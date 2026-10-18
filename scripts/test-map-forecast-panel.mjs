@@ -9,7 +9,10 @@ const result={available:true,score:72,level:'fair',time,
 const zone={id:'synthetic-only',name:'Syntetisk område',region:'Lokal prøve'};
 const weather={time,windSpeedMps:6,windDirectionDeg:90};
 const forecast={hourly:[weather]};
-test('selected-hour panel does not invent an unavailable five-day summary; normal view is preserved',()=>{
+test('selected-hour panel does not invent an unavailable five-day summary; normal view is preserved',t=>{
+  // The synthetic forecast must belong to the test's date, not the CI host's
+  // moving Danish day. Keep the normal renderer's real expiry rule unchanged.
+  t.mock.timers.enable({apis:['Date'],now:Date.parse('2026-10-18T10:00:00.000Z')});
   for(const mode of ['waders','beach']){
     const current={innerHTML:''};showZoneInfo(current,zone,result,weather,mode,{forecast});
     assert.match(current.innerHTML,/data-forecast-section/);assert.match(current.innerHTML,/data-tide-section/);
@@ -18,5 +21,17 @@ test('selected-hour panel does not invent an unavailable five-day summary; norma
     assert.match(selected.innerHTML,/map-timeline-zone-scope/);
     const invalid={innerHTML:''};showZoneInfo(invalid,zone,result,weather,mode,{forecast,mapForecastTime:'2026-10-18T13:00:00.000Z'});
     assert.match(invalid.innerHTML,/data-forecast-section/,'An unrelated time flag must not suppress normal functions');
+  }
+});
+
+test('normal panel expires the same synthetic forecast after Danish midnight',t=>{
+  t.mock.timers.enable({apis:['Date'],now:Date.parse('2026-10-18T22:01:00.000Z')});
+  for(const mode of ['waders','beach']){
+    const current={innerHTML:''};showZoneInfo(current,zone,result,weather,mode,{forecast});
+    assert.match(current.innerHTML,/class="forecast-section"/);
+    assert.match(current.innerHTML,/class="tide-section"/);
+    assert.doesNotMatch(current.innerHTML,/data-forecast-section|data-tide-section/,
+      'Expired prior-day data must not become a selectable normal forecast');
+    assert.doesNotMatch(current.innerHTML,/map-timeline-zone-scope/);
   }
 });

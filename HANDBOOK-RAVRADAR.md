@@ -1,3 +1,11 @@
+## 89.255 Hold prøvens klokke sammen med dens prognose
+
+Kort fortalt: En fast prøvedato kræver en fast prøveklokke. Rigtige brugere skal stadig kun se gyldige prognosedage.
+
+En prøve med en fast prognosedato skal bruge en tilsvarende fast klokke. Ellers kan en korrekt udløbsregel få en kildekontrol til at skifte resultat ved dansk midnat. Produktionsvisningen skal fortsat afvise udløbne dage; den må ikke gøres mindre streng for at få en prøve igennem.
+
+Status 19. oktober: Den konkrete panelprøve er reproduceret rød efter dansk midnat og består lokalt med fastlåst prøveklokke. Alle eksisterende kontroludsagn og begge søgemåder bevares. En ny prøve beviser desuden, at samme prognose faktisk udløber den følgende danske dag. De to panelprøver og syv normale generations-/livscyklustilfælde består. Der er ingen ændring af produktionskode, model, vejrdata eller scorer i denne opfølgning. Ny præcis samlet kildekontrol og faktisk offentlig vejrgeneration mangler; kildeprøver er ikke drift eller deploy. Ældre statusafsnit nedenfor er historik på disse punkter.
+
 ## 89.254 Gendan vejret gennem én sammenhængende vej
 
 Kort fortalt: Ved den godkendte nye start begynder strømhistorikken på ny. Tidligere data gemmes særskilt som arkiv og må ikke gøre gamle strømtimer nødvendige. Først en faktisk kontrolleret levering giver en ny offentlig prognose.

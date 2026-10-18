@@ -1,3 +1,11 @@
+## 19. oktober — panelprøvens klokke, ikke en ændret prognoseregel
+
+PR667's første præcise kildekontrol bestod de indledende native Linux- og PostgreSQL-prøver, men den samlede kildevalidering fejlede i én UI-prøve. Dens faste prognosedato var 18. oktober, mens den normale renderer brugte værtsmaskinens aktuelle danske dag. Efter dansk midnat udløb prøveprognosen korrekt. Den samme fejl er reproduceret lokalt; det er ikke et nyt produktionsstop eller bevis for en defekt scoremodel.
+
+Kun prøvens klokke fastlåses til dens syntetiske input. Alle gamle kontroludsagn bevares, og en ny prøve kræver fortsat udløb efter dansk midnat i begge søgemåder. De to panelprøver og den normale generations-/livscyklusprøves syv tilfælde består lokalt uden skip. Produktionsrenderer, opstartsrettelse, modelbinding, SQL, scoreformel, kilder, adminpunkter og geometri ændres ikke her. Ny præcis samlet kildekontrol kræves stadig før levering.
+
+Den særskilte størrelsesregression for 673 kunstige dele og 121 timer er faktisk gennemført rød til grøn: samme normalt lagrede input og alle tre korrigerede scalar-kopier er cirka 29,7 MB, ikke de tidligere udpakkede cirka 352 MB; originalerne og det afkodede indhold bevares. Det er ikke måling af den konkrete produktionsfil eller en ny offentlig vejrgeneration. Den aktive strømhistorik må fortsat begynde fra nu uden gamle strømtimer. Cron og de tilbageholdte leverancer forbliver inaktive. Fristen 18. oktober er passeret uden færdiggørelse; alle fem hovedmål er åbne. Det private checkpoint ejer kørselsevidens og næste handling. Ældre afsnit bevares som dateret historik.
+
 ## 18. oktober — tabsfri scalar-lagring ved den nye historikstart
 
 Den præcise PR664-kildekontrol er bestået, og samme træ er merget. Den første faktiske engangsstart arkiverede originalerne og klargjorde sin kontekst, men stoppede i den efterfølgende historikplan før leverandører, beregning og deploy. Fejlkoden er FILE_SIZE; hvilken konkret fil der udløste den, er endnu ikke bevist. Der er ingen ny offentlig vejrgeneration.
