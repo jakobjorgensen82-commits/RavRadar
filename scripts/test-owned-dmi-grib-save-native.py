@@ -667,6 +667,12 @@ class OwnedRawSaveOfficialSdkNative(unittest.TestCase):
     def test_official_sdk_fixed_cipher_http_200_false_never_uploads(self):
         self.official_chain(finalize_ok=False, ciphertext=True)
 
+    def test_official_sdk_cipher_parent_sigkill_stops_before_cleanup_without_uploaded(self):
+        self._cipher_sdk_parent_loss = []
+        self.official_chain(finalize_ok=True, ciphertext=True)
+        self.assertEqual(self._cipher_sdk_parent_loss,
+                         ['ACTUAL_CIPHER_SDK_PARENT_LOSS_CLOSED_BEFORE_CLEANUP'])
+
     def official_chain(self, *, finalize_ok, ciphertext=False):
         import hashlib
         from http.server import BaseHTTPRequestHandler, HTTPServer
@@ -816,6 +822,64 @@ class OwnedRawSaveOfficialSdkNative(unittest.TestCase):
                     case.assertEqual(value['version'], archive_version)
                     case.assertEqual(value['size_bytes'], str(len(archive_bytes)))
                     assert_pending()  # Real SDK blocked on this exact response.
+                    if getattr(case, '_cipher_sdk_parent_loss', None) is not None:
+                        # Only the NEW case interrupts the real official SDK
+                        # after its genuine archive PUT, before any finalize ACK.
+                        case.assertTrue(ciphertext)
+                        case.assertEqual(case._cipher_sdk_parent_loss, [])
+                        original_raw = raw.lstat()
+                        original_cipher = (root / cipher_path).lstat()
+                        calls.append('finalize-owner-loss')
+                        signal.pidfd_send_signal(fds['action'], signal.SIGKILL)
+                        case.assertEqual(parent.wait(timeout=1.0), -signal.SIGKILL)
+                        case.assertTrue(exited(fds['action']))
+                        # No test signal is sent to cohort/worker here. The
+                        # product must detect its lost parent and stop itself.
+                        case.assertTrue(exited(fds['cohort'], 1.0),
+                                        'product cohort did not close after cipher parent loss')
+                        case.assertTrue(exited(fds['worker']),
+                                        'product left the cipher SDK worker live')
+                        terminal = os.waitid(os.P_PIDFD, fds['cohort'],
+                            os.WEXITED | os.WNOHANG | os.WNOWAIT)
+                        case.assertEqual(terminal.si_pid, observed['cohort']['pid'])
+                        case.assertEqual(terminal.si_code, os.CLD_EXITED)
+                        case.assertNotEqual(terminal.si_status, 0,
+                                            'lost owner cannot produce a successful cohort')
+                        with case.assertRaises(ProcessLookupError):
+                            os.killpg(observed['worker']['pid'], 0)
+                        reaped = os.waitid(os.P_PIDFD, fds['cohort'], os.WEXITED | os.WNOHANG)
+                        case.assertEqual(reaped.si_pid, observed['cohort']['pid'])
+                        no_children()  # Product drainer, not fixture cleanup, reaped the worker.
+                        for value in (os.fstat(claim_fd), (root / CLAIM).lstat()):
+                            case.assertEqual((value.st_dev, value.st_ino), claim_identity)
+                            case.assertTrue(stat.S_ISREG(value.st_mode))
+                            case.assertEqual(value.st_nlink, 1)
+                        case.assertEqual(small(root / CLAIM), b'', 'dead owner claim stays retained')
+                        case.assertEqual((root / cipher_path).read_bytes(), own_cipher)
+                        current_cipher = (root / cipher_path).lstat()
+                        case.assertEqual((current_cipher.st_dev, current_cipher.st_ino), cipher_identity)
+                        case.assertEqual((current_cipher.st_size, current_cipher.st_mtime_ns,
+                                          current_cipher.st_ctime_ns),
+                                         (original_cipher.st_size, original_cipher.st_mtime_ns,
+                                          original_cipher.st_ctime_ns))
+                        case.assertTrue(stat.S_ISREG(current_cipher.st_mode))
+                        case.assertEqual(current_cipher.st_nlink, 1)
+                        case.assertEqual(raw.read_bytes(), own_raw)
+                        current_raw = raw.lstat()
+                        case.assertEqual((current_raw.st_dev, current_raw.st_ino,
+                                          current_raw.st_size, current_raw.st_mtime_ns,
+                                          current_raw.st_ctime_ns),
+                                         (original_raw.st_dev, original_raw.st_ino,
+                                          original_raw.st_size, original_raw.st_mtime_ns,
+                                          original_raw.st_ctime_ns))
+                        case.assertTrue(stat.S_ISREG(current_raw.st_mode))
+                        case.assertEqual(current_raw.st_nlink, 1)
+                        case.assertEqual(small(root / 'action-output'), b'',
+                                         'parent loss must not publish uploaded=true or saved=true')
+                        case._cipher_sdk_parent_loss.append(
+                            'ACTUAL_CIPHER_SDK_PARENT_LOSS_CLOSED_BEFORE_CLEANUP')
+                        finished = True
+                        return  # Deliberately no successful Finalize response.
                     calls.append('finalize')
                     self.reply(200, {'ok': finalize_ok, 'entry_id': '17' if finalize_ok else '0'})
                     finished = True
@@ -912,6 +976,11 @@ class OwnedRawSaveOfficialSdkNative(unittest.TestCase):
                 server.handle_request()
                 if server_failure:
                     raise server_failure[0]
+            if getattr(self, '_cipher_sdk_parent_loss', None) is not None:
+                self.assertEqual(self._cipher_sdk_parent_loss,
+                                 ['ACTUAL_CIPHER_SDK_PARENT_LOSS_CLOSED_BEFORE_CLEANUP'])
+                self.assertEqual(calls, ['create', 'put', 'finalize-owner-loss'])
+                return  # The unchanged finally now closes only already stopped own processes.
             self.assertEqual(parent.wait(timeout=1.0), 0 if finalize_ok else 1)
             for role in ('action', 'cohort', 'worker'):
                 self.assertTrue(exited(fds[role]), f'{role} actual exit required')
