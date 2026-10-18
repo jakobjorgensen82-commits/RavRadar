@@ -657,6 +657,166 @@ class ExactOriginalTests(unittest.TestCase):
         self.assertNotIn("allow_redirects", producer.DOWNLOAD_SESSION.get.call_args.kwargs)
         producer.STAC_SESSION.get.assert_not_called()
 
+    def test_unknown_stac_size_reserves_actual_header_not_the_entire_download_budget(self):
+        # This is the normal downloader, not exact-restore or native admission.
+        # The real small file fits; reserving the whole allowance plus manifest
+        # metadata does not fit even this otherwise empty, genuine RAW fixture.
+        expected = capture()
+        href = HREF.replace("exact-original.grib", "ordinary-unknown-size.grib")
+        response = Response(BODY)
+        budget = {"bytes": 0}
+        producer.DOWNLOAD_SESSION.get.side_effect = [response]
+        with patch.object(producer, "RAW_CACHE_MAX_BYTES", 8192), \
+             patch.object(producer, "MAX_DOWNLOAD_BYTES", 8192), \
+             patch.object(producer, "_RAW_CURRENT_PROTECTED", None):
+            target, reused = producer.download_asset(href, None, budget,
+                collection=expected["collection"], model_run=expected["modelRun"], valid_time=expected["validTime"],
+                item_id="ordinary-unknown-size", item_created_at=expected["itemCreatedAt"])
+        self.assertFalse(reused)
+        self.assertTrue(response.closed)
+        self.assertEqual(target.read_bytes(), BODY)
+        self.assertEqual(budget["bytes"], len(BODY))
+        row = json.loads(self.manifest.read_text())["assets"][target.name]
+        self.assertIsNone(row["assetSizeBytes"], "HTTP length must never become a fabricated STAC size")
+        self.assertEqual(row["contentLengthBytes"], len(BODY))
+        self.assertEqual(row["contentSha256"], hashlib.sha256(BODY).hexdigest())
+        self.assertEqual(row["canonicalHref"], href)
+        producer.DOWNLOAD_SESSION.get.assert_called_once()
+        producer.STAC_SESSION.get.assert_not_called()
+
+    def ordinary_unknown_download(self):
+        expected = capture()
+        return producer.download_asset(HREF, None, {"bytes": 0},
+            collection=expected["collection"], model_run=expected["modelRun"], valid_time=expected["validTime"],
+            item_id=expected["itemId"], item_created_at=expected["itemCreatedAt"])
+
+    def test_unknown_stac_headers_refuse_before_body_temp_or_registration(self):
+        invalid = [None, "", "0", "-1", "+1", " 1", "1 ", "1, 1", "1.0", "1e3", "١", 1, True]
+        for headers in ([{"content-length": value} for value in invalid]
+                        + [{"content-encoding": ""}, {"content-encoding": "gzip"}, {"content-encoding": "br"},
+                           {"transfer-encoding": "chunked"}]):
+            with self.subTest(headers=headers):
+                response = Response(BODY, **headers)
+                response.iter_content = Mock(side_effect=AssertionError("header rejection read body"))
+                before = {entry.name: entry.read_bytes() for entry in self.raw.iterdir()}
+                producer.DOWNLOAD_SESSION.get.side_effect = [response]
+                with patch.object(producer, "MAX_DOWNLOAD_BYTES", 8192), \
+                     patch.object(producer, "RAW_CACHE_MAX_BYTES", 8192), \
+                     patch.object(producer.tempfile, "NamedTemporaryFile") as temporary, \
+                     patch.object(producer, "register_raw_cache_asset") as register:
+                    with self.assertRaisesRegex(RuntimeError, "invalid Content-Length"):
+                        self.ordinary_unknown_download()
+                self.assertTrue(response.closed)
+                response.iter_content.assert_not_called()
+                temporary.assert_not_called()
+                register.assert_not_called()
+                self.assertEqual({entry.name: entry.read_bytes() for entry in self.raw.iterdir()}, before)
+
+    def test_unknown_stac_capacity_and_download_budget_refuse_after_headers_before_body(self):
+        for raw_capacity, download_capacity, error in ((4096, 8192, "DMI_RAW_CURRENT_CACHE_BUDGET"),
+                                                     (8192, len(BODY) - 1, "download budget exceeded")):
+            with self.subTest(raw_capacity=raw_capacity):
+                response = Response(BODY)
+                response.iter_content = Mock(side_effect=AssertionError("capacity rejection read body"))
+                producer.DOWNLOAD_SESSION.get.side_effect = [response]
+                before = {entry.name: entry.read_bytes() for entry in self.raw.iterdir()}
+                with patch.object(producer, "RAW_CACHE_MAX_BYTES", raw_capacity), \
+                     patch.object(producer, "MAX_DOWNLOAD_BYTES", download_capacity), \
+                     patch.object(producer, "_RAW_CURRENT_PROTECTED", None), \
+                     patch.object(producer.tempfile, "NamedTemporaryFile") as temporary, \
+                     patch.object(producer, "register_raw_cache_asset") as register:
+                    with self.assertRaisesRegex(RuntimeError, error):
+                        self.ordinary_unknown_download()
+                self.assertTrue(response.closed)
+                response.iter_content.assert_not_called()
+                temporary.assert_not_called()
+                register.assert_not_called()
+                self.assertEqual({entry.name: entry.read_bytes() for entry in self.raw.iterdir()}, before)
+        self.assertEqual(len(producer._UNSETTLED_ASSET_DOWNLOADS), 1,
+                         "Existing fatal RAW-policy refusal is not silently downgraded to recoverable")
+
+    def test_unknown_stac_reservation_precedes_temp_body_and_preserves_real_eof_length(self):
+        events = []
+        response = Response(BODY)
+        original_prepare = producer.prepare_raw_cache_space
+        original_temp = producer.tempfile.NamedTemporaryFile
+        original_body = response.iter_content
+        def prepare(incoming, **kwargs):
+            self.assertEqual(incoming, len(BODY))
+            events.append("reserve")
+            return original_prepare(incoming, **kwargs)
+        def temporary(*args, **kwargs):
+            self.assertEqual(events, ["reserve"])
+            events.append("temp")
+            return original_temp(*args, **kwargs)
+        def body(size):
+            self.assertEqual(events, ["reserve", "temp"])
+            events.append("body")
+            yield from original_body(size)
+        response.iter_content = body
+        producer.DOWNLOAD_SESSION.get.side_effect = [response]
+        with patch.object(producer, "RAW_CACHE_MAX_BYTES", 8192), \
+             patch.object(producer, "MAX_DOWNLOAD_BYTES", 8192), \
+             patch.object(producer, "prepare_raw_cache_space", side_effect=prepare), \
+             patch.object(producer.tempfile, "NamedTemporaryFile", side_effect=temporary):
+            target, _reused = self.ordinary_unknown_download()
+        self.assertEqual(events, ["reserve", "temp", "body"])
+        self.assertEqual(target.read_bytes(), BODY)
+        self.assertTrue(response.closed)
+
+    def test_unknown_stac_short_or_long_body_never_publishes_or_registers(self):
+        for length in (len(BODY) + 1, len(BODY) - 1):
+            with self.subTest(length=length), tempfile.TemporaryDirectory() as folder:
+                raw = Path(folder)
+                response = Response(BODY, **{"content-length": str(length)})
+                producer.DOWNLOAD_SESSION.get.side_effect = [response]
+                with patch.object(producer, "RAW_DIR", raw), \
+                     patch.object(producer, "RAW_CACHE_MAX_BYTES", 8192), \
+                     patch.object(producer, "MAX_DOWNLOAD_BYTES", 8192), \
+                     patch.object(producer, "_RAW_CURRENT_PROTECTED", None), \
+                     patch.object(producer, "register_raw_cache_asset") as register:
+                    with self.assertRaisesRegex(RuntimeError, "incomplete|INCOMING_LENGTH_EXCEEDED"):
+                        self.ordinary_unknown_download()
+                    self.assertFalse(producer.cached_asset_path(HREF).exists())
+                self.assertTrue(response.closed)
+                register.assert_not_called()
+
+    def test_unknown_stac_header_failure_preserves_first_cause_and_fatal_cleanup(self):
+        class FirstCause(RuntimeError):
+            def __bool__(self): return False
+        first = FirstCause("synthetic first capacity refusal")
+        for close_fails in (False, True):
+            with self.subTest(close_fails=close_fails):
+                class ObservedResponse(Response):
+                    def __exit__(self, _kind, error, _traceback):
+                        self.closed = True
+                        self.error_seen = error
+                        if close_fails:
+                            raise RuntimeError("synthetic close failure")
+                response = ObservedResponse(BODY)
+                producer.DOWNLOAD_SESSION.get.side_effect = [response]
+                with patch.object(producer, "prepare_raw_cache_space", side_effect=first), \
+                     patch.object(producer.tempfile, "NamedTemporaryFile") as temporary:
+                    with self.assertRaises(RuntimeError) as caught:
+                        self.ordinary_unknown_download()
+                self.assertTrue(response.closed)
+                self.assertIs(response.error_seen, first)
+                temporary.assert_not_called()
+                if close_fails:
+                    self.assertIsInstance(caught.exception, producer.AssetDownloadCleanupUnproven)
+                    self.assertIs(caught.exception.__cause__, first)
+                else:
+                    self.assertIs(caught.exception, first)
+
+    def test_known_stac_capacity_and_download_budget_still_refuse_before_http(self):
+        for raw_capacity, download_capacity in ((4096, 8192), (8192, len(BODY) - 1)):
+            with self.subTest(raw_capacity=raw_capacity), \
+                 patch.object(producer, "RAW_CACHE_MAX_BYTES", raw_capacity), \
+                 patch.object(producer, "MAX_DOWNLOAD_BYTES", download_capacity), \
+                 self.assertRaises(RuntimeError):
+                producer.download_asset(HREF, len(BODY), {"bytes": 0})
+        producer.DOWNLOAD_SESSION.get.assert_not_called()
+
     def test_report_never_prints_exception_payload_or_runs_normal_main(self):
         for error in (RuntimeError("SECRET/url?api-key=not-reportable"),
                       producer.ExactOriginalRestoreRejected("SECRET-not-allowlisted")):

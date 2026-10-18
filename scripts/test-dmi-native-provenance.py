@@ -418,7 +418,161 @@ def check_raw_current_retention():
                 p._RAW_CURRENT_SESSION_PROTECTED.update(old_policies[2])
 
 
+def check_raw_nonmarine_retention():
+    """Only normal registered nonmarine transport may become unpinned LRU."""
+    import hashlib
+    from unittest.mock import patch
+    p = producer
+    body = b"synthetic normal RAW LRU body, not a provider GRIB".ljust(32768, b"x")
+    cases = [(collection, "good") for collection in ("harmonie_dini_sf", "wam_dw", "wam_nsb")]
+    cases += [("wam_dw", case) for case in (
+        "missing-acquired", "missing-sha", "missing-length", "missing-item", "wrong-href",
+        "wrong-identity", "unsupported", "changed-body", "no-boundary", "pins-only",
+        "late-second-file", "late-manifest", "late-inventory-file",
+    )]
+    for collection, case in cases:
+        with tempfile.TemporaryDirectory(prefix="rr-nonmarine-lru-") as directory, \
+             patch.object(p, "ROOT", Path(directory)), \
+             patch.object(p, "RAW_DIR", Path(directory) / ".cache/dmi-grib"), \
+             patch.object(p, "RAW_CACHE_MAX_BYTES", 3 * len(body) + 12000), \
+             patch.object(p, "_RAW_CURRENT_PROTECTED", None), \
+             patch.object(p, "_RAW_CURRENT_IDENTITIES", {}), \
+             patch.object(p, "_RAW_CURRENT_UNPROVED_NAMES", set()), \
+             patch.object(p, "_RAW_CURRENT_SESSION_PROTECTED", {}):
+            p.RAW_DIR.mkdir(parents=True)
+            def seed(label, kind, mtime):
+                href = f"https://owned-fixture.invalid/{label}.grib"
+                path = p.cached_asset_path(href)
+                path.write_bytes(body)
+                p.register_raw_cache_asset(path, href, kind, valid_time, valid_time,
+                    item_id=label, item_created_at=valid_time, expected_size=len(body),
+                    acquired_at=valid_time, content_sha256=hashlib.sha256(body).hexdigest())
+                os.utime(path, (mtime, mtime))
+                return path, href
+            def write(relative, value):
+                path = p.ROOT / relative
+                path.parent.mkdir(parents=True, exist_ok=True)
+                raw = json.dumps(value).encode()
+                path.write_bytes(raw)
+                return "sha256:" + hashlib.sha256(raw).hexdigest()
+            committed, _ = seed("committed-marine", "dkss_nsbs", 1)
+            old, _ = seed("old-nonmarine", collection, 2)
+            second = seed("second-nonmarine", "wam_nsb", 3)[0] if case.startswith("late-") else None
+            p._RAW_CURRENT_SESSION_PROTECTED.clear()  # Prior-process fixtures, no new eviction grant.
+            capture = p.canonical_current_source_asset(p.load_raw_cache_manifest()["assets"][committed.name])
+            part_doc = {"zones": {zone["parentZoneId"]: [{"partId": "TEST", "waterPoint": [2, 1]}]}}
+            part_bytes = json.dumps(part_doc).encode()
+            targets = [{"partId": "TEST", "parentZoneId": zone["parentZoneId"], "waterPoint": [2, 1]}]
+            target = "2026-01-01T04:00:00Z"
+            source_hashes = {"conditions": write("data/live/conditions.json", {"synthetic": True}),
+                "checkpoint": write(".cache/ravscore-continuation-checkpoint/checkpoint.json", {"generationSha256": "3" * 64}),
+                "activation": None}
+            boundary = {"datasetId": "rr-synthetic-nonmarine-boundary", "productionReferenceAt": "2026-01-01T02:00:00Z",
+                "bundleContentSha256": "2" * 64, "checkpointGenerationSha256": "3" * 64,
+                "conditionsSha256": source_hashes["conditions"].removeprefix("sha256:")}
+            write("private/bundle/manifest.json", {key: boundary[key] for key in
+                ("datasetId", "productionReferenceAt", "bundleContentSha256")})
+            write("private/bundle/payload/data/live/conditions.json", {"synthetic": True})
+            write(".cache/ravscore-current-history-demand.json", {
+                "schemaVersion": 2, "kind": "RAVSCORE_CURRENT_HISTORY_ACQUISITION_DEMAND",
+                "productionReferenceAt": target, "modelBinding": {},
+                "registrySha256": "sha256:" + hashlib.sha256(part_bytes).hexdigest(),
+                "sourceHashes": source_hashes, "demands": [],
+                "rawRetention": {"schemaVersion": 1, "kind": "COMMITTED_POST_H0_UNKNOWN_RAW_RETENTION",
+                    "boundary": boundary, "captures": [capture]},
+            })
+            with patch.dict(os.environ, {
+                "DMI_BULK_REQUIRE_COMMITTED_RAW_RETENTION": "true",
+                "DMI_BULK_CURRENT_HISTORY_DEMAND_PATH": str(p.ROOT / ".cache/ravscore-current-history-demand.json"),
+                "RAVRADAR_PRIVATE_RUNTIME_ROOT": str(p.ROOT / "private"),
+                "RAVRADAR_PRIVATE_RUNTIME_BUNDLE": str(p.ROOT / "private/bundle"),
+            }):
+                assert p.read_current_history_demands(part_doc, part_bytes, targets, [zone], target) == {}
+            assert p._RAW_CURRENT_PROTECTED is not None and committed.name in p._RAW_CURRENT_PROTECTED
+            session, _ = seed("session-marine", "dkss_lf", 4)
+            unknown = p.RAW_DIR / "unregistered-original.grib"
+            unknown.write_bytes(b"unregistered remains unowned")
+            manifest = p.load_raw_cache_manifest()
+            row = manifest["assets"][old.name]
+            if case.startswith("missing-"):
+                row.pop({"missing-acquired": "acquiredAt", "missing-sha": "contentSha256",
+                    "missing-length": "contentLengthBytes", "missing-item": "itemId"}[case])
+            elif case == "wrong-href": row["canonicalHref"] += "?not-canonical=1"
+            elif case == "wrong-identity": row["assetIdentitySha256"] = "0" * 64
+            elif case == "unsupported": row["collection"] = "not-an-owned-producer"
+            elif case == "changed-body": old.write_bytes(b"changed".ljust(len(body), b"y"))
+            elif case == "no-boundary": p._RAW_CURRENT_PROTECTED = None
+            elif case == "pins-only": p.RAW_CACHE_MAX_BYTES = 2 * len(body) + 12000
+            p.save_raw_cache_manifest(manifest)
+            before = {path.name: path.read_bytes() for path in p.RAW_DIR.iterdir()}
+            pin_identities = {path.name: p._OwnedGribRead._identity(path.lstat()) for path in (committed, session)}
+            calls = []
+            class Response:
+                headers = {"content-length": str(len(body))}
+                def __enter__(self): return self
+                def __exit__(self, *args): return False
+                def raise_for_status(self): pass
+                def iter_content(self, _size): yield body
+            class Session:
+                def get(self, href, **kwargs):
+                    calls.append(href)
+                    return Response()
+            qualified = []
+            normal_capture = p.raw_cache_source_capture
+            normal_inventory = p._raw_current_inventory
+            late_manifest = None
+            late_inventory_changed = False
+            def capture_for_deletion(path, *args, **kwargs):
+                nonlocal late_manifest
+                qualified.append(path.name)
+                actual = normal_capture(path, *args, **kwargs)
+                if path == old and second is not None:
+                    if case == "late-second-file": second.write_bytes(b"late-change".ljust(len(body), b"z"))
+                    elif case == "late-manifest":
+                        late_manifest = p.load_raw_cache_manifest()
+                        late_manifest["assets"][second.name]["lastUsedAt"] = "2026-01-01T05:00:00Z"
+                        p.save_raw_cache_manifest(late_manifest)
+                return actual
+            def final_inventory():
+                nonlocal late_inventory_changed
+                if case == "late-inventory-file" and len(qualified) == 2 and not late_inventory_changed:
+                    second.write_bytes(b"final-inventory-change".ljust(len(body), b"z"))
+                    late_inventory_changed = True
+                return normal_inventory()
+            with patch.object(p, "DOWNLOAD_SESSION", Session()), \
+                 patch.object(p, "raw_cache_source_capture", side_effect=capture_for_deletion), \
+                 patch.object(p, "_raw_current_inventory", side_effect=final_inventory):
+                if case == "good":
+                    incoming, reused = p.download_asset("https://owned-fixture.invalid/incoming.grib", len(body), {"bytes": 0},
+                        collection="dkss_idw", model_run=valid_time, valid_time=valid_time,
+                        item_id="incoming", item_created_at=valid_time)
+                    assert not reused and incoming.read_bytes() == body and len(calls) == 1
+                    assert not old.exists() and old.name not in p.load_raw_cache_manifest()["assets"]
+                    assert qualified == [old.name], "hash only selected nonmarine deletion, not unrelated files"
+                else:
+                    try:
+                        p.download_asset("https://owned-fixture.invalid/incoming.grib", len(body), {"bytes": 0})
+                    except p.AssetDownloadCleanupUnproven:
+                        pass
+                    else:
+                        raise AssertionError(f"nonmarine LRU refusal bypassed: {case}")
+                    assert not calls, f"unproved deletion reached transport: {case}"
+                    if case.startswith("late-"):
+                        assert old.read_bytes() == body and second.exists(), "late refusal deleted the first planned input"
+                        if late_manifest is not None:
+                            assert p.load_raw_cache_manifest() == late_manifest
+                        else:
+                            assert p.raw_cache_manifest_path().read_bytes() == before[p.CACHE_MANIFEST_NAME]
+                    else:
+                        assert before == {path.name: path.read_bytes() for path in p.RAW_DIR.iterdir()}, case
+            assert unknown.read_bytes() == before[unknown.name]
+            for path in (committed, session):
+                assert path.read_bytes() == body and p._OwnedGribRead._identity(path.lstat()) == pin_identities[path.name]
+    print("RAW nonmarine LRU: 3 normal registered families, capture/identity/ownership/pin refusals and pre-delete late races passed")
+
+
 check_raw_current_retention()
+check_raw_nonmarine_retention()
 if sys.argv[1:] == ["--raw-current-retention-only"]:
     print("RAW current retention: normal download -> later score failure -> unchanged B/S -> next replay plan passed")
     raise SystemExit(0)
