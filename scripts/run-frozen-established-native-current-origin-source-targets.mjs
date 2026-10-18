@@ -175,6 +175,21 @@ const DATA=Object.freeze(['supabase/config.toml','supabase/schema.sql','supabase
  'supabase/functions/_shared/rav-assistant-contract.ts','data/admin/ravscore-profile-selection.json',
  'data/live/coastal-parts-v2.json','.github/workflows/deploy-code-only-repair.yml','scripts/source-critical-gate.mjs',
  'scripts/test-ravscore-recovery-replay.mjs']);
+// These are TEXT inputs of the whole genuine follower, not executable imports
+// of its sparse host. The follower copies them into its own genuine BASE clone.
+// Read only the existing fixed HEAD/TREE; never supply current582 afterimages or
+// relax the strict import scanner for the modules actually loaded by this host.
+const FOLLOWER_TEXT_INPUTS=Object.freeze([
+ ['scripts/lib/established-native-current-origin.mjs','e4741332e9cc54523fccf8ded70ace9767047d97090306c00fafd43385235c42'],
+ ['scripts/lib/ravscore-production-part-pipeline.mjs','dadb5bf8c37fd12415b4596523df218f67cca4d4775b1cf8d0f2066c524cabd0'],
+ ['scripts/update-weather.mjs','608b795d382d96fed7435ffd9437f589f8771ea742ec65f75053d25059b9d25d'],
+ ['scripts/public-conditions-lib.mjs','e5a921d2a818694cfa13d5fcb30392cad972dc3b7038e929bc1d659a95f8017d'],
+ ['scripts/check-native-current-reanalysis-predecessor-source.mjs','1c08778a28bc3931b42430eaa94d9659dd279f42528c5306631b971c4405928d'],
+ ['scripts/lib/model-source-imports.mjs','534aa596471ea2fd68661540c4ed5e29d8385cf7cbf45f0c010e7e3357ec811b'],
+ ['scripts/build-ravscore-model-bundle.mjs','974a8af2c8fdbc92217b15f582142f43a13288143d635b72dec0521021a66dcd'],
+ ['scripts/build-candidate-g-rollback-bundle.mjs','79e030daafc41f56c20d343c1a246ad79b82fce2cd27a3f636a762f8f687dbf0'],
+ ['scripts/test-weather-update-entrypoint.mjs','72035cc686f34b86a3e5702d6c6f25831a8bbbb451b3465b29286cd96a17beed'],
+]);
 const sha=v=>crypto.createHash('sha256').update(v).digest('hex');
 const env=()=>Object.fromEntries(['PATH','Path','SystemRoot','WINDIR','TEMP','TMP','LANG','LC_ALL','PYTHON']
  .filter(k=>typeof process.env[k]==='string').map(k=>[k,process.env[k]]));
@@ -223,6 +238,10 @@ async function withFrozenEstablishedNativeCurrentOriginTestSource(group,useVerif
      const found=choices.find(p=>regular.has(p));assert(found,'Unknown historical relative import: '+file+' '+specifier);pending.push(found);}
    }
    for(const file of DATA)await add(file,await read(file));
+   if(group==='followers'||group==='all')for(const[file,pin]of FOLLOWER_TEXT_INPUTS){
+    const bytes=await read(file);assert.equal(sha(bytes),pin,'Whole genuine140000 follower text input');
+    await add(file,bytes);
+   }
    const readiness=await import(pathToFileURL(path.join(sourceRoot,'scripts/integrated-cutover-readiness.mjs')).href);
    assert.equal(readiness.REQUIRED_CUTOVER_MIGRATIONS.length,52);assert.equal(readiness.LATEST_REQUIRED_CUTOVER_MIGRATION.version,'20261017140000');
    for(const row of readiness.REQUIRED_CUTOVER_MIGRATIONS){const file='supabase/migrations/'+row.filename;await add(file,await read(file));}

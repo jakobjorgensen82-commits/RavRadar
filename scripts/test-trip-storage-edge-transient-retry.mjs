@@ -2676,7 +2676,9 @@ test('same-h0 Worker actual workflow runs only new route after B/S and before cu
   assert.match(step,/SUPABASE_DB_PASSWORD: \$\{\{ secrets\.SUPABASE_DB_PASSWORD \}\}/);
   assert.ok(workflow.indexOf('Publish current bounded private runtime')<start);
   assert.ok(workflow.indexOf('Publish measured continuation only after verified warmup private runtime')<start);
-  assert.ok(start<workflow.indexOf('Deploy exact rebound trip Edges without Worker or D1 replay'));
+  const edgesMarker='      - name: Deploy exact rebound trip Edges after the required Worker update\n';
+  assert.equal(workflow.split(edgesMarker).length,2);
+  assert.ok(start<workflow.indexOf(edgesMarker));
   assert.ok(start<workflow.indexOf('Publish exact integrated backend and Edge readiness for this source'));
   assert.ok(start<workflow.indexOf('Upload GitHub Pages artifact'));
   const edges=workflow.slice(end,workflow.indexOf('      - name:',end+18));
