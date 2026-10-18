@@ -12,7 +12,9 @@ import importlib.util
 import io
 import json
 import os
+import shutil
 import stat
+import subprocess
 from pathlib import Path
 import sys
 import tempfile
@@ -669,6 +671,253 @@ class ExactOriginalTests(unittest.TestCase):
             self.assertFalse(result["pruningPerformed"])
 
 
+    def inventory_report(self, plan, *, digest=None):
+        # Same normal plan reader and existing portable identity distinction;
+        # only the new metadata/lstat observer is imported from its real file.
+        self.read_plan(plan)
+        body = (self.raw / ".original-recovery-plan.json").read_bytes()
+        spec = importlib.util.spec_from_file_location("exact_pretransport_inventory",
+            Path(__file__).with_name("inspect-exact-dmi-original-plan.py"))
+        inventory = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(inventory)
+        identity = (patch.object(producer._OwnedGribRead, "_identity", staticmethod(
+            lambda info: (info.st_dev, info.st_ino, info.st_mode, info.st_size)))
+            if os.name == "nt" and not NATIVE else nullcontext())
+        with identity, patch.dict(os.environ, GITHUB_SHA=HEAD,
+                                  DMI_EXACT_ORIGINAL_PLAN_SHA256=digest or hashlib.sha256(body).hexdigest()), \
+             patch.object(producer, "_verify_exact_original_file", side_effect=AssertionError("no GRIB read")), \
+             patch.object(producer, "restore_exact_original_assets", side_effect=AssertionError("no restore")):
+            return inventory.inspect_exact_original_plan(producer)
+
+    def test_pretransport_inventory_deduplicates_captures_and_reports_only_bounded_metadata(self):
+        first = capture()
+        second = {**first, "acquiredAt": "2026-10-14T02:00:00Z"}
+        other = {**first, "collection": "dkss_nsbs", "modelRun": "2026-10-09T06:00:00Z",
+                 "validTime": "2026-10-14T01:00:00Z", "itemId": "OTHER_PRIVATE_ITEM",
+                 "assetIdentitySha256": "f" * 64}
+        report = self.inventory_report(self.make_plan([first, second, other]))
+        self.assertEqual((report["originalCount"], report["uniqueAssetCount"]), (3, 2))
+        self.assertEqual(report["requiredUniqueBytes"], 2 * len(BODY))
+        self.assertEqual(report["modelRun"], {"minimum": producer.canonical_time(first["modelRun"]),
+                                             "maximum": producer.canonical_time(other["modelRun"])})
+        self.assertEqual(report["validTime"], {"minimum": producer.canonical_time(first["validTime"]),
+                                              "maximum": producer.canonical_time(other["validTime"])})
+        self.assertEqual(report["uniqueAssetCountByCollection"]["dkss_lf"], 1)
+        self.assertEqual(report["uniqueAssetCountByCollection"]["dkss_nsbs"], 1)
+        self.assertEqual(report["noManifestAssetCount"], 2)
+        self.assertFalse(report["fileContentVerified"])
+        for key in ("transportPerformed", "decodePerformed", "restorePerformed", "cacheSaved"):
+            self.assertFalse(report[key])
+        text = json.dumps(report)
+        self.assertLess(len(text), 8192)
+        for private in ("OTHER_PRIVATE_ITEM", first["itemId"], first["assetIdentitySha256"], HREF, "api-key"):
+            self.assertNotIn(private, text)
+        producer.STAC_SESSION.get.assert_not_called()
+        producer.DOWNLOAD_SESSION.get.assert_not_called()
+
+    def test_pretransport_inventory_distinguishes_exact_manifest_from_file_presence(self):
+        expected = capture()
+        target = self.local_original(expected)
+        before = target.read_bytes(), self.manifest.read_bytes()
+        present = self.inventory_report(self.make_plan())
+        self.assertEqual((present["validatedManifestAssetCount"], present["validatedManifestFilePresentCount"],
+                          present["validatedManifestFileMissingCount"]), (1, 1, 0))
+        self.assertEqual((target.read_bytes(), self.manifest.read_bytes()), before)
+        target.unlink()
+        missing = self.inventory_report(self.make_plan())
+        self.assertEqual((missing["validatedManifestAssetCount"], missing["validatedManifestFilePresentCount"],
+                          missing["validatedManifestFileMissingCount"]), (1, 0, 1))
+        self.assertEqual(self.manifest.read_bytes(), before[1])
+        producer.STAC_SESSION.get.assert_not_called()
+        producer.DOWNLOAD_SESSION.get.assert_not_called()
+
+    def test_pretransport_inventory_refuses_unbound_plan_before_report(self):
+        output = io.StringIO()
+        with redirect_stdout(output), self.expect_refusal("PLAN_REJECTED"):
+            self.inventory_report(self.make_plan(), digest="0" * 64)
+        self.assertEqual(output.getvalue(), "")
+        producer.STAC_SESSION.get.assert_not_called()
+        producer.DOWNLOAD_SESSION.get.assert_not_called()
+
+    def test_pretransport_download_candidate_comparison_is_full_hash_only_not_transport(self):
+        filename = "dkss_lf_SF_20261009T000000Z_20261014T000000Z.grib"
+        expected = {**capture(), "itemId": filename,
+                    "assetIdentitySha256": producer.asset_identity_sha256(
+                        "https://opendataapi.dmi.dk/v1/forecastdata/download/" + filename.replace("dkss_lf_SF_", "DKSS_LF_SF_"))}
+        report = self.inventory_report(self.make_plan([expected]))
+        comparison = report["deterministicDownloadIdentity"]
+        self.assertEqual(comparison["fullIdentityMatchesByKnownHost"], {"opendataapi.dmi.dk": 1})
+        self.assertFalse(comparison["remoteAvailabilityChecked"])
+        self.assertFalse(comparison["usedForTransport"])
+        self.assertNotIn(filename, json.dumps(report))
+        changed = {**expected, "assetIdentitySha256": expected["assetIdentitySha256"][:24] + "f" * 40}
+        report = self.inventory_report(self.make_plan([changed]))
+        self.assertEqual(report["deterministicDownloadIdentity"]["fullIdentityMatchesByKnownHost"], {"opendataapi.dmi.dk": 0})
+        producer.STAC_SESSION.get.assert_not_called()
+        producer.DOWNLOAD_SESSION.get.assert_not_called()
+
+    def test_pretransport_inventory_does_not_upgrade_unregistered_or_conflicting_originals(self):
+        target = self.local_original()
+        self.manifest.write_text('{"schemaVersion":2,"assets":{}}\n', encoding="utf-8")
+        unknown = self.inventory_report(self.make_plan())
+        self.assertEqual((unknown["noManifestAssetCount"], unknown["noManifestPrefixFilePresentCount"]), (1, 1))
+        self.manifest.write_text(json.dumps({"schemaVersion": 2, "assets": {
+            target.name: {**capture(), "canonicalHref": HREF + "?api-key=SECRET_MUST_NOT_LEAK"}}}), encoding="utf-8")
+        before = target.read_bytes(), self.manifest.read_bytes()
+        conflict = self.inventory_report(self.make_plan())
+        self.assertEqual(conflict["conflictingManifestAssetCount"], 1)
+        self.assertEqual(conflict["validatedManifestAssetCount"], 0)
+        self.assertNotIn("SECRET_MUST_NOT_LEAK", json.dumps(conflict))
+        self.assertEqual((target.read_bytes(), self.manifest.read_bytes()), before)
+        producer.STAC_SESSION.get.assert_not_called()
+        producer.DOWNLOAD_SESSION.get.assert_not_called()
+
+
+    def locator_capture(self, body=BODY, *, collection="dkss_lf", uppercase=True):
+        filename = collection + "_sf_20261009T000000Z_20261014T000000Z.grib"
+        located = filename.replace(collection + "_sf_", (collection + "_sf_").upper(), 1) if uppercase else filename
+        href = "https://opendataapi.dmi.dk/v1/forecastdata/download/" + located
+        return {**capture(body), "collection": collection, "itemId": filename,
+                "assetIdentitySha256": hashlib.sha256(href.encode()).hexdigest()}, href
+
+    def portable_locator_verification(self, path, wanted, *, work_deadline, require_capture=False):
+        # Normal download_asset still performs the actual streaming digest,
+        # length, exclusive install and registration. Only ecCodes/lease proof
+        # is replaced on Windows; the native case below uses the real reader.
+        self.assertEqual(path.stat().st_size, wanted["contentLengthBytes"])
+        self.assertEqual(hashlib.sha256(path.read_bytes()).hexdigest(), wanted["contentSha256"])
+        if require_capture:
+            row = json.loads(self.manifest.read_text())["assets"][path.name]
+            self.assertTrue(producer._exact_same_capture(row, wanted))
+
+    def test_locator_missing_stac_restores_only_exact_authenticated_bytes_through_normal_caller(self):
+        for status, collection, uppercase in ((404, "dkss_lf", True), (410, "dkss_nsbs", True)):
+            with self.subTest(status=status, collection=collection):
+                expected, href = self.locator_capture(collection=collection, uppercase=uppercase)
+                # Actual documented STAC spelling: lower-case collection with
+                # upper-case SF. Only the two documented download spellings
+                # are considered, and the full captured URL hash still decides.
+                expected["itemId"] = expected["itemId"].replace("_sf_", "_SF_", 1)
+                original = copy.deepcopy(expected)
+                existing = self.raw / "preserved-other-original.grib"
+                existing.write_bytes(b"preserved unrelated original")
+                before_existing = existing.read_bytes()
+                producer.STAC_SESSION.get.reset_mock()
+                producer.DOWNLOAD_SESSION.get.reset_mock()
+                producer.STAC_SESSION.get.side_effect = [Response(status=status)]
+                producer.DOWNLOAD_SESSION.get.side_effect = [Response(BODY)]
+                with patch.object(producer, "_verify_exact_original_file", side_effect=self.portable_locator_verification), \
+                     patch.object(producer, "download_asset", wraps=producer.download_asset) as download, \
+                     patch.object(producer, "prune_raw_cache", side_effect=AssertionError("no pruning")):
+                    report = producer.restore_exact_original_assets([expected, expected])
+                self.assertEqual((report["status"], report["uniqueAssetCount"], report["downloadedAssetCount"],
+                                  report["downloadedBytes"]), ("RESTORED", 1, 1, len(BODY)))
+                self.assertEqual(producer.DOWNLOAD_SESSION.get.call_args.args, (href,))
+                self.assertFalse(producer.DOWNLOAD_SESSION.get.call_args.kwargs["allow_redirects"])
+                self.assertIsNone(producer.DOWNLOAD_SESSION.get.call_args.kwargs["params"])
+                self.assertEqual(download.call_args.kwargs["expected_capture"], original)
+                self.assertEqual(expected, original)
+                self.assertEqual(existing.read_bytes(), before_existing)
+                row = json.loads(self.manifest.read_text())["assets"][producer.cached_asset_path(href).name]
+                self.assertTrue(producer._exact_same_capture(row, original))
+                self.assertNotEqual(row["acquiredAt"], original["acquiredAt"], "Actual new HTTP acquisition has its own truthful time")
+
+    def test_locator_candidates_are_pure_two_spelling_full_sha_matches_only(self):
+        for collection in ("dkss_lf", "dkss_nsbs"):
+            for uppercase in (False, True):
+                expected, href = self.locator_capture(collection=collection, uppercase=uppercase)
+                before = copy.deepcopy(expected)
+                self.assertEqual(producer.exact_original_download_candidates(expected), (href,))
+                self.assertEqual(expected, before)
+                changed = {**expected, "assetIdentitySha256": expected["assetIdentitySha256"][:24] + "f" * 40}
+                self.assertEqual(producer.exact_original_download_candidates(changed), ())
+            mixed, href = self.locator_capture(collection=collection)
+            mixed["itemId"] = mixed["itemId"].replace("_sf_", "_SF_", 1)
+            self.assertEqual(producer.exact_original_download_candidates(mixed), (href,))
+        producer.STAC_SESSION.get.assert_not_called()
+        producer.DOWNLOAD_SESSION.get.assert_not_called()
+
+    def test_locator_unsafe_names_other_models_and_full_hash_mismatch_never_add_http(self):
+        good, _ = self.locator_capture()
+        for name in ("dkss_lf_sf_../other.grib", "dkss_lf_sf_abc%2fdef.grib", "dkss_lf_sf_abc?x=1.grib",
+                     "dkss_lf_sf_abc#frag.grib", "dkss_lf_sf_abc\\def.grib", "dkss_nsbs_sf_abc.grib",
+                     "harmonie_dini_sf_abc.grib", "dkss_lf_sf_abc;param.grib", "dKss_lf_SF_abc.grib",
+                     "dkss_lf_sf_" + "a" * 401 + ".grib"):
+            with self.subTest(name=name):
+                wanted = {**good, "itemId": name, "assetIdentitySha256": producer.asset_identity_sha256(
+                    "https://opendataapi.dmi.dk/v1/forecastdata/download/" + name)}
+                producer.STAC_SESSION.get.side_effect = [Response(status=404)]
+                with self.expect_refusal("METADATA_UNAVAILABLE"):
+                    producer.restore_exact_original_assets([wanted])
+        producer.STAC_SESSION.get.side_effect = [Response(status=410)]
+        with self.expect_refusal("METADATA_UNAVAILABLE"):
+            producer.restore_exact_original_assets([{**good, "assetIdentitySha256": "f" * 64}])
+        producer.DOWNLOAD_SESSION.get.assert_not_called()
+
+    def test_locator_other_metadata_failures_never_enter_historical_transport(self):
+        expected, _ = self.locator_capture()
+        bad_revision = item(expected)
+        bad_revision["id"] = "wrong-official-revision"
+        cases = [(Response(status=status), "HTTP_REJECTED") for status in (401, 403, 429, 500)]
+        cases += [(metadata_response(bad_revision), "REVISION_MISMATCH"), (Response(b"invalid JSON"), "METADATA_INVALID")]
+        for response, code in cases:
+            with self.subTest(code=code), \
+                 patch.object(producer, "exact_original_download_candidates", side_effect=AssertionError("fallback leaked")):
+                producer.STAC_SESSION.get.side_effect = [response]
+                with self.expect_refusal(code):
+                    producer.restore_exact_original_assets([expected])
+        producer.STAC_SESSION.get.side_effect = producer.requests.Timeout("not reportable")
+        with patch.object(producer, "exact_original_download_candidates", side_effect=AssertionError("timeout fallback")), \
+             self.assertRaises(producer.requests.Timeout):
+            producer.restore_exact_original_assets([expected])
+        producer.DOWNLOAD_SESSION.get.assert_not_called()
+
+    def test_locator_exact_transport_rejects_wrong_content_and_wrong_headers_without_install(self):
+        expected, href = self.locator_capture()
+        before = self.manifest.read_bytes()
+        producer.STAC_SESSION.get.side_effect = [Response(status=404)]
+        producer.DOWNLOAD_SESSION.get.side_effect = [Response(b"X" * len(BODY))]
+        with self.expect_refusal("CONTENT_MISMATCH"):
+            producer.restore_exact_original_assets([expected])
+        self.assertFalse(producer.cached_asset_path(href).exists())
+        self.assertEqual(self.manifest.read_bytes(), before)
+        producer.STAC_SESSION.get.side_effect = [Response(status=410)]
+        producer.DOWNLOAD_SESSION.get.side_effect = [Response(BODY)]
+        with patch.object(producer, "_verify_exact_original_file", side_effect=producer.ExactOriginalRestoreRejected(
+                "DMI_EXACT_ORIGINAL_HEADER_MISMATCH")), self.expect_refusal("HEADER_MISMATCH"):
+            producer.restore_exact_original_assets([expected])
+        self.assertFalse(producer.cached_asset_path(href).exists())
+        self.assertEqual(self.manifest.read_bytes(), before)
+        self.assertEqual(sorted(path.name for path in self.raw.iterdir()), ["asset-manifest.json"])
+
+    def test_locator_raced_destination_is_not_overwritten(self):
+        expected, href = self.locator_capture()
+        target = producer.cached_asset_path(href)
+        before = self.manifest.read_bytes()
+        real_link = os.link
+        def occupy(source, destination, **kwargs):
+            self.assertEqual(destination, target)
+            target.write_bytes(b"another immutable original")
+            return real_link(source, destination, **kwargs)
+        producer.STAC_SESSION.get.side_effect = [Response(status=404)]
+        producer.DOWNLOAD_SESSION.get.side_effect = [Response(BODY)]
+        with patch.object(producer, "_verify_exact_original_file", side_effect=self.portable_locator_verification), \
+             patch.object(os, "link", side_effect=occupy), self.expect_refusal("COLLISION"):
+            producer.restore_exact_original_assets([expected])
+        self.assertEqual(target.read_bytes(), b"another immutable original")
+        self.assertEqual(self.manifest.read_bytes(), before)
+
+    def test_locator_off_origin_redirect_is_still_rejected(self):
+        expected, href = self.locator_capture()
+        producer.STAC_SESSION.get.side_effect = [Response(status=404)]
+        producer.DOWNLOAD_SESSION.get.side_effect = [Response(status=302, location="https://unapproved-s3.invalid/object")]
+        with self.expect_refusal("URL_REJECTED"):
+            producer.restore_exact_original_assets([expected])
+        self.assertEqual(producer.DOWNLOAD_SESSION.get.call_count, 1)
+        self.assertEqual(producer.DOWNLOAD_SESSION.get.call_args.args, (href,))
+        self.assertFalse(producer.cached_asset_path(href).exists())
+
+
 if NATIVE:
     class NativeExactOriginalTests(ExactOriginalTests):
         def setUp(self):
@@ -677,6 +926,56 @@ if NATIVE:
             super().setUp()
             # Use the REAL deadline, ownership, ecCodes and file hashing in native cases.
             self.patches[-1].stop()
+
+        # A fresh actual CLI must retain the complete normal Linux timestamp
+        # witness. Windows lstat/fstat creation/change-time semantics differ;
+        # do not weaken product identity or massage fixture times to pass.
+        def test_pretransport_actual_cli_imports_real_producer_and_refuses_bad_sha_without_leaks(self):
+            self.read_plan(self.make_plan())
+            plan_path = self.raw / ".original-recovery-plan.json"
+            before = {entry.name: entry.read_bytes() for entry in self.raw.iterdir()}
+            scripts = self.root / "scripts"
+            scripts.mkdir()
+            source_scripts = Path(__file__).parent
+            for name in ("inspect-exact-dmi-original-plan.py", "update-dmi-bulk.py"):
+                shutil.copyfile(source_scripts / name, scripts / name)
+            shutil.copytree(source_scripts / "lib", scripts / "lib")
+            if not NATIVE:
+                # The existing portable ecCodes boundary, NOT a product function
+                # stub. The actual CLI, import path, plan/inventory reader and
+                # shared helper execute in a fresh real Python process.
+                (scripts / "eccodes.py").write_text(
+                    "import sys\nclass OutOfAreaError(Exception): pass\n"
+                    "def forbidden(*args,**kwargs): raise AssertionError('NO_DECODER')\n"
+                    "codes_get=codes_get_array=codes_get_elements=codes_grib_find_nearest=forbidden\n"
+                    "codes_grib_new_from_file=codes_release=forbidden\n"
+                    "def audit(event,args):\n"
+                    " if event in ('socket.connect','socket.getaddrinfo'): raise AssertionError('NO_NETWORK')\n"
+                    "sys.addaudithook(audit)\n", encoding="utf-8")
+            environment = {**os.environ, "GITHUB_SHA": HEAD,
+                           "DMI_EXACT_ORIGINAL_PLAN_SHA256": hashlib.sha256(plan_path.read_bytes()).hexdigest()}
+            for bad_sha in (False, True):
+                if bad_sha:
+                    environment["DMI_EXACT_ORIGINAL_PLAN_SHA256"] = "0" * 64
+                result = subprocess.run([sys.executable, "-B", str((scripts / "inspect-exact-dmi-original-plan.py").resolve())],
+                    cwd=self.root, env=environment, capture_output=True, text=True, timeout=15)
+                if bad_sha:
+                    self.assertEqual(result.returncode, 2)
+                    self.assertEqual(result.stdout, "")
+                    self.assertEqual(result.stderr.strip(), "DMI_EXACT_ORIGINAL_PRETRANSPORT_REFUSED")
+                else:
+                    self.assertEqual(result.returncode, 0, result.stderr)
+                    self.assertEqual(result.stderr, "")
+                    report = json.loads(result.stdout)
+                    self.assertEqual(report["kind"], "DMI_EXACT_ORIGINAL_PRETRANSPORT_METADATA")
+                    self.assertEqual(report["uniqueAssetCount"], 1)
+                    self.assertTrue(report["metadataAndLstatOnly"])
+                    self.assertFalse(report["fileContentVerified"])
+                    self.assertFalse(report["transportPerformed"])
+                    self.assertLess(len(result.stdout.encode()), 8192)
+                for private in (HREF, capture()["itemId"], capture()["contentSha256"]):
+                    self.assertNotIn(private, result.stdout + result.stderr)
+                self.assertEqual({entry.name: entry.read_bytes() for entry in self.raw.iterdir()}, before)
 
         def generated_grib(self, *, wrong_time=False):
             fields = []
@@ -690,6 +989,40 @@ if NATIVE:
                 finally:
                     eccodes.codes_release(gid)
             return b"".join(fields)
+
+        def test_native_retired_stac_locator_uses_real_headers_and_owned_read(self):
+            body = self.generated_grib()
+            expected, href = self.locator_capture(body)
+            expected["itemId"] = expected["itemId"].replace("_sf_", "_SF_", 1)
+            original = copy.deepcopy(expected)
+            producer.STAC_SESSION.get.side_effect = [Response(status=404)]
+            producer.DOWNLOAD_SESSION.get.side_effect = [Response(body)]
+            with patch.object(producer, "WORK_DEADLINE", time.monotonic() + 30), \
+                 patch.object(producer, "codes_get_array", side_effect=AssertionError("numeric read forbidden")), \
+                 patch.object(producer, "codes_get_elements", side_effect=AssertionError("numeric read forbidden")), \
+                 patch.object(producer, "process_grib", side_effect=AssertionError("normal process forbidden")):
+                report = producer.restore_exact_original_assets([expected])
+            self.assertEqual((report["status"], report["downloadedAssetCount"], report["downloadedBytes"]),
+                             ("RESTORED", 1, len(body)))
+            self.assertEqual(producer.cached_asset_path(href).read_bytes(), body)
+            self.assertEqual(expected, original)
+            self.assertEqual(producer._UNSETTLED_GRIB_READS, [])
+            self.assertEqual(producer._UNSETTLED_ASSET_DOWNLOADS, [])
+
+        def test_native_retired_stac_locator_rejects_full_hash_matching_wrong_header(self):
+            body = self.generated_grib(wrong_time=True)
+            expected, href = self.locator_capture(body)
+            expected["itemId"] = expected["itemId"].replace("_sf_", "_SF_", 1)
+            before = self.manifest.read_bytes()
+            producer.STAC_SESSION.get.side_effect = [Response(status=410)]
+            producer.DOWNLOAD_SESSION.get.side_effect = [Response(body)]
+            with patch.object(producer, "WORK_DEADLINE", time.monotonic() + 30), \
+                 self.expect_refusal("HEADER_MISMATCH"):
+                producer.restore_exact_original_assets([expected])
+            self.assertFalse(producer.cached_asset_path(href).exists())
+            self.assertEqual(self.manifest.read_bytes(), before)
+            self.assertEqual(producer._UNSETTLED_GRIB_READS, [])
+            self.assertEqual(producer._UNSETTLED_ASSET_DOWNLOADS, [])
 
         def test_native_download_register_and_reuse_are_exact_no_numeric_read(self):
             body = self.generated_grib()

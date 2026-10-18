@@ -4246,6 +4246,27 @@ def _exact_original_response(url, *, metadata_path=None):
     _exact_original_refuse("REDIRECT_REJECTED")
 
 
+def exact_original_download_candidates(expected_capture):
+    """Pure historical locator; only FULL authenticated URL-hash matches leave.
+
+    The two documented filename spellings are not requests or fresh STAC
+    evidence. No other model, escaping, query, fragment or spelling is tried.
+    A match says nothing about current remote availability or correct bytes.
+    """
+    expected = _exact_capture(expected_capture)
+    collection, filename = expected["collection"], expected["itemId"]
+    if collection not in ("dkss_lf", "dkss_nsbs"):
+        return ()
+    prefix = collection + "_sf_"
+    if (not filename.isascii() or filename[:len(prefix)].lower() != prefix
+            or not re.fullmatch(r"[A-Za-z0-9_-]{1,400}\.grib", filename[len(prefix):])):
+        return ()
+    filenames = dict.fromkeys((filename, prefix.upper() + filename[len(prefix):]))
+    base = "https://opendataapi.dmi.dk/v1/forecastdata/download/"
+    return tuple(base + name for name in filenames
+                 if asset_identity_sha256(base + name) == expected["assetIdentitySha256"])
+
+
 def resolve_exact_original_item(expected_capture, *, work_deadline):
     """Resolve one authenticated original item, never list/select a newer item."""
     expected = _exact_capture(expected_capture)
@@ -4537,15 +4558,27 @@ def restore_exact_original_assets(originals, *, report=None, observed_names=None
             if missing_bytes > MAX_DOWNLOAD_BYTES:
                 _exact_original_refuse("DOWNLOAD_BUDGET")
         for capture in missing:
-            identity = resolve_exact_original_item(capture, work_deadline=WORK_DEADLINE)
+            try:
+                href = resolve_exact_original_item(capture, work_deadline=WORK_DEADLINE)["href"]
+            except ExactOriginalRestoreRejected as exc:
+                if (type(exc) is not ExactOriginalRestoreRejected
+                        or str(exc) != "DMI_EXACT_ORIGINAL_METADATA_UNAVAILABLE"):
+                    raise
+                candidates = exact_original_download_candidates(capture)
+                if len(candidates) != 1:
+                    raise  # Preserve the actual metadata failure; no extra GET.
+                # Historical exact-byte transport only, NOT a constructed STAC
+                # item or a fresh official revision. The authenticated original
+                # capture stays unchanged; download_asset still proves all bytes.
+                href = candidates[0]
             supervised_identity = supervised_asset_identity(capture["collection"], capture["modelRun"], {
-                "valid": identity["validTime"], "id": identity["itemId"], "href": identity["href"],
-                "size": identity["size"], "itemCreatedAt": identity["itemCreatedAt"],
-                "itemUpdatedAt": identity["itemUpdatedAt"],
+                "valid": capture["validTime"], "id": capture["itemId"], "href": href,
+                "size": capture["assetSizeBytes"], "itemCreatedAt": capture["itemCreatedAt"],
+                "itemUpdatedAt": capture["itemUpdatedAt"],
             })
             with supervised_asset_operation(supervised_identity):
                 _, reused = download_asset(
-                    identity["href"], identity["size"], budget,
+                    href, capture["assetSizeBytes"], budget,
                     collection=capture["collection"], model_run=capture["modelRun"], valid_time=capture["validTime"],
                     item_id=capture["itemId"], item_created_at=capture["itemCreatedAt"],
                     item_updated_at=capture["itemUpdatedAt"], work_deadline=WORK_DEADLINE, expected_capture=capture,
