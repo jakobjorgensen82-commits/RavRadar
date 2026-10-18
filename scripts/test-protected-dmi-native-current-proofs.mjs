@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
-import { assertCurrentHistoryRawRetentionOrder, inverseCurrentHistoryRawRetentionOrder }
+import { assertCurrentHistoryRawRetentionOrder, inverseCurrentHistoryRawRetentionOrder, inverseAssistant582UserAgent }
   from './lib/completed-private-runtime-workflow-review.mjs';
 import { inspectDmiForecastGridSampling } from './lib/dmi-forecast-store.mjs';
 import { assertDmiPartHourlyGridSamplingApplicable } from './lib/ravscore-production-adapters.mjs';
@@ -1023,7 +1023,7 @@ test('actual committed RAW demand follows the materialized generation before leg
     await import('./private-production-runtime-workflow.mjs');
   const workflow = (await readFile(new URL('../.github/workflows/reusable-weather-build.yml', import.meta.url),
     'utf8')).replaceAll('\r\n', '\n');
-  assertCurrentHistoryRawRetentionOrder(workflow);
+  assertCurrentHistoryRawRetentionOrder(inverseAssistant582UserAgent(workflow, 'build'));
   const name = '      - name: Plan bounded current history from the actual selected continuation\n';
   assert.equal(workflow.split(name).length - 1, 1);
   const start = workflow.indexOf(name);

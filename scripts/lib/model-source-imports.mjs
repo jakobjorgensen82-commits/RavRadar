@@ -4,15 +4,27 @@
 import crypto from 'node:crypto';
 import { exactRelativeModuleSpecifiers } from './static-module-closure.mjs';
 const REVIEWED = Object.freeze({
+  // Two additional immutable140000-family leaves. These inventories do not
+  // authorize a new binding or retag the pre-paired-repair85 family to075.
+  // Every computed module is loaded only from the helper's fixed Git host.
+  'scripts/check-established-native-current-origin-predecessor-source.mjs': Object.freeze({
+    sha256: 'cb2743d4c7caff798667c6eb61436d9bc662fb321c37e3844e52f4b70eabce69',
+    imports: Object.freeze([]),
+  }),
+  'scripts/lib/authenticated-frozen140000-predecessor.mjs': Object.freeze({
+    sha256: 'ae78ab5dfbf03ef9eba4b9955c10d2cc2c8cbb588703728da91c0ef9bbb52d73',
+    imports: Object.freeze(['../check-established-native-current-origin-predecessor-source.mjs']),
+  }),
   'scripts/lib/established-native-current-origin.mjs': Object.freeze({
-    sha256: 'e4741332e9cc54523fccf8ded70ace9767047d97090306c00fafd43385235c42',
+    sha256: 'e9d378c8f2c23f225884e595690c4ca9868d97ffa482db40ed78359742a03a42',
     imports: Object.freeze(['../protected-private-production-runtime.mjs', '../protected-ravscore-continuation-checkpoint.mjs',
       '../private-production-runtime-bundle.mjs', '../ravscore-continuation-checkpoint.mjs',
       '../private-production-runtime-workflow.mjs', '../../js/core/ravscore-model-contract.js',
       '../rollback-assets/ravscore-model-contract.js', '../../js/core/ravscore-model-bundle.generated.js',
       './ravscore-sampling-context.mjs', './coastal-point-staging-contract.mjs',
       './ravscore-candidate-g-rollback-runtime.mjs', './private-weather-component-pack.mjs',
-      '../check-native-current-reanalysis-predecessor-source.mjs', './ravscore-production-part-pipeline.mjs']),
+      '../check-native-current-reanalysis-predecessor-source.mjs', './ravscore-production-part-pipeline.mjs',
+      './authenticated-frozen140000-predecessor.mjs']),
   }),
   // Its computed imports are only from the verified, fixed immutable d7 Git
   // source materialization. That complete 122-leaf closure is independently

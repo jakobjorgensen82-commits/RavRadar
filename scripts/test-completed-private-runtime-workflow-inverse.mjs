@@ -3,9 +3,31 @@ import assert from 'node:assert/strict';
 import crypto from 'node:crypto';
 import fs from 'node:fs/promises';
 import test from 'node:test';
-import { inverseCompletedRuntimeWorkflow, inverseOrdinaryFullHistoryCheckout, inversePairedPrivateRuntimePublication, inverseOriginWeatherReadCredentials, assertCurrentHistoryRawRetentionOrder, inverseCurrentHistoryRawRetentionOrder } from './lib/completed-private-runtime-workflow-review.mjs';
+import { inverseCompletedRuntimeWorkflow, inverseOrdinaryFullHistoryCheckout, inversePairedPrivateRuntimePublication, inverseOriginWeatherReadCredentials, assertCurrentHistoryRawRetentionOrder, inverseCurrentHistoryRawRetentionOrder, inverseAssistant582UserAgent } from './lib/completed-private-runtime-workflow-review.mjs';
 const sha = source => crypto.createHash('sha256').update(source).digest('hex');
-const read = async relative => (await fs.readFile(new URL(relative, import.meta.url), 'utf8')).replaceAll('\r\n', '\n');
+const readActual = async relative => (await fs.readFile(new URL(relative, import.meta.url), 'utf8')).replaceAll('\r\n', '\n');
+// Exact private-composition test view: retain every earlier test body/hash.
+const readRaw = async relative => {
+  const source = await readActual(relative);
+  if (relative === '../.github/workflows/reusable-weather-build.yml') {
+    assert.equal(sha(source), '5086dcfbcde252d39173fe989ccd22b3f1f84314ca7ef8728d3468aa4b6b65e1', 'Only the whole composed582 RAW caller has this historical view');
+    const previous = inverseCurrentHistoryRawRetentionOrder(inverseAssistant582UserAgent(source, 'build'), 'build').replaceAll('RavRadar/4.0.581', 'RavRadar/4.0.582');
+    assert.equal(sha(previous), '251f0cd62db0d5ab779283cda14e1723433792baee97ded8815f1f7a69eed0aa');
+    return previous;
+  }
+  if (relative === './lib/completed-private-runtime-workflow-review.mjs') {
+    assert.equal(sha(source), '84a0477b5ff3ec88871fa962f236b244466c7044deb12dbde6cd0e85be69b525', 'Only the whole composed reader has this historical view');
+    const previous = source.replace("// Exact test-only RAW-retention caller layer. No runtime input or authority changes.\nconst rawRetentionDemand = \"      - name: Plan bounded current history from the actual selected continuation\\n\";\nconst rawRetentionRefresh = \"      - name: Refresh DMI water-source registry\\n\";\nconst rawRetentionGeneration = \"      - name: Prepare strict active DMI donor or resumable candidate\\n\";\nconst rawRetentionLegacy = \"      - name: Bind causal OLD current reconstruction to the materialized saved inputs\\n\";\nconst rawRetentionDmi = \"      - name: Update DMI bulk model cache\\n\";\nconst rawRetentionOldBlock = \"      - name: Plan bounded current history from the actual selected continuation\\n        id: current-history-demand\\n        if: inputs.completed_private_runtime != true && (steps.preflight.outputs.should_run == 'true' && steps.weather-source-handoff.outputs.reused != 'true' && (steps.operational-action.outputs.action == 'integrated' || steps.operational-action.outputs.action == 'integrated-historical-maintenance') && steps.historical-wave-transition.outputs.required != 'true')\\n        run: node scripts/plan-ravscore-current-history.mjs\\n        env:\\n          RAVRADAR_R2_ACCOUNT_ID: ${{ inputs.weather_state_epoch_bootstrap && secrets.RAVRADAR_R2_ACCOUNT_ID || '' }}\\n          RAVRADAR_R2_ACCESS_KEY_ID: ${{ inputs.weather_state_epoch_bootstrap && secrets.RAVRADAR_R2_ACCESS_KEY_ID || '' }}\\n          RAVRADAR_R2_SECRET_ACCESS_KEY: ${{ inputs.weather_state_epoch_bootstrap && secrets.RAVRADAR_R2_SECRET_ACCESS_KEY || '' }}\\n          SUPABASE_URL: ${{ inputs.weather_state_epoch_bootstrap && secrets.SUPABASE_URL || '' }}\\n          SUPABASE_SERVICE_ROLE_KEY: ${{ inputs.weather_state_epoch_bootstrap && secrets.SUPABASE_SERVICE_ROLE_KEY || '' }}\\n          RAVRADAR_REQUIRE_PRIVATE_WEATHER_BASELINE: ${{ steps.private-runtime-install.outcome == 'success' && 'true' || 'false' }}\\n          RAVSCORE_STATELESS_INTEGRATED_COLD_START_ALLOWED: ${{ (steps.operational-action.outputs.action == 'integrated' || steps.operational-action.outputs.action == 'integrated-historical-maintenance') && steps.legacy-bootstrap.outputs.stateless_integrated_recovery == 'true' && 'true' || 'false' }}\\n\\n\";\nconst rawRetentionBlock = \"      - name: Plan bounded current history from the actual selected continuation\\n        id: current-history-demand\\n        if: inputs.completed_private_runtime != true && (steps.preflight.outputs.should_run == 'true' && steps.weather-source-handoff.outputs.reused != 'true' && (steps.operational-action.outputs.action == 'integrated' || steps.operational-action.outputs.action == 'integrated-historical-maintenance') && steps.historical-wave-transition.outputs.required != 'true')\\n        run: node scripts/plan-ravscore-current-history.mjs --retain-committed-raw\\n        env:\\n          RAVRADAR_R2_ACCOUNT_ID: ${{ inputs.weather_state_epoch_bootstrap && secrets.RAVRADAR_R2_ACCOUNT_ID || '' }}\\n          RAVRADAR_R2_ACCESS_KEY_ID: ${{ inputs.weather_state_epoch_bootstrap && secrets.RAVRADAR_R2_ACCESS_KEY_ID || '' }}\\n          RAVRADAR_R2_SECRET_ACCESS_KEY: ${{ inputs.weather_state_epoch_bootstrap && secrets.RAVRADAR_R2_SECRET_ACCESS_KEY || '' }}\\n          SUPABASE_URL: ${{ inputs.weather_state_epoch_bootstrap && secrets.SUPABASE_URL || '' }}\\n          SUPABASE_SERVICE_ROLE_KEY: ${{ inputs.weather_state_epoch_bootstrap && secrets.SUPABASE_SERVICE_ROLE_KEY || '' }}\\n          RAVRADAR_REQUIRE_PRIVATE_WEATHER_BASELINE: ${{ steps.private-runtime-install.outcome == 'success' && 'true' || 'false' }}\\n          RAVSCORE_STATELESS_INTEGRATED_COLD_START_ALLOWED: ${{ (steps.operational-action.outputs.action == 'integrated' || steps.operational-action.outputs.action == 'integrated-historical-maintenance') && steps.legacy-bootstrap.outputs.stateless_integrated_recovery == 'true' && 'true' || 'false' }}\\n\\n\";\nconst rawRetentionEnv = \"          DMI_BULK_REQUIRE_COMMITTED_RAW_RETENTION: ${{ steps.private-runtime-install.outcome == 'success' && (steps.operational-action.outputs.action == 'integrated' || steps.operational-action.outputs.action == 'integrated-historical-maintenance') && inputs.weather_state_epoch_bootstrap != true && steps.legacy-bootstrap.outputs.stateless_integrated_recovery != 'true' && steps.historical-wave-transition.outputs.required != 'true' && 'true' || 'false' }}\\n\";\nexport function assertCurrentHistoryRawRetentionOrder(source) {\n  for (const marker of [rawRetentionDemand, rawRetentionRefresh, rawRetentionGeneration,\n    rawRetentionLegacy, rawRetentionDmi])\n    assert.equal(source.split(marker).length, 2, 'One exact RAW-retention workflow step');\n  const start = source.indexOf(rawRetentionDemand);\n  const end = source.indexOf('      - name: ', start + rawRetentionDemand.length);\n  const prepared = source.indexOf(rawRetentionGeneration);\n  assert(end > start, 'The actual demand block has a finite next-step boundary');\n  assert.equal(end, source.indexOf(rawRetentionLegacy), 'Demand immediately precedes legacy binding');\n  assert(prepared < start, 'Actual generation materialization precedes demand');\n  assert.equal(source.indexOf('      - name: ', prepared + rawRetentionGeneration.length), start,\n    'Demand immediately follows actual generation materialization');\n  assert(end < source.indexOf(rawRetentionDmi), 'Demand and legacy binding precede DMI');\n  assert.equal(source.slice(start, end), rawRetentionBlock, 'Only the reviewed planner arg changes');\n  assert.equal(source.split(rawRetentionEnv).length, 2, 'One exact committed-retention requirement');\n  const dmiStart = source.indexOf(rawRetentionDmi);\n  const dmiEnd = source.indexOf('      - name: ', dmiStart + rawRetentionDmi.length);\n  assert(dmiEnd > dmiStart);\n  assert(source.slice(dmiStart, dmiEnd).includes(rawRetentionEnv), 'Retention requirement belongs to DMI');\n  assert.equal(sha(source), '46c88e4cca919ecc288c006db443106b1f8ce8fed1dbca3a87b74d7aea8a3e34', 'The entire current RAW-retention workflow is reviewed');\n}\nexport function inverseCurrentHistoryRawRetentionOrder(source, role) {\n  if (role !== 'build' || sha(source) !== '46c88e4cca919ecc288c006db443106b1f8ce8fed1dbca3a87b74d7aea8a3e34') return source;\n  assertCurrentHistoryRawRetentionOrder(source);\n  let previous = source.replace(rawRetentionEnv, '').replace(rawRetentionBlock, '');\n  previous = previous.replace(rawRetentionRefresh, rawRetentionOldBlock + rawRetentionRefresh);\n  assert.equal(sha(previous), 'fd1cd664bdbdcf41ef2ad32e6ad5caf058a980b3093a3f4fc226ca1797854b49',\n    'Whole preceding workflow survives only the exact demand move, arg and env inverses');\n  return previous;\n}\n", '').replace("  source = inverseCurrentHistoryRawRetentionOrder(source, role);\n", '').replace("  if (role === 'build' && sha(source) === '5086dcfbcde252d39173fe989ccd22b3f1f84314ca7ef8728d3468aa4b6b65e1') {\n    assert.equal(source.split('RavRadar/4.0.582').length, 6, 'Exactly five reviewed582 RAW-caller UA changes');\n    const previous = source.replaceAll('RavRadar/4.0.582', 'RavRadar/4.0.581');\n    assert.equal(sha(previous), '46c88e4cca919ecc288c006db443106b1f8ce8fed1dbca3a87b74d7aea8a3e34',\n      'The WHOLE d8 P0 RAW-retention caller survives only the582 UA inverse');\n    return previous;\n  }\n", '');
+    assert.equal(sha(previous), '95f6136fba9e8582040981ec74ca9a5757293d2e27dece90e84c643c89c4c275');
+    return previous;
+  }
+  return source;
+};
+const read = async relative => {
+  const source = await readRaw(relative);
+  return relative === '../.github/workflows/reusable-weather-build.yml'
+    ? inverseAssistant582UserAgent(source, 'build') : source;
+};
 const actualBuild = inversePairedPrivateRuntimePublication(await read('../.github/workflows/reusable-weather-build.yml'), 'build');
 const build = inverseOrdinaryFullHistoryCheckout(actualBuild, 'build');
 const once = await read('../.github/workflows/run-current-weather-once.yml');
@@ -170,6 +192,51 @@ test('weather credential scope refuses conditional missing duplicate wrong-key R
   assert.throws(()=>inverseCompletedRuntimeWorkflow(source+'\n# UNREVIEWED CREDENTIAL DRIFT\n','build'));
 });
 
+test('actual582 UA-only workflow retains the whole581 source and every historical completed oracle', async () => {
+  const source = await readRaw('../.github/workflows/reusable-weather-build.yml');
+  const currentSha = '251f0cd62db0d5ab779283cda14e1723433792baee97ded8815f1f7a69eed0aa';
+  const priorSha = 'fd1cd664bdbdcf41ef2ad32e6ad5caf058a980b3093a3f4fc226ca1797854b49';
+  assert.equal(sha(source), currentSha, 'The actual new workflow is not a synthetic replacement');
+  assert.equal(source.split('RavRadar/4.0.582').length, 6);
+  const previous = inverseAssistant582UserAgent(source, 'build');
+  assert.equal(sha(previous), priorSha);
+  assert.equal(previous, await read('../.github/workflows/reusable-weather-build.yml'));
+  assert.equal(inverseAssistant582UserAgent(previous, 'build'), previous);
+  assert.equal(inverseCompletedRuntimeWorkflow(source, 'build'), inverseCompletedRuntimeWorkflow(previous, 'build'));
+  assert.equal(sha(inverseCompletedRuntimeWorkflow(source, 'build')), legacySha);
+  assert.equal(inverseAssistant582UserAgent(source, 'once'), source);
+  assert.throws(() => inverseCompletedRuntimeWorkflow(source, 'once'));
+  const count = source.split('RavRadar/4.0.582').length - 1;
+  const mutations = [
+    ...Array.from({ length: count }, (_, index) => {
+      let seen = 0;
+      return source.replaceAll('RavRadar/4.0.582', value => seen++ === index ? 'RavRadar/4.0.581' : value);
+    }),
+    source.replaceAll('RavRadar/4.0.582', 'RavRadar/4.0.583'),
+    source.replace('          fetch-depth: 0', '          fetch-depth: 1'),
+    source.replace('SUPABASE_URL: ${{ secrets.SUPABASE_URL }}', 'SUPABASE_URL: INVALID'),
+    source + '\n# UNREVIEWED582 DRIFT\n',
+  ];
+  for (const changed of mutations) {
+    assert.notEqual(changed, source);
+    assert.notEqual(sha(changed), currentSha);
+    assert.equal(inverseAssistant582UserAgent(changed, 'build'), changed, 'An unknown whole source cannot enter the582 layer');
+    assert.throws(() => inverseCompletedRuntimeWorkflow(changed, 'build'));
+  }
+  const helper = await readRaw('./lib/completed-private-runtime-workflow-review.mjs');
+  const begin = helper.indexOf('// Exact test-only582 UA layer;');
+  const end = helper.indexOf('export function inverseOriginWeatherReadCredentials(source, role) {', begin);
+  assert(begin > 0 && end > begin);
+  const withoutNewLayer = (helper.slice(0, begin) + helper.slice(end))
+    .replace('  source = inverseAssistant582UserAgent(source, role);\n', '');
+  assert.equal(sha(withoutNewLayer), '60c98201e118be2536ad061e0bda162d16d460eb6196ca9d3f9ce5301ebbbc7c',
+    'The WHOLE old helper, all guards, offsets and historical assertions survive');
+});
+
+{
+  // The two unchanged P0 RAW cases see the exact581 d8 source through UA-only inverse.
+  const read = async relative => inverseAssistant582UserAgent(await readActual(relative), 'build');
+
 test('actual committed RAW caller has one exact inverse before every unchanged historical layer', async () => {
   const source = await read('../.github/workflows/reusable-weather-build.yml');
   assertCurrentHistoryRawRetentionOrder(source);
@@ -214,6 +281,24 @@ test('actual RAW caller refuses missing duplicate misplaced changed and unrelate
     assert.throws(() => assertCurrentHistoryRawRetentionOrder(changed));
     assert.equal(inverseCurrentHistoryRawRetentionOrder(changed, 'build'), changed,
       'Unknown bytes never enter this exact layer');
+    assert.throws(() => inverseCompletedRuntimeWorkflow(changed, 'build'));
+  }
+});
+
+}
+
+test('actual582 plus committed RAW caller composes both strict whole inverses without skipping either layer', async () => {
+  const source = await readActual('../.github/workflows/reusable-weather-build.yml');
+  assert.equal(sha(source), '5086dcfbcde252d39173fe989ccd22b3f1f84314ca7ef8728d3468aa4b6b65e1');
+  const p0 = inverseAssistant582UserAgent(source, 'build');
+  assert.equal(sha(p0), '46c88e4cca919ecc288c006db443106b1f8ce8fed1dbca3a87b74d7aea8a3e34');
+  assertCurrentHistoryRawRetentionOrder(p0);
+  assert.equal(sha(inverseCurrentHistoryRawRetentionOrder(p0, 'build')), 'fd1cd664bdbdcf41ef2ad32e6ad5caf058a980b3093a3f4fc226ca1797854b49');
+  assert.equal(sha(inverseCompletedRuntimeWorkflow(source, 'build')), legacySha);
+  const mutations = [source.replace(' --retain-committed-raw', ''), source.replace('RavRadar/4.0.582', 'RavRadar/4.0.581'), source.replace('DMI_BULK_REQUIRE_COMMITTED_RAW_RETENTION:', 'DMI_BULK_REQUIRE_COMMITTED_RAW_RETENTION_UNKNOWN:'), source + '\n# UNREVIEWED COMPOSITION DRIFT\n'];
+  for (const changed of mutations) {
+    assert.notEqual(changed, source);
+    assert.equal(inverseAssistant582UserAgent(changed, 'build'), changed);
     assert.throws(() => inverseCompletedRuntimeWorkflow(changed, 'build'));
   }
 });

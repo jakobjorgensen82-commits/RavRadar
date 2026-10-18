@@ -5,7 +5,7 @@ import crypto from 'node:crypto';
 import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 import { execFileSync } from 'node:child_process';
 import { isDeepStrictEqual as same } from 'node:util';
 import { createProtectedPrivateRuntimeClients, validateProtectedPrivateRuntimePointer,
@@ -20,6 +20,9 @@ import { createProtectedRavScoreCheckpointRequester, createProtectedRavScoreChec
   from './protected-ravscore-continuation-checkpoint.mjs';
 import { ESTABLISHED_NATIVE_CURRENT_ORIGIN_BINDING as FAMILY }
   from './lib/established-native-current-origin-successor-source.mjs';
+import { ASSISTANT_SAME_H0_BINDING as NEXT_FAMILY } from './lib/assistant-same-h0-successor-source.mjs';
+import { withEstablishedNativeCurrentOrigin140000PredecessorSource }
+  from './check-established-native-current-origin-predecessor-source.mjs';
 import { ownFileDescriptorIdentity, ownedFileDescriptorClosed } from './lib/private-weather-component-pack.mjs';
 import { classifyProductionTargetFreshness } from './check-production-target-freshness.mjs';
 
@@ -29,9 +32,14 @@ const need = (condition, code) => assert(condition, 'PAIRED_PUBLICATION_' + code
 const json = async file => JSON.parse(await fs.readFile(file, 'utf8'));
 const identityKeys = ['sourceHead', 'datasetId', 'productionReferenceAt', 'generatedAt',
   'bundleContentSha256', 'modelBinding', 'contractHashes'];
+function checkpointReconcileFamily(descriptor) {
+  // Only the two source-issued fixed families; null NEXT is deliberately inert.
+  return [FAMILY, NEXT_FAMILY].find(family => family !== null
+    && descriptor?.modelBinding?.modelBundleSha256 === family.I
+    && descriptor?.contractHashes?.continuationStateContractSha256 === family.T) ?? null;
+}
 export function requiresPrivateRuntimeCheckpointReconcile(descriptor) {
-  return descriptor?.modelBinding?.modelBundleSha256 === FAMILY.I
-    && descriptor?.contractHashes?.continuationStateContractSha256 === FAMILY.T;
+  return checkpointReconcileFamily(descriptor) !== null;
 }
 export function assertPrivateRuntimeCheckpointPublicationDisposition(descriptor, disposition) {
   if (requiresPrivateRuntimeCheckpointReconcile(descriptor)) need(
@@ -43,6 +51,59 @@ export function assertOrdinaryPrivateRuntimeCheckpointReconcileRequest(env = pro
     'RAVRADAR_WEATHER_STATE_EPOCH_BOOTSTRAP', 'RAVRADAR_WEATHER_STATE_EPOCH_CHECKPOINT_REENTRY',
     'NATIVE_IDENTITY_RECOVERY']) need(env[key] === 'false', 'NON_ORDINARY_REQUEST');
 }
+// Only the source-issued NEXT family's same-H0 metadata handoff can load an
+// otherwise incompatible S through the whole immutable140000 normal loader.
+// This is a data equality check, never origin/ForPart authority or a T allowlist.
+function assertSameH0CheckpointMetadataInverse(original, prepared, current) {
+  need(NEXT_FAMILY !== null && checkpointReconcileFamily(current) === NEXT_FAMILY, 'SAME_H0_FAMILY');
+  need(original.datasetId === prepared.datasetId && prepared.datasetId === current.datasetId
+    && original.productionReferenceAt === prepared.productionReferenceAt
+    && prepared.productionReferenceAt === current.productionReferenceAt, 'SAME_H0_IDENTITY');
+  need(original.modelBinding.modelBundleSha256 === FAMILY.I
+    && original.candidateGRollbackCompanion.modelBinding.modelBundleSha256 === FAMILY.C
+    && original.continuationStateContractSha256 === FAMILY.T, 'SAME_H0_PREDECESSOR');
+  const inverse = structuredClone(prepared);
+  need(inverse.modelBinding.modelBundleSha256 === NEXT_FAMILY.I
+    && inverse.candidateGRollbackCompanion.modelBinding.modelBundleSha256 === NEXT_FAMILY.C
+    && inverse.continuationStateContractSha256 === NEXT_FAMILY.T, 'SAME_H0_CURRENT');
+  inverse.modelBinding.modelBundleSha256 = original.modelBinding.modelBundleSha256;
+  inverse.candidateGRollbackCompanion.modelBinding.modelBundleSha256
+    = original.candidateGRollbackCompanion.modelBinding.modelBundleSha256;
+  inverse.continuationStateContractSha256 = original.continuationStateContractSha256;
+  need(same(Object.keys(inverse.states).sort(), Object.keys(original.states).sort()), 'SAME_H0_PARTS');
+  for (const [id, state] of Object.entries(inverse.states)) {
+    need(state.modelBundleSha256 === NEXT_FAMILY.I && original.states[id].modelBundleSha256 === FAMILY.I,
+      'SAME_H0_STATE_BINDING');
+    state.modelBundleSha256 = original.states[id].modelBundleSha256;
+  }
+  for (const key of ['generationSha256', 'stateSha256']) inverse[key] = original[key];
+  inverse.candidateGRollbackCompanion.generationSha256 = original.candidateGRollbackCompanion.generationSha256;
+  need(same(inverse, original), 'SAME_H0_WHOLE_METADATA_INVERSE');
+}
+async function restoreCheckpointForReconcile({ current, derived, checkpointPath, request }) {
+  try {
+    const restored = await restoreProtectedRavScoreContinuationCheckpoint({ checkpointPath,
+      targetReference: current.productionReferenceAt, request });
+    return { saved: restored.restored ? await json(checkpointPath) : null, sameH0Metadata: false };
+  } catch (error) {
+    if (NEXT_FAMILY === null || checkpointReconcileFamily(current) !== NEXT_FAMILY
+      || error.message !== 'RavScore checkpoint continuation implementation is incompatible') throw error;
+    // The failed current loader leaves no destination. Do not replace a local S
+    // or reuse its failed temporary representation as a qualified predecessor.
+    await assert.rejects(fs.lstat(checkpointPath), { code: 'ENOENT' });
+    return withEstablishedNativeCurrentOrigin140000PredecessorSource(async frozenRoot => {
+      const frozen = await import(pathToFileURL(path.join(frozenRoot,
+        'scripts/protected-ravscore-continuation-checkpoint.mjs')).href);
+      const restored = await frozen.restoreProtectedRavScoreContinuationCheckpoint({ checkpointPath,
+        targetReference: current.productionReferenceAt, request });
+      need(restored.restored, 'SAME_H0_PREDECESSOR_MISSING');
+      const saved = await json(checkpointPath);
+      assertSameH0CheckpointMetadataInverse(saved, derived, current);
+      return { saved, sameH0Metadata: true };
+    });
+  }
+}
+
 async function readPointer(request) {
   const key = PROTECTED_PRIVATE_RUNTIME_POLICY.documentKey;
   const rows = await request(`?document_key=eq.${key}&select=document_key,payload,version&limit=2`, {}, 'read');
@@ -100,7 +161,8 @@ export async function reconcilePrivateRuntimeCheckpoint({ repositoryRoot = ROOT,
   const Srequest = (...args) => { counts.checkpointReads++; return checkpointRequest(...args); };
   const Sversion = (...args) => { counts.checkpointVersionReads++; return checkpointVersionRequest(...args); };
   const before = await readPointer(pointerRequest), current = before.pointer.current;
-  need(requiresPrivateRuntimeCheckpointReconcile(current), 'UNSUPPORTED_FAMILY');
+  const family = checkpointReconcileFamily(current);
+  need(family !== null, 'UNSUPPORTED_FAMILY');
   classifyProductionTargetFreshness({ target: current.productionReferenceAt, now, maximumAgeMinutes: 150 });
   need(path.isAbsolute(privateRoot) && path.isAbsolute(bundlePath) && path.dirname(bundlePath) === privateRoot, 'B_PATH');
   // No previous-generation fallback and no download: the caller already restored
@@ -143,15 +205,14 @@ export async function reconcilePrivateRuntimeCheckpoint({ repositoryRoot = ROOT,
     const derived = await json(derivedPath);
     need(derived.productionReferenceAt === current.productionReferenceAt, 'DERIVED_REFERENCE');
     const restoredPath = path.join(work, 'before/.cache/ravscore-continuation-checkpoint/checkpoint.json');
-    const restored = await restoreProtectedRavScoreContinuationCheckpoint({ checkpointPath: restoredPath,
-      targetReference: current.productionReferenceAt, request: Srequest });
-    let saved = restored.restored ? await json(restoredPath) : null;
+    const restored = await restoreCheckpointForReconcile({ current, derived, checkpointPath: restoredPath, request: Srequest });
+    let saved = restored.saved;
     let publishError = null;
     if (!same(derived, saved)) {
-      // Missing/older SAME-family S alone can advance. Same-time conflict and
-      // S-ahead-B are hard stops. A newer S may already be refused by restore.
-      need(saved === null || (saved.modelBinding.modelBundleSha256 === FAMILY.I
-        && saved.continuationStateContractSha256 === FAMILY.T
+      // Missing/older SAME-family S, or the exact whole-inverse metadata
+      // handoff above, can advance. Other same-time conflicts and S-ahead-B stop.
+      need(restored.sameH0Metadata || saved === null || (saved.modelBinding.modelBundleSha256 === family.I
+        && saved.continuationStateContractSha256 === family.T
         && Date.parse(saved.productionReferenceAt) < Date.parse(current.productionReferenceAt)), 'S_NOT_BEHIND');
       await stable();
       counts.checkpointPublishCalls++;

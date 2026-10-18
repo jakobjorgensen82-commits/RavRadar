@@ -23,7 +23,12 @@ on:
         default: false
         type: boolean
       upgrade_established_native_current_origin:
-        description: "Installer kun den originalbevarende fortsættelse efter faktisk installeret0200 og autentisk B/S"
+        description: "Historisk140000-grant; må ikke genbruges i en senere kilde"
+        required: false
+        default: false
+        type: boolean
+      upgrade_assistant_same_h0:
+        description: "Installer kun SAME_H0 metadata-successor efter faktisk140000 og autentisk uændret B/S"
         required: false
         default: false
         type: boolean
@@ -74,10 +79,12 @@ jobs:
           UPGRADE_ACCOUNT_ASSISTANT: ${{ inputs.upgrade_account_assistant }}
           UPGRADE_STATISTICS_REVISION: ${{ inputs.upgrade_statistics_preference_revision }}
           UPGRADE_ESTABLISHED_NATIVE_CURRENT_ORIGIN: ${{ inputs.upgrade_established_native_current_origin }}
+          UPGRADE_ASSISTANT_SAME_H0: ${{ inputs.upgrade_assistant_same_h0 }}
         run: |
           set -euo pipefail
           test "$GITHUB_EVENT_NAME" = "workflow_dispatch"
           test "$GITHUB_REF" = "refs/heads/main"
+          test "$UPGRADE_ESTABLISHED_NATIVE_CURRENT_ORIGIN" != "true"
           if test "$UPGRADE_EXISTING_OWNER_EXPORT" = "true"; then
             test "$CONFIRMATION" = "DEPLOY-CODE-ONLY-REPAIR"
             test "$SAVED_WEATHER" != "true"
@@ -97,7 +104,7 @@ jobs:
             test "$SAVED_WEATHER" != "true"
             test -z "$RECOVER_PUBLIC_RUN_ID"
           fi
-          if test "$UPGRADE_ESTABLISHED_NATIVE_CURRENT_ORIGIN" = "true"; then
+          if test "$UPGRADE_ASSISTANT_SAME_H0" = "true"; then
             test "$UPGRADE_EXISTING_OWNER_EXPORT" != "true"
             test "$UPGRADE_ACCOUNT_ASSISTANT" != "true"
             test "$UPGRADE_STATISTICS_REVISION" != "true"
@@ -180,13 +187,14 @@ jobs:
       RAVRADAR_STATISTICS_REVISION_SAVED_WEATHER: ${{ inputs.publish_newest_saved_weather }}
       RAVRADAR_STATISTICS_REVISION_RECOVERY_RUN_ID: ${{ inputs.recover_public_run_id }}
       RAVRADAR_ESTABLISHED_NATIVE_CURRENT_ORIGIN_UPGRADE_OPT_IN: ${{ inputs.upgrade_established_native_current_origin == true && 'true' || 'false' }}
-      RAVRADAR_ESTABLISHED_NATIVE_CURRENT_ORIGIN_CONFIRMATION: ${{ inputs.confirmation }}
-      RAVRADAR_ESTABLISHED_NATIVE_CURRENT_ORIGIN_SAVED_WEATHER: ${{ inputs.publish_newest_saved_weather }}
-      RAVRADAR_ESTABLISHED_NATIVE_CURRENT_ORIGIN_RECOVERY_RUN_ID: ${{ inputs.recover_public_run_id }}
-      RAVRADAR_ESTABLISHED_NATIVE_CURRENT_ORIGIN_RECOVERY_GATE_RESULT: ${{ needs.operational-recovery-gate.result }}
+      RAVRADAR_ASSISTANT_SAME_H0_UPGRADE_OPT_IN: ${{ inputs.upgrade_assistant_same_h0 == true && 'true' || 'false' }}
+      RAVRADAR_ASSISTANT_SAME_H0_CONFIRMATION: ${{ inputs.confirmation }}
+      RAVRADAR_ASSISTANT_SAME_H0_SAVED_WEATHER: ${{ inputs.publish_newest_saved_weather }}
+      RAVRADAR_ASSISTANT_SAME_H0_RECOVERY_RUN_ID: ${{ inputs.recover_public_run_id }}
+      RAVRADAR_ASSISTANT_SAME_H0_RECOVERY_GATE_RESULT: ${{ needs.operational-recovery-gate.result }}
       # This job holds both unchanged production/trip-storage writer locks.
-      RAVRADAR_ESTABLISHED_NATIVE_CURRENT_ORIGIN_WRITER_ACTIVE: 'false'
-      RAVRADAR_ESTABLISHED_NATIVE_CURRENT_ORIGIN_METADATA_ONLY: 'false'
+      RAVRADAR_ASSISTANT_SAME_H0_WRITER_ACTIVE: 'false'
+      RAVRADAR_ASSISTANT_SAME_H0_METADATA_ONLY: 'false'
     steps:
       - uses: actions/checkout@v7
         with:
@@ -558,20 +566,20 @@ jobs:
           fs.appendFileSync(process.env.GITHUB_ENV, `RAVRADAR_ACCOUNT_ASSISTANT_FINAL_REQUIRED=${accountCurrent}\n`);
           NODE
 
-      - name: Select only an already-installed established-origin successor before private work
+      - name: Select only an already-installed SAME_H0 successor before private work
         if: steps.operational-action.outputs.action == 'integrated' || steps.operational-action.outputs.action == 'integrated-historical-maintenance'
         shell: bash
         run: |
           set -euo pipefail
-          if test "$RAVRADAR_ESTABLISHED_NATIVE_CURRENT_ORIGIN_UPGRADE_OPT_IN" = 'false'; then
-            node scripts/verify-established-native-current-origin-plan.mjs --select \
+          if test "$RAVRADAR_ASSISTANT_SAME_H0_UPGRADE_OPT_IN" = 'false'; then
+            node scripts/verify-assistant-same-h0-plan.mjs --select \
               --migration-list "$RUNNER_TEMP/code-only-migrations-before.txt"
           else
             # Pending selection stays forbidden until actual B/S/no-loss proof.
-            test "$RAVRADAR_ESTABLISHED_NATIVE_CURRENT_ORIGIN_UPGRADE_OPT_IN" = 'true'
+            test "$RAVRADAR_ASSISTANT_SAME_H0_UPGRADE_OPT_IN" = 'true'
             # Route only: the later fixed original B/S preparation must still
             # prove every original before select/proof/final can authorize SQL.
-            echo 'RAVRADAR_ESTABLISHED_NATIVE_CURRENT_ORIGIN_PHASE=before' >> "$GITHUB_ENV"
+            echo 'RAVRADAR_ASSISTANT_SAME_H0_PHASE=before' >> "$GITHUB_ENV"
           fi
 
       - name: Hydrate only already-applied migration identities
@@ -879,13 +887,13 @@ jobs:
           --expected "$RAVRADAR_PREDECESSOR_PRIVATE_ROOT/expected.json"
           --output "$RAVRADAR_PREDECESSOR_PRIVATE_RESTORE"
 
-      - name: Select only the exact authenticated0200 origin metadata bridge
+      - name: Select only the exact authenticated140000 SAME_H0 metadata bridge
         if: steps.current-private-install.outcome != 'success' && steps.owner-current-original.outputs.transition_kind != 'owner-current-domain-original'
         shell: bash
-        run: node scripts/established-native-current-origin-prewrite.mjs --slot select
+        run: node scripts/assistant-same-h0-prewrite.mjs --slot select
 
       - name: Rebind saved private runtime to current source without changing measurements
-        if: steps.current-private-install.outcome != 'success' && env.RAVRADAR_ESTABLISHED_NATIVE_CURRENT_ORIGIN_METADATA_ONLY != 'true'
+        if: steps.current-private-install.outcome != 'success' && env.RAVRADAR_ASSISTANT_SAME_H0_METADATA_ONLY != 'true'
         shell: bash
         run: |
           set -euo pipefail
@@ -909,7 +917,7 @@ jobs:
             test "${{ steps.owner-current-original.outputs.transition_kind }}" != "owner-current-domain-original"
             migration_args+=(--metadata-only)
           fi
-          if test "${RAVRADAR_ESTABLISHED_NATIVE_CURRENT_ORIGIN_METADATA_ONLY:-false}" = "true"; then
+          if test "${RAVRADAR_ASSISTANT_SAME_H0_METADATA_ONLY:-false}" = "true"; then
             test "${{ steps.owner-current-original.outputs.transition_kind }}" != "owner-current-domain-original"
             migration_args+=(--metadata-only)
           fi
@@ -923,22 +931,22 @@ jobs:
             --expected-source-head "$(jq -er '.sourceHead' "$RAVRADAR_OPERATIONAL_WORK/target-private-runtime-source.json")" \
             --report .geometry-v2-work/post-cutover-private-runtime-migration.json
 
-      - name: Stage the exact saved public coastal registry before seed metadata
-        if: steps.current-private-install.outcome != 'success' && env.RAVRADAR_ESTABLISHED_NATIVE_CURRENT_ORIGIN_METADATA_ONLY == 'true'
+      - name: Stage the exact saved public coastal registry before SAME_H0 metadata
+        if: steps.current-private-install.outcome != 'success' && env.RAVRADAR_ASSISTANT_SAME_H0_METADATA_ONLY == 'true'
         run: >-
           node scripts/prepare-code-only-public-runtime.mjs --stage-public-coastal-registry-only
           --repository-root "${{ github.workspace }}" --snapshot-root "${{ env.RAVRADAR_CODE_ONLY_PUBLIC_SNAPSHOT }}"
 
-      - name: Verify actual already-installed contracts before seed metadata reentry
-        if: env.RAVRADAR_ESTABLISHED_NATIVE_CURRENT_ORIGIN_METADATA_ONLY == 'true' && env.RAVRADAR_ESTABLISHED_NATIVE_CURRENT_ORIGIN_PHASE == 'installed'
+      - name: Verify actual already-installed contracts before SAME_H0 metadata reentry
+        if: env.RAVRADAR_ASSISTANT_SAME_H0_METADATA_ONLY == 'true' && env.RAVRADAR_ASSISTANT_SAME_H0_PHASE == 'installed'
         run: node scripts/integrated-cutover-readiness.mjs verify-db
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
 
-      - name: Prepare exact authenticated seed metadata and private origin
-        if: steps.current-private-install.outcome != 'success' && env.RAVRADAR_ESTABLISHED_NATIVE_CURRENT_ORIGIN_METADATA_ONLY == 'true'
-        run: node scripts/established-native-current-origin-prewrite.mjs --slot prepare
+      - name: Prepare exact authenticated SAME_H0 metadata and private origin
+        if: steps.current-private-install.outcome != 'success' && env.RAVRADAR_ASSISTANT_SAME_H0_METADATA_ONLY == 'true'
+        run: node scripts/assistant-same-h0-prewrite.mjs --slot prepare
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
@@ -1083,18 +1091,18 @@ jobs:
             --report .geometry-v2-work/post-cutover-private-runtime-migration.json
           echo "RAVRADAR_ACCOUNT_ASSISTANT_PREWRITE_VERIFIED=true" >> "$GITHUB_ENV"
 
-      - name: Authenticate original0200 B/S and compare every prepared successor byte before new binding
-        if: env.RAVRADAR_ESTABLISHED_NATIVE_CURRENT_ORIGIN_METADATA_ONLY == 'true' && steps.migrated-private-install.outcome == 'success'
+      - name: Authenticate original140000 B/S and compare every prepared SAME_H0 byte before new binding
+        if: env.RAVRADAR_ASSISTANT_SAME_H0_METADATA_ONLY == 'true' && steps.migrated-private-install.outcome == 'success'
         shell: bash
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
-        run: node scripts/established-native-current-origin-prewrite.mjs --slot proof
+        run: node scripts/assistant-same-h0-prewrite.mjs --slot proof
 
-      - name: Select the sole pending current-memory warmup successor after actual original and no-loss proof
-        if: env.RAVRADAR_ESTABLISHED_NATIVE_CURRENT_ORIGIN_UPGRADE_OPT_IN == 'true'
+      - name: Select the sole pending SAME_H0 successor after actual original and no-loss proof
+        if: env.RAVRADAR_ASSISTANT_SAME_H0_UPGRADE_OPT_IN == 'true'
         run: >-
-          node scripts/verify-established-native-current-origin-plan.mjs --select
+          node scripts/verify-assistant-same-h0-plan.mjs --select
           --migration-list "$RUNNER_TEMP/code-only-migrations-before.txt"
 
       - name: Verify unchanged current originals and schema1 before statistics revision
@@ -1126,9 +1134,9 @@ jobs:
           if test "${RAVRADAR_ACCOUNT_ASSISTANT_PREWRITE_REQUIRED:-false}" = "true"; then
             account_plan_args+=(--account-assistant-prewrite-plan --expected-pending-version 20261013210000)
           fi
-          if test -n "${RAVRADAR_ESTABLISHED_NATIVE_CURRENT_ORIGIN_PHASE:-}"; then
-            node scripts/verify-established-native-current-origin-plan.mjs \
-              --phase "$RAVRADAR_ESTABLISHED_NATIVE_CURRENT_ORIGIN_PHASE" \
+          if test -n "${RAVRADAR_ASSISTANT_SAME_H0_PHASE:-}"; then
+            node scripts/verify-assistant-same-h0-plan.mjs \
+              --phase "$RAVRADAR_ASSISTANT_SAME_H0_PHASE" \
               --migration-list "$RUNNER_TEMP/code-only-migrations-plan.txt" \
               --dry-run "$RUNNER_TEMP/code-only-migrations-dry-run.txt" \
               --migrations-directory "${{ steps.migration-view.outputs.workdir }}/supabase/migrations"
@@ -1181,16 +1189,16 @@ jobs:
               --dry-run "$RUNNER_TEMP/code-only-statistics-final-dry-run.txt" \
               --migrations-directory "$PWD/supabase/migrations"
           fi
-          if test "${RAVRADAR_ESTABLISHED_NATIVE_CURRENT_ORIGIN_PHASE:-}" = 'before'; then
-            env -u SUPABASE_DB_PASSWORD node "$GITHUB_WORKSPACE/scripts/established-native-current-origin-prewrite.mjs" --slot final
-            supabase migration list --linked | tee "$RUNNER_TEMP/code-only-established-native-current-origin-final-plan.txt"
-            supabase db push --linked --dry-run --skip-vault 2>&1 | tee "$RUNNER_TEMP/code-only-established-native-current-origin-final-dry-run.txt"
-            node "$GITHUB_WORKSPACE/scripts/verify-established-native-current-origin-plan.mjs" \
-              --phase before --migration-list "$RUNNER_TEMP/code-only-established-native-current-origin-final-plan.txt" \
-              --dry-run "$RUNNER_TEMP/code-only-established-native-current-origin-final-dry-run.txt" \
+          if test "${RAVRADAR_ASSISTANT_SAME_H0_PHASE:-}" = 'before'; then
+            env -u SUPABASE_DB_PASSWORD node "$GITHUB_WORKSPACE/scripts/assistant-same-h0-prewrite.mjs" --slot final
+            supabase migration list --linked | tee "$RUNNER_TEMP/code-only-assistant-same-h0-final-plan.txt"
+            supabase db push --linked --dry-run --skip-vault 2>&1 | tee "$RUNNER_TEMP/code-only-assistant-same-h0-final-dry-run.txt"
+            node "$GITHUB_WORKSPACE/scripts/verify-assistant-same-h0-plan.mjs" \
+              --phase before --migration-list "$RUNNER_TEMP/code-only-assistant-same-h0-final-plan.txt" \
+              --dry-run "$RUNNER_TEMP/code-only-assistant-same-h0-final-dry-run.txt" \
               --migrations-directory "$PWD/supabase/migrations"
           fi
-          if test "${RAVRADAR_ESTABLISHED_NATIVE_CURRENT_ORIGIN_PHASE:-}" != 'installed'; then
+          if test "${RAVRADAR_ASSISTANT_SAME_H0_PHASE:-}" != 'installed'; then
             supabase db push --linked --skip-vault
           fi
 
@@ -1211,12 +1219,12 @@ jobs:
             --migration-list "$RUNNER_TEMP/code-only-migrations-applied.txt"
           node scripts/integrated-cutover-readiness.mjs verify-db
           (cd "${{ steps.migration-view.outputs.workdir }}" && supabase db push --linked --dry-run --skip-vault) 2>&1 | tee "$RUNNER_TEMP/code-only-statistics-installed-dry-run.txt"
-          RAVRADAR_ESTABLISHED_NATIVE_CURRENT_ORIGIN_UPGRADE_OPT_IN=false node scripts/verify-established-native-current-origin-plan.mjs \
+          RAVRADAR_ASSISTANT_SAME_H0_UPGRADE_OPT_IN=false node scripts/verify-assistant-same-h0-plan.mjs \
             --phase installed --migration-list "$RUNNER_TEMP/code-only-migrations-applied.txt" \
             --dry-run "$RUNNER_TEMP/code-only-statistics-installed-dry-run.txt" \
             --migrations-directory "${{ steps.migration-view.outputs.workdir }}/supabase/migrations"
-          echo "RAVRADAR_ESTABLISHED_NATIVE_CURRENT_ORIGIN_UPGRADE_OPT_IN=false" >> "$GITHUB_ENV"
-          echo "RAVRADAR_ESTABLISHED_NATIVE_CURRENT_ORIGIN_PHASE=installed" >> "$GITHUB_ENV"
+          echo "RAVRADAR_ASSISTANT_SAME_H0_UPGRADE_OPT_IN=false" >> "$GITHUB_ENV"
+          echo "RAVRADAR_ASSISTANT_SAME_H0_PHASE=installed" >> "$GITHUB_ENV"
           node scripts/verify-statistics-preference-revision-schema.mjs
 
       - name: Read unchanged Candidate quality before owner-export upgrade
@@ -1736,7 +1744,7 @@ jobs:
 
       - name: Publish measured continuation checkpoint without promoting rollback readiness
         id: checkpoint-publish
-        if: (steps.checkpoint-disposition.outputs.disposition == 'READY_PUBLISHED' || steps.checkpoint-disposition.outputs.disposition == 'MEASURED_WARMUP_PUBLISHED') && env.RAVRADAR_ESTABLISHED_NATIVE_CURRENT_ORIGIN_EDGE_REQUIRED != 'true'
+        if: (steps.checkpoint-disposition.outputs.disposition == 'READY_PUBLISHED' || steps.checkpoint-disposition.outputs.disposition == 'MEASURED_WARMUP_PUBLISHED') && env.RAVRADAR_ASSISTANT_SAME_H0_EDGE_REQUIRED != 'true'
         run: >-
           node scripts/protected-ravscore-continuation-checkpoint.mjs
           --publish
@@ -1884,8 +1892,8 @@ jobs:
       # verified and committed its pointer. An interrupted installed retry can
       # then restore current B normally instead of requiring the replaced old S.
       - name: Publish measured continuation only after verified warmup private runtime
-        id: established-native-current-origin-checkpoint-publish
-        if: (steps.checkpoint-disposition.outputs.disposition == 'READY_PUBLISHED' || steps.checkpoint-disposition.outputs.disposition == 'MEASURED_WARMUP_PUBLISHED') && env.RAVRADAR_ESTABLISHED_NATIVE_CURRENT_ORIGIN_EDGE_REQUIRED == 'true'
+        id: assistant-same-h0-checkpoint-publish
+        if: (steps.checkpoint-disposition.outputs.disposition == 'READY_PUBLISHED' || steps.checkpoint-disposition.outputs.disposition == 'MEASURED_WARMUP_PUBLISHED') && env.RAVRADAR_ASSISTANT_SAME_H0_EDGE_REQUIRED == 'true'
         run: >-
           node scripts/protected-ravscore-continuation-checkpoint.mjs
           --publish
@@ -1903,8 +1911,26 @@ jobs:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
 
-      - name: Deploy exact rebound trip Edges without Worker or D1 replay
-        if: env.RAVRADAR_ACCOUNT_ASSISTANT_FINAL_REQUIRED == 'true' || env.RAVRADAR_ESTABLISHED_NATIVE_CURRENT_ORIGIN_EDGE_REQUIRED == 'true'
+      - name: Update and attest the existing SELF_REPORTED Worker before new Edges
+        if: env.RAVRADAR_ASSISTANT_SAME_H0_EDGE_REQUIRED == 'true'
+        timeout-minutes: 15
+        shell: bash
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+          RAVRADAR_ASSISTANT_SAME_H0_MIGRATION_VIEW: ${{ steps.migration-view.outputs.workdir }}
+          SUPABASE_PROJECT_ID: afqhhdrkjfjtpadntdzo
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          SUPABASE_PUBLISHABLE_KEY: ${{ secrets.SUPABASE_PUBLISHABLE_KEY }}
+          TRIP_GATEWAY_SHARED_SECRET: ${{ secrets.TRIP_GATEWAY_SHARED_SECRET }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_TRIP_GATEWAY_URL: ${{ secrets.CLOUDFLARE_TRIP_GATEWAY_URL }}
+        run: node scripts/update-assistant-same-h0-trip-worker.mjs
+
+      - name: Deploy exact rebound trip Edges after the required Worker update
+        if: env.RAVRADAR_ACCOUNT_ASSISTANT_FINAL_REQUIRED == 'true' || env.RAVRADAR_ASSISTANT_SAME_H0_EDGE_REQUIRED == 'true'
         timeout-minutes: 7
         shell: bash
         env:
@@ -1917,9 +1943,9 @@ jobs:
         run: |
           set -euo pipefail
           test "${RAVRADAR_USERDATA_UPGRADE_OPT_IN:-false}" != "true"
-          if test "${RAVRADAR_ESTABLISHED_NATIVE_CURRENT_ORIGIN_EDGE_REQUIRED:-false}" = "true"; then
-            test "$RAVRADAR_ESTABLISHED_NATIVE_CURRENT_ORIGIN_PHASE" = "installed"
-            test "$RAVRADAR_ESTABLISHED_NATIVE_CURRENT_ORIGIN_UPGRADE_OPT_IN" = "false"
+          if test "${RAVRADAR_ASSISTANT_SAME_H0_EDGE_REQUIRED:-false}" = "true"; then
+            test "$RAVRADAR_ASSISTANT_SAME_H0_PHASE" = "installed"
+            test "$RAVRADAR_ASSISTANT_SAME_H0_UPGRADE_OPT_IN" = "false"
           fi
           git fetch --no-tags --prune origin +refs/heads/main:refs/remotes/origin/main
           test "$(git rev-parse HEAD^{commit})" = "$GITHUB_SHA"
@@ -1936,7 +1962,7 @@ jobs:
           assistant_deploy_attempts=3
           if test "${RAVRADAR_USERDATA_UPGRADE_OPT_IN:-false}" = "true" \
               || test "${RAVRADAR_ACCOUNT_ASSISTANT_UPGRADE_OPT_IN:-false}" = "true" \
-              || test "${RAVRADAR_ESTABLISHED_NATIVE_CURRENT_ORIGIN_EDGE_REQUIRED:-false}" = "true"; then
+              || test "${RAVRADAR_ASSISTANT_SAME_H0_EDGE_REQUIRED:-false}" = "true"; then
             assistant_deploy_attempts=1
           fi
           for ((attempt = 1; attempt <= assistant_deploy_attempts; attempt++)); do
@@ -2009,7 +2035,7 @@ jobs:
             --arg checkpointRuntimeAuditSha256 "${{ steps.checkpoint-disposition.outputs.runtime_audit_sha256 }}" \
             --arg checkpointBuildOutcome "${{ steps.checkpoint-build.outcome }}" \
             --arg checkpointSaveOutcome "${{ steps.checkpoint-save.outcome }}" \
-            --arg checkpointPublishOutcome "${{ env.RAVRADAR_ESTABLISHED_NATIVE_CURRENT_ORIGIN_EDGE_REQUIRED == 'true' && steps.established-native-current-origin-checkpoint-publish.outcome || steps.checkpoint-publish.outcome }}" \
+            --arg checkpointPublishOutcome "${{ env.RAVRADAR_ASSISTANT_SAME_H0_EDGE_REQUIRED == 'true' && steps.assistant-same-h0-checkpoint-publish.outcome || steps.checkpoint-publish.outcome }}" \
             --arg codeOnlyReuseReportSha256 "$code_only_sha256" \
             --arg sourceRepairId "${{ steps.public-source.outputs.repair_id }}" \
             --argjson codeOnlyRepair '${{ inputs.publish_newest_saved_weather != true }}' \

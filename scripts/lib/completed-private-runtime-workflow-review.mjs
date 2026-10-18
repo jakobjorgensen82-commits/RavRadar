@@ -55,7 +55,25 @@ export function inverseCurrentHistoryRawRetentionOrder(source, role) {
     'Whole preceding workflow survives only the exact demand move, arg and env inverses');
   return previous;
 }
+// Exact test-only582 UA layer; every pre-existing workflow oracle below stays
+// byte-identical. Unknown source is never accepted by the completed inverse.
+export function inverseAssistant582UserAgent(source, role) {
+  if (role === 'build' && sha(source) === '5086dcfbcde252d39173fe989ccd22b3f1f84314ca7ef8728d3468aa4b6b65e1') {
+    assert.equal(source.split('RavRadar/4.0.582').length, 6, 'Exactly five reviewed582 RAW-caller UA changes');
+    const previous = source.replaceAll('RavRadar/4.0.582', 'RavRadar/4.0.581');
+    assert.equal(sha(previous), '46c88e4cca919ecc288c006db443106b1f8ce8fed1dbca3a87b74d7aea8a3e34',
+      'The WHOLE d8 P0 RAW-retention caller survives only the582 UA inverse');
+    return previous;
+  }
+  if (role !== 'build' || sha(source) !== '251f0cd62db0d5ab779283cda14e1723433792baee97ded8815f1f7a69eed0aa') return source;
+  assert.equal(source.split('RavRadar/4.0.582').length, 6, 'Exactly five reviewed582 UA changes');
+  const previous = source.replaceAll('RavRadar/4.0.582', 'RavRadar/4.0.581');
+  assert.equal(sha(previous), 'fd1cd664bdbdcf41ef2ad32e6ad5caf058a980b3093a3f4fc226ca1797854b49',
+    'Whole existing581 workflow survives the582 UA inverse');
+  return previous;
+}
 export function inverseOriginWeatherReadCredentials(source, role) {
+  source = inverseAssistant582UserAgent(source, role);
   source = inverseCurrentHistoryRawRetentionOrder(source, role);
   if (role !== 'build' || sha(source) !== 'fd1cd664bdbdcf41ef2ad32e6ad5caf058a980b3093a3f4fc226ca1797854b49') return source;
   const marker = '      - name: Update central weather cache\n';

@@ -2,6 +2,8 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
 import { spawnSync } from 'node:child_process';
+import { inverseAssistantSameH0CodeOnlyWorkflow } from './lib/assistant-same-h0-caller-review.mjs';
+import { assistantSameH0Migration } from './lib/assistant-same-h0-successor-source.mjs';
 
 const root = process.cwd();
 const read = relative => fs.readFileSync(path.join(root, relative), 'utf8');
@@ -199,10 +201,20 @@ assert.equal((codeOnlyWorkflow.match(/supabase db push --linked --dry-run --skip
   'Normal plan, historiske kontroller, ny assistentgenkontrol og installeret assistentplan skal være dry-run, ikke skrivninger.');
 assert.equal((codeOnlyWorkflow.match(/^\s*supabase db push --linked --skip-vault\s*$/gm) || []).length, 1,
   'Der skal fortsat være præcis én database-apply.');
+// Keep both complete historical140000 checks against the SHA-bound whole
+// inverse; separately require the reviewed current213500 caller, never OR/skip.
+const historicalCodeOnlyWorkflow = inverseAssistantSameH0CodeOnlyWorkflow(codeOnlyWorkflow);
+assert.equal(assistantSameH0Migration().version, '20261017213500');
 assert.match(codeOnlyWorkflow,
+  /if test "\$\{RAVRADAR_ACCOUNT_ASSISTANT_PREWRITE_REQUIRED:-false\}" = "true"; then[\s\S]*?supabase migration list --linked[\s\S]*?supabase db push --linked --dry-run --skip-vault[\s\S]*?--account-assistant-prewrite-plan --require-prewrite-gate[\s\S]*?--expected-pending-version 20261013210000[\s\S]*?fi\s+if test "\$\{RAVRADAR_STATISTICS_REVISION_PHASE:-\}" = "before"; then[\s\S]*?supabase migration list --linked[\s\S]*?supabase db push --linked --dry-run --skip-vault[\s\S]*?verify-statistics-preference-revision-plan\.mjs[\s\S]*?--phase before[\s\S]*?fi\s+if test "\$\{RAVRADAR_ASSISTANT_SAME_H0_PHASE:-\}" = 'before'; then[\s\S]*?env -u SUPABASE_DB_PASSWORD node[\s\S]*?assistant-same-h0-prewrite\.mjs"[\s\S]*?--slot final[\s\S]*?supabase migration list --linked[\s\S]*?supabase db push --linked --dry-run --skip-vault[\s\S]*?verify-assistant-same-h0-plan\.mjs"[\s\S]*?--phase before[\s\S]*?fi\s+if test "\$\{RAVRADAR_ASSISTANT_SAME_H0_PHASE:-\}" != 'installed'; then\s+supabase db push --linked --skip-vault/,
+  'Current213500 must retain all historical prerequisites and fresh authenticated prewrite before its sole apply.');
+assert.match(codeOnlyWorkflow,
+  /\(cd "\$\{\{ steps\.migration-view\.outputs\.workdir \}\}" && supabase db push --linked --dry-run --skip-vault\)[\s\S]*?RAVRADAR_ASSISTANT_SAME_H0_UPGRADE_OPT_IN=false node scripts\/verify-assistant-same-h0-plan\.mjs[\s\S]*?--phase installed[\s\S]*?node scripts\/verify-statistics-preference-revision-schema\.mjs/,
+  'Current213500 installed readback must keep opt-in false and the unchanged statistics schema check.');
+assert.match(historicalCodeOnlyWorkflow,
   /if test "\$\{RAVRADAR_ACCOUNT_ASSISTANT_PREWRITE_REQUIRED:-false\}" = "true"; then[\s\S]*?supabase migration list --linked[\s\S]*?supabase db push --linked --dry-run --skip-vault[\s\S]*?--account-assistant-prewrite-plan --require-prewrite-gate[\s\S]*?--expected-pending-version 20261013210000[\s\S]*?fi\s+if test "\$\{RAVRADAR_STATISTICS_REVISION_PHASE:-\}" = "before"; then[\s\S]*?supabase migration list --linked[\s\S]*?supabase db push --linked --dry-run --skip-vault[\s\S]*?verify-statistics-preference-revision-plan\.mjs[\s\S]*?--phase before[\s\S]*?fi\s+if test "\$\{RAVRADAR_ESTABLISHED_NATIVE_CURRENT_ORIGIN_PHASE:-\}" = 'before'; then[\s\S]*?env -u SUPABASE_DB_PASSWORD node[\s\S]*?established-native-current-origin-prewrite\.mjs"[\s\S]*?--slot final[\s\S]*?supabase migration list --linked[\s\S]*?supabase db push --linked --dry-run --skip-vault[\s\S]*?verify-established-native-current-origin-plan\.mjs"[\s\S]*?--phase before[\s\S]*?fi\s+if test "\$\{RAVRADAR_ESTABLISHED_NATIVE_CURRENT_ORIGIN_PHASE:-\}" != 'installed'; then\s+supabase db push --linked --skip-vault/,
   'Historiske gates bevares, og den nye assistentfase skal have frisk originalkontrol og egen eksakt plan før den ene apply.');
-assert.match(codeOnlyWorkflow,
+assert.match(historicalCodeOnlyWorkflow,
   /\(cd "\$\{\{ steps\.migration-view\.outputs\.workdir \}\}" && supabase db push --linked --dry-run --skip-vault\)[\s\S]*?RAVRADAR_ESTABLISHED_NATIVE_CURRENT_ORIGIN_UPGRADE_OPT_IN=false node scripts\/verify-established-native-current-origin-plan\.mjs[\s\S]*?--phase installed[\s\S]*?node scripts\/verify-statistics-preference-revision-schema\.mjs/,
   'Den sidste dry-run skal bevise installeret ny assistentfase med opt-in false og efterfølgende uændret schema2-genlæsning.');
 assert.ok(

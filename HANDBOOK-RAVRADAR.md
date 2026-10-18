@@ -1,3 +1,13 @@
+## 89.254 Hele spørgsmål og selvrapporterede ture
+
+Privat kildekladde til 4.0.582, endnu ikke offentliggjort. Mobilens tidsskyder og dens faktiske tilgængelige dage bevares; en ny kalenderdag kræver et nyt gyldigt vejrdatasæt.
+
+Spørg RavRadar skal kunne besvare hele forståede spørgsmål om begyndersøgning, udstyr, opskyl og høj score uden fund på dansk, tysk og engelsk. Et generelt spørgsmål kræver ikke et valgt område. Relevante opfølgninger kan bruge samtalens korte emne; usikre eller ukendte tillæg må ikke omdannes til fundgarantier eller opdigtede vejrtal.
+
+Manuelt startede ture og manuelle rapporter kan fra første indsendelse være markeret som selvrapporterede. Mærket er ikke bevis for et ægte fund eller verificeret vejr. Gamle umærkede og kunstige testture ændres ikke automatisk. Samlet statistik er fortsat inaktiv, og automatisk sletning efter inaktivitet er ikke aktiveret uden fungerende varsling.
+
+Den private kilde til 4.0.582 er låst med `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b` og `modelBundleSha256=504393dd6f819f6d5a1dc172092e26b10cae26fe684342aaaed001c51e466d94` over 93 kanonisk normaliserede transitive implementeringsfiler og otte deklarerede forbrugere. Inaktiv Candidate G har `modelContractSha256=c73dac1b4376005e792580791d84eb79c9370e905a2a7fd0bdee857506a20cf8` og `modelBundleSha256=3ce599247688acbf21062441f726e1e13d758cb1c52c5b85e6026df175973bca` over 94 transitive filer. T12 er `eadf4569d28ee92dc6e196b284428c7838305d9d01998c2b751e05aa96880487`. Det er en kildeidentitet, ikke installeret eller offentlig 582. De daterede bindingsafsnit nedenfor bevares som historik.
+
 ## 89.253 Genaflæs kun nødvendige strømoriginaler
 
 Den samlede kildeændring tilføjer nu den faste metadata-/tilstedeværelsesrapport og en snæver historisk transportvej: kun STAC 404/410 og fuldt match af den allerede autentificerede URL-SHA vælger én adresse blandt højst to lokalt sammenlignede DMI-stavemåder. Indholds-SHA, størrelse, alle GRIB-tider, faktisk hentetid, budgetter, eksklusiv skrivning og cachelukning bevares. Ingen S3-udvidelse, nye kilder eller opdigtet katalogbevis. Tolv portable målprøver består i den reelle sammenføring. Den nye faktiske kommandoprøve kræver Linux: Windows' forskellige oprettelses-/ændringstider gjorde dens tidligere lokale resultat ustabilt. Hele prøvens kontroludsagn bevares i den obligatoriske native-kontrol; produktidentiteten lempes ikke. Native Linux, præcis samlet CI, faktisk filtilgængelighed, SAVE og offentlig effekt er endnu åbne. Rapportens filtilstedeværelse er ikke kvalificeret genbrug.
@@ -434,7 +444,7 @@ En særskilt, dokumenteret Storage-formatkant rettes samtidig: immutable upload 
 
 # RavRadar Håndbog
 
-**Håndbogsversion:** 4.0.581
+**Håndbogsversion:** 4.0.582
 
 ## Aktuel lokal kildebinding — 17. oktober 2026, 4.0.579 ikke installeret
 

@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import {inverseAssistantSameH0SourceScripts} from './lib/assistant-same-h0-caller-review.mjs';
 import crypto from 'node:crypto';
 import fs from 'node:fs/promises';
 import os from 'node:os';
@@ -741,7 +742,7 @@ test('47 baseline commands plus genuine OLD, NEW native, epoch and pure diagnost
 });
 
 test('current frozen routes and warmup checks reach normal checkpoint integration exactly once', async () => {
-  const scripts = JSON.parse(await fs.readFile(new URL('../package.json', import.meta.url), 'utf8')).scripts;
+  const scripts = inverseAssistantSameH0SourceScripts(JSON.parse(await fs.readFile(new URL('../package.json', import.meta.url), 'utf8')).scripts);
   const { expandSourceCommands } = await import('./validate-source-once.mjs');
   const commands = expandSourceCommands(scripts, 'validate:source:checks');
   for (const check of [
@@ -1077,4 +1078,28 @@ test('default-OFF original-plan caller preserves the whole FFD updater and all e
     + '\nreturn normalOriginUpdaterTestInput;')(assert, digest);
   const oracle = await sourceText(new URL('./test-weather-update-entrypoint.mjs', import.meta.url));
   assert.equal(normalInput(actual, oracle), inverseSavedCurrentReplayUpdater(actual), 'same actual normal follower reader, not another host');
+});
+
+test('new SAME_H0 source commands retain every historical route and add the current gate once',async()=>{
+  const scripts=JSON.parse(await fs.readFile(new URL('../package.json',import.meta.url),'utf8')).scripts;
+  const {expandSourceCommands}=await import('./validate-source-once.mjs');
+  const commands=expandSourceCommands(scripts,'validate:source:checks');
+  for(const command of ['node scripts/run-frozen-established-native-current-origin-source-targets.mjs builder',
+    'node scripts/build-assistant-same-h0-successor.mjs --check',
+    'node scripts/run-frozen-established-native-current-origin-source-targets.mjs successor',
+    'node scripts/run-frozen-established-native-current-origin-source-targets.mjs postgres-source',
+    'node scripts/run-frozen-established-native-current-origin-source-targets.mjs followers'])
+    assert.equal(commands.filter(value=>value===command).length,1);
+  const invoked=commands.flatMap(value=>value.split(' '));
+  assert.equal(invoked.filter(file=>file==='scripts/test-assistant-same-h0-successor-source.mjs').length,1);
+  assert.equal(commands.includes('node scripts/build-established-native-current-origin-successor.mjs --check'),false);
+  for(const command of ['node scripts/test-established-native-current-origin-followers.mjs'])assert.equal(commands.includes(command),false);
+  const history=inverseAssistantSameH0SourceScripts(scripts);assert.notDeepEqual(history,scripts);
+  for(const change of [value=>value.replace('build-assistant-same-h0-successor.mjs --check','missing-next.mjs'),
+    value=>value.replace('source-targets.mjs successor','source-targets.mjs builder'),
+    value=>value.replace('scripts/test-assistant-same-h0-successor-source.mjs',''),
+    value=>value+' && node scripts/test-assistant-same-h0-successor-source.mjs']){
+    const mutated={...scripts,'test:ravscore-source-critical':change(scripts['test:ravscore-source-critical'])};
+    assert.throws(()=>inverseAssistantSameH0SourceScripts(mutated));
+  }
 });

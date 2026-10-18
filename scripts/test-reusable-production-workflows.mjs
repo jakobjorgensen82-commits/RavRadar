@@ -9,6 +9,8 @@ import fs from 'node:fs';
 import { runInNewContext } from 'node:vm';
 import { nativeIdentityMigration } from './lib/native-sampling-identity-successor-source.mjs';
 import { establishedNativeCurrentOriginMigration as currentMemoryWarmupMigration } from './lib/established-native-current-origin-successor-source.mjs';
+import { assistantSameH0Migration, requireAssistantSameH0Output } from './lib/assistant-same-h0-successor-source.mjs';
+import { createHash } from 'node:crypto';
 
 // Keep the payload-free operational control report inside this existing cheap
 // workflow command so the source gate does not grow another process.
@@ -732,10 +734,29 @@ assert.doesNotMatch(checkpointTimeoutMigration, /alter (?:role|database)/i);
 // A later binding migration must not silently undo DEC-0249's scoped 55s
 // setting. Checking the old corrective file alone missed the Top20 reset.
 const migrationsUrl = new URL('../supabase/migrations/', import.meta.url);
-const casTimeoutSettings = fs.readdirSync(migrationsUrl).filter(name => name.endsWith('.sql'))
-  .sort().flatMap(name => [...fs.readFileSync(new URL(name, migrationsUrl), 'utf8').matchAll(
+const migrationNames = fs.readdirSync(migrationsUrl).filter(name => name.endsWith('.sql')).sort();
+const successorMigration = assistantSameH0Migration();
+const successorBytes = fs.readFileSync(new URL(successorMigration.filename, migrationsUrl));
+const sourceSha = value => createHash('sha256').update(value).digest('hex');
+assert.equal(sourceSha(successorBytes), requireAssistantSameH0Output().migrationSha256,
+  'Whole raw issued213500 source, not a latest-version alias');
+const historicalNames = migrationNames.filter(name => name !== successorMigration.filename);
+assert.equal(historicalNames.length, 62, 'Keep the entire genuine140000 physical catalogue');
+// Derived from genuine edf68357f3b2aa6654629d49b7e12084473932df,
+// tree0ee995dc288278652fc4e5b92a2007050a57aced. No old SQL is retagged.
+const historicalCatalogue = historicalNames.map(name => [name,
+  sourceSha(fs.readFileSync(new URL(name, migrationsUrl), 'utf8').replace(/\r\n?/g, '\n'))]);
+assert.equal(sourceSha(JSON.stringify(historicalCatalogue)),
+  'bf3a49febab7903d8c14a5cd2cad6786a8a155a55219a33b83084006e9881b29',
+  'All62 whole genuine predecessor SQL sources remain unchanged');
+assert.deepEqual(migrationNames.filter(name => !historicalNames.includes(name)), [successorMigration.filename]);
+const timeoutSettings = names => names.flatMap(name => [...fs.readFileSync(new URL(name, migrationsUrl), 'utf8').matchAll(
     /alter function public\.ravradar_ravscore_checkpoint_cas\(bigint,timestamptz,jsonb\)\s+set statement_timeout = '([^']+)';/g,
   )].map(match => ({ migration: name, timeout: match[1] })));
+const currentCasTimeoutSettings = timeoutSettings(migrationNames);
+assert.deepEqual(currentCasTimeoutSettings.at(-1), { migration: successorMigration.filename, timeout: '55s' },
+  'The separately issued213500 descriptor retains the scoped55s setting');
+const casTimeoutSettings = timeoutSettings(historicalNames);
 assert.equal(casTimeoutSettings.at(-1)?.timeout, '55s',
   'the final migration order must retain the established checkpoint-only 55s timeout');
 assert.equal(casTimeoutSettings.at(-1).migration,

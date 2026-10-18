@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { inverseAssistantSameH0SourceScripts } from './lib/assistant-same-h0-caller-review.mjs';
 import fs from 'node:fs';
 import path from 'node:path';
 import { spawnSync } from 'node:child_process';
@@ -10,7 +11,10 @@ import {
   SOURCE_BINDING_PREFLIGHT,
 } from './validate-source-once.mjs';
 
-const scripts = JSON.parse(fs.readFileSync('package.json', 'utf8')).scripts;
+const actualCurrentScripts = JSON.parse(fs.readFileSync('package.json', 'utf8')).scripts;
+const assertActualAfter658Inventory=value=>assert.equal(process.getBuiltinModule('node:crypto').createHash('sha256').update(JSON.stringify(value)).digest('hex'),"1f2b284d59c55539a94c5b6d3c95dfffce8d8e3d1e8178839c36231fa882f28c",'Whole actual213500 plus808 command inventory');
+assertActualAfter658Inventory(actualCurrentScripts);
+const scripts = inverseAssistantSameH0SourceScripts(actualCurrentScripts);
 const plan = buildSourceValidationPlan(scripts);
 const declared = expandSourceCommands(scripts, 'validate:source:checks');
 
@@ -372,3 +376,13 @@ assert.ok(fixedSourceWorkflow.includes('run: npm run validate:source && node scr
 assert.doesNotMatch(fixedReadJob,/supabase db push|functions deploy|wrangler|upload-artifact|cache\/save|SUPABASE_DB_PASSWORD|SUPABASE_SERVICE_ROLE_KEY/);
 
 console.log(`Source validation: ${calls.length} direkte produktionskritiske kommandoer, samlet fejlrapport og ingen bred release-/historiksuite; ny fast loglæsning bruger alene det beskyttede læsejob.`);
+
+// Additive actual213500/808 union gate; all historical assertions above remain.
+const actualCurrentCommands=expandSourceCommands(actualCurrentScripts,'validate:source:checks');
+const actualCurrentPlan=buildSourceValidationPlan(actualCurrentScripts);
+assert.equal(actualCurrentPlan.gate,'node scripts/source-critical-gate.mjs');
+assert.deepEqual(actualCurrentPlan.remaining,actualCurrentCommands.filter(command=>command!==actualCurrentPlan.gate&&!actualCurrentPlan.preflight.includes(command)));
+for(const command of ['node scripts/run-frozen-established-native-current-origin-source-targets.mjs builder','node scripts/build-assistant-same-h0-successor.mjs --check','node scripts/run-frozen-established-native-current-origin-source-targets.mjs successor','node scripts/run-frozen-established-native-current-origin-source-targets.mjs postgres-source','node scripts/run-frozen-established-native-current-origin-source-targets.mjs followers'])assert.equal(actualCurrentCommands.filter(value=>value===command).length,1);
+for(const file of ["scripts/test-post-h0-dmi-original-dependencies.mjs","scripts/test-saved-current-forward-original-plan.mjs","scripts/test-assistant-same-h0-successor-source.mjs"])assert.equal(actualCurrentCommands.flatMap(command=>command.split(' ')).filter(value=>value===file).length,1);
+assert.equal(actualCurrentCommands.includes('node scripts/build-established-native-current-origin-successor.mjs --check'),false);
+for(const change of [value=>value.replace(" scripts/test-post-h0-dmi-original-dependencies.mjs scripts/test-saved-current-forward-original-plan.mjs",''),value=>value+' && node scripts/test-saved-current-forward-original-plan.mjs',value=>value.replace('build-assistant-same-h0-successor.mjs --check','unreviewed-builder.mjs')])assert.throws(()=>assertActualAfter658Inventory({...actualCurrentScripts,'test:ravscore-source-critical':change(actualCurrentScripts['test:ravscore-source-critical'])}));

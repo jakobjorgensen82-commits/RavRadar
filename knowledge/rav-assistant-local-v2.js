@@ -55,7 +55,7 @@ const CORE_LOCAL_RAV_KNOWLEDGE = Object.freeze([
     'Tang er et spor, ikke et bevis. Friskhed, placering, andet let materiale og det forudgående vejrforløb fortæller mere end tang alene.',
     'Seegras ist ein Hinweis, kein Beweis. Frische, Lage, weiteres Leichtmaterial und der vorherige Wetterverlauf sagen mehr aus als Seegras allein.',
     'Seaweed is a clue, not proof. Freshness, position, other light material and the preceding weather sequence matter more than seaweed alone.'),
-  entry('light-fraction', /hvorfor.*(?:træ|frø|kul|skaller)|(?:træ|frø|kul|skaller).*(?:rav|opskyl)|warum.*(?:holz|samen|kohle|muscheln)|(?:holz|samen|kohle|muscheln).*(?:bernstein|spülsaum)|why.*(?:wood|seeds|coal|shells)|(?:wood|seeds|coal|shells).*(?:amber|wash)/iu,
+  entry('light-fraction', /hvorfor.*(?<![\p{L}\p{N}_])(?:træ|frø|kul|skaller)(?![\p{L}\p{N}_])|(?<![\p{L}\p{N}_])(?:træ|frø|kul|skaller)(?![\p{L}\p{N}_]).*(?:rav|opskyl)|warum.*(?<![\p{L}\p{N}_])(?:holz|samen|kohle|muscheln)(?![\p{L}\p{N}_])|(?<![\p{L}\p{N}_])(?:holz|samen|kohle|muscheln)(?![\p{L}\p{N}_]).*(?:bernstein|spülsaum)|why.*(?<![\p{L}\p{N}_])(?:wood|seeds|coal|shells)(?![\p{L}\p{N}_])|(?<![\p{L}\p{N}_])(?:wood|seeds|coal|shells)(?![\p{L}\p{N}_]).*(?:amber|wash)/iu,
     'Træ, frø, kul, skaller og andet let opskyl kan vise, at havet har sorteret en let fraktion, som rav nogle gange følger. Materialerne har ikke identisk massefylde og form, så de følger ikke altid præcis samme bane.',
     'Holz, Samen, Kohle, Muscheln und anderes Leichtmaterial können eine sortierte Fraktion anzeigen, der Bernstein manchmal folgt. Die Stoffe bewegen sich jedoch nicht immer auf genau derselben Bahn.',
     'Wood, seeds, coal, shells and other light wash may show a sorted fraction that amber sometimes follows. Their density and shape differ, so they do not always take exactly the same route.'),
@@ -265,6 +265,13 @@ export function matchLocalRavKnowledge(question) {
     (LOCAL_RAV_KNOWLEDGE_EXAMPLES[item.id] || []).some(example => normalizeKnowledgeQuestion(example) === normalized)
   );
   if (exact) return exact;
+  // Whole paper/rubbing questions reuse the already sourced static-electricity
+  // answer. Unknown qualifications retain the normal matcher; no new facts.
+  if (/^(?:hvorfor|hvordan) (?:kan )?(?:tiltrækker|tiltrække) (?:gnubbet |gnedet )?rav (?:små |lette )?(?:stykker papir|papirstumper|papirstykker|papir)(?: (?:efter|ved) gnidning)?$/u.test(normalized)
+    || /^(?:warum|wie) zieht (?:geriebener )?bernstein (?:nach dem reiben )?(?:kleine |leichte )?(?:papierstücke|papierschnipsel|papier)(?: nach dem reiben)? an$/u.test(normalized)
+    || /^(?:warum|wie) kann (?:geriebener )?bernstein (?:kleine |leichte )?(?:papierstücke|papierschnipsel|papier) anziehen$/u.test(normalized)) {
+    return LOCAL_RAV_KNOWLEDGE.find(item => item.id === 'amber-static') || null;
+  }
   return LOCAL_RAV_KNOWLEDGE.find(item => item.pattern.test(text)) || null;
 }
 

@@ -1,5 +1,8 @@
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
+import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
 import {
   TRACKED_PUBLIC_LIVE_ALLOWLIST,
   auditTrackedRuntimePaths,
@@ -61,6 +64,22 @@ for (const script of [
   'scripts/test-trip-storage-edge-transient-retry.mjs',
 ]) {
   const result = spawnSync(process.execPath, [script], { cwd: process.cwd(), encoding: 'utf8', timeout: 30_000, maxBuffer: 1024 * 1024 });
+  const processReceipt = { kind: 'SOURCE_PRIVACY_CHILD_PROCESS', status: result.status,
+    signal: result.signal ?? null, errorCode: result.error?.code ?? null,
+    stdoutBytes: Buffer.byteLength(result.stdout ?? ''), stderrBytes: Buffer.byteLength(result.stderr ?? '') };
+  if (result.status !== 0 || result.error || result.signal) {
+    // Preserve the complete PRIVATE result before the bounded public receipt
+    // and original assertion. Do not print raw diagnostics or a local path.
+    const privateRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'rr-source-privacy-child-'));
+    fs.chmodSync(privateRoot, 0o700);
+    for (const channel of ['stdout', 'stderr']) fs.writeFileSync(path.join(privateRoot, channel),
+      result[channel] ?? '', { flag: 'wx', mode: 0o600 });
+    const error = result.error ? Object.fromEntries(Object.getOwnPropertyNames(result.error)
+      .map(key => [key, result.error[key]])) : null;
+    fs.writeFileSync(path.join(privateRoot, 'result.json'), JSON.stringify({ script, ...result, error }, null, 2) + '\n',
+      { flag: 'wx', mode: 0o600 });
+  }
+  console.log(JSON.stringify(processReceipt));
   assert.equal(result.status, 0, `${script} failed:\n${result.stdout}\n${result.stderr}`);
   process.stdout.write(result.stdout);
 }

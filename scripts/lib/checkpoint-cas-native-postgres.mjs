@@ -34,7 +34,7 @@ const sqlText = text => String(text).replace(/\r\n?/g, '\n');
 const NATIVE_PSQL_PHASES = new Set(['NATIVE_SETUP', 'CAS200_MIGRATION',
   'BASELINE_FIXTURES', 'BASELINE_ADMISSION', 'BASELINE_CAS_CASES',
   'ACCOUNT213', 'CURRENT220', 'STATISTICS230', 'NATIVE_IDENTITY0600', 'CURRENT_MEMORY_WARMUP',
-  'ESTABLISHED_NATIVE_CURRENT_ORIGIN', 'UNKNOWN']);
+  'ESTABLISHED_NATIVE_CURRENT_ORIGIN', 'ASSISTANT_SAME_H0', 'UNKNOWN']);
 const NATIVE_PSQL_STATES = Object.freeze({
   '22003':'SQL_RANGE', '22023':'SQL_PARAMETER', '22P02':'SQL_TEXT_FORMAT',
   '23502':'SQL_NOT_NULL', '23503':'SQL_FOREIGN_KEY', '23505':'SQL_UNIQUE',
@@ -625,11 +625,13 @@ async function compareCurrentGridSuccessor({ psql, runSql, source, accountSource
 // Its real 673 model builders and normal checkpoint saver supply the fixtures.
 export async function runNativeCheckpointSqlComparison({ repositoryRoot,
   sourceDocumentAt, atHour, saveCheckpoint, includeStatisticsRevision = false,
-  includeNativeIdentity = false, includeCurrentMemoryWarmup = false, includeEstablishedNativeCurrentOrigin = false } = {}) {
+  includeNativeIdentity = false, includeCurrentMemoryWarmup = false, includeEstablishedNativeCurrentOrigin = false, includeAssistantSameH0 = false } = {}) {
   assert.equal(typeof includeStatisticsRevision,'boolean');
   assert.equal(typeof includeNativeIdentity,'boolean');
   assert.equal(typeof includeCurrentMemoryWarmup,'boolean');
   assert.equal(typeof includeEstablishedNativeCurrentOrigin,'boolean');
+  assert.equal(typeof includeAssistantSameH0,'boolean');
+  assert(!includeAssistantSameH0 || includeEstablishedNativeCurrentOrigin,'SAME_H0 requires the genuine frozen140000 phase');
   assert(!includeEstablishedNativeCurrentOrigin || includeCurrentMemoryWarmup,'Established origin requires every unchanged historical native phase');
   assert(!includeCurrentMemoryWarmup || (includeNativeIdentity && includeStatisticsRevision), 'CurrentMemoryWarmup requires every unchanged historical native phase');
   assert(!includeNativeIdentity || includeStatisticsRevision, 'NEW requires the unchanged statistics230 phase');
@@ -906,15 +908,23 @@ select public.native_checkpoint_attempt(${baseline},${version},(select payload f
     let establishedNativeCurrentOrigin;
     if (includeEstablishedNativeCurrentOrigin) {
       nativePhase='ESTABLISHED_NATIVE_CURRENT_ORIGIN';
-      const {compareEstablishedNativeCurrentOriginSuccessor}=await import('./established-native-current-origin-postgres.mjs');
-      establishedNativeCurrentOrigin=await compareEstablishedNativeCurrentOriginSuccessor({
-        psql,runSql,root,sourceDocumentAt,atHour,saveCheckpoint});
+      const {withFrozenEstablishedNativeCurrentOriginPostgresSource}=await import('../run-frozen-established-native-current-origin-source-targets.mjs');
+      establishedNativeCurrentOrigin=await withFrozenEstablishedNativeCurrentOriginPostgresSource(async({adapter,factory})=>
+        adapter.compareEstablishedNativeCurrentOriginSuccessor({psql,runSql,root,
+          sourceDocumentAt:factory.sourceDocumentAt,atHour:factory.atHour,saveCheckpoint:factory.saveRavScoreContinuationCheckpoint}));
+    }
+    let assistantSameH0;
+    if(includeAssistantSameH0){
+      nativePhase='ASSISTANT_SAME_H0';
+      const {compareAssistantSameH0Successor}=await import('./assistant-same-h0-postgres.mjs');
+      assistantSameH0=await compareAssistantSameH0Successor({psql,runSql,root,sourceDocumentAt,atHour,saveCheckpoint});
     }
     return {kind:'NATIVE_POSTGRES_CHECKPOINT_CAS_COMPARISON',accountAssistant,currentGrid,
       ...(includeStatisticsRevision?{statisticsRevision}:{}),
       ...(includeNativeIdentity?{nativeIdentity}:{}),
       ...(includeCurrentMemoryWarmup?{currentMemoryWarmup}:{}),
       ...(includeEstablishedNativeCurrentOrigin?{establishedNativeCurrentOrigin}:{}),
+      ...(includeAssistantSameH0?{assistantSameH0}:{}),
       issuedSource:issued.sourceReceipt,postgresMajorVersion:programs.majorVersion,
       tcpEnabled:false,normalModelPartCount:673,sqlExecuted:true,migrationExecuted:true,
       migrationSQLSha256:hash(newSource),caseCount:reports.length,
