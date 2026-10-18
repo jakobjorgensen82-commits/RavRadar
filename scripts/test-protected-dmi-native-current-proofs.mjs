@@ -1,7 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
-import { assertCurrentHistoryRawRetentionOrder, inverseCurrentHistoryRawRetentionOrder }
+import { assertCurrentHistoryRawRetentionOrder, inverseCurrentHistoryRawRetentionOrder,
+  inverseCurrentFamilyColdStartWorkflow }
   from './lib/completed-private-runtime-workflow-review.mjs';
 import { inspectDmiForecastGridSampling } from './lib/dmi-forecast-store.mjs';
 import { assertDmiPartHourlyGridSamplingApplicable } from './lib/ravscore-production-adapters.mjs';
@@ -1021,8 +1022,10 @@ test('actual committed RAW demand follows the materialized generation before leg
   const { readFile } = await import('node:fs/promises');
   const { PRIVATE_RUNTIME_PRODUCER_SOURCE_FILES, PRIVATE_RUNTIME_CONTRACT_FILES } =
     await import('./private-production-runtime-workflow.mjs');
-  const workflow = (await readFile(new URL('../.github/workflows/reusable-weather-build.yml', import.meta.url),
-    'utf8')).replaceAll('\r\n', '\n');
+  // Qualify the complete reviewed C afterimage before the unchanged f644
+  // order oracle; mutations never enter this exact whole-workflow inverse.
+  const workflow = inverseCurrentFamilyColdStartWorkflow((await readFile(new URL('../.github/workflows/reusable-weather-build.yml', import.meta.url),
+    'utf8')).replaceAll('\r\n', '\n'), 'build');
   assertCurrentHistoryRawRetentionOrder(workflow);
   const name = '      - name: Plan bounded current history from the actual selected continuation\n';
   assert.equal(workflow.split(name).length - 1, 1);

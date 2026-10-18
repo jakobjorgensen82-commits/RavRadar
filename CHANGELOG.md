@@ -1,3 +1,13 @@
+## 18. oktober — kildekontrollens testværter skal følge den faktiske indgang
+
+Ejeren har igen præciseret, at historikken gerne må begynde fra nu. Gamle strømtimer og gammel strømhukommelse må ikke være en forudsætning for den første nye generation. De gamle originaler bevares som arkiv; manglende ny historik skal behandles ærligt og derefter opbygges fremad. Historiske kildekodeprøver er ikke et krav om at sammenføje gamle vejrtimer.
+
+Den første præcise PR664-kontrol bestod native Linux og PostgreSQL, men fejlede i tre normale kommandogrupper. De konkrete afslag var gamle updater-inverser, manglende ny kontekst i testværter samt workflow-/kommandolistens præcise forventninger. Kun fem testfiler er rettet; alle gamle kildepins, kontroludsagn og mutationsafslag bevares. De tre berørte normale kommandogrupper består nu samlet lokalt med 328 beståede prøver, nul fejl og to dokumenterede udeladelser: den eksisterende særskilte storfilprøve og Linux-shellprøven. Produktguard, model, originaler, workflow og SQL-semantik er uændrede. Ny samlet kontrol på rettelsens præcise head kræves før merge eller aktivering.
+
+En særskilt privat prøve har gennemført første beregning og to almindelige efterfølgere for 673 kunstige dele med normale 121-timers PART-pakker og faktisk B/S-gemning/genlæsning. De gemte H0-beviser bruger de nye strømdata i begge hukommelser. Den oprindelige afsluttende testværtsfejl bevares; en separat, eksakt inputkvalifikation og genlæsning består. Dette er ikke faktisk landsgeometri, leverandørhentning, fuld offentlig payload, samlet kapacitet eller produktionseffekt.
+
+Seks timers jobloft er ikke en samlet fasegaranti. Den nye indgang har ikke den gamle epoch-vejs særskilte efterbehandlingsreserve, og denne robusthedsrest må ikke kaldes lukket. Den større model-/databaseovergang forbliver inaktiv. Offentligt vejr er fortsat senest verificeret fra 16. oktober kl. 12 dansk tid, cron er slået fra, og alle fem hovedmål er åbne. Det private checkpoint ejer den detaljerede, nyere kørselsevidens; ældre afventninger nedenfor er dateret historik.
+
 ## 18. oktober — én samlet genopretningsvej under den installerede datafamilie
 
 PR663 har faktisk bestået hele sin præcise kildekontrol og er merget med identisk træ. Det lukker kildeleveringen af de to konkrete RAW-cachefejl, ikke vejrhentningens P0. Offentligt vejr er senest verificeret fra 16. oktober kl. 12 dansk tid; cron forbliver pauset, og alle fem hovedmål er åbne.

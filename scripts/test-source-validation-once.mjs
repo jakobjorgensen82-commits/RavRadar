@@ -14,6 +14,37 @@ const scripts = JSON.parse(fs.readFileSync('package.json', 'utf8')).scripts;
 const plan = buildSourceValidationPlan(scripts);
 const declared = expandSourceCommands(scripts, 'validate:source:checks');
 
+// The new normal adapter check is additive, exact and first. Only its one
+// qualified command is inverted before the unchanged historical inventory.
+const coldSupervisorName = 'test:current-family-cold-supervisor';
+const coldSupervisorCheck = 'node --test scripts/test-current-family-cold-supervisor-wrapper.mjs';
+const coldSupervisorPrefix = 'npm run ' + coldSupervisorName + ' && ';
+function inverseReviewedColdSupervisorCommand(actualScripts) {
+  assert.equal(actualScripts[coldSupervisorName], coldSupervisorCheck,
+    'The actual C supervisor group must retain its exact normal target.');
+  assert.ok(actualScripts['validate:source:checks'].startsWith(coldSupervisorPrefix),
+    'The exact C supervisor group must remain the first declared source check.');
+  const commands = expandSourceCommands(actualScripts, 'validate:source:checks');
+  assert.equal(commands.filter(command => command === coldSupervisorCheck).length, 1,
+    'The exact C supervisor command must execute once, never be dropped or duplicated.');
+  assert.deepEqual(commands.slice(0, 1), [coldSupervisorCheck]);
+  return commands.slice(1);
+}
+const baselineDeclared = inverseReviewedColdSupervisorCommand(scripts);
+assert.deepEqual([coldSupervisorCheck, ...baselineDeclared], declared,
+  'The inverse must preserve every other command byte, order and duplicate count.');
+for (const changes of [
+  { [coldSupervisorName]: undefined },
+  { [coldSupervisorName]: coldSupervisorCheck + ' --test-concurrency 2' },
+  { 'validate:source:checks': scripts['validate:source:checks'].slice(coldSupervisorPrefix.length) },
+  { 'validate:source:checks': coldSupervisorPrefix + scripts['validate:source:checks'] },
+  { 'validate:source:checks': scripts['validate:source:checks'].slice(coldSupervisorPrefix.length)
+    + ' && npm run ' + coldSupervisorName },
+  { 'validate:source:checks': coldSupervisorCheck + ' && '
+    + scripts['validate:source:checks'].slice(coldSupervisorPrefix.length) },
+  { 'test:ravscore-source-critical': coldSupervisorCheck + ' && ' + scripts['test:ravscore-source-critical'] },
+]) assert.throws(() => inverseReviewedColdSupervisorCommand({ ...scripts, ...changes }));
+
 // Historical assertions retain their actual immutable source, not a package
 // projection retagged as current. The normal host verifies every materialized
 // leaf and the complete native0600 migration catalog before this callback.
@@ -136,7 +167,7 @@ for (const check of mapTimelineChecks)
 const mapTimelineAt = declared.indexOf(mapTimelineAnchor);
 assert.deepEqual(declared.slice(mapTimelineAt, mapTimelineAt + 3),
   [mapTimelineAnchor, ...mapTimelineChecks], 'Both timeline commands keep their normal additive position.');
-assert.deepEqual(declared.filter(command => !mapTimelineChecks.includes(command)),
+assert.deepEqual(baselineDeclared.filter(command => !mapTimelineChecks.includes(command)),
   historicalDeclared.flatMap(command => replaced.get(command) ?? [command]),
   'Preserve every baseline command, order and duplicate count except the six exact historical routes and three separate warmup checks.');
 for (const check of [issuedCheck, frozenCurrentCheck, diagnosticCheck, currentBuilder, originBuilder, originTargets, originFollowers,
@@ -176,6 +207,7 @@ assert.equal((fs.readFileSync('scripts/source-critical-gate.mjs', 'utf8').match(
 const invokedFiles = declared.flatMap(command => command.split(' ').filter(argument =>
   /^scripts\/test-[A-Za-z0-9_.-]+\.mjs$/.test(argument)));
 for (const file of [
+  'scripts/test-current-family-cold-supervisor-wrapper.mjs',
   'scripts/test-progressive-public-conditions-4.0.216.mjs',
   'scripts/test-public-nonblocking-forecast-4.0.83.mjs',
   'scripts/test-map-zoom-refresh-4.0.88.mjs',

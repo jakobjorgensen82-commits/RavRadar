@@ -4,6 +4,7 @@ import path from 'node:path';
 import vm from 'node:vm';
 import test from 'node:test';
 import * as normalDmiRecord from './lib/private-dmi-recovery-record.mjs';
+import { currentFamilyColdStartScalarRecord } from './current-family-cold-start.mjs';
 import { OPEN_METEO_NATIVE_NEAREST_POLICIES } from './lib/open-meteo-part-bank.mjs';
 import { applyVerifiedWaterSourceRoutingToPartHourly } from './lib/water-source-forecast-routing.mjs';
 import { assertDmiPartHourlyGridSamplingApplicable, verifiedIntegratedPartHourly,
@@ -56,6 +57,7 @@ test('normal PART production plans on current central identity and passes the pr
     deployedDmiBulkCache: {}, liveCurrentPilot: {}, previous: {}, previousPrivateCandidateGRuntime: null,
     coastalPointStateInjections: {}, ravScoreCheckpoint: { loaded: false },
     historicalWaveInputTransition: null, stateEpochView: null,
+    currentFamilyColdStart: null, coldInputs: null,
     readEstablishedNativeCurrentOrigin: async contract => {
       assert.equal(planned, true, 'fixed origin read follows prepared normal inputs');
       assert.equal(contract, context.coastalPartsContract);
@@ -183,6 +185,7 @@ test('scalar planning and public current scoring use their own exact applicabili
   const scoreEnd = source.indexOf('\n      if (routedWater.diagnostic)', scoreStart);
   assert.ok(planningEnd > start && scoreStart >= 0 && scoreEnd > scoreStart);
   const common = { path, process: ordinaryProcess, generatedAt: at, liveCurrentPilot: null,
+    currentFamilyColdStart: null, coldInputs: null,
     applyVerifiedWaterSourceRoutingToPartHourly, assertDmiPartHourlyGridSamplingApplicable,
     verifiedIntegratedPartHourly, verifiedBulkCurrent, dmiExpectedIdentityForPart,
     mergeActiveNativeLiveCurrentPilotIntoRecord,
@@ -443,8 +446,10 @@ test('epoch scalar bridge reaches actual score/preflight/proxy and packed121 row
     const planningRecords = new Map([[selectedPart.partId, record]]), weatherComponents = {inputs: {}};
     // This source-boundary seam starts AFTER genuine archive/view admission.
     // A sentinel here exercises only route selection, not a fake epoch brand.
-    Function('stateEpochView', 'planningRecords', 'weatherComponents', 'withoutCurrent', setup)(
-      epoch ? {} : null, planningRecords, weatherComponents, normalDmiRecord.withoutCurrent);
+    Function('stateEpochView', 'planningRecords', 'weatherComponents', 'withoutCurrent',
+      'currentFamilyColdStart', 'currentFamilyColdStartScalarRecord', setup)(
+      epoch ? {} : null, planningRecords, weatherComponents, normalDmiRecord.withoutCurrent,
+      null, currentFamilyColdStartScalarRecord);
     assert.equal(planningRecords.size, 0, 'the ordinary bounded planning map is still released');
     return weatherComponents.inputs;
   };

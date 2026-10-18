@@ -1,3 +1,4 @@
+import { inverseAlternativeCCaller } from './lib/alternative-c-caller-test-input.mjs';
 import assert from 'node:assert/strict';
 import { inverseCompletedRuntimeWorkflow } from './lib/completed-private-runtime-workflow-review.mjs';
 import { spawnSync } from 'node:child_process';
@@ -486,6 +487,7 @@ assert.throws(() => buildIntegratedPartScoreSeries({
 
 const updater = (await fs.readFile(new URL('./update-weather.mjs', import.meta.url), 'utf8'))
   .replaceAll('\r\n', '\n');
+const ordinaryUpdater = inverseAlternativeCCaller(updater, 'scripts/update-weather.mjs');
 // Reuse only the existing pure inverse, not the entrypoint target's top-level tests.
 // Its whole-source SHA keeps these historical assertions bound to genuine 903307.
 const entrypointOracle = (await fs.readFile(
@@ -499,7 +501,7 @@ const inverseDependencyStart = entrypointOracle.indexOf('const establishedNative
 assert.ok(inverseDependencyStart >= 0 && inverseDependencyStart < inverseStart);
 const historicalUpdater = runInNewContext(
   entrypointOracle.slice(inverseDependencyStart, inverseEnd) + '\ninverseWeatherStateEpochIntegration;', { assert, digest },
-)(updater);
+)(ordinaryUpdater);
 assert.equal(digest(historicalUpdater),
   '62bbe6eb4325dcba05afb922028150a9bdf7c45f2ebd7a7e975d85f3941d6288');
 const bulkUpdater = await fs.readFile(new URL('./update-dmi-bulk.py', import.meta.url), 'utf8');
@@ -1009,7 +1011,7 @@ function assertEpochCalculationRouting(source) {
     }
   }
 }
-assertEpochCalculationRouting(updater);
+assertEpochCalculationRouting(ordinaryUpdater);
 for (const [from, to] of [
   ['? stateEpochView.candidateGBootstrapMode :', '? RAVSCORE_EFFECTIVE_FIRST_CUTOVER_BOOTSTRAP_MODE :'],
   ['? stateEpochView.candidateGSourceValidated :', '? true :'],
@@ -1018,8 +1020,8 @@ for (const [from, to] of [
   ['const previousPrivateCandidateGRuntime = stateEpochView !== null || historicalWaveInputTransition',
     'const previousPrivateCandidateGRuntime = historicalWaveInputTransition'],
 ]) {
-  assert.equal(updater.split(from).length, 2, 'each routing mutation must change one actual source site');
-  assert.throws(() => assertEpochCalculationRouting(updater.replace(from, to)));
+  assert.equal(ordinaryUpdater.split(from).length, 2, 'each routing mutation must change one actual source site');
+  assert.throws(() => assertEpochCalculationRouting(ordinaryUpdater.replace(from, to)));
 }
 
 assert.ok(
