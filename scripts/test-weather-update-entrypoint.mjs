@@ -1,3 +1,4 @@
+import {inverseAssistant583SourceScripts} from './lib/assistant583-source-command-review.mjs';
 import { inverseAlternativeCCaller } from './lib/alternative-c-caller-test-input.mjs';
 import assert from 'node:assert/strict';
 import crypto from 'node:crypto';
@@ -742,7 +743,7 @@ test('47 baseline commands plus genuine OLD, NEW native, epoch and pure diagnost
 });
 
 test('current frozen routes and warmup checks reach normal checkpoint integration exactly once', async () => {
-  const scripts = JSON.parse(await fs.readFile(new URL('../package.json', import.meta.url), 'utf8')).scripts;
+  const scripts = inverseAssistant583SourceScripts(JSON.parse(await fs.readFile(new URL('../package.json', import.meta.url), 'utf8')).scripts);
   const { expandSourceCommands } = await import('./validate-source-once.mjs');
   const commands = expandSourceCommands(scripts, 'validate:source:checks');
   for (const check of [

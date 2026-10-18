@@ -5,8 +5,8 @@ import crypto from 'node:crypto';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { establishedNativeCurrentOriginMigration, readEstablishedNativeCurrentOriginCanonicalSource }
-  from './lib/established-native-current-origin-successor-source.mjs';
+import { ASSISTANT_SAME_H0_BINDING,assistantSameH0Migration,readAssistantSameH0CanonicalSource,requireAssistantSameH0Output }
+  from './lib/assistant-same-h0-successor-source.mjs';
 import {
   assertRavScoreModelBinding,
   ravScoreModelBinding,
@@ -31,7 +31,7 @@ const SQL_BINDING_PATHS = Object.freeze([
   'supabase/INSTALL-RAVRADAR-4.0.56-SECURITY.sql',
 ]);
 const CHECKPOINT_METADATA_CAS_MIGRATION_PATH =
-  'supabase/migrations/' + establishedNativeCurrentOriginMigration().filename;
+  ASSISTANT_SAME_H0_BINDING === null ? null : 'supabase/migrations/' + assistantSameH0Migration().filename;
 const CHECKPOINT_METADATA_CAS_MARKER = 'RAVSCORE_CHECKPOINT_METADATA_CAS_GENERATED';
 const CHECKPOINT_METADATA_CAS_INNER_MARKERS = Object.freeze([
   'RAVSCORE_CHECKPOINT_INTEGRATED_STATE_BINDING_GENERATED',
@@ -120,14 +120,18 @@ export function checkpointMetadataCasBlock(source, binding, candidateBinding, co
   const originalAliases=[
     ['public.ravradar_ravscore_checkpoint_cmw0200_state_valid','7841b008be46efc651c3c416ded60145fa2265954a39020a50974b353ac3feb0'],
     ['public.ravradar_ravscore_checkpoint_cmw0200_payload_valid','225de0e8252fa5ab814432a0ce0424ecc663d2552062f2b341b7cbab8054dbaa'],
+    ['public.ravradar_ravscore_checkpoint_origin140000_state_valid','555e474c30be69459a42ad8bf64a8f14f675acc0fc383ce6f55f56ecd93d0cd7'],
+    ['public.ravradar_ravscore_checkpoint_origin140000_payload_valid','fb3ed93b7ced924d4e7f96c0163fe384616a17194d4e1ec82c4ff5cb7488738e'],
   ];
-  if(originalAliases.some(([name])=>source.includes('function '+name+'('))){
-    for(const [name,pin]of originalAliases){
+  for(const group of [originalAliases.slice(0,2),originalAliases.slice(2)]){
+   if(group.some(([name])=>source.includes('function '+name+'('))){
+    for(const [name,pin]of group){
       const original=exactFunctionDefinition(currentView,name,label+' frozen0200 original');
       assert.equal(crypto.createHash('sha256').update(original.text).digest('hex'),pin,
         'Whole original0200 alias changed');
       currentView=currentView.slice(0,original.start)+currentView.slice(original.end);
     }
+   }
   }
   const validationOuter=exactGeneratedBlock(currentView,CHECKPOINT_METADATA_CAS_MARKER,label);
   const innerBlocks = Object.fromEntries(CHECKPOINT_METADATA_CAS_INNER_MARKERS.map(marker => [
@@ -297,6 +301,7 @@ function synchronizeAccountSchema(source, accountSource, relative) {
 }
 
 export async function synchronizeRavScoreModelBinding({ write = false, root = ROOT } = {}) {
+  requireAssistantSameH0Output();
   const binding = ravScoreModelBinding();
   assertRavScoreModelBinding(binding);
   const candidateBinding = candidateGRollbackModelBinding();
@@ -305,7 +310,7 @@ export async function synchronizeRavScoreModelBinding({ write = false, root = RO
 
   // Sparse immutable successor is reconstructed only as a pinned READ view.
   const { canonicalSource: checkpointMigration, statisticsSchema2Source: accountSource } =
-    await readEstablishedNativeCurrentOriginCanonicalSource({ migrationsDirectory: path.join(root, 'supabase/migrations') });
+    await readAssistantSameH0CanonicalSource({ migrationsDirectory: path.join(root, 'supabase/migrations') });
   const checkpointBlock = checkpointMetadataCasBlock(
     checkpointMigration,
     binding,
@@ -431,7 +436,7 @@ if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.me
   try {
     const write = process.argv.includes('--write');
     const result = await synchronizeRavScoreModelBinding({ write });
-    console.log(`RavScore binding ${write ? 'synchronized' : 'verified'} for ${JSON_BINDING_FILES.length + SQL_BINDING_PATHS.length + 4} consumers: ${result.binding.modelBundleSha256}.`);
+    console.log(`RavScore binding ${write ? 'synchronized' : 'verified'} for ${JSON_BINDING_FILES.length + SQL_BINDING_PATHS.length + 3} consumers: ${result.binding.modelBundleSha256}.`);
   } catch (error) {
     console.error(error instanceof Error ? error.message : 'RavScore binding synchronization failed');
     process.exitCode = 1;

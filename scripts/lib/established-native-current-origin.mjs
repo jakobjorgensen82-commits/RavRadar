@@ -23,14 +23,20 @@ import { assertIntegratedCoastalPointContinuation } from './coastal-point-stagin
 import { assertCandidateGRollbackContinuation } from './ravscore-candidate-g-rollback-runtime.mjs';
 import { ownFileDescriptorIdentity, ownedFileDescriptorClosed } from './private-weather-component-pack.mjs';
 import { withNativeCurrentReanalysisPredecessorSource } from '../check-native-current-reanalysis-predecessor-source.mjs';
+import { assertAuthenticatedFrozen140000Snapshot } from './authenticated-frozen140000-predecessor.mjs';
 
-export const ESTABLISHED_NATIVE_CURRENT_SEMANTIC_CONTRACT = 'established-native-current-continuation-v1';
+// Generated I038 retains its genuine v1/default behavior while this source is
+// still unissued. This is a DENIAL gate, never metadata or source authority.
+const ORIGINAL140000_I='038d9b0cdc50d36dd10f207c6f33e909ddedbdacb28c89adbca12121cb2c7f5f';
+export const ESTABLISHED_NATIVE_CURRENT_SEMANTIC_CONTRACT =
+  ravScoreModelBinding().modelBundleSha256 === ORIGINAL140000_I
+    ? 'established-native-current-continuation-v1' : 'established-native-current-continuation-v2';
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
 const ATTEST = 'privateEstablishedNativeCurrentOrigin';
 const KIND = 'PRIVATE_ESTABLISHED_NATIVE_CURRENT_ORIGIN';
 const SHA = /^[a-f0-9]{64}$/, HEAD = /^[a-f0-9]{40}$/;
 const MB = 1024 * 1024, MAX_ATTEST = 16 * 1024, MAX_CONDITIONS = 256 * MB;
-const contexts = new WeakMap(), failedCloses = new Map();
+const contexts = new WeakMap(), failedCloses = new Map(), metadataConsumed = new WeakSet();
 const exec = promisify(callbackExec);
 const canonical = value => JSON.stringify(value, (_key, nested) => nested && typeof nested === 'object'
   && !Array.isArray(nested) ? Object.fromEntries(Object.keys(nested).sort().map(key => [key, nested[key]])) : nested);
@@ -188,7 +194,9 @@ function validateAttestation(attest, { descriptor, conditions, central, pairs, c
     && exact(attest.producer, Object.keys(currentSource))
     && same({ ...attest.producer, sourceHead: currentSource.sourceHead }, currentSource)
     && attest.producer.sourceHead === descriptor.sourceHead, 'ATTESTED_SOURCE');
-  need(['SEED_METADATA_ONLY', 'NORMAL_STRICT_CONTINUATION'].includes(attest.transition), 'TRANSITION');
+  need((ESTABLISHED_NATIVE_CURRENT_SEMANTIC_CONTRACT === 'established-native-current-continuation-v1'
+    ? ['SEED_METADATA_ONLY', 'NORMAL_STRICT_CONTINUATION']
+    : ['SEED_METADATA_ONLY', 'NORMAL_STRICT_CONTINUATION', 'SAME_H0_MODEL_METADATA']).includes(attest.transition), 'TRANSITION');
   if (attest.transition === 'SEED_METADATA_ONLY') need(attest.parent.bundleContentSha256 === SEED.B
     && attest.parent.generationSha256 === SEED.S && attest.parent.attestationSha256 === null
     && attest.referenceAt === SEED.referenceAt && attest.datasetId === SEED.datasetId, 'SEED_PARENT');
@@ -218,6 +226,7 @@ async function readOrigin(centralContract, seedOnly) {
   const checkpointRequest = createProtectedRavScoreCheckpointRequester();
   const before = await readPointer(request), descriptor = before.pointer.current;
   const seed = descriptor.bundleContentSha256 === SEED.B;
+  if (seed) need(ESTABLISHED_NATIVE_CURRENT_SEMANTIC_CONTRACT === 'established-native-current-continuation-v1', 'SEED_ALREADY_ISSUED');
   if (seedOnly) need(seed, 'SEED_CONTENT_CHANGED');
   let conditions = seedOnly ? null : await json(path.join(ROOT, 'data/live/conditions.json'), MAX_CONDITIONS);
   // Unknown/legacy input retains its OLD normal transitions; a claimed clean
@@ -315,6 +324,7 @@ export async function readEstablishedNativeCurrentOrigin(centralContract) {
 // reject the wrong workflow; the exact immutable B/S remain the authority.
 export async function readEstablishedNativeCurrentSeedOrigin() {
   need(arguments.length === 0, 'ARGUMENTS');
+  need(ESTABLISHED_NATIVE_CURRENT_SEMANTIC_CONTRACT === 'established-native-current-continuation-v1', 'SEED_ALREADY_ISSUED');
   for (const [key, value] of Object.entries({ GITHUB_WORKFLOW: 'Deploy RavRadar code-only repair',
     GITHUB_EVENT_NAME: 'workflow_dispatch', GITHUB_REF: 'refs/heads/main', GITHUB_RUN_ATTEMPT: '1',
     RAVRADAR_ESTABLISHED_NATIVE_CURRENT_ORIGIN_WRITER_ACTIVE: 'false',
@@ -377,4 +387,67 @@ export async function buildEstablishedNativeCurrentOriginAttestation(handle, { c
   need(Buffer.byteLength(canonical(attest)) <= MAX_ATTEST, 'ATTESTATION_SIZE');
   context.finalized = true;
   return freeze(attest);
+}
+
+// Explicit later binding event. ONLY the separate fixed authenticated OLD140000
+// snapshot can authorize it; ordinary/seed handles and serialized data cannot.
+// This grants neither normal ForPart nor fabricated strict-production results.
+export async function buildEstablishedNativeCurrentSameH0MetadataAttestation(handle, options) {
+  need(arguments.length === 2 && exact(options, ['centralContract', 'conditions']), 'ARGUMENTS');
+  need(ravScoreModelBinding().modelBundleSha256 !== ORIGINAL140000_I, 'METADATA_UNISSUED');
+  const old = assertAuthenticatedFrozen140000Snapshot(handle);
+  need(!metadataConsumed.has(handle), 'METADATA_ALREADY_CONSUMED');
+  // The I038 comparison above only denies the unissued branch. Admission
+  // additionally requires BOTH complete normal generated-model checks, not a
+  // caller tuple/flag or a hash inequality. No static builder/NEXT import may
+  // make this bound source depend on its own generated checksum.
+  const builders = ['scripts/build-candidate-g-rollback-bundle.mjs', 'scripts/build-ravscore-model-bundle.mjs'];
+  await git(['diff', '--exit-code', 'HEAD', '--', ...builders,
+    'scripts/lib/model-source-imports.mjs', 'scripts/lib/static-module-closure.mjs']);
+  for (const builder of builders) await exec(process.execPath, [path.join(ROOT, builder), '--check'],
+    { cwd: ROOT, env: sourceEnv(), encoding: 'utf8', maxBuffer: 2 * MB, timeout: 60000 });
+  const currentSource = await sourceIdentity();
+  const oldI = old.checkpoint.modelBinding, oldC = old.checkpoint.candidateGRollbackCompanion.modelBinding;
+  const contracts = await privateRuntimeContractHashes();
+  need(currentSource.integrated !== oldI.modelBundleSha256
+    && currentSource.candidate !== oldC.modelBundleSha256
+    && currentSource.continuation !== old.checkpoint.continuationStateContractSha256, 'METADATA_UNISSUED');
+  need(same({ ...oldI, modelBundleSha256: currentSource.integrated }, ravScoreModelBinding())
+    && same({ ...oldC, modelBundleSha256: currentSource.candidate }, candidateBinding())
+    && same({ ...old.descriptor.contractHashes,
+      continuationStateContractSha256: currentSource.continuation }, contracts), 'METADATA_CONTRACT_CHANGED');
+  const { centralContract, conditions } = options;
+  need(same(centralContract, old.centralContract), 'METADATA_REGISTRY_CHANGED');
+  const parts = registryParts(centralContract), pairs = pairsFromConditions(conditions, parts);
+  need(conditions.datasetId === old.descriptor.datasetId
+    && conditions.productionReferenceAt === old.descriptor.productionReferenceAt
+    && same(conditions[ATTEST], old.attestation), 'METADATA_TARGET_CHANGED');
+  need(old.attestation.semanticContract === 'established-native-current-continuation-v1'
+    && SHA.test(old.attestation.attestationSha256), 'METADATA_PARENT');
+  for (const [id, pair] of pairs) {
+    const oldIntegrated = old.checkpoint.states[id], oldCandidate = old.checkpoint.candidateGRollbackCompanion.states[id];
+    const inverseI = structuredClone(pair.integrated), inverseG = structuredClone(pair.candidate);
+    need(inverseI.modelBundleSha256 === currentSource.integrated, 'METADATA_BINDING');
+    inverseI.modelBundleSha256 = oldIntegrated.modelBundleSha256;
+    if (Object.hasOwn(inverseG, 'modelBundleSha256')) {
+      need(inverseG.modelBundleSha256 === currentSource.candidate, 'METADATA_BINDING');
+      inverseG.modelBundleSha256 = oldCandidate.modelBundleSha256;
+    }
+    need(same(inverseI, oldIntegrated) && same(inverseG, oldCandidate), 'METADATA_NUMERICAL_CHANGE');
+  }
+  // Source/HEAD and physical required blobs must still be the same actual new
+  // normal source after validating every H0 pair. No caller tuple is accepted.
+  need(same(await sourceIdentity(), currentSource), 'SOURCE_CHANGED');
+  const content = { schemaVersion: 1, kind: KIND,
+    semanticContract: ESTABLISHED_NATIVE_CURRENT_SEMANTIC_CONTRACT, seed: { ...SEED },
+    parent: { bundleContentSha256: old.descriptor.bundleContentSha256,
+      generationSha256: old.checkpoint.generationSha256,
+      attestationSha256: old.attestation.attestationSha256 },
+    producer: { ...currentSource }, datasetId: conditions.datasetId, referenceAt: conditions.productionReferenceAt,
+    registrySha256: digest(centralContract), contextRegistrySha256: contextDigest(pairs),
+    pairsSha256: pairsDigest(pairs), transition: 'SAME_H0_MODEL_METADATA' };
+  const attestation = { ...content, attestationSha256: digest(content) };
+  need(Buffer.byteLength(canonical(attestation)) <= MAX_ATTEST, 'ATTESTATION_SIZE');
+  metadataConsumed.add(handle);
+  return freeze(attestation);
 }
