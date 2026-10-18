@@ -1,3 +1,9 @@
+## 18. oktober — PR659's afsluttende kapacitetsprøve
+
+- [x] Bevar den faktiske røde kontrol efter bestået Linux/native, PostgreSQL, kildegennemgang og baseline; ingen proofupload eller merge på det røde udfald.
+- [x] Adskil alene de tre downloader-fixtures' bevarede gamle filer fra faktisk nye destinationer. Bevar alle gamle deadline-, førsteårsags-, luknings- og checkpointassertions samt den faktiske Linux-prøve uden guardmock.
+- [ ] Bestå ny præcis samlet CI, faktisk originalrestore/SAVE, checkpoint-genoptagelse og offentlig levering. Beståede delfaser er ikke genoprettet drift.
+
 ## 18. oktober — PR659 bevarer også ukendte transportinput
 
 - [x] Bevar første faktiske tidlige CI-fejl; reproducer afslag på uregistreret fil i den normale portable prøve.

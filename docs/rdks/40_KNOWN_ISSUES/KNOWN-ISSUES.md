@@ -1,3 +1,7 @@
+## 18. oktober — kapacitetsprøvens transportinput
+
+Den anden PR659-kontrol stoppede i den sidste kapacitetsprøve efter faktisk bestået Linux/native, PostgreSQL, kildegennemgang og baseline. Tre gamle fixtures lod en uregistreret fil optage indkommende destination; det nye korrekte bevaringsafslag kom før den tilsigtede deadline-/cleanupfejl. Kun fixtures adskiller nu gammel original og ny destination. Alle gamle assertions og Linux-signalkrav bevares, produktguard er uændret. Ny præcis CI, egentlig genopretning og offentlig vejrgeneration er stadig åbne; ingen kilde- eller produktionssucces udledes af deltrin.
+
 ## 18. oktober — bevar ukendte filer også i den normale transportprøve
 
 PR659's første præcise kontrol stoppede i en eksisterende transportprøve, der forventede overskrivning af en uregistreret RAW-fil. Den nye bevaringsregel afviser korrekt dette før transport. Den samme fejl er reproduceret lokalt. Prøven bevarer nu den ukendte fil, kræver ingen HTTP ved afslaget og afprøver alle normale download-/signaturkrav på en særskilt ny filsti. Alle 29 portable originaltransportprøver består; produktguard, originaler, model og budgetter er uændrede. Linux/native og resten af den præcise samlede kontrol er stadig åbne.

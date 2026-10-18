@@ -1,3 +1,7 @@
+## 18. oktober 2026 — deadlineprøven skal faktisk nå transporten
+
+En kapacitets-/deadlineprøve kan stoppe før sin tiltænkte fejlgren, når dens gamle fixture samtidig kræver overskrivning af en ukendt fil. Adskil den bevarede gamle original fra en reelt fraværende indkommende destination, og kræv fortsat de oprindelige bytes, inode, første fejl, lukning og checkpointadfærd. Et tidligt sikkerhedsafslag er ikke bevis for mistet førsteårsag i transportens fejlbehandling. Søg alle direkte downloader-fixtures og behold den faktiske Linux-signalprøve; hverken tomt beskyttelsessæt, mock af pladsbevis eller fjernede assertions må skjule sammenstødet. Beståede tidligere CI-faser er ikke et grønt kildebevis, når den sidste obligatoriske fase fejler.
+
 ## 18. oktober 2026 — ny bevaringsregel skal nå den gamle normaltransportprøve
 
 Søg alle normale kald til en ændret cachefunktion, også i exact-restore-målets default-ikke-opt-in-prøve. Hvis den gamle prøve kræver overskrivning af uregistrerede input, skal den nye no-loss-regel prøves som faktisk afslag med uændrede bytes og ingen HTTP. Afprøv derefter alle stadig gældende normale transportkrav på en særskilt fraværende destination. Svæk ikke produktets beskyttelse for at gøre en tidligere forventning grøn. Reproducer første CI-fejl lokalt og behold begge beviser.

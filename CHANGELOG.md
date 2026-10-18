@@ -1,3 +1,7 @@
+## 4.0.581 — 2026-10-18 — kapacitetsprøvens transportinput
+
+PR659's næste kontrol bestod native Linux, PostgreSQL, hele kildegennemgangen og baseline, men stoppede i den afsluttende kapacitetsprøve. Tre fixtures placerede en uregistreret gammel fil på den indkommende destination og nåede derfor ikke længere deres deadline-/fejlbevaringsgren. Kun testinput adskiller nu den bevarede gamle fil fra en faktisk ny destination. Alle eksisterende timeout-, førsteårsags-, luknings-, checkpoint-, byte- og identitetskrav består; produktguard og Linux-prøven omgås ikke. Ny præcis samlet CI og faktisk originalgenopretning/deploy er fortsat påkrævet.
+
 ## 4.0.581 — 2026-10-18 — normal transportprøve følger den nye bevaring
 
 Den første PR659-kontrol stoppede på en ældre test, som krævede overskrivning af en ukendt lokal fil. Prøven kræver nu faktisk bevarelse og ingen HTTP ved afslaget, mens normal frisk download og fravær af exact-restore-indblanding efterprøves på en anden, ny sti. Samme fejl er reproduceret og alle 29 portable transportprøver består. Ingen produktguard eller tidligere gemte data ændres; præcis Linux/native og samlet kildekontrol kræves fortsat.
