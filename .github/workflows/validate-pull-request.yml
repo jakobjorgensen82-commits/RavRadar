@@ -14,7 +14,7 @@ jobs:
   validate:
     name: Source validation and release gate
     runs-on: ubuntu-24.04
-    timeout-minutes: 60
+    timeout-minutes: 75
     steps:
       - uses: actions/checkout@v7
         with:

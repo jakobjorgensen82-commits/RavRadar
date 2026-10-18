@@ -1,3 +1,11 @@
+## 18. oktober — mobilens dagrække leveret; femte dag og replayfejl er ikke lukket
+
+PR655 og rettelsesdeploy 39084415873/1 har faktisk leveret mobilrettelsen med alle efterkontroller. Offentlig browserkontrol ved 375/320 pixels indholdsbredde viser én vandret dagrække uden overflow; skærmbilleder er gemt privat. Fysisk Safari er ikke afprøvet. Den femte dag mangler, fordi det genbrugte datasæt slutter 21. oktober kl. 09 dansk tid, ikke på grund af labelrækken. Ny gyldig generation mangler stadig.
+
+Standardaudit 39083683060/1 har faktisk målt 833 fraværende egne samplingkvitteringer efter B-state blandt 55.195 traditionelt originalbeviste strømrækker. Ingen modstridende/kildeugyldige og ingen ukendte ved/før B-state er målt. Det identificerer ikke den normale fejlrække, syv bestemte zoner, en bestemt leverandørgren eller et nødvendigt RAW-behov. Ældre bevarede kilder kan mangle kvitteringer uden at deres originaler er ugyldige; nye forbrugsgrænser skal stadig bestå.
+
+Den særskilte lokale, inaktive diagnoseforbedring knytter kun et faktisk reproduceret forward-gate-input til normale donor-/original- og continuity-kategorier. Alle probes bruger uændret replay; anden prefixguard giver intet lokaliseringsbevis. Den oprindelige fejl genkastes før enhver slutbygning, og en gate-række udnævnes ikke til endelig valgt unionvinder. Ingen guardlempelse, ny attest, retag, nulstilling, RAW-hentning eller produktion følger af lokal diagnosekode. Den brede gamle preflight er ikke det normale efter-H0-valg og må ikke bruges som nødvendighedsplan. Præcis kildekontrol, faktisk diagnose, årsagsrettelse og ny offentlig generation er åbne; cron og tilbageholdte leverancer er inaktive. Tidligere daterede leveringsafventninger nedenfor er historik.
+
 ## 18. oktober — PR656's afgrænsede kildeprøvefejl
 
 Den første præcise CI bestod native PostgreSQL og gennemførte kildeplanen med én fejlet kommandogruppe. To normale VM-kaldere manglede et credentialfrit procesmiljø til diagnosens default-OFF-flag. Kun VM-scopes er tilpasset; hele deres normale mål består nu fem prøver lokalt uden skip. Alle gamle kontroludsagn og produktkoden bevares. Ny præcis samlet CI og faktisk diagnose mangler; den almindelige vejrhentningsfejl er ikke løst eller omklassificeret af dette. Mobilrettelsens uændrede kildekontrol fortsætter særskilt.

@@ -2418,6 +2418,15 @@ function scoreCoastalPartsRuntime(
             console.error('RAVSCORE_SAVED_CURRENT_REPLAY_AUDIT ' + JSON.stringify(summarizeSavedCurrentReplayGridFailure({
               error, part: { ...part, zoneId }, initialSelection, targetReferenceAt: generatedAt,
               recoverySources, establishedNativeCurrentOrigin,
+              fallbackSource: deployedRecoverySource, preferredSource: progressiveRecoverySource,
+              persistedHourly: persistedDmiPartRows.get(part.partId)?.hourly ?? [],
+              publicHourly: hourly.filter(hour => Date.parse(hour.time) >= targetMs
+                && Date.parse(hour.time) < targetMs + RAVSCORE_PUBLIC_FORECAST_HOURS * 3_600_000),
+              replayCandidate: (sourceRecords, publicHourly) => buildRavScoreRecoveryReplay({
+                part: { ...part, zoneId }, initialState: initialSelection.state,
+                targetReferenceAt: generatedAt, sourceRecords, publicHourly,
+                nativeCadenceHoldHours, requireNativeGridSampling: true, liveCurrentPilot,
+              }),
             })));
           } catch { console.error('RAVSCORE_SAVED_CURRENT_REPLAY_AUDIT_UNAVAILABLE'); }
           savedCurrentReplayDiagnostic.firstError ??= error;

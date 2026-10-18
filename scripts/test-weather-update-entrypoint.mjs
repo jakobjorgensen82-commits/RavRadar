@@ -86,7 +86,18 @@ const savedCurrentReplayUpdaterHunks = [
     "after": "const establishedNativeCurrentOrigin = coastalPartsContract.enabled\n  ? await readEstablishedNativeCurrentOrigin(coastalPartsContract)\n  : null;\nif (process.env.RAVRADAR_SAVED_CURRENT_REPLAY_DIAGNOSTIC === '39066350748-1'\n  && establishedNativeCurrentOrigin === null) throw new Error('SAVED_CURRENT_REPLAY_ORIGIN_REQUIRED');\nconst coastalPartScoreBuild = coastalPartsContract.enabled\n  ? scoreCoastalPartsRuntime(\n    coastalPartsContract,\n"
   }
 ];
+// Additive diagnostic input inverse; the whole153 and older oracles below stay unchanged.
+const savedCurrentForwardGateHunk = {
+  before: "              recoverySources, establishedNativeCurrentOrigin,\n            })));",
+  after: "              recoverySources, establishedNativeCurrentOrigin,\n              fallbackSource: deployedRecoverySource, preferredSource: progressiveRecoverySource,\n              persistedHourly: persistedDmiPartRows.get(part.partId)?.hourly ?? [],\n              publicHourly: hourly.filter(hour => Date.parse(hour.time) >= targetMs\n                && Date.parse(hour.time) < targetMs + RAVSCORE_PUBLIC_FORECAST_HOURS * 3_600_000),\n              replayCandidate: (sourceRecords, publicHourly) => buildRavScoreRecoveryReplay({\n                part: { ...part, zoneId }, initialState: initialSelection.state,\n                targetReferenceAt: generatedAt, sourceRecords, publicHourly,\n                nativeCadenceHoldHours, requireNativeGridSampling: true, liveCurrentPilot,\n              }),\n            })));",
+};
+function inverseSavedCurrentForwardGate(source) {
+  assert.equal(source.split(savedCurrentForwardGateHunk.after).length, 2, 'exact forward gate diagnostic hunk required');
+  return source.replace(savedCurrentForwardGateHunk.after, () => savedCurrentForwardGateHunk.before);
+}
 function inverseSavedCurrentReplayUpdater(source) {
+  if (source.includes('fallbackSource: deployedRecoverySource, preferredSource: progressiveRecoverySource,'))
+    source = inverseSavedCurrentForwardGate(source);
   for (const hunk of [...savedCurrentReplayUpdaterHunks].reverse()) {
     assert.equal(source.split(hunk.after).length, 2, 'each exact replay diagnostic hunk must occur once; exact reviewed positive-origin hunk context required');
     source = source.replace(hunk.after, () => hunk.before);
@@ -930,7 +941,7 @@ test('epoch scalar inverse rejects changed numeric/source routing before all imm
 });
 // New caller admission is separate; no historical whole-source assertion is retagged.
 test('390663 replay diagnostic has an exact whole updater inverse and refuses all missing diagnostic hunks', async () => {
-  const actual = await sourceText(producerPath);
+  const actual = inverseSavedCurrentForwardGate(await sourceText(producerPath));
   assert.equal(digest(actual), 'a748c0fbc5e266ffbe69c21a8ff6953c05b6cee1c5245d798de82e2307002025');
   assert.equal(digest(inverseSavedCurrentReplayUpdater(actual)), '608b795d382d96fed7435ffd9437f589f8771ea742ec65f75053d25059b9d25d');
   for (const hunk of savedCurrentReplayUpdaterHunks) {
@@ -946,7 +957,7 @@ test('normal follower input keeps its whole140000 updater pin without repeating 
   assert(begin >= 0 && end > begin);
   const normalInput = new Function('assert', 'sha', follower.slice(begin, end)
     + '\nreturn normalOriginUpdaterTestInput;')(assert, digest);
-  const actual = await sourceText(producerPath);
+  const actual = inverseSavedCurrentForwardGate(await sourceText(producerPath));
   const oracle = await sourceText(new URL('./test-weather-update-entrypoint.mjs', import.meta.url));
   assert.equal(digest(actual), 'a748c0fbc5e266ffbe69c21a8ff6953c05b6cee1c5245d798de82e2307002025');
   const old = normalInput(actual, oracle);
@@ -955,4 +966,34 @@ test('normal follower input keeps its whole140000 updater pin without repeating 
   assert.throws(() => normalInput(actual + '// unreviewed drift\n', oracle), /whole genuine140000/);
   for (const hunk of savedCurrentReplayUpdaterHunks)
     assert.throws(() => normalInput(actual.replace(hunk.after, () => hunk.before), oracle), /each exact replay diagnostic hunk/);
+});
+
+test('forward gate diagnostic input has a whole153 inverse before every unchanged historical updater oracle', async () => {
+  const actual = await sourceText(producerPath);
+  const check = source => {
+    assert.equal(digest(source), '4e5b24d8f535c6074a6612b402157b8426b08ef20e507d9817b47d45bb32b034');
+    assert.equal(digest(inverseSavedCurrentForwardGate(source)), 'a748c0fbc5e266ffbe69c21a8ff6953c05b6cee1c5245d798de82e2307002025');
+    assert.equal(digest(inverseSavedCurrentReplayUpdater(source)), '608b795d382d96fed7435ffd9437f589f8771ea742ec65f75053d25059b9d25d');
+  };
+  check(actual);
+  for (const [before, after] of [
+    ['fallbackSource: deployedRecoverySource', 'fallbackSource: null'],
+    ['persistedHourly: persistedDmiPartRows.get(part.partId)?.hourly ?? []', 'persistedHourly: []'],
+    ['requireNativeGridSampling: true', 'requireNativeGridSampling: false'],
+    ['buildRavScoreRecoveryReplay({', 'alternativeReplay({'],
+  ]) {
+    const changed = savedCurrentForwardGateHunk.after.replace(before, after);
+    assert.notEqual(changed, savedCurrentForwardGateHunk.after);
+    assert.throws(() => check(actual.replace(savedCurrentForwardGateHunk.after, () => changed)));
+    assert.throws(() => inverseSavedCurrentForwardGate(actual.replace(savedCurrentForwardGateHunk.after, () => changed)), /exact forward gate/);
+  }
+  const follower = await sourceText(new URL('./test-established-native-current-origin-followers.mjs', import.meta.url));
+  const begin = follower.indexOf('function normalOriginUpdaterTestInput(source, oracle) {');
+  const end = follower.indexOf('\nconst P0 =', begin);
+  assert(begin >= 0 && end > begin);
+  const normalInput = new Function('assert', 'sha', follower.slice(begin, end)
+    + '\nreturn normalOriginUpdaterTestInput;')(assert, digest);
+  const oracle = await sourceText(new URL('./test-weather-update-entrypoint.mjs', import.meta.url));
+  assert.equal(normalInput(actual, oracle), inverseSavedCurrentReplayUpdater(actual));
+  assert.throws(() => normalInput(actual + '// unreviewed drift\n', oracle), /whole genuine140000/);
 });

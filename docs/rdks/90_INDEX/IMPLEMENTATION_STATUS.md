@@ -1,3 +1,18 @@
+## 18. oktober — mobil leveret; årsagen til det normale strømstop fortsat åben
+
+- [x] PR655 bestået på præcis kilde og faktisk merget; rettelsesdeploy 39084415873/1 bestod hele efterkæden og sluttede 18. oktober kl. 03.03 dansk tid.
+- [x] Faktisk offentlig browserkontrol ved 375 og 320 pixels indholdsbredde viser én dagrække uden vandret rulning; normalt dagsklik, dato/time og nye cacheadresser er kontrolleret. Offentlige skærmbilleder er gemt privat. Ingen fysisk iPhone/Safari-påstand.
+- [x] Standardaudit 39083683060/1 autentificerede gemte originaler/fremgang og målte 54.362 sammenhængende plus 833 ukendte egne samplingkvitteringer. Ingen modstridende/kildeugyldige; alle 833 efter B-state. Det er ikke replayvalg eller faktisk forbrug.
+- [x] Bevar den første normale fejl og afgræns den lokale default-OFF-diagnose til samme forward-kald, normale prefixprøver, donorbevis og præcist privat continuity-match. Anden prefixguard må ikke fortolkes som succes; en gate-række er ikke en bevist endelig unionvinder.
+- [x] ROOTs endelige normale Node22-mål bestod 45 tilfælde uden fejl/skip på 30,792 sekunder; workflowmål otte og kildebevismål bestod. Lille kildegate bestod med 123 browserfiler og 17+5 Python-prøver; uændret model på 91 filer. Ikke Linux/PostgreSQL-/produktionsbevis.
+- [ ] Bestå ny præcis samlet kildekontrol og udfør én afgørende diagnose af det faktiske 390663/20Z-checkpoint uden ny vejrhentning eller publicering.
+- [ ] Ret den dokumenterede donor-/original-/valgårsag, genoptag sikkert, og bevis ny offentlig vejrgeneration samt almindelig efterfølger før cron.
+- [ ] Den femte prognosedag kræver faktiske nye vejrdata: uændret datasæt slutter 21. oktober kl. 09 dansk tid og giver fire datoer fra den 18. Ingen falsk femte dag.
+
+Mobilens layoutleverance er lukket; vejrstoppet og alle fem hovedmål er ikke lukket. Ingen model-, SQL-, scoreformel-, geometri-, kildeprioritets- eller originalændring. SOURCE19, assistent582 og samlet statistik er inaktive; ældre daterede noter bevares.
+
+Kilde-PR-jobbet får alene en ydre grænse på 75 minutter med uændrede obligatoriske faser, efter den faktisk grønne 56:59-kontrol. Kode-only 60 minutter, vejr- og underprocesbudgetter bevares. Den normale workflowlæser skal fortsat bevise det konkrete krav; dette er ikke gennemført kilde-CI eller ny produktionskapacitet.
+
 ## 18. oktober — VM-kalderrettelse efter faktisk PR656-kildefejl
 
 PR656's første CI bestod Linux/native PostgreSQL, men to VM-prøver i én kildegruppe stoppede på `process is not defined`. Kun deres isolerede miljø er rettet til et fælles, frosset tomt env uden værtsoplysninger. Produktets integrationsudsnit og alle gamle assertions er uændrede. Hele det normale berørte mål består fem prøver uden fejl eller skip på 2,292 sekunder. Dette erstatter kun den lokale testafventning; ny præcis CI, faktisk checkpoint-diagnose, rettelse af driftsfejlen og ny offentlig vejrgeneration er fortsat åbne. PR655 fortsætter uændret og er ikke en fejlet vejrhentning. Ingen model-, SQL- eller produktionsændring.

@@ -13,7 +13,10 @@ import { savedCurrentReplayChildEnvironment, readSavedCurrentReplayProcessReport
 import { summarizeSavedCurrentReplayGridFailure, fixedSavedCurrentReplayGridReport }
   from './lib/saved-current-replay-grid-audit.mjs';
 import { buildDmiForecastHourly, assertDmiForecastGridSamplingApplicable } from './lib/dmi-forecast-store.mjs';
-import { dmiExpectedIdentityForPart } from './lib/ravscore-production-adapters.mjs';
+import { dmiExpectedIdentityForPart, verifiedIntegratedPartHourly } from './lib/ravscore-production-adapters.mjs';
+import { buildRavScoreRecoveryReplay } from './lib/ravscore-recovery-replay.mjs';
+import { buildIntegratedPartScoreSeries } from './lib/ravscore-integrated-runtime.mjs';
+import { buildNewestValidRavScoreRecoverySources, originalCurrentDecoderHistory } from './lib/ravscore-recovery-source-priority.mjs';
 const repo = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const fixtureReport = () => {
   const model = { metadata: { ReferenceAt: 'SAME', MemoryReady: 'FALSE_TO_TRUE', MemoryStatus: 'CHANGED',
@@ -244,7 +247,7 @@ test('390663 exact read guard confines async transport capability and refuses al
   }
 });
 
-async function replayObserverFixture() {
+async function replayObserverFixture(options = {}) {
   const source = (await fs.readFile(new URL('./test-protected-dmi-native-current-proofs.mjs', import.meta.url), 'utf8')).replace(/\r\n/g, '\n');
   const start = source.indexOf("const epoch = Date.parse('2026-09-01T00:00:00.000Z');");
   const end = source.indexOf('\nconst bankFor = fixture =>', start);
@@ -256,7 +259,7 @@ async function replayObserverFixture() {
   assert.equal(fixtureInput.replace(newEpoch, oldEpoch), whole, 'only fixed synthetic test reference changes; whole factory inverse');
   const create = new Function('dmiExpectedIdentityForPart', 'buildDmiForecastHourly',
     'const HOUR=3600000;\n'+fixtureInput+'\nreturn fixture;')(dmiExpectedIdentityForPart, buildDmiForecastHourly);
-  return create();
+  return create(options);
 }
 
 test('actual updater observation control preserves first genuine grid-error identity and never reaches output/finalize/publish', async () => {
@@ -277,12 +280,15 @@ test('actual updater observation control preserves first genuine grid-error iden
   const counters={calls:0,output:0,finalize:0,publish:0};
   const build = (observe=observation, end=failure) => new Function('calls','counters','process','console',
     'summarizeSavedCurrentReplayGridFailure','part','zoneId','initialSelection','generatedAt','recoverySources','establishedNativeCurrentOrigin','contract',
+    'deployedRecoverySource','progressiveRecoverySource','persistedDmiPartRows','buildRavScoreRecoveryReplay',
+    'hourly','targetMs','RAVSCORE_PUBLIC_FORECAST_HOURS','nativeCadenceHoldHours','liveCurrentPilot',
     declaration+`for(const call of calls){try{savedCurrentReplayDiagnostic && savedCurrentReplayDiagnostic.observedParts++;counters.calls++;call();}
       catch(error){${observe}throw error;}}\n`+end+'counters.output++;counters.finalize++;counters.publish++;\n'+close);
   const invoke = (calls, enabled=true, observe=observation, end=failure) => build(observe,end)(calls,counters,
     {env:{RAVRADAR_SAVED_CURRENT_REPLAY_DIAGNOSTIC:enabled?'39066350748-1':''}}, {error:value=>logs.push(value)},
     summarizeSavedCurrentReplayGridFailure,f.part,f.part.zoneId,{source:'EXISTING_INTEGRATED',state:{time:'2026-10-17T18:00:00.000Z'}},
-    SAVED_CURRENT_REPLAY_SCOPE.target,[{record:{hourly:[f.row]}}],null,{partCount:673});
+    SAVED_CURRENT_REPLAY_SCOPE.target,[{record:{hourly:[f.row]}}],null,{partCount:673},
+    null,null,new Map(),buildRavScoreRecoveryReplay,[],Date.parse(SAVED_CURRENT_REPLAY_SCOPE.target),118,0,null);
   // The normal guard constructs these errors. No origin handle is invented:
   // null means safe observation UNAVAILABLE, not a native/authentication grant.
   assert.throws(()=>invoke([()=>{throw first;},()=>{throw second;}]),error=>error===first);
@@ -302,6 +308,179 @@ test('actual updater observation control preserves first genuine grid-error iden
   counters.calls=0;
   invoke([()=>{throw first;}],true,observation,'');
   assert.equal(counters.finalize,1,'missing final refusal is detected by actual output/finalize boundary');
+});
+
+async function forwardGateFixture() {
+  const f = await replayObserverFixture({ nativeHours: [0, 1, 2], target: 1 });
+  const part = { ...f.part, onshoreDirectionDeg: 90 };
+  const raw = buildDmiForecastHourly({ ocean: Object.values(f.bulk.zones[dmiExpectedIdentityForPart(part).entityId].hourly)
+    .map(row => ({ step: row.time, 'current-u': row['current-u'], 'current-v': row['current-v'], provenance: row.sources })),
+    generatedAt: '2026-10-17T18:00:00.000Z', startAt: '2026-10-17T18:00:00.000Z', hours: 3 }).hourly;
+  const hourly = verifiedIntegratedPartHourly({ point: part.waterPoint, hourly: raw }, f.bulk,
+    dmiExpectedIdentityForPart(part).entityId, part, { requireNativeGridSampling: false });
+  const state = buildIntegratedPartScoreSeries({ part, zone: { onshoreDirectionDeg: 90 }, hourly: [hourly[0]] })
+    .ravScoreState.continuationState;
+  const fallbackSource = { source: 'deployed-private-runtime', nativeCurrentContexts: [f.bulk],
+    record: { point: part.waterPoint, hourly } };
+  const recoverySources = buildNewestValidRavScoreRecoverySources({ fallbackSource, part });
+  const publicHourly = [hourly[2]];
+  const replayCandidate = (sourceRecords, publicRows = publicHourly) => buildRavScoreRecoveryReplay({ part, initialState: state,
+    targetReferenceAt: SAVED_CURRENT_REPLAY_SCOPE.target, sourceRecords, publicHourly: publicRows,
+    requireNativeGridSampling: true });
+  let error; try { replayCandidate(recoverySources); } catch (value) { error = value; }
+  assert.equal(error?.code, 'DMI_GRID_SAMPLING_APPLICABILITY_REQUIRED');
+  assert.match(error.stack, /at buildRavScoreRecoveryReplay \([^\n]*ravscore-recovery-replay\.mjs:1084:/);
+  return { f, raw, hourly, input: { error, part, initialSelection: { source: 'EXISTING_INTEGRATED', state },
+    targetReferenceAt: SAVED_CURRENT_REPLAY_SCOPE.target, recoverySources, fallbackSource, preferredSource: null,
+    persistedHourly: raw, replayCandidate, publicHourly,
+    // Data-only diagnostic fixture; no native/origin authority is issued.
+    establishedNativeCurrentOrigin: {} } };
+}
+
+test('normal forward gate prefix identifies the checked input and exact persisted original without claiming a union winner', async () => {
+  const { input } = await forwardGateFixture(), before = JSON.stringify(input.recoverySources);
+  const value = summarizeSavedCurrentReplayGridFailure(input);
+  assert.equal(value.counters.forwardGateLocalized, 1);
+  assert.equal(value.counters.forwardGateInterior, 1);
+  assert.equal(value.counters.forwardGatePriorityOld, 1);
+  assert.equal(value.counters.forwardGatePersistedExactMatch, 1);
+  assert.equal(value.counters.forwardGatePersistedMatchedUnknown, 1);
+  assert.equal(value.counters.forwardGateOldOriginalComplete, 1);
+  assert.equal(value.counters.forwardGateOldUnknown, 1);
+  assert.equal(value.counters.forwardGateNewAbsent, 1);
+  assert.equal(value.actualOffendingRowIdentified, false, 'a checked gate input is not a completed replay-union winner');
+  assert.equal(JSON.stringify(input.recoverySources), before);
+  const safe = fixedSavedCurrentReplayGridReport(value);
+  assert.equal(safe.counters.forwardGateLocalized, 1);
+  assert.doesNotMatch(JSON.stringify(safe), /SYNTHETIC|2026-|currentUMps|itemId|sourceSha/);
+  const differentDerived = structuredClone(input.persistedHourly);
+  differentDerived[1].currentSpeedMps += 1;
+  const notExact = summarizeSavedCurrentReplayGridFailure({ ...input, persistedHourly: differentDerived });
+  assert.equal(notExact.counters.forwardGatePersistedExactMatch, 0, 'derived fields are part of exact current-input equality');
+  assert.equal(notExact.counters.forwardGatePersistedNoExactMatch, 1);
+  const provenanceOnly = input.recoverySources.map(source => ({ ...source, record: { ...source.record,
+    hourly: source.record.hourly.map(row => row.time === input.persistedHourly[1].time ? { ...row, sources: undefined } : row) } }));
+  const noRawSource = summarizeSavedCurrentReplayGridFailure({ ...input, recoverySources: provenanceOnly });
+  assert.equal(noRawSource.counters.forwardGateLocalized, 1);
+  assert.equal(noRawSource.counters.forwardGatePersistedUnavailable, 1, 'currentProvenance alone cannot claim exact raw continuity equality');
+  assert.equal(noRawSource.counters.forwardGatePersistedExactMatch, 0);
+});
+
+test('normal forward gate refuses other prefix stops, non-forward errors and a non-reproduced original error', async () => {
+  const { input } = await forwardGateFixture();
+  let calls = 0;
+  const other = summarizeSavedCurrentReplayGridFailure({ ...input, replayCandidate: sources => {
+    if (++calls > 1) throw new Error('OTHER_PREFIX_STOP_PRIVATE_CANARY');
+    return input.replayCandidate(sources);
+  } });
+  assert.equal(other.counters.forwardGateLocalized, 0);
+  assert.equal(other.counters.forwardGateOtherStop, 1);
+  assert.doesNotMatch(JSON.stringify(other), /PRIVATE_CANARY/);
+  const absent = summarizeSavedCurrentReplayGridFailure({ ...input, replayCandidate: () => ({}) });
+  assert.equal(absent.counters.forwardGateNotReproduced, 1);
+  assert.equal(absent.counters.forwardGateLocalized, 0);
+  let direct; try { assertDmiForecastGridSamplingApplicable(input.recoverySources[0].record.hourly[1].sources.current,
+    'current', input.recoverySources[0].record.hourly[1].time, dmiExpectedIdentityForPart(input.part)); } catch (value) { direct = value; }
+  const wrongSite = summarizeSavedCurrentReplayGridFailure({ ...input, error: direct });
+  assert.equal(wrongSite.counters.forwardGateNotForwardStack, 1);
+  assert.equal(wrongSite.counters.forwardGateProbeCount, 0);
+  // Real replay, not an invented psql/provenance response: whole input stops
+  // on its first UNKNOWN, but an incomplete prefix reaches another source's
+  // existing point guard. The diagnostic must decline localization.
+  const mixed = summarizeSavedCurrentReplayGridFailure({ ...input,
+    recoverySources: [...input.recoverySources, { record: { point: [9, 55], hourly: [] } }] });
+  assert.equal(mixed.counters.forwardGateOtherStop, 1);
+  assert.equal(mixed.counters.forwardGateLocalized, 0);
+  for (const field of ['state', 'public']) {
+    const f = await forwardGateFixture();
+    assert.throws(() => summarizeSavedCurrentReplayGridFailure({ ...f.input, replayCandidate: (sources, publicRows) => {
+      try { return f.input.replayCandidate(sources, publicRows); }
+      finally { if (field === 'state') f.input.initialSelection.state.currentEvidence.length = 0;
+        else publicRows.push(publicRows[0]); }
+    } }), /UNAVAILABLE/, 'a mutating probe must not emit the fixed false mutation claim');
+  }
+});
+
+test('normal forward gate keeps donor proof, coherent alternate and exact continuity match distinct', async () => {
+  const { f, input } = await forwardGateFixture(), identity = dmiExpectedIdentityForPart(input.part);
+  const fresh = structuredClone(f.bulk);
+  for (const row of Object.values(fresh.zones[identity.entityId].hourly)) {
+    const source = row.sources.current;
+    source.contentSha256 = 'd'.repeat(64); // explicitly DIFFERENT synthetic original bytes, not a receipt repair
+    source.nativeGridSampling = { contractId: 'dmi-native-grid-sampling-v1', elementIndex: 71,
+      gridIndexIdentitySha256: 'e'.repeat(64), coordinateInterpretation: 'dmi-dkss-grib1-header-endpoints-v1',
+      gridDefinitionSha256: source.gridDefinitionSha256, gridPoint: [...source.gridPoint],
+      fieldSet: [...source.fieldSet], optionalFieldSet: [...source.optionalFieldSet] };
+  }
+  const raw = buildDmiForecastHourly({ ocean: Object.values(fresh.zones[identity.entityId].hourly)
+    .map(row => ({ step: row.time, 'current-u': row['current-u'], 'current-v': row['current-v'], provenance: row.sources })),
+    generatedAt: input.initialSelection.state.time, startAt: input.initialSelection.state.time, hours: 3 }).hourly;
+  const preferredSource = { source: 'progressive-private-dmi', nativeCurrentContexts: [fresh], record: {
+    point: input.part.waterPoint, hourly: verifiedIntegratedPartHourly({ point: input.part.waterPoint, hourly: raw },
+      fresh, identity.entityId, input.part, { requireNativeGridSampling: false }) } };
+  const recoverySources = buildNewestValidRavScoreRecoverySources({ fallbackSource: input.fallbackSource,
+    preferredSource, protectedPreviousSource: input.fallbackSource, productionReferenceAt: input.targetReferenceAt, part: input.part });
+  const full = { ...input, preferredSource, recoverySources, persistedHourly: [] };
+  const value = summarizeSavedCurrentReplayGridFailure(full);
+  assert.equal(value.counters.forwardGateLocalized, 1);
+  assert.equal(value.counters.forwardGatePriorityOld, 1);
+  assert.equal(value.counters.forwardGateNewCoherent, 1);
+  assert.equal(value.counters.forwardGateNewOriginalComplete, 1);
+  assert.equal(value.counters.forwardGateNoDecoderAssociation, 1, 'coherence alone is not a same-original decoder association');
+  assert.equal(value.counters.forwardGatePersistedNoExactMatch, 1);
+  const rejected = summarizeSavedCurrentReplayGridFailure({ ...full,
+    preferredSource: { ...preferredSource, nativeCurrentContexts: [f.bulk] } });
+  assert.equal(rejected.counters.forwardGateNewOriginalRejected, 1);
+  assert.equal(rejected.counters.forwardGateNewCoherent, 1, 'embedded coherence does not authenticate a donor');
+  assert.equal(rejected.counters.forwardGateDecoderAssociationInconsistent, 0);
+  const missing = summarizeSavedCurrentReplayGridFailure({ ...input,
+    fallbackSource: { ...input.fallbackSource, nativeCurrentContexts: [] }, persistedHourly: null });
+  assert.equal(missing.counters.forwardGateOldNoContext, 1);
+  assert.equal(missing.counters.forwardGatePersistedUnavailable, 1);
+  assert.equal(missing.counters.forwardGateOldOriginalComplete, 0);
+});
+
+test('normal forward gate same-original coherent successor has a real association and cannot reproduce the OLD unknown stop', async () => {
+  const { f, input } = await forwardGateFixture(), part = input.part, identity = dmiExpectedIdentityForPart(part);
+  const old = structuredClone(f.bulk);
+  for (const row of Object.values(old.zones[identity.entityId].hourly)) {
+    Object.assign(row.sources.current, { contentLengthBytes: 16, assetSizeBytes: 16 });
+  }
+  const fresh = structuredClone(old);
+  for (const row of Object.values(fresh.zones[identity.entityId].hourly)) {
+    const source = row.sources.current;
+    source.nativeGridSampling = { contractId: 'dmi-native-grid-sampling-v1', elementIndex: 71,
+      gridIndexIdentitySha256: 'e'.repeat(64), coordinateInterpretation: 'dmi-dkss-grib1-header-endpoints-v1',
+      gridDefinitionSha256: source.gridDefinitionSha256, gridPoint: [...source.gridPoint],
+      fieldSet: [...source.fieldSet], optionalFieldSet: [...source.optionalFieldSet] };
+  }
+  const project = bulk => {
+    const hourly = buildDmiForecastHourly({ ocean: Object.values(bulk.zones[identity.entityId].hourly)
+      .map(row => ({ step: row.time, 'current-u': row['current-u'], 'current-v': row['current-v'], provenance: row.sources })),
+      generatedAt: input.initialSelection.state.time, startAt: input.initialSelection.state.time, hours: 3 }).hourly;
+    return { point: part.waterPoint, hourly: verifiedIntegratedPartHourly({ point: part.waterPoint, hourly }, bulk,
+      identity.entityId, part, { requireNativeGridSampling: false }) };
+  };
+  const fallbackSource = { source: 'deployed-private-runtime', nativeCurrentContexts: [old], record: project(old) };
+  const preferredSource = { source: 'progressive-private-dmi', nativeCurrentContexts: [fresh], record: project(fresh) };
+  const recoverySources = buildNewestValidRavScoreRecoverySources({ fallbackSource, preferredSource,
+    protectedPreviousSource: fallbackSource, productionReferenceAt: input.targetReferenceAt, part });
+  const publicHourly = [preferredSource.record.hourly[2]];
+  const forward = input.replayCandidate(recoverySources, publicHourly);
+  assert.ok(originalCurrentDecoderHistory(recoverySources,
+    forward.hourly.filter(row => Date.parse(row.time) < Date.parse(input.targetReferenceAt)), part),
+  'normal strict selected replay history, not rich PUBLIC target rows, has the actual decoder association');
+  // This is the SAME normal single-row projection used by the diagnostic,
+  // not a replacement comparator or manufactured origin/native handle.
+  const projected = buildRavScoreRecoveryReplay({ part, initialState: null, targetReferenceAt: input.targetReferenceAt,
+    sourceRecords: [{ record: { point: part.waterPoint, hourly: [preferredSource.record.hourly[1]] } }],
+    publicHourly: [{ time: input.targetReferenceAt }] });
+  assert.ok(originalCurrentDecoderHistory(recoverySources,
+    projected.hourly.filter(row => row.time === preferredSource.record.hourly[1].time), part));
+  const report = summarizeSavedCurrentReplayGridFailure({ ...input, fallbackSource, preferredSource, recoverySources, publicHourly });
+  assert.equal(report.counters.forwardGateNotReproduced, 1);
+  assert.equal(report.counters.forwardGateLocalized, 0);
+  assert.equal(report.counters.forwardGateDecoderAssociationInconsistent, 0);
 });
 
 test('fixed replay observer reports candidate counts only and projects multi-part logs without IDs, payload or origin claims', async t => {
