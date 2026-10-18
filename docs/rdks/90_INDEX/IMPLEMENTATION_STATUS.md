@@ -1,3 +1,9 @@
+## 18. oktober — native-prøve for tab af uploadens moderproces
+
+Den eksisterende native SDK-målfil får én additiv prøve: tab af actionens moderproces under den officielle SDKs upload af egne syntetiske cipher-bytes. Før prøvens oprydning kræves faktisk ophør af produktets kohorte og worker, bevaret claim og uændrede egne RAW-/cipher-filer samt fravær af uploaded/saved-kvittering. De 18 gamle testmetoder og eksisterende helperkontroller bevares; produkt, workflow, version, C/I/T og SQL er uændrede.
+
+Windows-kontrollen omfatter kun syntaks, AST, hele før-/efterbilleder og normal CI-discovery. Linux-/SDK-kørsel og den nye prøves præcise kildekontrol er endnu ikke gennemført. Dette er ikke en reproduceret produktfejl, hostet upload-/restorebevis, tab af hele runneren eller afslutning af revisionen. Den normale Node24/native-indgang indsamler prøven uden ny selector eller afhængighed.
+
 ## 18. oktober — kildekontrollens testværter skal følge den faktiske indgang
 
 Ejeren har igen præciseret, at historikken gerne må begynde fra nu. Gamle strømtimer og gammel strømhukommelse må ikke være en forudsætning for den første nye generation. De gamle originaler bevares som arkiv; manglende ny historik skal behandles ærligt og derefter opbygges fremad. Historiske kildekodeprøver er ikke et krav om at sammenføje gamle vejrtimer.
