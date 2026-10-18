@@ -32,7 +32,8 @@ import { weatherComponentProgressCache, withAuthenticatedWeatherProgress,
 import { buildCurrentGridSamplingOriginalRestoreExpectation } from './lib/bounded-conditions-predecessor-transition.mjs';
 import { migratePostCutoverPrivateRuntime } from './migrate-post-cutover-private-runtime.mjs';
 import { SAVED_DMI_ORIGINAL_SCOPES, savedDmiOriginalHistoryDemand,
-  inspectSelectedSavedDmiOriginalCaptures, createSavedDmiOriginalDependencyDiscovery }
+  inspectSelectedSavedDmiOriginalCaptures, createSavedDmiOriginalDependencyDiscovery,
+  buildSavedDmiOriginalRestorePlan, writeSavedDmiOriginalRestorePlan }
   from './prepare-saved-dmi-original-restore.mjs';
 
 const REPOSITORY = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
@@ -1074,11 +1075,12 @@ export async function auditSavedWeatherInputs({ mode, privateRoot, descriptorPat
       if (['dev', 'ino', 'size', 'mtimeNs'].some(key => stat[key] !== after[key])) fail('LOCAL_METADATA_INVALID');
       const document = forward.validateSavedCurrentForwardOriginalDocument(bytes, { parts, conditions });
       if (document.gridUnknownParts !== currentWindowScratch.collection.gridUnknownParts) fail('LOCAL_METADATA_INVALID');
-      const prepare = await import('./prepare-saved-dmi-original-restore.mjs');
-      const plan = prepare.buildSavedDmiOriginalRestorePlan({ captures: document.captures, source,
+      // This module and the pure preparer share a static import cycle. Never
+      // dynamically await that cycle while this CLI's evaluation is pending.
+      const plan = buildSavedDmiOriginalRestorePlan({ captures: document.captures, source,
         demands: document.demands, executionHead: process.env.GITHUB_SHA,
         progressSource, progressCacheKey, targetReferenceAt: progressBaselineTargetHour });
-      originalRestorePreparation = await prepare.writeSavedDmiOriginalRestorePlan({ repositoryRoot: ctx.repository, plan });
+      originalRestorePreparation = await writeSavedDmiOriginalRestorePlan({ repositoryRoot: ctx.repository, plan });
     }
     const report = { ...baseReport('AUDIT_COMPLETED'), protectedGenerationReadbackVerified: true,
       exactArchivedSourceContractsVerified: true, exactProgressAuthenticated: true,

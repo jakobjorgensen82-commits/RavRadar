@@ -181,6 +181,249 @@ if sys.argv[1:] == ["--cached-current-history-plan-only"]:
     raise SystemExit(0)
 
 
+def check_raw_current_retention():
+    """Normal download/prune across a failed score; synthetic transport only."""
+    import hashlib
+    from unittest.mock import patch
+    p = producer
+    old = (p.ROOT, p.RAW_DIR, p.RAW_CACHE_MAX_BYTES, p.DOWNLOAD_SESSION,
+           getattr(p, "_RAW_CURRENT_PROTECTED", None))
+    old_policies = (dict(p._RAW_CURRENT_IDENTITIES), set(p._RAW_CURRENT_UNPROVED_NAMES), dict(p._RAW_CURRENT_SESSION_PROTECTED))
+    with tempfile.TemporaryDirectory(prefix="rr-raw-retention-") as directory:
+        p.ROOT = Path(directory)
+        p.RAW_DIR = p.ROOT / ".cache/dmi-grib"
+        p.RAW_DIR.mkdir(parents=True)
+        body = b"synthetic cache bytes, not a GRIB or native admission".ljust(32768, b"x")
+        def seed(label, mtime):
+            href = f"https://owned-fixture.invalid/{label}.grib"
+            path = p.cached_asset_path(href)
+            path.write_bytes(body)
+            p.register_raw_cache_asset(path, href, "dkss_nsbs", valid_time, valid_time,
+                item_id=label, item_created_at=valid_time, expected_size=len(body),
+                acquired_at=valid_time, content_sha256=hashlib.sha256(body).hexdigest())
+            os.utime(path, (mtime, mtime))
+            return path, href
+        required, required_href = seed("committed-unknown-required", 1)
+        disposable, _ = seed("not-a-dependency", 2)
+        unknown_sidefile = p.RAW_DIR / "unregistered-original.grib"
+        unknown_sidefile.write_bytes(b"unregistered is not disposable")
+        p._RAW_CURRENT_SESSION_PROTECTED.clear()  # These two files represent the prior run, not this session.
+        required_capture = p.canonical_current_source_asset(p.load_raw_cache_manifest()["assets"][required.name])
+        # Normal fixed-file loader, with explicitly ARTIFICIAL metadata here.
+        # This is not a B-authentication test, native receipt or production grant.
+        def write(relative, value):
+            target = p.ROOT / relative
+            target.parent.mkdir(parents=True, exist_ok=True)
+            raw = json.dumps(value).encode()
+            target.write_bytes(raw)
+            return "sha256:" + hashlib.sha256(raw).hexdigest()
+        h0 = "2026-01-01T02:00:00Z"
+        target = "2026-01-01T04:00:00Z"
+        part_doc = {"zones": {zone["parentZoneId"]: [{"partId": "TEST", "waterPoint": [2, 1]}]}}
+        part_bytes = json.dumps(part_doc).encode()
+        targets = [{"partId": "TEST", "parentZoneId": zone["parentZoneId"], "waterPoint": [2, 1]}]
+        source_hashes = {"conditions": write("data/live/conditions.json", {"synthetic": True}),
+            "checkpoint": write(".cache/ravscore-continuation-checkpoint/checkpoint.json", {"generationSha256": "3" * 64}),
+            "activation": None}
+        private_root = p.ROOT / "private"
+        bundle = private_root / "bundle"
+        boundary = {"datasetId": "rr-synthetic-boundary", "productionReferenceAt": h0,
+            "bundleContentSha256": "2" * 64, "checkpointGenerationSha256": "3" * 64,
+            "conditionsSha256": source_hashes["conditions"].removeprefix("sha256:")}
+        write("private/bundle/manifest.json", {key: boundary[key] for key in
+            ("datasetId", "productionReferenceAt", "bundleContentSha256")})
+        write("private/bundle/payload/data/live/conditions.json", {"synthetic": True})
+        retention = {"schemaVersion": 1, "kind": "COMMITTED_POST_H0_UNKNOWN_RAW_RETENTION",
+            "boundary": boundary, "captures": [required_capture]}
+        history = {"schemaVersion": 2, "kind": "RAVSCORE_CURRENT_HISTORY_ACQUISITION_DEMAND",
+            "productionReferenceAt": target, "modelBinding": {},
+            "registrySha256": "sha256:" + hashlib.sha256(part_bytes).hexdigest(), "sourceHashes": source_hashes,
+            "demands": [{"partId": "TEST", "zoneId": zone["parentZoneId"], "parentZoneId": zone["parentZoneId"],
+                "entityId": zone["id"], "samplingPoint": [2, 1], "samplingContextKey": "sha256:" + "1" * 64,
+                "initialSource": "EXISTING_INTEGRATED", "initialStateAt": h0, "initialStateSha256": "sha256:" + "4" * 64,
+                "startAt": "2025-12-29T23:00:00Z", "endAt": target}], "rawRetention": retention}
+        demand_path = p.ROOT / ".cache/ravscore-current-history-demand.json"
+        env = {"DMI_BULK_REQUIRE_COMMITTED_RAW_RETENTION": "true",
+            "DMI_BULK_CURRENT_HISTORY_DEMAND_PATH": str(demand_path),
+            "RAVRADAR_PRIVATE_RUNTIME_ROOT": str(private_root), "RAVRADAR_PRIVATE_RUNTIME_BUNDLE": str(bundle)}
+        read = lambda: p.read_current_history_demands(part_doc, part_bytes, targets, [zone], target)
+        with patch.dict(os.environ, env):
+            with patch.dict(os.environ, {"DMI_BULK_CURRENT_HISTORY_DEMAND_PATH": ""}):
+                try: read()
+                except p.AssetDownloadCleanupUnproven as error: assert str(error) == "DMI_RAW_CURRENT_RETENTION_REQUIRED"
+                else: raise AssertionError("missing normal demand flag silently bypassed protection")
+            no_retention = {key: value for key, value in history.items() if key != "rawRetention"}
+            no_retention["schemaVersion"] = 1
+            write(".cache/ravscore-current-history-demand.json", no_retention)
+            try: read()
+            except p.AssetDownloadCleanupUnproven as error: assert str(error) == "DMI_RAW_CURRENT_RETENTION_REQUIRED"
+            else: raise AssertionError("old unprotected demand bypassed required retention")
+            # The actual provider-free caller keeps every old demand check,
+            # but does not acquire new eviction permission or perform HTTP.
+            with patch.object(p, "CACHE_ONLY", True):
+                previous_policy = p._RAW_CURRENT_PROTECTED
+                p._RAW_CURRENT_PROTECTED = None
+                assert len(read()) == 1 and p._RAW_CURRENT_PROTECTED is None
+                with patch.dict(os.environ, {"DMI_BULK_REQUIRE_COMMITTED_RAW_RETENTION": "unknown"}):
+                    try: read()
+                    except p.AssetDownloadCleanupUnproven as error: assert str(error) == "DMI_RAW_CURRENT_REQUIRED_FLAG_INVALID"
+                    else: raise AssertionError("cache-only swallowed malformed orchestration flag")
+                try: p.download_asset("https://owned-fixture.invalid/cache-only.grib", len(body), {"bytes": 0})
+                except RuntimeError as error: assert str(error) == "DMI_CACHE_ONLY_NETWORK_DISABLED"
+                else: raise AssertionError("cache-only reached transport")
+                p._RAW_CURRENT_PROTECTED = previous_policy
+            write(".cache/ravscore-current-history-demand.json", {**history, "rawRetention": {}})
+            try: read()
+            except p.AssetDownloadCleanupUnproven as error: assert str(error) == "DMI_RAW_CURRENT_B_BOUNDARY_INVALID"
+            else: raise AssertionError("malformed retention was silently ignored")
+            stale = copy.deepcopy(history)
+            stale["rawRetention"]["boundary"]["conditionsSha256"] = "0" * 64
+            write(".cache/ravscore-current-history-demand.json", stale)
+            try: read()
+            except p.AssetDownloadCleanupUnproven as error: assert str(error) == "DMI_RAW_CURRENT_B_BOUNDARY_CHANGED"
+            else: raise AssertionError("changed immutable input was silently ignored")
+            write(".cache/ravscore-current-history-demand.json", history)
+            assert len(read()) == 1
+            missing_href = "https://owned-fixture.invalid/unselected-missing.grib"
+            missing_capture = {**required_capture, "assetIdentitySha256": p.asset_identity_sha256(missing_href),
+                "itemId": "unselected-missing"}
+            sparse = copy.deepcopy(history)
+            sparse["rawRetention"]["captures"].append(missing_capture)
+            write(".cache/ravscore-current-history-demand.json", sparse)
+            assert len(read()) == 1 and p._RAW_CURRENT_PROTECTED is None, 'unselected missing RAW disables eviction, not replay'
+            bad_path = p.cached_asset_path(missing_href)
+            original_manifest = p.load_raw_cache_manifest()
+            bad_manifest = copy.deepcopy(original_manifest)
+            bad_manifest["assets"][bad_path.name] = {**missing_capture, "canonicalHref": missing_href}
+            bad_path.write_bytes(b"damaged".ljust(len(body), b"x"))
+            p.save_raw_cache_manifest(bad_manifest)
+            assert len(read()) == 1 and p._RAW_CURRENT_PROTECTED is None, 'unselected corrupt RAW disables eviction, not the entire loader'
+            bad_before = bad_path.read_bytes()
+            try:
+                p.download_asset(missing_href, len(body), {"bytes": 0})
+            except p.AssetDownloadCleanupUnproven as error:
+                assert str(error) == "DMI_RAW_CURRENT_DEPENDENCY_UNPROVED"
+            else:
+                raise AssertionError("corrupt optional donor was silently reused/replaced")
+            assert bad_path.read_bytes() == bad_before and required.read_bytes() == body
+            bad_path.unlink()  # Only this test's explicitly artificial damaged fixture.
+            p.save_raw_cache_manifest(original_manifest)
+            write(".cache/ravscore-current-history-demand.json", history)
+            assert len(read()) == 1 and p._RAW_CURRENT_PROTECTED is not None
+        p.RAW_CACHE_MAX_BYTES = 2 * len(body) + 12000
+        calls = []
+        class Response:
+            headers = {"content-length": str(len(body))}
+            def __enter__(self): return self
+            def __exit__(self, *args): return False
+            def raise_for_status(self): pass
+            def iter_content(self, _size): yield body
+        class Session:
+            def get(self, href, **kwargs):
+                calls.append(href)
+                return Response()
+        p.DOWNLOAD_SESSION = Session()
+        try:
+            protected = p._RAW_CURRENT_PROTECTED
+            p._RAW_CURRENT_PROTECTED = None
+            before_unqualified = {path.name: path.read_bytes() for path in p.RAW_DIR.iterdir()}
+            try:
+                p.download_asset("https://owned-fixture.invalid/unqualified.grib", len(body), {"bytes": 0})
+            except p.AssetDownloadCleanupUnproven as error:
+                assert str(error) == "DMI_RAW_CURRENT_CACHE_BUDGET"
+            else:
+                raise AssertionError("unqualified caller inherited disposable LRU authority")
+            assert not calls and before_unqualified == {path.name: path.read_bytes() for path in p.RAW_DIR.iterdir()}
+            p._RAW_CURRENT_PROTECTED = protected
+            mtime_before_hit = required.stat().st_mtime_ns
+            reused, hit = p.download_asset(required_href, len(body), {"bytes": 0}, collection="dkss_nsbs",
+                model_run=valid_time, valid_time=valid_time, item_id="committed-unknown-required", item_created_at=valid_time)
+            assert reused == required and hit and not calls
+            assert required.stat().st_mtime_ns == mtime_before_hit, 'a hard pin is not an LRU timestamp to mutate'
+            incoming, hit = p.download_asset("https://owned-fixture.invalid/new.grib", len(body), {"bytes": 0},
+                collection="dkss_nsbs", model_run=valid_time, valid_time=valid_time,
+                item_id="new", item_created_at=valid_time)
+            assert hit is False and len(calls) == 1 and incoming.is_file()
+            assert incoming.name in p._raw_current_session_files(), 'new current-run marine bytes need a session pin'
+            p._raw_current_inventory()  # Latch the actual new session file identity.
+            session_mtime = incoming.stat().st_mtime_ns
+            for _ in range(2):
+                reused, hit = p.download_asset("https://owned-fixture.invalid/new.grib", len(body), {"bytes": 0},
+                    collection="dkss_nsbs", model_run=valid_time, valid_time=valid_time,
+                    item_id="new", item_created_at=valid_time)
+                assert reused == incoming and hit and len(calls) == 1
+                assert incoming.stat().st_mtime_ns == session_mtime
+                p._raw_current_inventory()  # Repeated normal hits must not create a false race.
+            # The later central score failed: neither committed B nor S moved.
+            try:
+                raise RuntimeError("SYNTHETIC_LATER_SCORE_FAILED_S_NOT_PUBLISHED")
+            except RuntimeError:
+                pass
+            p.prune_raw_cache(p.RAW_CACHE_MAX_BYTES)
+            assert required.is_file(), "COMMITTED_UNKNOWN_RAW_WAS_EVICTED_BEFORE_SUCCESSOR_B_S"
+            assert required.read_bytes() == body and not disposable.exists()
+            assert unknown_sidefile.read_bytes() == b"unregistered is not disposable", 'empty/nonmatching pinset is not sidefile ownership'
+            assert sum(f.stat().st_size for f in p.RAW_DIR.iterdir() if f.is_file()) <= p.RAW_CACHE_MAX_BYTES
+            demand = {"PART::TEST": {"initialStateAt": "2026-01-01T00:00:00Z"}}
+            own = {"zoneId": "PART::TEST", "time": valid_time, "capture": required_capture,
+                "row": {"sources": {"current": required_capture}, "current-u": .1, "current-v": .2}}
+            plan = p.plan_cached_current_history(demand, [own], p.load_raw_cache_manifest())
+            assert len(plan["jobs"]) == 1 and not plan["unavailable"], "NEXT_RESUME_LOST_REQUIRED_RAW"
+            with patch.dict(os.environ, env):
+                write(".cache/ravscore-current-history-demand.json", sparse)
+                assert len(read()) == 1 and p._RAW_CURRENT_PROTECTED is None
+                reused, hit = p.download_asset(required_href, len(body), {"bytes": 0}, collection="dkss_nsbs",
+                    model_run=valid_time, valid_time=valid_time, item_id="committed-unknown-required", item_created_at=valid_time)
+                assert reused == required and hit and len(calls) == 1, 'missing unselected RAW must not block good reuse'
+                p.RAW_CACHE_MAX_BYTES = 3 * len(body) + 20000  # Scaled fixture, NOT a production limit change.
+                before_free = {path.name: path.read_bytes() for path in p.RAW_DIR.iterdir()}
+                extra, hit = p.download_asset("https://owned-fixture.invalid/free-space.grib", len(body), {"bytes": 0},
+                    collection="dkss_nsbs", model_run=valid_time, valid_time=valid_time,
+                    item_id="free-space", item_created_at=valid_time)
+                assert not hit and extra.is_file() and len(calls) == 2
+                assert all((p.RAW_DIR / name).read_bytes() == data for name, data in before_free.items()
+                    if name != p.CACHE_MANIFEST_NAME), 'no-eviction free-space download changed an old input'
+                write(".cache/ravscore-current-history-demand.json", history)
+                assert len(read()) == 1
+            snapshot = {path.name: path.read_bytes() for path in p.RAW_DIR.iterdir()}
+            # There would be room by deleting current-run data, but that would
+            # lose the failed run's progress originals. Both new files stay pinned.
+            p.RAW_CACHE_MAX_BYTES = 3 * len(body) + 12000
+            try:
+                p.download_asset("https://owned-fixture.invalid/cannot-fit.grib", len(body), {"bytes": 0})
+            except p.AssetDownloadCleanupUnproven as error:
+                assert str(error) == "DMI_RAW_CURRENT_CACHE_BUDGET"
+            else:
+                raise AssertionError("protected plus incoming capacity did not stop")
+            assert len(calls) == 2, "capacity failure reached transport"
+            assert snapshot == {path.name: path.read_bytes() for path in p.RAW_DIR.iterdir()}, "capacity failure deleted input"
+            p.RAW_CACHE_MAX_BYTES = 2 * len(body) + 12000
+            required.write_bytes(b"corrupt".ljust(len(body), b"x"))
+            damaged = {path.name: path.read_bytes() for path in p.RAW_DIR.iterdir()}
+            try:
+                p.download_asset("https://owned-fixture.invalid/after-corruption.grib", len(body), {"bytes": 0})
+            except p.AssetDownloadCleanupUnproven as error:
+                assert str(error) == "DMI_RAW_CURRENT_DEPENDENCY_CHANGED"
+            else:
+                raise AssertionError("corrupt protected local input was not a stop")
+            assert len(calls) == 2 and damaged == {path.name: path.read_bytes() for path in p.RAW_DIR.iterdir()}
+        finally:
+            p.ROOT, p.RAW_DIR, p.RAW_CACHE_MAX_BYTES, p.DOWNLOAD_SESSION, p._RAW_CURRENT_PROTECTED = old
+            if hasattr(p, "_RAW_CURRENT_IDENTITIES"):
+                p._RAW_CURRENT_IDENTITIES.clear()
+                p._RAW_CURRENT_IDENTITIES.update(old_policies[0])
+                p._RAW_CURRENT_UNPROVED_NAMES.clear()
+                p._RAW_CURRENT_UNPROVED_NAMES.update(old_policies[1])
+                p._RAW_CURRENT_SESSION_PROTECTED.clear()
+                p._RAW_CURRENT_SESSION_PROTECTED.update(old_policies[2])
+
+
+check_raw_current_retention()
+if sys.argv[1:] == ["--raw-current-retention-only"]:
+    print("RAW current retention: normal download -> later score failure -> unchanged B/S -> next replay plan passed")
+    raise SystemExit(0)
+
+
 def check_current_history_native_bracket_boundaries():
     """Normal capture/clean callers; demanded CURRENT only, not blanket retention."""
     from unittest.mock import patch

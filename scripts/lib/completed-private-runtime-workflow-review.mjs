@@ -16,7 +16,47 @@ export function inverseOrdinaryFullHistoryCheckout(source, role) {
     'The entire preceding workflow survives the one-line checkout inverse');
   return previous;
 }
+// Exact test-only RAW-retention caller layer. No runtime input or authority changes.
+const rawRetentionDemand = "      - name: Plan bounded current history from the actual selected continuation\n";
+const rawRetentionRefresh = "      - name: Refresh DMI water-source registry\n";
+const rawRetentionGeneration = "      - name: Prepare strict active DMI donor or resumable candidate\n";
+const rawRetentionLegacy = "      - name: Bind causal OLD current reconstruction to the materialized saved inputs\n";
+const rawRetentionDmi = "      - name: Update DMI bulk model cache\n";
+const rawRetentionOldBlock = "      - name: Plan bounded current history from the actual selected continuation\n        id: current-history-demand\n        if: inputs.completed_private_runtime != true && (steps.preflight.outputs.should_run == 'true' && steps.weather-source-handoff.outputs.reused != 'true' && (steps.operational-action.outputs.action == 'integrated' || steps.operational-action.outputs.action == 'integrated-historical-maintenance') && steps.historical-wave-transition.outputs.required != 'true')\n        run: node scripts/plan-ravscore-current-history.mjs\n        env:\n          RAVRADAR_R2_ACCOUNT_ID: ${{ inputs.weather_state_epoch_bootstrap && secrets.RAVRADAR_R2_ACCOUNT_ID || '' }}\n          RAVRADAR_R2_ACCESS_KEY_ID: ${{ inputs.weather_state_epoch_bootstrap && secrets.RAVRADAR_R2_ACCESS_KEY_ID || '' }}\n          RAVRADAR_R2_SECRET_ACCESS_KEY: ${{ inputs.weather_state_epoch_bootstrap && secrets.RAVRADAR_R2_SECRET_ACCESS_KEY || '' }}\n          SUPABASE_URL: ${{ inputs.weather_state_epoch_bootstrap && secrets.SUPABASE_URL || '' }}\n          SUPABASE_SERVICE_ROLE_KEY: ${{ inputs.weather_state_epoch_bootstrap && secrets.SUPABASE_SERVICE_ROLE_KEY || '' }}\n          RAVRADAR_REQUIRE_PRIVATE_WEATHER_BASELINE: ${{ steps.private-runtime-install.outcome == 'success' && 'true' || 'false' }}\n          RAVSCORE_STATELESS_INTEGRATED_COLD_START_ALLOWED: ${{ (steps.operational-action.outputs.action == 'integrated' || steps.operational-action.outputs.action == 'integrated-historical-maintenance') && steps.legacy-bootstrap.outputs.stateless_integrated_recovery == 'true' && 'true' || 'false' }}\n\n";
+const rawRetentionBlock = "      - name: Plan bounded current history from the actual selected continuation\n        id: current-history-demand\n        if: inputs.completed_private_runtime != true && (steps.preflight.outputs.should_run == 'true' && steps.weather-source-handoff.outputs.reused != 'true' && (steps.operational-action.outputs.action == 'integrated' || steps.operational-action.outputs.action == 'integrated-historical-maintenance') && steps.historical-wave-transition.outputs.required != 'true')\n        run: node scripts/plan-ravscore-current-history.mjs --retain-committed-raw\n        env:\n          RAVRADAR_R2_ACCOUNT_ID: ${{ inputs.weather_state_epoch_bootstrap && secrets.RAVRADAR_R2_ACCOUNT_ID || '' }}\n          RAVRADAR_R2_ACCESS_KEY_ID: ${{ inputs.weather_state_epoch_bootstrap && secrets.RAVRADAR_R2_ACCESS_KEY_ID || '' }}\n          RAVRADAR_R2_SECRET_ACCESS_KEY: ${{ inputs.weather_state_epoch_bootstrap && secrets.RAVRADAR_R2_SECRET_ACCESS_KEY || '' }}\n          SUPABASE_URL: ${{ inputs.weather_state_epoch_bootstrap && secrets.SUPABASE_URL || '' }}\n          SUPABASE_SERVICE_ROLE_KEY: ${{ inputs.weather_state_epoch_bootstrap && secrets.SUPABASE_SERVICE_ROLE_KEY || '' }}\n          RAVRADAR_REQUIRE_PRIVATE_WEATHER_BASELINE: ${{ steps.private-runtime-install.outcome == 'success' && 'true' || 'false' }}\n          RAVSCORE_STATELESS_INTEGRATED_COLD_START_ALLOWED: ${{ (steps.operational-action.outputs.action == 'integrated' || steps.operational-action.outputs.action == 'integrated-historical-maintenance') && steps.legacy-bootstrap.outputs.stateless_integrated_recovery == 'true' && 'true' || 'false' }}\n\n";
+const rawRetentionEnv = "          DMI_BULK_REQUIRE_COMMITTED_RAW_RETENTION: ${{ steps.private-runtime-install.outcome == 'success' && (steps.operational-action.outputs.action == 'integrated' || steps.operational-action.outputs.action == 'integrated-historical-maintenance') && inputs.weather_state_epoch_bootstrap != true && steps.legacy-bootstrap.outputs.stateless_integrated_recovery != 'true' && steps.historical-wave-transition.outputs.required != 'true' && 'true' || 'false' }}\n";
+export function assertCurrentHistoryRawRetentionOrder(source) {
+  for (const marker of [rawRetentionDemand, rawRetentionRefresh, rawRetentionGeneration,
+    rawRetentionLegacy, rawRetentionDmi])
+    assert.equal(source.split(marker).length, 2, 'One exact RAW-retention workflow step');
+  const start = source.indexOf(rawRetentionDemand);
+  const end = source.indexOf('      - name: ', start + rawRetentionDemand.length);
+  const prepared = source.indexOf(rawRetentionGeneration);
+  assert(end > start, 'The actual demand block has a finite next-step boundary');
+  assert.equal(end, source.indexOf(rawRetentionLegacy), 'Demand immediately precedes legacy binding');
+  assert(prepared < start, 'Actual generation materialization precedes demand');
+  assert.equal(source.indexOf('      - name: ', prepared + rawRetentionGeneration.length), start,
+    'Demand immediately follows actual generation materialization');
+  assert(end < source.indexOf(rawRetentionDmi), 'Demand and legacy binding precede DMI');
+  assert.equal(source.slice(start, end), rawRetentionBlock, 'Only the reviewed planner arg changes');
+  assert.equal(source.split(rawRetentionEnv).length, 2, 'One exact committed-retention requirement');
+  const dmiStart = source.indexOf(rawRetentionDmi);
+  const dmiEnd = source.indexOf('      - name: ', dmiStart + rawRetentionDmi.length);
+  assert(dmiEnd > dmiStart);
+  assert(source.slice(dmiStart, dmiEnd).includes(rawRetentionEnv), 'Retention requirement belongs to DMI');
+  assert.equal(sha(source), '46c88e4cca919ecc288c006db443106b1f8ce8fed1dbca3a87b74d7aea8a3e34', 'The entire current RAW-retention workflow is reviewed');
+}
+export function inverseCurrentHistoryRawRetentionOrder(source, role) {
+  if (role !== 'build' || sha(source) !== '46c88e4cca919ecc288c006db443106b1f8ce8fed1dbca3a87b74d7aea8a3e34') return source;
+  assertCurrentHistoryRawRetentionOrder(source);
+  let previous = source.replace(rawRetentionEnv, '').replace(rawRetentionBlock, '');
+  previous = previous.replace(rawRetentionRefresh, rawRetentionOldBlock + rawRetentionRefresh);
+  assert.equal(sha(previous), 'fd1cd664bdbdcf41ef2ad32e6ad5caf058a980b3093a3f4fc226ca1797854b49',
+    'Whole preceding workflow survives only the exact demand move, arg and env inverses');
+  return previous;
+}
 export function inverseOriginWeatherReadCredentials(source, role) {
+  source = inverseCurrentHistoryRawRetentionOrder(source, role);
   if (role !== 'build' || sha(source) !== 'fd1cd664bdbdcf41ef2ad32e6ad5caf058a980b3093a3f4fc226ca1797854b49') return source;
   const marker = '      - name: Update central weather cache\n';
   assert.equal(source.split(marker).length, 2, 'One normal weather credential scope');

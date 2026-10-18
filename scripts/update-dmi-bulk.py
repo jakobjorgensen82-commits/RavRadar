@@ -3696,7 +3696,7 @@ def write_cache_audit(before: dict[str, Any], after: dict[str, Any], removed_fil
     CACHE_AUDIT_PATH.write_text(json.dumps({
         "schemaVersion": 1,
         "generatedAt": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
-        "policy": {"maxBytes": RAW_CACHE_MAX_BYTES, "strategy": "non-reserved least-recently-used first; one eligible marine replay file per model area retained until hard ceiling"},
+        "policy": {"maxBytes": RAW_CACHE_MAX_BYTES, "strategy": "hard committed UNKNOWN dependencies excluded; unprotected LRU only; capacity before transport including manifest"},
         "before": before, "after": after,
         "removedFiles": removed_files, "removedBytes": removed_bytes
     }, ensure_ascii=False, indent=2) + "\n", "utf-8")
@@ -3807,6 +3807,7 @@ def register_raw_cache_asset(
         "lastUsedAt": registered_at,
     }
     save_raw_cache_manifest(document)
+    _pin_raw_current_session(path, assets[path.name])
 
 
 def reserved_current_replay_files(document: dict[str, Any], now_epoch: float | None = None) -> set[str]:
@@ -3829,36 +3830,191 @@ def reserved_current_replay_files(document: dict[str, Any], now_epoch: float | N
     }
 
 
-def prune_raw_cache(max_bytes: int = RAW_CACHE_MAX_BYTES) -> dict[str, int]:
+_RAW_CURRENT_PROTECTED: dict[str, dict[str, Any]] | None = None
+_RAW_CURRENT_IDENTITIES: dict[str, tuple] = {}
+_RAW_CURRENT_UNPROVED_NAMES: set[str] = set()
+_RAW_CURRENT_SESSION_PROTECTED: dict[str, dict[str, Any]] = {}
+
+
+def _pin_raw_current_session(path, source):
+    capture = canonical_current_source_asset(source)
+    if capture is not None and capture["collection"] in MARINE_COLLECTIONS:
+        _RAW_CURRENT_SESSION_PROTECTED[str(path.absolute())] = capture
+
+
+def _raw_current_session_files():
+    return {pathlib.Path(file).name: capture for file, capture in _RAW_CURRENT_SESSION_PROTECTED.items()
+        if pathlib.Path(file).parent == RAW_DIR.absolute()}
+
+
+def _raw_cache_protection_refuse(code):
+    # All ordinary asset callers already propagate ownership/integrity stops;
+    # do not turn a threatened retained input into a recoverable asset skip.
+    raise AssetDownloadCleanupUnproven("DMI_RAW_CURRENT_" + code)
+
+
+def _raw_current_capture_key(capture):
+    value = canonical_current_source_asset(capture)
+    return None if value is None else json.dumps({key: item for key, item in value.items()
+        if key != "acquiredAt"}, sort_keys=True, separators=(",", ":"))
+
+
+def _raw_current_inventory():
     RAW_DIR.mkdir(parents=True, exist_ok=True)
-    manifest = load_raw_cache_manifest()
-    files = [path for path in RAW_DIR.iterdir() if path.is_file() and path.name != CACHE_MANIFEST_NAME]
-    total = sum(path.stat().st_size for path in files)
-    removed_files = 0
+    if not stat.S_ISDIR(RAW_DIR.lstat().st_mode) or RAW_DIR.is_symlink():
+        _raw_cache_protection_refuse("DIRECTORY_INVALID")
+    files = {}
+    for path in RAW_DIR.iterdir():
+        info = path.lstat()
+        if not stat.S_ISREG(info.st_mode) or info.st_nlink != 1 or path.name.endswith(".tmp"):
+            _raw_cache_protection_refuse("ENTRY_UNPROVED")
+        files[path.name] = (path, info)
+    try:
+        manifest = json.loads(raw_cache_manifest_path().read_bytes()) if CACHE_MANIFEST_NAME in files else {
+            "schemaVersion": RAW_CACHE_MANIFEST_SCHEMA_VERSION, "assets": {}}
+    except (ValueError, OSError):
+        _raw_cache_protection_refuse("MANIFEST_INVALID")
+    if (not isinstance(manifest, dict) or manifest.get("schemaVersion") != RAW_CACHE_MANIFEST_SCHEMA_VERSION
+            or not isinstance(manifest.get("assets"), dict)):
+        _raw_cache_protection_refuse("MANIFEST_INVALID")
+    for name, required in {**_raw_current_session_files(), **(_RAW_CURRENT_PROTECTED or {})}.items():
+        actual = manifest["assets"].get(name)
+        entry = files.get(name)
+        if (not entry or _raw_current_capture_key(actual) != _raw_current_capture_key(required)
+                or entry[1].st_size != required["contentLengthBytes"]):
+            _raw_cache_protection_refuse("DEPENDENCY_UNAVAILABLE")
+        path, before = entry
+        identity = _OwnedGribRead._identity(before)
+        identity_key = str(path.absolute())
+        known = _RAW_CURRENT_IDENTITIES.get(identity_key)
+        if known is not None and known != (required["contentSha256"], identity):
+            _raw_cache_protection_refuse("DEPENDENCY_CHANGED")
+        if known is None:
+            if (file_content_sha256(path) != required["contentSha256"]
+                    or _OwnedGribRead._identity(path.lstat()) != identity):
+                _raw_cache_protection_refuse("DEPENDENCY_CHANGED")
+            _RAW_CURRENT_IDENTITIES[identity_key] = (required["contentSha256"], identity)
+    return manifest, files
+
+
+def configure_raw_current_retention(retention):
+    """Eviction only. The fixed JS caller binds the immutable committed B/S.
+
+    No manifest/capture here can admit a vector or issue a native receipt.
+    A local successful decode/score never releases this process's boundary.
+    """
+    global _RAW_CURRENT_PROTECTED
+    if not isinstance(retention, dict) or set(retention) != {"schemaVersion", "kind", "boundary", "captures"}:
+        _raw_cache_protection_refuse("RETENTION_INVALID")
+    boundary = retention["boundary"]
+    if (retention["schemaVersion"] != 1 or retention["kind"] != "COMMITTED_POST_H0_UNKNOWN_RAW_RETENTION"
+            or not isinstance(boundary, dict) or set(boundary) != {"datasetId", "productionReferenceAt",
+                "bundleContentSha256", "checkpointGenerationSha256", "conditionsSha256"}
+            or not isinstance(boundary["datasetId"], str) or not boundary["datasetId"].startswith("rr-")
+            or not canonical_time(boundary["productionReferenceAt"])
+            or any(not re.fullmatch(r"[0-9a-f]{64}", str(boundary[key])) for key in (
+                "bundleContentSha256", "checkpointGenerationSha256", "conditionsSha256"))
+            or not isinstance(retention["captures"], list) or len(retention["captures"]) > 4096):
+        _raw_cache_protection_refuse("RETENTION_INVALID")
+    manifest, files = _raw_current_inventory()
+    by_capture = {}
+    for name, asset in manifest["assets"].items():
+        if pathlib.Path(name).name != name or not isinstance(asset, dict):
+            _raw_cache_protection_refuse("MANIFEST_INVALID")
+        key = _raw_current_capture_key(asset)
+        if key is not None:
+            href = asset.get("canonicalHref")
+            if not isinstance(href, str) or cached_asset_path(href).name != name:
+                _raw_cache_protection_refuse("MANIFEST_INVALID")
+            by_capture.setdefault(key, []).append(name)
+    protected, unproved, unavailable = {}, set(), 0
+    for raw in retention["captures"]:
+        capture = canonical_current_source_asset(raw)
+        names = by_capture.get(_raw_current_capture_key(raw), [])
+        if capture is None or capture != raw:
+            _raw_cache_protection_refuse("RETENTION_INVALID")
+        if len(names) != 1 or names[0] not in files:
+            unavailable += 1
+            unproved.update(name for name in files if name.startswith(capture["assetIdentitySha256"][:24]))
+            continue
+        name = names[0]
+        path, before = files[name]
+        digest = file_content_sha256(path)
+        if _OwnedGribRead._identity(path.lstat()) != _OwnedGribRead._identity(before):
+            _raw_cache_protection_refuse("DEPENDENCY_CHANGED")
+        if before.st_size != capture["contentLengthBytes"] or digest != capture["contentSha256"]:
+            unavailable += 1
+            unproved.add(name)
+            continue
+        protected[name] = capture
+    previous = _RAW_CURRENT_PROTECTED
+    previous_identities = dict(_RAW_CURRENT_IDENTITIES)
+    _RAW_CURRENT_IDENTITIES.clear()
+    # The broader possible-merge set is NOT a request to download all donors.
+    # Missing/unproved bytes disable ALL eviction, rather than becoming {} or
+    # a new numerical admission requirement. Normal strict replay stays owner.
+    _RAW_CURRENT_PROTECTED = None if unavailable else protected
+    _RAW_CURRENT_UNPROVED_NAMES.clear()
+    _RAW_CURRENT_UNPROVED_NAMES.update(str((RAW_DIR / name).absolute()) for name in unproved)
+    try:
+        _raw_current_inventory()
+    except BaseException:
+        _RAW_CURRENT_PROTECTED = previous
+        _RAW_CURRENT_IDENTITIES.clear()
+        _RAW_CURRENT_IDENTITIES.update(previous_identities)
+        raise
+    return {"evictionAllowed": not unavailable, "protectedFiles": len(protected), "unavailableCaptures": unavailable}
+
+
+def prepare_raw_cache_space(incoming_bytes=0, *, metadata_reserve=0, max_bytes=None):
+    """Plan all deletions before any deletion; hard dependencies never evict.
+
+    Count every on-disk byte, including manifest/plan files, plus a bounded
+    incoming-manifest allowance. Only non-hidden, unprotected LRU can leave.
+    """
+    maximum = RAW_CACHE_MAX_BYTES if max_bytes is None else max_bytes
+    if any(type(value) is not int or value < 0 for value in (incoming_bytes, metadata_reserve, maximum)):
+        _raw_cache_protection_refuse("CAPACITY_INVALID")
+    manifest, entries = _raw_current_inventory()
+    total = sum(info.st_size for _, info in entries.values())
+    disposable = set()
+    for name, (path, info) in entries.items():
+        row = manifest["assets"].get(name)
+        capture = canonical_current_source_asset(row)
+        href = row.get("canonicalHref") if isinstance(row, dict) else None
+        if (capture is not None and isinstance(href, str) and cached_asset_path(href) == path
+                and asset_identity_sha256(href) == capture["assetIdentitySha256"]
+                and info.st_size == capture["contentLengthBytes"]):
+            disposable.add(name)
+    eligible = [(name, path, info) for name, (path, info) in entries.items()
+        if _RAW_CURRENT_PROTECTED is not None and name not in _RAW_CURRENT_PROTECTED and name not in _raw_current_session_files()
+        and name in disposable and name != CACHE_MANIFEST_NAME and not name.startswith(".")]
+    reserved = reserved_current_replay_files(manifest)
+    deletions = []
+    for name, path, info in sorted(eligible, key=lambda item: (item[0] in reserved, item[2].st_mtime)):
+        if total + incoming_bytes + metadata_reserve <= maximum:
+            break
+        deletions.append((name, path, info))
+        total -= info.st_size
+    if total + incoming_bytes + metadata_reserve > maximum:
+        _raw_cache_protection_refuse("CACHE_BUDGET")
+    # A corrupt/raced required file is a stop BEFORE any disposable deletion.
+    _raw_current_inventory()
     removed_bytes = 0
-    if total > max_bytes:
-        reserved = reserved_current_replay_files(manifest)
-        # Non-reserved files are removed first.  The reserve is still bounded by
-        # the hard byte ceiling; fail-closed research collection must never make
-        # the workflow cache unbounded.
-        for path in sorted(files, key=lambda item: (item.name in reserved, item.stat().st_mtime)):
-            try:
-                size = path.stat().st_size
-                path.unlink(missing_ok=True)
-                total -= size
-                removed_files += 1
-                removed_bytes += size
-            except OSError:
-                continue
-            if total <= max_bytes:
-                break
-    existing = {path.name for path in RAW_DIR.iterdir() if path.is_file()}
-    manifest["assets"] = {
-        name: row for name, row in (manifest.get("assets") or {}).items()
-        if name in existing
-    }
-    save_raw_cache_manifest(manifest)
-    return {"removedFiles": removed_files, "removedBytes": removed_bytes}
+    for name, path, before in deletions:
+        if _OwnedGribRead._identity(path.lstat()) != _OwnedGribRead._identity(before):
+            _raw_cache_protection_refuse("ENTRY_CHANGED")
+        path.unlink()
+        removed_bytes += before.st_size
+        manifest["assets"].pop(name, None)
+    if deletions:
+        save_raw_cache_manifest(manifest)
+    return {"removedFiles": len(deletions), "removedBytes": removed_bytes}
+
+
+def prune_raw_cache(max_bytes: int = RAW_CACHE_MAX_BYTES) -> dict[str, int]:
+    return prepare_raw_cache_space(max_bytes=max_bytes)
+
 
 def cached_asset_path(href: str) -> pathlib.Path:
     # The object path is the stable asset identity.  Ignore query credentials if
@@ -4466,6 +4622,8 @@ def download_asset(
     ):
         raise RuntimeError("DMI bulk asset has an invalid declared size")
     path = cached_asset_path(href)
+    if str(path.absolute()) in _RAW_CURRENT_UNPROVED_NAMES:
+        _raw_cache_protection_refuse("DEPENDENCY_UNPROVED")
     exact = _exact_capture(expected_capture) if expected_capture is not None else None
     if exact is not None:
         _exact_official_https(href)
@@ -4501,10 +4659,13 @@ def download_asset(
             item_updated_at=item_updated_at,
             expected_size=expected_size,
         ):
-            try:
-                os.utime(path, None)
-            except OSError:
-                pass
+            if path.name in (_RAW_CURRENT_PROTECTED or {}) or path.name in _raw_current_session_files():
+                _raw_current_inventory()
+            else:
+                try:
+                    os.utime(path, None)
+                except OSError:
+                    pass
             register_raw_cache_asset(
                 path, href, collection, model_run, valid_time,
                 item_id=item_id, item_created_at=item_created_at, item_updated_at=item_updated_at,
@@ -4513,6 +4674,18 @@ def download_asset(
             return path, True
     if expected_size and budget["bytes"] + expected_size > MAX_DOWNLOAD_BYTES:
         raise RuntimeError("DMI bulk download budget would be exceeded")
+    if exact is None:
+        if path.name in (_RAW_CURRENT_PROTECTED or {}):
+            _raw_cache_protection_refuse("DEPENDENCY_CHANGED")
+        if path.exists() and (_RAW_CURRENT_PROTECTED is None or path.name in _raw_current_session_files()):
+            _raw_cache_protection_refuse("EXISTING_UNPROVED")
+        # Missing declared size cannot authorize unbounded streaming. Reserve
+        # the remaining EXISTING download allowance, never raise either cap.
+        reservation = expected_size if expected_size is not None else MAX_DOWNLOAD_BYTES - budget["bytes"]
+        metadata_reserve = (raw_cache_manifest_path().stat().st_size if raw_cache_manifest_path().exists() else 0)
+        metadata_reserve += 4096 + sum(len(str(value).encode("utf-8")) for value in (
+            href, collection, model_run, valid_time, item_id, item_created_at, item_updated_at))
+        prepare_raw_cache_space(reservation, metadata_reserve=metadata_reserve)
     response_context = None
     tmp_context = None
     tmp_path: pathlib.Path | None = None
@@ -4555,6 +4728,8 @@ def download_asset(
                     raise RuntimeError("DMI bulk download budget exceeded during asset download")
                 if exact is not None and tmp.tell() + len(chunk) > exact["contentLengthBytes"]:
                     _exact_original_refuse("LENGTH_MISMATCH")
+                if exact is None and tmp.tell() + len(chunk) > reservation:
+                    _raw_cache_protection_refuse("INCOMING_LENGTH_EXCEEDED")
                 content_digest.update(chunk)
                 tmp.write(chunk)
             if exact is not None:
@@ -4795,6 +4970,8 @@ class _OwnedGribRead:
 
     def __enter__(self):
         try:
+            if str(self.path.absolute()) in _RAW_CURRENT_UNPROVED_NAMES:
+                self._refuse("DMI_RAW_CURRENT_DEPENDENCY_UNPROVED")
             if _UNSETTLED_GRIB_READS:
                 self._refuse("DMI_GRIB_PREVIOUS_READ_UNSETTLED")
             if (sys.platform != "linux"
@@ -4968,6 +5145,7 @@ def raw_cache_source_capture(
         "itemCreatedAt": iso(row.get("itemCreatedAt")),
         "itemUpdatedAt": iso(row.get("itemUpdatedAt")),
     }
+    _pin_raw_current_session(path, {**capture, "collection": collection, "modelRun": model_run, "validTime": valid_time})
     return capture
 
 
@@ -10824,8 +11002,16 @@ def plan_cached_current_history(demands, originals, manifest):
 
 
 def read_current_history_demands(part_doc, part_bytes, coastal_part_targets, zones, reference):
+    required = os.getenv("DMI_BULK_REQUIRE_COMMITTED_RAW_RETENTION", "false")
+    if required not in ("true", "false"):
+        _raw_cache_protection_refuse("REQUIRED_FLAG_INVALID")
+    # CACHE_ONLY already physically forbids HTTP and final pruning. It keeps
+    # normal history-demand validation, but needs no new eviction authority.
+    required = required == "true" and not CACHE_ONLY
     configured = os.getenv("DMI_BULK_CURRENT_HISTORY_DEMAND_PATH", "").strip()
     if not configured:
+        if required:
+            _raw_cache_protection_refuse("RETENTION_REQUIRED")
         return {}
     expected_path = ROOT / ".cache/ravscore-current-history-demand.json"
     path = pathlib.Path(configured)
@@ -10844,11 +11030,12 @@ def read_current_history_demands(part_doc, part_bytes, coastal_part_targets, zon
 
     document = json.loads(path.read_text("utf-8"), object_pairs_hook=unique_fields)
     if not (
-        isinstance(document, dict) and set(document) == {
+        isinstance(document, dict) and set(document) in ({
             "schemaVersion", "kind", "productionReferenceAt", "modelBinding",
             "registrySha256", "sourceHashes", "demands",
-        }
-        and type(document["schemaVersion"]) is int and document["schemaVersion"] == 1
+        }, {"schemaVersion", "kind", "productionReferenceAt", "modelBinding",
+            "registrySha256", "sourceHashes", "demands", "rawRetention"})
+        and type(document["schemaVersion"]) is int and document["schemaVersion"] == (2 if "rawRetention" in document else 1)
         and document["kind"] == "RAVSCORE_CURRENT_HISTORY_ACQUISITION_DEMAND"
         and canonical_time(document["productionReferenceAt"]) == canonical_time(reference)
         and isinstance(document["modelBinding"], dict)
@@ -10875,6 +11062,29 @@ def read_current_history_demands(part_doc, part_bytes, coastal_part_targets, zon
             actual = None
         if document["sourceHashes"][key] != actual:
             raise ValueError("DMI_CURRENT_HISTORY_DEMAND_INPUT_MISMATCH")
+    if required and document.get("rawRetention") is None:
+        _raw_cache_protection_refuse("RETENTION_REQUIRED")
+    if not CACHE_ONLY and "rawRetention" in document and document["rawRetention"] is not None:
+        retention = document["rawRetention"]
+        boundary = retention.get("boundary") if isinstance(retention, dict) else None
+        bundle = pathlib.Path(os.getenv("RAVRADAR_PRIVATE_RUNTIME_BUNDLE", ""))
+        root = pathlib.Path(os.getenv("RAVRADAR_PRIVATE_RUNTIME_ROOT", ""))
+        if not bundle.is_absolute() or not root.is_absolute() or bundle.parent != root or not isinstance(boundary, dict):
+            _raw_cache_protection_refuse("B_BOUNDARY_INVALID")
+        b_manifest_path = bundle / "manifest.json"
+        b_conditions_path = bundle / "payload/data/live/conditions.json"
+        for fixed in (b_manifest_path, b_conditions_path):
+            info = fixed.lstat()
+            if not stat.S_ISREG(info.st_mode) or info.st_nlink != 1 or info.st_size > 256 * 1024 * 1024:
+                _raw_cache_protection_refuse("B_BOUNDARY_INVALID")
+        b_manifest = json.loads(b_manifest_path.read_bytes())
+        s_checkpoint = json.loads(source_paths["checkpoint"].read_bytes())
+        if (any(b_manifest.get(key) != boundary.get(key) for key in
+                ("datasetId", "productionReferenceAt", "bundleContentSha256"))
+                or file_content_sha256(b_conditions_path) != boundary.get("conditionsSha256")
+                or s_checkpoint.get("generationSha256") != boundary.get("checkpointGenerationSha256")):
+            _raw_cache_protection_refuse("B_BOUNDARY_CHANGED")
+        configure_raw_current_retention(document["rawRetention"])
     if not document["demands"]:
         return {}  # Explicit stateless/no-demand plan; grants no source admission.
     owner_by_part = {}
@@ -13730,10 +13940,13 @@ def replay_current_field_shadow_from_cache(
                     "message": "one bounded cached current-field asset was skipped",
                 })
                 continue
-            try:
-                os.utime(path, None)
-            except OSError:
-                pass
+            if path.name in (_RAW_CURRENT_PROTECTED or {}) or path.name in _raw_current_session_files():
+                _raw_current_inventory()
+            else:
+                try:
+                    os.utime(path, None)
+                except OSError:
+                    pass
             register_raw_cache_asset(
                 path,
                 str(asset.get("href") or ""),

@@ -1,6 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
+import { assertCurrentHistoryRawRetentionOrder, inverseCurrentHistoryRawRetentionOrder }
+  from './lib/completed-private-runtime-workflow-review.mjs';
 import { inspectDmiForecastGridSampling } from './lib/dmi-forecast-store.mjs';
 import { assertDmiPartHourlyGridSamplingApplicable } from './lib/ravscore-production-adapters.mjs';
 import { buildNewestValidRavScoreRecoverySources,
@@ -992,8 +994,8 @@ test('current-history demand runs after actual activation and before DMI without
   const { readFile } = await import('node:fs/promises');
   const { PRIVATE_RUNTIME_PRODUCER_SOURCE_FILES, PRIVATE_RUNTIME_CONTRACT_FILES } =
     await import('./private-production-runtime-workflow.mjs');
-  const workflow = (await readFile(new URL('../.github/workflows/reusable-weather-build.yml', import.meta.url),
-    'utf8')).replaceAll('\r\n', '\n');
+  const workflow = inverseCurrentHistoryRawRetentionOrder((await readFile(new URL('../.github/workflows/reusable-weather-build.yml', import.meta.url),
+    'utf8')).replaceAll('\r\n', '\n'), 'build');
   const name = '      - name: Plan bounded current history from the actual selected continuation\n';
   assert.equal(workflow.split(name).length - 1, 1);
   const start = workflow.indexOf(name);
@@ -1011,6 +1013,36 @@ test('current-history demand runs after actual activation and before DMI without
   assert.ok(plan.includes("steps.private-runtime-install.outcome == 'success'"));
   assert.ok(plan.includes("steps.legacy-bootstrap.outputs.stateless_integrated_recovery == 'true'"));
   assert.ok(workflow.includes("DMI_BULK_CURRENT_HISTORY_DEMAND_PATH: ${{ steps.current-history-demand.outcome == 'success' && '.cache/ravscore-current-history-demand.json' || '' }}"));
+  assert.ok(PRIVATE_RUNTIME_PRODUCER_SOURCE_FILES.includes('scripts/plan-ravscore-current-history.mjs'));
+  assert.deepEqual(PRIVATE_RUNTIME_CONTRACT_FILES.fullRuntimeContractSha256,
+    ['scripts/lib/private-weather-storage-abi.json']);
+});
+test('actual committed RAW demand follows the materialized generation before legacy binding', async () => {
+  const { readFile } = await import('node:fs/promises');
+  const { PRIVATE_RUNTIME_PRODUCER_SOURCE_FILES, PRIVATE_RUNTIME_CONTRACT_FILES } =
+    await import('./private-production-runtime-workflow.mjs');
+  const workflow = (await readFile(new URL('../.github/workflows/reusable-weather-build.yml', import.meta.url),
+    'utf8')).replaceAll('\r\n', '\n');
+  assertCurrentHistoryRawRetentionOrder(workflow);
+  const name = '      - name: Plan bounded current history from the actual selected continuation\n';
+  assert.equal(workflow.split(name).length - 1, 1);
+  const start = workflow.indexOf(name);
+  const end = workflow.indexOf('      - name: Bind causal OLD current reconstruction to the materialized saved inputs\n', start);
+  assert.ok(end > start, 'the demand block must have the exact next legacy step');
+  const plan = workflow.slice(start, end);
+  assert.ok(workflow.indexOf('      - name: Prepare only an explicitly requested READY point activation\n') < start);
+  assert.ok(workflow.indexOf('      - name: Rebuild centrally reviewed coastal-part sampling points\n') < start);
+  assert.ok(workflow.indexOf('      - name: Prepare strict active DMI donor or resumable candidate\n') < start);
+  assert.ok(end < workflow.indexOf('      - name: Update DMI bulk model cache\n'));
+  assert.ok(plan.includes("steps.weather-source-handoff.outputs.reused != 'true'"));
+  assert.ok(plan.includes("steps.operational-action.outputs.action == 'integrated'"));
+  assert.ok(plan.includes("steps.operational-action.outputs.action == 'integrated-historical-maintenance'"));
+  assert.ok(plan.includes("steps.historical-wave-transition.outputs.required != 'true'"));
+  assert.ok(plan.includes('run: node scripts/plan-ravscore-current-history.mjs --retain-committed-raw'));
+  assert.ok(plan.includes("steps.private-runtime-install.outcome == 'success'"));
+  assert.ok(plan.includes("steps.legacy-bootstrap.outputs.stateless_integrated_recovery == 'true'"));
+  assert.ok(workflow.includes("DMI_BULK_CURRENT_HISTORY_DEMAND_PATH: ${{ steps.current-history-demand.outcome == 'success' && '.cache/ravscore-current-history-demand.json' || '' }}"));
+  assert.ok(workflow.includes("DMI_BULK_REQUIRE_COMMITTED_RAW_RETENTION: ${{ steps.private-runtime-install.outcome == 'success' && (steps.operational-action.outputs.action == 'integrated' || steps.operational-action.outputs.action == 'integrated-historical-maintenance') && inputs.weather_state_epoch_bootstrap != true && steps.legacy-bootstrap.outputs.stateless_integrated_recovery != 'true' && steps.historical-wave-transition.outputs.required != 'true' && 'true' || 'false' }}"));
   assert.ok(PRIVATE_RUNTIME_PRODUCER_SOURCE_FILES.includes('scripts/plan-ravscore-current-history.mjs'));
   assert.deepEqual(PRIVATE_RUNTIME_CONTRACT_FILES.fullRuntimeContractSha256,
     ['scripts/lib/private-weather-storage-abi.json']);

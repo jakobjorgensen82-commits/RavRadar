@@ -1,3 +1,7 @@
+## 4.0.581 — 2026-10-18 — lokal rettelse af genopretningens cirkulære selvventning
+
+Den præcist kvalificerede PR658 er merget, men den efterfølgende genopretning fejlede før originalrestore og cache-SAVE. Den nye forward-gren genimporterede dynamisk sin egen uafsluttede modulcyklus. Kun de allerede statiske planbindingskald anvendes nu; kildebunden native RED/GREEN og genindført-fejl-mutation samt 74 normale auth-/planprøver består lokalt. Ingen autenticitet, scope, planbody, model eller SQL ændres. Faktisk RAW-oprydning og lokal normal regression kræver desuden varig B/S-bundet originalbeskyttelse før almindelige vejrhentninger/cron. Lokal cyklusrettelse og engangsgenopretning er ikke en samlet løst driftsfejl. Ny præcis CI og faktisk produktion er åbne.
+
 ## 4.0.581 — 2026-10-18 — eksplicit hash i isolerede testlæsere
 
 PR658's samlede kildekontrol fejlede i den integrerede generators isolerede VM, fordi en ny testinverse brugte en skjult process-afhængighed. Den faktisk røde kalder reproduceres lokalt. Inversen bruger nu den eksisterende ægte SHA-256-funktion, og de to andre indirekte læsere binder samme afhængighed eksplicit. Alle gamle hele kontrolsummer, assertions og produktfiler bevares. Ny samlet præcis kildekontrol og faktisk vejrgendannelse er fortsat nødvendige.
