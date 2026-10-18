@@ -53,7 +53,7 @@ const bootstrap = await fs.readFile(new URL('../bootstrap.js', import.meta.url),
 const releaseVersion = JSON.parse(await fs.readFile(new URL('../package.json', import.meta.url), 'utf8')).version;
 const previousCopySuffix = `?v=${releaseVersion}&copy=footer-20261005`;
 const previousUiSuffix = `${previousCopySuffix}&ui=account-20261006`;
-const suffix = `${previousCopySuffix}&ui=account-timeline-20261018`;
+const suffix = `${previousCopySuffix}&ui=account-timeline-now-20261018`;
 assert.ok(index.includes(`src="bootstrap.js${suffix}"`));
 assert.ok(bootstrap.includes(`await import("./app.js${suffix}")`));
 

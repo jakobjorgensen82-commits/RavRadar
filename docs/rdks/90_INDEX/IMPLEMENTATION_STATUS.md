@@ -11,6 +11,12 @@ Den samlede kildeændring tilføjer nu den faste metadata-/tilstedeværelsesrapp
 
 Alle fem hovedmål er åbne; SOURCE, assistent582 og statistik er fortsat inaktive. Ældre afventninger nedenfor bevares som historik.
 
+## 18. oktober — femdøgnslistens zoneklik vælger Nu
+
+- [x] Fasthold ejerens seneste mindre bestilling og hold den annullerede kontekstomlægning ude. Frossen privat syvfilskandidat og normale lokale mål er bevaret; alle 51 kildeafhængigheder er uændrede på denne førkilde.
+- [ ] Integrer efter P0 med uændret 4.0.581 og C/I/T; opdater begge håndbøger og normal installationskopi uden schemaændring. Bestå præcis samlet CI.
+- [ ] Lever sikkert uden aktiv writer, og verificer faktisk Nu samt fuld gyldig zoneprognose efter klik fra femdøgnslisten. Kontroller fortsat fremtidstime ved kortklik og afvis sent færdig fremtid efter Nu. Browser-/mobilaccept og offentlig effekt er åbne.
+
 ## 18. oktober — PR659's afsluttende kapacitetsprøve
 
 - [x] Bevar den faktiske røde kontrol efter bestået Linux/native, PostgreSQL, kildegennemgang og baseline; ingen proofupload eller merge på det røde udfald.

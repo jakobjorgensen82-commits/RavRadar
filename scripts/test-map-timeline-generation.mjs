@@ -100,6 +100,9 @@ const oldKeys=new Map([
  `bootstrap.js?v=${version}&copy=footer-20261005&ui=account-20261006`,
  `app.js?v=${version}&copy=footer-20261005&ui=account-20261006`,
  `js/ui/map-timeline.js?v=${version}`,
+ // The actually delivered timeline keys must also miss after this caller fix.
+ `bootstrap.js?v=${version}&copy=footer-20261005&ui=account-timeline-20261018`,
+ `app.js?v=${version}&copy=footer-20261005&ui=account-timeline-20261018`,
 ].map(key=>[new URL(key,root).href,{old:true}]));
 const fetched=[];
 const cacheContext={CACHE:'synthetic-installed581',caches:{open:async()=>({

@@ -56,6 +56,10 @@ En lokal syntetisk 673-dels kæde med tre efterfølgere har bestået normal gemn
 
 ## 89.251 Kortet kan vises for en valgt prognosetime
 
+**Lokal UI-rettelse 18. oktober — endnu ikke offentligt verificeret:** Klikker du på en zone i forsiden femdøgnsprognose, vælger den afgrænsede rettelse først Nu ved kortet og åbner derefter zonens normale prognose. Nu betyder den aktuelle verificerede time, ikke midnat. Klik på selve kortet beholder fortsat den time, du har valgt med skyderen. Valgt dag og rangering i femdøgnslisten ændres ikke.
+
+Kun den nationale listes zoneklik ændres. Den tidligere foreslåede større adskillelse af kortets og zonens tidskontekst er annulleret. Versionsnummer 4.0.581, vejrdata og scoremodel er uændrede. Lokal test er ikke bevis for offentlig levering; præcis kildekontrol, sikker levering og browseraccept udestår.
+
 Nyeste status 18. oktober — UI-build 4.0.581, endnu ikke offentligt verificeret: Ejerens iPhone viste, at onsdag rykkede ned på en ny dagrække. Alle dagslabels holdes nu på én vandret række. Hver label har kort ugedag og dato på to linjer. Den følger omtrent sin faktiske placering under timerne, mens præcise daggrænser og delvise første og sidste dage bevares. Klik vælger fortsat dagens første eksisterende time.
 
 Dette er en afgrænset visningsrettelse med uændret versionsnummer 4.0.581. Browserens allerede eksisterende UI-adressenøgler skiftes på de ændrede filer, så gamle cachede labels og CSS ikke genbruges. Timevalg, vejrdata, model og RavScore ændres ikke.
