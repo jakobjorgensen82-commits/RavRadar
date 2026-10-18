@@ -1,3 +1,7 @@
+## 18. oktober — to testlæsergrænser efter asynkron fejlbevaring
+
+Den normale komponentkalderprøve søgte stadig en const-erklæring, som den nye ydre asynkrone fejlgrænse har opdelt. Begge fejl er faktisk reproduceret. Kun to tekstgrænser tilpasses den aktuelle tildeling og erklæringen før try; eksisterende assertions og normal VM-/scalar-/strøm-/epoch-adfærd bevares. Hele målfilen består fem tilfælde uden skip. Ny samlet præcis CI er fortsat nødvendig; dette løser ikke i sig selv produktionsstoppet eller den manglende femte dag. Ingen produktguard eller modelbinding lempes.
+
 ## 18. oktober — traditionelt originalbevis er ikke en samplingkvittering
 
 Den faktiske nye normaldiagnose har nået alle 673 dele og lokaliseret 33 forward-stop. Ved disse første stop har både gammel og ny kandidat komplet traditionelt originalbevis, men ukendt sampling; ingen korrekt dokumenteret efterfølger er påvist. Dette afkræfter, at en præferenceændring alene løser de målte stop. Første-stop- og kandidatantal er ikke en minimal filliste, og DMI-data er ikke dermed påvist ugyldige.

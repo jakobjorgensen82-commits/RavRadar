@@ -1,3 +1,7 @@
+## 4.0.581 — 2026-10-18 — normale testlæsere efter asynkron fejlbevaring
+
+To faktisk fejlede tekstgrænser i komponentkalderprøven følger nu updaterens særskilte erklæring og tildeling. Alle gamle kontroludsagn og faktiske normale VM-kodeudsnit bevares; hele målet består fem tilfælde uden skip. Produkt, model, SQL og originaler ændres ikke. Ny præcis samlet kildekontrol og faktisk vejrgendannelse er fortsat åbne.
+
 ## 4.0.581 — 2026-10-18 — præcis post-H0-originalplan og local-first-genopretning
 
 Den faktiske normaldiagnose har nået alle 673 dele og afgrænset 33 forward-stop uden en korrekt samplingkvitteret efterfølger. Den lokale default-OFF-forberedelse følger de faktiske normale prioriterede rækker og deres egne native-captures, ikke den gamle brede H0−51-plan. Alle deludfald, ægte B/S-origin, frisk pointer og faste private output kræves; plan er ikke numerisk admission. Den eksisterende eksakte RAW-restorer kontrollerer alle lokale originaler før transport og samlet manglende plads/download før første hentning uden pruning. Korruption, races og ukendt lukning afvises. Normal genaflæsning og checkpoint-genoptagelse skal fortsat gennemføre de strenge kontroller. Gamle orakler bevares gennem eksakte inverser; ingen model-, SQL-, kildeprioritets-, scoreformel-, geometri- eller originalændring. Fem relevante supportjob-linjer fastlåses til den allerede anvendte ubuntu-24.04 før leverandørens varslede imageovergang. Ny præcis CI og faktisk produktion er åbne; alle fem mål består.

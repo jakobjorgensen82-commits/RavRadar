@@ -1,5 +1,9 @@
 ## 89.253 Genaflæs kun nødvendige strømoriginaler
 
+**Kort fortalt:** Originalfiler skal genaflæses og hele vejret leveres, før genopretningen er bevist. Kildekandidaten er under kontrol; driften er endnu ikke genoprettet.
+
+Den normale kalderprøve skal følge den faktiske kodeform, også når fejlbevaring kræver en særskilt erklæring og asynkron grænse. To tidligere tekstgrænser er faktisk reproduceret røde og rettet uden at fjerne kontroludsagn eller erstatte normal kode. Fem måltilfælde består; præcis samlet kildekontrol og faktisk drift skal stadig dokumenteres særskilt.
+
 En gemt original og dens kontrolsum er ikke i sig selv dokumentation for en senere korrekt gitteraflæsning. Når den normale fremadberegning mangler denne dokumentation, skal de faktiske kildevalg efter den gemte tilstand spores til hvert native-endepunkts egen komplette originalidentitet. Nødvendig interpolation og kvalificeret støtte til strømhukommelse må ikke bortfalde. Den gemte gyldige tilstand og gamle originale bytes skal bevares.
 
 En privat behovsplan giver hverken samplingbevis eller tilladelse til at fortsætte beregningen. Alle allerede lokale råfiler kontrolleres før eventuel netadgang. Kun reelt manglende, præcist identificerede originaler må genanskaffes, og det samlede plads- og downloadbehov skal passe inden for eksisterende grænser uden sletning. Korruption, uafklaret filudskiftning og manglende lukningsbevis er ikke et legitimt fravær.

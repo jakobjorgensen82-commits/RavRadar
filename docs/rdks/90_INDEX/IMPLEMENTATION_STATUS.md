@@ -1,3 +1,11 @@
+## 18. oktober — afgrænset komponentkalderprøve efter fejlwrapperen
+
+- [x] Reproducer to gamle const-afgrænsninger mod den faktiske nye updater: tre tilfælde bestod og to fejlede.
+- [x] Ret kun tildelings-/planlægningsgrænserne; alle gamle kontroludsagn og normale kodeudsnit bevares. Hele normale mål består fem tilfælde uden fejl eller skip.
+- [ ] Bestå ny præcis samlet kildekontrol. Den tidligere PR658-kørsels beståede native PostgreSQL er ikke et grønt bevis for det rettede head.
+
+Produkt, modelbinding, SQL og vejrgendannelsens krav ændres ikke. Alle fem hovedmål er fortsat åbne.
+
 ## 18. oktober — præcis originalplan efter faktisk normal forward-diagnose
 
 - [x] PR657 bestået på præcis head inklusive PostgreSQL og faktisk merget med samme træ.

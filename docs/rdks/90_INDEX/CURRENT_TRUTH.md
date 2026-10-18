@@ -1,3 +1,7 @@
+## 18. oktober — normal komponentprøve følger den faktiske asynkrone kalder
+
+Mens PR658's første præcise kontrol efter bestået native PostgreSQL kørte kildeplanen, reproducerede ROOT to lokale kalderprøvefejl. Den normale testlæser søgte den gamle const-erklæring; produktet har nu en særskilt erklæring og asynkron fejlbevaring. Kun de to afgrænsninger opdateres. Alle gamle assertions, faktisk normal VM-kode, scalar-/strømhorisonter, Feggesund og epoch-rundtur bevares. Hele målet består fem tilfælde uden skip efter det faktiske røde udfald. Ny præcis samlet kontrol og faktisk vejrgendannelse er fortsat åbne; ingen produkt-, model-, SQL- eller dataændring følger af testrettelsen.
+
 ## 18. oktober — normal gitterafvisning kræver ægte genaflæsning af præcise originaler
 
 Præcis PR657-CI, merge og faktisk efterfølgende skrivefri diagnose er gennemført. Alle 673 normale delkald blev nået; 33 stoppede i forward-replay. Ved hvert målte første stop var den gamle kandidat valgt, og samme kvitteringsløse strøm fandtes i den gemte continuity. Både gammel og ny kandidat havde komplet traditionelt native-originalbevis, men ukendt sampling; der var ingen korrekt kvitteret efterfølger at foretrække. De tidligere diagnoseafventninger nedenfor er dermed historiske. Endelig unionvinder, minimale assets og fuldt forbrug er ikke bevist af første-stop-rapporten.

@@ -1,3 +1,7 @@
+## 18. oktober — præcise kaldergrænser efter asynkron fejlbevaring
+
+Den første PR658-kontrol bestod native Linux/PostgreSQL og fortsatte til kildeplanen. En samtidig målrettet gennemgang reproducerede to fejl i den normale komponentkalderprøve: den søgte stadig den tidligere const-erklæring efter indførelsen af den asynkrone ydre fejlgrænse. Kun to leksikalske grænser ændres til den faktiske tildeling og erklæringen før try-blokken. Alle eksisterende kontroludsagn og den faktisk udførte normale kode bevares. Hele målet består nu fem tilfælde uden fejl eller skip; ny præcis samlet CI kræves. Dette er test/support, ikke en ændret produktguard eller en vellykket vejrhentning. Model, SQL, originaler og alle fem åbne mål er uændrede.
+
 ## 18. oktober — faktisk forward-stop afklaret; præcis originalgenaflæsning forberedes
 
 Den præcise PR657-kildekontrol bestod inklusive PostgreSQL, baseline, kapacitet og kildebevis; samme træ er merget. Den efterfølgende skrivefri diagnose gennemløb faktisk alle 673 normale delkald og fandt 33 forward-stop. Ved alle målte første stop havde både den gamle og nye kandidat komplet traditionelt originalbevis, men manglede egne samplingkvitteringer. Ingen korrekt kvalificeret efterfølger kunne derfor vælges. Dette er ikke fejl i DMI-data, bortkomne korrigerede kvitteringer eller bevis for 833 forskellige nødvendige filer.
