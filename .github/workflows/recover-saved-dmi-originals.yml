@@ -216,6 +216,13 @@ jobs:
           RAVRADAR_R2_SECRET_ACCESS_KEY: ${{ secrets.RAVRADAR_R2_SECRET_ACCESS_KEY }}
           WEATHER_PROGRESS_MASTER_SECRET: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
 
+      - name: Inspect authenticated original metadata before transport
+        if: steps.plan.outputs.preparation_status == 'ORIGINAL_PLAN_PREPARED'
+        run: python -B scripts/inspect-exact-dmi-original-plan.py
+        env:
+          DMI_EXACT_ORIGINAL_PLAN_SHA256: ${{ steps.plan.outputs.plan_sha256 }}
+          GITHUB_SHA: ${{ github.sha }}
+
       - name: Select the normal owned cache API runtime
         uses: actions/setup-node@v7
         with:

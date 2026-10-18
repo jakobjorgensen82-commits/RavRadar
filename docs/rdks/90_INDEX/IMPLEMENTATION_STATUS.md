@@ -1,3 +1,16 @@
+## 18. oktober — originalplan bestået; faktisk filgendannelse åben
+
+Den samlede kildeændring tilføjer nu den faste metadata-/tilstedeværelsesrapport og en snæver historisk transportvej: kun STAC 404/410 og fuldt match af den allerede autentificerede URL-SHA vælger én adresse blandt højst to lokalt sammenlignede DMI-stavemåder. Indholds-SHA, størrelse, alle GRIB-tider, faktisk hentetid, budgetter, eksklusiv skrivning og cachelukning bevares. Ingen S3-udvidelse, nye kilder eller opdigtet katalogbevis. Tolv portable målprøver består i den reelle sammenføring. Den nye faktiske kommandoprøve kræver Linux: Windows' forskellige oprettelses-/ændringstider gjorde dens tidligere lokale resultat ustabilt. Hele prøvens kontroludsagn bevares i den obligatoriske native-kontrol; produktidentiteten lempes ikke. Native Linux, præcis samlet CI, faktisk filtilgængelighed, SAVE og offentlig effekt er endnu åbne. Rapportens filtilstedeværelse er ikke kvalificeret genbrug.
+
+- [x] Kvalificer PR659's præcise head med alle obligatoriske native Linux-, PostgreSQL-, kilde-, baseline-, kapacitets- og bevistrin; merge identisk træ.
+- [x] Gennemfør faktisk checkpoint-autentificering, alle 673 normale delkald og plan med 26 originalreferencer; bevar hele terminalresultatet før filtrering.
+- [x] Afgræns næste stop til HTTP 404/410 på ét eksakt STAC-item efter bestået samlet plads-/downloadkontrol. Ingen RAW-SAVE eller offentlig levering følger af planen.
+- [ ] Færdiggør afgrænset, skrivefri plan-/manifestrapport og målrettede prøver; mål faktisk modelalder og filtilstedeværelse før næste genopretningsvalg.
+- [ ] Bevis eventuelt ældre cacheindhold ved fuldt originalmatch; ingen gættet URL, blind cacheerstatning eller ny historikstart.
+- [ ] Gennemfør faktisk filrestore/SAVE, streng normal genaflæsning og checkpoint-levering, derefter almindelig efterfølger og offentlig kontrol før cron.
+
+Alle fem hovedmål er åbne; SOURCE, assistent582 og statistik er fortsat inaktive. Ældre afventninger nedenfor bevares som historik.
+
 ## 18. oktober — PR659's afsluttende kapacitetsprøve
 
 - [x] Bevar den faktiske røde kontrol efter bestået Linux/native, PostgreSQL, kildegennemgang og baseline; ingen proofupload eller merge på det røde udfald.

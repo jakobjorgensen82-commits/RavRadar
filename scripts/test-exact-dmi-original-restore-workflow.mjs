@@ -3,7 +3,17 @@ import fs from 'node:fs';
 import test from 'node:test';
 import crypto from 'node:crypto';
 
-const currentWorkflow = fs.readFileSync('.github/workflows/recover-saved-dmi-originals.yml', 'utf8').replace(/\r\n/g, '\n');
+const deliveredWorkflow = fs.readFileSync('.github/workflows/recover-saved-dmi-originals.yml', 'utf8').replace(/\r\n/g, '\n');
+const diagnosticStep = `      - name: Inspect authenticated original metadata before transport
+        if: steps.plan.outputs.preparation_status == 'ORIGINAL_PLAN_PREPARED'
+        run: python -B scripts/inspect-exact-dmi-original-plan.py
+        env:
+          DMI_EXACT_ORIGINAL_PLAN_SHA256: \${{ steps.plan.outputs.plan_sha256 }}
+          GITHUB_SHA: \${{ github.sha }}
+
+`;
+assert.ok(deliveredWorkflow.split(diagnosticStep).length <= 2, 'No duplicate observer');
+const currentWorkflow = deliveredWorkflow.replace(diagnosticStep, '');
 // Reconstitute the WHOLE genuine old workflow before its unchanged historical
 // assertions. Current390663 behavior is tested separately below, never retagged.
 function inverseForwardRecovery(source) {
@@ -33,6 +43,15 @@ function inverseForwardRecovery(source) {
   return source;
 }
 const workflow = inverseForwardRecovery(currentWorkflow);
+test('pretransport observer follows authenticated preparation and has no provider credential or added restore authority', () => {
+  assert.equal(deliveredWorkflow.split(diagnosticStep).length, 2, 'The bounded report must actually run before transport');
+  const prepared = deliveredWorkflow.indexOf('id: plan\n');
+  const observed = deliveredWorkflow.indexOf(diagnosticStep);
+  const recovered = deliveredWorkflow.indexOf('      - name: Recover exact originals without weather calculation or pruning\n');
+  assert.ok(prepared > 0 && observed > prepared && recovered > observed);
+  assert.doesNotMatch(diagnosticStep, /secrets\.|DMI_API_KEY|SUPABASE|R2_|GITHUB_OUTPUT|--restore|--publish/);
+  assert.match(diagnosticStep, /DMI_EXACT_ORIGINAL_PLAN_SHA256:/);
+});
 const gh = value => '${{ ' + value + ' }}';
 const step = name => {
   const start = workflow.indexOf(`      - name: ${name}\n`);
