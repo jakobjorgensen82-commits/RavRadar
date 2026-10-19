@@ -1,3 +1,11 @@
+## 19. oktober — SOURCE: isoleret kildeprøve, ikke revisionsaktivering
+
+En særskilt kildekandidat tilføjer kun en eksplicit prøvebank og et krævet Linux-job før den uændrede fulde kildegate. Prøveværten sammensætter 296 afgrænsede input: 227 autentiske Gitblobs fra den allerede kvalificerede a568-kilde og 69 inerte prøvefiler fra de frosne, gennemgåede operander. Ingen normale produktfiler, aktuelle C/I/T-bindinger, SQL, version eller provider-/schedulerbudgetter ændres. SOURCE-revisionen kopieres ikke ind i aktive produktstier og aktiveres ikke.
+
+Den faktisk nåelige fejlsti har fået historikplanlæggeren, DMI-producenten og deres præcise importer med. Punktstaging er success-only og kvalificeres ikke af denne fejlprøve. Begge egne prøveværter skal læse de ægte historiske Gitobjekter gennem fysisk verificerede, skrivefri alternates; ingen gamle pins eller Gitidentiteter ommærkes. De tidligere V13/V15-fixtures og alle 27 produktpins bevares.
+
+Den frosne lokale Node-kontrol består med normal inventory, 125 historiske Gitblobs, 296 inputhashes, 27 produktpins og 36 CI-betingelser. Hele patchinverser består; disse beviser genbruges kun for de byteidentiske input. Linux-native, den faktiske samlede fireminutters-fejlkæde og varig fjernlagring er fortsat ukvalificerede. Kun et lille metadataresultat må gemmes; uobserverede forhold er UNKNOWN/null, og lokalt SDK er ikke cloudbevis. Se SOURCE19_NATIVE_PROOF_BANK_V16. Dette er ikke en ny offentlig vejrgeneration eller færdiggørelse af revisionen.
+
 ## 19. oktober — panelprøvens klokke, ikke en ændret prognoseregel
 
 PR667's første præcise kildekontrol bestod de indledende native Linux- og PostgreSQL-prøver, men den samlede kildevalidering fejlede i én UI-prøve. Dens faste prognosedato var 18. oktober, mens den normale renderer brugte værtsmaskinens aktuelle danske dag. Efter dansk midnat udløb prøveprognosen korrekt. Den samme fejl er reproduceret lokalt; det er ikke et nyt produktionsstop eller bevis for en defekt scoremodel.

@@ -1,0 +1,73 @@
+// Test-only data verification of genuine Git operands; no source/family authority.
+import assert from 'node:assert/strict';
+import fs from 'node:fs/promises';
+import path from 'node:path';
+import crypto from 'node:crypto';
+import {spawnSync} from 'node:child_process';
+import {fileURLToPath} from 'node:url';
+const DATA='scripts/fixtures/source19-terminal-proof-git-operands-v3.json';
+const DATA_SHA='7e06eae7ba27488c1418dc42097db798e4399222b1bd5b721de8321a0c856afc';
+const sha=b=>crypto.createHash('sha256').update(b).digest('hex');
+const environment=()=>Object.fromEntries(Object.entries(process.env).filter(([k])=>
+ ['PATH','Path','SystemRoot','WINDIR','TEMP','TMP','LANG','LC_ALL','LC_CTYPE'].includes(k)));
+function code(error){return error?.message?.match(/^SOURCE_GIT_[A-Z_]+$/)?.[0]??'SOURCE_GIT_UNCLASSIFIED';}
+function need(value,key){if(!value)throw Error('SOURCE_GIT_'+key);}
+async function physical(file,directory){
+ need(path.isAbsolute(file)&&!/[\r\n\0]/.test(file),'PHYSICAL_PATH');
+ need(path.resolve(file)===file&&await fs.realpath(file)===file,'PHYSICAL_PATH');
+ let current=path.parse(file).root;
+ for(const piece of path.relative(current,file).split(path.sep).filter(Boolean)){
+  current=path.join(current,piece);const s=await fs.lstat(current);
+  need(!s.isSymbolicLink(),'SYMLINK_REFUSED');
+  if(current!==file)need(s.isDirectory(),'PHYSICAL_DIRECTORY');
+ }
+ const s=await fs.lstat(file);need(directory?s.isDirectory():s.isFile()&&s.nlink===1,'OWN_REGULAR');
+ if(process.getuid)need(s.uid===process.getuid(),'OWNER');return s;
+}
+async function stableBytes(file,maximum){const before=await physical(file,false);
+ need(before.size<=maximum,'INPUT_BOUND');const handle=await fs.open(file,'r');let b,opened,ended;
+ try{opened=await handle.stat();b=await handle.readFile();ended=await handle.stat();}finally{await handle.close();}
+ const after=await fs.lstat(file),key=s=>[s.dev,s.ino,s.mode,s.nlink,s.size,s.mtimeMs,s.ctimeMs].join(':');
+ need(key(before)===key(opened)&&key(opened)===key(ended)&&key(ended)===key(after)&&b.length===after.size,'INPUT_CHANGED');return b;
+}
+function git(root,args,input){const r=spawnSync('git',['--no-optional-locks',...args],
+ {cwd:root,env:environment(),input,maxBuffer:32*1024*1024,timeout:30000});
+ need(r.status===0&&!r.signal,'OPERAND_UNAVAILABLE');return r.stdout;}
+export async function verifySource19GitOperandData({root,dataBytes}){
+ need(arguments.length===1&&path.isAbsolute(root),'ARGUMENTS');need(sha(dataBytes)===DATA_SHA,'PINNED_DATA');
+ const data=JSON.parse(dataBytes);need(data.schemaVersion===1&&data.kind==='SOURCE19_FIXED_REACHABLE_GIT_OPERANDS'
+  &&data.sourceAdmission===false&&data.productionActivation===false&&data.commits.length===1,'DATA_SHAPE');
+ let count=0;
+ for(const group of data.commits){
+  need(/^[a-f0-9]{40}$/.test(group.commit)&&/^[a-f0-9]{40}$/.test(group.tree),'OBJECT_ID');
+  need(git(root,['rev-parse',group.commit+'^{commit}']).toString().trim()===group.commit,'COMMIT_ID');
+  need(git(root,['rev-parse',group.commit+'^{tree}']).toString().trim()===group.tree,'TREE_ID');
+  const tree=new Map(git(root,['ls-tree','-r','-z','--full-tree',group.commit]).toString().split('\0').filter(Boolean).map(row=>{
+   const m=/^(100644|100755) blob ([a-f0-9]{40})\t(.+)$/.exec(row);return m?[m[3],m[2]]:[null,null];}));
+  const rows=group.files;need(rows.length>0&&rows.length<=256&&new Set(rows.map(r=>r.path)).size===rows.length,'SOURCE_COUNT');
+  for(const row of rows){need(/^[A-Za-z0-9_./-]+$/.test(row.path)&&!row.path.split('/').includes('..')
+    &&!path.posix.isAbsolute(row.path)&&tree.get(row.path)===row.gitBlob,'SOURCE_TREE_BLOB');}
+  const batch=git(root,['cat-file','--batch'],rows.map(r=>group.commit+':'+r.path+'\n').join(''));let offset=0;
+  for(const row of rows){const e=batch.indexOf(10,offset);need(e>offset,'BATCH_HEADER');
+   const header=batch.subarray(offset,e).toString().split(' ');
+   need(header[0]===row.gitBlob&&header[1]==='blob'&&Number(header[2])===row.bytes,'BLOB_ID_SIZE');
+   need(sha(batch.subarray(e+1,e+1+row.bytes))===row.sha256&&batch[e+1+row.bytes]===10,'BLOB_SHA');offset=e+2+row.bytes;count++;}
+  need(offset===batch.length,'BATCH_END');
+ }
+ return {kind:'SOURCE19_AUTHENTIC_FIXED_GIT_DATA',status:'PASS',commits:data.commits.length,blobs:count,
+  manifestSha256:DATA_SHA,sourceAdmission:false,productionActivation:false};
+}
+export async function verifySource19ProofHostGit(root){
+ const alternate=path.join(root,'.git/objects/info/alternates');const raw=await stableBytes(alternate,4096);
+ const text=raw.toString('utf8');need(Buffer.from(text).equals(raw)&&text.endsWith('\n')&&text.split('\n').length===2&&!text.includes('\r'),'ONE_ALTERNATE');
+ const common=text.slice(0,-1);await physical(common,true);
+ const result=await verifySource19GitOperandData({root,dataBytes:await stableBytes(path.join(root,DATA),256*1024)});
+ return {...result,physicalReadOnlyAlternate:true};
+}
+if(import.meta.url.startsWith('file:')&&process.argv[1]&&path.resolve(process.argv[1])===fileURLToPath(import.meta.url)){
+ try{need(process.argv.length===3&&process.argv[2]==='--verify','ARGUMENTS');
+  const root=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'../..');
+  console.log(JSON.stringify(await verifySource19ProofHostGit(root)));
+ }catch(error){console.log(JSON.stringify({kind:'SOURCE19_AUTHENTIC_FIXED_GIT_DATA',status:'FAIL',failureCode:code(error),
+  sourceAdmission:false,productionActivation:false}));process.exitCode=1;}
+}

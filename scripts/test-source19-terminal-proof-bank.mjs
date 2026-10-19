@@ -1,0 +1,121 @@
+// Test-only proof-bank contract. Never imported by a production caller.
+import assert from 'node:assert/strict';
+import fs from 'node:fs/promises';
+import path from 'node:path';
+import crypto from 'node:crypto';
+import {spawnSync} from 'node:child_process';
+import {fileURLToPath} from 'node:url';
+const ROOT=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
+const sha=b=>crypto.createHash('sha256').update(b).digest('hex');
+const CONTRACT=Object.freeze({"bankRoot":"scripts/fixtures/source19-terminal-proof-inputs-v2","manifest":"scripts/fixtures/source19-terminal-proof-inputs-v2/manifest.json","manifestSha256":"403a82974a2a67e4372cf7c2a70e3dde007053d1713e34ffb0e81cd44acbeada","materializer":"scripts/run-source19-terminal-native-bank.py","materializerSha256":"2163e3fa7653c1d4666c593ef11fbc299b7e1be6d32801c12e952d0753b970bc","workflowBeforeSha256":"8551796f634919621f6bbeff948f08f5f70aa3482f4a2f4f79758067640717de","workflowAfterSha256":"5357ea3bb58c59d32e249716d9fb405b202211c06ddc1d00a93f2f80ce566e71","jobs":"  source-proof-bank-scope:\n    name: Determine exact isolated SOURCE proof-bank scope\n    runs-on: ubuntu-24.04\n    timeout-minutes: 3\n    outputs:\n      required: ${{ steps.scope.outputs.required }}\n    steps:\n      - uses: actions/checkout@v7\n        with:\n          fetch-depth: 0\n          ref: ${{ github.event.pull_request.head.sha }}\n          persist-credentials: false\n      - uses: actions/setup-node@v7\n        with:\n          node-version: 22\n      - name: Classify only the explicit test bank and its proof caller\n        id: scope\n        run: node scripts/test-source19-terminal-proof-bank.mjs --scope\n        env:\n          SOURCE19_PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}\n          SOURCE19_PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}\n\n  source-proof-bank-native:\n    name: SOURCE native terminal failure / asset-skip-limit\n    needs: source-proof-bank-scope\n    if: needs.source-proof-bank-scope.outputs.required == 'true'\n    runs-on: ubuntu-24.04\n    timeout-minutes: 35\n    steps:\n      - uses: actions/checkout@v7\n        with:\n          fetch-depth: 0\n          ref: ${{ github.event.pull_request.head.sha }}\n          persist-credentials: false\n      - name: Require exact native fixture pull-request head\n        shell: bash\n        env:\n          EXPECTED_HEAD_SHA: ${{ github.event.pull_request.head.sha }}\n        run: |\n          set -euo pipefail\n          test \"$(git rev-parse HEAD^{commit})\" = \"$EXPECTED_HEAD_SHA\"\n          test ! -e /tmp/ravradar-private-production-runtime\n          test ! -L /tmp/ravradar-private-production-runtime\n      - uses: actions/setup-python@v7\n        with:\n          python-version: \"3.12\"\n      - uses: actions/setup-node@v7\n        with:\n          node-version: 24\n      - name: Install only existing SOURCE native fixture requirements\n        run: >-\n          python -m pip install --disable-pip-version-check\n          -r requirements-dmi.txt\n          -r requirements-geometry.txt\n          -r requirements-copernicus.txt\n      - name: Retain verified Node24 path for the isolated action\n        id: native-node24\n        shell: bash\n        run: |\n          set -euo pipefail\n          executable=\"$(node -p 'require(\"node:fs\").realpathSync(process.execPath)')\"\n          case \"$executable\" in /*) ;; *) exit 1 ;; esac\n          test -x \"$executable\"\n          test \"$(\"$executable\" -p 'process.versions.node.split(\".\")[0]')\" = 24\n          printf 'path=%s\\n' \"$executable\" >> \"$GITHUB_OUTPUT\"\n      - name: Restore Node22 for normal SOURCE prelude programs\n        uses: actions/setup-node@v7\n        with:\n          node-version: 22\n      - name: Retain verified Node22 path for the normal prelude\n        id: native-node22\n        shell: bash\n        run: |\n          set -euo pipefail\n          executable=\"$(node -p 'require(\"node:fs\").realpathSync(process.execPath)')\"\n          case \"$executable\" in /*) ;; *) exit 1 ;; esac\n          test -x \"$executable\"\n          test \"$(\"$executable\" -p 'process.versions.node.split(\".\")[0]')\" = 22\n          printf 'path=%s\\n' \"$executable\" >> \"$GITHUB_OUTPUT\"\n      - name: Run one exact source-only terminal failure proof host\n        shell: bash\n        env:\n          SOURCE19_PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}\n          SOURCE_NODE22_PATH: ${{ steps.native-node22.outputs.path }}\n          SOURCE_NODE24_PATH: ${{ steps.native-node24.outputs.path }}\n        run: |\n          set -euo pipefail\n          node scripts/test-source19-terminal-proof-bank.mjs\n          python -I -B scripts/run-source19-terminal-native-bank.py --node24-path \"$SOURCE_NODE24_PATH\" --node22-path \"$SOURCE_NODE22_PATH\"\n\n      # Fixed safe metadata only; not the host, SDK archive or raw logs.\n      - name: Retain bounded native proof metadata after actual outcome\n        if: always()\n        uses: actions/upload-artifact@v7\n        with:\n          name: source19-terminal-proof-${{ github.run_id }}-${{ github.run_attempt }}\n          path: .cache/source19-terminal-proof-result/result.json\n          if-no-files-found: error\n          retention-days: 7\n          compression-level: 9\n\n","guard":"    needs: [source-proof-bank-scope, source-proof-bank-native]\n    if: always() && needs.source-proof-bank-scope.result == 'success' && ((needs.source-proof-bank-scope.outputs.required == 'true' && needs.source-proof-bank-native.result == 'success') || (needs.source-proof-bank-scope.outputs.required == 'false' && needs.source-proof-bank-native.result == 'skipped'))\n","scopePaths":[".github/workflows/validate-pull-request.yml","scripts/test-workflow-validation-order-4.0.108.mjs",".gitattributes","scripts/test-source19-terminal-proof-bank.mjs","scripts/run-source19-terminal-native-bank.py","requirements-dmi.txt","requirements-geometry.txt","requirements-copernicus.txt"],"files":296,"testBank":69,"fixedGit":227,"fixedGitOperands":{"path":"scripts/fixtures/source19-terminal-proof-git-operands-v3.json","sha256":"7e06eae7ba27488c1418dc42097db798e4399222b1bd5b721de8321a0c856afc","helper":"scripts/test-helpers/source19-native-git-operands.mjs","helperSha256":"4984f7113f4cde8b44f8b53f994217ce31a270c401aff2949bd83f6f4ad2f96e","commits":[{"commit":"85fe6f7ffa889af0b74346a12d0b4385ce4ab0e9","tree":"b7deb9eb805f5bdcd79ad0e02c1612bd99946d61","blobs":125}]}});
+function git(args,input){const r=spawnSync('git',['--no-optional-locks',...args],{cwd:ROOT,input,maxBuffer:32*1024*1024});
+ assert.equal(r.status,0,'SOURCE_PROOF_GIT_REQUIRED');return r.stdout;}
+export function source19ProofBankRequired(files){
+ assert(Array.isArray(files)&&files.every(x=>typeof x==='string'&&!x.includes('\\')&&!x.startsWith('/')&&!x.split('/').includes('..')));
+ return files.some(file=>file.startsWith(CONTRACT.bankRoot+'/')||CONTRACT.scopePaths.includes(file));
+}
+export function projectSource19ProofBankWorkflow(value,{requireRegistered=false}={}){
+ const actual=value.replaceAll('\r\n','\n');
+ if(sha(actual)!==CONTRACT.workflowAfterSha256){
+  assert.equal(requireRegistered,false,'SOURCE_PROOF_EXACT_WORKFLOW_REQUIRED');
+  assert(!actual.includes('  source-proof-bank-native:\n'),'SOURCE_PROOF_CHANGED_JOB_REFUSED');return actual;
+ }
+ assert.equal(actual.split(CONTRACT.jobs).length,2);
+ assert.equal(actual.split(CONTRACT.guard).length,2);
+ const inverse=actual.replace(CONTRACT.jobs,'').replace(CONTRACT.guard,'');
+ assert.equal(sha(inverse),CONTRACT.workflowBeforeSha256,'Whole ordinary source gate unchanged');return inverse;
+}
+export async function testSource19ProofBank(){
+ const manifestBytes=await fs.readFile(path.join(ROOT,CONTRACT.manifest));assert.equal(sha(manifestBytes),CONTRACT.manifestSha256);
+ const manifest=JSON.parse(manifestBytes);assert.equal(manifest.files.length,CONTRACT.files);assert.equal(manifest.testOnlyBankFiles,CONTRACT.testBank);
+ assert.equal(manifest.fixedGitFiles,CONTRACT.fixedGit);assert.equal(manifest.sourceAdmission,false);assert.equal(manifest.productionActivation,false);
+ const workflow=await fs.readFile(path.join(ROOT,'.github/workflows/validate-pull-request.yml'),'utf8');
+ projectSource19ProofBankWorkflow(workflow,{requireRegistered:true});
+ assert.equal(source19ProofBankRequired(['README.md']),false);
+ for(const file of [...CONTRACT.scopePaths,CONTRACT.manifest,CONTRACT.bankRoot+'/operands/001.source.txt'])assert(source19ProofBankRequired([file]));
+ const fixed=manifest.files.filter(r=>r.input.kind==='FIXED_NORMAL_GIT_BLOB');
+ const bytes=git(['cat-file','--batch'],fixed.map(r=>manifest.ordinaryBase.commit+':'+r.path+'\n').join(''));
+ let offset=0;const bodies=new Map();
+ for(const row of fixed){const e=bytes.indexOf(10,offset);assert(e>offset);const header=bytes.subarray(offset,e).toString().split(' ');
+  assert.equal(header[0],row.input.gitBlob);assert.equal(header[1],'blob');assert.equal(Number(header[2]),row.bytes);
+  const body=bytes.subarray(e+1,e+1+row.bytes);assert.equal(sha(body),row.sha256);assert.equal(bytes[e+1+row.bytes],10);
+  offset=e+2+row.bytes;bodies.set(row.path,body);}
+ assert.equal(offset,bytes.length);
+ const bankRows=manifest.files.filter(r=>r.input.kind==='FROZEN_TEST_BANK');assert.equal(bankRows.length,CONTRACT.testBank);
+ for(const row of bankRows){const body=await fs.readFile(path.join(ROOT,row.input.bankPath));assert.equal(body.length,row.bytes);assert.equal(sha(body),row.sha256);
+  assert.notEqual(sha(Buffer.concat([body,Buffer.from('changed')])),row.sha256);bodies.set(row.path,body);}
+ const fixture=bodies.get(manifest.fixture).toString();
+ const identity=JSON.parse(/const fixtureIdentity=Object\.freeze\((\{[\s\S]*?\})\);/.exec(fixture)[1]);
+ const pins=JSON.parse(/const fixtureProductPins=Object\.freeze\((\{[\s\S]*?\})\);/.exec(fixture)[1]);
+ assert.equal(Object.keys(pins).length,27);assert.equal(sha(JSON.stringify(pins)),manifest.productIdentity);
+ for(const[file,pin]of Object.entries(pins))assert.equal(sha(bodies.get(file)),pin);
+ assert.equal(identity.productIdentity,manifest.productIdentity);
+ assert.equal(sha(bodies.get(identity.sourceOnlyProofBankParent.path)),identity.sourceOnlyProofBankParent.sha256);
+ const helper=bodies.get('scripts/test-helpers/source19-native-import-closure.mjs');
+ const scanner=bodies.get('scripts/lib/static-module-closure.mjs'),scannerSha=sha(scanner);
+ const parser=await import('data:text/javascript;base64,'+helper.toString('base64'));
+ assert.deepEqual(await parser.nativeProofLiteralImports('const source="import x from \'./false.mjs\'"; import x from "./real.mjs"; require("./local.cjs");',scanner,scannerSha),['./real.mjs','./local.cjs']);
+ await assert.rejects(parser.nativeProofLiteralImports('import "./real.mjs";',scanner,'0'.repeat(64)));
+ const fixedGitModule=await import('data:text/javascript;base64,'+bodies.get(CONTRACT.fixedGitOperands.helper).toString('base64'));
+ await fixedGitModule.verifySource19GitOperandData({root:ROOT,dataBytes:bodies.get(CONTRACT.fixedGitOperands.path)});
+ await assert.rejects(fixedGitModule.verifySource19GitOperandData({root:ROOT,
+  dataBytes:Buffer.concat([bodies.get(CONTRACT.fixedGitOperands.path),Buffer.from('changed')])}),/SOURCE_GIT_PINNED_DATA/);
+ const fixedGitData=JSON.parse(bodies.get(CONTRACT.fixedGitOperands.path));
+ assert.equal(fixedGitData.commits.length,1);assert.equal(fixedGitData.commits[0].files.length,125);
+ assert.equal(fixedGitData.commits[0].commit,'85fe6f7ffa889af0b74346a12d0b4385ce4ab0e9');
+ assert.equal(fixedGitData.commits[0].tree,'b7deb9eb805f5bdcd79ad0e02c1612bd99946d61');
+ assert.equal(fixedGitData.selector.sha256,sha(bodies.get(fixedGitData.selector.path)));
+ const driver=bodies.get(manifest.driver).toString();
+ for(const s of ["outer_alternate = ROOT / '.git/objects/info/alternates'",
+  "(git / 'objects/info/alternates').open('xb')","str(seed / 'scripts/test-helpers/source19-native-git-operands.mjs')",
+  "cwd=seed, env=clean_environment()"] )assert(driver.includes(s),s);
+ assert(driver.indexOf("str(seed / 'scripts/test-helpers/source19-native-git-operands.mjs')")<driver.indexOf("str(seed / FIXTURE), '--prepare'"));
+ const childRoots=new Set(manifest.requiredChildPrograms.map(r=>r.path));
+ assert.deepEqual([...childRoots].sort(),['scripts/plan-ravscore-current-history.mjs','scripts/update-dmi-bulk.py']);
+ for(const r of manifest.requiredChildPrograms)assert.equal(sha(bodies.get(r.path)),r.sha256);
+ assert.equal(manifest.notObservedSuccessOnly.includes('scripts/update-coastal-point-staging.mjs'),true);
+ assert.equal(bodies.has('scripts/update-coastal-point-staging.mjs'),false);
+ const materializer=await fs.readFile(path.join(ROOT,CONTRACT.materializer));assert.equal(sha(materializer),CONTRACT.materializerSha256);
+ for(const needle of ["'FIXED_NORMAL_GIT_BLOB'","'git', 'cat-file', 'blob'","'npm', 'ci', '--ignore-scripts', '--no-audit', '--no-fund'",
+  "'SOURCE_NATIVE_V16_BOUNDED_OBSERVATION'",'128 * 1024',"'sourceAdmission': False","'remoteCloudDurability': 'NOT_TESTED_LOCAL_SDK_PROTOCOL_ONLY'",
+  "'stage': 'INPUTS'","metadata_result(report)","env=clean_environment()"])
+  assert(materializer.toString().includes(needle),needle);
+ for(const needle of ["'--git-path', 'objects'","common.resolve(strict=True) != common",
+  "stat.S_ISLNK(info.st_mode)","common.stat().st_uid != os.geteuid()",
+  "host / '.git/objects/info/alternates'","'stage'] = 'FIXED_GIT_OPERANDS'",
+  "'seedGitOperands': 'UNKNOWN'","'normalCheckoutMutationObserved': 'UNKNOWN'",
+  "'normalCheckoutWritesAuthorized': False","'fixedGitOperandFailureCode'"])
+  assert(materializer.toString().includes(needle),needle);
+ assert.doesNotMatch(materializer.toString(),/rmtree|git.*checkout|git.*clone|sourceAdmission[^\n]*True/);
+ for(const needle of ['timeout-minutes: 35','retention-days: 7','if: always()','if-no-files-found: error',
+  'path: .cache/source19-terminal-proof-result/result.json','node-version: 24','node-version: 22','python-version: "3.12"',
+  'persist-credentials: false','--node24-path "$SOURCE_NODE24_PATH" --node22-path "$SOURCE_NODE22_PATH"'])assert(CONTRACT.jobs.includes(needle),needle);
+ assert.doesNotMatch(CONTRACT.jobs,/continue-on-error|secrets\.|pull_request_target|workflow_dispatch|(?:contents|actions|pages|id-token): write|DMI_BULK_MAX_RUNTIME_SECONDS/);
+ let guardCases=0;
+ for(const scope of ['success','failure','skipped'])for(const required of ['true','false',''])for(const native of ['success','failure','skipped',null]){
+  let expr=CONTRACT.guard.split('if: ')[1].trim().replaceAll('always()','true');
+  for(const[k,v]of [['needs.source-proof-bank-scope.result',scope],['needs.source-proof-bank-scope.outputs.required',required],
+   ['needs.source-proof-bank-native.result',native]])expr=expr.replaceAll(k,JSON.stringify(v));
+  assert.equal(Function('return ('+expr+');')(),scope==='success'&&((required==='true'&&native==='success')||(required==='false'&&native==='skipped')));guardCases++;
+ }
+ for(const[from,to]of [['timeout-minutes: 35','timeout-minutes: 12'],['retention-days: 7','retention-days: 90'],
+  ["needs.source-proof-bank-native.result == 'success'","needs.source-proof-bank-native.result != 'failure'"]])
+  assert.throws(()=>projectSource19ProofBankWorkflow(workflow.replace(from,to),{requireRegistered:true}));
+ return {kind:'SOURCE19_PROOF_BANK_NODE_CONTRACT',status:'PASS',files:CONTRACT.files,testBank:CONTRACT.testBank,fixedGit:CONTRACT.fixedGit,
+  guardCases,wholeOrdinaryWorkflowInverse:true,ordinaryModelAndProductChanges:false,
+  linuxMaterializer:'UNRUN',native:'UNRUN',remoteCloudDurability:'UNTESTED'};
+}
+async function scope(){
+ const head=process.env.SOURCE19_PR_HEAD_SHA,base=process.env.SOURCE19_PR_BASE_SHA;
+ assert.match(head??'',/^[a-f0-9]{40}$/);assert.match(base??'',/^[a-f0-9]{40}$/);
+ assert.equal(git(['rev-parse','HEAD^{commit}']).toString().trim(),head);
+ const files=git(['diff','--name-only','-z',base,head]).toString().split('\0').filter(Boolean);
+ const required=source19ProofBankRequired(files);
+ assert(path.isAbsolute(process.env.GITHUB_OUTPUT??''));
+ await fs.appendFile(process.env.GITHUB_OUTPUT,'required='+String(required)+'\n');
+ console.log(JSON.stringify({kind:'SOURCE19_PROOF_BANK_EXACT_SCOPE',required,changedPaths:files.length}));
+}
+if(process.argv[1]&&path.resolve(process.argv[1])===fileURLToPath(import.meta.url)){
+ if(process.argv.length===3&&process.argv[2]==='--scope')await scope();
+ else{assert.equal(process.argv.length,2);console.log(JSON.stringify(await testSource19ProofBank()));}
+}

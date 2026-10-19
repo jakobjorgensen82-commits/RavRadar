@@ -1,0 +1,38 @@
+// Test-only adapter around the unchanged, whole-hash verified normal lexer.
+// The old inventory admitted literal import/require only and ignored dynamic
+// nonliteral expressions. Preserve that scope while excluding quoted source.
+import assert from 'node:assert/strict';
+import crypto from 'node:crypto';
+import fs from 'node:fs/promises';
+const sha=b=>crypto.createHash('sha256').update(b).digest('hex');
+let lexer;
+export async function nativeProofLiteralImports(source,scannerBytes,scannerSha256){
+ assert.equal(sha(scannerBytes),scannerSha256,'WHOLE_NORMAL_LEXER_CHANGED');
+ if(!lexer){
+  const addition='\nexport {tokens as source19ProofTokens,statementEnd as source19ProofStatementEnd};\n';
+  lexer=await import('data:text/javascript;base64,'+Buffer.concat([scannerBytes,Buffer.from(addition)]).toString('base64'));
+ }
+ const items=lexer.source19ProofTokens(source),out=new Set();
+ for(let i=0;i<items.length;i++){
+  const t=items[i],n=items[i+1];if(t.type!=='id')continue;
+  if(t.value==='require'){
+   const offset=n?.value==='.'&&items[i+2]?.value==='resolve'?3:1;
+   if(items[i+offset]?.value==='('&&items[i+offset+1]?.type==='string'&&items[i+offset+2]?.value===')')out.add(items[i+offset+1].value);
+  }
+  if(!['import','export'].includes(t.value)||n?.value==='.')continue;
+  if(t.value==='import'&&n?.value==='('){
+   if(items[i+2]?.type==='string'&&items[i+3]?.value===')')out.add(items[i+2].value);
+   continue;
+  }
+  if(t.value==='import'&&n?.type==='string'){out.add(n.value);continue;}
+  const end=lexer.source19ProofStatementEnd(items,i+1);
+  for(let k=i+1;k<end;k++)if(items[k].type==='id'&&items[k].value==='from'&&items[k+1]?.type==='string'){
+   out.add(items[k+1].value);break;
+  }
+ }
+ return [...out].filter(x=>x.startsWith('./')||x.startsWith('../'));
+}
+export async function nativeProofLiteralImportsFromNormalSource(source){
+ const bytes=await fs.readFile(new URL('../lib/static-module-closure.mjs',import.meta.url));
+ return nativeProofLiteralImports(source,bytes,'675f91e7942143a78636e219e54bd7fa0ff25ddcd1998657dd215105054938b0');
+}

@@ -11,7 +11,110 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  source-proof-bank-scope:
+    name: Determine exact isolated SOURCE proof-bank scope
+    runs-on: ubuntu-24.04
+    timeout-minutes: 3
+    outputs:
+      required: ${{ steps.scope.outputs.required }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+          ref: ${{ github.event.pull_request.head.sha }}
+          persist-credentials: false
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+      - name: Classify only the explicit test bank and its proof caller
+        id: scope
+        run: node scripts/test-source19-terminal-proof-bank.mjs --scope
+        env:
+          SOURCE19_PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          SOURCE19_PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+
+  source-proof-bank-native:
+    name: SOURCE native terminal failure / asset-skip-limit
+    needs: source-proof-bank-scope
+    if: needs.source-proof-bank-scope.outputs.required == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+          ref: ${{ github.event.pull_request.head.sha }}
+          persist-credentials: false
+      - name: Require exact native fixture pull-request head
+        shell: bash
+        env:
+          EXPECTED_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD^{commit})" = "$EXPECTED_HEAD_SHA"
+          test ! -e /tmp/ravradar-private-production-runtime
+          test ! -L /tmp/ravradar-private-production-runtime
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+      - name: Install only existing SOURCE native fixture requirements
+        run: >-
+          python -m pip install --disable-pip-version-check
+          -r requirements-dmi.txt
+          -r requirements-geometry.txt
+          -r requirements-copernicus.txt
+      - name: Retain verified Node24 path for the isolated action
+        id: native-node24
+        shell: bash
+        run: |
+          set -euo pipefail
+          executable="$(node -p 'require("node:fs").realpathSync(process.execPath)')"
+          case "$executable" in /*) ;; *) exit 1 ;; esac
+          test -x "$executable"
+          test "$("$executable" -p 'process.versions.node.split(".")[0]')" = 24
+          printf 'path=%s\n' "$executable" >> "$GITHUB_OUTPUT"
+      - name: Restore Node22 for normal SOURCE prelude programs
+        uses: actions/setup-node@v7
+        with:
+          node-version: 22
+      - name: Retain verified Node22 path for the normal prelude
+        id: native-node22
+        shell: bash
+        run: |
+          set -euo pipefail
+          executable="$(node -p 'require("node:fs").realpathSync(process.execPath)')"
+          case "$executable" in /*) ;; *) exit 1 ;; esac
+          test -x "$executable"
+          test "$("$executable" -p 'process.versions.node.split(".")[0]')" = 22
+          printf 'path=%s\n' "$executable" >> "$GITHUB_OUTPUT"
+      - name: Run one exact source-only terminal failure proof host
+        shell: bash
+        env:
+          SOURCE19_PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          SOURCE_NODE22_PATH: ${{ steps.native-node22.outputs.path }}
+          SOURCE_NODE24_PATH: ${{ steps.native-node24.outputs.path }}
+        run: |
+          set -euo pipefail
+          node scripts/test-source19-terminal-proof-bank.mjs
+          python -I -B scripts/run-source19-terminal-native-bank.py --node24-path "$SOURCE_NODE24_PATH" --node22-path "$SOURCE_NODE22_PATH"
+
+      # Fixed safe metadata only; not the host, SDK archive or raw logs.
+      - name: Retain bounded native proof metadata after actual outcome
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: source19-terminal-proof-${{ github.run_id }}-${{ github.run_attempt }}
+          path: .cache/source19-terminal-proof-result/result.json
+          if-no-files-found: error
+          retention-days: 7
+          compression-level: 9
+
   validate:
+    needs: [source-proof-bank-scope, source-proof-bank-native]
+    if: always() && needs.source-proof-bank-scope.result == 'success' && ((needs.source-proof-bank-scope.outputs.required == 'true' && needs.source-proof-bank-native.result == 'success') || (needs.source-proof-bank-scope.outputs.required == 'false' && needs.source-proof-bank-native.result == 'skipped'))
     name: Source validation and release gate
     runs-on: ubuntu-24.04
     timeout-minutes: 75

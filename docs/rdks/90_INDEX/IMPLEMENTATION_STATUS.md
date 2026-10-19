@@ -1,3 +1,9 @@
+## 19. oktober — SOURCE: præcis prøvebank klar til kilde-PR
+
+Den isolerede kildekandidat er mekanisk materialiseret fra de gennemgåede, hashverificerede efterbilleder på den faktisk kvalificerede hovedkode efter PR667. Kun prøvebank, prøvekalder, additiv CI-kontrakt og dokumentation ændres; normale produktblade, model-/SQL-bindinger, gamle fixtures, budgetter og kildegatens gamle kontroludsagn bevares. Den gamle SOURCE-branch og alle private forældre bevares særskilt.
+
+Genbrugt lokalt bevis: normal Node-inventory og additiv kontrakt består for alle 296 input, 125 ægte historiske Gitblobs, 27 uændrede produktpins og 36 gatekombinationer. Begge hele patchretninger er verificeret. Materialisering er ikke en ny prøvekørsel eller CI. Næste trin er review og præcis kilde-PR med det særskilte Linux-job krævet før fuld kildekontrol. Fem normale transportstalls, oprindelig fejlfrist, fysisk proceslukning, finalizer, forsegling og SDK-gemning skal faktisk gennemføres dér; ingen PASS for disse udledes af Node-kontrollen. Fjern cloudbevarelse er ikke dækket af det lokale SDK. SOURCE forbliver inaktiv, og revisionens produktintegration samt produktionseffekt er fortsat åbne.
+
 ## 19. oktober — panelprøvens klokke, ikke en ændret prognoseregel
 
 PR667's første præcise kildekontrol bestod de indledende native Linux- og PostgreSQL-prøver, men den samlede kildevalidering fejlede i én UI-prøve. Dens faste prognosedato var 18. oktober, mens den normale renderer brugte værtsmaskinens aktuelle danske dag. Efter dansk midnat udløb prøveprognosen korrekt. Den samme fejl er reproduceret lokalt; det er ikke et nyt produktionsstop eller bevis for en defekt scoremodel.

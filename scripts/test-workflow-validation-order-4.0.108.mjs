@@ -1,3 +1,4 @@
+import {projectSource19ProofBankWorkflow} from './test-source19-terminal-proof-bank.mjs';
 import assert from 'node:assert/strict';
 import { inverseCompletedRuntimeWorkflow } from './lib/completed-private-runtime-workflow-review.mjs';
 import fs from 'node:fs';
@@ -325,7 +326,7 @@ if (/\b(?:push|pull_request|schedule|workflow_run):/.test(historicalWavePilot)) 
 if (/\.nc(?:\s|$)/m.test(historicalWavePilot)) {
   throw new Error('Den historiske bølgepilot må ikke uploade NetCDF-filer.');
 }
-const pullRequestValidation = fs.readFileSync(`${workflowDirectory}/validate-pull-request.yml`, 'utf8').replace(/\r\n/g, '\n');
+const pullRequestValidation = projectSource19ProofBankWorkflow(fs.readFileSync(`${workflowDirectory}/validate-pull-request.yml`, 'utf8').replace(/\r\n/g, '\n'));
 for (const marker of [
   'pull_request:',
   'permissions:\n  contents: read',

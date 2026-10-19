@@ -1,3 +1,9 @@
+## 19. oktober — SOURCE: afgrænset test-only Linux-forberedelse
+
+Tilføjer en eksplicit, hashbundet prøvebank og et krævet, særskilt 35-minutters Linux-job før den uændrede normale kildegate. Prøveværten får kun de faktisk nødvendige frosne input, den nåelige historikplan-/DMI-childlukning og skrivefri adgang til autentiske historiske Gitobjekter. Gamle fixtures, alle 27 produktpins, normale produktfiler, C/I/T, SQL, version og provider-/schedulerbudgetter ændres ikke. Det lille metadataartifact må hverken indeholde råpayloads eller fungere som produktions-SAVE-bevis.
+
+Den præcise lokale Node-inventory/kontrakt og hele patchinverser består og genbruges efter byteidentisk materialisering. Linux-native, samlet fireminutters-forløb, cloudbevarelse, normal produktintegration og offentlig effekt er ikke bevist. Ingen revision eller produktionsfunktion aktiveres af denne kildeforberedelse.
+
 ## 19. oktober — panelprøvens klokke, ikke en ændret prognoseregel
 
 PR667's første præcise kildekontrol bestod de indledende native Linux- og PostgreSQL-prøver, men den samlede kildevalidering fejlede i én UI-prøve. Dens faste prognosedato var 18. oktober, mens den normale renderer brugte værtsmaskinens aktuelle danske dag. Efter dansk midnat udløb prøveprognosen korrekt. Den samme fejl er reproduceret lokalt; det er ikke et nyt produktionsstop eller bevis for en defekt scoremodel.
