@@ -4,6 +4,7 @@ import {createHash,webcrypto} from 'node:crypto';
 import vm from 'node:vm';
 import {createCurrentArrowLandMask,readCurrentArrowLandMaskResponse,CURRENT_ARROW_LAND_MASK_SHA256} from '../js/map/current-arrow-land-mask.js';
 import {buildFlowArrowCandidates,installFlowArrows} from '../js/map/map-view.js';
+import {createMapForecastController,mapCoastalPartsForDisplay} from '../js/services/map-forecast-view.js';
 import {polygonRecord,extractPolygons,packRing} from './build-current-arrow-land-mask.mjs';
 
 const rect=(west,south,east,north)=>[[west,south],[east,south],[east,north],[west,north],[west,south]];
@@ -153,18 +154,32 @@ try {
   const callerStart=appSource.indexOf('  let flowArrowAttempts=0;');
   const callerEnd=appSource.indexOf('  setTimeout(installArrows,0);',callerStart);
   assert.ok(callerStart>=0&&callerEnd>callerStart,'Actual deferred caller must be present');
-  const currentOnlyMap=makeMap(),events=[],timers=[];
+  const currentOnlyMap=makeMap(),events=[],timers=[],callerErrors=[];
   const state={zones:features,conditions:{zones:{'arbitrary-zone':{
     currentSource:'dmi-cache',flowPoints:{current:[10.2918063,56.875],sources:{current:'dmi-marine-grid'}},
     current:{currentDirectionDeg:177}
   }}}};
-  vm.runInNewContext(appSource.slice(callerStart,callerEnd)+'\nsetTimeout(installArrows,0);',{
-    installFlowArrows,map:currentOnlyMap,state,performance:{mark(){}},console:{error(){}},
+  // The actual caller now reads the selected map frame through these normal
+  // app functions. Load their complete current bodies; do not replace them
+  // with test-only mapConditions/coastalParts/forecast stubs.
+  const mapStateStart=appSource.indexOf('function mapFrame(){');
+  const mapStateEnd=appSource.indexOf('function mapScoreFor(',mapStateStart);
+  const forecastStart=appSource.indexOf('function flowForecastForMap(){');
+  const forecastEnd=appSource.indexOf('function configureMapTimeline(){',forecastStart);
+  assert.ok(mapStateStart>=0&&mapStateEnd>mapStateStart&&forecastStart>mapStateEnd&&forecastEnd>forecastStart,
+    'Actual map-state dependencies must be present');
+  const mapStateSource=appSource.slice(mapStateStart,mapStateEnd)+'\n'+appSource.slice(forecastStart,forecastEnd);
+  const mapForecast=createMapForecastController({loadHour:()=>assert.fail('Current-only mask admission must not fetch a forecast hour')});
+  mapForecast.configure({generation:'synthetic-land-mask-current-only',times:[at],live:{time:at,conditions:state.conditions}});
+  vm.runInNewContext(mapStateSource+'\n'+appSource.slice(callerStart,callerEnd)+'\nsetTimeout(installArrows,0);',{
+    installFlowArrows,map:currentOnlyMap,state,mapForecast,mapCoastalPartsForDisplay,
+    performance:{mark(){}},console:{error(_message,error){callerErrors.push(error);}},
     window:{dispatchEvent(event){events.push(event);}},
     CustomEvent:class {constructor(type,options){this.type=type;this.detail=options.detail;}},
     setTimeout(callback){timers.push(callback);}
   });
   timers.shift()();
+  assert.deepEqual(callerErrors.map(error=>error?.name),[],'Normal deferred caller must not hide missing VM dependencies');
   assert.ok(state.flowArrows,'Normal current-only caller must retain its loading layer');
   assert.equal(timers.length,0,'A pending coastline is not an installation error or reason for a duplicate retry');
   assert.equal(events.length,0,'A pending mask must produce neither false readiness nor failure');
@@ -180,7 +195,7 @@ try {
   assert.equal(await state.flowArrows.ready,true);
   assert.deepEqual(state.flowArrows.counts(),{wind:0,current:1});
   assert.deepEqual(events.map(event=>event.type),['ravradar:flow-arrows-ready']);
-  state.flowArrows.destroy();
+  state.flowArrows.destroy();mapForecast.destroy();
   assert.equal(await discarded.ready,false,'Destroyed layer is never ready, even after a successful shared load');
   assert.equal(live.layer.ravCurrentMaskStatus,'ready');
   assert.deepEqual(live.counts(),{wind:1,current:0},'Late mask arrival uses the latest land coordinate');

@@ -33,6 +33,20 @@ const tree = [['js/core/ravscore-model-bundle.generated.js','100644','blob',oid]
   ['supabase/migrations/20261019060000_last_mile.sql','100644','blob',oid],
   ['version.json','100644','blob',oid]];
 
+test('only the two named current map artifact callers are non-native inputs',()=>{
+  const callers=['scripts/test-mobile-start-and-live-cache-4.0.74.mjs','scripts/test-current-arrow-land-mask.mjs'];
+  for(const file of callers){
+    assert.equal(NON_NATIVE_TEST_INPUTS.filter(value=>value===file).length,1);
+    const before=[...tree,[file,'100644','blob',oid]],after=[...tree,[file,'100644','blob',newOid]];
+    assert.equal(verifyInputTrees(before,after).retainedEntries,tree.length);
+    assert.throws(()=>verifyInputTrees(before,after.map(row=>row[0]===file?[file,'120000','blob',newOid]:row)));
+    assert.throws(()=>verifyInputTrees(before,tree),'A named UI caller cannot disappear');
+  }
+  for(const file of ['scripts/test-current-arrow-land-mask-other.mjs','scripts/lib/current-arrow-land-mask.mjs',
+    'js/map/current-arrow-land-mask.js'])
+    assert.throws(()=>verifyInputTrees(tree,[...tree,[file,'100644','blob',newOid]]));
+});
+
 test('exact native phase reuse; drift, missing evidence and later failure execute normal PG', async () => {
   verifyWorkflow(originalWorkflow,candidateWorkflow);
   assert.throws(()=>verifyWorkflow(originalWorkflow,candidateWorkflow.replace('npm run validate:source','true')));
@@ -175,7 +189,17 @@ test('only exact reviewed follow-up inputs preserve every original retained PG t
   const after=parseTree(git(['ls-tree','-rz','--full-tree','HEAD']));
   const readSource=(file,side)=>git(['show',(side==='before'?ORIGIN.head:'HEAD')+':'+file]);
   const result=verifyInputTrees(before,after,readSource);
-  assert.equal(result.retainedEntries,3228);assert.equal(result.followupWorkflowWholeInverse,true);
+  const currentMapCallers=['scripts/test-mobile-start-and-live-cache-4.0.74.mjs','scripts/test-current-arrow-land-mask.mjs'];
+  // The original3228 inventory included these two source-only UI callers.
+  // Account for both actual regular Git entries explicitly; retain every other
+  // original input, fixed-Git tree and all existing drift/refusal assertions.
+  for(const file of currentMapCallers){
+    for(const entries of [before,after]){
+      const found=entries.filter(row=>row[0]===file);assert.equal(found.length,1);
+      assert.equal(found[0][1],'100644');assert.equal(found[0][2],'blob');
+    }
+  }
+  assert.equal(result.retainedEntries+currentMapCallers.length,3228);assert.equal(result.followupWorkflowWholeInverse,true);
   assert.throws(()=>verifyInputTrees([...before,before[0]],after,readSource));
   assert.throws(()=>verifyInputTrees(before,[...after,after[0]],readSource));
   assert.deepEqual(result.exactFollowupInputs.slice().sort(),FOLLOWUP_INPUTS.map(row=>row.path).sort());

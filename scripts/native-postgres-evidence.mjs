@@ -38,6 +38,10 @@ export const NON_NATIVE_TEST_INPUTS = Object.freeze([
   'scripts/test-weather-component-normal-wireup.mjs',
   'scripts/test-reusable-production-workflows.mjs',
   'scripts/test-weather-update-entrypoint.mjs',
+  // These two CURRENT UI/VM artifact callers never enter either PG command.
+  // Their immutable historical Git copies remain bound by the frozen trees.
+  'scripts/test-mobile-start-and-live-cache-4.0.74.mjs',
+  'scripts/test-current-arrow-land-mask.mjs',
 ]);
 // These five prose records are not read by the reviewed native command or its
 // historical materializers. No whole documentation directory is excluded.

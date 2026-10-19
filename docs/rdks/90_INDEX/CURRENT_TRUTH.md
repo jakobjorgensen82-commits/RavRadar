@@ -1,3 +1,11 @@
+## 19. oktober — 4.0.584: to forældede UI-prøveværter efter faktisk beregning
+
+Den faktiske providerfrie genoptagelse 39246956714/1 gennemførte beregningen den 19. oktober kl. 14.10.23 dansk tid efter 21 minutter og 49 sekunder. Begge normale produktionskollektioner blev gennemført: 53 af 55 artifactprøver og alle tre releaseprøver bestod. Samlekontrollen stoppede korrekt før SQL, nyt privat B/S og Pages; et grønt collectortrin er ikke bevis for alle underprøver. Kun de to fejlrelevante UI-prøveværter rettes lokalt.
+
+Den gamle mobilprøve forventede farveforklaringen direkte efter kortet uden den godkendte tidsskyder. Strømpileprøvens VM manglede nu de faktiske mapFrame/mapConditions/coastalPartsForMap/flowForecastForMap-afhængigheder og skjulte en ReferenceError. Rettelserne bevarer alle reelle runtime-, geometri-, kilde-, time- og maskekrav; produktkode, C/I/T, SQL, adminpunkter og geometri er uændrede. De to aktuelle UI-prøver er eksplicit ikke-native input; historiske Git-operander og enhver faktisk database-/miljøændring kræver fortsat gyldigt bevis eller ny PostgreSQL-prøve.
+
+Der er endnu ingen ny offentlig vejrgeneration. Beregningsresultatet nåede ikke det senere checkpointtrin; kun valideringsrapporterne blev uploadet. Ingen checkpointgenbrug af selve denne beregning må påstås. Nye præcise kilde- og produktionskontroller, B/S og deploy er åbne. Alle fem hovedmål er fortsat åbne, cron er senest verificeret pauset, og den isolerede SOURCE-revision forbliver inaktiv. Ældre statusafsnit nedenfor er dateret historik på disse punkter.
+
 ## 19. oktober — 4.0.584: normal artifactkontrol efter arkivberegning
 
 Den providerfrie arkivgenstart bevarede arkivet og gennemførte normal beregning den 19. oktober kl. 11.07.24 dansk tid. Derefter blev kørslen annulleret omkring 60-minuttersgrænsen, mens den genindførte brede `npm run validate` stadig kørte. Der blev ikke oprettet nyt leveringsartifact, publiceret nyt privat B/S, installeret den nye SQL eller leveret Pages. Bestået beregning er ikke bestået udgivelse.

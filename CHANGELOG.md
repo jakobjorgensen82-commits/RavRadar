@@ -1,3 +1,10 @@
+## 19. oktober — 4.0.584: tidsskyderens normale artifactprøver
+
+- Faktisk genoptagelse 39246956714/1 gennemførte beregningen på 21 minutter og 49 sekunder uden nye leverandørkald. Alle 55 artifactprøver blev forsøgt: to fejlede; alle tre releaseprøver bestod. Ingen ny SQL, privat B/S eller Pages blev leveret.
+- Mobilprøven krævede forældet direkte naboskab mellem kort og farveforklaring. Den kontrollerer nu reel placering og rækkefølge, inklusive den godkendte tidsskyder, samt afslag på fejlplaceringer.
+- Strømpileprøvens VM manglede de faktiske korttidsfunktioner. Hele normale funktioner og controller indlæses; de eksisterende geometri-, kilde-, time- og maskekrav bevares. Ingen produktkode, vejrdata, scoremodel eller geometri ændres.
+- Kun de to navngivne aktuelle UI-prøver klassificeres som ikke-native PostgreSQL-input. Oprindelige Git-træer, rigtige databaseinput, miljø- og fejlkontroller bevares; faktisk genbrug afhænger fortsat af friskt gyldigt bevis. Ny præcis kildekontrol og offentlig genopretning er endnu åbne.
+
 ## 19. oktober — 4.0.584: normal artifactkontrol efter arkivberegning
 
 - Den sidste providerfrie arkivgenstart gennemførte arkiv og beregning, men blev annulleret under en forældet fuld validering omkring jobloftet. Intet nyt B/S, SQL-installation, leveringsartifact eller Pages er bevist.
