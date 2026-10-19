@@ -1,3 +1,7 @@
+## 19. oktober — lokal 4.0.584: ret producenten, bevar originalerne
+
+Læs den nye front i CODEX_START_HERE, CURRENT_TRUTH og håndbog 89.256 før ældre statusnoter. Vejrhentningen nåede gemt B, men S blev afvist; producentens indramnings-/serialiseringsfejl er reproduceret uden gammel historik. Lokal 4.0.584 og ny append-only modelovergang er forberedelse, ikke installation. Ejerens nye start kræver nul gammel aktiv historik, permanent særskilt bevaring af faktiske B/S/offentlige originaler og efterfølgende normal fremadrettet opbygning. Offentlig version er senest verificeret som 4.0.581 med vejr fra 16. oktober kl. 12 dansk tid. Cron er senest verificeret slået fra. Alle fem hovedmål er åbne; fristen 18. oktober er overskredet og er ikke forlænget.
+
 ## 17. oktober — 4.0.581: bevar autentisk H0 og fortsæt kun fremad
 
 Historikgennemgangen genfinder den tidligere læring om bevaret punktvis historik og adskillelse af engangsovergang fra almindelig fortsættelse. Den aktuelle fejl skyldes konkret, at en engangskontrol genberegner allerede gemt strømtilstand fra et senere, flyttet kildevindue. Den normale videreberegner validerer allerede gemt tilstand og anvender kun timer efter dens tidspunkt. Ny historiknulstilling, ekstra stor originaljournal og svækkelse af no-loss er derfor ikke den valgte P0-løsning.

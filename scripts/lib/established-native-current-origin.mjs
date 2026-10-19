@@ -11,7 +11,8 @@ import { promisify, isDeepStrictEqual } from 'node:util';
 import { createProtectedPrivateRuntimeClients, validateProtectedPrivateRuntimePointer,
   PROTECTED_PRIVATE_RUNTIME_POLICY } from '../protected-private-production-runtime.mjs';
 import { createProtectedRavScoreCheckpointRequester } from '../protected-ravscore-continuation-checkpoint.mjs';
-import { verifyPrivateProductionRuntimeBundle } from '../private-production-runtime-bundle.mjs';
+import { verifyPrivateProductionRuntimeBundle, privateRuntimeBundleContentSha256, PRIVATE_PRODUCTION_RUNTIME_BUNDLE_POLICY } from '../private-production-runtime-bundle.mjs';
+import { assertVerifiedUnpairedWeatherRestartArchive } from './weather-state-epoch-archive.mjs';
 import { saveRavScoreContinuationCheckpoint } from '../ravscore-continuation-checkpoint.mjs';
 import { privateRuntimeContractHashes } from '../private-production-runtime-workflow.mjs';
 import { restoreProtectedRavScoreContinuationCheckpoint } from '../protected-ravscore-continuation-checkpoint.mjs';
@@ -64,6 +65,175 @@ const SEED = Object.freeze({
   T: 'a519a34e91e552623892e28f3c1fa9ee67b65d1fa08869a96e34fa24bd6d832f',
   ownerPolicyGitBlob: 'a4f65f8eb0396dbe3c3da442ebcb9a06d99d3287',
 });
+
+
+// A separate archive-authorized MEASURED-COLD start. The old pairs are NEVER
+// admitted, rebound or claimed to descend numerically from the historic SEED.
+const RESTART_KIND = 'PRIVATE_ARCHIVE_ISOLATED_NATIVE_CURRENT_ORIGIN';
+const RESTART_TRANSITION = 'ARCHIVE_ISOLATED_MEASURED_COLD';
+const RESTART_PREDECESSOR = Object.freeze({
+  version: '20261017140000',
+  integrated: '038d9b0cdc50d36dd10f207c6f33e909ddedbdacb28c89adbca12121cb2c7f5f',
+  candidate: '5cc38c658bf14513a029a62de8f5f9e98259630755bdd84bccbc5fb2c1797858',
+  continuation: '047db5f9c91b555eb47b886d200061456c9cbec450732743265f0f1739114447',
+});
+const restartCapabilitiesConsumed = new WeakSet();
+function archivedRestartParent(value) {
+  return { archiveId: value.archiveId, archiveCatalogSha256: value.archiveCatalogSha256,
+    bundleContentSha256: value.B.description.bundleContentSha256,
+    centralCheckpointPayloadSha256: value.S.payloadSha256,
+    centralCheckpointVersion: value.S.version,
+    publicManifestSha256: value.public.manifestSha256 };
+}
+function archivedRestartScope(value) {
+  return { predecessor: { ...RESTART_PREDECESSOR },
+    originalBundleSourceHead: value.B.description.sourceHead,
+    originalBundleDatasetId: value.B.description.datasetId,
+    originalBundleReferenceAt: value.B.description.productionReferenceAt,
+    centralCheckpointDatasetId: value.S.datasetId,
+    centralCheckpointReferenceAt: value.S.productionReferenceAt,
+    publicDatasetId: value.public.datasetId, publicReferenceAt: value.public.productionReferenceAt,
+    registryRawSha256: value.registry.rawSha256, registryCanonicalSha256: value.registry.canonicalSha256,
+    originalBundleInventorySha256: digest(value.B.fileDigests) };
+}
+function validateArchivedRestartAttestation(attest, { descriptor, conditions, central, pairs, currentSource }) {
+  need(exact(attest, ['schemaVersion','kind','semanticContract','restart','parent','producer','datasetId',
+    'referenceAt','registrySha256','contextRegistrySha256','pairsSha256','transition','attestationSha256'])
+    && attest.schemaVersion === 1 && attest.kind === RESTART_KIND
+    && attest.semanticContract === ESTABLISHED_NATIVE_CURRENT_SEMANTIC_CONTRACT
+    && attest.transition === RESTART_TRANSITION && SHA.test(attest.attestationSha256), 'RESTART_ATTESTATION');
+  const { attestationSha256, ...content } = attest;
+  need(digest(content) === attestationSha256 && Buffer.byteLength(canonical(attest)) <= MAX_ATTEST, 'RESTART_ATTESTATION_HASH');
+  need(exact(attest.parent, ['archiveId','archiveCatalogSha256','bundleContentSha256',
+    'centralCheckpointPayloadSha256','centralCheckpointVersion','publicManifestSha256'])
+    && ['archiveId','archiveCatalogSha256','bundleContentSha256','centralCheckpointPayloadSha256','publicManifestSha256']
+      .every(key => SHA.test(attest.parent[key]))
+    && Number.isSafeInteger(attest.parent.centralCheckpointVersion) && attest.parent.centralCheckpointVersion > 0,
+  'RESTART_ARCHIVE_PARENT');
+  const restart = attest.restart;
+  need(exact(restart, ['predecessor','originalBundleSourceHead','originalBundleDatasetId','originalBundleReferenceAt',
+    'centralCheckpointDatasetId','centralCheckpointReferenceAt','publicDatasetId','publicReferenceAt',
+    'registryRawSha256','registryCanonicalSha256','originalBundleInventorySha256'])
+    && same(restart.predecessor, RESTART_PREDECESSOR) && HEAD.test(restart.originalBundleSourceHead)
+    && ['registryRawSha256','registryCanonicalSha256','originalBundleInventorySha256'].every(key => SHA.test(restart[key]))
+    && ['originalBundleDatasetId','centralCheckpointDatasetId','publicDatasetId']
+      .every(key => typeof restart[key] === 'string' && /^rr-[A-Za-z0-9][A-Za-z0-9._-]{0,127}$/.test(restart[key]))
+    && ['originalBundleReferenceAt','centralCheckpointReferenceAt','publicReferenceAt'].every(key => hour(restart[key]))
+    && Date.parse(restart.centralCheckpointReferenceAt) < Date.parse(restart.originalBundleReferenceAt)
+    && Date.parse(attest.referenceAt) > Date.parse(restart.originalBundleReferenceAt)
+    && Date.parse(attest.referenceAt) > Date.parse(restart.publicReferenceAt), 'RESTART_SCOPE');
+  need(attest.datasetId === descriptor.datasetId && attest.datasetId === conditions.datasetId
+    && attest.referenceAt === descriptor.productionReferenceAt && attest.referenceAt === conditions.productionReferenceAt
+    && attest.registrySha256 === digest(central) && restart.registryCanonicalSha256 === digest(central)
+    && attest.contextRegistrySha256 === contextDigest(pairs) && attest.pairsSha256 === pairsDigest(pairs)
+    && exact(attest.producer, Object.keys(currentSource))
+    && same({ ...attest.producer, sourceHead: currentSource.sourceHead }, currentSource)
+    && attest.producer.sourceHead === descriptor.sourceHead
+    && ['integrated','candidate','continuation'].every(key => currentSource[key] !== RESTART_PREDECESSOR[key]),
+  'RESTART_ATTESTED_SOURCE');
+}
+async function assertArchivedRestartCurrentBoundary(value) {
+  const clients = createProtectedPrivateRuntimeClients({ storageBackend: 'supabase' });
+  const checkpointRequest = createProtectedRavScoreCheckpointRequester();
+  const before = await readPointer(clients.documentRequest);
+  need(before.version === value.B.pointerRow.version && same(before.pointer, value.B.pointerRow.payload), 'RESTART_POINTER_CHANGED');
+  const key = 'ravscore-continuation-checkpoint';
+  const rows = await checkpointRequest('?document_key=eq.' + encodeURIComponent(key)
+    + '&select=document_key,payload,version&limit=2', {}, 'read');
+  need(Array.isArray(rows) && rows.length === 1 && rows[0].document_key === key
+    && Number(rows[0].version) === value.S.version && same(rows[0].payload, value.S.payload)
+    && digest(rows[0].payload) === value.S.payloadSha256, 'RESTART_CENTRAL_CHECKPOINT_CHANGED');
+  need(same(await readPointer(clients.documentRequest), before), 'RESTART_POINTER_CHANGED');
+}
+async function assertArchivedRestartPhysicalOriginal(value) {
+  // Archive callbacks are NOT the origin issuer's authority. Bind their facts
+  // again to the actual remote pointer and owned local normal manifest/bytes.
+  const privateRoot = process.env.RAVRADAR_PRIVATE_RUNTIME_ROOT;
+  const bundlePath = process.env.RAVRADAR_PRIVATE_RUNTIME_BUNDLE;
+  need(path.isAbsolute(privateRoot ?? '') && path.isAbsolute(bundlePath ?? '')
+    && path.dirname(bundlePath) === privateRoot, 'RESTART_FIXED_B_PATHS');
+  const manifest = await json(path.join(bundlePath, 'manifest.json'), 2 * MB);
+  need(manifest.schemaVersion === PRIVATE_PRODUCTION_RUNTIME_BUNDLE_POLICY.schemaVersion
+    && manifest.kind === PRIVATE_PRODUCTION_RUNTIME_BUNDLE_POLICY.kind
+    && manifest.privacyClass === PRIVATE_PRODUCTION_RUNTIME_BUNDLE_POLICY.privacyClass
+    && manifest.zoneCount === 210 && manifest.partCount === 673
+    && manifest.bundleContentSha256 === value.B.description.bundleContentSha256
+    && privateRuntimeBundleContentSha256(manifest) === value.B.description.bundleContentSha256, 'RESTART_ORIGINAL_MANIFEST');
+  for (const key of ['datasetId','productionReferenceAt','generatedAt','modelBinding','contractHashes'])
+    need(same(manifest[key], value.B.description[key]), 'RESTART_ORIGINAL_METADATA');
+  need(Array.isArray(manifest.files) && manifest.fileCount === manifest.files.length
+    && manifest.files.length > 0 && manifest.files.length <= 32, 'RESTART_ORIGINAL_INVENTORY');
+  const inventory = manifest.files.map(({ relativePath, bytes, sha256 }) => ({ relativePath, bytes, sha256 }))
+    .sort((a,b) => a.relativePath.localeCompare(b.relativePath, 'en'));
+  need(same(inventory, value.B.fileDigests), 'RESTART_ORIGINAL_INVENTORY');
+  const item = inventory.find(row => row.relativePath === 'data/live/conditions.json');
+  need(item && SHA.test(item.sha256) && Number.isSafeInteger(item.bytes), 'RESTART_ORIGINAL_CONDITIONS');
+  const bytes = await ownedBytes(path.join(bundlePath, 'payload/data/live/conditions.json'), MAX_CONDITIONS);
+  need(bytes.length === item.bytes && sha(bytes) === item.sha256
+    && same(JSON.parse(bytes.toString('utf8')), value.B.conditions), 'RESTART_ORIGINAL_CONDITIONS');
+  need(HEAD.test(value.B.description.sourceHead), 'RESTART_ORIGINAL_SOURCE');
+  await git(['merge-base', '--is-ancestor', value.B.description.sourceHead, 'HEAD']);
+  for (const [file,key] of [['js/core/ravscore-model-bundle.generated.js','integrated'],
+    ['scripts/rollback-assets/ravscore-model-bundle.generated.js','candidate']]) {
+    const source = await git(['show', value.B.description.sourceHead + ':' + file]);
+    const match = /^export const GENERATED_RAVSCORE_MODEL_BUNDLE_SHA256 = '([a-f0-9]{64})';$/m.exec(source);
+    need(match && match[1] === RESTART_PREDECESSOR[key], 'RESTART_ORIGINAL_SOURCE');
+  }
+}
+export async function prepareArchivedCurrentOriginRestart(archiveCapability, { centralContract, targetReferenceAt } = {}) {
+  need(arguments.length === 2 && !restartCapabilitiesConsumed.has(archiveCapability), 'RESTART_ARGUMENTS');
+  const value = assertVerifiedUnpairedWeatherRestartArchive(archiveCapability);
+  need(value.kind === 'RAVRADAR_UNPAIRED_WEATHER_RESTART_ARCHIVE' && value.admission === 'NO_ADMISSION'
+    && value.paired === false && hour(targetReferenceAt) && targetReferenceAt === value.targetReferenceAt
+    && Date.parse(targetReferenceAt) > Date.parse(value.B.description.productionReferenceAt)
+    && Date.parse(targetReferenceAt) > Date.parse(value.public.productionReferenceAt)
+    && value.B.description.modelBinding.modelBundleSha256 === RESTART_PREDECESSOR.integrated
+    && value.B.description.contractHashes.continuationStateContractSha256 === RESTART_PREDECESSOR.continuation,
+  'RESTART_ARCHIVE_SCOPE');
+  const currentSource = await sourceIdentity(); // Genuine rendered model, physical source and clean Git guards.
+  need(['integrated','candidate','continuation'].every(key => currentSource[key] !== RESTART_PREDECESSOR[key]), 'RESTART_UNISSUED');
+  const registryBytes = await ownedBytes(path.join(ROOT, 'data/live/coastal-parts-v2.json'), 16 * MB);
+  const registry = JSON.parse(registryBytes.toString('utf8'));
+  need(sha(registryBytes) === value.registry.rawSha256 && digest(registry) === value.registry.canonicalSha256
+    && same(registry, value.registry.value) && same(registry, centralContract), 'RESTART_REGISTRY_CHANGED');
+  const parts = registryParts(registry);
+  await assertArchivedRestartCurrentBoundary(value);
+  await assertArchivedRestartPhysicalOriginal(value);
+  need(same(await sourceIdentity(), currentSource), 'RESTART_SOURCE_CHANGED');
+  await assertArchivedRestartCurrentBoundary(value);
+  const handle = Object.freeze({});
+  contexts.set(handle, { seed: false, restart: value, restartTargetReferenceAt: targetReferenceAt,
+    descriptor: structuredClone(value.B.description), currentSource, central: structuredClone(registry),
+    parts, pairs: new Map(), consumedParts: new Set(), finalized: false });
+  restartCapabilitiesConsumed.add(archiveCapability);
+  return handle;
+}
+async function buildArchivedCurrentOriginRestartAttestation(context, handle, { centralContract, conditions, partResults }) {
+  need(!context.finalized && conditions.productionReferenceAt === context.restartTargetReferenceAt
+    && same(centralContract, context.central) && partResults instanceof Map
+    && same([...partResults.keys()].sort(), [...context.parts.keys()].sort()), 'RESTART_PRODUCED_TARGET');
+  const currentSource = await sourceIdentity(); need(same(currentSource, context.currentSource), 'RESTART_SOURCE_CHANGED');
+  const pairs = pairsFromConditions(conditions, context.parts);
+  const { assertEstablishedNativeCurrentProductionResult } = await import('./ravscore-production-part-pipeline.mjs');
+  for (const [id,part] of context.parts) {
+    const actual = assertEstablishedNativeCurrentProductionResult(partResults.get(id),
+      { originHandle: handle, part, targetReferenceAt: context.restartTargetReferenceAt, requireMeasuredColdStart: true });
+    need(same(actual.integrated, pairs.get(id).integrated) && same(actual.candidate, pairs.get(id).candidate), 'RESTART_PRODUCED_PAIR_DIFFER');
+  }
+  await assertArchivedRestartCurrentBoundary(context.restart);
+  const bytes = await ownedBytes(path.join(ROOT, 'data/live/coastal-parts-v2.json'), 16 * MB);
+  need(sha(bytes) === context.restart.registry.rawSha256 && same(JSON.parse(bytes), context.central), 'RESTART_REGISTRY_CHANGED');
+  const content = { schemaVersion: 1, kind: RESTART_KIND, semanticContract: ESTABLISHED_NATIVE_CURRENT_SEMANTIC_CONTRACT,
+    restart: archivedRestartScope(context.restart), parent: archivedRestartParent(context.restart),
+    producer: { ...currentSource }, datasetId: conditions.datasetId, referenceAt: conditions.productionReferenceAt,
+    registrySha256: digest(context.central), contextRegistrySha256: contextDigest(pairs), pairsSha256: pairsDigest(pairs),
+    transition: RESTART_TRANSITION };
+  const attest = { ...content, attestationSha256: digest(content) };
+  validateArchivedRestartAttestation(attest, { descriptor: { ...context.descriptor, datasetId: conditions.datasetId,
+    productionReferenceAt: conditions.productionReferenceAt, sourceHead: currentSource.sourceHead },
+    conditions, central: context.central, pairs, currentSource });
+  context.finalized = true; return freeze(attest);
+}
 
 async function noLinks(file) {
   let at = path.parse(file).root;
@@ -171,6 +341,7 @@ function contextDigest(pairs) {
   return digest([...pairs].map(([id, pair]) => [id, pair.context]).sort(([a], [b]) => a.localeCompare(b)));
 }
 function validateAttestation(attest, { descriptor, conditions, central, pairs, currentSource }) {
+  if (attest?.kind === RESTART_KIND) return validateArchivedRestartAttestation(attest, { descriptor, conditions, central, pairs, currentSource });
   need(exact(attest, ['schemaVersion', 'kind', 'semanticContract', 'seed', 'parent', 'producer',
     'datasetId', 'referenceAt', 'registrySha256', 'contextRegistrySha256', 'pairsSha256', 'transition', 'attestationSha256'])
     && attest.schemaVersion === 1 && attest.kind === KIND
@@ -331,7 +502,7 @@ export async function readEstablishedNativeCurrentSeedOrigin() {
 // preparation. New-model origin handles qualify exactly their admitted pairs.
 export function assertEstablishedNativeCurrentOriginForPart(handle, { part, integrated, candidate }) {
   need(arguments.length === 2, 'ARGUMENTS'); const context = contexts.get(handle);
-  need(context && !context.seed && !context.finalized, 'HANDLE'); const admitted = context.pairs.get(part?.partId);
+  need(context && !context.seed && !context.restart && !context.finalized, 'HANDLE'); const admitted = context.pairs.get(part?.partId);
   need(admitted && same(part, context.parts.get(part.partId))
     && admitted.context === ravScoreSamplingContextKey(part)
     && same(integrated, admitted.integrated) && same(candidate, admitted.candidate), 'SELECTED_PAIR_DIFFER');
@@ -344,6 +515,7 @@ export function assertEstablishedNativeCurrentOriginForPart(handle, { part, inte
 
 export async function buildEstablishedNativeCurrentOriginAttestation(handle, { centralContract, conditions, partResults }) {
   need(arguments.length === 2, 'ARGUMENTS'); const context = contexts.get(handle); need(context && !context.finalized, 'HANDLE');
+  if (context.restart) return buildArchivedCurrentOriginRestartAttestation(context, handle, { centralContract, conditions, partResults });
   const currentSource = await sourceIdentity(); need(same(currentSource, context.currentSource)
     && same(centralContract, context.central), 'SOURCE_CHANGED');
   const pairs = pairsFromConditions(conditions, context.parts);

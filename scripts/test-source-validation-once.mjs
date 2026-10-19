@@ -10,7 +10,94 @@ import {
   SOURCE_BINDING_PREFLIGHT,
 } from './validate-source-once.mjs';
 
-const scripts = JSON.parse(fs.readFileSync('package.json', 'utf8')).scripts;
+// Validate the ACTUAL new source plan first. Then reverse only one exact
+// last-mile registration and the three reviewed historical route rewrites.
+// Every original oracle/assertion below remains whole and unchanged.
+const actualOriginSourceScripts = JSON.parse(fs.readFileSync('package.json', 'utf8')).scripts;
+const originalOriginSourceCritical = "node scripts/build-ravscore-model-bundle.mjs --check && node scripts/check-account-assistant-issued-source.mjs && node scripts/check-native-identity-frozen-i71-source.mjs && node scripts/run-frozen-current-memory-warmup-source-targets.mjs builder && node scripts/build-established-native-current-origin-successor.mjs --check && node --test scripts/test-model-source-imports.mjs scripts/test-established-native-current-origin-successor.mjs scripts/test-established-native-current-origin-postgres-source.mjs scripts/test-code-only-public-coastal-registry-stage.mjs && node scripts/test-established-native-current-origin-followers.mjs && node scripts/sync-ravscore-model-binding.mjs --check && npm run test:native-identity-successor && npm run test:current-memory-warmup && npm run test:weather-state-epoch && node scripts/test-ravscore-integrated-model.mjs && node scripts/test-ravscore-integrated-state-pipeline.mjs && node --test scripts/test-ravscore-integrated-generator.mjs scripts/test-ravscore-recovery-replay.mjs scripts/test-score-prognosis-plain-copy.mjs scripts/test-ravscore-initial-current-window-audit.mjs scripts/test-saved-current-window-scratch.mjs scripts/test-post-h0-dmi-original-dependencies.mjs scripts/test-saved-current-forward-original-plan.mjs && node scripts/test-ravscore-public-runtime-contract.mjs && node scripts/test-ravscore-public-data-service-binding.mjs && node scripts/test-missing-weather-null-safety-4.0.116.mjs";
+const originSourceRoutingHunks = [
+  [
+    "node scripts/build-established-native-current-origin-successor.mjs --check",
+    "node scripts/run-frozen-established-native-current-origin-source-targets.mjs builder"
+  ],
+  [
+    "node --test scripts/test-model-source-imports.mjs scripts/test-established-native-current-origin-successor.mjs scripts/test-established-native-current-origin-postgres-source.mjs scripts/test-code-only-public-coastal-registry-stage.mjs",
+    "node scripts/run-frozen-established-native-current-origin-source-targets.mjs model-imports && node scripts/run-frozen-established-native-current-origin-source-targets.mjs successor && node scripts/run-frozen-established-native-current-origin-source-targets.mjs postgres-source && node --test scripts/test-last-mile-enclosure-current-model-imports.mjs scripts/test-code-only-public-coastal-registry-stage.mjs"
+  ],
+  [
+    "node scripts/test-established-native-current-origin-followers.mjs",
+    "node scripts/run-frozen-established-native-current-origin-source-targets.mjs followers"
+  ]
+];
+const actualOriginSourceCommands = [
+  "node scripts/run-frozen-established-native-current-origin-source-targets.mjs builder",
+  "node scripts/run-frozen-established-native-current-origin-source-targets.mjs model-imports",
+  "node scripts/run-frozen-established-native-current-origin-source-targets.mjs successor",
+  "node scripts/run-frozen-established-native-current-origin-source-targets.mjs postgres-source",
+  "node --test scripts/test-last-mile-enclosure-current-model-imports.mjs scripts/test-code-only-public-coastal-registry-stage.mjs",
+  "node scripts/run-frozen-established-native-current-origin-source-targets.mjs followers"
+];
+const lastMileSourceGroup = "test:last-mile-enclosure";
+const lastMileSourceDefinition = "node scripts/build-last-mile-enclosure-successor.mjs --check && node --test scripts/test-ravscore-last-mile-canonical-checkpoint.mjs scripts/test-unpaired-weather-restart-archive.mjs scripts/test-archived-weather-restart-input-view.mjs scripts/test-archived-weather-restart-locator.mjs scripts/test-last-mile-enclosure-predecessor-source.mjs scripts/test-last-mile-enclosure-plan.mjs scripts/test-last-mile-enclosure-postgres-source.mjs scripts/test-last-mile-enclosure-restart-archive-origin.mjs scripts/test-reconcile-private-runtime-checkpoint.mjs scripts/test-archived-weather-restart-workflow.mjs";
+const lastMileSourceChecks = [
+  "node scripts/build-last-mile-enclosure-successor.mjs --check",
+  "node --test scripts/test-ravscore-last-mile-canonical-checkpoint.mjs scripts/test-unpaired-weather-restart-archive.mjs scripts/test-archived-weather-restart-input-view.mjs scripts/test-archived-weather-restart-locator.mjs scripts/test-last-mile-enclosure-predecessor-source.mjs scripts/test-last-mile-enclosure-plan.mjs scripts/test-last-mile-enclosure-postgres-source.mjs scripts/test-last-mile-enclosure-restart-archive-origin.mjs scripts/test-reconcile-private-runtime-checkpoint.mjs scripts/test-archived-weather-restart-workflow.mjs"
+];
+const lastMileCriticalRegistration = ["node scripts/run-frozen-established-native-current-origin-source-targets.mjs followers","node scripts/run-frozen-established-native-current-origin-source-targets.mjs followers && npm run test:last-mile-enclosure"];
+function inverseReviewedOriginSourceRouting(actualScripts) {
+  assert.equal(actualScripts[lastMileSourceGroup], lastMileSourceDefinition,
+    'The exact current584 builder and all ten normal targets must stay in order.');
+  const expanded = expandSourceCommands(actualScripts, 'validate:source:checks');
+  for (const command of [...actualOriginSourceCommands, ...lastMileSourceChecks])
+    assert.equal(expanded.filter(value => value === command).length, 1,
+      'Each historical route and direct584 target runs exactly once.');
+  let critical = actualScripts['test:ravscore-source-critical'];
+  assert.equal(typeof critical, 'string');
+  assert.equal(critical.split('npm run ' + lastMileSourceGroup).length, 2,
+    'Exactly one last-mile group reference in the normal critical group.');
+  assert.equal(critical.split(lastMileCriticalRegistration[1]).length, 2,
+    'The one fixed registration retains its reviewed location.');
+  critical = critical.replace(lastMileCriticalRegistration[1], () => lastMileCriticalRegistration[0]);
+  for (const [oldCommand, newCommand] of [...originSourceRoutingHunks].reverse()) {
+    assert.equal(critical.split(newCommand).length, 2, 'Exact whole routing operand, no duplicate or missing target.');
+    critical = critical.replace(newCommand, () => oldCommand);
+  }
+  assert.equal(critical, originalOriginSourceCritical, 'Whole qualified preceding source group, not a pin retag.');
+  const previous = { ...actualScripts, 'test:ravscore-source-critical': critical };
+  delete previous[lastMileSourceGroup];
+  return previous;
+}
+const actualOriginSourcePlan = buildSourceValidationPlan(actualOriginSourceScripts);
+const actualOriginSourceDeclared = expandSourceCommands(actualOriginSourceScripts, 'validate:source:checks');
+assert.deepEqual(actualOriginSourcePlan.preflight, [...SOURCE_BINDING_PREFLIGHT]);
+assert.equal(actualOriginSourcePlan.gate, 'node scripts/source-critical-gate.mjs');
+assert.deepEqual(actualOriginSourcePlan.remaining, actualOriginSourceDeclared.filter(command =>
+  command !== actualOriginSourcePlan.gate && !actualOriginSourcePlan.preflight.includes(command)));
+const actualOriginSourceCalls = [];
+assert.equal(runSourceValidation(actualOriginSourcePlan, { execute(command) {
+  actualOriginSourceCalls.push(command); return 0;
+}, log() {} }), 0);
+assert.deepEqual(actualOriginSourceCalls, [...actualOriginSourcePlan.preflight,
+  ...actualOriginSourcePlan.remaining, actualOriginSourcePlan.gate]);
+for (const command of actualOriginSourceCommands) {
+  const current = actualOriginSourceScripts['test:ravscore-source-critical'];
+  for (const changed of [current.replace(command, 'node scripts/UNQUALIFIED-MISSING.mjs'),
+    current.replace(command, command + ' && ' + command)])
+    assert.throws(() => inverseReviewedOriginSourceRouting({ ...actualOriginSourceScripts,
+      'test:ravscore-source-critical': changed }));
+}
+for (const definition of [undefined, '', lastMileSourceDefinition + ' && node scripts/UNKNOWN.mjs',
+  lastMileSourceDefinition.replace(lastMileSourceChecks[0], lastMileSourceChecks[0] + ' --unexpected'),
+  lastMileSourceDefinition.replace('scripts/test-unpaired-weather-restart-archive.mjs',
+    'scripts/test-archived-weather-restart-input-view.mjs')])
+  assert.throws(() => inverseReviewedOriginSourceRouting({ ...actualOriginSourceScripts, [lastMileSourceGroup]: definition }));
+for (const critical of [
+  actualOriginSourceScripts['test:ravscore-source-critical'].replace(lastMileCriticalRegistration[1], lastMileCriticalRegistration[0]),
+  actualOriginSourceScripts['test:ravscore-source-critical'] + ' && npm run ' + lastMileSourceGroup,
+  actualOriginSourceScripts['test:ravscore-source-critical'] + ' && node scripts/UNKNOWN.mjs',
+]) assert.throws(() => inverseReviewedOriginSourceRouting({ ...actualOriginSourceScripts,
+  'test:ravscore-source-critical': critical }));
+const scripts = inverseReviewedOriginSourceRouting(actualOriginSourceScripts);
 const plan = buildSourceValidationPlan(scripts);
 const declared = expandSourceCommands(scripts, 'validate:source:checks');
 

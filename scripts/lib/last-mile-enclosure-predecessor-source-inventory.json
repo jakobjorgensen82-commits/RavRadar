@@ -1,0 +1,1181 @@
+{
+  "schemaVersion": 1,
+  "kind": "FIXED_GENUINE_LAST_MILE_ENCLOSURE_PREDECESSOR_SOURCE",
+  "head": "d8a52e3e4cbaed1557cc56fe01f5f0a2b0d657d7",
+  "tree": "0ddede3f4b4fb4faa43b0d43f17c7cdbadcc9bc0",
+  "scope": "Read old current140000 B bytes and older central S independently for separate immutable archive only; no old origin or numeric-state admission.",
+  "maximumFiles": 105,
+  "maximumTotalBytes": 2319125,
+  "maximumFileBytes": 121860,
+  "manifests": [
+    {
+      "file": "scripts/rollback-assets/ravscore-model-bundle.generated.js",
+      "sha256": "1fe82a7dfdc8f4fd89ccec32687129e00baa61bae5af897f6a9ec85423beac76",
+      "binding": "5cc38c658bf14513a029a62de8f5f9e98259630755bdd84bccbc5fb2c1797858",
+      "count": 92
+    },
+    {
+      "file": "js/core/ravscore-model-bundle.generated.js",
+      "sha256": "839a6b3938a6725afbc0072064eeef00a6054119c299fb454854ee978f2dc7fd",
+      "binding": "038d9b0cdc50d36dd10f207c6f33e909ddedbdacb28c89adbca12121cb2c7f5f",
+      "count": 91
+    }
+  ],
+  "t": {
+    "module": "scripts/lib/ravscore-continuation-implementation-contract.mjs",
+    "count": 12,
+    "files": [
+      "js/core/ravscore-model-contract.js",
+      "js/core/ravscore-mobilisation-memory.js",
+      "js/core/ravscore-regime-memory.js",
+      "js/core/ravscore-candidate-g-state-pipeline.js",
+      "js/core/ravscore-current-supply-memory.js",
+      "js/core/ravscore-wave-mobilisation-state.js",
+      "js/core/ravscore-integrated-state-pipeline.js",
+      "scripts/lib/coastal-point-staging-contract.mjs",
+      "scripts/lib/ravscore-candidate-g-rollback-runtime.mjs",
+      "scripts/rollback-assets/ravscore-model-contract.js",
+      "scripts/rollback-assets/ravscore-model-bundle.generated.js",
+      "scripts/ravscore-continuation-checkpoint.mjs"
+    ],
+    "sha256": "047db5f9c91b555eb47b886d200061456c9cbec450732743265f0f1739114447"
+  },
+  "runtimeContracts": {
+    "continuationStateContractSha256": "047db5f9c91b555eb47b886d200061456c9cbec450732743265f0f1739114447",
+    "fullRuntimeContractSha256": "ede0b53b8ed0f3fa5d0e505ea7c07d98969dc7a38fe94ae034a85f9c5d5af7ff",
+    "publicProjectionContractSha256": "c495b80c7ca8906d81ae0a58f340fe693f79acce51ca6efc7933681d9505da09"
+  },
+  "runtimeContractFiles": {
+    "continuationStateContractSha256": [
+      "js/core/ravscore-model-contract.js",
+      "js/core/ravscore-mobilisation-memory.js",
+      "js/core/ravscore-regime-memory.js",
+      "js/core/ravscore-candidate-g-state-pipeline.js",
+      "js/core/ravscore-current-supply-memory.js",
+      "js/core/ravscore-wave-mobilisation-state.js",
+      "js/core/ravscore-integrated-state-pipeline.js",
+      "scripts/lib/coastal-point-staging-contract.mjs",
+      "scripts/lib/ravscore-candidate-g-rollback-runtime.mjs",
+      "scripts/rollback-assets/ravscore-model-contract.js",
+      "scripts/rollback-assets/ravscore-model-bundle.generated.js",
+      "scripts/ravscore-continuation-checkpoint.mjs"
+    ],
+    "fullRuntimeContractSha256": [
+      "scripts/lib/private-weather-storage-abi.json"
+    ],
+    "publicProjectionContractSha256": [
+      "js/core/ravscore-model-contract.js",
+      "js/core/ravscore-public-model.js",
+      "js/core/ravscore-public-runtime-contract.js",
+      "js/core/public-delivery-contract.js",
+      "js/core/local-zone-score.js",
+      "scripts/public-conditions-lib.mjs",
+      "scripts/copy-public-delivery-shards.mjs",
+      "scripts/lib/private-weather-component-inventory.mjs",
+      "scripts/lib/public-hour-delivery-pack.mjs"
+    ]
+  },
+  "seeds": [
+    "scripts/rollback-assets/ravscore-model-bundle.generated.js",
+    "js/core/ravscore-model-bundle.generated.js",
+    "scripts/lib/ravscore-continuation-implementation-contract.mjs",
+    "scripts/lib/static-module-closure.mjs",
+    "package.json",
+    "scripts/private-production-runtime-bundle.mjs",
+    "scripts/protected-ravscore-continuation-checkpoint.mjs",
+    "scripts/private-production-runtime-workflow.mjs",
+    "scripts/lib/private-weather-storage-abi.json",
+    "scripts/lib/dmi-marine-zone-exclusions.json",
+    "scripts/lib/copernicus-component-spatial-policy.json",
+    "js/core/ravscore-model-contract.js",
+    "js/core/ravscore-public-model.js",
+    "js/core/ravscore-public-runtime-contract.js",
+    "js/core/public-delivery-contract.js",
+    "js/core/local-zone-score.js",
+    "scripts/public-conditions-lib.mjs",
+    "scripts/copy-public-delivery-shards.mjs",
+    "scripts/lib/private-weather-component-inventory.mjs",
+    "scripts/lib/public-hour-delivery-pack.mjs"
+  ],
+  "reviewedFixedImportInventories": {
+    "scripts/protected-private-production-runtime.mjs": {
+      "sha256": "e41b0434e14dd181c5ca3f6313456274c4fa5fcc9e97029e49f300ae0d4e4762",
+      "imports": [
+        "./private-production-runtime-bundle.mjs",
+        "./lib/supabase-admin-rest.mjs",
+        "../js/core/ravscore-model-contract.js",
+        "./lib/r2-private-runtime-storage.mjs",
+        "./lib/private-weather-component-inventory.mjs",
+        "./lib/bounded-conditions-predecessor-transition.mjs"
+      ],
+      "reason": "Computed old historical CLI reader imports are not called by the fixed bundleverify/independent-S reader seam; exact whole old source and its literal static imports are pinned."
+    },
+    "scripts/private-production-runtime-bundle.mjs": {
+      "sha256": "2eeff25c6d6e769c7a5d9b414bfed574e0105e7cb24d0bd1578e7700781d5529",
+      "imports": [
+        "../js/core/ravscore-model-contract.js",
+        "./lib/bounded-conditions-predecessor-transition.mjs",
+        "./lib/private-weather-component-inventory.mjs"
+      ],
+      "reason": "Exact old scanner confuses exported Array.from expression with export-from; genuine top-level imports are explicitly bound."
+    },
+    "scripts/lib/established-native-current-origin.mjs": {
+      "sha256": "e4741332e9cc54523fccf8ded70ace9767047d97090306c00fafd43385235c42",
+      "imports": [
+        "../protected-private-production-runtime.mjs",
+        "../protected-ravscore-continuation-checkpoint.mjs",
+        "../private-production-runtime-bundle.mjs",
+        "../ravscore-continuation-checkpoint.mjs",
+        "../private-production-runtime-workflow.mjs",
+        "../../js/core/ravscore-model-contract.js",
+        "../rollback-assets/ravscore-model-contract.js",
+        "../../js/core/ravscore-model-bundle.generated.js",
+        "./ravscore-sampling-context.mjs",
+        "./coastal-point-staging-contract.mjs",
+        "./ravscore-candidate-g-rollback-runtime.mjs",
+        "./private-weather-component-pack.mjs",
+        "../check-native-current-reanalysis-predecessor-source.mjs",
+        "./ravscore-production-part-pipeline.mjs"
+      ],
+      "reason": "Old seed/numeric-origin dynamic reader is not invoked or granted. Exact whole old file and genuine literal imports (including fixed PartPipeline) are pinned for normal module closure only."
+    },
+    "scripts/check-native-current-reanalysis-predecessor-source.mjs": {
+      "sha256": "1c08778a28bc3931b42430eaa94d9659dd279f42528c5306631b971c4405928d",
+      "imports": [],
+      "reason": "Whole fixed old predecessor helper has builtins only at module load; its nested old source materializer is not invoked or extended."
+    }
+  },
+  "files": [
+    {
+      "file": "config.js",
+      "bytes": 379,
+      "sha256": "7cb635a4fbfad6693774ecc776dd5df6bef024d59aba51c50eeab380fdc4ed0d",
+      "gitBlob": "1d8989418d4e85eacde80137b807d2723c49e188",
+      "imports": []
+    },
+    {
+      "file": "js/core/best-time-policy.js",
+      "bytes": 6392,
+      "sha256": "0f429dd3a365159ea11f3597d4848c87b38d3615d8cc273ae94d398f5948ace5",
+      "gitBlob": "f58b9112a8b8bf13d9e7c0ddc0442b0bfa183611",
+      "imports": [
+        "./ravscore-model-contract.js?v=4.0.581"
+      ]
+    },
+    {
+      "file": "js/core/best-time-selector.js",
+      "bytes": 2611,
+      "sha256": "e6740c3805e1b4a9e0f0f58d0495b676a3f66f62fab1ed7093778910505daba8",
+      "gitBlob": "6f094f97451bf404a14ae185eb0336540c18d91b",
+      "imports": [
+        "./best-time-policy.js?v=4.0.581",
+        "./forecast-calendar.js?v=4.0.581"
+      ]
+    },
+    {
+      "file": "js/core/forecast-calendar.js",
+      "bytes": 1877,
+      "sha256": "c5de0a8c258bdd0d8435b76b2200f07c9bf8e65d711bd5ef431725855cdf3cc5",
+      "gitBlob": "d526a990b9307866623afedfefc4166ed5762abf",
+      "imports": []
+    },
+    {
+      "file": "js/core/local-zone-score.js",
+      "bytes": 19425,
+      "sha256": "da53e4c9534106583385d8373b7fe672e18380c2fae9e2421fa4f86f386a88ac",
+      "gitBlob": "bdffa011c72e6896145c5a6db231e812ebb77564",
+      "imports": [
+        "./score-presentation.js?v=4.0.581",
+        "./best-time-policy.js?v=4.0.581",
+        "./forecast-calendar.js?v=4.0.581",
+        "./ravscore-model-contract.js?v=4.0.581"
+      ]
+    },
+    {
+      "file": "js/core/phase-d-process-candidate.js",
+      "bytes": 14109,
+      "sha256": "d745f8ead7554bb0c63bd2f3740efff243ee761c99f86e93fc7276883a64fcfa",
+      "gitBlob": "db9d082b051ab5af1bcbc404610c69f8bd1ba800",
+      "imports": []
+    },
+    {
+      "file": "js/core/phase-d-wave-process-candidate.js",
+      "bytes": 5223,
+      "sha256": "52d7d6b0eae5abb4d42e9fb2b1e6d2b4ef87036730f9e5dcd0493f0c41230533",
+      "gitBlob": "a546297b6a09831d7ef1a5c018553b940f4e99b9",
+      "imports": [
+        "./phase-d-process-candidate.js",
+        "./wave-approach.js?v=4.0.581"
+      ]
+    },
+    {
+      "file": "js/core/public-delivery-contract.js",
+      "bytes": 9266,
+      "sha256": "0571025b79e74cf5c0c71d2356146da4a4c5159ee2571de7d45448361b85692d",
+      "gitBlob": "af956d7bc66ecdd6d52a4d0d4ce3b287b1cf0618",
+      "imports": []
+    },
+    {
+      "file": "js/core/ravscore-candidate-g-state-pipeline.js",
+      "bytes": 16255,
+      "sha256": "fe4b7e7e8e4a07dcd74d1da0c3e566971df33e3ef418fd7f2fc3f1028008c3e7",
+      "gitBlob": "57084ac2f486a67017a845bb7da5c414c3734625",
+      "imports": [
+        "./ravscore-regime-memory.js",
+        "./ravscore-mobilisation-memory.js"
+      ]
+    },
+    {
+      "file": "js/core/ravscore-candidate-g.js",
+      "bytes": 25702,
+      "sha256": "106363377e50b6823aa96e7141f209f07d8786a7901ee4e7bba0735434777a8d",
+      "gitBlob": "f3c11bd45f40aca5842bdcdbdf8ddd2c035dd150",
+      "imports": [
+        "./phase-d-wave-process-candidate.js",
+        "./phase-d-process-candidate.js",
+        "./wave-approach.js?v=4.0.581"
+      ]
+    },
+    {
+      "file": "js/core/ravscore-current-supply-memory.js",
+      "bytes": 32847,
+      "sha256": "7e462b10982724d121ab1566a5fe497beb62f49b0f821bf768165af29e5401da",
+      "gitBlob": "86f1d369d02df60abe6368c7dd297fca890170fe",
+      "imports": [
+        "./ravscore-model-contract.js",
+        "./ravscore-time.js"
+      ]
+    },
+    {
+      "file": "js/core/ravscore-evidence-trust-contract.js",
+      "bytes": 3477,
+      "sha256": "81a8560d2c9e7b372a7e6608da80dab993b7249ca7ef1c573378e6e9303e9157",
+      "gitBlob": "45f1cc37807498bef6b11c9d828071b7e5761e1f",
+      "imports": [
+        "./ravscore-regime-memory.js"
+      ]
+    },
+    {
+      "file": "js/core/ravscore-huntability.js",
+      "bytes": 4005,
+      "sha256": "eabc93f7bf66d8daab6f29221d759c01ede4f3832a828da383cc864169d608d7",
+      "gitBlob": "5a95211058b36b0ff871b3a408991e1909451b32",
+      "imports": [
+        "./ravscore-model-contract.js"
+      ]
+    },
+    {
+      "file": "js/core/ravscore-integrated-explanation-presenter.js",
+      "bytes": 37066,
+      "sha256": "cf67dd93ef6b2ea5bca1be8e92a2eee57a1bf7dd91466f23f3128c02836d4ee8",
+      "gitBlob": "fc8f1003bc022bcb25a76fab66789d2875f919bc",
+      "imports": [
+        "./ravscore-model-contract.js?v=4.0.581"
+      ]
+    },
+    {
+      "file": "js/core/ravscore-integrated-state-pipeline.js",
+      "bytes": 99056,
+      "sha256": "b3d17bce7f2233243fca4f561b1be8a108943dea69474dadbfa255a2167ebbc0",
+      "gitBlob": "fdbc61249ae70cfa224e66f5f0ad687cf1ebc08d",
+      "imports": [
+        "./ravscore-candidate-g-state-pipeline.js",
+        "./ravscore-regime-memory.js",
+        "./ravscore-current-supply-memory.js",
+        "./ravscore-wave-mobilisation-state.js",
+        "./ravscore-wave-approach-state.js",
+        "./ravscore-mobilisation-memory.js",
+        "./ravscore-time.js",
+        "./ravscore-model-contract.js"
+      ]
+    },
+    {
+      "file": "js/core/ravscore-integrated.js",
+      "bytes": 27487,
+      "sha256": "ba041c23de74829cade71b679dc8a566befeb41140bf1ee3fa1ceefc6e803317",
+      "gitBlob": "a91493211d7830ecd39fff9bef355c5deed617b6",
+      "imports": [
+        "./ravscore-model-contract.js",
+        "./ravscore-huntability.js",
+        "./ravscore-mobilisation-memory.js"
+      ]
+    },
+    {
+      "file": "js/core/ravscore-mobilisation-memory.js",
+      "bytes": 6749,
+      "sha256": "fdb8c104f6df2e31eba05ea1e31d844e5a376a9b754784793a79398843231031",
+      "gitBlob": "4c4e4e4d1c62d5fd26fa63d05b5b3cc7cb3ee403",
+      "imports": []
+    },
+    {
+      "file": "js/core/ravscore-model-bundle.generated.js",
+      "bytes": 15584,
+      "sha256": "839a6b3938a6725afbc0072064eeef00a6054119c299fb454854ee978f2dc7fd",
+      "gitBlob": "1b9bd5b6bb8894ff828a725357560e5e7c44dd10",
+      "imports": []
+    },
+    {
+      "file": "js/core/ravscore-model-contract.js",
+      "bytes": 13790,
+      "sha256": "6edf369edf09b50005a0d04ce0ec892cf6455ddcea02ab4a7f2e51b644b8baab",
+      "gitBlob": "251e476c24a278cdf24fcca37a8bac4f86e5c9c7",
+      "imports": [
+        "./ravscore-model-bundle.generated.js"
+      ]
+    },
+    {
+      "file": "js/core/ravscore-profile-switch.js",
+      "bytes": 24065,
+      "sha256": "446e6ba22f5d9c2b1aefc300890c950cdd95f158750f99cea3aa224df879c36b",
+      "gitBlob": "bf918082c7862193d9df8c98bed625bfa7a65d42",
+      "imports": [
+        "./ravscore-candidate-g-state-pipeline.js"
+      ]
+    },
+    {
+      "file": "js/core/ravscore-public-model.js",
+      "bytes": 33663,
+      "sha256": "08180f603fbc738bbc12201a10d043f4319c5008947ad90099cf63fddebbc983",
+      "gitBlob": "b7c2d37cd0d9661c23aeafbe4e21baad10f9693b",
+      "imports": [
+        "./ravscore-model-contract.js",
+        "./score-presentation.js"
+      ]
+    },
+    {
+      "file": "js/core/ravscore-public-profile-contract.js",
+      "bytes": 5565,
+      "sha256": "ac011932b79b2ff5adf228e71882cdbea228b6fbc528887ccaa645d318dd86b4",
+      "gitBlob": "99c90a387e825a2ee9dd1cbd5620710065d44010",
+      "imports": []
+    },
+    {
+      "file": "js/core/ravscore-public-runtime-contract.js",
+      "bytes": 34644,
+      "sha256": "d1040e1fdd958584416b45fae6c5aa725db822a441b2b927d34858f2e089da5d",
+      "gitBlob": "4caebd3c42b5e63168b6763e8aeffa5efc22348b",
+      "imports": [
+        "./ravscore-model-contract.js",
+        "./ravscore-public-profile-contract.js",
+        "./ravscore-evidence-trust-contract.js",
+        "./ravscore-public-weather-source-age.js"
+      ]
+    },
+    {
+      "file": "js/core/ravscore-public-weather-source-age.js",
+      "bytes": 7151,
+      "sha256": "e06902c660ad0337be478c5d9140c59cc0477164caa50efb5c9dc3b9f3faca26",
+      "gitBlob": "841303a80ce361a27f29727e7ba09ec9cd42a11b",
+      "imports": []
+    },
+    {
+      "file": "js/core/ravscore-regime-memory.js",
+      "bytes": 36237,
+      "sha256": "fd361b0b0d5cbb6bf7d7af632aad070be7c3e49dd4870837476bc96fe3f1cb22",
+      "gitBlob": "90e9a19af406e5d4755e227f0814f44b87a325b3",
+      "imports": []
+    },
+    {
+      "file": "js/core/ravscore-time.js",
+      "bytes": 1550,
+      "sha256": "b2311b8f2426968da59b387096522c29a191c4640afe39913ec0ae0c5b0272fa",
+      "gitBlob": "65786c3044d3b5ce0a024d368eda286a058853db",
+      "imports": []
+    },
+    {
+      "file": "js/core/ravscore-wave-approach-state.js",
+      "bytes": 15550,
+      "sha256": "6900c089a30e3036dcb05ef1c985b71299c2c408257deea37f18fdbcbcba4e2c",
+      "gitBlob": "0d60b888931800eb0249f44e17c7e983398b37f0",
+      "imports": [
+        "./ravscore-mobilisation-memory.js",
+        "./ravscore-model-contract.js",
+        "./ravscore-time.js"
+      ]
+    },
+    {
+      "file": "js/core/ravscore-wave-mobilisation-state.js",
+      "bytes": 22009,
+      "sha256": "f845fdaa95733b1b57fd7b53b085e3b9d5e60ea431ac84072b442d07aa89fb35",
+      "gitBlob": "3794d40770ec15d411eeb748ba7ff5bf47d1d209",
+      "imports": [
+        "./ravscore-mobilisation-memory.js",
+        "./ravscore-model-contract.js",
+        "./ravscore-time.js"
+      ]
+    },
+    {
+      "file": "js/core/score-presentation.js",
+      "bytes": 746,
+      "sha256": "3f4d32e68f705efd2629a45012d232bf25ac0a39de4f3f279d0fca7c4222fe69",
+      "gitBlob": "e8cc285b445a6dce4646f29f832e3fa1f0ae305e",
+      "imports": [
+        "./ravscore-model-contract.js?v=4.0.581"
+      ]
+    },
+    {
+      "file": "js/core/wave-approach.js",
+      "bytes": 3626,
+      "sha256": "1dda08cdd8e8e0eedbd5e426237372e2dba3c076af4da26f757066fb91d5076c",
+      "gitBlob": "ee2431f7c3edc95dfe2e3eca4229c414a322cfa2",
+      "imports": []
+    },
+    {
+      "file": "js/core/zone-ranking.js",
+      "bytes": 5240,
+      "sha256": "6a672a90255894357ec0b5985da474d314b502f21b4e5f0b7bea1e1c1c0ea464",
+      "gitBlob": "949e7e29505bea3a47cac4e5e4896f0b3fc92f24",
+      "imports": []
+    },
+    {
+      "file": "js/i18n.js",
+      "bytes": 121860,
+      "sha256": "4d7962d9140a65e5ca0a65b6da676ab729ea0a1137f58b503dcda150761b9763",
+      "gitBlob": "1e7aaff1ee9c81d1aa2e6ddde07c9848d461716a",
+      "imports": []
+    },
+    {
+      "file": "js/services/calibration-eligibility.js",
+      "bytes": 36376,
+      "sha256": "1f1508344d8ddbae0b67243da0c9b6c51f6f3dde0eca9c7befc279f3e334860f",
+      "gitBlob": "6ac1b501baf579c4addb01ab471812446df6e1b5",
+      "imports": []
+    },
+    {
+      "file": "js/services/rav-assistant.js",
+      "bytes": 47129,
+      "sha256": "3312bd5d3e24d4f4560c285fc3cfb1d6ddd05c6daf6d816e8f947e0c3b416a7d",
+      "gitBlob": "3a0687718f93d435ce76815fe9f71350663f9f61",
+      "imports": [
+        "../../config.js?v=4.0.581",
+        "../../knowledge/rav-assistant-local-v2.js?v=4.0.581",
+        "../core/local-zone-score.js?v=4.0.581",
+        "../core/zone-ranking.js?v=4.0.581",
+        "../core/forecast-calendar.js?v=4.0.581",
+        "../core/ravscore-model-contract.js?v=4.0.581",
+        "../core/ravscore-public-runtime-contract.js?v=4.0.581",
+        "../core/ravscore-integrated-explanation-presenter.js?v=4.0.581",
+        "../core/best-time-policy.js?v=4.0.581",
+        "../i18n.js?v=4.0.581"
+      ]
+    },
+    {
+      "file": "js/services/trip-evidence-contract.js",
+      "bytes": 28009,
+      "sha256": "64853631a09be4720544bc29aa00d9d1d2542d8f430838b2429fe14920e3a823",
+      "gitBlob": "ecc05b60a8f98c32bfb91dab1ea4fa031b108552",
+      "imports": [
+        "../core/ravscore-model-contract.js?v=4.0.581",
+        "./calibration-eligibility.js?v=4.0.581"
+      ]
+    },
+    {
+      "file": "js/services/trip-evidence-public-adapter.js",
+      "bytes": 11414,
+      "sha256": "88b4346d4c5c1d80f917bc70ace1ce361c4d4f5cc92ea97b1a8f5415d9b16af8",
+      "gitBlob": "5369888e65be2e415673a17791a8f403aa4f2af2",
+      "imports": [
+        "./trip-evidence-contract.js?v=4.0.581",
+        "../core/ravscore-model-contract.js?v=4.0.581",
+        "../core/ravscore-public-runtime-contract.js?v=4.0.581",
+        "../core/ravscore-evidence-trust-contract.js?v=4.0.581"
+      ]
+    },
+    {
+      "file": "knowledge/rav-assistant-local-v2.js",
+      "bytes": 42981,
+      "sha256": "9ad077823f16f1bfe90af9041c2b5d9264efbbb29d7c86b4dd0708e2fc71d327",
+      "gitBlob": "44ee97e4fbd0a997a5545c9010f9622618ad7e7b",
+      "imports": [
+        "./rav-assistant-research-v1.js"
+      ]
+    },
+    {
+      "file": "knowledge/rav-assistant-research-coast-v1.js",
+      "bytes": 48592,
+      "sha256": "fb64037af05782cc7214198bb23f1f4756ccf917475ccc76afb03423cfec1ffd",
+      "gitBlob": "5ccb5193cb120fe4818b95f10cf391231eb8f893",
+      "imports": [
+        "./rav-assistant-sources-v1.js"
+      ]
+    },
+    {
+      "file": "knowledge/rav-assistant-research-material-v1.js",
+      "bytes": 54230,
+      "sha256": "b97224b044c6e7f4b72c4120ee01c95ad6af5f427257a745b7c00e8876e9961d",
+      "gitBlob": "055e7af64cc4f7a5a87582f03c79088c372d59e4",
+      "imports": [
+        "./rav-assistant-sources-v1.js"
+      ]
+    },
+    {
+      "file": "knowledge/rav-assistant-research-v1.js",
+      "bytes": 479,
+      "sha256": "bebd5a709e5505b1d958e6424056b196385f2ca7a9f607348919e32f95079df2",
+      "gitBlob": "ba052cfd98b0ebcd289e04421f46c9c593b376ae",
+      "imports": [
+        "./rav-assistant-research-material-v1.js",
+        "./rav-assistant-research-coast-v1.js"
+      ]
+    },
+    {
+      "file": "knowledge/rav-assistant-sources-v1.js",
+      "bytes": 8912,
+      "sha256": "c9a387ca9ed30d4c5a9932eb1b1133a99ae651c23c822b7d0ad1c8adbd8c43a6",
+      "gitBlob": "a82e1172e2381ef9a74ddbcd02811031b5bc09be",
+      "imports": []
+    },
+    {
+      "file": "package.json",
+      "bytes": 49518,
+      "sha256": "0a7ccf5ad08232607dbb287367e34e88afddf4e59707a9be8cf00b8bed2a41fc",
+      "gitBlob": "348757fbe7816f8648b40415591e18a7d769d00b",
+      "imports": null
+    },
+    {
+      "file": "scripts/check-native-current-reanalysis-predecessor-source.mjs",
+      "bytes": 12971,
+      "sha256": "1c08778a28bc3931b42430eaa94d9659dd279f42528c5306631b971c4405928d",
+      "gitBlob": "b667aed90891a0677a0a7a40d99905fadffb2429",
+      "imports": []
+    },
+    {
+      "file": "scripts/copy-public-delivery-shards.mjs",
+      "bytes": 1670,
+      "sha256": "39fdc0dc2fe7e098665f4e10f6f081a39a55230b2eb9ec3973eb3e7dfe88de79",
+      "gitBlob": "64cdaa6acebb76f1e3a56f61b845238e6c52de47",
+      "imports": [
+        "../js/core/public-delivery-contract.js"
+      ]
+    },
+    {
+      "file": "scripts/lib/account-assistant-successor-source.mjs",
+      "bytes": 4462,
+      "sha256": "eb35dc46cc6792da5ddff026de0bd61258f240a6b037565c29869873afb08bc5",
+      "gitBlob": "665f70d7ef7332a345aee2ad0119451dad2746b7",
+      "imports": []
+    },
+    {
+      "file": "scripts/lib/bounded-conditions-predecessor-transition.mjs",
+      "bytes": 31863,
+      "sha256": "5783e5aa4a0c0f9b794a7ff196d64119359d9b30372e1dce4aa481f2c4219425",
+      "gitBlob": "e1964ac2b9a828563c1b1912fd0ab824056c88e2",
+      "imports": [
+        "../../js/core/ravscore-model-contract.js",
+        "../rollback-assets/ravscore-model-contract.js",
+        "../../js/core/ravscore-model-bundle.generated.js",
+        "../rollback-assets/ravscore-model-bundle.generated.js",
+        "../private-production-runtime-bundle.mjs",
+        "../private-production-runtime-workflow.mjs"
+      ]
+    },
+    {
+      "file": "scripts/lib/coastal-point-stage-dmi-adapter.mjs",
+      "bytes": 5659,
+      "sha256": "f4dd1e46e70b5c39de014940c8451617c10541f4b5d27e7743387a6c2cd5e8e7",
+      "gitBlob": "9f2e2100445fb21c2b8a20bfb93a5b8bddabcf21",
+      "imports": [
+        "./ravscore-production-adapters.mjs"
+      ]
+    },
+    {
+      "file": "scripts/lib/coastal-point-staging-contract.mjs",
+      "bytes": 27848,
+      "sha256": "c2abd8fb7f03a0d84628a4af9b734a5f648dd5e250fdd96ccace3d7bc5d2f851",
+      "gitBlob": "d1f34cc7a81032cdfd025c3a97fd3f1225badd9e",
+      "imports": [
+        "../../js/core/ravscore-candidate-g-state-pipeline.js",
+        "../../js/core/ravscore-integrated-state-pipeline.js",
+        "../../js/core/ravscore-model-contract.js",
+        "./ravscore-sampling-context.mjs"
+      ]
+    },
+    {
+      "file": "scripts/lib/copernicus-component-index.mjs",
+      "bytes": 13504,
+      "sha256": "cfdfdab9bbd9fe286d8ab6899845263fe031e2d2e933838f99901145ca15f48f",
+      "gitBlob": "03cab3d25c9a081fcac5ccfb1e5098d9f7ed55f5",
+      "imports": [
+        "./copernicus-component-projection.mjs"
+      ]
+    },
+    {
+      "file": "scripts/lib/copernicus-component-projection.mjs",
+      "bytes": 2660,
+      "sha256": "08a8109dc4e1df58743a4400d3c508076e6f8ca057a82fe5e38f5d900b2686ac",
+      "gitBlob": "ed9342b8eefbba45c9e7cc621807fd9ddf6b1924",
+      "imports": []
+    },
+    {
+      "file": "scripts/lib/copernicus-component-spatial-policy.json",
+      "bytes": 2011,
+      "sha256": "6463a4b47c9375659ac73b13cb24bdf358da4ab621acab49ba58c0d281ef2177",
+      "gitBlob": "060ac359c235ac640ec1bc98200288e6058b8812",
+      "imports": null
+    },
+    {
+      "file": "scripts/lib/copernicus-offline-environment.mjs",
+      "bytes": 886,
+      "sha256": "a19a2de9102560936f3ed380fd843475dc125799bf9b3be948eaef0b425d9ea0",
+      "gitBlob": "910dc3f5ffdc69e68e23fa22a586b842b7ac19a9",
+      "imports": []
+    },
+    {
+      "file": "scripts/lib/current-grid-successor-source.mjs",
+      "bytes": 4303,
+      "sha256": "f86aa7b2df9500942c5b4218f7cf777c6e32391722c091d3beabe4ef9f12636c",
+      "gitBlob": "4df7e271a8810ee8877d7d79a78efe761b2db947",
+      "imports": [
+        "./account-assistant-successor-source.mjs"
+      ]
+    },
+    {
+      "file": "scripts/lib/current-transport-history.mjs",
+      "bytes": 4967,
+      "sha256": "c7d5b4226aee7846e307d5d314fa336ef6143cfa6c0eca966b0f567b97c1ce9d",
+      "gitBlob": "9576e45411ad42eef9ded7e575b51a3846d8da6e",
+      "imports": []
+    },
+    {
+      "file": "scripts/lib/dmi-bulk-storage.mjs",
+      "bytes": 11401,
+      "sha256": "fe51cae3131bc7e91022fc3ede69bc4587409b720bb8c1226d87cee2bff46f1d",
+      "gitBlob": "77d58251a61fa8b1c2443b4899a01eef62837cca",
+      "imports": []
+    },
+    {
+      "file": "scripts/lib/dmi-forecast-store.mjs",
+      "bytes": 58667,
+      "sha256": "a525ef4ae0109336541758b7fc4de661e4b1977397fd7e5bcba71eed83c9bc99",
+      "gitBlob": "c8cf4a1c43cac9c1e59c9c432ba719613741f960",
+      "imports": []
+    },
+    {
+      "file": "scripts/lib/dmi-marine-zone-exclusions.json",
+      "bytes": 416,
+      "sha256": "b959dee7b87cfebe9fdc7311ffd62b835c96d5c4a263bbcff5c0485f6660ef16",
+      "gitBlob": "a4f65f8eb0396dbe3c3da442ebcb9a06d99d3287",
+      "imports": null
+    },
+    {
+      "file": "scripts/lib/dmi-marine-zone-exclusions.mjs",
+      "bytes": 1353,
+      "sha256": "d560dda981a8f0bdec49bbca05abb60cc6a26699784b345b1b258e7f1668ac28",
+      "gitBlob": "681f6485e3fef029e5ba46b6c17fc818c76dc3d7",
+      "imports": []
+    },
+    {
+      "file": "scripts/lib/established-native-current-origin.mjs",
+      "bytes": 27731,
+      "sha256": "e4741332e9cc54523fccf8ded70ace9767047d97090306c00fafd43385235c42",
+      "gitBlob": "1e2deef9d5e8a42f10c3e676ceabf13d6abffbc5",
+      "imports": [
+        "../protected-private-production-runtime.mjs",
+        "../protected-ravscore-continuation-checkpoint.mjs",
+        "../private-production-runtime-bundle.mjs",
+        "../ravscore-continuation-checkpoint.mjs",
+        "../private-production-runtime-workflow.mjs",
+        "../../js/core/ravscore-model-contract.js",
+        "../rollback-assets/ravscore-model-contract.js",
+        "../../js/core/ravscore-model-bundle.generated.js",
+        "./ravscore-sampling-context.mjs",
+        "./coastal-point-staging-contract.mjs",
+        "./ravscore-candidate-g-rollback-runtime.mjs",
+        "./private-weather-component-pack.mjs",
+        "../check-native-current-reanalysis-predecessor-source.mjs",
+        "./ravscore-production-part-pipeline.mjs"
+      ]
+    },
+    {
+      "file": "scripts/lib/feggesund-wave-proxy.mjs",
+      "bytes": 22546,
+      "sha256": "fcc6c9af2c8d58c85514d5ac8e7af9645392fe7816187d08e18bf78cbef55292",
+      "gitBlob": "98d49388b05f1b7837eaa51efadb59e920b12fd3",
+      "imports": [
+        "./weather-reserve-admission.mjs"
+      ]
+    },
+    {
+      "file": "scripts/lib/live-current-pilot.mjs",
+      "bytes": 110378,
+      "sha256": "552a709d34b828086061f148841245b32f6f4d25c3d1e8249681bda83ad45ad9",
+      "gitBlob": "65721877b2b816a08a357cc8bd8dccbccb3aa167",
+      "imports": [
+        "./copernicus-offline-environment.mjs",
+        "./dmi-marine-zone-exclusions.mjs",
+        "../../js/core/ravscore-integrated-state-pipeline.js"
+      ]
+    },
+    {
+      "file": "scripts/lib/local-current-reference.mjs",
+      "bytes": 2253,
+      "sha256": "6e1c6a28cb3cf704d760e5c6f52dade2e0c81112e1299a1264b3a9502851a75b",
+      "gitBlob": "e6e24d9d46ca53e4f9e7b10134826a8b1461f027",
+      "imports": []
+    },
+    {
+      "file": "scripts/lib/native-sampling-identity-successor-source.mjs",
+      "bytes": 9042,
+      "sha256": "a7b77c586e72e0c67be225c7fa773152d5dc3c41b5f5ea47e55504eee495d5ba",
+      "gitBlob": "4cc8065550be8af322ee0d9c24ebe9a19b29cad5",
+      "imports": [
+        "./current-grid-successor-source.mjs"
+      ]
+    },
+    {
+      "file": "scripts/lib/open-meteo-hourly-components.mjs",
+      "bytes": 8408,
+      "sha256": "79518ec13546c78ff4ecbacc16d80c06d091b4c45f7d529e0ea2fef8af70b07f",
+      "gitBlob": "b47d6c6422d63da703a7f9516037640af7ecda1c",
+      "imports": []
+    },
+    {
+      "file": "scripts/lib/open-meteo-o1280-grid.mjs",
+      "bytes": 3226,
+      "sha256": "1a4ac015264521fcd62fb326868608738056d918acfcc2da3157f05996e4112d",
+      "gitBlob": "7541dcbc842e25267024f95d507596f52d972842",
+      "imports": []
+    },
+    {
+      "file": "scripts/lib/open-meteo-part-bank.mjs",
+      "bytes": 24708,
+      "sha256": "0a46cdf5788f267599268a9ce5499dda645fc444929754bfded5d29dd30ef435",
+      "gitBlob": "80c42f43051d363626b4377775e9d29bfb654366",
+      "imports": [
+        "./open-meteo-hourly-components.mjs",
+        "./open-meteo-o1280-grid.mjs"
+      ]
+    },
+    {
+      "file": "scripts/lib/private-conditions-hourly.mjs",
+      "bytes": 8465,
+      "sha256": "ea5fe3d5b801edd1cf8670b7d2bc3d7dbb870be70f26c56a01a8a21b2755dc0e",
+      "gitBlob": "0790f80d7fae3179e7ba4f987d1fd91c94826f57",
+      "imports": []
+    },
+    {
+      "file": "scripts/lib/private-weather-component-inventory.mjs",
+      "bytes": 5021,
+      "sha256": "125e1a2acee5bff8d16ac549e96004dc8c80bbcea684782c45b3cfc666edba3c",
+      "gitBlob": "74165842787c0e802c090f873ce1c4837ccd97bb",
+      "imports": []
+    },
+    {
+      "file": "scripts/lib/private-weather-component-pack.mjs",
+      "bytes": 30005,
+      "sha256": "2b35ca0d311d7e166e948bff5dbb6536bf626546d130bf3b3848a8634f6999b5",
+      "gitBlob": "0c57120e97f7dafa99bd6c406fc3e1b3d0a27270",
+      "imports": [
+        "./open-meteo-part-bank.mjs",
+        "./private-weather-component-inventory.mjs",
+        "./private-weather-progress-files.mjs",
+        "./copernicus-offline-environment.mjs",
+        "./weather-state-epoch-input-view.mjs"
+      ]
+    },
+    {
+      "file": "scripts/lib/private-weather-progress-files.mjs",
+      "bytes": 336,
+      "sha256": "441a086ab2b0aff8c259433322d85733ef65fb785e1ceca0fdd88894e2b5d5f3",
+      "gitBlob": "be89eb603dbb78f6d573bc12ce9efe90b6654aee",
+      "imports": []
+    },
+    {
+      "file": "scripts/lib/private-weather-storage-abi.json",
+      "bytes": 672,
+      "sha256": "0d445cc7823602e1a5cab51b20dbdabef59d52c7e929df9bf415f1bc6293d3b3",
+      "gitBlob": "eb779329bd5446cefdca589d0fabe3f4d12d35e0",
+      "imports": null
+    },
+    {
+      "file": "scripts/lib/protected-dmi-native-current-proofs.mjs",
+      "bytes": 27624,
+      "sha256": "ff73196e11604183eb0c59d93d419a70041e43d06a14325759ddcf10c8450bbd",
+      "gitBlob": "138cc0ec78628f3a0c30399a60d7973ae459c2df",
+      "imports": [
+        "./dmi-forecast-store.mjs",
+        "./ravscore-production-adapters.mjs"
+      ]
+    },
+    {
+      "file": "scripts/lib/public-hour-delivery-pack.mjs",
+      "bytes": 25913,
+      "sha256": "10a1bab2155b7eedd791045209a514f41bda08e3dc9470840729b87967fb7f6d",
+      "gitBlob": "3c37c6755b54f44bbcd34eb5071b4e1f2ff9e43a",
+      "imports": [
+        "../../js/core/ravscore-model-contract.js",
+        "../../js/core/public-delivery-contract.js",
+        "./private-weather-component-inventory.mjs"
+      ]
+    },
+    {
+      "file": "scripts/lib/r2-private-runtime-storage.mjs",
+      "bytes": 12623,
+      "sha256": "2ec0b01fa4cc34ca4ea166681d7046fa3920a20086fba977797a50afc765e97c",
+      "gitBlob": "4811d5713556b66899d2d903182cab711e7a6fdc",
+      "imports": []
+    },
+    {
+      "file": "scripts/lib/ravscore-candidate-g-rollback-runtime.mjs",
+      "bytes": 36594,
+      "sha256": "920f790b5459a945525565498ad014c51b9d7d0a0f32360948ead9c54424adb6",
+      "gitBlob": "4a72c4ff03c9354488b17dc49fd6d37ecf7b471a",
+      "imports": [
+        "../../js/core/ravscore-candidate-g.js",
+        "../../js/core/ravscore-candidate-g-state-pipeline.js",
+        "../../js/core/ravscore-profile-switch.js",
+        "./current-transport-history.mjs",
+        "./coastal-point-staging-contract.mjs",
+        "../../js/core/ravscore-regime-memory.js",
+        "../../js/core/ravscore-integrated-state-pipeline.js",
+        "./live-current-pilot.mjs",
+        "../rollback-assets/ravscore-model-contract.js"
+      ]
+    },
+    {
+      "file": "scripts/lib/ravscore-continuation-implementation-contract.mjs",
+      "bytes": 2316,
+      "sha256": "09a4f9a4b07717bdaed81742db94f1c22d9968adae30bdafbb5927c3dd2780b3",
+      "gitBlob": "356669d7d2043440bfe62455b52d7502e1dd3bad",
+      "imports": []
+    },
+    {
+      "file": "scripts/lib/ravscore-integrated-runtime.mjs",
+      "bytes": 18515,
+      "sha256": "a75dc5f45df6db6cc97b0cfc17d5c7cd9834c017fd213ed4f7dc699f527b27c8",
+      "gitBlob": "7df5ed3d273d66b5a2ffefb19798782b2bd04ee2",
+      "imports": [
+        "../../js/core/ravscore-integrated.js",
+        "../../js/core/ravscore-integrated-state-pipeline.js",
+        "../../js/core/ravscore-wave-approach-state.js",
+        "../../js/core/ravscore-model-contract.js",
+        "./coastal-point-staging-contract.mjs",
+        "./live-current-pilot.mjs",
+        "./ravscore-sampling-context.mjs"
+      ]
+    },
+    {
+      "file": "scripts/lib/ravscore-production-adapters.mjs",
+      "bytes": 47507,
+      "sha256": "70796cda12d12f858438d21860e84067e4cf7fe5dfb967a2176804a155c681bd",
+      "gitBlob": "e69c9f1da07863a43c29c1ba05591df5e161502b",
+      "imports": [
+        "./dmi-marine-zone-exclusions.mjs",
+        "../../js/core/ravscore-model-contract.js",
+        "./dmi-forecast-store.mjs",
+        "./live-current-pilot.mjs",
+        "./weather-component-selection.mjs",
+        "./weather-reserve-admission.mjs",
+        "./weather-component-selection-history.mjs",
+        "./feggesund-wave-proxy.mjs"
+      ]
+    },
+    {
+      "file": "scripts/lib/ravscore-production-part-pipeline.mjs",
+      "bytes": 40100,
+      "sha256": "dadb5bf8c37fd12415b4596523df218f67cca4d4775b1cf8d0f2066c524cabd0",
+      "gitBlob": "a614b1fb9eb4c71595ec5367e1baf19156a5bc2e",
+      "imports": [
+        "./established-native-current-origin.mjs",
+        "./ravscore-candidate-g-rollback-runtime.mjs",
+        "./ravscore-integrated-runtime.mjs",
+        "./dmi-marine-zone-exclusions.mjs",
+        "./ravscore-recovery-source-priority.mjs",
+        "../../js/core/ravscore-integrated-state-pipeline.js",
+        "./ravscore-recovery-replay.mjs",
+        "./coastal-point-staging-contract.mjs",
+        "./ravscore-sampling-context.mjs",
+        "./ravscore-production-adapters.mjs",
+        "../../js/core/ravscore-current-supply-memory.js",
+        "../../js/core/ravscore-regime-memory.js"
+      ]
+    },
+    {
+      "file": "scripts/lib/ravscore-profile-transition.mjs",
+      "bytes": 9199,
+      "sha256": "d82449cfb267802b79fdf77581494cabcde9385614fe9ef47fa96490f5b41320",
+      "gitBlob": "e06352b93bb0dc30c8ea0fe9d59d3b9e328d4d2e",
+      "imports": [
+        "../../js/core/ravscore-model-contract.js",
+        "../../js/core/ravscore-public-model.js",
+        "../rollback-assets/ravscore-model-contract.js"
+      ]
+    },
+    {
+      "file": "scripts/lib/ravscore-recovery-replay.mjs",
+      "bytes": 49200,
+      "sha256": "b7459a5d821800a9c58c303fc1fb166610b73d98a68523a8830ef29eb4e70223",
+      "gitBlob": "1a8ffd5d1f97ae80a5b22d085c72858d710d3e73",
+      "imports": [
+        "./live-current-pilot.mjs",
+        "../../js/core/ravscore-model-contract.js",
+        "../../js/core/ravscore-integrated-state-pipeline.js",
+        "../../js/core/ravscore-current-supply-memory.js",
+        "../../js/core/ravscore-mobilisation-memory.js",
+        "./coastal-point-staging-contract.mjs",
+        "./ravscore-sampling-context.mjs",
+        "./ravscore-production-adapters.mjs",
+        "./feggesund-wave-proxy.mjs",
+        "./dmi-marine-zone-exclusions.mjs",
+        "./dmi-forecast-store.mjs"
+      ]
+    },
+    {
+      "file": "scripts/lib/ravscore-recovery-source-priority.mjs",
+      "bytes": 48158,
+      "sha256": "57ee543fd10450cd0272697843c402061436d1039650a9a0c455f6e68b838ad1",
+      "gitBlob": "e41dd8a4f7ca39366f52c45098956deca9855b2e",
+      "imports": [
+        "./weather-component-selection.mjs",
+        "../../js/core/ravscore-mobilisation-memory.js",
+        "./ravscore-production-adapters.mjs",
+        "./feggesund-wave-proxy.mjs",
+        "./ravscore-recovery-replay.mjs",
+        "./dmi-forecast-store.mjs",
+        "./protected-dmi-native-current-proofs.mjs"
+      ]
+    },
+    {
+      "file": "scripts/lib/ravscore-sampling-context.mjs",
+      "bytes": 979,
+      "sha256": "5e3465826e7dc7caac4cc8b0da1d1117a3b51dac157973d09aa7c2b7baa44cf4",
+      "gitBlob": "9d3f05b2339326bfdaf72dfd866144ea59d8f964",
+      "imports": []
+    },
+    {
+      "file": "scripts/lib/static-module-closure.mjs",
+      "bytes": 6790,
+      "sha256": "675f91e7942143a78636e219e54bd7fa0ff25ddcd1998657dd215105054938b0",
+      "gitBlob": "45461ab7495ec41dfa4fd601d0ce27b8a914075b",
+      "imports": []
+    },
+    {
+      "file": "scripts/lib/supabase-admin-rest.mjs",
+      "bytes": 4576,
+      "sha256": "ce6213930e27ceec1c125f98ac4706aa92df14b228d055a20c37a864d84f8724",
+      "gitBlob": "0650fc60a62bd651de63ea54892c80eedb915727",
+      "imports": []
+    },
+    {
+      "file": "scripts/lib/weather-component-selection-history.mjs",
+      "bytes": 6634,
+      "sha256": "eaf41bd0fc8e72b80e291745ea8049f06170bb9f06892721bbdccb434e00c8cd",
+      "gitBlob": "d9c420b156906d2c835e399fa545d6afd841472e",
+      "imports": []
+    },
+    {
+      "file": "scripts/lib/weather-component-selection.mjs",
+      "bytes": 8993,
+      "sha256": "eb2672566579e46529514b7227085bd9bef9b8e8f23b6d5df7b71dcbb9889ec4",
+      "gitBlob": "594da4e74efe8f224f423fbb61a442f9b9528c75",
+      "imports": []
+    },
+    {
+      "file": "scripts/lib/weather-reserve-admission.mjs",
+      "bytes": 1637,
+      "sha256": "c847fadb22e02e92a872726f97a4e5ea648ce08fb171f36558e6727110439c24",
+      "gitBlob": "dec71df0f04368c4ae08e339f452314b3add9ed8",
+      "imports": [
+        "./open-meteo-part-bank.mjs",
+        "./copernicus-component-index.mjs"
+      ]
+    },
+    {
+      "file": "scripts/lib/weather-state-epoch-archive.mjs",
+      "bytes": 33438,
+      "sha256": "8a6e2847b16413b20e901fbeb317e92c9d596aeb664bad7c0914134b9f995641",
+      "gitBlob": "4d38c768e9c9f6eee61c12a84c70bfd3b7aee3b2",
+      "imports": []
+    },
+    {
+      "file": "scripts/lib/weather-state-epoch-input-view.mjs",
+      "bytes": 11064,
+      "sha256": "26b0831e60dcb438d9e3d7647a775825d1472d962a622d0089a2e3306e1f0cf2",
+      "gitBlob": "ac01b24783a292a5597811a79abe6836fe8fec5b",
+      "imports": [
+        "./weather-state-epoch-archive.mjs",
+        "./bounded-conditions-predecessor-transition.mjs",
+        "./native-sampling-identity-successor-source.mjs",
+        "./private-weather-component-inventory.mjs",
+        "../../js/core/ravscore-model-contract.js",
+        "../rollback-assets/ravscore-model-contract.js",
+        "./ravscore-continuation-implementation-contract.mjs",
+        "./ravscore-recovery-replay.mjs"
+      ]
+    },
+    {
+      "file": "scripts/private-production-runtime-bundle.mjs",
+      "bytes": 34235,
+      "sha256": "2eeff25c6d6e769c7a5d9b414bfed574e0105e7cb24d0bd1578e7700781d5529",
+      "gitBlob": "2b704bb13e11a8cea511f1c6c15e72042ac14a51",
+      "imports": [
+        "../js/core/ravscore-model-contract.js",
+        "./lib/bounded-conditions-predecessor-transition.mjs",
+        "./lib/private-weather-component-inventory.mjs"
+      ]
+    },
+    {
+      "file": "scripts/private-production-runtime-workflow.mjs",
+      "bytes": 79207,
+      "sha256": "046d871aa2d4ff38a8152c9621e59a28ba20aae2ad450d4c56d52c447f71f42f",
+      "gitBlob": "f0bc52ac0e2820bb8d4f330112ed973bb89b3c2c",
+      "imports": [
+        "./private-production-runtime-bundle.mjs",
+        "./protected-private-production-runtime.mjs",
+        "../js/core/ravscore-model-contract.js",
+        "./lib/ravscore-continuation-implementation-contract.mjs",
+        "./ravscore-continuation-checkpoint.mjs",
+        "./lib/dmi-bulk-storage.mjs",
+        "./lib/private-weather-component-inventory.mjs",
+        "./lib/private-weather-component-pack.mjs",
+        "./lib/private-conditions-hourly.mjs",
+        "./lib/public-hour-delivery-pack.mjs",
+        "./lib/weather-state-epoch-input-view.mjs"
+      ]
+    },
+    {
+      "file": "scripts/protected-private-production-runtime.mjs",
+      "bytes": 114822,
+      "sha256": "e41b0434e14dd181c5ca3f6313456274c4fa5fcc9e97029e49f300ae0d4e4762",
+      "gitBlob": "60a9aa7c6db50a12d89b5071e7b782b817a5f65b",
+      "imports": [
+        "./private-production-runtime-bundle.mjs",
+        "./lib/supabase-admin-rest.mjs",
+        "../js/core/ravscore-model-contract.js",
+        "./lib/r2-private-runtime-storage.mjs",
+        "./lib/private-weather-component-inventory.mjs",
+        "./lib/bounded-conditions-predecessor-transition.mjs"
+      ]
+    },
+    {
+      "file": "scripts/protected-ravscore-continuation-checkpoint.mjs",
+      "bytes": 49091,
+      "sha256": "d9e9e4facb7005cdcbdd353241bcc84de8ef3d4ede28aaba91e5c00a5aaab030",
+      "gitBlob": "00b0db4c896ee38f91df49366b5421626635661e",
+      "imports": [
+        "./lib/supabase-admin-rest.mjs",
+        "./ravscore-continuation-checkpoint.mjs",
+        "./lib/ravscore-candidate-g-rollback-runtime.mjs"
+      ]
+    },
+    {
+      "file": "scripts/public-conditions-lib.mjs",
+      "bytes": 65524,
+      "sha256": "e5a921d2a818694cfa13d5fcb30392cad972dc3b7038e929bc1d659a95f8017d",
+      "gitBlob": "197115e9d933877e7a7e0b95f5d6f0f89d9ceed5",
+      "imports": [
+        "../js/core/public-delivery-contract.js",
+        "./lib/public-hour-delivery-pack.mjs",
+        "./lib/local-current-reference.mjs",
+        "../js/core/local-zone-score.js",
+        "../js/core/forecast-calendar.js",
+        "../js/core/zone-ranking.js",
+        "../js/core/ravscore-model-contract.js",
+        "../js/core/ravscore-public-runtime-contract.js",
+        "../js/core/ravscore-public-profile-contract.js",
+        "../js/core/ravscore-evidence-trust-contract.js",
+        "../js/core/ravscore-public-weather-source-age.js"
+      ]
+    },
+    {
+      "file": "scripts/ravscore-continuation-checkpoint.mjs",
+      "bytes": 53512,
+      "sha256": "a119e9fff37bfcb7b60174bec97ae4f0a49012f5b5ac40ae57cb79ffbdf8322e",
+      "gitBlob": "74b66035a8850100b60fbef93fbde07b4b6a7e03",
+      "imports": [
+        "../js/core/ravscore-model-contract.js",
+        "../js/core/ravscore-integrated-state-pipeline.js",
+        "../js/core/ravscore-current-supply-memory.js",
+        "../js/core/ravscore-candidate-g-state-pipeline.js",
+        "./lib/ravscore-continuation-implementation-contract.mjs",
+        "./lib/ravscore-candidate-g-rollback-runtime.mjs",
+        "./rollback-assets/ravscore-model-contract.js"
+      ]
+    },
+    {
+      "file": "scripts/rollback-assets/ravscore-model-bundle.generated.js",
+      "bytes": 15804,
+      "sha256": "1fe82a7dfdc8f4fd89ccec32687129e00baa61bae5af897f6a9ec85423beac76",
+      "gitBlob": "077d6f0d09788657c87ea07161f2a5e90f214595",
+      "imports": []
+    },
+    {
+      "file": "scripts/rollback-assets/ravscore-model-contract.js",
+      "bytes": 7249,
+      "sha256": "ba1c670fb3aaf30ff01b6c04583296c0a5da395866f28f03569285f7b0a2c135",
+      "gitBlob": "21aaca07603d8ae263eae9ff9bd97b6d8c0aca02",
+      "imports": [
+        "./ravscore-model-bundle.generated.js"
+      ]
+    },
+    {
+      "file": "supabase/functions/_shared/public-gateway.ts",
+      "bytes": 7416,
+      "sha256": "48a64b2a4a741bc1e0b9afc2dce50ce4c55dc3a7d2b24bfc4cc529ba8873b287",
+      "gitBlob": "9e64ef78875cad99f3cdb1c460e969fa1551e29b",
+      "imports": [
+        "./trip-storage-contract-probe.js"
+      ]
+    },
+    {
+      "file": "supabase/functions/_shared/trip-source-projection.js",
+      "bytes": 6955,
+      "sha256": "5db6019a5457e145c582d4c24c35ea9f49dd67826b0000b59ab0d23d109e8a72",
+      "gitBlob": "992e3fea18793d344167b8a45e01babd17015996",
+      "imports": []
+    },
+    {
+      "file": "supabase/functions/_shared/trip-storage-contract-probe.js",
+      "bytes": 1223,
+      "sha256": "71103934af8d5623b743c2c3866e7f80778a8f296a8125aeb1d87e44bc2bc5b8",
+      "gitBlob": "9efe00e691cde0c2f6d7ed17e9e85a155c464beb",
+      "imports": []
+    },
+    {
+      "file": "supabase/functions/_shared/trip-storage-readiness.ts",
+      "bytes": 708,
+      "sha256": "297b7bd026c903fb5bb63841bcf00d155a73d7ac9d70d0ce9f7a642620c17089",
+      "gitBlob": "2b9ee7806c5ce591fcf3af5db86cc368e0d23dd9",
+      "imports": [
+        "./public-gateway.ts",
+        "./trip-store.ts"
+      ]
+    },
+    {
+      "file": "supabase/functions/_shared/trip-storage.js",
+      "bytes": 49064,
+      "sha256": "837b99847de83ae7a2ccb8bd1a0d22da1d1fd4e12d423a4eedafda4e05706f4f",
+      "gitBlob": "7fd81400374dd189d257fe4c7e6103966d34ff82",
+      "imports": []
+    },
+    {
+      "file": "supabase/functions/_shared/trip-store.ts",
+      "bytes": 13392,
+      "sha256": "78b5d6eb49e28147607440be6d978c8b5fa4e12761db1363881de78f7cb36dc2",
+      "gitBlob": "70c1a6db1675446dc3c427e966c549da37f846e6",
+      "imports": [
+        "./public-gateway.ts",
+        "./trip-storage.js",
+        "./trip-source-projection.js",
+        "../../../js/services/calibration-eligibility.js",
+        "../../../js/core/ravscore-model-contract.js"
+      ]
+    },
+    {
+      "file": "supabase/functions/submit-observation/index.ts",
+      "bytes": 10785,
+      "sha256": "863465db9b4f2aadec00b14d46a9d383b33bb3fe9dc7ccf9ee2083e09f623617",
+      "gitBlob": "a70232a3f0788e357d9be92bd7547a8ba47003ad",
+      "imports": [
+        "../_shared/public-gateway.ts",
+        "../_shared/trip-store.ts",
+        "../_shared/trip-storage-readiness.ts",
+        "../_shared/trip-storage.js",
+        "../../../js/core/ravscore-model-contract.js",
+        "../../../scripts/rollback-assets/ravscore-model-contract.js",
+        "../../../js/services/calibration-eligibility.js"
+      ]
+    }
+  ],
+  "noSourceCopyAtPreparation": true
+}

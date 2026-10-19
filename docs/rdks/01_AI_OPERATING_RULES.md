@@ -1,3 +1,9 @@
+## 19. oktober — lokal 4.0.584: ret producenten, bevar originalerne
+
+Den godkendte engangsstart må begynde uden gamle I/G-tilstande og uden replay før den nye reference, men kun efter autentificeret, permanent og særskilt bevaring af faktisk B, central S og offentlig generation. Et arkiv eller en lokator er ikke numerisk adgang, et selvopfundet tilstandspar eller tilladelse til at ommærke originale data. Nye timer og de efterfølgende almindelige kørsler skal bruge normale native-, kilde-, score-, databevarelses- og gemmekontroller.
+
+Ret de reproducerede producentfejl frem for at lempe sidste-mile- eller SQL-kontrollen. Udled C/I/T fra hele den faktisk versionssynkroniserede kilde; brug kun ny append-only migration, aldrig overskrivning af gamle SQL-filer. Lokale mål, syntetisk arkiv og genereret SQL er ikke installeret drift. Ingen færdigmelding eller cron-genaktivering før faktisk ny levering og normal fortsættelse er verificeret. Se håndbog 89.256; øvrige sikkerheds- og tilladelsesgrænser består.
+
 ## 17. oktober — 4.0.581: bevar autentisk H0 og fortsæt kun fremad
 
 Historikgennemgangen genfinder den tidligere læring om bevaret punktvis historik og adskillelse af engangsovergang fra almindelig fortsættelse. Den aktuelle fejl skyldes konkret, at en engangskontrol genberegner allerede gemt strømtilstand fra et senere, flyttet kildevindue. Den normale videreberegner validerer allerede gemt tilstand og anvender kun timer efter dens tidspunkt. Ny historiknulstilling, ekstra stor originaljournal og svækkelse af no-loss er derfor ikke den valgte P0-løsning.

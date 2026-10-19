@@ -1,0 +1,1021 @@
+{
+  "schemaVersion": 1,
+  "kind": "EXPLICIT_TEST_ONLY_140000_SOURCE_TARGET_EXTENSION",
+  "head": "d8a52e3e4cbaed1557cc56fe01f5f0a2b0d657d7",
+  "tree": "0ddede3f4b4fb4faa43b0d43f17c7cdbadcc9bc0",
+  "original105InventorySha256": "8a35db217041ddfb2f14fb2da76b09af427367989ec67bad7a4fef72d34c0e45",
+  "original105Unchanged": true,
+  "targets": {
+    "model-imports": "scripts/test-model-source-imports.mjs",
+    "builder": "scripts/build-established-native-current-origin-successor.mjs",
+    "successor": "scripts/test-established-native-current-origin-successor.mjs",
+    "postgres-source": "scripts/test-established-native-current-origin-postgres-source.mjs",
+    "followers": "scripts/test-established-native-current-origin-followers.mjs"
+  },
+  "directReadInputs": [
+    "scripts/test-model-source-imports.mjs",
+    "scripts/build-established-native-current-origin-successor.mjs",
+    "scripts/test-established-native-current-origin-successor.mjs",
+    "scripts/test-established-native-current-origin-postgres-source.mjs",
+    "scripts/test-established-native-current-origin-followers.mjs",
+    "scripts/integrated-cutover-readiness.mjs",
+    "scripts/test-weather-update-entrypoint.mjs",
+    "scripts/update-weather.mjs",
+    "scripts/lib/established-native-current-origin.mjs",
+    "scripts/lib/ravscore-production-part-pipeline.mjs",
+    "scripts/public-conditions-lib.mjs",
+    "scripts/check-native-current-reanalysis-predecessor-source.mjs",
+    "scripts/lib/model-source-imports.mjs",
+    "scripts/build-ravscore-model-bundle.mjs",
+    "scripts/build-candidate-g-rollback-bundle.mjs"
+  ],
+  "dataOnlyInputs": [
+    "scripts/test-weather-update-entrypoint.mjs",
+    "scripts/update-weather.mjs",
+    "package.json",
+    "version.json",
+    "supabase/config.toml",
+    "supabase/schema.sql",
+    "supabase/INSTALL-RAVRADAR-4.0.56-SECURITY.sql",
+    "knowledge/rav-assistant-public-v1.json",
+    "scripts/fixtures/rav-assistant-evals-v1.json",
+    "supabase/functions/_shared/rav-assistant-contract.ts",
+    "data/admin/ravscore-profile-selection.json",
+    "data/live/coastal-parts-v2.json",
+    ".github/workflows/deploy-code-only-repair.yml",
+    "scripts/source-critical-gate.mjs",
+    "scripts/fixtures/statistics-preference-revision-input.json"
+  ],
+  "requiredSqlFiles": [
+    "supabase/migrations/20260829010000_ravscore_operational_documents_no_history.sql",
+    "supabase/migrations/20260829020000_integrated_trip_calibration_binding.sql",
+    "supabase/migrations/20260901010000_integrated_trip_measured_warmup_admission.sql",
+    "supabase/migrations/20260903010000_ravscore_checkpoint_metadata_cas.sql",
+    "supabase/migrations/20260904140000_harmonie_wind_reference_binding.sql",
+    "supabase/migrations/20260905090000_open_meteo_current_fallback_binding.sql",
+    "supabase/migrations/20260906162332_per_pair_weather_fallback_binding.sql",
+    "supabase/migrations/20260907084343_horizon_valid_weather_binding.sql",
+    "supabase/migrations/20260909194000_wam_same_run_resolution_binding.sql",
+    "supabase/migrations/20260912122607_measured_rollback_warmup_binding.sql",
+    "supabase/migrations/20260912141641_state_only_hold_closure_v2_binding.sql",
+    "supabase/migrations/20260912194206_local_unavailable_cutover_binding.sql",
+    "supabase/migrations/20260913010000_public_runtime_oracle_binding.sql",
+    "supabase/migrations/20260914010000_h0_reference_recovery_binding.sql",
+    "supabase/migrations/20260914020000_h0_state_snapshot_binding.sql",
+    "supabase/migrations/20260914234500_post_cutover_current_hold_binding.sql",
+    "supabase/migrations/20260915020000_private_runtime_storage_deny.sql",
+    "supabase/migrations/20260916120000_valid_data_before_local_missing_binding.sql",
+    "supabase/migrations/20260917001500_partial_zone_public_metadata_binding.sql",
+    "supabase/migrations/20260918125600_last_mile_history_envelope_binding.sql",
+    "supabase/migrations/20260918190000_weather_input_resolution_binding.sql",
+    "supabase/migrations/20260919010000_current_input_foundation_binding.sql",
+    "supabase/migrations/20260919020000_measured_warmup_checkpoint.sql",
+    "supabase/migrations/20260919231000_public_hour_delivery_binding.sql",
+    "supabase/migrations/20260920220000_public_hour_pack_capacity_binding.sql",
+    "supabase/migrations/20260922100000_integrated_trip_binding_repair.sql",
+    "supabase/migrations/20260922170000_integrated_model_binding_successor.sql",
+    "supabase/migrations/20260923052100_integrated_current_projection_binding.sql",
+    "supabase/migrations/20260923091500_integrated_native_hold_continuation_binding.sql",
+    "supabase/migrations/20260923100000_integrated_checkpoint_part_identity_binding.sql",
+    "supabase/migrations/20260923110000_integrated_checkpoint_warmup_status_binding.sql",
+    "supabase/migrations/20260923120000_integrated_checkpoint_missing_state_binding.sql",
+    "supabase/migrations/20260923130000_checkpoint_rejection_diagnostic.sql",
+    "supabase/migrations/20260923140000_checkpoint_native_hold_null_evidence.sql",
+    "supabase/migrations/20260923150000_checkpoint_candidate_diagnostic_correction.sql",
+    "supabase/migrations/20260923160000_checkpoint_candidate_companion_id.sql",
+    "supabase/migrations/20260923210000_checkpoint_cas_bounded_timeout.sql",
+    "supabase/migrations/20260925150000_weather_selection_model_binding.sql",
+    "supabase/migrations/20260926170000_exact_checkpoint_predecessor.sql",
+    "supabase/migrations/20261002080000_top20_display_binding.sql",
+    "supabase/migrations/20261002094500_restore_checkpoint_cas_timeout.sql",
+    "supabase/migrations/20261003080000_copernicus_child_close_binding.sql",
+    "supabase/migrations/20261004190000_owner_current_source_domain_binding.sql",
+    "supabase/migrations/20261005000000_owner_water_level_only_binding.sql",
+    "supabase/migrations/20261010130000_owner_export_origin_bound_successor.sql",
+    "supabase/migrations/20261012200000_checkpoint_cas_single_projection_successor.sql",
+    "supabase/migrations/20261013210000_account_assistant_original_bound_successor.sql",
+    "supabase/migrations/20261013220000_current_grid_original_bound_successor.sql",
+    "supabase/migrations/20261013230000_account_statistics_revision.sql",
+    "supabase/migrations/20261016060000_native_sampling_identity_original_bound_successor.sql",
+    "supabase/migrations/20261017020000_current_memory_warmup_original_bound_successor.sql",
+    "supabase/migrations/20261017140000_established_native_current_origin_bound_successor.sql"
+  ],
+  "additionalFiles": [
+    {
+      "file": ".github/workflows/deploy-code-only-repair.yml",
+      "gitBlob": "b72a5dab22d3bf89a65b4e633f1c4429a5db48e4",
+      "bytes": 128247,
+      "sha256": "a5052ae64638aaf4df28523f8a8c401e13803707ea0d46e0bb371f012f33352b",
+      "imports": null,
+      "dataOnly": true
+    },
+    {
+      "file": "data/admin/ravscore-profile-selection.json",
+      "gitBlob": "6e04116a66f5e7ed9eb433909cafb4b4c16dcfd4",
+      "bytes": 1633,
+      "sha256": "21fbd48f5952a4a4b0806c3dd0cf878292865cb109b61834e4f09f2fd3acdc51",
+      "imports": null,
+      "dataOnly": true
+    },
+    {
+      "file": "data/live/coastal-parts-v2.json",
+      "gitBlob": "c3c6f9c2f1c22aa62655bc5f9ccec77f7835fe81",
+      "bytes": 2150194,
+      "sha256": "43094b3124f77f7018965f9b890084cb7b62a06d0d05a8df45e7763e15fa35a2",
+      "imports": null,
+      "dataOnly": true
+    },
+    {
+      "file": "knowledge/rav-assistant-public-v1.json",
+      "gitBlob": "3d1c03ea833294739a1081ceeb305c3b592e5ce4",
+      "bytes": 16441,
+      "sha256": "419c1b74c8eb9015b953ccc9ad47a6705553f0c59d2687778de9a9323fe739d8",
+      "imports": null,
+      "dataOnly": true
+    },
+    {
+      "file": "scripts/audit-ravscore-integrated-public-runtime.mjs",
+      "gitBlob": "efcb315edc71c7e4c00a2cd10f75a7de83127db8",
+      "bytes": 96053,
+      "sha256": "07d8fc98990b355ba31a588a0a307aac7872bffad93799258f1d85f36697382a",
+      "imports": [
+        "../js/core/ravscore-candidate-g-state-pipeline.js",
+        "../js/core/ravscore-integrated.js",
+        "../js/core/ravscore-current-supply-memory.js",
+        "../js/core/ravscore-mobilisation-memory.js",
+        "../js/core/ravscore-wave-approach-state.js",
+        "../js/core/ravscore-time.js",
+        "../js/core/local-zone-score.js",
+        "../js/core/ravscore-integrated-state-pipeline.js",
+        "../js/core/ravscore-regime-memory.js",
+        "../js/core/ravscore-model-contract.js",
+        "../js/core/ravscore-public-model.js",
+        "../js/core/ravscore-public-runtime-contract.js",
+        "../js/core/ravscore-public-profile-contract.js",
+        "./lib/ravscore-production-adapters.mjs",
+        "./lib/ravscore-integrated-runtime.mjs",
+        "./lib/feggesund-wave-proxy.mjs",
+        "./lib/ravscore-candidate-g-rollback-runtime.mjs",
+        "./rollback-assets/ravscore-model-contract.js",
+        "./lib/ravscore-sampling-context.mjs",
+        "./public-conditions-lib.mjs",
+        "./lib/private-conditions-hourly.mjs"
+      ]
+    },
+    {
+      "file": "scripts/build-candidate-g-rollback-bundle.mjs",
+      "gitBlob": "004eaf14227ab20639668f1240f1575621433aba",
+      "bytes": 6548,
+      "sha256": "79e030daafc41f56c20d343c1a246ad79b82fce2cd27a3f636a762f8f687dbf0",
+      "imports": [
+        "./rollback-assets/ravscore-model-contract.js",
+        "./lib/model-source-imports.mjs"
+      ]
+    },
+    {
+      "file": "scripts/build-established-native-current-origin-successor.mjs",
+      "gitBlob": "3d39d3273b9aa28cb86838763cd14fa3bb135032",
+      "bytes": 28385,
+      "sha256": "077f7ab2579f582688e568ec420de824f0dc9fdbe948401b457039261e894e19",
+      "imports": [
+        "./build-candidate-g-rollback-bundle.mjs",
+        "./build-ravscore-model-bundle.mjs",
+        "./lib/ravscore-continuation-implementation-contract.mjs",
+        "./lib/current-memory-warmup-successor-source.mjs",
+        "./verify-account-assistant-schema.mjs",
+        "./lib/established-native-current-origin-successor-source.mjs",
+        "./integrated-cutover-readiness.mjs"
+      ]
+    },
+    {
+      "file": "scripts/build-ravscore-model-bundle.mjs",
+      "gitBlob": "e86dba4688cd70c66db6dac013b08da37bb27bba",
+      "bytes": 6644,
+      "sha256": "974a8af2c8fdbc92217b15f582142f43a13288143d635b72dec0521021a66dcd",
+      "imports": [
+        "../js/core/ravscore-model-contract.js",
+        "./lib/model-source-imports.mjs"
+      ]
+    },
+    {
+      "file": "scripts/build-statistics-preference-revision.mjs",
+      "gitBlob": "060fc5b368592c0a6d70fa2b1ad150f956e75235",
+      "bytes": 11350,
+      "sha256": "2196c4362615f6ea0541578553984fb280769ec650cd3319de6feadd52cba00e",
+      "imports": [
+        "./lib/current-grid-successor-source.mjs",
+        "./verify-account-assistant-schema.mjs"
+      ]
+    },
+    {
+      "file": "scripts/check-current-memory-warmup-predecessor-source.mjs",
+      "gitBlob": "c4d281d65c3984178078f2354978f68a42893e46",
+      "bytes": 10404,
+      "sha256": "a201e4afb0da382623004d7717ca867d9a9b881ff107e7a30dd052a5b2a68989",
+      "imports": []
+    },
+    {
+      "file": "scripts/check-native-identity-frozen-i71-source.mjs",
+      "gitBlob": "4fda002394cb8932fe1f36841e13267b5b156cd1",
+      "bytes": 22296,
+      "sha256": "21f08e71ee3384b7e5d8a9294d356536ce0d866ffc562f7ecf94a4f547f35e77",
+      "imports": []
+    },
+    {
+      "file": "scripts/established-native-current-origin-prewrite.mjs",
+      "gitBlob": "e8479e1b5643367f866f22a77426df400de4a03c",
+      "bytes": 15935,
+      "sha256": "28fd39e193bd231dfdca76adde268409be8d8b34126011807e290c3200fdc7fc",
+      "imports": [
+        "./established-native-current-origin-runtime-transition.mjs",
+        "./migrate-post-cutover-private-runtime.mjs",
+        "./check-native-current-reanalysis-predecessor-source.mjs",
+        "./lib/established-native-current-origin-successor-source.mjs",
+        "../js/core/ravscore-model-contract.js",
+        "./rollback-assets/ravscore-model-contract.js",
+        "./private-production-runtime-workflow.mjs",
+        "./protected-private-production-runtime.mjs",
+        "./protected-ravscore-continuation-checkpoint.mjs"
+      ]
+    },
+    {
+      "file": "scripts/established-native-current-origin-runtime-transition.mjs",
+      "gitBlob": "54c4b65f90082233d7edc5b1b6ddea5f57a73c4e",
+      "bytes": 25078,
+      "sha256": "8712d49df8a91b0669e3fb13865a57ae7df0a70775a6cfa1aa8cf323e7541b98",
+      "imports": [
+        "./lib/bounded-json-writer.mjs",
+        "./lib/established-native-current-origin.mjs",
+        "./check-native-current-reanalysis-predecessor-source.mjs",
+        "./lib/established-native-current-origin-successor-source.mjs",
+        "../js/core/ravscore-model-contract.js",
+        "./rollback-assets/ravscore-model-contract.js",
+        "./private-production-runtime-workflow.mjs",
+        "./ravscore-continuation-checkpoint.mjs",
+        "./migrate-post-cutover-private-runtime.mjs",
+        "./protected-private-production-runtime.mjs"
+      ]
+    },
+    {
+      "file": "scripts/fixtures/rav-assistant-evals-v1.json",
+      "gitBlob": "9ca23cdc802187546f436c5a7f4944f760332b73",
+      "bytes": 27262,
+      "sha256": "b55dd222033e05edbb52713f154ec129c2937f2071ffb58ac5dab24b559f17d0",
+      "imports": null,
+      "dataOnly": true
+    },
+    {
+      "file": "scripts/fixtures/statistics-preference-revision-input.json",
+      "gitBlob": "f7ddedf12a846b5c03eb8c3a12b5c8f194db2276",
+      "bytes": 4889,
+      "sha256": "4990770bb2b0ca4bbad5da97156b88a186ef6df95319415ca91819cef8ff49af",
+      "imports": null,
+      "dataOnly": true
+    },
+    {
+      "file": "scripts/integrated-cutover-readiness.mjs",
+      "gitBlob": "4dfa69bb2f554c186870203551c70e4fadcbe040",
+      "bytes": 86408,
+      "sha256": "647f46129b92431275c6d091d9a325c32fc3e48efda78f7c00908bc42c4d3da8",
+      "imports": [
+        "../config.js",
+        "../js/core/ravscore-model-contract.js",
+        "./lib/ravscore-profile-transition.mjs",
+        "./rollback-assets/ravscore-model-contract.js",
+        "./lib/supabase-admin-rest.mjs",
+        "./lib/account-assistant-successor-source.mjs",
+        "./lib/current-grid-successor-source.mjs",
+        "./lib/native-sampling-identity-successor-source.mjs",
+        "./lib/current-memory-warmup-successor-source.mjs",
+        "./lib/established-native-current-origin-successor-source.mjs",
+        "./build-statistics-preference-revision.mjs"
+      ]
+    },
+    {
+      "file": "scripts/lib/alternative-c-caller-test-input.mjs",
+      "gitBlob": "dfbb6a9f891d2e926259959c910a365fb4d8ad5b",
+      "bytes": 11812,
+      "sha256": "39ab525ea7d69c11e749a4fe9b1f623850b0ad6e4191932ae2f87fa9931cb88a",
+      "imports": []
+    },
+    {
+      "file": "scripts/lib/bounded-json-writer.mjs",
+      "gitBlob": "ecc586bd8759555a817039fa6a5d84dfbac78334",
+      "bytes": 4989,
+      "sha256": "d25c6199a18e7227e5160b58d56454abc4c9eaed52a678a55b8bb0dd00369583",
+      "imports": []
+    },
+    {
+      "file": "scripts/lib/current-memory-warmup-postgres.mjs",
+      "gitBlob": "73953a792fb0aa4fdb346c8a654d5efa8dde8de8",
+      "bytes": 21181,
+      "sha256": "2e1498b7603a6625d415a1aed8c042c73d747ddd408f4222bdb0e3aa6046e091",
+      "imports": [
+        "../check-current-memory-warmup-predecessor-source.mjs",
+        "./current-memory-warmup-successor-source.mjs",
+        "../integrated-cutover-readiness.mjs",
+        "../verify-account-assistant-schema.mjs",
+        "../protected-ravscore-continuation-checkpoint.mjs",
+        "../ravscore-continuation-checkpoint.mjs",
+        "../../js/core/ravscore-integrated-state-pipeline.js",
+        "../../js/core/ravscore-candidate-g-state-pipeline.js",
+        "../../js/core/ravscore-model-contract.js",
+        "../rollback-assets/ravscore-model-contract.js",
+        "./coastal-point-staging-contract.mjs",
+        "./ravscore-candidate-g-rollback-runtime.mjs",
+        "./ravscore-continuation-implementation-contract.mjs"
+      ]
+    },
+    {
+      "file": "scripts/lib/current-memory-warmup-successor-source.mjs",
+      "gitBlob": "20e42e2c5c13b064dc0f4b9d9fdddd3785825336",
+      "bytes": 10489,
+      "sha256": "399e7e4690513b1db64a010c03b041d529caccfc0785fb34ab4c1b68ea5894b6",
+      "imports": [
+        "./native0600-original-successor-source.mjs",
+        "./native-sampling-identity-successor-source.mjs",
+        "../build-statistics-preference-revision.mjs"
+      ]
+    },
+    {
+      "file": "scripts/lib/established-native-current-origin-cp-fixture.mjs",
+      "gitBlob": "f82ec1d2324616de82f3680bdb40f393fd7cc111",
+      "bytes": 4812,
+      "sha256": "4816464052247abb993d97521ed28ab4fc0e0de10ecc77c390ab6ba0b80e380d",
+      "imports": []
+    },
+    {
+      "file": "scripts/lib/established-native-current-origin-postgres.mjs",
+      "gitBlob": "c9ec7b2b6f55cf42053bf8f027108cf006d22bff",
+      "bytes": 25634,
+      "sha256": "61b98bd1a899d5c14ea940532b564f6d9ad52ce73c7afc8164b31f00bc802e9b",
+      "imports": [
+        "./established-native-current-origin-successor-source.mjs",
+        "./current-memory-warmup-successor-source.mjs",
+        "./current-memory-warmup-postgres.mjs",
+        "../integrated-cutover-readiness.mjs",
+        "../verify-account-assistant-schema.mjs",
+        "../protected-ravscore-continuation-checkpoint.mjs",
+        "../ravscore-continuation-checkpoint.mjs"
+      ]
+    },
+    {
+      "file": "scripts/lib/established-native-current-origin-successor-source.mjs",
+      "gitBlob": "e379cf5d1e9352484fedd2ab79c1056e78bcc283",
+      "bytes": 7945,
+      "sha256": "9f985630a0985af396d1510d9387b76596e81ca57774fbb6c0d8789598333f9b",
+      "imports": [
+        "./current-memory-warmup-successor-source.mjs"
+      ]
+    },
+    {
+      "file": "scripts/lib/established-native-current-origin-test-transports.mjs",
+      "gitBlob": "d5aa1d2ed7f9abd70dc3295a22217df163e28ead",
+      "bytes": 5574,
+      "sha256": "c681a9f57771a66ab6f201142516446e4a8b0a47c1d6ec76a90a2c5013e59552",
+      "imports": []
+    },
+    {
+      "file": "scripts/lib/model-source-imports.mjs",
+      "gitBlob": "5eb753b281a812b6afc2fafe875a8b7f87773f69",
+      "bytes": 3006,
+      "sha256": "534aa596471ea2fd68661540c4ed5e29d8385cf7cbf45f0c010e7e3357ec811b",
+      "imports": [
+        "./static-module-closure.mjs"
+      ]
+    },
+    {
+      "file": "scripts/lib/native0600-original-successor-source.mjs",
+      "gitBlob": "ab6803be1977296b16913c344b35adf7ff329923",
+      "bytes": 7442,
+      "sha256": "bcc2ac876cafcd61ea434bc9658302224e8f061ca048905d5682222eccf348c3",
+      "imports": [
+        "./native-sampling-identity-successor-source.mjs",
+        "./current-grid-successor-source.mjs",
+        "../build-statistics-preference-revision.mjs"
+      ]
+    },
+    {
+      "file": "scripts/lib/public-delivery-nested-binding.mjs",
+      "gitBlob": "2d1ca2ec47f6ff3f33ffc937d059adfc6bed46ba",
+      "bytes": 1168,
+      "sha256": "1e954452290922e10b0682abf1a6dd85f26a3d3bd9d520f9712d3bb8661f54b4",
+      "imports": []
+    },
+    {
+      "file": "scripts/lib/rebind-public-hour-pack-exact.mjs",
+      "gitBlob": "8b6e08df5a11b3caa752d3f0dda2a8d402b87cc4",
+      "bytes": 3667,
+      "sha256": "75baa904a9fa466393e5c8889e0590fa7d333b074ba3824b0e94405a7a7dc5e2",
+      "imports": [
+        "./public-hour-delivery-pack.mjs",
+        "./public-delivery-nested-binding.mjs"
+      ]
+    },
+    {
+      "file": "scripts/migrate-post-cutover-private-runtime.mjs",
+      "gitBlob": "dd5fe3b432dbcaca9889773c5171e7c0fa6b73b6",
+      "bytes": 110999,
+      "sha256": "1b097d22f4102dc80f8d2c917dbaead896ceb3e7b8f364992d3422c4d010d9f6",
+      "imports": [
+        "../js/core/ravscore-integrated-state-pipeline.js",
+        "../js/core/ravscore-integrated.js",
+        "../js/core/ravscore-model-contract.js",
+        "../js/core/ravscore-public-model.js",
+        "../js/core/ravscore-public-profile-contract.js",
+        "../js/core/ravscore-public-runtime-contract.js",
+        "./audit-ravscore-integrated-public-runtime.mjs",
+        "./check-native-identity-frozen-i71-source.mjs",
+        "./lib/bounded-conditions-predecessor-transition.mjs",
+        "./lib/bounded-json-writer.mjs",
+        "./lib/coastal-point-staging-contract.mjs",
+        "./lib/dmi-marine-zone-exclusions.mjs",
+        "./lib/private-conditions-hourly.mjs",
+        "./lib/private-weather-component-inventory.mjs",
+        "./lib/public-hour-delivery-pack.mjs",
+        "./lib/ravscore-integrated-runtime.mjs",
+        "./lib/ravscore-production-adapters.mjs",
+        "./lib/ravscore-production-part-pipeline.mjs",
+        "./lib/rebind-public-hour-pack-exact.mjs",
+        "./private-production-runtime-bundle.mjs",
+        "./private-production-runtime-workflow.mjs",
+        "./protected-private-production-runtime.mjs",
+        "./public-conditions-lib.mjs",
+        "./rollback-assets/ravscore-model-contract.js",
+        "./runtime-binding-registry.mjs"
+      ]
+    },
+    {
+      "file": "scripts/runtime-binding-registry.mjs",
+      "gitBlob": "78777664dcb320beaa07cc608fd6745b5d9b958a",
+      "bytes": 7047,
+      "sha256": "ae0b7a9350774f6328d364ffdadbe8bd25f69b675be19a034830481c850af46c",
+      "imports": []
+    },
+    {
+      "file": "scripts/source-critical-gate.mjs",
+      "gitBlob": "c8edd162194339d7148d70b396e7f0f97b481c24",
+      "bytes": 12865,
+      "sha256": "010e831772367b8ee5e7ad116c19fa5fa87c10aa15a88cbd51f66a69f4e96492",
+      "imports": null,
+      "dataOnly": true
+    },
+    {
+      "file": "scripts/sync-ravscore-model-binding.mjs",
+      "gitBlob": "2c88b4bc8f48ac442af99aa472bce00751d34980",
+      "bytes": 19414,
+      "sha256": "c78f0d291595ee1ea255a3ccb6a2450b6eeb3eb585561bd7277a2ca6ebb31bfc",
+      "imports": [
+        "./lib/established-native-current-origin-successor-source.mjs",
+        "../js/core/ravscore-model-contract.js",
+        "./rollback-assets/ravscore-model-contract.js",
+        "./lib/ravscore-continuation-implementation-contract.mjs"
+      ]
+    },
+    {
+      "file": "scripts/test-established-native-current-origin-followers.mjs",
+      "gitBlob": "bb11c7a064dd8f594cd7644c6e4388ec19ad5ee1",
+      "bytes": 29842,
+      "sha256": "3f8b13047ecc5ee02ee75a01820212f63a316c9bac315edf1549bd387ac5b194",
+      "imports": [
+        "./lib/alternative-c-caller-test-input.mjs",
+        "./lib/established-native-current-origin-cp-fixture.mjs",
+        "./lib/established-native-current-origin-test-transports.mjs"
+      ]
+    },
+    {
+      "file": "scripts/test-established-native-current-origin-postgres-source.mjs",
+      "gitBlob": "c25e7c581fa8d9a97b2b6e2e99bb71090c34e7a9",
+      "bytes": 10734,
+      "sha256": "1108891caa8da8e3d8847ebde81666f7e847f0f8ee211de81fcc479130c8a0ae",
+      "imports": [
+        "./lib/established-native-current-origin-postgres.mjs",
+        "./lib/established-native-current-origin-successor-source.mjs",
+        "./lib/current-memory-warmup-successor-source.mjs"
+      ]
+    },
+    {
+      "file": "scripts/test-established-native-current-origin-successor.mjs",
+      "gitBlob": "1bb82d3903966deab55e045bf7757891f087d915",
+      "bytes": 11545,
+      "sha256": "fd851a28c08b8d71abcf3ef81991f92c29b31a4e9c3b1ea3aea7e628ce55a432",
+      "imports": [
+        "./build-established-native-current-origin-successor.mjs",
+        "./lib/established-native-current-origin-successor-source.mjs",
+        "./lib/current-memory-warmup-successor-source.mjs",
+        "./integrated-cutover-readiness.mjs",
+        "./verify-established-native-current-origin-plan.mjs",
+        "./established-native-current-origin-prewrite.mjs",
+        "./sync-ravscore-model-binding.mjs",
+        "../js/core/ravscore-model-contract.js",
+        "./rollback-assets/ravscore-model-contract.js",
+        "./public-conditions-lib.mjs"
+      ]
+    },
+    {
+      "file": "scripts/test-model-source-imports.mjs",
+      "gitBlob": "4093ca8c1c0175d0890bd767e968f0def4a631d8",
+      "bytes": 4751,
+      "sha256": "7637878304690656fd6f404d5efc3a1b098a56209d9da407f3864d10b2dbb158",
+      "imports": [
+        "./lib/model-source-imports.mjs",
+        "./lib/static-module-closure.mjs"
+      ]
+    },
+    {
+      "file": "scripts/test-weather-update-entrypoint.mjs",
+      "gitBlob": "e22a949dd70dd3a09d6ce7f01bc07ce9d7ec9316",
+      "bytes": 135689,
+      "sha256": "c9e0e204535bba8398de2cdefdbdd946095345632c35aea7c5ff532903d2e8c2",
+      "imports": null,
+      "dataOnly": true
+    },
+    {
+      "file": "scripts/update-weather.mjs",
+      "gitBlob": "587aaa4540d665acce1926b1a5808d92bd057635",
+      "bytes": 239377,
+      "sha256": "039ac65c779fe3eb8dbc870c00b0af30b33f9333c7cd542492ee40595c6eac77",
+      "imports": null,
+      "dataOnly": true
+    },
+    {
+      "file": "scripts/verify-account-assistant-schema.mjs",
+      "gitBlob": "cba1e102549878567420544e8c7e2cd20252eaf9",
+      "bytes": 25513,
+      "sha256": "8bc595c8d1bef55d71cba5234c78256ff5797a0f33d17fe6a0146c9b08bddccd",
+      "imports": [
+        "./lib/account-assistant-successor-source.mjs"
+      ]
+    },
+    {
+      "file": "scripts/verify-established-native-current-origin-plan.mjs",
+      "gitBlob": "1a0494cadc1dbf54955d58b47f86c3a7b8bf77fe",
+      "bytes": 5831,
+      "sha256": "71722a05f907f92cd58b2038d6efccefbc5ef7fffd60ef20cab8675f1cc42a7b",
+      "imports": [
+        "./integrated-cutover-readiness.mjs",
+        "./lib/established-native-current-origin-successor-source.mjs",
+        "./lib/current-memory-warmup-successor-source.mjs"
+      ]
+    },
+    {
+      "file": "supabase/config.toml",
+      "gitBlob": "a868461ac89e4fbb9180152f79ea683dcd3e17e3",
+      "bytes": 167,
+      "sha256": "06fdf6c78815f3a40e74ab3614bfabfa3b37f9690be62fd93a119c3ddee0ccf5",
+      "imports": null,
+      "dataOnly": true
+    },
+    {
+      "file": "supabase/functions/_shared/rav-assistant-contract.ts",
+      "gitBlob": "1850a04852c2789717a7a627bcb4d83fd63b6e66",
+      "bytes": 78362,
+      "sha256": "0344fc036197edc8a9299e90d05af32a4a99e2a06b63c29665b88f4680840dd1",
+      "imports": null,
+      "dataOnly": true
+    },
+    {
+      "file": "supabase/INSTALL-RAVRADAR-4.0.56-SECURITY.sql",
+      "gitBlob": "f93978be7e7ca715cf76a1841f4c8ab50558dcbc",
+      "bytes": 1455852,
+      "sha256": "0917591842c34dc7832054d99a46843c3d9fbcb7c9c6de2b0b2d3fc8d4d38809",
+      "imports": null,
+      "dataOnly": true
+    },
+    {
+      "file": "supabase/migrations/20260829010000_ravscore_operational_documents_no_history.sql",
+      "gitBlob": "d458bee19111d94d44b9d4cf812178d62740bf47",
+      "bytes": 7811,
+      "sha256": "84e532839d69eed7afba64d01f20bef3fdf4e8699ba66b91e4d17f469300cd45",
+      "imports": null,
+      "dataOnly": true
+    },
+    {
+      "file": "supabase/migrations/20260829020000_integrated_trip_calibration_binding.sql",
+      "gitBlob": "c047ca33aee334909eaf2553ca3641a16bdb82da",
+      "bytes": 49473,
+      "sha256": "3e32daa856e44f81ae900e3c841b74633ef8efb473fca8b3f3dacef47de1a96d",
+      "imports": null,
+      "dataOnly": true
+    },
+    {
+      "file": "supabase/migrations/20260901010000_integrated_trip_measured_warmup_admission.sql",
+      "gitBlob": "c5f9dba121694ca389d483a0746bfdfa4e91bf96",
+      "bytes": 36614,
+      "sha256": "443d7f02f7736ca9d5ab2bd5dab28b8f5f56c6dc1c7550ee548fdec611e5386c",
+      "imports": null,
+      "dataOnly": true
+    },
+    {
+      "file": "supabase/migrations/20260903010000_ravscore_checkpoint_metadata_cas.sql",
+      "gitBlob": "1dbf4e6742f6e10b1bc38153ea613d13a88b4c26",
+      "bytes": 74529,
+      "sha256": "0076acd2a51ff76bc68ff9ccbcb7ad19b24848b338c22ce00b7382674d3088d5",
+      "imports": null,
+      "dataOnly": true
+    },
+    {
+      "file": "supabase/migrations/20260904140000_harmonie_wind_reference_binding.sql",
+      "gitBlob": "1d670bf52f01e8419b0c38ecf5798322104d3ce4",
+      "bytes": 110870,
+      "sha256": "bb6f7cf3f637edaa95970d9e336c0cfa845200b8edaf15ff2929de0c4f822ce1",
+      "imports": null,
+      "dataOnly": true
+    },
+    {
+      "file": "supabase/migrations/20260905090000_open_meteo_current_fallback_binding.sql",
+      "gitBlob": "6170f70001c2273dcdca891d6495e301026b2050",
+      "bytes": 110874,
+      "sha256": "c94b2480770edf82863416d19b0b8abc465ddec2f9ce9bccf650258e187485ac",
+      "imports": null,
+      "dataOnly": true
+    },
+    {
+      "file": "supabase/migrations/20260906162332_per_pair_weather_fallback_binding.sql",
+      "gitBlob": "1b88ed433787604238690323d267fd2319b9490b",
+      "bytes": 110881,
+      "sha256": "8767e45cc001b50d00ae32c0f3e1aaaba27411c04390956a47b1f23f86e9abf2",
+      "imports": null,
+      "dataOnly": true
+    },
+    {
+      "file": "supabase/migrations/20260907084343_horizon_valid_weather_binding.sql",
+      "gitBlob": "f0e949cb6ea8a1f803bb770916dab7d5cdd061b5",
+      "bytes": 110881,
+      "sha256": "f22ce2b3ee2e45c4fc86ce6a71b7a48543aef47dbbe014ecf41bd95558421c0d",
+      "imports": null,
+      "dataOnly": true
+    },
+    {
+      "file": "supabase/migrations/20260909194000_wam_same_run_resolution_binding.sql",
+      "gitBlob": "2127fe6594fb1a1acc8078899be6d97f16061fb7",
+      "bytes": 110901,
+      "sha256": "a76ae8bd0de79cbbbc79edcff0af92e37c2dfb3d5798e9c35e4337cbfea6606d",
+      "imports": null,
+      "dataOnly": true
+    },
+    {
+      "file": "supabase/migrations/20260912122607_measured_rollback_warmup_binding.sql",
+      "gitBlob": "c647f809d04bf93cf87e9499362e321f5d026592",
+      "bytes": 110902,
+      "sha256": "704439882eb6e77a7c038e14b8ecfd49ef9b6bb9074f9ea5778f6843f6c48137",
+      "imports": null,
+      "dataOnly": true
+    },
+    {
+      "file": "supabase/migrations/20260912141641_state_only_hold_closure_v2_binding.sql",
+      "gitBlob": "f655ffb289dd0e32aa54a675e8f7bc3043daaa1e",
+      "bytes": 110904,
+      "sha256": "548c29250363ecb45d19408141ff5206e86de273092c4a9d15add2e774a8cfc9",
+      "imports": null,
+      "dataOnly": true
+    },
+    {
+      "file": "supabase/migrations/20260912194206_local_unavailable_cutover_binding.sql",
+      "gitBlob": "13ebba02b1a05394ca0717b2791d8fef9c9f98f2",
+      "bytes": 110903,
+      "sha256": "24a7450ae913ceef37375e6df200a0e85e6a001128c4a1ca9b6652ae6642fbd8",
+      "imports": null,
+      "dataOnly": true
+    },
+    {
+      "file": "supabase/migrations/20260913010000_public_runtime_oracle_binding.sql",
+      "gitBlob": "3e175dd4b60a384bd0689b93d0a9aaf6eba64075",
+      "bytes": 110899,
+      "sha256": "0e855c718611360ffaa633c6dd890632b791c82faed03bd4699c0a9f20a0ecd5",
+      "imports": null,
+      "dataOnly": true
+    },
+    {
+      "file": "supabase/migrations/20260914010000_h0_reference_recovery_binding.sql",
+      "gitBlob": "decde68a4301efe421aa21abe090c20ffb106efa",
+      "bytes": 110899,
+      "sha256": "298e0a4c849d3dee363792b3cf4bad302f9eb7d724dc5f686a1f9bf602d38040",
+      "imports": null,
+      "dataOnly": true
+    },
+    {
+      "file": "supabase/migrations/20260914020000_h0_state_snapshot_binding.sql",
+      "gitBlob": "8798affb1c801423134bd2caa7120678e8e8189f",
+      "bytes": 110895,
+      "sha256": "f664d2a36f9a9bde668a542ac74b2312eab56c1c0ef9087cc26ef71f4f3b491c",
+      "imports": null,
+      "dataOnly": true
+    },
+    {
+      "file": "supabase/migrations/20260914234500_post_cutover_current_hold_binding.sql",
+      "gitBlob": "e76166fb29d232acf4135ba602b379efdd8d1609",
+      "bytes": 111231,
+      "sha256": "9386e0f6754ccb28521422c73ee5eb00c6c2e4f5899609e0bc3033048a83b840",
+      "imports": null,
+      "dataOnly": true
+    },
+    {
+      "file": "supabase/migrations/20260915020000_private_runtime_storage_deny.sql",
+      "gitBlob": "fccac46043672d63f94ddc954d687bfd0cee411a",
+      "bytes": 501,
+      "sha256": "cf1291f9c595d2746323c1b73202958e6a596016acff72e9aae01e69c76c869c",
+      "imports": null,
+      "dataOnly": true
+    },
+    {
+      "file": "supabase/migrations/20260916120000_valid_data_before_local_missing_binding.sql",
+      "gitBlob": "a85e92bb0718f2f9a6f9a2adf7451b993ce8c31a",
+      "bytes": 111237,
+      "sha256": "95272e1f95d07f2616cd4bc2057cbe3c82837bea1057e04bdece33e5e2958796",
+      "imports": null,
+      "dataOnly": true
+    },
+    {
+      "file": "supabase/migrations/20260917001500_partial_zone_public_metadata_binding.sql",
+      "gitBlob": "e84cac1eb78cd6328611001330fede1848f60ad3",
+      "bytes": 111234,
+      "sha256": "548ba234d6ad2a534bef96f0068c57243c7857a71e8cbe88f262a7a46b5c826b",
+      "imports": null,
+      "dataOnly": true
+    },
+    {
+      "file": "supabase/migrations/20260918125600_last_mile_history_envelope_binding.sql",
+      "gitBlob": "bfeb47fd87440c9710b7dd5bce1f72583066a4b5",
+      "bytes": 111232,
+      "sha256": "0548e4ad175c02b32f330c9563be89a0f7d3c4093409385155469368535d5707",
+      "imports": null,
+      "dataOnly": true
+    },
+    {
+      "file": "supabase/migrations/20260918190000_weather_input_resolution_binding.sql",
+      "gitBlob": "be7500e1315a765210780e38085dab198845f5be",
+      "bytes": 111230,
+      "sha256": "9dd27fae7ffd93720a7c2c9c347ab8ea6df40cbc96d713cb1ff25c638078f2dc",
+      "imports": null,
+      "dataOnly": true
+    },
+    {
+      "file": "supabase/migrations/20260919010000_current_input_foundation_binding.sql",
+      "gitBlob": "deff324ab791c09634539aa0a4160018af3255b9",
+      "bytes": 111230,
+      "sha256": "5ff2e8a01d27eb5bc5df9482c0660e1b82133fa9a738bff60e93fed5fd2b1233",
+      "imports": null,
+      "dataOnly": true
+    },
+    {
+      "file": "supabase/migrations/20260919020000_measured_warmup_checkpoint.sql",
+      "gitBlob": "2115f283d759b119dc6256ccc801104a0d1bf4f0",
+      "bytes": 115286,
+      "sha256": "24fd06b77349fe993f844fa0401deca3d69c30d823205cd6840f51f93f4b2fe8",
+      "imports": null,
+      "dataOnly": true
+    },
+    {
+      "file": "supabase/migrations/20260919231000_public_hour_delivery_binding.sql",
+      "gitBlob": "aed8ecf8fdfcaa7f4f326dc7fdac3863a775a31f",
+      "bytes": 115288,
+      "sha256": "491b33fe1027340ecfe389f6dc98ac3fcdcaf4c0a2351607eb98cd3b14f003be",
+      "imports": null,
+      "dataOnly": true
+    },
+    {
+      "file": "supabase/migrations/20260920220000_public_hour_pack_capacity_binding.sql",
+      "gitBlob": "fe5f59679e6a6a35c6add1e8e65a8d465f0fea5a",
+      "bytes": 115369,
+      "sha256": "4ab13e16700801ee38cd6a25cc6fe4adcc87cbe188c5f226a61798bede7b2f9f",
+      "imports": null,
+      "dataOnly": true
+    },
+    {
+      "file": "supabase/migrations/20260922100000_integrated_trip_binding_repair.sql",
+      "gitBlob": "3803ab3642872d1d1dfdfb3d149a4aa35e3ca36d",
+      "bytes": 90491,
+      "sha256": "f44465ffb4a4f253a15becf5b1a449781e05a120fec95de1a1ad35f959067e69",
+      "imports": null,
+      "dataOnly": true
+    },
+    {
+      "file": "supabase/migrations/20260922170000_integrated_model_binding_successor.sql",
+      "gitBlob": "8ca0fbd1c33cd2a6b1342bbb5e88353cddea0895",
+      "bytes": 90555,
+      "sha256": "6746c7e9bf1a980a194aae08410bab04917b5ee0d3e6b08f7543a3470c5680d0",
+      "imports": null,
+      "dataOnly": true
+    },
+    {
+      "file": "supabase/migrations/20260923052100_integrated_current_projection_binding.sql",
+      "gitBlob": "87a6402f04aeb9c548e82d60da34cac2237dc415",
+      "bytes": 90630,
+      "sha256": "26d5133de58137d121c7f1bbf4410503fdfb553c5101010bd667dfcd6decd1a6",
+      "imports": null,
+      "dataOnly": true
+    },
+    {
+      "file": "supabase/migrations/20260923091500_integrated_native_hold_continuation_binding.sql",
+      "gitBlob": "f88ca2c2a37486caa8c7bc267c1057602c28e04d",
+      "bytes": 90625,
+      "sha256": "fb6b357395c11e5982eb496187a6eb3c45502c21ef036a12ecb1ad4838a5457d",
+      "imports": null,
+      "dataOnly": true
+    },
+    {
+      "file": "supabase/migrations/20260923100000_integrated_checkpoint_part_identity_binding.sql",
+      "gitBlob": "dad1a1f8de551bc08096c5d4f7ea37baba661b21",
+      "bytes": 90622,
+      "sha256": "3d0b9aa386cd19ee092a1fd2cb25afd3dc4b367d92c3fb1503bc0e1b4adf130c",
+      "imports": null,
+      "dataOnly": true
+    },
+    {
+      "file": "supabase/migrations/20260923110000_integrated_checkpoint_warmup_status_binding.sql",
+      "gitBlob": "0b909b5bbebc49e0e63748d60fcbbc6bd1c237ec",
+      "bytes": 90518,
+      "sha256": "24c77f96a0a21a95232dba473394b1e19783bca4bceb32069e5bb482c4421187",
+      "imports": null,
+      "dataOnly": true
+    },
+    {
+      "file": "supabase/migrations/20260923120000_integrated_checkpoint_missing_state_binding.sql",
+      "gitBlob": "4dcabf5d4097692dd2a80be91882fa3ee8a2e212",
+      "bytes": 90899,
+      "sha256": "a171ed10e1520d2979fae506aba9aca17d420ded2a11fc12ba087dfb32ccd6c1",
+      "imports": null,
+      "dataOnly": true
+    },
+    {
+      "file": "supabase/migrations/20260923130000_checkpoint_rejection_diagnostic.sql",
+      "gitBlob": "e36db9f5232a0d948af72444eef9de6847038677",
+      "bytes": 60529,
+      "sha256": "6c43152ca038e5d322063cb3ed922bfb43dc698de5690629b488b4a6dfbf6d57",
+      "imports": null,
+      "dataOnly": true
+    },
+    {
+      "file": "supabase/migrations/20260923140000_checkpoint_native_hold_null_evidence.sql",
+      "gitBlob": "5e75e21e3ed037ae9f6db82b49491af8d9b46b35",
+      "bytes": 78839,
+      "sha256": "b502c3c1abc12fb07375eca7954f7538d4c8f5d12f776802e7dc48a8173caa8d",
+      "imports": null,
+      "dataOnly": true
+    },
+    {
+      "file": "supabase/migrations/20260923150000_checkpoint_candidate_diagnostic_correction.sql",
+      "gitBlob": "fab3329744ffefa0831d66f35f778350de7b43dc",
+      "bytes": 9367,
+      "sha256": "10ebc7983bfab8677188c304f9591a5c21c7b7ff24dc329d622f9ecec3ec9c5f",
+      "imports": null,
+      "dataOnly": true
+    },
+    {
+      "file": "supabase/migrations/20260923160000_checkpoint_candidate_companion_id.sql",
+      "gitBlob": "0de996e7b5fa5faadbf24bbaaf62cf3e57cfcd91",
+      "bytes": 19462,
+      "sha256": "14d2746b647006c2720a1666887f02ed59e964fe5841b626101b32efd77efe00",
+      "imports": null,
+      "dataOnly": true
+    },
+    {
+      "file": "supabase/migrations/20260923210000_checkpoint_cas_bounded_timeout.sql",
+      "gitBlob": "37ce4644b06c97c947a97fb934a11f55464392e0",
+      "bytes": 414,
+      "sha256": "547d73df4294cb7ba2dadd8bc56912d9d345108c54e5933167c4a018f01c7e00",
+      "imports": null,
+      "dataOnly": true
+    },
+    {
+      "file": "supabase/migrations/20260925150000_weather_selection_model_binding.sql",
+      "gitBlob": "5e822a4ef71d50d47777a4167194586ca8bf7e0f",
+      "bytes": 140697,
+      "sha256": "436a0ec8a57a6b9b5e1b9124b37c0ccf3e0328234f9bf7635b88ed23602c3bc4",
+      "imports": null,
+      "dataOnly": true
+    },
+    {
+      "file": "supabase/migrations/20260926170000_exact_checkpoint_predecessor.sql",
+      "gitBlob": "ad536d7e119184560cc23e4a64cd021fac5e38cb",
+      "bytes": 3850,
+      "sha256": "e435b9c0ad8fa1137d770cda0bd1d277de0bc4b896886c14e25fbf8c5ac2e2fc",
+      "imports": null,
+      "dataOnly": true
+    },
+    {
+      "file": "supabase/migrations/20261002080000_top20_display_binding.sql",
+      "gitBlob": "b3ff6fbd394a73687edd46e0eb8cc615d464eb68",
+      "bytes": 145084,
+      "sha256": "103de25ac4521bef4a1b041dd2ad65eb8465c6ab38dc19b23947c675ad5b60a8",
+      "imports": null,
+      "dataOnly": true
+    },
+    {
+      "file": "supabase/migrations/20261002094500_restore_checkpoint_cas_timeout.sql",
+      "gitBlob": "68427b63209a3516cbc47454a104db0c2b755eb0",
+      "bytes": 9274,
+      "sha256": "31632e333f16bf07f00f95cc87e19cb66a92fd4448ac0a27c1b4f7964e9eee47",
+      "imports": null,
+      "dataOnly": true
+    },
+    {
+      "file": "supabase/migrations/20261003080000_copernicus_child_close_binding.sql",
+      "gitBlob": "406ead80b2cc85565211e49c6fbdc78470ba8a9b",
+      "bytes": 149708,
+      "sha256": "b673b75476709c8bb51c5c2caba9e3acfa8f64b6666f4a74de3213ba961eb505",
+      "imports": null,
+      "dataOnly": true
+    },
+    {
+      "file": "supabase/migrations/20261004190000_owner_current_source_domain_binding.sql",
+      "gitBlob": "93b82560943c086277c2583f116a3ef00a2e2e80",
+      "bytes": 153959,
+      "sha256": "4e5ae691182ae6ef7b84f346bab0cfd828eedd321501424a307d5c918e449399",
+      "imports": null,
+      "dataOnly": true
+    },
+    {
+      "file": "supabase/migrations/20261005000000_owner_water_level_only_binding.sql",
+      "gitBlob": "80467f2fb66e9162a96d29115388f0a1f11b622b",
+      "bytes": 158209,
+      "sha256": "6b161bc71753b52c5728c8b9a03b02d5d0955d0e42e751a3f2a51a6ea6900496",
+      "imports": null,
+      "dataOnly": true
+    },
+    {
+      "file": "supabase/migrations/20261010130000_owner_export_origin_bound_successor.sql",
+      "gitBlob": "3c429dcbcc5a3acf80635b50451030112901e7ff",
+      "bytes": 162471,
+      "sha256": "55f01dd535553ad5df708ec70de8d58d177299f3348d18a2355a188bfb4f8cb6",
+      "imports": null,
+      "dataOnly": true
+    },
+    {
+      "file": "supabase/migrations/20261012200000_checkpoint_cas_single_projection_successor.sql",
+      "gitBlob": "4ba471e7dab9c1c396637f30c3c3f2a18b149736",
+      "bytes": 12218,
+      "sha256": "b03605272397585a3e6ad248398ba7bc6d88af506837f76c88a9a92955b48c18",
+      "imports": null,
+      "dataOnly": true
+    },
+    {
+      "file": "supabase/migrations/20261013210000_account_assistant_original_bound_successor.sql",
+      "gitBlob": "4c48f406c2d3c1c6a9424e5687a5ccb310523b06",
+      "bytes": 150567,
+      "sha256": "80ad179bc896e9fcd62b8af103d70a2d086d3626395dd97f03e4184e52bcae5d",
+      "imports": null,
+      "dataOnly": true
+    },
+    {
+      "file": "supabase/migrations/20261013220000_current_grid_original_bound_successor.sql",
+      "gitBlob": "b85f2a33d4c00cb5cd6a7bd13b0b6b2436c44d27",
+      "bytes": 293911,
+      "sha256": "77d5a60f22ff38fce3164c87e74d089ea56c0a18647310213cde465e95e4632b",
+      "imports": null,
+      "dataOnly": true
+    },
+    {
+      "file": "supabase/migrations/20261013230000_account_statistics_revision.sql",
+      "gitBlob": "ac9b03721bc0a3227ff0b14968aa67c013acc35a",
+      "bytes": 29257,
+      "sha256": "af4bd9d36f9a8d4badf3802d151acb2f16f2d5edd22ce095f8086167f2a00cae",
+      "imports": null,
+      "dataOnly": true
+    },
+    {
+      "file": "supabase/migrations/20261016060000_native_sampling_identity_original_bound_successor.sql",
+      "gitBlob": "d234ed018b852551ec317e274a3e5d24352462ed",
+      "bytes": 213647,
+      "sha256": "10e26f9d095b6c06eee479eb11d821114b04e4db0dbdb7c6717c13200793f019",
+      "imports": null,
+      "dataOnly": true
+    },
+    {
+      "file": "supabase/migrations/20261017020000_current_memory_warmup_original_bound_successor.sql",
+      "gitBlob": "77adb635b9f8d25e4dbee66260dbc0c6090a4ef5",
+      "bytes": 238629,
+      "sha256": "c8fff609ea03bbc2e5c84bea57b1d7702b15e51cd27f1854692506b18369ef47",
+      "imports": null,
+      "dataOnly": true
+    },
+    {
+      "file": "supabase/migrations/20261017140000_established_native_current_origin_bound_successor.sql",
+      "gitBlob": "fae1df6b19d3f1cc0a0589036340d5113ac5ad40",
+      "bytes": 299508,
+      "sha256": "f1d12590cfc93047afa94cdf152fab6e77f2851807695f0771127a2fdf6122b5",
+      "imports": null,
+      "dataOnly": true
+    },
+    {
+      "file": "supabase/schema.sql",
+      "gitBlob": "5ba0a362df11d921eac378f59f254218dee834f0",
+      "bytes": 449794,
+      "sha256": "3fee66e1b9480a99bf4fe2817b98b04e441f95eaef5ec037c22cf9d66fb646a7",
+      "imports": null,
+      "dataOnly": true
+    },
+    {
+      "file": "version.json",
+      "gitBlob": "14b03466e7b7b271b846f1d36c7fe1df9f6879d9",
+      "bytes": 4727,
+      "sha256": "91360a7788fc6a3fc40e6aae6c765e2e05fbbab213b14fda9bb6bf48e36f7818",
+      "imports": null,
+      "dataOnly": true
+    }
+  ],
+  "status": "PRIVATE_NOT_EXECUTED",
+  "admission": false,
+  "warning": "Explicit test-only extension outside unchanged105 archive-reader API; never a new production reader or current584 gate."
+}

@@ -1,3 +1,11 @@
+## 19. oktober — lokal 4.0.584: ret producenten, bevar originalerne
+
+Ejerens aktuelle beslutning tillader nul gammel aktiv strøm-/scorehistorik ved den afgrænsede nye start; gamle originaler skal bevares permanent og særskilt. Den private vejrpakke B, den faktisk centrale beregningstilstand S og den offentlige generation kan være forskellige og må ikke udlægges som et sammenhørende sæt. Ingen gamle I/G-tilstande eller timer før den nye reference må genindføres som aktiv historik.
+
+Den seneste faktiske kørsel hentede og beregnede vejret, bestod databevarelse og releasekontroller og gemte B, men S blev afvist. En syvtimers reproduktion uden gammel tilstand har påvist to producentfejl: forkerte feltnavne til sidste-mile-indramningen og en serializer, som gemte den rå kopi frem for den validerede kanoniske tilstand. Ret producentkæden; lemp ikke databasegrænsen. Ny modelbinding skal afledes af hele den reelle releasekilde, også versionssynk, og kræver en ny append-only migration. Gamle SQL-filer og originaler bevares.
+
+Dette er lokal kildeforberedelse, ikke installation eller offentlig levering. Normal kalder-/workflowintegration, endelig præcis kildekontrol, native- og PostgreSQL-kontrol, faktisk resterende vejrhorisont for 673 dele, ny B/S-gemning/genlæsning, offentlig effekt og almindelige efterfølgere er fortsat åbne. Offentlig version er senest verificeret som 4.0.581 med vejr fra 16. oktober kl. 12 dansk tid. Cron er senest verificeret slået fra. Alle fem hovedmål er åbne; fristen 18. oktober er overskredet og er ikke forlænget. Se håndbog 89.256 og det private checkpoint; tidligere modsatrettede status-/historikkrav nedenfor er dateret historik alene på disse punkter.
+
 ## 18. oktober — UI-build 4.0.581: mobilens dagrække, ingen ny modelovergang
 
 Dette er en UI-build på uændret 4.0.581, ikke en 4.0.582-release. Den eksisterende fuld-URL-cachevej opdaterer ui-nøglen i index.htmls CSS- og bootstrap-adresser og bootstrap.js' app-adresse samt app.js' import af tidsskyderen med en afgrænset timeline-nøgle dateret 20261018. v=4.0.581 og de delte auth-/i18n-adresser bevares. Ingen version:set, nye C/I/T-bindinger, modelændring eller SQL følger med. Den ændrede offentlige kode kræver stadig normal ny kilde-/artifactforsegling og sikker levering.

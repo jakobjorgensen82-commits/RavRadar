@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 import assert from 'node:assert/strict';
+import { inverseArchivedWeatherRestartWorkflow } from './lib/archived-weather-restart-workflow-review.mjs';
 import './test-post-cutover-migration-routing.mjs';
 import crypto from 'node:crypto';
 import fs from 'node:fs';
@@ -267,7 +268,7 @@ for (const marker of [
   'kan ikke ugyldiggøre',
 ]) assert.ok(decision.includes(marker), `DEC-0148 mangler ${marker}`);
 
-const workflow = fs.readFileSync('.github/workflows/deploy-code-only-repair.yml', 'utf8');
+const workflow = inverseArchivedWeatherRestartWorkflow(fs.readFileSync('.github/workflows/deploy-code-only-repair.yml', 'utf8').replace(/\r\n/g, '\n'));
 const prewriteOrder = [
   'Rebind saved private runtime to current source without changing measurements',
   'Require exact code-only reuse invariants',

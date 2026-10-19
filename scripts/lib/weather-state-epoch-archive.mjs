@@ -462,3 +462,356 @@ export async function materializeWeatherStateEpochArchive({ storage, archiveRoot
     archiveCatalogSha256, targetReferenceAt, verifyOriginalSnapshot });
   checkDeadline(); return handle;
 }
+// Additive UNPAIRED preservation. These originals deliberately do NOT form a
+// B/S/public generation. This capability grants archive identity only; normal
+// current-source, restart and all-part production authorities remain separate.
+const unpairedRestartArchives = new WeakMap();
+const UNPAIRED_RESTART_KIND = 'RAVRADAR_UNPAIRED_WEATHER_RESTART_ARCHIVE';
+const unpairedFail = code => fail('UNPAIRED_' + code);
+function unpairedExact(value, keys) {
+  return plain(value) && equal(Object.keys(value).sort(), [...keys].sort());
+}
+function unpairedFileNames(hasDerived) {
+  return ['original-S.json', 'registry.json', ...WEATHER_STATE_EPOCH_PUBLIC_FILES,
+    ...(hasDerived ? ['B-derived-S.json'] : [])].sort();
+}
+function unpairedFileRole(name) {
+  return name === 'original-S.json' ? 'checkpoint' : name === 'registry.json' ? 'registry'
+    : name === 'B-derived-S.json' ? 'b-derived-checkpoint' : 'public-snapshot';
+}
+function unpairedFileMaximum(role) {
+  return ['checkpoint', 'b-derived-checkpoint', 'registry'].includes(role) ? 16 * 1024 * 1024 : MAX_FILE;
+}
+function unpairedRegistry(registry) {
+  if (!plain(registry) || registry.schemaVersion !== 2 || registry.enabled !== true
+    || registry.zoneCount !== 210 || registry.partCount !== 673 || !plain(registry.zones)
+    || Object.keys(registry.zones).length !== 210) unpairedFail('REGISTRY_INVALID');
+  const ids = [];
+  for (const parts of Object.values(registry.zones)) {
+    if (!Array.isArray(parts) || !parts.length) unpairedFail('REGISTRY_INVALID');
+    for (const part of parts) {
+      if (!plain(part) || typeof part.partId !== 'string' || !part.partId) unpairedFail('REGISTRY_INVALID');
+      ids.push(part.partId);
+    }
+  }
+  if (ids.length !== 673 || new Set(ids).size !== 673) unpairedFail('REGISTRY_INVALID');
+  return { zoneCount: 210, partCount: 673, canonicalSha256: sha(Buffer.from(canonical(registry))) };
+}
+function unpairedDescription(snapshot, objects, targetReferenceAt) {
+  if (!plain(snapshot) || !plain(snapshot.originalConditions)
+    || !plain(snapshot.originalDescription) || !plain(snapshot.originalPointerRow)
+    || !plain(snapshot.originalCheckpointRow) || !plain(snapshot.originalCheckpointPayload)
+    || !Array.isArray(snapshot.originalFileDigests) || !Array.isArray(snapshot.files)) unpairedFail('SNAPSHOT_INVALID');
+  const d = snapshot.originalDescription, p = snapshot.originalPointerRow, s = snapshot.originalCheckpointRow;
+  if (p.document_key !== 'ravscore-private-production-runtime-pointer' || !Number.isSafeInteger(p.version) || p.version < 1
+    || !plain(p.payload?.current) || s.document_key !== 'ravscore-continuation-checkpoint'
+    || !Number.isSafeInteger(s.version) || s.version < 1 || s.version !== snapshot.checkpointVersion
+    || !plain(s.payload) || !plain(d.modelBinding) || !plain(d.contractHashes)
+    || !/^[a-f0-9]{40}$/.test(d.sourceHead ?? '') || !/^rr-[A-Za-z0-9][A-Za-z0-9._-]{0,127}$/.test(d.datasetId ?? '')
+    || !SHA.test(d.bundleContentSha256 ?? '')) unpairedFail('SOURCE_IDENTITY_INVALID');
+  for (const field of ['sourceHead', 'datasetId', 'productionReferenceAt', 'generatedAt',
+    'bundleContentSha256', 'modelBinding', 'contractHashes']) same(p.payload.current[field], d[field], 'UNPAIRED_POINTER_CHANGED');
+  same(objectsChecked(p.payload.current.objects ?? [{ index: 0, objectPath: p.payload.current.objectPath,
+    objectBytes: p.payload.current.objectBytes, objectSha256: p.payload.current.objectSha256 }]), objects, 'UNPAIRED_POINTER_OBJECTS_CHANGED');
+  time(d.productionReferenceAt); time(d.generatedAt);
+  same(snapshot.originalConditions.coastalParts?.modelBinding, d.modelBinding, 'UNPAIRED_B_BINDING_CHANGED');
+  same(s.payload, snapshot.originalCheckpointPayload, 'UNPAIRED_CHECKPOINT_ROW_CHANGED');
+  if (snapshot.originalConditions.datasetId !== d.datasetId
+    || snapshot.originalConditions.productionReferenceAt !== d.productionReferenceAt
+    || !plain(s.payload.modelBinding) || !SHA.test(s.payload.generationSha256 ?? '')
+    || typeof s.payload.datasetId !== 'string'
+    || Date.parse(time(s.payload.productionReferenceAt)) >= Date.parse(d.productionReferenceAt)
+    || Date.parse(time(targetReferenceAt)) <= Date.parse(d.productionReferenceAt)) unpairedFail('UNPAIRED_TIME_IDENTITY_REQUIRED');
+  const digests = snapshot.originalFileDigests.map(row => {
+    if (!plain(row) || typeof row.relativePath !== 'string' || row.relativePath.includes('..')
+      || path.isAbsolute(row.relativePath) || !SHA.test(row.sha256 ?? '')
+      || !Number.isSafeInteger(row.bytes) || row.bytes < 1 || row.bytes > MAX_TOTAL) unpairedFail('B_DIGEST_INVALID');
+    return { relativePath: row.relativePath, bytes: row.bytes, sha256: row.sha256 };
+  }).sort((a, b) => a.relativePath.localeCompare(b.relativePath, 'en'));
+  if (!digests.length || new Set(digests.map(row => row.relativePath)).size !== digests.length
+    || !digests.some(row => row.relativePath === 'data/live/conditions.json')) unpairedFail('B_DIGEST_INVALID');
+  let derivedCheckpoint = null;
+  if (snapshot.bDerivedCheckpointPayload !== undefined) {
+    const derived = snapshot.bDerivedCheckpointPayload;
+    if (!plain(derived) || derived.datasetId !== d.datasetId || derived.productionReferenceAt !== d.productionReferenceAt
+      || !SHA.test(derived.generationSha256 ?? '')) unpairedFail('B_DERIVED_CHECKPOINT_INVALID');
+    derivedCheckpoint = { kind: 'B_DERIVED_NORMAL_CHECKPOINT_ARCHIVE_ONLY', datasetId: derived.datasetId,
+      productionReferenceAt: derived.productionReferenceAt, generationSha256: derived.generationSha256,
+      payloadSha256: sha(Buffer.from(canonical(derived))) };
+  }
+  same(snapshot.files.map(row => row.relativePath).sort(),
+    unpairedFileNames(derivedCheckpoint !== null), 'UNPAIRED_FILES_INVALID');
+  for (const row of snapshot.files) if (!plain(row) || !path.isAbsolute(row.sourcePath ?? '')
+    || inside(REPOSITORY, path.resolve(row.sourcePath))
+    || row.role !== unpairedFileRole(row.relativePath)) unpairedFail('FILE_INVALID');
+  return {
+    B: { description: structuredClone(d), pointerRow: structuredClone(p), fileDigests: digests, derivedCheckpoint },
+    registry: unpairedRegistry(snapshot.registry),
+    S: { documentKey: s.document_key, version: s.version, datasetId: s.payload.datasetId,
+      productionReferenceAt: s.payload.productionReferenceAt, generationSha256: s.payload.generationSha256,
+      modelBinding: structuredClone(s.payload.modelBinding),
+      payloadSha256: sha(Buffer.from(canonical(s.payload))) },
+  };
+}
+async function measureUnpairedRestartSnapshot(snapshot, objects, targetReferenceAt) {
+  const metadata = unpairedDescription(snapshot, objects, targetReferenceAt), files = [];
+  let total = objects.reduce((sum, row) => sum + row.objectBytes, 0);
+  for (const row of [...snapshot.files].sort((a, b) => a.relativePath.localeCompare(b.relativePath, 'en'))) {
+    const measured = await readMeasured(row.sourcePath, unpairedFileMaximum(row.role));
+    total += measured.bytes; if (total > MAX_TOTAL) unpairedFail('TOTAL_SIZE_LIMIT');
+    files.push({ role: row.role, relativePath: row.relativePath, ...measured });
+  }
+  const source = name => snapshot.files.find(row => row.relativePath === name).sourcePath;
+  same(JSON.parse((await readBuffer(source('original-S.json'), 16 * 1024 * 1024)).toString('utf8')),
+    snapshot.originalCheckpointRow.payload, 'UNPAIRED_CHECKPOINT_BYTES_CHANGED');
+  if (metadata.B.derivedCheckpoint !== null) same(
+    JSON.parse((await readBuffer(source('B-derived-S.json'), 16 * 1024 * 1024)).toString('utf8')),
+    snapshot.bDerivedCheckpointPayload, 'UNPAIRED_B_DERIVED_CHECKPOINT_BYTES_CHANGED');
+  const registryBytes = await readBuffer(source('registry.json'), 16 * 1024 * 1024);
+  same(JSON.parse(registryBytes.toString('utf8')), snapshot.registry, 'UNPAIRED_REGISTRY_BYTES_CHANGED');
+  metadata.registry.rawSha256 = sha(registryBytes);
+  const manifestBytes = await readBuffer(source('manifest.json'), MAX_CATALOG);
+  const manifest = JSON.parse(manifestBytes.toString('utf8'));
+  if (manifest.schemaVersion !== 4 || manifest.complete !== true || manifest.zoneCount !== 210
+    || manifest.coastalPartCount !== 673 || !plain(manifest.ravScoreModelBinding)
+    || typeof manifest.datasetId !== 'string'
+    || Date.parse(time(manifest.productionReferenceAt)) >= Date.parse(targetReferenceAt)) unpairedFail('PUBLIC_INVALID');
+  for (const [name, key] of [['public-conditions.json', 'publicConditions'], ['public-condition-details.json', 'publicConditionDetails'],
+    ['coastal-parts-v2.json', 'coastalParts'], ['zones.geojson', 'zoneRegistry']]) {
+    const row = files.find(file => file.relativePath === name);
+    if (manifest[key + 'Sha256'] !== row.sha256 || manifest[key + 'Bytes'] !== row.bytes) unpairedFail('PUBLIC_MANIFEST_CHANGED');
+  }
+  metadata.public = { datasetId: manifest.datasetId, productionReferenceAt: manifest.productionReferenceAt,
+    modelBinding: structuredClone(manifest.ravScoreModelBinding), manifestSha256: sha(manifestBytes) };
+  if (Buffer.byteLength(canonical(metadata)) > MAX_CATALOG) unpairedFail('SOURCE_METADATA_SIZE');
+  return { metadata, files, publicManifest: manifest };
+}
+function mintUnpairedRestart(snapshot, measured, catalog, catalogSha256) {
+  const handle = Object.freeze({});
+  unpairedRestartArchives.set(handle, freezeTree({
+    kind: UNPAIRED_RESTART_KIND, admission: 'NO_ADMISSION', paired: false,
+    archiveId: catalog.archiveId, archiveCatalogSha256: catalogSha256, targetReferenceAt: catalog.targetReferenceAt,
+    B: { ...structuredClone(measured.metadata.B), conditions: snapshot.originalConditions,
+      derivedCheckpoint: measured.metadata.B.derivedCheckpoint === null ? null
+        : { ...structuredClone(measured.metadata.B.derivedCheckpoint), payload: snapshot.bDerivedCheckpointPayload } },
+    registry: { ...structuredClone(measured.metadata.registry), value: snapshot.registry },
+    S: { ...structuredClone(measured.metadata.S), payload: snapshot.originalCheckpointPayload },
+    public: { ...structuredClone(measured.metadata.public), manifest: measured.publicManifest,
+      files: measured.files.filter(row => row.role === 'public-snapshot').map(row => ({ ...row })) },
+  }));
+  return handle;
+}
+export function assertVerifiedUnpairedWeatherRestartArchive(handle) {
+  const value = unpairedRestartArchives.get(handle);
+  if (!value) unpairedFail('HANDLE_INVALID');
+  return value;
+}
+function unpairedCatalogIdentity(catalog) {
+  return { schemaVersion: catalog.schemaVersion, kind: catalog.kind, admission: catalog.admission,
+    paired: catalog.paired, targetReferenceAt: catalog.targetReferenceAt, source: catalog.source,
+    originalBObjects: catalog.originalBObjects, originalFiles: catalog.originalFiles };
+}
+function unpairedCatalogLayout(bytes, archiveId, catalogSha256, targetReferenceAt) {
+  if (!Buffer.isBuffer(bytes) || bytes.length < 1 || bytes.length > MAX_CATALOG
+    || !SHA.test(archiveId ?? '') || !SHA.test(catalogSha256 ?? '') || sha(bytes) !== catalogSha256) unpairedFail('CATALOG_DIGEST');
+  const catalog = JSON.parse(gunzipSync(bytes, { maxOutputLength: MAX_CATALOG }).toString('utf8'));
+  if (!unpairedExact(catalog, ['schemaVersion', 'kind', 'admission', 'paired', 'targetReferenceAt', 'source',
+    'originalBObjects', 'originalFiles', 'archiveId', 'bObjects', 'files'])
+    || catalog.schemaVersion !== 1 || catalog.kind !== UNPAIRED_RESTART_KIND || catalog.admission !== 'NO_ADMISSION'
+    || catalog.paired !== false || catalog.archiveId !== archiveId || catalog.targetReferenceAt !== time(targetReferenceAt)
+    || sha(Buffer.from(canonical(unpairedCatalogIdentity(catalog)))) !== archiveId) unpairedFail('CATALOG_INVALID');
+  const objects = objectsChecked(catalog.originalBObjects), selected = [];
+  if (!plain(catalog.source) || !Array.isArray(catalog.bObjects) || catalog.bObjects.length !== objects.length
+    || !plain(catalog.source.B) || !plain(catalog.source.S) || !plain(catalog.source.registry)
+    || !Array.isArray(catalog.files)
+    || !Array.isArray(catalog.originalFiles) || catalog.originalFiles.length !== catalog.files.length) unpairedFail('CATALOG_INVENTORY');
+  same(catalog.originalFiles.map(row => row.relativePath).sort(),
+    unpairedFileNames(catalog.source.B.derivedCheckpoint !== null), 'UNPAIRED_CATALOG_FILES');
+  let partIndex = 0, totalBytes = bytes.length, totalRaw = objects.reduce((sum, row) => sum + row.objectBytes, 0);
+  const select = (objectPath, localFile, objectBytes, objectSha256) => {
+    if (!Number.isSafeInteger(objectBytes) || objectBytes < 1 || objectBytes > MAX_OBJECT
+      || !SHA.test(objectSha256 ?? '') || selected.length >= 128
+      || objectPath !== `bundles/sha256/${archiveId}/part-${String(partIndex++).padStart(3, '0')}-${objectSha256}.json.gz.part`) unpairedFail('CATALOG_OBJECT');
+    totalBytes += objectBytes; if (totalBytes > 2_000_000_000) unpairedFail('TOTAL_SIZE_LIMIT');
+    selected.push({ objectPath, localFile, bytes: objectBytes, sha256: objectSha256 });
+  };
+  for (let index = 0; index < objects.length; index++) {
+    const row = catalog.bObjects[index], expected = objects[index], localFile = `original-b-${String(index).padStart(3, '0')}.part`;
+    same({ index: row.index, objectPath: row.objectPath, objectBytes: row.objectBytes, objectSha256: row.objectSha256 },
+      expected, 'UNPAIRED_CATALOG_B');
+    if (row.localFile !== localFile) unpairedFail('CATALOG_B');
+    select(row.archivedObjectPath, localFile, expected.objectBytes, expected.objectSha256);
+  }
+  for (let index = 0; index < catalog.files.length; index++) {
+    const row = catalog.files[index], expected = catalog.originalFiles[index];
+    same({ role: row.role, relativePath: row.relativePath, bytes: row.bytes, sha256: row.sha256 }, expected, 'UNPAIRED_CATALOG_FILE');
+    if (row.localFile !== `original-file-${String(index).padStart(3, '0')}.bin`
+      || row.role !== unpairedFileRole(row.relativePath)
+      || row.encoding !== 'GZIP_CHUNKS_OF_EXACT_ORIGINAL_BYTES' || !SHA.test(row.sha256 ?? '')
+      || !Number.isSafeInteger(row.bytes) || row.bytes < 1
+      || row.bytes > unpairedFileMaximum(row.role)
+      || !Array.isArray(row.chunks) || row.chunks.length < 1 || row.chunks.length > 24) unpairedFail('CATALOG_FILE');
+    totalRaw += row.bytes; if (totalRaw > MAX_TOTAL) unpairedFail('TOTAL_SIZE_LIMIT');
+    let rawBytes = 0;
+    for (let chunkIndex = 0; chunkIndex < row.chunks.length; chunkIndex++) {
+      const chunk = row.chunks[chunkIndex], localFile = `transport-${String(index).padStart(3, '0')}-${String(chunkIndex).padStart(3, '0')}.gz`;
+      if (chunk.localFile !== localFile || !SHA.test(chunk.rawSha256 ?? '')
+        || !Number.isSafeInteger(chunk.rawBytes) || chunk.rawBytes < 1 || chunk.rawBytes > CHUNK) unpairedFail('CATALOG_CHUNK');
+      rawBytes += chunk.rawBytes; select(chunk.objectPath, localFile, chunk.bytes, chunk.sha256);
+    }
+    if (rawBytes !== row.bytes) unpairedFail('CATALOG_CHUNK');
+  }
+  return { catalog: freezeTree(catalog), objects, selected };
+}
+async function writeUnpairedArchivedFile({ root, row, sourcePath, objectPathFor, storage, index }) {
+  const localFile = `original-file-${String(index).padStart(3, '0')}.bin`, destination = path.join(root, localFile);
+  await noLinks(root);
+  const output = await fs.open(destination, constants.O_WRONLY | constants.O_CREAT | constants.O_EXCL
+    | (constants.O_NOFOLLOW ?? 0), 0o600);
+  retainedHandles.add(output); let first; const chunks = [];
+  try {
+    const actual = await readMeasured(sourcePath, unpairedFileMaximum(row.role), async (raw, chunkIndex) => {
+      await output.writeFile(raw);
+      const compressed = gzipSync(raw, { level: 6 }), compressedSha256 = sha(compressed), objectPath = objectPathFor(compressedSha256);
+      const chunkFile = `transport-${String(index).padStart(3, '0')}-${String(chunkIndex).padStart(3, '0')}.gz`;
+      await writeOwned(path.join(root, chunkFile), compressed); await storedExact(storage, objectPath, compressed);
+      chunks.push({ objectPath, bytes: compressed.length, sha256: compressedSha256,
+        rawBytes: raw.length, rawSha256: sha(raw), localFile: chunkFile });
+    });
+    same(actual, { bytes: row.bytes, sha256: row.sha256 }, 'UNPAIRED_SOURCE_FILE_CHANGED');
+    await output.sync();
+  } catch (error) { first = error; }
+  await closeOwned(output, first);
+  same(await readMeasured(destination, MAX_FILE), { bytes: row.bytes, sha256: row.sha256 }, 'UNPAIRED_LOCAL_COPY_CHANGED');
+  return { ...row, localFile, encoding: 'GZIP_CHUNKS_OF_EXACT_ORIGINAL_BYTES', chunks };
+}
+async function verifyUnpairedLocalFiles(root, layout) {
+  for (const row of layout.selected) same(await readMeasured(path.join(root, row.localFile), MAX_OBJECT),
+    { bytes: row.bytes, sha256: row.sha256 }, 'UNPAIRED_LOCAL_TRANSPORT_CHANGED');
+  for (const row of layout.catalog.files) {
+    const aggregate = crypto.createHash('sha256'); let total = 0;
+    for (const chunk of row.chunks) {
+      const compressed = await readBuffer(path.join(root, chunk.localFile), MAX_OBJECT);
+      if (compressed.length !== chunk.bytes || sha(compressed) !== chunk.sha256) unpairedFail('LOCAL_TRANSPORT_CHANGED');
+      const raw = gunzipSync(compressed, { maxOutputLength: CHUNK });
+      if (raw.length !== chunk.rawBytes || sha(raw) !== chunk.rawSha256) unpairedFail('LOCAL_TRANSPORT_CHANGED');
+      aggregate.update(raw); total += raw.length;
+    }
+    if (total !== row.bytes || aggregate.digest('hex') !== row.sha256) unpairedFail('LOCAL_TRANSPORT_CHANGED');
+    same(await readMeasured(path.join(root, row.localFile), MAX_FILE),
+      { bytes: row.bytes, sha256: row.sha256 }, 'UNPAIRED_LOCAL_ORIGINAL_CHANGED');
+  }
+}
+export async function saveUnpairedWeatherRestartArchive({ capture, storage, targetReferenceAt, verifyOriginalSnapshot } = {}) {
+  const state = captures.get(capture); storageChecked(storage);
+  if (!state || state.saving || state.closed || typeof verifyOriginalSnapshot !== 'function') unpairedFail('CAPTURE_INVALID');
+  state.saving = true;
+  try {
+    if (state.files.size !== state.objects.length) unpairedFail('CAPTURE_INCOMPLETE');
+    const captureFiles = state.objects.map(row => state.files.get(row.objectPath));
+    for (const row of captureFiles) same(await readMeasured(row.sourcePath, MAX_OBJECT),
+      { bytes: row.objectBytes, sha256: row.objectSha256 }, 'UNPAIRED_CAPTURE_CHANGED');
+    const before = await verifyOriginalSnapshot({ phase: 'UNPAIRED_BEFORE_SAVE', captureFiles });
+    const measured = await measureUnpairedRestartSnapshot(before, state.objects, targetReferenceAt);
+    const identity = { schemaVersion: 1, kind: UNPAIRED_RESTART_KIND, admission: 'NO_ADMISSION', paired: false,
+      targetReferenceAt, source: measured.metadata, originalBObjects: state.objects, originalFiles: measured.files };
+    const archiveId = sha(Buffer.from(canonical(identity)));
+    const catalog = { ...identity, archiveId, bObjects: [], files: [] };
+    await storage.ensurePrivateBucket({ allowCreate: false });
+    let partIndex = 0, transportBytes = 0;
+    const objectPathFor = digest => {
+      if (partIndex >= 128) unpairedFail('CATALOG_OBJECT_LIMIT');
+      return `bundles/sha256/${archiveId}/part-${String(partIndex++).padStart(3, '0')}-${digest}.json.gz.part`;
+    };
+    const boundedStorage = { ...storage, async uploadImmutable(objectPath, bytes) {
+      transportBytes += bytes.length; if (transportBytes > 2_000_000_000) unpairedFail('TOTAL_SIZE_LIMIT');
+      return storage.uploadImmutable(objectPath, bytes);
+    } };
+    for (const row of captureFiles) {
+      const bytes = await readBuffer(row.sourcePath, MAX_OBJECT), objectPath = objectPathFor(row.objectSha256);
+      await storedExact(boundedStorage, objectPath, bytes);
+      catalog.bObjects.push({ ...state.objects[row.index], localFile: row.localFile, archivedObjectPath: objectPath });
+    }
+    for (let index = 0; index < measured.files.length; index++) {
+      const row = measured.files[index], sourcePath = before.files.find(file => file.relativePath === row.relativePath).sourcePath;
+      catalog.files.push(await writeUnpairedArchivedFile({ root: state.root, row, sourcePath, objectPathFor, storage: boundedStorage, index }));
+    }
+    const catalogBytes = gzipSync(Buffer.from(canonical(catalog)), { level: 9 });
+    if (catalogBytes.length > MAX_CATALOG) unpairedFail('CATALOG_SIZE_LIMIT');
+    const catalogSha256 = sha(catalogBytes);
+    const layout = unpairedCatalogLayout(catalogBytes, archiveId, catalogSha256, targetReferenceAt);
+    await writeOwned(path.join(state.root, 'unpaired-catalog.json.gz'), catalogBytes);
+    await storedExact(boundedStorage, `bundles/sha256/${archiveId}.json.gz`, catalogBytes);
+    const archivedFiles = catalog.files.map(row => ({ role: row.role, relativePath: row.relativePath, sourcePath: path.join(state.root, row.localFile) }));
+    const after = await verifyOriginalSnapshot({ phase: 'UNPAIRED_AFTER_SAVE', captureFiles, archivedFiles, catalog: layout.catalog });
+    same(await measureUnpairedRestartSnapshot(after, state.objects, targetReferenceAt), measured, 'UNPAIRED_ORIGINALS_CHANGED');
+    for (const row of measured.files) same(await readMeasured(before.files.find(file => file.relativePath === row.relativePath).sourcePath, MAX_FILE),
+      { bytes: row.bytes, sha256: row.sha256 }, 'UNPAIRED_SOURCE_FILE_CHANGED');
+    await verifyUnpairedLocalFiles(state.root, layout);
+    same(await readMeasured(path.join(state.root, 'unpaired-catalog.json.gz'), MAX_CATALOG),
+      { bytes: catalogBytes.length, sha256: catalogSha256 }, 'UNPAIRED_CATALOG_CHANGED');
+    state.closed = true; return mintUnpairedRestart(after, measured, layout.catalog, catalogSha256);
+  } catch (error) { state.closed = true; throw error; }
+}
+export async function rehydrateLocalUnpairedWeatherRestartArchive({ archiveRoot, archiveId, archiveCatalogSha256,
+  targetReferenceAt, verifyOriginalSnapshot } = {}) {
+  if (typeof verifyOriginalSnapshot !== 'function') unpairedFail('REHYDRATE_INVALID');
+  const root = await privateRoot(archiveRoot);
+  const bytes = await readBuffer(path.join(root, 'unpaired-catalog.json.gz'), MAX_CATALOG);
+  const layout = unpairedCatalogLayout(bytes, archiveId, archiveCatalogSha256, targetReferenceAt), { catalog, objects } = layout;
+  await verifyUnpairedLocalFiles(root, layout);
+  const captureFiles = objects.map(row => ({ ...row, localFile: catalog.bObjects[row.index].localFile,
+    sourcePath: path.join(root, catalog.bObjects[row.index].localFile) }));
+  const archivedFiles = catalog.files.map(row => ({ role: row.role, relativePath: row.relativePath, sourcePath: path.join(root, row.localFile) }));
+  const before = await verifyOriginalSnapshot({ phase: 'UNPAIRED_REHYDRATE_BEFORE', captureFiles, archivedFiles, catalog });
+  const measured = await measureUnpairedRestartSnapshot(before, objects, targetReferenceAt);
+  same(measured.metadata, catalog.source, 'UNPAIRED_REHYDRATE_ORIGINALS_CHANGED');
+  same(measured.files, catalog.originalFiles, 'UNPAIRED_REHYDRATE_ORIGINALS_CHANGED');
+  const after = await verifyOriginalSnapshot({ phase: 'UNPAIRED_REHYDRATE_AFTER', captureFiles, archivedFiles, catalog });
+  same(await measureUnpairedRestartSnapshot(after, objects, targetReferenceAt), measured, 'UNPAIRED_ORIGINALS_CHANGED');
+  await verifyUnpairedLocalFiles(root, layout);
+  same(await readMeasured(path.join(root, 'unpaired-catalog.json.gz'), MAX_CATALOG),
+    { bytes: bytes.length, sha256: archiveCatalogSha256 }, 'UNPAIRED_CATALOG_CHANGED');
+  return mintUnpairedRestart(after, measured, catalog, archiveCatalogSha256);
+}
+export async function materializeUnpairedWeatherRestartArchive({ storage, archiveRoot, archiveId, archiveCatalogSha256,
+  targetReferenceAt, verifyOriginalSnapshot } = {}) {
+  storageChecked(storage);
+  if (typeof verifyOriginalSnapshot !== 'function' || !SHA.test(archiveId ?? '') || !SHA.test(archiveCatalogSha256 ?? '')) unpairedFail('REHYDRATE_INVALID');
+  const deadline = performance.now() + 30 * 60 * 1000;
+  const checkDeadline = () => { if (performance.now() >= deadline) unpairedFail('MATERIALIZE_DEADLINE'); };
+  const root = await privateRoot(archiveRoot, true), objectPath = `bundles/sha256/${archiveId}.json.gz`;
+  await storage.ensurePrivateBucket({ allowCreate: false });
+  checkDeadline(); const bytes = await storage.download(objectPath); checkDeadline();
+  const layout = unpairedCatalogLayout(bytes, archiveId, archiveCatalogSha256, targetReferenceAt);
+  if (![400, 401, 403, 404].includes(await storage.anonymousStatus(objectPath))) unpairedFail('ANONYMOUS_ACCESS');
+  await writeOwned(path.join(root, 'unpaired-catalog.json.gz'), bytes);
+  for (const row of layout.selected) {
+    checkDeadline(); const body = await storage.download(row.objectPath); checkDeadline();
+    if (!Buffer.isBuffer(body) || body.length !== row.bytes || sha(body) !== row.sha256) unpairedFail('STORAGE_READBACK_CHANGED');
+    if (![400, 401, 403, 404].includes(await storage.anonymousStatus(row.objectPath))) unpairedFail('ANONYMOUS_ACCESS');
+    await writeOwned(path.join(root, row.localFile), body);
+  }
+  for (const row of layout.catalog.files) {
+    checkDeadline(); await noLinks(root);
+    const output = await fs.open(path.join(root, row.localFile), constants.O_WRONLY | constants.O_CREAT
+      | constants.O_EXCL | (constants.O_NOFOLLOW ?? 0), 0o600);
+    retainedHandles.add(output); let first; const aggregate = crypto.createHash('sha256'); let total = 0;
+    try {
+      for (const chunk of row.chunks) {
+        checkDeadline(); const compressed = await readBuffer(path.join(root, chunk.localFile), MAX_OBJECT);
+        if (compressed.length !== chunk.bytes || sha(compressed) !== chunk.sha256) unpairedFail('LOCAL_TRANSPORT_CHANGED');
+        const raw = gunzipSync(compressed, { maxOutputLength: CHUNK });
+        if (raw.length !== chunk.rawBytes || sha(raw) !== chunk.rawSha256) unpairedFail('LOCAL_TRANSPORT_CHANGED');
+        aggregate.update(raw); total += raw.length; await output.writeFile(raw);
+      }
+      if (total !== row.bytes || aggregate.digest('hex') !== row.sha256) unpairedFail('LOCAL_ORIGINAL_CHANGED');
+      await output.sync();
+    } catch (error) { first = error; }
+    await closeOwned(output, first);
+  }
+  checkDeadline();
+  const handle = await rehydrateLocalUnpairedWeatherRestartArchive({ archiveRoot: root, archiveId,
+    archiveCatalogSha256, targetReferenceAt, verifyOriginalSnapshot });
+  checkDeadline(); return handle;
+}

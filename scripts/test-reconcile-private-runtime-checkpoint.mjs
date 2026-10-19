@@ -1,3 +1,9 @@
+import { assertSavedPrivateRuntimeCheckpointReconcileRequest } from './reconcile-private-runtime-checkpoint.mjs';
+import { ESTABLISHED_NATIVE_CURRENT_ORIGIN_BINDING as OLD_FAMILY } from './lib/established-native-current-origin-successor-source.mjs';
+import { LAST_MILE_ENCLOSURE_BINDING as NEW_FAMILY } from './lib/last-mile-enclosure-successor-source.mjs';
+import { withFrozenEstablishedNativeCurrentOriginPostgresSource } from './run-frozen-established-native-current-origin-source-targets.mjs';
+import { pathToFileURL } from 'node:url';
+import { execFileSync, spawnSync } from 'node:child_process';
 // Synthetic normal B/S transport. No native/origin issuer, SQL simulation claim
 // or production output. Every bundle/checkpoint is built by the normal APIs.
 import assert from 'node:assert/strict';
@@ -224,6 +230,54 @@ test('normal CURRENT B/S interruption reconciliation preserves whole pairs and r
       assert.deepEqual(backend.documents.get(S), before);
     }
   });
+  // Additive584 cases reuse the entire unchanged normal B/S fixture above.
+  async function withOld140000S(use) {
+    return withFrozenEstablishedNativeCurrentOriginPostgresSource(async ({ repositoryRoot: oldRoot, factory }) => {
+      const backend = normalBAndSTransports(), originalPath = path.join(own, 'genuine-old-S-' + n++, 'source.json');
+      const checkpointPath = path.join(path.dirname(originalPath), '.cache/ravscore-continuation-checkpoint/checkpoint.json');
+      await write(originalPath, factory.sourceDocumentAt(49, 'rr-reconcile-genuine140000'));
+      await factory.saveRavScoreContinuationCheckpoint({ repositoryRoot: oldRoot, sourcePath: originalPath, checkpointPath });
+      const originalBytes = await fs.readFile(originalPath), checkpointBytes = await fs.readFile(checkpointPath);
+      const publisher = await import(pathToFileURL(path.join(oldRoot, 'scripts/protected-ravscore-continuation-checkpoint.mjs')).href);
+      await publisher.publishProtectedRavScoreContinuationCheckpoint({ checkpointPath, targetReference: factory.atHour(49),
+        request: backend.documentRequest, rpcRequest: backend.checkpointRpc });
+      assert.equal(backend.documents.get(S).payload.modelBinding.modelBundleSha256, OLD_FAMILY.I);
+      await publishB(backend, 1);
+      const result = await use(backend);
+      assert.deepEqual(await fs.readFile(originalPath), originalBytes);
+      assert.deepEqual(await fs.readFile(checkpointPath), checkpointBytes);
+      return result;
+    });
+  }
+  await t.test('584 B plus genuine older140000 S reconciles without installing old state or resetting H0', async () => {
+    await withOld140000S(async backend => {
+      const version = backend.documents.get(S).version, expected = JSON.parse(await fs.readFile(saved[1].checkpointPath));
+      const result = await run(backend, 1);
+      assert.equal(result.outcome, 'ADVANCED_READBACK_PROVED'); assert.equal(result.checkpointPublishCalls, 1);
+      assert.equal(result.nativeAdmissionIssued, false); assert.equal(result.storageDownloads, 0);
+      assert.equal(backend.documents.get(S).version, version + 1); assert.deepEqual(backend.documents.get(S).payload, expected);
+      assert.equal(backend.documents.get(S).payload.modelBinding.modelBundleSha256, NEW_FAMILY.I);
+    });
+  });
+  await t.test('584 cross-family S reply loss requires whole actual readback and never retries CAS', async () => {
+    await withOld140000S(async backend => {
+      let attempts = 0;
+      const result = await run(backend, 1, { rpcRequest: async body => {
+        attempts++; await backend.checkpointRpc(body); throw new Error('SYNTHETIC_584_S_REPLY_LOST'); } });
+      assert.equal(result.outcome, 'COMMITTED_REPLY_LOST_READBACK_PROVED'); assert.equal(attempts, 1);
+    });
+  });
+  await t.test('584 version drift after whole S read refuses before CAS without changing payload', async () => {
+    const backend = await paired(); await publishB(backend, 1);
+    const payload = clone(backend.documents.get(S).payload), casBefore = backend.events.filter(x => x === 'S_CAS').length;
+    const readers = strictRequests(backend); let changed = false;
+    await assert.rejects(run(backend, 1, { checkpointVersionRequest: async (...args) => {
+      if (!changed) { changed = true; backend.documents.get(S).version++; }
+      return readers.checkpointVersionRequest(...args);
+    } }), /S_VERSION_CHANGED_BEFORE_PUBLISH/);
+    assert.equal(changed, true); assert.deepEqual(backend.documents.get(S).payload, payload);
+    assert.equal(backend.events.filter(x => x === 'S_CAS').length, casBefore);
+  });
   assert.equal(requiresPrivateRuntimeCheckpointReconcile({}), false);
   assert.equal(requiresPrivateRuntimeCheckpointReconcile({ modelBinding: { modelBundleSha256: '0'.repeat(64) } }), false);
   await t.test('initial/unknown family cannot reconcile or gain publication permission', async () => {
@@ -300,4 +354,72 @@ test('ordinary paired publication is genuinely new, exact-invertible and cannot 
     raw.replace('node scripts/reconcile-private-runtime-checkpoint.mjs reconcile', 'true'),
     raw.replace('assertPrivateRuntimeCheckpointPublicationDisposition(descriptor, process.env.CHECKPOINT_DISPOSITION);', 'true;')];
   for (const changed of mutations) { assert.notEqual(changed, raw); assert.throws(() => inverseCompletedRuntimeWorkflow(changed, 'build')); }
+});
+
+test('both fixed families and separate saved guard reject mixed tuples and colliding modes', () => {
+  for (const family of [OLD_FAMILY, NEW_FAMILY]) {
+    const descriptor = { modelBinding: { modelBundleSha256: family.I },
+      contractHashes: { continuationStateContractSha256: family.T } };
+    assert.equal(requiresPrivateRuntimeCheckpointReconcile(descriptor), true);
+    for (const disposition of ['READY_PUBLISHED', 'MEASURED_WARMUP_PUBLISHED'])
+      assert.doesNotThrow(() => assertPrivateRuntimeCheckpointPublicationDisposition(descriptor, disposition));
+    assert.throws(() => assertPrivateRuntimeCheckpointPublicationDisposition(descriptor, 'UNKNOWN'), /S_DISPOSITION/);
+  }
+  for (const [I, T] of [[OLD_FAMILY.I, NEW_FAMILY.T], [NEW_FAMILY.I, OLD_FAMILY.T]])
+    assert.equal(requiresPrivateRuntimeCheckpointReconcile({ modelBinding: { modelBundleSha256: I },
+      contractHashes: { continuationStateContractSha256: T } }), false);
+  const env = { OPERATIONAL_ACTION: 'integrated-historical-maintenance', GITHUB_WORKFLOW: 'Deploy RavRadar code-only repair',
+    CONFIRMATION: 'DEPLOY-SAVED-WEATHER-REPAIR', PUBLISH_NEWEST_SAVED_WEATHER: 'true',
+    RESTART_ARCHIVED_WEATHER: 'false', COMPLETED_PRIVATE_RUNTIME: 'false', CHECKPOINT_ONLY: 'false', QUICK_CONFIRMATION: 'false',
+    RAVRADAR_WEATHER_STATE_EPOCH_BOOTSTRAP: 'false', RAVRADAR_WEATHER_STATE_EPOCH_CHECKPOINT_REENTRY: 'false',
+    NATIVE_IDENTITY_RECOVERY: 'false', UPGRADE_LAST_MILE_ENCLOSURE: 'false', UPGRADE_ESTABLISHED_NATIVE_CURRENT_ORIGIN: 'false',
+    UPGRADE_EXISTING_OWNER_EXPORT: 'false', UPGRADE_ACCOUNT_ASSISTANT: 'false', UPGRADE_STATISTICS_REVISION: 'false' };
+  assert.doesNotThrow(() => assertSavedPrivateRuntimeCheckpointReconcileRequest(env));
+  assert.throws(() => assertOrdinaryPrivateRuntimeCheckpointReconcileRequest(env), /OPERATIONAL_ACTION/);
+  for (const key of Object.keys(env)) for (const value of ['', undefined])
+    assert.throws(() => assertSavedPrivateRuntimeCheckpointReconcileRequest({ ...env, [key]: value }));
+  for (const key of Object.keys(env).filter(key => env[key] === 'false'))
+    assert.throws(() => assertSavedPrivateRuntimeCheckpointReconcileRequest({ ...env, [key]: 'true' }), /SAVED_MODE_COLLISION/);
+  for (const key of ['RAVRADAR_ARCHIVED_WEATHER_RESTART_CONTEXT_PATH', 'RAVRADAR_ARCHIVED_WEATHER_RESTART_CONTEXT_SHA256',
+    'RAVRADAR_CURRENT_FAMILY_COLD_START_CONTEXT_PATH', 'RAVRADAR_CURRENT_FAMILY_COLD_START_CONTEXT_SHA256'])
+    assert.throws(() => assertSavedPrivateRuntimeCheckpointReconcileRequest({ ...env, [key]: '' }), /SAVED_MODE_COLLISION/);
+});
+test('actual readonly ordinary and saved CLI select use one genuine committed source head without backend requests', async t => {
+  const head = execFileSync('git', ['rev-parse', 'HEAD'], { cwd: ROOT, encoding: 'utf8' }).trim();
+  const actual = await fs.readFile(path.join(ROOT, 'scripts/reconcile-private-runtime-checkpoint.mjs'));
+  const committed = execFileSync('git', ['cat-file', 'blob', head + ':scripts/reconcile-private-runtime-checkpoint.mjs'],
+    { cwd: ROOT, encoding: null });
+  assert.deepEqual(Buffer.from(actual.toString().replaceAll(String.fromCharCode(13,10), String.fromCharCode(10))), committed,
+    'This CLI target requires real committed source, not copied working files under an old HEAD.');
+  const parent = await fs.realpath(os.tmpdir()), own = await fs.mkdtemp(path.join(parent, 'rr-reconcile-cli-select-'));
+  t.after(() => fs.rm(own, { recursive: true, force: true }));
+  const host = path.join(own, 'source');
+  execFileSync('git', ['-c', 'core.autocrlf=false', 'clone', '--shared', '--no-checkout', '--no-hardlinks', ROOT, host]);
+  execFileSync('git', ['-c', 'core.autocrlf=false', '-C', host, 'checkout', '--detach', head]);
+  execFileSync('git', ['-C', host, 'update-ref', 'refs/remotes/origin/main', head]);
+  // Synthetic descriptor metadata selects only a route; it cannot authorize
+  // reconcile, native state, transport, a numerical value or production writes.
+  const descriptor = { modelBinding: { modelBundleSha256: NEW_FAMILY.I },
+    contractHashes: { continuationStateContractSha256: NEW_FAMILY.T } };
+  for (const name of ['private-runtime-current-source.json', 'current-private-runtime-source.json'])
+    await fs.writeFile(path.join(own, name), JSON.stringify(descriptor), { flag: 'wx' });
+  const baseEnv = Object.fromEntries(['PATH', 'Path', 'SystemRoot', 'WINDIR', 'TEMP', 'TMP']
+    .filter(key => typeof process.env[key] === 'string').map(key => [key, process.env[key]]));
+  const flags = { COMPLETED_PRIVATE_RUNTIME: 'false', CHECKPOINT_ONLY: 'false', QUICK_CONFIRMATION: 'false',
+    RAVRADAR_WEATHER_STATE_EPOCH_BOOTSTRAP: 'false', RAVRADAR_WEATHER_STATE_EPOCH_CHECKPOINT_REENTRY: 'false',
+    NATIVE_IDENTITY_RECOVERY: 'false' };
+  for (const command of ['select', 'select-saved']) {
+    const output = path.join(own, command + '.out'); await fs.writeFile(output, '', { flag: 'wx' });
+    const env = { ...baseEnv, ...flags, OPERATIONAL_ACTION: 'integrated', GITHUB_REF: 'refs/heads/main',
+      GITHUB_EVENT_NAME: 'workflow_dispatch', GITHUB_SHA: head, RUNNER_TEMP: own, GITHUB_OUTPUT: output };
+    if (command === 'select-saved') Object.assign(env, { OPERATIONAL_ACTION: 'integrated-historical-maintenance',
+      GITHUB_WORKFLOW: 'Deploy RavRadar code-only repair', CONFIRMATION: 'DEPLOY-SAVED-WEATHER-REPAIR',
+      PUBLISH_NEWEST_SAVED_WEATHER: 'true', RESTART_ARCHIVED_WEATHER: 'false', UPGRADE_LAST_MILE_ENCLOSURE: 'false',
+      UPGRADE_ESTABLISHED_NATIVE_CURRENT_ORIGIN: 'false', UPGRADE_EXISTING_OWNER_EXPORT: 'false',
+      UPGRADE_ACCOUNT_ASSISTANT: 'false', UPGRADE_STATISTICS_REVISION: 'false', RAVRADAR_OPERATIONAL_WORK: own });
+    const child = spawnSync(process.execPath, ['scripts/reconcile-private-runtime-checkpoint.mjs', command],
+      { cwd: host, env, encoding: 'utf8', timeout: 30000 });
+    assert.equal(child.status, 0, child.stderr); assert.equal(child.signal, null);
+    assert.equal(await fs.readFile(output, 'utf8'), 'required=true' + String.fromCharCode(10));
+  }
 });

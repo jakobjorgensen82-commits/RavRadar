@@ -1,3 +1,13 @@
+## 19. oktober — lokal 4.0.584: ret producenten, bevar originalerne
+
+DELVIST IMPLEMENTERET: Begge reproducerede producentfejl er rettet lokalt; seks målrettede prøver består. Ægte ny model-/lagringsbinding og en ny append-only 20261019060000-migration er genereret lokalt fra hele 4.0.584-kilden efter normal versionssynk. Gamle SQL-filer, originaler, administratorpunkter og geometri bevares.
+
+VALGT, IKKE DRIFTSBEVIST: Permanent særskilt arkiv af faktisk B, central S og offentlig generation; providerfri normal beregning ved en strengt nyere reference fra gemte vejr-/PART-inputs; nul gammel I/G-historik og intet replay før target. Den almindelige efterfølger skal fortsætte fra den nye gemte tilstand uden engangsflag.
+
+ÅBENT: Kalder-/workflowintegration, endelig præcis kilde-/native-/PostgreSQL-kontrol, faktisk resterende horisont for alle 673 dele, ny normal B før S med genlæsning, Pages/offentlig verifikation og almindelige efterfølgere. De adskilte lokale producent-, arkiv-, læser- og planprøver er ikke dette driftsbevis. Offentlig version er senest verificeret som 4.0.581 med vejr fra 16. oktober kl. 12 dansk tid. Cron er senest verificeret slået fra. Alle fem hovedmål er åbne; fristen 18. oktober er overskredet og er ikke forlænget. Se håndbog 89.256; ældre status nedenfor er historik på disse punkter.
+
+Efter endelig normal versionssynk består de lokale C/I-/SQL-byggere, kontrollen af syv mutable bindingsforbrugere samt planens ni mål. Dette er kilde-/genereringskontrol, ikke PostgreSQL-eksekvering, faktisk installation eller ny offentlig prognose.
+
 ## 19. oktober — panelprøvens klokke, ikke en ændret prognoseregel
 
 PR667's første præcise kildekontrol bestod de indledende native Linux- og PostgreSQL-prøver, men den samlede kildevalidering fejlede i én UI-prøve. Dens faste prognosedato var 18. oktober, mens den normale renderer brugte værtsmaskinens aktuelle danske dag. Efter dansk midnat udløb prøveprognosen korrekt. Den samme fejl er reproduceret lokalt; det er ikke et nyt produktionsstop eller bevis for en defekt scoremodel.
