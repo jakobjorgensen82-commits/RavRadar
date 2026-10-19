@@ -1,3 +1,9 @@
+## 19. oktober — SOURCE: oprindelig prøvefejl skal kunne aflæses
+
+PR669's første Linux-prøve stoppede efter action-exit 1 og nul observerede transportstalls; den sekundære prøveassertion viste 0 mod 5. Den oprindelige actionårsag er fortsat UNKNOWN. Kun prøveobserveren ændres: de eksisterende sikre SOURCE-/RAW-diagnoser læses før sekundære assertions, mens rå output forbliver privat lokalt. Fejludlæseren må ikke bruge unittest-overskriften FAIL som produktfejl.
+
+Seks rene projektionstilfælde og seks præcise Python-headerprøver består lokalt uden gentagelse af native. Et faktisk Windows lstat/fstat-ctime-afslag bevares; fysisk identitetskontrol lempes ikke. Den normale Linux-kalder får en lille særskilt unitfase før SDK/native. Dens otte fysiske I/O-/frame-prøver og hele nativekæden er endnu UNRUN. Produktblade, gamle fixtures/pins, assertions, model/SQL, budgetter og workflowgate ændres ikke. Dette er diagnostik, ikke et produktfix eller revisionsaktivering.
+
 ## 19. oktober — SOURCE: afgrænset test-only Linux-forberedelse
 
 Tilføjer en eksplicit, hashbundet prøvebank og et krævet, særskilt 35-minutters Linux-job før den uændrede normale kildegate. Prøveværten får kun de faktisk nødvendige frosne input, den nåelige historikplan-/DMI-childlukning og skrivefri adgang til autentiske historiske Gitobjekter. Gamle fixtures, alle 27 produktpins, normale produktfiler, C/I/T, SQL, version og provider-/schedulerbudgetter ændres ikke. Det lille metadataartifact må hverken indeholde råpayloads eller fungere som produktions-SAVE-bevis.

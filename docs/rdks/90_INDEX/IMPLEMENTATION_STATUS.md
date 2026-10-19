@@ -1,3 +1,9 @@
+## 19. oktober — SOURCE: afgrænset diagnostik efter første nativeafslag
+
+PR669's første nativekørsel er faktisk fejlet; oprindelig actionårsag UNKNOWN, ikke dokumenteret produktfejl. Den efterfølgende test-only kandidat læser actionens eksisterende sikre SOURCE-/RAW-projektion før sekundære assertions og kvalificerer Python-testheaderens faktiske klasse/metodeformat. Ingen rå payload eller log uploades.
+
+Lokalt består præcis seks fælles rene parserprøver og seks headerprøver; det tidligere Windows-forløbs to PASS, tre FAIL og én ERROR samt det målte ctime-afslag bevares privat. Den delte rene parser bruges af den uændrede fysiske Linux-observer. Næste Linux-kald skal først bestå en lille unitfase med seks rene og otte fysiske I/O-/frame-prøver, derefter uændret SDK/native og fuld kildegate. Ingen nativegenprøve er kørt lokalt. Originale assertions, frister, produkt-/fixturepins, model/SQL og workflow bevares. Produktårsag, samlet fireminutterskæde, varig fjernlagring, produktintegration og produktionseffekt er fortsat åbne.
+
 ## 19. oktober — SOURCE: præcis prøvebank klar til kilde-PR
 
 Den isolerede kildekandidat er mekanisk materialiseret fra de gennemgåede, hashverificerede efterbilleder på den faktisk kvalificerede hovedkode efter PR667. Kun prøvebank, prøvekalder, additiv CI-kontrakt og dokumentation ændres; normale produktblade, model-/SQL-bindinger, gamle fixtures, budgetter og kildegatens gamle kontroludsagn bevares. Den gamle SOURCE-branch og alle private forældre bevares særskilt.

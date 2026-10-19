@@ -12,7 +12,7 @@
   },
   "productIdentity": "133fc019849df44d4f1dcd81d5405e8b52c109cf2b9f0ca671391564072462e1",
   "fixture": "scripts/test-source19-union-native-early-terminal-proof-bank-v16-fixture.mjs",
-  "driver": "scripts/test-source19-terminal-failure-proof-bank-v16-native.py",
+  "driver": "scripts/test-source19-terminal-failure-proof-bank-v17-observer-native.py",
   "files": [
     {
       "path": ".github/actions/save-owned-dmi-grib/index.cjs",
@@ -1959,9 +1959,9 @@
       }
     },
     {
-      "path": "scripts/test-source19-terminal-failure-proof-bank-v16-native.py",
-      "bytes": 162625,
-      "sha256": "6670e529cd7e2ea6107df60992aaf5669a70a1a5e9d704e85183fa4cd9f87840",
+      "path": "scripts/test-source19-terminal-failure-proof-bank-v17-observer-native.py",
+      "bytes": 200939,
+      "sha256": "b5a980ff6ec815999111b7c16a8b67be0b2af2c26d1d4ef8f4278af090df4c87",
       "input": {
         "kind": "FROZEN_TEST_BANK",
         "bankPath": "scripts/fixtures/source19-terminal-proof-inputs-v2/operands/043.source.txt"
@@ -2719,5 +2719,31 @@
   "notObservedSuccessOnly": [
     "scripts/update-coastal-point-staging.mjs"
   ],
-  "closurePurpose": "ONLY_REACHABLE_TERMINAL_FAILURE_NO_SUCCESS_PIPELINE_ADMISSION"
+  "closurePurpose": "ONLY_REACHABLE_TERMINAL_FAILURE_NO_SUCCESS_PIPELINE_ADMISSION",
+  "nativeObserver": {
+    "revision": 5,
+    "catalogSha256": "cb86c930359e7e517d668e8c22a73650ff94b48e1a50a02231f80cfa1a9cb7a5",
+    "sourcePins": {
+      "action": {
+        "path": ".github/actions/save-owned-dmi-grib/index.cjs",
+        "sha256": "dd8bd752a5cef8c927db2c00e642ab240638e3ab10c56d9f57c9546ab4e02926"
+      },
+      "runtime": {
+        "path": "scripts/protected-private-production-runtime.mjs",
+        "sha256": "84ba28e3da2da1af80e2e1b1e22040ecd9163c9722fcf13b89e911e8974f43fe"
+      }
+    },
+    "parentDriver": {
+      "path": "scripts/test-source19-terminal-failure-proof-bank-v16-native.py",
+      "sha256": "6670e529cd7e2ea6107df60992aaf5669a70a1a5e9d704e85183fa4cd9f87840"
+    },
+    "existingSafeProjectionsOnly": true,
+    "fallbackFrames": "AT_MOST3_ALREADY_EMITTED_PHYSICALLY_HASH_BOUND_ACTION_ROOT_FRAMES",
+    "rawLogUpload": false,
+    "pureProjection": "SHARED_WITH_PHYSICAL_LINUX_HELPER",
+    "observerUnitBeforeSdkAndNative": {
+      "pureCases": 6,
+      "physicalLinuxCases": 8
+    }
+  }
 }

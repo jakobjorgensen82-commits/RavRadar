@@ -1,3 +1,9 @@
+## 19. oktober — SOURCE: nativeårsagen er endnu ukendt
+
+Den første PR669-kørsel gennemførte scope- og historiske Gitinputkontroller, men nativeprøven stoppede efter action-exit 1 med nul observerede stalls. Første påviste assertion var 0 mod 5; den oprindelige actionårsag kan ikke udledes af den gamle rapports fejlagtige FAIL-klassifikation. Log og metadata er bevaret privat. Ingen produktårsag eller gennemført fireminutterskæde påstås.
+
+Den nye test-only observer bærer de allerede eksisterende sikre diagnoser, fase og exitkode videre før sekundære assertions; ukendt forbliver UNKNOWN. Seks rene projektionstilfælde og seks headerprøver består lokalt. Linux-I/O8 og native er fortsat UNRUN og kræves særskilt før fuld kildegate. Den målte Windows-ctime-forskel er ikke løst ved guardlempelse; den fysiske Linux-læser og dens assertions bevares. Alle 27 produktpins, 295 øvrige inputrækker, model/SQL, budgetter og workflow er uændrede. SOURCE forbliver inaktiv; dette er ikke offentlig vejreffekt eller færdig revision.
+
 ## 19. oktober — SOURCE: isoleret kildeprøve, ikke revisionsaktivering
 
 En særskilt kildekandidat tilføjer kun en eksplicit prøvebank og et krævet Linux-job før den uændrede fulde kildegate. Prøveværten sammensætter 296 afgrænsede input: 227 autentiske Gitblobs fra den allerede kvalificerede a568-kilde og 69 inerte prøvefiler fra de frosne, gennemgåede operander. Ingen normale produktfiler, aktuelle C/I/T-bindinger, SQL, version eller provider-/schedulerbudgetter ændres. SOURCE-revisionen kopieres ikke ind i aktive produktstier og aktiveres ikke.
