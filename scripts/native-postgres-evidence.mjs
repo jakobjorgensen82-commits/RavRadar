@@ -42,6 +42,9 @@ export const NON_NATIVE_TEST_INPUTS = Object.freeze([
   // Their immutable historical Git copies remain bound by the frozen trees.
   'scripts/test-mobile-start-and-live-cache-4.0.74.mjs',
   'scripts/test-current-arrow-land-mask.mjs',
+  // This CURRENT PR-workflow contract test is a source/release collector leaf,
+  // not a command/input of either native PG target. Frozen Git copies stay exact.
+  'scripts/test-workflow-validation-order-4.0.108.mjs',
 ]);
 // These five prose records are not read by the reviewed native command or its
 // historical materializers. No whole documentation directory is excluded.

@@ -1,3 +1,9 @@
+## 19. oktober — 4.0.584: PR-kildekontrollens ydre jobloft
+
+Den præcise PR673-kildekontrol gennemførte native PostgreSQL på 28 minutter og 46 sekunder samt kildevalidering på 30 minutter og 43 sekunder. Den blev derefter afbrudt omkring det konfigurerede 75-minuttersloft under anden nationale efterfølger, efter 601 af 673 dele. Tidsforløbet peger stærkt på jobloftet; loggen viser ingen assertionsfejl. Det er hverken samlet grøn kildekontrol, national kapacitetsgodkendelse eller offentlig levering.
+
+Den lokale rettelse øger alene PR-kildejobbets ydre loft til 90 minutter og tilpasser den normale præcise forventning. Ingen gate, kommando, rækkefølge, vejr-/leverandørbudget, kode-only-grænse eller underprocesgrænse ændres. Kun den konkret gennemgåede aktuelle workflowtest kvalificeres som ikke-native; gamle Git-operander og alle øvrige input-/miljøafslag består. ORIGIN, PostgreSQL-kommandoer og workflowgenbrugskontrakten er uændrede; ændret workflow kan derfor korrekt kræve ny rigtig PostgreSQL. Ingen nye C/I/T-bindinger eller SQL følger med. Præcis ny samlet kontrol og produktionsgenopretning er fortsat åbne; alle fem hovedmål er åbne, og fristen 18. oktober er overskredet. Ældre afsnit nedenfor er dateret historik.
+
 ## 19. oktober — 4.0.584: to forældede UI-prøveværter efter faktisk beregning
 
 Den faktiske providerfrie genoptagelse 39246956714/1 gennemførte beregningen den 19. oktober kl. 14.10.23 dansk tid efter 21 minutter og 49 sekunder. Begge normale produktionskollektioner blev gennemført: 53 af 55 artifactprøver og alle tre releaseprøver bestod. Samlekontrollen stoppede korrekt før SQL, nyt privat B/S og Pages; et grønt collectortrin er ikke bevis for alle underprøver. Kun de to fejlrelevante UI-prøveværter rettes lokalt.

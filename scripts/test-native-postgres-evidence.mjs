@@ -33,17 +33,19 @@ const tree = [['js/core/ravscore-model-bundle.generated.js','100644','blob',oid]
   ['supabase/migrations/20261019060000_last_mile.sql','100644','blob',oid],
   ['version.json','100644','blob',oid]];
 
-test('only the two named current map artifact callers are non-native inputs',()=>{
-  const callers=['scripts/test-mobile-start-and-live-cache-4.0.74.mjs','scripts/test-current-arrow-land-mask.mjs'];
+test('only the three named current UI and PR-workflow callers are non-native inputs',()=>{
+  const callers=['scripts/test-mobile-start-and-live-cache-4.0.74.mjs','scripts/test-current-arrow-land-mask.mjs',
+    'scripts/test-workflow-validation-order-4.0.108.mjs'];
   for(const file of callers){
     assert.equal(NON_NATIVE_TEST_INPUTS.filter(value=>value===file).length,1);
     const before=[...tree,[file,'100644','blob',oid]],after=[...tree,[file,'100644','blob',newOid]];
     assert.equal(verifyInputTrees(before,after).retainedEntries,tree.length);
     assert.throws(()=>verifyInputTrees(before,after.map(row=>row[0]===file?[file,'120000','blob',newOid]:row)));
-    assert.throws(()=>verifyInputTrees(before,tree),'A named UI caller cannot disappear');
+    assert.throws(()=>verifyInputTrees(before,tree),'A named current caller cannot disappear');
   }
   for(const file of ['scripts/test-current-arrow-land-mask-other.mjs','scripts/lib/current-arrow-land-mask.mjs',
-    'js/map/current-arrow-land-mask.js'])
+    'js/map/current-arrow-land-mask.js','scripts/test-workflow-validation-order-4.0.108-other.mjs',
+    'scripts/lib/workflow-validation-order.mjs'])
     assert.throws(()=>verifyInputTrees(tree,[...tree,[file,'100644','blob',newOid]]));
 });
 
@@ -189,9 +191,10 @@ test('only exact reviewed follow-up inputs preserve every original retained PG t
   const after=parseTree(git(['ls-tree','-rz','--full-tree','HEAD']));
   const readSource=(file,side)=>git(['show',(side==='before'?ORIGIN.head:'HEAD')+':'+file]);
   const result=verifyInputTrees(before,after,readSource);
-  const currentMapCallers=['scripts/test-mobile-start-and-live-cache-4.0.74.mjs','scripts/test-current-arrow-land-mask.mjs'];
-  // The original3228 inventory included these two source-only UI callers.
-  // Account for both actual regular Git entries explicitly; retain every other
+  const currentMapCallers=['scripts/test-mobile-start-and-live-cache-4.0.74.mjs','scripts/test-current-arrow-land-mask.mjs',
+    'scripts/test-workflow-validation-order-4.0.108.mjs'];
+  // The original3228 inventory included these three source-only current callers.
+  // Account for all three actual regular Git entries explicitly; retain every other
   // original input, fixed-Git tree and all existing drift/refusal assertions.
   for(const file of currentMapCallers){
     for(const entries of [before,after]){

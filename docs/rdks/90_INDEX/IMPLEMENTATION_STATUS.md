@@ -1,3 +1,9 @@
+## 19. oktober — 4.0.584: PR-kildekontrollens ydre jobloft
+
+- Faktisk PR673: native PostgreSQL bestod på 28:46 og kildevalidering på 30:43; den efterfølgende nationalprøve blev afbrudt omkring det konfigurerede 75-minuttersloft under anden efterfølger, efter 601/673 dele. Tidsforløbet peger stærkt på jobloftet; loggen viser ingen assertionsfejl. Samlet kilde-CI er ikke bestået.
+- Lokal kildeopfølgning: kun ydre PR-jobloft 75→90, normal præcis timeoutforventning og én navngiven ikke-native workflowtest med uændret 3228-regnskab og afgrænsede mutationsafslag. Frosne Git-blade, ORIGIN og normal PG-/genbrugsadfærd bevares; ændret workflow kan kræve faktisk ny PostgreSQL.
+- Ingen produkt-, model-, C/I/T-, SQL-, vejr-/leverandør-, kode-only- eller underprocesbudgetændring. Ny præcis samlet kontrol, national færdiggørelse, ny B/S, SQL/Pages og almindelig efterfølger er fortsat åbne. Alle fem hovedmål er åbne; fristen 18. oktober er overskredet.
+
 ## 19. oktober — 4.0.584: normal UI-prøvevært efter tidsskyderen
 
 - [x] Faktisk providerfri beregning i 39246956714/1, fuld 55+3-rapport: præcis mobilprøve20 og strømpileprøve38 fejlede; øvrige 53+3 bestod.
