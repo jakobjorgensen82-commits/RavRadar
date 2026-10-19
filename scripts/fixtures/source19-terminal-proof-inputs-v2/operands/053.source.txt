@@ -331,6 +331,14 @@ async function prepareSource19UnionPublicHours(fixture,baseGeneration,output,nat
   return conditions;
 }
 
+async function prepareSource19UnionMissingBulk(fixture) {
+  const {writeDmiBulkDocument,readDmiBulkDocument}=await import('../scripts/lib/dmi-bulk-storage.mjs');
+  const file=path.join(fixture.repository,'data/live/dmi-bulk-cache.json');
+  const missingOnly={zones:{}};
+  await writeDmiBulkDocument(file,missingOnly);
+  assert.deepEqual(await readDmiBulkDocument(file),missingOnly,'SOURCE_UNION_DMI_BULK_INPUT_INVALID');
+}
+
 async function prepareSource19UnionB(fixture,baseGeneration,output,target,python,native) {
   const {dmiWaterSourceFixture}=await import('../scripts/test-helpers/dmi-water-source-fixture.mjs');
   const {buildWaterSourceForecastIndex,packWaterSourceForecastContinuity}=await import('../scripts/lib/water-source-forecast-routing.mjs');
@@ -365,6 +373,7 @@ async function prepareSource19UnionB(fixture,baseGeneration,output,target,python
   const progressForecast={...minimal,waterSourceContinuity:await packWaterSourceForecastContinuity(original,native.reference)};
   await write(fixture.repository,'data/live/dmi-forecast-cache.json',baselineForecast);
   await write(fixture.repository,'data/live/dmi-water-stations.json',{schemaVersion:1,stations:[]});
+  await prepareSource19UnionMissingBulk(fixture);
   // The old test-only createGeneration deliberately used arbitrary byte strings
   // in these files. Build a NEW own B through the normal bundle constructor;
   // never rewrite that already-created B or fake its manifest/hash binding.

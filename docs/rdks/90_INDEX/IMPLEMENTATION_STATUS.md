@@ -1,3 +1,9 @@
+## 19. oktober — SOURCE: afgrænset rettelse af nyt prøveinput
+
+Faktisk afslagssted er nu normal DMI-materialisering før importer og leverandører. Den nye V16-prøves arvede 38-bytes tekstmarkør er ikke JSON; samme normale codec reproducerer afslaget uden platformstub. Et gyldigt manglende-data-dokument materialiseres tabsfrit i samme lille prøve. Ingen normal produktfejl eller native-succes udledes heraf.
+
+Kun V16's nye B-input ændres gennem normal codec-skrivning og genlæsning før bundling. En additiv bankkontrakt kontrollerer inputtet og kræver kaldet før B; den består sammen med wrapperens syntaks én gang. Gamle fixtures/factories/B/S, 297 andre bankrækker, 27 produktpins, protokol, model/SQL og budgetter bevares. Ny præcis Linux/native og fuld kildegate mangler. SOURCE er inaktiv; varig fjernlagring, faktisk fireminuttersgrænse og produktionsintegration er ikke færdiggjort.
+
 ## 19. oktober — SOURCE: præcis prøveværtslukning før ny kvalifikation
 
 Faktisk Linux-resultat: den lille unitfase bestod; native stoppede med SOURCE_NORMAL_PHASE_FAILED i PRODUCER_CHAIN før stalls/finalizer. Specifik childfase og numerisk exitkode er endnu UNKNOWN. En manglende dynamisk modulfil er uafhængigt et deterministisk stop i normal generation-klargøring; en anden kræves af dens strenge gren. Det er et bevist fixturehul, ikke bevis for netop den første kørselsfejl.

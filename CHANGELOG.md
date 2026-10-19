@@ -1,3 +1,9 @@
+## 19. oktober — SOURCE: gyldigt prøveinput før ny privat pakke
+
+Den seneste isolerede nativeprøve stoppede i normal DMI-materialisering før leverandører. Den nye prøve havde arvet en 38-bytes tekstmarkør som DMI-JSON. Én afgrænset prøve af den uændrede normale codec reproducerer JSON-afslaget og beviser gyldig, tabsfri lagring af et udtrykkeligt manglende-data-dokument; det er ikke en påvist produktfejl.
+
+Kun den nye V16-fixture skriver og genlæser dette normale bulkinput før sin NYE B. Gamle factories, originaler, 297 øvrige bankrækker, 27 produktpins, protokol og budgetter bevares. Normal Node-bankkontrakt og Python-wrapperens syntaks består én gang. Den ærlige mangeldækning vælger den eksisterende adaptive recovery, ikke et nyt budget. Ny Linux/native og fuld kildegate mangler; SOURCE forbliver inaktiv, og fireminutterskæde eller cloudbevarelse påstås ikke lukket.
+
 ## 19. oktober — SOURCE: to manglende prøveafhængigheder
 
 Den nye lille Linux-unitfase bestod, men terminalprøven stoppede stadig før transportstalls. Den sikre oprindelige kode er SOURCE_NORMAL_PHASE_FAILED i PRODUCER_CHAIN; præcis childfase og numerisk exitkode er ikke bevist. Der er særskilt påvist to manglende dynamiske prøveafhængigheder: normal generation-klargøring kan ikke gennemføres uden dem. Begge hele filer er autentiske frosne kildeblobs og matcher den fastlagte grønne baseline; ingen produktkode ændres.

@@ -1,3 +1,9 @@
+## 19. oktober — SOURCE: første konkrete prøveinputårsag
+
+Den seneste nativekørsels faktiske hashbundne frames peger på DMI-materialisering før dynamiske importer og før leverandører. V16 havde arvet den gamle fabriks vilkårlige tekstmarkør i bulkfilen. Den præcise uændrede codec afviser samme 38 bytes som ugyldig JSON i en lille portable prøve; normal missing-only lagring materialiseres korrekt med uændrede kildebytes. Dette er et konkret fixturehul, ikke bevis for en produktionsfejl.
+
+Den nye V16-forberedelse danner og genlæser kun ægte normalt lagret, manglende bulkinput før en NY B. Gamle B/S, factories, 297 andre inputrækker og alle 27 produktpins er urørte. Den normale bankkontrakt og wrapper-syntaks består; nyt Linux/native er UNRUN. Readiness forbliver ærligt ikke-READY, og den eksisterende adaptive recovery vælges uden budgetændring. SOURCE, produktintegration, faktisk fireminutterskæde og fjern cloudbevarelse er fortsat åbne/inaktive. Ældre ukendt-fase-noter nedenfor er dateret historik.
+
 ## 19. oktober — SOURCE: afgrænset dynamisk importlukning
 
 Den seneste isolerede Linux-prøve bestod sin lille unitfase, men stoppede fortsat med nul transportstalls og den faktiske sikre kode SOURCE_NORMAL_PHASE_FAILED i PRODUCER_CHAIN. Den specifikke første childfase og numeriske exitkode er stadig UNKNOWN. De må ikke udledes af en sekundær assertion eller af filstørrelser alene.

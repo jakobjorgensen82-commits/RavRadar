@@ -2068,8 +2068,8 @@
     },
     {
       "path": "scripts/test-source19-union-native-early-terminal-proof-bank-v16-fixture.mjs",
-      "bytes": 51942,
-      "sha256": "e8ccc89976c54188d9501dab16f3fc947d08c343c6ff0b7dd23f1324a22d0ab1",
+      "bytes": 52416,
+      "sha256": "8b3a54181092d655f2814bee22bbff855e29c9f97608d58077b94d437033c107",
       "input": {
         "kind": "FROZEN_TEST_BANK",
         "bankPath": "scripts/fixtures/source19-terminal-proof-inputs-v2/operands/053.source.txt"
