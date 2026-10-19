@@ -1,3 +1,20 @@
+## 19. oktober — 4.0.584: PR-kildekontrollens ydre jobloft
+
+- Faktisk PR673: native PostgreSQL bestod på 28:46 og kildevalidering på 30:43; den efterfølgende nationalprøve blev afbrudt omkring det konfigurerede 75-minuttersloft under anden efterfølger, efter 601/673 dele. Tidsforløbet peger stærkt på jobloftet; loggen viser ingen assertionsfejl. Samlet kilde-CI er ikke bestået.
+- Lokal kildeopfølgning: kun ydre PR-jobloft 75→90, normal præcis timeoutforventning og én navngiven ikke-native workflowtest med uændret 3228-regnskab og afgrænsede mutationsafslag. Frosne Git-blade, ORIGIN og normal PG-/genbrugsadfærd bevares; ændret workflow kan kræve faktisk ny PostgreSQL.
+- Ingen produkt-, model-, C/I/T-, SQL-, vejr-/leverandør-, kode-only- eller underprocesbudgetændring. Ny præcis samlet kontrol, national færdiggørelse, ny B/S, SQL/Pages og almindelig efterfølger er fortsat åbne. Alle fem hovedmål er åbne; fristen 18. oktober er overskredet.
+
+## 19. oktober — 4.0.584: normal UI-prøvevært efter tidsskyderen
+
+- [x] Faktisk providerfri beregning i 39246956714/1, fuld 55+3-rapport: præcis mobilprøve20 og strømpileprøve38 fejlede; øvrige 53+3 bestod.
+- [x] Mobilprøvens placering/rækkefølge med tidsskyderen og negative layouttilfælde bestået lokalt.
+- [x] Strømpileprøvens faktiske manglende VM-afhængighed reproduceret; hele normale mål bestået med faktiske kortfunktioner og controller, alle gamle geometri-/maskeassertions bevaret.
+- [x] Målrettet native-bevislæser består fire grupper: kun de to navngivne aktuelle UI-prøver må afvige; faktisk native-input-/miljødrift, ukendt evidens og relevante senere fejl kræver ny udførelse. Ingen nyt PG-genbrug eller SQL-installation er påstået.
+- [ ] Præcis ny samlet kildekontrol, sikker merge og providerfri genoptagelse med alle 55+3 faktisk bestået.
+- [ ] Nyt B/S, installation/genlæsning, serverfunktioner, Pages og almindelig efterfølger. Beregningen fra det fejlede forsøg blev ikke gemt i et checkpoint.
+
+Dette er en testkalderrettelse på uændret 4.0.584, ikke en ny model-, data-, geometri- eller SQL-overgang. Alle fem hovedmål er åbne; fristen 18. oktober er overskredet, og tilbageholdte aktiveringer forbliver inaktive.
+
 ## 19. oktober — 4.0.584: normal artifactkontrol efter arkivberegning
 
 FAKTISK: Den foregående præcise 584-kildekontrol og den nationale syntetiske opstart med to efterfølgere er bestået. Den efterfølgende providerfrie arkivgenstart gennemførte arkiv og beregning kl. 11.07.24 dansk tid, men blev annulleret omkring 60 minutter under den forældede fulde validering. Nyt leveringsartifact, B/S-publicering, SQL-installation og Pages blev ikke gennemført.
