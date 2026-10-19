@@ -23,6 +23,7 @@ import subprocess
 import sys
 import tempfile
 import threading
+import textwrap
 import time
 import unittest
 import urllib.parse
@@ -1412,6 +1413,26 @@ class TerminalProtocolFixture(ProtocolFixture):
         return super().route(request, host, parsed)
 
 
+# Test observation only; never ACTION cause, process stop or SAVE authority.
+SOURCE_TERMINAL_SUMMARY_PREFIX = b'{"collectionsAttempted": '
+SOURCE_TERMINAL_OBSERVER_PHASES = ('SETUP', 'ACTION_OBSERVE', 'ACTION_EXIT', 'PHYSICAL_CLOSURE', 'DISPOSITION', 'SDK_AND_ORIGINALS', 'CLEANUP', 'UNKNOWN')
+SOURCE_TERMINAL_OBSERVER_CODES = ('SOURCE_TERMINAL_OBSERVER_LOG_BOUND', 'SOURCE_TERMINAL_NATIVE_OBSERVER_DEADLINE', 'REAL_SOURCE_PRODUCER_MUST_NOT_INHERIT_CONTROL', 'SOURCE_TERMINAL_PARSER_STOP_UNPROVED', 'TERMINAL_FAILURE_MUST_NOT_BECOME_SOURCE_SUCCESS', 'FIVE_DISTINCT_NORMAL_180S_PARSER_STALLS_REQUIRED', 'ACTUAL_NORMAL_FINALIZER_NOT_OBSERVED', 'ACTUAL_WHOLE_FAILURE_CHAIN_EXCEEDED_ORIGINAL_240S', 'TYPED_DURABLE_LOCAL_OUTCOME_OBSERVED_TOO_LATE', 'ACTUAL_OFFICIAL_SDK_FINALIZE_REQUIRED', 'NEW_NORMAL_SEAL_MUST_NOT_REUSE_OLD_CIPHER', 'NO_SOURCE_COMPLETE_ADMISSION_ON_FAILURE', 'UNKNOWN')
+
+def source_terminal_test_failure(error, phase):
+    result = {'phase': phase if phase in SOURCE_TERMINAL_OBSERVER_PHASES else 'UNKNOWN', 'code': 'UNKNOWN'}
+    try:
+        value = str(error)
+        codes = [code for code in SOURCE_TERMINAL_OBSERVER_CODES if code != 'UNKNOWN'
+                 and (value == code or value.endswith(': ' + code))]
+        if len(codes) == 1:
+            result['code'] = codes[0]
+    except BaseException:
+        pass  # Observation can never replace the actual first exception.
+    return result
+
+
+SOURCE_TERMINAL_MARKER_BEFORE_FUNCTION = "        def marker_state():\n            nonlocal pending, read_offset, current_asset\n            with (root / 'stdout').open('rb') as stream:\n                stream.seek(read_offset); chunk = stream.read(256 * 1024)\n            read_offset += len(chunk); pending += chunk\n            if len(pending) > 512 * 1024 or read_offset > 8 * 1024 * 1024:\n                raise AssertionError('SOURCE_TERMINAL_OBSERVER_LOG_BOUND')\n            lines = pending.split(b'\\n'); pending = lines.pop()\n            for line in lines:\n                match = re.search(rb'DMI_ASSET_PROCESSING_(START|END)=(\\{[^\\r\\n]+\\})$', line)\n                if not match:\n                    continue\n                identity = json.loads(match[2]); canonical = json.dumps(identity, sort_keys=True, separators=(',', ':'))\n                if match[1] == b'START':\n                    starts[canonical] = starts.get(canonical, 0) + 1\n                    current_asset = canonical\n                elif current_asset == canonical:\n                    current_asset = None"
+
 class SourceTerminalFailureNative(SourceActualSUnionNative):
     def actual_case(self, own, seed, fixtures, protocol, cert, key, helper, mode):
         if mode != 'terminal-asset-skip-limit':
@@ -1487,21 +1508,39 @@ class SourceTerminalFailureNative(SourceActualSUnionNative):
         stopped, producers, finalizers = [], {}, set()
         first, drained = None, False
         pending = b''; read_offset = 0; current_asset = None; starts = {}
+        discarding_summary = False; summary_tail = b''
         stop_attempts = set()
         physical_before_cleanup, bounded_clock = None, None
+        first_test_failure = None; observer_phase = 'SETUP'
         case_passed = False
         action_observation = None
         def args_for(pid):
             return Path(f'/proc/{pid}/cmdline').read_bytes().split(b'\0')[:-1]
         def marker_state():
-            nonlocal pending, read_offset, current_asset
+            nonlocal pending, read_offset, current_asset, discarding_summary, summary_tail
             with (root / 'stdout').open('rb') as stream:
                 stream.seek(read_offset); chunk = stream.read(256 * 1024)
-            read_offset += len(chunk); pending += chunk
-            if len(pending) > 512 * 1024 or read_offset > 8 * 1024 * 1024:
+            read_offset += len(chunk)
+            if read_offset > 8 * 1024 * 1024:
                 raise AssertionError('SOURCE_TERMINAL_OBSERVER_LOG_BOUND')
+            tokens = (b'DMI_ASSET_PROCESSING_START=', b'DMI_ASSET_PROCESSING_END=')
+            overlap = max(map(len, tokens)) - 1
+            if discarding_summary:
+                segment, separator, rest = chunk.partition(b'\n')
+                inspected = summary_tail + segment
+                if any(token in inspected for token in tokens):
+                    raise AssertionError('SOURCE_TERMINAL_OBSERVER_LOG_BOUND')
+                summary_tail = inspected[-overlap:]
+                if not separator:
+                    return
+                discarding_summary = False; summary_tail = b''; chunk = rest
+            pending += chunk
             lines = pending.split(b'\n'); pending = lines.pop()
             for line in lines:
+                if len(line) > 512 * 1024:
+                    if not line.startswith(SOURCE_TERMINAL_SUMMARY_PREFIX) or any(token in line for token in tokens):
+                        raise AssertionError('SOURCE_TERMINAL_OBSERVER_LOG_BOUND')
+                    continue
                 match = re.search(rb'DMI_ASSET_PROCESSING_(START|END)=(\{[^\r\n]+\})$', line)
                 if not match:
                     continue
@@ -1511,6 +1550,10 @@ class SourceTerminalFailureNative(SourceActualSUnionNative):
                     current_asset = canonical
                 elif current_asset == canonical:
                     current_asset = None
+            if len(pending) > 512 * 1024:
+                if not pending.startswith(SOURCE_TERMINAL_SUMMARY_PREFIX) or any(token in pending for token in tokens):
+                    raise AssertionError('SOURCE_TERMINAL_OBSERVER_LOG_BOUND')
+                summary_tail = pending[-overlap:]; pending = b''; discarding_summary = True
         try:
             owner.enter(); transport.start()
             logs = [(root / name).open('wb') for name in ('stdout', 'stderr')]
@@ -1518,6 +1561,7 @@ class SourceTerminalFailureNative(SourceActualSUnionNative):
                 stdin=subprocess.DEVNULL, stdout=logs[0], stderr=logs[1])
             action_fd = os.pidfd_open(process.pid); retained.append(action_fd)
             end = time.monotonic() + 22 * 60
+            observer_phase = 'ACTION_OBSERVE'
             while process.poll() is None:
                 self.assertLess(time.monotonic(), end, 'SOURCE_TERMINAL_NATIVE_OBSERVER_DEADLINE')
                 marker_state()
@@ -1555,10 +1599,12 @@ class SourceTerminalFailureNative(SourceActualSUnionNative):
                     except (FileNotFoundError, ProcessLookupError):
                         continue  # Discovery race never means injection/closure.
                 time.sleep(.002)
+            observer_phase = 'ACTION_EXIT'
             action_observation = source_native_action_observation(root, getattr(self, 'native_observer_source_rows', ()), process.returncode, logs, transport)
             self.assertEqual(process.wait(timeout=1), 1, 'TERMINAL_FAILURE_MUST_NOT_BECOME_SOURCE_SUCCESS')
             # Native subreaper proof BEFORE any cleanup signal/drain. A live or
             # unreaped adopted descendant returns None/a result, never ECHILD.
+            observer_phase = 'PHYSICAL_CLOSURE'
             with self.assertRaises(ChildProcessError):
                 os.waitid(os.P_ALL, 0, os.WEXITED | os.WNOHANG | os.WNOWAIT)
             action_closed_ns = time.monotonic_ns()
@@ -1566,6 +1612,7 @@ class SourceTerminalFailureNative(SourceActualSUnionNative):
             self.assertEqual(len(stopped), 5, 'FIVE_DISTINCT_NORMAL_180S_PARSER_STALLS_REQUIRED')
             self.assertEqual(len({row['identity'] for row in stopped}), 5)
             self.assertTrue(finalizers, 'ACTUAL_NORMAL_FINALIZER_NOT_OBSERVED')
+            observer_phase = 'DISPOSITION'
             disposition = strict_json(FIXED / 'source-failure-disposition-200-2.json', 16384)
             self.assertEqual(disposition['kind'], 'SOURCE_PRIVATE_FAILURE_DISPOSITION')
             self.assertEqual(disposition['status'], 'FAILED')
@@ -1586,6 +1633,7 @@ class SourceTerminalFailureNative(SourceActualSUnionNative):
             self.assertGreater(caught_ns, stopped[-1]['stoppedNs'])
             self.assertLessEqual(action_closed_ns, cutoff_ns, 'ACTUAL_WHOLE_FAILURE_CHAIN_EXCEEDED_ORIGINAL_240S')
             self.assertLessEqual(time.monotonic_ns(), cutoff_ns, 'TYPED_DURABLE_LOCAL_OUTCOME_OBSERVED_TOO_LATE')
+            observer_phase = 'SDK_AND_ORIGINALS'
             with transport.lock:
                 self.assertEqual(transport.failures, [])
                 tags, uploads = list(transport.calls), dict(transport.uploads)
@@ -1613,10 +1661,11 @@ class SourceTerminalFailureNative(SourceActualSUnionNative):
             print(json.dumps(receipt))
             case_passed = True
         except BaseException as error:
+            first = error
+            first_test_failure = source_terminal_test_failure(error, observer_phase)
             if action_observation is None:
                 action_observation = source_native_action_observation(root, getattr(self, 'native_observer_source_rows', ()),
                     process.returncode if process is not None else None, logs, transport)
-            first = error
             raise
         finally:
             cleanup_failure = None
@@ -1637,6 +1686,8 @@ class SourceTerminalFailureNative(SourceActualSUnionNative):
             except BaseException as error: cleanup_failure = cleanup_failure or error
             print(json.dumps({'sourceNativeTerminalOuterECHILD': drained,
                 'entirePrivateFixtureRetained': True, 'sourceAdmission': False}))
+            if first_test_failure is None and cleanup_failure is not None:
+                first_test_failure = source_terminal_test_failure(cleanup_failure, 'CLEANUP')
             with transport.lock:
                 safe_uploads = {role: {'phase': row.get('phase'), 'archiveBytes': row.get('bytes'),
                     'archiveFileCount': len(row.get('files', []))} for role, row in transport.uploads.items()}
@@ -1646,17 +1697,171 @@ class SourceTerminalFailureNative(SourceActualSUnionNative):
                 'physicalClosureBeforeCleanup': physical_before_cleanup, 'outerDrainClosed': drained,
                 'originalClock': bounded_clock, 'localOfficialSdk': safe_uploads,
                 'actionObservation': action_observation,
+                'firstTestFailure': first_test_failure,
                 'originalBObjectsPreserved': True if case_passed else None,
                 'sourceAdmission': False, 'productionActivation': False, 'remoteCloudDurability': 'NOT_TESTED'}))
             if first is None and cleanup_failure is not None:
                 raise cleanup_failure
 
 
+class SourceTerminalMarkerInputTests(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        producer = (ROOT / 'scripts/update-dmi-bulk.py').read_bytes()
+        if sha(producer) != '440de35ab0c0551abcc9c1ba2b4741105420a0e21eaf5eb252315b4894556563':
+            raise AssertionError('SOURCE_TERMINAL_NORMAL_SUMMARY_SOURCE_CHANGED')
+        text = producer.decode('utf-8')
+        assert '"diagnostics": {"collectionsAttempted": [], "collectionsSucceeded": []' in text
+        assert 'diag = result["diagnostics"]' in text
+        assert 'summary = {**diag, "refreshStatus": result["refreshStatus"]' in text
+        assert 'print(json.dumps(summary, ensure_ascii=False))' in text
+        from datetime import datetime, timedelta, timezone
+        from importlib.machinery import PathFinder
+        normal_inputs = {
+            'scripts/update-dmi-bulk.py': '440de35ab0c0551abcc9c1ba2b4741105420a0e21eaf5eb252315b4894556563',
+            'scripts/lib/dmi_native_provenance.py': 'c5f391d7ffe4564a7546c38b8229c2c16b3878f18658387fecfe31df430e0329',
+            'scripts/lib/dmi_current_processing_compatibility.py': '1f6033decdcbcc8c02b37270751a4e4c55a890921969f16d94704c81882e3853',
+            'scripts/lib/dmi_wind_reference.py': '3cb86ab5bc7c8dfa14053d54c639a200ce1e0afb5101e48c39170da0db38d08c',
+        }
+        for relative, expected in normal_inputs.items():
+            file = ROOT / relative
+            if file.is_symlink() or not file.is_file() or sha(file.read_bytes()) != expected:
+                raise AssertionError('SOURCE_TERMINAL_NORMAL_LIB_SOURCE_CHANGED')
+        library = (ROOT / 'scripts/lib').resolve(strict=True)
+        package_spec = PathFinder.find_spec('lib', [str((ROOT / 'scripts').resolve(strict=True))])
+        if (package_spec is None or package_spec.loader is not None or package_spec.origin is not None
+                or package_spec.submodule_search_locations is None
+                or [Path(value).resolve(strict=True) for value in package_spec.submodule_search_locations] != [library]):
+            raise AssertionError('SOURCE_TERMINAL_NORMAL_LIB_NAMESPACE_REFUSED')
+        allowed_modules = {'lib.' + Path(relative).stem: (ROOT / relative).resolve(strict=True)
+            for relative in normal_inputs if relative.startswith('scripts/lib/')}
+        for name, module in tuple(sys.modules.items()):
+            if name == 'lib':
+                existing_spec = getattr(module, '__spec__', None)
+                if (existing_spec is None or existing_spec.origin is not None
+                        or [Path(value).resolve(strict=True) for value in getattr(module, '__path__', ())] != [library]
+                        or existing_spec.submodule_search_locations is None
+                        or [Path(value).resolve(strict=True) for value in existing_spec.submodule_search_locations] != [library]):
+                    raise AssertionError('SOURCE_TERMINAL_NORMAL_LIB_NAMESPACE_REFUSED')
+            elif name.startswith('lib.'):
+                if (name not in allowed_modules or getattr(module, '__file__', None) is None
+                        or Path(module.__file__).resolve(strict=True) != allowed_modules[name]):
+                    raise AssertionError('SOURCE_TERMINAL_NORMAL_LIB_NAMESPACE_REFUSED')
+        # This is the actual PEP 420 package discovered at the pinned host
+        # location, not a fabricated __init__.py or a global sys.path change.
+        if 'lib' not in sys.modules:
+            sys.modules['lib'] = importlib.util.module_from_spec(package_spec)
+        module_name = 'lib.dmi_native_provenance'
+        if module_name not in sys.modules:
+            native_spec = importlib.util.spec_from_file_location(module_name, library / 'dmi_native_provenance.py')
+            if native_spec is None or native_spec.loader is None:
+                raise AssertionError('SOURCE_TERMINAL_NORMAL_LIB_NAMESPACE_REFUSED')
+            native = importlib.util.module_from_spec(native_spec)
+            sys.modules[module_name] = native
+            try:
+                native_spec.loader.exec_module(native)
+            except BaseException:
+                if sys.modules.get(module_name) is native:
+                    del sys.modules[module_name]
+                raise
+        exact_current_operational_complement = sys.modules[module_name].exact_current_operational_complement
+        reference = datetime(2026, 10, 19, tzinfo=timezone.utc)
+        times = [(reference + timedelta(hours=hour)).isoformat().replace('+00:00', 'Z') for hour in range(118)]
+        parts = ['SYNTHETIC-PART-' + str(part).zfill(4) for part in range(673)]
+        complement = exact_current_operational_complement(parts, times, [])
+        assert len(complement) == 673 * 118
+        document = json.dumps({'collectionsAttempted': [], 'currentOperationalLedger': {
+            'operationalComplementPairs': complement}}, ensure_ascii=False).encode() + b'\n'
+        assert document.startswith(SOURCE_TERMINAL_SUMMARY_PREFIX) and 512 * 1024 < len(document) < 8 * 1024 * 1024
+        cls.summary = document
+        cls.identity = {'collection': 'dkss_nsbs', 'modelRun': '2026-10-19T00:00:00Z',
+            'validTime': '2026-10-19T00:00:00Z', 'itemId': 'SYNTHETIC',
+            'assetIdentitySha256': 'a' * 64, 'assetRevisionSha256': 'b' * 64}
+        marker = json.dumps(cls.identity, sort_keys=True, separators=(',', ':')).encode()
+        cls.start = b'[DMI bulk +   0.0s] DMI_ASSET_PROCESSING_START=' + marker + b'\n'
+        cls.end = b'[DMI bulk +   0.0s] DMI_ASSET_PROCESSING_END=' + marker + b'\n'
+
+    def parser(self, root, *, before=False):
+        source = Path(__file__).read_text(encoding='utf-8')
+        if before:
+            function = SOURCE_TERMINAL_MARKER_BEFORE_FUNCTION
+            self.assertEqual(sha(function.encode()), '78049ab3e500b7296a63ed1a8946fd9e67b0fbf83cafcdbf6afd39b70dfde654')
+        else:
+            offset = source.index('class SourceTerminalFailureNative(')
+            start = source.index('        def marker_state():', offset)
+            end = source.index('\n        try:\n            owner.enter(); transport.start()', start)
+            function = source[start:end]
+        body = textwrap.dedent(function)
+        host = ("def exact_marker_host(root):\n    pending=b''; read_offset=0; current_asset=None; starts={}\n"
+            + "    discarding_summary=False; summary_tail=b''\n" + textwrap.indent(body, '    ')
+            + "\n    def state():\n        return read_offset,len(pending),current_asset,dict(starts)\n    return marker_state,state\n")
+        scope = {'json': json, 're': re, 'SOURCE_TERMINAL_SUMMARY_PREFIX': SOURCE_TERMINAL_SUMMARY_PREFIX}
+        exec(compile(host, '<hash-bound-test-marker-framing>', 'exec'), scope)
+        return scope['exact_marker_host'](root)
+
+    def consume(self, body, *, before=False):
+        with tempfile.TemporaryDirectory(prefix='rr-source-marker-unit-') as temporary:
+            root = Path(temporary)
+            (root / 'stdout').write_bytes(body)
+            read, state = self.parser(root, before=before)
+            while state()[0] < len(body):
+                read()
+            return state()
+
+    def test_same_normal_summary_before_red_after_green(self):
+        value = self.start + self.summary + self.end
+        with self.assertRaisesRegex(AssertionError, '^SOURCE_TERMINAL_OBSERVER_LOG_BOUND$'):
+            self.consume(value, before=True)
+        state = self.consume(value)
+        self.assertEqual(sum(state[3].values()), 1)
+        self.assertIsNone(state[2])
+        self.assertEqual(state[1], 0)
+
+    def test_split_markers_remain_observable(self):
+        for offset in range(1, 28):
+            padding = b'x' * (256 * 1024 - offset - 1) + b'\n'
+            state = self.consume(padding + self.start + self.end)
+            self.assertEqual(sum(state[3].values()), 1)
+            self.assertIsNone(state[2])
+
+    def test_hidden_tokens_in_discarded_line_are_refused_across_chunks(self):
+        prefix = SOURCE_TERMINAL_SUMMARY_PREFIX + b'x' * (1024 * 1024 - len(SOURCE_TERMINAL_SUMMARY_PREFIX))
+        for token in (b'DMI_ASSET_PROCESSING_START=', b'DMI_ASSET_PROCESSING_END='):
+            for split in range(1, len(token)):
+                value = prefix[:-split] + token + b'{}\n' + self.end
+                with self.assertRaisesRegex(AssertionError, '^SOURCE_TERMINAL_OBSERVER_LOG_BOUND$'):
+                    self.consume(value)
+
+    def test_unknown_and_oversized_marker_lines_remain_refused(self):
+        for value in (b'{"currentOperationalLedger": "' + b'x' * (768 * 1024) + b'"}\n',
+                      self.start[:-1] + b'x' * (768 * 1024) + b'\n',
+                      b'unknown ' + b'x' * (768 * 1024) + b'\n'):
+            with self.assertRaisesRegex(AssertionError, '^SOURCE_TERMINAL_OBSERVER_LOG_BOUND$'):
+                self.consume(value)
+
+    def test_eight_mib_total_still_counts_discarded_diagnostics(self):
+        value = SOURCE_TERMINAL_SUMMARY_PREFIX + b'x' * (8 * 1024 * 1024) + b'\n'
+        with self.assertRaisesRegex(AssertionError, '^SOURCE_TERMINAL_OBSERVER_LOG_BOUND$'):
+            self.consume(value)
+
+    def test_first_test_failure_projection_has_only_fixed_code_and_phase(self):
+        error = AssertionError('SOURCE_TERMINAL_OBSERVER_LOG_BOUND')
+        self.assertEqual(source_terminal_test_failure(error, 'ACTION_OBSERVE'),
+            {'phase': 'ACTION_OBSERVE', 'code': 'SOURCE_TERMINAL_OBSERVER_LOG_BOUND'})
+        self.assertEqual(source_terminal_test_failure(AssertionError('1 not less than 0 : SOURCE_TERMINAL_NATIVE_OBSERVER_DEADLINE'), 'ACTION_OBSERVE')['code'],
+            'SOURCE_TERMINAL_NATIVE_OBSERVER_DEADLINE')
+        self.assertEqual(source_terminal_test_failure(ValueError('private payload with "FAIL"'), 'unissued'),
+            {'phase': 'UNKNOWN', 'code': 'UNKNOWN'})
+
+
+
 if __name__ == '__main__':
+    if sys.argv[1:] == ['--terminal-marker-unit']:
+        unittest.main(argv=[sys.argv[0]], defaultTest='SourceTerminalMarkerInputTests')
     if sys.argv[1:] == ['--observer-unit']:
         if sys.platform != 'linux':
             raise ValueError('SOURCE_OBSERVER_LINUX_UNIT_REQUIRED')
-        unittest.main(argv=[sys.argv[0]], defaultTest=('SourceObserverPureTests', 'SourceObserverLinuxIoTests'))
+        unittest.main(argv=[sys.argv[0]], defaultTest=('SourceObserverPureTests', 'SourceObserverLinuxIoTests', 'SourceTerminalMarkerInputTests'))
     parser = argparse.ArgumentParser()
     parser.add_argument('--node24-path', required=True)
     parser.add_argument('--node22-path', required=True)

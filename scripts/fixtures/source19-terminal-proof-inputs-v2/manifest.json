@@ -1978,8 +1978,8 @@
     },
     {
       "path": "scripts/test-source19-terminal-failure-proof-bank-v17-observer-native.py",
-      "bytes": 202095,
-      "sha256": "0263c607073f34ca8e45b028fb313737384c7f03607446a088e0ab8169cd01b5",
+      "bytes": 216524,
+      "sha256": "d1cc929be3253b003c5ee0adbfbf47b150d29f27ff7cb0973d062a87051de05f",
       "input": {
         "kind": "FROZEN_TEST_BANK",
         "bankPath": "scripts/fixtures/source19-terminal-proof-inputs-v2/operands/043.source.txt"
@@ -2761,9 +2761,20 @@
     "pureProjection": "SHARED_WITH_PHYSICAL_LINUX_HELPER",
     "observerUnitBeforeSdkAndNative": {
       "pureCases": 6,
-      "physicalLinuxCases": 9
+      "physicalLinuxCases": 9,
+      "terminalMarkerCases": 6
     },
-    "numericChildSourceCode": "UNKNOWN_UNLESS_SEPARATELY_PROVEN_NOT_PROJECTED_HERE"
+    "numericChildSourceCode": "UNKNOWN_UNLESS_SEPARATELY_PROVEN_NOT_PROJECTED_HERE",
+    "terminalMarkerFraming": {
+      "producer": "scripts/update-dmi-bulk.py",
+      "producerSha256": "440de35ab0c0551abcc9c1ba2b4741105420a0e21eaf5eb252315b4894556563",
+      "summaryPrefix": "{\"collectionsAttempted\": ",
+      "totalBytes": 8388608,
+      "pendingBytes": 524288,
+      "hiddenTokenAcrossChunks": "REFUSED",
+      "unknownLargeFraming": "REFUSED",
+      "firstTestFailure": "FIXED_CODE_AND_PHASE_NOT_ACTION_AUTHORITY"
+    }
   },
   "dynamicNormalModules": {
     "caller": "scripts/materialize-dmi-bulk-storage.py",
