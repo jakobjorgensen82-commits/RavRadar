@@ -1,5 +1,15 @@
 # RavRadar 4.0.508 – diagnostik af DMI-afvisning
 
+## Driftsopfølgning 19. oktober — uændret 4.0.584
+
+Dette tillæg viderefører DEC-0249's genbrug af færdige beregninger; det er ikke en ny 4.0.508-udgivelse eller et versionsløft.
+
+- Genopretning `39291575502/1` er faktisk leveret med Pages og særskilt offentlig kontrol omkring kl. 20.00 dansk tid. Den genbrugte gemte vejrinput. Almindelig `39299413035/1` er ved dette checkpoint i beregning; ingen ny almindelig deploy påstås.
+- Lokal SOURCE_PREPARED: De fire normale private spec/create/seal/upload-trin flyttes før sene artifactkontroller, så et allerede færdigt resultat kan overleve en efterfølgende leveringsfejl.
+- Valgfri `completed_stage_source` genbruger original autentificeret ordinary B/GCM gennem eksisterende completed-runtime-mode, med ægte parent-B/S, samme beregnings-/admin-/modelgrundlag og alle normale produktionsgates. Ingen ny providerhentning eller rescore af en gyldigt genanvendelig færdigpakke.
+- Original producentidentitet, 55+3, no-loss, privacy, B før S og frisk parentkontrol består. Ukendt central skrivning eller manglende artifact er ikke tilladelse til retry.
+- Målrettet delevidens foreligger; samlet positiv genuine-admit, præcis source-CI, installation og produktionsbrug af den nye vej er fortsat åbne. Version, C/I/T, databasefunktioner/migrationer, scoremodel, geometri og leverandørbudgetter er uændrede. Den eksisterende installationsfils ene håndbogstekst synkroniseres normalt med webhåndbogen, med fuld bevaring af alle øvrige SQL-bytes.
+
 Merged som main `cadd9b9d`; DMI-årsagen og fuld vejrdækning er
 fortsat ikke produktionsafklaret.
 

@@ -7,6 +7,9 @@ import {ORIGIN, WORKFLOW, JOB, STEP, COMMANDS, NEW_NATIVE_BLOCK,
   verifyLaterRuns, decideReuse, verifyCurrentPullRequest, FOLLOWUP_INPUTS} from './native-postgres-evidence.mjs';
 
 const copy = value => structuredClone(value);
+// Genuine reviewed P0 follow-up, not the potentially changed current PR tree.
+const REVIEWED_FOLLOWUP = 'c72d6730bd235954091416268e7af649b46452d9';
+const REVIEWED_FOLLOWUP_TREE = 'b2b49abd10c186115759f3792ecc8fd312049126';
 const originalWorkflow = 'name: Validate RavRadar pull request\non:\n  pull_request:\npermissions:\n  contents: read\n'
   + 'jobs:\n  validate:\n    steps:\n      - name: ' + STEP + '\n        shell: bash\n        run: |\n          set -euo pipefail\n'
   + COMMANDS.map(command => '          ' + command + '\n').join('')
@@ -187,9 +190,11 @@ test('follow-up PR identity and both native branch histories remain independentl
 test('only exact reviewed follow-up inputs preserve every original retained PG tree entry',async()=>{
   const {execFileSync}=await import('node:child_process');
   const git=args=>execFileSync('git',args,{encoding:'utf8',maxBuffer:32*1024*1024});
+  assert.equal(git(['rev-parse',REVIEWED_FOLLOWUP+'^{commit}']).trim(),REVIEWED_FOLLOWUP);
+  assert.equal(git(['rev-parse',REVIEWED_FOLLOWUP+'^{tree}']).trim(),REVIEWED_FOLLOWUP_TREE);
   const before=parseTree(git(['ls-tree','-rz','--full-tree',ORIGIN.head]));
-  const after=parseTree(git(['ls-tree','-rz','--full-tree','HEAD']));
-  const readSource=(file,side)=>git(['show',(side==='before'?ORIGIN.head:'HEAD')+':'+file]);
+  const after=parseTree(git(['ls-tree','-rz','--full-tree',REVIEWED_FOLLOWUP]));
+  const readSource=(file,side)=>git(['show',(side==='before'?ORIGIN.head:REVIEWED_FOLLOWUP)+':'+file]);
   const result=verifyInputTrees(before,after,readSource);
   const currentMapCallers=['scripts/test-mobile-start-and-live-cache-4.0.74.mjs','scripts/test-current-arrow-land-mask.mjs',
     'scripts/test-workflow-validation-order-4.0.108.mjs'];
@@ -212,4 +217,30 @@ test('only exact reviewed follow-up inputs preserve every original retained PG t
     assert.throws(()=>verifyInputTrees(before,after,(file,side)=>readSource(file,side)+(file===pin.path&&side==='after'?'\n':'')));
   }
   assert.throws(()=>verifyInputTrees(before,after));
+});
+
+test('actual committed follow-up drift selects original PG before any network access',async t=>{
+  const {execFileSync}=await import('node:child_process');
+  const git=args=>execFileSync('git',args,{encoding:'utf8',maxBuffer:32*1024*1024,
+    env:{...process.env,GIT_NO_LAZY_FETCH:'1'}});
+  const head=git(['rev-parse','HEAD^{commit}']).trim();
+  if(head===REVIEWED_FOLLOWUP){
+    t.skip('Actual follow-up HEAD is not committed yet; future-tree refusal remains unqualified.');
+    return;
+  }
+  git(['merge-base','--is-ancestor',REVIEWED_FOLLOWUP,head]);
+  const before=parseTree(git(['ls-tree','-rz','--full-tree',ORIGIN.head]));
+  const after=parseTree(git(['ls-tree','-rz','--full-tree',head]));
+  const readSource=(file,side)=>git(['show',(side==='before'?ORIGIN.head:head)+':'+file]);
+  assert.throws(()=>verifyInputTrees(before,after,readSource),
+    'Actual committed delivery additions are not unchanged native inputs');
+  let apiCalls=0,environmentCalls=0;
+  const env={GITHUB_EVENT_NAME:'pull_request',GITHUB_REPOSITORY:ORIGIN.repository,
+    PULL_REQUEST_NUMBER:'1',GITHUB_RUN_ATTEMPT:'1',SOURCE_GATE_HEAD_SHA:head,
+    GITHUB_RUN_ID:String(ORIGIN.run+2)};
+  const decision=await decideReuse({env,readGit:git,
+    get:async()=>{apiCalls++;throw new Error('Unexpected network boundary');},
+    getEnvironment:()=>{environmentCalls++;return runtime;}});
+  assert.deepEqual(decision,{status:'EXECUTE',reason:'native-input-or-evidence-unavailable-or-different'});
+  assert.equal(apiCalls,0);assert.equal(environmentCalls,0);
 });

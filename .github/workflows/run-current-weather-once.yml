@@ -13,6 +13,11 @@ on:
         required: false
         type: boolean
         default: false
+      completed_stage_source:
+        description: 'Optional exact ordinary completed-stage run-attempt-producerhead; requires completed reuse and its original checkpoint target hint'
+        required: false
+        type: string
+        default: ''
       quick_confirmation:
         description: 'Use short supplier budgets while verifying cache continuation and deployment'
         required: false
@@ -137,6 +142,15 @@ jobs:
           test "$(git rev-parse HEAD^{commit})" = "$EXPECTED_HEAD_SHA"
           test "$(git rev-parse origin/main^{commit})" = "$EXPECTED_HEAD_SHA"
 
+      - name: Reject an orphaned completed-stage locator before target selection
+        if: inputs.completed_stage_source != ''
+        shell: bash
+        env:
+          COMPLETED: ${{ inputs.completed_private_runtime }}
+        run: |
+          set -euo pipefail
+          test "$COMPLETED" = true
+
       - uses: actions/setup-node@v7
         if: inputs.completed_private_runtime == true
         with:
@@ -145,9 +159,18 @@ jobs:
       - name: Pin the actual newest completed private generation before target selection
         id: completed-target
         if: inputs.completed_private_runtime == true
-        run: node scripts/completed-private-runtime-admission.mjs pin
+        shell: bash
+        run: |
+          set -euo pipefail
+          if test -n "$COMPLETED_STAGE_SOURCE"; then
+            node scripts/ordinary-completed-stage-admission.mjs pin
+          else
+            node scripts/completed-private-runtime-admission.mjs pin
+          fi
         env:
           COMPLETED_PRIVATE_RUNTIME: 'true'
+          COMPLETED_STAGE_SOURCE: ${{ inputs.completed_stage_source }}
+          CURRENT_FAMILY_COLD_START: ${{ inputs.current_family_cold_start }}
           QUICK_CONFIRMATION: ${{ inputs.quick_confirmation }}
           QUICK_PROGRESS_SOURCE: ${{ inputs.quick_progress_source }}
           CHECKPOINT_TARGET_HOUR: ${{ inputs.checkpoint_target_hour }}
@@ -211,7 +234,7 @@ jobs:
 
       - name: Lock the requested original checkpoint hour without provider work
         id: checkpoint-target
-        if: inputs.checkpoint_target_hour != ''
+        if: inputs.checkpoint_target_hour != '' && inputs.completed_stage_source == ''
         shell: bash
         env:
           CHECKPOINT_TARGET_HOUR: ${{ inputs.checkpoint_target_hour }}
@@ -871,6 +894,7 @@ jobs:
       production_target_hour: ${{ needs.current-main-target.outputs.target_hour }}
       completed_private_runtime: ${{ inputs.completed_private_runtime }}
       completed_private_runtime_pin: ${{ needs.current-main-target.outputs.completed_private_runtime_pin }}
+      completed_stage_source: ${{ inputs.completed_stage_source }}
       force: true
       extended_provider_bootstrap: ${{ inputs.weather_state_epoch_bootstrap == true || inputs.current_family_cold_start == true }}
       current_family_cold_start: ${{ inputs.current_family_cold_start == true }}
@@ -881,7 +905,7 @@ jobs:
       weather_state_epoch_archive_catalog_sha256: ${{ inputs.weather_state_epoch_checkpoint_reentry && inputs.weather_state_epoch_archive_catalog_sha256 || needs.state-epoch-prewrite.outputs.archive_catalog_sha256 }}
       quick_confirmation: ${{ inputs.quick_confirmation }}
       quick_progress_source: ${{ inputs.quick_progress_source }}
-      checkpoint_only: ${{ inputs.checkpoint_target_hour != '' }}
+      checkpoint_only: ${{ inputs.checkpoint_target_hour != '' && inputs.completed_stage_source == '' }}
       native_sampling_identity_original_recovery: ${{ inputs.native_sampling_identity_original_recovery }}
       produce_weather_handoff: false
       produce_weather_handoff_confirmation: ''

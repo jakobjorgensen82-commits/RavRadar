@@ -1,10 +1,16 @@
 import assert from 'node:assert/strict';
-import { inverseCompletedRuntimeWorkflow } from './lib/completed-private-runtime-workflow-review.mjs';
+import { assertEarlyCompletedRuntimeStageOrder, inverseCompletedRuntimeWorkflow } from './lib/completed-private-runtime-workflow-review.mjs';
 import fs from 'node:fs';
 import vm from 'node:vm';
 import { exactPagesAttemptStep } from './github-pages-attempt-evidence.mjs';
 import './test-weather-source-gate.mjs';
 import './test-weather-state-epoch-workflow.mjs';
+// The normal source gate owns the optional completed-result transport tests.
+// These use synthetic data only, never provider or production credentials.
+import './test-ordinary-completed-stage-artifact.mjs';
+import './test-ordinary-completed-stage-source.mjs';
+import './test-ordinary-completed-stage-lineage.mjs';
+import './test-ordinary-completed-stage-admission.mjs';
 import {
   PRODUCTION_WORKFLOW_SOURCES,
   readProductionWorkflowSources,
@@ -12,6 +18,8 @@ import {
 
 const workflowDirectory = '.github/workflows';
 const productionWorkflowSources = await readProductionWorkflowSources();
+// Qualify the actual new order before restoring every unchanged historical oracle.
+assertEarlyCompletedRuntimeStageOrder(productionWorkflowSources.build.replace(/\r\n/g, '\n'));
 const productionWorkflows = Object.freeze(Object.fromEntries(
   Object.entries(productionWorkflowSources).map(([role, source]) => [role, inverseCompletedRuntimeWorkflow(source.replace(/\r\n/g, '\n'), role)]),
 ));

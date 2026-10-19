@@ -1,3 +1,9 @@
+## 19. oktober — 4.0.584: genopretning leveret, færdigberegning skal kunne genbruges
+
+Samtaledelta: Ejeren ønsker at undgå ny vejrhentning og scoreberegning alene på grund af fejl i den efterfølgende levering. Den lokale rettelse flytter de fire eksisterende spec/create/seal/upload-trin frem og kobler valgfri `completed_stage_source` til den normale completed-runtime-vej. Original GCM-identitet, ægte parent-B/S, samme beregnings-/admin-/modelgrundlag og alle normale produktionsgates bevares. Ingen ny service, version, modelbinding, SQL eller leverandørbudgetter.
+
+Faktisk genopretning `39291575502/1`, Pages og særskilt offentlig kontrol er gennemført omkring kl. 20.00 dansk tid med gemte vejrinput. Almindelig `39299413035/1` er ved dette checkpoint i beregning uden bevist deploy. Den nye genoptagelsesvej er SOURCE_PREPARED med målrettede delprøver; samlet positiv genuine-admit, præcis source-CI, installation og produktionsbrug er fortsat åbne. En gammel beregning uden faktisk gemt færdigpakke kan ikke genbruges. Alle fem hovedmål er åbne; ældre afventninger om den leverede 584-genopretning er dateret historik på disse punkter.
+
 ## 19. oktober — lokal 4.0.584: ret producenten, bevar originalerne
 
 Samtaledelta: Ejeren fastholder nul gammel aktiv historik med permanent bevaring af originalerne. Den seneste faktiske vejrhentning nåede beregning, databevarelse, releasekontroller og privat B, men blev afvist ved S. Syv nye timer uden gammel state reproducerede to producentfejl; den parrede lokale rettelse består seks mål. SQL-grænsen lempes ikke.

@@ -6,9 +6,85 @@ import fs from 'node:fs';
 const review = JSON.parse(fs.readFileSync(new URL('./completed-private-runtime-workflow-review.json', import.meta.url), 'utf8'));
 const coldReview = JSON.parse(fs.readFileSync(new URL('./current-family-cold-start-workflow-review.json', import.meta.url), 'utf8'));
 const sha = value => crypto.createHash('sha256').update(value).digest('hex');
+// Test-only exact optional-stage wiring inverse. Both entire reviewed afterimages
+// restore the previous workflows; no caller, selector or command is ignored.
+export const ordinaryStageWiringReview = JSON.parse(fs.readFileSync(
+  new URL('./ordinary-completed-stage-workflow-review.json', import.meta.url), 'utf8'));
+for (const row of Object.values(ordinaryStageWiringReview)) {
+  row.edits.forEach(Object.freeze); Object.freeze(row.edits); Object.freeze(row);
+}
+Object.freeze(ordinaryStageWiringReview);
+export function inverseOrdinaryCompletedStageWorkflowWiring(source, role) {
+  const row = ordinaryStageWiringReview[role];
+  if (!row || sha(source) !== row.afterSha256) return source;
+  assert.equal(Buffer.byteLength(source), row.afterBytes, 'Whole reviewed staged caller byte count');
+  let previous = source;
+  for (const [offset, actual, original] of row.edits) {
+    assert.equal(previous.slice(offset, offset + actual.length), actual, 'Exact optional-stage wiring hunk');
+    previous = previous.slice(0, offset) + original + previous.slice(offset + actual.length);
+  }
+  assert.equal(Buffer.byteLength(previous), row.beforeBytes);
+  assert.equal(sha(previous), row.beforeSha256, 'Entire preceding workflow survives the optional-stage wiring inverse');
+  return previous;
+}
+// Test-only exact relocation of the unchanged four-step UNPUBLISHED B stage.
+// The entire c72 predecessor, including its later protected B/S writes, remains
+// the old oracle. Unknown whole bytes never enter this inverse.
+const earlyStageAfterSha = '05665749cefb5f210a7542cb6fab06e2900be0fd9bb8326cab9b1dcc7b432f73';
+const earlyStageBeforeSha = 'f0254a092c0baa188370c207b218e15ad7c9e616138d15234e6f323f101178c6';
+const earlyStageStart = '      # The expensive weather/score build is already complete. Save its exact\n';
+const earlyStageNext = '      - name: Generate and strictly validate production reference zones\n';
+const earlyStageOldNext = '      - name: Build dataminimized weather preflight state after final gates\n';
+export function assertEarlyCompletedRuntimeStageOrder(source) {
+  source = inverseOrdinaryCompletedStageWorkflowWiring(source, 'build');
+  assert.equal(sha(source), earlyStageAfterSha, 'Only the whole reviewed early-stage workflow is current');
+  for (const marker of [earlyStageStart, earlyStageNext, earlyStageOldNext])
+    assert.equal(source.split(marker).length, 2, 'One exact early-stage boundary');
+  const start = source.indexOf(earlyStageStart), end = source.indexOf(earlyStageNext);
+  assert(start >= 0 && end > start);
+  const block = source.slice(start, end);
+  assert.equal(Buffer.byteLength(block), 3399, 'The same four complete stage blocks are relocated');
+  assert.equal(sha(block), '712d300b49902e52d89f7fdbe383106fdfc692eb93a531ef7ec57101a8b3d22a',
+    'Every stage body, selector, secret, inventory and upload field is unchanged');
+  assert.deepEqual([...block.matchAll(/^        id: (.+)$/gm)].map(row => row[1]),
+    ['private-runtime-bundle-spec', 'private-runtime-bundle-create', 'private-build-stage-seal', 'private-build-stage-upload']);
+  const markers = [
+    '      - name: Create and validate exactly one checkpoint disposition before release gate\n',
+    earlyStageStart, earlyStageNext,
+    '        id: full-validation\n', '        id: release-gate\n',
+    '      - name: Require exact integrated backend and Edge readiness before integrated Pages\n',
+    '        id: checkpoint-build\n', '        id: checkpoint-save\n', earlyStageOldNext,
+    '        id: private-runtime-publish\n', '        id: checkpoint-publish\n',
+  ];
+  let prior = -1;
+  for (const marker of markers) {
+    assert.equal(source.split(marker).length, 2, 'One unchanged current workflow step: ' + marker.trim());
+    const at = source.indexOf(marker);
+    assert(at > prior, 'Encrypted UNPUBLISHED B precedes final gates; protected B/S stay after them: ' + marker.trim());
+    prior = at;
+  }
+  const disposition = source.indexOf(markers[0]);
+  assert.equal(source.indexOf('      - name: ', disposition + markers[0].length),
+    source.indexOf('      - name: Build private production runtime bundle specification\n'),
+    'The exact four-block stage immediately follows checkpoint disposition');
+  return block;
+}
+export function inverseEarlyCompletedRuntimeStage(source, role) {
+  source = inverseOrdinaryCompletedStageWorkflowWiring(source, role);
+  if (role !== 'build' || sha(source) !== earlyStageAfterSha) return source;
+  const block = assertEarlyCompletedRuntimeStageOrder(source);
+  const without = source.replace(block, '');
+  assert.equal(without.split(earlyStageOldNext).length, 2, 'One original stage destination');
+  const previous = without.replace(earlyStageOldNext, () => block + earlyStageOldNext);
+  assert.equal(sha(previous), earlyStageBeforeSha,
+    'The whole genuine c72 workflow survives only the four-block relocation inverse');
+  return previous;
+}
 // Test-only release584 UA layer. The complete actual workflow is checked
 // before replacing only its five version strings; no runtime guard changes.
 export function inverseRelease584WorkflowUserAgents(source, role) {
+  source = inverseOrdinaryCompletedStageWorkflowWiring(source, role);
+  source = inverseEarlyCompletedRuntimeStage(source, role);
   if (role !== 'build' || sha(source) !== 'f0254a092c0baa188370c207b218e15ad7c9e616138d15234e6f323f101178c6') return source;
   assert.equal(source.split('RavRadar/4.0.584').length, 6, 'Exactly five reviewed584 User-Agent fields');
   const previous = source.replaceAll('RavRadar/4.0.584', 'RavRadar/4.0.581');
@@ -108,6 +184,8 @@ export function inversePairedPrivateRuntimePublication(source, role) {
   return source;
 }
 export function inverseCompletedRuntimeWorkflow(source, role) {
+  source = inverseOrdinaryCompletedStageWorkflowWiring(source, role);
+  source = inverseEarlyCompletedRuntimeStage(source, role);
   source = inversePairedPrivateRuntimePublication(source, role);
   source = inverseOrdinaryFullHistoryCheckout(source, role);
   // Exact release581 UA-only inverse; all historical guards below remain intact.

@@ -1,3 +1,14 @@
+## 19. oktober — 4.0.584: færdig beregning skal overleve en sen leveringsfejl
+
+- [x] Genopretning `39291575502/1`, Pages og særskilt offentlig kontrol gennemført omkring kl. 20.00 dansk tid. Gemte input blev genbrugt; dette er ikke en frisk almindelig vejrgeneration.
+- [ ] Almindelig `39299413035/1`: ved dette checkpoint i beregning; ny B/S, deploy, offentlig reference og faktisk vedligeholdelse er ikke endnu bevist.
+- [x] SOURCE_PREPARED: fire eksisterende private spec/create/seal/upload-trin er flyttet før de sene artifactkontroller i den lokale kandidat. Der er ingen tidlig central B/S- eller offentlig skrivning.
+- [x] Lokal valgfri `completed_stage_source` er koblet til eksisterende completed-runtime-mode: autentisk original GCM-pakke, faktisk parent-B/S, normal origin-reader, eksakt kilde-/admin-/modelgrundlag, normal restore og afledning af S. Original producentidentitet bevares, og alle normale produktionsgates forbliver påkrævet.
+- [x] Målrettede delprøver og kodelæsning af transport, kildegrænse, lineage og normale pakke-/gemmekald; dette er ikke et samlet genuine-admit-bevis.
+- [ ] Faktisk positiv genuine-admit, den nye ændrings præcise samlede source-CI, sikker installation/aktivering og en gennemført produktionsgenoptagelse med samme færdige beregning.
+
+Ingen ny version, modelbinding, SQL-overgang, scoreformel, kilder, leverandørbudgetter eller geometri. Webhåndbogens eksisterende installationskopi synkroniseres alene i den ene dokumentationsværdi; alle øvrige SQL-bytes bevares og helfilinversen kontrolleres. Manglende/udløbet artifact, ændret parent eller ukendt skrivningsudfald må ikke kaldes genbrug. De tidligere afventninger nedenfor er historik på de konkret leverede 584-punkter; alle fem hovedmål er fortsat åbne.
+
 ## 19. oktober — 4.0.584: PR-kildekontrollens ydre jobloft
 
 - Faktisk PR673: native PostgreSQL bestod på 28:46 og kildevalidering på 30:43; den efterfølgende nationalprøve blev afbrudt omkring det konfigurerede 75-minuttersloft under anden efterfølger, efter 601/673 dele. Tidsforløbet peger stærkt på jobloftet; loggen viser ingen assertionsfejl. Samlet kilde-CI er ikke bestået.
