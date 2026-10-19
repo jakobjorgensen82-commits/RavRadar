@@ -1,3 +1,9 @@
+## 19. oktober — gamle migrationskrav og ny SAME_H0-fase kontrolleres særskilt
+
+Den præcise PR668-kontrol bestod Linux/PostgreSQL, men den samlede kildekontrol fandt to gamle testantagelser: at140000 stadig var sidste migration, og at kode-deploy kun havde den tidligere origin-fase. Testlæserne bevarer nu de gamle kontroludsagn med præcise hele kildeinverser og kræver særskilt den nye004500-migrations55s-grænse samt dens friske originalkontrol, plan, seks dry-runs og præcis én apply. Produktworkflow, modelbindinger, gamle62 SQL-filer og P0 ændres ikke.
+
+Den normale lokale workflowprøves33 beståede tilfælde genbruges. Dens ene værtsfejl består særskilt med det eksisterende Bash-miljøvalg; den udtrykkelige Linux-shellprøve kræver stadig CI. Den kritiske kildekontrol består med det eksisterende Python-miljøvalg, inklusive123 browsersyntakser og jordravprøverne. De første værtsafslag bevares; ingen assertion eller OS-adfærd ændres. Ny samlet kildekontrol på præcis opdateret head, sikker installation og offentlig effekt er fortsat åbne. Ingen merge eller produktionsændring under den aktive vejrhentning og dens almindelige efterfølger.
+
 ## 19. oktober — lokal assistentkandidat 4.0.583, ikke installeret
 
 Den nye afgrænsede kildekandidat samler de allerede gennemgåede assistentrettelser på den aktuelle P0-kilde. Grøn prognose skelnes fra ravets farve, og et blandet spørgsmål må ikke få et lokalt svar alene på første led. Hele genkendte begynderråd, praktiske planer og sikkerhedsforbehold bevares; et ukendt selvstændigt led går som helt spørgsmål til den normale fjernvej eller et ærligt ukendt svar. Der tilføjes ingen nye faglige fakta, interne fejlrapporter, private oplysninger eller tjenestenøgler i brugerens viden. Den eksisterende nøglefamilie-/transportrettelse og normal sprog-, kvote-, råspørgsmåls- og privatlivskontrol følger med.

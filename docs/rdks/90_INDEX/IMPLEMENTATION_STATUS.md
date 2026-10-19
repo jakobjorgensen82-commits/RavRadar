@@ -1,3 +1,9 @@
+## 19. oktober — gamle migrationskrav og ny SAME_H0-fase kontrolleres særskilt
+
+Den præcise PR668-kontrol bestod Linux/PostgreSQL, men den samlede kildekontrol fandt to gamle testantagelser: at140000 stadig var sidste migration, og at kode-deploy kun havde den tidligere origin-fase. Testlæserne bevarer nu de gamle kontroludsagn med præcise hele kildeinverser og kræver særskilt den nye004500-migrations55s-grænse samt dens friske originalkontrol, plan, seks dry-runs og præcis én apply. Produktworkflow, modelbindinger, gamle62 SQL-filer og P0 ændres ikke.
+
+Den normale lokale workflowprøves33 beståede tilfælde genbruges. Dens ene værtsfejl består særskilt med det eksisterende Bash-miljøvalg; den udtrykkelige Linux-shellprøve kræver stadig CI. Den kritiske kildekontrol består med det eksisterende Python-miljøvalg, inklusive123 browsersyntakser og jordravprøverne. De første værtsafslag bevares; ingen assertion eller OS-adfærd ændres. Ny samlet kildekontrol på præcis opdateret head, sikker installation og offentlig effekt er fortsat åbne. Ingen merge eller produktionsændring under den aktive vejrhentning og dens almindelige efterfølger.
+
 ## 19. oktober — historisk scanner isoleres i den oprindelige databaseprøve
 
 PR668's næste kildekontrol bestod den tidlige B/S-prøve, de native anskaffelsesprøver og DMI-diagnosen, men stoppede i databaseprøvens historiske fixtureskabelse. Den normale lokale kildeindgang reproducerer årsagen: den gamle213-fixture krævede, at den aktuelle importscanner var byteidentisk med den oprindelige044d-scanner. Testværten bruger nu den ægte, nøjagtigt hashbundne044d-scanner alene til den gamle fixture. Alle27 kildepins, tilstandsbyggere og gamle migrationsfiler bevares; produktets forbedrede scanner ændres ikke.

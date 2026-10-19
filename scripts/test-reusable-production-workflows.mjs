@@ -1,4 +1,6 @@
 import assert from 'node:assert/strict';
+import crypto from 'node:crypto';
+import { assistantSameH0Migration } from './lib/assistant-same-h0-successor-source.mjs';
 import path from 'node:path';
 import {pathToFileURL} from 'node:url';
 import {withFrozenNative0600TestSource} from './run-frozen-native0600-source-targets.mjs';
@@ -732,10 +734,20 @@ assert.doesNotMatch(checkpointTimeoutMigration, /alter (?:role|database)/i);
 // A later binding migration must not silently undo DEC-0249's scoped 55s
 // setting. Checking the old corrective file alone missed the Top20 reset.
 const migrationsUrl = new URL('../supabase/migrations/', import.meta.url);
-const casTimeoutSettings = fs.readdirSync(migrationsUrl).filter(name => name.endsWith('.sql'))
+const actualCasTimeoutSettings = fs.readdirSync(migrationsUrl).filter(name => name.endsWith('.sql'))
   .sort().flatMap(name => [...fs.readFileSync(new URL(name, migrationsUrl), 'utf8').matchAll(
     /alter function public\.ravradar_ravscore_checkpoint_cas\(bigint,timestamptz,jsonb\)\s+set statement_timeout = '([^']+)';/g,
   )].map(match => ({ migration: name, timeout: match[1] })));
+// The current append-only successor is checked separately; every historical
+// scoped-timeout assertion below still receives the exact preceding row list.
+const sameH0Migration = assistantSameH0Migration();
+assert.equal(sameH0Migration.version, '20261019004500');
+const sameH0Sql = fs.readFileSync(new URL(sameH0Migration.filename, migrationsUrl), 'utf8').replaceAll('\r\n', '\n');
+assert.equal(crypto.createHash('sha256').update(sameH0Sql).digest('hex'), '2a08d5054767cfee2e0e881fce7a2b3490a92628ef8397b7de026028faee3ca6');
+assert.deepEqual(actualCasTimeoutSettings.at(-1), { migration: sameH0Migration.filename, timeout: '55s' }, 'The actual newest issued successor retains the scoped55s setting');
+assert.equal(actualCasTimeoutSettings.filter(row => row.migration === sameH0Migration.filename).length, 1, 'Exactly one new scoped CAS setting');
+const casTimeoutSettings = actualCasTimeoutSettings.slice(0, -1);
+assert.deepEqual([...casTimeoutSettings, { migration: sameH0Migration.filename, timeout: '55s' }], actualCasTimeoutSettings, 'Whole historical timeout inventory plus the one new successor');
 assert.equal(casTimeoutSettings.at(-1)?.timeout, '55s',
   'the final migration order must retain the established checkpoint-only 55s timeout');
 assert.equal(casTimeoutSettings.at(-1).migration,

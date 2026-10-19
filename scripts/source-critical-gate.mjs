@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import crypto from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
 import { spawnSync } from 'node:child_process';
@@ -119,7 +120,67 @@ assert.ok(orchestrator.includes('uses: ./.github/workflows/reusable-pages-deploy
 assert.ok(read('.github/workflows/validate-pull-request.yml').includes('run: npm run validate:source'), 'PR-kildegaten er ikke aktiv.');
 assert.doesNotMatch(orchestrator, /\n  push:/, 'Normal vejrhentning må ikke starte automatisk ved merge.');
 
-const codeOnlyWorkflow = read('.github/workflows/deploy-code-only-repair.yml');
+// TEST ONLY: preserve the historical origin-only assertions below through
+// exactly two reviewed source-segment inverses; all other actual bytes remain.
+const actualCodeOnlyWorkflow = read('.github/workflows/deploy-code-only-repair.yml').replaceAll('\r\n', '\n');
+function assistantSameH0OriginOnlyGuardView(source) {
+  const hash = value => crypto.createHash('sha256').update(value).digest('hex');
+  assert.equal(hash(source), "1d1a8efda07b8d86ccbec8fb6f58dcc02847d97244a94a61dfebc1232f61fa20", 'Only the whole reviewed current SAME_H0 workflow enters this test view');
+  const finalBlock = "          if test \"${RAVRADAR_ASSISTANT_SAME_H0_PHASE:-}\" = 'before'; then\n            env -u SUPABASE_DB_PASSWORD node \"$GITHUB_WORKSPACE/scripts/assistant-same-h0-prewrite.mjs\" --slot final\n            supabase migration list --linked | tee \"$RUNNER_TEMP/code-only-assistant-same-h0-final-plan.txt\"\n            supabase db push --linked --dry-run --skip-vault 2>&1 | tee \"$RUNNER_TEMP/code-only-assistant-same-h0-final-dry-run.txt\"\n            node \"$GITHUB_WORKSPACE/scripts/verify-assistant-same-h0-plan.mjs\" \\\n              --phase before --migration-list \"$RUNNER_TEMP/code-only-assistant-same-h0-final-plan.txt\" \\\n              --dry-run \"$RUNNER_TEMP/code-only-assistant-same-h0-final-dry-run.txt\" \\\n              --migrations-directory \"$PWD/supabase/migrations\"\n          fi\n";
+  const newGuard = "          if test \"${RAVRADAR_ESTABLISHED_NATIVE_CURRENT_ORIGIN_PHASE:-}\" != 'installed' && test \"${RAVRADAR_ASSISTANT_SAME_H0_PHASE:-}\" != 'installed'; then\n";
+  const oldGuard = "          if test \"${RAVRADAR_ESTABLISHED_NATIVE_CURRENT_ORIGIN_PHASE:-}\" != 'installed'; then\n";
+  assert.equal(source.split(finalBlock).length, 2, 'Exactly one fresh SAME_H0 final proof and dry run');
+  assert.equal(source.split(newGuard).length, 2, 'Both installed phases jointly guard the sole apply');
+  assert.equal((source.match(/supabase db push --linked/g) || []).length, 7, 'Current workflow has six exact dry runs and one apply');
+  assert.equal((source.match(/supabase db push --linked --dry-run --skip-vault/g) || []).length, 6);
+  assert.equal((source.match(/^\s*supabase db push --linked --skip-vault\s*$/gm) || []).length, 1);
+  const step = name => {
+    const marker = '      - name: ' + name + '\n';
+    assert.equal(source.split(marker).length, 2, 'One actual named delivery step: ' + name);
+    const at = source.indexOf(marker), next = source.indexOf('\n      - ', at + marker.length);
+    return source.slice(at, next < 0 ? undefined : next);
+  };
+  const proof = step('Authenticate original140000 B/S and compare every prepared SAME_H0 byte before new binding');
+  assert(proof.includes("if: env.RAVRADAR_ASSISTANT_SAME_H0_METADATA_ONLY == 'true' && steps.migrated-private-install.outcome == 'success'"));
+  assert(proof.includes('node scripts/assistant-same-h0-prewrite.mjs --slot proof'));
+  const selected = step('Select the sole pending SAME_H0 successor after actual original and no-loss proof');
+  assert(selected.includes("if: env.RAVRADAR_ASSISTANT_SAME_H0_UPGRADE_OPT_IN == 'true'"));
+  assert(selected.includes('node scripts/verify-assistant-same-h0-plan.mjs --select'));
+  assert(finalBlock.includes('env -u SUPABASE_DB_PASSWORD node'));
+  assert(finalBlock.includes('assistant-same-h0-prewrite.mjs" --slot final'));
+  assert(finalBlock.indexOf('--slot final') < finalBlock.indexOf('supabase migration list --linked'));
+  assert(finalBlock.indexOf('supabase migration list --linked') < finalBlock.indexOf('supabase db push --linked --dry-run --skip-vault'));
+  assert(finalBlock.indexOf('supabase db push --linked --dry-run --skip-vault') < finalBlock.indexOf('verify-assistant-same-h0-plan.mjs'));
+  assert(finalBlock.includes('--phase before --migration-list "$RUNNER_TEMP/code-only-assistant-same-h0-final-plan.txt"'));
+  assert(finalBlock.includes('--dry-run "$RUNNER_TEMP/code-only-assistant-same-h0-final-dry-run.txt"'));
+  assert(source.indexOf(proof) < source.indexOf(selected));
+  assert(source.indexOf(selected) < source.indexOf(finalBlock));
+  assert(source.indexOf(finalBlock) < source.indexOf(newGuard));
+  const readback = step('Read back migration and database binding');
+  assert(readback.includes('node scripts/integrated-cutover-readiness.mjs verify-db'));
+  assert(readback.includes('RAVRADAR_ASSISTANT_SAME_H0_UPGRADE_OPT_IN=false node scripts/verify-assistant-same-h0-plan.mjs'));
+  assert(readback.includes('--phase installed --migration-list "$RUNNER_TEMP/code-only-migrations-applied.txt"'));
+  assert(readback.includes('echo "RAVRADAR_ASSISTANT_SAME_H0_PHASE=installed"'));
+  const edges = step('Deploy exact rebound trip Edges without Worker or D1 replay');
+  assert(edges.includes('test "$RAVRADAR_ASSISTANT_SAME_H0_PHASE" = "installed"'));
+  assert(edges.includes('test "$RAVRADAR_ASSISTANT_SAME_H0_UPGRADE_OPT_IN" = "false"'));
+  assert(source.indexOf(newGuard) < source.indexOf(readback));
+  assert(source.indexOf(readback) < source.indexOf(edges));
+  const historicalView = source.replace(finalBlock, '').replace(newGuard, oldGuard);
+  assert.equal(hash(historicalView), "2323179de0eac316d7f71ef8f7c239d7e5a601115b9ecb999a25fd2c789d7364", 'Whole exact origin-only guard view, not a loose count normalization');
+  assert.equal(historicalView.replace("          if test \"${RAVRADAR_ESTABLISHED_NATIVE_CURRENT_ORIGIN_PHASE:-}\" = 'before'; then\n", finalBlock + "          if test \"${RAVRADAR_ESTABLISHED_NATIVE_CURRENT_ORIGIN_PHASE:-}\" = 'before'; then\n").replace(oldGuard, newGuard), source, 'Whole two-segment forward inverse');
+  return historicalView;
+}
+const codeOnlyWorkflow = assistantSameH0OriginOnlyGuardView(actualCodeOnlyWorkflow);
+for (const changed of [
+  actualCodeOnlyWorkflow.replace('assistant-same-h0-prewrite.mjs" --slot final', 'assistant-same-h0-prewrite.mjs" --slot proof'),
+  actualCodeOnlyWorkflow.replace('RAVRADAR_ASSISTANT_SAME_H0_UPGRADE_OPT_IN=false node', 'RAVRADAR_ASSISTANT_SAME_H0_UPGRADE_OPT_IN=true node'),
+  actualCodeOnlyWorkflow.replace("          if test \"${RAVRADAR_ESTABLISHED_NATIVE_CURRENT_ORIGIN_PHASE:-}\" != 'installed' && test \"${RAVRADAR_ASSISTANT_SAME_H0_PHASE:-}\" != 'installed'; then\n", "          if test \"${RAVRADAR_ESTABLISHED_NATIVE_CURRENT_ORIGIN_PHASE:-}\" != 'installed'; then\n"),
+  actualCodeOnlyWorkflow + '\n# UNREVIEWED DELIVERY CHANGE\n',
+]) {
+  assert.notEqual(changed, actualCodeOnlyWorkflow);
+  assert.throws(() => assistantSameH0OriginOnlyGuardView(changed));
+}
 const codeOnlyTrigger = codeOnlyWorkflow.slice(
   codeOnlyWorkflow.indexOf('\non:'),
   codeOnlyWorkflow.indexOf('\npermissions:'),
