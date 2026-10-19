@@ -192,7 +192,8 @@ export async function admitOrdinaryCompletedStage(env = process.env) {
     await normalParentCheckpoint(baseReceipt, own.work);
     const restored = path.join(own.work, 'restored');
     await restorePrivateProductionRuntimeBundle({ privateRoot: own.work, bundlePath: bundle,
-      outputPath: restored, repositoryRoot: p.root, expected, targetReferenceAt: request.target,
+      outputPath: restored, repositoryRoot: p.root, expected,
+      targetReferenceAt: new Date(request.target).toISOString(),
       minimumReferenceAt: expected.minimumReferenceAt, minimumGeneratedAt: expected.minimumGeneratedAt });
     await installRestoredPrivateRuntime({ restoredRoot: restored, repositoryRoot: p.root });
     // The ordinary create-spec selects this same canonical bulk value. Do not

@@ -8,7 +8,7 @@ Genoptagelse må kun bruge den nøjagtige originale pakke, når dens beregningsr
 
 En genbrugt beregning bliver ikke automatisk til friskere vejr. Dens oprindelige tidspunkt og prognosens faktiske gyldighed skal bevares. Genopretningen blev leveret den 19. oktober omkring kl. 20.00 dansk tid med allerede gemte vejrinput. Den efterfølgende almindelige vejrkørsel er ved dette statuspunkt i beregning, og en ny offentlig generation er ikke endnu bevist.
 
-Status for selve genoptagelsesrettelsen: lokalt forberedt med målrettede delprøver, ikke endnu samlet godkendt eller taget i drift. En virkelig samlet genoptagelse, den præcise kildekontrol og offentlig effekt mangler. Rettelsen ændrer ikke scoremodel, version, vejrleverandører, budgetter eller kystpunkter. Ældre daterede afventninger om 584-genopretningen nedenfor er historik på de faktisk leverede punkter.
+Status for selve genoptagelsesrettelsen: En samlet lokal prøve er bestået med rigtigt opbyggede testpakker for 673 kystdele, begge beregningstilstande, kontrol af oprindelsen, kryptering, gendannelse og gemt tilstand. To direkte fejltilfælde blev korrekt afvist. Prøven omfatter ét beregningstidspunkt med en normal femdøgnscache, ikke en fuld national prognose eller kapacitetsmåling. Rettelsen er stadig lokalt forberedt, ikke taget i drift; den præcise Linux-kildekontrol, installation og offentlig effekt mangler. Scoremodel, version, vejrleverandører, budgetter og kystpunkter ændres ikke. Ældre daterede afventninger om 584-genopretningen nedenfor er historik på de faktisk leverede punkter.
 
 ## 89.256 Når historikken begynder på ny
 

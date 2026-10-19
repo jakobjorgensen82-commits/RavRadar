@@ -4,8 +4,9 @@
 - [ ] Almindelig `39299413035/1`: ved dette checkpoint i beregning; ny B/S, deploy, offentlig reference og faktisk vedligeholdelse er ikke endnu bevist.
 - [x] SOURCE_PREPARED: fire eksisterende private spec/create/seal/upload-trin er flyttet før de sene artifactkontroller i den lokale kandidat. Der er ingen tidlig central B/S- eller offentlig skrivning.
 - [x] Lokal valgfri `completed_stage_source` er koblet til eksisterende completed-runtime-mode: autentisk original GCM-pakke, faktisk parent-B/S, normal origin-reader, eksakt kilde-/admin-/modelgrundlag, normal restore og afledning af S. Original producentidentitet bevares, og alle normale produktionsgates forbliver påkrævet.
-- [x] Målrettede delprøver og kodelæsning af transport, kildegrænse, lineage og normale pakke-/gemmekald; dette er ikke et samlet genuine-admit-bevis.
-- [ ] Faktisk positiv genuine-admit, den nye ændrings præcise samlede source-CI, sikker installation/aktivering og en gennemført produktionsgenoptagelse med samme færdige beregning.
+- [x] Målrettede delprøver og kodelæsning af transport, kildegrænse, lineage og normale pakke-/gemmekald.
+- [x] Samlet lokal genuine-admit på `cd506034d8f4c3aa787b822a860f3a5b5e06a918`: ægte syntetisk parent/child for 673 dele, I+G, normal origin-reader, GCM, restore/S og to direkte afslag. Ét H0 med normal 121-timers cache er ikke fuld national prognose eller kapacitetsbevis.
+- [ ] Præcis samlet Linux-source-CI, sikker installation/aktivering og gennemført produktionsgenoptagelse. Lokal setup fejlede på manglende eccodeslib-distribution til Windows-runtime; ingen vejrfejl eller ændring af miljøpins følger heraf.
 
 Ingen ny version, modelbinding, SQL-overgang, scoreformel, kilder, leverandørbudgetter eller geometri. Webhåndbogens eksisterende installationskopi synkroniseres alene i den ene dokumentationsværdi; alle øvrige SQL-bytes bevares og helfilinversen kontrolleres. Manglende/udløbet artifact, ændret parent eller ukendt skrivningsudfald må ikke kaldes genbrug. De tidligere afventninger nedenfor er historik på de konkret leverede 584-punkter; alle fem hovedmål er fortsat åbne.
 
