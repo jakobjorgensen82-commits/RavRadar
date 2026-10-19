@@ -142,10 +142,156 @@ def bounded_first_test_exception(value, test_failure, files):
     return value
 
 
+# Safe fixed observations only. None/UNKNOWN never becomes admission.
+_COHORT_STAGES = frozenset(('UNKNOWN', 'PLATFORM', 'PARENT_GUARD', 'API_FD_GUARD',
+    'PARENT_PIDFD', 'PARENT_LIVE', 'SIGNAL_SETUP', 'WORKER_SPAWN', 'WORKER_WAIT',
+    'OWNED_GROUP_SIGNAL', 'GROUP_ABSENCE', 'SIGNAL_RESTORE', 'PARENT_FD_CLOSE',
+    'API_FD_CLOSE', 'CLOSURE_WRITE'))
+_COHORT_REASONS = frozenset(('UNKNOWN', 'OS_ERROR', 'DMI_RAW_SAVE_PLATFORM_REFUSED',
+    'DMI_RAW_SAVE_PARENT_UNPROVED', 'DMI_RAW_SAVE_PARENT_LOST', 'DMI_RAW_SAVE_GROUP_UNPROVED',
+    'DMI_RAW_SAVE_INTERRUPTED', 'DMI_RAW_SAVE_PARENT_FD_NOT_CLOSED', 'DMI_RAW_SAVE_PIPE_NOT_CLOSED'))
+_COHORT_ERRNOS = frozenset(('NONE', 'UNKNOWN', 'ENOENT', 'ESRCH', 'EINTR', 'EIO',
+    'EBADF', 'ECHILD', 'ENOMEM', 'EACCES', 'EINVAL', 'EMFILE', 'EPIPE'))
+_COHORT_SIGNALS = frozenset(('NONE', 'UNKNOWN', 'SIGTERM', 'SIGKILL', 'SIGINT',
+    'SIGPIPE', 'SIGABRT', 'SIGSEGV', 'SIGBUS', 'SIGHUP', 'SIGQUIT'))
+
+
+CURRENT_COHORT_DESCRIPTOR = "scripts/fixtures/source19-terminal-proof-inputs-v2/current-cohort-v1/overlay.json"
+CURRENT_COHORT_DESCRIPTOR_SHA256 = "3382d64eed90430af3e817f4b53ead3c7ef75aa6d4cd540766e3facee9ca933c"
+CURRENT_PROOF_PROFILE = json.loads(r'''{"kind":"CURRENT_INSTRUMENTED_SOURCE_PROOF_HOST","descriptorSha256":"3382d64eed90430af3e817f4b53ead3c7ef75aa6d4cd540766e3facee9ca933c","baselineProductIdentity":"133fc019849df44d4f1dcd81d5405e8b52c109cf2b9f0ca671391564072462e1","currentProductIdentity":"df3aa92ec2fdb5dcbe4959a26c5fa2ae3f7cba9d102feaa81a7fe52268824baf","products":[{"path":"scripts/run-owned-dmi-grib-save.py","beforeSha256":"6b30481f00a6b316bf3fd3c22d66b06dc636956361ecf7ad4dfd8173685e0d3e","afterSha256":"093712ab8b16e9e42201a267f1ad70d743b29e58432d5c84bf11735ddbd02af2"},{"path":".github/actions/save-owned-dmi-grib/index.cjs","beforeSha256":"dd8bd752a5cef8c927db2c00e642ab240638e3ab10c56d9f57c9546ab4e02926","afterSha256":"fa036495bd223620653c7645d3bdc22ae103cdb58743b99fd11e53122ef0ad93"}],"sourceAdmission":false,"productionActivation":false,"purpose":"DIAGNOSTIC+EXACT_CIPHER_CALLER_FIX"}''')
+
+# Explicit TEST-ONLY current diagnostic overlay, never SOURCE admission.
+def source_current_cohort_read(root, relative, maximum=512 * 1024):
+    part = Path(relative)
+    if part.is_absolute() or '..' in part.parts or part.as_posix() != relative:
+        raise ValueError('SOURCE_CURRENT_COHORT_PATH')
+    file = root / part
+    before = file.lstat()
+    if not stat.S_ISREG(before.st_mode) or before.st_nlink != 1 or before.st_size > maximum:
+        raise ValueError('SOURCE_CURRENT_COHORT_REGULAR')
+    with file.open('rb') as stream:
+        opened = os.fstat(stream.fileno()); body = stream.read(maximum + 1); ended = os.fstat(stream.fileno())
+    key = lambda row: (row.st_dev, row.st_ino, row.st_mode, row.st_nlink, row.st_size, row.st_mtime_ns, row.st_ctime_ns)
+    if key(before) != key(opened) or key(opened) != key(ended) or key(ended) != key(file.lstat()) or len(body) != before.st_size:
+        raise ValueError('SOURCE_CURRENT_COHORT_CHANGED')
+    return body
+
+
+def source_current_cohort_load(root, expected_sha, baseline_files):
+    body = source_current_cohort_read(root, CURRENT_COHORT_DESCRIPTOR)
+    if hashlib.sha256(body).hexdigest() != expected_sha:
+        raise ValueError('SOURCE_CURRENT_COHORT_DESCRIPTOR')
+    data = json.loads(body)
+    if (data['kind'] != 'CURRENT_INSTRUMENTED_SOURCE_PROOF_HOST' or data['schemaVersion'] != 1
+            or data['sourceAdmission'] is not False or data['productionActivation'] is not False
+            or len(data['baselineProductPins']) != 27 or len(data['currentProductPins']) != 27
+            or {row['path'] for row in data['products']} != {
+                '.github/actions/save-owned-dmi-grib/index.cjs', 'scripts/run-owned-dmi-grib-save.py'}):
+        raise ValueError('SOURCE_CURRENT_COHORT_SCOPE')
+    digest = lambda value: hashlib.sha256(value).hexdigest()
+    for name in ('baseline', 'current'):
+        if digest(json.dumps(data[name + 'ProductPins'], separators=(',', ':')).encode()) != data[name + 'ProductIdentity']:
+            raise ValueError('SOURCE_CURRENT_COHORT_PRODUCT_IDENTITY')
+    for relative, pin in data['baselineProductPins'].items():
+        if digest(baseline_files[relative]) != pin:
+            raise ValueError('SOURCE_CURRENT_COHORT_BASELINE')
+    replacements = []
+    actual_pins = dict(data['baselineProductPins'])
+    for row in data['products']:
+        after = source_current_cohort_read(root, row['bankPath'])
+        if len(after) != row['afterBytes'] or digest(after) != row['afterSha256'] or digest(baseline_files[row['path']]) != row['beforeSha256']:
+            raise ValueError('SOURCE_CURRENT_COHORT_LEAF')
+        inverse = after.decode('utf-8')
+        for hunk in reversed(row['inverseHunks']):
+            if inverse.count(hunk['after']) != hunk['count']:
+                raise ValueError('SOURCE_CURRENT_COHORT_INVERSE')
+            inverse = inverse.replace(hunk['after'], hunk['before'])
+        if inverse.encode() != baseline_files[row['path']]:
+            raise ValueError('SOURCE_CURRENT_COHORT_INVERSE')
+        replacements.append((row, after))
+        if row['path'] in actual_pins:
+            actual_pins[row['path']] = row['afterSha256']
+    if actual_pins != data['currentProductPins']:
+        raise ValueError('SOURCE_CURRENT_COHORT_PRODUCT_IDENTITY')
+    return data, replacements
+
+
+def current_cohort_observation_files(files, replacements):
+    # Only metadata admission uses the verified current source bytes. Historical
+    # materialization/V16 always keeps its authentic original product inputs.
+    if len(replacements) != 2 or {row['path'] for row, _ in replacements} != {
+            '.github/actions/save-owned-dmi-grib/index.cjs', 'scripts/run-owned-dmi-grib-save.py'}:
+        raise ValueError('SOURCE_CURRENT_COHORT_SCOPE')
+    observation_files = dict(files)
+    for row, after in replacements:
+        if (len(after) != row['afterBytes'] or digest(after) != row['afterSha256']
+                or digest(files[row['path']]) != row['beforeSha256']):
+            raise ValueError('SOURCE_CURRENT_COHORT_LEAF')
+        observation_files[row['path']] = after
+    return observation_files
+
+
+def current_cohort_inputs(data, files):
+    overlay, replacements = source_current_cohort_load(ROOT, CURRENT_COHORT_DESCRIPTOR_SHA256, files)
+    if data['productIdentity'] != overlay['baselineProductIdentity']:
+        raise ValueError('SOURCE_CURRENT_COHORT_BASELINE')
+    driver = source_current_cohort_read(ROOT, 'scripts/fixtures/source19-terminal-proof-inputs-v2/current-cohort-v1/driver.source.txt')
+    inverse_raw = source_current_cohort_read(ROOT, 'scripts/fixtures/source19-terminal-proof-inputs-v2/current-cohort-v1/driver-inverse.json')
+    if digest(driver) != '83a7c6bbb311cd2113c25d74deddb24663c5857d713a3ef12e4675ea3a31d0c4' or digest(inverse_raw) != '52970080ebe17df755ff6eb3bb28c09f434379cf84738c66e9b6fa79858075a7':
+        raise ValueError('SOURCE_CURRENT_COHORT_DRIVER')
+    inverse = driver.decode('utf-8')
+    for hunk in reversed(json.loads(inverse_raw)):
+        if inverse.count(hunk['after']) != hunk['count']:
+            raise ValueError('SOURCE_CURRENT_COHORT_INVERSE')
+        inverse = inverse.replace(hunk['after'], hunk['before'])
+    if inverse.encode() != files[data['driver']]:
+        raise ValueError('SOURCE_CURRENT_COHORT_INVERSE')
+    current = dict(files); current[data['driver']] = driver
+    for relative in (CURRENT_COHORT_DESCRIPTOR, 'scripts/fixtures/source19-terminal-proof-inputs-v2/current-cohort-v1/driver.source.txt', 'scripts/fixtures/source19-terminal-proof-inputs-v2/current-cohort-v1/driver-inverse.json', *[row['bankPath'] for row in overlay['products']]):
+        current[relative] = source_current_cohort_read(ROOT, relative)
+    return current, current_cohort_observation_files(current, replacements)
+
+
+def bounded_raw_cohort_observation(value):
+    if value is None:
+        return
+    if (type(value) is not dict or set(value) != {'exitCode', 'signal', 'stdoutClass', 'stdoutBytes', 'stage', 'reason', 'errno'}
+            or value['exitCode'] is not None and (type(value['exitCode']) is not int or not 0 <= value['exitCode'] <= 255)
+            or value['signal'] not in _COHORT_SIGNALS or value['stdoutClass'] not in ('EMPTY', 'INVALID_JSON', 'NON_OBJECT', 'OBJECT')
+            or type(value['stdoutBytes']) is not int or not 0 <= value['stdoutBytes'] <= 4096
+            or value['stage'] not in _COHORT_STAGES or value['reason'] not in _COHORT_REASONS or value['errno'] not in _COHORT_ERRNOS):
+        raise ValueError('SOURCE_BANK_ACTION_COHORT_OBSERVATION')
+
+
+def bounded_disposition_observation(value):
+    if value is None:
+        return
+    if (type(value) is not dict or set(value) != {'status', 'physicalStopProven', 'localCipherSealed', 'cloudFinalized', 'clock', 'actionClosedNs'}
+            or value['status'] not in ('UNKNOWN', 'FAILED', 'STOP_UNPROVEN', 'DURABILITY_UNCONFIRMED')
+            or any(value[key] is not None and type(value[key]) is not bool for key in ('physicalStopProven', 'localCipherSealed', 'cloudFinalized'))
+            or type(value['actionClosedNs']) is not str or re.fullmatch(r'[1-9][0-9]{0,29}', value['actionClosedNs']) is None):
+        raise ValueError('SOURCE_BANK_DISPOSITION_OBSERVATION')
+    clock = value['clock']
+    if clock is None:
+        return
+    if (type(clock) is not dict or set(clock) != {'kind', 'caughtAt', 'cutoff', 'child'}
+            or clock['kind'] not in ('PARENT_FIRST_FAILURE', 'CHILD_FIRST_FAILURE')
+            or any(type(clock[key]) not in (int, float) or not 0 <= clock[key] <= 1e15 for key in ('caughtAt', 'cutoff'))):
+        raise ValueError('SOURCE_BANK_DISPOSITION_CLOCK')
+    child = clock['child']
+    if clock['kind'] == 'PARENT_FIRST_FAILURE':
+        if child is not None:
+            raise ValueError('SOURCE_BANK_DISPOSITION_CLOCK')
+    elif (type(child) is not dict or set(child) != {'reason', 'caughtNs', 'cutoffNs'}
+            or type(child['reason']) is not int or child['reason'] != 1
+            or any(type(child[key]) is not str or re.fullmatch(r'[1-9][0-9]{0,29}', child[key]) is None for key in ('caughtNs', 'cutoffNs'))):
+        raise ValueError('SOURCE_BANK_DISPOSITION_CLOCK')
+
+
 def bounded_observation(value, files):
     keys = {'kind', 'status', 'actualStalls', 'actualFinalizerCount', 'physicalClosureBeforeCleanup',
         'outerDrainClosed', 'originalClock', 'localOfficialSdk', 'originalBObjectsPreserved',
-        'sourceAdmission', 'productionActivation', 'remoteCloudDurability', 'actionObservation', 'firstTestFailure', 'firstTestException'}
+        'sourceAdmission', 'productionActivation', 'remoteCloudDurability', 'actionObservation', 'firstTestFailure', 'firstTestException', 'dispositionObservation', 'currentInstrumentedProofHost'}
     if set(value) != keys or value['status'] not in ('PASS', 'FAIL'):
         raise ValueError('SOURCE_BANK_NATIVE_OBSERVATION_SHAPE')
     if (type(value['actualStalls']) is not int or not 0 <= value['actualStalls'] <= 5
@@ -163,6 +309,9 @@ def bounded_observation(value, files):
             or test_failure['code'] not in TERMINAL_OBSERVER_CODES):
         raise ValueError('SOURCE_BANK_TEST_FAILURE_SHAPE')
     bounded_first_test_exception(value['firstTestException'], test_failure, files)
+    bounded_disposition_observation(value['dispositionObservation'])
+    if value['currentInstrumentedProofHost'] not in (None, CURRENT_PROOF_PROFILE):
+        raise ValueError('SOURCE_BANK_CURRENT_PROOF_PROFILE')
     if test_failure is not None and value['status'] != 'FAIL':
         raise ValueError('SOURCE_BANK_TEST_EXCEPTION_SUCCESS_REFUSED')
     clock = value['originalClock']
@@ -181,10 +330,12 @@ def bounded_observation(value, files):
     return value
 
 
+ACTION_CURRENT_COHORT_CATALOG = {**ACTION_OBSERVER_CATALOG, 'sourcePins': {**ACTION_OBSERVER_CATALOG['sourcePins'], 'action': {'path': '.github/actions/save-owned-dmi-grib/index.cjs', 'sha256': 'fa036495bd223620653c7645d3bdc22ae103cdb58743b99fd11e53122ef0ad93'}, 'cohort': {'path': 'scripts/run-owned-dmi-grib-save.py', 'sha256': '093712ab8b16e9e42201a267f1ad70d743b29e58432d5c84bf11735ddbd02af2'}}}
+
 def bounded_action_observation(value, files):
     if value is None:
         return None
-    keys = {'kind', 'phase', 'actionExitCode', 'sourceDiagnostic', 'rawSaveDiagnostic', 'firstSafeCode',
+    keys = {'kind', 'phase', 'actionExitCode', 'sourceDiagnostic', 'rawSaveDiagnostic', 'firstSafeCode', 'rawCohortObservation',
         'projectedFrames', 'unmappedFrames', 'handshakes', 'beforeHStages', 'unknownHandshakes', 'logs',
         'observerFailure', 'rawLogsRetainedPrivatelyLocally', 'rawLogsUploaded'}
     if (not isinstance(value, dict) or set(value) != keys or value['kind'] != 'SOURCE_NATIVE_ORIGINAL_ACTION_OBSERVATION'
@@ -192,7 +343,8 @@ def bounded_action_observation(value, files):
             or value['rawLogsUploaded'] is not False or value['actionExitCode'] is not None
             and (type(value['actionExitCode']) is not int or not -255 <= value['actionExitCode'] <= 255)):
         raise ValueError('SOURCE_BANK_ACTION_OBSERVATION_SHAPE')
-    catalog = ACTION_OBSERVER_CATALOG
+    bounded_raw_cohort_observation(value['rawCohortObservation'])
+    catalog = ACTION_CURRENT_COHORT_CATALOG
     for field, allowed in (('handshakes', catalog['handshakes']), ('beforeHStages', catalog['beforeHStages'])):
         if not isinstance(value[field], list) or len(value[field]) > 12 or any(type(item) is not str or item not in allowed for item in value[field]):
             raise ValueError('SOURCE_BANK_ACTION_HANDSHAKE_SHAPE')
@@ -245,6 +397,8 @@ def main():
         'productionActivation': False, 'remoteCloudDurability': 'NOT_TESTED_LOCAL_SDK_PROTOCOL_ONLY'}
     try:
         data, files = inputs()
+        files, observation_files = current_cohort_inputs(data, files)
+        report['currentInstrumentedInputProfile'] = CURRENT_PROOF_PROFILE
         report['inputHashes'] = [{'path': row['path'], 'bytes': row['bytes'], 'sha256': row['sha256']} for row in data['files']]
         report['productIdentity'] = data['productIdentity']
         if sys.platform != 'linux' or sys.version_info[:2] != (3, 12):
@@ -361,8 +515,8 @@ def main():
                 observations.append(value)
         if len(observations) != 1:
             raise ValueError('SOURCE_BANK_FIXED_NATIVE_OBSERVATION_MISSING')
-        native_observation = bounded_observation(observations[0], files)
-        action_observation = bounded_action_observation(native_observation['actionObservation'], files)
+        native_observation = bounded_observation(observations[0], observation_files)
+        action_observation = bounded_action_observation(native_observation['actionObservation'], observation_files)
         report['observation'] = native_observation
         report['nativeFailureCode'] = action_observation['firstSafeCode'] if action_observation is not None else 'UNKNOWN'
         if child.returncode != 0 or observations[0].get('status') != 'PASS':

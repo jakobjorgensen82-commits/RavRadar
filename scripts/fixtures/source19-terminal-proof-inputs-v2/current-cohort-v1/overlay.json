@@ -1,0 +1,244 @@
+{
+  "schemaVersion": 1,
+  "kind": "CURRENT_INSTRUMENTED_SOURCE_PROOF_HOST",
+  "baselineProductIdentity": "133fc019849df44d4f1dcd81d5405e8b52c109cf2b9f0ca671391564072462e1",
+  "currentProductIdentity": "df3aa92ec2fdb5dcbe4959a26c5fa2ae3f7cba9d102feaa81a7fe52268824baf",
+  "baselineProductPins": {
+    ".github/actions/save-owned-dmi-grib/index.cjs": "dd8bd752a5cef8c927db2c00e642ab240638e3ab10c56d9f57c9546ab4e02926",
+    ".github/actions/save-owned-dmi-grib/package-lock.json": "920ad50fc3b7084879c1257d5b11e0e3ce52367b42f05871ffc68f8a66f66c47",
+    ".github/actions/save-owned-dmi-grib/package.json": "27ec4c37add8a4fb54de05e6ceb797b42c95ff15dd84526b4aa326f64c073d99",
+    "scripts/check-dmi-bulk-operational-ready.py": "0b8387364f936bf686f22806d3cf2fb88d61972cde7dcf73de265fceb95d68c4",
+    "scripts/lib/copernicus_component_process.py": "12ccf69c936c59dd11165fb4f473572b46570ac47ca7d4f616eae624ec21d76b",
+    "scripts/lib/dmi-forecast-file.mjs": "467c1f8ffd6a9a8440deda6d201c0d9f9389e61dfb8441276748256c389af11f",
+    "scripts/lib/private-weather-component-pack.mjs": "f8c7c2e0e7c6c24fd5c2e59b868a8803d97eee3fabb3666ee4bc6d3d81e0717a",
+    "scripts/lib/source-union-birth-journal.mjs": "896d5b52129580f3239c7be328a5a23404959567f380b221b15380e0acfcb423",
+    "scripts/lib/source_union_birth_journal.py": "fe415bd438a7c89b63bb32f763121a703cb9680429e5684480cc873a3036ab44",
+    "scripts/lib/verified-dmi-progress-inputs.mjs": "0ea08f33003a5a19dbea0cd7c208f441368fe437fa5c9c00d87451248beeb0e6",
+    "scripts/lib/verified-protected-progress-components.mjs": "e32a3a6038502fe0a384ccdde71c385f476dde283c65c110e2f8d51afd1f9c17",
+    "scripts/materialize-dmi-bulk-storage.py": "445eec99139717b5021b38a8d6d26de9520b8c74e173d45dc8d00605dcef1e82",
+    "scripts/merge-verified-current-donor-banks.py": "f5f5dfd6ddb0c5d41ecb33652c5047b8825906a61de8c1f836ae564e31ae4671",
+    "scripts/migrate-post-cutover-private-runtime.mjs": "1f9daed66722801bcd6b4e710fd0c2a70fc82e73da03443ab8012afbb5effb53",
+    "scripts/prepare-historical-wave-predecessor-restore.mjs": "ada6fd0dcdd0ceff359e17e21b157b1dfec736def4c29ac95cb0f1c7484b8382",
+    "scripts/private-production-runtime-workflow.mjs": "7c31eb67866a3f12c5d5954267f44d4add1708dd56e3b643ea63c2c085b85703",
+    "scripts/protected-private-production-runtime.mjs": "84ba28e3da2da1af80e2e1b1e22040ecd9163c9722fcf13b89e911e8974f43fe",
+    "scripts/run-copernicus-weather-components.py": "ad775661c9b41a801bb73d792649e72436b43efa7cfae86e8af141989547460c",
+    "scripts/run-dmi-bulk-supervised.py": "52283dcc051b928e880d8fba4aa6c9f654829fbd964aba3b386ad9347297b2e9",
+    "scripts/source-progress-union-consumer.mjs": "4cc33cc26be4988e5d580e5c6e1a9ba33721ef616a8f78b7af69fe02292942e3",
+    "scripts/test-dmi-supervisor-parent-loss.py": "da53d801c19801ed7539d5561d2eb9b161b44452bc61bb35cc13fc3799e1f9a1",
+    "scripts/test-owned-dmi-grib-save-native.py": "c31e1da21738d94d4fb7ff1faf7da3e71730518d0ea8006db6fc3e1f02982b6f",
+    "scripts/test-protected-private-production-runtime.mjs": "03034a700824d4ce96b8b802cda77776b6095dfb741d3c6cad2da302aa715595",
+    "scripts/test-weather-component-progress-workflow.mjs": "d0793d047155d80a1b9fd2edfb0d2a28e37923c10e3adc647f6958ef2ef80204",
+    "scripts/verified-weather-source-handoff.mjs": "2c62ffa0d1733e1fbc6447ba54948e3f73ca3b6c7d21683d5682cb8de733a7a3",
+    "scripts/weather-component-progress-cache.mjs": "811be585728e73994d1d002f040aafc2d94ae9fe1e1714dca4554bafd5297da3",
+    "scripts/weather-source-gate.mjs": "3dbc78e87636f121c60c25904d97c42b79fb374adedf06ca9cb95dfbee33a3d6"
+  },
+  "currentProductPins": {
+    ".github/actions/save-owned-dmi-grib/index.cjs": "fa036495bd223620653c7645d3bdc22ae103cdb58743b99fd11e53122ef0ad93",
+    ".github/actions/save-owned-dmi-grib/package-lock.json": "920ad50fc3b7084879c1257d5b11e0e3ce52367b42f05871ffc68f8a66f66c47",
+    ".github/actions/save-owned-dmi-grib/package.json": "27ec4c37add8a4fb54de05e6ceb797b42c95ff15dd84526b4aa326f64c073d99",
+    "scripts/check-dmi-bulk-operational-ready.py": "0b8387364f936bf686f22806d3cf2fb88d61972cde7dcf73de265fceb95d68c4",
+    "scripts/lib/copernicus_component_process.py": "12ccf69c936c59dd11165fb4f473572b46570ac47ca7d4f616eae624ec21d76b",
+    "scripts/lib/dmi-forecast-file.mjs": "467c1f8ffd6a9a8440deda6d201c0d9f9389e61dfb8441276748256c389af11f",
+    "scripts/lib/private-weather-component-pack.mjs": "f8c7c2e0e7c6c24fd5c2e59b868a8803d97eee3fabb3666ee4bc6d3d81e0717a",
+    "scripts/lib/source-union-birth-journal.mjs": "896d5b52129580f3239c7be328a5a23404959567f380b221b15380e0acfcb423",
+    "scripts/lib/source_union_birth_journal.py": "fe415bd438a7c89b63bb32f763121a703cb9680429e5684480cc873a3036ab44",
+    "scripts/lib/verified-dmi-progress-inputs.mjs": "0ea08f33003a5a19dbea0cd7c208f441368fe437fa5c9c00d87451248beeb0e6",
+    "scripts/lib/verified-protected-progress-components.mjs": "e32a3a6038502fe0a384ccdde71c385f476dde283c65c110e2f8d51afd1f9c17",
+    "scripts/materialize-dmi-bulk-storage.py": "445eec99139717b5021b38a8d6d26de9520b8c74e173d45dc8d00605dcef1e82",
+    "scripts/merge-verified-current-donor-banks.py": "f5f5dfd6ddb0c5d41ecb33652c5047b8825906a61de8c1f836ae564e31ae4671",
+    "scripts/migrate-post-cutover-private-runtime.mjs": "1f9daed66722801bcd6b4e710fd0c2a70fc82e73da03443ab8012afbb5effb53",
+    "scripts/prepare-historical-wave-predecessor-restore.mjs": "ada6fd0dcdd0ceff359e17e21b157b1dfec736def4c29ac95cb0f1c7484b8382",
+    "scripts/private-production-runtime-workflow.mjs": "7c31eb67866a3f12c5d5954267f44d4add1708dd56e3b643ea63c2c085b85703",
+    "scripts/protected-private-production-runtime.mjs": "84ba28e3da2da1af80e2e1b1e22040ecd9163c9722fcf13b89e911e8974f43fe",
+    "scripts/run-copernicus-weather-components.py": "ad775661c9b41a801bb73d792649e72436b43efa7cfae86e8af141989547460c",
+    "scripts/run-dmi-bulk-supervised.py": "52283dcc051b928e880d8fba4aa6c9f654829fbd964aba3b386ad9347297b2e9",
+    "scripts/source-progress-union-consumer.mjs": "4cc33cc26be4988e5d580e5c6e1a9ba33721ef616a8f78b7af69fe02292942e3",
+    "scripts/test-dmi-supervisor-parent-loss.py": "da53d801c19801ed7539d5561d2eb9b161b44452bc61bb35cc13fc3799e1f9a1",
+    "scripts/test-owned-dmi-grib-save-native.py": "c31e1da21738d94d4fb7ff1faf7da3e71730518d0ea8006db6fc3e1f02982b6f",
+    "scripts/test-protected-private-production-runtime.mjs": "03034a700824d4ce96b8b802cda77776b6095dfb741d3c6cad2da302aa715595",
+    "scripts/test-weather-component-progress-workflow.mjs": "d0793d047155d80a1b9fd2edfb0d2a28e37923c10e3adc647f6958ef2ef80204",
+    "scripts/verified-weather-source-handoff.mjs": "2c62ffa0d1733e1fbc6447ba54948e3f73ca3b6c7d21683d5682cb8de733a7a3",
+    "scripts/weather-component-progress-cache.mjs": "811be585728e73994d1d002f040aafc2d94ae9fe1e1714dca4554bafd5297da3",
+    "scripts/weather-source-gate.mjs": "3dbc78e87636f121c60c25904d97c42b79fb374adedf06ca9cb95dfbee33a3d6"
+  },
+  "products": [
+    {
+      "path": "scripts/run-owned-dmi-grib-save.py",
+      "beforeSha256": "6b30481f00a6b316bf3fd3c22d66b06dc636956361ecf7ad4dfd8173685e0d3e",
+      "afterSha256": "093712ab8b16e9e42201a267f1ad70d743b29e58432d5c84bf11735ddbd02af2",
+      "afterBytes": 10273,
+      "bankPath": "scripts/fixtures/source19-terminal-proof-inputs-v2/current-cohort-v1/cohort.source.txt",
+      "inverseHunks": [
+        {
+          "path": "scripts/run-owned-dmi-grib-save.py",
+          "before": "\ndef main():\n",
+          "after": "\n# Observation only. These fields cannot issue closure, release or SAVE.\n_cohort_stage = 'PLATFORM'\n_cohort_first_diagnostic = None\n_COHORT_STAGES = frozenset(('PLATFORM', 'PARENT_GUARD', 'API_FD_GUARD',\n    'PARENT_PIDFD', 'PARENT_LIVE', 'SIGNAL_SETUP', 'WORKER_SPAWN', 'WORKER_WAIT',\n    'OWNED_GROUP_SIGNAL', 'GROUP_ABSENCE', 'SIGNAL_RESTORE', 'PARENT_FD_CLOSE',\n    'API_FD_CLOSE', 'CLOSURE_WRITE'))\n_COHORT_REASONS = frozenset(('DMI_RAW_SAVE_PLATFORM_REFUSED',\n    'DMI_RAW_SAVE_PARENT_UNPROVED', 'DMI_RAW_SAVE_PARENT_LOST',\n    'DMI_RAW_SAVE_GROUP_UNPROVED', 'DMI_RAW_SAVE_INTERRUPTED',\n    'DMI_RAW_SAVE_PARENT_FD_NOT_CLOSED', 'DMI_RAW_SAVE_PIPE_NOT_CLOSED'))\n_COHORT_ERRNOS = {2: 'ENOENT', 3: 'ESRCH', 4: 'EINTR', 5: 'EIO', 9: 'EBADF',\n    10: 'ECHILD', 12: 'ENOMEM', 13: 'EACCES', 22: 'EINVAL', 24: 'EMFILE', 32: 'EPIPE'}\n\n\ndef _observe_cohort_first_failure(error):\n    global _cohort_first_diagnostic\n    if _cohort_first_diagnostic is not None:\n        return\n    reason, number = 'UNKNOWN', 'NONE'\n    if type(error) is RuntimeError and str(error) in _COHORT_REASONS:\n        reason = str(error)\n    elif isinstance(error, OSError):\n        reason = 'OS_ERROR'\n        number = _COHORT_ERRNOS.get(error.errno, 'UNKNOWN')\n    _cohort_first_diagnostic = (_cohort_stage if _cohort_stage in _COHORT_STAGES\n        else 'UNKNOWN', reason, number)\n\n\ndef _cohort_first_failure_line():\n    stage, reason, number = _cohort_first_diagnostic or ('UNKNOWN', 'UNKNOWN', 'UNKNOWN')\n    return (f'DMI_RAW_SAVE_COHORT_DIAGNOSTIC stage={stage} reason={reason} '\n            f'errno={number}')\n\n\ndef main():\n    global _cohort_stage\n",
+          "count": 1
+        },
+        {
+          "path": "scripts/run-owned-dmi-grib-save.py",
+          "before": "    parent_pid = os.getppid()\n",
+          "after": "    _cohort_stage = 'PARENT_GUARD'\n    parent_pid = os.getppid()\n",
+          "count": 1
+        },
+        {
+          "path": "scripts/run-owned-dmi-grib-save.py",
+          "before": "    os.fstat(3)  # Own inherited private IPC pipe, never a path supplied by callers.\n",
+          "after": "    _cohort_stage = 'API_FD_GUARD'\n    os.fstat(3)  # Own inherited private IPC pipe, never a path supplied by callers.\n",
+          "count": 1
+        },
+        {
+          "path": "scripts/run-owned-dmi-grib-save.py",
+          "before": "    def require_parent_live():\n",
+          "after": "    def require_parent_live():\n        global _cohort_stage\n        _cohort_stage = 'PARENT_LIVE'\n",
+          "count": 1
+        },
+        {
+          "path": "scripts/run-owned-dmi-grib-save.py",
+          "before": "    def signal_owned_group(signum):\n",
+          "after": "    def signal_owned_group(signum):\n        global _cohort_stage\n        _cohort_stage = 'OWNED_GROUP_SIGNAL'\n",
+          "count": 1
+        },
+        {
+          "path": "scripts/run-owned-dmi-grib-save.py",
+          "before": "    def close_group():\n        nonlocal reaped, first_failure\n",
+          "after": "    def close_group():\n        global _cohort_stage\n        nonlocal reaped, first_failure\n",
+          "count": 1
+        },
+        {
+          "path": "scripts/run-owned-dmi-grib-save.py",
+          "before": "                except BaseException as error:\n                    first_failure = error\n",
+          "after": "                except BaseException as error:\n                    _observe_cohort_first_failure(error)\n                    first_failure = error\n",
+          "count": 1
+        },
+        {
+          "path": "scripts/run-owned-dmi-grib-save.py",
+          "before": "            if not reaped:\n                observed = os.waitid",
+          "after": "            if not reaped:\n                _cohort_stage = 'WORKER_WAIT'\n                observed = os.waitid",
+          "count": 1
+        },
+        {
+          "path": "scripts/run-owned-dmi-grib-save.py",
+          "before": "                if observed is not None:\n                    child.wait()\n",
+          "after": "                if observed is not None:\n                    _cohort_stage = 'WORKER_WAIT'\n                    child.wait()\n",
+          "count": 1
+        },
+        {
+          "path": "scripts/run-owned-dmi-grib-save.py",
+          "before": "            if reaped:\n                try:\n                    os.killpg",
+          "after": "            if reaped:\n                try:\n                    _cohort_stage = 'GROUP_ABSENCE'\n                    os.killpg",
+          "count": 1
+        },
+        {
+          "path": "scripts/run-owned-dmi-grib-save.py",
+          "before": "    try:\n        parent_fd = os.pidfd_open",
+          "after": "    try:\n        _cohort_stage = 'PARENT_PIDFD'\n        parent_fd = os.pidfd_open",
+          "count": 1
+        },
+        {
+          "path": "scripts/run-owned-dmi-grib-save.py",
+          "before": "        for signum in (signal.SIGTERM, signal.SIGINT):\n",
+          "after": "        _cohort_stage = 'SIGNAL_SETUP'\n        for signum in (signal.SIGTERM, signal.SIGINT):\n",
+          "count": 1
+        },
+        {
+          "path": "scripts/run-owned-dmi-grib-save.py",
+          "before": "        child = subprocess.Popen([parent_executable, str(ENTRY), fixed_worker],",
+          "after": "        _cohort_stage = 'WORKER_SPAWN'\n        child = subprocess.Popen([parent_executable, str(ENTRY), fixed_worker],",
+          "count": 1
+        },
+        {
+          "path": "scripts/run-owned-dmi-grib-save.py",
+          "before": "    except BaseException as error:\n        if first_failure is None:\n            first_failure = error\n",
+          "after": "    except BaseException as error:\n        if first_failure is None:\n            _observe_cohort_first_failure(error)\n            first_failure = error\n",
+          "count": 1
+        },
+        {
+          "path": "scripts/run-owned-dmi-grib-save.py",
+          "before": "    finally:\n        for signum, handler in reversed(previous):\n",
+          "after": "    finally:\n        _cohort_stage = 'SIGNAL_RESTORE'\n        for signum, handler in reversed(previous):\n",
+          "count": 1
+        },
+        {
+          "path": "scripts/run-owned-dmi-grib-save.py",
+          "before": "            try:\n                os.close(parent_fd)\n",
+          "after": "            try:\n                _cohort_stage = 'PARENT_FD_CLOSE'\n                os.close(parent_fd)\n",
+          "count": 1
+        },
+        {
+          "path": "scripts/run-owned-dmi-grib-save.py",
+          "before": "            except BaseException:\n                # Never replace the first owner/worker/closure failure.",
+          "after": "            except BaseException as error:\n                # Never replace the first owner/worker/closure failure.",
+          "count": 1
+        },
+        {
+          "path": "scripts/run-owned-dmi-grib-save.py",
+          "before": "                if first_failure is None:\n                    raise\n",
+          "after": "                if first_failure is None:\n                    _observe_cohort_first_failure(error)\n                    raise\n",
+          "count": 1
+        },
+        {
+          "path": "scripts/run-owned-dmi-grib-save.py",
+          "before": "    os.close(3)\n",
+          "after": "    _cohort_stage = 'API_FD_CLOSE'\n    os.close(3)\n",
+          "count": 1
+        },
+        {
+          "path": "scripts/run-owned-dmi-grib-save.py",
+          "before": "    print(json.dumps({'schemaVersion': 1, 'kind': 'DMI_RAW_SAVE_COHORT_CLOSED',",
+          "after": "    _cohort_stage = 'CLOSURE_WRITE'\n    print(json.dumps({'schemaVersion': 1, 'kind': 'DMI_RAW_SAVE_COHORT_CLOSED',",
+          "count": 1
+        },
+        {
+          "path": "scripts/run-owned-dmi-grib-save.py",
+          "before": "    except BaseException:\n        print('DMI_RAW_SAVE_COHORT_REFUSED', file=sys.stderr)\n        sys.exit(1)\n",
+          "after": "    except BaseException as error:\n        _observe_cohort_first_failure(error)\n        print('DMI_RAW_SAVE_COHORT_REFUSED', file=sys.stderr)\n        try:\n            print(_cohort_first_failure_line(), file=sys.stderr)\n        except BaseException:\n            pass  # A diagnostic stream failure cannot change the existing exit.\n        sys.exit(1)\n",
+          "count": 1
+        },
+        {
+          "path": "scripts/run-owned-dmi-grib-save.py",
+          "before": "or (ciphertext and (parent_fields[1:] != [os.fsencode(str(ENTRY))]\n                                or os.environ.get('INPUT_OPERATION') != 'upload-encrypted-progress')))",
+          "after": "or (ciphertext and (parent_fields[1:] not in (\n                [os.fsencode(str(ENTRY))],\n                [os.fsencode(str(ENTRY)), b'--source-fixed-cipher-upload'])\n                                or os.environ.get('INPUT_OPERATION') != 'upload-encrypted-progress')))",
+          "count": 1
+        }
+      ]
+    },
+    {
+      "path": ".github/actions/save-owned-dmi-grib/index.cjs",
+      "beforeSha256": "dd8bd752a5cef8c927db2c00e642ab240638e3ab10c56d9f57c9546ab4e02926",
+      "afterSha256": "fa036495bd223620653c7645d3bdc22ae103cdb58743b99fd11e53122ef0ad93",
+      "afterBytes": 71221,
+      "bankPath": "scripts/fixtures/source19-terminal-proof-inputs-v2/current-cohort-v1/action.source.txt",
+      "inverseHunks": [
+        {
+          "path": ".github/actions/save-owned-dmi-grib/index.cjs",
+          "before": "let cliPhase = 'UNKNOWN';\n",
+          "after": "let cliPhase = 'UNKNOWN';\n// Observation only; never read by a closure/lease/SAVE admission guard.\nconst rawCohortRefusalObservations = new WeakMap();\nconst COHORT_DIAGNOSTIC_STAGES = new Set(['UNKNOWN','PLATFORM','PARENT_GUARD','API_FD_GUARD','PARENT_PIDFD','PARENT_LIVE','SIGNAL_SETUP','WORKER_SPAWN','WORKER_WAIT','OWNED_GROUP_SIGNAL','GROUP_ABSENCE','SIGNAL_RESTORE','PARENT_FD_CLOSE','API_FD_CLOSE','CLOSURE_WRITE']);\nconst COHORT_DIAGNOSTIC_REASONS = new Set(['UNKNOWN','OS_ERROR','DMI_RAW_SAVE_PLATFORM_REFUSED','DMI_RAW_SAVE_PARENT_UNPROVED','DMI_RAW_SAVE_PARENT_LOST','DMI_RAW_SAVE_GROUP_UNPROVED','DMI_RAW_SAVE_INTERRUPTED','DMI_RAW_SAVE_PARENT_FD_NOT_CLOSED','DMI_RAW_SAVE_PIPE_NOT_CLOSED']);\nconst COHORT_DIAGNOSTIC_ERRNOS = new Set(['NONE','UNKNOWN','ENOENT','ESRCH','EINTR','EIO','EBADF','ECHILD','ENOMEM','EACCES','EINVAL','EMFILE','EPIPE']);\nconst COHORT_DIAGNOSTIC_SIGNALS = new Set(['SIGTERM','SIGKILL','SIGINT','SIGPIPE','SIGABRT','SIGSEGV','SIGBUS','SIGHUP','SIGQUIT']);\nfunction rememberRawCohortRefusal(error, exit, closureBody, closureReader, errorReader) {\n  // The first raw refusal stays the thrown object; observation is best effort.\n  try {\n    let stdoutClass = closureBody.trim() === '' ? 'EMPTY' : 'INVALID_JSON';\n    if (stdoutClass !== 'EMPTY') {\n      try { const value = JSON.parse(closureBody); stdoutClass = value && typeof value === 'object' && !Array.isArray(value) ? 'OBJECT' : 'NON_OBJECT'; } catch {}\n    }\n    let stage='UNKNOWN', reason='UNKNOWN', number='UNKNOWN';\n    const rows=[];\n    try {\n      for (const line of errorReader().split(/\\r?\\n/)) {\n        const match=/^DMI_RAW_SAVE_COHORT_DIAGNOSTIC stage=([A-Z_]+) reason=([A-Z_]+) errno=([A-Z_]+)$/.exec(line);\n        if (match && COHORT_DIAGNOSTIC_STAGES.has(match[1]) && COHORT_DIAGNOSTIC_REASONS.has(match[2]) && COHORT_DIAGNOSTIC_ERRNOS.has(match[3])) rows.push(match);\n      }\n    } catch {} // Never replace the original stdout refusal with diagnostics I/O.\n    if(rows.length===1)[,stage,reason,number]=rows[0];\n    const bytes=closureReader.observedBytes;\n    if(!Number.isInteger(bytes)||bytes<0||bytes>MAX_RECEIPT_BYTES)return;\n    rawCohortRefusalObservations.set(error,Object.freeze({\n      exit: Number.isInteger(exit.code)&&exit.code>=0&&exit.code<=255?String(exit.code):'NONE',\n      signal: exit.signal===null?'NONE':COHORT_DIAGNOSTIC_SIGNALS.has(exit.signal)?exit.signal:'UNKNOWN',\n      stdoutClass,bytes,stage,reason,errno:number}));\n  } catch {} // No diagnostic failure may replace or authorize the first refusal.\n}\nfunction rawCohortRefusalDiagnosticLine(error) {\n  const value=rawCohortRefusalObservations.get(error);\n  return value ? `DMI_RAW_SAVE_COHORT_OBSERVATION exit=${value.exit} signal=${value.signal} stdout=${value.stdoutClass} bytes=${value.bytes} stage=${value.stage} reason=${value.reason} errno=${value.errno}\\n` : '';\n}\n\n",
+          "count": 1
+        },
+        {
+          "path": ".github/actions/save-owned-dmi-grib/index.cjs",
+          "before": "  return () => {\n    if (failure) throw failure;\n    if (!ended) throw refused('DMI_RAW_SAVE_PIPE_NOT_CLOSED');\n    return Buffer.concat(chunks).toString('utf8');\n  };\n",
+          "after": "  const read = () => {\n    if (failure) throw failure;\n    if (!ended) throw refused('DMI_RAW_SAVE_PIPE_NOT_CLOSED');\n    return Buffer.concat(chunks).toString('utf8');\n  };\n  Object.defineProperty(read, 'observedBytes', { get: () => size }); // Observation only.\n  return read;\n",
+          "count": 1
+        },
+        {
+          "path": ".github/actions/save-owned-dmi-grib/index.cjs",
+          "before": "    const closure = parseReceipt(closureText());\n    errorText();\n",
+          "after": "    const closureBody = closureText();\n    let closure;\n    try { closure = parseReceipt(closureBody); }\n    catch (error) {\n      rememberRawCohortRefusal(error, exit, closureBody, closureText, errorText);\n      throw error;\n    }\n    errorText();\n",
+          "count": 1
+        },
+        {
+          "path": ".github/actions/save-owned-dmi-grib/index.cjs",
+          "before": "    process.stderr.write(refusalDiagnostic(error));\n",
+          "after": "    process.stderr.write(refusalDiagnostic(error));\n    process.stderr.write(rawCohortRefusalDiagnosticLine(error));\n",
+          "count": 1
+        }
+      ]
+    }
+  ],
+  "sourceAdmission": false,
+  "productionActivation": false,
+  "provenance": "Two explicit current instrumented proof-host leaves; narrow normal SOURCE-CIPHER parent-role acceptance added to the Python cohort. Not the historical V16 pass or production snapshot.",
+  "purpose": "DIAGNOSTIC+EXACT_CIPHER_CALLER_FIX"
+}
