@@ -728,7 +728,10 @@ function advanceLastMileHistoryBounds(previous, row, sample, onshoreDirectionDeg
   // the newly reopened interval can be narrower than its own point state and
   // the next ordinary run rejects the saved continuation.
   if (historyUncertaintyOpen(lastUnknownAt, conservativeResetAt)) {
-    bounds = encloseLastMilePointTrack(bounds, row.continuationState);
+    bounds = encloseLastMilePointTrack(bounds, {
+      activityMoment: row.continuationState.waveActivityMoment,
+      normalMoment: row.continuationState.waveNormalMoment,
+    });
   }
   const unknownAgeHours = lastUnknownAt === null
     ? Number.POSITIVE_INFINITY

@@ -1,3 +1,9 @@
+## 19. oktober — lokal 4.0.584: ret producenten, bevar originalerne
+
+P0 ÅBEN: Den faktiske nye kørsel nåede gemt B efter vejrhentning, beregning, databevarelse og releasekontrol, men S blev afvist. En syvtimers prøve uden gammel tilstand har påvist forkert mapping af bølgemomenter til sidste-mile-indramningen samt en serializer, som beholdt den rå kopi. Den parrede lokale producentrettelse består seks mål; den dokumenterer ikke forkert DMI-input eller forkert SQL-formel.
+
+Den samlede løsning er endnu ikke leveret: ny ægte 4.0.584-binding, append-only migration og den arkivbevarende nyere-reference-genopretning skal kvalificeres gennem normale kaldere, native/PostgreSQL, faktisk horisont for 673 dele, B/S-gemning/genlæsning, offentlig effekt og almindelige efterfølgere. Nul gammel aktiv historik er godkendt, men må ikke bruges som frit reset-flag eller falsk oprindelsesbevis. Offentlig version er senest verificeret som 4.0.581 med vejr fra 16. oktober kl. 12 dansk tid. Cron er senest verificeret slået fra. Alle fem hovedmål er åbne; fristen 18. oktober er overskredet og er ikke forlænget. Se håndbog 89.256; øvrige åbne revisions- og brugerfunktionskrav består.
+
 ## 19. oktober — panelprøvens klokke, ikke en ændret prognoseregel
 
 PR667's første præcise kildekontrol bestod de indledende native Linux- og PostgreSQL-prøver, men den samlede kildevalidering fejlede i én UI-prøve. Dens faste prognosedato var 18. oktober, mens den normale renderer brugte værtsmaskinens aktuelle danske dag. Efter dansk midnat udløb prøveprognosen korrekt. Den samme fejl er reproduceret lokalt; det er ikke et nyt produktionsstop eller bevis for en defekt scoremodel.

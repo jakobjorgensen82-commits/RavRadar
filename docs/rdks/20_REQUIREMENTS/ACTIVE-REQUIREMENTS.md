@@ -1,3 +1,9 @@
+## 19. oktober — lokal 4.0.584: ret producenten, bevar originalerne
+
+AKTIVT: Ejerens nye start må have nul gammel aktiv strøm-/scorehistorik. Autentiske tidligere B/S og offentliggjorte data skal bevares permanent som særskilte originaler, også når de ikke udgør et sammenhørende par. De må ikke ommærkes, slettes eller levere gammel I/G-initialtilstand til den nye beregning. Manglende ny historik skal vises ærligt og opbygges fremad.
+
+Den valgte genopretning skal bruge normal beregning fra allerede gemte, kvalificerede vejr-/PART-inputs ved en strengt nyere reference, uden replay før denne reference. Tilgængelig horisont, alle 673 normale resultater, hård femfelts-databevarelse, ægte ny modelbinding, ny append-only migration, B før S, genlæsning, offentlig levering og almindelige efterfølgere skal faktisk bevises. Dette erstatter alene kravet om gammel aktiv historik, ikke original-, kilde-, SQL-, privacy- eller leveringskontroller. Se håndbog 89.256.
+
 ## 17. oktober — 4.0.580: fysisk lukning og en anden gyldig filtype
 
 Den seneste præcise kildekontrol bestod PostgreSQL, men fejlede i én af 58 normale kommandogrupper ved pakkens B/S-rundtur. Observationen viste en anden gyldig, ikke-almindelig filtype efter lukning; det beviser hverken en konkret mappe eller en læk. Den tidlige isolerede prøve genfandt ikke fejlen. De senere baseline-, kapacitets- og trækontroller blev ikke kørt, og der kom intet leveringsartifact.

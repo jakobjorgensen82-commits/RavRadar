@@ -1,4 +1,5 @@
 import { inverseAlternativeCCaller } from './lib/alternative-c-caller-test-input.mjs';
+import { inverseArchivedWeatherRestartUpdater } from './lib/archived-weather-restart-updater-test-input.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
@@ -85,8 +86,27 @@ test('diagnostic source delta preserves every genuine historical updater oracle'
  }
  assert.throws(()=>inverse(updater+'// unrelated source drift\n'),/genuine 903307 updater/);
 });
-test('current-family updater inverse preserves the genuine input and refuses every changed C hunk',async()=>{
+test('archive restart updater inverse preserves all old oracles and rejects every changed hunk',async()=>{
  const actual=(await fs.readFile(path.join(ROOT,'scripts/update-weather.mjs'),'utf8')).replace(/\r\n/g,'\n');
+ const row=JSON.parse(await fs.readFile(path.join(ROOT,'scripts/lib/archived-weather-restart-updater-test-input.json'),'utf8'));
+ assert.equal(hash(actual),'6978aaa62fd8126f460913ed9ee428e4cb6da8f146bcf4146d6ee69e170f88a6');
+ assert.equal(row.hunks.length,10);
+ const historical=inverseArchivedWeatherRestartUpdater(actual);
+ assert.equal(hash(historical),'039ac65c779fe3eb8dbc870c00b0af30b33f9333c7cd542492ee40595c6eac77');
+ assert.equal(inverseArchivedWeatherRestartUpdater(historical),historical);
+ for(const [before,after] of row.hunks){
+  assert.equal(actual.split(after).length,2);
+  for(const changed of [actual.replace(after,()=>before),actual.replace(after,()=>after+after)]){
+   assert.notEqual(changed,actual);
+   assert.throws(()=>inverseArchivedWeatherRestartUpdater(changed),/ALTERNATIVE_C_TEST_INPUT_CHANGED/);
+  }
+ }
+ assert.throws(()=>inverseArchivedWeatherRestartUpdater(actual+'// unrelated drift\n'),/ALTERNATIVE_C_TEST_INPUT_CHANGED/);
+});
+
+test('current-family updater inverse preserves the genuine input and refuses every changed C hunk',async()=>{
+ const current=(await fs.readFile(path.join(ROOT,'scripts/update-weather.mjs'),'utf8')).replace(/\r\n/g,'\n');
+ const actual=inverseArchivedWeatherRestartUpdater(current);
  const review=(await fs.readFile(path.join(ROOT,'scripts/lib/alternative-c-caller-test-input.mjs'),'utf8')).replace(/\r\n/g,'\n');
  const begin=review.indexOf('const SOURCE_INPUTS=')+'const SOURCE_INPUTS='.length;
  const end=review.indexOf(';\nconst digest=',begin);

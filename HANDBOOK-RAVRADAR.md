@@ -1,3 +1,15 @@
+## 89.256 Når historikken begynder på ny
+
+Kort fortalt: Ny historik bygges af faktiske nye timer. Manglende fortid opfindes ikke.
+
+Når en ny historik begynder, bruger RavScore de faktiske prognosedata for de nye timer fra historikkens start. Manglende fortid udfyldes ikke med gæt.
+
+En kort eller ufuldstændig historik giver større usikkerhed. Det skal fremgå ærligt af prognosen. Historikken bygges fremad, efterhånden som nye timer indgår; den manglende fortid bliver ikke automatisk til kendte forhold.
+
+En ny historikstart ændrer ikke i sig selv de gyldige datakilder, scoreformlen eller zonernes land- og vandpunkter. De samme krav til de anvendte vejrdata gælder fortsat.
+
+RavScore beskriver forholdene for ravjagt, ikke om der faktisk ligger rav på stranden. Heller ikke en høj score er en fundgaranti.
+
 ## 89.255 Hold prøvens klokke sammen med dens prognose
 
 Kort fortalt: En fast prøvedato kræver en fast prøveklokke. Rigtige brugere skal stadig kun se gyldige prognosedage.
@@ -472,9 +484,13 @@ En særskilt, dokumenteret Storage-formatkant rettes samtidig: immutable upload 
 
 # RavRadar Håndbog
 
-**Håndbogsversion:** 4.0.581
+**Håndbogsversion:** 4.0.584
 
-## Aktuel lokal kildebinding — 17. oktober 2026, 4.0.579 ikke installeret
+## Aktuel lokal kildebinding — 19. oktober 2026, 4.0.584 ikke installeret
+
+Den lokale kildekandidat til RavScore 4.0.584 er låst med `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b` og `modelBundleSha256=bb0da11642d1aff76fc4f821114d923aa9897c41abd543df0fa6166290075947` over 91 kanonisk normaliserede transitive implementeringsfiler og de deklarerede forbrugere. Inaktiv Candidate G har `modelContractSha256=c73dac1b4376005e792580791d84eb79c9370e905a2a7fd0bdee857506a20cf8` og `modelBundleSha256=47a27aec034d8d7cbab7755a19025d796b6fe51c2b276676c7309c912a85f501` over 92 transitive filer. Den normale fortsættelsesbinding er `7532755a43f8bb2ccc125efa3aa747ed03365b720d13addfcdb91ce4b74d908c`. Autoriteten er `version.json.releaseContract.modelBindings`. Dette beskriver lokal kildeidentitet, ikke installation eller offentlig levering; tidligere afsnit nedenfor er dateret historik.
+
+## Historisk lokal kildebinding — 17. oktober 2026, dengang 4.0.579 ikke installeret
 
 Den lokale kildekandidat til RavScore 4.0.580 er låst med `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b` og `modelBundleSha256=84217430a712fec3e78c5c3115d86520a4011a388998af030d231a8433d52bb3` over 71 kanonisk normaliserede transitive implementeringsfiler og otte deklarerede forbrugere. Inaktiv Candidate G har `modelContractSha256=c73dac1b4376005e792580791d84eb79c9370e905a2a7fd0bdee857506a20cf8` og `modelBundleSha256=76a86277db106621e7f0952d0789f9038a4bf9cfe7993b88de5c9a49bf25b4b8` over 69 transitive filer. T12 er `a519a34e91e552623892e28f3c1fa9ee67b65d1fa08869a96e34fa24bd6d832f`. Scorekontrakterne er uændrede; forbrugerne følger `version.json.releaseContract.modelBindings`. Migration `20261017020000_current_memory_warmup_original_bound_successor.sql` er faktisk installeret og genlæst i 39004552563/1 omkring kl. 05.09 UTC. Beskyttet B/S-publicering, tre serverfunktioner, Pages og offentlig 579 er endnu ikke bekræftet; UI-prøven er ikke bevis for disse trin. Offentlig 4.0.578 er leveret; det er ikke bevis for denne rettelse. Originaler og historiske værdier skal bevares gennem alle kontrol- og leveringstrin. Se 89.250.
 

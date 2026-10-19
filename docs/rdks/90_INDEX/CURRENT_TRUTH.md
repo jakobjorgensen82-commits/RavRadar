@@ -1,3 +1,21 @@
+## 19. oktober — genbrug bestået databaseprøve ved uændrede input
+
+Den ægte native PostgreSQL-prøve for 4.0.584 bestod, inklusive den nye append-only migration på syntetiske data. Den efterfølgende kildekontrol fejlede i syv konkrete test-/værtsårsager: historiske kildepins og kildepositioner, manglende almindelige NULL-defaults i udskårne testfixtures samt forældet kalder-/timeoutregistrering. Opfølgningen retter disse samlet, bevarer de gamle assertions på deres præcise historiske input og tilføjer helkilde- og mutationskontrol af den nye arkiverede opstartsvej. Ingen produktkode, SQL, scoreformel, modelbinding, adminpunkter eller geometri ændres i denne testopfølgning. Præcis samlet kildekontrol, national kapacitet, faktisk installation, ny B/S, Pages og almindelige efterfølgere er fortsat åbne. Alle fem hovedmål er åbne; den offentlige baseline er fortsat senest verificeret 4.0.581. Det private checkpoint ejer kørselsnumre, fejlpartition og kvitteringer.
+
+## 19. oktober — lokal 4.0.584: ret producenten, bevar originalerne
+
+Faktisk drift: Den seneste kørsel gennemførte vejrhentning, beregning, hård databevarelse og releasekontroller samt privat B-gemning. S-publiceringen blev derefter afvist af I29's sidste-mile-kontrol. En gemt B er ikke bevis for en gemt S eller et Pages-deploy. Der er ingen dokumenteret ny offentlig generation fra dette forløb.
+
+Påvist årsag: En normal syvtimers prøve uden gammel strømtilstand reproducerer forkert feltmapping til indramningen og gemning af rå tilstand efter validering af en anden kopi. Seks målrettede producentprøver består efter den parrede rettelse. SQL-grænsen er ikke påvist forkert og lempes ikke; DMI-data gøres ikke til årsag uden bevis.
+
+Valgt lokal vej: 4.0.584s ægte nye C/I/T og append-only 20261019060000-migration er genereret lokalt fra hele den versionssynkroniserede kilde; gammel 140000-kilde og udstedte SQL-originaler bevares. Den afgrænsede genopretning skal beregne en strengt nyere reference fra allerede gemte, hashverificerede PART-vejrinputs. Gamle I/G-tilstande og timer før den nye reference bruges ikke som aktiv historik. Normal fremadrettet fortsættelse skal derefter opbygge historikken uden engangsflag.
+
+Originalbevaring: Faktisk B, faktisk central S og den offentlige generation arkiveres særskilt og permanent. Deres forskellige referencer eller bindinger må ikke skjules ved falsk B/S-paritet. Den normale gamle læser består ét mål, arkivkernen 19 syntetiske tilfælde og den tidlige plan ni mål; disse er forskellige kildebeviser, ikke den nye releases samlede kvalifikation.
+
+Dette er lokal kildeforberedelse, ikke installation eller offentlig levering. Normal kalder-/workflowintegration, endelig præcis kildekontrol, native- og PostgreSQL-kontrol, faktisk resterende vejrhorisont for 673 dele, ny B/S-gemning/genlæsning, offentlig effekt og almindelige efterfølgere er fortsat åbne. Offentlig version er senest verificeret som 4.0.581 med vejr fra 16. oktober kl. 12 dansk tid. Cron er senest verificeret slået fra. Alle fem hovedmål er åbne; fristen 18. oktober er overskredet og er ikke forlænget. SOURCE-revisionen, assistentleveringen og øvrige tilbageholdte aktiveringer er ikke udført. Se håndbog 89.256 og privat checkpoint. Tidligere krav om at videreføre gammel aktiv historik og tidligere afventningsstatus er erstattet alene på de ovenfor præciserede punkter.
+
+Efter endelig normal versionssynk består de lokale C/I-/SQL-byggere, kontrollen af syv mutable bindingsforbrugere samt planens ni mål. Dette er kilde-/genereringskontrol, ikke PostgreSQL-eksekvering, faktisk installation eller ny offentlig prognose.
+
 ## 19. oktober — panelprøvens klokke, ikke en ændret prognoseregel
 
 PR667's første præcise kildekontrol bestod de indledende native Linux- og PostgreSQL-prøver, men den samlede kildevalidering fejlede i én UI-prøve. Dens faste prognosedato var 18. oktober, mens den normale renderer brugte værtsmaskinens aktuelle danske dag. Efter dansk midnat udløb prøveprognosen korrekt. Den samme fejl er reproduceret lokalt; det er ikke et nyt produktionsstop eller bevis for en defekt scoremodel.

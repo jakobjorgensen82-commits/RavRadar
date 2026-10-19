@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
 import { spawnSync } from 'node:child_process';
+import { inverseArchivedWeatherRestartWorkflow } from './lib/archived-weather-restart-workflow-review.mjs';
 
 const root = process.cwd();
 const read = relative => fs.readFileSync(path.join(root, relative), 'utf8');
@@ -119,7 +120,21 @@ assert.ok(orchestrator.includes('uses: ./.github/workflows/reusable-pages-deploy
 assert.ok(read('.github/workflows/validate-pull-request.yml').includes('run: npm run validate:source'), 'PR-kildegaten er ikke aktiv.');
 assert.doesNotMatch(orchestrator, /\n  push:/, 'Normal vejrhentning må ikke starte automatisk ved merge.');
 
-const codeOnlyWorkflow = read('.github/workflows/deploy-code-only-repair.yml');
+const actualCodeOnlyWorkflow = read('.github/workflows/deploy-code-only-repair.yml').replace(/\r\n/g, '\n');
+// Source/CI only: qualify the exact reviewed new route first. Its complete
+// inverse then preserves every existing code-only oracle below; arbitrary
+// changed workflow bytes cannot obtain this historical source view.
+for (const marker of [
+  'code_only_repair: ${{ inputs.publish_newest_saved_weather != true && inputs.restart_archived_weather != true }}',
+  'Select only the unconsumed last-mile archive restart',
+  'Apply sole last-mile binding only after all new artifact checks',
+  'Read back the actual installed last-mile contracts and unchanged schema2',
+  'Require already-installed last-mile saved-weather contracts without replay',
+  'Reconcile saved last-mile CURRENT B with central S before public projection',
+]) assert.ok(actualCodeOnlyWorkflow.includes(marker), `Archive restart source contract is missing ${marker}.`);
+for (const forbidden of ['DMI_API_KEY', 'COPERNICUSMARINE_SERVICE_USERNAME', 'COPERNICUSMARINE_SERVICE_PASSWORD'])
+  assert.ok(!actualCodeOnlyWorkflow.includes(forbidden), `Provider-free restart must not contain ${forbidden}.`);
+const codeOnlyWorkflow = inverseArchivedWeatherRestartWorkflow(actualCodeOnlyWorkflow);
 const codeOnlyTrigger = codeOnlyWorkflow.slice(
   codeOnlyWorkflow.indexOf('\non:'),
   codeOnlyWorkflow.indexOf('\npermissions:'),

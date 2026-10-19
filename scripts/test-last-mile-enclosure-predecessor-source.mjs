@@ -1,0 +1,79 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import crypto from 'node:crypto';
+import fs from 'node:fs/promises';
+import os from 'node:os';
+import path from 'node:path';
+import {fileURLToPath,pathToFileURL} from 'node:url';
+import {withFrozenLastMileEnclosurePredecessorSource} from './check-last-mile-enclosure-predecessor-source.mjs';
+
+const ROOT=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
+const INVENTORY='scripts/lib/last-mile-enclosure-predecessor-source-inventory.json';
+const INVENTORY_SHA='8a35db217041ddfb2f14fb2da76b09af427367989ec67bad7a4fef72d34c0e45';
+const sha=value=>crypto.createHash('sha256').update(value).digest('hex');
+async function absent(file){
+  await assert.rejects(fs.lstat(file),error=>error?.code==='ENOENT','Owned fixed-source host must be physically removed');
+}
+
+test('fixed current140000 archive reader uses genuine source and cleans both normal callback outcomes',async()=>{
+  const inventoryBytes=await fs.readFile(path.join(ROOT,INVENTORY));
+  assert.equal(sha(inventoryBytes),INVENTORY_SHA);
+  const inventory=JSON.parse(inventoryBytes);
+  assert.equal(inventory.head,'d8a52e3e4cbaed1557cc56fe01f5f0a2b0d657d7');
+  assert.equal(inventory.tree,'0ddede3f4b4fb4faa43b0d43f17c7cdbadcc9bc0');
+  assert.equal(inventory.files.length,105);
+  const parent=await fs.realpath(os.tmpdir());
+  let callbackRoot=null,callbacks=0;
+  const expectedReturn=Object.freeze({kind:'SOURCE_READER_CONTRACT_ONLY',files:105});
+  const returned=await withFrozenLastMileEnclosurePredecessorSource(async sourceRoot=>{
+    callbacks+=1;callbackRoot=sourceRoot;
+    assert.equal(path.dirname(sourceRoot),parent);
+    assert(path.basename(sourceRoot).startsWith('rr-last-mile-enclosure-source-'));
+    assert.equal(await fs.realpath(sourceRoot),sourceRoot);
+    let total=0;
+    for(const row of inventory.files){
+      const file=path.join(sourceRoot,row.file),stat=await fs.lstat(file,{bigint:true}),bytes=await fs.readFile(file);
+      assert(stat.isFile()&&!stat.isSymbolicLink()&&stat.nlink===1n&&stat.ino>0n);
+      assert.equal(bytes.length,row.bytes,row.file);assert.equal(sha(bytes),row.sha256,row.file);
+      total+=bytes.length;
+    }
+    assert.equal(total,2319125);
+    const load=relative=>import(pathToFileURL(path.join(sourceRoot,relative)).href);
+    for(const manifest of inventory.manifests){
+      const old=await load(manifest.file);
+      assert.equal(old.GENERATED_RAVSCORE_MODEL_BUNDLE_SHA256,manifest.binding);
+      assert.equal(old.GENERATED_RAVSCORE_MODEL_BUNDLE_MANIFEST.files.length,manifest.count);
+    }
+    const t=await load(inventory.t.module);
+    assert.deepEqual(t.RAVSCORE_CONTINUATION_IMPLEMENTATION_FILES,inventory.t.files);
+    assert.equal(await t.ravScoreContinuationImplementationSha256({repositoryRoot:sourceRoot}),inventory.t.sha256);
+    const workflow=await load('scripts/private-production-runtime-workflow.mjs');
+    assert.deepEqual(await workflow.privateRuntimeContractHashes({repositoryRoot:sourceRoot}),inventory.runtimeContracts);
+    const bundle=await load('scripts/private-production-runtime-bundle.mjs');
+    const protectedS=await load('scripts/protected-ravscore-continuation-checkpoint.mjs');
+    const localS=await load('scripts/ravscore-continuation-checkpoint.mjs');
+    for(const [name,value] of Object.entries({
+      verifyPrivateProductionRuntimeBundle:bundle.verifyPrivateProductionRuntimeBundle,
+      buildPrivateRuntimeExpectation:workflow.buildPrivateRuntimeExpectation,
+      restoreProtectedRavScoreContinuationCheckpoint:protectedS.restoreProtectedRavScoreContinuationCheckpoint,
+      loadRavScoreContinuationCheckpointForTarget:localS.loadRavScoreContinuationCheckpointForTarget,
+    }))assert.equal(typeof value,'function',name);
+    // No production B/S fixture is invented, no S is built from B, and no old origin is invoked.
+    return expectedReturn;
+  });
+  assert.strictEqual(returned,expectedReturn);assert.equal(callbacks,1);await absent(callbackRoot);
+
+  const firstError=new Error('SYNTHETIC_CALLBACK_SENTINEL_NOT_PRODUCTION_DATA');
+  let failedRoot=null,failedCallbacks=0;
+  await assert.rejects(withFrozenLastMileEnclosurePredecessorSource(sourceRoot=>{
+    failedRoot=sourceRoot;failedCallbacks+=1;throw firstError;
+  }),error=>error===firstError,'Original callback failure must survive successful owned cleanup');
+  assert.equal(failedCallbacks,1);await absent(failedRoot);
+
+  let refusedCallbacks=0;
+  await assert.rejects(withFrozenLastMileEnclosurePredecessorSource(()=>{refusedCallbacks+=1;},'not-an-override'),
+    error=>error?.code==='ERR_ASSERTION');
+  for(const value of [undefined,null,{},'d8a52e3e4cbaed1557cc56fe01f5f0a2b0d657d7'])
+    await assert.rejects(withFrozenLastMileEnclosurePredecessorSource(value),error=>error?.code==='ERR_ASSERTION');
+  assert.equal(refusedCallbacks,0,'Forbidden override must fail before callback');
+});

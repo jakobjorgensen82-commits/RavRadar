@@ -1,3 +1,16 @@
+## 19. oktober — genbrug bestået databaseprøve ved uændrede input
+
+Den ægte native PostgreSQL-prøve for 4.0.584 bestod, inklusive den nye append-only migration på syntetiske data. Den efterfølgende kildekontrol fejlede i syv konkrete test-/værtsårsager: historiske kildepins og kildepositioner, manglende almindelige NULL-defaults i udskårne testfixtures samt forældet kalder-/timeoutregistrering. Opfølgningen retter disse samlet, bevarer de gamle assertions på deres præcise historiske input og tilføjer helkilde- og mutationskontrol af den nye arkiverede opstartsvej. Ingen produktkode, SQL, scoreformel, modelbinding, adminpunkter eller geometri ændres i denne testopfølgning. Præcis samlet kildekontrol, national kapacitet, faktisk installation, ny B/S, Pages og almindelige efterfølgere er fortsat åbne. Alle fem hovedmål er åbne; den offentlige baseline er fortsat senest verificeret 4.0.581. Det private checkpoint ejer kørselsnumre, fejlpartition og kvitteringer.
+
+## 4.0.584 — lokal kandidat, 19. oktober 2026
+
+- Retter de to reproducerede producentfejl i sidste-mile-feltmapping og kanonisk checkpointserialisering; seks målrettede prøver består. Databasegrænsen lempes ikke.
+- Lokalt genereret ægte ny model-/lagringsbinding fra den fulde versionssynkroniserede kilde og en separat append-only 20261019060000-migration; ingen gammel migrationsfil ændres, og ingen ny migration er installeret.
+- Forbereder permanent, særskilt arkiv af faktiske B/S/offentlige originaler og normal genberegning på en nyere reference fra gemte vejr-/PART-inputs. Den nye aktive historik bruger ikke gammel I/G eller replay før reference; almindelige efterfølgere skal opbygge den fremad.
+- Lokale C/I-/SQL-byggere, syv bindingsforbrugere og planens ni mål består efter endelig versionssynk; ingen PostgreSQL- eller produktionspåstand.
+- Fjerner en dobbelt registrering af den omfattende B/S-prøve; hele prøven beholdes gennem den eksisterende normale kalder. De fem nye User-Agent-versionsfelter kvalificeres med en præcis helkilde-inverse, uden ændring af produktworkflow eller gamle testorakler.
+- Ikke leveret: kalder-/workflowintegration, endelig præcis kilde-/native-/PostgreSQL-kontrol, 673-dels horisont og faktisk ny B/S, Pages og almindelige efterfølgere. Offentlig 4.0.581 og vejr fra 16. oktober kl. 12 dansk tid er seneste verificerede status; cron er senest slået fra. Alle fem mål er åbne, og fristen 18. oktober er overskredet.
+
 ## 19. oktober — panelprøvens klokke, ikke en ændret prognoseregel
 
 PR667's første præcise kildekontrol bestod de indledende native Linux- og PostgreSQL-prøver, men den samlede kildevalidering fejlede i én UI-prøve. Dens faste prognosedato var 18. oktober, mens den normale renderer brugte værtsmaskinens aktuelle danske dag. Efter dansk midnat udløb prøveprognosen korrekt. Den samme fejl er reproduceret lokalt; det er ikke et nyt produktionsstop eller bevis for en defekt scoremodel.

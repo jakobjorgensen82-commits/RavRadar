@@ -506,6 +506,18 @@ function compactState(state, partId) {
     || validation.initialStateSource !== 'INTEGRATED_CONTINUATION') {
     throw new Error(`RavScore state for ${partId} is not an exact schema-6 continuation`);
   }
+  // Validation may explicitly repair a historical open last-mile envelope.
+  // Storage must not validate that returned copy but serialize the raw input.
+  // The normal migration/canonicalization caller must first install its exact
+  // canonical continuation in the complete source document, preserving B/S.
+  if (['minimumFactorTrack', 'maximumFactorTrack'].some(track =>
+    ['activityMoment', 'normalMoment'].some(field =>
+      validation.continuationState.historyBounds.lastMile[track][field]
+        !== compact.historyBounds.lastMile[track][field]))) {
+    const error = new Error('RavScore checkpoint requires explicit canonical last-mile tracks before serialization');
+    error.code = 'RAVSCORE_CHECKPOINT_LAST_MILE_CANONICALIZATION_REQUIRED';
+    throw error;
+  }
   return compact;
 }
 
