@@ -1,3 +1,10 @@
+## 19. oktober — 4.0.584: normal artifactkontrol efter arkivberegning
+
+- Den sidste providerfrie arkivgenstart gennemførte arkiv og beregning, men blev annulleret under en forældet fuld validering omkring jobloftet. Intet nyt B/S, SQL-installation, leveringsartifact eller Pages er bevist.
+- Lokal workflowrettelse: genbrug den normale, uændrede 55+3-collectorplan; forsøg begge og kræv faktiske beståede udfald før arkivgrenens writes. Alle selvstændige sikkerhedskontroller består.
+- Kun arkivgenstartens jobloft ændres fra 60 til 90 minutter; almindelig kode-only forbliver 60. Ingen nye leverandørbudgetter, cronændring, releaseversion, C/I/T eller SQL.
+- Ikke leveret eller driftsbevist: ny præcis kildekontrol, faktisk B/S og SQL, Pages og almindelige efterfølgere. Alle fem hovedmål er åbne; fristen 18. oktober er overskredet. Se DEC-0184s tillæg og privat checkpoint.
+
 ## 19. oktober — genbrug bestået databaseprøve ved uændrede input
 
 Den ægte native PostgreSQL-prøve for 4.0.584 bestod, inklusive den nye append-only migration på syntetiske data. Den efterfølgende kildekontrol fejlede i syv konkrete test-/værtsårsager: historiske kildepins og kildepositioner, manglende almindelige NULL-defaults i udskårne testfixtures samt forældet kalder-/timeoutregistrering. Opfølgningen retter disse samlet, bevarer de gamle assertions på deres præcise historiske input og tilføjer helkilde- og mutationskontrol af den nye arkiverede opstartsvej. Ingen produktkode, SQL, scoreformel, modelbinding, adminpunkter eller geometri ændres i denne testopfølgning. Præcis samlet kildekontrol, national kapacitet, faktisk installation, ny B/S, Pages og almindelige efterfølgere er fortsat åbne. Alle fem hovedmål er åbne; den offentlige baseline er fortsat senest verificeret 4.0.581. Det private checkpoint ejer kørselsnumre, fejlpartition og kvitteringer.

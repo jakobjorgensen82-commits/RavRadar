@@ -1,3 +1,11 @@
+## 19. oktober — 4.0.584: normal artifactkontrol efter arkivberegning
+
+Den providerfrie arkivgenstart bevarede arkivet og gennemførte normal beregning den 19. oktober kl. 11.07.24 dansk tid. Derefter blev kørslen annulleret omkring 60-minuttersgrænsen, mens den genindførte brede `npm run validate` stadig kørte. Der blev ikke oprettet nyt leveringsartifact, publiceret nyt privat B/S, installeret den nye SQL eller leveret Pages. Bestået beregning er ikke bestået udgivelse.
+
+Den lokale workflowrettelse bruger den eksisterende collector `validate:production-artifact` med faktisk 55 bladkontroller og den særskilte `release:gate:production` med tre kontroller. Begge forsøges; arkivgrenen kræver begge faktisk bestået før senere skrivning. Runtime-, target/main-, databevarelses-, model-, privat-, artifact- og deploykontroller bevares. Kun denne arkivgenstart får 90 minutters jobloft; almindelig kode-only beholder 60 minutter, og vejrhentningernes leverandørbudgetter og cron ændres ikke.
+
+Version 4.0.584, C/I/T, model, udstedte SQL-filer og originaler er uændrede i denne rettelse. Den foregående præcise 584-kildekontrol og nationale syntetiske opstart med to efterfølgere er bestået; den nye workflowkilde kræver sit eget præcise bevis. Ny B/S-gemning/genlæsning, SQL-installation, Pages, offentlig effekt og almindelige efterfølgere er fortsat åbne. Alle fem hovedmål er åbne; fristen 18. oktober er overskredet og ikke forlænget. Det private checkpoint ejer detaljeret kørselsevidens. Ældre modstridende status er dateret historik.
+
 ## 19. oktober — lokal 4.0.584: ret producenten, bevar originalerne
 
 Den seneste faktiske vejrhentning nåede gennem leverandører, beregning, hård databevarelse og releasekontroller til gemt privat vejrpakke B. Publicering af beregningstilstanden S blev afvist af sidste-mile-kontrollen, så der er ikke bevist nyt offentligt vejr. Syv nye timer uden gammel tilstand reproducerer to konkrete producentfejl: feltnavnene til indramningen stemte ikke, og checkpointet beholdt en rå kopi efter validering af en anden kopi. De seks målrettede producentprøver består efter rettelsen; dette er ikke et bevis for en fejl i DMI-data eller databaseformlen.

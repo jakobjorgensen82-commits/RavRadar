@@ -94,7 +94,137 @@ export function parseTree(text) {
     assert(match); return [match[4], match[1], match[2], match[3]];
   }).sort((a, b) => a[0].localeCompare(b[0], 'en'));
 }
-export function verifyInputTrees(before, after) {
+export const FOLLOWUP_INPUTS=Object.freeze([
+  {
+    "path": ".github/workflows/deploy-code-only-repair.yml",
+    "role": "EXACT_DEPLOY_GATE_AND_TIMEOUT_INVERSE",
+    "before": {
+      "sha256": "b87ef14d831e6e825607a22deef3ab10f85bab654d2101731a473b393cb619cf",
+      "gitBlob": "42840b788860fddb5e20e7cba7d6857b9302f434"
+    },
+    "after": {
+      "sha256": "b10eac363d4c067bf7f7c81159881b57a70923851ae8e78d1dde2357a770a477",
+      "gitBlob": "41e5375a2c90bd06d7fcd6e6d444aa027e320826"
+    }
+  },
+  {
+    "path": "scripts/lib/archived-production-gate-review.mjs",
+    "role": "EXACT_NON_NATIVE_TEST_ADAPTER",
+    "before": null,
+    "after": {
+      "sha256": "d2e9f9b88b2b52e8ed3b31bccccfbc91d0032f2f520162ea7324f7c333696bf4",
+      "gitBlob": "0945181849688930b5a23f27b80b2dbcf7fca47f"
+    }
+  },
+  {
+    "path": "scripts/lib/archived-production-gate-review.json",
+    "role": "EXACT_NON_NATIVE_TEST_ADAPTER",
+    "before": null,
+    "after": {
+      "sha256": "11d7f402b18871a4bd46717de27158fd4db8eba710f2db6c4fb8e9ece78247f7",
+      "gitBlob": "56dcd51eeba776abbd98085ab47513ff966097a1"
+    }
+  },
+  {
+    "path": "scripts/lib/archived-weather-restart-workflow-review.mjs",
+    "role": "EXACT_NON_NATIVE_TEST_ADAPTER",
+    "before": {
+      "sha256": "fbc8ab6201d18e4d2c8b6f1f07b14d234463819d0a2776a72931ad8cf952587a",
+      "gitBlob": "8b96f4f0ccdffe006a53cf2309a7213900939425"
+    },
+    "after": {
+      "sha256": "fcdbf0cf41fdde6cfd918b2f0b63f9685c7923e0bbdb70e3e7cd72078a73bf74",
+      "gitBlob": "c65c09f1f632df26184eb6eb36e24c14184fadbe"
+    }
+  },
+  {
+    "path": "scripts/test-archived-weather-restart-workflow.mjs",
+    "role": "EXACT_NON_NATIVE_TEST_ADAPTER",
+    "before": {
+      "sha256": "abc9e350a947990855d5f9ee4401420023d7bc9a40d693fea35d69d182004614",
+      "gitBlob": "0e8e5be9dbc67a1814f6f4a3160cf5e61f864fa3"
+    },
+    "after": {
+      "sha256": "d0b603ed6432ba7f639a5a5db96b98f0ab0243bf6c2d10c268c8a5d0f878a7e4",
+      "gitBlob": "5003ab455df2cdd0f3a66dd95a7bcedbdcac086e"
+    }
+  },
+  {
+    "path": "docs/ai/CODEX_START_HERE.md",
+    "role": "EXACT_NON_NATIVE_PROSE_RECORD",
+    "before": {
+      "sha256": "84bb1954e1088eae171f39aacf8220f90ab28f48e81eca28bb3a80ab36116875",
+      "gitBlob": "92f204fc2e413a1c1c4aa0e9574ca9a016e12b7b"
+    },
+    "after": {
+      "sha256": "3d3c6bb0c6b44788b79be49df228049159fccd9c945337442e3afad2910bb85c",
+      "gitBlob": "142f461429bc223f67c18b81647c70fab8b96d45"
+    }
+  },
+  {
+    "path": "docs/rdks/10_DECISIONS/DEC-0184-CRITICAL-PRODUCTION-ARTIFACT-GATE.md",
+    "role": "EXACT_NON_NATIVE_PROSE_RECORD",
+    "before": {
+      "sha256": "b218eaf0cf9aa41f8339128287609a407c1c837cc8effd6e2e845926a36a8822",
+      "gitBlob": "d0471f5eb2ee72e713f77c466ceb477e81bc6d78"
+    },
+    "after": {
+      "sha256": "90985721fe68d16e1d1632e28058dfd8c96a450f3a2d61242fd797b908a00396",
+      "gitBlob": "e4aae721de79ae4a53e522038e10ca14c5643d2c"
+    }
+  }
+]);
+
+// Exact, reviewed current-only source adapters. Never exclude a workflow tree.
+// Existing entries are mapped back only after authentic whole before/after
+// source and Git object identity plus the two-hunk workflow inverse qualify.
+export function verifyFollowupInputs(before, after, readSource) {
+  const old = new Map(before.map(row => [row[0], row]));
+  const next = new Map(after.map(row => [row[0], row]));
+  assert(before.length>0&&after.length>0&&old.size===before.length&&next.size===after.length);
+  const changed = FOLLOWUP_INPUTS.filter(row => JSON.stringify(old.get(row.path)) !== JSON.stringify(next.get(row.path)));
+  if (!changed.length) return {before,after,paths:[]};
+  assert.equal(typeof readSource,'function','Exact follow-up source operands are required');
+  const sources = new Map();
+  for (const pin of FOLLOWUP_INPUTS) {
+    const a=old.get(pin.path), b=next.get(pin.path);
+    assert.deepEqual(a,pin.before===null?undefined:[pin.path,'100644','blob',pin.before.gitBlob]);
+    assert.deepEqual(b,[pin.path,'100644','blob',pin.after.gitBlob]);
+    const current=readSource(pin.path,'after'); assert.equal(sha(current),pin.after.sha256);
+    assert.equal(crypto.createHash('sha1').update('blob '+Buffer.byteLength(current)+'\0').update(current).digest('hex'),pin.after.gitBlob);
+    let prior=null;
+    if(pin.before!==null){prior=readSource(pin.path,'before');assert.equal(sha(prior),pin.before.sha256);
+      assert.equal(crypto.createHash('sha1').update('blob '+Buffer.byteLength(prior)+'\0').update(prior).digest('hex'),pin.before.gitBlob);}
+    sources.set(pin.path,{current,prior});
+  }
+  const workflow=sources.get('.github/workflows/deploy-code-only-repair.yml');
+  const descriptor=JSON.parse(sources.get('scripts/lib/archived-production-gate-review.json').current);
+  assert.equal(descriptor.schemaVersion,1);assert.equal(descriptor.kind,'TEST_ONLY_EXACT_ARCHIVED_PRODUCTION_GATE_INVERSE');
+  assert.equal(descriptor.edits.length,2);assert.equal(sha(workflow.current),descriptor.actualSha256);
+  let restored=workflow.current,last=Infinity;
+  for(const[offset,current,prior]of descriptor.edits){assert(Number.isSafeInteger(offset)&&offset>=0&&offset<last);last=offset;
+    assert.equal(restored.slice(offset,offset+current.length),current);restored=restored.slice(0,offset)+prior+restored.slice(offset+current.length);}
+  assert.equal(restored,workflow.prior,'Only the exact gate and restart timeout may differ');
+  assert.equal(sha(restored),descriptor.predecessorSha256);
+  const regular=new Map(next);
+  for(const pin of FOLLOWUP_INPUTS){if(pin.before===null)regular.delete(pin.path);else regular.set(pin.path,old.get(pin.path));}
+  return {before,after:[...regular.values()].sort((a,b)=>a[0].localeCompare(b[0],'en')),paths:changed.map(row=>row.path),workflowWholeInverse:true};
+}
+
+export function verifyCurrentPullRequest(pr,current,number) {
+  assert(Number.isSafeInteger(number)&&number>0);
+  assert.equal(pr.number,number);assert.equal(pr.state,'open');
+  assert.equal(pr.base?.repo?.full_name,ORIGIN.repository);assert.equal(pr.base?.ref,'main');
+  assert.equal(pr.head?.repo?.full_name,ORIGIN.repository);
+  assert.equal(pr.head?.sha,current.head_sha);assert.equal(pr.head?.ref,current.head_branch);
+  assert.equal(typeof current.head_branch,'string');assert(current.head_branch.length>0&&current.head_branch.length<=255);
+  assert(current.pull_requests?.some(value=>value.number===number));
+  return {number,branch:current.head_branch,head:current.head_sha};
+}
+
+
+export function verifyInputTrees(before, after, readSource) {
+  const followup=verifyFollowupInputs(before,after,readSource); before=followup.before; after=followup.after;
   const excluded = new Set([...NON_NATIVE_TEST_INPUTS, ...NON_NATIVE_PROSE, ...REUSE_FILES, WORKFLOW]);
   const old = new Map(before.map(row => [row[0], row]));
   const next = new Map(after.map(row => [row[0], row]));
@@ -109,7 +239,8 @@ export function verifyInputTrees(before, after) {
   return {inputGitManifestSha256: sha(JSON.stringify(retained(before))),
     retainedEntries: retained(before).length,
     changedNonNativePaths: [...excluded].filter(file => JSON.stringify(old.get(file)) !== JSON.stringify(next.get(file))).sort(),
-    frozenGitTrees: FROZEN.map(([head,tree]) => ({head,tree}))};
+    frozenGitTrees: FROZEN.map(([head,tree]) => ({head,tree})),
+    exactFollowupInputs:followup.paths,followupWorkflowWholeInverse:followup.workflowWholeInverse===true};
 }
 export function verifyOriginMetadata(run, jobs) {
   assert.equal(run.id, ORIGIN.run); assert.equal(run.run_attempt, ORIGIN.attempt);
@@ -162,13 +293,13 @@ export function verifyEnvironment(value) {
   assert.deepEqual(value.overrides, []);
   return value;
 }
-export function verifyLaterRuns(list, jobsByRun, originRun, currentRunId) {
+export function verifyLaterRuns(list, jobsByRun, originRun, currentRunId, branch=originRun.head_branch) {
   assert(complete(list, 'workflow_runs'));
   assert.equal(new Set(list.workflow_runs.map(run=>run.id)).size,list.workflow_runs.length);
   for (const run of list.workflow_runs) {
     assert.equal(run.path, WORKFLOW); assert.equal(run.event, 'pull_request');
     assert.equal(run.repository?.full_name, ORIGIN.repository);
-    assert.equal(run.head_branch, originRun.head_branch);
+    assert.equal(run.head_branch, branch);
     if ([ORIGIN.run,currentRunId].includes(run.id)) continue;
     assert.equal(run.status, 'completed'); assert.equal(run.run_attempt, 1);
     const jobs = jobsByRun.get(run.id); assert(complete(jobs, 'jobs'));
@@ -204,8 +335,9 @@ async function github(route, {raw=false}={}) {
 export async function decideReuse({env=process.env,get=github,readGit=git,getEnvironment=environment}={}) {
   try {
     assert.equal(env.GITHUB_EVENT_NAME,'pull_request'); assert.equal(env.GITHUB_REPOSITORY,ORIGIN.repository);
-    assert.equal(Number(env.PULL_REQUEST_NUMBER),ORIGIN.pullRequest); assert.equal(env.GITHUB_RUN_ATTEMPT,'1');
-    assert(/^[a-f0-9]{40}$/.test(env.SOURCE_GATE_HEAD_SHA));
+    const currentPrNumber=Number(env.PULL_REQUEST_NUMBER);
+    assert(/^[1-9][0-9]*$/.test(env.PULL_REQUEST_NUMBER||'')&&Number.isSafeInteger(currentPrNumber));
+    assert.equal(env.GITHUB_RUN_ATTEMPT,'1');assert(/^[a-f0-9]{40}$/.test(env.SOURCE_GATE_HEAD_SHA));
     assert.equal(readGit(['rev-parse','HEAD^{commit}']).trim(),env.SOURCE_GATE_HEAD_SHA);
     assert.equal(readGit(['status','--porcelain','--untracked-files=no']).trim(),'');
     assert.equal(readGit(['for-each-ref','refs/replace']).trim(),'');
@@ -213,31 +345,42 @@ export async function decideReuse({env=process.env,get=github,readGit=git,getEnv
     readGit(['merge-base','--is-ancestor',ORIGIN.head,'HEAD']);
     for (const [head,tree] of FROZEN) assert.equal(readGit(['rev-parse',head+'^{tree}']).trim(),tree);
     verifyWorkflow(readGit(['show',ORIGIN.head+':'+WORKFLOW]),readGit(['show','HEAD:'+WORKFLOW]));
-    const inputs = verifyInputTrees(parseTree(readGit(['ls-tree','-rz','--full-tree',ORIGIN.head])),parseTree(readGit(['ls-tree','-rz','--full-tree','HEAD'])));
-    const runtime = verifyEnvironment(getEnvironment());
-    const base='/repos/'+ORIGIN.repository+'/actions', originRun=await get(base+'/runs/'+ORIGIN.run);
+    const inputs=verifyInputTrees(parseTree(readGit(['ls-tree','-rz','--full-tree',ORIGIN.head])),parseTree(readGit(['ls-tree','-rz','--full-tree','HEAD'])),
+      (file,side)=>readGit(['show',(side==='before'?ORIGIN.head:'HEAD')+':'+file]));
+    const runtime=verifyEnvironment(getEnvironment());
+    const repo='/repos/'+ORIGIN.repository,base=repo+'/actions',originRun=await get(base+'/runs/'+ORIGIN.run);
     const jobs=await get(base+'/runs/'+ORIGIN.run+'/attempts/1/jobs?per_page=100');
-    const log=await get(base+'/jobs/'+ORIGIN.job+'/logs',{raw:true}); verifyOrigin(originRun,jobs,log);
-    const currentRunId=Number(env.GITHUB_RUN_ID); assert(Number.isSafeInteger(currentRunId)&&currentRunId>ORIGIN.run);
+    const log=await get(base+'/jobs/'+ORIGIN.job+'/logs',{raw:true});verifyOrigin(originRun,jobs,log);
+    const currentRunId=Number(env.GITHUB_RUN_ID);assert(Number.isSafeInteger(currentRunId)&&currentRunId>ORIGIN.run);
     const current=await get(base+'/runs/'+currentRunId);
-    assert.equal(current.id,currentRunId); assert.equal(current.run_attempt,1); assert.equal(current.path,WORKFLOW);
-    assert.equal(current.head_sha,env.SOURCE_GATE_HEAD_SHA); assert.equal(current.event,'pull_request');
-    assert.equal(current.repository?.full_name,ORIGIN.repository); assert.equal(current.head_branch,originRun.head_branch);
-    assert(current.pull_requests?.some(pr=>pr.number===ORIGIN.pullRequest));
-    const query=new URLSearchParams({event:'pull_request',branch:originRun.head_branch,created:'>='+originRun.created_at,per_page:'100'});
-    const later=await get(base+'/workflows/validate-pull-request.yml/runs?'+query);
-    assert(complete(later,'workflow_runs'));
-    assert(later.workflow_runs.some(run=>run.id===ORIGIN.run)&&later.workflow_runs.some(run=>run.id===currentRunId));
-    const laterJobs=new Map();
-    for(const run of later.workflow_runs)if(![ORIGIN.run,currentRunId].includes(run.id))
-      laterJobs.set(run.id,await get(base+'/runs/'+run.id+'/attempts/'+run.run_attempt+'/jobs?per_page=100'));
-    verifyLaterRuns(later,laterJobs,originRun,currentRunId);
-    // Recheck origin after discovery; a newly requested old rerun revokes it.
+    assert.equal(current.id,currentRunId);assert.equal(current.run_attempt,1);assert.equal(current.path,WORKFLOW);
+    assert.equal(current.head_sha,env.SOURCE_GATE_HEAD_SHA);assert.equal(current.event,'pull_request');
+    assert.equal(current.repository?.full_name,ORIGIN.repository);
+    const pullRequest=verifyCurrentPullRequest(await get(repo+'/pulls/'+currentPrNumber),current,currentPrNumber);
+    const branches=[...new Set([originRun.head_branch,current.head_branch])];
+    assert(branches.every(branch=>typeof branch==='string'&&branch.length>0&&branch.length<=255));
+    const branchAudits=[];
+    for(const branch of branches){
+      const query=new URLSearchParams({event:'pull_request',branch,created:'>='+originRun.created_at,per_page:'100'});
+      const later=await get(base+'/workflows/validate-pull-request.yml/runs?'+query);
+      assert(complete(later,'workflow_runs'));
+      if(branch===originRun.head_branch)assert(later.workflow_runs.some(run=>run.id===ORIGIN.run));
+      if(branch===current.head_branch)assert(later.workflow_runs.some(run=>run.id===currentRunId));
+      const laterJobs=new Map();
+      for(const run of later.workflow_runs)if(![ORIGIN.run,currentRunId].includes(run.id))
+        laterJobs.set(run.id,await get(base+'/runs/'+run.id+'/attempts/'+run.run_attempt+'/jobs?per_page=100'));
+      verifyLaterRuns(later,laterJobs,originRun,currentRunId,branch);
+      branchAudits.push({branch,totalRuns:later.total_count,complete:true});
+    }
+    // Fresh metadata after both branch audits: no moved PR, old rerun or lost
+    // original-phase evidence may grant reuse on another current PR.
     verifyOriginMetadata(await get(base+'/runs/'+ORIGIN.run),jobs);
-    return {status:'REUSED',executedInThisRun:false,origin:ORIGIN,current:{run:currentRunId,attempt:1,head:env.SOURCE_GATE_HEAD_SHA},commands:COMMANDS,...inputs,
-      runtime,environmentEvidence:'same-hosted-image-and-observed-runtime-prerequisites-not-an-unobserved-binary-sha'};
+    verifyCurrentPullRequest(await get(repo+'/pulls/'+currentPrNumber),current,currentPrNumber);
+    return {status:'REUSED',executedInThisRun:false,origin:ORIGIN,current:{run:currentRunId,attempt:1,head:env.SOURCE_GATE_HEAD_SHA,pullRequest},commands:COMMANDS,...inputs,
+      branchAudits,runtime,environmentEvidence:'same-hosted-image-and-observed-runtime-prerequisites-not-an-unobserved-binary-sha'};
   } catch { return {status:'EXECUTE',reason:'native-input-or-evidence-unavailable-or-different'}; }
 }
+
 async function record(receipt) {
   const file='.cache/source-tree-content-proof.json', proof=JSON.parse(await fs.readFile(file,'utf8'));
   assert.equal(proof.headSha,git(['rev-parse','HEAD^{commit}']).trim()); assert.equal(proof.repository,ORIGIN.repository);

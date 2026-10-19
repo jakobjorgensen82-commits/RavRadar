@@ -4,7 +4,7 @@ import test from 'node:test';
 import {ORIGIN, WORKFLOW, JOB, STEP, COMMANDS, NEW_NATIVE_BLOCK,
   NON_NATIVE_TEST_INPUTS, NON_NATIVE_PROSE, nativeBlock, parseTree, verifyWorkflow,
   verifyInputTrees, verifyOriginMetadata, verifyOrigin, verifyEnvironment,
-  verifyLaterRuns, decideReuse} from './native-postgres-evidence.mjs';
+  verifyLaterRuns, decideReuse, verifyCurrentPullRequest, FOLLOWUP_INPUTS} from './native-postgres-evidence.mjs';
 
 const copy = value => structuredClone(value);
 const originalWorkflow = 'name: Validate RavRadar pull request\non:\n  pull_request:\npermissions:\n  contents: read\n'
@@ -91,6 +91,7 @@ test('exact native phase reuse; drift, missing evidence and later failure execut
     };
     const get=async route=>{
       if(route.endsWith('/logs'))return log;
+      if(route.endsWith('/pulls/671'))return {number:671,state:'open',base:{repo:{full_name:ORIGIN.repository},ref:'main'},head:{repo:{full_name:ORIGIN.repository},sha:current.head_sha,ref:current.head_branch}};
       if(route.endsWith('/runs/'+ORIGIN.run))return run;
       if(route.endsWith('/runs/'+currentId))return current;
       if(route.includes('/attempts/1/jobs'))return jobs;
@@ -104,4 +105,84 @@ test('exact native phase reuse; drift, missing evidence and later failure execut
     assert.equal((await decideReuse({...options,getEnvironment:()=>({...runtime,imageVersion:'changed'})})).status,'EXECUTE');
     assert.equal((await decideReuse({...options,get:async(route,...rest)=>route.endsWith('/logs')?Buffer.from('wrong'):get(route,...rest)})).status,'EXECUTE');
   }
+});
+
+test('follow-up PR identity and both native branch histories remain independently strict',async()=>{
+  const number=ORIGIN.pullRequest+1,current={...copy(run),id:ORIGIN.run+5,head_sha:newOid,
+    head_branch:'test-followup-branch',pull_requests:[{number}],status:'in_progress',conclusion:null};
+  const pr={number,state:'open',base:{repo:{full_name:ORIGIN.repository},ref:'main'},
+    head:{repo:{full_name:ORIGIN.repository},sha:newOid,ref:current.head_branch}};
+  assert.equal(verifyCurrentPullRequest(pr,current,number).number,number);
+  for(const mutate of [v=>v.number++,v=>v.state='closed',v=>v.head.sha=oid,v=>v.head.ref='other',
+      v=>v.head.repo.full_name='other/repo',v=>v.base.ref='other',v=>v.base.repo.full_name='other/repo']){
+    const value=copy(pr);mutate(value);assert.throws(()=>verifyCurrentPullRequest(value,current,number));}
+  assert.throws(()=>verifyCurrentPullRequest(pr,{...current,pull_requests:[]},number));
+  const oldLater={...copy(run),id:ORIGIN.run+2},newLater={...copy(current),id:ORIGIN.run+3,status:'completed',conclusion:'failure'};
+  const laterJobs=value=>{const result=copy(jobs);Object.assign(result.jobs[0],{run_id:value.id,head_sha:value.head_sha});return result;};
+  const oldJobs=laterJobs(oldLater),newJobs=laterJobs(newLater);
+  verifyLaterRuns({total_count:1,workflow_runs:[oldLater]},new Map([[oldLater.id,oldJobs]]),run,current.id,run.head_branch);
+  verifyLaterRuns({total_count:1,workflow_runs:[newLater]},new Map([[newLater.id,newJobs]]),run,current.id,current.head_branch);
+  for(const value of [oldLater,newLater]){
+    const failed=laterJobs(value);failed.jobs[0].steps[0].conclusion='failure';
+    assert.throws(()=>verifyLaterRuns({total_count:1,workflow_runs:[value]},new Map([[value.id,failed]]),run,current.id,value.head_branch));
+  }
+  assert.throws(()=>verifyLaterRuns({total_count:1,workflow_runs:[oldLater]},new Map([[oldLater.id,oldJobs]]),run,current.id,current.head_branch));
+  if(process.env.NATIVE_REUSE_TEST_LOG){
+    const log=await fs.readFile(process.env.NATIVE_REUSE_TEST_LOG);verifyOrigin(run,jobs,log);
+    const env={GITHUB_EVENT_NAME:'pull_request',GITHUB_REPOSITORY:ORIGIN.repository,PULL_REQUEST_NUMBER:String(number),GITHUB_RUN_ATTEMPT:'1',SOURCE_GATE_HEAD_SHA:newOid,GITHUB_RUN_ID:String(current.id)};
+    const readGit=args=>{
+      if(['status','for-each-ref','merge-base'].includes(args[0]))return '';
+      if(args[0]==='rev-parse'&&args[1]==='HEAD^{commit}')return newOid;
+      if(args[0]==='rev-parse'&&args[1]==='--is-shallow-repository')return 'false';
+      if(args[0]==='rev-parse')return verifyInputTrees(tree,tree).frozenGitTrees.find(row=>args[1]===row.head+'^{tree}').tree;
+      if(args[0]==='show')return args[1].startsWith('HEAD:')?candidateWorkflow:originalWorkflow;
+      if(args[0]==='ls-tree')return tree.map(([file,mode,type,id])=>mode+' '+type+' '+id+'\t'+file+'\0').join('');
+      throw new Error('Unexpected Git call');
+    };
+    const visited=[];
+    const get=async route=>{
+      visited.push(route);
+      if(route.endsWith('/logs'))return log;
+      if(route.endsWith('/pulls/'+number))return pr;
+      if(route.endsWith('/runs/'+ORIGIN.run))return run;
+      if(route.endsWith('/runs/'+current.id))return current;
+      if(route.includes('/runs/'+ORIGIN.run+'/attempts/1/jobs'))return jobs;
+      if(route.includes('/runs/'+oldLater.id+'/attempts/1/jobs'))return oldJobs;
+      if(route.includes('/runs/'+newLater.id+'/attempts/1/jobs'))return newJobs;
+      if(route.includes('/workflows/')){
+        const branch=new URL('https://api.github.com'+route).searchParams.get('branch');
+        if(branch===run.head_branch)return {total_count:2,workflow_runs:[run,oldLater]};
+        if(branch===current.head_branch)return {total_count:2,workflow_runs:[current,newLater]};
+      }
+      throw new Error('Unexpected API call');
+    };
+    const options={env,get,readGit,getEnvironment:()=>runtime};
+    const accepted=await decideReuse(options);assert.equal(accepted.status,'REUSED');assert.equal(accepted.branchAudits.length,2);
+    for(const branch of [run.head_branch,current.head_branch])assert(visited.some(route=>route.includes('/workflows/')&&new URL('https://api.github.com'+route).searchParams.get('branch')===branch));
+    for(const value of [oldLater,newLater]){
+      const failed=laterJobs(value);failed.jobs[0].steps[0].conclusion='failure';
+      assert.equal((await decideReuse({...options,get:route=>route.includes('/runs/'+value.id+'/attempts/1/jobs')?failed:get(route)})).status,'EXECUTE');
+    }
+    assert.equal((await decideReuse({...options,get:route=>route.endsWith('/pulls/'+number)?{...pr,state:'closed'}:get(route)})).status,'EXECUTE');
+    assert.equal((await decideReuse({...options,get:route=>route.includes('/workflows/')?{total_count:101,workflow_runs:[]}:get(route)})).status,'EXECUTE');
+  }
+});
+
+test('only exact reviewed follow-up inputs preserve every original retained PG tree entry',async()=>{
+  const {execFileSync}=await import('node:child_process');
+  const git=args=>execFileSync('git',args,{encoding:'utf8',maxBuffer:32*1024*1024});
+  const before=parseTree(git(['ls-tree','-rz','--full-tree',ORIGIN.head]));
+  const after=parseTree(git(['ls-tree','-rz','--full-tree','HEAD']));
+  const readSource=(file,side)=>git(['show',(side==='before'?ORIGIN.head:'HEAD')+':'+file]);
+  const result=verifyInputTrees(before,after,readSource);
+  assert.equal(result.retainedEntries,3228);assert.equal(result.followupWorkflowWholeInverse,true);
+  assert.throws(()=>verifyInputTrees([...before,before[0]],after,readSource));
+  assert.throws(()=>verifyInputTrees(before,[...after,after[0]],readSource));
+  assert.deepEqual(result.exactFollowupInputs.slice().sort(),FOLLOWUP_INPUTS.map(row=>row.path).sort());
+  for(const pin of FOLLOWUP_INPUTS){
+    const changed=copy(after);changed.find(row=>row[0]===pin.path)[3]=newOid;
+    assert.throws(()=>verifyInputTrees(before,changed,readSource));
+    assert.throws(()=>verifyInputTrees(before,after,(file,side)=>readSource(file,side)+(file===pin.path&&side==='after'?'\n':'')));
+  }
+  assert.throws(()=>verifyInputTrees(before,after));
 });
