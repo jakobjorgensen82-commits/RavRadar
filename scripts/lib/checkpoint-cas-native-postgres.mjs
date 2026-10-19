@@ -5,7 +5,6 @@ import os from 'node:os';
 import path from 'node:path';
 import { execFile } from 'node:child_process';
 import { fileURLToPath, pathToFileURL } from 'node:url';
-import { exactRelativeModuleSpecifiers } from './static-module-closure.mjs';
 import { accountAssistantCatalogQuery, verifyAccountAssistantCatalogMetadata }
   from '../verify-account-assistant-schema.mjs';
 
@@ -125,8 +124,10 @@ async function issued213Factory(root) {
     + slice('const samples =', 'const sourceDocument =');
   assert.equal(hash(factory), '71ce29ec98e43bfa02017a145c4438346f1d8a1f4323526ec58e4b1081d81e36');
   const scanner = 'scripts/lib/static-module-closure.mjs';
-  assert.equal(sqlText(await fs.readFile(path.join(ISSUED_ROOT, scanner), 'utf8')),
-    String(await read(scanner)), 'Use the actual reviewed issued static scanner');
+  const scannerBytes = await read(scanner);
+  assert.equal(hash(scannerBytes), '675f91e7942143a78636e219e54bd7fa0ff25ddcd1998657dd215105054938b0',
+    'Use the whole genuine044d issued scanner only for its original fixture');
+  const { exactRelativeModuleSpecifiers } = await import('data:text/javascript;base64,' + scannerBytes.toString('base64'));
   const tSource = String(await read(ISSUED_T));
   const declaration = /export const RAVSCORE_CONTINUATION_IMPLEMENTATION_FILES = Object\.freeze\(\[\n((?:  '[A-Za-z0-9_./-]+',\n)+)\]\);/.exec(tSource);
   assert(declaration, 'Exact historical T declaration required');
@@ -929,6 +930,13 @@ select public.native_checkpoint_attempt(${baseline},${version},(select payload f
       tcpEnabled:false,normalModelPartCount:673,sqlExecuted:true,migrationExecuted:true,
       migrationSQLSha256:hash(newSource),caseCount:reports.length,
       oldCasDefinitionSha256:hash(oldCas),newCasDefinitionSha256:hash(newCas),reports};
+  } catch (error) {
+    if (error?.code === 'ERR_ASSERTION') {
+      console.error(JSON.stringify({ kind: 'NATIVE_POSTGRES_FIRST_ASSERTION_FAILURE',
+        phase: NATIVE_PSQL_PHASES.has(nativePhase) ? nativePhase : 'UNKNOWN',
+        category: 'ASSERTION_FAILED', privatePayloadIncluded: false }));
+    }
+    throw error;
   } finally {
     try {
     if (started) {

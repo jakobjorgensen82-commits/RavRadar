@@ -1,3 +1,9 @@
+## 19. oktober — historisk scanner isoleres i den oprindelige databaseprøve
+
+PR668's næste kildekontrol bestod den tidlige B/S-prøve, de native anskaffelsesprøver og DMI-diagnosen, men stoppede i databaseprøvens historiske fixtureskabelse. Den normale lokale kildeindgang reproducerer årsagen: den gamle213-fixture krævede, at den aktuelle importscanner var byteidentisk med den oprindelige044d-scanner. Testværten bruger nu den ægte, nøjagtigt hashbundne044d-scanner alene til den gamle fixture. Alle27 kildepins, tilstandsbyggere og gamle migrationsfiler bevares; produktets forbedrede scanner ændres ikke.
+
+Samme normale kildeindgang består efter rettelsen med673 dele og normal gemning. Det er ikke en bestået Linux/PostgreSQL-prøve. En lille assertiondiagnostik bevarer alene den faste native-testfase og fejlkategori uden rå fejltekst, SQL, stack eller payload; den oprindelige fejl og fysisk stop/cleanup bevares. Ny præcis samlet kildekontrol og faktisk installation/offentlig effekt er fortsat åbne. Ingen modelbinding, SQL-semantik, P0-kode eller produktion ændres her.
+
 ## 19. oktober — præcis versionsinverse i assistentens kildekontrol
 
 Den første PR668-kontrol stoppede i den tidlige B/S-prøves indlæsning, før PostgreSQL og den samlede kildekontrol. Workflowets eneste ændring på denne sti var fem klientnavne fra581 til583, men testlæserens hele kildeinverse genkendte kun581. En nøjagtigt hashbundet, test-only583-til581-inverse genbruges nu både før de gamle C-/RAW-/checkout-inverser og ved C-prøvens rå indlæsning. Alle gamle kildeorakler, kontroludsagn og mutationsafslag bevares; produktworkflow, modelbinding, SQL og P0-kode ændres ikke.
