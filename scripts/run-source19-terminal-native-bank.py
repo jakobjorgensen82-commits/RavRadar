@@ -237,7 +237,7 @@ def current_cohort_inputs(data, files):
         raise ValueError('SOURCE_CURRENT_COHORT_BASELINE')
     driver = source_current_cohort_read(ROOT, 'scripts/fixtures/source19-terminal-proof-inputs-v2/current-cohort-v1/driver.source.txt')
     inverse_raw = source_current_cohort_read(ROOT, 'scripts/fixtures/source19-terminal-proof-inputs-v2/current-cohort-v1/driver-inverse.json')
-    if digest(driver) != '8d6667525b0f60cc498f715bfa184d2fd8e2e15b2ab01ad74f4f09507d06032e' or digest(inverse_raw) != 'b44548dcd24da86bbcc3b87ca6939fad108c25e69c0b1ed530dce5da6abc6cba':
+    if digest(driver) != '3dffe008d1a3dde3c51bce038755b6abdc316b9e07ba4898741cf860bade2c66' or digest(inverse_raw) != 'b93448129b5f5a163b1d56a3e14aced3edb6650a61b77506b8a1c997e96c8343':
         raise ValueError('SOURCE_CURRENT_COHORT_DRIVER')
     inverse = driver.decode('utf-8')
     for hunk in reversed(json.loads(inverse_raw)):

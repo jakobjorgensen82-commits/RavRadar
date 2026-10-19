@@ -160,5 +160,23 @@
     "before": "                'dispositionObservation': disposition_observation,\n",
     "after": "                'dispositionObservation': disposition_observation,\n                'transportObservation': transport_observation,\n",
     "count": 1
+  },
+  {
+    "path": "scripts/fixtures/source19-terminal-proof-inputs-v2/current-cohort-v1/driver.source.txt",
+    "before": "    def route(self, request, host, parsed):\n        data, method, route = self.protocol, request.command, parsed.path\n",
+    "after": "    def cache_restore_reply(self, request, body):\n        # Same normal fallback validator, now given the one already parsed body.\n        if not isinstance(body, dict) or not isinstance(body.get('key'), str) or not re.fullmatch(r'[a-f0-9]{64}', body.get('version', '')):\n            raise AssertionError('CACHE_RESTORE_REQUEST_INVALID')\n        if not body['key'].startswith(('weather-preflight-state-v1-Linux-', 'ravscore-continuation-schema6-v2-', 'weather-private-progress-encrypted-v2-Linux-main-')):\n            raise AssertionError('CACHE_SCOPE_REFUSED')\n        request.reply(200, {'ok': False, 'signed_download_url': ''})\n        return 'cache-miss'\n\n    def route(self, request, host, parsed):\n        data, method, route = self.protocol, request.command, parsed.path\n",
+    "count": 1
+  },
+  {
+    "path": "scripts/fixtures/source19-terminal-proof-inputs-v2/current-cohort-v1/driver.source.txt",
+    "before": "            body = request.body()\n            if not isinstance(body, dict) or not isinstance(body.get('key'), str) or not re.fullmatch(r'[a-f0-9]{64}', body.get('version', '')):\n                raise AssertionError('CACHE_RESTORE_REQUEST_INVALID')\n            if not body['key'].startswith(('weather-preflight-state-v1-Linux-', 'ravscore-continuation-schema6-v2-', 'weather-private-progress-encrypted-v2-Linux-main-')):\n                raise AssertionError('CACHE_SCOPE_REFUSED')\n            request.reply(200, {'ok': False, 'signed_download_url': ''})\n            return 'cache-miss'\n",
+    "after": "            return self.cache_restore_reply(request, request.body())\n",
+    "count": 1
+  },
+  {
+    "path": "scripts/fixtures/source19-terminal-proof-inputs-v2/current-cohort-v1/driver.source.txt",
+    "before": "            if parsed.path == service + 'GetCacheEntryDownloadURL' and raw_key:\n                request.reply(200, {'ok': False, 'signed_download_url': ''})\n                return 'normal-raw-cache-miss'\n",
+    "after": "            if parsed.path == service + 'GetCacheEntryDownloadURL':\n                if raw_key:\n                    request.reply(200, {'ok': False, 'signed_download_url': ''})\n                    return 'normal-raw-cache-miss'\n                return self.cache_restore_reply(request, value)\n",
+    "count": 1
   }
 ]

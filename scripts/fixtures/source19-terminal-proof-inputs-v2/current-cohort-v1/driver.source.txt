@@ -927,6 +927,15 @@ class ProtocolFixture:
             if self.thread.is_alive():
                 raise AssertionError('FIXTURE_SERVER_CLOSE_UNPROVED')
 
+    def cache_restore_reply(self, request, body):
+        # Same normal fallback validator, now given the one already parsed body.
+        if not isinstance(body, dict) or not isinstance(body.get('key'), str) or not re.fullmatch(r'[a-f0-9]{64}', body.get('version', '')):
+            raise AssertionError('CACHE_RESTORE_REQUEST_INVALID')
+        if not body['key'].startswith(('weather-preflight-state-v1-Linux-', 'ravscore-continuation-schema6-v2-', 'weather-private-progress-encrypted-v2-Linux-main-')):
+            raise AssertionError('CACHE_SCOPE_REFUSED')
+        request.reply(200, {'ok': False, 'signed_download_url': ''})
+        return 'cache-miss'
+
     def route(self, request, host, parsed):
         data, method, route = self.protocol, request.command, parsed.path
         query = urllib.parse.parse_qs(parsed.query, strict_parsing=True) if parsed.query else {}
@@ -957,13 +966,7 @@ class ProtocolFixture:
                 return request.fixed_failure('CACHE_WRITE_OR_ROUTE_REFUSED')
             if request.headers.get('Authorization') != 'Bearer source19-synthetic-cache':
                 raise AssertionError('SYNTHETIC_CACHE_AUTH_REQUIRED')
-            body = request.body()
-            if not isinstance(body, dict) or not isinstance(body.get('key'), str) or not re.fullmatch(r'[a-f0-9]{64}', body.get('version', '')):
-                raise AssertionError('CACHE_RESTORE_REQUEST_INVALID')
-            if not body['key'].startswith(('weather-preflight-state-v1-Linux-', 'ravscore-continuation-schema6-v2-', 'weather-private-progress-encrypted-v2-Linux-main-')):
-                raise AssertionError('CACHE_SCOPE_REFUSED')
-            request.reply(200, {'ok': False, 'signed_download_url': ''})
-            return 'cache-miss'
+            return self.cache_restore_reply(request, request.body())
         if host == 'fixture.github.io' and method == 'GET' and route == '/repo/data/live/manifest.json':
             if query != {'weather-preflight': ['200-2']}:
                 raise AssertionError('PUBLIC_MANIFEST_QUERY_REFUSED')
@@ -1528,9 +1531,11 @@ class TerminalProtocolFixture(ProtocolFixture):
                 raise AssertionError('SOURCE_TERMINAL_SDK_KEY_REQUIRED')
             raw_key = re.fullmatch(r'dmi-grib-v4-Linux-\d{4}-W\d{2}-200-2', key)
             cipher_key = key == 'weather-private-progress-encrypted-v2-Linux-main-200-2'
-            if parsed.path == service + 'GetCacheEntryDownloadURL' and raw_key:
-                request.reply(200, {'ok': False, 'signed_download_url': ''})
-                return 'normal-raw-cache-miss'
+            if parsed.path == service + 'GetCacheEntryDownloadURL':
+                if raw_key:
+                    request.reply(200, {'ok': False, 'signed_download_url': ''})
+                    return 'normal-raw-cache-miss'
+                return self.cache_restore_reply(request, value)
             if parsed.path in {service + 'CreateCacheEntry', service + 'FinalizeCacheEntryUpload'}:
                 if not (raw_key or cipher_key):
                     raise AssertionError('SOURCE_TERMINAL_SDK_SAVE_SCOPE_REFUSED')
