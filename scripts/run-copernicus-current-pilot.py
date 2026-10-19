@@ -2190,6 +2190,9 @@ def run_bounded_operational_refresh(
 
 def main() -> int:
     args = arguments()
+    checkpoint_started_at = time.monotonic() if args.checkpoint_only else None
+    if checkpoint_started_at is not None:
+        print("Copernicus local recovery phase: load; elapsedSeconds=0.", flush=True)
     registry = validate_target_registry(json.loads(args.targets.read_text(encoding="utf-8")))
     reference = selected_reference(args.at, registry)
     acquisition_at = parse_time(args.acquisition_at, "acquisition time") if args.acquisition_at else datetime.now(timezone.utc)
@@ -2372,11 +2375,61 @@ def main() -> int:
             "records": merged_records,
             "collections": [],
         }
+        # Keep the authenticated base separate from the rebuilt candidate. The
+        # strict transaction updates the base object only after all three
+        # prepared documents have passed verification and durable commit.
+        checkpoint_base_donor = donor_state if args.checkpoint_only else None
+        if checkpoint_started_at is not None:
+            print(
+                "Copernicus local recovery phase: rebuild; "
+                f"elapsedSeconds={time.monotonic() - checkpoint_started_at:.3f}.",
+                flush=True,
+            )
         donor_state = build_copernicus_donor_bank(
             merged_shadow, targets=authoritative_targets, attempts=source_attempts,
             previous_bank=donor_state, production_reference_at=reference,
             **stage_positive_evidence(donor_state),
         )
+        if args.checkpoint_only:
+            print(
+                "Copernicus local recovery phase: strict-transaction; "
+                f"elapsedSeconds={time.monotonic() - checkpoint_started_at:.3f}.",
+                flush=True,
+            )
+            # Recovery needs no acquisition hint or preliminary selection. The
+            # existing strict transaction validates this exact rebuilt donor,
+            # checks its complete projection, and performs the normal selection
+            # before committing bank -> shadow -> stage and removing receipts.
+            consolidate_durable_segment_progress(
+                shadow_path=args.shadow,
+                source_stage_path=args.source_stage,
+                segment_journal_path=args.segment_journal,
+                registry=registry,
+                target_identities=target_identities,
+                attempts=source_attempts,
+                updated_at=acquisition_at,
+                donor_bank_path=args.donor_bank,
+                donor_state=checkpoint_base_donor,
+                validated_donor_candidate=donor_state,
+                bank_changed=True,
+            )
+            if restored_segment_journal is not None:
+                print(
+                    "Replayed and consolidated durable Copernicus segment receipts: "
+                    f"entryCount={len(restored_segment_journal['entries'])}.",
+                    flush=True,
+                )
+            print(
+                "Copernicus local recovery phase: committed; "
+                f"elapsedSeconds={time.monotonic() - checkpoint_started_at:.3f}.",
+                flush=True,
+            )
+            print(
+                "Copernicus durable timeout recovery completed without provider "
+                "or network work.",
+                flush=True,
+            )
+            return 0
         initial_projection = projected_donor_shadow(donor_state, targets=authoritative_targets)
         existing_acquisitions, existing_records = initial_projection["acquisitions"], initial_projection["records"]
         source_attempts = journal_for_donor_projection(source_attempts, bank=donor_state,
@@ -2471,13 +2524,6 @@ def main() -> int:
                 flush=True,
             )
         existing = initial_checkpoint.shadow
-        if args.checkpoint_only:
-            print(
-                "Copernicus durable timeout recovery completed without provider "
-                "or network work.",
-                flush=True,
-            )
-            return 0
     attempted_pairs_by_source = {
         product["source"]: current_reference_attempt_pairs(
             source_attempts,

@@ -8,8 +8,11 @@ import inspect
 import os
 import sys
 import types
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from unittest.mock import patch
+
+from lib import dmi_native_provenance as native_provenance
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -712,4 +715,173 @@ assert producer.dkss_collection_deferred_only(deferred_run, 3)
 assert not producer.dkss_collection_deferred_only({**deferred_run, "assetsProcessed": 1}, 3)
 assert not producer.dkss_collection_deferred_only(deferred_run, 4)
 
+def check_single_asset_operational_attestation_scope() -> None:
+    """Compare the real full-horizon oracle and exact-hour normal qualifier."""
+    reference = datetime(2026, 1, 1, tzinfo=timezone.utc)
+    targets = [TARGET, {**TARGET, "partId": "TEST-SECOND"}]
+    document = {"zones": {}}
+    for target in targets:
+        own_zone = {**ZONE, "id": f"PART::{target['partId']}"}
+        entity = producer.sampling_identity(own_zone)
+        assert entity is not None
+        hours = {}
+        for offset in range(-1, producer.PUBLIC_END_OFFSET_HOURS + 2):
+            valid = producer.canonical_time(reference + timedelta(hours=offset))
+            model_run = producer.canonical_time(
+                reference - timedelta(hours=6) if offset < 0 else reference
+            )
+            own_source = producer.native_component_source(
+                "dkss_lf", model_run, valid, component="current", zone=own_zone,
+                grid_candidate=CANDIDATE, capture=CAPTURE,
+                spatial_selection=producer.COMPONENT_SPATIAL_SELECTION["current"],
+                verticalLayer="depthBelowSea:1", verticalLayerRankM=1.0,
+                vectorSelection=producer.CURRENT_VECTOR_SELECTION,
+                vectorSemanticsVersion=producer.CURRENT_VECTOR_SEMANTICS_VERSION,
+            )
+            assert own_source is not None
+            hours[valid] = {
+                "time": valid, "current-u": 0.1, "current-v": -0.2,
+                "sources": {"current": own_source},
+            }
+        document["zones"][own_zone["id"]] = {**entity, "hourly": hours}
+    original_document = copy.deepcopy(document)
+    original_qualifier = native_provenance._verified_part_current_row
+    expected_full_calls = len(targets) * (producer.PUBLIC_END_OFFSET_HOURS + 1)
+    scope_cases = 0
+    for offset in (0, 59, producer.PUBLIC_END_OFFSET_HOURS, -1, producer.PUBLIC_END_OFFSET_HOURS + 1):
+        valid = producer.canonical_time(reference + timedelta(hours=offset))
+        selected = document["zones"][ZONE_ID]["hourly"][valid]["sources"]["current"]
+        asset = producer.canonical_current_source_asset(selected)
+        assert asset is not None
+        with patch.object(native_provenance, "_verified_part_current_row", wraps=original_qualifier) as full_rows:
+            expected = producer.current_operational_attestation(
+                document, targets, reference, [asset], [],
+            )["verifiedPairSources"]
+        with patch.object(native_provenance, "_verified_part_current_row", wraps=original_qualifier) as bounded_rows:
+            actual = producer.current_operational_asset_pair_sources(document, targets, reference, asset)
+        assert actual == expected, "SINGLE_ASSET_FULL_PAIR_SOURCE_PROJECTION_CHANGED"
+        assert full_rows.call_count == expected_full_calls
+        if 0 <= offset <= producer.PUBLIC_END_OFFSET_HOURS:
+            assert len(actual) == len(targets)
+            assert bounded_rows.call_count == len(targets), "SINGLE_ASSET_STILL_QUALIFIES_FULL_HORIZON"
+            assert full_rows.call_count > bounded_rows.call_count
+        else:
+            assert actual == [], "PRIVATE_SUPPORT_HOUR_BECAME_OPERATIONAL"
+        scope_cases += 1
+    assert document == original_document, "SINGLE_ASSET_QUALIFICATION_MUTATED_ORIGINALS"
+
+    # Old rich sources may carry a validTime alias in addition to the native
+    # time. The canonical asset key prefers the alias, while row admission
+    # uses nativeValidTime. The final full attestation rejects their mismatch;
+    # the optimization must not turn that refusal into partial success.
+    alias_document = copy.deepcopy(original_document)
+    native_time = producer.canonical_time(reference + timedelta(hours=59))
+    alias_time = producer.canonical_time(reference + timedelta(hours=60))
+    for own in alias_document["zones"].values():
+        own["hourly"][native_time]["sources"]["current"]["validTime"] = alias_time
+    alias_asset = producer.canonical_current_source_asset(
+        original_document["zones"][ZONE_ID]["hourly"][alias_time]["sources"]["current"]
+    )
+    assert alias_asset is not None
+    alias_before = copy.deepcopy(alias_document)
+    for alias_caller in (
+        lambda: producer.current_operational_attestation(
+            alias_document, targets, reference, [alias_asset], [],
+        )["verifiedPairSources"],
+        lambda: producer.current_operational_asset_pair_sources(
+            alias_document, targets, reference, alias_asset,
+        ),
+    ):
+        with patch.object(native_provenance, "_verified_part_current_row", wraps=original_qualifier) as alias_rows:
+            try:
+                alias_caller()
+            except ValueError as error:
+                assert str(error) == "Verified part/source identity is invalid"
+            else:
+                raise AssertionError("OLD_TIME_ALIAS_REFUSAL_BECAME_SUCCESS")
+        assert alias_rows.call_count == expected_full_calls, "OLD_TIME_ALIAS_LOST_NORMAL_FULL_PATH"
+    assert alias_document == alias_before, "OLD_TIME_ALIAS_ORIGINAL_CHANGED"
+    scope_cases += 1
+
+    valid = producer.canonical_time(reference + timedelta(hours=59))
+    old_asset = producer.canonical_current_source_asset(
+        document["zones"][ZONE_ID]["hourly"][valid]["sources"]["current"]
+    )
+    assert old_asset is not None
+    for mutation in ("wrong-row-time", "invalid-native-grid", "changed-point"):
+        changed = copy.deepcopy(original_document)
+        for own in changed["zones"].values():
+            row = own["hourly"][valid]
+            if mutation == "wrong-row-time":
+                row["time"] = producer.canonical_time(reference + timedelta(hours=60))
+            elif mutation == "invalid-native-grid":
+                row["sources"]["current"]["gridDefinitionSha256"] = "not-a-grid-sha256"
+            else:
+                own["samplingPoint"] = [2.01, 1.0]
+        before = copy.deepcopy(changed)
+        expected = producer.current_operational_attestation(
+            changed, targets, reference, [old_asset], [],
+        )["verifiedPairSources"]
+        assert producer.current_operational_asset_pair_sources(changed, targets, reference, old_asset) == expected == []
+        assert changed == before
+        scope_cases += 1
+    for other_reference in (reference + timedelta(minutes=30), reference.replace(tzinfo=None)):
+        outcomes = []
+        for caller in (
+            lambda: producer.current_operational_attestation(document, targets, other_reference, [old_asset], [])["verifiedPairSources"],
+            lambda: producer.current_operational_asset_pair_sources(document, targets, other_reference, old_asset),
+        ):
+            try:
+                outcomes.append(("value", caller()))
+            except (TypeError, ValueError) as error:
+                outcomes.append(("error", type(error), str(error)))
+        assert outcomes[0] == outcomes[1], "NONSTANDARD_REFERENCE_REFUSAL_CHANGED"
+        if other_reference.tzinfo is not None:
+            assert outcomes[0][0] == "error"
+        scope_cases += 1
+    for own in document["zones"].values():
+        winner = own["hourly"][valid]["sources"]["current"]
+        winner["modelRun"] = producer.canonical_time(reference + timedelta(hours=6))
+        winner["leadTimeHours"] -= 6
+        winner["itemId"] = "newer-exact-stac-winner"
+        winner["contentSha256"] = "e" * 64
+    new_asset = producer.canonical_current_source_asset(
+        document["zones"][ZONE_ID]["hourly"][valid]["sources"]["current"]
+    )
+    assert new_asset is not None
+    newer_document = copy.deepcopy(document)
+    for asset, count in ((old_asset, 0), (new_asset, len(targets))):
+        expected = producer.current_operational_attestation(
+            document, targets, reference, [asset], [],
+        )["verifiedPairSources"]
+        assert producer.current_operational_asset_pair_sources(document, targets, reference, asset) == expected
+        assert len(expected) == count, "A_PARSED_LOSER_REPLACED_THE_SELECTED_ORIGINAL"
+        scope_cases += 1
+    malformed = {**new_asset, "contentSha256": "not-a-hash"}
+    for caller in (
+        lambda: producer.current_operational_attestation(document, targets, reference, [malformed], []),
+        lambda: producer.current_operational_asset_pair_sources(document, targets, reference, malformed),
+    ):
+        try:
+            caller()
+        except ValueError as error:
+            assert str(error) == "Selected current source asset is invalid"
+        else:
+            raise AssertionError("INVALID_SOURCE_ASSET_ACCEPTED")
+    assert document == newer_document, "SINGLE_ASSET_QUALIFICATION_MUTATED_SELECTED_WINNER"
+    # The normal caller uses the optimized projection, not an unreferenced helper.
+    main_tree = ast.parse(inspect.getsource(producer.main))
+    projection_calls = [node for node in ast.walk(main_tree)
+                        if isinstance(node, ast.Call) and isinstance(node.func, ast.Name)
+                        and node.func.id == "current_operational_asset_pair_sources"]
+    assert len(projection_calls) == 1
+    assert len(projection_calls[0].args) == 4
+    assert isinstance(projection_calls[0].args[-1], ast.Name)
+    assert projection_calls[0].args[-1].id == "step_source_asset"
+    assert original_document["zones"][ZONE_ID]["hourly"][producer.canonical_time(reference - timedelta(hours=1))] == \
+        document["zones"][ZONE_ID]["hourly"][producer.canonical_time(reference - timedelta(hours=1))]
+    print(f"DMI selected-asset attestation scope OK: {scope_cases} projection cases; normal row qualifications {expected_full_calls}->{len(targets)}")
+
+
+check_single_asset_operational_attestation_scope()
 print("DMI DKSS primary-mode contract OK")

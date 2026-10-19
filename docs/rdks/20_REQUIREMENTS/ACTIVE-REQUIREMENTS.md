@@ -1,3 +1,9 @@
+## 19. oktober — samme fulde datakontrol uden gentaget leverandørarbejde
+
+AKTIVT: Den normale Copernicus-checkpoint-kalder skal genbruge sin faktisk genopbyggede kandidat gennem den eksisterende strenge transaktion, med en særskilt autentificeret base. Alle tre forberedte snapshots skal verificeres før bank, shadow og stage committes i samme rækkefølge; journalen fjernes først derefter. Acquisition-plan og en gentagen foreløbig udvælgelse må ikke forbruge den lokale genoptagelsesreserve. Falsk baseline-genbrug eller svækket kildeadgang er ikke tilladt.
+
+DMI's indre enkeltfilskvalifikation må begrænses til den valgte fils egen eksakte operationelle time, når hele den tidligere pair/source-projektion er uændret. Samme targets, native-kilde-/gitterkontroller og valgte original skal bevares. Private støttetimer må ikke få operationelle par; ikke-standard input bruger den hidtidige fulde vej. Fuld checkpoint-/slutledgerkontrol, schedulerprioritet og budgetter ændres ikke. Lokale prøver er ikke målt national hastighed eller faktisk leverandørkomplethed.
+
 ## 19. oktober — bevar og genbrug faktisk færdig almindelig beregning
 
 AKTIVT: En sen leveringsfejl må ikke alene udløse ny providerhentning eller rescore, når den eksakte færdige almindelige beregning findes som gyldigt, autentificeret krypteret artifact. Normal spec/create/seal/upload skal gemme resultatet før sene artifactgates uden central eller offentlig skrivning. Genoptagelse kræver original producentidentitet, samme beregnings-/admin-/modelgrundlag, ægte uændret parent-B/S og alle normale 55+3-, runtime-, no-loss-, privacy- og leveringskontroller. Ukendt skrivning, ændret parent og manglende/udløbet artifact afviser genbrug. Ingen falsk numerisk adgang eller generel kildeundtagelse; se DEC-0249's tillæg 19. oktober.

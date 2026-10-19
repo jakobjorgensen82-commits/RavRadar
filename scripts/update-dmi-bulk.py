@@ -12590,6 +12590,71 @@ def current_operational_attestation(
     )
 
 
+def _current_operational_asset_rows_unaliased(
+    document: dict[str, Any], targets: list[dict[str, Any]],
+) -> bool:
+    """Fall back for old time aliases or malformed containers, never re-admit."""
+    if type(document) is not dict or type(targets) not in (list, tuple):
+        return False
+    zones = document.get("zones")
+    if type(zones) is not dict:
+        return False
+    for target in targets:
+        if type(target) is not dict or type(target.get("partId")) is not str:
+            return False
+        zone = zones.get(f"PART::{target['partId'].strip()}")
+        if type(zone) is not dict or type(zone.get("hourly")) is not dict:
+            return False
+        for row in zone["hourly"].values():
+            if type(row) is not dict or type(row.get("sources")) is not dict:
+                return False
+            sources = row["sources"]
+            if "current" in sources and (
+                type(sources["current"]) is not dict
+                or "validTime" in sources["current"]
+            ):
+                return False
+    return True
+
+
+def current_operational_asset_pair_sources(
+    document: dict[str, Any],
+    targets: list[dict[str, Any]],
+    reference: datetime,
+    source_asset: dict[str, Any],
+) -> list[dict[str, Any]]:
+    """Qualify one selected asset without rechecking unrelated native hours.
+
+    The ordinary validator binds every accepted row to the allowed asset's
+    exact valid time. Only its pair/source projection is used by this caller;
+    full checkpoint and terminal attestations retain the complete horizon.
+    Keep the original path for invalid or out-of-window assets, including its
+    normal refusals and the empty result for private support hours.
+    """
+    exact_utc_reference = bool(
+        type(reference) is datetime
+        and reference.tzinfo is timezone.utc
+        and reference == reference.replace(minute=0, second=0, microsecond=0)
+    )
+    source = (
+        canonical_current_source_asset(source_asset)
+        if exact_utc_reference and _current_operational_asset_rows_unaliased(document, targets)
+        else None
+    )
+    if source is not None:
+        valid = datetime.fromisoformat(source["validTime"].replace("Z", "+00:00"))
+        if (
+            valid == valid.replace(minute=0, second=0, microsecond=0)
+            and reference <= valid <= reference + timedelta(hours=PUBLIC_END_OFFSET_HOURS)
+        ):
+            return coastal_part_current_attestation(
+                document, targets, valid, valid, [source_asset], [],
+            )["verifiedPairSources"]
+    return current_operational_attestation(
+        document, targets, reference, [source_asset], [],
+    )["verifiedPairSources"]
+
+
 class CurrentOperationalLedgerResult(NamedTuple):
     """One ledger and its already-validated, same-input full attestation.
 
@@ -17030,16 +17095,13 @@ def main() -> int:
                         and step_complete
                         and step_source_asset is not None
                     ):
-                        step_attestation = current_operational_attestation(
+                        step_pair_sources = current_operational_asset_pair_sources(
                             result,
                             coastal_part_targets,
                             locked_production_reference,
-                            [step_source_asset],
-                            [],
+                            step_source_asset,
                         )
-                        for pair_source in (
-                            step_attestation.get("verifiedPairSources") or []
-                        ):
+                        for pair_source in step_pair_sources:
                             selected_source = canonical_current_source_asset(
                                 pair_source.get("source")
                             )

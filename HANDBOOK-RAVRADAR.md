@@ -1,3 +1,13 @@
+## 89.258 Leverandørtid er ikke det samme som dækningsgrad
+
+Kort fortalt: En vejrhentning består både af hentning, kontrol, genbrug, beregning og sikker gemning. Et tidsloft er ikke et krav om at bruge al tiden.
+
+Et leverandørtrin kan slutte tidligere, når det har behandlet sin aktuelle kø. Der kan stadig være timer, som leverandøren ikke kan levere, eller svar, der ikke opfylder kravene til tidspunkt, sted og indhold. De timer skal fortsat stå som manglende. At gemt fremgang er gyldig, betyder ikke, at hele prognosen er komplet.
+
+De tre leverandørers opgaver er forskellige. DMI er førstevalg; Copernicus og Open-Meteo udfylder kvalificerede rester. Open-Meteos særlige strømtrin udfylder ikke samtidig alle mangler i vind, bølger, vandstand og temperatur. Vandstandens kildekrav kan ikke erstattes af en anden leverandør alene for at få færre mangler.
+
+Den interne behandling skal undgå at bygge samme grundlag flere gange og undgå at kontrollere alle andre timer, når kun én fils egen time er relevant. Det må ikke ændre de godkendte data, kilder, kystpunkter, scoreformel eller fulde slutkontroller. En lokal forbedring er først dokumenteret i drift, når en faktisk vejrhentning har gemt og leveret resultatet sikkert.
+
 ## 89.257 Gem det færdige arbejde, før det leveres
 
 Kort fortalt: En færdig prognose skal kunne gemmes sikkert, så en senere leveringsfejl ikke tvinger systemet til at hente og beregne det samme igen.
