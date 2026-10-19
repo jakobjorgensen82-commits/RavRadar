@@ -1,0 +1,31 @@
+{
+  "schemaVersion": "3.0.0",
+  "sourceVersion": "4.0.582",
+  "switchVersion": "RAVSCORE-PROFILE-SWITCH-INTEGRATED-1.0.0",
+  "requestedProfileId": "RRS-COASTAL-PROCESS-INTEGRATED-1.1.0",
+  "activeModelId": "RRS-COASTAL-PROCESS-INTEGRATED-1.1.0",
+  "stateSchemaVersion": "6.0.0",
+  "variantId": "COASTAL-SUPPLY-MOBILISATION-BOUNDED-WAVE-APPROACH-HUNTABILITY-2",
+  "profileId": "cn-003-015-in10-out8-full24-cos48-gap3-wave4-48-historybounds12d-lastmileewma4-tail40-atten15-v5",
+  "componentSchemaId": "ravscore-components-huntability-delivery-mobilisation-bounds-v5",
+  "explanationSchemaId": "ravscore-explanation-integrated-bounds-v5",
+  "rankingPolicyId": "direction-broad-19-history-tie-v2",
+  "bestTimePolicyId": "score-history-water-tie-earliest-v3",
+  "presentationPolicyId": "score-bands-35-55-75-exceptional90-v1",
+  "modelContractSha256": "a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b",
+  "modelBundleSha256": "504393dd6f819f6d5a1dc172092e26b10cae26fe684342aaaed001c51e466d94",
+  "rollbackModelId": "RRS-CANDIDATE-G-CURRENT-LED-WAVE-MOBILISATION-RESEARCH-3",
+  "runtimeFallbackModelId": null,
+  "modelActivationEnabled": true,
+  "automaticActivationAllowed": false,
+  "publicAvailabilityPolicy": "integrated-model-local-fail-closed",
+  "crossModelRuntimeFallbackAllowed": false,
+  "migrationRequiredAtFirstCutover": true,
+  "status": "owner-approved-integrated-model-only-local-fail-closed",
+  "activationAuthority": "DEC-0110-integrated-ravscore-release-decision",
+  "evidence": {
+    "decisionId": "DEC-0110",
+    "exactHeadValidationRequired": true,
+    "freshProductionValidationRequired": true
+  }
+}

@@ -1,3 +1,16 @@
+## 19. oktober — faktisk P0-levering og isoleret SOURCE-testopfølgning
+
+- [x] Præcis PR673-kildekontrol 39278848551/1, faktisk PostgreSQL og national opstart med to efterfølgere.
+- [x] 39291575502/1 på main c72d6730: faktisk 55+3, sole060000-installation/genlæsning, privat B før S, serverfunktioner, Pages, offentlig 210/673-kontrol og central afslutning kl. 20.00 dansk tid.
+- [x] Uafhængig, afgrænset offentlig kontrol af nyt rr-20261019171204-210 med reference kl. 02.00 dansk tid; fem nationale kalenderdage og én aktuel times dækning. Dette er gemte vejrinput, ikke ny leverandørhentning eller fuld fremtidig numerisk dækning.
+- [x] Præcis én almindelig standardkørsel 39299413035/1 startet kl. 20.03; faktisk privat genlæsning og B/S-sammenkobling bestået.
+- [ ] Denne almindelige kørsels nye leverandørdata, beregning, gemning, upload og offentlige effekt samt efterfølgende uændret cron. Browserforbindelsen svarer ikke; genaktivering er ikke påstået.
+- [x] SOURCEs særlige nativejob i 39269013971/1 er bestået; normal kildekontrols første fejl er identificeret i selvtesten før PostgreSQL.
+- [x] Lokal testrettelse bevarer gamle præcise kontroller på en autentisk P0-fixture og prøver afvist genbrug på en autentisk SOURCE-fixture uden antagelse om callerens HEAD. Produktionslæser, afslag, SQL og model er uændrede.
+- [ ] Samlede målprøver efter komposition med leveret main, præcis ny kildekontrol og faktisk SOURCE-integration/aktivering. 90-minuttersloftet og de tre eksisterende ikke-native prøveforbrugere skal bevares.
+
+SOURCE og assistentkandidaten er ikke aktiveret. Alle fem hovedmål er åbne; fristen 18. oktober er overskredet. Live-status og detaljeret privat evidens ligger i checkpointet. Ældre modstridende status nedenfor er dateret historik.
+
 ## 19. oktober — 4.0.584: PR-kildekontrollens ydre jobloft
 
 - Faktisk PR673: native PostgreSQL bestod på 28:46 og kildevalidering på 30:43; den efterfølgende nationalprøve blev afbrudt omkring det konfigurerede 75-minuttersloft under anden efterfølger, efter 601/673 dele. Tidsforløbet peger stærkt på jobloftet; loggen viser ingen assertionsfejl. Samlet kilde-CI er ikke bestået.
@@ -36,6 +49,48 @@ VALGT, IKKE DRIFTSBEVIST: Permanent særskilt arkiv af faktisk B, central S og o
 ÅBENT: Kalder-/workflowintegration, endelig præcis kilde-/native-/PostgreSQL-kontrol, faktisk resterende horisont for alle 673 dele, ny normal B før S med genlæsning, Pages/offentlig verifikation og almindelige efterfølgere. De adskilte lokale producent-, arkiv-, læser- og planprøver er ikke dette driftsbevis. Offentlig version er senest verificeret som 4.0.581 med vejr fra 16. oktober kl. 12 dansk tid. Cron er senest verificeret slået fra. Alle fem hovedmål er åbne; fristen 18. oktober er overskredet og er ikke forlænget. Se håndbog 89.256; ældre status nedenfor er historik på disse punkter.
 
 Efter endelig normal versionssynk består de lokale C/I-/SQL-byggere, kontrollen af syv mutable bindingsforbrugere samt planens ni mål. Dette er kilde-/genereringskontrol, ikke PostgreSQL-eksekvering, faktisk installation eller ny offentlig prognose.
+
+## 19. oktober — SOURCE-afgrænsning efter P0: målt RAW-afslag, ny prøvevært endnu ikke kørt
+
+SOURCE fysisk kvalifikation: 39216786897/1 målte fem stalls og én finalizer, men afviste ved RAW_CLOSURE/DMI_RAW_SAVE_RECEIPT_INVALID før efterfølgende API-/SAVE-admission. Indre RAW-årsag og oprindelig clock er UNKNOWN; ingen nativePASS eller cloud-SAVE er opnået. Lokal SDK-protokolfinalisering giver ikke den manglende lukningsautoritet.
+
+SOURCE-kilde: 0ddca9ce indeholder den minimale current-instrumenterede v2, herunder to ægte nye produktoperands, sikker førsteafslagsdiagnostik og særskilt præcis CIPHER-parentargv-korrektion. Historiske 298 input/27 produktpins bevares. ROOTs normale Node-bank består lokalt med 69 bankblade, 229 faste Git-input og 36 værn; den lille v2-målprøve har fire PASS. Det er ikke Linux-/nativekvalifikation.
+
+Kommende levering: normal main-komposition er forberedt privat, fordi dokumentations-/håndbogsseedkonflikter forhindrede automatisk CI på det aktuelle head. Ny v2-native er UNRUN. P0-version 4.0.584, model/C/I/T, SQL uden håndbogsseed og aktiveringsstatus ændres ikke af denne source-only status-/integrationsopfølgning. SOURCE forbliver separat og inaktiv.
+
+## 19. oktober — SOURCE: snæver privat opfølgning på målt EACCES
+
+Faktisk kørsel 39205832547 nåede fem bekræftede SIGSTOP/T-stalls før PERMISSION_ERROR/EACCES i testobservatørens procfs-stdinlæsning. Original pidfd-exitstatus er UNKNOWN; nul finalizers og null actionstatus er ikke produkt-/stopbevis. Privat V4 tillader kun en frisk pidfd-bevist afsluttet discovery ved EACCES; levende eller ukendt EACCES genkastes. Ny Linux-prøve accepterer None eller præcis ENOENT efter målt exit og kræver fortsat uafventet Popen-status før oprydning.
+
+Portable event-/kildekontrakt: faktisk 1 PASS, 0 fejl/skip; ikke en fysisk OS-prøve. Kandidatens normale bankkontrol, fysisk Linux, native og ny CI er UNRUN. Kun fire testbank-/wrapper-/kontraktfiler og dokumentation forberedes privat. Gamle prøver, 297 øvrige inputrækker, 27 produktpins, version, model, SQL-migrationer og budgetter bevares. Revisionen er separat/inaktiv og ikke færdiggjort; varig SAVE, cloud og samlet fireminutterskæde er fortsat åbne.
+
+## 19. oktober — SOURCE: testens egen første fejl bevares særskilt
+
+Faktisk sidste nativeudfald: kørsel 39193345711, to bekræftede SIGSTOP/T-stalls, nul finalizers og ukendt første testundtagelse i ACTION_OBSERVE. actionExitCode=null beviser ikke exit. Ny firstTestException fastholder kun faste, kildekontrollerede metadata før oprydning; den er hverken produktårsag, fysisk stop eller SAVE-bevis. Lokal portable kontrakt: 1 PASS, ingen fejl/skip. Normal bankkontrakt: PASS med 298 input, 69 prøvefiler, 229 faste Gitinput og 36 gatekombinationer. Ny fysisk Linux/native/CI er UNRUN; ingen produkt-, model-, versions-, migrations- eller produktpinændring. Revisionen er fortsat inaktiv og ikke færdiggjort.
+
+## 19. oktober — SOURCE: afgrænset rettelse af nyt prøveinput
+
+Faktisk afslagssted er nu normal DMI-materialisering før importer og leverandører. Den nye V16-prøves arvede 38-bytes tekstmarkør er ikke JSON; samme normale codec reproducerer afslaget uden platformstub. Et gyldigt manglende-data-dokument materialiseres tabsfrit i samme lille prøve. Ingen normal produktfejl eller native-succes udledes heraf.
+
+Kun V16's nye B-input ændres gennem normal codec-skrivning og genlæsning før bundling. En additiv bankkontrakt kontrollerer inputtet og kræver kaldet før B; den består sammen med wrapperens syntaks én gang. Gamle fixtures/factories/B/S, 297 andre bankrækker, 27 produktpins, protokol, model/SQL og budgetter bevares. Ny præcis Linux/native og fuld kildegate mangler. SOURCE er inaktiv; varig fjernlagring, faktisk fireminuttersgrænse og produktionsintegration er ikke færdiggjort.
+
+## 19. oktober — SOURCE: præcis prøveværtslukning før ny kvalifikation
+
+Faktisk Linux-resultat: den lille unitfase bestod; native stoppede med SOURCE_NORMAL_PHASE_FAILED i PRODUCER_CHAIN før stalls/finalizer. Specifik childfase og numerisk exitkode er endnu UNKNOWN. En manglende dynamisk modulfil er uafhængigt et deterministisk stop i normal generation-klargøring; en anden kræves af dens strenge gren. Det er et bevist fixturehul, ikke bevis for netop den første kørselsfejl.
+
+Den test-only efterfølger tilføjer to hele frosne afhængigheder til begge prøveværter og en kontrakt for alle tre faktiske modul-kald med seks fjernelsesnegativer. Eksisterende maksimalt tre hashbundne stackframes kan også kvalificeres ved den generiske fasefejl; første fejlkode og ukendt numerisk status bevares. En additiv Linux-case er forberedt, ikke kørt lokalt. Normale produktblade, 27 pins, protokol, gamle cases, frister og budgetter er uændrede. Ny præcis Linux-/fuld kildekvalifikation kræves; ingen revisionsaktivering eller produktionseffekt følger af denne forberedelse.
+
+## 19. oktober — SOURCE: afgrænset diagnostik efter første nativeafslag
+
+PR669's første nativekørsel er faktisk fejlet; oprindelig actionårsag UNKNOWN, ikke dokumenteret produktfejl. Den efterfølgende test-only kandidat læser actionens eksisterende sikre SOURCE-/RAW-projektion før sekundære assertions og kvalificerer Python-testheaderens faktiske klasse/metodeformat. Ingen rå payload eller log uploades.
+
+Lokalt består præcis seks fælles rene parserprøver og seks headerprøver; det tidligere Windows-forløbs to PASS, tre FAIL og én ERROR samt det målte ctime-afslag bevares privat. Den delte rene parser bruges af den uændrede fysiske Linux-observer. Næste Linux-kald skal først bestå en lille unitfase med seks rene og otte fysiske I/O-/frame-prøver, derefter uændret SDK/native og fuld kildegate. Ingen nativegenprøve er kørt lokalt. Originale assertions, frister, produkt-/fixturepins, model/SQL og workflow bevares. Produktårsag, samlet fireminutterskæde, varig fjernlagring, produktintegration og produktionseffekt er fortsat åbne.
+
+## 19. oktober — SOURCE: præcis prøvebank klar til kilde-PR
+
+Den isolerede kildekandidat er mekanisk materialiseret fra de gennemgåede, hashverificerede efterbilleder på den faktisk kvalificerede hovedkode efter PR667. Kun prøvebank, prøvekalder, additiv CI-kontrakt og dokumentation ændres; normale produktblade, model-/SQL-bindinger, gamle fixtures, budgetter og kildegatens gamle kontroludsagn bevares. Den gamle SOURCE-branch og alle private forældre bevares særskilt.
+
+Genbrugt lokalt bevis: normal Node-inventory og additiv kontrakt består for alle 296 input, 125 ægte historiske Gitblobs, 27 uændrede produktpins og 36 gatekombinationer. Begge hele patchretninger er verificeret. Materialisering er ikke en ny prøvekørsel eller CI. Næste trin er review og præcis kilde-PR med det særskilte Linux-job krævet før fuld kildekontrol. Fem normale transportstalls, oprindelig fejlfrist, fysisk proceslukning, finalizer, forsegling og SDK-gemning skal faktisk gennemføres dér; ingen PASS for disse udledes af Node-kontrollen. Fjern cloudbevarelse er ikke dækket af det lokale SDK. SOURCE forbliver inaktiv, og revisionens produktintegration samt produktionseffekt er fortsat åbne.
 
 ## 19. oktober — panelprøvens klokke, ikke en ændret prognoseregel
 

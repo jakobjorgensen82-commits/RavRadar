@@ -1,0 +1,182 @@
+[
+  {
+    "path": "scripts/test-source19-terminal-failure-proof-bank-v17-observer-native.py",
+    "before": "def source_native_diagnostic_projection(stderr):\n",
+    "after": "# Safe fixed observations only. None/UNKNOWN never becomes admission.\n_COHORT_STAGES = frozenset(('UNKNOWN', 'PLATFORM', 'PARENT_GUARD', 'API_FD_GUARD',\n    'PARENT_PIDFD', 'PARENT_LIVE', 'SIGNAL_SETUP', 'WORKER_SPAWN', 'WORKER_WAIT',\n    'OWNED_GROUP_SIGNAL', 'GROUP_ABSENCE', 'SIGNAL_RESTORE', 'PARENT_FD_CLOSE',\n    'API_FD_CLOSE', 'CLOSURE_WRITE'))\n_COHORT_REASONS = frozenset(('UNKNOWN', 'OS_ERROR', 'DMI_RAW_SAVE_PLATFORM_REFUSED',\n    'DMI_RAW_SAVE_PARENT_UNPROVED', 'DMI_RAW_SAVE_PARENT_LOST', 'DMI_RAW_SAVE_GROUP_UNPROVED',\n    'DMI_RAW_SAVE_INTERRUPTED', 'DMI_RAW_SAVE_PARENT_FD_NOT_CLOSED', 'DMI_RAW_SAVE_PIPE_NOT_CLOSED'))\n_COHORT_ERRNOS = frozenset(('NONE', 'UNKNOWN', 'ENOENT', 'ESRCH', 'EINTR', 'EIO',\n    'EBADF', 'ECHILD', 'ENOMEM', 'EACCES', 'EINVAL', 'EMFILE', 'EPIPE'))\n_COHORT_SIGNALS = frozenset(('NONE', 'UNKNOWN', 'SIGTERM', 'SIGKILL', 'SIGINT',\n    'SIGPIPE', 'SIGABRT', 'SIGSEGV', 'SIGBUS', 'SIGHUP', 'SIGQUIT'))\n\n\ndef source_raw_cohort_observation(stderr):\n    found = []\n    for line in stderr.splitlines():\n        match = re.fullmatch(r'DMI_RAW_SAVE_COHORT_OBSERVATION exit=(NONE|[0-9]{1,3}) signal=([A-Z_]+) stdout=([A-Z_]+) bytes=([0-9]{1,4}) stage=([A-Z_]+) reason=([A-Z_]+) errno=([A-Z_]+)', line)\n        if match:\n            exit_code, signal_name, stdout_class, count, stage, reason, number = match.groups()\n            if ((exit_code == 'NONE' or int(exit_code) <= 255) and int(count) <= 4096\n                    and signal_name in _COHORT_SIGNALS and stdout_class in ('EMPTY', 'INVALID_JSON', 'NON_OBJECT', 'OBJECT')\n                    and stage in _COHORT_STAGES and reason in _COHORT_REASONS and number in _COHORT_ERRNOS):\n                found.append({'exitCode': None if exit_code == 'NONE' else int(exit_code),\n                    'signal': signal_name, 'stdoutClass': stdout_class, 'stdoutBytes': int(count),\n                    'stage': stage, 'reason': reason, 'errno': number})\n    return found[0] if len(found) == 1 else None\n\n\ndef source_disposition_observation(value, action_closed_ns):\n    if type(value) is not dict:\n        return None\n    result = {'status': value.get('status') if value.get('status') in\n        ('FAILED', 'STOP_UNPROVEN', 'DURABILITY_UNCONFIRMED') else 'UNKNOWN',\n        'physicalStopProven': value.get('physicalStopProven') if type(value.get('physicalStopProven')) is bool else None,\n        'localCipherSealed': value.get('localCipherSealed') if type(value.get('localCipherSealed')) is bool else None,\n        'cloudFinalized': value.get('cloudFinalized') if type(value.get('cloudFinalized')) is bool else None,\n        'clock': None, 'actionClosedNs': str(action_closed_ns)}\n    clock = value.get('clock')\n    if (type(clock) is dict and clock.get('kind') in ('PARENT_FIRST_FAILURE', 'CHILD_FIRST_FAILURE')\n            and all(type(clock.get(key)) in (int, float) and 0 <= clock[key] <= 1e15\n                    for key in ('caughtAt', 'cutoff'))):\n        projected = {key: clock[key] for key in ('kind', 'caughtAt', 'cutoff')}\n        projected['child'] = None\n        if clock['kind'] == 'CHILD_FIRST_FAILURE':\n            child = clock.get('child')\n            if (type(child) is dict and type(child.get('reason')) is int and child['reason'] == 1\n                    and all(type(child.get(key)) is str and re.fullmatch(r'[1-9][0-9]{0,29}', child[key])\n                            for key in ('caughtNs', 'cutoffNs'))):\n                projected['child'] = {key: child[key] for key in ('reason', 'caughtNs', 'cutoffNs')}\n            else:\n                return result\n        result['clock'] = projected\n    return result\n\n\ndef source_native_diagnostic_projection(stderr):\n",
+    "count": 1
+  },
+  {
+    "path": "scripts/test-source19-terminal-failure-proof-bank-v17-observer-native.py",
+    "before": "        'actionExitCode': action_exit_code, 'sourceDiagnostic': None, 'rawSaveDiagnostic': None,\n",
+    "after": "        'actionExitCode': action_exit_code, 'sourceDiagnostic': None, 'rawSaveDiagnostic': None,\n        'rawCohortObservation': None,\n",
+    "count": 1
+  },
+  {
+    "path": "scripts/test-source19-terminal-failure-proof-bank-v17-observer-native.py",
+    "before": "        result.update(source_native_diagnostic_projection(raw_logs['stderr']))\n",
+    "after": "        result.update(source_native_diagnostic_projection(raw_logs['stderr']))\n        result['rawCohortObservation'] = source_raw_cohort_observation(raw_logs['stderr'])\n",
+    "count": 1
+  },
+  {
+    "path": "scripts/test-source19-terminal-failure-proof-bank-v17-observer-native.py",
+    "before": "        physical_before_cleanup, bounded_clock = None, None\n",
+    "after": "        physical_before_cleanup, bounded_clock = None, None\n        disposition_observation = None\n",
+    "count": 1
+  },
+  {
+    "path": "scripts/test-source19-terminal-failure-proof-bank-v17-observer-native.py",
+    "before": "            disposition = strict_json(FIXED / 'source-failure-disposition-200-2.json', 16384)\n",
+    "after": "            disposition = strict_json(FIXED / 'source-failure-disposition-200-2.json', 16384)\n            disposition_observation = source_disposition_observation(disposition, action_closed_ns)\n",
+    "count": 1
+  },
+  {
+    "path": "scripts/test-source19-terminal-failure-proof-bank-v17-observer-native.py",
+    "before": "                'originalClock': bounded_clock, 'localOfficialSdk': safe_uploads,\n",
+    "after": "                'originalClock': bounded_clock, 'localOfficialSdk': safe_uploads,\n                'dispositionObservation': disposition_observation,\n",
+    "count": 1
+  },
+  {
+    "path": "scripts/test-source19-terminal-failure-proof-bank-v17-observer-native.py",
+    "before": "# Safe fixed observations only. None/UNKNOWN never becomes admission.\n",
+    "after": "CURRENT_COHORT_DESCRIPTOR = \"scripts/fixtures/source19-terminal-proof-inputs-v2/current-cohort-v1/overlay.json\"\nCURRENT_COHORT_DESCRIPTOR_SHA256 = \"faa5a7d36dd7abadfe33a1fb5fad0f359f0d5c88044ebbce446e55139fb1c1db\"\nCURRENT_PROOF_PROFILE = json.loads(r'''{\"kind\":\"CURRENT_INSTRUMENTED_SOURCE_PROOF_HOST\",\"descriptorSha256\":\"faa5a7d36dd7abadfe33a1fb5fad0f359f0d5c88044ebbce446e55139fb1c1db\",\"baselineProductIdentity\":\"133fc019849df44d4f1dcd81d5405e8b52c109cf2b9f0ca671391564072462e1\",\"currentProductIdentity\":\"df3aa92ec2fdb5dcbe4959a26c5fa2ae3f7cba9d102feaa81a7fe52268824baf\",\"products\":[{\"path\":\"scripts/run-owned-dmi-grib-save.py\",\"beforeSha256\":\"6b30481f00a6b316bf3fd3c22d66b06dc636956361ecf7ad4dfd8173685e0d3e\",\"afterSha256\":\"d527139f9e0d7e427c2b8b939b4c262f1c2316bfd0852889442fc16f1fac81d9\"},{\"path\":\".github/actions/save-owned-dmi-grib/index.cjs\",\"beforeSha256\":\"dd8bd752a5cef8c927db2c00e642ab240638e3ab10c56d9f57c9546ab4e02926\",\"afterSha256\":\"fa036495bd223620653c7645d3bdc22ae103cdb58743b99fd11e53122ef0ad93\"}],\"sourceAdmission\":false,\"productionActivation\":false}''')\n\n# Explicit TEST-ONLY current diagnostic overlay, never SOURCE admission.\ndef source_current_cohort_read(root, relative, maximum=512 * 1024):\n    part = Path(relative)\n    if part.is_absolute() or '..' in part.parts or part.as_posix() != relative:\n        raise ValueError('SOURCE_CURRENT_COHORT_PATH')\n    file = root / part\n    before = file.lstat()\n    if not stat.S_ISREG(before.st_mode) or before.st_nlink != 1 or before.st_size > maximum:\n        raise ValueError('SOURCE_CURRENT_COHORT_REGULAR')\n    with file.open('rb') as stream:\n        opened = os.fstat(stream.fileno()); body = stream.read(maximum + 1); ended = os.fstat(stream.fileno())\n    key = lambda row: (row.st_dev, row.st_ino, row.st_mode, row.st_nlink, row.st_size, row.st_mtime_ns, row.st_ctime_ns)\n    if key(before) != key(opened) or key(opened) != key(ended) or key(ended) != key(file.lstat()) or len(body) != before.st_size:\n        raise ValueError('SOURCE_CURRENT_COHORT_CHANGED')\n    return body\n\n\ndef source_current_cohort_load(root, expected_sha, baseline_files):\n    body = source_current_cohort_read(root, CURRENT_COHORT_DESCRIPTOR)\n    if hashlib.sha256(body).hexdigest() != expected_sha:\n        raise ValueError('SOURCE_CURRENT_COHORT_DESCRIPTOR')\n    data = json.loads(body)\n    if (data['kind'] != 'CURRENT_INSTRUMENTED_SOURCE_PROOF_HOST' or data['schemaVersion'] != 1\n            or data['sourceAdmission'] is not False or data['productionActivation'] is not False\n            or len(data['baselineProductPins']) != 27 or len(data['currentProductPins']) != 27\n            or {row['path'] for row in data['products']} != {\n                '.github/actions/save-owned-dmi-grib/index.cjs', 'scripts/run-owned-dmi-grib-save.py'}):\n        raise ValueError('SOURCE_CURRENT_COHORT_SCOPE')\n    digest = lambda value: hashlib.sha256(value).hexdigest()\n    for name in ('baseline', 'current'):\n        if digest(json.dumps(data[name + 'ProductPins'], separators=(',', ':')).encode()) != data[name + 'ProductIdentity']:\n            raise ValueError('SOURCE_CURRENT_COHORT_PRODUCT_IDENTITY')\n    for relative, pin in data['baselineProductPins'].items():\n        if digest(baseline_files[relative]) != pin:\n            raise ValueError('SOURCE_CURRENT_COHORT_BASELINE')\n    replacements = []\n    actual_pins = dict(data['baselineProductPins'])\n    for row in data['products']:\n        after = source_current_cohort_read(root, row['bankPath'])\n        if len(after) != row['afterBytes'] or digest(after) != row['afterSha256'] or digest(baseline_files[row['path']]) != row['beforeSha256']:\n            raise ValueError('SOURCE_CURRENT_COHORT_LEAF')\n        inverse = after.decode('utf-8')\n        for hunk in reversed(row['inverseHunks']):\n            if inverse.count(hunk['after']) != hunk['count']:\n                raise ValueError('SOURCE_CURRENT_COHORT_INVERSE')\n            inverse = inverse.replace(hunk['after'], hunk['before'])\n        if inverse.encode() != baseline_files[row['path']]:\n            raise ValueError('SOURCE_CURRENT_COHORT_INVERSE')\n        replacements.append((row, after))\n        if row['path'] in actual_pins:\n            actual_pins[row['path']] = row['afterSha256']\n    if actual_pins != data['currentProductPins']:\n        raise ValueError('SOURCE_CURRENT_COHORT_PRODUCT_IDENTITY')\n    return data, replacements\n\n\ndef source_current_cohort_install(seed, originals, replacements):\n    originals.mkdir()  # This new fixture owns exactly one absent namespace.\n    for row, after in replacements:\n        relative = row['path']; target = seed / relative\n        before = source_current_cohort_read(seed, relative)\n        if hashlib.sha256(before).hexdigest() != row['beforeSha256']:\n            raise ValueError('SOURCE_CURRENT_COHORT_SEED_CHANGED')\n        saved = originals / relative; saved.parent.mkdir(parents=True, exist_ok=True)\n        with saved.open('xb') as stream:\n            stream.write(before); stream.flush(); os.fsync(stream.fileno())\n        staged = target.with_name(target.name + '.source-current-cohort-stage')\n        with staged.open('xb') as stream:\n            stream.write(after); stream.flush(); os.fsync(stream.fileno())\n        if source_current_cohort_read(seed, relative) != before:\n            raise ValueError('SOURCE_CURRENT_COHORT_SEED_CHANGED')\n        os.replace(staged, target)\n        if source_current_cohort_read(seed, relative) != after:\n            raise ValueError('SOURCE_CURRENT_COHORT_SEED_CHANGED')\n\n\n# Safe fixed observations only. None/UNKNOWN never becomes admission.\n",
+    "count": 1
+  },
+  {
+    "path": "scripts/test-source19-terminal-failure-proof-bank-v17-observer-native.py",
+    "before": "def source_native_action_observation(root, source_rows, action_exit_code, streams, transport):\n",
+    "after": "SOURCE_CURRENT_COHORT_CATALOG = {**SOURCE_NATIVE_OBSERVER_CATALOG, 'sourcePins': {**SOURCE_NATIVE_OBSERVER_CATALOG['sourcePins'], 'action': {'path': '.github/actions/save-owned-dmi-grib/index.cjs', 'sha256': 'fa036495bd223620653c7645d3bdc22ae103cdb58743b99fd11e53122ef0ad93'}, 'cohort': {'path': 'scripts/run-owned-dmi-grib-save.py', 'sha256': 'd527139f9e0d7e427c2b8b939b4c262f1c2316bfd0852889442fc16f1fac81d9'}}}\n\ndef source_native_action_observation(root, source_rows, action_exit_code, streams, transport):\n",
+    "count": 1
+  },
+  {
+    "path": "scripts/test-source19-terminal-failure-proof-bank-v17-observer-native.py",
+    "before": "        catalog = SOURCE_NATIVE_OBSERVER_CATALOG\n",
+    "after": "        catalog = SOURCE_CURRENT_COHORT_CATALOG\n",
+    "count": 1
+  },
+  {
+    "path": "scripts/test-source19-terminal-failure-proof-bank-v17-observer-native.py",
+    "before": "        root = own / mode\n        shutil.copytree(seed, root)\n",
+    "after": "        root = own / mode\n        baseline_files = {relative: source_current_cohort_read(ROOT, relative) for relative in CURRENT_BASELINE_PATHS}\n        overlay, replacements = source_current_cohort_load(ROOT, CURRENT_COHORT_DESCRIPTOR_SHA256, baseline_files)\n        source_current_cohort_install(seed, own / 'current-instrumented-cohort-originals', replacements)\n        self.current_cohort_profile = CURRENT_PROOF_PROFILE\n        updated = {row['path']: row for row, _ in replacements}\n        self.native_observer_source_rows = tuple({**row, 'bytes': updated[row['relativePath']]['afterBytes'], 'sha256': updated[row['relativePath']]['afterSha256']}\n            if row['relativePath'] in updated else row for row in self.native_observer_source_rows)\n        shutil.copytree(seed, root)\n",
+    "count": 1
+  },
+  {
+    "path": "scripts/test-source19-terminal-failure-proof-bank-v17-observer-native.py",
+    "before": "        self.assertEqual(action.read_bytes(), (ROOT / ENTRY).read_bytes(), 'ACTUAL_ACTION_BYTES_CHANGED')\n",
+    "after": "        self.assertEqual(sha(action.read_bytes()), 'fa036495bd223620653c7645d3bdc22ae103cdb58743b99fd11e53122ef0ad93', 'CURRENT_INSTRUMENTED_ACTION_CHANGED')\n",
+    "count": 1
+  },
+  {
+    "path": "scripts/test-source19-terminal-failure-proof-bank-v17-observer-native.py",
+    "before": "CURRENT_PROOF_PROFILE = json.loads(r'''{\"kind\":\"CURRENT_INSTRUMENTED_SOURCE_PROOF_HOST\",\"descriptorSha256\":\"faa5a7d36dd7abadfe33a1fb5fad0f359f0d5c88044ebbce446e55139fb1c1db\",\"baselineProductIdentity\":\"133fc019849df44d4f1dcd81d5405e8b52c109cf2b9f0ca671391564072462e1\",\"currentProductIdentity\":\"df3aa92ec2fdb5dcbe4959a26c5fa2ae3f7cba9d102feaa81a7fe52268824baf\",\"products\":[{\"path\":\"scripts/run-owned-dmi-grib-save.py\",\"beforeSha256\":\"6b30481f00a6b316bf3fd3c22d66b06dc636956361ecf7ad4dfd8173685e0d3e\",\"afterSha256\":\"d527139f9e0d7e427c2b8b939b4c262f1c2316bfd0852889442fc16f1fac81d9\"},{\"path\":\".github/actions/save-owned-dmi-grib/index.cjs\",\"beforeSha256\":\"dd8bd752a5cef8c927db2c00e642ab240638e3ab10c56d9f57c9546ab4e02926\",\"afterSha256\":\"fa036495bd223620653c7645d3bdc22ae103cdb58743b99fd11e53122ef0ad93\"}],\"sourceAdmission\":false,\"productionActivation\":false}''')\n",
+    "after": "CURRENT_PROOF_PROFILE = json.loads(r'''{\"kind\":\"CURRENT_INSTRUMENTED_SOURCE_PROOF_HOST\",\"descriptorSha256\":\"faa5a7d36dd7abadfe33a1fb5fad0f359f0d5c88044ebbce446e55139fb1c1db\",\"baselineProductIdentity\":\"133fc019849df44d4f1dcd81d5405e8b52c109cf2b9f0ca671391564072462e1\",\"currentProductIdentity\":\"df3aa92ec2fdb5dcbe4959a26c5fa2ae3f7cba9d102feaa81a7fe52268824baf\",\"products\":[{\"path\":\"scripts/run-owned-dmi-grib-save.py\",\"beforeSha256\":\"6b30481f00a6b316bf3fd3c22d66b06dc636956361ecf7ad4dfd8173685e0d3e\",\"afterSha256\":\"d527139f9e0d7e427c2b8b939b4c262f1c2316bfd0852889442fc16f1fac81d9\"},{\"path\":\".github/actions/save-owned-dmi-grib/index.cjs\",\"beforeSha256\":\"dd8bd752a5cef8c927db2c00e642ab240638e3ab10c56d9f57c9546ab4e02926\",\"afterSha256\":\"fa036495bd223620653c7645d3bdc22ae103cdb58743b99fd11e53122ef0ad93\"}],\"sourceAdmission\":false,\"productionActivation\":false}''')\nCURRENT_BASELINE_PATHS = [\".github/actions/save-owned-dmi-grib/index.cjs\",\".github/actions/save-owned-dmi-grib/package-lock.json\",\".github/actions/save-owned-dmi-grib/package.json\",\"scripts/check-dmi-bulk-operational-ready.py\",\"scripts/lib/copernicus_component_process.py\",\"scripts/lib/dmi-forecast-file.mjs\",\"scripts/lib/private-weather-component-pack.mjs\",\"scripts/lib/source-union-birth-journal.mjs\",\"scripts/lib/source_union_birth_journal.py\",\"scripts/lib/verified-dmi-progress-inputs.mjs\",\"scripts/lib/verified-protected-progress-components.mjs\",\"scripts/materialize-dmi-bulk-storage.py\",\"scripts/merge-verified-current-donor-banks.py\",\"scripts/migrate-post-cutover-private-runtime.mjs\",\"scripts/prepare-historical-wave-predecessor-restore.mjs\",\"scripts/private-production-runtime-workflow.mjs\",\"scripts/protected-private-production-runtime.mjs\",\"scripts/run-copernicus-weather-components.py\",\"scripts/run-dmi-bulk-supervised.py\",\"scripts/source-progress-union-consumer.mjs\",\"scripts/test-dmi-supervisor-parent-loss.py\",\"scripts/test-owned-dmi-grib-save-native.py\",\"scripts/test-protected-private-production-runtime.mjs\",\"scripts/test-weather-component-progress-workflow.mjs\",\"scripts/verified-weather-source-handoff.mjs\",\"scripts/weather-component-progress-cache.mjs\",\"scripts/weather-source-gate.mjs\",\"scripts/run-owned-dmi-grib-save.py\"]\n",
+    "count": 1
+  },
+  {
+    "path": "scripts/test-source19-terminal-failure-proof-bank-v17-observer-native.py",
+    "before": "                'dispositionObservation': disposition_observation,\n",
+    "after": "                'dispositionObservation': disposition_observation,\n                'currentInstrumentedProofHost': getattr(self, 'current_cohort_profile', None),\n",
+    "count": 1
+  },
+  {
+    "path": "driver",
+    "before": "CURRENT_COHORT_DESCRIPTOR_SHA256 = \"faa5a7d36dd7abadfe33a1fb5fad0f359f0d5c88044ebbce446e55139fb1c1db\"",
+    "after": "CURRENT_COHORT_DESCRIPTOR_SHA256 = \"3382d64eed90430af3e817f4b53ead3c7ef75aa6d4cd540766e3facee9ca933c\"",
+    "count": 1
+  },
+  {
+    "path": "driver",
+    "before": "CURRENT_PROOF_PROFILE = json.loads(r'''{\"kind\":\"CURRENT_INSTRUMENTED_SOURCE_PROOF_HOST\",\"descriptorSha256\":\"faa5a7d36dd7abadfe33a1fb5fad0f359f0d5c88044ebbce446e55139fb1c1db\",\"baselineProductIdentity\":\"133fc019849df44d4f1dcd81d5405e8b52c109cf2b9f0ca671391564072462e1\",\"currentProductIdentity\":\"df3aa92ec2fdb5dcbe4959a26c5fa2ae3f7cba9d102feaa81a7fe52268824baf\",\"products\":[{\"path\":\"scripts/run-owned-dmi-grib-save.py\",\"beforeSha256\":\"6b30481f00a6b316bf3fd3c22d66b06dc636956361ecf7ad4dfd8173685e0d3e\",\"afterSha256\":\"d527139f9e0d7e427c2b8b939b4c262f1c2316bfd0852889442fc16f1fac81d9\"},{\"path\":\".github/actions/save-owned-dmi-grib/index.cjs\",\"beforeSha256\":\"dd8bd752a5cef8c927db2c00e642ab240638e3ab10c56d9f57c9546ab4e02926\",\"afterSha256\":\"fa036495bd223620653c7645d3bdc22ae103cdb58743b99fd11e53122ef0ad93\"}],\"sourceAdmission\":false,\"productionActivation\":false}''')",
+    "after": "CURRENT_PROOF_PROFILE = json.loads(r'''{\"kind\":\"CURRENT_INSTRUMENTED_SOURCE_PROOF_HOST\",\"descriptorSha256\":\"3382d64eed90430af3e817f4b53ead3c7ef75aa6d4cd540766e3facee9ca933c\",\"baselineProductIdentity\":\"133fc019849df44d4f1dcd81d5405e8b52c109cf2b9f0ca671391564072462e1\",\"currentProductIdentity\":\"df3aa92ec2fdb5dcbe4959a26c5fa2ae3f7cba9d102feaa81a7fe52268824baf\",\"products\":[{\"path\":\"scripts/run-owned-dmi-grib-save.py\",\"beforeSha256\":\"6b30481f00a6b316bf3fd3c22d66b06dc636956361ecf7ad4dfd8173685e0d3e\",\"afterSha256\":\"093712ab8b16e9e42201a267f1ad70d743b29e58432d5c84bf11735ddbd02af2\"},{\"path\":\".github/actions/save-owned-dmi-grib/index.cjs\",\"beforeSha256\":\"dd8bd752a5cef8c927db2c00e642ab240638e3ab10c56d9f57c9546ab4e02926\",\"afterSha256\":\"fa036495bd223620653c7645d3bdc22ae103cdb58743b99fd11e53122ef0ad93\"}],\"sourceAdmission\":false,\"productionActivation\":false,\"purpose\":\"DIAGNOSTIC+EXACT_CIPHER_CALLER_FIX\"}''')",
+    "count": 1
+  },
+  {
+    "path": "driver",
+    "before": "'cohort': {'path': 'scripts/run-owned-dmi-grib-save.py', 'sha256': 'd527139f9e0d7e427c2b8b939b4c262f1c2316bfd0852889442fc16f1fac81d9'}",
+    "after": "'cohort': {'path': 'scripts/run-owned-dmi-grib-save.py', 'sha256': '093712ab8b16e9e42201a267f1ad70d743b29e58432d5c84bf11735ddbd02af2'}",
+    "count": 1
+  },
+  {
+    "path": "scripts/fixtures/source19-terminal-proof-inputs-v2/current-cohort-v1/driver.source.txt",
+    "before": "def source_terminal_first_exception(previous, error, phase, callsite=None):\n",
+    "after": "SOURCE_TERMINAL_TRANSPORT_CATEGORIES = [\"ABSOLUTE_REQUEST_REFUSED\",\"CACHE_WRITE_OR_ROUTE_REFUSED\",\"CONNECT_ORIGIN_REFUSED\",\"LOOPBACK_HANDLER_FAILED\",\"PROTOCOL_CONTRACT_REFUSED\",\"TLS_HOST_REFUSED\",\"TLS_TRANSPORT_FAILED\",\"UNEXPECTED_ORIGIN_ROUTE\",\"UNEXPECTED_ROUTE_OR_WRITE\",\"WRITE_METHOD_REFUSED\",\"UNKNOWN\"]\nSOURCE_TERMINAL_TRANSPORT_INNER_CODES = [\"ADMIN_KEY_REFUSED\",\"ADMIN_QUERY_INVALID\",\"ADMIN_SELECTOR_INVALID\",\"CACHE_RESTORE_REQUEST_INVALID\",\"CACHE_SCOPE_REFUSED\",\"DB_READBACK_BODY_REQUIRED\",\"EXACT_B_OBJECT_CHANGED\",\"EXACT_B_OBJECT_REQUIRED\",\"FIXTURE_BODY_BOUND\",\"FIXTURE_BODY_SIZE_INVALID\",\"FIXTURE_BODY_TRUNCATED\",\"FIXTURE_SERVER_CLOSE_UNPROVED\",\"PUBLIC_MANIFEST_QUERY_REFUSED\",\"SOURCE_TERMINAL_ACTUAL_SDK_ARCHIVE_REQUIRED\",\"SOURCE_TERMINAL_CATALOG_COLLECTION_REFUSED\",\"SOURCE_TERMINAL_CATALOG_QUERY_REFUSED\",\"SOURCE_TERMINAL_EXACT_GRIB_ROUTE_REFUSED\",\"SOURCE_TERMINAL_REAL_RAW_ORIGINALS_REQUIRED\",\"SOURCE_TERMINAL_SDK_ARCHIVED_BYTES_CHANGED\",\"SOURCE_TERMINAL_SDK_ARCHIVE_BOUND\",\"SOURCE_TERMINAL_SDK_ARCHIVE_DIRECTORY\",\"SOURCE_TERMINAL_SDK_ARCHIVE_INVENTORY\",\"SOURCE_TERMINAL_SDK_ARCHIVE_PATH\",\"SOURCE_TERMINAL_SDK_CIPHER_INVENTORY\",\"SOURCE_TERMINAL_SDK_CREATE_COLLISION\",\"SOURCE_TERMINAL_SDK_FINALIZE_IDENTITY\",\"SOURCE_TERMINAL_SDK_FINALIZE_ORDER\",\"SOURCE_TERMINAL_SDK_KEY_REQUIRED\",\"SOURCE_TERMINAL_SDK_PUT_HEADERS\",\"SOURCE_TERMINAL_SDK_PUT_ORDER\",\"SOURCE_TERMINAL_SDK_SAVE_SCOPE_REFUSED\",\"SOURCE_TERMINAL_SDK_VERSION_REQUIRED\",\"SOURCE_TERMINAL_SDK_WORKING_FILE\",\"SOURCE_TERMINAL_SYNTHETIC_GRIB_CHANGED\",\"SYNTHETIC_CACHE_AUTH_REQUIRED\",\"SYNTHETIC_GITHUB_AUTH_REQUIRED\",\"SYNTHETIC_JOBS_QUERY_REQUIRED\",\"SYNTHETIC_SUPABASE_AUTH_REQUIRED\",\"UNKNOWN\"]\n\n\n# Test observation only. These functions never grant transport/SAVE authority.\ndef source_terminal_first_transport_failure(previous, category, error=None, callsite=None):\n    if previous is not None:\n        return previous\n    inner = None\n    if error is not None:\n        projected = source_terminal_exception_projection(error, 'SDK_AND_ORIGINALS', callsite)\n        inner = {key: projected[key] for key in ('code', 'exceptionType', 'osError', 'callsite')}\n        inner['code'] = 'UNKNOWN'\n        try:\n            text = str(error)\n            if type(error) is AssertionError and text in SOURCE_TERMINAL_TRANSPORT_INNER_CODES:\n                inner['code'] = text\n        except BaseException:\n            pass  # Never replace the original exception with its observation.\n    return {'category': category if type(category) is str and category in SOURCE_TERMINAL_TRANSPORT_CATEGORIES else 'UNKNOWN',\n        'inner': inner}\n\n\ndef source_terminal_note_transport_failure(owner, category, error=None):\n    # Called under the SAME existing lock, directly before the failure append.\n    # Only the terminal fixture has this field; all other fixture cases are unchanged.\n    if not hasattr(owner, 'terminal_transport_first') or owner.terminal_transport_first is not None:\n        return\n    try:\n        site = source_terminal_exception_callsite(error, ROOT, owner.terminal_source_rows) if error is not None else None\n        first = source_terminal_first_transport_failure(None, category, error, site)\n    except BaseException:\n        first = source_terminal_first_transport_failure(None, category)\n    owner.terminal_transport_first = first\n\n\ndef source_terminal_transport_observation(first, failures, phase):\n    # The caller holds transport.lock. This is a bounded snapshot, not admission.\n    count = len(failures)\n    return {'phase': phase if phase in ('SDK_AND_ORIGINALS', 'CLEANUP') else 'UNKNOWN',\n        'count': min(count, 65535), 'overflow': count > 65535,\n        'first': None if count == 0 else first if first is not None else {'category': 'UNKNOWN', 'inner': None}}\n\n\ndef source_terminal_first_exception(previous, error, phase, callsite=None):\n",
+    "count": 1
+  },
+  {
+    "path": "scripts/fixtures/source19-terminal-proof-inputs-v2/current-cohort-v1/driver.source.txt",
+    "before": "            def fixed_failure(self, code):\n                with owner.lock:\n                    owner.failures.append(code)\n",
+    "after": "            def fixed_failure(self, code, error=None):\n                with owner.lock:\n                    source_terminal_note_transport_failure(owner, code, error)\n                    owner.failures.append(code)\n",
+    "count": 1
+  },
+  {
+    "path": "scripts/fixtures/source19-terminal-proof-inputs-v2/current-cohort-v1/driver.source.txt",
+    "before": "                except (ssl.SSLError, ConnectionError, OSError):\n                    with owner.lock:\n                        owner.failures.append('TLS_TRANSPORT_FAILED')\n",
+    "after": "                except (ssl.SSLError, ConnectionError, OSError) as error:\n                    with owner.lock:\n                        source_terminal_note_transport_failure(owner, 'TLS_TRANSPORT_FAILED', error)\n                        owner.failures.append('TLS_TRANSPORT_FAILED')\n",
+    "count": 1
+  },
+  {
+    "path": "scripts/fixtures/source19-terminal-proof-inputs-v2/current-cohort-v1/driver.source.txt",
+    "before": "                except (AssertionError, ValueError, KeyError, TypeError, OSError):\n                    self.fixed_failure('PROTOCOL_CONTRACT_REFUSED')\n",
+    "after": "                except (AssertionError, ValueError, KeyError, TypeError, OSError) as error:\n                    self.fixed_failure('PROTOCOL_CONTRACT_REFUSED', error)\n",
+    "count": 1
+  },
+  {
+    "path": "scripts/fixtures/source19-terminal-proof-inputs-v2/current-cohort-v1/driver.source.txt",
+    "before": "                with owner.lock:\n                    owner.failures.append('LOOPBACK_HANDLER_FAILED')\n",
+    "after": "                with owner.lock:\n                    source_terminal_note_transport_failure(owner, 'LOOPBACK_HANDLER_FAILED', sys.exc_info()[1])\n                    owner.failures.append('LOOPBACK_HANDLER_FAILED')\n",
+    "count": 1
+  },
+  {
+    "path": "scripts/fixtures/source19-terminal-proof-inputs-v2/current-cohort-v1/driver.source.txt",
+    "before": "        self.uploads = {}\n        self.working_root = None\n",
+    "after": "        self.uploads = {}\n        self.working_root = None\n        self.terminal_transport_first = None\n        self.terminal_source_rows = ()\n",
+    "count": 1
+  },
+  {
+    "path": "scripts/fixtures/source19-terminal-proof-inputs-v2/current-cohort-v1/driver.source.txt",
+    "before": "        transport = TerminalProtocolFixture(fixtures, protocol, cert, key)\n",
+    "after": "        transport = TerminalProtocolFixture(fixtures, protocol, cert, key)\n        transport.terminal_source_rows = getattr(self, 'native_observer_source_rows', ())\n",
+    "count": 1
+  },
+  {
+    "path": "scripts/fixtures/source19-terminal-proof-inputs-v2/current-cohort-v1/driver.source.txt",
+    "before": "        disposition_observation = None\n        first_test_failure = None; first_test_exception = None; observer_phase = 'SETUP'\n",
+    "after": "        disposition_observation = None\n        transport_observation = None\n        first_test_failure = None; first_test_exception = None; observer_phase = 'SETUP'\n",
+    "count": 1
+  },
+  {
+    "path": "scripts/fixtures/source19-terminal-proof-inputs-v2/current-cohort-v1/driver.source.txt",
+    "before": "            observer_phase = 'SDK_AND_ORIGINALS'\n            with transport.lock:\n                self.assertEqual(transport.failures, [])\n",
+    "after": "            observer_phase = 'SDK_AND_ORIGINALS'\n            with transport.lock:\n                transport_observation = source_terminal_transport_observation(transport.terminal_transport_first, transport.failures, observer_phase)\n                self.assertEqual(transport.failures, [])\n",
+    "count": 1
+  },
+  {
+    "path": "scripts/fixtures/source19-terminal-proof-inputs-v2/current-cohort-v1/driver.source.txt",
+    "before": "            with transport.lock:\n                safe_uploads = {role: {'phase': row.get('phase'), 'archiveBytes': row.get('bytes'),\n",
+    "after": "            with transport.lock:\n                if transport_observation is None:\n                    transport_observation = source_terminal_transport_observation(transport.terminal_transport_first, transport.failures, 'CLEANUP')\n                safe_uploads = {role: {'phase': row.get('phase'), 'archiveBytes': row.get('bytes'),\n",
+    "count": 1
+  },
+  {
+    "path": "scripts/fixtures/source19-terminal-proof-inputs-v2/current-cohort-v1/driver.source.txt",
+    "before": "                'dispositionObservation': disposition_observation,\n",
+    "after": "                'dispositionObservation': disposition_observation,\n                'transportObservation': transport_observation,\n",
+    "count": 1
+  },
+  {
+    "path": "scripts/fixtures/source19-terminal-proof-inputs-v2/current-cohort-v1/driver.source.txt",
+    "before": "    def route(self, request, host, parsed):\n        data, method, route = self.protocol, request.command, parsed.path\n",
+    "after": "    def cache_restore_reply(self, request, body):\n        # Same normal fallback validator, now given the one already parsed body.\n        if not isinstance(body, dict) or not isinstance(body.get('key'), str) or not re.fullmatch(r'[a-f0-9]{64}', body.get('version', '')):\n            raise AssertionError('CACHE_RESTORE_REQUEST_INVALID')\n        if not body['key'].startswith(('weather-preflight-state-v1-Linux-', 'ravscore-continuation-schema6-v2-', 'weather-private-progress-encrypted-v2-Linux-main-')):\n            raise AssertionError('CACHE_SCOPE_REFUSED')\n        request.reply(200, {'ok': False, 'signed_download_url': ''})\n        return 'cache-miss'\n\n    def route(self, request, host, parsed):\n        data, method, route = self.protocol, request.command, parsed.path\n",
+    "count": 1
+  },
+  {
+    "path": "scripts/fixtures/source19-terminal-proof-inputs-v2/current-cohort-v1/driver.source.txt",
+    "before": "            body = request.body()\n            if not isinstance(body, dict) or not isinstance(body.get('key'), str) or not re.fullmatch(r'[a-f0-9]{64}', body.get('version', '')):\n                raise AssertionError('CACHE_RESTORE_REQUEST_INVALID')\n            if not body['key'].startswith(('weather-preflight-state-v1-Linux-', 'ravscore-continuation-schema6-v2-', 'weather-private-progress-encrypted-v2-Linux-main-')):\n                raise AssertionError('CACHE_SCOPE_REFUSED')\n            request.reply(200, {'ok': False, 'signed_download_url': ''})\n            return 'cache-miss'\n",
+    "after": "            return self.cache_restore_reply(request, request.body())\n",
+    "count": 1
+  },
+  {
+    "path": "scripts/fixtures/source19-terminal-proof-inputs-v2/current-cohort-v1/driver.source.txt",
+    "before": "            if parsed.path == service + 'GetCacheEntryDownloadURL' and raw_key:\n                request.reply(200, {'ok': False, 'signed_download_url': ''})\n                return 'normal-raw-cache-miss'\n",
+    "after": "            if parsed.path == service + 'GetCacheEntryDownloadURL':\n                if raw_key:\n                    request.reply(200, {'ok': False, 'signed_download_url': ''})\n                    return 'normal-raw-cache-miss'\n                return self.cache_restore_reply(request, value)\n",
+    "count": 1
+  }
+]

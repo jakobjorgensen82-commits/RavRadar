@@ -1,0 +1,169 @@
+#!/usr/bin/env node
+import crypto from 'node:crypto';
+import fs from 'node:fs/promises';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+import { ravScoreModelBinding } from '../js/core/ravscore-model-contract.js';
+import {
+  HISTORICAL_WAVE_INPUT_TRANSITION_POLICY,
+  buildHistoricalWavePredecessorRestoreExpectation,
+} from './lib/historical-wave-input-transition.mjs';
+import {
+  BOUNDED_CONDITIONS_PREDECESSOR_POLICY,
+  buildBoundedConditionsPredecessorRestoreExpectation,
+  buildOwnerCurrentOriginalRestoreExpectation,
+  buildCurrentGridSamplingOriginalRestoreExpectation,
+  CURRENT_GRID_SAMPLING_SELECTED_PREDECESSOR_POLICY as CURRENT_GRID_SAMPLING_PREDECESSOR_POLICY,
+  OWNER_CURRENT_DOMAIN_PREDECESSOR,
+  OWNER_WATER_LEVEL_ONLY_PREDECESSOR,
+} from './lib/bounded-conditions-predecessor-transition.mjs';
+import {
+  privateRuntimeContractHashes,
+} from './private-production-runtime-workflow.mjs';
+
+function parseArguments(argv) {
+  const result = {};
+  for (let index = 0; index < argv.length; index += 2) {
+    const key = argv[index];
+    const value = argv[index + 1];
+    if (!value || value.startsWith('--')) throw new Error(`Missing value for ${key}`);
+    if (key === '--source-description') result.sourceDescriptionPath = value;
+    else if (key === '--target-reference') result.targetReferenceAt = value;
+    else if (key === '--output') result.outputPath = value;
+    else if (key === '--github-output') result.githubOutputPath = value;
+    else if (key === '--now') result.now = value;
+    else throw new Error(`Unknown argument: ${key}`);
+  }
+  for (const key of [
+    'sourceDescriptionPath', 'targetReferenceAt', 'outputPath', 'githubOutputPath',
+  ]) if (!result[key]) throw new Error(`Historical predecessor restore lacks ${key}`);
+  return result;
+}
+
+async function readDescription(file) {
+  const details = await fs.lstat(file);
+  if (!details.isFile() || details.isSymbolicLink()
+    || details.size < 2 || details.size > 128 * 1024) {
+    throw new Error('Protected current description is invalid');
+  }
+  try { return JSON.parse(await fs.readFile(file, 'utf8')); }
+  catch { throw new Error('Protected current description cannot be parsed'); }
+}
+
+async function atomicWriteJson(file, value) {
+  const destination = path.resolve(file);
+  await fs.mkdir(path.dirname(destination), { recursive: true });
+  const temporary = `${destination}.tmp-${process.pid}-${crypto.randomBytes(6).toString('hex')}`;
+  try {
+    await fs.writeFile(temporary, `${JSON.stringify(value, null, 2)}\n`, {
+      flag: 'wx', mode: 0o600,
+    });
+    await fs.rename(temporary, destination);
+  } catch (error) {
+    await fs.rm(temporary, { force: true }).catch(() => {});
+    throw error;
+  }
+}
+
+export async function selectHistoricalWavePredecessorRestore({ sourceDescription, targetReferenceAt, now } = {}) {
+  const options = { targetReferenceAt, now };
+  const historicalExpectation = buildHistoricalWavePredecessorRestoreExpectation({
+    sourceDescription,
+    targetReferenceAt: options.targetReferenceAt,
+    currentBinding: ravScoreModelBinding(),
+    now: options.now ?? new Date().toISOString(),
+  });
+  const boundedConditionsExpectation = historicalExpectation ? null
+    : buildBoundedConditionsPredecessorRestoreExpectation({
+      sourceDescription,
+      targetReferenceAt: options.targetReferenceAt,
+      currentBinding: ravScoreModelBinding(),
+      currentContractHashes: await privateRuntimeContractHashes(),
+      now: options.now ?? new Date().toISOString(),
+    });
+  const ownerCurrentExpectation = historicalExpectation || boundedConditionsExpectation ? null
+    : buildOwnerCurrentOriginalRestoreExpectation({ sourceDescription,
+      targetReferenceAt: options.targetReferenceAt,
+      currentBinding: ravScoreModelBinding(),
+      currentContractHashes: await privateRuntimeContractHashes(),
+      now: options.now ?? new Date().toISOString() });
+  const currentGridSamplingExpectation = historicalExpectation || boundedConditionsExpectation
+    || ownerCurrentExpectation ? null
+    : await buildCurrentGridSamplingOriginalRestoreExpectation({
+      sourceDescription, targetReferenceAt: options.targetReferenceAt,
+      now: options.now ?? new Date().toISOString(),
+    });
+  const expectation = historicalExpectation ?? boundedConditionsExpectation ?? ownerCurrentExpectation
+    ?? currentGridSamplingExpectation;
+  if (!ownerCurrentExpectation
+    && ravScoreModelBinding().modelBundleSha256 !== OWNER_CURRENT_DOMAIN_PREDECESSOR.modelBinding.modelBundleSha256
+    && [OWNER_CURRENT_DOMAIN_PREDECESSOR.modelBinding.modelBundleSha256,
+      OWNER_WATER_LEVEL_ONLY_PREDECESSOR.modelBinding.modelBundleSha256]
+      .includes(sourceDescription.modelBinding?.modelBundleSha256)
+    && sourceDescription.modelBinding?.modelBundleSha256 !== ravScoreModelBinding().modelBundleSha256) {
+    throw new Error('Owner original generation no longer matches the exact approved binding bridge');
+  }
+
+  if (!currentGridSamplingExpectation
+    && sourceDescription.modelBinding?.modelBundleSha256
+      === CURRENT_GRID_SAMPLING_PREDECESSOR_POLICY.sourceModelBinding.modelBundleSha256
+    && sourceDescription.modelBinding.modelBundleSha256 !== ravScoreModelBinding().modelBundleSha256) {
+    throw new Error('Current-grid original generation is not the exact reviewed native-grid SOURCE bridge');
+  }
+  const transitionKind = historicalExpectation
+    ? 'historical-wave-input'
+    : boundedConditionsExpectation ? 'bounded-conditions-writer'
+      : ownerCurrentExpectation ? 'owner-current-domain-original'
+        : currentGridSamplingExpectation ? 'current-grid-sampling-original' : '';
+  const sourceHead = historicalExpectation
+    ? HISTORICAL_WAVE_INPUT_TRANSITION_POLICY.sourceHead
+    : boundedConditionsExpectation
+      ? BOUNDED_CONDITIONS_PREDECESSOR_POLICY.sourceHead
+      : ownerCurrentExpectation ? ownerCurrentExpectation.sourceHead
+        : currentGridSamplingExpectation ? currentGridSamplingExpectation.sourceHead : '';
+  return Object.freeze({ required: Boolean(expectation), transitionKind: transitionKind || null,
+    sourceHead, expectation });
+}
+
+export async function prepareHistoricalWavePredecessorRestore(options) {
+  const sourceDescription = await readDescription(options.sourceDescriptionPath);
+  const selected = await selectHistoricalWavePredecessorRestore({ sourceDescription,
+    targetReferenceAt: options.targetReferenceAt, now: options.now });
+  const { expectation, sourceHead } = selected;
+  const transitionKind = selected.transitionKind ?? '';
+  if (expectation) await atomicWriteJson(options.outputPath, expectation);
+  await fs.appendFile(options.githubOutputPath, [
+    `required=${expectation ? 'true' : 'false'}`,
+    `source_head=${sourceHead}`,
+    `expected_path=${expectation ? path.resolve(options.outputPath) : ''}`,
+    `transition_kind=${transitionKind}`,
+    '',
+  ].join('\n'));
+  return {
+    required: Boolean(expectation),
+    transitionKind: transitionKind || null,
+    privatePayloadIncluded: false,
+  };
+}
+
+async function main() {
+  const result = await prepareHistoricalWavePredecessorRestore(
+    parseArguments(process.argv.slice(2)),
+  );
+  console.log(JSON.stringify({
+    status: result.required
+      ? 'private-runtime-predecessor-restore-required'
+      : 'private-runtime-predecessor-restore-not-applicable',
+    transitionKind: result.transitionKind,
+    privatePayloadIncluded: false,
+  }));
+}
+
+if (process.argv[1]
+  && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
+  main().catch(error => {
+    console.error(`Historical wave predecessor restore preparation failed closed: ${error.message}`);
+    process.exitCode = 1;
+  });
+}

@@ -55,3 +55,11 @@ supabase/migrations/20261013230000_account_statistics_revision.sql text eol=lf
 # Warmup successor verifies the exact issued predecessor and new migration bytes.
 supabase/migrations/20261016060000_native_sampling_identity_original_bound_successor.sql text eol=lf
 supabase/migrations/20261017020000_current_memory_warmup_original_bound_successor.sql text eol=lf
+
+# Inert SOURCE proof inputs bind exact bytes, never normal production sources.
+scripts/fixtures/source19-terminal-proof-inputs-v2/operands/** -text
+scripts/fixtures/source19-terminal-proof-inputs-v2/manifest.json text eol=lf
+# The additive current proof host also authenticates exact source bytes.
+scripts/fixtures/source19-terminal-proof-inputs-v2/current-cohort-v1/** -text
+scripts/run-source19-terminal-native-bank.py text eol=lf
+scripts/test-source19-terminal-proof-bank.mjs text eol=lf

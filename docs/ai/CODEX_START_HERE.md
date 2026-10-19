@@ -1,3 +1,11 @@
+## 19. oktober — faktisk offentlig genopretning og isoleret SOURCE-testrettelse
+
+Den præcise PR673-kontrol 39278848551/1 bestod, inklusive faktisk PostgreSQL og national opstart med to almindelige efterfølgere. Produktionsforløb 39291575502/1 på main c72d6730 gennemførte normal beregning fra gemte vejrinput, begge 55+3-kollektioner, installation og genlæsning af den ene 060000-migration, privat vejrpakke B før beregningstilstand S, serverfunktioner, Pages, offentlig 210/673-kontrol og central afslutning den 19. oktober kl. 20.00 dansk tid. Det nye offentlige datasæt er rr-20261019171204-210 med reference kl. 02.00 dansk tid. En særskilt kontrol af manifest, startpakke og én faktisk aktuel time bestod. Dette er ikke ny leverandørhentning eller bevis for fuld numerisk dækning i alle fremtidige timer.
+
+Præcis én almindelig vejrhentning 39299413035/1 med standardindstillinger blev startet kl. 20.03. Normal privat genlæsning og sammenkobling af B/S er bestået; dens øvrige resultat og efterfølgende cron-genaktivering er endnu åbne. Browserforbindelsen svarer ikke. Alle fem hovedmål er åbne, og fristen 18. oktober er ikke forlænget. Det private checkpoint ejer den nyeste kørselsstatus; ældre modstridende afsnit nedenfor er dateret historik.
+
+SOURCE forbliver isoleret og inaktiv. Dets særlige nativejob i 39269013971/1 bestod, men den samlede kildekontrol stoppede før PostgreSQL: selvtesten krævede fejlagtigt, at den ændrede SOURCE-HEAD var genbrugskompatibel med gamle input. Den lokale testrettelse bevarer de præcise gamle kontroller på et autentisk, fast P0-snapshot og prøver normal genbrugsafvisning på et særskilt autentisk SOURCE-snapshot. Produktionslæser, inputkrav, SQL og model ændres ikke; faktisk inputdrift skal fortsat udløse normal PostgreSQL. Komposition med den leverede main bevarer 90-minuttersloftet og de tre navngivne ikke-native prøveforbrugere. Ny samlet kontrol af denne komposition er endnu ikke bestået.
+
 ## 19. oktober — 4.0.584: normal artifactkontrol efter arkivberegning
 
 Den providerfrie arkivgenstart bevarede arkivet og gennemførte normal beregning den 19. oktober kl. 11.07.24 dansk tid. Derefter blev kørslen annulleret omkring 60-minuttersgrænsen, mens den genindførte brede `npm run validate` stadig kørte. Der blev ikke oprettet nyt leveringsartifact, publiceret nyt privat B/S, installeret den nye SQL eller leveret Pages. Bestået beregning er ikke bestået udgivelse.
@@ -15,6 +23,22 @@ Efter normal versionssynk er 4.0.584s ægte nye C/I/T og den separate append-onl
 De tidlige, adskilte kildeprøver omfatter seks producenttilfælde, 19 syntetiske arkivtilfælde, ét normalt gammelt læsermål og ni plan-/afslagstilfælde. De er ikke den endelige releases samlede bevis. Dette er lokal kildeforberedelse, ikke installation eller offentlig levering. Normal kalder-/workflowintegration, endelig præcis kildekontrol, native- og PostgreSQL-kontrol, faktisk resterende vejrhorisont for 673 dele, ny B/S-gemning/genlæsning, offentlig effekt og almindelige efterfølgere er fortsat åbne. Offentlig version er senest verificeret som 4.0.581 med vejr fra 16. oktober kl. 12 dansk tid. Cron er senest verificeret slået fra. Alle fem hovedmål er åbne; fristen 18. oktober er overskredet og er ikke forlænget. Den separate assistentkandidat og SOURCE-revision er ikke aktiveret. Se håndbog 89.256; ældre noter bevares som historik på de her udtrykkeligt erstattede punkter.
 
 Efter endelig normal versionssynk består de lokale C/I-/SQL-byggere, kontrollen af syv mutable bindingsforbrugere samt planens ni mål. Dette er kilde-/genereringskontrol, ikke PostgreSQL-eksekvering, faktisk installation eller ny offentlig prognose.
+
+## 19. oktober — SOURCE-afgrænsning efter P0: målt RAW-afslag, ny prøvevært endnu ikke kørt
+
+P0-sandheden ovenfor har fortsat prioritet. SOURCE er separat og inaktiv. Sidste faktiske nativeudfald er 39216786897/1: fem stalls, én finalizer og DMI_RAW_SAVE_RECEIPT_INVALID ved RAW_CLOSURE før efterfølgende API-/SAVE-admission. Indre RAW-årsag og den fulde oprindelige fejl-/clockkæde er fortsat ukendte; lokale SDK-markører beviser ikke holdbar cloudgemning.
+
+Aktuelt SOURCE-head 0ddca9ce er en current-instrumenteret prøvevært, ikke en bestået historisk V16 eller aktiveret revision. Den har præcis normal CIPHER-forælderadmission og sikre førsteafslagsfelter; ROOTs normale Node-bank består lokalt (298/69/229 input og 36 værn), mens den nye nativev2 er UNRUN. AutoCI var ikke oprettet på dette head, fordi dokumentation og håndbogsseed havde mergekonflikter mod main. Før næste kildekontrol skal den gennemgåede main-komposition bevare P0 4.0.584/C/I/T og alle historiske SOURCE-pins; ingen gate eller runtimeværn må omgås.
+
+## 19. oktober — SOURCE: målt adgangsafslag i prøveobservatøren
+
+PR669-kørsel 39205832547 nåede fem bekræftede SIGSTOP/T-stalls. Den bevarede første testundtagelse er PERMISSION_ERROR/EACCES i ACTION_OBSERVE ved prøvens kildehashbundne læsning af /proc/PID/fd/0. Den faktiske pidfd-exitstatus for denne discovery blev ikke bevaret; et afsluttet eller zombie-lignende forløb er derfor ikke påvist. Nul finalizers og actionExitCode=null beviser hverken produktfejl eller processtop.
+
+Den private V4-opfølgning ændrer kun testobservatøren: en frisk, ejet pidfd må ved EACCES alene lade en faktisk exit-klar discovery falde uden for optællingen; levende eller ukendt EACCES kastes uændret. Den nye Linux-prøve tillader også præcis ENOENT efter særskilt målt pidfd-exit, uden reaping eller stop-/SAVE-autoritet. Én portable event-/kildekontrakt består; fysisk Linux, ny native/CI og denne kandidats normale bankkontrakt er UNRUN. SOURCE forbliver separat og inaktiv. Se håndbog 89.192; ældre daterede observationer bevares.
+
+## 19. oktober — SOURCE: bevar prøvens første undtagelse før oprydning
+
+PR669-kørsel 39193345711 nåede to bekræftede SIGSTOP/T-stalls, men prøven fik en ukendt første undtagelse under ACTION_OBSERVE. actionExitCode=null var ikke et bevist procesexit. Den lokale test-only opfølgning bevarer nu faste undtagelsesmetadata og et kildehashkontrolleret kaldested før oprydning; ingen produktfejl, stop- eller SAVE-autoritet udledes. Én portable kontraktprøve og den normale bankkontrakt består lokalt. Ny fysisk Linux/native-/CI-kvalifikation er UNRUN; SOURCE forbliver inaktiv. Se håndbog 89.192. Ældre observationer bevares som dateret historik.
 
 ## 19. oktober — panelprøvens klokke, ikke en ændret prognoseregel
 

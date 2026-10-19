@@ -1,3 +1,9 @@
+## 19. oktober — isoleret SOURCE: præcis native-selvtest efter faktisk P0-levering
+
+- P0 39291575502/1 leverede nyt offentligt 4.0.584-datasæt kl. 20.00 dansk tid efter faktisk 55+3, sole060000-genlæsning, privat B før S og verificeret Pages/central afslutning. Det er beregnet fra gemte input; én almindelig efterfølger 39299413035/1 er startet, men dens resultat er endnu åbent.
+- SOURCEs nativejob bestod; den samlede kildekontrol stoppede før PostgreSQL på en selvtest, der fejlagtigt krævede aktuel HEAD genbrugskompatibel med gamle input. Testen bruger nu autentiske, faste positive/negative Git-snapshots. Gamle præcise kontroller og normal afvisning af faktisk inputdrift bevares; ingen produktguard eller PostgreSQL-kørsel springes over.
+- Lokal komposition bevarer den leverede 90-minutters kildegrænse, alle tre navngivne ikke-native prøveforbrugere og SOURCEs separate 35-minutters nativegrænse. Ny præcis samlet kontrol og SOURCE-aktivering er fortsat åbne. Ingen ny model-, geometri- eller SQL-overgang følger af testrettelsen.
+
 ## 19. oktober — 4.0.584: PR-kildekontrollens ydre jobloft
 
 - Den præcise PR673-kontrol bestod native PostgreSQL på 28:46 og den efterfølgende kildevalidering på 30:43, men blev afbrudt omkring det konfigurerede 75-minuttersloft under den anden nationale efterfølger. Loggen nåede 601 af 673 dele; tidsforløbet peger stærkt på jobloftet, og loggen viser ingen assertionsfejl. Dette er ikke bestået samlet kildekontrol.
@@ -30,6 +36,44 @@ Den ægte native PostgreSQL-prøve for 4.0.584 bestod, inklusive den nye append-
 - Lokale C/I-/SQL-byggere, syv bindingsforbrugere og planens ni mål består efter endelig versionssynk; ingen PostgreSQL- eller produktionspåstand.
 - Fjerner en dobbelt registrering af den omfattende B/S-prøve; hele prøven beholdes gennem den eksisterende normale kalder. De fem nye User-Agent-versionsfelter kvalificeres med en præcis helkilde-inverse, uden ændring af produktworkflow eller gamle testorakler.
 - Ikke leveret: kalder-/workflowintegration, endelig præcis kilde-/native-/PostgreSQL-kontrol, 673-dels horisont og faktisk ny B/S, Pages og almindelige efterfølgere. Offentlig 4.0.581 og vejr fra 16. oktober kl. 12 dansk tid er seneste verificerede status; cron er senest slået fra. Alle fem mål er åbne, og fristen 18. oktober er overskredet.
+
+## 19. oktober — SOURCE-afgrænsning efter P0: målt RAW-afslag, ny prøvevært endnu ikke kørt
+
+Den særskilte SOURCE-prøve 39216786897/1 på 9e14daf3 nåede fem bekræftede SIGSTOP/T-stalls og én finalizer. RAW-lukningskvitteringen blev derefter afvist med DMI_RAW_SAVE_RECEIPT_INVALID i CLOSURE før den efterfølgende API-/SAVE-admission. Den indre årsag til afslaget er ikke bevaret i denne rapport og er fortsat ukendt; lokal SDK-finalisering er ikke cloudbevis eller en gyldig lukningskvittering.
+
+Den senere 0ddca9ce-kilde indeholder en eksplicit current-instrumenteret prøvevært med faste diagnostikfelter, optagelse af de to faktiske nye kildeblade og en snæver CIPHER-guard for den normale source-fixed-cipher-upload-forælder. ROOTs normale Node-bankkontrakt består lokalt: 298 input, 69 bankblade, 229 faste Git-input og 36 værn; alle 27 historiske produktpins bevares. Ved aflæsningen af dette head var automatisk CI ikke startet på grund af dokumentations-/håndbogsseedkonflikter mod main. Den nye v2-nativeprøve er derfor ikke kørt. Dette er ikke et påvist RAW-årsagsfix, SOURCE-aktivering, fireminuttersbevis eller produktionslevering.
+
+## 19. oktober — SOURCE: snæver observatørrettelse efter EACCES
+
+39205832547 nåede fem bekræftede SIGSTOP/T-stalls før målt PERMISSION_ERROR/EACCES i testens procfs-stdinlæsning. Den faktiske pidfd-exitstatus er ukendt; ingen produktfejl eller bevist stop udledes. Forbereder kun privat V4: frisk pidfd-bevist exit må frasortere en udløbet discovery uden optælling; levende/ukendt EACCES genkastes. Den nye Linux-prøve tillader None eller præcis ENOENT efter målt exit og bevarer uafventet Popen før oprydning. Portable event-/kildekontrakt består én gang; normal bankkontrol på kandidaten og fysisk Linux/native/CI er UNRUN. Gamle assertions, 297 andre inputrækker og 27 produktpins bevares. SOURCE forbliver inaktiv; ingen produkt-, model-, versions-, migrations- eller budgetændring.
+
+## 19. oktober — SOURCE: rapportér første testundtagelse før oprydning
+
+Den sidste nativeprøve 39193345711 nåede to bekræftede SIGSTOP/T-stalls, men første testundtagelse i ACTION_OBSERVE var ukendt; actionExitCode=null var ikke et bevist exit. Tilføjer kun faste firstTestException-metadata før oprydning og streng kontrol af kildehash/linje; ingen rå fejltekst eller ny produkt-/stop-/SAVE-autoritet. Den første fejl og gamle assertions bevares. Én portable kontrakt og normal bank består lokalt. Ny fysisk Linux/native/CI er UNRUN; SOURCE, produktintegration og cloudkvalifikation er fortsat åbne/inaktive. Ingen version, model, migration, produktpin eller budget ændres.
+
+## 19. oktober — SOURCE: gyldigt prøveinput før ny privat pakke
+
+Den seneste isolerede nativeprøve stoppede i normal DMI-materialisering før leverandører. Den nye prøve havde arvet en 38-bytes tekstmarkør som DMI-JSON. Én afgrænset prøve af den uændrede normale codec reproducerer JSON-afslaget og beviser gyldig, tabsfri lagring af et udtrykkeligt manglende-data-dokument; det er ikke en påvist produktfejl.
+
+Kun den nye V16-fixture skriver og genlæser dette normale bulkinput før sin NYE B. Gamle factories, originaler, 297 øvrige bankrækker, 27 produktpins, protokol og budgetter bevares. Normal Node-bankkontrakt og Python-wrapperens syntaks består én gang. Den ærlige mangeldækning vælger den eksisterende adaptive recovery, ikke et nyt budget. Ny Linux/native og fuld kildegate mangler; SOURCE forbliver inaktiv, og fireminutterskæde eller cloudbevarelse påstås ikke lukket.
+
+## 19. oktober — SOURCE: to manglende prøveafhængigheder
+
+Den nye lille Linux-unitfase bestod, men terminalprøven stoppede stadig før transportstalls. Den sikre oprindelige kode er SOURCE_NORMAL_PHASE_FAILED i PRODUCER_CHAIN; præcis childfase og numerisk exitkode er ikke bevist. Der er særskilt påvist to manglende dynamiske prøveafhængigheder: normal generation-klargøring kan ikke gennemføres uden dem. Begge hele filer er autentiske frosne kildeblobs og matcher den fastlagte grønne baseline; ingen produktkode ændres.
+
+Prøvebanken og den indre prøvevært får nu begge filer. Den billige kontrakt kræver alle tre faktiske normal_module-kald i begge værter og afviser hver fjernet afhængighed. Eksisterende hashbundet frameprojektion må også bruges ved den generiske fasefejl uden at erstatte fejlkoden eller opfinde exitstatus. Den nye Linux-case er endnu UNRUN. Produktpins, protokol, gamle assertions, frister og budgetter bevares; dette er ikke et bevist produktfix eller revisionsaktivering.
+
+## 19. oktober — SOURCE: oprindelig prøvefejl skal kunne aflæses
+
+PR669's første Linux-prøve stoppede efter action-exit 1 og nul observerede transportstalls; den sekundære prøveassertion viste 0 mod 5. Den oprindelige actionårsag er fortsat UNKNOWN. Kun prøveobserveren ændres: de eksisterende sikre SOURCE-/RAW-diagnoser læses før sekundære assertions, mens rå output forbliver privat lokalt. Fejludlæseren må ikke bruge unittest-overskriften FAIL som produktfejl.
+
+Seks rene projektionstilfælde og seks præcise Python-headerprøver består lokalt uden gentagelse af native. Et faktisk Windows lstat/fstat-ctime-afslag bevares; fysisk identitetskontrol lempes ikke. Den normale Linux-kalder får en lille særskilt unitfase før SDK/native. Dens otte fysiske I/O-/frame-prøver og hele nativekæden er endnu UNRUN. Produktblade, gamle fixtures/pins, assertions, model/SQL, budgetter og workflowgate ændres ikke. Dette er diagnostik, ikke et produktfix eller revisionsaktivering.
+
+## 19. oktober — SOURCE: afgrænset test-only Linux-forberedelse
+
+Tilføjer en eksplicit, hashbundet prøvebank og et krævet, særskilt 35-minutters Linux-job før den uændrede normale kildegate. Prøveværten får kun de faktisk nødvendige frosne input, den nåelige historikplan-/DMI-childlukning og skrivefri adgang til autentiske historiske Gitobjekter. Gamle fixtures, alle 27 produktpins, normale produktfiler, C/I/T, SQL, version og provider-/schedulerbudgetter ændres ikke. Det lille metadataartifact må hverken indeholde råpayloads eller fungere som produktions-SAVE-bevis.
+
+Den præcise lokale Node-inventory/kontrakt og hele patchinverser består og genbruges efter byteidentisk materialisering. Linux-native, samlet fireminutters-forløb, cloudbevarelse, normal produktintegration og offentlig effekt er ikke bevist. Ingen revision eller produktionsfunktion aktiveres af denne kildeforberedelse.
 
 ## 19. oktober — panelprøvens klokke, ikke en ændret prognoseregel
 

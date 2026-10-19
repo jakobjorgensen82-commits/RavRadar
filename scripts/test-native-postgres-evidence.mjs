@@ -7,6 +7,9 @@ import {ORIGIN, WORKFLOW, JOB, STEP, COMMANDS, NEW_NATIVE_BLOCK,
   verifyLaterRuns, decideReuse, verifyCurrentPullRequest, FOLLOWUP_INPUTS} from './native-postgres-evidence.mjs';
 
 const copy = value => structuredClone(value);
+// Genuine reviewed P0 follow-up, not the potentially changed current PR tree.
+const REVIEWED_FOLLOWUP = '8d869f48bd0d1b3fe2c5b2818054db515296c7e6';
+const REVIEWED_FOLLOWUP_TREE = 'ada0fd0bd34f45cc3a035644e39433518908a719';
 const originalWorkflow = 'name: Validate RavRadar pull request\non:\n  pull_request:\npermissions:\n  contents: read\n'
   + 'jobs:\n  validate:\n    steps:\n      - name: ' + STEP + '\n        shell: bash\n        run: |\n          set -euo pipefail\n'
   + COMMANDS.map(command => '          ' + command + '\n').join('')
@@ -187,9 +190,11 @@ test('follow-up PR identity and both native branch histories remain independentl
 test('only exact reviewed follow-up inputs preserve every original retained PG tree entry',async()=>{
   const {execFileSync}=await import('node:child_process');
   const git=args=>execFileSync('git',args,{encoding:'utf8',maxBuffer:32*1024*1024});
+  assert.equal(git(['rev-parse',REVIEWED_FOLLOWUP+'^{commit}']).trim(),REVIEWED_FOLLOWUP);
+  assert.equal(git(['rev-parse',REVIEWED_FOLLOWUP+'^{tree}']).trim(),REVIEWED_FOLLOWUP_TREE);
   const before=parseTree(git(['ls-tree','-rz','--full-tree',ORIGIN.head]));
-  const after=parseTree(git(['ls-tree','-rz','--full-tree','HEAD']));
-  const readSource=(file,side)=>git(['show',(side==='before'?ORIGIN.head:'HEAD')+':'+file]);
+  const after=parseTree(git(['ls-tree','-rz','--full-tree',REVIEWED_FOLLOWUP]));
+  const readSource=(file,side)=>git(['show',(side==='before'?ORIGIN.head:REVIEWED_FOLLOWUP)+':'+file]);
   const result=verifyInputTrees(before,after,readSource);
   const currentMapCallers=['scripts/test-mobile-start-and-live-cache-4.0.74.mjs','scripts/test-current-arrow-land-mask.mjs',
     'scripts/test-workflow-validation-order-4.0.108.mjs'];
@@ -212,4 +217,53 @@ test('only exact reviewed follow-up inputs preserve every original retained PG t
     assert.throws(()=>verifyInputTrees(before,after,(file,side)=>readSource(file,side)+(file===pin.path&&side==='after'?'\n':'')));
   }
   assert.throws(()=>verifyInputTrees(before,after));
+});
+
+test('recorded genuine SOURCE drift fixture selects original PG before any network access',async()=>{
+  const {execFileSync}=await import('node:child_process');
+  const git=args=>execFileSync('git',args,{encoding:'utf8',maxBuffer:32*1024*1024,
+    env:{...process.env,GIT_NO_LAZY_FETCH:'1'}});
+  // An immutable recorded SOURCE fixture, not the caller's current HEAD or
+  // production state. Every snapshot operand comes from its genuine Git object.
+  const head='8a62b0f325ac82ddd45eb37582845a1d06e2c296';
+  const tree='9771842cbcb9b2b0689f7411d675cb028f54dde1';
+  assert.equal(git(['rev-parse',head+'^{commit}']).trim(),head);
+  assert.equal(git(['rev-parse',head+'^{tree}']).trim(),tree);
+  const snapshotGit=args=>git(args.map(arg=>arg==='HEAD'?head
+    :arg==='HEAD^{commit}'?head+'^{commit}':arg.startsWith('HEAD:')?head+arg.slice(4):arg));
+  const before=parseTree(snapshotGit(['ls-tree','-rz','--full-tree',ORIGIN.head]));
+  const after=parseTree(snapshotGit(['ls-tree','-rz','--full-tree','HEAD']));
+  const readSource=(file,side)=>snapshotGit(['show',(side==='before'?ORIGIN.head:'HEAD')+':'+file]);
+  assert.throws(()=>verifyInputTrees(before,after,readSource),'Recorded SOURCE is not unchanged native input');
+  const oldWorkflow=snapshotGit(['show',ORIGIN.head+':'+WORKFLOW]);
+  const reviewedWorkflow=git(['show',REVIEWED_FOLLOWUP+':'+WORKFLOW]);
+  verifyWorkflow(oldWorkflow,reviewedWorkflow);
+  const env={GITHUB_EVENT_NAME:'pull_request',GITHUB_REPOSITORY:ORIGIN.repository,
+    PULL_REQUEST_NUMBER:'669',GITHUB_RUN_ATTEMPT:'1',SOURCE_GATE_HEAD_SHA:head,
+    GITHUB_RUN_ID:String(ORIGIN.run+2)};
+  for(const isolateTreeGuard of [false,true]){
+    let apiCalls=0,environmentCalls=0,currentTreeReads=0;
+    const readGit=args=>{
+      // This injected unit seam evaluates the recorded immutable SOURCE Git
+      // snapshot, not the caller's HEAD/worktree. No runtime guard is changed.
+      if(args[0]==='status'){
+        assert.deepEqual(args,['status','--porcelain','--untracked-files=no']);return '';
+      }
+      // CI checks out full history. Model only that existing unit precondition
+      // when the local host is shallow; every frozen tree/blob is still read
+      // from genuine Git objects, and the unchanged runtime guard stays strict.
+      if(args[0]==='rev-parse'&&args[1]==='--is-shallow-repository')return 'false';
+      // Also reach the recorded SOURCE tree guard with a genuine, independently
+      // qualified workflow operand; no verifier or source-tree guard is stubbed.
+      if(isolateTreeGuard&&args[0]==='show'&&args[1]==='HEAD:'+WORKFLOW)return reviewedWorkflow;
+      if(args[0]==='ls-tree'&&args.at(-1)==='HEAD')currentTreeReads++;
+      return snapshotGit(args);
+    };
+    const decision=await decideReuse({env,readGit,
+      get:async()=>{apiCalls++;throw new Error('Unexpected network boundary');},
+      getEnvironment:()=>{environmentCalls++;return runtime;}});
+    assert.deepEqual(decision,{status:'EXECUTE',reason:'native-input-or-evidence-unavailable-or-different'});
+    assert.equal(apiCalls,0);assert.equal(environmentCalls,0);
+    assert.equal(currentTreeReads,isolateTreeGuard?1:0);
+  }
 });

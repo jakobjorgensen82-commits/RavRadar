@@ -989,6 +989,14 @@ genforsøgt, og ingen ny offentlig effekt påstås.
 
 ## 89.192 Stop af egen procesgruppe før genbrug
 
+**SOURCE-prøvens målte opfølgning 19. oktober:** Kørsel 39205832547 nåede fem bekræftede SIGSTOP/T-stalls, før testobservatørens læsning af /proc/PID/fd/0 gav PERMISSION_ERROR/EACCES under ACTION_OBSERVE. Det kildehashkontrollerede kaldested er bevaret, men pidfd-exitstatus for den berørte discovery blev ikke målt og gemt. Det er derfor ikke påvist, om denne proces var afsluttet. Nul finalizers og actionExitCode=null beviser hverken produktfejl, processtop eller SAVE. Den ældre 39193345711-observation er fortsat historisk og har ukendt oprindelig undtagelse.
+
+Privat V4 ændrer kun prøven: ved EACCES må en frisk ejet pidfd alene frasortere en faktisk exit-klar discovery uden at tælle et stall, en finalizer eller stop. Levende eller ukendt EACCES kastes uændret. Den nye Linux-enhedsprøve kræver først levende afslag og siden særskilt målt exit; derefter accepterer den None eller præcis FileNotFoundError/ENOENT, men Popen skal fortsat være uafventet før oprydning. Normal discovery håndterede allerede ENOENT. Én portable event-/kildekontrakt består; dette er ikke fysisk Linux-/pidfd-bevis. Ny bankkontrol på kandidaten, fysisk Linux/native og CI er UNRUN. Produktpins, protokol, budgetter og gamle prøver bevares. SOURCE er separat og inaktiv; faktisk fireminutterskæde, stop, SAVE og fjern cloudbevarelse er stadig åbne. Lokale SDK-prøver er ikke cloudbevis.
+
+**SOURCE-prøvens status 19. oktober:** Kørsel 39193345711 nåede to bekræftede SIGSTOP/T-stalls og nul finalizers, før testens egen første undtagelse opstod under ACTION_OBSERVE. Den oprindelige undtagelse er stadig ukendt. actionExitCode=null var ikke en ny måling af procesexit. Efterfølgende oprydning beviser heller ikke, at produktets processtop var gennemført før fejlen.
+
+Kun prøvens rapportering tilføjer firstTestException med fast type, årsagskode/errno og højst ét kildehashkontrolleret kaldested før oprydning. Første fejl bevares; ingen rå fejltekst, private stier eller stack uploades. Metadataene giver ingen produkt-, stop- eller SAVE-autoritet. Én portable kontraktprøve og normal bankkontrakt består lokalt. Ny fysisk Linux-framekontrol, native-/CI-kvalifikation, samlet fireminutterskæde og fjern cloudbevarelse er ikke dokumenteret. SOURCE forbliver inaktiv; lokale SDK-prøver er ikke cloudbevis. Ældre afsnit nedenfor bevares som dateret historik.
+
 På Linux opretter den normale vejrhentning, dens finalizer og det supplerende
 strømkald hver sin procesgruppe. Hovedprogrammet kan afslutte, mens en
 underproces stadig skriver eller holder en outputkanal åben. Derfor er

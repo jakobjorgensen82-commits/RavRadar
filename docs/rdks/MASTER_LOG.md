@@ -6,6 +6,20 @@ Lokal 4.0.584 har efter normal samlet versionssynk fået ægte nye C/I/T og en n
 
 Efter endelig normal versionssynk består de lokale C/I-/SQL-byggere, kontrollen af syv mutable bindingsforbrugere samt planens ni mål. Dette er kilde-/genereringskontrol, ikke PostgreSQL-eksekvering, faktisk installation eller ny offentlig prognose.
 
+## 19. oktober — SOURCE-afgrænsning efter P0: målt RAW-afslag, ny prøvevært endnu ikke kørt
+
+Faktisk SOURCE-udfald 39216786897/1: fem bekræftede stalls, én finalizer, actionexit 1 og RAW_CLOSURE/DMI_RAW_SAVE_RECEIPT_INVALID før efterfølgende API-/SAVE-admission. Den indre kohorts første årsag og oprindelige clock er ikke bevaret; intet RAW-årsagsfix eller cloudbevis kan udledes.
+
+Efterfølgende current-instrumenteret v2 på 0ddca9ce bevarer historiske 298 input og 27 produktpins, tilføjer sikre afslagsfelter/korrekt observation af to nye produktblade og retter den præcise normale CIPHER-forælderform. ROOTs normale Node-bank er lokalt PASS (69 bankblade/229 faste Git-input/36 værn). Ny v2-native er UNRUN: autoCI var ikke startet på grund af dokumentations-/håndbogsseedkonflikter mod main. Privat gennemgået main-komposition og dette daterede statusdelta er forberedelse, ikke merge, aktivering eller produktionslevering. Alle ældre daterede afsnit og P0-sandheden ovenfor bevares.
+
+## 19. oktober — SOURCE: målt EACCES og afgrænset privat V4
+
+Nativekørsel 39205832547 nåede fem bekræftede SIGSTOP/T-stalls og bevarede PERMISSION_ERROR/EACCES ved testens procfs-stdinlæsning. Original pidfd-exitstatus er ukendt; nul finalizers/null actionstatus dokumenterer ikke produktfejl eller stop. Privat V4 bruger kun frisk pidfd-exit-readiness til at frasortere en udløbet discovery ved EACCES og bevarer levende/ukendt afslag. Den nye Linux-prøve tillader None eller præcis ENOENT efter målt exit, uden at reap'e før oprydning. Faktisk portable kontrakt: 1 PASS, 0 fejl/skip; ny normal bankkontrol og fysisk Linux/native/CI er UNRUN. SOURCE er inaktiv; ingen produkt-, model-, versions-, migrations-, protokol-, budget- eller produktpinændring. Gamle beviser bevares.
+
+## 19. oktober — SOURCE-prøvens egen første undtagelse
+
+39193345711 nåede to bekræftede SIGSTOP/T-stalls, men første testundtagelse i ACTION_OBSERVE forblev ukendt; null var ikke et bevist action-exit. Den test-only firstTestException-opfølgning bevarer faste, kildehashkontrollerede metadata før oprydning uden produkt-/stop-/SAVE-autoritet. Lokal portable kontrakt 1 PASS og normal bankkontrakt PASS genbruges; ny fysisk Linux/native/CI er UNRUN. Ingen version, model, SQL-migration eller produktpin ændres, og SOURCE forbliver inaktiv. Ældre beviser og afslag bevares.
+
 ## 18. oktober — bevist plan og afgrænset katalogafslag
 
 Den samlede kildeændring tilføjer nu den faste metadata-/tilstedeværelsesrapport og en snæver historisk transportvej: kun STAC 404/410 og fuldt match af den allerede autentificerede URL-SHA vælger én adresse blandt højst to lokalt sammenlignede DMI-stavemåder. Indholds-SHA, størrelse, alle GRIB-tider, faktisk hentetid, budgetter, eksklusiv skrivning og cachelukning bevares. Ingen S3-udvidelse, nye kilder eller opdigtet katalogbevis. Tolv portable målprøver består i den reelle sammenføring. Den nye faktiske kommandoprøve kræver Linux: Windows' forskellige oprettelses-/ændringstider gjorde dens tidligere lokale resultat ustabilt. Hele prøvens kontroludsagn bevares i den obligatoriske native-kontrol; produktidentiteten lempes ikke. Native Linux, præcis samlet CI, faktisk filtilgængelighed, SAVE og offentlig effekt er endnu åbne. Rapportens filtilstedeværelse er ikke kvalificeret genbrug.

@@ -1,3 +1,9 @@
+## 19. oktober — faktisk P0-levering; SOURCE-selvtest må ikke kræve uændret HEAD
+
+PR673s præcise kildekontrol 39278848551/1 er faktisk bestået med PostgreSQL og national opstart med to efterfølgere. Main c72d6730 og produktionsforløb 39291575502/1 leverede nyt offentligt datasæt rr-20261019171204-210 den 19. oktober kl. 20.00 dansk tid: normal beregning fra gemte input, faktisk 55+3, sole060000-installation/genlæsning, privat B før S, serverfunktioner, Pages, offentlig 210/673-kontrol og central afslutning. Uafhængig manifest/startpakke/aktuel-time-kontrol bestod. Referencen er kl. 02.00 dansk tid; det er ikke en ny leverandørhentning eller dokumenteret fuld historik. Den ene almindelige standardkørsel 39299413035/1 har genlæst og sammenkoblet B/S, men dens nye leverandør-/gemme-/deployforløb er endnu ikke verificeret. Cron må først genaktiveres efter verificeret normal genopretning. Browserbetjening er aktuelt utilgængelig; privat checkpoint ejer live-status.
+
+SOURCEs særlige nativejob i 39269013971/1 bestod, men normal kildekontrol fejlede i selvtesten før selve PostgreSQL. Den krævede ubetinget, at aktuel HEAD passede til en gammel præcis genbrugsovergang; SOURCE ændrer reelt andre beholdte input. En ny dokumentpin eller bred udelukkelse ville være forkert. Lokal testrettelse bruger autentiske, faste positive/negative Git-snapshots og bevarer samtlige oprindelige byte-, træ-, mode- og workflowinversekrav. Den normale produktlæser er uændret: drift betyder afvist genbrug og rigtig PostgreSQL. Senere main-komposition bevarer leverede 90 minutter og tre præcist navngivne ikke-native prøveforbrugere. Den nye kompositions målprøver, præcise samlede kildekontrol, integration og aktivering er åbne. SOURCE er inaktiv; alle fem hovedmål er åbne, og fristen 18. oktober er overskredet. Ældre afsnit nedenfor er dateret historik.
+
 ## 19. oktober — 4.0.584: PR-kildekontrollens ydre jobloft
 
 Den præcise PR673-kildekontrol gennemførte native PostgreSQL på 28 minutter og 46 sekunder samt kildevalidering på 30 minutter og 43 sekunder. Den blev derefter afbrudt omkring det konfigurerede 75-minuttersloft under anden nationale efterfølger, efter 601 af 673 dele. Tidsforløbet peger stærkt på jobloftet; loggen viser ingen assertionsfejl. Det er hverken samlet grøn kildekontrol, national kapacitetsgodkendelse eller offentlig levering.
@@ -37,6 +43,54 @@ Originalbevaring: Faktisk B, faktisk central S og den offentlige generation arki
 Dette er lokal kildeforberedelse, ikke installation eller offentlig levering. Normal kalder-/workflowintegration, endelig præcis kildekontrol, native- og PostgreSQL-kontrol, faktisk resterende vejrhorisont for 673 dele, ny B/S-gemning/genlæsning, offentlig effekt og almindelige efterfølgere er fortsat åbne. Offentlig version er senest verificeret som 4.0.581 med vejr fra 16. oktober kl. 12 dansk tid. Cron er senest verificeret slået fra. Alle fem hovedmål er åbne; fristen 18. oktober er overskredet og er ikke forlænget. SOURCE-revisionen, assistentleveringen og øvrige tilbageholdte aktiveringer er ikke udført. Se håndbog 89.256 og privat checkpoint. Tidligere krav om at videreføre gammel aktiv historik og tidligere afventningsstatus er erstattet alene på de ovenfor præciserede punkter.
 
 Efter endelig normal versionssynk består de lokale C/I-/SQL-byggere, kontrollen af syv mutable bindingsforbrugere samt planens ni mål. Dette er kilde-/genereringskontrol, ikke PostgreSQL-eksekvering, faktisk installation eller ny offentlig prognose.
+
+## 19. oktober — SOURCE-afgrænsning efter P0: målt RAW-afslag, ny prøvevært endnu ikke kørt
+
+Seneste faktisk kørte SOURCE-nativeprøve er 39216786897/1 på 9e14daf3, terminal FAIL. Den målte fem SIGSTOP/T-stalls, én finalizer og actionExitCode=1. Første sikre actionkode var DMI_RAW_SAVE_RECEIPT_INVALID i CLOSURE; den efterfølgende test standsede under DISPOSITION. Afslaget kom før efterfølgende API-/SAVE-admission. Den indre RAW-afslagsårsag og den oprindelige clock blev ikke bevaret og er ukendte. Lokal officiel SDK-finalisering er hverken cloudbevis, normal SAVE-admission eller bevis for hele fireminutterskontrakten.
+
+Aktuelt SOURCE-head 0ddca9ce indeholder v2-current-caller-kompositionen: faste first-refusal-felter, autentificeret observation af to nye faktiske produktblade og præcis CIPHER-guardian-/parentargv-admission for source-fixed-cipher-upload. Det er en current-instrumenteret proof-host, ikke et omskrevet historisk V16-bevis. ROOTs normale Node-bank er lokalt PASS med 298 input (69 testbank/229 fast Git), 36 værn og hel ordinary-workflow-inverse; de historiske 27 produktpins er uændrede.
+
+Ny automatisk CI var ikke oprettet for 0ddca9ce på grund af faktiske dokumentations-/håndbogsseedkonflikter mod main. Ny v2-native er derfor UNRUN, ikke rød eller grøn. Den private integrationsplan bevarer P0-sandheden ovenfor og løser kun denne source-only komposition. SOURCE er inaktiv; aktivering, samlet fireminutterskæde og holdbar cloudgemning er ikke dokumenteret. Den ældre 392058/EACCES-status nedenfor er historisk på de ovenfor opdaterede udfaldspunkter.
+
+## 19. oktober — SOURCE: første målte EACCES er en prøveobservationsfejl
+
+Seneste faktiske nativeudfald er PR669-kørsel 39205832547 på 364e83cc: fem bekræftede SIGSTOP/T-stalls, nul finalizers og første testundtagelse PERMISSION_ERROR/EACCES under ACTION_OBSERVE ved driverens kildehashbundne procfs-stdinlæsning. Den nye firstTestException-rapportering fandt dette kaldested. Den berørte discoverys pidfd-exitstatus blev ikke gemt; årsagen kan ikke omskrives til en bevist zombie, produktfejl eller vellykket afslutning. actionExitCode=null er fortsat ikke et bevist exit.
+
+Privat V4 er alene en snæver testopfølgning. Kun en frisk ejet pidfd med faktisk exit-readiness tillader, at EACCES behandles som en udløbet, ikke-optalt discovery. Levende eller ukendt EACCES genkastes som samme fejl. Ny Linux-enhedsprøve kræver først levende adgangsafslag og derefter målt pidfd-exit; efter exit accepterer den None eller præcis FileNotFoundError/ENOENT, mens Popen stadig skal være uafventet før oprydning. Normal discovery håndterede allerede ENOENT.
+
+Den lille portable event-/kildestrukturprøve består én gang (1 PASS, 0 fejl/skip); dens uændrede funktioner genbruges uden gentest. Den er ikke Linux-/pidfd-bevis. Nye fysiske Linux-/nativeprøver, kandidatspecifik normal bankkontrol og CI er UNRUN. Alle 27 produktpins og 297 øvrige inputrækker bevares; model, SQL-migrationer, protokol, budgetter og aktivering ændres ikke. SOURCE er fortsat separat og inaktiv. Fireminutterskæde, faktisk stop, SAVE og fjern cloudbevarelse er stadig åbne. Tidligere 39193345711 forbliver en særskilt historisk observation med ukendt oprindelig undtagelse.
+
+## 19. oktober — SOURCE: første testundtagelse er endnu ikke identificeret
+
+Den seneste faktiske PR669-kørsel 39193345711 nåede to bekræftede SIGSTOP/T-stalls og nul finalizers. Første testundtagelse blev registreret under ACTION_OBSERVE, men dens type og kaldested blev ikke bevaret i det uploadede metadataresultat. actionExitCode=null var kun en ikke-genaflæst processtatus, ikke et bevist exit. Dette dokumenterer ikke en produktfejl eller en afsluttet fejlworker-/SAVE-kæde.
+
+Kun testdriveren og dens faste metadataopsamling tilføjer firstTestException: fast type, årsagskode/errno og højst ét kildehashkontrolleret kaldested før oprydning. Den første fejl bevares; rå fejltekst, stier og stack uploades ikke. Én portable kontraktprøve og normal bankkontrakt består lokalt; 297 øvrige inputrækker og alle 27 produktpins er uændrede. Ny fysisk Linux-framekontrol, native og præcis CI er UNRUN. SOURCE og produktintegration er fortsat inaktive/åbne. De følgende tidligere fejl er historik, ikke årsagen til denne nye observation.
+
+## 19. oktober — SOURCE: første konkrete prøveinputårsag
+
+Den seneste nativekørsels faktiske hashbundne frames peger på DMI-materialisering før dynamiske importer og før leverandører. V16 havde arvet den gamle fabriks vilkårlige tekstmarkør i bulkfilen. Den præcise uændrede codec afviser samme 38 bytes som ugyldig JSON i en lille portable prøve; normal missing-only lagring materialiseres korrekt med uændrede kildebytes. Dette er et konkret fixturehul, ikke bevis for en produktionsfejl.
+
+Den nye V16-forberedelse danner og genlæser kun ægte normalt lagret, manglende bulkinput før en NY B. Gamle B/S, factories, 297 andre inputrækker og alle 27 produktpins er urørte. Den normale bankkontrakt og wrapper-syntaks består; nyt Linux/native er UNRUN. Readiness forbliver ærligt ikke-READY, og den eksisterende adaptive recovery vælges uden budgetændring. SOURCE, produktintegration, faktisk fireminutterskæde og fjern cloudbevarelse er fortsat åbne/inaktive. Ældre ukendt-fase-noter nedenfor er dateret historik.
+
+## 19. oktober — SOURCE: afgrænset dynamisk importlukning
+
+Den seneste isolerede Linux-prøve bestod sin lille unitfase, men stoppede fortsat med nul transportstalls og den faktiske sikre kode SOURCE_NORMAL_PHASE_FAILED i PRODUCER_CHAIN. Den specifikke første childfase og numeriske exitkode er stadig UNKNOWN. De må ikke udledes af en sekundær assertion eller af filstørrelser alene.
+
+En konkret prøveværtsmangel er derimod bevist: generation-klargøringen har to dynamiske modulafhængigheder, som manglede i både ydre bank og indre prøvevært. De tilføjes fra præcis frosne, hele Gitblobs; alle tre faktiske modul-kald og deres eksisterende importer kontrolleres. Allerede udsendte hashkvalificerede frames kan kun afgrænse et faktisk callsite, ikke skabe ny fejl-/stop-/SAVE-autoritet. Den nye Linux-prøve er fortsat UNRUN; produktkilde, 27 pins, protokol, model/SQL og budgetter ændres ikke. SOURCE forbliver inaktiv, og første konkrete produktårsag er ikke fastslået.
+
+## 19. oktober — SOURCE: nativeårsagen er endnu ukendt
+
+Den første PR669-kørsel gennemførte scope- og historiske Gitinputkontroller, men nativeprøven stoppede efter action-exit 1 med nul observerede stalls. Første påviste assertion var 0 mod 5; den oprindelige actionårsag kan ikke udledes af den gamle rapports fejlagtige FAIL-klassifikation. Log og metadata er bevaret privat. Ingen produktårsag eller gennemført fireminutterskæde påstås.
+
+Den nye test-only observer bærer de allerede eksisterende sikre diagnoser, fase og exitkode videre før sekundære assertions; ukendt forbliver UNKNOWN. Seks rene projektionstilfælde og seks headerprøver består lokalt. Linux-I/O8 og native er fortsat UNRUN og kræves særskilt før fuld kildegate. Den målte Windows-ctime-forskel er ikke løst ved guardlempelse; den fysiske Linux-læser og dens assertions bevares. Alle 27 produktpins, 295 øvrige inputrækker, model/SQL, budgetter og workflow er uændrede. SOURCE forbliver inaktiv; dette er ikke offentlig vejreffekt eller færdig revision.
+
+## 19. oktober — SOURCE: isoleret kildeprøve, ikke revisionsaktivering
+
+En særskilt kildekandidat tilføjer kun en eksplicit prøvebank og et krævet Linux-job før den uændrede fulde kildegate. Prøveværten sammensætter 296 afgrænsede input: 227 autentiske Gitblobs fra den allerede kvalificerede a568-kilde og 69 inerte prøvefiler fra de frosne, gennemgåede operander. Ingen normale produktfiler, aktuelle C/I/T-bindinger, SQL, version eller provider-/schedulerbudgetter ændres. SOURCE-revisionen kopieres ikke ind i aktive produktstier og aktiveres ikke.
+
+Den faktisk nåelige fejlsti har fået historikplanlæggeren, DMI-producenten og deres præcise importer med. Punktstaging er success-only og kvalificeres ikke af denne fejlprøve. Begge egne prøveværter skal læse de ægte historiske Gitobjekter gennem fysisk verificerede, skrivefri alternates; ingen gamle pins eller Gitidentiteter ommærkes. De tidligere V13/V15-fixtures og alle 27 produktpins bevares.
+
+Den frosne lokale Node-kontrol består med normal inventory, 125 historiske Gitblobs, 296 inputhashes, 27 produktpins og 36 CI-betingelser. Hele patchinverser består; disse beviser genbruges kun for de byteidentiske input. Linux-native, den faktiske samlede fireminutters-fejlkæde og varig fjernlagring er fortsat ukvalificerede. Kun et lille metadataresultat må gemmes; uobserverede forhold er UNKNOWN/null, og lokalt SDK er ikke cloudbevis. Se SOURCE19_NATIVE_PROOF_BANK_V16. Dette er ikke en ny offentlig vejrgeneration eller færdiggørelse af revisionen.
 
 ## 19. oktober — panelprøvens klokke, ikke en ændret prognoseregel
 
