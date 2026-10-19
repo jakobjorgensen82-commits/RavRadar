@@ -1,3 +1,7 @@
+## 19. oktober — SOURCE: rapportér første testundtagelse før oprydning
+
+Den sidste nativeprøve 39193345711 nåede to bekræftede SIGSTOP/T-stalls, men første testundtagelse i ACTION_OBSERVE var ukendt; actionExitCode=null var ikke et bevist exit. Tilføjer kun faste firstTestException-metadata før oprydning og streng kontrol af kildehash/linje; ingen rå fejltekst eller ny produkt-/stop-/SAVE-autoritet. Den første fejl og gamle assertions bevares. Én portable kontrakt og normal bank består lokalt. Ny fysisk Linux/native/CI er UNRUN; SOURCE, produktintegration og cloudkvalifikation er fortsat åbne/inaktive. Ingen version, model, migration, produktpin eller budget ændres.
+
 ## 19. oktober — SOURCE: gyldigt prøveinput før ny privat pakke
 
 Den seneste isolerede nativeprøve stoppede i normal DMI-materialisering før leverandører. Den nye prøve havde arvet en 38-bytes tekstmarkør som DMI-JSON. Én afgrænset prøve af den uændrede normale codec reproducerer JSON-afslaget og beviser gyldig, tabsfri lagring af et udtrykkeligt manglende-data-dokument; det er ikke en påvist produktfejl.

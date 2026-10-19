@@ -1,3 +1,7 @@
+## 19. oktober — SOURCE: bevar prøvens første undtagelse før oprydning
+
+PR669-kørsel 39193345711 nåede to bekræftede SIGSTOP/T-stalls, men prøven fik en ukendt første undtagelse under ACTION_OBSERVE. actionExitCode=null var ikke et bevist procesexit. Den lokale test-only opfølgning bevarer nu faste undtagelsesmetadata og et kildehashkontrolleret kaldested før oprydning; ingen produktfejl, stop- eller SAVE-autoritet udledes. Én portable kontraktprøve og den normale bankkontrakt består lokalt. Ny fysisk Linux/native-/CI-kvalifikation er UNRUN; SOURCE forbliver inaktiv. Se håndbog 89.192. Ældre observationer bevares som dateret historik.
+
 ## 19. oktober — panelprøvens klokke, ikke en ændret prognoseregel
 
 PR667's første præcise kildekontrol bestod de indledende native Linux- og PostgreSQL-prøver, men den samlede kildevalidering fejlede i én UI-prøve. Dens faste prognosedato var 18. oktober, mens den normale renderer brugte værtsmaskinens aktuelle danske dag. Efter dansk midnat udløb prøveprognosen korrekt. Den samme fejl er reproduceret lokalt; det er ikke et nyt produktionsstop eller bevis for en defekt scoremodel.

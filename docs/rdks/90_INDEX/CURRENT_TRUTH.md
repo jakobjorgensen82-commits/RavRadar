@@ -1,3 +1,9 @@
+## 19. oktober — SOURCE: første testundtagelse er endnu ikke identificeret
+
+Den seneste faktiske PR669-kørsel 39193345711 nåede to bekræftede SIGSTOP/T-stalls og nul finalizers. Første testundtagelse blev registreret under ACTION_OBSERVE, men dens type og kaldested blev ikke bevaret i det uploadede metadataresultat. actionExitCode=null var kun en ikke-genaflæst processtatus, ikke et bevist exit. Dette dokumenterer ikke en produktfejl eller en afsluttet fejlworker-/SAVE-kæde.
+
+Kun testdriveren og dens faste metadataopsamling tilføjer firstTestException: fast type, årsagskode/errno og højst ét kildehashkontrolleret kaldested før oprydning. Den første fejl bevares; rå fejltekst, stier og stack uploades ikke. Én portable kontraktprøve og normal bankkontrakt består lokalt; 297 øvrige inputrækker og alle 27 produktpins er uændrede. Ny fysisk Linux-framekontrol, native og præcis CI er UNRUN. SOURCE og produktintegration er fortsat inaktive/åbne. De følgende tidligere fejl er historik, ikke årsagen til denne nye observation.
+
 ## 19. oktober — SOURCE: første konkrete prøveinputårsag
 
 Den seneste nativekørsels faktiske hashbundne frames peger på DMI-materialisering før dynamiske importer og før leverandører. V16 havde arvet den gamle fabriks vilkårlige tekstmarkør i bulkfilen. Den præcise uændrede codec afviser samme 38 bytes som ugyldig JSON i en lille portable prøve; normal missing-only lagring materialiseres korrekt med uændrede kildebytes. Dette er et konkret fixturehul, ikke bevis for en produktionsfejl.

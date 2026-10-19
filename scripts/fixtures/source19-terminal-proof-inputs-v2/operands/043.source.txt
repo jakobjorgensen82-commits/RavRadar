@@ -1431,6 +1431,75 @@ def source_terminal_test_failure(error, phase):
     return result
 
 
+SOURCE_TERMINAL_EXCEPTION_TYPES = ('ASSERTION_ERROR', 'FILE_NOT_FOUND_ERROR', 'PROCESS_LOOKUP_ERROR',
+    'PERMISSION_ERROR', 'OS_ERROR', 'JSON_DECODE_ERROR', 'VALUE_ERROR', 'TYPE_ERROR', 'KEY_ERROR',
+    'INDEX_ERROR', 'RUNTIME_ERROR', 'OVERFLOW_ERROR', 'UNKNOWN')
+SOURCE_TERMINAL_OS_ERRORS = ('NONE', 'UNKNOWN', 'EACCES', 'EPERM', 'ENOENT', 'ESRCH', 'EBADF',
+    'EMFILE', 'ENFILE', 'EIO', 'EINVAL', 'EINTR', 'EAGAIN', 'ENOMEM', 'ENOSPC', 'EPIPE')
+
+
+def source_terminal_exception_projection(error, phase, callsite=None):
+    # Diagnostic only. Never copy a message, filename, class name or stack text.
+    result = source_terminal_test_failure(error, phase)
+    types = {AssertionError: 'ASSERTION_ERROR', FileNotFoundError: 'FILE_NOT_FOUND_ERROR',
+        ProcessLookupError: 'PROCESS_LOOKUP_ERROR', PermissionError: 'PERMISSION_ERROR', OSError: 'OS_ERROR',
+        json.JSONDecodeError: 'JSON_DECODE_ERROR', ValueError: 'VALUE_ERROR', TypeError: 'TYPE_ERROR',
+        KeyError: 'KEY_ERROR', IndexError: 'INDEX_ERROR', RuntimeError: 'RUNTIME_ERROR', OverflowError: 'OVERFLOW_ERROR'}
+    result.update(exceptionType=types.get(type(error), 'UNKNOWN'), osError='NONE', callsite=None)
+    if type(error) in (FileNotFoundError, ProcessLookupError, PermissionError, OSError):
+        name = errno.errorcode.get(error.errno) if type(error.errno) is int else None
+        result['osError'] = name if name in SOURCE_TERMINAL_OS_ERRORS else 'UNKNOWN'
+    if (type(callsite) is dict and set(callsite) == {'module', 'sha256', 'line'}
+            and type(callsite['module']) is str and re.fullmatch(r'scripts/[A-Za-z0-9_/-]+\.py', callsite['module'])
+            and '..' not in callsite['module'].split('/') and type(callsite['sha256']) is str
+            and re.fullmatch(r'[a-f0-9]{64}', callsite['sha256'])
+            and type(callsite['line']) is int and 1 <= callsite['line'] <= 1000000):
+        result['callsite'] = dict(callsite)
+    return result
+
+
+def source_terminal_first_exception(previous, error, phase, callsite=None):
+    return previous if previous is not None else source_terminal_exception_projection(error, phase, callsite)
+
+
+def source_terminal_exception_callsite(error, root, source_rows):
+    # At most one innermost physically stable source frame. The outer wrapper
+    # independently requires its whole manifest SHA and actual line before upload.
+    try:
+        rows = {row['relativePath']: row for row in source_rows}
+        driver = Path(__file__)
+        trace, frames = error.__traceback__, []
+        while trace is not None and len(frames) < 64:
+            frames.append(trace); trace = trace.tb_next
+        stable = lambda s: (s.st_dev, s.st_ino, s.st_mode, s.st_nlink, s.st_size, s.st_mtime_ns, s.st_ctime_ns)
+        for trace in reversed(frames):
+            try:
+                file = Path(trace.tb_frame.f_code.co_filename)
+                relative = file.relative_to(root).as_posix()
+                row = rows.get(relative)
+                if (not re.fullmatch(r'scripts/[A-Za-z0-9_/-]+\.py', relative)
+                        or row is None and file != driver or file.resolve(strict=True) != file):
+                    continue
+                before = file.lstat()
+                if not stat.S_ISREG(before.st_mode) or before.st_nlink != 1 or before.st_size > 32 * 1024 * 1024:
+                    continue
+                with file.open('rb') as stream:
+                    opened = os.fstat(stream.fileno()); body = stream.read(32 * 1024 * 1024 + 1); ended = os.fstat(stream.fileno())
+                if (stable(before) != stable(opened) or stable(opened) != stable(ended)
+                        or stable(ended) != stable(file.lstat()) or len(body) != before.st_size):
+                    continue
+                pin = sha(body)
+                if row is not None and (len(body), pin) != (row['bytes'], row['sha256']):
+                    continue
+                if 1 <= trace.tb_lineno <= len(body.splitlines()):
+                    return {'module': relative, 'sha256': pin, 'line': trace.tb_lineno}
+            except (OSError, ValueError, KeyError, TypeError):
+                continue
+    except BaseException:
+        pass  # Observation can never replace or mutate the original exception.
+    return None
+
+
 SOURCE_TERMINAL_MARKER_BEFORE_FUNCTION = "        def marker_state():\n            nonlocal pending, read_offset, current_asset\n            with (root / 'stdout').open('rb') as stream:\n                stream.seek(read_offset); chunk = stream.read(256 * 1024)\n            read_offset += len(chunk); pending += chunk\n            if len(pending) > 512 * 1024 or read_offset > 8 * 1024 * 1024:\n                raise AssertionError('SOURCE_TERMINAL_OBSERVER_LOG_BOUND')\n            lines = pending.split(b'\\n'); pending = lines.pop()\n            for line in lines:\n                match = re.search(rb'DMI_ASSET_PROCESSING_(START|END)=(\\{[^\\r\\n]+\\})$', line)\n                if not match:\n                    continue\n                identity = json.loads(match[2]); canonical = json.dumps(identity, sort_keys=True, separators=(',', ':'))\n                if match[1] == b'START':\n                    starts[canonical] = starts.get(canonical, 0) + 1\n                    current_asset = canonical\n                elif current_asset == canonical:\n                    current_asset = None"
 
 class SourceTerminalFailureNative(SourceActualSUnionNative):
@@ -1511,7 +1580,7 @@ class SourceTerminalFailureNative(SourceActualSUnionNative):
         discarding_summary = False; summary_tail = b''
         stop_attempts = set()
         physical_before_cleanup, bounded_clock = None, None
-        first_test_failure = None; observer_phase = 'SETUP'
+        first_test_failure = None; first_test_exception = None; observer_phase = 'SETUP'
         case_passed = False
         action_observation = None
         def args_for(pid):
@@ -1663,6 +1732,8 @@ class SourceTerminalFailureNative(SourceActualSUnionNative):
         except BaseException as error:
             first = error
             first_test_failure = source_terminal_test_failure(error, observer_phase)
+            first_test_exception = source_terminal_first_exception(first_test_exception, error, observer_phase,
+                source_terminal_exception_callsite(error, ROOT, getattr(self, 'native_observer_source_rows', ())))
             if action_observation is None:
                 action_observation = source_native_action_observation(root, getattr(self, 'native_observer_source_rows', ()),
                     process.returncode if process is not None else None, logs, transport)
@@ -1688,6 +1759,8 @@ class SourceTerminalFailureNative(SourceActualSUnionNative):
                 'entirePrivateFixtureRetained': True, 'sourceAdmission': False}))
             if first_test_failure is None and cleanup_failure is not None:
                 first_test_failure = source_terminal_test_failure(cleanup_failure, 'CLEANUP')
+                first_test_exception = source_terminal_first_exception(first_test_exception, cleanup_failure, 'CLEANUP',
+                    source_terminal_exception_callsite(cleanup_failure, ROOT, getattr(self, 'native_observer_source_rows', ())))
             with transport.lock:
                 safe_uploads = {role: {'phase': row.get('phase'), 'archiveBytes': row.get('bytes'),
                     'archiveFileCount': len(row.get('files', []))} for role, row in transport.uploads.items()}
@@ -1698,6 +1771,7 @@ class SourceTerminalFailureNative(SourceActualSUnionNative):
                 'originalClock': bounded_clock, 'localOfficialSdk': safe_uploads,
                 'actionObservation': action_observation,
                 'firstTestFailure': first_test_failure,
+                'firstTestException': first_test_exception,
                 'originalBObjectsPreserved': True if case_passed else None,
                 'sourceAdmission': False, 'productionActivation': False, 'remoteCloudDurability': 'NOT_TESTED'}))
             if first is None and cleanup_failure is not None:
@@ -1852,6 +1926,22 @@ class SourceTerminalMarkerInputTests(unittest.TestCase):
             'SOURCE_TERMINAL_NATIVE_OBSERVER_DEADLINE')
         self.assertEqual(source_terminal_test_failure(ValueError('private payload with "FAIL"'), 'unissued'),
             {'phase': 'UNKNOWN', 'code': 'UNKNOWN'})
+
+    def test_first_exception_projection_is_fixed_and_preserves_the_original_failure(self):
+        original = PermissionError(errno.EACCES, 'PRIVATE_ERROR_MESSAGE', '/PRIVATE_FILENAME')
+        first = source_terminal_first_exception(None, original, 'ACTION_OBSERVE')
+        self.assertEqual(first, {'phase': 'ACTION_OBSERVE', 'code': 'UNKNOWN',
+            'exceptionType': 'PERMISSION_ERROR', 'osError': 'EACCES', 'callsite': None})
+        self.assertIs(source_terminal_first_exception(first, AssertionError('SOURCE_TERMINAL_OBSERVER_LOG_BOUND'), 'CLEANUP'), first)
+        self.assertEqual(original.errno, errno.EACCES)
+        self.assertNotIn('PRIVATE', json.dumps(first))
+        self.assertTrue(set(first).isdisjoint({'message', 'filename', 'stack', 'actionExitCode', 'status', 'physicalStopProven', 'saved'}))
+        self.assertEqual(source_terminal_exception_projection(json.JSONDecodeError('PRIVATE', 'SECRET', 1), 'ACTION_OBSERVE')['exceptionType'], 'JSON_DECODE_ERROR')
+        class PrivateClassName(Exception):
+            pass
+        unknown = source_terminal_exception_projection(PrivateClassName('PRIVATE'), 'unissued')
+        self.assertEqual(unknown, {'phase': 'UNKNOWN', 'code': 'UNKNOWN', 'exceptionType': 'UNKNOWN', 'osError': 'NONE', 'callsite': None})
+        self.assertEqual(source_terminal_exception_projection(AssertionError('SOURCE_TERMINAL_OBSERVER_LOG_BOUND'), 'ACTION_OBSERVE')['code'], 'SOURCE_TERMINAL_OBSERVER_LOG_BOUND')
 
 
 

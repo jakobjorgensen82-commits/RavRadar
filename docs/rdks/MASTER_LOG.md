@@ -1,3 +1,7 @@
+## 19. oktober — SOURCE-prøvens egen første undtagelse
+
+39193345711 nåede to bekræftede SIGSTOP/T-stalls, men første testundtagelse i ACTION_OBSERVE forblev ukendt; null var ikke et bevist action-exit. Den test-only firstTestException-opfølgning bevarer faste, kildehashkontrollerede metadata før oprydning uden produkt-/stop-/SAVE-autoritet. Lokal portable kontrakt 1 PASS og normal bankkontrakt PASS genbruges; ny fysisk Linux/native/CI er UNRUN. Ingen version, model, SQL-migration eller produktpin ændres, og SOURCE forbliver inaktiv. Ældre beviser og afslag bevares.
+
 ## 18. oktober — bevist plan og afgrænset katalogafslag
 
 Den samlede kildeændring tilføjer nu den faste metadata-/tilstedeværelsesrapport og en snæver historisk transportvej: kun STAC 404/410 og fuldt match af den allerede autentificerede URL-SHA vælger én adresse blandt højst to lokalt sammenlignede DMI-stavemåder. Indholds-SHA, størrelse, alle GRIB-tider, faktisk hentetid, budgetter, eksklusiv skrivning og cachelukning bevares. Ingen S3-udvidelse, nye kilder eller opdigtet katalogbevis. Tolv portable målprøver består i den reelle sammenføring. Den nye faktiske kommandoprøve kræver Linux: Windows' forskellige oprettelses-/ændringstider gjorde dens tidligere lokale resultat ustabilt. Hele prøvens kontroludsagn bevares i den obligatoriske native-kontrol; produktidentiteten lempes ikke. Native Linux, præcis samlet CI, faktisk filtilgængelighed, SAVE og offentlig effekt er endnu åbne. Rapportens filtilstedeværelse er ikke kvalificeret genbrug.

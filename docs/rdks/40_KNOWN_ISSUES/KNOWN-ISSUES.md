@@ -1,3 +1,7 @@
+## 19. oktober — åbent SOURCE-issue: ukendt første testundtagelse
+
+Kørsel 39193345711 nåede to bekræftede SIGSTOP/T-stalls før ukendt testundtagelse i ACTION_OBSERVE. Nul finalizers og actionExitCode=null er ikke bevis for en produktfejl eller et afsluttet processtop. Den tabte første undtagelse kan ikke rekonstrueres fra den gemte log eller det faste artifact. Den lokale firstTestException-opfølgning bevarer nu type, fast kode/errno og kildehashkontrolleret kaldested før oprydning uden rå fejldata. Én portable kontraktprøve og normal bank består lokalt; ny Linux/native/CI-kvalifikation, faktisk fireminutterskæde, fjern cloudbevarelse og produktintegration er åbne. SOURCE aktiveres ikke. Se håndbog 89.192; ældre afslag nedenfor bevares som historik.
+
 ## 19. oktober — panelprøvens klokke, ikke en ændret prognoseregel
 
 PR667's første præcise kildekontrol bestod de indledende native Linux- og PostgreSQL-prøver, men den samlede kildevalidering fejlede i én UI-prøve. Dens faste prognosedato var 18. oktober, mens den normale renderer brugte værtsmaskinens aktuelle danske dag. Efter dansk midnat udløb prøveprognosen korrekt. Den samme fejl er reproduceret lokalt; det er ikke et nyt produktionsstop eller bevis for en defekt scoremodel.

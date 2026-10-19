@@ -1978,8 +1978,8 @@
     },
     {
       "path": "scripts/test-source19-terminal-failure-proof-bank-v17-observer-native.py",
-      "bytes": 216524,
-      "sha256": "d1cc929be3253b003c5ee0adbfbf47b150d29f27ff7cb0973d062a87051de05f",
+      "bytes": 222815,
+      "sha256": "c28b2f97f7763226832786882fc1c2d3f01f3a77cecb31e93ed8d99a01a4aec9",
       "input": {
         "kind": "FROZEN_TEST_BANK",
         "bankPath": "scripts/fixtures/source19-terminal-proof-inputs-v2/operands/043.source.txt"
@@ -2739,7 +2739,7 @@
   ],
   "closurePurpose": "ONLY_REACHABLE_TERMINAL_FAILURE_NO_SUCCESS_PIPELINE_ADMISSION",
   "nativeObserver": {
-    "revision": 5,
+    "revision": 6,
     "catalogSha256": "cb86c930359e7e517d668e8c22a73650ff94b48e1a50a02231f80cfa1a9cb7a5",
     "sourcePins": {
       "action": {
@@ -2762,7 +2762,7 @@
     "observerUnitBeforeSdkAndNative": {
       "pureCases": 6,
       "physicalLinuxCases": 9,
-      "terminalMarkerCases": 6
+      "terminalMarkerCases": 7
     },
     "numericChildSourceCode": "UNKNOWN_UNLESS_SEPARATELY_PROVEN_NOT_PROJECTED_HERE",
     "terminalMarkerFraming": {
@@ -2774,6 +2774,19 @@
       "hiddenTokenAcrossChunks": "REFUSED",
       "unknownLargeFraming": "REFUSED",
       "firstTestFailure": "FIXED_CODE_AND_PHASE_NOT_ACTION_AUTHORITY"
+    },
+    "firstTestException": {
+      "fields": [
+        "phase",
+        "code",
+        "exceptionType",
+        "osError",
+        "callsite"
+      ],
+      "callsite": "AT_MOST_ONE_INNERMOST_PHYSICALLY_READ_SOURCE_WITH_WHOLE_MANIFEST_PIN_CHECK_BEFORE_UPLOAD",
+      "timing": "FIRST_EXCEPTION_BEFORE_OUTER_DRAIN",
+      "authority": "NONE",
+      "rawMessageOrTracebackUploaded": false
     }
   },
   "dynamicNormalModules": {

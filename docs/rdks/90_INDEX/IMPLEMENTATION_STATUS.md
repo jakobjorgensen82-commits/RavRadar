@@ -1,3 +1,7 @@
+## 19. oktober — SOURCE: testens egen første fejl bevares særskilt
+
+Faktisk sidste nativeudfald: kørsel 39193345711, to bekræftede SIGSTOP/T-stalls, nul finalizers og ukendt første testundtagelse i ACTION_OBSERVE. actionExitCode=null beviser ikke exit. Ny firstTestException fastholder kun faste, kildekontrollerede metadata før oprydning; den er hverken produktårsag, fysisk stop eller SAVE-bevis. Lokal portable kontrakt: 1 PASS, ingen fejl/skip. Normal bankkontrakt: PASS med 298 input, 69 prøvefiler, 229 faste Gitinput og 36 gatekombinationer. Ny fysisk Linux/native/CI er UNRUN; ingen produkt-, model-, versions-, migrations- eller produktpinændring. Revisionen er fortsat inaktiv og ikke færdiggjort.
+
 ## 19. oktober — SOURCE: afgrænset rettelse af nyt prøveinput
 
 Faktisk afslagssted er nu normal DMI-materialisering før importer og leverandører. Den nye V16-prøves arvede 38-bytes tekstmarkør er ikke JSON; samme normale codec reproducerer afslaget uden platformstub. Et gyldigt manglende-data-dokument materialiseres tabsfrit i samme lille prøve. Ingen normal produktfejl eller native-succes udledes heraf.
