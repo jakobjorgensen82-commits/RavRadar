@@ -15,6 +15,10 @@ on:
         required: false
         type: string
         default: ''
+      completed_stage_source:
+        required: false
+        type: string
+        default: ''
       production_target_hour:
         required: true
         type: string
@@ -230,6 +234,13 @@ jobs:
       CHECKPOINT_ONLY: ${{ inputs.checkpoint_only }}
       COMPLETED_PRIVATE_RUNTIME: ${{ inputs.completed_private_runtime }}
       COMPLETED_PRIVATE_RUNTIME_PIN: ${{ inputs.completed_private_runtime_pin }}
+      COMPLETED_STAGE_SOURCE: ${{ inputs.completed_stage_source }}
+      CURRENT_FAMILY_COLD_START: ${{ inputs.current_family_cold_start }}
+      EPOCH_BOOTSTRAP: ${{ inputs.weather_state_epoch_bootstrap }}
+      EPOCH_REENTRY: ${{ inputs.weather_state_epoch_checkpoint_reentry }}
+      NATIVE_IDENTITY_RECOVERY: ${{ inputs.native_sampling_identity_original_recovery }}
+      EXTENDED_PROVIDER_BOOTSTRAP: ${{ inputs.extended_provider_bootstrap }}
+      PRODUCE_HANDOFF: ${{ inputs.produce_weather_handoff }}
       CHECKPOINT_TARGET_HOUR: ${{ inputs.checkpoint_only && inputs.production_target_hour || '' }}
       RAVRADAR_WEATHER_STATE_EPOCH_ARCHIVE_ID: ${{ inputs.weather_state_epoch_archive_key }}
       RAVRADAR_WEATHER_STATE_EPOCH_ARCHIVE_CATALOG_SHA256: ${{ inputs.weather_state_epoch_archive_catalog_sha256 }}
@@ -306,6 +317,17 @@ jobs:
         uses: actions/setup-node@v7
         with:
           node-version: 22
+
+      - name: Verify the original ordinary-stage source before any hydration
+        if: inputs.completed_stage_source != ''
+        run: node scripts/ordinary-completed-stage-admission.mjs source
+        env:
+          CURRENT_FAMILY_COLD_START: ${{ inputs.current_family_cold_start }}
+          EPOCH_BOOTSTRAP: ${{ inputs.weather_state_epoch_bootstrap }}
+          EPOCH_REENTRY: ${{ inputs.weather_state_epoch_checkpoint_reentry }}
+          NATIVE_IDENTITY_RECOVERY: ${{ inputs.native_sampling_identity_original_recovery }}
+          EXTENDED_PROVIDER_BOOTSTRAP: ${{ inputs.extended_provider_bootstrap }}
+          PRODUCE_HANDOFF: ${{ inputs.produce_weather_handoff }}
 
       - name: Require the explicit fresh caller-only cold-start scope
         if: inputs.current_family_cold_start == true
@@ -1475,8 +1497,13 @@ jobs:
             integrated|integrated-historical-maintenance) ;;
             *) exit 1 ;;
           esac
-          node scripts/completed-private-runtime-admission.mjs request
+          if test -n "$COMPLETED_STAGE_SOURCE"; then
+            node scripts/ordinary-completed-stage-admission.mjs request
+          else
+            node scripts/completed-private-runtime-admission.mjs request
+          fi
         env:
+          CURRENT_FAMILY_COLD_START: ${{ inputs.current_family_cold_start }}
           CHECKPOINT_TARGET_HOUR: ''
           QUICK_CONFIRMATION: ${{ inputs.quick_confirmation }}
           QUICK_PROGRESS_SOURCE: ${{ inputs.quick_progress_source }}
@@ -1503,8 +1530,17 @@ jobs:
       - name: Admit only the exact authenticated completed B and matching central S
         id: completed-runtime-admission
         if: inputs.completed_private_runtime == true
-        run: node scripts/completed-private-runtime-admission.mjs admit
+        shell: bash
+        run: |
+          set -euo pipefail
+          if test -n "$COMPLETED_STAGE_SOURCE"; then
+            node scripts/ordinary-completed-stage-admission.mjs admit
+          else
+            node scripts/completed-private-runtime-admission.mjs admit
+          fi
         env:
+          GH_TOKEN: ${{ github.token }}
+          STAGED_PRIVATE_BUILD_MASTER_SECRET: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
 
@@ -3019,6 +3055,71 @@ jobs:
           echo "dataset_id=$dataset_id" >> "$GITHUB_OUTPUT"
           echo "runtime_audit_sha256=$runtime_audit_sha256" >> "$GITHUB_OUTPUT"
 
+      # The expensive weather/score build is already complete. Save its exact
+      # private bundle before any late central write can stop this runner.
+      - name: Build private production runtime bundle specification
+        id: private-runtime-bundle-spec
+        if: steps.preflight.outputs.should_run == 'true' && (steps.weather.outcome == 'success' || (inputs.completed_private_runtime == true && steps.completed-runtime-admission.outcome == 'success'))
+        run: >-
+          node scripts/private-production-runtime-workflow.mjs create-spec
+          --repository-root "$GITHUB_WORKSPACE"
+          --dmi-bulk .cache/dmi-candidate-progress.json
+          --output .cache/private-production-runtime-create-spec.json
+
+      - name: Create the next private production runtime bundle atomically
+        id: private-runtime-bundle-create
+        if: steps.preflight.outputs.should_run == 'true' && (steps.weather.outcome == 'success' || (inputs.completed_private_runtime == true && steps.completed-runtime-admission.outcome == 'success'))
+        shell: bash
+        run: |
+          mkdir -p "$RAVRADAR_PRIVATE_RUNTIME_ROOT"
+          rm -rf "$RAVRADAR_PRIVATE_RUNTIME_ROOT/bundle-prior"
+          if test -d "$RAVRADAR_PRIVATE_RUNTIME_BUNDLE"; then
+            mv "$RAVRADAR_PRIVATE_RUNTIME_BUNDLE" "$RAVRADAR_PRIVATE_RUNTIME_ROOT/bundle-prior"
+          fi
+          node scripts/private-production-runtime-bundle.mjs create \
+            --private-root "$RAVRADAR_PRIVATE_RUNTIME_ROOT" \
+            --bundle "$RAVRADAR_PRIVATE_RUNTIME_BUNDLE" \
+            --spec .cache/private-production-runtime-create-spec.json
+          rm -rf "$RAVRADAR_PRIVATE_RUNTIME_ROOT/bundle-prior"
+
+      - name: Encrypt exact completed private build for late-failure recovery
+        id: private-build-stage-seal
+        if: steps.preflight.outputs.should_run == 'true' && (steps.weather.outcome == 'success' || (inputs.completed_private_runtime == true && steps.completed-runtime-admission.outcome == 'success')) && (steps.checkpoint-disposition.outputs.disposition == 'READY_PUBLISHED' || steps.checkpoint-disposition.outputs.disposition == 'MEASURED_WARMUP_PUBLISHED') && steps.operational-action.outputs.action != 'candidate-dry-run'
+        timeout-minutes: 30
+        shell: bash
+        run: |
+          set -euo pipefail
+          if test -n "$COMPLETED_STAGE_SOURCE"; then
+            node scripts/ordinary-completed-stage-admission.mjs preserve-cipher
+            echo ORIGINAL_CIPHERTEXT_PRESERVED_NOT_NEW_GENERATION
+          else
+            node scripts/staged-private-production-runtime.mjs seal \
+              --repository-root "$GITHUB_WORKSPACE" \
+              --private-root "$RAVRADAR_PRIVATE_RUNTIME_ROOT" \
+              --bundle "$RAVRADAR_PRIVATE_RUNTIME_BUNDLE" \
+              --expected .cache/private-production-runtime-expected.json \
+              --source-head "$GITHUB_SHA" \
+              --repository "$GITHUB_REPOSITORY" \
+              --run-id "$GITHUB_RUN_ID" \
+              --run-attempt "$GITHUB_RUN_ATTEMPT" \
+              --output "$RUNNER_TEMP/ravradar-private-build-stage/sealed.bin"
+          fi
+        env:
+          STAGED_PRIVATE_BUILD_MASTER_SECRET: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+
+      - name: Save only encrypted completed private build for one day
+        id: private-build-stage-upload
+        if: steps.private-build-stage-seal.outcome == 'success'
+        uses: actions/upload-artifact@v7
+        with:
+          name: ravradar-private-build-stage-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/ravradar-private-build-stage/sealed.bin
+          retention-days: 1
+          compression-level: 0
+          if-no-files-found: error
+
       - name: Generate and strictly validate production reference zones
         continue-on-error: true
         id: production-reference-zones
@@ -3222,7 +3323,11 @@ jobs:
             --manifest data/live/manifest.json \
             --audit .geometry-v2-work/ravscore-integrated-public-runtime-audit.json \
             --source-head "$GITHUB_SHA"
-          node scripts/completed-private-runtime-admission.mjs target
+          if test -n "$COMPLETED_STAGE_SOURCE"; then
+            node scripts/ordinary-completed-stage-admission.mjs target
+          else
+            node scripts/completed-private-runtime-admission.mjs target
+          fi
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
@@ -3243,62 +3348,6 @@ jobs:
         with:
           path: .cache/ravscore-continuation-checkpoint
           key: ravscore-continuation-schema6-v2-${{ github.run_id }}-${{ github.run_attempt }}
-
-      # The expensive weather/score build is already complete. Save its exact
-      # private bundle before any late central write can stop this runner.
-      - name: Build private production runtime bundle specification
-        id: private-runtime-bundle-spec
-        if: steps.preflight.outputs.should_run == 'true' && (steps.weather.outcome == 'success' || (inputs.completed_private_runtime == true && steps.completed-runtime-admission.outcome == 'success'))
-        run: >-
-          node scripts/private-production-runtime-workflow.mjs create-spec
-          --repository-root "$GITHUB_WORKSPACE"
-          --dmi-bulk .cache/dmi-candidate-progress.json
-          --output .cache/private-production-runtime-create-spec.json
-
-      - name: Create the next private production runtime bundle atomically
-        id: private-runtime-bundle-create
-        if: steps.preflight.outputs.should_run == 'true' && (steps.weather.outcome == 'success' || (inputs.completed_private_runtime == true && steps.completed-runtime-admission.outcome == 'success'))
-        shell: bash
-        run: |
-          mkdir -p "$RAVRADAR_PRIVATE_RUNTIME_ROOT"
-          rm -rf "$RAVRADAR_PRIVATE_RUNTIME_ROOT/bundle-prior"
-          if test -d "$RAVRADAR_PRIVATE_RUNTIME_BUNDLE"; then
-            mv "$RAVRADAR_PRIVATE_RUNTIME_BUNDLE" "$RAVRADAR_PRIVATE_RUNTIME_ROOT/bundle-prior"
-          fi
-          node scripts/private-production-runtime-bundle.mjs create \
-            --private-root "$RAVRADAR_PRIVATE_RUNTIME_ROOT" \
-            --bundle "$RAVRADAR_PRIVATE_RUNTIME_BUNDLE" \
-            --spec .cache/private-production-runtime-create-spec.json
-          rm -rf "$RAVRADAR_PRIVATE_RUNTIME_ROOT/bundle-prior"
-
-      - name: Encrypt exact completed private build for late-failure recovery
-        id: private-build-stage-seal
-        if: steps.preflight.outputs.should_run == 'true' && (steps.weather.outcome == 'success' || (inputs.completed_private_runtime == true && steps.completed-runtime-admission.outcome == 'success')) && (steps.checkpoint-disposition.outputs.disposition == 'READY_PUBLISHED' || steps.checkpoint-disposition.outputs.disposition == 'MEASURED_WARMUP_PUBLISHED') && steps.operational-action.outputs.action != 'candidate-dry-run'
-        timeout-minutes: 30
-        run: >-
-          node scripts/staged-private-production-runtime.mjs seal
-          --repository-root "$GITHUB_WORKSPACE"
-          --private-root "$RAVRADAR_PRIVATE_RUNTIME_ROOT"
-          --bundle "$RAVRADAR_PRIVATE_RUNTIME_BUNDLE"
-          --expected .cache/private-production-runtime-expected.json
-          --source-head "$GITHUB_SHA"
-          --repository "$GITHUB_REPOSITORY"
-          --run-id "$GITHUB_RUN_ID"
-          --run-attempt "$GITHUB_RUN_ATTEMPT"
-          --output "$RUNNER_TEMP/ravradar-private-build-stage/sealed.bin"
-        env:
-          STAGED_PRIVATE_BUILD_MASTER_SECRET: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
-
-      - name: Save only encrypted completed private build for one day
-        id: private-build-stage-upload
-        if: steps.private-build-stage-seal.outcome == 'success'
-        uses: actions/upload-artifact@v7
-        with:
-          name: ravradar-private-build-stage-${{ github.run_id }}-${{ github.run_attempt }}
-          path: ${{ runner.temp }}/ravradar-private-build-stage/sealed.bin
-          retention-days: 1
-          compression-level: 0
-          if-no-files-found: error
 
       - name: Build dataminimized weather preflight state after final gates
         id: weather-preflight-state-build
@@ -3330,7 +3379,14 @@ jobs:
 
       - name: Prove the whole recreated B manifest and installed originals are unchanged
         if: inputs.completed_private_runtime == true
-        run: node scripts/completed-private-runtime-admission.mjs before-publish
+        shell: bash
+        run: |
+          set -euo pipefail
+          if test -n "$COMPLETED_STAGE_SOURCE"; then
+            node scripts/ordinary-completed-stage-admission.mjs before-publish
+          else
+            node scripts/completed-private-runtime-admission.mjs before-publish
+          fi
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
@@ -3353,14 +3409,20 @@ jobs:
       - name: Publish bounded private runtime with one protected rollback generation
         id: private-runtime-publish
         if: steps.preflight.outputs.should_run == 'true' && (steps.weather.outcome == 'success' || (inputs.completed_private_runtime == true && steps.completed-runtime-admission.outcome == 'success')) && steps.operational-action.outputs.action != 'candidate-dry-run'
-        run: >-
-          node scripts/protected-private-production-runtime.mjs
-          --publish
-          --private-root "$RAVRADAR_PRIVATE_RUNTIME_ROOT"
-          --bundle "$RAVRADAR_PRIVATE_RUNTIME_BUNDLE"
-          --repository-root "$GITHUB_WORKSPACE"
-          --expected .cache/private-production-runtime-expected.json
-          --source-head "$GITHUB_SHA"
+        shell: bash
+        run: |
+          set -euo pipefail
+          if test -n "$COMPLETED_STAGE_SOURCE"; then
+            node scripts/ordinary-completed-stage-admission.mjs publish
+          else
+            node scripts/protected-private-production-runtime.mjs \
+              --publish \
+              --private-root "$RAVRADAR_PRIVATE_RUNTIME_ROOT" \
+              --bundle "$RAVRADAR_PRIVATE_RUNTIME_BUNDLE" \
+              --repository-root "$GITHUB_WORKSPACE" \
+              --expected .cache/private-production-runtime-expected.json \
+              --source-head "$GITHUB_SHA"
+          fi
         env:
           RAVRADAR_R2_ACCOUNT_ID: ${{ secrets.RAVRADAR_R2_ACCOUNT_ID }}
           RAVRADAR_R2_ACCESS_KEY_ID: ${{ secrets.RAVRADAR_R2_ACCESS_KEY_ID }}

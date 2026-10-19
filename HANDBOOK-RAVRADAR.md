@@ -1,3 +1,15 @@
+## 89.257 Gem det færdige arbejde, før det leveres
+
+Kort fortalt: En færdig prognose skal kunne gemmes sikkert, så en senere leveringsfejl ikke tvinger systemet til at hente og beregne det samme igen.
+
+Den forberedte rettelse gemmer en krypteret kopi straks efter en vellykket almindelig beregning. De fire eksisterende trin beskriver pakken, bygger den, krypterer den og gemmer den. Kopien er stadig privat og ikke godkendt til offentlig visning. De normale slutkontroller skal fortsat bestå, før hjemmesiden opdateres.
+
+Genoptagelse må kun bruge den nøjagtige originale pakke, når dens beregningsregler, datagrundlag, administratorindstillinger og tilhørende tidligere beregningstilstand stadig passer. Systemet skal kontrollere originalen og den centrale tilstand igen; en filbetegnelse eller grøn status er ikke nok. En gyldig færdigpakke skal kunne gå videre uden ny vejrhentning eller ny scoreberegning. En manglende eller udløbet kopi kan ikke bruges, og en uafklaret tidligere skrivning skal først afklares.
+
+En genbrugt beregning bliver ikke automatisk til friskere vejr. Dens oprindelige tidspunkt og prognosens faktiske gyldighed skal bevares. Genopretningen blev leveret den 19. oktober omkring kl. 20.00 dansk tid med allerede gemte vejrinput. Den efterfølgende almindelige vejrkørsel er ved dette statuspunkt i beregning, og en ny offentlig generation er ikke endnu bevist.
+
+Status for selve genoptagelsesrettelsen: En samlet lokal prøve er bestået med rigtigt opbyggede testpakker for 673 kystdele, begge beregningstilstande, kontrol af oprindelsen, kryptering, gendannelse og gemt tilstand. To direkte fejltilfælde blev korrekt afvist. Prøven omfatter ét beregningstidspunkt med en normal femdøgnscache, ikke en fuld national prognose eller kapacitetsmåling. Rettelsen er stadig lokalt forberedt, ikke taget i drift; den præcise Linux-kildekontrol, installation og offentlig effekt mangler. Scoremodel, version, vejrleverandører, budgetter og kystpunkter ændres ikke. Ældre daterede afventninger om 584-genopretningen nedenfor er historik på de faktisk leverede punkter.
+
 ## 89.256 Når historikken begynder på ny
 
 Kort fortalt: Ny historik bygges af faktiske nye timer. Manglende fortid opfindes ikke.

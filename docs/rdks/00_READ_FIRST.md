@@ -1,3 +1,7 @@
+## 19. oktober — leveret genopretning, forberedt genbrug af færdig almindelig beregning
+
+Den nyeste front i CURRENT_TRUTH og IMPLEMENTATION_STATUS samt DEC-0249's tillæg 19. oktober erstatter de tidligere afventninger om 584-genopretning: `39291575502/1` er leveret omkring kl. 20.00 dansk tid med gemte input, ikke frisk ordinary-data. `39299413035/1` er ved dette checkpoint i beregning uden bevist deploy. Den nye `completed_stage_source`-vej er SOURCE_PREPARED med bestået samlet lokal genuine-admit; præcis Linux-source-CI, installation og produktion er åbne. Den lokale prøve er ikke fuld national prognose eller kapacitetsbevis. Ingen ny version, SQL eller modelbinding. De fem hovedmål er ikke færdigmeldt.
+
 ## 19. oktober — lokal 4.0.584: ret producenten, bevar originalerne
 
 Læs den nye front i CODEX_START_HERE, CURRENT_TRUTH og håndbog 89.256 før ældre statusnoter. Vejrhentningen nåede gemt B, men S blev afvist; producentens indramnings-/serialiseringsfejl er reproduceret uden gammel historik. Lokal 4.0.584 og ny append-only modelovergang er forberedelse, ikke installation. Ejerens nye start kræver nul gammel aktiv historik, permanent særskilt bevaring af faktiske B/S/offentlige originaler og efterfølgende normal fremadrettet opbygning. Offentlig version er senest verificeret som 4.0.581 med vejr fra 16. oktober kl. 12 dansk tid. Cron er senest verificeret slået fra. Alle fem hovedmål er åbne; fristen 18. oktober er overskredet og er ikke forlænget.

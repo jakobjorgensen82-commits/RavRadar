@@ -1,4 +1,5 @@
-// Normal target7: default archive/origin authority; explicit --national adds673x121 plus two ordinary followers.
+// Normal target7: default authority and --national673x121 stay unchanged.
+// Explicit --completed-stage-admit adds one actual lexical-origin consumer proof,673 target-H0 pairs only.
 // Genuine d8 B/S builders -> normal UNPAIRED archive -> genuine issued584
 // opaque restart origin. No SEED edit, tuple retag, origin stub or dirty waiver.
 import assert from 'node:assert/strict';
@@ -11,6 +12,8 @@ import {execFileSync} from 'node:child_process';
 import {fileURLToPath,pathToFileURL} from 'node:url';
 
 const ROOT=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
+const completedStageAdmit=process.argv.includes('--completed-stage-admit');
+assert(!(completedStageAdmit&&process.argv.includes('--national')),'Select exactly one explicit fixture.');
 const OLD_HEAD='d8a52e3e4cbaed1557cc56fe01f5f0a2b0d657d7';
 const OLD_TREE='0ddede3f4b4fb4faa43b0d43f17c7cdbadcc9bc0';
 const EXPECTED={C:'47a27aec034d8d7cbab7755a19025d796b6fe51c2b276676c7309c912a85f501',
@@ -38,6 +41,7 @@ test('issued584 genuine old B/S and UNPAIRED archive mint a new zero-history ori
     const event=JSON.parse(await fs.readFile(eventPath,'utf8')),eventHead=event?.pull_request?.head?.sha;
     assert.match(eventHead??'',/^[a-f0-9]{40}$/);assert.equal(sourceHead,eventHead,'Checkout must be the actual PR event source head.');
   }else if(process.env.GITHUB_SHA!==undefined)assert.equal(process.env.GITHUB_SHA,sourceHead);
+  if(completedStageAdmit)t.mock.timers.enable({apis:['Date'],now:Date.parse(time(15))});
   const parent=await fs.realpath(os.tmpdir());
   const work=await fs.mkdtemp(path.join(parent,'rr-lme584-archive-origin-'));
   const workIdentity=await fs.lstat(work,{bigint:true});
@@ -64,6 +68,10 @@ test('issued584 genuine old B/S and UNPAIRED archive mint a new zero-history ori
     const currentManifest=(await load(HOST,'js/core/ravscore-model-bundle.generated.js')).GENERATED_RAVSCORE_MODEL_BUNDLE_MANIFEST;
     assert.equal(currentManifest.files.some(row=>(row.path??row.file)==='data/live/coastal-parts-v2.json'),false,
       'The fixture may hydrate runtime registry input, never mutate a bound source leaf.');
+    // Capture the actual clean committed comparison before runtime hydration.
+    const completedStageSourceComparison=completedStageAdmit
+      ?(await load(HOST,'scripts/ordinary-completed-stage-source.mjs')).assertOrdinaryCompletedStageSource(
+        {root:HOST,producerHead:sourceHead,consumerHead:sourceHead}):null;
     const oldWorkflow=await load(OLD,'scripts/private-production-runtime-workflow.mjs');
     const oldBundle=await load(OLD,'scripts/private-production-runtime-bundle.mjs');
     const oldB=await load(OLD,'scripts/protected-private-production-runtime.mjs');
@@ -190,7 +198,7 @@ test('issued584 genuine old B/S and UNPAIRED archive mint a new zero-history ori
     /ESTABLISHED_CURRENT_ORIGIN_HANDLE/,'A genuine restart handle must not admit an archived old pair.');
     assert.deepEqual(backend.documents.get('ravscore-private-production-runtime-pointer'),pointer);
     assert.deepEqual(backend.documents.get('ravscore-continuation-checkpoint'),central);
-    if(process.argv.includes('--national')){
+    if(process.argv.includes('--national')||completedStageAdmit){
       // Explicit sequential preactivation target, never a default authority test.
       // Reuse the normal673x121 fixture; every model/origin/PART/B/S API is real.
       const load=relative=>import(pathToFileURL(path.join(HOST,relative)).href);
@@ -302,7 +310,7 @@ test('issued584 genuine old B/S and UNPAIRED archive mint a new zero-history ori
         for (const file of ['public-conditions.json', 'coastal-parts-v2.json', 'zones.geojson', 'water-level-station-routing.json'])
           await write(path.join(PUBLIC, file), { synthetic: file, datasetId: conditions.datasetId });
       }
-      async function saveNormal(conditions, bulk, partRecords, label) {
+      async function saveNormal(conditions, bulk, partRecords, label, {publish=true}={}) {
         await publicPack(conditions);
         for (const descriptor of workflow.PRIVATE_RUNTIME_FILES) {
           if (descriptor.id === 'dmi-forecast-cache') continue;
@@ -322,6 +330,14 @@ test('issued584 genuine old B/S and UNPAIRED archive mint a new zero-history ori
         await bundle.createPrivateProductionRuntimeBundle({ repositoryRoot: HOST, privateRoot, bundlePath: created, ...spec });
         const now = conditions.generatedAt, expected = await workflow.buildPrivateRuntimeExpectation({ repositoryRoot: HOST,
           targetReferenceAt: conditions.productionReferenceAt, now });
+        if(!publish){
+          // Actual normal B/S creation, but no protected parent mutation.
+          const verified=await bundle.verifyPrivateProductionRuntimeBundle({repositoryRoot:HOST,privateRoot,
+            bundlePath:created,expected,now});
+          return {privateRoot,bundlePath:created,conditions:JSON.parse(await fs.readFile(path.join(created,'payload/data/live/conditions.json'))),
+            bulk,rows:partRecords,manifest:verified.manifest,
+            checkpoint:JSON.parse(await fs.readFile(checkpointPath)),remoteCheckpointPath:checkpointPath};
+        }
         const B = await protectedB.publishProtectedPrivateProductionRuntime({ repositoryRoot: HOST, privateRoot, bundlePath: created,
           expected, now, sourceHead, request: backend.documentRequest, storage: backend.storage });
         const S = await protectedS.publishProtectedRavScoreContinuationCheckpoint({ checkpointPath,
@@ -352,14 +368,15 @@ test('issued584 genuine old B/S and UNPAIRED archive mint a new zero-history ori
           bulk: restoredBulk, rows, manifest, checkpoint, remoteCheckpointPath: remoteS };
       }
 
-      async function generation({ targetHour, generation, firstOffset, old, capInputs = null, label }) {
+      async function generation({ targetHour, generation, firstOffset, old, capInputs = null, label, h0Only=false }) {
+        assert(!h0Only||completedStageAdmit,'H0 reduction is exclusive to the new consumer fixture.');
         const pairs = new Map(), results = new Map(), partRecords = new Map(), bulk = { schemaVersion: 2,
           generatedAt: at(targetHour), currentVectorSemanticsVersion: 3,
           currentVectorSelection: 'nearest-shared-uv-column-across-dmi-collections-then-deepest-valid-layer',
           currentMaxDistanceKm: 5, timeStrideHours: 3, zones: {} };
         const oldPairs = old ? pairsFrom(old.conditions) : null;
         const oldSnapshot = oldPairs ? hash([...oldPairs]) : null;
-        const offsets = Array.from({ length: (168 - firstOffset) / 3 + 1 }, (_, i) => firstOffset + i * 3);
+        const offsets = Array.from({ length: ((h0Only?targetHour+3:168) - firstOffset) / 3 + 1 }, (_, i) => firstOffset + i * 3);
         let handle = capInputs?.establishedNativeCurrentOrigin ?? null;
         if (old && !capInputs) handle = await origin.readEstablishedNativeCurrentOrigin(central);
         let unknownCaptures = 0, newRunRows = 0, verifiedNativeRows = 0, actualParts = 0;
@@ -389,11 +406,19 @@ test('issued584 genuine old B/S and UNPAIRED archive mint a new zero-history ori
           const forecastRows = dmi.buildDmiForecastHourly({ ocean: f.natives.map(row => ({ step: row.time,
             'current-u': row['current-u'], 'current-v': row['current-v'], provenance: row.sources })),
             generatedAt: target, startAt: target, hours: dmi.DMI_FORECAST_HOURS }).hourly;
-          const publicHourly = adapters.verifiedIntegratedPartHourly({ point: part.waterPoint, hourly: forecastRows },
+          const cacheHourly = adapters.verifiedIntegratedPartHourly({ point: part.waterPoint, hourly: forecastRows },
             f.document, id, part, { requireNativeGridSampling: true });
+          // The existing persisted DMI cache requires its complete 121-row
+          // axis, including honest missing rows. Reduce only score evaluation
+          // in this new consumer test, never the normal cache contract.
+          const publicHourly = h0Only ? cacheHourly.slice(0, 1) : cacheHourly;
+          if(h0Only){assert.equal(forecastRows.length,121);assert.equal(cacheHourly.length,121);
+            assert.equal(publicHourly.length,1);assert.equal(publicHourly[0].time,target);}
+          else{
           assert.equal(forecastRows.length,121);assert.equal(publicHourly.length,121);
           assert.equal(publicHourly[0].time,target);assert.equal(publicHourly.at(-1).time,at(targetHour+120));
-          partRecords.set(part.partId, { point: part.waterPoint, zoneId: id, hourly: publicHourly });
+          }
+          partRecords.set(part.partId, { point: part.waterPoint, zoneId: id, hourly: cacheHourly });
           for (const source of [...recoverySources,{record:{hourly:publicHourly}}]) for (const row of source.record.hourly) {
             const proof = row.currentProvenance ?? row.sources?.current;
             if (proof?.provider !== 'dmi') continue;
@@ -411,7 +436,10 @@ test('issued584 genuine old B/S and UNPAIRED archive mint a new zero-history ori
           assert(handle,'Every generation must carry a genuine opaque origin.');
           assert.deepEqual(pipeline.assertEstablishedNativeCurrentProductionResult(series,
             { originHandle: handle, part, targetReferenceAt: target,requireMeasuredColdStart:cold }), actual);
+          if(h0Only){assert.equal(series.scores.length,1);assert.equal(series.candidateGRollbackScores.length,1);}
+          else{
           assert.equal(series.scores.length,121);assert.equal(series.candidateGRollbackScores.length,121);
+          }
           if(cold){
             assert.equal(series.recovery.replayedHourCount,0);
             assert(series.recovery.hourly.every(row=>Date.parse(row.time)>=Date.parse(target)));
@@ -486,6 +514,162 @@ test('issued584 genuine old B/S and UNPAIRED archive mint a new zero-history ori
         (receipt.savedH0Readbacks??=[]).push({hour,currentNative,integratedFresh,candidateFresh,oldNumericRefused,
           checkpointSha256:sha(await fs.readFile(saved.remoteCheckpointPath))});
       };
+      if(completedStageAdmit){
+        // This explicit fixture exercises the actual consumer. The fixed Date
+        // is Node's test-owned clock, not a product clock/callback parameter.
+        // Existing default/national targets do not enter this branch.
+        phase='ACTUAL_ADMIT_GENUINE_673_H0_PARENT';
+        const cold=await generation({targetHour:9,generation:0,firstOffset:9,
+          capInputs:selected,label:'admit-parent',h0Only:true});
+        assert.equal(cold.conditions.privateEstablishedNativeCurrentOrigin.transition,'ARCHIVE_ISOLATED_MEASURED_COLD');
+        const saved=await saveNormal(cold.conditions,cold.bulk,cold.partRecords,'admit-parent');
+        const parentConditionsBytes=await fs.readFile(path.join(saved.bundlePath,'payload/data/live/conditions.json'));
+        const parentPointer=clone(backend.documents.get('ravscore-private-production-runtime-pointer'));
+        const parentCentral=clone(backend.documents.get('ravscore-continuation-checkpoint'));
+        phase='ACTUAL_ADMIT_GENUINE_673_H0_CHILD';
+        // generation() itself invokes the real lexical origin reader for old.
+        const child=await generation({targetHour:12,generation:1,firstOffset:9,
+          old:saved,label:'admit-child',h0Only:true});
+        assert.equal(child.conditions.privateEstablishedNativeCurrentOrigin.transition,'NORMAL_STRICT_CONTINUATION');
+        assert.equal(child.conditions.privateEstablishedNativeCurrentOrigin.parent.bundleContentSha256,
+          saved.manifest.bundleContentSha256);
+        assert.equal(child.conditions.privateEstablishedNativeCurrentOrigin.parent.generationSha256,
+          saved.checkpoint.generationSha256);
+        const unpublished=await saveNormal(child.conditions,child.bulk,child.partRecords,'admit-child',{publish:false});
+        assert.deepEqual(backend.documents.get('ravscore-private-production-runtime-pointer'),parentPointer);
+        assert.deepEqual(backend.documents.get('ravscore-continuation-checkpoint'),parentCentral);
+        const identity={repository:'synthetic-owner/RavRadar',runId:'87654321',runAttempt:'1',sourceHead};
+        const expected=await workflow.buildPrivateRuntimeExpectation({repositoryRoot:HOST,
+          targetReferenceAt:at(12)});
+        const secret='SYNTHETIC_ONLY_NOT_A_SERVICE_CREDENTIAL_ORDINARY_STAGE_123456';
+        const staged=await load('scripts/staged-private-production-runtime.mjs');
+        const cipherPath=path.join(work,'ordinary-original-sealed.bin');
+        await staged.sealStagedPrivateProductionRuntime({...identity,repositoryRoot:HOST,
+          privateRoot:unpublished.privateRoot,bundlePath:unpublished.bundlePath,expected,
+          outputPath:cipherPath,masterSecret:secret});
+        const originalCipher=await fs.readFile(cipherPath),zipPath=path.join(work,'ordinary-original-artifact.zip');
+        // The actual stdlib writer makes one stored sealed.bin; the product's
+        // existing Python extractor and GCM opener must authenticate it later.
+        execFileSync(process.env.PYTHON||'python',['-c',
+          'import pathlib,stat,sys,zipfile\ns=pathlib.Path(sys.argv[1]);o=pathlib.Path(sys.argv[2]);i=zipfile.ZipInfo("sealed.bin");i.create_system=3;i.external_attr=(stat.S_IFREG|0o600)<<16\nwith zipfile.ZipFile(o,"x",compression=zipfile.ZIP_STORED,allowZip64=True) as z:z.writestr(i,s.read_bytes())',
+          cipherPath,zipPath],{timeout:30000,maxBuffer:4096,windowsHide:true});
+        const zip=await fs.readFile(zipPath);
+        const minute=n=>new Date(Date.parse(at(13))+n*60000).toISOString();
+        const run={id:Number(identity.runId),run_attempt:1,repository:{id:123,full_name:identity.repository},
+          head_repository:{id:123,full_name:identity.repository},path:'.github/workflows/run-current-weather-once.yml',
+          event:'workflow_dispatch',head_branch:'main',head_sha:sourceHead,status:'completed',conclusion:'failure',
+          run_started_at:at(12),updated_at:minute(20)};
+        const stepNames=['Update central weather cache','Build private production runtime bundle specification',
+          'Create the next private production runtime bundle atomically',
+          'Encrypt exact completed private build for late-failure recovery',
+          'Save only encrypted completed private build for one day'];
+        const job={id:456,run_id:run.id,run_attempt:1,head_sha:sourceHead,head_branch:'main',
+          name:'Build and prepare weather production through reusable workflow / build-and-prepare',
+          status:'completed',conclusion:'failure',started_at:minute(0),completed_at:minute(19),
+          steps:stepNames.map((name,index)=>({name,number:index+10,status:'completed',conclusion:'success',
+            started_at:minute(index*2),completed_at:minute(index*2+1)}))};
+        const artifact={id:789,name:`ravradar-private-build-stage-${identity.runId}-1`,expired:false,
+          size_in_bytes:zip.length,digest:'sha256:'+sha(zip),workflow_run:{id:run.id,repository_id:123,
+            head_repository_id:123,head_sha:sourceHead,head_branch:'main'},created_at:minute(8),
+          updated_at:minute(9),expires_at:at(39)};
+        const base=`https://api.github.com/repos/${identity.repository}`;
+        const metadata=new Map([
+          [`${base}/actions/runs/${identity.runId}/attempts/1`,run],
+          [`${base}/actions/runs/${identity.runId}/attempts/1/jobs?per_page=100`,{total_count:1,jobs:[job]}],
+          [`${base}/actions/runs/${identity.runId}/artifacts?per_page=100`,{total_count:1,artifacts:[artifact]}],
+        ]);
+        const runner=path.join(work,'ordinary-stage-runner');await fs.mkdir(runner);
+        await write(path.join(runner,'ordinary-completed-stage-source.json'),completedStageSourceComparison);
+        await write(path.join(HOST,'.cache/private-production-runtime-expected.json'),expected);
+        // Operational readback is synthetic input, not origin authority. The
+        // immutable B/S and lexical reader below authenticate the actual H0.
+        await write(path.join(runner,'completed-runtime-active-source.json'),{
+          model:'integrated',status:'INTEGRATED_ACTIVE',pending:false,calibrationEligible:false,
+          datasetId:saved.conditions.datasetId,productionReferenceAt:saved.conditions.productionReferenceAt});
+        const restoredParent=path.join(saved.privateRoot,'ordinary-parent-install');
+        await bundle.restorePrivateProductionRuntimeBundle({privateRoot:saved.privateRoot,
+          bundlePath:saved.bundlePath,outputPath:restoredParent,repositoryRoot:HOST,expected,
+          targetReferenceAt:saved.conditions.productionReferenceAt,
+          minimumReferenceAt:expected.minimumReferenceAt,minimumGeneratedAt:expected.minimumGeneratedAt});
+        await workflow.installRestoredPrivateRuntime({restoredRoot:restoredParent,repositoryRoot:HOST});
+        await fs.copyFile(saved.remoteCheckpointPath,path.join(HOST,'.cache/ravscore-continuation-checkpoint/checkpoint.json'));
+        assert.deepEqual(await fs.readFile(path.join(HOST,'data/live/conditions.json')),parentConditionsBytes);
+        process.env.RAVRADAR_PRIVATE_RUNTIME_ROOT=saved.privateRoot;
+        process.env.RAVRADAR_PRIVATE_RUNTIME_BUNDLE=saved.bundlePath;
+        const env={...process.env,GITHUB_WORKSPACE:HOST,RUNNER_TEMP:runner,GITHUB_SHA:sourceHead,
+          GITHUB_REF:'refs/heads/main',GITHUB_EVENT_NAME:'workflow_dispatch',GITHUB_RUN_ATTEMPT:'1',
+          GITHUB_REPOSITORY:identity.repository,GH_TOKEN:'synthetic-api-token',
+          COMPLETED_STAGE_SOURCE:`${identity.runId}-1-${sourceHead}`,COMPLETED_PRIVATE_RUNTIME:'true',
+          RAVRADAR_PRODUCTION_TARGET_HOUR:at(12).replace('.000Z','Z'),CHECKPOINT_TARGET_HOUR:'',
+          QUICK_PROGRESS_SOURCE:'',STAGED_PRIVATE_BUILD_MASTER_SECRET:secret,
+          ...Object.fromEntries(['QUICK_CONFIRMATION','CHECKPOINT_ONLY','EPOCH_BOOTSTRAP','EPOCH_REENTRY',
+            'NATIVE_IDENTITY_RECOVERY','EXTENDED_PROVIDER_BOOTSTRAP','PRODUCE_HANDOFF','CURRENT_FAMILY_COLD_START']
+            .map(name=>[name,'false']))};
+        const admission=await load('scripts/ordinary-completed-stage-admission.mjs');
+        const completed=await load('scripts/completed-private-runtime-admission.mjs');
+        const parentPin=await completed.readCompletedPrivateRuntimePin(backend.documentRequest);
+        env.COMPLETED_PRIVATE_RUNTIME_PIN=parentPin.pin;
+        const fixedReaderFetch=globalThis.fetch,artifactCalls=[];
+        const fixtureFetch=async(input,options={})=>{
+          const url=typeof input==='string'||input instanceof URL?String(input):input.url;
+          if(!url.startsWith(base+'/'))return fixedReaderFetch(input,options);
+          artifactCalls.push(url);assert(artifactCalls.length<=4,'One actual artifact read only.');
+          assert.equal(options.redirect,'manual');assert(options.signal instanceof AbortSignal);
+          assert.equal(new Headers(options.headers).get('authorization'),'Bearer '+env.GH_TOKEN);
+          if(metadata.has(url))return new Response(JSON.stringify(metadata.get(url)),{status:200});
+          assert.equal(url,`${base}/actions/artifacts/789/zip`,'No new transport endpoint.');
+          return new Response(zip,{status:200,headers:{'content-length':String(zip.length)}});
+        };
+        globalThis.fetch=fixtureFetch;
+        let admitted;
+        try{
+          phase='ACTUAL_ADMIT_DIRECT_PARENT_REFUSAL';
+          await assert.rejects(admission.admitOrdinaryCompletedStage({...env,COMPLETED_PRIVATE_RUNTIME_PIN:'0'.repeat(64)}),
+            {code:'ORDINARY_STAGE_PARENT_POINTER_CHANGED'});
+          assert.equal(artifactCalls.length,0);
+          phase='ACTUAL_ADMIT_REAL_LEXICAL_ORIGIN_REFUSAL';
+          const missing=clone(saved.conditions);delete missing.privateEstablishedNativeCurrentOrigin;
+          try{
+            await fs.writeFile(path.join(HOST,'data/live/conditions.json'),JSON.stringify(missing)+'\n');
+            await assert.rejects(admission.admitOrdinaryCompletedStage(env),
+              {code:'ESTABLISHED_CURRENT_ORIGIN_WORKING_ATTESTATION_CHANGED'});
+          }finally{await fs.writeFile(path.join(HOST,'data/live/conditions.json'),parentConditionsBytes);}
+          assert.equal(artifactCalls.length,0,'The real lexical origin refusal precedes artifact retrieval.');
+          phase='ACTUAL_ADMIT_GENUINE_LEXICAL_ORIGIN_POSITIVE';
+          admitted=await admission.admitOrdinaryCompletedStage(env);
+        }finally{
+          assert.equal(globalThis.fetch,fixtureFetch);globalThis.fetch=fixedReaderFetch;
+        }
+        assert.equal(artifactCalls.length,4);
+        assert.equal(admitted.kind,'ORDINARY_UNPUBLISHED_COMPLETED_STAGE_ADMISSION');
+        assert.equal(admitted.providerRequestsPerformed,false);assert.equal(admitted.scoringPerformed,false);
+        assert.equal(admitted.bundleContentSha256,unpublished.manifest.bundleContentSha256);
+        assert.deepEqual(admitted.originalIdentity,identity);
+        assert.equal(admitted.parentPin,parentPin.pin);
+        assert.deepEqual(JSON.parse(await fs.readFile(path.join(HOST,'data/live/conditions.json'))),unpublished.conditions);
+        assert.deepEqual(JSON.parse(await fs.readFile(path.join(HOST,'.cache/ravscore-continuation-checkpoint/checkpoint.json'))),
+          unpublished.checkpoint,'Actual admission used the unchanged normal S builder on the exact child.');
+        assert.deepEqual(backend.documents.get('ravscore-private-production-runtime-pointer'),parentPointer);
+        assert.deepEqual(backend.documents.get('ravscore-continuation-checkpoint'),parentCentral);
+        assert.deepEqual(await fs.readFile(admitted.sealedPath),originalCipher);
+        assert.equal(sha(await fs.readFile(cipherPath)),sha(originalCipher));
+        await assertCurrentInputSource();
+        for(const[file,pin]of originals)assert.equal(sha(await fs.readFile(file)),pin);
+        for(const[name,pin]of archivedObjects){assert(backend.objects.has(name));assert.equal(sha(backend.objects.get(name)),pin);}
+        receipt.actualAdmit={result:'PASS',actualLexicalOriginReader:true,originStub:false,
+          authoredPositiveAttestation:false,parentParts:673,childParts:673,scoreRowsPerPart:1,
+          genuineGenerations:2,directDenials:2,artifactTransportCalls:artifactCalls.length,
+          externalNetworkRequests:0,productionProof:false,protectedBSPublishedByAdmission:false,
+          originalCipherUnchanged:true,admissionPerformedScoring:false,admissionPerformedProviderRequest:false,
+          parentB:saved.manifest.bundleContentSha256,parentS:saved.checkpoint.generationSha256,
+          childB:admitted.bundleContentSha256,childS:admitted.checkpointSha256};
+        // Only the synthetic test-owned artifact copy is retired. The fixture's
+        // original ciphertext, parent B/S, child B and receipt are retained.
+        const downloaded=path.dirname(admitted.sealedPath),temporaryRoot=await fs.realpath(os.tmpdir());
+        const stat=await fs.lstat(downloaded);assert.equal(path.dirname(downloaded),temporaryRoot);
+        assert(path.basename(downloaded).startsWith('rr-ordinary-completed-stage-'));
+        assert(stat.isDirectory()&&!stat.isSymbolicLink());await fs.rm(downloaded,{recursive:true,force:false});
+      }else{
       const clockCheckedAt=new Date().toISOString();
       for(const hour of[9,28,41])for(const value of[at(hour),at(hour+1)])assert(Date.parse(value)<=Date.parse(clockCheckedAt));
       receipt.national={requested:true,sourceHead,sourceCleanWaiver:false,modelRetag:false,originStub:false,
@@ -525,8 +709,9 @@ test('issued584 genuine old B/S and UNPAIRED archive mint a new zero-history ori
       receipt.full673Cold=true;receipt.full121Forecast=true;receipt.ordinaryFollowers=2;
       receipt.national.result='PASS';receipt.national.originalArchivePreserved=true;
       receipt.national.modelBoundSourceUnchanged=true;receipt.national.wholeCliProviderOrProductionProof=false;
+      }
     }
-    receipt.result='PASS';receipt.phase=receipt.national?.result==='PASS'?'NATIONAL_COLD_AND_TWO_ORDINARY_FOLLOWERS_COMPLETE':'OPAQUE_ORIGIN_MINTED_NO_OLD_PAIR_ADMISSION';
+    receipt.result='PASS';receipt.phase=receipt.actualAdmit?.result==='PASS'?'ACTUAL_GENUINE_ORDINARY_STAGE_ADMISSION_COMPLETE':receipt.national?.result==='PASS'?'NATIONAL_COLD_AND_TWO_ORDINARY_FOLLOWERS_COMPLETE':'OPAQUE_ORIGIN_MINTED_NO_OLD_PAIR_ADMISSION';
     receipt.archiveId=facts.archiveId;receipt.sourceLeavesUnchanged=true;
   }catch(error){receipt.result='FAIL';receipt.phase=phase;receipt.firstError={name:error.name,code:error.code??null,message:error.message,stack:error.stack};throw error;}
   finally{
@@ -536,6 +721,6 @@ test('issued584 genuine old B/S and UNPAIRED archive mint a new zero-history ori
     assert.equal(actual.dev,workIdentity.dev);assert.equal(actual.ino,workIdentity.ino);assert.equal(await fs.realpath(work),work);
     receipt.runtime={node:process.version,argv:process.execArgv,cpu:process.cpuUsage(),resourceUsage:process.resourceUsage(),memory:process.memoryUsage()};
     await write(path.join(work,'receipt.json'),receipt);
-    t.diagnostic(receipt.national?.result==='PASS'?'Owned synthetic673x121 restart/two-follower receipt retained; not provider,SQL or production proof.':'Owned synthetic authority receipt retained; explicit --national full chain remains separate.');
+    t.diagnostic(receipt.actualAdmit?.result==='PASS'?'Owned genuine673-H0 parent/child actual-admit receipt retained; not provider,SQL or production proof.':receipt.national?.result==='PASS'?'Owned synthetic673x121 restart/two-follower receipt retained; not provider,SQL or production proof.':'Owned synthetic authority receipt retained; explicit --national full chain remains separate.');
   }
 });

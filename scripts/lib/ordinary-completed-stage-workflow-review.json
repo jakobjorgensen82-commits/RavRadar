@@ -1,0 +1,113 @@
+{
+  "build": {
+    "beforeBytes": 282443,
+    "beforeSha256": "05665749cefb5f210a7542cb6fab06e2900be0fd9bb8326cab9b1dcc7b432f73",
+    "afterBytes": 285368,
+    "afterSha256": "b509a5131c64f9df9a431fdf9f99b082fb14c88de8bf9c3ad3e33b8ddc77de57",
+    "edits": [
+      [
+        213527,
+        "        shell: bash\n        run: |\n          set -euo pipefail\n          if test -n \"$COMPLETED_STAGE_SOURCE\"; then\n            node scripts/ordinary-completed-stage-admission.mjs publish\n          else\n            node scripts/protected-private-production-runtime.mjs \\\n              --publish \\\n              --private-root \"$RAVRADAR_PRIVATE_RUNTIME_ROOT\" \\\n              --bundle \"$RAVRADAR_PRIVATE_RUNTIME_BUNDLE\" \\\n              --repository-root \"$GITHUB_WORKSPACE\" \\\n              --expected .cache/private-production-runtime-expected.json \\\n              --source-head \"$GITHUB_SHA\"\n          fi\n",
+        "        run: >-\n          node scripts/protected-private-production-runtime.mjs\n          --publish\n          --private-root \"$RAVRADAR_PRIVATE_RUNTIME_ROOT\"\n          --bundle \"$RAVRADAR_PRIVATE_RUNTIME_BUNDLE\"\n          --repository-root \"$GITHUB_WORKSPACE\"\n          --expected .cache/private-production-runtime-expected.json\n          --source-head \"$GITHUB_SHA\"\n"
+      ],
+      [
+        211681,
+        "        shell: bash\n        run: |\n          set -euo pipefail\n          if test -n \"$COMPLETED_STAGE_SOURCE\"; then\n            node scripts/ordinary-completed-stage-admission.mjs before-publish\n          else\n            node scripts/completed-private-runtime-admission.mjs before-publish\n          fi\n",
+        "        run: node scripts/completed-private-runtime-admission.mjs before-publish\n"
+      ],
+      [
+        207869,
+        "          if test -n \"$COMPLETED_STAGE_SOURCE\"; then\n            node scripts/ordinary-completed-stage-admission.mjs target\n          else\n            node scripts/completed-private-runtime-admission.mjs target\n          fi\n",
+        "          node scripts/completed-private-runtime-admission.mjs target\n"
+      ],
+      [
+        195370,
+        "          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}\n          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}\n",
+        ""
+      ],
+      [
+        194391,
+        "        shell: bash\n        run: |\n          set -euo pipefail\n          if test -n \"$COMPLETED_STAGE_SOURCE\"; then\n            node scripts/ordinary-completed-stage-admission.mjs preserve-cipher\n            echo ORIGINAL_CIPHERTEXT_PRESERVED_NOT_NEW_GENERATION\n          else\n            node scripts/staged-private-production-runtime.mjs seal \\\n              --repository-root \"$GITHUB_WORKSPACE\" \\\n              --private-root \"$RAVRADAR_PRIVATE_RUNTIME_ROOT\" \\\n              --bundle \"$RAVRADAR_PRIVATE_RUNTIME_BUNDLE\" \\\n              --expected .cache/private-production-runtime-expected.json \\\n              --source-head \"$GITHUB_SHA\" \\\n              --repository \"$GITHUB_REPOSITORY\" \\\n              --run-id \"$GITHUB_RUN_ID\" \\\n              --run-attempt \"$GITHUB_RUN_ATTEMPT\" \\\n              --output \"$RUNNER_TEMP/ravradar-private-build-stage/sealed.bin\"\n          fi\n",
+        "        run: >-\n          node scripts/staged-private-production-runtime.mjs seal\n          --repository-root \"$GITHUB_WORKSPACE\"\n          --private-root \"$RAVRADAR_PRIVATE_RUNTIME_ROOT\"\n          --bundle \"$RAVRADAR_PRIVATE_RUNTIME_BUNDLE\"\n          --expected .cache/private-production-runtime-expected.json\n          --source-head \"$GITHUB_SHA\"\n          --repository \"$GITHUB_REPOSITORY\"\n          --run-id \"$GITHUB_RUN_ID\"\n          --run-attempt \"$GITHUB_RUN_ATTEMPT\"\n          --output \"$RUNNER_TEMP/ravradar-private-build-stage/sealed.bin\"\n"
+      ],
+      [
+        91001,
+        "          GH_TOKEN: ${{ github.token }}\n          STAGED_PRIVATE_BUILD_MASTER_SECRET: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}\n",
+        ""
+      ],
+      [
+        90703,
+        "        shell: bash\n        run: |\n          set -euo pipefail\n          if test -n \"$COMPLETED_STAGE_SOURCE\"; then\n            node scripts/ordinary-completed-stage-admission.mjs admit\n          else\n            node scripts/completed-private-runtime-admission.mjs admit\n          fi\n",
+        "        run: node scripts/completed-private-runtime-admission.mjs admit\n"
+      ],
+      [
+        88985,
+        "          CURRENT_FAMILY_COLD_START: ${{ inputs.current_family_cold_start }}\n",
+        ""
+      ],
+      [
+        88746,
+        "          if test -n \"$COMPLETED_STAGE_SOURCE\"; then\n            node scripts/ordinary-completed-stage-admission.mjs request\n          else\n            node scripts/completed-private-runtime-admission.mjs request\n          fi\n",
+        "          node scripts/completed-private-runtime-admission.mjs request\n"
+      ],
+      [
+        15810,
+        "      - name: Verify the original ordinary-stage source before any hydration\n        if: inputs.completed_stage_source != ''\n        run: node scripts/ordinary-completed-stage-admission.mjs source\n        env:\n          CURRENT_FAMILY_COLD_START: ${{ inputs.current_family_cold_start }}\n          EPOCH_BOOTSTRAP: ${{ inputs.weather_state_epoch_bootstrap }}\n          EPOCH_REENTRY: ${{ inputs.weather_state_epoch_checkpoint_reentry }}\n          NATIVE_IDENTITY_RECOVERY: ${{ inputs.native_sampling_identity_original_recovery }}\n          EXTENDED_PROVIDER_BOOTSTRAP: ${{ inputs.extended_provider_bootstrap }}\n          PRODUCE_HANDOFF: ${{ inputs.produce_weather_handoff }}\n\n",
+        ""
+      ],
+      [
+        10121,
+        "      COMPLETED_STAGE_SOURCE: ${{ inputs.completed_stage_source }}\n      CURRENT_FAMILY_COLD_START: ${{ inputs.current_family_cold_start }}\n      EPOCH_BOOTSTRAP: ${{ inputs.weather_state_epoch_bootstrap }}\n      EPOCH_REENTRY: ${{ inputs.weather_state_epoch_checkpoint_reentry }}\n      NATIVE_IDENTITY_RECOVERY: ${{ inputs.native_sampling_identity_original_recovery }}\n      EXTENDED_PROVIDER_BOOTSTRAP: ${{ inputs.extended_provider_bootstrap }}\n      PRODUCE_HANDOFF: ${{ inputs.produce_weather_handoff }}\n",
+        ""
+      ],
+      [
+        394,
+        "      completed_stage_source:\n        required: false\n        type: string\n        default: ''\n",
+        ""
+      ]
+    ]
+  },
+  "once": {
+    "beforeBytes": 53334,
+    "beforeSha256": "445964fbbc697ec86848744a9413897d3418b011c4218fb10336734b5e5055a2",
+    "afterBytes": 54389,
+    "afterSha256": "ca7f15673910e1176ba68c190b9f08c85d8274efb31dc36dbceca1b3838360b3",
+    "edits": [
+      [
+        46775,
+        "      checkpoint_only: ${{ inputs.checkpoint_target_hour != '' && inputs.completed_stage_source == '' }}\n",
+        "      checkpoint_only: ${{ inputs.checkpoint_target_hour != '' }}\n"
+      ],
+      [
+        45619,
+        "      completed_stage_source: ${{ inputs.completed_stage_source }}\n",
+        ""
+      ],
+      [
+        10133,
+        "        if: inputs.checkpoint_target_hour != '' && inputs.completed_stage_source == ''\n",
+        "        if: inputs.checkpoint_target_hour != ''\n"
+      ],
+      [
+        6709,
+        "          COMPLETED_STAGE_SOURCE: ${{ inputs.completed_stage_source }}\n          CURRENT_FAMILY_COLD_START: ${{ inputs.current_family_cold_start }}\n",
+        ""
+      ],
+      [
+        6371,
+        "        shell: bash\n        run: |\n          set -euo pipefail\n          if test -n \"$COMPLETED_STAGE_SOURCE\"; then\n            node scripts/ordinary-completed-stage-admission.mjs pin\n          else\n            node scripts/completed-private-runtime-admission.mjs pin\n          fi\n",
+        "        run: node scripts/completed-private-runtime-admission.mjs pin\n"
+      ],
+      [
+        5767,
+        "      - name: Reject an orphaned completed-stage locator before target selection\n        if: inputs.completed_stage_source != ''\n        shell: bash\n        env:\n          COMPLETED: ${{ inputs.completed_private_runtime }}\n        run: |\n          set -euo pipefail\n          test \"$COMPLETED\" = true\n\n",
+        ""
+      ],
+      [
+        540,
+        "      completed_stage_source:\n        description: 'Optional exact ordinary completed-stage run-attempt-producerhead; requires completed reuse and its original checkpoint target hint'\n        required: false\n        type: string\n        default: ''\n",
+        ""
+      ]
+    ]
+  }
+}

@@ -1,3 +1,11 @@
+## 19. oktober — P0 ÅBEN: færdig almindelig beregning gemmes for sent
+
+Den gamle rækkefølge gemmer den krypterede færdigpakke efter de sene artifactkontroller. En fejl dér kan derfor miste en allerede afsluttet beregning, selv om vejrhentningens input er bevaret. Et cachehit eller en bestået beregning er ikke bevis for en gemt, genanvendelig færdigpakke.
+
+SOURCE_PREPARED: Fire normale spec/create/seal/upload-trin flyttes før disse kontroller. En valgfri `completed_stage_source` skal bruge det præcise originale ordinary-artifact med normal GCM-autentifikation, uændrede beregnings-/admininput og ægte parent-B/S gennem samme normale levering uden providers eller rescore. Ingen ny destination, model, SQL eller undtagelse fra 55+3, runtime, no-loss, privacy og B før S. Ukendt tidligere central skrivning, ændret parent, manglende artifact eller forkert lineage afviser genbrug.
+
+Samlet lokal genuine-admit er nu bestået med ægte syntetisk parent/child for 673 dele, I+G, normal origin-reader, GCM, restore/S og to direkte afslag. Ét H0 og 121-timers cache er ikke en fuld national prognose eller kapacitet. Status er fortsat SOURCE_PREPARED; præcis Linux-source-CI, installation og aktuel produktionsbrug er åbne. Rettelsen kan ikke skabe et artifact fra tidligere tabte beregninger. Genopretning `39291575502/1` er særskilt leveret omkring kl. 20.00 dansk tid med gemte input; almindelig `39299413035/1` er ved dette checkpoint i beregning uden bevist deploy. De gamle 584-leveringsafventninger nedenfor er historik på de leverede punkter, ikke lukning af almindelig cachevedligeholdelse eller de fem hovedmål.
+
 ## 19. oktober — lokal 4.0.584: ret producenten, bevar originalerne
 
 P0 ÅBEN: Den faktiske nye kørsel nåede gemt B efter vejrhentning, beregning, databevarelse og releasekontrol, men S blev afvist. En syvtimers prøve uden gammel tilstand har påvist forkert mapping af bølgemomenter til sidste-mile-indramningen samt en serializer, som beholdt den rå kopi. Den parrede lokale producentrettelse består seks mål; den dokumenterer ikke forkert DMI-input eller forkert SQL-formel.

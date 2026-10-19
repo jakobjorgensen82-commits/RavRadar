@@ -1,5 +1,19 @@
 # DEC-0249 – fortsæt fra rigtig vejrpakke og gem kortere Copernicus-kald
 
+## Tillæg 2026-10-19 — gem den færdige almindelige beregning før sen levering
+
+**Valgt; SOURCE_PREPARED på uændret 4.0.584.** En sen leveringsfejl må ikke i sig selv kræve ny leverandørhentning eller scoreberegning, når et autentificeret, kompatibelt færdigt resultat findes. De fire eksisterende normale trin for pakkespecifikation, atomisk B-bygning, GCM-forsegling og upload flyttes umiddelbart efter vellykket beregning og før de sene artifactkontroller. Den eksisterende kryptering, nøgle, GitHub-artifactvej og éndagsopbevaring genbruges. Tidlig gemning er alene privat transport, aldrig central B/S-publicering, SQL-installation eller offentlig frigivelse.
+
+Den eksisterende `completed_private_runtime`-mode får den valgfrie `completed_stage_source` med eksakt run, attempt og producent-head samt den oprindelige targettime. Tom lokator bevarer den tidligere mode. Kun en faktisk terminal almindelig producent med vellykket beregning og alle fire gemmetrin kan kvalificeres. Entydigt, ikke udløbet artifact, kontrolsum, begrænset ZIP og GCM-autentifikation kræves; metadata er kun lokator. Original repository/run/attempt/head forbliver kryptografisk identitet og original B-producent, også efter en leveringsrettelse.
+
+Samtlige beregningsinput, model-/kontraktbindinger og admin-/punktgrundlag skal være uændrede. Kun eksplicit gennemgåede leverings-, test- og dokumentationsblade samt de eksakte hele workflowinverser må afvige i kildekontrollen; ingen generel mappeundtagelse. Den normale oprindelseslæser skal kvalificere virkelig parent-B/S, ikke en JSON-kopi eller et opfundet handle. Child-pakken skal være en normal fortsættelse af samme parent. Normal restore/install og normal afledning af S genbruges uden providers eller rescore.
+
+Den eksisterende statiske installationskopi skal fortsat indeholde præcis samme håndbog som webhåndbogen. Kun denne ene dokumentationsværdi må ændres; hele resten af SQL-filen og filtypen skal være identisk. Det er ikke en undtagelse for SQL-filen, en migrations-/funktionsændring eller en installation. Begge commits' faktiske håndbog og tilsvarende seed skal stemme, før den snævre dokumentationsinverse kan bruges.
+
+Alle normale produktionskrav, herunder 55+3, runtime, no-loss, privacy, target og deploy, består. Parent og konfiguration genlæses før publicering; normal B før S, CAS og genlæsning bevares. Ukendt skrivningsudfald eller allerede ændret parent kræver faktisk afklaring, ikke blind gentagelse eller SQL-replay. Manglende eller udløbet færdigpakke giver ingen genbrugsadgang.
+
+Samlet lokal genuine-admit er bestået gennem ægte syntetisk parent/child for 673 dele, I+G, normal origin-reader, GCM, restore/S og to direkte afslag. Ét H0 med normal 121-timers cache er ikke fuld national prognose eller kapacitetsbevis. Status er fortsat SOURCE_PREPARED; præcis samlet Linux-source-CI, installation/aktivering og produktionseffekt er åbne. Genopretning `39291575502/1` er allerede leveret med gemte input omkring kl. 20.00 dansk tid; den beviser ikke frisk almindelig vejrhentning. `39299413035/1` er ved dette checkpoint i beregning uden bevist deploy. Ingen ny version, C/I/T, SQL, scoreformel, kildeprioritet, budgetter eller geometri følger af beslutningen. Historiske engangsidentiteter nedenfor er ikke den nye modes generelle tilladelse.
+
 ## Tillæg 2026-09-28 – afgrænset timeout og allerede færdig pakke
 
 En ny fuld 4.0.508-kørsel `36396834072` viste, at 30 sekunder ikke

@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import crypto from 'node:crypto';
 import fs from 'node:fs/promises';
 import test from 'node:test';
-import { inverseCompletedRuntimeWorkflow, inverseOrdinaryFullHistoryCheckout, inversePairedPrivateRuntimePublication, inverseOriginWeatherReadCredentials, assertCurrentHistoryRawRetentionOrder, inverseCurrentHistoryRawRetentionOrder, inverseCurrentFamilyColdStartWorkflow, inverseRelease584WorkflowUserAgents } from './lib/completed-private-runtime-workflow-review.mjs';
+import { ordinaryStageWiringReview, inverseOrdinaryCompletedStageWorkflowWiring, assertEarlyCompletedRuntimeStageOrder, inverseEarlyCompletedRuntimeStage, inverseCompletedRuntimeWorkflow, inverseOrdinaryFullHistoryCheckout, inversePairedPrivateRuntimePublication, inverseOriginWeatherReadCredentials, assertCurrentHistoryRawRetentionOrder, inverseCurrentHistoryRawRetentionOrder, inverseCurrentFamilyColdStartWorkflow, inverseRelease584WorkflowUserAgents } from './lib/completed-private-runtime-workflow-review.mjs';
 import { runInNewContext } from 'node:vm';
 import { spawnSync } from 'node:child_process';
 const sha = source => crypto.createHash('sha256').update(source).digest('hex');
@@ -416,7 +416,7 @@ test('actual RAW caller refuses missing duplicate misplaced changed and unrelate
 // Actual584 is qualified separately; all581/580/C/checkout/RAW cases above
 // continue to receive only the exact whole predecessor, never a partial view.
 test('release584 actual five User-Agent fields preserve the whole581 current-family-C source', async () => {
-  const source = (await fs.readFile(new URL('../.github/workflows/reusable-weather-build.yml', import.meta.url), 'utf8')).replaceAll('\r\n', '\n');
+  const source = inverseEarlyCompletedRuntimeStage((await fs.readFile(new URL('../.github/workflows/reusable-weather-build.yml', import.meta.url), 'utf8')).replaceAll('\r\n', '\n'), 'build');
   assert.equal(sha(source), 'f0254a092c0baa188370c207b218e15ad7c9e616138d15234e6f323f101178c6');
   assert.equal((source.match(/^          WEATHER_USER_AGENT: "RavRadar\/4\.0\.584 /gm) ?? []).length, 5);
   const previous = inverseRelease584WorkflowUserAgents(source, 'build');
@@ -433,7 +433,7 @@ test('release584 actual five User-Agent fields preserve the whole581 current-fam
   assert.throws(() => inverseCompletedRuntimeWorkflow(source, 'once'));
 });
 test('release584 rejects every partial UA conversion deletion duplication and unrelated whole-source change', async () => {
-  const source = (await fs.readFile(new URL('../.github/workflows/reusable-weather-build.yml', import.meta.url), 'utf8')).replaceAll('\r\n', '\n');
+  const source = inverseEarlyCompletedRuntimeStage((await fs.readFile(new URL('../.github/workflows/reusable-weather-build.yml', import.meta.url), 'utf8')).replaceAll('\r\n', '\n'), 'build');
   const current = 'RavRadar/4.0.584', pieces = source.split(current);
   assert.equal(pieces.length, 6);
   const mutations = Array.from({ length: 5 }, (_, changedAt) => pieces.reduce((text, piece, index) =>
@@ -450,5 +450,173 @@ test('release584 rejects every partial UA conversion deletion duplication and un
       'Only one exact whole584 source can enter the UA inverse');
     assert.equal(inverseCurrentFamilyColdStartWorkflow(changed, 'build'), changed);
     assert.throws(() => inverseCompletedRuntimeWorkflow(changed, 'build'));
+  }
+});
+
+test('actual encrypted completed B stage precedes final gates with whole c72 and protected B/S order preserved', async () => {
+  const source = inverseOrdinaryCompletedStageWorkflowWiring((await fs.readFile(new URL('../.github/workflows/reusable-weather-build.yml', import.meta.url), 'utf8')).replaceAll('\r\n', '\n'), 'build');
+  const block = assertEarlyCompletedRuntimeStageOrder(source);
+  assert.equal(Buffer.byteLength(block), 3399);
+  const previous = inverseEarlyCompletedRuntimeStage(source, 'build');
+  assert.notEqual(previous, source);
+  assert.equal(sha(previous), 'f0254a092c0baa188370c207b218e15ad7c9e616138d15234e6f323f101178c6');
+  assert.equal(inverseEarlyCompletedRuntimeStage(previous, 'build'), previous);
+  assert.equal(inverseRelease584WorkflowUserAgents(source, 'build'), coldActual.build);
+  assert.equal(inverseCompletedRuntimeWorkflow(source, 'build'), inverseCompletedRuntimeWorkflow(previous, 'build'));
+  assert.equal(sha(inverseCompletedRuntimeWorkflow(source, 'build')), legacySha);
+  assert.equal(inverseEarlyCompletedRuntimeStage(source, 'once'), source);
+  assert.throws(() => inverseCompletedRuntimeWorkflow(source, 'once'));
+});
+
+test('early stage rejects changed missing duplicated relocated or unrelated whole-workflow bytes', async () => {
+  const source = inverseOrdinaryCompletedStageWorkflowWiring((await fs.readFile(new URL('../.github/workflows/reusable-weather-build.yml', import.meta.url), 'utf8')).replaceAll('\r\n', '\n'), 'build');
+  const block = assertEarlyCompletedRuntimeStageOrder(source);
+  const without = source.replace(block, '');
+  const oldNext = '      - name: Build dataminimized weather preflight state after final gates\n';
+  const mutateBlock = (from, to) => {
+    assert.equal(block.split(from).length, 2, 'One exact changed field inside the relocated stage');
+    return source.replace(block, () => block.replace(from, to));
+  };
+  const mutations = [
+    mutateBlock('id: private-build-stage-seal\n', 'id: unreviewed-private-build-stage-seal\n'),
+    mutateBlock('retention-days: 1\n', 'retention-days: 2\n'),
+    mutateBlock('          STAGED_PRIVATE_BUILD_MASTER_SECRET: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}\n', ''),
+    source.replace(block, block + block), without,
+    without.replace(oldNext, () => block + oldNext),
+    source + '\n# UNREVIEWED EARLY-STAGE DRIFT\n',
+  ];
+  assert.equal(mutations.length, 7);
+  for (const changed of mutations) {
+    assert.notEqual(changed, source);
+    assert.throws(() => assertEarlyCompletedRuntimeStageOrder(changed));
+    assert.equal(inverseEarlyCompletedRuntimeStage(changed, 'build'), changed,
+      'Only the one whole reviewed afterimage enters the relocation inverse');
+    if (sha(changed) === 'f0254a092c0baa188370c207b218e15ad7c9e616138d15234e6f323f101178c6')
+      assert.equal(sha(inverseCompletedRuntimeWorkflow(changed, 'build')), legacySha,
+        'The exact unchanged c72 remains only the separate historical oracle');
+    else assert.throws(() => inverseCompletedRuntimeWorkflow(changed, 'build'));
+  }
+});
+
+const actualWiringStep = (source, name) => {
+  const marker = '      - name: ' + name + '\n';
+  assert.equal(source.split(marker).length, 2, 'One exact actual stage-wiring step');
+  const start = source.indexOf(marker);
+  const end = source.indexOf('\n      - ', start + marker.length);
+  assert(end > start); return source.slice(start, end);
+};
+const actualWiringBranches = block => {
+  const rows = [...block.matchAll(/^          if test -n "\$COMPLETED_STAGE_SOURCE"; then\n([\s\S]*?)^          else\n([\s\S]*?)^          fi(?:\n|$)/gm)];
+  assert.equal(rows.length, 1, 'One explicit locator-only branch, not completed flag alone');
+  const command = body => body.trim().replace(/\\\n\s*/g, ' ').replace(/\s+/g, ' ');
+  return { stage: command(rows[0][1]), ordinary: command(rows[0][2]) };
+};
+test('actual optional stage wiring preserves default commands, original cipher, caller mode and every delivery gate', async () => {
+  const current = Object.fromEntries(await Promise.all([['build', 'reusable-weather-build.yml'], ['once', 'run-current-weather-once.yml']]
+    .map(async ([role, file]) => [role, (await fs.readFile(new URL('../.github/workflows/' + file, import.meta.url), 'utf8')).replaceAll('\r\n', '\n')])));
+  assert.equal(sha(current.build), 'b509a5131c64f9df9a431fdf9f99b082fb14c88de8bf9c3ad3e33b8ddc77de57');
+  assert.equal(sha(current.once), 'ca7f15673910e1176ba68c190b9f08c85d8274efb31dc36dbceca1b3838360b3');
+  for (const [role, source] of Object.entries(current)) {
+    assert.equal((source.match(/^      completed_stage_source:\n/gm) ?? []).length, 1,
+      'One optional declaration; forwarding has its own exact expression assertion below');
+    const input = coldBlock(source, '      completed_stage_source:');
+    assert.match(input, /^        required: false$/m); assert.match(input, /^        type: string$/m);
+    assert.match(input, /^        default: ''$/m);
+    const prior = inverseOrdinaryCompletedStageWorkflowWiring(source, role);
+    assert.notEqual(prior, source);
+    assert.equal(sha(prior), role === 'build' ? '05665749cefb5f210a7542cb6fab06e2900be0fd9bb8326cab9b1dcc7b432f73'
+      : '445964fbbc697ec86848744a9413897d3418b011c4218fb10336734b5e5055a2');
+    assert.equal(inverseOrdinaryCompletedStageWorkflowWiring(prior, role), prior);
+    assert.equal(inverseCompletedRuntimeWorkflow(source, role), inverseCompletedRuntimeWorkflow(prior, role));
+  }
+  const locator = '123-1-' + 'a'.repeat(40);
+  const pin = actualWiringStep(current.once, 'Pin the actual newest completed private generation before target selection');
+  assert.deepEqual(actualWiringBranches(pin), { stage: 'node scripts/ordinary-completed-stage-admission.mjs pin',
+    ordinary: 'node scripts/completed-private-runtime-admission.mjs pin' });
+  assert.match(pin, /^          CHECKPOINT_TARGET_HOUR: \$\{\{ inputs\.checkpoint_target_hour \}\}$/m);
+  const orphan = actualWiringStep(current.once, 'Reject an orphaned completed-stage locator before target selection');
+  assert.match(orphan, /^        if: inputs\.completed_stage_source != ''$/m);
+  assert(orphan.includes('test "$COMPLETED" = true'));
+  const checkpoint = actualWiringStep(current.once, 'Lock the requested original checkpoint hour without provider work');
+  const checkpointSelector = /^        if: (.+)$/m.exec(checkpoint)[1];
+  const checkpointOnly = /^      checkpoint_only: (.+)$/m.exec(current.once)[1];
+  for (const [stage, targetHint, expected] of [['', '', false], ['', '2026-10-19T11:00:00Z', true],
+    [locator, '2026-10-19T11:00:00Z', false], [locator, '', false]]) {
+    const context = { inputs: { completed_stage_source: stage, checkpoint_target_hour: targetHint } };
+    assert.equal(coldEvaluate(checkpointSelector, context), expected);
+    assert.equal(coldEvaluate(checkpointOnly, context), expected);
+  }
+  assert(current.once.includes('completed_stage_source: ${{ inputs.completed_stage_source }}'));
+  assert(current.build.includes("CHECKPOINT_TARGET_HOUR: ${{ inputs.checkpoint_only && inputs.production_target_hour || '' }}"));
+  const source = actualWiringStep(current.build, 'Verify the original ordinary-stage source before any hydration');
+  assert.match(source, /^        if: inputs\.completed_stage_source != ''$/m);
+  assert(source.includes('run: node scripts/ordinary-completed-stage-admission.mjs source'));
+  assert(current.build.indexOf(source) > current.build.indexOf('      - name: Set up Node.js\n'));
+  for (const later of ['Read exact centrally active operational RavScore', 'Build constrained natural zone coastlines',
+    'Sync centrally saved admin configuration', 'Materialize the authoritative active coastal-part registry'])
+    assert(current.build.indexOf(source) < current.build.indexOf('      - name: ' + later + '\n'));
+  for (const [key, expression] of [['CURRENT_FAMILY_COLD_START', 'current_family_cold_start'], ['EPOCH_BOOTSTRAP', 'weather_state_epoch_bootstrap'],
+    ['EPOCH_REENTRY', 'weather_state_epoch_checkpoint_reentry'], ['NATIVE_IDENTITY_RECOVERY', 'native_sampling_identity_original_recovery'],
+    ['EXTENDED_PROVIDER_BOOTSTRAP', 'extended_provider_bootstrap'], ['PRODUCE_HANDOFF', 'produce_weather_handoff']]) {
+    assert(source.includes('          ' + key + ': ${{ inputs.' + expression + ' }}'));
+    assert(current.build.includes('      ' + key + ': ${{ inputs.' + expression + ' }}'),
+      'Every later stage CLI operation receives the actual typed mode, never a default false');
+  }
+  for (const [name, command] of [
+    ['Require the separate completed B request and actual restored originals', 'request'],
+    ['Admit only the exact authenticated completed B and matching central S', 'admit'],
+    ['Refuse completed-runtime target or calibration mismatch before any new S or B publication', 'target'],
+    ['Prove the whole recreated B manifest and installed originals are unchanged', 'before-publish'],
+  ]) {
+    const scope = actualWiringStep(current.build, name);
+    assert.deepEqual(actualWiringBranches(scope), { stage: 'node scripts/ordinary-completed-stage-admission.mjs ' + command,
+      ordinary: 'node scripts/completed-private-runtime-admission.mjs ' + command });
+    assert(!scope.includes('continue-on-error:'));
+  }
+  const admit = actualWiringStep(current.build, 'Admit only the exact authenticated completed B and matching central S');
+  assert.match(admit, /^        id: completed-runtime-admission$/m);
+  assert.match(admit, /^          GH_TOKEN: \$\{\{ github\.token \}\}$/m);
+  assert.match(admit, /^          STAGED_PRIVATE_BUILD_MASTER_SECRET: \$\{\{ secrets\.SUPABASE_SERVICE_ROLE_KEY \}\}$/m);
+  const cipher = actualWiringStep(current.build, 'Encrypt exact completed private build for late-failure recovery');
+  assert.match(cipher, /^          SUPABASE_URL: \$\{\{ secrets\.SUPABASE_URL \}\}$/m);
+  assert.match(cipher, /^          SUPABASE_SERVICE_ROLE_KEY: \$\{\{ secrets\.SUPABASE_SERVICE_ROLE_KEY \}\}$/m);
+  const cipherBranches = actualWiringBranches(cipher);
+  assert.equal(cipherBranches.stage, 'node scripts/ordinary-completed-stage-admission.mjs preserve-cipher echo ORIGINAL_CIPHERTEXT_PRESERVED_NOT_NEW_GENERATION');
+  assert(cipherBranches.ordinary.startsWith('node scripts/staged-private-production-runtime.mjs seal '));
+  assert(cipherBranches.ordinary.endsWith('--output "$RUNNER_TEMP/ravradar-private-build-stage/sealed.bin"'));
+  const publish = actualWiringBranches(actualWiringStep(current.build, 'Publish bounded private runtime with one protected rollback generation'));
+  assert.equal(publish.stage, 'node scripts/ordinary-completed-stage-admission.mjs publish');
+  assert(publish.ordinary.startsWith('node scripts/protected-private-production-runtime.mjs --publish '));
+  assert(publish.ordinary.endsWith('--source-head "$GITHUB_SHA"'));
+  assert.equal(actualWiringStep(current.build, 'Save only encrypted completed private build for one day'),
+    actualWiringStep(inverseOrdinaryCompletedStageWorkflowWiring(current.build, 'build'), 'Save only encrypted completed private build for one day'));
+  assertEarlyCompletedRuntimeStageOrder(current.build);
+});
+
+test('actual optional wiring refuses every partial hunk, wrong role and changed complete workflow', async () => {
+  for (const [role, file] of [['build', 'reusable-weather-build.yml'], ['once', 'run-current-weather-once.yml']]) {
+    const source = (await fs.readFile(new URL('../.github/workflows/' + file, import.meta.url), 'utf8')).replaceAll('\r\n', '\n');
+    assert.equal(sha(source), ordinaryStageWiringReview[role].afterSha256);
+    for (const [offset, actual] of ordinaryStageWiringReview[role].edits) {
+      assert(actual.length > 0);
+      for (const substitute of ['', actual + actual, '?' + actual.slice(1)]) {
+        const changed = source.slice(0, offset) + substitute + source.slice(offset + actual.length);
+        assert.notEqual(changed, source);
+        assert.equal(inverseOrdinaryCompletedStageWorkflowWiring(changed, role), changed);
+        assert.throws(() => inverseCompletedRuntimeWorkflow(changed, role));
+      }
+    }
+    const mutations = [source.replace('completed_stage_source:', 'unreviewed_stage_source:'),
+      source.replace('ordinary-completed-stage-admission.mjs', 'unreviewed-stage-admission.mjs'),
+      source.replace('if test -n "$COMPLETED_STAGE_SOURCE"; then', 'if true; then'),
+      source + '\n# UNREVIEWED STAGE WIRING DRIFT\n'];
+    for (const changed of mutations) {
+      assert.notEqual(changed, source);
+      assert.equal(inverseOrdinaryCompletedStageWorkflowWiring(changed, role), changed);
+      assert.throws(() => inverseCompletedRuntimeWorkflow(changed, role));
+    }
+    const wrong = role === 'build' ? 'once' : 'build';
+    assert.equal(inverseOrdinaryCompletedStageWorkflowWiring(source, wrong), source);
+    assert.throws(() => inverseCompletedRuntimeWorkflow(source, wrong));
   }
 });

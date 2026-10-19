@@ -1,3 +1,9 @@
+## 19. oktober — bevar og genbrug faktisk færdig almindelig beregning
+
+AKTIVT: En sen leveringsfejl må ikke alene udløse ny providerhentning eller rescore, når den eksakte færdige almindelige beregning findes som gyldigt, autentificeret krypteret artifact. Normal spec/create/seal/upload skal gemme resultatet før sene artifactgates uden central eller offentlig skrivning. Genoptagelse kræver original producentidentitet, samme beregnings-/admin-/modelgrundlag, ægte uændret parent-B/S og alle normale 55+3-, runtime-, no-loss-, privacy- og leveringskontroller. Ukendt skrivning, ændret parent og manglende/udløbet artifact afviser genbrug. Ingen falsk numerisk adgang eller generel kildeundtagelse; se DEC-0249's tillæg 19. oktober.
+
+Implementeringen er SOURCE_PREPARED med bestået samlet lokal genuine-admit gennem ægte syntetisk parent/child, I+G, normal origin-reader, GCM, restore/S og to direkte afslag. Ét H0 for 673 dele med normal 121-timers cache er ikke fuld national prognose eller kapacitet. Præcis Linux-source-CI, installation og produktion er fortsat åbne. Den leverede genopretning med gemte input er ikke i sig selv bevis for normal cachevedligeholdelse eller frisk vejrhentning.
+
 ## 19. oktober — lokal 4.0.584: ret producenten, bevar originalerne
 
 AKTIVT: Ejerens nye start må have nul gammel aktiv strøm-/scorehistorik. Autentiske tidligere B/S og offentliggjorte data skal bevares permanent som særskilte originaler, også når de ikke udgør et sammenhørende par. De må ikke ommærkes, slettes eller levere gammel I/G-initialtilstand til den nye beregning. Manglende ny historik skal vises ærligt og opbygges fremad.
