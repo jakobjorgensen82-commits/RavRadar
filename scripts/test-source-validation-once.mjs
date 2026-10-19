@@ -38,15 +38,15 @@ const actualOriginSourceCommands = [
   "node scripts/run-frozen-established-native-current-origin-source-targets.mjs followers"
 ];
 const lastMileSourceGroup = "test:last-mile-enclosure";
-const lastMileSourceDefinition = "node scripts/build-last-mile-enclosure-successor.mjs --check && node --test scripts/test-ravscore-last-mile-canonical-checkpoint.mjs scripts/test-unpaired-weather-restart-archive.mjs scripts/test-archived-weather-restart-input-view.mjs scripts/test-archived-weather-restart-locator.mjs scripts/test-last-mile-enclosure-predecessor-source.mjs scripts/test-last-mile-enclosure-plan.mjs scripts/test-last-mile-enclosure-postgres-source.mjs scripts/test-last-mile-enclosure-restart-archive-origin.mjs scripts/test-reconcile-private-runtime-checkpoint.mjs scripts/test-archived-weather-restart-workflow.mjs";
+const lastMileSourceDefinition = "node scripts/build-last-mile-enclosure-successor.mjs --check && node --test scripts/test-ravscore-last-mile-canonical-checkpoint.mjs scripts/test-unpaired-weather-restart-archive.mjs scripts/test-archived-weather-restart-input-view.mjs scripts/test-archived-weather-restart-locator.mjs scripts/test-last-mile-enclosure-predecessor-source.mjs scripts/test-last-mile-enclosure-plan.mjs scripts/test-last-mile-enclosure-postgres-source.mjs scripts/test-last-mile-enclosure-restart-archive-origin.mjs scripts/test-archived-weather-restart-workflow.mjs";
 const lastMileSourceChecks = [
   "node scripts/build-last-mile-enclosure-successor.mjs --check",
-  "node --test scripts/test-ravscore-last-mile-canonical-checkpoint.mjs scripts/test-unpaired-weather-restart-archive.mjs scripts/test-archived-weather-restart-input-view.mjs scripts/test-archived-weather-restart-locator.mjs scripts/test-last-mile-enclosure-predecessor-source.mjs scripts/test-last-mile-enclosure-plan.mjs scripts/test-last-mile-enclosure-postgres-source.mjs scripts/test-last-mile-enclosure-restart-archive-origin.mjs scripts/test-reconcile-private-runtime-checkpoint.mjs scripts/test-archived-weather-restart-workflow.mjs"
+  "node --test scripts/test-ravscore-last-mile-canonical-checkpoint.mjs scripts/test-unpaired-weather-restart-archive.mjs scripts/test-archived-weather-restart-input-view.mjs scripts/test-archived-weather-restart-locator.mjs scripts/test-last-mile-enclosure-predecessor-source.mjs scripts/test-last-mile-enclosure-plan.mjs scripts/test-last-mile-enclosure-postgres-source.mjs scripts/test-last-mile-enclosure-restart-archive-origin.mjs scripts/test-archived-weather-restart-workflow.mjs"
 ];
 const lastMileCriticalRegistration = ["node scripts/run-frozen-established-native-current-origin-source-targets.mjs followers","node scripts/run-frozen-established-native-current-origin-source-targets.mjs followers && npm run test:last-mile-enclosure"];
 function inverseReviewedOriginSourceRouting(actualScripts) {
   assert.equal(actualScripts[lastMileSourceGroup], lastMileSourceDefinition,
-    'The exact current584 builder and all ten normal targets must stay in order.');
+    'The exact current584 builder and all nine direct normal targets must stay in order.');
   const expanded = expandSourceCommands(actualScripts, 'validate:source:checks');
   for (const command of [...actualOriginSourceCommands, ...lastMileSourceChecks])
     assert.equal(expanded.filter(value => value === command).length, 1,
@@ -67,6 +67,16 @@ function inverseReviewedOriginSourceRouting(actualScripts) {
   delete previous[lastMileSourceGroup];
   return previous;
 }
+// The normal reusable caller already imports the full B/S reconcile target.
+// Keep that coverage once, rather than executing the same costly fixture in
+// both the new group and the existing deploy-source group.
+const onceExpanded = expandSourceCommands(actualOriginSourceScripts, 'validate:source:checks');
+assert.equal(onceExpanded.filter(command => command.includes('scripts/test-reusable-production-workflows.mjs')).length, 1);
+assert.equal(onceExpanded.some(command => command.includes('scripts/test-reconcile-private-runtime-checkpoint.mjs')), false);
+assert.equal((fs.readFileSync('scripts/test-reusable-production-workflows.mjs', 'utf8')
+  .match(/^await import\('\.\/test-completed-private-runtime-admission\.mjs'\);$/gm) ?? []).length, 1);
+assert.equal((fs.readFileSync('scripts/test-completed-private-runtime-admission.mjs', 'utf8')
+  .match(/^import '\.\/test-reconcile-private-runtime-checkpoint\.mjs';$/gm) ?? []).length, 1);
 const actualOriginSourcePlan = buildSourceValidationPlan(actualOriginSourceScripts);
 const actualOriginSourceDeclared = expandSourceCommands(actualOriginSourceScripts, 'validate:source:checks');
 assert.deepEqual(actualOriginSourcePlan.preflight, [...SOURCE_BINDING_PREFLIGHT]);

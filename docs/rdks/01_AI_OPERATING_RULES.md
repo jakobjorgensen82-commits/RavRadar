@@ -1,3 +1,9 @@
+## 19. oktober — målrettet kontrol og ingen dobbelt gemmeprøve
+
+Ejeren har igen bedt om at skære unødige test fra for at komme frem til faktisk fungerende drift. Hver prøve skal afklare en konkret risiko eller opfylde et nødvendigt leveringskrav. Genbrug afsluttet evidens, undgå dubletter og fulde gentagelser uden en ny relevant ændring; korrekt beregning, hård databevarelse, gemning, sikker levering og præcis kilde-/native-/produktionskontrol bevares.
+
+Den omfattende B/S-afprøvning beholdes én gang gennem den eksisterende normale importkæde fra reusable-workflowmålet via completed-admission. Den nye last-mile-gruppe gentager den ikke; kildeplanen kræver både denne ene normale kalder og den uændrede direkte import. Den særskilte nationale opstart-/efterfølgerprøve er en sekventiel føraktiveringskontrol, ikke en ny prøve under hver vejrhentning. Lokalt PASS eller fjernede dubletter er fortsat ikke produktionsbevis.
+
 ## 19. oktober — lokal 4.0.584: ret producenten, bevar originalerne
 
 Den godkendte engangsstart må begynde uden gamle I/G-tilstande og uden replay før den nye reference, men kun efter autentificeret, permanent og særskilt bevaring af faktisk B, central S og offentlig generation. Et arkiv eller en lokator er ikke numerisk adgang, et selvopfundet tilstandspar eller tilladelse til at ommærke originale data. Nye timer og de efterfølgende almindelige kørsler skal bruge normale native-, kilde-, score-, databevarelses- og gemmekontroller.

@@ -317,6 +317,7 @@ En version må ikke afleveres, hvis projektets hukommelse stadig beskriver en ti
 Ved konflikt gælder: brugerens aktuelle instruktion > aktiv RDKS-beslutning > verificeret aktuel kodeadfærd > håndbog > changelog > gamle chats.
 
 ## Omkostningsbevidst testmatrix
+- Ejerens præcisering 19. oktober: skær dubletter og prøver uden konkret betydning for den aktuelle levering fra. Hver prøve skal afklare en reel risiko eller et nødvendigt leveringskrav; samme omfattende prøve må ikke køres gennem to normale indgange. Bevar korrekt beregning, databevarelse, gemning og deploy samt de krævede præcise kilde-/native-/produktionskontroller.
 - Under udvikling køres kun målrettede tests for den berørte kontrakt samt nødvendige versions- og RDKS-kontroller.
 - Den fulde validate:source skal bestå én gang på PR'ens eksakte head i GitHub. Lokal gentagelse er kun nødvendig ved bred/tværgående risiko, manglende CI eller konkret fejlevidens.
 - Almindelige rettelser deployes efter DEC-0148 som kode-only med eksakt genbrug af senest gyldige data og uden ekstern vejrhentning. Normal vejrhentning følger som et særskilt, tidsbegrænset forløb.

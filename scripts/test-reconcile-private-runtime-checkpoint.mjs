@@ -274,7 +274,12 @@ test('normal CURRENT B/S interruption reconciliation preserves whole pairs and r
     await assert.rejects(run(backend, 1, { checkpointVersionRequest: async (...args) => {
       if (!changed) { changed = true; backend.documents.get(S).version++; }
       return readers.checkpointVersionRequest(...args);
-    } }), /S_VERSION_CHANGED_BEFORE_PUBLISH/);
+    } }), error => {
+      assert.equal(error.code, 'PROTECTED_RAVSCORE_CHECKPOINT_REMOTE_ERROR');
+      assert.equal(error.cause?.code, 'ERR_ASSERTION');
+      assert.match(error.cause.message, /PAIRED_PUBLICATION_S_VERSION_CHANGED_BEFORE_PUBLISH/);
+      return true;
+    });
     assert.equal(changed, true); assert.deepEqual(backend.documents.get(S).payload, payload);
     assert.equal(backend.events.filter(x => x === 'S_CAS').length, casBefore);
   });
