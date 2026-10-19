@@ -1,5 +1,11 @@
 # RavRadar 4.0.508 – diagnostik af DMI-afvisning
 
+## Driftsopfølgning 19. oktober — normal levering og mindre lokalt dobbeltarbejde
+
+Uændret 4.0.584: Almindelig vejrhentning er faktisk leveret med ny offentlig generation omkring kl. 23.02 dansk tid. Det er ikke fuld DMI-/historikdækning eller bevis for autonom drift. PR674's tidligere private gemning/genoptagelse har bestået præcis Linux-kontrol og er kildeleveret; faktisk normal produktionsbrug er endnu åbent.
+
+Den nye lokale kandidat fører Copernicus-checkpointets genopbyggede donor direkte til eksisterende streng tretrinsgemning med særskilt base og fjerner en gentagen helhorisontskvalifikation i DMI's enkeltfilskald. Alle originale validatorer, fulde slutkontroller, journal-/commitregler og budgetter bevares. Ingen nye vejrdata, installation, aktivering, version, modelbinding, SQL-overgang, kildeprioritet eller geometri følger af den lokale rettelse. Præcis kildekontrol og produktionseffekt er åbne; cron holdes pauset. Den statiske håndbogskopi synkroniseres kun i sin ene eksisterende dokumentationsværdi.
+
 ## Driftsopfølgning 19. oktober — uændret 4.0.584
 
 Dette tillæg viderefører DEC-0249's genbrug af færdige beregninger; det er ikke en ny 4.0.508-udgivelse eller et versionsløft.

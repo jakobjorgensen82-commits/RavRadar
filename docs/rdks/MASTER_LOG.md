@@ -1,3 +1,9 @@
+## 19. oktober — almindelig levering gennemført; leverandørarbejde optimeres
+
+Den almindelige vejrhentning `39299413035/1` er faktisk leveret med nye vejrdata, B før S, 55+3-kontroller, Pages og særskilt offentlig kontrol den 19. oktober omkring kl. 23.02 dansk tid. Det er ikke bevis for fuld DMI-dækning, komplet historik eller selvstændig drift. PR674 er særskilt kildeleveret efter præcis Linux-kontrol; faktisk brug af dens tidligere gemning/genoptagelse mangler endnu.
+
+Den nye lokale leverandørrettelse fjerner dobbeltarbejde ved Copernicus-checkpoint og begrænser DMI's enkeltfilskvalifikation til filens egen operationelle time. De eksisterende strenge validatorer, fulde slutkontroller, originaler og tidsbudgetter bevares. Præcis kildekontrol og produktionseffekt for disse ændringer er åbne. Cron holdes pauset efter ejerens nyeste beslutning. Ingen ny version, scoreformel, modelbinding, SQL-overgang, kildeprioritet eller geometri; alle fem hovedmål er fortsat åbne. Se DEC-0249 og det private checkpoint for aktuel evidens. Ældre daterede afventninger er historik alene på de faktisk leverede punkter.
+
 ## 19. oktober — 4.0.584: genopretning leveret, færdigberegning skal kunne genbruges
 
 Samtaledelta: Ejeren ønsker at undgå ny vejrhentning og scoreberegning alene på grund af fejl i den efterfølgende levering. Den lokale rettelse flytter de fire eksisterende spec/create/seal/upload-trin frem og kobler valgfri `completed_stage_source` til den normale completed-runtime-vej. Original GCM-identitet, ægte parent-B/S, samme beregnings-/admin-/modelgrundlag og alle normale produktionsgates bevares. Ingen ny service, version, modelbinding, SQL eller leverandørbudgetter.

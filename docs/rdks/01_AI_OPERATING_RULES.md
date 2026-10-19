@@ -1,3 +1,9 @@
+## 19. oktober — almindelig levering gennemført; leverandørarbejde optimeres
+
+Den almindelige vejrhentning `39299413035/1` er faktisk leveret med nye vejrdata, B før S, 55+3-kontroller, Pages og særskilt offentlig kontrol den 19. oktober omkring kl. 23.02 dansk tid. Det er ikke bevis for fuld DMI-dækning, komplet historik eller selvstændig drift. PR674 er særskilt kildeleveret efter præcis Linux-kontrol; faktisk brug af dens tidligere gemning/genoptagelse mangler endnu.
+
+Den nye lokale leverandørrettelse fjerner dobbeltarbejde ved Copernicus-checkpoint og begrænser DMI's enkeltfilskvalifikation til filens egen operationelle time. De eksisterende strenge validatorer, fulde slutkontroller, originaler og tidsbudgetter bevares. Præcis kildekontrol og produktionseffekt for disse ændringer er åbne. Cron holdes pauset efter ejerens nyeste beslutning. Ingen ny version, scoreformel, modelbinding, SQL-overgang, kildeprioritet eller geometri; alle fem hovedmål er fortsat åbne. Se DEC-0249 og det private checkpoint for aktuel evidens. Ældre daterede afventninger er historik alene på de faktisk leverede punkter.
+
 ## 19. oktober — genbrug bestået databaseprøve ved uændrede input
 
 En faktisk bestået native PostgreSQL-prøve må genbruges på en testrettet efterfølger, selv om et senere trin i den oprindelige kildekontrol fejlede. Det kræver verificeret oprindelig kørsel, forsøg, job, step og kommando, uændrede faktiske databaseinput inklusive transitive/frosne Git-kilder samt samme observerede runner-/runtimeforudsætninger. En markeringsfil eller grøn enkeltstatus alene er ikke bevis. Ukendt evidens, ændrede input eller relevante senere fejl kræver en ny databaseprøve. Genbrug skal mærkes som genbrug med den oprindelige identitet; det er ikke en ny SQL-kørsel eller installation. Hele den præcise nye kildekontrol og de endnu ikke gennemførte nationale prøver bevares.

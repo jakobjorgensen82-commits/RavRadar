@@ -61,7 +61,9 @@ from lib.copernicus_current_donor_bank import (
     _advance_validated_copernicus_donor_bank,
     _project_validated_donor_shadow,
 )
-from lib.weather_acquisition_plan import build_current_acquisition_plan
+from lib.weather_acquisition_plan import (
+    build_current_acquisition_plan, read_current_acquisition_plan,
+)
 from lib.copernicus_target_identity import target_fingerprint
 from lib.current_operational_closure import _copernicus_state
 
@@ -412,6 +414,152 @@ def has_forbidden_safe_key(value: object) -> bool:
     return False
 
 
+def checkpoint_only_cli_transaction_regression(
+    destination: Path, replay_fixture: Path,
+) -> None:
+    """Replay the real CLI once, without acquisition work or a second rebuild."""
+    real_build = RUNNER_MODULE.build_copernicus_donor_bank
+    real_persist = RUNNER_MODULE.persist_source_stage_progress
+    real_prepare = RUNNER_MODULE._prepare_validated_json_snapshot
+    real_verify = RUNNER_MODULE._verify_prepared_json_snapshot
+    real_commit = RUNNER_MODULE._commit_verified_json_snapshot
+    real_remove = RUNNER_MODULE.remove_segment_journal
+    real_fsync = CURRENT_MODULE.os.fsync
+    for fail_second_write in (False, True):
+        folder = destination / ("failed-prepare" if fail_second_write else "complete")
+        shutil.copytree(replay_fixture, folder)
+        bank_path = folder / "copernicus-current-donor-bank.json"
+        shadow_path = folder / "shadow.json"
+        stage_path = folder / "source-stage.json"
+        journal_path = folder / "copernicus-current-segment-journal.json"
+        assert journal_path.exists()
+        before = {
+            path: path.read_bytes()
+            for path in (bank_path, shadow_path, stage_path, journal_path)
+        }
+        write(folder / "weather-current-acquisition-plan.json", build_current_acquisition_plan(
+            targets=[TARGET], production_reference_at=REFERENCE,
+            covered_pairs=[], source_input_hashes={"fixture": file_sha256(bank_path)},
+        ))
+        labels = {bank_path: "bank", shadow_path: "shadow", stage_path: "stage"}
+        events: list[str] = []
+        builds: list[dict] = []
+        persists: list[dict] = []
+        fsync_calls = [0]
+        write_failure = OSError("fixture checkpoint-only second prepared write failure")
+
+        def observe_build(*args, **kwargs):
+            base = kwargs["previous_bank"]
+            candidate = real_build(*args, **kwargs)
+            builds.append({
+                "base": base, "before": copy.deepcopy(base),
+                "candidate": candidate, "candidateBefore": copy.deepcopy(candidate),
+            })
+            return candidate
+
+        def observe_persist(**kwargs):
+            persists.append(kwargs)
+            return real_persist(**kwargs)
+
+        def observe_prepare(path, *args, **kwargs):
+            events.append("prepare-" + labels[path])
+            return real_prepare(path, *args, **kwargs)
+
+        def observe_verify(snapshot, **kwargs):
+            events.append("verify-" + labels[snapshot.destination])
+            return real_verify(snapshot, **kwargs)
+
+        def observe_commit(verified):
+            # All three exact snapshots must pass the actual verifier before
+            # any durable pointer is changed, and the journal still exists.
+            assert events[:6] == [
+                "prepare-bank", "prepare-shadow", "prepare-stage",
+                "verify-bank", "verify-shadow", "verify-stage",
+            ]
+            assert journal_path.exists()
+            events.append("commit-" + labels[verified.snapshot.destination])
+            return real_commit(verified)
+
+        def observe_remove(path):
+            events.append("remove-journal")
+            return real_remove(path)
+
+        def observe_fsync(descriptor):
+            real_fsync(descriptor)
+            fsync_calls[0] += 1
+            if fail_second_write and fsync_calls[0] == 2:
+                raise write_failure
+
+        command = [
+            str(RUNNER), "--targets", str(folder / "registry.json"),
+            "--authoritative-targets", str(folder / "targets.json"),
+            "--shadow", str(shadow_path), "--source-stage", str(stage_path),
+            "--report", str(folder / "safe-report.json"),
+            "--summary", str(folder / "safe-summary.txt"),
+            "--at", REFERENCE.isoformat().replace("+00:00", "Z"),
+            "--acquisition-at", (REFERENCE + timedelta(minutes=21)).isoformat().replace("+00:00", "Z"),
+            "--checkpoint-only",
+        ]
+        with (
+            patch.object(sys, "argv", command),
+            patch.dict(os.environ, {"GITHUB_OUTPUT": str(folder / "fixture-github-output.txt")}),
+            patch.object(RUNNER_MODULE, "build_copernicus_donor_bank", side_effect=observe_build) as build_spy,
+            patch.object(RUNNER_MODULE, "persist_source_stage_progress", side_effect=observe_persist),
+            patch.object(RUNNER_MODULE, "_prepare_validated_json_snapshot", side_effect=observe_prepare),
+            patch.object(RUNNER_MODULE, "_verify_prepared_json_snapshot", side_effect=observe_verify),
+            patch.object(RUNNER_MODULE, "_commit_verified_json_snapshot", side_effect=observe_commit),
+            patch.object(RUNNER_MODULE, "remove_segment_journal", side_effect=observe_remove),
+            patch.object(CURRENT_MODULE.os, "fsync", side_effect=observe_fsync),
+            patch("lib.weather_acquisition_plan.read_current_acquisition_plan", wraps=read_current_acquisition_plan) as plan_spy,
+            patch.object(RUNNER_MODULE, "select_source_order_admissible_records", wraps=RUNNER_MODULE.select_source_order_admissible_records) as selection_spy,
+        ):
+            if fail_second_write:
+                try:
+                    RUNNER_MODULE.main()
+                except OSError as error:
+                    assert error is write_failure
+                else:
+                    raise AssertionError("Checkpoint-only prepared write failure must remain fatal")
+            else:
+                assert RUNNER_MODULE.main() == 0
+        assert build_spy.call_count == 1, "checkpoint-only rebuilt its donor generation"
+        assert plan_spy.call_count == 0, "checkpoint-only read an acquisition scheduling hint"
+        assert selection_spy.call_count == 0, "checkpoint-only repeated acquisition preselection"
+        assert len(persists) == 1
+        built = builds[0]
+        assert built["base"] is not built["candidate"]
+        assert built["base"] and built["candidate"]
+        assert persists[0]["donor_state"] is built["base"]
+        assert persists[0]["validated_donor_candidate"] is built["candidate"]
+        assert built["candidate"] == built["candidateBefore"]
+        assert not list(folder.glob(".*.prepared-*.tmp"))
+        if fail_second_write:
+            assert events == ["prepare-bank", "prepare-shadow"]
+            assert fsync_calls == [2]
+            assert all(path.read_bytes() == payload for path, payload in before.items())
+            assert built["base"] == built["before"]
+        else:
+            assert events == [
+                "prepare-bank", "prepare-shadow", "prepare-stage",
+                "verify-bank", "verify-shadow", "verify-stage",
+                "commit-bank", "commit-shadow", "commit-stage", "remove-journal",
+            ]
+            assert not journal_path.exists()
+            assert built["base"] == built["candidate"]
+            committed_bank = load_copernicus_donor_bank(bank_path, targets=[TARGET])
+            assert committed_bank == built["candidate"]
+            committed_shadow = json.loads(shadow_path.read_text(encoding="utf-8"))
+            committed_stage = validate_source_stage_progress(
+                json.loads(stage_path.read_text(encoding="utf-8")),
+                registry=json.loads((folder / "registry.json").read_text(encoding="utf-8")),
+                shadow=committed_shadow, target_identities={TARGET["partId"]: TARGET},
+                shadow_sha256=file_sha256(shadow_path),
+            )
+            assert committed_stage["missingPairCount"] == 0
+            assert len(committed_stage["attempts"]) >= 1
+    print("OK: checkpoint-only CLI reuses one strict donor candidate and preserves receipts on prepared-write failure.")
+
+
 with tempfile.TemporaryDirectory(prefix="ravradar-cop-source-stage-") as raw_root:
     root = Path(raw_root)
 
@@ -701,6 +849,9 @@ with tempfile.TemporaryDirectory(prefix="ravradar-cop-source-stage-") as raw_roo
         "dmiVerifiedPairCount": 161,
     })
     write(segmented / "registry.json", segmented_registry)
+    checkpoint_only_cli_transaction_regression(
+        root / "checkpoint-only-cli-transaction", segmented,
+    )
     replayed_run = run_runner(
         segmented,
         None,

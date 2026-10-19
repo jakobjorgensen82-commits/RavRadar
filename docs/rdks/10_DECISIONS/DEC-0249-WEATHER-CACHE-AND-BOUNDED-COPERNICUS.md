@@ -1,5 +1,15 @@
 # DEC-0249 – fortsæt fra rigtig vejrpakke og gem kortere Copernicus-kald
 
+## Tillæg 2026-10-19 — fjern gentaget lokal kvalifikation, bevar tidsgrænserne
+
+Den almindelige vejrhentning er nu faktisk leveret, men leverandørernes indre fuldstændighed er ikke dermed lukket. De allerede gemte normale rapporter afgrænser DMI til ikke påbegyndte officielle havtimer og Copernicus til timeout under lokal samling af gemte segmenter. Der er ikke påvist en generel DMI-datafejl eller en begrundelse for at hæve leverandørbudgetterne. Historiske løsninger fra september kræver netop genbrug af en valideret kandidat og samme fulde gemmetransaktion frem for gentaget genopbygning.
+
+Den lokale Copernicus-kalder bevarer den autentificerede base som et andet objekt end den nye kandidat. Checkpoint-only går direkte fra normal genopbygning til den eksisterende `consolidate_durable_segment_progress`, hvis strenge kandidatvalidering, hele projektionslighed, normale udvælgelse og tre præcist verificerede snapshots er uændrede. Commit er fortsat bank → shadow → stage; først derefter må segmentjournalen fjernes. Den tidligere baseline-genbrugsgren og almindelig acquisition-/refresh-adfærd bevares. Faste lokale fasemarkører viser kun fase og forløbet tid, ikke rå data.
+
+DMI's per-asset-kalder forbruger kun `verifiedPairSources`. En eksakt UTC-heltimereference og et gyldigt asset inden for T..T+117 tillader derfor samme uændrede kvalifikator på netop assetets ene time. Alle andre input følger den gamle fuldhorisontvej, inklusive afslag og nul operationelle par for private støttetimer. Fuld checkpoint- og slutattestation ændres ikke. Prøven sammenligner hele projektionen, ægte kvalifikatorkald, ændret valgt original, ugyldig kilde, tids-/gitter-/punktfejl og referencegrænser.
+
+Dette er lokal kildeforberedelse på uændret 4.0.584. Præcis samlet Linux-kontrol, sikker levering og målt produktionseffekt er fortsat åbne; færre kvalifikationer er ikke i sig selv en hastighedsgaranti. C/I/T, udstedte migrationer, scoreformel, kildeprioritet, administratorpunkter, geometri, databevarelse og budgetter bevares. Cron holdes pauset efter ejerens nyeste beslutning. PR674's tidligere gemning er allerede kildeleveret; dens normale produktionsbrug mangler fortsat bevis.
+
 ## Tillæg 2026-10-19 — gem den færdige almindelige beregning før sen levering
 
 **Valgt; SOURCE_PREPARED på uændret 4.0.584.** En sen leveringsfejl må ikke i sig selv kræve ny leverandørhentning eller scoreberegning, når et autentificeret, kompatibelt færdigt resultat findes. De fire eksisterende normale trin for pakkespecifikation, atomisk B-bygning, GCM-forsegling og upload flyttes umiddelbart efter vellykket beregning og før de sene artifactkontroller. Den eksisterende kryptering, nøgle, GitHub-artifactvej og éndagsopbevaring genbruges. Tidlig gemning er alene privat transport, aldrig central B/S-publicering, SQL-installation eller offentlig frigivelse.
