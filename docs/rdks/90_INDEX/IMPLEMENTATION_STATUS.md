@@ -1,3 +1,7 @@
+## 19. oktober — genbrug bestået databaseprøve ved uændrede input
+
+Den ægte native PostgreSQL-prøve for 4.0.584 bestod, inklusive den nye append-only migration på syntetiske data. Den efterfølgende kildekontrol fejlede i syv konkrete test-/værtsårsager: historiske kildepins og kildepositioner, manglende almindelige NULL-defaults i udskårne testfixtures samt forældet kalder-/timeoutregistrering. Opfølgningen retter disse samlet, bevarer de gamle assertions på deres præcise historiske input og tilføjer helkilde- og mutationskontrol af den nye arkiverede opstartsvej. Ingen produktkode, SQL, scoreformel, modelbinding, adminpunkter eller geometri ændres i denne testopfølgning. Præcis samlet kildekontrol, national kapacitet, faktisk installation, ny B/S, Pages og almindelige efterfølgere er fortsat åbne. Alle fem hovedmål er åbne; den offentlige baseline er fortsat senest verificeret 4.0.581. Det private checkpoint ejer kørselsnumre, fejlpartition og kvitteringer.
+
 ## 19. oktober — lokal 4.0.584: ret producenten, bevar originalerne
 
 DELVIST IMPLEMENTERET: Begge reproducerede producentfejl er rettet lokalt; seks målrettede prøver består. Ægte ny model-/lagringsbinding og en ny append-only 20261019060000-migration er genereret lokalt fra hele 4.0.584-kilden efter normal versionssynk. Gamle SQL-filer, originaler, administratorpunkter og geometri bevares.

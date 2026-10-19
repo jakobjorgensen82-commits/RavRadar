@@ -7,6 +7,7 @@ import path from 'node:path';
 import test from 'node:test';
 import { writeDmiForecastFileAtomic, isDmiForecastCheckpointStopUnproved } from './lib/dmi-forecast-file.mjs';
 import { withFrozenNative0600TestSource } from './run-frozen-native0600-source-targets.mjs';
+import { withFrozenEstablishedNativeCurrentOriginSourceTarget } from './run-frozen-established-native-current-origin-source-targets.mjs';
 
 const producerPath = new URL('./update-weather.mjs', import.meta.url);
 const sourceText = async file => {
@@ -742,7 +743,11 @@ test('47 baseline commands plus genuine OLD, NEW native, epoch and pure diagnost
 });
 
 test('current frozen routes and warmup checks reach normal checkpoint integration exactly once', async () => {
-  const scripts = JSON.parse(await fs.readFile(new URL('../package.json', import.meta.url), 'utf8')).scripts;
+  const actualScripts = JSON.parse(await fs.readFile(new URL('../package.json', import.meta.url), 'utf8')).scripts;
+  // Retain the entire genuine140000 command oracle on its real frozen input,
+  // then separately qualify how the current source reaches those same targets.
+  const scripts = await withFrozenEstablishedNativeCurrentOriginSourceTarget('builder', async sourceRoot =>
+    JSON.parse(await fs.readFile(path.join(sourceRoot,'package.json'),'utf8')).scripts);
   const { expandSourceCommands } = await import('./validate-source-once.mjs');
   const commands = expandSourceCommands(scripts, 'validate:source:checks');
   for (const check of [
@@ -776,6 +781,36 @@ test('current frozen routes and warmup checks reach normal checkpoint integratio
   assert.equal(invoked.filter(file => file === 'scripts/test-weather-update-entrypoint.mjs').length, 0);
   const grouped = await sourceText(new URL('./test-dmi-forecast-file.mjs', import.meta.url));
   assert.equal(grouped.split("await import('./test-weather-update-entrypoint.mjs');").length, 2);
+  const actualCommands=expandSourceCommands(actualScripts,'validate:source:checks');
+  const historicalTargets={
+    'model-imports':'scripts/test-model-source-imports.mjs',
+    builder:'scripts/build-established-native-current-origin-successor.mjs',
+    successor:'scripts/test-established-native-current-origin-successor.mjs',
+    'postgres-source':'scripts/test-established-native-current-origin-postgres-source.mjs',
+    followers:'scripts/test-established-native-current-origin-followers.mjs',
+  };
+  const inventory=JSON.parse(await fs.readFile(new URL('./lib/established-native-current-origin-source-target-inventory.json',import.meta.url),'utf8'));
+  assert.deepEqual(inventory.targets,historicalTargets);
+  for(const group of Object.keys(historicalTargets))
+    assert.equal(actualCommands.filter(command=>command===
+      'node scripts/run-frozen-established-native-current-origin-source-targets.mjs '+group).length,1,
+    'Each unchanged historical assertion runs once in its genuine source host');
+  for(const target of Object.values(historicalTargets))
+    assert.equal(actualCommands.flatMap(command=>command.split(' ')).includes(target),false,
+      'Old issued140000 targets must not run against an unqualified current source');
+  for(const check of ['node --test scripts/test-last-mile-enclosure-current-model-imports.mjs scripts/test-code-only-public-coastal-registry-stage.mjs',
+    'node scripts/check-account-assistant-issued-source.mjs','node scripts/check-native-identity-frozen-i71-source.mjs',
+    'node scripts/test-current-grid-prewrite-diagnostic.mjs',
+    'node scripts/run-frozen-native0600-source-targets.mjs native',
+    'node scripts/run-frozen-native0600-source-targets.mjs epoch',
+    'node scripts/run-frozen-native0600-source-targets.mjs install',
+    'node scripts/run-frozen-native0600-source-targets.mjs readiness',
+    ...expandSourceCommands(actualScripts,'test:last-mile-enclosure'),
+    ...expandSourceCommands(actualScripts,'test:current-memory-warmup')])
+    assert.equal(actualCommands.filter(command=>command===check).length,1);
+  const actualInvoked=actualCommands.flatMap(command=>command.split(' '));
+  assert.equal(actualInvoked.filter(file=>file==='scripts/test-dmi-forecast-file.mjs').length,1);
+  assert.equal(actualInvoked.filter(file=>file==='scripts/test-weather-update-entrypoint.mjs').length,0);
 });
 
 test('actual DMI queue propagates an uncertain real checkpoint but preserves proved safe failure handling', async t => {

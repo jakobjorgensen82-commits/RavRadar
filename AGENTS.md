@@ -1,3 +1,7 @@
+## 19. oktober — genbrug bestået databaseprøve ved uændrede input
+
+En faktisk bestået native PostgreSQL-prøve må genbruges på en testrettet efterfølger, selv om et senere trin i den oprindelige kildekontrol fejlede. Det kræver verificeret oprindelig kørsel, forsøg, job, step og kommando, uændrede faktiske databaseinput inklusive transitive/frosne Git-kilder samt samme observerede runner-/runtimeforudsætninger. En markeringsfil eller grøn enkeltstatus alene er ikke bevis. Ukendt evidens, ændrede input eller relevante senere fejl kræver en ny databaseprøve. Genbrug skal mærkes som genbrug med den oprindelige identitet; det er ikke en ny SQL-kørsel eller installation. Hele den præcise nye kildekontrol og de endnu ikke gennemførte nationale prøver bevares.
+
 ## 19. oktober — lokal 4.0.584: ret producenten, bevar originalerne
 
 Ejerens aktuelle beslutning tillader nul gammel aktiv strøm-/scorehistorik ved den afgrænsede nye start; gamle originaler skal bevares permanent og særskilt. Den private vejrpakke B, den faktisk centrale beregningstilstand S og den offentlige generation kan være forskellige og må ikke udlægges som et sammenhørende sæt. Ingen gamle I/G-tilstande eller timer før den nye reference må genindføres som aktiv historik.

@@ -312,6 +312,8 @@ const runPublicPartProjection = Function(
      const feggesundSourcesByTime = new Map();
      const liveCurrentPilot = pilot;
      const componentInputs = {};
+     // This existing fixture follows the ordinary, non-archive call path.
+     const archivedRestartInputs = null;
      if (replay) {
        const replayStartAt = productionAt;
        const protectedSameRunDmiRetentions = {current: {SAME_VALUES: 0, DIFFERENT_VALUES: 0},

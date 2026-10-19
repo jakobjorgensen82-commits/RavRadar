@@ -1,3 +1,7 @@
+## 19. oktober — genbrug bestået databaseprøve ved uændrede input
+
+En faktisk bestået native PostgreSQL-prøve må genbruges på en testrettet efterfølger, selv om et senere trin i den oprindelige kildekontrol fejlede. Det kræver verificeret oprindelig kørsel, forsøg, job, step og kommando, uændrede faktiske databaseinput inklusive transitive/frosne Git-kilder samt samme observerede runner-/runtimeforudsætninger. En markeringsfil eller grøn enkeltstatus alene er ikke bevis. Ukendt evidens, ændrede input eller relevante senere fejl kræver en ny databaseprøve. Genbrug skal mærkes som genbrug med den oprindelige identitet; det er ikke en ny SQL-kørsel eller installation. Hele den præcise nye kildekontrol og de endnu ikke gennemførte nationale prøver bevares.
+
 ## 19. oktober — målrettet kontrol og ingen dobbelt gemmeprøve
 
 Ejeren har igen bedt om at skære unødige test fra for at komme frem til faktisk fungerende drift. Hver prøve skal afklare en konkret risiko eller opfylde et nødvendigt leveringskrav. Genbrug afsluttet evidens, undgå dubletter og fulde gentagelser uden en ny relevant ændring; korrekt beregning, hård databevarelse, gemning, sikker levering og præcis kilde-/native-/produktionskontrol bevares.

@@ -57,7 +57,7 @@ test('normal PART production plans on current central identity and passes the pr
     deployedDmiBulkCache: {}, liveCurrentPilot: {}, previous: {}, previousPrivateCandidateGRuntime: null,
     coastalPointStateInjections: {}, ravScoreCheckpoint: { loaded: false },
     historicalWaveInputTransition: null, stateEpochView: null,
-    currentFamilyColdStart: null, coldInputs: null,
+    currentFamilyColdStart: null, coldInputs: null, archivedWeatherRestartView: null,
     readEstablishedNativeCurrentOrigin: async contract => {
       assert.equal(planned, true, 'fixed origin read follows prepared normal inputs');
       assert.equal(contract, context.coastalPartsContract);
@@ -112,6 +112,7 @@ test('normal PART production plans on current central identity and passes the pr
       assert.equal(args[14], waterSourceRoutingContext);
       assert.equal(args[15], context.persistedDmiPartRows);
       assert.equal(args[18], null, 'ordinary weather does not request a new epoch');
+      assert.equal(args[21], null, 'ordinary weather does not request an archive-isolated restart');
       assert.equal(args[16], context.historicalDmiBulkCache);
       scored = true; return { completeLocalBuild: true };
     },
@@ -185,7 +186,7 @@ test('scalar planning and public current scoring use their own exact applicabili
   const scoreEnd = source.indexOf('\n      if (routedWater.diagnostic)', scoreStart);
   assert.ok(planningEnd > start && scoreStart >= 0 && scoreEnd > scoreStart);
   const common = { path, process: ordinaryProcess, generatedAt: at, liveCurrentPilot: null,
-    currentFamilyColdStart: null, coldInputs: null,
+    currentFamilyColdStart: null, coldInputs: null, archivedWeatherRestartView: null,
     applyVerifiedWaterSourceRoutingToPartHourly, assertDmiPartHourlyGridSamplingApplicable,
     verifiedIntegratedPartHourly, verifiedBulkCurrent, dmiExpectedIdentityForPart,
     mergeActiveNativeLiveCurrentPilotIntoRecord,
@@ -447,9 +448,9 @@ test('epoch scalar bridge reaches actual score/preflight/proxy and packed121 row
     // This source-boundary seam starts AFTER genuine archive/view admission.
     // A sentinel here exercises only route selection, not a fake epoch brand.
     Function('stateEpochView', 'planningRecords', 'weatherComponents', 'withoutCurrent',
-      'currentFamilyColdStart', 'currentFamilyColdStartScalarRecord', setup)(
+      'currentFamilyColdStart', 'currentFamilyColdStartScalarRecord', 'archivedWeatherRestartView', setup)(
       epoch ? {} : null, planningRecords, weatherComponents, normalDmiRecord.withoutCurrent,
-      null, currentFamilyColdStartScalarRecord);
+      null, currentFamilyColdStartScalarRecord, null);
     assert.equal(planningRecords.size, 0, 'the ordinary bounded planning map is still released');
     return weatherComponents.inputs;
   };
