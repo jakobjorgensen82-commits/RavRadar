@@ -94,5 +94,71 @@
     "before": "'cohort': {'path': 'scripts/run-owned-dmi-grib-save.py', 'sha256': 'd527139f9e0d7e427c2b8b939b4c262f1c2316bfd0852889442fc16f1fac81d9'}",
     "after": "'cohort': {'path': 'scripts/run-owned-dmi-grib-save.py', 'sha256': '093712ab8b16e9e42201a267f1ad70d743b29e58432d5c84bf11735ddbd02af2'}",
     "count": 1
+  },
+  {
+    "path": "scripts/fixtures/source19-terminal-proof-inputs-v2/current-cohort-v1/driver.source.txt",
+    "before": "def source_terminal_first_exception(previous, error, phase, callsite=None):\n",
+    "after": "SOURCE_TERMINAL_TRANSPORT_CATEGORIES = [\"ABSOLUTE_REQUEST_REFUSED\",\"CACHE_WRITE_OR_ROUTE_REFUSED\",\"CONNECT_ORIGIN_REFUSED\",\"LOOPBACK_HANDLER_FAILED\",\"PROTOCOL_CONTRACT_REFUSED\",\"TLS_HOST_REFUSED\",\"TLS_TRANSPORT_FAILED\",\"UNEXPECTED_ORIGIN_ROUTE\",\"UNEXPECTED_ROUTE_OR_WRITE\",\"WRITE_METHOD_REFUSED\",\"UNKNOWN\"]\nSOURCE_TERMINAL_TRANSPORT_INNER_CODES = [\"ADMIN_KEY_REFUSED\",\"ADMIN_QUERY_INVALID\",\"ADMIN_SELECTOR_INVALID\",\"CACHE_RESTORE_REQUEST_INVALID\",\"CACHE_SCOPE_REFUSED\",\"DB_READBACK_BODY_REQUIRED\",\"EXACT_B_OBJECT_CHANGED\",\"EXACT_B_OBJECT_REQUIRED\",\"FIXTURE_BODY_BOUND\",\"FIXTURE_BODY_SIZE_INVALID\",\"FIXTURE_BODY_TRUNCATED\",\"FIXTURE_SERVER_CLOSE_UNPROVED\",\"PUBLIC_MANIFEST_QUERY_REFUSED\",\"SOURCE_TERMINAL_ACTUAL_SDK_ARCHIVE_REQUIRED\",\"SOURCE_TERMINAL_CATALOG_COLLECTION_REFUSED\",\"SOURCE_TERMINAL_CATALOG_QUERY_REFUSED\",\"SOURCE_TERMINAL_EXACT_GRIB_ROUTE_REFUSED\",\"SOURCE_TERMINAL_REAL_RAW_ORIGINALS_REQUIRED\",\"SOURCE_TERMINAL_SDK_ARCHIVED_BYTES_CHANGED\",\"SOURCE_TERMINAL_SDK_ARCHIVE_BOUND\",\"SOURCE_TERMINAL_SDK_ARCHIVE_DIRECTORY\",\"SOURCE_TERMINAL_SDK_ARCHIVE_INVENTORY\",\"SOURCE_TERMINAL_SDK_ARCHIVE_PATH\",\"SOURCE_TERMINAL_SDK_CIPHER_INVENTORY\",\"SOURCE_TERMINAL_SDK_CREATE_COLLISION\",\"SOURCE_TERMINAL_SDK_FINALIZE_IDENTITY\",\"SOURCE_TERMINAL_SDK_FINALIZE_ORDER\",\"SOURCE_TERMINAL_SDK_KEY_REQUIRED\",\"SOURCE_TERMINAL_SDK_PUT_HEADERS\",\"SOURCE_TERMINAL_SDK_PUT_ORDER\",\"SOURCE_TERMINAL_SDK_SAVE_SCOPE_REFUSED\",\"SOURCE_TERMINAL_SDK_VERSION_REQUIRED\",\"SOURCE_TERMINAL_SDK_WORKING_FILE\",\"SOURCE_TERMINAL_SYNTHETIC_GRIB_CHANGED\",\"SYNTHETIC_CACHE_AUTH_REQUIRED\",\"SYNTHETIC_GITHUB_AUTH_REQUIRED\",\"SYNTHETIC_JOBS_QUERY_REQUIRED\",\"SYNTHETIC_SUPABASE_AUTH_REQUIRED\",\"UNKNOWN\"]\n\n\n# Test observation only. These functions never grant transport/SAVE authority.\ndef source_terminal_first_transport_failure(previous, category, error=None, callsite=None):\n    if previous is not None:\n        return previous\n    inner = None\n    if error is not None:\n        projected = source_terminal_exception_projection(error, 'SDK_AND_ORIGINALS', callsite)\n        inner = {key: projected[key] for key in ('code', 'exceptionType', 'osError', 'callsite')}\n        inner['code'] = 'UNKNOWN'\n        try:\n            text = str(error)\n            if type(error) is AssertionError and text in SOURCE_TERMINAL_TRANSPORT_INNER_CODES:\n                inner['code'] = text\n        except BaseException:\n            pass  # Never replace the original exception with its observation.\n    return {'category': category if type(category) is str and category in SOURCE_TERMINAL_TRANSPORT_CATEGORIES else 'UNKNOWN',\n        'inner': inner}\n\n\ndef source_terminal_note_transport_failure(owner, category, error=None):\n    # Called under the SAME existing lock, directly before the failure append.\n    # Only the terminal fixture has this field; all other fixture cases are unchanged.\n    if not hasattr(owner, 'terminal_transport_first') or owner.terminal_transport_first is not None:\n        return\n    try:\n        site = source_terminal_exception_callsite(error, ROOT, owner.terminal_source_rows) if error is not None else None\n        first = source_terminal_first_transport_failure(None, category, error, site)\n    except BaseException:\n        first = source_terminal_first_transport_failure(None, category)\n    owner.terminal_transport_first = first\n\n\ndef source_terminal_transport_observation(first, failures, phase):\n    # The caller holds transport.lock. This is a bounded snapshot, not admission.\n    count = len(failures)\n    return {'phase': phase if phase in ('SDK_AND_ORIGINALS', 'CLEANUP') else 'UNKNOWN',\n        'count': min(count, 65535), 'overflow': count > 65535,\n        'first': None if count == 0 else first if first is not None else {'category': 'UNKNOWN', 'inner': None}}\n\n\ndef source_terminal_first_exception(previous, error, phase, callsite=None):\n",
+    "count": 1
+  },
+  {
+    "path": "scripts/fixtures/source19-terminal-proof-inputs-v2/current-cohort-v1/driver.source.txt",
+    "before": "            def fixed_failure(self, code):\n                with owner.lock:\n                    owner.failures.append(code)\n",
+    "after": "            def fixed_failure(self, code, error=None):\n                with owner.lock:\n                    source_terminal_note_transport_failure(owner, code, error)\n                    owner.failures.append(code)\n",
+    "count": 1
+  },
+  {
+    "path": "scripts/fixtures/source19-terminal-proof-inputs-v2/current-cohort-v1/driver.source.txt",
+    "before": "                except (ssl.SSLError, ConnectionError, OSError):\n                    with owner.lock:\n                        owner.failures.append('TLS_TRANSPORT_FAILED')\n",
+    "after": "                except (ssl.SSLError, ConnectionError, OSError) as error:\n                    with owner.lock:\n                        source_terminal_note_transport_failure(owner, 'TLS_TRANSPORT_FAILED', error)\n                        owner.failures.append('TLS_TRANSPORT_FAILED')\n",
+    "count": 1
+  },
+  {
+    "path": "scripts/fixtures/source19-terminal-proof-inputs-v2/current-cohort-v1/driver.source.txt",
+    "before": "                except (AssertionError, ValueError, KeyError, TypeError, OSError):\n                    self.fixed_failure('PROTOCOL_CONTRACT_REFUSED')\n",
+    "after": "                except (AssertionError, ValueError, KeyError, TypeError, OSError) as error:\n                    self.fixed_failure('PROTOCOL_CONTRACT_REFUSED', error)\n",
+    "count": 1
+  },
+  {
+    "path": "scripts/fixtures/source19-terminal-proof-inputs-v2/current-cohort-v1/driver.source.txt",
+    "before": "                with owner.lock:\n                    owner.failures.append('LOOPBACK_HANDLER_FAILED')\n",
+    "after": "                with owner.lock:\n                    source_terminal_note_transport_failure(owner, 'LOOPBACK_HANDLER_FAILED', sys.exc_info()[1])\n                    owner.failures.append('LOOPBACK_HANDLER_FAILED')\n",
+    "count": 1
+  },
+  {
+    "path": "scripts/fixtures/source19-terminal-proof-inputs-v2/current-cohort-v1/driver.source.txt",
+    "before": "        self.uploads = {}\n        self.working_root = None\n",
+    "after": "        self.uploads = {}\n        self.working_root = None\n        self.terminal_transport_first = None\n        self.terminal_source_rows = ()\n",
+    "count": 1
+  },
+  {
+    "path": "scripts/fixtures/source19-terminal-proof-inputs-v2/current-cohort-v1/driver.source.txt",
+    "before": "        transport = TerminalProtocolFixture(fixtures, protocol, cert, key)\n",
+    "after": "        transport = TerminalProtocolFixture(fixtures, protocol, cert, key)\n        transport.terminal_source_rows = getattr(self, 'native_observer_source_rows', ())\n",
+    "count": 1
+  },
+  {
+    "path": "scripts/fixtures/source19-terminal-proof-inputs-v2/current-cohort-v1/driver.source.txt",
+    "before": "        disposition_observation = None\n        first_test_failure = None; first_test_exception = None; observer_phase = 'SETUP'\n",
+    "after": "        disposition_observation = None\n        transport_observation = None\n        first_test_failure = None; first_test_exception = None; observer_phase = 'SETUP'\n",
+    "count": 1
+  },
+  {
+    "path": "scripts/fixtures/source19-terminal-proof-inputs-v2/current-cohort-v1/driver.source.txt",
+    "before": "            observer_phase = 'SDK_AND_ORIGINALS'\n            with transport.lock:\n                self.assertEqual(transport.failures, [])\n",
+    "after": "            observer_phase = 'SDK_AND_ORIGINALS'\n            with transport.lock:\n                transport_observation = source_terminal_transport_observation(transport.terminal_transport_first, transport.failures, observer_phase)\n                self.assertEqual(transport.failures, [])\n",
+    "count": 1
+  },
+  {
+    "path": "scripts/fixtures/source19-terminal-proof-inputs-v2/current-cohort-v1/driver.source.txt",
+    "before": "            with transport.lock:\n                safe_uploads = {role: {'phase': row.get('phase'), 'archiveBytes': row.get('bytes'),\n",
+    "after": "            with transport.lock:\n                if transport_observation is None:\n                    transport_observation = source_terminal_transport_observation(transport.terminal_transport_first, transport.failures, 'CLEANUP')\n                safe_uploads = {role: {'phase': row.get('phase'), 'archiveBytes': row.get('bytes'),\n",
+    "count": 1
+  },
+  {
+    "path": "scripts/fixtures/source19-terminal-proof-inputs-v2/current-cohort-v1/driver.source.txt",
+    "before": "                'dispositionObservation': disposition_observation,\n",
+    "after": "                'dispositionObservation': disposition_observation,\n                'transportObservation': transport_observation,\n",
+    "count": 1
   }
 ]

@@ -237,7 +237,7 @@ def current_cohort_inputs(data, files):
         raise ValueError('SOURCE_CURRENT_COHORT_BASELINE')
     driver = source_current_cohort_read(ROOT, 'scripts/fixtures/source19-terminal-proof-inputs-v2/current-cohort-v1/driver.source.txt')
     inverse_raw = source_current_cohort_read(ROOT, 'scripts/fixtures/source19-terminal-proof-inputs-v2/current-cohort-v1/driver-inverse.json')
-    if digest(driver) != '83a7c6bbb311cd2113c25d74deddb24663c5857d713a3ef12e4675ea3a31d0c4' or digest(inverse_raw) != '52970080ebe17df755ff6eb3bb28c09f434379cf84738c66e9b6fa79858075a7':
+    if digest(driver) != '8d6667525b0f60cc498f715bfa184d2fd8e2e15b2ab01ad74f4f09507d06032e' or digest(inverse_raw) != 'b44548dcd24da86bbcc3b87ca6939fad108c25e69c0b1ed530dce5da6abc6cba':
         raise ValueError('SOURCE_CURRENT_COHORT_DRIVER')
     inverse = driver.decode('utf-8')
     for hunk in reversed(json.loads(inverse_raw)):
@@ -288,10 +288,45 @@ def bounded_disposition_observation(value):
         raise ValueError('SOURCE_BANK_DISPOSITION_CLOCK')
 
 
+SOURCE_TERMINAL_TRANSPORT_CATEGORIES = ["ABSOLUTE_REQUEST_REFUSED","CACHE_WRITE_OR_ROUTE_REFUSED","CONNECT_ORIGIN_REFUSED","LOOPBACK_HANDLER_FAILED","PROTOCOL_CONTRACT_REFUSED","TLS_HOST_REFUSED","TLS_TRANSPORT_FAILED","UNEXPECTED_ORIGIN_ROUTE","UNEXPECTED_ROUTE_OR_WRITE","WRITE_METHOD_REFUSED","UNKNOWN"]
+SOURCE_TERMINAL_TRANSPORT_INNER_CODES = ["ADMIN_KEY_REFUSED","ADMIN_QUERY_INVALID","ADMIN_SELECTOR_INVALID","CACHE_RESTORE_REQUEST_INVALID","CACHE_SCOPE_REFUSED","DB_READBACK_BODY_REQUIRED","EXACT_B_OBJECT_CHANGED","EXACT_B_OBJECT_REQUIRED","FIXTURE_BODY_BOUND","FIXTURE_BODY_SIZE_INVALID","FIXTURE_BODY_TRUNCATED","FIXTURE_SERVER_CLOSE_UNPROVED","PUBLIC_MANIFEST_QUERY_REFUSED","SOURCE_TERMINAL_ACTUAL_SDK_ARCHIVE_REQUIRED","SOURCE_TERMINAL_CATALOG_COLLECTION_REFUSED","SOURCE_TERMINAL_CATALOG_QUERY_REFUSED","SOURCE_TERMINAL_EXACT_GRIB_ROUTE_REFUSED","SOURCE_TERMINAL_REAL_RAW_ORIGINALS_REQUIRED","SOURCE_TERMINAL_SDK_ARCHIVED_BYTES_CHANGED","SOURCE_TERMINAL_SDK_ARCHIVE_BOUND","SOURCE_TERMINAL_SDK_ARCHIVE_DIRECTORY","SOURCE_TERMINAL_SDK_ARCHIVE_INVENTORY","SOURCE_TERMINAL_SDK_ARCHIVE_PATH","SOURCE_TERMINAL_SDK_CIPHER_INVENTORY","SOURCE_TERMINAL_SDK_CREATE_COLLISION","SOURCE_TERMINAL_SDK_FINALIZE_IDENTITY","SOURCE_TERMINAL_SDK_FINALIZE_ORDER","SOURCE_TERMINAL_SDK_KEY_REQUIRED","SOURCE_TERMINAL_SDK_PUT_HEADERS","SOURCE_TERMINAL_SDK_PUT_ORDER","SOURCE_TERMINAL_SDK_SAVE_SCOPE_REFUSED","SOURCE_TERMINAL_SDK_VERSION_REQUIRED","SOURCE_TERMINAL_SDK_WORKING_FILE","SOURCE_TERMINAL_SYNTHETIC_GRIB_CHANGED","SYNTHETIC_CACHE_AUTH_REQUIRED","SYNTHETIC_GITHUB_AUTH_REQUIRED","SYNTHETIC_JOBS_QUERY_REQUIRED","SYNTHETIC_SUPABASE_AUTH_REQUIRED","UNKNOWN"]
+
+
+def bounded_transport_observation(value, files, status):
+    if value is None:
+        return
+    if (type(value) is not dict or set(value) != {'phase', 'count', 'overflow', 'first'}
+            or value['phase'] not in ('SDK_AND_ORIGINALS', 'CLEANUP', 'UNKNOWN')
+            or type(value['count']) is not int or not 0 <= value['count'] <= 65535
+            or type(value['overflow']) is not bool or value['overflow'] and value['count'] != 65535
+            or value['count'] == 0 and value['first'] is not None
+            or value['count'] > 0 and status != 'FAIL'):
+        raise ValueError('SOURCE_BANK_TRANSPORT_OBSERVATION_SHAPE')
+    first = value['first']
+    if value['count'] == 0:
+        return
+    if (type(first) is not dict or set(first) != {'category', 'inner'}
+            or first['category'] not in SOURCE_TERMINAL_TRANSPORT_CATEGORIES):
+        raise ValueError('SOURCE_BANK_TRANSPORT_OBSERVATION_VALUE')
+    inner = first['inner']
+    if inner is None:
+        return
+    if (type(inner) is not dict or set(inner) != {'code', 'exceptionType', 'osError', 'callsite'}
+            or inner['code'] not in SOURCE_TERMINAL_TRANSPORT_INNER_CODES
+            or inner['exceptionType'] not in TERMINAL_EXCEPTION_TYPES or inner['osError'] not in TERMINAL_OS_ERRORS):
+        raise ValueError('SOURCE_BANK_TRANSPORT_OBSERVATION_INNER')
+    site = inner['callsite']
+    if site is not None and (type(site) is not dict or set(site) != {'module', 'sha256', 'line'}
+            or type(site['module']) is not str or site['module'] not in files
+            or digest(files[site['module']]) != site['sha256'] or type(site['line']) is not int
+            or not 1 <= site['line'] <= len(files[site['module']].splitlines())):
+        raise ValueError('SOURCE_BANK_TRANSPORT_OBSERVATION_CALLSITE')
+
+
 def bounded_observation(value, files):
     keys = {'kind', 'status', 'actualStalls', 'actualFinalizerCount', 'physicalClosureBeforeCleanup',
         'outerDrainClosed', 'originalClock', 'localOfficialSdk', 'originalBObjectsPreserved',
-        'sourceAdmission', 'productionActivation', 'remoteCloudDurability', 'actionObservation', 'firstTestFailure', 'firstTestException', 'dispositionObservation', 'currentInstrumentedProofHost'}
+        'sourceAdmission', 'productionActivation', 'remoteCloudDurability', 'actionObservation', 'firstTestFailure', 'firstTestException', 'dispositionObservation', 'currentInstrumentedProofHost', 'transportObservation'}
     if set(value) != keys or value['status'] not in ('PASS', 'FAIL'):
         raise ValueError('SOURCE_BANK_NATIVE_OBSERVATION_SHAPE')
     if (type(value['actualStalls']) is not int or not 0 <= value['actualStalls'] <= 5
@@ -310,6 +345,7 @@ def bounded_observation(value, files):
         raise ValueError('SOURCE_BANK_TEST_FAILURE_SHAPE')
     bounded_first_test_exception(value['firstTestException'], test_failure, files)
     bounded_disposition_observation(value['dispositionObservation'])
+    bounded_transport_observation(value['transportObservation'], files, value['status'])
     if value['currentInstrumentedProofHost'] not in (None, CURRENT_PROOF_PROFILE):
         raise ValueError('SOURCE_BANK_CURRENT_PROOF_PROFILE')
     if test_failure is not None and value['status'] != 'FAIL':

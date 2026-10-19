@@ -819,8 +819,9 @@ class ProtocolFixture:
             def log_message(self, *_args):
                 pass  # No URLs, authorization, questions, raw data or bodies.
 
-            def fixed_failure(self, code):
+            def fixed_failure(self, code, error=None):
                 with owner.lock:
+                    source_terminal_note_transport_failure(owner, code, error)
                     owner.failures.append(code)
                 self.reply(403, {'code': 'SOURCE19_FIXTURE_ROUTE_REFUSED'})
 
@@ -866,8 +867,9 @@ class ProtocolFixture:
                     self.wfile = self.connection.makefile('wb')
                     self.close_connection = True
                     self.handle_one_request()
-                except (ssl.SSLError, ConnectionError, OSError):
+                except (ssl.SSLError, ConnectionError, OSError) as error:
                     with owner.lock:
+                        source_terminal_note_transport_failure(owner, 'TLS_TRANSPORT_FAILED', error)
                         owner.failures.append('TLS_TRANSPORT_FAILED')
 
             def do_GET(self):
@@ -896,8 +898,8 @@ class ProtocolFixture:
                     if tag is not None:
                         with owner.lock:
                             owner.calls.append(tag)
-                except (AssertionError, ValueError, KeyError, TypeError, OSError):
-                    self.fixed_failure('PROTOCOL_CONTRACT_REFUSED')
+                except (AssertionError, ValueError, KeyError, TypeError, OSError) as error:
+                    self.fixed_failure('PROTOCOL_CONTRACT_REFUSED', error)
 
         class Server(ThreadingHTTPServer):
             daemon_threads = False
@@ -905,6 +907,7 @@ class ProtocolFixture:
 
             def handle_error(self, _request, _address):
                 with owner.lock:
+                    source_terminal_note_transport_failure(owner, 'LOOPBACK_HANDLER_FAILED', sys.exc_info()[1])
                     owner.failures.append('LOOPBACK_HANDLER_FAILED')
 
         self.server = Server(('127.0.0.1', 0), Handler)
@@ -1482,6 +1485,8 @@ class TerminalProtocolFixture(ProtocolFixture):
         self.dmi = strict_json(root / 'terminal-dmi-protocol.json')
         self.uploads = {}
         self.working_root = None
+        self.terminal_transport_first = None
+        self.terminal_source_rows = ()
 
     def route(self, request, host, parsed):
         service = '/twirp/github.actions.results.api.v1.CacheService/'
@@ -1670,6 +1675,50 @@ def source_terminal_exception_projection(error, phase, callsite=None):
     return result
 
 
+SOURCE_TERMINAL_TRANSPORT_CATEGORIES = ["ABSOLUTE_REQUEST_REFUSED","CACHE_WRITE_OR_ROUTE_REFUSED","CONNECT_ORIGIN_REFUSED","LOOPBACK_HANDLER_FAILED","PROTOCOL_CONTRACT_REFUSED","TLS_HOST_REFUSED","TLS_TRANSPORT_FAILED","UNEXPECTED_ORIGIN_ROUTE","UNEXPECTED_ROUTE_OR_WRITE","WRITE_METHOD_REFUSED","UNKNOWN"]
+SOURCE_TERMINAL_TRANSPORT_INNER_CODES = ["ADMIN_KEY_REFUSED","ADMIN_QUERY_INVALID","ADMIN_SELECTOR_INVALID","CACHE_RESTORE_REQUEST_INVALID","CACHE_SCOPE_REFUSED","DB_READBACK_BODY_REQUIRED","EXACT_B_OBJECT_CHANGED","EXACT_B_OBJECT_REQUIRED","FIXTURE_BODY_BOUND","FIXTURE_BODY_SIZE_INVALID","FIXTURE_BODY_TRUNCATED","FIXTURE_SERVER_CLOSE_UNPROVED","PUBLIC_MANIFEST_QUERY_REFUSED","SOURCE_TERMINAL_ACTUAL_SDK_ARCHIVE_REQUIRED","SOURCE_TERMINAL_CATALOG_COLLECTION_REFUSED","SOURCE_TERMINAL_CATALOG_QUERY_REFUSED","SOURCE_TERMINAL_EXACT_GRIB_ROUTE_REFUSED","SOURCE_TERMINAL_REAL_RAW_ORIGINALS_REQUIRED","SOURCE_TERMINAL_SDK_ARCHIVED_BYTES_CHANGED","SOURCE_TERMINAL_SDK_ARCHIVE_BOUND","SOURCE_TERMINAL_SDK_ARCHIVE_DIRECTORY","SOURCE_TERMINAL_SDK_ARCHIVE_INVENTORY","SOURCE_TERMINAL_SDK_ARCHIVE_PATH","SOURCE_TERMINAL_SDK_CIPHER_INVENTORY","SOURCE_TERMINAL_SDK_CREATE_COLLISION","SOURCE_TERMINAL_SDK_FINALIZE_IDENTITY","SOURCE_TERMINAL_SDK_FINALIZE_ORDER","SOURCE_TERMINAL_SDK_KEY_REQUIRED","SOURCE_TERMINAL_SDK_PUT_HEADERS","SOURCE_TERMINAL_SDK_PUT_ORDER","SOURCE_TERMINAL_SDK_SAVE_SCOPE_REFUSED","SOURCE_TERMINAL_SDK_VERSION_REQUIRED","SOURCE_TERMINAL_SDK_WORKING_FILE","SOURCE_TERMINAL_SYNTHETIC_GRIB_CHANGED","SYNTHETIC_CACHE_AUTH_REQUIRED","SYNTHETIC_GITHUB_AUTH_REQUIRED","SYNTHETIC_JOBS_QUERY_REQUIRED","SYNTHETIC_SUPABASE_AUTH_REQUIRED","UNKNOWN"]
+
+
+# Test observation only. These functions never grant transport/SAVE authority.
+def source_terminal_first_transport_failure(previous, category, error=None, callsite=None):
+    if previous is not None:
+        return previous
+    inner = None
+    if error is not None:
+        projected = source_terminal_exception_projection(error, 'SDK_AND_ORIGINALS', callsite)
+        inner = {key: projected[key] for key in ('code', 'exceptionType', 'osError', 'callsite')}
+        inner['code'] = 'UNKNOWN'
+        try:
+            text = str(error)
+            if type(error) is AssertionError and text in SOURCE_TERMINAL_TRANSPORT_INNER_CODES:
+                inner['code'] = text
+        except BaseException:
+            pass  # Never replace the original exception with its observation.
+    return {'category': category if type(category) is str and category in SOURCE_TERMINAL_TRANSPORT_CATEGORIES else 'UNKNOWN',
+        'inner': inner}
+
+
+def source_terminal_note_transport_failure(owner, category, error=None):
+    # Called under the SAME existing lock, directly before the failure append.
+    # Only the terminal fixture has this field; all other fixture cases are unchanged.
+    if not hasattr(owner, 'terminal_transport_first') or owner.terminal_transport_first is not None:
+        return
+    try:
+        site = source_terminal_exception_callsite(error, ROOT, owner.terminal_source_rows) if error is not None else None
+        first = source_terminal_first_transport_failure(None, category, error, site)
+    except BaseException:
+        first = source_terminal_first_transport_failure(None, category)
+    owner.terminal_transport_first = first
+
+
+def source_terminal_transport_observation(first, failures, phase):
+    # The caller holds transport.lock. This is a bounded snapshot, not admission.
+    count = len(failures)
+    return {'phase': phase if phase in ('SDK_AND_ORIGINALS', 'CLEANUP') else 'UNKNOWN',
+        'count': min(count, 65535), 'overflow': count > 65535,
+        'first': None if count == 0 else first if first is not None else {'category': 'UNKNOWN', 'inner': None}}
+
+
 def source_terminal_first_exception(previous, error, phase, callsite=None):
     return previous if previous is not None else source_terminal_exception_projection(error, phase, callsite)
 
@@ -1765,6 +1814,7 @@ class SourceTerminalFailureNative(SourceActualSUnionNative):
         with cipher.open('xb') as stream:
             stream.write(encrypted)
         transport = TerminalProtocolFixture(fixtures, protocol, cert, key)
+        transport.terminal_source_rows = getattr(self, 'native_observer_source_rows', ())
         proxy = f'http://127.0.0.1:{transport.server.server_port}'
         environment = clean_environment()
         environment.update({'PATH': str(NODE22.parent) + os.pathsep + str(Path(sys.executable).parent) + os.pathsep + environment.get('PATH', ''),
@@ -1800,6 +1850,7 @@ class SourceTerminalFailureNative(SourceActualSUnionNative):
         stop_attempts = set()
         physical_before_cleanup, bounded_clock = None, None
         disposition_observation = None
+        transport_observation = None
         first_test_failure = None; first_test_exception = None; observer_phase = 'SETUP'
         case_passed = False
         action_observation = None
@@ -1928,6 +1979,7 @@ class SourceTerminalFailureNative(SourceActualSUnionNative):
             self.assertLessEqual(time.monotonic_ns(), cutoff_ns, 'TYPED_DURABLE_LOCAL_OUTCOME_OBSERVED_TOO_LATE')
             observer_phase = 'SDK_AND_ORIGINALS'
             with transport.lock:
+                transport_observation = source_terminal_transport_observation(transport.terminal_transport_first, transport.failures, observer_phase)
                 self.assertEqual(transport.failures, [])
                 tags, uploads = list(transport.calls), dict(transport.uploads)
             for role in ('raw', 'cipher'):
@@ -1986,6 +2038,8 @@ class SourceTerminalFailureNative(SourceActualSUnionNative):
                 first_test_exception = source_terminal_first_exception(first_test_exception, cleanup_failure, 'CLEANUP',
                     source_terminal_exception_callsite(cleanup_failure, ROOT, getattr(self, 'native_observer_source_rows', ())))
             with transport.lock:
+                if transport_observation is None:
+                    transport_observation = source_terminal_transport_observation(transport.terminal_transport_first, transport.failures, 'CLEANUP')
                 safe_uploads = {role: {'phase': row.get('phase'), 'archiveBytes': row.get('bytes'),
                     'archiveFileCount': len(row.get('files', []))} for role, row in transport.uploads.items()}
             print(json.dumps({'kind': 'SOURCE_NATIVE_V17_BOUNDED_OBSERVATION',
@@ -1994,6 +2048,7 @@ class SourceTerminalFailureNative(SourceActualSUnionNative):
                 'physicalClosureBeforeCleanup': physical_before_cleanup, 'outerDrainClosed': drained,
                 'originalClock': bounded_clock, 'localOfficialSdk': safe_uploads,
                 'dispositionObservation': disposition_observation,
+                'transportObservation': transport_observation,
                 'currentInstrumentedProofHost': getattr(self, 'current_cohort_profile', None),
                 'actionObservation': action_observation,
                 'firstTestFailure': first_test_failure,
