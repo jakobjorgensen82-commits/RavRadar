@@ -1,10 +1,20 @@
 # DEC-0184 – Kritisk produktionsartifact-gate uden historisk testspiral
 
 **Status:** Aktiv og bindende; den oprindelige 52+3-kæde er livebevist i
-4.0.402. Siden 4.0.438 har den kritiske artifactplan 54 bladkontroller,
-fordi DEC-0217 tilføjede to kontroller for offentlig timepakke og
-strømproveniens. De tre særskilte releasekontroller består.
+4.0.402. Den faktisk aktuelle normalplan har 55 bladkontroller og tre
+særskilte releasekontroller; se tillægget 19. oktober. Den tidligere
+54-plan og dens begrundelse bevares som dateret historik nedenfor.
 **Dato:** 2026-09-17
+
+## Præcisering 2026-10-19 — faktisk 55+3 og arkivgenstart
+
+Den uændrede normale `validate:production-artifact` udvider på den faktiske 4.0.584-kilde til 55 bladkommandoer. Mod den ægte 54-plan på 4.0.551 (`e6b34db2d82d18b69fdeec21a63b8b10a6f6fa3d`) er eneste tilføjede blad `node scripts/test-current-arrow-land-mask.mjs` gennem `test:flow-arrow-runtime`; ingen blade er fjernet. Det er optælling af den eksisterende plan, ikke en ny kontrol, ekstra testbank eller ændring af `package.json`. De tre særskilte releasekontroller består.
+
+En providerfri arkivgenstart beregner et nyt artifact fra gemte, autentificerede input og bruger derfor den normale artifactcollector og `release:gate:production`, ikke den brede historiske `validate`/`release:gate`. Begge collectorer forsøges også ved fund i den første. Denne særlige arkivgren kræver begge faktiske udfald bestået før SQL, ny B/S-publicering og Pages. Den almindelige vejrhentnings diagnostiske fortsættelse efter DEC-0193 ændres ikke; selvstændige target/main-, runtime-, databevarelses-, model-, privat-, artifact- og deploygrænser består.
+
+Kun den særlige arkivgenstarts kode-only-job får et loft på 90 minutter; samme jobs almindelige kode-only-gren beholder 60 minutter (`inputs.restart_archived_weather == true && 90 || 60`). Ingen leverandørbudgetter, normal vejrhentning, cron, releaseversion, C/I/T eller SQL ændres af workflowrettelsen.
+
+Status er lokal kildeforberedelse. Den seneste arkivgenstart bestod arkiv og normal beregning, men blev annulleret under bred validering omkring 60 minutter, før nyt leveringsartifact, B/S-publicering, SQL-installation eller Pages. Tidligere syntetisk kilde-/database-/nationalt bevis er ikke dette produktionsbevis; den nye præcise kildekontrol og den faktiske leveringskæde mangler fortsat.
 
 ## Præcisering 2026-09-30
 

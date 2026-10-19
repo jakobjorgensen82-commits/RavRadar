@@ -1,3 +1,11 @@
+## 19. oktober — 4.0.584: normal artifactkontrol efter arkivberegning
+
+FAKTISK: Den foregående præcise 584-kildekontrol og den nationale syntetiske opstart med to efterfølgere er bestået. Den efterfølgende providerfrie arkivgenstart gennemførte arkiv og beregning kl. 11.07.24 dansk tid, men blev annulleret omkring 60 minutter under den forældede fulde validering. Nyt leveringsartifact, B/S-publicering, SQL-installation og Pages blev ikke gennemført.
+
+LOKALT FORBEREDT: Arkivgrenen bruger den eksisterende faktiske 55+3-collectorplan og kræver begge udfald bestået før skrivning. Kun dens jobloft bliver 90 minutter; almindelig kode-only forbliver 60. Ingen ændring af version 584, C/I/T, model, SQL, kilder, leverandørbudgetter, adminpunkter eller geometri. Selvstændige kontroller bevares.
+
+ÅBENT: Den nye præcise workflowkontrol og faktisk kæde gennem artifact, privat B før S med genlæsning, SQL, Pages, offentlig effekt og almindelige efterfølgere. Dette er ikke fuldført revision eller selvstændig drift. Alle fem hovedmål er åbne, og fristen 18. oktober er overskredet uden forlængelse. Det private checkpoint ejer næste trin; ældre status bevares som historik.
+
 ## 19. oktober — genbrug bestået databaseprøve ved uændrede input
 
 Den ægte native PostgreSQL-prøve for 4.0.584 bestod, inklusive den nye append-only migration på syntetiske data. Den efterfølgende kildekontrol fejlede i syv konkrete test-/værtsårsager: historiske kildepins og kildepositioner, manglende almindelige NULL-defaults i udskårne testfixtures samt forældet kalder-/timeoutregistrering. Opfølgningen retter disse samlet, bevarer de gamle assertions på deres præcise historiske input og tilføjer helkilde- og mutationskontrol af den nye arkiverede opstartsvej. Ingen produktkode, SQL, scoreformel, modelbinding, adminpunkter eller geometri ændres i denne testopfølgning. Præcis samlet kildekontrol, national kapacitet, faktisk installation, ny B/S, Pages og almindelige efterfølgere er fortsat åbne. Alle fem hovedmål er åbne; den offentlige baseline er fortsat senest verificeret 4.0.581. Det private checkpoint ejer kørselsnumre, fejlpartition og kvitteringer.

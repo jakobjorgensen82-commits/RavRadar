@@ -166,7 +166,10 @@ jobs:
       cancel-in-progress: false
     name: Reuse exact runtime and build code-only artifact
     runs-on: ubuntu-24.04
-    timeout-minutes: 60
+    # The provider-free archive rebuild measured about 43 minutes before its
+    # artifact checks. Reserve bounded time for those checks and late B/S/Edges.
+    # Ordinary code-only repair keeps its existing 60-minute limit.
+    timeout-minutes: ${{ inputs.restart_archived_weather == true && 90 || 60 }}
     outputs:
       active_deployment_id: ${{ steps.public-source.outputs.deployment_id }}
       central_version: ${{ steps.operational-model.outputs.central_version }}
@@ -1348,15 +1351,44 @@ jobs:
           --repository-root "$GITHUB_WORKSPACE" --target-reference "$RAVRADAR_PRODUCTION_TARGET_HOUR"
           --output .cache/private-production-runtime-expected.json
 
-      - name: Run full validation on the actual newly calculated forecast
+      - name: Validate critical production artifact on the actual newly calculated forecast
         id: archived-weather-validation
-        if: inputs.restart_archived_weather == true
-        run: npm run validate
+        continue-on-error: true
+        if: inputs.restart_archived_weather == true && steps.archived-weather-build.outcome == 'success'
+        env:
+          DMI_BULK_CACHE_PATH: .cache/dmi-candidate-progress.json
+        run: >-
+          node scripts/run-validation-collection.mjs
+          --script validate:production-artifact
+          --output .geometry-v2-work/production-artifact-validation-report.json
 
-      - name: Run full release gate on the actual newly calculated forecast
+      - name: Run production release gate on the actual newly calculated forecast
         id: archived-weather-release-gate
-        if: inputs.restart_archived_weather == true
-        run: npm run release:gate
+        continue-on-error: true
+        if: always() && inputs.restart_archived_weather == true && steps.archived-weather-build.outcome == 'success'
+        run: npm run release:gate:production
+
+      - name: Upload payload-free archived production validation reports
+        continue-on-error: true
+        if: always() && inputs.restart_archived_weather == true && hashFiles('.geometry-v2-work/production-artifact-validation-report.json', '.geometry-v2-work/production-release-validation-report.json') != ''
+        uses: actions/upload-artifact@v7
+        with:
+          name: ravradar-production-validation-${{ github.run_id }}-${{ github.run_attempt }}
+          path: |
+            .geometry-v2-work/production-artifact-validation-report.json
+            .geometry-v2-work/production-release-validation-report.json
+          retention-days: 30
+          if-no-files-found: error
+
+      - name: Require both archived production collections before any new production writes
+        id: archived-production-gates
+        if: always() && inputs.restart_archived_weather == true
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "${{ steps.archived-weather-build.outcome }}" = success
+          test "${{ steps.archived-weather-validation.outcome }}" = success
+          test "${{ steps.archived-weather-release-gate.outcome }}" = success
 
       - name: Reverify the same assistant originals before binding installation
         if: env.RAVRADAR_ASSISTANT_PREWRITE_REQUIRED == 'true'

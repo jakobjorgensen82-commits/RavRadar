@@ -8,12 +8,15 @@ import vm from 'node:vm';
 import {spawnSync} from 'node:child_process';
 import {fileURLToPath} from 'node:url';
 import {inverseArchivedWeatherRestartWorkflow} from './lib/archived-weather-restart-workflow-review.mjs';
+import {inverseArchivedProductionGate} from './lib/archived-production-gate-review.mjs';
+import {expandValidationCommands} from './run-validation-collection.mjs';
 import {lastMileEnclosureRequiredMigrations} from './integrated-cutover-readiness.mjs';
 import {requireLastMileEnclosureBinding} from './lib/last-mile-enclosure-successor-source.mjs';
 import {ESTABLISHED_NATIVE_CURRENT_ORIGIN_BINDING} from './lib/established-native-current-origin-successor-source.mjs';
 
 const ROOT=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
-const actual=fs.readFileSync(path.join(ROOT,'.github/workflows/deploy-code-only-repair.yml'),'utf8').replace(/\r\n/g,'\n');
+const current=fs.readFileSync(path.join(ROOT,'.github/workflows/deploy-code-only-repair.yml'),'utf8').replace(/\r\n/g,'\n');
+const actual=inverseArchivedProductionGate(current);
 const sha=value=>crypto.createHash('sha256').update(value).digest('hex');
 const historical=inverseArchivedWeatherRestartWorkflow(actual);
 const bashPath=['C:/Program Files/Git/bin/bash.exe','C:/Program Files/Git/usr/bin/bash.exe',
@@ -170,6 +173,61 @@ function fixture(run){
     assert.deepEqual(identity(after),identity(before));fs.rmSync(directory,{recursive:true,force:true});
   }
 }
+
+test('archive restart uses the unchanged normal 55+3 collectors and requires both actual outcomes',()=>{
+  assert.equal(sha(current),'b10eac363d4c067bf7f7c81159881b57a70923851ae8e78d1dde2357a770a477');
+  assert.equal(inverseArchivedProductionGate(current),actual);
+  const artifact=named(current,'Validate critical production artifact on the actual newly calculated forecast');
+  const release=named(current,'Run production release gate on the actual newly calculated forecast');
+  const reports=named(current,'Upload payload-free archived production validation reports');
+  const barrier=named(current,'Require both archived production collections before any new production writes');
+  assert.match(artifact.text,/continue-on-error: true\n/);
+  assert.match(artifact.text,/DMI_BULK_CACHE_PATH: \.cache\/dmi-candidate-progress\.json\n/);
+  assert.match(artifact.text,/node scripts\/run-validation-collection\.mjs\n\s+--script validate:production-artifact\n\s+--output \.geometry-v2-work\/production-artifact-validation-report\.json/);
+  assert.match(release.text,/continue-on-error: true\n/);
+  assert.match(release.text,/run: npm run release:gate:production\n/);
+  assert.match(release.if,/^always\(\) &&/);
+  assert.match(reports.if,/^always\(\) &&/);
+  assert.match(reports.text,/uses: actions\/upload-artifact@v7/);
+  for(const file of ['production-artifact-validation-report.json','production-release-validation-report.json'])
+    assert(reports.text.includes('.geometry-v2-work/'+file));
+  assert(artifact.at<release.at&&release.at<reports.at&&reports.at<barrier.at);
+  assert.doesNotMatch(barrier.text,/continue-on-error/);
+  assert(barrier.at<named(current,'Apply sole last-mile binding only after all new artifact checks').at);
+  assert(barrier.at<named(current,'Create current private runtime bundle atomically').at);
+  const scripts=JSON.parse(fs.readFileSync(path.join(ROOT,'package.json'),'utf8')).scripts;
+  assert.equal(expandValidationCommands(scripts,'validate:production-artifact').length,55);
+  assert.equal(expandValidationCommands(scripts,'validate:production-release').length,3);
+  assert.equal(scripts['release:gate:production'],'node scripts/run-validation-collection.mjs --script validate:production-release --output .geometry-v2-work/production-release-validation-report.json');
+  const state=context();
+  assert(enabled(artifact,state));assert(enabled(release,state));
+  state.steps['archived-weather-validation'].outcome='failure';
+  assert(enabled(release,state),'A failed artifact collection must not hide the release report');
+  for(const outcome of ['failure','skipped','cancelled']){
+    const failed=context();failed.steps['archived-weather-build'].outcome=outcome;
+    assert.equal(enabled(artifact,failed),false);assert.equal(enabled(release,failed),false);
+  }
+  const prefix=runText(barrier);
+  assert.equal(bash(render(prefix,context())).status,0);
+  for(const id of ['archived-weather-build','archived-weather-validation','archived-weather-release-gate'])
+    for(const outcome of ['failure','skipped','cancelled','']){
+      const refused=context();refused.steps[id].outcome=outcome;
+      assert.notEqual(bash(render(prefix,refused)).status,0,id+': '+outcome);
+    }
+  const timeout=/^    timeout-minutes: (.+)$/m.exec(current.slice(current.indexOf('  build-code-only:\n')))?.[1];
+  assert(timeout);assert.equal(evaluate(timeout,context()),90);
+  const ordinary=context();ordinary.inputs.restart_archived_weather=false;
+  assert.equal(evaluate(timeout,ordinary),60);
+  assert.equal(enabled(artifact,ordinary),false);assert.equal(enabled(release,ordinary),false);
+  for(const [before,after]of [
+    ['--script validate:production-artifact','--script validate'],
+    ['run: npm run release:gate:production','run: npm run release:gate'],
+    ["&& 90 || 60","&& 90 || 90"],
+    [barrier.text,barrier.text.replace('          test "$'+'{{ steps.archived-weather-release-gate.outcome }}" = success\n','')],
+  ])assert.throws(()=>inverseArchivedProductionGate(replaceOne(current,before,after)));
+  // The following pre-existing tests execute unchanged against their complete
+  // byte-identical former input, including all route and prewrite negatives.
+});
 
 test('new actual route preserves the complete historical oracle and refuses changed routes',()=>{
   assert.equal(sha(actual),'b87ef14d831e6e825607a22deef3ab10f85bab654d2101731a473b393cb619cf');
