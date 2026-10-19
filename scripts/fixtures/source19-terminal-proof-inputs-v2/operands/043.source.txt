@@ -91,7 +91,7 @@ def source_native_action_observation(root, source_rows, action_exit_code, stream
         # Only if the existing projection is absent/UNKNOWN: at most three
         # ALREADY EMITTED frames, qualified by actual normal inventory bytes.
         # No new product logger; no raw path/message or external file is exposed.
-        if result['firstSafeCode'] == 'UNKNOWN':
+        if result['firstSafeCode'] in ('UNKNOWN', 'SOURCE_NORMAL_PHASE_FAILED'):
             for stream_name in ('stderr', 'stdout'):
                 for line in raw_logs[stream_name].splitlines():
                     node = re.fullmatch(r'\s+at .*?\(?((?:file://)?/[^\r\n()]+):(\d+):(\d+)\)?', line)
@@ -247,6 +247,22 @@ class SourceObserverLinuxIoTests(unittest.TestCase):
         self.assertIsNone(value['actionExitCode'])
         self.assertFalse(value['rawLogsUploaded'])
         self.assertNotIn('physicalStopProven', value)
+
+    def test_generic_closed_phase_keeps_reason_and_only_qualified_frames(self):
+        file = self.root / 'phase-proof.mjs'
+        body = b'// known source\nthrow new Error();\n'; file.write_bytes(body)
+        row = {'relativePath': 'phase-proof.mjs', 'bytes': len(body), 'sha256': hashlib.sha256(body).hexdigest()}
+        frame = '    at hidden (' + file.as_uri() + ':2:3)\n'
+        for reason, expected in (('SOURCE_NORMAL_PHASE_FAILED', [
+                {'module': row['relativePath'], 'sha256': row['sha256'], 'line': 2, 'column': 3, 'stream': 'stderr'}]),
+                ('SOURCE_PRELUDE_PROGRAM_FAILED', [])):
+            with self.subTest(reason=reason):
+                line = 'SOURCE_RUN_DIAGNOSTIC stage=PRODUCER_CHAIN reason=' + reason + ' node_class=ERROR rejection=NONE\n'
+                value = self.project((line + frame).encode(), rows=[row])
+                self.assertEqual(value['firstSafeCode'], reason)
+                self.assertEqual(value['projectedFrames'], expected)
+                self.assertNotIn(str(self.root), json.dumps(value))
+                self.assertNotIn('sourceCode', value)
 
 
 

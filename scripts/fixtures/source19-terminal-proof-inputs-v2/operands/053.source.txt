@@ -421,6 +421,10 @@ async function inventory() {
     'scripts/test-helpers/source19-native-import-closure.mjs',
     'scripts/plan-ravscore-current-history.mjs',
     'scripts/update-dmi-bulk.py',
+    // Actual dynamic normal_module() dependencies of generationPrepare.
+    'scripts/check-dmi-bulk-operational-ready.py',
+    'scripts/plan-dmi-recovery.py',
+    'scripts/build-copernicus-target-registry.py',
     'scripts/test-helpers/source19-native-git-operands.mjs',
     'scripts/fixtures/source19-terminal-proof-git-operands-v3.json',
     'scripts/lib/static-module-closure.mjs',

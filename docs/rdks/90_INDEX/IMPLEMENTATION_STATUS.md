@@ -1,3 +1,9 @@
+## 19. oktober — SOURCE: præcis prøveværtslukning før ny kvalifikation
+
+Faktisk Linux-resultat: den lille unitfase bestod; native stoppede med SOURCE_NORMAL_PHASE_FAILED i PRODUCER_CHAIN før stalls/finalizer. Specifik childfase og numerisk exitkode er endnu UNKNOWN. En manglende dynamisk modulfil er uafhængigt et deterministisk stop i normal generation-klargøring; en anden kræves af dens strenge gren. Det er et bevist fixturehul, ikke bevis for netop den første kørselsfejl.
+
+Den test-only efterfølger tilføjer to hele frosne afhængigheder til begge prøveværter og en kontrakt for alle tre faktiske modul-kald med seks fjernelsesnegativer. Eksisterende maksimalt tre hashbundne stackframes kan også kvalificeres ved den generiske fasefejl; første fejlkode og ukendt numerisk status bevares. En additiv Linux-case er forberedt, ikke kørt lokalt. Normale produktblade, 27 pins, protokol, gamle cases, frister og budgetter er uændrede. Ny præcis Linux-/fuld kildekvalifikation kræves; ingen revisionsaktivering eller produktionseffekt følger af denne forberedelse.
+
 ## 19. oktober — SOURCE: afgrænset diagnostik efter første nativeafslag
 
 PR669's første nativekørsel er faktisk fejlet; oprindelig actionårsag UNKNOWN, ikke dokumenteret produktfejl. Den efterfølgende test-only kandidat læser actionens eksisterende sikre SOURCE-/RAW-projektion før sekundære assertions og kvalificerer Python-testheaderens faktiske klasse/metodeformat. Ingen rå payload eller log uploades.

@@ -1,3 +1,9 @@
+## 19. oktober — SOURCE: to manglende prøveafhængigheder
+
+Den nye lille Linux-unitfase bestod, men terminalprøven stoppede stadig før transportstalls. Den sikre oprindelige kode er SOURCE_NORMAL_PHASE_FAILED i PRODUCER_CHAIN; præcis childfase og numerisk exitkode er ikke bevist. Der er særskilt påvist to manglende dynamiske prøveafhængigheder: normal generation-klargøring kan ikke gennemføres uden dem. Begge hele filer er autentiske frosne kildeblobs og matcher den fastlagte grønne baseline; ingen produktkode ændres.
+
+Prøvebanken og den indre prøvevært får nu begge filer. Den billige kontrakt kræver alle tre faktiske normal_module-kald i begge værter og afviser hver fjernet afhængighed. Eksisterende hashbundet frameprojektion må også bruges ved den generiske fasefejl uden at erstatte fejlkoden eller opfinde exitstatus. Den nye Linux-case er endnu UNRUN. Produktpins, protokol, gamle assertions, frister og budgetter bevares; dette er ikke et bevist produktfix eller revisionsaktivering.
+
 ## 19. oktober — SOURCE: oprindelig prøvefejl skal kunne aflæses
 
 PR669's første Linux-prøve stoppede efter action-exit 1 og nul observerede transportstalls; den sekundære prøveassertion viste 0 mod 5. Den oprindelige actionårsag er fortsat UNKNOWN. Kun prøveobserveren ændres: de eksisterende sikre SOURCE-/RAW-diagnoser læses før sekundære assertions, mens rå output forbliver privat lokalt. Fejludlæseren må ikke bruge unittest-overskriften FAIL som produktfejl.

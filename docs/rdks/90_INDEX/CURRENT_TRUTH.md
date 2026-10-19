@@ -1,3 +1,9 @@
+## 19. oktober — SOURCE: afgrænset dynamisk importlukning
+
+Den seneste isolerede Linux-prøve bestod sin lille unitfase, men stoppede fortsat med nul transportstalls og den faktiske sikre kode SOURCE_NORMAL_PHASE_FAILED i PRODUCER_CHAIN. Den specifikke første childfase og numeriske exitkode er stadig UNKNOWN. De må ikke udledes af en sekundær assertion eller af filstørrelser alene.
+
+En konkret prøveværtsmangel er derimod bevist: generation-klargøringen har to dynamiske modulafhængigheder, som manglede i både ydre bank og indre prøvevært. De tilføjes fra præcis frosne, hele Gitblobs; alle tre faktiske modul-kald og deres eksisterende importer kontrolleres. Allerede udsendte hashkvalificerede frames kan kun afgrænse et faktisk callsite, ikke skabe ny fejl-/stop-/SAVE-autoritet. Den nye Linux-prøve er fortsat UNRUN; produktkilde, 27 pins, protokol, model/SQL og budgetter ændres ikke. SOURCE forbliver inaktiv, og første konkrete produktårsag er ikke fastslået.
+
 ## 19. oktober — SOURCE: nativeårsagen er endnu ukendt
 
 Den første PR669-kørsel gennemførte scope- og historiske Gitinputkontroller, men nativeprøven stoppede efter action-exit 1 med nul observerede stalls. Første påviste assertion var 0 mod 5; den oprindelige actionårsag kan ikke udledes af den gamle rapports fejlagtige FAIL-klassifikation. Log og metadata er bevaret privat. Ingen produktårsag eller gennemført fireminutterskæde påstås.

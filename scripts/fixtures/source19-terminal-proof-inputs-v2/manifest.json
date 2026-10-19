@@ -483,6 +483,15 @@
       }
     },
     {
+      "path": "scripts/build-copernicus-target-registry.py",
+      "bytes": 13956,
+      "sha256": "75f26d7d2b2b6440868b8fced8f5ab97da46e191e4c70991f5a22898f917bf18",
+      "input": {
+        "kind": "FIXED_NORMAL_GIT_BLOB",
+        "gitBlob": "f6f4af98b42dab2b9259f5783e3ebcf32981f177"
+      }
+    },
+    {
       "path": "scripts/build-public-coastal-parts-v2.mjs",
       "bytes": 8168,
       "sha256": "ad4dcfb1158639be600b1740453841f130539cf34f3f8e73158e3ad53fb99105",
@@ -627,6 +636,15 @@
       }
     },
     {
+      "path": "scripts/lib/coastal_point_staging.py",
+      "bytes": 9565,
+      "sha256": "c74e3149778a4d88aeaab3f652d53835307c69f6d658d06477b933213f99e517",
+      "input": {
+        "kind": "FIXED_NORMAL_GIT_BLOB",
+        "gitBlob": "65de48b08db277b816cef3b454ddbde9425017ec"
+      }
+    },
+    {
       "path": "scripts/lib/coastal-point-stage-dmi-adapter.mjs",
       "bytes": 5659,
       "sha256": "f4dd1e46e70b5c39de014940c8451617c10541f4b5d27e7743387a6c2cd5e8e7",
@@ -645,12 +663,84 @@
       }
     },
     {
-      "path": "scripts/lib/coastal_point_staging.py",
-      "bytes": 9565,
-      "sha256": "c74e3149778a4d88aeaab3f652d53835307c69f6d658d06477b933213f99e517",
+      "path": "scripts/lib/copernicus_component_process.py",
+      "bytes": 100561,
+      "sha256": "12ccf69c936c59dd11165fb4f473572b46570ac47ca7d4f616eae624ec21d76b",
+      "input": {
+        "kind": "FROZEN_TEST_BANK",
+        "bankPath": "scripts/fixtures/source19-terminal-proof-inputs-v2/operands/019.source.txt"
+      }
+    },
+    {
+      "path": "scripts/lib/copernicus_component_spatial.py",
+      "bytes": 11304,
+      "sha256": "8ac6a060a799a8099bba70a529513ec3f1e8b23fbcb16eaa5048d76ea0d54e0a",
       "input": {
         "kind": "FIXED_NORMAL_GIT_BLOB",
-        "gitBlob": "65de48b08db277b816cef3b454ddbde9425017ec"
+        "gitBlob": "0638b89fdec12f24f58f5da9747b48e407851843"
+      }
+    },
+    {
+      "path": "scripts/lib/copernicus_component_transport.py",
+      "bytes": 20266,
+      "sha256": "70191e578902b036c0591fb0ccb9ccb495451c1397ed287099d309a5ae2b9a95",
+      "input": {
+        "kind": "FIXED_NORMAL_GIT_BLOB",
+        "gitBlob": "144851d2bac014a41f5f25d0073c38f72b66bac3"
+      }
+    },
+    {
+      "path": "scripts/lib/copernicus_current_donor_bank.py",
+      "bytes": 28713,
+      "sha256": "bc54c2f6be6d09a8268f1d0b2062555ee7f27b6a20777c100d061548610f3bb8",
+      "input": {
+        "kind": "FIXED_NORMAL_GIT_BLOB",
+        "gitBlob": "3eb5942869e41357c145f8198e4caffaf8eafe0c"
+      }
+    },
+    {
+      "path": "scripts/lib/copernicus_current_source_stage.py",
+      "bytes": 85106,
+      "sha256": "91bbca862d8e7d8b5da851081643b788aad299e5b5e0edf3b861a233c16aead0",
+      "input": {
+        "kind": "FIXED_NORMAL_GIT_BLOB",
+        "gitBlob": "b47e514aced85aa94bdaf2143ebd38d154ca6de8"
+      }
+    },
+    {
+      "path": "scripts/lib/copernicus_current.py",
+      "bytes": 113783,
+      "sha256": "c8e16757ee06ad31bfda803f3b20a6c866d072ac8d40c59d95be5be3792ddcdf",
+      "input": {
+        "kind": "FIXED_NORMAL_GIT_BLOB",
+        "gitBlob": "9fccbab4829565285061208c24e286dcf4b0de7c"
+      }
+    },
+    {
+      "path": "scripts/lib/copernicus_target_identity.py",
+      "bytes": 3237,
+      "sha256": "3546da912a7a1777532c282f202f513862b06965bf407da5c2809ea6314351f4",
+      "input": {
+        "kind": "FIXED_NORMAL_GIT_BLOB",
+        "gitBlob": "cab9e22b24f3ca5d14c312d828506e94eb82322c"
+      }
+    },
+    {
+      "path": "scripts/lib/copernicus_weather_component_bank.py",
+      "bytes": 47363,
+      "sha256": "7ecb7e62b99ced092414839fa7cdefe20a934da0de35f9391b3149f1d1569042",
+      "input": {
+        "kind": "FIXED_NORMAL_GIT_BLOB",
+        "gitBlob": "ced9959db03d55bee62be39304579dae88dab504"
+      }
+    },
+    {
+      "path": "scripts/lib/copernicus_weather_components.py",
+      "bytes": 20626,
+      "sha256": "5ae12b41f9b347253429a5c5366fa8764518d4d732589386fb5dca3168310e0b",
+      "input": {
+        "kind": "FIXED_NORMAL_GIT_BLOB",
+        "gitBlob": "5e4fc96396583be69bfb40fdbb93fc4e68b46b3d"
       }
     },
     {
@@ -690,123 +780,6 @@
       }
     },
     {
-      "path": "scripts/lib/copernicus_component_process.py",
-      "bytes": 100561,
-      "sha256": "12ccf69c936c59dd11165fb4f473572b46570ac47ca7d4f616eae624ec21d76b",
-      "input": {
-        "kind": "FROZEN_TEST_BANK",
-        "bankPath": "scripts/fixtures/source19-terminal-proof-inputs-v2/operands/019.source.txt"
-      }
-    },
-    {
-      "path": "scripts/lib/copernicus_component_spatial.py",
-      "bytes": 11304,
-      "sha256": "8ac6a060a799a8099bba70a529513ec3f1e8b23fbcb16eaa5048d76ea0d54e0a",
-      "input": {
-        "kind": "FIXED_NORMAL_GIT_BLOB",
-        "gitBlob": "0638b89fdec12f24f58f5da9747b48e407851843"
-      }
-    },
-    {
-      "path": "scripts/lib/copernicus_component_transport.py",
-      "bytes": 20266,
-      "sha256": "70191e578902b036c0591fb0ccb9ccb495451c1397ed287099d309a5ae2b9a95",
-      "input": {
-        "kind": "FIXED_NORMAL_GIT_BLOB",
-        "gitBlob": "144851d2bac014a41f5f25d0073c38f72b66bac3"
-      }
-    },
-    {
-      "path": "scripts/lib/copernicus_current.py",
-      "bytes": 113783,
-      "sha256": "c8e16757ee06ad31bfda803f3b20a6c866d072ac8d40c59d95be5be3792ddcdf",
-      "input": {
-        "kind": "FIXED_NORMAL_GIT_BLOB",
-        "gitBlob": "9fccbab4829565285061208c24e286dcf4b0de7c"
-      }
-    },
-    {
-      "path": "scripts/lib/copernicus_current_donor_bank.py",
-      "bytes": 28713,
-      "sha256": "bc54c2f6be6d09a8268f1d0b2062555ee7f27b6a20777c100d061548610f3bb8",
-      "input": {
-        "kind": "FIXED_NORMAL_GIT_BLOB",
-        "gitBlob": "3eb5942869e41357c145f8198e4caffaf8eafe0c"
-      }
-    },
-    {
-      "path": "scripts/lib/copernicus_current_source_stage.py",
-      "bytes": 85106,
-      "sha256": "91bbca862d8e7d8b5da851081643b788aad299e5b5e0edf3b861a233c16aead0",
-      "input": {
-        "kind": "FIXED_NORMAL_GIT_BLOB",
-        "gitBlob": "b47e514aced85aa94bdaf2143ebd38d154ca6de8"
-      }
-    },
-    {
-      "path": "scripts/lib/copernicus_target_identity.py",
-      "bytes": 3237,
-      "sha256": "3546da912a7a1777532c282f202f513862b06965bf407da5c2809ea6314351f4",
-      "input": {
-        "kind": "FIXED_NORMAL_GIT_BLOB",
-        "gitBlob": "cab9e22b24f3ca5d14c312d828506e94eb82322c"
-      }
-    },
-    {
-      "path": "scripts/lib/copernicus_weather_component_bank.py",
-      "bytes": 47363,
-      "sha256": "7ecb7e62b99ced092414839fa7cdefe20a934da0de35f9391b3149f1d1569042",
-      "input": {
-        "kind": "FIXED_NORMAL_GIT_BLOB",
-        "gitBlob": "ced9959db03d55bee62be39304579dae88dab504"
-      }
-    },
-    {
-      "path": "scripts/lib/copernicus_weather_components.py",
-      "bytes": 20626,
-      "sha256": "5ae12b41f9b347253429a5c5366fa8764518d4d732589386fb5dca3168310e0b",
-      "input": {
-        "kind": "FIXED_NORMAL_GIT_BLOB",
-        "gitBlob": "5e4fc96396583be69bfb40fdbb93fc4e68b46b3d"
-      }
-    },
-    {
-      "path": "scripts/lib/current-grid-successor-source.mjs",
-      "bytes": 4303,
-      "sha256": "f86aa7b2df9500942c5b4218f7cf777c6e32391722c091d3beabe4ef9f12636c",
-      "input": {
-        "kind": "FIXED_NORMAL_GIT_BLOB",
-        "gitBlob": "4df7e271a8810ee8877d7d79a78efe761b2db947"
-      }
-    },
-    {
-      "path": "scripts/lib/current-memory-warmup-successor-source.mjs",
-      "bytes": 10489,
-      "sha256": "399e7e4690513b1db64a010c03b041d529caccfc0785fb34ab4c1b68ea5894b6",
-      "input": {
-        "kind": "FIXED_NORMAL_GIT_BLOB",
-        "gitBlob": "20e42e2c5c13b064dc0f4b9d9fdddd3785825336"
-      }
-    },
-    {
-      "path": "scripts/lib/current-spatial-runtime-proof.mjs",
-      "bytes": 17490,
-      "sha256": "2f0a3d3d265a86ca5f1c577fd001c21d6bc39da9ee2bd32b9c690229b31fc0b5",
-      "input": {
-        "kind": "FIXED_NORMAL_GIT_BLOB",
-        "gitBlob": "8d88c26e0d896da12c9545f5733be867df194736"
-      }
-    },
-    {
-      "path": "scripts/lib/current-transport-history.mjs",
-      "bytes": 4967,
-      "sha256": "c7d5b4226aee7846e307d5d314fa336ef6143cfa6c0eca966b0f567b97c1ce9d",
-      "input": {
-        "kind": "FIXED_NORMAL_GIT_BLOB",
-        "gitBlob": "9576e45411ad42eef9ded7e575b51a3846d8da6e"
-      }
-    },
-    {
       "path": "scripts/lib/current_aged_dmi_challenge.py",
       "bytes": 4999,
       "sha256": "1b995f06bd691b7a234669b4a92b48ad268879ba5b62fdde208f8a8b26d762d2",
@@ -843,84 +816,39 @@
       }
     },
     {
-      "path": "scripts/lib/dmi-bulk-storage.mjs",
-      "bytes": 11401,
-      "sha256": "fe51cae3131bc7e91022fc3ede69bc4587409b720bb8c1226d87cee2bff46f1d",
+      "path": "scripts/lib/current-grid-successor-source.mjs",
+      "bytes": 4303,
+      "sha256": "f86aa7b2df9500942c5b4218f7cf777c6e32391722c091d3beabe4ef9f12636c",
       "input": {
         "kind": "FIXED_NORMAL_GIT_BLOB",
-        "gitBlob": "77d58251a61fa8b1c2443b4899a01eef62837cca"
+        "gitBlob": "4df7e271a8810ee8877d7d79a78efe761b2db947"
       }
     },
     {
-      "path": "scripts/lib/dmi-forecast-file.mjs",
-      "bytes": 30028,
-      "sha256": "467c1f8ffd6a9a8440deda6d201c0d9f9389e61dfb8441276748256c389af11f",
+      "path": "scripts/lib/current-memory-warmup-successor-source.mjs",
+      "bytes": 10489,
+      "sha256": "399e7e4690513b1db64a010c03b041d529caccfc0785fb34ab4c1b68ea5894b6",
       "input": {
-        "kind": "FROZEN_TEST_BANK",
-        "bankPath": "scripts/fixtures/source19-terminal-proof-inputs-v2/operands/020.source.txt"
+        "kind": "FIXED_NORMAL_GIT_BLOB",
+        "gitBlob": "20e42e2c5c13b064dc0f4b9d9fdddd3785825336"
       }
     },
     {
-      "path": "scripts/lib/dmi-forecast-store.mjs",
-      "bytes": 58667,
-      "sha256": "a525ef4ae0109336541758b7fc4de661e4b1977397fd7e5bcba71eed83c9bc99",
+      "path": "scripts/lib/current-spatial-runtime-proof.mjs",
+      "bytes": 17490,
+      "sha256": "2f0a3d3d265a86ca5f1c577fd001c21d6bc39da9ee2bd32b9c690229b31fc0b5",
       "input": {
         "kind": "FIXED_NORMAL_GIT_BLOB",
-        "gitBlob": "c8cf4a1c43cac9c1e59c9c432ba719613741f960"
+        "gitBlob": "8d88c26e0d896da12c9545f5733be867df194736"
       }
     },
     {
-      "path": "scripts/lib/dmi-marine-run-seam-recovery.mjs",
-      "bytes": 6883,
-      "sha256": "40ad4fadf89307659c6dcad0567935ccbc7ec17cdc09d525e5271ad58496fabe",
+      "path": "scripts/lib/current-transport-history.mjs",
+      "bytes": 4967,
+      "sha256": "c7d5b4226aee7846e307d5d314fa336ef6143cfa6c0eca966b0f567b97c1ce9d",
       "input": {
         "kind": "FIXED_NORMAL_GIT_BLOB",
-        "gitBlob": "da7073fb7a1e6149f772db076f13ca7ec1705f46"
-      }
-    },
-    {
-      "path": "scripts/lib/dmi-marine-zone-exclusions.json",
-      "bytes": 416,
-      "sha256": "b959dee7b87cfebe9fdc7311ffd62b835c96d5c4a263bbcff5c0485f6660ef16",
-      "input": {
-        "kind": "FIXED_NORMAL_GIT_BLOB",
-        "gitBlob": "a4f65f8eb0396dbe3c3da442ebcb9a06d99d3287"
-      }
-    },
-    {
-      "path": "scripts/lib/dmi-marine-zone-exclusions.mjs",
-      "bytes": 1353,
-      "sha256": "d560dda981a8f0bdec49bbca05abb60cc6a26699784b345b1b258e7f1668ac28",
-      "input": {
-        "kind": "FIXED_NORMAL_GIT_BLOB",
-        "gitBlob": "681f6485e3fef029e5ba46b6c17fc818c76dc3d7"
-      }
-    },
-    {
-      "path": "scripts/lib/dmi-native-current-runtime-projection.mjs",
-      "bytes": 1941,
-      "sha256": "4ba7ec15e497871711cc9850aca67090d99f1d057f9ddd9a9c35c390bef23790",
-      "input": {
-        "kind": "FIXED_NORMAL_GIT_BLOB",
-        "gitBlob": "679facce2a3b5dc38db6a1a7578b6bccb8f37ec6"
-      }
-    },
-    {
-      "path": "scripts/lib/dmi-part-continuity.mjs",
-      "bytes": 8832,
-      "sha256": "c8cd24d090ea7a08ca9d7a86892e44d26c8955023db16ead9fd53ea78325f51a",
-      "input": {
-        "kind": "FIXED_NORMAL_GIT_BLOB",
-        "gitBlob": "f1dc7499ef9ae0b108361eae46de8b2e1a9107e4"
-      }
-    },
-    {
-      "path": "scripts/lib/dmi-wave-tuple-proof.mjs",
-      "bytes": 912,
-      "sha256": "81a65c28673bc3ef3e30ff1ab001ecd8b14c8f3af285acab48c60b84e7b3362e",
-      "input": {
-        "kind": "FIXED_NORMAL_GIT_BLOB",
-        "gitBlob": "2b3529bb1c2e32e1c044bbe66c06d0e867a5533f"
+        "gitBlob": "9576e45411ad42eef9ded7e575b51a3846d8da6e"
       }
     },
     {
@@ -1023,6 +951,87 @@
       }
     },
     {
+      "path": "scripts/lib/dmi-bulk-storage.mjs",
+      "bytes": 11401,
+      "sha256": "fe51cae3131bc7e91022fc3ede69bc4587409b720bb8c1226d87cee2bff46f1d",
+      "input": {
+        "kind": "FIXED_NORMAL_GIT_BLOB",
+        "gitBlob": "77d58251a61fa8b1c2443b4899a01eef62837cca"
+      }
+    },
+    {
+      "path": "scripts/lib/dmi-forecast-file.mjs",
+      "bytes": 30028,
+      "sha256": "467c1f8ffd6a9a8440deda6d201c0d9f9389e61dfb8441276748256c389af11f",
+      "input": {
+        "kind": "FROZEN_TEST_BANK",
+        "bankPath": "scripts/fixtures/source19-terminal-proof-inputs-v2/operands/020.source.txt"
+      }
+    },
+    {
+      "path": "scripts/lib/dmi-forecast-store.mjs",
+      "bytes": 58667,
+      "sha256": "a525ef4ae0109336541758b7fc4de661e4b1977397fd7e5bcba71eed83c9bc99",
+      "input": {
+        "kind": "FIXED_NORMAL_GIT_BLOB",
+        "gitBlob": "c8cf4a1c43cac9c1e59c9c432ba719613741f960"
+      }
+    },
+    {
+      "path": "scripts/lib/dmi-marine-run-seam-recovery.mjs",
+      "bytes": 6883,
+      "sha256": "40ad4fadf89307659c6dcad0567935ccbc7ec17cdc09d525e5271ad58496fabe",
+      "input": {
+        "kind": "FIXED_NORMAL_GIT_BLOB",
+        "gitBlob": "da7073fb7a1e6149f772db076f13ca7ec1705f46"
+      }
+    },
+    {
+      "path": "scripts/lib/dmi-marine-zone-exclusions.json",
+      "bytes": 416,
+      "sha256": "b959dee7b87cfebe9fdc7311ffd62b835c96d5c4a263bbcff5c0485f6660ef16",
+      "input": {
+        "kind": "FIXED_NORMAL_GIT_BLOB",
+        "gitBlob": "a4f65f8eb0396dbe3c3da442ebcb9a06d99d3287"
+      }
+    },
+    {
+      "path": "scripts/lib/dmi-marine-zone-exclusions.mjs",
+      "bytes": 1353,
+      "sha256": "d560dda981a8f0bdec49bbca05abb60cc6a26699784b345b1b258e7f1668ac28",
+      "input": {
+        "kind": "FIXED_NORMAL_GIT_BLOB",
+        "gitBlob": "681f6485e3fef029e5ba46b6c17fc818c76dc3d7"
+      }
+    },
+    {
+      "path": "scripts/lib/dmi-native-current-runtime-projection.mjs",
+      "bytes": 1941,
+      "sha256": "4ba7ec15e497871711cc9850aca67090d99f1d057f9ddd9a9c35c390bef23790",
+      "input": {
+        "kind": "FIXED_NORMAL_GIT_BLOB",
+        "gitBlob": "679facce2a3b5dc38db6a1a7578b6bccb8f37ec6"
+      }
+    },
+    {
+      "path": "scripts/lib/dmi-part-continuity.mjs",
+      "bytes": 8832,
+      "sha256": "c8cd24d090ea7a08ca9d7a86892e44d26c8955023db16ead9fd53ea78325f51a",
+      "input": {
+        "kind": "FIXED_NORMAL_GIT_BLOB",
+        "gitBlob": "f1dc7499ef9ae0b108361eae46de8b2e1a9107e4"
+      }
+    },
+    {
+      "path": "scripts/lib/dmi-wave-tuple-proof.mjs",
+      "bytes": 912,
+      "sha256": "81a65c28673bc3ef3e30ff1ab001ecd8b14c8f3af285acab48c60b84e7b3362e",
+      "input": {
+        "kind": "FIXED_NORMAL_GIT_BLOB",
+        "gitBlob": "2b3529bb1c2e32e1c044bbe66c06d0e867a5533f"
+      }
+    },
+    {
       "path": "scripts/lib/established-native-current-origin-successor-source.mjs",
       "bytes": 7945,
       "sha256": "9f985630a0985af396d1510d9387b76596e81ca57774fbb6c0d8789598333f9b",
@@ -1122,6 +1131,15 @@
       }
     },
     {
+      "path": "scripts/lib/open_meteo_current_fallback.py",
+      "bytes": 60341,
+      "sha256": "050df8aeea083f906f55b8981f72f1b3027f38df494dec6e97f3a363dfa451d4",
+      "input": {
+        "kind": "FIXED_NORMAL_GIT_BLOB",
+        "gitBlob": "387e19b9b37e329f7ad4a7252e7754b4d3c1d772"
+      }
+    },
+    {
       "path": "scripts/lib/open-meteo-forecast-window.mjs",
       "bytes": 831,
       "sha256": "a286cc97ce6bc7dbee19eb986fdeef4c64809357ee99b571573768ae86ce2d79",
@@ -1164,15 +1182,6 @@
       "input": {
         "kind": "FIXED_NORMAL_GIT_BLOB",
         "gitBlob": "3253def82c85a55fbf5087b1ae720e22fc22044c"
-      }
-    },
-    {
-      "path": "scripts/lib/open_meteo_current_fallback.py",
-      "bytes": 60341,
-      "sha256": "050df8aeea083f906f55b8981f72f1b3027f38df494dec6e97f3a363dfa451d4",
-      "input": {
-        "kind": "FIXED_NORMAL_GIT_BLOB",
-        "gitBlob": "387e19b9b37e329f7ad4a7252e7754b4d3c1d772"
       }
     },
     {
@@ -1446,6 +1455,15 @@
       }
     },
     {
+      "path": "scripts/lib/source_union_birth_journal.py",
+      "bytes": 6852,
+      "sha256": "fe415bd438a7c89b63bb32f763121a703cb9680429e5684480cc873a3036ab44",
+      "input": {
+        "kind": "FROZEN_TEST_BANK",
+        "bankPath": "scripts/fixtures/source19-terminal-proof-inputs-v2/operands/023.source.txt"
+      }
+    },
+    {
       "path": "scripts/lib/source-tree-content.mjs",
       "bytes": 3422,
       "sha256": "ebf2c31976600c9c72ee87465791c683b88bb9980f5cf0262a05d977cc8c87c3",
@@ -1461,15 +1479,6 @@
       "input": {
         "kind": "FROZEN_TEST_BANK",
         "bankPath": "scripts/fixtures/source19-terminal-proof-inputs-v2/operands/024.source.txt"
-      }
-    },
-    {
-      "path": "scripts/lib/source_union_birth_journal.py",
-      "bytes": 6852,
-      "sha256": "fe415bd438a7c89b63bb32f763121a703cb9680429e5684480cc873a3036ab44",
-      "input": {
-        "kind": "FROZEN_TEST_BANK",
-        "bankPath": "scripts/fixtures/source19-terminal-proof-inputs-v2/operands/023.source.txt"
       }
     },
     {
@@ -1542,6 +1551,15 @@
       "input": {
         "kind": "FIXED_NORMAL_GIT_BLOB",
         "gitBlob": "4d77a0dbe1fd448aa6386a5d33586f4f62e1da65"
+      }
+    },
+    {
+      "path": "scripts/lib/weather_acquisition_plan.py",
+      "bytes": 9418,
+      "sha256": "720c700523c9f5213bcdea3d1774b89c695bb787b8abcac6016c05b8d7c304ae",
+      "input": {
+        "kind": "FIXED_NORMAL_GIT_BLOB",
+        "gitBlob": "bda3f388e45386c8023e80856ab771664576bdbf"
       }
     },
     {
@@ -1626,15 +1644,6 @@
       }
     },
     {
-      "path": "scripts/lib/weather_acquisition_plan.py",
-      "bytes": 9418,
-      "sha256": "720c700523c9f5213bcdea3d1774b89c695bb787b8abcac6016c05b8d7c304ae",
-      "input": {
-        "kind": "FIXED_NORMAL_GIT_BLOB",
-        "gitBlob": "bda3f388e45386c8023e80856ab771664576bdbf"
-      }
-    },
-    {
       "path": "scripts/materialize-dmi-bulk-storage.py",
       "bytes": 10195,
       "sha256": "445eec99139717b5021b38a8d6d26de9520b8c74e173d45dc8d00605dcef1e82",
@@ -1668,6 +1677,15 @@
       "input": {
         "kind": "FIXED_NORMAL_GIT_BLOB",
         "gitBlob": "42ced169225cd4114c8e5cd8badaadb0e9a74299"
+      }
+    },
+    {
+      "path": "scripts/plan-dmi-recovery.py",
+      "bytes": 9665,
+      "sha256": "ac0f3ca00339e0e7a95a0f6583c369bc4c1f67a4b3786fcfa9028f9017ac4b7b",
+      "input": {
+        "kind": "FIXED_NORMAL_GIT_BLOB",
+        "gitBlob": "e69244c07473f8aff7dab5e7719779d35259a17f"
       }
     },
     {
@@ -1960,8 +1978,8 @@
     },
     {
       "path": "scripts/test-source19-terminal-failure-proof-bank-v17-observer-native.py",
-      "bytes": 200939,
-      "sha256": "b5a980ff6ec815999111b7c16a8b67be0b2af2c26d1d4ef8f4278af090df4c87",
+      "bytes": 202095,
+      "sha256": "0263c607073f34ca8e45b028fb313737384c7f03607446a088e0ab8169cd01b5",
       "input": {
         "kind": "FROZEN_TEST_BANK",
         "bankPath": "scripts/fixtures/source19-terminal-proof-inputs-v2/operands/043.source.txt"
@@ -2050,8 +2068,8 @@
     },
     {
       "path": "scripts/test-source19-union-native-early-terminal-proof-bank-v16-fixture.mjs",
-      "bytes": 51731,
-      "sha256": "e09bb8d3398bff997ce83be1d4472ca1b56fbe67ee10682cafdf78b2263009b9",
+      "bytes": 51942,
+      "sha256": "e8ccc89976c54188d9501dab16f3fc947d08c343c6ff0b7dd23f1324a22d0ab1",
       "input": {
         "kind": "FROZEN_TEST_BANK",
         "bankPath": "scripts/fixtures/source19-terminal-proof-inputs-v2/operands/053.source.txt"
@@ -2685,7 +2703,7 @@
   "sourceAdmission": false,
   "productionActivation": false,
   "cloudDurability": "UNTESTED_LOCAL_SDK_ONLY",
-  "fixedGitFiles": 227,
+  "fixedGitFiles": 229,
   "proofBankRevision": 3,
   "requiredChildPrograms": [
     {
@@ -2738,12 +2756,52 @@
       "sha256": "6670e529cd7e2ea6107df60992aaf5669a70a1a5e9d704e85183fa4cd9f87840"
     },
     "existingSafeProjectionsOnly": true,
-    "fallbackFrames": "AT_MOST3_ALREADY_EMITTED_PHYSICALLY_HASH_BOUND_ACTION_ROOT_FRAMES",
+    "fallbackFrames": "AT_MOST3_ALREADY_EMITTED_PHYSICALLY_HASH_BOUND_ACTION_ROOT_FRAMES_FOR_UNKNOWN_OR_GENERIC_PHASE_FAILURE",
     "rawLogUpload": false,
     "pureProjection": "SHARED_WITH_PHYSICAL_LINUX_HELPER",
     "observerUnitBeforeSdkAndNative": {
       "pureCases": 6,
-      "physicalLinuxCases": 8
-    }
+      "physicalLinuxCases": 9
+    },
+    "numericChildSourceCode": "UNKNOWN_UNLESS_SEPARATELY_PROVEN_NOT_PROJECTED_HERE"
+  },
+  "dynamicNormalModules": {
+    "caller": "scripts/materialize-dmi-bulk-storage.py",
+    "callerSha256": "445eec99139717b5021b38a8d6d26de9520b8c74e173d45dc8d00605dcef1e82",
+    "roots": [
+      {
+        "path": "scripts/check-dmi-bulk-operational-ready.py",
+        "bytes": 1154,
+        "sha256": "0b8387364f936bf686f22806d3cf2fb88d61972cde7dcf73de265fceb95d68c4"
+      },
+      {
+        "path": "scripts/build-copernicus-target-registry.py",
+        "bytes": 13956,
+        "sha256": "75f26d7d2b2b6440868b8fced8f5ab97da46e191e4c70991f5a22898f917bf18"
+      },
+      {
+        "path": "scripts/plan-dmi-recovery.py",
+        "bytes": 9665,
+        "sha256": "ac0f3ca00339e0e7a95a0f6583c369bc4c1f67a4b3786fcfa9028f9017ac4b7b"
+      }
+    ],
+    "requiredAlways": "scripts/plan-dmi-recovery.py",
+    "strictOnly": "scripts/build-copernicus-target-registry.py",
+    "existingStaticImportClosure": 12,
+    "addedWholeFrozenOperands": [
+      {
+        "path": "scripts/build-copernicus-target-registry.py",
+        "frozenTree": "515dde13369eafb5fe489b1fd19b95927f8c0b6e",
+        "gitBlob": "f6f4af98b42dab2b9259f5783e3ebcf32981f177",
+        "sha256": "75f26d7d2b2b6440868b8fced8f5ab97da46e191e4c70991f5a22898f917bf18"
+      },
+      {
+        "path": "scripts/plan-dmi-recovery.py",
+        "frozenTree": "515dde13369eafb5fe489b1fd19b95927f8c0b6e",
+        "gitBlob": "e69244c07473f8aff7dab5e7719779d35259a17f",
+        "sha256": "ac0f3ca00339e0e7a95a0f6583c369bc4c1f67a4b3786fcfa9028f9017ac4b7b"
+      }
+    ],
+    "contract": "ALL_ACTUAL_LITERAL_CALLS_REQUIRED_IN_OUTER_AND_SEED"
   }
 }
