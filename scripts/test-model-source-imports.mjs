@@ -5,16 +5,19 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { execFileSync } from 'node:child_process';
 import test from 'node:test';
+import {inverseAssistant583Origin} from './lib/assistant583-origin-test-input.mjs';
 import { modelSourceRelativeModuleSpecifiers } from './lib/model-source-imports.mjs';
 import { exactRelativeModuleSpecifiers } from './lib/static-module-closure.mjs';
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const sha = source => crypto.createHash('sha256').update(source).digest('hex');
 const normalized = source => source.replace(/^\uFEFF/, '').replace(/\r\n?/g, '\n');
 const pins = [
-  ['scripts/lib/established-native-current-origin.mjs', 'e4741332e9cc54523fccf8ded70ace9767047d97090306c00fafd43385235c42', 14],
+  ['scripts/lib/established-native-current-origin.mjs', '056d88253e4975e424af6df2b4fcf5f029c9fae72b4ad90ead4f06bfad503b98', 15],
   ['scripts/check-native-current-reanalysis-predecessor-source.mjs', '1c08778a28bc3931b42430eaa94d9659dd279f42528c5306631b971c4405928d', 0],
   ['scripts/protected-private-production-runtime.mjs', 'e41b0434e14dd181c5ca3f6313456274c4fa5fcc9e97029e49f300ae0d4e4762', 6],
   ['scripts/private-production-runtime-bundle.mjs', '2eeff25c6d6e769c7a5d9b414bfed574e0105e7cb24d0bd1578e7700781d5529', 3],
+  ['scripts/check-established-native-current-origin-predecessor-source.mjs', 'cb2743d4c7caff798667c6eb61436d9bc662fb321c37e3844e52f4b70eabce69', 0],
+  ['scripts/lib/authenticated-frozen140000-predecessor.mjs', 'ae78ab5dfbf03ef9eba4b9955c10d2cc2c8cbb588703728da91c0ef9bbb52d73', 1],
 ];
 
 test('only complete reviewed model leaves use their exact frozen inventories', async () => {
@@ -29,6 +32,49 @@ test('only complete reviewed model leaves use their exact frozen inventories', a
     assert.throws(() => modelSourceRelativeModuleSpecifiers(source + '\n// changed byte\n', file), /Whole reviewed model import source changed/);
     assert.throws(() => modelSourceRelativeModuleSpecifiers(source + "\nimport './hidden.mjs';\n", file), /Whole reviewed model import source changed/);
   }
+});
+
+test('exported declaration expressions do not turn property or binding names into from-clauses',()=>{
+ for(const source of [
+  'export const cells = Array.from({length:5});',
+  'export let cells = Array.from([]);',
+  'export var cells = Array.from([]);',
+  'export default Array.from([]);',
+  'export default {from: 3};',
+  'export const from = 3;',
+  'export function cells(){ return Array.from([]); }',
+  'export async function cells(){ return Array.from([]); }',
+  'export class Cells { field = Array.from([]); }',
+ ])assert.deepEqual(exactRelativeModuleSpecifiers(source,'export-expression.mjs'),[],source);
+});
+
+test('declaration bodies still expose literal imports and reject every existing unsafe dynamic form',()=>{
+ for(const declaration of ['const cells =','default','async function cells(){return','function cells(){return']){
+  const tail=declaration.includes('function')?';}':';';
+  assert.deepEqual(exactRelativeModuleSpecifiers(`export ${declaration} import('./real.js')${tail}`),['./real.js']);
+  for(const expression of ['import(variable)',"import('./x.js' + suffix)",'import(`./${name}.js`)',
+   'import(unknown.path)',"import('./x.js', options)"])
+   assert.throws(()=>exactRelativeModuleSpecifiers(`export ${declaration} ${expression}${tail}`),/non-literal or unparsed dynamic import/);
+ }
+ assert.deepEqual(exactRelativeModuleSpecifiers('export const o = { from: "./fake.js", load: import("./real.js") };'),['./real.js']);
+ assert.deepEqual(exactRelativeModuleSpecifiers('export const o = `from ${import("./real.js")}`;'),['./real.js']);
+ assert.throws(()=>exactRelativeModuleSpecifiers('export const o = `from ${import(variable)}`;'),/non-literal or unparsed dynamic import/);
+});
+
+test('ordinary import/export-from, import.meta, lexical exclusions and unsafe refusals remain strict',()=>{
+ const positive=[
+  ["import {x} from './one.js'; export {x as y} from '../two.mjs';",['./one.js','../two.mjs']],
+  ["export * from './star.js'; export * as ns from '../namespace.js';",['./star.js','../namespace.js']],
+  ["import './side.js'; const x=import('./dynamic.js');",['./side.js','./dynamic.js']],
+  ["export {x}; import 'node:fs'; export * from 'node:path';",[]],
+  ["// import(variable)\n/* export * from notLiteral */ const s='import(variable)';",[]],
+  ['const r=/import\\(/; const s=`not import`; const url=import.meta.url;',[]],
+ ];
+ for(const[source,expected]of positive)assert.deepEqual(exactRelativeModuleSpecifiers(source),expected);
+ for(const source of ['import(variable)',"import('./x.js' + suffix)",'import(`./${name}.js`)',
+  'export * from variable;', 'export {x} from variable;', 'import {x} from variable;',
+  'import {x};','import("unterminated)','const text=`unterminated', '/* unterminated',
+  'const r=/unterminated', 'const text=`${import(variable)}`;'])assert.throws(()=>exactRelativeModuleSpecifiers(source),undefined,source);
 });
 
 test('reviewed origin inventory is the whole static graph plus its fixed historical read', async () => {
@@ -64,5 +110,114 @@ test('both normal builders differ only by the explicit shared import-inventory c
     assert.equal(inverse.split('modelSourceRelativeModuleSpecifiers(').length, 2);
     inverse = inverse.replace('modelSourceRelativeModuleSpecifiers(', 'exactRelativeModuleSpecifiers(');
     assert.equal(inverse, before);
+  }
+});
+
+test('frozen140000 helper and snapshot reader inventories include every ordinary relative import', async () => {
+  const leaves = [
+    ['scripts/check-established-native-current-origin-predecessor-source.mjs', [
+      "import('data:text/javascript;base64,'+Buffer.from(executableModel).toString('base64'))",
+      "import('data:text/javascript;base64,'+(await bytes(file,index)).toString('base64'))",
+      'import(pathToFileURL(path.join(root,T)).href)',
+      "import(pathToFileURL(path.join(root,'scripts/private-production-runtime-workflow.mjs')).href)",
+    ], []],
+    ['scripts/lib/authenticated-frozen140000-predecessor.mjs', [
+      'import(pathToFileURL(path.join(frozenRoot,file)).href)',
+    ], ['../check-established-native-current-origin-predecessor-source.mjs']],
+  ];
+  for (const [file, dynamicImports, expected] of leaves) {
+    const source = normalized(await fs.readFile(path.join(ROOT, file), 'utf8'));
+    let ordinary = source;
+    for (const expression of dynamicImports) {
+      assert.equal(ordinary.split(expression).length, 2, 'One whole reviewed immutable-root import');
+      ordinary = ordinary.replace(expression, "import('node:fs')");
+    }
+    assert.deepEqual(exactRelativeModuleSpecifiers(ordinary, file), expected);
+    assert.deepEqual([...modelSourceRelativeModuleSpecifiers(source, file)], expected);
+    assert.throws(() => modelSourceRelativeModuleSpecifiers(source, 'scripts/not-a-reviewed-140000-leaf.mjs'),
+      /non-literal or unparsed dynamic import/);
+    // No local/future source can replace fixed family bytes or add an import.
+    for (const changed of [source.replace('85fe6f7ffa889af0b74346a12d0b4385ce4ab0e9',
+      '07534c1480fcf8da546dfb0a7b242e512aee7e93'), source + "\nimport './future.mjs';\n"]) {
+      assert.notEqual(changed, source);
+      assert.throws(() => modelSourceRelativeModuleSpecifiers(changed, file), /Whole reviewed model import source changed/);
+    }
+  }
+});
+
+test('SAME_H0 actual origin has only one new relative dependency and the whole old140000 inverse', async () => {
+  const file = 'scripts/lib/established-native-current-origin.mjs';
+  const actualSource = normalized(await fs.readFile(path.join(ROOT, file), 'utf8'));
+  const source = inverseAssistant583Origin(actualSource);
+  assert.equal(sha(source), 'e9d378c8f2c23f225884e595690c4ca9868d97ffa482db40ed78359742a03a42');
+  const oldImports = [
+  "../protected-private-production-runtime.mjs",
+  "../protected-ravscore-continuation-checkpoint.mjs",
+  "../private-production-runtime-bundle.mjs",
+  "../ravscore-continuation-checkpoint.mjs",
+  "../private-production-runtime-workflow.mjs",
+  "../../js/core/ravscore-model-contract.js",
+  "../rollback-assets/ravscore-model-contract.js",
+  "../../js/core/ravscore-model-bundle.generated.js",
+  "./ravscore-sampling-context.mjs",
+  "./coastal-point-staging-contract.mjs",
+  "./ravscore-candidate-g-rollback-runtime.mjs",
+  "./private-weather-component-pack.mjs",
+  "../check-native-current-reanalysis-predecessor-source.mjs",
+  "./ravscore-production-part-pipeline.mjs"
+];
+  const dependency = './authenticated-frozen140000-predecessor.mjs';
+  const current = modelSourceRelativeModuleSpecifiers(actualSource, file);
+  assert.deepEqual([...current], [...oldImports, dependency]);
+  assert.equal(current.length, 15);
+  const edits = [
+  {
+    "before": "import { withNativeCurrentReanalysisPredecessorSource } from '../check-native-current-reanalysis-predecessor-source.mjs';\n",
+    "after": "import { withNativeCurrentReanalysisPredecessorSource } from '../check-native-current-reanalysis-predecessor-source.mjs';\nimport { assertAuthenticatedFrozen140000Snapshot } from './authenticated-frozen140000-predecessor.mjs';\n"
+  },
+  {
+    "before": "export const ESTABLISHED_NATIVE_CURRENT_SEMANTIC_CONTRACT = 'established-native-current-continuation-v1';",
+    "after": "export const ESTABLISHED_NATIVE_CURRENT_SEMANTIC_CONTRACT = 'established-native-current-continuation-v2';"
+  },
+  {
+    "before": "const contexts = new WeakMap(), failedCloses = new Map();",
+    "after": "const contexts = new WeakMap(), failedCloses = new Map(), metadataConsumed = new WeakSet();"
+  },
+  {
+    "before": "need(['SEED_METADATA_ONLY', 'NORMAL_STRICT_CONTINUATION'].includes(attest.transition), 'TRANSITION');",
+    "after": "need(['SEED_METADATA_ONLY', 'NORMAL_STRICT_CONTINUATION', 'SAME_H0_MODEL_METADATA'].includes(attest.transition), 'TRANSITION');"
+  },
+  {
+    "before": "  const seed = descriptor.bundleContentSha256 === SEED.B;\n",
+    "after": "  const seed = descriptor.bundleContentSha256 === SEED.B;\n  if (seed) need(ESTABLISHED_NATIVE_CURRENT_SEMANTIC_CONTRACT === 'established-native-current-continuation-v1', 'SEED_ALREADY_ISSUED');\n"
+  },
+  {
+    "before": "  need(arguments.length === 0, 'ARGUMENTS');\n  for (const [key, value]",
+    "after": "  need(arguments.length === 0, 'ARGUMENTS');\n  need(ESTABLISHED_NATIVE_CURRENT_SEMANTIC_CONTRACT === 'established-native-current-continuation-v1', 'SEED_ALREADY_ISSUED');\n  for (const [key, value]"
+  },
+  {
+    "before": "",
+    "after": "\n// Explicit later binding event. ONLY the separate fixed authenticated OLD140000\n// snapshot can authorize it; ordinary/seed handles and serialized data cannot.\n// This grants neither normal ForPart nor fabricated strict-production results.\nexport async function buildEstablishedNativeCurrentSameH0MetadataAttestation(handle, options) {\n  need(arguments.length === 2 && exact(options, ['centralContract', 'conditions']), 'ARGUMENTS');\n  const old = assertAuthenticatedFrozen140000Snapshot(handle);\n  need(!metadataConsumed.has(handle), 'METADATA_ALREADY_CONSUMED');\n  const currentSource = await sourceIdentity();\n  const oldI = old.checkpoint.modelBinding, oldC = old.checkpoint.candidateGRollbackCompanion.modelBinding;\n  const contracts = await privateRuntimeContractHashes();\n  need(currentSource.integrated !== oldI.modelBundleSha256\n    && currentSource.candidate !== oldC.modelBundleSha256\n    && currentSource.continuation !== old.checkpoint.continuationStateContractSha256, 'METADATA_UNISSUED');\n  need(same({ ...oldI, modelBundleSha256: currentSource.integrated }, ravScoreModelBinding())\n    && same({ ...oldC, modelBundleSha256: currentSource.candidate }, candidateBinding())\n    && same({ ...old.descriptor.contractHashes,\n      continuationStateContractSha256: currentSource.continuation }, contracts), 'METADATA_CONTRACT_CHANGED');\n  const { centralContract, conditions } = options;\n  need(same(centralContract, old.centralContract), 'METADATA_REGISTRY_CHANGED');\n  const parts = registryParts(centralContract), pairs = pairsFromConditions(conditions, parts);\n  need(conditions.datasetId === old.descriptor.datasetId\n    && conditions.productionReferenceAt === old.descriptor.productionReferenceAt\n    && same(conditions[ATTEST], old.attestation), 'METADATA_TARGET_CHANGED');\n  need(old.attestation.semanticContract === 'established-native-current-continuation-v1'\n    && SHA.test(old.attestation.attestationSha256), 'METADATA_PARENT');\n  for (const [id, pair] of pairs) {\n    const oldIntegrated = old.checkpoint.states[id], oldCandidate = old.checkpoint.candidateGRollbackCompanion.states[id];\n    const inverseI = structuredClone(pair.integrated), inverseG = structuredClone(pair.candidate);\n    need(inverseI.modelBundleSha256 === currentSource.integrated, 'METADATA_BINDING');\n    inverseI.modelBundleSha256 = oldIntegrated.modelBundleSha256;\n    if (Object.hasOwn(inverseG, 'modelBundleSha256')) {\n      need(inverseG.modelBundleSha256 === currentSource.candidate, 'METADATA_BINDING');\n      inverseG.modelBundleSha256 = oldCandidate.modelBundleSha256;\n    }\n    need(same(inverseI, oldIntegrated) && same(inverseG, oldCandidate), 'METADATA_NUMERICAL_CHANGE');\n  }\n  // Source/HEAD and physical required blobs must still be the same actual new\n  // normal source after validating every H0 pair. No caller tuple is accepted.\n  need(same(await sourceIdentity(), currentSource), 'SOURCE_CHANGED');\n  const content = { schemaVersion: 1, kind: KIND,\n    semanticContract: ESTABLISHED_NATIVE_CURRENT_SEMANTIC_CONTRACT, seed: { ...SEED },\n    parent: { bundleContentSha256: old.descriptor.bundleContentSha256,\n      generationSha256: old.checkpoint.generationSha256,\n      attestationSha256: old.attestation.attestationSha256 },\n    producer: { ...currentSource }, datasetId: conditions.datasetId, referenceAt: conditions.productionReferenceAt,\n    registrySha256: digest(centralContract), contextRegistrySha256: contextDigest(pairs),\n    pairsSha256: pairsDigest(pairs), transition: 'SAME_H0_MODEL_METADATA' };\n  const attestation = { ...content, attestationSha256: digest(content) };\n  need(Buffer.byteLength(canonical(attestation)) <= MAX_ATTEST, 'ATTESTATION_SIZE');\n  metadataConsumed.add(handle);\n  return freeze(attestation);\n}\n",
+    "append": true
+  }
+];
+  let inverse = source;
+  for (const edit of [...edits].reverse()) {
+    assert.equal(inverse.split(edit.after).length, 2, 'Exact whole reviewed origin inverse hunk');
+    inverse = inverse.replace(edit.after, edit.before);
+  }
+  assert.equal(sha(inverse), 'e4741332e9cc54523fccf8ded70ace9767047d97090306c00fafd43385235c42', 'Entire genuine old140000 origin, not a pin retag');
+  const dynamic = 'import(pathToFileURL(path.join(sourceRoot, file)).href)';
+  assert.equal(inverse.split(dynamic).length, 2);
+  assert.deepEqual([...exactRelativeModuleSpecifiers(inverse.replace(dynamic, "import('node:fs')"), file)].sort(),
+    [...oldImports].sort(), 'All fourteen old imports remain unchanged');
+  assert.equal(oldImports.length, 14);
+  assert.throws(() => modelSourceRelativeModuleSpecifiers(inverse, file), /Whole reviewed model import source changed/,
+    'Historical bytes cannot masquerade as current SAME_H0 source');
+  const declaration = "import { assertAuthenticatedFrozen140000Snapshot } from './authenticated-frozen140000-predecessor.mjs';\n";
+  assert.equal(source.split(declaration).length, 2);
+  for (const changed of [actualSource.replace(declaration, ''), actualSource + declaration]) {
+    assert.notEqual(changed, actualSource);
+    assert.throws(() => modelSourceRelativeModuleSpecifiers(changed, file), /Whole reviewed model import source changed/);
   }
 });

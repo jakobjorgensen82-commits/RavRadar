@@ -5,7 +5,6 @@ import os from 'node:os';
 import path from 'node:path';
 import { execFile } from 'node:child_process';
 import { fileURLToPath, pathToFileURL } from 'node:url';
-import { exactRelativeModuleSpecifiers } from './static-module-closure.mjs';
 import { accountAssistantCatalogQuery, verifyAccountAssistantCatalogMetadata }
   from '../verify-account-assistant-schema.mjs';
 
@@ -34,7 +33,7 @@ const sqlText = text => String(text).replace(/\r\n?/g, '\n');
 const NATIVE_PSQL_PHASES = new Set(['NATIVE_SETUP', 'CAS200_MIGRATION',
   'BASELINE_FIXTURES', 'BASELINE_ADMISSION', 'BASELINE_CAS_CASES',
   'ACCOUNT213', 'CURRENT220', 'STATISTICS230', 'NATIVE_IDENTITY0600', 'CURRENT_MEMORY_WARMUP',
-  'ESTABLISHED_NATIVE_CURRENT_ORIGIN', 'UNKNOWN']);
+  'ESTABLISHED_NATIVE_CURRENT_ORIGIN', 'ASSISTANT_SAME_H0', 'UNKNOWN']);
 const NATIVE_PSQL_STATES = Object.freeze({
   '22003':'SQL_RANGE', '22023':'SQL_PARAMETER', '22P02':'SQL_TEXT_FORMAT',
   '23502':'SQL_NOT_NULL', '23503':'SQL_FOREIGN_KEY', '23505':'SQL_UNIQUE',
@@ -125,8 +124,10 @@ async function issued213Factory(root) {
     + slice('const samples =', 'const sourceDocument =');
   assert.equal(hash(factory), '71ce29ec98e43bfa02017a145c4438346f1d8a1f4323526ec58e4b1081d81e36');
   const scanner = 'scripts/lib/static-module-closure.mjs';
-  assert.equal(sqlText(await fs.readFile(path.join(ISSUED_ROOT, scanner), 'utf8')),
-    String(await read(scanner)), 'Use the actual reviewed issued static scanner');
+  const scannerBytes = await read(scanner);
+  assert.equal(hash(scannerBytes), '675f91e7942143a78636e219e54bd7fa0ff25ddcd1998657dd215105054938b0',
+    'Use the whole genuine044d issued scanner only for its original fixture');
+  const { exactRelativeModuleSpecifiers } = await import('data:text/javascript;base64,' + scannerBytes.toString('base64'));
   const tSource = String(await read(ISSUED_T));
   const declaration = /export const RAVSCORE_CONTINUATION_IMPLEMENTATION_FILES = Object\.freeze\(\[\n((?:  '[A-Za-z0-9_./-]+',\n)+)\]\);/.exec(tSource);
   assert(declaration, 'Exact historical T declaration required');
@@ -625,11 +626,13 @@ async function compareCurrentGridSuccessor({ psql, runSql, source, accountSource
 // Its real 673 model builders and normal checkpoint saver supply the fixtures.
 export async function runNativeCheckpointSqlComparison({ repositoryRoot,
   sourceDocumentAt, atHour, saveCheckpoint, includeStatisticsRevision = false,
-  includeNativeIdentity = false, includeCurrentMemoryWarmup = false, includeEstablishedNativeCurrentOrigin = false } = {}) {
+  includeNativeIdentity = false, includeCurrentMemoryWarmup = false, includeEstablishedNativeCurrentOrigin = false, includeAssistantSameH0 = false } = {}) {
   assert.equal(typeof includeStatisticsRevision,'boolean');
   assert.equal(typeof includeNativeIdentity,'boolean');
   assert.equal(typeof includeCurrentMemoryWarmup,'boolean');
   assert.equal(typeof includeEstablishedNativeCurrentOrigin,'boolean');
+  assert.equal(typeof includeAssistantSameH0,'boolean');
+  assert(!includeAssistantSameH0 || includeEstablishedNativeCurrentOrigin,'SAME_H0 requires the genuine frozen140000 phase');
   assert(!includeEstablishedNativeCurrentOrigin || includeCurrentMemoryWarmup,'Established origin requires every unchanged historical native phase');
   assert(!includeCurrentMemoryWarmup || (includeNativeIdentity && includeStatisticsRevision), 'CurrentMemoryWarmup requires every unchanged historical native phase');
   assert(!includeNativeIdentity || includeStatisticsRevision, 'NEW requires the unchanged statistics230 phase');
@@ -906,19 +909,34 @@ select public.native_checkpoint_attempt(${baseline},${version},(select payload f
     let establishedNativeCurrentOrigin;
     if (includeEstablishedNativeCurrentOrigin) {
       nativePhase='ESTABLISHED_NATIVE_CURRENT_ORIGIN';
-      const {compareEstablishedNativeCurrentOriginSuccessor}=await import('./established-native-current-origin-postgres.mjs');
-      establishedNativeCurrentOrigin=await compareEstablishedNativeCurrentOriginSuccessor({
-        psql,runSql,root,sourceDocumentAt,atHour,saveCheckpoint});
+      const {withFrozenEstablishedNativeCurrentOriginPostgresSource}=await import('../run-frozen-established-native-current-origin-source-targets.mjs');
+      establishedNativeCurrentOrigin=await withFrozenEstablishedNativeCurrentOriginPostgresSource(async({adapter,factory})=>
+        adapter.compareEstablishedNativeCurrentOriginSuccessor({psql,runSql,root,
+          sourceDocumentAt:factory.sourceDocumentAt,atHour:factory.atHour,saveCheckpoint:factory.saveRavScoreContinuationCheckpoint}));
+    }
+    let assistantSameH0;
+    if(includeAssistantSameH0){
+      nativePhase='ASSISTANT_SAME_H0';
+      const {compareAssistantSameH0Successor}=await import('./assistant-same-h0-postgres.mjs');
+      assistantSameH0=await compareAssistantSameH0Successor({psql,runSql,root,sourceDocumentAt,atHour,saveCheckpoint});
     }
     return {kind:'NATIVE_POSTGRES_CHECKPOINT_CAS_COMPARISON',accountAssistant,currentGrid,
       ...(includeStatisticsRevision?{statisticsRevision}:{}),
       ...(includeNativeIdentity?{nativeIdentity}:{}),
       ...(includeCurrentMemoryWarmup?{currentMemoryWarmup}:{}),
       ...(includeEstablishedNativeCurrentOrigin?{establishedNativeCurrentOrigin}:{}),
+      ...(includeAssistantSameH0?{assistantSameH0}:{}),
       issuedSource:issued.sourceReceipt,postgresMajorVersion:programs.majorVersion,
       tcpEnabled:false,normalModelPartCount:673,sqlExecuted:true,migrationExecuted:true,
       migrationSQLSha256:hash(newSource),caseCount:reports.length,
       oldCasDefinitionSha256:hash(oldCas),newCasDefinitionSha256:hash(newCas),reports};
+  } catch (error) {
+    if (error?.code === 'ERR_ASSERTION') {
+      console.error(JSON.stringify({ kind: 'NATIVE_POSTGRES_FIRST_ASSERTION_FAILURE',
+        phase: NATIVE_PSQL_PHASES.has(nativePhase) ? nativePhase : 'UNKNOWN',
+        category: 'ASSERTION_FAILED', privatePayloadIncluded: false }));
+    }
+    throw error;
   } finally {
     try {
     if (started) {

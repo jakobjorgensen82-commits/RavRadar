@@ -160,6 +160,11 @@ export function exactRelativeModuleSpecifiers(source, label = 'module') {
       index += 3;
       continue;
     }
+    // Exported declarations have no from-clause; property names in their
+    // expressions are not module specifiers. Keep scanning their bodies so
+    // literal and unsafe dynamic imports retain the same strict handling.
+    if (token.value === 'export' && next?.type === 'id'
+        && ['const', 'let', 'var', 'function', 'class', 'async', 'default'].includes(next.value)) continue;
     const end = statementEnd(items, index + 1);
     if (token.value === 'import' && next?.type === 'string') {
       if (next.value.startsWith('./') || next.value.startsWith('../')) values.add(next.value);

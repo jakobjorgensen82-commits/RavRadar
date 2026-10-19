@@ -8,7 +8,18 @@ const coldReview = JSON.parse(fs.readFileSync(new URL('./current-family-cold-sta
 const sha = value => crypto.createHash('sha256').update(value).digest('hex');
 // Test-only additive C layer. Only these two whole reviewed afterimages may
 // enter; every byte of the genuine f644 predecessor remains the old oracle.
+export function inverseRelease583WorkflowUserAgent(source, role) {
+  // Exact test-only release583 UA inverse before the unchanged C/historical layers.
+  if (role === 'build' && sha(source) === '4c86626e29537f51d48b0246fe33559f6efcdf0e1f431d879c2283290b0ad7a0') {
+    assert.equal(source.split('RavRadar/4.0.583').length, 6, 'Exactly five reviewed583 UA changes');
+    source = source.replaceAll('RavRadar/4.0.583', 'RavRadar/4.0.581');
+    assert.equal(sha(source), '4883b292423e162eec6f88d6402ef189adca71dc538fdfe22b7f91162f8ce4f0',
+      'Whole genuine899 C workflow survives the release583 UA inverse');
+  }
+  return source;
+}
 export function inverseCurrentFamilyColdStartWorkflow(source, role) {
+  source = inverseRelease583WorkflowUserAgent(source, role);
   const row = coldReview.roles[role];
   if (!row || sha(source) !== row.actualSha256) return source;
   let previous = source;

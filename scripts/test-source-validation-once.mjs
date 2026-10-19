@@ -1,3 +1,4 @@
+import {inverseAssistant583SourceScripts} from './lib/assistant583-source-command-review.mjs';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
@@ -10,7 +11,7 @@ import {
   SOURCE_BINDING_PREFLIGHT,
 } from './validate-source-once.mjs';
 
-const scripts = JSON.parse(fs.readFileSync('package.json', 'utf8')).scripts;
+const scripts = inverseAssistant583SourceScripts(JSON.parse(fs.readFileSync('package.json', 'utf8')).scripts);
 const plan = buildSourceValidationPlan(scripts);
 const declared = expandSourceCommands(scripts, 'validate:source:checks');
 
