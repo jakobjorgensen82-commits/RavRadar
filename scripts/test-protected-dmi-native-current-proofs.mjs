@@ -1732,13 +1732,14 @@ test('normal private recovery maps the complete 72h bridge without widening publ
     buildNewestValidRavScoreRecoverySources,
     ravScoreOwnerCurrentHistoryStartAt, ravScoreRecoverySourceStartAt: recovery.ravScoreRecoverySourceStartAt,
     part, zoneId: part.zoneId, initialSelection, generatedAt: at(120), feature,
+    archivedRestartInputs: null,
     deployedBulkCache: old, historicalDmiBulkCache: null, bulkCache: fresh,
     bulkId: identity.entityId, partDmiIdentity: identity, liveCurrentPilot: null, componentInputs: {},
     persistedDmiPartRows: new Map([[part.partId, { hourly: oldDefault.hourly }]]),
     protectedSameRunDmiRetentions: { current: { SAME_VALUES: 0, DIFFERENT_VALUES: 0 },
       wave: { SAME_VALUES: 0, DIFFERENT_VALUES: 0 } } };
   const actualRecovery = Function(...Object.keys(callScope),
-    slice(source, '      const replayStartAt = ravScoreOwnerCurrentHistoryStartAt(',
+    slice(source, '      const replayStartAt = archivedRestartInputs !== null ? generatedAt',
       '      let productionSeries;')
     + ';return { replayStartAt, deployedRecoverySource, progressiveRecoverySource, recoverySources };')(
     ...Object.values(callScope));
