@@ -118,7 +118,7 @@ jobs:
     if: always() && needs.source-proof-bank-scope.result == 'success' && ((needs.source-proof-bank-scope.outputs.required == 'true' && needs.source-proof-bank-native.result == 'success') || (needs.source-proof-bank-scope.outputs.required == 'false' && needs.source-proof-bank-native.result == 'skipped'))
     name: Source validation and release gate
     runs-on: ubuntu-24.04
-    timeout-minutes: 75
+    timeout-minutes: 90
     steps:
       - uses: actions/checkout@v7
         with:

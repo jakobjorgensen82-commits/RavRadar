@@ -1,3 +1,22 @@
+## 19. oktober — isoleret SOURCE: præcis native-selvtest efter faktisk P0-levering
+
+- P0 39291575502/1 leverede nyt offentligt 4.0.584-datasæt kl. 20.00 dansk tid efter faktisk 55+3, sole060000-genlæsning, privat B før S og verificeret Pages/central afslutning. Det er beregnet fra gemte input; én almindelig efterfølger 39299413035/1 er startet, men dens resultat er endnu åbent.
+- SOURCEs nativejob bestod; den samlede kildekontrol stoppede før PostgreSQL på en selvtest, der fejlagtigt krævede aktuel HEAD genbrugskompatibel med gamle input. Testen bruger nu autentiske, faste positive/negative Git-snapshots. Gamle præcise kontroller og normal afvisning af faktisk inputdrift bevares; ingen produktguard eller PostgreSQL-kørsel springes over.
+- Lokal komposition bevarer den leverede 90-minutters kildegrænse, alle tre navngivne ikke-native prøveforbrugere og SOURCEs separate 35-minutters nativegrænse. Ny præcis samlet kontrol og SOURCE-aktivering er fortsat åbne. Ingen ny model-, geometri- eller SQL-overgang følger af testrettelsen.
+
+## 19. oktober — 4.0.584: PR-kildekontrollens ydre jobloft
+
+- Den præcise PR673-kontrol bestod native PostgreSQL på 28:46 og den efterfølgende kildevalidering på 30:43, men blev afbrudt omkring det konfigurerede 75-minuttersloft under den anden nationale efterfølger. Loggen nåede 601 af 673 dele; tidsforløbet peger stærkt på jobloftet, og loggen viser ingen assertionsfejl. Dette er ikke bestået samlet kildekontrol.
+- Kun PR-kildejobbets ydre loft hæves fra 75 til 90 minutter. Samtlige normale kommandoer, rækkefølger, gates og fejlkrav bevares; vejr-, leverandør-, kode-only- og underprocesbudgetter ændres ikke. Ingen produktkode, C/I/T, model eller SQL ændres.
+- Den ene aktuelle PR-workflowprøve er eksplicit ikke-native input med mutation-, symlink-, forsvindings- og nabofilafslag; alle historiske Git-blade bevares. Den uændrede genbrugskontrakt må afvise den ændrede workflowkilde og køre rigtig PostgreSQL. Ny præcis samlet kontrol og offentlig genopretning er fortsat åbne.
+
+## 19. oktober — 4.0.584: tidsskyderens normale artifactprøver
+
+- Faktisk genoptagelse 39246956714/1 gennemførte beregningen på 21 minutter og 49 sekunder uden nye leverandørkald. Alle 55 artifactprøver blev forsøgt: to fejlede; alle tre releaseprøver bestod. Ingen ny SQL, privat B/S eller Pages blev leveret.
+- Mobilprøven krævede forældet direkte naboskab mellem kort og farveforklaring. Den kontrollerer nu reel placering og rækkefølge, inklusive den godkendte tidsskyder, samt afslag på fejlplaceringer.
+- Strømpileprøvens VM manglede de faktiske korttidsfunktioner. Hele normale funktioner og controller indlæses; de eksisterende geometri-, kilde-, time- og maskekrav bevares. Ingen produktkode, vejrdata, scoremodel eller geometri ændres.
+- Kun de to navngivne aktuelle UI-prøver klassificeres som ikke-native PostgreSQL-input. Oprindelige Git-træer, rigtige databaseinput, miljø- og fejlkontroller bevares; faktisk genbrug afhænger fortsat af friskt gyldigt bevis. Ny præcis kildekontrol og offentlig genopretning er endnu åbne.
+
 ## 19. oktober — 4.0.584: normal artifactkontrol efter arkivberegning
 
 - Den sidste providerfrie arkivgenstart gennemførte arkiv og beregning, men blev annulleret under en forældet fuld validering omkring jobloftet. Intet nyt B/S, SQL-installation, leveringsartifact eller Pages er bevist.

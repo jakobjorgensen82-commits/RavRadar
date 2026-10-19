@@ -1,3 +1,33 @@
+## 19. oktober — faktisk P0-levering og isoleret SOURCE-testopfølgning
+
+- [x] Præcis PR673-kildekontrol 39278848551/1, faktisk PostgreSQL og national opstart med to efterfølgere.
+- [x] 39291575502/1 på main c72d6730: faktisk 55+3, sole060000-installation/genlæsning, privat B før S, serverfunktioner, Pages, offentlig 210/673-kontrol og central afslutning kl. 20.00 dansk tid.
+- [x] Uafhængig, afgrænset offentlig kontrol af nyt rr-20261019171204-210 med reference kl. 02.00 dansk tid; fem nationale kalenderdage og én aktuel times dækning. Dette er gemte vejrinput, ikke ny leverandørhentning eller fuld fremtidig numerisk dækning.
+- [x] Præcis én almindelig standardkørsel 39299413035/1 startet kl. 20.03; faktisk privat genlæsning og B/S-sammenkobling bestået.
+- [ ] Denne almindelige kørsels nye leverandørdata, beregning, gemning, upload og offentlige effekt samt efterfølgende uændret cron. Browserforbindelsen svarer ikke; genaktivering er ikke påstået.
+- [x] SOURCEs særlige nativejob i 39269013971/1 er bestået; normal kildekontrols første fejl er identificeret i selvtesten før PostgreSQL.
+- [x] Lokal testrettelse bevarer gamle præcise kontroller på en autentisk P0-fixture og prøver afvist genbrug på en autentisk SOURCE-fixture uden antagelse om callerens HEAD. Produktionslæser, afslag, SQL og model er uændrede.
+- [ ] Samlede målprøver efter komposition med leveret main, præcis ny kildekontrol og faktisk SOURCE-integration/aktivering. 90-minuttersloftet og de tre eksisterende ikke-native prøveforbrugere skal bevares.
+
+SOURCE og assistentkandidaten er ikke aktiveret. Alle fem hovedmål er åbne; fristen 18. oktober er overskredet. Live-status og detaljeret privat evidens ligger i checkpointet. Ældre modstridende status nedenfor er dateret historik.
+
+## 19. oktober — 4.0.584: PR-kildekontrollens ydre jobloft
+
+- Faktisk PR673: native PostgreSQL bestod på 28:46 og kildevalidering på 30:43; den efterfølgende nationalprøve blev afbrudt omkring det konfigurerede 75-minuttersloft under anden efterfølger, efter 601/673 dele. Tidsforløbet peger stærkt på jobloftet; loggen viser ingen assertionsfejl. Samlet kilde-CI er ikke bestået.
+- Lokal kildeopfølgning: kun ydre PR-jobloft 75→90, normal præcis timeoutforventning og én navngiven ikke-native workflowtest med uændret 3228-regnskab og afgrænsede mutationsafslag. Frosne Git-blade, ORIGIN og normal PG-/genbrugsadfærd bevares; ændret workflow kan kræve faktisk ny PostgreSQL.
+- Ingen produkt-, model-, C/I/T-, SQL-, vejr-/leverandør-, kode-only- eller underprocesbudgetændring. Ny præcis samlet kontrol, national færdiggørelse, ny B/S, SQL/Pages og almindelig efterfølger er fortsat åbne. Alle fem hovedmål er åbne; fristen 18. oktober er overskredet.
+
+## 19. oktober — 4.0.584: normal UI-prøvevært efter tidsskyderen
+
+- [x] Faktisk providerfri beregning i 39246956714/1, fuld 55+3-rapport: præcis mobilprøve20 og strømpileprøve38 fejlede; øvrige 53+3 bestod.
+- [x] Mobilprøvens placering/rækkefølge med tidsskyderen og negative layouttilfælde bestået lokalt.
+- [x] Strømpileprøvens faktiske manglende VM-afhængighed reproduceret; hele normale mål bestået med faktiske kortfunktioner og controller, alle gamle geometri-/maskeassertions bevaret.
+- [x] Målrettet native-bevislæser består fire grupper: kun de to navngivne aktuelle UI-prøver må afvige; faktisk native-input-/miljødrift, ukendt evidens og relevante senere fejl kræver ny udførelse. Ingen nyt PG-genbrug eller SQL-installation er påstået.
+- [ ] Præcis ny samlet kildekontrol, sikker merge og providerfri genoptagelse med alle 55+3 faktisk bestået.
+- [ ] Nyt B/S, installation/genlæsning, serverfunktioner, Pages og almindelig efterfølger. Beregningen fra det fejlede forsøg blev ikke gemt i et checkpoint.
+
+Dette er en testkalderrettelse på uændret 4.0.584, ikke en ny model-, data-, geometri- eller SQL-overgang. Alle fem hovedmål er åbne; fristen 18. oktober er overskredet, og tilbageholdte aktiveringer forbliver inaktive.
+
 ## 19. oktober — 4.0.584: normal artifactkontrol efter arkivberegning
 
 FAKTISK: Den foregående præcise 584-kildekontrol og den nationale syntetiske opstart med to efterfølgere er bestået. Den efterfølgende providerfrie arkivgenstart gennemførte arkiv og beregning kl. 11.07.24 dansk tid, men blev annulleret omkring 60 minutter under den forældede fulde validering. Nyt leveringsartifact, B/S-publicering, SQL-installation og Pages blev ikke gennemført.
