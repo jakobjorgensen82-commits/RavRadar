@@ -503,11 +503,13 @@ function exactEstablishedProductionH0(result, part, targetReferenceAt) {
 // Assert-only collector seam for the fixed national origin finalizer. The
 // returned states are detached data, not a new origin handle or native grant.
 export function assertEstablishedNativeCurrentProductionResult(result, {
-  originHandle, part, targetReferenceAt,
+  originHandle, part, targetReferenceAt, requireMeasuredColdStart = false,
 } = {}) {
   const record = result && typeof result === 'object'
     ? establishedNativeCurrentProductionResults.get(result) : null;
-  if (!record || !originHandle || record.originHandle !== originHandle
+  if (typeof requireMeasuredColdStart !== 'boolean'
+    || (requireMeasuredColdStart && record?.measuredColdStart !== true)
+    || !record || !originHandle || record.originHandle !== originHandle
     || record.targetReferenceAt !== targetReferenceAt
     || !isDeepStrictEqual(record.context, establishedProductionContext(part))) {
     establishedProductionFailure();
@@ -754,6 +756,8 @@ export function buildRavScoreProductionPartSeries({
     // fixed finalizer's responsibility; they never bypass either OLD rebuild.
     establishedNativeCurrentProductionResults.set(result, {
       originHandle: establishedNativeCurrentOrigin,
+      measuredColdStart: measuredColdStartAttested && initialSelection.state === null
+        && candidateContinuationCount === 0 && initialSelection.source === 'COLD_START',
       context: structuredClone(establishedContext),
       targetReferenceAt,
       pair: structuredClone(exactEstablishedProductionH0(result, part, targetReferenceAt)),

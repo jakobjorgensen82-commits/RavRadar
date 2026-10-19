@@ -1,3 +1,33 @@
+## 19. oktober — 4.0.584: normal artifactkontrol efter arkivberegning
+
+FAKTISK: Den foregående præcise 584-kildekontrol og den nationale syntetiske opstart med to efterfølgere er bestået. Den efterfølgende providerfrie arkivgenstart gennemførte arkiv og beregning kl. 11.07.24 dansk tid, men blev annulleret omkring 60 minutter under den forældede fulde validering. Nyt leveringsartifact, B/S-publicering, SQL-installation og Pages blev ikke gennemført.
+
+LOKALT FORBEREDT: Arkivgrenen bruger den eksisterende faktiske 55+3-collectorplan og kræver begge udfald bestået før skrivning. Kun dens jobloft bliver 90 minutter; almindelig kode-only forbliver 60. Ingen ændring af version 584, C/I/T, model, SQL, kilder, leverandørbudgetter, adminpunkter eller geometri. Selvstændige kontroller bevares.
+
+ÅBENT: Den nye præcise workflowkontrol og faktisk kæde gennem artifact, privat B før S med genlæsning, SQL, Pages, offentlig effekt og almindelige efterfølgere. Dette er ikke fuldført revision eller selvstændig drift. Alle fem hovedmål er åbne, og fristen 18. oktober er overskredet uden forlængelse. Det private checkpoint ejer næste trin; ældre status bevares som historik.
+
+## 19. oktober — genbrug bestået databaseprøve ved uændrede input
+
+Den ægte native PostgreSQL-prøve for 4.0.584 bestod, inklusive den nye append-only migration på syntetiske data. Den efterfølgende kildekontrol fejlede i syv konkrete test-/værtsårsager: historiske kildepins og kildepositioner, manglende almindelige NULL-defaults i udskårne testfixtures samt forældet kalder-/timeoutregistrering. Opfølgningen retter disse samlet, bevarer de gamle assertions på deres præcise historiske input og tilføjer helkilde- og mutationskontrol af den nye arkiverede opstartsvej. Ingen produktkode, SQL, scoreformel, modelbinding, adminpunkter eller geometri ændres i denne testopfølgning. Præcis samlet kildekontrol, national kapacitet, faktisk installation, ny B/S, Pages og almindelige efterfølgere er fortsat åbne. Alle fem hovedmål er åbne; den offentlige baseline er fortsat senest verificeret 4.0.581. Det private checkpoint ejer kørselsnumre, fejlpartition og kvitteringer.
+
+## 19. oktober — lokal 4.0.584: ret producenten, bevar originalerne
+
+DELVIST IMPLEMENTERET: Begge reproducerede producentfejl er rettet lokalt; seks målrettede prøver består. Ægte ny model-/lagringsbinding og en ny append-only 20261019060000-migration er genereret lokalt fra hele 4.0.584-kilden efter normal versionssynk. Gamle SQL-filer, originaler, administratorpunkter og geometri bevares.
+
+VALGT, IKKE DRIFTSBEVIST: Permanent særskilt arkiv af faktisk B, central S og offentlig generation; providerfri normal beregning ved en strengt nyere reference fra gemte vejr-/PART-inputs; nul gammel I/G-historik og intet replay før target. Den almindelige efterfølger skal fortsætte fra den nye gemte tilstand uden engangsflag.
+
+ÅBENT: Kalder-/workflowintegration, endelig præcis kilde-/native-/PostgreSQL-kontrol, faktisk resterende horisont for alle 673 dele, ny normal B før S med genlæsning, Pages/offentlig verifikation og almindelige efterfølgere. De adskilte lokale producent-, arkiv-, læser- og planprøver er ikke dette driftsbevis. Offentlig version er senest verificeret som 4.0.581 med vejr fra 16. oktober kl. 12 dansk tid. Cron er senest verificeret slået fra. Alle fem hovedmål er åbne; fristen 18. oktober er overskredet og er ikke forlænget. Se håndbog 89.256; ældre status nedenfor er historik på disse punkter.
+
+Efter endelig normal versionssynk består de lokale C/I-/SQL-byggere, kontrollen af syv mutable bindingsforbrugere samt planens ni mål. Dette er kilde-/genereringskontrol, ikke PostgreSQL-eksekvering, faktisk installation eller ny offentlig prognose.
+
+## 19. oktober — SOURCE-afgrænsning efter P0: målt RAW-afslag, ny prøvevært endnu ikke kørt
+
+SOURCE fysisk kvalifikation: 39216786897/1 målte fem stalls og én finalizer, men afviste ved RAW_CLOSURE/DMI_RAW_SAVE_RECEIPT_INVALID før efterfølgende API-/SAVE-admission. Indre RAW-årsag og oprindelig clock er UNKNOWN; ingen nativePASS eller cloud-SAVE er opnået. Lokal SDK-protokolfinalisering giver ikke den manglende lukningsautoritet.
+
+SOURCE-kilde: 0ddca9ce indeholder den minimale current-instrumenterede v2, herunder to ægte nye produktoperands, sikker førsteafslagsdiagnostik og særskilt præcis CIPHER-parentargv-korrektion. Historiske 298 input/27 produktpins bevares. ROOTs normale Node-bank består lokalt med 69 bankblade, 229 faste Git-input og 36 værn; den lille v2-målprøve har fire PASS. Det er ikke Linux-/nativekvalifikation.
+
+Kommende levering: normal main-komposition er forberedt privat, fordi dokumentations-/håndbogsseedkonflikter forhindrede automatisk CI på det aktuelle head. Ny v2-native er UNRUN. P0-version 4.0.584, model/C/I/T, SQL uden håndbogsseed og aktiveringsstatus ændres ikke af denne source-only status-/integrationsopfølgning. SOURCE forbliver separat og inaktiv.
+
 ## 19. oktober — SOURCE: snæver privat opfølgning på målt EACCES
 
 Faktisk kørsel 39205832547 nåede fem bekræftede SIGSTOP/T-stalls før PERMISSION_ERROR/EACCES i testobservatørens procfs-stdinlæsning. Original pidfd-exitstatus er UNKNOWN; nul finalizers og null actionstatus er ikke produkt-/stopbevis. Privat V4 tillader kun en frisk pidfd-bevist afsluttet discovery ved EACCES; levende eller ukendt EACCES genkastes. Ny Linux-prøve accepterer None eller præcis ENOENT efter målt exit og kræver fortsat uafventet Popen-status før oprydning.

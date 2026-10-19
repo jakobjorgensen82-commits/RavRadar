@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import crypto from 'node:crypto';
 import fs from 'node:fs/promises';
 import test from 'node:test';
-import { inverseCompletedRuntimeWorkflow, inverseOrdinaryFullHistoryCheckout, inversePairedPrivateRuntimePublication, inverseOriginWeatherReadCredentials, assertCurrentHistoryRawRetentionOrder, inverseCurrentHistoryRawRetentionOrder, inverseCurrentFamilyColdStartWorkflow } from './lib/completed-private-runtime-workflow-review.mjs';
+import { inverseCompletedRuntimeWorkflow, inverseOrdinaryFullHistoryCheckout, inversePairedPrivateRuntimePublication, inverseOriginWeatherReadCredentials, assertCurrentHistoryRawRetentionOrder, inverseCurrentHistoryRawRetentionOrder, inverseCurrentFamilyColdStartWorkflow, inverseRelease584WorkflowUserAgents } from './lib/completed-private-runtime-workflow-review.mjs';
 import { runInNewContext } from 'node:vm';
 import { spawnSync } from 'node:child_process';
 const sha = source => crypto.createHash('sha256').update(source).digest('hex');
@@ -53,7 +53,7 @@ test('all ten original completed-route source mutations still fail the exact inv
 // above retain their complete original assertions and exact predecessor bytes.
 const coldWorkflowReview = JSON.parse(await read('./lib/current-family-cold-start-workflow-review.json'));
 const coldActual = Object.fromEntries(await Promise.all(Object.entries(coldWorkflowReview.roles).map(async ([role, row]) =>
-  [role, (await fs.readFile(new URL('../' + row.relativePath, import.meta.url), 'utf8')).replaceAll('\r\n', '\n')])));
+  [role, inverseRelease584WorkflowUserAgents((await fs.readFile(new URL('../' + row.relativePath, import.meta.url), 'utf8')).replaceAll('\r\n', '\n'), role)])));
 function coldBlock(source, header) {
   const marker = header + '\n', at = source.indexOf(marker);
   assert(at >= 0, 'Actual C workflow block: ' + header);
@@ -409,6 +409,46 @@ test('actual RAW caller refuses missing duplicate misplaced changed and unrelate
     assert.throws(() => assertCurrentHistoryRawRetentionOrder(changed));
     assert.equal(inverseCurrentHistoryRawRetentionOrder(changed, 'build'), changed,
       'Unknown bytes never enter this exact layer');
+    assert.throws(() => inverseCompletedRuntimeWorkflow(changed, 'build'));
+  }
+});
+
+// Actual584 is qualified separately; all581/580/C/checkout/RAW cases above
+// continue to receive only the exact whole predecessor, never a partial view.
+test('release584 actual five User-Agent fields preserve the whole581 current-family-C source', async () => {
+  const source = (await fs.readFile(new URL('../.github/workflows/reusable-weather-build.yml', import.meta.url), 'utf8')).replaceAll('\r\n', '\n');
+  assert.equal(sha(source), 'f0254a092c0baa188370c207b218e15ad7c9e616138d15234e6f323f101178c6');
+  assert.equal((source.match(/^          WEATHER_USER_AGENT: "RavRadar\/4\.0\.584 /gm) ?? []).length, 5);
+  const previous = inverseRelease584WorkflowUserAgents(source, 'build');
+  assert.notEqual(previous, source);
+  assert.equal(sha(previous), '4883b292423e162eec6f88d6402ef189adca71dc538fdfe22b7f91162f8ce4f0');
+  assert.equal(previous, coldActual.build);
+  assert.equal(inverseRelease584WorkflowUserAgents(previous, 'build'), previous);
+  assert.equal(inverseCurrentFamilyColdStartWorkflow(source, 'build'),
+    inverseCurrentFamilyColdStartWorkflow(previous, 'build'));
+  assert.equal(inverseCompletedRuntimeWorkflow(source, 'build'),
+    inverseCompletedRuntimeWorkflow(previous, 'build'));
+  assert.equal(sha(inverseCompletedRuntimeWorkflow(source, 'build')), legacySha);
+  assert.equal(inverseRelease584WorkflowUserAgents(source, 'once'), source);
+  assert.throws(() => inverseCompletedRuntimeWorkflow(source, 'once'));
+});
+test('release584 rejects every partial UA conversion deletion duplication and unrelated whole-source change', async () => {
+  const source = (await fs.readFile(new URL('../.github/workflows/reusable-weather-build.yml', import.meta.url), 'utf8')).replaceAll('\r\n', '\n');
+  const current = 'RavRadar/4.0.584', pieces = source.split(current);
+  assert.equal(pieces.length, 6);
+  const mutations = Array.from({ length: 5 }, (_, changedAt) => pieces.reduce((text, piece, index) =>
+    text + (index ? index - 1 === changedAt ? 'RavRadar/4.0.581' : current : '') + piece, ''));
+  const line = source.split('\n').find(row => row.includes('WEATHER_USER_AGENT: "' + current));
+  assert.equal(typeof line, 'string');
+  mutations.push(source.replace(line + '\n', ''), source.replace(line + '\n', line + '\n' + line + '\n'),
+    source.replace(current, 'RavRadar/4.0.583'), source.replace('actions/checkout@v7', 'actions/checkout@v6'),
+    source + '\n# UNREVIEWED RELEASE584 DRIFT\n');
+  assert.equal(mutations.length, 10);
+  for (const changed of mutations) {
+    assert.notEqual(changed, source);
+    assert.equal(inverseRelease584WorkflowUserAgents(changed, 'build'), changed,
+      'Only one exact whole584 source can enter the UA inverse');
+    assert.equal(inverseCurrentFamilyColdStartWorkflow(changed, 'build'), changed);
     assert.throws(() => inverseCompletedRuntimeWorkflow(changed, 'build'));
   }
 });

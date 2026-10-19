@@ -1,3 +1,27 @@
+## 19. oktober — 4.0.584: normal artifactkontrol efter arkivberegning
+
+Den providerfrie arkivgenstart bevarede arkivet og gennemførte normal beregning den 19. oktober kl. 11.07.24 dansk tid. Derefter blev kørslen annulleret omkring 60-minuttersgrænsen, mens den genindførte brede `npm run validate` stadig kørte. Der blev ikke oprettet nyt leveringsartifact, publiceret nyt privat B/S, installeret den nye SQL eller leveret Pages. Bestået beregning er ikke bestået udgivelse.
+
+Den lokale workflowrettelse bruger den eksisterende collector `validate:production-artifact` med faktisk 55 bladkontroller og den særskilte `release:gate:production` med tre kontroller. Begge forsøges; arkivgrenen kræver begge faktisk bestået før senere skrivning. Runtime-, target/main-, databevarelses-, model-, privat-, artifact- og deploykontroller bevares. Kun denne arkivgenstart får 90 minutters jobloft; almindelig kode-only beholder 60 minutter, og vejrhentningernes leverandørbudgetter og cron ændres ikke.
+
+Version 4.0.584, C/I/T, model, udstedte SQL-filer og originaler er uændrede i denne rettelse. Den foregående præcise 584-kildekontrol og nationale syntetiske opstart med to efterfølgere er bestået; den nye workflowkilde kræver sit eget præcise bevis. Ny B/S-gemning/genlæsning, SQL-installation, Pages, offentlig effekt og almindelige efterfølgere er fortsat åbne. Alle fem hovedmål er åbne; fristen 18. oktober er overskredet og ikke forlænget. Det private checkpoint ejer detaljeret kørselsevidens. Ældre modstridende status er dateret historik.
+
+## 19. oktober — lokal 4.0.584: ret producenten, bevar originalerne
+
+Den seneste faktiske vejrhentning nåede gennem leverandører, beregning, hård databevarelse og releasekontroller til gemt privat vejrpakke B. Publicering af beregningstilstanden S blev afvist af sidste-mile-kontrollen, så der er ikke bevist nyt offentligt vejr. Syv nye timer uden gammel tilstand reproducerer to konkrete producentfejl: feltnavnene til indramningen stemte ikke, og checkpointet beholdt en rå kopi efter validering af en anden kopi. De seks målrettede producentprøver består efter rettelsen; dette er ikke et bevis for en fejl i DMI-data eller databaseformlen.
+
+Efter normal versionssynk er 4.0.584s ægte nye C/I/T og den separate append-only migration 20261019060000_last_mile_enclosure_original_bound_successor.sql genereret lokalt. De tidligere førversions-kandidathashes er erstattet; der er ikke installeret en ny kontrakt i produktionen. Den valgte genopretning bruger en strengt nyere reference og de allerede gemte, hashverificerede vejr-/PART-inputs gennem normal beregning, uden gammel I/G-tilstand eller replay før den nye reference. Original B, faktisk central S og offentlig generation bevares særskilt i et permanent arkiv, uden opdigtet paritet.
+
+De tidlige, adskilte kildeprøver omfatter seks producenttilfælde, 19 syntetiske arkivtilfælde, ét normalt gammelt læsermål og ni plan-/afslagstilfælde. De er ikke den endelige releases samlede bevis. Dette er lokal kildeforberedelse, ikke installation eller offentlig levering. Normal kalder-/workflowintegration, endelig præcis kildekontrol, native- og PostgreSQL-kontrol, faktisk resterende vejrhorisont for 673 dele, ny B/S-gemning/genlæsning, offentlig effekt og almindelige efterfølgere er fortsat åbne. Offentlig version er senest verificeret som 4.0.581 med vejr fra 16. oktober kl. 12 dansk tid. Cron er senest verificeret slået fra. Alle fem hovedmål er åbne; fristen 18. oktober er overskredet og er ikke forlænget. Den separate assistentkandidat og SOURCE-revision er ikke aktiveret. Se håndbog 89.256; ældre noter bevares som historik på de her udtrykkeligt erstattede punkter.
+
+Efter endelig normal versionssynk består de lokale C/I-/SQL-byggere, kontrollen af syv mutable bindingsforbrugere samt planens ni mål. Dette er kilde-/genereringskontrol, ikke PostgreSQL-eksekvering, faktisk installation eller ny offentlig prognose.
+
+## 19. oktober — SOURCE-afgrænsning efter P0: målt RAW-afslag, ny prøvevært endnu ikke kørt
+
+P0-sandheden ovenfor har fortsat prioritet. SOURCE er separat og inaktiv. Sidste faktiske nativeudfald er 39216786897/1: fem stalls, én finalizer og DMI_RAW_SAVE_RECEIPT_INVALID ved RAW_CLOSURE før efterfølgende API-/SAVE-admission. Indre RAW-årsag og den fulde oprindelige fejl-/clockkæde er fortsat ukendte; lokale SDK-markører beviser ikke holdbar cloudgemning.
+
+Aktuelt SOURCE-head 0ddca9ce er en current-instrumenteret prøvevært, ikke en bestået historisk V16 eller aktiveret revision. Den har præcis normal CIPHER-forælderadmission og sikre førsteafslagsfelter; ROOTs normale Node-bank består lokalt (298/69/229 input og 36 værn), mens den nye nativev2 er UNRUN. AutoCI var ikke oprettet på dette head, fordi dokumentation og håndbogsseed havde mergekonflikter mod main. Før næste kildekontrol skal den gennemgåede main-komposition bevare P0 4.0.584/C/I/T og alle historiske SOURCE-pins; ingen gate eller runtimeværn må omgås.
+
 ## 19. oktober — SOURCE: målt adgangsafslag i prøveobservatøren
 
 PR669-kørsel 39205832547 nåede fem bekræftede SIGSTOP/T-stalls. Den bevarede første testundtagelse er PERMISSION_ERROR/EACCES i ACTION_OBSERVE ved prøvens kildehashbundne læsning af /proc/PID/fd/0. Den faktiske pidfd-exitstatus for denne discovery blev ikke bevaret; et afsluttet eller zombie-lignende forløb er derfor ikke påvist. Nul finalizers og actionExitCode=null beviser hverken produktfejl eller processtop.

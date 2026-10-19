@@ -164,6 +164,9 @@ import { CURRENT_FAMILY_COLD_START_CONTEXT_ENV,
   loadCurrentFamilyColdStartForTarget, currentFamilyColdStartScoreInputs,
   currentFamilyColdStartAcquisitionChoices, currentFamilyColdStartScalarRecord }
   from './current-family-cold-start.mjs';
+import { ARCHIVED_WEATHER_RESTART_CONTEXT_ENV,
+  loadArchivedWeatherRestartInputViewForTarget } from './archived-weather-restart.mjs';
+import { archivedWeatherRestartScoreInputs } from './lib/archived-weather-restart-input-view.mjs';
 import { summarizeRavScoreInitialCurrentWindow } from './lib/ravscore-initial-current-window-audit.mjs';
 import { summarizeSavedCurrentReplayGridFailure } from './lib/saved-current-replay-grid-audit.mjs';
 import { createSavedCurrentForwardOriginalPlan, persistSavedCurrentForwardOriginalPlan }
@@ -283,7 +286,23 @@ if (!Object.values(RAVSCORE_FIRST_CUTOVER_BOOTSTRAP_MODES)
 const coldPath = process.env[CURRENT_FAMILY_COLD_START_CONTEXT_ENV.path];
 const coldSha256 = process.env[CURRENT_FAMILY_COLD_START_CONTEXT_ENV.sha256];
 const coldRequested = coldPath !== undefined || coldSha256 !== undefined;
-if (coldRequested && (!coldPath || !coldSha256
+const archivedRestartRequested = process.env[ARCHIVED_WEATHER_RESTART_CONTEXT_ENV.path] !== undefined
+  || process.env[ARCHIVED_WEATHER_RESTART_CONTEXT_ENV.sha256] !== undefined;
+if (archivedRestartRequested && (!WEATHER_CACHE_ONLY || coldRequested
+  || ![undefined, 'false'].includes(process.env.RAVRADAR_WEATHER_STATE_EPOCH_BOOTSTRAP)
+  || ![undefined, 'false'].includes(process.env.CHECKPOINT_ONLY)
+  || process.env.RAVRADAR_REQUIRE_PRIVATE_WEATHER_BASELINE !== 'true'
+  || process.env.RAVRADAR_DMI_LEGACY_CURRENT_EXPECTATION
+  || process.env.DMI_PART_CONTINUITY_DONOR_PATH
+  || process.env.RAVRADAR_SAVED_CURRENT_REPLAY_DIAGNOSTIC
+  || process.env.RAVRADAR_SAVED_CURRENT_FORWARD_ORIGINAL_PLAN
+  || RAVSCORE_HISTORICAL_WAVE_TRANSITION_PATH
+  || RAVSCORE_STATELESS_INTEGRATED_COLD_START_ALLOWED
+  || RAVSCORE_FIRST_CUTOVER_SOURCE_VALIDATED
+  || RAVSCORE_FIRST_CUTOVER_BOOTSTRAP_MODE !== RAVSCORE_FIRST_CUTOVER_BOOTSTRAP_MODES.automatic)) {
+  throw new Error('ARCHIVED_WEATHER_RESTART_MODE_COLLISION');
+}
+if (coldRequested && (!coldPath || !coldSha256 || archivedRestartRequested
   || ![undefined, 'false'].includes(process.env.RAVRADAR_WEATHER_STATE_EPOCH_BOOTSTRAP)
   || ![undefined, 'false'].includes(process.env.CHECKPOINT_ONLY)
   || process.env.RAVRADAR_REQUIRE_PRIVATE_WEATHER_BASELINE !== 'true'
@@ -1919,6 +1938,7 @@ function scoreCoastalPartsRuntime(
   stateEpochView = null,
   establishedNativeCurrentOrigin = null,
   currentFamilyColdStart = null,
+  archivedWeatherRestartView = null,
 ) {
   // A separately authenticated, archived epoch omits OLD numerical state only
   // for this first calculation. The full original weather baseline remains
@@ -1940,9 +1960,16 @@ function scoreCoastalPartsRuntime(
       throw new Error('WEATHER_STATE_EPOCH_TRANSITION_COLLISION');
     }
   }
-  const coldInputs = currentFamilyColdStart === null ? null
-    : currentFamilyColdStartScoreInputs(currentFamilyColdStart,
+  const archivedRestartInputs = archivedWeatherRestartView === null ? null
+    : archivedWeatherRestartScoreInputs(archivedWeatherRestartView,
       { registry: contract, targetReferenceAt: generatedAt });
+  if (archivedRestartInputs !== null && (currentFamilyColdStart !== null
+    || stateEpochView !== null || historicalWaveInputTransition !== null)) {
+    throw new Error('ARCHIVED_WEATHER_RESTART_TRANSITION_COLLISION');
+  }
+  const coldInputs = archivedRestartInputs ?? (currentFamilyColdStart === null ? null
+    : currentFamilyColdStartScoreInputs(currentFamilyColdStart,
+      { registry: contract, targetReferenceAt: generatedAt }));
   if (coldInputs !== null) {
     if (stateEpochView !== null || historicalWaveInputTransition !== null) {
       throw new Error('CURRENT_FAMILY_COLD_START_TRANSITION_COLLISION');
@@ -2306,11 +2333,14 @@ function scoreCoastalPartsRuntime(
       }
       const nativeCadenceHoldHours = nativeCadenceHoldHoursForPart({ ...part, zoneId }, liveCurrentPilot);
       const zone = localPartRuntimeProperties(parent.properties, part, part.partId);
-      const replayStartAt = ravScoreOwnerCurrentHistoryStartAt(
-        { ...part, zoneId }, initialSelection.state,
-        ravScoreRecoverySourceStartAt(initialSelection.state, generatedAt),
-        { requireNativeGridSampling: true },
-      );
+      // This opaque once-only restart begins active memory at target, not
+      // at a reconstructed pre-target window. Original cache bytes survive.
+      const replayStartAt = archivedRestartInputs !== null ? generatedAt
+        : ravScoreOwnerCurrentHistoryStartAt(
+          { ...part, zoneId }, initialSelection.state,
+          ravScoreRecoverySourceStartAt(initialSelection.state, generatedAt),
+          { requireNativeGridSampling: true },
+        );
       let deployedRecoverySource = null;
       const protectedCurrentContexts = [deployedBulkCache, historicalDmiBulkCache];
       // A promoted point has a deliberately new sampling context; old deployed
@@ -2387,13 +2417,18 @@ function scoreCoastalPartsRuntime(
             )),
           },
         );
+        // The original/proof context stays whole. Only this first active
+        // input view omits earlier rows; ordinary followers never use it.
+        const progressiveInputRecord = archivedRestartInputs === null ? progressiveRecord
+          : { ...progressiveRecord, hourly: progressiveRecord.hourly
+            .filter(hour => Date.parse(hour.time) >= Date.parse(generatedAt)) };
         progressiveRecoverySource = {
           source: 'progressive-private-dmi',
           nativeCurrentContexts: [bulkCache],
           record: {
-            ...progressiveRecord,
+            ...progressiveInputRecord,
             hourly: verifiedIntegratedPartHourly(
-              progressiveRecord,
+              progressiveInputRecord,
               bulkCache,
               bulkId,
               { ...part, zoneId },
@@ -3853,29 +3888,48 @@ if (!features.length) throw new Error(`${ZONES_PATH} indeholder ingen zoner`);
 await fs.access(COASTAL_PARTS_SOURCE_PATH);
 const coastalPartsContract = await buildPublicCoastalParts();
 if (coastalPartsContract.enabled && (coastalPartsContract.partCount < 1 || coastalPartsContract.zoneCount < 1)) throw new Error('Den aktive nationale kystdelskontrakt er ikke komplet');
+// Only locator presence selects this route; the real loader reauthenticates
+// archived B/S, physical originals, current source, registry and newer target.
+// Keep the ordinary clock/read order byte-for-byte on the default route.
+const archivedRestartBuildGeneratedAt = archivedRestartRequested ? new Date().toISOString() : null;
+const archivedRestartTarget = archivedRestartRequested
+  ? resolveProductionReferenceTime(process.env.RAVRADAR_PRODUCTION_TARGET_HOUR,
+    new Date(archivedRestartBuildGeneratedAt)) : null;
+const archivedWeatherRestartView = archivedRestartRequested
+  ? await loadArchivedWeatherRestartInputViewForTarget({ registry: coastalPartsContract,
+    targetReferenceAt: archivedRestartTarget }) : null;
+if (archivedRestartRequested && (!coastalPartsContract.enabled || archivedWeatherRestartView === null)) {
+  throw new Error('ARCHIVED_WEATHER_RESTART_VIEW_REQUIRED');
+}
+const archivedRestartInputs = archivedWeatherRestartView === null ? null
+  : archivedWeatherRestartScoreInputs(archivedWeatherRestartView,
+    { registry: coastalPartsContract, targetReferenceAt: archivedRestartTarget });
 const coastCorridors = buildCoastCorridors(features);
 const previous = await readPrevious();
 const dmiForecastStore = await readDmiForecastStore();
 const dmiBulkCache = await readDmiBulkCache();
-const deployedDmiBulkCache = await readDmiBulkCache(DEPLOYED_DMI_BULK_CACHE_PATH);
-let historicalDmiBulkCache = process.env.DMI_PART_CONTINUITY_DONOR_PATH
+const deployedDmiBulkCache = archivedRestartInputs !== null
+  ? archivedRestartInputs.deployedBulkCache : await readDmiBulkCache(DEPLOYED_DMI_BULK_CACHE_PATH);
+let historicalDmiBulkCache = archivedRestartInputs !== null ? archivedRestartInputs.historicalDmiBulkCache
+  : process.env.DMI_PART_CONTINUITY_DONOR_PATH
   ? await readDmiBulkCache(process.env.DMI_PART_CONTINUITY_DONOR_PATH)
   : null;
 if (process.env.DMI_PART_CONTINUITY_DONOR_PATH && !historicalDmiBulkCache) {
   throw new Error('DMI_PART_CONTINUITY_DONOR_INVALID');
 }
 const liveCurrentPilot = await readLiveCurrentPilot(coastalPartsContract);
-const buildGeneratedAt = new Date().toISOString();
-const generatedAt = resolveProductionReferenceTime(process.env.RAVRADAR_PRODUCTION_TARGET_HOUR, new Date(buildGeneratedAt));
+const buildGeneratedAt = archivedRestartBuildGeneratedAt ?? new Date().toISOString();
+const generatedAt = archivedRestartTarget
+  ?? resolveProductionReferenceTime(process.env.RAVRADAR_PRODUCTION_TARGET_HOUR, new Date(buildGeneratedAt));
 if (!['true', 'false'].includes(process.env.RAVRADAR_WEATHER_STATE_EPOCH_BOOTSTRAP ?? 'false')) {
   throw new Error('WEATHER_STATE_EPOCH_MODE_INVALID');
 }
 const currentFamilyColdStart = coldRequested
   ? await loadCurrentFamilyColdStartForTarget({ contextPath: coldPath,
     contextSha256: coldSha256, targetReferenceAt: generatedAt }) : null;
-const coldInputs = currentFamilyColdStart === null ? null
+const coldInputs = archivedRestartInputs ?? (currentFamilyColdStart === null ? null
   : currentFamilyColdStartScoreInputs(currentFamilyColdStart,
-    { registry: coastalPartsContract, targetReferenceAt: generatedAt });
+    { registry: coastalPartsContract, targetReferenceAt: generatedAt }));
 if (currentFamilyColdStart !== null && path.resolve(DMI_BULK_CACHE_PATH)
   !== currentFamilyColdStartAcquisitionChoices(currentFamilyColdStart).outputPath) {
   throw new Error('CURRENT_FAMILY_COLD_START_ACQUISITION_OUTPUT_PATH');
@@ -3913,9 +3967,10 @@ if (process.env.RAVRADAR_DMI_LEGACY_CURRENT_EXPECTATION) {
   if (reconstructed && historicalDmiBulkCache) throw new Error('DMI_LEGACY_CURRENT_DONOR_COLLISION');
   if (reconstructed) historicalDmiBulkCache = reconstructed;
 }
-const persistedDmiPartRows = await unpackDmiPartContinuity(
-  dmiForecastStore.partContinuity, activeParts, generatedAt,
-);
+const persistedDmiPartRows = archivedRestartInputs !== null ? archivedRestartInputs.persistedDmiPartRows
+  : await unpackDmiPartContinuity(
+    dmiForecastStore.partContinuity, activeParts, generatedAt,
+  );
 // The archived OLD checkpoint is preserved but never reattested/selected as
 // NEW state. Ordinary followers have no epoch flag and load their real NEW S.
 const ravScoreCheckpoint = coldInputs !== null ? {
@@ -4373,14 +4428,16 @@ output.controlledLiveCurrentPilot = {
   credentialsIncluded: false,
   generatedAt: liveCurrentPilot?.generatedAt ?? null,
 };
-const historicalWaveInputTransition = await loadHistoricalWaveInputTransition({
+const historicalWaveInputTransition = archivedWeatherRestartView !== null ? null
+  : await loadHistoricalWaveInputTransition({
   transitionPath: RAVSCORE_HISTORICAL_WAVE_TRANSITION_PATH,
   currentContract: coastalPartsContract,
   previousConditions: previous,
   targetReferenceAt: generatedAt,
   currentBinding: ravScoreModelBinding(),
 });
-if ((stateEpochView !== null || currentFamilyColdStart !== null) && historicalWaveInputTransition !== null) {
+if ((stateEpochView !== null || currentFamilyColdStart !== null || archivedWeatherRestartView !== null)
+  && historicalWaveInputTransition !== null) {
   throw new Error('WEATHER_STATE_EPOCH_TRANSITION_COLLISION');
 }
 const previousPrivateCandidateGRuntime = coldInputs !== null || stateEpochView !== null || historicalWaveInputTransition
@@ -4496,6 +4553,7 @@ coastalPartScoreBuild = coastalPartsContract.enabled
     stateEpochView,
     establishedNativeCurrentOrigin,
     currentFamilyColdStart,
+    archivedWeatherRestartView,
   )
   : null;
 } catch (error) {

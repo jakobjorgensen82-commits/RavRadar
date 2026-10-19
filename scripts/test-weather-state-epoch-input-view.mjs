@@ -32,7 +32,29 @@ const hash = value => crypto.createHash('sha256').update(value).digest('hex');
 // TEST-only stack view for the exact reviewed additive origin pipeline.
 // Real production calls/errors remain unchanged; only known source positions
 // are projected before the complete unchanged historical stack assertions.
-const reviewedOriginPipelineSource = nativeFs.readFileSync(new URL('./lib/ravscore-production-part-pipeline.mjs', import.meta.url), 'utf8').replace(/\r\n/g, '\n');
+let reviewedOriginPipelineSource = nativeFs.readFileSync(new URL('./lib/ravscore-production-part-pipeline.mjs', import.meta.url), 'utf8').replace(/\r\n/g, '\n');
+// Reverse only the complete reviewed D8 -> 584 collector delta before the
+// unchanged historical source/stack oracle. Both additions are after line436,
+// so its actual transitionNewInitialCurrentApplication callsite is unchanged.
+assert.equal(hash(reviewedOriginPipelineSource),
+  '8e979128a682a7324d7defcc3d2d2dfa5edc85ebc22d4ae714810aa085490758');
+for (const [before, after] of [
+  ['  originHandle, part, targetReferenceAt,',
+    '  originHandle, part, targetReferenceAt, requireMeasuredColdStart = false,'],
+  ['  if (!record || !originHandle || record.originHandle !== originHandle',
+    '  if (typeof requireMeasuredColdStart !== \'boolean\'\n'
+      + '    || (requireMeasuredColdStart && record?.measuredColdStart !== true)\n'
+      + '    || !record || !originHandle || record.originHandle !== originHandle'],
+  ['      originHandle: establishedNativeCurrentOrigin,\n      context:',
+    '      originHandle: establishedNativeCurrentOrigin,\n'
+      + '      measuredColdStart: measuredColdStartAttested && initialSelection.state === null\n'
+      + '        && candidateContinuationCount === 0 && initialSelection.source === \'COLD_START\',\n'
+      + '      context:'],
+]) {
+  assert.equal(reviewedOriginPipelineSource.split(after).length, 2,
+    'Exact reviewed measured-COLD collector hunk required');
+  reviewedOriginPipelineSource = reviewedOriginPipelineSource.replace(after, () => before);
+}
 assert.equal(hash(reviewedOriginPipelineSource),
   'dadb5bf8c37fd12415b4596523df218f67cca4d4775b1cf8d0f2066c524cabd0');
 function reviewedOriginPipelineStack(stack) {

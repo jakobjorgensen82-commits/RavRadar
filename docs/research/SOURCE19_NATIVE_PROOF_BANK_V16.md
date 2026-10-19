@@ -1,3 +1,13 @@
+## 19. oktober — aktuel SOURCE-status; den tidligere beskrivelse nedenfor er historik
+
+Dette er fortsat en isoleret, inaktiv kildeprøve og ikke normal produktintegration eller aktivering. Den aktuelle historiske bank indeholder 298 input: 229 faste Git-input og 69 testbankblade; dens 27 produktpins er bevaret. Afsnittet nedenfor om 296/227/69 beskriver den tidligere komposition og bevares ordret, ikke som en påstand om det nuværende antal eller et ommærket manifest.
+
+Sidste faktisk kørte nativeforsøg er 39216786897/1 på 9e14daf3, terminal FAIL efter fem bekræftede SIGSTOP/T-stalls og én finalizer. Første sikre actionkode er DMI_RAW_SAVE_RECEIPT_INVALID i RAW_CLOSURE før efterfølgende API-/SAVE-admission; den indre kohorts første årsag og oprindelige clock blev ikke bevaret. Local official SDK created/put/finalized er ikke cloudholdbarhed, normal lukningskvittering eller et samlet fireminuttersbevis.
+
+Senere current-instrumenteret v2 på 0ddca9ce lægger to ægte nye produktoperands oven på den uændrede historiske V16-vært med hele inverser. Den giver sikre førsteafslagsfelter, optager de nye bytes i observationens admission og retter præcis den normale CIPHER-forælderform source-fixed-cipher-upload med bevaret rolle-/modebinding. Dette er DIAGNOSTIC+EXACT_CIPHER_CALLER_FIX, ikke et påvist fix af det målte RAW-afslag eller en historisk nativePASS. ROOTs normale Node-bank består lokalt med 298/69/229 input og 36 værn.
+
+Ny v2-Linux/native er UNRUN. Ved aflæsningen af det aktuelle head blev automatisk CI ikke oprettet på grund af dokumentations-/håndbogsseedkonflikter mod main. Den gennemgåede source-only main-komposition bevarer P0-version, C/I/T, produkter og alle gamle pins. Normal kontrolleret produktintegration, faktisk fireminutterskæde, fremtidig genlæsning og fjern cloudholdbarhed er fortsat åbne. De udaterede UNRUN-formuleringer nedenfor er bevaret ældre planstatus, ikke en benægtelse af de faktisk fejlede fysiske forsøg ovenfor.
+
 # Isolated SOURCE terminal-failure native proof bank
 
 This is a test-only input closure, not integration or activation of SOURCE.

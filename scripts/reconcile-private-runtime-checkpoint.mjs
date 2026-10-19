@@ -5,7 +5,7 @@ import crypto from 'node:crypto';
 import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 import { execFileSync } from 'node:child_process';
 import { isDeepStrictEqual as same } from 'node:util';
 import { createProtectedPrivateRuntimeClients, validateProtectedPrivateRuntimePointer,
@@ -20,6 +20,10 @@ import { createProtectedRavScoreCheckpointRequester, createProtectedRavScoreChec
   from './protected-ravscore-continuation-checkpoint.mjs';
 import { ESTABLISHED_NATIVE_CURRENT_ORIGIN_BINDING as FAMILY }
   from './lib/established-native-current-origin-successor-source.mjs';
+import { LAST_MILE_ENCLOSURE_BINDING as NEXT_FAMILY }
+  from './lib/last-mile-enclosure-successor-source.mjs';
+import { withFrozenLastMileEnclosurePredecessorSource }
+  from './check-last-mile-enclosure-predecessor-source.mjs';
 import { ownFileDescriptorIdentity, ownedFileDescriptorClosed } from './lib/private-weather-component-pack.mjs';
 import { classifyProductionTargetFreshness } from './check-production-target-freshness.mjs';
 
@@ -29,9 +33,13 @@ const need = (condition, code) => assert(condition, 'PAIRED_PUBLICATION_' + code
 const json = async file => JSON.parse(await fs.readFile(file, 'utf8'));
 const identityKeys = ['sourceHead', 'datasetId', 'productionReferenceAt', 'generatedAt',
   'bundleContentSha256', 'modelBinding', 'contractHashes'];
+function reconcileFamily(descriptor) {
+  return [FAMILY, NEXT_FAMILY].find(family =>
+    descriptor?.modelBinding?.modelBundleSha256 === family.I
+    && descriptor?.contractHashes?.continuationStateContractSha256 === family.T) ?? null;
+}
 export function requiresPrivateRuntimeCheckpointReconcile(descriptor) {
-  return descriptor?.modelBinding?.modelBundleSha256 === FAMILY.I
-    && descriptor?.contractHashes?.continuationStateContractSha256 === FAMILY.T;
+  return reconcileFamily(descriptor) !== null;
 }
 export function assertPrivateRuntimeCheckpointPublicationDisposition(descriptor, disposition) {
   if (requiresPrivateRuntimeCheckpointReconcile(descriptor)) need(
@@ -42,6 +50,51 @@ export function assertOrdinaryPrivateRuntimeCheckpointReconcileRequest(env = pro
   for (const key of ['COMPLETED_PRIVATE_RUNTIME', 'CHECKPOINT_ONLY', 'QUICK_CONFIRMATION',
     'RAVRADAR_WEATHER_STATE_EPOCH_BOOTSTRAP', 'RAVRADAR_WEATHER_STATE_EPOCH_CHECKPOINT_REENTRY',
     'NATIVE_IDENTITY_RECOVERY']) need(env[key] === 'false', 'NON_ORDINARY_REQUEST');
+}
+export function assertSavedPrivateRuntimeCheckpointReconcileRequest(env = process.env) {
+  need(['integrated', 'integrated-historical-maintenance'].includes(env.OPERATIONAL_ACTION), 'SAVED_OPERATIONAL_ACTION');
+  need(env.GITHUB_WORKFLOW === 'Deploy RavRadar code-only repair'
+    && env.CONFIRMATION === 'DEPLOY-SAVED-WEATHER-REPAIR'
+    && env.PUBLISH_NEWEST_SAVED_WEATHER === 'true', 'SAVED_REQUEST');
+  for (const key of ['RESTART_ARCHIVED_WEATHER', 'COMPLETED_PRIVATE_RUNTIME', 'CHECKPOINT_ONLY',
+    'QUICK_CONFIRMATION', 'RAVRADAR_WEATHER_STATE_EPOCH_BOOTSTRAP',
+    'RAVRADAR_WEATHER_STATE_EPOCH_CHECKPOINT_REENTRY', 'NATIVE_IDENTITY_RECOVERY',
+    'UPGRADE_LAST_MILE_ENCLOSURE', 'UPGRADE_ESTABLISHED_NATIVE_CURRENT_ORIGIN',
+    'UPGRADE_EXISTING_OWNER_EXPORT', 'UPGRADE_ACCOUNT_ASSISTANT', 'UPGRADE_STATISTICS_REVISION'])
+    need(env[key] === 'false', 'SAVED_MODE_COLLISION');
+  for (const key of ['RAVRADAR_ARCHIVED_WEATHER_RESTART_CONTEXT_PATH',
+    'RAVRADAR_ARCHIVED_WEATHER_RESTART_CONTEXT_SHA256',
+    'RAVRADAR_CURRENT_FAMILY_COLD_START_CONTEXT_PATH',
+    'RAVRADAR_CURRENT_FAMILY_COLD_START_CONTEXT_SHA256']) need(env[key] === undefined, 'SAVED_MODE_COLLISION');
+}
+const checkpointQuery = '?document_key=eq.ravscore-continuation-checkpoint&select=document_key,payload,version&limit=2';
+async function readCheckpointRows(request) {
+  const rows = await request(checkpointQuery, {}, 'read');
+  need(Array.isArray(rows) && rows.length <= 1 && rows.every(row =>
+    row?.document_key === 'ravscore-continuation-checkpoint'
+    && Number.isSafeInteger(Number(row.version)) && Number(row.version) > 0
+    && row.payload && typeof row.payload === 'object'), 'S_ROW');
+  return rows;
+}
+async function restoreReconcilePredecessor({ family, checkpointPath, targetReference, request }) {
+  const rows = await readCheckpointRows(request);
+  // Reader selection is NOT numerical admission. Normal current validation
+  // remains unchanged; only an exact older140000 S gets its genuine old reader.
+  const old = family === NEXT_FAMILY && rows.length === 1
+    && rows[0].payload.modelBinding?.modelBundleSha256 === FAMILY.I
+    && rows[0].payload.continuationStateContractSha256 === FAMILY.T;
+  const checkedRequest = async (...args) => {
+    const fresh = await request(...args); need(same(fresh, rows), 'S_CHANGED_BEFORE_READ'); return fresh;
+  };
+  const options = { checkpointPath, targetReference, request: checkedRequest };
+  let restored;
+  if (old) restored = await withFrozenLastMileEnclosurePredecessorSource(async sourceRoot => {
+    const reader = await import(pathToFileURL(path.join(sourceRoot,
+      'scripts/protected-ravscore-continuation-checkpoint.mjs')).href);
+    return reader.restoreProtectedRavScoreContinuationCheckpoint(options);
+  });
+  else restored = await restoreProtectedRavScoreContinuationCheckpoint(options);
+  return { restored, rows, predecessorFamily: old ? FAMILY : family };
 }
 async function readPointer(request) {
   const key = PROTECTED_PRIVATE_RUNTIME_POLICY.documentKey;
@@ -86,11 +139,21 @@ async function stableFile(file, maximum) {
 // Like the normal protected publishers, injected requesters are transport seams,
 // not authority. Production is ONLY the fixed CLI inside the shared serialized
 // weather writer, after a fresh main check and actual verify/install of CURRENT B.
-export async function reconcilePrivateRuntimeCheckpoint({ repositoryRoot = ROOT, privateRoot, bundlePath,
+export async function reconcilePrivateRuntimeCheckpoint(options = {}) {
+  need((options.operationalAction ?? process.env.OPERATIONAL_ACTION) === 'integrated', 'OPERATIONAL_ACTION');
+  return reconcileAuthenticatedPrivateRuntimeCheckpoint(options);
+}
+export async function reconcileSavedPrivateRuntimeCheckpoint(options = {}) {
+  assertSavedPrivateRuntimeCheckpointReconcileRequest();
+  need((options.operationalAction ?? process.env.OPERATIONAL_ACTION) === process.env.OPERATIONAL_ACTION,
+    'SAVED_OPERATIONAL_ACTION');
+  return reconcileAuthenticatedPrivateRuntimeCheckpoint(options);
+}
+async function reconcileAuthenticatedPrivateRuntimeCheckpoint({ repositoryRoot = ROOT, privateRoot, bundlePath,
   checkpointPath = path.join(repositoryRoot, '.cache/ravscore-continuation-checkpoint/checkpoint.json'),
   expected, now = new Date().toISOString(), operationalAction = process.env.OPERATIONAL_ACTION,
   request, checkpointRequest, checkpointVersionRequest, rpcRequest } = {}) {
-  need(operationalAction === 'integrated', 'OPERATIONAL_ACTION');
+  // Both public entry points have their distinct fixed request guard above.
   request ??= createProtectedPrivateRuntimeClients({ storageBackend: 'supabase' }).documentRequest;
   checkpointRequest ??= createProtectedRavScoreCheckpointRequester();
   checkpointVersionRequest ??= createProtectedRavScoreCheckpointVersionRequester();
@@ -100,7 +163,7 @@ export async function reconcilePrivateRuntimeCheckpoint({ repositoryRoot = ROOT,
   const Srequest = (...args) => { counts.checkpointReads++; return checkpointRequest(...args); };
   const Sversion = (...args) => { counts.checkpointVersionReads++; return checkpointVersionRequest(...args); };
   const before = await readPointer(pointerRequest), current = before.pointer.current;
-  need(requiresPrivateRuntimeCheckpointReconcile(current), 'UNSUPPORTED_FAMILY');
+  const family = reconcileFamily(current); need(family !== null, 'UNSUPPORTED_FAMILY');
   classifyProductionTargetFreshness({ target: current.productionReferenceAt, now, maximumAgeMinutes: 150 });
   need(path.isAbsolute(privateRoot) && path.isAbsolute(bundlePath) && path.dirname(bundlePath) === privateRoot, 'B_PATH');
   // No previous-generation fallback and no download: the caller already restored
@@ -143,20 +206,25 @@ export async function reconcilePrivateRuntimeCheckpoint({ repositoryRoot = ROOT,
     const derived = await json(derivedPath);
     need(derived.productionReferenceAt === current.productionReferenceAt, 'DERIVED_REFERENCE');
     const restoredPath = path.join(work, 'before/.cache/ravscore-continuation-checkpoint/checkpoint.json');
-    const restored = await restoreProtectedRavScoreContinuationCheckpoint({ checkpointPath: restoredPath,
+    const predecessor = await restoreReconcilePredecessor({ family, checkpointPath: restoredPath,
       targetReference: current.productionReferenceAt, request: Srequest });
-    let saved = restored.restored ? await json(restoredPath) : null;
+    let saved = predecessor.restored.restored ? await json(restoredPath) : null;
     let publishError = null;
     if (!same(derived, saved)) {
       // Missing/older SAME-family S alone can advance. Same-time conflict and
       // S-ahead-B are hard stops. A newer S may already be refused by restore.
-      need(saved === null || (saved.modelBinding.modelBundleSha256 === FAMILY.I
-        && saved.continuationStateContractSha256 === FAMILY.T
+      need(saved === null || (saved.modelBinding.modelBundleSha256 === predecessor.predecessorFamily.I
+        && saved.continuationStateContractSha256 === predecessor.predecessorFamily.T
         && Date.parse(saved.productionReferenceAt) < Date.parse(current.productionReferenceAt)), 'S_NOT_BEHIND');
       await stable();
+      need(same(await readCheckpointRows(Srequest), predecessor.rows), 'S_CHANGED_BEFORE_PUBLISH');
       counts.checkpointPublishCalls++;
       try { await publishProtectedRavScoreContinuationCheckpoint({ checkpointPath: derivedPath,
-        targetReference: current.productionReferenceAt, request: Sversion, rpcRequest }); }
+        targetReference: current.productionReferenceAt, request: async (...args) => {
+          const rows = await Sversion(...args);
+          const expected = predecessor.rows.map(row => ({ document_key: row.document_key, version: row.version }));
+          need(same(rows, expected), 'S_VERSION_CHANGED_BEFORE_PUBLISH'); return rows;
+        }, rpcRequest }); }
       catch (error) { publishError = error; }
       const freshPath = path.join(work, 'after/.cache/ravscore-continuation-checkpoint/checkpoint.json');
       try {
@@ -190,16 +258,23 @@ export async function reconcilePrivateRuntimeCheckpoint({ repositoryRoot = ROOT,
 
 async function main() {
   need(process.env.GITHUB_REF === 'refs/heads/main' && process.env.GITHUB_EVENT_NAME === 'workflow_dispatch', 'WORKFLOW');
-  assertOrdinaryPrivateRuntimeCheckpointReconcileRequest();
+  const command = process.argv[2];
+  const savedWeather = ['select-saved', 'reconcile-saved'].includes(command);
+  if (savedWeather) assertSavedPrivateRuntimeCheckpointReconcileRequest();
+  else assertOrdinaryPrivateRuntimeCheckpointReconcileRequest();
   const head = execFileSync('git', ['rev-parse', 'HEAD'], { cwd: ROOT, encoding: 'utf8' }).trim();
   const main = execFileSync('git', ['rev-parse', 'origin/main'], { cwd: ROOT, encoding: 'utf8' }).trim();
   need(head === process.env.GITHUB_SHA && head === main, 'MAIN');
-  if (process.argv[2] === 'select') {
-    const source = await json(path.join(process.env.RUNNER_TEMP, 'private-runtime-current-source.json'));
+  if (command === 'select' || command === 'select-saved') {
+    if (savedWeather) need(path.isAbsolute(process.env.RAVRADAR_OPERATIONAL_WORK ?? ''), 'SAVED_WORK_PATH');
+    const source = await json(savedWeather
+      ? path.join(process.env.RAVRADAR_OPERATIONAL_WORK, 'current-private-runtime-source.json')
+      : path.join(process.env.RUNNER_TEMP, 'private-runtime-current-source.json'));
     await fs.appendFile(process.env.GITHUB_OUTPUT, `required=${requiresPrivateRuntimeCheckpointReconcile(source)}\n`);
   } else {
-    need(process.argv[2] === 'reconcile', 'COMMAND');
-    const result = await reconcilePrivateRuntimeCheckpoint({ privateRoot: process.env.RAVRADAR_PRIVATE_RUNTIME_ROOT,
+    need(command === 'reconcile' || command === 'reconcile-saved', 'COMMAND');
+    const reconcile = savedWeather ? reconcileSavedPrivateRuntimeCheckpoint : reconcilePrivateRuntimeCheckpoint;
+    const result = await reconcile({ privateRoot: process.env.RAVRADAR_PRIVATE_RUNTIME_ROOT,
       bundlePath: process.env.RAVRADAR_PRIVATE_RUNTIME_BUNDLE });
     await fs.appendFile(process.env.GITHUB_OUTPUT, `paired=${result.paired}\n`);
     console.log(JSON.stringify({ kind: 'PRIVATE_B_S_RECONCILE', ...result }));

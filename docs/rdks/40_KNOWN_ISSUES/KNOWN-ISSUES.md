@@ -1,3 +1,15 @@
+## 19. oktober — lokal 4.0.584: ret producenten, bevar originalerne
+
+P0 ÅBEN: Den faktiske nye kørsel nåede gemt B efter vejrhentning, beregning, databevarelse og releasekontrol, men S blev afvist. En syvtimers prøve uden gammel tilstand har påvist forkert mapping af bølgemomenter til sidste-mile-indramningen samt en serializer, som beholdt den rå kopi. Den parrede lokale producentrettelse består seks mål; den dokumenterer ikke forkert DMI-input eller forkert SQL-formel.
+
+Den samlede løsning er endnu ikke leveret: ny ægte 4.0.584-binding, append-only migration og den arkivbevarende nyere-reference-genopretning skal kvalificeres gennem normale kaldere, native/PostgreSQL, faktisk horisont for 673 dele, B/S-gemning/genlæsning, offentlig effekt og almindelige efterfølgere. Nul gammel aktiv historik er godkendt, men må ikke bruges som frit reset-flag eller falsk oprindelsesbevis. Offentlig version er senest verificeret som 4.0.581 med vejr fra 16. oktober kl. 12 dansk tid. Cron er senest verificeret slået fra. Alle fem hovedmål er åbne; fristen 18. oktober er overskredet og er ikke forlænget. Se håndbog 89.256; øvrige åbne revisions- og brugerfunktionskrav består.
+
+## 19. oktober — SOURCE-afgrænsning efter P0: målt RAW-afslag, ny prøvevært endnu ikke kørt
+
+Åbent SOURCE-issue: 39216786897/1 nåede fem stalls og én finalizer, men RAW_CLOSURE afviste med DMI_RAW_SAVE_RECEIPT_INVALID før efterfølgende API-/SAVE-admission. Rapporten indeholder ikke den indre kohorts første konkrete afslagsårsag; RAW-rodårsagen må ikke erklæres fundet ud fra denne ydre kode. SDK-created/put/finalized blev målt i lokal protokol, ikke i fjern cloud.
+
+Senere kilde 0ddca9ce forbereder denne årsagsaflæsning og retter et særskilt, statisk påvist CIPHER-parentargv-brud med præcis rolle-/modebinding. Det er ikke bevis for, at det målte RAW-afslag er løst. ROOTs lokale normale Node-bank er PASS (298/69/229 og 36 værn); ny v2-Linux/native er UNRUN, da autoCI var blokeret af dokumentations-/håndbogsseedkonflikter mod main. Fireminutterskæde, autoritativ lukning og holdbar cloud-SAVE er åbne. Gamle afsnit nedenfor bevares som dateret historik; ingen produktionsaktivering eller ny version følger af opfølgningen.
+
 ## 19. oktober — åbent SOURCE-issue: procfs-EACCES i observatøren
 
 39205832547 dokumenterer nu første testundtagelse PERMISSION_ERROR/EACCES ved kildehashbundet læsning af /proc/PID/fd/0 efter fem bekræftede SIGSTOP/T-stalls. Den berørte pidfd-exitstatus er ukendt; en zombie, produktfejl eller lukket fejlworker er ikke påvist. V4 er en privat testrettelse, ikke et produktfix: kun frisk pidfd-bevist exit må frasortere en EACCES-discovery uden optælling; levende/ukendt EACCES genkastes. Ny Linux-prøve accepterer også præcis ENOENT efter målt exit uden reaping eller SAVE-autoritet.

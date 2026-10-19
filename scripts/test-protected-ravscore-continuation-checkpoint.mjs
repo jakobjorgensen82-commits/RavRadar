@@ -529,7 +529,7 @@ if (process.argv.includes('--native-identity-source-only')) {
 // and the normal checkpoint saver; do not run the simulated RPC tests here.
 if (process.argv.includes('--native-postgres') || process.argv.includes('--native-statistics-revision')
     || process.argv.includes('--native-sampling-identity') || process.argv.includes('--current-memory-warmup')
-    || process.argv.includes('--established-native-current-origin')) {
+    || process.argv.includes('--established-native-current-origin') || process.argv.includes('--last-mile-enclosure')) {
   try {
     const { runNativeCheckpointSqlComparison } =
       await import('./lib/checkpoint-cas-native-postgres.mjs');
@@ -538,11 +538,12 @@ if (process.argv.includes('--native-postgres') || process.argv.includes('--nativ
       saveCheckpoint: saveRavScoreContinuationCheckpoint,
       includeStatisticsRevision: process.argv.includes('--native-statistics-revision')
         || process.argv.includes('--native-sampling-identity') || process.argv.includes('--current-memory-warmup')
-        || process.argv.includes('--established-native-current-origin'),
+        || process.argv.includes('--established-native-current-origin') || process.argv.includes('--last-mile-enclosure'),
       includeNativeIdentity: process.argv.includes('--native-sampling-identity') || process.argv.includes('--current-memory-warmup')
-        || process.argv.includes('--established-native-current-origin'),
-      includeCurrentMemoryWarmup: process.argv.includes('--current-memory-warmup') || process.argv.includes('--established-native-current-origin'),
-      includeEstablishedNativeCurrentOrigin: process.argv.includes('--established-native-current-origin'),
+        || process.argv.includes('--established-native-current-origin') || process.argv.includes('--last-mile-enclosure'),
+      includeCurrentMemoryWarmup: process.argv.includes('--current-memory-warmup') || process.argv.includes('--established-native-current-origin') || process.argv.includes('--last-mile-enclosure'),
+      includeEstablishedNativeCurrentOrigin: process.argv.includes('--established-native-current-origin') || process.argv.includes('--last-mile-enclosure'),
+      includeLastMileEnclosure: process.argv.includes('--last-mile-enclosure'),
     });
     console.log(JSON.stringify(report));
   } catch (error) {

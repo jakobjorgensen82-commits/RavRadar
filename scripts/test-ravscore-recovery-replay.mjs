@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { inverseArchivedWeatherRestartUpdater } from './lib/archived-weather-restart-updater-test-input.mjs';
 import crypto from 'node:crypto';
 import fs from 'node:fs/promises';
 import { buildDmiForecastHourly } from './lib/dmi-forecast-store.mjs';
@@ -3356,7 +3357,7 @@ assert.throws(() => buildRavScoreRecoveryReplay({
   publicHourly: [weather(4), weather(4)],
 }), error => error?.code === 'RAVSCORE_RECOVERY_REPLAY_PUBLIC_DUPLICATE');
 
-const productionSource = await fs.readFile('scripts/update-weather.mjs', 'utf8');
+const productionSource = inverseArchivedWeatherRestartUpdater(await fs.readFile('scripts/update-weather.mjs', 'utf8'));
 const productionPartPipelineSource = await fs.readFile(
   'scripts/lib/ravscore-production-part-pipeline.mjs',
   'utf8',

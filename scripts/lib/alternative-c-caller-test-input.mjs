@@ -1,6 +1,7 @@
 // TEST INPUT ONLY. Reverse precisely the new C caller hunks before old oracles.
 import assert from 'node:assert/strict';
 import crypto from 'node:crypto';
+import { inverseArchivedWeatherRestartUpdater } from './archived-weather-restart-updater-test-input.mjs';
 const SOURCE_INPUTS=[
   {
     "path": "scripts/plan-ravscore-current-history.mjs",
@@ -120,6 +121,7 @@ export function inverseAlternativeCCaller(source,relative) {
   assert(row,'ALTERNATIVE_C_TEST_INPUT_PATH');
   source=source.replaceAll('\r\n','\n');
   if(digest(source)===row.before.sha256) return source;
+  if(relative==='scripts/update-weather.mjs') source=inverseArchivedWeatherRestartUpdater(source);
   assert.equal(digest(source),row.after.sha256,'ALTERNATIVE_C_TEST_INPUT_CHANGED');
   for(const [before,after] of [...row.hunks].reverse()) {
     assert.equal(source.split(after).length,2,'ALTERNATIVE_C_TEST_INPUT_HUNK');

@@ -33,11 +33,40 @@ import { PROTECTED_DMI_NATIVE_PROOF_LIMITS, buildProtectedDmiNativeCurrentProofs
 // TEST-only stack view for the exact reviewed additive origin pipeline.
 // Real production calls/errors remain unchanged; only known source positions
 // are projected before the complete unchanged historical stack assertions.
-const reviewedOriginPipelineSource = (await import('node:fs')).readFileSync(new URL('./lib/ravscore-production-part-pipeline.mjs', import.meta.url), 'utf8').replace(/\r\n/g, '\n');
+let reviewedOriginPipelineSource = (await import('node:fs')).readFileSync(new URL('./lib/ravscore-production-part-pipeline.mjs', import.meta.url), 'utf8').replace(/\r\n/g, '\n');
+// Exact whole D8 -> 584 collector inverse; no unknown source or callsite is
+// accepted as the historical normal OWNER guard.
+assert.equal(createHash('sha256').update(reviewedOriginPipelineSource).digest('hex'),
+  '8e979128a682a7324d7defcc3d2d2dfa5edc85ebc22d4ae714810aa085490758');
+for (const [before, after] of [
+  ['  originHandle, part, targetReferenceAt,',
+    '  originHandle, part, targetReferenceAt, requireMeasuredColdStart = false,'],
+  ['  if (!record || !originHandle || record.originHandle !== originHandle',
+    '  if (typeof requireMeasuredColdStart !== \'boolean\'\n'
+      + '    || (requireMeasuredColdStart && record?.measuredColdStart !== true)\n'
+      + '    || !record || !originHandle || record.originHandle !== originHandle'],
+  ['      originHandle: establishedNativeCurrentOrigin,\n      context:',
+    '      originHandle: establishedNativeCurrentOrigin,\n'
+      + '      measuredColdStart: measuredColdStartAttested && initialSelection.state === null\n'
+      + '        && candidateContinuationCount === 0 && initialSelection.source === \'COLD_START\',\n'
+      + '      context:'],
+]) {
+  assert.equal(reviewedOriginPipelineSource.split(after).length, 2,
+    'Exact reviewed measured-COLD collector hunk required');
+  reviewedOriginPipelineSource = reviewedOriginPipelineSource.replace(after, () => before);
+}
 assert.equal(createHash('sha256').update(reviewedOriginPipelineSource).digest('hex'),
   'dadb5bf8c37fd12415b4596523df218f67cca4d4775b1cf8d0f2066c524cabd0');
 function reviewedOriginPipelineStack(stack) {
   assert.equal(typeof stack, 'string');
+  {
+    // The first measured-COLD collector hunk adds exactly two lines before
+    // this real call. Project only that pinned callsite, then keep both old
+    // stack assertions below unchanged.
+    const pattern = /(at buildRavScoreProductionPartSeries \([^\n]*ravscore-production-part-pipeline\.mjs:)623(:\d+\))/g;
+    assert.equal([...stack.matchAll(pattern)].length, 1, 'Exact reviewed584 buildRavScoreProductionPartSeries callsite required');
+    stack = stack.replace(pattern, (_whole, prefix, suffix) => prefix + '621' + suffix);
+  }
   {
     const pattern = /(at transitionOwnerCurrentHistory \([^\n]*ravscore-production-part-pipeline\.mjs:)52(:\d+\))/g;
     assert.equal([...stack.matchAll(pattern)].length, 1, 'Exact reviewed transitionOwnerCurrentHistory callsite required');
@@ -1703,13 +1732,14 @@ test('normal private recovery maps the complete 72h bridge without widening publ
     buildNewestValidRavScoreRecoverySources,
     ravScoreOwnerCurrentHistoryStartAt, ravScoreRecoverySourceStartAt: recovery.ravScoreRecoverySourceStartAt,
     part, zoneId: part.zoneId, initialSelection, generatedAt: at(120), feature,
+    archivedRestartInputs: null,
     deployedBulkCache: old, historicalDmiBulkCache: null, bulkCache: fresh,
     bulkId: identity.entityId, partDmiIdentity: identity, liveCurrentPilot: null, componentInputs: {},
     persistedDmiPartRows: new Map([[part.partId, { hourly: oldDefault.hourly }]]),
     protectedSameRunDmiRetentions: { current: { SAME_VALUES: 0, DIFFERENT_VALUES: 0 },
       wave: { SAME_VALUES: 0, DIFFERENT_VALUES: 0 } } };
   const actualRecovery = Function(...Object.keys(callScope),
-    slice(source, '      const replayStartAt = ravScoreOwnerCurrentHistoryStartAt(',
+    slice(source, '      const replayStartAt = archivedRestartInputs !== null ? generatedAt',
       '      let productionSeries;')
     + ';return { replayStartAt, deployedRecoverySource, progressiveRecoverySource, recoverySources };')(
     ...Object.values(callScope));

@@ -6,9 +6,20 @@ import fs from 'node:fs';
 const review = JSON.parse(fs.readFileSync(new URL('./completed-private-runtime-workflow-review.json', import.meta.url), 'utf8'));
 const coldReview = JSON.parse(fs.readFileSync(new URL('./current-family-cold-start-workflow-review.json', import.meta.url), 'utf8'));
 const sha = value => crypto.createHash('sha256').update(value).digest('hex');
+// Test-only release584 UA layer. The complete actual workflow is checked
+// before replacing only its five version strings; no runtime guard changes.
+export function inverseRelease584WorkflowUserAgents(source, role) {
+  if (role !== 'build' || sha(source) !== 'f0254a092c0baa188370c207b218e15ad7c9e616138d15234e6f323f101178c6') return source;
+  assert.equal(source.split('RavRadar/4.0.584').length, 6, 'Exactly five reviewed584 User-Agent fields');
+  const previous = source.replaceAll('RavRadar/4.0.584', 'RavRadar/4.0.581');
+  assert.equal(sha(previous), '4883b292423e162eec6f88d6402ef189adca71dc538fdfe22b7f91162f8ce4f0',
+    'Every byte of the genuine581 current-family-C workflow survives the584 UA inverse');
+  return previous;
+}
 // Test-only additive C layer. Only these two whole reviewed afterimages may
 // enter; every byte of the genuine f644 predecessor remains the old oracle.
 export function inverseCurrentFamilyColdStartWorkflow(source, role) {
+  source = inverseRelease584WorkflowUserAgents(source, role);
   const row = coldReview.roles[role];
   if (!row || sha(source) !== row.actualSha256) return source;
   let previous = source;

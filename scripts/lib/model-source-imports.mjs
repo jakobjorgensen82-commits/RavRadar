@@ -5,14 +5,15 @@ import crypto from 'node:crypto';
 import { exactRelativeModuleSpecifiers } from './static-module-closure.mjs';
 const REVIEWED = Object.freeze({
   'scripts/lib/established-native-current-origin.mjs': Object.freeze({
-    sha256: 'e4741332e9cc54523fccf8ded70ace9767047d97090306c00fafd43385235c42',
+    sha256: '2828947062b3fd0afa24eca48f8ee8f782c1b6b3287da3127be2aeccaf6b234d',
     imports: Object.freeze(['../protected-private-production-runtime.mjs', '../protected-ravscore-continuation-checkpoint.mjs',
       '../private-production-runtime-bundle.mjs', '../ravscore-continuation-checkpoint.mjs',
       '../private-production-runtime-workflow.mjs', '../../js/core/ravscore-model-contract.js',
       '../rollback-assets/ravscore-model-contract.js', '../../js/core/ravscore-model-bundle.generated.js',
       './ravscore-sampling-context.mjs', './coastal-point-staging-contract.mjs',
       './ravscore-candidate-g-rollback-runtime.mjs', './private-weather-component-pack.mjs',
-      '../check-native-current-reanalysis-predecessor-source.mjs', './ravscore-production-part-pipeline.mjs']),
+      '../check-native-current-reanalysis-predecessor-source.mjs', './ravscore-production-part-pipeline.mjs',
+      './weather-state-epoch-archive.mjs']),
   }),
   // Its computed imports are only from the verified, fixed immutable d7 Git
   // source materialization. That complete 122-leaf closure is independently

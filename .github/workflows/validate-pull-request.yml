@@ -5,6 +5,7 @@ on:
 
 permissions:
   contents: read
+  actions: read
 
 concurrency:
   group: ravradar-pr-${{ github.event.pull_request.number }}
@@ -211,17 +212,22 @@ jobs:
       # All the same gates must succeed; only their execution order changes.
       - name: Validate native PostgreSQL checkpoint CAS on artificial data only
         shell: bash
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          SOURCE_GATE_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          PULL_REQUEST_NUMBER: ${{ github.event.pull_request.number }}
         run: |
           set -euo pipefail
-          # Use only PostgreSQL binaries already present in the normal runner.
-          # No package/runtime install, network, cloud database or skip fallback.
-          node scripts/run-frozen-native0600-source-targets.mjs policy
-          # Includes the unchanged 213 -> 220 -> 230 phases in the SAME owned
-          # cluster, then executes the actual native-identity SQL and CAS cases.
-          node scripts/test-protected-ravscore-continuation-checkpoint.mjs --native-statistics-revision --native-sampling-identity --current-memory-warmup --established-native-current-origin
+          node --test scripts/test-native-postgres-evidence.mjs
+          node scripts/native-postgres-evidence.mjs
 
       - name: Validate source contracts and release governance
         run: npm run validate:source && node scripts/test-fixed-public-rate-log-20261013.mjs && node scripts/test-fixed-storage-upload-log-20261013.mjs && node scripts/test-fixed-public-rate-console-log-20261015.mjs
+
+      # A single sequential national preactivation proof, not a weather-run
+      # budget change or another concurrent member of the small source group.
+      - name: Validate isolated restart and two ordinary national followers
+        run: node --max-old-space-size=6144 scripts/test-last-mile-enclosure-restart-archive-origin.mjs --national
 
       - name: Validate durable Copernicus current-reference baseline on artificial data only
         shell: bash

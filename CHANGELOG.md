@@ -1,3 +1,29 @@
+## 19. oktober — 4.0.584: normal artifactkontrol efter arkivberegning
+
+- Den sidste providerfrie arkivgenstart gennemførte arkiv og beregning, men blev annulleret under en forældet fuld validering omkring jobloftet. Intet nyt B/S, SQL-installation, leveringsartifact eller Pages er bevist.
+- Lokal workflowrettelse: genbrug den normale, uændrede 55+3-collectorplan; forsøg begge og kræv faktiske beståede udfald før arkivgrenens writes. Alle selvstændige sikkerhedskontroller består.
+- Kun arkivgenstartens jobloft ændres fra 60 til 90 minutter; almindelig kode-only forbliver 60. Ingen nye leverandørbudgetter, cronændring, releaseversion, C/I/T eller SQL.
+- Ikke leveret eller driftsbevist: ny præcis kildekontrol, faktisk B/S og SQL, Pages og almindelige efterfølgere. Alle fem hovedmål er åbne; fristen 18. oktober er overskredet. Se DEC-0184s tillæg og privat checkpoint.
+
+## 19. oktober — genbrug bestået databaseprøve ved uændrede input
+
+Den ægte native PostgreSQL-prøve for 4.0.584 bestod, inklusive den nye append-only migration på syntetiske data. Den efterfølgende kildekontrol fejlede i syv konkrete test-/værtsårsager: historiske kildepins og kildepositioner, manglende almindelige NULL-defaults i udskårne testfixtures samt forældet kalder-/timeoutregistrering. Opfølgningen retter disse samlet, bevarer de gamle assertions på deres præcise historiske input og tilføjer helkilde- og mutationskontrol af den nye arkiverede opstartsvej. Ingen produktkode, SQL, scoreformel, modelbinding, adminpunkter eller geometri ændres i denne testopfølgning. Præcis samlet kildekontrol, national kapacitet, faktisk installation, ny B/S, Pages og almindelige efterfølgere er fortsat åbne. Alle fem hovedmål er åbne; den offentlige baseline er fortsat senest verificeret 4.0.581. Det private checkpoint ejer kørselsnumre, fejlpartition og kvitteringer.
+
+## 4.0.584 — lokal kandidat, 19. oktober 2026
+
+- Retter de to reproducerede producentfejl i sidste-mile-feltmapping og kanonisk checkpointserialisering; seks målrettede prøver består. Databasegrænsen lempes ikke.
+- Lokalt genereret ægte ny model-/lagringsbinding fra den fulde versionssynkroniserede kilde og en separat append-only 20261019060000-migration; ingen gammel migrationsfil ændres, og ingen ny migration er installeret.
+- Forbereder permanent, særskilt arkiv af faktiske B/S/offentlige originaler og normal genberegning på en nyere reference fra gemte vejr-/PART-inputs. Den nye aktive historik bruger ikke gammel I/G eller replay før reference; almindelige efterfølgere skal opbygge den fremad.
+- Lokale C/I-/SQL-byggere, syv bindingsforbrugere og planens ni mål består efter endelig versionssynk; ingen PostgreSQL- eller produktionspåstand.
+- Fjerner en dobbelt registrering af den omfattende B/S-prøve; hele prøven beholdes gennem den eksisterende normale kalder. De fem nye User-Agent-versionsfelter kvalificeres med en præcis helkilde-inverse, uden ændring af produktworkflow eller gamle testorakler.
+- Ikke leveret: kalder-/workflowintegration, endelig præcis kilde-/native-/PostgreSQL-kontrol, 673-dels horisont og faktisk ny B/S, Pages og almindelige efterfølgere. Offentlig 4.0.581 og vejr fra 16. oktober kl. 12 dansk tid er seneste verificerede status; cron er senest slået fra. Alle fem mål er åbne, og fristen 18. oktober er overskredet.
+
+## 19. oktober — SOURCE-afgrænsning efter P0: målt RAW-afslag, ny prøvevært endnu ikke kørt
+
+Den særskilte SOURCE-prøve 39216786897/1 på 9e14daf3 nåede fem bekræftede SIGSTOP/T-stalls og én finalizer. RAW-lukningskvitteringen blev derefter afvist med DMI_RAW_SAVE_RECEIPT_INVALID i CLOSURE før den efterfølgende API-/SAVE-admission. Den indre årsag til afslaget er ikke bevaret i denne rapport og er fortsat ukendt; lokal SDK-finalisering er ikke cloudbevis eller en gyldig lukningskvittering.
+
+Den senere 0ddca9ce-kilde indeholder en eksplicit current-instrumenteret prøvevært med faste diagnostikfelter, optagelse af de to faktiske nye kildeblade og en snæver CIPHER-guard for den normale source-fixed-cipher-upload-forælder. ROOTs normale Node-bankkontrakt består lokalt: 298 input, 69 bankblade, 229 faste Git-input og 36 værn; alle 27 historiske produktpins bevares. Ved aflæsningen af dette head var automatisk CI ikke startet på grund af dokumentations-/håndbogsseedkonflikter mod main. Den nye v2-nativeprøve er derfor ikke kørt. Dette er ikke et påvist RAW-årsagsfix, SOURCE-aktivering, fireminuttersbevis eller produktionslevering.
+
 ## 19. oktober — SOURCE: snæver observatørrettelse efter EACCES
 
 39205832547 nåede fem bekræftede SIGSTOP/T-stalls før målt PERMISSION_ERROR/EACCES i testens procfs-stdinlæsning. Den faktiske pidfd-exitstatus er ukendt; ingen produktfejl eller bevist stop udledes. Forbereder kun privat V4: frisk pidfd-bevist exit må frasortere en udløbet discovery uden optælling; levende/ukendt EACCES genkastes. Den nye Linux-prøve tillader None eller præcis ENOENT efter målt exit og bevarer uafventet Popen før oprydning. Portable event-/kildekontrakt består én gang; normal bankkontrol på kandidaten og fysisk Linux/native/CI er UNRUN. Gamle assertions, 297 andre inputrækker og 27 produktpins bevares. SOURCE forbliver inaktiv; ingen produkt-, model-, versions-, migrations- eller budgetændring.

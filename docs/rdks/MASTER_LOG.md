@@ -1,3 +1,17 @@
+## 19. oktober — lokal 4.0.584: ret producenten, bevar originalerne
+
+Samtaledelta: Ejeren fastholder nul gammel aktiv historik med permanent bevaring af originalerne. Den seneste faktiske vejrhentning nåede beregning, databevarelse, releasekontroller og privat B, men blev afvist ved S. Syv nye timer uden gammel state reproducerede to producentfejl; den parrede lokale rettelse består seks mål. SQL-grænsen lempes ikke.
+
+Lokal 4.0.584 har efter normal samlet versionssynk fået ægte nye C/I/T og en ny genereret append-only 20261019060000-migration. Den valgte genopretning beregner en strengt nyere reference fra allerede gemte vejr-/PART-inputs uden gammel I/G eller replay før target. B, central S og offentlig generation bevares særskilt; tidligere numerisk historikbro er ikke den valgte vej. De adskilte arkiv-, gamle læser- og planprøver er lokale beviser, ikke installation. Dette er lokal kildeforberedelse, ikke installation eller offentlig levering. Normal kalder-/workflowintegration, endelig præcis kildekontrol, native- og PostgreSQL-kontrol, faktisk resterende vejrhorisont for 673 dele, ny B/S-gemning/genlæsning, offentlig effekt og almindelige efterfølgere er fortsat åbne. Offentlig version er senest verificeret som 4.0.581 med vejr fra 16. oktober kl. 12 dansk tid. Cron er senest verificeret slået fra. Alle fem hovedmål er åbne; fristen 18. oktober er overskredet og er ikke forlænget. Se håndbog 89.256.
+
+Efter endelig normal versionssynk består de lokale C/I-/SQL-byggere, kontrollen af syv mutable bindingsforbrugere samt planens ni mål. Dette er kilde-/genereringskontrol, ikke PostgreSQL-eksekvering, faktisk installation eller ny offentlig prognose.
+
+## 19. oktober — SOURCE-afgrænsning efter P0: målt RAW-afslag, ny prøvevært endnu ikke kørt
+
+Faktisk SOURCE-udfald 39216786897/1: fem bekræftede stalls, én finalizer, actionexit 1 og RAW_CLOSURE/DMI_RAW_SAVE_RECEIPT_INVALID før efterfølgende API-/SAVE-admission. Den indre kohorts første årsag og oprindelige clock er ikke bevaret; intet RAW-årsagsfix eller cloudbevis kan udledes.
+
+Efterfølgende current-instrumenteret v2 på 0ddca9ce bevarer historiske 298 input og 27 produktpins, tilføjer sikre afslagsfelter/korrekt observation af to nye produktblade og retter den præcise normale CIPHER-forælderform. ROOTs normale Node-bank er lokalt PASS (69 bankblade/229 faste Git-input/36 værn). Ny v2-native er UNRUN: autoCI var ikke startet på grund af dokumentations-/håndbogsseedkonflikter mod main. Privat gennemgået main-komposition og dette daterede statusdelta er forberedelse, ikke merge, aktivering eller produktionslevering. Alle ældre daterede afsnit og P0-sandheden ovenfor bevares.
+
 ## 19. oktober — SOURCE: målt EACCES og afgrænset privat V4
 
 Nativekørsel 39205832547 nåede fem bekræftede SIGSTOP/T-stalls og bevarede PERMISSION_ERROR/EACCES ved testens procfs-stdinlæsning. Original pidfd-exitstatus er ukendt; nul finalizers/null actionstatus dokumenterer ikke produktfejl eller stop. Privat V4 bruger kun frisk pidfd-exit-readiness til at frasortere en udløbet discovery ved EACCES og bevarer levende/ukendt afslag. Den nye Linux-prøve tillader None eller præcis ENOENT efter målt exit, uden at reap'e før oprydning. Faktisk portable kontrakt: 1 PASS, 0 fejl/skip; ny normal bankkontrol og fysisk Linux/native/CI er UNRUN. SOURCE er inaktiv; ingen produkt-, model-, versions-, migrations-, protokol-, budget- eller produktpinændring. Gamle beviser bevares.

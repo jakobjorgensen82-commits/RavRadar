@@ -1,3 +1,15 @@
+## 19. oktober — genbrug bestået databaseprøve ved uændrede input
+
+En faktisk bestået native PostgreSQL-prøve må genbruges på en testrettet efterfølger, selv om et senere trin i den oprindelige kildekontrol fejlede. Det kræver verificeret oprindelig kørsel, forsøg, job, step og kommando, uændrede faktiske databaseinput inklusive transitive/frosne Git-kilder samt samme observerede runner-/runtimeforudsætninger. En markeringsfil eller grøn enkeltstatus alene er ikke bevis. Ukendt evidens, ændrede input eller relevante senere fejl kræver en ny databaseprøve. Genbrug skal mærkes som genbrug med den oprindelige identitet; det er ikke en ny SQL-kørsel eller installation. Hele den præcise nye kildekontrol og de endnu ikke gennemførte nationale prøver bevares.
+
+## 19. oktober — lokal 4.0.584: ret producenten, bevar originalerne
+
+Ejerens aktuelle beslutning tillader nul gammel aktiv strøm-/scorehistorik ved den afgrænsede nye start; gamle originaler skal bevares permanent og særskilt. Den private vejrpakke B, den faktisk centrale beregningstilstand S og den offentlige generation kan være forskellige og må ikke udlægges som et sammenhørende sæt. Ingen gamle I/G-tilstande eller timer før den nye reference må genindføres som aktiv historik.
+
+Den seneste faktiske kørsel hentede og beregnede vejret, bestod databevarelse og releasekontroller og gemte B, men S blev afvist. En syvtimers reproduktion uden gammel tilstand har påvist to producentfejl: forkerte feltnavne til sidste-mile-indramningen og en serializer, som gemte den rå kopi frem for den validerede kanoniske tilstand. Ret producentkæden; lemp ikke databasegrænsen. Ny modelbinding skal afledes af hele den reelle releasekilde, også versionssynk, og kræver en ny append-only migration. Gamle SQL-filer og originaler bevares.
+
+Dette er lokal kildeforberedelse, ikke installation eller offentlig levering. Normal kalder-/workflowintegration, endelig præcis kildekontrol, native- og PostgreSQL-kontrol, faktisk resterende vejrhorisont for 673 dele, ny B/S-gemning/genlæsning, offentlig effekt og almindelige efterfølgere er fortsat åbne. Offentlig version er senest verificeret som 4.0.581 med vejr fra 16. oktober kl. 12 dansk tid. Cron er senest verificeret slået fra. Alle fem hovedmål er åbne; fristen 18. oktober er overskredet og er ikke forlænget. Se håndbog 89.256 og det private checkpoint; tidligere modsatrettede status-/historikkrav nedenfor er dateret historik alene på disse punkter.
+
 ## 18. oktober — UI-build 4.0.581: mobilens dagrække, ingen ny modelovergang
 
 Dette er en UI-build på uændret 4.0.581, ikke en 4.0.582-release. Den eksisterende fuld-URL-cachevej opdaterer ui-nøglen i index.htmls CSS- og bootstrap-adresser og bootstrap.js' app-adresse samt app.js' import af tidsskyderen med en afgrænset timeline-nøgle dateret 20261018. v=4.0.581 og de delte auth-/i18n-adresser bevares. Ingen version:set, nye C/I/T-bindinger, modelændring eller SQL følger med. Den ændrede offentlige kode kræver stadig normal ny kilde-/artifactforsegling og sikker levering.
@@ -309,6 +321,7 @@ En version må ikke afleveres, hvis projektets hukommelse stadig beskriver en ti
 Ved konflikt gælder: brugerens aktuelle instruktion > aktiv RDKS-beslutning > verificeret aktuel kodeadfærd > håndbog > changelog > gamle chats.
 
 ## Omkostningsbevidst testmatrix
+- Ejerens præcisering 19. oktober: skær dubletter og prøver uden konkret betydning for den aktuelle levering fra. Hver prøve skal afklare en reel risiko eller et nødvendigt leveringskrav; samme omfattende prøve må ikke køres gennem to normale indgange. Bevar korrekt beregning, databevarelse, gemning og deploy samt de krævede præcise kilde-/native-/produktionskontroller.
 - Under udvikling køres kun målrettede tests for den berørte kontrakt samt nødvendige versions- og RDKS-kontroller.
 - Den fulde validate:source skal bestå én gang på PR'ens eksakte head i GitHub. Lokal gentagelse er kun nødvendig ved bred/tværgående risiko, manglende CI eller konkret fejlevidens.
 - Almindelige rettelser deployes efter DEC-0148 som kode-only med eksakt genbrug af senest gyldige data og uden ekstern vejrhentning. Normal vejrhentning følger som et særskilt, tidsbegrænset forløb.
