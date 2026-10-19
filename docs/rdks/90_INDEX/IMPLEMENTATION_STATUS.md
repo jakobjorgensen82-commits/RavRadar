@@ -1,3 +1,9 @@
+## 19. oktober — SOURCE: snæver privat opfølgning på målt EACCES
+
+Faktisk kørsel 39205832547 nåede fem bekræftede SIGSTOP/T-stalls før PERMISSION_ERROR/EACCES i testobservatørens procfs-stdinlæsning. Original pidfd-exitstatus er UNKNOWN; nul finalizers og null actionstatus er ikke produkt-/stopbevis. Privat V4 tillader kun en frisk pidfd-bevist afsluttet discovery ved EACCES; levende eller ukendt EACCES genkastes. Ny Linux-prøve accepterer None eller præcis ENOENT efter målt exit og kræver fortsat uafventet Popen-status før oprydning.
+
+Portable event-/kildekontrakt: faktisk 1 PASS, 0 fejl/skip; ikke en fysisk OS-prøve. Kandidatens normale bankkontrol, fysisk Linux, native og ny CI er UNRUN. Kun fire testbank-/wrapper-/kontraktfiler og dokumentation forberedes privat. Gamle prøver, 297 øvrige inputrækker, 27 produktpins, version, model, SQL-migrationer og budgetter bevares. Revisionen er separat/inaktiv og ikke færdiggjort; varig SAVE, cloud og samlet fireminutterskæde er fortsat åbne.
+
 ## 19. oktober — SOURCE: testens egen første fejl bevares særskilt
 
 Faktisk sidste nativeudfald: kørsel 39193345711, to bekræftede SIGSTOP/T-stalls, nul finalizers og ukendt første testundtagelse i ACTION_OBSERVE. actionExitCode=null beviser ikke exit. Ny firstTestException fastholder kun faste, kildekontrollerede metadata før oprydning; den er hverken produktårsag, fysisk stop eller SAVE-bevis. Lokal portable kontrakt: 1 PASS, ingen fejl/skip. Normal bankkontrakt: PASS med 298 input, 69 prøvefiler, 229 faste Gitinput og 36 gatekombinationer. Ny fysisk Linux/native/CI er UNRUN; ingen produkt-, model-, versions-, migrations- eller produktpinændring. Revisionen er fortsat inaktiv og ikke færdiggjort.

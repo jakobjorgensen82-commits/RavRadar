@@ -1,3 +1,9 @@
+## 19. oktober — åbent SOURCE-issue: procfs-EACCES i observatøren
+
+39205832547 dokumenterer nu første testundtagelse PERMISSION_ERROR/EACCES ved kildehashbundet læsning af /proc/PID/fd/0 efter fem bekræftede SIGSTOP/T-stalls. Den berørte pidfd-exitstatus er ukendt; en zombie, produktfejl eller lukket fejlworker er ikke påvist. V4 er en privat testrettelse, ikke et produktfix: kun frisk pidfd-bevist exit må frasortere en EACCES-discovery uden optælling; levende/ukendt EACCES genkastes. Ny Linux-prøve accepterer også præcis ENOENT efter målt exit uden reaping eller SAVE-autoritet.
+
+Én portable event-/kildekontrakt består; ny normal bankkontrol og fysisk Linux/native/CI er UNRUN. Først en faktisk normal Linux-kørsel kan afklare efterkæden. Samlet fireminuttersgrænse, fysisk stop, SAVE, cloudbevarelse og produktintegration er åbne, og SOURCE forbliver inaktiv. Historiske fejl og deres oprindelige ukendte forhold bevares nedenfor.
+
 ## 19. oktober — åbent SOURCE-issue: ukendt første testundtagelse
 
 Kørsel 39193345711 nåede to bekræftede SIGSTOP/T-stalls før ukendt testundtagelse i ACTION_OBSERVE. Nul finalizers og actionExitCode=null er ikke bevis for en produktfejl eller et afsluttet processtop. Den tabte første undtagelse kan ikke rekonstrueres fra den gemte log eller det faste artifact. Den lokale firstTestException-opfølgning bevarer nu type, fast kode/errno og kildehashkontrolleret kaldested før oprydning uden rå fejldata. Én portable kontraktprøve og normal bank består lokalt; ny Linux/native/CI-kvalifikation, faktisk fireminutterskæde, fjern cloudbevarelse og produktintegration er åbne. SOURCE aktiveres ikke. Se håndbog 89.192; ældre afslag nedenfor bevares som historik.

@@ -1,3 +1,7 @@
+## 19. oktober — SOURCE: målt EACCES og afgrænset privat V4
+
+Nativekørsel 39205832547 nåede fem bekræftede SIGSTOP/T-stalls og bevarede PERMISSION_ERROR/EACCES ved testens procfs-stdinlæsning. Original pidfd-exitstatus er ukendt; nul finalizers/null actionstatus dokumenterer ikke produktfejl eller stop. Privat V4 bruger kun frisk pidfd-exit-readiness til at frasortere en udløbet discovery ved EACCES og bevarer levende/ukendt afslag. Den nye Linux-prøve tillader None eller præcis ENOENT efter målt exit, uden at reap'e før oprydning. Faktisk portable kontrakt: 1 PASS, 0 fejl/skip; ny normal bankkontrol og fysisk Linux/native/CI er UNRUN. SOURCE er inaktiv; ingen produkt-, model-, versions-, migrations-, protokol-, budget- eller produktpinændring. Gamle beviser bevares.
+
 ## 19. oktober — SOURCE-prøvens egen første undtagelse
 
 39193345711 nåede to bekræftede SIGSTOP/T-stalls, men første testundtagelse i ACTION_OBSERVE forblev ukendt; null var ikke et bevist action-exit. Den test-only firstTestException-opfølgning bevarer faste, kildehashkontrollerede metadata før oprydning uden produkt-/stop-/SAVE-autoritet. Lokal portable kontrakt 1 PASS og normal bankkontrakt PASS genbruges; ny fysisk Linux/native/CI er UNRUN. Ingen version, model, SQL-migration eller produktpin ændres, og SOURCE forbliver inaktiv. Ældre beviser og afslag bevares.

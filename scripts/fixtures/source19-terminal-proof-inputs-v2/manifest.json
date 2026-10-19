@@ -1978,8 +1978,8 @@
     },
     {
       "path": "scripts/test-source19-terminal-failure-proof-bank-v17-observer-native.py",
-      "bytes": 222815,
-      "sha256": "c28b2f97f7763226832786882fc1c2d3f01f3a77cecb31e93ed8d99a01a4aec9",
+      "bytes": 226751,
+      "sha256": "0e32f25f23b0df17d01c9521056eed08d7909a37976ce54ce5fb71f90a86b628",
       "input": {
         "kind": "FROZEN_TEST_BANK",
         "bankPath": "scripts/fixtures/source19-terminal-proof-inputs-v2/operands/043.source.txt"
@@ -2739,7 +2739,7 @@
   ],
   "closurePurpose": "ONLY_REACHABLE_TERMINAL_FAILURE_NO_SUCCESS_PIPELINE_ADMISSION",
   "nativeObserver": {
-    "revision": 6,
+    "revision": 7,
     "catalogSha256": "cb86c930359e7e517d668e8c22a73650ff94b48e1a50a02231f80cfa1a9cb7a5",
     "sourcePins": {
       "action": {
@@ -2761,7 +2761,7 @@
     "pureProjection": "SHARED_WITH_PHYSICAL_LINUX_HELPER",
     "observerUnitBeforeSdkAndNative": {
       "pureCases": 6,
-      "physicalLinuxCases": 9,
+      "physicalLinuxCases": 10,
       "terminalMarkerCases": 7
     },
     "numericChildSourceCode": "UNKNOWN_UNLESS_SEPARATELY_PROVEN_NOT_PROJECTED_HERE",
@@ -2787,6 +2787,11 @@
       "timing": "FIRST_EXCEPTION_BEFORE_OUTER_DRAIN",
       "authority": "NONE",
       "rawMessageOrTracebackUploaded": false
+    },
+    "stdinDiscovery": {
+      "permissionRefusal": "RETHROW_SAME_ERROR_UNLESS_FRESH_OWNED_PIDFD_EXIT_READY",
+      "exitedDiscovery": "NO_PRODUCER_FINALIZER_STALL_OR_CLOSURE_COUNT",
+      "physicalLinux": "UNRUN_LOCALLY"
     }
   },
   "dynamicNormalModules": {

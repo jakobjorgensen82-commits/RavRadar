@@ -1,3 +1,9 @@
+## 19. oktober — SOURCE: målt adgangsafslag i prøveobservatøren
+
+PR669-kørsel 39205832547 nåede fem bekræftede SIGSTOP/T-stalls. Den bevarede første testundtagelse er PERMISSION_ERROR/EACCES i ACTION_OBSERVE ved prøvens kildehashbundne læsning af /proc/PID/fd/0. Den faktiske pidfd-exitstatus for denne discovery blev ikke bevaret; et afsluttet eller zombie-lignende forløb er derfor ikke påvist. Nul finalizers og actionExitCode=null beviser hverken produktfejl eller processtop.
+
+Den private V4-opfølgning ændrer kun testobservatøren: en frisk, ejet pidfd må ved EACCES alene lade en faktisk exit-klar discovery falde uden for optællingen; levende eller ukendt EACCES kastes uændret. Den nye Linux-prøve tillader også præcis ENOENT efter særskilt målt pidfd-exit, uden reaping eller stop-/SAVE-autoritet. Én portable event-/kildekontrakt består; fysisk Linux, ny native/CI og denne kandidats normale bankkontrakt er UNRUN. SOURCE forbliver separat og inaktiv. Se håndbog 89.192; ældre daterede observationer bevares.
+
 ## 19. oktober — SOURCE: bevar prøvens første undtagelse før oprydning
 
 PR669-kørsel 39193345711 nåede to bekræftede SIGSTOP/T-stalls, men prøven fik en ukendt første undtagelse under ACTION_OBSERVE. actionExitCode=null var ikke et bevist procesexit. Den lokale test-only opfølgning bevarer nu faste undtagelsesmetadata og et kildehashkontrolleret kaldested før oprydning; ingen produktfejl, stop- eller SAVE-autoritet udledes. Én portable kontraktprøve og den normale bankkontrakt består lokalt. Ny fysisk Linux/native-/CI-kvalifikation er UNRUN; SOURCE forbliver inaktiv. Se håndbog 89.192. Ældre observationer bevares som dateret historik.

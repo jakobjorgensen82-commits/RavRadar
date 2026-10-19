@@ -1,3 +1,11 @@
+## 19. oktober — SOURCE: første målte EACCES er en prøveobservationsfejl
+
+Seneste faktiske nativeudfald er PR669-kørsel 39205832547 på 364e83cc: fem bekræftede SIGSTOP/T-stalls, nul finalizers og første testundtagelse PERMISSION_ERROR/EACCES under ACTION_OBSERVE ved driverens kildehashbundne procfs-stdinlæsning. Den nye firstTestException-rapportering fandt dette kaldested. Den berørte discoverys pidfd-exitstatus blev ikke gemt; årsagen kan ikke omskrives til en bevist zombie, produktfejl eller vellykket afslutning. actionExitCode=null er fortsat ikke et bevist exit.
+
+Privat V4 er alene en snæver testopfølgning. Kun en frisk ejet pidfd med faktisk exit-readiness tillader, at EACCES behandles som en udløbet, ikke-optalt discovery. Levende eller ukendt EACCES genkastes som samme fejl. Ny Linux-enhedsprøve kræver først levende adgangsafslag og derefter målt pidfd-exit; efter exit accepterer den None eller præcis FileNotFoundError/ENOENT, mens Popen stadig skal være uafventet før oprydning. Normal discovery håndterede allerede ENOENT.
+
+Den lille portable event-/kildestrukturprøve består én gang (1 PASS, 0 fejl/skip); dens uændrede funktioner genbruges uden gentest. Den er ikke Linux-/pidfd-bevis. Nye fysiske Linux-/nativeprøver, kandidatspecifik normal bankkontrol og CI er UNRUN. Alle 27 produktpins og 297 øvrige inputrækker bevares; model, SQL-migrationer, protokol, budgetter og aktivering ændres ikke. SOURCE er fortsat separat og inaktiv. Fireminutterskæde, faktisk stop, SAVE og fjern cloudbevarelse er stadig åbne. Tidligere 39193345711 forbliver en særskilt historisk observation med ukendt oprindelig undtagelse.
+
 ## 19. oktober — SOURCE: første testundtagelse er endnu ikke identificeret
 
 Den seneste faktiske PR669-kørsel 39193345711 nåede to bekræftede SIGSTOP/T-stalls og nul finalizers. Første testundtagelse blev registreret under ACTION_OBSERVE, men dens type og kaldested blev ikke bevaret i det uploadede metadataresultat. actionExitCode=null var kun en ikke-genaflæst processtatus, ikke et bevist exit. Dette dokumenterer ikke en produktfejl eller en afsluttet fejlworker-/SAVE-kæde.

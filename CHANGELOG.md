@@ -1,3 +1,7 @@
+## 19. oktober — SOURCE: snæver observatørrettelse efter EACCES
+
+39205832547 nåede fem bekræftede SIGSTOP/T-stalls før målt PERMISSION_ERROR/EACCES i testens procfs-stdinlæsning. Den faktiske pidfd-exitstatus er ukendt; ingen produktfejl eller bevist stop udledes. Forbereder kun privat V4: frisk pidfd-bevist exit må frasortere en udløbet discovery uden optælling; levende/ukendt EACCES genkastes. Den nye Linux-prøve tillader None eller præcis ENOENT efter målt exit og bevarer uafventet Popen før oprydning. Portable event-/kildekontrakt består én gang; normal bankkontrol på kandidaten og fysisk Linux/native/CI er UNRUN. Gamle assertions, 297 andre inputrækker og 27 produktpins bevares. SOURCE forbliver inaktiv; ingen produkt-, model-, versions-, migrations- eller budgetændring.
+
 ## 19. oktober — SOURCE: rapportér første testundtagelse før oprydning
 
 Den sidste nativeprøve 39193345711 nåede to bekræftede SIGSTOP/T-stalls, men første testundtagelse i ACTION_OBSERVE var ukendt; actionExitCode=null var ikke et bevist exit. Tilføjer kun faste firstTestException-metadata før oprydning og streng kontrol af kildehash/linje; ingen rå fejltekst eller ny produkt-/stop-/SAVE-autoritet. Den første fejl og gamle assertions bevares. Én portable kontrakt og normal bank består lokalt. Ny fysisk Linux/native/CI er UNRUN; SOURCE, produktintegration og cloudkvalifikation er fortsat åbne/inaktive. Ingen version, model, migration, produktpin eller budget ændres.
