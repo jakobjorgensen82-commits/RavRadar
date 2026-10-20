@@ -4,6 +4,29 @@
 
 **Status:** Lokal rettelse implementeret; kildekvalifikation og levering åbne.
 
+Den ene fulde lokale stage-prøve har faktisk genereret alle 118 Candidate-timefiler
+og bestået zonebindinger, originalbevarelse og de tre inputafslag. Den stoppede
+derefter i den normale reserveaudit: `writePublicDelivery` tilføjer
+`manifest.detailDelivery`, mens auditoren sammenlignede med den statiske
+`buildPublicManifest` alene. Startup og details havde bestået deres kanoniske
+kontroller. Det er en selvstændig auditregression, ikke et grønt samlet mål.
+
+Den afgrænsede efterfølger bevarer hele den gamle kanoniske manifestkontrol og
+genopbygger alene det validerede leveringsindeks gennem den eksisterende normale
+inventarvalidator, eksakte header-/descriptorfelter og zonemedlemskab. Den må
+ikke blot ignorere indekset. Filindhold, hash, model og privatliv skal fortsat
+bestå de normale artifact- og deploykontroller; indeksformat er ikke filbevis.
+Fire nye mutationer bevarer afslag på ufuldstændig timeakse, ændret zone og ekstra
+index-/descriptorfelter. De gamle prøver og deres afslag bevares.
+Manifestmutationer skrives i producentens normale indrykkede JSON, mens startup
+forbliver kompakt. Et forkert tekstformat må ikke skjule manglende semantiske
+kontroller i hverken de nye eller gamle manifesttilfælde.
+
+Ny præcis kildekontrol skal gennemføre hele det normale mål. Den 43 minutter
+lange lokale generation gentages ikke alene for status. Testens eksisterende
+automatiske oprydning fjernede dens midlertidige stage ved fejlen; fulde logs og
+kontrolkvitteringer bevares privat. Et slettet testartifact må ikke påstås genbrugt.
+
 **Omfang:** Det manuelle Candidate G-reserve-/vedligeholdelsesforløb, ikke den
 almindelige integrerede vejrhentning uden Candidate-aktivering.
 

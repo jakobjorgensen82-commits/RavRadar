@@ -30,6 +30,7 @@ import {
 import {
   assertExactPublicRavScoreProfile,
 } from '../js/core/ravscore-public-profile-contract.js';
+import { publicDeliveryEntries } from '../js/core/public-delivery-contract.js';
 
 export const CANDIDATE_G_PUBLIC_ROLLBACK_AUDIT_SCHEMA =
   'candidate-g-operational-rollback-public-audit-v1';
@@ -437,6 +438,30 @@ export async function auditCandidateGRollbackPublicRuntime({
   const expectedDetailsText = compactJson(expectedDetails);
   const expectedManifest = buildPublicManifest(candidateFull, expectedStartupText,
     expectedDetailsText, coastalPartsText, zoneRegistryText);
+  // The normal writer adds its hour/zone index AFTER buildPublicManifest.
+  // Reconstruct only that validated delivery phase; never discard unknown
+  // manifest fields or treat descriptor syntax as proof of file contents.
+  // The normal Pages artifact/privacy and deployed-file checks remain required.
+  if (manifest?.detailDelivery !== undefined) {
+    const delivery = manifest.detailDelivery;
+    if (!exactKeys(delivery,
+      ['schemaVersion', 'forecastHours', 'sourceDetailsSha256', 'hours', 'zones'])
+      || !delivery.hours || typeof delivery.hours !== 'object' || Array.isArray(delivery.hours)
+      || !delivery.zones || typeof delivery.zones !== 'object' || Array.isArray(delivery.zones)
+      || JSON.stringify(Object.keys(delivery.zones)) !== JSON.stringify(Object.keys(expectedDetails.zones))) {
+      throw new Error('Candidate G public delivery field set or zone inventory is not canonical');
+    }
+    const expectedDelivery = { schemaVersion: 1, forecastHours: 118,
+      sourceDetailsSha256: expectedManifest.publicConditionDetailsSha256, hours: {}, zones: {} };
+    for (const entry of publicDeliveryEntries(manifest)) {
+      const group = entry.kind === 'hour' ? 'hours' : 'zones';
+      if (!exactKeys(delivery[group][entry.key], ['path', 'sha256', 'bytes'])) {
+        throw new Error('Candidate G public delivery descriptor field set is not canonical');
+      }
+      expectedDelivery[group][entry.key] = { path: entry.path, sha256: entry.sha256, bytes: entry.bytes };
+    }
+    expectedManifest.detailDelivery = expectedDelivery;
+  }
   if (startupText !== expectedStartupText || !same(startup, expectedStartup)) {
     throw new Error('Candidate G public startup projection is not canonical');
   }

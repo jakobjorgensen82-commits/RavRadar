@@ -1,5 +1,7 @@
 ## 20. oktober — ÅBEN: Candidate-public fra normalt pakket input
 
+21. oktober: Den fulde lokale stage nåede 118 Candidate-timefiler, men normal audit sammenlignede producentens opdelte manifest med en statisk forgænger uden leveringsindeks. Efterfølgeren validerer og kanoniserer alene indekset gennem normal kontrakt; alle øvrige manifest-, model-, privacy- og deploykrav bevares. Ny samlet kildekontrol og faktisk levering er åbne; dette er ikke en fejl i den aktive almindelige vejrhentning.
+
 Den normale manuelle reservegren blander gammel privat timepakning med nye Candidate-zonetimer og bevarer den integrerede models afledte public-hour-markør. Lokal rettelse og normal regression udarbejdes; originaler og almindelig integreret vejrhentning ændres ikke. Se [det afgrænsede issue](CANDIDATE-PUBLIC-PACKED-INPUT.md). Ingen ny version, modelbinding, SQL eller SOURCE-aktivering. Senere forberedelse, test og levering skal fortsat skelnes.
 
 ## 20. oktober — ÅBEN: 585-originalstage og faktisk lagerbackend

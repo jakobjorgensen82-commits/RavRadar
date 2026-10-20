@@ -631,7 +631,8 @@ try {
   assert.equal(stagedAvailability.fullHistoryModeCount, 420);
   assert.equal(stagedAvailability.historyIncompleteModeCount, 0);
   assert.equal(stagedAvailability.historyIncompleteZoneCount, 0);
-  for (const [label, file, mutate] of [
+  for (const [label, file, mutate,
+    expectedFailure = /canonical|profile|runtime|field set|digest/i] of [
     ['partial Candidate profile', manifestPath, document => {
       delete document.ravScoreProfile.rankingPolicyId;
     }],
@@ -653,16 +654,31 @@ try {
     ['partial Candidate runtime descriptor', manifestPath, document => {
       delete document.ravScoreRuntime.details.fileSha256;
     }],
+    ['incomplete Candidate public delivery hour axis', manifestPath, document => {
+      delete document.detailDelivery.hours[forecastTimes.at(-1)];
+    }, /public delivery|canonical|field set/i],
+    ['changed Candidate public delivery zone identity', manifestPath, document => {
+      const zoneId = Object.keys(document.detailDelivery.zones)[0];
+      document.detailDelivery.zones['unexpected-zone'] = document.detailDelivery.zones[zoneId];
+      delete document.detailDelivery.zones[zoneId];
+    }, /public delivery|canonical|field set/i],
+    ['extra Candidate public delivery index field', manifestPath, document => {
+      document.detailDelivery.unexpectedShadowIndex = true;
+    }, /public delivery|canonical|field set/i],
+    ['extra Candidate public delivery descriptor field', manifestPath, document => {
+      document.detailDelivery.hours[forecastTimes[0]].unexpectedShadowField = true;
+    }, /public delivery|canonical|field set/i],
   ]) {
     const pristine = file === manifestPath ? pristineManifest : pristineStartup;
     const invalid = JSON.parse(pristine);
     mutate(invalid);
-    await fs.writeFile(file, `${JSON.stringify(invalid)}\n`);
+    // Preserve producer formatting so each rejection tests the mutation, not JSON layout.
+    await fs.writeFile(file, `${JSON.stringify(invalid, null, file === manifestPath ? 2 : undefined)}\n`);
     await assert.rejects(() => execFileAsync(process.execPath, auditArguments, {
       cwd: stageRoot,
       windowsHide: true,
       maxBuffer: 10 * 1024 * 1024,
-    }), error => /canonical|profile|runtime|field set|digest/i.test(
+    }), error => expectedFailure.test(
       `${error?.stderr ?? ''}${error?.message ?? ''}`), label);
     await fs.writeFile(file, pristine);
   }

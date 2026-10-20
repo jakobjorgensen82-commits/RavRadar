@@ -1,5 +1,7 @@
 ## 20. oktober — lokal normal Candidate-forberedelse, ikke aktivering
 
+- [x] Den fulde lokale generation nåede 118 Candidate-timefiler, 210×118 zonebindinger og inputafslag, men fandt derefter reserveauditens statisk/opdelt-manifestkonflikt. Fuld prøve er derfor ikke bestået.
+- [ ] Efterfølgende normal auditrettelse med valideret kanonisk leveringsindeks og fire nye mutationsafslag skal bestå ny præcis kildekontrol; ingen dubleret lokal fuldgeneration eller offentlig effekt påstås.
 - [x] Kaldergennemgang har påvist blandet privat timepakning og forkert models afledte timepakkemarkør i den manuelle reservegren; den almindelige integrerede vejrhentning rammes ikke af denne særskilte gren.
 - [ ] Afgrænset normal prepare-rettelse og regression med normalt pakket input, uændrede originaler, 118 Candidate-zonetimer og fortsat afslag på beskadiget/afkortet input.
 - [ ] Præcis kildekontrol og sikker levering. Ingen ny version, C/I, SQL, ændring af kildeprioritet eller aktivering af den isolerede revision. Alle fem hovedmål forbliver åbne.

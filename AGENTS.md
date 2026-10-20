@@ -1,5 +1,7 @@
 ## 20. oktober — aktuel drift og lokal reserveforberedelse
 
+21. oktober: Den normale reserveaudit havde desuden en reproduceret statisk/opdelt-manifestkonflikt efter alle 118 genererede timer. Efterfølgeren bevarer hele manifestkontrollen og validerer særskilt producentens leveringsindeks gennem normal kontrakt. Ny samlet kildekontrol og levering er åbne; gammel lokal generation eller grønne deltrin må ikke kaldes et samlet PASS.
+
 Læs ROOTs aktuelle P0-linje i CURRENT_TRUTH og det private checkpoint før de daterede statusfronter nedenfor. 585 og senere almindeligt nyt vejr er faktisk leveret; DMI-tidsfortolkningens præcise kildekontrol er bestået og rettelsen er med i den næste aktive almindelige kørsel. Det beviser ikke fuld dækning eller målt tidsgevinst. Cron fortsætter uændret; ingen produktionsændring under aktiv writer.
 
 En særskilt lokal rettelse af den normale Candidate-reserveforberedelse håndterer pakket input gennem den eksisterende hydrator og invaliderer alene den nye kopis forkerte afledte visningscache. Originaler, scoreværdier, modelbindinger, SQL og kildeprioriteten DMI → Copernicus → Open-Meteo bevares med gældende komponent-/aldersregler. Test og levering er åbne; SOURCE-revisionen forbliver inaktiv. Alle fem hovedmål er åbne til 18. november 2026. Ældre frister og modstridende status nedenfor er historik på disse konkrete punkter.

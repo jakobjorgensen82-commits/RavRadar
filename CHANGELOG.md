@@ -1,5 +1,6 @@
 ## 20. oktober — lokal Candidate-public: korrekt genbrug af pakket input
 
+- 21. oktober: Den fulde lokale generation nåede alle 118 Candidate-timer, men normal audit afviste producentens efterfølgende `detailDelivery`-indeks. Retter denne særskilte to-fase-manifestkonflikt med normal inventarvalidering, eksakte felter og bevaret hel kanonisk kontrol; fire mutationsafslag tilføjes. Samlet ny kildekontrol og levering mangler; ingen ny lokal fuldgeneration påstås.
 - Retter den normale reserveforberedelse gennem den eksisterende tabsfri hydrator og invalidering af en anden models afledte visningscache alene i den nye kopi. Originalt input og original integreret timepakke bevares; normale public-/bindings-/horisontkontroller må ikke omgås.
 - Den udvidede normale stage-regression og levering er endnu åbne. Ingen ny version, modelbinding, SQL, scoreformel, leverandørprioritet, geometri eller SOURCE-aktivering. Ældre leveringsstatus nedenfor er dateret historik; aktuel vejrhentning står i CURRENT_TRUTH og privat checkpoint.
 
