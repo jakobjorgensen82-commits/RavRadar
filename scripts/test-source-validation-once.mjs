@@ -298,6 +298,12 @@ for (const file of [
   `The existing source privacy group must execute ${file} exactly once.`);
 assert.equal((pythonContractGroup.match(/'test-dmi-bulk-supervised\.py'/g) || []).length, 1,
   'The existing Python source group must execute the DMI supervisor regression exactly once.');
+for (const target of ['test-dmi-transactional-checkpoint.py',
+  'CanonicalTimeParsingTests', 'CurrentLedgerCheckpointTests'])
+  assert.equal(pythonContractGroup.split(`'${target}'`).length - 1, 1,
+    `The existing Python source group must select ${target} exactly once.`);
+assert.match(pythonContractGroup, /spawnSync\(python, \['-B', path\.join\(root, 'scripts', file\),\r?\n    'CanonicalTimeParsingTests', 'CurrentLedgerCheckpointTests'\]/,
+  'The registered group must actually invoke both current classes, not the full native suite or a frozen copy.');
 assert.equal((scripts['test:flow-arrow-runtime'].match(/node scripts\/test-current-arrow-land-mask\.mjs/g) || []).length, 1,
   'The existing flow-arrow group must verify the actual nationwide land mask exactly once.');
 assert.equal((fs.readFileSync('scripts/source-critical-gate.mjs', 'utf8').match(/'test:flow-arrow-runtime'/g) || []).length, 1,

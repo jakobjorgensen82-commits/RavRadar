@@ -1,3 +1,10 @@
+## 20. oktober — lokal DMI-rettelse: genbrug ren tidsfortolkning
+
+- Genbruger kun fortolkningen af højst 2.048 korte, almindelige tidsstrenge gennem den uændrede parser. Lange input, ændrende objekter og tekstunderklasser følger den gamle vej. Ingen kilde-, række-, proveniens- eller ledgerkontrol springes over.
+- Den normale målprøve reproducerer 200 gentagne fortolkninger før rettelsen og to efter. Seks afgrænsede parser-/checkpointprøver består; fuld Windows-filprøve stopper fortsat på den eksisterende Linux-læsekontrakt og er ikke et samlet PASS.
+- Kobler de seks aktuelle parser-/checkpointprøver på den allerede registrerede Python-kildegruppe. Gruppen kræver faktisk seks gennemførte prøver uden skip; den eksisterende kildeplan kontrollerer den præcise tilkobling. Den første kandidats kildekontrol omfattede ikke disse seks og må ikke bruges som deres bevis.
+- Dataværdier, kildeprioritet, budgetter, score, version og modelbinding bevares. Ny præcis Linux-kildekontrol, sikker levering og faktisk effekt i almindelig vejrhentning mangler. Andre leverancer holdes tilbage under ejerens vejrfokus.
+
 ## 20. oktober — lokal 585-rettelse: behold originalernes rigtige lagervej
 
 - Bevarer normal backendudvælgelse og videresender den faktiske storage-klient gennem genuine 584-originalrestore; central dokumentadgang er fortsat Supabase, aktuelle private objekter R2. Workflowet fører kun de tre eksisterende R2-miljøfelter frem.

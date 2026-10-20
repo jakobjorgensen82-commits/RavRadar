@@ -1,3 +1,11 @@
+## 20. oktober — fuldt vejrfokus; lokal genbrug af ren tidsfortolkning
+
+De seks aktuelle parser-/checkpointmål er nu koblet på den eksisterende normale Python-kildegruppe med krav om faktisk seks prøver uden skip. Den første kandidats sourceplan manglede dem; dens kontrol er ikke et bevis for de seks mål. Ny præcis kildekontrol kræves efter denne tilkobling. Den kørende almindelige vejrhentning ændres ikke.
+
+Almindelig 39392596895/1 og den efterfølgende 585-levering 39427178008/1 er faktisk afsluttet og offentligt kontrolleret. Den sidste genbrugte morgenens vejr. Cron er faktisk genaktiveret uændret; næste almindelige kørsel må ikke erstattes af et unødvendigt manuelt forsøg. Andre leverancer og den isolerede SOURCE-forberedelse holdes tilbage efter ejerens nyeste prioritet.
+
+Den nye P0-kandidat genbruger kun ren tidsfortolkning for højst 2.048 korte, eksakte tekstværdier. Parserkroppen, alle datakontroller og tidsbudgetter bevares. Seks lokale mål består efter faktisk rød reproduktion; den fulde Windows-filprøve møder den eksisterende Linux-læsegrænse og er ikke et samlet PASS. Præcis ny Linux-kildekontrol, sikker levering og faktisk vejreffekt mangler. Ingen ny version, C/I/T, SQL, kildeprioritet, geometri eller scoreformel. Se DEC-0249 og privat checkpoint; alle fem mål er fortsat åbne til 18. november 2026. Ældre modstridende status nedenfor er historik.
+
 ## 20. oktober — leveret 584-vejr; 585 stoppet før installation
 
 Læs CURRENT_TRUTHs P0-linje først. Almindelig 39392596895/1 er faktisk leveret med offentlig kontrol; den ældre schema4-audit målte alle fem komponenter samtidigt i 89,919 % af hele 118×210-hovedpunktsaksen med krav om endelige tal i alle tuplefelter, ikke lokal søgemåde-/PART-dækning. Det er ikke fuld leverandør- eller strømhistorik. Første 585-installation stoppede i trin 45 før SQL, ny B/S, Worker, Edges og Pages. Cron er faktisk pauset med uændret `19 */4` UTC; alle fem mål er åbne til 18. november 2026.

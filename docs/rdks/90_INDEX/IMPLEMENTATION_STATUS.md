@@ -1,3 +1,12 @@
+## 20. oktober — almindelig vejrhentning har fuld prioritet
+
+- [x] Almindelig 39392596895/1 og efterfølgende 585-rettelsesdeploy 39427178008/1 faktisk afsluttet med offentlig kontrol; kun den første hentede nyt vejr. Cron er faktisk genaktiveret med uændret tidsplan.
+- [x] Lokal DMI-kandidat genbruger kun ren tidsfortolkning af højst 2.048 eksakte strenge på højst 64 tegn. Parserkrop, datakontroller, budgetter, kilder, score og modelbinding bevares.
+- [x] Normal RED med 200 parserkald mod forventet to; efter rettelse består fire parsergrænser og to uændrede checkpointmål. Den fulde filprøve er ikke lokalt grøn på Windows' eksisterende native-læsegrænse og må ikke ommærkes.
+- [x] Tilkoblet de seks aktuelle mål én gang til den eksisterende Python-kildegruppe med faktisk kørsels-/no-skip-krav og præcis kildeplanskontrol. Den første kandidats sourceplan manglede dem og beviser ikke deres GitHub-eksekvering.
+- [ ] Præcis ny Linux-kildekontrol, sikker levering og faktisk tids-/dækningseffekt gennem almindelig vejrhentning. Lokal profilering beviser ikke national kapacitet eller fuld DMI.
+- [ ] Andre leverancer og isoleret SOURCE-forberedelse holdes tilbage under ejerens aktuelle vejrfokus. Alle fem mål er fortsat åbne til 18. november 2026.
+
 ## 20. oktober — 584 leveret; lokal rettelse af 585-originalernes lagervej
 
 - [x] Almindelig 39392596895/1 leveret og særskilt offentligt kontrolleret; den ældre schema4-audits fem-komponent-intersektion er 89,919 % af hele 118×210-hovedpunktsaksen med krav om endelige tal i alle tuplefelter, ikke lokal søgemåde-/PART-dækning eller fuld historik.

@@ -11,6 +11,7 @@ import json
 import math
 import re
 from datetime import datetime, timedelta, timezone
+from functools import lru_cache
 from typing import Any
 
 from .dmi_current_processing_compatibility import (
@@ -173,7 +174,7 @@ def inspect_native_grid_sampling(source: Any) -> dict[str, str]:
     return result("coherent", "NATIVE_RECORD_COHERENT")
 
 
-def canonical_time(value: Any) -> str | None:
+def _canonical_time_uncached(value: Any) -> str | None:
     if value is None:
         return None
     try:
@@ -183,6 +184,22 @@ def canonical_time(value: Any) -> str | None:
     if parsed.tzinfo is None:
         return None
     return parsed.astimezone(timezone.utc).isoformat().replace("+00:00", "Z")
+
+
+@lru_cache(maxsize=2048)
+def _canonical_time_short_text(value: str) -> str | None:
+    return _canonical_time_uncached(value)
+
+
+def canonical_time(value: Any) -> str | None:
+    """Reuse only bounded immutable parsing, never source/row validation.
+
+    Keep custom objects and string subclasses on the original path: their
+    string value can change. Long input must not occupy the bounded cache.
+    """
+    if type(value) is str and len(value) <= 64:
+        return _canonical_time_short_text(value)
+    return _canonical_time_uncached(value)
 
 
 def _canonical_json(value: Any) -> str:
