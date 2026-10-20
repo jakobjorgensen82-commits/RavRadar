@@ -46,6 +46,8 @@ Områdets viste vejr følger den lokale kystdel, som er valgt for den enkelte s�
 
 Den interne behandling skal undgå at bygge samme grundlag flere gange og undgå at kontrollere alle andre timer, når kun én fils egen time er relevant. Det må ikke ændre de godkendte data, kilder, kystpunkter, scoreformel eller fulde slutkontroller. En lokal forbedring er først dokumenteret i drift, når en faktisk vejrhentning har gemt og leveret resultatet sikkert.
 
+En lille, størrelsesbegrænset hukommelse kan genbruge fortolkningen af præcis samme tidsangivelse. Det ændrer ikke tidspunktet eller de tilhørende vejrdata. Systemet skal stadig kontrollere hver kilde og række samt gemme og genlæse resultatet sikkert. Hurtigere lokal behandling er hverken bevis for komplette prognoser eller en målt forbedring på den offentlige side.
+
 ## 89.257 Gem det færdige arbejde, før det leveres
 
 Kort fortalt: En færdig prognose skal kunne gemmes sikkert, så en senere leveringsfejl ikke tvinger systemet til at hente og beregne det samme igen.

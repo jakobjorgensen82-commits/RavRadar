@@ -1,5 +1,15 @@
 # DEC-0249 – fortsæt fra rigtig vejrpakke og gem kortere Copernicus-kald
 
+## Tillæg 2026-10-20 — genbrug kun den rene tidsfortolkning
+
+Ejerens nyeste prioritet er fuldt fokus på den almindelige vejrhentning. Yderligere måleforbedringer, brugerdata-/assistentlevering og den isolerede SOURCE-forberedelse sættes til side. Den fungerende normale cron bevares; der startes ikke en ekstra vejrhentning alene til afprøvning.
+
+Den gemte almindelige log viser væsentlig tid mellem download/afkodning og afsluttet checkpoint. En afgrænset Windows-profil af den rigtige normale forsegling, codec, disk og genlæsning med 64 syntetiske dele og 118 timer fandt gentagen tidsfortolkning som en konkret CPU-omkostning. Det er ikke et nationalt eller produktionsmålt tidsresultat. Gemte gamle originale rækker bevares og genbruges; sene LF-timer, der ikke blev forsøgt inden tidsbudgettet, er ikke dokumenterede decoderfejl.
+
+Kun `canonical_time` får en proceslokal LRU på højst 2.048 poster, og kun eksakte built-in-strenge på højst 64 tegn må bruge den. Den hidtidige parserkrop bevares uændret. Lange input, tekstunderklasser og andre objekter fortolkes på ny; deres tekst kan være ændrende. Ingen mutable kilder, rækker, værdier, attestationer eller valideringsresultater gemmes som genbrugsautoritet. Naive/ugyldige tider, tidszoner og hidtidige exceptions bevarer deres adfærd. Alle normale proveniens-, ledger-, checkpoint- og slutkontroller udføres fortsat.
+
+Den normale målprøve er faktisk rød før produktrettelsen med 200 parserkald i stedet for to og grøn efter. Fire parsergrænseprøver og to uændrede checkpointprøver består lokalt. Den fulde normale filprøve er ikke et Windows-PASS: den møder den eksisterende `DMI_GRIB_READ_LEASE_UNSUPPORTED`, som ikke må omgås eller ommærkes. Den præcise Linux-kildekontrol og faktisk almindelig drift skal stadig bestå før effekt påstås. Ingen ændring af scoreformel, kildeprioritet, administratorpunkter, geometri, budgetter, version, modelbinding eller udstedt SQL. Håndbog 89.258 opdateres, og kun den eksisterende installationsfils håndbogspayload synkroniseres.
+
 ## Tillæg 2026-10-20 — behold den faktiske storage gennem originalstage
 
 Den normale klientfabrik skal vælge den konfigurerede private backend. Stage af autentiske forgængeroriginaler må ikke tvinge Supabase-objektlager eller miste den returnerede storage-klient: samme faktiske klient sendes til den genuine 584-restore. Central dokumentadgang er fortsat Supabase, mens de aktuelle beskyttede B-objekter ligger i R2. Workflowet videresender de tre allerede eksisterende R2-miljøfelter; der oprettes ingen nye secrets, backends, schemaer eller migrationer. Eksakte original-/familie-/target-/readback- og privacykontroller bevares.
