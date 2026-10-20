@@ -1,3 +1,11 @@
+## 20. oktober — P0: hukommelsesstop efter beregning, ikke et deploybevis
+
+Den almindelige vejrhentning 39368970562/1 på samme 954-kilde som den foregående vellykkede kørsel stoppede med V8-hukommelsesfejl i updaterens afsluttende behandling. Score- og continuity-trin blev nået, men originfinalisering og offentlig projektion kunne ikke adskilles af den gamle log. Ingen ny B/S eller Pages blev leveret. Ny krypteret leverandørfremgang blev gemt; det er ikke en færdig beregningspakke.
+
+Den lokale, afgrænsede kandidat frigiver kun updaterens to afsluttede DMI-arbejdsreferencer efter vellykket, hashbundet continuity-pakning. Delte maps, originalrækker og gemte originaler ændres ikke. Normale fasemarkører får faste hukommelsestal og adskiller afsluttet origin fra offentlig eksport. Den faktiske continuity-prøve fejlede før rettelsen og består efter med uændrede bytes, hashes, genlæsning og afslag. Et lavere produktionsmaksimum og en løst OOM er endnu ikke bevist.
+
+Genoptag først efter præcis kildekontrol og sikker levering gennem den normale autentificerede cache-only-vej; undgå nye leverandørhentninger, når det gemte input kan kvalificeres. Ingen ny version, C/I/T, SQL, scoreformel, kildeprioritet, tidsbudget eller geometri. Alle fem mål er åbne; ejeren har forlænget fristen til 18. november 2026. Nyere drifts- og cronstatus findes i det private checkpoint. Se DEC-0249.
+
 ## 19. oktober — almindelig levering gennemført; leverandørarbejde optimeres
 
 Den almindelige vejrhentning `39299413035/1` er faktisk leveret med nye vejrdata, B før S, 55+3-kontroller, Pages og særskilt offentlig kontrol den 19. oktober omkring kl. 23.02 dansk tid. Det er ikke bevis for fuld DMI-dækning, komplet historik eller selvstændig drift. PR674 er særskilt kildeleveret efter præcis Linux-kontrol; faktisk brug af dens tidligere gemning/genoptagelse mangler endnu.

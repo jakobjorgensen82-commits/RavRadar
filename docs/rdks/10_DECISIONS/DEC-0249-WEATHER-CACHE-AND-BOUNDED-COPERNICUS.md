@@ -1,5 +1,13 @@
 # DEC-0249 – fortsæt fra rigtig vejrpakke og gem kortere Copernicus-kald
 
+## Tillæg 2026-10-20 — frigiv kun færdigbrugte arbejdsreferencer
+
+V8-hukommelsesstoppet i den almindelige 39368970562/1 kommer efter score-/continuity-opbygning og provenanceberigelse. Den foregående vellykkede kørsel brugte samme kilde. Den konkrete kandidat forkorter kun levetiden for updaterens `selectedDmiPartRecords` og lokale `persistedDmiPartRows`, efter at den normale `packDmiPartContinuity` faktisk er afsluttet. Referencer sættes til null; delte maps og rækker tømmes eller muteres ikke. Fejl før/under pakning bevarer begge referencer og det hidtidige pakkefelt.
+
+Den eksisterende normale codec-prøve bruger den aktuelle updaterblok og rigtig pack/unpack med samme fixture. Faktisk RED/GREEN bevarer hele pakkens bytes, alle indre hashes, genlæste timer samt de beholdte originalers værdier og identiteter. Den eksisterende faselog får kun faste hukommelsestal og særskilte slutpunkter for origin og offentlig runtime. Det er ikke et målt produktionsmaksimum eller bevis for præcis allokeringsårsag mellem disse to led.
+
+Updateren og testinputprojektionen ligger uden for C/I/T's faktiske inventarer. Der ændres ingen modelblade, bindinger, version, SQL, scoreformel, kildeprioritet, budgetter, originaler eller geometri. Præcis kildekontrol og sikker levering kræves før normal autentificeret cache-only-genoptagelse. Den faktisk gemte leverandørfremgang er ikke en afsluttet beregningspakke; beregning og forsegling skal køres igen. Produktionsfejlen forbliver åben indtil faktisk verificeret levering.
+
 ## Tillæg 2026-10-19 — fjern gentaget lokal kvalifikation, bevar tidsgrænserne
 
 Den almindelige vejrhentning er nu faktisk leveret, men leverandørernes indre fuldstændighed er ikke dermed lukket. De allerede gemte normale rapporter afgrænser DMI til ikke påbegyndte officielle havtimer og Copernicus til timeout under lokal samling af gemte segmenter. Der er ikke påvist en generel DMI-datafejl eller en begrundelse for at hæve leverandørbudgetterne. Historiske løsninger fra september kræver netop genbrug af en valideret kandidat og samme fulde gemmetransaktion frem for gentaget genopbygning.
