@@ -1,3 +1,9 @@
+## 20. oktober — P0 ÅBEN: V8-hukommelsesstop før offentlig pakning
+
+39368970562/1 fejlede efter score-/continuity-opbygning og provenanceberigelse. Ny leverandørfremgang blev gemt, men ny B/S, færdig beregningspakke og Pages blev ikke leveret. Samme kode havde gennemført den foregående kørsel; større input og samtidige arbejdskopier er konkrete belastninger, ikke i sig selv bevis for en bestemt læk.
+
+Den lokale kandidat frigiver kun to udtjente updater-referencer efter vellykket continuity-pakning og præciserer den eksisterende faselog. Normal RED/GREEN bevarer alle pakkebytes, hashes, originalrækker og afslag. Præcis kildekontrol, sikker levering og faktisk cache-only-genoptagelse mangler. Produktions-OOM er fortsat åben, indtil det normale forløb er gennemført og kontrolleret. Ingen højere heap, nye leverandørbudgetter, model-/SQL-overgang eller datanedskæring indføres her.
+
 ## 19. oktober — almindelig levering gennemført; leverandørarbejde optimeres
 
 Den almindelige vejrhentning `39299413035/1` er faktisk leveret med nye vejrdata, B før S, 55+3-kontroller, Pages og særskilt offentlig kontrol den 19. oktober omkring kl. 23.02 dansk tid. Det er ikke bevis for fuld DMI-dækning, komplet historik eller selvstændig drift. PR674 er særskilt kildeleveret efter præcis Linux-kontrol; faktisk brug af dens tidligere gemning/genoptagelse mangler endnu.

@@ -1,3 +1,7 @@
+## 20. oktober — afsluttede arbejdsreferencer er ikke historikopbevaring
+
+AKTIVT: Efter faktisk vellykket continuity-pakning må updateren frigive sine færdigbrugte lokale referencer før origin og offentlig eksport. Den komplette hashbundne pakke, delte originalmaps og rækker skal bevares uændret. Fejl før eller under pakning skal ske før referencefrigivelse. Frigivelse af en reference er ikke tilladelse til pruning, historiknulstilling eller datatab. Lokale byte-/genlæsningsprøver beviser ikke et lavere produktionsmaksimum eller en løst hukommelsesfejl. Eksisterende faselog må vise faste hukommelsestal, aldrig private dataværdier.
+
 ## 19. oktober — samme fulde datakontrol uden gentaget leverandørarbejde
 
 AKTIVT: Den normale Copernicus-checkpoint-kalder skal genbruge sin faktisk genopbyggede kandidat gennem den eksisterende strenge transaktion, med en særskilt autentificeret base. Alle tre forberedte snapshots skal verificeres før bank, shadow og stage committes i samme rækkefølge; journalen fjernes først derefter. Acquisition-plan og en gentagen foreløbig udvælgelse må ikke forbruge den lokale genoptagelsesreserve. Falsk baseline-genbrug eller svækket kildeadgang er ikke tilladt.

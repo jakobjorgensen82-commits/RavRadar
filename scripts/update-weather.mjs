@@ -3872,11 +3872,16 @@ const weatherBuildStartedAt = Date.now();
 let weatherBuildPreviousStageAt = weatherBuildStartedAt;
 function reportWeatherBuildStage(stage, details = {}) {
   const now = Date.now();
+  const memory = process.memoryUsage();
   console.log(JSON.stringify({
     kind: 'weather-build-stage',
     stage,
     stageSeconds: round((now - weatherBuildPreviousStageAt) / 1000, 3),
     totalSeconds: round((now - weatherBuildStartedAt) / 1000, 3),
+    memoryBytes: {
+      rss: memory.rss, heapTotal: memory.heapTotal, heapUsed: memory.heapUsed,
+      external: memory.external, arrayBuffers: memory.arrayBuffers,
+    },
     ...details,
   }));
   weatherBuildPreviousStageAt = now;
@@ -3967,7 +3972,7 @@ if (process.env.RAVRADAR_DMI_LEGACY_CURRENT_EXPECTATION) {
   if (reconstructed && historicalDmiBulkCache) throw new Error('DMI_LEGACY_CURRENT_DONOR_COLLISION');
   if (reconstructed) historicalDmiBulkCache = reconstructed;
 }
-const persistedDmiPartRows = archivedRestartInputs !== null ? archivedRestartInputs.persistedDmiPartRows
+let persistedDmiPartRows = archivedRestartInputs !== null ? archivedRestartInputs.persistedDmiPartRows
   : await unpackDmiPartContinuity(
     dmiForecastStore.partContinuity, activeParts, generatedAt,
   );
@@ -4569,6 +4574,11 @@ if (coastalPartScoreBuild) {
     activeParts,
     generatedAt,
   );
+  // The complete, hash-bound continuity pack now owns the persisted bytes.
+  // Retire only this caller's finished working references before finalization
+  // and public projection; never clear shared maps or mutate original rows.
+  coastalPartScoreBuild.selectedDmiPartRecords = null;
+  persistedDmiPartRows = null;
 }
 reportWeatherBuildStage('coastal-score-runtime-ready', {
   scoredPartCount: coastalPartScoreBuild?.integratedRuntime?.scoredPartCount ?? 0,
@@ -4654,6 +4664,7 @@ if (establishedNativeCurrentOrigin !== null) {
       partResults: coastalPartScoreBuild?.establishedNativeCurrentPartResults,
     });
 }
+reportWeatherBuildStage('current-origin-ready');
 // Byg først de offentlige, begrænsede timefiler fra den komplette beregning i
 // hukommelsen. Gem derefter en komprimeret og hashbundet genstartspakke og fjern
 // de 673 x 118 afledte timer fra den monolitiske private conditions-fil. Den
@@ -4669,6 +4680,7 @@ let privateHourlyMetrics;
 let privatePairInstalled = false;
 try {
   const publicRuntime = await writePublicRuntimeFromFull(output);
+  reportWeatherBuildStage('public-runtime-ready');
   publicHourPack = await buildPrivatePublicHourDeliveryPack({
     liveDirectory: path.dirname('data/live/manifest.json'),
     publicManifest: publicRuntime.manifest,

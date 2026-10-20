@@ -1,3 +1,9 @@
+## 20. oktober — 4.0.584 kildekandidat: færdigbrugte DMI-arbejdskopier
+
+- Frigiver kun updaterens to afsluttede arbejdsreferencer efter vellykket hashbundet continuity-pakning. Ingen ændring eller sletning af originalmaps, rækker eller gemt historik.
+- Faktisk normal RED/GREEN bevarer hele pakkens bytes, hashes, genlæsning og afslag før frigivelse. Tilføjer faste hukommelsestal og præcisere slutpunkter til den eksisterende faselog.
+- Ingen ny version, C/I/T, SQL, scoreformel, kildeprioritet, tidsbudget eller geometri. Præcis kildekontrol, sikker levering og faktisk produktionsbevis mod OOM er endnu åbne.
+
 ## 19. oktober — 4.0.584: PR-kildekontrollens ydre jobloft
 
 - Den præcise PR673-kontrol bestod native PostgreSQL på 28:46 og den efterfølgende kildevalidering på 30:43, men blev afbrudt omkring det konfigurerede 75-minuttersloft under den anden nationale efterfølger. Loggen nåede 601 af 673 dele; tidsforløbet peger stærkt på jobloftet, og loggen viser ingen assertionsfejl. Dette er ikke bestået samlet kildekontrol.

@@ -1,3 +1,13 @@
+## 20. oktober — hukommelsesstop efter normal beregning
+
+- [x] Hele den aktuelle fejllog bevaret og afgrænset til V8-hukommelsesstop før ny B/S og Pages; gemt leverandørfremgang er ikke et færdigt beregningscheckpoint.
+- [x] Kun to færdigbrugte updater-referencer frigives efter vellykket continuity-pakning; ingen maps eller originalrækker muteres.
+- [x] Samme normale continuity-prøve faktisk RED før og GREEN efter; pakke, hashes, genlæste timer, originale identiteter og fejl før frigivelse bevares.
+- [x] Eksisterende faselog får faste hukommelsestal og særskilte origin-/offentlig-runtime-slutpunkter.
+- [ ] Præcis samlet kildekontrol, sikker levering, autentificeret cache-only-genoptagelse og faktisk offentlig generation uden hukommelsesstop.
+
+Ingen ny version, C/I/T, SQL, tidsbudget, scoreformel, kildeprioritet eller geometri. Alle fem mål er åbne; ejerens nye frist er 18. november 2026. Se DEC-0249 og privat checkpoint for aktuel drift.
+
 ## 19. oktober — almindelig levering gennemført; leverandørarbejde optimeres
 
 Den almindelige vejrhentning `39299413035/1` er faktisk leveret med nye vejrdata, B før S, 55+3-kontroller, Pages og særskilt offentlig kontrol den 19. oktober omkring kl. 23.02 dansk tid. Det er ikke bevis for fuld DMI-dækning, komplet historik eller selvstændig drift. PR674 er særskilt kildeleveret efter præcis Linux-kontrol; faktisk brug af dens tidligere gemning/genoptagelse mangler endnu.
