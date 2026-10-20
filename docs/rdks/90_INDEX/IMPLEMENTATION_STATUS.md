@@ -5,6 +5,7 @@
 - [x] 585-produktkomposition, rå falsy-fejl-bevarelse og præcis import-pin, moderne/legacy servicekey-headere, QA DA/DE/EN og ærlig `self-reported`-markør.
 - [x] Én normal versionssynk; nye reelle C94/I93/T, append-only 100000-SQL, normal consumer-/releasekontraktkontrol og fixedpoint lokalt gennemført. Gamle 63 SQL-filer og numeriske originaler bevares.
 - [x] LOCAL_TARGETED_PASSED: målrettet lokal slutmatrix med genbrug af uændrede beståede grupper; alle midlertidige SQL-/guarddataarbejdsvisninger fysisk gendannet. Den eksisterende Linux-specifikke case er ikke kørt på Windows.
+- [x] Kandidatens frosne 584-prøvevært: normal import-/kontraktindgang reproduceret rød til grøn med 127+3 ægte testblade; første rå fejl og ejerbeskyttet oprydning bevares også ved defekt fejllogning. Kun testkilde ændret; C/I/T, producenthelper og alle 64 SQL-filer er uændrede. Det er ikke et PostgreSQL-bevis eller en vejrfejlrettelse.
 - [ ] Ny 585 native PostgreSQL, eksakt samlet source-CI og færdig releasekvalifikation. Lokale mål er ikke disse beviser.
 - [ ] Ægte originale B/S→normal prepare/proof/final, én sikker SQL-installation/readback, B før S, samme-SQL Worker med aggregate OFF, tre Edges, Pages og offentlig bruger-/AI-effekt.
 - [ ] Normal `39340901993/1` og målt virkning af 675; fuld DMI, komplet cache/historik, national kapacitet og selvstændig drift. Cron er fortsat OFF.

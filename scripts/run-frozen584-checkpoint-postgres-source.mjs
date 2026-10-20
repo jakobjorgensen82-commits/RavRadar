@@ -11,6 +11,24 @@ import {withAuthenticated584PredecessorSource} from './check-account-statistics-
 const ROOT=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
 const HEAD='ee029982538c67dea39880bc7b33f3508c10cf9c',TREE='400babda9377e43ea7ee1444008f7accd1aded32';
 const ADAPTER='scripts/lib/last-mile-enclosure-postgres.mjs',FACTORY='scripts/test-protected-ravscore-continuation-checkpoint.mjs';
+// TEST-only extension of the unchanged127-leaf producer host. Every byte is
+// genuine issued584 source; no current producer/model input is changed.
+const TEST_CLOSURE=Object.freeze([
+  Object.freeze({file:ADAPTER,bytes:22604,sha256:'ce41dc273b2fbf82f0bfd3b8fa0883c0212fd0c51a6ff05fb3017c46cb0c357b'}),
+  Object.freeze({file:'scripts/lib/current-memory-warmup-postgres.mjs',bytes:21181,sha256:'2e1498b7603a6625d415a1aed8c042c73d747ddd408f4222bdb0e3aa6046e091'}),
+  Object.freeze({file:'scripts/check-current-memory-warmup-predecessor-source.mjs',bytes:10404,sha256:'a201e4afb0da382623004d7717ca867d9a9b881ff107e7a30dd052a5b2a68989'}),
+]);
+const FAILURE_PHASES=new Set(['TEST_CLOSURE','ADAPTER_IMPORT','FACTORY_IMPORT','NATIVE_CALLBACK','CLEANUP']);
+const FAILURE_CODES=new Set(['ERR_MODULE_NOT_FOUND','ENOENT','EACCES','EPERM','ERR_ASSERTION']);
+function firstFailureDiagnostic(phase,error){
+  // Best-effort observation is never authority and must not replace a raw
+  // failure or prevent the real guarded cleanup, even for throwing getters.
+  try{
+    assert(FAILURE_PHASES.has(phase));
+    console.error(JSON.stringify({kind:'FROZEN584_NATIVE_FIRST_FAILURE',phase,
+      code:FAILURE_CODES.has(error?.code)?error.code:'UNKNOWN',privatePayloadIncluded:false}));
+  }catch{}
+}
 const execute=promisify(callbackExec),sha=value=>crypto.createHash('sha256').update(value).digest('hex');
 const environment=()=>Object.fromEntries(['PATH','Path','SystemRoot','WINDIR','TEMP','TMP','LANG','LC_ALL']
   .filter(key=>typeof process.env[key]==='string').map(key=>[key,process.env[key]]));
@@ -47,24 +65,37 @@ async function frozenFactory(sourceRoot,source){
 export async function withFrozen584CheckpointPostgresSource(callback){
   assert.equal(arguments.length,1);assert.equal(typeof callback,'function');
   assert.equal(String(await git(['rev-parse',HEAD+'^{tree}'],'utf8')).trim(),TREE);
-  for(const file of [ADAPTER,FACTORY])assert.match(String(await git(['ls-tree',HEAD,'--',file],'utf8')),/^100(?:644|755) blob [a-f0-9]{40}\t/);
-  const raw=Buffer.from(await git(['cat-file','blob',HEAD+':'+ADAPTER]));
-  assert.equal(raw.length,22604);assert.equal(sha(raw),'ce41dc273b2fbf82f0bfd3b8fa0883c0212fd0c51a6ff05fb3017c46cb0c357b');
+  for(const file of [...TEST_CLOSURE.map(row=>row.file),FACTORY])
+    assert.match(String(await git(['ls-tree',HEAD,'--',file],'utf8')),/^100(?:644|755) blob [a-f0-9]{40}\t/);
+  const leaves=await Promise.all(TEST_CLOSURE.map(async row=>{
+    const raw=Buffer.from(await git(['cat-file','blob',HEAD+':'+row.file]));
+    assert.equal(raw.length,row.bytes);assert.equal(sha(raw),row.sha256);return{...row,raw};
+  }));
   const factorySource=String(await git(['cat-file','blob',HEAD+':'+FACTORY],'utf8'));
   return withAuthenticated584PredecessorSource(async sourceRoot=>{
-    const target=path.join(sourceRoot,ADAPTER);await noLinks(path.dirname(target));
-    const present=await fs.lstat(target).catch(error=>{if(error.code==='ENOENT')return null;throw error;});
-    let owned=null,result,first;
+    const staged=[];let result,first,hasFirst=false,phase='TEST_CLOSURE';
     try{
-      if(present){assert(present.isFile()&&!present.isSymbolicLink());assert.deepEqual(await fs.readFile(target),raw);}
-      else{await fs.writeFile(target,raw,{flag:'wx',mode:0o600});owned=identity(await fs.lstat(target,{bigint:true}));}
-      const adapter=await import(pathToFileURL(target).href),factory=await frozenFactory(sourceRoot,factorySource);
+      for(const row of leaves){
+        const target=path.join(sourceRoot,row.file);await noLinks(path.dirname(target));
+        const present=await fs.lstat(target,{bigint:true}).catch(error=>{if(error.code==='ENOENT')return null;throw error;});
+        const record={target,raw:row.raw,owned:null};
+        if(present){identity(present);assert.deepEqual(await fs.readFile(target),row.raw);staged.push(record);}
+        else{
+          await fs.writeFile(target,row.raw,{flag:'wx',mode:0o600});staged.push(record);
+          record.owned=identity(await fs.lstat(target,{bigint:true}));
+        }
+      }
+      phase='ADAPTER_IMPORT';const adapter=await import(pathToFileURL(path.join(sourceRoot,ADAPTER)).href);
+      phase='FACTORY_IMPORT';const factory=await frozenFactory(sourceRoot,factorySource);
+      phase='NATIVE_CALLBACK';
       result=await callback({adapter,factory,repositoryRoot:sourceRoot});
-    }catch(error){first=error;}
+    }catch(error){first=error;hasFirst=true;firstFailureDiagnostic(phase,error);}
     try{
-      await noLinks(target);assert.deepEqual(await fs.readFile(target),raw);
-      if(owned){assert.deepEqual(identity(await fs.lstat(target,{bigint:true})),owned);await fs.unlink(target);}
-    }catch(error){first=first?new AggregateError([first,error],'Frozen584 PG source failed; preserve unknown files'):error;}
-    if(first)throw first;return result;
+      for(const{target,raw,owned}of [...staged].reverse()){
+        await noLinks(target);assert.deepEqual(await fs.readFile(target),raw);
+        if(owned){assert.deepEqual(identity(await fs.lstat(target,{bigint:true})),owned);await fs.unlink(target);}
+      }
+    }catch(error){firstFailureDiagnostic('CLEANUP',error);if(!hasFirst){first=error;hasFirst=true;}}
+    if(hasFirst)throw first;return result;
   });
 }

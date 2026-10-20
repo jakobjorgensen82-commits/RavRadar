@@ -1,5 +1,6 @@
 ## 4.0.585 — lokal kandidat, 20. oktober 2026
 
+- Retter kandidatens frosne 584-PostgreSQL-prøvevært med tre præcist hashbundne testblade og beskyttet førsteårsagslogning/oprydning. Normal import-/kontraktindgang er lokalt reproduceret rød til grøn; ny præcis GitHub-/PostgreSQL-kontrol mangler. C/I/T, producenthelper og alle SQL-filer er uændrede; det er ikke en ændring af den aktive vejrhentning.
 - Samler bedre DA/DE/EN-spørgsmålsforståelse, hele sammensatte spørgsmål og afgrænsede emneopfølgninger; beholder privacy, ærlig tidsusikkerhed og read-only assistent.
 - Nye almindelige ture og kontoindberetninger mærkes `self-reported`; det er ikke samtykke, ægte vejrsnapshot eller automatisk model-/statistikgodkendelse. Gamle payloads omskrives ikke.
 - Moderne `sb_secret_` sendes kun som apikey i normal kvote- og turlagertransport; legacy service-role JWT bevarer Bearer. Kvote, RPC, body, timeout og adgangsgrænser bevares.
