@@ -1,3 +1,13 @@
+## 89.261 Bevar originalerne i det lager, de faktisk ligger i
+
+Kort fortalt: En programopdatering skal hente de bevarede originaler fra det rigtige private lager. Den må ikke flytte eller ændre dem for at komme videre.
+
+Ved en opdatering følger læsningen det valgte private lager og den samme adgangsklient hele vejen. Programmet må ikke skifte til et andet objektlager alene for at komme videre. Oplysninger om pakken og selve pakkens indhold kan være gemt forskellige steder; begge skal læses gennem deres korrekte, kontrollerede adgang.
+
+De eksisterende originaler kontrolleres før brug og bevares uændret. En rettelse af lageradgangen ændrer ikke de gemte tal, den offentliggjorte historik, beregningsmodellen eller kildekravene. En ukendt eller ændret pakke må ikke få adgang, blot fordi forbindelsen til lageret virker.
+
+Fungerende lagring er ikke det samme som komplette eller aktuelle vejrdata. Datakvalitet, dækning og historikkens længde vurderes særskilt. Manglende data skal fortsat vises ærligt og må ikke udfyldes med gæt. Private data og adgangsoplysninger må ikke følge den offentlige visning.
+
 ## 89.260 Gem arbejdet sikkert, også når måneden skifter
 
 Kort fortalt: En afbrudt statistikforberedelse skal kunne fortsætte fra det faktisk gemte arbejde. Det må ikke give adgang til gamle ture eller ændre brugerens valg.

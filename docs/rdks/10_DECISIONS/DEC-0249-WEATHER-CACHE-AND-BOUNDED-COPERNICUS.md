@@ -1,5 +1,11 @@
 # DEC-0249 – fortsæt fra rigtig vejrpakke og gem kortere Copernicus-kald
 
+## Tillæg 2026-10-20 — behold den faktiske storage gennem originalstage
+
+Den normale klientfabrik skal vælge den konfigurerede private backend. Stage af autentiske forgængeroriginaler må ikke tvinge Supabase-objektlager eller miste den returnerede storage-klient: samme faktiske klient sendes til den genuine 584-restore. Central dokumentadgang er fortsat Supabase, mens de aktuelle beskyttede B-objekter ligger i R2. Workflowet videresender de tre allerede eksisterende R2-miljøfelter; der oprettes ingen nye secrets, backends, schemaer eller migrationer. Eksakte original-/familie-/target-/readback- og privacykontroller bevares.
+
+Første 585-installation stoppede i trin 45 før SQL, ny B/S, Worker, Edges og Pages. Den gamle generiske fejl skjulte den rå indre årsag og beviser ikke, at restore blev nået. Kun faste nåede fasenavne tilføjes uden private værdier; lokal rettelse og målprøve er ikke live restore-/installationsbevis. Sikker levering kræver nyt præcist kildebevis og kontrolleret faktisk forløb. Den almindelige 39392596895/1 er særskilt leveret med 89,919 % samtidig fem-komponentdækning over hele zoneaksen; det lukker ikke fuld leverandør-/PART-/strømhistorik. Aktuel cronpause og de fem åbne mål til 18. november står i CURRENT_TRUTH. Håndbog 89.261 forklarer afgrænsningen; kun installationsfilens eksisterende håndbogspayload synkroniseres, ikke SQL udenfor den.
+
 ## 20. oktober — fælles integrationsfront: P0 678 og sourcekvalificeret 585
 
 Denne front er privat dokumentforberedelse til en senere samlet kilde, ikke en merge, installation eller offentlig levering. PR678s afgrænsede 584-memoryrettelse bevarer kun færdigbrugte arbejdsreferencer kortere; præcis source-/mergestatus føres alene i den aktuelle P0-statuslinje øverst i CURRENT_TRUTH.md. Lokal RED/GREEN eller source-PASS er ikke bevis for løst produktions-OOM.

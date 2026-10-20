@@ -11,6 +11,23 @@ assert.equal(review.kind,'TEST_ONLY_EXACT_ACCOUNT_STATISTICS_ASSISTANT_WORKFLOW_
 assert.equal(review.role,'code-only-repair');assert.equal(review.edits.length,54);
 export const ACCOUNT_STATISTICS_ASSISTANT_WORKFLOW_SHA256=review.actualSha256;
 export const ACCOUNT_STATISTICS_ASSISTANT_OFF_WORKFLOW_SHA256='5bd146c570f3413e3f9cb4e687975c8ec05f61f5fa2232ef6f9de19437b16a9f';
+export const ACCOUNT_STATISTICS_ASSISTANT_STORAGE_WORKFLOW_SHA256='c60f65d52663525fb01095b87888e9385fa886b6d7d9cc38af788e08ad1d5435';
+// Only the existing R2 transport credentials are wired to the original reader.
+// Remove precisely those three lines to recover the whole qualified OFF caller.
+export function inverseAccountStatisticsAssistantStorageTransport(source){
+  assert.equal(arguments.length,1);assert.equal(typeof source,'string');
+  assert.equal(sha(source),ACCOUNT_STATISTICS_ASSISTANT_STORAGE_WORKFLOW_SHA256,'Only the exact original-storage caller may enter this inverse');
+  const heading='      - name: Select actual CURRENT family and restore only genuine original584 if needed\n';
+  const start=source.indexOf(heading),end=source.indexOf('\n      - name:',start+heading.length);
+  assert(start>=0&&end>start);assert.equal(source.indexOf(heading,start+heading.length),-1);
+  const lines=['          RAVRADAR_R2_ACCOUNT_ID: ${{ secrets.RAVRADAR_R2_ACCOUNT_ID }}\n',
+    '          RAVRADAR_R2_ACCESS_KEY_ID: ${{ secrets.RAVRADAR_R2_ACCESS_KEY_ID }}\n',
+    '          RAVRADAR_R2_SECRET_ACCESS_KEY: ${{ secrets.RAVRADAR_R2_SECRET_ACCESS_KEY }}\n'].join('');
+  const current=source.slice(start,end);assert.equal(current.split(lines).length,2);
+  const prior=source.slice(0,start)+current.replace(lines,'')+source.slice(end);
+  assert.equal(sha(prior),ACCOUNT_STATISTICS_ASSISTANT_OFF_WORKFLOW_SHA256,'Whole qualified OFF workflow survives storage wiring');
+  return prior;
+}
 // Qualify ONLY the reviewed two-symbol OFF-caller correction. The old 54-hunk
 // descriptor and its genuine input/output remain physically unchanged.
 export function inverseAccountStatisticsAssistantOffAttestation(source){
@@ -29,6 +46,7 @@ export function inverseAccountStatisticsAssistantOffAttestation(source){
 }
 export function inverseAccountStatisticsAssistantWorkflow(source){
   assert.equal(arguments.length,1);assert.equal(typeof source,'string');
+  if(sha(source)===ACCOUNT_STATISTICS_ASSISTANT_STORAGE_WORKFLOW_SHA256)source=inverseAccountStatisticsAssistantStorageTransport(source);
   if(sha(source)===ACCOUNT_STATISTICS_ASSISTANT_OFF_WORKFLOW_SHA256)source=inverseAccountStatisticsAssistantOffAttestation(source);
   if(sha(source)===review.predecessorSha256)return source;
   assert.equal(sha(source),review.actualSha256,'Unreviewed new workflow cannot enter the P0 or old oracle');

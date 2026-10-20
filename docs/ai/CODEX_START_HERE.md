@@ -1,3 +1,9 @@
+## 20. oktober — leveret 584-vejr; 585 stoppet før installation
+
+Læs CURRENT_TRUTHs P0-linje først. Almindelig 39392596895/1 er faktisk leveret med offentlig kontrol; alle fem komponenter findes samtidigt i 89,919 % af hele 118×210-zoneaksen. Det er ikke fuld leverandør- eller strømhistorik. Første 585-installation stoppede i trin 45 før SQL, ny B/S, Worker, Edges og Pages. Cron er faktisk pauset med uændret `19 */4` UTC; alle fem mål er åbne til 18. november 2026.
+
+Den lokale stage-rettelse bruger normal backendudvælgelse og sender den faktiske storage-klient videre til den autentiske 584-originalgendannelse. Central metadataadgang forbliver Supabase; de beskyttede objekter skal læses fra den valgte backend, aktuelt R2. Tre eksisterende R2-miljøfelter videresendes, og kun faste fasenavne logges. Første logs skjulte den indre fejl og beviser ikke, at restore blev nået. Lokal rettelse/prøve er ikke live årsags- eller installationsbevis. Ingen ny version, C/I/T eller SQL; se DEC-0249 og håndbog 89.261. Ældre afventninger nedenfor er dateret historik på disse punkter.
+
 ## 20. oktober — lokal sammenført 585, ingen samtidig produktionsændring
 
 Læs først CURRENT_TRUTHs ene aktuelle P0-linje og det private checkpoint. Den mergede hukommelsesrettelse og genaktiveret cron er faktiske handlinger; den nye almindelige kørsels udfald må ikke udledes af dem. Den lokale 585-efterfølger bevarer begge kilde-/dokumentationshistorikker og de fem gennemgåede statistikforberedelsesrettelser. Faktisk servervalgt, varigt gemt arbejde kan fortsætte over månedsskifte uden at åbne for vilkårlige gamle klientperioder. Samtykke, slettebarriere, model, originaler og eksisterende budgetter består.

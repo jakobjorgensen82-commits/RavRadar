@@ -1,3 +1,9 @@
+## 20. oktober — ÅBEN: 585-originalstage og faktisk lagerbackend
+
+Første 585-installation stoppede i trin 45 før SQL, ny B/S, Worker, Edges og Pages. Kodegennemgangen påviste en tvungen Supabase-storage og manglende videreføring af storage-klienten trods aktuelt R2-objektlager. Den lokale rettelse genbruger normal backendvalg/klient og de tre eksisterende R2-miljøfelter. Den skjulte indre exception og første kørsels nåede restore er fortsat ukendt; wiretest eller faste faselogs er ikke live årsagsbevis. Præcis ny kildekontrol, sikker installation og offentlig 585-effekt kræves før lukning.
+
+584-vejret fra almindelig 39392596895/1 er faktisk leveret; alle fem komponenter samtidigt dækker 89,919 % af zoneprognosens 118×210 timer. Fuld PART-/leverandør-/strømhistorik og alle fem mål til 18. november er stadig åbne. Cron er faktisk pauset med uændret tidsplan; ingen ny version, C/I/T eller SQL. Se CURRENT_TRUTH, DEC-0249 og håndbog 89.261. De tidligere fejl og daterede afventninger bevares nedenfor.
+
 ## 20. oktober — ÅBEN levering: månedsskifte og begrænset statistikforberedelse
 
 Konkret kontrolfund før installation: 585-workflowets eksplicitte OFF-trin gav bindingskrav til en funktion, som alene kontrollerer aktiv Worker-version og ikke bruger de to bindingsargumenter. Det er ikke bevis for en faktisk aktiv statistikfunktion i produktionen. Den lokale rettelse bruger den allerede eksisterende normale bindingskontrol og afviser live ON, manglende OFF, forkert D1 og deploymentskift. Den normale caller er faktisk reproduceret rød før rettelsen; dens fem nye tilfælde og tretten eksisterende bindingsprøver består efter. Den særskilte workflowprøve stoppede før sit mål på en uændret historisk JSON-kontrols Windows-CRLF-grænse; den må ikke kaldes bestået. Nyt præcist Linux-kildebevis og faktisk installationskontrol skal foreligge før lukning; den almindelige vejrhentning fortsætter uændret.

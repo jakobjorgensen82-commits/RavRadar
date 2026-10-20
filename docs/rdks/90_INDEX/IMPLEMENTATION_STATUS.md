@@ -1,3 +1,13 @@
+## 20. oktober — 584 leveret; lokal rettelse af 585-originalernes lagervej
+
+- [x] Almindelig 39392596895/1 leveret og særskilt offentligt kontrolleret; fem-komponent-intersektion 89,919 % af hele 118×210-zoneaksen, ikke alle PART-timer eller fuld historik.
+- [x] Første 585-installation stoppede i trin 45 før SQL, ny B/S, Worker, Edges og Pages. Cron er faktisk pauset/gemt med uændret tidsplan; tidligere ON-noter er historik.
+- [x] Lokal kildekandidat bevarer normal backendudvælgelse, videresender storage til genuine 584-restore og fører de tre eksisterende R2-miljøfelter frem. Faste faselogs indeholder ikke private værdier.
+- [x] ROOTs normale Node22-callerprøve: 1 PASS/0 FAIL/0 SKIP på 9,52 sekunder. Gammel kalder reproducerer manglende storage; ny kalder bruger faktisk R2-adapter og når én dokumentlæsning mod syntetisk tom pointer, ikke download eller B/S-admission. Hel workflow-inverse og ti mutationsafslag består. Den særskilte workflowcase er ikke kørt lokalt, fordi en eksisterende fysisk CRLF/raw-JSON-guard stopper før casen; den lempes ikke.
+- [ ] Ny præcis kildekontrol og kontrolleret installations-/genlæsningsbevis. Den gamle generiske fejl skjulte indre exception og beviser ikke, at restore blev nået; lokal wiretest er ikke live årsagsbevis.
+
+Ingen ny version, C/I/T, SQL eller aktivering. Alle fem mål er åbne til 18. november 2026. Aktuel drift føres i CURRENT_TRUTH; se DEC-0249 og håndbog 89.261. Hele historikken nedenfor bevares.
+
 ## 20. oktober — lokal 585-sammenføring og varig månedsskiftefortsættelse
 
 - [x] Sammenfør 676-kilde og faktisk merget hukommelsesrettelse med bevarede dokumentationshistorikker og gamle bindings-/SQL-originaler.

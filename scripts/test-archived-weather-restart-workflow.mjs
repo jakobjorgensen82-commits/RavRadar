@@ -9,7 +9,7 @@ import {spawnSync} from 'node:child_process';
 import {fileURLToPath} from 'node:url';
 import {inverseArchivedWeatherRestartWorkflow} from './lib/archived-weather-restart-workflow-review.mjs';
 import {inverseArchivedProductionGate} from './lib/archived-production-gate-review.mjs';
-import {inverseAccountStatisticsAssistantWorkflow,inverseAccountStatisticsAssistantOffAttestation} from './lib/account-statistics-assistant-workflow-review.mjs';
+import {inverseAccountStatisticsAssistantWorkflow,inverseAccountStatisticsAssistantOffAttestation,inverseAccountStatisticsAssistantStorageTransport} from './lib/account-statistics-assistant-workflow-review.mjs';
 import {expandValidationCommands} from './run-validation-collection.mjs';
 import {lastMileEnclosureRequiredMigrations} from './integrated-cutover-readiness.mjs';
 import {requireLastMileEnclosureBinding} from './lib/last-mile-enclosure-successor-source.mjs';
@@ -271,8 +271,10 @@ function proveMetadata585NormalCallers(source){
   assert.doesNotMatch(source,/DMI_API_KEY|COPERNICUSMARINE_SERVICE_(?:USERNAME|PASSWORD)/);
 }
 test('actual585 metadata workflow qualifies its own callers before the unchanged P0 and old oracles',()=>{
-  assert.equal(sha(actualCurrent),'5bd146c570f3413e3f9cb4e687975c8ec05f61f5fa2232ef6f9de19437b16a9f');
-  const beforeOff=inverseAccountStatisticsAssistantOffAttestation(actualCurrent);
+  assert.equal(sha(actualCurrent),'c60f65d52663525fb01095b87888e9385fa886b6d7d9cc38af788e08ad1d5435');
+  const beforeStorage=inverseAccountStatisticsAssistantStorageTransport(actualCurrent);
+  assert.equal(sha(beforeStorage),'5bd146c570f3413e3f9cb4e687975c8ec05f61f5fa2232ef6f9de19437b16a9f');
+  const beforeOff=inverseAccountStatisticsAssistantOffAttestation(beforeStorage);
   assert.equal(sha(beforeOff),'3ad071b6257531a3f256c1092403c25c7a197c08b7589c26f03c2454052b6218');
   assert.throws(()=>inverseAccountStatisticsAssistantOffAttestation(beforeOff),'The new inverse refuses reverting both OFF symbols');
   assert.equal(inverseAccountStatisticsAssistantWorkflow(beforeOff),current,'Genuine old54-hunk input remains admitted unchanged');
@@ -282,6 +284,14 @@ test('actual585 metadata workflow qualifies its own callers before the unchanged
   assert.equal(sha(actual),'b87ef14d831e6e825607a22deef3ab10f85bab654d2101731a473b393cb619cf');
   assert.equal(sha(historical),'a5052ae64638aaf4df28523f8a8c401e13803707ea0d46e0bb371f012f33352b');
   assert.equal(inverseArchivedWeatherRestartWorkflow(actualCurrent),historical,'Normal shared consumers use both exact layers');
+  const storage=named(actualCurrent,'Select actual CURRENT family and restore only genuine original584 if needed');
+  for(const key of ['RAVRADAR_R2_ACCOUNT_ID','RAVRADAR_R2_ACCESS_KEY_ID','RAVRADAR_R2_SECRET_ACCESS_KEY']){
+    const line='          '+key+': ${{ secrets.'+key+' }}\n';
+    assert.equal(storage.text.split(line).length,2,'The selected existing R2 reader has its normal transport credential');
+    for(const changed of [replaceOne(actualCurrent,storage.text,storage.text.replace(line,'')),
+      replaceOne(actualCurrent,storage.text,storage.text.replace(line,line+line))])
+      assert.throws(()=>inverseAccountStatisticsAssistantStorageTransport(changed),'Missing or duplicate transport binding is not the reviewed caller');
+  }
   proveMetadata585NormalCallers(actualCurrent);
   for(const [name,change]of [
     ['Apply the sole new metadata binding after every artifact gate and fresh originals',text=>text.replace(" && env.RAVRADAR_ACCOUNT_STATISTICS_ASSISTANT_PHASE == 'before'",'')],
