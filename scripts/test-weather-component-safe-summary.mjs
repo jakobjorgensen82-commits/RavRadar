@@ -6,6 +6,9 @@ import { spawnSync } from 'node:child_process';
 import test from 'node:test';
 import { safeWeatherComponentSummary } from './lib/weather-component-safe-summary.mjs';
 import { copernicusRetryableReasonCounts } from './lib/copernicus-component-runtime.mjs';
+// Existing normal source-gate seam: run the local coverage diagnostic target
+// once without changing the frozen source-command list or model inputs.
+import './test-zone-mode-weather-coverage.mjs';
 
 const accounting = (known, unaccounted, consistent) => ({
   knownReasonReportedAttempts: known,
