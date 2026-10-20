@@ -10,8 +10,26 @@ assert.equal(review.schemaVersion,1);
 assert.equal(review.kind,'TEST_ONLY_EXACT_ACCOUNT_STATISTICS_ASSISTANT_WORKFLOW_INVERSE');
 assert.equal(review.role,'code-only-repair');assert.equal(review.edits.length,54);
 export const ACCOUNT_STATISTICS_ASSISTANT_WORKFLOW_SHA256=review.actualSha256;
+export const ACCOUNT_STATISTICS_ASSISTANT_OFF_WORKFLOW_SHA256='5bd146c570f3413e3f9cb4e687975c8ec05f61f5fa2232ef6f9de19437b16a9f';
+// Qualify ONLY the reviewed two-symbol OFF-caller correction. The old 54-hunk
+// descriptor and its genuine input/output remain physically unchanged.
+export function inverseAccountStatisticsAssistantOffAttestation(source){
+  assert.equal(arguments.length,1);assert.equal(typeof source,'string');
+  assert.equal(sha(source),ACCOUNT_STATISTICS_ASSISTANT_OFF_WORKFLOW_SHA256,'Only the exact live-OFF caller may enter this inverse');
+  const heading='      - name: Require the exact new Worker and explicit aggregate OFF binding\n';
+  const start=source.indexOf(heading),end=source.indexOf('\n      - name:',start+heading.length);
+  assert(start>=0&&end>start);assert.equal(source.indexOf(heading,start+heading.length),-1);
+  const current=source.slice(start,end);let prior=current;
+  for(const [actual,original]of [
+    ["import {verifyExistingWorkerBindings} from './scripts/verify-cloudflare-trip-gateway.mjs';","import {verifyActiveWorkerDeployment} from './scripts/verify-cloudflare-trip-gateway.mjs';"],
+    ['await verifyExistingWorkerBindings({expectedBindings:config.d1_databases,','await verifyActiveWorkerDeployment({expectedBindings:config.d1_databases,'],
+  ]){assert.equal(prior.split(actual).length,2,'Exactly one reviewed OFF symbol');prior=prior.replace(actual,original);}
+  prior=source.slice(0,start)+prior+source.slice(end);
+  assert.equal(sha(prior),review.actualSha256,'Whole genuine pre-fix585 workflow restored');return prior;
+}
 export function inverseAccountStatisticsAssistantWorkflow(source){
   assert.equal(arguments.length,1);assert.equal(typeof source,'string');
+  if(sha(source)===ACCOUNT_STATISTICS_ASSISTANT_OFF_WORKFLOW_SHA256)source=inverseAccountStatisticsAssistantOffAttestation(source);
   if(sha(source)===review.predecessorSha256)return source;
   assert.equal(sha(source),review.actualSha256,'Unreviewed new workflow cannot enter the P0 or old oracle');
   let prior=source,sourceHunk=55;

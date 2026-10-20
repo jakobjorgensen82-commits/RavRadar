@@ -1,5 +1,6 @@
 ## 20. oktober — samlet 585-kandidat: bevar ventende arbejde ved månedsskifte
 
+- Retter den eksplicitte OFF-attestation til den eksisterende kontrol af den faktisk aktive Worker-versions bindinger; lokal false og versionsnummer alene må ikke kvalificere leveringen. Kontrollen skal også bevare de ti D1-bindinger og uændret deployment. Det er endnu ikke en installeret eller offentligt verificeret rettelse.
 - Sammenfør den selvstændigt kildekvalificerede 585-kandidat med den faktisk mergede 584-hukommelsesrettelse; begge historikker og gamle model-/SQL-originaler bevares.
 - Den eksisterende private statistikforberedelse bruger nu afgrænsede, varigt kvitterede trin. Et faktisk eksisterende job vælges på serveren, også efter månedsskifte; ingen klientparameter eller kopieret kvittering giver historisk skriveadgang.
 - Samtykke, kontosletning, bindinger, oprindelige rækker og de eksisterende tids-/forespørgselsgrænser kontrolleres fortsat. Ukendt skriveudfald får ingen automatisk gentagelse. Den eksisterende verify-vej genlæser kun et allerede gemt forslag.

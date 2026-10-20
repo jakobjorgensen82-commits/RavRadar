@@ -9,7 +9,7 @@ import {spawnSync} from 'node:child_process';
 import {fileURLToPath} from 'node:url';
 import {inverseArchivedWeatherRestartWorkflow} from './lib/archived-weather-restart-workflow-review.mjs';
 import {inverseArchivedProductionGate} from './lib/archived-production-gate-review.mjs';
-import {inverseAccountStatisticsAssistantWorkflow} from './lib/account-statistics-assistant-workflow-review.mjs';
+import {inverseAccountStatisticsAssistantWorkflow,inverseAccountStatisticsAssistantOffAttestation} from './lib/account-statistics-assistant-workflow-review.mjs';
 import {expandValidationCommands} from './run-validation-collection.mjs';
 import {lastMileEnclosureRequiredMigrations} from './integrated-cutover-readiness.mjs';
 import {requireLastMileEnclosureBinding} from './lib/last-mile-enclosure-successor-source.mjs';
@@ -263,13 +263,20 @@ function proveMetadata585NormalCallers(source){
   assert.match(named(source,'Metadata585 - Read-only existing D1 repair preparation and live preflight').text,
     /config\.vars=\{TRIP_AGGREGATE_ENABLED:'false'\}/);
   assert.match(off.text,/expectedPlainTextBindings:\{TRIP_AGGREGATE_ENABLED:'false'\}/);
+  assert.match(off.text,/import \{verifyExistingWorkerBindings\} from '\.\/scripts\/verify-cloudflare-trip-gateway\.mjs';/);
+  assert.match(off.text,/await verifyExistingWorkerBindings\(\{expectedBindings:config\.d1_databases,/);
   assert.match(edges.text,/steps\.account_statistics_assistant_repair_restore\.outcome/);
   for(const worker of steps(source).filter(step=>step.name.startsWith('Metadata585 - ')))
     assert.doesNotMatch(worker.text,/--existing-owner-export-upgrade-apply|--existing-owner-erasure-guard-apply|secrets put|ensureDatabases/);
   assert.doesNotMatch(source,/DMI_API_KEY|COPERNICUSMARINE_SERVICE_(?:USERNAME|PASSWORD)/);
 }
 test('actual585 metadata workflow qualifies its own callers before the unchanged P0 and old oracles',()=>{
-  assert.equal(sha(actualCurrent),'3ad071b6257531a3f256c1092403c25c7a197c08b7589c26f03c2454052b6218');
+  assert.equal(sha(actualCurrent),'5bd146c570f3413e3f9cb4e687975c8ec05f61f5fa2232ef6f9de19437b16a9f');
+  const beforeOff=inverseAccountStatisticsAssistantOffAttestation(actualCurrent);
+  assert.equal(sha(beforeOff),'3ad071b6257531a3f256c1092403c25c7a197c08b7589c26f03c2454052b6218');
+  assert.throws(()=>inverseAccountStatisticsAssistantOffAttestation(beforeOff),'The new inverse refuses reverting both OFF symbols');
+  assert.equal(inverseAccountStatisticsAssistantWorkflow(beforeOff),current,'Genuine old54-hunk input remains admitted unchanged');
+  assert.throws(()=>inverseAccountStatisticsAssistantOffAttestation(actualCurrent.replace('name: Reuse exact runtime and build code-only artifact','name: Changed neighboring workflow')),'Neighbor changes refused');
   assert.equal(inverseAccountStatisticsAssistantWorkflow(actualCurrent),current);
   assert.equal(sha(current),'b10eac363d4c067bf7f7c81159881b57a70923851ae8e78d1dde2357a770a477');
   assert.equal(sha(actual),'b87ef14d831e6e825607a22deef3ab10f85bab654d2101731a473b393cb619cf');
@@ -284,9 +291,15 @@ test('actual585 metadata workflow qualifies its own callers before the unchanged
     ['Publish measured continuation only after verified warmup private runtime',text=>text.replace(" && steps.current-private-publish.outcome == 'success'",'')],
     ['Pair already-current metadata B with actual S without origin or SQL replay',text=>text.replace('reconcile-private-runtime-checkpoint.mjs reconcile-account-statistics-assistant','account-statistics-assistant-prewrite.mjs --slot prepare')],
     ['Metadata585 - Read-only existing D1 repair preparation and live preflight',text=>text.replace("config.vars={TRIP_AGGREGATE_ENABLED:'false'}","config.vars={TRIP_AGGREGATE_ENABLED:'true'}")],
+    ['Require the exact new Worker and explicit aggregate OFF binding',text=>text.replace('import {verifyExistingWorkerBindings}','import {verifyActiveWorkerDeployment}')],
+    ['Require the exact new Worker and explicit aggregate OFF binding',text=>text.replace('await verifyExistingWorkerBindings(','await verifyActiveWorkerDeployment(')],
+    ['Require the exact new Worker and explicit aggregate OFF binding',text=>text.replace("from './scripts/verify-cloudflare-trip-gateway.mjs'","from './scripts/unknown-verifier.mjs'")],
+    ['Require the exact new Worker and explicit aggregate OFF binding',text=>text.replace("expectedPlainTextBindings:{TRIP_AGGREGATE_ENABLED:'false'},",'')],
+    ['Require the exact new Worker and explicit aggregate OFF binding',text=>text.replace('expectedBindings:config.d1_databases,','expectedBindings:config.d1_databases.slice(0,9),')],
   ]){
     const before=named(actualCurrent,name).text,after=change(before);assert.notEqual(after,before,name+' real mutation');
     const changed=replaceOne(actualCurrent,before,after);
+    assert.throws(()=>inverseAccountStatisticsAssistantOffAttestation(changed),'Exact OFF inverse refuses '+name);
     assert.throws(()=>inverseAccountStatisticsAssistantWorkflow(changed),'Whole585 inverse refuses '+name);
     assert.throws(()=>proveMetadata585NormalCallers(changed),'Current caller assertions refuse '+name);
     assert.throws(()=>inverseArchivedWeatherRestartWorkflow(changed),'Old/P0 oracles cannot adopt '+name);

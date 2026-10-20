@@ -2948,10 +2948,10 @@ jobs:
         run: |
           node --input-type=module <<'OFF_ATTEST_NODE'
           import fs from 'node:fs';
-          import {verifyActiveWorkerDeployment} from './scripts/verify-cloudflare-trip-gateway.mjs';
+          import {verifyExistingWorkerBindings} from './scripts/verify-cloudflare-trip-gateway.mjs';
           const env=process.env,config=JSON.parse(fs.readFileSync(env.TRIP_WRANGLER_CONFIG_PATH,'utf8'));
           if(config.vars?.TRIP_AGGREGATE_ENABLED!=='false')throw new Error('AGGREGATE_OFF_CONFIG_REQUIRED');
-          await verifyActiveWorkerDeployment({expectedBindings:config.d1_databases,
+          await verifyExistingWorkerBindings({expectedBindings:config.d1_databases,
             expectedPlainTextBindings:{TRIP_AGGREGATE_ENABLED:'false'},accountId:env.CLOUDFLARE_ACCOUNT_ID,
             apiToken:env.CLOUDFLARE_API_TOKEN,workerName:config.name,expectedVersion:env.EXPECTED_TRIP_WORKER_VERSION});
           OFF_ATTEST_NODE

@@ -5,6 +5,8 @@
 - [x] Samme afgrænsede prøve består mod faktiske kandidatmoduler og som permanent regression importeret af normal sourcecaller; ingen produktsubstitution.
 - [ ] Bestå den nye samlede exact-head-kontrol; tidligere grønne deltræer kvalificerer ikke kombinationen.
 - [ ] Kontrolleret 585-installation og faktisk offentlig konto-/assistent-/ekstern-AI-effekt; ingen produktion under aktiv writer.
+- [x] Reproducer den normale OFF-caller rød før den snævre symbolrettelse; fem nye og tretten eksisterende bindingsprøver består efter. Produktverifier, gamle 54 inverse-hunks, udstedte SQL og C/I/T bevares. Særskilt workflowmål er endnu ikke kørt på Linux og stoppede før målet på en uændret Windows-CRLF-grænse.
+- [ ] Luk den påviste OFF-kontrolmangel med eksisterende live bindingskontrol, normal regression, nyt præcist kildebevis og faktisk uændret OFF/D1/deployment før Edge-levering; versionsmetadata eller lokal false er ikke tilstrækkeligt.
 - [ ] Særskilt statistik-/anonymitets- og Worker-kapacitetsbevis; 004/005 og automatisk retention er ikke aktiveret.
 
 Aktuel vejr-/cronstatus står alene i CURRENT_TRUTHs P0-linje og privat checkpoint. Alle fem mål er åbne til 18. november 2026; ældre afventninger og frister nedenfor er dateret historik.

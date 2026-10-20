@@ -6,6 +6,8 @@ Den forberedte rettelse deler arbejdet op i små, kontrollerede trin. Et allered
 
 Hvis et svar mangler, er arbejdet ikke bekræftet. Systemet skal afklare den gemte tilstand før en senere fortsættelse og må ikke automatisk gentage en ukendt skrivning. En besked om fremdrift er hverken en færdig rapport eller anonym statistik.
 
+Før opdateringen går videre, skal systemet aflæse, at statistik faktisk er slået fra på den nye aktive serverversion, og at den fortsat bruger de samme ti turlagre. En lokal indstilling eller et versionsnummer er ikke bevis nok. Skifter serverversionen under kontrollen, skal leveringen stoppe.
+
 Rettelsen er lokalt sammenført og afgrænset prøvet, men endnu ikke leveret offentligt. Samlet statistik og dens særskilte lagerinstallation er fortsat slået fra. Der loves hverken dokumenteret anonymitet, en fungerende automatisk sletning eller mailvarsling ud fra denne prøve. Den nye måldato er 18. november 2026; ældre frister og leveringsstatus nedenfor er dateret historik.
 
 ## 89.259 Bedre spørgsmål og ærlige turrapporter – 4.0.585-kandidat

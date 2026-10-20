@@ -2,6 +2,8 @@
 
 AKTIVT: Normal privat forberedelse skal fortsætte et faktisk eksisterende job over månedsskifte med samme periode, inputgrundlag og model. Kun serverens normale databasegenlæsning må udstede adgang til den gamle periode; klientinput, JSON-kopier og ukvitteret arbejde giver ingen ny skriveautoritet. Friskt samtykke og slettebarriere samt eksisterende tids-, række-, byte- og forespørgselsgrænser bevares. Timeout, ukendt skrivning og afvist kvittering må ikke udløse automatisk retry. Forberedelse og genlæsning er ikke anonym statistikfrigivelse. 004/005, retention og SOURCE aktiveres ikke af den sammenførte kilde.
 
+Før 585-leveringen går fra Worker-opdatering til Edge-funktioner, skal den normale bindingskontrol genlæse den faktisk aktive Worker-versions ti D1-bindinger og eksplicitte `TRIP_AGGREGATE_ENABLED=false` samt kontrollere, at deploymentet er uændret efter aflæsningen. Lokal konfiguration eller aktivt versionsnummer alene beviser ikke, at statistik er slået fra. Manglende/ændret OFF, forkert D1-binding eller ændret deployment skal afvise leveringen; ingen ny kontrolrute eller aktivering følger med.
+
 ## 20. oktober — fælles integrationsfront: P0 678 og sourcekvalificeret 585
 
 Denne front er privat dokumentforberedelse til en senere samlet kilde, ikke en merge, installation eller offentlig levering. PR678s afgrænsede 584-memoryrettelse bevarer kun færdigbrugte arbejdsreferencer kortere; præcis source-/mergestatus føres alene i den aktuelle P0-statuslinje øverst i CURRENT_TRUTH.md. Lokal RED/GREEN eller source-PASS er ikke bevis for løst produktions-OOM.
