@@ -1,3 +1,29 @@
+## 20. oktober — fælles integrationsfront: P0 678 og sourcekvalificeret 585
+
+AKTUEL P0-STATUS — ROOTs eneste opdateringslinje: PR678/7f2d36cb bestod faktisk 27/27 præcise kildetrin inklusive udført PostgreSQL og er merget som main 1ec737133 den 20. oktober kl. 10.09 dansk tid med uændret kvalificeret træ. Friske kontroller før/efter viste ingen aktiv writer. Eksisterende cron er faktisk genaktiveret, gemt og genlæst med uændret tidsplan; joblisten viste næste kørsel kl. 10.19. Ingen manuel vejrhentning, checkpoint-genoptagelse eller rettelsesdeploy er startet. Faktisk hukommelsesforløb og ny offentlig levering fra rettelsen er endnu ikke bevist; seneste præcise kørselsstatus føres i det private checkpoint.
+
+Den samlede lokale 585-efterfølger bevarer 676-kilden, den leverede hukommelsesrettelse og begge dokumentationshistorikker. Fem eksisterende statistikforberedelsesmoduler og én permanent normal regression er sammenført: et faktisk ventende databasejob kan fortsætte over et månedsskifte med frisk samtykke-/slettekontrol og uændrede grænser. Kun kvitteret fremdrift tillader næste trin; timeout eller ukendt skrivning gentages ikke automatisk. Det er ikke statistikfrigivelse, anonymitetsbevis, installeret 004/005, automatisk retention eller offentlig 585. Ny samlet præcis kildekontrol, kontrolleret levering og normal browser-/AI-verifikation er åbne.
+
+Lokal afgrænsning: Den normale builder stoppede på Windows' allerede kendte raw-SQL/CRLF-grænse. Den særskilt kørte normale caller havde syv beståede og fire afledte afslag på samme grænse; den nye permanente månedsskifteregression bestod. Ingen udstedt SQL eller sourceguard blev ændret for at gøre Windows grøn. Den samlede normale kæde er ikke lokalt bestået og kræver præcis Linux-CI. En allerede eksisterende dokumentationsmangel i 029-kilden er rettet særskilt: aktuelle 585-hashes havde de rigtige værdier, men manglede de normale feltnavne, filantal og den aktuelle fortsættelsesmarkør i bøgerne. Kun den aktuelle beskrivelse og håndbogskopien er synkroniseret; gamle afsnit og C/I/T er uændrede. Hele den normale håndbogskontrol, RDKS, sikkerhed og versionskontrol består.
+
+Denne front er privat dokumentforberedelse til en senere samlet kilde, ikke en merge, installation eller offentlig levering. PR678s afgrænsede 584-memoryrettelse bevarer kun færdigbrugte arbejdsreferencer kortere; præcis source-/mergestatus føres alene i den aktuelle P0-statuslinje øverst i CURRENT_TRUTH.md. Lokal RED/GREEN eller source-PASS er ikke bevis for løst produktions-OOM.
+
+PR676/029462e43414d803bc251fda99f168117a921e0f er selvstændigt sourcekvalificeret som 4.0.585-kandidat. Det kvalificerer ikke kombinationen med 678 og er ikke installation af 585, dens SQL, Worker, Edges eller Pages. Det senere præcise kombinerede head kræver sit eget normale kildebevis. Genuine historiske 584-kilder, deres pins/inverser og allerede udstedte model-/SQL-originaler må ikke ommærkes eller repinnes af denne dokumentpatch.
+
+P0 og den almindelige vejrrute har førsteprioritet. Ejerens aktuelle valg er ingen checkpoint-genoptagelse nu; genoptagelsesønsker i de bevarede ældre afsnit er historiske på dette punkt. Aktuel cron-, leverings- og kørselsstatus må kun opdateres af ROOT fra faktisk evidens i den fælles P0-statuslinje; denne patch tænder, pauser eller udløser intet.
+
+Alle fem hovedmål er fortsat åbne med ejerens måldato 18. november 2026. Ældre henvisninger til 18. oktober og til afventede eller daværende kørsel-/cronudfald bevares som dateret historik, ikke som den aktuelle frist eller drift. SOURCE, statistikinstallation og automatisk retention/sletning aktiveres ikke her; gamle autentiske originaler bevares.
+
+Begge nedenstående historiesider er bevaret. Denne nye front erstatter kun modstridende status-/fristfortolkninger, ikke deres faglige krav, bevarede fejlevidens eller øvrige beslutninger.
+
+## 20. oktober — P0: afgrænset referencedrop efter faktisk continuity-pakning
+
+Den almindelige 39368970562/1 fejlede med V8-hukommelsesstop efter score-/continuity-opbygning og provenanceberigelse, før ny B/S og Pages. Den tidligere vellykkede 39340901993/1 brugte samme 954-kode. Krypteret leverandørfremgang er gemt; en afsluttet beregningspakke er ikke bevist. Det sidste succespunkt afgrænser ikke alene fejlen til origin eller offentlig projektion.
+
+Lokalt frigives alene ejerens to færdigbrugte DMI-arbejdsreferencer efter vellykket pakning, uden at tømme maps eller ændre originalrækker. Den normale continuity-prøves faktiske RED/GREEN beviser byte-/hashbevarelse, genlæsning, uændrede originaler og afslag før frigivelse. Faste hukommelsestal og to fasemarkører tilføjes den eksisterende logger. Præcis kildekontrol, sikker levering og produktionsbevis for hukommelsesforløbet er åbne; OOM må ikke kaldes løst alene på lokal test.
+
+Ingen ny version, modelbinding, SQL, scoreformel, kildeprioritet, budgetter eller geometri. Normal autentificeret genoptagelse fra de gemte leverandørinput foretrækkes, men er endnu ikke udført. Alle fem mål er fortsat åbne, nu med ejerens frist 18. november 2026. Aktuel cron- og kørselsstatus føres i det private checkpoint; ældre status nedenfor er historik på disse punkter.
+
 ## 20. oktober — national kalderrettelse efter faktisk native- og kilde-PASS
 
 PR676 på `b02745d6` bestod faktisk native 585-PostgreSQL og hele kildevalideringen. Nationaltrinnet stoppede før sin normale prøve, fordi kildebevislæserens workflow-inverse ikke medtog den allerede gennemgåede job-header 75→90 minutter. Den lokale rettelse bevarer hele den oprindelige workflow-hash efter de præcise inverser. Et afgrænset normalt mål med positive og mutationsafslag består; det er ikke samlet CI. Den første nye testanchors fejl er bevaret og rettet til den faktiske fulde sourcekommando. Ingen produkt-, C/I/T-, SQL- eller vejrbudgetændring.

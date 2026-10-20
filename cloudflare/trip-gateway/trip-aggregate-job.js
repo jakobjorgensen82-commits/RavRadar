@@ -1,7 +1,7 @@
 import { canonicalJson, sha256Hex } from '../../supabase/functions/_shared/trip-storage.js';
 import { ravScoreModelBinding } from '../../js/core/ravscore-model-contract.js';
 import { isCalibrationEligibleForBinding } from '../../js/services/calibration-eligibility.js';
-import { AGGREGATE_LIMITS, assertAggregateRequest } from '../../supabase/functions/_shared/trip-aggregate-contract.js';
+import { AGGREGATE_LIMITS, assertAggregateRequest, assertAggregateRequestEnvelope } from '../../supabase/functions/_shared/trip-aggregate-contract.js';
 import { assertReviewPolicyAnchor, POLICY_ANCHOR } from './trip-aggregate-policy-gate.js';
 import { qualifyTripWeatherAggregateRow } from './trip-aggregate-row.js';
 
@@ -83,8 +83,18 @@ async function epoch(q, control) {
     || !integer(rows[0].erasure_revision, Number.MAX_SAFE_INTEGER)) fail('AGGREGATE_JOB_STATE_INVALID');
   return rows[0].erasure_revision;
 }
+// Only actual database readback below can issue an existing-job request.
+// Its JSON clone or a caller-provided period does not carry this authority.
+const existingRequests=new WeakMap();
+export function assertServerSelectedAggregateRequest(request, now=Date.now()) {
+  const issued=existingRequests.get(request);
+  if(!issued) return assertAggregateRequest(request,ravScoreModelBinding(),now);
+  assertAggregateRequestEnvelope(request,ravScoreModelBinding(),now);
+  if(canonicalJson(request)!==issued.request) fail('AGGREGATE_JOB_REQUEST_CHANGED');
+  return request;
+}
 async function metadata(q, databases, request, now) {
-  assertAggregateRequest(request, ravScoreModelBinding(), now);
+  assertServerSelectedAggregateRequest(request, now);
   await assertReviewPolicyAnchor(q.wrappedControl);
   const key = await sha256Hex(canonicalJson({ ledgerId: POLICY_ANCHOR.ledger_id, period: request.period }));
   return { key, bindingSha: await sha256Hex(canonicalJson(request.modelBinding)),
@@ -143,10 +153,48 @@ async function assertBasis(q, databases, row, info, request) {
   if (['FAILED','INVALIDATED'].includes(row.phase)) fail('AGGREGATE_JOB_TERMINAL');
 }
 
+async function issueExistingRequest(q,databases,request,row,now) {
+  if(!row) fail('AGGREGATE_JOB_MISSING');
+  const selected={...request,period:{start:row.period_start,end:row.period_end}};
+  assertAggregateRequestEnvelope(selected,ravScoreModelBinding(),now);
+  await assertReviewPolicyAnchor(q.wrappedControl);
+  const info={key:await sha256Hex(canonicalJson({ledgerId:POLICY_ANCHOR.ledger_id,period:selected.period})),
+    bindingSha:await sha256Hex(canonicalJson(selected.modelBinding)),
+    preferenceSha:await sha256Hex(canonicalJson(selected.preferenceSnapshot.accounts)),
+    erasureRevision:await epoch(q,databases[0])};
+  if(row.job_key!==info.key) fail('AGGREGATE_JOB_STATE_INVALID');
+  await assertBasis(q,databases,row,info,selected);
+  existingRequests.set(selected,{key:row.job_key,request:canonicalJson(selected)});
+  return selected;
+}
+// The wire still names only the previous closed month. Selection is a bounded
+// actual control-shard lookup, not a historical-period argument or JSON grant.
+export async function selectPendingTripWeatherAggregateRequest(databases,request) {
+  assertAggregateRequest(request,ravScoreModelBinding());
+  const q=execution(databases),control=databases[0];
+  const rows=await q.all(control,`select job_key from trip_weather_aggregate_jobs j
+    where phase in ('SCANNING','READY_INPUT') and not exists
+      (select 1 from trip_weather_aggregate_releases r where r.period_start=j.period_start)
+    order by period_start,job_key limit 1`);
+  if(!rows.length)return request;
+  if(rows.length!==1||!exact(rows[0],['job_key'])||!SHA.test(rows[0].job_key))fail('AGGREGATE_JOB_STATE_INVALID');
+  return issueExistingRequest(q,databases,request,await read(q,control,rows[0].job_key),Date.now());
+}
+// Existing readonly verify endpoint: a period is only a locator. It cannot
+// create/scan/sample; the actual READY job and frozen 004 ledger are required.
+export async function selectReadyTripWeatherAggregateRequest(databases,request) {
+  assertAggregateRequestEnvelope(request,ravScoreModelBinding());
+  const q=execution(databases),key=await sha256Hex(canonicalJson({ledgerId:POLICY_ANCHOR.ledger_id,period:request.period}));
+  const row=await read(q,databases[0],key);
+  if(!row||row.phase!=='READY_INPUT')fail('AGGREGATE_JOB_NOT_READY');
+  return issueExistingRequest(q,databases,request,row,Date.now());
+}
+
 export async function startTripWeatherAggregateJob(databases, request, { now = Date.now() } = {}) {
   const q = execution(databases), control = databases[0], info = await metadata(q, databases, request, now);
   let row = await read(q, control, info.key);
   if (!row) {
+    if(existingRequests.has(request))fail('AGGREGATE_JOB_MISSING');
     const tombstones = await q.all(control,
       'select owner_subject from trip_owner_erasure_tombstones order by owner_subject limit 10001');
     let prior = '';

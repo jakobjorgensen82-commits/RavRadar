@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import fs from 'node:fs/promises';
 import { DMI_FORECAST_HOURS } from './lib/dmi-forecast-store.mjs';
 import { PROTECTED_PRIVATE_RUNTIME_POLICY } from './protected-private-production-runtime.mjs';
 import { WEATHER_PROGRESS_MAX_CIPHER_BYTES } from './weather-component-progress-cache.mjs';
@@ -47,4 +48,75 @@ await assert.rejects(unpackDmiPartContinuity({
 }, parts, '2026-09-27T11:00:00.000Z'), /DIGEST/);
 await assert.rejects(unpackDmiPartContinuity(pack, parts, '2026-09-27T09:00:00.000Z'),
   /MARKER/);
+
+// Exercise the actual updater's completed pack/retirement block, not a second
+// implementation or a fake codec. This proves reference/byte behaviour only;
+// the deliberately retained fixture observations cannot prove a heap peak.
+const updater = (await fs.readFile(new URL('./update-weather.mjs', import.meta.url), 'utf8'))
+  .replace(/\r\n/g, '\n');
+const packStart = 'if (coastalPartScoreBuild) {\n  nextDmiForecastStore.partContinuity = await packDmiPartContinuity(';
+const packEnd = "reportWeatherBuildStage('coastal-score-runtime-ready', {";
+assert.equal(updater.split(packStart).length, 2, 'Actual updater pack block must be unique');
+assert.equal(updater.split(packEnd).length, 2, 'Actual updater pack boundary must be unique');
+const packStartAt = updater.indexOf(packStart);
+const packEndAt = updater.indexOf(packEnd, packStartAt);
+assert.ok(packEndAt > packStartAt, 'Actual updater pack must precede score-ready reporting');
+const packBlock = updater.slice(packStartAt, packEndAt);
+const AsyncFunction = Object.getPrototypeOf(async function () {}).constructor;
+const runActualPackBlock = new AsyncFunction(
+  'coastalPartScoreBuild', 'persistedDmiPartRows', 'nextDmiForecastStore',
+  'activeParts', 'generatedAt', 'packDmiPartContinuity',
+  `let failurePresent = false, firstFailure;\ntry {\n${packBlock}\n}
+   catch (error) { failurePresent = true; firstFailure = error; }
+   return { failurePresent, firstFailure,
+     selectedReference: coastalPartScoreBuild?.selectedDmiPartRecords,
+     persistedReference: persistedDmiPartRows,
+     partContinuity: nextDmiForecastStore.partContinuity };`,
+);
+const persistedRows = new Map([...records].map(([id, record]) =>
+  [id, { point: record.point, hourly: record.hourly }]));
+const originalRecords = structuredClone(records);
+const originalPersistedRows = structuredClone(persistedRows);
+const originalRecordA = records.get('A');
+const originalHoursA = records.get('A').hourly;
+const originalPackBytes = Buffer.from(JSON.stringify(pack));
+
+// Real normal-codec refusal must occur before either reference is retired and
+// must preserve the previous bound pack. No replacement codec or error stub.
+const invalidRecords = new Map(records);
+invalidRecords.set('A', { ...records.get('A'),
+  hourly: records.get('A').hourly.map((row, index) => index === 0
+    ? { ...row, time: 'not-an-exact-hour' } : row) });
+const invalidSnapshot = structuredClone(invalidRecords);
+const refused = await runActualPackBlock(
+  { selectedDmiPartRecords: invalidRecords }, persistedRows, { partContinuity: pack },
+  parts, start, packDmiPartContinuity,
+);
+assert.equal(refused.failurePresent, true);
+assert.match(refused.firstFailure?.message ?? '', /^DMI_PART_CONTINUITY_RECORD_INVALID$/);
+assert.equal(refused.selectedReference, invalidRecords);
+assert.equal(refused.persistedReference, persistedRows);
+assert.equal(refused.partContinuity, pack);
+assert.deepEqual(invalidRecords, invalidSnapshot);
+
+const completed = await runActualPackBlock(
+  { selectedDmiPartRecords: records }, persistedRows, { partContinuity: null },
+  parts, start, packDmiPartContinuity,
+);
+assert.equal(completed.failurePresent, false);
+assert.deepEqual(Buffer.from(JSON.stringify(completed.partContinuity)), originalPackBytes,
+  'Retirement must preserve the entire hash-bound pack byte-for-byte');
+const completedRows = await unpackDmiPartContinuity(completed.partContinuity, parts,
+  '2026-09-27T11:00:00.000Z');
+for (const part of parts) assert.deepEqual(completedRows.get(part.partId).hourly, hours);
+assert.deepEqual(records, originalRecords);
+assert.deepEqual(persistedRows, originalPersistedRows);
+assert.equal(records.get('A'), originalRecordA);
+assert.equal(records.get('A').hourly, originalHoursA);
+assert.equal(completed.selectedReference === null, true,
+  'DMI_CONTINUITY_SELECTED_REFERENCE_NOT_RETIRED');
+assert.equal(completed.persistedReference === null, true,
+  'DMI_CONTINUITY_PERSISTED_REFERENCE_NOT_RETIRED');
+assert.match(updater, /^let persistedDmiPartRows =/m,
+  'The actual updater binding must permit reference retirement');
 console.log('DMI PART continuity codec: roundtrip, tamper, time and size limits passed');

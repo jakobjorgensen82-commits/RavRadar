@@ -1,3 +1,27 @@
+## 20. oktober — ÅBEN levering: månedsskifte og begrænset statistikforberedelse
+
+Den normale private kalder kunne ikke fortsætte et gemt ældre job efter månedsskifte, og monolitisk forberedelse var ikke den aftalte varige trinvise vej. Fem lokale rettelser bruger servervalgt eksisterende job, kvitteret fremdrift og separat senere forberedelse/genlæsning. Den gennemgåede permanente regression består på faktiske moduler med normale syntetiske SQLite/D1-kontrakter. Det beviser ikke installeret 004/005, faktisk Worker-kapacitet, frigivet anonym statistik, mailvarsel eller automatisk retention. Ny præcis samlet kilde-CI og kontrolleret produktion er stadig åbne; den aktuelle almindelige vejrhentning må ikke afbrydes for denne kandidat.
+
+ÅBEN platformgrænse: Normal builder og fire caller-tilfælde stopper på den kendte Windows raw-SQL/CRLF-kontrol. Den normale kæde er ikke bestået lokalt; udstedte SQL-bytes og kontrollen lempes ikke. Præcis Linux-CI er den nødvendige næste prøve. LUKKET lokalt dokumentfund: allerede 029-kildens aktuelle 585-bogtekst havde korrekte, men uetiketterede hashes og manglede den aktuelle fortsættelsesmarkør. De normale labels/filantal og den ene håndbogspayload er nu synkroniseret med uændrede C/I/T; normal håndbogskontrol består. Det er ikke installation eller offentlig effekt.
+
+## 20. oktober — fælles integrationsfront: P0 678 og sourcekvalificeret 585
+
+Denne front er privat dokumentforberedelse til en senere samlet kilde, ikke en merge, installation eller offentlig levering. PR678s afgrænsede 584-memoryrettelse bevarer kun færdigbrugte arbejdsreferencer kortere; præcis source-/mergestatus føres alene i den aktuelle P0-statuslinje øverst i CURRENT_TRUTH.md. Lokal RED/GREEN eller source-PASS er ikke bevis for løst produktions-OOM.
+
+PR676/029462e43414d803bc251fda99f168117a921e0f er selvstændigt sourcekvalificeret som 4.0.585-kandidat. Det kvalificerer ikke kombinationen med 678 og er ikke installation af 585, dens SQL, Worker, Edges eller Pages. Det senere præcise kombinerede head kræver sit eget normale kildebevis. Genuine historiske 584-kilder, deres pins/inverser og allerede udstedte model-/SQL-originaler må ikke ommærkes eller repinnes af denne dokumentpatch.
+
+P0 og den almindelige vejrrute har førsteprioritet. Ejerens aktuelle valg er ingen checkpoint-genoptagelse nu; genoptagelsesønsker i de bevarede ældre afsnit er historiske på dette punkt. Aktuel cron-, leverings- og kørselsstatus må kun opdateres af ROOT fra faktisk evidens i den fælles P0-statuslinje; denne patch tænder, pauser eller udløser intet.
+
+Alle fem hovedmål er fortsat åbne med ejerens måldato 18. november 2026. Ældre henvisninger til 18. oktober og til afventede eller daværende kørsel-/cronudfald bevares som dateret historik, ikke som den aktuelle frist eller drift. SOURCE, statistikinstallation og automatisk retention/sletning aktiveres ikke her; gamle autentiske originaler bevares.
+
+Begge nedenstående historiesider er bevaret. Denne nye front erstatter kun modstridende status-/fristfortolkninger, ikke deres faglige krav, bevarede fejlevidens eller øvrige beslutninger.
+
+## 20. oktober — P0 ÅBEN: V8-hukommelsesstop før offentlig pakning
+
+39368970562/1 fejlede efter score-/continuity-opbygning og provenanceberigelse. Ny leverandørfremgang blev gemt, men ny B/S, færdig beregningspakke og Pages blev ikke leveret. Samme kode havde gennemført den foregående kørsel; større input og samtidige arbejdskopier er konkrete belastninger, ikke i sig selv bevis for en bestemt læk.
+
+Den lokale kandidat frigiver kun to udtjente updater-referencer efter vellykket continuity-pakning og præciserer den eksisterende faselog. Normal RED/GREEN bevarer alle pakkebytes, hashes, originalrækker og afslag. Præcis kildekontrol, sikker levering og faktisk cache-only-genoptagelse mangler. Produktions-OOM er fortsat åben, indtil det normale forløb er gennemført og kontrolleret. Ingen højere heap, nye leverandørbudgetter, model-/SQL-overgang eller datanedskæring indføres her.
+
 ## 20. oktober — åbne grænser efter lokal 585-generering
 
 Aktuelt: almindelig `39340901993/1` er faktisk leveret med nye offentlige vejrdata, 55+3, B før S og begge gemte cacheposter. Eksisterende cron er genaktiveret uændret; kommende normale cachegenbrug, delvis DMI, ufuldstændig historik og selvstændig drift er fortsat åbne. Dette erstatter nedenstående afventning på denne ene kørsel og cron-OFF, ikke de øvrige grænser.

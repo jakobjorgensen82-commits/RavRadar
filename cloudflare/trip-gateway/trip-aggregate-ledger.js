@@ -2,7 +2,7 @@ import { canonicalJson, sha256Hex } from '../../supabase/functions/_shared/trip-
 import { ravScoreModelBinding } from '../../js/core/ravscore-model-contract.js';
 import { assertAggregateRequest } from '../../supabase/functions/_shared/trip-aggregate-contract.js';
 import { prepareTripWeatherAggregate, prepareReadyTripWeatherAggregate, aggregateContributionSubjects } from './trip-aggregate.js';
-import { readTripWeatherAggregateJob } from './trip-aggregate-job.js';
+import { readTripWeatherAggregateJob, assertServerSelectedAggregateRequest } from './trip-aggregate-job.js';
 import { POLICY, fail, makePrivateNoisyProposal, assertPrivateNoisyProposal } from './trip-aggregate-dp.js';
 
 export const ACCOUNTING_POLICY=Object.freeze({
@@ -71,7 +71,7 @@ async function readFrozen(control,period,requiredExportBasis=null){
   return report;
 }
 function assertDatabases(databases,request){
-  assertAggregateRequest(request,ravScoreModelBinding());
+  assertServerSelectedAggregateRequest(request);
   if(!Array.isArray(databases)||databases.length!==10)fail('DP_SHARDS_INVALID');
 }
 export async function verifyPersistedReviewProposal(databaseList,request){
@@ -82,6 +82,7 @@ export async function verifyPersistedReviewProposal(databaseList,request){
   return{kind:'PRIVATE_REVIEW_RESULT_DO_NOT_RELEASE',status:'REPLAY',report,accountingSha256:await accountingPolicySha256()};
 }
 export async function preparePersistedReviewProposal(databaseList,request,options={}){
+  assertAggregateRequest(request,ravScoreModelBinding());
   return preparePersistedReviewUsing(databaseList,request,prepareTripWeatherAggregate,options);
 }
 // Separate internal entry, not an HTTP/user option. Frozen replay still requires

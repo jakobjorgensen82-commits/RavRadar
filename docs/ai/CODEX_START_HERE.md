@@ -1,3 +1,29 @@
+## 20. oktober — lokal sammenført 585, ingen samtidig produktionsændring
+
+Læs først CURRENT_TRUTHs ene aktuelle P0-linje og det private checkpoint. Den mergede hukommelsesrettelse og genaktiveret cron er faktiske handlinger; den nye almindelige kørsels udfald må ikke udledes af dem. Den lokale 585-efterfølger bevarer begge kilde-/dokumentationshistorikker og de fem gennemgåede statistikforberedelsesrettelser. Faktisk servervalgt, varigt gemt arbejde kan fortsætte over månedsskifte uden at åbne for vilkårlige gamle klientperioder. Samtykke, slettebarriere, model, originaler og eksisterende budgetter består.
+
+Den permanente regression bruger normale moduler og SQLite/D1-prøveskemaer; dens beståelse er ikke installeret statistik, anonymitets- eller Worker-kapacitetsbevis. Samlet ny præcis CI, sikker 585-levering, normale browserforløb og eksisterende ekstern AI er åbne. Ingen 004/005-, SOURCE- eller automatisk sletteaktivering. Ingen produktionsskrivning under aktiv vejrhentning. Alle fem mål består til 18. november 2026; tidligere frister og afventninger er dateret historik.
+
+## 20. oktober — fælles integrationsfront: P0 678 og sourcekvalificeret 585
+
+Denne front er privat dokumentforberedelse til en senere samlet kilde, ikke en merge, installation eller offentlig levering. PR678s afgrænsede 584-memoryrettelse bevarer kun færdigbrugte arbejdsreferencer kortere; præcis source-/mergestatus føres alene i den aktuelle P0-statuslinje øverst i CURRENT_TRUTH.md. Lokal RED/GREEN eller source-PASS er ikke bevis for løst produktions-OOM.
+
+PR676/029462e43414d803bc251fda99f168117a921e0f er selvstændigt sourcekvalificeret som 4.0.585-kandidat. Det kvalificerer ikke kombinationen med 678 og er ikke installation af 585, dens SQL, Worker, Edges eller Pages. Det senere præcise kombinerede head kræver sit eget normale kildebevis. Genuine historiske 584-kilder, deres pins/inverser og allerede udstedte model-/SQL-originaler må ikke ommærkes eller repinnes af denne dokumentpatch.
+
+P0 og den almindelige vejrrute har førsteprioritet. Ejerens aktuelle valg er ingen checkpoint-genoptagelse nu; genoptagelsesønsker i de bevarede ældre afsnit er historiske på dette punkt. Aktuel cron-, leverings- og kørselsstatus må kun opdateres af ROOT fra faktisk evidens i den fælles P0-statuslinje; denne patch tænder, pauser eller udløser intet.
+
+Alle fem hovedmål er fortsat åbne med ejerens måldato 18. november 2026. Ældre henvisninger til 18. oktober og til afventede eller daværende kørsel-/cronudfald bevares som dateret historik, ikke som den aktuelle frist eller drift. SOURCE, statistikinstallation og automatisk retention/sletning aktiveres ikke her; gamle autentiske originaler bevares.
+
+Begge nedenstående historiesider er bevaret. Denne nye front erstatter kun modstridende status-/fristfortolkninger, ikke deres faglige krav, bevarede fejlevidens eller øvrige beslutninger.
+
+## 20. oktober — P0: hukommelsesstop efter beregning, ikke et deploybevis
+
+Den almindelige vejrhentning 39368970562/1 på samme 954-kilde som den foregående vellykkede kørsel stoppede med V8-hukommelsesfejl i updaterens afsluttende behandling. Score- og continuity-trin blev nået, men originfinalisering og offentlig projektion kunne ikke adskilles af den gamle log. Ingen ny B/S eller Pages blev leveret. Ny krypteret leverandørfremgang blev gemt; det er ikke en færdig beregningspakke.
+
+Den lokale, afgrænsede kandidat frigiver kun updaterens to afsluttede DMI-arbejdsreferencer efter vellykket, hashbundet continuity-pakning. Delte maps, originalrækker og gemte originaler ændres ikke. Normale fasemarkører får faste hukommelsestal og adskiller afsluttet origin fra offentlig eksport. Den faktiske continuity-prøve fejlede før rettelsen og består efter med uændrede bytes, hashes, genlæsning og afslag. Et lavere produktionsmaksimum og en løst OOM er endnu ikke bevist.
+
+Genoptag først efter præcis kildekontrol og sikker levering gennem den normale autentificerede cache-only-vej; undgå nye leverandørhentninger, når det gemte input kan kvalificeres. Ingen ny version, C/I/T, SQL, scoreformel, kildeprioritet, tidsbudget eller geometri. Alle fem mål er åbne; ejeren har forlænget fristen til 18. november 2026. Nyere drifts- og cronstatus findes i det private checkpoint. Se DEC-0249.
+
 ## 20. oktober — præcis national kildekalder; normal vejrhentning beskyttes
 
 PR676 på `b02745d6` bestod faktisk native 585-PostgreSQL og hele kildevalideringen. Det næste nationale trin stoppede før selve prøven: dets præcise workflow-inverse manglede den allerede gennemgåede ændring af kildejobbets loft fra 75 til 90 minutter. Den lokale rettelse inverterer kun denne eksakte job-header og den eksisterende nationalblok tilbage til hele den oprindelige workflow-hash. Gamle kontroludsagn bevares; ændrede rettigheder, native-/sourcekommandoer og flyttede/duplikerede blokke afvises. Ét målrettet normalt kildekontraktmål består efter en rettet ny testanchor; første prøvefejl er bevaret. Produktkode, C/I/T, SQL og vejrhentningernes budgetter ændres ikke.

@@ -1,5 +1,25 @@
 # DEC-0249 – fortsæt fra rigtig vejrpakke og gem kortere Copernicus-kald
 
+## 20. oktober — fælles integrationsfront: P0 678 og sourcekvalificeret 585
+
+Denne front er privat dokumentforberedelse til en senere samlet kilde, ikke en merge, installation eller offentlig levering. PR678s afgrænsede 584-memoryrettelse bevarer kun færdigbrugte arbejdsreferencer kortere; præcis source-/mergestatus føres alene i den aktuelle P0-statuslinje øverst i CURRENT_TRUTH.md. Lokal RED/GREEN eller source-PASS er ikke bevis for løst produktions-OOM.
+
+PR676/029462e43414d803bc251fda99f168117a921e0f er selvstændigt sourcekvalificeret som 4.0.585-kandidat. Det kvalificerer ikke kombinationen med 678 og er ikke installation af 585, dens SQL, Worker, Edges eller Pages. Det senere præcise kombinerede head kræver sit eget normale kildebevis. Genuine historiske 584-kilder, deres pins/inverser og allerede udstedte model-/SQL-originaler må ikke ommærkes eller repinnes af denne dokumentpatch.
+
+P0 og den almindelige vejrrute har førsteprioritet. Ejerens aktuelle valg er ingen checkpoint-genoptagelse nu; genoptagelsesønsker i de bevarede ældre afsnit er historiske på dette punkt. Aktuel cron-, leverings- og kørselsstatus må kun opdateres af ROOT fra faktisk evidens i den fælles P0-statuslinje; denne patch tænder, pauser eller udløser intet.
+
+Alle fem hovedmål er fortsat åbne med ejerens måldato 18. november 2026. Ældre henvisninger til 18. oktober og til afventede eller daværende kørsel-/cronudfald bevares som dateret historik, ikke som den aktuelle frist eller drift. SOURCE, statistikinstallation og automatisk retention/sletning aktiveres ikke her; gamle autentiske originaler bevares.
+
+Begge nedenstående historiesider er bevaret. Denne nye front erstatter kun modstridende status-/fristfortolkninger, ikke deres faglige krav, bevarede fejlevidens eller øvrige beslutninger.
+
+## Tillæg 2026-10-20 — frigiv kun færdigbrugte arbejdsreferencer
+
+V8-hukommelsesstoppet i den almindelige 39368970562/1 kommer efter score-/continuity-opbygning og provenanceberigelse. Den foregående vellykkede kørsel brugte samme kilde. Den konkrete kandidat forkorter kun levetiden for updaterens `selectedDmiPartRecords` og lokale `persistedDmiPartRows`, efter at den normale `packDmiPartContinuity` faktisk er afsluttet. Referencer sættes til null; delte maps og rækker tømmes eller muteres ikke. Fejl før/under pakning bevarer begge referencer og det hidtidige pakkefelt.
+
+Den eksisterende normale codec-prøve bruger den aktuelle updaterblok og rigtig pack/unpack med samme fixture. Faktisk RED/GREEN bevarer hele pakkens bytes, alle indre hashes, genlæste timer samt de beholdte originalers værdier og identiteter. Den eksisterende faselog får kun faste hukommelsestal og særskilte slutpunkter for origin og offentlig runtime. Det er ikke et målt produktionsmaksimum eller bevis for præcis allokeringsårsag mellem disse to led.
+
+Updateren og testinputprojektionen ligger uden for C/I/T's faktiske inventarer. Der ændres ingen modelblade, bindinger, version, SQL, scoreformel, kildeprioritet, budgetter, originaler eller geometri. Præcis kildekontrol og sikker levering kræves før normal autentificeret cache-only-genoptagelse. Den faktisk gemte leverandørfremgang er ikke en afsluttet beregningspakke; beregning og forsegling skal køres igen. Produktionsfejlen forbliver åben indtil faktisk verificeret levering.
+
 ## Tillæg 2026-10-20 — kildeleveret 675 og særskilt lokale 585-metadata
 
 De afgrænsede CP-konsoliderings- og DMI-kvalifikationsrettelser i det følgende tillæg er nu kildeleveret: PR675 bestod 27/27 præcise CI-trin uden skip og er merget som main `954ca00a`. Den almindelige efterfølger `39340901993/1` er endnu ikke verificeret færdig; kildelevering er ikke målt leverandørforbedring. Sidste fulde almindelige offentlige levering er 584 den 19. oktober omkring kl. 23.02 dansk tid. Fuld DMI, komplet cache/historik og selvstændig drift er åbne, cron er OFF, og budgetterne er ikke ændret.

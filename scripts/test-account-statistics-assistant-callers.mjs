@@ -5,6 +5,7 @@ import assert from 'node:assert/strict';
 import crypto from 'node:crypto';
 import fs from 'node:fs/promises';
 import test from 'node:test';
+import './test-trip-aggregate-month-rollover.mjs';
 import {modelSourceRelativeModuleSpecifiers} from './lib/model-source-imports.mjs';
 import {checkpointMetadataCasBlock} from './sync-ravscore-model-binding.mjs';
 import {fileURLToPath} from 'node:url';

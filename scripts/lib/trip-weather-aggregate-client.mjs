@@ -4,7 +4,7 @@ import { ravScoreModelBinding } from '../../js/core/ravscore-model-contract.js';
 import { assertPrivateNoisyProposal } from '../../cloudflare/trip-gateway/trip-aggregate-dp.js';
 import { buildSupabaseAdminHeaders } from './supabase-admin-rest.mjs';
 import { AGGREGATE_PATH, AGGREGATE_VERIFY_PATH, AGGREGATE_LIMITS, aggregateExact, aggregateFail,
-  previousClosedAggregateMonth, assertAggregateRequest, assertAggregateWithheldReport }
+  previousClosedAggregateMonth, assertAggregateRequest, assertAggregateRequestEnvelope, assertClosedAggregatePeriod, assertAggregatePreparationReport }
   from '../../supabase/functions/_shared/trip-aggregate-contract.js';
 
 const UUID = /^[a-f0-9]{8}-[a-f0-9]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[a-f0-9]{12}$/i;
@@ -113,14 +113,18 @@ export async function readTripWeatherAggregate({ supabaseUrl, serviceRoleKey,
         snapshotAt: new Date(now).toISOString(), accounts: before } };
     assertAggregateRequest(request, ravScoreModelBinding(), now);
     const send=async(pathname,bodyRequest)=>{
-      assertAggregateRequest(bodyRequest,ravScoreModelBinding());
+      if(pathname===AGGREGATE_PATH)assertAggregateRequest(bodyRequest,ravScoreModelBinding());
+      else assertAggregateRequestEnvelope(bodyRequest,ravScoreModelBinding());
       const body=JSON.stringify(bodyRequest),timestamp=String(Date.now());
       const signature=await tripGatewaySignature({secret:sharedSecret,timestamp,method:'POST',pathname,bodyText:body});
       const answer=await boundedJson(gateway+pathname,{method:'POST',
         headers:{'Content-Type':'application/json','X-RavRadar-Timestamp':timestamp,'X-RavRadar-Signature':signature},body},fetchImpl,controller.signal);
       aggregateExact(answer,['ok','report'],'AGGREGATE_RESPONSE_INVALID');
       if(answer.ok!==true)aggregateFail('AGGREGATE_RESPONSE_INVALID');
-      if(pathname===AGGREGATE_PATH)assertAggregateWithheldReport(answer.report,bodyRequest);
+      if(pathname===AGGREGATE_PATH){
+        assertClosedAggregatePeriod(answer.report?.period);
+        assertAggregatePreparationReport(answer.report,{...bodyRequest,period:answer.report.period});
+      }
       else{
         await assertPrivateNoisyProposal(answer.report);
         if(answer.report.period.start!==bodyRequest.period.start||answer.report.period.end!==bodyRequest.period.end)
@@ -128,13 +132,28 @@ export async function readTripWeatherAggregate({ supabaseUrl, serviceRoleKey,
       }
       return answer;
     };
-    await send(AGGREGATE_PATH,request);
-    const after=await snapshot();
-    if(canonicalJson(before)!==canonicalJson(after))aggregateFail('AGGREGATE_PREFERENCES_CHANGED');
+    let after=before, priorRevision=-1, prepared=false, selectedPeriod=null;
+    // Only an authenticated, strictly newer pending ACK permits another step.
+    // A timeout/unknown write/rejection is NEVER retried here. The durable job
+    // may be reconciled by a later ordinary invocation with fresh inventories.
+    // Logical bound:4000 consumed rows+10 shard ends+one final preparation;
+    // the existing45-second whole caller deadline remains authoritative.
+    for(let step=0;step<=AGGREGATE_LIMITS.rows+10;step++){
+      const result=await send(AGGREGATE_PATH,{...request,preferenceSnapshot:{schemaVersion:2,
+        snapshotAt:new Date(Date.now()).toISOString(),accounts:after}});
+      after=await snapshot();
+      if(canonicalJson(before)!==canonicalJson(after))aggregateFail('AGGREGATE_PREFERENCES_CHANGED');
+      if(selectedPeriod&&canonicalJson(selectedPeriod)!==canonicalJson(result.report.period))aggregateFail('AGGREGATE_JOB_SELECTION_CHANGED');
+      selectedPeriod=result.report.period;
+      if(result.report.status==='WITHHELD_RELEASE_POLICY_UNISSUED'){prepared=true;break;}
+      if(result.report.revision<=priorRevision)aggregateFail('AGGREGATE_PROGRESS_NOT_ADVANCED');
+      priorRevision=result.report.revision;
+    }
+    if(!prepared)aggregateFail('AGGREGATE_PROGRESS_INCOMPLETE');
     // A delayed/lost preparation response cannot authorize an obsolete frozen
     // report. Fresh signed acknowledgement reads only an EXISTING proposal and
     // the normal control-shard erasure barrier; it never creates/resamples.
-    const verified=await send(AGGREGATE_VERIFY_PATH,{...request,preferenceSnapshot:{schemaVersion:2,snapshotAt:new Date(Date.now()).toISOString(),accounts:after}});
+    const verified=await send(AGGREGATE_VERIFY_PATH,{...request,period:selectedPeriod,preferenceSnapshot:{schemaVersion:2,snapshotAt:new Date(Date.now()).toISOString(),accounts:after}});
     if(canonicalJson(after)!==canonicalJson(await snapshot()))aggregateFail('AGGREGATE_PREFERENCES_CHANGED');
     return verified.report;
   };

@@ -1,7 +1,8 @@
 import { canonicalJson, sha256Hex } from '../../supabase/functions/_shared/trip-storage.js';
 import { ravScoreModelBinding } from '../../js/core/ravscore-model-contract.js';
-import { AGGREGATE_LIMITS, assertAggregateRequest, aggregateWithheldReport } from '../../supabase/functions/_shared/trip-aggregate-contract.js';
+import { AGGREGATE_LIMITS, assertAggregateRequest, aggregateWithheldReport, aggregatePendingReport } from '../../supabase/functions/_shared/trip-aggregate-contract.js';
 import { POLICY, fail } from './trip-aggregate-dp.js';
+import { startTripWeatherAggregateJob, advanceTripWeatherAggregateJob, selectPendingTripWeatherAggregateRequest, selectReadyTripWeatherAggregateRequest, assertServerSelectedAggregateRequest } from './trip-aggregate-job.js';
 import { preparePersistedReviewProposal, preparePersistedReadyInputReviewProposal, verifyPersistedReviewProposal, ACCOUNTING_POLICY, accountingPolicySha256 } from './trip-aggregate-ledger.js';
 
 // Pins the already reviewed, still UNISSUED v2 basis. Not an env flag, policy
@@ -60,7 +61,8 @@ export async function prepareReadyInputPolicyBoundReview(databaseList, request, 
   return preparePolicyBoundReviewUsing(databaseList,request,preparePersistedReadyInputReviewProposal,options);
 }
 async function preparePolicyBoundReviewUsing(databaseList, request, prepare, {randomFill}={}) {
-  assertAggregateRequest(request,ravScoreModelBinding());
+  if(prepare===preparePersistedReadyInputReviewProposal)assertServerSelectedAggregateRequest(request);
+  else assertAggregateRequest(request,ravScoreModelBinding());
   if (!Array.isArray(databaseList)||databaseList.length!==10) fail('DP_SHARDS_INVALID');
   const bounded=policyQueryBoundDatabases(databaseList);
   await assertReviewPolicyAnchor(bounded[0]);
@@ -76,8 +78,24 @@ async function preparePolicyBoundReviewUsing(databaseList, request, prepare, {ra
 // the original fixed withheld shape. No count, origin, budget or error detail
 // is serialized. Policy issuance/public transcript/CPU remain separate gates.
 export async function handlePolicyBoundAggregate(databaseList,request) {
-  await preparePolicyBoundReview(databaseList,request);
-  return aggregateWithheldReport(request);
+  assertAggregateRequest(request,ravScoreModelBinding());
+  if (!Array.isArray(databaseList)||databaseList.length!==10) fail('DP_SHARDS_INVALID');
+  // ONE shared45-statement allowance covers discovery AND the selected step.
+  // No request field selects an executor or revives monolithic preparation.
+  const bounded=policyQueryBoundDatabases(databaseList);
+  request=await selectPendingTripWeatherAggregateRequest(bounded,request);
+  const current=await startTripWeatherAggregateJob(bounded,request);
+  if (current.phase==='READY_INPUT') {
+    await prepareReadyInputPolicyBoundReview(bounded,request);
+    return aggregateWithheldReport(request);
+  }
+  if (current.phase!=='SCANNING') fail('AGGREGATE_JOB_TERMINAL');
+  const next=await advanceTripWeatherAggregateJob(bounded,request);
+  if (!['SCANNING','READY_INPUT'].includes(next.phase) || next.revision<=current.revision)
+    fail('AGGREGATE_JOB_NO_ACKNOWLEDGED_PROGRESS');
+  // Even the final scan ACK is pending: reduction/noise/004 happen only in a
+  // subsequent independently bounded invocation, never after the scan budget.
+  return aggregatePendingReport(request,next.revision);
 }
 
 // EXISTING signed operator-only verify route: return ONLY an existing frozen
@@ -85,9 +103,9 @@ export async function handlePolicyBoundAggregate(databaseList,request) {
 // insert, new budget, public route or request/env release override is added.
 // Prepare remains WITHHELD. Internal curator diagnostics are not study data.
 export async function handleVerifyPolicyBoundAggregate(databases,request){
-  assertAggregateRequest(request,ravScoreModelBinding());
   if(!Array.isArray(databases)||databases.length!==10)fail('DP_SHARDS_INVALID');
   const bounded=policyQueryBoundDatabases(databases);
+  request=await selectReadyTripWeatherAggregateRequest(bounded,request);
   await assertReviewPolicyAnchor(bounded[0]);
   const result=await verifyPersistedReviewProposal(bounded,request);
   await assertReviewPolicyAnchor(bounded[0]);

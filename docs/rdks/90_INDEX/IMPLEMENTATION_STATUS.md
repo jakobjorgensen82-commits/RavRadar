@@ -1,3 +1,36 @@
+## 20. oktober — lokal 585-sammenføring og varig månedsskiftefortsættelse
+
+- [x] Sammenfør 676-kilde og faktisk merget hukommelsesrettelse med bevarede dokumentationshistorikker og gamle bindings-/SQL-originaler.
+- [x] Fem gennemgåede moduler bruger servervalgt eksisterende job, frisk samtykke-/slettekontrol og kun kvitteret trinfremgang med uændrede budgetter.
+- [x] Samme afgrænsede prøve består mod faktiske kandidatmoduler og som permanent regression importeret af normal sourcecaller; ingen produktsubstitution.
+- [ ] Bestå den nye samlede exact-head-kontrol; tidligere grønne deltræer kvalificerer ikke kombinationen.
+- [ ] Kontrolleret 585-installation og faktisk offentlig konto-/assistent-/ekstern-AI-effekt; ingen produktion under aktiv writer.
+- [ ] Særskilt statistik-/anonymitets- og Worker-kapacitetsbevis; 004/005 og automatisk retention er ikke aktiveret.
+
+Aktuel vejr-/cronstatus står alene i CURRENT_TRUTHs P0-linje og privat checkpoint. Alle fem mål er åbne til 18. november 2026; ældre afventninger og frister nedenfor er dateret historik.
+
+## 20. oktober — fælles integrationsfront: P0 678 og sourcekvalificeret 585
+
+Denne front er privat dokumentforberedelse til en senere samlet kilde, ikke en merge, installation eller offentlig levering. PR678s afgrænsede 584-memoryrettelse bevarer kun færdigbrugte arbejdsreferencer kortere; præcis source-/mergestatus føres alene i den aktuelle P0-statuslinje øverst i CURRENT_TRUTH.md. Lokal RED/GREEN eller source-PASS er ikke bevis for løst produktions-OOM.
+
+PR676/029462e43414d803bc251fda99f168117a921e0f er selvstændigt sourcekvalificeret som 4.0.585-kandidat. Det kvalificerer ikke kombinationen med 678 og er ikke installation af 585, dens SQL, Worker, Edges eller Pages. Det senere præcise kombinerede head kræver sit eget normale kildebevis. Genuine historiske 584-kilder, deres pins/inverser og allerede udstedte model-/SQL-originaler må ikke ommærkes eller repinnes af denne dokumentpatch.
+
+P0 og den almindelige vejrrute har førsteprioritet. Ejerens aktuelle valg er ingen checkpoint-genoptagelse nu; genoptagelsesønsker i de bevarede ældre afsnit er historiske på dette punkt. Aktuel cron-, leverings- og kørselsstatus må kun opdateres af ROOT fra faktisk evidens i den fælles P0-statuslinje; denne patch tænder, pauser eller udløser intet.
+
+Alle fem hovedmål er fortsat åbne med ejerens måldato 18. november 2026. Ældre henvisninger til 18. oktober og til afventede eller daværende kørsel-/cronudfald bevares som dateret historik, ikke som den aktuelle frist eller drift. SOURCE, statistikinstallation og automatisk retention/sletning aktiveres ikke her; gamle autentiske originaler bevares.
+
+Begge nedenstående historiesider er bevaret. Denne nye front erstatter kun modstridende status-/fristfortolkninger, ikke deres faglige krav, bevarede fejlevidens eller øvrige beslutninger.
+
+## 20. oktober — hukommelsesstop efter normal beregning
+
+- [x] Hele den aktuelle fejllog bevaret og afgrænset til V8-hukommelsesstop før ny B/S og Pages; gemt leverandørfremgang er ikke et færdigt beregningscheckpoint.
+- [x] Kun to færdigbrugte updater-referencer frigives efter vellykket continuity-pakning; ingen maps eller originalrækker muteres.
+- [x] Samme normale continuity-prøve faktisk RED før og GREEN efter; pakke, hashes, genlæste timer, originale identiteter og fejl før frigivelse bevares.
+- [x] Eksisterende faselog får faste hukommelsestal og særskilte origin-/offentlig-runtime-slutpunkter.
+- [ ] Præcis samlet kildekontrol, sikker levering, autentificeret cache-only-genoptagelse og faktisk offentlig generation uden hukommelsesstop.
+
+Ingen ny version, C/I/T, SQL, tidsbudget, scoreformel, kildeprioritet eller geometri. Alle fem mål er åbne; ejerens nye frist er 18. november 2026. Se DEC-0249 og privat checkpoint for aktuel drift.
+
 ## 20. oktober — national kalderrettelse, ikke ændret produktionsvej
 
 - [x] PR676 på `b02745d6`: faktisk native 585-PostgreSQL og hele kildevalideringen bestod. Nationaltrin stoppede før selve prøven på manglende præcis 75→90-headerinverse.

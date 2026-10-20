@@ -21,13 +21,13 @@ export function previousClosedAggregateMonth(now = Date.now()) {
   const start = Date.UTC(date.getUTCFullYear(), date.getUTCMonth() - 1, 1);
   return Object.freeze({ start: new Date(start).toISOString(), end: new Date(end).toISOString() });
 }
-export function assertAggregateRequest(value, binding, now = Date.now()) {
+// Shape/fresh-consent validation only; NOT permission to select or create an old job.
+export function assertAggregateRequestEnvelope(value, binding, now = Date.now()) {
   aggregateExact(value, ['schemaVersion', 'period', 'modelBinding', 'preferenceSnapshot']);
   if (value.schemaVersion !== 1 || !isExactCalibrationModelBinding(value.modelBinding)
       || !sameCalibrationModelBinding(value.modelBinding, binding)) aggregateFail('AGGREGATE_BINDING_INVALID');
   aggregateExact(value.period, ['start', 'end']);
-  const period = previousClosedAggregateMonth(now);
-  if (value.period.start !== period.start || value.period.end !== period.end) aggregateFail('AGGREGATE_PERIOD_INVALID');
+  assertClosedAggregatePeriod(value.period, now);
   const snapshot = value.preferenceSnapshot;
   aggregateExact(snapshot, ['schemaVersion', 'snapshotAt', 'accounts']);
   const at = Date.parse(snapshot.snapshotAt);
@@ -52,6 +52,22 @@ export function assertAggregateRequest(value, binding, now = Date.now()) {
   return value;
 }
 
+export function assertClosedAggregatePeriod(period, now = Date.now()) {
+  aggregateExact(period, ['start','end']);
+  const end=Date.parse(period.end);
+  if (!Number.isFinite(end) || new Date(end).toISOString()!==period.end
+      || end!==Date.UTC(new Date(end).getUTCFullYear(),new Date(end).getUTCMonth(),1)
+      || period.start!==previousClosedAggregateMonth(end).start
+      || end>Date.parse(previousClosedAggregateMonth(now).end)) aggregateFail('AGGREGATE_PERIOD_INVALID');
+  return period;
+}
+export function assertAggregateRequest(value, binding, now = Date.now()) {
+  assertAggregateRequestEnvelope(value,binding,now);
+  const period=previousClosedAggregateMonth(now);
+  if(value.period.start!==period.start || value.period.end!==period.end) aggregateFail('AGGREGATE_PERIOD_INVALID');
+  return value;
+}
+
 // Physically closed: no env var, request field, option or caller-supplied
 // policy can turn a preparation into a statistical disclosure. ROOT must
 // separately implement/review the actual release and repeated-release rule.
@@ -66,5 +82,22 @@ export function assertAggregateWithheldReport(report, request) {
       || report.period.start !== request.period.start || report.period.end !== request.period.end
       || !isExactCalibrationModelBinding(report.modelBinding)
       || !sameCalibrationModelBinding(report.modelBinding, request.modelBinding)) aggregateFail('AGGREGATE_RESPONSE_INVALID');
+  return report;
+}
+
+// Acknowledged internal scan progress is NOT a report, contribution or token.
+// No row/account counts, cursor, owner, source identity or caller grant leaks.
+export function aggregatePendingReport(request, revision) {
+  if (!Number.isSafeInteger(revision) || revision < 0) aggregateFail('AGGREGATE_RESPONSE_INVALID');
+  return Object.freeze({ schemaVersion: 1, status: 'PENDING_INPUT_SCAN',
+    period: { ...request.period }, modelBinding: { ...request.modelBinding }, revision });
+}
+export function assertAggregatePreparationReport(report, request) {
+  if (report?.status === 'WITHHELD_RELEASE_POLICY_UNISSUED') return assertAggregateWithheldReport(report, request);
+  aggregateExact(report, ['schemaVersion', 'status', 'period', 'modelBinding', 'revision'], 'AGGREGATE_RESPONSE_INVALID');
+  if (report.status !== 'PENDING_INPUT_SCAN' || !Number.isSafeInteger(report.revision) || report.revision < 0)
+    aggregateFail('AGGREGATE_RESPONSE_INVALID');
+  assertAggregateWithheldReport({ schemaVersion: report.schemaVersion,
+    status: 'WITHHELD_RELEASE_POLICY_UNISSUED', period: report.period, modelBinding: report.modelBinding }, request);
   return report;
 }

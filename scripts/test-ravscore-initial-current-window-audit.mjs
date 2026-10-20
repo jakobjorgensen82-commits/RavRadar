@@ -1,5 +1,6 @@
 import { inverseAlternativeCCaller } from './lib/alternative-c-caller-test-input.mjs';
-import { inverseArchivedWeatherRestartUpdater } from './lib/archived-weather-restart-updater-test-input.mjs';
+import { inverseArchivedWeatherRestartUpdater, inverseWeatherExportMemoryUpdater,
+ WEATHER_EXPORT_MEMORY_UPDATER_REVIEW } from './lib/archived-weather-restart-updater-test-input.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
@@ -86,8 +87,35 @@ test('diagnostic source delta preserves every genuine historical updater oracle'
  }
  assert.throws(()=>inverse(updater+'// unrelated source drift\n'),/genuine 903307 updater/);
 });
-test('archive restart updater inverse preserves all old oracles and rejects every changed hunk',async()=>{
+test('memory-export caller delta has an exact genuine954 inverse before every historical source oracle',async()=>{
  const actual=(await fs.readFile(path.join(ROOT,'scripts/update-weather.mjs'),'utf8')).replace(/\r\n/g,'\n');
+ const row=WEATHER_EXPORT_MEMORY_UPDATER_REVIEW;
+ assert.equal(hash(actual),row.after.sha256,'actual current updater, not a projected fixture');
+ assert.equal(Buffer.byteLength(actual),row.after.bytes);
+ assert.equal(row.hunks.length,5);
+ const genuine954=inverseWeatherExportMemoryUpdater(actual);
+ assert.equal(hash(genuine954),'6978aaa62fd8126f460913ed9ee428e4cb6da8f146bcf4146d6ee69e170f88a6');
+ assert.equal(Buffer.byteLength(genuine954),243322);
+ assert.equal(inverseWeatherExportMemoryUpdater(genuine954),genuine954);
+ assert.equal(inverseArchivedWeatherRestartUpdater(actual),inverseArchivedWeatherRestartUpdater(genuine954));
+ assert.equal(inverseAlternativeCCaller(actual,'scripts/update-weather.mjs'),
+  inverseAlternativeCCaller(genuine954,'scripts/update-weather.mjs'));
+ for(const [before,after] of row.hunks){
+  assert.equal(actual.split(after).length,2,'each new reviewed hunk occurs exactly once');
+  for(const changed of [actual.replace(after,()=>before),actual.replace(after,()=>after+after),
+   actual.replace(after,()=>after+'\n// changed reviewed memory hunk')]){
+   assert.notEqual(changed,actual);
+   assert.throws(()=>inverseWeatherExportMemoryUpdater(changed),/ALTERNATIVE_C_TEST_INPUT_CHANGED/);
+   assert.throws(()=>inverseArchivedWeatherRestartUpdater(changed),/ALTERNATIVE_C_TEST_INPUT_CHANGED/);
+   assert.throws(()=>inverseAlternativeCCaller(changed,'scripts/update-weather.mjs'),/ALTERNATIVE_C_TEST_INPUT_CHANGED/);
+  }
+ }
+ assert.throws(()=>inverseWeatherExportMemoryUpdater(actual+'// unrelated source drift\n'),/ALTERNATIVE_C_TEST_INPUT_CHANGED/);
+ assert.throws(()=>inverseArchivedWeatherRestartUpdater(actual+'// unrelated source drift\n'),/ALTERNATIVE_C_TEST_INPUT_CHANGED/);
+});
+
+test('archive restart updater inverse preserves all old oracles and rejects every changed hunk',async()=>{
+ const actual=inverseWeatherExportMemoryUpdater((await fs.readFile(path.join(ROOT,'scripts/update-weather.mjs'),'utf8')).replace(/\r\n/g,'\n'));
  const row=JSON.parse(await fs.readFile(path.join(ROOT,'scripts/lib/archived-weather-restart-updater-test-input.json'),'utf8'));
  assert.equal(hash(actual),'6978aaa62fd8126f460913ed9ee428e4cb6da8f146bcf4146d6ee69e170f88a6');
  assert.equal(row.hunks.length,10);
