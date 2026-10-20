@@ -1,3 +1,10 @@
+## 20. oktober — lokal 585-rettelse: behold originalernes rigtige lagervej
+
+- Bevarer normal backendudvælgelse og videresender den faktiske storage-klient gennem genuine 584-originalrestore; central dokumentadgang er fortsat Supabase, aktuelle private objekter R2. Workflowet fører kun de tre eksisterende R2-miljøfelter frem.
+- Tilføjer faste, payloadfri stagefaselogs. Første installation stoppede i trin 45 før SQL, ny B/S, Worker, Edges og Pages; indre råfejl og nået restore kan ikke udledes af den gamle generiske log. Lokal rettelse/prøve er ikke installation eller live årsagsbevis.
+- ROOTs ene normale lokale callerprøve består og genfinder gammel manglende-storage-fejl; efterkaldet bruger faktisk R2-adapter frem til én syntetisk dokumentlæsning, uden downloads eller B/S-admission. Hel workflow-inverse med ti mutationsafslag består; den særskilte workflowcase afventer Linux efter en uændret lokal CRLF/raw-JSON-grænse.
+- Dokumenterer særskilt faktisk almindelig levering 39392596895/1 og 89,919 % samtidig fem-komponentdækning af hele zoneprognosen. Cron er faktisk pauset, tidsplanen uændret; alle fem mål er åbne til 18. november 2026. Ingen ny version, C/I/T eller SQL. Håndbog 89.261 og dens ene installationspayload synkroniseres; historik og SQL udenfor payloaden bevares.
+
 ## 20. oktober — samlet 585-kandidat: bevar ventende arbejde ved månedsskifte
 
 - Retter den eksplicitte OFF-attestation til den eksisterende kontrol af den faktisk aktive Worker-versions bindinger; lokal false og versionsnummer alene må ikke kvalificere leveringen. Kontrollen skal også bevare de ti D1-bindinger og uændret deployment. Det er endnu ikke en installeret eller offentligt verificeret rettelse.

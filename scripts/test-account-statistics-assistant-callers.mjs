@@ -240,3 +240,84 @@ test('source-PR-only120-minute job preserves genuine90 workflow and rejects ever
   assert.throws(()=>verifyWorkflow(actual.replace(CURRENT_JOB,CURRENT_JOB+CURRENT_JOB)));
   assert.throws(()=>verifyWorkflow(actual+'\n# unknown source change\n'));
 });
+
+test('normal original584 staging forwards the selected R2 storage into the real frozen restore',async()=>{
+  const {execFileSync}=await import('node:child_process');
+  const {join}=await import('node:path');
+  const {pathToFileURL}=await import('node:url');
+  const {createProtectedPrivateRuntimeClients}=await import('./protected-private-production-runtime.mjs');
+  const {withAuthenticated584PredecessorSource}=await import('./check-account-statistics-assistant-predecessor-source.mjs');
+  const stageFile='scripts/stage-account-statistics-assistant-originals.mjs';
+  const current=await fs.readFile(new URL('./stage-account-statistics-assistant-originals.mjs',import.meta.url),'utf8');
+  const before=execFileSync('git',['show','e7b7436afb0c9388b7e9015ad60b361704950550:'+stageFile],{
+    cwd:fileURLToPath(new URL('../',import.meta.url)),encoding:'utf8',timeout:30000,maxBuffer:65536,
+    env:{...process.env,GIT_NO_LAZY_FETCH:'1',GIT_NO_REPLACE_OBJECTS:'1'},
+  });
+  const seams=source=>{
+    const factory=[...source.matchAll(/^  (const \{documentRequest:request(?:,storage)?\}=createProtectedPrivateRuntimeClients\((?:\{storageBackend:'supabase'\})?\);)\r?$/gm)];
+    const restore=[...source.matchAll(/^    (const restored=await protectedB\.restoreProtectedPrivateProductionRuntime\(\{privateRoot,bundlePath,repositoryRoot:frozenRoot,expected,request(?:,storage)?\}\);)\r?$/gm)];
+    assert.equal(factory.length,1,'One actual normal clientfactory seam');
+    assert.equal(restore.length,1,'One actual normal frozen584 restore seam');
+    return {factory:factory[0][1],restore:restore[0][1]};
+  };
+  const actual=seams(current),historical=seams(before);
+  const AsyncFunction=Object.getPrototypeOf(async function(){}).constructor;
+  await withAuthenticated584PredecessorSource(async frozenRoot=>{
+    const protectedB=await import(pathToFileURL(join(frozenRoot,'scripts/protected-private-production-runtime.mjs')).href);
+    const invoke=async(seam,observed)=>{
+      observed.pointerReads=0;
+      const factory=(...args)=>{
+        assert(args.length<=1);observed.factoryArguments=args;
+        const synthetic={RAVRADAR_PRIVATE_RUNTIME_STORAGE_BACKEND:'r2',
+          RAVRADAR_R2_ACCOUNT_ID:'a'.repeat(32),RAVRADAR_R2_ACCESS_KEY_ID:'synthetic-r2-access',
+          RAVRADAR_R2_SECRET_ACCESS_KEY:'synthetic-r2-secret'};
+        const saved=Object.fromEntries(Object.keys(synthetic).map(key=>[key,process.env[key]]));
+        try{
+          Object.assign(process.env,synthetic);
+          observed.clients=createProtectedPrivateRuntimeClients({
+            supabaseUrl:'https://synthetic.invalid',serviceRoleKey:'synthetic-service-role-key',
+            fetchImpl:async(url,options={})=>{
+              const target=new URL(url);
+              assert.equal(target.origin,'https://synthetic.invalid');
+              assert.equal(target.pathname,'/rest/v1/admin_documents');
+              assert.equal(options.method??'GET','GET');
+              assert.equal(target.searchParams.get('document_key'),'eq.ravscore-private-production-runtime-pointer');
+              assert.equal(target.searchParams.get('select'),'document_key,payload,version');
+              assert.equal(target.searchParams.get('limit'),'2');
+              observed.pointerReads++;
+              return new Response('[]',{status:200,headers:{'content-type':'application/json'}});
+            },...args[0],
+          });
+          return observed.clients;
+        }finally{
+          for(const key of Object.keys(synthetic)){
+            if(saved[key]===undefined)delete process.env[key];else process.env[key]=saved[key];
+          }
+        }
+      };
+      // Both executable statements are the actual stage source, not a repaired
+      // product copy. Only the transport/configuration uses synthetic fixtures.
+      const execute=new AsyncFunction('createProtectedPrivateRuntimeClients','protectedB','frozenRoot',
+        "const privateRoot=frozenRoot+'/unused-private',bundlePath=privateRoot+'/bundle',expected={};\n"
+        +seam.factory+'\n'+seam.restore+'\nreturn restored;');
+      return execute(factory,protectedB,frozenRoot);
+    };
+    const oldObservation={};
+    await assert.rejects(invoke(historical,oldObservation),/Private runtime storage client lacks ensurePrivateBucket/);
+    assert.deepEqual(oldObservation.factoryArguments,[{storageBackend:'supabase'}]);
+    assert.equal(typeof oldObservation.clients.storage.bucketUsage,'undefined','Actual old factory overrode the selected R2 backend');
+    assert.equal(oldObservation.pointerReads,0,'The genuine old restore refuses before reading a pointer');
+    const observation={},result=await invoke(actual,observation);
+    assert.deepEqual(observation.factoryArguments,[],'The actual stage must retain the normally selected backend');
+    assert.equal(typeof observation.clients.storage.bucketUsage,'function','The real selected R2 adapter was constructed');
+    assert.equal(observation.pointerReads,1,'The genuine frozen584 document reader was reached');
+    assert.deepEqual(result,{restored:false,reason:'protected-private-runtime-not-found',targetUnchanged:true,privatePayloadLogged:false});
+    const dropped=actual.restore.replace(',request,storage}',',request}');
+    assert.notEqual(dropped,actual.restore,'The actual after-call forwards storage explicitly');
+    const droppedObservation={};
+    await assert.rejects(invoke({...actual,restore:dropped},droppedObservation),/Private runtime storage client lacks ensurePrivateBucket/);
+    assert.equal(droppedObservation.pointerReads,0);
+  });
+  // A deliberately empty pointer proves client/call wiring only: no archive
+  // download, private payload, B/S admission, SQL or publication is exercised.
+});
