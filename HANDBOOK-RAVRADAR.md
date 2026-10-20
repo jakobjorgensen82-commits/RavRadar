@@ -1,3 +1,27 @@
+## 89.260 Gem arbejdet sikkert, også når måneden skifter
+
+Kort fortalt: En afbrudt statistikforberedelse skal kunne fortsætte fra det faktisk gemte arbejde. Det må ikke give adgang til gamle ture eller ændre brugerens valg.
+
+Den forberedte rettelse deler arbejdet op i små, kontrollerede trin. Et allerede gemt job beholder sin oprindelige måned, selv om kalenderen går videre. Systemet skal fortsat kontrollere de aktuelle statistikvalg, slettede konti og det samme datagrundlag. En forsinket kvittering må ikke skjule et nyere fravalg. Brugeren eller en kopieret anmodning kan ikke selv åbne en gammel periode.
+
+Hvis et svar mangler, er arbejdet ikke bekræftet. Systemet skal afklare den gemte tilstand før en senere fortsættelse og må ikke automatisk gentage en ukendt skrivning. En besked om fremdrift er hverken en færdig rapport eller anonym statistik.
+
+Før opdateringen går videre, skal systemet aflæse, at statistik faktisk er slået fra på den nye aktive serverversion, og at den fortsat bruger de samme ti turlagre. En lokal indstilling eller et versionsnummer er ikke bevis nok. Skifter serverversionen under kontrollen, skal leveringen stoppe.
+
+Rettelsen er lokalt sammenført og afgrænset prøvet, men endnu ikke leveret offentligt. Samlet statistik og dens særskilte lagerinstallation er fortsat slået fra. Der loves hverken dokumenteret anonymitet, en fungerende automatisk sletning eller mailvarsling ud fra denne prøve. Den nye måldato er 18. november 2026; ældre frister og leveringsstatus nedenfor er dateret historik.
+
+## 89.259 Bedre spørgsmål og ærlige turrapporter – 4.0.585-kandidat
+
+Kort fortalt: Den forberedte 585-opdatering skal forstå flere almindelige og sammensatte spørgsmål uden at gætte på manglende oplysninger. Den er endnu ikke offentligt leveret.
+
+Spørg RavRadar skal svare på hele det forståede spørgsmål på dansk, tysk eller engelsk. Et spørgsmål om en grøn prognose må ikke forveksles med et spørgsmål om grønt rav. En opfølgning må kun bygge på et kendt offentligt emne, ikke på private turdata eller en gemt samtale. Hvis spørgsmålet gælder en anden time, skal et generelt svar skelnes tydeligt fra zonens aktuelle tal. Ukendt viden, manglende data og usikkerhed skal fortsat siges ærligt. Assistenten ændrer hverken prognoser, scorer, konto eller ture og giver ingen garanti for ravfund eller sikkerhed ved vandet.
+
+En ny tur eller manuel kontoindberetning mærkes som selvrapporteret. Det betyder kun, at oplysningerne er indberettet af brugeren. Det er ikke bevis for turens nøjagtighed, et godkendt historisk vejrsnapshot eller tilladelse til enhver viderebrug. Tidligere rapporter ændres ikke. Testture, fravalg og slettede ejere må ikke automatisk blive statistikgrundlag. En pseudonym identitet er heller ikke det samme som anonym statistik.
+
+Leveringen skal bevare gemte originaler, tal og historik, selv om programmets nye bindinger ændres. Turlageret og de eksisterende serverfunktioner skal opdateres og kontrolleres i den aftalte rækkefølge, før den nye offentlige side bruges. Samlet statistik og dens særskilte databaseinstallation er fortsat slået fra. Automatisk sletning efter inaktivitet aktiveres ikke uden den fungerende mailafsender, som det aftalte varsel kræver.
+
+De nødvendige lokale målprøver og normal generering består med det dokumenterede Windows-/Linux-forbehold; det er ikke bevis for ny databaseinstallation, offentlig AI eller gennemført 585-levering. En ny almindelig offentlig 584-vejrlevering er verificeret den 20. oktober omkring kl. 03.45 dansk tid. De tilhørende cacheposter er gemt, og den eksisterende automatiske tidsplan er genaktiveret uændret. Fuld DMI, komplet cache/historik, efterfølgende genbrug og selvstændig drift er stadig åbne. En gemt cache eller én vellykket kørsel beviser ikke disse forhold. Alle fem hovedmål er åbne; fristen 18. oktober er overskredet, ikke flyttet. Ældre afventninger i håndbogen bevares som historik alene på de konkret erstattede punkter.
+
 ## 89.258 Leverandørtid er ikke det samme som dækningsgrad
 
 Kort fortalt: En vejrhentning består både af hentning, kontrol, genbrug, beregning og sikker gemning. Et tidsloft er ikke et krav om at bruge al tiden.
@@ -506,9 +530,13 @@ En særskilt, dokumenteret Storage-formatkant rettes samtidig: immutable upload 
 
 # RavRadar Håndbog
 
-**Håndbogsversion:** 4.0.584
+**Håndbogsversion:** 4.0.585
 
-## Aktuel lokal kildebinding — 19. oktober 2026, 4.0.584 ikke installeret
+## Aktuel lokal kildebinding — 20. oktober 2026, 4.0.585 ikke installeret
+
+Den nye lokale kandidat til RavScore 4.0.585 er låst med `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b` og `modelBundleSha256=31bbb9a98f4df93804a9d4bcdff50fe5e9b1c880e04492d2c596079488a6bfa2` over 93 kanonisk normaliserede transitive implementeringsfiler og de deklarerede forbrugere. Inaktiv Candidate G har `modelContractSha256=c73dac1b4376005e792580791d84eb79c9370e905a2a7fd0bdee857506a20cf8` og `modelBundleSha256=2f5f28044ae88fccbcad4a9d21943b986aabcdd8be1ae607d5e79d0a8947925f` over 94 transitive filer. Fortsættelseskontrakten er `a0a5fa40385afb221dcb66e61b815453c11ee8c91f3e2d6581be0670cadc9299` (`a0a5fa40…`) over 12 normaliserede kildefiler. De fysiske scorekontrakter og formler er uændrede. Autoriteten er den normale `version.json.releaseContract.modelBindings` og den nye append-only 100000-migration; lokal generering og målprøver er ikke ny PostgreSQL, installation eller offentlig levering. Den almindelige offentlige 584-levering fra 19. oktober er verificeret særskilt. Se 89.259.
+
+## Historisk lokal kildebinding — 19. oktober 2026, 4.0.584 før installation
 
 Den lokale kildekandidat til RavScore 4.0.584 er låst med `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b` og `modelBundleSha256=bb0da11642d1aff76fc4f821114d923aa9897c41abd543df0fa6166290075947` over 91 kanonisk normaliserede transitive implementeringsfiler og de deklarerede forbrugere. Inaktiv Candidate G har `modelContractSha256=c73dac1b4376005e792580791d84eb79c9370e905a2a7fd0bdee857506a20cf8` og `modelBundleSha256=47a27aec034d8d7cbab7755a19025d796b6fe51c2b276676c7309c912a85f501` over 92 transitive filer. Den normale fortsættelsesbinding er `7532755a43f8bb2ccc125efa3aa747ed03365b720d13addfcdb91ce4b74d908c`. Autoriteten er `version.json.releaseContract.modelBindings`. Dette beskriver lokal kildeidentitet, ikke installation eller offentlig levering; tidligere afsnit nedenfor er dateret historik.
 

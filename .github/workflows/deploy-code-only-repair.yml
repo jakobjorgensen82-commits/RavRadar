@@ -27,6 +27,11 @@ on:
         required: false
         default: false
         type: boolean
+      upgrade_account_statistics_assistant:
+        description: "Installer kun den eksakte originalbevarende585 metadata-efterfølger efter faktisk584; statistik forbliver OFF"
+        required: false
+        default: false
+        type: boolean
       restart_archived_weather:
         description: "Ny fremadrettet familie fra særskilt arkiverede originaler og gemte PART-input; ingen leverandørhentning"
         required: false
@@ -86,10 +91,24 @@ jobs:
           UPGRADE_ESTABLISHED_NATIVE_CURRENT_ORIGIN: ${{ inputs.upgrade_established_native_current_origin }}
           RESTART_ARCHIVED_WEATHER: ${{ inputs.restart_archived_weather }}
           UPGRADE_LAST_MILE_ENCLOSURE: ${{ inputs.upgrade_last_mile_enclosure }}
+          UPGRADE_ACCOUNT_STATISTICS_ASSISTANT: ${{ inputs.upgrade_account_statistics_assistant }}
         run: |
           set -euo pipefail
           test "$GITHUB_EVENT_NAME" = "workflow_dispatch"
           test "$GITHUB_REF" = "refs/heads/main"
+          if test "$UPGRADE_ACCOUNT_STATISTICS_ASSISTANT" = true; then
+            test "$UPGRADE_EXISTING_OWNER_EXPORT" != true
+            test "$UPGRADE_ACCOUNT_ASSISTANT" != true
+            test "$UPGRADE_STATISTICS_REVISION" != true
+            test "$UPGRADE_ESTABLISHED_NATIVE_CURRENT_ORIGIN" != true
+            test "$UPGRADE_LAST_MILE_ENCLOSURE" != true
+            test "$RESTART_ARCHIVED_WEATHER" != true
+            test "$SAVED_WEATHER" != true
+            test -z "$RECOVER_PUBLIC_RUN_ID"
+            test "$RECOVER_PUBLIC_RUN_ATTEMPT" = 1
+            test "$GITHUB_RUN_ATTEMPT" = 1
+            test "$CONFIRMATION" = DEPLOY-CODE-ONLY-REPAIR
+          fi
           if test "$RESTART_ARCHIVED_WEATHER" = "true" || test "$UPGRADE_LAST_MILE_ENCLOSURE" = "true"; then
             test "$RESTART_ARCHIVED_WEATHER" = "true"
             test "$UPGRADE_LAST_MILE_ENCLOSURE" = "true"
@@ -217,6 +236,14 @@ jobs:
       RAVRADAR_ESTABLISHED_NATIVE_CURRENT_ORIGIN_METADATA_ONLY: 'false'
       RAVRADAR_LAST_MILE_ENCLOSURE_UPGRADE_OPT_IN: ${{ inputs.upgrade_last_mile_enclosure == true && 'true' || 'false' }}
       RAVRADAR_LAST_MILE_ENCLOSURE_CONFIRMATION: ${{ inputs.confirmation }}
+      RAVRADAR_ACCOUNT_STATISTICS_ASSISTANT_UPGRADE_OPT_IN: ${{ inputs.upgrade_account_statistics_assistant == true && 'true' || 'false' }}
+      RAVRADAR_ACCOUNT_STATISTICS_ASSISTANT_CONFIRMATION: ${{ inputs.confirmation }}
+      RAVRADAR_ACCOUNT_STATISTICS_ASSISTANT_SAVED_WEATHER: ${{ inputs.publish_newest_saved_weather == true && 'true' || 'false' }}
+      RAVRADAR_ACCOUNT_STATISTICS_ASSISTANT_RECOVERY_RUN_ID: ${{ inputs.recover_public_run_id }}
+      RAVRADAR_ACCOUNT_STATISTICS_ASSISTANT_RECOVERY_GATE_RESULT: ${{ needs.operational-recovery-gate.result }}
+      RAVRADAR_ACCOUNT_STATISTICS_ASSISTANT_WRITER_ACTIVE: 'false'
+      RAVRADAR_ACCOUNT_STATISTICS_ASSISTANT_METADATA_ONLY: 'false'
+      UPGRADE_ACCOUNT_STATISTICS_ASSISTANT: ${{ inputs.upgrade_account_statistics_assistant == true && 'true' || 'false' }}
       RAVRADAR_LAST_MILE_ENCLOSURE_WRITER_ACTIVE: 'false'
       RAVRADAR_WEATHER_CACHE_ONLY: ${{ inputs.restart_archived_weather == true && 'true' || 'false' }}
       RAVRADAR_REQUIRE_PRIVATE_WEATHER_BASELINE: ${{ inputs.restart_archived_weather == true && 'true' || 'false' }}
@@ -534,6 +561,9 @@ jobs:
           esac
           echo "action=$action" >> "$GITHUB_OUTPUT"
 
+      - name: Select the issued account-statistics-assistant source phase without admission
+        run: node scripts/select-account-statistics-assistant-code-only-source.mjs
+
       - name: Describe newest protected runtime for saved-weather continuation
         if: inputs.restart_archived_weather != true
         run: >-
@@ -546,7 +576,7 @@ jobs:
 
       - name: Select only the exact installed last-mile saved-weather source
         id: saved-last-mile-source
-        if: inputs.publish_newest_saved_weather == true
+        if: (inputs.publish_newest_saved_weather == true) && (env.RAVRADAR_ACCOUNT_STATISTICS_ASSISTANT_SOURCE_ACTIVE != 'true')
         shell: bash
         env:
           OPERATIONAL_ACTION: ${{ steps.operational-action.outputs.action }}
@@ -584,7 +614,12 @@ jobs:
           node scripts/integrated-cutover-readiness.mjs assert-source \
             --public-implementation-closure-sha256 \
             "${{ steps.integrated-implementation.outputs.closure_sha256 }}"
-          if test "${{ inputs.restart_archived_weather }}" = true \
+          if test "${RAVRADAR_ACCOUNT_STATISTICS_ASSISTANT_SOURCE_ACTIVE:-false}" = true; then
+            WORKDIR="$migration_workdir" node --input-type=module <<'NODE'
+          import { prepareAccountStatisticsAssistantCutoverWorkdir } from './scripts/integrated-cutover-readiness.mjs';
+          await prepareAccountStatisticsAssistantCutoverWorkdir({workdir:process.env.WORKDIR});
+          NODE
+          elif test "${{ inputs.restart_archived_weather }}" = true \
               || test "${{ steps.saved-last-mile-source.outputs.required }}" = true; then
             WORKDIR="$migration_workdir" node --input-type=module <<'NODE'
           import { prepareLastMileEnclosureCutoverWorkdir } from './scripts/integrated-cutover-readiness.mjs';
@@ -611,8 +646,14 @@ jobs:
           supabase link --project-ref "$SUPABASE_PROJECT_ID" --password "$SUPABASE_DB_PASSWORD"
           supabase migration list --linked | tee "$RUNNER_TEMP/code-only-migrations-before.txt"
 
+      - name: Select exact new metadata SQL phase from actual linked history
+        if: env.RAVRADAR_ACCOUNT_STATISTICS_ASSISTANT_SOURCE_ACTIVE == 'true'
+        run: >-
+          node scripts/verify-account-statistics-assistant-plan.mjs --select
+          --migration-list "$RUNNER_TEMP/code-only-migrations-before.txt"
+
       - name: Require originals before the pending assistant binding
-        if: ((steps.operational-action.outputs.action == 'integrated' || steps.operational-action.outputs.action == 'integrated-historical-maintenance') && (inputs.restart_archived_weather != true)) && (steps.saved-last-mile-source.outputs.required != 'true')
+        if: (((steps.operational-action.outputs.action == 'integrated' || steps.operational-action.outputs.action == 'integrated-historical-maintenance') && (inputs.restart_archived_weather != true)) && (steps.saved-last-mile-source.outputs.required != 'true')) && (env.RAVRADAR_ACCOUNT_STATISTICS_ASSISTANT_SOURCE_ACTIVE != 'true')
         shell: bash
         run: |
           set -euo pipefail
@@ -652,7 +693,7 @@ jobs:
           NODE
 
       - name: Select only an already-installed established-origin successor before private work
-        if: ((steps.operational-action.outputs.action == 'integrated' || steps.operational-action.outputs.action == 'integrated-historical-maintenance') && (inputs.restart_archived_weather != true)) && (steps.saved-last-mile-source.outputs.required != 'true')
+        if: (((steps.operational-action.outputs.action == 'integrated' || steps.operational-action.outputs.action == 'integrated-historical-maintenance') && (inputs.restart_archived_weather != true)) && (steps.saved-last-mile-source.outputs.required != 'true')) && (env.RAVRADAR_ACCOUNT_STATISTICS_ASSISTANT_SOURCE_ACTIVE != 'true')
         shell: bash
         run: |
           set -euo pipefail
@@ -680,7 +721,14 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          if test "${{ inputs.restart_archived_weather }}" = true \
+          if test "${RAVRADAR_ACCOUNT_STATISTICS_ASSISTANT_SOURCE_ACTIVE:-false}" = true; then
+            WORKDIR="${{ steps.migration-view.outputs.workdir }}" node --input-type=module <<'NODE'
+          import fs from 'node:fs/promises';
+          import { hydrateAccountStatisticsAssistantRemoteMigrationHistory } from './scripts/integrated-cutover-readiness.mjs';
+          await hydrateAccountStatisticsAssistantRemoteMigrationHistory({workdir:process.env.WORKDIR,
+            migrationListText:await fs.readFile(process.env.RUNNER_TEMP+'/code-only-migrations-before.txt','utf8')});
+          NODE
+          elif test "${{ inputs.restart_archived_weather }}" = true \
               || test "${{ steps.saved-last-mile-source.outputs.required }}" = true; then
             WORKDIR="${{ steps.migration-view.outputs.workdir }}" node --input-type=module <<'NODE'
           import fs from 'node:fs/promises';
@@ -693,6 +741,24 @@ jobs:
               --workdir "${{ steps.migration-view.outputs.workdir }}" \
               --migration-list "$RUNNER_TEMP/code-only-migrations-before.txt"
           fi
+
+      - name: Require actually installed metadata contracts before installed reentry
+        if: env.RAVRADAR_ACCOUNT_STATISTICS_ASSISTANT_SOURCE_ACTIVE == 'true' && env.RAVRADAR_ACCOUNT_STATISTICS_ASSISTANT_PHASE == 'installed'
+        shell: bash
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: |
+          set -euo pipefail
+          (cd "${{ steps.migration-view.outputs.workdir }}" && supabase db push --linked --dry-run --skip-vault) 2>&1 | tee "$RUNNER_TEMP/code-only-account-statistics-assistant-installed-dry-run.txt"
+          node scripts/verify-account-statistics-assistant-plan.mjs --phase installed \
+            --migration-list "$RUNNER_TEMP/code-only-migrations-before.txt" \
+            --dry-run "$RUNNER_TEMP/code-only-account-statistics-assistant-installed-dry-run.txt" \
+            --migrations-directory "${{ steps.migration-view.outputs.workdir }}/supabase/migrations"
+          env -u SUPABASE_DB_PASSWORD node scripts/integrated-cutover-readiness.mjs verify-db
+          env -u SUPABASE_DB_PASSWORD node scripts/verify-statistics-preference-revision-schema.mjs
 
       - name: Require already-installed last-mile saved-weather contracts without replay
         if: steps.saved-last-mile-source.outputs.required == 'true'
@@ -729,17 +795,17 @@ jobs:
           NODE
 
       - name: Install normal geometry and DMI validation dependencies for archive restart
-        if: inputs.restart_archived_weather == true || steps.saved-last-mile-source.outputs.required == 'true'
+        if: (inputs.restart_archived_weather == true || steps.saved-last-mile-source.outputs.required == 'true') || (env.RAVRADAR_ACCOUNT_STATISTICS_ASSISTANT_SOURCE_ACTIVE == 'true' && inputs.publish_newest_saved_weather == true)
         run: python -m pip install --disable-pip-version-check -r requirements-dmi.txt -r requirements-geometry.txt
 
 
       - name: Build normal constrained coastlines before central hydration
-        if: inputs.restart_archived_weather == true || steps.saved-last-mile-source.outputs.required == 'true'
+        if: (inputs.restart_archived_weather == true || steps.saved-last-mile-source.outputs.required == 'true') || (env.RAVRADAR_ACCOUNT_STATISTICS_ASSISTANT_SOURCE_ACTIVE == 'true' && inputs.publish_newest_saved_weather == true)
         run: python scripts/refine-coastlines-constrained-4.0.48.py
 
 
       - name: Read centrally saved admin configuration without promotion
-        if: inputs.restart_archived_weather == true || steps.saved-last-mile-source.outputs.required == 'true'
+        if: (inputs.restart_archived_weather == true || steps.saved-last-mile-source.outputs.required == 'true') || (env.RAVRADAR_ACCOUNT_STATISTICS_ASSISTANT_SOURCE_ACTIVE == 'true' && inputs.publish_newest_saved_weather == true)
         run: python scripts/sync-admin-config.py
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
@@ -747,17 +813,17 @@ jobs:
 
 
       - name: Apply only centrally approved active geometry
-        if: inputs.restart_archived_weather == true || steps.saved-last-mile-source.outputs.required == 'true'
+        if: (inputs.restart_archived_weather == true || steps.saved-last-mile-source.outputs.required == 'true') || (env.RAVRADAR_ACCOUNT_STATISTICS_ASSISTANT_SOURCE_ACTIVE == 'true' && inputs.publish_newest_saved_weather == true)
         run: python scripts/apply-central-zone-reviews.py
 
 
       - name: Stage the actual active central coastal registry before separate archive
-        if: inputs.restart_archived_weather == true || steps.saved-last-mile-source.outputs.required == 'true'
+        if: (inputs.restart_archived_weather == true || steps.saved-last-mile-source.outputs.required == 'true') || (env.RAVRADAR_ACCOUNT_STATISTICS_ASSISTANT_SOURCE_ACTIVE == 'true' && inputs.publish_newest_saved_weather == true)
         run: node scripts/build-public-coastal-parts-v2.mjs
 
 
       - name: Require unchanged central-public authority before saved checkpoint reconciliation
-        if: steps.saved-last-mile-source.outputs.required == 'true'
+        if: (steps.saved-last-mile-source.outputs.required == 'true') || (env.RAVRADAR_ACCOUNT_STATISTICS_ASSISTANT_SOURCE_ACTIVE == 'true' && inputs.publish_newest_saved_weather == true)
         shell: bash
         env:
           OPERATIONAL_ACTION: ${{ steps.operational-action.outputs.action }}
@@ -827,7 +893,7 @@ jobs:
 
       - name: Select saved B-S reconciliation before any checkpoint restore
         id: saved-checkpoint-reconcile
-        if: steps.saved-last-mile-source.outputs.required == 'true'
+        if: (steps.saved-last-mile-source.outputs.required == 'true') || (env.RAVRADAR_ACCOUNT_STATISTICS_ASSISTANT_SOURCE_ACTIVE == 'true' && inputs.publish_newest_saved_weather == true)
         shell: bash
         env:
           OPERATIONAL_ACTION: ${{ steps.operational-action.outputs.action }}
@@ -892,8 +958,19 @@ jobs:
           echo "RAVRADAR_PRODUCTION_TARGET_HOUR=$target_reference" >> "$GITHUB_ENV"
           node scripts/private-production-runtime-workflow.mjs expected --repository-root "$GITHUB_WORKSPACE" --target-reference "$target_reference" --output .cache/private-production-runtime-expected.json
 
+      - name: Select actual CURRENT family and restore only genuine original584 if needed
+        if: env.RAVRADAR_ACCOUNT_STATISTICS_ASSISTANT_SOURCE_ACTIVE == 'true' && inputs.publish_newest_saved_weather != true
+        shell: bash
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: |
+          set -euo pipefail
+          mkdir -p "$RAVRADAR_PRIVATE_RUNTIME_ROOT"
+          node scripts/stage-account-statistics-assistant-originals.mjs
+
       - name: Prepare exact original binding for owner current-domain release
-        if: (inputs.restart_archived_weather != true) && (steps.saved-last-mile-source.outputs.required != 'true')
+        if: ((inputs.restart_archived_weather != true) && (steps.saved-last-mile-source.outputs.required != 'true')) && (env.RAVRADAR_ACCOUNT_STATISTICS_ASSISTANT_SOURCE_ACTIVE != 'true')
         id: owner-current-original
         run: >-
           node scripts/prepare-historical-wave-predecessor-restore.mjs
@@ -903,7 +980,7 @@ jobs:
           --github-output "$GITHUB_OUTPUT"
 
       - name: Try newest current-compatible private runtime
-        if: inputs.restart_archived_weather != true
+        if: (inputs.restart_archived_weather != true) && (env.RAVRADAR_ACCOUNT_STATISTICS_ASSISTANT_CURRENT_FAMILY != 'predecessor')
         id: current-private-protected-restore
         continue-on-error: true
         shell: bash
@@ -983,7 +1060,7 @@ jobs:
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
 
       - name: Require authenticated exact original before owner binding migration
-        if: ((steps.owner-current-original.outputs.transition_kind == 'owner-current-domain-original') && (inputs.restart_archived_weather != true)) && (steps.saved-last-mile-source.outputs.required != 'true')
+        if: (((steps.owner-current-original.outputs.transition_kind == 'owner-current-domain-original') && (inputs.restart_archived_weather != true)) && (steps.saved-last-mile-source.outputs.required != 'true')) && (env.RAVRADAR_ACCOUNT_STATISTICS_ASSISTANT_SOURCE_ACTIVE != 'true')
         shell: bash
         run: |
           set -euo pipefail
@@ -991,7 +1068,7 @@ jobs:
           test "${{ steps.current-private-bundle-restore.outcome }}" = "success"
 
       - name: Describe exact target private runtime source for bounded migration
-        if: ((steps.current-private-install.outcome != 'success') && (inputs.restart_archived_weather != true)) && (steps.saved-last-mile-source.outputs.required != 'true')
+        if: (((steps.current-private-install.outcome != 'success') && (inputs.restart_archived_weather != true)) && (steps.saved-last-mile-source.outputs.required != 'true')) && (env.RAVRADAR_ACCOUNT_STATISTICS_ASSISTANT_SOURCE_ACTIVE != 'true')
         run: >-
           node scripts/protected-private-production-runtime.mjs --describe-target
           --target-reference "$RAVRADAR_PRODUCTION_TARGET_HOUR"
@@ -1001,7 +1078,7 @@ jobs:
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
 
       - name: Prepare exact predecessor source for bounded binding migration
-        if: ((steps.current-private-install.outcome != 'success' && steps.owner-current-original.outputs.transition_kind != 'owner-current-domain-original') && (inputs.restart_archived_weather != true)) && (steps.saved-last-mile-source.outputs.required != 'true')
+        if: (((steps.current-private-install.outcome != 'success' && steps.owner-current-original.outputs.transition_kind != 'owner-current-domain-original') && (inputs.restart_archived_weather != true)) && (steps.saved-last-mile-source.outputs.required != 'true')) && (env.RAVRADAR_ACCOUNT_STATISTICS_ASSISTANT_SOURCE_ACTIVE != 'true')
         shell: bash
         run: |
           set -euo pipefail
@@ -1020,7 +1097,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
 
       - name: Build exact predecessor private-runtime expectation
-        if: ((steps.current-private-install.outcome != 'success' && steps.owner-current-original.outputs.transition_kind != 'owner-current-domain-original') && (inputs.restart_archived_weather != true)) && (steps.saved-last-mile-source.outputs.required != 'true')
+        if: (((steps.current-private-install.outcome != 'success' && steps.owner-current-original.outputs.transition_kind != 'owner-current-domain-original') && (inputs.restart_archived_weather != true)) && (steps.saved-last-mile-source.outputs.required != 'true')) && (env.RAVRADAR_ACCOUNT_STATISTICS_ASSISTANT_SOURCE_ACTIVE != 'true')
         run: >-
           node "$RAVRADAR_PREDECESSOR_SOURCE_ROOT/scripts/private-production-runtime-workflow.mjs" expected
           --repository-root "$RAVRADAR_PREDECESSOR_SOURCE_ROOT"
@@ -1028,7 +1105,7 @@ jobs:
           --output "$RAVRADAR_PREDECESSOR_PRIVATE_ROOT/expected.json"
 
       - name: Verify installed current050000 predecessor before userdata preparation
-        if: ((env.RAVRADAR_USERDATA_PREWRITE_REQUIRED == 'true') && (inputs.restart_archived_weather != true)) && (steps.saved-last-mile-source.outputs.required != 'true')
+        if: (((env.RAVRADAR_USERDATA_PREWRITE_REQUIRED == 'true') && (inputs.restart_archived_weather != true)) && (steps.saved-last-mile-source.outputs.required != 'true')) && (env.RAVRADAR_ACCOUNT_STATISTICS_ASSISTANT_SOURCE_ACTIVE != 'true')
         shell: bash
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
@@ -1052,7 +1129,7 @@ jobs:
           )
 
       - name: Install and import-check the exact predecessor restore compatibility closure
-        if: ((steps.current-private-install.outcome != 'success' && steps.owner-current-original.outputs.transition_kind != 'owner-current-domain-original') && (inputs.restart_archived_weather != true)) && (steps.saved-last-mile-source.outputs.required != 'true')
+        if: (((steps.current-private-install.outcome != 'success' && steps.owner-current-original.outputs.transition_kind != 'owner-current-domain-original') && (inputs.restart_archived_weather != true)) && (steps.saved-last-mile-source.outputs.required != 'true')) && (env.RAVRADAR_ACCOUNT_STATISTICS_ASSISTANT_SOURCE_ACTIVE != 'true')
         shell: bash
         run: |
           set -euo pipefail
@@ -1080,7 +1157,7 @@ jobs:
           NODE
 
       - name: Prove the saved predecessor runtime is no longer client-readable
-        if: ((steps.current-private-install.outcome != 'success' && steps.owner-current-original.outputs.transition_kind != 'owner-current-domain-original') && (inputs.restart_archived_weather != true)) && (steps.saved-last-mile-source.outputs.required != 'true')
+        if: (((steps.current-private-install.outcome != 'success' && steps.owner-current-original.outputs.transition_kind != 'owner-current-domain-original') && (inputs.restart_archived_weather != true)) && (steps.saved-last-mile-source.outputs.required != 'true')) && (env.RAVRADAR_ACCOUNT_STATISTICS_ASSISTANT_SOURCE_ACTIVE != 'true')
         run: >-
           node "$RAVRADAR_PREDECESSOR_SOURCE_ROOT/scripts/protected-private-production-runtime.mjs"
           --audit-anon
@@ -1092,7 +1169,7 @@ jobs:
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
 
       - name: Restore exact predecessor private runtime
-        if: ((steps.current-private-install.outcome != 'success' && steps.owner-current-original.outputs.transition_kind != 'owner-current-domain-original') && (inputs.restart_archived_weather != true)) && (steps.saved-last-mile-source.outputs.required != 'true')
+        if: (((steps.current-private-install.outcome != 'success' && steps.owner-current-original.outputs.transition_kind != 'owner-current-domain-original') && (inputs.restart_archived_weather != true)) && (steps.saved-last-mile-source.outputs.required != 'true')) && (env.RAVRADAR_ACCOUNT_STATISTICS_ASSISTANT_SOURCE_ACTIVE != 'true')
         shell: bash
         run: |
           set -uo pipefail
@@ -1120,7 +1197,7 @@ jobs:
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
 
       - name: Verify and unpack exact predecessor private runtime
-        if: ((steps.current-private-install.outcome != 'success' && steps.owner-current-original.outputs.transition_kind != 'owner-current-domain-original') && (inputs.restart_archived_weather != true)) && (steps.saved-last-mile-source.outputs.required != 'true')
+        if: (((steps.current-private-install.outcome != 'success' && steps.owner-current-original.outputs.transition_kind != 'owner-current-domain-original') && (inputs.restart_archived_weather != true)) && (steps.saved-last-mile-source.outputs.required != 'true')) && (env.RAVRADAR_ACCOUNT_STATISTICS_ASSISTANT_SOURCE_ACTIVE != 'true')
         run: >-
           node "$RAVRADAR_PREDECESSOR_SOURCE_ROOT/scripts/private-production-runtime-bundle.mjs" restore
           --private-root "$RAVRADAR_PREDECESSOR_PRIVATE_ROOT"
@@ -1129,12 +1206,12 @@ jobs:
           --output "$RAVRADAR_PREDECESSOR_PRIVATE_RESTORE"
 
       - name: Select only the exact authenticated0200 origin metadata bridge
-        if: ((steps.current-private-install.outcome != 'success' && steps.owner-current-original.outputs.transition_kind != 'owner-current-domain-original') && (inputs.restart_archived_weather != true)) && (steps.saved-last-mile-source.outputs.required != 'true')
+        if: (((steps.current-private-install.outcome != 'success' && steps.owner-current-original.outputs.transition_kind != 'owner-current-domain-original') && (inputs.restart_archived_weather != true)) && (steps.saved-last-mile-source.outputs.required != 'true')) && (env.RAVRADAR_ACCOUNT_STATISTICS_ASSISTANT_SOURCE_ACTIVE != 'true')
         shell: bash
         run: node scripts/established-native-current-origin-prewrite.mjs --slot select
 
       - name: Rebind saved private runtime to current source without changing measurements
-        if: ((steps.current-private-install.outcome != 'success' && env.RAVRADAR_ESTABLISHED_NATIVE_CURRENT_ORIGIN_METADATA_ONLY != 'true') && (inputs.restart_archived_weather != true)) && (steps.saved-last-mile-source.outputs.required != 'true')
+        if: (((steps.current-private-install.outcome != 'success' && env.RAVRADAR_ESTABLISHED_NATIVE_CURRENT_ORIGIN_METADATA_ONLY != 'true') && (inputs.restart_archived_weather != true)) && (steps.saved-last-mile-source.outputs.required != 'true')) && (env.RAVRADAR_ACCOUNT_STATISTICS_ASSISTANT_SOURCE_ACTIVE != 'true')
         shell: bash
         run: |
           set -euo pipefail
@@ -1173,28 +1250,45 @@ jobs:
             --report .geometry-v2-work/post-cutover-private-runtime-migration.json
 
       - name: Stage the exact saved public coastal registry before seed metadata
-        if: ((steps.current-private-install.outcome != 'success' && env.RAVRADAR_ESTABLISHED_NATIVE_CURRENT_ORIGIN_METADATA_ONLY == 'true') && (inputs.restart_archived_weather != true)) && (steps.saved-last-mile-source.outputs.required != 'true')
+        if: (((steps.current-private-install.outcome != 'success' && env.RAVRADAR_ESTABLISHED_NATIVE_CURRENT_ORIGIN_METADATA_ONLY == 'true') && (inputs.restart_archived_weather != true)) && (steps.saved-last-mile-source.outputs.required != 'true')) && (env.RAVRADAR_ACCOUNT_STATISTICS_ASSISTANT_SOURCE_ACTIVE != 'true')
         run: >-
           node scripts/prepare-code-only-public-runtime.mjs --stage-public-coastal-registry-only
           --repository-root "${{ github.workspace }}" --snapshot-root "${{ env.RAVRADAR_CODE_ONLY_PUBLIC_SNAPSHOT }}"
 
       - name: Verify actual already-installed contracts before seed metadata reentry
-        if: ((env.RAVRADAR_ESTABLISHED_NATIVE_CURRENT_ORIGIN_METADATA_ONLY == 'true' && env.RAVRADAR_ESTABLISHED_NATIVE_CURRENT_ORIGIN_PHASE == 'installed') && (inputs.restart_archived_weather != true)) && (steps.saved-last-mile-source.outputs.required != 'true')
+        if: (((env.RAVRADAR_ESTABLISHED_NATIVE_CURRENT_ORIGIN_METADATA_ONLY == 'true' && env.RAVRADAR_ESTABLISHED_NATIVE_CURRENT_ORIGIN_PHASE == 'installed') && (inputs.restart_archived_weather != true)) && (steps.saved-last-mile-source.outputs.required != 'true')) && (env.RAVRADAR_ACCOUNT_STATISTICS_ASSISTANT_SOURCE_ACTIVE != 'true')
         run: node scripts/integrated-cutover-readiness.mjs verify-db
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
 
       - name: Prepare exact authenticated seed metadata and private origin
-        if: ((steps.current-private-install.outcome != 'success' && env.RAVRADAR_ESTABLISHED_NATIVE_CURRENT_ORIGIN_METADATA_ONLY == 'true') && (inputs.restart_archived_weather != true)) && (steps.saved-last-mile-source.outputs.required != 'true')
+        if: (((steps.current-private-install.outcome != 'success' && env.RAVRADAR_ESTABLISHED_NATIVE_CURRENT_ORIGIN_METADATA_ONLY == 'true') && (inputs.restart_archived_weather != true)) && (steps.saved-last-mile-source.outputs.required != 'true')) && (env.RAVRADAR_ACCOUNT_STATISTICS_ASSISTANT_SOURCE_ACTIVE != 'true')
         run: node scripts/established-native-current-origin-prewrite.mjs --slot prepare
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
 
+      - name: Stage the exact saved registry for original584 metadata preparation
+        if: env.RAVRADAR_ACCOUNT_STATISTICS_ASSISTANT_SOURCE_ACTIVE == 'true' && env.RAVRADAR_ACCOUNT_STATISTICS_ASSISTANT_CURRENT_FAMILY == 'predecessor'
+        run: >-
+          node scripts/prepare-code-only-public-runtime.mjs --stage-public-coastal-registry-only
+          --repository-root "${{ github.workspace }}" --snapshot-root "${{ env.RAVRADAR_CODE_ONLY_PUBLIC_SNAPSHOT }}"
+
+      - name: Select and prepare only the exact authenticated584 metadata handoff
+        if: env.RAVRADAR_ACCOUNT_STATISTICS_ASSISTANT_SOURCE_ACTIVE == 'true' && env.RAVRADAR_ACCOUNT_STATISTICS_ASSISTANT_CURRENT_FAMILY == 'predecessor'
+        shell: bash
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: |
+          set -euo pipefail
+          node scripts/account-statistics-assistant-prewrite.mjs --slot select
+          node scripts/account-statistics-assistant-prewrite.mjs --slot prepare
+
       - name: Install migrated saved private runtime atomically
         id: migrated-private-install
-        if: ((steps.current-private-install.outcome != 'success') && (inputs.restart_archived_weather != true)) && (steps.saved-last-mile-source.outputs.required != 'true')
+        if: (((steps.current-private-install.outcome != 'success') && (inputs.restart_archived_weather != true)) && (steps.saved-last-mile-source.outputs.required != 'true')) && ((env.RAVRADAR_ACCOUNT_STATISTICS_ASSISTANT_SOURCE_ACTIVE != 'true') || (env.RAVRADAR_ACCOUNT_STATISTICS_ASSISTANT_CURRENT_FAMILY == 'predecessor'))
         run: >-
           node scripts/private-production-runtime-workflow.mjs install
           --restored "$RAVRADAR_MIGRATED_PRIVATE_RUNTIME_RESTORE"
@@ -1217,9 +1311,32 @@ jobs:
             echo "Exact predecessor runtime migrated and installed."
           fi
 
+      - name: Pair already-current metadata B with actual S without origin or SQL replay
+        if: env.RAVRADAR_ACCOUNT_STATISTICS_ASSISTANT_SOURCE_ACTIVE == 'true' && env.RAVRADAR_ACCOUNT_STATISTICS_ASSISTANT_CURRENT_FAMILY == 'current' && inputs.publish_newest_saved_weather != true
+        shell: bash
+        env:
+          OPERATIONAL_ACTION: ${{ steps.operational-action.outputs.action }}
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: |
+          set -euo pipefail
+          test "${{ steps.current-private-install.outcome }}" = success
+          node scripts/reconcile-private-runtime-checkpoint.mjs reconcile-account-statistics-assistant
+
+      - name: Prove actual original584 and complete prepared metadata B before artifact gates
+        if: env.RAVRADAR_ACCOUNT_STATISTICS_ASSISTANT_SOURCE_ACTIVE == 'true' && env.RAVRADAR_ACCOUNT_STATISTICS_ASSISTANT_CURRENT_FAMILY == 'predecessor'
+        shell: bash
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: |
+          set -euo pipefail
+          test "${{ steps.migrated-private-install.outcome }}" = success
+          node scripts/account-statistics-assistant-prewrite.mjs --slot proof
+
       - name: Reconcile saved last-mile CURRENT B with central S before public projection
         id: saved-checkpoint-paired
-        if: steps.saved-last-mile-source.outputs.required == 'true'
+        if: (steps.saved-last-mile-source.outputs.required == 'true') || (env.RAVRADAR_ACCOUNT_STATISTICS_ASSISTANT_SOURCE_ACTIVE == 'true' && inputs.publish_newest_saved_weather == true)
         shell: bash
         env:
           OPERATIONAL_ACTION: ${{ steps.operational-action.outputs.action }}
@@ -1229,7 +1346,11 @@ jobs:
           set -euo pipefail
           test "${{ steps.current-private-install.outcome }}" = success
           test "${{ steps.saved-checkpoint-reconcile.outputs.required }}" = true
-          test "$RAVRADAR_LAST_MILE_ENCLOSURE_PHASE" = installed
+          if test "${RAVRADAR_ACCOUNT_STATISTICS_ASSISTANT_SOURCE_ACTIVE:-false}" = true; then
+            test "$RAVRADAR_ACCOUNT_STATISTICS_ASSISTANT_PHASE" = installed
+          else
+            test "$RAVRADAR_LAST_MILE_ENCLOSURE_PHASE" = installed
+          fi
           node scripts/reconcile-private-runtime-checkpoint.mjs reconcile-saved
 
       - name: Rebuild public runtime from saved state without provider acquisition
@@ -1486,7 +1607,7 @@ jobs:
           echo "RAVRADAR_STATISTICS_REVISION_PREWRITE_VERIFIED=true" >> "$GITHUB_ENV"
 
       - name: Dry-run and require only the latest exact integrated migration
-        if: ((steps.operational-action.outputs.action == 'integrated' || steps.operational-action.outputs.action == 'integrated-historical-maintenance') && (inputs.restart_archived_weather != true)) && (steps.saved-last-mile-source.outputs.required != 'true')
+        if: (((steps.operational-action.outputs.action == 'integrated' || steps.operational-action.outputs.action == 'integrated-historical-maintenance') && (inputs.restart_archived_weather != true)) && (steps.saved-last-mile-source.outputs.required != 'true')) && (env.RAVRADAR_ACCOUNT_STATISTICS_ASSISTANT_SOURCE_ACTIVE != 'true')
         shell: bash
         env:
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
@@ -1517,7 +1638,7 @@ jobs:
           fi
 
       - name: Reconfirm current main before the database binding write
-        if: ((steps.operational-action.outputs.action == 'integrated' || steps.operational-action.outputs.action == 'integrated-historical-maintenance') && (inputs.restart_archived_weather != true)) && (steps.saved-last-mile-source.outputs.required != 'true')
+        if: (((steps.operational-action.outputs.action == 'integrated' || steps.operational-action.outputs.action == 'integrated-historical-maintenance') && (inputs.restart_archived_weather != true)) && (steps.saved-last-mile-source.outputs.required != 'true')) && (env.RAVRADAR_ACCOUNT_STATISTICS_ASSISTANT_SOURCE_ACTIVE != 'true')
         shell: bash
         env:
           EXPECTED_HEAD_SHA: ${{ github.sha }}
@@ -1528,7 +1649,7 @@ jobs:
           test "$(git rev-parse origin/main^{commit})" = "$EXPECTED_HEAD_SHA"
 
       - name: Apply exact dry-run-verified post-cutover binding
-        if: ((steps.operational-action.outputs.action == 'integrated' || steps.operational-action.outputs.action == 'integrated-historical-maintenance') && (inputs.restart_archived_weather != true)) && (steps.saved-last-mile-source.outputs.required != 'true')
+        if: (((steps.operational-action.outputs.action == 'integrated' || steps.operational-action.outputs.action == 'integrated-historical-maintenance') && (inputs.restart_archived_weather != true)) && (steps.saved-last-mile-source.outputs.required != 'true')) && (env.RAVRADAR_ACCOUNT_STATISTICS_ASSISTANT_SOURCE_ACTIVE != 'true')
         shell: bash
         env:
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
@@ -1570,7 +1691,7 @@ jobs:
           fi
 
       - name: Read back migration and database binding
-        if: ((steps.operational-action.outputs.action == 'integrated' || steps.operational-action.outputs.action == 'integrated-historical-maintenance') && (inputs.restart_archived_weather != true)) && (steps.saved-last-mile-source.outputs.required != 'true')
+        if: (((steps.operational-action.outputs.action == 'integrated' || steps.operational-action.outputs.action == 'integrated-historical-maintenance') && (inputs.restart_archived_weather != true)) && (steps.saved-last-mile-source.outputs.required != 'true')) && (env.RAVRADAR_ACCOUNT_STATISTICS_ASSISTANT_SOURCE_ACTIVE != 'true')
         shell: bash
         env:
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
@@ -1951,7 +2072,8 @@ jobs:
           fi
           echo "runtime_audit_outcome=$runtime_audit_outcome" >> "$GITHUB_OUTPUT"
           if test "$runtime_audit_outcome" = "failure"; then
-            if test "${{ inputs.restart_archived_weather }}" = true \
+            if test "${RAVRADAR_ACCOUNT_STATISTICS_ASSISTANT_SOURCE_ACTIVE:-false}" = true \
+                || test "${{ inputs.restart_archived_weather }}" = true \
                 || test "${{ steps.saved-last-mile-source.outputs.required }}" = true; then
               echo "New archive-restart forecast failed its actual strict runtime audit." >&2
               exit 1
@@ -2115,7 +2237,7 @@ jobs:
 
       - name: Publish measured continuation checkpoint without promoting rollback readiness
         id: checkpoint-publish
-        if: (((steps.checkpoint-disposition.outputs.disposition == 'READY_PUBLISHED' || steps.checkpoint-disposition.outputs.disposition == 'MEASURED_WARMUP_PUBLISHED') && env.RAVRADAR_ESTABLISHED_NATIVE_CURRENT_ORIGIN_EDGE_REQUIRED != 'true') && (inputs.restart_archived_weather != true)) && (steps.saved-last-mile-source.outputs.required != 'true')
+        if: (((((steps.checkpoint-disposition.outputs.disposition == 'READY_PUBLISHED' || steps.checkpoint-disposition.outputs.disposition == 'MEASURED_WARMUP_PUBLISHED') && env.RAVRADAR_ESTABLISHED_NATIVE_CURRENT_ORIGIN_EDGE_REQUIRED != 'true') && (inputs.restart_archived_weather != true)) && (steps.saved-last-mile-source.outputs.required != 'true')) && (env.RAVRADAR_ACCOUNT_STATISTICS_ASSISTANT_SOURCE_ACTIVE != 'true')) && (env.RAVRADAR_ACCOUNT_STATISTICS_ASSISTANT_SOURCE_ACTIVE != 'true')
         run: >-
           node scripts/protected-ravscore-continuation-checkpoint.mjs
           --publish
@@ -2283,6 +2405,50 @@ jobs:
           echo "RAVRADAR_LAST_MILE_ENCLOSURE_UPGRADE_OPT_IN=false" >> "$GITHUB_ENV"
           echo "RAVRADAR_LAST_MILE_ENCLOSURE_PHASE=installed" >> "$GITHUB_ENV"
 
+      - name: Apply the sole new metadata binding after every artifact gate and fresh originals
+        if: env.RAVRADAR_ACCOUNT_STATISTICS_ASSISTANT_SOURCE_ACTIVE == 'true' && env.RAVRADAR_ACCOUNT_STATISTICS_ASSISTANT_PHASE == 'before'
+        shell: bash
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: |
+          set -euo pipefail
+          test "$RAVRADAR_ACCOUNT_STATISTICS_ASSISTANT_CURRENT_FAMILY" = predecessor
+          test "${{ steps.runtime-audit.outputs.runtime_audit_outcome }}" = success
+          test "${{ steps.current-private-spec.outcome }}" = success
+          test "${{ steps.current-private-bundle.outcome }}" = success
+          test "${{ steps.pages-prebuild.outcome }}" = success
+          test "${{ steps.pages-preflight-privacy.outcome }}" = success
+          git fetch --no-tags --prune origin +refs/heads/main:refs/remotes/origin/main
+          test "$(git rev-parse HEAD^{commit})" = "$GITHUB_SHA"
+          test "$(git rev-parse origin/main^{commit})" = "$GITHUB_SHA"
+          (cd "${{ steps.migration-view.outputs.workdir }}" && supabase migration list --linked) | tee "$RUNNER_TEMP/code-only-account-statistics-assistant-final-list.txt"
+          (cd "${{ steps.migration-view.outputs.workdir }}" && supabase db push --linked --dry-run --skip-vault) 2>&1 | tee "$RUNNER_TEMP/code-only-account-statistics-assistant-final-dry-run.txt"
+          env -u SUPABASE_DB_PASSWORD node scripts/account-statistics-assistant-prewrite.mjs --slot final
+          node scripts/verify-account-statistics-assistant-plan.mjs --phase before \
+            --migration-list "$RUNNER_TEMP/code-only-account-statistics-assistant-final-list.txt" \
+            --dry-run "$RUNNER_TEMP/code-only-account-statistics-assistant-final-dry-run.txt" \
+            --migrations-directory "${{ steps.migration-view.outputs.workdir }}/supabase/migrations"
+          # Exactly one mutation. An uncertain result is resolved by actual
+          # history/contract readback below, never by repeating db push.
+          sql_status=0
+          (cd "${{ steps.migration-view.outputs.workdir }}" && supabase db push --linked --skip-vault) || sql_status=$?
+          (cd "${{ steps.migration-view.outputs.workdir }}" && supabase migration list --linked) | tee "$RUNNER_TEMP/code-only-account-statistics-assistant-applied.txt"
+          (cd "${{ steps.migration-view.outputs.workdir }}" && supabase db push --linked --dry-run --skip-vault) 2>&1 | tee "$RUNNER_TEMP/code-only-account-statistics-assistant-readback-dry-run.txt"
+          RAVRADAR_ACCOUNT_STATISTICS_ASSISTANT_UPGRADE_OPT_IN=false node scripts/verify-account-statistics-assistant-plan.mjs --phase installed \
+            --migration-list "$RUNNER_TEMP/code-only-account-statistics-assistant-applied.txt" \
+            --dry-run "$RUNNER_TEMP/code-only-account-statistics-assistant-readback-dry-run.txt" \
+            --migrations-directory "${{ steps.migration-view.outputs.workdir }}/supabase/migrations"
+          env -u SUPABASE_DB_PASSWORD node scripts/integrated-cutover-readiness.mjs verify-db
+          env -u SUPABASE_DB_PASSWORD node scripts/verify-statistics-preference-revision-schema.mjs
+          if test "$sql_status" -ne 0; then
+            echo 'SQL response was uncertain; the exact installed history and full contracts were subsequently read back. No replay.'
+          fi
+          echo 'RAVRADAR_ACCOUNT_STATISTICS_ASSISTANT_UPGRADE_OPT_IN=false' >> "$GITHUB_ENV"
+          echo 'RAVRADAR_ACCOUNT_STATISTICS_ASSISTANT_PHASE=installed' >> "$GITHUB_ENV"
+
       - name: Publish current bounded private runtime
         id: current-private-publish
         shell: bash
@@ -2316,7 +2482,7 @@ jobs:
       # then restore current B normally instead of requiring the replaced old S.
       - name: Publish measured continuation only after verified warmup private runtime
         id: established-native-current-origin-checkpoint-publish
-        if: (steps.checkpoint-disposition.outputs.disposition == 'READY_PUBLISHED' || steps.checkpoint-disposition.outputs.disposition == 'MEASURED_WARMUP_PUBLISHED') && (env.RAVRADAR_ESTABLISHED_NATIVE_CURRENT_ORIGIN_EDGE_REQUIRED == 'true' || inputs.restart_archived_weather == true || steps.saved-last-mile-source.outputs.required == 'true') && steps.current-private-publish.outcome == 'success'
+        if: (steps.checkpoint-disposition.outputs.disposition == 'READY_PUBLISHED' || steps.checkpoint-disposition.outputs.disposition == 'MEASURED_WARMUP_PUBLISHED') && (env.RAVRADAR_ESTABLISHED_NATIVE_CURRENT_ORIGIN_EDGE_REQUIRED == 'true' || inputs.restart_archived_weather == true || steps.saved-last-mile-source.outputs.required == 'true' || env.RAVRADAR_ACCOUNT_STATISTICS_ASSISTANT_SOURCE_ACTIVE == 'true') && steps.current-private-publish.outcome == 'success'
         run: >-
           node scripts/protected-ravscore-continuation-checkpoint.mjs
           --publish
@@ -2334,8 +2500,464 @@ jobs:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
 
+      - name: Metadata585 - Read-only existing D1 repair preparation and live preflight
+        if: env.RAVRADAR_ACCOUNT_STATISTICS_ASSISTANT_SOURCE_ACTIVE == 'true' && env.RAVRADAR_ACCOUNT_STATISTICS_ASSISTANT_PHASE == 'installed' && steps.current-private-publish.outcome == 'success' && steps.established-native-current-origin-checkpoint-publish.outcome == 'success'
+        timeout-minutes: 5
+        shell: bash
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_PROJECT_ID: afqhhdrkjfjtpadntdzo
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          SUPABASE_PUBLISHABLE_KEY: ${{ secrets.SUPABASE_PUBLISHABLE_KEY }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_TRIP_GATEWAY_URL: ${{ secrets.CLOUDFLARE_TRIP_GATEWAY_URL }}
+          TRIP_GATEWAY_SHARED_SECRET: ${{ secrets.TRIP_GATEWAY_SHARED_SECRET }}
+          TRIP_WRANGLER_CONFIG_PATH: /tmp/ravradar-account-statistics-assistant-repair-wrangler.json
+          TRIP_STORAGE_OWNER_EXPORT_UPGRADE: '0'
+          TRIP_STORAGE_OWNER_ERASURE_GUARD: '0'
+          TRIP_STORAGE_UPGRADE_PREFLIGHT: '0'
+          EXPECTED_TRIP_STORAGE_MODE: d1
+        run: |
+          set -euo pipefail
+          if [ "$TRIP_STORAGE_OWNER_EXPORT_UPGRADE" = "1" ]; then
+            node scripts/prepare-cloudflare-trip-storage.mjs --existing-owner-export-upgrade-plan
+          else
+            node scripts/prepare-cloudflare-trip-storage.mjs --existing-worker-repair
+          fi
+          node --input-type=module <<'OFF_NODE'
+          import fs from 'node:fs';
+          const file=process.env.TRIP_WRANGLER_CONFIG_PATH,config=JSON.parse(fs.readFileSync(file,'utf8'));
+          if(Object.hasOwn(config,'vars'))throw new Error('UNEXPECTED_WORKER_VARS');
+          config.vars={TRIP_AGGREGATE_ENABLED:'false'};
+          fs.writeFileSync(file,JSON.stringify(config)+'\n',{mode:0o600});
+          OFF_NODE
+          node scripts/audit-cloudflare-trip-storage.mjs
+          node scripts/verify-trip-storage-edge.mjs
+          node scripts/verify-cloudflare-trip-gateway.mjs
+
+      # Metadata snapshot only: atomicWriterLease=false, not physical drain.
+      - name: Metadata585 - Quiesce the existing D1 installation
+        id: account_statistics_assistant_repair_quiesce
+        if: env.RAVRADAR_ACCOUNT_STATISTICS_ASSISTANT_SOURCE_ACTIVE == 'true' && env.RAVRADAR_ACCOUNT_STATISTICS_ASSISTANT_PHASE == 'installed' && steps.current-private-publish.outcome == 'success' && steps.established-native-current-origin-checkpoint-publish.outcome == 'success'
+        timeout-minutes: 5
+        shell: bash
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_PROJECT_ID: afqhhdrkjfjtpadntdzo
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          SUPABASE_PUBLISHABLE_KEY: ${{ secrets.SUPABASE_PUBLISHABLE_KEY }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_TRIP_GATEWAY_URL: ${{ secrets.CLOUDFLARE_TRIP_GATEWAY_URL }}
+          TRIP_GATEWAY_SHARED_SECRET: ${{ secrets.TRIP_GATEWAY_SHARED_SECRET }}
+          TRIP_WRANGLER_CONFIG_PATH: /tmp/ravradar-account-statistics-assistant-repair-wrangler.json
+          TRIP_STORAGE_OWNER_EXPORT_UPGRADE: '0'
+          TRIP_STORAGE_OWNER_ERASURE_GUARD: '0'
+          TRIP_STORAGE_UPGRADE_PREFLIGHT: '0'
+        run: |
+          node --input-type=module <<'REPAIR_NODE'
+          import { execFileSync } from 'node:child_process';
+          import fs from 'node:fs';
+          const env = process.env;
+          function run(label, command, args, options = {}) {
+            try { return execFileSync(command, args, { encoding: 'utf8', stdio: 'pipe', timeout: 180000,
+              maxBuffer: 1024 * 1024, ...options }); }
+            catch { throw new Error('TRIP_REPAIR_' + label); }
+          }
+          function exactMain() {
+            if (env.GITHUB_REF !== 'refs/heads/main' || !/^[a-f0-9]{40}$/.test(env.GITHUB_SHA || '')) throw new Error('TRIP_REPAIR_MAIN_INVALID');
+            run('MAIN_FETCH', 'git', ['fetch', '--no-tags', '--depth=1', 'origin', '+refs/heads/main:refs/remotes/origin/main']);
+            for (const ref of ['HEAD^{commit}', 'origin/main^{commit}']) {
+              if (run('MAIN_READ', 'git', ['rev-parse', ref]).trim() !== env.GITHUB_SHA) throw new Error('TRIP_REPAIR_MAIN_CHANGED');
+            }
+          }
+          function edge(mode) {
+            run('EDGE_ATTESTATION', 'node', ['scripts/verify-trip-storage-edge.mjs'], { env: { ...env, EXPECTED_TRIP_STORAGE_MODE: mode } });
+          }
+          function worker(expectedVersion) {
+            run('WORKER_ATTESTATION', 'node', ['scripts/verify-cloudflare-trip-gateway.mjs'],
+              expectedVersion === undefined ? {} : { env: { ...env, EXPECTED_TRIP_WORKER_VERSION: expectedVersion } });
+          }
+          function lease(minimumSeconds) {
+            const deadline = Number(env.REPAIR_LEASE_DEADLINE);
+            if (!Number.isSafeInteger(deadline) || deadline - Date.now() < minimumSeconds * 1000
+              || deadline - Date.now() > 20 * 60000) throw new Error('TRIP_REPAIR_LEASE_INVALID');
+          }
+          function output(name, value) { fs.appendFileSync(env.GITHUB_OUTPUT, name + '=' + value + '\n'); }
+          exactMain();
+          output('intent', 'true');
+          const deadline = Date.now() + 20 * 60000;
+          output('deadline', String(deadline));
+          run('MAINTENANCE', 'supabase', ['secrets', 'set', '--project-ref', env.SUPABASE_PROJECT_ID,
+            'TRIP_STORAGE_MODE=maintenance:' + new Date(deadline).toISOString()]);
+          edge('maintenance');
+          run('DRAIN', 'sleep', ['20']);
+          REPAIR_NODE
+
+      - name: Metadata585 - Replace and attest the same-SQL Worker
+        id: account_statistics_assistant_repair_replace
+        if: env.RAVRADAR_ACCOUNT_STATISTICS_ASSISTANT_SOURCE_ACTIVE == 'true' && env.RAVRADAR_ACCOUNT_STATISTICS_ASSISTANT_PHASE == 'installed' && steps.current-private-publish.outcome == 'success' && steps.established-native-current-origin-checkpoint-publish.outcome == 'success'
+        timeout-minutes: 7
+        shell: bash
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_PROJECT_ID: afqhhdrkjfjtpadntdzo
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          SUPABASE_PUBLISHABLE_KEY: ${{ secrets.SUPABASE_PUBLISHABLE_KEY }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_TRIP_GATEWAY_URL: ${{ secrets.CLOUDFLARE_TRIP_GATEWAY_URL }}
+          TRIP_GATEWAY_SHARED_SECRET: ${{ secrets.TRIP_GATEWAY_SHARED_SECRET }}
+          TRIP_WRANGLER_CONFIG_PATH: /tmp/ravradar-account-statistics-assistant-repair-wrangler.json
+          TRIP_STORAGE_OWNER_EXPORT_UPGRADE: '0'
+          TRIP_STORAGE_OWNER_ERASURE_GUARD: '0'
+          TRIP_STORAGE_UPGRADE_PREFLIGHT: '0'
+          REPAIR_LEASE_DEADLINE: ${{ steps.account_statistics_assistant_repair_quiesce.outputs.deadline }}
+        run: |
+          node --input-type=module <<'REPAIR_NODE'
+          import { execFileSync } from 'node:child_process';
+          import fs from 'node:fs';
+          const env = process.env;
+          function run(label, command, args, options = {}) {
+            try { return execFileSync(command, args, { encoding: 'utf8', stdio: 'pipe', timeout: 180000,
+              maxBuffer: 1024 * 1024, ...options }); }
+            catch { throw new Error('TRIP_REPAIR_' + label); }
+          }
+          function exactMain() {
+            if (env.GITHUB_REF !== 'refs/heads/main' || !/^[a-f0-9]{40}$/.test(env.GITHUB_SHA || '')) throw new Error('TRIP_REPAIR_MAIN_INVALID');
+            run('MAIN_FETCH', 'git', ['fetch', '--no-tags', '--depth=1', 'origin', '+refs/heads/main:refs/remotes/origin/main']);
+            for (const ref of ['HEAD^{commit}', 'origin/main^{commit}']) {
+              if (run('MAIN_READ', 'git', ['rev-parse', ref]).trim() !== env.GITHUB_SHA) throw new Error('TRIP_REPAIR_MAIN_CHANGED');
+            }
+          }
+          function edge(mode) {
+            run('EDGE_ATTESTATION', 'node', ['scripts/verify-trip-storage-edge.mjs'], { env: { ...env, EXPECTED_TRIP_STORAGE_MODE: mode } });
+          }
+          function worker(expectedVersion) {
+            run('WORKER_ATTESTATION', 'node', ['scripts/verify-cloudflare-trip-gateway.mjs'],
+              expectedVersion === undefined ? {} : { env: { ...env, EXPECTED_TRIP_WORKER_VERSION: expectedVersion } });
+          }
+          function lease(minimumSeconds) {
+            const deadline = Number(env.REPAIR_LEASE_DEADLINE);
+            if (!Number.isSafeInteger(deadline) || deadline - Date.now() < minimumSeconds * 1000
+              || deadline - Date.now() > 20 * 60000) throw new Error('TRIP_REPAIR_LEASE_INVALID');
+          }
+          function output(name, value) { fs.appendFileSync(env.GITHUB_OUTPUT, name + '=' + value + '\n'); }
+          worker();
+          if (env.TRIP_STORAGE_OWNER_EXPORT_UPGRADE === '1') {
+            run('UPGRADE_READBACK', 'node', ['scripts/prepare-cloudflare-trip-storage.mjs', '--existing-owner-export-upgrade-check']);
+          }
+          exactMain();
+          lease(600);
+          import { deployTripWorker } from './scripts/lib/trip-worker-deploy-process.mjs';
+          output('deploy_intent', 'true');
+          let deployed;
+          try {
+            const result = await deployTripWorker({ configPath: env.TRIP_WRANGLER_CONFIG_PATH, env });
+            if (result?.terminationConfirmed !== true) throw new Error('TRIP_REPAIR_WORKER_DEPLOY');
+            output('deploy_stopped', 'true');
+            deployed = result.stdout;
+          } catch (error) {
+            if (error?.terminationConfirmed === true) output('deploy_stopped', 'true');
+            throw new Error('TRIP_REPAIR_WORKER_DEPLOY');
+          }
+          const versions = [...deployed.matchAll(/^Current Version ID: ([a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12})\s*$/gim)];
+          if (versions.length !== 1) throw new Error('TRIP_REPAIR_DEPLOY_IDENTITY_MISSING');
+          worker(versions[0][1]);
+          output('version', versions[0][1]);
+          console.log('Worker repair source=' + env.GITHUB_SHA + ' version=' + versions[0][1]);
+          REPAIR_NODE
+
+      - name: Metadata585 - Restore and attest normal D1 after replacement
+        id: account_statistics_assistant_repair_restore
+        if: env.RAVRADAR_ACCOUNT_STATISTICS_ASSISTANT_SOURCE_ACTIVE == 'true' && env.RAVRADAR_ACCOUNT_STATISTICS_ASSISTANT_PHASE == 'installed' && steps.current-private-publish.outcome == 'success' && steps.established-native-current-origin-checkpoint-publish.outcome == 'success'
+        timeout-minutes: 5
+        shell: bash
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_PROJECT_ID: afqhhdrkjfjtpadntdzo
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          SUPABASE_PUBLISHABLE_KEY: ${{ secrets.SUPABASE_PUBLISHABLE_KEY }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_TRIP_GATEWAY_URL: ${{ secrets.CLOUDFLARE_TRIP_GATEWAY_URL }}
+          TRIP_GATEWAY_SHARED_SECRET: ${{ secrets.TRIP_GATEWAY_SHARED_SECRET }}
+          TRIP_WRANGLER_CONFIG_PATH: /tmp/ravradar-account-statistics-assistant-repair-wrangler.json
+          TRIP_STORAGE_OWNER_EXPORT_UPGRADE: '0'
+          TRIP_STORAGE_OWNER_ERASURE_GUARD: '0'
+          TRIP_STORAGE_UPGRADE_PREFLIGHT: '0'
+          REPAIR_LEASE_DEADLINE: ${{ steps.account_statistics_assistant_repair_quiesce.outputs.deadline }}
+          REPAIR_EXPECTED_WORKER_VERSION: ${{ steps.account_statistics_assistant_repair_replace.outputs.version }}
+        run: |
+          node --input-type=module <<'REPAIR_NODE'
+          import { execFileSync } from 'node:child_process';
+          import fs from 'node:fs';
+          const env = process.env;
+          function run(label, command, args, options = {}) {
+            try { return execFileSync(command, args, { encoding: 'utf8', stdio: 'pipe', timeout: 180000,
+              maxBuffer: 1024 * 1024, ...options }); }
+            catch { throw new Error('TRIP_REPAIR_' + label); }
+          }
+          function exactMain() {
+            if (env.GITHUB_REF !== 'refs/heads/main' || !/^[a-f0-9]{40}$/.test(env.GITHUB_SHA || '')) throw new Error('TRIP_REPAIR_MAIN_INVALID');
+            run('MAIN_FETCH', 'git', ['fetch', '--no-tags', '--depth=1', 'origin', '+refs/heads/main:refs/remotes/origin/main']);
+            for (const ref of ['HEAD^{commit}', 'origin/main^{commit}']) {
+              if (run('MAIN_READ', 'git', ['rev-parse', ref]).trim() !== env.GITHUB_SHA) throw new Error('TRIP_REPAIR_MAIN_CHANGED');
+            }
+          }
+          function edge(mode) {
+            run('EDGE_ATTESTATION', 'node', ['scripts/verify-trip-storage-edge.mjs'], { env: { ...env, EXPECTED_TRIP_STORAGE_MODE: mode } });
+          }
+          function worker(expectedVersion) {
+            run('WORKER_ATTESTATION', 'node', ['scripts/verify-cloudflare-trip-gateway.mjs'],
+              expectedVersion === undefined ? {} : { env: { ...env, EXPECTED_TRIP_WORKER_VERSION: expectedVersion } });
+          }
+          function lease(minimumSeconds) {
+            const deadline = Number(env.REPAIR_LEASE_DEADLINE);
+            if (!Number.isSafeInteger(deadline) || deadline - Date.now() < minimumSeconds * 1000
+              || deadline - Date.now() > 20 * 60000) throw new Error('TRIP_REPAIR_LEASE_INVALID');
+          }
+          function output(name, value) { fs.appendFileSync(env.GITHUB_OUTPUT, name + '=' + value + '\n'); }
+          worker(env.REPAIR_EXPECTED_WORKER_VERSION || '');
+          exactMain();
+          lease(1);
+          run('RESTORE_D1', 'supabase', ['secrets', 'set', '--project-ref', env.SUPABASE_PROJECT_ID, 'TRIP_STORAGE_MODE=d1']);
+          edge('d1');
+          worker(env.REPAIR_EXPECTED_WORKER_VERSION || '');
+          REPAIR_NODE
+
+      - name: Metadata585 - Reattest and lease once for D1-only failure roll-forward
+        id: account_statistics_assistant_repair_recovery_quiesce
+        if: ${{ env.RAVRADAR_ACCOUNT_STATISTICS_ASSISTANT_SOURCE_ACTIVE == 'true' && env.RAVRADAR_ACCOUNT_STATISTICS_ASSISTANT_PHASE == 'installed' && steps.current-private-publish.outcome == 'success' && steps.established-native-current-origin-checkpoint-publish.outcome == 'success' && failure() && !cancelled() && steps.account_statistics_assistant_repair_quiesce.outputs.intent == 'true' && (steps.account_statistics_assistant_repair_replace.outputs.deploy_intent != 'true' || steps.account_statistics_assistant_repair_replace.outputs.deploy_stopped == 'true') }}
+        timeout-minutes: 5
+        shell: bash
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_PROJECT_ID: afqhhdrkjfjtpadntdzo
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          SUPABASE_PUBLISHABLE_KEY: ${{ secrets.SUPABASE_PUBLISHABLE_KEY }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_TRIP_GATEWAY_URL: ${{ secrets.CLOUDFLARE_TRIP_GATEWAY_URL }}
+          TRIP_GATEWAY_SHARED_SECRET: ${{ secrets.TRIP_GATEWAY_SHARED_SECRET }}
+          TRIP_WRANGLER_CONFIG_PATH: /tmp/ravradar-account-statistics-assistant-repair-wrangler.json
+          TRIP_STORAGE_OWNER_EXPORT_UPGRADE: '0'
+          TRIP_STORAGE_OWNER_ERASURE_GUARD: '0'
+          TRIP_STORAGE_UPGRADE_PREFLIGHT: '0'
+        run: |
+          node --input-type=module <<'REPAIR_NODE'
+          import { execFileSync } from 'node:child_process';
+          import fs from 'node:fs';
+          const env = process.env;
+          function run(label, command, args, options = {}) {
+            try { return execFileSync(command, args, { encoding: 'utf8', stdio: 'pipe', timeout: 180000,
+              maxBuffer: 1024 * 1024, ...options }); }
+            catch { throw new Error('TRIP_REPAIR_' + label); }
+          }
+          function exactMain() {
+            if (env.GITHUB_REF !== 'refs/heads/main' || !/^[a-f0-9]{40}$/.test(env.GITHUB_SHA || '')) throw new Error('TRIP_REPAIR_MAIN_INVALID');
+            run('MAIN_FETCH', 'git', ['fetch', '--no-tags', '--depth=1', 'origin', '+refs/heads/main:refs/remotes/origin/main']);
+            for (const ref of ['HEAD^{commit}', 'origin/main^{commit}']) {
+              if (run('MAIN_READ', 'git', ['rev-parse', ref]).trim() !== env.GITHUB_SHA) throw new Error('TRIP_REPAIR_MAIN_CHANGED');
+            }
+          }
+          function edge(mode) {
+            run('EDGE_ATTESTATION', 'node', ['scripts/verify-trip-storage-edge.mjs'], { env: { ...env, EXPECTED_TRIP_STORAGE_MODE: mode } });
+          }
+          function worker(expectedVersion) {
+            run('WORKER_ATTESTATION', 'node', ['scripts/verify-cloudflare-trip-gateway.mjs'],
+              expectedVersion === undefined ? {} : { env: { ...env, EXPECTED_TRIP_WORKER_VERSION: expectedVersion } });
+          }
+          function lease(minimumSeconds) {
+            const deadline = Number(env.REPAIR_LEASE_DEADLINE);
+            if (!Number.isSafeInteger(deadline) || deadline - Date.now() < minimumSeconds * 1000
+              || deadline - Date.now() > 20 * 60000) throw new Error('TRIP_REPAIR_LEASE_INVALID');
+          }
+          function output(name, value) { fs.appendFileSync(env.GITHUB_OUTPUT, name + '=' + value + '\n'); }
+          import { waitForTripStorageEdgeReadiness } from './scripts/lib/trip-storage-edge-readiness.mjs';
+          const options = { baseUrl: env.SUPABASE_URL, publishableKey: env.SUPABASE_PUBLISHABLE_KEY };
+          const maintained = await waitForTripStorageEdgeReadiness({ ...options, expectedStorageMode: 'maintenance' });
+          if (!maintained.ok) {
+            const normal = await waitForTripStorageEdgeReadiness({ ...options, expectedStorageMode: 'd1' });
+            if (!normal.ok) throw new Error('TRIP_REPAIR_RECOVERY_EDGE_INVALID');
+          }
+          exactMain();
+          output('intent', 'true');
+          const deadline = Date.now() + 20 * 60000;
+          output('deadline', String(deadline));
+          run('MAINTENANCE', 'supabase', ['secrets', 'set', '--project-ref', env.SUPABASE_PROJECT_ID,
+            'TRIP_STORAGE_MODE=maintenance:' + new Date(deadline).toISOString()]);
+          edge('maintenance');
+          run('DRAIN', 'sleep', ['20']);
+          REPAIR_NODE
+
+      - name: Metadata585 - One bounded D1-only recovery replacement
+        id: account_statistics_assistant_repair_recovery_replace
+        if: ${{ env.RAVRADAR_ACCOUNT_STATISTICS_ASSISTANT_SOURCE_ACTIVE == 'true' && env.RAVRADAR_ACCOUNT_STATISTICS_ASSISTANT_PHASE == 'installed' && steps.current-private-publish.outcome == 'success' && steps.established-native-current-origin-checkpoint-publish.outcome == 'success' && failure() && !cancelled() && steps.account_statistics_assistant_repair_recovery_quiesce.outcome == 'success' }}
+        timeout-minutes: 7
+        shell: bash
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_PROJECT_ID: afqhhdrkjfjtpadntdzo
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          SUPABASE_PUBLISHABLE_KEY: ${{ secrets.SUPABASE_PUBLISHABLE_KEY }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_TRIP_GATEWAY_URL: ${{ secrets.CLOUDFLARE_TRIP_GATEWAY_URL }}
+          TRIP_GATEWAY_SHARED_SECRET: ${{ secrets.TRIP_GATEWAY_SHARED_SECRET }}
+          TRIP_WRANGLER_CONFIG_PATH: /tmp/ravradar-account-statistics-assistant-repair-wrangler.json
+          TRIP_STORAGE_OWNER_EXPORT_UPGRADE: '0'
+          TRIP_STORAGE_OWNER_ERASURE_GUARD: '0'
+          TRIP_STORAGE_UPGRADE_PREFLIGHT: '0'
+          REPAIR_LEASE_DEADLINE: ${{ steps.account_statistics_assistant_repair_recovery_quiesce.outputs.deadline }}
+        run: |
+          node --input-type=module <<'REPAIR_NODE'
+          import { execFileSync } from 'node:child_process';
+          import fs from 'node:fs';
+          const env = process.env;
+          function run(label, command, args, options = {}) {
+            try { return execFileSync(command, args, { encoding: 'utf8', stdio: 'pipe', timeout: 180000,
+              maxBuffer: 1024 * 1024, ...options }); }
+            catch { throw new Error('TRIP_REPAIR_' + label); }
+          }
+          function exactMain() {
+            if (env.GITHUB_REF !== 'refs/heads/main' || !/^[a-f0-9]{40}$/.test(env.GITHUB_SHA || '')) throw new Error('TRIP_REPAIR_MAIN_INVALID');
+            run('MAIN_FETCH', 'git', ['fetch', '--no-tags', '--depth=1', 'origin', '+refs/heads/main:refs/remotes/origin/main']);
+            for (const ref of ['HEAD^{commit}', 'origin/main^{commit}']) {
+              if (run('MAIN_READ', 'git', ['rev-parse', ref]).trim() !== env.GITHUB_SHA) throw new Error('TRIP_REPAIR_MAIN_CHANGED');
+            }
+          }
+          function edge(mode) {
+            run('EDGE_ATTESTATION', 'node', ['scripts/verify-trip-storage-edge.mjs'], { env: { ...env, EXPECTED_TRIP_STORAGE_MODE: mode } });
+          }
+          function worker(expectedVersion) {
+            run('WORKER_ATTESTATION', 'node', ['scripts/verify-cloudflare-trip-gateway.mjs'],
+              expectedVersion === undefined ? {} : { env: { ...env, EXPECTED_TRIP_WORKER_VERSION: expectedVersion } });
+          }
+          function lease(minimumSeconds) {
+            const deadline = Number(env.REPAIR_LEASE_DEADLINE);
+            if (!Number.isSafeInteger(deadline) || deadline - Date.now() < minimumSeconds * 1000
+              || deadline - Date.now() > 20 * 60000) throw new Error('TRIP_REPAIR_LEASE_INVALID');
+          }
+          function output(name, value) { fs.appendFileSync(env.GITHUB_OUTPUT, name + '=' + value + '\n'); }
+          worker();
+          exactMain();
+          lease(600);
+          import { deployTripWorker } from './scripts/lib/trip-worker-deploy-process.mjs';
+          output('deploy_intent', 'true');
+          let deployed;
+          try {
+            const result = await deployTripWorker({ configPath: env.TRIP_WRANGLER_CONFIG_PATH, env });
+            if (result?.terminationConfirmed !== true) throw new Error('TRIP_REPAIR_WORKER_DEPLOY');
+            output('deploy_stopped', 'true');
+            deployed = result.stdout;
+          } catch (error) {
+            if (error?.terminationConfirmed === true) output('deploy_stopped', 'true');
+            throw new Error('TRIP_REPAIR_WORKER_DEPLOY');
+          }
+          const versions = [...deployed.matchAll(/^Current Version ID: ([a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12})\s*$/gim)];
+          if (versions.length !== 1) throw new Error('TRIP_REPAIR_DEPLOY_IDENTITY_MISSING');
+          worker(versions[0][1]);
+          output('version', versions[0][1]);
+          console.log('Worker repair source=' + env.GITHUB_SHA + ' version=' + versions[0][1]);
+          REPAIR_NODE
+
+      - name: Metadata585 - Reattest D1 recovery without masking the primary failure
+        id: account_statistics_assistant_repair_recovery_restore
+        if: ${{ env.RAVRADAR_ACCOUNT_STATISTICS_ASSISTANT_SOURCE_ACTIVE == 'true' && env.RAVRADAR_ACCOUNT_STATISTICS_ASSISTANT_PHASE == 'installed' && steps.current-private-publish.outcome == 'success' && steps.established-native-current-origin-checkpoint-publish.outcome == 'success' && failure() && !cancelled() && steps.account_statistics_assistant_repair_recovery_replace.outcome == 'success' }}
+        timeout-minutes: 5
+        shell: bash
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_PROJECT_ID: afqhhdrkjfjtpadntdzo
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          SUPABASE_PUBLISHABLE_KEY: ${{ secrets.SUPABASE_PUBLISHABLE_KEY }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_TRIP_GATEWAY_URL: ${{ secrets.CLOUDFLARE_TRIP_GATEWAY_URL }}
+          TRIP_GATEWAY_SHARED_SECRET: ${{ secrets.TRIP_GATEWAY_SHARED_SECRET }}
+          TRIP_WRANGLER_CONFIG_PATH: /tmp/ravradar-account-statistics-assistant-repair-wrangler.json
+          TRIP_STORAGE_OWNER_EXPORT_UPGRADE: '0'
+          TRIP_STORAGE_OWNER_ERASURE_GUARD: '0'
+          TRIP_STORAGE_UPGRADE_PREFLIGHT: '0'
+          REPAIR_LEASE_DEADLINE: ${{ steps.account_statistics_assistant_repair_recovery_quiesce.outputs.deadline }}
+          REPAIR_EXPECTED_WORKER_VERSION: ${{ steps.account_statistics_assistant_repair_recovery_replace.outputs.version }}
+        run: |
+          node --input-type=module <<'REPAIR_NODE'
+          import { execFileSync } from 'node:child_process';
+          import fs from 'node:fs';
+          const env = process.env;
+          function run(label, command, args, options = {}) {
+            try { return execFileSync(command, args, { encoding: 'utf8', stdio: 'pipe', timeout: 180000,
+              maxBuffer: 1024 * 1024, ...options }); }
+            catch { throw new Error('TRIP_REPAIR_' + label); }
+          }
+          function exactMain() {
+            if (env.GITHUB_REF !== 'refs/heads/main' || !/^[a-f0-9]{40}$/.test(env.GITHUB_SHA || '')) throw new Error('TRIP_REPAIR_MAIN_INVALID');
+            run('MAIN_FETCH', 'git', ['fetch', '--no-tags', '--depth=1', 'origin', '+refs/heads/main:refs/remotes/origin/main']);
+            for (const ref of ['HEAD^{commit}', 'origin/main^{commit}']) {
+              if (run('MAIN_READ', 'git', ['rev-parse', ref]).trim() !== env.GITHUB_SHA) throw new Error('TRIP_REPAIR_MAIN_CHANGED');
+            }
+          }
+          function edge(mode) {
+            run('EDGE_ATTESTATION', 'node', ['scripts/verify-trip-storage-edge.mjs'], { env: { ...env, EXPECTED_TRIP_STORAGE_MODE: mode } });
+          }
+          function worker(expectedVersion) {
+            run('WORKER_ATTESTATION', 'node', ['scripts/verify-cloudflare-trip-gateway.mjs'],
+              expectedVersion === undefined ? {} : { env: { ...env, EXPECTED_TRIP_WORKER_VERSION: expectedVersion } });
+          }
+          function lease(minimumSeconds) {
+            const deadline = Number(env.REPAIR_LEASE_DEADLINE);
+            if (!Number.isSafeInteger(deadline) || deadline - Date.now() < minimumSeconds * 1000
+              || deadline - Date.now() > 20 * 60000) throw new Error('TRIP_REPAIR_LEASE_INVALID');
+          }
+          function output(name, value) { fs.appendFileSync(env.GITHUB_OUTPUT, name + '=' + value + '\n'); }
+          worker(env.REPAIR_EXPECTED_WORKER_VERSION || '');
+          exactMain();
+          lease(1);
+          run('RESTORE_D1', 'supabase', ['secrets', 'set', '--project-ref', env.SUPABASE_PROJECT_ID, 'TRIP_STORAGE_MODE=d1']);
+          edge('d1');
+          worker(env.REPAIR_EXPECTED_WORKER_VERSION || '');
+          REPAIR_NODE
+      - name: Require the exact new Worker and explicit aggregate OFF binding
+        if: env.RAVRADAR_ACCOUNT_STATISTICS_ASSISTANT_SOURCE_ACTIVE == 'true' && env.RAVRADAR_ACCOUNT_STATISTICS_ASSISTANT_PHASE == 'installed' && steps.current-private-publish.outcome == 'success' && steps.established-native-current-origin-checkpoint-publish.outcome == 'success'
+        shell: bash
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_PROJECT_ID: afqhhdrkjfjtpadntdzo
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          SUPABASE_PUBLISHABLE_KEY: ${{ secrets.SUPABASE_PUBLISHABLE_KEY }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_TRIP_GATEWAY_URL: ${{ secrets.CLOUDFLARE_TRIP_GATEWAY_URL }}
+          TRIP_GATEWAY_SHARED_SECRET: ${{ secrets.TRIP_GATEWAY_SHARED_SECRET }}
+          TRIP_WRANGLER_CONFIG_PATH: /tmp/ravradar-account-statistics-assistant-repair-wrangler.json
+          TRIP_STORAGE_OWNER_EXPORT_UPGRADE: '0'
+          TRIP_STORAGE_OWNER_ERASURE_GUARD: '0'
+          TRIP_STORAGE_UPGRADE_PREFLIGHT: '0'
+          EXPECTED_TRIP_WORKER_VERSION: ${{ steps.account_statistics_assistant_repair_replace.outputs.version }}
+        run: |
+          node --input-type=module <<'OFF_ATTEST_NODE'
+          import fs from 'node:fs';
+          import {verifyExistingWorkerBindings} from './scripts/verify-cloudflare-trip-gateway.mjs';
+          const env=process.env,config=JSON.parse(fs.readFileSync(env.TRIP_WRANGLER_CONFIG_PATH,'utf8'));
+          if(config.vars?.TRIP_AGGREGATE_ENABLED!=='false')throw new Error('AGGREGATE_OFF_CONFIG_REQUIRED');
+          await verifyExistingWorkerBindings({expectedBindings:config.d1_databases,
+            expectedPlainTextBindings:{TRIP_AGGREGATE_ENABLED:'false'},accountId:env.CLOUDFLARE_ACCOUNT_ID,
+            apiToken:env.CLOUDFLARE_API_TOKEN,workerName:config.name,expectedVersion:env.EXPECTED_TRIP_WORKER_VERSION});
+          OFF_ATTEST_NODE
+
       - name: Deploy exact rebound trip Edges without Worker or D1 replay
-        if: env.RAVRADAR_ACCOUNT_ASSISTANT_FINAL_REQUIRED == 'true' || env.RAVRADAR_ESTABLISHED_NATIVE_CURRENT_ORIGIN_EDGE_REQUIRED == 'true' || inputs.restart_archived_weather == true || steps.saved-last-mile-source.outputs.required == 'true'
+        if: env.RAVRADAR_ACCOUNT_ASSISTANT_FINAL_REQUIRED == 'true' || env.RAVRADAR_ESTABLISHED_NATIVE_CURRENT_ORIGIN_EDGE_REQUIRED == 'true' || inputs.restart_archived_weather == true || steps.saved-last-mile-source.outputs.required == 'true' || env.RAVRADAR_ACCOUNT_STATISTICS_ASSISTANT_SOURCE_ACTIVE == 'true'
         timeout-minutes: 7
         shell: bash
         env:
@@ -2348,6 +2970,11 @@ jobs:
         run: |
           set -euo pipefail
           test "${RAVRADAR_USERDATA_UPGRADE_OPT_IN:-false}" != "true"
+          if test "${RAVRADAR_ACCOUNT_STATISTICS_ASSISTANT_SOURCE_ACTIVE:-false}" = true; then
+            test "$RAVRADAR_ACCOUNT_STATISTICS_ASSISTANT_PHASE" = installed
+            test "$RAVRADAR_ACCOUNT_STATISTICS_ASSISTANT_UPGRADE_OPT_IN" = false
+            test "${{ steps.account_statistics_assistant_repair_restore.outcome }}" = success
+          fi
           if test "${RAVRADAR_ESTABLISHED_NATIVE_CURRENT_ORIGIN_EDGE_REQUIRED:-false}" = "true"; then
             test "$RAVRADAR_ESTABLISHED_NATIVE_CURRENT_ORIGIN_PHASE" = "installed"
             test "$RAVRADAR_ESTABLISHED_NATIVE_CURRENT_ORIGIN_UPGRADE_OPT_IN" = "false"
@@ -2370,7 +2997,8 @@ jobs:
         run: |
           set -euo pipefail
           assistant_deploy_attempts=3
-          if test "${RAVRADAR_USERDATA_UPGRADE_OPT_IN:-false}" = "true" \
+          if test "${RAVRADAR_ACCOUNT_STATISTICS_ASSISTANT_SOURCE_ACTIVE:-false}" = true \
+              || test "${RAVRADAR_USERDATA_UPGRADE_OPT_IN:-false}" = "true" \
               || test "${RAVRADAR_ACCOUNT_ASSISTANT_UPGRADE_OPT_IN:-false}" = "true" \
               || test "${RAVRADAR_ESTABLISHED_NATIVE_CURRENT_ORIGIN_EDGE_REQUIRED:-false}" = "true" \
               || test "${{ inputs.restart_archived_weather }}" = true \
@@ -2404,7 +3032,7 @@ jobs:
 
       - name: Seal historical-to-current integrated maintenance plan when required
         if: steps.operational-action.outputs.action == 'integrated-historical-maintenance'
-        continue-on-error: ${{ inputs.restart_archived_weather != true && steps.saved-last-mile-source.outputs.required != 'true' }}
+        continue-on-error: ${{ inputs.restart_archived_weather != true && steps.saved-last-mile-source.outputs.required != 'true' && env.RAVRADAR_ACCOUNT_STATISTICS_ASSISTANT_SOURCE_ACTIVE != 'true' }}
         run: >-
           node scripts/ravscore-operational-activation.mjs prepare-integrated-historical-maintenance
           --manifest data/live/manifest.json
@@ -2452,7 +3080,7 @@ jobs:
             --arg checkpointRuntimeAuditSha256 "${{ steps.checkpoint-disposition.outputs.runtime_audit_sha256 }}" \
             --arg checkpointBuildOutcome "${{ steps.checkpoint-build.outcome }}" \
             --arg checkpointSaveOutcome "${{ steps.checkpoint-save.outcome }}" \
-            --arg checkpointPublishOutcome "${{ (env.RAVRADAR_ESTABLISHED_NATIVE_CURRENT_ORIGIN_EDGE_REQUIRED == 'true' || inputs.restart_archived_weather == true || steps.saved-last-mile-source.outputs.required == 'true') && steps.established-native-current-origin-checkpoint-publish.outcome || steps.checkpoint-publish.outcome }}" \
+            --arg checkpointPublishOutcome "${{ (env.RAVRADAR_ESTABLISHED_NATIVE_CURRENT_ORIGIN_EDGE_REQUIRED == 'true' || inputs.restart_archived_weather == true || steps.saved-last-mile-source.outputs.required == 'true' || env.RAVRADAR_ACCOUNT_STATISTICS_ASSISTANT_SOURCE_ACTIVE == 'true') && steps.established-native-current-origin-checkpoint-publish.outcome || steps.checkpoint-publish.outcome }}" \
             --arg codeOnlyReuseReportSha256 "$code_only_sha256" \
             --arg sourceRepairId "${{ steps.public-source.outputs.repair_id }}" \
             --argjson codeOnlyRepair '${{ inputs.publish_newest_saved_weather != true && inputs.restart_archived_weather != true }}' \

@@ -178,7 +178,7 @@ function writeWranglerConfiguration(databases) {
   fs.writeFileSync(outputPath, `${JSON.stringify(configuration, null, 2)}\n`, { encoding: 'utf8', mode: 0o600 });
 }
 
-function schemaTokens(sql) {
+export function schemaTokens(sql) {
   if (typeof sql !== 'string') throw new Error('TRIP_REPAIR_SCHEMA_INVALID');
   // Preserve quoted literals exactly, normalize only SQL words/spacing.
   const tokens = sql.match(/'(?:''|[^'])*'|"(?:""|[^"])*"|[A-Za-z_][A-Za-z_0-9]*|\d+|[^\s]/g) || [];

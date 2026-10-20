@@ -1,5 +1,13 @@
 # User Data & Analytics 1.0
 
+## 20. oktober 2026 — lokal varig forberedelse, ikke aktiveret statistik
+
+Den eksisterende private, signerede operatørkalder forbereder input i afgrænsede trin med de uændrede tids-, række-, byte- og forespørgselsgrænser. Et kvitteret, faktisk gemt job kan fortsætte over månedsskifte. Serveren vælger det ældste ventende job gennem den normale kontrollagerlæsning; klienten kan ikke bestille oprettelse af vilkårlige gamle perioder. En gammel periode i verify er alene en locator til et eksisterende færdigt job og dets allerede frosne forslag.
+
+Friske konto-/samtykkeinventarer, slettebarrieren, modelbinding og inputgrundlag kontrolleres igen. Kun en gyldig, strengt nyere fremdriftskvittering tillader næste trin. Timeout, ukendt skriveudfald eller afslag stopper uden automatisk gentagelse; senere normal fortsættelse skal afklare den varigt gemte tilstand. Sidste scan-kvittering er fortsat pending; reduktion og forslag må først ske i en separat afgrænset kaldelse.
+
+Dette er lokal kildeintegration med bestået afgrænset regression, ikke en installeret 004/005, offentlig statistik, påvist anonymitet eller målt Worker-kapacitet. Præcis samlet kildekontrol og de særskilte drifts-/frigivelseskrav mangler. Automatisk sletning forbliver fra uden fungerende mailvarsel; en kontaktadresse er ikke en installeret afsender. Originale ture, udstedte migrationsfiler og tidligere offentliggjorte scorer bevares.
+
 ## Formål
 At kunne undersøge hvor, hvornår og under hvilke forløb rav registreres, samt forbedre algoritmen uden at gøre enkeltbrugeres adfærd offentlig.
 

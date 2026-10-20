@@ -1,6 +1,30 @@
+## 20. oktober — varig statistikforberedelse uden historisk klientautoritet
+
+AKTIVT: Normal privat forberedelse skal fortsætte et faktisk eksisterende job over månedsskifte med samme periode, inputgrundlag og model. Kun serverens normale databasegenlæsning må udstede adgang til den gamle periode; klientinput, JSON-kopier og ukvitteret arbejde giver ingen ny skriveautoritet. Friskt samtykke og slettebarriere samt eksisterende tids-, række-, byte- og forespørgselsgrænser bevares. Timeout, ukendt skrivning og afvist kvittering må ikke udløse automatisk retry. Forberedelse og genlæsning er ikke anonym statistikfrigivelse. 004/005, retention og SOURCE aktiveres ikke af den sammenførte kilde.
+
+Før 585-leveringen går fra Worker-opdatering til Edge-funktioner, skal den normale bindingskontrol genlæse den faktisk aktive Worker-versions ti D1-bindinger og eksplicitte `TRIP_AGGREGATE_ENABLED=false` samt kontrollere, at deploymentet er uændret efter aflæsningen. Lokal konfiguration eller aktivt versionsnummer alene beviser ikke, at statistik er slået fra. Manglende/ændret OFF, forkert D1-binding eller ændret deployment skal afvise leveringen; ingen ny kontrolrute eller aktivering følger med.
+
+## 20. oktober — fælles integrationsfront: P0 678 og sourcekvalificeret 585
+
+Denne front er privat dokumentforberedelse til en senere samlet kilde, ikke en merge, installation eller offentlig levering. PR678s afgrænsede 584-memoryrettelse bevarer kun færdigbrugte arbejdsreferencer kortere; præcis source-/mergestatus føres alene i den aktuelle P0-statuslinje øverst i CURRENT_TRUTH.md. Lokal RED/GREEN eller source-PASS er ikke bevis for løst produktions-OOM.
+
+PR676/029462e43414d803bc251fda99f168117a921e0f er selvstændigt sourcekvalificeret som 4.0.585-kandidat. Det kvalificerer ikke kombinationen med 678 og er ikke installation af 585, dens SQL, Worker, Edges eller Pages. Det senere præcise kombinerede head kræver sit eget normale kildebevis. Genuine historiske 584-kilder, deres pins/inverser og allerede udstedte model-/SQL-originaler må ikke ommærkes eller repinnes af denne dokumentpatch.
+
+P0 og den almindelige vejrrute har førsteprioritet. Ejerens aktuelle valg er ingen checkpoint-genoptagelse nu; genoptagelsesønsker i de bevarede ældre afsnit er historiske på dette punkt. Aktuel cron-, leverings- og kørselsstatus må kun opdateres af ROOT fra faktisk evidens i den fælles P0-statuslinje; denne patch tænder, pauser eller udløser intet.
+
+Alle fem hovedmål er fortsat åbne med ejerens måldato 18. november 2026. Ældre henvisninger til 18. oktober og til afventede eller daværende kørsel-/cronudfald bevares som dateret historik, ikke som den aktuelle frist eller drift. SOURCE, statistikinstallation og automatisk retention/sletning aktiveres ikke her; gamle autentiske originaler bevares.
+
+Begge nedenstående historiesider er bevaret. Denne nye front erstatter kun modstridende status-/fristfortolkninger, ikke deres faglige krav, bevarede fejlevidens eller øvrige beslutninger.
+
 ## 20. oktober — afsluttede arbejdsreferencer er ikke historikopbevaring
 
 AKTIVT: Efter faktisk vellykket continuity-pakning må updateren frigive sine færdigbrugte lokale referencer før origin og offentlig eksport. Den komplette hashbundne pakke, delte originalmaps og rækker skal bevares uændret. Fejl før eller under pakning skal ske før referencefrigivelse. Frigivelse af en reference er ikke tilladelse til pruning, historiknulstilling eller datatab. Lokale byte-/genlæsningsprøver beviser ikke et lavere produktionsmaksimum eller en løst hukommelsesfejl. Eksisterende faselog må vise faste hukommelsestal, aldrig private dataværdier.
+
+## 20. oktober — kvalificér 585 uden tab af originaler eller implicit statistikaktivering
+
+AKTIVT: Nye 585-metadata skal afledes af hele den reelle versionssynkroniserede kilde, med bevarede originale 584-attester, numeriske værdier/historik og 63 udstedte SQL-filer. Lokale builders/fixedpoint er ikke en installeret database. Rigtig ny PostgreSQL, præcis source-CI og den normale ægte original-B/S→prepare/proof/final→SQL/readback→B før S-kæde kræves før faktisk levering. Den samme-SQL Worker skal være verificeret med aggregate eksplicit OFF før de tre Edges og den offentlige selvrapporteringsklient.
+
+Selvrapportering er ikke samtykke eller autentisk vejr. Pseudonymisering er ikke anonymisering; 004/005, samlet statistik og automatisk sletning aktiveres ikke implicit. Mailafsender til det aftalte inaktivitetsvarsel mangler. Gamle faglige, privacy-, kilde-, budget-, admin- og geometrigrænser består. Ingen produktion under aktiv writer; genbrug uændrede beståede målprøver frem for nye testbanker. Alle fem hovedmål er åbne; fristen 18. oktober er overskredet og ikke forlænget. Se DEC-0091/0064/0249 og håndbog 89.259.
 
 ## 19. oktober — samme fulde datakontrol uden gentaget leverandørarbejde
 

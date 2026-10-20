@@ -101,14 +101,21 @@ function sameOwnerBinding(stored: Record<string, unknown>, expected: Record<stri
     && String(stored.anonymous_id || "").toLowerCase() === String(expected.anonymous_id || "").toLowerCase();
 }
 
+// Opaque Supabase secret keys are API keys, not JWT bearer tokens.
+// Retain the unchanged legacy service-role JWT request shape.
+function serviceKeyHeaders(serviceKey: string): Record<string, string> {
+  const headers: Record<string, string> = { apikey: serviceKey };
+  if (!serviceKey.startsWith("sb_secret_")) headers.authorization = `Bearer ${serviceKey}`;
+  return headers;
+}
+
 async function storeInSupabase(payload: Record<string, unknown>) {
   const url = requiredEnvironment("SUPABASE_URL");
   const serviceKey = requiredEnvironment("SUPABASE_SERVICE_ROLE_KEY");
   const response = await fetchWithTimeout(`${url}/rest/v1/observations?on_conflict=client_observation_id`, {
     method: "POST",
     headers: {
-      apikey: serviceKey,
-      authorization: `Bearer ${serviceKey}`,
+      ...serviceKeyHeaders(serviceKey),
       "Content-Type": "application/json",
       Prefer: "resolution=ignore-duplicates,return=minimal",
     },
@@ -130,7 +137,7 @@ async function storeInSupabase(payload: Record<string, unknown>) {
   readbackUrl.searchParams.set("limit", "2");
   const readback = await fetchWithTimeout(
     readbackUrl,
-    { headers: { apikey: serviceKey, authorization: `Bearer ${serviceKey}` } },
+    { headers: serviceKeyHeaders(serviceKey) },
     8_000,
   );
   if (!readback.ok) throw new GatewayError(503, "OBSERVATION_STORE_UNAVAILABLE");
@@ -201,8 +208,7 @@ async function assertActiveRavScoreTripBinding(payload: Record<string, unknown>)
   const response = await fetchWithTimeout(`${url}/rest/v1/rpc/${ACTIVE_RAVSCORE_TRIP_RPC}`, {
     method: "POST",
     headers: {
-      apikey: serviceKey,
-      authorization: `Bearer ${serviceKey}`,
+      ...serviceKeyHeaders(serviceKey),
       "Content-Type": "application/json",
     },
     body: JSON.stringify(activeRavScoreTripAdmissionBody(payload)),
@@ -222,7 +228,7 @@ async function listFromSupabase(userId: string, limit: number) {
   const serviceKey = requiredEnvironment("SUPABASE_SERVICE_ROLE_KEY");
   const query = `${url}/rest/v1/observations?select=${OWN_TRIP_FIELDS}&user_id=eq.${encodeURIComponent(userId)}&order=observed_at.desc&limit=${limit}`;
   const response = await fetchWithTimeout(query, {
-    headers: { apikey: serviceKey, authorization: `Bearer ${serviceKey}` },
+    headers: serviceKeyHeaders(serviceKey),
   }, 8_000);
   if (!response.ok) throw new GatewayError(503, "TRIP_LOG_UNAVAILABLE");
   const rows = await response.json();

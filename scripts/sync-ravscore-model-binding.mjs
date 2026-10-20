@@ -5,8 +5,8 @@ import crypto from 'node:crypto';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { LAST_MILE_ENCLOSURE_BINDING,lastMileEnclosureMigration,readLastMileEnclosureCanonicalSource,requireLastMileEnclosureOutput }
-  from './lib/last-mile-enclosure-successor-source.mjs';
+import { ACCOUNT_STATISTICS_ASSISTANT_BINDING,accountStatisticsAssistantMigration,readAccountStatisticsAssistantCanonicalSource,requireAccountStatisticsAssistantOutput }
+  from './lib/account-statistics-assistant-successor-source.mjs';
 import {
   assertRavScoreModelBinding,
   ravScoreModelBinding,
@@ -31,7 +31,7 @@ const SQL_BINDING_PATHS = Object.freeze([
   'supabase/INSTALL-RAVRADAR-4.0.56-SECURITY.sql',
 ]);
 const CHECKPOINT_METADATA_CAS_MIGRATION_PATH =
-  LAST_MILE_ENCLOSURE_BINDING === null ? null : 'supabase/migrations/' + lastMileEnclosureMigration().filename;
+  ACCOUNT_STATISTICS_ASSISTANT_BINDING === null ? null : 'supabase/migrations/' + accountStatisticsAssistantMigration().filename;
 const CHECKPOINT_METADATA_CAS_MARKER = 'RAVSCORE_CHECKPOINT_METADATA_CAS_GENERATED';
 const CHECKPOINT_METADATA_CAS_INNER_MARKERS = Object.freeze([
   'RAVSCORE_CHECKPOINT_INTEGRATED_STATE_BINDING_GENERATED',
@@ -122,8 +122,10 @@ export function checkpointMetadataCasBlock(source, binding, candidateBinding, co
     ['public.ravradar_ravscore_checkpoint_cmw0200_payload_valid','225de0e8252fa5ab814432a0ce0424ecc663d2552062f2b341b7cbab8054dbaa'],
     ['public.ravradar_ravscore_checkpoint_lme140000_state_valid','a8e5a5bfd8c047d7996a4c9b8a1bafbc02785003804dc823222e33c8586bd9d9'],
     ['public.ravradar_ravscore_checkpoint_lme140000_payload_valid','7792672f3bd214973f262454a0f9198be151543d04e61d1599839b77332c4e04'],
+    ['public.ravradar_ravscore_checkpoint_asa584_state_valid','90d6006bcc855383dbafd49c629609b3cd961bde8d73650255a18ad9bcff8f4a'],
+    ['public.ravradar_ravscore_checkpoint_asa584_payload_valid','267f075649c7c5e305cbc0d4c2cb4ac5292d75e1e271923c95c0b0b4597f3b6f'],
   ];
-  for(const group of [originalAliases.slice(0,2),originalAliases.slice(2)]){
+  for(const group of [originalAliases.slice(0,2),originalAliases.slice(2,4),originalAliases.slice(4,6)]){
    if(group.some(([name])=>source.includes('function '+name+'('))){
     for(const [name,pin]of group){
       const original=exactFunctionDefinition(currentView,name,label+' frozen0200 original');
@@ -301,7 +303,7 @@ function synchronizeAccountSchema(source, accountSource, relative) {
 }
 
 export async function synchronizeRavScoreModelBinding({ write = false, root = ROOT } = {}) {
-  requireLastMileEnclosureOutput();
+  requireAccountStatisticsAssistantOutput();
   const binding = ravScoreModelBinding();
   assertRavScoreModelBinding(binding);
   const candidateBinding = candidateGRollbackModelBinding();
@@ -310,7 +312,7 @@ export async function synchronizeRavScoreModelBinding({ write = false, root = RO
 
   // Sparse immutable successor is reconstructed only as a pinned READ view.
   const { canonicalSource: checkpointMigration, statisticsSchema2Source: accountSource } =
-    await readLastMileEnclosureCanonicalSource({ migrationsDirectory: path.join(root, 'supabase/migrations') });
+    await readAccountStatisticsAssistantCanonicalSource({ migrationsDirectory: path.join(root, 'supabase/migrations') });
   const checkpointBlock = checkpointMetadataCasBlock(
     checkpointMigration,
     binding,

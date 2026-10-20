@@ -322,12 +322,15 @@ export async function verifyActiveWorkerDeployment({
 }
 
 export async function verifyExistingWorkerBindings({
-  accountId, apiToken, workerName, expectedVersion, expectedBindings,
+  accountId, apiToken, workerName, expectedVersion, expectedBindings, expectedPlainTextBindings,
   fetchImpl = globalThis.fetch, timeoutMs = TRIP_STORAGE_NETWORK_TIMEOUT_MS,
 }) {
   const failure = () => new Error('TRIP_STORAGE_WORKER_BINDINGS_UNVERIFIED');
   const uuid = /^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/i;
   const object = value => value !== null && typeof value === 'object' && !Array.isArray(value);
+  if (expectedPlainTextBindings !== undefined
+    && (!object(expectedPlainTextBindings) || Object.keys(expectedPlainTextBindings).join(',') !== 'TRIP_AGGREGATE_ENABLED'
+      || expectedPlainTextBindings.TRIP_AGGREGATE_ENABLED !== 'false')) throw failure();
   if (!Array.isArray(expectedBindings) || expectedBindings.length !== 10
     || expectedBindings.some((row, index) => !object(row) || row.binding !== `TRIP_DB_${index}`
       || row.database_name !== `ravradar-trips-${index}` || typeof row.database_id !== 'string' || !uuid.test(row.database_id))
@@ -350,6 +353,10 @@ export async function verifyExistingWorkerBindings({
       const row = d1.find(binding => binding.name === expected.binding);
       return !row || typeof row.id !== 'string' || row.id.toLowerCase() !== expected.database_id.toLowerCase();
     })) throw failure();
+    if (expectedPlainTextBindings !== undefined) {
+      const setting = bindings.find(row => row.name === 'TRIP_AGGREGATE_ENABLED');
+      if (!setting || setting.type !== 'plain_text' || setting.text !== expectedPlainTextBindings.TRIP_AGGREGATE_ENABLED) throw failure();
+    }
     const after = await verifyActiveWorkerDeployment({ ...options, expectedVersion: current.versionId });
     if (after.deploymentId !== current.deploymentId) throw failure();
     // Do not retain settings, author, annotations or unrelated/secret bindings.

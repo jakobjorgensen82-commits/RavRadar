@@ -1,0 +1,81 @@
+name: Private RavRadar trip weather study
+
+on:
+  workflow_dispatch:
+    inputs:
+      operation:
+        description: Read-only plan or controlled installation with statistics disabled
+        type: choice
+        default: plan
+        options: [plan, deliver]
+      allow_004:
+        description: Allow one exact control0-only004 attempt when absent
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+  actions: read
+
+# Same order as code-only: weather OUTER, trip-storage INNER. Never the reverse.
+concurrency:
+  group: ravradar-weather-production-v2
+  queue: max
+  cancel-in-progress: false
+
+jobs:
+  validate-operation:
+    runs-on: ubuntu-latest
+    env:
+      PRIVATE_STUDY_OPERATION: ${{ inputs.operation }}
+    steps:
+      - name: Validate fixed private study operation
+        shell: bash
+        run: |
+          case "$PRIVATE_STUDY_OPERATION" in
+            plan|deliver) ;;
+            *) echo 'PRIVATE_STUDY_OPERATION_INVALID' >&2; exit 1 ;;
+          esac
+
+  private-study-upgrade:
+    needs: validate-operation
+    if: ${{ inputs.operation == 'plan' || inputs.operation == 'deliver' }}
+    concurrency:
+      group: ravradar-trip-storage-production
+      cancel-in-progress: false
+    name: Separate control0-only statistics schema and existing Worker
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    env:
+      GITHUB_TOKEN: ${{ github.token }}
+      SUPABASE_PROJECT_ID: afqhhdrkjfjtpadntdzo
+      SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+      SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+      SUPABASE_PUBLISHABLE_KEY: ${{ secrets.SUPABASE_PUBLISHABLE_KEY }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_TRIP_GATEWAY_URL: ${{ secrets.CLOUDFLARE_TRIP_GATEWAY_URL }}
+      TRIP_GATEWAY_SHARED_SECRET: ${{ secrets.TRIP_GATEWAY_SHARED_SECRET }}
+      TRIP_STORAGE_OPERATION: existing-private-study-upgrade
+      TRIP_STORAGE_PRIVATE_STUDY: '1'
+      TRIP_PRIVATE_STUDY_MODE: ${{ inputs.operation }}
+      TRIP_PRIVATE_STUDY_APPLY_ALLOWED: ${{ inputs.allow_004 && 'true' || 'false' }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+      - uses: supabase/setup-cli@3c2f5e2ae34c34e428e8e206e2c4d21fa2d20fbf
+        with:
+          version: 2.117.0
+      - name: Restore source-content validation locator
+        uses: actions/cache/restore@v6
+        with:
+          path: .cache/weather-source-validation.json
+          key: weather-source-proof-v2-${{ runner.os }}-${{ github.sha }}-${{ github.run_id }}-${{ github.run_attempt }}-private-study
+          restore-keys: |
+            weather-source-proof-v2-${{ runner.os }}-${{ github.sha }}-
+      - name: Fixed private-study controller verifies actual source before any write
+        run: node scripts/deploy-private-trip-study.mjs

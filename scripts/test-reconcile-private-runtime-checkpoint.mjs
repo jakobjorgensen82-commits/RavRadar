@@ -2,6 +2,7 @@ import { assertSavedPrivateRuntimeCheckpointReconcileRequest } from './reconcile
 import { ESTABLISHED_NATIVE_CURRENT_ORIGIN_BINDING as OLD_FAMILY } from './lib/established-native-current-origin-successor-source.mjs';
 import { LAST_MILE_ENCLOSURE_BINDING as NEW_FAMILY } from './lib/last-mile-enclosure-successor-source.mjs';
 import { withFrozenEstablishedNativeCurrentOriginPostgresSource } from './run-frozen-established-native-current-origin-source-targets.mjs';
+import { withFrozen584ReconcileFixture } from './run-frozen584-reconcile-source.mjs';
 import { pathToFileURL } from 'node:url';
 import { execFileSync, spawnSync } from 'node:child_process';
 // Synthetic normal B/S transport. No native/origin issuer, SQL simulation claim
@@ -230,8 +231,12 @@ test('normal CURRENT B/S interruption reconciliation preserves whole pairs and r
       assert.deepEqual(backend.documents.get(S), before);
     }
   });
-  // Additive584 cases reuse the entire unchanged normal B/S fixture above.
-  async function withOld140000S(use) {
+  // Historical584 assertions use genuine584 factories/caller, never current585
+  // B relabelled as584. Keep the actual current fixture available separately.
+  const current585 = { saved, run, publishB };
+  await withFrozen584ReconcileFixture(t, async old584 => {
+  const { saved, run, publishB, publishS, normalBAndSTransports, withFrozenEstablishedNativeCurrentOriginPostgresSource } = old584;
+  async function withOld140000S(use, { publishOldB = true } = {}) {
     return withFrozenEstablishedNativeCurrentOriginPostgresSource(async ({ repositoryRoot: oldRoot, factory }) => {
       const backend = normalBAndSTransports(), originalPath = path.join(own, 'genuine-old-S-' + n++, 'source.json');
       const checkpointPath = path.join(path.dirname(originalPath), '.cache/ravscore-continuation-checkpoint/checkpoint.json');
@@ -242,7 +247,7 @@ test('normal CURRENT B/S interruption reconciliation preserves whole pairs and r
       await publisher.publishProtectedRavScoreContinuationCheckpoint({ checkpointPath, targetReference: factory.atHour(49),
         request: backend.documentRequest, rpcRequest: backend.checkpointRpc });
       assert.equal(backend.documents.get(S).payload.modelBinding.modelBundleSha256, OLD_FAMILY.I);
-      await publishB(backend, 1);
+      if (publishOldB) await publishB(backend, 1);
       const result = await use(backend);
       assert.deepEqual(await fs.readFile(originalPath), originalBytes);
       assert.deepEqual(await fs.readFile(checkpointPath), checkpointBytes);
@@ -266,6 +271,45 @@ test('normal CURRENT B/S interruption reconciliation preserves whole pairs and r
         attempts++; await backend.checkpointRpc(body); throw new Error('SYNTHETIC_584_S_REPLY_LOST'); } });
       assert.equal(result.outcome, 'COMMITTED_REPLY_LOST_READBACK_PROVED'); assert.equal(attempts, 1);
     });
+  });
+  async function current585WithOlder584S(use) {
+    const backend = normalBAndSTransports();
+    const oldBytes = await fs.readFile(saved[0].checkpointPath);
+    await publishS(backend, 0);
+    assert.equal(backend.documents.get(S).payload.modelBinding.modelBundleSha256, NEW_FAMILY.I);
+    await current585.publishB(backend, 1);
+    try { return await use(backend); }
+    finally { assert.deepEqual(await fs.readFile(saved[0].checkpointPath), oldBytes); }
+  }
+  await t.test('current585 B advances genuine older584 S without installing old state', async () => {
+    await current585WithOlder584S(async backend => {
+      const version = backend.documents.get(S).version;
+      const expected = JSON.parse(await fs.readFile(current585.saved[1].checkpointPath));
+      const result = await current585.run(backend, 1);
+      assert.equal(result.outcome, 'ADVANCED_READBACK_PROVED'); assert.equal(result.checkpointPublishCalls, 1);
+      assert.equal(result.nativeAdmissionIssued, false); assert.equal(result.storageDownloads, 0);
+      assert.equal(backend.documents.get(S).version, version + 1);
+      assert.deepEqual(backend.documents.get(S).payload, expected);
+    });
+  });
+  await t.test('current585 reply loss requires whole actual readback of its new S and one CAS', async () => {
+    await current585WithOlder584S(async backend => {
+      let attempts = 0;
+      const result = await current585.run(backend, 1, { rpcRequest: async body => {
+        attempts++; await backend.checkpointRpc(body); throw new Error('SYNTHETIC_585_S_REPLY_LOST'); } });
+      assert.equal(result.outcome, 'COMMITTED_REPLY_LOST_READBACK_PROVED'); assert.equal(attempts, 1);
+    });
+  });
+  await t.test('current585 B refuses direct older140000 S without a CAS or old state installation', async () => {
+    await withOld140000S(async backend => {
+      await current585.publishB(backend, 1);
+      const before = clone(backend.documents.get(S));
+      const calls = backend.events.filter(event => event === 'S_CAS').length;
+      await assert.rejects(current585.run(backend, 1), /RavScore checkpoint continuation implementation is incompatible/);
+      assert.deepEqual(backend.documents.get(S), before);
+      assert.equal(backend.events.filter(event => event === 'S_CAS').length, calls);
+    }, { publishOldB: false });
+  });
   });
   await t.test('584 version drift after whole S read refuses before CAS without changing payload', async () => {
     const backend = await paired(); await publishB(backend, 1);
@@ -378,7 +422,8 @@ test('both fixed families and separate saved guard reject mixed tuples and colli
     RESTART_ARCHIVED_WEATHER: 'false', COMPLETED_PRIVATE_RUNTIME: 'false', CHECKPOINT_ONLY: 'false', QUICK_CONFIRMATION: 'false',
     RAVRADAR_WEATHER_STATE_EPOCH_BOOTSTRAP: 'false', RAVRADAR_WEATHER_STATE_EPOCH_CHECKPOINT_REENTRY: 'false',
     NATIVE_IDENTITY_RECOVERY: 'false', UPGRADE_LAST_MILE_ENCLOSURE: 'false', UPGRADE_ESTABLISHED_NATIVE_CURRENT_ORIGIN: 'false',
-    UPGRADE_EXISTING_OWNER_EXPORT: 'false', UPGRADE_ACCOUNT_ASSISTANT: 'false', UPGRADE_STATISTICS_REVISION: 'false' };
+    UPGRADE_EXISTING_OWNER_EXPORT: 'false', UPGRADE_ACCOUNT_ASSISTANT: 'false', UPGRADE_STATISTICS_REVISION: 'false',
+    UPGRADE_ACCOUNT_STATISTICS_ASSISTANT: 'false' };
   assert.doesNotThrow(() => assertSavedPrivateRuntimeCheckpointReconcileRequest(env));
   assert.throws(() => assertOrdinaryPrivateRuntimeCheckpointReconcileRequest(env), /OPERATIONAL_ACTION/);
   for (const key of Object.keys(env)) for (const value of ['', undefined])
@@ -421,10 +466,21 @@ test('actual readonly ordinary and saved CLI select use one genuine committed so
       GITHUB_WORKFLOW: 'Deploy RavRadar code-only repair', CONFIRMATION: 'DEPLOY-SAVED-WEATHER-REPAIR',
       PUBLISH_NEWEST_SAVED_WEATHER: 'true', RESTART_ARCHIVED_WEATHER: 'false', UPGRADE_LAST_MILE_ENCLOSURE: 'false',
       UPGRADE_ESTABLISHED_NATIVE_CURRENT_ORIGIN: 'false', UPGRADE_EXISTING_OWNER_EXPORT: 'false',
-      UPGRADE_ACCOUNT_ASSISTANT: 'false', UPGRADE_STATISTICS_REVISION: 'false', RAVRADAR_OPERATIONAL_WORK: own });
+      UPGRADE_ACCOUNT_ASSISTANT: 'false', UPGRADE_STATISTICS_REVISION: 'false',
+      UPGRADE_ACCOUNT_STATISTICS_ASSISTANT: 'false', RAVRADAR_OPERATIONAL_WORK: own });
     const child = spawnSync(process.execPath, ['scripts/reconcile-private-runtime-checkpoint.mjs', command],
       { cwd: host, env, encoding: 'utf8', timeout: 30000 });
     assert.equal(child.status, 0, child.stderr); assert.equal(child.signal, null);
     assert.equal(await fs.readFile(output, 'utf8'), 'required=true' + String.fromCharCode(10));
+    if (command === 'select-saved') for (const value of ['true', undefined]) {
+      const rejectedOutput = path.join(own, 'saved-rejected-' + String(value) + '.out');
+      await fs.writeFile(rejectedOutput, '', { flag: 'wx' });
+      const rejected = spawnSync(process.execPath, ['scripts/reconcile-private-runtime-checkpoint.mjs', command],
+        { cwd: host, env: { ...env, UPGRADE_ACCOUNT_STATISTICS_ASSISTANT: value, GITHUB_OUTPUT: rejectedOutput },
+          encoding: 'utf8', timeout: 30000 });
+      assert.equal(rejected.status, 1); assert.equal(rejected.signal, null);
+      assert.match(rejected.stderr, /PRIVATE_B_S_RECONCILE_REFUSED/);
+      assert.equal(await fs.readFile(rejectedOutput, 'utf8'), '');
+    }
   }
 });

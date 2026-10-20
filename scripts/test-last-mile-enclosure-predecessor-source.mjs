@@ -77,3 +77,48 @@ test('fixed current140000 archive reader uses genuine source and cleans both nor
     await assert.rejects(withFrozenLastMileEnclosurePredecessorSource(value),error=>error?.code==='ERR_ASSERTION');
   assert.equal(refusedCallbacks,0,'Forbidden override must fail before callback');
 });
+
+
+test('fixed584 source reader preserves first raw falsy failures through genuine source and cleanup', {timeout:180000}, async()=>{
+  const {withAuthenticated584PredecessorSource}=await import('./check-account-statistics-assistant-predecessor-source.mjs');
+  const parent=await fs.realpath(os.tmpdir());let callbacks=0;
+  const checkRoot=async root=>{
+    callbacks+=1;assert.equal(path.dirname(root),parent);
+    assert(path.basename(root).startsWith('rr-authenticated584-predecessor-source-'));
+    assert.equal(await fs.realpath(root),root);
+  };
+  let successRoot;
+  const returned=Object.freeze({kind:'CALLBACK_RETURN_NOT_AUTHORITY'});
+  assert.strictEqual(await withAuthenticated584PredecessorSource(async root=>{
+    await checkRoot(root);successRoot=root;return returned;
+  }),returned);await absent(successRoot);
+  for(const raw of [undefined,null,false,0]){
+    let sourceRoot,rejected=false;
+    try{await withAuthenticated584PredecessorSource(async root=>{
+      await checkRoot(root);sourceRoot=root;throw raw;
+    });}catch(error){rejected=true;assert.strictEqual(error,raw,'The first thrown raw value is preserved verbatim');}
+    assert.equal(rejected,true,'A falsy thrown value must never become a successful callback');
+    await absent(sourceRoot);
+  }
+  // A real additional leaf makes exactTree reject cleanup. No fs/loader/callback
+  // implementation is stubbed; the original first null must win over this error.
+  let retainedFirstRoot,rejectedFirst=false;
+  try{await withAuthenticated584PredecessorSource(async root=>{
+    await checkRoot(root);retainedFirstRoot=root;
+    await fs.writeFile(path.join(root,'test-only-cleanup-denial'),'fixture-owned',{flag:'wx'});throw null;
+  });}catch(error){rejectedFirst=true;assert.strictEqual(error,null);}
+  assert.equal(rejectedFirst,true);await fs.unlink(path.join(retainedFirstRoot,'test-only-cleanup-denial'));
+  // With a successful callback, the actual cleanup assertion is the first failure.
+  let retainedCleanupRoot,rejectedCleanup=false;
+  try{await withAuthenticated584PredecessorSource(async root=>{
+    await checkRoot(root);retainedCleanupRoot=root;
+    await fs.writeFile(path.join(root,'test-only-cleanup-denial'),'fixture-owned',{flag:'wx'});return returned;
+  });}catch(error){rejectedCleanup=true;assert.equal(error?.code,'ERR_ASSERTION');assert.match(error.message,/Unknown source leaf is retained/);}
+  assert.equal(rejectedCleanup,true);await fs.unlink(path.join(retainedCleanupRoot,'test-only-cleanup-denial'));
+  // Only this test's two marker files are removed. Genuine source factories whose
+  // normal guarded cleanup failed remain retained; this test invents no cleanup grant.
+  assert.equal(callbacks,7);
+  console.log(JSON.stringify({kind:'GENUINE_FIXED584_FIRST_RAW_FAILURES',callbacks,rawFalsyFailures:4,
+    callbackFailureBeforeCleanupFailure:true,cleanupOnlyFailure:true,retainedSourceRoots:2,
+    old140000AssertionsUnchanged:true,current585Admission:false,postgresExecuted:false}));
+});

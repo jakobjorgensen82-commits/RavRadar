@@ -1922,7 +1922,7 @@ const { test: upgradeTest } = await import('node:test');
 const { compileFunction } = await import('node:vm');
 const { createHash } = await import('node:crypto');
 const path = await import('node:path');
-const { verifyExistingWorkerBindings, waitForWorkerHealth } = await import('./verify-cloudflare-trip-gateway.mjs');
+const { verifyExistingWorkerBindings, verifyActiveWorkerDeployment, waitForWorkerHealth } = await import('./verify-cloudflare-trip-gateway.mjs');
 const { matchesTripStorageReadiness } = await import('./lib/trip-storage-edge-readiness.mjs');
 const classification = await import('./lib/trip-storage-legacy-classification.mjs');
 const { D1_TRIP_SCHEMA_STATEMENTS } = await import('../supabase/functions/_shared/trip-storage.js');
@@ -1932,9 +1932,9 @@ const bindings=()=>rows().map((row,index)=>({binding:'TRIP_DB_'+index,database_n
 const descriptors={accountId:'a'.repeat(32),apiToken:'synthetic-token',workerName:'ravradar-trip-gateway'};
 const deployment=()=>({success:true,result:{deployments:[{id:other,strategy:'percentage',versions:[{version_id:version,percentage:100}]}]}});
 const versionBody=()=>({success:true,result:{id:version,resources:{bindings:[...bindings().map(row=>({type:'d1',name:row.binding,id:row.database_id})),{type:'secret_text',name:'EXISTING_SECRET',text:'must-not-retain'}]},metadata:{author_email:'must-not-retain'}}});
-async function bindingProbe(mutate=()=>{}, options={}) {
+async function bindingProbe(mutate=()=>{}, options={}, verify=verifyExistingWorkerBindings) {
   const calls=[];let activeReads=0;
-  const result=await verifyExistingWorkerBindings({...descriptors,expectedBindings:bindings(),...options,fetchImpl:async(url,init)=>{
+  const result=await verify({...descriptors,expectedBindings:bindings(),...options,fetchImpl:async(url,init)=>{
     calls.push({url,init});const body=url.includes('/versions/')?versionBody():deployment();
     if(!url.includes('/versions/'))activeReads++;
     mutate(body,{url,activeReads});return new Response(JSON.stringify(body));
@@ -1964,6 +1964,45 @@ upgradeTest('owner-upgrade bindings rejects a deployment changed during version 
 });
 upgradeTest('owner-upgrade metadata invalid planned descriptor produces zero transport',async()=>{
   let calls=0;await assert.rejects(verifyExistingWorkerBindings({...descriptors,expectedBindings:[],fetchImpl:async()=>{calls++;}}));assert.equal(calls,0);
+});
+// Execute the actual normal OFF heredoc and its actual imported verifier.
+// Reuse the existing deployment/version fixture and real verifier; only local
+// config I/O and Cloudflare transport are artificial. No product call is stubbed.
+const offWorkflow=fs.readFileSync('.github/workflows/deploy-code-only-repair.yml','utf8').replaceAll('\r\n','\n');
+const offHeading='      - name: Require the exact new Worker and explicit aggregate OFF binding\n';
+const offStart=offWorkflow.indexOf(offHeading),offEnd=offWorkflow.indexOf('\n      - name:',offStart+offHeading.length);
+assert(offStart>=0&&offEnd>offStart);assert.equal(offWorkflow.indexOf(offHeading,offStart+offHeading.length),-1);
+const offMatch=/node --input-type=module <<'OFF_ATTEST_NODE'\n([\s\S]*?)\n          OFF_ATTEST_NODE/.exec(offWorkflow.slice(offStart,offEnd));
+assert(offMatch);
+const offProgram=offMatch[1].split('\n').map(line=>{assert(line.startsWith('          '));return line.slice(10);}).join('\n');
+const offImport=/^import \{(verifyExistingWorkerBindings|verifyActiveWorkerDeployment)\} from '\.\/scripts\/verify-cloudflare-trip-gateway\.mjs';$/m.exec(offProgram);
+assert(offImport);assert.equal(offProgram.split(offImport[0]).length,2);
+const offVerifier={verifyExistingWorkerBindings,verifyActiveWorkerDeployment}[offImport[1]];
+const invokeOff=compileFunction('return(async()=>{'+offProgram.replace("import fs from 'node:fs';\n",'').replace(offImport[0],'')+'})();',
+  ['fs','process',offImport[1]]);
+async function offCallerProbe(mutate=()=>{}) {
+  return bindingProbe((body,info)=>{
+    if(info.url.includes('/versions/'))body.result.resources.bindings.push({type:'plain_text',name:'TRIP_AGGREGATE_ENABLED',text:'false'});
+    mutate(body,info);
+  },{},options=>invokeOff({readFileSync:(file,encoding)=>{
+    assert.equal(file,'/synthetic/metadata585-wrangler.json');assert.equal(encoding,'utf8');
+    return JSON.stringify({name:descriptors.workerName,d1_databases:bindings(),vars:{TRIP_AGGREGATE_ENABLED:'false'}});
+  }},{env:{CLOUDFLARE_ACCOUNT_ID:descriptors.accountId,CLOUDFLARE_API_TOKEN:descriptors.apiToken,
+    TRIP_WRANGLER_CONFIG_PATH:'/synthetic/metadata585-wrangler.json',EXPECTED_TRIP_WORKER_VERSION:version}},
+  value=>offVerifier({...value,fetchImpl:options.fetchImpl})));
+}
+for(const [label,mutate]of [
+  ['live ON',(body,{url})=>{if(url.includes('/versions/'))body.result.resources.bindings.at(-1).text='true';}],
+  ['missing live OFF',(body,{url})=>{if(url.includes('/versions/'))body.result.resources.bindings.pop();}],
+  ['wrong D1 mapping',(body,{url})=>{if(url.includes('/versions/'))body.result.resources.bindings[9].id=other;}],
+  ['changed deployment',(body,{url,activeReads})=>{if(!url.includes('/versions/')&&activeReads===2)body.result.deployments[0].id=version;}],
+])upgradeTest('metadata585 actual normal OFF caller rejects '+label,async()=>{
+  await assert.rejects(offCallerProbe(mutate),{message:'TRIP_STORAGE_WORKER_BINDINGS_UNVERIFIED'});
+});
+upgradeTest('metadata585 actual normal OFF caller verifies all bindings between exact deployment reads',async()=>{
+  const {calls}=await offCallerProbe();assert.equal(calls.length,3);
+  assert(calls[0].url.includes('/deployments?'));assert(calls[1].url.endsWith('/versions/'+version));assert(calls[2].url.includes('/deployments?'));
+  assert(calls.every(call=>call.init.method==='GET'&&call.init.redirect==='error'&&call.init.body===undefined));
 });
 upgradeTest('owner-upgrade preflight compatibility is explicit and never final export success',async()=>{
   const health={ok:true,contract_version:'4.0.311',shards:10,storage_schema_version:1,idempotency_registry_schema_version:2,owner_erasure_tombstone_schema_version:1};

@@ -1,3 +1,7 @@
+## 20. oktober — læs lokal 585 og faktisk 584-drift hver for sig
+
+Aktuel kildekandidat er 4.0.585; dens nye C/I/T, 100000-SQL og normale forbrugere er genereret/kontrolleret lokalt, ikke installeret eller offentligt bevist. Læs CODEX_START_HERE, CURRENT_TRUTH, IMPLEMENTATION_STATUS og håndbog 89.259 før de daterede noter nedenfor. PR675 er faktisk kildeleveret på main `954ca00a`; den næste almindelige vejrhentning er ikke endnu verificeret færdig. Sidste fuldt verificerede almindelige offentlige generation er 4.0.584 den 19. oktober omkring kl. 23.02 dansk tid. Cron er OFF, alle fem mål er åbne, og fristen 18. oktober er overskredet uden forlængelse. Dette ophæver ingen original-, privacy-, writer- eller leveringsgrænse.
+
 ## 19. oktober — almindelig levering gennemført; leverandørarbejde optimeres
 
 Den almindelige vejrhentning `39299413035/1` er faktisk leveret med nye vejrdata, B før S, 55+3-kontroller, Pages og særskilt offentlig kontrol den 19. oktober omkring kl. 23.02 dansk tid. Det er ikke bevis for fuld DMI-dækning, komplet historik eller selvstændig drift. PR674 er særskilt kildeleveret efter præcis Linux-kontrol; faktisk brug af dens tidligere gemning/genoptagelse mangler endnu.

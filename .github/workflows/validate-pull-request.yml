@@ -15,7 +15,7 @@ jobs:
   validate:
     name: Source validation and release gate
     runs-on: ubuntu-24.04
-    timeout-minutes: 90
+    timeout-minutes: 120
     steps:
       - uses: actions/checkout@v7
         with:
@@ -124,7 +124,12 @@ jobs:
       # A single sequential national preactivation proof, not a weather-run
       # budget change or another concurrent member of the small source group.
       - name: Validate isolated restart and two ordinary national followers
-        run: node --max-old-space-size=6144 scripts/test-last-mile-enclosure-restart-archive-origin.mjs --national
+        shell: bash
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          SOURCE_GATE_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          PULL_REQUEST_NUMBER: ${{ github.event.pull_request.number }}
+        run: node scripts/national584-source-evidence.mjs
 
       - name: Validate durable Copernicus current-reference baseline on artificial data only
         shell: bash

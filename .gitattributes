@@ -55,3 +55,13 @@ supabase/migrations/20261013230000_account_statistics_revision.sql text eol=lf
 # Warmup successor verifies the exact issued predecessor and new migration bytes.
 supabase/migrations/20261016060000_native_sampling_identity_original_bound_successor.sql text eol=lf
 supabase/migrations/20261017020000_current_memory_warmup_original_bound_successor.sql text eol=lf
+# These successors also verify whole issued Git-LF SQL, not Windows checkout CRLF.
+supabase/migrations/20261017140000_established_native_current_origin_bound_successor.sql text eol=lf
+supabase/migrations/20261019060000_last_mile_enclosure_original_bound_successor.sql text eol=lf
+supabase/migrations/20261019100000_account_statistics_assistant_original_bound_successor.sql text eol=lf
+# Exact reviewed JSON operands must retain their canonical source bytes on fresh checkouts.
+scripts/lib/archived-production-gate-review.json text eol=lf
+scripts/lib/archived-weather-restart-workflow-review.json text eol=lf
+scripts/lib/account-statistics-assistant-package-review.json text eol=lf
+scripts/lib/account-statistics-assistant-workflow-review.json text eol=lf
+scripts/lib/frozen584-normal-source-target-inventory.json text eol=lf

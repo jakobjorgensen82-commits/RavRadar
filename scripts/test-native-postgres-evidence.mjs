@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
 import test from 'node:test';
-import {ORIGIN, WORKFLOW, JOB, STEP, COMMANDS, NEW_NATIVE_BLOCK,
+import {ORIGIN, WORKFLOW, JOB, STEP, COMMANDS, CURRENT_COMMANDS, NATIVE_SCRIPT, NEW_NATIVE_BLOCK,
   NON_NATIVE_TEST_INPUTS, NON_NATIVE_PROSE, nativeBlock, parseTree, verifyWorkflow,
   verifyInputTrees, verifyOriginMetadata, verifyOrigin, verifyEnvironment,
   verifyLaterRuns, decideReuse, verifyCurrentPullRequest, FOLLOWUP_INPUTS} from './native-postgres-evidence.mjs';
@@ -243,4 +243,14 @@ test('actual committed follow-up drift selects original PG before any network ac
     getEnvironment:()=>{environmentCalls++;return runtime;}});
   assert.deepEqual(decision,{status:'EXECUTE',reason:'native-input-or-evidence-unavailable-or-different'});
   assert.equal(apiCalls,0);assert.equal(environmentCalls,0);
+});
+
+// Preserve the exact oldP0 receipt oracle above at its genuine historical input.
+// Current585 must execute its own normal phase, never inherit that receipt.
+test('585 current native command includes its new phase while historical commands stay exact',()=>{
+  assert.equal(COMMANDS.length,2);assert.equal(CURRENT_COMMANDS.length,2);
+  assert.equal(CURRENT_COMMANDS[0],COMMANDS[0]);
+  assert.equal(CURRENT_COMMANDS[1],COMMANDS[1]+' --account-statistics-assistant');
+  assert.notDeepEqual(CURRENT_COMMANDS,COMMANDS);
+  assert.equal(NATIVE_SCRIPT,'set -euo pipefail\n'+CURRENT_COMMANDS.join('\n')+'\n');
 });

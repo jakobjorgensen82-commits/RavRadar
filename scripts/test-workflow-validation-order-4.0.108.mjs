@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { verifyWorkflow as verifyCurrentNationalWorkflow, CURRENT_JOB as CURRENT_SOURCE_JOB, AFTER_JOB as REVIEWED90_SOURCE_JOB } from './national584-source-evidence.mjs';
 import { assertEarlyCompletedRuntimeStageOrder, inverseCompletedRuntimeWorkflow } from './lib/completed-private-runtime-workflow-review.mjs';
 import fs from 'node:fs';
 import vm from 'node:vm';
@@ -333,7 +334,9 @@ if (/\b(?:push|pull_request|schedule|workflow_run):/.test(historicalWavePilot)) 
 if (/\.nc(?:\s|$)/m.test(historicalWavePilot)) {
   throw new Error('Den historiske bølgepilot må ikke uploade NetCDF-filer.');
 }
-const pullRequestValidation = fs.readFileSync(`${workflowDirectory}/validate-pull-request.yml`, 'utf8').replace(/\r\n/g, '\n');
+const actualPullRequestValidation = fs.readFileSync(`${workflowDirectory}/validate-pull-request.yml`, 'utf8').replace(/\r\n/g, '\n');
+verifyCurrentNationalWorkflow(actualPullRequestValidation);
+const pullRequestValidation = actualPullRequestValidation.replace(CURRENT_SOURCE_JOB, REVIEWED90_SOURCE_JOB);
 for (const marker of [
   'pull_request:',
   'permissions:\n  contents: read',

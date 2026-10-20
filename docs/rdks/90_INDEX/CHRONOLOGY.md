@@ -1,3 +1,9 @@
+## 20. oktober 2026 — 4.0.585 lokalt genereret, offentlig 584 bevares
+
+PR675 bestod præcis source-CI med 27 succeser uden skip og er merget som `954ca00a`. Den næste almindelige vejrhentning er endnu ikke verificeret færdig. Sidste fuldt verificerede almindelige offentlige levering er 584 den 19. oktober omkring kl. 23.02 dansk tid, reference kl. 20 og startup `rr-20261019195021-210`.
+
+585's nye reelle C/I/T og append-only 100000-SQL er lokalt genereret/kontrolleret efter én normal versionssynk; consumer-/releasekontrakt og fixedpoint består. Forbedret QA, selvrapportering, servicekey-headere og rå fejlværdi-bevarelse er kildekandidat, ikke installation eller offentlig AI-bevis. Nye PG-/source-/original-/installations-/offentlige beviser udestår. Cron er OFF, SOURCE/statistik/retention er inaktive, alle fem mål er åbne, og 18. oktober-fristen er overskredet uden forlængelse. Se håndbog 89.259.
+
 ## 17. oktober 2026 — lokal 4.0.581, historisk læring anvendt på almindelig fortsættelse
 
 Gentaget engangsanalyse af gemt strømtilstand er adskilt fra normal fremadrettet replay i en lokal kandidat. Normal 673-dels B/S-kæde gennem tre efterfølgere består syntetisk; ny præcis kildekontrol, databaseprøve, installation og produktionseffekt mangler. Ingen ny historiknulstilling. Se MASTER_LOG og håndbog 89.252.

@@ -55,7 +55,7 @@ const CORE_LOCAL_RAV_KNOWLEDGE = Object.freeze([
     'Tang er et spor, ikke et bevis. Friskhed, placering, andet let materiale og det forudgående vejrforløb fortæller mere end tang alene.',
     'Seegras ist ein Hinweis, kein Beweis. Frische, Lage, weiteres Leichtmaterial und der vorherige Wetterverlauf sagen mehr aus als Seegras allein.',
     'Seaweed is a clue, not proof. Freshness, position, other light material and the preceding weather sequence matter more than seaweed alone.'),
-  entry('light-fraction', /hvorfor.*(?:træ|frø|kul|skaller)|(?:træ|frø|kul|skaller).*(?:rav|opskyl)|warum.*(?:holz|samen|kohle|muscheln)|(?:holz|samen|kohle|muscheln).*(?:bernstein|spülsaum)|why.*(?:wood|seeds|coal|shells)|(?:wood|seeds|coal|shells).*(?:amber|wash)/iu,
+  entry('light-fraction', /hvorfor.*(?<![\p{L}\p{N}_])(?:træ|frø|kul|skaller)(?![\p{L}\p{N}_])|(?<![\p{L}\p{N}_])(?:træ|frø|kul|skaller)(?![\p{L}\p{N}_]).*(?:rav|opskyl)|warum.*(?<![\p{L}\p{N}_])(?:holz|samen|kohle|muscheln)(?![\p{L}\p{N}_])|(?<![\p{L}\p{N}_])(?:holz|samen|kohle|muscheln)(?![\p{L}\p{N}_]).*(?:bernstein|spülsaum)|why.*(?<![\p{L}\p{N}_])(?:wood|seeds|coal|shells)(?![\p{L}\p{N}_])|(?<![\p{L}\p{N}_])(?:wood|seeds|coal|shells)(?![\p{L}\p{N}_]).*(?:amber|wash)/iu,
     'Træ, frø, kul, skaller og andet let opskyl kan vise, at havet har sorteret en let fraktion, som rav nogle gange følger. Materialerne har ikke identisk massefylde og form, så de følger ikke altid præcis samme bane.',
     'Holz, Samen, Kohle, Muscheln und anderes Leichtmaterial können eine sortierte Fraktion anzeigen, der Bernstein manchmal folgt. Die Stoffe bewegen sich jedoch nicht immer auf genau derselben Bahn.',
     'Wood, seeds, coal, shells and other light wash may show a sorted fraction that amber sometimes follows. Their density and shape differ, so they do not always take exactly the same route.'),
@@ -258,6 +258,38 @@ export const LOCAL_RAV_KNOWLEDGE_EXAMPLES = Object.freeze({
   ...CORE_LOCAL_RAV_KNOWLEDGE_EXAMPLES
 });
 
+// Mask only a colour grammatically attached to a forecast/map/score head.
+// The original question and any separate material colour remain intact.
+function materialColourScope(question) {
+  const text = String(question || '').trim().normalize('NFKC');
+  const edge = String.raw`[\p{L}\p{N}_]`;
+  const green = String.raw`(?:grøn(?:t|ne)?|grün(?:e|en|em|er|es)?|green)`;
+  const head = String.raw`(?:prognos(?:e|en|er)|kort(?:et)?|ravscore|scor(?:e|en)|zon(?:e|en|er)|områd(?:e|et|er)|vorhersage|karte|karten|gebiet|forecast|map|zone|area)`;
+  const relation = String.raw`(?:er|viser|lyser|bliver|ist|zeigt|leuchtet|wird|is|shows|turns)`;
+  const adverb = String.raw`(?:(?:stadig|helt|ikke|allerede|noch|ganz|nicht|bereits|still|fully|not|already)\s+)?`;
+  let materialText = text;
+  for (const pattern of [
+    new RegExp(String.raw`(?<!${edge})(${green})\s+${head}(?!${edge})`, 'giu'),
+    new RegExp(String.raw`(?<!${edge})${head}\s+${relation}\s+${adverb}(${green})(?!${edge})`, 'giu'),
+    new RegExp(String.raw`(?<!${edge})${head}\s+${adverb}(${green})\s+(?:ist|anzeigt|zeigt|leuchtet|wird)(?!${edge})`, 'giu'),
+    new RegExp(String.raw`(?<!${edge})${relation}\s+(?:(?:the|die|der|das)\s+)?${head}\s+${adverb}(${green})(?!${edge})`, 'giu'),
+  ]) materialText = materialText.replace(pattern, (whole, colour) => {
+    const index = whole.lastIndexOf(colour);
+    return whole.slice(0, index) + ' '.repeat(colour.length) + whole.slice(index + colour.length);
+  });
+  return { text, materialText, hasForecastColour:materialText !== text };
+}
+
+// A whole multi-question request must not fall through to the first catalogue
+// topic. Existing fully covered field compositions still get first refusal.
+export function localRavQuestionRequiresWholeAnswer(question) {
+  const text = String(question || '').trim().normalize('NFKC');
+  const starter = String.raw`(?:hvor|hvordan|hvorfor|hvad|hvilk(?:et|en|e)|kan|er|betyder|wo|wie|warum|was|welch(?:e|es|er)|kann(?:st)?|können|ist|bedeutet|where|how|why|what|which|can|is|does)\b`;
+  const clauses = text.split(new RegExp(
+    String.raw`[?？]\s*(?=\p{L})|[,:.;]\s*(?:(?:og|und|and)\s+)?(?=${starter})|\s+(?:og|und|and)\s+(?=${starter})`, 'iu'));
+  return clauses.filter(clause => clause.trim()).length > 1;
+}
+
 export function matchLocalRavKnowledge(question) {
   const text = String(question || '').trim();
   const normalized = normalizeKnowledgeQuestion(text);
@@ -265,7 +297,18 @@ export function matchLocalRavKnowledge(question) {
     (LOCAL_RAV_KNOWLEDGE_EXAMPLES[item.id] || []).some(example => normalizeKnowledgeQuestion(example) === normalized)
   );
   if (exact) return exact;
-  return LOCAL_RAV_KNOWLEDGE.find(item => item.pattern.test(text)) || null;
+  // Whole paper/rubbing questions reuse the already sourced static-electricity
+  // answer. Unknown qualifications retain the normal matcher; no new facts.
+  if (/^(?:hvorfor|hvordan) (?:kan )?(?:tiltrækker|tiltrække) (?:gnubbet |gnedet )?rav (?:små |lette )?(?:stykker papir|papirstumper|papirstykker|papir)(?: (?:efter|ved) gnidning)?$/u.test(normalized)
+    || /^(?:warum|wie) zieht (?:geriebener )?bernstein (?:nach dem reiben )?(?:kleine |leichte )?(?:papierstücke|papierschnipsel|papier)(?: nach dem reiben)? an$/u.test(normalized)
+    || /^(?:warum|wie) kann (?:geriebener )?bernstein (?:kleine |leichte )?(?:papierstücke|papierschnipsel|papier) anziehen$/u.test(normalized)) {
+    return LOCAL_RAV_KNOWLEDGE.find(item => item.id === 'amber-static') || null;
+  }
+  const { materialText } = materialColourScope(text);
+  return LOCAL_RAV_KNOWLEDGE.find(item => item.id === 'amber-colour-range-research'
+    ? item.pattern.test(materialText)
+      || /(?<![\p{L}\p{N}_])(?:grøn(?:t|ne)?\s+rav|grün(?:e|en|em|er|es)?\s+bernstein|green\s+amber)(?![\p{L}\p{N}_])/iu.test(materialText)
+    : item.pattern.test(text)) || null;
 }
 
 export function localRavKnowledgeAnswer(question, language = 'da') {

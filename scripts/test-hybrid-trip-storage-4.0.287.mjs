@@ -113,7 +113,10 @@ const payload = {
 // Explicit test-only selection; no flag still runs every historical case below.
 if (process.argv.includes('--real-sqlite-export-only')) {
   await checkRealSqliteSignedExport({ payload, userOwner, secret, gatewaySecret, gatewayUrl });
+} else if (process.argv.includes('--service-key-headers-only')) {
+  await checkServiceKeyHeadersOnly();
 } else {
+await checkServiceKeyHeadersOnly();
 const external = externalTripPayload(payload);
 assert.equal('user_id' in external, false);
 assert.equal('anonymous_id' in external, false);
@@ -2209,4 +2212,82 @@ async function checkOriginReportStorage({ payload, userOwner, secret, gatewaySec
     for (const database of databases) database.close();
   }
   console.log('Origin report storage: 2 report-only origins, signed STORE/LIST/EXPORT, other owner empty, 7 invalid origins/no transport, immutable replay; SQLite closed.');
+}
+
+// Uses the real normal trip-store and gateway timeout helper. Only transport
+// responses and Deno configuration are synthetic; no request leaves this test.
+async function checkServiceKeyHeadersOnly() {
+  const originalDeno = globalThis.Deno, originalFetch = globalThis.fetch;
+  const environment = { TRIP_STORAGE_MODE: 'd1', SUPABASE_URL: 'https://service-key-test.supabase.co',
+    SUPABASE_SERVICE_ROLE_KEY: 'TEST.ONLY.INVALID' };
+  const { storeObservation, listOwnTripObservations, activeRavScoreTripAdmissionBody } =
+    await import('../supabase/functions/_shared/trip-store.ts');
+  const { SAFE_IDEMPOTENCY_SOURCE_COLUMNS } = await import('../supabase/functions/_shared/trip-source-projection.js');
+  const binding = (await import('../js/core/ravscore-model-contract.js')).ravScoreModelBinding();
+  const features = { modelVersion: binding.modelId, modelStateVersion: binding.stateSchemaVersion,
+    modelVariantId: binding.variantId, modelProfileId: binding.profileId,
+    modelComponentSchemaId: binding.componentSchemaId, modelExplanationSchemaId: binding.explanationSchemaId,
+    modelRankingPolicyId: binding.rankingPolicyId, modelBestTimePolicyId: binding.bestTimePolicyId,
+    modelPresentationPolicyId: binding.presentationPolicyId, modelContractSha256: binding.modelContractSha256,
+    modelBundleSha256: binding.modelBundleSha256, reasonCodes: [] };
+  const input = { ...payload, schema_version: 3, calibration_eligible: false,
+    forecast_zone_id: payload.actual_zone_id, forecast_coastal_part_id: payload.actual_coastal_part_id,
+    calibration_features: features };
+  const inputBefore = canonicalJson(input), expectedBody = activeRavScoreTripAdmissionBody(input);
+  const requests = [];
+  let responseFor;
+  globalThis.Deno = { env: { get: name => environment[name] ?? null } };
+  globalThis.fetch = async (input, init = {}) => {
+    const request = new Request(input, init);
+    assert.equal(new URL(request.url).origin, environment.SUPABASE_URL);
+    assert.ok(init.signal instanceof AbortSignal, 'Genuine normal timeout/cancellation remains attached');
+    const row = { url: request.url, method: request.method, headers: request.headers,
+      body: request.method === 'POST' ? await request.json() : null };
+    requests.push(row);
+    assert.equal(row.headers.get('apikey'), environment.SUPABASE_SERVICE_ROLE_KEY);
+    // Model only the known opaque-as-JWT boundary, not a hosted auth diagnosis.
+    if (environment.SUPABASE_SERVICE_ROLE_KEY.startsWith('sb_secret_') && row.headers.has('authorization'))
+      return new Response(null, { status: 401 });
+    return responseFor(row);
+  };
+  try {
+    for (const [family,key] of [['legacy-jwt','TEST.ONLY.INVALID'],['opaque-secret','sb_secret_TEST']]) {
+      environment.SUPABASE_SERVICE_ROLE_KEY = key; environment.TRIP_STORAGE_MODE = 'd1'; requests.length = 0;
+      responseFor = row => {
+        assert.match(row.url, /\/rest\/v1\/rpc\/ravradar_trip_v3_active_binding_admitted$/);
+        assert.equal(row.method, 'POST'); assert.deepEqual(row.body, expectedBody);
+        assert.equal(row.headers.get('content-type'), 'application/json');
+        return Response.json(false);
+      };
+      await assert.rejects(storeObservation(input, userId), error => error?.status === 409
+        && error?.code === 'RAVSCORE_MODEL_NOT_ACTIVE', family + ': active-model refusal is preserved');
+      assert.equal(requests.length,1,'D1 uses the same admission RPC before any storage; no retry/write');
+      assert.equal(canonicalJson(input),inputBefore);
+      responseFor = () => new Response(null,{status:401}); requests.length = 0;
+      await assert.rejects(storeObservation(input,userId),error => error?.status === 503
+        && error?.code === 'RAVSCORE_ADMISSION_UNAVAILABLE');
+      assert.equal(requests.length,1,'Auth failure remains503; no retry or D1 storage fallback');
+
+      environment.TRIP_STORAGE_MODE = 'supabase'; requests.length = 0;
+      const legacy = { ...payload, schema_version:1 };
+      const stored = Object.fromEntries(Object.entries(legacy).filter(([name]) => SAFE_IDEMPOTENCY_SOURCE_COLUMNS.includes(name)));
+      responseFor = row => {
+        const url = new URL(row.url);
+        assert.equal(url.pathname,'/rest/v1/observations');
+        if(row.method==='POST') {
+          assert.deepEqual(row.body,legacy); assert.equal(row.headers.get('prefer'),'resolution=ignore-duplicates,return=minimal');
+          return new Response(null,{status:201});
+        }
+        return Response.json(url.searchParams.has('client_observation_id')?[stored]:[]);
+      };
+      await storeObservation(legacy,userId);
+      assert.deepEqual(await listOwnTripObservations(userId,1),[]);
+      assert.equal(requests.length,3,'One insert, exact idempotency readback, and one owner list; no retry');
+      for(const row of requests) assert.equal(row.headers.get('authorization'),family==='opaque-secret'?null:'Bearer '+key);
+    }
+    console.log('Service-key headers: both synthetic families; genuine v3/D1 admission and unchanged409/503; legacy insert/readback/list; no real network or retry.');
+  } finally {
+    globalThis.fetch=originalFetch;
+    if(originalDeno===undefined)delete globalThis.Deno;else globalThis.Deno=originalDeno;
+  }
 }

@@ -1,4 +1,4 @@
-import { getLanguage, getLocale, t } from '../i18n.js?v=4.0.584';
+import { getLanguage, getLocale, t } from '../i18n.js?v=4.0.585';
 const ZONE = 'Europe/Copenhagen';
 export function mapTimelineDate(time, language = getLanguage()) {
   const locale = { da: 'da-DK', de: 'de-DE', en: 'en-GB' }[language] ?? 'da-DK';

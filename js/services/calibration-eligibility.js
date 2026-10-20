@@ -1,9 +1,9 @@
-// A negative provenance disposition, never evidence of consent or genuine data.
+// Submission disposition only; never evidence of consent, genuine trips or verified weather.
 // Absence stays physically absent so old payloads and their hashes are unchanged.
 export function observationOrigin(record, key = 'observation_origin') {
   if (!record || !Object.hasOwn(record, key)) return 'unknown';
   const value = record[key];
-  if (value !== 'unknown' && value !== 'synthetic-test') throw new Error('TRIP_OBSERVATION_ORIGIN_INVALID');
+  if (value !== 'unknown' && value !== 'synthetic-test' && value !== 'self-reported') throw new Error('TRIP_OBSERVATION_ORIGIN_INVALID');
   return value;
 }
 export function observationOriginFields(record, inputKey = 'observation_origin', outputKey = inputKey) {

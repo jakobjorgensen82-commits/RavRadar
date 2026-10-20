@@ -1,8 +1,40 @@
+## 20. oktober — ÅBEN levering: månedsskifte og begrænset statistikforberedelse
+
+Konkret kontrolfund før installation: 585-workflowets eksplicitte OFF-trin gav bindingskrav til en funktion, som alene kontrollerer aktiv Worker-version og ikke bruger de to bindingsargumenter. Det er ikke bevis for en faktisk aktiv statistikfunktion i produktionen. Den lokale rettelse bruger den allerede eksisterende normale bindingskontrol og afviser live ON, manglende OFF, forkert D1 og deploymentskift. Den normale caller er faktisk reproduceret rød før rettelsen; dens fem nye tilfælde og tretten eksisterende bindingsprøver består efter. Den særskilte workflowprøve stoppede før sit mål på en uændret historisk JSON-kontrols Windows-CRLF-grænse; den må ikke kaldes bestået. Nyt præcist Linux-kildebevis og faktisk installationskontrol skal foreligge før lukning; den almindelige vejrhentning fortsætter uændret.
+
+Den normale private kalder kunne ikke fortsætte et gemt ældre job efter månedsskifte, og monolitisk forberedelse var ikke den aftalte varige trinvise vej. Fem lokale rettelser bruger servervalgt eksisterende job, kvitteret fremdrift og separat senere forberedelse/genlæsning. Den gennemgåede permanente regression består på faktiske moduler med normale syntetiske SQLite/D1-kontrakter. Det beviser ikke installeret 004/005, faktisk Worker-kapacitet, frigivet anonym statistik, mailvarsel eller automatisk retention. Ny præcis samlet kilde-CI og kontrolleret produktion er stadig åbne; den aktuelle almindelige vejrhentning må ikke afbrydes for denne kandidat.
+
+ÅBEN platformgrænse: Normal builder og fire caller-tilfælde stopper på den kendte Windows raw-SQL/CRLF-kontrol. Den normale kæde er ikke bestået lokalt; udstedte SQL-bytes og kontrollen lempes ikke. Præcis Linux-CI er den nødvendige næste prøve. LUKKET lokalt dokumentfund: allerede 029-kildens aktuelle 585-bogtekst havde korrekte, men uetiketterede hashes og manglede den aktuelle fortsættelsesmarkør. De normale labels/filantal og den ene håndbogspayload er nu synkroniseret med uændrede C/I/T; normal håndbogskontrol består. Det er ikke installation eller offentlig effekt.
+
+## 20. oktober — fælles integrationsfront: P0 678 og sourcekvalificeret 585
+
+Denne front er privat dokumentforberedelse til en senere samlet kilde, ikke en merge, installation eller offentlig levering. PR678s afgrænsede 584-memoryrettelse bevarer kun færdigbrugte arbejdsreferencer kortere; præcis source-/mergestatus føres alene i den aktuelle P0-statuslinje øverst i CURRENT_TRUTH.md. Lokal RED/GREEN eller source-PASS er ikke bevis for løst produktions-OOM.
+
+PR676/029462e43414d803bc251fda99f168117a921e0f er selvstændigt sourcekvalificeret som 4.0.585-kandidat. Det kvalificerer ikke kombinationen med 678 og er ikke installation af 585, dens SQL, Worker, Edges eller Pages. Det senere præcise kombinerede head kræver sit eget normale kildebevis. Genuine historiske 584-kilder, deres pins/inverser og allerede udstedte model-/SQL-originaler må ikke ommærkes eller repinnes af denne dokumentpatch.
+
+P0 og den almindelige vejrrute har førsteprioritet. Ejerens aktuelle valg er ingen checkpoint-genoptagelse nu; genoptagelsesønsker i de bevarede ældre afsnit er historiske på dette punkt. Aktuel cron-, leverings- og kørselsstatus må kun opdateres af ROOT fra faktisk evidens i den fælles P0-statuslinje; denne patch tænder, pauser eller udløser intet.
+
+Alle fem hovedmål er fortsat åbne med ejerens måldato 18. november 2026. Ældre henvisninger til 18. oktober og til afventede eller daværende kørsel-/cronudfald bevares som dateret historik, ikke som den aktuelle frist eller drift. SOURCE, statistikinstallation og automatisk retention/sletning aktiveres ikke her; gamle autentiske originaler bevares.
+
+Begge nedenstående historiesider er bevaret. Denne nye front erstatter kun modstridende status-/fristfortolkninger, ikke deres faglige krav, bevarede fejlevidens eller øvrige beslutninger.
+
 ## 20. oktober — P0 ÅBEN: V8-hukommelsesstop før offentlig pakning
 
 39368970562/1 fejlede efter score-/continuity-opbygning og provenanceberigelse. Ny leverandørfremgang blev gemt, men ny B/S, færdig beregningspakke og Pages blev ikke leveret. Samme kode havde gennemført den foregående kørsel; større input og samtidige arbejdskopier er konkrete belastninger, ikke i sig selv bevis for en bestemt læk.
 
 Den lokale kandidat frigiver kun to udtjente updater-referencer efter vellykket continuity-pakning og præciserer den eksisterende faselog. Normal RED/GREEN bevarer alle pakkebytes, hashes, originalrækker og afslag. Præcis kildekontrol, sikker levering og faktisk cache-only-genoptagelse mangler. Produktions-OOM er fortsat åben, indtil det normale forløb er gennemført og kontrolleret. Ingen højere heap, nye leverandørbudgetter, model-/SQL-overgang eller datanedskæring indføres her.
+
+## 20. oktober — åbne grænser efter lokal 585-generering
+
+Aktuelt: almindelig `39340901993/1` er faktisk leveret med nye offentlige vejrdata, 55+3, B før S og begge gemte cacheposter. Eksisterende cron er genaktiveret uændret; kommende normale cachegenbrug, delvis DMI, ufuldstændig historik og selvstændig drift er fortsat åbne. Dette erstatter nedenstående afventning på denne ene kørsel og cron-OFF, ikke de øvrige grænser.
+
+Den efterfølgende 585-databaseprøve nåede den nye adapter og fejlede på en forkert testforventning om direkte overgang fra en ældre familie. Fire sådanne forventninger er rettet til afslag uden ændring af den udstedte SQL eller de positive 584-overgange. Ny begrænset logning bevarer første fejl og viser kun faste kategorier; den oprindelige CI's faktiske SQLSTATE er stadig ukendt. Lokal kontrakt-/logningsprøve er ikke ny PostgreSQL eller offentlig installation. Vejrdriften må ikke afvente denne kandidatprøve.
+
+Kandidatens første præcise kildekontrol fejlede i den frosne 584-prøveværts importkæde før et PostgreSQL-bevis. Manglen på to testafhængigheder er reproduceret og rettet lokalt i testværten alene; den normale callback beholder alle tre ægte ekstra testblade indtil afslutning og bevarer første rå fejl ved oprydning eller logfejl. Ingen ændring af C/I/T, modelbundet producenthelper eller de 64 SQL-filer. Ny præcis kontrol med rigtig PostgreSQL er stadig åben. Kandidatfejlen må ikke beskrives som en fejl i den igangværende almindelige vejrhentning.
+
+585's servicekey-headerinkompatibilitet og tab af rå falsy-fejl er rettet lokalt med målbevis; det er ikke dokumentation for løst hosted 503 i alle tilfælde. Historisk hosted nøglefamilie og eventuel øvrig årsag er ukendt. Nye QA-/konto-/Worker-/Edge-funktioner, normal originalovergang og ny SQL kræver stadig faktisk 585-kilde-/PG-/installations-/offentlig kontrol. Parserpræcedens og fysisk Windows-CRLF i lokale prøveinput er ikke nye produktions- eller vejrfejl; hashguards og gamle originaler bevares.
+
+PR675 er faktisk kildeleveret, men den kørende almindelige efterfølger er endnu ikke verificeret færdig. Fuld DMI, cache-/historikkomplethed og selvstændig drift forbliver åbne. SOURCE hel-tail og fire FD-HOLD-restpunkter er private/inaktive. Privat positiv statistikkæde er ikke anonym offentlig release; rollover/hosted drift og retention med mailafsender er åbne. 004/005 og automatisk sletning aktiveres ikke ved 585. Cron er OFF, alle fem mål er åbne, og 18. oktober-fristen er overskredet uden forlængelse. Se håndbog 89.259 og CURRENT_TRUTH.
 
 ## 19. oktober — almindelig levering gennemført; leverandørarbejde optimeres
 
