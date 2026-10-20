@@ -1,3 +1,7 @@
+## 20. oktober — ÅBEN: Candidate-public fra normalt pakket input
+
+Den normale manuelle reservegren blander gammel privat timepakning med nye Candidate-zonetimer og bevarer den integrerede models afledte public-hour-markør. Lokal rettelse og normal regression udarbejdes; originaler og almindelig integreret vejrhentning ændres ikke. Se [det afgrænsede issue](CANDIDATE-PUBLIC-PACKED-INPUT.md). Ingen ny version, modelbinding, SQL eller SOURCE-aktivering. Senere forberedelse, test og levering skal fortsat skelnes.
+
 ## 20. oktober — ÅBEN: 585-originalstage og faktisk lagerbackend
 
 Første 585-installation stoppede i trin 45 før SQL, ny B/S, Worker, Edges og Pages. Kodegennemgangen påviste en tvungen Supabase-storage og manglende videreføring af storage-klienten trods aktuelt R2-objektlager. Den lokale rettelse genbruger normal backendvalg/klient og de tre eksisterende R2-miljøfelter. Den skjulte indre exception og første kørsels nåede restore er fortsat ukendt; wiretest eller faste faselogs er ikke live årsagsbevis. Præcis ny kildekontrol, sikker installation og offentlig 585-effekt kræves før lukning.

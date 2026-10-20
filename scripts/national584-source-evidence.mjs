@@ -43,6 +43,8 @@ export const BEFORE_JOB="  validate:\n    name: Source validation and release ga
 export const AFTER_JOB=BEFORE_JOB.replace('timeout-minutes: 75','timeout-minutes: 90');
 // Registered genuine90 predecessor; only CURRENT_JOB is admitted by currentContext.
 export const CURRENT_JOB=AFTER_JOB.replace('timeout-minutes: 90','timeout-minutes: 120');
+export const REVIEWED_SOURCE_RUN_LINE='        run: npm run validate:source && node scripts/test-fixed-public-rate-log-20261013.mjs && node scripts/test-fixed-storage-upload-log-20261013.mjs && node scripts/test-fixed-public-rate-console-log-20261015.mjs\n';
+export const CURRENT_SOURCE_RUN_LINE='        run: npm run validate:source && node scripts/test-fixed-public-rate-log-20261013.mjs && node scripts/test-fixed-storage-upload-log-20261013.mjs && node scripts/test-fixed-public-rate-console-log-20261015.mjs && node scripts/test-prepare-candidate-g-operational-rollback.mjs && node scripts/test-candidate-g-rollback-public-stage.mjs\n';
 const ROOT=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
 const sha=raw=>crypto.createHash('sha256').update(raw).digest('hex');
 const lf=value=>String(value).replace(/\r\n/g,'\n');
@@ -94,10 +96,16 @@ export function verifyReviewed90Workflow(source) {
   assert(source.indexOf('Validate source contracts and release governance')<source.indexOf(AFTER_BLOCK));
   assert(source.indexOf('Require validated source tree to remain unchanged')>source.indexOf(AFTER_BLOCK));
 }
+export function inverseCandidatePublicSourceRunLine(source) {
+  source=lf(source);
+  assert.equal(source.split(CURRENT_SOURCE_RUN_LINE).length,2,
+    'Only the exact once appended Candidate source-PR test runline is admitted');
+  return source.replace(CURRENT_SOURCE_RUN_LINE,REVIEWED_SOURCE_RUN_LINE);
+}
 export function verifyWorkflow(source) {
   source=lf(source);
   assert.equal(source.split(CURRENT_JOB).length,2,'Only the exact reviewed current120-minute source PR job is admitted');
-  verifyReviewed90Workflow(source.replace(CURRENT_JOB,AFTER_JOB));
+  verifyReviewed90Workflow(inverseCandidatePublicSourceRunLine(source).replace(CURRENT_JOB,AFTER_JOB));
 }
 export function verifyOrigin(run,jobs) {
   assert.equal(run.id,ORIGIN.run);assert.equal(run.run_attempt,1);

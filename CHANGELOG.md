@@ -1,3 +1,8 @@
+## 20. oktober — lokal Candidate-public: korrekt genbrug af pakket input
+
+- Retter den normale reserveforberedelse gennem den eksisterende tabsfri hydrator og invalidering af en anden models afledte visningscache alene i den nye kopi. Originalt input og original integreret timepakke bevares; normale public-/bindings-/horisontkontroller må ikke omgås.
+- Den udvidede normale stage-regression og levering er endnu åbne. Ingen ny version, modelbinding, SQL, scoreformel, leverandørprioritet, geometri eller SOURCE-aktivering. Ældre leveringsstatus nedenfor er dateret historik; aktuel vejrhentning står i CURRENT_TRUTH og privat checkpoint.
+
 ## 20. oktober — lokal DMI-rettelse: genbrug ren tidsfortolkning
 
 - Genbruger kun fortolkningen af højst 2.048 korte, almindelige tidsstrenge gennem den uændrede parser. Lange input, ændrende objekter og tekstunderklasser følger den gamle vej. Ingen kilde-, række-, proveniens- eller ledgerkontrol springes over.

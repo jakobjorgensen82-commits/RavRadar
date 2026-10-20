@@ -1,3 +1,21 @@
+## 20. oktober — aktuel rækkefølge og frist
+
+Ejerens gældende frist er 18. november 2026. CURRENT_TRUTH og det private
+checkpoint fører den aktuelle drift; ældre modstridende frister og kørselsstatus
+nedenfor er dateret historik. Alle fem hovedmål er fortsat åbne.
+
+Bevar den fungerende almindelige vejrhentning og uændret cron. Følg næste
+autentiske generation til faktisk B/S, deploy, offentlig effekt og fuld
+zone-/søgemåde-/dagsdækning uden dubletaflæsninger. Der må ikke ske
+produktionsændringer under aktiv writer.
+
+Før den afgrænsede normale Candidate-prepare-rettelse gennem eksisterende
+runtimeprøve, præcis kildekontrol og sikker levering, før den bruges som
+forudsætning for den isolerede revisions videre integration. Se
+[det konkrete issue](../40_KNOWN_ISSUES/CANDIDATE-PUBLIC-PACKED-INPUT.md).
+Rettelsen er ikke aktivering af SOURCE, fuld fremtidig PART-dækning eller
+færdiggørelse af revisionen. De øvrige åbne krav i det aktuelle mål bevares.
+
 ## 20. oktober — vejrhentning og cache først, 585 forberedes isoleret
 
 1. Følg den faktiske almindelige vejrhentning `39340901993/1`; mål 675's reelle DMI-/Copernicus-effekt, cachegemning/genbrug og ny B/S/Pages/offentlig generation. Driftsfejl har førsteprioritet. Genaktivér kun den uændrede cron efter verificeret genopretning og den aktuelle leverandørvurdering.

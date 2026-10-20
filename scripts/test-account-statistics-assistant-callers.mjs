@@ -189,7 +189,7 @@ test('normal585 mutable consumer reads the actual issued source and preserves al
 test('historical584 national evidence inverts only the reviewed current90-minute job and exact national wrapper',async()=>{
   const {execFileSync}=await import('node:child_process');
   const {ORIGIN:old,WORKFLOW,BEFORE_BLOCK,AFTER_BLOCK,BEFORE_JOB,AFTER_JOB,CURRENT_JOB,verifyWorkflow:verifyCurrentWorkflow,
-    verifyReviewed90Workflow:verifyWorkflow}=await import('./national584-source-evidence.mjs');
+    inverseCandidatePublicSourceRunLine,verifyReviewed90Workflow:verifyWorkflow}=await import('./national584-source-evidence.mjs');
   const git=(...args)=>execFileSync('git',args,{maxBuffer:8*1024*1024,timeout:30000,
     env:{...process.env,GIT_NO_LAZY_FETCH:'1',GIT_NO_REPLACE_OBJECTS:'1'}});
   const fixture='b02745d6d2987ed0fd2913623b3809fd0ea02dd6';
@@ -199,7 +199,7 @@ test('historical584 national evidence inverts only the reviewed current90-minute
   const recorded=git('show',fixture+':'+WORKFLOW).toString();
   const actual=(await fs.readFile(new URL('../.github/workflows/validate-pull-request.yml',import.meta.url),'utf8')).replace(/\r\n/g,'\n');
   verifyCurrentWorkflow(actual);
-  const current=actual.replace(CURRENT_JOB,AFTER_JOB);
+  const current=inverseCandidatePublicSourceRunLine(actual).replace(CURRENT_JOB,AFTER_JOB);
   const hash=value=>crypto.createHash('sha256').update(value).digest('hex');
   assert.equal(hash(before),'55bd264d8cc8fb7301d6b403f7035f644625d08528514fab3200e7e435f1d2d0');
   assert.equal(recorded.split(AFTER_BLOCK).length,2);assert.equal(recorded.split(AFTER_JOB).length,2);
@@ -225,19 +225,34 @@ test('historical584 national evidence inverts only the reviewed current90-minute
 
 test('source-PR-only120-minute job preserves genuine90 workflow and rejects every other budget',async()=>{
   const {execFileSync}=await import('node:child_process');
-  const {WORKFLOW,CURRENT_JOB,AFTER_JOB,verifyWorkflow,verifyReviewed90Workflow}=await import('./national584-source-evidence.mjs');
+  const {WORKFLOW,CURRENT_JOB,AFTER_JOB,CURRENT_SOURCE_RUN_LINE,inverseCandidatePublicSourceRunLine,
+    verifyWorkflow,verifyReviewed90Workflow}=await import('./national584-source-evidence.mjs');
   const fixture='b02745d6d2987ed0fd2913623b3809fd0ea02dd6';
   const recorded=execFileSync('git',['show',fixture+':'+WORKFLOW],{maxBuffer:65536,timeout:30000,
     env:{...process.env,GIT_NO_LAZY_FETCH:'1',GIT_NO_REPLACE_OBJECTS:'1'}}).toString();
   const actual=(await fs.readFile(new URL('../.github/workflows/validate-pull-request.yml',import.meta.url),'utf8')).replace(/\r\n/g,'\n');
   assert.equal(recorded.split(AFTER_JOB).length,2);assert.equal(actual.split(CURRENT_JOB).length,2);
-  assert.equal(actual.replace(CURRENT_JOB,AFTER_JOB),recorded,'The WHOLE genuine90 workflow is reconstructed');
+  assert.equal(inverseCandidatePublicSourceRunLine(actual).replace(CURRENT_JOB,AFTER_JOB),recorded,
+    'The WHOLE genuine90 workflow is reconstructed');
   assert.doesNotThrow(()=>verifyWorkflow(actual));assert.doesNotThrow(()=>verifyReviewed90Workflow(recorded));
   assert.throws(()=>verifyWorkflow(recorded),'Historical90 is not current120 admission');
   assert.throws(()=>verifyReviewed90Workflow(actual),'Current120 is not silently accepted as historical90');
   for(const minutes of [75,89,90,91,119,121,180,360])
     assert.throws(()=>verifyWorkflow(actual.replace(CURRENT_JOB,CURRENT_JOB.replace('timeout-minutes: 120','timeout-minutes: '+minutes))));
   assert.throws(()=>verifyWorkflow(actual.replace(CURRENT_JOB,CURRENT_JOB+CURRENT_JOB)));
+  for(const command of ['node scripts/test-prepare-candidate-g-operational-rollback.mjs',
+    'node scripts/test-candidate-g-rollback-public-stage.mjs']) {
+    assert.equal(actual.split(command).length,2,'Each appended Candidate command occurs exactly once');
+    assert.throws(()=>verifyWorkflow(actual.replace(' && '+command,'')),
+      'Missing Candidate command is not a current source-PR runline');
+    assert.throws(()=>verifyWorkflow(actual.replace(command,command.replace('.mjs','-changed.mjs'))),
+      'Changed Candidate command is not a current source-PR runline');
+    assert.throws(()=>verifyWorkflow(actual.replace(command,command+' && '+command)),
+      'Duplicate Candidate command is not a current source-PR runline');
+  }
+  assert.throws(()=>verifyWorkflow(actual.replace(CURRENT_SOURCE_RUN_LINE,CURRENT_SOURCE_RUN_LINE+CURRENT_SOURCE_RUN_LINE)));
+  assert.throws(()=>verifyWorkflow(actual.replace('  contents: read\n','  contents: write\n')),
+    'An unrelated workflow change must still fail after the exact runline inverse');
   assert.throws(()=>verifyWorkflow(actual+'\n# unknown source change\n'));
 });
 

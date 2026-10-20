@@ -1,3 +1,9 @@
+## 20. oktober — lokal normal Candidate-forberedelse, ikke aktivering
+
+- [x] Kaldergennemgang har påvist blandet privat timepakning og forkert models afledte timepakkemarkør i den manuelle reservegren; den almindelige integrerede vejrhentning rammes ikke af denne særskilte gren.
+- [ ] Afgrænset normal prepare-rettelse og regression med normalt pakket input, uændrede originaler, 118 Candidate-zonetimer og fortsat afslag på beskadiget/afkortet input.
+- [ ] Præcis kildekontrol og sikker levering. Ingen ny version, C/I, SQL, ændring af kildeprioritet eller aktivering af den isolerede revision. Alle fem hovedmål forbliver åbne.
+
 ## 20. oktober — almindelig vejrhentning har fuld prioritet
 
 - [x] Almindelig 39392596895/1 og efterfølgende 585-rettelsesdeploy 39427178008/1 faktisk afsluttet med offentlig kontrol; kun den første hentede nyt vejr. Cron er faktisk genaktiveret med uændret tidsplan.
