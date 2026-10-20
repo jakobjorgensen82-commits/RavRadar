@@ -21,7 +21,10 @@ export const COMMANDS = Object.freeze([
   'node scripts/run-frozen-native0600-source-targets.mjs policy',
   'node scripts/test-protected-ravscore-continuation-checkpoint.mjs --native-statistics-revision --native-sampling-identity --current-memory-warmup --established-native-current-origin --last-mile-enclosure',
 ]);
-export const NATIVE_SCRIPT = 'set -euo pipefail\n' + COMMANDS.join('\n') + '\n';
+// COMMANDS remains the exact immutable historical receipt inventory.
+// The new production command cannot reuse that old SQL proof.
+export const CURRENT_COMMANDS = Object.freeze([COMMANDS[0],COMMANDS[1]+' --account-statistics-assistant']);
+export const NATIVE_SCRIPT = 'set -euo pipefail\n' + CURRENT_COMMANDS.join('\n') + '\n';
 
 // Explicit CURRENT non-native test consumers only. Historical copies of these
 // files are NOT excluded: unchanged frozen loaders read exact old Git blobs.
@@ -395,14 +398,15 @@ async function record(receipt) {
   proof.nativePostgres=receipt; await fs.writeFile(file,JSON.stringify(proof)+'\n');
 }
 async function main() {
-  let receipt=await decideReuse();
+  let receipt=JSON.stringify(CURRENT_COMMANDS) === JSON.stringify(COMMANDS) ? await decideReuse()
+    : {status:'EXECUTE',reason:'new-account-statistics-assistant-native-phase-requires-actual-execution'};
   if(receipt.status!=='REUSED') {
     console.log('Native PostgreSQL: original commands required; reuse evidence absent or different.');
     const env={...process.env}; for(const key of ['GITHUB_TOKEN','SOURCE_GATE_HEAD_SHA','PULL_REQUEST_NUMBER'])delete env[key];
     const result=spawnSync('/usr/bin/bash',['--noprofile','--norc','-e','-o','pipefail','-c',NATIVE_SCRIPT],{env,stdio:'inherit'});
     if(result.error||result.status!==0){process.exitCode=result.status||1;return;}
     receipt={...receipt,status:'EXECUTED',executedInThisRun:true,origin:null,
-      current:{run:Number(process.env.GITHUB_RUN_ID),attempt:Number(process.env.GITHUB_RUN_ATTEMPT),head:git(['rev-parse','HEAD^{commit}']).trim()},commands:COMMANDS};
+      current:{run:Number(process.env.GITHUB_RUN_ID),attempt:Number(process.env.GITHUB_RUN_ATTEMPT),head:git(['rev-parse','HEAD^{commit}']).trim()},commands:CURRENT_COMMANDS};
   } else console.log('Native PostgreSQL: REUSED from run '+ORIGIN.run+'/1, job '+ORIGIN.job+', head '+ORIGIN.head+'; no new SQL execution claimed.');
   await record(receipt);
 }

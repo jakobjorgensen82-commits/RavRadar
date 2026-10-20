@@ -1,3 +1,4 @@
+import {inverseReviewedAccountStatisticsAssistantSourceScripts} from './lib/account-statistics-assistant-package-review.mjs';
 import { inverseAlternativeCCaller } from './lib/alternative-c-caller-test-input.mjs';
 import assert from 'node:assert/strict';
 import crypto from 'node:crypto';
@@ -743,7 +744,7 @@ test('47 baseline commands plus genuine OLD, NEW native, epoch and pure diagnost
 });
 
 test('current frozen routes and warmup checks reach normal checkpoint integration exactly once', async () => {
-  const actualScripts = JSON.parse(await fs.readFile(new URL('../package.json', import.meta.url), 'utf8')).scripts;
+  const actualScripts = inverseReviewedAccountStatisticsAssistantSourceScripts(JSON.parse(await fs.readFile(new URL('../package.json', import.meta.url), 'utf8')).scripts);
   // Retain the entire genuine140000 command oracle on its real frozen input,
   // then separately qualify how the current source reaches those same targets.
   const scripts = await withFrozenEstablishedNativeCurrentOriginSourceTarget('builder', async sourceRoot =>

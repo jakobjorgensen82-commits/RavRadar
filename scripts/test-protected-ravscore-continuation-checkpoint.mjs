@@ -373,7 +373,8 @@ const rpcFailureIncludes = pattern => error => {
 // Pure classification of the real native caller's bounded failure output.
 // These assertions are not PostgreSQL/SQL/installation proof.
 if (!process.argv.includes('--native-postgres') && !process.argv.includes('--native-statistics-revision')
-    && !process.argv.includes('--native-sampling-identity') && !process.argv.includes('--current-memory-warmup')) {
+    && !process.argv.includes('--native-sampling-identity') && !process.argv.includes('--current-memory-warmup')
+    && !process.argv.includes('--account-statistics-assistant')) {
   const { nativePostgresFailureDiagnostic: diagnose,
     nativePostgresFailureAnnotation: annotate } =
       await import('./lib/checkpoint-cas-native-postgres.mjs');
@@ -524,12 +525,13 @@ if (process.argv.includes('--native-identity-source-only')) {
   process.exit(0);
 }
 
+const accountStatisticsAssistantNative = process.argv.includes('--account-statistics-assistant');
 // Native PostgreSQL is a separate mandatory Linux source leaf, never a
 // MemoryCentral/Windows representation proof. Reuse these exact 673 builders
 // and the normal checkpoint saver; do not run the simulated RPC tests here.
 if (process.argv.includes('--native-postgres') || process.argv.includes('--native-statistics-revision')
     || process.argv.includes('--native-sampling-identity') || process.argv.includes('--current-memory-warmup')
-    || process.argv.includes('--established-native-current-origin') || process.argv.includes('--last-mile-enclosure')) {
+    || process.argv.includes('--established-native-current-origin') || (process.argv.includes('--last-mile-enclosure') || accountStatisticsAssistantNative)) {
   try {
     const { runNativeCheckpointSqlComparison } =
       await import('./lib/checkpoint-cas-native-postgres.mjs');
@@ -538,12 +540,13 @@ if (process.argv.includes('--native-postgres') || process.argv.includes('--nativ
       saveCheckpoint: saveRavScoreContinuationCheckpoint,
       includeStatisticsRevision: process.argv.includes('--native-statistics-revision')
         || process.argv.includes('--native-sampling-identity') || process.argv.includes('--current-memory-warmup')
-        || process.argv.includes('--established-native-current-origin') || process.argv.includes('--last-mile-enclosure'),
+        || process.argv.includes('--established-native-current-origin') || (process.argv.includes('--last-mile-enclosure') || accountStatisticsAssistantNative),
       includeNativeIdentity: process.argv.includes('--native-sampling-identity') || process.argv.includes('--current-memory-warmup')
-        || process.argv.includes('--established-native-current-origin') || process.argv.includes('--last-mile-enclosure'),
-      includeCurrentMemoryWarmup: process.argv.includes('--current-memory-warmup') || process.argv.includes('--established-native-current-origin') || process.argv.includes('--last-mile-enclosure'),
-      includeEstablishedNativeCurrentOrigin: process.argv.includes('--established-native-current-origin') || process.argv.includes('--last-mile-enclosure'),
-      includeLastMileEnclosure: process.argv.includes('--last-mile-enclosure'),
+        || process.argv.includes('--established-native-current-origin') || (process.argv.includes('--last-mile-enclosure') || accountStatisticsAssistantNative),
+      includeCurrentMemoryWarmup: process.argv.includes('--current-memory-warmup') || process.argv.includes('--established-native-current-origin') || (process.argv.includes('--last-mile-enclosure') || accountStatisticsAssistantNative),
+      includeEstablishedNativeCurrentOrigin: process.argv.includes('--established-native-current-origin') || (process.argv.includes('--last-mile-enclosure') || accountStatisticsAssistantNative),
+      includeLastMileEnclosure: (process.argv.includes('--last-mile-enclosure') || accountStatisticsAssistantNative),
+      includeAccountStatisticsAssistant: accountStatisticsAssistantNative,
     });
     console.log(JSON.stringify(report));
   } catch (error) {

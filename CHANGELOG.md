@@ -1,3 +1,17 @@
+## 4.0.585 — lokal kandidat, 20. oktober 2026
+
+- Samler bedre DA/DE/EN-spørgsmålsforståelse, hele sammensatte spørgsmål og afgrænsede emneopfølgninger; beholder privacy, ærlig tidsusikkerhed og read-only assistent.
+- Nye almindelige ture og kontoindberetninger mærkes `self-reported`; det er ikke samtykke, ægte vejrsnapshot eller automatisk model-/statistikgodkendelse. Gamle payloads omskrives ikke.
+- Moderne `sb_secret_` sendes kun som apikey i normal kvote- og turlagertransport; legacy service-role JWT bevarer Bearer. Kvote, RPC, body, timeout og adgangsgrænser bevares.
+- Bevarer den allerførste rå fejl, også `undefined`/`null`/`false`/`0`, ved den autentiske 584-kildelæser; præcis modelimport-pin og ægte normal regression følger rettelsen.
+- Fastholder kanoniske LF-bytes ved friske Windows-checkouts af de præcist navngivne, hashbundne SQL-/reviewinput; gamle Git-blobs ændres ikke, og ingen hashkontrol lempes.
+- Normal versionssynk udført én gang; ny ægte C94/I93/T og append-only `20261019100000_account_statistics_assistant_original_bound_successor.sql` er lokalt genereret/kontrolleret med normal consumer-/releasekontrakt og fixedpoint. Gamle 63 migrationsfiler, originale attester, numeriske værdier og historik bevares.
+- Leveringskandidaten kræver original-B/S/prewrite, ny SQL/readback, B før S, samme-SQL Worker med aggregate eksplicit OFF og derefter tre Edges/Pages. Ingen 004/005-installation, statistikrelease eller automatisk retention følger med.
+- LOCAL_TARGETED_PASSED med genbrug af uændrede beståede målgrupper; den eksisterende Linux-specifikke case er ikke kørt på Windows. Midlertidige SQL-/guarddataarbejdsvisninger er gendannet til fysiske originalbytes. Ikke udført for 585: ny PostgreSQL, præcis samlet source-CI, installation, offentlig levering eller hosted AI-kontrol.
+- Faktisk offentlig baseline er 584 fra almindelig `39299413035/1`, leveret 19. oktober omkring kl. 23.02 dansk tid. PR675 er siden kildeleveret som `954ca00a`; næste almindelige kørsel er endnu ikke verificeret færdig. Cron er OFF, fuld DMI/cache/historik/autonomi og alle fem hovedmål er åbne; 18. oktober-fristen er overskredet uden forlængelse.
+
+Ældre afsnit bevares som historik og er kun erstattet på de ovenfor konkret beskrevne statuspunkter. Se håndbog 89.259.
+
 ## 19. oktober — 4.0.584: PR-kildekontrollens ydre jobloft
 
 - Den præcise PR673-kontrol bestod native PostgreSQL på 28:46 og den efterfølgende kildevalidering på 30:43, men blev afbrudt omkring det konfigurerede 75-minuttersloft under den anden nationale efterfølger. Loggen nåede 601 af 673 dele; tidsforløbet peger stærkt på jobloftet, og loggen viser ingen assertionsfejl. Dette er ikke bestået samlet kildekontrol.

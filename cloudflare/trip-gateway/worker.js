@@ -12,6 +12,9 @@ import {
   verifyTripGatewaySignature,
 } from '../../supabase/functions/_shared/trip-storage.js';
 
+import { handleTripWeatherAggregate, handleVerifyTripWeatherAggregate } from './trip-aggregate.js';
+import { AGGREGATE_PATH, AGGREGATE_VERIFY_PATH } from '../../supabase/functions/_shared/trip-aggregate-contract.js';
+
 const DATABASE_BINDINGS = Object.freeze(Array.from({ length: 10 }, (_, index) => `TRIP_DB_${index}`));
 const JSON_HEADERS = Object.freeze({
   'Cache-Control': 'no-store',
@@ -426,13 +429,18 @@ export async function handleRequest(request, env) {
       shards: 10,
     });
   }
-  if (request.method !== 'POST' || !['/v1/trips/store', '/v1/trips/list', '/v1/trips/export-page', '/v1/trips/count', '/v1/trips/delete-owner'].includes(url.pathname)) {
+  if (request.method !== 'POST' || !['/v1/trips/store', '/v1/trips/list', '/v1/trips/export-page', '/v1/trips/count', '/v1/trips/delete-owner', AGGREGATE_PATH, AGGREGATE_VERIFY_PATH].includes(url.pathname)) {
     return json(404, { ok: false, error: 'NOT_FOUND' });
   }
   try {
     const bodyText = await requestBody(request);
     if (!await authorized(request, env, url.pathname, bodyText)) return json(401, { ok: false, error: 'UNAUTHORIZED' });
     const body = parsedObject(bodyText);
+    // Aggregate preparation and frozen export are separately opt-in; OFF must do no D1 work.
+    if ((url.pathname === AGGREGATE_PATH || url.pathname === AGGREGATE_VERIFY_PATH)
+        && env.TRIP_AGGREGATE_ENABLED !== 'true') return json(404, { ok: false, error: 'NOT_FOUND' });
+    if (url.pathname === AGGREGATE_PATH) return json(200, { ok: true, report: await handleTripWeatherAggregate(databases(env), body) });
+    if (url.pathname === AGGREGATE_VERIFY_PATH) return json(200, { ok: true, report: await handleVerifyTripWeatherAggregate(databases(env), body) });
     if (url.pathname === '/v1/trips/count') {
       try {
         return json(200, { ok: true, trip_count: await countTrips(env) });

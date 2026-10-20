@@ -14,7 +14,16 @@ for (const row of Object.values(ordinaryStageWiringReview)) {
   row.edits.forEach(Object.freeze); Object.freeze(row.edits); Object.freeze(row);
 }
 Object.freeze(ordinaryStageWiringReview);
+// Exact585 normal User-Agent inverse; the entire issued584 workflow remains the oracle.
+export function inverseRelease585WorkflowUserAgents(source, role) {
+  if (role !== 'build' || sha(source) !== '2ee56b8ae3546f8ac3ce97b45aaedbfe7eb67fac0960961f164cecca70c0970c') return source;
+  assert.equal(source.split('RavRadar/4.0.585').length, 6, 'Exactly five normal585 User-Agent fields');
+  const previous = source.replaceAll('RavRadar/4.0.585', 'RavRadar/4.0.584');
+  assert.equal(sha(previous), 'b509a5131c64f9df9a431fdf9f99b082fb14c88de8bf9c3ad3e33b8ddc77de57', 'Whole genuine main674 workflow survives');
+  return previous;
+}
 export function inverseOrdinaryCompletedStageWorkflowWiring(source, role) {
+  source = inverseRelease585WorkflowUserAgents(source, role);
   const row = ordinaryStageWiringReview[role];
   if (!row || sha(source) !== row.afterSha256) return source;
   assert.equal(Buffer.byteLength(source), row.afterBytes, 'Whole reviewed staged caller byte count');

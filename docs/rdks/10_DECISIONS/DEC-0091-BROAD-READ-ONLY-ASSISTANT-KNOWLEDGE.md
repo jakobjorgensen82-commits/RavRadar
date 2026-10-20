@@ -14,6 +14,12 @@ lokalt; offentlig levering mangler. Dette aktiverer hverken den brede
 isolerede assistentkandidat eller bindingsadskillelsen i bero. Interne fejl,
 privat diagnostik og produktionsfakta må ikke indgå i den offentlige viden.
 
+## Tillæg 2026-10-20 — lokal 585-kandidat, hele spørgsmål uden ny myndighed
+
+585 forbedrer den eksisterende DA/DE/EN-vej ved hele sammensatte spørgsmål, afgrænsede begynderspørgsmål, materialefarve kontra prognosefarve og offentligt emnebundne opfølgninger. Ukendt kvalifikation må ikke skjules af et lokalt delmatch. Den efterspurgte fremtidstime må ikke beskrives med aktuelle zonetal uden udtrykkelig afgrænsning. Ingen samtalehistorik, private brugerfakta eller interne fejlrapporter føjes til offentlig QA-viden. De oprindelige faglige read-only-, kilde-, sikkerheds- og privacygrænser består.
+
+Den normale kvote- og turlagertransport bruger moderne `sb_secret_` kun som apikey; legacy service-role JWT beholder Bearer. RPC, body, kvote og timeout lempes ikke. Historisk hosted nøglefamilie er ukendt, så den lokale rettelse er ikke bevis for årsagen til samtlige 503 eller for fungerende ny ekstern AI. Lokale mål består; rigtig 585 PostgreSQL/source-CI, sikker Worker/Edge/Pages-levering og normal offentlig ekstern-AI-rundtur med aktuelle bindinger udestår. Den tidligere produktionsverifikation nedenfor er historisk evidens for sin egen version, ikke en leveringskvittering for 585. Se håndbog 89.259 og CURRENT_TRUTH.
+
 ## Status
 
 Besluttet og produktionsverificeret i 4.0.293/4.0.294. Den offentlige formuleringstest udløste og lukkede en afgrænset 4.0.294-hotfix. **Kildebegrænsningen i beslutningens punkt 1 er historisk og erstattet af DEC-0105**, som tillader kildeklassificeret ekstern forskning, officielle kilder, RavRadars systematiske forskningsgrundlag og navngiven praktisk ekspertviden. Read-only-, sikkerheds-, privacy- og modelgrænserne består.

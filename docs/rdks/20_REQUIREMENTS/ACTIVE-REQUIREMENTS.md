@@ -1,3 +1,9 @@
+## 20. oktober — kvalificér 585 uden tab af originaler eller implicit statistikaktivering
+
+AKTIVT: Nye 585-metadata skal afledes af hele den reelle versionssynkroniserede kilde, med bevarede originale 584-attester, numeriske værdier/historik og 63 udstedte SQL-filer. Lokale builders/fixedpoint er ikke en installeret database. Rigtig ny PostgreSQL, præcis source-CI og den normale ægte original-B/S→prepare/proof/final→SQL/readback→B før S-kæde kræves før faktisk levering. Den samme-SQL Worker skal være verificeret med aggregate eksplicit OFF før de tre Edges og den offentlige selvrapporteringsklient.
+
+Selvrapportering er ikke samtykke eller autentisk vejr. Pseudonymisering er ikke anonymisering; 004/005, samlet statistik og automatisk sletning aktiveres ikke implicit. Mailafsender til det aftalte inaktivitetsvarsel mangler. Gamle faglige, privacy-, kilde-, budget-, admin- og geometrigrænser består. Ingen produktion under aktiv writer; genbrug uændrede beståede målprøver frem for nye testbanker. Alle fem hovedmål er åbne; fristen 18. oktober er overskredet og ikke forlænget. Se DEC-0091/0064/0249 og håndbog 89.259.
+
 ## 19. oktober — samme fulde datakontrol uden gentaget leverandørarbejde
 
 AKTIVT: Den normale Copernicus-checkpoint-kalder skal genbruge sin faktisk genopbyggede kandidat gennem den eksisterende strenge transaktion, med en særskilt autentificeret base. Alle tre forberedte snapshots skal verificeres før bank, shadow og stage committes i samme rækkefølge; journalen fjernes først derefter. Acquisition-plan og en gentagen foreløbig udvælgelse må ikke forbruge den lokale genoptagelsesreserve. Falsk baseline-genbrug eller svækket kildeadgang er ikke tilladt.

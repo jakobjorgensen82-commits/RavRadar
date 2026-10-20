@@ -1,3 +1,9 @@
+## 20. oktober — kvalificér den nye 585-kilde uden at genudstede gammel autoritet
+
+585 skal have faktisk ny C/I/T- og PostgreSQL-kvalifikation; historiske 584-orakler og gammel native-evidens må ikke ommærkes som nye. Den lokale første-rå-fejl-rettelse bevarer også `undefined`, `null`, `false` og `0` gennem cleanup; dens modelimportregel accepterer kun den hele gennemgåede nye helper. Windows-LF-arbejdsvisning må ikke svække hashguards eller ændre udstedte SQL/JSON-originaler; eksakte fysiske backupbytes gendannes og genkontrolleres efter den normale lokale kommando.
+
+Genbrug allerede afsluttede målprøver ved uændrede input; lokale resultater er ikke installation, hosted AI eller offentlig effekt. Ingen produktionsændring under den aktive almindelige writer. 585's samme-SQL Worker med aggregate OFF skal være verificeret før de nye Edges og offentlige selvrapporteringsproducenter; 004/005-installation, statistikrelease og automatisk sletning følger ikke implicit med. Alle fem mål er åbne, fristen 18. oktober er overskredet, og den nyere CODEX-/CURRENT_TRUTH-front erstatter kun ældre konkrete statusafventninger.
+
 ## 19. oktober — almindelig levering gennemført; leverandørarbejde optimeres
 
 Den almindelige vejrhentning `39299413035/1` er faktisk leveret med nye vejrdata, B før S, 55+3-kontroller, Pages og særskilt offentlig kontrol den 19. oktober omkring kl. 23.02 dansk tid. Det er ikke bevis for fuld DMI-dækning, komplet historik eller selvstændig drift. PR674 er særskilt kildeleveret efter præcis Linux-kontrol; faktisk brug af dens tidligere gemning/genoptagelse mangler endnu.

@@ -1,3 +1,9 @@
+## 20. oktober — 4.0.585 er lokal kandidat, ikke offentlig levering
+
+Læs den nye 585-front i CODEX_START_HERE, CURRENT_TRUTH og håndbog 89.259. PR675 har faktisk bestået 27 kilde-CI-trin uden skip og er merget som main `954ca00a`; den efterfølgende almindelige vejrhentning er endnu ikke dokumenteret færdig. Sidste fuldt verificerede almindelige offentlige levering er 4.0.584 fra 19. oktober omkring kl. 23.02 dansk tid. Cron er fortsat slået fra; fuld DMI, komplet cache/historik og selvstændig drift er åbne.
+
+585 samler forbedret assistent, selvrapporteringsmarkør og præcise servicekey-headere med en ny originale-bevarende metadataovergang. Normal versionssynk er udført én gang, nye C/I/T og append-only 100000-SQL er lokalt genereret/kontrolleret, og fixedpoint består. Det er ikke ny PostgreSQL-eksekvering, præcis kilde-CI, installation, offentlig effekt eller hosted AI-bevis. Ingen produktionsændring under aktiv writer. Gamle originaler, numeriske scoreværdier, 63 gamle migrationer, kildeprioritet og geometri bevares. SOURCE-revision, samlet statistik og automatisk retention forbliver inaktive. Alle fem hovedmål er åbne; fristen 18. oktober er overskredet, ikke forlænget. Ældre noter er kun erstattet på disse konkrete statuspunkter.
+
 ## 19. oktober — almindelig levering gennemført; leverandørarbejde optimeres
 
 Den almindelige vejrhentning `39299413035/1` er faktisk leveret med nye vejrdata, B før S, 55+3-kontroller, Pages og særskilt offentlig kontrol den 19. oktober omkring kl. 23.02 dansk tid. Det er ikke bevis for fuld DMI-dækning, komplet historik eller selvstændig drift. PR674 er særskilt kildeleveret efter præcis Linux-kontrol; faktisk brug af dens tidligere gemning/genoptagelse mangler endnu.

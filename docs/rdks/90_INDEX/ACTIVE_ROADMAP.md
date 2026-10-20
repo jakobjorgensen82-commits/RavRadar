@@ -1,3 +1,12 @@
+## 20. oktober — vejrhentning og cache først, 585 forberedes isoleret
+
+1. Følg den faktiske almindelige vejrhentning `39340901993/1`; mål 675's reelle DMI-/Copernicus-effekt, cachegemning/genbrug og ny B/S/Pages/offentlig generation. Driftsfejl har førsteprioritet. Genaktivér kun den uændrede cron efter verificeret genopretning og den aktuelle leverandørvurdering.
+2. Forbered 585 isoleret under ventetiden: afslut nødvendige mål- og dokumentationskontroller med genbrug af uændrede beståede resultater. Kør faktisk ny native PostgreSQL og samlet kilde-CI på præcist nyt head; dette må ikke ændre den aktive writer eller produktionen.
+3. Først efter afsluttet writer og sikker driftsvurdering: ægte originale B/S→prepare/proof/final, kontrolleret 100000-SQL/readback, B før S, samme-SQL Worker med aggregate OFF, tre Edges og Pages; verificér faktisk brugerforløb og eksisterende ekstern AI. Ingen 004/005-installation eller statistikaktivering i dette forløb. Den separate SOURCE-hel-tail forbliver inaktiv indtil sine egne integrations- og leveringsbeviser.
+4. Luk de resterende brugerdata-/statistik-/retentionkrav og dokumentér selvstændig drift. Pseudonymisering er ikke anonymisering; mailafsender til varsling mangler, og automatisk sletning forbliver OFF.
+
+Sidste fuldt verificerede almindelige offentlige levering er 584 den 19. oktober omkring kl. 23.02 dansk tid. Cron er OFF. Fuld DMI, komplet cache/historik og alle fem hovedmål er åbne; fristen 18. oktober er overskredet og ikke forlænget. Se CURRENT_TRUTH og håndbog 89.259; ældre afventninger er historik alene på de konkret erstattede punkter.
+
 ## 19. oktober — panelprøvens klokke, ikke en ændret prognoseregel
 
 PR667's første præcise kildekontrol bestod de indledende native Linux- og PostgreSQL-prøver, men den samlede kildevalidering fejlede i én UI-prøve. Dens faste prognosedato var 18. oktober, mens den normale renderer brugte værtsmaskinens aktuelle danske dag. Efter dansk midnat udløb prøveprognosen korrekt. Den samme fejl er reproduceret lokalt; det er ikke et nyt produktionsstop eller bevis for en defekt scoremodel.

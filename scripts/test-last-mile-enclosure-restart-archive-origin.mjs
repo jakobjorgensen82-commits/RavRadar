@@ -14,6 +14,7 @@ import {fileURLToPath,pathToFileURL} from 'node:url';
 const ROOT=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
 const completedStageAdmit=process.argv.includes('--completed-stage-admit');
 assert(!(completedStageAdmit&&process.argv.includes('--national')),'Select exactly one explicit fixture.');
+const FIXED584_HEAD='0b3a6fdd92dddf90f0030094a2ec9aa36261e748',FIXED584_TREE='dd2d223ab88e9061bc751dd7f531fa1a52d5bba7';
 const OLD_HEAD='d8a52e3e4cbaed1557cc56fe01f5f0a2b0d657d7';
 const OLD_TREE='0ddede3f4b4fb4faa43b0d43f17c7cdbadcc9bc0';
 const EXPECTED={C:'47a27aec034d8d7cbab7755a19025d796b6fe51c2b276676c7309c912a85f501',
@@ -31,16 +32,19 @@ const write=async(file,value)=>{
 };
 
 test('issued584 genuine old B/S and UNPAIRED archive mint a new zero-history origin, never old-pair admission',async t=>{
-  const sourceHead=git(ROOT,'rev-parse','HEAD');
+  const executionHead=git(ROOT,'rev-parse','HEAD'),sourceHead=FIXED584_HEAD;
+  assert.match(executionHead,/^[a-f0-9]{40}$/);
   assert.match(sourceHead,/^[a-f0-9]{40}$/);
+  git(ROOT,'merge-base','--is-ancestor',FIXED584_HEAD,executionHead);
+  assert.equal(git(ROOT,'rev-parse',FIXED584_HEAD+'^{tree}'),FIXED584_TREE);
   git(ROOT,'merge-base','--is-ancestor',OLD_HEAD,sourceHead);
   assert.equal(git(ROOT,'diff','--name-only','HEAD'),'','Real committed source is required before this positive target.');
   if(process.env.GITHUB_EVENT_NAME==='pull_request'){
     // The workflow checks out pull_request.head.sha; ambient GITHUB_SHA is its merge commit.
     const eventPath=process.env.GITHUB_EVENT_PATH;assert.equal(typeof eventPath,'string');assert(path.isAbsolute(eventPath));
     const event=JSON.parse(await fs.readFile(eventPath,'utf8')),eventHead=event?.pull_request?.head?.sha;
-    assert.match(eventHead??'',/^[a-f0-9]{40}$/);assert.equal(sourceHead,eventHead,'Checkout must be the actual PR event source head.');
-  }else if(process.env.GITHUB_SHA!==undefined)assert.equal(process.env.GITHUB_SHA,sourceHead);
+    assert.match(eventHead??'',/^[a-f0-9]{40}$/);assert.equal(executionHead,eventHead,'Checkout must be the actual PR event source head.');
+  }else if(process.env.GITHUB_SHA!==undefined)assert.equal(process.env.GITHUB_SHA,executionHead);
   if(completedStageAdmit)t.mock.timers.enable({apis:['Date'],now:Date.parse(time(15))});
   const parent=await fs.realpath(os.tmpdir());
   const work=await fs.mkdtemp(path.join(parent,'rr-lme584-archive-origin-'));
@@ -48,7 +52,7 @@ test('issued584 genuine old B/S and UNPAIRED archive mint a new zero-history ori
   const HOST=path.join(work,'source584'),OLD=path.join(work,'source140000');
   const originalFetch=globalThis.fetch,originalEnv={...process.env};
   let restoreTransport=null;
-  const receipt={kind:'SYNTHETIC_GENUINE_584_ARCHIVE_TO_OPAQUE_ORIGIN',result:'STARTED',sourceHead,
+  const receipt={kind:'SYNTHETIC_GENUINE_584_ARCHIVE_TO_OPAQUE_ORIGIN',result:'STARTED',sourceHead,executionHead,historical584Only:true,current585Admission:false,
     oldProducer:OLD_HEAD,sourceCleanWaiver:false,modelRetag:false,originStub:false,
     syntheticPublicProjection:true,full673Cold:false,full121Forecast:false,ordinaryFollowers:0,
     productionProof:false,sqlExecuted:false,stages:[]};
@@ -61,6 +65,7 @@ test('issued584 genuine old B/S and UNPAIRED archive mint a new zero-history ori
       assert.equal(git(root,'rev-parse','HEAD'),head);
       assert.equal(git(root,'status','--porcelain','-uno'),'');
     }
+    assert.equal(git(HOST,'rev-parse','HEAD^{tree}'),FIXED584_TREE);
     assert.equal(git(OLD,'rev-parse','HEAD^{tree}'),OLD_TREE);
     const source=await load(HOST,'scripts/lib/last-mile-enclosure-successor-source.mjs');
     const binding=source.requireLastMileEnclosureBinding();source.requireLastMileEnclosureOutput();

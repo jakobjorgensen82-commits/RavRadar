@@ -490,7 +490,7 @@ function assertWeatherSnapshotContract(value, allowLegacySchemaTwo = false, exac
 
 export function assertExternalTripNestedContract(payload) {
   if (payload && Object.hasOwn(payload, 'observation_origin')
-    && !['unknown', 'synthetic-test'].includes(payload.observation_origin)) {
+    && !['unknown', 'synthetic-test', 'self-reported'].includes(payload.observation_origin)) {
     throw new Error('TRIP_OBSERVATION_ORIGIN_INVALID');
   }
   if (!isRecord(payload)) throw new Error('TRIP_PAYLOAD_REQUIRED');
@@ -681,7 +681,7 @@ export function assertNoPrivateLocation(value, depth = 0) {
 export function externalTripPayload(payload, { stored = false } = {}) {
   if (!isRecord(payload)) throw new Error('TRIP_PAYLOAD_REQUIRED');
   if (Object.hasOwn(payload, 'observation_origin')
-    && !['unknown', 'synthetic-test'].includes(payload.observation_origin)) throw new Error('TRIP_OBSERVATION_ORIGIN_INVALID');
+    && !['unknown', 'synthetic-test', 'self-reported'].includes(payload.observation_origin)) throw new Error('TRIP_OBSERVATION_ORIGIN_INVALID');
   const cloned = typeof structuredClone === 'function'
     ? structuredClone(payload)
     : JSON.parse(JSON.stringify(payload));

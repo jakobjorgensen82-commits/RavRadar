@@ -1,3 +1,9 @@
+## 20. oktober — åbne grænser efter lokal 585-generering
+
+585's servicekey-headerinkompatibilitet og tab af rå falsy-fejl er rettet lokalt med målbevis; det er ikke dokumentation for løst hosted 503 i alle tilfælde. Historisk hosted nøglefamilie og eventuel øvrig årsag er ukendt. Nye QA-/konto-/Worker-/Edge-funktioner, normal originalovergang og ny SQL kræver stadig faktisk 585-kilde-/PG-/installations-/offentlig kontrol. Parserpræcedens og fysisk Windows-CRLF i lokale prøveinput er ikke nye produktions- eller vejrfejl; hashguards og gamle originaler bevares.
+
+PR675 er faktisk kildeleveret, men den kørende almindelige efterfølger er endnu ikke verificeret færdig. Fuld DMI, cache-/historikkomplethed og selvstændig drift forbliver åbne. SOURCE hel-tail og fire FD-HOLD-restpunkter er private/inaktive. Privat positiv statistikkæde er ikke anonym offentlig release; rollover/hosted drift og retention med mailafsender er åbne. 004/005 og automatisk sletning aktiveres ikke ved 585. Cron er OFF, alle fem mål er åbne, og 18. oktober-fristen er overskredet uden forlængelse. Se håndbog 89.259 og CURRENT_TRUTH.
+
 ## 19. oktober — almindelig levering gennemført; leverandørarbejde optimeres
 
 Den almindelige vejrhentning `39299413035/1` er faktisk leveret med nye vejrdata, B før S, 55+3-kontroller, Pages og særskilt offentlig kontrol den 19. oktober omkring kl. 23.02 dansk tid. Det er ikke bevis for fuld DMI-dækning, komplet historik eller selvstændig drift. PR674 er særskilt kildeleveret efter præcis Linux-kontrol; faktisk brug af dens tidligere gemning/genoptagelse mangler endnu.

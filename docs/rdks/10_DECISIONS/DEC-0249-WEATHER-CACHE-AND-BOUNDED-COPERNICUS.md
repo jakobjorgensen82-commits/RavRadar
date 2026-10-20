@@ -1,5 +1,11 @@
 # DEC-0249 – fortsæt fra rigtig vejrpakke og gem kortere Copernicus-kald
 
+## Tillæg 2026-10-20 — kildeleveret 675 og særskilt lokale 585-metadata
+
+De afgrænsede CP-konsoliderings- og DMI-kvalifikationsrettelser i det følgende tillæg er nu kildeleveret: PR675 bestod 27/27 præcise CI-trin uden skip og er merget som main `954ca00a`. Den almindelige efterfølger `39340901993/1` er endnu ikke verificeret færdig; kildelevering er ikke målt leverandørforbedring. Sidste fulde almindelige offentlige levering er 584 den 19. oktober omkring kl. 23.02 dansk tid. Fuld DMI, komplet cache/historik og selvstændig drift er åbne, cron er OFF, og budgetterne er ikke ændret.
+
+585 er en særskilt lokalt genereret, originale-bevarende metadata-/assistent-/kontokandidat, ikke en ny weather-acquisition-vej. Nye ægte C/I/T og 100000-SQL skal gennem ny PostgreSQL, eksakt source-CI og faktisk normal original-B/S/prewrite før sikker installation/readback, B før S, samme-SQL Worker med aggregate OFF, tre Edges og Pages. Gamle 63 migrationsfiler, numeriske originaler og historik bevares. Ingen 004/005 eller SOURCE-aktivering følger med. Dette erstatter alene de gamle afventninger om 675's kildelevering, ikke kravene om faktisk drift eller de fem åbne hovedmål. Fristen 18. oktober er overskredet uden forlængelse; se håndbog 89.259.
+
 ## Tillæg 2026-10-19 — fjern gentaget lokal kvalifikation, bevar tidsgrænserne
 
 Den almindelige vejrhentning er nu faktisk leveret, men leverandørernes indre fuldstændighed er ikke dermed lukket. De allerede gemte normale rapporter afgrænser DMI til ikke påbegyndte officielle havtimer og Copernicus til timeout under lokal samling af gemte segmenter. Der er ikke påvist en generel DMI-datafejl eller en begrundelse for at hæve leverandørbudgetterne. Historiske løsninger fra september kræver netop genbrug af en valideret kandidat og samme fulde gemmetransaktion frem for gentaget genopbygning.

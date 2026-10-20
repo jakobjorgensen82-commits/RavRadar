@@ -1,5 +1,11 @@
 # DEC-0064: Fleksibel kontoindberetning uden falske vejrdata eller dobbeltlagring
 
+## Tillæg 2026-10-20 — selvrapportering er ikke samtykke eller vejrautenticitet
+
+Den lokale 585-kandidat mærker nye almindelige ture og nye manuelle kontoindberetninger `self-reported` gennem de normale producenter og validatorer. Markøren beskriver indberetningsoprindelse alene; den udsteder ikke samtykke, ægte historisk snapshot, statistikpolicy eller modelautoritet. Fravær på gamle payloads forbliver fysisk fravær, og gamle payloadhashes/originaler omskrives ikke. `unknown` og `synthetic-test` beholder deres afgrænsning. Manuel efterregistrerings valg af tid, manglende historisk snapshot, `calibration_eligible=false`, dataminimering og ejeradgang ændres ikke af dette tillæg.
+
+Den samme normale 585-levering skal opdatere og verificere den eksisterende Worker på uændret D1-schema med aggregate eksplicit OFF før de tre Edge-funktioner og den offentlige klient. 004/005-installation og statistikrelease er særskilte og følger ikke med. Den private positive producent→lagret original→job→consumer→charge-prøve er lokal evidens, ikke hosted drift eller anonym offentlig statistik. Pseudonymisering er ikke anonymisering; fravalg, testdata og ejersletning skal respekteres. Rollover/hosted kontrol og automatisk retention er åbne; automatisk sletning aktiveres ikke uden den manglende mailafsender til det aftalte varsel. 585 er ikke installeret eller offentligt bevist. De oprindelige krav og historiske kvitteringer nedenfor bevares for deres eget scope. Se håndbog 89.259.
+
 **Status:** PRODUKTIONSVERIFICERET
 
 **Dato:** 2026-08-23

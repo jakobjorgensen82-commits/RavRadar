@@ -9,13 +9,15 @@ import {spawnSync} from 'node:child_process';
 import {fileURLToPath} from 'node:url';
 import {inverseArchivedWeatherRestartWorkflow} from './lib/archived-weather-restart-workflow-review.mjs';
 import {inverseArchivedProductionGate} from './lib/archived-production-gate-review.mjs';
+import {inverseAccountStatisticsAssistantWorkflow} from './lib/account-statistics-assistant-workflow-review.mjs';
 import {expandValidationCommands} from './run-validation-collection.mjs';
 import {lastMileEnclosureRequiredMigrations} from './integrated-cutover-readiness.mjs';
 import {requireLastMileEnclosureBinding} from './lib/last-mile-enclosure-successor-source.mjs';
 import {ESTABLISHED_NATIVE_CURRENT_ORIGIN_BINDING} from './lib/established-native-current-origin-successor-source.mjs';
 
 const ROOT=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
-const current=fs.readFileSync(path.join(ROOT,'.github/workflows/deploy-code-only-repair.yml'),'utf8').replace(/\r\n/g,'\n');
+const actualCurrent=fs.readFileSync(path.join(ROOT,'.github/workflows/deploy-code-only-repair.yml'),'utf8').replace(/\r\n/g,'\n');
+const current=inverseAccountStatisticsAssistantWorkflow(actualCurrent);
 const actual=inverseArchivedProductionGate(current);
 const sha=value=>crypto.createHash('sha256').update(value).digest('hex');
 const historical=inverseArchivedWeatherRestartWorkflow(actual);
@@ -173,6 +175,138 @@ function fixture(run){
     assert.deepEqual(identity(after),identity(before));fs.rmSync(directory,{recursive:true,force:true});
   }
 }
+
+// NEW normal case only. The old584/P0 cases below remain whole-byte unchanged.
+function metadata585Context(source,{phase='installed',family='current',saved=false}={}){
+  const state=context();
+  state.inputs.restart_archived_weather=false;state.inputs.upgrade_last_mile_enclosure=false;
+  state.inputs.publish_newest_saved_weather=saved;
+  state.inputs.upgrade_account_statistics_assistant=phase==='before';
+  for(const step of steps(source))if(step.id&&!state.steps[step.id])state.steps[step.id]={outcome:'success',outputs:{}};
+  Object.assign(state.env,{RAVRADAR_ACCOUNT_STATISTICS_ASSISTANT_SOURCE_ACTIVE:'true',
+    RAVRADAR_ACCOUNT_STATISTICS_ASSISTANT_PHASE:phase,
+    RAVRADAR_ACCOUNT_STATISTICS_ASSISTANT_UPGRADE_OPT_IN:phase==='before'?'true':'false',
+    RAVRADAR_ACCOUNT_STATISTICS_ASSISTANT_CURRENT_FAMILY:saved?undefined:family});
+  state.steps['current-private-install'].outcome=family==='current'?'success':'skipped';
+  state.steps['migrated-private-install'].outcome=family==='predecessor'?'success':'skipped';
+  state.steps['saved-checkpoint-reconcile'].outputs.required=saved?'true':'false';
+  return state;
+}
+function proveMetadata585NormalCallers(source){
+  const input=/^      upgrade_account_statistics_assistant:\n((?:        [^\n]*\n)+)/m.exec(source)?.[1];
+  assert(input);assert.match(input,/^        default: false$/m);assert.match(input,/^        type: boolean$/m);
+  const stage=named(source,'Select actual CURRENT family and restore only genuine original584 if needed');
+  const prepare=named(source,'Select and prepare only the exact authenticated584 metadata handoff');
+  const proof=named(source,'Prove actual original584 and complete prepared metadata B before artifact gates');
+  const reentry=named(source,'Pair already-current metadata B with actual S without origin or SQL replay');
+  const installed=named(source,'Require actually installed metadata contracts before installed reentry');
+  const sql=named(source,'Apply the sole new metadata binding after every artifact gate and fresh originals');
+  const B=named(source,'Publish current bounded private runtime');
+  const S=named(source,'Publish measured continuation only after verified warmup private runtime');
+  const early=named(source,'Publish measured continuation checkpoint without promoting rollback readiness');
+  assert.match(stage.text,/node scripts\/stage-account-statistics-assistant-originals\.mjs/);
+  assert.match(prepare.text,/node scripts\/account-statistics-assistant-prewrite\.mjs --slot select/);
+  assert.match(prepare.text,/node scripts\/account-statistics-assistant-prewrite\.mjs --slot prepare/);
+  assert.match(proof.text,/node scripts\/account-statistics-assistant-prewrite\.mjs --slot proof/);
+  assert.match(reentry.text,/node scripts\/reconcile-private-runtime-checkpoint\.mjs reconcile-account-statistics-assistant/);
+  assert.doesNotMatch(reentry.text,/--slot prepare|run-archived-weather-restart/);
+  assert.match(installed.text,/verify-account-statistics-assistant-plan\.mjs --phase installed/);
+  assert.match(installed.text,/integrated-cutover-readiness\.mjs verify-db/);
+  assert.match(installed.text,/verify-statistics-preference-revision-schema\.mjs/);
+  assert(stage.at<prepare.at&&prepare.at<proof.at&&proof.at<sql.at&&sql.at<B.at&&B.at<S.at);
+  const sqlBody=runText(sql);
+  for(const expected of ['runtime-audit.outputs.runtime_audit_outcome','current-private-spec.outcome',
+    'current-private-bundle.outcome','pages-prebuild.outcome','pages-preflight-privacy.outcome'])
+    assert(sqlBody.includes('test "${{ steps.'+expected+' }}" = success'),expected);
+  assert.match(sqlBody,/test "\$\(git rev-parse HEAD\^\{commit\}\)" = "\$GITHUB_SHA"/);
+  assert.match(sqlBody,/test "\$\(git rev-parse origin\/main\^\{commit\}\)" = "\$GITHUB_SHA"/);
+  assert.match(sqlBody,/env -u SUPABASE_DB_PASSWORD node scripts\/account-statistics-assistant-prewrite\.mjs --slot final/);
+  assert.equal((sqlBody.match(/supabase db push --linked --skip-vault/g)||[]).length,1,'One mutation, no replay loop');
+  const write=sqlBody.indexOf('supabase db push --linked --skip-vault');
+  assert(sqlBody.indexOf('--slot final')<write);
+  assert(sqlBody.indexOf('supabase migration list --linked',write)>write,'Unknown outcome uses actual linked readback');
+  assert(sqlBody.indexOf('--phase installed',write)>write);
+  assert(sqlBody.indexOf('integrated-cutover-readiness.mjs verify-db',write)>write);
+  assert.doesNotMatch(sqlBody,/for .*attempt|while |--force|--include-all/);
+  for(const state of [metadata585Context(source,{phase:'before',family:'predecessor'}),
+    metadata585Context(source,{phase:'installed',family:'predecessor'}),metadata585Context(source)]){
+    const predecessor=state.env.RAVRADAR_ACCOUNT_STATISTICS_ASSISTANT_CURRENT_FAMILY==='predecessor';
+    assert(enabled(stage,state));assert.equal(enabled(prepare,state),predecessor);
+    assert.equal(enabled(proof,state),predecessor);assert.equal(enabled(reentry,state),!predecessor);
+    assert.equal(enabled(installed,state),state.env.RAVRADAR_ACCOUNT_STATISTICS_ASSISTANT_PHASE==='installed');
+    assert.equal(enabled(sql,state),state.env.RAVRADAR_ACCOUNT_STATISTICS_ASSISTANT_PHASE==='before');
+    assert.equal(steps(source).filter(step=>/supabase db push --linked --skip-vault/.test(step.text)&&enabled(step,state)).length,
+      state.env.RAVRADAR_ACCOUNT_STATISTICS_ASSISTANT_PHASE==='before'?1:0,'No consumed/historical SQL writer');
+    for(const name of ['Apply exact dry-run-verified post-cutover binding','Prepare exact authenticated seed metadata and private origin',
+      'Select only the unconsumed last-mile archive restart','Archive independent actual originals and install only saved weather inputs',
+      'Build a new full public forecast through the normal provider-free updater'])
+      assert.equal(enabled(named(source,name),state),false,'No inherited source/cold/recomputation route: '+name);
+    assert.equal(enabled(early,state),false,'S is never published before B on the new source');assert(enabled(S,state));
+    state.steps['current-private-publish'].outcome='failure';assert.equal(enabled(S,state),false,'Late S requires actual B success');
+  }
+  const saved=metadata585Context(source,{saved:true});
+  assert.equal(enabled(stage,saved),false);assert.equal(enabled(prepare,saved),false);
+  assert.equal(enabled(proof,saved),false);assert.equal(enabled(reentry,saved),false);assert.equal(enabled(sql,saved),false);
+  assert(enabled(installed,saved));
+  for(const name of ['Select saved B-S reconciliation before any checkpoint restore',
+    'Reconcile saved last-mile CURRENT B with central S before public projection'])
+    assert(enabled(named(source,name),saved),'Saved current uses normal installed B/S route: '+name);
+  const replace=named(source,'Metadata585 - Replace and attest the same-SQL Worker');
+  const restore=named(source,'Metadata585 - Restore and attest normal D1 after replacement');
+  const repair=named(source,'Metadata585 - One bounded D1-only recovery replacement');
+  const off=named(source,'Require the exact new Worker and explicit aggregate OFF binding');
+  const edges=named(source,'Deploy exact rebound trip Edges without Worker or D1 replay');
+  assert(S.at<replace.at&&replace.at<restore.at&&restore.at<off.at&&off.at<edges.at);
+  assert.match(replace.text,/deployTripWorker\(/);assert.match(replace.text,/terminationConfirmed/);
+  assert.match(repair.if,/failure\(\) && !cancelled\(\)/);
+  assert.equal(steps(source).filter(step=>step.id==='account_statistics_assistant_repair_recovery_replace').length,1);
+  assert.match(named(source,'Metadata585 - Read-only existing D1 repair preparation and live preflight').text,
+    /config\.vars=\{TRIP_AGGREGATE_ENABLED:'false'\}/);
+  assert.match(off.text,/expectedPlainTextBindings:\{TRIP_AGGREGATE_ENABLED:'false'\}/);
+  assert.match(edges.text,/steps\.account_statistics_assistant_repair_restore\.outcome/);
+  for(const worker of steps(source).filter(step=>step.name.startsWith('Metadata585 - ')))
+    assert.doesNotMatch(worker.text,/--existing-owner-export-upgrade-apply|--existing-owner-erasure-guard-apply|secrets put|ensureDatabases/);
+  assert.doesNotMatch(source,/DMI_API_KEY|COPERNICUSMARINE_SERVICE_(?:USERNAME|PASSWORD)/);
+}
+test('actual585 metadata workflow qualifies its own callers before the unchanged P0 and old oracles',()=>{
+  assert.equal(sha(actualCurrent),'3ad071b6257531a3f256c1092403c25c7a197c08b7589c26f03c2454052b6218');
+  assert.equal(inverseAccountStatisticsAssistantWorkflow(actualCurrent),current);
+  assert.equal(sha(current),'b10eac363d4c067bf7f7c81159881b57a70923851ae8e78d1dde2357a770a477');
+  assert.equal(sha(actual),'b87ef14d831e6e825607a22deef3ab10f85bab654d2101731a473b393cb619cf');
+  assert.equal(sha(historical),'a5052ae64638aaf4df28523f8a8c401e13803707ea0d46e0bb371f012f33352b');
+  assert.equal(inverseArchivedWeatherRestartWorkflow(actualCurrent),historical,'Normal shared consumers use both exact layers');
+  proveMetadata585NormalCallers(actualCurrent);
+  for(const [name,change]of [
+    ['Apply the sole new metadata binding after every artifact gate and fresh originals',text=>text.replace(" && env.RAVRADAR_ACCOUNT_STATISTICS_ASSISTANT_PHASE == 'before'",'')],
+    ['Apply the sole new metadata binding after every artifact gate and fresh originals',text=>text.replace(" && env.RAVRADAR_ACCOUNT_STATISTICS_ASSISTANT_PHASE == 'before'"," && env.RAVRADAR_ACCOUNT_STATISTICS_ASSISTANT_PHASE == 'before' && unknownSqlGuard()")],
+    ['Apply the sole new metadata binding after every artifact gate and fresh originals',text=>text.replace('          test "${{ steps.pages-preflight-privacy.outcome }}" = success\n','')],
+    ['Publish measured continuation checkpoint without promoting rollback readiness',text=>text.replaceAll(" && (env.RAVRADAR_ACCOUNT_STATISTICS_ASSISTANT_SOURCE_ACTIVE != 'true')",'')],
+    ['Publish measured continuation only after verified warmup private runtime',text=>text.replace(" && steps.current-private-publish.outcome == 'success'",'')],
+    ['Pair already-current metadata B with actual S without origin or SQL replay',text=>text.replace('reconcile-private-runtime-checkpoint.mjs reconcile-account-statistics-assistant','account-statistics-assistant-prewrite.mjs --slot prepare')],
+    ['Metadata585 - Read-only existing D1 repair preparation and live preflight',text=>text.replace("config.vars={TRIP_AGGREGATE_ENABLED:'false'}","config.vars={TRIP_AGGREGATE_ENABLED:'true'}")],
+  ]){
+    const before=named(actualCurrent,name).text,after=change(before);assert.notEqual(after,before,name+' real mutation');
+    const changed=replaceOne(actualCurrent,before,after);
+    assert.throws(()=>inverseAccountStatisticsAssistantWorkflow(changed),'Whole585 inverse refuses '+name);
+    assert.throws(()=>proveMetadata585NormalCallers(changed),'Current caller assertions refuse '+name);
+    assert.throws(()=>inverseArchivedWeatherRestartWorkflow(changed),'Old/P0 oracles cannot adopt '+name);
+  }
+  assert.throws(()=>inverseAccountStatisticsAssistantWorkflow(actualCurrent+'\n'),'Unreviewed bytes refused');
+  const authority=/      - name: Require the exact dispatch purpose on main\n([\s\S]*?)(?=\n  operational-recovery-gate:)/.exec(actualCurrent);
+  assert(authority);const body=runText({name:'actual585 authority',text:authority[0]});
+  const base={GITHUB_EVENT_NAME:'workflow_dispatch',GITHUB_REF:'refs/heads/main',GITHUB_RUN_ATTEMPT:'1',
+    CONFIRMATION:'DEPLOY-CODE-ONLY-REPAIR',SAVED_WEATHER:'false',RECOVER_PUBLIC_RUN_ID:'',RECOVER_PUBLIC_RUN_ATTEMPT:'1',
+    UPGRADE_EXISTING_OWNER_EXPORT:'false',UPGRADE_ACCOUNT_ASSISTANT:'false',UPGRADE_STATISTICS_REVISION:'false',
+    UPGRADE_ESTABLISHED_NATIVE_CURRENT_ORIGIN:'false',UPGRADE_LAST_MILE_ENCLOSURE:'false',RESTART_ARCHIVED_WEATHER:'false',
+    UPGRADE_ACCOUNT_STATISTICS_ASSISTANT:'true'};
+  assert.equal(bash(body,base).status,0,'Real normal authority Bash accepts only the named new purpose');
+  for(const key of ['UPGRADE_EXISTING_OWNER_EXPORT','UPGRADE_ACCOUNT_ASSISTANT','UPGRADE_STATISTICS_REVISION',
+    'UPGRADE_ESTABLISHED_NATIVE_CURRENT_ORIGIN','UPGRADE_LAST_MILE_ENCLOSURE','RESTART_ARCHIVED_WEATHER','SAVED_WEATHER'])
+    assert.notEqual(bash(body,{...base,[key]:'true'}).status,0,key+' collision');
+  for(const changes of [{GITHUB_RUN_ATTEMPT:'2'},{GITHUB_REF:'refs/heads/topic'},{GITHUB_EVENT_NAME:'push'},
+    {RECOVER_PUBLIC_RUN_ID:'123'},{CONFIRMATION:'DEPLOY-SAVED-WEATHER-REPAIR'}])
+    assert.notEqual(bash(body,{...base,...changes}).status,0,'Fresh exact-main purpose remains required');
+});
 
 test('archive restart uses the unchanged normal 55+3 collectors and requires both actual outcomes',()=>{
   assert.equal(sha(current),'b10eac363d4c067bf7f7c81159881b57a70923851ae8e78d1dde2357a770a477');
@@ -438,6 +572,7 @@ function savedEnvironment(directory){
     RAVRADAR_WEATHER_STATE_EPOCH_BOOTSTRAP:'false',RAVRADAR_WEATHER_STATE_EPOCH_CHECKPOINT_REENTRY:'false',
     NATIVE_IDENTITY_RECOVERY:'false',UPGRADE_LAST_MILE_ENCLOSURE:'false',UPGRADE_ESTABLISHED_NATIVE_CURRENT_ORIGIN:'false',
     UPGRADE_EXISTING_OWNER_EXPORT:'false',UPGRADE_ACCOUNT_ASSISTANT:'false',UPGRADE_STATISTICS_REVISION:'false',
+    UPGRADE_ACCOUNT_STATISTICS_ASSISTANT:'false',
     RAVRADAR_OPERATIONAL_WORK:directory,GITHUB_OUTPUT:path.join(directory,'saved-output'),GITHUB_ENV:path.join(directory,'saved-env'),
     RUNNER_TEMP:directory};
 }
@@ -483,7 +618,7 @@ test('actual saved584 source selector requires the real issued I and T and the s
   for(const key of ['RESTART_ARCHIVED_WEATHER','COMPLETED_PRIVATE_RUNTIME','CHECKPOINT_ONLY','QUICK_CONFIRMATION',
     'RAVRADAR_WEATHER_STATE_EPOCH_BOOTSTRAP','RAVRADAR_WEATHER_STATE_EPOCH_CHECKPOINT_REENTRY','NATIVE_IDENTITY_RECOVERY',
     'UPGRADE_LAST_MILE_ENCLOSURE','UPGRADE_ESTABLISHED_NATIVE_CURRENT_ORIGIN','UPGRADE_EXISTING_OWNER_EXPORT',
-    'UPGRADE_ACCOUNT_ASSISTANT','UPGRADE_STATISTICS_REVISION']){
+    'UPGRADE_ACCOUNT_ASSISTANT','UPGRADE_STATISTICS_REVISION','UPGRADE_ACCOUNT_STATISTICS_ASSISTANT']){
     for(const value of ['true',undefined]){const refused=invoke(next.I,next.T,{[key]:value});
       assert.notEqual(refused.result.status,0,key+': '+value);assert.equal(refused.output,null);}
   }

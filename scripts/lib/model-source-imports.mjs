@@ -4,8 +4,18 @@
 import crypto from 'node:crypto';
 import { exactRelativeModuleSpecifiers } from './static-module-closure.mjs';
 const REVIEWED = Object.freeze({
+  // Only the exact frozen584 Git source may feed these computed loaders.
+  // The snapshot accessor is opaque; data assertions mint no admission.
+  'scripts/lib/authenticated-frozen584-predecessor.mjs': Object.freeze({
+    sha256: '900e9452cdf7cb4ed2ec73cebfd451510a1ae71dc55402fb06a66c4b256c1792',
+    imports: Object.freeze(['../check-account-statistics-assistant-predecessor-source.mjs']),
+  }),
+  'scripts/check-account-statistics-assistant-predecessor-source.mjs': Object.freeze({
+    sha256: '10ccdee12b112bcc323689c331a7bb068b7f47ae1ac60d535caf2d4523f465c1',
+    imports: Object.freeze([]),
+  }),
   'scripts/lib/established-native-current-origin.mjs': Object.freeze({
-    sha256: '2828947062b3fd0afa24eca48f8ee8f782c1b6b3287da3127be2aeccaf6b234d',
+    sha256: 'e6aac50d3077acd501228ffa64027c6524ab4c429a9b7edf97f48f966bcfb95b',
     imports: Object.freeze(['../protected-private-production-runtime.mjs', '../protected-ravscore-continuation-checkpoint.mjs',
       '../private-production-runtime-bundle.mjs', '../ravscore-continuation-checkpoint.mjs',
       '../private-production-runtime-workflow.mjs', '../../js/core/ravscore-model-contract.js',
@@ -13,7 +23,8 @@ const REVIEWED = Object.freeze({
       './ravscore-sampling-context.mjs', './coastal-point-staging-contract.mjs',
       './ravscore-candidate-g-rollback-runtime.mjs', './private-weather-component-pack.mjs',
       '../check-native-current-reanalysis-predecessor-source.mjs', './ravscore-production-part-pipeline.mjs',
-      './weather-state-epoch-archive.mjs']),
+      './weather-state-epoch-archive.mjs', './authenticated-frozen584-predecessor.mjs',
+      '../check-account-statistics-assistant-predecessor-source.mjs']),
   }),
   // Its computed imports are only from the verified, fixed immutable d7 Git
   // source materialization. That complete 122-leaf closure is independently

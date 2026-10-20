@@ -1,3 +1,17 @@
+## 20. oktober — 4.0.585-kandidat, endnu ikke installeret
+
+- [x] PR675: præcis 27/27 source-CI uden skip og merge som `954ca00a`; kun kildelevering, ikke målt ny leverandøreffekt.
+- [x] Sidste fulde almindelige offentlige levering: `39299413035/1`, 584 omkring 19. oktober kl. 23.02 dansk tid med reference kl. 20 og startup `rr-20261019195021-210`.
+- [x] 585-produktkomposition, rå falsy-fejl-bevarelse og præcis import-pin, moderne/legacy servicekey-headere, QA DA/DE/EN og ærlig `self-reported`-markør.
+- [x] Én normal versionssynk; nye reelle C94/I93/T, append-only 100000-SQL, normal consumer-/releasekontraktkontrol og fixedpoint lokalt gennemført. Gamle 63 SQL-filer og numeriske originaler bevares.
+- [x] LOCAL_TARGETED_PASSED: målrettet lokal slutmatrix med genbrug af uændrede beståede grupper; alle midlertidige SQL-/guarddataarbejdsvisninger fysisk gendannet. Den eksisterende Linux-specifikke case er ikke kørt på Windows.
+- [ ] Ny 585 native PostgreSQL, eksakt samlet source-CI og færdig releasekvalifikation. Lokale mål er ikke disse beviser.
+- [ ] Ægte originale B/S→normal prepare/proof/final, én sikker SQL-installation/readback, B før S, samme-SQL Worker med aggregate OFF, tre Edges, Pages og offentlig bruger-/AI-effekt.
+- [ ] Normal `39340901993/1` og målt virkning af 675; fuld DMI, komplet cache/historik, national kapacitet og selvstændig drift. Cron er fortsat OFF.
+- [ ] SOURCE hel-tail/fire FD-HOLD, hosted statistik/rollover og retention med fungerende varslingsafsender. Private prøver er ikke disse aktiveringer; 004/005 følger ikke 585.
+
+Alle fem hovedmål er åbne; 18. oktober-fristen er overskredet, ikke flyttet. Tidligere statusafsnit bevares som dateret historik på de her udtrykkeligt leverede eller lokalt forberedte punkter. Se håndbog 89.259.
+
 ## 19. oktober — almindelig levering gennemført; leverandørarbejde optimeres
 
 Den almindelige vejrhentning `39299413035/1` er faktisk leveret med nye vejrdata, B før S, 55+3-kontroller, Pages og særskilt offentlig kontrol den 19. oktober omkring kl. 23.02 dansk tid. Det er ikke bevis for fuld DMI-dækning, komplet historik eller selvstændig drift. PR674 er særskilt kildeleveret efter præcis Linux-kontrol; faktisk brug af dens tidligere gemning/genoptagelse mangler endnu.

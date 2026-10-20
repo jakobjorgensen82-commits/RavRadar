@@ -1,0 +1,1180 @@
+{
+  "schemaVersion": 1,
+  "kind": "EXACT_ISSUED584_NORMAL_SOURCE_TARGET_INVENTORY",
+  "head": "ee029982538c67dea39880bc7b33f3508c10cf9c",
+  "tree": "400babda9377e43ea7ee1444008f7accd1aded32",
+  "builder": "scripts/build-last-mile-enclosure-successor.mjs",
+  "targets": [
+    "scripts/test-last-mile-enclosure-current-model-imports.mjs",
+    "scripts/test-last-mile-enclosure-plan.mjs",
+    "scripts/test-last-mile-enclosure-postgres-source.mjs"
+  ],
+  "migrations": [
+    "supabase/migrations/20260829010000_ravscore_operational_documents_no_history.sql",
+    "supabase/migrations/20260829020000_integrated_trip_calibration_binding.sql",
+    "supabase/migrations/20260901010000_integrated_trip_measured_warmup_admission.sql",
+    "supabase/migrations/20260903010000_ravscore_checkpoint_metadata_cas.sql",
+    "supabase/migrations/20260904140000_harmonie_wind_reference_binding.sql",
+    "supabase/migrations/20260905090000_open_meteo_current_fallback_binding.sql",
+    "supabase/migrations/20260906162332_per_pair_weather_fallback_binding.sql",
+    "supabase/migrations/20260907084343_horizon_valid_weather_binding.sql",
+    "supabase/migrations/20260909194000_wam_same_run_resolution_binding.sql",
+    "supabase/migrations/20260912122607_measured_rollback_warmup_binding.sql",
+    "supabase/migrations/20260912141641_state_only_hold_closure_v2_binding.sql",
+    "supabase/migrations/20260912194206_local_unavailable_cutover_binding.sql",
+    "supabase/migrations/20260913010000_public_runtime_oracle_binding.sql",
+    "supabase/migrations/20260914010000_h0_reference_recovery_binding.sql",
+    "supabase/migrations/20260914020000_h0_state_snapshot_binding.sql",
+    "supabase/migrations/20260914234500_post_cutover_current_hold_binding.sql",
+    "supabase/migrations/20260915020000_private_runtime_storage_deny.sql",
+    "supabase/migrations/20260916120000_valid_data_before_local_missing_binding.sql",
+    "supabase/migrations/20260917001500_partial_zone_public_metadata_binding.sql",
+    "supabase/migrations/20260918125600_last_mile_history_envelope_binding.sql",
+    "supabase/migrations/20260918190000_weather_input_resolution_binding.sql",
+    "supabase/migrations/20260919010000_current_input_foundation_binding.sql",
+    "supabase/migrations/20260919020000_measured_warmup_checkpoint.sql",
+    "supabase/migrations/20260919231000_public_hour_delivery_binding.sql",
+    "supabase/migrations/20260920220000_public_hour_pack_capacity_binding.sql",
+    "supabase/migrations/20260922100000_integrated_trip_binding_repair.sql",
+    "supabase/migrations/20260922170000_integrated_model_binding_successor.sql",
+    "supabase/migrations/20260923052100_integrated_current_projection_binding.sql",
+    "supabase/migrations/20260923091500_integrated_native_hold_continuation_binding.sql",
+    "supabase/migrations/20260923100000_integrated_checkpoint_part_identity_binding.sql",
+    "supabase/migrations/20260923110000_integrated_checkpoint_warmup_status_binding.sql",
+    "supabase/migrations/20260923120000_integrated_checkpoint_missing_state_binding.sql",
+    "supabase/migrations/20260923130000_checkpoint_rejection_diagnostic.sql",
+    "supabase/migrations/20260923140000_checkpoint_native_hold_null_evidence.sql",
+    "supabase/migrations/20260923150000_checkpoint_candidate_diagnostic_correction.sql",
+    "supabase/migrations/20260923160000_checkpoint_candidate_companion_id.sql",
+    "supabase/migrations/20260923210000_checkpoint_cas_bounded_timeout.sql",
+    "supabase/migrations/20260925150000_weather_selection_model_binding.sql",
+    "supabase/migrations/20260926170000_exact_checkpoint_predecessor.sql",
+    "supabase/migrations/20261002080000_top20_display_binding.sql",
+    "supabase/migrations/20261002094500_restore_checkpoint_cas_timeout.sql",
+    "supabase/migrations/20261003080000_copernicus_child_close_binding.sql",
+    "supabase/migrations/20261004190000_owner_current_source_domain_binding.sql",
+    "supabase/migrations/20261005000000_owner_water_level_only_binding.sql",
+    "supabase/migrations/20261010130000_owner_export_origin_bound_successor.sql",
+    "supabase/migrations/20261012200000_checkpoint_cas_single_projection_successor.sql",
+    "supabase/migrations/20261013210000_account_assistant_original_bound_successor.sql",
+    "supabase/migrations/20261013220000_current_grid_original_bound_successor.sql",
+    "supabase/migrations/20261013230000_account_statistics_revision.sql",
+    "supabase/migrations/20261016060000_native_sampling_identity_original_bound_successor.sql",
+    "supabase/migrations/20261017020000_current_memory_warmup_original_bound_successor.sql",
+    "supabase/migrations/20261017140000_established_native_current_origin_bound_successor.sql",
+    "supabase/migrations/20261019060000_last_mile_enclosure_original_bound_successor.sql"
+  ],
+  "constructorFactory": {
+    "file": "scripts/test-protected-ravscore-continuation-checkpoint.mjs",
+    "sha256": "949a332c33073fdd2d9e01238241c9b8bfb6f877414ff7765d835759074dd736",
+    "factoryRangeSha256": "832098498476efe1b119472f16fe6e254496640b2e7ad5bf23d5518088926ed2",
+    "imports": [
+      "js/core/ravscore-integrated-state-pipeline.js",
+      "js/core/ravscore-candidate-g-state-pipeline.js",
+      "js/core/ravscore-model-contract.js",
+      "scripts/rollback-assets/ravscore-model-contract.js",
+      "scripts/lib/coastal-point-staging-contract.mjs",
+      "scripts/lib/ravscore-candidate-g-rollback-runtime.mjs",
+      "scripts/ravscore-continuation-checkpoint.mjs",
+      "scripts/lib/ravscore-continuation-implementation-contract.mjs"
+    ]
+  },
+  "exactConstructorImportReview": {
+    "file": "scripts/test-last-mile-enclosure-postgres-source.mjs",
+    "sha256": "534429996e175712a9ce8cb63e3ead56abfe61440817979896da87d8c1d4dd73",
+    "staticImports": [
+      "./lib/last-mile-enclosure-postgres.mjs",
+      "./lib/last-mile-enclosure-successor-source.mjs",
+      "./ravscore-continuation-checkpoint.mjs"
+    ],
+    "computedFactoryRangeAndNamedImportsCheckedByUnchangedOriginal": true
+  },
+  "files": [
+    {
+      "file": "config.js",
+      "gitBlob": "1d8989418d4e85eacde80137b807d2723c49e188",
+      "bytes": 379,
+      "sha256": "7cb635a4fbfad6693774ecc776dd5df6bef024d59aba51c50eeab380fdc4ed0d"
+    },
+    {
+      "file": "js/core/best-time-policy.js",
+      "gitBlob": "0d947d249c76d1e05cf70c092c8a22823462334a",
+      "bytes": 6392,
+      "sha256": "61ac6a994178149c67facb53d883fc0c07c525fb4e6e55982cff1fd4b167dd63"
+    },
+    {
+      "file": "js/core/best-time-selector.js",
+      "gitBlob": "548b9cca46192dec5704bd3ec2a65ec3b9576952",
+      "bytes": 2611,
+      "sha256": "79c92c96328b5fcf87e18bbe540fd9ebe0919e213af4d036e78d70db50a2c74c"
+    },
+    {
+      "file": "js/core/forecast-calendar.js",
+      "gitBlob": "d526a990b9307866623afedfefc4166ed5762abf",
+      "bytes": 1877,
+      "sha256": "c5de0a8c258bdd0d8435b76b2200f07c9bf8e65d711bd5ef431725855cdf3cc5"
+    },
+    {
+      "file": "js/core/local-zone-score.js",
+      "gitBlob": "5fdfdcf94e731009493fc44752316b93c2f5feab",
+      "bytes": 19425,
+      "sha256": "f03719cefe767a0d1a71e26e1a0c556e6f4fdb155a0e1f56be1ea3197099b508"
+    },
+    {
+      "file": "js/core/phase-d-process-candidate.js",
+      "gitBlob": "db9d082b051ab5af1bcbc404610c69f8bd1ba800",
+      "bytes": 14109,
+      "sha256": "d745f8ead7554bb0c63bd2f3740efff243ee761c99f86e93fc7276883a64fcfa"
+    },
+    {
+      "file": "js/core/phase-d-wave-process-candidate.js",
+      "gitBlob": "a95447ee17011b1e8937ebfe11806f643283371f",
+      "bytes": 5223,
+      "sha256": "4bab93ed36eca89dc5a1493685f01b0a1a44abe710ac62a0e4cd78df4fe0f4ea"
+    },
+    {
+      "file": "js/core/public-delivery-contract.js",
+      "gitBlob": "af956d7bc66ecdd6d52a4d0d4ce3b287b1cf0618",
+      "bytes": 9266,
+      "sha256": "0571025b79e74cf5c0c71d2356146da4a4c5159ee2571de7d45448361b85692d"
+    },
+    {
+      "file": "js/core/ravscore-candidate-g-state-pipeline.js",
+      "gitBlob": "57084ac2f486a67017a845bb7da5c414c3734625",
+      "bytes": 16255,
+      "sha256": "fe4b7e7e8e4a07dcd74d1da0c3e566971df33e3ef418fd7f2fc3f1028008c3e7"
+    },
+    {
+      "file": "js/core/ravscore-candidate-g.js",
+      "gitBlob": "8b051632a9a62fc9b3d3051e6808911ed0e55ec4",
+      "bytes": 25702,
+      "sha256": "0ccd6f05068c300faa6242d4104f5b9eeb021d599038512eeb7f3c98abc86345"
+    },
+    {
+      "file": "js/core/ravscore-current-supply-memory.js",
+      "gitBlob": "86f1d369d02df60abe6368c7dd297fca890170fe",
+      "bytes": 32847,
+      "sha256": "7e462b10982724d121ab1566a5fe497beb62f49b0f821bf768165af29e5401da"
+    },
+    {
+      "file": "js/core/ravscore-evidence-trust-contract.js",
+      "gitBlob": "45f1cc37807498bef6b11c9d828071b7e5761e1f",
+      "bytes": 3477,
+      "sha256": "81a8560d2c9e7b372a7e6608da80dab993b7249ca7ef1c573378e6e9303e9157"
+    },
+    {
+      "file": "js/core/ravscore-huntability.js",
+      "gitBlob": "5a95211058b36b0ff871b3a408991e1909451b32",
+      "bytes": 4005,
+      "sha256": "eabc93f7bf66d8daab6f29221d759c01ede4f3832a828da383cc864169d608d7"
+    },
+    {
+      "file": "js/core/ravscore-integrated-explanation-presenter.js",
+      "gitBlob": "8dfe4046d04969a0d8fcb9df06c958eb1f2ffd9b",
+      "bytes": 37066,
+      "sha256": "1e9242008af74c6d0b120ed8fca7dc0f979c036ac9602ecd6e9f150ed0b5c264"
+    },
+    {
+      "file": "js/core/ravscore-integrated-state-pipeline.js",
+      "gitBlob": "de16f3f32d10f5ce8e8ae1c2257edc47372bc331",
+      "bytes": 99166,
+      "sha256": "b81dcc45ea939f54aaedffe60af90cf1709239941129057fe2007c12d1e27f2a"
+    },
+    {
+      "file": "js/core/ravscore-integrated.js",
+      "gitBlob": "a91493211d7830ecd39fff9bef355c5deed617b6",
+      "bytes": 27487,
+      "sha256": "ba041c23de74829cade71b679dc8a566befeb41140bf1ee3fa1ceefc6e803317"
+    },
+    {
+      "file": "js/core/ravscore-mobilisation-memory.js",
+      "gitBlob": "4c4e4e4d1c62d5fd26fa63d05b5b3cc7cb3ee403",
+      "bytes": 6749,
+      "sha256": "fdb8c104f6df2e31eba05ea1e31d844e5a376a9b754784793a79398843231031"
+    },
+    {
+      "file": "js/core/ravscore-model-bundle.generated.js",
+      "gitBlob": "df85deb13ac60fb110eff06a6687ae5957fd22ae",
+      "bytes": 15584,
+      "sha256": "8920babd4e70c369d770b3543389a67055cdc152b95721de4a90d45c248a9e97"
+    },
+    {
+      "file": "js/core/ravscore-model-contract.js",
+      "gitBlob": "251e476c24a278cdf24fcca37a8bac4f86e5c9c7",
+      "bytes": 13790,
+      "sha256": "6edf369edf09b50005a0d04ce0ec892cf6455ddcea02ab4a7f2e51b644b8baab"
+    },
+    {
+      "file": "js/core/ravscore-profile-switch.js",
+      "gitBlob": "bf918082c7862193d9df8c98bed625bfa7a65d42",
+      "bytes": 24065,
+      "sha256": "446e6ba22f5d9c2b1aefc300890c950cdd95f158750f99cea3aa224df879c36b"
+    },
+    {
+      "file": "js/core/ravscore-public-model.js",
+      "gitBlob": "b7c2d37cd0d9661c23aeafbe4e21baad10f9693b",
+      "bytes": 33663,
+      "sha256": "08180f603fbc738bbc12201a10d043f4319c5008947ad90099cf63fddebbc983"
+    },
+    {
+      "file": "js/core/ravscore-public-profile-contract.js",
+      "gitBlob": "99c90a387e825a2ee9dd1cbd5620710065d44010",
+      "bytes": 5565,
+      "sha256": "ac011932b79b2ff5adf228e71882cdbea228b6fbc528887ccaa645d318dd86b4"
+    },
+    {
+      "file": "js/core/ravscore-public-runtime-contract.js",
+      "gitBlob": "4caebd3c42b5e63168b6763e8aeffa5efc22348b",
+      "bytes": 34644,
+      "sha256": "d1040e1fdd958584416b45fae6c5aa725db822a441b2b927d34858f2e089da5d"
+    },
+    {
+      "file": "js/core/ravscore-public-weather-source-age.js",
+      "gitBlob": "841303a80ce361a27f29727e7ba09ec9cd42a11b",
+      "bytes": 7151,
+      "sha256": "e06902c660ad0337be478c5d9140c59cc0477164caa50efb5c9dc3b9f3faca26"
+    },
+    {
+      "file": "js/core/ravscore-regime-memory.js",
+      "gitBlob": "90e9a19af406e5d4755e227f0814f44b87a325b3",
+      "bytes": 36237,
+      "sha256": "fd361b0b0d5cbb6bf7d7af632aad070be7c3e49dd4870837476bc96fe3f1cb22"
+    },
+    {
+      "file": "js/core/ravscore-time.js",
+      "gitBlob": "65786c3044d3b5ce0a024d368eda286a058853db",
+      "bytes": 1550,
+      "sha256": "b2311b8f2426968da59b387096522c29a191c4640afe39913ec0ae0c5b0272fa"
+    },
+    {
+      "file": "js/core/ravscore-wave-approach-state.js",
+      "gitBlob": "0d60b888931800eb0249f44e17c7e983398b37f0",
+      "bytes": 15550,
+      "sha256": "6900c089a30e3036dcb05ef1c985b71299c2c408257deea37f18fdbcbcba4e2c"
+    },
+    {
+      "file": "js/core/ravscore-wave-mobilisation-state.js",
+      "gitBlob": "3794d40770ec15d411eeb748ba7ff5bf47d1d209",
+      "bytes": 22009,
+      "sha256": "f845fdaa95733b1b57fd7b53b085e3b9d5e60ea431ac84072b442d07aa89fb35"
+    },
+    {
+      "file": "js/core/score-presentation.js",
+      "gitBlob": "cef94e4e26b75fb41aa8914949060c0c1690dd3d",
+      "bytes": 746,
+      "sha256": "c105b2e42d1b524640142487ba8d185edc0147b85fbf8dd9d69700d2b5a1bea9"
+    },
+    {
+      "file": "js/core/wave-approach.js",
+      "gitBlob": "ee2431f7c3edc95dfe2e3eca4229c414a322cfa2",
+      "bytes": 3626,
+      "sha256": "1dda08cdd8e8e0eedbd5e426237372e2dba3c076af4da26f757066fb91d5076c"
+    },
+    {
+      "file": "js/core/zone-ranking.js",
+      "gitBlob": "949e7e29505bea3a47cac4e5e4896f0b3fc92f24",
+      "bytes": 5240,
+      "sha256": "6a672a90255894357ec0b5985da474d314b502f21b4e5f0b7bea1e1c1c0ea464"
+    },
+    {
+      "file": "js/i18n.js",
+      "gitBlob": "1e7aaff1ee9c81d1aa2e6ddde07c9848d461716a",
+      "bytes": 121860,
+      "sha256": "4d7962d9140a65e5ca0a65b6da676ab729ea0a1137f58b503dcda150761b9763"
+    },
+    {
+      "file": "js/services/calibration-eligibility.js",
+      "gitBlob": "6ac1b501baf579c4addb01ab471812446df6e1b5",
+      "bytes": 36376,
+      "sha256": "1f1508344d8ddbae0b67243da0c9b6c51f6f3dde0eca9c7befc279f3e334860f"
+    },
+    {
+      "file": "js/services/rav-assistant.js",
+      "gitBlob": "f8ae2a8981c550e02d0c5fe2152c1c468e134933",
+      "bytes": 47129,
+      "sha256": "c75105ca9870d8f868c04e3954a5546a6ac41a9c916b380c89eaa42d8c45903e"
+    },
+    {
+      "file": "js/services/trip-evidence-contract.js",
+      "gitBlob": "8c08f8017fba788a999018ba31028476fe4e41a0",
+      "bytes": 28009,
+      "sha256": "f6f0c9b328761f79821164d1ebbcfe98a31e49186976ff4dccf4d6a3f9ca2f4c"
+    },
+    {
+      "file": "js/services/trip-evidence-public-adapter.js",
+      "gitBlob": "53e8e814b750cd9b3ebbe6ec142ef517023aaedd",
+      "bytes": 11414,
+      "sha256": "5598c10be1fc24ee516e08cb5e6c966f95083e3ef377e416381cab8cb58206ef"
+    },
+    {
+      "file": "knowledge/rav-assistant-local-v2.js",
+      "gitBlob": "44ee97e4fbd0a997a5545c9010f9622618ad7e7b",
+      "bytes": 42981,
+      "sha256": "9ad077823f16f1bfe90af9041c2b5d9264efbbb29d7c86b4dd0708e2fc71d327"
+    },
+    {
+      "file": "knowledge/rav-assistant-research-coast-v1.js",
+      "gitBlob": "5ccb5193cb120fe4818b95f10cf391231eb8f893",
+      "bytes": 48592,
+      "sha256": "fb64037af05782cc7214198bb23f1f4756ccf917475ccc76afb03423cfec1ffd"
+    },
+    {
+      "file": "knowledge/rav-assistant-research-material-v1.js",
+      "gitBlob": "055e7af64cc4f7a5a87582f03c79088c372d59e4",
+      "bytes": 54230,
+      "sha256": "b97224b044c6e7f4b72c4120ee01c95ad6af5f427257a745b7c00e8876e9961d"
+    },
+    {
+      "file": "knowledge/rav-assistant-research-v1.js",
+      "gitBlob": "ba052cfd98b0ebcd289e04421f46c9c593b376ae",
+      "bytes": 479,
+      "sha256": "bebd5a709e5505b1d958e6424056b196385f2ca7a9f607348919e32f95079df2"
+    },
+    {
+      "file": "knowledge/rav-assistant-sources-v1.js",
+      "gitBlob": "a82e1172e2381ef9a74ddbcd02811031b5bc09be",
+      "bytes": 8912,
+      "sha256": "c9a387ca9ed30d4c5a9932eb1b1133a99ae651c23c822b7d0ad1c8adbd8c43a6"
+    },
+    {
+      "file": "package.json",
+      "gitBlob": "aff88d36c05d2e89025e2e648b04d0406427d10c",
+      "bytes": 50341,
+      "sha256": "90e235b9dd2583eb8acdd13baad29e9e4b9c3b7ddcddcd3103e2ffc44b0d7fd4"
+    },
+    {
+      "file": "scripts/audit-ravscore-integrated-public-runtime.mjs",
+      "gitBlob": "efcb315edc71c7e4c00a2cd10f75a7de83127db8",
+      "bytes": 96053,
+      "sha256": "07d8fc98990b355ba31a588a0a307aac7872bffad93799258f1d85f36697382a"
+    },
+    {
+      "file": "scripts/build-candidate-g-rollback-bundle.mjs",
+      "gitBlob": "004eaf14227ab20639668f1240f1575621433aba",
+      "bytes": 6548,
+      "sha256": "79e030daafc41f56c20d343c1a246ad79b82fce2cd27a3f636a762f8f687dbf0"
+    },
+    {
+      "file": "scripts/build-last-mile-enclosure-successor.mjs",
+      "gitBlob": "f1579bc3d10e99576c4633b475cdcd22499ff180",
+      "bytes": 22085,
+      "sha256": "0b0d8e2670fe0ff82ed0aad35687f5635cc24f98186082f508d4db788a7ef910"
+    },
+    {
+      "file": "scripts/build-ravscore-model-bundle.mjs",
+      "gitBlob": "e86dba4688cd70c66db6dac013b08da37bb27bba",
+      "bytes": 6644,
+      "sha256": "974a8af2c8fdbc92217b15f582142f43a13288143d635b72dec0521021a66dcd"
+    },
+    {
+      "file": "scripts/build-statistics-preference-revision.mjs",
+      "gitBlob": "060fc5b368592c0a6d70fa2b1ad150f956e75235",
+      "bytes": 11350,
+      "sha256": "2196c4362615f6ea0541578553984fb280769ec650cd3319de6feadd52cba00e"
+    },
+    {
+      "file": "scripts/check-current-memory-warmup-predecessor-source.mjs",
+      "gitBlob": "c4d281d65c3984178078f2354978f68a42893e46",
+      "bytes": 10404,
+      "sha256": "a201e4afb0da382623004d7717ca867d9a9b881ff107e7a30dd052a5b2a68989"
+    },
+    {
+      "file": "scripts/check-native-current-reanalysis-predecessor-source.mjs",
+      "gitBlob": "b667aed90891a0677a0a7a40d99905fadffb2429",
+      "bytes": 12971,
+      "sha256": "1c08778a28bc3931b42430eaa94d9659dd279f42528c5306631b971c4405928d"
+    },
+    {
+      "file": "scripts/copy-public-delivery-shards.mjs",
+      "gitBlob": "64cdaa6acebb76f1e3a56f61b845238e6c52de47",
+      "bytes": 1670,
+      "sha256": "39fdc0dc2fe7e098665f4e10f6f081a39a55230b2eb9ec3973eb3e7dfe88de79"
+    },
+    {
+      "file": "scripts/fixtures/account-assistant-successor-inputs.json",
+      "gitBlob": "978c805e4b8c597e2f636f0e720a8b229886a282",
+      "bytes": 5974,
+      "sha256": "456388ea92807f3763420970c963bd72a3a03bcd3ca5d4b0f4826dfabefdf4ed"
+    },
+    {
+      "file": "scripts/fixtures/statistics-preference-revision-input.json",
+      "gitBlob": "f7ddedf12a846b5c03eb8c3a12b5c8f194db2276",
+      "bytes": 4889,
+      "sha256": "4990770bb2b0ca4bbad5da97156b88a186ef6df95319415ca91819cef8ff49af"
+    },
+    {
+      "file": "scripts/integrated-cutover-readiness.mjs",
+      "gitBlob": "03bd8f0e04135689e6bff2b3292d16cf5746637b",
+      "bytes": 92343,
+      "sha256": "b8576b2c4d9e1710b9aecb4e93100875648aa3c140965c43dc2e48549e210963"
+    },
+    {
+      "file": "scripts/last-mile-enclosure-prewrite-readiness.mjs",
+      "gitBlob": "6d1c16852f375efd567a743b71d89c361a7277d9",
+      "bytes": 7462,
+      "sha256": "b7c10efeba335bad349f9018e89060ac24123bae2cdefbe408ff926a1d22d05d"
+    },
+    {
+      "file": "scripts/lib/account-assistant-successor-source.mjs",
+      "gitBlob": "665f70d7ef7332a345aee2ad0119451dad2746b7",
+      "bytes": 4462,
+      "sha256": "eb35dc46cc6792da5ddff026de0bd61258f240a6b037565c29869873afb08bc5"
+    },
+    {
+      "file": "scripts/lib/bounded-conditions-predecessor-transition.mjs",
+      "gitBlob": "e1964ac2b9a828563c1b1912fd0ab824056c88e2",
+      "bytes": 31863,
+      "sha256": "5783e5aa4a0c0f9b794a7ff196d64119359d9b30372e1dce4aa481f2c4219425"
+    },
+    {
+      "file": "scripts/lib/coastal-point-stage-dmi-adapter.mjs",
+      "gitBlob": "9f2e2100445fb21c2b8a20bfb93a5b8bddabcf21",
+      "bytes": 5659,
+      "sha256": "f4dd1e46e70b5c39de014940c8451617c10541f4b5d27e7743387a6c2cd5e8e7"
+    },
+    {
+      "file": "scripts/lib/coastal-point-staging-contract.mjs",
+      "gitBlob": "d1f34cc7a81032cdfd025c3a97fd3f1225badd9e",
+      "bytes": 27848,
+      "sha256": "c2abd8fb7f03a0d84628a4af9b734a5f648dd5e250fdd96ccace3d7bc5d2f851"
+    },
+    {
+      "file": "scripts/lib/copernicus-component-index.mjs",
+      "gitBlob": "03cab3d25c9a081fcac5ccfb1e5098d9f7ed55f5",
+      "bytes": 13504,
+      "sha256": "cfdfdab9bbd9fe286d8ab6899845263fe031e2d2e933838f99901145ca15f48f"
+    },
+    {
+      "file": "scripts/lib/copernicus-component-projection.mjs",
+      "gitBlob": "ed9342b8eefbba45c9e7cc621807fd9ddf6b1924",
+      "bytes": 2660,
+      "sha256": "08a8109dc4e1df58743a4400d3c508076e6f8ca057a82fe5e38f5d900b2686ac"
+    },
+    {
+      "file": "scripts/lib/copernicus-component-spatial-policy.json",
+      "gitBlob": "060ac359c235ac640ec1bc98200288e6058b8812",
+      "bytes": 2011,
+      "sha256": "6463a4b47c9375659ac73b13cb24bdf358da4ab621acab49ba58c0d281ef2177"
+    },
+    {
+      "file": "scripts/lib/copernicus-offline-environment.mjs",
+      "gitBlob": "910dc3f5ffdc69e68e23fa22a586b842b7ac19a9",
+      "bytes": 886,
+      "sha256": "a19a2de9102560936f3ed380fd843475dc125799bf9b3be948eaef0b425d9ea0"
+    },
+    {
+      "file": "scripts/lib/current-grid-successor-source.mjs",
+      "gitBlob": "4df7e271a8810ee8877d7d79a78efe761b2db947",
+      "bytes": 4303,
+      "sha256": "f86aa7b2df9500942c5b4218f7cf777c6e32391722c091d3beabe4ef9f12636c"
+    },
+    {
+      "file": "scripts/lib/current-memory-warmup-postgres.mjs",
+      "gitBlob": "73953a792fb0aa4fdb346c8a654d5efa8dde8de8",
+      "bytes": 21181,
+      "sha256": "2e1498b7603a6625d415a1aed8c042c73d747ddd408f4222bdb0e3aa6046e091"
+    },
+    {
+      "file": "scripts/lib/current-memory-warmup-successor-source.mjs",
+      "gitBlob": "20e42e2c5c13b064dc0f4b9d9fdddd3785825336",
+      "bytes": 10489,
+      "sha256": "399e7e4690513b1db64a010c03b041d529caccfc0785fb34ab4c1b68ea5894b6"
+    },
+    {
+      "file": "scripts/lib/current-transport-history.mjs",
+      "gitBlob": "9576e45411ad42eef9ded7e575b51a3846d8da6e",
+      "bytes": 4967,
+      "sha256": "c7d5b4226aee7846e307d5d314fa336ef6143cfa6c0eca966b0f567b97c1ce9d"
+    },
+    {
+      "file": "scripts/lib/dmi-bulk-storage.mjs",
+      "gitBlob": "77d58251a61fa8b1c2443b4899a01eef62837cca",
+      "bytes": 11401,
+      "sha256": "fe51cae3131bc7e91022fc3ede69bc4587409b720bb8c1226d87cee2bff46f1d"
+    },
+    {
+      "file": "scripts/lib/dmi-forecast-store.mjs",
+      "gitBlob": "c8cf4a1c43cac9c1e59c9c432ba719613741f960",
+      "bytes": 58667,
+      "sha256": "a525ef4ae0109336541758b7fc4de661e4b1977397fd7e5bcba71eed83c9bc99"
+    },
+    {
+      "file": "scripts/lib/dmi-marine-zone-exclusions.json",
+      "gitBlob": "a4f65f8eb0396dbe3c3da442ebcb9a06d99d3287",
+      "bytes": 416,
+      "sha256": "b959dee7b87cfebe9fdc7311ffd62b835c96d5c4a263bbcff5c0485f6660ef16"
+    },
+    {
+      "file": "scripts/lib/dmi-marine-zone-exclusions.mjs",
+      "gitBlob": "681f6485e3fef029e5ba46b6c17fc818c76dc3d7",
+      "bytes": 1353,
+      "sha256": "d560dda981a8f0bdec49bbca05abb60cc6a26699784b345b1b258e7f1668ac28"
+    },
+    {
+      "file": "scripts/lib/established-native-current-origin-successor-source.mjs",
+      "gitBlob": "e379cf5d1e9352484fedd2ab79c1056e78bcc283",
+      "bytes": 7945,
+      "sha256": "9f985630a0985af396d1510d9387b76596e81ca57774fbb6c0d8789598333f9b"
+    },
+    {
+      "file": "scripts/lib/established-native-current-origin.mjs",
+      "gitBlob": "d000eb336e7d46a9ef7770c13a082170a061e1f6",
+      "bytes": 41472,
+      "sha256": "2828947062b3fd0afa24eca48f8ee8f782c1b6b3287da3127be2aeccaf6b234d"
+    },
+    {
+      "file": "scripts/lib/feggesund-wave-proxy.mjs",
+      "gitBlob": "98d49388b05f1b7837eaa51efadb59e920b12fd3",
+      "bytes": 22546,
+      "sha256": "fcc6c9af2c8d58c85514d5ac8e7af9645392fe7816187d08e18bf78cbef55292"
+    },
+    {
+      "file": "scripts/lib/last-mile-enclosure-postgres.mjs",
+      "gitBlob": "753bbe95004ceeb9b145488758e39f28040790ea",
+      "bytes": 22604,
+      "sha256": "ce41dc273b2fbf82f0bfd3b8fa0883c0212fd0c51a6ff05fb3017c46cb0c357b"
+    },
+    {
+      "file": "scripts/lib/last-mile-enclosure-successor-source.mjs",
+      "gitBlob": "031fb080392cd64e74352334914b2e1c634b3c5e",
+      "bytes": 8720,
+      "sha256": "0e09687c7541493fe10fe9c21f95cf42c9423732f2665664674e629d9825625d"
+    },
+    {
+      "file": "scripts/lib/live-current-pilot.mjs",
+      "gitBlob": "65721877b2b816a08a357cc8bd8dccbccb3aa167",
+      "bytes": 110378,
+      "sha256": "552a709d34b828086061f148841245b32f6f4d25c3d1e8249681bda83ad45ad9"
+    },
+    {
+      "file": "scripts/lib/local-current-reference.mjs",
+      "gitBlob": "e6e24d9d46ca53e4f9e7b10134826a8b1461f027",
+      "bytes": 2253,
+      "sha256": "6e1c6a28cb3cf704d760e5c6f52dade2e0c81112e1299a1264b3a9502851a75b"
+    },
+    {
+      "file": "scripts/lib/model-source-imports.mjs",
+      "gitBlob": "529fd48eff3e16e55cc4f762821c43be4bbc7043",
+      "bytes": 3049,
+      "sha256": "79b337c15283ce0f5e3bea107c2d2d7e9aac934ccf932bc10aac41ebcb5fa1a0"
+    },
+    {
+      "file": "scripts/lib/native-sampling-identity-successor-source.mjs",
+      "gitBlob": "4cc8065550be8af322ee0d9c24ebe9a19b29cad5",
+      "bytes": 9042,
+      "sha256": "a7b77c586e72e0c67be225c7fa773152d5dc3c41b5f5ea47e55504eee495d5ba"
+    },
+    {
+      "file": "scripts/lib/native0600-original-successor-source.mjs",
+      "gitBlob": "ab6803be1977296b16913c344b35adf7ff329923",
+      "bytes": 7442,
+      "sha256": "bcc2ac876cafcd61ea434bc9658302224e8f061ca048905d5682222eccf348c3"
+    },
+    {
+      "file": "scripts/lib/open-meteo-hourly-components.mjs",
+      "gitBlob": "b47d6c6422d63da703a7f9516037640af7ecda1c",
+      "bytes": 8408,
+      "sha256": "79518ec13546c78ff4ecbacc16d80c06d091b4c45f7d529e0ea2fef8af70b07f"
+    },
+    {
+      "file": "scripts/lib/open-meteo-o1280-grid.mjs",
+      "gitBlob": "7541dcbc842e25267024f95d507596f52d972842",
+      "bytes": 3226,
+      "sha256": "1a4ac015264521fcd62fb326868608738056d918acfcc2da3157f05996e4112d"
+    },
+    {
+      "file": "scripts/lib/open-meteo-part-bank.mjs",
+      "gitBlob": "80c42f43051d363626b4377775e9d29bfb654366",
+      "bytes": 24708,
+      "sha256": "0a46cdf5788f267599268a9ce5499dda645fc444929754bfded5d29dd30ef435"
+    },
+    {
+      "file": "scripts/lib/private-conditions-hourly.mjs",
+      "gitBlob": "0790f80d7fae3179e7ba4f987d1fd91c94826f57",
+      "bytes": 8465,
+      "sha256": "ea5fe3d5b801edd1cf8670b7d2bc3d7dbb870be70f26c56a01a8a21b2755dc0e"
+    },
+    {
+      "file": "scripts/lib/private-weather-component-inventory.mjs",
+      "gitBlob": "74165842787c0e802c090f873ce1c4837ccd97bb",
+      "bytes": 5021,
+      "sha256": "125e1a2acee5bff8d16ac549e96004dc8c80bbcea684782c45b3cfc666edba3c"
+    },
+    {
+      "file": "scripts/lib/private-weather-component-pack.mjs",
+      "gitBlob": "0c57120e97f7dafa99bd6c406fc3e1b3d0a27270",
+      "bytes": 30005,
+      "sha256": "2b35ca0d311d7e166e948bff5dbb6536bf626546d130bf3b3848a8634f6999b5"
+    },
+    {
+      "file": "scripts/lib/private-weather-progress-files.mjs",
+      "gitBlob": "be89eb603dbb78f6d573bc12ce9efe90b6654aee",
+      "bytes": 336,
+      "sha256": "441a086ab2b0aff8c259433322d85733ef65fb785e1ceca0fdd88894e2b5d5f3"
+    },
+    {
+      "file": "scripts/lib/private-weather-storage-abi.json",
+      "gitBlob": "eb779329bd5446cefdca589d0fabe3f4d12d35e0",
+      "bytes": 672,
+      "sha256": "0d445cc7823602e1a5cab51b20dbdabef59d52c7e929df9bf415f1bc6293d3b3"
+    },
+    {
+      "file": "scripts/lib/protected-dmi-native-current-proofs.mjs",
+      "gitBlob": "138cc0ec78628f3a0c30399a60d7973ae459c2df",
+      "bytes": 27624,
+      "sha256": "ff73196e11604183eb0c59d93d419a70041e43d06a14325759ddcf10c8450bbd"
+    },
+    {
+      "file": "scripts/lib/public-hour-delivery-pack.mjs",
+      "gitBlob": "3c37c6755b54f44bbcd34eb5071b4e1f2ff9e43a",
+      "bytes": 25913,
+      "sha256": "10a1bab2155b7eedd791045209a514f41bda08e3dc9470840729b87967fb7f6d"
+    },
+    {
+      "file": "scripts/lib/r2-private-runtime-storage.mjs",
+      "gitBlob": "4811d5713556b66899d2d903182cab711e7a6fdc",
+      "bytes": 12623,
+      "sha256": "2ec0b01fa4cc34ca4ea166681d7046fa3920a20086fba977797a50afc765e97c"
+    },
+    {
+      "file": "scripts/lib/ravscore-candidate-g-rollback-runtime.mjs",
+      "gitBlob": "4a72c4ff03c9354488b17dc49fd6d37ecf7b471a",
+      "bytes": 36594,
+      "sha256": "920f790b5459a945525565498ad014c51b9d7d0a0f32360948ead9c54424adb6"
+    },
+    {
+      "file": "scripts/lib/ravscore-continuation-implementation-contract.mjs",
+      "gitBlob": "356669d7d2043440bfe62455b52d7502e1dd3bad",
+      "bytes": 2316,
+      "sha256": "09a4f9a4b07717bdaed81742db94f1c22d9968adae30bdafbb5927c3dd2780b3"
+    },
+    {
+      "file": "scripts/lib/ravscore-integrated-runtime.mjs",
+      "gitBlob": "7df5ed3d273d66b5a2ffefb19798782b2bd04ee2",
+      "bytes": 18515,
+      "sha256": "a75dc5f45df6db6cc97b0cfc17d5c7cd9834c017fd213ed4f7dc699f527b27c8"
+    },
+    {
+      "file": "scripts/lib/ravscore-production-adapters.mjs",
+      "gitBlob": "e69c9f1da07863a43c29c1ba05591df5e161502b",
+      "bytes": 47507,
+      "sha256": "70796cda12d12f858438d21860e84067e4cf7fe5dfb967a2176804a155c681bd"
+    },
+    {
+      "file": "scripts/lib/ravscore-production-part-pipeline.mjs",
+      "gitBlob": "5a741cffb6d4fbef7a377e6235d46d79f5768b78",
+      "bytes": 40434,
+      "sha256": "8e979128a682a7324d7defcc3d2d2dfa5edc85ebc22d4ae714810aa085490758"
+    },
+    {
+      "file": "scripts/lib/ravscore-profile-transition.mjs",
+      "gitBlob": "e06352b93bb0dc30c8ea0fe9d59d3b9e328d4d2e",
+      "bytes": 9199,
+      "sha256": "d82449cfb267802b79fdf77581494cabcde9385614fe9ef47fa96490f5b41320"
+    },
+    {
+      "file": "scripts/lib/ravscore-recovery-replay.mjs",
+      "gitBlob": "1a8ffd5d1f97ae80a5b22d085c72858d710d3e73",
+      "bytes": 49200,
+      "sha256": "b7459a5d821800a9c58c303fc1fb166610b73d98a68523a8830ef29eb4e70223"
+    },
+    {
+      "file": "scripts/lib/ravscore-recovery-source-priority.mjs",
+      "gitBlob": "e41dd8a4f7ca39366f52c45098956deca9855b2e",
+      "bytes": 48158,
+      "sha256": "57ee543fd10450cd0272697843c402061436d1039650a9a0c455f6e68b838ad1"
+    },
+    {
+      "file": "scripts/lib/ravscore-sampling-context.mjs",
+      "gitBlob": "9d3f05b2339326bfdaf72dfd866144ea59d8f964",
+      "bytes": 979,
+      "sha256": "5e3465826e7dc7caac4cc8b0da1d1117a3b51dac157973d09aa7c2b7baa44cf4"
+    },
+    {
+      "file": "scripts/lib/static-module-closure.mjs",
+      "gitBlob": "45461ab7495ec41dfa4fd601d0ce27b8a914075b",
+      "bytes": 6790,
+      "sha256": "675f91e7942143a78636e219e54bd7fa0ff25ddcd1998657dd215105054938b0"
+    },
+    {
+      "file": "scripts/lib/supabase-admin-rest.mjs",
+      "gitBlob": "0650fc60a62bd651de63ea54892c80eedb915727",
+      "bytes": 4576,
+      "sha256": "ce6213930e27ceec1c125f98ac4706aa92df14b228d055a20c37a864d84f8724"
+    },
+    {
+      "file": "scripts/lib/weather-component-selection-history.mjs",
+      "gitBlob": "d9c420b156906d2c835e399fa545d6afd841472e",
+      "bytes": 6634,
+      "sha256": "eaf41bd0fc8e72b80e291745ea8049f06170bb9f06892721bbdccb434e00c8cd"
+    },
+    {
+      "file": "scripts/lib/weather-component-selection.mjs",
+      "gitBlob": "594da4e74efe8f224f423fbb61a442f9b9528c75",
+      "bytes": 8993,
+      "sha256": "eb2672566579e46529514b7227085bd9bef9b8e8f23b6d5df7b71dcbb9889ec4"
+    },
+    {
+      "file": "scripts/lib/weather-reserve-admission.mjs",
+      "gitBlob": "dec71df0f04368c4ae08e339f452314b3add9ed8",
+      "bytes": 1637,
+      "sha256": "c847fadb22e02e92a872726f97a4e5ea648ce08fb171f36558e6727110439c24"
+    },
+    {
+      "file": "scripts/lib/weather-state-epoch-archive.mjs",
+      "gitBlob": "fc2e8f803056797a328c221e9115d85e8ce9ab82",
+      "bytes": 59855,
+      "sha256": "e3ee3638edd722723442feb41fee751184e9c943aba89b06922fde738febfc1a"
+    },
+    {
+      "file": "scripts/lib/weather-state-epoch-input-view.mjs",
+      "gitBlob": "ac01b24783a292a5597811a79abe6836fe8fec5b",
+      "bytes": 11064,
+      "sha256": "26b0831e60dcb438d9e3d7647a775825d1472d962a622d0089a2e3306e1f0cf2"
+    },
+    {
+      "file": "scripts/private-production-runtime-bundle.mjs",
+      "gitBlob": "2b704bb13e11a8cea511f1c6c15e72042ac14a51",
+      "bytes": 34235,
+      "sha256": "2eeff25c6d6e769c7a5d9b414bfed574e0105e7cb24d0bd1578e7700781d5529"
+    },
+    {
+      "file": "scripts/private-production-runtime-workflow.mjs",
+      "gitBlob": "a9ce918585a2e531b5af6fde23139e69c457bf38",
+      "bytes": 79207,
+      "sha256": "5d661c24490e13052a1d6f18bc8f7dba9a99ffde76950c8fa8667d042cc0eacf"
+    },
+    {
+      "file": "scripts/protected-private-production-runtime.mjs",
+      "gitBlob": "60a9aa7c6db50a12d89b5071e7b782b817a5f65b",
+      "bytes": 114822,
+      "sha256": "e41b0434e14dd181c5ca3f6313456274c4fa5fcc9e97029e49f300ae0d4e4762"
+    },
+    {
+      "file": "scripts/protected-ravscore-continuation-checkpoint.mjs",
+      "gitBlob": "00b0db4c896ee38f91df49366b5421626635661e",
+      "bytes": 49091,
+      "sha256": "d9e9e4facb7005cdcbdd353241bcc84de8ef3d4ede28aaba91e5c00a5aaab030"
+    },
+    {
+      "file": "scripts/public-conditions-lib.mjs",
+      "gitBlob": "197115e9d933877e7a7e0b95f5d6f0f89d9ceed5",
+      "bytes": 65524,
+      "sha256": "e5a921d2a818694cfa13d5fcb30392cad972dc3b7038e929bc1d659a95f8017d"
+    },
+    {
+      "file": "scripts/ravscore-continuation-checkpoint.mjs",
+      "gitBlob": "4741240186854b0e24546eefc2085defa1fe736f",
+      "bytes": 54290,
+      "sha256": "e5c20048add873a1fcf890c23f922b4ea5394ab88b867cf8d4914cde215d88bf"
+    },
+    {
+      "file": "scripts/rollback-assets/ravscore-model-bundle.generated.js",
+      "gitBlob": "def056b0aaf056a8c3c1196bdfa117439e4cd59a",
+      "bytes": 15804,
+      "sha256": "84636202e51f89dc84e35a270cc839081989e4efac0865cc8e064d8c28e27bde"
+    },
+    {
+      "file": "scripts/rollback-assets/ravscore-model-contract.js",
+      "gitBlob": "21aaca07603d8ae263eae9ff9bd97b6d8c0aca02",
+      "bytes": 7249,
+      "sha256": "ba1c670fb3aaf30ff01b6c04583296c0a5da395866f28f03569285f7b0a2c135"
+    },
+    {
+      "file": "scripts/test-last-mile-enclosure-current-model-imports.mjs",
+      "gitBlob": "588a820a3a20337352406a56d0f38dedfb1505aa",
+      "bytes": 2683,
+      "sha256": "87cd239da363c12dfdfbe9ec54d3cc1458666980b7fcea636270760121b30620"
+    },
+    {
+      "file": "scripts/test-last-mile-enclosure-plan.mjs",
+      "gitBlob": "8d3c725020934e91cd39f4b92cd45a3c8bbc50f9",
+      "bytes": 8536,
+      "sha256": "fef57a711bda1dbec8e7bc2a852535dbedcafb83a36d622370259dc526cce74b"
+    },
+    {
+      "file": "scripts/test-last-mile-enclosure-postgres-source.mjs",
+      "gitBlob": "fb88f4559bffc63ac45a6d2a147592ed49c18f5b",
+      "bytes": 13407,
+      "sha256": "534429996e175712a9ce8cb63e3ead56abfe61440817979896da87d8c1d4dd73"
+    },
+    {
+      "file": "scripts/test-protected-ravscore-continuation-checkpoint.mjs",
+      "gitBlob": "695b11da7071e1149db1c22deae5e5b7a9934ff7",
+      "bytes": 66848,
+      "sha256": "949a332c33073fdd2d9e01238241c9b8bfb6f877414ff7765d835759074dd736"
+    },
+    {
+      "file": "scripts/verify-account-assistant-schema.mjs",
+      "gitBlob": "cba1e102549878567420544e8c7e2cd20252eaf9",
+      "bytes": 25513,
+      "sha256": "8bc595c8d1bef55d71cba5234c78256ff5797a0f33d17fe6a0146c9b08bddccd"
+    },
+    {
+      "file": "scripts/verify-last-mile-enclosure-plan.mjs",
+      "gitBlob": "80f7c63009ec68b07622d65aa483954046ea862d",
+      "bytes": 7230,
+      "sha256": "497f44fd06936e3d8165f577fdc3b30459420a010558cdae4bf389a4822b4161"
+    },
+    {
+      "file": "supabase/functions/_shared/public-gateway.ts",
+      "gitBlob": "9e64ef78875cad99f3cdb1c460e969fa1551e29b",
+      "bytes": 7416,
+      "sha256": "48a64b2a4a741bc1e0b9afc2dce50ce4c55dc3a7d2b24bfc4cc529ba8873b287"
+    },
+    {
+      "file": "supabase/functions/_shared/trip-source-projection.js",
+      "gitBlob": "992e3fea18793d344167b8a45e01babd17015996",
+      "bytes": 6955,
+      "sha256": "5db6019a5457e145c582d4c24c35ea9f49dd67826b0000b59ab0d23d109e8a72"
+    },
+    {
+      "file": "supabase/functions/_shared/trip-storage-contract-probe.js",
+      "gitBlob": "9efe00e691cde0c2f6d7ed17e9e85a155c464beb",
+      "bytes": 1223,
+      "sha256": "71103934af8d5623b743c2c3866e7f80778a8f296a8125aeb1d87e44bc2bc5b8"
+    },
+    {
+      "file": "supabase/functions/_shared/trip-storage-readiness.ts",
+      "gitBlob": "2b9ee7806c5ce591fcf3af5db86cc368e0d23dd9",
+      "bytes": 708,
+      "sha256": "297b7bd026c903fb5bb63841bcf00d155a73d7ac9d70d0ce9f7a642620c17089"
+    },
+    {
+      "file": "supabase/functions/_shared/trip-storage.js",
+      "gitBlob": "7fd81400374dd189d257fe4c7e6103966d34ff82",
+      "bytes": 49064,
+      "sha256": "837b99847de83ae7a2ccb8bd1a0d22da1d1fd4e12d423a4eedafda4e05706f4f"
+    },
+    {
+      "file": "supabase/functions/_shared/trip-store.ts",
+      "gitBlob": "70c1a6db1675446dc3c427e966c549da37f846e6",
+      "bytes": 13392,
+      "sha256": "78b5d6eb49e28147607440be6d978c8b5fa4e12761db1363881de78f7cb36dc2"
+    },
+    {
+      "file": "supabase/functions/submit-observation/index.ts",
+      "gitBlob": "a70232a3f0788e357d9be92bd7547a8ba47003ad",
+      "bytes": 10785,
+      "sha256": "863465db9b4f2aadec00b14d46a9d383b33bb3fe9dc7ccf9ee2083e09f623617"
+    },
+    {
+      "file": "supabase/migrations/20260829010000_ravscore_operational_documents_no_history.sql",
+      "gitBlob": "d458bee19111d94d44b9d4cf812178d62740bf47",
+      "bytes": 7811,
+      "sha256": "84e532839d69eed7afba64d01f20bef3fdf4e8699ba66b91e4d17f469300cd45"
+    },
+    {
+      "file": "supabase/migrations/20260829020000_integrated_trip_calibration_binding.sql",
+      "gitBlob": "c047ca33aee334909eaf2553ca3641a16bdb82da",
+      "bytes": 49473,
+      "sha256": "3e32daa856e44f81ae900e3c841b74633ef8efb473fca8b3f3dacef47de1a96d"
+    },
+    {
+      "file": "supabase/migrations/20260901010000_integrated_trip_measured_warmup_admission.sql",
+      "gitBlob": "c5f9dba121694ca389d483a0746bfdfa4e91bf96",
+      "bytes": 36614,
+      "sha256": "443d7f02f7736ca9d5ab2bd5dab28b8f5f56c6dc1c7550ee548fdec611e5386c"
+    },
+    {
+      "file": "supabase/migrations/20260903010000_ravscore_checkpoint_metadata_cas.sql",
+      "gitBlob": "1dbf4e6742f6e10b1bc38153ea613d13a88b4c26",
+      "bytes": 74529,
+      "sha256": "0076acd2a51ff76bc68ff9ccbcb7ad19b24848b338c22ce00b7382674d3088d5"
+    },
+    {
+      "file": "supabase/migrations/20260904140000_harmonie_wind_reference_binding.sql",
+      "gitBlob": "1d670bf52f01e8419b0c38ecf5798322104d3ce4",
+      "bytes": 110870,
+      "sha256": "bb6f7cf3f637edaa95970d9e336c0cfa845200b8edaf15ff2929de0c4f822ce1"
+    },
+    {
+      "file": "supabase/migrations/20260905090000_open_meteo_current_fallback_binding.sql",
+      "gitBlob": "6170f70001c2273dcdca891d6495e301026b2050",
+      "bytes": 110874,
+      "sha256": "c94b2480770edf82863416d19b0b8abc465ddec2f9ce9bccf650258e187485ac"
+    },
+    {
+      "file": "supabase/migrations/20260906162332_per_pair_weather_fallback_binding.sql",
+      "gitBlob": "1b88ed433787604238690323d267fd2319b9490b",
+      "bytes": 110881,
+      "sha256": "8767e45cc001b50d00ae32c0f3e1aaaba27411c04390956a47b1f23f86e9abf2"
+    },
+    {
+      "file": "supabase/migrations/20260907084343_horizon_valid_weather_binding.sql",
+      "gitBlob": "f0e949cb6ea8a1f803bb770916dab7d5cdd061b5",
+      "bytes": 110881,
+      "sha256": "f22ce2b3ee2e45c4fc86ce6a71b7a48543aef47dbbe014ecf41bd95558421c0d"
+    },
+    {
+      "file": "supabase/migrations/20260909194000_wam_same_run_resolution_binding.sql",
+      "gitBlob": "2127fe6594fb1a1acc8078899be6d97f16061fb7",
+      "bytes": 110901,
+      "sha256": "a76ae8bd0de79cbbbc79edcff0af92e37c2dfb3d5798e9c35e4337cbfea6606d"
+    },
+    {
+      "file": "supabase/migrations/20260912122607_measured_rollback_warmup_binding.sql",
+      "gitBlob": "c647f809d04bf93cf87e9499362e321f5d026592",
+      "bytes": 110902,
+      "sha256": "704439882eb6e77a7c038e14b8ecfd49ef9b6bb9074f9ea5778f6843f6c48137"
+    },
+    {
+      "file": "supabase/migrations/20260912141641_state_only_hold_closure_v2_binding.sql",
+      "gitBlob": "f655ffb289dd0e32aa54a675e8f7bc3043daaa1e",
+      "bytes": 110904,
+      "sha256": "548c29250363ecb45d19408141ff5206e86de273092c4a9d15add2e774a8cfc9"
+    },
+    {
+      "file": "supabase/migrations/20260912194206_local_unavailable_cutover_binding.sql",
+      "gitBlob": "13ebba02b1a05394ca0717b2791d8fef9c9f98f2",
+      "bytes": 110903,
+      "sha256": "24a7450ae913ceef37375e6df200a0e85e6a001128c4a1ca9b6652ae6642fbd8"
+    },
+    {
+      "file": "supabase/migrations/20260913010000_public_runtime_oracle_binding.sql",
+      "gitBlob": "3e175dd4b60a384bd0689b93d0a9aaf6eba64075",
+      "bytes": 110899,
+      "sha256": "0e855c718611360ffaa633c6dd890632b791c82faed03bd4699c0a9f20a0ecd5"
+    },
+    {
+      "file": "supabase/migrations/20260914010000_h0_reference_recovery_binding.sql",
+      "gitBlob": "decde68a4301efe421aa21abe090c20ffb106efa",
+      "bytes": 110899,
+      "sha256": "298e0a4c849d3dee363792b3cf4bad302f9eb7d724dc5f686a1f9bf602d38040"
+    },
+    {
+      "file": "supabase/migrations/20260914020000_h0_state_snapshot_binding.sql",
+      "gitBlob": "8798affb1c801423134bd2caa7120678e8e8189f",
+      "bytes": 110895,
+      "sha256": "f664d2a36f9a9bde668a542ac74b2312eab56c1c0ef9087cc26ef71f4f3b491c"
+    },
+    {
+      "file": "supabase/migrations/20260914234500_post_cutover_current_hold_binding.sql",
+      "gitBlob": "e76166fb29d232acf4135ba602b379efdd8d1609",
+      "bytes": 111231,
+      "sha256": "9386e0f6754ccb28521422c73ee5eb00c6c2e4f5899609e0bc3033048a83b840"
+    },
+    {
+      "file": "supabase/migrations/20260915020000_private_runtime_storage_deny.sql",
+      "gitBlob": "fccac46043672d63f94ddc954d687bfd0cee411a",
+      "bytes": 501,
+      "sha256": "cf1291f9c595d2746323c1b73202958e6a596016acff72e9aae01e69c76c869c"
+    },
+    {
+      "file": "supabase/migrations/20260916120000_valid_data_before_local_missing_binding.sql",
+      "gitBlob": "a85e92bb0718f2f9a6f9a2adf7451b993ce8c31a",
+      "bytes": 111237,
+      "sha256": "95272e1f95d07f2616cd4bc2057cbe3c82837bea1057e04bdece33e5e2958796"
+    },
+    {
+      "file": "supabase/migrations/20260917001500_partial_zone_public_metadata_binding.sql",
+      "gitBlob": "e84cac1eb78cd6328611001330fede1848f60ad3",
+      "bytes": 111234,
+      "sha256": "548ba234d6ad2a534bef96f0068c57243c7857a71e8cbe88f262a7a46b5c826b"
+    },
+    {
+      "file": "supabase/migrations/20260918125600_last_mile_history_envelope_binding.sql",
+      "gitBlob": "bfeb47fd87440c9710b7dd5bce1f72583066a4b5",
+      "bytes": 111232,
+      "sha256": "0548e4ad175c02b32f330c9563be89a0f7d3c4093409385155469368535d5707"
+    },
+    {
+      "file": "supabase/migrations/20260918190000_weather_input_resolution_binding.sql",
+      "gitBlob": "be7500e1315a765210780e38085dab198845f5be",
+      "bytes": 111230,
+      "sha256": "9dd27fae7ffd93720a7c2c9c347ab8ea6df40cbc96d713cb1ff25c638078f2dc"
+    },
+    {
+      "file": "supabase/migrations/20260919010000_current_input_foundation_binding.sql",
+      "gitBlob": "deff324ab791c09634539aa0a4160018af3255b9",
+      "bytes": 111230,
+      "sha256": "5ff2e8a01d27eb5bc5df9482c0660e1b82133fa9a738bff60e93fed5fd2b1233"
+    },
+    {
+      "file": "supabase/migrations/20260919020000_measured_warmup_checkpoint.sql",
+      "gitBlob": "2115f283d759b119dc6256ccc801104a0d1bf4f0",
+      "bytes": 115286,
+      "sha256": "24fd06b77349fe993f844fa0401deca3d69c30d823205cd6840f51f93f4b2fe8"
+    },
+    {
+      "file": "supabase/migrations/20260919231000_public_hour_delivery_binding.sql",
+      "gitBlob": "aed8ecf8fdfcaa7f4f326dc7fdac3863a775a31f",
+      "bytes": 115288,
+      "sha256": "491b33fe1027340ecfe389f6dc98ac3fcdcaf4c0a2351607eb98cd3b14f003be"
+    },
+    {
+      "file": "supabase/migrations/20260920220000_public_hour_pack_capacity_binding.sql",
+      "gitBlob": "fe5f59679e6a6a35c6add1e8e65a8d465f0fea5a",
+      "bytes": 115369,
+      "sha256": "4ab13e16700801ee38cd6a25cc6fe4adcc87cbe188c5f226a61798bede7b2f9f"
+    },
+    {
+      "file": "supabase/migrations/20260922100000_integrated_trip_binding_repair.sql",
+      "gitBlob": "3803ab3642872d1d1dfdfb3d149a4aa35e3ca36d",
+      "bytes": 90491,
+      "sha256": "f44465ffb4a4f253a15becf5b1a449781e05a120fec95de1a1ad35f959067e69"
+    },
+    {
+      "file": "supabase/migrations/20260922170000_integrated_model_binding_successor.sql",
+      "gitBlob": "8ca0fbd1c33cd2a6b1342bbb5e88353cddea0895",
+      "bytes": 90555,
+      "sha256": "6746c7e9bf1a980a194aae08410bab04917b5ee0d3e6b08f7543a3470c5680d0"
+    },
+    {
+      "file": "supabase/migrations/20260923052100_integrated_current_projection_binding.sql",
+      "gitBlob": "87a6402f04aeb9c548e82d60da34cac2237dc415",
+      "bytes": 90630,
+      "sha256": "26d5133de58137d121c7f1bbf4410503fdfb553c5101010bd667dfcd6decd1a6"
+    },
+    {
+      "file": "supabase/migrations/20260923091500_integrated_native_hold_continuation_binding.sql",
+      "gitBlob": "f88ca2c2a37486caa8c7bc267c1057602c28e04d",
+      "bytes": 90625,
+      "sha256": "fb6b357395c11e5982eb496187a6eb3c45502c21ef036a12ecb1ad4838a5457d"
+    },
+    {
+      "file": "supabase/migrations/20260923100000_integrated_checkpoint_part_identity_binding.sql",
+      "gitBlob": "dad1a1f8de551bc08096c5d4f7ea37baba661b21",
+      "bytes": 90622,
+      "sha256": "3d0b9aa386cd19ee092a1fd2cb25afd3dc4b367d92c3fb1503bc0e1b4adf130c"
+    },
+    {
+      "file": "supabase/migrations/20260923110000_integrated_checkpoint_warmup_status_binding.sql",
+      "gitBlob": "0b909b5bbebc49e0e63748d60fcbbc6bd1c237ec",
+      "bytes": 90518,
+      "sha256": "24c77f96a0a21a95232dba473394b1e19783bca4bceb32069e5bb482c4421187"
+    },
+    {
+      "file": "supabase/migrations/20260923120000_integrated_checkpoint_missing_state_binding.sql",
+      "gitBlob": "4dcabf5d4097692dd2a80be91882fa3ee8a2e212",
+      "bytes": 90899,
+      "sha256": "a171ed10e1520d2979fae506aba9aca17d420ded2a11fc12ba087dfb32ccd6c1"
+    },
+    {
+      "file": "supabase/migrations/20260923130000_checkpoint_rejection_diagnostic.sql",
+      "gitBlob": "e36db9f5232a0d948af72444eef9de6847038677",
+      "bytes": 60529,
+      "sha256": "6c43152ca038e5d322063cb3ed922bfb43dc698de5690629b488b4a6dfbf6d57"
+    },
+    {
+      "file": "supabase/migrations/20260923140000_checkpoint_native_hold_null_evidence.sql",
+      "gitBlob": "5e75e21e3ed037ae9f6db82b49491af8d9b46b35",
+      "bytes": 78839,
+      "sha256": "b502c3c1abc12fb07375eca7954f7538d4c8f5d12f776802e7dc48a8173caa8d"
+    },
+    {
+      "file": "supabase/migrations/20260923150000_checkpoint_candidate_diagnostic_correction.sql",
+      "gitBlob": "fab3329744ffefa0831d66f35f778350de7b43dc",
+      "bytes": 9367,
+      "sha256": "10ebc7983bfab8677188c304f9591a5c21c7b7ff24dc329d622f9ecec3ec9c5f"
+    },
+    {
+      "file": "supabase/migrations/20260923160000_checkpoint_candidate_companion_id.sql",
+      "gitBlob": "0de996e7b5fa5faadbf24bbaaf62cf3e57cfcd91",
+      "bytes": 19462,
+      "sha256": "14d2746b647006c2720a1666887f02ed59e964fe5841b626101b32efd77efe00"
+    },
+    {
+      "file": "supabase/migrations/20260923210000_checkpoint_cas_bounded_timeout.sql",
+      "gitBlob": "37ce4644b06c97c947a97fb934a11f55464392e0",
+      "bytes": 414,
+      "sha256": "547d73df4294cb7ba2dadd8bc56912d9d345108c54e5933167c4a018f01c7e00"
+    },
+    {
+      "file": "supabase/migrations/20260925150000_weather_selection_model_binding.sql",
+      "gitBlob": "5e822a4ef71d50d47777a4167194586ca8bf7e0f",
+      "bytes": 140697,
+      "sha256": "436a0ec8a57a6b9b5e1b9124b37c0ccf3e0328234f9bf7635b88ed23602c3bc4"
+    },
+    {
+      "file": "supabase/migrations/20260926170000_exact_checkpoint_predecessor.sql",
+      "gitBlob": "ad536d7e119184560cc23e4a64cd021fac5e38cb",
+      "bytes": 3850,
+      "sha256": "e435b9c0ad8fa1137d770cda0bd1d277de0bc4b896886c14e25fbf8c5ac2e2fc"
+    },
+    {
+      "file": "supabase/migrations/20261002080000_top20_display_binding.sql",
+      "gitBlob": "b3ff6fbd394a73687edd46e0eb8cc615d464eb68",
+      "bytes": 145084,
+      "sha256": "103de25ac4521bef4a1b041dd2ad65eb8465c6ab38dc19b23947c675ad5b60a8"
+    },
+    {
+      "file": "supabase/migrations/20261002094500_restore_checkpoint_cas_timeout.sql",
+      "gitBlob": "68427b63209a3516cbc47454a104db0c2b755eb0",
+      "bytes": 9274,
+      "sha256": "31632e333f16bf07f00f95cc87e19cb66a92fd4448ac0a27c1b4f7964e9eee47"
+    },
+    {
+      "file": "supabase/migrations/20261003080000_copernicus_child_close_binding.sql",
+      "gitBlob": "406ead80b2cc85565211e49c6fbdc78470ba8a9b",
+      "bytes": 149708,
+      "sha256": "b673b75476709c8bb51c5c2caba9e3acfa8f64b6666f4a74de3213ba961eb505"
+    },
+    {
+      "file": "supabase/migrations/20261004190000_owner_current_source_domain_binding.sql",
+      "gitBlob": "93b82560943c086277c2583f116a3ef00a2e2e80",
+      "bytes": 153959,
+      "sha256": "4e5ae691182ae6ef7b84f346bab0cfd828eedd321501424a307d5c918e449399"
+    },
+    {
+      "file": "supabase/migrations/20261005000000_owner_water_level_only_binding.sql",
+      "gitBlob": "80467f2fb66e9162a96d29115388f0a1f11b622b",
+      "bytes": 158209,
+      "sha256": "6b161bc71753b52c5728c8b9a03b02d5d0955d0e42e751a3f2a51a6ea6900496"
+    },
+    {
+      "file": "supabase/migrations/20261010130000_owner_export_origin_bound_successor.sql",
+      "gitBlob": "3c429dcbcc5a3acf80635b50451030112901e7ff",
+      "bytes": 162471,
+      "sha256": "55f01dd535553ad5df708ec70de8d58d177299f3348d18a2355a188bfb4f8cb6"
+    },
+    {
+      "file": "supabase/migrations/20261012200000_checkpoint_cas_single_projection_successor.sql",
+      "gitBlob": "4ba471e7dab9c1c396637f30c3c3f2a18b149736",
+      "bytes": 12218,
+      "sha256": "b03605272397585a3e6ad248398ba7bc6d88af506837f76c88a9a92955b48c18"
+    },
+    {
+      "file": "supabase/migrations/20261013210000_account_assistant_original_bound_successor.sql",
+      "gitBlob": "4c48f406c2d3c1c6a9424e5687a5ccb310523b06",
+      "bytes": 150567,
+      "sha256": "80ad179bc896e9fcd62b8af103d70a2d086d3626395dd97f03e4184e52bcae5d"
+    },
+    {
+      "file": "supabase/migrations/20261013220000_current_grid_original_bound_successor.sql",
+      "gitBlob": "b85f2a33d4c00cb5cd6a7bd13b0b6b2436c44d27",
+      "bytes": 293911,
+      "sha256": "77d5a60f22ff38fce3164c87e74d089ea56c0a18647310213cde465e95e4632b"
+    },
+    {
+      "file": "supabase/migrations/20261013230000_account_statistics_revision.sql",
+      "gitBlob": "ac9b03721bc0a3227ff0b14968aa67c013acc35a",
+      "bytes": 29257,
+      "sha256": "af4bd9d36f9a8d4badf3802d151acb2f16f2d5edd22ce095f8086167f2a00cae"
+    },
+    {
+      "file": "supabase/migrations/20261016060000_native_sampling_identity_original_bound_successor.sql",
+      "gitBlob": "d234ed018b852551ec317e274a3e5d24352462ed",
+      "bytes": 213647,
+      "sha256": "10e26f9d095b6c06eee479eb11d821114b04e4db0dbdb7c6717c13200793f019"
+    },
+    {
+      "file": "supabase/migrations/20261017020000_current_memory_warmup_original_bound_successor.sql",
+      "gitBlob": "77adb635b9f8d25e4dbee66260dbc0c6090a4ef5",
+      "bytes": 238629,
+      "sha256": "c8fff609ea03bbc2e5c84bea57b1d7702b15e51cd27f1854692506b18369ef47"
+    },
+    {
+      "file": "supabase/migrations/20261017140000_established_native_current_origin_bound_successor.sql",
+      "gitBlob": "fae1df6b19d3f1cc0a0589036340d5113ac5ad40",
+      "bytes": 299508,
+      "sha256": "f1d12590cfc93047afa94cdf152fab6e77f2851807695f0771127a2fdf6122b5"
+    },
+    {
+      "file": "supabase/migrations/20261019060000_last_mile_enclosure_original_bound_successor.sql",
+      "gitBlob": "4758231c6f387fd6631cb88036d40e7542da2865",
+      "bytes": 299757,
+      "sha256": "7d21e67a9d9b9ef5e1322a7e746120b289185ac09f24701044cbc7254617fd67"
+    }
+  ]
+}
