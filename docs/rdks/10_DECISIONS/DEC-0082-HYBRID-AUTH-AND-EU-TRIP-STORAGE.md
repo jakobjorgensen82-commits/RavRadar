@@ -2,6 +2,16 @@
 
 **Status:** Ejerbesluttet, implementeret og produktionsverificeret i 4.0.287. Auth-, HMAC-, EU-, shard-, dataminimerings- og kapacitetsdelene gælder fortsat. DEC-0109's 4.0.311-protokol og 4.0.313's bounded legacyreplay er merged; exact-main D1-run `33269631305` bestod begge syncs, slutreconciliation, Edge, Worker, registry og SQL. Lokal 4.0.314 ændrer kun incident-inspektørens afteranker og kræver nyt exact-head D1-bevis før rekonstruktion/Pages. Offentlig produktionssandhed er fortsat 4.0.310. Driftspræciseringen af 27. august 2026 gør Supabase-PAT'et behovsstyret i stedet for kalenderroteret.
 
+## Tillæg 20. oktober 2026 – leveret 585 og afgrænset sletteadgang
+
+Den kontrollerede 4.0.585-levering er gennemført med installeret/genlæst metadataovergang, B før S, samme-SQL Worker med statistik eksplicit OFF, tre serverfunktioner, Pages og offentlig slutkontrol. Dette erstatter alene ældre afventninger om denne installation, ikke kravene til komplette brugerforløb, anonymitet eller sletning.
+
+En normal browserprøve har bekræftet statistikvalgets default ON, gemt OFF, bevaret OFF efter faktisk genindlæsning og gendannet det oprindelige ON med serverkvittering. Logout/login er ikke afprøvet; eksportens fil er ikke verificeret. Ingen rigtig tur er oprettet eller slettet af dette bevis.
+
+En særskilt lokal kildeopfølgning retter slettehjælperens to Supabase-kald: moderne opaque `sb_secret_` sendes kun som apikey, mens legacy service-role JWT bevarer Bearer. Den eksisterende normale CLI, ejerskab, HMAC-kald, rækkefølge, første fejl og ingen gentagelse bevares. Den normale målprøve reproducerer alene den nye opaque-nøglefejl før rettelsen og består efter; hele førbilleder og inverse er bevaret. Det er ikke udført ejersletning, ny kilde-CI, merge eller produktionsbevis for denne opfølgning.
+
+Samlet statistik, 004/005-installation og automatisk retention er fortsat inaktive. Fungerende mailafsender, varsel, login-redning og dokumenteret Auth-/backup-sletning mangler. Turkildetrinnets kvittering må ikke udlægges som disse beviser. Alle fem hovedmål er åbne til 18. november 2026; ældre frister og leveringsstatus nedenfor er dateret historik.
+
 ## Baggrund
 
 Supabase Free har fortsat plads til login, profiler, rettigheder og central administration, men den bindende databasegrænse er 500 MB. Projektet viste cirka 86 MB database og et særskilt varsel om mulig begrænsning fra 9. september 2026 efter en tidligere egressoverskridelse. Ture er den forventede langsigtede vækst og må derfor ikke optage Supabases resterende databaseloft.

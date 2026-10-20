@@ -1,3 +1,14 @@
+## 20. oktober — 585 leveret; sletteadgang er en ny kildeopfølgning
+
+- [x] Kontrolleret 585-installation med SQL/genlæsning, B før S, samme-SQL Worker og faktisk aggregate OFF, tre serverfunktioner, Pages og offentlig slutkontrol er gennemført. Det er ikke ny vejrhentning eller fuld brugerdatafærdiggørelse.
+- [x] Normal browserprøve: default ON/revision 0 → gemt OFF/revision 1 → faktisk genindlæsning med OFF/revision 1 → gendannet ON/revision 2 og gemmekvittering. Logout/login er ikke prøvet. Ingen testtur er oprettet.
+- [x] Slettehjælperens opaque servicekey-fejl er lokalt reproduceret gennem den normale CLI: 24 bestået/1 fejl før rettelsen og 25 bestået/0 fejl/0 skip efter. Legacy JWT, alle tidligere afslag og hele inverse er bevaret; ingen rigtig sletning.
+- [ ] Kilde-CI, sikker sammenføring og kildelevering af denne nye tofilers opfølgning. Ingen nye C/I/T, migrationer eller versionsudstedelse; de to blade er uden for de aktuelle C94/I93/T12-kilder.
+- [ ] Samlede normale konto-/turforløb, logout/login, eksportfil og Auth-/backup-slettekæde. Eksportobservationens udfald er ukendt, ikke en påvist produktfejl.
+- [ ] Anonymitets-/kapacitetsbevis, 004/005 og aktiveret samlet statistik samt retention med fungerende mailafsender og varsel. Statistik og automatisk sletning forbliver OFF.
+
+Alle fem hovedmål er fortsat åbne til 18. november 2026. Aktuel vejr-/cronstatus føres af ROOT i CURRENT_TRUTH og det private checkpoint; ældre kandidat-, installations- og fristafventninger nedenfor er dateret historik på de her beviste punkter.
+
 ## 20. oktober — 584 leveret; lokal rettelse af 585-originalernes lagervej
 
 - [x] Almindelig 39392596895/1 leveret og særskilt offentligt kontrolleret; den ældre schema4-audits fem-komponent-intersektion er 89,919 % af hele 118×210-hovedpunktsaksen med krav om endelige tal i alle tuplefelter, ikke lokal søgemåde-/PART-dækning eller fuld historik.

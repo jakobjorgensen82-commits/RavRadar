@@ -1,5 +1,11 @@
 # User Data & Analytics 1.0
 
+## 20. oktober 2026 – leveret kontofundament, statistik fortsat OFF
+
+4.0.585's kontrollerede metadata-, Worker-, serverfunktions- og offentlige levering er gennemført. Den normale browserprøve bekræfter default ON, gemt OFF, bevaret OFF efter genindlæsning og gendannet ON med serverkvittering. Det er ikke logout/login-, fuldt tur-/eksport- eller anonymitetsbevis. Statistikpræferencen aktiverer ikke i sig selv statistisk behandling, og 004/005 er ikke installeret af leveringen.
+
+Den nye sletteadgangsrettelse er en særskilt lokal kildekandidat med normal CLI-regression, ikke udført tur-/konto-/backup-sletning. Samlet statistik og automatisk retention forbliver inaktive; mailafsender, varsel, login-redning og backupfrister skal stadig færdiggøres. Alle fem hovedmål er åbne til 18. november 2026. Den følgende lokale forberedelsesstatus bevares som historik; dens drifts- og anonymitetskrav består.
+
 ## 20. oktober 2026 — lokal varig forberedelse, ikke aktiveret statistik
 
 Den eksisterende private, signerede operatørkalder forbereder input i afgrænsede trin med de uændrede tids-, række-, byte- og forespørgselsgrænser. Et kvitteret, faktisk gemt job kan fortsætte over månedsskifte. Serveren vælger det ældste ventende job gennem den normale kontrollagerlæsning; klienten kan ikke bestille oprettelse af vilkårlige gamle perioder. En gammel periode i verify er alene en locator til et eksisterende færdigt job og dets allerede frosne forslag.
