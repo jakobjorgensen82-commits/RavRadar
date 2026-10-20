@@ -12,6 +12,8 @@ Fungerende lagring er ikke det samme som komplette eller aktuelle vejrdata. Data
 
 Kort fortalt: En afbrudt statistikforberedelse skal kunne fortsætte fra det faktisk gemte arbejde. Det må ikke give adgang til gamle ture eller ændre brugerens valg.
 
+Opdatering 20. oktober 2026: Den kontrollerede 4.0.585-levering er gennemført med statistikbehandling fortsat slået fra. En afgrænset browserprøve har bekræftet, at et gemt fravalg bevares efter genindlæsning, og at det oprindelige valg kan gendannes med serverkvittering. Det er ikke bevis for alle konto-, tur- eller eksportforløb. Den tidligere lokale leveringsstatus nedenfor er dateret historik; sikkerhedskravene består.
+
 Den forberedte rettelse deler arbejdet op i små, kontrollerede trin. Et allerede gemt job beholder sin oprindelige måned, selv om kalenderen går videre. Systemet skal fortsat kontrollere de aktuelle statistikvalg, slettede konti og det samme datagrundlag. En forsinket kvittering må ikke skjule et nyere fravalg. Brugeren eller en kopieret anmodning kan ikke selv åbne en gammel periode.
 
 Hvis et svar mangler, er arbejdet ikke bekræftet. Systemet skal afklare den gemte tilstand før en senere fortsættelse og må ikke automatisk gentage en ukendt skrivning. En besked om fremdrift er hverken en færdig rapport eller anonym statistik.
@@ -770,6 +772,8 @@ Den lokale 575-kilde samler de gennemgåede konto-, eksport- og assistentrettels
 Alle tidligere kapitler fra begge kildegrene bevares. Deres ældre test- og leveringsstatus er historik. Scoreformel, administratorpunkter, geometri og gyldige originaler ændres ikke. Alle fem hovedmål er fortsat åbne.
 
 ## 89.207 Kontrolleret sletning af ejerens turkilder
+
+En lokal kildeopfølgning i 4.0.585 skelner mellem to slags adgangsnøgler ved begge Supabase-kald. Moderne hemmelige API-nøgler er ikke login-tokens og sendes kun som API-nøgle; ældre service-role JWT beholder den eksisterende Bearer-adgang. Ejerskab, signerede lagerkald, sletterækkefølge, genlæsning og stop ved første fejl ændres ikke. Kildeprøver er ikke bevis for udført kontosletning eller backup-sletning.
 
 Det eksisterende serverforløb skal bruge den samme ejer gennem validering, signerede lagerkald, sletning og genlæsning. Det er nu samlet i én fast serverfunktion. Den eksisterende kommandolinje er fortsat eneste produktionskalder og kræver stadig et udtrykkeligt bekræftelsesflag. Rækkefølge, første fejl og adgangsoplysninger ændres ikke, og der er ingen automatisk gentagelse.
 

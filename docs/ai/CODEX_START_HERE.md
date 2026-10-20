@@ -1,3 +1,11 @@
+## 20. oktober — 585 faktisk leveret; normal vejrhentning bevares
+
+Læs CURRENT_TRUTHs aktuelle P0-linje og det private checkpoint før nye handlinger. Den almindelige vejrhentning 39392596895/1 leverede nyt vejr med B før S, Pages og særskilt offentlig kontrol. Det efterfølgende rettelsesdeploy 39427178008/1 installerede og genlæste 585-overgangen, bevarede originalerne og leverede Worker med statistik eksplicit OFF, tre serverfunktioner, Pages og offentlig slutkontrol. Rettelsesdeployet genbrugte morgenens vejr; det var ikke en ny vejrhentning. Det eksisterende cron-job er faktisk genaktiveret med uændret tidsplan.
+
+Normale browserforløb har nu bekræftet gemt statistikfravalg efter genindlæsning og gendannelse af det oprindelige valg samt eksterne assistentsvar på dansk, tysk og engelsk. En enkelt observeret 502 er fortsat årsagsuafklaret; dette er ikke bevis for fejlfri AI eller alle kontoforløb. Den afgrænsede offentlige zoneprøve viste fem dage og normal nulstilling fra femdøgnslisten. Eksportfil, logout/login, fuld tur-/slettekæde og backupfrister er stadig åbne.
+
+Den følgende kildeopfølgning retter kun Supabase-headere i den eksisterende ejerslettehjælper og dens normale CLI-regression. Den udfører ingen sletning og udsteder ingen version, C/I/T eller SQL. SOURCE-revision, samlet statistik og automatisk retention er fortsat inaktive. Fuld leverandørdækning, komplet cache/strømhistorik og gentaget selvstændig drift er ikke bevist. Alle fem mål er åbne til 18. november 2026; ældre modstridende installations-, cron- og fristudsagn nedenfor er dateret historik alene på disse punkter.
+
 ## 20. oktober — leveret 584-vejr; 585 stoppet før installation
 
 Læs CURRENT_TRUTHs P0-linje først. Almindelig 39392596895/1 er faktisk leveret med offentlig kontrol; den ældre schema4-audit målte alle fem komponenter samtidigt i 89,919 % af hele 118×210-hovedpunktsaksen med krav om endelige tal i alle tuplefelter, ikke lokal søgemåde-/PART-dækning. Det er ikke fuld leverandør- eller strømhistorik. Første 585-installation stoppede i trin 45 før SQL, ny B/S, Worker, Edges og Pages. Cron er faktisk pauset med uændret `19 */4` UTC; alle fem mål er åbne til 18. november 2026.

@@ -32,7 +32,11 @@ Begge nedenstående historiesider er bevaret. Denne nye front erstatter kun mods
 - Faktisk normal RED/GREEN bevarer hele pakkens bytes, hashes, genlæsning og afslag før frigivelse. Tilføjer faste hukommelsestal og præcisere slutpunkter til den eksisterende faselog.
 - Ingen ny version, C/I/T, SQL, scoreformel, kildeprioritet, tidsbudget eller geometri. Præcis kildekontrol, sikker levering og faktisk produktionsbevis mod OOM er endnu åbne.
 
-## 4.0.585 — lokal kandidat, 20. oktober 2026
+## 4.0.585 — leveret 20. oktober 2026; afgrænset kildeopfølgning
+
+- Faktisk leveret: kontrolleret metadataovergang og genlæsning, B før S, Worker med statistik eksplicit OFF, tre serverfunktioner, Pages og offentlig slutkontrol. En normal browserprøve bekræfter gemt fravalg efter genindlæsning og gendannelse af det oprindelige statistikvalg; den beviser ikke alle kontoforløb.
+- Ny lokal kildeopfølgning: begge Supabase-kald i den eksisterende ejerslettehjælper bruger kun apikey for moderne opaque servicekeys og bevarer Bearer for legacy JWT. Den normale CLI-prøve reproducerer fejlen før rettelsen og består alle 25 tilfælde efter, uden rigtig sletning. Denne opfølgning er endnu ikke kildeleveret; ingen ny version, C/I/T eller SQL udstedes.
+- Samlet statistik, 004/005 og automatisk retention er fortsat inaktive. Mailafsender, logout/login, verificeret eksportfil og den samlede Auth-/backup-sletning er ikke færdigbevist. Måldatoen er 18. november 2026; de følgende ældre kandidat-/leveringsstatusser er historik på de ovenfor udtrykkeligt beviste punkter.
 
 - Lokal målerettelse: Bevarer schema4-hovedpunktsprognosen som mærket særskilt scope og tilføjer lokal zone-/søgemådedækning over hele 118-timersaksen, med normal nulbølge-semantik, eksplicit missing/unknown, fem komponenter/intersektion og dansk dagfordeling. Den eksisterende normale audit og source-testindgang bruges; strøm-/scorehistorik og PART-dækning er fortsat særskilte mål. Ingen version, C/I/T, SQL, scoreformel eller data ændres. Lokal måltest er ikke installeret måling eller nye dokumenterede produktionstal.
 

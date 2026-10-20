@@ -24,6 +24,9 @@ export async function eraseTripOwnerSources({
     throw new Error('SUPABASE_URL er ugyldig.');
   }
   required(serviceKey, 'SUPABASE_SERVICE_ROLE_KEY');
+  const supabaseHeaders = { apikey: serviceKey };
+  // Opaque secret keys are not JWTs; preserve Bearer for legacy service-role keys.
+  if (!serviceKey.startsWith('sb_secret_')) supabaseHeaders.authorization = `Bearer ${serviceKey}`;
   const owner = await externalOwnerSubject({ userId, secret: required(pseudonymSecret, 'TRIP_PSEUDONYM_SECRET_V1') });
   const cloudflareConfiguration = {
     gatewayUrl: required(gatewayUrl, 'CLOUDFLARE_TRIP_GATEWAY_URL'),
@@ -34,8 +37,7 @@ export async function eraseTripOwnerSources({
   const supabaseDelete = await fetchImpl(`${supabaseUrl}/rest/v1/observations?user_id=eq.${encodeURIComponent(userId)}`, {
     method: 'DELETE',
     headers: {
-      apikey: serviceKey,
-      authorization: `Bearer ${serviceKey}`,
+      ...supabaseHeaders,
       Prefer: 'return=minimal',
     },
   });
@@ -43,7 +45,7 @@ export async function eraseTripOwnerSources({
   const remainingD1 = await listCloudflareTrips({ ...cloudflareConfiguration, ownerSubject: owner.subject, limit: 1 });
   if (remainingD1.length) throw new Error('D1-verifikationen fandt fortsat en turpost.');
   const supabaseVerify = await fetchImpl(`${supabaseUrl}/rest/v1/observations?select=id&user_id=eq.${encodeURIComponent(userId)}&limit=1`, {
-    headers: { apikey: serviceKey, authorization: `Bearer ${serviceKey}` },
+    headers: supabaseHeaders,
   });
   const remainingSupabase = supabaseVerify.ok ? await supabaseVerify.json() : null;
   if (!Array.isArray(remainingSupabase) || remainingSupabase.length) throw new Error('Supabase-verifikationen kunne ikke bekræfte, at ejerens ture er slettet.');
