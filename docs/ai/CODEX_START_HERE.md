@@ -1,3 +1,11 @@
+## 20. oktober — 585-prøver bruger deres faktiske datafamilie; vejrruten bevares
+
+**Aktuel drift:** Almindelig `39340901993/1` gennemførte faktisk 55+3-kontroller, B før S, Pages og terminal den 20. oktober omkring kl. 03.44 dansk tid. Særskilt offentlig kontrol kl. 03.45 fandt `rr-20261020005531-210`; begge cacheposter er faktisk gemt. Cron er ON med uændret tidsplan, næste kl. 06.19 dansk tid. Fuld DMI, komplet cache/historik, efterfølgende genbrug og selvstændig drift er fortsat åbne. Denne status erstatter de ældre afventninger om samme kørsel og cron nedenfor.
+
+PR676's præcise kontrol på `ee89d038` bestod faktisk ny native PostgreSQL med 585-migrationen. Det senere kildetrin fejlede i gamle prøveopstillinger: en 584-navngivet prøve byggede B med aktuelle 585-fabrikker og forventede en direkte overgang fra 140000-S; de eksisterende 585-kontroller afviser den korrekt. De to saved/CLI-opstillinger manglede også det nye eksplicitte false-flag. Test-only rettelsen bruger ægte hashbundne 584-fabrikker/kaldere med originale Git-LF-inventarer og bevarer de gamle assertions. Særskilte positive 584-til-585-/reply-loss-prøver og direkte 140000-afslag bevarer den aktuelle kontrakt. Produktkontroller, 127-bladsproducent, C/I/T og alle 64 migrationsfiler ændres ikke; ingen generel JSON-normalisering eller pin-lempelse.
+
+Afgrænsede lokale prøver består med præcist genbrug af uændrede delbeviser, ikke et nyt fuldfil-PASS. Ny præcis samlet CI, 585-installation og faktisk offentlig effekt mangler. Den aktive 584-vejrhentning og cacheopbygningen må ikke forsinkes af kandidaten. SOURCE, statistik og retention forbliver inaktive. Alle fem hovedmål er åbne; se seneste private checkpoint for eksakte udfald.
+
 ## 20. oktober — 4.0.585-kandidat: ægte kilde samlet, offentlig levering udestår
 
 **Faktisk drift:** PR675's præcise kildekontrol bestod alle 27 trin uden skip, og samme træ er merget som main `954ca00a`. Almindelig vejrhentning `39340901993/1` er under opfølgning; et igangværende DMI-trin er ikke en ny gemt eller leveret generation. Sidste fuldt verificerede almindelige levering er `39299413035/1`, offentlig 4.0.584 omkring 19. oktober kl. 23.02 dansk tid, reference kl. 20 dansk tid. Startup-generationen er `rr-20261019195021-210`. Cron er slået fra. Fuld DMI, komplet cache/historik og autonom drift er ikke bevist.

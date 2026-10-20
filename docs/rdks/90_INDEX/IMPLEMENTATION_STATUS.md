@@ -1,3 +1,14 @@
+## 20. oktober — test-only præcis familiekobling, ikke vejrændring
+
+- [x] PR676 på `ee89d038`: ny native PostgreSQL med 585-overgangen faktisk bestået; det senere kildetrin fejlede særskilt i reconciliation-prøveopstillinger. Den samlede kontrol er ikke grøn.
+- [x] Første konkrete årsag bevaret: gamle 584-navne brugte 585-fabrikker; saved/CLI-opstillinger manglede det nye eksplicitte false-flag. Ingen produktkontrol eller SQL lempes.
+- [x] Test-only kandidat bruger hashbundne ægte 584-fabrikker/kaldere og originale Git-LF-inventarer. Gamle assertions, 127-bladsproducent, C/I/T og alle 64 migrationsfiler bevares; særskilte 585-positive/reply-loss- og direkte ældre-familie-afslag indgår.
+- [x] Afgrænsede lokale prøver: 16 uændrede PASS genbruges fra første normale mål; begge ægte 584-positive tilfælde og den særskilt korrigerede direkte 140000-til-585-afvisning består med bevaret hel S og nul ekstra CAS. Syntaks består. Ikke et nyt fuldfil-PASS.
+- [x] Faktisk almindelig `39340901993/1` er leveret med begge gemte cacheposter og særskilt offentlig kontrol; cron er ON uændret, næste start kl. 06.19 dansk tid.
+- [ ] Ny præcis samlet kildekontrol skal køre hele målet uden mønsterfravalg; senere nationale kontroller er endnu ikke udført for denne head.
+- [ ] 585-installation/readback, original-B/S/prewrite, kontrolleret Worker/Edges/Pages og faktisk offentlig bruger-/AI-effekt.
+- [ ] Fuld DMI, komplet cache/historik og selvstændig drift. Den fungerende 584-rute og cacheopbygning må ikke forsinkes af kandidaten; SOURCE aktiveres ikke. Alle fem mål er åbne; ældre afventninger erstattes kun på disse punkter.
+
 ## 20. oktober — 4.0.585-kandidat, endnu ikke installeret
 
 - [x] PR675: præcis 27/27 source-CI uden skip, merge som `954ca00a` og faktisk normal Copernicus-genoptagelse/commit i efterfølgeren.
