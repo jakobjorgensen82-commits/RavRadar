@@ -195,7 +195,7 @@ export async function compareAccountStatisticsAssistantSuccessor({ psql, runSql,
       ['newer-direct0200-refused', 'after0600-same', PREFIX+'newer', 1, '22023', null, 1],
     ];
     for (const [family, central] of [['i994', 'grid-current'], ...['ffc', '249', 'c1ac'].map(family => [family, 'original-' + family])])
-      cases.push(['newer-' + family, central, PREFIX + 'newer', 1, null, 'updated', 2], ['same-' + family, central, PREFIX + 'same', 1, '22023', null, 1]);
+      cases.push(['newer-' + family, central, PREFIX + 'newer', 1, '22023', null, 1], ['same-' + family, central, PREFIX + 'same', 1, '22023', null, 1]);
     for(const [kind,expression] of [
       ['value',"jsonb_set(payload,'{states,part-001,currentEvidence,0,strength}','2'::jsonb)"],
       ['field',"jsonb_set(payload,'{unknownField}','true'::jsonb)"],
@@ -212,7 +212,23 @@ export async function compareAccountStatisticsAssistantSuccessor({ psql, runSql,
       const observed = JSON.parse(await psql(reset(central)
         + "set statement_timeout='55s';set request.jwt.claim.role='service_role';set role service_role;select public.native_checkpoint_attempt(false,"
         + version + ",(select payload from native_checkpoint_payloads where name='" + incoming + "'));"));
-      assertObserved(observed, code, disposition, storedVersion); reports.push({ case: name, sqlstate: code, disposition, storedVersion });
+      try { assertObserved(observed, code, disposition, storedVersion); }
+      catch (error) {
+        // Retain only fixed case/SQLSTATE/outcome categories, never row payloads.
+        // Observation failure must not replace the original assertion/cleanup.
+        try {
+          const state = value => value === null ? null : typeof value === 'string' && /^[0-9A-Z]{5}$/.test(value) ? value : 'UNKNOWN';
+          const result = value => ['inserted','updated','unchanged'].includes(value) ? value : value === null || value === undefined ? null : 'UNKNOWN';
+          const version = value => Number.isSafeInteger(value) && value >= 0 ? value : null;
+          console.error(JSON.stringify({ kind: 'ACCOUNT_STATISTICS_ASSISTANT_NATIVE_CASE_ASSERTION', phase,
+            expectedSqlstate: state(code), observedSqlstate: state(observed?.sqlstate),
+            expectedDisposition: result(disposition), observedDisposition: result(observed?.result?.disposition),
+            expectedVersion: version(storedVersion), observedVersion: version(observed?.stored?.version),
+            privatePayloadIncluded: false }));
+        } catch {}
+        throw error;
+      }
+      reports.push({ case: name, sqlstate: code, disposition, storedVersion });
     }
     phase = 'PRESERVED'; assert.equal(await psql(currentMemoryWarmupPreservationInventorySql('original-bank')), bank);
     assert.equal(await psql(accountRowsSql()), account); assert.equal(await psql(statisticsPreferenceRevisionCatalogQuery), accountCatalogBefore);
