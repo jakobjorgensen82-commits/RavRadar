@@ -39,6 +39,10 @@ export const AFTER_BLOCK=[
   '          PULL_REQUEST_NUMBER: $'+'{{ github.event.pull_request.number }}',
   '        run: node scripts/national584-source-evidence.mjs','',
 ].join('\n');
+export const BEFORE_JOB="  validate:\n    name: Source validation and release gate\n    runs-on: ubuntu-24.04\n    timeout-minutes: 75\n    steps:\n";
+export const AFTER_JOB=BEFORE_JOB.replace('timeout-minutes: 75','timeout-minutes: 90');
+// Registered genuine90 predecessor; only CURRENT_JOB is admitted by currentContext.
+export const CURRENT_JOB=AFTER_JOB.replace('timeout-minutes: 90','timeout-minutes: 120');
 const ROOT=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
 const sha=raw=>crypto.createHash('sha256').update(raw).digest('hex');
 const lf=value=>String(value).replace(/\r\n/g,'\n');
@@ -80,13 +84,20 @@ export function requireHistoricalSource() {
   assert.equal(lf(raw(WORKFLOW)).split(BEFORE_BLOCK).length,2);
   return {head:ORIGIN.head,tree:ORIGIN.tree,content:ORIGIN.content,frozenGitTrees:frozen};
 }
-export function verifyWorkflow(source) {
+export function verifyReviewed90Workflow(source) {
   source=lf(source);assert.equal(source.split(AFTER_BLOCK).length,2);
-  assert.equal(sha(Buffer.from(source.replace(AFTER_BLOCK,BEFORE_BLOCK))),
+  assert.equal(source.split(AFTER_JOB).length,2,'Only the exact reviewed current90-minute source job is admitted');
+  const restored=source.replace(AFTER_BLOCK,BEFORE_BLOCK).replace(AFTER_JOB,BEFORE_JOB);
+  assert.equal(sha(Buffer.from(restored)),
     '55bd264d8cc8fb7301d6b403f7035f644625d08528514fab3200e7e435f1d2d0',
-    'Only this exact CI step may differ from the verified old workflow');
+    'Only this exact CI step and reviewed75-to90 source-job header may differ from the verified old workflow');
   assert(source.indexOf('Validate source contracts and release governance')<source.indexOf(AFTER_BLOCK));
   assert(source.indexOf('Require validated source tree to remain unchanged')>source.indexOf(AFTER_BLOCK));
+}
+export function verifyWorkflow(source) {
+  source=lf(source);
+  assert.equal(source.split(CURRENT_JOB).length,2,'Only the exact reviewed current120-minute source PR job is admitted');
+  verifyReviewed90Workflow(source.replace(CURRENT_JOB,AFTER_JOB));
 }
 export function verifyOrigin(run,jobs) {
   assert.equal(run.id,ORIGIN.run);assert.equal(run.run_attempt,1);

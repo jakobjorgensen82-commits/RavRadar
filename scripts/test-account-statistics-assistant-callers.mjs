@@ -184,3 +184,58 @@ test('normal585 mutable consumer reads the actual issued source and preserves al
     canonicalSource.replace(whole,''),canonicalSource+'\n'+whole+'\n'])
     assert.throws(()=>checkpointMetadataCasBlock(changed,integratedBinding(),candidateBinding(),NEXT.T));
 });
+
+test('historical584 national evidence inverts only the reviewed current90-minute job and exact national wrapper',async()=>{
+  const {execFileSync}=await import('node:child_process');
+  const {ORIGIN:old,WORKFLOW,BEFORE_BLOCK,AFTER_BLOCK,BEFORE_JOB,AFTER_JOB,CURRENT_JOB,verifyWorkflow:verifyCurrentWorkflow,
+    verifyReviewed90Workflow:verifyWorkflow}=await import('./national584-source-evidence.mjs');
+  const git=(...args)=>execFileSync('git',args,{maxBuffer:8*1024*1024,timeout:30000,
+    env:{...process.env,GIT_NO_LAZY_FETCH:'1',GIT_NO_REPLACE_OBJECTS:'1'}});
+  const fixture='b02745d6d2987ed0fd2913623b3809fd0ea02dd6';
+  assert.equal(git('rev-parse',old.head+'^{tree}').toString().trim(),'400babda9377e43ea7ee1444008f7accd1aded32');
+  assert.equal(git('rev-parse',fixture+'^{tree}').toString().trim(),'b3fe05c0b6356ead06fb91a957113d10553d7631');
+  const before=git('show',old.head+':'+WORKFLOW).toString();
+  const recorded=git('show',fixture+':'+WORKFLOW).toString();
+  const actual=(await fs.readFile(new URL('../.github/workflows/validate-pull-request.yml',import.meta.url),'utf8')).replace(/\r\n/g,'\n');
+  verifyCurrentWorkflow(actual);
+  const current=actual.replace(CURRENT_JOB,AFTER_JOB);
+  const hash=value=>crypto.createHash('sha256').update(value).digest('hex');
+  assert.equal(hash(before),'55bd264d8cc8fb7301d6b403f7035f644625d08528514fab3200e7e435f1d2d0');
+  assert.equal(recorded.split(AFTER_BLOCK).length,2);assert.equal(recorded.split(AFTER_JOB).length,2);
+  assert.equal(hash(recorded.replace(AFTER_BLOCK,BEFORE_BLOCK)),'bd78b6279be1f9677bc04748f71f60553c1b2220f878bffbc0e2714a7841bcf6');
+  assert.equal(recorded.replace(AFTER_BLOCK,BEFORE_BLOCK).replace(AFTER_JOB,BEFORE_JOB),before,
+    'The entire genuine old workflow is preserved, not a repinned current hash');
+  assert.doesNotThrow(()=>verifyWorkflow(recorded));assert.doesNotThrow(()=>verifyWorkflow(current));
+  assert.throws(()=>verifyWorkflow(before),'A historical75-minute job is not the current source contract');
+  const once=(text,from,to)=>{assert.equal(text.split(from).length,2);return text.replace(from,()=>to);};
+  const mutations=[
+    ...[75,89,91].map(minutes=>once(recorded,AFTER_JOB,AFTER_JOB.replace('timeout-minutes: 90','timeout-minutes: '+minutes))),
+    once(recorded,AFTER_JOB,AFTER_JOB+AFTER_JOB),
+    once(recorded,AFTER_BLOCK,AFTER_BLOCK+AFTER_BLOCK),
+    once(recorded,'  contents: read\n','  contents: write\n'),
+    once(recorded,"        run: npm run validate:source && node scripts/test-fixed-public-rate-log-20261013.mjs && node scripts/test-fixed-storage-upload-log-20261013.mjs && node scripts/test-fixed-public-rate-console-log-20261015.mjs\n","        run: true && node scripts/test-fixed-public-rate-log-20261013.mjs && node scripts/test-fixed-storage-upload-log-20261013.mjs && node scripts/test-fixed-public-rate-console-log-20261015.mjs\n"),
+    once(recorded,'          node scripts/native-postgres-evidence.mjs\n','          true\n'),
+    once(recorded,AFTER_BLOCK,AFTER_BLOCK.replace('github.token','secrets.UNRELATED')),
+    once(recorded,AFTER_BLOCK,'')+AFTER_BLOCK,
+    recorded+'\n# unreviewed byte\n',
+  ];
+  for(const changed of mutations)assert.throws(()=>verifyWorkflow(changed));
+});
+
+test('source-PR-only120-minute job preserves genuine90 workflow and rejects every other budget',async()=>{
+  const {execFileSync}=await import('node:child_process');
+  const {WORKFLOW,CURRENT_JOB,AFTER_JOB,verifyWorkflow,verifyReviewed90Workflow}=await import('./national584-source-evidence.mjs');
+  const fixture='b02745d6d2987ed0fd2913623b3809fd0ea02dd6';
+  const recorded=execFileSync('git',['show',fixture+':'+WORKFLOW],{maxBuffer:65536,timeout:30000,
+    env:{...process.env,GIT_NO_LAZY_FETCH:'1',GIT_NO_REPLACE_OBJECTS:'1'}}).toString();
+  const actual=(await fs.readFile(new URL('../.github/workflows/validate-pull-request.yml',import.meta.url),'utf8')).replace(/\r\n/g,'\n');
+  assert.equal(recorded.split(AFTER_JOB).length,2);assert.equal(actual.split(CURRENT_JOB).length,2);
+  assert.equal(actual.replace(CURRENT_JOB,AFTER_JOB),recorded,'The WHOLE genuine90 workflow is reconstructed');
+  assert.doesNotThrow(()=>verifyWorkflow(actual));assert.doesNotThrow(()=>verifyReviewed90Workflow(recorded));
+  assert.throws(()=>verifyWorkflow(recorded),'Historical90 is not current120 admission');
+  assert.throws(()=>verifyReviewed90Workflow(actual),'Current120 is not silently accepted as historical90');
+  for(const minutes of [75,89,90,91,119,121,180,360])
+    assert.throws(()=>verifyWorkflow(actual.replace(CURRENT_JOB,CURRENT_JOB.replace('timeout-minutes: 120','timeout-minutes: '+minutes))));
+  assert.throws(()=>verifyWorkflow(actual.replace(CURRENT_JOB,CURRENT_JOB+CURRENT_JOB)));
+  assert.throws(()=>verifyWorkflow(actual+'\n# unknown source change\n'));
+});

@@ -1,3 +1,17 @@
+## 20. oktober — national kalderrettelse, ikke ændret produktionsvej
+
+- [x] PR676 på `b02745d6`: faktisk native 585-PostgreSQL og hele kildevalideringen bestod. Nationaltrin stoppede før selve prøven på manglende præcis 75→90-headerinverse.
+- [x] Lokal tobladsrettelse bevarer hele gamle workflow-orakel, alle gamle assertions og uændrede produkt-/vejrbudget-/C/I/T-/SQL-kontrakter. Ét normalt kildekontraktmål med mutationsafslag består; første nye testanchor-fejl er bevaret.
+- [x] Fremadrettet faktisk tidsgrundlag viser kun cirka 79 sekunders reserve under 90 minutter. Kun det ydre kilde-PR-loft er lokalt ændret til 120 med præcis 120→90→75-inverse. Alle andre jobs, vejrhentninger, leverandører, procesfrister og gates bevares; næste CI skal faktisk køre 585-PostgreSQL.
+- [x] Begge præcise 90-/120-kontraktmål består lokalt. Den aktuelle normale 585-workflowinterface passerede 23 tilfælde med én oprindelig Linux-skip. Det samlede tofilmål blev afbrudt af den private værts 300-sekundersgrænse under uændrede reconciliation-prøver; ingen assertionfejl var observeret, og fuldfil-PASS hævdes ikke. Den ældre direkte 584-prøve er ikke den aktuelle 585-kaldevej, og dens orakler bevares.
+- [x] Alle otte ændrede filer er uden for C/I/T; alle 64 SQL-filer og syv native input er uændrede. RDKS, sikkerheds- og versionskontrol består med bevaret første værts-PATH-fejl og kun de resterende kontroller kørt efter den.
+- [x] Almindelig `39368970562/1` startet af uændret cron kl. 06.19 dansk tid på main `954ca00a`. Det er ikke bevis for ny cache eller offentlig levering.
+- [x] Samlet CI-tid kvalificeret ud fra faktisk forbrug; minimal kilde-PR-only 120-grænse valgt frem for ny genbrugskontrakt. Næste CI skal faktisk udføre 585-PostgreSQL; grøn enkeltstep eller markeringsfil alene er utilstrækkelig.
+- [ ] Samlet CI, 585-installation/readback, originale B/S, Worker/Edges/Pages og normal offentlig bruger-/AI-kontrol.
+- [ ] Faktisk næste cachegenbrug/SAVE, fortsat historikopbygning, fuld DMI og selvstændig drift. Seneste offentlige levering er fortsat `39340901993/1`; vejropbygning må ikke forsinkes af kandidaten, og ingen produktion ændres under aktiv writer. SOURCE og alle fem hovedmål er fortsat åbne.
+
+Ældre afventninger erstattes kun på disse dokumenterede punkter; det private checkpoint ejer senere kørselsudfald.
+
 ## 20. oktober — test-only præcis familiekobling, ikke vejrændring
 
 - [x] PR676 på `ee89d038`: ny native PostgreSQL med 585-overgangen faktisk bestået; det senere kildetrin fejlede særskilt i reconciliation-prøveopstillinger. Den samlede kontrol er ikke grøn.
