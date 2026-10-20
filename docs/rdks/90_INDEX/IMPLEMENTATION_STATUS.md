@@ -1,10 +1,14 @@
 ## 20. oktober — 584 leveret; lokal rettelse af 585-originalernes lagervej
 
-- [x] Almindelig 39392596895/1 leveret og særskilt offentligt kontrolleret; fem-komponent-intersektion 89,919 % af hele 118×210-zoneaksen, ikke alle PART-timer eller fuld historik.
+- [x] Almindelig 39392596895/1 leveret og særskilt offentligt kontrolleret; den ældre schema4-audits fem-komponent-intersektion er 89,919 % af hele 118×210-hovedpunktsaksen med krav om endelige tal i alle tuplefelter, ikke lokal søgemåde-/PART-dækning eller fuld historik.
 - [x] Første 585-installation stoppede i trin 45 før SQL, ny B/S, Worker, Edges og Pages. Cron er faktisk pauset/gemt med uændret tidsplan; tidligere ON-noter er historik.
 - [x] Lokal kildekandidat bevarer normal backendudvælgelse, videresender storage til genuine 584-restore og fører de tre eksisterende R2-miljøfelter frem. Faste faselogs indeholder ikke private værdier.
 - [x] ROOTs normale Node22-callerprøve: 1 PASS/0 FAIL/0 SKIP på 9,52 sekunder. Gammel kalder reproducerer manglende storage; ny kalder bruger faktisk R2-adapter og når én dokumentlæsning mod syntetisk tom pointer, ikke download eller B/S-admission. Hel workflow-inverse og ti mutationsafslag består. Den særskilte workflowcase er ikke kørt lokalt, fordi en eksisterende fysisk CRLF/raw-JSON-guard stopper før casen; den lempes ikke.
 - [ ] Ny præcis kildekontrol og kontrolleret installations-/genlæsningsbevis. Den gamle generiske fejl skjulte indre exception og beviser ikke, at restore blev nået; lokal wiretest er ikke live årsagsbevis.
+
+- [x] Lokal additiv dækningsaudit bevarer hele schema4-hovedpunktsmålingen og tæller særskilt lokalt zonesøgemådevejr over alle 118 timer og aktive hydrerede zone-ID'er. Normale nul-/calm-regler, missing/unknown, alle fem/intersektion og Europe/Copenhagen-dage er med; model og vejr ændres ikke.
+- [x] Det endelige normale mål består 10 tilfælde uden skip, inklusive faktisk 210-zone pack→JSON→hydrate og auditkalder. Den tidligere 26-case source-seam genbruges kun for uændret import og gamle tilfælde; den er ikke kørt eller ommærket igen efter slutdeltaet.
+- [ ] Præcis integreret kildekontrol og ny normal vejrhentnings autentiske slutmatrix/offentlige effekt mangler. Ingen nye produktionstal kan udledes af den lokale prøve. Se DEC-0206 og håndbogens måledefinition i 89.258; aktuel leverings-/cronstatus ændres ikke af denne note.
 
 Ingen ny version, C/I/T, SQL eller aktivering. Alle fem mål er åbne til 18. november 2026. Aktuel drift føres i CURRENT_TRUTH; se DEC-0249 og håndbog 89.261. Hele historikken nedenfor bevares.
 

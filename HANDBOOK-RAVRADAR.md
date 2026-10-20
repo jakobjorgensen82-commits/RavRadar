@@ -40,6 +40,10 @@ Et leverandørtrin kan slutte tidligere, når det har behandlet sin aktuelle kø
 
 De tre leverandørers opgaver er forskellige. DMI er førstevalg; Copernicus og Open-Meteo udfylder kvalificerede rester. Open-Meteos særlige strømtrin udfylder ikke samtidig alle mangler i vind, bølger, vandstand og temperatur. Vandstandens kildekrav kan ikke erstattes af en anden leverandør alene for at få færre mangler.
 
+En dækningsopgørelse skal omfatte alle prognosens timer for alle aktive områder, ikke kun forholdene nu. Vind, bølger, strøm, vandstand og vandtemperatur samt timer med alle fem samtidig skal opgøres særskilt og fordeles på danske kalenderdage. En gyldig nulværdi er ikke manglende; nul bølgehøjde kan være gyldig uden en bølgeretning. Tomme felter må ikke blive til nul.
+
+Områdets viste vejr følger den lokale kystdel, som er valgt for den enkelte søgemåde. Derfor skal de to søgemåder måles hver for sig. Ét hovedpunkts vejr beviser ikke forholdene i alle lokale dele, og én valgt kystdel beviser ikke dækning af hele området. Vejrdækning, ukendte oplysninger og længden af strøm- og scorehistorikken skal holdes adskilt.
+
 Den interne behandling skal undgå at bygge samme grundlag flere gange og undgå at kontrollere alle andre timer, når kun én fils egen time er relevant. Det må ikke ændre de godkendte data, kilder, kystpunkter, scoreformel eller fulde slutkontroller. En lokal forbedring er først dokumenteret i drift, når en faktisk vejrhentning har gemt og leveret resultatet sikkert.
 
 ## 89.257 Gem det færdige arbejde, før det leveres
