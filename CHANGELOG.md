@@ -1,5 +1,7 @@
 ## 21. oktober — afgrænset fejllokation i normal historikplan
 
+- Efterfølger: Den faktisk leverede rapport nåede `COMMITTED_RAW_RETENTION` og post-H0-kontrollens fejlfabrik, men tabte dens eksisterende `originalDependencyCode`. Den afgrænsede lokale efterfølger bevarer kun modulets faste, kvalificerede fejlkategorier; den viser fortsat hverken rå fejlbesked, værdier eller private identiteter. Det konkrete produktionsafslag, årsagsrettelse og ny offentlig generation er fortsat åbne.
+- PR-kontrollens samlede maksimum følger den særskilt afprøvede 180-minutters kontrakt med bevaret præcis 120-minutters forgænger. Ingen kommando eller gate fjernes, og almindelig vejrhentning samt leverandørbudgetter ændres ikke. Det er en kontrolgrænse, ikke en påstået hastighedsgevinst.
 - Bevarer første faktiske fase, fast fejltype og kvalificeret kildested, når den normale historikplan fejler uden en særskilt kode. Ingen rå fejltekst, værdier eller private identiteter vises; stop, exitstatus og alle eksisterende input-/B/S-/historikkrav bevares. Dette forbedrer årsagsgrundlaget og er ikke i sig selv en rettelse af den ukendte indre fejl eller en offentlig vejrlevering. Præcis kildekontrol og faktisk effekt kræves fortsat.
 
 ## 20. oktober — lokal Candidate-public: korrekt genbrug af pakket input

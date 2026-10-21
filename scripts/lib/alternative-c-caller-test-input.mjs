@@ -156,6 +156,40 @@ const PLANNER_FIRST_FAILURE_REVIEW={
     ]
   ]
 };
+// TEST INPUT ONLY: preserve the exact earlier planner and all older oracles.
+const PLANNER_ORIGINAL_DEPENDENCY_REVIEW={
+  "before": {
+    "sha256": "76f867902dbab4b462d3108e1e6ac992fe4c54203c4f7fbb93cfc9ff00d8eb7e",
+    "bytes": 58585
+  },
+  "after": {
+    "sha256": "b0027151541ac8fa3ae2ac99b1b0ef1bbfcd18e0e3be407d32b9704ecba552fb",
+    "bytes": 59770
+  },
+  "hunks": [
+    [
+      "    const operator=data('operator');\n",
+      "    const originalDependencyCode=data('originalDependencyCode');\n    const operator=data('operator');\n"
+    ],
+    [
+      "        result.frame={module:relative,sha256:crypto.createHash('sha256').update(body).digest('hex'),line:at,column};break;\n",
+      "        result.frame={module:relative,sha256:crypto.createHash('sha256').update(body).digest('hex'),line:at,column};\n        // This fixed diagnostic family is not replay/publication authority.\n        // A code attached to another error/frame is not its original failure.\n        const originalDependencyReasons=new Set(['CAPTURE_INCOMPLETE','HOLD_SUPPORT_REQUIRED',\n          'INITIAL_SELECTION_INVALID','INITIAL_STATE_INVALID','INPUT_BOUND','INPUT_INVALID','PLAN_BOUND',\n          'REGIONAL_SUPPORT_REQUIRED','SAMPLING_MISMATCH','SELECTED_CURRENT_INVALID',\n          'SELECTED_ENDPOINT_UNAVAILABLE','SOURCE_DOMAIN_EXCLUDED','WINDOW_INVALID']);\n        const originalPrefix='POST_H0_DMI_ORIGINAL_';\n        if(result.code==='RAVSCORE_CURRENT_HISTORY_DEMAND_REFUSED'&&prototype===Error.prototype\n          &&typeof originalDependencyCode==='string'&&originalDependencyCode.startsWith(originalPrefix)\n          &&originalDependencyReasons.has(originalDependencyCode.slice(originalPrefix.length))\n          &&relative==='scripts/lib/post-h0-dmi-original-dependencies.mjs'\n          &&result.frame.sha256==='dcb3ff1d9caae7440e94201c391b0a9d0d6dbdc312d54281e1f47a7d017462da'\n          &&at===18)result.code=originalDependencyCode;\n        break;\n"
+    ]
+  ]
+};
+function inversePlannerOriginalDependency(source) {
+  const review=PLANNER_ORIGINAL_DEPENDENCY_REVIEW;
+  if([review.before.sha256,PLANNER_FIRST_FAILURE_REVIEW.before.sha256].includes(digest(source)))return source;
+  assert.equal(digest(source),review.after.sha256,'PLANNER_ORIGINAL_DEPENDENCY_TEST_INPUT_CHANGED');
+  assert.equal(Buffer.byteLength(source),review.after.bytes);
+  for(const [before,after]of [...review.hunks].reverse()){
+    assert.equal(source.split(after).length,2,'PLANNER_ORIGINAL_DEPENDENCY_TEST_INPUT_HUNK');
+    source=source.replace(after,()=>before);
+  }
+  assert.equal(digest(source),review.before.sha256,'PLANNER_ORIGINAL_DEPENDENCY_TEST_INPUT_WHOLE_INVERSE');
+  assert.equal(Buffer.byteLength(source),review.before.bytes);
+  return source;
+}
 function inversePlannerFirstFailure(source) {
   const review=PLANNER_FIRST_FAILURE_REVIEW;
   if(digest(source)===review.before.sha256) return source;
@@ -175,7 +209,7 @@ export function inverseAlternativeCCaller(source,relative) {
   assert(row,'ALTERNATIVE_C_TEST_INPUT_PATH');
   source=source.replaceAll('\r\n','\n');
   if(digest(source)===row.before.sha256) return source;
-  if(relative==='scripts/plan-ravscore-current-history.mjs') source=inversePlannerFirstFailure(source);
+  if(relative==='scripts/plan-ravscore-current-history.mjs') source=inversePlannerFirstFailure(inversePlannerOriginalDependency(source));
   if(relative==='scripts/update-weather.mjs') source=inverseArchivedWeatherRestartUpdater(source);
   assert.equal(digest(source),row.after.sha256,'ALTERNATIVE_C_TEST_INPUT_CHANGED');
   for(const [before,after] of [...row.hunks].reverse()) {

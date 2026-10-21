@@ -298,7 +298,7 @@ test('historical584 national evidence inverts only the reviewed current90-minute
   for(const changed of mutations)assert.throws(()=>verifyWorkflow(changed));
 });
 
-test('source-PR-only120-minute job preserves genuine90 workflow and rejects every other budget',async()=>{
+test('source-PR-only180-minute job preserves genuine120 and90 workflows and rejects every other budget',async()=>{
   const {execFileSync}=await import('node:child_process');
   const {WORKFLOW,CURRENT_JOB,AFTER_JOB,CURRENT_SOURCE_RUN_LINE,inverseCandidatePublicSourceRunLine,
     verifyWorkflow,verifyReviewed90Workflow}=await import('./national584-source-evidence.mjs');
@@ -306,14 +306,22 @@ test('source-PR-only120-minute job preserves genuine90 workflow and rejects ever
   const recorded=execFileSync('git',['show',fixture+':'+WORKFLOW],{maxBuffer:65536,timeout:30000,
     env:{...process.env,GIT_NO_LAZY_FETCH:'1',GIT_NO_REPLACE_OBJECTS:'1'}}).toString();
   const actual=(await fs.readFile(new URL('../.github/workflows/validate-pull-request.yml',import.meta.url),'utf8')).replace(/\r\n/g,'\n');
+  const predecessorHead='bb8d354e0d889080b5f7182b2962f05fbb8fd2e7';
+  const predecessor=execFileSync('git',['show',predecessorHead+':'+WORKFLOW],{maxBuffer:65536,timeout:30000,
+    env:{...process.env,GIT_NO_LAZY_FETCH:'1',GIT_NO_REPLACE_OBJECTS:'1'}}).toString();
+  const old120Job=CURRENT_JOB.replace('timeout-minutes: 180','timeout-minutes: 120');
+  assert.notEqual(old120Job,CURRENT_JOB,'The reviewed successor is exactly180, not the interrupted120-minute job');
+  assert.equal(actual.replace(CURRENT_JOB,old120Job),predecessor,
+    'The WHOLE interrupted120 workflow is reconstructed; no command, gate, permission or weather budget changes');
+  assert.throws(()=>verifyWorkflow(predecessor),'Historical120 is not current180 admission');
   assert.equal(recorded.split(AFTER_JOB).length,2);assert.equal(actual.split(CURRENT_JOB).length,2);
   assert.equal(inverseCandidatePublicSourceRunLine(actual).replace(CURRENT_JOB,AFTER_JOB),recorded,
     'The WHOLE genuine90 workflow is reconstructed');
   assert.doesNotThrow(()=>verifyWorkflow(actual));assert.doesNotThrow(()=>verifyReviewed90Workflow(recorded));
-  assert.throws(()=>verifyWorkflow(recorded),'Historical90 is not current120 admission');
-  assert.throws(()=>verifyReviewed90Workflow(actual),'Current120 is not silently accepted as historical90');
-  for(const minutes of [75,89,90,91,119,121,180,360])
-    assert.throws(()=>verifyWorkflow(actual.replace(CURRENT_JOB,CURRENT_JOB.replace('timeout-minutes: 120','timeout-minutes: '+minutes))));
+  assert.throws(()=>verifyWorkflow(recorded),'Historical90 is not current180 admission');
+  assert.throws(()=>verifyReviewed90Workflow(actual),'Current180 is not silently accepted as historical90');
+  for(const minutes of [75,89,90,91,119,120,121,179,181,360])
+    assert.throws(()=>verifyWorkflow(actual.replace(CURRENT_JOB,CURRENT_JOB.replace('timeout-minutes: 180','timeout-minutes: '+minutes))));
   assert.throws(()=>verifyWorkflow(actual.replace(CURRENT_JOB,CURRENT_JOB+CURRENT_JOB)));
   for(const command of ['node scripts/test-prepare-candidate-g-operational-rollback.mjs',
     'node scripts/test-candidate-g-rollback-public-stage.mjs']) {
