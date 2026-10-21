@@ -1,4 +1,8 @@
-## 21. oktober — lokal 4.0.586: originalbevis skal følge bevarede timer
+## 21. oktober — 586 faktisk installeret; almindeligt originalstop fortsat åbent
+
+Præcis CI med native PostgreSQL og kontrolleret 586-kode-only-levering er faktisk gennemført med bevaret vejr, SQL-readback, B før S, tre serverfunktioner, Pages og offentlig 210/673-kontrol. Den almindelige efterfølger stoppede fortsat før leverandører på manglende valgt native-endepunktsbevis. Hele loggen er gemt privat; BASELINE_MISMATCH/restored:false viser, at krypteret fremdrift ikke blev genbrugt. Intet nyt beregningscheckpoint eller vejrdeploy blev lavet. Cron er faktisk pauset. Afgrænset CURRENT-only-audit forberedes gennem den eksisterende skrivefri læsegrænse; ingen årsagsrettelse eller komplet cache påstås. Se ROOTs aktuelle P0-linje og DEC-0249. Alle fem hovedmål er åbne til 18. november 2026.
+
+## 21. oktober — bevaret lokal udstedelseshistorik for 4.0.586
 
 Samtaledelta: Ejeren beder om sammenligning med de faktisk fungerende tidligere forløb, ikke alene flere isolerede reparationer. Den sidste verificerede almindelige offentlige levering kl. 05.39 dansk tid passerede allerede retentionguard. Den senere normale kørsel stoppede før leverandører, fordi et valgt native-endepunkt ikke kunne bevises blandt de leverede kontekster. Et nyere arbejds-slot kan have erstattet den gamle originalvisning, selv om en ældre kvalificeret time bevares. Det er ikke bevis for ugyldige DMI-tal eller fysisk fravær af alle gemte originaler.
 

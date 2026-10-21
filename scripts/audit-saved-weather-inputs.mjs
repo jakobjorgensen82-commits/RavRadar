@@ -4,6 +4,8 @@
 // may rebuild normal inputs/score only in private scratch; no production authority.
 import fs from 'node:fs/promises';
 import crypto from 'node:crypto';
+import { execFile } from 'node:child_process';
+import { promisify } from 'node:util';
 import os from 'node:os';
 import path from 'node:path';
 import { Readable, Writable } from 'node:stream';
@@ -37,6 +39,199 @@ import { SAVED_DMI_ORIGINAL_SCOPES, savedDmiOriginalHistoryDemand,
   from './prepare-saved-dmi-original-restore.mjs';
 
 const REPOSITORY = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
+
+// Fixed actual failed ordinary attempt. Bundle/binding pins come from its
+// complete private log; source head follows the actual logged 585->586 route
+// and its normal GITHUB_SHA publication (not a direct pointer payload read).
+export const CURRENT586_ENDPOINT_AUDIT = Object.freeze({
+  scope: 'CURRENT586_ENDPOINTS_39666991481_1', progressSource: '39666991481-1',
+  failedHead: '94b2b6173747b9d1f7d261c5110042a657af0cac',
+  targetReferenceAt: '2026-10-21T20:00:00.000Z',
+  bundleContentSha256: 'e9e7b9327df875133b7c2c00ef6440bc411ef2178a9edf9d6cb1ba1a3e7555c3',
+  modelId: 'RRS-COASTAL-PROCESS-INTEGRATED-1.1.0', stateSchemaVersion: '6.0.0',
+  modelContractSha256: 'a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b',
+  modelBundleSha256: '6d8f7cca203b5f7ee5155f3c0cdb39403a02fd0eb30fecaca5070ef9f814a805',
+});
+const runLocalReader = promisify(execFile);
+function assertCurrent586Source(source, manifest = null) {
+  if (source.sourceHead !== CURRENT586_ENDPOINT_AUDIT.failedHead
+    || source.bundleContentSha256 !== CURRENT586_ENDPOINT_AUDIT.bundleContentSha256
+    || !['modelId', 'stateSchemaVersion', 'modelContractSha256', 'modelBundleSha256']
+      .every(key => source.modelBinding?.[key] === CURRENT586_ENDPOINT_AUDIT[key])
+    || source.expectedZoneCount !== 210 || source.expectedPartCount !== 673
+    || Date.parse(source.productionReferenceAt) >= Date.parse(CURRENT586_ENDPOINT_AUDIT.targetReferenceAt)
+    || manifest !== null && (manifest.files?.length !== 11
+      || manifest.bundleContentSha256 !== source.bundleContentSha256)) fail('CURRENT586_SOURCE_MISMATCH');
+}
+
+async function readCurrent586PublicRegistry(fetchImpl) {
+  const url = 'https://ravradar.dk/data/live/coastal-parts-v2.json';
+  const response = await fetchImpl(url, { method: 'GET', redirect: 'error',
+    signal: AbortSignal.timeout(20_000) });
+  if (response.status !== 200 || response.redirected
+    || response.headers.has('content-length') && (!Number.isSafeInteger(Number(response.headers.get('content-length')))
+      || Number(response.headers.get('content-length')) < 0 || Number(response.headers.get('content-length')) > 3 * 1024 * 1024)) {
+    fail('CURRENT586_REGISTRY_MISMATCH');
+  }
+  const reader = response.body?.getReader();
+  if (!reader) fail('CURRENT586_REGISTRY_MISMATCH');
+  const chunks = []; let count = 0;
+  try {
+    for (;;) {
+      const item = await reader.read();
+      if (item.done) break;
+      count += item.value.length;
+      if (count > 3 * 1024 * 1024) fail('CURRENT586_REGISTRY_MISMATCH');
+      chunks.push(Buffer.from(item.value));
+    }
+  } finally { try { await reader.cancel(); } catch {} reader.releaseLock(); }
+  const bytes = Buffer.concat(chunks, count);
+  if (count !== 2158637 || crypto.createHash('sha256').update(bytes).digest('hex') !==
+    'cc21aa4e6768adf5d569f8b557cfddfad45536985a18ce55bea503831a732c31') fail('CURRENT586_REGISTRY_MISMATCH');
+  const registry = JSON.parse(bytes);
+  if (registry.schemaVersion !== 2 || registry.enabled !== true || registry.partCount !== 673
+    || registry.zoneCount !== 210 || registry.sourceRunId !== '31764242827' || registry.datasetVersion !== '4.0.193'
+    || 'sha256:' + crypto.createHash('sha256').update(stable(registry)).digest('hex') !==
+      'sha256:dbf13b8293d1322ab132dda00c0e170dfb3b3a63e1c78fd93b6eb0740a30aba4') fail('CURRENT586_REGISTRY_MISMATCH');
+  return { registry, bytes };
+}
+
+async function measureCurrent586Endpoints({ ctx, work, payloadRoot, source, conditions, manifest,
+  pythonExecutable, oldWorkflow, registryFetchImpl }) {
+  const scratch = await noSymlinks(ctx.root, path.join(ctx.root, 'current586-source'));
+  if (!(await fs.lstat(scratch)).isDirectory()) fail('CURRENT586_SCRATCH_INVALID');
+  assertCurrent586Source(source, manifest);
+  const imported = async file => import(pathToFileURL(await noSymlinks(scratch, path.join(scratch, file))).href);
+  // Normal installer, ONLY in owned scratch. Original B is never rewritten.
+  await withoutSavedAuditSecrets(() => oldWorkflow.installRestoredPrivateRuntime({
+    restoredRoot: payloadRoot, repositoryRoot: scratch }));
+  const parts = originalParts(conditions);
+  const { registry, bytes: registryBytes } = await readCurrent586PublicRegistry(registryFetchImpl);
+  const seen = new Set();
+  for (const [zoneId, entries] of Object.entries(registry.zones)) for (const part of entries) {
+    const original = conditions.coastalParts.parts[part.partId];
+    if (!original || seen.has(part.partId) || original.zoneId !== zoneId || original.name !== part.name
+      || !['waterPoint', 'landPoint', 'onshoreDirectionDeg'].every(key => same(original[key], part[key]))) {
+      fail('CURRENT586_REGISTRY_MISMATCH');
+    }
+    seen.add(part.partId);
+  }
+  if (seen.size !== 673 || Object.keys(registry.zones).length !== 210) fail('CURRENT586_REGISTRY_MISMATCH');
+  const features = Object.entries(conditions.zones).map(([zoneId, row]) => {
+    if (!object(row)) fail('ORIGINAL_GEOMETRY_INVALID');
+    return { properties: { ...row, id: zoneId } };
+  });
+  await fs.writeFile(path.join(scratch, 'data/live/coastal-parts-v2.json'), registryBytes);
+  const protectedBulk = await bulk(path.join(payloadRoot, 'data/live/dmi-bulk-cache.json'));
+  await fs.copyFile(path.join(payloadRoot, 'data/live/dmi-bulk-cache.json'),
+    path.join(scratch, '.cache/deployed-dmi-bulk-cache.json'), fs.constants.COPYFILE_EXCL);
+  const activeFile = path.join(scratch, PRIVATE_WEATHER_COMPONENT_FILES.dmiActive);
+  const candidateFile = path.join(scratch, PRIVATE_WEATHER_COMPONENT_FILES.dmiCandidate);
+  const exists = async file => {
+    const stat = await fs.lstat(file).catch(error => { if (error.code === 'ENOENT') return null; throw error; });
+    if (stat && (!stat.isFile() || stat.isSymbolicLink() || stat.size < 2)) fail('CURRENT586_SCRATCH_INVALID');
+    return Boolean(stat);
+  };
+  const kind = await exists(activeFile) ? 'active' : await exists(candidateFile) ? 'candidate' : 'deployed';
+  const originalFile = kind === 'active' ? activeFile : kind === 'candidate' ? candidateFile
+    : path.join(scratch, 'data/live/dmi-bulk-cache.json');
+  if (!await exists(originalFile)) fail('CURRENT586_SCRATCH_INVALID'); // never invent empty input
+  const materialized = path.join(work, 'normal-generation-materialized.json');
+  const local = async args => withoutSavedAuditSecrets(() => runLocalReader(pythonExecutable, args, {
+    cwd: scratch, timeout: 90_000, maxBuffer: 1024 * 1024, windowsHide: true }));
+  await local(['scripts/materialize-dmi-bulk-storage.py', '--input', originalFile, '--output', materialized]);
+  let strict = false, reference = null;
+  if (kind !== 'candidate') {
+    try {
+      reference = (await local(['scripts/check-dmi-bulk-operational-ready.py', '--cache', materialized])).stdout.trim();
+      if (!/^\d{4}-\d\d-\d\dT\d\d:00:00(?:\.000)?Z$/.test(reference)) fail('CURRENT586_GENERATION_PREPARE_REJECTED');
+      strict = true;
+    } catch { if (kind === 'active') fail('CURRENT586_GENERATION_PREPARE_REJECTED'); }
+  }
+  if (strict) {
+    await local(['scripts/build-copernicus-target-registry.py', '--require-strict-dmi-ledger',
+      '--targets', 'data/live/coastal-parts-v2.json', '--dmi', materialized,
+      '--output', path.join(work, 'normal-generation-targets.json'), '--at', reference]);
+    await fs.copyFile(materialized, activeFile);
+    await fs.copyFile(materialized, path.join(scratch, 'data/live/dmi-bulk-cache.json'));
+  } else await fs.copyFile(materialized, candidateFile);
+  const [planner, checkpointApi, companionApi, pilotApi, bundleApi] = await Promise.all([
+    imported('scripts/plan-ravscore-current-history.mjs'), imported('scripts/ravscore-continuation-checkpoint.mjs'),
+    imported('scripts/read-authenticated-dmi-current-companions.mjs'), imported('scripts/lib/live-current-pilot.mjs'),
+    imported('scripts/private-production-runtime-bundle.mjs')]);
+  const verify = () => bundleApi.verifyPrivateProductionRuntimeBundle({
+    privateRoot: work, bundlePath: path.dirname(payloadRoot), repositoryRoot: scratch, expected: source });
+  const verified = await verify();
+  const companions = await withoutSavedAuditSecrets(() => companionApi.readAuthenticatedCurrentCompanions(verified, conditions));
+  const checkpointPath = path.join(work, 'derived-checkpoint.json');
+  await checkpointApi.saveRavScoreContinuationCheckpoint({ sourcePath: path.join(payloadRoot, 'data/live/conditions.json'),
+    checkpointPath, expectedPartCount: 673, repositoryRoot: scratch });
+  const checkpoint = await readJson(checkpointPath, 256 * 1024 * 1024);
+  const boundary = { datasetId: source.datasetId, productionReferenceAt: source.productionReferenceAt,
+    bundleContentSha256: source.bundleContentSha256, checkpointGenerationSha256: checkpoint.generationSha256,
+    conditionsSha256: crypto.createHash('sha256').update(await fs.readFile(path.join(payloadRoot, 'data/live/conditions.json'))).digest('hex') };
+  const forecast = await forecastIndex(path.join(payloadRoot, 'data/live/dmi-forecast-cache.json'));
+  const candidate = await exists(candidateFile) ? await bulk(candidateFile) : null;
+  const active = await exists(activeFile) ? await bulk(activeFile) : null;
+  const liveCurrentPilot = await withoutSavedAuditSecrets(() => pilotApi.readLiveCurrentPilot(registry));
+  let aggregate = null, visitedParts = 0;
+  const byPart = new Map();
+  const registryByPart = new Map(Object.entries(registry.zones).flatMap(([zoneId, entries]) =>
+    entries.map(part => [part.partId, { zoneId, part }])));
+  const orderedParts = [];
+  if (forecast?.continuity) {
+    const meta = forecast.continuity.metadata;
+    if (meta.partCount !== 673 || forecast.continuity.entries.length !== 673) fail('CONTINUITY_INSPECTION_FAILED');
+    assertDmiPartContinuityTotalSize(meta.rawBytes, meta.compressedBytes);
+    let raw = 0, compressed = 0;
+    for (const descriptor of forecast.continuity.entries) {
+      const entry = await readDmiForecastRecord(forecast, descriptor);
+      if (!parts.has(entry.partId) || byPart.has(entry.partId)) fail('CONTINUITY_INSPECTION_FAILED');
+      byPart.set(entry.partId, descriptor); orderedParts.push(registryByPart.get(entry.partId));
+      raw += entry.rawBytes; compressed += entry.compressedBytes;
+    }
+    if (raw !== meta.rawBytes || compressed !== meta.compressedBytes) fail('CONTINUITY_INSPECTION_FAILED');
+  }
+  else orderedParts.push(...registryByPart.values());
+  const begun = Date.now();
+  outer: for (const { zoneId, part } of orderedParts) {
+    if (Date.now() - begun > 600_000 || visitedParts >= 673) fail('CURRENT586_DIAGNOSTIC_BOUND');
+    let persisted = new Map();
+    if (forecast?.continuity) {
+      const entry = await readDmiForecastRecord(forecast, byPart.get(part.partId));
+      persisted = await unpackDmiPartContinuity({ ...forecast.continuity.metadata, partCount: 1,
+        rawBytes: entry.rawBytes, compressedBytes: entry.compressedBytes, entries: [entry] }, [{ ...part, zoneId }],
+      CURRENT586_ENDPOINT_AUDIT.targetReferenceAt);
+      if (!persisted.has(part.partId)) fail('CONTINUITY_INSPECTION_FAILED');
+    }
+    aggregate = planner.diagnoseCurrent586SelectedEndpoints({
+      registry: { ...registry, partCount: 1, zones: { [zoneId]: [part] } },
+      conditions: { ...conditions, coastalParts: { ...conditions.coastalParts,
+        parts: { [part.partId]: conditions.coastalParts.parts[part.partId] } } },
+      checkpoint: { ...checkpoint, states: { [part.partId]: checkpoint.states[part.partId] } },
+      boundary, zones: { features }, productionReferenceAt: CURRENT586_ENDPOINT_AUDIT.targetReferenceAt,
+      protectedBulk, progressCandidate: candidate ?? active, progressActive: active, historicalBulk: null,
+      protectedCompanionContexts: companions, persistedHourlyByPart: persisted, liveCurrentPilot });
+    visitedParts++;
+    if (aggregate.firstFailureCategory !== 'NO_NORMAL_COLLECTOR_REFUSAL') break outer;
+  }
+  if (!aggregate) fail('AUDIT_COUNTER_INVALID');
+  const pilotRegistryFingerprintMatches = liveCurrentPilot?.targetFingerprint ===
+    'sha256:dbf13b8293d1322ab132dda00c0e170dfb3b3a63e1c78fd93b6eb0740a30aba4';
+  const report = { ...baseReport('AUDIT_COMPLETED'), protectedGenerationReadbackVerified: true,
+    exactArchivedSourceContractsVerified: true, fixedScope: CURRENT586_ENDPOINT_AUDIT.scope,
+    originalBGeometryUsed: true, freshCentralRegistryProved: false, actualSParityProved: false,
+    wholeFailedStepReproduced: false, pilotRegistryFingerprintMatches,
+    regionalScopeEquivalenceProved: false, fullCoverageClaimed: false,
+    observedScope: 'FIRST_NORMAL_COLLECTOR_FAILURE_ONLY', visitedParts, registeredParts: 673,
+    encryptedProgressRead: false, rawCacheRead: false, remoteSRead: false,
+    normalGenerationPreparation: { sourceRole: kind, strictReady: strict },
+    endpointAvailability: aggregate };
+  if (Buffer.byteLength(JSON.stringify(report)) > 64 * 1024) fail('CURRENT586_DIAGNOSTIC_BOUND');
+  await verify();
+  return report;
+}
+
 const policy = protectedApi.PROTECTED_PRIVATE_RUNTIME_POLICY;
 const object = value => value !== null && typeof value === 'object' && !Array.isArray(value);
 const stable = value => JSON.stringify(value, (_key, item) => object(item)
@@ -58,7 +253,8 @@ const safeCode = new Set(['MODE_INVALID', 'PRIVATE_ROOT_INVALID', 'PRIVATE_PATH_
   'BULK_CONTEXT_INVALID', 'CONTINUITY_INSPECTION_FAILED', 'AUDIT_COUNTER_INVALID', 'OUTPUT_ALREADY_EXISTS',
   'PRIVATE_TEMP_CLEANUP_FAILED', 'BASELINE_COMPONENT_PACK_REJECTED', 'NATIVE_PROOF_INSPECTION_FAILED',
   'RAW_MANIFEST_BOUND', 'RAW_CACHE_IDENTITY_INVALID', 'RAW_FILE_INVENTORY_REJECTED', 'PROGRESS_BASELINE_TARGET_INVALID',
-  'PROGRESS_BASELINE_RECONSTRUCTION_REJECTED']);
+  'PROGRESS_BASELINE_RECONSTRUCTION_REJECTED', 'CURRENT586_SOURCE_MISMATCH',
+  'CURRENT586_SCRATCH_INVALID', 'CURRENT586_GENERATION_PREPARE_REJECTED', 'CURRENT586_DIAGNOSTIC_BOUND', 'CURRENT586_REGISTRY_MISMATCH']);
 const safeProgressAuthenticationCodes = new Set(['SIZE_BUDGET_INVALID', 'REPOSITORY_INVALID', 'ROOT_INVALID',
   'BASE_INVALID', 'ENCRYPTION_KEY_UNAVAILABLE', 'ENCRYPTION_KEY_INVALID', 'BASELINE_MISMATCH',
   'PATH_INVALID', 'SYMLINK_REJECTED', 'FILE_INVALID', 'SNAPSHOT_ABSENT', 'SNAPSHOT_INVALID',
@@ -839,7 +1035,7 @@ export async function auditSavedWeatherInputs({ mode, privateRoot, descriptorPat
   progressFile, progressSource, progressCacheKey, outputPath, repositoryRoot = REPOSITORY,
   includeRawManifest = false, rawCacheKey = null, rawManifestSource = null,
   includeRawFilePresence = false, progressBaselineTargetHour = null, includeSelectedCurrentPreflight = false,
-  includeCurrentWindowDiagnostic = false,
+  includeCurrentWindowDiagnostic = false, includeCurrent586Endpoints = false,
   prepareCurrentForwardOriginals = false,
   repository = process.env.GITHUB_REPOSITORY, pythonExecutable = process.env.PYTHON ?? 'python',
   encryptionKey = process.env.WEATHER_PROGRESS_ENCRYPTION_KEY,
@@ -850,6 +1046,12 @@ export async function auditSavedWeatherInputs({ mode, privateRoot, descriptorPat
   let baselinePackInvocation = null;
   let normalProgressBaselineUsed = false;
   try {
+    if (typeof includeCurrent586Endpoints !== 'boolean'
+      || includeCurrent586Endpoints && (mode !== 'audit' || progressSource !== CURRENT586_ENDPOINT_AUDIT.progressSource
+        || progressFile != null || progressCacheKey != null || progressBaselineTargetHour !== null
+        || includeCurrentWindowDiagnostic || includeSelectedCurrentPreflight || includeRawManifest
+        || includeRawFilePresence || rawCacheKey !== null || rawManifestSource !== null
+        || prepareCurrentForwardOriginals)) fail('MODE_INVALID');
     if (typeof includeCurrentWindowDiagnostic !== 'boolean') fail('MODE_INVALID');
     const currentReplayDiagnostic = includeCurrentWindowDiagnostic && progressSource === '39066350748-1';
     if (typeof prepareCurrentForwardOriginals !== 'boolean'
@@ -908,11 +1110,14 @@ export async function auditSavedWeatherInputs({ mode, privateRoot, descriptorPat
     const source = identity(await readJson(await noSymlinks(ctx.root, descriptorPath)));
     // Reject malformed, same-hour and older targets before any remote read.
     validateProgressBaselineTargetHour(progressBaselineTargetHour, source);
+    let cipher = null;
+    if (!includeCurrent586Endpoints) {
     if (!/^\d+-[1-9]\d*$/.test(progressSource ?? '') || progressCacheKey !== `weather-private-progress-encrypted-v2-Linux-main-${progressSource}`
       || !/^[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+$/.test(repository ?? '')) fail('PROGRESS_IDENTITY_INVALID');
-    const cipher = await noSymlinks(ctx.root, progressFile);
+    cipher = await noSymlinks(ctx.root, progressFile);
     const cipherStat = await fs.lstat(cipher);
     if (!cipherStat.isFile() || cipherStat.size < 1 || cipherStat.size > WEATHER_PROGRESS_MAX_CIPHER_BYTES) fail('PROGRESS_IDENTITY_INVALID');
+    } else assertCurrent586Source(source);
     const requestedPredecessor = path.resolve(predecessorRoot);
     const predecessorStat = await fs.lstat(requestedPredecessor);
     const predecessor = await fs.realpath(requestedPredecessor);
@@ -951,6 +1156,15 @@ export async function auditSavedWeatherInputs({ mode, privateRoot, descriptorPat
     const conditions = await readJson(path.join(payloadRoot, 'data/live/conditions.json'), 535_822_312);
     const parts = originalParts(conditions);
     const bStateTimes = authenticatedBStateTimes(conditions, parts, oldStaging, oldSampling);
+    if (includeCurrent586Endpoints) {
+      phase = 'CURRENT586_ENDPOINT_INSPECTION';
+      const report = await measureCurrent586Endpoints({ ctx, work, payloadRoot, source,
+        conditions, manifest, pythonExecutable, oldWorkflow, registryFetchImpl: credentials.fetchImpl ?? fetch });
+      if (!same(await oldProtected.describeCurrentProtectedPrivateProductionRuntime(clients), source)) fail('CURRENT_GENERATION_CHANGED');
+      await fs.rm(work, { recursive: true, force: true }); work = null;
+      await fs.writeFile(safeOutput, JSON.stringify(report) + '\n', { flag: 'wx', mode: 0o600 });
+      return report;
+    }
     const baselineIndex = await forecastIndex(path.join(payloadRoot, 'data/live/dmi-forecast-cache.json'));
     phase = 'BASELINE_COMPONENT_AUTHENTICATION';
     let baselineComponentFiles = [];
@@ -1122,7 +1336,7 @@ export async function auditSavedWeatherInputs({ mode, privateRoot, descriptorPat
     if (safeOutput) await fs.writeFile(safeOutput, `${JSON.stringify(report)}\n`, { flag: 'wx', mode: 0o600 }).catch(() => {});
     return report;
   } finally {
-    if (work && (baselinePackInvocation === null || privateWeatherPackJsonReadsClosed(baselinePackInvocation))
+    if (work && !includeCurrent586Endpoints && (baselinePackInvocation === null || privateWeatherPackJsonReadsClosed(baselinePackInvocation))
       && path.dirname(work) === await fs.realpath(privateRoot).catch(() => null)
       && path.basename(work).startsWith('saved-input-audit-')) await fs.rm(work, { recursive: true, force: true }).catch(() => {});
   }
@@ -1261,11 +1475,12 @@ if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.me
       '--raw-manifest-source': 'rawManifestSource', '--include-raw-file-presence': 'includeRawFilePresence',
       '--include-selected-current-preflight': 'includeSelectedCurrentPreflight',
       '--include-current-window-diagnostic': 'includeCurrentWindowDiagnostic',
+      '--include-current586-endpoints': 'includeCurrent586Endpoints',
       '--prepare-current-forward-originals': 'prepareCurrentForwardOriginals',
       '--progress-baseline-target-hour': 'progressBaselineTargetHour' };
     while (args.length) { const key = args.shift(), value = args.shift();
       if (!names[key] || !value || value.startsWith('--') || Object.hasOwn(options, names[key])) fail('MODE_INVALID'); options[names[key]] = value; }
-    for (const key of ['includeRawManifest', 'includeRawFilePresence', 'includeSelectedCurrentPreflight', 'includeCurrentWindowDiagnostic', 'prepareCurrentForwardOriginals']) {
+    for (const key of ['includeRawManifest', 'includeRawFilePresence', 'includeSelectedCurrentPreflight', 'includeCurrentWindowDiagnostic', 'includeCurrent586Endpoints', 'prepareCurrentForwardOriginals']) {
       if (!Object.hasOwn(options, key)) continue;
       if (!['true', 'false'].includes(options[key])) fail('MODE_INVALID');
       options[key] = options[key] === 'true';

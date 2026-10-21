@@ -1,4 +1,15 @@
-## 21. oktober — P0-originalkontinuitet 4.0.586 lokalt udstedt, ikke installeret
+## 21. oktober — faktisk 586-installation og fortsat åbent ordinary-stop
+
+- [x] Præcis kilde-CI inklusive native PostgreSQL og normal 586-kode-only-levering er faktisk gennemført: installeret SQL, B før S, tre eksisterende serverfunktioner, Pages og offentlig 210/673-kontrol. Samme gemte vejr er bevaret; det er ikke ny vejrhentning eller ny dækning.
+- [x] Almindelig efterfølger stopper fortsat før leverandører i COMMITTED_RAW_RETENTION med POST_H0_DMI_ORIGINAL_SELECTED_ENDPOINT_PROOF_NATIVE_ENDPOINT_MISSING. Hele loggen er bevaret; BASELINE_MISMATCH/restored:false viser, at krypteret fremdrift ikke blev genbrugt. Intet nyt beregningscheckpoint eller deploy blev lavet. Cron er faktisk pauset.
+- [ ] Afgrænset CURRENT-only-udvidelse af eksisterende saved-input-audit: faktisk valgt rolle, schema/bank og eksakte native-endepunkter blandt eget input og autentificerede B-ledsagere. Ingen ny vejrhentning, RAW, beregning, SQL, produktionsadmission eller svækkede originalkrav. Lokal forberedelse er ikke gennemført diagnose eller årsagsrettelse.
+- [x] Lokal snæver diagnoseprøve og tre eksisterende normale native-/helkilde-/autentificerede B-kalderprøver består. C96/I95/T12 og syv bindingsforbrugere er kontrolleret uændrede. Præcis samlet GitHub-kontrol og den faktiske afgrænsede læsning mangler fortsat.
+- [x] Hele den berørte eksisterende audit-testfil består med 56 prøver uden fejl eller skip, inklusive gamle scopes, autentifikation og sikker oprydning. Det er lokal kontraktkontrol, ikke et bevis for den faktiske produktionsårsag.
+- [ ] Konkret årsagsrettelse og faktisk almindelig ny offentlig levering. Ingen påstand om fysisk originalfravær, komplet cache eller selvstændig drift.
+
+Ældre lokale afventninger nedenfor er historik på installations-/CI-punkterne, ikke gældende status. C96/I95/T12 og de udstedte SQL-originaler ændres ikke af diagnoseforberedelsen.
+
+## 21. oktober — bevaret lokal udstedelsesevidens for 4.0.586
 
 - [x] Faktisk 39608743697/1 afgrænset til POST_H0_DMI_ORIGINAL_SELECTED_ENDPOINT_PROOF_NATIVE_ENDPOINT_MISSING i COMMITTED_RAW_RETENTION før leverandører. Det er manglende bevis blandt leverede kontekster, ikke en dom over DMI-værdier eller alle fysiske originaler. Sidste offentlige 39520623069/1 kl. 05.39 dansk tid passerede allerede retentionguard.
 - [x] Lokalt integreret schema2/per-PART-originalbank sammen med de samme 121 timer; eksakt nativeGridSampling-egenfeltsmatch; autentificeret fixed-B-companions-only-læser; normal 585-samme-H0-metadatabro og kontrolleret kode-only-workflow. Gamle schema1-originaler bevares; manglende lagret selektionsbevis er ikke påstand om fysisk manglende originaler.

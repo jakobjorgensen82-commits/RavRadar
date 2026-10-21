@@ -1,4 +1,8 @@
-## 21. oktober — bevar de originale endepunkter, ikke kun arbejdsfilen
+## 21. oktober — læs først den faktisk installerede 586 og det fortsatte stop
+
+586 er nu faktisk kildekvalificeret, installeret og offentligt verificeret med samme gemte vejr. Den almindelige efterfølger fejlede fortsat før leverandører på manglende native-endepunktsbevis; den genbrugte ikke krypteret fremdrift, og skabte intet nyt beregningscheckpoint. ROOTs ene P0-linje i CURRENT_TRUTH og seneste private checkpoint er aktuel sandhed; de lokale CI-/installationsafventninger nedenfor er historik. Cron er faktisk pauset. En afgrænset CURRENT-only-udvidelse af eksisterende saved-input-audit forberedes uden ny vejrhentning, RAW, beregning, SQL eller produktionsadmission. Ingen ny version, C/I/T eller lempet originalkontrol.
+
+## 21. oktober — bevaret lokal forberedelse: originale endepunkter, ikke kun arbejdsfilen
 
 Den faktiske almindelige 39608743697/1 stoppede i COMMITTED_RAW_RETENTION før leverandører med POST_H0_DMI_ORIGINAL_SELECTED_ENDPOINT_PROOF_NATIVE_ENDPOINT_MISSING. Det betyder, at det valgte endepunkt ikke kunne bevises blandt de leverede kontekster; det er ikke bevis for DMI-nedbrud, forkert strømfortolkning eller fysisk tab af alle originaler. Den seneste offentligt verificerede 39520623069/1 kl. 05.39 dansk tid havde allerede passeret retentionguard. Det nye lokale årsagsspor er, at et nyere native-arbejdsslot kan erstatte netop den gamle originalvisning, mens en tidligere kvalificeret række bevares.
 
