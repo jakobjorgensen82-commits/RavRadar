@@ -31,6 +31,15 @@ export const SOURCE_ARGV=Object.freeze([TARGET]);
 export const SOURCE_COMMAND='node '+SOURCE_ARGV.join(' ');
 export const CURRENT585_ROOT_TARGET='scripts/test-account-statistics-assistant-callers.mjs';
 export const CURRENT585_SOURCE_COMMAND='node scripts/build-account-statistics-assistant-successor.mjs --check && node --test '+CURRENT585_ROOT_TARGET;
+export const CURRENT586_PREDECESSOR_SOURCE_COMMAND='node --test scripts/test-account-statistics-assistant-callers.mjs';
+export const CURRENT586_ROOT_TARGET='scripts/test-native-original-continuity-callers.mjs';
+export const CURRENT586_SOURCE_COMMAND='node scripts/build-native-original-continuity-successor.mjs --check && node --test scripts/test-native-original-continuity-callers.mjs';
+export const CURRENT585_NATIVE_COMMANDS=Object.freeze([
+  'node scripts/run-frozen-native0600-source-targets.mjs policy',
+  'node scripts/test-protected-ravscore-continuation-checkpoint.mjs --native-statistics-revision --native-sampling-identity --current-memory-warmup --established-native-current-origin --last-mile-enclosure --account-statistics-assistant',
+]);
+export const CURRENT586_NATIVE_COMMANDS=Object.freeze([CURRENT585_NATIVE_COMMANDS[0],CURRENT585_NATIVE_COMMANDS[1]+' --native-original-continuity']);
+
 export const BEFORE_BLOCK='      - name: '+STEP+'\n        run: '+COMMAND+'\n';
 export const AFTER_BLOCK=[
   '      - name: '+STEP,'        shell: bash','        env:',
@@ -143,7 +152,7 @@ export function verifyRuntime(current,prior) {
   assert.equal(current.platform,'linux');assert.equal(current.arch,'x64');
   assert.equal(current.imageOS,'ubuntu24');assert.equal(current.node,'v22.23.3');
 }
-export function verifyPackage(pkg){
+export function verifyReviewed585Package(pkg){
   assert.equal(pkg.version,'4.0.585');
   assert.equal(pkg.scripts['test:account-statistics-assistant-source'],CURRENT585_SOURCE_COMMAND);
   const commands=pkg.scripts['test:ravscore-source-critical'].split(' && ');
@@ -153,6 +162,25 @@ export function verifyPackage(pkg){
   assert.equal(Object.values(pkg.scripts).join('\n').split(CURRENT585_ROOT_TARGET).length,2,
     'Exactly one normal current585 caller target must remain in the package');
   assert.equal(pkg.scripts['test:last-mile-enclosure'].split('node scripts/national584-source-evidence.mjs source').length,2);
+}
+export function verifyPackage(pkg){
+  if(pkg.version==='4.0.585')return verifyReviewed585Package(pkg);
+  assert.equal(pkg.version,'4.0.586');
+  assert.equal(pkg.scripts['test:account-statistics-assistant-source'],CURRENT586_PREDECESSOR_SOURCE_COMMAND);
+  assert.equal(pkg.scripts['test:native-original-continuity-source'],CURRENT586_SOURCE_COMMAND);
+  const commands=pkg.scripts['test:ravscore-source-critical'].split(' && ');
+  const asa='npm run test:account-statistics-assistant-source',native='npm run test:native-original-continuity-source';
+  assert.equal(commands.filter(c=>c===asa).length,1);assert.equal(commands.filter(c=>c===native).length,1);
+  assert.equal(commands[commands.indexOf(asa)-1],'npm run test:last-mile-enclosure');
+  assert.equal(commands[commands.indexOf(asa)+1],native);
+  assert.equal(commands[commands.indexOf(native)+1],'node scripts/sync-ravscore-model-binding.mjs --check');
+  for(const target of [CURRENT585_ROOT_TARGET,CURRENT586_ROOT_TARGET])
+    assert.equal(Object.values(pkg.scripts).join('\n').split(target).length,2,'Each genuine585/current586 source target remains once');
+  assert.equal(pkg.scripts['test:last-mile-enclosure'].split('node scripts/national584-source-evidence.mjs source').length,2);
+}
+export function verifyCurrentNativeCommands(commands,version){
+  assert(['4.0.585','4.0.586'].includes(version));
+  assert.deepEqual(commands,version==='4.0.585'?CURRENT585_NATIVE_COMMANDS:CURRENT586_NATIVE_COMMANDS);
 }
 async function currentContext() {
   const env=process.env,head=git('rev-parse','HEAD^{commit}');
@@ -173,13 +201,10 @@ async function currentContext() {
   assert.equal(native?.status,'EXECUTED');assert.equal(native.executedInThisRun,true);
   assert.equal(native.current?.head,head);assert.equal(native.current?.run,Number(env.GITHUB_RUN_ID));
   assert.equal(native.current?.attempt,Number(env.GITHUB_RUN_ATTEMPT));assert.equal(native.origin,null);
-  assert.deepEqual(native.commands,[
-    'node scripts/run-frozen-native0600-source-targets.mjs policy',
-    'node scripts/test-protected-ravscore-continuation-checkpoint.mjs --native-statistics-revision --native-sampling-identity --current-memory-warmup --established-native-current-origin --last-mile-enclosure --account-statistics-assistant',
-  ]);
+  verifyCurrentNativeCommands(native.commands,pkg.version);
   assert(!Object.hasOwn(proof,'historical584National'));
   return {head,run:Number(env.GITHUB_RUN_ID),attempt:Number(env.GITHUB_RUN_ATTEMPT),pullRequest:Number(env.PULL_REQUEST_NUMBER),
-    branch:event.pull_request.head.ref,proof};
+    branch:event.pull_request.head.ref,releaseVersion:pkg.version,proof};
 }
 async function authenticatedReuse(ctx) {
   const directory=await fs.mkdtemp(path.join(ROOT,'.cache/national584-evidence-'));
@@ -316,11 +341,22 @@ async function main(){
   assert.equal(git('rev-parse','HEAD'),ctx.head);assert.equal(git('status','--porcelain','--untracked-files=no'),'');
   const file=path.join(ROOT,'.cache/source-tree-content-proof.json');
   const current=JSON.parse(await fs.readFile(file,'utf8'));assert.deepEqual(current,ctx.proof);
+  if(ctx.releaseVersion==='4.0.585'){
   current.historical584National={...result,historicalInput:historical,
     current:{head:ctx.head,run:ctx.run,attempt:ctx.attempt,pullRequest:ctx.pullRequest},
     current585Native:{status:'EXECUTED',phase:'account-statistics-assistant',separatelyRequired:true},
     current585Source:{command:'npm run test:account-statistics-assistant-source',actualCommand:CURRENT585_SOURCE_COMMAND,separatelyRequired:true},
     current585NationalExecutionClaimed:false,providerOrProductionProof:false};
+  }else{
+    assert.equal(ctx.releaseVersion,'4.0.586');
+    current.historical584National={...result,historicalInput:historical,
+      current:{head:ctx.head,run:ctx.run,attempt:ctx.attempt,pullRequest:ctx.pullRequest},
+      current585PredecessorSource:{command:'npm run test:account-statistics-assistant-source',
+        actualCommand:CURRENT586_PREDECESSOR_SOURCE_COMMAND,scope:'GENUINE_FROZEN585_SOURCE_ONLY',separatelyRequired:true},
+      current586Native:{status:'EXECUTED',phase:'native-original-continuity',separatelyRequired:true},
+      current586Source:{command:'npm run test:native-original-continuity-source',actualCommand:CURRENT586_SOURCE_COMMAND,separatelyRequired:true},
+      current585NationalExecutionClaimed:false,current586NationalExecutionClaimed:false,providerOrProductionProof:false};
+  }
   await fs.writeFile(file,JSON.stringify(current)+'\n');
   console.log('Historical584 national '+result.status+'; frozen '+ORIGIN.head+'; CURRENT585 native/source remain separate.');
 }

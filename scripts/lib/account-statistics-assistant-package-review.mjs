@@ -9,7 +9,7 @@ assert.equal(sha(bytes),'8d068a938290911427dbef05fc75a0700829b48c7f8dee069440ce0
 const review=JSON.parse(bytes);assert.equal(review.schemaVersion,1);
 assert.equal(review.kind,'TEST_ONLY_EXACT_ACCOUNT_STATISTICS_ASSISTANT_PACKAGE_INVERSE');assert.equal(review.edits.length,3);
 const canonical=scripts=>JSON.stringify(Object.keys(scripts).sort().map(key=>[key,scripts[key]]));
-export function inverseReviewedAccountStatisticsAssistantSourceScripts(scripts){
+function inverseReviewed585AccountStatisticsAssistantSourceScripts(scripts){
   assert.equal(arguments.length,1);assert(scripts&&Object.getPrototypeOf(scripts)===Object.prototype);
   assert(Object.values(scripts).every(value=>typeof value==='string'));
   assert.equal(sha(canonical(scripts)),review.afterSha256,'Unreviewed actual source commands cannot enter an old oracle');
@@ -39,4 +39,35 @@ export function inverseReviewedAccountStatisticsAssistantSourceScripts(scripts){
   for(const edit of review.edits){assert.equal(prior[edit.key],edit.after);if(edit.before===null)delete prior[edit.key];else prior[edit.key]=edit.before;}
   assert.equal(sha(canonical(prior)),review.beforeSha256,'Every genuine previous script and ordering operand survives the whole inverse');
   return prior;
+}
+
+// Additive exact current586 registration inverse; all old585 assertions above
+// still execute against their WHOLE unchanged canonical scripts hash.
+export function inverseReviewedAccountStatisticsAssistantSourceScripts(scripts){
+  assert.equal(arguments.length,1);assert(scripts&&Object.getPrototypeOf(scripts)===Object.prototype);
+  assert(Object.values(scripts).every(value=>typeof value==='string'));
+  if(!Object.hasOwn(scripts,'test:native-original-continuity-source'))
+    return inverseReviewed585AccountStatisticsAssistantSourceScripts(scripts);
+  assert.equal(scripts['test:native-original-continuity-source'],'node scripts/build-native-original-continuity-successor.mjs --check && node --test scripts/test-native-original-continuity-callers.mjs');
+  assert.equal(scripts['test:account-statistics-assistant-source'],'node --test scripts/test-account-statistics-assistant-callers.mjs');
+  const actual=scripts['test:ravscore-source-critical'],asa='npm run test:account-statistics-assistant-source',native='npm run test:native-original-continuity-source';
+  assert.equal(actual.split(asa).length,2);assert.equal(actual.split(native).length,2);
+  const sequence='npm run test:last-mile-enclosure && '+asa+' && '+native+' && node scripts/sync-ravscore-model-binding.mjs --check';
+  assert.equal(actual.split(sequence).length,2,'Exact585 then586 source registration order');
+  const expanded=expandSourceCommands(scripts,'validate:source:checks');
+  const plan=buildSourceValidationPlan(scripts),dispatched=[];
+  assert.equal(runSourceValidation(plan,{execute(command){dispatched.push(command);return 0;},log(){}}),0);
+  assert.deepEqual(dispatched,[...plan.preflight,...plan.remaining,plan.gate]);
+  for(const command of ['node --test scripts/test-account-statistics-assistant-callers.mjs',
+    'node scripts/build-native-original-continuity-successor.mjs --check',
+    'node --test scripts/test-native-original-continuity-callers.mjs']){
+    assert.equal(expanded.filter(c=>c===command).length,1);assert.equal(dispatched.filter(c=>c===command).length,1);
+  }
+  assert.equal(expanded.includes('node scripts/build-account-statistics-assistant-successor.mjs --check'),false,
+    'Genuine585 builder executes inside its fixed source host, never on current586');
+  const prior={...scripts,'test:account-statistics-assistant-source':'node scripts/build-account-statistics-assistant-successor.mjs --check && node --test scripts/test-account-statistics-assistant-callers.mjs',
+    'test:ravscore-source-critical':actual.replace(asa+' && '+native,asa)};
+  delete prior['test:native-original-continuity-source'];
+  assert.equal(sha(canonical(prior)),review.afterSha256,'Whole genuine585 scripts reconstructed before unchanged old oracles');
+  return inverseReviewed585AccountStatisticsAssistantSourceScripts(prior);
 }

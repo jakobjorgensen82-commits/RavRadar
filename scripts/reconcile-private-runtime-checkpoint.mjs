@@ -29,6 +29,11 @@ import {ACCOUNT_STATISTICS_ASSISTANT_BINDING as METADATA_FAMILY}
 import {withAuthenticated584PredecessorSource} from './check-account-statistics-assistant-predecessor-source.mjs';
 import {assertEstablishedNativeCurrent584MetadataCheckpoint} from './lib/established-native-current-origin.mjs';
 import {assertAccountStatisticsAssistantPrewriteCaller} from './account-statistics-assistant-prewrite.mjs';
+import {NATIVE_ORIGINAL_CONTINUITY_BINDING as NATIVE_METADATA_FAMILY,requireNativeOriginalContinuityOutput}
+  from './lib/native-original-continuity-successor-source.mjs';
+import {withAuthenticated585PredecessorSource} from './check-native-original-continuity-predecessor-source.mjs';
+import {assertEstablishedNativeCurrent585MetadataCheckpoint} from './lib/established-native-current-origin.mjs';
+import {assertNativeOriginalContinuityCodeOnlyCaller} from './select-native-original-continuity-code-only-source.mjs';
 import { ownFileDescriptorIdentity, ownedFileDescriptorClosed } from './lib/private-weather-component-pack.mjs';
 import { classifyProductionTargetFreshness } from './check-production-target-freshness.mjs';
 
@@ -39,7 +44,7 @@ const json = async file => JSON.parse(await fs.readFile(file, 'utf8'));
 const identityKeys = ['sourceHead', 'datasetId', 'productionReferenceAt', 'generatedAt',
   'bundleContentSha256', 'modelBinding', 'contractHashes'];
 function reconcileFamily(descriptor) {
-  return [FAMILY, NEXT_FAMILY, METADATA_FAMILY].filter(Boolean).find(family =>
+  return [FAMILY, NEXT_FAMILY, METADATA_FAMILY, NATIVE_METADATA_FAMILY].filter(Boolean).find(family =>
     descriptor?.modelBinding?.modelBundleSha256 === family.I
     && descriptor?.contractHashes?.continuationStateContractSha256 === family.T) ?? null;
 }
@@ -66,7 +71,7 @@ export function assertSavedPrivateRuntimeCheckpointReconcileRequest(env = proces
     'RAVRADAR_WEATHER_STATE_EPOCH_CHECKPOINT_REENTRY', 'NATIVE_IDENTITY_RECOVERY',
     'UPGRADE_LAST_MILE_ENCLOSURE', 'UPGRADE_ESTABLISHED_NATIVE_CURRENT_ORIGIN',
     'UPGRADE_EXISTING_OWNER_EXPORT', 'UPGRADE_ACCOUNT_ASSISTANT', 'UPGRADE_STATISTICS_REVISION',
-    'UPGRADE_ACCOUNT_STATISTICS_ASSISTANT'])
+    'UPGRADE_ACCOUNT_STATISTICS_ASSISTANT', 'UPGRADE_NATIVE_ORIGINAL_CONTINUITY'])
     need(env[key] === 'false', 'SAVED_MODE_COLLISION');
   for (const key of ['RAVRADAR_ARCHIVED_WEATHER_RESTART_CONTEXT_PATH',
     'RAVRADAR_ARCHIVED_WEATHER_RESTART_CONTEXT_SHA256',
@@ -86,6 +91,9 @@ async function restoreReconcilePredecessor({ family, checkpointPath, targetRefer
   const rows = await readCheckpointRows(request);
   // Reader selection is NOT numerical admission. Normal current validation
   // remains unchanged; only an exact older140000 S gets its genuine old reader.
+  const old585 = family === NATIVE_METADATA_FAMILY && rows.length === 1
+    && rows[0].payload.modelBinding?.modelBundleSha256 === METADATA_FAMILY.I
+    && rows[0].payload.continuationStateContractSha256 === METADATA_FAMILY.T;
   const old584 = family === METADATA_FAMILY && rows.length === 1
     && rows[0].payload.modelBinding?.modelBundleSha256 === NEXT_FAMILY.I
     && rows[0].payload.continuationStateContractSha256 === NEXT_FAMILY.T;
@@ -97,7 +105,11 @@ async function restoreReconcilePredecessor({ family, checkpointPath, targetRefer
   };
   const options = { checkpointPath, targetReference, request: checkedRequest };
   let restored;
-  if(old584) restored = await withAuthenticated584PredecessorSource(async sourceRoot=>{
+  if(old585) restored = await withAuthenticated585PredecessorSource(async sourceRoot=>{
+    const reader=await import(pathToFileURL(path.join(sourceRoot,'scripts/protected-ravscore-continuation-checkpoint.mjs')).href);
+    return reader.restoreProtectedRavScoreContinuationCheckpoint(options);
+  });
+  else if(old584) restored = await withAuthenticated584PredecessorSource(async sourceRoot=>{
     const reader=await import(pathToFileURL(path.join(sourceRoot,'scripts/protected-ravscore-continuation-checkpoint.mjs')).href);
     return reader.restoreProtectedRavScoreContinuationCheckpoint(options);
   });
@@ -107,7 +119,7 @@ async function restoreReconcilePredecessor({ family, checkpointPath, targetRefer
     return reader.restoreProtectedRavScoreContinuationCheckpoint(options);
   });
   else restored = await restoreProtectedRavScoreContinuationCheckpoint(options);
-  return { restored, rows, predecessorFamily: old584 ? NEXT_FAMILY : old ? FAMILY : family };
+  return { restored, rows, predecessorFamily: old585 ? METADATA_FAMILY : old584 ? NEXT_FAMILY : old ? FAMILY : family };
 }
 async function readPointer(request) {
   const key = PROTECTED_PRIVATE_RUNTIME_POLICY.documentKey;
@@ -175,6 +187,22 @@ export async function reconcileAccountStatisticsAssistantPrivateRuntimeCheckpoin
   const source=await describeCurrentProtectedPrivateProductionRuntime({request});
   need(METADATA_FAMILY !== null && source.modelBinding?.modelBundleSha256 === METADATA_FAMILY.I
     && source.contractHashes?.continuationStateContractSha256 === METADATA_FAMILY.T, 'METADATA_CURRENT_FAMILY');
+  return reconcileAuthenticatedPrivateRuntimeCheckpoint({...options,request});
+}
+export async function reconcileNativeOriginalContinuityPrivateRuntimeCheckpoint(options = {}) {
+  requireNativeOriginalContinuityOutput();
+  assertNativeOriginalContinuityCodeOnlyCaller(process.env);
+  need(process.env.RAVRADAR_NATIVE_ORIGINAL_CONTINUITY_SOURCE_ACTIVE === 'true'
+    && process.env.RAVRADAR_NATIVE_ORIGINAL_CONTINUITY_PHASE === 'installed'
+    && process.env.RAVRADAR_NATIVE_ORIGINAL_CONTINUITY_UPGRADE_OPT_IN === 'false'
+    && process.env.RAVRADAR_NATIVE_ORIGINAL_CONTINUITY_CURRENT_FAMILY === 'current', 'NATIVE_METADATA_INSTALLED_CURRENT_REQUEST');
+  need(['integrated','integrated-historical-maintenance'].includes(process.env.OPERATIONAL_ACTION), 'NATIVE_METADATA_OPERATIONAL_ACTION');
+  need(options.operationalAction === undefined || options.operationalAction === process.env.OPERATIONAL_ACTION,
+    'NATIVE_METADATA_OPERATIONAL_ACTION');
+  const request=options.request ?? createProtectedPrivateRuntimeClients({storageBackend:'supabase'}).documentRequest;
+  const source=await describeCurrentProtectedPrivateProductionRuntime({request});
+  need(NATIVE_METADATA_FAMILY !== null && source.modelBinding?.modelBundleSha256 === NATIVE_METADATA_FAMILY.I
+    && source.contractHashes?.continuationStateContractSha256 === NATIVE_METADATA_FAMILY.T, 'NATIVE_METADATA_CURRENT_FAMILY');
   return reconcileAuthenticatedPrivateRuntimeCheckpoint({...options,request});
 }
 async function reconcileAuthenticatedPrivateRuntimeCheckpoint({ repositoryRoot = ROOT, privateRoot, bundlePath,
@@ -249,7 +277,15 @@ async function reconcileAuthenticatedPrivateRuntimeCheckpoint({ repositoryRoot =
           centralContract:JSON.parse(registry.raw.toString('utf8')),previousCheckpoint:saved,incomingCheckpoint:derived});
         need(exact584MetadataOnly === true,'SAME_H0_METADATA_ORIGINALS');
       }
-      need(exact584MetadataOnly || saved === null || (saved.modelBinding.modelBundleSha256 === predecessor.predecessorFamily.I
+      let exact585MetadataOnly = false;
+      if(family === NATIVE_METADATA_FAMILY && saved !== null
+        && predecessor.predecessorFamily === METADATA_FAMILY && saved.productionReferenceAt === current.productionReferenceAt){
+        exact585MetadataOnly = await assertEstablishedNativeCurrent585MetadataCheckpoint({
+          descriptor:current,conditions:JSON.parse(original.raw.toString('utf8')),
+          centralContract:JSON.parse(registry.raw.toString('utf8')),previousCheckpoint:saved,incomingCheckpoint:derived});
+        need(exact585MetadataOnly === true,'SAME_H0_NATIVE_METADATA_ORIGINALS');
+      }
+      need(exact584MetadataOnly || exact585MetadataOnly || saved === null || (saved.modelBinding.modelBundleSha256 === predecessor.predecessorFamily.I
         && saved.continuationStateContractSha256 === predecessor.predecessorFamily.T
         && Date.parse(saved.productionReferenceAt) < Date.parse(current.productionReferenceAt)), 'S_NOT_BEHIND');
       await stable();
@@ -297,7 +333,9 @@ async function main() {
   const command = process.argv[2];
   const savedWeather = ['select-saved', 'reconcile-saved'].includes(command);
   const metadata = command === 'reconcile-account-statistics-assistant';
-  if (metadata) assertAccountStatisticsAssistantPrewriteCaller(process.env);
+  const nativeMetadata = command === 'reconcile-native-original-continuity';
+  if (nativeMetadata) { requireNativeOriginalContinuityOutput(); assertNativeOriginalContinuityCodeOnlyCaller(process.env); }
+  else if (metadata) assertAccountStatisticsAssistantPrewriteCaller(process.env);
   else if (savedWeather) assertSavedPrivateRuntimeCheckpointReconcileRequest();
   else assertOrdinaryPrivateRuntimeCheckpointReconcileRequest();
   const head = execFileSync('git', ['rev-parse', 'HEAD'], { cwd: ROOT, encoding: 'utf8' }).trim();
@@ -310,8 +348,8 @@ async function main() {
       : path.join(process.env.RUNNER_TEMP, 'private-runtime-current-source.json'));
     await fs.appendFile(process.env.GITHUB_OUTPUT, `required=${requiresPrivateRuntimeCheckpointReconcile(source)}\n`);
   } else {
-    need(command === 'reconcile' || command === 'reconcile-saved' || metadata, 'COMMAND');
-    const reconcile = metadata ? reconcileAccountStatisticsAssistantPrivateRuntimeCheckpoint
+    need(command === 'reconcile' || command === 'reconcile-saved' || metadata || nativeMetadata, 'COMMAND');
+    const reconcile = nativeMetadata ? reconcileNativeOriginalContinuityPrivateRuntimeCheckpoint : metadata ? reconcileAccountStatisticsAssistantPrivateRuntimeCheckpoint
       : savedWeather ? reconcileSavedPrivateRuntimeCheckpoint : reconcilePrivateRuntimeCheckpoint;
     const result = await reconcile({ privateRoot: process.env.RAVRADAR_PRIVATE_RUNTIME_ROOT,
       bundlePath: process.env.RAVRADAR_PRIVATE_RUNTIME_BUNDLE });

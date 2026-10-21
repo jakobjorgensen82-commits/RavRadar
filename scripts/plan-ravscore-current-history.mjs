@@ -36,7 +36,8 @@ import { localPartRuntimeProperties } from './lib/local-part-runtime.mjs';
 import { readLiveCurrentPilot } from './lib/live-current-pilot.mjs';
 import { mergeProtectedLiveCurrentPilotIntoRecord } from './lib/protected-live-current-assembly.mjs';
 import { originalContextForProtectedDmiCurrent } from './lib/protected-dmi-current-context.mjs';
-import { verifyPrivateProductionRuntimeBundle } from './private-production-runtime-bundle.mjs';
+import { readCurrentPrivateRuntimeCompanionInput, readAuthenticatedCurrentCompanions }
+  from './read-authenticated-dmi-current-companions.mjs';
 import { CURRENT_FAMILY_COLD_START_CONTEXT_ENV,
   loadCurrentFamilyColdStartForTarget, currentFamilyColdStartScoreInputs,
   currentFamilyColdStartRawRetention } from './current-family-cold-start.mjs';
@@ -182,7 +183,8 @@ export function buildRavScoreCurrentHistoryDemand({
 // in the fixed caller below. This pure projection never authenticates/admit rows.
 export function buildRavScoreRawCurrentRetention({ registry, conditions, checkpoint,
   productionReferenceAt, boundary, protectedBulk, progressCandidate = null,
-  progressActive = null, historicalBulk = null, persistedHourlyByPart = new Map(), liveCurrentPilot = null, zones } = {}) {
+  progressActive = null, historicalBulk = null, protectedCompanionContexts = [],
+  persistedHourlyByPart = new Map(), liveCurrentPilot = null, zones } = {}) {
   const target = exactHour(productionReferenceAt), captures = new Map();
   if (!object(boundary) || boundary.datasetId !== conditions?.datasetId
     || boundary.productionReferenceAt !== conditions?.productionReferenceAt
@@ -192,7 +194,8 @@ export function buildRavScoreRawCurrentRetention({ registry, conditions, checkpo
     || !/^[a-f0-9]{64}$/.test(boundary.conditionsSha256 ?? '')
     || !object(registry?.zones) || !object(conditions?.coastalParts?.parts)
     || !object(checkpoint?.states) || !Array.isArray(zones?.features)
-    || !(persistedHourlyByPart instanceof Map)) refuse('RETENTION_INPUT_INVALID');
+    || !(persistedHourlyByPart instanceof Map) || !Array.isArray(protectedCompanionContexts)
+    || protectedCompanionContexts.length > 2) refuse('RETENTION_INPUT_INVALID');
   let partCount = 0;
   for (const [zoneId, entries] of Object.entries(registry.zones)) for (const entry of entries) {
     const part = { ...entry, zoneId }, expected = dmiExpectedIdentityForPart(part);
@@ -210,10 +213,11 @@ export function buildRavScoreRawCurrentRetention({ registry, conditions, checkpo
     const feature = { properties: localPartRuntimeProperties(
       zones.features.find(row => row?.properties?.id === zoneId)?.properties ?? {}, part, expected.entityId) };
     const protectedContexts = [protectedBulk, historicalBulk];
+    const persisted = persistedHourlyByPart.get(part.partId);
     const records = [];
     for (const [document, previous] of [[protectedBulk, true], [progressCandidate, false]]) {
       let record = buildPrivateDmiRecoveryRecord(feature, document, target, { startAt, expectedIdentity: expected,
-        ...(previous ? { persistedHourly: persistedHourlyByPart.get(part.partId)?.hourly ?? [],
+        ...(previous ? { persistedHourly: persisted?.hourly ?? [],
           historicalBulkCache: historicalBulk, protectPreviousDmi: true } : {}) });
       if (!record) { records.push(null); continue; }
       const contexts = previous ? protectedContexts : [document];
@@ -228,7 +232,12 @@ export function buildRavScoreRawCurrentRetention({ registry, conditions, checkpo
         { requireNativeGridSampling: false, liveCurrentPilot }) : verifiedIntegratedPartHourly(record,
           document, expected.entityId, part, { requireNativeGridSampling: false, liveCurrentPilot });
       records.push({ source: previous ? 'deployed-private-runtime' : 'progressive-private-dmi',
-        nativeCurrentContexts: contexts, record: { ...record, hourly } });
+        // Original B companions support only proof of the protected selection;
+        // they never become mapper inputs, new candidates or source priority.
+        nativeCurrentContexts: previous ? [...contexts, ...protectedCompanionContexts] : contexts,
+        ...(previous && persisted?.nativeCurrentOriginals != null
+          ? { nativeCurrentOriginals: persisted.nativeCurrentOriginals } : {}),
+        record: { ...record, hourly } });
     }
     const recoverySources = buildNewestValidRavScoreRecoverySources({ fallbackSource: records[0],
       preferredSource: records[1], protectedPreviousSource: records[0], productionReferenceAt: target, part });
@@ -273,26 +282,9 @@ export function buildRavScoreRawCurrentRetention({ registry, conditions, checkpo
 }
 
 async function readCommittedRawCurrentRetention(registry, checkpointFile, productionReferenceAt) {
-  const privateRoot = process.env.RAVRADAR_PRIVATE_RUNTIME_ROOT;
-  const bundlePath = process.env.RAVRADAR_PRIVATE_RUNTIME_BUNDLE;
-  if (!path.isAbsolute(privateRoot ?? '') || !path.isAbsolute(bundlePath ?? '')
-    || path.dirname(bundlePath) !== privateRoot || !process.env.RUNNER_TEMP) refuse('RETENTION_B_PATH');
-  // Already authenticated CURRENT from the ordinary restore/reconcile, not a
-  // caller-supplied old manifest or newly calculated/local H0. No network here.
-  const descriptor = JSON.parse(await fs.readFile(path.join(process.env.RUNNER_TEMP,
-    'private-runtime-current-source.json'), 'utf8'));
-  const verify = () => verifyPrivateProductionRuntimeBundle({ privateRoot, bundlePath,
-    repositoryRoot: ROOT, expected: descriptor });
-  const verified = await verify();
-  if (verified.bundleContentSha256 !== descriptor.bundleContentSha256) refuse('RETENTION_B_CHANGED');
-  const file = path.join(bundlePath, 'payload/data/live/conditions.json');
-  const fileInfo = await fs.lstat(file);
-  if (!fileInfo.isFile() || fileInfo.isSymbolicLink() || fileInfo.size > 256 * 1024 * 1024) refuse('RETENTION_B_CHANGED');
-  const bytes = await fs.readFile(file);
-  const conditionsSha256 = hash(bytes).slice(7);
-  const listed = verified.files.find(row => row.relativePath === 'data/live/conditions.json');
-  if (!listed || listed.bytes !== bytes.length || listed.sha256 !== conditionsSha256 || !checkpointFile) refuse('RETENTION_B_CHANGED');
-  const conditions = JSON.parse(bytes.toString('utf8'));
+  const { verified, conditions, conditionsPath: file, conditionsSha256, verify } =
+    await readCurrentPrivateRuntimeCompanionInput(productionReferenceAt);
+  if (!checkpointFile) refuse('RETENTION_B_CHANGED');
   const work = await fs.mkdtemp(path.join(os.tmpdir(), 'rr-raw-retention-'));
   let checkpoint;
   try {
@@ -302,6 +294,7 @@ async function readCommittedRawCurrentRetention(registry, checkpointFile, produc
     checkpoint = JSON.parse(await fs.readFile(output, 'utf8'));
     if (!isDeepStrictEqual(checkpoint, checkpointFile.json)) refuse('RETENTION_B_S_DIFFER');
   } finally { await fs.rm(work, { recursive: true }); }
+  const protectedCompanionContexts = await readAuthenticatedCurrentCompanions(verified, conditions);
   const parts = Object.entries(registry.zones).flatMap(([zoneId, entries]) => entries.map(part => ({ ...part, zoneId })));
   const forecast = await inspectDmiForecastFile(path.join(ROOT, 'data/live/dmi-forecast-cache.json'));
   const protectedBulk = await readDmiBulkDocument(path.join(ROOT, '.cache/deployed-dmi-bulk-cache.json'));
@@ -322,7 +315,7 @@ async function readCommittedRawCurrentRetention(registry, checkpointFile, produc
         parts: { [part.partId]: conditions.coastalParts.parts[part.partId] } } },
       checkpoint: { ...checkpoint, states: { [part.partId]: checkpoint.states[part.partId] } },
       productionReferenceAt, boundary, protectedBulk, progressCandidate: candidate ?? active, progressActive: active,
-      historicalBulk, persistedHourlyByPart, liveCurrentPilot, zones });
+      historicalBulk, protectedCompanionContexts, persistedHourlyByPart, liveCurrentPilot, zones });
     for (const capture of result.captures) all.set(canonical(capture), capture);
     if (all.size > 4096) refuse('RETENTION_BOUND');
   };
@@ -828,7 +821,7 @@ export async function describeRavScoreCurrentHistoryFailure(error,phase='UNKNOWN
             ||endpointDependencyReasons.has(originalDependencyCode.slice(originalPrefix.length))
               &&message.value==='POST_H0_DMI_ORIGINAL_SELECTED_ENDPOINT_UNAVAILABLE')
           &&relative==='scripts/lib/post-h0-dmi-original-dependencies.mjs'
-          &&result.frame.sha256==='0db7833d68cad3c1ab60c86855bab6e90b1cbf40d8a2ad766da74609781ce6dc'
+          &&result.frame.sha256==='a49ea641f76af721c43a13a091aa102e0904a3730803859d7c5f5e29e7c516bc'
           &&at===18)result.code=originalDependencyCode;
         break;
       }catch{} // Unknown frame stays unknown; diagnostic I/O cannot replace the failure.

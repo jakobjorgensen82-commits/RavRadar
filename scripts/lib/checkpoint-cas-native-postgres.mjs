@@ -34,7 +34,7 @@ const sqlText = text => String(text).replace(/\r\n?/g, '\n');
 const NATIVE_PSQL_PHASES = new Set(['NATIVE_SETUP', 'CAS200_MIGRATION',
   'BASELINE_FIXTURES', 'BASELINE_ADMISSION', 'BASELINE_CAS_CASES',
   'ACCOUNT213', 'CURRENT220', 'STATISTICS230', 'NATIVE_IDENTITY0600', 'CURRENT_MEMORY_WARMUP',
-  'ESTABLISHED_NATIVE_CURRENT_ORIGIN', 'LAST_MILE_ENCLOSURE', 'ACCOUNT_STATISTICS_ASSISTANT', 'UNKNOWN']);
+  'ESTABLISHED_NATIVE_CURRENT_ORIGIN', 'LAST_MILE_ENCLOSURE', 'ACCOUNT_STATISTICS_ASSISTANT', 'NATIVE_ORIGINAL_CONTINUITY', 'UNKNOWN']);
 const NATIVE_PSQL_STATES = Object.freeze({
   '22003':'SQL_RANGE', '22023':'SQL_PARAMETER', '22P02':'SQL_TEXT_FORMAT',
   '23502':'SQL_NOT_NULL', '23503':'SQL_FOREIGN_KEY', '23505':'SQL_UNIQUE',
@@ -626,13 +626,21 @@ async function compareCurrentGridSuccessor({ psql, runSql, source, accountSource
 export async function runNativeCheckpointSqlComparison({ repositoryRoot,
   sourceDocumentAt, atHour, saveCheckpoint, includeStatisticsRevision = false,
   includeNativeIdentity = false, includeCurrentMemoryWarmup = false, includeEstablishedNativeCurrentOrigin = false,
-  includeLastMileEnclosure = false, includeAccountStatisticsAssistant = false } = {}) {
+  includeLastMileEnclosure = false, includeAccountStatisticsAssistant = false,
+  includeNativeOriginalContinuity = false } = {}) {
   assert.equal(typeof includeStatisticsRevision,'boolean');
   assert.equal(typeof includeNativeIdentity,'boolean');
   assert.equal(typeof includeCurrentMemoryWarmup,'boolean');
   assert.equal(typeof includeEstablishedNativeCurrentOrigin,'boolean');
   assert.equal(typeof includeLastMileEnclosure,'boolean');
   assert.equal(typeof includeAccountStatisticsAssistant,'boolean');
+  assert.equal(typeof includeNativeOriginalContinuity,'boolean');
+  assert(!includeNativeOriginalContinuity || includeAccountStatisticsAssistant,
+    'Native continuity requires the genuine complete585 native phase');
+  if(includeNativeOriginalContinuity){
+    const {requireNativeOriginalContinuityOutput}=await import('./native-original-continuity-successor-source.mjs');
+    requireNativeOriginalContinuityOutput(); // UNISSUED before programs, host or SQL.
+  }
   assert(!includeAccountStatisticsAssistant || includeLastMileEnclosure,'585 requires the genuine complete584 native phase');
   assert(!includeLastMileEnclosure || includeEstablishedNativeCurrentOrigin,'Last-mile enclosure requires every genuine historical native phase');
   assert(!includeEstablishedNativeCurrentOrigin || includeCurrentMemoryWarmup,'Established origin requires every unchanged historical native phase');
@@ -934,8 +942,21 @@ select public.native_checkpoint_attempt(${baseline},${version},(select payload f
     let accountStatisticsAssistant;
     if(includeAccountStatisticsAssistant){
       nativePhase='ACCOUNT_STATISTICS_ASSISTANT';
-      const {compareAccountStatisticsAssistantSuccessor}=await import('./account-statistics-assistant-postgres.mjs');
-      accountStatisticsAssistant=await compareAccountStatisticsAssistantSuccessor({psql,runSql,root,sourceDocumentAt,atHour,saveCheckpoint});
+      if(includeNativeOriginalContinuity){
+        const {withFrozen585CheckpointPostgresSource}=await import('../run-frozen585-native-continuity-postgres-source.mjs');
+        accountStatisticsAssistant=await withFrozen585CheckpointPostgresSource(async({adapter,factory})=>
+          adapter.compareAccountStatisticsAssistantSuccessor({psql,runSql,root,sourceDocumentAt:factory.sourceDocumentAt,
+            atHour:factory.atHour,saveCheckpoint:factory.saveRavScoreContinuationCheckpoint}));
+      }else{
+        const {compareAccountStatisticsAssistantSuccessor}=await import('./account-statistics-assistant-postgres.mjs');
+        accountStatisticsAssistant=await compareAccountStatisticsAssistantSuccessor({psql,runSql,root,sourceDocumentAt,atHour,saveCheckpoint});
+      }
+    }
+    let nativeOriginalContinuity;
+    if(includeNativeOriginalContinuity){
+      nativePhase='NATIVE_ORIGINAL_CONTINUITY';
+      const {compareNativeOriginalContinuitySuccessor}=await import('./native-original-continuity-postgres.mjs');
+      nativeOriginalContinuity=await compareNativeOriginalContinuitySuccessor({psql,runSql,root,sourceDocumentAt,atHour,saveCheckpoint});
     }
     return {kind:'NATIVE_POSTGRES_CHECKPOINT_CAS_COMPARISON',accountAssistant,currentGrid,
       ...(includeStatisticsRevision?{statisticsRevision}:{}),
@@ -944,6 +965,7 @@ select public.native_checkpoint_attempt(${baseline},${version},(select payload f
       ...(includeEstablishedNativeCurrentOrigin?{establishedNativeCurrentOrigin}:{}),
       ...(includeLastMileEnclosure?{lastMileEnclosure}:{}),
       ...(includeAccountStatisticsAssistant?{accountStatisticsAssistant}:{}),
+      ...(includeNativeOriginalContinuity?{nativeOriginalContinuity}:{}),
       issuedSource:issued.sourceReceipt,postgresMajorVersion:programs.majorVersion,
       tcpEnabled:false,normalModelPartCount:673,sqlExecuted:true,migrationExecuted:true,
       migrationSQLSha256:hash(newSource),caseCount:reports.length,

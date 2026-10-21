@@ -1,5 +1,7 @@
 import {inverseReviewedAccountStatisticsAssistantSourceScripts} from './lib/account-statistics-assistant-package-review.mjs';
 import { inverseAlternativeCCaller } from './lib/alternative-c-caller-test-input.mjs';
+import { inverseCurrentNativeOriginalProducerTestInput, CURRENT_NATIVE_ORIGINAL_PRODUCER_TEST_REVIEW }
+  from './lib/archived-weather-restart-updater-test-input.mjs';
 import assert from 'node:assert/strict';
 import crypto from 'node:crypto';
 import fs from 'node:fs/promises';
@@ -12,7 +14,9 @@ import { withFrozenEstablishedNativeCurrentOriginSourceTarget } from './run-froz
 
 const producerPath = new URL('./update-weather.mjs', import.meta.url);
 const sourceText = async file => {
-  const source = (await fs.readFile(file, 'utf8')).replace(/\r\n/g, '\n');
+  let source = (await fs.readFile(file, 'utf8')).replace(/\r\n/g, '\n');
+  if (file instanceof URL && file.href === new URL('./lib/private-dmi-recovery-record.mjs', import.meta.url).href)
+    source = inverseCurrentNativeOriginalProducerTestInput(source, 'scripts/lib/private-dmi-recovery-record.mjs');
   return file === producerPath ? inverseSavedCurrentForwardOriginalPlan(inverseAlternativeCCaller(source, 'scripts/update-weather.mjs')) : source;
 };
 const digest = value => crypto.createHash('sha256').update(value).digest('hex');
@@ -1114,4 +1118,53 @@ test('default-OFF original-plan caller preserves the whole FFD updater and all e
     + '\nreturn normalOriginUpdaterTestInput;')(assert, digest);
   const oracle = await sourceText(new URL('./test-weather-update-entrypoint.mjs', import.meta.url));
   assert.equal(normalInput(actual, oracle), inverseSavedCurrentReplayUpdater(actual), 'same actual normal follower reader, not another host');
+});
+
+test('native-original producer preserves exact whole archived inputs and rejects every changed delta', async () => {
+  assert.deepEqual(CURRENT_NATIVE_ORIGINAL_PRODUCER_TEST_REVIEW.rows.map(row => row.path),
+    ['scripts/update-weather.mjs', 'scripts/lib/private-dmi-recovery-record.mjs']);
+  for (const row of CURRENT_NATIVE_ORIGINAL_PRODUCER_TEST_REVIEW.rows) {
+    const actual = (await fs.readFile(new URL('../' + row.path, import.meta.url), 'utf8')).replace(/\r\n/g, '\n');
+    assert.equal(Buffer.byteLength(actual), row.after.bytes, 'The new actual source must be tested, not an old projected body');
+    assert.equal(digest(actual), row.after.sha256);
+    const original = inverseCurrentNativeOriginalProducerTestInput(actual, row.path);
+    assert.equal(digest(original), row.before.sha256);
+    assert.equal(inverseCurrentNativeOriginalProducerTestInput(original, row.path), original);
+    for (const edit of row.edits) {
+      assert.equal(actual.slice(edit.offset, edit.offset + edit.after.length), edit.after);
+      const changed = edit.after.length
+        ? actual.slice(0, edit.offset) + (edit.after[0] === 'X' ? 'Y' : 'X') + actual.slice(edit.offset + 1)
+        : actual.slice(0, edit.offset) + edit.before + actual.slice(edit.offset);
+      assert.notEqual(changed, actual, 'Each mutation changes its exact real final delta');
+      assert.throws(() => inverseCurrentNativeOriginalProducerTestInput(changed, row.path), /ALTERNATIVE_C_TEST_INPUT_CHANGED/);
+    }
+    assert.throws(() => inverseCurrentNativeOriginalProducerTestInput(actual + '// unreviewed drift\n', row.path),
+      /ALTERNATIVE_C_TEST_INPUT_CHANGED/);
+    assert.throws(() => inverseCurrentNativeOriginalProducerTestInput(actual, 'scripts/unknown.mjs'),
+      /ALTERNATIVE_C_TEST_INPUT_CHANGED/);
+  }
+  assert.throws(() => inverseCurrentNativeOriginalProducerTestInput({}, 'scripts/update-weather.mjs'),
+    /ALTERNATIVE_C_TEST_INPUT_CHANGED/);
+});
+
+test('actual native-original companion caller stays unprojected and declared in producer review', async () => {
+  const actual = (await fs.readFile(producerPath, 'utf8')).replace(/\r\n/g, '\n');
+  const read = "import { readCurrentPrivateRuntimeCompanions } from './read-authenticated-dmi-current-companions.mjs';";
+  assert.equal(actual.split(read).length, 2, 'Actual updater imports the controller exactly once');
+  assert.match(actual, /coastalPartsContract\.enabled\n  && coldInputs === null && stateEpochView === null\n  \? await readCurrentPrivateRuntimeCompanions\(generatedAt\) : \[\]/);
+  assert.match(actual, /    archivedWeatherRestartView,\n    protectedNativeCurrentCompanionContexts,\n  \)/);
+  assert.equal(actual.split('error.nativeOriginalProofCode = /^DMI_NATIVE_PROOF_[A-Z_]{1,80}$/.test(proof.code)').length, 2);
+  const planner = (await fs.readFile(new URL('./plan-ravscore-current-history.mjs', import.meta.url), 'utf8')).replace(/\r\n/g, '\n');
+  assert.equal(planner.split("from './read-authenticated-dmi-current-companions.mjs';").length, 2);
+  assert.match(planner, /await readCurrentPrivateRuntimeCompanionInput\(productionReferenceAt\)/);
+  assert.match(planner, /await readAuthenticatedCurrentCompanions\(verified, conditions\)/);
+  const helper = (await fs.readFile(new URL('./read-authenticated-dmi-current-companions.mjs', import.meta.url), 'utf8')).replace(/\r\n/g, '\n');
+  assert.match(helper, /await readAuthenticatedCurrentCompanions\(input\.verified, input\.conditions\);\n  await input\.verify\(\);/);
+  assert.doesNotMatch(helper, /\.\/plan-ravscore-current-history|^await\s|^main\(/m);
+  const { PRIVATE_RUNTIME_PRODUCER_SOURCE_FILES, PRIVATE_RUNTIME_CONTRACT_FILES } =
+    await import('./private-production-runtime-workflow.mjs');
+  assert.equal(PRIVATE_RUNTIME_PRODUCER_SOURCE_FILES.filter(file =>
+    file === 'scripts/read-authenticated-dmi-current-companions.mjs').length, 1);
+  assert.deepEqual(PRIVATE_RUNTIME_CONTRACT_FILES.fullRuntimeContractSha256,
+    ['scripts/lib/private-weather-storage-abi.json'], 'Controller review is not a storage-ABI retag');
 });

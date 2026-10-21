@@ -7,6 +7,7 @@ import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
+import {inverseNativeOriginalContinuityWorkflow} from './lib/native-original-continuity-workflow-review.mjs';
 import { withFrozenI71Source } from './check-native-identity-frozen-i71-source.mjs';
 import {
   ASSISTANT_BINDING_HEADERS,
@@ -2206,7 +2207,7 @@ await assert.rejects(verifyInstalledAccountAssistantSchema({accessToken:'synthet
   query:'select anything',fetchImpl:async()=>{arbitraryAccountCalls++;}}),/ACCOUNT_ASSISTANT_CATALOG_/);
 assert.equal(arbitraryAccountCalls,0);
 
-const accountCodeOnly=await fs.readFile('.github/workflows/deploy-code-only-repair.yml','utf8');
+const accountCodeOnly=inverseNativeOriginalContinuityWorkflow((await fs.readFile('.github/workflows/deploy-code-only-repair.yml','utf8')).replace(/\r\n/g,'\n'));
 const accountReadback=accountCodeOnly.indexOf('node scripts/verify-account-assistant-schema.mjs');
 const accountSchema1Prewrite=accountCodeOnly.indexOf('      - name: Verify unchanged current originals and schema1 before statistics revision');
 const accountDryRun=accountCodeOnly.indexOf('      - name: Dry-run and require only the latest exact integrated migration');
@@ -2464,7 +2465,7 @@ assert.equal(arbitraryAccountCalls,0);
     ['GITHUB_RUN_ATTEMPT','2'],['RAVRADAR_STATISTICS_REVISION_CONFIRMATION','DEPLOY-SAVED-WEATHER-REPAIR'],
     ['RAVRADAR_STATISTICS_REVISION_SAVED_WEATHER','true'],['RAVRADAR_STATISTICS_REVISION_RECOVERY_RUN_ID','123']])
     assert.throws(()=>select(list(),{...env,[key]:value}));
-  const workflow=(await fs.readFile('.github/workflows/deploy-code-only-repair.yml','utf8')).replace(/\r\n/g,'\n');
+  const workflow=inverseNativeOriginalContinuityWorkflow((await fs.readFile('.github/workflows/deploy-code-only-repair.yml','utf8')).replace(/\r\n/g,'\n'));
   assert.match(workflow,/upgrade_statistics_preference_revision:\n        description:[^\n]+\n        required: false\n        default: false\n        type: boolean/);
   const before=workflow.indexOf('- name: Verify unchanged current originals and schema1 before statistics revision');
   const dry=workflow.indexOf('- name: Dry-run and require only the latest exact integrated migration');
@@ -2497,7 +2498,8 @@ assert.equal(arbitraryAccountCalls,0);
     /named prewrite route/,'Ordinary plan still refuses pending230 without its named opt-in');
   let stageCallers=0;
   for(const [filename,count] of [['deploy-code-only-repair.yml',1],['apply-weather-model-binding-only.yml',1],['deploy-trip-storage.yml',2]]) {
-    const text=(await fs.readFile('.github/workflows/'+filename,'utf8')).replace(/\r\n/g,'\n');
+    const rawWorkflow=(await fs.readFile('.github/workflows/'+filename,'utf8')).replace(/\r\n/g,'\n');
+    const text=filename==='deploy-code-only-repair.yml'?inverseNativeOriginalContinuityWorkflow(rawWorkflow):rawWorkflow;
     const calls=[...text.matchAll(/node scripts\/integrated-cutover-readiness\.mjs prepare-workdir([^\n]*(?:\n[^\n]*)?)/g)];
     assert.equal(calls.length,count,filename+' exact normal stage-caller inventory');
     for(const call of calls)assert(call[0].includes('--statistics-preference-revision-source'),filename+' must stage exact230 source, not a historical placeholder');
