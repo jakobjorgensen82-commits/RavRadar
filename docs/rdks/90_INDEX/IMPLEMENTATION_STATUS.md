@@ -1,5 +1,6 @@
 ## 21. oktober – inaktiv SOURCE: afledte kontrolmetadata
 
+- [x] Faktisk næste Linux-kontrol bestod distributionsprøven og 19 af 20 efterfølgende prøver. Den negative tomme-cacheprøves gamle 64-KiB-debuglæser er erstattet med fuld, identitetskontrolleret streaming og uændret præcist npm-fejlkrav. To portable mål består; ny samlet Linux/native/PG er stadig åben.
 - [x] Næste præcise CI bestod den tidlige Linux-pakkelæser og stoppede ved det gamle cache-only distributionsorakel, før native PostgreSQL. Samme forventning er fundet og samlet rettet i to efterfølgende native kaldere, uden ændret produktvagt eller lock.
 - [x] Test-only hel-inverse bevarer alle 49 gamle pakker. Faktisk 259-pakkedistribution, installerede enginekrav, officielle cache/artifact-importer og syv manifestafslag består på lokal Node24 uden API-kald. Native værter beholder den faktiske nye pakke og normal actionkode; præcis ejet oprydning erstatter rekursiv testsletning.
 - [ ] Faktisk Linux SDK-loopback/offline/cohort, ny samlet CI og native PostgreSQL. Den smalle Python-helperprøve er afvist af Windows' Node-opstart under det uændrede Linux-miljøfilter; det er ikke native PASS eller en ændret produktionsfejl.

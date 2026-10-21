@@ -69,6 +69,78 @@ def reviewed_current_distribution():
     return {'current': current, 'predecessor_lock': prior}
 
 
+def bounded_npm_offline_cache_refusal(log_path):
+    """Read the complete owned fixture log, not only its first64KiB.
+
+    The larger real SDK graph produces more npm diagnostic lines. Keep the
+    exact historical line-suffix predicate and bounded memory; never infer the
+    expected npm error from a generic process failure or a truncated prefix.
+    """
+    import stat
+
+    suffix = b' error code ENOTCACHED'
+    maximum = 16 * 1024 * 1024  # Same fixed bounded source-log capture ceiling.
+    before = log_path.lstat()
+    identity = lambda value: (value.st_dev, value.st_ino, value.st_size, value.st_mtime_ns)
+    if not stat.S_ISREG(before.st_mode) or before.st_size > maximum:
+        raise AssertionError('BOUNDED_NPM_LOG_NOT_REGULAR_OR_TOO_LARGE')
+    found, tail, total = False, b'', 0
+    with log_path.open('rb') as handle:
+        if identity(os.fstat(handle.fileno())) != identity(before):
+            raise AssertionError('BOUNDED_NPM_LOG_OPEN_CHANGED')
+        while chunk := handle.read(65536):
+            total += len(chunk)
+            if total > before.st_size or total > maximum:
+                raise AssertionError('BOUNDED_NPM_LOG_GREW')
+            # bytes.splitlines() accepts LF, CRLF and bare CR. CRLF creates
+            # an extra empty record here, which cannot match the suffix.
+            lines = (tail + chunk).replace(b'\r', b'\n').split(b'\n')
+            found |= any(line.rstrip(b'\r').endswith(suffix) for line in lines[:-1])
+            tail = lines[-1][-len(suffix)-1:]
+        found |= tail.rstrip(b'\r').endswith(suffix)
+        if total != before.st_size or identity(os.fstat(handle.fileno())) != identity(before):
+            raise AssertionError('BOUNDED_NPM_LOG_READ_CHANGED')
+    if identity(log_path.lstat()) != identity(before):
+        raise AssertionError('BOUNDED_NPM_LOG_PATH_CHANGED')
+    return bool(found)
+
+
+class BoundedNpmDistributionLog(unittest.TestCase):
+    def test_complete_log_preserves_exact_error_predicate_across_chunks(self):
+        suffix = b' error code ENOTCACHED'
+        with tempfile.TemporaryDirectory(prefix='rr-npm-log-reader-') as folder:
+            log_path = Path(folder).resolve() / 'owned-debug.log'
+            positive = [b'42' + suffix + b'\n', b'42' + suffix + b'\r\n',
+                        b'x' * 70000 + b'\n42' + suffix + b'\n',
+                        b'x' * (65536 - 10) + suffix + b'\n',
+                        b'x' * 140000 + b'\n42' + suffix,
+                        b'x' * 140000 + b'\r42' + suffix + b'\rnext record',
+                        b'x' * (65536 - len(suffix) - 1) + suffix + b'\r\nnext record']
+            negative = [b'', b'42 error code ENETUNREACH\n',
+                        b'42 error code ENOTCACHED-extra\n', b'42 ENOTCACHED\n',
+                        b'42 error code ENOTCACHED trailing\n',
+                        b'x' * 140000 + b'\n42 error code ENOTCACHE\n']
+            for data in positive:
+                with self.subTest(bytes=len(data), expected=True):
+                    log_path.write_bytes(data)
+                    self.assertTrue(bounded_npm_offline_cache_refusal(log_path))
+            for data in negative:
+                with self.subTest(bytes=len(data), expected=False):
+                    log_path.write_bytes(data)
+                    self.assertFalse(bounded_npm_offline_cache_refusal(log_path))
+
+    def test_unknown_file_type_and_oversized_log_are_not_error_evidence(self):
+        with tempfile.TemporaryDirectory(prefix='rr-npm-log-reader-') as folder:
+            root = Path(folder).resolve()
+            with self.assertRaisesRegex(AssertionError, 'NOT_REGULAR_OR_TOO_LARGE'):
+                bounded_npm_offline_cache_refusal(root)
+            log_path = root / 'owned-debug.log'
+            with log_path.open('wb') as handle:
+                handle.truncate(16 * 1024 * 1024 + 1)
+            with self.assertRaisesRegex(AssertionError, 'NOT_REGULAR_OR_TOO_LARGE'):
+                bounded_npm_offline_cache_refusal(log_path)
+
+
 SYNTHETIC_CACHE = r'''
 import fs from 'node:fs';
 import path from 'node:path';
@@ -1273,11 +1345,7 @@ class OwnedRawDistributionNative(unittest.TestCase):
                 # A generic setup failure is not the negative npm-cache proof.
                 debug_logs = list((own_cache / '_logs').glob('*-debug-0.log'))
                 self.assertEqual(len(debug_logs), 1)
-                with debug_logs[0].open('rb') as handle:
-                    debug = handle.read(65537)
-                self.assertLessEqual(len(debug), 65536)
-                self.assertTrue(any(line.endswith(b' error code ENOTCACHED')
-                                    for line in debug.splitlines()),
+                self.assertTrue(bounded_npm_offline_cache_refusal(debug_logs[0]),
                                 'Actual npm must refuse the missing offline cache')
         finally:
             primary = sys.exc_info()[1]

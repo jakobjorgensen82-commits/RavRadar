@@ -81,6 +81,16 @@ adskilt fra Linux-native bevis; en Windows-prøves Node-opstart afvises under
 det uændrede Linux-miljøfilter og må ikke ommærkes som native PASS. Faktisk
 Linux-cohort, PostgreSQL og samlet ny CI er fortsat åbne.
 
+Den næste faktiske Linux-kontrol bestod distributionsprøven og 19 af de 20
+efterfølgende prøver. Den negative tomme-cacheprøve stoppede på sin gamle
+64-KiB-læsning af npm's større testlog, ikke på manglende fysisk processtop.
+En test-only læser bevarer det præcise ENOTCACHED-linjesuffix og scanner hele
+filen i 64-KiB-portioner med lille suffikshukommelse, 16-MiB-testlogloft samt
+uændret filidentitet og størrelse til EOF. To portable mål bevarer syv
+positive og seks negative logtilfælde samt afslag på forkert filtype og
+oversize. Det er læserbevis, ikke en ny native kørsel; produktets frister,
+proceskontrol, logning og afhængigheder ændres ikke.
+
 Fire normale lokale mål består: streng dataform, faktisk C/I-kæde og uændret
 offentlig pakkelæser, den faktiske committed-source-funktions syntetiske
 afslag samt nu den faktiske udstedte kanoniske SQL i bindingssynkroniseringen. Den uafhængige
