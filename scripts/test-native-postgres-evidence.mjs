@@ -12,6 +12,21 @@ import {ORIGIN, WORKFLOW, JOB, STEP, COMMANDS, CURRENT_COMMANDS as SOURCE_CURREN
   verifyLaterRuns, decideReuse, verifyCurrentPullRequest, FOLLOWUP_INPUTS} from './native-postgres-evidence.mjs';
 
 const copy = value => structuredClone(value);
+test('provider fixture: normal ledger preserves decoded rows and binds all catalog headers',async()=>{
+  const result=spawnSync(process.env.PYTHON||'python3',['-B',
+    fileURLToPath(new URL('./test-source-current-provider-catalog.py',import.meta.url))],
+    {cwd:fileURLToPath(new URL('../',import.meta.url)),encoding:null,timeout:30000,
+      maxBuffer:1024*1024,windowsHide:true,input:''});
+  const parent=fileURLToPath(new URL('../.cache/',import.meta.url));await fs.mkdir(parent,{recursive:true});
+  const output=await fs.mkdtemp(fileURLToPath(new URL('../.cache/provider-catalog-unit-',import.meta.url)));
+  await fs.writeFile(output+'/whole.stdout',result.stdout??Buffer.alloc(0),{flag:'wx',mode:0o600});
+  await fs.writeFile(output+'/whole.stderr',result.stderr??Buffer.alloc(0),{flag:'wx',mode:0o600});
+  assert.equal(result.error,undefined,'Provider catalog ledger regression must start');
+  assert.equal(result.signal,null,'Provider catalog ledger regression must finish');
+  assert.equal(result.status,0,'Provider catalog ledger regression must pass');
+  assert.match(String(result.stderr),/^Ran 1 test in [^\r\n]+\r?$/m);
+  assert.match(String(result.stderr),/^OK\r?$/m);assert.doesNotMatch(String(result.stderr),/skipped/);
+});
 test('provider evidence: normal caller executes the five pure boundary/process regressions',async()=>{
   const result=spawnSync(process.env.PYTHON||'python3',['-I','-B',
     'scripts/test-source19-terminal-failure-proof-bank-v17-observer-native.py','--provider-diagnostic-unit'],

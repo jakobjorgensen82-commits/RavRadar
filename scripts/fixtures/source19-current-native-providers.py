@@ -139,6 +139,23 @@ class StacWire:
         return response
 
 
+def bind_catalog_run_headers(producer, document, official):
+    """Use the normal run metadata even when a selected catalog has no target assets.
+
+    An empty processedSteps never claims decoding, completion or READY.  The
+    unchanged normal ledger validates the actual catalog and every source pair.
+    Existing decoder-owned run metadata is retained, not rebuilt or overwritten.
+    """
+    signature = producer.current_marine_processing_signature(document["zoneRegistrySignature"])
+    for collection in sorted(producer.MARINE_COLLECTIONS):
+        model_run, _assets, _stats = official[collection]
+        document["runs"].setdefault(collection, {"referenceTime": model_run,
+            "parserVersion": producer.PARSER_VERSION,
+            "parameterMapVersion": producer.PARAMETER_MAP_VERSION,
+            "gridLookupVersion": producer.GRID_LOOKUP_VERSION,
+            "processingSignature": signature, "processedSteps": {}})
+
+
 def prepare(node, target, initial_phase=None):
     # Linux lease and actual ecCodes are mandatory. Never stub either on Windows.
     need(sys.platform == "linux" and sys.version_info[:2] == (3, 12), "LINUX_PYTHON312_REQUIRED")
@@ -296,6 +313,7 @@ def prepare(node, target, initial_phase=None):
             allow_documented_required_gaps=True) for collection in producer.MARINE_COLLECTIONS}
         # No authored COMPLETE ledger/attestation; this actual normal sealer must
         # validate the actual decoded bytes against the normal parsed wire catalog.
+        bind_catalog_run_headers(producer, document, official)
         producer.seal_current_operational_checkpoint(document, targets, reference, official)
         need(producer.current_operational_cache_ready(document, targets, reference), "NORMAL_LEDGER_NOT_READY")
         initial_observations = None

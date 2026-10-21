@@ -1,5 +1,9 @@
 ## 21. oktober – inaktiv SOURCE: afledte kontrolmetadata
 
+- [x] Faktisk Linux-report har kvalificeret den første providerfejl til normal ledgerforsegling. Ren reproduktion genfinder manglende kørselsheadere i den syntetiske fixture; det er ikke en SQL-, signal- eller dokumenteret OOM-fejl.
+- [x] Kun manglende normale katalogheadere tilføjes med tomme processedSteps; eksisterende decoderdata og 121 inputtimer bevares. Gammelt afslag og nye positive/negative ledgerregler består, også gennem ROOTs faktiske normale Node22→Python-kalder: ét PASS, nul fejl/skip. Alle 76 beskyttede blade er byteuændrede.
+- [ ] Præcis ny samlet Linux/native/PG-kontrol og efterfølgende forecast-/follower-/kapacitets-/leveringskrav. Lokal fixturesealing er ikke fuld revision eller produktionsbevis. CI skal senere bruge den særskilt gennemgåede P0-tidsrettelse; intet nyt forsøg startes her på det gamle loft.
+
 - [x] Den generiske native-fejlrapport er reproduceret med Nodes egentlige assertion-suffiks. Test-only første fase/kildested, fast kodekatalog og privat child-capture før filtrering er tilføjet med eksplicit ufuldstændighed ved buffergrænse eller afbrydelse. Databasekrav, stop, frister og C/I/T/SQL er uændrede.
 - [ ] Præcis ny Linux-/databasekontrol skal vise den oprindelige indre fejl eller et faktisk samlet resultat. Lokal diagnostik er ikke årsagsrettelse, installation eller offentlig SOURCE-effekt. Se DEC-0294.
 - [x] Efter den faktiske provider-child-afvisning tilføjet test-only procesudfald, signal og private streambeviser samt AST-bundet 36-kodekatalog og første fysisk kvalificerede provider-frame. Syv rene normale mål består uden skip; gamle rapporter, checks, 120-sekunders helperfrist og 240-minutters childfrist bevares.

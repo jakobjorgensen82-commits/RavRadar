@@ -62,6 +62,16 @@ kildekontraktprøver, ikke native B/S, installation eller produktionseffekt.
 
 ## Status og bevarede grænser
 
+### Tillæg 2026-10-21 — normale katalogheadere i den syntetiske providerfixture
+
+Den efterfølgende faktiske Linux-kontrol kvalificerede nu providerens første kildested: normal ledgerforsegling, ikke SQL, signal, OOM eller en observeret timeout. En lille normal reproduktion har 118 verificerede par, men kun én af tre kørselsheadere; den strenge normale kontrol afviser præcist manglende processing-signature og derefter samme sealerlinje som i GitHub.
+
+Kun fixturegrundlaget tilføjer de manglende katalogheadere fra det faktisk valgte syntetiske modelRun og de normale parser-/parameter-/gitterversioner samt den normale processing-signature. Nye processedSteps er tomme. Eksisterende decoder-ejet metadata, alle rækker og 121 inputtimer inklusive T+3 bevares. Den uændrede ledger, terminalkontrol og attestation afgør fortsat READY; der forfattes ingen færdig ledger eller numerisk produktproveniens.
+
+Den normale lille prøve bevarer det gamle afslag og viser derefter ægte sealing af 118 par, nul rest og ærlig UPSTREAM_ABSENT for de to tomme kataloger. Eksisterende korruption og manglende terminalbevis afvises fortsat. ROOT har fysisk integreret de tre gennemgåede test-/fixtureblade og kørt den faktiske normale Node22→Python-kalder: ét bestået mål uden fejl eller skip. Alle 76 beskyttede blade, inklusive DMI-producent, validatorer, C/I/T, version/geodata og 66 migrationer, er byteuændrede. Kun afsluttende blanklinjer i de gennemgåede efterbilleder er normaliseret.
+
+Det er ren ledger-/fixtureevidens, ikke ecCodes-/decoder-/Linux-native-/PostgreSQL- eller nationalt kapacitetsbevis. Ny samlet præcis kildekontrol, efterfølgende provider-/forecast-/followerfaser og sikker offentlig SOURCE-levering er stadig åbne. Koden er ikke aktiveret, og P0's almindelige vejrhentning har fortsat førsteprioritet. Ældre åbne diagnostikudsagn nedenfor er kun erstattet på de nu faktisk beviste kildested-/fixturepunkter.
+
 ### Første fejl skal bevares, ikke gættes
 
 En efterfølgende native databaseprøve gav kun en generisk assertion. En reel
