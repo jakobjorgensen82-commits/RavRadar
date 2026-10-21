@@ -548,7 +548,11 @@ En særskilt, dokumenteret Storage-formatkant rettes samtidig: immutable upload 
 
 **Håndbogsversion:** 4.0.586
 
-## Aktuel lokal SOURCE-kildebinding — 21. oktober 2026, 4.0.586 ikke installeret
+## Aktuel lokal SOURCE-kildebinding efter importrettelse — 21. oktober 2026, 4.0.586 ikke installeret
+
+Den korrigerede lokale SOURCE-kandidat har `modelBundleSha256=74285752bdec26f6f08aff5a8773a32f57c33d42c868954d8ff4ff990f77b585` over 141 kanonisk normaliserede transitive implementeringsfiler og de deklarerede forbrugere. Inaktiv Candidate G har `modelBundleSha256=25bb6cdac14d2e3f51b353e6cfd710246a4f664b26b396e4b979a99ca921e3da` over 145 transitive filer. De fysiske `modelContractSha256` er uændrede. Fortsættelseskontrakten er `42a7d8ab0b6fdb2e9eb038a91f9a7b8030d8af98c055d6bef6a88c35c3a762ea` (`42a7d8ab…`) over 12 normaliserede kildefiler. Autoriteten er `version.json.releaseContract.modelBindings` og den nye append-only 030000-migration fra genuine 585. Alle 65 tidligere migrationsfiler bevares; aldrig installeret 020000 vælges ikke som mellemtrin. Normal genberegning af modeller, SQL og syv forbrugere består fixedpoint. Dette er ikke PostgreSQL, installation eller offentlig levering. SOURCE er inaktiv, og den almindelige vejrhentning bevares.
+
+## Historisk lokal SOURCE-kildebinding — 21. oktober 2026, 020000 aldrig installeret
 
 Den lokale SOURCE-kandidat til RavScore 4.0.586 er låst med `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b` og `modelBundleSha256=995000bd1f77172e36f3d457e48689c5e0ba89e37a49468b874ae0e479123e6c` over 141 kanonisk normaliserede transitive implementeringsfiler og de deklarerede forbrugere. Inaktiv Candidate G har `modelContractSha256=c73dac1b4376005e792580791d84eb79c9370e905a2a7fd0bdee857506a20cf8` og `modelBundleSha256=b5dbe2de4f0120912746dfba43fb7db00b41776dc98a594d03e1677a65e7e5c5` over 145 transitive filer. Fortsættelseskontrakten er `36ac8344f986ca3754d51908f76117ad7d0a678bd81081f3e216db2d9db86390`. Autoriteten er `version.json.releaseContract.modelBindings` og append-only 020000-migrationen. Normal genberegning af begge modeller, SQL og alle syv forbrugere består efter synkronisering. Fysiske scorekontrakter og formler er uændrede. Dette er lokal kildeafledning, ikke native PostgreSQL, installation eller offentlig levering af 586. SOURCE er inaktiv; tidligere daterede bindinger nedenfor er bevaret som historik.
 
@@ -9972,6 +9976,8 @@ Kort fortalt: En kontrolsum skal beskrive programmet, ikke være en del af sit e
 Beregningskoden og dens normale data- og ejerkontroller skal fortsat kontrolleres samlet. De kontroloplysninger, som afledes af koden, holdes som et særskilt, strengt afgrænset dataoutput. Det giver ikke adgang til at udelade vilkårlig kode, ændre vejrtal eller springe en sikkerhedskontrol over.
 
 En ændret programafhængighed skal afprøves som den pakke, der faktisk skal bruges. En historisk kontrol må bevares med de præcise gamle kilder, men må ikke erstatte kontrollen af den nye pakke eller få en gammel prøve til at ligne ny drift. En lokal importprøve er ikke bevis for gemning, upload eller fysisk processtop på produktionssystemet.
+
+Når kode flyttes mellem moduler, skal hele det flyttede modul fortsat kunne indlæses med sine rigtige afhængigheder. Ubrugte rester må fjernes, men det gør ikke en ændring af beregningskoden til en ren testrettelse. De tilhørende kontroloplysninger skal afledes på ny. En tidligere, aldrig installeret databasekandidat bevares som historik; kun det valgte nye mål må indgå i installationskæden.
 
 Programversion, faktiske kildefiler og alle afledte kontroloplysninger skal passe sammen. En lokal markering eller fil, som ikke findes i den kontrollerede programkilde, er ikke bevis. Gamle originaler og tidligere offentliggjorte tal bevares.
 

@@ -1,3 +1,7 @@
+## 21. oktober — ÅBEN kvalifikation: SOURCE-tail og ny afledning
+
+Den præcise Linux-kontrol bestod SDK-/offlinegruppen og fandt derefter en reel importfejl i SOURCE-tail. To ubrugte deklarationer er fjernet efter helmodulernes navne- og importgennemgang; den normale berørte DMI-prøve består lokalt med 34 PASS, otte Linux-skips og ingen fejl. Da tailen faktisk indgår i C/I, er nye bindinger og append-only 030000 afledt og genberegnet med fixedpoint. Alle 65 gamle migrationsfiler bevares byteeksakt. Aldrig installeret 020000 er bevaret som kildehistorik, men vælges ikke som mellemtrin fra genuine 585. Ny præcis samlet CI, PostgreSQL, B/S, national kapacitet og sikker levering er fortsat åbne. Ingen aktivering eller ændring af almindelig vejrhentning, scoreformel, kildeprioritet eller geometri. Se DEC-0294.
+
 ## 20. oktober — ÅBEN: Candidate-public fra normalt pakket input
 
 21. oktober: Præcis CI afslørede dernæst auditorens gamle fem-rækkerskrav, selv om normalproducenten leverer Top20. En lokal rettelse kræver hele kanoniske dage og bevarer model-, dato- og indholdskontrol. Den hurtige regression består; hele ny CI og sikker levering er åbne. Dette er ikke bevis for en fejl i den almindelige vejrhentning eller i den offentlige Top20-producent.

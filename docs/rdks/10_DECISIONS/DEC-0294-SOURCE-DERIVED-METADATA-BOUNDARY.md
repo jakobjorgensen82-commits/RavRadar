@@ -62,6 +62,23 @@ kildekontraktprøver, ikke native B/S, installation eller produktionseffekt.
 
 ## Status og bevarede grænser
 
+Den efterfølgende Linux-kontrol bestod både den aktuelle distribution og hele
+den native SDK-/offlinegruppe. Den stoppede senere ved import af den udskilte
+normale tail: to ubrugte gzip-/gunzip-deklarationer havde ikke deres gamle
+importbindinger. Begge deklarationer fjernes; der indføres ikke nye imports
+eller komprimeringsadfærd. En statisk gennemgang af hele entry/tail fandt
+ingen andre ubundne navne. Den normale berørte DMI-kalderprøve består lokalt
+med 34 PASS og otte bevarede Linux-specifikke skips; det er ikke Linux-bevis.
+
+Ændringen er faktisk modelbundet kode, ikke en testrettelse. Derfor afledes
+egne C145/I141/T og nye SQL-output igen fra den korrigerede LF-kilde.
+Append-only `20261021030000_source_producer_original_bound_successor.sql`
+erstatter alene den aldrig installerede 020000-kandidat som valgt SOURCE-mål
+fra samme genuine 585-forgænger. Den gamle 020000-fil og alle øvrige 65
+eksisterende migrationsfiler bevares byteeksakt; den må ikke installeres som
+et mellemtrin. Den normale midlertidige migrationsvisning vælger fortsat kun
+den præcise krævede kæde. Ny samlet CI, PostgreSQL og aktivering er åbne.
+
 Den efterfølgende præcise kontrol bestod den tidlige Linux-pakkelæser, men
 stoppede før native PostgreSQL ved en gammel cache-only distributionsprøve.
 Den genuine gamle pakke har 49 afhængigheder; SOURCE tilføjer alene den

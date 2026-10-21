@@ -1,18 +1,18 @@
 {
   "schemaVersion": "source-producer-derived-metadata-v1",
-  "version": "20261021020000",
+  "version": "20261021030000",
   "binding": {
-    "version": "20261021020000",
-    "C": "b5dbe2de4f0120912746dfba43fb7db00b41776dc98a594d03e1677a65e7e5c5",
-    "I": "995000bd1f77172e36f3d457e48689c5e0ba89e37a49468b874ae0e479123e6c",
-    "T": "36ac8344f986ca3754d51908f76117ad7d0a678bd81081f3e216db2d9db86390",
-    "candidateManifestSha256": "b5dbe2de4f0120912746dfba43fb7db00b41776dc98a594d03e1677a65e7e5c5",
-    "integratedManifestSha256": "995000bd1f77172e36f3d457e48689c5e0ba89e37a49468b874ae0e479123e6c"
+    "version": "20261021030000",
+    "C": "25bb6cdac14d2e3f51b353e6cfd710246a4f664b26b396e4b979a99ca921e3da",
+    "I": "74285752bdec26f6f08aff5a8773a32f57c33d42c868954d8ff4ff990f77b585",
+    "T": "42a7d8ab0b6fdb2e9eb038a91f9a7b8030d8af98c055d6bef6a88c35c3a762ea",
+    "candidateManifestSha256": "25bb6cdac14d2e3f51b353e6cfd710246a4f664b26b396e4b979a99ca921e3da",
+    "integratedManifestSha256": "74285752bdec26f6f08aff5a8773a32f57c33d42c868954d8ff4ff990f77b585"
   },
   "output": {
-    "migrationSha256": "d8986e0721129a0d0ad996a3a8c6f71c5b0e9dd487883e9d2417843a68599517",
-    "canonicalSha256": "c3fb8075bbb326b31567a458a5f37660556275848b1d3181138ab1645f8b2938",
-    "checkpointContractSha256": "6b1ca8a0cb085a8c29763879c68b4dfa9b6b982bdddace771f0f578f31667b61",
-    "tripBindingPolicySha256": "e89d28a34c49b739bbab3c618b44b7e5598eeb91c90e58b656b31c26a94e882b"
+    "migrationSha256": "6df6b57de605877c0bbbffff4e6b4c2a2554f8be1827da030e17353650cf7979",
+    "canonicalSha256": "7e18672276f73bfa1b14c6ee253db2b4a4c640f6330717fb740b098556719e9f",
+    "checkpointContractSha256": "0a350345b2bb97f2c4941870c6492d6b28619357be3a9d96c77d92331e432b64",
+    "tripBindingPolicySha256": "1f58cc800a0240988b1e8d897b1fd6deb8cc6a4fcc719dad8b5f12782d82c1f0"
   }
 }

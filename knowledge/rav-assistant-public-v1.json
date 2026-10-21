@@ -12,7 +12,7 @@
     "bestTimePolicyId": "score-history-water-tie-earliest-v3",
     "presentationPolicyId": "score-bands-35-55-75-exceptional90-v1",
     "modelContractSha256": "a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b",
-    "modelBundleSha256": "995000bd1f77172e36f3d457e48689c5e0ba89e37a49468b874ae0e479123e6c"
+    "modelBundleSha256": "74285752bdec26f6f08aff5a8773a32f57c33d42c868954d8ff4ff990f77b585"
   },
   "scoreModel": {
     "id": "RRS-COASTAL-PROCESS-INTEGRATED-1.1.0",

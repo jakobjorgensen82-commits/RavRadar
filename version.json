@@ -17,7 +17,7 @@
         "bestTimePolicyId": "score-history-water-tie-earliest-v3",
         "presentationPolicyId": "score-bands-35-55-75-exceptional90-v1",
         "modelContractSha256": "a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b",
-        "modelBundleSha256": "995000bd1f77172e36f3d457e48689c5e0ba89e37a49468b874ae0e479123e6c"
+        "modelBundleSha256": "74285752bdec26f6f08aff5a8773a32f57c33d42c868954d8ff4ff990f77b585"
       },
       "candidateGRollback": {
         "modelId": "RRS-CANDIDATE-G-CURRENT-LED-WAVE-MOBILISATION-RESEARCH-3",
@@ -30,7 +30,7 @@
         "bestTimePolicyId": "score-water-tie-earliest-v2",
         "presentationPolicyId": "score-bands-35-55-75-exceptional90-v1",
         "modelContractSha256": "c73dac1b4376005e792580791d84eb79c9370e905a2a7fd0bdee857506a20cf8",
-        "modelBundleSha256": "b5dbe2de4f0120912746dfba43fb7db00b41776dc98a594d03e1677a65e7e5c5"
+        "modelBundleSha256": "25bb6cdac14d2e3f51b353e6cfd710246a4f664b26b396e4b979a99ca921e3da"
       }
     },
     "publicManifestAuthority": {

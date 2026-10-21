@@ -1,5 +1,7 @@
 ## 21. oktober – isoleret SOURCE: ret selvbinding før udstedelse
 
+Nyeste efterfølger retter en reel importfejl i den udskilte tail, efter at Linux faktisk bestod hele SDK-/offlinegruppen. To ubrugte deklarationer er fjernet; helmodulernes navne og 57 relative imports er gennemgået. Ny faktisk C145/I141/T og append-only 030000 er afledt med fixedpoint og alle 65 gamle migrationsfiler uændrede. Den aldrig installerede 020000-kandidat nedenfor er bevaret kildehistorik, ikke et mellemtrin; kun 030000 vælges fra genuine 585. Normal berørt DMI-prøve består lokalt med 34 PASS, otte Linux-skips og ingen fejl. Ny samlet kildekontrol, PostgreSQL, B/S og national kapacitet mangler stadig. SOURCE forbliver inaktiv, den almindelige vejrhentning og DMI → Copernicus → Open-Meteo ændres ikke.
+
 Læs DEC-0294. Den lokale 586-kandidat har nu ægte b2-ancestry, egen Git-LF-afledning, faktisk C145/I141/T, ny append-only 020000-SQL og fuldt genberegnet fixedpoint efter syv normale forbrugersynkroniseringer. En gammel SOURCE-importprøve læser sin eksakt bevarede, inerte førkilde; den faktiske nyere kalder kontrolleres fortsat særskilt. Ingen gammel pin eller assertion er fjernet. Native PostgreSQL, ægte 585→SOURCE B/S, national efterfølgerkapacitet, præcis samlet kildekontrol og sikker levering mangler. Ingen installation, SOURCE-aktivering eller ændring af aktiv vejrhentning følger heraf. Alle fem mål er åbne til 18. november 2026; det private checkpoint ejer den løbende status.
 
 ## 20. oktober — fungerende almindelig vejrrute bevares; reservekopi rettes lokalt

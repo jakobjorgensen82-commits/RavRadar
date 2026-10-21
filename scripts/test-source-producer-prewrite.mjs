@@ -14,10 +14,25 @@ import {reconcileSourceCodeOnlyPrivateRuntimeCheckpoint} from './reconcile-priva
 import {reconcileSourceProducerCodeOnly} from './reconcile-source-producer-code-only.mjs';
 import {runSourceProducerLegacyCompatibility} from './test-source-producer-legacy-compatibility.mjs';
 import {modelSourceRelativeModuleSpecifiers} from './lib/model-source-imports.mjs';
+import {sourceProducerRequiredMigrations} from './integrated-cutover-readiness.mjs';
 
 const sourceIssued=SOURCE_PRODUCER_BINDING!==null;
 if(sourceIssued){requireSourceProducerBinding();requireSourceProducerOutput();}
 else assert.equal(SOURCE_PRODUCER_OUTPUT,null,'No partial SOURCE issuance');
+
+test('SOURCE preserves the never-installed first proposal without staging it as an intermediate', {skip:!sourceIssued}, async()=>{
+  const old='20261021020000_source_producer_original_bound_successor.sql';
+  const bytes=await fs.readFile(new URL('../supabase/migrations/'+old,import.meta.url));
+  assert.equal(crypto.createHash('sha256').update(bytes).digest('hex'),
+    'd8986e0721129a0d0ad996a3a8c6f71c5b0e9dd487883e9d2417843a68599517',
+    'Whole never-installed original SQL is retained, not rewritten');
+  const required=sourceProducerRequiredMigrations();
+  assert.equal(required.length,55);
+  assert.equal(required.at(-2).version,'20261019100000','Same genuine585 predecessor');
+  assert.equal(required.at(-1).version,SOURCE_PRODUCER_BINDING.version);
+  assert.notEqual(required.at(-1).version,'20261021020000');
+  assert(!required.some(row=>row.filename===old),'Old source-only proposal is not an installation step');
+});
 
 test(sourceIssued?'SOURCE issued staging and prewrite reject invalid call forms before operands or IO':'SOURCE original staging and prewrite refuse unissued before operands, clients or IO',async t=>{
   if(sourceIssued){

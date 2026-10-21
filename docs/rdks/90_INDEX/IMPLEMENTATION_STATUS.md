@@ -1,9 +1,13 @@
 ## 21. oktober – inaktiv SOURCE: afledte kontrolmetadata
 
+- [x] Den efterfølgende faktiske Linux-kontrol bestod hele SDK-/offlinegruppen og fandt senere ubrugte, ubundne gzip-/gunzip-deklarationer i tail. Hel entry-/tail-navnegennemgang og fjernelse af netop de to døde deklarationer; normal DMI-kalder lokalt 34 PASS/otte Linux-skips/ingen fejl.
+- [x] Korrigeret faktisk modelkode har ny C145/I141/T-afledning, normal syvforbrugersynk og append-only 030000-SQL med fixedpoint. Alle 65 gamle migrationsfiler er byteeksakt bevaret; aldrig installeret 020000 er ikke længere valgt mål eller et mellemtrin.
+- [ ] Ny præcis samlet CI og native PostgreSQL på denne reelle produktrettelse samt de fortsat åbne B/S-, national-, kapacitets- og leveringskrav. Gamle deltrin ommærkes ikke som ny samlet kvalifikation.
+
 - [x] Faktisk næste Linux-kontrol bestod distributionsprøven og 19 af 20 efterfølgende prøver. Den negative tomme-cacheprøves gamle 64-KiB-debuglæser er erstattet med fuld, identitetskontrolleret streaming og uændret præcist npm-fejlkrav. To portable mål består; ny samlet Linux/native/PG er stadig åben.
 - [x] Næste præcise CI bestod den tidlige Linux-pakkelæser og stoppede ved det gamle cache-only distributionsorakel, før native PostgreSQL. Samme forventning er fundet og samlet rettet i to efterfølgende native kaldere, uden ændret produktvagt eller lock.
 - [x] Test-only hel-inverse bevarer alle 49 gamle pakker. Faktisk 259-pakkedistribution, installerede enginekrav, officielle cache/artifact-importer og syv manifestafslag består på lokal Node24 uden API-kald. Native værter beholder den faktiske nye pakke og normal actionkode; præcis ejet oprydning erstatter rekursiv testsletning.
-- [ ] Faktisk Linux SDK-loopback/offline/cohort, ny samlet CI og native PostgreSQL. Den smalle Python-helperprøve er afvist af Windows' Node-opstart under det uændrede Linux-miljøfilter; det er ikke native PASS eller en ændret produktionsfejl.
+- [x] Faktisk Linux SDK-loopback/offline/cohort bestod i den efterfølgende præcise kontrol. Ny samlet CI og native PostgreSQL er fortsat åbne. Den tidligere smalle Python-helperprøves Windows-afslag er ikke ommærket som native PASS.
 - [x] Faktisk C/I-inventar har påvist selvbindingen gennem normale lager-/ejerkald; kun wrapperfjernelse eller LF-omlægning ville ikke løse den.
 - [x] Én eksakt genereret JSON-datafil, ny normaliseringsidentitet og bevaret modelkode-/owneraftryk; almindelig I-manifestform og public pakkelæser bevares.
 - [x] Normal committed-source-kontrol kræver hele den fysiske producentfortegnelse i HEAD; fire mål består uden skip, og den uafhængige gennemgang er udført.

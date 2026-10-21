@@ -1,5 +1,7 @@
 ## 21. oktober – SOURCE-kildeafledning, ikke ny offentlig levering
 
+Nyeste lokale efterfølger: Den faktiske Linux-kontrol bestod hele SDK-/offlinegruppen og fandt derefter en reel importfejl i SOURCE-tail. To ubrugte deklarationer er fjernet efter helmodulernes navnegennemgang. Normal berørt DMI-kalderprøve består lokalt med 34 PASS, otte Linux-skips og ingen fejl. Den nødvendige nye C145/I141/T-afledning og append-only 030000-SQL består fixedpoint; alle 65 gamle migrationsfiler, inklusive den aldrig installerede 020000-kandidat, er uændrede. Kun 030000 vælges fra genuine 585; 020000 er bevaret kildehistorik, ikke et installationstrin. Dette erstatter de følgende aktuelle 020000-bindinger, ikke deres historiske evidens. Samlet ny CI, native PostgreSQL, B/S, national kapacitet og faktisk levering mangler fortsat. Den almindelige vejrhentning er ikke berørt.
+
 Den inaktive 586-revision har nu ægte b2-ancestry og egen Git-LF-afledning af C145/I141/T og append-only 020000-SQL. Efter normale syv forbrugersynkroniseringer genberegnes alle bindinger og SQL uændret til faktisk fixedpoint. Den præcist bevarede e938-førkilde er inert testdata, ikke aktuel produktkode eller en opfundet historisk commit; gammel og nyere importkontrol bevares hver for sig. Dette er ikke native PostgreSQL, 585→SOURCE B/S, national efterfølgerkapacitet, præcis samlet CI eller levering. Se DEC-0294. Den aktuelle almindelige drift føres alene i ROOTs P0-linje og private checkpoint; SOURCE er fortsat inaktiv.
 
 ## 20. oktober — fælles integrationsfront: P0 678 og sourcekvalificeret 585

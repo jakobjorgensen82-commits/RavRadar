@@ -4652,9 +4652,6 @@ export function retainSourceOriginalProgressFailure(holder, error) {
 // supply its own reviewed physical closure before originals may be released.
 
 
-const gzipAsync = promisify(gzip);
-const gunzipAsync = promisify(gunzip);
-
 // 4.0.478 changed only DMI's time-sharing, not the persisted weather format.
 // That producer file is included in the broad full-runtime source fingerprint,
 // so the last 4.0.477 generation needs one exact, expiring transition. Never
