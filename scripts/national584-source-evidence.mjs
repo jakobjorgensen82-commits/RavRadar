@@ -41,8 +41,11 @@ export const AFTER_BLOCK=[
 ].join('\n');
 export const BEFORE_JOB="  validate:\n    name: Source validation and release gate\n    runs-on: ubuntu-24.04\n    timeout-minutes: 75\n    steps:\n";
 export const AFTER_JOB=BEFORE_JOB.replace('timeout-minutes: 75','timeout-minutes: 90');
-// Registered genuine90 predecessor; only CURRENT_JOB is admitted by currentContext.
-export const CURRENT_JOB=AFTER_JOB.replace('timeout-minutes: 90','timeout-minutes: 120');
+// Registered genuine90/120 predecessors. The interrupted120-minute source job
+// needed40m native SQL,32m source and45m full public stage, before later gates.
+// Only the exact180-minute PR job is current; no weather/provider budget changes.
+export const REVIEWED120_JOB=AFTER_JOB.replace('timeout-minutes: 90','timeout-minutes: 120');
+export const CURRENT_JOB=REVIEWED120_JOB.replace('timeout-minutes: 120','timeout-minutes: 180');
 export const REVIEWED_SOURCE_RUN_LINE='        run: npm run validate:source && node scripts/test-fixed-public-rate-log-20261013.mjs && node scripts/test-fixed-storage-upload-log-20261013.mjs && node scripts/test-fixed-public-rate-console-log-20261015.mjs\n';
 export const CURRENT_SOURCE_RUN_LINE='        run: npm run validate:source && node scripts/test-fixed-public-rate-log-20261013.mjs && node scripts/test-fixed-storage-upload-log-20261013.mjs && node scripts/test-fixed-public-rate-console-log-20261015.mjs && node scripts/test-prepare-candidate-g-operational-rollback.mjs && node scripts/test-candidate-g-rollback-public-stage.mjs\n';
 const ROOT=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
@@ -104,7 +107,7 @@ export function inverseCandidatePublicSourceRunLine(source) {
 }
 export function verifyWorkflow(source) {
   source=lf(source);
-  assert.equal(source.split(CURRENT_JOB).length,2,'Only the exact reviewed current120-minute source PR job is admitted');
+  assert.equal(source.split(CURRENT_JOB).length,2,'Only the exact reviewed current180-minute source PR job is admitted');
   verifyReviewed90Workflow(inverseCandidatePublicSourceRunLine(source).replace(CURRENT_JOB,AFTER_JOB));
 }
 export function verifyOrigin(run,jobs) {

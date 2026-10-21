@@ -14,6 +14,14 @@ privacy-, artifact- og deploytrin.
 
 ## Problem
 
+### Tillæg 2026-10-21 — plads til hele den obligatoriske PR-kildekontrol
+
+Den præcise kildekontrol blev faktisk annulleret af GitHubs samlede jobloft på to timer. Native PostgreSQL tog cirka 40 minutter, den almindelige kildeplan cirka 32 minutter og den efterfølgende fulde nationale reservetest cirka 45 minutter; de senere obligatoriske trin var endnu ikke kørt. Det er ikke en ny fejlet vejrhentning eller bevis for, at dens særskilte historikfejl er rettet.
+
+Kun PR-kildejobbets loft hæves fra 120 til 180 minutter. Alle kommandoer, rækkefølger, afslag, rettigheder, efterfølgende gates og krav om præcist nyt kildebevis bevares. Vejrhentningens og leverandørernes budgetter ændres ikke. Den normale historiske nationale evidenslæser accepterer kun den eksakte nye jobheader og genskaber hele den uændrede, autentiske 90-minutters forgænger; målprøven genskaber desuden hele den faktiske 120-minutters forgænger. Andre lofter, ukendte bytes, bortfaldne eller gentagne kommandoer afvises fortsat.
+
+Den målrettede normale kontraktprøve er reproduceret rød før ændringen og grøn efter. Det er lokal kontrol, ikke nyt samlet CI-PASS, merge, produktionsændring eller offentlig vejreffekt. En særskilt optimering af reservetestproducentens gentagne kalenderarbejde kræver sin egen dokumentation; den improviseres ikke ind i denne tidsrettelse.
+
 RavRadar brugte for meget tid på at gentage den samme kildekodekontrol lokalt, i PR og igen ved hver planlagt vejropdatering. Den virkelige 4.0.245-fejl skyldtes derimod samspillet mellem en frisk DMI-cache og den valgte strømtime og blev kun fundet af den fulde produktionsdatagate.
 
 ## Beslutning

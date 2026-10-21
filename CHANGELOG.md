@@ -1,3 +1,12 @@
+## 21. oktober — afgrænset tidsramme til hele PR-kildekontrollen
+
+- Retter kun det dokumenteret nåede CI-jobloft fra 120 til 180 minutter. Alle normale kildetrin, afslag og rettigheder bevares; ingen ændring af vejr-/leverandørtider, version, modelbindinger, SQL, score, geometri eller produktion.
+- Normal kontraktprøve bevarer hele den faktiske 120-minutters workflowforgænger og de autentiske 90-minutters orakler; RED/GREEN er lokal evidens. Ny samlet præcis kildekontrol og årsagen til vejrhentningens særskilte historikstop er fortsat åbne.
+
+## 21. oktober — afgrænset fejllokation i normal historikplan
+
+- Bevarer første faktiske fase, fast fejltype og kvalificeret kildested, når den normale historikplan fejler uden en særskilt kode. Ingen rå fejltekst, værdier eller private identiteter vises; stop, exitstatus og alle eksisterende input-/B/S-/historikkrav bevares. Dette forbedrer årsagsgrundlaget og er ikke i sig selv en rettelse af den ukendte indre fejl eller en offentlig vejrlevering. Præcis kildekontrol og faktisk effekt kræves fortsat.
+
 ## 20. oktober — lokal Candidate-public: korrekt genbrug af pakket input
 
 - 21. oktober: Den præcise kildekontrol påviste reserveauditens gamle krav om fem rankingrækker mod normal Top20. Auditen kræver nu hele normale kanoniske dage, og et tidligt mål bevarer afslag ved afkortning samt ændrede scorer, zoner, datoer og model. Normal ranking, scoreformel og vejrdata ændres ikke. Ny samlet CI og sikker levering er endnu ikke dokumenteret.

@@ -3,8 +3,9 @@ import crypto from 'node:crypto';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import os from 'node:os';
+import { AssertionError } from 'node:assert';
 import { fileURLToPath } from 'node:url';
-import { isDeepStrictEqual } from 'node:util';
+import { isDeepStrictEqual, types } from 'node:util';
 import { assertRavScoreModelBinding, ravScoreModelBinding } from '../js/core/ravscore-model-contract.js';
 import { selectRavScoreProductionInitialState, ravScoreOwnerCurrentHistoryStartAt }
   from './lib/ravscore-production-part-pipeline.mjs';
@@ -41,6 +42,11 @@ import { CURRENT_FAMILY_COLD_START_CONTEXT_ENV,
   currentFamilyColdStartRawRetention } from './current-family-cold-start.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
+const BUILTIN_ERROR_STACK=Object.getOwnPropertyDescriptor(new Error(),'stack');
+const BUILTIN_ERROR_PREPARE_STACK=Object.getOwnPropertyDescriptor(Error,'prepareStackTrace');
+const CURRENT_HISTORY_FAILURE_PHASES=new Set(['INPUTS','BASELINE_FILES','PACKED_BASELINE','CHECKPOINT',
+  'DEMAND','COMMITTED_RAW_RETENTION','SAVE','UNKNOWN']);
+let currentHistoryFailurePhase='INPUTS';
 const HOUR = 3_600_000;
 const SHA = /^sha256:[a-f0-9]{64}$/;
 const hash = bytes => `sha256:${crypto.createHash('sha256').update(bytes).digest('hex')}`;
@@ -662,6 +668,7 @@ async function main() {
     || stateLessRecovery || !baselineRequired || !retainCommittedRaw)) {
     refuse('CURRENT_FAMILY_COLD_START_MODE_COLLISION');
   }
+  currentHistoryFailurePhase='BASELINE_FILES';
   const registry = await readFixed(SOURCE_PATHS.registry);
   const baseline = await readFixed(SOURCE_PATHS.conditions, !baselineRequired);
   const conditions = baseline?.json ?? { zones: {} };
@@ -670,6 +677,7 @@ async function main() {
   }
   // The compact part states are not inside the compressed zone-hour arrays.
   // Validate the existing lossless pack without materializing another hour copy.
+  currentHistoryFailurePhase='PACKED_BASELINE';
   assertPrivateConditionsHourly(conditions);
   const epochView = epochRequested
     ? await (await import('./weather-state-epoch.mjs')).loadInstalledWeatherStateEpochInputView({
@@ -687,6 +695,7 @@ async function main() {
     : activation ? assertCoastalPointActivationStateInjection(activation.json) : {};
   // This is the SAME normal cache validator/compatible-reattest operation used
   // by Weather. It may update only its usual cache checkpoint, never B/S.
+  currentHistoryFailurePhase='CHECKPOINT';
   const checkpoint = coldInputs !== null ? {
     loaded: false, continuationAvailable: false, states: coldInputs.checkpointStates,
     candidateGRollbackStates: coldInputs.checkpointCandidateGRollbackStates,
@@ -707,6 +716,7 @@ async function main() {
   }
   // The hash describes post-validation/normal-reattest cache bytes, not a new
   // authentication token. The returned genuine states determine demand only.
+  currentHistoryFailurePhase='DEMAND';
   const demand = buildRavScoreCurrentHistoryDemand({
     registry: registry.json, conditions: coldInputs !== null
       ? { ...conditions, coastalParts: coldInputs.previousCoastalParts }
@@ -729,17 +739,90 @@ async function main() {
     demand.rawRetention = currentFamilyColdStartRawRetention(currentFamilyColdStart,
       { registry: registry.json, targetReferenceAt: productionReferenceAt });
   } else if (retainCommittedRaw && !checkpointOnly && baselineRequired && epochView === null && !stateLessRecovery) {
+    currentHistoryFailurePhase='COMMITTED_RAW_RETENTION';
     demand.schemaVersion = 2;
     demand.rawRetention = await readCommittedRawCurrentRetention(registry.json, checkpointFile, productionReferenceAt);
   }
   // Existing private .cache only; no directory creation, original rewrite,
   // provider operation, public artifact, checkpoint save or state promotion.
+  currentHistoryFailurePhase='SAVE';
   await fs.writeFile(path.join(ROOT, RAVSCORE_CURRENT_HISTORY_DEMAND_PATH),
     `${JSON.stringify(demand)}\n`, { encoding: 'utf8', flag: 'wx', mode: 0o600 });
   console.log(JSON.stringify({ kind: demand.kind, partCount: demand.demands.length,
     maximumSpanHours: Math.max(...demand.demands.map(row =>
       (Date.parse(row.endAt) - Date.parse(row.startAt)) / HOUR)) }));
 }
+
+// CLI observation only. Never expose messages, assertion values or raw stacks,
+// and never change the original stop, state, inputs or selected sources.
+export async function describeRavScoreCurrentHistoryFailure(error,phase='UNKNOWN') {
+  const result={kind:'RAVSCORE_CURRENT_HISTORY_FIRST_FAILURE',code:'RAVSCORE_CURRENT_HISTORY_DEMAND_REFUSED',
+    phase:CURRENT_HISTORY_FAILURE_PHASES.has(phase)?phase:'UNKNOWN',
+    exceptionType:'UNKNOWN',operator:null,frame:null,privatePayloadIncluded:false};
+  try{
+    if(types.isProxy(error)||!types.isNativeError(error))return result;
+    const prototype=Object.getPrototypeOf(error);
+    result.exceptionType=new Map([[Error.prototype,'ERROR'],[AssertionError.prototype,'ASSERTION_ERROR'],
+      [TypeError.prototype,'TYPE_ERROR'],[RangeError.prototype,'RANGE_ERROR'],[SyntaxError.prototype,'SYNTAX_ERROR'],
+      [ReferenceError.prototype,'REFERENCE_ERROR']]).get(prototype)??'UNKNOWN';
+    if(result.exceptionType==='UNKNOWN')return result;
+    const message=Object.getOwnPropertyDescriptor(error,'message');
+    const name=Object.getOwnPropertyDescriptor(error,'name')??Object.getOwnPropertyDescriptor(prototype,'name');
+    // Node22 can format its lazy data stack during descriptor collection too.
+    // Inspect only safe descriptors before either runtime can format anything.
+    if(!isDeepStrictEqual(Object.getOwnPropertyDescriptor(Error,'prepareStackTrace'),BUILTIN_ERROR_PREPARE_STACK)
+      ||!message||!Object.hasOwn(message,'value')||typeof message.value!=='string'
+      ||!name||!Object.hasOwn(name,'value')||typeof name.value!=='string')return result;
+    const own=Object.getOwnPropertyDescriptors(error),data=key=>own[key]&&Object.hasOwn(own[key],'value')?own[key].value:undefined;
+    const reasons=new Set(['ARGUMENTS_INVALID','BASELINE_INVALID','BASELINE_REQUIRED','CHECKPOINT_CHANGED','CHECKPOINT_INVALID',
+      'CURRENT_FAMILY_COLD_START_MODE_COLLISION','ENVELOPE_INVALID','ENVIRONMENT_INVALID','IDENTITY_INVALID',
+      'LEGACY_CAPTURE_UNAVAILABLE','LEGACY_CONTEXT_UNAVAILABLE','LEGACY_DEMAND_INVALID','LEGACY_DONOR_INVALID',
+      'LEGACY_EXISTING_ORIGINAL_UNAVAILABLE','LEGACY_HOLD_SUPPORT_UNAVAILABLE','LEGACY_INPUTS_INVALID',
+      'LEGACY_NEW_ENDPOINT_UNAVAILABLE','LEGACY_PLAN_BOUND','LEGACY_PROCESSING_CONTEXT_UNAVAILABLE','LEGACY_SELECTED_ENDPOINT_UNAVAILABLE',
+      'MODE_INVALID','NON_INTEGRATED_ROUTE','NONCANONICAL_TIME','RANGE_INVALID','REGISTRY_INVALID','REGISTRY_INVENTORY_MISMATCH',
+      'RETENTION_B_CHANGED','RETENTION_B_PATH','RETENTION_B_S_DIFFER','RETENTION_BOUND','RETENTION_CAPTURE_REQUIRED',
+      'RETENTION_COMMITTED_STATE_REQUIRED','RETENTION_DONOR_INVALID','RETENTION_INPUT_INVALID','RETENTION_INVENTORY',
+      'RETENTION_NATIVE_INVALID','RETENTION_NATIVE_REQUIRED','STATE_SOURCE_MISMATCH','STATE_TIME_INVALID','TARGET_REQUIRED']);
+    const code=data('code'),prefix='RAVSCORE_CURRENT_HISTORY_DEMAND_';
+    if(typeof code==='string'&&code.startsWith(prefix)&&reasons.has(code.slice(prefix.length)))result.code=code;
+    else if(['ERR_ASSERTION','ENOENT','EEXIST','EACCES','EPERM','EIO','ENOSPC','ENOMEM'].includes(code))result.code=code;
+    const operator=data('operator');
+    if(['strictEqual','deepStrictEqual','equal','deepEqual','ok','match','throws','rejects'].includes(operator))result.operator=operator;
+    let stack=data('stack');
+    // Node24 exposes the VM's own stack accessor rather than a data property.
+    // Never invoke a caller getter or a replaced formatter to recover a frame.
+    if(stack===undefined&&own.stack?.get===BUILTIN_ERROR_STACK?.get&&own.stack?.get!==undefined){
+      if(Reflect.ownKeys(own).some(key=>!Object.hasOwn(own[key],'value')
+        &&!(key==='stack'&&own.stack.get===BUILTIN_ERROR_STACK.get&&own.stack.set===BUILTIN_ERROR_STACK.set)))return result;
+      stack=Reflect.apply(BUILTIN_ERROR_STACK.get,error,[]);
+    }
+    if(typeof stack!=='string'||stack.length>2*1024*1024)return result;
+    for(const line of stack.split(/\r?\n/)){
+      const match=/^\s+at (?:[^\r\n()]* \()?((?:file:\/\/\/)[^\r\n()]+):(\d+):(\d+)\)?$/.exec(line);
+      if(!match)continue;
+      try{
+        const url=new URL(match[1]);if(url.host||url.search||url.hash)continue;
+        const file=fileURLToPath(url),relative=path.relative(ROOT,file).split(path.sep).join('/');
+        if(!/^(?:scripts|js\/core)\/[A-Za-z0-9_./-]+\.(?:mjs|js)$/.test(relative)
+          ||relative.split('/').includes('..')||await fs.realpath(file)!==file)continue;
+        const before=await fs.lstat(file,{bigint:true});
+        if(!before.isFile()||before.isSymbolicLink()||before.nlink!==1n||before.size>2n*1024n*1024n)continue;
+        const body=await fs.readFile(file),after=await fs.lstat(file,{bigint:true});
+        if(!['dev','ino','size','mtimeNs','ctimeNs'].every(key=>before[key]===after[key])||BigInt(body.length)!==before.size)continue;
+        const at=Number(match[2]),column=Number(match[3]);
+        if(!Number.isSafeInteger(at)||at<1||at>body.toString('utf8').split(/\r?\n/).length
+          ||!Number.isSafeInteger(column)||column<1||column>100000)continue;
+        result.frame={module:relative,sha256:crypto.createHash('sha256').update(body).digest('hex'),line:at,column};break;
+      }catch{} // Unknown frame stays unknown; diagnostic I/O cannot replace the failure.
+    }
+  }catch{}
+  return result;
+}
+export async function reportRavScoreCurrentHistoryFailure(error){
+  try{console.error(JSON.stringify(await describeRavScoreCurrentHistoryFailure(error,currentHistoryFailurePhase)));}
+  catch{try{console.error('RAVSCORE_CURRENT_HISTORY_DEMAND_REFUSED');}catch{}}
+  process.exitCode=1;
+}
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
-  main().catch(error => { console.error(error.code ?? 'RAVSCORE_CURRENT_HISTORY_DEMAND_REFUSED'); process.exitCode = 1; });
+  main().catch(reportRavScoreCurrentHistoryFailure);
 }

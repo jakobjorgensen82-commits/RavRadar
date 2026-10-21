@@ -1,3 +1,16 @@
+## 21. oktober — lokalt rettet samlet tidsramme for kilde-PR
+
+- [x] Den faktiske GitHub-annotation bekræfter jobloftet på to timer; PostgreSQL og den normale kildeplan bestod, men senere obligatoriske trin blev ikke kørt.
+- [x] Kun PR-kildeloftet er ændret fra 120 til 180 minutter. Normal målprøve er først rød og derefter grøn, inklusive hel inverse til den faktiske 120-minutters kilde og bevarede 90-minutters orakler. Vejr-/providerbudgetter, gates og rettigheder er uændrede.
+- [ ] Ny præcis samlet kildekontrol, sikker levering og faktisk normal historikfejllokation. Bedre diagnostik eller længere CI-tid er ikke en rettelse af den endnu ukendte vejrfejl.
+
+## 21. oktober — normal historikplan: indre fejl skal bevares
+
+- [x] Hele den aktuelle fejllog er bevaret, og seneste vellykkede og fejlede kilde er sammenlignet: ingen ændring af planlægger, checkpoint- eller B-kaldere. Den generiske CLI-kategori identificerer ikke den indre årsag.
+- [x] Afgrænset fast fase-/fejltype-/kildestedrapport og præcis additiv helinverse er lokalt integreret. De fire nye mål består faktisk på både Node22 og Node24; det normale gamle checkpoint-only-orakel består på Node22. Private værdier og ukvalificerede getters/formattering afvises uden at ændre stoppet.
+- [ ] Præcis ny normal kildekontrol og faktisk fejllokation på de aktuelle gemte input. Lokale mål er ikke Linux-/database-/produktionsbevis, årsagsrettelse, genoptagelse eller offentlig vejreffekt.
+- [ ] Faktisk konkret årsag, sikker rettelse og ny almindelig offentlig levering med bevarede originaler og fremadrettet historik. Se DEC-0249 og aktuel P0-linje; ingen ny nulstilling eller ændring af kildeprioritet.
+
 ## 20. oktober — lokal normal Candidate-forberedelse, ikke aktivering
 
 - [x] Den præcise GitHub-kontrol har efter manifestrettelsen påvist det gamle fem-rækkerskrav i reserveauditen mod normal Top20. Sammenligning af hele kanoniske dage og en normal tidlig målprøve er implementeret; afkortning, score-/zone-/dato-/modelmutationer afvises. Ingen ranking- eller scorepolitik ændres.
