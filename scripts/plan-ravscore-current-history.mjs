@@ -28,7 +28,7 @@ import { createProtectedDmiNativeCurrentInspector } from './lib/protected-dmi-na
 import { verifiedProtectedDmiPartHourly } from './lib/protected-dmi-current-context.mjs';
 import { inspectDmiForecastGridSampling, inspectDmiNativeGridSampling } from './lib/dmi-forecast-store.mjs';
 import { dmiMarineCollectionAllowedForZone } from './lib/dmi-marine-zone-exclusions.mjs';
-import { collectPostH0DmiOriginalDependencies } from './lib/post-h0-dmi-original-dependencies.mjs';
+import { collectPostH0DmiOriginalDependencies, POST_H0_DMI_ENDPOINT_DIAGNOSTICS } from './lib/post-h0-dmi-original-dependencies.mjs';
 import { readDmiBulkDocument } from './lib/dmi-bulk-storage.mjs';
 import { unpackDmiPartContinuity, assertDmiPartContinuityTotalSize } from './lib/dmi-part-continuity.mjs';
 import { inspectDmiForecastFile, readDmiForecastRecord } from './lib/dmi-forecast-file.mjs';
@@ -820,12 +820,15 @@ export async function describeRavScoreCurrentHistoryFailure(error,phase='UNKNOWN
           'INITIAL_SELECTION_INVALID','INITIAL_STATE_INVALID','INPUT_BOUND','INPUT_INVALID','PLAN_BOUND',
           'REGIONAL_SUPPORT_REQUIRED','SAMPLING_MISMATCH','SELECTED_CURRENT_INVALID',
           'SELECTED_ENDPOINT_UNAVAILABLE','SOURCE_DOMAIN_EXCLUDED','WINDOW_INVALID']);
+        const endpointDependencyReasons=new Set(POST_H0_DMI_ENDPOINT_DIAGNOSTICS);
         const originalPrefix='POST_H0_DMI_ORIGINAL_';
         if(result.code==='RAVSCORE_CURRENT_HISTORY_DEMAND_REFUSED'&&prototype===Error.prototype
           &&typeof originalDependencyCode==='string'&&originalDependencyCode.startsWith(originalPrefix)
-          &&originalDependencyReasons.has(originalDependencyCode.slice(originalPrefix.length))
+          &&(originalDependencyReasons.has(originalDependencyCode.slice(originalPrefix.length))
+            ||endpointDependencyReasons.has(originalDependencyCode.slice(originalPrefix.length))
+              &&message.value==='POST_H0_DMI_ORIGINAL_SELECTED_ENDPOINT_UNAVAILABLE')
           &&relative==='scripts/lib/post-h0-dmi-original-dependencies.mjs'
-          &&result.frame.sha256==='dcb3ff1d9caae7440e94201c391b0a9d0d6dbdc312d54281e1f47a7d017462da'
+          &&result.frame.sha256==='0db7833d68cad3c1ab60c86855bab6e90b1cbf40d8a2ad766da74609781ce6dc'
           &&at===18)result.code=originalDependencyCode;
         break;
       }catch{} // Unknown frame stays unknown; diagnostic I/O cannot replace the failure.
