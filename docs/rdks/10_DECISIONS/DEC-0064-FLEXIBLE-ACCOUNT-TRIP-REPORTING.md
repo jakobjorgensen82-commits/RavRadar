@@ -6,6 +6,10 @@ Den lokale 585-kandidat mærker nye almindelige ture og nye manuelle kontoindber
 
 Den samme normale 585-levering skal opdatere og verificere den eksisterende Worker på uændret D1-schema med aggregate eksplicit OFF før de tre Edge-funktioner og den offentlige klient. 004/005-installation og statistikrelease er særskilte og følger ikke med. Den private positive producent→lagret original→job→consumer→charge-prøve er lokal evidens, ikke hosted drift eller anonym offentlig statistik. Pseudonymisering er ikke anonymisering; fravalg, testdata og ejersletning skal respekteres. Rollover/hosted kontrol og automatisk retention er åbne; automatisk sletning aktiveres ikke uden den manglende mailafsender til det aftalte varsel. 585 er ikke installeret eller offentligt bevist. De oprindelige krav og historiske kvitteringer nedenfor bevares for deres eget scope. Se håndbog 89.259.
 
+21. oktober: En særskilt privat `TARGET_TESTED`-kandidat lukker leveringskalderens manglende 005-trin. Det eksisterende `allow_004` beholder sit omfang; nyt `allow_005` er eksplicit false som standard. Kun kontrol0 kan modtage hver godkendt DDL én gang efter eksakt 001/002/003-kontrol og den uændrede 004-policy. Fravær, kun 004, hele 004+005, ændret schema og statistikobjekter på de øvrige ni shards skelnes. Ukendt skriveudfald stopper uden gentagelse; Worker-reparation kan ikke gentage DDL. Alle gamle SQL-bytes, lifetime-budgettet og aggregate OFF bevares.
+
+Fire valgte normale mål består på Node22.23.3 i en privat Git-LF-kildehost; begge JavaScript-syntakskontroller består. YAML-formatkontrollen er ikke gennemført, fordi den lokale Python mangler PyYAML. Dette er ikke samlet kildekontrol, D1-installation, faktisk netværks-/DDL-fejlgenopretning eller produktionslevering. 004/005 er fortsat uinstallerede. Faktisk Worker-/Free-CPU og hukommelse, anonymitet og gentagne rapporters spor, tur-/vejroprindelse samt statistikrelease er fortsat åbne; pseudonymer eller `self-reported` lukker ikke disse krav. Ingen automatisk retention eller mailafsender aktiveres. Se håndbog 89.260; aktuel vejrstatus ændres ikke her.
+
 **Status:** PRODUKTIONSVERIFICERET
 
 **Dato:** 2026-08-23

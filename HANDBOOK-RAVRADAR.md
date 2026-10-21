@@ -18,6 +18,10 @@ Hvis et svar mangler, er arbejdet ikke bekræftet. Systemet skal afklare den gem
 
 Før opdateringen går videre, skal systemet aflæse, at statistik faktisk er slået fra på den nye aktive serverversion, og at den fortsat bruger de samme ti turlagre. En lokal indstilling eller et versionsnummer er ikke bevis nok. Skifter serverversionen under kontrollen, skal leveringen stoppe.
 
+Statistikkens to ekstra lagerdele skal tillades særskilt. Tilladelsen til den første del åbner ikke automatisk den næste. Kun det fælles kontrollager må få disse dele, og de eksisterende tabeller, sletteværn og regler for bidragsbudget skal passe præcist før ændringen. Et ukendt svar må ikke udløse endnu en databaseskrivning. Statistik forbliver slået fra, også hvis serverprogrammet skal repareres.
+
+Den nye installationsforberedelse er privat og afgrænset prøvet, ikke installeret. Fire målprøver på normal programkode består, men en nødvendig lokal formatkontrol kunne ikke køres, fordi parseren mangler. Faktisk databaselevering, håndtering af ukendte skriveudfald og serverens processor- og hukommelsesforbrug skal stadig dokumenteres. Selvrapporterede ture er ikke bevis for ægte ture eller korrekt historisk vejr, og skjulte bruger-ID'er er ikke i sig selv anonymitet. Anonymitet, rapporternes samlede spor og tilladt frigivelse skal kontrolleres særskilt, før statistik kan bruges.
+
 Rettelsen er lokalt sammenført og afgrænset prøvet, men endnu ikke leveret offentligt. Samlet statistik og dens særskilte lagerinstallation er fortsat slået fra. Der loves hverken dokumenteret anonymitet, en fungerende automatisk sletning eller mailvarsling ud fra denne prøve. Den nye måldato er 18. november 2026; ældre frister og leveringsstatus nedenfor er dateret historik.
 
 ## 89.259 Bedre spørgsmål og ærlige turrapporter – 4.0.585-kandidat

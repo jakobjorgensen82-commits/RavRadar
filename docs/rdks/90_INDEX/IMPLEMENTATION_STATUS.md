@@ -47,7 +47,9 @@ Ingen ny version, C/I/T, SQL eller aktivering. Alle fem mål er åbne til 18. no
 - [ ] Kontrolleret 585-installation og faktisk offentlig konto-/assistent-/ekstern-AI-effekt; ingen produktion under aktiv writer.
 - [x] Reproducer den normale OFF-caller rød før den snævre symbolrettelse; fem nye og tretten eksisterende bindingsprøver består efter. Produktverifier, gamle 54 inverse-hunks, udstedte SQL og C/I/T bevares. Særskilt workflowmål er endnu ikke kørt på Linux og stoppede før målet på en uændret Windows-CRLF-grænse.
 - [ ] Luk den påviste OFF-kontrolmangel med eksisterende live bindingskontrol, normal regression, nyt præcist kildebevis og faktisk uændret OFF/D1/deployment før Edge-levering; versionsmetadata eller lokal false er ikke tilstrækkeligt.
-- [ ] Særskilt statistik-/anonymitets- og Worker-kapacitetsbevis; 004/005 og automatisk retention er ikke aktiveret.
+- [x] Særskilt privat `TARGET_TESTED` 005-leveringsforberedelse: gammelt 004-flag bevares, særskilt false-default 005-flag, kontrol0-only, eksakte gamle SQL-/schema-/policykrav og stop uden DDL-gentagelse. Fire normale Node22-mål og to JavaScript-syntakskontroller består i privat Git-LF-host; ingen aktive kildefiler eller produktionsdata er ændret af prøven.
+- [ ] YAML-formatkontrol (lokal PyYAML mangler), ny præcis samlet kildekontrol og faktisk kontrolleret D1-/Worker-levering. 004/005 er fortsat uinstallerede og aggregate OFF; lokale schema-/ledningsprøver er ikke bevis for virkelige ukendte DDL-udfald.
+- [ ] Særskilt faktisk Worker-/Free-CPU-/hukommelsesbevis, anonymitet/rapportspor, tur-/vejroprindelse og statistikrelease. Automatisk retention forbliver inaktiv uden fungerende mailvarsel.
 
 Aktuel vejr-/cronstatus står alene i CURRENT_TRUTHs P0-linje og privat checkpoint. Alle fem mål er åbne til 18. november 2026; ældre afventninger og frister nedenfor er dateret historik.
 

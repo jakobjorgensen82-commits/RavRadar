@@ -5,6 +5,9 @@ import assert from 'node:assert/strict';
 import crypto from 'node:crypto';
 import fs from 'node:fs/promises';
 import test from 'node:test';
+import {DatabaseSync} from 'node:sqlite';
+import {privateTripStudySchemaModel,classifyPrivateTripStudySchema,privateTripStudyMigrationSteps}
+  from './deploy-private-trip-study.mjs';
 import './test-trip-aggregate-month-rollover.mjs';
 import {modelSourceRelativeModuleSpecifiers} from './lib/model-source-imports.mjs';
 import {checkpointMetadataCasBlock} from './sync-ravscore-model-binding.mjs';
@@ -34,6 +37,78 @@ requireAccountStatisticsAssistantOutput();
 const descriptor=accountStatisticsAssistantMigration();
 const required=accountStatisticsAssistantRequiredMigrations();
 const migrationsDirectory=fileURLToPath(new URL('../supabase/migrations',import.meta.url));
+// Existing normal controller and unchanged real SQL, synthetic in-memory D1
+// metadata only. These cases neither install D1 nor prove Worker CPU/privacy.
+const privateStudySql=async()=>Promise.all(['001_trip_observations.sql',
+  '004_trip_weather_aggregate_releases.sql','005_trip_weather_aggregate_jobs.sql']
+  .map(name=>fs.readFile(new URL('../cloudflare/trip-gateway/migrations/'+name,import.meta.url),'utf8')));
+const privateStudySnapshot=database=>database.prepare('select type,name,tbl_name,sql from sqlite_master order by type,name')
+  .all().map(row=>({...row})).filter(row=>row.name.startsWith('trip_weather_aggregate_')||row.tbl_name.startsWith('trip_weather_aggregate_'));
+const privateStudyShards=rows=>[rows,...Array.from({length:9},()=>[])];
+test('private-study005: exact absent,004 and004+005 states preserve the old policy',async()=>{
+  const model=privateTripStudySchemaModel(),[initial,release,jobs]=await privateStudySql(),db=new DatabaseSync(':memory:');
+  try{
+    db.exec(initial);assert.equal(classifyPrivateTripStudySchema(model,privateStudyShards(privateStudySnapshot(db))).state,'ABSENT');
+    db.exec(release);const only004=privateStudySnapshot(db),anchor=db.prepare('select * from trip_weather_aggregate_policy_anchor').all();
+    assert.equal(classifyPrivateTripStudySchema(model,privateStudyShards(only004)).state,'EXACT');
+    db.exec(jobs);const complete=privateStudySnapshot(db);
+    assert.equal(classifyPrivateTripStudySchema(model,privateStudyShards(complete)).state,'EXACT_004_005');
+    assert.deepEqual(db.prepare('select * from trip_weather_aggregate_policy_anchor').all(),anchor);
+    assert.deepEqual(complete.filter(row=>only004.some(old=>old.name===row.name)),only004);
+    assert.equal(anchor[0].status,'PRIVATE_UNISSUED_REVIEW_ONLY');assert.equal(anchor[0].public_release_issued,0);
+    assert.equal(anchor[0].maximum_units,8);assert.equal(anchor[0].cost_units,4);
+    assert.equal(db.prepare('select count(*) count from trip_weather_aggregate_releases').get().count,0);
+    assert.equal(db.prepare('select count(*) count from trip_weather_aggregate_account_charges').get().count,0);
+    assert.equal(db.prepare('select count(*) count from trip_weather_aggregate_jobs').get().count,0);
+    assert.equal(db.prepare('select erasure_revision from trip_weather_aggregate_job_control').get().erasure_revision,0);
+  }finally{db.close();}
+});
+test('private-study005: missing004,partial,tampered and non-control schemas refuse',async()=>{
+  const model=privateTripStudySchemaModel(),[initial,release,jobs]=await privateStudySql(),db=new DatabaseSync(':memory:');
+  const refused=rows=>assert.throws(()=>classifyPrivateTripStudySchema(model,rows),error=>error.stage==='PARTIAL_OR_CHANGED_STATISTICS_SCHEMA');
+  try{
+    db.exec(initial);db.exec(jobs);refused(privateStudyShards(privateStudySnapshot(db)));
+    db.exec(release);const full=privateStudySnapshot(db);
+    refused(privateStudyShards(full.filter(row=>row.name!=='trip_weather_aggregate_job_transition')));
+    const changed=full.map(row=>row.name==='trip_weather_aggregate_jobs'?{...row,sql:row.sql.replace('4000','4001')}:row);
+    refused(privateStudyShards(changed));
+    db.exec('create index private_study_test_extra on trip_weather_aggregate_jobs(revision)');
+    refused(privateStudyShards(privateStudySnapshot(db)));
+    for(const index of [1,9]){
+      const shards=privateStudyShards(full);shards[index]=[full[0]];
+      assert.throws(()=>classifyPrivateTripStudySchema(model,shards),error=>error.stage==='NON_CONTROL_STATISTICS_SCHEMA');
+    }
+    assert.throws(()=>classifyPrivateTripStudySchema(model,[full]),error=>error.stage==='SHARD_COUNT');
+  }finally{db.close();}
+});
+test('private-study005: old004 approval never authorizes005 and exact reentry never repeats DDL',()=>{
+  assert.deepEqual(privateTripStudyMigrationSteps('ABSENT',{allow004:true}),['004']);
+  assert.deepEqual(privateTripStudyMigrationSteps('EXACT',{allow004:true}),[]);
+  assert.deepEqual(privateTripStudyMigrationSteps('ABSENT',{allow004:true,allow005:true}),['004','005']);
+  assert.deepEqual(privateTripStudyMigrationSteps('EXACT',{allow005:true}),['005']);
+  assert.deepEqual(privateTripStudyMigrationSteps('EXACT_004_005'),[]);
+  assert.deepEqual(privateTripStudyMigrationSteps('EXACT_004_005',{allow004:true,allow005:true}),[]);
+  assert.throws(()=>privateTripStudyMigrationSteps('ABSENT',{allow005:true}),error=>error.stage==='004_APPLY_NOT_ALLOWED');
+  for(const state of ['UNKNOWN','EXACT_005',null])assert.throws(()=>privateTripStudyMigrationSteps(state),error=>error.stage==='AUTHORITY');
+  assert.throws(()=>privateTripStudyMigrationSteps('EXACT',{allow005:'true'}),error=>error.stage==='AUTHORITY');
+});
+test('private-study005: the normal workflow stays OFF and DDL remains outside Worker repair',async()=>{
+  const source=await fs.readFile(new URL('./deploy-private-trip-study.mjs',import.meta.url),'utf8'),
+    workflow=await fs.readFile(new URL('../.github/workflows/private-trip-weather-study.yml',import.meta.url),'utf8');
+  assert.match(workflow,/allow_005:\s*\n\s+description:[^\n]+\n\s+type: boolean\s*\n\s+default: false/);
+  assert.match(workflow,/TRIP_PRIVATE_STUDY_JOBS_APPLY_ALLOWED: \$\{\{ inputs\.allow_005 && 'true' \|\| 'false' \}\}/);
+  assert.match(workflow,/TRIP_PRIVATE_STUDY_APPLY_ALLOWED: \$\{\{ inputs\.allow_004 && 'true' \|\| 'false' \}\}/);
+  assert.match(source,/const VARS=Object\.freeze\(\{TRIP_AGGREGATE_ENABLED:'false'\}\)/);
+  const from=source.indexOf('    for(const migration of migrationSteps){'),to=source.indexOf('    let version;',from);
+  assert(from>0&&to>from);const ddl=source.slice(from,to);
+  assert.equal([...ddl.matchAll(/await cf\(/g)].length,1);
+  assert.match(ddl,/config\.d1_databases\[0\]\.database_id/);
+  assert.match(ddl,/await verifySchema\('EXACT'\);await attest\(currentVersion\);exactMain\(\);lease\(600\)/);
+  assert.match(ddl,/stage=migration\+'_APPLY_OUTCOME_UNKNOWN'/);
+  assert.match(ddl,/if\(!result\.length\|\|result\.length>64\|\|result\.some\(row=>row\?\.success!==true\)\)throw fail\(stage\)/);
+  assert.doesNotMatch(ddl,/catch\s*\{|recoveryAttempted|replace\(/);
+  assert.doesNotMatch(source.slice(to),/await cf\(|model\.jobsMigration/);
+});
 const environment=(installed=false)=>({
   GITHUB_WORKFLOW:'Deploy RavRadar code-only repair', GITHUB_EVENT_NAME:'workflow_dispatch',
   GITHUB_REF:'refs/heads/main', GITHUB_RUN_ATTEMPT:'1', GITHUB_RUN_ID:'1', GITHUB_SHA:'a'.repeat(40),

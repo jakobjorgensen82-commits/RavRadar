@@ -25,6 +25,8 @@
 
 ## 20. oktober — samlet 585-kandidat: bevar ventende arbejde ved månedsskifte
 
+- 21. oktober: Særskilt privat `TARGET_TESTED`-forberedelse lukker statistikcontrollerens manglende 005-leveringsvej. Bevarer gammelt 004-flag og alle gamle SQL-bytes; nyt 005-flag er false som standard. Kun kontrol0 kan opdateres efter eksakte forudsætninger, med uændret policy/lifetime-budget, stop ved ukendt DDL-udfald og aggregate OFF. Fire normale Node22-mål og to JavaScript-syntakskontroller består; YAML-formatkontrollen er ikke gennemført på grund af manglende lokal PyYAML. Samlet kildekontrol, 004/005-installation, faktiske D1-/fejludfald og Worker-/Free-CPU-/hukommelse, anonymitet, origin og statistikrelease mangler. Ingen ny version, migration eller offentlig aktivering.
+
 - Retter den eksplicitte OFF-attestation til den eksisterende kontrol af den faktisk aktive Worker-versions bindinger; lokal false og versionsnummer alene må ikke kvalificere leveringen. Kontrollen skal også bevare de ti D1-bindinger og uændret deployment. Det er endnu ikke en installeret eller offentligt verificeret rettelse.
 - Sammenfør den selvstændigt kildekvalificerede 585-kandidat med den faktisk mergede 584-hukommelsesrettelse; begge historikker og gamle model-/SQL-originaler bevares.
 - Den eksisterende private statistikforberedelse bruger nu afgrænsede, varigt kvitterede trin. Et faktisk eksisterende job vælges på serveren, også efter månedsskifte; ingen klientparameter eller kopieret kvittering giver historisk skriveadgang.

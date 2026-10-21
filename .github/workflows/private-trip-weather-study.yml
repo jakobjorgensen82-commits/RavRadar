@@ -12,6 +12,10 @@ on:
         description: Allow one exact control0-only004 attempt when absent
         type: boolean
         default: false
+      allow_005:
+        description: Allow one exact control0-only005 attempt after exact001 and004; statistics stay disabled
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -60,6 +64,7 @@ jobs:
       TRIP_STORAGE_PRIVATE_STUDY: '1'
       TRIP_PRIVATE_STUDY_MODE: ${{ inputs.operation }}
       TRIP_PRIVATE_STUDY_APPLY_ALLOWED: ${{ inputs.allow_004 && 'true' || 'false' }}
+      TRIP_PRIVATE_STUDY_JOBS_APPLY_ALLOWED: ${{ inputs.allow_005 && 'true' || 'false' }}
     steps:
       - uses: actions/checkout@v7
         with:
