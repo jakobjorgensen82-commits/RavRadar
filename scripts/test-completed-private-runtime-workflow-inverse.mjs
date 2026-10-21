@@ -6,6 +6,7 @@ import test from 'node:test';
 import { inverseRelease585WorkflowUserAgents, ordinaryStageWiringReview, inverseOrdinaryCompletedStageWorkflowWiring, assertEarlyCompletedRuntimeStageOrder, inverseEarlyCompletedRuntimeStage, inverseCompletedRuntimeWorkflow, inverseOrdinaryFullHistoryCheckout, inversePairedPrivateRuntimePublication, inverseOriginWeatherReadCredentials, assertCurrentHistoryRawRetentionOrder, inverseCurrentHistoryRawRetentionOrder, inverseCurrentFamilyColdStartWorkflow, inverseRelease584WorkflowUserAgents } from './lib/completed-private-runtime-workflow-review.mjs';
 import { runInNewContext } from 'node:vm';
 import { spawnSync } from 'node:child_process';
+import { inverseSourceNormalWorkflow } from './lib/source-normal-workflow-review.mjs';
 const sha = source => crypto.createHash('sha256').update(source).digest('hex');
 const read = async relative => {
   const source = (await fs.readFile(new URL(relative, import.meta.url), 'utf8')).replaceAll('\r\n', '\n');
@@ -622,7 +623,7 @@ test('actual optional wiring refuses every partial hunk, wrong role and changed 
 });
 
 test('current585 release inverse keeps every genuine584 workflow byte and refuses partial UA or unrelated drift', async () => {
-  const source = (await fs.readFile(new URL('../.github/workflows/reusable-weather-build.yml', import.meta.url), 'utf8')).replaceAll('\r\n', '\n');
+  const source = inverseSourceNormalWorkflow((await fs.readFile(new URL('../.github/workflows/reusable-weather-build.yml', import.meta.url), 'utf8')).replaceAll('\r\n', '\n'), 'build');
   assert.equal(sha(source), '2ee56b8ae3546f8ac3ce97b45aaedbfe7eb67fac0960961f164cecca70c0970c');
   const previous = inverseRelease585WorkflowUserAgents(source, 'build');
   assert.equal(sha(previous), 'b509a5131c64f9df9a431fdf9f99b082fb14c88de8bf9c3ad3e33b8ddc77de57');

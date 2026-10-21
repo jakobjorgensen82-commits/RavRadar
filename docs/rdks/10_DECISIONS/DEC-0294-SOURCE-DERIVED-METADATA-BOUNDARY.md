@@ -44,6 +44,22 @@ skal genberegne alle faktiske C/I/T og SQL-pins til et stabilt resultat.
 Opfundne tuples, sourceOverrides, ændrede gamle SQL-/JSON-originaler eller
 omdøbning af en frossen 585-kilde til SOURCE må ikke bruges som bevis.
 
+## Normale workflows og deres historiske kontroller
+
+Første præcise 586-kontrol stoppede før native PostgreSQL: den gamle
+completed-runtime-kontrol genkendte ikke den nye almindelige SOURCE-rute.
+Det er ikke kun fem nye User-Agent-versionsfelter; build og manuel kalder
+har også request-, selector- og outputændringer. Kontrollen må ikke repinnes
+eller fjernes, og en testinverse må ikke blive produktets genbrugsautoritet.
+
+En særskilt test-only inverse binder alle 152 build- og fire once-Git-hunks
+til de faktiske hele efterbilleder og genskaber præcis den genuine b2-kilde.
+Alle gamle 585- og ældre orakler bevares. Den faktiske nye kode prøves
+særskilt: default-OFF, blandede/ukendte requests, 19 outputfelter, NO_WORK,
+forberedt resultat, afslag uden legacy-fallback, gamle selectors over 24
+tilstande samt faktisk dependency-, main- og B-før-S-rækkefølge. Det er
+kildekontraktprøver, ikke native B/S, installation eller produktionseffekt.
+
 ## Status og bevarede grænser
 
 Fire normale lokale mål består: streng dataform, faktisk C/I-kæde og uændret

@@ -3,6 +3,7 @@
 import assert from 'node:assert/strict';
 import crypto from 'node:crypto';
 import fs from 'node:fs';
+import { inverseSourceNormalWorkflow } from './source-normal-workflow-review.mjs';
 const review = JSON.parse(fs.readFileSync(new URL('./completed-private-runtime-workflow-review.json', import.meta.url), 'utf8'));
 const coldReview = JSON.parse(fs.readFileSync(new URL('./current-family-cold-start-workflow-review.json', import.meta.url), 'utf8'));
 const sha = value => crypto.createHash('sha256').update(value).digest('hex');
@@ -16,6 +17,10 @@ for (const row of Object.values(ordinaryStageWiringReview)) {
 Object.freeze(ordinaryStageWiringReview);
 // Exact585 normal User-Agent inverse; the entire issued584 workflow remains the oracle.
 export function inverseRelease585WorkflowUserAgents(source, role) {
+  // SOURCE changes the producer and selectors, not just release User-Agents.
+  // Qualify its entire afterimage before any unchanged historical oracle.
+  if ((role === 'build' || role === 'once') && source.includes('      source_normal_producer:\n'))
+    source = inverseSourceNormalWorkflow(source, role);
   if (role !== 'build' || sha(source) !== '2ee56b8ae3546f8ac3ce97b45aaedbfe7eb67fac0960961f164cecca70c0970c') return source;
   assert.equal(source.split('RavRadar/4.0.585').length, 6, 'Exactly five normal585 User-Agent fields');
   const previous = source.replaceAll('RavRadar/4.0.585', 'RavRadar/4.0.584');

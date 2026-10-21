@@ -1,5 +1,6 @@
 ## 4.0.586 – isoleret SOURCE-kandidat, ikke offentlig levering
 
+- Første præcise kildekontrol fandt en historisk workflowkontrol, før native PostgreSQL blev startet. En test-only hel-Git-inverse genskaber genuine b2 med alle gamle assertions bevaret; den nye almindelige SOURCE-rutes faktiske requests, output, selectors og sikkerhedsrækkefølge kontrolleres særskilt. Produktets beregnings-/genbrugskontrol udvides ikke til SOURCE.
 - Normal versionssynk, faktisk C145/I141/T og den nye append-only 020000-SQL er afledt lokalt fra egen Git-LF-kilde. Efter normale syv forbrugersynkroniseringer består begge bundlere, SQL-builder og bindingskontrol uændret: faktisk fixedpoint uden ændrede gamle originaler. Det er ikke PostgreSQL-eksekvering, installation eller aktivering.
 - Gamle originale SQL-/JSON-filer og historiske kildebeviser bevares. Geodata ændrer kun topversionsfeltet. Ingen ændring af scoreformel, kildeprioritet, administratorpunkter, geometri eller aktive tidsbudgetter.
 - Denne kildefrysning er ikke native-/B/S-/kapacitetsbevis, installation eller aktivering. Alle fem hovedmål er åbne til 18. november 2026; den almindelige vejrhentning må ikke forstyrres.

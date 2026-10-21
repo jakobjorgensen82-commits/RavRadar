@@ -6,6 +6,7 @@ import vm from 'node:vm';
 import { exactPagesAttemptStep } from './github-pages-attempt-evidence.mjs';
 import './test-weather-source-gate.mjs';
 import './test-weather-state-epoch-workflow.mjs';
+import './test-source-normal-workflow.mjs';
 // The normal source gate owns the optional completed-result transport tests.
 // These use synthetic data only, never provider or production credentials.
 import './test-ordinary-completed-stage-artifact.mjs';
