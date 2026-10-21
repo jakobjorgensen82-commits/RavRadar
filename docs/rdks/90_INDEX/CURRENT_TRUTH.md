@@ -1,5 +1,7 @@
 ## 20. oktober — fælles integrationsfront: P0 678 og sourcekvalificeret 585
 
+21. oktober — reserveaudit: Den præcise kildekontrol bestod native PostgreSQL, kildevalidering og prepare-målet, men den fulde stage fandt et forældet fem-rækkerskrav mod producentens Top20. Den lokale efterfølger sammenligner hele hver dags kanoniske ranking uden at ændre producenten. Hurtig strukturel målprøve består; samlet ny CI, sikker merge og faktisk leveringsvirkning er åbne. Fejlen vedrører den særskilte reservevej, ikke den almindelige vejrhentning, som efterfølgende faktisk har leveret nyt offentligt vejr.
+
 21. oktober — lokal reserve: Den normale generation nåede 118 Candidate-timefiler, men den efterfølgende audit afviste det normale leveringsindeks, som den statiske manifestbygger ikke opretter. Den afgrænsede auditrettelse validerer og kanoniserer alene denne normale anden fase og bevarer øvrige gates. Ny præcis samlet kildekontrol og sikker levering mangler. Den aktive almindelige vejrhentning ændres ikke.
 
 Den afgrænsede DMI-tidsfortolkningsrettelse er faktisk kildekvalificeret gennem PR683 og merget som 72099. Den nye almindelige kørsel bruger rettelsen og genbruger det faktisk kontrollerede kildeindhold; dens tids- og dækningseffekt er endnu ikke målt. Der gentages ikke fuld kildekontrol alene for status.

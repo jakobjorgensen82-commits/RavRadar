@@ -1,5 +1,7 @@
 ## 20. oktober — fungerende almindelig vejrrute bevares; reservekopi rettes lokalt
 
+21. oktober: Præcis CI fandt efter manifestrettelsen reserveauditens gamle fem-rækkers rankingkrav. Den normale producent leverer Top20. Sammenligningen kræver nu hele kanoniske dage fra samme normale producent med bevarede dato-/modelkrav; den indfører ikke en anden rankingpolitik. Hurtig normal målprøve består inklusive indholdsmutationer og afkortningsafslag. Hele ny exact-head-CI og sikker levering mangler; grønne tidligere deltrin eller målprøven er ikke et samlet PASS.
+
 21. oktober: Den fulde lokale reservegeneration nåede alle 118 timer, men fandt auditorens statisk/opdelt-manifestkonflikt. Den normale audit efterfølger nu producentens to faser med valideret kanonisk leveringsindeks; fuldt nyt kildebevis og levering er fortsat åbne. Det ændrer ikke den aktive almindelige vejrrute.
 
 Læs først ROOTs aktuelle P0-linje i CURRENT_TRUTH og seneste private checkpoint. 585 er faktisk leveret; efterfølgende almindeligt nyt vejr er offentligt kontrolleret, og den næste almindelige kørsel bruger den kildekvalificerede tidsfortolkningsrettelse. Fuld dækning, komplet historik og målt tidsgevinst følger ikke alene af disse leverancer. Bevar aktiv writer, cron og de eksisterende kilde-/datakontroller.

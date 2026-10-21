@@ -175,6 +175,30 @@ export function assertCandidateGRollbackPublicScore(value,
 
 const assertPublicScore = assertCandidateGRollbackPublicScore;
 
+// The normal producer publishes Top20, not the retired five-row preview.
+// Compare whole days against its canonical projection instead of keeping a
+// second, independently hardcoded row-count policy in the reserve audit.
+export function assertCandidateGRollbackNationalForecast(actual, expected) {
+  const dates = actual?.dates;
+  if (!Array.isArray(dates) || dates.length !== 5 || new Set(dates).size !== 5
+    || !same(dates, expected?.dates)) {
+    throw new Error('Candidate G public five-day date horizon is incomplete');
+  }
+  assertExactCandidateBinding(actual.modelBinding, 'Candidate G five-day model binding');
+  assertExactCandidateBinding(expected.modelBinding, 'Candidate G canonical five-day model binding');
+  for (const mode of MODES) {
+    const days = actual?.modes?.[mode], canonicalDays = expected?.modes?.[mode];
+    if (!Array.isArray(days) || days.length !== 5
+      || !Array.isArray(canonicalDays) || canonicalDays.length !== 5
+      || days.some((day, index) => day?.date !== dates[index]
+        || canonicalDays[index]?.date !== dates[index]
+        || !Array.isArray(day?.rows) || !Array.isArray(canonicalDays[index]?.rows)
+        || !same(day, canonicalDays[index]))) {
+      throw new Error(`Candidate G public five-day ${mode} ranking is incomplete or not canonical`);
+    }
+  }
+}
+
 function assertSealedStageInput(candidateFull, plan, {
   expectedSourceHead,
   expectedDatasetId,
@@ -555,21 +579,7 @@ export async function auditCandidateGRollbackPublicRuntime({
       assertPublicScore(row?.[mode], `Candidate G public ${mode} zone ${zoneId}/${row?.time}`);
     }
   }
-  const dates = startup?.nationalForecast?.dates;
-  if (!Array.isArray(dates) || dates.length !== 5 || new Set(dates).size !== 5) {
-    throw new Error('Candidate G public five-day date horizon is incomplete');
-  }
-  assertExactCandidateBinding(startup.nationalForecast.modelBinding,
-    'Candidate G five-day model binding');
-  for (const mode of MODES) {
-    const days = startup?.nationalForecast?.modes?.[mode];
-    if (!Array.isArray(days) || days.length !== 5
-      || days.some(day => !dates.includes(day?.date)
-        || !Array.isArray(day?.rows)
-        || day.rows.length !== Math.min(5, expectedZoneCount))) {
-      throw new Error(`Candidate G public five-day ${mode} ranking is incomplete`);
-    }
-  }
+  assertCandidateGRollbackNationalForecast(startup?.nationalForecast, expectedStartup.nationalForecast);
 
   assertPublicRuntimePrivacy(startup, 'startup');
   assertPublicRuntimePrivacy(details, 'details');

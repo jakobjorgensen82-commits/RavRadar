@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import './test-candidate-g-rollback-national-forecast.mjs';
 import crypto from 'node:crypto';
 import fs from 'node:fs/promises';
 import os from 'node:os';

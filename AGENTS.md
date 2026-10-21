@@ -1,5 +1,7 @@
 ## 20. oktober — aktuel drift og lokal reserveforberedelse
 
+21. oktober: Den efterfølgende præcise kildekontrol nåede den normale reserveaudit, men fandt endnu et forældet krav: fem rankingrækker pr. dag mod normalproducentens Top20. Rettelsen sammenligner hele hver dags resultat med den normale kanoniske projektion, ikke en ny særskilt rækkegrænse. Målprøven afviser afkortning og ændret indhold; samlet ny CI og levering er stadig åbne. Det er ikke en fejlet almindelig vejrhentning eller en ændring af Top20, score, kilder eller model.
+
 21. oktober: Den normale reserveaudit havde desuden en reproduceret statisk/opdelt-manifestkonflikt efter alle 118 genererede timer. Efterfølgeren bevarer hele manifestkontrollen og validerer særskilt producentens leveringsindeks gennem normal kontrakt. Ny samlet kildekontrol og levering er åbne; gammel lokal generation eller grønne deltrin må ikke kaldes et samlet PASS.
 
 Læs ROOTs aktuelle P0-linje i CURRENT_TRUTH og det private checkpoint før de daterede statusfronter nedenfor. 585 og senere almindeligt nyt vejr er faktisk leveret; DMI-tidsfortolkningens præcise kildekontrol er bestået og rettelsen er med i den næste aktive almindelige kørsel. Det beviser ikke fuld dækning eller målt tidsgevinst. Cron fortsætter uændret; ingen produktionsændring under aktiv writer.

@@ -4,6 +4,30 @@
 
 **Status:** Lokal rettelse implementeret; kildekvalifikation og levering åbne.
 
+## Efterfølgende præcis CI: rankingkontrakt
+
+Den efterfølgende præcise GitHub-kontrol bestod native PostgreSQL, den normale
+kildevalidering og prepare-målet. Den fulde stage stoppede derefter på
+`Candidate G public five-day waders ranking is incomplete`. Det var auditorens
+forældede krav om fem rækker pr. dag; `buildPublicNationalForecast` leverer
+normalt Top20. Der blev ikke påvist en fejl i producentens rangering.
+
+Efterfølgeren kræver datoakse, eksakt Candidate-model og hele hver dags resultat
+fra den samme normale kanoniske projektion. Den erstatter ikke den gamle grænse
+med en anden uafhængig rækkegrænse og svækker ikke de eksisterende hele startup-,
+details- eller manifestkontroller. En kanonisk delvis fremtidig dag må fortsat
+være tom; manglende rækker må ikke opfindes.
+
+En kort strukturel normalprøve køres før den eksisterende dyre stage. Den prøver
+Top20 og afviser fem-rækkersafkortning, manglende række, ændret score, duplikeret
+zone, ændret dato, manglende dag/dato og forkert model. Den er ikke bevis for
+hele den faktiske offentlige projektion; den eksisterende fulde stage og ny
+samlet exact-head-CI skal fortsat bestå. Den almindelige vejrhentning ændres
+ikke. De senere nationale og kapacitetsmæssige CI-trin blev ikke kørt i det
+fejlede job og er stadig åbne.
+
+## Tidligere reproduktion: normalt leveringsindeks
+
 Den ene fulde lokale stage-prøve har faktisk genereret alle 118 Candidate-timefiler
 og bestået zonebindinger, originalbevarelse og de tre inputafslag. Den stoppede
 derefter i den normale reserveaudit: `writePublicDelivery` tilføjer
