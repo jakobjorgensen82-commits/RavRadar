@@ -1,3 +1,13 @@
+## 20. oktober — fungerende almindelig vejrrute bevares; reservekopi rettes lokalt
+
+21. oktober: Præcis CI fandt efter manifestrettelsen reserveauditens gamle fem-rækkers rankingkrav. Den normale producent leverer Top20. Sammenligningen kræver nu hele kanoniske dage fra samme normale producent med bevarede dato-/modelkrav; den indfører ikke en anden rankingpolitik. Hurtig normal målprøve består inklusive indholdsmutationer og afkortningsafslag. Hele ny exact-head-CI og sikker levering mangler; grønne tidligere deltrin eller målprøven er ikke et samlet PASS.
+
+21. oktober: Den fulde lokale reservegeneration nåede alle 118 timer, men fandt auditorens statisk/opdelt-manifestkonflikt. Den normale audit efterfølger nu producentens to faser med valideret kanonisk leveringsindeks; fuldt nyt kildebevis og levering er fortsat åbne. Det ændrer ikke den aktive almindelige vejrrute.
+
+Læs først ROOTs aktuelle P0-linje i CURRENT_TRUTH og seneste private checkpoint. 585 er faktisk leveret; efterfølgende almindeligt nyt vejr er offentligt kontrolleret, og den næste almindelige kørsel bruger den kildekvalificerede tidsfortolkningsrettelse. Fuld dækning, komplet historik og målt tidsgevinst følger ikke alene af disse leverancer. Bevar aktiv writer, cron og de eksisterende kilde-/datakontroller.
+
+Den normale manuelle Candidate-reservegren har en selvstændig fejl ved pakket privat input og gammel afledt public-hour-markør. En lokal prepare-rettelse og normal stage-regression udarbejdes uden at ændre model, SQL, scoreformel, originaler eller produktionen. Se KNOWN-ISSUES og CANDIDATE-PUBLIC-PACKED-INPUT. Det er ikke en aktivering af den isolerede SOURCE-revision. Alle fem mål er åbne til 18. november; ældre modstridende status nedenfor er dateret historik.
+
 ## 20. oktober — fuldt vejrfokus; lokal genbrug af ren tidsfortolkning
 
 De seks aktuelle parser-/checkpointmål er nu koblet på den eksisterende normale Python-kildegruppe med krav om faktisk seks prøver uden skip. Den første kandidats sourceplan manglede dem; dens kontrol er ikke et bevis for de seks mål. Ny præcis kildekontrol kræves efter denne tilkobling. Den kørende almindelige vejrhentning ændres ikke.

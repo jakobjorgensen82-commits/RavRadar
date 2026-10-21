@@ -3,6 +3,8 @@ import crypto from 'node:crypto';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { hydratePrivateConditionsHourly } from './lib/private-conditions-hourly.mjs';
+import { privatePublicHourDeliveryMarker } from './lib/public-hour-delivery-pack.mjs';
 import {
   assertRavScoreModelBinding as assertIntegratedBinding,
   ravScoreModelBinding as integratedModelBinding,
@@ -406,6 +408,8 @@ export function prepareCandidateGOperationalRollback(full, {
   now = new Date().toISOString(),
   maximumRuntimeAgeHours = CANDIDATE_G_OPERATIONAL_ROLLBACK_POLICY.maximumRuntimeAgeHours,
 } = {}) {
+  full = hydratePrivateConditionsHourly(full);
+  privatePublicHourDeliveryMarker(full);
   assertCandidateGRollbackBinding();
   const resolvedMode = assertManualMode({
     mode,
@@ -481,6 +485,8 @@ export function prepareCandidateGOperationalRollback(full, {
   };
   const candidateFull = structuredClone(full);
   delete candidateFull.ravScoreCandidateGRollback;
+  // Only this new C projection loses the derived I public cache; its source and pack remain intact.
+  delete candidateFull.publicHourDelivery;
   candidateFull.coastalParts = structuredClone(validated.runtime);
   candidateFull.ravScoreOperationalActivation = {
     ...activation,

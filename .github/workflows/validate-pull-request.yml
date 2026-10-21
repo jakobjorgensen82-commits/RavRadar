@@ -119,7 +119,7 @@ jobs:
           node scripts/native-postgres-evidence.mjs
 
       - name: Validate source contracts and release governance
-        run: npm run validate:source && node scripts/test-fixed-public-rate-log-20261013.mjs && node scripts/test-fixed-storage-upload-log-20261013.mjs && node scripts/test-fixed-public-rate-console-log-20261015.mjs
+        run: npm run validate:source && node scripts/test-fixed-public-rate-log-20261013.mjs && node scripts/test-fixed-storage-upload-log-20261013.mjs && node scripts/test-fixed-public-rate-console-log-20261015.mjs && node scripts/test-prepare-candidate-g-operational-rollback.mjs && node scripts/test-candidate-g-rollback-public-stage.mjs
 
       # A single sequential national preactivation proof, not a weather-run
       # budget change or another concurrent member of the small source group.

@@ -1,3 +1,13 @@
+## 20. oktober — lokal normal Candidate-forberedelse, ikke aktivering
+
+- [x] Den præcise GitHub-kontrol har efter manifestrettelsen påvist det gamle fem-rækkerskrav i reserveauditen mod normal Top20. Sammenligning af hele kanoniske dage og en normal tidlig målprøve er implementeret; afkortning, score-/zone-/dato-/modelmutationer afvises. Ingen ranking- eller scorepolitik ændres.
+- [ ] Den fulde normale stage og hele den nye præcise CI skal bestå; beståede deltrin fra det fejlede job er ikke ny samlet kvalifikation. Efterfølgende sikker levering og faktisk virkning er fortsat åbne.
+- [x] Den fulde lokale generation nåede 118 Candidate-timefiler, 210×118 zonebindinger og inputafslag, men fandt derefter reserveauditens statisk/opdelt-manifestkonflikt. Fuld prøve er derfor ikke bestået.
+- [ ] Efterfølgende normal auditrettelse med valideret kanonisk leveringsindeks og fire nye mutationsafslag skal bestå ny præcis kildekontrol; ingen dubleret lokal fuldgeneration eller offentlig effekt påstås.
+- [x] Kaldergennemgang har påvist blandet privat timepakning og forkert models afledte timepakkemarkør i den manuelle reservegren; den almindelige integrerede vejrhentning rammes ikke af denne særskilte gren.
+- [ ] Afgrænset normal prepare-rettelse og regression med normalt pakket input, uændrede originaler, 118 Candidate-zonetimer og fortsat afslag på beskadiget/afkortet input.
+- [ ] Præcis kildekontrol og sikker levering. Ingen ny version, C/I, SQL, ændring af kildeprioritet eller aktivering af den isolerede revision. Alle fem hovedmål forbliver åbne.
+
 ## 20. oktober — almindelig vejrhentning har fuld prioritet
 
 - [x] Almindelig 39392596895/1 og efterfølgende 585-rettelsesdeploy 39427178008/1 faktisk afsluttet med offentlig kontrol; kun den første hentede nyt vejr. Cron er faktisk genaktiveret med uændret tidsplan.

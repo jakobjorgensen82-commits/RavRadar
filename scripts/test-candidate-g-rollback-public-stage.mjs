@@ -1,4 +1,6 @@
 import assert from 'node:assert/strict';
+import './test-candidate-g-rollback-national-forecast.mjs';
+import crypto from 'node:crypto';
 import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
@@ -34,6 +36,18 @@ import {
 import {
   assertCandidateGRollbackPublicScore,
 } from './audit-candidate-g-rollback-public-runtime.mjs';
+import { evaluateRavScoreIntegrated } from '../js/core/ravscore-integrated.js';
+import {
+  resolvePublicRavScoreProfile,
+  selectPublicRavScoreResult,
+} from '../js/core/ravscore-public-model.js';
+import { buildIntegratedPublicScoreAvailability } from '../js/core/ravscore-public-runtime-contract.js';
+import {
+  buildPrivatePublicHourDeliveryPack,
+  compactPrivateConditionsForPersistence,
+  inspectPrivatePublicHourDeliveryPack,
+} from './lib/public-hour-delivery-pack.mjs';
+import { packPrivateConditionsHourly } from './lib/private-conditions-hourly.mjs';
 
 const execFileAsync = promisify(execFile);
 const HOUR_MS = 3_600_000;
@@ -311,7 +325,7 @@ assert.equal(fixtureAvailability.historyIncompleteZoneCount, 0);
 assert.equal(fixture.full.ravScoreCandidateGRollback.runtime.zones['rollback-zone-1']
   .hourly[0].beach.calibrationEligible, false,
 'Candidate G FULL_HISTORY score rows must remain calibration-ineligible');
-const prepared = prepareCandidateGOperationalRollback(fixture.full, {
+const preparationOptions = {
   expectedDatasetId: datasetId,
   sourceHead,
   privateBundleContentSha256,
@@ -319,7 +333,81 @@ const prepared = prepareCandidateGOperationalRollback(fixture.full, {
   requestedImplementationClosureSha256: 'd'.repeat(64),
   centralExpectedVersion: 0,
   now: at(1),
-});
+};
+let prepared = prepareCandidateGOperationalRollback(fixture.full, preparationOptions);
+
+async function buildPackedIntegratedSource(root) {
+  const live = path.join(root, 'data', 'live');
+  await fs.mkdir(live, { recursive: true });
+  const profile = resolvePublicRavScoreProfile({
+    modelCoverageReady: false, modelMemoryReady: false, modelMigrationReady: false,
+  });
+  // Obtain genuine I-model results from the ordinary evaluator/presenter. They
+  // are unavailable without history, not C scores relabelled as integrated.
+  const modes = Object.fromEntries(['waders', 'beach'].map(mode => [mode,
+    selectPublicRavScoreResult({ profile, mode,
+      modelResult: evaluateRavScoreIntegrated({ mode }), modelState: null }),
+  ]));
+  const zones = Object.fromEntries(Object.entries(fixture.full.ravScoreCandidateGRollback.runtime.zones)
+    .map(([id, zone]) => [id, {
+      expectedPartCount: zone.expectedPartCount,
+      scoredPartCount: zone.scoredPartCount,
+      currentReferenceAt: reference,
+      hourly: forecastTimes.map(time => ({ time, ...modes })),
+    }]));
+  const parts = Object.fromEntries(Object.entries(fixture.full.ravScoreCandidateGRollback.runtime.parts)
+    .map(([id, part]) => [id, {
+      zoneId: part.zoneId, name: part.name, marineCoverage: part.marineCoverage,
+      waterPoint: part.waterPoint, landPoint: part.landPoint,
+      onshoreDirectionDeg: part.onshoreDirectionDeg,
+      onshoreDirectionSource: part.onshoreDirectionSource,
+      flowPoints: part.flowPoints,
+      current: { time: reference, weather: part.current.weather, ...modes },
+    }]));
+  const full = { ...fixture.full, coastalParts: {
+    schemaVersion: 2, enabled: true, modelBinding: integratedModelBinding(),
+    evidenceTrust: ravScoreVerifiedEvidenceTrust(), scoreProfile: profile,
+    scoreAvailability: buildIntegratedPublicScoreAvailability({ zones, referenceAt: reference }),
+    expectedPartCount: 673, scoredPartCount: 673, parts, zones,
+  } };
+  // As in the ordinary hourpack target, these small, explicit synthetic I
+  // documents are pack INPUTS, not a claim of a complete I publication. The
+  // real pack builder binds all118 bytes/times; C still uses normal generation.
+  const digest = bytes => crypto.createHash('sha256').update(bytes).digest('hex');
+  const sourceDetailsSha256 = digest('synthetic-integrated-hourpack-input');
+  const hours = {};
+  const forecast = path.join(live, 'forecast');
+  await fs.mkdir(forecast, { recursive: true });
+  for (const time of forecastTimes) {
+    const text = `${JSON.stringify({
+      fixtureKind: 'SYNTHETIC_INTEGRATED_HOURPACK_INPUT',
+      delivery: { schemaVersion: 1, kind: 'hour', key: time,
+        sourceDetailsSha256, modelBinding: integratedModelBinding() },
+      coastalParts: { modelBinding: integratedModelBinding(), current: modes },
+    })}\n`;
+    const sha256 = digest(text);
+    await fs.writeFile(path.join(forecast, `${sha256}.json`), text);
+    hours[time] = { path: `./forecast/${sha256}.json`, sha256, bytes: Buffer.byteLength(text) };
+  }
+  const publicManifest = { datasetId, productionReferenceAt: reference,
+    ravScoreModelBinding: integratedModelBinding(),
+    publicConditionDetailsSha256: sourceDetailsSha256,
+    detailDelivery: { schemaVersion: 1, sourceDetailsSha256, hours } };
+  const startupNationalForecast = { schemaVersion: 2, modelBinding: integratedModelBinding(),
+    dates: [reference.slice(0, 10)],
+    modes: { waders: [{ date: reference.slice(0, 10), rows: [] }],
+      beach: [{ date: reference.slice(0, 10), rows: [] }] } };
+  const packPath = path.join(root, '.cache', 'public-hour-delivery.pack');
+  const pack = await buildPrivatePublicHourDeliveryPack({
+    liveDirectory: live, publicManifest, startupNationalForecast, outputPath: packPath,
+  });
+  const packed = packPrivateConditionsHourly(compactPrivateConditionsForPersistence(full, pack.marker));
+  const conditionsPath = path.join(live, 'conditions.json');
+  await fs.writeFile(conditionsPath, `${JSON.stringify(packed)}\n`);
+  await inspectPrivatePublicHourDeliveryPack({ packPath, conditions: packed });
+  return { packed, conditionsPath, packPath,
+    originalConditions: await fs.readFile(conditionsPath), originalPack: await fs.readFile(packPath) };
+}
 
 const temporaryRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'ravradar-candidate-stage-test-'));
 const stageRoot = path.join(temporaryRoot, 'stage');
@@ -333,6 +421,9 @@ try {
     fs.cp(path.join(repositoryRoot, 'scripts'), path.join(stageRoot, 'scripts'), { recursive: true }),
     fs.copyFile(path.join(repositoryRoot, 'package.json'), path.join(stageRoot, 'package.json')),
   ]);
+  const integratedSource = await buildPackedIntegratedSource(path.join(inputRoot, 'integrated-original'));
+  prepared = prepareCandidateGOperationalRollback(integratedSource.packed, preparationOptions);
+  await assert.rejects(() => fs.stat(path.join(stageRoot, '.cache')), { code: 'ENOENT' });
   const candidatePath = path.join(inputRoot, 'candidate-full.json');
   const planPath = path.join(inputRoot, 'plan.json');
   await Promise.all([
@@ -392,6 +483,64 @@ try {
     windowsHide: true,
     maxBuffer: 10 * 1024 * 1024,
   });
+  assert.equal(Object.hasOwn(prepared.candidateFull, 'privateZoneHourly'), false);
+  assert.equal(Object.hasOwn(prepared.candidateFull, 'publicHourDelivery'), false,
+    'new C projection must not retain I ranking/hourpack authority');
+  assert.deepEqual(await fs.readFile(integratedSource.conditionsPath), integratedSource.originalConditions);
+  assert.deepEqual(await fs.readFile(integratedSource.packPath), integratedSource.originalPack);
+  assert.deepEqual(integratedSource.packed, JSON.parse(integratedSource.originalConditions),
+    'normal preparation must not mutate the packed I input');
+  const corruptedPacked = structuredClone(integratedSource.packed);
+  corruptedPacked.privateZoneHourly.zones['rollback-zone-1'].score.rawSha256 = '0'.repeat(64);
+  assert.throws(() => prepareCandidateGOperationalRollback(corruptedPacked, preparationOptions),
+    /PRIVATE_CONDITIONS_HOURLY_/);
+  const shortenedCandidate = structuredClone(integratedSource.packed);
+  shortenedCandidate.ravScoreCandidateGRollback.runtime.zones['rollback-zone-1'].hourly.pop();
+  const shortenedPrepared = prepareCandidateGOperationalRollback(shortenedCandidate, preparationOptions);
+  await installCandidateGRollbackStage({ stageRoot, repositoryRoot,
+    candidateFull: shortenedPrepared.candidateFull, plan: shortenedPrepared.plan,
+    expectedSourceHead: sourceHead, expectedDatasetId: datasetId });
+  await assert.rejects(() => execFileAsync(process.execPath, ['scripts/generate-public-conditions.mjs'], {
+    cwd: stageRoot, windowsHide: true, maxBuffer: 10 * 1024 * 1024,
+  }), error => /complete|horizon|118|forecast/i.test(`${error?.stderr ?? ''}${error?.message ?? ''}`),
+  'the existing normal public horizon gate must reject an abbreviated C axis');
+  await installCandidateGRollbackStage({ stageRoot, repositoryRoot,
+    candidateFull: prepared.candidateFull, plan: prepared.plan,
+    expectedSourceHead: sourceHead, expectedDatasetId: datasetId });
+  const corruptedMarker = structuredClone(integratedSource.packed);
+  corruptedMarker.publicHourDelivery.startupNationalForecastSha256 = '0'.repeat(64);
+  assert.throws(() => prepareCandidateGOperationalRollback(corruptedMarker, preparationOptions),
+    /Private (?:public-hour|startup national)/i);
+  const generatedManifest = JSON.parse(await fs.readFile(path.join(stageRoot, 'data', 'live', 'manifest.json'), 'utf8'));
+  assert.deepEqual(Object.keys(generatedManifest.detailDelivery.hours).sort(), forecastTimes);
+  for (const time of forecastTimes) {
+    const descriptor = generatedManifest.detailDelivery.hours[time];
+    const hour = JSON.parse(await fs.readFile(path.join(stageRoot, 'data', 'live', descriptor.path), 'utf8'));
+    assert.deepEqual(hour.delivery.modelBinding, candidateBinding);
+    assert.deepEqual(hour.nationalForecast.modelBinding, candidateBinding);
+    for (const [zoneId, expected] of Object.entries(fixture.full.ravScoreCandidateGRollback.runtime.zones)) {
+      const row = hour.coastalParts.zones[zoneId].hourly;
+      assert.equal(row.length, 1);
+      assert.equal(row[0].time, time);
+      const source = expected.hourly.find(item => item.time === time);
+      for (const mode of ['waders', 'beach']) {
+        assert.deepEqual(row[0][mode].modelBinding, candidateBinding);
+        assert.equal(row[0][mode].score, source[mode].score);
+      }
+    }
+    assert.equal(Object.keys(hour.coastalParts.parts).length, 673);
+    for (const [partId, part] of Object.entries(hour.coastalParts.parts)) {
+      assert.equal(part.id, partId);
+      if (time === reference) {
+        assert.equal(part.current.time, reference);
+      } else {
+        assert.equal(Object.hasOwn(part, 'current'), false);
+        assert.equal(Object.hasOwn(part, 'flowPoints'), false);
+        assert.equal(Object.hasOwn(part, 'weather'), false,
+          'future C PART metadata is not a time-specific weather projection');
+      }
+    }
+  }
   const auditOutput = path.join(stageRoot, '.cache', 'candidate-g-operational-rollback',
     'public-audit.json');
   const auditArguments = [
@@ -483,7 +632,8 @@ try {
   assert.equal(stagedAvailability.fullHistoryModeCount, 420);
   assert.equal(stagedAvailability.historyIncompleteModeCount, 0);
   assert.equal(stagedAvailability.historyIncompleteZoneCount, 0);
-  for (const [label, file, mutate] of [
+  for (const [label, file, mutate,
+    expectedFailure = /canonical|profile|runtime|field set|digest/i] of [
     ['partial Candidate profile', manifestPath, document => {
       delete document.ravScoreProfile.rankingPolicyId;
     }],
@@ -505,16 +655,31 @@ try {
     ['partial Candidate runtime descriptor', manifestPath, document => {
       delete document.ravScoreRuntime.details.fileSha256;
     }],
+    ['incomplete Candidate public delivery hour axis', manifestPath, document => {
+      delete document.detailDelivery.hours[forecastTimes.at(-1)];
+    }, /public delivery|canonical|field set/i],
+    ['changed Candidate public delivery zone identity', manifestPath, document => {
+      const zoneId = Object.keys(document.detailDelivery.zones)[0];
+      document.detailDelivery.zones['unexpected-zone'] = document.detailDelivery.zones[zoneId];
+      delete document.detailDelivery.zones[zoneId];
+    }, /public delivery|canonical|field set/i],
+    ['extra Candidate public delivery index field', manifestPath, document => {
+      document.detailDelivery.unexpectedShadowIndex = true;
+    }, /public delivery|canonical|field set/i],
+    ['extra Candidate public delivery descriptor field', manifestPath, document => {
+      document.detailDelivery.hours[forecastTimes[0]].unexpectedShadowField = true;
+    }, /public delivery|canonical|field set/i],
   ]) {
     const pristine = file === manifestPath ? pristineManifest : pristineStartup;
     const invalid = JSON.parse(pristine);
     mutate(invalid);
-    await fs.writeFile(file, `${JSON.stringify(invalid)}\n`);
+    // Preserve producer formatting so each rejection tests the mutation, not JSON layout.
+    await fs.writeFile(file, `${JSON.stringify(invalid, null, file === manifestPath ? 2 : undefined)}\n`);
     await assert.rejects(() => execFileAsync(process.execPath, auditArguments, {
       cwd: stageRoot,
       windowsHide: true,
       maxBuffer: 10 * 1024 * 1024,
-    }), error => /canonical|profile|runtime|field set|digest/i.test(
+    }), error => expectedFailure.test(
       `${error?.stderr ?? ''}${error?.message ?? ''}`), label);
     await fs.writeFile(file, pristine);
   }
