@@ -16,13 +16,21 @@ import {exactRelativeModuleSpecifiers} from './lib/static-module-closure.mjs';
 const CONFIG='/tmp/ravradar-private-trip-study-wrangler.json';
 const PLAN='/tmp/ravradar-private-trip-study-plan.json';
 const INTENT='/tmp/ravradar-private-trip-study-apply-intent.json';
+const JOBS_INTENT='/tmp/ravradar-private-trip-study-jobs-apply-intent.json';
+const INITIAL_MIGRATION='cloudflare/trip-gateway/migrations/001_trip_observations.sql';
+const INITIAL_MIGRATION_SHAS=['c076a6163f9dfeb869397f354ebe955efa03cd4fb5498d10c6dfc61715ae1368',
+  '24aa703cc987bf21d3a0bcadd406917cc594807a79a3ea460c0bf1092c2c7165']; // exact Git-LF/Windows bytes
 const MIGRATION='cloudflare/trip-gateway/migrations/004_trip_weather_aggregate_releases.sql';
 const MIGRATION_SHA='89ce282ac7ab7ced40162a6fec09032def9256a69e740bd1ecc5d1d344733332';
+const JOBS_MIGRATION='cloudflare/trip-gateway/migrations/005_trip_weather_aggregate_jobs.sql';
+const JOBS_MIGRATION_SHA='4a9a109cf9f7660d1852af246c1b1208c0ff3e4eba1e3acb55848ee03f827216';
 const UUID=/^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/i;
 const VARS=Object.freeze({TRIP_AGGREGATE_ENABLED:'false'});
 const FAILURE='PRIVATE_TRIP_STUDY_DELIVERY_FAILED';
-const STATS_TABLES=['trip_weather_aggregate_policy_anchor','trip_weather_aggregate_releases','trip_weather_aggregate_account_charges'];
-const META_SQL="select type,name,tbl_name,sql from sqlite_master where name like 'trip_weather_aggregate_%' or tbl_name in ('trip_weather_aggregate_policy_anchor','trip_weather_aggregate_releases','trip_weather_aggregate_account_charges') order by type,name";
+const STATS_TABLES=['trip_weather_aggregate_policy_anchor','trip_weather_aggregate_releases','trip_weather_aggregate_account_charges',
+  'trip_weather_aggregate_job_control','trip_weather_aggregate_jobs','trip_weather_aggregate_job_seen','trip_weather_aggregate_job_winners'];
+const META_SQL="select type,name,tbl_name,sql from sqlite_master where name like 'trip_weather_aggregate_%' or tbl_name in ("
+  +STATS_TABLES.map(name=>"'"+name+"'").join(',')+") order by type,name";
 const hash=x=>crypto.createHash('sha256').update(x).digest('hex');
 const fail=stage=>Object.assign(new Error(FAILURE),{stage});
 const canonical=value=>JSON.stringify(value);
@@ -57,19 +65,32 @@ function normalized(rows){
 }
 export function privateTripStudySchemaModel(){
   const bytes=fs.readFileSync(MIGRATION);if(hash(bytes)!==MIGRATION_SHA)throw fail('MIGRATION_SOURCE');
+  const initial=fs.readFileSync(INITIAL_MIGRATION),jobs=fs.readFileSync(JOBS_MIGRATION);
+  if(!INITIAL_MIGRATION_SHAS.includes(hash(initial))||hash(jobs)!==JOBS_MIGRATION_SHA)throw fail('MIGRATION_SOURCE');
   const database=new DatabaseSync(':memory:');
-  try{database.exec(bytes.toString('utf8'));
-    return{migration:bytes.toString('utf8'),metadata:normalized(database.prepare(META_SQL).all().map(row=>({...row}))),
-      anchor:database.prepare('select * from trip_weather_aggregate_policy_anchor').all().map(row=>({...row}))};
+  try{database.exec(initial.toString('utf8'));database.exec(bytes.toString('utf8'));
+    const metadata=normalized(database.prepare(META_SQL).all().map(row=>({...row}))),
+      anchor=database.prepare('select * from trip_weather_aggregate_policy_anchor').all().map(row=>({...row}));
+    database.exec(jobs.toString('utf8'));
+    return{migration:bytes.toString('utf8'),metadata,anchor,jobsMigration:jobs.toString('utf8'),
+      jobsMetadata:normalized(database.prepare(META_SQL).all().map(row=>({...row})))};
   }finally{database.close();}
 }
 export function classifyPrivateTripStudySchema(model,snapshots){
   if(!Array.isArray(snapshots)||snapshots.length!==10)throw fail('SHARD_COUNT');
   const normalizedSets=snapshots.map(normalized);
   if(normalizedSets.slice(1).some(rows=>rows.length))throw fail('NON_CONTROL_STATISTICS_SCHEMA');
-  const current=normalizedSets[0],state=current.length===0?'ABSENT':isDeepStrictEqual(current,model.metadata)?'EXACT':'UNKNOWN';
+  const current=normalizedSets[0],state=current.length===0?'ABSENT':isDeepStrictEqual(current,model.metadata)?'EXACT'
+    :isDeepStrictEqual(current,model.jobsMetadata)?'EXACT_004_005':'UNKNOWN';
   if(state==='UNKNOWN')throw fail('PARTIAL_OR_CHANGED_STATISTICS_SCHEMA');
-  return{state,beforeSchemaSha256:hash(canonical(normalizedSets)),expectedControlSchemaSha256:hash(canonical(model.metadata))};
+  return{state,beforeSchemaSha256:hash(canonical(normalizedSets)),expectedControlSchemaSha256:hash(canonical(model.metadata)),
+    expectedJobsControlSchemaSha256:hash(canonical(model.jobsMetadata))};
+}
+// Fixed migration selection only. Existing allow004 never authorizes005.
+export function privateTripStudyMigrationSteps(state,{allow004=false,allow005=false}={}){
+  if(!['ABSENT','EXACT','EXACT_004_005'].includes(state)||typeof allow004!=='boolean'||typeof allow005!=='boolean')throw fail('AUTHORITY');
+  if(state==='ABSENT'&&!allow004)throw fail('004_APPLY_NOT_ALLOWED');
+  return Object.freeze([...(state==='ABSENT'?['004']:[]),...(state!=='EXACT_004_005'&&allow005?['005']:[])]);
 }
 function readOwnedJson(filename,maximum=65536){
   const stat=fs.lstatSync(filename);if(!stat.isFile()||stat.isSymbolicLink()||stat.size<1||stat.size>maximum)throw fail('LOCAL_FILE');
@@ -90,9 +111,11 @@ export async function deployPrivateTripStudy(){
   // These are existing secrets. Never put service-role/DB-password in Wrangler children.
   const env={...process.env,TRIP_WRANGLER_CONFIG_PATH:CONFIG,TRIP_STORAGE_OWNER_ERASURE_GUARD:'1',
     TRIP_STORAGE_OWNER_EXPORT_UPGRADE:'0',TRIP_STORAGE_UPGRADE_PREFLIGHT:'0'};
+  env.TRIP_PRIVATE_STUDY_JOBS_APPLY_ALLOWED??='false';
   delete env.SUPABASE_SERVICE_ROLE_KEY;delete env.SUPABASE_DB_PASSWORD;delete env.TRIP_PSEUDONYM_SECRET_V1;
   delete env.EXPECTED_TRIP_WORKER_VERSION;
-  let stage='AUTHORITY',deadline=0,interrupted=false,schemaVerified=false,stopKnown=true,workerIntent=false,recoveryAttempted=false;
+  let stage='AUTHORITY',deadline=0,interrupted=false,schemaVerified=false,stopKnown=true,workerIntent=false,recoveryAttempted=false,
+    desiredSchemaState='EXACT',jobsDdlApplied=false;
   const onSignal=()=>{interrupted=true;};
   const run=(command,args,extra={})=>{
     try{return execFileSync(command,args,{env:{...env,...extra},encoding:'utf8',stdio:['ignore','pipe','pipe'],timeout:240000,maxBuffer:2*1024*1024});}
@@ -104,7 +127,8 @@ export async function deployPrivateTripStudy(){
       ||env.GITHUB_RUN_ATTEMPT!=='1'||!/^\d+$/.test(env.GITHUB_RUN_ID||'')||!/^[a-f0-9]{40}$/.test(env.GITHUB_SHA||'')
       ||env.SUPABASE_PROJECT_ID!=='afqhhdrkjfjtpadntdzo'||env.TRIP_STORAGE_OPERATION!=='existing-private-study-upgrade'
       ||env.TRIP_STORAGE_PRIVATE_STUDY!=='1'||!['plan','deliver'].includes(env.TRIP_PRIVATE_STUDY_MODE)
-      ||!['true','false'].includes(env.TRIP_PRIVATE_STUDY_APPLY_ALLOWED))throw fail('AUTHORITY');
+      ||!['true','false'].includes(env.TRIP_PRIVATE_STUDY_APPLY_ALLOWED)
+      ||!['true','false'].includes(env.TRIP_PRIVATE_STUDY_JOBS_APPLY_ALLOWED))throw fail('AUTHORITY');
     if(!/^[a-f0-9]{32}$/.test(env.CLOUDFLARE_ACCOUNT_ID||'')||typeof env.CLOUDFLARE_API_TOKEN!=='string'
       ||env.CLOUDFLARE_API_TOKEN.length<1)throw fail('CONFIGURATION');
     run('git',['fetch','--no-tags','origin','+refs/heads/main:refs/remotes/origin/main']);
@@ -145,7 +169,7 @@ export async function deployPrivateTripStudy(){
   const inspect=async()=>{
     const snapshots=[];for(let i=0;i<10;i++)snapshots.push(await query(i,META_SQL));
     const classification=classifyPrivateTripStudySchema(model,snapshots);
-    if(classification.state==='EXACT'){
+    if(['EXACT','EXACT_004_005'].includes(classification.state)){
       const anchor=await query(0,'select * from trip_weather_aggregate_policy_anchor');
       if(!isDeepStrictEqual(anchor,model.anchor))throw fail('POLICY_ANCHOR_CHANGED');
     }
@@ -159,8 +183,8 @@ export async function deployPrivateTripStudy(){
       ...(enabled?{expectedPlainTextBindings:VARS}:{})});
     return observed.versionId;
   };
-  const verifySchema=async()=>{
-    stage='SCHEMA_READBACK';const result=await inspect();if(result.state!=='EXACT')throw fail(stage);
+  const verifySchema=async(expectedState=desiredSchemaState)=>{
+    stage='SCHEMA_READBACK';const result=await inspect();if(result.state!==expectedState)throw fail(stage);
     const fence=oldFence();if(!isDeepStrictEqual({...fence,workerVersionId:null},{...originalFence,workerVersionId:null}))throw fail('OLD_SCHEMA_CHANGED');
     schemaVerified=true;return result;
   };
@@ -196,20 +220,31 @@ export async function deployPrivateTripStudy(){
     const before=await inspect();const currentVersion=await attest(originalFence.workerVersionId);edge('d1');
     plan={kind:'PRIVATE_TRIP_STUDY_CONTROL0_PLAN',sourceSha:env.GITHUB_SHA,runId:env.GITHUB_RUN_ID,
       workerVersionId:currentVersion,migrationSha256:MIGRATION_SHA,configurationSha256:hash(canonical(config)),
+      jobsMigrationSha256:JOBS_MIGRATION_SHA,
       bindingsSha256:hash(canonical(config.d1_databases)),workerSourceFiles:workerSources(),oldSchema:originalFence,...before};
     fs.writeFileSync(PLAN,JSON.stringify(plan)+'\n',{flag:'wx',mode:0o600});
     if(env.TRIP_PRIVATE_STUDY_MODE==='plan')return{...plan,operation:'READ_ONLY_PLAN',schemaApplied:false,workerUpdated:false};
-    if(before.state==='ABSENT'&&env.TRIP_PRIVATE_STUDY_APPLY_ALLOWED!=='true')throw fail('004_APPLY_NOT_ALLOWED');
+    const migrationSteps=privateTripStudyMigrationSteps(before.state,{
+      allow004:env.TRIP_PRIVATE_STUDY_APPLY_ALLOWED==='true',allow005:env.TRIP_PRIVATE_STUDY_JOBS_APPLY_ALLOWED==='true'});
+    desiredSchemaState=before.state==='EXACT_004_005'||migrationSteps.includes('005')?'EXACT_004_005':'EXACT';
     quiesce();stage='PRE_APPLY_REVALIDATION';lease(600);exactMain();
     if(!isDeepStrictEqual(readOwnedJson(PLAN),plan)||!isDeepStrictEqual(await inspect(),before))throw fail(stage);
     await attest(currentVersion);
-    if(before.state==='ABSENT'){
-      if(env.TRIP_PRIVATE_STUDY_APPLY_ALLOWED!=='true')throw fail('004_APPLY_NOT_ALLOWED');
-      stage='004_APPLY_INTENT';fs.writeFileSync(INTENT,JSON.stringify(plan)+'\n',{flag:'wx',mode:0o600});
-      stage='004_APPLY_OUTCOME_UNKNOWN';
-      // EXACTLY ONE possible DDL invocation, only the existing control binding0.
-      const result=await cf('/d1/database/'+config.d1_databases[0].database_id+'/query',{sql:model.migration});
+    for(const migration of migrationSteps){
+      if(migration==='005'){
+        // The exact001/002/003 fence and004 anchor must still exist immediately
+        // before the only005 write. No shard1..9 or old schema is changed.
+        await verifySchema('EXACT');await attest(currentVersion);exactMain();lease(600);
+      }
+      const jobs=migration==='005';
+      stage=migration+'_APPLY_INTENT';fs.writeFileSync(jobs?JOBS_INTENT:INTENT,JSON.stringify(plan)+'\n',{flag:'wx',mode:0o600});
+      stage=migration+'_APPLY_OUTCOME_UNKNOWN';
+      // Each separately authorized DDL can be sent ONCE, control binding0 only.
+      // Neither an unknown reply nor later Worker recovery can replay this loop.
+      const result=await cf('/d1/database/'+config.d1_databases[0].database_id+'/query',{sql:jobs?model.jobsMigration:model.migration});
       if(!result.length||result.length>64||result.some(row=>row?.success!==true))throw fail(stage);
+      await verifySchema(jobs?'EXACT_004_005':'EXACT');
+      if(jobs)jobsDdlApplied=true;
     }
     await verifySchema();await attest(currentVersion);
     let version;
@@ -229,6 +264,7 @@ export async function deployPrivateTripStudy(){
     }
     return{kind:'PRIVATE_TRIP_STUDY_EXISTING_WORKER_ATTESTED',sourceSha:env.GITHUB_SHA,workerVersionId:version,
       migrationSha256:MIGRATION_SHA,ddlApplied:before.state==='ABSENT',controlShard:0,shards:10,
+      jobsMigrationSha256:JOBS_MIGRATION_SHA,jobsDdlApplied,
       configAttested:true,storageMode:'d1',reportExported:false,publicStatisticsActivated:false};
   }catch(error){throw Object.assign(fail(error?.stage||stage),{recoveryAttempted,terminationConfirmed:stopKnown});}
   finally{process.off('SIGINT',onSignal);process.off('SIGTERM',onSignal);}

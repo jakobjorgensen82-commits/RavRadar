@@ -1,3 +1,7 @@
+## 21. oktober — afgrænset fejllokation i normal historikplan
+
+- Bevarer første faktiske fase, fast fejltype og kvalificeret kildested, når den normale historikplan fejler uden en særskilt kode. Ingen rå fejltekst, værdier eller private identiteter vises; stop, exitstatus og alle eksisterende input-/B/S-/historikkrav bevares. Dette forbedrer årsagsgrundlaget og er ikke i sig selv en rettelse af den ukendte indre fejl eller en offentlig vejrlevering. Præcis kildekontrol og faktisk effekt kræves fortsat.
+
 ## 20. oktober — lokal Candidate-public: korrekt genbrug af pakket input
 
 - 21. oktober: Den præcise kildekontrol påviste reserveauditens gamle krav om fem rankingrækker mod normal Top20. Auditen kræver nu hele normale kanoniske dage, og et tidligt mål bevarer afslag ved afkortning samt ændrede scorer, zoner, datoer og model. Normal ranking, scoreformel og vejrdata ændres ikke. Ny samlet CI og sikker levering er endnu ikke dokumenteret.
@@ -20,6 +24,8 @@
 - Dokumenterer særskilt faktisk almindelig levering 39392596895/1 og 89,919 % samtidig fem-komponentdækning af hele zoneprognosen. Cron er faktisk pauset, tidsplanen uændret; alle fem mål er åbne til 18. november 2026. Ingen ny version, C/I/T eller SQL. Håndbog 89.261 og dens ene installationspayload synkroniseres; historik og SQL udenfor payloaden bevares.
 
 ## 20. oktober — samlet 585-kandidat: bevar ventende arbejde ved månedsskifte
+
+- 21. oktober: Særskilt privat `TARGET_TESTED`-forberedelse lukker statistikcontrollerens manglende 005-leveringsvej. Bevarer gammelt 004-flag og alle gamle SQL-bytes; nyt 005-flag er false som standard. Kun kontrol0 kan opdateres efter eksakte forudsætninger, med uændret policy/lifetime-budget, stop ved ukendt DDL-udfald og aggregate OFF. Fire normale Node22-mål og to JavaScript-syntakskontroller består; YAML-formatkontrollen er ikke gennemført på grund af manglende lokal PyYAML. Samlet kildekontrol, 004/005-installation, faktiske D1-/fejludfald og Worker-/Free-CPU-/hukommelse, anonymitet, origin og statistikrelease mangler. Ingen ny version, migration eller offentlig aktivering.
 
 - Retter den eksplicitte OFF-attestation til den eksisterende kontrol af den faktisk aktive Worker-versions bindinger; lokal false og versionsnummer alene må ikke kvalificere leveringen. Kontrollen skal også bevare de ti D1-bindinger og uændret deployment. Det er endnu ikke en installeret eller offentligt verificeret rettelse.
 - Sammenfør den selvstændigt kildekvalificerede 585-kandidat med den faktisk mergede 584-hukommelsesrettelse; begge historikker og gamle model-/SQL-originaler bevares.
