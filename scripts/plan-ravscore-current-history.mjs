@@ -23,10 +23,10 @@ import { canonicalSavedDmiOriginalCapture } from './lib/saved-dmi-original-captu
 import { createSavedDmiOriginalDependencyDiscovery, assertSavedDmiOriginalDependencyDiscoveryInputs,
   resolveSavedDmiOriginalDependencyCaptures } from './lib/saved-dmi-original-dependencies.mjs';
 import { buildPrivateDmiRecoveryRecord } from './lib/private-dmi-recovery-record.mjs';
-import { buildNewestValidRavScoreRecoverySources } from './lib/ravscore-recovery-source-priority.mjs';
+import { buildNewestValidRavScoreRecoverySources, nativeCurrentOriginalBankForPart } from './lib/ravscore-recovery-source-priority.mjs';
 import { createProtectedDmiNativeCurrentInspector } from './lib/protected-dmi-native-current-proofs.mjs';
 import { verifiedProtectedDmiPartHourly } from './lib/protected-dmi-current-context.mjs';
-import { inspectDmiForecastGridSampling, inspectDmiNativeGridSampling } from './lib/dmi-forecast-store.mjs';
+import { inspectDmiForecastGridSampling, inspectDmiNativeGridSampling, sameNativeIdentity } from './lib/dmi-forecast-store.mjs';
 import { dmiMarineCollectionAllowedForZone } from './lib/dmi-marine-zone-exclusions.mjs';
 import { collectPostH0DmiOriginalDependencies, POST_H0_DMI_ENDPOINT_DIAGNOSTICS } from './lib/post-h0-dmi-original-dependencies.mjs';
 import { readDmiBulkDocument } from './lib/dmi-bulk-storage.mjs';
@@ -179,13 +179,8 @@ export function buildRavScoreCurrentHistoryDemand({
   };
 }
 
-// Retention only: normal immutable-B verification and actual S parity happen
-// in the fixed caller below. This pure projection never authenticates/admit rows.
-export function buildRavScoreRawCurrentRetention({ registry, conditions, checkpoint,
-  productionReferenceAt, boundary, protectedBulk, progressCandidate = null,
-  progressActive = null, historicalBulk = null, protectedCompanionContexts = [],
-  persistedHourlyByPart = new Map(), liveCurrentPilot = null, zones } = {}) {
-  const target = exactHour(productionReferenceAt), captures = new Map();
+function assertCommittedRawRetentionInputs({ registry, conditions, checkpoint, boundary,
+  zones, persistedHourlyByPart, protectedCompanionContexts }) {
   if (!object(boundary) || boundary.datasetId !== conditions?.datasetId
     || boundary.productionReferenceAt !== conditions?.productionReferenceAt
     || boundary.datasetId !== checkpoint?.datasetId || boundary.productionReferenceAt !== checkpoint?.productionReferenceAt
@@ -196,51 +191,73 @@ export function buildRavScoreRawCurrentRetention({ registry, conditions, checkpo
     || !object(checkpoint?.states) || !Array.isArray(zones?.features)
     || !(persistedHourlyByPart instanceof Map) || !Array.isArray(protectedCompanionContexts)
     || protectedCompanionContexts.length > 2) refuse('RETENTION_INPUT_INVALID');
+}
+
+// One private per-PART source projection, shared by ordinary retention and the
+// fixed observational diagnostic. No callback, route override or proof admission.
+function projectCommittedRawRetentionPart({ part, expected, target, conditions, checkpoint, boundary,
+  zones, protectedBulk, progressCandidate, historicalBulk, protectedCompanionContexts,
+  persistedHourlyByPart, liveCurrentPilot }) {
+  const selected = selectRavScoreProductionInitialState({ part,
+    existingPart: conditions.coastalParts.parts[part.partId], targetReferenceAt: target });
+  // Never release an OLD point's dependencies by a local point/cold rewrite.
+  // A changed context must first use a separately reviewed normal transition.
+  if (selected.source !== 'EXISTING_INTEGRATED' || selected.state.time !== boundary.productionReferenceAt
+    || !isDeepStrictEqual(selected.state, checkpoint.states[part.partId])) {
+    refuse('RETENTION_COMMITTED_STATE_REQUIRED');
+  }
+  const startAt = ravScoreOwnerCurrentHistoryStartAt(part, selected.state,
+    ravScoreRecoverySourceStartAt(selected.state, target), { requireNativeGridSampling: true });
+  const feature = { properties: localPartRuntimeProperties(
+    zones.features.find(row => row?.properties?.id === part.zoneId)?.properties ?? {}, part, expected.entityId) };
+  const protectedContexts = [protectedBulk, historicalBulk];
+  const persisted = persistedHourlyByPart.get(part.partId);
+  const records = [];
+  for (const [document, previous] of [[protectedBulk, true], [progressCandidate, false]]) {
+    let record = buildPrivateDmiRecoveryRecord(feature, document, target, { startAt, expectedIdentity: expected,
+      ...(previous ? { persistedHourly: persisted?.hourly ?? [],
+        historicalBulkCache: historicalBulk, protectPreviousDmi: true } : {}) });
+    if (!record) { records.push(null); continue; }
+    const contexts = previous ? protectedContexts : [document];
+    record = mergeProtectedLiveCurrentPilotIntoRecord(record, part, liveCurrentPilot, {
+      currentContexts: contexts, bulkId: expected.entityId, productionReferenceAt: target,
+      includePrivateNativeCadenceReferences: true,
+      primaryCurrentVerified: hour => previous ? Boolean(originalContextForProtectedDmiCurrent(
+        hour, contexts, expected.entityId, part)) : Boolean(verifiedBulkCurrent(document,
+          document?.zones?.[expected.entityId], part.waterPoint, hour?.sources?.current, hour?.time, expected)),
+    });
+    const hourly = previous ? verifiedProtectedDmiPartHourly(record, contexts, expected.entityId, part,
+      { requireNativeGridSampling: false, liveCurrentPilot }) : verifiedIntegratedPartHourly(record,
+        document, expected.entityId, part, { requireNativeGridSampling: false, liveCurrentPilot });
+    records.push({ source: previous ? 'deployed-private-runtime' : 'progressive-private-dmi',
+      // Original B companions support only proof of the protected selection;
+      // they never become mapper inputs, new candidates or source priority.
+      nativeCurrentContexts: previous ? [...contexts, ...protectedCompanionContexts] : contexts,
+      ...(previous && persisted?.nativeCurrentOriginals != null
+        ? { nativeCurrentOriginals: persisted.nativeCurrentOriginals } : {}),
+      record: { ...record, hourly } });
+  }
+  const recoverySources = buildNewestValidRavScoreRecoverySources({ fallbackSource: records[0],
+    preferredSource: records[1], protectedPreviousSource: records[0], productionReferenceAt: target, part });
+  return { selected, recoverySources };
+}
+
+// Retention only: normal immutable-B verification and actual S parity happen
+// in the fixed caller below. This pure projection never authenticates/admit rows.
+export function buildRavScoreRawCurrentRetention({ registry, conditions, checkpoint,
+  productionReferenceAt, boundary, protectedBulk, progressCandidate = null,
+  progressActive = null, historicalBulk = null, protectedCompanionContexts = [],
+  persistedHourlyByPart = new Map(), liveCurrentPilot = null, zones } = {}) {
+  const target = exactHour(productionReferenceAt), captures = new Map();
+  assertCommittedRawRetentionInputs({ registry, conditions, checkpoint, boundary,
+    zones, persistedHourlyByPart, protectedCompanionContexts });
   let partCount = 0;
   for (const [zoneId, entries] of Object.entries(registry.zones)) for (const entry of entries) {
     const part = { ...entry, zoneId }, expected = dmiExpectedIdentityForPart(part);
-    const selected = selectRavScoreProductionInitialState({ part,
-      existingPart: conditions.coastalParts.parts[part.partId], targetReferenceAt: target });
-    // Never release an OLD point's dependencies by a local point/cold rewrite.
-    // A changed context must first use a separately reviewed normal transition.
-    if (selected.source !== 'EXISTING_INTEGRATED' || selected.state.time !== boundary.productionReferenceAt
-      || !isDeepStrictEqual(selected.state, checkpoint.states[part.partId])) {
-      refuse('RETENTION_COMMITTED_STATE_REQUIRED');
-    }
+    const { selected, recoverySources } = projectCommittedRawRetentionPart({
+      part, expected, target, conditions, checkpoint, boundary, zones, protectedBulk, progressCandidate,
+      historicalBulk, protectedCompanionContexts, persistedHourlyByPart, liveCurrentPilot });
     partCount++;
-    const startAt = ravScoreOwnerCurrentHistoryStartAt(part, selected.state,
-      ravScoreRecoverySourceStartAt(selected.state, target), { requireNativeGridSampling: true });
-    const feature = { properties: localPartRuntimeProperties(
-      zones.features.find(row => row?.properties?.id === zoneId)?.properties ?? {}, part, expected.entityId) };
-    const protectedContexts = [protectedBulk, historicalBulk];
-    const persisted = persistedHourlyByPart.get(part.partId);
-    const records = [];
-    for (const [document, previous] of [[protectedBulk, true], [progressCandidate, false]]) {
-      let record = buildPrivateDmiRecoveryRecord(feature, document, target, { startAt, expectedIdentity: expected,
-        ...(previous ? { persistedHourly: persisted?.hourly ?? [],
-          historicalBulkCache: historicalBulk, protectPreviousDmi: true } : {}) });
-      if (!record) { records.push(null); continue; }
-      const contexts = previous ? protectedContexts : [document];
-      record = mergeProtectedLiveCurrentPilotIntoRecord(record, part, liveCurrentPilot, {
-        currentContexts: contexts, bulkId: expected.entityId, productionReferenceAt: target,
-        includePrivateNativeCadenceReferences: true,
-        primaryCurrentVerified: hour => previous ? Boolean(originalContextForProtectedDmiCurrent(
-          hour, contexts, expected.entityId, part)) : Boolean(verifiedBulkCurrent(document,
-            document?.zones?.[expected.entityId], part.waterPoint, hour?.sources?.current, hour?.time, expected)),
-      });
-      const hourly = previous ? verifiedProtectedDmiPartHourly(record, contexts, expected.entityId, part,
-        { requireNativeGridSampling: false, liveCurrentPilot }) : verifiedIntegratedPartHourly(record,
-          document, expected.entityId, part, { requireNativeGridSampling: false, liveCurrentPilot });
-      records.push({ source: previous ? 'deployed-private-runtime' : 'progressive-private-dmi',
-        // Original B companions support only proof of the protected selection;
-        // they never become mapper inputs, new candidates or source priority.
-        nativeCurrentContexts: previous ? [...contexts, ...protectedCompanionContexts] : contexts,
-        ...(previous && persisted?.nativeCurrentOriginals != null
-          ? { nativeCurrentOriginals: persisted.nativeCurrentOriginals } : {}),
-        record: { ...record, hourly } });
-    }
-    const recoverySources = buildNewestValidRavScoreRecoverySources({ fallbackSource: records[0],
-      preferredSource: records[1], protectedPreviousSource: records[0], productionReferenceAt: target, part });
     const dependencies = collectPostH0DmiOriginalDependencies({ part, initialSelection: selected,
       targetReferenceAt: target, recoverySources, liveCurrentPilot });
     for (const capture of dependencies.captures) captures.set(canonical(capture), capture);
@@ -279,6 +296,192 @@ export function buildRavScoreRawCurrentRetention({ registry, conditions, checkpo
   if (partCount !== registry.partCount || Object.keys(checkpoint.states).length !== partCount) refuse('RETENTION_INVENTORY');
   return { schemaVersion: 1, kind: 'COMMITTED_POST_H0_UNKNOWN_RAW_RETENTION', boundary: { ...boundary },
     captures: [...captures].sort(([a], [b]) => a < b ? -1 : a > b ? 1 : 0).map(([, value]) => value) };
+}
+
+// Fixed observational follow-up to the ordinary 39666991481/1 failure.
+// This entry cannot change the ordinary source projection or return evidence,
+// captures, selected rows, state, identities or an admission capability.
+export function diagnoseCurrent586SelectedEndpoints(options = {}) {
+  const { registry, conditions, checkpoint, boundary, zones, protectedBulk,
+    progressCandidate = null, progressActive = null, historicalBulk = null,
+    protectedCompanionContexts = [], persistedHourlyByPart = new Map(), liveCurrentPilot = null } = options;
+  const target = exactHour(options.productionReferenceAt);
+  if (target !== '2026-10-21T20:00:00.000Z') refuse('FIXED_ENDPOINT_DIAGNOSTIC_SCOPE');
+  assertCommittedRawRetentionInputs({ registry, conditions, checkpoint, boundary,
+    zones, persistedHourlyByPart, protectedCompanionContexts });
+  if (!Number.isSafeInteger(registry.partCount) || registry.partCount < 1 || registry.partCount > 673) {
+    refuse('FIXED_ENDPOINT_DIAGNOSTIC_BOUND');
+  }
+  const roleNames = ['deployed-private-runtime', 'progressive-private-dmi'];
+  const scopeCounts = () => ({ selectionsProved: 0, selectionsRejected: 0,
+    nativeStepsRequested: 0, exactNativeStepsFound: 0, endpointProbeRejected: 0 });
+  const roleCounts = () => ({ partsPresent: 0, originalWrapperAbsent: 0,
+    originalBankExplicitNull: 0, originalBankPresent: 0, directForwardRows: 0,
+    unknownSamplingRows: 0, coherentSamplingRows: 0, invalidSamplingRows: 0,
+    firstNativeEndpointMissingParts: 0,
+    own: scopeCounts(), bank: scopeCounts(), companions: scopeCounts(), all: scopeCounts(),
+    contextMismatch: { timeNotObserved: 0, onlyDerivedNativeAtTime: 0,
+      nativeValidationRejected: 0, identityMismatch: 0, samplingPresenceMismatch: 0,
+      stepFieldsMismatch: 0, exactNativeObserved: 0 } });
+  const result = { schemaVersion: 1, kind: 'CURRENT586_SELECTED_ENDPOINT_DIAGNOSTIC',
+    fixedScope: 'CURRENT586_ENDPOINTS_39666991481_1',
+    geometryScope: 'AUTHENTICATED_ORIGINAL_B_PARTS_ONLY',
+    selectionScope: 'NORMAL_PRIORITY_PROJECTED_CANDIDATES_NOT_FINAL_REPLAY_UNION',
+    scope: 'FIRST_NORMAL_COLLECTOR_FAILURE_ONLY', visitedParts: 0, normalCollectorCompletedParts: 0, normalCollectorEndpointMissingParts: 0,
+    normalCollectorOtherRefusedParts: 0, firstMissingRoleNotLocatedParts: 0,
+    roles: Object.fromEntries(roleNames.map(role => [role, roleCounts()])),
+    sourcePriorityChanged: false, nativeAdmissionPerformed: false, rawVectorsIncluded: false,
+    identityIncluded: false, actualSParityProved: false, providerRequestsPerformed: false,
+    firstFailureCategory: 'NO_NORMAL_COLLECTOR_REFUSAL', firstFailureCode: null };
+  const begun = Date.now();
+  for (const [zoneId, entries] of Object.entries(registry.zones)) for (const entry of entries) {
+    if (Date.now() - begun > 600_000 || result.visitedParts >= 673) refuse('FIXED_ENDPOINT_DIAGNOSTIC_BOUND');
+    const part = { ...entry, zoneId }, expected = dmiExpectedIdentityForPart(part);
+    const { selected, recoverySources } = projectCommittedRawRetentionPart({
+      part, expected, target, conditions, checkpoint, boundary, zones, protectedBulk,
+      progressCandidate, historicalBulk, protectedCompanionContexts, persistedHourlyByPart, liveCurrentPilot });
+    result.visitedParts++;
+    let nativeEndpointMissing = false;
+    try {
+      // Exact unchanged normal collector; no evidence/admission is returned.
+      collectPostH0DmiOriginalDependencies({ part, initialSelection: selected,
+        targetReferenceAt: target, recoverySources, liveCurrentPilot });
+      result.normalCollectorCompletedParts++;
+      continue; // Observe only the first refusal, not a national proof matrix.
+    } catch (error) {
+      nativeEndpointMissing = error?.originalDependencyCode ===
+        'POST_H0_DMI_ORIGINAL_SELECTED_ENDPOINT_PROOF_NATIVE_ENDPOINT_MISSING';
+      result[nativeEndpointMissing ? 'normalCollectorEndpointMissingParts' : 'normalCollectorOtherRefusedParts']++;
+      result.firstFailureCategory = nativeEndpointMissing ? 'NATIVE_ENDPOINT_MISSING' : 'OTHER_NORMAL_COLLECTOR_REFUSAL';
+      const known = [...POST_H0_DMI_ENDPOINT_DIAGNOSTICS,
+        'INPUT_INVALID', 'INPUT_BOUND', 'WINDOW_INVALID', 'INITIAL_SELECTION_INVALID', 'INITIAL_STATE_INVALID',
+        'SAMPLING_MISMATCH', 'HOLD_SUPPORT_REQUIRED', 'SOURCE_DOMAIN_EXCLUDED', 'SELECTED_CURRENT_INVALID',
+        'REGIONAL_SUPPORT_REQUIRED', 'CAPTURE_INCOMPLETE', 'PLAN_BOUND'];
+      result.firstFailureCode = known.map(code => 'POST_H0_DMI_ORIGINAL_' + code).includes(error?.originalDependencyCode)
+        ? error.originalDependencyCode : 'OTHER_NORMAL_COLLECTOR_REFUSAL';
+      if (!nativeEndpointMissing) return result;
+    }
+    const allBanks = [];
+    for (const candidate of recoverySources) {
+      const bank = nativeCurrentOriginalBankForPart(candidate, part);
+      if (bank === null) continue;
+      // Validate each actual wrapper/bank independently; never merge evidence.
+      createProtectedDmiNativeCurrentInspector({ contexts: [], previousBank: bank });
+      if (!allBanks.some(value => isDeepStrictEqual(value, bank))) allBanks.push(bank);
+    }
+    if (allBanks.length > 1) {
+      result.allBankProbeStatus = 'REFUSED_MULTIPLE_DISTINCT_BANKS';
+      return result;
+    }
+    const allBank = allBanks[0] ?? null;
+    result.allBankProbeStatus = allBank === null ? 'NO_PROVIDED_BANK' : 'ONE_EXISTING_PROVIDED_BANK';
+    let firstMissingLocated = false;
+    for (const source of recoverySources) {
+      const count = result.roles[source.source];
+      if (!count) refuse('FIXED_ENDPOINT_DIAGNOSTIC_ROLE');
+      count.partsPresent++;
+      const bank = nativeCurrentOriginalBankForPart(source, part);
+      count[source.nativeCurrentOriginals == null ? 'originalWrapperAbsent'
+        : bank === null ? 'originalBankExplicitNull' : 'originalBankPresent']++;
+      const contexts = source.nativeCurrentContexts ?? [];
+      const allContexts = [...new Set([...contexts, protectedBulk, historicalBulk,
+        progressCandidate, progressActive, ...protectedCompanionContexts].filter(Boolean))];
+      const probes = {
+        own: createProtectedDmiNativeCurrentInspector({ contexts, previousBank: bank }),
+        bank: createProtectedDmiNativeCurrentInspector({ contexts: [], previousBank: bank }),
+        companions: createProtectedDmiNativeCurrentInspector({ contexts: protectedCompanionContexts }),
+        all: createProtectedDmiNativeCurrentInspector({ contexts: allContexts, previousBank: allBank }),
+      };
+      const candidatesAt = new Map();
+      const add = (row, document, zone) => {
+        if (!row || !Number.isFinite(Date.parse(row.time))) return;
+        const key = Date.parse(row.time), values = candidatesAt.get(key) ?? [];
+        if (values.length >= 10_000) refuse('FIXED_ENDPOINT_DIAGNOSTIC_BOUND');
+        // Match the normal inspector's contextFrom: copy only existing wire
+        // identity fields, never desired central values or the whole hourly zone.
+        const wireIdentity = object(zone) ? Object.fromEntries(Object.keys(expected)
+          .filter(key => Object.hasOwn(zone, key)).map(key => [key, zone[key]])) : null;
+        values.push({ row, document, zone, wireIdentity }); candidatesAt.set(key, values);
+      };
+      for (const document of allContexts) {
+        const zone = document?.zones?.[expected.entityId];
+        const rows = zone?.hourly;
+        if (!rows) continue;
+        if (!object(rows) || Object.keys(rows).length > 10_000) refuse('FIXED_ENDPOINT_DIAGNOSTIC_BOUND');
+        for (const row of Object.values(rows)) add(row, document, zone);
+      }
+      if (allBank) {
+        const contextById = new Map(allBank.contexts.map(value => [value.id, value.value]));
+        for (const value of allBank.nativeRows) {
+          const native = value.value, context = contextById.get(native.contextId);
+          add({ time: native.time, 'current-u': native.uMps, 'current-v': native.vMps,
+            sources: { current: native.source } }, context?.header, context?.zone);
+        }
+      }
+      for (const row of source.record.hourly) {
+        const at = Date.parse(row.time);
+        if (at <= Date.parse(selected.state.time) || at >= Date.parse(target)) continue;
+        const provenance = row.currentProvenance?.status === 'verified'
+          ? row.currentProvenance : row.sources?.current;
+        if (provenance?.provider !== 'dmi' || provenance.vectorSemanticsVersion === 4
+          || !['currentUMps', 'currentVMps', 'currentSpeedMps', 'currentDirectionDeg']
+            .every(key => Number.isFinite(row[key]))) continue;
+        const direct = { part, row: { time: row.time, currentUMps: row.currentUMps,
+          currentVMps: row.currentVMps, sources: { current: row.sources?.current } } };
+        if (probes.own.inspect(direct).code !== 'DMI_NATIVE_PROOF_NATIVE_ENDPOINT_MISSING') continue;
+        count.directForwardRows++;
+        const sampling = inspectDmiForecastGridSampling(provenance, 'current', row.time, expected).status;
+        count[sampling === 'unknown' ? 'unknownSamplingRows'
+          : sampling === 'coherent' ? 'coherentSamplingRows' : 'invalidSamplingRows']++;
+        const original = row.sources?.current;
+        const selection = { part, row: { time: row.time, currentUMps: row.currentUMps,
+          currentVMps: row.currentVMps, sources: { current: original } } };
+        let ownMissing = false;
+        for (const [scope, inspector] of Object.entries(probes)) {
+          const proof = inspector.inspect(selection);
+          const endpoints = inspector.inspectEndpointOriginals(selection);
+          const observed = count[scope];
+          observed[proof.ok ? 'selectionsProved' : 'selectionsRejected']++;
+          observed.nativeStepsRequested += Array.isArray(original?.nativeSteps) ? original.nativeSteps.length : 0;
+          if (endpoints.ok) observed.exactNativeStepsFound += endpoints.endpoints.filter(Boolean).length;
+          else observed.endpointProbeRejected++;
+          if (scope === 'own' && proof.code === 'DMI_NATIVE_PROOF_NATIVE_ENDPOINT_MISSING') ownMissing = true;
+        }
+        if (nativeEndpointMissing && ownMissing && !firstMissingLocated) {
+          count.firstNativeEndpointMissingParts++; firstMissingLocated = true;
+        }
+        // Diagnostic stages are only observations of provided contexts/bank.
+        // Pure/native validator requirements are NOT relaxed to make a match.
+        for (const step of original?.nativeSteps ?? []) {
+          const candidates = candidatesAt.get(Date.parse(step.nativeValidTime)) ?? [];
+          const pure = candidates.filter(({ row: native }) =>
+            !['nativeSteps', 'nativeValidTimes', 'temporalResolution', 'forecastAgeHours']
+              .some(key => Object.hasOwn(native.sources?.current ?? {}, key)));
+          const eligible = pure.filter(({ row: native, document, zone }) =>
+            Number.isFinite(native['current-u']) && Number.isFinite(native['current-v'])
+            && verifiedDmiNativeComponentSource(native.sources?.current, native.time, 'current', expected)
+            && verifiedBulkCurrent(document, zone, part.waterPoint, native.sources.current, native.time, expected));
+          const identity = eligible.filter(({ row: native, wireIdentity }) =>
+            dmiOriginalWireIdentityMatchesCentralIdentity(wireIdentity, expected)
+            && sameNativeIdentity(native.sources.current, original, 'current'));
+          const presence = identity.filter(({ row: native }) =>
+            Object.hasOwn(step, 'nativeGridSampling') === Object.hasOwn(native.sources.current, 'nativeGridSampling'));
+          const exact = presence.filter(({ row: native }) => Object.entries(step).every(([key, value]) =>
+            key === 'nativeValidTime' ? Date.parse(native.sources.current[key]) === Date.parse(value)
+              : isDeepStrictEqual(native.sources.current[key], value)));
+          const category = !candidates.length ? 'timeNotObserved' : !pure.length ? 'onlyDerivedNativeAtTime'
+            : !eligible.length ? 'nativeValidationRejected' : !identity.length ? 'identityMismatch'
+            : !presence.length ? 'samplingPresenceMismatch' : !exact.length ? 'stepFieldsMismatch' : 'exactNativeObserved';
+          count.contextMismatch[category]++;
+        }
+        return result; // Exact first missing row/role only; no later source scan.
+      }
+    }
+    if (nativeEndpointMissing && !firstMissingLocated) result.firstMissingRoleNotLocatedParts++;
+    return result;
+  }
+  if (result.visitedParts !== registry.partCount || Object.keys(checkpoint.states).length !== result.visitedParts) refuse('RETENTION_INVENTORY');
+  return result;
 }
 
 async function readCommittedRawCurrentRetention(registry, checkpointFile, productionReferenceAt) {

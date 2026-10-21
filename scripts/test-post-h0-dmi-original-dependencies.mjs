@@ -1,4 +1,4 @@
-import { inverseAlternativeCCaller, inverseCurrentNativeOriginalConsumerTestInput, CURRENT_NATIVE_ORIGINAL_CONSUMER_TEST_REVIEW } from './lib/alternative-c-caller-test-input.mjs';
+import { inverseAlternativeCCaller, inverseCurrentNativeOriginalConsumerTestInput, CURRENT_NATIVE_ORIGINAL_CONSUMER_TEST_REVIEW, inverseCurrent586EndpointDiagnosticTestInput } from './lib/alternative-c-caller-test-input.mjs';
 import assert from 'node:assert/strict';
 import crypto from 'node:crypto';
 import test from 'node:test';
@@ -582,7 +582,8 @@ test('native-original planner oracle preserves complete earlier source and actua
   assert.deepEqual(CURRENT_NATIVE_ORIGINAL_CONSUMER_TEST_REVIEW.rows.map(row => row.path),
     ['scripts/plan-ravscore-current-history.mjs', 'scripts/lib/post-h0-dmi-original-dependencies.mjs']);
   for (const row of CURRENT_NATIVE_ORIGINAL_CONSUMER_TEST_REVIEW.rows) {
-    const current = readFileSync(new URL('../' + row.path, import.meta.url), 'utf8').replace(/\r\n/g, '\n');
+    const current = inverseCurrent586EndpointDiagnosticTestInput(
+      readFileSync(new URL('../' + row.path, import.meta.url), 'utf8').replace(/\r\n/g, '\n'), row.path);
     assert.equal(sha(current), row.after.sha256, 'The actual current source must be qualified before historical projection');
     assert.equal(Buffer.byteLength(current), row.after.bytes);
     const original = inverseCurrentNativeOriginalConsumerTestInput(current, row.path);

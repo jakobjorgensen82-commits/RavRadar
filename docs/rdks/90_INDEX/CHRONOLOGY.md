@@ -1,4 +1,8 @@
-## 21. oktober 2026 — 4.0.586 lokalt udstedt; originalkontinuitet og historisk sammenligning
+## 21. oktober 2026 — 4.0.586 faktisk installeret; almindelig efterfølger fejler før leverandører
+
+Den præcise 586-kildekontrol med native PostgreSQL og kode-only-levering er faktisk gennemført, inklusive SQL-readback, B før S, tre serverfunktioner, Pages og offentlig kontrol. Det bevarer samme gemte vejr. Den almindelige efterfølger stopper fortsat på manglende native-endepunktsbevis før leverandører, nyt beregningscheckpoint og deploy. Loggen beviser afvist genbrug af krypteret fremdrift, ikke fysisk tab af originaler. Cron er faktisk pauset; en særskilt CURRENT-only-audit forberedes uden produktionsskrivning eller ændret model. Alle fem hovedmål til 18. november er åbne; se CURRENT_TRUTH og privat checkpoint.
+
+## 21. oktober 2026 — bevaret lokal udstedelseshistorik for 4.0.586
 
 Den sidste verificerede almindelige offentlige levering kl. 05.39 dansk tid passerede allerede originalbevarelseskontrollen. Den senere kørsel stoppede før leverandører på manglende valgt native-endepunktsbevis blandt de leverede kontekster. En lokal reproduktion viser, hvorfor bevarede timer skal have deres originale bevis med videre, når nyere arbejdsfiler erstatter ældre native-slots.
 

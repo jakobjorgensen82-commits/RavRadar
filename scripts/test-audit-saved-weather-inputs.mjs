@@ -4,11 +4,12 @@ import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import test from 'node:test';
+import vm from 'node:vm';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { auditSavedWeatherInputs, createReadOnlySavedWeatherClients,
   measureSavedCurrentContexts, measureSavedNativeProofAvailability, withoutSavedAuditSecrets,
   indexSavedRawManifest, measureSavedRawCaptureMatches, inspectSavedRawFileInventory,
-  savedAuditProgressAuthenticationCode } from './audit-saved-weather-inputs.mjs';
+  savedAuditProgressAuthenticationCode, CURRENT586_ENDPOINT_AUDIT } from './audit-saved-weather-inputs.mjs';
 import { createPrivateProductionRuntimeBundle } from './private-production-runtime-bundle.mjs';
 import { buildProtectedPrivateRuntimeArchive, PROTECTED_PRIVATE_RUNTIME_POLICY as policy } from './protected-private-production-runtime.mjs';
 import { PRIVATE_RUNTIME_BASE_FILES, PRIVATE_WEATHER_COMPONENT_FILES } from './lib/private-weather-component-inventory.mjs';
@@ -19,6 +20,9 @@ import { packDmiPartContinuity } from './lib/dmi-part-continuity.mjs';
 import { DMI_FORECAST_HOURS, buildDmiForecastHourly, inspectDmiNativeGridSampling } from './lib/dmi-forecast-store.mjs';
 import { dmiExpectedIdentityForPart } from './lib/ravscore-production-adapters.mjs';
 import { ravScoreModelBinding } from '../js/core/ravscore-model-contract.js';
+import { diagnoseCurrent586SelectedEndpoints, buildRavScoreRawCurrentRetention } from './plan-ravscore-current-history.mjs';
+import { buildIntegratedPartScoreSeries } from './lib/ravscore-integrated-runtime.mjs';
+import { inverseCurrent586EndpointDiagnosticTestInput, CURRENT586_ENDPOINT_DIAGNOSTIC_TEST_REVIEW } from './lib/alternative-c-caller-test-input.mjs';
 import { buildCurrentSupplyMemory } from '../js/core/ravscore-current-supply-memory.js';
 import { spawnSync } from 'node:child_process';
 import { summarizeSealedCurrentPart, summarizeSealedCurrentNationalParts, validateSealedCurrentSourceTarget,
@@ -1337,4 +1341,109 @@ test('main audit pack JSON lifetime / ' + location + ' / ' + fault, { timeout: 3
       await original.rm(row.folder, { recursive: true, force: true });
     }
   }
+});
+
+test('CURRENT586 fixed B-only endpoint diagnostic observes role evidence without admission or scope widening', async () => {
+  const part = { partId: 'coastal-part-sensitive', zoneId: 'DK-B01-01',
+    name: 'Synthetic diagnostic PART', waterPoint: [8, 55], landPoint: [8.001, 55], onshoreDirectionDeg: 90 };
+  const reference = '2026-10-21T14:00:00.000Z';
+  const f = nativeFixture(part, reference, true), complete = f.donor(f.native);
+  const partial = f.donor([f.native[1]]);
+  const state = buildIntegratedPartScoreSeries({ part, zone: { id: part.zoneId, onshoreDirectionDeg: 90 },
+    hourly: [{ time: reference }] }).ravScoreState.continuationState;
+  const conditions = { datasetId: 'rr-synthetic-diagnostic', productionReferenceAt: reference,
+    coastalParts: { parts: { [part.partId]: { ravScoreModel: { currentState: state } } } } };
+  const checkpoint = { datasetId: conditions.datasetId, productionReferenceAt: reference,
+    generationSha256: 'a'.repeat(64), states: { [part.partId]: state } };
+  const options = { registry: { partCount: 1, zones: { [part.zoneId]: [part] } }, conditions, checkpoint,
+    productionReferenceAt: CURRENT586_ENDPOINT_AUDIT.targetReferenceAt, protectedBulk: partial,
+    progressActive: complete, persistedHourlyByPart: new Map([[part.partId, {
+      point: part.waterPoint, hourly: f.hourly }]]), zones: { features: [{ properties: { id: part.zoneId } }] },
+    boundary: { datasetId: conditions.datasetId, productionReferenceAt: reference,
+      bundleContentSha256: 'b'.repeat(64), conditionsSha256: 'c'.repeat(64),
+      checkpointGenerationSha256: checkpoint.generationSha256 } };
+  const missing = error => error.originalDependencyCode ===
+    'POST_H0_DMI_ORIGINAL_SELECTED_ENDPOINT_PROOF_NATIVE_ENDPOINT_MISSING';
+  const before = JSON.stringify(options), beforePersisted = JSON.stringify([...options.persistedHourlyByPart]);
+  assert.throws(() => buildRavScoreRawCurrentRetention(options), missing);
+  const observed = diagnoseCurrent586SelectedEndpoints(options);
+  const role = observed.roles['deployed-private-runtime'];
+  assert.equal(observed.normalCollectorEndpointMissingParts, 1);
+  assert.equal(role.firstNativeEndpointMissingParts, 1);
+  assert.equal(role.originalWrapperAbsent, 1);
+  assert(role.unknownSamplingRows > 0);
+  assert(role.own.selectionsRejected > 0);
+  assert(role.all.selectionsProved > role.own.selectionsProved);
+  assert(role.all.exactNativeStepsFound > role.own.exactNativeStepsFound);
+  assert.equal(observed.nativeAdmissionPerformed, false);
+  assert.throws(() => buildRavScoreRawCurrentRetention(options), missing, 'diagnostic cannot repair the normal refusal');
+  const companion = diagnoseCurrent586SelectedEndpoints({ ...options, protectedCompanionContexts: [complete] });
+  assert.equal(companion.normalCollectorEndpointMissingParts, 0);
+  assert.equal(companion.firstFailureCategory, 'NO_NORMAL_COLLECTOR_REFUSAL');
+  assert.equal(companion.scope, 'FIRST_NORMAL_COLLECTOR_FAILURE_ONLY');
+  for (const [category, mutate] of [
+    ['onlyDerivedNativeAtTime', source => { source.forecastAgeHours = 1; }],
+    ['identityMismatch', source => { source.collection = 'dkss_nsbs'; }],
+    ['samplingPresenceMismatch', source => { source.nativeGridSampling = {
+      contractId: 'dmi-native-grid-sampling-v1', elementIndex: 71,
+      gridIndexIdentitySha256: 'd'.repeat(64), coordinateInterpretation: 'dmi-dkss-grib1-header-endpoints-v1',
+      gridDefinitionSha256: source.gridDefinitionSha256, gridPoint: [...source.gridPoint],
+      fieldSet: [...source.fieldSet], optionalFieldSet: [...source.optionalFieldSet] }; }],
+    ['stepFieldsMismatch', source => { source.itemId += '-different'; }],
+  ]) {
+    const changed = structuredClone(complete);
+    mutate(changed.zones[f.identity.entityId].hourly[f.native[0].time].sources.current);
+    const result = diagnoseCurrent586SelectedEndpoints({ ...options, progressActive: changed });
+    assert(result.roles['deployed-private-runtime'].contextMismatch[category] > 0,
+      category + ': ' + JSON.stringify(result.roles['deployed-private-runtime'].contextMismatch));
+    assert.throws(() => buildRavScoreRawCurrentRetention({ ...options, progressActive: changed }), missing);
+    safeReport(result, 'secret-error-canary');
+  }
+  assert.equal(JSON.stringify(options), before);
+  assert.equal(JSON.stringify([...options.persistedHourlyByPart]), beforePersisted);
+  safeReport(observed, 'secret-error-canary');
+  assert.throws(() => diagnoseCurrent586SelectedEndpoints({ ...options,
+    productionReferenceAt: '2026-10-21T21:00:00.000Z' }), /FIXED_ENDPOINT_DIAGNOSTIC_SCOPE/);
+  let reads = 0;
+  for (const extra of [{ progressFile: '/private/cipher' }, { includeRawManifest: true },
+    { includeCurrentWindowDiagnostic: true }, { progressSource: '39066350748-1' },
+    { progressCacheKey: 'weather-private-progress-encrypted-v2-Linux-main-39666991481-1' }]) {
+    const result = await auditSavedWeatherInputs({ mode: 'audit', includeCurrent586Endpoints: true,
+      progressSource: CURRENT586_ENDPOINT_AUDIT.progressSource,
+      fetchImpl: async () => { reads++; throw Error('secret-error-canary'); }, ...extra });
+    assert.equal(result.status, 'AUDIT_FAILED_CLOSED'); assert.equal(result.code, 'MODE_INVALID');
+  }
+  assert.equal(reads, 0, 'colliding old/cipher/RAW scopes refuse before transport');
+  // Execute only the actual normal finally-control seam with inert filesystem
+  // functions. The installer's unknown internal close must not trigger removal
+  // merely because the outer baselinePackInvocation stayed null.
+  const auditSource = await fs.readFile(new URL('./audit-saved-weather-inputs.mjs', import.meta.url), 'utf8');
+  const cleanup = auditSource.match(/    if \(work && !includeCurrent586Endpoints && \(baselinePackInvocation === null[\s\S]+?await fs\.rm\(work, \{ recursive: true, force: true \}\)\.catch\(\(\) => \{\}\);/)?.[0];
+  assert(cleanup, 'qualify the actual new-mode finalizer, not a copied predicate');
+  for (const includeCurrent586Endpoints of [true, false]) {
+    let removals = 0;
+    const privateRoot = path.join(os.tmpdir(), 'synthetic-unclosed-audit');
+    const firstError = new Error('synthetic-first-error');
+    const scope = { work: path.join(privateRoot, 'saved-input-audit-owned'), privateRoot, path,
+      includeCurrent586Endpoints, baselinePackInvocation: null,
+      privateWeatherPackJsonReadsClosed: () => false, firstError,
+      fs: { realpath: async () => privateRoot, rm: async () => { removals++; } } };
+    await assert.rejects(vm.runInNewContext('(async () => { try { throw firstError; } finally {' + cleanup + '} })()', scope),
+      error => error === firstError, 'unknown close/cleanup cannot replace the original failure');
+    assert.equal(removals, includeCurrent586Endpoints ? 0 : 1,
+      'new-mode uncertain work is retained; old mode behavior is unchanged');
+  }
+  const row = CURRENT586_ENDPOINT_DIAGNOSTIC_TEST_REVIEW;
+  const whole = (await fs.readFile(new URL('./plan-ravscore-current-history.mjs', import.meta.url), 'utf8')).replace(/\r\n/g, '\n');
+  const old = inverseCurrent586EndpointDiagnosticTestInput(whole, row.path);
+  assert.equal(Buffer.byteLength(old), row.before.bytes);
+  assert.equal(crypto.createHash('sha256').update(old).digest('hex'), row.before.sha256);
+  assert.equal(inverseCurrent586EndpointDiagnosticTestInput(old, row.path), old);
+  for (const edit of row.edits) {
+    assert.equal(whole.slice(edit.offset, edit.offset + edit.after.length), edit.after);
+    const changed = whole.slice(0, edit.offset) + (edit.after[0] === 'X' ? 'Y' : 'X') + whole.slice(edit.offset + 1);
+    assert.throws(() => inverseCurrent586EndpointDiagnosticTestInput(changed, row.path), /ALTERNATIVE_C_TEST_INPUT_CHANGED/);
+  }
+  assert.throws(() => inverseCurrent586EndpointDiagnosticTestInput(whole + '// unknown drift\n', row.path),
+    /ALTERNATIVE_C_TEST_INPUT_CHANGED/);
 });

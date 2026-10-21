@@ -1,4 +1,8 @@
-## 20. oktober — læs lokal 585 og faktisk 584-drift hver for sig
+## 21. oktober — faktisk 586-installation er ikke en ny almindelig vejrgeneration
+
+Læs den nye front i CODEX_START_HERE, ROOTs ene P0-linje i CURRENT_TRUTH, IMPLEMENTATION_STATUS og det private checkpoint før ældre afventninger. 586 er faktisk installeret og offentligt verificeret med samme gemte vejr; den almindelige efterfølger fejlede før leverandører på manglende native-endepunktsbevis. Krypteret fremdrift blev ikke genbrugt, og intet nyt beregningscheckpoint blev lavet. Cron er faktisk pauset. Næste afgrænsede CURRENT-only-audit må ikke genmærke gamle scopes, svække kontrollen eller ændre produktionsdata. Alle fem hovedmål er fortsat åbne til 18. november 2026.
+
+## 20. oktober — bevaret historik: lokal 585 og faktisk 584-drift
 
 Aktuel kildekandidat er 4.0.585; dens nye C/I/T, 100000-SQL og normale forbrugere er genereret/kontrolleret lokalt, ikke installeret eller offentligt bevist. Læs CODEX_START_HERE, CURRENT_TRUTH, IMPLEMENTATION_STATUS og håndbog 89.259 før de daterede noter nedenfor. PR675 er faktisk kildeleveret på main `954ca00a`; den næste almindelige vejrhentning er ikke endnu verificeret færdig. Sidste fuldt verificerede almindelige offentlige generation er 4.0.584 den 19. oktober omkring kl. 23.02 dansk tid. Cron er OFF, alle fem mål er åbne, og fristen 18. oktober er overskredet uden forlængelse. Dette ophæver ingen original-, privacy-, writer- eller leveringsgrænse.
 

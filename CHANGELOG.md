@@ -1,4 +1,11 @@
-## Lokal 4.0.586 — native-originalkontinuitet udstedt, ikke installeret eller leveret
+## Ikke udgivet — afgrænset diagnose af aktuelt originalgrundlag
+
+- 4.0.586 er faktisk kildekvalificeret, installeret og offentligt verificeret med samme gemte vejr. Den almindelige efterfølger fejler stadig før leverandører på manglende native-endepunktsbevis; intet nyt beregningscheckpoint eller deploy blev lavet.
+- Forbereder en CURRENT-only-udvidelse af eksisterende saved-input-audit uden krypteret fremdrift, fordi den faktiske læser afviste genbrug med BASELINE_MISMATCH. Kun faste roller og originaltilgængelighed må rapporteres; ingen rå værdier, ny vejrhentning, produktionsadmission, SQL eller ændrede kilder/scorer. Det er ikke en færdig diagnose eller årsagsrettelse.
+- Bevarer version 4.0.586, C96/I95/T12, tidligere udstedte originaler og alle normale stop. Cron er faktisk pauset. Ny kildekontrol, faktisk afgrænset måling, begrundet rettelse og ny almindelig offentlig levering er fortsat nødvendige.
+- De tre eksisterende prøver af normal native-brug, helkildeorakel og autentificeret B-kalder består efter den delte kildeprojektion. Den nye snævre diagnoseprøve består efter rettelse af sin egen identitetssammenligning: kun originalens eksisterende identitetsfelter bruges, ikke hele timeregisteret. Normal originaladmission er uændret. Modelbundle og alle syv bindinger er kontrolleret uændrede; dette er endnu ikke en produktionsdiagnose eller vejrrettelse.
+
+## Bevaret lokal udstedelseshistorik: 4.0.586-native-originalkontinuitet
 
 - Bevarer den normalt byggede originalbank pr. PART sammen med præcis de samme 121 DMI-timer i versioneret schema2. Gammel schema1 læses uændret; manglende lagret selektionsbevis ommærkes ikke til fysisk originalfravær eller fabrikeret bevis.
 - Bevarer nativeGridSampling-feltets præcise egen tilstedeværelse ved endepunktsmatch, som den normale rekonstruktion kræver. Den gamle original og den kvalificerede genfortolkning af samme original må ikke fejlagtigt blandes og afvises som numerisk konflikt.

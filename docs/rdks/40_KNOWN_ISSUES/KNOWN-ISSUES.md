@@ -1,4 +1,10 @@
-## 21. oktober — ÅBEN levering: originale native-endepunkter skal følge bevarede timer
+## 21. oktober — ÅBEN årsag efter faktisk 586-installation
+
+Den kildekvalificerede 586-kode-only-levering er faktisk installeret og offentligt verificeret. Den almindelige efterfølger stopper stadig før leverandører på samme manglende native-endepunktsbevis. Den gemte hele log viser desuden BASELINE_MISMATCH og ingen genbrugt krypteret fremdrift. Der er ikke et nyt beregningscheckpoint at genoptage. Det er ikke bevis for ugyldige DMI-værdier eller fysisk fravær af samtlige originale data.
+
+Næste afgrænsede trin er en CURRENT-only-udvidelse af den eksisterende saved-input-audit, med samme GET/HEAD-læsegrænse, ægte uændret B, normal originalkontrol og ingen produktionsadmission. Den skal måle, hvilken valgt rolle og hvilket originalgrundlag der faktisk fejler. Gamle fastlåste scopes eller krypterede pakker må ikke ommærkes som aktuelle. Diagnosekoden og dens snævre målprøve er lokalt gennemgået; tre eksisterende normale native-/helkilde-/autentificerede B-kalderprøver består. Præcis samlet kildekontrol, faktisk diagnose, årsagsrettelse og ny almindelig offentlig levering er fortsat åbne. Cron er faktisk pauset. Detaljer står i det private checkpoint.
+
+## 21. oktober — bevaret forberedelseshistorik: native-endepunkter følger bevarede timer
 
 Faktisk 39608743697/1 stoppede før leverandører med POST_H0_DMI_ORIGINAL_SELECTED_ENDPOINT_PROOF_NATIVE_ENDPOINT_MISSING. Rapporten siger kun, at det valgte endepunkt ikke kan bevises blandt de leverede kontekster. Den sidste verificerede offentlige 39520623069/1 kl. 05.39 dansk tid passerede allerede retentionguard; det er ikke generelt bevist, at denne guard altid stopper, eller at DMI/revisionen/strømpilens regning er årsagen.
 
