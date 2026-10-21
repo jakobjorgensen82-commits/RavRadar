@@ -548,6 +548,8 @@ En særskilt, dokumenteret Storage-formatkant rettes samtidig: immutable upload 
 
 **Håndbogsversion:** 4.0.585
 
+Hvis genbrug af gemte data stopper, skal den første fejlfase og et kontrolleret kildested bevares uden private fejltekster eller værdier. Tidligere beståede kontroller frikender ikke automatisk en senere mål-time eller andre input. En bedre fejlrapport ændrer ikke beregningen og er ikke bevis for, at årsagen er rettet. Gemte originaler og sidste gyldige offentlige data bevares, mens fejlen undersøges.
+
 ## Aktuel lokal kildebinding — 20. oktober 2026, 4.0.585 ikke installeret
 
 Den nye lokale kandidat til RavScore 4.0.585 er låst med `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b` og `modelBundleSha256=31bbb9a98f4df93804a9d4bcdff50fe5e9b1c880e04492d2c596079488a6bfa2` over 93 kanonisk normaliserede transitive implementeringsfiler og de deklarerede forbrugere. Inaktiv Candidate G har `modelContractSha256=c73dac1b4376005e792580791d84eb79c9370e905a2a7fd0bdee857506a20cf8` og `modelBundleSha256=2f5f28044ae88fccbcad4a9d21943b986aabcdd8be1ae607d5e79d0a8947925f` over 94 transitive filer. Fortsættelseskontrakten er `a0a5fa40385afb221dcb66e61b815453c11ee8c91f3e2d6581be0670cadc9299` (`a0a5fa40…`) over 12 normaliserede kildefiler. De fysiske scorekontrakter og formler er uændrede. Autoriteten er den normale `version.json.releaseContract.modelBindings` og den nye append-only 100000-migration; lokal generering og målprøver er ikke ny PostgreSQL, installation eller offentlig levering. Den almindelige offentlige 584-levering fra 19. oktober er verificeret særskilt. Se 89.259.

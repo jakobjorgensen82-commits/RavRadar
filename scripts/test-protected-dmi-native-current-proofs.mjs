@@ -15,6 +15,70 @@ import * as productionPipeline from './lib/ravscore-production-part-pipeline.mjs
 import { planRavScoreCurrentHistoryForPart, buildRavScoreCurrentHistoryDemand }
   from './plan-ravscore-current-history.mjs';
 import * as currentHistoryPlanner from './plan-ravscore-current-history.mjs';
+
+test('planner first failure: actual assertion gets a stable qualified frame, not values',async()=>{
+  let original;try{assert.equal('PRIVATE_ACTUAL','PRIVATE_EXPECTED','PRIVATE_MESSAGE');}catch(error){original=error;}
+  const observed=await currentHistoryPlanner.describeRavScoreCurrentHistoryFailure(original,'COMMITTED_RAW_RETENTION');
+  assert.equal(observed.phase,'COMMITTED_RAW_RETENTION');
+  assert.equal(observed.code,'ERR_ASSERTION');
+  assert.equal(observed.exceptionType,'ASSERTION_ERROR');assert.equal(observed.operator,'strictEqual');
+  assert.equal(observed.frame.module,'scripts/test-protected-dmi-native-current-proofs.mjs');
+  assert.match(observed.frame.sha256,/^[a-f0-9]{64}$/);assert(observed.frame.line>0);
+  assert.doesNotMatch(JSON.stringify(observed),/PRIVATE|message|actual|expected|stack/);
+  assert.equal(original.message.includes('PRIVATE_ACTUAL'),true);
+});
+test('planner first failure: only actual fixed code/operator/type values leave the CLI',async()=>{
+  const known=new Error('PRIVATE');known.code='RAVSCORE_CURRENT_HISTORY_DEMAND_RETENTION_B_S_DIFFER';
+  assert.equal((await currentHistoryPlanner.describeRavScoreCurrentHistoryFailure(known)).code,known.code);
+  const unknown=new Error('PRIVATE');unknown.code='RAVSCORE_CURRENT_HISTORY_DEMAND_PRIVATE_SENTINEL';unknown.operator='PRIVATE_OPERATOR';
+  const observed=await currentHistoryPlanner.describeRavScoreCurrentHistoryFailure(unknown);
+  assert.equal(observed.code,'RAVSCORE_CURRENT_HISTORY_DEMAND_REFUSED');assert.equal(observed.operator,null);
+  assert.doesNotMatch(JSON.stringify(observed),/PRIVATE/);
+});
+test('planner first failure: proxies and getters are not invoked and external frames stay unknown',async()=>{
+  let calls=0;const getter=new Error('PRIVATE');
+  for(const key of ['code','stack','message'])Object.defineProperty(getter,key,{configurable:true,get(){calls++;throw Error('PRIVATE_GETTER');}});
+  const proxy=new Proxy({}, {get(){calls++;throw Error('PRIVATE_PROXY');},getOwnPropertyDescriptor(){calls++;throw Error('PRIVATE_PROXY');}});
+  const proxyPrototype=new Error('PRIVATE');Object.setPrototypeOf(proxyPrototype,proxy);
+  for(const error of [proxy,proxyPrototype,getter,null,undefined,false,0]){
+    const observed=await currentHistoryPlanner.describeRavScoreCurrentHistoryFailure(error);
+    assert.equal(observed.frame,null);assert.doesNotMatch(JSON.stringify(observed),/PRIVATE/);
+  }
+  assert.equal(calls,0);
+  const external=new Error('PRIVATE');external.stack='PRIVATE\n    at external (file:///outside/private.mjs:1:1)';
+  assert.equal((await currentHistoryPlanner.describeRavScoreCurrentHistoryFailure(external)).frame,null);
+  const formatterBefore=Object.getOwnPropertyDescriptor(Error,'prepareStackTrace');
+  try{
+    const nativeStackError=new Error('PRIVATE');
+    Object.defineProperty(Error,'prepareStackTrace',{configurable:true,get(){calls++;throw Error('PRIVATE_FORMATTER');}});
+    assert.equal((await currentHistoryPlanner.describeRavScoreCurrentHistoryFailure(nativeStackError)).frame,null);
+    assert.equal(calls,0);
+  }finally{
+    if(formatterBefore)Object.defineProperty(Error,'prepareStackTrace',formatterBefore);
+    else delete Error.prepareStackTrace;
+  }
+  for(const key of ['name','message']){
+    const nonPrimitive=new Error('PRIVATE');
+    const descriptor=Object.getOwnPropertyDescriptor(nonPrimitive,'stack');
+    Object.defineProperty(nonPrimitive,key,{configurable:true,value:{toString(){calls++;throw Error('PRIVATE_CONVERSION');}}});
+    // Materialize Node22's ordinary data stack before installing bad inputs;
+    // Node24 keeps its real VM getter for this same negative case.
+    if(Object.hasOwn(descriptor,'value'))Object.defineProperty(nonPrimitive,'stack',{...descriptor,value:undefined});
+    assert.equal((await currentHistoryPlanner.describeRavScoreCurrentHistoryFailure(nonPrimitive)).frame,null);
+    assert.equal(calls,0);
+  }
+});
+test('planner first failure: normal CLI handler preserves the failing stop and original error',async()=>{
+  const beforeExit=process.exitCode,beforeError=console.error,lines=[],original=new TypeError('PRIVATE');
+  try{
+    console.error=value=>lines.push(value);
+    await currentHistoryPlanner.reportRavScoreCurrentHistoryFailure(original);
+    assert.equal(process.exitCode,1);assert.equal(lines.length,1);
+    const observed=JSON.parse(lines[0]);assert.equal(observed.kind,'RAVSCORE_CURRENT_HISTORY_FIRST_FAILURE');
+    assert.equal(observed.exceptionType,'TYPE_ERROR');assert.equal(observed.privatePayloadIncluded,false);
+    assert.doesNotMatch(lines[0],/PRIVATE/);assert.equal(original.message,'PRIVATE');
+  }finally{console.error=beforeError;process.exitCode=beforeExit;}
+});
 import { buildIntegratedPartScoreSeries } from './lib/ravscore-integrated-runtime.mjs';
 import { buildCandidateGRollbackPartScoreSeries } from './lib/ravscore-candidate-g-rollback-runtime.mjs';
 import { buildRavScorePermittedCurrentHistory } from './lib/ravscore-recovery-replay.mjs';

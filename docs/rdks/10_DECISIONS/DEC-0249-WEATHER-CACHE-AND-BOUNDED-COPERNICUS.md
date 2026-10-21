@@ -1,5 +1,15 @@
 # DEC-0249 – fortsæt fra rigtig vejrpakke og gem kortere Copernicus-kald
 
+## Tillæg 2026-10-21 — bevar første fejl i normal historikplan
+
+En faktisk almindelig kørsel stoppede i historikplanlægningen før nye leverandørkald. Den gamle CLI viste kun en generisk kategori, når en normal underkontrol kastede en fejl uden kode. Sidste vellykkede og fejlede kilde ændrer ikke denne planlægger. Tidligere grøn B/S-verifikation bruger blandt andet B's egen reference og er ikke tilstrækkeligt bevis for planens nye mål-time, continuity eller native-retention.
+
+Fejlrapporten skal derfor bevare den faktisk nåede fase, en fast fejltype og højst ét fysisk kvalificeret kildested med filhash og linje. Rå fejlbesked, stack, værdier, koordinater og private kildeidentiteter må ikke følge rapporten. Ukendt eller ukvalificeret sted forbliver ukendt. Rapportering må ikke erstatte oprindelig fejl, ændre exitstatus, oprette genbrugsautoritet eller lempe normal input-, model-, B/S- og historikvalidering. Kun indbyggede runtimefunktioner bruges; produktet må ikke importere en databaseprøves diagnosebibliotek.
+
+En rent diagnostisk ændring af denne CLI ligger uden for de faktiske C/I-inventarer, men kræver stadig præcis kildekontrol og relevante regressioner. Historiske helkildeorakler bevares gennem en præcis additiv testinverse, ikke repin eller reducerede assertions. Ingen ny version, C/I/T, SQL, nulstilling, ændret kildeprioritet eller leverandørbudget følger af rapporteringen.
+
+Eksisterende saved-input-audits må ikke ommærkes som en reproduktion, hvis de kalder andre collectors eller kun accepterer gamle, fastlåste forløb. Et checkpoints oprindelige reference må ikke ændres for at ramme en ny time. Det eksisterende korte normale protected-current-forløb kan kontrollere planlæggeren på en ny time med strenge B/S-kontroller, men bruger en anden S-restoregren end den almindelige reconcile. Det er ikke identisk heljobbevis og ikke providerfrit. Bedre diagnostik er først et grundlag for konkret årsagsrettelse; efterfølgende almindelig levering og faktisk ny offentlig effekt er stadig nødvendige.
+
 ## Tillæg 2026-10-20 — genbrug kun den rene tidsfortolkning
 
 Ejerens nyeste prioritet er fuldt fokus på den almindelige vejrhentning. Yderligere måleforbedringer, brugerdata-/assistentlevering og den isolerede SOURCE-forberedelse sættes til side. Den fungerende normale cron bevares; der startes ikke en ekstra vejrhentning alene til afprøvning.

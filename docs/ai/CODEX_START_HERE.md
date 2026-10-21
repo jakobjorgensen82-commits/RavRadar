@@ -1,3 +1,7 @@
+## 21. oktober — præcis fejllokation i normal historikplanlægning
+
+Den almindelige vejrhentning stoppede før leverandørhentning i den normale historikplanlægger. Dens generiske CLI-fejl skjuler årsagen, når en underliggende kontrol kaster en fejl uden kode. En afgrænset rapport må kun vise faktisk nået fase, fast fejltype og ét kvalificeret kildested; rå fejltekst, værdier, koordinater og private identiteter må ikke følge med. Den oprindelige fejl, exitstatus og alle input-/historik-/B/S-kontroller bevares. Bedre diagnostik er ikke en årsagsrettelse eller et nyt offentligt vejrsæt. Se DEC-0249, den ene aktuelle P0-linje og det private checkpoint.
+
 ## 20. oktober — fungerende almindelig vejrrute bevares; reservekopi rettes lokalt
 
 21. oktober: Præcis CI fandt efter manifestrettelsen reserveauditens gamle fem-rækkers rankingkrav. Den normale producent leverer Top20. Sammenligningen kræver nu hele kanoniske dage fra samme normale producent med bevarede dato-/modelkrav; den indfører ikke en anden rankingpolitik. Hurtig normal målprøve består inklusive indholdsmutationer og afkortningsafslag. Hele ny exact-head-CI og sikker levering mangler; grønne tidligere deltrin eller målprøven er ikke et samlet PASS.
