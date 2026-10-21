@@ -1,11 +1,12 @@
 import assert from 'node:assert/strict';
-import { verifyWorkflow as verifyCurrentNationalWorkflow, CURRENT_JOB as CURRENT_SOURCE_JOB, AFTER_JOB as REVIEWED90_SOURCE_JOB } from './national584-source-evidence.mjs';
+import { verifyWorkflow as verifyCurrentNationalWorkflow, inverseSourceNode24Workflow, CURRENT_JOB as CURRENT_SOURCE_JOB, AFTER_JOB as REVIEWED90_SOURCE_JOB } from './national584-source-evidence.mjs';
 import { assertEarlyCompletedRuntimeStageOrder, inverseCompletedRuntimeWorkflow } from './lib/completed-private-runtime-workflow-review.mjs';
 import fs from 'node:fs';
 import vm from 'node:vm';
 import { exactPagesAttemptStep } from './github-pages-attempt-evidence.mjs';
 import './test-weather-source-gate.mjs';
 import './test-weather-state-epoch-workflow.mjs';
+import './test-source-normal-workflow.mjs';
 // The normal source gate owns the optional completed-result transport tests.
 // These use synthetic data only, never provider or production credentials.
 import './test-ordinary-completed-stage-artifact.mjs';
@@ -99,7 +100,7 @@ productionWorkflowNames.add('run-current-weather-once.yml');
 const workflowFiles = fs.readdirSync(workflowDirectory)
   .filter((name) => /\.ya?ml$/i.test(name))
   .sort();
-const expectedWorkflowFiles = ['apply-weather-model-binding-only.yml', 'audit-native-current-grid.yml', 'audit-saved-weather-inputs.yml', 'audit-sealed-current-source.yml', 'build-ravscore-historical-wave-pilot.yml', 'deploy-code-only-repair.yml', 'deploy-trip-storage.yml', 'extract-private-geodanmark-layer.yml', 'migrate-private-runtime-to-r2.yml', 'monitor-trip-storage.yml', 'notify-weather-failure.yml', 'preserve-copernicus-current-shadow.yml', 'recover-live-ravscore-central.yml', 'recover-saved-dmi-originals.yml', 'recover-sealed-weather-36396834072.yml', 'retry-national-admin-roundtrip.yml', 'reusable-operational-reentry.yml', 'reusable-pages-deploy.yml', 'reusable-weather-build.yml', 'run-current-weather-once.yml', 'update-and-deploy.yml', 'validate-approved-public-coast.yml', 'validate-copernicus-current-pilot.yml', 'validate-local-part-system-candidate.yml', 'validate-pull-request.yml', 'validate-six-zone-recovery.yml', 'watch-missed-weather-schedule.yml'];
+const expectedWorkflowFiles = ['apply-weather-model-binding-only.yml', 'audit-native-current-grid.yml', 'audit-saved-weather-inputs.yml', 'audit-sealed-current-source.yml', 'build-ravscore-historical-wave-pilot.yml', 'deploy-code-only-repair.yml', 'deploy-trip-storage.yml', 'extract-private-geodanmark-layer.yml', 'migrate-private-runtime-to-r2.yml', 'monitor-trip-storage.yml', 'notify-weather-failure.yml', 'preserve-copernicus-current-shadow.yml', 'recover-live-ravscore-central.yml', 'recover-saved-dmi-originals.yml', 'recover-sealed-weather-36396834072.yml', 'retry-national-admin-roundtrip.yml', 'reusable-operational-reentry.yml', 'reusable-pages-deploy.yml', 'reusable-weather-build.yml', 'run-current-weather-once.yml', 'update-and-deploy.yml', 'validate-approved-public-coast.yml', 'validate-copernicus-current-pilot.yml', 'validate-current-source-native-profile.yml', 'validate-local-part-system-candidate.yml', 'validate-pull-request.yml', 'validate-six-zone-recovery.yml', 'watch-missed-weather-schedule.yml'];
 if (JSON.stringify(workflowFiles) !== JSON.stringify(expectedWorkflowFiles)) {
   throw new Error(`Uventet workflowinventar: ${workflowFiles.join(', ') || '(tomt)'}. Kun produktionsworkflowet og de registrerede private, ikke-deployerende workflows må være aktive.`);
 }
@@ -336,7 +337,7 @@ if (/\.nc(?:\s|$)/m.test(historicalWavePilot)) {
 }
 const actualPullRequestValidation = fs.readFileSync(`${workflowDirectory}/validate-pull-request.yml`, 'utf8').replace(/\r\n/g, '\n');
 verifyCurrentNationalWorkflow(actualPullRequestValidation);
-const pullRequestValidation = actualPullRequestValidation.replace(CURRENT_SOURCE_JOB, REVIEWED90_SOURCE_JOB);
+const pullRequestValidation = inverseSourceNode24Workflow(actualPullRequestValidation).replace(CURRENT_SOURCE_JOB, REVIEWED90_SOURCE_JOB);
 for (const marker of [
   'pull_request:',
   'permissions:\n  contents: read',

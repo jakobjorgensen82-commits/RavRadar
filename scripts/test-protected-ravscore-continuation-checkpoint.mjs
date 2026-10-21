@@ -3,6 +3,9 @@ import crypto from 'node:crypto';
 import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
+import {requireSourceProducerOutput} from './lib/source-producer-successor-source.mjs';
+// Refuse the new command before model/T calculation, files or native processes.
+if(process.argv.includes('--source-producer')||process.argv.includes('--current-source-native-profile'))requireSourceProducerOutput();
 import { buildIntegratedRavScoreStateSeries } from '../js/core/ravscore-integrated-state-pipeline.js';
 import { buildCandidateGDerivedStateSeries } from '../js/core/ravscore-candidate-g-state-pipeline.js';
 import {
@@ -374,7 +377,8 @@ const rpcFailureIncludes = pattern => error => {
 // These assertions are not PostgreSQL/SQL/installation proof.
 if (!process.argv.includes('--native-postgres') && !process.argv.includes('--native-statistics-revision')
     && !process.argv.includes('--native-sampling-identity') && !process.argv.includes('--current-memory-warmup')
-    && !process.argv.includes('--account-statistics-assistant')) {
+    && !process.argv.includes('--account-statistics-assistant') && !process.argv.includes('--source-producer')
+    && !process.argv.includes('--current-source-native-profile')) {
   const { nativePostgresFailureDiagnostic: diagnose,
     nativePostgresFailureAnnotation: annotate } =
       await import('./lib/checkpoint-cas-native-postgres.mjs');
@@ -525,16 +529,20 @@ if (process.argv.includes('--native-identity-source-only')) {
   process.exit(0);
 }
 
-const accountStatisticsAssistantNative = process.argv.includes('--account-statistics-assistant');
+const currentSourceNativeProfile = process.argv.includes('--current-source-native-profile');
+const sourceProducerNative = process.argv.includes('--source-producer') || currentSourceNativeProfile;
+const accountStatisticsAssistantNative = process.argv.includes('--account-statistics-assistant') || sourceProducerNative;
 // Native PostgreSQL is a separate mandatory Linux source leaf, never a
 // MemoryCentral/Windows representation proof. Reuse these exact 673 builders
 // and the normal checkpoint saver; do not run the simulated RPC tests here.
 if (process.argv.includes('--native-postgres') || process.argv.includes('--native-statistics-revision')
     || process.argv.includes('--native-sampling-identity') || process.argv.includes('--current-memory-warmup')
     || process.argv.includes('--established-native-current-origin') || (process.argv.includes('--last-mile-enclosure') || accountStatisticsAssistantNative)) {
+  let classifyNativeFailure=()=> 'NATIVE_POSTGRES_UNKNOWN_FAILURE';
   try {
-    const { runNativeCheckpointSqlComparison } =
+    const { runNativeCheckpointSqlComparison, nativePostgresExceptionCode } =
       await import('./lib/checkpoint-cas-native-postgres.mjs');
+    classifyNativeFailure=nativePostgresExceptionCode;
     const report = await runNativeCheckpointSqlComparison({
       repositoryRoot: path.resolve('.'), sourceDocumentAt, atHour,
       saveCheckpoint: saveRavScoreContinuationCheckpoint,
@@ -547,12 +555,12 @@ if (process.argv.includes('--native-postgres') || process.argv.includes('--nativ
       includeEstablishedNativeCurrentOrigin: process.argv.includes('--established-native-current-origin') || (process.argv.includes('--last-mile-enclosure') || accountStatisticsAssistantNative),
       includeLastMileEnclosure: (process.argv.includes('--last-mile-enclosure') || accountStatisticsAssistantNative),
       includeAccountStatisticsAssistant: accountStatisticsAssistantNative,
+      includeSourceProducer: sourceProducerNative,
+      includeCurrentSourceNativeProfile: currentSourceNativeProfile,
     });
     console.log(JSON.stringify(report));
   } catch (error) {
-    const category = /^NATIVE_POSTGRES_[A-Z0-9_]+$/.test(error?.message ?? '')
-      ? error.message : error?.code === 'ERR_ASSERTION'
-        ? 'NATIVE_POSTGRES_ASSERTION_FAILED' : 'NATIVE_POSTGRES_UNKNOWN_FAILURE';
+    const category = classifyNativeFailure(error);
     console.error(JSON.stringify({ kind: 'NATIVE_POSTGRES_CHECKPOINT_CAS_COMPARISON',
       sqlProof: false, category }));
     process.exitCode = 1;

@@ -5,6 +5,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { execFileSync } from 'node:child_process';
 import test from 'node:test';
+import { inverseRelease585WorkflowUserAgents } from './lib/completed-private-runtime-workflow-review.mjs';
 import { assertOrdinaryCompletedStageSource, assertOrdinaryCompletedStageCommittedSource, ordinaryStageCalculationWorkflow }
   from './ordinary-completed-stage-source.mjs';
 
@@ -31,11 +32,16 @@ test('committed source reuse compares all calculation objects and only exact sto
     await fs.writeFile(destination, bytes);
   };
   const commit = message => { git('add', '-A'); git('commit', '-m', message); return git('rev-parse', 'HEAD'); };
-  const actual = Buffer.from((await fs.readFile(new URL('../.github/workflows/reusable-weather-build.yml', import.meta.url), 'utf8'))
-    .replaceAll('\r\n', '\n'));
+  // Historical storage-only calculation compatibility remains tested on its
+  // exact genuine584 bytes. SOURCE is not a runtime compatibility exception.
+  const currentBuild = (await fs.readFile(new URL('../.github/workflows/reusable-weather-build.yml', import.meta.url), 'utf8')).replaceAll('\r\n', '\n');
+  const actual = Buffer.from(inverseRelease585WorkflowUserAgents(currentBuild, 'build'));
   const previous = ordinaryStageCalculationWorkflow(actual);
-  const actualOnce = Buffer.from((await fs.readFile(new URL('../.github/workflows/run-current-weather-once.yml', import.meta.url), 'utf8'))
-    .replaceAll('\r\n', '\n'));
+  const currentOnce = (await fs.readFile(new URL('../.github/workflows/run-current-weather-once.yml', import.meta.url), 'utf8')).replaceAll('\r\n', '\n');
+  const actualOnce = Buffer.from(inverseRelease585WorkflowUserAgents(currentOnce, 'once'));
+  assert.deepEqual(ordinaryStageCalculationWorkflow(Buffer.from(currentBuild)), Buffer.from(currentBuild),
+    'Production calculation compatibility must not invert or waive the new SOURCE producer');
+  assert.deepEqual(ordinaryStageCalculationWorkflow(Buffer.from(currentOnce)), Buffer.from(currentOnce));
   const previousOnce = ordinaryStageCalculationWorkflow(actualOnce);
   assert.equal(sha(previous), 'f0254a092c0baa188370c207b218e15ad7c9e616138d15234e6f323f101178c6');
   assert.equal(sha(previousOnce), '445964fbbc697ec86848744a9413897d3418b011c4218fb10336734b5e5055a2');
@@ -93,6 +99,11 @@ test('committed source reuse compares all calculation objects and only exact sto
     ['scripts/new-unreviewed-input.mjs', '// SYNTHETIC unreviewed input\n'],
     ['.github/workflows/reusable-weather-build.yml', Buffer.concat([actual, Buffer.from('\n# SYNTHETIC unreviewed workflow edit\n')])],
     ['.github/workflows/run-current-weather-once.yml', Buffer.concat([actualOnce, Buffer.from('\n# SYNTHETIC unreviewed caller edit\n')])],
+    // Real committed SOURCE afterimages must not acquire calculation reuse
+    // through the test-only historical projection used above. Each successor
+    // is committed separately and the owned fixture restores consumerHead.
+    ['.github/workflows/reusable-weather-build.yml', Buffer.from(currentBuild)],
+    ['.github/workflows/run-current-weather-once.yml', Buffer.from(currentOnce)],
   ];
   let refused = 0;
   for (const [file, bytes] of changes) {

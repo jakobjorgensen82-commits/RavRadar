@@ -546,9 +546,21 @@ En særskilt, dokumenteret Storage-formatkant rettes samtidig: immutable upload 
 
 # RavRadar Håndbog
 
-**Håndbogsversion:** 4.0.585
+**Håndbogsversion:** 4.0.586
 
-## Aktuel lokal kildebinding — 20. oktober 2026, 4.0.585 ikke installeret
+## Aktuel lokal SOURCE-kildebinding efter importrettelse — 21. oktober 2026, 4.0.586 ikke installeret
+
+En fejlet kontrol skal bevare det første kontrollerede kildested og den aktuelle fase, før fejlteksten udvælges. Kun faste fejlkoder og kildeidentitet må vises; private fejltekster og værdier holdes private. Afkortet output er ikke et fuldstændigt logbevis. En bedre fejlrapport ændrer ikke beregningen og er ikke bevis for, at den bagvedliggende fejl er rettet eller revisionen leveret.
+
+Hvis et underprogram stopper, skal kontrollen skelne mellem dets faktiske afslutning, en afbrydelse og en tidsgrænse. Det kræver også oplysning om, hvorvidt hele det private output blev bevaret. Et afbrydelsessignal beviser ikke i sig selv årsagen. Kun faste, kontrollerede fejloplysninger må vises; ukendt årsag skal fortsat stå som ukendt. Dette ændrer hverken vejrtal, beregning, tidsgrænser eller godkendelseskrav.
+
+Den korrigerede lokale SOURCE-kandidat har `modelBundleSha256=74285752bdec26f6f08aff5a8773a32f57c33d42c868954d8ff4ff990f77b585` over 141 kanonisk normaliserede transitive implementeringsfiler og de deklarerede forbrugere. Inaktiv Candidate G har `modelBundleSha256=25bb6cdac14d2e3f51b353e6cfd710246a4f664b26b396e4b979a99ca921e3da` over 145 transitive filer. De fysiske `modelContractSha256` er uændrede. Fortsættelseskontrakten er `42a7d8ab0b6fdb2e9eb038a91f9a7b8030d8af98c055d6bef6a88c35c3a762ea` (`42a7d8ab…`) over 12 normaliserede kildefiler. Autoriteten er `version.json.releaseContract.modelBindings` og den nye append-only 030000-migration fra genuine 585. Alle 65 tidligere migrationsfiler bevares; aldrig installeret 020000 vælges ikke som mellemtrin. Normal genberegning af modeller, SQL og syv forbrugere består fixedpoint. Dette er ikke PostgreSQL, installation eller offentlig levering. SOURCE er inaktiv, og den almindelige vejrhentning bevares.
+
+## Historisk lokal SOURCE-kildebinding — 21. oktober 2026, 020000 aldrig installeret
+
+Den lokale SOURCE-kandidat til RavScore 4.0.586 er låst med `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b` og `modelBundleSha256=995000bd1f77172e36f3d457e48689c5e0ba89e37a49468b874ae0e479123e6c` over 141 kanonisk normaliserede transitive implementeringsfiler og de deklarerede forbrugere. Inaktiv Candidate G har `modelContractSha256=c73dac1b4376005e792580791d84eb79c9370e905a2a7fd0bdee857506a20cf8` og `modelBundleSha256=b5dbe2de4f0120912746dfba43fb7db00b41776dc98a594d03e1677a65e7e5c5` over 145 transitive filer. Fortsættelseskontrakten er `36ac8344f986ca3754d51908f76117ad7d0a678bd81081f3e216db2d9db86390`. Autoriteten er `version.json.releaseContract.modelBindings` og append-only 020000-migrationen. Normal genberegning af begge modeller, SQL og alle syv forbrugere består efter synkronisering. Fysiske scorekontrakter og formler er uændrede. Dette er lokal kildeafledning, ikke native PostgreSQL, installation eller offentlig levering af 586. SOURCE er inaktiv; tidligere daterede bindinger nedenfor er bevaret som historik.
+
+## Historisk lokal kildebinding — 20. oktober 2026, 4.0.585 før installation
 
 Den nye lokale kandidat til RavScore 4.0.585 er låst med `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b` og `modelBundleSha256=31bbb9a98f4df93804a9d4bcdff50fe5e9b1c880e04492d2c596079488a6bfa2` over 93 kanonisk normaliserede transitive implementeringsfiler og de deklarerede forbrugere. Inaktiv Candidate G har `modelContractSha256=c73dac1b4376005e792580791d84eb79c9370e905a2a7fd0bdee857506a20cf8` og `modelBundleSha256=2f5f28044ae88fccbcad4a9d21943b986aabcdd8be1ae607d5e79d0a8947925f` over 94 transitive filer. Fortsættelseskontrakten er `a0a5fa40385afb221dcb66e61b815453c11ee8c91f3e2d6581be0670cadc9299` (`a0a5fa40…`) over 12 normaliserede kildefiler. De fysiske scorekontrakter og formler er uændrede. Autoriteten er den normale `version.json.releaseContract.modelBindings` og den nye append-only 100000-migration; lokal generering og målprøver er ikke ny PostgreSQL, installation eller offentlig levering. Den almindelige offentlige 584-levering fra 19. oktober er verificeret særskilt. Se 89.259.
 
@@ -9961,3 +9973,16 @@ selve JSON-indholdet. 4.0.466 holder de to hashes adskilt. Den offentlige
 rækkefølgekontrol accepterer kun den forseglede forgænger eller målpakke;
 en ældre eller ukendt pakke afvises fortsat. Ingen vejr- eller scoretal
 ændres af denne rettelse.
+## 89.262 Beregningskode og genererede kontroloplysninger
+
+Kort fortalt: En kontrolsum skal beskrive programmet, ikke være en del af sit eget beregningsinput.
+
+Beregningskoden og dens normale data- og ejerkontroller skal fortsat kontrolleres samlet. De kontroloplysninger, som afledes af koden, holdes som et særskilt, strengt afgrænset dataoutput. Det giver ikke adgang til at udelade vilkårlig kode, ændre vejrtal eller springe en sikkerhedskontrol over.
+
+En ændret programafhængighed skal afprøves som den pakke, der faktisk skal bruges. En historisk kontrol må bevares med de præcise gamle kilder, men må ikke erstatte kontrollen af den nye pakke eller få en gammel prøve til at ligne ny drift. En lokal importprøve er ikke bevis for gemning, upload eller fysisk processtop på produktionssystemet.
+
+Når kode flyttes mellem moduler, skal hele det flyttede modul fortsat kunne indlæses med sine rigtige afhængigheder. Ubrugte rester må fjernes, men det gør ikke en ændring af beregningskoden til en ren testrettelse. De tilhørende kontroloplysninger skal afledes på ny. En tidligere, aldrig installeret databasekandidat bevares som historik; kun det valgte nye mål må indgå i installationskæden.
+
+Programversion, faktiske kildefiler og alle afledte kontroloplysninger skal passe sammen. En lokal markering eller fil, som ikke findes i den kontrollerede programkilde, er ikke bevis. Gamle originaler og tidligere offentliggjorte tal bevares.
+
+Den isolerede revisions lokale kontrol af denne adskillelse er ikke en offentlig levering. Fuld afledning, normale database- og lagringsforløb, kapacitet og faktisk drift skal fortsat verificeres, før revisionen kan aktiveres. Den almindelige vejrhentning og prioriteringen af vejrkilder ændres ikke af dette forberedelsestrin.

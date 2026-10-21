@@ -6,6 +6,7 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import {execFileSync, spawnSync} from 'node:child_process';
 import {fileURLToPath} from 'node:url';
+import {requireSourceProducerOutput} from './lib/source-producer-successor-source.mjs';
 
 export const ORIGIN = Object.freeze({
   repository: 'jakobjorgensen82-commits/RavRadar', pullRequest: 671,
@@ -23,7 +24,9 @@ export const COMMANDS = Object.freeze([
 ]);
 // COMMANDS remains the exact immutable historical receipt inventory.
 // The new production command cannot reuse that old SQL proof.
-export const CURRENT_COMMANDS = Object.freeze([COMMANDS[0],COMMANDS[1]+' --account-statistics-assistant']);
+export const ACCOUNT_STATISTICS_ASSISTANT_COMMANDS = Object.freeze([COMMANDS[0],COMMANDS[1]+' --account-statistics-assistant']);
+export const ACCOUNT_STATISTICS_ASSISTANT_NATIVE_SCRIPT = 'set -euo pipefail\n' + ACCOUNT_STATISTICS_ASSISTANT_COMMANDS.join('\n') + '\n';
+export const CURRENT_COMMANDS = Object.freeze([ACCOUNT_STATISTICS_ASSISTANT_COMMANDS[0],ACCOUNT_STATISTICS_ASSISTANT_COMMANDS[1]+' --source-producer']);
 export const NATIVE_SCRIPT = 'set -euo pipefail\n' + CURRENT_COMMANDS.join('\n') + '\n';
 
 // Explicit CURRENT non-native test consumers only. Historical copies of these
@@ -398,8 +401,9 @@ async function record(receipt) {
   proof.nativePostgres=receipt; await fs.writeFile(file,JSON.stringify(proof)+'\n');
 }
 async function main() {
+  requireSourceProducerOutput(); // Before reuse probes, GitHub, native spawn or receipt writes.
   let receipt=JSON.stringify(CURRENT_COMMANDS) === JSON.stringify(COMMANDS) ? await decideReuse()
-    : {status:'EXECUTE',reason:'new-account-statistics-assistant-native-phase-requires-actual-execution'};
+    : {status:'EXECUTE',reason:'new-source-producer-native-phase-requires-actual-execution'};
   if(receipt.status!=='REUSED') {
     console.log('Native PostgreSQL: original commands required; reuse evidence absent or different.');
     const env={...process.env}; for(const key of ['GITHUB_TOKEN','SOURCE_GATE_HEAD_SHA','PULL_REQUEST_NUMBER'])delete env[key];

@@ -10,13 +10,16 @@ import {fileURLToPath} from 'node:url';
 import {inverseArchivedWeatherRestartWorkflow} from './lib/archived-weather-restart-workflow-review.mjs';
 import {inverseArchivedProductionGate} from './lib/archived-production-gate-review.mjs';
 import {inverseAccountStatisticsAssistantWorkflow,inverseAccountStatisticsAssistantOffAttestation,inverseAccountStatisticsAssistantStorageTransport} from './lib/account-statistics-assistant-workflow-review.mjs';
+import {SOURCE_PRODUCER_WORKFLOW_SHA256,inverseSourceProducerWorkflow} from './lib/source-producer-workflow-review.mjs';
 import {expandValidationCommands} from './run-validation-collection.mjs';
 import {lastMileEnclosureRequiredMigrations} from './integrated-cutover-readiness.mjs';
 import {requireLastMileEnclosureBinding} from './lib/last-mile-enclosure-successor-source.mjs';
 import {ESTABLISHED_NATIVE_CURRENT_ORIGIN_BINDING} from './lib/established-native-current-origin-successor-source.mjs';
 
 const ROOT=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
-const actualCurrent=fs.readFileSync(path.join(ROOT,'.github/workflows/deploy-code-only-repair.yml'),'utf8').replace(/\r\n/g,'\n');
+const sourceCurrent=fs.readFileSync(path.join(ROOT,'.github/workflows/deploy-code-only-repair.yml'),'utf8').replace(/\r\n/g,'\n');
+const actualCurrent=crypto.createHash('sha256').update(sourceCurrent).digest('hex')===SOURCE_PRODUCER_WORKFLOW_SHA256
+  ?inverseSourceProducerWorkflow(sourceCurrent):sourceCurrent;
 const current=inverseAccountStatisticsAssistantWorkflow(actualCurrent);
 const actual=inverseArchivedProductionGate(current);
 const sha=value=>crypto.createHash('sha256').update(value).digest('hex');

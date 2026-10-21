@@ -1,3 +1,11 @@
+## 21. oktober — ÅBEN kvalifikation: SOURCE-tail og ny afledning
+
+Den efterfølgende native databaseprøves konkrete indre fejl er stadig ukendt: den gamle udlæser reducerede også en præcis child-afvisning til en generisk assertion, fordi Node tilføjer faktiske/forventede værdier til fejlbeskeden. Testkæden bevarer nu kun faste koder, første kvalificerede fase/kildested og private hele child-output før filtrering. Afkortet capture er ikke et helt logbevis. Denne diagnostikrettelse må ikke kaldes en produktårsag eller en færdig SOURCE-løsning; ny præcis CI og egentlig årsagsafklaring mangler. C/I/T, SQL og almindelig vejrhentning er uændrede.
+
+Næste præcise kontrol nåede providerbarnets afslag, men bevarede ikke dets numeriske procesudfald eller første indre årsag i den faste rapport. Test-only efterfølgeren tilføjer netop returkode, fast signalnavn, streamstørrelser/kontrolsummer/fuldstændighed og eksisterende 36 AST-bundne providerkoder eller UNKNOWN. Timeout og første kvalificerede kildeframe skelnes uden rå fejltekst. Syv rene lokale mål består; ingen ny native/PG- eller årsagsrettelsessucces følger heraf. Alle oprindelige stop, budgetter, modelbindinger og SQL bevares.
+
+Den præcise Linux-kontrol bestod SDK-/offlinegruppen og fandt derefter en reel importfejl i SOURCE-tail. To ubrugte deklarationer er fjernet efter helmodulernes navne- og importgennemgang; den normale berørte DMI-prøve består lokalt med 34 PASS, otte Linux-skips og ingen fejl. Da tailen faktisk indgår i C/I, er nye bindinger og append-only 030000 afledt og genberegnet med fixedpoint. Alle 65 gamle migrationsfiler bevares byteeksakt. Aldrig installeret 020000 er bevaret som kildehistorik, men vælges ikke som mellemtrin fra genuine 585. Ny præcis samlet CI, PostgreSQL, B/S, national kapacitet og sikker levering er fortsat åbne. Ingen aktivering eller ændring af almindelig vejrhentning, scoreformel, kildeprioritet eller geometri. Se DEC-0294.
+
 ## 20. oktober — ÅBEN: Candidate-public fra normalt pakket input
 
 21. oktober: Præcis CI afslørede dernæst auditorens gamle fem-rækkerskrav, selv om normalproducenten leverer Top20. En lokal rettelse kræver hele kanoniske dage og bevarer model-, dato- og indholdskontrol. Den hurtige regression består; hele ny CI og sikker levering er åbne. Dette er ikke bevis for en fejl i den almindelige vejrhentning eller i den offentlige Top20-producent.
@@ -6925,3 +6933,6 @@ DEC-0185. Ingen oneoff eller nye providerkald i reparationsdeployet.
 # Aktuelt leveringsstop – 2026-09-29
 
 - **FEGGESUND-FORHÅNDSKONTROL – 4.0.510-KANDIDAT:** Normalrun `36567354134` stoppede efter leverandørerne, fordi forhåndskontrollen kun læste aktiv DMI-cache, mens scorebygningen også brugte gyldige beskyttede ældre bølger. Ingen færdig pakke eller deploy; krypteret fremdrift bevaret. Koden bruger nu samme beskyttede udvælger i begge veje, men exact-head CI og produktionsbevis mangler. En lokal grøn test lukker ikke issue.
+## 21. oktober – SOURCE-selvbinding: lokal rettelse, udstedelse åben
+
+Den konkrete C/I→egne metadata-cirkel er lokalt fjernet gennem DEC-0294s ene strenge genererede datafil, med fortsat hashbinding af SOURCE-kode og fysiske HEAD-kontroller. Egen Git-LF-afledning af C145/I141/T, 020000-SQL, syv normale forbrugere og fuldt genberegnet fixedpoint består. Det gamle e938-importorakel og nye 0d39-orakel bruger hver sin reelle kilde, uden repin eller tabte assertions. Native PostgreSQL, B/S/efterfølgere, kapacitet, præcis samlet CI og levering mangler; det samlede revisionsissue er åbent. Ingen aktivering eller ændring af almindelig vejrdrift, kildeprioritet, scorer, historik eller gamle originaler.

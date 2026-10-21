@@ -3,6 +3,11 @@ name: Run current RavRadar weather once
 on:
   workflow_dispatch:
     inputs:
+      source_normal_producer:
+        description: 'Private prepared SOURCE ordinary route; default off, never mixed with special modes'
+        required: false
+        type: boolean
+        default: false
       current_family_cold_start:
         description: 'Archive authenticated current-family B/S and measure a new cold start without changing model/SQL; fresh one-off only'
         required: false
@@ -79,8 +84,39 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  source-route-request:
+    name: Validate the explicit SOURCE request before any operational reentry
+    runs-on: ubuntu-24.04
+    timeout-minutes: 2
+    permissions:
+      contents: read
+    steps:
+      - name: Reject unknown or mixed SOURCE request before any operational reentry
+        id: source-route-request
+        shell: bash
+        env:
+          SOURCE_REQUEST: ${{ toJSON(inputs) }}
+        run: |
+          set -euo pipefail
+          node --input-type=module <<'NODE'
+          import fs from 'node:fs';
+          import assert from 'node:assert/strict';
+          const request=JSON.parse(process.env.SOURCE_REQUEST);
+          assert(request && typeof request==='object' && !Array.isArray(request),'SOURCE_ROUTE_REQUEST_INVALID');
+          const booleans=["current_family_cold_start","completed_private_runtime","quick_confirmation","weather_state_epoch_bootstrap","weather_state_epoch_checkpoint_reentry","native_sampling_identity_original_recovery"], strings=["completed_stage_source","quick_progress_source","checkpoint_target_hour","weather_state_epoch_archive_key","weather_state_epoch_archive_catalog_sha256","weather_state_epoch_raw_cache_key"];
+          const known=new Set(['source_normal_producer',...booleans,...strings]);
+          assert(Object.keys(request).every(key=>known.has(key)),'SOURCE_ROUTE_REQUEST_UNKNOWN');
+          assert.equal(typeof request.source_normal_producer,'boolean','SOURCE_ROUTE_SELECTION_UNKNOWN');
+          if(request.source_normal_producer===true){
+            for(const key of booleans)assert.equal(request[key],false,'SOURCE_ROUTE_MIXED_BOOLEAN');
+            for(const key of strings)assert.equal(request[key],'','SOURCE_ROUTE_MIXED_LOCATOR');
+          }
+          fs.appendFileSync(process.env.GITHUB_OUTPUT,'route='+(request.source_normal_producer===true?'source':'legacy')+'\n');
+          NODE
+
   operational-recovery-gate:
-    if: inputs.current_family_cold_start != true
+    needs: source-route-request
+    if: needs.source-route-request.result == 'success' && (inputs.current_family_cold_start != true)
     name: Finish an interrupted generation before new work
     permissions:
       contents: read
@@ -94,8 +130,8 @@ jobs:
       SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
 
   current-main-target:
-    needs: operational-recovery-gate
-    if: ${{ !cancelled() && ((inputs.current_family_cold_start == true && needs.operational-recovery-gate.result == 'skipped') || (inputs.current_family_cold_start != true && needs.operational-recovery-gate.result == 'success')) }}
+    needs: [source-route-request, operational-recovery-gate]
+    if: ${{ !cancelled() && needs.source-route-request.result == 'success' && ((inputs.current_family_cold_start == true && needs.operational-recovery-gate.result == 'skipped') || (inputs.current_family_cold_start != true && needs.operational-recovery-gate.result == 'success')) }}
     name: Lock one normal run to exact current main and UTC hour
     runs-on: ubuntu-24.04
     timeout-minutes: 5
@@ -891,6 +927,7 @@ jobs:
       pull-requests: read
     uses: ./.github/workflows/reusable-weather-build.yml
     with:
+      source_normal_producer: ${{ inputs.source_normal_producer }}
       production_target_hour: ${{ needs.current-main-target.outputs.target_hour }}
       completed_private_runtime: ${{ inputs.completed_private_runtime }}
       completed_private_runtime_pin: ${{ needs.current-main-target.outputs.completed_private_runtime_pin }}
