@@ -62,6 +62,12 @@ kildekontraktprøver, ikke native B/S, installation eller produktionseffekt.
 
 ## Status og bevarede grænser
 
+### Tillæg 2026-10-21 — præcist PR-loft, ikke nye vejrbudgetter
+
+P0-kildekontrollens faktiske 120-minutters jobafbrud er særskilt dokumenteret. SOURCE overtager alene det gennemgåede 180-minutters PR-loft; de øvrige kommandoer, trin, rettigheder, Node22-miljøet og den præcise Node24-child-afgrænsning er uændrede. Den eksisterende kontrol genskaber nu hele genuine c4f4-SOURCE120, derefter hele bb8d-P0120 gennem den gamle præcise Node24-inverse og fortsat hele 90-/75-minutters kæden. Historiske budgetter godkendes ikke som det aktuelle job.
+
+ROOT har anvendt de tre gennemgåede blade og kørt de tre faktiske normale mål på de fysiske filer med Node22: tre PASS, nul fejl eller skip. Hele efterbilleder matcher den private gennemgang. Blade og normale testændringer har nul intersektion med C145/I141/T12; gamle SQL- og modelværdier bevares. Dette er ikke fuld kildekontrol, native PostgreSQL, national kapacitet eller installation. Forbedring af faktisk kontroltid behandles særskilt; ingen vejr- eller leverandørfrist forlænges.
+
 ### Tillæg 2026-10-21 — normale katalogheadere i den syntetiske providerfixture
 
 Den efterfølgende faktiske Linux-kontrol kvalificerede nu providerens første kildested: normal ledgerforsegling, ikke SQL, signal, OOM eller en observeret timeout. En lille normal reproduktion har 118 verificerede par, men kun én af tre kørselsheadere; den strenge normale kontrol afviser præcist manglende processing-signature og derefter samme sealerlinje som i GitHub.

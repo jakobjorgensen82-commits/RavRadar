@@ -1,5 +1,8 @@
 ## 21. oktober – inaktiv SOURCE: afledte kontrolmetadata
 
+- [x] P0's afgrænsede 180-minutters PR-job er semantisk integreret uden at erstatte SOURCEs egne workflow-/Node24-kontroller. Genuin hel 120-/90-/75-minutters inverse og tre normale mål består på fysisk kilde. De tre CI-blade ligger uden for C/I/T; ingen ekstra model- eller SQL-udstedelse følger alene heraf.
+- [ ] Ny præcis samlet SOURCE-CI, native PostgreSQL og national kapacitet. Et højere jobloft er ikke en målt hastighedsforbedring eller produktionslevering; vejrets og leverandørernes budgetter er uændrede.
+
 - [x] Faktisk Linux-report har kvalificeret den første providerfejl til normal ledgerforsegling. Ren reproduktion genfinder manglende kørselsheadere i den syntetiske fixture; det er ikke en SQL-, signal- eller dokumenteret OOM-fejl.
 - [x] Kun manglende normale katalogheadere tilføjes med tomme processedSteps; eksisterende decoderdata og 121 inputtimer bevares. Gammelt afslag og nye positive/negative ledgerregler består, også gennem ROOTs faktiske normale Node22→Python-kalder: ét PASS, nul fejl/skip. Alle 76 beskyttede blade er byteuændrede.
 - [ ] Præcis ny samlet Linux/native/PG-kontrol og efterfølgende forecast-/follower-/kapacitets-/leveringskrav. Lokal fixturesealing er ikke fuld revision eller produktionsbevis. CI skal senere bruge den særskilt gennemgåede P0-tidsrettelse; intet nyt forsøg startes her på det gamle loft.
