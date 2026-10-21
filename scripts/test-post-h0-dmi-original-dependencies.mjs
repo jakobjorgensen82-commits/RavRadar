@@ -4,8 +4,8 @@ import crypto from 'node:crypto';
 import test from 'node:test';
 import { readFileSync } from 'node:fs';
 import vm from 'node:vm';
-import { collectPostH0DmiOriginalDependencies as collect } from './lib/post-h0-dmi-original-dependencies.mjs';
-import { buildRavScoreRawCurrentRetention } from './plan-ravscore-current-history.mjs';
+import { collectPostH0DmiOriginalDependencies as collect, POST_H0_DMI_ENDPOINT_DIAGNOSTICS } from './lib/post-h0-dmi-original-dependencies.mjs';
+import { buildRavScoreRawCurrentRetention, describeRavScoreCurrentHistoryFailure } from './plan-ravscore-current-history.mjs';
 import { buildPrivateDmiRecoveryRecord } from './lib/private-dmi-recovery-record.mjs';
 import { buildIntegratedPartScoreSeries } from './lib/ravscore-integrated-runtime.mjs';
 import { dmiExpectedIdentityForPart, verifiedIntegratedPartHourly } from './lib/ravscore-production-adapters.mjs';
@@ -89,7 +89,47 @@ test('actual planner checkpoint-only control omits only the new eviction project
   }), /ENVIRONMENT_INVALID/);
 });
 const reject = (options, code) => assert.throws(() => collect(options), error =>
-  error.message === `POST_H0_DMI_ORIGINAL_${code}` && error.originalDependencyCode === error.message);
+  error.message === `POST_H0_DMI_ORIGINAL_${code}` && (error.originalDependencyCode === error.message
+    ||code==='SELECTED_ENDPOINT_UNAVAILABLE'&&POST_H0_DMI_ENDPOINT_DIAGNOSTICS.some(reason=>
+      error.originalDependencyCode===`POST_H0_DMI_ORIGINAL_${reason}`)));
+
+
+test('endpoint failure detail: normal collector and seven-field CLI distinguish exact failure branches',async()=>{
+  for(const [mutate,reason]of [
+    [f=>{f.options.recoverySources[0].record.hourly=[{...rowAt(f,1),sources:{}}];},'SELECTED_ENDPOINT_SOURCE_MISSING'],
+    [f=>{rowAt(f,1).currentProvenance.entityId='PART::OTHER';},'SELECTED_ENDPOINT_VIEW_MISMATCH'],
+    [f=>{delete f.document.zones[f.identity.entityId].hourly[at(0)];},'SELECTED_ENDPOINT_PROOF_NATIVE_ENDPOINT_MISSING'],
+    [f=>{rowAt(f,1).currentUMps+=0.1;},'SELECTED_ENDPOINT_PROOF_PROJECTION_MISMATCH'],
+  ]){
+    const f=fixture();mutate(f);const before=JSON.stringify(f.options);let error;
+    try{collect(f.options);}catch(value){error=value;}
+    assert(error instanceof Error);assert.equal(error.message,'POST_H0_DMI_ORIGINAL_SELECTED_ENDPOINT_UNAVAILABLE');
+    assert.equal(error.originalDependencyCode,'POST_H0_DMI_ORIGINAL_'+reason);assert.equal(error.code,undefined);
+    const report=await describeRavScoreCurrentHistoryFailure(error,'COMMITTED_RAW_RETENTION');
+    assert.deepEqual(Object.keys(report).sort(),['kind','code','phase','exceptionType','operator','frame','privatePayloadIncluded'].sort());
+    assert.equal(report.code,error.originalDependencyCode);assert.equal(report.frame.line,18);
+    assert.equal(report.frame.sha256,'0db7833d68cad3c1ab60c86855bab6e90b1cbf40d8a2ad766da74609781ce6dc');assert.equal(report.privatePayloadIncluded,false);
+    assert.equal(JSON.stringify(f.options),before);assert.equal(error.message,'POST_H0_DMI_ORIGINAL_SELECTED_ENDPOINT_UNAVAILABLE');
+  }
+});
+
+
+test('endpoint failure detail: original validation keeps nonfinite INPUT_INVALID before missing-source diagnosis',()=>{
+  for(const value of [NaN,Infinity,-Infinity]){
+    const f=fixture(),selected=rowAt(f,1);
+    f.options.recoverySources[0].record.hourly=[{...selected,sources:{current:value}}];
+    assert.throws(()=>collect(f.options),error=>error.message==='POST_H0_DMI_ORIGINAL_INPUT_INVALID'
+      &&error.originalDependencyCode===error.message&&error.code===undefined);
+    assert(Object.is(f.options.recoverySources[0].record.hourly[0].sources.current,value));
+  }
+  for(const value of [null,undefined,false,0]){
+    const f=fixture(),selected=rowAt(f,1);
+    f.options.recoverySources[0].record.hourly=[{...selected,sources:{current:value}}];
+    assert.throws(()=>collect(f.options),error=>error.message==='POST_H0_DMI_ORIGINAL_SELECTED_ENDPOINT_UNAVAILABLE'
+      &&error.originalDependencyCode==='POST_H0_DMI_ORIGINAL_SELECTED_ENDPOINT_SOURCE_MISSING'&&error.code===undefined);
+    assert(Object.is(f.options.recoverySources[0].record.hourly[0].sources.current,value));
+  }
+});
 
 test('normal priority/projected interpolated candidates resolve own endpoint captures, dedup and remain unchanged', () => {
   const f = fixture(), before = JSON.stringify(f.options), plan = collect(f.options);

@@ -203,13 +203,55 @@ function inversePlannerFirstFailure(source) {
   assert.equal(Buffer.byteLength(source),review.before.bytes);
   return source;
 }
+// TEST INPUT ONLY: undo this exact diagnostic-only successor before old oracles.
+const PLANNER_ENDPOINT_SUBREASON_REVIEW={
+  "before": {
+    "sha256": "b0027151541ac8fa3ae2ac99b1b0ef1bbfcd18e0e3be407d32b9704ecba552fb",
+    "bytes": 59770
+  },
+  "after": {
+    "sha256": "d462be0aaa0401fbf1d36f5a52b44d9dde2d31dd21d4a2b160ade406562c2276",
+    "bytes": 60071
+  },
+  "hunks": [
+    [
+      "import { collectPostH0DmiOriginalDependencies } from './lib/post-h0-dmi-original-dependencies.mjs';",
+      "import { collectPostH0DmiOriginalDependencies, POST_H0_DMI_ENDPOINT_DIAGNOSTICS } from './lib/post-h0-dmi-original-dependencies.mjs';"
+    ],
+    [
+      "        const originalPrefix='POST_H0_DMI_ORIGINAL_';",
+      "        const endpointDependencyReasons=new Set(POST_H0_DMI_ENDPOINT_DIAGNOSTICS);\n        const originalPrefix='POST_H0_DMI_ORIGINAL_';"
+    ],
+    [
+      "          &&originalDependencyReasons.has(originalDependencyCode.slice(originalPrefix.length))",
+      "          &&(originalDependencyReasons.has(originalDependencyCode.slice(originalPrefix.length))\n            ||endpointDependencyReasons.has(originalDependencyCode.slice(originalPrefix.length))\n              &&message.value==='POST_H0_DMI_ORIGINAL_SELECTED_ENDPOINT_UNAVAILABLE')"
+    ],
+    [
+      "          &&result.frame.sha256==='dcb3ff1d9caae7440e94201c391b0a9d0d6dbdc312d54281e1f47a7d017462da'",
+      "          &&result.frame.sha256==='0db7833d68cad3c1ab60c86855bab6e90b1cbf40d8a2ad766da74609781ce6dc'"
+    ]
+  ]
+};
+function inversePlannerEndpointSubreason(source) {
+  const review=PLANNER_ENDPOINT_SUBREASON_REVIEW;
+  if(digest(source)===review.before.sha256)return source;
+  assert.equal(digest(source),review.after.sha256,'PLANNER_ENDPOINT_SUBREASON_TEST_INPUT_CHANGED');
+  assert.equal(Buffer.byteLength(source),review.after.bytes);
+  for(const [before,after]of [...review.hunks].reverse()){
+    assert.equal(source.split(after).length,2,'PLANNER_ENDPOINT_SUBREASON_TEST_INPUT_HUNK');
+    source=source.replace(after,()=>before);
+  }
+  assert.equal(digest(source),review.before.sha256,'PLANNER_ENDPOINT_SUBREASON_TEST_INPUT_WHOLE_INVERSE');
+  assert.equal(Buffer.byteLength(source),review.before.bytes);
+  return source;
+}
 export function inverseAlternativeCCaller(source,relative) {
   assert.equal(typeof source,'string');
   const row=SOURCE_INPUTS.find(item=>item.path===relative);
   assert(row,'ALTERNATIVE_C_TEST_INPUT_PATH');
   source=source.replaceAll('\r\n','\n');
   if(digest(source)===row.before.sha256) return source;
-  if(relative==='scripts/plan-ravscore-current-history.mjs') source=inversePlannerFirstFailure(inversePlannerOriginalDependency(source));
+  if(relative==='scripts/plan-ravscore-current-history.mjs') source=inversePlannerFirstFailure(inversePlannerOriginalDependency(inversePlannerEndpointSubreason(source)));
   if(relative==='scripts/update-weather.mjs') source=inverseArchivedWeatherRestartUpdater(source);
   assert.equal(digest(source),row.after.sha256,'ALTERNATIVE_C_TEST_INPUT_CHANGED');
   for(const [before,after] of [...row.hunks].reverse()) {

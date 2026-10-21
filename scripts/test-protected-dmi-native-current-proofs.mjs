@@ -87,9 +87,9 @@ test('planner original dependency: actual collector reasons survive the normal C
   const fs=await import('node:fs/promises');
   const producer=await fs.readFile(new URL('./lib/post-h0-dmi-original-dependencies.mjs',import.meta.url),'utf8');
   assert.equal(createHash('sha256').update(producer).digest('hex'),
-    'dcb3ff1d9caae7440e94201c391b0a9d0d6dbdc312d54281e1f47a7d017462da');
+    '0db7833d68cad3c1ab60c86855bab6e90b1cbf40d8a2ad766da74609781ce6dc');
   const planner=await fs.readFile(new URL('./plan-ravscore-current-history.mjs',import.meta.url),'utf8');
-  const actualReasons=[...new Set([...producer.matchAll(/fail\('([A-Z_]+)'\)/g)].map(match=>match[1]))].sort();
+  const actualReasons=[...new Set([...producer.matchAll(/fail\('([A-Z_]+)'(?:,|\))/g)].map(match=>match[1]))].sort();
   const whitelist=planner.match(/const originalDependencyReasons=new Set\(\[([\s\S]*?)\]\);/);
   assert(whitelist,'The entire fixed family must be explicit');
   const listed=[...whitelist[1].matchAll(/'([A-Z_]+)'/g)].map(match=>match[1]).sort();
@@ -104,7 +104,7 @@ test('planner original dependency: actual collector reasons survive the normal C
     assert.equal(observed.phase,'COMMITTED_RAW_RETENTION');
     assert.equal(observed.frame.module,'scripts/lib/post-h0-dmi-original-dependencies.mjs');
     assert.equal(observed.frame.line,18);
-    assert.equal(observed.frame.sha256,'dcb3ff1d9caae7440e94201c391b0a9d0d6dbdc312d54281e1f47a7d017462da');
+    assert.equal(observed.frame.sha256,'0db7833d68cad3c1ab60c86855bab6e90b1cbf40d8a2ad766da74609781ce6dc');
     const beforeExit=process.exitCode,beforeError=console.error,lines=[];
     try{
       console.error=value=>lines.push(value);
@@ -127,10 +127,12 @@ test('planner original dependency: forged family, own getter, proxy and unknown 
   const nonString=make();nonString.originalDependencyCode={toString(){calls++;throw Error('PRIVATE_SENTINEL');}};
   const unknown=make();unknown.originalDependencyCode='POST_H0_DMI_ORIGINAL_PRIVATE_SENTINEL';
   const wrongFamily=make();wrongFamily.originalDependencyCode='OTHER_ORIGINAL_INPUT_INVALID';
+  const wrongParent=make();wrongParent.originalDependencyCode='POST_H0_DMI_ORIGINAL_SELECTED_ENDPOINT_SOURCE_MISSING';
+  const unlistedProof=make();unlistedProof.originalDependencyCode='POST_H0_DMI_ORIGINAL_SELECTED_ENDPOINT_PROOF_PRIVATE_SENTINEL';
   const wrongFrame=new Error('PRIVATE_SENTINEL');wrongFrame.originalDependencyCode='POST_H0_DMI_ORIGINAL_INPUT_INVALID';
   const forged={originalDependencyCode:'POST_H0_DMI_ORIGINAL_INPUT_INVALID'};
   const inherited=make();Object.setPrototypeOf(inherited,Object.create(Error.prototype));
-  for(const error of [getter,proxy,nonString,unknown,wrongFamily,wrongFrame,forged,inherited]){
+  for(const error of [getter,proxy,nonString,unknown,wrongFamily,wrongParent,unlistedProof,wrongFrame,forged,inherited]){
     const observed=await currentHistoryPlanner.describeRavScoreCurrentHistoryFailure(error,'COMMITTED_RAW_RETENTION');
     assert.equal(observed.code,'RAVSCORE_CURRENT_HISTORY_DEMAND_REFUSED');
     assert.doesNotMatch(JSON.stringify(observed),/PRIVATE_SENTINEL|OTHER_ORIGINAL/);
