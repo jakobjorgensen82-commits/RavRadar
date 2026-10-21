@@ -466,6 +466,38 @@ async function buildPackWithJsonReadLifetime({
   return { ...PRIVATE_WEATHER_COMPONENT_PACK_FILE, sourcePath: destination };
 }
 
+// Partial private materialization only: no native/READY/selection authority.
+// The caller verifies B before/after, supplies its exact pack descriptor, owns
+// a fresh private stage, and uses the existing DMI file reader on returned files.
+export function unpackPrivateWeatherComponentCompanions({
+  restoredRoot, outputRoot, conditions, expectedPackDescriptor,
+} = {}) {
+  const state = { settled: false, closed: true };
+  const invocation = unpackPackWithJsonReadLifetime(
+    { restoredRoot, outputRoot, conditions }, state,
+    { expectedPackDescriptor });
+  packJsonReadLifetimes.set(invocation, state);
+  invocation.then(() => { state.settled = true; }, () => { state.settled = true; });
+  return invocation;
+}
+
+function companionPackDescriptor(value) {
+  const keys = ['bytes', 'id', 'privacyClass', 'relativePath', 'sha256'];
+  if (!value || typeof value !== 'object' || types.isProxy(value)
+    || ![Object.prototype, null].includes(Object.getPrototypeOf(value))
+    || Reflect.ownKeys(value).some(key => typeof key !== 'string')
+    || Reflect.ownKeys(value).sort().join(',') !== keys.join(',')) fail('WEATHER_PACK_COMPANION_DESCRIPTOR_INVALID');
+  const fields = Object.getOwnPropertyDescriptors(value);
+  if (keys.some(key => !Object.hasOwn(fields[key], 'value'))) fail('WEATHER_PACK_COMPANION_DESCRIPTOR_INVALID');
+  const copy = Object.fromEntries(keys.map(key => [key, fields[key].value]));
+  if (copy.id !== PRIVATE_WEATHER_COMPONENT_PACK_FILE.id
+    || copy.relativePath !== PRIVATE_WEATHER_COMPONENT_PACK_FILE.relativePath
+    || copy.privacyClass !== 'PRIVATE_PRODUCTION_RUNTIME'
+    || !Number.isSafeInteger(copy.bytes) || copy.bytes < MAGIC.length + 6 || copy.bytes > MAX_PACK_BYTES
+    || typeof copy.sha256 !== 'string' || !/^[0-9a-f]{64}$/.test(copy.sha256)) fail('WEATHER_PACK_COMPANION_DESCRIPTOR_INVALID');
+  return Object.freeze(copy);
+}
+
 export function unpackPrivateWeatherComponentPack(options = {}) {
   const state = { settled: false, closed: true };
   const invocation = unpackPackWithJsonReadLifetime(options, state);
@@ -480,7 +512,12 @@ async function unpackPackWithJsonReadLifetime({
   pythonExecutable,
   includeOperationalProgress = null,
   stateEpochInputView = null,
-} = {}, readState) {
+} = {}, readState, companionOptions = null) {
+  const companionDescriptor = companionOptions === null ? null
+    : companionPackDescriptor(companionOptions.expectedPackDescriptor);
+  const companionPaths = companionDescriptor === null ? null : new Set([
+    PRIVATE_WEATHER_COMPONENT_FILES.dmiActive, PRIVATE_WEATHER_COMPONENT_FILES.dmiCandidate,
+  ]);
   // The opaque archive-authenticated epoch view binds this optional install
   // to the ORIGINAL pack. A JSON digest or flag is never an authority.
   let epochPack = null;
@@ -497,14 +534,43 @@ async function unpackPackWithJsonReadLifetime({
     }
   }
   const source = await checkedFile(restoredRoot, PRIVATE_WEATHER_COMPONENT_PACK_FILE.relativePath);
+  if (companionDescriptor && source.bytes !== companionDescriptor.bytes) fail('WEATHER_PACK_COMPANION_ORIGINAL_CHANGED');
   if (epochPack && source.bytes !== epochPack.bytes) fail('WEATHER_PACK_EPOCH_ORIGINAL_CHANGED');
   const epochDigest = epochPack ? crypto.createHash('sha256') : null;
+  const companionDigest = companionDescriptor ? crypto.createHash('sha256') : null;
   const output = path.resolve(outputRoot);
-  const handle = await fs.open(source.absolute, 'r');
+  let companionBefore = null;
+  if (companionDescriptor) {
+    const inputRoot = path.resolve(restoredRoot), parent = path.dirname(output);
+    const within = (a, b) => { const relative = path.relative(a, b); return relative === ''
+      || !relative.startsWith('..' + path.sep) && relative !== '..' && !path.isAbsolute(relative); };
+    if (!path.isAbsolute(outputRoot) || within(inputRoot, output) || within(output, inputRoot)
+      || await fs.realpath(inputRoot) !== inputRoot || await fs.realpath(parent) !== parent) {
+      fail('WEATHER_PACK_COMPANION_STAGE_PATH_INVALID');
+    }
+    companionBefore = await fs.lstat(source.absolute, { bigint: true });
+    if (!companionBefore.isFile() || companionBefore.isSymbolicLink()
+      || companionBefore.size !== BigInt(companionDescriptor.bytes)) {
+      fail('WEATHER_PACK_COMPANION_ORIGINAL_CHANGED');
+    }
+  }
+  const handle = await fs.open(source.absolute, companionDescriptor
+    ? constants.O_RDONLY | (constants.O_NOFOLLOW ?? 0) : 'r');
   let inputFd, inputDescriptorIdentity;
   let unpackFailed = false;
   let position = 0;
+  const requireCompanionOriginal = async () => {
+    if (!companionDescriptor) return;
+    await checkedFile(restoredRoot, PRIVATE_WEATHER_COMPONENT_PACK_FILE.relativePath);
+    for (const current of [await handle.stat({ bigint: true }), await fs.lstat(source.absolute, { bigint: true })]) {
+      if (!current.isFile() || current.isSymbolicLink()
+        || ['dev', 'ino', 'mode', 'nlink', 'size', 'mtimeNs', 'ctimeNs']
+          .some(key => current[key] !== companionBefore[key])) fail('WEATHER_PACK_COMPANION_ORIGINAL_CHANGED');
+    }
+  };
   const read = async bytes => {
+    if (companionDescriptor && (!Number.isSafeInteger(bytes) || bytes < 1
+      || position + bytes > companionDescriptor.bytes)) fail('WEATHER_PACK_TRUNCATED');
     const buffer = Buffer.alloc(bytes);
     let offset = 0;
     while (offset < bytes) {
@@ -514,11 +580,13 @@ async function unpackPackWithJsonReadLifetime({
       position += result.bytesRead;
     }
     epochDigest?.update(buffer);
+    companionDigest?.update(buffer);
     return buffer;
   };
   try {
     inputFd = handle.fd; // Own archive descriptor, captured before another await.
     inputDescriptorIdentity = ownFileDescriptorIdentity(inputFd);
+    if (companionDescriptor) await requireCompanionOriginal();
     await fs.mkdir(output, { mode: 0o700 }); // caller passes a new private stage
     if (!(await read(MAGIC.length)).equals(MAGIC)) fail('WEATHER_PACK_FORMAT_INVALID');
     const length = (await read(4)).readUInt32BE();
@@ -539,6 +607,17 @@ async function unpackPackWithJsonReadLifetime({
     }
     if (total !== source.bytes) fail('WEATHER_PACK_SIZE_INVALID');
     for (const file of manifest.files) {
+      // Reuse the same manifest, bounds and sequential read/whole-pack digest.
+      // Unselected entries are still fully checked, but never unpacked/parsed.
+      if (companionPaths && !companionPaths.has(file.relativePath)) {
+        const hash = crypto.createHash('sha256');
+        for (let remaining = file.bytes; remaining > 0;) {
+          const chunk = await read(Math.min(64 * 1024, remaining));
+          remaining -= chunk.length; hash.update(chunk);
+        }
+        if (hash.digest('hex') !== file.sha256) fail('WEATHER_PACK_ENTRY_HASH_INVALID');
+        continue;
+      }
       const destination = path.join(output, file.relativePath);
       await fs.mkdir(path.dirname(destination), { recursive: true, mode: 0o700 });
       const hash = crypto.createHash('sha256');
@@ -570,6 +649,26 @@ async function unpackPackWithJsonReadLifetime({
         if (!copyFailed && closeFailure) throw closeFailure.error;
       }
       if (hash.digest('hex') !== file.sha256) fail('WEATHER_PACK_ENTRY_HASH_INVALID');
+    }
+    if (companionDescriptor) {
+      if (position !== companionDescriptor.bytes
+        || companionDigest.digest('hex') !== companionDescriptor.sha256
+        || (await handle.read(Buffer.alloc(1), 0, 1, position)).bytesRead !== 0) {
+        fail('WEATHER_PACK_COMPANION_ORIGINAL_CHANGED');
+      }
+      await requireCompanionOriginal();
+      const files = manifest.files.filter(file => companionPaths.has(file.relativePath));
+      // Read back only these two normal files; this is NOT sourceInventory or
+      // a full unpack PASS. No CP subprocess or DMI JSON decoding occurs here.
+      for (const file of files) {
+        const selected = await checkedFile(output, file.relativePath, { maximumBytes: MAX_PACK_BYTES });
+        const digest = await digestFile(selected.absolute, readState);
+        if (digest.bytes !== file.bytes || digest.sha256 !== file.sha256) fail('WEATHER_PACK_ENTRY_HASH_INVALID');
+      }
+      await requireCompanionOriginal();
+      return { kind: 'PRIVATE_WEATHER_COMPONENT_COMPANION_STAGE',
+        packDescriptor: companionDescriptor,
+        files: files.map(file => ({ ...file, sourcePath: path.join(output, file.relativePath) })) };
     }
     const actual = await sourceInventory(output, conditions, {
       pythonExecutable,

@@ -11,6 +11,8 @@ import { nativeIdentityMigration } from './lib/native-sampling-identity-successo
 import { lastMileEnclosureMigration } from './lib/last-mile-enclosure-successor-source.mjs';
 import {ACCOUNT_STATISTICS_ASSISTANT_BINDING,accountStatisticsAssistantMigration,requireAccountStatisticsAssistantOutput}
   from './lib/account-statistics-assistant-successor-source.mjs';
+import {NATIVE_ORIGINAL_CONTINUITY_BINDING,nativeOriginalContinuityMigration,requireNativeOriginalContinuityOutput}
+  from './lib/native-original-continuity-successor-source.mjs';
 
 // Keep the payload-free operational control report inside this existing cheap
 // workflow command so the source gate does not grow another process.
@@ -741,8 +743,14 @@ const casTimeoutSettings = fs.readdirSync(migrationsUrl).filter(name => name.end
 assert.equal(casTimeoutSettings.at(-1)?.timeout, '55s',
   'the final migration order must retain the established checkpoint-only 55s timeout');
 if(ACCOUNT_STATISTICS_ASSISTANT_BINDING!==null)requireAccountStatisticsAssistantOutput();
+if(NATIVE_ORIGINAL_CONTINUITY_BINDING!==null)requireNativeOriginalContinuityOutput();
 assert.equal(casTimeoutSettings.at(-1).migration,
-  ACCOUNT_STATISTICS_ASSISTANT_BINDING===null ? lastMileEnclosureMigration().filename : accountStatisticsAssistantMigration().filename);
+  NATIVE_ORIGINAL_CONTINUITY_BINDING!==null ? nativeOriginalContinuityMigration().filename
+    : ACCOUNT_STATISTICS_ASSISTANT_BINDING===null ? lastMileEnclosureMigration().filename : accountStatisticsAssistantMigration().filename);
+if(ACCOUNT_STATISTICS_ASSISTANT_BINDING!==null)assert.deepEqual(
+  casTimeoutSettings.find(item=>item.migration===accountStatisticsAssistantMigration().filename),
+  {migration:accountStatisticsAssistantMigration().filename,timeout:'55s'},
+  'the immutable actual585 predecessor also retains its original scoped55s timeout');
 assert.deepEqual(casTimeoutSettings.find(item=>item.migration===lastMileEnclosureMigration().filename),
   {migration:lastMileEnclosureMigration().filename,timeout:'55s'},
   'the immutable actual584 predecessor also retains its original scoped55s timeout');

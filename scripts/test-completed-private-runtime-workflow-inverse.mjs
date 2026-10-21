@@ -622,7 +622,19 @@ test('actual optional wiring refuses every partial hunk, wrong role and changed 
 });
 
 test('current585 release inverse keeps every genuine584 workflow byte and refuses partial UA or unrelated drift', async () => {
-  const source = (await fs.readFile(new URL('../.github/workflows/reusable-weather-build.yml', import.meta.url), 'utf8')).replaceAll('\r\n', '\n');
+  const current586 = (await fs.readFile(new URL('../.github/workflows/reusable-weather-build.yml', import.meta.url), 'utf8')).replaceAll('\r\n', '\n');
+  assert.equal(sha(current586), '8223891e25cfb7fbcf57a536bcc55a1cbf59ed676f02172588192065ae4eccc0');
+  assert.equal(current586.split('RavRadar/4.0.586').length, 6, 'Exactly five genuine current586 User-Agent fields');
+  assertEarlyCompletedRuntimeStageOrder(current586);
+  assert.equal(inverseRelease585WorkflowUserAgents(current586, 'once'), current586);
+  for (const changed of [current586.replace('RavRadar/4.0.586', 'RavRadar/4.0.585'),
+    current586.replace('RavRadar/4.0.586', 'RavRadar/4.0.587'), current586 + '\n# UNREVIEWED\n']) {
+    assert.equal(inverseRelease585WorkflowUserAgents(changed, 'build'), changed);
+    assert.throws(() => assertEarlyCompletedRuntimeStageOrder(changed));
+  }
+  // Only the WHOLE qualified586 workflow projects to its genuine585
+  // predecessor; every original585 assertion/mutation below is unchanged.
+  const source = current586.replaceAll('RavRadar/4.0.586', 'RavRadar/4.0.585');
   assert.equal(sha(source), '2ee56b8ae3546f8ac3ce97b45aaedbfe7eb67fac0960961f164cecca70c0970c');
   const previous = inverseRelease585WorkflowUserAgents(source, 'build');
   assert.equal(sha(previous), 'b509a5131c64f9df9a431fdf9f99b082fb14c88de8bf9c3ad3e33b8ddc77de57');

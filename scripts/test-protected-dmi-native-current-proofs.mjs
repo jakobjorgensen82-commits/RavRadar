@@ -87,7 +87,7 @@ test('planner original dependency: actual collector reasons survive the normal C
   const fs=await import('node:fs/promises');
   const producer=await fs.readFile(new URL('./lib/post-h0-dmi-original-dependencies.mjs',import.meta.url),'utf8');
   assert.equal(createHash('sha256').update(producer).digest('hex'),
-    '0db7833d68cad3c1ab60c86855bab6e90b1cbf40d8a2ad766da74609781ce6dc');
+    'a49ea641f76af721c43a13a091aa102e0904a3730803859d7c5f5e29e7c516bc');
   const planner=await fs.readFile(new URL('./plan-ravscore-current-history.mjs',import.meta.url),'utf8');
   const actualReasons=[...new Set([...producer.matchAll(/fail\('([A-Z_]+)'(?:,|\))/g)].map(match=>match[1]))].sort();
   const whitelist=planner.match(/const originalDependencyReasons=new Set\(\[([\s\S]*?)\]\);/);
@@ -104,7 +104,7 @@ test('planner original dependency: actual collector reasons survive the normal C
     assert.equal(observed.phase,'COMMITTED_RAW_RETENTION');
     assert.equal(observed.frame.module,'scripts/lib/post-h0-dmi-original-dependencies.mjs');
     assert.equal(observed.frame.line,18);
-    assert.equal(observed.frame.sha256,'0db7833d68cad3c1ab60c86855bab6e90b1cbf40d8a2ad766da74609781ce6dc');
+    assert.equal(observed.frame.sha256,'a49ea641f76af721c43a13a091aa102e0904a3730803859d7c5f5e29e7c516bc');
     const beforeExit=process.exitCode,beforeError=console.error,lines=[];
     try{
       console.error=value=>lines.push(value);
@@ -1093,7 +1093,8 @@ test('OLD null shape follows exact normal projection and never promotes a receip
   assert.equal(selectedProjection.sources.current.nativeGridSampling, null);
   assert.equal(selectedProjection.sources.current.nativeSteps[0].nativeGridSampling, null,
     'actual normal top-null always also emits its selected native step null');
-  assert.equal(inspect(selectedNull, topOnly).code, 'DMI_NATIVE_PROOF_PROJECTION_MISMATCH');
+  assert.equal(inspect(selectedNull, topOnly).code, 'DMI_NATIVE_PROOF_NATIVE_ENDPOINT_MISSING',
+    'own null and absent sampling are distinct native endpoints; reject before projection');
   assert.equal(inspect(selectedNull, selectedProjection).ok, true);
   const selectedStepOnly = copy(selectedProjection); delete selectedStepOnly.sources.current.nativeGridSampling;
   assert.equal(inspectDmiForecastGridSampling(selectedStepOnly.sources.current, 'current', selectedStepOnly.time, identity).status, 'unknown');
@@ -1861,6 +1862,8 @@ test('normal private recovery maps the complete 72h bridge without widening publ
     part, zoneId: part.zoneId, initialSelection, generatedAt: at(120), feature,
     archivedRestartInputs: null,
     deployedBulkCache: old, historicalDmiBulkCache: null, bulkCache: fresh,
+    protectedCompanionContexts: [],
+    persistedNativeOriginals: null,
     bulkId: identity.entityId, partDmiIdentity: identity, liveCurrentPilot: null, componentInputs: {},
     persistedDmiPartRows: new Map([[part.partId, { hourly: oldDefault.hourly }]]),
     protectedSameRunDmiRetentions: { current: { SAME_VALUES: 0, DIFFERENT_VALUES: 0 },
@@ -2289,4 +2292,106 @@ test('legacy current request CLI proves hash-reader native closure before publis
       } finally { if (mode.includes('noop')) await actualClose(); retained.delete(handle); }
     }
   } finally { await fs.rm(root, { recursive: true, force: true }); }
+});
+
+test('inspector previous bank: normal coherent native121 survives serialization without its old document', () => {
+  // Existing normal fixture/projection/bank contracts on synthetic originals.
+  // JSON readback is not authenticated B/GCM, a saved-bundle caller or GRIB.
+  const f = fixture({ nativeHours: Array.from({ length: 43 }, (_, index) => index * 3), target: 0 });
+  const identity = dmiExpectedIdentityForPart(f.part), own = f.bulk.zones[identity.entityId];
+  for (const native of Object.values(own.hourly)) {
+    const source = native.sources.current;
+    source.nativeGridSampling = {
+      contractId: 'dmi-native-grid-sampling-v1', elementIndex: 71,
+      gridIndexIdentitySha256: createHash('sha256').update('synthetic-previous-bank-native121').digest('hex'),
+      coordinateInterpretation: 'dmi-dkss-grib1-header-endpoints-v1',
+      gridDefinitionSha256: source.gridDefinitionSha256, gridPoint: [...source.gridPoint],
+      fieldSet: [...source.fieldSet], optionalFieldSet: [...source.optionalFieldSet],
+    };
+  }
+  const hourly = buildDmiForecastHourly({ generatedAt: at(0), startAt: at(0), hours: 121,
+    ocean: Object.values(own.hourly).map(native => ({ step: native.time,
+      'current-u': native['current-u'], 'current-v': native['current-v'], provenance: native.sources })) }).hourly;
+  const selections = hourly.map(row => ({ part: f.part, row }));
+  assert.equal(selections.length, 121);
+  assert.deepEqual(hourly[1].sources.current.nativeSteps.map(step => step.nativeValidTime), [at(0), at(3)]);
+  const originalBefore = JSON.stringify(f.bulk);
+  const bank = buildProtectedDmiNativeCurrentProofs({ selections, contexts: [f.bulk] });
+  const serialized = JSON.stringify(bank), reloaded = JSON.parse(serialized);
+  assert.deepEqual(reloaded, bank);
+  // No original document with an endpoint remains among the inspector inputs.
+  const current = copy(f.bulk); current.zones[identity.entityId].hourly = {};
+  assert.equal(createProtectedDmiNativeCurrentInspector({ contexts: [current] }).inspect(selections[1]).code,
+    'DMI_NATIVE_PROOF_NATIVE_ENDPOINT_MISSING');
+  const inspector = createProtectedDmiNativeCurrentInspector({ contexts: [current], previousBank: reloaded });
+  for (const selection of selections) {
+    assert.equal(inspector.inspect(selection).ok, true);
+    const actual = inspector.inspectOriginals(selection);
+    assert.equal(actual.ok, true, actual.code);
+    assert.equal(actual.nativeRows.length, selection.row.sources.current.nativeSteps.length);
+    assert(actual.nativeRows.every(native => native.source.nativeGridSampling.coordinateInterpretation
+      === 'dmi-dkss-grib1-header-endpoints-v1'));
+    const endpoints = inspector.inspectEndpointOriginals(selection);
+    assert.equal(endpoints.ok, true, endpoints.code);
+    assert(endpoints.endpoints.every(Boolean));
+  }
+  assert.equal(JSON.stringify(reloaded), serialized, 'inspector preserves caller bank bytes');
+  assert.equal(JSON.stringify(f.bulk), originalBefore, 'normal bank/proof path preserves actual original inputs');
+  assert.deepEqual(current.zones[identity.entityId].hourly, {});
+});
+
+test('inspector previous bank: detached snapshot does not cache PASS or accept a changed bank on new construction', () => {
+  const f = fixture(), next = fixture({ target: 2 });
+  const bank = JSON.parse(JSON.stringify(bankFor(f))), originalBank = JSON.stringify(bank);
+  const inspector = createProtectedDmiNativeCurrentInspector({ contexts: [], previousBank: bank });
+  assert.equal(JSON.stringify(bank), originalBank);
+  assert.equal(inspector.inspect(f).ok, true);
+  assert.equal(inspector.inspect(next).ok, true, 'every distinct selection is genuinely projected from the retained endpoints');
+  const detached = inspector.inspectOriginals(f);
+  detached.nativeRows[0].uMps += 1;
+  bank.nativeRows[0].value.uMps += 1;
+  bank.contexts[0].value.header.timeStrideHours = 24;
+  bank.selections[0].sourceSha256 = 'd'.repeat(64);
+  assert.equal(inspector.inspectOriginals(f).ok, true, 'already validated private snapshot is independent of caller/output mutation');
+  const changedTuple = { part: f.part, row: { ...f.row, currentUMps: f.row.currentUMps + 0.01 } };
+  assert.deepEqual(inspector.inspect(changedTuple), { ok: false, code: 'DMI_NATIVE_PROOF_PROJECTION_MISMATCH' });
+  assert.throws(() => createProtectedDmiNativeCurrentInspector({ previousBank: bank }), /DMI_NATIVE_PROOF_BANK_INVALID/,
+    'fresh construction must validate current bytes instead of trusting an earlier PASS/hash label');
+});
+
+test('inspector previous bank: tuple context grid collision and scoped-donor refusals remain closed', () => {
+  const f = fixture(), bank = JSON.parse(JSON.stringify(bankFor(f)));
+  const inspector = createProtectedDmiNativeCurrentInspector({ previousBank: bank });
+  for (const mutate of [
+    value => { value.row.currentVMps += 0.01; },
+    value => { value.part.waterPoint[0] += 0.01; },
+    value => { value.row.sources.current.gridPoint[0] += 0.01; },
+    value => { value.row.sources.current.nativeSteps[0].assetIdentitySha256 = 'd'.repeat(64); },
+  ]) {
+    const invalid = copy(f); mutate(invalid);
+    assert.equal(inspector.inspect(invalid).ok, false);
+  }
+  const invalidContext = copy(f.bulk);
+  invalidContext.zones[dmiExpectedIdentityForPart(f.part).entityId].entityType = 'parent-zone';
+  assert.deepEqual(createProtectedDmiNativeCurrentInspector({ contexts: [invalidContext], previousBank: bank }).inspect(f),
+    { ok: false, code: 'DMI_NATIVE_PROOF_CONTEXT_INVALID' });
+  const conflicting = copy(f.bulk);
+  conflicting.zones[dmiExpectedIdentityForPart(f.part).entityId].hourly[at(0)]['current-u'] += 0.01;
+  assert.deepEqual(createProtectedDmiNativeCurrentInspector({ contexts: [conflicting], previousBank: bank }).inspect(f),
+    { ok: false, code: 'DMI_NATIVE_PROOF_NATIVE_CONFLICT' }, 'a bank cannot hide conflicting actual same-identity originals');
+  const lostScope = copy(f.bulk); lostScope.nativeCurrentOriginalScope = 'role-scoped-native-originals-v2';
+  assert.deepEqual(createProtectedDmiNativeCurrentInspector({ contexts: [lostScope], previousBank: bank }).inspect(f),
+    { ok: false, code: 'DMI_NATIVE_PROOF_SCOPED_ORIGINAL_CONTEXT_UNAVAILABLE' },
+    'the existing refusal marker cannot be flattened into a global donor pool even beside a valid bank');
+  for (const mutate of [
+    value => { value.nativeRows[0].value.vMps += 0.01; },
+    value => { value.contexts[0].value.zone.parentZoneId += '-different'; },
+    value => { value.nativeRows[0].value.source.gridPoint[0] += 0.01; },
+  ]) {
+    const tampered = copy(bank); mutate(tampered);
+    assert.throws(() => createProtectedDmiNativeCurrentInspector({ previousBank: tampered }), /DMI_NATIVE_PROOF_BANK_INVALID/);
+  }
+  assert.equal(createProtectedDmiNativeCurrentInspector({ contexts: [f.bulk] }).inspect(f).ok, true);
+  assert.deepEqual(createProtectedDmiNativeCurrentInspector({ contexts: [] }).inspect(f),
+    { ok: false, code: 'DMI_NATIVE_PROOF_NATIVE_ENDPOINT_MISSING' }, 'legacy no-bank behavior is unchanged');
 });

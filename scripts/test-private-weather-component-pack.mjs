@@ -10,6 +10,7 @@ import { EventEmitter } from 'node:events';
 import { syncBuiltinESMExports } from 'node:module';
 import { promisify } from 'node:util';
 import { buildPrivateWeatherComponentPack, unpackPrivateWeatherComponentPack,
+  unpackPrivateWeatherComponentCompanions,
   privateWeatherPackJsonReadsClosed, ownFileDescriptorIdentity,
   ownedFileDescriptorClosed } from './lib/private-weather-component-pack.mjs';
 import { mergeVerifiedProtectedProgressComponents } from './lib/verified-protected-progress-components.mjs';
@@ -60,6 +61,94 @@ async function seed(root) {
   await write(root, PRIVATE_WEATHER_COMPONENT_FILES.fallbackCursor,
     { kind: 'WEATHER_COMPONENT_FALLBACK_CURSOR', schemaVersion: 1, openMeteoLastAttemptedPartId: 'TEST' });
 }
+
+async function companionFixture(t) {
+  const owned = await fixture(t);
+  // Supply actual canonical roots, not a lexical spelling of a temporary path.
+  // The authenticated normal caller must satisfy the same strict contract.
+  const folder = await fs.realpath(owned.folder), source = await fs.realpath(owned.source);
+  return { folder, source, output: path.join(folder, 'unpacked') };
+}
+
+test('original DMI companion stage: exact whole pack, only two entries, closed normal readers', async t => {
+  const { folder, source, output } = await companionFixture(t);
+  await seed(source);
+  for (const key of ['dmiActive', 'dmiCandidate']) {
+    await write(source, PRIVATE_WEATHER_COMPONENT_FILES[key], { syntheticOperationalProgress: key });
+  }
+  const built = await buildPrivateWeatherComponentPack({ repositoryRoot: source, conditions });
+  const original = await fs.readFile(built.sourcePath);
+  // API unit input only, NOT a claim that this artificial descriptor is B.
+  // Actual B authentication and caller ownership remain integration tests.
+  const expectedPackDescriptor = { ...PRIVATE_WEATHER_COMPONENT_PACK_FILE,
+    privacyClass: 'PRIVATE_PRODUCTION_RUNTIME', bytes: original.length, sha256: digest(original) };
+  const invocation = unpackPrivateWeatherComponentCompanions({ restoredRoot: source,
+    outputRoot: output, conditions, expectedPackDescriptor });
+  const result = await invocation;
+  assert.equal(privateWeatherPackJsonReadsClosed(invocation), true);
+  assert.equal(result.kind, 'PRIVATE_WEATHER_COMPONENT_COMPANION_STAGE');
+  assert.deepEqual(result.packDescriptor, expectedPackDescriptor);
+  assert.deepEqual(result.files.map(row => row.relativePath).sort(),
+    ['dmiActive', 'dmiCandidate'].map(key => PRIVATE_WEATHER_COMPONENT_FILES[key]).sort());
+  for (const row of result.files) {
+    const bytes = await fs.readFile(row.sourcePath);
+    assert.deepEqual(bytes, await fs.readFile(path.join(source, row.relativePath)));
+    assert.equal(row.bytes, bytes.length); assert.equal(row.sha256, digest(bytes));
+  }
+  for (const key of ['openMeteoBank', 'selectedComponents', 'fallbackCursor']) {
+    await assert.rejects(fs.access(path.join(output, PRIVATE_WEATHER_COMPONENT_FILES[key])), /ENOENT/);
+  }
+  assert.deepEqual(await fs.readdir(path.join(output, '.cache')),
+    ['dmi-active-complete.json', 'dmi-candidate-progress.json']);
+  assert.deepEqual(await fs.readFile(built.sourcePath), original);
+  const full = await unpackPrivateWeatherComponentPack({ restoredRoot: source,
+    outputRoot: path.join(folder, 'full-unpack'), conditions });
+  assert.equal(full.length, 5, 'the unchanged normal entry still verifies/materializes its complete inventory');
+});
+
+test('original DMI companion stage: absence and strict descriptor/path refusals', async t => {
+  const { folder, source, output } = await companionFixture(t);
+  await seed(source);
+  const built = await buildPrivateWeatherComponentPack({ repositoryRoot: source, conditions });
+  const original = await fs.readFile(built.sourcePath);
+  const expectedPackDescriptor = { ...PRIVATE_WEATHER_COMPONENT_PACK_FILE,
+    privacyClass: 'PRIVATE_PRODUCTION_RUNTIME', bytes: original.length, sha256: digest(original) };
+  const invoke = (descriptor, destination) => unpackPrivateWeatherComponentCompanions({
+    restoredRoot: source, outputRoot: destination, conditions, expectedPackDescriptor: descriptor });
+  const absent = invoke(expectedPackDescriptor, output);
+  assert.deepEqual((await absent).files, []);
+  assert.equal(privateWeatherPackJsonReadsClosed(absent), true);
+  for (const descriptor of [undefined, { ...expectedPackDescriptor, extra: true },
+    { ...expectedPackDescriptor, privacyClass: 'PUBLIC' },
+    Object.defineProperty({ ...expectedPackDescriptor }, 'sha256', { get() { throw new Error('must not invoke accessor'); } }),
+    new Proxy(expectedPackDescriptor, { get() { throw new Error('must not invoke proxy'); } })]) {
+    await assert.rejects(invoke(descriptor, path.join(folder, 'invalid-descriptor')), /COMPANION_DESCRIPTOR_INVALID/);
+  }
+  await assert.rejects(fs.access(path.join(folder, 'invalid-descriptor')), /ENOENT/);
+  await assert.rejects(invoke({ ...expectedPackDescriptor, bytes: original.length + 1 },
+    path.join(folder, 'wrong-size')), /COMPANION_ORIGINAL_CHANGED/);
+  await assert.rejects(invoke({ ...expectedPackDescriptor, sha256: '0'.repeat(64) },
+    path.join(folder, 'wrong-hash')), /COMPANION_ORIGINAL_CHANGED/);
+  await assert.rejects(invoke(expectedPackDescriptor, path.join(source, 'overlap')), /COMPANION_STAGE_PATH_INVALID/);
+  await assert.rejects(invoke(expectedPackDescriptor, output), /EEXIST/);
+  assert.deepEqual(await fs.readFile(built.sourcePath), original);
+});
+
+test('original DMI companion stage: unselected entry corruption is still fatal', async t => {
+  const { source, output } = await companionFixture(t);
+  await seed(source);
+  const built = await buildPrivateWeatherComponentPack({ repositoryRoot: source, conditions });
+  const original = await fs.readFile(built.sourcePath), changed = Buffer.from(original);
+  // This pack has NO selected DMI entries: every body byte is unselected.
+  changed[changed.length - 1] ^= 1;
+  await fs.writeFile(built.sourcePath, changed);
+  const invocation = unpackPrivateWeatherComponentCompanions({ restoredRoot: source,
+    outputRoot: output, conditions, expectedPackDescriptor: { ...PRIVATE_WEATHER_COMPONENT_PACK_FILE,
+      privacyClass: 'PRIVATE_PRODUCTION_RUNTIME', bytes: changed.length, sha256: digest(changed) } });
+  await assert.rejects(invocation, /WEATHER_PACK_ENTRY_HASH_INVALID/);
+  assert.equal(privateWeatherPackJsonReadsClosed(invocation), true);
+  assert.deepEqual(await fs.readFile(built.sourcePath), changed, 'the reader never rewrites even invalid originals');
+});
 
 test('shared own-fd close proof refuses a real open original, then accepts its actual close', async t => {
   const { source } = await fixture(t);

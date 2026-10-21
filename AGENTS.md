@@ -1,3 +1,11 @@
+## 21. oktober — 4.0.586-originalkontinuitet lokalt udstedt, ikke installeret
+
+Læs ROOTs ene aktuelle P0-linje i CURRENT_TRUTH og seneste private checkpoint før de daterede afventninger nedenfor. Sidste verificerede almindelige offentlige levering er fortsat 39520623069/1 kl. 05.39 dansk tid; den passerede allerede originalbevarelsens retentionguard. Den senere 39608743697/1 stoppede før leverandører med manglende bevis for et valgt native-endepunkt blandt de leverede kontekster. Det beviser ikke leverandørsvigt, ugyldige DMI-tal eller fysisk fravær af alle originaler.
+
+Den lokale P0-efterfølger bevarer en normalt bygget originalbank pr. kystdel sammen med de uændrede 121 timer og læser kun de faste ledsagere fra autentificeret B. En nyere arbejdsfil er ikke erstatning for den gamle originals bevis. Normal fuld kontrol før brug, egne samplingfelters tilstedeværelse, punkt-/epoch-/arkivadskillelse og alle stop består; gammel schema1 får ikke automatisk originalbevis. Den normale samme-H0-metadataovergang fra 585 og kode-only-leveringen er lokalt tilkoblet, ikke installeret.
+
+Normal versionssynk til 4.0.586 og lokal C96/I95/T12-udstedelse er udført med releasedAt 2026-10-21T15:05:07.445Z og én ny append-only SQL. Det er ikke installation eller offentlig levering; Normal fixedpoint og synk af syv forbrugere består lokalt; ROOT ejer fortsat præcis kilde-/nativekontrol og kontrolleret levering. Lokale strømkomponentprøver er ikke hele femfamiliepakken, native PostgreSQL, præcis CI eller offentligt vejr. Ingen historiknulstilling, ændring af gamle numeriske værdier/SQL, kildeprioritet, admin eller geometri. SOURCE, statistik og automatisk retention forbliver inaktive; aktuel cronstatus er UKENDT. Alle fem mål er åbne til 18. november 2026. Ældre modstridende status bevares som dateret historik.
+
 ## 20. oktober — aktuel drift og lokal reserveforberedelse
 
 21. oktober: Den efterfølgende præcise kildekontrol nåede den normale reserveaudit, men fandt endnu et forældet krav: fem rankingrækker pr. dag mod normalproducentens Top20. Rettelsen sammenligner hele hver dags resultat med den normale kanoniske projektion, ikke en ny særskilt rækkegrænse. Målprøven afviser afkortning og ændret indhold; samlet ny CI og levering er stadig åbne. Det er ikke en fejlet almindelig vejrhentning eller en ændring af Top20, score, kilder eller model.

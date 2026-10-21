@@ -8,6 +8,7 @@ import {execFile as callbackExec} from 'node:child_process';
 import {promisify} from 'node:util';
 import {fileURLToPath,pathToFileURL} from 'node:url';
 import {withAuthenticated584PredecessorSource} from './check-account-statistics-assistant-predecessor-source.mjs';
+import {withFrozen585AccountStatisticsAssistantTestHost} from './lib/frozen585-account-statistics-assistant-test-host.mjs';
 const ROOT=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
 const HEAD='ee029982538c67dea39880bc7b33f3508c10cf9c',TREE='400babda9377e43ea7ee1444008f7accd1aded32';
 const FIXTURE='scripts/test-reconcile-private-runtime-checkpoint.mjs';
@@ -29,7 +30,9 @@ const identity=s=>{assert(s.isFile()&&!s.isSymbolicLink()&&s.nlink===1n&&s.ino>0
 async function noLinks(file){let at=path.parse(file).root;for(const piece of path.relative(at,file).split(path.sep).filter(Boolean)){
  at=path.join(at,piece);assert(!(await fs.lstat(at)).isSymbolicLink());}}
 async function fixtureFactory(sourceRoot,source){
- assert.equal(sha(source),'dfa4cdd570fe1ebc7571b6cca07024a9aa843b9486a17a9fa49528c561899f48');
+ assert(['dfa4cdd570fe1ebc7571b6cca07024a9aa843b9486a17a9fa49528c561899f48',
+  'aeb487682ce182ac87709087d808e52b382c58eff9c445a317f86324e5e11a01'].includes(sha(source)),
+  'Only the two whole genuine issued584/585 fixture sources');
  const slice=(a,b)=>{assert.equal(source.split(a).length,2);assert.equal(source.split(b).length,2);
   assert(source.indexOf(a)<source.indexOf(b));return source.slice(source.indexOf(a),source.indexOf(b));};
  const utilities=slice('const sha = value =>',"test('normal CURRENT B/S interruption reconciliation preserves whole pairs and refuses ambiguity', async t => {");
@@ -87,6 +90,44 @@ export async function withFrozen584ReconcileFixture(t,callback){
    await noLinks(gitDirectory);const fresh=await fs.lstat(gitDirectory,{bigint:true});assert.deepEqual([fresh.dev,fresh.ino,fresh.birthtimeNs],gitIdentity);
    for(const row of added){await noLinks(row.target);assert.deepEqual(identity(await fs.lstat(row.target,{bigint:true})),row.identity);assert.deepEqual(await fs.readFile(row.target),row.raw);}
    for(const row of [...added].reverse())await fs.unlink(row.target);
+  }catch(error){if(!hasFirst){first=error;hasFirst=true;}}
+  if(hasFirst)throw first;return result;
+ });
+}
+
+// Genuine issued585 B/S fixtures: the existing133-leaf DATA host plus its
+// already-reviewed closed controller host. No current tuple or caller override.
+const HEAD585='e8f9f7197d9e262720b7627b4970d3da82baa9d9',TREE585='24dbf944916031ea256537b125966e946efeead8';
+const EXTENSION585=Object.freeze([...EXTENSION.slice(0,-1),Object.freeze([
+ 'scripts/reconcile-private-runtime-checkpoint.mjs','792bece360975105cec695ad3c9b9823d63373bb',22905,
+ 'aafa9155606e80360e170cc4c9df97f766e66e8cfb52cdfce5eebc5f0c6a41fd'])]);
+export async function withFrozen585ReconcileFixture(t,callback){
+ assert.equal(arguments.length,2);assert.equal(typeof t?.after,'function');assert.equal(typeof callback,'function');
+ assert.equal(String(await git(['rev-parse',HEAD585+'^{tree}'],'utf8')).trim(),TREE585);
+ const leaves=[];for(const[file,blob,size,hash]of EXTENSION585){
+  assert.equal(String(await git(['ls-tree',HEAD585,'--',file],'utf8')).trim(),'100644 blob '+blob+'\t'+file);
+  const raw=Buffer.from(await git(['cat-file','blob',HEAD585+':'+file]));assert.equal(raw.length,size);assert.equal(sha(raw),hash);leaves.push({file,raw});}
+ assert.equal(String(await git(['ls-tree',HEAD585,'--',FIXTURE],'utf8')).trim(),
+  '100644 blob 18f823ab156836c7771a9a9d15719b0ccb1b0882\t'+FIXTURE);
+ const source=String(await git(['cat-file','blob',HEAD585+':'+FIXTURE],'utf8'));
+ return withFrozen585AccountStatisticsAssistantTestHost(async sourceRoot=>{
+  const checked=[],added=[];let result,first,hasFirst=false;
+  try{
+   for(const{file,raw}of leaves){
+    const target=path.join(sourceRoot,file);await noLinks(path.dirname(target));
+    const existing=await fs.lstat(target,{bigint:true}).catch(error=>{if(error.code==='ENOENT')return null;throw error;});
+    if(existing){await noLinks(target);identity(existing);assert.deepEqual(await fs.readFile(target),raw);}
+    else{await fs.writeFile(target,raw,{flag:'wx',mode:0o600});added.push(target);}
+    checked.push({target,raw,identity:identity(await fs.lstat(target,{bigint:true}))});}
+   const factory=await fixtureFactory(sourceRoot,source),fixture=await factory.prepare(t);
+   const expected=JSON.parse(await fs.readFile(fixture.saved[1].checkpointPath,'utf8'));
+   assert.equal(expected.modelBinding.modelBundleSha256,'31bbb9a98f4df93804a9d4bcdff50fe5e9b1c880e04492d2c596079488a6bfa2');
+   assert.equal(expected.continuationStateContractSha256,'a0a5fa40385afb221dcb66e61b815453c11ee8c91f3e2d6581be0670cadc9299');
+   result=await callback(fixture);
+  }catch(error){first=error;hasFirst=true;}
+  try{
+   for(const row of checked){await noLinks(row.target);assert.deepEqual(identity(await fs.lstat(row.target,{bigint:true})),row.identity);assert.deepEqual(await fs.readFile(row.target),row.raw);}
+   for(const target of [...added].reverse())await fs.unlink(target);
   }catch(error){if(!hasFirst){first=error;hasFirst=true;}}
   if(hasFirst)throw first;return result;
  });

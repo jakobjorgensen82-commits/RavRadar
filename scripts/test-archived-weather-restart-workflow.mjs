@@ -9,6 +9,7 @@ import {spawnSync} from 'node:child_process';
 import {fileURLToPath} from 'node:url';
 import {inverseArchivedWeatherRestartWorkflow} from './lib/archived-weather-restart-workflow-review.mjs';
 import {inverseArchivedProductionGate} from './lib/archived-production-gate-review.mjs';
+import {NATIVE_ORIGINAL_CONTINUITY_WORKFLOW_SHA256,inverseNativeOriginalContinuityWorkflow} from './lib/native-original-continuity-workflow-review.mjs';
 import {inverseAccountStatisticsAssistantWorkflow,inverseAccountStatisticsAssistantOffAttestation,inverseAccountStatisticsAssistantStorageTransport} from './lib/account-statistics-assistant-workflow-review.mjs';
 import {expandValidationCommands} from './run-validation-collection.mjs';
 import {lastMileEnclosureRequiredMigrations} from './integrated-cutover-readiness.mjs';
@@ -16,7 +17,8 @@ import {requireLastMileEnclosureBinding} from './lib/last-mile-enclosure-success
 import {ESTABLISHED_NATIVE_CURRENT_ORIGIN_BINDING} from './lib/established-native-current-origin-successor-source.mjs';
 
 const ROOT=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
-const actualCurrent=fs.readFileSync(path.join(ROOT,'.github/workflows/deploy-code-only-repair.yml'),'utf8').replace(/\r\n/g,'\n');
+const nativeCurrent=fs.readFileSync(path.join(ROOT,'.github/workflows/deploy-code-only-repair.yml'),'utf8').replace(/\r\n/g,'\n');
+const actualCurrent=inverseNativeOriginalContinuityWorkflow(nativeCurrent);
 const current=inverseAccountStatisticsAssistantWorkflow(actualCurrent);
 const actual=inverseArchivedProductionGate(current);
 const sha=value=>crypto.createHash('sha256').update(value).digest('hex');
@@ -595,7 +597,7 @@ function savedEnvironment(directory){
     RAVRADAR_WEATHER_STATE_EPOCH_BOOTSTRAP:'false',RAVRADAR_WEATHER_STATE_EPOCH_CHECKPOINT_REENTRY:'false',
     NATIVE_IDENTITY_RECOVERY:'false',UPGRADE_LAST_MILE_ENCLOSURE:'false',UPGRADE_ESTABLISHED_NATIVE_CURRENT_ORIGIN:'false',
     UPGRADE_EXISTING_OWNER_EXPORT:'false',UPGRADE_ACCOUNT_ASSISTANT:'false',UPGRADE_STATISTICS_REVISION:'false',
-    UPGRADE_ACCOUNT_STATISTICS_ASSISTANT:'false',
+    UPGRADE_ACCOUNT_STATISTICS_ASSISTANT:'false',UPGRADE_NATIVE_ORIGINAL_CONTINUITY:'false',
     RAVRADAR_OPERATIONAL_WORK:directory,GITHUB_OUTPUT:path.join(directory,'saved-output'),GITHUB_ENV:path.join(directory,'saved-env'),
     RUNNER_TEMP:directory};
 }
@@ -641,7 +643,8 @@ test('actual saved584 source selector requires the real issued I and T and the s
   for(const key of ['RESTART_ARCHIVED_WEATHER','COMPLETED_PRIVATE_RUNTIME','CHECKPOINT_ONLY','QUICK_CONFIRMATION',
     'RAVRADAR_WEATHER_STATE_EPOCH_BOOTSTRAP','RAVRADAR_WEATHER_STATE_EPOCH_CHECKPOINT_REENTRY','NATIVE_IDENTITY_RECOVERY',
     'UPGRADE_LAST_MILE_ENCLOSURE','UPGRADE_ESTABLISHED_NATIVE_CURRENT_ORIGIN','UPGRADE_EXISTING_OWNER_EXPORT',
-    'UPGRADE_ACCOUNT_ASSISTANT','UPGRADE_STATISTICS_REVISION','UPGRADE_ACCOUNT_STATISTICS_ASSISTANT']){
+    'UPGRADE_ACCOUNT_ASSISTANT','UPGRADE_STATISTICS_REVISION','UPGRADE_ACCOUNT_STATISTICS_ASSISTANT',
+    'UPGRADE_NATIVE_ORIGINAL_CONTINUITY']){
     for(const value of ['true',undefined]){const refused=invoke(next.I,next.T,{[key]:value});
       assert.notEqual(refused.result.status,0,key+': '+value);assert.equal(refused.output,null);}
   }
@@ -753,4 +756,162 @@ test('actual saved authority guard permits only clock and release metadata while
     assert.doesNotMatch(refused.stderr,/synthetic-part-0|synthetic-source-A|"coordinates"/,'No actual coordinate/route payload in error output');
   }
   assert.notEqual(invoke(()=>{},false).status,0,'A stale public manifest digest must fail before S');
+}));
+
+// This case reads the ACTUAL new YAML, never the frozen-oracle projection.
+function nativeContinuityContext(source,{phase='installed',family='current'}={}){
+  const state=context();Object.assign(state.inputs,{restart_archived_weather:false,upgrade_last_mile_enclosure:false,
+    upgrade_account_statistics_assistant:false,upgrade_native_original_continuity:phase==='before',publish_newest_saved_weather:false});
+  for(const step of steps(source))if(step.id&&!state.steps[step.id])state.steps[step.id]={outcome:'success',outputs:{}};
+  Object.assign(state.env,{RAVRADAR_ACCOUNT_STATISTICS_ASSISTANT_SOURCE_ACTIVE:'false',
+    RAVRADAR_NATIVE_ORIGINAL_CONTINUITY_SOURCE_ACTIVE:'true',RAVRADAR_NATIVE_ORIGINAL_CONTINUITY_PHASE:phase,
+    RAVRADAR_NATIVE_ORIGINAL_CONTINUITY_CURRENT_FAMILY:family,
+    RAVRADAR_NATIVE_ORIGINAL_CONTINUITY_UPGRADE_OPT_IN:phase==='before'?'true':'false'});
+  state.steps['current-private-install'].outcome=family==='current'?'success':'skipped';
+  state.steps['migrated-private-install'].outcome=family==='predecessor'?'success':'skipped';
+  state.steps['native-original-continuity-binding'].outputs.installed='true';
+  state.steps['migration-view'].outputs.workdir=ROOT;
+  return state;
+}
+function proveNativeContinuityWorkflow(source){
+  const input=/^      upgrade_native_original_continuity:\n((?:        [^\n]*\n)+)/m.exec(source)?.[1];
+  assert(input);assert.match(input,/^        default: false$/m);assert.match(input,/^        type: boolean$/m);
+  const selector=named(source,'Select the issued native-original-continuity phase without admission');
+  const view=named(source,'Prepare isolated post-cutover migration view');
+  const plan=named(source,'Select exact native-original-continuity from actual linked history');
+  const installed=named(source,'Require actually installed native-original-continuity without SQL replay');
+  const stage=named(source,'Select actual CURRENT family and restore only genuine original585 when required');
+  const prepare=named(source,'Prepare genuine585 originals and no-loss native-original successor');
+  const reconcile=named(source,'Pair already-current native-original B and actual S without origin or SQL replay');
+  const final=named(source,'Complete exact native-original binding after artifacts and fresh authentic originals');
+  const B=named(source,'Publish current bounded private runtime'),S=named(source,'Publish measured continuation only after verified warmup private runtime');
+  const early=named(source,'Publish measured continuation checkpoint without promoting rollback readiness');
+  const edges=named(source,'Deploy exact rebound trip Edges without Worker or D1 replay');
+  assert.match(selector.text,/node scripts\/select-native-original-continuity-code-only-source\.mjs/);
+  assert.match(view.text,/prepareNativeOriginalContinuityCutoverWorkdir/);
+  assert.match(named(source,'Hydrate only already-applied migration identities').text,/hydrateNativeOriginalContinuityRemoteMigrationHistory/);
+  assert.match(plan.text,/verify-native-original-continuity-plan\.mjs --select/);
+  assert.match(stage.text,/node scripts\/stage-native-original-continuity-originals\.mjs/);
+  assert.match(prepare.text,/node scripts\/native-original-continuity-prewrite\.mjs --slot prepare/);
+  assert.match(reconcile.text,/reconcile-private-runtime-checkpoint\.mjs reconcile-native-original-continuity/);
+  assert.doesNotMatch(reconcile.text,/--slot prepare|--slot final|db push/);
+  assert.match(installed.text,/--phase installed/);assert.match(installed.text,/--dry-run --skip-vault/);
+  assert.match(installed.text,/sourcePhase:'native-original-continuity'/);
+  assert.match(installed.text,/verify-statistics-preference-revision-schema\.mjs/);
+  assert(selector.at<view.at&&view.at<plan.at&&plan.at<installed.at&&installed.at<stage.at&&stage.at<prepare.at);
+  assert(prepare.at<final.at&&final.at<B.at&&B.at<S.at&&S.at<edges.at);
+  const body=runText(final),write=body.indexOf('supabase db push --linked --skip-vault');
+  assert.equal((body.match(/supabase db push --linked --skip-vault/g)||[]).length,1,'Only one potential actual SQL mutation');
+  for(const result of ['runtime-audit.outputs.runtime_audit_outcome','current-private-spec.outcome','current-private-bundle.outcome',
+    'pages-prebuild.outcome','pages-preflight-privacy.outcome'])assert(body.includes('test "${{ steps.'+result+' }}" = success'));
+  assert(body.indexOf('--slot final')>0&&body.indexOf('--slot final')<write);
+  const freshPlan=body.indexOf('verify-native-original-continuity-plan.mjs --phase "$RAVRADAR_NATIVE_ORIGINAL_CONTINUITY_PHASE"');
+  assert(freshPlan>0&&freshPlan<write,'The real fresh plan command must exist before the actual SQL write');
+  assert.match(body,/test "\$\(git rev-parse HEAD\^\{commit\}\)" = "\$GITHUB_SHA"/);
+  assert.match(body,/test "\$\(git rev-parse origin\/main\^\{commit\}\)" = "\$GITHUB_SHA"/);
+  assert(body.indexOf('supabase migration list --linked',write)>write);
+  assert(body.indexOf('--phase installed',write)>write);
+  assert(body.indexOf("sourcePhase:'native-original-continuity'",write)>write);
+  assert(body.indexOf('verify-statistics-preference-revision-schema.mjs',write)>write);
+  assert.match(body,/if test "\$RAVRADAR_NATIVE_ORIGINAL_CONTINUITY_PHASE" = before; then/);
+  assert.doesNotMatch(body,/for .*attempt|while |--force|--include-all/);
+  assert.match(B.text,/steps\.native-original-continuity-binding\.outputs\.installed/);
+  assert.match(edges.text,/steps\.current-private-publish\.outcome/);
+  assert.match(edges.text,/steps\.established-native-current-origin-checkpoint-publish\.outcome/);
+  const handoff=named(source,'Seal privacy-safe code-only operational handoff');
+  assert.match(handoff.text,/RAVRADAR_NATIVE_ORIGINAL_CONTINUITY_SOURCE_ACTIVE == 'true'\) && steps\.established-native-current-origin-checkpoint-publish\.outcome/);
+  assert.match(source,/uses: \.\/\.github\/workflows\/reusable-pages-deploy\.yml/);
+  for(const state of [nativeContinuityContext(source,{phase:'before',family:'predecessor'}),
+    nativeContinuityContext(source,{phase:'installed',family:'predecessor'}),nativeContinuityContext(source)]){
+    const predecessor=state.env.RAVRADAR_NATIVE_ORIGINAL_CONTINUITY_CURRENT_FAMILY==='predecessor';
+    assert(enabled(selector,state));assert(enabled(plan,state));assert(enabled(stage,state));assert(enabled(final,state));
+    assert.equal(enabled(prepare,state),predecessor);assert.equal(enabled(reconcile,state),!predecessor);
+    assert.equal(enabled(installed,state),state.env.RAVRADAR_NATIVE_ORIGINAL_CONTINUITY_PHASE==='installed');
+    assert.equal(enabled(named(source,'Select the issued account-statistics-assistant source phase without admission'),state),false);
+    assert.deepEqual(steps(source).filter(row=>/supabase db push --linked --skip-vault/.test(row.text)&&enabled(row,state))
+      .map(row=>row.name),[final.name],'No legacy or second SQL caller is reachable');
+    for(const name of ['Apply exact dry-run-verified post-cutover binding','Prepare exact predecessor source for bounded binding migration',
+      'Select only the unconsumed last-mile archive restart','Build a new full public forecast through the normal provider-free updater'])
+      assert.equal(enabled(named(source,name),state),false,'No inherited source/recompute route: '+name);
+    for(const step of steps(source).filter(row=>row.name.startsWith('Metadata585 - ')||/Worker and explicit aggregate OFF/.test(row.name)))
+      assert.equal(enabled(step,state),false,'No Worker/D1 replay: '+step.name);
+    assert.equal(enabled(early,state),false,'S cannot publish before B');assert(enabled(S,state));assert(enabled(edges,state));
+    state.steps['current-private-publish'].outcome='failure';assert.equal(enabled(S,state),false,'Actual B outcome gates S');
+  }
+  assert.doesNotMatch(source,/RAVRADAR_SOURCE_PRODUCER_|stage-source-producer-originals|source-producer-prewrite/);
+}
+
+test('native continuity workflow: actual unprojected callers and exact historical boundary',()=>{
+  assert.equal(sha(nativeCurrent),NATIVE_ORIGINAL_CONTINUITY_WORKFLOW_SHA256);
+  assert.equal(sha(inverseNativeOriginalContinuityWorkflow(nativeCurrent)),
+    'c60f65d52663525fb01095b87888e9385fa886b6d7d9cc38af788e08ad1d5435');
+  assert.equal(inverseNativeOriginalContinuityWorkflow(nativeCurrent),actualCurrent);
+  assert.throws(()=>inverseNativeOriginalContinuityWorkflow(actualCurrent),'Already-inverted bytes do not gain another pass');
+  proveNativeContinuityWorkflow(nativeCurrent);
+  for(const[name,mutate]of[
+    ['Prepare genuine585 originals and no-loss native-original successor',text=>text.replace('--slot prepare','--slot final')],
+    ['Complete exact native-original binding after artifacts and fresh authentic originals',text=>text.replace('--slot final','--slot prepare')],
+    ['Complete exact native-original binding after artifacts and fresh authentic originals',text=>text.replace('sourcePhase:\'native-original-continuity\'','sourcePhase:\'account-statistics-assistant\'')],
+    ['Complete exact native-original binding after artifacts and fresh authentic originals',text=>text.replace('          test "${{ steps.pages-preflight-privacy.outcome }}" = success\n','')],
+    ['Pair already-current native-original B and actual S without origin or SQL replay',text=>text.replace('reconcile-private-runtime-checkpoint.mjs reconcile-native-original-continuity','native-original-continuity-prewrite.mjs --slot prepare')],
+    ['Publish measured continuation checkpoint without promoting rollback readiness',text=>text.replace(" && (env.RAVRADAR_NATIVE_ORIGINAL_CONTINUITY_SOURCE_ACTIVE != 'true')",'')],
+    ['Publish measured continuation only after verified warmup private runtime',text=>text.replace(" && steps.current-private-publish.outcome == 'success'",'')],
+  ]){
+    const original=named(nativeCurrent,name).text,changed=mutate(original);assert.notEqual(changed,original);
+    const source=replaceOne(nativeCurrent,original,changed);
+    assert.throws(()=>inverseNativeOriginalContinuityWorkflow(source),'The whole new inverse rejects '+name);
+    assert.throws(()=>proveNativeContinuityWorkflow(source),'The actual new structural caller refuses '+name);
+  }
+});
+
+test('native continuity workflow: actual authority and selector environment are exclusive',()=>{
+  const authority=/      - name: Require the exact dispatch purpose on main\n([\s\S]*?)(?=\n  operational-recovery-gate:)/.exec(nativeCurrent);
+  assert(authority);const body=runText({name:'native authority',text:authority[0]});
+  const base={GITHUB_EVENT_NAME:'workflow_dispatch',GITHUB_REF:'refs/heads/main',GITHUB_RUN_ATTEMPT:'1',
+    CONFIRMATION:'DEPLOY-CODE-ONLY-REPAIR',SAVED_WEATHER:'false',RECOVER_PUBLIC_RUN_ID:'',RECOVER_PUBLIC_RUN_ATTEMPT:'1',
+    UPGRADE_EXISTING_OWNER_EXPORT:'false',UPGRADE_ACCOUNT_ASSISTANT:'false',UPGRADE_STATISTICS_REVISION:'false',
+    UPGRADE_ESTABLISHED_NATIVE_CURRENT_ORIGIN:'false',UPGRADE_LAST_MILE_ENCLOSURE:'false',RESTART_ARCHIVED_WEATHER:'false',
+    UPGRADE_ACCOUNT_STATISTICS_ASSISTANT:'false',UPGRADE_NATIVE_ORIGINAL_CONTINUITY:'true'};
+  assert.equal(bash(body,base).status,0);
+  for(const key of ['UPGRADE_EXISTING_OWNER_EXPORT','UPGRADE_ACCOUNT_ASSISTANT','UPGRADE_STATISTICS_REVISION',
+    'UPGRADE_ESTABLISHED_NATIVE_CURRENT_ORIGIN','UPGRADE_LAST_MILE_ENCLOSURE','RESTART_ARCHIVED_WEATHER',
+    'SAVED_WEATHER','UPGRADE_ACCOUNT_STATISTICS_ASSISTANT'])assert.notEqual(bash(body,{...base,[key]:'true'}).status,0,key);
+  for(const changes of [{GITHUB_RUN_ATTEMPT:'2'},{GITHUB_REF:'refs/heads/topic'},{GITHUB_EVENT_NAME:'push'},
+    {RECOVER_PUBLIC_RUN_ID:'123'},{RECOVER_PUBLIC_RUN_ATTEMPT:'2'},{CONFIRMATION:'DEPLOY-SAVED-WEATHER-REPAIR'}])
+    assert.notEqual(bash(body,{...base,...changes}).status,0);
+  for(const opted of [false,true]){
+    const state=nativeContinuityContext(nativeCurrent,{phase:opted?'before':'installed',family:'predecessor'});
+    state.inputs.upgrade_native_original_continuity=opted;
+    for(const[field,value]of [['UPGRADE_OPT_IN',String(opted)],['PHASE',opted?'before':'installed'],['WRITER_ACTIVE','false']]){
+      const expression=new RegExp('^      RAVRADAR_NATIVE_ORIGINAL_CONTINUITY_'+field+': (.+)$','m').exec(nativeCurrent)?.[1];
+      assert(expression);assert.equal(String(evaluate(expression,state)),value);
+    }
+  }
+});
+
+test('native continuity workflow: actual SQL shell branch is one before call and zero installed calls',()=>fixture(directory=>{
+  const final=named(nativeCurrent,'Complete exact native-original binding after artifacts and fresh authentic originals');
+  const body=runText(final),begin=body.indexOf('sql_status=0\n');
+  const marker='(cd "${{ steps.migration-view.outputs.workdir }}" && supabase migration list --linked)';
+  const stop=body.indexOf(marker,begin);assert(begin>=0&&stop>begin);
+  const fragment=body.slice(begin,stop),state=nativeContinuityContext(nativeCurrent);state.steps['migration-view'].outputs.workdir=directory;
+  for(const[phase,family,opted,status,calls]of[['before','predecessor','true',0,1],['before','predecessor','true',42,1],
+    ['installed','predecessor','false',0,0],['installed','current','false',0,0]]){
+    const output=path.join(directory,'actual-sql-branch.txt');fs.writeFileSync(output,'');
+    const program=body.slice(0,body.indexOf('\n')+1)
+      +'supabase(){ printf "%s\\n" "$*" >> "$CALL_OUTPUT"; return "$SYNTHETIC_TRANSPORT_STATUS"; };\n'
+      +render(fragment,state)+'printf "sql_status=%s\\n" "$sql_status"\n';
+    const result=bash(program,{RAVRADAR_NATIVE_ORIGINAL_CONTINUITY_PHASE:phase,
+      RAVRADAR_NATIVE_ORIGINAL_CONTINUITY_CURRENT_FAMILY:family,RAVRADAR_NATIVE_ORIGINAL_CONTINUITY_UPGRADE_OPT_IN:opted,
+      CALL_OUTPUT:output,SYNTHETIC_TRANSPORT_STATUS:String(status)});
+    assert.equal(result.status,0,result.stderr);assert.equal(result.stdout.trim(),'sql_status='+status);
+    const observed=fs.readFileSync(output,'utf8').trim();assert.equal(observed?observed.split('\n').length:0,calls);
+    if(calls)assert.equal(observed,'db push --linked --skip-vault');
+  }
+  const refused=bash(body.slice(0,body.indexOf('\n')+1)+render(fragment,state),{
+    RAVRADAR_NATIVE_ORIGINAL_CONTINUITY_PHASE:'installed',RAVRADAR_NATIVE_ORIGINAL_CONTINUITY_CURRENT_FAMILY:'predecessor',
+    RAVRADAR_NATIVE_ORIGINAL_CONTINUITY_UPGRADE_OPT_IN:'true'});
+  assert.notEqual(refused.status,0,'A consumed true grant is not an installed-only execution');
+  // This is actual shell reachability with a bounded transport stand-in, NOT
+  // an executed SQL/plan/native proof or successful installation.
 }));

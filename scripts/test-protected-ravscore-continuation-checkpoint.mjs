@@ -525,7 +525,8 @@ if (process.argv.includes('--native-identity-source-only')) {
   process.exit(0);
 }
 
-const accountStatisticsAssistantNative = process.argv.includes('--account-statistics-assistant');
+const nativeOriginalContinuityNative = process.argv.includes('--native-original-continuity');
+const accountStatisticsAssistantNative = process.argv.includes('--account-statistics-assistant') || nativeOriginalContinuityNative;
 // Native PostgreSQL is a separate mandatory Linux source leaf, never a
 // MemoryCentral/Windows representation proof. Reuse these exact 673 builders
 // and the normal checkpoint saver; do not run the simulated RPC tests here.
@@ -547,6 +548,7 @@ if (process.argv.includes('--native-postgres') || process.argv.includes('--nativ
       includeEstablishedNativeCurrentOrigin: process.argv.includes('--established-native-current-origin') || (process.argv.includes('--last-mile-enclosure') || accountStatisticsAssistantNative),
       includeLastMileEnclosure: (process.argv.includes('--last-mile-enclosure') || accountStatisticsAssistantNative),
       includeAccountStatisticsAssistant: accountStatisticsAssistantNative,
+      includeNativeOriginalContinuity: nativeOriginalContinuityNative,
     });
     console.log(JSON.stringify(report));
   } catch (error) {

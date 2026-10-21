@@ -1,3 +1,9 @@
+## 21. oktober 2026 — 4.0.586 lokalt udstedt; originalkontinuitet og historisk sammenligning
+
+Den sidste verificerede almindelige offentlige levering kl. 05.39 dansk tid passerede allerede originalbevarelseskontrollen. Den senere kørsel stoppede før leverandører på manglende valgt native-endepunktsbevis blandt de leverede kontekster. En lokal reproduktion viser, hvorfor bevarede timer skal have deres originale bevis med videre, når nyere arbejdsfiler erstatter ældre native-slots.
+
+Normal per-PART-originalbank, præcis sampling-identitet, autentificerede faste B-ledsagere og 585-samme-H0-metadataovergang er lokalt integreret. 4.0.586, C96/I95/T12 og én append-only SQL er lokalt udstedt med bevarede gamle SQL-originaler, numeriske værdier og geometri; normal fixedpoint og syv forbrugersynk består. Nationale strømkomponentmål er ikke hele vejrjobbet eller produktion. CLI-/native-PG-/præcis CI-/installations-/offentlige beviser er fortsat åbne; ingen aktivering af SOURCE, statistik eller automatisk retention. Aktuel cronstatus er ukendt, og alle fem mål er åbne til 18. november 2026. Se MASTER_LOG, CURRENT_TRUTH og det private checkpoint.
+
 ## 20. oktober 2026 — 4.0.585 lokalt genereret, offentlig 584 bevares
 
 PR675 bestod præcis source-CI med 27 succeser uden skip og er merget som `954ca00a`. Den næste almindelige vejrhentning er endnu ikke verificeret færdig. Sidste fuldt verificerede almindelige offentlige levering er 584 den 19. oktober omkring kl. 23.02 dansk tid, reference kl. 20 og startup `rr-20261019195021-210`.

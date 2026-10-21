@@ -245,13 +245,142 @@ function inversePlannerEndpointSubreason(source) {
   assert.equal(Buffer.byteLength(source),review.before.bytes);
   return source;
 }
+// TEST INPUT ONLY: exact native-original consumer/source-controller inverse.
+// Only historical source-oracle dispatch uses this; real core/B-S CLI inputs
+// remain the actual unmodified source. No admission or runtime authority.
+export const CURRENT_NATIVE_ORIGINAL_CONSUMER_TEST_REVIEW = Object.freeze({
+  "schemaVersion": 1,
+  "kind": "TEST_ONLY_EXACT_NATIVE_ORIGINAL_CONSUMER_INVERSE",
+  "rows": [
+    {
+      "path": "scripts/plan-ravscore-current-history.mjs",
+      "before": {
+        "bytes": 60071,
+        "sha256": "d462be0aaa0401fbf1d36f5a52b44d9dde2d31dd21d4a2b160ade406562c2276"
+      },
+      "after": {
+        "bytes": 59484,
+        "sha256": "e4d66bc22fb2c788ecf91d58ec2c96cf1eb910016fe64f3820c0b311f660872d"
+      },
+      "historicalPassThrough": [
+        {
+          "bytes": 52332,
+          "sha256": "f9c0f19126785fcaedde569643e368913edb6e25b8a51d32ac11a4f1584d3e20"
+        },
+        {
+          "bytes": 58585,
+          "sha256": "76f867902dbab4b462d3108e1e6ac992fe4c54203c4f7fbb93cfc9ff00d8eb7e"
+        },
+        {
+          "bytes": 59770,
+          "sha256": "b0027151541ac8fa3ae2ac99b1b0ef1bbfcd18e0e3be407d32b9704ecba552fb"
+        }
+      ],
+      "edits": [
+        {
+          "offset": 3066,
+          "after": "import { readCurrentPrivateRuntimeCompanionInput, readAuthenticatedCurrentCompanions }\n  from './read-authenticated-dmi-current-companions.mjs';",
+          "before": "import { verifyPrivateProductionRuntimeBundle } from './private-production-runtime-bundle.mjs';"
+        },
+        {
+          "offset": 11615,
+          "after": "  progressActive = null, historicalBulk = null, protectedCompanionContexts = [],\n  persistedHourlyByPart = new Map(), liveCurrentPilot = null, zones } = {}) {",
+          "before": "  progressActive = null, historicalBulk = null, persistedHourlyByPart = new Map(), liveCurrentPilot = null, zones } = {}) {"
+        },
+        {
+          "offset": 12470,
+          "after": "    || !(persistedHourlyByPart instanceof Map) || !Array.isArray(protectedCompanionContexts)\n    || protectedCompanionContexts.length > 2) refuse('RETENTION_INPUT_INVALID');",
+          "before": "    || !(persistedHourlyByPart instanceof Map)) refuse('RETENTION_INPUT_INVALID');"
+        },
+        {
+          "offset": 13779,
+          "after": "    const protectedContexts = [protectedBulk, historicalBulk];\n    const persisted = persistedHourlyByPart.get(part.partId);\n    const records = [];",
+          "before": "    const protectedContexts = [protectedBulk, historicalBulk];\n    const records = [];"
+        },
+        {
+          "offset": 14145,
+          "after": "...(previous ? { persistedHourly: persisted?.hourly ?? [],",
+          "before": "...(previous ? { persistedHourly: persistedHourlyByPart.get(part.partId)?.hourly ?? [],"
+        },
+        {
+          "offset": 15269,
+          "after": "      records.push({ source: previous ? 'deployed-private-runtime' : 'progressive-private-dmi',\n        // Original B companions support only proof of the protected selection;\n        // they never become mapper inputs, new candidates or source priority.\n        nativeCurrentContexts: previous ? [...contexts, ...protectedCompanionContexts] : contexts,\n        ...(previous && persisted?.nativeCurrentOriginals != null\n          ? { nativeCurrentOriginals: persisted.nativeCurrentOriginals } : {}),\n        record: { ...record, hourly } });",
+          "before": "      records.push({ source: previous ? 'deployed-private-runtime' : 'progressive-private-dmi',\n        nativeCurrentContexts: contexts, record: { ...record, hourly } });"
+        },
+        {
+          "offset": 18801,
+          "after": "async function readCommittedRawCurrentRetention(registry, checkpointFile, productionReferenceAt) {\n  const { verified, conditions, conditionsPath: file, conditionsSha256, verify } =\n    await readCurrentPrivateRuntimeCompanionInput(productionReferenceAt);\n  if (!checkpointFile) refuse('RETENTION_B_CHANGED');\n",
+          "before": "async function readCommittedRawCurrentRetention(registry, checkpointFile, productionReferenceAt) {\n  const privateRoot = process.env.RAVRADAR_PRIVATE_RUNTIME_ROOT;\n  const bundlePath = process.env.RAVRADAR_PRIVATE_RUNTIME_BUNDLE;\n  if (!path.isAbsolute(privateRoot ?? '') || !path.isAbsolute(bundlePath ?? '')\n    || path.dirname(bundlePath) !== privateRoot || !process.env.RUNNER_TEMP) refuse('RETENTION_B_PATH');\n  // Already authenticated CURRENT from the ordinary restore/reconcile, not a\n  // caller-supplied old manifest or newly calculated/local H0. No network here.\n  const descriptor = JSON.parse(await fs.readFile(path.join(process.env.RUNNER_TEMP,\n    'private-runtime-current-source.json'), 'utf8'));\n  const verify = () => verifyPrivateProductionRuntimeBundle({ privateRoot, bundlePath,\n    repositoryRoot: ROOT, expected: descriptor });\n  const verified = await verify();\n  if (verified.bundleContentSha256 !== descriptor.bundleContentSha256) refuse('RETENTION_B_CHANGED');\n  const file = path.join(bundlePath, 'payload/data/live/conditions.json');\n  const fileInfo = await fs.lstat(file);\n  if (!fileInfo.isFile() || fileInfo.isSymbolicLink() || fileInfo.size > 256 * 1024 * 1024) refuse('RETENTION_B_CHANGED');\n  const bytes = await fs.readFile(file);\n  const conditionsSha256 = hash(bytes).slice(7);\n  const listed = verified.files.find(row => row.relativePath === 'data/live/conditions.json');\n  if (!listed || listed.bytes !== bytes.length || listed.sha256 !== conditionsSha256 || !checkpointFile) refuse('RETENTION_B_CHANGED');\n  const conditions = JSON.parse(bytes.toString('utf8'));\n"
+        },
+        {
+          "offset": 19642,
+          "after": "  const protectedCompanionContexts = await readAuthenticatedCurrentCompanions(verified, conditions);\n  const parts = Object.entries(registry.zones).flatMap(([zoneId, entries]) => entries.map(part => ({ ...part, zoneId })));",
+          "before": "  const parts = Object.entries(registry.zones).flatMap(([zoneId, entries]) => entries.map(part => ({ ...part, zoneId })));"
+        },
+        {
+          "offset": 21627,
+          "after": "      historicalBulk, protectedCompanionContexts, persistedHourlyByPart, liveCurrentPilot, zones });",
+          "before": "      historicalBulk, persistedHourlyByPart, liveCurrentPilot, zones });"
+        },
+        {
+          "offset": 58763,
+          "after": "&&result.frame.sha256==='a49ea641f76af721c43a13a091aa102e0904a3730803859d7c5f5e29e7c516bc'",
+          "before": "&&result.frame.sha256==='0db7833d68cad3c1ab60c86855bab6e90b1cbf40d8a2ad766da74609781ce6dc'"
+        }
+      ]
+    },
+    {
+      "path": "scripts/lib/post-h0-dmi-original-dependencies.mjs",
+      "before": {
+        "bytes": 15137,
+        "sha256": "0db7833d68cad3c1ab60c86855bab6e90b1cbf40d8a2ad766da74609781ce6dc"
+      },
+      "after": {
+        "bytes": 15554,
+        "sha256": "a49ea641f76af721c43a13a091aa102e0904a3730803859d7c5f5e29e7c516bc"
+      },
+      "historicalPassThrough": [],
+      "edits": [
+        {
+          "offset": 2895,
+          "after": "import { nativeCurrentOriginalBankForPart } from './ravscore-recovery-source-priority.mjs';\n\nfunction data(value, array = false) {",
+          "before": "function data(value, array = false) {"
+        },
+        {
+          "offset": 9349,
+          "after": "    checkContexts(contexts, expected);\n    let previousBank;\n    try { previousBank = nativeCurrentOriginalBankForPart(source, part); }\n    catch { fail('INPUT_INVALID'); }\n    if (previousBank !== null) plainTree(previousBank, 0, { nodes: 0, bytes: 0,\n      maximumNodes: LIMIT.donorRowsPerPart * 256, maximumBytes: LIMIT.candidateBytesPerPart });\n    const inspector = createProtectedDmiNativeCurrentInspector({ contexts, previousBank });",
+          "before": "    checkContexts(contexts, expected);\n    const inspector = createProtectedDmiNativeCurrentInspector({ contexts });"
+        }
+      ]
+    }
+  ]
+});
+export function inverseCurrentNativeOriginalConsumerTestInput(source, relative) {
+  assert.equal(arguments.length, 2, 'ALTERNATIVE_C_TEST_INPUT_CHANGED:NATIVE_ORIGINAL_CONSUMER_ARGUMENTS');
+  assert.equal(typeof source, 'string', 'ALTERNATIVE_C_TEST_INPUT_CHANGED:NATIVE_ORIGINAL_CONSUMER_TYPE');
+  const row = CURRENT_NATIVE_ORIGINAL_CONSUMER_TEST_REVIEW.rows.find(value => value.path === relative);
+  assert(row, 'ALTERNATIVE_C_TEST_INPUT_CHANGED:NATIVE_ORIGINAL_CONSUMER_PATH');
+  const whole = digest(source), bytes = Buffer.byteLength(source);
+  if ([row.before, ...row.historicalPassThrough].some(value => value.sha256 === whole && value.bytes === bytes)) return source;
+  assert.equal(bytes, row.after.bytes, 'ALTERNATIVE_C_TEST_INPUT_CHANGED:NATIVE_ORIGINAL_CONSUMER_AFTER_SIZE');
+  assert.equal(whole, row.after.sha256, 'ALTERNATIVE_C_TEST_INPUT_CHANGED:NATIVE_ORIGINAL_CONSUMER_AFTER_WHOLE');
+  for (const edit of [...row.edits].reverse()) {
+    assert.equal(source.slice(edit.offset, edit.offset + edit.after.length), edit.after,
+      'ALTERNATIVE_C_TEST_INPUT_CHANGED:NATIVE_ORIGINAL_CONSUMER_HUNK');
+    source = source.slice(0, edit.offset) + edit.before + source.slice(edit.offset + edit.after.length);
+  }
+  assert.equal(Buffer.byteLength(source), row.before.bytes, 'ALTERNATIVE_C_TEST_INPUT_CHANGED:NATIVE_ORIGINAL_CONSUMER_BEFORE_SIZE');
+  assert.equal(digest(source), row.before.sha256, 'ALTERNATIVE_C_TEST_INPUT_CHANGED:NATIVE_ORIGINAL_CONSUMER_WHOLE_INVERSE');
+  return source;
+}
+
 export function inverseAlternativeCCaller(source,relative) {
   assert.equal(typeof source,'string');
   const row=SOURCE_INPUTS.find(item=>item.path===relative);
   assert(row,'ALTERNATIVE_C_TEST_INPUT_PATH');
   source=source.replaceAll('\r\n','\n');
   if(digest(source)===row.before.sha256) return source;
-  if(relative==='scripts/plan-ravscore-current-history.mjs') source=inversePlannerFirstFailure(inversePlannerOriginalDependency(inversePlannerEndpointSubreason(source)));
+  if(relative==='scripts/plan-ravscore-current-history.mjs') source=inversePlannerFirstFailure(inversePlannerOriginalDependency(inversePlannerEndpointSubreason(inverseCurrentNativeOriginalConsumerTestInput(source, relative))));
   if(relative==='scripts/update-weather.mjs') source=inverseArchivedWeatherRestartUpdater(source);
   assert.equal(digest(source),row.after.sha256,'ALTERNATIVE_C_TEST_INPUT_CHANGED');
   for(const [before,after] of [...row.hunks].reverse()) {

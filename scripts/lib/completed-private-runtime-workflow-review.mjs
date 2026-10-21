@@ -14,8 +14,14 @@ for (const row of Object.values(ordinaryStageWiringReview)) {
   row.edits.forEach(Object.freeze); Object.freeze(row.edits); Object.freeze(row);
 }
 Object.freeze(ordinaryStageWiringReview);
-// Exact585 normal User-Agent inverse; the entire issued584 workflow remains the oracle.
+// Exact586 then585 normal User-Agent inverses; every historical workflow byte remains the oracle.
 export function inverseRelease585WorkflowUserAgents(source, role) {
+  if (role === 'build' && sha(source) === '8223891e25cfb7fbcf57a536bcc55a1cbf59ed676f02172588192065ae4eccc0') {
+    assert.equal(source.split('RavRadar/4.0.586').length, 6, 'Exactly five normal586 User-Agent fields');
+    source = source.replaceAll('RavRadar/4.0.586', 'RavRadar/4.0.585');
+    assert.equal(sha(source), '2ee56b8ae3546f8ac3ce97b45aaedbfe7eb67fac0960961f164cecca70c0970c',
+      'Whole genuine585 workflow survives the586 User-Agent inverse');
+  }
   if (role !== 'build' || sha(source) !== '2ee56b8ae3546f8ac3ce97b45aaedbfe7eb67fac0960961f164cecca70c0970c') return source;
   assert.equal(source.split('RavRadar/4.0.585').length, 6, 'Exactly five normal585 User-Agent fields');
   const previous = source.replaceAll('RavRadar/4.0.585', 'RavRadar/4.0.584');

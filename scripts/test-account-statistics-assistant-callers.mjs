@@ -10,33 +10,11 @@ import {privateTripStudySchemaModel,classifyPrivateTripStudySchema,privateTripSt
   from './deploy-private-trip-study.mjs';
 import './test-trip-aggregate-month-rollover.mjs';
 import {modelSourceRelativeModuleSpecifiers} from './lib/model-source-imports.mjs';
-import {checkpointMetadataCasBlock} from './sync-ravscore-model-binding.mjs';
-import {fileURLToPath} from 'node:url';
-import {ravScoreModelBinding as integratedBinding} from '../js/core/ravscore-model-contract.js';
-import {ravScoreModelBinding as candidateBinding} from './rollback-assets/ravscore-model-contract.js';
-import {privateRuntimeContractHashes} from './private-production-runtime-workflow.mjs';
-import {accountStatisticsAssistantRequiredMigrations} from './integrated-cutover-readiness.mjs';
-import {ACCOUNT_STATISTICS_ASSISTANT_BEFORE as OLD, requireAccountStatisticsAssistantBinding,
-  requireAccountStatisticsAssistantOutput, accountStatisticsAssistantMigration,
-  readAccountStatisticsAssistantCanonicalSource,ACCOUNT_STATISTICS_ASSISTANT_ALIASES,
-  accountStatisticsAssistantDefinition} from './lib/account-statistics-assistant-successor-source.mjs';
-import {assertAccountStatisticsAssistantPlanCaller, selectAccountStatisticsAssistantRoute,
-  verifyAccountStatisticsAssistantPlan} from './verify-account-statistics-assistant-plan.mjs';
-import {assertAccountStatisticsAssistantPrewriteCaller,
-  verifyAccountStatisticsAssistantPrewritePreservation} from './account-statistics-assistant-prewrite.mjs';
-import {prepareAccountStatisticsAssistantRuntimeTransition,
-  restoreAndPrepareAccountStatisticsAssistantRuntimeTransition,
-  assertAccountStatisticsAssistantRuntimeTransitionPrepared} from './account-statistics-assistant-runtime-transition.mjs';
-import {assertAuthenticatedFrozen584Snapshot} from './lib/authenticated-frozen584-predecessor.mjs';
-import {buildEstablishedNativeCurrent584MetadataAttestation,
-  assertEstablishedNativeCurrent584MetadataCheckpoint} from './lib/established-native-current-origin.mjs';
+import path from 'node:path';
+import {fileURLToPath,pathToFileURL} from 'node:url';
+import {withFrozen585AccountStatisticsAssistantTestHost}
+  from './lib/frozen585-account-statistics-assistant-test-host.mjs';
 
-// No fake issued tuple and no early-UNISSUED branch that could qualify585.
-const NEXT=requireAccountStatisticsAssistantBinding();
-requireAccountStatisticsAssistantOutput();
-const descriptor=accountStatisticsAssistantMigration();
-const required=accountStatisticsAssistantRequiredMigrations();
-const migrationsDirectory=fileURLToPath(new URL('../supabase/migrations',import.meta.url));
 // Existing normal controller and unchanged real SQL, synthetic in-memory D1
 // metadata only. These cases neither install D1 nor prove Worker CPU/privacy.
 const privateStudySql=async()=>Promise.all(['001_trip_observations.sql',
@@ -109,6 +87,51 @@ test('private-study005: the normal workflow stays OFF and DDL remains outside Wo
   assert.doesNotMatch(ddl,/catch\s*\{|recoveryAttempted|replace\(/);
   assert.doesNotMatch(source.slice(to),/await cf\(|model\.jobsMigration/);
 });
+test('current585 model-import guard admits only the whole reviewed first-raw-error loader',async()=>{
+  const file='scripts/check-account-statistics-assistant-predecessor-source.mjs';
+  const source=(await fs.readFile(new URL('./check-account-statistics-assistant-predecessor-source.mjs',import.meta.url),'utf8'))
+    .replace(/^\uFEFF/,'').replace(/\r\n?/g,'\n');
+  const hash=value=>crypto.createHash('sha256').update(value).digest('hex');
+  assert.equal(hash(source),'10ccdee12b112bcc323689c331a7bb068b7f47ae1ac60d535caf2d4523f465c1');
+  const imports=modelSourceRelativeModuleSpecifiers(source,file);
+  assert(Object.isFrozen(imports));assert.deepEqual(imports,[]);
+  const once=(text,before,after)=>{assert.equal(text.split(before).length,2);return text.replace(before,()=>after);};
+  let predecessor=once(source,'let result,first,hasFirst=false;','let result,first;');
+  predecessor=once(predecessor,'}catch(error){first=error;hasFirst=true;}','}catch(error){first=error;}');
+  predecessor=once(predecessor,'}catch(error){if(!hasFirst){first=error;hasFirst=true;}}\n  if(hasFirst)throw first;',
+    '}catch(error){if(!first)first=error;}\n  if(first)throw first;');
+  assert.equal(hash(predecessor),'44ed717ec5aa7df32f2fb5603c50091aa53878df57dc23e834c67ba00185a4ac');
+  for(const changed of [source+'\n// changed byte\n',source+"\nimport './hidden.mjs';\n",predecessor])
+    assert.throws(()=>modelSourceRelativeModuleSpecifiers(changed,file),/Whole reviewed model import source changed/);
+});
+
+test('genuine fixed585 ASA callers retain every original oracle after current586',async t=>{
+  await withFrozen585AccountStatisticsAssistantTestHost(async sourceRoot=>{
+const load=file=>import(pathToFileURL(path.join(sourceRoot,file)).href);
+const {checkpointMetadataCasBlock}=await load('scripts/sync-ravscore-model-binding.mjs');
+const {ravScoreModelBinding:integratedBinding}=await load('js/core/ravscore-model-contract.js');
+const {ravScoreModelBinding:candidateBinding}=await load('scripts/rollback-assets/ravscore-model-contract.js');
+const {privateRuntimeContractHashes}=await load('scripts/private-production-runtime-workflow.mjs');
+const {accountStatisticsAssistantRequiredMigrations}=await load('scripts/integrated-cutover-readiness.mjs');
+const {ACCOUNT_STATISTICS_ASSISTANT_BEFORE:OLD,requireAccountStatisticsAssistantBinding,
+  requireAccountStatisticsAssistantOutput,accountStatisticsAssistantMigration,
+  readAccountStatisticsAssistantCanonicalSource,ACCOUNT_STATISTICS_ASSISTANT_ALIASES,
+  accountStatisticsAssistantDefinition}=await load('scripts/lib/account-statistics-assistant-successor-source.mjs');
+const {assertAccountStatisticsAssistantPlanCaller,selectAccountStatisticsAssistantRoute,
+  verifyAccountStatisticsAssistantPlan}=await load('scripts/verify-account-statistics-assistant-plan.mjs');
+const {assertAccountStatisticsAssistantPrewriteCaller,
+  verifyAccountStatisticsAssistantPrewritePreservation}=await load('scripts/account-statistics-assistant-prewrite.mjs');
+const {prepareAccountStatisticsAssistantRuntimeTransition,restoreAndPrepareAccountStatisticsAssistantRuntimeTransition,
+  assertAccountStatisticsAssistantRuntimeTransitionPrepared}=await load('scripts/account-statistics-assistant-runtime-transition.mjs');
+const {assertAuthenticatedFrozen584Snapshot}=await load('scripts/lib/authenticated-frozen584-predecessor.mjs');
+const {buildEstablishedNativeCurrent584MetadataAttestation,
+  assertEstablishedNativeCurrent584MetadataCheckpoint}=await load('scripts/lib/established-native-current-origin.mjs');
+// No fake issued tuple and no early-UNISSUED branch that could qualify585.
+const NEXT=requireAccountStatisticsAssistantBinding();
+requireAccountStatisticsAssistantOutput();
+const descriptor=accountStatisticsAssistantMigration();
+const required=accountStatisticsAssistantRequiredMigrations();
+const migrationsDirectory=path.join(sourceRoot,'supabase/migrations');
 const environment=(installed=false)=>({
   GITHUB_WORKFLOW:'Deploy RavRadar code-only repair', GITHUB_EVENT_NAME:'workflow_dispatch',
   GITHUB_REF:'refs/heads/main', GITHUB_RUN_ATTEMPT:'1', GITHUB_RUN_ID:'1', GITHUB_SHA:'a'.repeat(40),
@@ -131,25 +154,7 @@ const noop='DRY RUN: migrations will *not* be pushed to the database.\nRemote da
 const plan=(installed=false)=>({phase:installed?'installed':'before',migrationListText:list(installed),
   dryRunText:installed?noop:dry,migrationsDirectory,environment:environment(installed)});
 
-test('current585 model-import guard admits only the whole reviewed first-raw-error loader',async()=>{
-  const file='scripts/check-account-statistics-assistant-predecessor-source.mjs';
-  const source=(await fs.readFile(new URL('./check-account-statistics-assistant-predecessor-source.mjs',import.meta.url),'utf8'))
-    .replace(/^\uFEFF/,'').replace(/\r\n?/g,'\n');
-  const hash=value=>crypto.createHash('sha256').update(value).digest('hex');
-  assert.equal(hash(source),'10ccdee12b112bcc323689c331a7bb068b7f47ae1ac60d535caf2d4523f465c1');
-  const imports=modelSourceRelativeModuleSpecifiers(source,file);
-  assert(Object.isFrozen(imports));assert.deepEqual(imports,[]);
-  const once=(text,before,after)=>{assert.equal(text.split(before).length,2);return text.replace(before,()=>after);};
-  let predecessor=once(source,'let result,first,hasFirst=false;','let result,first;');
-  predecessor=once(predecessor,'}catch(error){first=error;hasFirst=true;}','}catch(error){first=error;}');
-  predecessor=once(predecessor,'}catch(error){if(!hasFirst){first=error;hasFirst=true;}}\n  if(hasFirst)throw first;',
-    '}catch(error){if(!first)first=error;}\n  if(first)throw first;');
-  assert.equal(hash(predecessor),'44ed717ec5aa7df32f2fb5603c50091aa53878df57dc23e834c67ba00185a4ac');
-  for(const changed of [source+'\n// changed byte\n',source+"\nimport './hidden.mjs';\n",predecessor])
-    assert.throws(()=>modelSourceRelativeModuleSpecifiers(changed,file),/Whole reviewed model import source changed/);
-});
-
-test('actual585 bindings and canonical source are distinct from preserved584',async()=>{
+await t.test('actual585 bindings and canonical source are distinct from preserved584',async()=>{
   assert.equal(descriptor.version,'20261019100000');
   assert.equal(required.length,54);assert.equal(required.at(-2).version,OLD.version);
   assert.equal(required.at(-1).version,descriptor.version);
@@ -162,7 +167,7 @@ test('actual585 bindings and canonical source are distinct from preserved584',as
   assert.equal(source.migration.version,descriptor.version);
 });
 
-test('normal585 plan distinguishes sole pending migration from installed reentry',async()=>{
+await t.test('normal585 plan distinguishes sole pending migration from installed reentry',async()=>{
   assert.equal(selectAccountStatisticsAssistantRoute({migrationListText:list(),environment:environment()}),'before');
   assert.deepEqual((await verifyAccountStatisticsAssistantPlan(plan())).pendingVersions,[descriptor.version]);
   assert.equal(selectAccountStatisticsAssistantRoute({migrationListText:list(true),environment:environment(true)}),'installed');
@@ -173,7 +178,7 @@ test('normal585 plan distinguishes sole pending migration from installed reentry
     /ACCOUNT_STATISTICS_ASSISTANT_NO_CONSUMED_GRANT_REPLAY/);
 });
 
-test('normal585 caller rejects missing584, unknown migrations and duplicate sources',()=>{
+await t.test('normal585 caller rejects missing584, unknown migrations and duplicate sources',()=>{
   for(const suffix of ['\n20991019060000 | 20991019060000 | unknown-future',
     '\n20261019080000 | 20261019080000 | unknown-between',
     '\n20261019100001 | | unknown-pending'])
@@ -196,7 +201,7 @@ test('normal585 caller rejects missing584, unknown migrations and duplicate sour
       +`\n${version} | ${version} | forbidden-archive`,environment:environment()}));
 });
 
-test('before-plan requires every fresh preservation flag and the exact dry-run',async()=>{
+await t.test('before-plan requires every fresh preservation flag and the exact dry-run',async()=>{
   for(const key of ['RAVRADAR_ACCOUNT_STATISTICS_ASSISTANT_ORIGINALS_VERIFIED',
     'RAVRADAR_ACCOUNT_STATISTICS_ASSISTANT_NOLOSS_VERIFIED','RAVRADAR_ACCOUNT_STATISTICS_ASSISTANT_PREWRITE_VERIFIED'])
     await assert.rejects(verifyAccountStatisticsAssistantPlan({...plan(),environment:{...environment(),[key]:'false'}}),
@@ -206,7 +211,7 @@ test('before-plan requires every fresh preservation flag and the exact dry-run',
     'Finished supabase db push.',' • 20991019100001_extra.sql\nFinished supabase db push.')}));
 });
 
-test('plan and prewrite cannot combine historical grants or an active writer',()=>{
+await t.test('plan and prewrite cannot combine historical grants or an active writer',()=>{
   for(const installed of [false,true]){
     const env=environment(installed);
     assert.equal(assertAccountStatisticsAssistantPlanCaller(env).version,descriptor.version);
@@ -231,7 +236,7 @@ test('plan and prewrite cannot combine historical grants or an active writer',()
   }
 });
 
-test('serialized origin or prepared PASS cannot mint metadata or prewrite authority',async()=>{
+await t.test('serialized origin or prepared PASS cannot mint metadata or prewrite authority',async()=>{
   for(const forged of [{},{status:'passed'},Object.freeze({admission:'NO_ADMISSION',
     originalReferenceAt:'2026-10-19T00:00:00.000Z',targetReferenceAt:'2026-10-19T00:00:00.000Z'})]){
     assert.throws(()=>assertAuthenticatedFrozen584Snapshot(forged),/FROZEN584_PREDECESSOR_HANDLE/);
@@ -248,7 +253,7 @@ test('serialized origin or prepared PASS cannot mint metadata or prewrite author
   await assert.rejects(assertEstablishedNativeCurrent584MetadataCheckpoint(forged),/ARGUMENTS/);
 });
 
-test('normal585 mutable consumer reads the actual issued source and preserves all original584 aliases',async()=>{
+await t.test('normal585 mutable consumer reads the actual issued source and preserves all original584 aliases',async()=>{
   const {canonicalSource}=await readAccountStatisticsAssistantCanonicalSource();
   const block=checkpointMetadataCasBlock(canonicalSource,integratedBinding(),candidateBinding(),NEXT.T);
   for(const row of ACCOUNT_STATISTICS_ASSISTANT_ALIASES){
@@ -259,6 +264,9 @@ test('normal585 mutable consumer reads the actual issued source and preserves al
   for(const changed of [canonicalSource.replace(whole,whole.replace('begin\n','begin\n  -- CHANGED ORIGINAL\n')),
     canonicalSource.replace(whole,''),canonicalSource+'\n'+whole+'\n'])
     assert.throws(()=>checkpointMetadataCasBlock(changed,integratedBinding(),candidateBinding(),NEXT.T));
+});
+
+  });
 });
 
 test('historical584 national evidence inverts only the reviewed current90-minute job and exact national wrapper',async()=>{
@@ -418,4 +426,30 @@ test('normal original584 staging forwards the selected R2 storage into the real 
   });
   // A deliberately empty pointer proves client/call wiring only: no archive
   // download, private payload, B/S admission, SQL or publication is exercised.
+});
+
+test('current586 source registration preserves exact585 predecessor and distinct current native scope',async()=>{
+  const pkg=JSON.parse(await fs.readFile(new URL('../package.json',import.meta.url),'utf8'));
+  const {verifyPackage,verifyCurrentNativeCommands,CURRENT586_NATIVE_COMMANDS}=await import('./national584-source-evidence.mjs');
+  const {inverseReviewedAccountStatisticsAssistantSourceScripts}=await import('./lib/account-statistics-assistant-package-review.mjs');
+  assert.equal(pkg.version,'4.0.586');assert.doesNotThrow(()=>verifyPackage(pkg));
+  assert.doesNotThrow(()=>inverseReviewedAccountStatisticsAssistantSourceScripts(pkg.scripts));
+  const critical=pkg.scripts['test:ravscore-source-critical'],group='test:native-original-continuity-source';
+  const asa='test:account-statistics-assistant-source',marker='npm run '+group;
+  const clone=()=>structuredClone(pkg);
+  for(const mode of ['missing','duplicate','reordered','changed-command','old-builder-current','unknown-version']){
+    const changed=clone();
+    if(mode==='missing'){delete changed.scripts[group];changed.scripts['test:ravscore-source-critical']=critical.replace(' && '+marker,'');}
+    if(mode==='duplicate')changed.scripts['test:ravscore-source-critical']=critical.replace(marker,marker+' && '+marker);
+    if(mode==='reordered')changed.scripts['test:ravscore-source-critical']=critical.replace('npm run '+asa+' && '+marker,marker+' && npm run '+asa);
+    if(mode==='changed-command')changed.scripts[group]+=' --unexpected';
+    if(mode==='old-builder-current')changed.scripts[asa]='node scripts/build-account-statistics-assistant-successor.mjs --check && node --test scripts/test-account-statistics-assistant-callers.mjs';
+    if(mode==='unknown-version')changed.version='4.0.587';
+    assert.throws(()=>verifyPackage(changed));
+    if(mode!=='unknown-version')assert.throws(()=>inverseReviewedAccountStatisticsAssistantSourceScripts(changed.scripts));
+  }
+  assert.doesNotThrow(()=>verifyCurrentNativeCommands([...CURRENT586_NATIVE_COMMANDS],'4.0.586'));
+  assert.throws(()=>verifyCurrentNativeCommands([...CURRENT586_NATIVE_COMMANDS],'4.0.585'));
+  assert.throws(()=>verifyCurrentNativeCommands(CURRENT586_NATIVE_COMMANDS.map(c=>c.replace(' --native-original-continuity','')),'4.0.586'));
+  assert.throws(()=>verifyCurrentNativeCommands([...CURRENT586_NATIVE_COMMANDS,CURRENT586_NATIVE_COMMANDS[1]],'4.0.586'));
 });

@@ -1,0 +1,241 @@
+{
+  "schemaVersion": 1,
+  "kind": "TEST_ONLY_EXACT_NATIVE_ORIGINAL_CONTINUITY_WORKFLOW_INVERSE",
+  "role": "code-only-repair",
+  "actualSha256": "1d6c90aa36c648b3848b859f86d122e442340971d36aa64a59d7a3395ece7240",
+  "predecessorSha256": "c60f65d52663525fb01095b87888e9385fa886b6d7d9cc38af788e08ad1d5435",
+  "normalization": "EXACT_UTF8_LF_ONLY_NO_VERSION_REWRITE",
+  "edits": [
+    {
+      "current": "        continue-on-error: ${{ inputs.restart_archived_weather != true && steps.saved-last-mile-source.outputs.required != 'true' && env.RAVRADAR_ACCOUNT_STATISTICS_ASSISTANT_SOURCE_ACTIVE != 'true' && env.RAVRADAR_NATIVE_ORIGINAL_CONTINUITY_SOURCE_ACTIVE != 'true' }}",
+      "original": "        continue-on-error: ${{ inputs.restart_archived_weather != true && steps.saved-last-mile-source.outputs.required != 'true' && env.RAVRADAR_ACCOUNT_STATISTICS_ASSISTANT_SOURCE_ACTIVE != 'true' }}",
+      "count": 1,
+      "beforeSha256": "1d6c90aa36c648b3848b859f86d122e442340971d36aa64a59d7a3395ece7240",
+      "afterSha256": "f95e55242db98b46e61395e1ee971df3510e03fe62047916ce7890b0d7ea185c"
+    },
+    {
+      "current": "          if test \"${RAVRADAR_NATIVE_ORIGINAL_CONTINUITY_SOURCE_ACTIVE:-false}\" = true; then\n            test \"$RAVRADAR_NATIVE_ORIGINAL_CONTINUITY_PHASE\" = installed\n            test \"$RAVRADAR_NATIVE_ORIGINAL_CONTINUITY_UPGRADE_OPT_IN\" = false\n            test \"${{ steps.current-private-publish.outcome }}\" = success\n            test \"${{ steps.established-native-current-origin-checkpoint-publish.outcome }}\" = success\n          fi\n          if test \"${RAVRADAR_ESTABLISHED_NATIVE_CURRENT_ORIGIN_EDGE_REQUIRED:-false}\" = \"true\"; then\n",
+      "original": "          if test \"${RAVRADAR_ESTABLISHED_NATIVE_CURRENT_ORIGIN_EDGE_REQUIRED:-false}\" = \"true\"; then\n",
+      "count": 1,
+      "beforeSha256": "f95e55242db98b46e61395e1ee971df3510e03fe62047916ce7890b0d7ea185c",
+      "afterSha256": "f0f5780bdf58df62eb112eec2467f5705bca144cf4a12fa6946d970c28c4c610"
+    },
+    {
+      "current": "        if: env.RAVRADAR_ACCOUNT_ASSISTANT_FINAL_REQUIRED == 'true' || env.RAVRADAR_ESTABLISHED_NATIVE_CURRENT_ORIGIN_EDGE_REQUIRED == 'true' || inputs.restart_archived_weather == true || steps.saved-last-mile-source.outputs.required == 'true' || env.RAVRADAR_ACCOUNT_STATISTICS_ASSISTANT_SOURCE_ACTIVE == 'true' || env.RAVRADAR_NATIVE_ORIGINAL_CONTINUITY_SOURCE_ACTIVE == 'true'",
+      "original": "        if: env.RAVRADAR_ACCOUNT_ASSISTANT_FINAL_REQUIRED == 'true' || env.RAVRADAR_ESTABLISHED_NATIVE_CURRENT_ORIGIN_EDGE_REQUIRED == 'true' || inputs.restart_archived_weather == true || steps.saved-last-mile-source.outputs.required == 'true' || env.RAVRADAR_ACCOUNT_STATISTICS_ASSISTANT_SOURCE_ACTIVE == 'true'",
+      "count": 1,
+      "beforeSha256": "f0f5780bdf58df62eb112eec2467f5705bca144cf4a12fa6946d970c28c4c610",
+      "afterSha256": "4079f4d20c4738b7b3fd3a4188539e60e79c2d133e1b2a0d5797981784ec81c2"
+    },
+    {
+      "current": "|| env.RAVRADAR_ACCOUNT_STATISTICS_ASSISTANT_SOURCE_ACTIVE == 'true' || env.RAVRADAR_NATIVE_ORIGINAL_CONTINUITY_SOURCE_ACTIVE == 'true') && steps.",
+      "original": "|| env.RAVRADAR_ACCOUNT_STATISTICS_ASSISTANT_SOURCE_ACTIVE == 'true') && steps.",
+      "count": 2,
+      "beforeSha256": "4079f4d20c4738b7b3fd3a4188539e60e79c2d133e1b2a0d5797981784ec81c2",
+      "afterSha256": "19babd6b4d5e57a17a7320b3f7de3d36025c9a13749a474088b9316db0fe8c59"
+    },
+    {
+      "current": "          if test \"${RAVRADAR_NATIVE_ORIGINAL_CONTINUITY_SOURCE_ACTIVE:-false}\" = true; then\n            test \"$RAVRADAR_NATIVE_ORIGINAL_CONTINUITY_PHASE\" = installed\n            test \"$RAVRADAR_NATIVE_ORIGINAL_CONTINUITY_UPGRADE_OPT_IN\" = false\n            test \"${{ steps.native-original-continuity-binding.outputs.installed }}\" = true\n          fi\n          same_reference_args=()\n",
+      "original": "          same_reference_args=()\n",
+      "count": 1,
+      "beforeSha256": "19babd6b4d5e57a17a7320b3f7de3d36025c9a13749a474088b9316db0fe8c59",
+      "afterSha256": "03fbcf568776af9bac48e89d9dd6278350fc9b4b94b50f321c0850915e2f0391"
+    },
+    {
+      "current": "      - name: Complete exact native-original binding after artifacts and fresh authentic originals\n        id: native-original-continuity-binding\n        if: env.RAVRADAR_NATIVE_ORIGINAL_CONTINUITY_SOURCE_ACTIVE == 'true'\n        shell: bash\n        env:\n          RAVRADAR_R2_ACCOUNT_ID: ${{ secrets.RAVRADAR_R2_ACCOUNT_ID }}\n          RAVRADAR_R2_ACCESS_KEY_ID: ${{ secrets.RAVRADAR_R2_ACCESS_KEY_ID }}\n          RAVRADAR_R2_SECRET_ACCESS_KEY: ${{ secrets.RAVRADAR_R2_SECRET_ACCESS_KEY }}\n          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}\n          SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}\n          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}\n          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}\n        run: |\n          set -euo pipefail\n          test \"${{ steps.runtime-audit.outputs.runtime_audit_outcome }}\" = success\n          test \"${{ steps.current-private-spec.outcome }}\" = success\n          test \"${{ steps.current-private-bundle.outcome }}\" = success\n          test \"${{ steps.pages-prebuild.outcome }}\" = success\n          test \"${{ steps.pages-preflight-privacy.outcome }}\" = success\n          git fetch --no-tags --prune origin +refs/heads/main:refs/remotes/origin/main\n          test \"$(git rev-parse HEAD^{commit})\" = \"$GITHUB_SHA\"\n          test \"$(git rev-parse origin/main^{commit})\" = \"$GITHUB_SHA\"\n          (cd \"${{ steps.migration-view.outputs.workdir }}\" && supabase migration list --linked) | tee \"$RUNNER_TEMP/code-only-native-original-continuity-final-list.txt\"\n          (cd \"${{ steps.migration-view.outputs.workdir }}\" && supabase db push --linked --dry-run --skip-vault) 2>&1 | tee \"$RUNNER_TEMP/code-only-native-original-continuity-final-dry-run.txt\"\n          case \"$RAVRADAR_NATIVE_ORIGINAL_CONTINUITY_CURRENT_FAMILY\" in\n            predecessor)\n              env -u SUPABASE_DB_PASSWORD node scripts/native-original-continuity-prewrite.mjs --slot final\n              ;;\n            current)\n              test \"$RAVRADAR_NATIVE_ORIGINAL_CONTINUITY_PHASE\" = installed\n              test \"$RAVRADAR_NATIVE_ORIGINAL_CONTINUITY_UPGRADE_OPT_IN\" = false\n              test \"${{ steps.current-private-install.outcome }}\" = success\n              ;;\n            *) echo 'Unknown native-original CURRENT family.' >&2; exit 1 ;;\n          esac\n          node scripts/verify-native-original-continuity-plan.mjs --phase \"$RAVRADAR_NATIVE_ORIGINAL_CONTINUITY_PHASE\" \\\n            --migration-list \"$RUNNER_TEMP/code-only-native-original-continuity-final-list.txt\" \\\n            --dry-run \"$RUNNER_TEMP/code-only-native-original-continuity-final-dry-run.txt\" \\\n            --migrations-directory \"${{ steps.migration-view.outputs.workdir }}/supabase/migrations\"\n          sql_status=0\n          if test \"$RAVRADAR_NATIVE_ORIGINAL_CONTINUITY_PHASE\" = before; then\n            test \"$RAVRADAR_NATIVE_ORIGINAL_CONTINUITY_CURRENT_FAMILY\" = predecessor\n            # Sole actual DDL call. Never repeat an unknown outcome.\n            (cd \"${{ steps.migration-view.outputs.workdir }}\" && supabase db push --linked --skip-vault) || sql_status=$?\n          else\n            test \"$RAVRADAR_NATIVE_ORIGINAL_CONTINUITY_PHASE\" = installed\n            test \"$RAVRADAR_NATIVE_ORIGINAL_CONTINUITY_UPGRADE_OPT_IN\" = false\n          fi\n          (cd \"${{ steps.migration-view.outputs.workdir }}\" && supabase migration list --linked) | tee \"$RUNNER_TEMP/code-only-native-original-continuity-applied.txt\"\n          (cd \"${{ steps.migration-view.outputs.workdir }}\" && supabase db push --linked --dry-run --skip-vault) 2>&1 | tee \"$RUNNER_TEMP/code-only-native-original-continuity-readback-dry-run.txt\"\n          RAVRADAR_NATIVE_ORIGINAL_CONTINUITY_UPGRADE_OPT_IN=false RAVRADAR_NATIVE_ORIGINAL_CONTINUITY_PHASE=installed \\\n            node scripts/verify-native-original-continuity-plan.mjs --phase installed \\\n            --migration-list \"$RUNNER_TEMP/code-only-native-original-continuity-applied.txt\" \\\n            --dry-run \"$RUNNER_TEMP/code-only-native-original-continuity-readback-dry-run.txt\" \\\n            --migrations-directory \"${{ steps.migration-view.outputs.workdir }}/supabase/migrations\"\n          env -u SUPABASE_DB_PASSWORD node --input-type=module <<'NODE'\n          import { verifyIntegratedDatabaseReadback } from './scripts/integrated-cutover-readiness.mjs';\n          await verifyIntegratedDatabaseReadback({url:process.env.SUPABASE_URL,\n            serviceRoleKey:process.env.SUPABASE_SERVICE_ROLE_KEY,sourcePhase:'native-original-continuity'});\n          NODE\n          env -u SUPABASE_DB_PASSWORD node scripts/verify-statistics-preference-revision-schema.mjs\n          if test \"$sql_status\" -ne 0; then\n            echo 'SQL response was uncertain; exact installed history/contracts were read back. No replay.'\n          fi\n          echo 'RAVRADAR_NATIVE_ORIGINAL_CONTINUITY_UPGRADE_OPT_IN=false' >> \"$GITHUB_ENV\"\n          echo 'RAVRADAR_NATIVE_ORIGINAL_CONTINUITY_PHASE=installed' >> \"$GITHUB_ENV\"\n          echo 'installed=true' >> \"$GITHUB_OUTPUT\"\n\n      - name: Apply the sole new metadata binding after every artifact gate and fresh originals\n",
+      "original": "      - name: Apply the sole new metadata binding after every artifact gate and fresh originals\n",
+      "count": 1,
+      "beforeSha256": "03fbcf568776af9bac48e89d9dd6278350fc9b4b94b50f321c0850915e2f0391",
+      "afterSha256": "03d29336f60eb5cc874a3a9d603666ca32110531125ca842f086bc03f003f77e"
+    },
+    {
+      "current": "          if test \"${RAVRADAR_NATIVE_ORIGINAL_CONTINUITY_SOURCE_ACTIVE:-false}\" = true \\\n              || test \"${RAVRADAR_ACCOUNT_STATISTICS_ASSISTANT_SOURCE_ACTIVE:-false}\" = true \\\n",
+      "original": "          if test \"${RAVRADAR_ACCOUNT_STATISTICS_ASSISTANT_SOURCE_ACTIVE:-false}\" = true \\\n",
+      "count": 2,
+      "beforeSha256": "03d29336f60eb5cc874a3a9d603666ca32110531125ca842f086bc03f003f77e",
+      "afterSha256": "871c4d41673c29981b3c7e00170193ec061fcd5e9d19fb34edb08cb52e0fa1ec"
+    },
+    {
+      "current": "      - name: Pair already-current native-original B and actual S without origin or SQL replay\n        if: env.RAVRADAR_NATIVE_ORIGINAL_CONTINUITY_SOURCE_ACTIVE == 'true' && env.RAVRADAR_NATIVE_ORIGINAL_CONTINUITY_CURRENT_FAMILY == 'current'\n        shell: bash\n        env:\n          OPERATIONAL_ACTION: ${{ steps.operational-action.outputs.action }}\n          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}\n          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}\n        run: |\n          set -euo pipefail\n          test \"$RAVRADAR_NATIVE_ORIGINAL_CONTINUITY_PHASE\" = installed\n          test \"$RAVRADAR_NATIVE_ORIGINAL_CONTINUITY_UPGRADE_OPT_IN\" = false\n          test \"${{ steps.current-private-install.outcome }}\" = success\n          node scripts/reconcile-private-runtime-checkpoint.mjs reconcile-native-original-continuity\n\n      - name: Pair already-current metadata B with actual S without origin or SQL replay\n",
+      "original": "      - name: Pair already-current metadata B with actual S without origin or SQL replay\n",
+      "count": 1,
+      "beforeSha256": "871c4d41673c29981b3c7e00170193ec061fcd5e9d19fb34edb08cb52e0fa1ec",
+      "afterSha256": "db2610e899c6967b51249c138231cd759cc58027492e8c7d0133d86324ccd2f0"
+    },
+    {
+      "current": "          if test \"${RAVRADAR_NATIVE_ORIGINAL_CONTINUITY_SOURCE_ACTIVE:-false}\" = true; then\n            case \"$RAVRADAR_NATIVE_ORIGINAL_CONTINUITY_CURRENT_FAMILY\" in\n              current)\n                test \"$RAVRADAR_NATIVE_ORIGINAL_CONTINUITY_PHASE\" = installed\n                test \"$RAVRADAR_NATIVE_ORIGINAL_CONTINUITY_UPGRADE_OPT_IN\" = false\n                test \"${{ steps.current-private-install.outcome }}\" = success\n                test \"${{ steps.migrated-private-install.outcome }}\" != success\n                ;;\n              predecessor)\n                test \"${{ steps.migrated-private-install.outcome }}\" = success\n                test \"${{ steps.current-private-install.outcome }}\" != success\n                ;;\n              *) echo 'Unknown native-original runtime family.' >&2; exit 1 ;;\n            esac\n          elif test \"${{ steps.saved-last-mile-source.outputs.required }}\" = true; then\n            test \"${{ steps.current-private-install.outcome }}\" = success\n            test \"${{ steps.migrated-private-install.outcome }}\" != success",
+      "original": "          if test \"${{ steps.saved-last-mile-source.outputs.required }}\" = true; then\n            test \"${{ steps.current-private-install.outcome }}\" = success\n            test \"${{ steps.migrated-private-install.outcome }}\" != success",
+      "count": 1,
+      "beforeSha256": "db2610e899c6967b51249c138231cd759cc58027492e8c7d0133d86324ccd2f0",
+      "afterSha256": "f70d433d533df509a9fa0949d5ba284005fe03ab4f25d0fd496a1b5a66d926e6"
+    },
+    {
+      "current": "      - name: Stage exact saved registry for genuine585 native-original preservation\n        if: env.RAVRADAR_NATIVE_ORIGINAL_CONTINUITY_SOURCE_ACTIVE == 'true' && env.RAVRADAR_NATIVE_ORIGINAL_CONTINUITY_CURRENT_FAMILY == 'predecessor'\n        run: >-\n          node scripts/prepare-code-only-public-runtime.mjs --stage-public-coastal-registry-only\n          --repository-root \"${{ github.workspace }}\" --snapshot-root \"${{ env.RAVRADAR_CODE_ONLY_PUBLIC_SNAPSHOT }}\"\n\n      - name: Prepare genuine585 originals and no-loss native-original successor\n        if: env.RAVRADAR_NATIVE_ORIGINAL_CONTINUITY_SOURCE_ACTIVE == 'true' && env.RAVRADAR_NATIVE_ORIGINAL_CONTINUITY_CURRENT_FAMILY == 'predecessor'\n        shell: bash\n        env:\n          RAVRADAR_R2_ACCOUNT_ID: ${{ secrets.RAVRADAR_R2_ACCOUNT_ID }}\n          RAVRADAR_R2_ACCESS_KEY_ID: ${{ secrets.RAVRADAR_R2_ACCESS_KEY_ID }}\n          RAVRADAR_R2_SECRET_ACCESS_KEY: ${{ secrets.RAVRADAR_R2_SECRET_ACCESS_KEY }}\n          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}\n          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}\n        run: node scripts/native-original-continuity-prewrite.mjs --slot prepare\n\n      - name: Stage the exact saved registry for original584 metadata preparation\n",
+      "original": "      - name: Stage the exact saved registry for original584 metadata preparation\n",
+      "count": 1,
+      "beforeSha256": "f70d433d533df509a9fa0949d5ba284005fe03ab4f25d0fd496a1b5a66d926e6",
+      "afterSha256": "ba4866e1202b5f59c31f4f42761c21d3dd0dbdb803900ec78bcb61169d9ad4cf"
+    },
+    {
+      "current": "        if: (inputs.restart_archived_weather != true) && (env.RAVRADAR_ACCOUNT_STATISTICS_ASSISTANT_CURRENT_FAMILY != 'predecessor') && (env.RAVRADAR_NATIVE_ORIGINAL_CONTINUITY_CURRENT_FAMILY != 'predecessor')",
+      "original": "        if: (inputs.restart_archived_weather != true) && (env.RAVRADAR_ACCOUNT_STATISTICS_ASSISTANT_CURRENT_FAMILY != 'predecessor')",
+      "count": 1,
+      "beforeSha256": "ba4866e1202b5f59c31f4f42761c21d3dd0dbdb803900ec78bcb61169d9ad4cf",
+      "afterSha256": "e89e477f30289594a2a2d21f08df7d054a49c5a225a8da2863230af81715ba54"
+    },
+    {
+      "current": "      - name: Select actual CURRENT family and restore only genuine original585 when required\n        if: env.RAVRADAR_NATIVE_ORIGINAL_CONTINUITY_SOURCE_ACTIVE == 'true'\n        shell: bash\n        env:\n          RAVRADAR_R2_ACCOUNT_ID: ${{ secrets.RAVRADAR_R2_ACCOUNT_ID }}\n          RAVRADAR_R2_ACCESS_KEY_ID: ${{ secrets.RAVRADAR_R2_ACCESS_KEY_ID }}\n          RAVRADAR_R2_SECRET_ACCESS_KEY: ${{ secrets.RAVRADAR_R2_SECRET_ACCESS_KEY }}\n          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}\n          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}\n        run: |\n          set -euo pipefail\n          mkdir -p \"$RAVRADAR_PRIVATE_RUNTIME_ROOT\"\n          node scripts/stage-native-original-continuity-originals.mjs\n\n      - name: Select actual CURRENT family and restore only genuine original584 if needed\n",
+      "original": "      - name: Select actual CURRENT family and restore only genuine original584 if needed\n",
+      "count": 1,
+      "beforeSha256": "e89e477f30289594a2a2d21f08df7d054a49c5a225a8da2863230af81715ba54",
+      "afterSha256": "44d5552560b48aeb30c67fe4816358a5a99675ffc07ec7c2b6d23a5042a36e98"
+    },
+    {
+      "current": "      - name: Require actually installed native-original-continuity without SQL replay\n        if: env.RAVRADAR_NATIVE_ORIGINAL_CONTINUITY_SOURCE_ACTIVE == 'true' && env.RAVRADAR_NATIVE_ORIGINAL_CONTINUITY_PHASE == 'installed'\n        shell: bash\n        env:\n          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}\n          SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}\n          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}\n          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}\n        run: |\n          set -euo pipefail\n          (cd \"${{ steps.migration-view.outputs.workdir }}\" && supabase db push --linked --dry-run --skip-vault) 2>&1 | tee \"$RUNNER_TEMP/code-only-native-original-continuity-installed-dry-run.txt\"\n          node scripts/verify-native-original-continuity-plan.mjs --phase installed \\\n            --migration-list \"$RUNNER_TEMP/code-only-migrations-before.txt\" \\\n            --dry-run \"$RUNNER_TEMP/code-only-native-original-continuity-installed-dry-run.txt\" \\\n            --migrations-directory \"${{ steps.migration-view.outputs.workdir }}/supabase/migrations\"\n          env -u SUPABASE_DB_PASSWORD node --input-type=module <<'NODE'\n          import { verifyIntegratedDatabaseReadback } from './scripts/integrated-cutover-readiness.mjs';\n          await verifyIntegratedDatabaseReadback({url:process.env.SUPABASE_URL,\n            serviceRoleKey:process.env.SUPABASE_SERVICE_ROLE_KEY,sourcePhase:'native-original-continuity'});\n          NODE\n          env -u SUPABASE_DB_PASSWORD node scripts/verify-statistics-preference-revision-schema.mjs\n\n      - name: Require actually installed metadata contracts before installed reentry\n",
+      "original": "      - name: Require actually installed metadata contracts before installed reentry\n",
+      "count": 1,
+      "beforeSha256": "44d5552560b48aeb30c67fe4816358a5a99675ffc07ec7c2b6d23a5042a36e98",
+      "afterSha256": "d04d4cb6ca3a93e3cd88744346a58e345812d461682664c1768cff61eebc6d29"
+    },
+    {
+      "current": "          if test \"${RAVRADAR_NATIVE_ORIGINAL_CONTINUITY_SOURCE_ACTIVE:-false}\" = true; then\n            WORKDIR=\"${{ steps.migration-view.outputs.workdir }}\" node --input-type=module <<'NODE'\n          import fs from 'node:fs/promises';\n          import { hydrateNativeOriginalContinuityRemoteMigrationHistory } from './scripts/integrated-cutover-readiness.mjs';\n          await hydrateNativeOriginalContinuityRemoteMigrationHistory({workdir:process.env.WORKDIR,\n            migrationListText:await fs.readFile(process.env.RUNNER_TEMP+'/code-only-migrations-before.txt','utf8')});\n          NODE\n          elif test \"${RAVRADAR_ACCOUNT_STATISTICS_ASSISTANT_SOURCE_ACTIVE:-false}\" = true; then\n            WORKDIR=\"${{ steps.migration-view.outputs.workdir }}\" node --input-type=module <<'NODE'",
+      "original": "          if test \"${RAVRADAR_ACCOUNT_STATISTICS_ASSISTANT_SOURCE_ACTIVE:-false}\" = true; then\n            WORKDIR=\"${{ steps.migration-view.outputs.workdir }}\" node --input-type=module <<'NODE'",
+      "count": 1,
+      "beforeSha256": "d04d4cb6ca3a93e3cd88744346a58e345812d461682664c1768cff61eebc6d29",
+      "afterSha256": "bafd19886a74ebb2e9fe55e5ab67b4c59b7179a1b98fd1bd36b58c2278fe07eb"
+    },
+    {
+      "current": "      - name: Select exact native-original-continuity from actual linked history\n        if: env.RAVRADAR_NATIVE_ORIGINAL_CONTINUITY_SOURCE_ACTIVE == 'true'\n        run: >-\n          node scripts/verify-native-original-continuity-plan.mjs --select\n          --migration-list \"$RUNNER_TEMP/code-only-migrations-before.txt\"\n\n      - name: Select exact new metadata SQL phase from actual linked history\n",
+      "original": "      - name: Select exact new metadata SQL phase from actual linked history\n",
+      "count": 1,
+      "beforeSha256": "bafd19886a74ebb2e9fe55e5ab67b4c59b7179a1b98fd1bd36b58c2278fe07eb",
+      "afterSha256": "40614c93787e6db892cb17269046978d7c0fa596619961e11584430953fdc5c0"
+    },
+    {
+      "current": "          if test \"${RAVRADAR_NATIVE_ORIGINAL_CONTINUITY_SOURCE_ACTIVE:-false}\" = true; then\n            WORKDIR=\"$migration_workdir\" node --input-type=module <<'NODE'\n          import { prepareNativeOriginalContinuityCutoverWorkdir } from './scripts/integrated-cutover-readiness.mjs';\n          await prepareNativeOriginalContinuityCutoverWorkdir({workdir:process.env.WORKDIR});\n          NODE\n          elif test \"${RAVRADAR_ACCOUNT_STATISTICS_ASSISTANT_SOURCE_ACTIVE:-false}\" = true; then\n            WORKDIR=\"$migration_workdir\" node --input-type=module <<'NODE'",
+      "original": "          if test \"${RAVRADAR_ACCOUNT_STATISTICS_ASSISTANT_SOURCE_ACTIVE:-false}\" = true; then\n            WORKDIR=\"$migration_workdir\" node --input-type=module <<'NODE'",
+      "count": 1,
+      "beforeSha256": "40614c93787e6db892cb17269046978d7c0fa596619961e11584430953fdc5c0",
+      "afterSha256": "1677c6698f6f3ce70a822e93109741005f029199029d4cfe23f9d613a1b72aa1"
+    },
+    {
+      "current": "      - name: Select the issued native-original-continuity phase without admission\n        run: node scripts/select-native-original-continuity-code-only-source.mjs\n\n      - name: Select the issued account-statistics-assistant source phase without admission\n        if: env.RAVRADAR_NATIVE_ORIGINAL_CONTINUITY_SOURCE_ACTIVE != 'true'\n        run: node scripts/select-account-statistics-assistant-code-only-source.mjs",
+      "original": "      - name: Select the issued account-statistics-assistant source phase without admission\n        run: node scripts/select-account-statistics-assistant-code-only-source.mjs",
+      "count": 1,
+      "beforeSha256": "1677c6698f6f3ce70a822e93109741005f029199029d4cfe23f9d613a1b72aa1",
+      "afterSha256": "08e5149c19107ea0363b87bb54c22cfeb3293548d935e5357a0aab7d045f0e75"
+    },
+    {
+      "current": "      RAVRADAR_NATIVE_ORIGINAL_CONTINUITY_UPGRADE_OPT_IN: ${{ inputs.upgrade_native_original_continuity == true && 'true' || 'false' }}\n      RAVRADAR_NATIVE_ORIGINAL_CONTINUITY_CONFIRMATION: ${{ inputs.confirmation }}\n      RAVRADAR_NATIVE_ORIGINAL_CONTINUITY_SAVED_WEATHER: ${{ inputs.publish_newest_saved_weather == true && 'true' || 'false' }}\n      RAVRADAR_NATIVE_ORIGINAL_CONTINUITY_RECOVERY_RUN_ID: ${{ inputs.recover_public_run_id }}\n      RAVRADAR_NATIVE_ORIGINAL_CONTINUITY_RECOVERY_GATE_RESULT: ${{ needs.operational-recovery-gate.result }}\n      # This job owns both existing unchanged production/trip writer locks.\n      RAVRADAR_NATIVE_ORIGINAL_CONTINUITY_WRITER_ACTIVE: 'false'\n      RAVRADAR_NATIVE_ORIGINAL_CONTINUITY_METADATA_ONLY: 'false'\n      # Preliminary request only; actual linked history must confirm the phase.\n      RAVRADAR_NATIVE_ORIGINAL_CONTINUITY_PHASE: ${{ inputs.upgrade_native_original_continuity == true && 'before' || 'installed' }}\n      UPGRADE_NATIVE_ORIGINAL_CONTINUITY: ${{ inputs.upgrade_native_original_continuity == true && 'true' || 'false' }}\n      RAVRADAR_LAST_MILE_ENCLOSURE_WRITER_ACTIVE: 'false'\n",
+      "original": "      RAVRADAR_LAST_MILE_ENCLOSURE_WRITER_ACTIVE: 'false'\n",
+      "count": 1,
+      "beforeSha256": "08e5149c19107ea0363b87bb54c22cfeb3293548d935e5357a0aab7d045f0e75",
+      "afterSha256": "84fb3d561f094a5a29490da4b5e60885072665766808c28e6cb2e0c4c9b74c26"
+    },
+    {
+      "current": "          if test \"$UPGRADE_NATIVE_ORIGINAL_CONTINUITY\" = true; then\n            test \"$UPGRADE_EXISTING_OWNER_EXPORT\" != true\n            test \"$UPGRADE_ACCOUNT_ASSISTANT\" != true\n            test \"$UPGRADE_STATISTICS_REVISION\" != true\n            test \"$UPGRADE_ESTABLISHED_NATIVE_CURRENT_ORIGIN\" != true\n            test \"$UPGRADE_ACCOUNT_STATISTICS_ASSISTANT\" != true\n            test \"$UPGRADE_LAST_MILE_ENCLOSURE\" != true\n            test \"$RESTART_ARCHIVED_WEATHER\" != true\n            test \"$SAVED_WEATHER\" != true\n            test -z \"$RECOVER_PUBLIC_RUN_ID\"\n            test \"$RECOVER_PUBLIC_RUN_ATTEMPT\" = 1\n            test \"$GITHUB_RUN_ATTEMPT\" = 1\n            test \"$CONFIRMATION\" = DEPLOY-CODE-ONLY-REPAIR\n          fi\n          if test \"$UPGRADE_ACCOUNT_STATISTICS_ASSISTANT\" = true; then\n",
+      "original": "          if test \"$UPGRADE_ACCOUNT_STATISTICS_ASSISTANT\" = true; then\n",
+      "count": 1,
+      "beforeSha256": "84fb3d561f094a5a29490da4b5e60885072665766808c28e6cb2e0c4c9b74c26",
+      "afterSha256": "c130fdbc8a0e19ed529e2b1febe04d2da7f2686972c89ac5e2710960755a69fd"
+    },
+    {
+      "current": "          UPGRADE_ACCOUNT_STATISTICS_ASSISTANT: ${{ inputs.upgrade_account_statistics_assistant }}\n          UPGRADE_NATIVE_ORIGINAL_CONTINUITY: ${{ inputs.upgrade_native_original_continuity }}\n",
+      "original": "          UPGRADE_ACCOUNT_STATISTICS_ASSISTANT: ${{ inputs.upgrade_account_statistics_assistant }}\n",
+      "count": 1,
+      "beforeSha256": "c130fdbc8a0e19ed529e2b1febe04d2da7f2686972c89ac5e2710960755a69fd",
+      "afterSha256": "04c1c33e5b450a1f88b37d3e295708aa076ee9574fe578b6de48bd44b11cf8ce"
+    },
+    {
+      "current": "      upgrade_native_original_continuity:\n        description: \"Installer kun den eksakte native-original-continuity efter autentisk585 B/S; ingen ny vejrhentning\"\n        required: false\n        default: false\n        type: boolean\n      restart_archived_weather:\n",
+      "original": "      restart_archived_weather:\n",
+      "count": 1,
+      "beforeSha256": "04c1c33e5b450a1f88b37d3e295708aa076ee9574fe578b6de48bd44b11cf8ce",
+      "afterSha256": "194748782ca616983201f1e3f7ecc1a1d457f8d81aae01237a86354833a415db"
+    },
+    {
+      "current": "        if: (((((steps.checkpoint-disposition.outputs.disposition == 'READY_PUBLISHED' || steps.checkpoint-disposition.outputs.disposition == 'MEASURED_WARMUP_PUBLISHED') && env.RAVRADAR_ESTABLISHED_NATIVE_CURRENT_ORIGIN_EDGE_REQUIRED != 'true') && (inputs.restart_archived_weather != true)) && (steps.saved-last-mile-source.outputs.required != 'true')) && (env.RAVRADAR_ACCOUNT_STATISTICS_ASSISTANT_SOURCE_ACTIVE != 'true')) && (env.RAVRADAR_ACCOUNT_STATISTICS_ASSISTANT_SOURCE_ACTIVE != 'true') && (env.RAVRADAR_NATIVE_ORIGINAL_CONTINUITY_SOURCE_ACTIVE != 'true')",
+      "original": "        if: (((((steps.checkpoint-disposition.outputs.disposition == 'READY_PUBLISHED' || steps.checkpoint-disposition.outputs.disposition == 'MEASURED_WARMUP_PUBLISHED') && env.RAVRADAR_ESTABLISHED_NATIVE_CURRENT_ORIGIN_EDGE_REQUIRED != 'true') && (inputs.restart_archived_weather != true)) && (steps.saved-last-mile-source.outputs.required != 'true')) && (env.RAVRADAR_ACCOUNT_STATISTICS_ASSISTANT_SOURCE_ACTIVE != 'true')) && (env.RAVRADAR_ACCOUNT_STATISTICS_ASSISTANT_SOURCE_ACTIVE != 'true')",
+      "count": 1,
+      "beforeSha256": "194748782ca616983201f1e3f7ecc1a1d457f8d81aae01237a86354833a415db",
+      "afterSha256": "941bec825318c60f3620a7d2e629f58db9aa1674ad37e0f3e3ed265948652c4f"
+    },
+    {
+      "current": "        if: (((steps.current-private-install.outcome != 'success') && (inputs.restart_archived_weather != true)) && (steps.saved-last-mile-source.outputs.required != 'true')) && ((env.RAVRADAR_ACCOUNT_STATISTICS_ASSISTANT_SOURCE_ACTIVE != 'true') || (env.RAVRADAR_ACCOUNT_STATISTICS_ASSISTANT_CURRENT_FAMILY == 'predecessor')) && (env.RAVRADAR_NATIVE_ORIGINAL_CONTINUITY_SOURCE_ACTIVE != 'true' || env.RAVRADAR_NATIVE_ORIGINAL_CONTINUITY_CURRENT_FAMILY == 'predecessor')",
+      "original": "        if: (((steps.current-private-install.outcome != 'success') && (inputs.restart_archived_weather != true)) && (steps.saved-last-mile-source.outputs.required != 'true')) && ((env.RAVRADAR_ACCOUNT_STATISTICS_ASSISTANT_SOURCE_ACTIVE != 'true') || (env.RAVRADAR_ACCOUNT_STATISTICS_ASSISTANT_CURRENT_FAMILY == 'predecessor'))",
+      "count": 1,
+      "beforeSha256": "941bec825318c60f3620a7d2e629f58db9aa1674ad37e0f3e3ed265948652c4f",
+      "afterSha256": "39188abbe278f02a5a877dfaf5c5e9bf8a333e6c98af8338ba7318396bf9e3e2"
+    },
+    {
+      "current": "        if: (((env.RAVRADAR_ESTABLISHED_NATIVE_CURRENT_ORIGIN_METADATA_ONLY == 'true' && env.RAVRADAR_ESTABLISHED_NATIVE_CURRENT_ORIGIN_PHASE == 'installed') && (inputs.restart_archived_weather != true)) && (steps.saved-last-mile-source.outputs.required != 'true')) && (env.RAVRADAR_ACCOUNT_STATISTICS_ASSISTANT_SOURCE_ACTIVE != 'true') && (env.RAVRADAR_NATIVE_ORIGINAL_CONTINUITY_SOURCE_ACTIVE != 'true')",
+      "original": "        if: (((env.RAVRADAR_ESTABLISHED_NATIVE_CURRENT_ORIGIN_METADATA_ONLY == 'true' && env.RAVRADAR_ESTABLISHED_NATIVE_CURRENT_ORIGIN_PHASE == 'installed') && (inputs.restart_archived_weather != true)) && (steps.saved-last-mile-source.outputs.required != 'true')) && (env.RAVRADAR_ACCOUNT_STATISTICS_ASSISTANT_SOURCE_ACTIVE != 'true')",
+      "count": 1,
+      "beforeSha256": "39188abbe278f02a5a877dfaf5c5e9bf8a333e6c98af8338ba7318396bf9e3e2",
+      "afterSha256": "3d25afb7cd83f9b88d0638835a165180b6da989b4bdb45403d979a16378c0845"
+    },
+    {
+      "current": "        if: (((steps.current-private-install.outcome != 'success' && env.RAVRADAR_ESTABLISHED_NATIVE_CURRENT_ORIGIN_METADATA_ONLY == 'true') && (inputs.restart_archived_weather != true)) && (steps.saved-last-mile-source.outputs.required != 'true')) && (env.RAVRADAR_ACCOUNT_STATISTICS_ASSISTANT_SOURCE_ACTIVE != 'true') && (env.RAVRADAR_NATIVE_ORIGINAL_CONTINUITY_SOURCE_ACTIVE != 'true')",
+      "original": "        if: (((steps.current-private-install.outcome != 'success' && env.RAVRADAR_ESTABLISHED_NATIVE_CURRENT_ORIGIN_METADATA_ONLY == 'true') && (inputs.restart_archived_weather != true)) && (steps.saved-last-mile-source.outputs.required != 'true')) && (env.RAVRADAR_ACCOUNT_STATISTICS_ASSISTANT_SOURCE_ACTIVE != 'true')",
+      "count": 2,
+      "beforeSha256": "3d25afb7cd83f9b88d0638835a165180b6da989b4bdb45403d979a16378c0845",
+      "afterSha256": "00bb0a1463866837743277cae1fcaf11eaac82722b51c2362e8e6459a7d44394"
+    },
+    {
+      "current": "        if: (((steps.current-private-install.outcome != 'success' && env.RAVRADAR_ESTABLISHED_NATIVE_CURRENT_ORIGIN_METADATA_ONLY != 'true') && (inputs.restart_archived_weather != true)) && (steps.saved-last-mile-source.outputs.required != 'true')) && (env.RAVRADAR_ACCOUNT_STATISTICS_ASSISTANT_SOURCE_ACTIVE != 'true') && (env.RAVRADAR_NATIVE_ORIGINAL_CONTINUITY_SOURCE_ACTIVE != 'true')",
+      "original": "        if: (((steps.current-private-install.outcome != 'success' && env.RAVRADAR_ESTABLISHED_NATIVE_CURRENT_ORIGIN_METADATA_ONLY != 'true') && (inputs.restart_archived_weather != true)) && (steps.saved-last-mile-source.outputs.required != 'true')) && (env.RAVRADAR_ACCOUNT_STATISTICS_ASSISTANT_SOURCE_ACTIVE != 'true')",
+      "count": 1,
+      "beforeSha256": "00bb0a1463866837743277cae1fcaf11eaac82722b51c2362e8e6459a7d44394",
+      "afterSha256": "963719c416ef3767dd99e28ae727719baba604a54de69076815565e1e78e388a"
+    },
+    {
+      "current": "        if: (((env.RAVRADAR_USERDATA_PREWRITE_REQUIRED == 'true') && (inputs.restart_archived_weather != true)) && (steps.saved-last-mile-source.outputs.required != 'true')) && (env.RAVRADAR_ACCOUNT_STATISTICS_ASSISTANT_SOURCE_ACTIVE != 'true') && (env.RAVRADAR_NATIVE_ORIGINAL_CONTINUITY_SOURCE_ACTIVE != 'true')",
+      "original": "        if: (((env.RAVRADAR_USERDATA_PREWRITE_REQUIRED == 'true') && (inputs.restart_archived_weather != true)) && (steps.saved-last-mile-source.outputs.required != 'true')) && (env.RAVRADAR_ACCOUNT_STATISTICS_ASSISTANT_SOURCE_ACTIVE != 'true')",
+      "count": 1,
+      "beforeSha256": "963719c416ef3767dd99e28ae727719baba604a54de69076815565e1e78e388a",
+      "afterSha256": "8d76b32ea114c444757b784a4256079940939abf814960e9501cf6dadde76313"
+    },
+    {
+      "current": "        if: (((steps.current-private-install.outcome != 'success' && steps.owner-current-original.outputs.transition_kind != 'owner-current-domain-original') && (inputs.restart_archived_weather != true)) && (steps.saved-last-mile-source.outputs.required != 'true')) && (env.RAVRADAR_ACCOUNT_STATISTICS_ASSISTANT_SOURCE_ACTIVE != 'true') && (env.RAVRADAR_NATIVE_ORIGINAL_CONTINUITY_SOURCE_ACTIVE != 'true')",
+      "original": "        if: (((steps.current-private-install.outcome != 'success' && steps.owner-current-original.outputs.transition_kind != 'owner-current-domain-original') && (inputs.restart_archived_weather != true)) && (steps.saved-last-mile-source.outputs.required != 'true')) && (env.RAVRADAR_ACCOUNT_STATISTICS_ASSISTANT_SOURCE_ACTIVE != 'true')",
+      "count": 7,
+      "beforeSha256": "8d76b32ea114c444757b784a4256079940939abf814960e9501cf6dadde76313",
+      "afterSha256": "d43eacf4e62842926ab8aef4219137a1c5364a5b39ef49a0d6e3aba26801166f"
+    },
+    {
+      "current": "        if: (((steps.current-private-install.outcome != 'success') && (inputs.restart_archived_weather != true)) && (steps.saved-last-mile-source.outputs.required != 'true')) && (env.RAVRADAR_ACCOUNT_STATISTICS_ASSISTANT_SOURCE_ACTIVE != 'true') && (env.RAVRADAR_NATIVE_ORIGINAL_CONTINUITY_SOURCE_ACTIVE != 'true')",
+      "original": "        if: (((steps.current-private-install.outcome != 'success') && (inputs.restart_archived_weather != true)) && (steps.saved-last-mile-source.outputs.required != 'true')) && (env.RAVRADAR_ACCOUNT_STATISTICS_ASSISTANT_SOURCE_ACTIVE != 'true')",
+      "count": 1,
+      "beforeSha256": "d43eacf4e62842926ab8aef4219137a1c5364a5b39ef49a0d6e3aba26801166f",
+      "afterSha256": "d6c21f919298e2e37b84a499c99cef989313537ff40e76561d73bf615484022c"
+    },
+    {
+      "current": "        if: (((steps.owner-current-original.outputs.transition_kind == 'owner-current-domain-original') && (inputs.restart_archived_weather != true)) && (steps.saved-last-mile-source.outputs.required != 'true')) && (env.RAVRADAR_ACCOUNT_STATISTICS_ASSISTANT_SOURCE_ACTIVE != 'true') && (env.RAVRADAR_NATIVE_ORIGINAL_CONTINUITY_SOURCE_ACTIVE != 'true')",
+      "original": "        if: (((steps.owner-current-original.outputs.transition_kind == 'owner-current-domain-original') && (inputs.restart_archived_weather != true)) && (steps.saved-last-mile-source.outputs.required != 'true')) && (env.RAVRADAR_ACCOUNT_STATISTICS_ASSISTANT_SOURCE_ACTIVE != 'true')",
+      "count": 1,
+      "beforeSha256": "d6c21f919298e2e37b84a499c99cef989313537ff40e76561d73bf615484022c",
+      "afterSha256": "732ff30ec4a4e6fad216cad6fcfae78bd7129b92137f5664e99da6b582a502a0"
+    },
+    {
+      "current": "        if: ((inputs.restart_archived_weather != true) && (steps.saved-last-mile-source.outputs.required != 'true')) && (env.RAVRADAR_ACCOUNT_STATISTICS_ASSISTANT_SOURCE_ACTIVE != 'true') && (env.RAVRADAR_NATIVE_ORIGINAL_CONTINUITY_SOURCE_ACTIVE != 'true')",
+      "original": "        if: ((inputs.restart_archived_weather != true) && (steps.saved-last-mile-source.outputs.required != 'true')) && (env.RAVRADAR_ACCOUNT_STATISTICS_ASSISTANT_SOURCE_ACTIVE != 'true')",
+      "count": 1,
+      "beforeSha256": "732ff30ec4a4e6fad216cad6fcfae78bd7129b92137f5664e99da6b582a502a0",
+      "afterSha256": "4dea91ed0c66657c4ab2f3a66bd5fb7d7b2a9f9c693da90b10e974b0d74e5774"
+    },
+    {
+      "current": "        if: (((steps.operational-action.outputs.action == 'integrated' || steps.operational-action.outputs.action == 'integrated-historical-maintenance') && (inputs.restart_archived_weather != true)) && (steps.saved-last-mile-source.outputs.required != 'true')) && (env.RAVRADAR_ACCOUNT_STATISTICS_ASSISTANT_SOURCE_ACTIVE != 'true') && (env.RAVRADAR_NATIVE_ORIGINAL_CONTINUITY_SOURCE_ACTIVE != 'true')",
+      "original": "        if: (((steps.operational-action.outputs.action == 'integrated' || steps.operational-action.outputs.action == 'integrated-historical-maintenance') && (inputs.restart_archived_weather != true)) && (steps.saved-last-mile-source.outputs.required != 'true')) && (env.RAVRADAR_ACCOUNT_STATISTICS_ASSISTANT_SOURCE_ACTIVE != 'true')",
+      "count": 6,
+      "beforeSha256": "4dea91ed0c66657c4ab2f3a66bd5fb7d7b2a9f9c693da90b10e974b0d74e5774",
+      "afterSha256": "845275ff4614c6eff71995d23fbd71b50a077cdb2205278fb3603085d5776248"
+    },
+    {
+      "current": "        if: (inputs.publish_newest_saved_weather == true) && (env.RAVRADAR_ACCOUNT_STATISTICS_ASSISTANT_SOURCE_ACTIVE != 'true') && (env.RAVRADAR_NATIVE_ORIGINAL_CONTINUITY_SOURCE_ACTIVE != 'true')",
+      "original": "        if: (inputs.publish_newest_saved_weather == true) && (env.RAVRADAR_ACCOUNT_STATISTICS_ASSISTANT_SOURCE_ACTIVE != 'true')",
+      "count": 1,
+      "beforeSha256": "845275ff4614c6eff71995d23fbd71b50a077cdb2205278fb3603085d5776248",
+      "afterSha256": "c60f65d52663525fb01095b87888e9385fa886b6d7d9cc38af788e08ad1d5435"
+    }
+  ]
+}

@@ -1,3 +1,29 @@
+## 21. oktober — P0-originalkontinuitet 4.0.586 lokalt udstedt, ikke installeret
+
+- [x] Faktisk 39608743697/1 afgrænset til POST_H0_DMI_ORIGINAL_SELECTED_ENDPOINT_PROOF_NATIVE_ENDPOINT_MISSING i COMMITTED_RAW_RETENTION før leverandører. Det er manglende bevis blandt leverede kontekster, ikke en dom over DMI-værdier eller alle fysiske originaler. Sidste offentlige 39520623069/1 kl. 05.39 dansk tid passerede allerede retentionguard.
+- [x] Lokalt integreret schema2/per-PART-originalbank sammen med de samme 121 timer; eksakt nativeGridSampling-egenfeltsmatch; autentificeret fixed-B-companions-only-læser; normal 585-samme-H0-metadatabro og kontrolleret kode-only-workflow. Gamle schema1-originaler bevares; manglende lagret selektionsbevis er ikke påstand om fysisk manglende originaler.
+- [x] Normale regressioner er lokalt synkroniseret med de nye input: eksplicit false for den uvalgte native-overgang, ægte frosne 585-fabrikker frem for ny familie under gammelt navn, faktisk native-bank i epoch-fixturen og korrekt fasebestemt sidste CAS-migration med uændrede gamle 55s-krav. Forældede fixtures må ikke få produktguards lempet. Dette er testvedligeholdelse, ikke ny produktionskode eller et samlet CI-/leveringsbevis; den præcise nye kildekontrol er fortsat påkrævet.
+- [x] Hel normal continuity, syv gamle originalbevisprøver, to entrypoint- og to plannerprøver består. De historiske orakler er bevaret med præcise additive inverser; de nye faktiske kaldere prøves uden historisk projektion.
+- [x] Én national syntetisk current-continuity-prøve: 673×121 PASS, 596.790 ms, maxRSS 1.405.552 KiB, rå 452.782.914 / komprimeret 34.156.315 bytes. Kun strømkomponentens normalbank→pakning→streaming; ikke hele femfamiliepakken, remote B, native PostgreSQL, præcis CI, installation eller offentlig effekt.
+- [x] Fysisk graf efter tilkobling opgjort som C96/I95/T12; tre ægte 585-autentifikationsinput er inkluderet, otte controllere ligger udenfor. Ingen modelinput er skjult med inventarundtagelser. Gamle numeriske værdier, SQL, kildeprioritet, admin og geometri bevares; ingen nulstilling eller guardfjernelse.
+- [x] Normal versionssynk til 4.0.586 er udført lokalt; den ændrer ikke i sig selv installeret version eller udsteder ny SQL.
+- [x] ROOTs faktiske lokale C/I/T- og SQL-udstedelse med releasedAt `2026-10-21T15:05:07.445Z`; det er ikke en installeret modelbinding.
+
+| Binding | Normalt felt | Antal kildefiler | Lokalt udstedt SHA-256 |
+| --- | --- | ---: | --- |
+| C | `modelBundleSha256` | 96 | `eb042ae79b64df21537421283a0d62d39af22c2d1a38707e530970af6bc7c8dd` |
+| I | `modelBundleSha256` | 95 | `6d8f7cca203b5f7ee5155f3c0cdb39403a02fd0eb30fecaca5070ef9f814a805` |
+| T | `continuationStateContractSha256` | 12 | `d2d93920aacc4be877da22c7b9e31e21426e647227a2c5018ee14b3a267500c7` |
+
+Én ny append-only migration er lokalt afledt med den normale builder: `20261021150500_native_original_continuity_original_bound_successor.sql`, 326605 bytes, `migrationSha256=b4594e2187c5326ef798551fdb12b596ce8b2bd0ae961b7529acf5b668ea5ccd`. Tilhørende normale output er `canonicalSha256=d2ecf4414b020478789ed9007b3fe466c16ecc8e01b1053445397d241159065b`, `checkpointContractSha256=d69f1327c28bbc1d36a4267ab2b9c557791100ca0a7be663df049a845431e07f` og `tripBindingPolicySha256=c4cc7de2c5464f23bd42a6372b4543e82e7106374385e562a7dfb4e7dae67348`. Alle 64 tidligere udstedte SQL-filer er byteuændrede. En særskilt diff for hver af de to geodatafiler viser kun topversionens synk, ikke ændret admin/geometri.
+
+- [x] Efter lokal udstedelse består den normale caller med fem PASS uden skip, native-evidensmålet med seks PASS og den rå workflowkontrol med tre PASS; de fire uændrede snævre orakelmål genbruges. Native-evidensmålet er ikke en faktisk native PostgreSQL-kørsel. Normal fixedpoint og synk af syv forbrugere består lokalt; den fulde CLI-/native-PG-/præcise CI-kæde, installation og offentlig levering er fortsat åbne.
+- [x] Normal endelig fixedpoint og synk af syv forbrugere består lokalt på de faktisk udstedte bindinger og den nye SQL.
+- [x] Den normale autentificerede B/S/CLI-prøve består lokalt med fire faktiske kommandokald: originaler i henholdsvis aktiv- og kandidatledsager bevares trods ændrede arbejdsfiler, ægte manglende original afvises, og første læsefejl bevares ved efterfølgende cleanupfejl. Normal registervalidering er bevaret; prøven bruger syntetiske input og beviser ikke produktionspakkens konkrete indhold eller native GRIB/SQL.
+- [ ] Den fulde relevante CLI-/native-PG-kvalifikation, præcis CI og faktisk levering er fortsat åbne; de ommærkes ikke fra de lokale delmål.
+- [ ] Hele relevante femfamilie-/autentificerede B/S-/native-PG-/præcise CI- og normale installationskontroller; derefter ny almindelig offentlig levering og verificeret fortsættelse/cacheopbygning. En lokal komponentmåling lukker ingen af disse krav.
+- [ ] Alle fem hovedmål til 18. november 2026. SOURCE, samlet statistik og automatisk retention er fortsat inaktive; cronstatus er UKENDT. Se ROOTs ene P0-linje og private checkpoint. Ældre modstridende afventningsnoter nedenfor er dateret historik.
+
 ## 21. oktober — normal historikplan: indre fejl skal bevares
 
 - [x] Hele den aktuelle fejllog er bevaret, og seneste vellykkede og fejlede kilde er sammenlignet: ingen ændring af planlægger, checkpoint- eller B-kaldere. Den generiske CLI-kategori identificerer ikke den indre årsag.

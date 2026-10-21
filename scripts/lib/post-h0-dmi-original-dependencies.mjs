@@ -45,6 +45,8 @@ function endpointProofDiagnostic(code) {
     ? 'SELECTED_ENDPOINT_PROOF_'+code.slice('DMI_NATIVE_PROOF_'.length) : null;
   return POST_H0_DMI_ENDPOINT_DIAGNOSTICS.includes(reason) ? reason : 'SELECTED_ENDPOINT_PROOF_INVALID';
 }
+import { nativeCurrentOriginalBankForPart } from './ravscore-recovery-source-priority.mjs';
+
 function data(value, array = false) {
   if (!value || typeof value !== 'object' || types.isProxy(value)
     || Array.isArray(value) !== array
@@ -163,7 +165,12 @@ export function collectPostH0DmiOriginalDependencies({
     if (rows.length > LIMIT.donorRowsPerPart) fail('INPUT_BOUND');
     const contexts = own(source, 'nativeCurrentContexts') ?? [];
     checkContexts(contexts, expected);
-    const inspector = createProtectedDmiNativeCurrentInspector({ contexts });
+    let previousBank;
+    try { previousBank = nativeCurrentOriginalBankForPart(source, part); }
+    catch { fail('INPUT_INVALID'); }
+    if (previousBank !== null) plainTree(previousBank, 0, { nodes: 0, bytes: 0,
+      maximumNodes: LIMIT.donorRowsPerPart * 256, maximumBytes: LIMIT.candidateBytesPerPart });
+    const inspector = createProtectedDmiNativeCurrentInspector({ contexts, previousBank });
     for (let rowIndex = 0; rowIndex < rows.length; rowIndex++) {
       const row = data(own(rows, String(rowIndex))), time = own(row, 'time'), ms = hour(time);
       const at = rowsByTime.get(time) ?? []; at.push(row); rowsByTime.set(time, at);

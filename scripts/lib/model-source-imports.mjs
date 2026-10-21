@@ -43,12 +43,32 @@ const REVIEWED = Object.freeze({
     imports: Object.freeze(['../js/core/ravscore-model-contract.js', './lib/bounded-conditions-predecessor-transition.mjs', './lib/private-weather-component-inventory.mjs']),
   }),
 });
+// Additive genuine585 validation closure. These whole-source variants are
+// explicit reviewed imports, never exclusions or a scanner-error fallback.
+const NATIVE_CONTINUITY_REVIEWED = Object.freeze({
+  'scripts/check-native-original-continuity-predecessor-source.mjs': Object.freeze({
+    sha256: '17b3ce539b1f296fb75bf592fcd7393569f0dd3614974e6d7d06a836a0020922',
+    imports: Object.freeze([]),
+  }),
+  'scripts/lib/authenticated-frozen585-predecessor.mjs': Object.freeze({
+    sha256: 'b62351eb51f1871d970295957f6d4882f9a996db95ee8e7ff10b638306acc65a',
+    imports: Object.freeze(['../check-native-original-continuity-predecessor-source.mjs']),
+  }),
+  'scripts/lib/established-native-current-origin.mjs': Object.freeze({
+    sha256: 'b67f460aa9b01ff9d0ff03bfbbed5c9d570425196bf929f9bd8d7b4b67b586b1',
+    imports: Object.freeze([...REVIEWED['scripts/lib/established-native-current-origin.mjs'].imports,
+      './authenticated-frozen585-predecessor.mjs', '../check-native-original-continuity-predecessor-source.mjs']),
+  }),
+});
 export function modelSourceRelativeModuleSpecifiers(source, file) {
-  if (!Object.hasOwn(REVIEWED, file)) return exactRelativeModuleSpecifiers(source, file);
+  if (!Object.hasOwn(REVIEWED, file) && !Object.hasOwn(NATIVE_CONTINUITY_REVIEWED, file))
+    return exactRelativeModuleSpecifiers(source, file);
   if (typeof source !== 'string') throw new Error('Reviewed model source must be a string');
   const normalized = source.replace(/^\uFEFF/, '').replace(/\r\n?/g, '\n');
-  const reviewed = REVIEWED[file];
-  if (crypto.createHash('sha256').update(normalized).digest('hex') !== reviewed.sha256)
+  const hash = crypto.createHash('sha256').update(normalized).digest('hex');
+  const reviewed = [REVIEWED[file], NATIVE_CONTINUITY_REVIEWED[file]].filter(Boolean)
+    .find(variant => variant.sha256 === hash);
+  if (!reviewed)
     throw new Error('Whole reviewed model import source changed: ' + file);
   return reviewed.imports;
 }

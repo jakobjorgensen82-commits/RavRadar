@@ -7,6 +7,9 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { ACCOUNT_STATISTICS_ASSISTANT_BINDING,accountStatisticsAssistantMigration,readAccountStatisticsAssistantCanonicalSource,requireAccountStatisticsAssistantOutput }
   from './lib/account-statistics-assistant-successor-source.mjs';
+import {NATIVE_ORIGINAL_CONTINUITY_BINDING,NATIVE_ORIGINAL_CONTINUITY_ALIASES,nativeOriginalContinuityMigration,
+  readNativeOriginalContinuityCanonicalSource,requireNativeOriginalContinuityOutput}
+  from './lib/native-original-continuity-successor-source.mjs';
 import {
   assertRavScoreModelBinding,
   ravScoreModelBinding,
@@ -31,7 +34,8 @@ const SQL_BINDING_PATHS = Object.freeze([
   'supabase/INSTALL-RAVRADAR-4.0.56-SECURITY.sql',
 ]);
 const CHECKPOINT_METADATA_CAS_MIGRATION_PATH =
-  ACCOUNT_STATISTICS_ASSISTANT_BINDING === null ? null : 'supabase/migrations/' + accountStatisticsAssistantMigration().filename;
+  NATIVE_ORIGINAL_CONTINUITY_BINDING !== null ? 'supabase/migrations/' + nativeOriginalContinuityMigration().filename
+    : ACCOUNT_STATISTICS_ASSISTANT_BINDING === null ? null : 'supabase/migrations/' + accountStatisticsAssistantMigration().filename;
 const CHECKPOINT_METADATA_CAS_MARKER = 'RAVSCORE_CHECKPOINT_METADATA_CAS_GENERATED';
 const CHECKPOINT_METADATA_CAS_INNER_MARKERS = Object.freeze([
   'RAVSCORE_CHECKPOINT_INTEGRATED_STATE_BINDING_GENERATED',
@@ -109,6 +113,22 @@ function assertJsonBindingBlock(block, binding, assertion, label) {
 
 // Pure source validation seam. The normal synchronizer still obtains its
 // canonical source only from the pinned, immutable successor reader.
+export function nativeOriginalContinuityCheckpointInspectionView(source){
+  const pins=requireNativeOriginalContinuityOutput(); // Unissued before input inspection.
+  assert.equal(arguments.length,1);assert.equal(typeof source,'string');
+  assert.equal(crypto.createHash('sha256').update(source).digest('hex'),pins.canonicalSha256,
+    'Native continuity checkpoint inspection requires the entire issued canonical source');
+  let view=source;
+  // The genuine585 aliases retain their original generated comments. Remove
+  // only their whole definitions from this inspection view AFTER whole-source
+  // authentication. Returned/synchronized SQL retains every original byte.
+  for(const row of NATIVE_ORIGINAL_CONTINUITY_ALIASES.slice(0,2)){
+    const original=exactFunctionDefinition(view,'public.'+row.name,'Exact original585 native continuity alias');
+    view=view.slice(0,original.start)+view.slice(original.end);
+  }
+  return view;
+}
+
 export function checkpointMetadataCasBlock(source, binding, candidateBinding, continuationHash) {
   const label = `${CHECKPOINT_METADATA_CAS_MIGRATION_PATH} checkpoint metadata CAS`;
   const outer = exactGeneratedBlock(source, CHECKPOINT_METADATA_CAS_MARKER, label);
@@ -117,6 +137,8 @@ export function checkpointMetadataCasBlock(source, binding, candidateBinding, co
   // them from this current-binding-only inspection view. The returned SQL still
   // contains every original byte; no alias is rebound, hidden or rewritten.
   let currentView=source;
+  if(NATIVE_ORIGINAL_CONTINUITY_BINDING!==null||NATIVE_ORIGINAL_CONTINUITY_ALIASES.slice(0,2).some(row=>source.includes('function public.'+row.name+'(')))
+    currentView=nativeOriginalContinuityCheckpointInspectionView(source);
   const originalAliases=[
     ['public.ravradar_ravscore_checkpoint_cmw0200_state_valid','7841b008be46efc651c3c416ded60145fa2265954a39020a50974b353ac3feb0'],
     ['public.ravradar_ravscore_checkpoint_cmw0200_payload_valid','225de0e8252fa5ab814432a0ce0424ecc663d2552062f2b341b7cbab8054dbaa'],
@@ -303,7 +325,8 @@ function synchronizeAccountSchema(source, accountSource, relative) {
 }
 
 export async function synchronizeRavScoreModelBinding({ write = false, root = ROOT } = {}) {
-  requireAccountStatisticsAssistantOutput();
+  if(NATIVE_ORIGINAL_CONTINUITY_BINDING!==null)requireNativeOriginalContinuityOutput();
+  else requireAccountStatisticsAssistantOutput();
   const binding = ravScoreModelBinding();
   assertRavScoreModelBinding(binding);
   const candidateBinding = candidateGRollbackModelBinding();
@@ -312,7 +335,8 @@ export async function synchronizeRavScoreModelBinding({ write = false, root = RO
 
   // Sparse immutable successor is reconstructed only as a pinned READ view.
   const { canonicalSource: checkpointMigration, statisticsSchema2Source: accountSource } =
-    await readAccountStatisticsAssistantCanonicalSource({ migrationsDirectory: path.join(root, 'supabase/migrations') });
+    await (NATIVE_ORIGINAL_CONTINUITY_BINDING!==null?readNativeOriginalContinuityCanonicalSource
+      :readAccountStatisticsAssistantCanonicalSource)({ migrationsDirectory: path.join(root, 'supabase/migrations') });
   const checkpointBlock = checkpointMetadataCasBlock(
     checkpointMigration,
     binding,

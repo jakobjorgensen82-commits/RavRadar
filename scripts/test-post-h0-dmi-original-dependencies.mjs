@@ -1,4 +1,4 @@
-import { inverseAlternativeCCaller } from './lib/alternative-c-caller-test-input.mjs';
+import { inverseAlternativeCCaller, inverseCurrentNativeOriginalConsumerTestInput, CURRENT_NATIVE_ORIGINAL_CONSUMER_TEST_REVIEW } from './lib/alternative-c-caller-test-input.mjs';
 import assert from 'node:assert/strict';
 import crypto from 'node:crypto';
 import test from 'node:test';
@@ -95,6 +95,7 @@ const reject = (options, code) => assert.throws(() => collect(options), error =>
 
 
 test('endpoint failure detail: normal collector and seven-field CLI distinguish exact failure branches',async()=>{
+  const currentCollectorSha256=sha(readFileSync(new URL('./lib/post-h0-dmi-original-dependencies.mjs',import.meta.url)));
   for(const [mutate,reason]of [
     [f=>{f.options.recoverySources[0].record.hourly=[{...rowAt(f,1),sources:{}}];},'SELECTED_ENDPOINT_SOURCE_MISSING'],
     [f=>{rowAt(f,1).currentProvenance.entityId='PART::OTHER';},'SELECTED_ENDPOINT_VIEW_MISMATCH'],
@@ -108,7 +109,8 @@ test('endpoint failure detail: normal collector and seven-field CLI distinguish 
     const report=await describeRavScoreCurrentHistoryFailure(error,'COMMITTED_RAW_RETENTION');
     assert.deepEqual(Object.keys(report).sort(),['kind','code','phase','exceptionType','operator','frame','privatePayloadIncluded'].sort());
     assert.equal(report.code,error.originalDependencyCode);assert.equal(report.frame.line,18);
-    assert.equal(report.frame.sha256,'0db7833d68cad3c1ab60c86855bab6e90b1cbf40d8a2ad766da74609781ce6dc');assert.equal(report.privatePayloadIncluded,false);
+    assert.equal(report.frame.module,'scripts/lib/post-h0-dmi-original-dependencies.mjs');
+    assert.equal(report.frame.sha256,currentCollectorSha256);assert.equal(report.privatePayloadIncluded,false);
     assert.equal(JSON.stringify(f.options),before);assert.equal(error.message,'POST_H0_DMI_ORIGINAL_SELECTED_ENDPOINT_UNAVAILABLE');
   }
 });
@@ -425,4 +427,448 @@ test('normal one-PART native121 survives atomic continuity IO and newer model/wi
   assert.deepEqual(await fs.readFile(old.file), old.saved);
   assert.deepEqual(await fs.readFile(fresh.file), fresh.saved);
   complete = true;
+});
+
+test('normal native originals consumers: A2 bank retention companions and newer candidate remain normal',async t=>{
+  // Same normal native121 projection/continuity/priority/collector seam above.
+  // Artificial schema-valid originals; not GRIB, authenticated B/S or395920 evidence.
+  const fs=await import('node:fs/promises'),os=await import('node:os'),path=await import('node:path');
+  const dmi=await import('./lib/dmi-forecast-store.mjs');
+  const {buildProtectedDmiNativeCurrentProofs}=await import('./lib/protected-dmi-native-current-proofs.mjs');
+  const continuity=await import('./lib/dmi-part-continuity.mjs');
+  const io=await import('./lib/dmi-forecast-file.mjs');
+  const {buildPartDmiForecastWithProtectedRetention}=await import('./lib/private-dmi-recovery-record.mjs');
+  const {verifiedProtectedDmiPartHourly}=await import('./lib/protected-dmi-current-context.mjs');
+  assert.equal(dmi.DMI_FORECAST_HOURS,121);
+  const root=await fs.mkdtemp(path.join(os.tmpdir(),'rr-coherent-native-closure-'));
+  let complete=false;
+  t.after(async()=>{
+    assert.equal(path.dirname(root),path.resolve(os.tmpdir()));
+    assert(path.basename(root).startsWith('rr-coherent-native-closure-'));
+    if(complete)await fs.rm(root,{recursive:true});
+  });
+  const f=fixture({coherent:[-3,0,3,6,9]});
+  const feature={properties:{id:f.identity.entityId,dataPoint:f.part.waterPoint}};
+  // Reuse the existing native121 fixture's source constructor and sampling record.
+  // A is an older official run; B replaces only the native valid-time0 slot.
+  const native=(run,lead)=>{
+    const valid=run+lead,source=structuredClone(f.natives[1].sources.current);
+    Object.assign(source,{modelRun:at(run),nativeValidTime:at(valid),leadTimeHours:lead,
+      itemId:`synthetic-closure-${run}-${lead}`,assetIdentitySha256:sha(`closure-asset-${run}-${lead}`),
+      contentSha256:sha(`closure-bytes-${run}-${lead}`),acquiredAt:at(run+0.5),
+      itemCreatedAt:at(run),itemUpdatedAt:at(run)});
+    source.nativeGridSampling=sampling(source);
+    return{time:at(valid),'current-u':0.1+valid/1000+run/100,'current-v':0.2,sources:{current:source}};
+  };
+  const originals=Array.from({length:43},(_,index)=>native(-6,index*3));
+  const oldDocument={...structuredClone(f.document),generatedAt:at(0),zones:{[f.identity.entityId]:{
+    ...f.identity,hourly:Object.fromEntries(originals.map(row=>[row.time,row]))}}};
+  const oldBefore=JSON.stringify(oldDocument);
+  const oldRecord=buildPartDmiForecastWithProtectedRetention(feature,oldDocument,null,at(0),{
+    startAt:at(0),expectedIdentity:f.identity});
+  assert(oldRecord);assert.equal(oldRecord.hourly.length,121);
+  const oldHourly=verifiedIntegratedPartHourly(oldRecord,oldDocument,f.identity.entityId,f.part,
+    {requireNativeGridSampling:true});
+  const oldA2=oldHourly.find(row=>row.time===at(2));assert(oldA2);
+  assert.equal(oldA2.sources.current.modelRun,at(-6));
+  assert.deepEqual(oldA2.sources.current.nativeSteps.map(step=>step.nativeValidTime),[at(0),at(3)]);
+  assert.equal(inspectDmiForecastGridSampling(oldA2.currentProvenance,'current',oldA2.time,f.identity).status,'coherent');
+  assert.equal(createProtectedDmiNativeCurrentInspector({contexts:[oldDocument]}).inspectOriginals({part:f.part,row:oldA2}).ok,true);
+  // Real producer storage shape: one current source tuple at a valid-time key.
+  const partialDocument=structuredClone(oldDocument);
+  partialDocument.zones[f.identity.entityId].hourly[at(0)]=native(0,0);
+  const partialBefore=JSON.stringify(partialDocument);
+  const retained=buildPartDmiForecastWithProtectedRetention(feature,partialDocument,oldDocument,at(0),{
+    startAt:at(0),expectedIdentity:f.identity,persistedHourly:oldRecord.hourly});
+  // Observed positive edge control: B0 legitimately supplies the first hour only.
+  const retainedB1=retained.hourly.find(row=>row.time===at(1));assert(retainedB1);
+  assert.equal(retainedB1.sources.current.modelRun,at(0));
+  assert.equal(retainedB1.sources.current.temporalResolution,'nearest-edge');
+  const retainedA2=retained.hourly.find(row=>row.time===at(2));assert(retainedA2);
+  assert.deepEqual(retainedA2.sources.current,oldA2.sources.current);
+  assert.equal(partialDocument.zones[f.identity.entityId].hourly[at(0)].sources.current.modelRun,at(0));
+  assert.equal(partialDocument.zones[f.identity.entityId].hourly[at(3)].sources.current.modelRun,at(-6));
+  // This is the existing published PART-continuity producer/atomic IO/readback,
+  // not an invented native donor or a fabricated serialized proof.
+  const nativeBank=buildProtectedDmiNativeCurrentProofs({
+    selections:retained.hourly.map(row=>({part:f.part,row})),contexts:[partialDocument,oldDocument]});
+  const packed=await continuity.packDmiPartContinuity(new Map([[f.part.partId,retained]]),[f.part],at(0),
+    {nativeCurrentProofsByPart:new Map([[f.part.partId,nativeBank]])});
+  const file=path.join(root,'forecast.json');
+  await io.writeDmiForecastFileAtomic(file,{schemaVersion:2,zones:{},partContinuity:packed});
+  const saved=await fs.readFile(file),read=await io.readDmiForecastFile(file);
+  const restored=await continuity.unpackDmiPartContinuity(read.partContinuity,[f.part],at(6));
+  assert.deepEqual(restored.get(f.part.partId).hourly,retained.hourly);
+  const recoveryRecord=buildPrivateDmiRecoveryRecord(feature,partialDocument,at(6),{
+    startAt:at(0),expectedIdentity:f.identity,persistedHourly:restored.get(f.part.partId).hourly,
+    protectPreviousDmi:true});
+  const recovered=verifiedProtectedDmiPartHourly(recoveryRecord,[partialDocument],f.identity.entityId,f.part,
+    {requireNativeGridSampling:false});
+  const fallback={source:'deployed-private-runtime',nativeCurrentContexts:[partialDocument],
+    record:{...recoveryRecord,hourly:recovered}};
+  const selected=buildNewestValidRavScoreRecoverySources({fallbackSource:fallback,protectedPreviousSource:fallback,
+    productionReferenceAt:at(6),part:f.part});
+  const selectedA2=selected.flatMap(source=>source.record.hourly).find(row=>row.time===at(2));
+  assert(Number.isFinite(selectedA2.currentUMps));
+  assert.deepEqual(selectedA2.sources.current,oldA2.sources.current);
+  assert.equal(inspectDmiForecastGridSampling(selectedA2.currentProvenance,'current',at(2),f.identity).status,'coherent');
+  const own=createProtectedDmiNativeCurrentInspector({contexts:[partialDocument]}).inspectOriginals({part:f.part,row:selectedA2});
+  assert.deepEqual(own,{ok:false,code:'DMI_NATIVE_PROOF_NATIVE_ENDPOINT_MISSING'});
+  assert.throws(()=>collect({...f.options,targetReferenceAt:at(6),recoverySources:selected}),error=>
+    error.message==='POST_H0_DMI_ORIGINAL_SELECTED_ENDPOINT_UNAVAILABLE'
+      &&error.originalDependencyCode==='POST_H0_DMI_ORIGINAL_SELECTED_ENDPOINT_PROOF_NATIVE_ENDPOINT_MISSING');
+  // Positive control uses the actual unchanged old native document, not a label,
+  // inspector stub, reconstructed provenance, changed score or zeroed demand.
+  const completeFallback={...fallback,nativeCurrentContexts:[partialDocument,oldDocument]};
+  const completeSelected=buildNewestValidRavScoreRecoverySources({fallbackSource:completeFallback,
+    protectedPreviousSource:completeFallback,productionReferenceAt:at(6),part:f.part});
+  const plan=collect({...f.options,targetReferenceAt:at(6),recoverySources:completeSelected});
+  assert.equal(plan.captures.length,0);assert(plan.counts.coherentRows>0);
+  assert.equal(JSON.stringify(oldDocument),oldBefore);assert.equal(JSON.stringify(partialDocument),partialBefore);
+  assert.deepEqual(await fs.readFile(file),saved);
+  // Same actual restored per-PART bank; the old donor document is absent here.
+  const savedRecord=restored.get(f.part.partId);
+  const bankFallback={...fallback,nativeCurrentOriginals:savedRecord.nativeCurrentOriginals};
+  const bankSelected=buildNewestValidRavScoreRecoverySources({fallbackSource:bankFallback,
+    protectedPreviousSource:bankFallback,productionReferenceAt:at(6),part:f.part});
+  assert.equal(bankSelected[0].nativeCurrentOriginals,savedRecord.nativeCurrentOriginals);
+  const bankPlan=collect({...f.options,targetReferenceAt:at(6),recoverySources:bankSelected});
+  assert.equal(bankPlan.captures.length,0);assert(bankPlan.counts.coherentRows>0);
+  assert.deepEqual(bankSelected[0].nativeCurrentContexts,[partialDocument]);
+  // Bank existence cannot hide a wrong-PART wrapper, change the chosen current
+  // tuple, or make an older DMI model win over a normally qualified newer one.
+  const wrong=structuredClone(bankFallback);
+  wrong.nativeCurrentOriginals.bank.contexts[0].value.partId='OTHER-SYNTHETIC-PART';
+  assert.throws(()=>collect({...f.options,targetReferenceAt:at(6),recoverySources:[wrong]}),
+    error=>error.message==='POST_H0_DMI_ORIGINAL_INPUT_INVALID');
+  const freshDocument={...structuredClone(f.document),generatedAt:at(6),zones:{[f.identity.entityId]:{
+    ...f.identity,hourly:Object.fromEntries(Array.from({length:43},(_,index)=>native(0,index*3)).map(row=>[row.time,row]))}}};
+  const freshRecord=buildPrivateDmiRecoveryRecord(feature,freshDocument,at(6),{startAt:at(0),expectedIdentity:f.identity});
+  const fresh={source:'progressive-private-dmi',nativeCurrentContexts:[freshDocument],record:{...freshRecord,
+    hourly:verifiedIntegratedPartHourly(freshRecord,freshDocument,f.identity.entityId,f.part,{requireNativeGridSampling:true})}};
+  const newest=buildNewestValidRavScoreRecoverySources({fallbackSource:bankFallback,preferredSource:fresh,
+    protectedPreviousSource:bankFallback,productionReferenceAt:at(6),part:f.part});
+  const a2=newest.flatMap(source=>source.record.hourly).filter(row=>row.time===at(2)&&Number.isFinite(row.currentUMps));
+  assert.equal(a2.length,1);assert.equal(a2[0].currentProvenance.modelRun,at(0));
+  assert.equal(newest[0].nativeCurrentOriginals,savedRecord.nativeCurrentOriginals);
+  assert.equal(collect({...f.options,targetReferenceAt:at(6),recoverySources:newest}).captures.length,0);
+  // The existing pure normal planner seam uses actual source documents as
+  // companion proof ONLY; this is not an authenticated B transport fixture.
+  const part={...f.part,name:'Synthetic retained PART',landPoint:[8.001,55]};
+  const state=f.options.initialSelection.state;
+  const conditions={datasetId:'rr-synthetic-native-consumers',productionReferenceAt:at(0),
+    coastalParts:{parts:{[part.partId]:{ravScoreModel:{currentState:state}}}}};
+  const checkpoint={datasetId:conditions.datasetId,productionReferenceAt:at(0),
+    generationSha256:sha('synthetic-native-consumers-S'),states:{[part.partId]:state}};
+  const options={registry:{partCount:1,zones:{[part.zoneId]:[part]}},conditions,checkpoint,
+    productionReferenceAt:at(6),protectedBulk:partialDocument,
+    persistedHourlyByPart:new Map([[part.partId,{point:savedRecord.point,hourly:savedRecord.hourly}]]),
+    zones:{features:[{properties:{id:part.zoneId}}]},boundary:{datasetId:conditions.datasetId,
+      productionReferenceAt:at(0),bundleContentSha256:sha('synthetic-native-consumers-B'),
+      checkpointGenerationSha256:checkpoint.generationSha256,conditionsSha256:sha(JSON.stringify(conditions))}};
+  assert.throws(()=>buildRavScoreRawCurrentRetention(options),
+    error=>error.originalDependencyCode==='POST_H0_DMI_ORIGINAL_SELECTED_ENDPOINT_PROOF_NATIVE_ENDPOINT_MISSING');
+  assert.equal(buildRavScoreRawCurrentRetention({...options,protectedCompanionContexts:[oldDocument]}).captures.length,0);
+  assert.equal(buildRavScoreRawCurrentRetention({...options,
+    persistedHourlyByPart:new Map([[part.partId,savedRecord]])}).captures.length,0);
+  assert.throws(()=>buildRavScoreRawCurrentRetention({...options,
+    protectedCompanionContexts:[oldDocument,oldDocument,oldDocument]}),/RETENTION_INPUT_INVALID/);
+  assert.equal(JSON.stringify(oldDocument),oldBefore);assert.equal(JSON.stringify(partialDocument),partialBefore);
+  assert.deepEqual(await fs.readFile(file),saved);
+  complete=true;
+});
+
+test('native-original planner oracle preserves complete earlier source and actual collector identity', () => {
+  assert.deepEqual(CURRENT_NATIVE_ORIGINAL_CONSUMER_TEST_REVIEW.rows.map(row => row.path),
+    ['scripts/plan-ravscore-current-history.mjs', 'scripts/lib/post-h0-dmi-original-dependencies.mjs']);
+  for (const row of CURRENT_NATIVE_ORIGINAL_CONSUMER_TEST_REVIEW.rows) {
+    const current = readFileSync(new URL('../' + row.path, import.meta.url), 'utf8').replace(/\r\n/g, '\n');
+    assert.equal(sha(current), row.after.sha256, 'The actual current source must be qualified before historical projection');
+    assert.equal(Buffer.byteLength(current), row.after.bytes);
+    const original = inverseCurrentNativeOriginalConsumerTestInput(current, row.path);
+    assert.equal(sha(original), row.before.sha256);
+    assert.equal(inverseCurrentNativeOriginalConsumerTestInput(original, row.path), original);
+    for (const edit of row.edits) {
+      assert.equal(current.slice(edit.offset, edit.offset + edit.after.length), edit.after);
+      const changed = edit.after.length
+        ? current.slice(0, edit.offset) + (edit.after[0] === 'X' ? 'Y' : 'X') + current.slice(edit.offset + 1)
+        : current.slice(0, edit.offset) + edit.before + current.slice(edit.offset);
+      assert.notEqual(changed, current);
+      assert.throws(() => inverseCurrentNativeOriginalConsumerTestInput(changed, row.path), /ALTERNATIVE_C_TEST_INPUT_CHANGED/);
+    }
+    assert.throws(() => inverseCurrentNativeOriginalConsumerTestInput(current + '// unreviewed drift\n', row.path),
+      /ALTERNATIVE_C_TEST_INPUT_CHANGED/);
+    assert.throws(() => inverseCurrentNativeOriginalConsumerTestInput(current, 'scripts/unknown.mjs'),
+      /ALTERNATIVE_C_TEST_INPUT_CHANGED/);
+    if (row.path === 'scripts/plan-ravscore-current-history.mjs') {
+      assert.equal(sha(inverseAlternativeCCaller(current, row.path)),
+        '667b05b88a7cb3734507baccaa3bfa4e1fdd1214ea0ca076027dcbbae03d65d1');
+      assert.equal(inverseAlternativeCCaller(current, row.path), inverseAlternativeCCaller(original, row.path));
+    }
+  }
+  assert.throws(() => inverseCurrentNativeOriginalConsumerTestInput({}, 'scripts/plan-ravscore-current-history.mjs'),
+    /ALTERNATIVE_C_TEST_INPUT_CHANGED/);
+});
+
+test('normal authenticated B companions CLI: original fixed entries survive working changes and missing originals still fail',async t=>{
+  // Real fixed CLI + ordinary local B create/verify and S save/load. Synthetic
+  // constructor-valid DMI originals, not remote GCM/GRIB or production evidence.
+  const fs=await import('node:fs/promises'),path=await import('node:path'),os=await import('node:os');
+  const {fileURLToPath}=await import('node:url'),{spawnSync}=await import('node:child_process');
+  const {GENERATED_RAVSCORE_MODEL_BUNDLE_MANIFEST:integratedInventory}
+    =await import('../js/core/ravscore-model-bundle.generated.js');
+  const {GENERATED_RAVSCORE_MODEL_BUNDLE_MANIFEST:candidateInventory}
+    =await import('./rollback-assets/ravscore-model-bundle.generated.js');
+  const {RAVSCORE_CONTINUATION_IMPLEMENTATION_FILES,ravScoreContinuationImplementationSha256}
+    =await import('./lib/ravscore-continuation-implementation-contract.mjs');
+  const {saveRavScoreContinuationCheckpoint,RAVSCORE_CONTINUATION_CHECKPOINT_POLICY}
+    =await import('./ravscore-continuation-checkpoint.mjs');
+  const {buildPrivateRuntimeCreateSpec,PRIVATE_RUNTIME_CONTRACT_FILES,PRIVATE_RUNTIME_PRODUCER_SOURCE_FILES}
+    =await import('./private-production-runtime-workflow.mjs');
+  const {createPrivateProductionRuntimeBundle,verifyPrivateProductionRuntimeBundle}
+    =await import('./private-production-runtime-bundle.mjs');
+  const {PRIVATE_RUNTIME_BASE_FILES,PRIVATE_WEATHER_COMPONENT_FILES}
+    =await import('./lib/private-weather-component-inventory.mjs');
+  const {buildCandidateGDerivedStateSeries}=await import('../js/core/ravscore-candidate-g-state-pipeline.js');
+  const {candidateGStateKey}=await import('./lib/coastal-point-staging-contract.mjs');
+  const {ravScoreModelBinding}=await import('../js/core/ravscore-model-contract.js');
+  const {ravScoreModelBinding:rollbackBinding}=await import('./rollback-assets/ravscore-model-contract.js');
+  const {buildPartDmiForecastWithProtectedRetention}=await import('./lib/private-dmi-recovery-record.mjs');
+  const {packDmiPartContinuity}=await import('./lib/dmi-part-continuity.mjs');
+  const {writeDmiForecastFileAtomic}=await import('./lib/dmi-forecast-file.mjs');
+  const {packPrivateConditionsHourly,assertPrivateConditionsHourly}=await import('./lib/private-conditions-hourly.mjs');
+  const repository=fileURLToPath(new URL('../',import.meta.url));
+  const root=await fs.mkdtemp(path.join(await fs.realpath(os.tmpdir()),'rr-auth-companion-cli-'));
+  const rootIdentity=await fs.lstat(root,{bigint:true});let complete=false;
+  t.after(async()=>{
+    assert.equal(await fs.realpath(root),root);assert.equal(path.dirname(root),await fs.realpath(os.tmpdir()));
+    assert(path.basename(root).startsWith('rr-auth-companion-cli-'));
+    const current=await fs.lstat(root,{bigint:true});assert.equal(current.dev,rootIdentity.dev);assert.equal(current.ino,rootIdentity.ino);
+    if(complete)await fs.rm(root,{recursive:true}); // Only the wholly owned artificial fixture.
+  });
+  const host=path.join(root,'source');await fs.mkdir(host,{mode:0o700});
+  // Fixed-root host from the genuine model, continuation and normal producer
+  // inventories. Computed historical loaders are copied byte-for-byte, not
+  // interpreted as calls made by this ordinary retain-committed-raw CLI.
+  // This closed controller list supplies their actual static module neighbours;
+  // no directory copy, synthetic module, import rewrite or scanner exception.
+  const fixedCliSources=[
+    'scripts/current-family-cold-start.mjs',
+    'scripts/lib/post-h0-dmi-original-dependencies.mjs',
+    'scripts/check-native-identity-frozen-i71-source.mjs',
+    'scripts/verify-native-sampling-identity-successor-plan.mjs',
+    'scripts/native-sampling-identity-successor-readiness.mjs',
+    'scripts/migrate-post-cutover-private-runtime.mjs',
+    'scripts/audit-ravscore-integrated-public-runtime.mjs',
+    'scripts/runtime-binding-registry.mjs',
+    'scripts/lib/native-identity-staging-working-copy.mjs',
+    'scripts/lib/native-sampling-identity-successor-source.mjs',
+    'scripts/lib/current-grid-successor-source.mjs',
+    'scripts/lib/account-assistant-successor-source.mjs',
+    'scripts/lib/rebind-public-hour-pack-exact.mjs',
+    'scripts/lib/public-delivery-nested-binding.mjs',
+    'scripts/lib/protected-live-current-assembly.mjs',
+    'scripts/lib/ravscore-continuation-implementation-contract.mjs',
+    'scripts/lib/static-module-closure.mjs',
+    'js/core/current-direction-audit.js',
+    'js/core/direction-anchors.js',
+    'js/core/water-station-routing.js',
+    'scripts/archived-weather-restart.mjs',
+    'scripts/build-public-coastal-parts-v2.mjs',
+    'scripts/build-statistics-preference-revision.mjs',
+    'scripts/check-last-mile-enclosure-predecessor-source.mjs',
+    'scripts/lib/archived-weather-restart-input-view.mjs',
+    'scripts/lib/current-memory-warmup-successor-source.mjs',
+    'scripts/lib/current-spatial-runtime-proof.mjs',
+    'scripts/lib/data-quality.mjs',
+    'scripts/lib/dmi-acquisition-state.mjs',
+    'scripts/lib/dmi-native-current-runtime-projection.mjs',
+    'scripts/lib/established-native-current-origin-successor-source.mjs',
+    'scripts/lib/last-mile-enclosure-successor-source.mjs',
+    'scripts/lib/local-part-runtime.mjs',
+    'scripts/lib/native0600-original-successor-source.mjs',
+    'scripts/lib/ravscore-initial-current-window-audit.mjs',
+    'scripts/lib/ravscore-operational-state-readiness.mjs',
+    'scripts/lib/saved-current-forward-original-plan.mjs',
+    'scripts/lib/saved-current-replay-grid-audit.mjs',
+    'scripts/lib/water-level-continuity.mjs',
+    'scripts/lib/water-station-routing-alerts.mjs',
+    'scripts/lib/weather-history-retention.mjs',
+    'scripts/verify-account-assistant-schema.mjs',
+  ];
+  const productBytes=new Map(),pending=[...new Set([
+    'scripts/plan-ravscore-current-history.mjs','package.json',...fixedCliSources,
+    ...RAVSCORE_CONTINUATION_IMPLEMENTATION_FILES,
+    ...Object.values(PRIVATE_RUNTIME_CONTRACT_FILES).flat(),
+    ...PRIVATE_RUNTIME_PRODUCER_SOURCE_FILES,...candidateInventory.excludedModules,
+    ...integratedInventory.files.map(row=>row.path),...candidateInventory.files.map(row=>row.file),
+  ])];
+  let sourceBytes=0;
+  while(pending.length){
+    const relative=pending.pop();if(productBytes.has(relative))continue;
+    assert.equal(path.posix.normalize(relative),relative);assert(!relative.startsWith('../')&&!path.posix.isAbsolute(relative));
+    const input=path.join(repository,relative),stat=await fs.lstat(input);assert(stat.isFile()&&!stat.isSymbolicLink());
+    const bytes=await fs.readFile(input);productBytes.set(relative,bytes);sourceBytes+=bytes.length;
+    assert(productBytes.size<=2048&&sourceBytes<=32*1024*1024);
+  }
+  const write=async(relative,value,{replace=false}={})=>{
+    const file=path.join(host,relative);await fs.mkdir(path.dirname(file),{recursive:true,mode:0o700});
+    await fs.writeFile(file,Buffer.isBuffer(value)?value:typeof value==='string'?value:JSON.stringify(value)+'\n',
+      {flag:replace?'w':'wx',mode:0o600});return file;
+  };
+  for(const[relative,bytes]of productBytes){await write(relative,bytes);assert.deepEqual(await fs.readFile(path.join(host,relative)),bytes);}
+  assert.equal(await ravScoreContinuationImplementationSha256({repositoryRoot:host}),
+    await ravScoreContinuationImplementationSha256({repositoryRoot:repository}));
+
+  const f=fixture({coherent:[-3,0,3,6,9]});
+  const targetPart={...f.part,name:'Synthetic retained PART',landPoint:[8.001,55]};
+  const feature={properties:{id:f.identity.entityId,dataPoint:targetPart.waterPoint}};
+  const native=(run,lead)=>{
+    const valid=run+lead,source=structuredClone(f.natives[1].sources.current);
+    Object.assign(source,{modelRun:at(run),nativeValidTime:at(valid),leadTimeHours:lead,
+      itemId:`synthetic-cli-closure-${run}-${lead}`,assetIdentitySha256:sha(`cli-asset-${run}-${lead}`),
+      contentSha256:sha(`cli-bytes-${run}-${lead}`),acquiredAt:at(run+0.5),itemCreatedAt:at(run),itemUpdatedAt:at(run)});
+    source.nativeGridSampling=sampling(source);
+    return{time:at(valid),'current-u':0.1+valid/1000+run/100,'current-v':0.2,sources:{current:source}};
+  };
+  const old={...structuredClone(f.document),generatedAt:at(0),zones:{[f.identity.entityId]:{...f.identity,
+    hourly:Object.fromEntries(Array.from({length:43},(_,i)=>native(-6,i*3)).map(row=>[row.time,row]))}}};
+  const partial=structuredClone(old);partial.zones[f.identity.entityId].hourly[at(0)]=native(0,0);
+  const oldRecord=buildPartDmiForecastWithProtectedRetention(feature,old,null,at(0),{startAt:at(0),expectedIdentity:f.identity});
+  const retained=buildPartDmiForecastWithProtectedRetention(feature,partial,old,at(0),{
+    startAt:at(0),expectedIdentity:f.identity,persistedHourly:oldRecord.hourly});
+  const a2=retained.hourly.find(row=>row.time===at(2));assert(a2);
+  assert.deepEqual(a2.sources.current.nativeSteps.map(step=>step.nativeValidTime),[at(0),at(3)]);
+  assert.equal(createProtectedDmiNativeCurrentInspector({contexts:[partial]}).inspectOriginals({part:targetPart,row:a2}).code,
+    'DMI_NATIVE_PROOF_NATIVE_ENDPOINT_MISSING');
+  assert.equal(createProtectedDmiNativeCurrentInspector({contexts:[old]}).inspectOriginals({part:targetPart,row:a2}).ok,true);
+
+  // Fixed CLI and normal B/S policies require210/673; no test-only override.
+  // Only one PART has DMI values. Other121 rows carry time alone, never fake weather.
+  const zoneIds=[targetPart.zoneId,...Array.from({length:209},(_,i)=>'SYNTHETIC-CLI-ZONE-'+i)];
+  const parts=[targetPart,...Array.from({length:RAVSCORE_CONTINUATION_CHECKPOINT_POLICY.expectedPartCount-1},(_,i)=>({
+    partId:'SYNTHETIC-CLI-PART-'+String(i).padStart(3,'0'),zoneId:zoneIds[(i+1)%zoneIds.length],
+    name:'Synthetic retained companion PART '+i,
+    landPoint:[8.001+i/100000,55],waterPoint:[8+i/100000,55],onshoreDirectionDeg:90}))];
+  assert.equal(parts.length,673);
+  const registry={schemaVersion:2,enabled:true,zoneCount:210,partCount:673,zones:Object.fromEntries(zoneIds.map(id=>[id,[]]))};
+  const stateParts={},candidateParts={},records=new Map();
+  for(const part of parts){
+    registry.zones[part.zoneId].push(part);
+    const state=buildIntegratedPartScoreSeries({part,zone:{id:part.zoneId,onshoreDirectionDeg:90},hourly:[{time:at(0)}]})
+      .ravScoreState.continuationState;
+    stateParts[part.partId]={...part,ravScoreModel:{currentState:state}};
+    const candidate=buildCandidateGDerivedStateSeries([{time:at(0)}],{stateKey:candidateGStateKey(part)}).continuationState;
+    assert.equal(candidate.transportMemoryReady,false);
+    candidateParts[part.partId]={ravScoreModel:{currentState:candidate}};
+    records.set(part.partId,part===targetPart?retained:{zoneId:'PART::'+part.partId,point:part.waterPoint,
+      hourly:Array.from({length:121},(_,i)=>({time:at(i)}))});
+  }
+  const ledger='{"synthetic":"fixed authenticated companion CLI fixture"}\n';
+  const conditions={datasetId:'rr-synthetic-auth-companion-cli',productionReferenceAt:at(0),generatedAt:at(0),
+    zones:Object.fromEntries(zoneIds.map(id=>[id,{forecast:{hourly:[]}}])),
+    coastalParts:{modelBinding:ravScoreModelBinding(),parts:stateParts,
+      zones:Object.fromEntries(zoneIds.map(id=>[id,{hourly:[]}]))},
+    ravScoreCandidateGWarmup:{schemaVersion:'1.0.0',kind:'PRIVATE_CANDIDATE_G_MEASURED_WARMUP_RUNTIME',
+      privacyClass:'PRIVATE_PRODUCTION_RUNTIME',status:'BUILDING_MEASURED_ONLY',evidencePolicy:'MEASURED_ONLY',
+      syntheticHistoryAllowed:false,automaticActivationAllowed:false,publicDuringNormalOperation:false,
+      sourceModelBinding:ravScoreModelBinding(),candidateModelBinding:rollbackBinding(),runtime:{
+        modelBinding:rollbackBinding(),status:'BUILDING_MEASURED_ONLY',expectedPartCount:673,measuredPartCount:673,parts:candidateParts}},
+    weatherComponentInputs:{schemaVersion:1,kind:'PRIVATE_WEATHER_COMPONENT_INPUTS',sourceSelectionApplied:true,
+      openMeteoBankSha256:null,copernicusBankSha256:null,selectedComponentsSha256:sha(ledger)}};
+  await write('data/live/coastal-parts-v2.json',registry);
+  await write('data/zones.geojson',{type:'FeatureCollection',features:zoneIds.map(id=>({type:'Feature',properties:{id}}))});
+  const packedConditions=packPrivateConditionsHourly(conditions);assert.equal(assertPrivateConditionsHourly(packedConditions),true);
+  await write('data/live/conditions.json',packedConditions);
+  await fs.mkdir(path.join(host,'.cache/ravscore-continuation-checkpoint'),{recursive:true});
+  const checkpointPath=path.join(host,'.cache/ravscore-continuation-checkpoint/checkpoint.json');
+  await saveRavScoreContinuationCheckpoint({sourcePath:path.join(host,'data/live/conditions.json'),checkpointPath,repositoryRoot:host});
+  const sBefore=await fs.readFile(checkpointPath);
+  const continuity=await packDmiPartContinuity(records,parts,at(0));assert.equal(continuity.schemaVersion,1);
+  await fs.mkdir(path.join(host,'data/live'),{recursive:true});
+  await writeDmiForecastFileAtomic(path.join(host,'data/live/dmi-forecast-cache.json'),{schemaVersion:2,zones:{},partContinuity:continuity});
+  await write('data/live/dmi-bulk-cache.json',partial);await write('.cache/deployed-dmi-bulk-cache.json',partial);
+  for(const descriptor of PRIVATE_RUNTIME_BASE_FILES){
+    const file=path.join(host,descriptor.relativePath);
+    if(!await fs.lstat(file).catch(error=>{if(error.code==='ENOENT')return null;throw error;}))await write(descriptor.relativePath,{});
+  }
+  await write(PRIVATE_WEATHER_COMPONENT_FILES.selectedComponents,ledger);
+  const emptyWorking={...structuredClone(partial),zones:{}};
+  const oldBytes=JSON.stringify(old),partialBytes=JSON.stringify(partial);
+  const output=path.join(host,'.cache/ravscore-current-history-demand.json');
+  const envBase=Object.fromEntries(Object.entries(process.env).filter(([key])=>
+    new Set(['PATH','SYSTEMROOT','WINDIR','COMSPEC','PATHEXT','LANG','LC_ALL']).has(key.toUpperCase())));
+  const networkGuard=`import http from 'node:http';import https from 'node:https';import {syncBuiltinESMExports} from 'node:module';
+    const forbidden=()=>{process.stderr.write('FORBIDDEN_NETWORK\\n');process.exit(97)};
+    globalThis.fetch=forbidden;http.get=http.request=https.get=https.request=forbidden;syncBuiltinESMExports();`;
+  for(const[mode,active,candidate,expected]of[
+    ['active',old,partial,0],['candidate',partial,old,0],['missing',partial,partial,1],['first-error',[],old,1]]){
+    await write(PRIVATE_WEATHER_COMPONENT_FILES.dmiActive,active,{replace:true});
+    await write(PRIVATE_WEATHER_COMPONENT_FILES.dmiCandidate,candidate,{replace:true});
+    const privateRoot=path.join(root,'private-'+mode);await fs.mkdir(privateRoot,{mode:0o700});
+    const bundlePath=path.join(privateRoot,'bundle');
+    const spec=await buildPrivateRuntimeCreateSpec({repositoryRoot:host});
+    await createPrivateProductionRuntimeBundle({...spec,privateRoot,bundlePath,repositoryRoot:host});
+    const verified=await verifyPrivateProductionRuntimeBundle({privateRoot,bundlePath,repositoryRoot:host});
+    assert.equal(verified.verified,true);assert.equal(verified.partCount,673);assert.equal(verified.zoneCount,210);
+    const bBefore=new Map(await Promise.all(['manifest.json',...verified.files.map(row=>'payload/'+row.relativePath)]
+      .map(async relative=>[relative,await fs.readFile(path.join(bundlePath,relative))])));
+    const runner=path.join(root,'runner-'+mode),tmp=path.join(root,'temp-'+mode);
+    await fs.mkdir(runner,{mode:0o700});await fs.mkdir(tmp,{mode:0o700});
+    await fs.writeFile(path.join(runner,'private-runtime-current-source.json'),JSON.stringify(verified),{flag:'wx',mode:0o600});
+    await fs.writeFile(path.join(tmp,'untouched-sentinel'),'owned fixture sentinel',{flag:'wx',mode:0o600});
+    // Mutate ONLY disposable working files after B was really built/verified.
+    await write(PRIVATE_WEATHER_COMPONENT_FILES.dmiActive,emptyWorking,{replace:true});
+    await write(PRIVATE_WEATHER_COMPONENT_FILES.dmiCandidate,emptyWorking,{replace:true});
+    assert.deepEqual(JSON.parse(await fs.readFile(path.join(host,PRIVATE_WEATHER_COMPONENT_FILES.dmiActive),'utf8')),emptyWorking);
+    assert.deepEqual(JSON.parse(await fs.readFile(path.join(host,PRIVATE_WEATHER_COMPONENT_FILES.dmiCandidate),'utf8')),emptyWorking);
+    assert.notDeepEqual(emptyWorking,old,'The unchanged old original is absent from both mutable working donors');
+    const env={...envBase,RUNNER_TEMP:runner,TMPDIR:tmp,TMP:tmp,TEMP:tmp,
+      RAVRADAR_PRIVATE_RUNTIME_ROOT:privateRoot,RAVRADAR_PRIVATE_RUNTIME_BUNDLE:bundlePath,
+      RAVRADAR_PRODUCTION_TARGET_HOUR:at(6).replace('.000Z','Z'),RAVRADAR_REQUIRE_PRIVATE_WEATHER_BASELINE:'true',
+      RAVSCORE_STATELESS_INTEGRATED_COLD_START_ALLOWED:'false',RAVRADAR_WEATHER_STATE_EPOCH_BOOTSTRAP:'false',CHECKPOINT_ONLY:'false'};
+    // One bounded filesystem fault only: don't replace verification/proof.
+    // Invalid decoded [] must stay FIRST even when normal cleanup gets EIO.
+    const fault=mode==='first-error'?`import fs from 'node:fs/promises';import path from 'node:path';
+      const original=fs.rmdir;fs.rmdir=async function(file,...rest){
+        if(path.dirname(path.dirname(file)).startsWith(process.env.TMPDIR+path.sep+'rr-raw-retention-companions-')
+          &&path.basename(file)==='.cache'){const error=new Error('SYNTHETIC_CLEANUP_EIO');error.code='EIO';throw error;}
+        return Reflect.apply(original,this,[file,...rest]);};`:'';
+    const result=spawnSync(process.execPath,['--import','data:text/javascript,'+encodeURIComponent(networkGuard),
+      ...(fault?['--import','data:text/javascript,'+encodeURIComponent(fault)]:[]),
+      path.join(host,'scripts/plan-ravscore-current-history.mjs'),'--retain-committed-raw'],
+      {cwd:host,env,encoding:'utf8',timeout:90_000,maxBuffer:1024*1024,windowsHide:true});
+    // Keep whole child transports private before extracting any status/error.
+    await fs.writeFile(path.join(root,mode+'.stdout'),result.stdout??'',{flag:'wx',mode:0o600});
+    await fs.writeFile(path.join(root,mode+'.stderr'),result.stderr??'',{flag:'wx',mode:0o600});
+    assert.equal(result.error,undefined);assert.equal(result.signal,null);assert.equal(result.status,expected,result.stderr);
+    assert(!result.stderr.includes('FORBIDDEN_NETWORK'));
+    if(expected===0){
+      const demand=JSON.parse(await fs.readFile(output,'utf8'));
+      assert.equal(demand.schemaVersion,2);assert.equal(demand.demands.length,673);assert.equal(demand.rawRetention.captures.length,0);
+      assert.equal(demand.rawRetention.boundary.bundleContentSha256,verified.bundleContentSha256);
+      const savedS=JSON.parse(sBefore);assert.equal(demand.rawRetention.boundary.checkpointGenerationSha256,savedS.generationSha256);
+      await fs.rename(output,path.join(root,mode+'.demand.json')); // Own output only; preserve the first plan.
+    }else{
+      const reports=result.stderr.trim().split(/\r?\n/).map(line=>{try{return JSON.parse(line);}catch{return null;}})
+        .filter(row=>row?.kind==='RAVSCORE_CURRENT_HISTORY_FIRST_FAILURE');
+      assert.equal(reports.length,1);const report=reports[0];assert.equal(report.phase,'COMMITTED_RAW_RETENTION');
+      assert.equal(report.privatePayloadIncluded,false);
+      if(mode==='missing')assert.equal(report.code,'POST_H0_DMI_ORIGINAL_SELECTED_ENDPOINT_PROOF_NATIVE_ENDPOINT_MISSING');
+      else{assert.equal(report.code,'RAVSCORE_CURRENT_HISTORY_DEMAND_REFUSED');
+        assert.equal(report.frame.module,'scripts/lib/dmi-bulk-storage.mjs');assert.notEqual(report.code,'EIO');}
+      await assert.rejects(fs.access(output),{code:'ENOENT'});
+    }
+    for(const[relative,bytes]of bBefore)assert.deepEqual(await fs.readFile(path.join(bundlePath,relative)),bytes);
+    assert.deepEqual(await fs.readFile(checkpointPath),sBefore);
+    const finalVerified=await verifyPrivateProductionRuntimeBundle({privateRoot,bundlePath,repositoryRoot:host,expected:verified});
+    assert.equal(finalVerified.bundleContentSha256,verified.bundleContentSha256);
+    const tempNames=await fs.readdir(tmp);
+    if(mode==='first-error')assert.equal(tempNames.filter(name=>name.startsWith('rr-raw-retention-companions-')).length,1,
+      'An EIO cleanup keeps its own unresolved private stage without masking the decoder error');
+    else assert.deepEqual(tempNames,['untouched-sentinel'],'Successful API/decode/cleanup leaves no owned stage, even if later collector fails');
+  }
+  assert.equal(JSON.stringify(old),oldBytes);assert.equal(JSON.stringify(partial),partialBytes);
+  for(const[relative,bytes]of productBytes)assert.deepEqual(await fs.readFile(path.join(host,relative)),bytes);
+  complete=true;
 });

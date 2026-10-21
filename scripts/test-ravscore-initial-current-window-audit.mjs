@@ -1,6 +1,7 @@
 import { inverseAlternativeCCaller } from './lib/alternative-c-caller-test-input.mjs';
 import { inverseArchivedWeatherRestartUpdater, inverseWeatherExportMemoryUpdater,
- WEATHER_EXPORT_MEMORY_UPDATER_REVIEW } from './lib/archived-weather-restart-updater-test-input.mjs';
+ WEATHER_EXPORT_MEMORY_UPDATER_REVIEW, inverseCurrentNativeOriginalProducerTestInput,
+ CURRENT_NATIVE_ORIGINAL_PRODUCER_TEST_REVIEW } from './lib/archived-weather-restart-updater-test-input.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
@@ -88,9 +89,14 @@ test('diagnostic source delta preserves every genuine historical updater oracle'
  assert.throws(()=>inverse(updater+'// unrelated source drift\n'),/genuine 903307 updater/);
 });
 test('memory-export caller delta has an exact genuine954 inverse before every historical source oracle',async()=>{
- const actual=(await fs.readFile(path.join(ROOT,'scripts/update-weather.mjs'),'utf8')).replace(/\r\n/g,'\n');
+ const current=(await fs.readFile(path.join(ROOT,'scripts/update-weather.mjs'),'utf8')).replace(/\r\n/g,'\n');
+ const nativeOriginalReview=CURRENT_NATIVE_ORIGINAL_PRODUCER_TEST_REVIEW.rows.find(row=>row.path==='scripts/update-weather.mjs');
+ assert(nativeOriginalReview);
+ assert.equal(hash(current),nativeOriginalReview.after.sha256,'actual final native-original updater before this historical memory oracle');
+ assert.equal(Buffer.byteLength(current),nativeOriginalReview.after.bytes);
+ const actual=inverseCurrentNativeOriginalProducerTestInput(current,'scripts/update-weather.mjs');
  const row=WEATHER_EXPORT_MEMORY_UPDATER_REVIEW;
- assert.equal(hash(actual),row.after.sha256,'actual current updater, not a projected fixture');
+ assert.equal(hash(actual),row.after.sha256,'whole genuine memory-era updater before unchanged memory/archive/C oracles');
  assert.equal(Buffer.byteLength(actual),row.after.bytes);
  assert.equal(row.hunks.length,5);
  const genuine954=inverseWeatherExportMemoryUpdater(actual);

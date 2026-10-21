@@ -2,7 +2,7 @@ import { assertSavedPrivateRuntimeCheckpointReconcileRequest } from './reconcile
 import { ESTABLISHED_NATIVE_CURRENT_ORIGIN_BINDING as OLD_FAMILY } from './lib/established-native-current-origin-successor-source.mjs';
 import { LAST_MILE_ENCLOSURE_BINDING as NEW_FAMILY } from './lib/last-mile-enclosure-successor-source.mjs';
 import { withFrozenEstablishedNativeCurrentOriginPostgresSource } from './run-frozen-established-native-current-origin-source-targets.mjs';
-import { withFrozen584ReconcileFixture } from './run-frozen584-reconcile-source.mjs';
+import { withFrozen584ReconcileFixture, withFrozen585ReconcileFixture } from './run-frozen584-reconcile-source.mjs';
 import { pathToFileURL } from 'node:url';
 import { execFileSync, spawnSync } from 'node:child_process';
 // Synthetic normal B/S transport. No native/origin issuer, SQL simulation claim
@@ -231,9 +231,9 @@ test('normal CURRENT B/S interruption reconciliation preserves whole pairs and r
       assert.deepEqual(backend.documents.get(S), before);
     }
   });
-  // Historical584 assertions use genuine584 factories/caller, never current585
-  // B relabelled as584. Keep the actual current fixture available separately.
-  const current585 = { saved, run, publishB };
+  // Historical584/585 assertions use their genuine issued factories AND callers.
+  // Actual current586 B/S coverage above/below is not projected to an old family.
+  await withFrozen585ReconcileFixture(t, async current585 => {
   await withFrozen584ReconcileFixture(t, async old584 => {
   const { saved, run, publishB, publishS, normalBAndSTransports, withFrozenEstablishedNativeCurrentOriginPostgresSource } = old584;
   async function withOld140000S(use, { publishOldB = true } = {}) {
@@ -309,6 +309,7 @@ test('normal CURRENT B/S interruption reconciliation preserves whole pairs and r
       assert.deepEqual(backend.documents.get(S), before);
       assert.equal(backend.events.filter(event => event === 'S_CAS').length, calls);
     }, { publishOldB: false });
+  });
   });
   });
   await t.test('584 version drift after whole S read refuses before CAS without changing payload', async () => {
@@ -423,7 +424,7 @@ test('both fixed families and separate saved guard reject mixed tuples and colli
     RAVRADAR_WEATHER_STATE_EPOCH_BOOTSTRAP: 'false', RAVRADAR_WEATHER_STATE_EPOCH_CHECKPOINT_REENTRY: 'false',
     NATIVE_IDENTITY_RECOVERY: 'false', UPGRADE_LAST_MILE_ENCLOSURE: 'false', UPGRADE_ESTABLISHED_NATIVE_CURRENT_ORIGIN: 'false',
     UPGRADE_EXISTING_OWNER_EXPORT: 'false', UPGRADE_ACCOUNT_ASSISTANT: 'false', UPGRADE_STATISTICS_REVISION: 'false',
-    UPGRADE_ACCOUNT_STATISTICS_ASSISTANT: 'false' };
+    UPGRADE_ACCOUNT_STATISTICS_ASSISTANT: 'false', UPGRADE_NATIVE_ORIGINAL_CONTINUITY: 'false' };
   assert.doesNotThrow(() => assertSavedPrivateRuntimeCheckpointReconcileRequest(env));
   assert.throws(() => assertOrdinaryPrivateRuntimeCheckpointReconcileRequest(env), /OPERATIONAL_ACTION/);
   for (const key of Object.keys(env)) for (const value of ['', undefined])
@@ -467,16 +468,16 @@ test('actual readonly ordinary and saved CLI select use one genuine committed so
       PUBLISH_NEWEST_SAVED_WEATHER: 'true', RESTART_ARCHIVED_WEATHER: 'false', UPGRADE_LAST_MILE_ENCLOSURE: 'false',
       UPGRADE_ESTABLISHED_NATIVE_CURRENT_ORIGIN: 'false', UPGRADE_EXISTING_OWNER_EXPORT: 'false',
       UPGRADE_ACCOUNT_ASSISTANT: 'false', UPGRADE_STATISTICS_REVISION: 'false',
-      UPGRADE_ACCOUNT_STATISTICS_ASSISTANT: 'false', RAVRADAR_OPERATIONAL_WORK: own });
+      UPGRADE_ACCOUNT_STATISTICS_ASSISTANT: 'false', UPGRADE_NATIVE_ORIGINAL_CONTINUITY: 'false', RAVRADAR_OPERATIONAL_WORK: own });
     const child = spawnSync(process.execPath, ['scripts/reconcile-private-runtime-checkpoint.mjs', command],
       { cwd: host, env, encoding: 'utf8', timeout: 30000 });
     assert.equal(child.status, 0, child.stderr); assert.equal(child.signal, null);
     assert.equal(await fs.readFile(output, 'utf8'), 'required=true' + String.fromCharCode(10));
-    if (command === 'select-saved') for (const value of ['true', undefined]) {
-      const rejectedOutput = path.join(own, 'saved-rejected-' + String(value) + '.out');
+    if (command === 'select-saved') for (const key of ['UPGRADE_ACCOUNT_STATISTICS_ASSISTANT', 'UPGRADE_NATIVE_ORIGINAL_CONTINUITY']) for (const value of ['true', undefined]) {
+      const rejectedOutput = path.join(own, 'saved-rejected-' + key + '-' + String(value) + '.out');
       await fs.writeFile(rejectedOutput, '', { flag: 'wx' });
       const rejected = spawnSync(process.execPath, ['scripts/reconcile-private-runtime-checkpoint.mjs', command],
-        { cwd: host, env: { ...env, UPGRADE_ACCOUNT_STATISTICS_ASSISTANT: value, GITHUB_OUTPUT: rejectedOutput },
+        { cwd: host, env: { ...env, [key]: value, GITHUB_OUTPUT: rejectedOutput },
           encoding: 'utf8', timeout: 30000 });
       assert.equal(rejected.status, 1); assert.equal(rejected.signal, null);
       assert.match(rejected.stderr, /PRIVATE_B_S_RECONCILE_REFUSED/);
