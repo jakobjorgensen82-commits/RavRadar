@@ -1,0 +1,13 @@
+{
+  "schemaVersion": "source-producer-derived-metadata-v1",
+  "version": "20261021020000",
+  "binding": {
+    "version": "20261021020000",
+    "C": "b5dbe2de4f0120912746dfba43fb7db00b41776dc98a594d03e1677a65e7e5c5",
+    "I": "995000bd1f77172e36f3d457e48689c5e0ba89e37a49468b874ae0e479123e6c",
+    "T": "36ac8344f986ca3754d51908f76117ad7d0a678bd81081f3e216db2d9db86390",
+    "candidateManifestSha256": "b5dbe2de4f0120912746dfba43fb7db00b41776dc98a594d03e1677a65e7e5c5",
+    "integratedManifestSha256": "995000bd1f77172e36f3d457e48689c5e0ba89e37a49468b874ae0e479123e6c"
+  },
+  "output": null
+}

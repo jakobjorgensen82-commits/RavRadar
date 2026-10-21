@@ -64,6 +64,36 @@ function context(zip) {
     zip, calls: [], redirect: null, downloadStatus: 200, declaredSize: null };
 }
 
+const sourceName = 'Run the one explicit owned SOURCE ordinary route';
+const sourceGuardNames = ['Select one explicit legacy or SOURCE ordinary route',
+  'Require current integrated SOURCE route before admin and owner work'];
+const sourceRequestJobName = 'Validate the explicit SOURCE request before any operational reentry';
+const sourceRequestStepName = 'Reject unknown or mixed SOURCE request before any operational reentry';
+
+function sourceContext(zip, conclusion = 'failure') {
+  const state = context(zip), job = state.jobs.jobs[0];
+  state.run.conclusion = conclusion;
+  job.conclusion = conclusion;
+  job.steps = [
+    ...sourceGuardNames.map((name, index) => ({ name, number: index * 10 + 10,
+      status: 'completed', conclusion: 'success', started_at: timestamp(index * 2 + 2),
+      completed_at: timestamp(index * 2 + 3) })),
+    { name: sourceName, number: 30, status: 'completed', conclusion,
+      started_at: timestamp(6), completed_at: timestamp(17) },
+    ...names.map((name, index) => ({ name, number: index + 40, status: 'completed',
+      conclusion: 'skipped', started_at: null, completed_at: null })),
+  ];
+  const request = { id: 455, run_id: job.run_id, run_attempt: job.run_attempt, head_sha: job.head_sha,
+    head_branch: 'main', name: sourceRequestJobName, status: 'completed', conclusion: 'success',
+    started_at: timestamp(0), completed_at: timestamp(1), steps: [
+      { name: sourceRequestStepName, number: 2, status: 'completed', conclusion: 'success',
+        started_at: timestamp(0), completed_at: timestamp(1) },
+    ] };
+  state.jobs = { total_count: 2, jobs: [request, job] };
+  return state;
+}
+
+
 function transport(state) {
   const base = `https://api.github.com/repos/${input.repository}`;
   return async (url, options) => {
@@ -171,6 +201,103 @@ test('ORDINARY_STAGE_EXACT_ATTEMPT_CIPHERTEXT_ONLY', async () => {
     await assert.rejects(downloadOrdinaryCompletedStageArtifact({ ...input, runAttempt: '02',
       fetchImpl: async () => { networkCalls++; } }), { code: 'ORDINARY_STAGE_REQUEST' });
     assert.equal(networkCalls, 0);
+    // Additive SOURCE locator cases. Actual synthetic GCM bytes and the same
+    // real stdlib ZIP/extractor are reused; no origin/owner/publication claim.
+    let sourcePositiveCount = 0, sourceNegativeCount = 0;
+    for (const conclusion of ['success', 'failure', 'cancelled', 'timed_out']) {
+      const state = sourceContext(stored, conclusion);
+      const result = await downloadOrdinaryCompletedStageArtifact({ ...input, fetchImpl: transport(state) });
+      try {
+        assert.deepEqual(await fs.readFile(result.sealedPath), sealed);
+        assert.deepEqual(result.identity, { repository: input.repository, runId: input.runId,
+          runAttempt: input.runAttempt, sourceHead: input.sourceHead });
+        assert.deepEqual(result.producer.steps.map(step => step.name), [...sourceGuardNames, sourceName]);
+        assert.equal(result.producer.steps.at(-1).startedAt, timestamp(6));
+        assert.equal(result.producer.steps.at(-1).completedAt, timestamp(17));
+        assert.equal(result.producer.conclusion, conclusion);
+        assert.equal(result.contentsAuthenticated, false);
+        assert.equal(result.publicationAuthorized, false);
+        assert.equal(result.sealedSha256, sha(sealed));
+        assert.equal(result.requestCount, 4);
+        assert.equal(state.calls.length, 4);
+        sourcePositiveCount++;
+      } finally { await fs.rm(result.privateDirectory, { recursive: true, force: true }); }
+    }
+    const sourceRefused = async (mutate, code, maxCalls = 2) => {
+      const state = sourceContext(stored);
+      await mutate(state);
+      await assert.rejects(downloadOrdinaryCompletedStageArtifact({ ...input, fetchImpl: transport(state) }),
+        error => error.code === code && error.message === code);
+      assert.ok(state.calls.length <= maxCalls);
+      sourceNegativeCount++;
+    };
+    for (const mutate of [s => s.jobs.jobs[1].run_attempt++, s => s.jobs.jobs[1].head_sha = 'b'.repeat(40),
+      s => s.jobs.jobs[1].status = 'in_progress', s => s.jobs.jobs[1].conclusion = 'neutral'])
+      await sourceRefused(mutate, 'ORDINARY_STAGE_SOURCE_JOB_IDENTITY');
+    for (const mutate of [s => s.jobs.jobs[0].conclusion = 'failure',
+      s => s.jobs.jobs[0].run_attempt++, s => s.jobs.jobs[0].head_sha = 'b'.repeat(40),
+      s => s.jobs.jobs[0].id = s.jobs.jobs[1].id,
+      s => s.jobs.jobs[0].completed_at = timestamp(2),
+      s => { s.jobs.jobs.shift(); s.jobs.total_count--; },
+      s => { s.jobs.jobs.unshift(structuredClone(s.jobs.jobs[0])); s.jobs.total_count++; }])
+      await sourceRefused(mutate, 'ORDINARY_STAGE_SOURCE_REQUEST_JOB');
+    for (const mutate of [s => s.jobs.jobs[0].steps[0].conclusion = 'skipped',
+      s => s.jobs.jobs[0].steps[0].number = 0,
+      s => s.jobs.jobs[0].steps[0].completed_at = timestamp(2),
+      s => s.jobs.jobs[0].steps.push({ ...s.jobs.jobs[0].steps[0] })])
+      await sourceRefused(mutate, 'ORDINARY_STAGE_SOURCE_REQUEST_STEP');
+    for (const mutate of [s => s.jobs.jobs[1].steps[0].conclusion = 'failure',
+      s => s.jobs.jobs[1].steps[1].conclusion = 'skipped',
+      s => s.jobs.jobs[1].steps[1].number = 9,
+      s => s.jobs.jobs[1].steps[1].started_at = timestamp(2),
+      s => s.jobs.jobs[1].steps[2].conclusion = 'neutral',
+      s => s.jobs.jobs[1].steps[2].conclusion = null,
+      s => s.jobs.jobs[1].steps[2].status = 'in_progress',
+      s => s.jobs.jobs[1].steps[2].number = 19,
+      s => s.jobs.jobs[1].steps[2].started_at = timestamp(4),
+      s => s.jobs.jobs[1].steps[2].completed_at = timestamp(20),
+      s => s.jobs.jobs[1].steps.push({ ...s.jobs.jobs[1].steps[2] })])
+      await sourceRefused(mutate, 'ORDINARY_STAGE_SOURCE_REQUIRED_STEP');
+    for (const mutate of [s => s.jobs.jobs[1].steps[3].conclusion = 'success',
+      s => s.jobs.jobs[1].steps[4].status = 'in_progress',
+      s => s.jobs.jobs[1].steps[4].number = 39,
+      s => s.jobs.jobs[1].steps.push({ ...s.jobs.jobs[1].steps[7] })])
+      await sourceRefused(mutate, 'ORDINARY_STAGE_SOURCE_LEGACY_STEP');
+    // No fallback: even five forged legacy successes cannot rescue a selected,
+    // failed SOURCE guard. Conversely the real cipher-preserving resume has
+    // SOURCE and weather skipped, and must not become a fresh producer.
+    await sourceRefused(s => {
+      s.jobs.jobs[1].steps[0].conclusion = 'failure';
+      for (const step of s.jobs.jobs[1].steps.slice(3)) step.conclusion = 'success';
+    }, 'ORDINARY_STAGE_SOURCE_REQUIRED_STEP');
+    await sourceRefused(s => s.jobs.jobs[1].steps[2].conclusion = 'skipped',
+      'ORDINARY_STAGE_REQUIRED_STEP');
+    await sourceRefused(s => {
+      s.jobs.jobs[1].steps = s.jobs.jobs[1].steps.filter(step => step.name !== sourceName);
+    }, 'ORDINARY_STAGE_REQUIRED_STEP');
+    // A successful NO_WORK action has no stage. No aggregate result or success
+    // marker may substitute for an actually present exact original artifact.
+    await sourceRefused(s => {
+      s.run.conclusion = 'success'; s.jobs.jobs[1].conclusion = 'success';
+      s.jobs.jobs[1].steps[2].conclusion = 'success'; s.artifacts = { total_count: 0, artifacts: [] };
+    }, 'ORDINARY_STAGE_ARTIFACT_IDENTITY', 3);
+    for (const mutate of [s => s.artifacts.artifacts[0].created_at = timestamp(5),
+      s => s.artifacts.artifacts[0].created_at = timestamp(18),
+      s => s.artifacts.artifacts[0].updated_at = timestamp(20),
+      s => s.artifacts.artifacts[0].workflow_run.id++,
+      s => s.artifacts.artifacts[0].workflow_run.head_sha = 'b'.repeat(40),
+      s => s.artifacts.artifacts[0].name = `ravradar-private-build-stage-${input.runId}-1`,
+      s => s.artifacts.artifacts[0].expires_at = input.now])
+      await sourceRefused(mutate, 'ORDINARY_STAGE_ARTIFACT_IDENTITY', 3);
+    for (const mutate of [s => s.run.run_attempt++, s => s.run.head_sha = 'b'.repeat(40)])
+      await sourceRefused(mutate, 'ORDINARY_STAGE_PRODUCER_IDENTITY', 1);
+    await sourceRefused(s => s.artifacts.artifacts[0].digest = `sha256:${'0'.repeat(64)}`,
+      'ORDINARY_STAGE_ARTIFACT_DIGEST', 4);
+    console.log(JSON.stringify({ code: 'ORDINARY_STAGE_SOURCE_LOCATOR_CONTRACT_PASS', sourcePositiveCount,
+      sourceNegativeCount, actualNetworkRequests: 0, contentsAuthenticated: false,
+      ownerClosureClaimed: false, publicationAuthorized: false }));
+
+
     console.log(JSON.stringify({ code: 'ORDINARY_STAGE_CONTRACT_PASS', positiveCount, negativeCount,
       actualNetworkRequests: 0, publicationAuthorized: false }));
   } finally { await fs.rm(own, { recursive: true, force: true }); }

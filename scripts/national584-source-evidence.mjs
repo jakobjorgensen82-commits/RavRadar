@@ -8,6 +8,9 @@ import crypto from 'node:crypto';
 import {execFileSync,spawnSync} from 'node:child_process';
 import {fileURLToPath} from 'node:url';
 import {sourceTreeContentSha256} from './lib/source-tree-content.mjs';
+import {CURRENT_COMMANDS as CURRENT_NATIVE_COMMANDS} from './native-postgres-evidence.mjs';
+import {SOURCE_PRODUCER_BINDING,SOURCE_PRODUCER_PROPOSED_RELEASE,
+  requireSourceProducerBinding,requireSourceProducerOutput} from './lib/source-producer-successor-source.mjs';
 
 export const ORIGIN=Object.freeze({
   repository:'jakobjorgensen82-commits/RavRadar',pullRequest:671,
@@ -43,6 +46,29 @@ export const BEFORE_JOB="  validate:\n    name: Source validation and release ga
 export const AFTER_JOB=BEFORE_JOB.replace('timeout-minutes: 75','timeout-minutes: 90');
 // Registered genuine90 predecessor; only CURRENT_JOB is admitted by currentContext.
 export const CURRENT_JOB=AFTER_JOB.replace('timeout-minutes: 90','timeout-minutes: 120');
+export const REVIEWED_SOURCE_RUN_LINE='        run: npm run validate:source && node scripts/test-fixed-public-rate-log-20261013.mjs && node scripts/test-fixed-storage-upload-log-20261013.mjs && node scripts/test-fixed-public-rate-console-log-20261015.mjs\n';
+export const CURRENT_SOURCE_RUN_LINE='        run: npm run validate:source && node scripts/test-fixed-public-rate-log-20261013.mjs && node scripts/test-fixed-storage-upload-log-20261013.mjs && node scripts/test-fixed-public-rate-console-log-20261015.mjs && node scripts/test-prepare-candidate-g-operational-rollback.mjs && node scripts/test-candidate-g-rollback-public-stage.mjs\n';
+// Scope the observed Node24 executable to the one later PG step only. No
+// RAVRADAR_* override may leak into frozen national/source execution.
+export const SOURCE_NODE24_CAPTURE = [
+  '          # Retain the observed Node24 executable before PATH returns to Node22.',
+  '          # The later SOURCE compatibility child alone requires this runtime.',
+  '          printf \'node24_path=%s\\n\' "$(command -v node)" >> "$GITHUB_OUTPUT"',
+  '        id: source-native-node24', '',
+].join('\n');
+export const SOURCE_NODE24_ENV = '          RAVRADAR_SOURCE_NATIVE_NODE24_PATH: $'+'{{ steps.source-native-node24.outputs.node24_path }}\n';
+export function inverseSourceNode24Workflow(value) {
+  let source=String(value).replace(/\r\n/g,'\n');
+  assert.equal(source.split(SOURCE_NODE24_CAPTURE).length,2,'Exact once-only observed Node24 capture');
+  assert.equal(source.split(SOURCE_NODE24_ENV).length,2,'Exact once-only step-scoped Node24 operand');
+  const cohort='          python -B scripts/test-owned-dmi-grib-save-native.py --node24-path "$(command -v node)"\n';
+  assert(source.includes(cohort+SOURCE_NODE24_CAPTURE),'Capture must follow the actual Node24 cohort');
+  const pg='      - name: Validate native PostgreSQL checkpoint CAS on artificial data only\n        shell: bash\n        env:\n';
+  assert(source.includes(pg+SOURCE_NODE24_ENV),'Runtime belongs only to the existing PG step');
+  assert(source.indexOf(SOURCE_NODE24_CAPTURE)<source.indexOf('      - name: Restore Node22 for existing source validation\n'));
+  source=source.replace(SOURCE_NODE24_CAPTURE,'').replace(SOURCE_NODE24_ENV,'');
+  return source;
+}
 const ROOT=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
 const sha=raw=>crypto.createHash('sha256').update(raw).digest('hex');
 const lf=value=>String(value).replace(/\r\n/g,'\n');
@@ -94,10 +120,18 @@ export function verifyReviewed90Workflow(source) {
   assert(source.indexOf('Validate source contracts and release governance')<source.indexOf(AFTER_BLOCK));
   assert(source.indexOf('Require validated source tree to remain unchanged')>source.indexOf(AFTER_BLOCK));
 }
+export function inverseCandidatePublicSourceRunLine(source) {
+  source=lf(source);
+  assert.equal(source.split(CURRENT_SOURCE_RUN_LINE).length,2,
+    'Only the exact once appended Candidate source-PR test runline is admitted');
+  return source.replace(CURRENT_SOURCE_RUN_LINE,REVIEWED_SOURCE_RUN_LINE);
+}
 export function verifyWorkflow(source) {
   source=lf(source);
+  if(source.includes('source-native-node24')||source.includes('RAVRADAR_SOURCE_NATIVE_NODE24_PATH'))
+    source=inverseSourceNode24Workflow(source);
   assert.equal(source.split(CURRENT_JOB).length,2,'Only the exact reviewed current120-minute source PR job is admitted');
-  verifyReviewed90Workflow(source.replace(CURRENT_JOB,AFTER_JOB));
+  verifyReviewed90Workflow(inverseCandidatePublicSourceRunLine(source).replace(CURRENT_JOB,AFTER_JOB));
 }
 export function verifyOrigin(run,jobs) {
   assert.equal(run.id,ORIGIN.run);assert.equal(run.run_attempt,1);
@@ -133,7 +167,12 @@ export function verifyRuntime(current,prior) {
   assert.equal(current.imageOS,'ubuntu24');assert.equal(current.node,'v22.23.3');
 }
 export function verifyPackage(pkg){
-  assert.equal(pkg.version,'4.0.585');
+  let currentRelease='4.0.585';
+  if(SOURCE_PRODUCER_BINDING!==null){
+    requireSourceProducerBinding();requireSourceProducerOutput();
+    currentRelease=SOURCE_PRODUCER_PROPOSED_RELEASE;
+  }
+  assert.equal(pkg.version,currentRelease);
   assert.equal(pkg.scripts['test:account-statistics-assistant-source'],CURRENT585_SOURCE_COMMAND);
   const commands=pkg.scripts['test:ravscore-source-critical'].split(' && ');
   const marker='npm run test:account-statistics-assistant-source';
@@ -142,6 +181,14 @@ export function verifyPackage(pkg){
   assert.equal(Object.values(pkg.scripts).join('\n').split(CURRENT585_ROOT_TARGET).length,2,
     'Exactly one normal current585 caller target must remain in the package');
   assert.equal(pkg.scripts['test:last-mile-enclosure'].split('node scripts/national584-source-evidence.mjs source').length,2);
+}
+// Only the current PG producer's actual command inventory qualifies the
+// current receipt. Historical584 COMMAND/ARGV/ORIGIN remain separate below.
+export function verifyCurrentNativePostgresReceipt(native,{head,run,attempt}) {
+  assert.equal(native?.status,'EXECUTED');assert.equal(native.executedInThisRun,true);
+  assert.equal(native.current?.head,head);assert.equal(native.current?.run,run);
+  assert.equal(native.current?.attempt,attempt);assert.equal(native.origin,null);
+  assert.deepEqual(native.commands,CURRENT_NATIVE_COMMANDS);
 }
 async function currentContext() {
   const env=process.env,head=git('rev-parse','HEAD^{commit}');
@@ -158,14 +205,9 @@ async function currentContext() {
   assert.equal(proof.headSha,head);assert.equal(proof.repository,ORIGIN.repository);
   assert.equal(proof.contractId,'weather-source-gate-content-v2');assert.equal(proof.privatePayloadIncluded,false);
   assert.equal(proof.sourceTreeSha256,content('HEAD'));
-  const native=proof.nativePostgres;
-  assert.equal(native?.status,'EXECUTED');assert.equal(native.executedInThisRun,true);
-  assert.equal(native.current?.head,head);assert.equal(native.current?.run,Number(env.GITHUB_RUN_ID));
-  assert.equal(native.current?.attempt,Number(env.GITHUB_RUN_ATTEMPT));assert.equal(native.origin,null);
-  assert.deepEqual(native.commands,[
-    'node scripts/run-frozen-native0600-source-targets.mjs policy',
-    'node scripts/test-protected-ravscore-continuation-checkpoint.mjs --native-statistics-revision --native-sampling-identity --current-memory-warmup --established-native-current-origin --last-mile-enclosure --account-statistics-assistant',
-  ]);
+  verifyCurrentNativePostgresReceipt(proof.nativePostgres,{
+    head,run:Number(env.GITHUB_RUN_ID),attempt:Number(env.GITHUB_RUN_ATTEMPT),
+  });
   assert(!Object.hasOwn(proof,'historical584National'));
   return {head,run:Number(env.GITHUB_RUN_ID),attempt:Number(env.GITHUB_RUN_ATTEMPT),pullRequest:Number(env.PULL_REQUEST_NUMBER),
     branch:event.pull_request.head.ref,proof};

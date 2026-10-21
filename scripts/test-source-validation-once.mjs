@@ -279,6 +279,25 @@ assert.ok(fs.readFileSync('scripts/test-copernicus-current-pilot.py', 'utf8').in
   'runpy.run_path(str(ROOT / "scripts/test-copernicus-dataset-updating.py"), run_name="__main__")'),
   'The existing Copernicus source group must execute the actual subset/checkpoint regression suite.');
 const pythonContractGroup = fs.readFileSync('scripts/test-current-operational-python-contracts.mjs', 'utf8');
+const normalPublicContractGroup = fs.readFileSync('scripts/test-ravscore-public-runtime-contract.mjs', 'utf8');
+const candidatePublicCiWorkflow = fs.readFileSync('.github/workflows/validate-pull-request.yml', 'utf8');
+const candidatePublicCiSourceLine = candidatePublicCiWorkflow.split(/\r?\n/)
+  .filter(line => line.trimStart().startsWith('run: npm run validate:source'));
+assert.equal(candidatePublicCiSourceLine.length, 1);
+assert.equal(declared.filter(command => command === 'node scripts/test-ravscore-public-runtime-contract.mjs').length, 1,
+  'The existing source public-contract entry must execute exactly once.');
+for (const target of ['test-prepare-candidate-g-operational-rollback.mjs',
+  'test-candidate-g-rollback-public-stage.mjs']) {
+  const command = `node scripts/${target}`;
+  assert.equal(candidatePublicCiWorkflow.split(command).length - 1, 1,
+    `The normal PR source CI must execute the actual ${target} exactly once.`);
+  assert.ok(candidatePublicCiSourceLine[0].includes(` && ${command}`),
+    'Candidate public regressions run only after successful normal source validation.');
+  assert.equal(normalPublicContractGroup.includes(`import('./${target}')`), false,
+    'The public-contract entry must not repeat targets already listed in the broad release gate.');
+  assert.equal(declared.some(command => command.includes(`scripts/${target}`)), false,
+    'The packed Candidate targets must not also run inside the source command plan.');
+}
 const publicPrivacyGroup = fs.readFileSync('scripts/test-tracked-runtime-privacy.mjs', 'utf8');
 for (const file of [
   'scripts/test-observation-production-mapping.mjs',
@@ -298,6 +317,12 @@ for (const file of [
   `The existing source privacy group must execute ${file} exactly once.`);
 assert.equal((pythonContractGroup.match(/'test-dmi-bulk-supervised\.py'/g) || []).length, 1,
   'The existing Python source group must execute the DMI supervisor regression exactly once.');
+for (const target of ['test-dmi-transactional-checkpoint.py',
+  'CanonicalTimeParsingTests', 'CurrentLedgerCheckpointTests'])
+  assert.equal(pythonContractGroup.split(`'${target}'`).length - 1, 1,
+    `The existing Python source group must select ${target} exactly once.`);
+assert.match(pythonContractGroup, /spawnSync\(python, \['-B', path\.join\(root, 'scripts', file\),\r?\n    'CanonicalTimeParsingTests', 'CurrentLedgerCheckpointTests'\]/,
+  'The registered group must actually invoke both current classes, not the full native suite or a frozen copy.');
 assert.equal((scripts['test:flow-arrow-runtime'].match(/node scripts\/test-current-arrow-land-mask\.mjs/g) || []).length, 1,
   'The existing flow-arrow group must verify the actual nationwide land mask exactly once.');
 assert.equal((fs.readFileSync('scripts/source-critical-gate.mjs', 'utf8').match(/'test:flow-arrow-runtime'/g) || []).length, 1,

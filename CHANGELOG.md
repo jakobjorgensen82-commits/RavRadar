@@ -1,3 +1,30 @@
+## 4.0.586 – isoleret SOURCE-kandidat, ikke offentlig levering
+
+- Normal versionssynk og faktisk C145/I141/T-afledning er udført lokalt. De genererede bindingsværdier ændrer ikke deres eget modelinput; normal genberegning beviser første fixedpoint. Egen SQL/output er fortsat ufuldstændig, og produktionsadgang er lukket.
+- Gamle originale SQL-/JSON-filer og historiske kildebeviser bevares. Geodata ændrer kun topversionsfeltet. Ingen ændring af scoreformel, kildeprioritet, administratorpunkter, geometri eller aktive tidsbudgetter.
+- Denne kildefrysning er ikke native-/B/S-/kapacitetsbevis, installation eller aktivering. Alle fem hovedmål er åbne til 18. november 2026; den almindelige vejrhentning må ikke forstyrres.
+
+## 20. oktober — lokal Candidate-public: korrekt genbrug af pakket input
+
+- 21. oktober: Den præcise kildekontrol påviste reserveauditens gamle krav om fem rankingrækker mod normal Top20. Auditen kræver nu hele normale kanoniske dage, og et tidligt mål bevarer afslag ved afkortning samt ændrede scorer, zoner, datoer og model. Normal ranking, scoreformel og vejrdata ændres ikke. Ny samlet CI og sikker levering er endnu ikke dokumenteret.
+- 21. oktober: Den fulde lokale generation nåede alle 118 Candidate-timer, men normal audit afviste producentens efterfølgende `detailDelivery`-indeks. Retter denne særskilte to-fase-manifestkonflikt med normal inventarvalidering, eksakte felter og bevaret hel kanonisk kontrol; fire mutationsafslag tilføjes. Samlet ny kildekontrol og levering mangler; ingen ny lokal fuldgeneration påstås.
+- Retter den normale reserveforberedelse gennem den eksisterende tabsfri hydrator og invalidering af en anden models afledte visningscache alene i den nye kopi. Originalt input og original integreret timepakke bevares; normale public-/bindings-/horisontkontroller må ikke omgås.
+- Den udvidede normale stage-regression og levering er endnu åbne. Ingen ny version, modelbinding, SQL, scoreformel, leverandørprioritet, geometri eller SOURCE-aktivering. Ældre leveringsstatus nedenfor er dateret historik; aktuel vejrhentning står i CURRENT_TRUTH og privat checkpoint.
+
+## 20. oktober — lokal DMI-rettelse: genbrug ren tidsfortolkning
+
+- Genbruger kun fortolkningen af højst 2.048 korte, almindelige tidsstrenge gennem den uændrede parser. Lange input, ændrende objekter og tekstunderklasser følger den gamle vej. Ingen kilde-, række-, proveniens- eller ledgerkontrol springes over.
+- Den normale målprøve reproducerer 200 gentagne fortolkninger før rettelsen og to efter. Seks afgrænsede parser-/checkpointprøver består; fuld Windows-filprøve stopper fortsat på den eksisterende Linux-læsekontrakt og er ikke et samlet PASS.
+- Kobler de seks aktuelle parser-/checkpointprøver på den allerede registrerede Python-kildegruppe. Gruppen kræver faktisk seks gennemførte prøver uden skip; den eksisterende kildeplan kontrollerer den præcise tilkobling. Den første kandidats kildekontrol omfattede ikke disse seks og må ikke bruges som deres bevis.
+- Dataværdier, kildeprioritet, budgetter, score, version og modelbinding bevares. Ny præcis Linux-kildekontrol, sikker levering og faktisk effekt i almindelig vejrhentning mangler. Andre leverancer holdes tilbage under ejerens vejrfokus.
+
+## 20. oktober — lokal 585-rettelse: behold originalernes rigtige lagervej
+
+- Bevarer normal backendudvælgelse og videresender den faktiske storage-klient gennem genuine 584-originalrestore; central dokumentadgang er fortsat Supabase, aktuelle private objekter R2. Workflowet fører kun de tre eksisterende R2-miljøfelter frem.
+- Tilføjer faste, payloadfri stagefaselogs. Første installation stoppede i trin 45 før SQL, ny B/S, Worker, Edges og Pages; indre råfejl og nået restore kan ikke udledes af den gamle generiske log. Lokal rettelse/prøve er ikke installation eller live årsagsbevis.
+- ROOTs ene normale lokale callerprøve består og genfinder gammel manglende-storage-fejl; efterkaldet bruger faktisk R2-adapter frem til én syntetisk dokumentlæsning, uden downloads eller B/S-admission. Hel workflow-inverse med ti mutationsafslag består; den særskilte workflowcase afventer Linux efter en uændret lokal CRLF/raw-JSON-grænse.
+- Dokumenterer særskilt faktisk almindelig levering 39392596895/1 og 89,919 % samtidig fem-komponentdækning af hele zoneprognosen. Cron er faktisk pauset, tidsplanen uændret; alle fem mål er åbne til 18. november 2026. Ingen ny version, C/I/T eller SQL. Håndbog 89.261 og dens ene installationspayload synkroniseres; historik og SQL udenfor payloaden bevares.
+
 ## 20. oktober — samlet 585-kandidat: bevar ventende arbejde ved månedsskifte
 
 - Retter den eksplicitte OFF-attestation til den eksisterende kontrol af den faktisk aktive Worker-versions bindinger; lokal false og versionsnummer alene må ikke kvalificere leveringen. Kontrollen skal også bevare de ti D1-bindinger og uændret deployment. Det er endnu ikke en installeret eller offentligt verificeret rettelse.
@@ -26,6 +53,8 @@ Begge nedenstående historiesider er bevaret. Denne nye front erstatter kun mods
 - Ingen ny version, C/I/T, SQL, scoreformel, kildeprioritet, tidsbudget eller geometri. Præcis kildekontrol, sikker levering og faktisk produktionsbevis mod OOM er endnu åbne.
 
 ## 4.0.585 — lokal kandidat, 20. oktober 2026
+
+- Lokal målerettelse: Bevarer schema4-hovedpunktsprognosen som mærket særskilt scope og tilføjer lokal zone-/søgemådedækning over hele 118-timersaksen, med normal nulbølge-semantik, eksplicit missing/unknown, fem komponenter/intersektion og dansk dagfordeling. Den eksisterende normale audit og source-testindgang bruges; strøm-/scorehistorik og PART-dækning er fortsat særskilte mål. Ingen version, C/I/T, SQL, scoreformel eller data ændres. Lokal måltest er ikke installeret måling eller nye dokumenterede produktionstal.
 
 Nyeste kildekontrol: `b02745d6` bestod faktisk native 585-PostgreSQL og hele source-trinnet, men nationaltrinnet stoppede før prøven på en manglende præcis 75→90-jobheaderinverse. Den lokale test-/kalderrettelse bevarer hele gamle workflow-orakel og består sit målrettede normale mutationsmål. Fremadrettet faktisk tidsgrundlag efterlader kun cirka 79 sekunder under 90 minutter; alene kilde-PR-jobbets ydre loft hæves derfor til 120 med præcis projektion til den genuine 90-/75-kæde og alle gamle assertions bevaret. Begge præcise 90-/120-kontraktmål består; den normale 585-workflowinterface passerede 23 tilfælde med én oprindelig Linux-skip. Det samlede tofilmål stoppede på den private værts 300-sekundersgrænse uden observeret assertionafslag; det er ikke et fuldfil-PASS. RDKS, sikkerheds- og versionskontrol består, og 64 SQL-/syv native input er uændrede. Ny præcis samlet CI skal faktisk køre 585-PostgreSQL; ingen ny genbrugskontrakt, produkt-, C/I/T-, SQL-, vejr-, leverandør- eller procesbudgetændring. Offentlig 585-levering mangler. Almindelig `39368970562/1` er startet af cron på uændret 584-kode kl. 06.19 dansk tid; dens cache/deploy er endnu ikke verificeret. Den fungerende vejrrute og cacheopbygning beskyttes.
 
@@ -5582,3 +5611,8 @@ sikkert. Målrettede tests består lokalt, men den præcise årsag til de
   tilladelse til at springe friskhed, validering, centrale CAS-værn eller
   privat R2/Pages-kontrol over. En fuld, sikker genoptagelsesvej for
   sen fejl er fortsat åben; ingen ny tung vejrkørsel før den er afklaret.
+## 21. oktober – isoleret SOURCE-forberedelse: kontrolmetadata uden selvbinding
+
+- Adskiller én streng genereret JSON-datafil fra dens egen C/I-inputkode; alle SOURCE-implementeringer og ejer-/proceskontroller forbliver hashbundne. Begge normale bundlere får ny normaliseringsidentitet og den allerede krævede præcise releaseværktøjsgrænse.
+- Bevarer I-manifestets fem felter og begge rendererformater. Den faktiske normale HEAD-kontrol kræver nu alle inventoriserede producentblade committet, ikke blot usynlige for git diff.
+- Fire mål og uafhængig gennemgang er gennemført. Egen udstedelse, ægte native B/S og efterfølger-/kapacitetsbevis samt levering er fortsat åbne. Ingen ny version, aktivering, SQL-installation eller ændring af aktiv vejrdrift, scoreformel, kildeprioritet, admin/geometri eller gamle originaler. Se DEC-0294.

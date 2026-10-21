@@ -83,6 +83,11 @@ const PRIVATE_RUNTIME_SOURCE_FILES = Object.freeze({
     'scripts/private-production-runtime-bundle.mjs',
     'scripts/private-production-runtime-workflow.mjs',
     'scripts/protected-private-production-runtime.mjs',
+    'scripts/source-normal-producer-entry.mjs',
+    'scripts/source-normal-producer-tail.mjs',
+    'scripts/lib/source-producer-binding.generated.json',
+    'scripts/lib/source-producer-derived-metadata.mjs',
+    'scripts/ravscore-operational-activation.mjs',
     'scripts/lib/r2-private-runtime-storage.mjs',
     'scripts/weather-component-progress-cache.mjs',
     'scripts/lib/copernicus-offline-environment.mjs',
@@ -235,7 +240,7 @@ export const PRIVATE_RUNTIME_CAPACITY_POLICY = Object.freeze({
 
 export const PRIVATE_RUNTIME_FIRST_CUTOVER_EXCEPTION_POLICY = Object.freeze({
   decisionId: 'DEC-0122-OWNER-APPROVAL-2026-09-09',
-  releaseVersion: '4.0.585',
+  releaseVersion: '4.0.586',
   // The first cutover is over. A release-version bump cannot renew this authority.
   retired: true,
   invocationMarker: 'APPLY-DEC-0122-FIRST-CUTOVER-EXCEPTION',
@@ -251,7 +256,7 @@ export const PRIVATE_RUNTIME_FIRST_CUTOVER_EXCEPTION_POLICY = Object.freeze({
 export const PRIVATE_RUNTIME_CAPACITY_RESUME_POLICY = Object.freeze({
   schemaVersion: '1.0.0',
   kind: 'RAVRADAR_PRIVATE_RUNTIME_CAPACITY_RESUME_EVIDENCE',
-  releaseVersion: '4.0.585',
+  releaseVersion: '4.0.586',
   priorRunId: '34738698219',
   priorRunAttempt: 1,
   priorSourceHead: '099b70a8314864ba85f0fb7ea3858b3f3816d9ed',
@@ -1527,13 +1532,39 @@ async function assertNoSymlinkComponents(root, candidate, label) {
   }
 }
 
+// Exact lexical result association, not a caller-written install receipt.
+const privateRuntimeInstallationResults = new WeakMap();
+const privateRuntimeInstallationPacks = new WeakMap();
+export function privateRuntimeInstallationFiles(result) {
+  const files = privateRuntimeInstallationResults.get(result);
+  if (!files) throw new Error('PRIVATE_RUNTIME_NORMAL_INSTALL_RESULT_REQUIRED');
+  return files;
+}
+// The actual normal factory invocation, never a serialized completion receipt.
+export function privateRuntimeInstallationPack(result) {
+  const pack = privateRuntimeInstallationPacks.get(result);
+  if (!pack) throw new Error('PRIVATE_RUNTIME_NORMAL_INSTALL_RESULT_REQUIRED');
+  return pack;
+}
+
 export async function installRestoredPrivateRuntime({
   restoredRoot,
   repositoryRoot = PRIVATE_RUNTIME_REPOSITORY_ROOT,
   renameImpl = fs.rename,
   removeImpl = fs.rm,
   stateEpochInputView = null,
+  sourceInventoryContext = null,
 } = {}) {
+  let sourceOwner = null;
+  if (sourceInventoryContext !== null) {
+    sourceOwner = await import('./source-normal-producer-tail.mjs');
+    const sourceInstall = sourceOwner.assertSourceNormalInstallationContext(sourceInventoryContext);
+    if (sourceInstall.repositoryRoot !== path.resolve(repositoryRoot)
+      || sourceInstall.restoredRoot !== path.resolve(restoredRoot)) {
+      throw new Error('PRIVATE_RUNTIME_SOURCE_INSTALL_ROOT_CHANGED');
+    }
+    sourceOwner.beginSourceNormalInstallation(sourceInventoryContext);
+  }
   const requestedSourceRoot = path.resolve(restoredRoot);
   const requestedRepository = path.resolve(repositoryRoot);
   const sourceRootStat = await fs.lstat(requestedSourceRoot).catch(() => null);
@@ -1589,11 +1620,15 @@ export async function installRestoredPrivateRuntime({
   let componentInvocation = null;
   if (hasExtension) {
     componentInvocation = unpackPrivateWeatherComponentPack({ restoredRoot: sourceRoot, outputRoot: componentStage, conditions,
-      ...(stateEpochInputView === null ? {} : { stateEpochInputView }) });
+      ...(stateEpochInputView === null ? {} : { stateEpochInputView }),
+      ...(sourceInventoryContext === null ? {} : { sourceInventoryContext }) });
+    if (sourceOwner !== null) {
+      sourceOwner.attachSourceNormalInstallationInvocation(sourceInventoryContext, componentInvocation);
+    }
     try { componentFiles = await componentInvocation; }
     catch (error) {
       // Cleanup must not replace the original unpack/integrity failure.
-      if (privateWeatherPackJsonReadsClosed(componentInvocation)) {
+      if (sourceInventoryContext === null && privateWeatherPackJsonReadsClosed(componentInvocation)) {
         await fs.rm(componentStage, { recursive: true, force: true }).catch(() => {});
       }
       throw error;
@@ -1671,7 +1706,7 @@ export async function installRestoredPrivateRuntime({
     }
     throw error;
   } finally {
-    if (componentStage && privateWeatherPackJsonReadsClosed(componentInvocation)) {
+    if (sourceInventoryContext === null && componentStage && privateWeatherPackJsonReadsClosed(componentInvocation)) {
       try { await fs.rm(componentStage, { recursive: true, force: true }); }
       catch (error) {
         // A failed install/rollback is primary. Cleanup alone stays fatal.
@@ -1679,7 +1714,7 @@ export async function installRestoredPrivateRuntime({
       }
     }
   }
-  return {
+  const result = {
     installed: true,
     fileCount: descriptors.length + installedComponentFiles.length,
     ...(stateEpochInputView === null ? {} : {
@@ -1688,6 +1723,17 @@ export async function installRestoredPrivateRuntime({
     }),
     privateDataLogged: false,
   };
+  // Base hashes remain the authenticated B manifest's responsibility. The
+  // expanded rows retain the exact normal pack-validator output hashes.
+  privateRuntimeInstallationResults.set(result, Object.freeze([
+    ...descriptors.map(({ relativePath }) => Object.freeze({ relativePath })),
+    ...installedComponentFiles.map(({ relativePath, bytes, sha256 }) =>
+      Object.freeze({ relativePath, bytes, sha256 })),
+  ]));
+  privateRuntimeInstallationPacks.set(result, Object.freeze({
+    invocation: componentInvocation, sourceInventoryContext, componentStage,
+  }));
+  return result;
 }
 
 function argument(argv, name, required = true) {

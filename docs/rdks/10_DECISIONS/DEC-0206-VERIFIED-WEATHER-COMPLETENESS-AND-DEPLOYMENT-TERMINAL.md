@@ -30,6 +30,21 @@ Den samlede analyse fandt fem sammenhængende årsager i den normale kæde:
 - RavRadars driftsmål er altid 100 % gyldig dækning af alle nødvendige felter,
   steder og timer. En `MISSING`-værdi er alene sikker nødadfærd; den tæller
   aldrig som data, komplethed eller afsluttet vejrarbejde.
+- Tilføjelse 20. oktober 2026: Den eksisterende schema4-audits
+  hovedpunktsprognose bevares som et særskilt, mærket målegrundlag. Den
+  additive lokale zonemåling følger i stedet den normalt valgte kystdels
+  vejr for hver zone, præcis alle 118 timer fra produktionstimen og hver
+  søgemåde (`waders`/`beach`) særskilt. Nævneren bruger den hydrerede aktive
+  GeoJSON-`FeatureCollection`, aldrig kun de eksisterende eller resterende
+  timer. Vind, bølger, strøm, vandstand, vandtemperatur og deres samtidige
+  intersektion samt dansk kalenderfordeling opgøres hver for sig.
+- Den normale `hasValue`-semantik genbruges, inklusive gyldige nulbølger uden
+  retning. Manglende/afvist række, mode, model eller registry giver aldrig
+  dækning; ukendt og faktisk manglende numerisk input skelnes. Hovedpunkt,
+  lokal mode, alle PART-timer og strøm-/scorehistorik er forskellige scopes.
+  Rapporten giver ingen ny source-/native-/proveniensadgang, ændrer ingen
+  målinger eller score og må ikke bruges til at ommærke gamle procenttal.
+  Næste normale leverede slutmatrix skal bevise de nye faktiske tal.
 - Den rumlige strømaudit fører derfor to adskilte mål: `accountedPartRatio`
   viser, om hver del enten er gyldig eller sikkert markeret, mens
   `requiredCoastalPartCoverageRatio` kun tæller scoreklare, verificerede eller

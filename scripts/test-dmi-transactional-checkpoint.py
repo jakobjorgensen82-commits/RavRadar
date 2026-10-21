@@ -14,6 +14,7 @@ import sys
 import tempfile
 import types
 import unittest
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from unittest.mock import Mock, patch
 
@@ -49,6 +50,7 @@ spec = importlib.util.spec_from_file_location(
 assert spec and spec.loader
 producer = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(producer)
+import lib.dmi_native_provenance as native_provenance
 
 
 COLLECTION = "dkss_idw"
@@ -1367,6 +1369,79 @@ class CheckpointTests(unittest.TestCase):
             )
             self.assertFalse(active.with_name(active.name + ".tmp").exists())
             sticky.assert_called_once_with("candidate_promoted", "true")
+
+
+class CanonicalTimeParsingTests(unittest.TestCase):
+    def setUp(self):
+        cached = getattr(native_provenance, "_canonical_time_short_text", None)
+        if cached is not None:
+            cached.cache_clear()
+
+    def test_same_builtin_strings_do_not_repeat_the_time_parser(self):
+        valid = "2026-10-20T10:00:00+02:00"
+        invalid = "not-a-native-time"
+        with patch.object(native_provenance, "datetime", wraps=datetime) as parser:
+            for _ in range(100):
+                self.assertEqual(native_provenance.canonical_time(valid), "2026-10-20T08:00:00Z")
+                self.assertIsNone(native_provenance.canonical_time(invalid))
+        self.assertEqual(parser.fromisoformat.call_count, 2)
+
+    def test_old_time_interpretation_and_refusals_are_unchanged(self):
+        values = (None, "", "bad", "2026-10-20", "2026-10-20T08:00:00",
+                  "2026-10-20T08:00:00Z", "2026-10-20T10:00:00+02:00",
+                  "2026-10-20T07:30:00-00:30", "2026-10-20T08:00:00.123456Z",
+                  "2026-10-25T02:00:00+02:00", "2026-10-25T02:00:00+01:00",
+                  "x" * 65, "x" * 10000, [], {}, 0, True,
+                  datetime(2026, 10, 20, 8, tzinfo=timezone.utc))
+        for value in values:
+            if value is None:
+                expected = None
+            else:
+                try:
+                    parsed = datetime.fromisoformat(str(value).replace("Z", "+00:00"))
+                except (TypeError, ValueError):
+                    expected = None
+                else:
+                    expected = (None if parsed.tzinfo is None else
+                                parsed.astimezone(timezone.utc).isoformat().replace("+00:00", "Z"))
+            for _ in range(2):
+                self.assertEqual(native_provenance.canonical_time(value), expected)
+        for _ in range(2):
+            with self.assertRaises(OverflowError):
+                native_provenance.canonical_time("0001-01-01T00:00:00+01:00")
+
+    def test_mutable_objects_and_string_subclasses_are_never_cached(self):
+        class MutableTime:
+            text = "2026-10-20T08:00:00Z"
+
+            def __str__(self):
+                return self.text
+
+        class MutableString(str):
+            text = "2026-10-20T08:00:00Z"
+
+            def __str__(self):
+                return self.text
+
+        for value in (MutableTime(), MutableString("not-the-current-value")):
+            for text in ("2026-10-20T08:00:00Z", "2026-10-21T09:00:00Z", "bad"):
+                value.text = text
+                self.assertEqual(native_provenance.canonical_time(value), None if text == "bad" else text)
+        self.assertEqual(native_provenance._canonical_time_short_text.cache_info().currsize, 0)
+
+    def test_cache_has_entry_and_input_length_bounds(self):
+        start = datetime(2026, 10, 20, tzinfo=timezone.utc)
+        for offset in range(2200):
+            text = (start + timedelta(minutes=offset)).isoformat()
+            self.assertEqual(native_provenance.canonical_time(text), text.replace("+00:00", "Z"))
+        info = native_provenance._canonical_time_short_text.cache_info()
+        self.assertEqual((info.maxsize, info.currsize), (2048, 2048))
+        with patch.object(native_provenance, "datetime", wraps=datetime) as parser:
+            for _ in range(2):
+                self.assertIsNone(native_provenance.canonical_time("x" * 65))
+        self.assertEqual(parser.fromisoformat.call_count, 2)
+        self.assertEqual(native_provenance._canonical_time_short_text.cache_info().currsize, 2048)
+        self.assertEqual(native_provenance.canonical_time(start.isoformat()), "2026-10-20T00:00:00Z")
 
 
 class CurrentLedgerCheckpointTests(unittest.TestCase):

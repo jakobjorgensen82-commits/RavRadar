@@ -104,6 +104,95 @@ function producerJob(value, run) {
   return { job, steps };
 }
 
+// This second profile locates an artifact from the one actual SOURCE step.
+// Neither its terminal status nor this observation authenticates the contents,
+// proves old owner closure, or authorizes publication. The normal GCM/origin/
+// strict parent-B/S admission remains mandatory in the existing caller.
+const SOURCE_STEP = 'Run the one explicit owned SOURCE ordinary route';
+const SOURCE_GUARDS = Object.freeze([
+  'Select one explicit legacy or SOURCE ordinary route',
+  'Require current integrated SOURCE route before admin and owner work',
+]);
+const SOURCE_REQUEST_JOB = 'Validate the explicit SOURCE request before any operational reentry';
+const SOURCE_REQUEST_STEP = 'Reject unknown or mixed SOURCE request before any operational reentry';
+
+function sourceProducerJob(jobs, job, run) {
+  require(positive(job.id) && job.run_id === run.id && job.run_attempt === run.run_attempt
+    && job.head_sha === run.head_sha && job.head_branch === 'main'
+    && job.status === 'completed' && TERMINAL.has(job.conclusion)
+    && time(job.started_at) >= time(run.run_started_at)
+    && time(job.completed_at) >= time(job.started_at)
+    && time(job.completed_at) <= time(run.updated_at)
+    && Array.isArray(job.steps) && job.steps.length <= 512, 'ORDINARY_STAGE_SOURCE_JOB_IDENTITY');
+
+  const requests = jobs.filter(row => row?.name === SOURCE_REQUEST_JOB);
+  require(requests.length === 1, 'ORDINARY_STAGE_SOURCE_REQUEST_JOB');
+  const request = requests[0];
+  require(positive(request.id) && request.id !== job.id
+    && request.run_id === run.id && request.run_attempt === run.run_attempt
+    && request.head_sha === run.head_sha && request.head_branch === 'main'
+    && request.status === 'completed' && request.conclusion === 'success'
+    && time(request.started_at) >= time(run.run_started_at)
+    && time(request.completed_at) >= time(request.started_at)
+    && time(request.completed_at) <= time(job.started_at)
+    && Array.isArray(request.steps) && request.steps.length <= 512,
+  'ORDINARY_STAGE_SOURCE_REQUEST_JOB');
+  const requestSteps = request.steps.filter(row => row?.name === SOURCE_REQUEST_STEP);
+  require(requestSteps.length === 1, 'ORDINARY_STAGE_SOURCE_REQUEST_STEP');
+  const requestStep = requestSteps[0];
+  require(positive(requestStep.number) && requestStep.status === 'completed'
+    && requestStep.conclusion === 'success'
+    && time(requestStep.started_at) >= time(request.started_at)
+    && time(requestStep.completed_at) >= time(requestStep.started_at)
+    && time(requestStep.completed_at) <= time(request.completed_at),
+  'ORDINARY_STAGE_SOURCE_REQUEST_STEP');
+
+  let previousNumber = 0;
+  let previousEnd = time(job.started_at);
+  const steps = [...SOURCE_GUARDS, SOURCE_STEP].map((name, index) => {
+    const matching = job.steps.filter(step => step?.name === name);
+    require(matching.length === 1, 'ORDINARY_STAGE_SOURCE_REQUIRED_STEP');
+    const step = matching[0];
+    require(positive(step.number) && step.number > previousNumber
+      && step.status === 'completed'
+      && (index === SOURCE_GUARDS.length ? TERMINAL.has(step.conclusion) : step.conclusion === 'success')
+      && time(step.started_at) >= previousEnd && time(step.completed_at) >= time(step.started_at)
+      && time(step.completed_at) <= time(job.completed_at), 'ORDINARY_STAGE_SOURCE_REQUIRED_STEP');
+    previousNumber = step.number;
+    previousEnd = time(step.completed_at);
+    return { name, number: step.number, startedAt: step.started_at, completedAt: step.completed_at };
+  });
+  // SOURCE and the five old producer calls are mutually exclusive. Skipped
+  // metadata is not a success or SAVE receipt. A cipher-preserving resumer has
+  // SOURCE skipped and can never select this profile as a new producer.
+  for (const name of STEPS) {
+    const matching = job.steps.filter(step => step?.name === name);
+    require(matching.length === 1, 'ORDINARY_STAGE_SOURCE_LEGACY_STEP');
+    const step = matching[0];
+    require(positive(step.number) && step.number > previousNumber
+      && step.status === 'completed' && step.conclusion === 'skipped',
+    'ORDINARY_STAGE_SOURCE_LEGACY_STEP');
+    previousNumber = step.number;
+  }
+  return { job, steps };
+}
+
+function selectProducerJob(value, run) {
+  const jobs = completeList(value, 'jobs');
+  const matching = jobs.filter(job => job?.name === JOB);
+  require(matching.length === 1 && Array.isArray(matching[0].steps)
+    && matching[0].steps.length <= 512, 'ORDINARY_STAGE_JOB_IDENTITY');
+  const job = matching[0];
+  const source = job.steps.filter(step => step?.name === SOURCE_STEP);
+  require(source.length <= 1, 'ORDINARY_STAGE_SOURCE_REQUIRED_STEP');
+  // Choose once from the actual step metadata. Never retry another profile
+  // after any assertion in the selected SOURCE or legacy profile fails.
+  if (source.length === 1 && !(source[0].status === 'completed' && source[0].conclusion === 'skipped'))
+    return sourceProducerJob(jobs, job, run);
+  return producerJob(value, run); // The original five-SUCCESS profile is unchanged.
+}
+
+
 /** Downloads ciphertext only. Caller must later use the normal GCM opener,
  * source compatibility, fresh predecessor/write admission and all delivery gates.
  * Successful ownership of privateDirectory transfers to the caller for cleanup.
@@ -141,7 +230,7 @@ export async function downloadOrdinaryCompletedStageArtifact({ repository, runId
   try {
     const run = await json(`${base}/actions/runs/${runId}/attempts/${runAttempt}`);
     assertRun(run, identity, time(now));
-    const { job, steps } = producerJob(await json(
+    const { job, steps } = selectProducerJob(await json(
       `${base}/actions/runs/${runId}/attempts/${runAttempt}/jobs?per_page=100`), run);
     const artifacts = completeList(await json(`${base}/actions/runs/${runId}/artifacts?per_page=100`), 'artifacts');
     const name = `ravradar-private-build-stage-${runId}-${runAttempt}`;

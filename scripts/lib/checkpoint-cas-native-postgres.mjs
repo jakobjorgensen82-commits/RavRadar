@@ -6,6 +6,7 @@ import path from 'node:path';
 import { execFile } from 'node:child_process';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { exactRelativeModuleSpecifiers } from './static-module-closure.mjs';
+import {requireSourceProducerOutput} from './source-producer-successor-source.mjs';
 import { accountAssistantCatalogQuery, verifyAccountAssistantCatalogMetadata }
   from '../verify-account-assistant-schema.mjs';
 
@@ -34,7 +35,8 @@ const sqlText = text => String(text).replace(/\r\n?/g, '\n');
 const NATIVE_PSQL_PHASES = new Set(['NATIVE_SETUP', 'CAS200_MIGRATION',
   'BASELINE_FIXTURES', 'BASELINE_ADMISSION', 'BASELINE_CAS_CASES',
   'ACCOUNT213', 'CURRENT220', 'STATISTICS230', 'NATIVE_IDENTITY0600', 'CURRENT_MEMORY_WARMUP',
-  'ESTABLISHED_NATIVE_CURRENT_ORIGIN', 'LAST_MILE_ENCLOSURE', 'ACCOUNT_STATISTICS_ASSISTANT', 'UNKNOWN']);
+  'ESTABLISHED_NATIVE_CURRENT_ORIGIN', 'LAST_MILE_ENCLOSURE', 'ACCOUNT_STATISTICS_ASSISTANT', 'SOURCE_PRODUCER',
+  'SOURCE_CURRENT_FULL_BOOTSTRAP', 'SOURCE_CURRENT_FULL_READBACK', 'UNKNOWN']);
 const NATIVE_PSQL_STATES = Object.freeze({
   '22003':'SQL_RANGE', '22023':'SQL_PARAMETER', '22P02':'SQL_TEXT_FORMAT',
   '23502':'SQL_NOT_NULL', '23503':'SQL_FOREIGN_KEY', '23505':'SQL_UNIQUE',
@@ -626,7 +628,14 @@ async function compareCurrentGridSuccessor({ psql, runSql, source, accountSource
 export async function runNativeCheckpointSqlComparison({ repositoryRoot,
   sourceDocumentAt, atHour, saveCheckpoint, includeStatisticsRevision = false,
   includeNativeIdentity = false, includeCurrentMemoryWarmup = false, includeEstablishedNativeCurrentOrigin = false,
-  includeLastMileEnclosure = false, includeAccountStatisticsAssistant = false } = {}) {
+  includeLastMileEnclosure = false, includeAccountStatisticsAssistant = false, includeSourceProducer = false,
+  includeCurrentSourceNativeProfile = false } = {}) {
+  assert.equal(typeof includeCurrentSourceNativeProfile,'boolean');
+  if(includeCurrentSourceNativeProfile)requireSourceProducerOutput();
+  assert(!includeCurrentSourceNativeProfile || includeSourceProducer,'CURRENT profile requires the unchanged SOURCE PG phase');
+  assert.equal(typeof includeSourceProducer,'boolean');
+  if(includeSourceProducer)requireSourceProducerOutput(); // BEFORE nativePrograms/filesystem/process I/O.
+  assert(!includeSourceProducer || includeAccountStatisticsAssistant,'SOURCE requires the genuine complete585 native phase');
   assert.equal(typeof includeStatisticsRevision,'boolean');
   assert.equal(typeof includeNativeIdentity,'boolean');
   assert.equal(typeof includeCurrentMemoryWarmup,'boolean');
@@ -744,7 +753,14 @@ begin
     'elapsedMs',extract(epoch from (clock_timestamp()-started))*1000);
 end $$;
 grant execute on function public.native_checkpoint_attempt(boolean,bigint,jsonb) to service_role,anon,authenticated;`;
-    await psql(setup);
+    let currentFullPostgres=null;
+    if(includeCurrentSourceNativeProfile){
+      nativePhase='SOURCE_CURRENT_FULL_BOOTSTRAP';
+      const full=await import('./source-current-full-postgres-bootstrap.mjs');
+      currentFullPostgres=await full.bootstrapSourceCurrentFullPostgres({repositoryRoot,psql,setup});
+    }else{
+      await psql(setup);
+    }
     const calibrationSignature='public.ravradar_trip_v3_calibration_truth_allowed(text,jsonb,boolean,text,text,text,text)';
     const calibrationAcl=JSON.parse(await psql("select jsonb_build_object("
       + "'public',exists(select 1 from pg_proc p cross join lateral aclexplode(coalesce(p.proacl,acldefault('f',p.proowner))) a"
@@ -934,8 +950,123 @@ select public.native_checkpoint_attempt(${baseline},${version},(select payload f
     let accountStatisticsAssistant;
     if(includeAccountStatisticsAssistant){
       nativePhase='ACCOUNT_STATISTICS_ASSISTANT';
+      if(includeSourceProducer){
+        try{
+          const {withFrozen585CheckpointPostgresSource}=await import('../run-frozen585-checkpoint-postgres-source.mjs');
+          accountStatisticsAssistant=await withFrozen585CheckpointPostgresSource(async({adapter,factory})=>
+            adapter.compareAccountStatisticsAssistantSuccessor({psql,runSql,root,sourceDocumentAt:factory.sourceDocumentAt,
+              atHour:factory.atHour,saveCheckpoint:factory.saveRavScoreContinuationCheckpoint}));
+        }catch(error){statisticsRevisionFailure={error};throw error;}
+      }else{
       const {compareAccountStatisticsAssistantSuccessor}=await import('./account-statistics-assistant-postgres.mjs');
       accountStatisticsAssistant=await compareAccountStatisticsAssistantSuccessor({psql,runSql,root,sourceDocumentAt,atHour,saveCheckpoint});
+      }
+    }
+    let sourceProducer;
+    if(includeSourceProducer){
+      nativePhase='SOURCE_PRODUCER';
+      try{
+        const {compareSourceProducerSuccessor}=await import('./source-producer-postgres.mjs');
+        sourceProducer=await compareSourceProducerSuccessor({psql,runSql,root,sourceDocumentAt,atHour,saveCheckpoint});
+      }catch(error){statisticsRevisionFailure={error};throw error;}
+    }
+    let currentSourceNativeProfile;
+    let sourceLegacyCompatibility;
+    if(includeSourceProducer&&!includeCurrentSourceNativeProfile){
+      // The normal pre-merge --source-producer phase, AFTER its genuine585 +
+      // SOURCE SQL comparison. No GitHub/main proof or SOURCE19 activation.
+      assert.deepEqual(await readOwner(),owner);
+      const head=(await command('git',['-C',repositoryRoot,'rev-parse','HEAD'],{env})).stdout.trim();
+      assert.match(head,/^[a-f0-9]{40}$/);
+      // Source CI has restored Node22 for the unchanged native SQL matrix.
+      // Only this later normal CURRENT-input child requires the ACTUAL Node24
+      // executable observed in the preceding dedicated acquisition cohort.
+      const node24=process.env.RAVRADAR_SOURCE_NATIVE_NODE24_PATH;
+      assert(typeof node24==='string'&&path.isAbsolute(node24)&&!/[\r\n\0]/.test(node24),
+        'SOURCE_LEGACY_ACTUAL_NODE24_PATH_REQUIRED');
+      assert.equal(await fs.realpath(node24),node24,'SOURCE_LEGACY_NODE24_PATH_ALIASED');
+      const runtime=await command(node24,['--version'],{env});
+      assert.equal(runtime.code,0);assert.match(runtime.stdout.trim(),/^v24\.\d+\.\d+$/,
+        'SOURCE_LEGACY_ACTUAL_NODE24_REQUIRED');
+      const invocation=await command(process.env.PYTHON||'python3',
+        ['-I','-B',path.join(repositoryRoot,'scripts/run-source19-terminal-native-bank.py'),
+          '--source-legacy-compatibility','--node24-path',node24],
+        {input:JSON.stringify({kind:'SOURCE_CURRENT_SAME_NATIVE_PG',pgRoot:root,psql:programs.psql,head,server:owner}),
+          env,timeout:240*60*1000});
+      assert.equal(invocation.code,0,'NATIVE_POSTGRES_SOURCE_LEGACY_COMPATIBILITY_REFUSED');
+      const reports=invocation.stdout.split(/\r?\n/).flatMap(line=>{
+        if(line.length>2048)return [];try{const value=JSON.parse(line);
+          return value?.kind==='SOURCE_LEGACY_COMPATIBILITY_SYNTHETIC'?[value]:[];}catch{return [];}
+      });
+      assert.equal(reports.length,1,'Actual child must emit exactly one bounded legacy report');
+      const actual=reports[0];
+      assert.deepEqual(Object.keys(actual).sort(),['kind','sameH0MetadataPreserved','ordinaryFollowerCount','zoneCount',
+        'partCount','hourCount','normalBThenS','wholeReadback','originalBytesRetained','actionInvoked','sdkInvoked',
+        'sourceAdmission','mainProof','activeProfileIssued','sqlExecuted','productionProof','retentionCleanup','nativePayloadValidation'].sort());
+      for(const key of ['sameH0MetadataPreserved','normalBThenS','wholeReadback','originalBytesRetained'])assert.equal(actual[key],true);
+      for(const key of ['actionInvoked','sdkInvoked','sourceAdmission','mainProof','activeProfileIssued','sqlExecuted','productionProof'])
+        assert.equal(actual[key],false);
+      assert.equal(actual.ordinaryFollowerCount,1);assert.equal(actual.zoneCount,210);
+      assert.equal(actual.partCount,673);assert.equal(actual.hourCount,118);
+      assert.equal(typeof actual.retentionCleanup.complete,'boolean');
+      assert(Number.isSafeInteger(actual.retentionCleanup.failureCount)&&actual.retentionCleanup.failureCount>=0);
+      const native=actual.nativePayloadValidation;
+      assert.deepEqual(Object.keys(native).sort(),['actualReadOnlyCallCount','sourceModel','current','follower'].sort());
+      assert.equal(native.actualReadOnlyCallCount,2);
+      const expectedModel=(await import('./source-producer-successor-source.mjs')).requireSourceProducerBinding();
+      assert.deepEqual(native.sourceModel,{C:expectedModel.C,I:expectedModel.I,T:expectedModel.T});
+      for(const name of ['current','follower']){
+        const pin=native[name];
+        assert.deepEqual(Object.keys(pin).sort(),['bytes','sha256','targetReferenceAt']);
+        assert(Number.isSafeInteger(pin.bytes)&&pin.bytes>=2&&pin.bytes<=16*1024*1024);
+        assert.match(pin.sha256,/^[a-f0-9]{64}$/);
+        assert.match(pin.targetReferenceAt,/^\d{4}-\d{2}-\d{2}T\d{2}:00:00\.000Z$/);
+        assert.equal(new Date(pin.targetReferenceAt).toISOString(),pin.targetReferenceAt);
+      }
+      assert.equal(Date.parse(native.follower.targetReferenceAt)-Date.parse(native.current.targetReferenceAt),3600000);
+      assert.deepEqual(await readOwner(),owner);
+      sourceLegacyCompatibility=actual;
+    }
+    if(includeCurrentSourceNativeProfile){
+      try{
+      nativePhase='SOURCE_CURRENT_FULL_READBACK';
+      const full=await import('./source-current-full-postgres-bootstrap.mjs');
+      await full.verifySourceCurrentFullPostgres({repositoryRoot,psql,bootstrap:currentFullPostgres});
+      // SAME existing owned Unix-socket server AFTER every unchanged old/SOURCE
+      // comparison. Its normal finally still owns actual server stop/cleanup.
+      nativePhase='SOURCE_PRODUCER';
+      assert.deepEqual(await readOwner(),owner);
+      const head=(await command('git',['-C',repositoryRoot,'rev-parse','HEAD'],{env})).stdout.trim();
+      assert.match(head,/^[a-f0-9]{40}$/);
+      const profileEnvironment={...env,
+        ...(process.env.GITHUB_TOKEN?{GITHUB_TOKEN:process.env.GITHUB_TOKEN}:{}),
+        ...(process.env.GITHUB_REPOSITORY?{GITHUB_REPOSITORY:process.env.GITHUB_REPOSITORY}:{})};
+      const invocation=await command(process.env.PYTHON||'python3',
+        ['-I','-B',path.join(repositoryRoot,'scripts/run-source19-terminal-native-bank.py'),
+          '--current-source-profile','--node24-path',process.execPath],
+        {input:JSON.stringify({kind:'SOURCE_CURRENT_SAME_NATIVE_PG',pgRoot:root,psql:programs.psql,head,server:owner}),
+          env:profileEnvironment,timeout:240*60*1000});
+      const fixedReasons=new Set(["SOURCE_CURRENT_PROFILE_PENDING_FULL_PG_SCHEMA","SOURCE_CURRENT_PROFILE_PENDING_GENUINE_CENTRAL_PROFILE","SOURCE_CURRENT_PROFILE_PENDING_NORMAL_POST64_API","SOURCE_CURRENT_PROFILE_PENDING_LOCKED_SDK","SOURCE_CURRENT_PROFILE_PENDING_ACTUAL_GREEN_SOURCE_GATE","SOURCE_CURRENT_PROFILE_PG_CONTEXT","SOURCE_CURRENT_PROFILE_PG_OWNER_CHANGED","SOURCE_CURRENT_PROFILE_ACTUAL_PG_CALL_FAILED","CURRENT_POST64_SOURCE_UNISSUED","CURRENT_POST64_OWN_PARENT_REQUIRED","CURRENT_POST64_NORMAL_POLICY_REQUIRED","CURRENT_POST64_ORIGINAL_BYTES_CHANGED","CURRENT_POST64_OBJECT_BYTES_CHANGED","CURRENT_POST64_OBJECT_IDENTITY_CHANGED","CURRENT_POST64_OWNER_CHANGED","CURRENT_POST64_CHECKPOINT_BODY","CURRENT_POST64_POINTER_CAS","CURRENT_POST64_POINTER_VERSION","CURRENT_POST64_CENTRAL_CAS_BODY","CURRENT_POST64_DOCUMENT_INSERT","CURRENT_POST64_IMMUTABLE_HEADERS","CURRENT_POST64_OBJECT_DIGEST_KEY","CURRENT_POST64_PART_DIGEST_KEY","CURRENT_POST64_BODY_BOUND","CURRENT_POST64_BODY_TRUNCATED","CURRENT_POST64_REMOVE_NOT_CREATED","CURRENT_POST64_REMOVE_REFERENCED_OR_UNKNOWN","CURRENT_POST64_WRITE_READBACK","CURRENT_NATIVE_ACTIVATION_GENUINE_SOURCE_REQUIRED","UNKNOWN","GENUINE_SOURCE_INPUT_MISSING","SOURCE_UNISSUED","GENUINE_SOURCE_SEAL_REQUIRED","NORMAL_ACTIVATION_REFUSED","CANDIDATE_PUBLIC_PACK_REBUILD_REQUIRED","NONPUBLIC_FETCH","GENUINE_PREFIX_INPUT_MISSING","CANDIDATE_NORMAL_CONTINUATION_NOT_READY","CANDIDATE_NORMAL_NATIONAL_NOT_READY","NORMAL_INITIALIZATION_REFUSED"]);
+      let firstProfileFailure=null;
+      for(const line of invocation.stdout.split(/\r?\n/)){
+        if(line.length>2048)continue;let value;try{value=JSON.parse(line);}catch{continue;}
+        if(value?.kind!=='CURRENT_SOURCE_NATIVE_FIRST_FAILURE')continue;
+        assert.deepEqual(Object.keys(value).sort(),['kind','phase','privatePayloadIncluded','reason','route','sqlstate']);
+        assert(['CURRENT_CASE','PG_SQL','POST64_TRANSPORT','CENTRAL_ACTIVATION','UNKNOWN'].includes(value.phase));
+        assert(['CHECKPOINT_CAS','OPERATIONAL_CAS','POINTER_CAS','STORAGE','NONE','UNKNOWN'].includes(value.route));
+        assert(fixedReasons.has(value.reason));assert.equal(value.privatePayloadIncluded,false);
+        assert(/^(?:[0-9A-Z]{5}|UNKNOWN)$/.test(value.sqlstate));firstProfileFailure=value;break;
+      }
+      if(firstProfileFailure||invocation.code!==0){
+        const fixed=firstProfileFailure??{kind:'CURRENT_SOURCE_NATIVE_FIRST_FAILURE',phase:'UNKNOWN',
+          reason:'MISSING_CHILD_FIXED_REPORT',sqlstate:invocation.sqlState??'UNKNOWN',route:'NONE',privatePayloadIncluded:false};
+        console.error(JSON.stringify(fixed));
+        const error=new Error('NATIVE_POSTGRES_CURRENT_PROFILE_REFUSED phase='+fixed.phase+' reason='+fixed.reason
+          +' sqlstate='+fixed.sqlstate+' route='+fixed.route);error.currentNativeFailure=Object.freeze(fixed);throw error;
+      }
+      assert.deepEqual(await readOwner(),owner);
+      currentSourceNativeProfile={sameHost:true,actualNativeProcessCompleted:true,productionProof:false};
+      }catch(error){statisticsRevisionFailure={error};throw error;}
     }
     return {kind:'NATIVE_POSTGRES_CHECKPOINT_CAS_COMPARISON',accountAssistant,currentGrid,
       ...(includeStatisticsRevision?{statisticsRevision}:{}),
@@ -944,6 +1075,9 @@ select public.native_checkpoint_attempt(${baseline},${version},(select payload f
       ...(includeEstablishedNativeCurrentOrigin?{establishedNativeCurrentOrigin}:{}),
       ...(includeLastMileEnclosure?{lastMileEnclosure}:{}),
       ...(includeAccountStatisticsAssistant?{accountStatisticsAssistant}:{}),
+      ...(includeSourceProducer?{sourceProducer}:{}),
+      ...(includeSourceProducer&&!includeCurrentSourceNativeProfile?{sourceLegacyCompatibility}:{}),
+      ...(includeCurrentSourceNativeProfile?{currentSourceNativeProfile}:{}),
       issuedSource:issued.sourceReceipt,postgresMajorVersion:programs.majorVersion,
       tcpEnabled:false,normalModelPartCount:673,sqlExecuted:true,migrationExecuted:true,
       migrationSQLSha256:hash(newSource),caseCount:reports.length,
@@ -969,4 +1103,13 @@ select public.native_checkpoint_attempt(${baseline},${version},(select payload f
       throw cleanupError;
     }
   }
+}
+
+// Current-only normal seam. Refuse before touching caller operands or native I/O.
+export async function runNativeSourceProducerSqlComparison(options){
+  requireSourceProducerOutput();
+  assert.equal(arguments.length,1);
+  return runNativeCheckpointSqlComparison({...options,includeStatisticsRevision:true,includeNativeIdentity:true,
+    includeCurrentMemoryWarmup:true,includeEstablishedNativeCurrentOrigin:true,includeLastMileEnclosure:true,
+    includeAccountStatisticsAssistant:true,includeSourceProducer:true});
 }

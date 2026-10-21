@@ -1280,6 +1280,86 @@ class OwnedRawDistributionNative(unittest.TestCase):
                 signal.signal(signal.SIGALRM, old_alarm)
 
 
+class PortablePostWeatherCacheContract(unittest.TestCase):
+    """Real fixed-path inspection/FDs only; NEVER native owner or SDK evidence."""
+    def test_both_fixed_cache_inventories_bytes_mutation_extra_and_close(self):
+        with tempfile.TemporaryDirectory(prefix='rr-owned-cache-contract-') as folder:
+            own = Path(folder).resolve()
+            target = own / ENTRY
+            target.parent.mkdir(parents=True)
+            source = (ROOT / ENTRY).read_bytes()
+            target.write_bytes(source)
+            self.assertEqual(target.read_bytes(), source)
+            script = r'''
+const fs=require('node:fs'),path=require('node:path'),crypto=require('node:crypto'),assert=require('node:assert/strict');
+const entry=process.argv[1],root=path.resolve(path.dirname(entry),'../../..');
+const {inspectFixedPostWeatherCache:inspect}=require(entry);
+assert.throws(()=>inspect('raw'),/DMI_RAW_SAVE_INPUT_REFUSED/);
+const results=[];
+for(const[name,directory,file,backup]of [
+ ['checkpoint','.cache/ravscore-continuation-checkpoint','checkpoint.json','ravscore-continuation-checkpoint'],
+ ['preflight','.cache/weather-preflight-state','state.json','weather-preflight-state']]){
+ const dir=path.join(root,directory),canonical=path.join(dir,file),bytes=Buffer.from('{"own":"bounded"}\n');
+ fs.mkdirSync(dir,{recursive:true});fs.writeFileSync(canonical,bytes,{flag:'wx'});
+ const outside=path.join(root,'.cache',backup+'.progress-previous-own-transaction.json');
+ fs.writeFileSync(outside,'own preserved old inode\n',{flag:'wx'});
+ const original=fs.statSync(canonical,{bigint:true}),previous=fs.statSync(outside,{bigint:true});
+ const read=inspect(name);
+ assert.deepEqual(Object.keys(read).sort(),['assertUnchanged','bytes','close','sha256']);
+ assert.equal(read.bytes,bytes.length);assert.equal(read.sha256,crypto.createHash('sha256').update(bytes).digest('hex'));
+ read.assertUnchanged();
+ fs.writeFileSync(canonical,'{"own":"changed"}\n');
+ assert.throws(()=>read.assertUnchanged(),/SOURCE_CACHE_INVENTORY_CHANGED/);
+ read.close();assert.throws(()=>read.close(),/SOURCE_CACHE_CLOSE_UNPROVED/);
+ fs.writeFileSync(canonical,bytes);
+ const extra=path.join(dir,file+'.progress-previous-unexpected');fs.writeFileSync(extra,'must remain',{flag:'wx'});
+ assert.throws(()=>inspect(name),/SOURCE_CACHE_INVENTORY_CHANGED/);
+ assert.equal(fs.readFileSync(extra,'utf8'),'must remain');fs.unlinkSync(extra); // Own fixture only.
+ const again=inspect(name);again.assertUnchanged();again.close();
+ const after=fs.statSync(canonical,{bigint:true}),oldAfter=fs.statSync(outside,{bigint:true});
+ assert.equal(after.dev,original.dev);assert.equal(after.ino,original.ino);
+ assert.equal(oldAfter.dev,previous.dev);assert.equal(oldAfter.ino,previous.ino);
+ assert.equal(fs.readFileSync(outside,'utf8'),'own preserved old inode\n');
+ results.push(name);
+}
+console.log(JSON.stringify({kind:'PORTABLE_FIXED_CACHE_VALUE_FD_CHECK_ONLY',passed:results,native:false,SDK:false,owner:false,network:false}));
+'''
+            environment = runtime_environment()
+            # Portable case only: Windows Node's real OS entropy needs SystemRoot.
+            # The unchanged Linux native helper still excludes tokens/preloads.
+            for name in ('SystemRoot', 'WINDIR', 'TEMP', 'TMP'):
+                if name in os.environ:
+                    environment[name] = os.environ[name]
+            result = subprocess.run([str(NODE24), '-e', script, str(target)], cwd=own,
+                env=environment, stdin=subprocess.DEVNULL, capture_output=True, timeout=10)
+            self.assertEqual(result.returncode, 0, result.stderr.decode('utf-8', 'replace'))
+            self.assertEqual(result.stderr, b'')
+            value = json.loads(result.stdout)
+            self.assertEqual(value, {'kind': 'PORTABLE_FIXED_CACHE_VALUE_FD_CHECK_ONLY',
+                'passed': ['checkpoint', 'preflight'], 'native': False, 'SDK': False,
+                'owner': False, 'network': False})
+
+
+class OwnedPostWeatherSourceNative(unittest.TestCase):
+    def test_both_new_source_save_modes_refuse_non_guardian_before_lease(self):
+        # No fabricated SOURCE session: the actual private entry must refuse us.
+        for selection in ('checkpoint', 'preflight'):
+            with self.subTest(selection=selection), tempfile.TemporaryDirectory(prefix='rr-source-cache-refusal-') as folder:
+                root = Path(folder).resolve()
+                target = root / ENTRY
+                target.parent.mkdir(parents=True)
+                target.write_bytes((ROOT / ENTRY).read_bytes())
+                environment = runtime_environment()
+                environment.update({'INPUT_OPERATION': f'source-{selection}-cache-save'})
+                result = subprocess.run([str(NODE24), str(target), f'--source-fixed-{selection}-save'],
+                    cwd=root, env=environment, stdin=subprocess.DEVNULL, capture_output=True, timeout=5)
+                self.assertEqual(result.returncode, 1)
+                self.assertEqual(result.stdout, b'')
+                self.assertEqual(result.stderr, b'DMI_RAW_SAVE_REFUSED\n'
+                    b'DMI_RAW_SAVE_DIAGNOSTIC stage=INPUT reason=UNKNOWN\n')
+                self.assertFalse((root / CLAIM).exists())
+
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--node24-path', required=True,
@@ -1288,9 +1368,14 @@ if __name__ == '__main__':
                         help='Only real-SDK raw/cipher loopback cases; default runs all native cases')
     parser.add_argument('--distribution-only', action='store_true',
                         help='Only real npm prepare cases; requires the fixed warm offline cache')
+    parser.add_argument('--fixed-cache-contract-only', action='store_true',
+                        help='Portable actual fixed-path FD/value checks ONLY; not Linux/SDK/owner proof')
     args = parser.parse_args()
-    if args.official_sdk_only and args.distribution_only:
+    if sum((args.official_sdk_only, args.distribution_only, args.fixed_cache_contract_only)) > 1:
         parser.error('Select at most one native class')
+    if args.fixed_cache_contract_only:
+        NODE24 = Path(args.node24_path).resolve(strict=True)  # Legacy arg name; portable mode permits Node22.
+        unittest.main(argv=[sys.argv[0], 'PortablePostWeatherCacheContract'])
     if sys.platform != 'linux':
         raise SystemExit('NATIVE_LINUX_REQUIRED; syntax-only on other platforms, never PASS')
     NODE24 = Path(args.node24_path).resolve(strict=True)

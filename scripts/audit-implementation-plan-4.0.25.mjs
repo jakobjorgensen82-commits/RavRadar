@@ -1,5 +1,6 @@
 import fs from 'node:fs';
 import { hydratePrivateConditionsHourly } from './lib/private-conditions-hourly.mjs';
+import { buildZoneModeWeatherCoverage } from './lib/zone-mode-weather-coverage.mjs';
 
 const readJson = path => JSON.parse(fs.readFileSync(path, 'utf8'));
 const exists = path => fs.existsSync(path);
@@ -120,6 +121,10 @@ for(const [component,coverage] of Object.entries(intervalCoverage)){
   if(Object.values(missing).some(value=>value>0)) issues.push({severity:'warning',code:'DMI_HOURLY_PROVENANCE_INCOMPLETE',component,dmiHours:coverage.dmiHours,missing});
 }
 const report={schemaVersion:4,...summary,summary,componentIntervalCoverage:intervalCoverage,cacheAuditSummary:cacheAudit?{beforeBytes:cacheAudit.beforeBytes??cacheAudit.sizeBeforeBytes,afterBytes:cacheAudit.afterBytes??cacheAudit.sizeAfterBytes,filesKept:cacheAudit.filesKept??cacheAudit.keptFiles?.length,filesRemoved:cacheAudit.filesRemoved??cacheAudit.removedFiles?.length}:null,marineCoverage:ocean?.summary||null,providerSwitchDetails:providerSwitchDetails.slice(0,1000),issues,issueCounts:{errors:issues.filter(x=>x.severity==='error').length,warnings:issues.filter(x=>x.severity==='warning').length}};
+// Preserve every schema4 parent-point count; local selected weather is a
+// separate mode-specific matrix, never a retag or replacement of old figures.
+report.componentIntervalCoverageScope = 'LEGACY_PARENT_POINT_FORECAST_ALL_FIELDS_FINITE';
+report.zoneModeWeatherCoverage = buildZoneModeWeatherCoverage({ conditions, zonesDocument: zonesDoc });
 fs.mkdirSync('data/diagnostics',{recursive:true});
 fs.writeFileSync('data/diagnostics/implementation-plan-audit.json',JSON.stringify(report,null,2)+'\n');
 console.log(JSON.stringify(report,null,2));

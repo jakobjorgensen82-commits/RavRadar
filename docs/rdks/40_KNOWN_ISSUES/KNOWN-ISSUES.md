@@ -1,3 +1,17 @@
+## 20. oktober — ÅBEN: Candidate-public fra normalt pakket input
+
+21. oktober: Præcis CI afslørede dernæst auditorens gamle fem-rækkerskrav, selv om normalproducenten leverer Top20. En lokal rettelse kræver hele kanoniske dage og bevarer model-, dato- og indholdskontrol. Den hurtige regression består; hele ny CI og sikker levering er åbne. Dette er ikke bevis for en fejl i den almindelige vejrhentning eller i den offentlige Top20-producent.
+
+21. oktober: Den fulde lokale stage nåede 118 Candidate-timefiler, men normal audit sammenlignede producentens opdelte manifest med en statisk forgænger uden leveringsindeks. Efterfølgeren validerer og kanoniserer alene indekset gennem normal kontrakt; alle øvrige manifest-, model-, privacy- og deploykrav bevares. Ny samlet kildekontrol og faktisk levering er åbne; dette er ikke en fejl i den aktive almindelige vejrhentning.
+
+Den normale manuelle reservegren blander gammel privat timepakning med nye Candidate-zonetimer og bevarer den integrerede models afledte public-hour-markør. Lokal rettelse og normal regression udarbejdes; originaler og almindelig integreret vejrhentning ændres ikke. Se [det afgrænsede issue](CANDIDATE-PUBLIC-PACKED-INPUT.md). Ingen ny version, modelbinding, SQL eller SOURCE-aktivering. Senere forberedelse, test og levering skal fortsat skelnes.
+
+## 20. oktober — ÅBEN: 585-originalstage og faktisk lagerbackend
+
+Første 585-installation stoppede i trin 45 før SQL, ny B/S, Worker, Edges og Pages. Kodegennemgangen påviste en tvungen Supabase-storage og manglende videreføring af storage-klienten trods aktuelt R2-objektlager. Den lokale rettelse genbruger normal backendvalg/klient og de tre eksisterende R2-miljøfelter. Den skjulte indre exception og første kørsels nåede restore er fortsat ukendt; wiretest eller faste faselogs er ikke live årsagsbevis. Præcis ny kildekontrol, sikker installation og offentlig 585-effekt kræves før lukning.
+
+584-vejret fra almindelig 39392596895/1 er faktisk leveret; alle fem komponenter samtidigt dækker 89,919 % af zoneprognosens 118×210 timer. Fuld PART-/leverandør-/strømhistorik og alle fem mål til 18. november er stadig åbne. Cron er faktisk pauset med uændret tidsplan; ingen ny version, C/I/T eller SQL. Se CURRENT_TRUTH, DEC-0249 og håndbog 89.261. De tidligere fejl og daterede afventninger bevares nedenfor.
+
 ## 20. oktober — ÅBEN levering: månedsskifte og begrænset statistikforberedelse
 
 Konkret kontrolfund før installation: 585-workflowets eksplicitte OFF-trin gav bindingskrav til en funktion, som alene kontrollerer aktiv Worker-version og ikke bruger de to bindingsargumenter. Det er ikke bevis for en faktisk aktiv statistikfunktion i produktionen. Den lokale rettelse bruger den allerede eksisterende normale bindingskontrol og afviser live ON, manglende OFF, forkert D1 og deploymentskift. Den normale caller er faktisk reproduceret rød før rettelsen; dens fem nye tilfælde og tretten eksisterende bindingsprøver består efter. Den særskilte workflowprøve stoppede før sit mål på en uændret historisk JSON-kontrols Windows-CRLF-grænse; den må ikke kaldes bestået. Nyt præcist Linux-kildebevis og faktisk installationskontrol skal foreligge før lukning; den almindelige vejrhentning fortsætter uændret.
@@ -6911,3 +6925,6 @@ DEC-0185. Ingen oneoff eller nye providerkald i reparationsdeployet.
 # Aktuelt leveringsstop – 2026-09-29
 
 - **FEGGESUND-FORHÅNDSKONTROL – 4.0.510-KANDIDAT:** Normalrun `36567354134` stoppede efter leverandørerne, fordi forhåndskontrollen kun læste aktiv DMI-cache, mens scorebygningen også brugte gyldige beskyttede ældre bølger. Ingen færdig pakke eller deploy; krypteret fremdrift bevaret. Koden bruger nu samme beskyttede udvælger i begge veje, men exact-head CI og produktionsbevis mangler. En lokal grøn test lukker ikke issue.
+## 21. oktober – SOURCE-selvbinding: lokal rettelse, udstedelse åben
+
+Den konkrete C/I→egne metadata-cirkel er lokalt fjernet gennem DEC-0294s ene strenge genererede datafil, med fortsat hashbinding af SOURCE-kode og fysiske HEAD-kontroller. Fire mål består; dette lukker ikke det samlede revisionsissue. Normal egen LF-afledning, faktiske udstedte checks, native B/S/efterfølgere, kapacitet og levering mangler. Ingen ny aktivering eller ændring af almindelig vejrdrift, kildeprioritet, scorer, historik eller gamle originaler.

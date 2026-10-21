@@ -1,7 +1,8 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
 import test from 'node:test';
-import {ORIGIN, WORKFLOW, JOB, STEP, COMMANDS, CURRENT_COMMANDS, NATIVE_SCRIPT, NEW_NATIVE_BLOCK,
+import './test-source-native-node24-workflow.mjs';
+import {ORIGIN, WORKFLOW, JOB, STEP, COMMANDS, CURRENT_COMMANDS as SOURCE_CURRENT_COMMANDS, ACCOUNT_STATISTICS_ASSISTANT_COMMANDS as CURRENT_COMMANDS, NATIVE_SCRIPT as SOURCE_NATIVE_SCRIPT, ACCOUNT_STATISTICS_ASSISTANT_NATIVE_SCRIPT as NATIVE_SCRIPT, NEW_NATIVE_BLOCK,
   NON_NATIVE_TEST_INPUTS, NON_NATIVE_PROSE, nativeBlock, parseTree, verifyWorkflow,
   verifyInputTrees, verifyOriginMetadata, verifyOrigin, verifyEnvironment,
   verifyLaterRuns, decideReuse, verifyCurrentPullRequest, FOLLOWUP_INPUTS} from './native-postgres-evidence.mjs';
@@ -253,4 +254,12 @@ test('585 current native command includes its new phase while historical command
   assert.equal(CURRENT_COMMANDS[1],COMMANDS[1]+' --account-statistics-assistant');
   assert.notDeepEqual(CURRENT_COMMANDS,COMMANDS);
   assert.equal(NATIVE_SCRIPT,'set -euo pipefail\n'+CURRENT_COMMANDS.join('\n')+'\n');
+});
+
+// New source command is a distinct current phase, not retagged585 evidence.
+test('SOURCE current native command appends one mandatory unissued phase',()=>{
+  assert.equal(SOURCE_CURRENT_COMMANDS.length,2);
+  assert.equal(SOURCE_CURRENT_COMMANDS[0],CURRENT_COMMANDS[0]);
+  assert.equal(SOURCE_CURRENT_COMMANDS[1],CURRENT_COMMANDS[1]+' --source-producer');
+  assert.equal(SOURCE_NATIVE_SCRIPT,'set -euo pipefail\n'+SOURCE_CURRENT_COMMANDS.join('\n')+'\n');
 });

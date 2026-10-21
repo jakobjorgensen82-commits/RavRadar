@@ -1,3 +1,13 @@
+## 20. oktober — aktuel drift og lokal reserveforberedelse
+
+21. oktober: Den efterfølgende præcise kildekontrol nåede den normale reserveaudit, men fandt endnu et forældet krav: fem rankingrækker pr. dag mod normalproducentens Top20. Rettelsen sammenligner hele hver dags resultat med den normale kanoniske projektion, ikke en ny særskilt rækkegrænse. Målprøven afviser afkortning og ændret indhold; samlet ny CI og levering er stadig åbne. Det er ikke en fejlet almindelig vejrhentning eller en ændring af Top20, score, kilder eller model.
+
+21. oktober: Den normale reserveaudit havde desuden en reproduceret statisk/opdelt-manifestkonflikt efter alle 118 genererede timer. Efterfølgeren bevarer hele manifestkontrollen og validerer særskilt producentens leveringsindeks gennem normal kontrakt. Ny samlet kildekontrol og levering er åbne; gammel lokal generation eller grønne deltrin må ikke kaldes et samlet PASS.
+
+Læs ROOTs aktuelle P0-linje i CURRENT_TRUTH og det private checkpoint før de daterede statusfronter nedenfor. 585 og senere almindeligt nyt vejr er faktisk leveret; DMI-tidsfortolkningens præcise kildekontrol er bestået og rettelsen er med i den næste aktive almindelige kørsel. Det beviser ikke fuld dækning eller målt tidsgevinst. Cron fortsætter uændret; ingen produktionsændring under aktiv writer.
+
+En særskilt lokal rettelse af den normale Candidate-reserveforberedelse håndterer pakket input gennem den eksisterende hydrator og invaliderer alene den nye kopis forkerte afledte visningscache. Originaler, scoreværdier, modelbindinger, SQL og kildeprioriteten DMI → Copernicus → Open-Meteo bevares med gældende komponent-/aldersregler. Test og levering er åbne; SOURCE-revisionen forbliver inaktiv. Alle fem hovedmål er åbne til 18. november 2026. Ældre frister og modstridende status nedenfor er historik på disse konkrete punkter.
+
 ## 20. oktober — 4.0.585 er lokal kandidat, ikke offentlig levering
 
 Læs den nye 585-front i CODEX_START_HERE, CURRENT_TRUTH og håndbog 89.259. PR675 har faktisk bestået 27 kilde-CI-trin uden skip og er merget som main `954ca00a`; den efterfølgende almindelige vejrhentning er endnu ikke dokumenteret færdig. Sidste fuldt verificerede almindelige offentlige levering er 4.0.584 fra 19. oktober omkring kl. 23.02 dansk tid. Cron er fortsat slået fra; fuld DMI, komplet cache/historik og selvstændig drift er åbne.

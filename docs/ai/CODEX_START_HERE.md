@@ -1,3 +1,31 @@
+## 21. oktober – isoleret SOURCE: ret selvbinding før udstedelse
+
+Læs DEC-0294 før den nye revisionsbinding afledes. Begge faktiske modelinventarer nåede deres egne kommende kontrolsummer gennem normale ejerkald. Den lokale rettelse adskiller ét strengt genereret JSON-output fra den fortsat hashbundne implementering og bevarer de eksisterende normale releaseværktøjsgrænser. Fire mål består; egen udstedelse, ægte LF-/native-/B/S-/kapacitetsbevis og sikker levering mangler. Ingen gammel original eller aktiv vejrhentning ændres. Det private checkpoint ejer aktuel kørselsstatus; alle fem mål er åbne til 18. november 2026.
+
+## 20. oktober — fungerende almindelig vejrrute bevares; reservekopi rettes lokalt
+
+21. oktober: Præcis CI fandt efter manifestrettelsen reserveauditens gamle fem-rækkers rankingkrav. Den normale producent leverer Top20. Sammenligningen kræver nu hele kanoniske dage fra samme normale producent med bevarede dato-/modelkrav; den indfører ikke en anden rankingpolitik. Hurtig normal målprøve består inklusive indholdsmutationer og afkortningsafslag. Hele ny exact-head-CI og sikker levering mangler; grønne tidligere deltrin eller målprøven er ikke et samlet PASS.
+
+21. oktober: Den fulde lokale reservegeneration nåede alle 118 timer, men fandt auditorens statisk/opdelt-manifestkonflikt. Den normale audit efterfølger nu producentens to faser med valideret kanonisk leveringsindeks; fuldt nyt kildebevis og levering er fortsat åbne. Det ændrer ikke den aktive almindelige vejrrute.
+
+Læs først ROOTs aktuelle P0-linje i CURRENT_TRUTH og seneste private checkpoint. 585 er faktisk leveret; efterfølgende almindeligt nyt vejr er offentligt kontrolleret, og den næste almindelige kørsel bruger den kildekvalificerede tidsfortolkningsrettelse. Fuld dækning, komplet historik og målt tidsgevinst følger ikke alene af disse leverancer. Bevar aktiv writer, cron og de eksisterende kilde-/datakontroller.
+
+Den normale manuelle Candidate-reservegren har en selvstændig fejl ved pakket privat input og gammel afledt public-hour-markør. En lokal prepare-rettelse og normal stage-regression udarbejdes uden at ændre model, SQL, scoreformel, originaler eller produktionen. Se KNOWN-ISSUES og CANDIDATE-PUBLIC-PACKED-INPUT. Det er ikke en aktivering af den isolerede SOURCE-revision. Alle fem mål er åbne til 18. november; ældre modstridende status nedenfor er dateret historik.
+
+## 20. oktober — fuldt vejrfokus; lokal genbrug af ren tidsfortolkning
+
+De seks aktuelle parser-/checkpointmål er nu koblet på den eksisterende normale Python-kildegruppe med krav om faktisk seks prøver uden skip. Den første kandidats sourceplan manglede dem; dens kontrol er ikke et bevis for de seks mål. Ny præcis kildekontrol kræves efter denne tilkobling. Den kørende almindelige vejrhentning ændres ikke.
+
+Almindelig 39392596895/1 og den efterfølgende 585-levering 39427178008/1 er faktisk afsluttet og offentligt kontrolleret. Den sidste genbrugte morgenens vejr. Cron er faktisk genaktiveret uændret; næste almindelige kørsel må ikke erstattes af et unødvendigt manuelt forsøg. Andre leverancer og den isolerede SOURCE-forberedelse holdes tilbage efter ejerens nyeste prioritet.
+
+Den nye P0-kandidat genbruger kun ren tidsfortolkning for højst 2.048 korte, eksakte tekstværdier. Parserkroppen, alle datakontroller og tidsbudgetter bevares. Seks lokale mål består efter faktisk rød reproduktion; den fulde Windows-filprøve møder den eksisterende Linux-læsegrænse og er ikke et samlet PASS. Præcis ny Linux-kildekontrol, sikker levering og faktisk vejreffekt mangler. Ingen ny version, C/I/T, SQL, kildeprioritet, geometri eller scoreformel. Se DEC-0249 og privat checkpoint; alle fem mål er fortsat åbne til 18. november 2026. Ældre modstridende status nedenfor er historik.
+
+## 20. oktober — leveret 584-vejr; 585 stoppet før installation
+
+Læs CURRENT_TRUTHs P0-linje først. Almindelig 39392596895/1 er faktisk leveret med offentlig kontrol; den ældre schema4-audit målte alle fem komponenter samtidigt i 89,919 % af hele 118×210-hovedpunktsaksen med krav om endelige tal i alle tuplefelter, ikke lokal søgemåde-/PART-dækning. Det er ikke fuld leverandør- eller strømhistorik. Første 585-installation stoppede i trin 45 før SQL, ny B/S, Worker, Edges og Pages. Cron er faktisk pauset med uændret `19 */4` UTC; alle fem mål er åbne til 18. november 2026.
+
+Den lokale stage-rettelse bruger normal backendudvælgelse og sender den faktiske storage-klient videre til den autentiske 584-originalgendannelse. Central metadataadgang forbliver Supabase; de beskyttede objekter skal læses fra den valgte backend, aktuelt R2. Tre eksisterende R2-miljøfelter videresendes, og kun faste fasenavne logges. Første logs skjulte den indre fejl og beviser ikke, at restore blev nået. Lokal rettelse/prøve er ikke live årsags- eller installationsbevis. Ingen ny version, C/I/T eller SQL; se DEC-0249 og håndbog 89.261. Ældre afventninger nedenfor er dateret historik på disse punkter.
+
 ## 20. oktober — lokal sammenført 585, ingen samtidig produktionsændring
 
 Læs først CURRENT_TRUTHs ene aktuelle P0-linje og det private checkpoint. Den mergede hukommelsesrettelse og genaktiveret cron er faktiske handlinger; den nye almindelige kørsels udfald må ikke udledes af dem. Den lokale 585-efterfølger bevarer begge kilde-/dokumentationshistorikker og de fem gennemgåede statistikforberedelsesrettelser. Faktisk servervalgt, varigt gemt arbejde kan fortsætte over månedsskifte uden at åbne for vilkårlige gamle klientperioder. Samtykke, slettebarriere, model, originaler og eksisterende budgetter består.

@@ -1,3 +1,13 @@
+## 89.261 Bevar originalerne i det lager, de faktisk ligger i
+
+Kort fortalt: En programopdatering skal hente de bevarede originaler fra det rigtige private lager. Den må ikke flytte eller ændre dem for at komme videre.
+
+Ved en opdatering følger læsningen det valgte private lager og den samme adgangsklient hele vejen. Programmet må ikke skifte til et andet objektlager alene for at komme videre. Oplysninger om pakken og selve pakkens indhold kan være gemt forskellige steder; begge skal læses gennem deres korrekte, kontrollerede adgang.
+
+De eksisterende originaler kontrolleres før brug og bevares uændret. En rettelse af lageradgangen ændrer ikke de gemte tal, den offentliggjorte historik, beregningsmodellen eller kildekravene. En ukendt eller ændret pakke må ikke få adgang, blot fordi forbindelsen til lageret virker.
+
+Fungerende lagring er ikke det samme som komplette eller aktuelle vejrdata. Datakvalitet, dækning og historikkens længde vurderes særskilt. Manglende data skal fortsat vises ærligt og må ikke udfyldes med gæt. Private data og adgangsoplysninger må ikke følge den offentlige visning.
+
 ## 89.260 Gem arbejdet sikkert, også når måneden skifter
 
 Kort fortalt: En afbrudt statistikforberedelse skal kunne fortsætte fra det faktisk gemte arbejde. Det må ikke give adgang til gamle ture eller ændre brugerens valg.
@@ -30,7 +40,13 @@ Et leverandørtrin kan slutte tidligere, når det har behandlet sin aktuelle kø
 
 De tre leverandørers opgaver er forskellige. DMI er førstevalg; Copernicus og Open-Meteo udfylder kvalificerede rester. Open-Meteos særlige strømtrin udfylder ikke samtidig alle mangler i vind, bølger, vandstand og temperatur. Vandstandens kildekrav kan ikke erstattes af en anden leverandør alene for at få færre mangler.
 
+En dækningsopgørelse skal omfatte alle prognosens timer for alle aktive områder, ikke kun forholdene nu. Vind, bølger, strøm, vandstand og vandtemperatur samt timer med alle fem samtidig skal opgøres særskilt og fordeles på danske kalenderdage. En gyldig nulværdi er ikke manglende; nul bølgehøjde kan være gyldig uden en bølgeretning. Tomme felter må ikke blive til nul.
+
+Områdets viste vejr følger den lokale kystdel, som er valgt for den enkelte søgemåde. Derfor skal de to søgemåder måles hver for sig. Ét hovedpunkts vejr beviser ikke forholdene i alle lokale dele, og én valgt kystdel beviser ikke dækning af hele området. Vejrdækning, ukendte oplysninger og længden af strøm- og scorehistorikken skal holdes adskilt.
+
 Den interne behandling skal undgå at bygge samme grundlag flere gange og undgå at kontrollere alle andre timer, når kun én fils egen time er relevant. Det må ikke ændre de godkendte data, kilder, kystpunkter, scoreformel eller fulde slutkontroller. En lokal forbedring er først dokumenteret i drift, når en faktisk vejrhentning har gemt og leveret resultatet sikkert.
+
+En lille, størrelsesbegrænset hukommelse kan genbruge fortolkningen af præcis samme tidsangivelse. Det ændrer ikke tidspunktet eller de tilhørende vejrdata. Systemet skal stadig kontrollere hver kilde og række samt gemme og genlæse resultatet sikkert. Hurtigere lokal behandling er hverken bevis for komplette prognoser eller en målt forbedring på den offentlige side.
 
 ## 89.257 Gem det færdige arbejde, før det leveres
 
@@ -530,7 +546,7 @@ En særskilt, dokumenteret Storage-formatkant rettes samtidig: immutable upload 
 
 # RavRadar Håndbog
 
-**Håndbogsversion:** 4.0.585
+**Håndbogsversion:** 4.0.586
 
 ## Aktuel lokal kildebinding — 20. oktober 2026, 4.0.585 ikke installeret
 
@@ -9945,3 +9961,12 @@ selve JSON-indholdet. 4.0.466 holder de to hashes adskilt. Den offentlige
 rækkefølgekontrol accepterer kun den forseglede forgænger eller målpakke;
 en ældre eller ukendt pakke afvises fortsat. Ingen vejr- eller scoretal
 ændres af denne rettelse.
+## 89.262 Beregningskode og genererede kontroloplysninger
+
+Kort fortalt: En kontrolsum skal beskrive programmet, ikke være en del af sit eget beregningsinput.
+
+Beregningskoden og dens normale data- og ejerkontroller skal fortsat kontrolleres samlet. De kontroloplysninger, som afledes af koden, holdes som et særskilt, strengt afgrænset dataoutput. Det giver ikke adgang til at udelade vilkårlig kode, ændre vejrtal eller springe en sikkerhedskontrol over.
+
+Programversion, faktiske kildefiler og alle afledte kontroloplysninger skal passe sammen. En lokal markering eller fil, som ikke findes i den kontrollerede programkilde, er ikke bevis. Gamle originaler og tidligere offentliggjorte tal bevares.
+
+Den isolerede revisions lokale kontrol af denne adskillelse er ikke en offentlig levering. Fuld afledning, normale database- og lagringsforløb, kapacitet og faktisk drift skal fortsat verificeres, før revisionen kan aktiveres. Den almindelige vejrhentning og prioriteringen af vejrkilder ændres ikke af dette forberedelsestrin.

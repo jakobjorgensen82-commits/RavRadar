@@ -1,5 +1,21 @@
 # DEC-0249 – fortsæt fra rigtig vejrpakke og gem kortere Copernicus-kald
 
+## Tillæg 2026-10-20 — genbrug kun den rene tidsfortolkning
+
+Ejerens nyeste prioritet er fuldt fokus på den almindelige vejrhentning. Yderligere måleforbedringer, brugerdata-/assistentlevering og den isolerede SOURCE-forberedelse sættes til side. Den fungerende normale cron bevares; der startes ikke en ekstra vejrhentning alene til afprøvning.
+
+Den gemte almindelige log viser væsentlig tid mellem download/afkodning og afsluttet checkpoint. En afgrænset Windows-profil af den rigtige normale forsegling, codec, disk og genlæsning med 64 syntetiske dele og 118 timer fandt gentagen tidsfortolkning som en konkret CPU-omkostning. Det er ikke et nationalt eller produktionsmålt tidsresultat. Gemte gamle originale rækker bevares og genbruges; sene LF-timer, der ikke blev forsøgt inden tidsbudgettet, er ikke dokumenterede decoderfejl.
+
+Kun `canonical_time` får en proceslokal LRU på højst 2.048 poster, og kun eksakte built-in-strenge på højst 64 tegn må bruge den. Den hidtidige parserkrop bevares uændret. Lange input, tekstunderklasser og andre objekter fortolkes på ny; deres tekst kan være ændrende. Ingen mutable kilder, rækker, værdier, attestationer eller valideringsresultater gemmes som genbrugsautoritet. Naive/ugyldige tider, tidszoner og hidtidige exceptions bevarer deres adfærd. Alle normale proveniens-, ledger-, checkpoint- og slutkontroller udføres fortsat.
+
+Den normale målprøve er faktisk rød før produktrettelsen med 200 parserkald i stedet for to og grøn efter. Fire parsergrænseprøver og to uændrede checkpointprøver består lokalt. Den fulde normale filprøve er ikke et Windows-PASS: den møder den eksisterende `DMI_GRIB_READ_LEASE_UNSUPPORTED`, som ikke må omgås eller ommærkes. Den første kandidats sourceplan omfattede ikke de seks mål; den må ikke udlægges som deres GitHub-bevis. Den eksisterende registrerede Python-kildegruppe kalder nu præcis de to aktuelle klasser og kræver seks faktisk gennemførte prøver uden skip. Den normale kildeplan kontrollerer tilkoblingen, mens alle gamle mål bevares. Den præcise nye Linux-kildekontrol og faktisk almindelig drift skal stadig bestå før effekt påstås. Ingen ændring af scoreformel, kildeprioritet, administratorpunkter, geometri, budgetter, version, modelbinding eller udstedt SQL. Håndbog 89.258 opdateres, og kun den eksisterende installationsfils håndbogspayload synkroniseres.
+
+## Tillæg 2026-10-20 — behold den faktiske storage gennem originalstage
+
+Den normale klientfabrik skal vælge den konfigurerede private backend. Stage af autentiske forgængeroriginaler må ikke tvinge Supabase-objektlager eller miste den returnerede storage-klient: samme faktiske klient sendes til den genuine 584-restore. Central dokumentadgang er fortsat Supabase, mens de aktuelle beskyttede B-objekter ligger i R2. Workflowet videresender de tre allerede eksisterende R2-miljøfelter; der oprettes ingen nye secrets, backends, schemaer eller migrationer. Eksakte original-/familie-/target-/readback- og privacykontroller bevares.
+
+Første 585-installation stoppede i trin 45 før SQL, ny B/S, Worker, Edges og Pages. Den gamle generiske fejl skjulte den rå indre årsag og beviser ikke, at restore blev nået. Kun faste nåede fasenavne tilføjes uden private værdier; lokal rettelse og målprøve er ikke live restore-/installationsbevis. Sikker levering kræver nyt præcist kildebevis og kontrolleret faktisk forløb. Den almindelige 39392596895/1 er særskilt leveret med 89,919 % samtidig fem-komponentdækning over hele zoneaksen; det lukker ikke fuld leverandør-/PART-/strømhistorik. Aktuel cronpause og de fem åbne mål til 18. november står i CURRENT_TRUTH. Håndbog 89.261 forklarer afgrænsningen; kun installationsfilens eksisterende håndbogspayload synkroniseres, ikke SQL udenfor den.
+
 ## 20. oktober — fælles integrationsfront: P0 678 og sourcekvalificeret 585
 
 Denne front er privat dokumentforberedelse til en senere samlet kilde, ikke en merge, installation eller offentlig levering. PR678s afgrænsede 584-memoryrettelse bevarer kun færdigbrugte arbejdsreferencer kortere; præcis source-/mergestatus føres alene i den aktuelle P0-statuslinje øverst i CURRENT_TRUTH.md. Lokal RED/GREEN eller source-PASS er ikke bevis for løst produktions-OOM.

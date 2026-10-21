@@ -7,6 +7,9 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { ACCOUNT_STATISTICS_ASSISTANT_BINDING,accountStatisticsAssistantMigration,readAccountStatisticsAssistantCanonicalSource,requireAccountStatisticsAssistantOutput }
   from './lib/account-statistics-assistant-successor-source.mjs';
+import {SOURCE_PRODUCER_BINDING,SOURCE_PRODUCER_ALIASES,sourceProducerMigration,
+  readSourceProducerCanonicalSource,requireSourceProducerOutput}
+  from './lib/source-producer-successor-source.mjs';
 import {
   assertRavScoreModelBinding,
   ravScoreModelBinding,
@@ -31,7 +34,8 @@ const SQL_BINDING_PATHS = Object.freeze([
   'supabase/INSTALL-RAVRADAR-4.0.56-SECURITY.sql',
 ]);
 const CHECKPOINT_METADATA_CAS_MIGRATION_PATH =
-  ACCOUNT_STATISTICS_ASSISTANT_BINDING === null ? null : 'supabase/migrations/' + accountStatisticsAssistantMigration().filename;
+  SOURCE_PRODUCER_BINDING !== null ? 'supabase/migrations/' + sourceProducerMigration().filename
+    : ACCOUNT_STATISTICS_ASSISTANT_BINDING === null ? null : 'supabase/migrations/' + accountStatisticsAssistantMigration().filename;
 const CHECKPOINT_METADATA_CAS_MARKER = 'RAVSCORE_CHECKPOINT_METADATA_CAS_GENERATED';
 const CHECKPOINT_METADATA_CAS_INNER_MARKERS = Object.freeze([
   'RAVSCORE_CHECKPOINT_INTEGRATED_STATE_BINDING_GENERATED',
@@ -109,6 +113,22 @@ function assertJsonBindingBlock(block, binding, assertion, label) {
 
 // Pure source validation seam. The normal synchronizer still obtains its
 // canonical source only from the pinned, immutable successor reader.
+export function sourceProducerCheckpointInspectionView(source){
+  const pins=requireSourceProducerOutput(); // Unissued before input inspection.
+  assert.equal(arguments.length,1);assert.equal(typeof source,'string');
+  assert.equal(crypto.createHash('sha256').update(source).digest('hex'),pins.canonicalSha256,
+    'SOURCE checkpoint inspection requires the entire issued canonical source');
+  let view=source;
+  // These two exact frozen585 definitions retain their generated comments.
+  // Remove them only from this inspection view AFTER whole-source pinning;
+  // never omit them from the returned or synchronized SQL.
+  for(const row of SOURCE_PRODUCER_ALIASES.slice(0,2)){
+    const original=exactFunctionDefinition(view,'public.'+row.name,'Exact original585 SOURCE alias');
+    view=view.slice(0,original.start)+view.slice(original.end);
+  }
+  return view;
+}
+
 export function checkpointMetadataCasBlock(source, binding, candidateBinding, continuationHash) {
   const label = `${CHECKPOINT_METADATA_CAS_MIGRATION_PATH} checkpoint metadata CAS`;
   const outer = exactGeneratedBlock(source, CHECKPOINT_METADATA_CAS_MARKER, label);
@@ -117,6 +137,8 @@ export function checkpointMetadataCasBlock(source, binding, candidateBinding, co
   // them from this current-binding-only inspection view. The returned SQL still
   // contains every original byte; no alias is rebound, hidden or rewritten.
   let currentView=source;
+  if(SOURCE_PRODUCER_BINDING!==null||SOURCE_PRODUCER_ALIASES.slice(0,2).some(row=>source.includes('function public.'+row.name+'(')))
+    currentView=sourceProducerCheckpointInspectionView(source);
   const originalAliases=[
     ['public.ravradar_ravscore_checkpoint_cmw0200_state_valid','7841b008be46efc651c3c416ded60145fa2265954a39020a50974b353ac3feb0'],
     ['public.ravradar_ravscore_checkpoint_cmw0200_payload_valid','225de0e8252fa5ab814432a0ce0424ecc663d2552062f2b341b7cbab8054dbaa'],
@@ -303,7 +325,8 @@ function synchronizeAccountSchema(source, accountSource, relative) {
 }
 
 export async function synchronizeRavScoreModelBinding({ write = false, root = ROOT } = {}) {
-  requireAccountStatisticsAssistantOutput();
+  if(SOURCE_PRODUCER_BINDING!==null)requireSourceProducerOutput();
+  else requireAccountStatisticsAssistantOutput();
   const binding = ravScoreModelBinding();
   assertRavScoreModelBinding(binding);
   const candidateBinding = candidateGRollbackModelBinding();
@@ -312,7 +335,8 @@ export async function synchronizeRavScoreModelBinding({ write = false, root = RO
 
   // Sparse immutable successor is reconstructed only as a pinned READ view.
   const { canonicalSource: checkpointMigration, statisticsSchema2Source: accountSource } =
-    await readAccountStatisticsAssistantCanonicalSource({ migrationsDirectory: path.join(root, 'supabase/migrations') });
+    await (SOURCE_PRODUCER_BINDING!==null?readSourceProducerCanonicalSource:readAccountStatisticsAssistantCanonicalSource)(
+      { migrationsDirectory: path.join(root, 'supabase/migrations') });
   const checkpointBlock = checkpointMetadataCasBlock(
     checkpointMigration,
     binding,

@@ -1,3 +1,43 @@
+## 21. oktober – inaktiv SOURCE: afledte kontrolmetadata
+
+- [x] Faktisk C/I-inventar har påvist selvbindingen gennem normale lager-/ejerkald; kun wrapperfjernelse eller LF-omlægning ville ikke løse den.
+- [x] Én eksakt genereret JSON-datafil, ny normaliseringsidentitet og bevaret modelkode-/owneraftryk; almindelig I-manifestform og public pakkelæser bevares.
+- [x] Normal committed-source-kontrol kræver hele den fysiske producentfortegnelse i HEAD; fire mål består uden skip, og den uafhængige gennemgang er udført.
+- [ ] Egen versions-/C/I/T-/SQL-afledning til faktisk fixedpoint, ægte native 585→SOURCE B/S og nationale almindelige efterfølgere, kapacitet, installation og offentlig effekt. Ingen af disse kvalificeres af de lokale mål. Se DEC-0294; SOURCE og alle fem hovedmål er fortsat åbne.
+
+## 20. oktober — lokal normal Candidate-forberedelse, ikke aktivering
+
+- [x] Den præcise GitHub-kontrol har efter manifestrettelsen påvist det gamle fem-rækkerskrav i reserveauditen mod normal Top20. Sammenligning af hele kanoniske dage og en normal tidlig målprøve er implementeret; afkortning, score-/zone-/dato-/modelmutationer afvises. Ingen ranking- eller scorepolitik ændres.
+- [ ] Den fulde normale stage og hele den nye præcise CI skal bestå; beståede deltrin fra det fejlede job er ikke ny samlet kvalifikation. Efterfølgende sikker levering og faktisk virkning er fortsat åbne.
+- [x] Den fulde lokale generation nåede 118 Candidate-timefiler, 210×118 zonebindinger og inputafslag, men fandt derefter reserveauditens statisk/opdelt-manifestkonflikt. Fuld prøve er derfor ikke bestået.
+- [ ] Efterfølgende normal auditrettelse med valideret kanonisk leveringsindeks og fire nye mutationsafslag skal bestå ny præcis kildekontrol; ingen dubleret lokal fuldgeneration eller offentlig effekt påstås.
+- [x] Kaldergennemgang har påvist blandet privat timepakning og forkert models afledte timepakkemarkør i den manuelle reservegren; den almindelige integrerede vejrhentning rammes ikke af denne særskilte gren.
+- [ ] Afgrænset normal prepare-rettelse og regression med normalt pakket input, uændrede originaler, 118 Candidate-zonetimer og fortsat afslag på beskadiget/afkortet input.
+- [ ] Præcis kildekontrol og sikker levering. Ingen ny version, C/I, SQL, ændring af kildeprioritet eller aktivering af den isolerede revision. Alle fem hovedmål forbliver åbne.
+
+## 20. oktober — almindelig vejrhentning har fuld prioritet
+
+- [x] Almindelig 39392596895/1 og efterfølgende 585-rettelsesdeploy 39427178008/1 faktisk afsluttet med offentlig kontrol; kun den første hentede nyt vejr. Cron er faktisk genaktiveret med uændret tidsplan.
+- [x] Lokal DMI-kandidat genbruger kun ren tidsfortolkning af højst 2.048 eksakte strenge på højst 64 tegn. Parserkrop, datakontroller, budgetter, kilder, score og modelbinding bevares.
+- [x] Normal RED med 200 parserkald mod forventet to; efter rettelse består fire parsergrænser og to uændrede checkpointmål. Den fulde filprøve er ikke lokalt grøn på Windows' eksisterende native-læsegrænse og må ikke ommærkes.
+- [x] Tilkoblet de seks aktuelle mål én gang til den eksisterende Python-kildegruppe med faktisk kørsels-/no-skip-krav og præcis kildeplanskontrol. Den første kandidats sourceplan manglede dem og beviser ikke deres GitHub-eksekvering.
+- [ ] Præcis ny Linux-kildekontrol, sikker levering og faktisk tids-/dækningseffekt gennem almindelig vejrhentning. Lokal profilering beviser ikke national kapacitet eller fuld DMI.
+- [ ] Andre leverancer og isoleret SOURCE-forberedelse holdes tilbage under ejerens aktuelle vejrfokus. Alle fem mål er fortsat åbne til 18. november 2026.
+
+## 20. oktober — 584 leveret; lokal rettelse af 585-originalernes lagervej
+
+- [x] Almindelig 39392596895/1 leveret og særskilt offentligt kontrolleret; den ældre schema4-audits fem-komponent-intersektion er 89,919 % af hele 118×210-hovedpunktsaksen med krav om endelige tal i alle tuplefelter, ikke lokal søgemåde-/PART-dækning eller fuld historik.
+- [x] Første 585-installation stoppede i trin 45 før SQL, ny B/S, Worker, Edges og Pages. Cron er faktisk pauset/gemt med uændret tidsplan; tidligere ON-noter er historik.
+- [x] Lokal kildekandidat bevarer normal backendudvælgelse, videresender storage til genuine 584-restore og fører de tre eksisterende R2-miljøfelter frem. Faste faselogs indeholder ikke private værdier.
+- [x] ROOTs normale Node22-callerprøve: 1 PASS/0 FAIL/0 SKIP på 9,52 sekunder. Gammel kalder reproducerer manglende storage; ny kalder bruger faktisk R2-adapter og når én dokumentlæsning mod syntetisk tom pointer, ikke download eller B/S-admission. Hel workflow-inverse og ti mutationsafslag består. Den særskilte workflowcase er ikke kørt lokalt, fordi en eksisterende fysisk CRLF/raw-JSON-guard stopper før casen; den lempes ikke.
+- [ ] Ny præcis kildekontrol og kontrolleret installations-/genlæsningsbevis. Den gamle generiske fejl skjulte indre exception og beviser ikke, at restore blev nået; lokal wiretest er ikke live årsagsbevis.
+
+- [x] Lokal additiv dækningsaudit bevarer hele schema4-hovedpunktsmålingen og tæller særskilt lokalt zonesøgemådevejr over alle 118 timer og aktive hydrerede zone-ID'er. Normale nul-/calm-regler, missing/unknown, alle fem/intersektion og Europe/Copenhagen-dage er med; model og vejr ændres ikke.
+- [x] Det endelige normale mål består 10 tilfælde uden skip, inklusive faktisk 210-zone pack→JSON→hydrate og auditkalder. Den tidligere 26-case source-seam genbruges kun for uændret import og gamle tilfælde; den er ikke kørt eller ommærket igen efter slutdeltaet.
+- [ ] Præcis integreret kildekontrol og ny normal vejrhentnings autentiske slutmatrix/offentlige effekt mangler. Ingen nye produktionstal kan udledes af den lokale prøve. Se DEC-0206 og håndbogens måledefinition i 89.258; aktuel leverings-/cronstatus ændres ikke af denne note.
+
+Ingen ny version, C/I/T, SQL eller aktivering. Alle fem mål er åbne til 18. november 2026. Aktuel drift føres i CURRENT_TRUTH; se DEC-0249 og håndbog 89.261. Hele historikken nedenfor bevares.
+
 ## 20. oktober — lokal 585-sammenføring og varig månedsskiftefortsættelse
 
 - [x] Sammenfør 676-kilde og faktisk merget hukommelsesrettelse med bevarede dokumentationshistorikker og gamle bindings-/SQL-originaler.
