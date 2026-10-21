@@ -1,5 +1,8 @@
 ## 21. oktober – inaktiv SOURCE: afledte kontrolmetadata
 
+- [x] Næste præcise CI bestod den tidlige Linux-pakkelæser og stoppede ved det gamle cache-only distributionsorakel, før native PostgreSQL. Samme forventning er fundet og samlet rettet i to efterfølgende native kaldere, uden ændret produktvagt eller lock.
+- [x] Test-only hel-inverse bevarer alle 49 gamle pakker. Faktisk 259-pakkedistribution, installerede enginekrav, officielle cache/artifact-importer og syv manifestafslag består på lokal Node24 uden API-kald. Native værter beholder den faktiske nye pakke og normal actionkode; præcis ejet oprydning erstatter rekursiv testsletning.
+- [ ] Faktisk Linux SDK-loopback/offline/cohort, ny samlet CI og native PostgreSQL. Den smalle Python-helperprøve er afvist af Windows' Node-opstart under det uændrede Linux-miljøfilter; det er ikke native PASS eller en ændret produktionsfejl.
 - [x] Faktisk C/I-inventar har påvist selvbindingen gennem normale lager-/ejerkald; kun wrapperfjernelse eller LF-omlægning ville ikke løse den.
 - [x] Én eksakt genereret JSON-datafil, ny normaliseringsidentitet og bevaret modelkode-/owneraftryk; almindelig I-manifestform og public pakkelæser bevares.
 - [x] Normal committed-source-kontrol kræver hele den fysiske producentfortegnelse i HEAD; fire mål består uden skip, og den uafhængige gennemgang er udført.

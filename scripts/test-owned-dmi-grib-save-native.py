@@ -41,6 +41,34 @@ NODE24 = None
 BODY_SECONDS = 8.0  # Own fixture observer, not a new product deadline.
 CLEANUP_SECONDS = 3.0
 
+def reviewed_current_distribution():
+    """Keep current259 in every native host; project old49 ONLY for its oracle."""
+    import hashlib
+
+    action = ROOT / ENTRY.parent
+    current = {name: (action / name).read_bytes().replace(b'\r\n', b'\n')
+               for name in ('package.json', 'package-lock.json')}
+    result = subprocess.run([str(NODE24), str(ROOT / 'scripts/lib/source-artifact-distribution-review.mjs'),
+                             '--legacy-json'], cwd=ROOT, env=runtime_environment(),
+                            stdin=subprocess.DEVNULL, capture_output=True, timeout=10, check=False)
+    if result.returncode != 0 or result.stderr or len(result.stdout) > 65536:
+        raise AssertionError('SOURCE_DISTRIBUTION_REVIEW_UNPROVED')
+    report = json.loads(result.stdout)
+    if (report['kind'] != 'TEST_ONLY_SOURCE_ARTIFACT_LEGACY_GRAPH'
+            or report['productionAuthority'] is not False
+            or (report['packages'], report['predecessorPackages'], report['addedPackages']) != (259, 49, 210)):
+        raise AssertionError('SOURCE_DISTRIBUTION_REVIEW_INVALID')
+    for name, key in (('package.json', 'packageSha256'), ('package-lock.json', 'lockSha256')):
+        if hashlib.sha256(current[name]).hexdigest() != report[key]:
+            raise AssertionError('SOURCE_DISTRIBUTION_CURRENT_CHANGED')
+    if len(json.loads(current['package-lock.json'])['packages']) != 260:
+        raise AssertionError('SOURCE_DISTRIBUTION_NOT_CURRENT259')
+    prior = report['predecessorLock'].encode('utf-8')
+    if hashlib.sha256(prior).hexdigest() != '9bd935a0c94f605ab28b4cc1ea543173bb06e213ba779e6e9855e31a4dd6a9a5':
+        raise AssertionError('SOURCE_DISTRIBUTION_OLD49_CHANGED')
+    return {'current': current, 'predecessor_lock': prior}
+
+
 SYNTHETIC_CACHE = r'''
 import fs from 'node:fs';
 import path from 'node:path';
@@ -867,7 +895,12 @@ class OwnedRawSaveOfficialSdkNative(unittest.TestCase):
                 destination.write_bytes(source)
                 self.assertEqual(destination.read_bytes(), source)
             action = ROOT / ENTRY.parent
-            lock_bytes = (action / 'package-lock.json').read_bytes().replace(b'\r\n', b'\n')
+            distribution = reviewed_current_distribution()
+            # The real copied native action still receives current259. Only
+            # the historical whole-lock assertion uses its exact old49 image.
+            for name, contents in distribution['current'].items():
+                self.assertEqual((root / ENTRY.parent / name).read_bytes().replace(b'\r\n', b'\n'), contents)
+            lock_bytes = distribution['predecessor_lock']
             self.assertEqual(hashlib.sha256(lock_bytes).hexdigest(),
                 '9bd935a0c94f605ab28b4cc1ea543173bb06e213ba779e6e9855e31a4dd6a9a5')
             dependency = (action / 'node_modules').resolve(strict=True)
@@ -996,7 +1029,8 @@ class OwnedRawDistributionNative(unittest.TestCase):
         self.assertEqual(signal.getsignal(signal.SIGCHLD), signal.SIG_DFL)
         no_children()
         action_source = ROOT / ENTRY.parent
-        lock_bytes = (action_source / 'package-lock.json').read_bytes()
+        distribution = reviewed_current_distribution()
+        lock_bytes = distribution['predecessor_lock']
         self.assertEqual(hashlib.sha256(lock_bytes.replace(b'\r\n', b'\n')).hexdigest(),
                          '9bd935a0c94f605ab28b4cc1ea543173bb06e213ba779e6e9855e31a4dd6a9a5')
         official = action_source / 'node_modules/@actions/cache'
@@ -1104,6 +1138,8 @@ class OwnedRawDistributionNative(unittest.TestCase):
                 shutil.copyfile(ROOT / relative, destination)
                 self.assertEqual(destination.read_bytes(), (ROOT / relative).read_bytes())
             action = root / ENTRY.parent
+            for name, contents in distribution['current'].items():
+                self.assertEqual((action / name).read_bytes().replace(b'\r\n', b'\n'), contents)
             own_cache = action / '.npm-cache'
             own_cache.mkdir()
             self.assertFalse((action / 'node_modules').exists(), 'No preinstalled SDK can fake npm success')
@@ -1226,6 +1262,13 @@ class OwnedRawDistributionNative(unittest.TestCase):
                 self.assertEqual(metadata['exports']['.']['import'], './lib/cache.js')
                 self.assertEqual((installed / 'lib/cache.js').read_bytes(), (official / 'lib/cache.js').read_bytes())
                 self.assertFalse((installed / 'lib/cache.js').is_symlink())
+                # The actual normal offline npm process installs the new
+                # distribution, not the projected historical cache-only graph.
+                artifact = action / 'node_modules/@actions/artifact'
+                artifact_metadata = json.loads((artifact / 'package.json').read_text())
+                self.assertEqual((artifact_metadata['name'], artifact_metadata['version']), ('@actions/artifact', '6.3.1'))
+                self.assertEqual(artifact_metadata['exports']['.']['import'], './lib/artifact.js')
+                self.assertFalse(artifact.is_symlink())
             else:
                 # A generic setup failure is not the negative npm-cache proof.
                 debug_logs = list((own_cache / '_logs').glob('*-debug-0.log'))

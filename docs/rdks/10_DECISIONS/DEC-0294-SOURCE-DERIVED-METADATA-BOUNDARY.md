@@ -62,6 +62,25 @@ kildekontraktprøver, ikke native B/S, installation eller produktionseffekt.
 
 ## Status og bevarede grænser
 
+Den efterfølgende præcise kontrol bestod den tidlige Linux-pakkelæser, men
+stoppede før native PostgreSQL ved en gammel cache-only distributionsprøve.
+Den genuine gamle pakke har 49 afhængigheder; SOURCE tilføjer alene den
+officielle artifact-SDK's 210 ekstra pakker. Produktvagten kræver allerede
+begge hele aktuelle manifests, faktisk transitiv graf og præcis hel-inverse
+til de gamle manifests. Den vagt, låsefil og gamle forventninger ændres ikke.
+
+Test-only afledning bevarer hele den gamle 49-pakkeprøve, mens den faktiske
+259-pakkedistribution kontrolleres særskilt gennem installerede metadata,
+enginekrav, officielle importflader, de reelle manifestvagter og syv afslag.
+De fire efterfølgende officielle SDK-loopbackprøver og begge offline-npm- /
+cohortprøver beholder de faktiske nye manifests og den normale actionkode.
+De bruger ikke den historiske projektion som eksekveret pakke. Oprydning
+omfatter kun præcist ejede, identitetskontrollerede blade og mapper og bevarer
+første fejl. Det lokale Node24-mål består uden API-kald. Python-syntaks er
+adskilt fra Linux-native bevis; en Windows-prøves Node-opstart afvises under
+det uændrede Linux-miljøfilter og må ikke ommærkes som native PASS. Faktisk
+Linux-cohort, PostgreSQL og samlet ny CI er fortsat åbne.
+
 Fire normale lokale mål består: streng dataform, faktisk C/I-kæde og uændret
 offentlig pakkelæser, den faktiske committed-source-funktions syntetiske
 afslag samt nu den faktiske udstedte kanoniske SQL i bindingssynkroniseringen. Den uafhængige

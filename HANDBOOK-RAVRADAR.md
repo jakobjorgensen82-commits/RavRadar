@@ -9971,6 +9971,8 @@ Kort fortalt: En kontrolsum skal beskrive programmet, ikke være en del af sit e
 
 Beregningskoden og dens normale data- og ejerkontroller skal fortsat kontrolleres samlet. De kontroloplysninger, som afledes af koden, holdes som et særskilt, strengt afgrænset dataoutput. Det giver ikke adgang til at udelade vilkårlig kode, ændre vejrtal eller springe en sikkerhedskontrol over.
 
+En ændret programafhængighed skal afprøves som den pakke, der faktisk skal bruges. En historisk kontrol må bevares med de præcise gamle kilder, men må ikke erstatte kontrollen af den nye pakke eller få en gammel prøve til at ligne ny drift. En lokal importprøve er ikke bevis for gemning, upload eller fysisk processtop på produktionssystemet.
+
 Programversion, faktiske kildefiler og alle afledte kontroloplysninger skal passe sammen. En lokal markering eller fil, som ikke findes i den kontrollerede programkilde, er ikke bevis. Gamle originaler og tidligere offentliggjorte tal bevares.
 
 Den isolerede revisions lokale kontrol af denne adskillelse er ikke en offentlig levering. Fuld afledning, normale database- og lagringsforløb, kapacitet og faktisk drift skal fortsat verificeres, før revisionen kan aktiveres. Den almindelige vejrhentning og prioriteringen af vejrkilder ændres ikke af dette forberedelsestrin.
