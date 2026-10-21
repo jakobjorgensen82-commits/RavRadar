@@ -59,8 +59,14 @@ export async function prepareNativeCurrentForecast(target,initialPhase=null){
     otherWeatherComplete:false,scoreProduced:false,actionInvoked:false,productionProof:false};
 }
 if(process.argv[1]&&fileURLToPath(import.meta.url)===path.resolve(process.argv[1])){
+  try{
   requireSourceProducerOutput();assert([3,4].includes(process.argv.length));
   const phase=process.argv.length===3?null:({'--initial-h0':'h0','--initial-h1':'h1'}[process.argv[3]]);
   assert(phase!==undefined);
   console.log(JSON.stringify(await prepareNativeCurrentForecast(process.argv[2],phase)));
+  }catch(error){
+    try{const {emitNativePostgresFirstFailure}=await import('../lib/checkpoint-cas-native-postgres.mjs');
+      await emitNativePostgresFirstFailure(error,'SOURCE_LEGACY_PROVIDERS');}catch{}
+    throw error;
+  }
 }

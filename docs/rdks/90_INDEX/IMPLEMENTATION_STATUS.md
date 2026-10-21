@@ -1,5 +1,8 @@
 ## 21. oktober – inaktiv SOURCE: afledte kontrolmetadata
 
+- [x] Den generiske native-fejlrapport er reproduceret med Nodes egentlige assertion-suffiks. Test-only første fase/kildested, fast kodekatalog og privat child-capture før filtrering er tilføjet med eksplicit ufuldstændighed ved buffergrænse eller afbrydelse. Databasekrav, stop, frister og C/I/T/SQL er uændrede.
+- [ ] Præcis ny Linux-/databasekontrol skal vise den oprindelige indre fejl eller et faktisk samlet resultat. Lokal diagnostik er ikke årsagsrettelse, installation eller offentlig SOURCE-effekt. Se DEC-0294.
+
 - [x] Den efterfølgende faktiske Linux-kontrol bestod hele SDK-/offlinegruppen og fandt senere ubrugte, ubundne gzip-/gunzip-deklarationer i tail. Hel entry-/tail-navnegennemgang og fjernelse af netop de to døde deklarationer; normal DMI-kalder lokalt 34 PASS/otte Linux-skips/ingen fejl.
 - [x] Korrigeret faktisk modelkode har ny C145/I141/T-afledning, normal syvforbrugersynk og append-only 030000-SQL med fixedpoint. Alle 65 gamle migrationsfiler er byteeksakt bevaret; aldrig installeret 020000 er ikke længere valgt mål eller et mellemtrin.
 - [ ] Ny præcis samlet CI og native PostgreSQL på denne reelle produktrettelse samt de fortsat åbne B/S-, national-, kapacitets- og leveringskrav. Gamle deltrin ommærkes ikke som ny samlet kvalifikation.

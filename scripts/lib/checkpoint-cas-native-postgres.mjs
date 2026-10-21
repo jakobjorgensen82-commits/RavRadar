@@ -36,7 +36,8 @@ const NATIVE_PSQL_PHASES = new Set(['NATIVE_SETUP', 'CAS200_MIGRATION',
   'BASELINE_FIXTURES', 'BASELINE_ADMISSION', 'BASELINE_CAS_CASES',
   'ACCOUNT213', 'CURRENT220', 'STATISTICS230', 'NATIVE_IDENTITY0600', 'CURRENT_MEMORY_WARMUP',
   'ESTABLISHED_NATIVE_CURRENT_ORIGIN', 'LAST_MILE_ENCLOSURE', 'ACCOUNT_STATISTICS_ASSISTANT', 'SOURCE_PRODUCER',
-  'SOURCE_CURRENT_FULL_BOOTSTRAP', 'SOURCE_CURRENT_FULL_READBACK', 'UNKNOWN']);
+  'SOURCE_CURRENT_FULL_BOOTSTRAP', 'SOURCE_CURRENT_FULL_READBACK', 'SOURCE_LEGACY_COMPATIBILITY',
+  'SOURCE_LEGACY_FOLLOWER', 'SOURCE_LEGACY_BINDINGS', 'SOURCE_LEGACY_PROVIDERS', 'NATIVE_CLEANUP', 'UNKNOWN']);
 const NATIVE_PSQL_STATES = Object.freeze({
   '22003':'SQL_RANGE', '22023':'SQL_PARAMETER', '22P02':'SQL_TEXT_FORMAT',
   '23502':'SQL_NOT_NULL', '23503':'SQL_FOREIGN_KEY', '23505':'SQL_UNIQUE',
@@ -64,10 +65,146 @@ export function nativePostgresFailureAnnotation(phase, stderr) {
     + ' sqlstate=' + safe.sqlState + ' category=' + safe.category;
 }
 
-const command = (file, args, { input, env, timeout = 20_000 } = {}) => new Promise(resolve => {
-  const child = execFile(file, args, { env, timeout, maxBuffer: 2 * 1024 * 1024 },
-    (error, stdout, stderr) => resolve({ code: error ? (error.code ?? 'NATIVE_EXECFILE_UNKNOWN_ERROR') : 0,
-      stdout: String(stdout ?? ''), sqlState: nativePostgresFailureDiagnostic('UNKNOWN', stderr).sqlState }));
+const NATIVE_EXCEPTION_CODES=new Set(['NATIVE_POSTGRES_ASSERTION_FAILED','NATIVE_POSTGRES_UNKNOWN_FAILURE',
+  'NATIVE_POSTGRES_SQL_COMMAND_FAILED','NATIVE_POSTGRES_SOURCE_LEGACY_COMPATIBILITY_REFUSED',
+  'NATIVE_POSTGRES_UNAVAILABLE_ON_THIS_HOST','NATIVE_POSTGRES_PG_CONFIG_UNAVAILABLE',
+  'NATIVE_POSTGRES_COMPLETE_EXISTING_BINARIES_UNAVAILABLE']);
+export function nativePostgresExceptionCode(error) {
+  try {
+    // Node appends actual/expected after a custom assertion message. Only its
+    // fixed first line is a code; never emit the assertion's values or diff.
+    const first = typeof error?.message === 'string' ? error.message.split(/\r?\n/, 1)[0] : '';
+    if (NATIVE_EXCEPTION_CODES.has(first)) return first;
+    return error?.code === 'ERR_ASSERTION' ? 'NATIVE_POSTGRES_ASSERTION_FAILED' : 'NATIVE_POSTGRES_UNKNOWN_FAILURE';
+  } catch { return 'NATIVE_POSTGRES_UNKNOWN_FAILURE'; }
+}
+export async function nativePostgresExceptionDiagnostic(error, phase) {
+  const result = {kind:'NATIVE_POSTGRES_FIRST_FAILURE',
+    phase:NATIVE_PSQL_PHASES.has(phase)?phase:'UNKNOWN',code:nativePostgresExceptionCode(error),
+    frame:null,privatePayloadIncluded:false};
+  try {
+    const root=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'../..');
+    const stack=error?.stack;
+    if(typeof stack!=='string'||stack.length>2*1024*1024)return result;
+    for(const line of stack.split(/\r?\n/)){
+      const match=/^\s+at (?:[^\r\n()]* \()?((?:file:\/\/\/)[^\r\n()]+):(\d+):(\d+)\)?$/.exec(line);
+      if(!match)continue;
+      try{
+        const url=new URL(match[1]);if(url.host||url.search||url.hash)continue;
+        const file=fileURLToPath(url),relative=path.relative(root,file).split(path.sep).join('/');
+        if(!/^(?:scripts|js\/core)\/[A-Za-z0-9_./-]+\.(?:mjs|js)$/.test(relative)
+          ||relative.split('/').includes('..')||await fs.realpath(file)!==file)continue;
+        const before=await fs.lstat(file,{bigint:true});
+        if(!before.isFile()||before.isSymbolicLink()||before.nlink!==1n||before.size>2n*1024n*1024n)continue;
+        const body=await fs.readFile(file),after=await fs.lstat(file,{bigint:true});
+        const identity=value=>[value.dev,value.ino,value.size,value.mtimeNs,value.ctimeNs];
+        if(!identity(before).every((value,index)=>value===identity(after)[index])||BigInt(body.length)!==before.size)continue;
+        const at=Number(match[2]),column=Number(match[3]);
+        if(!Number.isSafeInteger(at)||at<1||at>body.toString('utf8').split(/\r?\n/).length
+          ||!Number.isSafeInteger(column)||column<1||column>100000)continue;
+        result.frame={module:relative,sha256:hash(body),line:at,column};break;
+      }catch{} // An unqualified frame stays unknown; never expose its path.
+    }
+  }catch{} // Diagnostic failure cannot replace the original error.
+  return result;
+}
+export async function emitNativePostgresFirstFailure(error,phase){
+  try{console.error(JSON.stringify(await nativePostgresExceptionDiagnostic(error,phase)));}catch{}
+}
+export function currentSourceNativeFirstFailure(stdout){
+  const fixedReasons=new Set(["SOURCE_CURRENT_PROFILE_PENDING_FULL_PG_SCHEMA","SOURCE_CURRENT_PROFILE_PENDING_GENUINE_CENTRAL_PROFILE","SOURCE_CURRENT_PROFILE_PENDING_NORMAL_POST64_API","SOURCE_CURRENT_PROFILE_PENDING_LOCKED_SDK","SOURCE_CURRENT_PROFILE_PENDING_ACTUAL_GREEN_SOURCE_GATE","SOURCE_CURRENT_PROFILE_PG_CONTEXT","SOURCE_CURRENT_PROFILE_PG_OWNER_CHANGED","SOURCE_CURRENT_PROFILE_ACTUAL_PG_CALL_FAILED","CURRENT_POST64_SOURCE_UNISSUED","CURRENT_POST64_OWN_PARENT_REQUIRED","CURRENT_POST64_NORMAL_POLICY_REQUIRED","CURRENT_POST64_ORIGINAL_BYTES_CHANGED","CURRENT_POST64_OBJECT_BYTES_CHANGED","CURRENT_POST64_OBJECT_IDENTITY_CHANGED","CURRENT_POST64_OWNER_CHANGED","CURRENT_POST64_CHECKPOINT_BODY","CURRENT_POST64_POINTER_CAS","CURRENT_POST64_POINTER_VERSION","CURRENT_POST64_CENTRAL_CAS_BODY","CURRENT_POST64_DOCUMENT_INSERT","CURRENT_POST64_IMMUTABLE_HEADERS","CURRENT_POST64_OBJECT_DIGEST_KEY","CURRENT_POST64_PART_DIGEST_KEY","CURRENT_POST64_BODY_BOUND","CURRENT_POST64_BODY_TRUNCATED","CURRENT_POST64_REMOVE_NOT_CREATED","CURRENT_POST64_REMOVE_REFERENCED_OR_UNKNOWN","CURRENT_POST64_WRITE_READBACK","CURRENT_NATIVE_ACTIVATION_GENUINE_SOURCE_REQUIRED","UNKNOWN","GENUINE_SOURCE_INPUT_MISSING","SOURCE_UNISSUED","GENUINE_SOURCE_SEAL_REQUIRED","NORMAL_ACTIVATION_REFUSED","CANDIDATE_PUBLIC_PACK_REBUILD_REQUIRED","NONPUBLIC_FETCH","GENUINE_PREFIX_INPUT_MISSING","CANDIDATE_NORMAL_CONTINUATION_NOT_READY","CANDIDATE_NORMAL_NATIONAL_NOT_READY","NORMAL_INITIALIZATION_REFUSED"]);
+  let firstProfileFailure=null;
+  for(const line of stdout.split(/\r?\n/)){
+    if(line.length>2048)continue;let value;try{value=JSON.parse(line);}catch{continue;}
+    if(value?.kind!=='CURRENT_SOURCE_NATIVE_FIRST_FAILURE')continue;
+    assert.deepEqual(Object.keys(value).sort(),['kind','phase','privatePayloadIncluded','reason','route','sqlstate']);
+    assert(['CURRENT_CASE','PG_SQL','POST64_TRANSPORT','CENTRAL_ACTIVATION','UNKNOWN'].includes(value.phase));
+    assert(['CHECKPOINT_CAS','OPERATIONAL_CAS','POINTER_CAS','STORAGE','NONE','UNKNOWN'].includes(value.route));
+    assert(fixedReasons.has(value.reason));assert.equal(value.privatePayloadIncluded,false);
+    assert(/^(?:[0-9A-Z]{5}|UNKNOWN)$/.test(value.sqlstate));firstProfileFailure=value;break;
+  }
+  return firstProfileFailure;
+}
+export function nativePostgresChildFirstFailure(stdout,stderr){
+  // Same fixed CURRENT child projection, plus the native caller's own bounded
+  // exception projection. Unknown/malformed records are never printed raw.
+  try{
+    for(const stream of [stdout,stderr]){
+      if(typeof stream!=='string'||Buffer.byteLength(stream)>2*1024*1024)continue;
+      for(const line of stream.split(/\r?\n/)){
+        if(line.length>2048)continue;let value;try{value=JSON.parse(line);}catch{continue;}
+        if(value?.kind==='CURRENT_SOURCE_NATIVE_FIRST_FAILURE'){
+          try{const fixed=currentSourceNativeFirstFailure(line);if(fixed)return fixed;}catch{}
+          continue;
+        }
+        if(value?.kind==='NATIVE_POSTGRES_FIRST_FAILURE'){
+          if(Object.keys(value).sort().join(',')!=='code,frame,kind,phase,privatePayloadIncluded'
+            ||!NATIVE_PSQL_PHASES.has(value.phase)||!NATIVE_EXCEPTION_CODES.has(value.code)
+            ||value.privatePayloadIncluded!==false)continue;
+          const frame=value.frame;
+          if(frame!==null&&(Object.keys(frame).sort().join(',')!=='column,line,module,sha256'
+            ||!/^(?:scripts|js\/core)\/[A-Za-z0-9_./-]+\.(?:mjs|js)$/.test(frame.module)
+            ||frame.module.split('/').includes('..')||!/^[a-f0-9]{64}$/.test(frame.sha256)
+            ||!Number.isSafeInteger(frame.line)||frame.line<1||frame.line>1000000
+            ||!Number.isSafeInteger(frame.column)||frame.column<1||frame.column>100000))continue;
+          return value;
+        }
+        if(value?.kind==='SOURCE_LEGACY_CHILD_FIRST_FAILURE'){
+          if(Object.keys(value).sort().join(',')!=='callsite,exceptionType,kind,osError,phase,privatePayloadIncluded'
+            ||!['BINDINGS','PROVIDERS','FOLLOWER','UNKNOWN'].includes(value.phase)||value.privatePayloadIncluded!==false
+            ||!['ASSERTION_ERROR','FILE_NOT_FOUND_ERROR','PROCESS_LOOKUP_ERROR','PERMISSION_ERROR','OS_ERROR',
+              'JSON_DECODE_ERROR','VALUE_ERROR','TYPE_ERROR','KEY_ERROR','INDEX_ERROR','RUNTIME_ERROR','OVERFLOW_ERROR','UNKNOWN'].includes(value.exceptionType)
+            ||!['NONE','UNKNOWN','EACCES','EPERM','ENOENT','ESRCH','EBADF','EMFILE','ENFILE','EIO','EINVAL','EINTR','EAGAIN','ENOMEM','ENOSPC','EPIPE'].includes(value.osError))continue;
+          const site=value.callsite;
+          if(site!==null&&(Object.keys(site).sort().join(',')!=='line,module,sha256'
+            ||!/^scripts\/[A-Za-z0-9_/-]+\.py$/.test(site.module)||!/^[a-f0-9]{64}$/.test(site.sha256)
+            ||!Number.isSafeInteger(site.line)||site.line<1||site.line>1000000))continue;
+          return value;
+        }
+      }
+    }
+  }catch{}
+  return null;
+}
+
+export function nativePostgresCaptureComplete(error){
+  try{return !error||typeof error.code==='number'&&error.killed!==true&&!error.signal;}
+  catch{return false;}
+}
+function nativeProcessFailureCategory(error){
+  try{
+    if(!error)return 'NONE';
+    if(error.code==='ERR_CHILD_PROCESS_STDIO_MAXBUFFER')return 'STDIO_BOUND';
+    if(error.killed===true||error.signal)return 'DEADLINE_OR_SIGNAL';
+    return typeof error.code==='number'?'EXIT_NONZERO':'SPAWN_OR_UNKNOWN';
+  }catch{return 'UNKNOWN';}
+}
+const command = (file, args, { input, env, timeout = 20_000, privateLogsRoot = null } = {}) => new Promise(resolve => {
+  const child = execFile(file, args, { env, timeout, maxBuffer: 2 * 1024 * 1024,
+    ...(privateLogsRoot!==null?{encoding:'buffer'}:{}) },
+    async (error, stdout, stderr) => {
+      const result={code:error?(error.code??'NATIVE_EXECFILE_UNKNOWN_ERROR'):0,
+        stdout:String(stdout??''),sqlState:nativePostgresFailureDiagnostic('UNKNOWN',stderr).sqlState};
+      if(privateLogsRoot!==null){
+        result.privateLogsPreserved=false;
+        try{
+          for(const [name,body]of [['stdout',stdout],['stderr',stderr]]){
+            const handle=await fs.open(path.join(privateLogsRoot,'source-legacy-child-captured.'+name),'wx',0o600);
+            try{await handle.writeFile(Buffer.isBuffer(body)?body:Buffer.from(String(body??'')));await handle.sync();}finally{await handle.close();}
+          }
+          result.privateLogsComplete=nativePostgresCaptureComplete(error);
+          await fs.writeFile(path.join(privateLogsRoot,'capture.json'),JSON.stringify({
+            kind:'NATIVE_POSTGRES_CHILD_CAPTURE',complete:result.privateLogsComplete,
+            processFailure:nativeProcessFailureCategory(error),
+            stdout:{bytes:Buffer.isBuffer(stdout)?stdout.length:Buffer.byteLength(String(stdout??'')),sha256:hash(stdout??'')},
+            stderr:{bytes:Buffer.isBuffer(stderr)?stderr.length:Buffer.byteLength(String(stderr??'')),sha256:hash(stderr??'')}},null,2)+'\n',{flag:'wx',mode:0o600});
+          result.privateLogsPreserved=true;result.stderr=String(stderr??'');
+          if(!result.privateLogsComplete){try{console.error(JSON.stringify({kind:'NATIVE_POSTGRES_CHILD_CAPTURE',
+            complete:false,processFailure:nativeProcessFailureCategory(error),privatePayloadIncluded:false}));}catch{}}
+        }catch{} // Preserve the original process outcome, including capture failure.
+      }
+      resolve(result);
+    });
   child.stdin?.on('error', () => {}); // Outcome is owned by execFile's actual close/error callback.
   child.stdin?.end(input ?? '');
 });
@@ -973,6 +1110,7 @@ select public.native_checkpoint_attempt(${baseline},${version},(select payload f
     let currentSourceNativeProfile;
     let sourceLegacyCompatibility;
     if(includeSourceProducer&&!includeCurrentSourceNativeProfile){
+      nativePhase='SOURCE_LEGACY_COMPATIBILITY';
       // The normal pre-merge --source-producer phase, AFTER its genuine585 +
       // SOURCE SQL comparison. No GitHub/main proof or SOURCE19 activation.
       assert.deepEqual(await readOwner(),owner);
@@ -988,11 +1126,22 @@ select public.native_checkpoint_attempt(${baseline},${version},(select payload f
       const runtime=await command(node24,['--version'],{env});
       assert.equal(runtime.code,0);assert.match(runtime.stdout.trim(),/^v24\.\d+\.\d+$/,
         'SOURCE_LEGACY_ACTUAL_NODE24_REQUIRED');
+      // Private test evidence is outside the PG directory's unchanged normal
+      // cleanup. Capture failure is UNKNOWN observation, not a new process result.
+      let privateLogsRoot=null;
+      try{
+        const parent=path.join(repositoryRoot,'.cache');await fs.mkdir(parent,{recursive:true});
+        privateLogsRoot=await fs.mkdtemp(path.join(parent,'native-pg-source-legacy-diagnostics-'));
+      }catch{}
       const invocation=await command(process.env.PYTHON||'python3',
         ['-I','-B',path.join(repositoryRoot,'scripts/run-source19-terminal-native-bank.py'),
           '--source-legacy-compatibility','--node24-path',node24],
         {input:JSON.stringify({kind:'SOURCE_CURRENT_SAME_NATIVE_PG',pgRoot:root,psql:programs.psql,head,server:owner}),
-          env,timeout:240*60*1000});
+          env,timeout:240*60*1000,privateLogsRoot});
+      if(invocation.code!==0&&invocation.privateLogsPreserved&&invocation.privateLogsComplete){
+        const first=nativePostgresChildFirstFailure(invocation.stdout,invocation.stderr);
+        try{if(first)console.error(JSON.stringify(first));}catch{}
+      }
       assert.equal(invocation.code,0,'NATIVE_POSTGRES_SOURCE_LEGACY_COMPATIBILITY_REFUSED');
       const reports=invocation.stdout.split(/\r?\n/).flatMap(line=>{
         if(line.length>2048)return [];try{const value=JSON.parse(line);
@@ -1046,17 +1195,7 @@ select public.native_checkpoint_attempt(${baseline},${version},(select payload f
           '--current-source-profile','--node24-path',process.execPath],
         {input:JSON.stringify({kind:'SOURCE_CURRENT_SAME_NATIVE_PG',pgRoot:root,psql:programs.psql,head,server:owner}),
           env:profileEnvironment,timeout:240*60*1000});
-      const fixedReasons=new Set(["SOURCE_CURRENT_PROFILE_PENDING_FULL_PG_SCHEMA","SOURCE_CURRENT_PROFILE_PENDING_GENUINE_CENTRAL_PROFILE","SOURCE_CURRENT_PROFILE_PENDING_NORMAL_POST64_API","SOURCE_CURRENT_PROFILE_PENDING_LOCKED_SDK","SOURCE_CURRENT_PROFILE_PENDING_ACTUAL_GREEN_SOURCE_GATE","SOURCE_CURRENT_PROFILE_PG_CONTEXT","SOURCE_CURRENT_PROFILE_PG_OWNER_CHANGED","SOURCE_CURRENT_PROFILE_ACTUAL_PG_CALL_FAILED","CURRENT_POST64_SOURCE_UNISSUED","CURRENT_POST64_OWN_PARENT_REQUIRED","CURRENT_POST64_NORMAL_POLICY_REQUIRED","CURRENT_POST64_ORIGINAL_BYTES_CHANGED","CURRENT_POST64_OBJECT_BYTES_CHANGED","CURRENT_POST64_OBJECT_IDENTITY_CHANGED","CURRENT_POST64_OWNER_CHANGED","CURRENT_POST64_CHECKPOINT_BODY","CURRENT_POST64_POINTER_CAS","CURRENT_POST64_POINTER_VERSION","CURRENT_POST64_CENTRAL_CAS_BODY","CURRENT_POST64_DOCUMENT_INSERT","CURRENT_POST64_IMMUTABLE_HEADERS","CURRENT_POST64_OBJECT_DIGEST_KEY","CURRENT_POST64_PART_DIGEST_KEY","CURRENT_POST64_BODY_BOUND","CURRENT_POST64_BODY_TRUNCATED","CURRENT_POST64_REMOVE_NOT_CREATED","CURRENT_POST64_REMOVE_REFERENCED_OR_UNKNOWN","CURRENT_POST64_WRITE_READBACK","CURRENT_NATIVE_ACTIVATION_GENUINE_SOURCE_REQUIRED","UNKNOWN","GENUINE_SOURCE_INPUT_MISSING","SOURCE_UNISSUED","GENUINE_SOURCE_SEAL_REQUIRED","NORMAL_ACTIVATION_REFUSED","CANDIDATE_PUBLIC_PACK_REBUILD_REQUIRED","NONPUBLIC_FETCH","GENUINE_PREFIX_INPUT_MISSING","CANDIDATE_NORMAL_CONTINUATION_NOT_READY","CANDIDATE_NORMAL_NATIONAL_NOT_READY","NORMAL_INITIALIZATION_REFUSED"]);
-      let firstProfileFailure=null;
-      for(const line of invocation.stdout.split(/\r?\n/)){
-        if(line.length>2048)continue;let value;try{value=JSON.parse(line);}catch{continue;}
-        if(value?.kind!=='CURRENT_SOURCE_NATIVE_FIRST_FAILURE')continue;
-        assert.deepEqual(Object.keys(value).sort(),['kind','phase','privatePayloadIncluded','reason','route','sqlstate']);
-        assert(['CURRENT_CASE','PG_SQL','POST64_TRANSPORT','CENTRAL_ACTIVATION','UNKNOWN'].includes(value.phase));
-        assert(['CHECKPOINT_CAS','OPERATIONAL_CAS','POINTER_CAS','STORAGE','NONE','UNKNOWN'].includes(value.route));
-        assert(fixedReasons.has(value.reason));assert.equal(value.privatePayloadIncluded,false);
-        assert(/^(?:[0-9A-Z]{5}|UNKNOWN)$/.test(value.sqlstate));firstProfileFailure=value;break;
-      }
+      const firstProfileFailure=currentSourceNativeFirstFailure(invocation.stdout);
       if(firstProfileFailure||invocation.code!==0){
         const fixed=firstProfileFailure??{kind:'CURRENT_SOURCE_NATIVE_FIRST_FAILURE',phase:'UNKNOWN',
           reason:'MISSING_CHILD_FIXED_REPORT',sqlstate:invocation.sqlState??'UNKNOWN',route:'NONE',privatePayloadIncluded:false};
@@ -1082,6 +1221,9 @@ select public.native_checkpoint_attempt(${baseline},${version},(select payload f
       tcpEnabled:false,normalModelPartCount:673,sqlExecuted:true,migrationExecuted:true,
       migrationSQLSha256:hash(newSource),caseCount:reports.length,
       oldCasDefinitionSha256:hash(oldCas),newCasDefinitionSha256:hash(newCas),reports};
+  } catch(error) {
+    await emitNativePostgresFirstFailure(error,nativePhase);
+    throw error;
   } finally {
     try {
     if (started) {
@@ -1097,6 +1239,7 @@ select public.native_checkpoint_attempt(${baseline},${version},(select payload f
     assert.ok(path.dirname(resolved)===temp && path.basename(resolved).startsWith('rr-checkpoint-pg-'));
     if (cleanupAllowed && (!started || stopped)) await fs.rm(resolved,{recursive:true,force:false});
     } catch (cleanupError) {
+      await emitNativePostgresFirstFailure(cleanupError,'NATIVE_CLEANUP');
       // Keep the first revision failure; unknown/failed stop retains the same
       // owned directory. Never turn physical cleanup failure into success.
       if (statisticsRevisionFailure!==null) throw statisticsRevisionFailure.error;

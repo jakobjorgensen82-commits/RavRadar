@@ -1,5 +1,7 @@
 ## 21. oktober — ÅBEN kvalifikation: SOURCE-tail og ny afledning
 
+Den efterfølgende native databaseprøves konkrete indre fejl er stadig ukendt: den gamle udlæser reducerede også en præcis child-afvisning til en generisk assertion, fordi Node tilføjer faktiske/forventede værdier til fejlbeskeden. Testkæden bevarer nu kun faste koder, første kvalificerede fase/kildested og private hele child-output før filtrering. Afkortet capture er ikke et helt logbevis. Denne diagnostikrettelse må ikke kaldes en produktårsag eller en færdig SOURCE-løsning; ny præcis CI og egentlig årsagsafklaring mangler. C/I/T, SQL og almindelig vejrhentning er uændrede.
+
 Den præcise Linux-kontrol bestod SDK-/offlinegruppen og fandt derefter en reel importfejl i SOURCE-tail. To ubrugte deklarationer er fjernet efter helmodulernes navne- og importgennemgang; den normale berørte DMI-prøve består lokalt med 34 PASS, otte Linux-skips og ingen fejl. Da tailen faktisk indgår i C/I, er nye bindinger og append-only 030000 afledt og genberegnet med fixedpoint. Alle 65 gamle migrationsfiler bevares byteeksakt. Aldrig installeret 020000 er bevaret som kildehistorik, men vælges ikke som mellemtrin fra genuine 585. Ny præcis samlet CI, PostgreSQL, B/S, national kapacitet og sikker levering er fortsat åbne. Ingen aktivering eller ændring af almindelig vejrhentning, scoreformel, kildeprioritet eller geometri. Se DEC-0294.
 
 ## 20. oktober — ÅBEN: Candidate-public fra normalt pakket input

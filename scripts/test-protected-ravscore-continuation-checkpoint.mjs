@@ -538,9 +538,11 @@ const accountStatisticsAssistantNative = process.argv.includes('--account-statis
 if (process.argv.includes('--native-postgres') || process.argv.includes('--native-statistics-revision')
     || process.argv.includes('--native-sampling-identity') || process.argv.includes('--current-memory-warmup')
     || process.argv.includes('--established-native-current-origin') || (process.argv.includes('--last-mile-enclosure') || accountStatisticsAssistantNative)) {
+  let classifyNativeFailure=()=> 'NATIVE_POSTGRES_UNKNOWN_FAILURE';
   try {
-    const { runNativeCheckpointSqlComparison } =
+    const { runNativeCheckpointSqlComparison, nativePostgresExceptionCode } =
       await import('./lib/checkpoint-cas-native-postgres.mjs');
+    classifyNativeFailure=nativePostgresExceptionCode;
     const report = await runNativeCheckpointSqlComparison({
       repositoryRoot: path.resolve('.'), sourceDocumentAt, atHour,
       saveCheckpoint: saveRavScoreContinuationCheckpoint,
@@ -558,9 +560,7 @@ if (process.argv.includes('--native-postgres') || process.argv.includes('--nativ
     });
     console.log(JSON.stringify(report));
   } catch (error) {
-    const category = /^NATIVE_POSTGRES_[A-Z0-9_]+$/.test(error?.message ?? '')
-      ? error.message : error?.code === 'ERR_ASSERTION'
-        ? 'NATIVE_POSTGRES_ASSERTION_FAILED' : 'NATIVE_POSTGRES_UNKNOWN_FAILURE';
+    const category = classifyNativeFailure(error);
     console.error(JSON.stringify({ kind: 'NATIVE_POSTGRES_CHECKPOINT_CAS_COMPARISON',
       sqlProof: false, category }));
     process.exitCode = 1;

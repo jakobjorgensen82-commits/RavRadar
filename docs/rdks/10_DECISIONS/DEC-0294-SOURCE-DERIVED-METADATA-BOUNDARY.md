@@ -62,6 +62,32 @@ kildekontraktprøver, ikke native B/S, installation eller produktionseffekt.
 
 ## Status og bevarede grænser
 
+### Første fejl skal bevares, ikke gættes
+
+En efterfølgende native databaseprøve gav kun en generisk assertion. En reel
+Node-assertion med fast brugerbesked tilføjer også faktiske og forventede
+værdier; den gamle helbesked-regex mistede derfor selv en præcis child-kode.
+Det beviser et diagnostikhul, ikke den oprindelige indre kørselsårsag.
+
+De eksisterende testkaldere bevarer nu første kvalificerede fase og fysisk
+kontrollerede kildested med SHA-256, linje og eventuel kolonne. Kun et endeligt
+katalog af fejlkoder og rapportfelter må vises. Rå fejlbeskeder, stacks, SQL og
+assertionværdier må ikke følge rapporten. De tre legacy-childfaser skelnes,
+og deres faste rapport vælges før den uændrede exit-assertion. Den eksisterende
+strenge CURRENT-rapportlæser genbruges med samme katalog og afslag.
+
+Private stdout-/stderr-bytes bevares før filtrering uden for databaseprøvens
+normale oprydning. Den eksisterende 2-MiB-buffer og 240-minutters childfrist
+ændres ikke: bufferstop, signal eller ukendt capture mærkes ufuldstændigt og
+fortolkes ikke som en hel rapport. Fejl i diagnostik må ikke erstatte den
+oprindelige fejl, give child-succes eller ændre processtop og oprydning.
+
+Kun test-/fixturefiler uden for begge aktuelle C/I-inventarer ændres. Derfor
+udstedes ingen ny version, C/I/T eller SQL af dette trin. Små kode-, frame-,
+privatheds- og childfaseprøver er særskilte fra Linux/native PostgreSQL.
+Præcis ny kildekontrol og egentlig årsagsafklaring kræves stadig; en bedre
+rapport er ikke en produktrettelse eller en offentlig SOURCE-levering.
+
 Den efterfølgende Linux-kontrol bestod både den aktuelle distribution og hele
 den native SDK-/offlinegruppe. Den stoppede senere ved import af den udskilte
 normale tail: to ubrugte gzip-/gunzip-deklarationer havde ikke deres gamle

@@ -550,6 +550,8 @@ En særskilt, dokumenteret Storage-formatkant rettes samtidig: immutable upload 
 
 ## Aktuel lokal SOURCE-kildebinding efter importrettelse — 21. oktober 2026, 4.0.586 ikke installeret
 
+En fejlet kontrol skal bevare det første kontrollerede kildested og den aktuelle fase, før fejlteksten udvælges. Kun faste fejlkoder og kildeidentitet må vises; private fejltekster og værdier holdes private. Afkortet output er ikke et fuldstændigt logbevis. En bedre fejlrapport ændrer ikke beregningen og er ikke bevis for, at den bagvedliggende fejl er rettet eller revisionen leveret.
+
 Den korrigerede lokale SOURCE-kandidat har `modelBundleSha256=74285752bdec26f6f08aff5a8773a32f57c33d42c868954d8ff4ff990f77b585` over 141 kanonisk normaliserede transitive implementeringsfiler og de deklarerede forbrugere. Inaktiv Candidate G har `modelBundleSha256=25bb6cdac14d2e3f51b353e6cfd710246a4f664b26b396e4b979a99ca921e3da` over 145 transitive filer. De fysiske `modelContractSha256` er uændrede. Fortsættelseskontrakten er `42a7d8ab0b6fdb2e9eb038a91f9a7b8030d8af98c055d6bef6a88c35c3a762ea` (`42a7d8ab…`) over 12 normaliserede kildefiler. Autoriteten er `version.json.releaseContract.modelBindings` og den nye append-only 030000-migration fra genuine 585. Alle 65 tidligere migrationsfiler bevares; aldrig installeret 020000 vælges ikke som mellemtrin. Normal genberegning af modeller, SQL og syv forbrugere består fixedpoint. Dette er ikke PostgreSQL, installation eller offentlig levering. SOURCE er inaktiv, og den almindelige vejrhentning bevares.
 
 ## Historisk lokal SOURCE-kildebinding — 21. oktober 2026, 020000 aldrig installeret

@@ -8,6 +8,7 @@ import path from 'node:path';
 import {execFileSync} from 'node:child_process';
 import {fileURLToPath,pathToFileURL} from 'node:url';
 import {isDeepStrictEqual} from 'node:util';
+import {emitNativePostgresFirstFailure} from './lib/checkpoint-cas-native-postgres.mjs';
 import {requireSourceProducerOutput,requireSourceProducerBinding,SOURCE_PRODUCER_BEFORE}
   from './lib/source-producer-successor-source.mjs';
 
@@ -214,5 +215,6 @@ export async function runSourceProducerLegacyCompatibility(){
 if(process.argv[1]&&path.resolve(process.argv[1])===fileURLToPath(import.meta.url)){
   requireSourceProducerOutput();requireSourceProducerBinding();
   assert.deepEqual(process.argv.slice(2),[]);
-  console.log(JSON.stringify(await runSourceProducerLegacyCompatibility()));
+  try{console.log(JSON.stringify(await runSourceProducerLegacyCompatibility()));}
+  catch(error){await emitNativePostgresFirstFailure(error,'SOURCE_LEGACY_FOLLOWER');throw error;}
 }

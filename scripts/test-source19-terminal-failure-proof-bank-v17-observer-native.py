@@ -277,6 +277,23 @@ def source_native_action_observation(root, source_rows, action_exit_code, stream
 
 # Same pure projection used by the physical Linux observer; no I/O oracle here.
 class SourceObserverPureTests(unittest.TestCase):
+    def test_legacy_child_failure_projects_three_commands_without_raw_exception(self):
+        try:
+            raise AssertionError('PRIVATE_SENTINEL_ACTUAL_EXPECTED')
+        except AssertionError as error:
+            for phase in ('BINDINGS', 'PROVIDERS', 'FOLLOWER'):
+                observed = source_legacy_child_failure(error, phase)
+                self.assertEqual(observed['phase'], phase)
+                self.assertEqual(observed['exceptionType'], 'ASSERTION_ERROR')
+                # The existing stable lstat/fstat frame reader is a Linux
+                # oracle. Windows may honestly return null (ctime differs);
+                # never loosen that reader to make a portable target green.
+                if sys.platform == 'linux' or observed['callsite'] is not None:
+                    self.assertEqual(observed['callsite']['module'], 'scripts/test-source19-terminal-failure-proof-bank-v17-observer-native.py')
+                self.assertFalse(observed['privatePayloadIncluded'])
+                self.assertNotIn('PRIVATE', json.dumps(observed))
+            self.assertEqual(source_legacy_child_failure(error, 'PRIVATE')['phase'], 'UNKNOWN')
+
     def project(self, stderr):
         return source_native_diagnostic_projection(stderr)
 
@@ -2095,6 +2112,20 @@ def source_terminal_exception_callsite(error, root, source_rows):
     return None
 
 
+def source_legacy_child_failure(error, phase):
+    # Reuse the qualified real traceback/exception projection. The three
+    # command phases are observation only, never child success or SQL proof.
+    try:
+        projected = source_terminal_exception_projection(error, 'UNKNOWN',
+            source_terminal_exception_callsite(error, ROOT, ()))
+        return {'kind': 'SOURCE_LEGACY_CHILD_FIRST_FAILURE',
+            'phase': phase if phase in ('BINDINGS', 'PROVIDERS', 'FOLLOWER') else 'UNKNOWN',
+            **{key: projected[key] for key in ('exceptionType', 'osError', 'callsite')},
+            'privatePayloadIncluded': False}
+    except BaseException:
+        return None  # Never replace the original exception, even for bad getters.
+
+
 SOURCE_TERMINAL_MARKER_BEFORE_FUNCTION = "        def marker_state():\n            nonlocal pending, read_offset, current_asset\n            with (root / 'stdout').open('rb') as stream:\n                stream.seek(read_offset); chunk = stream.read(256 * 1024)\n            read_offset += len(chunk); pending += chunk\n            if len(pending) > 512 * 1024 or read_offset > 8 * 1024 * 1024:\n                raise AssertionError('SOURCE_TERMINAL_OBSERVER_LOG_BOUND')\n            lines = pending.split(b'\\n'); pending = lines.pop()\n            for line in lines:\n                match = re.search(rb'DMI_ASSET_PROCESSING_(START|END)=(\\{[^\\r\\n]+\\})$', line)\n                if not match:\n                    continue\n                identity = json.loads(match[2]); canonical = json.dumps(identity, sort_keys=True, separators=(',', ':'))\n                if match[1] == b'START':\n                    starts[canonical] = starts.get(canonical, 0) + 1\n                    current_asset = canonical\n                elif current_asset == canonical:\n                    current_asset = None"
 
 class SourceTerminalFailureNative(SourceActualSUnionNative):
@@ -2853,18 +2884,44 @@ class SourceCurrentNative(SourceActualSUnionNative):
         # no capture-github, fabricated main ref, action, RPC adapter or SDK.
         commands = (
             ('bindings', [str(NODE), '--input-type=module', '-e',
-                "import {requireSourceProducerOutput,requireSourceProducerBinding} from './scripts/lib/source-producer-successor-source.mjs';requireSourceProducerOutput();console.log(JSON.stringify(requireSourceProducerBinding()));"]),
+                "import {requireSourceProducerOutput,requireSourceProducerBinding} from './scripts/lib/source-producer-successor-source.mjs';import {emitNativePostgresFirstFailure} from './scripts/lib/checkpoint-cas-native-postgres.mjs';try{requireSourceProducerOutput();console.log(JSON.stringify(requireSourceProducerBinding()));}catch(error){await emitNativePostgresFirstFailure(error,'SOURCE_LEGACY_BINDINGS');throw error;}"]),
             ('providers', [sys.executable, '-I', '-B', str(root / 'scripts/fixtures/source19-current-native-providers.py'), str(NODE), target]),
             ('follower', [str(NODE), str(root / 'scripts/test-source-producer-legacy-compatibility.mjs')]))
         for name, command in commands:
             # Preserve whole private stdout/stderr BEFORE status/filtering. A
             # failed child leaves this same owner/fixture intact for diagnosis.
-            with (own / ('legacy-' + name + '-whole.stdout')).open('xb') as output, \
-                    (own / ('legacy-' + name + '-whole.stderr')).open('xb') as errors:
-                result = subprocess.run(command, cwd=root, env=environment, stdin=subprocess.DEVNULL,
-                    stdout=output, stderr=errors, check=False)
-                output.flush(); os.fsync(output.fileno()); errors.flush(); os.fsync(errors.fileno())
-            self.assertEqual(result.returncode, 0, 'SOURCE_LEGACY_COMPATIBILITY_CHILD_REFUSED')
+            try:
+                with (own / ('legacy-' + name + '-whole.stdout')).open('xb') as output, \
+                        (own / ('legacy-' + name + '-whole.stderr')).open('xb') as errors:
+                    result = subprocess.run(command, cwd=root, env=environment, stdin=subprocess.DEVNULL,
+                        stdout=output, stderr=errors, check=False)
+                    output.flush(); os.fsync(output.fileno()); errors.flush(); os.fsync(errors.fileno())
+                self.assertEqual(result.returncode, 0, 'SOURCE_LEGACY_COMPATIBILITY_CHILD_REFUSED')
+            except BaseException as error:
+                try:
+                    # Whole child files above precede selection. Only the
+                    # child's fixed JSON projection is relayed; raw Node
+                    # assertion values/tracebacks stay in this private owner.
+                    raw = source_current_cohort_read(own, 'legacy-' + name + '-whole.stderr', 16 * 1024 * 1024)
+                    for line in raw.splitlines():
+                        if len(line) > 2048:
+                            continue
+                        try:
+                            value = json.loads(line)
+                        except (ValueError, UnicodeDecodeError):
+                            continue
+                        if type(value) is dict and value.get('kind') == 'NATIVE_POSTGRES_FIRST_FAILURE':
+                            print(json.dumps(value, separators=(',', ':')), flush=True)
+                            break  # The Node parent independently validates every field.
+                except BaseException:
+                    pass
+                try:
+                    projected = source_legacy_child_failure(error, name.upper())
+                    if projected is not None:
+                        print(json.dumps(projected, separators=(',', ':')), flush=True)
+                except BaseException:
+                    pass
+                raise
         whole = own / 'legacy-follower-whole.stdout'
         self.assertLessEqual(whole.stat().st_size, 16 * 1024 * 1024)
         reports = []
@@ -3145,9 +3202,23 @@ def run_current_native_profile_cli():
         # Standard unittest reporting remains unchanged; add only a fixed
         # first-cause observation before normal error/failure reporting.
         def addError(self, test, error):
+            if args.source_legacy_compatibility:
+                try:
+                    projected = source_legacy_child_failure(error[1], 'UNKNOWN')
+                    if projected is not None:
+                        print(json.dumps(projected, separators=(',', ':')), flush=True)
+                except BaseException:
+                    pass
             current_native_post64_module().emit_current_native_failure(error[1], phase='CURRENT_CASE')
             super().addError(test, error)
         def addFailure(self, test, error):
+            if args.source_legacy_compatibility:
+                try:
+                    projected = source_legacy_child_failure(error[1], 'UNKNOWN')
+                    if projected is not None:
+                        print(json.dumps(projected, separators=(',', ':')), flush=True)
+                except BaseException:
+                    pass
             current_native_post64_module().emit_current_native_failure(error[1], phase='CURRENT_CASE')
             super().addFailure(test, error)
     selected = ('SourceCurrentNative.test_source_legacy_compatibility' if args.source_legacy_compatibility
@@ -3157,6 +3228,8 @@ def run_current_native_profile_cli():
 
 
 if __name__ == '__main__':
+    if sys.argv[1:] == ['--legacy-diagnostic-unit']:
+        unittest.main(argv=[sys.argv[0]], defaultTest='SourceObserverPureTests.test_legacy_child_failure_projects_three_commands_without_raw_exception')
     if sys.argv[1:2] in (['--current-source-profile'], ['--source-legacy-compatibility']):
         run_current_native_profile_cli()
     if sys.argv[1:] == ['--terminal-marker-unit']:

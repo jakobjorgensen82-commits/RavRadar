@@ -1,6 +1,10 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
 import test from 'node:test';
+import {spawnSync} from 'node:child_process';
+import {fileURLToPath} from 'node:url';
+import {nativePostgresExceptionCode,nativePostgresExceptionDiagnostic,nativePostgresChildFirstFailure,nativePostgresCaptureComplete}
+  from './lib/checkpoint-cas-native-postgres.mjs';
 import './test-source-native-node24-workflow.mjs';
 import {ORIGIN, WORKFLOW, JOB, STEP, COMMANDS, CURRENT_COMMANDS as SOURCE_CURRENT_COMMANDS, ACCOUNT_STATISTICS_ASSISTANT_COMMANDS as CURRENT_COMMANDS, NATIVE_SCRIPT as SOURCE_NATIVE_SCRIPT, ACCOUNT_STATISTICS_ASSISTANT_NATIVE_SCRIPT as NATIVE_SCRIPT, NEW_NATIVE_BLOCK,
   NON_NATIVE_TEST_INPUTS, NON_NATIVE_PROSE, nativeBlock, parseTree, verifyWorkflow,
@@ -8,6 +12,66 @@ import {ORIGIN, WORKFLOW, JOB, STEP, COMMANDS, CURRENT_COMMANDS as SOURCE_CURREN
   verifyLaterRuns, decideReuse, verifyCurrentPullRequest, FOLLOWUP_INPUTS} from './native-postgres-evidence.mjs';
 
 const copy = value => structuredClone(value);
+test('native diagnostic: normal caller executes the one fixed Python child-phase regression',()=>{
+  const result=spawnSync(process.env.PYTHON||'python3',['-I','-B',
+    'scripts/test-source19-terminal-failure-proof-bank-v17-observer-native.py','--legacy-diagnostic-unit'],
+    {cwd:fileURLToPath(new URL('../',import.meta.url)),encoding:'utf8',timeout:30000,
+      maxBuffer:1024*1024,windowsHide:true,stdin:'ignore'});
+  assert.equal(result.error,undefined,'Fixed Python diagnostic process must start');
+  assert.equal(result.signal,null,'Fixed Python diagnostic process must physically finish');
+  assert.equal(result.status,0,'Fixed Python diagnostic regression must pass');
+  assert.match(result.stderr,/^Ran 1 test in [^\r\n]+\r?$/m);
+  assert.match(result.stderr,/^OK\r?$/m);assert.doesNotMatch(result.stderr,/skipped/);
+});
+test('native diagnostic: real assertion suffix keeps fixed code and qualified frame without values',async()=>{
+  let original;
+  try{assert.equal('PRIVATE_ACTUAL','PRIVATE_EXPECTED','NATIVE_POSTGRES_SOURCE_LEGACY_COMPATIBILITY_REFUSED');}
+  catch(error){original=error;}
+  assert.equal(original.code,'ERR_ASSERTION');assert.match(original.message,/PRIVATE_ACTUAL/);
+  assert.equal(nativePostgresExceptionCode(original),'NATIVE_POSTGRES_SOURCE_LEGACY_COMPATIBILITY_REFUSED');
+  const observed=await nativePostgresExceptionDiagnostic(original,'SOURCE_LEGACY_COMPATIBILITY');
+  assert.equal(observed.phase,'SOURCE_LEGACY_COMPATIBILITY');
+  assert.equal(observed.frame.module,'scripts/test-native-postgres-evidence.mjs');
+  assert.match(observed.frame.sha256,/^[a-f0-9]{64}$/);assert(observed.frame.line>0);
+  assert.doesNotMatch(JSON.stringify(observed),/PRIVATE_ACTUAL|PRIVATE_EXPECTED|message|stack|actual|expected/);
+});
+test('native diagnostic: unknown/external frames and throwing getters never replace the original error',async()=>{
+  const hidden=new Error('PRIVATE_SENTINEL');hidden.stack='PRIVATE_SENTINEL\n    at external (file:///outside/private.mjs:1:1)';
+  const unknownCode=await nativePostgresExceptionDiagnostic(new Error('NATIVE_POSTGRES_PRIVATE_SENTINEL'),'NATIVE_SETUP');
+  assert.equal(unknownCode.code,'NATIVE_POSTGRES_UNKNOWN_FAILURE');
+  assert.equal(unknownCode.frame.module,'scripts/test-native-postgres-evidence.mjs');
+  assert.doesNotMatch(JSON.stringify(unknownCode),/PRIVATE_SENTINEL/);
+  const values=[hidden,null,undefined,false,0,new Proxy({}, {get(){throw new Error('PRIVATE_GETTER');}})];
+  for(const error of values){
+    const observed=await nativePostgresExceptionDiagnostic(error,'PRIVATE_PHASE');
+    assert.equal(observed.code,'NATIVE_POSTGRES_UNKNOWN_FAILURE');assert.equal(observed.phase,'UNKNOWN');assert.equal(observed.frame,null);
+    assert.doesNotMatch(JSON.stringify(observed),/PRIVATE|outside|message|stack/);
+  }
+});
+test('native diagnostic: exact three child phases and fixed CURRENT reports survive before exit assertion',()=>{
+  for(const phase of ['BINDINGS','PROVIDERS','FOLLOWER']){
+    const fixed={kind:'SOURCE_LEGACY_CHILD_FIRST_FAILURE',phase,exceptionType:'ASSERTION_ERROR',osError:'NONE',callsite:null,privatePayloadIncluded:false};
+    assert.deepEqual(nativePostgresChildFirstFailure('PRIVATE_RAW\n'+JSON.stringify(fixed),'PRIVATE_STDERR'),fixed);
+    for(const mutation of [{...fixed,phase:'PRIVATE'},{...fixed,raw:'PRIVATE'},
+      {...fixed,callsite:{module:'../../private.py',sha256:'a'.repeat(64),line:1}}])
+      assert.equal(nativePostgresChildFirstFailure(JSON.stringify(mutation),''),null);
+  }
+  const current={kind:'CURRENT_SOURCE_NATIVE_FIRST_FAILURE',phase:'PG_SQL',reason:'SOURCE_CURRENT_PROFILE_ACTUAL_PG_CALL_FAILED',
+    sqlstate:'22023',route:'NONE',privatePayloadIncluded:false};
+  assert.deepEqual(nativePostgresChildFirstFailure(JSON.stringify(current),''),current);
+  assert.equal(nativePostgresChildFirstFailure(JSON.stringify({...current,reason:'PRIVATE'}),''),null);
+  const node={kind:'NATIVE_POSTGRES_FIRST_FAILURE',phase:'SOURCE_LEGACY_FOLLOWER',code:'NATIVE_POSTGRES_ASSERTION_FAILED',frame:null,privatePayloadIncluded:false};
+  assert.deepEqual(nativePostgresChildFirstFailure('',JSON.stringify(node)),node);
+  assert.equal(nativePostgresChildFirstFailure(JSON.stringify({...node,code:'NATIVE_POSTGRES_PRIVATE_SENTINEL'}),''),null);
+  assert.equal(nativePostgresChildFirstFailure(JSON.stringify({...node,frame:{module:'../private.mjs',sha256:'a'.repeat(64),line:1,column:1}}),''),null);
+});
+test('native diagnostic: truncated or killed process capture is never called complete',()=>{
+  assert.equal(nativePostgresCaptureComplete(null),true);
+  assert.equal(nativePostgresCaptureComplete({code:1,killed:false,signal:null}),true);
+  for(const error of [{code:'ERR_CHILD_PROCESS_STDIO_MAXBUFFER'},{code:1,killed:true},
+    {code:null,signal:'SIGTERM'},new Proxy({}, {get(){throw new Error('PRIVATE');}})])
+    assert.equal(nativePostgresCaptureComplete(error),false);
+});
 // Genuine reviewed P0 follow-up, not the potentially changed current PR tree.
 const REVIEWED_FOLLOWUP = 'c72d6730bd235954091416268e7af649b46452d9';
 const REVIEWED_FOLLOWUP_TREE = 'b2b49abd10c186115759f3792ecc8fd312049126';
