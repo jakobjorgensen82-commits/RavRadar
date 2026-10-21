@@ -62,6 +62,53 @@ kildekontraktprøver, ikke native B/S, installation eller produktionseffekt.
 
 ## Status og bevarede grænser
 
+### Tillæg 2026-10-21 — kalenderformatter og faktisk 040000-afledning
+
+Den normale kalender genbruger højst 16 formatterkonfigurationer for præcise,
+almindelige tidszonestrenge på højst 64 tegn. Datoer, vejr, scorer og
+rankingresultater caches ikke. Ukendte, objekt- og implicitte tidszoners
+normale coercion/afslag samt ugyldige datoer, DST og DA/DE/EN bevares.
+Den eksisterende kalenderprøve består. En afgrænset lokal prøve med 2.048
+kald giver identiske resultater, 2.048 → 1 formatterkonstruktion og målt
+191,9514 → 28,1594 ms. Dette er ikke en national tidsmåling.
+
+Modulet indgår faktisk i begge modelinventarer. Fra egen LF-kilde er derfor
+normalt afledt mål `20261021040000` med følgende faktiske identiteter:
+
+- C145: `cd24549a1a375d00499699397c0ff44bee70b699906462115f0a4101828649e5`.
+- I141: `fddfef8b8955e5a6ab55b4fb273884f43cbf355041727865b2080be9ff3f1400`.
+- T12: `9b9be3ded6a71e1c8d2253d626ac35a6daf172ad3acab6008f10cec9cd8cc231`.
+- Append-only SQL: `91e1030424e886c19bc2c3d1eb24d2d9332d992c60b1ca3930e5409a9d3ed19f`.
+- Kanonisk SQL: `be9843ed4b9aa178df4626eaa5df8e06d917b5077267fc8830857765e3d502bc`.
+- Checkpointkontrakt: `08f8dd36fdd9ab2acf3e3c09625cd473bba4b6ecec3339702b4ee1ed0d872825`.
+- Turlagerbinding: `86e6e9e8a68b6272e9c4e591071821c6033ead26898a1fed5773ce955c5e81e3`.
+
+Begge normale bundlechecks, SOURCE-SQL-check, normal syvforbrugersynk-check
+og kalenderprøven består faktisk på den egne LF-vært til fixedpoint.
+De normale 11 genererede output er mekanisk indarbejdet i SOURCE-kilden.
+Alle 66 tidligere SQL-filer er bytebevaret; numeriske SQL-regler og fysiske
+scorekontrakter er uændrede. 040000 vælges fra samme genuine 585-forgænger.
+De aldrig installerede 030000 og 020000 bevares som dateret kildehistorik,
+ikke som mellemtrin. Dette erstatter kun deres tidligere aktuelle målvalg.
+
+På den faktiske Windows-kilde består C-/I-/kalendermål særskilt. SQL- og
+synk-check stopper derimod fortsat i den normale oprindelseslæser, linje 87,
+på `supabase/migrations/20261017140000_established_native_current_origin_bound_successor.sql`:
+rå 304.564 bytes har SHA-256
+`d081fbe84968fbbabcb5e66dc7bd160d57fdd0e28528eeaba24cd33d881373bc`.
+De 5.056 CRLF og ingen løse CR giver ved ren LF-projektion 299.508 bytes med
+`f1d12590cfc93047afa94cdf152fab6e77f2851807695f0771127a2fdf6122b5`.
+Projektionen er byteidentisk med både den genuine Git-blob og LF-værtens
+råfil. Det er altså ikke ekstra SQL-indhold eller en påvist 040000-fejl.
+Originalfilen er ikke normaliseret, og hashguard er ikke lempet; Windows-
+afslaget bevares som faktisk fejl, ikke som et bestået SQL-/synkmål.
+
+Denne lokale afledning er ikke ny præcis samlet CI, native PostgreSQL,
+autentisk B/S-overgang, national efterfølgerkapacitet, installation eller
+offentlig effekt. Den senere kvalifikation skal bruge den genuine egne
+committede LF-kilde. SOURCE er fortsat inaktiv; ingen vejr-/providerfrist,
+scoreformel, kildeprioritet, adminpunkt, geometri eller normal cron ændres.
+
 ### Tillæg 2026-10-21 — præcist PR-loft, ikke nye vejrbudgetter
 
 P0-kildekontrollens faktiske 120-minutters jobafbrud er særskilt dokumenteret. SOURCE overtager alene det gennemgåede 180-minutters PR-loft; de øvrige kommandoer, trin, rettigheder, Node22-miljøet og den præcise Node24-child-afgrænsning er uændrede. Den eksisterende kontrol genskaber nu hele genuine c4f4-SOURCE120, derefter hele bb8d-P0120 gennem den gamle præcise Node24-inverse og fortsat hele 90-/75-minutters kæden. Historiske budgetter godkendes ikke som det aktuelle job.

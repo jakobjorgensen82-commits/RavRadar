@@ -1,14 +1,42 @@
 const ISO_DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
 
-export function forecastDateKeyInTimeZone(now = Date.now(), timeZone = 'Europe/Copenhagen') {
-  const date = now instanceof Date ? now : new Date(now);
-  if (!Number.isFinite(date.getTime())) throw new TypeError('Ugyldigt tidspunkt til prognosekalenderen.');
-  const parts = new Intl.DateTimeFormat('en-GB', {
+// Reuse only formatter configuration, never dates, weather or score results.
+// Exact primitive keys preserve Intl's own alias/validation/coercion semantics.
+const FORECAST_FORMATTER_LIMIT = 16;
+const FORECAST_TIME_ZONE_KEY = /^[A-Za-z][A-Za-z0-9_+-]*(?:\/[A-Za-z0-9_+-]+){0,2}$/;
+const forecastFormatters = new Map();
+let forecastFormatterConstructor = null;
+
+function forecastDateFormatter(timeZone) {
+  const Constructor = Intl.DateTimeFormat;
+  const reusable = typeof timeZone === 'string' && timeZone.length <= 64
+    && FORECAST_TIME_ZONE_KEY.test(timeZone);
+  if (reusable && forecastFormatterConstructor === Constructor && forecastFormatters.has(timeZone)) {
+    return forecastFormatters.get(timeZone);
+  }
+  const formatter = new Constructor('en-GB', {
     timeZone,
     year:'numeric',
     month:'2-digit',
     day:'2-digit'
-  }).formatToParts(date);
+  });
+  if (reusable) {
+    if (forecastFormatterConstructor !== Constructor) {
+      forecastFormatters.clear();
+      forecastFormatterConstructor = Constructor;
+    }
+    if (forecastFormatters.size >= FORECAST_FORMATTER_LIMIT) {
+      forecastFormatters.delete(forecastFormatters.keys().next().value);
+    }
+    forecastFormatters.set(timeZone, formatter);
+  }
+  return formatter;
+}
+
+export function forecastDateKeyInTimeZone(now = Date.now(), timeZone = 'Europe/Copenhagen') {
+  const date = now instanceof Date ? now : new Date(now);
+  if (!Number.isFinite(date.getTime())) throw new TypeError('Ugyldigt tidspunkt til prognosekalenderen.');
+  const parts = forecastDateFormatter(timeZone).formatToParts(date);
   const values = Object.fromEntries(parts.map(part => [part.type, part.value]));
   return `${values.year}-${values.month}-${values.day}`;
 }

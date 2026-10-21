@@ -548,7 +548,15 @@ En særskilt, dokumenteret Storage-formatkant rettes samtidig: immutable upload 
 
 **Håndbogsversion:** 4.0.586
 
-## Aktuel lokal SOURCE-kildebinding efter importrettelse — 21. oktober 2026, 4.0.586 ikke installeret
+## Aktuel lokal SOURCE-kildebinding efter kalenderrettelse — 21. oktober 2026, 4.0.586 ikke installeret
+
+Kalenderen genbruger en lille, begrænset samling formatterkonfigurationer, ikke datoer, vejr, scorer eller rangeringer. Den normale dato-, tidszone-, sommertids- og sprogadfærd bevares. En afgrænset lokal prøve har identiske resultater og færre formatterkonstruktioner; der er ikke målt en national tidsgevinst.
+
+Den lokale SOURCE-kandidat til RavScore 4.0.586 er låst med `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b` og `modelBundleSha256=fddfef8b8955e5a6ab55b4fb273884f43cbf355041727865b2080be9ff3f1400` over 141 kanonisk normaliserede transitive implementeringsfiler og de deklarerede forbrugere. Inaktiv Candidate G har `modelContractSha256=c73dac1b4376005e792580791d84eb79c9370e905a2a7fd0bdee857506a20cf8` og `modelBundleSha256=cd24549a1a375d00499699397c0ff44bee70b699906462115f0a4101828649e5` over 145 transitive filer. Fortsættelseskontrakten er `9b9be3ded6a71e1c8d2253d626ac35a6daf172ad3acab6008f10cec9cd8cc231` over 12 normaliserede kildefiler. Autoriteten er `version.json.releaseContract.modelBindings` og ny append-only 040000 fra genuine 585. Alle 66 tidligere migrationsfiler bevares; aldrig installeret 030000 og 020000 er historik, ikke mellemtrin. Fysiske scorekontrakter og formler er uændrede.
+
+Fem normale kontroller af modeller, SQL, syv forbrugere og kalender består på egen LF-kilde. På Windows-kilden består modeller og kalender, men den gamle udstedte SQL-originals rå linjeskift afvises fortsat af den uændrede kontrol. En ren LF-projektion er byteidentisk med Git og LF-værtens original; ingen gammel fil omskrives for at få et bestået resultat. Dette er lokal kildeafledning, ikke samlet kildekontrol, native PostgreSQL, gemning af nye originalpakker, national kapacitet, installation eller offentlig levering. SOURCE er inaktiv, og den almindelige vejrhentning ændres ikke.
+
+## Historisk lokal SOURCE-kildebinding efter importrettelse — 21. oktober 2026, 030000 aldrig installeret
 
 En fejlet kontrol skal bevare det første kontrollerede kildested og den aktuelle fase, før fejlteksten udvælges. Kun faste fejlkoder og kildeidentitet må vises; private fejltekster og værdier holdes private. Afkortet output er ikke et fuldstændigt logbevis. En bedre fejlrapport ændrer ikke beregningen og er ikke bevis for, at den bagvedliggende fejl er rettet eller revisionen leveret.
 

@@ -1,5 +1,9 @@
 ## 21. oktober – inaktiv SOURCE: afledte kontrolmetadata
 
+- [x] Kalenderen genbruger højst 16 formatterkonfigurationer for præcise almindelige tidszonestrenge, ikke datoer, vejr, scorer eller rankingresultater. Normal kalenderprøve bevarer dato-/DST-/sprog-/fejl- og coercionadfærd. Lokal 2.048-kaldsprøve har identiske resultater og 2.048 → 1 konstruktion; national tidsgevinst er ikke målt.
+- [x] Faktisk ny C145/I141/T12 og append-only 040000 er afledt fra egen LF-kilde med normal syvforbrugersynk. Alle fem normale LF-fixedpointmål består. Alle 66 gamle SQL-filer bevares byteeksakt; aldrig installeret 030000 og 020000 er historik, ikke mellemtrin fra genuine 585.
+- [ ] Windows-kildens SQL-/sync-check består ikke: gammel udstedt 20261017140000-SQL afvises på rå CRLF-hash, mens LF-projektionen er byteidentisk med Git og LF-værten. Ingen originalnormalisering eller guardlempelse. C/I- og kalendermål består særskilt; samlet præcis CI/native PostgreSQL, B/S, national kapacitet, installation og offentlig 040000-effekt er åbne. SOURCE er inaktiv. Se DEC-0294.
+
 - [x] P0's afgrænsede 180-minutters PR-job er semantisk integreret uden at erstatte SOURCEs egne workflow-/Node24-kontroller. Genuin hel 120-/90-/75-minutters inverse og tre normale mål består på fysisk kilde. De tre CI-blade ligger uden for C/I/T; ingen ekstra model- eller SQL-udstedelse følger alene heraf.
 - [ ] Ny præcis samlet SOURCE-CI, native PostgreSQL og national kapacitet. Et højere jobloft er ikke en målt hastighedsforbedring eller produktionslevering; vejrets og leverandørernes budgetter er uændrede.
 
