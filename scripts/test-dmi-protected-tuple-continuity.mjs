@@ -4,7 +4,7 @@ import crypto from 'node:crypto';
 import { mergeHourlyPreferDmi, bulkZoneToForecastRecord,
   buildPartDmiForecastWithProtectedRetention, buildPrivateDmiRecoveryRecord }
   from './lib/private-dmi-recovery-record.mjs';
-import { createProtectedDmiNativeCurrentInspector } from './lib/protected-dmi-native-current-proofs.mjs';
+import { createProtectedDmiNativeCurrentInspector, buildProtectedDmiNativeCurrentProofs } from './lib/protected-dmi-native-current-proofs.mjs';
 import {
   createDmiForecastRecord, DMI_FORECAST_HOURS, normalizeForecastHourly,
   inspectDmiForecastGridSampling,
@@ -272,13 +272,15 @@ const extract = (first, next) => {
 };
 const scorerStart = producer.indexOf('function scoreCoastalPartsRuntime(');
 const publicStart = producer.indexOf('      const dmiRecord = buildPartDmiForecastWithProtectedRetention(', scorerStart);
+const nativeSetupStart = producer.indexOf('      const persistedNativeOriginals =', scorerStart);
+assert.ok(nativeSetupStart > scorerStart && nativeSetupStart < publicStart);
 const publicEnd = producer.indexOf('      const routedWater = waterSourceRoutingContext', publicStart);
 assert.ok(publicStart > scorerStart && publicEnd > publicStart);
 const replayStart = producer.indexOf('      let deployedRecoverySource = null;', scorerStart);
 const replayEnd = producer.indexOf('      let productionSeries;', replayStart);
 assert.ok(replayStart > scorerStart && replayEnd > replayStart);
 const runPublicPartProjection = Function(
-  'inspectDmiForecastGridSampling', 'createProtectedDmiNativeCurrentInspector',
+  'inspectDmiForecastGridSampling', 'createProtectedDmiNativeCurrentInspector', 'buildProtectedDmiNativeCurrentProofs',
   'dmiExpectedIdentityForPart',
   'createDmiForecastRecord', 'DMI_FORECAST_HOURS', 'verifiedDmiNativeComponentSource',
   'verifiedDmiForecastComponentSource', 'verifiedBulkCurrent',
@@ -294,6 +296,7 @@ const runPublicPartProjection = Function(
   `const CURRENT_VECTOR_SEMANTICS_VERSION = 3;
    const ravScoreNumber = value => typeof value === 'number' && Number.isFinite(value) ? value : null;
    const num = ravScoreNumber;
+   ${extract('function assertDmiPartNativeProofBankDomain(', 'function assertSelectedDmiNativeOriginalsBeforeScore(')}
    ${extract('function applyFeggesundOperationalWaveProxy(', 'function missingFeggesundWaveHour(')}
    return function ({active, deployed = null, historical = null, persisted = [], pointActivated = false, replay = false, pilot = null, partWithoutZoneIdentity = false}) {
      const [zoneId, zoneParts] = Object.entries({[fixturePart.parentZoneId]: [fixturePart]})[0];
@@ -309,6 +312,9 @@ const runPublicPartProjection = Function(
      const initialSelection = {source: pointActivated ? 'POINT_ACTIVATION' : 'PRIVATE_RUNTIME'};
      const persistedDmiPartRows = new Map([[part.partId, {hourly: persisted}]]);
      const selectedDmiPartRecords = new Map();
+     const selectedDmiPartNativeProofs = new Map();
+     const protectedCompanionContexts = []; // This legacy fixture asserts no authenticated B companion authority.
+     ${producer.slice(nativeSetupStart, publicStart)}
      const feggesundSourcesByTime = new Map();
      const liveCurrentPilot = pilot;
      const componentInputs = {};
@@ -324,7 +330,7 @@ const runPublicPartProjection = Function(
      ${producer.slice(publicStart, publicEnd)}
      return {dmiRecord, record, verifiedHourly};
    };`,
-)(inspectDmiForecastGridSampling, createProtectedDmiNativeCurrentInspector,
+)(inspectDmiForecastGridSampling, createProtectedDmiNativeCurrentInspector, buildProtectedDmiNativeCurrentProofs,
   dmiExpectedIdentityForPart, createDmiForecastRecord, DMI_FORECAST_HOURS, verifiedDmiNativeComponentSource,
   verifiedDmiForecastComponentSource, verifiedBulkCurrent,
   buildDmiMarineComponentwiseHourly, recoverDmiMarineRunSeamHours,
@@ -483,14 +489,22 @@ for (const offset of [0, 1, 3]) {
 assert.equal(decoderResult.dmiRecord.hourly.length, 121, 'the private T+3 horizon is not pruned');
 const decoderUnknown = error => error.code === 'DMI_GRID_SAMPLING_APPLICABILITY_REQUIRED'
   && error.samplingStatus === 'unknown';
-for (const mutate of [
+for (const [mutationIndex, mutate] of [
   input => { input.active.zones[identity.entityId].hourly[time(3)].sources.current.contentSha256 = decoderHash('different-original-bytes'); },
   input => { input.active.zones[identity.entityId].hourly[time(3)].sources.current.itemId += '-different'; },
   input => { input.active.zones[identity.entityId].hourly[time(3)].sources.current.itemUpdatedAt = time(-11).replace(':00:00.000Z', ':01:00.000Z'); },
   input => { input.deployed = null; input.historical = null; },
-]) {
+].entries()) {
   const changed = structuredClone(decoderInputs);
   mutate(changed);
+  if (mutationIndex === 3) {
+    // This case removes both genuine native donors. The normal original guard
+    // now rejects it before public grid-sampling admission can be reached.
+    assert.throws(() => runPublicPartProjection(changed),
+      error => error?.message === 'DMI_NATIVE_PROOF_NATIVE_ENDPOINT_MISSING',
+      'missing native originals must fail the earlier exact original endpoint guard');
+    continue;
+  }
   assert.throws(() => assertDecoderNewUse(runPublicPartProjection(changed)), decoderUnknown,
     'different bytes/endpoints/precise revisions or missing native originals cannot borrow a transition');
 }

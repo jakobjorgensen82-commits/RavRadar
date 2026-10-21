@@ -87,7 +87,7 @@ test('planner original dependency: actual collector reasons survive the normal C
   const fs=await import('node:fs/promises');
   const producer=await fs.readFile(new URL('./lib/post-h0-dmi-original-dependencies.mjs',import.meta.url),'utf8');
   assert.equal(createHash('sha256').update(producer).digest('hex'),
-    '0db7833d68cad3c1ab60c86855bab6e90b1cbf40d8a2ad766da74609781ce6dc');
+    'a49ea641f76af721c43a13a091aa102e0904a3730803859d7c5f5e29e7c516bc');
   const planner=await fs.readFile(new URL('./plan-ravscore-current-history.mjs',import.meta.url),'utf8');
   const actualReasons=[...new Set([...producer.matchAll(/fail\('([A-Z_]+)'(?:,|\))/g)].map(match=>match[1]))].sort();
   const whitelist=planner.match(/const originalDependencyReasons=new Set\(\[([\s\S]*?)\]\);/);
@@ -104,7 +104,7 @@ test('planner original dependency: actual collector reasons survive the normal C
     assert.equal(observed.phase,'COMMITTED_RAW_RETENTION');
     assert.equal(observed.frame.module,'scripts/lib/post-h0-dmi-original-dependencies.mjs');
     assert.equal(observed.frame.line,18);
-    assert.equal(observed.frame.sha256,'0db7833d68cad3c1ab60c86855bab6e90b1cbf40d8a2ad766da74609781ce6dc');
+    assert.equal(observed.frame.sha256,'a49ea641f76af721c43a13a091aa102e0904a3730803859d7c5f5e29e7c516bc');
     const beforeExit=process.exitCode,beforeError=console.error,lines=[];
     try{
       console.error=value=>lines.push(value);
@@ -1093,7 +1093,8 @@ test('OLD null shape follows exact normal projection and never promotes a receip
   assert.equal(selectedProjection.sources.current.nativeGridSampling, null);
   assert.equal(selectedProjection.sources.current.nativeSteps[0].nativeGridSampling, null,
     'actual normal top-null always also emits its selected native step null');
-  assert.equal(inspect(selectedNull, topOnly).code, 'DMI_NATIVE_PROOF_PROJECTION_MISMATCH');
+  assert.equal(inspect(selectedNull, topOnly).code, 'DMI_NATIVE_PROOF_NATIVE_ENDPOINT_MISSING',
+    'own null and absent sampling are distinct native endpoints; reject before projection');
   assert.equal(inspect(selectedNull, selectedProjection).ok, true);
   const selectedStepOnly = copy(selectedProjection); delete selectedStepOnly.sources.current.nativeGridSampling;
   assert.equal(inspectDmiForecastGridSampling(selectedStepOnly.sources.current, 'current', selectedStepOnly.time, identity).status, 'unknown');
@@ -1861,6 +1862,8 @@ test('normal private recovery maps the complete 72h bridge without widening publ
     part, zoneId: part.zoneId, initialSelection, generatedAt: at(120), feature,
     archivedRestartInputs: null,
     deployedBulkCache: old, historicalDmiBulkCache: null, bulkCache: fresh,
+    protectedCompanionContexts: [],
+    persistedNativeOriginals: null,
     bulkId: identity.entityId, partDmiIdentity: identity, liveCurrentPilot: null, componentInputs: {},
     persistedDmiPartRows: new Map([[part.partId, { hourly: oldDefault.hourly }]]),
     protectedSameRunDmiRetentions: { current: { SAME_VALUES: 0, DIFFERENT_VALUES: 0 },

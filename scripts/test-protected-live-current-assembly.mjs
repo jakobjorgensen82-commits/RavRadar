@@ -14,7 +14,7 @@ import * as contexts from './lib/protected-dmi-current-context.mjs';
 import { mergeHourlyPreferDmi, bulkZoneToForecastRecord,
   buildPartDmiForecastWithProtectedRetention, buildPrivateDmiRecoveryRecord }
   from './lib/private-dmi-recovery-record.mjs';
-import { createProtectedDmiNativeCurrentInspector } from './lib/protected-dmi-native-current-proofs.mjs';
+import { createProtectedDmiNativeCurrentInspector, buildProtectedDmiNativeCurrentProofs } from './lib/protected-dmi-native-current-proofs.mjs';
 import { buildNewestValidRavScoreRecoverySources } from './lib/ravscore-recovery-source-priority.mjs';
 import { mergeProtectedLiveCurrentPilotIntoRecord,
   mergeActiveNativeLiveCurrentPilotIntoRecord } from './lib/protected-live-current-assembly.mjs';
@@ -30,7 +30,7 @@ const environment = { assert, fs, crypto, ...store, ...adapters, ...seams,
   ...pilot, ...waveProxy, ...selection, ...level, ...waveProof, ...recovery,
   mergeHourlyPreferDmi, bulkZoneToForecastRecord,
   buildPartDmiForecastWithProtectedRetention, buildPrivateDmiRecoveryRecord,
-  ...contexts, createProtectedDmiNativeCurrentInspector, mergeProtectedLiveCurrentPilotIntoRecord,
+  ...contexts, createProtectedDmiNativeCurrentInspector, buildProtectedDmiNativeCurrentProofs, mergeProtectedLiveCurrentPilotIntoRecord,
   mergeActiveNativeLiveCurrentPilotIntoRecord, buildNewestValidRavScoreRecoverySources };
 const evaluate = (script, result) => Function(...Object.keys(environment),
   `${script}; return ${result};`)(...Object.values(environment));
