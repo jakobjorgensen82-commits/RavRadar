@@ -9,5 +9,10 @@
     "candidateManifestSha256": "b5dbe2de4f0120912746dfba43fb7db00b41776dc98a594d03e1677a65e7e5c5",
     "integratedManifestSha256": "995000bd1f77172e36f3d457e48689c5e0ba89e37a49468b874ae0e479123e6c"
   },
-  "output": null
+  "output": {
+    "migrationSha256": "d8986e0721129a0d0ad996a3a8c6f71c5b0e9dd487883e9d2417843a68599517",
+    "canonicalSha256": "c3fb8075bbb326b31567a458a5f37660556275848b1d3181138ab1645f8b2938",
+    "checkpointContractSha256": "6b1ca8a0cb085a8c29763879c68b4dfa9b6b982bdddace771f0f578f31667b61",
+    "tripBindingPolicySha256": "e89d28a34c49b739bbab3c618b44b7e5598eeb91c90e58b656b31c26a94e882b"
+  }
 }

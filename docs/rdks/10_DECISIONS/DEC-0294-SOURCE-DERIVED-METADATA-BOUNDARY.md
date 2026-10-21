@@ -48,11 +48,23 @@ omdøbning af en frossen 585-kilde til SOURCE må ikke bruges som bevis.
 
 Fire normale lokale mål består: streng dataform, faktisk C/I-kæde og uændret
 offentlig pakkelæser, den faktiske committed-source-funktions syntetiske
-afslag samt uændret nullfase i bindingssynkroniseringen. Den uafhængige
+afslag samt nu den faktiske udstedte kanoniske SQL i bindingssynkroniseringen. Den uafhængige
 gennemgang har fundet og fået rettet en I-manifest-formkonflikt og en
 objektidentitetsfejl i prøvens kommende udstedte fase.
 
-Dette er ikke udstedte C/I/T, native PostgreSQL, ægte 585-B/S-overgang,
+Normal version 586 er synkroniseret én gang. Den faktiske lokale merge med
+b2 bevarer ægte e7-ancestry; en ny almindelig Git-worktree af denne egen
+commit leverer LF-kilder uden at ændre gamle SQL-/JSON-originaler. Faktisk
+C145/I141/T, den nye append-only 020000-SQL og syv normale forbrugere er
+afledt og genberegnet uændret til fuldt fixedpoint.
+
+To gamle SOURCE-importprøver læste fejlagtigt den nyere 0d39-kalder som den
+bevarede e938-variant. De uændrede 25.801 førbytes er nu inert, hashbundet
+testdata. Alle gamle import-, mutations- og hel-inversekrav bevares; nyere
+aktuel kode kontrolleres særskilt. Begge rettede mål består. Der opfindes
+ingen historisk commit, og produktkode eller C/I/T ændres ikke af testrettelsen.
+
+Dette er ikke native PostgreSQL, ægte 585-B/S-overgang,
 national efterfølgerkapacitet, installation eller offentlig effekt. Disse
 normale krav består. SOURCE er inaktiv, alle fem hovedmål er åbne, og den
 almindelige vejrhentning må ikke forstyrres. DMI → Copernicus → Open-Meteo,

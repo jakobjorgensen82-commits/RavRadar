@@ -1,6 +1,6 @@
 ## 21. oktober – isoleret SOURCE: ret selvbinding før udstedelse
 
-Læs DEC-0294 før den nye revisionsbinding afledes. Begge faktiske modelinventarer nåede deres egne kommende kontrolsummer gennem normale ejerkald. Den lokale rettelse adskiller ét strengt genereret JSON-output fra den fortsat hashbundne implementering og bevarer de eksisterende normale releaseværktøjsgrænser. Fire mål består; egen udstedelse, ægte LF-/native-/B/S-/kapacitetsbevis og sikker levering mangler. Ingen gammel original eller aktiv vejrhentning ændres. Det private checkpoint ejer aktuel kørselsstatus; alle fem mål er åbne til 18. november 2026.
+Læs DEC-0294. Den lokale 586-kandidat har nu ægte b2-ancestry, egen Git-LF-afledning, faktisk C145/I141/T, ny append-only 020000-SQL og fuldt genberegnet fixedpoint efter syv normale forbrugersynkroniseringer. En gammel SOURCE-importprøve læser sin eksakt bevarede, inerte førkilde; den faktiske nyere kalder kontrolleres fortsat særskilt. Ingen gammel pin eller assertion er fjernet. Native PostgreSQL, ægte 585→SOURCE B/S, national efterfølgerkapacitet, præcis samlet kildekontrol og sikker levering mangler. Ingen installation, SOURCE-aktivering eller ændring af aktiv vejrhentning følger heraf. Alle fem mål er åbne til 18. november 2026; det private checkpoint ejer den løbende status.
 
 ## 20. oktober — fungerende almindelig vejrrute bevares; reservekopi rettes lokalt
 

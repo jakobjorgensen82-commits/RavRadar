@@ -1,6 +1,6 @@
 ## 4.0.586 – isoleret SOURCE-kandidat, ikke offentlig levering
 
-- Normal versionssynk og faktisk C145/I141/T-afledning er udført lokalt. De genererede bindingsværdier ændrer ikke deres eget modelinput; normal genberegning beviser første fixedpoint. Egen SQL/output er fortsat ufuldstændig, og produktionsadgang er lukket.
+- Normal versionssynk, faktisk C145/I141/T og den nye append-only 020000-SQL er afledt lokalt fra egen Git-LF-kilde. Efter normale syv forbrugersynkroniseringer består begge bundlere, SQL-builder og bindingskontrol uændret: faktisk fixedpoint uden ændrede gamle originaler. Det er ikke PostgreSQL-eksekvering, installation eller aktivering.
 - Gamle originale SQL-/JSON-filer og historiske kildebeviser bevares. Geodata ændrer kun topversionsfeltet. Ingen ændring af scoreformel, kildeprioritet, administratorpunkter, geometri eller aktive tidsbudgetter.
 - Denne kildefrysning er ikke native-/B/S-/kapacitetsbevis, installation eller aktivering. Alle fem hovedmål er åbne til 18. november 2026; den almindelige vejrhentning må ikke forstyrres.
 

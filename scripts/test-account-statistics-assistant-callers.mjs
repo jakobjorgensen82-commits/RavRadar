@@ -440,6 +440,7 @@ const sourceReviewedImportCases = Object.freeze([
   {
     "file": "scripts/reconcile-private-runtime-checkpoint.mjs",
     "sha256": "e938b6607bc9cacad90e175555bfa9c7c6450b105a3589538c787577f70927a8",
+    "fixtureSource": "scripts/fixtures/reconcile-source-e938b660.source.txt",
     "imports": [
       "./protected-private-production-runtime.mjs",
       "./private-production-runtime-bundle.mjs",
@@ -567,7 +568,7 @@ const sourceReviewedImportCases = Object.freeze([
 test('SOURCE current import variants require exact bytes and preserve the old protected variant', async () => {
   const hash = value => crypto.createHash('sha256').update(value).digest('hex');
   for (const row of sourceReviewedImportCases) {
-    const source = (await fs.readFile(new URL('../' + row.file, import.meta.url), 'utf8'))
+    const source = (await fs.readFile(new URL('../' + (row.fixtureSource ?? row.file), import.meta.url), 'utf8'))
       .replace(/^\uFEFF/, '').replace(/\r\n?/g, '\n');
     assert.equal(hash(source), row.sha256);
     const imports = modelSourceRelativeModuleSpecifiers(source, row.file);
@@ -594,7 +595,7 @@ test('SOURCE current import variants require exact bytes and preserve the old pr
 });
 test('SOURCE reviewed inventories include every ordinary import with exact historical-site inverses', async () => {
   for (const row of sourceReviewedImportCases) {
-    const source = (await fs.readFile(new URL('../' + row.file, import.meta.url), 'utf8'))
+    const source = (await fs.readFile(new URL('../' + (row.fixtureSource ?? row.file), import.meta.url), 'utf8'))
       .replace(/^\uFEFF/, '').replace(/\r\n?/g, '\n');
     for (const expression of new Set(row.computedExpressions))
       assert.equal(source.split(expression).length - 1,

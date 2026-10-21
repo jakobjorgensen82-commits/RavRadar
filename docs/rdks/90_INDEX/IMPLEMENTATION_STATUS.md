@@ -3,7 +3,9 @@
 - [x] Faktisk C/I-inventar har påvist selvbindingen gennem normale lager-/ejerkald; kun wrapperfjernelse eller LF-omlægning ville ikke løse den.
 - [x] Én eksakt genereret JSON-datafil, ny normaliseringsidentitet og bevaret modelkode-/owneraftryk; almindelig I-manifestform og public pakkelæser bevares.
 - [x] Normal committed-source-kontrol kræver hele den fysiske producentfortegnelse i HEAD; fire mål består uden skip, og den uafhængige gennemgang er udført.
-- [ ] Egen versions-/C/I/T-/SQL-afledning til faktisk fixedpoint, ægte native 585→SOURCE B/S og nationale almindelige efterfølgere, kapacitet, installation og offentlig effekt. Ingen af disse kvalificeres af de lokale mål. Se DEC-0294; SOURCE og alle fem hovedmål er fortsat åbne.
+- [x] Normal version 586 én gang, ægte lokal b2-merge og egen Git-LF-kilde; faktiske C145/I141/T, 020000-SQL og syv normale forbrugere består fuldt fixedpoint. Uændrede gamle SQL-/JSON-originaler og alle numeriske regler bevares.
+- [x] Den tidligere Windows-rawgrænse i det fjerde gamle workflow-orakel består på egen LF-kilde uden repin. To fundne ældre SOURCE-importprøver bruger nu den præcist bevarede e938-førkilde; alle gamle assertions og nyere 0d39-kalderprøve bevares. De to rettede mål består; de øvrige 36 mål genbruges fra uændrede input, ikke som en ny samlet kørsel.
+- [ ] Faktisk native 585→SOURCE B/S, PostgreSQL, nationale almindelige efterfølgere, kapacitet, præcis samlet kildekontrol, installation og offentlig effekt. Lokalt fixedpoint er ikke disse beviser. Se DEC-0294; SOURCE og alle fem hovedmål er fortsat åbne.
 
 ## 20. oktober — lokal normal Candidate-forberedelse, ikke aktivering
 
