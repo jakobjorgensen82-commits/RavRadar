@@ -1,3 +1,7 @@
+## 21. oktober — ÅBEN samlet kildelevering: PR-jobbet når sit tidsloft
+
+Den faktiske GitHub-annotation bekræfter annullering efter to timer, ikke en rød assert i den normale kildeplan. Den komplette efterfølgende reservetest er tung, og de senere obligatoriske gates mangler. Kun PR-jobbet får lokalt et eksakt 180-minutters loft; alle kontroller og vejrbudgetter bevares. Hel workflowinverse samt budget-/kommandomutationer består i den normale målprøve. Nyt samlet præcist CI-PASS og levering er fortsat åbne. Den særskilte almindelige historikfejl nedenfor er ikke forklaret eller rettet af tidsændringen.
+
 ## 21. oktober — ÅBEN: normal historikplan skjuler første indre fejl
 
 Den seneste almindelige kørsel stoppede før leverandørhentning i historikplanens CLI. Underliggende fejl uden kode bliver til et generisk afslag uden kildested. Plannerens egne direkte afslag har særskilte koder og må ikke gættes ud fra dette svar. De aktuelle kilder ændrer ikke planlæggeren i forhold til den forudgående vellykkede kørsel. Tidligere vellykket B/S-verifikation gælder ikke automatisk den nye mål-time eller alle efterfølgende native-/continuity-operander.

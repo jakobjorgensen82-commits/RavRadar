@@ -1,3 +1,9 @@
+## 21. oktober — lokalt rettet samlet tidsramme for kilde-PR
+
+- [x] Den faktiske GitHub-annotation bekræfter jobloftet på to timer; PostgreSQL og den normale kildeplan bestod, men senere obligatoriske trin blev ikke kørt.
+- [x] Kun PR-kildeloftet er ændret fra 120 til 180 minutter. Normal målprøve er først rød og derefter grøn, inklusive hel inverse til den faktiske 120-minutters kilde og bevarede 90-minutters orakler. Vejr-/providerbudgetter, gates og rettigheder er uændrede.
+- [ ] Ny præcis samlet kildekontrol, sikker levering og faktisk normal historikfejllokation. Bedre diagnostik eller længere CI-tid er ikke en rettelse af den endnu ukendte vejrfejl.
+
 ## 21. oktober — normal historikplan: indre fejl skal bevares
 
 - [x] Hele den aktuelle fejllog er bevaret, og seneste vellykkede og fejlede kilde er sammenlignet: ingen ændring af planlægger, checkpoint- eller B-kaldere. Den generiske CLI-kategori identificerer ikke den indre årsag.
