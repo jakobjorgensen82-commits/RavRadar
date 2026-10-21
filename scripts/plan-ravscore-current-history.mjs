@@ -786,6 +786,7 @@ export async function describeRavScoreCurrentHistoryFailure(error,phase='UNKNOWN
     const code=data('code'),prefix='RAVSCORE_CURRENT_HISTORY_DEMAND_';
     if(typeof code==='string'&&code.startsWith(prefix)&&reasons.has(code.slice(prefix.length)))result.code=code;
     else if(['ERR_ASSERTION','ENOENT','EEXIST','EACCES','EPERM','EIO','ENOSPC','ENOMEM'].includes(code))result.code=code;
+    const originalDependencyCode=data('originalDependencyCode');
     const operator=data('operator');
     if(['strictEqual','deepStrictEqual','equal','deepEqual','ok','match','throws','rejects'].includes(operator))result.operator=operator;
     let stack=data('stack');
@@ -812,7 +813,21 @@ export async function describeRavScoreCurrentHistoryFailure(error,phase='UNKNOWN
         const at=Number(match[2]),column=Number(match[3]);
         if(!Number.isSafeInteger(at)||at<1||at>body.toString('utf8').split(/\r?\n/).length
           ||!Number.isSafeInteger(column)||column<1||column>100000)continue;
-        result.frame={module:relative,sha256:crypto.createHash('sha256').update(body).digest('hex'),line:at,column};break;
+        result.frame={module:relative,sha256:crypto.createHash('sha256').update(body).digest('hex'),line:at,column};
+        // This fixed diagnostic family is not replay/publication authority.
+        // A code attached to another error/frame is not its original failure.
+        const originalDependencyReasons=new Set(['CAPTURE_INCOMPLETE','HOLD_SUPPORT_REQUIRED',
+          'INITIAL_SELECTION_INVALID','INITIAL_STATE_INVALID','INPUT_BOUND','INPUT_INVALID','PLAN_BOUND',
+          'REGIONAL_SUPPORT_REQUIRED','SAMPLING_MISMATCH','SELECTED_CURRENT_INVALID',
+          'SELECTED_ENDPOINT_UNAVAILABLE','SOURCE_DOMAIN_EXCLUDED','WINDOW_INVALID']);
+        const originalPrefix='POST_H0_DMI_ORIGINAL_';
+        if(result.code==='RAVSCORE_CURRENT_HISTORY_DEMAND_REFUSED'&&prototype===Error.prototype
+          &&typeof originalDependencyCode==='string'&&originalDependencyCode.startsWith(originalPrefix)
+          &&originalDependencyReasons.has(originalDependencyCode.slice(originalPrefix.length))
+          &&relative==='scripts/lib/post-h0-dmi-original-dependencies.mjs'
+          &&result.frame.sha256==='dcb3ff1d9caae7440e94201c391b0a9d0d6dbdc312d54281e1f47a7d017462da'
+          &&at===18)result.code=originalDependencyCode;
+        break;
       }catch{} // Unknown frame stays unknown; diagnostic I/O cannot replace the failure.
     }
   }catch{}

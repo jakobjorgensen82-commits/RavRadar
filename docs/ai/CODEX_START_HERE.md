@@ -1,5 +1,7 @@
 ## 21. oktober — præcis fejllokation i normal historikplanlægning
 
+Den første rapport er faktisk kildekvalificeret og leveret gennem PR688. Næste almindelige forløb stoppede i `COMMITTED_RAW_RETENTION`; det kvalificerede kildested er post-H0-originalkontrollens fejlfabrik, ikke en bevist konkret afvisningsgren. Fabrikken gemmer allerede en fast `originalDependencyCode`, som den første rapport overså. Den lokale efterfølger bevarer alene kvalificerede faste koder uden at ændre kontrollen eller udskrive rå beskeder. Ingen identisk vejrhentning gentages for at gætte årsagen. Præcis ny kildekontrol, faktisk indre fejlkode, årsagsrettelse og ny offentlig levering er åbne. SOURCE, statistik og automatisk retention er fortsat inaktive.
+
 Den almindelige vejrhentning stoppede før leverandørhentning i den normale historikplanlægger. Dens generiske CLI-fejl skjuler årsagen, når en underliggende kontrol kaster en fejl uden kode. En afgrænset rapport må kun vise faktisk nået fase, fast fejltype og ét kvalificeret kildested; rå fejltekst, værdier, koordinater og private identiteter må ikke følge med. Den oprindelige fejl, exitstatus og alle input-/historik-/B/S-kontroller bevares. Bedre diagnostik er ikke en årsagsrettelse eller et nyt offentligt vejrsæt. Se DEC-0249, den ene aktuelle P0-linje og det private checkpoint.
 
 ## 20. oktober — fungerende almindelig vejrrute bevares; reservekopi rettes lokalt

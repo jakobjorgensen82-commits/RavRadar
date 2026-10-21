@@ -79,6 +79,67 @@ test('planner first failure: normal CLI handler preserves the failing stop and o
     assert.doesNotMatch(lines[0],/PRIVATE/);assert.equal(original.message,'PRIVATE');
   }finally{console.error=beforeError;process.exitCode=beforeExit;}
 });
+
+import { collectPostH0DmiOriginalDependencies as collectOriginalDependencies }
+  from './lib/post-h0-dmi-original-dependencies.mjs';
+
+test('planner original dependency: actual collector reasons survive the normal CLI without payload',async()=>{
+  const fs=await import('node:fs/promises');
+  const producer=await fs.readFile(new URL('./lib/post-h0-dmi-original-dependencies.mjs',import.meta.url),'utf8');
+  assert.equal(createHash('sha256').update(producer).digest('hex'),
+    'dcb3ff1d9caae7440e94201c391b0a9d0d6dbdc312d54281e1f47a7d017462da');
+  const planner=await fs.readFile(new URL('./plan-ravscore-current-history.mjs',import.meta.url),'utf8');
+  const actualReasons=[...new Set([...producer.matchAll(/fail\('([A-Z_]+)'\)/g)].map(match=>match[1]))].sort();
+  const whitelist=planner.match(/const originalDependencyReasons=new Set\(\[([\s\S]*?)\]\);/);
+  assert(whitelist,'The entire fixed family must be explicit');
+  const listed=[...whitelist[1].matchAll(/'([A-Z_]+)'/g)].map(match=>match[1]).sort();
+  assert.equal(listed.length,13);assert.deepEqual(listed,actualReasons);
+  for(const [args,suffix]of [[undefined,'INPUT_INVALID'],[{part:{},initialSelection:{}},'INITIAL_SELECTION_INVALID']]){
+    let original;try{collectOriginalDependencies(args);}catch(error){original=error;}
+    assert(original instanceof Error);const expected='POST_H0_DMI_ORIGINAL_'+suffix;
+    assert.equal(original.originalDependencyCode,expected);assert.equal(original.code,undefined);
+    const message=original.message;
+    const observed=await currentHistoryPlanner.describeRavScoreCurrentHistoryFailure(original,'COMMITTED_RAW_RETENTION');
+    assert.equal(observed.code,expected);assert.equal(observed.exceptionType,'ERROR');
+    assert.equal(observed.phase,'COMMITTED_RAW_RETENTION');
+    assert.equal(observed.frame.module,'scripts/lib/post-h0-dmi-original-dependencies.mjs');
+    assert.equal(observed.frame.line,18);
+    assert.equal(observed.frame.sha256,'dcb3ff1d9caae7440e94201c391b0a9d0d6dbdc312d54281e1f47a7d017462da');
+    const beforeExit=process.exitCode,beforeError=console.error,lines=[];
+    try{
+      console.error=value=>lines.push(value);
+      await currentHistoryPlanner.reportRavScoreCurrentHistoryFailure(original);
+      assert.equal(process.exitCode,1);assert.equal(lines.length,1);
+      assert.equal(JSON.parse(lines[0]).code,expected);
+      assert.doesNotMatch(lines[0],/"(?:message|actual|expected|stack)"|PRIVATE_SENTINEL/);
+    }finally{console.error=beforeError;process.exitCode=beforeExit;}
+    assert.equal(original.message,message);assert.equal(original.originalDependencyCode,expected);
+    assert.equal(original.code,undefined);
+  }
+});
+test('planner original dependency: forged family, own getter, proxy and unknown code remain rejected',async()=>{
+  const make=()=>{try{collectOriginalDependencies();}catch(error){return error;}};
+  let calls=0;
+  const getter=make();Object.defineProperty(getter,'originalDependencyCode',
+    {get(){calls++;throw Error('PRIVATE_SENTINEL');},configurable:true});
+  const proxy=new Proxy(make(),{get(){calls++;throw Error('PRIVATE_SENTINEL');},
+    getOwnPropertyDescriptor(){calls++;throw Error('PRIVATE_SENTINEL');}});
+  const nonString=make();nonString.originalDependencyCode={toString(){calls++;throw Error('PRIVATE_SENTINEL');}};
+  const unknown=make();unknown.originalDependencyCode='POST_H0_DMI_ORIGINAL_PRIVATE_SENTINEL';
+  const wrongFamily=make();wrongFamily.originalDependencyCode='OTHER_ORIGINAL_INPUT_INVALID';
+  const wrongFrame=new Error('PRIVATE_SENTINEL');wrongFrame.originalDependencyCode='POST_H0_DMI_ORIGINAL_INPUT_INVALID';
+  const forged={originalDependencyCode:'POST_H0_DMI_ORIGINAL_INPUT_INVALID'};
+  const inherited=make();Object.setPrototypeOf(inherited,Object.create(Error.prototype));
+  for(const error of [getter,proxy,nonString,unknown,wrongFamily,wrongFrame,forged,inherited]){
+    const observed=await currentHistoryPlanner.describeRavScoreCurrentHistoryFailure(error,'COMMITTED_RAW_RETENTION');
+    assert.equal(observed.code,'RAVSCORE_CURRENT_HISTORY_DEMAND_REFUSED');
+    assert.doesNotMatch(JSON.stringify(observed),/PRIVATE_SENTINEL|OTHER_ORIGINAL/);
+  }
+  assert.equal(calls,0);
+  const priority=make();priority.code='ENOENT';
+  assert.equal((await currentHistoryPlanner.describeRavScoreCurrentHistoryFailure(priority)).code,'ENOENT',
+    'The new diagnostic must never replace an existing accepted code');
+});
 import { buildIntegratedPartScoreSeries } from './lib/ravscore-integrated-runtime.mjs';
 import { buildCandidateGRollbackPartScoreSeries } from './lib/ravscore-candidate-g-rollback-runtime.mjs';
 import { buildRavScorePermittedCurrentHistory } from './lib/ravscore-recovery-replay.mjs';

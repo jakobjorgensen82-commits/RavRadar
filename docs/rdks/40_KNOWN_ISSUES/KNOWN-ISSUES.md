@@ -1,8 +1,10 @@
 ## 21. oktober — ÅBEN: normal historikplan skjuler første indre fejl
 
+Den første fase-/type-/kildestedsrapport er faktisk leveret gennem PR688. Den efterfølgende almindelige kørsel stoppede i `COMMITTED_RAW_RETENTION`, i post-H0-originalkontrollens generiske fejlfabrik. Den oprindelige faste `originalDependencyCode` blev ikke medtaget og er endnu ukendt i produktionen. En afgrænset lokal efterfølger bevarer kun kvalificerede faste koder; det er hverken en kendt forkert DMI-værdi, dokumenteret manglende fil, årsagsrettelse eller ny offentlig vejrlevering. De gamle audits har andre eller fastlåste kaldere og kan ikke ommærkes som dagens reproduktion.
+
 Den seneste almindelige kørsel stoppede før leverandørhentning i historikplanens CLI. Underliggende fejl uden kode bliver til et generisk afslag uden kildested. Plannerens egne direkte afslag har særskilte koder og må ikke gættes ud fra dette svar. De aktuelle kilder ændrer ikke planlæggeren i forhold til den forudgående vellykkede kørsel. Tidligere vellykket B/S-verifikation gælder ikke automatisk den nye mål-time eller alle efterfølgende native-/continuity-operander.
 
-Mindste næste trin er sikker første fejlfase/type/kildested i samme normale kalder, med uændret afvisning og exitstatus. Ingen ny diagnosekontrolvej, testbibliotek i produktet, rå fejltekst eller lempelse af dataadgang. Kildekontrol, konkret årsagsafklaring, rettelse og faktisk ny vejrgeneration er fortsat åbne. Et gammelt checkpoints oprindelige time må ikke ommærkes til den nye time; korte leverandørbudgetter er ikke det samme som providerfri genoptagelse.
+Mindste næste trin er den allerede eksisterende faste indre afvisningskode fra samme normale kalder, med uændret afvisning og exitstatus. Ingen ny diagnosekontrolvej, testbibliotek i produktet, rå fejltekst eller lempelse af dataadgang. Kildekontrol, konkret årsagsafklaring, rettelse og faktisk ny vejrgeneration er fortsat åbne. Et gammelt checkpoints oprindelige time må ikke ommærkes til den nye time; korte leverandørbudgetter er ikke det samme som providerfri genoptagelse.
 
 ## 20. oktober — ÅBEN: Candidate-public fra normalt pakket input
 
