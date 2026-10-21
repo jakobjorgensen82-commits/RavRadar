@@ -125,6 +125,44 @@ export function currentSourceNativeFirstFailure(stdout){
   }
   return firstProfileFailure;
 }
+const SOURCE_PROVIDER_NEED_CODES=new Set(["CURRENT_NATIVE_PROVIDER_ABSOLUTE_PATH","CURRENT_NATIVE_PROVIDER_ADMIN_COPY_CHANGED","CURRENT_NATIVE_PROVIDER_ADMIN_INPUT_MISSING","CURRENT_NATIVE_PROVIDER_BASIS_DESTINATION_EXISTS","CURRENT_NATIVE_PROVIDER_CLEAN_NATIVE_ACQUISITION_MODE","CURRENT_NATIVE_PROVIDER_ECCODES_REQUIRED","CURRENT_NATIVE_PROVIDER_EMPTY_NORMAL_STATION_SOURCE_REQUIRED","CURRENT_NATIVE_PROVIDER_EXACT_INITIAL_PHASE","CURRENT_NATIVE_PROVIDER_EXACT_INITIAL_PHASE_ARGUMENT","CURRENT_NATIVE_PROVIDER_EXACT_NODE_TARGET_ARGUMENTS","CURRENT_NATIVE_PROVIDER_EXISTING_FIXTURE_DIRECTORY","CURRENT_NATIVE_PROVIDER_EXISTING_OWNED_HOST","CURRENT_NATIVE_PROVIDER_EXTERNAL_NETWORK_REFUSED","CURRENT_NATIVE_PROVIDER_GRID_BOUND","CURRENT_NATIVE_PROVIDER_LINUX_PYTHON312_REQUIRED","CURRENT_NATIVE_PROVIDER_NODE24_REQUIRED","CURRENT_NATIVE_PROVIDER_NORMAL_BASIS_OUTPUT_MISSING","CURRENT_NATIVE_PROVIDER_NORMAL_BULK_READBACK","CURRENT_NATIVE_PROVIDER_NORMAL_CAPTURE_MISSING","CURRENT_NATIVE_PROVIDER_NORMAL_COPERNICUS_RESIDUALS_REQUIRE_DATA","CURRENT_NATIVE_PROVIDER_NORMAL_DECODE_INCOMPLETE","CURRENT_NATIVE_PROVIDER_NORMAL_DECODE_OUTCOMES_INCOMPLETE","CURRENT_NATIVE_PROVIDER_NORMAL_LEDGER_NOT_READY","CURRENT_NATIVE_PROVIDER_NORMAL_MODULE","CURRENT_NATIVE_PROVIDER_NORMAL_NATIVE_PAIR_REJECTED","CURRENT_NATIVE_PROVIDER_NORMAL_PART_TARGETS","CURRENT_NATIVE_PROVIDER_NORMAL_REGISTRY_210_673","CURRENT_NATIVE_PROVIDER_NO_ADOPTED_OLD_BULK","CURRENT_NATIVE_PROVIDER_RAW_CHANGED_AFTER_DECODE","CURRENT_NATIVE_PROVIDER_SAME_ACTION_RUNNER_TEMP","CURRENT_NATIVE_PROVIDER_STAC_HOST","CURRENT_NATIVE_PROVIDER_STAC_PAGE_BOUND","CURRENT_NATIVE_PROVIDER_STAC_ROUTE","CURRENT_NATIVE_PROVIDER_SYMLINK","CURRENT_NATIVE_PROVIDER_TARGET_HOUR","CURRENT_NATIVE_PROVIDER_WRITE_READBACK"]);
+const SOURCE_PROVIDER_SIGNALS=new Map([[-1,'SIGHUP'],[-2,'SIGINT'],[-3,'SIGQUIT'],[-6,'SIGABRT'],[-9,'SIGKILL'],[-11,'SIGSEGV'],[-13,'SIGPIPE'],[-15,'SIGTERM']]);
+export function nativeProviderProcessFirstFailure(value){
+  try{
+    if(!value||Object.keys(value).sort().join(',')!=='boundary,kind,phase,privatePayloadIncluded,returncode,signal,stderr,stdout'
+      ||value.kind!=='SOURCE_PROVIDER_PROCESS_FIRST_FAILURE'||value.phase!=='PROVIDERS'||value.privatePayloadIncluded!==false)return null;
+    const code=value.returncode;
+    if(code!==null&&(!Number.isSafeInteger(code)||code<-(2**31)||code>=2**31))return null;
+    if(value.signal!==(code===null?'UNKNOWN':code>=0?'NONE':SOURCE_PROVIDER_SIGNALS.get(code)??'UNKNOWN'))return null;
+    for(const stream of [value.stdout,value.stderr]){
+      if(!stream||Object.keys(stream).sort().join(',')!=='bytes,complete,sha256'||typeof stream.complete!=='boolean'
+        ||stream.bytes!==null&&(!Number.isSafeInteger(stream.bytes)||stream.bytes<0))return null;
+      if(stream.complete){
+        if(stream.bytes===null||stream.bytes>16*1024*1024||typeof stream.sha256!=='string'||!/^[a-f0-9]{64}$/.test(stream.sha256))return null;
+      }else if(stream.sha256!==null)return null;
+    }
+    const boundary=value.boundary;
+    if(boundary!==null){
+      if(!value.stderr.complete||Object.keys(boundary).sort().join(',')!=='callsite,exceptionType,helper,kind,privatePayloadIncluded,reason,timeoutSeconds'
+        ||boundary.kind!=='SOURCE_PROVIDER_BOUNDARY_FIRST_FAILURE'||boundary.privatePayloadIncluded!==false
+        ||!['ASSERTION_ERROR','FILE_NOT_FOUND_ERROR','PROCESS_LOOKUP_ERROR','PERMISSION_ERROR','OS_ERROR','JSON_DECODE_ERROR',
+          'VALUE_ERROR','TYPE_ERROR','KEY_ERROR','INDEX_ERROR','RUNTIME_ERROR','OVERFLOW_ERROR','UNKNOWN','SUBPROCESS_TIMEOUT','SUBPROCESS_EXIT'].includes(boundary.exceptionType)
+        ||boundary.reason!=='UNKNOWN'&&!SOURCE_PROVIDER_NEED_CODES.has(boundary.reason)
+        ||!['OPEN_METEO','CLOSURE','LIVE_PILOT','FORECAST','REGISTRY','NONE','UNKNOWN'].includes(boundary.helper)
+        ||boundary.timeoutSeconds!==null&&![30,120].includes(boundary.timeoutSeconds)
+        ||boundary.timeoutSeconds!==null&&boundary.exceptionType!=='SUBPROCESS_TIMEOUT'
+        ||boundary.reason!=='UNKNOWN'&&boundary.exceptionType!=='RUNTIME_ERROR'
+        ||!['SUBPROCESS_TIMEOUT','SUBPROCESS_EXIT'].includes(boundary.exceptionType)&&boundary.helper!=='NONE')return null;
+      const site=boundary.callsite;
+      if(site!==null&&(!site||Object.keys(site).sort().join(',')!=='line,module,sha256'
+        ||!['scripts/fixtures/source19-current-native-providers.py','scripts/update-dmi-bulk.py',
+          'scripts/test-source19-terminal-failure-proof-bank-v17-observer-native.py'].includes(site.module)
+        ||typeof site.sha256!=='string'||!/^[a-f0-9]{64}$/.test(site.sha256)
+        ||!Number.isSafeInteger(site.line)||site.line<1||site.line>1000000))return null;
+    }
+    return value; // Diagnostic only: never process/SQL/native success proof.
+  }catch{return null;}
+}
 export function nativePostgresChildFirstFailure(stdout,stderr){
   // Same fixed CURRENT child projection, plus the native caller's own bounded
   // exception projection. Unknown/malformed records are never printed raw.
@@ -133,6 +171,9 @@ export function nativePostgresChildFirstFailure(stdout,stderr){
       if(typeof stream!=='string'||Buffer.byteLength(stream)>2*1024*1024)continue;
       for(const line of stream.split(/\r?\n/)){
         if(line.length>2048)continue;let value;try{value=JSON.parse(line);}catch{continue;}
+        if(value?.kind==='SOURCE_PROVIDER_PROCESS_FIRST_FAILURE'){
+          const fixed=nativeProviderProcessFirstFailure(value);if(fixed)return fixed;continue;
+        }
         if(value?.kind==='CURRENT_SOURCE_NATIVE_FIRST_FAILURE'){
           try{const fixed=currentSourceNativeFirstFailure(line);if(fixed)return fixed;}catch{}
           continue;

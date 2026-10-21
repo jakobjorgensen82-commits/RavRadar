@@ -408,7 +408,20 @@ def finish_normal_basis(node, out, reference, producer, targets, document, *, in
 
 
 if __name__ == "__main__":
-    need(len(sys.argv) in (3, 4), "EXACT_NODE_TARGET_ARGUMENTS")
-    phase = None if len(sys.argv) == 3 else {'--initial-h0': 'h0', '--initial-h1': 'h1'}.get(sys.argv[3])
-    need(len(sys.argv) == 3 or phase is not None, "EXACT_INITIAL_PHASE_ARGUMENT")
-    prepare(Path(sys.argv[1]), sys.argv[2], initial_phase=phase)
+    try:
+        need(len(sys.argv) in (3, 4), "EXACT_NODE_TARGET_ARGUMENTS")
+        phase = None if len(sys.argv) == 3 else {'--initial-h0': 'h0', '--initial-h1': 'h1'}.get(sys.argv[3])
+        need(len(sys.argv) == 3 or phase is not None, "EXACT_INITIAL_PHASE_ARGUMENT")
+        prepare(Path(sys.argv[1]), sys.argv[2], initial_phase=phase)
+    except BaseException as error:
+        try:
+            # Reuse the existing terminal exception/frame reader only AFTER
+            # the actual failure. No native work or caller is retried here.
+            observer = module('source_provider_boundary_observer',
+                ROOT / 'scripts/test-source19-terminal-failure-proof-bank-v17-observer-native.py')
+            projected = observer.source_provider_boundary_failure(error)
+            if projected is not None:
+                print(json.dumps(projected, separators=(',', ':')), file=sys.stderr, flush=True)
+        except BaseException:
+            pass
+        raise

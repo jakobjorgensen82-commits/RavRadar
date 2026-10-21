@@ -2126,6 +2126,218 @@ def source_legacy_child_failure(error, phase):
         return None  # Never replace the original exception, even for bad getters.
 
 
+SOURCE_PROVIDER_NEED_CODES = frozenset(["CURRENT_NATIVE_PROVIDER_ABSOLUTE_PATH","CURRENT_NATIVE_PROVIDER_ADMIN_COPY_CHANGED","CURRENT_NATIVE_PROVIDER_ADMIN_INPUT_MISSING","CURRENT_NATIVE_PROVIDER_BASIS_DESTINATION_EXISTS","CURRENT_NATIVE_PROVIDER_CLEAN_NATIVE_ACQUISITION_MODE","CURRENT_NATIVE_PROVIDER_ECCODES_REQUIRED","CURRENT_NATIVE_PROVIDER_EMPTY_NORMAL_STATION_SOURCE_REQUIRED","CURRENT_NATIVE_PROVIDER_EXACT_INITIAL_PHASE","CURRENT_NATIVE_PROVIDER_EXACT_INITIAL_PHASE_ARGUMENT","CURRENT_NATIVE_PROVIDER_EXACT_NODE_TARGET_ARGUMENTS","CURRENT_NATIVE_PROVIDER_EXISTING_FIXTURE_DIRECTORY","CURRENT_NATIVE_PROVIDER_EXISTING_OWNED_HOST","CURRENT_NATIVE_PROVIDER_EXTERNAL_NETWORK_REFUSED","CURRENT_NATIVE_PROVIDER_GRID_BOUND","CURRENT_NATIVE_PROVIDER_LINUX_PYTHON312_REQUIRED","CURRENT_NATIVE_PROVIDER_NODE24_REQUIRED","CURRENT_NATIVE_PROVIDER_NORMAL_BASIS_OUTPUT_MISSING","CURRENT_NATIVE_PROVIDER_NORMAL_BULK_READBACK","CURRENT_NATIVE_PROVIDER_NORMAL_CAPTURE_MISSING","CURRENT_NATIVE_PROVIDER_NORMAL_COPERNICUS_RESIDUALS_REQUIRE_DATA","CURRENT_NATIVE_PROVIDER_NORMAL_DECODE_INCOMPLETE","CURRENT_NATIVE_PROVIDER_NORMAL_DECODE_OUTCOMES_INCOMPLETE","CURRENT_NATIVE_PROVIDER_NORMAL_LEDGER_NOT_READY","CURRENT_NATIVE_PROVIDER_NORMAL_MODULE","CURRENT_NATIVE_PROVIDER_NORMAL_NATIVE_PAIR_REJECTED","CURRENT_NATIVE_PROVIDER_NORMAL_PART_TARGETS","CURRENT_NATIVE_PROVIDER_NORMAL_REGISTRY_210_673","CURRENT_NATIVE_PROVIDER_NO_ADOPTED_OLD_BULK","CURRENT_NATIVE_PROVIDER_RAW_CHANGED_AFTER_DECODE","CURRENT_NATIVE_PROVIDER_SAME_ACTION_RUNNER_TEMP","CURRENT_NATIVE_PROVIDER_STAC_HOST","CURRENT_NATIVE_PROVIDER_STAC_PAGE_BOUND","CURRENT_NATIVE_PROVIDER_STAC_ROUTE","CURRENT_NATIVE_PROVIDER_SYMLINK","CURRENT_NATIVE_PROVIDER_TARGET_HOUR","CURRENT_NATIVE_PROVIDER_WRITE_READBACK"])
+SOURCE_PROVIDER_FRAME_FILES = ('scripts/fixtures/source19-current-native-providers.py',
+    'scripts/update-dmi-bulk.py', 'scripts/test-source19-terminal-failure-proof-bank-v17-observer-native.py')
+SOURCE_PROVIDER_SIGNALS = {-1: 'SIGHUP', -2: 'SIGINT', -3: 'SIGQUIT', -6: 'SIGABRT',
+    -9: 'SIGKILL', -11: 'SIGSEGV', -13: 'SIGPIPE', -15: 'SIGTERM'}
+SOURCE_PROVIDER_HELPERS = {'scripts/fill-open-meteo-current-fallback.py': 'OPEN_METEO',
+    'scripts/build-current-operational-closure.py': 'CLOSURE',
+    'scripts/build-live-current-pilot.py': 'LIVE_PILOT',
+    'scripts/fixtures/source19-current-provider-forecast.mjs': 'FORECAST',
+    'scripts/build-public-coastal-parts-v2.mjs': 'REGISTRY'}
+
+
+def source_provider_boundary_failure(error):
+    # Exact exception types and actual qualified source frames, not arbitrary
+    # error strings, argv, SQL or a claim about successful native processing.
+    try:
+        rows = []
+        for relative in SOURCE_PROVIDER_FRAME_FILES:
+            file = ROOT / relative
+            try:
+                body = file.read_bytes()
+                if len(body) <= 32 * 1024 * 1024:
+                    rows.append({'relativePath': relative, 'bytes': len(body), 'sha256': sha(body)})
+            except OSError:
+                pass
+        site = source_terminal_exception_callsite(error, ROOT, rows)
+        projected = source_terminal_exception_projection(error, 'UNKNOWN', site)
+        exception_type = projected['exceptionType']
+        helper, timeout = 'NONE', None
+        if type(error) in (subprocess.TimeoutExpired, subprocess.CalledProcessError):
+            exception_type = 'SUBPROCESS_TIMEOUT' if type(error) is subprocess.TimeoutExpired else 'SUBPROCESS_EXIT'
+            helper = 'UNKNOWN'
+            command = error.cmd
+            if type(command) in (list, tuple):
+                for token in command[:3]:
+                    if type(token) is str:
+                        for relative, fixed in SOURCE_PROVIDER_HELPERS.items():
+                            if token == str(ROOT / relative):
+                                helper = fixed
+            if type(error) is subprocess.TimeoutExpired and type(error.timeout) in (int, float) and error.timeout in (30, 120):
+                timeout = int(error.timeout)
+        reason = 'UNKNOWN'
+        if type(error) is RuntimeError:
+            text = str(error)
+            if text in SOURCE_PROVIDER_NEED_CODES:
+                reason = text
+        return {'kind': 'SOURCE_PROVIDER_BOUNDARY_FIRST_FAILURE', 'exceptionType': exception_type,
+            'reason': reason, 'callsite': site, 'helper': helper, 'timeoutSeconds': timeout,
+            'privatePayloadIncluded': False}
+    except BaseException:
+        return None  # The raw first exception still follows the unchanged path.
+
+
+def source_provider_boundary_valid(value):
+    try:
+        if (type(value) is not dict or set(value) != {'kind', 'exceptionType', 'reason', 'callsite',
+                'helper', 'timeoutSeconds', 'privatePayloadIncluded'}
+                or value['kind'] != 'SOURCE_PROVIDER_BOUNDARY_FIRST_FAILURE'
+                or value['privatePayloadIncluded'] is not False
+                or value['exceptionType'] not in (*SOURCE_TERMINAL_EXCEPTION_TYPES, 'SUBPROCESS_TIMEOUT', 'SUBPROCESS_EXIT')
+                or value['reason'] not in (*SOURCE_PROVIDER_NEED_CODES, 'UNKNOWN')
+                or value['helper'] not in (*SOURCE_PROVIDER_HELPERS.values(), 'NONE', 'UNKNOWN')
+                or value['timeoutSeconds'] is not None and (type(value['timeoutSeconds']) is not int or value['timeoutSeconds'] not in (30, 120))
+                or value['timeoutSeconds'] is not None and value['exceptionType'] != 'SUBPROCESS_TIMEOUT'
+                or value['reason'] != 'UNKNOWN' and value['exceptionType'] != 'RUNTIME_ERROR'
+                or value['exceptionType'] not in ('SUBPROCESS_TIMEOUT', 'SUBPROCESS_EXIT') and value['helper'] != 'NONE'):
+            return False
+        site = value['callsite']
+        return site is None or (type(site) is dict and set(site) == {'module', 'sha256', 'line'}
+            and site['module'] in SOURCE_PROVIDER_FRAME_FILES and type(site['sha256']) is str
+            and re.fullmatch(r'[a-f0-9]{64}', site['sha256']) is not None
+            and type(site['line']) is int and 1 <= site['line'] <= 1000000)
+    except BaseException:
+        return False
+
+
+def source_provider_process_failure(result, own):
+    # The existing subprocess/files are already closed+fsynced before this read.
+    # Oversized/missing/changed streams stay incomplete and yield no parsed cause.
+    try:
+        returncode = result.returncode if type(result) is subprocess.CompletedProcess else None
+        if type(returncode) is not int or not -(2**31) <= returncode < 2**31:
+            returncode = None
+        signal_name = ('UNKNOWN' if returncode is None else 'NONE' if returncode >= 0
+            else SOURCE_PROVIDER_SIGNALS.get(returncode, 'UNKNOWN'))
+        streams, stderr = {}, None
+        for name in ('stdout', 'stderr'):
+            relative = 'legacy-providers-whole.' + name
+            meta = {'bytes': None, 'sha256': None, 'complete': False}
+            try:
+                stat_result = (own / relative).lstat()
+                if type(stat_result.st_size) is int and 0 <= stat_result.st_size <= 2**53 - 1:
+                    meta['bytes'] = stat_result.st_size
+                raw = source_current_cohort_read(own, relative, 16 * 1024 * 1024)
+                meta = {'bytes': len(raw), 'sha256': sha(raw), 'complete': True}
+                if name == 'stderr':
+                    stderr = raw
+            except (OSError, ValueError, AssertionError, RuntimeError):
+                pass
+            streams[name] = meta
+        boundary = None
+        if stderr is not None:
+            for line in stderr.splitlines():
+                if len(line) > 4096:
+                    continue
+                try:
+                    value = json.loads(line)
+                except (ValueError, UnicodeDecodeError):
+                    continue
+                if source_provider_boundary_valid(value):
+                    boundary = value
+                    break
+        return {'kind': 'SOURCE_PROVIDER_PROCESS_FIRST_FAILURE', 'phase': 'PROVIDERS',
+            'returncode': returncode, 'signal': signal_name, **streams, 'boundary': boundary,
+            'privatePayloadIncluded': False}
+    except BaseException:
+        return None
+
+
+
+class SourceProviderEvidencePureTests(unittest.TestCase):
+    def test_exact_provider_need_catalog_matches_all_literal_source_sites(self):
+        import ast
+        tree = ast.parse((ROOT / SOURCE_PROVIDER_FRAME_FILES[0]).read_text(encoding='utf8'))
+        codes = set()
+        for node in ast.walk(tree):
+            if isinstance(node, ast.Call) and isinstance(node.func, ast.Name) and node.func.id == 'need':
+                self.assertEqual(len(node.args), 2)
+                self.assertIsInstance(node.args[1], ast.Constant)
+                self.assertIs(type(node.args[1].value), str)
+                codes.add('CURRENT_NATIVE_PROVIDER_' + node.args[1].value)
+            if isinstance(node, ast.Constant) and type(node.value) is str and node.value.startswith('CURRENT_NATIVE_PROVIDER_') and node.value != 'CURRENT_NATIVE_PROVIDER_':
+                codes.add(node.value)
+        self.assertEqual(len(codes), 36)
+        self.assertEqual(codes, SOURCE_PROVIDER_NEED_CODES)
+
+    def test_boundary_known_code_and_unknown_adversarial_text(self):
+        for text in ('CURRENT_NATIVE_PROVIDER_GRID_BOUND', 'CURRENT_NATIVE_PROVIDER_PRIVATE_SENTINEL',
+                'CURRENT_NATIVE_PROVIDER_GRID_BOUND\\nPRIVATE_SENTINEL', 'PRIVATE_SENTINEL'):
+            try:
+                raise RuntimeError(text)
+            except RuntimeError as error:
+                observed = source_provider_boundary_failure(error)
+                self.assertTrue(source_provider_boundary_valid(observed))
+                self.assertEqual(observed['reason'], text if text in SOURCE_PROVIDER_NEED_CODES else 'UNKNOWN')
+                self.assertNotIn('PRIVATE', json.dumps(observed))
+                if sys.platform == 'linux':
+                    self.assertIsNotNone(observed['callsite'])
+        class BrokenMessage(RuntimeError):
+            def __str__(self):
+                raise RuntimeError('PRIVATE')
+        error = BrokenMessage()
+        unknown = source_provider_boundary_failure(error)
+        self.assertEqual(unknown['exceptionType'], 'UNKNOWN')
+        self.assertEqual(unknown['reason'], 'UNKNOWN')
+        self.assertNotIn('PRIVATE', json.dumps(unknown))
+
+    def test_actual_subprocess_exception_types_have_fixed_helper_and_timeout(self):
+        for error, kind, helper, timeout in (
+                (subprocess.TimeoutExpired(['node', str(ROOT / 'scripts/fixtures/source19-current-provider-forecast.mjs'), 'PRIVATE_ARG'], 120),
+                    'SUBPROCESS_TIMEOUT', 'FORECAST', 120),
+                (subprocess.CalledProcessError(-9, ['python', '-B', str(ROOT / 'scripts/build-current-operational-closure.py'), 'PRIVATE_ARG']),
+                    'SUBPROCESS_EXIT', 'CLOSURE', None)):
+            try:
+                raise error
+            except BaseException as actual:
+                observed = source_provider_boundary_failure(actual)
+                self.assertEqual((observed['exceptionType'], observed['helper'], observed['timeoutSeconds']), (kind, helper, timeout))
+                self.assertTrue(source_provider_boundary_valid(observed))
+                self.assertNotIn('PRIVATE', json.dumps(observed))
+                self.assertNotIn('OOM', json.dumps(observed))
+
+    def test_actual_closed_private_streams_and_signal_outcome(self):
+        with tempfile.TemporaryDirectory(prefix='rr-provider-evidence-') as directory:
+            own = Path(directory).resolve()
+            boundary = source_provider_boundary_failure(RuntimeError('CURRENT_NATIVE_PROVIDER_NORMAL_LEDGER_NOT_READY'))
+            bodies = {'stdout': b'PRIVATE_STDOUT', 'stderr': (json.dumps(boundary) + '\nPRIVATE_STDERR').encode()}
+            for name, body in bodies.items():
+                with (own / ('legacy-providers-whole.' + name)).open('xb') as stream:
+                    stream.write(body); stream.flush(); os.fsync(stream.fileno())
+            observed = source_provider_process_failure(subprocess.CompletedProcess(['PRIVATE_ARG'], -9), own)
+            self.assertEqual(observed['returncode'], -9)
+            self.assertEqual(observed['signal'], 'SIGKILL')
+            self.assertNotIn('PRIVATE', json.dumps(observed))
+            self.assertNotIn('OOM', json.dumps(observed))
+            for name, body in bodies.items():
+                self.assertEqual(observed[name]['bytes'], len(body))
+                if sys.platform == 'linux':
+                    self.assertTrue(observed[name]['complete'])
+                    self.assertEqual(observed[name]['sha256'], sha(body))
+            if observed['stderr']['complete']:
+                self.assertEqual(observed['boundary'], boundary)
+            else:
+                self.assertIsNone(observed['boundary'])
+
+    def test_malformed_boundary_headers_and_incomplete_stream_never_become_cause(self):
+        fixed = source_provider_boundary_failure(RuntimeError('CURRENT_NATIVE_PROVIDER_GRID_BOUND'))
+        for mutation in ({**fixed, 'raw': 'PRIVATE'}, {**fixed, 'reason': 'CURRENT_NATIVE_PROVIDER_PRIVATE'},
+                {**fixed, 'exceptionType': 'PRIVATE'}, {**fixed, 'timeoutSeconds': True},
+                {**fixed, 'callsite': {'module': '../PRIVATE.py', 'sha256': 'a' * 64, 'line': 1}}):
+            self.assertFalse(source_provider_boundary_valid(mutation))
+        with tempfile.TemporaryDirectory(prefix='rr-provider-incomplete-') as directory:
+            own = Path(directory).resolve()
+            with (own / 'legacy-providers-whole.stderr').open('xb') as stream:
+                stream.seek(16 * 1024 * 1024); stream.write(b'x')
+            observed = source_provider_process_failure(None, own)
+            self.assertIsNone(observed['returncode'])
+            self.assertEqual(observed['signal'], 'UNKNOWN')
+            self.assertFalse(observed['stderr']['complete'])
+            self.assertEqual(observed['stderr']['bytes'], 16 * 1024 * 1024 + 1)
+            self.assertIsNone(observed['boundary'])
+
 SOURCE_TERMINAL_MARKER_BEFORE_FUNCTION = "        def marker_state():\n            nonlocal pending, read_offset, current_asset\n            with (root / 'stdout').open('rb') as stream:\n                stream.seek(read_offset); chunk = stream.read(256 * 1024)\n            read_offset += len(chunk); pending += chunk\n            if len(pending) > 512 * 1024 or read_offset > 8 * 1024 * 1024:\n                raise AssertionError('SOURCE_TERMINAL_OBSERVER_LOG_BOUND')\n            lines = pending.split(b'\\n'); pending = lines.pop()\n            for line in lines:\n                match = re.search(rb'DMI_ASSET_PROCESSING_(START|END)=(\\{[^\\r\\n]+\\})$', line)\n                if not match:\n                    continue\n                identity = json.loads(match[2]); canonical = json.dumps(identity, sort_keys=True, separators=(',', ':'))\n                if match[1] == b'START':\n                    starts[canonical] = starts.get(canonical, 0) + 1\n                    current_asset = canonical\n                elif current_asset == canonical:\n                    current_asset = None"
 
 class SourceTerminalFailureNative(SourceActualSUnionNative):
@@ -2888,6 +3100,7 @@ class SourceCurrentNative(SourceActualSUnionNative):
             ('providers', [sys.executable, '-I', '-B', str(root / 'scripts/fixtures/source19-current-native-providers.py'), str(NODE), target]),
             ('follower', [str(NODE), str(root / 'scripts/test-source-producer-legacy-compatibility.mjs')]))
         for name, command in commands:
+            result = None  # Never reuse the preceding bindings child's status.
             # Preserve whole private stdout/stderr BEFORE status/filtering. A
             # failed child leaves this same owner/fixture intact for diagnosis.
             try:
@@ -2898,6 +3111,13 @@ class SourceCurrentNative(SourceActualSUnionNative):
                     output.flush(); os.fsync(output.fileno()); errors.flush(); os.fsync(errors.fileno())
                 self.assertEqual(result.returncode, 0, 'SOURCE_LEGACY_COMPATIBILITY_CHILD_REFUSED')
             except BaseException as error:
+                if name == 'providers':
+                    try:
+                        projected = source_provider_process_failure(result, own)
+                        if projected is not None:
+                            print(json.dumps(projected, separators=(',', ':')), flush=True)
+                    except BaseException:
+                        pass
                 try:
                     # Whole child files above precede selection. Only the
                     # child's fixed JSON projection is relayed; raw Node
@@ -3228,6 +3448,8 @@ def run_current_native_profile_cli():
 
 
 if __name__ == '__main__':
+    if sys.argv[1:] == ['--provider-diagnostic-unit']:
+        unittest.main(argv=[sys.argv[0]], defaultTest='SourceProviderEvidencePureTests')
     if sys.argv[1:] == ['--legacy-diagnostic-unit']:
         unittest.main(argv=[sys.argv[0]], defaultTest='SourceObserverPureTests.test_legacy_child_failure_projects_three_commands_without_raw_exception')
     if sys.argv[1:2] in (['--current-source-profile'], ['--source-legacy-compatibility']):

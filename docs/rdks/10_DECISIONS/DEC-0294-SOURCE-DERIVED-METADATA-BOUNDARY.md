@@ -88,6 +88,30 @@ privatheds- og childfaseprøver er særskilte fra Linux/native PostgreSQL.
 Præcis ny kildekontrol og egentlig årsagsafklaring kræves stadig; en bedre
 rapport er ikke en produktrettelse eller en offentlig SOURCE-levering.
 
+Den følgende præcise kontrol nåede providerbarnets ikke-nul-udfald. Den gamle
+assertion ved denne procesgrænse beviser hverken barnets exceptiontype, SQL-fejl,
+positiv timeout eller hukommelsesmangel. En supplerende test-only projektion
+bevarer derfor faktisk signed returkode, fast signalnavn samt de allerede
+lukkede private stdout/stderr-strømmes byteantal, SHA-256 og fuldstændighed.
+Manglende, ændret eller oversize capture er ufuldstændig og må ikke give en
+udledt årsag; SIGKILL er ikke i sig selv OOM-bevis.
+
+Providerens normale CLI videresender ved den første reelle exception alene
+en fast type, eventuel faktisk 30/120-sekunders helper-timeout, kendt helperkode
+og fysisk kvalificeret script/SHA-256/linje. Kun de 36 eksisterende, AST-bundne
+afvisningskoder eller UNKNOWN må følge rapporten. Ingen rå besked, argv, stack,
+assertionværdier eller vejrdata vises. Diagnostikfejl må ikke erstatte den
+oprindelige fejl. Alle tidligere projektioner, assertions, procesudfald,
+oprydning, 2-MiB-buffer, 240-minutters childfrist og helperfrister bevares.
+
+Fire test-/fixtureblade ændres uden for aktuelle C/I-inventarer. Syv rene
+normale Node/Python-mål består uden skip; de omfatter signal, ukendt kode,
+strenge headers, faktisk timeouttype, ufuldstændig capture og adversarial tekst.
+Den første private Windows-invocation nåede ingen test før en file-URL-fejl;
+kun dens invocation blev rettet før det ene faktisk kørte mål. Linux-kvalificeret
+positiv frame, native PostgreSQL, ny præcis CI og selve providerårsagen er stadig
+åbne. 030000, C/I/T, alle migrationer og den almindelige vejrhentning ændres ikke.
+
 Den efterfølgende Linux-kontrol bestod både den aktuelle distribution og hele
 den native SDK-/offlinegruppe. Den stoppede senere ved import af den udskilte
 normale tail: to ubrugte gzip-/gunzip-deklarationer havde ikke deres gamle

@@ -3,7 +3,7 @@ import fs from 'node:fs/promises';
 import test from 'node:test';
 import {spawnSync} from 'node:child_process';
 import {fileURLToPath} from 'node:url';
-import {nativePostgresExceptionCode,nativePostgresExceptionDiagnostic,nativePostgresChildFirstFailure,nativePostgresCaptureComplete}
+import {nativePostgresExceptionCode,nativePostgresExceptionDiagnostic,nativePostgresChildFirstFailure,nativePostgresCaptureComplete,nativeProviderProcessFirstFailure}
   from './lib/checkpoint-cas-native-postgres.mjs';
 import './test-source-native-node24-workflow.mjs';
 import {ORIGIN, WORKFLOW, JOB, STEP, COMMANDS, CURRENT_COMMANDS as SOURCE_CURRENT_COMMANDS, ACCOUNT_STATISTICS_ASSISTANT_COMMANDS as CURRENT_COMMANDS, NATIVE_SCRIPT as SOURCE_NATIVE_SCRIPT, ACCOUNT_STATISTICS_ASSISTANT_NATIVE_SCRIPT as NATIVE_SCRIPT, NEW_NATIVE_BLOCK,
@@ -12,6 +12,49 @@ import {ORIGIN, WORKFLOW, JOB, STEP, COMMANDS, CURRENT_COMMANDS as SOURCE_CURREN
   verifyLaterRuns, decideReuse, verifyCurrentPullRequest, FOLLOWUP_INPUTS} from './native-postgres-evidence.mjs';
 
 const copy = value => structuredClone(value);
+test('provider evidence: normal caller executes the five pure boundary/process regressions',async()=>{
+  const result=spawnSync(process.env.PYTHON||'python3',['-I','-B',
+    'scripts/test-source19-terminal-failure-proof-bank-v17-observer-native.py','--provider-diagnostic-unit'],
+    {cwd:fileURLToPath(new URL('../',import.meta.url)),encoding:null,timeout:30000,
+      maxBuffer:1024*1024,windowsHide:true,input:''});
+  const parent=fileURLToPath(new URL('../.cache/',import.meta.url));await fs.mkdir(parent,{recursive:true});
+  const output=await fs.mkdtemp(fileURLToPath(new URL('../.cache/provider-evidence-unit-',import.meta.url)));
+  await fs.writeFile(output+'/whole.stdout',result.stdout??Buffer.alloc(0),{flag:'wx',mode:0o600});
+  await fs.writeFile(output+'/whole.stderr',result.stderr??Buffer.alloc(0),{flag:'wx',mode:0o600});
+  assert.equal(result.error,undefined,'Fixed provider diagnostic test process must start');
+  assert.equal(result.signal,null,'Fixed provider diagnostic test process must finish');
+  assert.equal(result.status,0,'Fixed provider diagnostic tests must pass');
+  assert.match(String(result.stderr),/^Ran 5 tests in [^\r\n]+\r?$/m);
+  assert.match(String(result.stderr),/^OK\r?$/m);assert.doesNotMatch(String(result.stderr),/skipped/);
+});
+test('provider evidence: exact finite codes, process signals, stream bounds and schemas through normal parser',async()=>{
+  const python=await fs.readFile(new URL('./test-source19-terminal-failure-proof-bank-v17-observer-native.py',import.meta.url),'utf8');
+  const match=/^SOURCE_PROVIDER_NEED_CODES = frozenset\((\[[^\r\n]+\])\)$/m.exec(python);
+  assert(match);const codes=JSON.parse(match[1]);assert.equal(codes.length,36);
+  const stream={bytes:2,sha256:'a'.repeat(64),complete:true};
+  const boundary={kind:'SOURCE_PROVIDER_BOUNDARY_FIRST_FAILURE',exceptionType:'RUNTIME_ERROR',
+    reason:codes[0],helper:'NONE',timeoutSeconds:null,callsite:null,privatePayloadIncluded:false};
+  const fixed={kind:'SOURCE_PROVIDER_PROCESS_FIRST_FAILURE',phase:'PROVIDERS',returncode:1,signal:'NONE',
+    stdout:stream,stderr:stream,boundary,privatePayloadIncluded:false};
+  for(const reason of codes){const value={...fixed,boundary:{...boundary,reason}};
+    assert.deepEqual(nativeProviderProcessFirstFailure(value),value);
+    assert.deepEqual(nativePostgresChildFirstFailure('PRIVATE_RAW\n'+JSON.stringify(value),''),value);}
+  for(const [returncode,signal]of [[-9,'SIGKILL'],[-15,'SIGTERM'],[-127,'UNKNOWN'],[null,'UNKNOWN'],[0,'NONE']]){
+    const value={...fixed,returncode,signal};assert.deepEqual(nativeProviderProcessFirstFailure(value),value);
+    assert(!JSON.stringify(nativeProviderProcessFirstFailure(value)).includes('OOM'));}
+  const timeout={...fixed,boundary:{...boundary,reason:'UNKNOWN',exceptionType:'SUBPROCESS_TIMEOUT',helper:'FORECAST',timeoutSeconds:120}};
+  assert.deepEqual(nativePostgresChildFirstFailure(JSON.stringify(timeout),''),timeout);
+  const incomplete={...fixed,stderr:{bytes:16*1024*1024+1,sha256:null,complete:false},boundary:null};
+  assert.deepEqual(nativeProviderProcessFirstFailure(incomplete),incomplete);
+  for(const value of [{...fixed,raw:'PRIVATE'},{...fixed,signal:'OOM'},{...fixed,returncode:true},
+    {...fixed,stderr:{...stream,private:'PRIVATE'}},{...fixed,stderr:{...stream,bytes:16*1024*1024+1}},
+    {...incomplete,boundary},{...fixed,boundary:{...boundary,reason:'CURRENT_NATIVE_PROVIDER_PRIVATE_SENTINEL'}},
+    {...fixed,boundary:{...boundary,reason:codes[0]+'\nPRIVATE'}},{...fixed,boundary:{...boundary,timeoutSeconds:120}},
+    {...fixed,boundary:{...boundary,rawMessage:'PRIVATE'}},
+    {...fixed,boundary:{...boundary,callsite:{module:'../private.py',sha256:'a'.repeat(64),line:1}}},
+    new Proxy({}, {get(){throw new Error('PRIVATE');}})]){
+      assert.equal(nativeProviderProcessFirstFailure(value),null);}
+});
 test('native diagnostic: normal caller executes the one fixed Python child-phase regression',()=>{
   const result=spawnSync(process.env.PYTHON||'python3',['-I','-B',
     'scripts/test-source19-terminal-failure-proof-bank-v17-observer-native.py','--legacy-diagnostic-unit'],

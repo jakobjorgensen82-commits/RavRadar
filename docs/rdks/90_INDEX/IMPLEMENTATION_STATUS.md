@@ -2,6 +2,8 @@
 
 - [x] Den generiske native-fejlrapport er reproduceret med Nodes egentlige assertion-suffiks. Test-only første fase/kildested, fast kodekatalog og privat child-capture før filtrering er tilføjet med eksplicit ufuldstændighed ved buffergrænse eller afbrydelse. Databasekrav, stop, frister og C/I/T/SQL er uændrede.
 - [ ] Præcis ny Linux-/databasekontrol skal vise den oprindelige indre fejl eller et faktisk samlet resultat. Lokal diagnostik er ikke årsagsrettelse, installation eller offentlig SOURCE-effekt. Se DEC-0294.
+- [x] Efter den faktiske provider-child-afvisning tilføjet test-only procesudfald, signal og private streambeviser samt AST-bundet 36-kodekatalog og første fysisk kvalificerede provider-frame. Syv rene normale mål består uden skip; gamle rapporter, checks, 120-sekunders helperfrist og 240-minutters childfrist bevares.
+- [ ] Den indre providerårsag, Linux-kvalificeret positiv frame, native PostgreSQL og ny præcis kilde-CI er ikke dokumenteret af de lokale mål. Ingen OOM-/SQL-årsag eller runtimefix påstås.
 
 - [x] Den efterfølgende faktiske Linux-kontrol bestod hele SDK-/offlinegruppen og fandt senere ubrugte, ubundne gzip-/gunzip-deklarationer i tail. Hel entry-/tail-navnegennemgang og fjernelse af netop de to døde deklarationer; normal DMI-kalder lokalt 34 PASS/otte Linux-skips/ingen fejl.
 - [x] Korrigeret faktisk modelkode har ny C145/I141/T-afledning, normal syvforbrugersynk og append-only 030000-SQL med fixedpoint. Alle 65 gamle migrationsfiler er byteeksakt bevaret; aldrig installeret 020000 er ikke længere valgt mål eller et mellemtrin.
