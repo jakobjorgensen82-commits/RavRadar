@@ -380,6 +380,8 @@ export function inverseAlternativeCCaller(source,relative) {
   assert(row,'ALTERNATIVE_C_TEST_INPUT_PATH');
   source=source.replaceAll('\r\n','\n');
   if(digest(source)===row.before.sha256) return source;
+  if(relative==='scripts/plan-ravscore-current-history.mjs') source=inverseCurrent586SharedProjectionExportTestInput(source, relative);
+  if(relative==='scripts/plan-ravscore-current-history.mjs') source=inverseCurrent586IdentityRefinementTestInput(source, relative);
   if(relative==='scripts/plan-ravscore-current-history.mjs') source=inverseCurrent586EndpointDiagnosticTestInput(source, relative);
   if(relative==='scripts/plan-ravscore-current-history.mjs') source=inversePlannerFirstFailure(inversePlannerOriginalDependency(inversePlannerEndpointSubreason(inverseCurrentNativeOriginalConsumerTestInput(source, relative))));
   if(relative==='scripts/update-weather.mjs') source=inverseArchivedWeatherRestartUpdater(source);
@@ -463,5 +465,90 @@ export function inverseCurrent586EndpointDiagnosticTestInput(source, relative) {
   }
   assert.equal(Buffer.byteLength(source), row.before.bytes, 'ALTERNATIVE_C_TEST_INPUT_CHANGED:ENDPOINT_DIAGNOSTIC_BEFORE_SIZE');
   assert.equal(digest(source), row.before.sha256, 'ALTERNATIVE_C_TEST_INPUT_CHANGED:ENDPOINT_DIAGNOSTIC_BEFORE_WHOLE');
+  return source;
+}
+
+// Additive identity-counter inverse only; every previous table and pin is unchanged.
+export const CURRENT586_IDENTITY_REFINEMENT_TEST_REVIEW = Object.freeze({
+  "schemaVersion": 1,
+  "kind": "TEST_ONLY_EXACT_CURRENT586_IDENTITY_REFINEMENT_INVERSE",
+  "path": "scripts/plan-ravscore-current-history.mjs",
+  "before": {
+    "bytes": 73142,
+    "sha256": "17b038d863620cccb86fce96c49109c6dba9a6c2cfa9966d883c7c675716ff76"
+  },
+  "after": {
+    "bytes": 77464,
+    "sha256": "98317ea46e1760613b8fd908257eca1a87d46f494c3966eafcbe3be4d63d8c4d"
+  },
+  "edits": [
+    {
+      "offset": 19799,
+      "before": "",
+      "after": "// Fixed diagnostic-only identity decomposition. Detached probes are observations,\n// never source rows, endpoint evidence, admission or a replacement comparator.\nfunction current586IdentityDifferenceDetails(nativeSource, wireIdentity, forecastSource, expected) {\n  const native = structuredClone(nativeSource), forecast = structuredClone(forecastSource);\n  const groups = {\n    collectionFamily: ['collection', 'collectionFamily'], modelRun: ['modelRun'],\n    entity: ['component', 'componentKind', 'entityId', 'parentZoneId', 'entityType', 'samplingContext'],\n    gridDefinition: ['gridDefinitionSha256'], gridLocation: ['gridPoint'],\n    samplingLocation: ['samplingPoint'], distance: ['distanceKm'],\n    vector: ['vectorSelection', 'vectorSemanticsVersion'],\n    spatial: ['spatialSelection', 'spatialSemanticsVersion'],\n    layer: ['verticalLayer', 'verticalLayerRankM'], fieldSet: ['fieldSet'],\n  };\n  const nativeMismatch = !sameNativeIdentity(native, forecast, 'current'), nativeGroups = {};\n  for (const [group] of Object.entries(groups)) {\n    const probe = structuredClone(forecast);\n    // Isolate one actual field group; all other comparator inputs are exact\n    // detached native copies. Canonical tolerances remain in sameNativeIdentity.\n    for (const [other, fields] of Object.entries(groups)) if (other !== group) for (const key of fields) {\n      if (Object.hasOwn(native, key)) probe[key] = structuredClone(native[key]);\n      else delete probe[key];\n    }\n    nativeGroups[group] = !sameNativeIdentity(structuredClone(native), probe, 'current');\n  }\n  const wireShape = wireIdentity !== null && typeof wireIdentity === 'object'\n    && !Array.isArray(wireIdentity)\n    && Object.keys(wireIdentity).sort().join(',') === Object.keys(expected).sort().join(',');\n  const wire = wireShape ? structuredClone(wireIdentity) : null;\n  const wireMismatch = !dmiOriginalWireIdentityMatchesCentralIdentity(wire, expected);\n  const wireStringsMatch = wireShape && dmiOriginalWireIdentityMatchesCentralIdentity({\n    ...wire, samplingPoint: structuredClone(expected.samplingPoint) }, expected);\n  const wirePointMatches = wireShape && dmiOriginalWireIdentityMatchesCentralIdentity({\n    ...structuredClone(expected), samplingPoint: structuredClone(wire.samplingPoint) }, expected);\n  return {\n    wireMismatch, wireShapeMismatch: !wireShape,\n    wireStringMismatch: wireShape && !wireStringsMatch,\n    wirePointMismatch: wireShape && !wirePointMatches,\n    wireUnclassifiedMismatch: wireMismatch && wireShape && wireStringsMatch && wirePointMatches,\n    nativeMismatch, nativeGroups,\n    nativeUnclassifiedMismatch: nativeMismatch && !Object.values(nativeGroups).some(Boolean),\n  };\n}\n\n"
+    },
+    {
+      "offset": 24249,
+      "before": "      stepFieldsMismatch: 0, exactNativeObserved: 0 } });",
+      "after": "      stepFieldsMismatch: 0, exactNativeObserved: 0 },\n    identityMismatchDetails: {\n      countingUnit: 'ELIGIBLE_CANDIDATE_OCCURRENCES_PER_ENDPOINT',\n      countsMayOverlap: true, uniqueOriginalsClaimed: false, singularCauseClaimed: false,\n      endpointSteps: 0, candidateOccurrences: 0,\n      wireMismatch: 0, wireShapeMismatch: 0, wireStringMismatch: 0, wirePointMismatch: 0,\n      wireUnclassifiedMismatch: 0, nativeMismatch: 0, nativeUnclassifiedMismatch: 0,\n      nativeGroups: { collectionFamily: 0, modelRun: 0, entity: 0, gridDefinition: 0,\n        gridLocation: 0, samplingLocation: 0, distance: 0, vector: 0, spatial: 0,\n        layer: 0, fieldSet: 0 },\n    } });"
+    },
+    {
+      "offset": 35334,
+      "before": "          count.contextMismatch[category]++;",
+      "after": "          count.contextMismatch[category]++;\n          if (category === 'identityMismatch') {\n            const detail = count.identityMismatchDetails;\n            detail.endpointSteps++;\n            // One occurrence may fail several groups, and repeated provided\n            // contexts are not deduplicated into invented unique originals.\n            for (const candidate of eligible) {\n              const observedIdentity = current586IdentityDifferenceDetails(\n                candidate.row.sources.current, candidate.wireIdentity, original, expected);\n              detail.candidateOccurrences++;\n              for (const key of ['wireMismatch', 'wireShapeMismatch', 'wireStringMismatch',\n                'wirePointMismatch', 'wireUnclassifiedMismatch', 'nativeMismatch', 'nativeUnclassifiedMismatch'])\n                detail[key] += Number(observedIdentity[key]);\n              for (const [group, mismatch] of Object.entries(observedIdentity.nativeGroups))\n                detail.nativeGroups[group] += Number(mismatch);\n            }\n          }"
+    }
+  ]
+});
+
+export function inverseCurrent586IdentityRefinementTestInput(source, relative) {
+  assert.equal(arguments.length, 2, 'ALTERNATIVE_C_TEST_INPUT_CHANGED:IDENTITY_REFINEMENT_ARGUMENTS');
+  assert.equal(typeof source, 'string', 'ALTERNATIVE_C_TEST_INPUT_CHANGED:IDENTITY_REFINEMENT_TYPE');
+  const row = CURRENT586_IDENTITY_REFINEMENT_TEST_REVIEW;
+  const whole = digest(source), bytes = Buffer.byteLength(source);
+  if (relative !== row.path || whole !== row.after.sha256 || bytes !== row.after.bytes) {
+    // Validate a known earlier whole source without removing any older layer.
+    inverseCurrent586EndpointDiagnosticTestInput(source, relative);
+    return source;
+  }
+  for (const edit of [...row.edits].reverse()) {
+    assert.equal(source.slice(edit.offset, edit.offset + edit.after.length), edit.after,
+      'ALTERNATIVE_C_TEST_INPUT_CHANGED:IDENTITY_REFINEMENT_HUNK');
+    source = source.slice(0, edit.offset) + edit.before + source.slice(edit.offset + edit.after.length);
+  }
+  assert.equal(Buffer.byteLength(source), row.before.bytes, 'ALTERNATIVE_C_TEST_INPUT_CHANGED:IDENTITY_REFINEMENT_BEFORE_SIZE');
+  assert.equal(digest(source), row.before.sha256, 'ALTERNATIVE_C_TEST_INPUT_CHANGED:IDENTITY_REFINEMENT_BEFORE_WHOLE');
+  return source;
+}
+
+// Additive exact inverse for the shared CURRENT projection exports only.
+// Existing identity/diagnostic/native/666 tables and assertions remain exact.
+export const CURRENT586_SHARED_PROJECTION_EXPORT_TEST_REVIEW = Object.freeze({
+  schemaVersion: 1,
+  kind: 'TEST_ONLY_EXACT_CURRENT586_SHARED_PROJECTION_EXPORT_INVERSE',
+  path: 'scripts/plan-ravscore-current-history.mjs',
+  before: { bytes: 77464, sha256: '98317ea46e1760613b8fd908257eca1a87d46f494c3966eafcbe3be4d63d8c4d' },
+  after: { bytes: 77545, sha256: '6fc90ba1b688ae2567ff760513f62db3124352a313279d1425c0b7bca014d96b' },
+  edits: [{ offset: 15829, before: '',
+    after: 'export { assertCommittedRawRetentionInputs, projectCommittedRawRetentionPart };\n\n' }],
+});
+
+export function inverseCurrent586SharedProjectionExportTestInput(source, relative) {
+  assert.equal(arguments.length, 2, 'ALTERNATIVE_C_TEST_INPUT_CHANGED:SHARED_EXPORT_ARGUMENTS');
+  assert.equal(typeof source, 'string', 'ALTERNATIVE_C_TEST_INPUT_CHANGED:SHARED_EXPORT_TYPE');
+  const row = CURRENT586_SHARED_PROJECTION_EXPORT_TEST_REVIEW;
+  const whole = digest(source), bytes = Buffer.byteLength(source);
+  if (relative !== row.path || whole !== row.after.sha256 || bytes !== row.after.bytes) {
+    // Validate an exact earlier source without removing its identity layer.
+    // Unknown paths, bytes or mutations still reach the existing strict refusal.
+    inverseCurrent586IdentityRefinementTestInput(source, relative);
+    return source;
+  }
+  for (const edit of [...row.edits].reverse()) {
+    assert.equal(source.slice(edit.offset, edit.offset + edit.after.length), edit.after,
+      'ALTERNATIVE_C_TEST_INPUT_CHANGED:SHARED_EXPORT_HUNK');
+    source = source.slice(0, edit.offset) + edit.before + source.slice(edit.offset + edit.after.length);
+  }
+  assert.equal(Buffer.byteLength(source), row.before.bytes, 'ALTERNATIVE_C_TEST_INPUT_CHANGED:SHARED_EXPORT_BEFORE_SIZE');
+  assert.equal(digest(source), row.before.sha256, 'ALTERNATIVE_C_TEST_INPUT_CHANGED:SHARED_EXPORT_BEFORE_WHOLE');
   return source;
 }

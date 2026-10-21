@@ -1,4 +1,4 @@
-import { inverseAlternativeCCaller, inverseCurrentNativeOriginalConsumerTestInput, CURRENT_NATIVE_ORIGINAL_CONSUMER_TEST_REVIEW, inverseCurrent586EndpointDiagnosticTestInput } from './lib/alternative-c-caller-test-input.mjs';
+import { inverseAlternativeCCaller, inverseCurrentNativeOriginalConsumerTestInput, CURRENT_NATIVE_ORIGINAL_CONSUMER_TEST_REVIEW, inverseCurrent586EndpointDiagnosticTestInput, inverseCurrent586IdentityRefinementTestInput, inverseCurrent586SharedProjectionExportTestInput } from './lib/alternative-c-caller-test-input.mjs';
 import assert from 'node:assert/strict';
 import crypto from 'node:crypto';
 import test from 'node:test';
@@ -13,6 +13,7 @@ import { buildNewestValidRavScoreRecoverySources } from './lib/ravscore-recovery
 import { createProtectedDmiNativeCurrentInspector } from './lib/protected-dmi-native-current-proofs.mjs';
 import { inspectDmiForecastGridSampling } from './lib/dmi-forecast-store.mjs';
 import { canonicalSavedDmiOriginalCapture } from './lib/saved-dmi-original-capture.mjs';
+import { discoverCommittedCoherentOriginalBootstrap } from './lib/coherent-current-original-bootstrap.mjs';
 import { buildRavScoreRecoveryReplay } from './lib/ravscore-recovery-replay.mjs';
 import { canonicalRavScoreStateOnlyCurrentHold, RAVSCORE_STATE_ONLY_CURRENT_HOLD_CONTRACT_ID,
   RAVSCORE_STATE_ONLY_CURRENT_HOLD_CLOSURE_CONTRACT_ID } from '../js/core/ravscore-integrated-state-pipeline.js';
@@ -582,8 +583,8 @@ test('native-original planner oracle preserves complete earlier source and actua
   assert.deepEqual(CURRENT_NATIVE_ORIGINAL_CONSUMER_TEST_REVIEW.rows.map(row => row.path),
     ['scripts/plan-ravscore-current-history.mjs', 'scripts/lib/post-h0-dmi-original-dependencies.mjs']);
   for (const row of CURRENT_NATIVE_ORIGINAL_CONSUMER_TEST_REVIEW.rows) {
-    const current = inverseCurrent586EndpointDiagnosticTestInput(
-      readFileSync(new URL('../' + row.path, import.meta.url), 'utf8').replace(/\r\n/g, '\n'), row.path);
+    const current = inverseCurrent586EndpointDiagnosticTestInput(inverseCurrent586IdentityRefinementTestInput(inverseCurrent586SharedProjectionExportTestInput(
+      readFileSync(new URL('../' + row.path, import.meta.url), 'utf8').replace(/\r\n/g, '\n'), row.path), row.path), row.path);
     assert.equal(sha(current), row.after.sha256, 'The actual current source must be qualified before historical projection');
     assert.equal(Buffer.byteLength(current), row.after.bytes);
     const original = inverseCurrentNativeOriginalConsumerTestInput(current, row.path);
@@ -872,4 +873,121 @@ test('normal authenticated B companions CLI: original fixed entries survive work
   assert.equal(JSON.stringify(old),oldBytes);assert.equal(JSON.stringify(partial),partialBytes);
   for(const[relative,bytes]of productBytes)assert.deepEqual(await fs.readFile(path.join(host,relative)),bytes);
   complete=true;
+});
+
+// Append to the EXISTING post-H0 test target, retaining its fixture() unchanged.
+// Synthetic normal-projection contracts only; no actual authenticated B or RAW.
+function coherentBootstrapInput(f, hourly = f.options.recoverySources[0].record.hourly) {
+  const part = { ...f.part, name: 'Synthetic bootstrap PART', landPoint: [8.001, 55] };
+  const state = f.options.initialSelection.state;
+  const conditions = { datasetId: 'rr-synthetic-coherent-bootstrap', productionReferenceAt: at(0),
+    coastalParts: { parts: { [part.partId]: { ravScoreModel: { currentState: state } } } } };
+  const checkpoint = { datasetId: conditions.datasetId, productionReferenceAt: at(0),
+    generationSha256: sha('synthetic-bootstrap-S'), states: { [part.partId]: state } };
+  const protectedBulk = structuredClone(f.document);
+  protectedBulk.zones[f.identity.entityId].hourly = {};
+  return { registry: { partCount: 1, zones: { [part.zoneId]: [part] } }, conditions, checkpoint,
+    boundary: { datasetId: conditions.datasetId, productionReferenceAt: at(0),
+      bundleContentSha256: sha('synthetic-bootstrap-B'), conditionsSha256: sha(JSON.stringify(conditions)),
+      checkpointGenerationSha256: checkpoint.generationSha256 }, productionReferenceAt: at(6),
+    protectedBulk, persistedHourlyByPart: new Map([[part.partId,
+      { point: part.waterPoint, hourly: structuredClone(hourly) }]]),
+    zones: { features: [{ properties: { id: part.zoneId } }] } };
+}
+const bootstrapInputBytes = input => JSON.stringify([input, [...input.persistedHourlyByPart]]);
+
+test('coherent original bootstrap metadata: single-native own top binds metadata but not original or RAW proof', () => {
+  const f = fixture({ coherent: [-3, 0, 3, 6, 9] });
+  const input = coherentBootstrapInput(f, [rowAt(f, 3)]), before = bootstrapInputBytes(input);
+  assert.throws(() => buildRavScoreRawCurrentRetention(input), error =>
+    error.originalDependencyCode === 'POST_H0_DMI_ORIGINAL_SELECTED_ENDPOINT_PROOF_NATIVE_ENDPOINT_MISSING');
+  const result = discoverCommittedCoherentOriginalBootstrap(input);
+  assert.equal(result.summary.status, 'METADATA_BOUND');
+  assert.equal(result.summary.counts.missingOriginalEndpoints, 1);
+  assert.equal(result.summary.counts.metadataBoundEndpoints, 1);
+  assert.equal(result.privateRequests.length, 1);
+  assert.deepEqual(result.privateRequests[0].capture, canonicalSavedDmiOriginalCapture(rowAt(f, 3).sources.current));
+  assert.equal(result.privateRequests[0].nativeValidTime, at(3));
+  assert.equal(result.summary.rawAvailability, 'NOT_PROBED');
+  assert.equal(result.summary.missingRawFiles, null);
+  for (const key of ['authenticationPerformed', 'rawReadPerformed', 'decoderExecuted',
+    'nativeAdmissionPerformed', 'sourcePriorityChanged', 'selectedRowsChanged']) assert.equal(result.summary[key], false);
+  assert.equal(bootstrapInputBytes(input), before);
+  result.privateRequests[0].capture.contentSha256 = 'detached-output-only';
+  assert.equal(bootstrapInputBytes(input), before);
+  assert.throws(() => buildRavScoreRawCurrentRetention(input), error =>
+    error.originalDependencyCode === 'POST_H0_DMI_ORIGINAL_SELECTED_ENDPOINT_PROOF_NATIVE_ENDPOINT_MISSING');
+});
+
+test('coherent original bootstrap metadata: interpolated top binds only its OWN endpoint, never another bracket SHA', () => {
+  const f = fixture({ coherent: [-3, 0, 3, 6, 9] }), interpolated = rowAt(f, 2);
+  assert.equal(interpolated.sources.current.nativeSteps.length, 2);
+  const input = coherentBootstrapInput(f, [interpolated]), before = bootstrapInputBytes(input);
+  const result = discoverCommittedCoherentOriginalBootstrap(input);
+  assert.equal(result.summary.status, 'UNRESOLVED');
+  assert.equal(result.summary.counts.missingOriginalEndpoints, 2);
+  assert.equal(result.summary.counts.metadataBoundEndpoints, 1, 'top capture identifies only its selectedStep');
+  assert.equal(result.summary.counts.unboundCaptures, 1);
+  assert.equal(result.summary.refusalCode, 'COHERENT_ORIGINAL_BOOTSTRAP_CAPTURE_UNRESOLVED');
+  assert.deepEqual(result.privateRequests, [], 'partial endpoint metadata cannot seed decode');
+  assert.equal(bootstrapInputBytes(input), before);
+});
+
+test('coherent original bootstrap metadata: own stored selections resolve both brackets with distinct genuine captures', () => {
+  const f = fixture({ coherent: [-3, 0, 3, 6, 9] });
+  const input = coherentBootstrapInput(f, [rowAt(f, 0), rowAt(f, 2), rowAt(f, 3)]), before = bootstrapInputBytes(input);
+  const result = discoverCommittedCoherentOriginalBootstrap(input);
+  assert.equal(result.summary.status, 'METADATA_BOUND');
+  assert.equal(result.summary.counts.unboundCaptures, 0);
+  const captures = new Map(result.privateRequests.map(request => [request.nativeValidTime, request.capture]));
+  for (const offset of [0, 3]) assert.deepEqual(captures.get(at(offset)),
+    canonicalSavedDmiOriginalCapture(rowAt(f, offset).sources.current));
+  assert.notEqual(captures.get(at(0)).contentSha256, captures.get(at(3)).contentSha256);
+  assert.equal(bootstrapInputBytes(input), before);
+});
+
+test('coherent original bootstrap metadata: ambiguity refuses the whole reservoir rather than selecting a capture', () => {
+  const f = fixture({ coherent: [-3, 0, 3, 6, 9] }), original = rowAt(f, 3), conflict = structuredClone(original);
+  // Synthetic malformed reservoir, not a claim that an authenticated pack has
+  // duplicate hours: two structurally complete own captures must not be chosen.
+  conflict.sources.current.contentSha256 = sha('different-own-capture-bytes');
+  const input = coherentBootstrapInput(f, [original, conflict]), result = discoverCommittedCoherentOriginalBootstrap(input);
+  assert.equal(result.summary.status, 'UNRESOLVED');
+  assert(result.summary.counts.ambiguousCaptures > 0);
+  assert.deepEqual(result.privateRequests, []);
+});
+
+test('coherent original bootstrap metadata: wrong sampling/capture identity cannot complete another stored bracket', () => {
+  for (const mode of ['sampling', 'acquiredAt', 'itemRevision']) {
+    const f = fixture({ coherent: [-3, 0, 3, 6, 9] }), reservoir = structuredClone(rowAt(f, 0));
+    if (mode === 'sampling') {
+      reservoir.sources.current.nativeGridSampling.elementIndex++;
+      reservoir.sources.current.nativeSteps[0].nativeGridSampling.elementIndex++;
+      reservoir.currentProvenance.nativeGridSampling.elementIndex++;
+      reservoir.currentProvenance.nativeSteps[0].nativeGridSampling.elementIndex++;
+    } else {
+      const key = mode === 'acquiredAt' ? 'acquiredAt' : 'itemUpdatedAt';
+      for (const view of [reservoir.sources.current, reservoir.currentProvenance]) {
+        view[key] = at(-0.5); view.nativeSteps[0][key] = at(-0.5);
+      }
+    }
+    const result = discoverCommittedCoherentOriginalBootstrap(coherentBootstrapInput(f, [reservoir, rowAt(f, 2)]));
+    assert.equal(result.summary.status, 'UNRESOLVED', mode);
+    assert(result.summary.counts.unboundCaptures > 0, mode);
+    assert.deepEqual(result.privateRequests, []);
+  }
+});
+
+test('coherent original bootstrap metadata: existing originals stay proved, UNKNOWN stays outside this coherent route', () => {
+  const f = fixture({ coherent: [-3, 0, 3, 6, 9] }), input = coherentBootstrapInput(f, [rowAt(f, 3)]);
+  input.protectedBulk = f.document;
+  const proved = discoverCommittedCoherentOriginalBootstrap(input);
+  assert.equal(proved.summary.status, 'NO_BOOTSTRAP_REQUIRED');
+  assert.equal(proved.summary.counts.missingOriginalEndpoints, 0);
+  assert.deepEqual(proved.privateRequests, []);
+  const unknown = fixture(), unresolved = discoverCommittedCoherentOriginalBootstrap(
+    coherentBootstrapInput(unknown, [rowAt(unknown, 3)]));
+  assert.equal(unresolved.summary.status, 'UNRESOLVED');
+  assert(unresolved.summary.counts.nonCoherentMissingSelections > 0);
+  assert.deepEqual(unresolved.privateRequests, []);
 });

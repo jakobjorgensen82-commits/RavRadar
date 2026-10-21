@@ -1,3 +1,9 @@
+## 22. oktober — ÅBEN: præcis original mangler blandt leverede kontekster
+
+Den faktiske skrivefri observation har lokaliseret en afvisning af en bevaret korrigeret strømselektions native-original. Et gyldigt trin med samme tid, men afvigende identitet, må ikke erstatte den krævede original. Den grove identitetskategori skelner endnu ikke modelkørsel, samling, gitter, punkt, afstand, dybde eller wire-format. Det er ikke dokumenteret fysisk RAW-tab eller en færdig årsagsrettelse.
+
+En lokal værdifri opdeling genbruger de normale comparatorer og bevarer alle eksisterende original- og før-score-krav. Pilotens fingerprint skal sammenlignes med den normale målprojektion; en anden hash-algoritme er ikke et geometribevis. Normal korrigeret RAW-genopbygning og varig bank skal fortsat bevises, ikke erstattes af den gamle dekoder eller et fravalg af kontrollen.
+
 ## 21. oktober — ÅBEN årsag efter faktisk 586-installation
 
 Den kildekvalificerede 586-kode-only-levering er faktisk installeret og offentligt verificeret. Den almindelige efterfølger stopper stadig før leverandører på samme manglende native-endepunktsbevis. Den gemte hele log viser desuden BASELINE_MISMATCH og ingen genbrugt krypteret fremdrift. Der er ikke et nyt beregningscheckpoint at genoptage. Det er ikke bevis for ugyldige DMI-værdier eller fysisk fravær af samtlige originale data.

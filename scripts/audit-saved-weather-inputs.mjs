@@ -96,6 +96,24 @@ async function readCurrent586PublicRegistry(fetchImpl) {
   return { registry, bytes };
 }
 
+function current586BootstrapObservation(bootstrapApi, options) {
+  try {
+    // Only the fixed safe summary is retained. Private requests, captures and
+    // binding values never enter a report or become native proof.
+    const { summary } = bootstrapApi.discoverCommittedCoherentOriginalBootstrap(options);
+    return { ...summary, scope: 'FIRST_NORMAL_COLLECTOR_FAILURE_PART_METADATA_ONLY' };
+  } catch (error) {
+    const known = /^(?:COHERENT_ORIGINAL_BOOTSTRAP_(?:WORK_BOUND|RUNTIME_BOUND|METADATA_RESERVOIR_BOUND|INPUT_BOUND|INPUT_INVALID|CAPTURE_BOUND|REFERENCE_BOUND|REQUEST_BYTES_BOUND|REQUEST_BOUND)|RAVSCORE_CURRENT_HISTORY_DEMAND_RETENTION_(?:INPUT_INVALID|COMMITTED_STATE_REQUIRED))$/;
+    return { schemaVersion: 1, kind: 'COHERENT_ORIGINAL_BOOTSTRAP_METADATA',
+      status: 'PREPARATION_REFUSED',
+      scope: 'FIRST_NORMAL_COLLECTOR_FAILURE_PART_METADATA_ONLY',
+      refusalCode: known.test(error?.message ?? '') ? error.message : 'UNCLASSIFIED_METADATA_PREPARATION_REFUSAL',
+      rawAvailability: 'NOT_PROBED', missingRawFiles: null, privatePayloadIncluded: false,
+      authenticationPerformed: false, rawReadPerformed: false, decoderExecuted: false,
+      nativeAdmissionPerformed: false, selectedRowsChanged: false, sourcePriorityChanged: false };
+  }
+}
+
 async function measureCurrent586Endpoints({ ctx, work, payloadRoot, source, conditions, manifest,
   pythonExecutable, oldWorkflow, registryFetchImpl }) {
   const scratch = await noSymlinks(ctx.root, path.join(ctx.root, 'current586-source'));
@@ -155,10 +173,11 @@ async function measureCurrent586Endpoints({ ctx, work, payloadRoot, source, cond
     await fs.copyFile(materialized, activeFile);
     await fs.copyFile(materialized, path.join(scratch, 'data/live/dmi-bulk-cache.json'));
   } else await fs.copyFile(materialized, candidateFile);
-  const [planner, checkpointApi, companionApi, pilotApi, bundleApi] = await Promise.all([
+  const [planner, checkpointApi, companionApi, pilotApi, bundleApi, bootstrapApi] = await Promise.all([
     imported('scripts/plan-ravscore-current-history.mjs'), imported('scripts/ravscore-continuation-checkpoint.mjs'),
     imported('scripts/read-authenticated-dmi-current-companions.mjs'), imported('scripts/lib/live-current-pilot.mjs'),
-    imported('scripts/private-production-runtime-bundle.mjs')]);
+    imported('scripts/private-production-runtime-bundle.mjs'),
+    imported('scripts/lib/coherent-current-original-bootstrap.mjs')]);
   const verify = () => bundleApi.verifyPrivateProductionRuntimeBundle({
     privateRoot: work, bundlePath: path.dirname(payloadRoot), repositoryRoot: scratch, expected: source });
   const verified = await verify();
@@ -174,7 +193,7 @@ async function measureCurrent586Endpoints({ ctx, work, payloadRoot, source, cond
   const candidate = await exists(candidateFile) ? await bulk(candidateFile) : null;
   const active = await exists(activeFile) ? await bulk(activeFile) : null;
   const liveCurrentPilot = await withoutSavedAuditSecrets(() => pilotApi.readLiveCurrentPilot(registry));
-  let aggregate = null, visitedParts = 0;
+  let aggregate = null, bootstrapMetadata = null, visitedParts = 0;
   const byPart = new Map();
   const registryByPart = new Map(Object.entries(registry.zones).flatMap(([zoneId, entries]) =>
     entries.map(part => [part.partId, { zoneId, part }])));
@@ -204,29 +223,41 @@ async function measureCurrent586Endpoints({ ctx, work, payloadRoot, source, cond
       CURRENT586_ENDPOINT_AUDIT.targetReferenceAt);
       if (!persisted.has(part.partId)) fail('CONTINUITY_INSPECTION_FAILED');
     }
-    aggregate = planner.diagnoseCurrent586SelectedEndpoints({
+    const partInputs = {
       registry: { ...registry, partCount: 1, zones: { [zoneId]: [part] } },
       conditions: { ...conditions, coastalParts: { ...conditions.coastalParts,
         parts: { [part.partId]: conditions.coastalParts.parts[part.partId] } } },
       checkpoint: { ...checkpoint, states: { [part.partId]: checkpoint.states[part.partId] } },
       boundary, zones: { features }, productionReferenceAt: CURRENT586_ENDPOINT_AUDIT.targetReferenceAt,
       protectedBulk, progressCandidate: candidate ?? active, progressActive: active, historicalBulk: null,
-      protectedCompanionContexts: companions, persistedHourlyByPart: persisted, liveCurrentPilot });
+      protectedCompanionContexts: companions, persistedHourlyByPart: persisted, liveCurrentPilot };
+    aggregate = planner.diagnoseCurrent586SelectedEndpoints(partInputs);
     visitedParts++;
-    if (aggregate.firstFailureCategory !== 'NO_NORMAL_COLLECTOR_REFUSAL') break outer;
+    if (aggregate.firstFailureCategory !== 'NO_NORMAL_COLLECTOR_REFUSAL') {
+      bootstrapMetadata = current586BootstrapObservation(bootstrapApi, partInputs);
+      break outer;
+    }
   }
   if (!aggregate) fail('AUDIT_COUNTER_INVALID');
-  const pilotRegistryFingerprintMatches = liveCurrentPilot?.targetFingerprint ===
-    'sha256:dbf13b8293d1322ab132dda00c0e170dfb3b3a63e1c78fd93b6eb0740a30aba4';
+  // The pilot hashes the normal sorted PART/parent/water-point projection,
+  // not the complete public registry JSON. A different hash algorithm is not
+  // evidence of changed geometry or an unqualified regional original scope.
+  const pilotTargetFingerprint = (await local(['-c',
+    'from pathlib import Path; from scripts.lib.copernicus_target_identity import target_fingerprint_from_registry; print(target_fingerprint_from_registry(Path("data/live/coastal-parts-v2.json")))',
+  ])).stdout.trim();
+  if (!/^sha256:[a-f0-9]{64}$/.test(pilotTargetFingerprint)) fail('CURRENT586_REGISTRY_MISMATCH');
+  const pilotRegistryFingerprintMatches = liveCurrentPilot?.targetFingerprint === pilotTargetFingerprint;
   const report = { ...baseReport('AUDIT_COMPLETED'), protectedGenerationReadbackVerified: true,
     exactArchivedSourceContractsVerified: true, fixedScope: CURRENT586_ENDPOINT_AUDIT.scope,
     originalBGeometryUsed: true, freshCentralRegistryProved: false, actualSParityProved: false,
     wholeFailedStepReproduced: false, pilotRegistryFingerprintMatches,
+    pilotFingerprintAlgorithm: 'NORMAL_COPERNICUS_TARGET_IDENTITY',
+    pilotProofStatus: pilotApi.controlledLiveCurrentProofStatus(liveCurrentPilot),
     regionalScopeEquivalenceProved: false, fullCoverageClaimed: false,
     observedScope: 'FIRST_NORMAL_COLLECTOR_FAILURE_ONLY', visitedParts, registeredParts: 673,
     encryptedProgressRead: false, rawCacheRead: false, remoteSRead: false,
     normalGenerationPreparation: { sourceRole: kind, strictReady: strict },
-    endpointAvailability: aggregate };
+    endpointAvailability: aggregate, bootstrapMetadata };
   if (Buffer.byteLength(JSON.stringify(report)) > 64 * 1024) fail('CURRENT586_DIAGNOSTIC_BOUND');
   await verify();
   return report;

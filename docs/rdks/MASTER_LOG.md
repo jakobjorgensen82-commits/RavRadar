@@ -1,3 +1,7 @@
+## 22. oktober — observation er årsagsgrundlag, ikke en færdig vejrrettelse
+
+Samtaledelta: Ejeren afviser en samlet rettelse baseret på gæt. Den faktiske CURRENT586-observation er nu gennemført og afgrænser en manglende præcis original blandt de leverede kontekster. En lokal udvidelse opdeler kun faste wire-/native-identitetskategorier med mulighed for overlap og retter fingerprint-sammenligningen til den eksisterende normale Python-projektion. Ingen private værdier eller identiteter rapporteres, og hverken kildevalg, originaladmission, tidsbudgetter, score, geometri eller SQL ændres. Lokale mål er ikke faktisk originalgenopbygning eller ny offentlig vejrhentning. Alle fem mål er fortsat åbne; detaljeret kørsels- og diagnostikevidens gemmes privat.
+
 ## 21. oktober — 586 faktisk installeret; almindeligt originalstop fortsat åbent
 
 Præcis CI med native PostgreSQL og kontrolleret 586-kode-only-levering er faktisk gennemført med bevaret vejr, SQL-readback, B før S, tre serverfunktioner, Pages og offentlig 210/673-kontrol. Den almindelige efterfølger stoppede fortsat før leverandører på manglende valgt native-endepunktsbevis. Hele loggen er gemt privat; BASELINE_MISMATCH/restored:false viser, at krypteret fremdrift ikke blev genbrugt. Intet nyt beregningscheckpoint eller vejrdeploy blev lavet. Cron er faktisk pauset. Afgrænset CURRENT-only-audit forberedes gennem den eksisterende skrivefri læsegrænse; ingen årsagsrettelse eller komplet cache påstås. Se ROOTs aktuelle P0-linje og DEC-0249. Alle fem hovedmål er åbne til 18. november 2026.

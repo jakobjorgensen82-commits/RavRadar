@@ -1,3 +1,11 @@
+## Ikke udgivet — præcisering af den gennemførte originaldiagnose
+
+- Første fejl-kystdel kan få en særskilt, værdifri metadataopgørelse over sine egne komplette filoplysninger. Manglende eller tvetydige oplysninger afvises samlet; RAW er fortsat ikke undersøgt. Hele det eksisterende post-H0-mål består lokalt med 23 prøver uden fejl eller skip. Det er årsagsundersøgelse, ikke en installeret vejrrettelse.
+
+- Værdifri opdeling af wire-identitet og normale native-identitetsgrupper i den eksisterende faste CURRENT586-diagnose; overlappende kandidatforekomster er hverken unikke originaler eller en påstået enkeltårsag.
+- Pilotens mål-fingerprint bruger nu den eksisterende normale Python-projektion frem for hele registrets JSON-hash. Lokal diagnose-/fingerprintkontrol og det bevarede kildeorakel består; almindelig vejrgenopretning, præcis ny samlet kontrol og offentlig effekt er fortsat åbne.
+- Ingen ny version, modelbinding, SQL, kildeprioritet, scoreformel, geometri, originaladmission eller nulstilling.
+
 ## Ikke udgivet — afgrænset diagnose af aktuelt originalgrundlag
 
 - 4.0.586 er faktisk kildekvalificeret, installeret og offentligt verificeret med samme gemte vejr. Den almindelige efterfølger fejler stadig før leverandører på manglende native-endepunktsbevis; intet nyt beregningscheckpoint eller deploy blev lavet.

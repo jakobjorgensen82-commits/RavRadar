@@ -1,3 +1,7 @@
+## 22. oktober — læs faktisk diagnose, ikke en antaget årsag
+
+Den skrivefri CURRENT586-observation er gennemført. Den viser en manglende præcis native-original blandt leverede kontekster, ikke fysisk RAW-fravær eller fuld reproduktion af den almindelige kørsel. Lokal identitetsopdeling og normalt Python-mål-fingerprint er målprøvet, men ikke ny offentlig levering. Bevar alle originale data og normale original-/før-score-krav; spring ikke coherent-rækkers bevis over. Fortsæt fra CURRENT_TRUTH og det seneste private checkpoint. Alle fem hovedmål til 18. november 2026 er åbne.
+
 ## 21. oktober — læs først den faktisk installerede 586 og det fortsatte stop
 
 586 er nu faktisk kildekvalificeret, installeret og offentligt verificeret med samme gemte vejr. Den almindelige efterfølger fejlede fortsat før leverandører på manglende native-endepunktsbevis; den genbrugte ikke krypteret fremdrift, og skabte intet nyt beregningscheckpoint. ROOTs ene P0-linje i CURRENT_TRUTH og seneste private checkpoint er aktuel sandhed; de lokale CI-/installationsafventninger nedenfor er historik. Cron er faktisk pauset. En afgrænset CURRENT-only-udvidelse af eksisterende saved-input-audit forberedes uden ny vejrhentning, RAW, beregning, SQL eller produktionsadmission. Ingen ny version, C/I/T eller lempet originalkontrol.

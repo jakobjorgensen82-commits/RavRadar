@@ -1,3 +1,13 @@
+## 22. oktober — faktisk afgrænset diagnose og lokal identitetsopdeling
+
+- [x] Lokal første-fejl-PART-metadataundersøgelse med samme normale projektion, egne fulde captures, globalt afslag ved tvetydighed og særskilt NOT_PROBED for RAW. Hele post-H0-målet består 23/23; diagnose-/fingerprintmål, uændret I95, syv forbrugere og håndbog/RDKS består lokalt. Ingen RAW-/produktionsrettelse eller faktisk ny pakkediagnose følger af prøverne.
+
+- [x] Præcis diagnosekilde kvalificeret og normal skrivefri CURRENT586-observation faktisk gennemført. Det er første normale collectorafvisning blandt de autentificerede B-input, ikke fuld reproduktion af hele den almindelige kørsel, faktisk S-paritet eller national dækning.
+- [x] Lokal opdeling af wire-/native-identitetsafvisning og korrekt normalt Python-mål-fingerprint. Eksisterende diagnose-/fingerprintmål samt det bevarede kildeorakel består; alle tidligere oracle-pins, originalkrav og produktionsstop er uændrede.
+- [ ] Præcis samlet kontrol og faktisk observation med de nye feltkategorier. Den tidligere grove kategori beviser ikke, hvilket identitetsfelt der afviger.
+- [ ] Komplet, præcis capture-/RAW-/dekoder-/reprojektionskæde for manglende korrigerede originaler, sikker normal levering og efterfølgende almindelig ny offentlig vejrgeneration. Ingen bank, fysisk RAW-tilgængelighed eller genopretning erklæres fra metadata alene.
+- [ ] Alle fem hovedmål. SOURCE, øvrige tilbageholdte leverancer og manglende bruger-/assistentforløb lukkes ikke af en skrivefri diagnose. Se aktuel CURRENT_TRUTH og privat checkpoint.
+
 ## 21. oktober — faktisk 586-installation og fortsat åbent ordinary-stop
 
 - [x] Præcis kilde-CI inklusive native PostgreSQL og normal 586-kode-only-levering er faktisk gennemført: installeret SQL, B før S, tre eksisterende serverfunktioner, Pages og offentlig 210/673-kontrol. Samme gemte vejr er bevaret; det er ikke ny vejrhentning eller ny dækning.

@@ -242,6 +242,8 @@ function projectCommittedRawRetentionPart({ part, expected, target, conditions, 
   return { selected, recoverySources };
 }
 
+export { assertCommittedRawRetentionInputs, projectCommittedRawRetentionPart };
+
 // Retention only: normal immutable-B verification and actual S parity happen
 // in the fixed caller below. This pure projection never authenticates/admit rows.
 export function buildRavScoreRawCurrentRetention({ registry, conditions, checkpoint,
@@ -298,6 +300,49 @@ export function buildRavScoreRawCurrentRetention({ registry, conditions, checkpo
     captures: [...captures].sort(([a], [b]) => a < b ? -1 : a > b ? 1 : 0).map(([, value]) => value) };
 }
 
+// Fixed diagnostic-only identity decomposition. Detached probes are observations,
+// never source rows, endpoint evidence, admission or a replacement comparator.
+function current586IdentityDifferenceDetails(nativeSource, wireIdentity, forecastSource, expected) {
+  const native = structuredClone(nativeSource), forecast = structuredClone(forecastSource);
+  const groups = {
+    collectionFamily: ['collection', 'collectionFamily'], modelRun: ['modelRun'],
+    entity: ['component', 'componentKind', 'entityId', 'parentZoneId', 'entityType', 'samplingContext'],
+    gridDefinition: ['gridDefinitionSha256'], gridLocation: ['gridPoint'],
+    samplingLocation: ['samplingPoint'], distance: ['distanceKm'],
+    vector: ['vectorSelection', 'vectorSemanticsVersion'],
+    spatial: ['spatialSelection', 'spatialSemanticsVersion'],
+    layer: ['verticalLayer', 'verticalLayerRankM'], fieldSet: ['fieldSet'],
+  };
+  const nativeMismatch = !sameNativeIdentity(native, forecast, 'current'), nativeGroups = {};
+  for (const [group] of Object.entries(groups)) {
+    const probe = structuredClone(forecast);
+    // Isolate one actual field group; all other comparator inputs are exact
+    // detached native copies. Canonical tolerances remain in sameNativeIdentity.
+    for (const [other, fields] of Object.entries(groups)) if (other !== group) for (const key of fields) {
+      if (Object.hasOwn(native, key)) probe[key] = structuredClone(native[key]);
+      else delete probe[key];
+    }
+    nativeGroups[group] = !sameNativeIdentity(structuredClone(native), probe, 'current');
+  }
+  const wireShape = wireIdentity !== null && typeof wireIdentity === 'object'
+    && !Array.isArray(wireIdentity)
+    && Object.keys(wireIdentity).sort().join(',') === Object.keys(expected).sort().join(',');
+  const wire = wireShape ? structuredClone(wireIdentity) : null;
+  const wireMismatch = !dmiOriginalWireIdentityMatchesCentralIdentity(wire, expected);
+  const wireStringsMatch = wireShape && dmiOriginalWireIdentityMatchesCentralIdentity({
+    ...wire, samplingPoint: structuredClone(expected.samplingPoint) }, expected);
+  const wirePointMatches = wireShape && dmiOriginalWireIdentityMatchesCentralIdentity({
+    ...structuredClone(expected), samplingPoint: structuredClone(wire.samplingPoint) }, expected);
+  return {
+    wireMismatch, wireShapeMismatch: !wireShape,
+    wireStringMismatch: wireShape && !wireStringsMatch,
+    wirePointMismatch: wireShape && !wirePointMatches,
+    wireUnclassifiedMismatch: wireMismatch && wireShape && wireStringsMatch && wirePointMatches,
+    nativeMismatch, nativeGroups,
+    nativeUnclassifiedMismatch: nativeMismatch && !Object.values(nativeGroups).some(Boolean),
+  };
+}
+
 // Fixed observational follow-up to the ordinary 39666991481/1 failure.
 // This entry cannot change the ordinary source projection or return evidence,
 // captures, selected rows, state, identities or an admission capability.
@@ -322,7 +367,17 @@ export function diagnoseCurrent586SelectedEndpoints(options = {}) {
     own: scopeCounts(), bank: scopeCounts(), companions: scopeCounts(), all: scopeCounts(),
     contextMismatch: { timeNotObserved: 0, onlyDerivedNativeAtTime: 0,
       nativeValidationRejected: 0, identityMismatch: 0, samplingPresenceMismatch: 0,
-      stepFieldsMismatch: 0, exactNativeObserved: 0 } });
+      stepFieldsMismatch: 0, exactNativeObserved: 0 },
+    identityMismatchDetails: {
+      countingUnit: 'ELIGIBLE_CANDIDATE_OCCURRENCES_PER_ENDPOINT',
+      countsMayOverlap: true, uniqueOriginalsClaimed: false, singularCauseClaimed: false,
+      endpointSteps: 0, candidateOccurrences: 0,
+      wireMismatch: 0, wireShapeMismatch: 0, wireStringMismatch: 0, wirePointMismatch: 0,
+      wireUnclassifiedMismatch: 0, nativeMismatch: 0, nativeUnclassifiedMismatch: 0,
+      nativeGroups: { collectionFamily: 0, modelRun: 0, entity: 0, gridDefinition: 0,
+        gridLocation: 0, samplingLocation: 0, distance: 0, vector: 0, spatial: 0,
+        layer: 0, fieldSet: 0 },
+    } });
   const result = { schemaVersion: 1, kind: 'CURRENT586_SELECTED_ENDPOINT_DIAGNOSTIC',
     fixedScope: 'CURRENT586_ENDPOINTS_39666991481_1',
     geometryScope: 'AUTHENTICATED_ORIGINAL_B_PARTS_ONLY',
@@ -473,6 +528,22 @@ export function diagnoseCurrent586SelectedEndpoints(options = {}) {
             : !eligible.length ? 'nativeValidationRejected' : !identity.length ? 'identityMismatch'
             : !presence.length ? 'samplingPresenceMismatch' : !exact.length ? 'stepFieldsMismatch' : 'exactNativeObserved';
           count.contextMismatch[category]++;
+          if (category === 'identityMismatch') {
+            const detail = count.identityMismatchDetails;
+            detail.endpointSteps++;
+            // One occurrence may fail several groups, and repeated provided
+            // contexts are not deduplicated into invented unique originals.
+            for (const candidate of eligible) {
+              const observedIdentity = current586IdentityDifferenceDetails(
+                candidate.row.sources.current, candidate.wireIdentity, original, expected);
+              detail.candidateOccurrences++;
+              for (const key of ['wireMismatch', 'wireShapeMismatch', 'wireStringMismatch',
+                'wirePointMismatch', 'wireUnclassifiedMismatch', 'nativeMismatch', 'nativeUnclassifiedMismatch'])
+                detail[key] += Number(observedIdentity[key]);
+              for (const [group, mismatch] of Object.entries(observedIdentity.nativeGroups))
+                detail.nativeGroups[group] += Number(mismatch);
+            }
+          }
         }
         return result; // Exact first missing row/role only; no later source scan.
       }
