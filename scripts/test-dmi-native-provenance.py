@@ -5951,11 +5951,20 @@ if scenario in {"current-only", "cached-current-history"}:
         step_names = ("itemId", "assetIdentitySha256", "nativeValidTime", "leadTimeHours",
                       "acquiredAt", "optionalFieldSet", "itemCreatedAt", "itemUpdatedAt",
                       "nativeGridSampling", "gridPoint", "distanceKm")
+        # A RAW manifest row may omit the two optional item timestamps. The
+        # normal request boundary still requires the complete eleven-field
+        # canonical asset, including both absent timestamps as None.
+        wrapper_capture = p.canonical_current_source_asset(fixture_capture)
+        assert wrapper_capture is not None
+        assert set(wrapper_capture) == set(fixture_capture) | {"itemCreatedAt", "itemUpdatedAt"}
+        assert len(wrapper_capture) == 11
+        assert all(wrapper_capture[key] == value for key, value in fixture_capture.items())
+        assert wrapper_capture["itemCreatedAt"] is None and wrapper_capture["itemUpdatedAt"] is None
         request = {"requestId": "a" * 64, "partId": current_zone["id"].removeprefix("PART::"),
                    "identity": p.sampling_identity(current_zone), "nativeValidTime": when,
                    "nativeStep": {key: copy.deepcopy(source_current[key]) for key in step_names if key in source_current},
-                   "capture": copy.deepcopy(fixture_capture)}
-        job = {"capture": copy.deepcopy(fixture_capture), "path": fixture_path,
+                   "capture": copy.deepcopy(wrapper_capture)}
+        job = {"capture": copy.deepcopy(wrapper_capture), "path": fixture_path,
                "requests": [request], "zones": {request["partId"]: current_zone}}
         before_inputs = copy.deepcopy((request, job, stage, stage_diagnostics, stage_outcomes))
         decoded, completed = wrapper.decode(p, [job], time.monotonic())
@@ -5968,6 +5977,18 @@ if scenario in {"current-only", "cached-current-history"}:
         assert "forecastAgeHours" not in decoded[0]["row"]["sources"]["current"]
         assert (request, job, stage, stage_diagnostics, stage_outcomes) == before_inputs
         assert not p._UNSETTLED_GRIB_READS and fixture_path.read_bytes() == payload
+        assert p.raw_cache_manifest_path().read_bytes() == fixture_manifest_bytes
+        # The malformed nine-field fixture must remain refused; correcting the
+        # test request does not loosen the unchanged full capture comparison.
+        raw_manifest_job = copy.deepcopy(job)
+        raw_manifest_job["capture"] = copy.deepcopy(fixture_capture)
+        try:
+            wrapper.decode(p, [raw_manifest_job], time.monotonic())
+        except wrapper.Refused as error:
+            assert str(error) == "COHERENT_CURRENT_ORIGINAL_OWNED_CAPTURE_MISMATCH"
+        else:
+            raise AssertionError("coherent CURRENT wrapper admitted a noncanonical RAW manifest row")
+        assert fixture_path.read_bytes() == payload and not p._UNSETTLED_GRIB_READS
         assert p.raw_cache_manifest_path().read_bytes() == fixture_manifest_bytes
         # Existing full versus Python-seven-place identity guard; do not require
         # exact central==wire point or introduce an independent nearby tolerance.

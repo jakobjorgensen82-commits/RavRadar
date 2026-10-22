@@ -1,5 +1,7 @@
 ## 22. oktober — ÅBEN: første afvisning er modelkørselsidentitet; RAW-bevis mangler stadig
 
+Den særskilte RAW-prøves første kildekontrol fejlede i en ny testfixture, ikke en ny vejrhentning: rå manifestposter kan udelade to item-tidsstempler, men wrapperens normale captureinput har alle elleve felter. Testen rettes med normal kanonisk projektion uden ændring af originalposten eller produktets afvisninger; korrigeret Linux-kontrol og faktisk RAW-prøve er fortsat åbne. Den normale modelrun-erstatning og schema2-bankens beskyttelse er særskilt reproduceret lokalt, men frikender ikke den faktiske produktionspakke.
+
 Den faktiske nye rapport afgrænser første native-forskel til modelkørselsidentiteten. Koden sammenligner den oprindelige tidsstreng; rapporten beviser ikke, om tidsinstanterne også er forskellige. Egne fulde captureoplysninger kan bindes entydigt, men hverken præcis RAW-fil, afkodning, bank eller genopretning følger af metadata alene.
 
 Ny lokal særskilt default-OFF-cacheprøve bruger uændret normal afkoder og kræver eksakt kilde-/tal-reprojektion samt normal pakning/genlæsning med gammel H0. Domænet skal omfatte alle 121 gemte prognosetimer og fremadrettet historik, ellers kan en senere før-score-kontrol stadig standse. Første-PART-prøve, syntetiske prøver eller genlæst cachemetadata må ikke kaldes national løsning. Ingen produktionsaktivering eller lempelse af originalkontrol er udført.

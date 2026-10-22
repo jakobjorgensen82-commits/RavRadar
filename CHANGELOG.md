@@ -1,5 +1,6 @@
 ## Ikke udgivet — afgrænset genopbygning af præcise strømoriginaler
 
+- Retter kun den nye native wrapper-prøves input til den eksisterende elleve-felts capture-normalform. Rå manifestposter bevares, og et direkte ni-felts afslag tilføjes uden lempelse af produktkontrollen. Første kildekontrol er fejlet; korrigeret native Linux-kontrol og faktisk RAW-prøve er åbne.
 - Den faktisk gennemførte diagnose afgrænser første afvisning til modelkørslens identitet, ikke punkt/gitter. Tællingen skelner endnu ikke forskellige tidsinstanter fra forskellig tidsstreng; ingen automatisk normalisering foretages.
 - Forbereder en særskilt, som udgangspunkt frakoblet skrivefri prøve af de præcise egne RAW-captures gennem uændret normal decoder og fuld kilde-/tal-reprojektion. Prøven bruger den faktisk restaurerede cache, ikke en antaget cache fra det fejlede run. Ingen ny vejrhentning eller ekstern skrivning.
 - Den lokale proof-only-udvidelse dækker både fremadrettet historik og alle 121 gemte prognosetimer, inklusive de sidste støttetimer. Normal pakning/genlæsning bevarer det gamle udgangspunkt og samtlige tal; en afledt arbejdsfil udgives ikke for original B. Gamle profiler og alle før-score-stop bevares.

@@ -1,5 +1,7 @@
 ## 22. oktober — præcis diagnose læst; fuld gemt prognose indgår i næste cacheprøve
 
+- [x] Privat reproduktion gennem normal Python-cachemerge, native kold genlæsning, JS-retention, faktisk schema1/schema2-pakning/genlæsning og collector. Alle 121 timer, gammel H0 og gamle originaler bevares; schema1 uden reservoir afvises, mens den eksisterende normale originalbank bevarer beviset. Ikke faktisk produktionsårsag eller RAW-sletningsbevis.
+- [ ] Gentag præcis kildekontrol efter rettelse af den nye native `current-only`-prøves ni-felts capture til normal elleve-felts input. Produktionswrapperen og dens fulde identitetsafslag lempes ikke; lokal syntakskontrol er ikke native Linux-bevis.
 - [x] Præcis kildekontrol, normal merge og faktisk afgrænset observation med de nye identitetsgrupper. Første observerede afvisning vedrører modelkørselsidentiteten; der påstås ikke fysisk RAW-tab, forskellige tidsinstanter eller fuldt nationalt årsagsbevis.
 - [x] Lokal proof-only-udvidelse med særskilt 121-timersrolle, herunder H0 og de sidste støttetimer, samt uændrede kilde-/tal-/alderskrav gennem normal kernel. En allerede bevist række må ikke mistes, blot fordi andre rækker kræver afkodning. Historikgrænser, RAW-grænser og samlet bytegrænse bevares.
 - [x] Syv normale bindingsforbrugere kontrolleret uændrede. Den separate audit/controller er ikke en ny indgående modelkilde; ingen inventory-undtagelse eller falsk I-genbinding anvendes.
