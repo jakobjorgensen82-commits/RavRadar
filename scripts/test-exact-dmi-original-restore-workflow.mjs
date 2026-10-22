@@ -36,7 +36,37 @@ function inverseCurrent586Workflow(source) {
     'WHOLE genuine preceding workflow survives the CURRENT586 inverse');
   return source;
 }
-const rawDeliveredWorkflow = fs.readFileSync('.github/workflows/recover-saved-dmi-originals.yml', 'utf8').replace(/\r\n/g, '\n');
+// Exact additive prerequisite inverse: the historical CURRENT586 and older
+// workflow pins/hunks below remain unchanged.
+const PRIVATE_ROOT_SETUP_REVIEW = Object.freeze({
+  beforeSha256: '546be70e725d85c5294e542921e0303d6715851737fcde93264689942f336940',
+  afterSha256: '8815617a34137653f3299f762bad440b685ee575124d797cbf9eac626e22b07d',
+  hunks: [
+    [
+      "      - name: Create the owned private audit directory for both restore modes\n        shell: bash\n        run: |\n          set -euo pipefail\n          umask 077\n          test ! -e \"$RUNNER_TEMP/ravradar-saved-input-audit\"\n          test ! -L \"$RUNNER_TEMP/ravradar-saved-input-audit\"\n          mkdir -m 0700 -- \"$RUNNER_TEMP/ravradar-saved-input-audit\"\n\n",
+      ""
+    ],
+    [
+      "          test ! -L .cache/weather-private-progress.encrypted\n          install -m 0600 .cache/weather-private-progress.encrypted \\\n",
+      "          test ! -L .cache/weather-private-progress.encrypted\n          mkdir \"$RUNNER_TEMP/ravradar-saved-input-audit\"\n          install -m 0600 .cache/weather-private-progress.encrypted \\\n"
+    ]
+  ]
+});
+function inversePrivateRootSetupWorkflow(source) {
+  assert.equal(typeof source, 'string', 'private-root prerequisite requires whole LF workflow');
+  if (workflowHash(source) === PRIVATE_ROOT_SETUP_REVIEW.beforeSha256) return source;
+  assert.equal(workflowHash(source), PRIVATE_ROOT_SETUP_REVIEW.afterSha256,
+    'only the exact reviewed private-root prerequisite may enter the CURRENT586 inverse');
+  for (const [after, before] of PRIVATE_ROOT_SETUP_REVIEW.hunks) {
+    assert.equal(source.split(after).length, 2, 'exact private-root prerequisite inverse hunk');
+    source = source.replace(after, () => before);
+  }
+  assert.equal(workflowHash(source), PRIVATE_ROOT_SETUP_REVIEW.beforeSha256,
+    'WHOLE genuine CURRENT586 workflow survives the prerequisite inverse');
+  return source;
+}
+const installedWorkflow = fs.readFileSync('.github/workflows/recover-saved-dmi-originals.yml', 'utf8').replace(/\r\n/g, '\n');
+const rawDeliveredWorkflow = inversePrivateRootSetupWorkflow(installedWorkflow);
 const deliveredWorkflow = inverseCurrent586Workflow(rawDeliveredWorkflow);
 const diagnosticStep = `      - name: Inspect authenticated original metadata before transport
         if: steps.plan.outputs.preparation_status == 'ORIGINAL_PLAN_PREPARED'
@@ -193,4 +223,82 @@ test('390663 forward repair authenticates genuine normal choices and preserves t
   assert.match(currentWorkflow, /test "\$SAVED" = true/);
   assert.doesNotMatch(currentWorkflow, /restore-keys:|workflow run|--publish|wrangler|supabase db|continue-on-error/);
   assert.match(currentWorkflow, /runs-on: ubuntu-24.04\n    timeout-minutes: 75/);
+});
+
+test('private audit prerequisite: both branches own one exclusive private directory before protected reads and clones', () => {
+  const setup = PRIVATE_ROOT_SETUP_REVIEW.hunks[0][0];
+  const assertPrerequisite = source => {
+    assert.equal(source.split(setup).length, 2, 'one exact unconditional private setup');
+    assert.equal((source.match(/^\s*mkdir\b[^\n]*ravradar-saved-input-audit[^\n]*$/gm) ?? []).length, 1,
+      'only the common step creates the audit root; no branch-local mkdir');
+    assert.doesNotMatch(setup, /\n        (?:if|env|continue-on-error):|mkdir -p|chmod|secrets\.|GITHUB_OUTPUT/);
+    const setupIndex = source.indexOf(setup);
+    const findStep = name => {
+      const start = source.indexOf('      - name: ' + name + '\n');
+      assert.ok(start > 0, name);
+      const end = source.indexOf('\n      - ', start + 1);
+      return { start, text: source.slice(start, end < 0 ? undefined : end) };
+    };
+    const proof = findStep('Require existing live green source proof before protected reads');
+    const checkpoint = findStep('Restore only the approved encrypted checkpoint');
+    const retained = findStep('Require exact checkpoint hit and privately retain its original bytes');
+    const raw = findStep("Restore the same checkpoint's existing RAW cache without fallback");
+    const describe = findStep('Read the current protected source identity without remote writes');
+    const producer = findStep('Materialize the exact original producer without executing it');
+    const legacy = findStep('Prepare the exact normal caller only inside private scratch');
+    const current = findStep('Prepare the exact normal CURRENT586 source without central hydration');
+    assert.ok(proof.start < setupIndex && setupIndex < checkpoint.start && checkpoint.start < retained.start
+      && retained.start < raw.start && raw.start < describe.start && describe.start < producer.start);
+    assert.equal(source.indexOf('$RUNNER_TEMP/ravradar-saved-input-audit'), setupIndex + setup.indexOf('$RUNNER_TEMP/ravradar-saved-input-audit'),
+      'the owned root exists before any reference to its descriptors, logs, output or clones');
+    for (const current586 of [false, true]) {
+      const clone = current586 ? current : legacy;
+      const plan = findStep(current586
+        ? 'Authenticate CURRENT586 B and actual S and prepare saved121 plus forward originals'
+        : 'Authenticate the checkpoint and prepare only demanded exact originals');
+      assert.ok(setupIndex < describe.start && producer.start < clone.start && clone.start < plan.start,
+        'both restore modes retain the common prerequisite before their normal consumers');
+      assert.ok(clone.text.includes('if: inputs.restore_current586_originals ' + (current586 ? '== true' : '!= true')));
+      assert.ok(clone.text.includes('root="$RUNNER_TEMP/ravradar-saved-input-audit"'));
+      assert.ok(clone.text.includes('git clone --shared --no-checkout "$GITHUB_WORKSPACE" "$root/' +
+        (current586 ? 'current586-source' : 'current-window-source') + '"'));
+      assert.match(plan.text, /--private-root "\$RUNNER_TEMP\/ravradar-saved-input-audit"/);
+    }
+    assert.match(checkpoint.text, /if: inputs\.restore_current586_originals != true/);
+    assert.match(retained.text, /if: inputs\.restore_current586_originals != true/);
+    assert.match(retained.text, /install -m 0600 \.cache\/weather-private-progress\.encrypted/);
+  };
+  assert.equal(workflowHash(installedWorkflow), PRIVATE_ROOT_SETUP_REVIEW.afterSha256);
+  assertPrerequisite(installedWorkflow);
+  assert.equal(inversePrivateRootSetupWorkflow(installedWorkflow), rawDeliveredWorkflow);
+  assert.equal(inversePrivateRootSetupWorkflow(rawDeliveredWorkflow), rawDeliveredWorkflow);
+  assert.equal(inverseCurrent586Workflow(inversePrivateRootSetupWorkflow(installedWorkflow)), deliveredWorkflow,
+    'the old eleven CURRENT586 inverse hunks and whole predecessor pins are still exact');
+  for (const mutation of [
+    setup.replace('umask 077', 'umask 022'),
+    setup.replace('mkdir -m 0700 --', 'mkdir -p'),
+    setup.replace('mkdir -m 0700 --', 'mkdir -m 0755 --'),
+    setup.replace('          test ! -e "$RUNNER_TEMP/ravradar-saved-input-audit"\n', ''),
+    setup.replace('          test ! -L "$RUNNER_TEMP/ravradar-saved-input-audit"\n', ''),
+    setup.replace('        shell: bash\n', '        if: inputs.restore_current586_originals != true\n        shell: bash\n'),
+    setup.replaceAll('ravradar-saved-input-audit', 'ravradar-other-audit'),
+    '',
+    setup + setup,
+  ]) {
+    const mutated = installedWorkflow.replace(setup, () => mutation);
+    assert.throws(() => assertPrerequisite(mutated), /private setup/);
+    assert.throws(() => inversePrivateRootSetupWorkflow(mutated), /exact reviewed private-root/);
+  }
+  const lateSetup = installedWorkflow.replace(setup, '').replace(
+    '      - name: Prepare the exact normal CURRENT586 source without central hydration\n',
+    () => setup + '      - name: Prepare the exact normal CURRENT586 source without central hydration\n');
+  assert.throws(() => assertPrerequisite(lateSetup));
+  assert.throws(() => inversePrivateRootSetupWorkflow(lateSetup), /exact reviewed private-root/);
+  const duplicateMkdir = installedWorkflow.replace(PRIVATE_ROOT_SETUP_REVIEW.hunks[1][0],
+    () => PRIVATE_ROOT_SETUP_REVIEW.hunks[1][1]);
+  assert.throws(() => assertPrerequisite(duplicateMkdir), /only the common step/);
+  assert.throws(() => inversePrivateRootSetupWorkflow(duplicateMkdir), /exact reviewed private-root/);
+  assert.throws(() => inversePrivateRootSetupWorkflow(null), /whole LF workflow/);
+  assert.throws(() => inversePrivateRootSetupWorkflow(installedWorkflow + '\n'), /exact reviewed private-root/);
+  assert.throws(() => inversePrivateRootSetupWorkflow(installedWorkflow.replace(/\n/g, '\r\n')), /exact reviewed private-root/);
 });

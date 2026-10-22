@@ -133,6 +133,15 @@ jobs:
           python -m pip install --disable-pip-version-check
           -r requirements-dmi.txt -r requirements-geometry.txt -r requirements-copernicus.txt
 
+      - name: Create the owned private audit directory for both restore modes
+        shell: bash
+        run: |
+          set -euo pipefail
+          umask 077
+          test ! -e "$RUNNER_TEMP/ravradar-saved-input-audit"
+          test ! -L "$RUNNER_TEMP/ravradar-saved-input-audit"
+          mkdir -m 0700 -- "$RUNNER_TEMP/ravradar-saved-input-audit"
+
       - name: Restore only the approved encrypted checkpoint
         if: inputs.restore_current586_originals != true
         id: progress
@@ -154,7 +163,6 @@ jobs:
           test "$MATCHED_KEY" = weather-private-progress-encrypted-v2-Linux-main-39066350748-1
           test -s .cache/weather-private-progress.encrypted
           test ! -L .cache/weather-private-progress.encrypted
-          mkdir "$RUNNER_TEMP/ravradar-saved-input-audit"
           install -m 0600 .cache/weather-private-progress.encrypted \
             "$RUNNER_TEMP/ravradar-saved-input-audit/progress.encrypted"
 
