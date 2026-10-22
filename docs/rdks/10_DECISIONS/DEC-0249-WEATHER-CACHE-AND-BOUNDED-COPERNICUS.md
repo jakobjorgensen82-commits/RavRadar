@@ -1,5 +1,17 @@
 # DEC-0249 – fortsæt fra rigtig vejrpakke og gem kortere Copernicus-kald
 
+## Tillæg 2026-10-22 — ny aktiv strømstart med varig almindelig fortsættelse
+
+Ejerens nyeste direkte beslutning tillader en ny aktiv strømhistorik, hvis den giver en holdbar vej til normal drift. Den erstatter ældre forbud mod endnu en nulstilling alene for den afgrænsede, arkivbevarende current-family-start. Ægte gamle B/S, kildeoriginaler og offentliggjorte scorer må ikke ommærkes eller slettes; ny start er ikke tilladelse til at svække numerisk adgang eller offentlig no-loss.
+
+Den eksisterende kalder skal først autentificere, arkivere og genlæse gammel B/S og offentlig historik. Første anskaffelse/replay begynder ved det nye låste target. Gammel strøm skal også fysisk ud af faste aktive arbejdsvisninger og den gamle prognoses PART-bank; tom scoretilstand alene er utilstrækkelig. Blandede filer viderefører vind, bølger, vandstand, temperatur og vandkildebank. Working S/conditions bevares til autentifikation, men gammel strømtilstand må ikke vælges som numerisk input. En ventende administratorpromotion afvises før ændring af arbejdsfiler. Efterfølgende load må kun kontrollere bevarede gamle kopier og aldrig flytte en ny producents filer.
+
+Nye strømdata skal komme gennem den korrekte normale afkoder og gemmes med en selvbærende, valideret schema2-originalbank for alle 121 interne timer inklusive tre støttetimer. Næste almindelige kørsel skal fortsætte fra den nye CURRENT B/S uden ny start eller gentagen gammel-originalgenopretning. Ukendte historiktimer forbliver ukendte. Model, 48/51-timersregler, kildeprioritet, admin/geometri og almindelige tidsbudgetter ændres ikke. Engangsstarten bruger eksisterende 360-minutters job med 180 minutters efterbehandlingsreserve og uændrede fasekontroller.
+
+Lokal målprøve af fysisk isolation/startgrænse, strenge kildeinverser og normal før/efterbindingsberegning er gennemført; C/I/T og storage-ABI er uændrede. Normal syntetisk 210/673-B/S-kæde gennem ny start og almindelig efterfølger består; den endelige fysiske helper er særskilt prøvet mod samme autentificerede seed. Afgrænsningen er dokumenteret, og dette er ikke fuld CLI, PostgreSQL eller faktisk leverandør-/produktionsbevis. Dette kræver ikke ny SQL, men præcis CI, sikker levering, faktisk første generation, almindelig efterfølger og reel dækning er fortsat åbne. Gammel offentlig overlapdækning må ikke mistes; arkiv er ikke en undtagelse fra no-loss.
+
+Supabase Free og Cloudflare Free er et fast krav til fremtidig drift. Særskilte engangsarkiver er immutable og rydes ikke af normal to-generations-retention; gentagne nye starter kan øge forbruget, men almindelige kørsler opretter ikke disse arkiver. Målt samlet forbrug og konservativ fremskrivning kræves før Free-drift erklæres holdbar. Ingen ny betalt plan eller uautoriseret sletning følger med.
+
 ## Tillæg 2026-10-21 — mål den aktuelle pakke uden et fremmed checkpoint
 
 Den faktisk installerede 586-kode-only-overgang bevarer gamle DMI-/komponentpakker byteidentisk. Den kan ikke bagefter opfinde en originalbank, som ikke blev gemt af den gamle producent. Den almindelige efterfølger viser samme native-endepunktsafslag før leverandører, og den normale fremdriftslæser viser BASELINE_MISMATCH samt restored:false. Ingen krypteret fremdrift må derfor antages som faktisk input til netop denne fejl.

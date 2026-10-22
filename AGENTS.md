@@ -1,3 +1,9 @@
+## 22. oktober — afgrænset ny strømstart på installeret 586
+
+Læs nyeste CURRENT_TRUTH og privat checkpoint før de historiske statustekster. Ejeren har nu udtrykkeligt godkendt en ny aktiv strømhistorik med bevarede autentiske arkiver og offentliggjorte scorer. Den eksisterende current-family-start færdiggøres; gammel numerisk strøm må ikke vende tilbage gennem arbejdsfiler eller næste almindelige cachegenbrug. Normal målprøvet fysisk isolation og første targetgrænse er lokal kode, ikke offentlig drift. Ingen scoreformel, kildeprioritet, admin/geometri, modelbinding eller SQL ændres af denne rettelse.
+
+Den fremtidige opsætning skal passe til Supabase Free og Cloudflare Free, også ved almindelig historik-/cachevækst. Kravet giver ingen tilladelse til betalt opgradering, tab af originaler eller svækkede kontroller. Faktisk forbrug, aktuelle grænser og konservativ fremskrivning skal dokumenteres; komprimeringsmål eller lokal test alene er ikke bevis. Alle fem mål er åbne til 18. november. Tidligere modstridende afventninger nedenfor er dateret historik alene på disse punkter.
+
 ## 21. oktober — 4.0.586-originalkontinuitet lokalt udstedt, ikke installeret
 
 Læs ROOTs ene aktuelle P0-linje i CURRENT_TRUTH og seneste private checkpoint før de daterede afventninger nedenfor. Sidste verificerede almindelige offentlige levering er fortsat 39520623069/1 kl. 05.39 dansk tid; den passerede allerede originalbevarelsens retentionguard. Den senere 39608743697/1 stoppede før leverandører med manglende bevis for et valgt native-endepunkt blandt de leverede kontekster. Det beviser ikke leverandørsvigt, ugyldige DMI-tal eller fysisk fravær af alle originaler.

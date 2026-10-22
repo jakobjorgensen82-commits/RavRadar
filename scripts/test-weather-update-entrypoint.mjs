@@ -1,6 +1,7 @@
 import {inverseReviewedAccountStatisticsAssistantSourceScripts} from './lib/account-statistics-assistant-package-review.mjs';
 import { inverseAlternativeCCaller } from './lib/alternative-c-caller-test-input.mjs';
-import { inverseCurrentNativeOriginalProducerTestInput, CURRENT_NATIVE_ORIGINAL_PRODUCER_TEST_REVIEW }
+import { inverseCurrentNativeOriginalProducerTestInput, CURRENT_NATIVE_ORIGINAL_PRODUCER_TEST_REVIEW,
+  inverseCurrentFamilyColdTargetTestInput }
   from './lib/archived-weather-restart-updater-test-input.mjs';
 import assert from 'node:assert/strict';
 import crypto from 'node:crypto';
@@ -1174,8 +1175,10 @@ test('native-original producer preserves exact whole archived inputs and rejects
   assert.deepEqual(CURRENT_NATIVE_ORIGINAL_PRODUCER_TEST_REVIEW.rows.map(row => row.path),
     ['scripts/update-weather.mjs', 'scripts/lib/private-dmi-recovery-record.mjs']);
   for (const row of CURRENT_NATIVE_ORIGINAL_PRODUCER_TEST_REVIEW.rows) {
-    const actual = (await fs.readFile(new URL('../' + row.path, import.meta.url), 'utf8')).replace(/\r\n/g, '\n');
-    assert.equal(Buffer.byteLength(actual), row.after.bytes, 'The new actual source must be tested, not an old projected body');
+    const raw = (await fs.readFile(new URL('../' + row.path, import.meta.url), 'utf8')).replace(/\r\n/g, '\n');
+    const actual = row.path === 'scripts/update-weather.mjs'
+      ? inverseCurrentFamilyColdTargetTestInput(raw, row.path) : raw;
+    assert.equal(Buffer.byteLength(actual), row.after.bytes, 'Exact native-original predecessor after only the reviewed cold-target inverse');
     assert.equal(digest(actual), row.after.sha256);
     const original = inverseCurrentNativeOriginalProducerTestInput(actual, row.path);
     assert.equal(digest(original), row.before.sha256);

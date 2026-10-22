@@ -1,3 +1,13 @@
+## 22. oktober — ny aktiv strømstart skal holde gennem næste genbrug
+
+AKTIVT: Ejerens nyeste beslutning tillader en ny aktiv strømstart uden tidligere strømhistorik. Bevar autentiske gamle sikkerhedspakker og offentliggjorte scorer, men gør dem ikke til nødvendige numeriske input for den nye drift. Første start må kun vælges efter arkiv og genlæsning; manglende historik forbliver UNKNOWN. Alle gamle strømindgange skal håndteres samlet, mens øvrige vejrkomponenter og vandkildebank bevares.
+
+Ny normal schema2-bank skal bevare korrigerede originale strømendepunkter for hele prognosen inklusive støttetimer. En almindelig efterfølger skal genbruge den uden endnu en nulstilling eller gammel RAW-genopretning. Ventende adminpunktpromotion må ikke ophæves. Ingen ændring af scoreformel, kildeprioritet, administratorpunkter, geometri eller modelbinding følger af denne beslutning. De normale databevarelses- og offentliggørelseskontroller består.
+
+## 22. oktober — drift skal passe til eksisterende Free-planer
+
+AKTIVT: Ejerens aktuelle krav er, at fremtidig RavRadar-drift skal passe til Supabase Free og Cloudflare Free, også når cache og historik bygges videre. Kontrollér faktisk periode, forbrug og relevante aktuelle officielle grænser; fremskriv konservativt ved normale kørsler og brugertrafik. Skeln faktisk abonnementsplan fra Free-sammenligning. Lokale komprimeringsmål er ikke kvotebevis. Ingen nye betalingsplaner, datatab, skjult pruning eller svækkelse af kontroller er tilladt. Gem målegrundlag og åbne afhængigheder privat.
+
 ## 20. oktober — varig statistikforberedelse uden historisk klientautoritet
 
 AKTIVT: Normal privat forberedelse skal fortsætte et faktisk eksisterende job over månedsskifte med samme periode, inputgrundlag og model. Kun serverens normale databasegenlæsning må udstede adgang til den gamle periode; klientinput, JSON-kopier og ukvitteret arbejde giver ingen ny skriveautoritet. Friskt samtykke og slettebarriere samt eksisterende tids-, række-, byte- og forespørgselsgrænser bevares. Timeout, ukendt skrivning og afvist kvittering må ikke udløse automatisk retry. Forberedelse og genlæsning er ikke anonym statistikfrigivelse. 004/005, retention og SOURCE aktiveres ikke af den sammenførte kilde.

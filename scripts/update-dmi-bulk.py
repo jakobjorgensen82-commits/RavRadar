@@ -11096,12 +11096,12 @@ def _current_history_json(value: Any) -> str:
     return json.dumps(value, sort_keys=True, separators=(",", ":"), ensure_ascii=False, allow_nan=False)
 
 
-def current_history_demands(rows, zones, locked_reference):
+def current_history_demands(rows, zones, locked_reference, *, archive_isolated_cold_start=False):
     """Validate the selector's bounded request; this is not source admission."""
     by_id = {str(zone["id"]): zone for zone in zones if zone.get("coastalPart")}
     reference = canonical_time(locked_reference)
     demands = {}
-    if not isinstance(rows, list) or reference is None:
+    if not isinstance(rows, list) or reference is None or type(archive_isolated_cold_start) is not bool:
         raise ValueError("DMI_CURRENT_HISTORY_DEMAND_INVALID")
     for row in rows:
         zone_id = "PART::" + str(row.get("partId") or "") if isinstance(row, dict) else ""
@@ -11132,7 +11132,7 @@ def current_history_demands(rows, zones, locked_reference):
             )
             and identity and zone_id not in demands and start
             and end == reference
-            and ((cold and epoch(start) == epoch(end) - 48 * 3600) or state_window)
+            and ((cold and epoch(start) == epoch(end) - (0 if archive_isolated_cold_start else 48) * 3600) or state_window)
             and all(epoch(value) % 3600 == 0 for value in (start, end))
             and (initial is None or epoch(initial) % 3600 == 0)
             and (source != "POINT_ACTIVATION" or initial == end)
@@ -11360,6 +11360,7 @@ def read_current_history_demands(part_doc, part_bytes, coastal_part_targets, zon
             raise ValueError("DMI_CURRENT_HISTORY_DEMAND_INPUT_MISMATCH")
     if required and document.get("rawRetention") is None:
         _raw_cache_protection_refuse("RETENTION_REQUIRED")
+    archive_isolated_cold_start = False
     if not CACHE_ONLY and "rawRetention" in document and document["rawRetention"] is not None:
         retention = document["rawRetention"]
         if isinstance(retention, dict) and retention.get("kind") == "ARCHIVE_ISOLATED_COLD_RAW_RETENTION":
@@ -11389,6 +11390,9 @@ def read_current_history_demands(part_doc, part_bytes, coastal_part_targets, zon
                 or s_checkpoint.get("generationSha256") != boundary.get("checkpointGenerationSha256")):
             _raw_cache_protection_refuse("B_BOUNDARY_CHANGED")
         configure_raw_current_retention(document["rawRetention"])
+        # Only the complete fixed archive/catalog/B/S validation above can
+        # select target-only acquisition. An env flag or CACHE_ONLY cannot.
+        archive_isolated_cold_start = retention.get("kind") == "ARCHIVE_ISOLATED_COLD_RAW_RETENTION"
     if not document["demands"]:
         return {}  # Explicit stateless/no-demand plan; grants no source admission.
     owner_by_part = {}
@@ -11405,7 +11409,8 @@ def read_current_history_demands(part_doc, part_bytes, coastal_part_targets, zon
             })
     if target_fingerprint(targets_from_read_bytes) != target_fingerprint(coastal_part_targets):
         raise ValueError("DMI_CURRENT_HISTORY_DEMAND_TARGET_INVALID")
-    demands = current_history_demands(document["demands"], zones, reference)
+    demands = current_history_demands(document["demands"], zones, reference,
+        archive_isolated_cold_start=archive_isolated_cold_start)
     expected = {"PART::" + target["partId"] for target in coastal_part_targets}
     if set(demands) != expected or any(
         row.get("zoneId") != owner_by_part.get(row.get("partId")) for row in document["demands"]

@@ -1,3 +1,17 @@
+## 89.264 Ny strømhistorik med bevaret arkiv
+
+Kort fortalt: RavRadar kan opbygge strømhistorik fra et nyt tidspunkt uden at ændre tidligere offentliggjorte scorer.
+
+En godkendt ny opstart skal holde det gamle arkiv adskilt fra de nye beregninger. Gamle strømværdier må ikke vende tilbage gennem gemte arbejdsfiler. Gyldige vind-, bølge-, vandstands- og temperaturdata bevares efter de normale kilderegler. En afventende ændring af administratorens kystpunkter må ikke annulleres som del af en sådan opstart.
+
+Timer før den nye start er ukendte, ikke nul strøm. Historikken vokser med nye gyldige timer, og prognosen skal fortsat vise usikkerheden ærligt. De nye data skal gemmes sammen med deres kildegrundlag, så næste almindelige opdatering kan fortsætte uden endnu en ny start.
+
+Strømdelen ser 48 timer bagud fra det tidspunkt, prognosen gælder for. Fremtidige prognosetimer bygger derfor videre på strømprognosen i timerne før dem. Efter 48 sammenhængende gyldige timer fra en ny start kan strømhistorikken stå på egne nye data. Det sker kun, hvis timerne faktisk findes og bliver gemt og genbrugt; ventetid alene udfylder ikke huller. Dette er strømhistorik, ikke et løfte om fuld dækning af alle vejrtyper.
+
+En vellykket opstart er ikke nok til at dokumentere stabil drift. Gemning, genlæsning, offentlig levering og mindst én efterfølgende almindelig opdatering skal også være kontrolleret. Beregningsmodel, kildeprioritet og kystpunkter ændres ikke af denne driftsform.
+
+Driften skal passe til Supabase Free og Cloudflare Free. Det kræver måling af faktisk forbrug og en forsigtig fremskrivning, også for bevarede arkiver. En lille komprimeret fil eller en lokal prøve er ikke i sig selv bevis for, at hele driften holder sig inden for de gratis grænser.
+
 ## 89.263 Originalfil og hentetid er to forskellige ting
 
 Kort fortalt: Den samme originale vejrfil kan hentes igen senere. Det gør ikke dens indhold nyere.
