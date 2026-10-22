@@ -1,3 +1,9 @@
+## 22. oktober — ÅBEN: første afvisning er modelkørselsidentitet; RAW-bevis mangler stadig
+
+Den faktiske nye rapport afgrænser første native-forskel til modelkørselsidentiteten. Koden sammenligner den oprindelige tidsstreng; rapporten beviser ikke, om tidsinstanterne også er forskellige. Egne fulde captureoplysninger kan bindes entydigt, men hverken præcis RAW-fil, afkodning, bank eller genopretning følger af metadata alene.
+
+Ny lokal særskilt default-OFF-cacheprøve bruger uændret normal afkoder og kræver eksakt kilde-/tal-reprojektion samt normal pakning/genlæsning med gammel H0. Domænet skal omfatte alle 121 gemte prognosetimer og fremadrettet historik, ellers kan en senere før-score-kontrol stadig standse. Første-PART-prøve, syntetiske prøver eller genlæst cachemetadata må ikke kaldes national løsning. Ingen produktionsaktivering eller lempelse af originalkontrol er udført.
+
 ## 22. oktober — ÅBEN: præcis original mangler blandt leverede kontekster
 
 Den faktiske skrivefri observation har lokaliseret en afvisning af en bevaret korrigeret strømselektions native-original. Et gyldigt trin med samme tid, men afvigende identitet, må ikke erstatte den krævede original. Den grove identitetskategori skelner endnu ikke modelkørsel, samling, gitter, punkt, afstand, dybde eller wire-format. Det er ikke dokumenteret fysisk RAW-tab eller en færdig årsagsrettelse.

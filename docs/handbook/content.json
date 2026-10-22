@@ -5,6 +5,12 @@
   "updatedAt": "2026-10-22",
   "sections": [
     {
+      "id": "exact-cached-current-original-proof-2026-10-22",
+      "chapter": "89.262",
+      "title": "Genskab originalbevis uden at ændre gemte tal",
+      "body": "<div class=\"reader-guide\"><strong>Kort fortalt:</strong> En bevaret strømprognose skal fortsat kunne knyttes til sine egne originaler, selv om en nyere vejrfil har erstattet en arbejdsfil.</div><p>En særskilt intern prøve kan genlæse præcis den gemte originalfil og bruge den normale afkoder. Den skal genskabe samme kildeoplysninger, strømværdier, sted og alder. En lignende time eller et andet modelkørselsnavn er ikke en erstatning. Manglende filer, ændrede bytes eller uafsluttet læsning giver ikke et gyldigt bevis.</p><p>Kontrollen omfatter både timer til den fremadrettede historik og hele den gemte prognose, også de sidste støttetimer. En privat arbejdsafledning kan pakkes og læses igen gennem det normale format, men den må hverken ændre det gamle udgangspunkt eller udgives for den oprindelige sikkerhedspakke. Originaler og tidligere offentliggjorte scorer bevares.</p><p>Den forberedte prøve er ikke en ny vejrhentning, ændring af beregningsmodel eller offentlig genopretning. Lokale prøver og én undersøgt kystdel beviser ikke hele landet. Faktisk normal levering og efterfølgende sikker drift skal fortsat dokumenteres særskilt.</p>"
+    },
+    {
       "id": "original-stage-storage-preservation-2026-10-20",
       "chapter": "89.261",
       "title": "Bevar originalerne i det lager, de faktisk ligger i",

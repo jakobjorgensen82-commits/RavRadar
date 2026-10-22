@@ -9,7 +9,9 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 import { auditSavedWeatherInputs, createReadOnlySavedWeatherClients,
   measureSavedCurrentContexts, measureSavedNativeProofAvailability, withoutSavedAuditSecrets,
   indexSavedRawManifest, measureSavedRawCaptureMatches, inspectSavedRawFileInventory,
-  savedAuditProgressAuthenticationCode, CURRENT586_ENDPOINT_AUDIT } from './audit-saved-weather-inputs.mjs';
+  savedAuditProgressAuthenticationCode, CURRENT586_ENDPOINT_AUDIT,
+  CURRENT586_CACHED_ORIGINAL_AUDIT } from './audit-saved-weather-inputs.mjs';
+import { cachedCoherentOriginalFailureCode } from './lib/prove-cached-coherent-current-originals.mjs';
 import { createPrivateProductionRuntimeBundle } from './private-production-runtime-bundle.mjs';
 import { buildProtectedPrivateRuntimeArchive, PROTECTED_PRIVATE_RUNTIME_POLICY as policy } from './protected-private-production-runtime.mjs';
 import { PRIVATE_RUNTIME_BASE_FILES, PRIVATE_WEATHER_COMPONENT_FILES } from './lib/private-weather-component-inventory.mjs';
@@ -1533,7 +1535,7 @@ test('CURRENT586 fixed B-only endpoint diagnostic observes role evidence without
     const privateRoot = path.join(os.tmpdir(), 'synthetic-unclosed-audit');
     const firstError = new Error('synthetic-first-error');
     const scope = { work: path.join(privateRoot, 'saved-input-audit-owned'), privateRoot, path,
-      includeCurrent586Endpoints, baselinePackInvocation: null,
+      includeCurrent586Endpoints, includeCurrent586CachedOriginals: false, baselinePackInvocation: null,
       privateWeatherPackJsonReadsClosed: () => false, firstError,
       fs: { realpath: async () => privateRoot, rm: async () => { removals++; } } };
     await assert.rejects(vm.runInNewContext('(async () => { try { throw firstError; } finally {' + cleanup + '} })()', scope),
@@ -1619,4 +1621,52 @@ test('CURRENT586 pilot fingerprint uses the actual normal Python target projecti
     && !Array.isArray(value) ? Object.fromEntries(Object.keys(value).sort().map(key => [key, value[key]])) : value);
   assert.notEqual(actual, 'sha256:' + crypto.createHash('sha256').update(fullRegistry).digest('hex'));
   assert.match(audit, /pilotFingerprintAlgorithm: 'NORMAL_COPERNICUS_TARGET_IDENTITY'/);
+});
+
+test('CURRENT586 cached originals: separate scope rejects every mixed transport before filesystem or network', async () => {
+  let reads = 0;
+  for (const extra of [{ includeCurrent586CachedOriginals: 'true' }, { includeCurrent586Endpoints: true },
+    { includeCurrentWindowDiagnostic: true }, { includeSelectedCurrentPreflight: true },
+    { includeRawManifest: true }, { includeRawFilePresence: true }, { rawCacheKey: 'secret-error-canary' },
+    { rawManifestSource: 'secret-error-canary' }, { progressFile: '/private/cipher' },
+    { progressCacheKey: 'secret-error-canary' }, { progressBaselineTargetHour: '2026-10-21T20:00:00.000Z' },
+    { progressSource: '39066350748-1' }, { prepareCurrentForwardOriginals: true }]) {
+    const result = await auditSavedWeatherInputs({ mode: 'audit', includeCurrent586CachedOriginals: true,
+      progressSource: CURRENT586_ENDPOINT_AUDIT.progressSource,
+      fetchImpl: async () => { reads++; throw Error('secret-error-canary'); }, ...extra });
+    assert.equal(result.status, 'AUDIT_FAILED_CLOSED'); assert.equal(result.code, 'MODE_INVALID');
+    assert.equal(result.nativeAdmissionPerformed, false);
+    safeReport(result, 'secret-error-canary');
+  }
+  assert.equal(reads, 0);
+  assert.equal(CURRENT586_CACHED_ORIGINAL_AUDIT.rawCacheKey, 'dmi-grib-v4-Linux-2026-W43-39520623069-1');
+  assert.equal(CURRENT586_CACHED_ORIGINAL_AUDIT.rawCacheId, 9250979458);
+  assert.equal(CURRENT586_CACHED_ORIGINAL_AUDIT.rawCacheBytes, 2729841089);
+});
+
+test('CURRENT586 cached originals: exact worker refusal codes survive without raw text; uncertain scratch stays owned', async () => {
+  for (const suffix of ['RAW_CAPTURE_UNAVAILABLE', 'RAW_ACQUISITION_UNRESOLVED', 'OWNED_CAPTURE_MISMATCH', 'DECODE_FAILED',
+    'DECODE_MISMATCH', 'PRODUCER_PATH_INVALID', 'RAW_PATH_INVALID', 'OUTPUT_PATH_INVALID', 'OUTPUT_BOUND',
+    'OUTPUT_WRITE_FAILED', 'OUTPUT_CLOSE_UNPROVED', 'ARGUMENT_INVALID', 'SUPERVISOR_ARGUMENT_INVALID',
+    'SUPERVISOR_SOURCE_INVALID', 'SUPERVISOR_OUTPUT_BOUND', 'SUPERVISOR_OUTPUT_INVALID']) {
+    const code = 'COHERENT_CURRENT_ORIGINAL_' + suffix;
+    assert.equal(cachedCoherentOriginalFailureCode(new Error(code)), code);
+  }
+  for (const message of ['secret-error-canary', 'COHERENT_CURRENT_ORIGINAL_SECRET_CANARY',
+    'COHERENT_CURRENT_ORIGINAL_RAW_CAPTURE_UNAVAILABLE: secret-error-canary']) {
+    assert.equal(cachedCoherentOriginalFailureCode(new Error(message)), 'COHERENT_CURRENT_CACHED_PROOF_UNCLASSIFIED');
+  }
+  const source = await fs.readFile(new URL('./audit-saved-weather-inputs.mjs', import.meta.url), 'utf8');
+  const cleanup = source.match(/    if \(work && !includeCurrent586Endpoints && \(baselinePackInvocation === null[\s\S]+?await fs\.rm\(work, \{ recursive: true, force: true \}\)\.catch\(\(\) => \{\}\);/)?.[0];
+  assert(cleanup);
+  const privateRoot = path.join(os.tmpdir(), 'synthetic-cached-current-owner');
+  let removals = 0;
+  const firstError = new Error('synthetic-first-error');
+  const scope = { work: path.join(privateRoot, 'saved-input-audit-owned'), privateRoot, path,
+    includeCurrent586Endpoints: false, includeCurrent586CachedOriginals: true, baselinePackInvocation: null,
+    privateWeatherPackJsonReadsClosed: () => false, firstError,
+    fs: { realpath: async () => privateRoot, rm: async () => { removals++; } } };
+  await assert.rejects(vm.runInNewContext('(async () => { try { throw firstError; } finally {' + cleanup + '} })()', scope),
+    error => error === firstError);
+  assert.equal(removals, 0, 'unknown CURRENT worker/read ownership must not be discarded');
 });

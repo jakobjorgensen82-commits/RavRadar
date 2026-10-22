@@ -53,6 +53,11 @@ export const CURRENT586_ENDPOINT_AUDIT = Object.freeze({
   modelBundleSha256: '6d8f7cca203b5f7ee5155f3c0cdb39403a02fd0eb30fecaca5070ef9f814a805',
 });
 const runLocalReader = promisify(execFile);
+export const CURRENT586_CACHED_ORIGINAL_AUDIT = Object.freeze({
+  scope: 'CURRENT586_CACHED_ORIGINAL_PROJECTION_39666991481_1',
+  rawCacheKey: 'dmi-grib-v4-Linux-2026-W43-39520623069-1',
+  rawCacheId: 9250979458, rawCacheBytes: 2729841089,
+});
 function assertCurrent586Source(source, manifest = null) {
   if (source.sourceHead !== CURRENT586_ENDPOINT_AUDIT.failedHead
     || source.bundleContentSha256 !== CURRENT586_ENDPOINT_AUDIT.bundleContentSha256
@@ -115,7 +120,7 @@ function current586BootstrapObservation(bootstrapApi, options) {
 }
 
 async function measureCurrent586Endpoints({ ctx, work, payloadRoot, source, conditions, manifest,
-  pythonExecutable, oldWorkflow, registryFetchImpl }) {
+  pythonExecutable, oldWorkflow, registryFetchImpl, cachedOriginalProof = false }) {
   const scratch = await noSymlinks(ctx.root, path.join(ctx.root, 'current586-source'));
   if (!(await fs.lstat(scratch)).isDirectory()) fail('CURRENT586_SCRATCH_INVALID');
   assertCurrent586Source(source, manifest);
@@ -193,7 +198,7 @@ async function measureCurrent586Endpoints({ ctx, work, payloadRoot, source, cond
   const candidate = await exists(candidateFile) ? await bulk(candidateFile) : null;
   const active = await exists(activeFile) ? await bulk(activeFile) : null;
   const liveCurrentPilot = await withoutSavedAuditSecrets(() => pilotApi.readLiveCurrentPilot(registry));
-  let aggregate = null, bootstrapMetadata = null, visitedParts = 0;
+  let aggregate = null, bootstrapMetadata = null, cachedProof = null, visitedParts = 0;
   const byPart = new Map();
   const registryByPart = new Map(Object.entries(registry.zones).flatMap(([zoneId, entries]) =>
     entries.map(part => [part.partId, { zoneId, part }])));
@@ -235,6 +240,32 @@ async function measureCurrent586Endpoints({ ctx, work, payloadRoot, source, cond
     visitedParts++;
     if (aggregate.firstFailureCategory !== 'NO_NORMAL_COLLECTOR_REFUSAL') {
       bootstrapMetadata = current586BootstrapObservation(bootstrapApi, partInputs);
+      if (cachedOriginalProof) {
+        const proofApi = await imported('scripts/lib/prove-cached-coherent-current-originals.mjs');
+        // Only the cache restored by this fixed read-only workflow is moved.
+        // Remote archive/cache bytes and original B/S are not modified. Keep
+        // the standard restore path/version, then the standard decoder's ROOT.
+        const restoredRaw = await noSymlinks(REPOSITORY, path.join(REPOSITORY, '.cache/dmi-grib'));
+        const targetParent = await noSymlinks(scratch, path.join(scratch, '.cache'));
+        const targetRaw = path.join(targetParent, 'dmi-grib');
+        const rawBefore = await fs.lstat(restoredRaw), parentBefore = await fs.lstat(targetParent);
+        const targetPresent = await fs.lstat(targetRaw).catch(error => { if (error.code === 'ENOENT') return null; throw error; });
+        if (!rawBefore.isDirectory() || rawBefore.isSymbolicLink() || !parentBefore.isDirectory()
+          || parentBefore.isSymbolicLink() || targetPresent || rawBefore.dev !== parentBefore.dev) fail('CURRENT586_SCRATCH_INVALID');
+        await fs.rename(restoredRaw, targetRaw); // exact owned diagnostic copy, no fallback or overwrite
+        const rawAfter = await fs.lstat(targetRaw);
+        if (!rawAfter.isDirectory() || rawAfter.isSymbolicLink()
+          || rawAfter.dev !== rawBefore.dev || rawAfter.ino !== rawBefore.ino) fail('CURRENT586_SCRATCH_INVALID');
+        try {
+          cachedProof = await withoutSavedAuditSecrets(() => proofApi.proveCachedCoherentCurrentOriginals({
+            input: partInputs, pythonExecutable }));
+        } catch (error) {
+          const refusal = new Error('CURRENT586_CACHED_ORIGINAL_PROOF_REFUSED');
+          refusal.auditCode = refusal.message;
+          refusal.cachedOriginalCode = proofApi.cachedCoherentOriginalFailureCode(error);
+          throw refusal;
+        }
+      }
       break outer;
     }
   }
@@ -248,16 +279,19 @@ async function measureCurrent586Endpoints({ ctx, work, payloadRoot, source, cond
   if (!/^sha256:[a-f0-9]{64}$/.test(pilotTargetFingerprint)) fail('CURRENT586_REGISTRY_MISMATCH');
   const pilotRegistryFingerprintMatches = liveCurrentPilot?.targetFingerprint === pilotTargetFingerprint;
   const report = { ...baseReport('AUDIT_COMPLETED'), protectedGenerationReadbackVerified: true,
-    exactArchivedSourceContractsVerified: true, fixedScope: CURRENT586_ENDPOINT_AUDIT.scope,
+    exactArchivedSourceContractsVerified: true,
+    fixedScope: cachedOriginalProof ? CURRENT586_CACHED_ORIGINAL_AUDIT.scope : CURRENT586_ENDPOINT_AUDIT.scope,
     originalBGeometryUsed: true, freshCentralRegistryProved: false, actualSParityProved: false,
     wholeFailedStepReproduced: false, pilotRegistryFingerprintMatches,
     pilotFingerprintAlgorithm: 'NORMAL_COPERNICUS_TARGET_IDENTITY',
     pilotProofStatus: pilotApi.controlledLiveCurrentProofStatus(liveCurrentPilot),
     regionalScopeEquivalenceProved: false, fullCoverageClaimed: false,
     observedScope: 'FIRST_NORMAL_COLLECTOR_FAILURE_ONLY', visitedParts, registeredParts: 673,
-    encryptedProgressRead: false, rawCacheRead: false, remoteSRead: false,
+    encryptedProgressRead: false, rawCacheRead: cachedProof?.rawReadPerformed === true, remoteSRead: false,
     normalGenerationPreparation: { sourceRole: kind, strictReady: strict },
-    endpointAvailability: aggregate, bootstrapMetadata };
+    endpointAvailability: aggregate, bootstrapMetadata,
+    ...(cachedOriginalProof ? { cachedOriginalProof: cachedProof } : {}) };
+  if (cachedOriginalProof && cachedProof?.status !== 'FIRST_PART_PROVED_PRIVATE_ONLY') fail('CURRENT586_CACHED_ORIGINAL_PROOF_REFUSED');
   if (Buffer.byteLength(JSON.stringify(report)) > 64 * 1024) fail('CURRENT586_DIAGNOSTIC_BOUND');
   await verify();
   return report;
@@ -285,7 +319,8 @@ const safeCode = new Set(['MODE_INVALID', 'PRIVATE_ROOT_INVALID', 'PRIVATE_PATH_
   'PRIVATE_TEMP_CLEANUP_FAILED', 'BASELINE_COMPONENT_PACK_REJECTED', 'NATIVE_PROOF_INSPECTION_FAILED',
   'RAW_MANIFEST_BOUND', 'RAW_CACHE_IDENTITY_INVALID', 'RAW_FILE_INVENTORY_REJECTED', 'PROGRESS_BASELINE_TARGET_INVALID',
   'PROGRESS_BASELINE_RECONSTRUCTION_REJECTED', 'CURRENT586_SOURCE_MISMATCH',
-  'CURRENT586_SCRATCH_INVALID', 'CURRENT586_GENERATION_PREPARE_REJECTED', 'CURRENT586_DIAGNOSTIC_BOUND', 'CURRENT586_REGISTRY_MISMATCH']);
+  'CURRENT586_SCRATCH_INVALID', 'CURRENT586_GENERATION_PREPARE_REJECTED', 'CURRENT586_DIAGNOSTIC_BOUND', 'CURRENT586_REGISTRY_MISMATCH',
+  'CURRENT586_CACHED_ORIGINAL_PROOF_REFUSED']);
 const safeProgressAuthenticationCodes = new Set(['SIZE_BUDGET_INVALID', 'REPOSITORY_INVALID', 'ROOT_INVALID',
   'BASE_INVALID', 'ENCRYPTION_KEY_UNAVAILABLE', 'ENCRYPTION_KEY_INVALID', 'BASELINE_MISMATCH',
   'PATH_INVALID', 'SYMLINK_REJECTED', 'FILE_INVALID', 'SNAPSHOT_ABSENT', 'SNAPSHOT_INVALID',
@@ -1067,6 +1102,7 @@ export async function auditSavedWeatherInputs({ mode, privateRoot, descriptorPat
   includeRawManifest = false, rawCacheKey = null, rawManifestSource = null,
   includeRawFilePresence = false, progressBaselineTargetHour = null, includeSelectedCurrentPreflight = false,
   includeCurrentWindowDiagnostic = false, includeCurrent586Endpoints = false,
+  includeCurrent586CachedOriginals = false,
   prepareCurrentForwardOriginals = false,
   repository = process.env.GITHUB_REPOSITORY, pythonExecutable = process.env.PYTHON ?? 'python',
   encryptionKey = process.env.WEATHER_PROGRESS_ENCRYPTION_KEY,
@@ -1077,6 +1113,12 @@ export async function auditSavedWeatherInputs({ mode, privateRoot, descriptorPat
   let baselinePackInvocation = null;
   let normalProgressBaselineUsed = false;
   try {
+    if (typeof includeCurrent586CachedOriginals !== 'boolean'
+      || includeCurrent586CachedOriginals && (mode !== 'audit' || progressSource !== CURRENT586_ENDPOINT_AUDIT.progressSource
+        || includeCurrent586Endpoints || progressFile != null || progressCacheKey != null || progressBaselineTargetHour !== null
+        || includeCurrentWindowDiagnostic || includeSelectedCurrentPreflight || includeRawManifest
+        || includeRawFilePresence || rawCacheKey !== null || rawManifestSource !== null
+        || prepareCurrentForwardOriginals)) fail('MODE_INVALID');
     if (typeof includeCurrent586Endpoints !== 'boolean'
       || includeCurrent586Endpoints && (mode !== 'audit' || progressSource !== CURRENT586_ENDPOINT_AUDIT.progressSource
         || progressFile != null || progressCacheKey != null || progressBaselineTargetHour !== null
@@ -1142,7 +1184,7 @@ export async function auditSavedWeatherInputs({ mode, privateRoot, descriptorPat
     // Reject malformed, same-hour and older targets before any remote read.
     validateProgressBaselineTargetHour(progressBaselineTargetHour, source);
     let cipher = null;
-    if (!includeCurrent586Endpoints) {
+    if (!includeCurrent586Endpoints && !includeCurrent586CachedOriginals) {
     if (!/^\d+-[1-9]\d*$/.test(progressSource ?? '') || progressCacheKey !== `weather-private-progress-encrypted-v2-Linux-main-${progressSource}`
       || !/^[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+$/.test(repository ?? '')) fail('PROGRESS_IDENTITY_INVALID');
     cipher = await noSymlinks(ctx.root, progressFile);
@@ -1187,10 +1229,11 @@ export async function auditSavedWeatherInputs({ mode, privateRoot, descriptorPat
     const conditions = await readJson(path.join(payloadRoot, 'data/live/conditions.json'), 535_822_312);
     const parts = originalParts(conditions);
     const bStateTimes = authenticatedBStateTimes(conditions, parts, oldStaging, oldSampling);
-    if (includeCurrent586Endpoints) {
-      phase = 'CURRENT586_ENDPOINT_INSPECTION';
+    if (includeCurrent586Endpoints || includeCurrent586CachedOriginals) {
+      phase = includeCurrent586CachedOriginals ? 'CURRENT586_CACHED_ORIGINAL_PROOF' : 'CURRENT586_ENDPOINT_INSPECTION';
       const report = await measureCurrent586Endpoints({ ctx, work, payloadRoot, source,
-        conditions, manifest, pythonExecutable, oldWorkflow, registryFetchImpl: credentials.fetchImpl ?? fetch });
+        conditions, manifest, pythonExecutable, oldWorkflow, registryFetchImpl: credentials.fetchImpl ?? fetch,
+        cachedOriginalProof: includeCurrent586CachedOriginals });
       if (!same(await oldProtected.describeCurrentProtectedPrivateProductionRuntime(clients), source)) fail('CURRENT_GENERATION_CHANGED');
       await fs.rm(work, { recursive: true, force: true }); work = null;
       await fs.writeFile(safeOutput, JSON.stringify(report) + '\n', { flag: 'wx', mode: 0o600 });
@@ -1360,6 +1403,11 @@ export async function auditSavedWeatherInputs({ mode, privateRoot, descriptorPat
       : phase === 'PROGRESS_AUTHENTICATION' ? 'PROGRESS_AUTHENTICATION_REJECTED'
       : phase === 'PROGRESS_BASELINE_RECONSTRUCTION' ? 'PROGRESS_BASELINE_RECONSTRUCTION_REJECTED' : 'AUDIT_FAILED_CLOSED';
     const report = { ...baseReport('AUDIT_FAILED_CLOSED'), normalProgressBaselineUsed, phase, code,
+      ...(includeCurrent586CachedOriginals ? { fixedScope: CURRENT586_CACHED_ORIGINAL_AUDIT.scope,
+        cachedOriginalProofCode: /^COHERENT_CURRENT_(?:ORIGINAL|CACHED_PROOF|REPROJECTION)_[A-Z_]{1,80}$/.test(error?.cachedOriginalCode ?? '')
+          ? error.cachedOriginalCode : 'COHERENT_CURRENT_CACHED_PROOF_UNCLASSIFIED',
+        localWorkScope: 'OWNED_PRIVATE_SCRATCH_ONLY', productionAuthority: false,
+        rawCacheRead: null, decoderExecuted: null, nativeAdmissionPerformed: false } : {}),
       ...(includeCurrentWindowDiagnostic ? { localWorkScope: 'OWNED_PRIVATE_SCRATCH_ONLY', productionAuthority: false,
         semanticUnionPerformed: null, replayPerformed: null, cacheBuilt: null } : {}),
       ...(phase === 'PROGRESS_AUTHENTICATION' ? { progressAuthenticationCode:
@@ -1368,6 +1416,7 @@ export async function auditSavedWeatherInputs({ mode, privateRoot, descriptorPat
     return report;
   } finally {
     if (work && !includeCurrent586Endpoints && (baselinePackInvocation === null || privateWeatherPackJsonReadsClosed(baselinePackInvocation))
+      && !includeCurrent586CachedOriginals
       && path.dirname(work) === await fs.realpath(privateRoot).catch(() => null)
       && path.basename(work).startsWith('saved-input-audit-')) await fs.rm(work, { recursive: true, force: true }).catch(() => {});
   }
@@ -1507,11 +1556,12 @@ if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.me
       '--include-selected-current-preflight': 'includeSelectedCurrentPreflight',
       '--include-current-window-diagnostic': 'includeCurrentWindowDiagnostic',
       '--include-current586-endpoints': 'includeCurrent586Endpoints',
+      '--include-current586-cached-originals': 'includeCurrent586CachedOriginals',
       '--prepare-current-forward-originals': 'prepareCurrentForwardOriginals',
       '--progress-baseline-target-hour': 'progressBaselineTargetHour' };
     while (args.length) { const key = args.shift(), value = args.shift();
       if (!names[key] || !value || value.startsWith('--') || Object.hasOwn(options, names[key])) fail('MODE_INVALID'); options[names[key]] = value; }
-    for (const key of ['includeRawManifest', 'includeRawFilePresence', 'includeSelectedCurrentPreflight', 'includeCurrentWindowDiagnostic', 'includeCurrent586Endpoints', 'prepareCurrentForwardOriginals']) {
+    for (const key of ['includeRawManifest', 'includeRawFilePresence', 'includeSelectedCurrentPreflight', 'includeCurrentWindowDiagnostic', 'includeCurrent586Endpoints', 'includeCurrent586CachedOriginals', 'prepareCurrentForwardOriginals']) {
       if (!Object.hasOwn(options, key)) continue;
       if (!['true', 'false'].includes(options[key])) fail('MODE_INVALID');
       options[key] = options[key] === 'true';

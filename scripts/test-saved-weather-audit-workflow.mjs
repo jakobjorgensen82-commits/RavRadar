@@ -136,7 +136,7 @@ test('optional RAW manifest audit defaults to exact same-run cache, never a prov
   assert.match(text, /test -z "\$RAW_MANIFEST_CACHE_KEY"/);
   assert.doesNotMatch(text, /date -u.*%G|\.created_at|\.run_started_at/);
   const raw = text.split('      - name: Optionally restore the exact same-run RAW cache for manifest counts\n')[1]
-    .split('      - name: Read the current protected source identity without storage writes\n')[0];
+    .split('      # This separate fixed CURRENT profile restores the same indivisible normal\n')[0];
   assert.equal((raw.match(/if: inputs\.include_raw_manifest == true/g) ?? []).length, 2);
   assert.equal((raw.match(/uses: actions\/cache\/restore@v6/g) ?? []).length, 1);
   assert.match(raw, /path: \.cache\/dmi-grib\n/);
@@ -191,7 +191,8 @@ test('RAW file presence is separate default-off metadata inventory, not numeric 
   assert.ok(text.indexOf('if test "$INCLUDE_RAW_FILE_PRESENCE" = true; then') < text.indexOf(gh('secrets.SUPABASE_URL')));
   assert.match(text, /--include-raw-file-presence "\$INCLUDE_RAW_FILE_PRESENCE"/);
   assert.match(text, /path: \.cache\/dmi-grib\n/);
-  assert.equal((text.match(/uses: actions\/cache\/restore@v6/g) ?? []).length, 2, 'one progress and one exact RAW restore only');
+  assert.equal((text.match(/uses: actions\/cache\/restore@v6/g) ?? []).length, 3,
+    'old progress and manifest restores plus one separately guarded CURRENT proof restore');
   assert.equal((text.match(/uses: actions\/upload-artifact@/g) ?? []).length, 1);
 });
 
@@ -224,7 +225,38 @@ test('selected-current preflight is default-off, exact saved scope and never res
   ]) assert.ok(scope.includes(guard), guard);
   assert.ok(text.indexOf('if test "$INCLUDE_SELECTED_CURRENT_PREFLIGHT" = true; then') < text.indexOf(gh('secrets.SUPABASE_URL')));
   assert.match(text, /--include-selected-current-preflight "\$INCLUDE_SELECTED_CURRENT_PREFLIGHT"/);
-  assert.equal((text.match(/uses: actions\/cache\/restore@v6/g) ?? []).length, 2, 'no added cache restore');
+  assert.equal((text.match(/uses: actions\/cache\/restore@v6/g) ?? []).length, 3,
+    'the new CURRENT-only restore is separate and cannot run with selected preflight');
   assert.equal((text.match(/uses: actions\/upload-artifact@/g) ?? []).length, 1, 'same bounded report only');
   assert.doesNotMatch(text, /(?:contents|actions|pull-requests|pages|id-token): write|actions\/cache\/save|run-exact-dmi-original-restore|update-dmi-bulk\.py|secrets\.DMI_API_KEY/);
+});
+
+test('CURRENT586 cached originals have one independent default-off exact-cache proof route, never weather or publication', () => {
+  assert.match(text, /include_current586_cached_originals:\n[\s\S]*?required: false\n        default: false\n        type: boolean/);
+  const scope = text.split('if test "$INCLUDE_CURRENT586_CACHED_ORIGINALS" = true; then')[1]?.split('\n          fi')[0];
+  assert(scope);
+  for (const name of ['CURRENT586_ENDPOINTS', 'CURRENT_WINDOW_DIAGNOSTIC', 'SELECTED_CURRENT_PREFLIGHT', 'RAW_MANIFEST', 'RAW_FILE_PRESENCE'])
+    assert(scope.includes('test "$INCLUDE_' + name + '" = false'));
+  for (const name of ['RAW_MANIFEST_SOURCE', 'RAW_MANIFEST_CACHE_KEY', 'PROGRESS_BASELINE_TARGET_HOUR'])
+    assert(scope.includes('test -z "$' + name + '"'));
+  assert(scope.includes('test "$SOURCE_RUN_ID-$SOURCE_RUN_ATTEMPT" = 39666991481-1'));
+  for (const pin of ['.actions_caches[0].id == 9250979458', '.actions_caches[0].size_in_bytes == 2729841089',
+    'dmi-grib-v4-Linux-2026-W43-39520623069-1', '.actions_caches[0].version == "9d434ae81d3120176028232ea936fc3f9dc0ed030022ff6d98bec91aa9cf117a"']) assert(text.includes(pin), pin);
+  const restore = text.split('      - name: Restore only the fixed CURRENT586 original RAW cache\n')[1]
+    ?.split('      - name: Create only the CURRENT586 diagnostic private root\n')[0];
+  assert(restore);
+  assert.equal((restore.match(/uses: actions\/cache\/restore@v6/g) ?? []).length, 1);
+  assert.equal((restore.match(/if: inputs\.include_current586_cached_originals == true/g) ?? []).length, 2);
+  assert.match(restore, /path: \.cache\/dmi-grib/);
+  assert.match(restore, /key: \$\{\{ steps\.authority\.outputs\.current586_cached_raw_key \}\}/);
+  assert.match(restore, /test "\$CACHE_HIT" = true/);
+  assert.match(restore, /test "\$MATCHED_KEY" = "\$EXACT_KEY"/);
+  assert.doesNotMatch(restore, /restore-keys:|save@|curl|wget/);
+  assert.equal((text.match(/if: inputs\.include_current586_endpoints != true && inputs\.include_current586_cached_originals != true/g) ?? []).length, 3);
+  const run = text.split('      - name: Prove only fixed CURRENT586 cached native originals in private scratch\n')[1]
+    ?.split('      - name: Upload only the fixed-schema payload-free aggregate report\n')[0];
+  assert(run); assert.match(run, /--include-current586-cached-originals true/);
+  assert.match(run, /--progress-source 39666991481-1/);
+  assert.doesNotMatch(run, /progress-file|WEATHER_PROGRESS_MASTER_SECRET|include-current586-endpoints|update-weather|deploy|publish/);
+  assert.doesNotMatch(text, /(?:contents|actions|pull-requests|pages|id-token): write|actions\/cache\/save|gh workflow run|--publish/);
 });

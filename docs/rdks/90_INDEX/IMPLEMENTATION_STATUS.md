@@ -1,3 +1,11 @@
+## 22. oktober — præcis diagnose læst; fuld gemt prognose indgår i næste cacheprøve
+
+- [x] Præcis kildekontrol, normal merge og faktisk afgrænset observation med de nye identitetsgrupper. Første observerede afvisning vedrører modelkørselsidentiteten; der påstås ikke fysisk RAW-tab, forskellige tidsinstanter eller fuldt nationalt årsagsbevis.
+- [x] Lokal proof-only-udvidelse med særskilt 121-timersrolle, herunder H0 og de sidste støttetimer, samt uændrede kilde-/tal-/alderskrav gennem normal kernel. En allerede bevist række må ikke mistes, blot fordi andre rækker kræver afkodning. Historikgrænser, RAW-grænser og samlet bytegrænse bevares.
+- [x] Syv normale bindingsforbrugere kontrolleret uændrede. Den separate audit/controller er ikke en ny indgående modelkilde; ingen inventory-undtagelse eller falsk I-genbinding anvendes.
+- [ ] Kvalificér samlet kilde, faktisk Linux/RAW/afkodning og normal paknings-/genlæsningskontrol på den autentificerede fejlpakke. Den første kystdel er ikke hele landet, selv ved bestået privat prøve.
+- [ ] Landsdækkende integration, sikker normal levering, ny offentlig vejrgeneration og efterfølgende selvstændig drift. SOURCE og de øvrige hovedmål forbliver åbne.
+
 ## 22. oktober — faktisk afgrænset diagnose og lokal identitetsopdeling
 
 - [x] Lokal første-fejl-PART-metadataundersøgelse med samme normale projektion, egne fulde captures, globalt afslag ved tvetydighed og særskilt NOT_PROBED for RAW. Hele post-H0-målet består 23/23; diagnose-/fingerprintmål, uændret I95, syv forbrugere og håndbog/RDKS består lokalt. Ingen RAW-/produktionsrettelse eller faktisk ny pakkediagnose følger af prøverne.

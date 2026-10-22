@@ -13,6 +13,8 @@ import { canonicalSavedDmiOriginalCapture } from './saved-dmi-original-capture.m
 import { createProtectedDmiNativeCurrentInspector,
   PROTECTED_DMI_NATIVE_PROOF_LIMITS as LIMIT } from './protected-dmi-native-current-proofs.mjs';
 import { nativeCurrentOriginalBankForPart } from './ravscore-recovery-source-priority.mjs';
+import { coherentOriginalScopeLimits, coherentOriginalSourceViews, saved121DirectSelection } from './coherent-original-source-views.mjs';
+export { SAVED_121_PROOF_ROLE as SAVED_FORECAST_121_ROLE } from './coherent-original-source-views.mjs';
 
 const canonical = value => JSON.stringify(value, (_key, item) => item && typeof item === 'object' && !Array.isArray(item)
   ? Object.fromEntries(Object.keys(item).sort().map(key => [key, item[key]])) : item);
@@ -24,17 +26,16 @@ const hour = value => typeof value === 'string' && /^\d{4}-\d\d-\d\dT\d\d:00:00\
 // Preserve the existing 124-row support window and 600_000ms CURRENT metadata
 // preparation budget. Exceeding any bound refuses the WHOLE preparation; no
 // row/capture/reference is truncated. National capacity remains unproved.
-const MAX_REFERENCES = 2 * LIMIT.parts * 124;
-const MAX_WORK_UNITS = LIMIT.parts * (LIMIT.donorDocuments * LIMIT.donorRowsPerPart
-  + 124 * 2 * LIMIT.candidatesPerPart);
+const maximumWorkUnits = scope => LIMIT.parts * (LIMIT.donorDocuments * LIMIT.donorRowsPerPart
+  + (124 + scope.additionalSelectionHours) * 2 * LIMIT.candidatesPerPart);
 const MAX_RUNTIME_NS = 600_000_000_000n;
 
-function workBudget() {
+function workBudget(scope) {
   const started = process.hrtime.bigint();
   let units = 0;
   return Object.freeze({
     charge() {
-      if (++units > MAX_WORK_UNITS) refuse('WORK_BOUND');
+      if (++units > maximumWorkUnits(scope)) refuse('WORK_BOUND');
       if ((units & 255) === 1 && process.hrtime.bigint() - started > MAX_RUNTIME_NS) refuse('RUNTIME_BOUND');
     },
     finish() {
@@ -118,9 +119,10 @@ function captureMatchesRequiredStep(candidate, source, step) {
 }
 
 export function discoverCommittedCoherentOriginalBootstrap(options = {}) {
-  const budget = workBudget();
   const input = { progressCandidate: null, historicalBulk: null, protectedCompanionContexts: [],
     persistedHourlyByPart: new Map(), liveCurrentPilot: null, ...options };
+  const scope = coherentOriginalScopeLimits(input), MAX_REFERENCES = scope.maximumReferences;
+  const budget = workBudget(scope);
   assertCommittedRawRetentionInputs(input); // The SAME normal B/S structure guard.
   if (!hour(input.productionReferenceAt) || !Number.isSafeInteger(input.registry.partCount)
     || input.registry.partCount < 1 || input.registry.partCount > LIMIT.parts) refuse('INPUT_INVALID');
@@ -130,6 +132,7 @@ export function discoverCommittedCoherentOriginalBootstrap(options = {}) {
     missingBankSources: 0, explicitNullBankSources: 0, presentBankSources: 0,
     reservoirCandidates: 0, reservoirBytes: 0, requestBytes: 2, selectionReferences: 0 };
   const requests = new Map(), seenParts = new Set(), captureKeys = new Set();
+  const referenceCounts = { history: 0, saved: 0 };
   for (const [zoneId, entries] of Object.entries(input.registry.zones)) for (const entry of entries) {
     budget.charge();
     const part = { ...entry, zoneId }, expected = dmiExpectedIdentityForPart(part);
@@ -140,17 +143,19 @@ export function discoverCommittedCoherentOriginalBootstrap(options = {}) {
     const projected = projectCommittedRawRetentionPart({ ...input, part, expected, target: input.productionReferenceAt });
     const reservoir = metadataReservoir(input, part, expected, projected, budget);
     counts.reservoirCandidates += reservoir.candidates.length; counts.reservoirBytes += reservoir.bytes;
-    const from = Date.parse(projected.selected.state.time), until = Date.parse(input.productionReferenceAt);
-    for (const selectedSource of projected.recoverySources) {
+    const views = coherentOriginalSourceViews({ input, part, expected, projected });
+    for (const view of views) {
+      const selectedSource = view.source;
       const bank = nativeCurrentOriginalBankForPart(selectedSource, part);
       if (selectedSource.nativeCurrentOriginals == null) counts.missingBankSources++;
       else if (bank === null) counts.explicitNullBankSources++;
       else counts.presentBankSources++;
       const inspector = createProtectedDmiNativeCurrentInspector({ contexts: selectedSource.nativeCurrentContexts, previousBank: bank });
-      for (const row of selectedSource.record.hourly) {
+      for (const row of view.rows) {
         budget.charge();
-        const time = Date.parse(row.time), source = row.sources?.current;
-        if (time <= from || time >= until || source?.provider !== 'dmi' || source.vectorSemanticsVersion !== 3) continue;
+        if (view.saved121 && !saved121DirectSelection(row)) continue;
+        const source = row.sources?.current;
+        if (source?.provider !== 'dmi' || source.vectorSemanticsVersion !== 3) continue;
         const payload = [row.currentUMps, row.currentVMps, row.currentSpeedMps, row.currentDirectionDeg];
         if (!payload.some(Number.isFinite)) continue;
         if (!payload.every(Number.isFinite)) { counts.otherProofRefusals++; continue; }
@@ -191,6 +196,9 @@ export function discoverCommittedCoherentOriginalBootstrap(options = {}) {
             captureOrigin: structuredClone(candidate.origin), selectionReferences: [] };
           if (!existing) counts.requestBytes += Buffer.byteLength(canonical(request)) + 2;
           if (!request.selectionReferences.some(value => isDeepStrictEqual(value, selection))) {
+            const category = view.saved121 ? 'saved' : 'history';
+            if (++referenceCounts[category] > (view.saved121
+              ? scope.maximumSavedReferences : scope.maximumHistoryReferences)) refuse('REFERENCE_BOUND');
             if (request.selectionReferences.length >= 124 || ++counts.selectionReferences > MAX_REFERENCES) refuse('REFERENCE_BOUND');
             counts.requestBytes += Buffer.byteLength(canonical(selection)) + 2;
             request.selectionReferences.push(selection);
@@ -212,7 +220,7 @@ export function discoverCommittedCoherentOriginalBootstrap(options = {}) {
   // All-or-nothing metadata: a partial/ambiguous reservoir cannot seed decode.
   return { summary: { schemaVersion: 1, kind: 'COHERENT_ORIGINAL_BOOTSTRAP_METADATA', status,
     refusalCode: unresolved ? 'COHERENT_ORIGINAL_BOOTSTRAP_CAPTURE_UNRESOLVED' : null,
-    scope: 'BEFORE_RETENTION_COHERENT_MISSING_ENDPOINT_METADATA_ONLY', counts, timing,
+    scope: scope.metadataScope, counts, timing,
     requestCount: unresolved ? 0 : requests.size, rawAvailability: 'NOT_PROBED', missingRawFiles: null,
     authenticationPerformed: false, rawReadPerformed: false, decoderExecuted: false,
     nativeAdmissionPerformed: false, sourcePriorityChanged: false, selectedRowsChanged: false,

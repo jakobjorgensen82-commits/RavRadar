@@ -14,6 +14,9 @@ import { createProtectedDmiNativeCurrentInspector } from './lib/protected-dmi-na
 import { inspectDmiForecastGridSampling } from './lib/dmi-forecast-store.mjs';
 import { canonicalSavedDmiOriginalCapture } from './lib/saved-dmi-original-capture.mjs';
 import { discoverCommittedCoherentOriginalBootstrap } from './lib/coherent-current-original-bootstrap.mjs';
+import { reprojectCommittedCoherentCurrentOriginals } from './lib/reproject-coherent-current-originals.mjs';
+import { SAVED_121_PROOF_ROLE } from './lib/coherent-original-source-views.mjs';
+import { verifyProtectedDmiNativeCurrentProof } from './lib/protected-dmi-native-current-proofs.mjs';
 import { buildRavScoreRecoveryReplay } from './lib/ravscore-recovery-replay.mjs';
 import { canonicalRavScoreStateOnlyCurrentHold, RAVSCORE_STATE_ONLY_CURRENT_HOLD_CONTRACT_ID,
   RAVSCORE_STATE_ONLY_CURRENT_HOLD_CLOSURE_CONTRACT_ID } from '../js/core/ravscore-integrated-state-pipeline.js';
@@ -612,6 +615,51 @@ test('native-original planner oracle preserves complete earlier source and actua
     /ALTERNATIVE_C_TEST_INPUT_CHANGED/);
 });
 
+const POST_H0_FIXED_CLI_SOURCES=[
+  'scripts/current-family-cold-start.mjs',
+  'scripts/lib/post-h0-dmi-original-dependencies.mjs',
+  'scripts/check-native-identity-frozen-i71-source.mjs',
+  'scripts/verify-native-sampling-identity-successor-plan.mjs',
+  'scripts/native-sampling-identity-successor-readiness.mjs',
+  'scripts/migrate-post-cutover-private-runtime.mjs',
+  'scripts/audit-ravscore-integrated-public-runtime.mjs',
+  'scripts/runtime-binding-registry.mjs',
+  'scripts/lib/native-identity-staging-working-copy.mjs',
+  'scripts/lib/native-sampling-identity-successor-source.mjs',
+  'scripts/lib/current-grid-successor-source.mjs',
+  'scripts/lib/account-assistant-successor-source.mjs',
+  'scripts/lib/rebind-public-hour-pack-exact.mjs',
+  'scripts/lib/public-delivery-nested-binding.mjs',
+  'scripts/lib/protected-live-current-assembly.mjs',
+  'scripts/lib/ravscore-continuation-implementation-contract.mjs',
+  'scripts/lib/static-module-closure.mjs',
+  'js/core/current-direction-audit.js',
+  'js/core/direction-anchors.js',
+  'js/core/water-station-routing.js',
+  'scripts/archived-weather-restart.mjs',
+  'scripts/build-public-coastal-parts-v2.mjs',
+  'scripts/build-statistics-preference-revision.mjs',
+  'scripts/check-last-mile-enclosure-predecessor-source.mjs',
+  'scripts/lib/archived-weather-restart-input-view.mjs',
+  'scripts/lib/current-memory-warmup-successor-source.mjs',
+  'scripts/lib/current-spatial-runtime-proof.mjs',
+  'scripts/lib/data-quality.mjs',
+  'scripts/lib/dmi-acquisition-state.mjs',
+  'scripts/lib/dmi-native-current-runtime-projection.mjs',
+  'scripts/lib/established-native-current-origin-successor-source.mjs',
+  'scripts/lib/last-mile-enclosure-successor-source.mjs',
+  'scripts/lib/local-part-runtime.mjs',
+  'scripts/lib/native0600-original-successor-source.mjs',
+  'scripts/lib/ravscore-initial-current-window-audit.mjs',
+  'scripts/lib/ravscore-operational-state-readiness.mjs',
+  'scripts/lib/saved-current-forward-original-plan.mjs',
+  'scripts/lib/saved-current-replay-grid-audit.mjs',
+  'scripts/lib/water-level-continuity.mjs',
+  'scripts/lib/water-station-routing-alerts.mjs',
+  'scripts/lib/weather-history-retention.mjs',
+  'scripts/verify-account-assistant-schema.mjs',
+];
+
 test('normal authenticated B companions CLI: original fixed entries survive working changes and missing originals still fail',async t=>{
   // Real fixed CLI + ordinary local B create/verify and S save/load. Synthetic
   // constructor-valid DMI originals, not remote GCM/GRIB or production evidence.
@@ -654,50 +702,7 @@ test('normal authenticated B companions CLI: original fixed entries survive work
   // interpreted as calls made by this ordinary retain-committed-raw CLI.
   // This closed controller list supplies their actual static module neighbours;
   // no directory copy, synthetic module, import rewrite or scanner exception.
-  const fixedCliSources=[
-    'scripts/current-family-cold-start.mjs',
-    'scripts/lib/post-h0-dmi-original-dependencies.mjs',
-    'scripts/check-native-identity-frozen-i71-source.mjs',
-    'scripts/verify-native-sampling-identity-successor-plan.mjs',
-    'scripts/native-sampling-identity-successor-readiness.mjs',
-    'scripts/migrate-post-cutover-private-runtime.mjs',
-    'scripts/audit-ravscore-integrated-public-runtime.mjs',
-    'scripts/runtime-binding-registry.mjs',
-    'scripts/lib/native-identity-staging-working-copy.mjs',
-    'scripts/lib/native-sampling-identity-successor-source.mjs',
-    'scripts/lib/current-grid-successor-source.mjs',
-    'scripts/lib/account-assistant-successor-source.mjs',
-    'scripts/lib/rebind-public-hour-pack-exact.mjs',
-    'scripts/lib/public-delivery-nested-binding.mjs',
-    'scripts/lib/protected-live-current-assembly.mjs',
-    'scripts/lib/ravscore-continuation-implementation-contract.mjs',
-    'scripts/lib/static-module-closure.mjs',
-    'js/core/current-direction-audit.js',
-    'js/core/direction-anchors.js',
-    'js/core/water-station-routing.js',
-    'scripts/archived-weather-restart.mjs',
-    'scripts/build-public-coastal-parts-v2.mjs',
-    'scripts/build-statistics-preference-revision.mjs',
-    'scripts/check-last-mile-enclosure-predecessor-source.mjs',
-    'scripts/lib/archived-weather-restart-input-view.mjs',
-    'scripts/lib/current-memory-warmup-successor-source.mjs',
-    'scripts/lib/current-spatial-runtime-proof.mjs',
-    'scripts/lib/data-quality.mjs',
-    'scripts/lib/dmi-acquisition-state.mjs',
-    'scripts/lib/dmi-native-current-runtime-projection.mjs',
-    'scripts/lib/established-native-current-origin-successor-source.mjs',
-    'scripts/lib/last-mile-enclosure-successor-source.mjs',
-    'scripts/lib/local-part-runtime.mjs',
-    'scripts/lib/native0600-original-successor-source.mjs',
-    'scripts/lib/ravscore-initial-current-window-audit.mjs',
-    'scripts/lib/ravscore-operational-state-readiness.mjs',
-    'scripts/lib/saved-current-forward-original-plan.mjs',
-    'scripts/lib/saved-current-replay-grid-audit.mjs',
-    'scripts/lib/water-level-continuity.mjs',
-    'scripts/lib/water-station-routing-alerts.mjs',
-    'scripts/lib/weather-history-retention.mjs',
-    'scripts/verify-account-assistant-schema.mjs',
-  ];
+  const fixedCliSources=POST_H0_FIXED_CLI_SOURCES;
   const productBytes=new Map(),pending=[...new Set([
     'scripts/plan-ravscore-current-history.mjs','package.json',...fixedCliSources,
     ...RAVSCORE_CONTINUATION_IMPLEMENTATION_FILES,
@@ -990,4 +995,417 @@ test('coherent original bootstrap metadata: existing originals stay proved, UNKN
   assert.equal(unresolved.summary.status, 'UNRESOLVED');
   assert(unresolved.summary.counts.nonCoherentMissingSelections > 0);
   assert.deepEqual(unresolved.privateRequests, []);
+});
+
+// PRIVATE PROPOSAL, UNRUN: append to the existing post-H0 target only.
+// These schema-valid synthetic rows are NOT actual Python/GRIB/B/GCM evidence.
+function coherentReprojectionFixture(f, input = coherentBootstrapInput(f, [rowAt(f, 3)])) {
+  const metadata = discoverCommittedCoherentOriginalBootstrap(input);
+  assert.equal(metadata.summary.status, 'METADATA_BOUND');
+  // Actual measured bytes in THIS synthetic test, deliberately pretty-printed.
+  // Not a canonical-object hash or a claim about a real on-disk request file.
+  const requestBytes = Buffer.from(JSON.stringify(metadata, null, 2) + '\n');
+  const requestSha256 = sha(requestBytes);
+  const privateOriginals = metadata.privateRequests.map(request => {
+    const row = f.natives.find(value => Date.parse(value.time) === Date.parse(request.nativeValidTime)
+      && value.sources.current.itemId === request.nativeStep.itemId);
+    assert(row, 'the fixture supplies its actual original, not forecast U/V');
+    return { requestId: request.requestId, partId: request.partId,
+      header: Object.fromEntries(['currentVectorSemanticsVersion', 'currentVectorSelection', 'currentMaxDistanceKm']
+        .map(key => [key, f.document[key]])), identity: structuredClone(f.identity),
+      row: structuredClone(row), capture: structuredClone(request.capture) };
+  });
+  const decodedEnvelope = { schemaVersion: 1, kind: 'COHERENT_CURRENT_ORIGINAL_DECODE',
+    privateBinding: structuredClone(metadata.privateBinding), requestSha256,
+    captureCount: new Set(metadata.privateRequests.map(request => JSON.stringify(request.capture))).size,
+    privateOriginals, nativeAdmissionPerformed: false };
+  return { input, metadata, requestSha256, decodedEnvelope };
+}
+
+test('coherent reprojection: exact normal selection and stored age survive; private bank changes no caller input', () => {
+  const f = fixture({ coherent: [-3, 0, 3, 6, 9] });
+  const args = coherentReprojectionFixture(f), inputBefore = bootstrapInputBytes(args.input);
+  const envelopeBefore = JSON.stringify([args.metadata, args.decodedEnvelope]);
+  const result = reprojectCommittedCoherentCurrentOriginals(args);
+  assert.equal(result.summary.status, 'PROVED_PRIVATE_ONLY');
+  assert.equal(result.privateProofBanks.length, 1);
+  const proposed = result.privateProofBanks[0], selected = rowAt(f, 3);
+  assert.equal(proposed.partId, f.part.partId); assert.equal(proposed.sourceRole, 'deployed-private-runtime');
+  const proof = verifyProtectedDmiNativeCurrentProof(proposed.bank, { part: f.part, row: selected });
+  assert.equal(proof.ok, true); assert.deepEqual(proof.source, selected.sources.current);
+  assert.equal(proof.source.forecastAgeHours, selected.sources.current.forecastAgeHours);
+  assert.deepEqual([proof.currentUMps, proof.currentVMps], [selected.currentUMps, selected.currentVMps]);
+  assert(proposed.bank.contexts.every(context => !Object.hasOwn(context.value.header, 'generatedAt')
+    && !Object.hasOwn(context.value.header, 'timeStrideHours')));
+  for (const key of ['authenticationPerformed', 'rawReadPerformed', 'nativeAdmissionPerformed',
+    'sourcePriorityChanged', 'selectedRowsChanged', 'bankActivated', 'bankSaved', 'privatePayloadIncluded']) {
+    assert.equal(result.summary[key], false, key);
+  }
+  assert.equal(bootstrapInputBytes(args.input), inputBefore);
+  assert.equal(JSON.stringify([args.metadata, args.decodedEnvelope]), envelopeBefore);
+  assert.throws(() => buildRavScoreRawCurrentRetention(args.input), error =>
+    error.originalDependencyCode === 'POST_H0_DMI_ORIGINAL_SELECTED_ENDPOINT_PROOF_NATIVE_ENDPOINT_MISSING');
+});
+
+test('coherent reprojection: fresh metadata and measured request SHA reject stale binding/selection/capture/receipt', () => {
+  const fresh = () => coherentReprojectionFixture(fixture({ coherent: [-3, 0, 3, 6, 9] }));
+  for (const mutate of [
+    a => { a.requestSha256 = sha('different-actual-request-bytes'); },
+    a => { a.decodedEnvelope.privateBinding.targetReferenceAt = at(7); },
+    a => { a.metadata.privateRequests[0].initialStateSha256 = sha('stale-state'); },
+    a => { a.metadata.privateRequests[0].selectionReferences[0].tupleSha256 = sha('stale-tuple'); },
+    a => { a.metadata.privateRequests[0].selectionReferences[0].sourceSha256 = sha('stale-source'); },
+    a => { a.decodedEnvelope.privateOriginals[0].row.sources.current.acquiredAt = at(-2); },
+    a => { a.decodedEnvelope.privateOriginals[0].capture.contentSha256 = sha('another-endpoint'); },
+    a => { a.decodedEnvelope.privateOriginals[0].row.sources.current.nativeGridSampling.elementIndex++; },
+    a => { a.decodedEnvelope.privateOriginals[0].identity.samplingPoint[0] += 0.01; },
+    a => { a.decodedEnvelope.privateOriginals[0].header.generatedAt = at(6); },
+    a => { a.decodedEnvelope.privateOriginals[0].row.sources.current.forecastAgeHours = 0; },
+    a => { a.decodedEnvelope.privateOriginals[0].row['current-u'] += 0.5; },
+  ]) {
+    const args = fresh(); mutate(args);
+    assert.throws(() => reprojectCommittedCoherentCurrentOriginals(args));
+  }
+  const timingOnly = fresh(); timingOnly.metadata.summary.timing.runtimeMilliseconds += 999;
+  assert.equal(reprojectCommittedCoherentCurrentOriginals(timingOnly).summary.status, 'PROVED_PRIVATE_ONLY');
+});
+
+test('coherent reprojection: envelope inventory rejects missing duplicate and unknown request IDs without partial banks', () => {
+  const fresh = () => {
+    const f = fixture({ coherent: [-3, 0, 3, 6, 9] });
+    return coherentReprojectionFixture(f, coherentBootstrapInput(f, [rowAt(f, 0), rowAt(f, 2), rowAt(f, 3)]));
+  };
+  assert.equal(fresh().metadata.privateRequests.length, 2);
+  for (const mutate of [
+    a => { a.decodedEnvelope.privateOriginals.pop(); },
+    a => { a.decodedEnvelope.privateOriginals[1] = structuredClone(a.decodedEnvelope.privateOriginals[0]); },
+    a => { a.decodedEnvelope.privateOriginals[0].requestId = sha('unknown-request'); },
+    a => { a.decodedEnvelope.captureCount++; },
+  ]) { const args = fresh(); mutate(args); assert.throws(() => reprojectCommittedCoherentCurrentOriginals(args)); }
+});
+
+test('coherent reprojection: own authenticated context supplies one bracket; decoded other bracket cannot change selected source', () => {
+  const f = fixture({ coherent: [-3, 0, 3, 6, 9] }), selected = rowAt(f, 2);
+  // The interpolated row owns A0's capture, not A3's. Keep A3's genuine
+  // saved row as the complete metadata donor for the other bracket.
+  const input = coherentBootstrapInput(f, [selected, rowAt(f, 3)]);
+  input.protectedBulk.zones[f.identity.entityId].hourly = { [at(0)]: structuredClone(f.natives[1]) };
+  const args = coherentReprojectionFixture(f, input);
+  assert.equal(args.metadata.privateRequests.length, 1);
+  assert.equal(args.metadata.privateRequests[0].nativeValidTime, at(3));
+  const result = reprojectCommittedCoherentCurrentOriginals(args);
+  const proof = verifyProtectedDmiNativeCurrentProof(result.privateProofBanks[0].bank, { part: f.part, row: selected });
+  assert.equal(proof.ok, true); assert.deepEqual(proof.source, selected.sources.current);
+  assert.equal(proof.nativeRows.length, 2); assert.equal(result.summary.counts.decodedContextDocuments, 1);
+});
+
+test('coherent reprojection: ordinary 72h continuation packs more than sixteen exact endpoints without per-endpoint documents', async () => {
+  const { buildDmiForecastHourly } = await import('./lib/dmi-forecast-store.mjs');
+  const f = fixture({ coherent: [-3, 0, 3, 6, 9] });
+  f.natives = Array.from({ length: 26 }, (_, index) => {
+    const offset = index * 3, source = structuredClone(f.natives[1].sources.current);
+    Object.assign(source, { nativeValidTime: at(offset), leadTimeHours: 100 + offset,
+      itemId: 'synthetic-reprojection-' + offset, assetIdentitySha256: sha('reprojection-asset-' + offset),
+      contentSha256: sha('reprojection-bytes-' + offset) });
+    return { time: at(offset), 'current-u': 0.1 + offset / 1000, 'current-v': 0.2, sources: { current: source } };
+  });
+  const hourly = buildDmiForecastHourly({ generatedAt: at(0), startAt: at(0), hours: 76,
+    ocean: f.natives.map(row => ({ step: row.time, 'current-u': row['current-u'], 'current-v': row['current-v'],
+      provenance: { current: row.sources.current } })) }).hourly;
+  const input = coherentBootstrapInput(f, hourly); input.productionReferenceAt = at(72);
+  const args = coherentReprojectionFixture(f, input);
+  assert(args.metadata.privateRequests.length > 16, 'real normal continuation, not reduced to sixteen endpoints');
+  const result = reprojectCommittedCoherentCurrentOriginals(args);
+  assert.equal(result.summary.counts.decodedContextDocuments, 1);
+  assert.equal(result.summary.counts.selections, 71);
+  assert.equal(result.privateProofBanks[0].bank.selections.length, 71);
+  const selected = hourly.find(row => row.time === at(70));
+  assert.equal(verifyProtectedDmiNativeCurrentProof(result.privateProofBanks[0].bank, { part: f.part, row: selected }).ok, true);
+});
+
+test('coherent reprojection: same-time distinct saved sources survive in separate context documents, never overwrite', async () => {
+  const { buildDmiForecastHourly } = await import('./lib/dmi-forecast-store.mjs');
+  const f = fixture({ coherent: [-3, 0, 3, 6, 9] }), freshDocument = structuredClone(f.document);
+  // A2 is a normal nearest-edge projection of the actual A3 original, so
+  // its top-level capture is A3's own. A1 still requires both A0 and A3.
+  // This preserves distinct saved hours while B3 occupies saved hour 3.
+  const a3 = f.natives.find(row => row.time === at(3));
+  const nearestA2 = buildDmiForecastHourly({ generatedAt: at(6), startAt: at(2), hours: 1,
+    ocean: [{ step: a3.time, 'current-u': a3['current-u'], 'current-v': a3['current-v'],
+      provenance: { current: a3.sources.current } }] }).hourly[0];
+  f.options.recoverySources[0].record.hourly = f.options.recoverySources[0].record.hourly
+    .map(row => row.time === at(2) ? nearestA2 : row);
+  assert.deepEqual(rowAt(f, 1).sources.current.nativeSteps.map(step => step.nativeValidTime), [at(0), at(3)]);
+  assert.deepEqual(rowAt(f, 2).sources.current.nativeSteps.map(step => step.nativeValidTime), [at(3)]);
+  for (const row of Object.values(freshDocument.zones[f.identity.entityId].hourly)) {
+    Object.assign(row.sources.current, { modelRun: at(-90), leadTimeHours: (Date.parse(row.time) - Date.parse(at(-90))) / 3_600_000,
+      itemId: 'synthetic-other-run-' + row.time, assetIdentitySha256: sha('other-asset-' + row.time),
+      contentSha256: sha('other-bytes-' + row.time) });
+    row['current-u'] += 0.05;
+  }
+  const newer = f.project(freshDocument).record.hourly;
+  const newerAt = hour => newer.find(row => row.time === at(hour));
+  const input = coherentBootstrapInput(f, [rowAt(f, 0), rowAt(f, 1), rowAt(f, 2),
+    newerAt(3), newerAt(4), newerAt(5), newerAt(6)]);
+  f.natives = [...f.natives, ...Object.values(freshDocument.zones[f.identity.entityId].hourly)];
+  const args = coherentReprojectionFixture(f, input), result = reprojectCommittedCoherentCurrentOriginals(args);
+  assert.equal(result.summary.counts.decodedContextDocuments, 2);
+  const bank = result.privateProofBanks[0].bank;
+  assert.equal(bank.nativeRows.filter(record => Date.parse(record.value.time) === Date.parse(at(3))).length, 2);
+  for (const row of [rowAt(f, 1), rowAt(f, 2), newerAt(3), newerAt(4), newerAt(5)]) {
+    const proof = verifyProtectedDmiNativeCurrentProof(bank, { part: f.part, row });
+    assert.equal(proof.ok, true); assert.deepEqual(proof.source, row.sources.current);
+  }
+});
+
+test('coherent reprojection: same-role saved previousBank supplies an existing bracket through normal continuity', async () => {
+  const { buildProtectedDmiNativeCurrentProofs } = await import('./lib/protected-dmi-native-current-proofs.mjs');
+  const continuity = await import('./lib/dmi-part-continuity.mjs');
+  const f = fixture({ coherent: [-3, 0, 3, 6, 9] }), record = f.project(f.document).record;
+  const bank = buildProtectedDmiNativeCurrentProofs({ selections: [{ part: f.part, row: rowAt(f, 0) }], contexts: [f.document] });
+  const packed = await continuity.packDmiPartContinuity(new Map([[f.part.partId, record]]), [f.part], at(-3),
+    { nativeCurrentProofsByPart: new Map([[f.part.partId, bank]]) });
+  const restored = await continuity.unpackDmiPartContinuity(packed, [f.part], at(6));
+  // A2's top capture cannot stand in for its A3 bracket's complete capture.
+  const input = coherentBootstrapInput(f, [rowAt(f, 2), rowAt(f, 3)]);
+  input.persistedHourlyByPart.get(f.part.partId).nativeCurrentOriginals = restored.get(f.part.partId).nativeCurrentOriginals;
+  const args = coherentReprojectionFixture(f, input);
+  assert.equal(args.metadata.privateRequests.length, 1); assert.equal(args.metadata.privateRequests[0].nativeValidTime, at(3));
+  const result = reprojectCommittedCoherentCurrentOriginals(args);
+  const proof = verifyProtectedDmiNativeCurrentProof(result.privateProofBanks[0].bank, { part: f.part, row: rowAt(f, 2) });
+  assert.equal(proof.ok, true); assert.deepEqual(proof.source, rowAt(f, 2).sources.current);
+  assert.equal(proof.nativeRows.length, 2);
+});
+
+// Private additive saved121 scope tests; same existing normal target/fixture.
+async function coherentSaved121Fixture() {
+  const { buildDmiForecastHourly } = await import('./lib/dmi-forecast-store.mjs');
+  const f = fixture({ coherent: [-3, 0, 3, 6, 9] }), template = structuredClone(f.natives[1]);
+  f.natives = Array.from({ length: 41 }, (_, index) => {
+    const offset = index * 3, row = structuredClone(template);
+    row.time = at(offset); row['current-u'] = 0.1 + offset / 1000;
+    Object.assign(row.sources.current, { modelRun: at(0), nativeValidTime: at(offset), leadTimeHours: offset,
+      acquiredAt: at(0), itemCreatedAt: at(0), itemUpdatedAt: at(0),
+      itemId: 'saved121-native-' + offset, assetIdentitySha256: sha('saved121-asset-' + offset),
+      contentSha256: sha('saved121-bytes-' + offset) });
+    return row;
+  });
+  const hourly = buildDmiForecastHourly({ generatedAt: at(0), startAt: at(0), hours: 121,
+    ocean: f.natives.map(row => ({ step: row.time, 'current-u': row['current-u'],
+      'current-v': row['current-v'], provenance: { current: row.sources.current } })) }).hourly;
+  const input = coherentBootstrapInput(f, hourly);
+  input.includeSavedForecast121 = true;
+  return { f, input, hourly };
+}
+
+test('coherent saved121: opt-in binds H0 plus119 plus120 without changing normal historical selections', async () => {
+  const { f, input, hourly } = await coherentSaved121Fixture(), before = bootstrapInputBytes(input);
+  const historyInput = { ...input }; delete historyInput.includeSavedForecast121;
+  const history = discoverCommittedCoherentOriginalBootstrap(historyInput);
+  assert(history.privateRequests.every(request => request.sourceRole !== SAVED_121_PROOF_ROLE));
+  const metadata = discoverCommittedCoherentOriginalBootstrap(input);
+  assert.equal(metadata.summary.status, 'METADATA_BOUND');
+  const saved = metadata.privateRequests.filter(request => request.sourceRole === SAVED_121_PROOF_ROLE);
+  for (const offset of [0, 119, 120]) assert(saved.some(request => request.selectionReferences.some(ref => ref.rowTime === at(offset))));
+  assert.deepEqual(metadata.privateRequests.filter(request => request.sourceRole !== SAVED_121_PROOF_ROLE), history.privateRequests);
+  assert.equal(bootstrapInputBytes(input), before);
+  const args = coherentReprojectionFixture(f, input), result = reprojectCommittedCoherentCurrentOriginals(args);
+  const proof = result.privateProofBanks.find(value => value.sourceRole === SAVED_121_PROOF_ROLE);
+  assert(proof); assert.equal(proof.bank.selections.length, 121);
+  for (const offset of [0, 119, 120]) {
+    const row = hourly[offset], verified = verifyProtectedDmiNativeCurrentProof(proof.bank, { part: f.part, row });
+    assert.equal(verified.ok, true); assert.deepEqual(verified.source, row.sources.current);
+    assert.deepEqual([verified.currentUMps, verified.currentVMps], [row.currentUMps, row.currentVMps]);
+    assert.equal(verified.source.forecastAgeHours, row.sources.current.forecastAgeHours);
+  }
+  assert.equal(bootstrapInputBytes(input), before);
+  assert.equal(result.summary.bankActivated, false); assert.equal(result.summary.bankSaved, false);
+});
+
+test('coherent saved121: newer working run cannot replace the saved source tuple or its own old original bank', async () => {
+  const { f, input, hourly } = await coherentSaved121Fixture();
+  const newer = { ...f.document, zones: { [f.identity.entityId]: { ...f.identity,
+    hourly: Object.fromEntries(f.natives.filter(row => Date.parse(row.time) >= Date.parse(at(3))
+      && Date.parse(row.time) <= Date.parse(at(9))).map(row => [row.time, structuredClone(row)])) } } };
+  for (const row of Object.values(newer.zones[f.identity.entityId].hourly)) {
+    Object.assign(row.sources.current, { modelRun: at(3), acquiredAt: at(3), itemCreatedAt: at(3), itemUpdatedAt: at(3),
+      leadTimeHours: (Date.parse(row.time) - Date.parse(at(3))) / 3_600_000,
+      itemId: 'newer-working-' + row.time, assetIdentitySha256: sha('newer-asset-' + row.time),
+      contentSha256: sha('newer-bytes-' + row.time) });
+    row['current-u'] += 0.05;
+  }
+  input.progressCandidate = newer;
+  f.natives = [...f.natives, ...Object.values(newer.zones[f.identity.entityId].hourly)];
+  const args = coherentReprojectionFixture(f, input), before = bootstrapInputBytes(input);
+  const result = reprojectCommittedCoherentCurrentOriginals(args);
+  const bank = result.privateProofBanks.find(value => value.sourceRole === SAVED_121_PROOF_ROLE).bank;
+  for (const offset of [0, 3, 119, 120]) {
+    const verified = verifyProtectedDmiNativeCurrentProof(bank, { part: f.part, row: hourly[offset] });
+    assert.equal(verified.ok, true); assert.equal(verified.source.modelRun, at(0));
+    assert.deepEqual(verified.source, hourly[offset].sources.current);
+  }
+  assert.equal(bootstrapInputBytes(input), before);
+});
+
+test('coherent saved121: wrong old time length point identity and opt-in type refuse without mutating originals', async () => {
+  for (const mutate of [
+    (input, part) => { input.persistedHourlyByPart.get(part.partId).hourly.pop(); },
+    (input, part) => { input.persistedHourlyByPart.get(part.partId).hourly[120].time = at(121); },
+    (input, part) => { const saved = input.persistedHourlyByPart.get(part.partId);
+      saved.point = [saved.point[0] + 0.01, saved.point[1]]; },
+    (input, part) => { input.persistedHourlyByPart.get(part.partId).hourly[120].sources.current.entityId = 'PART::OTHER'; },
+    input => { input.includeSavedForecast121 = 'true'; },
+  ]) {
+    const { f, input } = await coherentSaved121Fixture();
+    mutate(input, f.part);
+    const before = bootstrapInputBytes(input);
+    assert.throws(() => discoverCommittedCoherentOriginalBootstrap(input), /COHERENT_ORIGINAL_VIEWS_/);
+    assert.equal(bootstrapInputBytes(input), before);
+  }
+});
+
+test('coherent saved121: already available originals build the entire bank without decoder or request SHA', async () => {
+  const { f, input } = await coherentSaved121Fixture();
+  input.protectedBulk = { ...f.document, zones: { [f.identity.entityId]: { ...f.identity,
+    hourly: Object.fromEntries(f.natives.map(row => [row.time, row])) } } };
+  const before = bootstrapInputBytes(input), metadata = discoverCommittedCoherentOriginalBootstrap(input);
+  assert.equal(metadata.summary.status, 'NO_BOOTSTRAP_REQUIRED');
+  assert.deepEqual(metadata.privateRequests, []);
+  const result = reprojectCommittedCoherentCurrentOriginals({ input, metadata });
+  assert.equal(result.privateProofBanks.find(value => value.sourceRole === SAVED_121_PROOF_ROLE).bank.selections.length, 121);
+  assert.equal(result.summary.requestByteShaCompared, false); assert.equal(result.summary.decoderEnvelopeValidated, false);
+  assert.throws(() => reprojectCommittedCoherentCurrentOriginals({ input, metadata, requestSha256: sha('unneeded') }), /UNEXPECTED_DECODE/);
+  assert.equal(bootstrapInputBytes(input), before);
+});
+
+test('coherent cached proof IO: no-bootstrap 121-hour roundtrip preserves old H0 and rejects an existing destination', async t => {
+  const fs = await import('node:fs/promises'), path = await import('node:path'), os = await import('node:os');
+  const { fileURLToPath, pathToFileURL } = await import('node:url');
+  const { spawnSync } = await import('node:child_process');
+  const { GENERATED_RAVSCORE_MODEL_BUNDLE_MANIFEST: integratedInventory }
+    = await import('../js/core/ravscore-model-bundle.generated.js');
+  const { GENERATED_RAVSCORE_MODEL_BUNDLE_MANIFEST: candidateInventory }
+    = await import('./rollback-assets/ravscore-model-bundle.generated.js');
+  const { RAVSCORE_CONTINUATION_IMPLEMENTATION_FILES }
+    = await import('./lib/ravscore-continuation-implementation-contract.mjs');
+  const { PRIVATE_RUNTIME_CONTRACT_FILES, PRIVATE_RUNTIME_PRODUCER_SOURCE_FILES }
+    = await import('./private-production-runtime-workflow.mjs');
+  const repository = fileURLToPath(new URL('../', import.meta.url));
+  const temporaryParent = await fs.realpath(os.tmpdir());
+  const root = await fs.mkdtemp(path.join(temporaryParent, 'rr-coherent-cached-io-'));
+  const identity = await fs.lstat(root, { bigint: true });
+  let complete = false;
+  t.after(async () => {
+    assert.equal(await fs.realpath(root), root); assert.equal(path.dirname(root), temporaryParent);
+    assert(path.basename(root).startsWith('rr-coherent-cached-io-'));
+    const current = await fs.lstat(root, { bigint: true });
+    assert.equal(current.dev, identity.dev); assert.equal(current.ino, identity.ino);
+    if (complete) await fs.rm(root, { recursive: true }); // Only this owned synthetic host.
+  });
+  const host = path.join(root, 'source'); await fs.mkdir(host, { mode: 0o700 });
+  // Same fixed-root source inventory as the normal authenticated B/CLI test.
+  // These four new proof-only leaves are copied verbatim as well. No import,
+  // product ROOT, decoder, kernel, codec or retention implementation is replaced.
+  const pending = [...new Set(['package.json', 'scripts/plan-ravscore-current-history.mjs',
+    ...POST_H0_FIXED_CLI_SOURCES, ...RAVSCORE_CONTINUATION_IMPLEMENTATION_FILES,
+    ...Object.values(PRIVATE_RUNTIME_CONTRACT_FILES).flat(), ...PRIVATE_RUNTIME_PRODUCER_SOURCE_FILES,
+    ...candidateInventory.excludedModules, ...integratedInventory.files.map(row => row.path),
+    ...candidateInventory.files.map(row => row.file),
+    'scripts/lib/coherent-current-original-bootstrap.mjs', 'scripts/lib/coherent-original-source-views.mjs',
+    'scripts/lib/reproject-coherent-current-originals.mjs', 'scripts/lib/prove-cached-coherent-current-originals.mjs'])];
+  const productBytes = new Map(); let totalBytes = 0;
+  for (const relative of pending) {
+    assert.equal(path.posix.normalize(relative), relative);
+    assert(!relative.startsWith('../') && !path.posix.isAbsolute(relative));
+    const from = path.join(repository, relative), stat = await fs.lstat(from);
+    assert(stat.isFile() && !stat.isSymbolicLink());
+    const bytes = await fs.readFile(from); productBytes.set(relative, bytes); totalBytes += bytes.length;
+    assert(productBytes.size <= 2048 && totalBytes <= 32 * 1024 * 1024);
+    const target = path.join(host, relative);
+    await fs.mkdir(path.dirname(target), { recursive: true, mode: 0o700 });
+    await fs.writeFile(target, bytes, { flag: 'wx', mode: 0o600 });
+    assert.deepEqual(await fs.readFile(target), bytes);
+  }
+  await fs.mkdir(path.join(host, '.cache'), { mode: 0o700 });
+  const { f, input } = await coherentSaved121Fixture();
+  input.protectedBulk = { ...f.document, zones: { [f.identity.entityId]: { ...f.identity,
+    hourly: Object.fromEntries(f.natives.map(row => [row.time, row])) } } };
+  assert.equal(discoverCommittedCoherentOriginalBootstrap(input).summary.status, 'NO_BOOTSTRAP_REQUIRED');
+  const before = bootstrapInputBytes(input);
+  const inputFile = path.join(root, 'input.json');
+  const inputBytes = Buffer.from(JSON.stringify({ ...input, persistedHourlyByPart: [...input.persistedHourlyByPart] }) + '\n');
+  await fs.writeFile(inputFile, inputBytes, { flag: 'wx', mode: 0o600 });
+  const proofUrl = pathToFileURL(path.join(host, 'scripts/lib/prove-cached-coherent-current-originals.mjs')).href;
+  const storeUrl = pathToFileURL(path.join(host, 'scripts/lib/dmi-forecast-file.mjs')).href;
+  const codecUrl = pathToFileURL(path.join(host, 'scripts/lib/dmi-part-continuity.mjs')).href;
+  const nativeUrl = pathToFileURL(path.join(host, 'scripts/lib/protected-dmi-native-current-proofs.mjs')).href;
+  // The subprocess is the normal copied module's real fixed-root environment.
+  // Firewalls forbid subprocess/provider transport; they never replace proof or I/O.
+  const driver = `import assert from 'node:assert/strict';
+    import fs from 'node:fs/promises'; import path from 'node:path';
+    import cp from 'node:child_process'; import http from 'node:http'; import https from 'node:https';
+    import net from 'node:net'; import tls from 'node:tls'; import dns from 'node:dns'; import dgram from 'node:dgram';
+    import { syncBuiltinESMExports } from 'node:module';
+    let networkCalls=0, childCalls=0;
+    const noNetwork=()=>{networkCalls++;throw Error('FORBIDDEN_NETWORK')};
+    const noChild=()=>{childCalls++;throw Error('FORBIDDEN_CHILD')};
+    globalThis.fetch=noNetwork; http.get=http.request=https.get=https.request=noNetwork;
+    net.connect=net.createConnection=tls.connect=dgram.createSocket=dns.lookup=dns.resolve=noNetwork;
+    for(const name of ['spawn','spawnSync','exec','execSync','execFile','execFileSync','fork'])cp[name]=noChild;
+    syncBuiltinESMExports();
+    const {proveCachedCoherentCurrentOriginals}=await import(${JSON.stringify(proofUrl)});
+    const {readDmiForecastFile}=await import(${JSON.stringify(storeUrl)});
+    const {unpackDmiPartContinuity}=await import(${JSON.stringify(codecUrl)});
+    const {verifyProtectedDmiNativeCurrentProof}=await import(${JSON.stringify(nativeUrl)});
+    const inputFile=process.argv[2],originalInput=await fs.readFile(inputFile);
+    const input=JSON.parse(originalInput);input.persistedHourlyByPart=new Map(input.persistedHourlyByPart);
+    const snapshot=()=>JSON.stringify([input,[...input.persistedHourlyByPart]]),before=snapshot();
+    const [[partId,saved]]=input.persistedHourlyByPart,oldH0=input.boundary.productionReferenceAt;
+    const parts=Object.entries(input.registry.zones).flatMap(([zoneId,entries])=>entries.map(part=>({...part,zoneId})));
+    assert.equal(saved.hourly.length,121);assert.equal(saved.hourly[0].time,oldH0);
+    assert.equal(saved.hourly[120].time,new Date(Date.parse(oldH0)+120*3600000).toISOString());
+    const result=await proveCachedCoherentCurrentOriginals({input}); // No Python executable or decoder hook.
+    assert.equal(result.status,'FIRST_PART_PROVED_PRIVATE_ONLY');
+    assert.equal(result.savedHours,121);assert.equal(result.bankSelections,121);
+    for(const key of ['normalCodecRoundtripProved','normalRetentionAfterRoundtripProved','oldProductionReferencePreserved'])assert.equal(result[key],true);
+    for(const key of ['rawReadPerformed','decoderPhysicalGroupClosed','nativeAdmissionPerformed','productionActivated','originalRowsChanged'])assert.equal(result[key],false);
+    assert.equal(result.decodedRequests,0);assert.equal(result.decodedCaptures,0);assert.equal(result.retentionCaptureCount,0);
+    const file=path.join(process.cwd(),'.cache/coherent-current-first-part-forecast.json');
+    const firstBytes=await fs.readFile(file),readback=await readDmiForecastFile(file);
+    assert.equal(readback.partContinuity.schemaVersion,2);assert.equal(readback.partContinuity.productionReferenceAt,oldH0);
+    const restored=await unpackDmiPartContinuity(readback.partContinuity,parts,input.productionReferenceAt);
+    assert.equal(restored.size,1);const actual=restored.get(partId);
+    assert.deepEqual(actual.hourly,saved.hourly);assert.deepEqual(actual.point,saved.point);
+    assert.equal(actual.nativeCurrentOriginals.bank.selections.length,121);
+    for(let index=0;index<121;index++){
+      const row=actual.hourly[index];assert.equal(row.time,new Date(Date.parse(oldH0)+index*3600000).toISOString());
+      const proof=verifyProtectedDmiNativeCurrentProof(actual.nativeCurrentOriginals.bank,{part:parts[0],row});
+      assert.equal(proof.ok,true);assert.deepEqual(proof.source,row.sources.current);
+      assert.deepEqual([proof.currentUMps,proof.currentVMps],[row.currentUMps,row.currentVMps]);
+    }
+    assert.equal(snapshot(),before);assert.deepEqual(await fs.readFile(inputFile),originalInput);
+    assert.deepEqual(await fs.readdir(path.join(process.cwd(),'.cache')),['coherent-current-first-part-forecast.json']);
+    await assert.rejects(proveCachedCoherentCurrentOriginals({input}),{message:'COHERENT_CURRENT_CACHED_PROOF_ROUNDTRIP_EXISTS'});
+    assert.deepEqual(await fs.readFile(file),firstBytes);assert.equal(snapshot(),before);
+    assert.deepEqual(await fs.readFile(inputFile),originalInput);
+    assert.deepEqual(await fs.readdir(path.join(process.cwd(),'.cache')),['coherent-current-first-part-forecast.json']);
+    assert.equal(networkCalls,0);assert.equal(childCalls,0);
+    console.log(JSON.stringify({kind:'COHERENT_CACHED_PROOF_IO_TEST',hours:121,bankSelections:121,
+      noBootstrap:true,oldH0Preserved:true,existingDestinationRefused:true,networkCalls,childCalls}));`;
+  const driverFile = path.join(root, 'driver.mjs');
+  await fs.writeFile(driverFile, driver, { flag: 'wx', mode: 0o600 });
+  const environment = Object.fromEntries(Object.entries(process.env).filter(([key]) =>
+    new Set(['PATH', 'SYSTEMROOT', 'WINDIR', 'COMSPEC', 'PATHEXT', 'LANG', 'LC_ALL']).has(key.toUpperCase())));
+  const child = spawnSync(process.execPath, [driverFile, inputFile], { cwd: host, env: environment,
+    encoding: 'utf8', timeout: 60000, maxBuffer: 1024 * 1024, windowsHide: true });
+  await fs.writeFile(path.join(root, 'whole.stdout'), child.stdout ?? '', { flag: 'wx', mode: 0o600 });
+  await fs.writeFile(path.join(root, 'whole.stderr'), child.stderr ?? '', { flag: 'wx', mode: 0o600 });
+  assert.equal(child.error, undefined); assert.equal(child.signal, null); assert.equal(child.status, 0, child.stderr);
+  const reports = child.stdout.trim().split(/\r?\n/).map(line => JSON.parse(line))
+    .filter(row => row.kind === 'COHERENT_CACHED_PROOF_IO_TEST');
+  assert.equal(reports.length, 1); assert.equal(reports[0].hours, 121); assert.equal(reports[0].bankSelections, 121);
+  assert.equal(reports[0].networkCalls, 0); assert.equal(reports[0].childCalls, 0);
+  assert.equal(bootstrapInputBytes(input), before); assert.deepEqual(await fs.readFile(inputFile), inputBytes);
+  for (const [relative, bytes] of productBytes) assert.deepEqual(await fs.readFile(path.join(host, relative)), bytes);
+  complete = true;
 });
