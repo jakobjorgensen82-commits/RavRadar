@@ -1,3 +1,9 @@
+## 22. oktober — ÅBEN: faktisk RAW-prøve skelnede ikke fil og registrering
+
+Præcis native/kildekontrol og den faste RAW-prøve er nu gennemført. Prøven restaurerede samme cache som den fejlede almindelige vejrhentning, men dens `RAW_CAPTURE_UNAVAILABLE` dækkede både manglende fysisk fil efter match og manglende præcis capture i manifestet. Fysisk sletning og sammenblanding med datasættet før genstarten er derfor ikke årsagsbevist. Den ønskede målrettede gamle datasætoprydning er ikke udført.
+
+Lokal præcisering skelner de to afslag samt filnavneprefix til stede/fraværende ved manglende metadatamatch. Prefix er kun en observation, aldrig korrekt fil-/capturebevis. Normal registrering, virkelige private prøvefiler, uændrede input og nul GRIB-kald er målprøvet; acquisition-only-afslag og størrelseskontrol bevares. Den fulde Python-fil kræver fortsat Linux og er ikke bestået på Windows. Ny præcis kildekontrol, faktisk gren, årsagsrettelse og ny offentlig vejrgeneration er åbne. Ingen normal originalkontrol eller genstartsgrænse lempes.
+
 ## 22. oktober — ÅBEN: første afvisning er modelkørselsidentitet; RAW-bevis mangler stadig
 
 Den særskilte RAW-prøves første kildekontrol fejlede i en ny testfixture, ikke en ny vejrhentning: rå manifestposter kan udelade to item-tidsstempler, men wrapperens normale captureinput har alle elleve felter. Testen rettes med normal kanonisk projektion uden ændring af originalposten eller produktets afvisninger; korrigeret Linux-kontrol og faktisk RAW-prøve er fortsat åbne. Den normale modelrun-erstatning og schema2-bankens beskyttelse er særskilt reproduceret lokalt, men frikender ikke den faktiske produktionspakke.

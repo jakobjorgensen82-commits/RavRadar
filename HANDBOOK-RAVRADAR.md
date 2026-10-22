@@ -6,6 +6,8 @@ En særskilt intern prøve kan genlæse præcis den gemte originalfil og bruge d
 
 Kontrollen omfatter både timer til den fremadrettede historik og hele den gemte prognose, også de sidste støttetimer. En privat arbejdsafledning kan pakkes og læses igen gennem det normale format, men den må hverken ændre det gamle udgangspunkt eller udgives for den oprindelige sikkerhedspakke. Originaler og tidligere offentliggjorte scorer bevares.
 
+RavRadar kan begynde uden tidligere strømhistorik og bygge den op fra nye gyldige timer. Det kræver ikke genbrug af gamle strømtilstande eller data fra andre kystpunkter. Hver ny gemt prognose skal dog bevare forbindelsen til sine egne originaler, så næste opdatering kan fortsætte sikkert. En nødvendig original støttetime til interpolation er ikke det samme som gammel scorehistorik.
+
 Den forberedte prøve er ikke en ny vejrhentning, ændring af beregningsmodel eller offentlig genopretning. Lokale prøver og én undersøgt kystdel beviser ikke hele landet. Faktisk normal levering og efterfølgende sikker drift skal fortsat dokumenteres særskilt.
 
 ## 89.261 Bevar originalerne i det lager, de faktisk ligger i

@@ -1,3 +1,11 @@
+## 22. oktober — faktisk cacheprøve og præcis lokal fejlskelnen
+
+- [x] PR700: faktisk samlet kildekontrol inklusive native Linux og PostgreSQL, normal merge og én skrivefri RAW-prøve af præcis den faktisk anvendte cache.
+- [x] Læs faktisk afvisningsrapport. Den generiske kode beviser endnu ikke fysisk filfravær eller sletning.
+- [x] Reproducér kodekonflikten gennem normale registrerings-/manifestfunktioner og faktisk filfortegnelse. Lokal præcisering skelner manglende fil fra uoverensstemmende metadata med/uden filnavneprefix; prefix giver aldrig originalautoritet. Elleve tilfælde uden GRIB samt eksisterende JS-fejllæser består.
+- [ ] Ny samlet kildekontrol og faktisk afgrænsning på de samme gemte input. Den fulde Python-fil er ikke bestået på Windows på grund af den uændrede native læselås; Linux-kontrollen må ikke omgås.
+- [ ] Årsagsrettelse, ny almindelig offentlig vejrgeneration og efterfølgende sikker opbygning af den nye historik. Ingen sletning, ekstra nulstilling, SQL eller ny vejrhentning er udført af denne præcisering.
+
 ## 22. oktober — præcis diagnose læst; fuld gemt prognose indgår i næste cacheprøve
 
 - [x] Privat reproduktion gennem normal Python-cachemerge, native kold genlæsning, JS-retention, faktisk schema1/schema2-pakning/genlæsning og collector. Alle 121 timer, gammel H0 og gamle originaler bevares; schema1 uden reservoir afvises, mens den eksisterende normale originalbank bevarer beviset. Ikke faktisk produktionsårsag eller RAW-sletningsbevis.
