@@ -70,6 +70,108 @@ assert spec and spec.loader
 producer = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(producer)
 
+
+def check_coherent_raw_inventory():
+    """Real normal manifest/filename boundary only; no GRIB/provider proof."""
+    import hashlib
+    wrapper_spec = importlib.util.spec_from_file_location(
+        "coherent_inventory_boundary", ROOT / "scripts/decode-coherent-current-originals.py")
+    wrapper = importlib.util.module_from_spec(wrapper_spec)
+    wrapper_spec.loader.exec_module(wrapper)
+    previous_root, previous_raw = producer.ROOT, producer.RAW_DIR
+    previous_session = dict(producer._RAW_CURRENT_SESSION_PROTECTED)
+    grib_calls = []
+    previous_decoder = producer.codes_grib_new_from_file
+
+    def forbidden_grib(*args, **kwargs):
+        grib_calls.append(True)
+        raise AssertionError("RAW inventory opened the decoder")
+
+    producer.codes_grib_new_from_file = forbidden_grib
+    try:
+        with tempfile.TemporaryDirectory(prefix="rr-coherent-inventory-") as temporary:
+            producer.ROOT = Path(temporary).resolve()
+            producer.RAW_DIR = producer.ROOT / ".cache/dmi-grib"
+            producer.RAW_DIR.mkdir(parents=True)
+            href = "https://opendataapi.dmi.dk/synthetic-inventory-only.grib"
+            raw_path = producer.cached_asset_path(href)
+            payload = b"synthetic inventory bytes, never decoded\n"
+            raw_path.write_bytes(payload)
+            producer.save_raw_cache_manifest({"schemaVersion": 2, "assets": {}})
+            producer.register_raw_cache_asset(raw_path, href, "dkss_nsbs",
+                "2026-10-21T00:00:00Z", "2026-10-21T03:00:00Z",
+                item_id="synthetic-inventory-item", acquired_at="2026-10-21T01:00:00Z",
+                expected_size=len(payload), content_sha256=hashlib.sha256(payload).hexdigest())
+            registered = producer.load_raw_cache_manifest()
+            capture = producer.canonical_current_source_asset(registered["assets"][raw_path.name])
+            assert capture is not None and len(capture) == 11
+            original_manifest = producer.raw_cache_manifest_path().read_bytes()
+
+            def observe(reason=None):
+                jobs = [{"capture": copy.deepcopy(capture)}]
+                manifest_before = producer.raw_cache_manifest_path().read_bytes()
+                files_before = {file.name: file.read_bytes() for file in producer.RAW_DIR.iterdir()}
+                try:
+                    result = wrapper.raw_inventory(producer, jobs)
+                except wrapper.Refused as error:
+                    assert reason is not None
+                    assert str(error) == "COHERENT_CURRENT_ORIGINAL_" + reason, str(error)
+                    assert "path" not in jobs[0]
+                else:
+                    assert reason is None
+                    assert result == manifest_before and jobs[0]["path"] == raw_path
+                assert jobs[0]["capture"] == capture
+                assert producer.raw_cache_manifest_path().read_bytes() == manifest_before
+                assert {file.name: file.read_bytes() for file in producer.RAW_DIR.iterdir()} == files_before
+                assert not grib_calls and not producer._UNSETTLED_GRIB_READS
+
+            observe()
+            raw_path.unlink()  # Only this test's own synthetic file.
+            observe("RAW_CAPTURE_FILE_MISSING")
+            raw_path.write_bytes(payload)
+            changed = copy.deepcopy(registered)
+            changed["assets"][raw_path.name]["acquiredAt"] = "2026-10-21T01:01:00Z"
+            producer.save_raw_cache_manifest(changed)
+            observe("RAW_ACQUISITION_UNRESOLVED")
+            for mutation in ("absent", "invalid", "different-model"):
+                changed = copy.deepcopy(registered)
+                if mutation == "absent":
+                    changed["assets"] = {}
+                elif mutation == "invalid":
+                    changed["assets"][raw_path.name]["contentSha256"] = None
+                else:
+                    changed["assets"][raw_path.name]["modelRun"] = "2026-10-20T18:00:00Z"
+                producer.save_raw_cache_manifest(changed)
+                observe("RAW_CAPTURE_METADATA_UNMATCHED_PREFIX_PRESENT")
+                raw_path.unlink()
+                observe("RAW_CAPTURE_METADATA_UNMATCHED_PREFIX_ABSENT")
+                raw_path.write_bytes(payload)
+            # Same prefix is deliberately NOT proof of the expected extension,
+            # full URL/hash, bytes or original. Refusal remains mandatory.
+            producer.save_raw_cache_manifest({"schemaVersion": 2, "assets": {}})
+            raw_path.unlink()
+            collision = producer.RAW_DIR / (capture["assetIdentitySha256"][:24] + ".different")
+            collision.write_bytes(b"unrelated synthetic prefix candidate")
+            observe("RAW_CAPTURE_METADATA_UNMATCHED_PREFIX_PRESENT")
+            collision.unlink()
+            raw_path.write_bytes(payload + b"size mismatch")
+            producer.save_raw_cache_manifest(registered)
+            observe("RAW_FILE_INVALID")
+            raw_path.write_bytes(payload)
+            assert producer.raw_cache_manifest_path().read_bytes() == original_manifest
+            assert not grib_calls
+    finally:
+        producer.ROOT, producer.RAW_DIR = previous_root, previous_raw
+        producer._RAW_CURRENT_SESSION_PROTECTED.clear()
+        producer._RAW_CURRENT_SESSION_PROTECTED.update(previous_session)
+        producer.codes_grib_new_from_file = previous_decoder
+
+
+check_coherent_raw_inventory()
+if sys.argv[1:] == ["--coherent-raw-inventory-only"]:
+    print("Coherent RAW inventory boundary passed: real manifest/files, missing file versus unmatched metadata, prefix is not proof, acquisition refusal and size guard preserved; zero GRIB calls")
+    raise SystemExit(0)
+
 valid_time = "2026-01-01T03:00:00Z"
 zone = {
     "id": "PART::TEST",

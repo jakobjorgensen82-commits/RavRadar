@@ -1,3 +1,9 @@
+## Ikke udgivet — skeln manglende originalfil fra uoverensstemmende registrering
+
+- Den faktisk gennemførte RAW-prøve afviste samme cache, som den almindelige vejrhentning brugte. Den hidtidige generiske kode kunne ikke skelne en manglende fysisk fil fra manglende capturematch i manifestet.
+- Giver særskilte faste årsager og observerer kun allerede kontrollerede filnavneprefix. Prefix må aldrig give adgang til en fil, afkodning, originaladmission eller ommærkning. Alle eksisterende capture-, byte-, ejerskabs- og kildekontroller bevares.
+- Normal lokal manifest-/filprøve med 11 tilfælde og eksisterende sikker JS-fejllæser består; fuld native Linux-kontrol, faktisk årsag og ny offentlig vejrgeneration er fortsat åbne. Windows' kendte native låseafslag skjules ikke. Ingen ny version, modelbinding, SQL, scoreformel, geometri, sletning eller nulstilling.
+
 ## Ikke udgivet — afgrænset genopbygning af præcise strømoriginaler
 
 - Retter kun den nye native wrapper-prøves input til den eksisterende elleve-felts capture-normalform. Rå manifestposter bevares, og et direkte ni-felts afslag tilføjes uden lempelse af produktkontrollen. Første kildekontrol er fejlet; korrigeret native Linux-kontrol og faktisk RAW-prøve er åbne.

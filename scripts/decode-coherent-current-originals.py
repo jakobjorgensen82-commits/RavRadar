@@ -201,7 +201,8 @@ def raw_inventory(producer, jobs):
     raw = producer._legacy_current_fixed_bytes(MANIFEST_RELATIVE, maximum=MAX_BYTES)
     manifest = json.loads(raw, object_pairs_hook=producer._exact_unique_fields,
                           parse_constant=lambda _value: refuse("MANIFEST_INVALID"))
-    strict, used = producer._exact_raw_state()
+    observed_names = set()
+    strict, used = producer._exact_raw_state(observed_names=observed_names)
     if manifest != strict or used > producer.RAW_CACHE_MAX_BYTES:
         refuse("RAW_INVENTORY_INVALID")
     if manifest.get("schemaVersion") != producer.RAW_CACHE_MANIFEST_SCHEMA_VERSION or not isinstance(manifest.get("assets"), dict):
@@ -235,7 +236,7 @@ def raw_inventory(producer, jobs):
         try:
             info = path.lstat()
         except FileNotFoundError:
-            refuse("RAW_CAPTURE_UNAVAILABLE")
+            refuse("RAW_CAPTURE_FILE_MISSING")
         if not stat.S_ISREG(info.st_mode) or info.st_nlink != 1 or info.st_size != capture["contentLengthBytes"]:
             refuse("RAW_FILE_INVALID")
         if info.st_size > producer.MAX_DOWNLOAD_BYTES:
@@ -247,7 +248,12 @@ def raw_inventory(producer, jobs):
                                   sort_keys=True, separators=(",", ":"))
             if official in by_official_identity:
                 refuse("RAW_ACQUISITION_UNRESOLVED")
-            refuse("RAW_CAPTURE_UNAVAILABLE")
+            # A prefix is only an observation of the existing regular-file
+            # inventory. It cannot identify the URL/extension, full capture or
+            # bytes, and MUST NOT provide job.path, decode or admission.
+            prefix = job["capture"]["assetIdentitySha256"][:24] + "."
+            present = any(name.startswith(prefix) for name in observed_names)
+            refuse("RAW_CAPTURE_METADATA_UNMATCHED_PREFIX_" + ("PRESENT" if present else "ABSENT"))
     return raw
 
 
