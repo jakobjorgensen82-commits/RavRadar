@@ -7797,6 +7797,8 @@ Det vigtigste sikkerhedsnet er uændret: Hver gang der bygges et nyt produktions
 
 Den store browserkontrol af alle 210 zoner og 673 kystdele bruges ugentligt eller efter ændringer i score, brugerflade eller den offentlige datakontrakt. Små workflow- og dokumentationsændringer får målrettede kontroller. Det giver mere udviklingstid uden at reducere kontrollen dér, hvor rigtige datafejl faktisk kan opstå.
 
+Privat kildeplan, 22. oktober 2026: En allerede gennemført native databaseprøve kan fremover få sit eget verificerbare fasebevis, men kun ved præcis uændrede relevante input, runtime og friske GitHub-oplysninger. Den første nye kildekørsel skal stadig udføre prøven; gamle kørsler uden dette bevis godkendes ikke bagudrettet. Hele kildekontrollen kræves fortsat på hvert præcist PR-head, og fejl eller ukendt evidens giver normal fuld udførelse. Uafhængige ugyldige Candidate-G-markører og profiler kan afvises før dyre beregninger, men alle positive forløb beholder hele hash-, 210/673-, databevarelses- og publiceringskontrollen. De to rettelser er kun målprøvet hver for sig; samlet kilde- og Linux-kontrol, ægte upload/genbrug og faktisk tidsgevinst er endnu åbne. Dette ændrer ikke vejrhentning, scoremodel, originalkrav eller den aktuelle P0-status.
+
 ## Copernicus henter kun en verificeret DMI-strømtimes huller - 4.0.246-kandidat
 
 RavRadar bruger fortsat DMI som førstevalg. Den præcise liste over manglende lokale DMI-strømposter kan først kendes efter den friske DMI-kørsel. Produktionen danner derfor listen på dette tidspunkt og kontrollerer eller henter kun disse kystdele fra Copernicus. Den normale drift kræver ikke en landsdækkende Copernicus-cache på forhånd.

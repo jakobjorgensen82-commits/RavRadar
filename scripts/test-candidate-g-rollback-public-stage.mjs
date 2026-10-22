@@ -35,6 +35,7 @@ import {
 } from './install-candidate-g-rollback-stage.mjs';
 import {
   assertCandidateGRollbackPublicScore,
+  auditCandidateGRollbackPublicRuntime,
 } from './audit-candidate-g-rollback-public-runtime.mjs';
 import { evaluateRavScoreIntegrated } from '../js/core/ravscore-integrated.js';
 import {
@@ -627,6 +628,38 @@ try {
   const manifestPath = path.join(stageRoot, 'data', 'live', 'manifest.json');
   const pristineStartup = await fs.readFile(startupPath, 'utf8');
   const pristineManifest = await fs.readFile(manifestPath, 'utf8');
+  // The six existing independent shape mutations must fail before touching the
+  // candidate's national canonical hash/projection. BigInt is deliberately not
+  // serializable: it is invalid input, not a mocked validator or result.
+  const earlyStageMarker = JSON.parse(await fs.readFile(
+    path.join(stageRoot, ...CANDIDATE_G_ROLLBACK_STAGE_MARKER.split('/')), 'utf8'));
+  const earlyManifest = JSON.parse(pristineManifest);
+  const invalidCandidateForOrder = { unhashableBeforeAdmission: 1n };
+  const earlyInput = {
+    candidateFull: invalidCandidateForOrder,
+    plan: prepared.plan,
+    stageMarker: earlyStageMarker,
+    manifest: earlyManifest,
+    expectedSourceHead: sourceHead,
+    expectedDatasetId: datasetId,
+  };
+  for (const [label, field, mutate, expected] of [
+    ['partial profile', 'manifest', value => { delete value.ravScoreProfile.rankingPolicyId; }, /score.profile field set/],
+    ['extra profile', 'manifest', value => { value.ravScoreProfile.unexpectedShadowBinding = 'forbidden'; }, /score.profile field set/],
+    ['forged profile', 'manifest', value => { value.ravScoreProfile.bestTimePolicyId = 'forged-best-time'; }, /does not match bestTimePolicyId/],
+    ['public-ready marker', 'stageMarker', value => { value.publicArtifactReady = true; }, /stage marker is incompatible/],
+    ['wrong-profile marker', 'stageMarker', value => { value.candidateTargetProfileSha256 = '0'.repeat(64); }, /stage marker is incompatible/],
+    ['extra marker field', 'stageMarker', value => { value.unsealedField = true; }, /stage marker is incompatible/],
+  ]) {
+    const changed = structuredClone(earlyInput[field]);
+    mutate(changed);
+    await assert.rejects(() => auditCandidateGRollbackPublicRuntime({
+      ...earlyInput, [field]: changed,
+    }), expected, label + ' must reject before national candidate hashing');
+  }
+  await assert.rejects(() => auditCandidateGRollbackPublicRuntime(earlyInput),
+    error => error instanceof TypeError && /BigInt/.test(error.message),
+    'passing cheap shapes must still reach the unchanged whole-candidate hash');
   const stagedAvailability = JSON.parse(pristineStartup).coastalParts.scoreAvailability;
   assert.equal(stagedAvailability.allCurrentScoresFullHistory, true);
   assert.equal(stagedAvailability.fullHistoryModeCount, 420);

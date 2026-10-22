@@ -7,6 +7,7 @@ import { execFileSync } from 'node:child_process';
 import test from 'node:test';
 import { assertOrdinaryCompletedStageSource, assertOrdinaryCompletedStageCommittedSource, ordinaryStageCalculationWorkflow }
   from './ordinary-completed-stage-source.mjs';
+import { inverseRelease585WorkflowUserAgents } from './lib/completed-private-runtime-workflow-review.mjs';
 
 const sha = value => crypto.createHash('sha256').update(value).digest('hex');
 
@@ -31,8 +32,13 @@ test('committed source reuse compares all calculation objects and only exact sto
     await fs.writeFile(destination, bytes);
   };
   const commit = message => { git('add', '-A'); git('commit', '-m', message); return git('rev-parse', 'HEAD'); };
-  const actual = Buffer.from((await fs.readFile(new URL('../.github/workflows/reusable-weather-build.yml', import.meta.url), 'utf8'))
+  const currentBuild = Buffer.from((await fs.readFile(new URL('../.github/workflows/reusable-weather-build.yml', import.meta.url), 'utf8'))
     .replaceAll('\r\n', '\n'));
+  // This old relocation/wiring fixture keeps its genuine584 operands. Reuse
+  // the existing whole-hash-closed TEST inverse; never teach the product's
+  // committed-source comparator to ignore current calculation/workflow drift.
+  const actual = Buffer.from(inverseRelease585WorkflowUserAgents(currentBuild.toString('utf8'), 'build'));
+  assert.equal(sha(actual), 'b509a5131c64f9df9a431fdf9f99b082fb14c88de8bf9c3ad3e33b8ddc77de57');
   const previous = ordinaryStageCalculationWorkflow(actual);
   const actualOnce = Buffer.from((await fs.readFile(new URL('../.github/workflows/run-current-weather-once.yml', import.meta.url), 'utf8'))
     .replaceAll('\r\n', '\n'));
@@ -87,6 +93,8 @@ test('committed source reuse compares all calculation objects and only exact sto
   }
   git('switch', '--detach', consumerHead);
   const changes = [
+    // The test-only inverse grants no new runtime source-reuse authority.
+    ...(!currentBuild.equals(actual) ? [['.github/workflows/reusable-weather-build.yml', currentBuild]] : []),
     ['scripts/update-weather.mjs', '// SYNTHETIC changed calculation\n'],
     ['js/core/model-fixture.js', 'export const synthetic = 2;\n'],
     ['data/admin/coastal-fixture.json', '{"synthetic":true,"onshore":180}\n'],
