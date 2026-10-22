@@ -69,6 +69,12 @@ on:
         default: false
         type: boolean
 
+      include_raw_inventory_compare:
+        description: "Kun fast RAW925 mod924: hele inventaret og stream-SHA; aldrig dependency-, slette- eller admissionsbevis"
+        required: false
+        default: false
+        type: boolean
+
 permissions:
   contents: read
   actions: read
@@ -84,6 +90,7 @@ concurrency:
 
 jobs:
   audit:
+    if: inputs.include_raw_inventory_compare != true
     name: Authenticate existing packages and report only bounded aggregates
     runs-on: ubuntu-24.04
     timeout-minutes: ${{ inputs.include_current_window_diagnostic && 75 || 30 }}
@@ -518,5 +525,114 @@ jobs:
         with:
           name: saved-weather-input-audit-safe-${{ github.run_id }}-${{ github.run_attempt }}
           path: ${{ runner.temp }}/ravradar-saved-input-audit/summary-safe.json
+          if-no-files-found: error
+          retention-days: 14
+
+  raw-inventory-compare:
+    if: inputs.include_raw_inventory_compare == true
+    name: Compare fixed RAW925 against RAW924 inventories and file SHA
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    env:
+      RAW_INVENTORY_COMPARE_APPROVED: "true"
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - name: Require exact approved main and only the fixed two cache identities
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          CONFIRMATION: ${{ inputs.confirmation }}
+          EXPECTED_MAIN_HEAD: ${{ inputs.expected_main_head }}
+          SOURCE_RUN_ID: ${{ inputs.progress_source_run_id }}
+          SOURCE_RUN_ATTEMPT: ${{ inputs.progress_source_attempt }}
+          OLD_FLAGS: ${{ inputs.include_raw_manifest }},${{ inputs.include_raw_file_presence }},${{ inputs.include_selected_current_preflight }},${{ inputs.include_current_window_diagnostic }},${{ inputs.include_current586_endpoints }},${{ inputs.include_current586_cached_originals }}
+          OLD_STRINGS: ${{ inputs.raw_manifest_cache_key }}${{ inputs.raw_manifest_source }}${{ inputs.progress_baseline_target_hour }}
+        run: |
+          set -euo pipefail
+          test "$GITHUB_EVENT_NAME" = workflow_dispatch
+          test "$GITHUB_REF" = refs/heads/main
+          test "$CONFIRMATION" = AUDIT-SAVED-WEATHER-INPUTS
+          test "$SOURCE_RUN_ID-$SOURCE_RUN_ATTEMPT" = 39520623069-1
+          test "$OLD_FLAGS" = false,false,false,false,false,false
+          test -z "$OLD_STRINGS"
+          [[ "$EXPECTED_MAIN_HEAD" =~ ^[a-f0-9]{40}$ ]]
+          test "$GITHUB_SHA" = "$EXPECTED_MAIN_HEAD"
+          test "$(git rev-parse HEAD^{commit})" = "$GITHUB_SHA"
+          test "$(gh api "repos/$GITHUB_REPOSITORY/git/ref/heads/main" --jq '.object.sha')" = "$GITHUB_SHA"
+          for record in \
+            9250979458:39520623069:dmi-grib-v4-Linux-2026-W43-39520623069-1:2729841089 \
+            9242307361:39491014140:dmi-grib-v4-Linux-2026-W43-39491014140-1:2790259985; do
+            IFS=: read -r cache_id producer cache_key archive_bytes <<< "$record"
+            gh api "repos/$GITHUB_REPOSITORY/actions/runs/$producer/attempts/1" \
+              > "$RUNNER_TEMP/raw-inventory-producer-$producer.json"
+            jq -e --arg repo "$GITHUB_REPOSITORY" --arg run "$producer" '
+              (.id | tostring) == $run and .run_attempt == 1
+              and .repository.full_name == $repo and .head_repository.full_name == $repo
+              and .head_branch == "main" and .event == "workflow_dispatch"
+              and .path == ".github/workflows/run-current-weather-once.yml"
+              and .status == "completed"
+              and .head_sha == "72099f03520f14e0e9da4f21666d9d2ee6c7e556"
+            ' "$RUNNER_TEMP/raw-inventory-producer-$producer.json" >/dev/null
+            gh api --method GET "repos/$GITHUB_REPOSITORY/actions/caches" \
+              -f key="$cache_key" -f ref=refs/heads/main -f per_page=100 \
+              > "$RUNNER_TEMP/raw-inventory-cache-$cache_id.json"
+            jq -e --arg key "$cache_key" --argjson id "$cache_id" --argjson bytes "$archive_bytes" '
+              .total_count == 1 and (.actions_caches | length) == 1
+              and .actions_caches[0].id == $id and .actions_caches[0].key == $key
+              and .actions_caches[0].ref == "refs/heads/main"
+              and .actions_caches[0].size_in_bytes == $bytes
+              and .actions_caches[0].version == "9d434ae81d3120176028232ea936fc3f9dc0ed030022ff6d98bec91aa9cf117a"
+            ' "$RUNNER_TEMP/raw-inventory-cache-$cache_id.json" >/dev/null
+          done
+          git merge-base --is-ancestor 72099f03520f14e0e9da4f21666d9d2ee6c7e556 "$GITHUB_SHA"
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+      - name: Verify live exact-content source validation
+        id: source-proof
+        run: node scripts/weather-source-gate.mjs check
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+      - name: Stop unless current source already has live green proof
+        shell: bash
+        env:
+          SOURCE_REQUIRED: ${{ steps.source-proof.outputs.required }}
+        run: |
+          set -euo pipefail
+          test "$SOURCE_REQUIRED" = false
+      - name: Measure real disk and require fresh canonical and private paths
+        run: node scripts/audit-saved-weather-inputs.mjs raw-inventory-preflight
+      - name: Restore only the fixed latest RAW925 at the normal canonical path
+        id: raw-latest
+        uses: actions/cache/restore@v6
+        with:
+          path: .cache/dmi-grib
+          key: dmi-grib-v4-Linux-2026-W43-39520623069-1
+          fail-on-cache-miss: true
+      - name: Inventory and atomically park latest in its fresh owned private destination
+        run: node scripts/audit-saved-weather-inputs.mjs raw-inventory-park-latest
+        env:
+          RAW_SNAPSHOT_CACHE_HIT: ${{ steps.raw-latest.outputs.cache-hit }}
+          RAW_SNAPSHOT_MATCHED_KEY: ${{ steps.raw-latest.outputs.cache-matched-key }}
+      - name: Restore only fixed previous RAW924 into the now absent canonical path
+        id: raw-previous
+        uses: actions/cache/restore@v6
+        with:
+          path: .cache/dmi-grib
+          key: dmi-grib-v4-Linux-2026-W43-39491014140-1
+          fail-on-cache-miss: true
+      - name: Compare whole capture inventory and actual file SHA without dependency or deletion claim
+        run: node scripts/audit-saved-weather-inputs.mjs raw-inventory-compare
+        env:
+          RAW_SNAPSHOT_CACHE_HIT: ${{ steps.raw-previous.outputs.cache-hit }}
+          RAW_SNAPSHOT_MATCHED_KEY: ${{ steps.raw-previous.outputs.cache-matched-key }}
+      - name: Upload only fixed-schema safe aggregate counts
+        uses: actions/upload-artifact@v7
+        with:
+          name: raw-inventory-compare-safe-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/ravradar-raw-inventory-compare-${{ github.run_id }}-${{ github.run_attempt }}/summary-safe.json
           if-no-files-found: error
           retention-days: 14
