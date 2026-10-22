@@ -380,6 +380,7 @@ export function inverseAlternativeCCaller(source,relative) {
   assert(row,'ALTERNATIVE_C_TEST_INPUT_PATH');
   source=source.replaceAll('\r\n','\n');
   if(digest(source)===row.before.sha256) return source;
+  if(relative==='scripts/plan-ravscore-current-history.mjs') source=inverseNationalCoherentWorkTestInput(source, relative);
   if(relative==='scripts/plan-ravscore-current-history.mjs') source=inverseCurrent586SharedProjectionExportTestInput(source, relative);
   if(relative==='scripts/plan-ravscore-current-history.mjs') source=inverseCurrent586IdentityRefinementTestInput(source, relative);
   if(relative==='scripts/plan-ravscore-current-history.mjs') source=inverseCurrent586EndpointDiagnosticTestInput(source, relative);
@@ -551,4 +552,324 @@ export function inverseCurrent586SharedProjectionExportTestInput(source, relativ
   assert.equal(Buffer.byteLength(source), row.before.bytes, 'ALTERNATIVE_C_TEST_INPUT_CHANGED:SHARED_EXPORT_BEFORE_SIZE');
   assert.equal(digest(source), row.before.sha256, 'ALTERNATIVE_C_TEST_INPUT_CHANGED:SHARED_EXPORT_BEFORE_WHOLE');
   return source;
+}
+
+// Additive exact inverse for the default-OFF national WORK preamble only.
+// All earlier planner/frozen-original whole pins, edits and assertions remain.
+export const NATIONAL_COHERENT_WORK_TEST_REVIEW = Object.freeze({
+  "schemaVersion": 1,
+  "kind": "TEST_ONLY_EXACT_NATIONAL_COHERENT_CURRENT_WORK_INVERSE",
+  "path": "scripts/plan-ravscore-current-history.mjs",
+  "before": {
+    "bytes": 77545,
+    "sha256": "6fc90ba1b688ae2567ff760513f62db3124352a313279d1425c0b7bca014d96b"
+  },
+  "after": {
+    "bytes": 80474,
+    "sha256": "c2e17623e70bd297bad7b273f9f120c24affe7e4df67ee8207313d229c812a0d"
+  },
+  "edits": [
+    {
+      "offset": 36842,
+      "before": "  return result;\n}\n\nasync function readCommittedRawCurrentRetention(registry, checkpointFile, productionReferenceAt) {\n  const { verified, conditions, conditionsPath: file, conditionsSha256, verify } =\n    await readCurrentPrivateRuntimeCompanionInput(productionReferenceAt);\n  if (!checkpointFile) refuse('RETENTION_B_CHANGED');\n",
+      "after": "  return result;\n}\n\nasync function readCommittedRawCurrentRetention(registry, checkpointFile, productionReferenceAt,\n  prepareCachedNativeOriginals = false) {\n  const { verified, conditions, conditionsPath: file, conditionsSha256, verify } =\n    await readCurrentPrivateRuntimeCompanionInput(productionReferenceAt);\n  if (!checkpointFile) refuse('RETENTION_B_CHANGED');\n"
+    },
+    {
+      "offset": 37687,
+      "before": "  } finally { await fs.rm(work, { recursive: true }); }\n  const protectedCompanionContexts = await readAuthenticatedCurrentCompanions(verified, conditions);\n  const parts = Object.entries(registry.zones).flatMap(([zoneId, entries]) => entries.map(part => ({ ...part, zoneId })));\n  const forecast = await inspectDmiForecastFile(path.join(ROOT, 'data/live/dmi-forecast-cache.json'));\n  const protectedBulk = await readDmiBulkDocument(path.join(ROOT, '.cache/deployed-dmi-bulk-cache.json'));\n  const candidate = await readDmiBulkDocument(path.join(ROOT, '.cache/dmi-candidate-progress.json'), { optional: true });\n",
+      "after": "  } finally { await fs.rm(work, { recursive: true }); }\n  const protectedCompanionContexts = await readAuthenticatedCurrentCompanions(verified, conditions);\n  const parts = Object.entries(registry.zones).flatMap(([zoneId, entries]) => entries.map(part => ({ ...part, zoneId })));\n  const preamble = prepareCachedNativeOriginals\n    ? await import('./prepare-cached-coherent-current-work.mjs') : null;\n  const workingInputs = preamble === null ? null : await preamble.snapshotCoherentCurrentWorkInputs();\n  const forecast = await inspectDmiForecastFile(path.join(ROOT, 'data/live/dmi-forecast-cache.json'));\n  const protectedBulk = await readDmiBulkDocument(path.join(ROOT, '.cache/deployed-dmi-bulk-cache.json'));\n  const candidate = await readDmiBulkDocument(path.join(ROOT, '.cache/dmi-candidate-progress.json'), { optional: true });\n"
+    },
+    {
+      "offset": 38948,
+      "before": "  const boundary = { datasetId: verified.datasetId, productionReferenceAt: verified.productionReferenceAt,\n    bundleContentSha256: verified.bundleContentSha256, checkpointGenerationSha256: checkpoint.generationSha256, conditionsSha256 };\n  const liveCurrentPilot = await readLiveCurrentPilot(registry), zones = (await readFixed('data/zones.geojson')).json;\n  const all = new Map(), byPart = new Map(parts.map(part => [part.partId, part]));\n  const collect = (part, persistedHourlyByPart) => {\n    const result = buildRavScoreRawCurrentRetention({\n",
+      "after": "  const boundary = { datasetId: verified.datasetId, productionReferenceAt: verified.productionReferenceAt,\n    bundleContentSha256: verified.bundleContentSha256, checkpointGenerationSha256: checkpoint.generationSha256, conditionsSha256 };\n  const liveCurrentPilot = await readLiveCurrentPilot(registry), zones = (await readFixed('data/zones.geojson')).json;\n  if (preamble !== null) {\n    await preamble.assertCoherentCurrentWorkInputs(workingInputs);\n    const prepared = await preamble.prepareCachedCoherentCurrentWork({\n      registry, conditions, checkpoint, boundary, zones, productionReferenceAt,\n      protectedBulk, progressCandidate: candidate ?? active, progressActive: active,\n      historicalBulk, protectedCompanionContexts, liveCurrentPilot, forecast,\n      workingInputs, pythonExecutable: process.env.PYTHON ?? 'python' });\n    await verify(); // ORIGINAL authenticated B/S, never the derived work file.\n    await preamble.installPreparedCoherentCurrentWork(prepared);\n    // Re-enter the UNCHANGED normal reader/collector from the actual new bytes.\n    return readCommittedRawCurrentRetention(registry, checkpointFile, productionReferenceAt);\n  }\n  const all = new Map(), byPart = new Map(parts.map(part => [part.partId, part]));\n  const collect = (part, persistedHourlyByPart) => {\n    const result = buildRavScoreRawCurrentRetention({\n"
+    },
+    {
+      "offset": 65001,
+      "before": "\n\nasync function main() {\n  const retainCommittedRaw = process.argv.length === 3 && process.argv[2] === '--retain-committed-raw';\n  if (process.argv.length !== 2 && !retainCommittedRaw) refuse('ARGUMENTS_INVALID');\n  const productionReferenceAt = workflowTargetHour(process.env.RAVRADAR_PRODUCTION_TARGET_HOUR);\n  const baselineRequired = environmentBoolean('RAVRADAR_REQUIRE_PRIVATE_WEATHER_BASELINE');\n",
+      "after": "\n\nasync function main() {\n  const prepareCachedNativeOriginals = process.argv.length === 4\n    && process.argv[2] === '--retain-committed-raw' && process.argv[3] === '--prepare-cached-native-originals';\n  const retainCommittedRaw = prepareCachedNativeOriginals\n    || process.argv.length === 3 && process.argv[2] === '--retain-committed-raw';\n  if (process.argv.length !== 2 && !retainCommittedRaw) refuse('ARGUMENTS_INVALID');\n  const productionReferenceAt = workflowTargetHour(process.env.RAVRADAR_PRODUCTION_TARGET_HOUR);\n  const baselineRequired = environmentBoolean('RAVRADAR_REQUIRE_PRIVATE_WEATHER_BASELINE');\n"
+    },
+    {
+      "offset": 65869,
+      "before": "  const coldPath = process.env[CURRENT_FAMILY_COLD_START_CONTEXT_ENV.path];\n  const coldSha256 = process.env[CURRENT_FAMILY_COLD_START_CONTEXT_ENV.sha256];\n  const coldRequested = coldPath !== undefined || coldSha256 !== undefined;\n  if (coldRequested && (!coldPath || !coldSha256 || epochRequested || checkpointOnly\n    || stateLessRecovery || !baselineRequired || !retainCommittedRaw)) {\n    refuse('CURRENT_FAMILY_COLD_START_MODE_COLLISION');\n",
+      "after": "  const coldPath = process.env[CURRENT_FAMILY_COLD_START_CONTEXT_ENV.path];\n  const coldSha256 = process.env[CURRENT_FAMILY_COLD_START_CONTEXT_ENV.sha256];\n  const coldRequested = coldPath !== undefined || coldSha256 !== undefined;\n  // Explicit default-OFF ordinary work derivation only. No isolated/cold/\n  // checkpoint/quick view may borrow current B/native evidence through this.\n  if (prepareCachedNativeOriginals && (!baselineRequired || stateLessRecovery || epochRequested\n    || checkpointOnly || coldRequested || environmentBoolean('QUICK_CONFIRMATION'))) {\n    refuse('CACHED_NATIVE_ORIGINAL_MODE_COLLISION');\n  }\n  if (coldRequested && (!coldPath || !coldSha256 || epochRequested || checkpointOnly\n    || stateLessRecovery || !baselineRequired || !retainCommittedRaw)) {\n    refuse('CURRENT_FAMILY_COLD_START_MODE_COLLISION');\n"
+    },
+    {
+      "offset": 71103,
+      "before": "  } else if (retainCommittedRaw && !checkpointOnly && baselineRequired && epochView === null && !stateLessRecovery) {\n    currentHistoryFailurePhase='COMMITTED_RAW_RETENTION';\n    demand.schemaVersion = 2;\n    demand.rawRetention = await readCommittedRawCurrentRetention(registry.json, checkpointFile, productionReferenceAt);\n  }\n  // Existing private .cache only; no directory creation, original rewrite,\n  // provider operation, public artifact, checkpoint save or state promotion.\n",
+      "after": "  } else if (retainCommittedRaw && !checkpointOnly && baselineRequired && epochView === null && !stateLessRecovery) {\n    currentHistoryFailurePhase='COMMITTED_RAW_RETENTION';\n    demand.schemaVersion = 2;\n    demand.rawRetention = await readCommittedRawCurrentRetention(registry.json, checkpointFile, productionReferenceAt,\n      prepareCachedNativeOriginals);\n  }\n  // Existing private .cache only; no directory creation, original rewrite,\n  // provider operation, public artifact, checkpoint save or state promotion.\n"
+    },
+    {
+      "offset": 78451,
+      "before": "          &&relative==='scripts/lib/post-h0-dmi-original-dependencies.mjs'\n          &&result.frame.sha256==='a49ea641f76af721c43a13a091aa102e0904a3730803859d7c5f5e29e7c516bc'\n          &&at===18)result.code=originalDependencyCode;\n        break;\n      }catch{} // Unknown frame stays unknown; diagnostic I/O cannot replace the failure.\n    }\n",
+      "after": "          &&relative==='scripts/lib/post-h0-dmi-original-dependencies.mjs'\n          &&result.frame.sha256==='a49ea641f76af721c43a13a091aa102e0904a3730803859d7c5f5e29e7c516bc'\n          &&at===18)result.code=originalDependencyCode;\n        // Diagnostic-only closed work/decode/reprojection codes. The first\n        // qualified frame and original Error remain intact if classification fails.\n        try {\n          const coherentFrames=new Map([\n            ['scripts/prepare-cached-coherent-current-work.mjs','d35bceb88b65119ae3d942535a42b594e6de61de3f37397341cb1efc9222334e'],\n            ['scripts/lib/prove-cached-coherent-current-originals.mjs','2695904a5e5e63ea0f53ab0ba9801d55cf1ec1f6d5f72241da366c9967a13aff'],\n            ['scripts/lib/reproject-coherent-current-originals.mjs','1dea8a499b6d991db26411bc266b0e0e56be4b3b1ce34c85001a726304af71b3'],\n          ]);\n          if(result.code==='RAVSCORE_CURRENT_HISTORY_DEMAND_REFUSED'\n            &&result.phase==='COMMITTED_RAW_RETENTION'&&prototype===Error.prototype\n            &&coherentFrames.get(relative)===result.frame.sha256){\n            const {coherentCurrentWorkFailureCode}=await import('./prepare-cached-coherent-current-work.mjs');\n            const code=coherentCurrentWorkFailureCode(error);\n            if(code!=='COHERENT_CURRENT_CACHED_PROOF_UNCLASSIFIED')result.code=code;\n          }\n        }catch{} // An unknown classifier never hides/replaces the actual first frame.\n        break;\n      }catch{} // Unknown frame stays unknown; diagnostic I/O cannot replace the failure.\n    }\n"
+    }
+  ]
+});
+
+export function inverseNationalCoherentWorkTestInput(source, relative) {
+  assert.equal(arguments.length, 2, 'ALTERNATIVE_C_TEST_INPUT_CHANGED:NATIONAL_WORK_ARGUMENTS');
+  assert.equal(typeof source, 'string', 'ALTERNATIVE_C_TEST_INPUT_CHANGED:NATIONAL_WORK_TYPE');
+  source = source.replace(/\r\n/g, '\n');
+  source = inverseCoherentRawTransportLifetimeTestInput(source, relative);
+  source = inverseJointCoherentControllerTestInput(source, relative);
+  const distinctFrames = COHERENT_DISTINCT_CAPTURE_FRAME_TEST_REVIEW;
+  if (Buffer.byteLength(source) === distinctFrames.after.bytes && digest(source) === distinctFrames.after.sha256) {
+    source = inverseCoherentDistinctCaptureFramesTestInput(source, relative);
+  }
+  const capacity = NATIONAL_COHERENT_CAPACITY_TEST_REVIEW;
+  // Only remove the exact new layer; the unchanged V3 reader validates every OLD view below.
+  if (Buffer.byteLength(source) === capacity.after.bytes && digest(source) === capacity.after.sha256) {
+    source = inverseNationalCapacityTestInput(source, relative);
+  }
+  const row = NATIONAL_COHERENT_WORK_TEST_REVIEW;
+  assert.equal(relative, row.path, 'ALTERNATIVE_C_TEST_INPUT_CHANGED:NATIONAL_WORK_PATH');
+  const whole = digest(source), bytes = Buffer.byteLength(source);
+  if (whole !== row.after.sha256 || bytes !== row.after.bytes) {
+    // The existing exact earlier oracle remains responsible for OLD sources;
+    // it must reject unknown/current-source mutations, never accept a pattern.
+    inverseCurrent586SharedProjectionExportTestInput(source, relative);
+    return source;
+  }
+  for (const edit of [...row.edits].reverse()) {
+    assert.equal(source.slice(edit.offset, edit.offset + edit.after.length), edit.after,
+      'ALTERNATIVE_C_TEST_INPUT_CHANGED:NATIONAL_WORK_HUNK');
+    source = source.slice(0, edit.offset) + edit.before + source.slice(edit.offset + edit.after.length);
+  }
+  assert.equal(Buffer.byteLength(source), row.before.bytes, 'ALTERNATIVE_C_TEST_INPUT_CHANGED:NATIONAL_WORK_BEFORE_SIZE');
+  assert.equal(digest(source), row.before.sha256, 'ALTERNATIVE_C_TEST_INPUT_CHANGED:NATIONAL_WORK_WHOLE_INVERSE');
+  return source;
+}
+
+// New current frame pins only; every earlier table/assertion remains whole.
+export const NATIONAL_COHERENT_CAPACITY_TEST_REVIEW = Object.freeze({
+  "schemaVersion": 1,
+  "kind": "TEST_ONLY_EXACT_NATIONAL_CAPACITY_FRAME_INVERSE",
+  "path": "scripts/plan-ravscore-current-history.mjs",
+  "before": {
+    "bytes": 80474,
+    "sha256": "c2e17623e70bd297bad7b273f9f120c24affe7e4df67ee8207313d229c812a0d"
+  },
+  "after": {
+    "bytes": 80474,
+    "sha256": "3697edd3b15871520e66c7e3b134d04704507711b2d96251d64e814fbd7a856a"
+  },
+  "hunks": [
+    [
+      "d35bceb88b65119ae3d942535a42b594e6de61de3f37397341cb1efc9222334e",
+      "8dca73ce782f1293cb154aaeab4e536cd839c16b21695695ccf9c2c055c471a7"
+    ],
+    [
+      "2695904a5e5e63ea0f53ab0ba9801d55cf1ec1f6d5f72241da366c9967a13aff",
+      "f613c4dbe9845bf0edcfbe471acf54fc71f0059b52a4c7433c0c11577a23bdd4"
+    ]
+  ]
+});
+export function inverseNationalCapacityTestInput(source, relative) {
+  if(relative!=='scripts/plan-ravscore-current-history.mjs')return source;
+  const raw=source.replace(/\r\n/g,'\n'),row=NATIONAL_COHERENT_CAPACITY_TEST_REVIEW;
+  const digest=value=>crypto.createHash('sha256').update(value).digest('hex');
+  if(Buffer.byteLength(raw)===row.before.bytes&&digest(raw)===row.before.sha256)return raw;
+  assert.equal(Buffer.byteLength(raw),row.after.bytes,'ALTERNATIVE_C_TEST_INPUT_CHANGED NATIONAL_CAPACITY_SIZE');
+  assert.equal(digest(raw),row.after.sha256,'ALTERNATIVE_C_TEST_INPUT_CHANGED NATIONAL_CAPACITY_AFTER_SHA');
+  let original=raw;
+  for(const[before,after]of row.hunks){
+    assert.equal(original.split(after).length,2,'ALTERNATIVE_C_TEST_INPUT_CHANGED NATIONAL_CAPACITY_HUNK');
+    original=original.replace(after,before);
+  }
+  assert.equal(Buffer.byteLength(original),row.before.bytes,'NATIONAL_CAPACITY_BEFORE_SIZE');
+  assert.equal(digest(original),row.before.sha256,'NATIONAL_CAPACITY_BEFORE_SHA');
+  return original;
+}
+
+export const COHERENT_DISTINCT_CAPTURE_FRAME_TEST_REVIEW = Object.freeze({
+  path:'scripts/plan-ravscore-current-history.mjs',
+  before:{bytes:80474,sha256:'3697edd3b15871520e66c7e3b134d04704507711b2d96251d64e814fbd7a856a'},
+  after:{bytes:80474,sha256:'cd538b1108fd92455780cbf4d308c34216175e32e2ef834e8b224fb491e6cd61'},
+  hunks:[
+    ['f613c4dbe9845bf0edcfbe471acf54fc71f0059b52a4c7433c0c11577a23bdd4','eea3a889a2ae3140a406735b5e7fe4a174c62b7ee72ab425834c1baf2588e26f'],
+    ['1dea8a499b6d991db26411bc266b0e0e56be4b3b1ce34c85001a726304af71b3','616d5fae83eefe561b52b0b5ecb8e0b0691beda356f8819d7bfab283cc77cb65'],
+  ],
+});
+export function inverseCoherentDistinctCaptureFramesTestInput(source,relative){
+  assert.equal(arguments.length,2,'ALTERNATIVE_C_TEST_INPUT_CHANGED:DISTINCT_CAPTURE_ARGUMENTS');
+  assert.equal(typeof source,'string','ALTERNATIVE_C_TEST_INPUT_CHANGED:DISTINCT_CAPTURE_TYPE');
+  const row=COHERENT_DISTINCT_CAPTURE_FRAME_TEST_REVIEW;
+  assert.equal(relative,row.path,'ALTERNATIVE_C_TEST_INPUT_CHANGED:DISTINCT_CAPTURE_PATH');
+  const raw=source.replace(/\r\n/g,'\n');
+  if(Buffer.byteLength(raw)===row.before.bytes&&digest(raw)===row.before.sha256)return raw;
+  assert.equal(Buffer.byteLength(raw),row.after.bytes,'ALTERNATIVE_C_TEST_INPUT_CHANGED:DISTINCT_CAPTURE_AFTER_SIZE');
+  assert.equal(digest(raw),row.after.sha256,'ALTERNATIVE_C_TEST_INPUT_CHANGED:DISTINCT_CAPTURE_AFTER_SHA');
+  let original=raw;
+  for(const[before,after]of row.hunks){
+    assert.equal(original.split(after).length,2,'ALTERNATIVE_C_TEST_INPUT_CHANGED:DISTINCT_CAPTURE_HUNK');
+    original=original.replace(after,before);
+  }
+  assert.equal(Buffer.byteLength(original),row.before.bytes,'ALTERNATIVE_C_TEST_INPUT_CHANGED:DISTINCT_CAPTURE_BEFORE_SIZE');
+  assert.equal(digest(original),row.before.sha256,'ALTERNATIVE_C_TEST_INPUT_CHANGED:DISTINCT_CAPTURE_BEFORE_SHA');
+  return original;
+}
+
+// Exact JOINT layer only: stage budget + explicit capture mode, before the
+// unchanged distinct-capture/capacity/V3 and all older source-oracle layers.
+export const JOINT_NATIONAL_COHERENT_CONTROLLER_TEST_REVIEW = Object.freeze([
+  {
+    "path": "scripts/prepare-cached-coherent-current-work.mjs",
+    "before": {
+      "bytes": 23918,
+      "sha256": "8dca73ce782f1293cb154aaeab4e536cd839c16b21695695ccf9c2c055c471a7"
+    },
+    "after": {
+      "bytes": 24716,
+      "sha256": "338f6c7671ad76c8dadecb574e6974931cc08d9206af6a4541747c2cc3d0c574"
+    },
+    "stageBudgetHunkCount": 4,
+    "reviewedStageOnly": {
+      "bytes": 24446,
+      "sha256": "187786c5424c8d461e6b219e7b412a7bf797e8bde0ada6bba3ca7e8460205f05"
+    },
+    "hunks": [
+      [
+        "  await writeDmiForecastRecords(STAGE, forecast, zones, { ...forecast.metadata, partContinuity: replacement });",
+        "  await writeDmiForecastRecords(STAGE, forecast, zones, { ...forecast.metadata, partContinuity: replacement });\n  if (elapsedMilliseconds(projectionStarted) > 600_000) refuse('PROJECTION_RUNTIME_BOUND');"
+      ],
+      [
+        "    if (!next || !equal(await readDmiForecastRecord(forecast, descriptor),\n      await readDmiForecastRecord(staged, next))) refuse('STAGE_CHANGED');",
+        "    if (!next || !equal(await readDmiForecastRecord(forecast, descriptor),\n      await readDmiForecastRecord(staged, next))) refuse('STAGE_CHANGED');\n    if (elapsedMilliseconds(projectionStarted) > 600_000) refuse('PROJECTION_RUNTIME_BOUND');"
+      ],
+      [
+        "    if (!equal(await readDmiForecastRecord(forecast, forecast.waterSourceContinuity.entries[i]),\n      await readDmiForecastRecord(staged, staged.waterSourceContinuity.entries[i]))) refuse('STAGE_CHANGED');",
+        "    if (!equal(await readDmiForecastRecord(forecast, forecast.waterSourceContinuity.entries[i]),\n      await readDmiForecastRecord(staged, staged.waterSourceContinuity.entries[i]))) refuse('STAGE_CHANGED');\n    if (elapsedMilliseconds(projectionStarted) > 600_000) refuse('PROJECTION_RUNTIME_BOUND');"
+      ],
+      [
+        "  const stageIdentity = await measuredFile(STAGE);",
+        "  const stageIdentity = await measuredFile(STAGE);\n  // The SAME projection budget includes the awaited writer/readback and both\n  // final input/stage hashes. Expiry cannot issue an installable capability.\n  if (elapsedMilliseconds(projectionStarted) > 600_000) refuse('PROJECTION_RUNTIME_BOUND');"
+      ],
+      [
+        "import { reprojectCommittedCoherentCurrentOriginals, validatedCommittedCoherentCurrentOriginals }",
+        "import { reprojectCommittedCoherentCurrentOriginals, validatedCommittedCoherentCurrentOriginals,\n  COHERENT_DISTINCT_READ_CAPTURE_MODE }"
+      ],
+      [
+        "  const decoded = await decodeCommittedCoherentOriginalRequests({ metadata, pythonExecutable: base.pythonExecutable });",
+        "  const decoded = await decodeCommittedCoherentOriginalRequests({ metadata, pythonExecutable: base.pythonExecutable,\n    captureMode: metadata.privateRequests.length ? COHERENT_DISTINCT_READ_CAPTURE_MODE : null });"
+      ],
+      [
+        "      decodedEnvelope: decoded.decodedEnvelope });",
+        "      decodedEnvelope: decoded.decodedEnvelope, captureMode: decoded.captureMode ?? null });"
+      ],
+      [
+        "    const projection = reprojectCommittedCoherentCurrentOriginals({ input, metadata: localMetadata, ...localDecoded });",
+        "    const projection = reprojectCommittedCoherentCurrentOriginals({ input, metadata: localMetadata, ...localDecoded,\n      captureMode: localMetadata.privateRequests.length ? decoded.captureMode ?? null : null });"
+      ]
+    ]
+  },
+  {
+    "path": "scripts/plan-ravscore-current-history.mjs",
+    "before": {
+      "bytes": 80474,
+      "sha256": "cd538b1108fd92455780cbf4d308c34216175e32e2ef834e8b224fb491e6cd61"
+    },
+    "after": {
+      "bytes": 80474,
+      "sha256": "7b5196b8267406cde0035a2c99ba94e81219f976efa2af5c584bc12e57a3171b"
+    },
+    "hunks": [
+      [
+        "8dca73ce782f1293cb154aaeab4e536cd839c16b21695695ccf9c2c055c471a7",
+        "338f6c7671ad76c8dadecb574e6974931cc08d9206af6a4541747c2cc3d0c574"
+      ]
+    ]
+  }
+]);
+export function inverseJointCoherentControllerTestInput(source, relative) {
+  if (typeof source !== 'string') return source;
+  const row = JOINT_NATIONAL_COHERENT_CONTROLLER_TEST_REVIEW.find(row => row.path === relative);
+  if (!row) return source;
+  const raw = source.replace(/\r\n/g, '\n');
+  if (Buffer.byteLength(raw) !== row.after.bytes || digest(raw) !== row.after.sha256) return source;
+  let original = raw;
+  for (const [before, after] of [...row.hunks].reverse()) {
+    assert.equal(original.split(after).length, 2, 'JOINT_COHERENT_CONTROLLER_HUNK');
+    original = original.replace(after, before);
+  }
+  assert.equal(Buffer.byteLength(original), row.before.bytes, 'JOINT_COHERENT_CONTROLLER_BEFORE_SIZE');
+  assert.equal(digest(original), row.before.sha256, 'JOINT_COHERENT_CONTROLLER_BEFORE_SHA');
+  return original;
+}
+
+// Additive RAW-eviction lifetime layer only; every previous oracle is unchanged.
+export const COHERENT_RAW_TRANSPORT_LIFETIME_TEST_REVIEW = Object.freeze([
+  {
+    "path": "scripts/prepare-cached-coherent-current-work.mjs",
+    "before": {
+      "bytes": 24716,
+      "sha256": "338f6c7671ad76c8dadecb574e6974931cc08d9206af6a4541747c2cc3d0c574"
+    },
+    "after": {
+      "bytes": 25838,
+      "sha256": "1bdab356610e089958d1408f7d68acc1518005f27c1012116c05dd1c857cab9b"
+    },
+    "hunks": [
+      [
+        "function combineMetadata(metas, boundary, started, requestBudget) {",
+        "// BEGIN validated coherent RAW transport retention\n// ONLY the already globally validated decoder objects enter here. These pins\n// protect exact measured bytes from eviction; they are never native admission.\nfunction validatedTransportRetentionCaptures(originals) {\n  const captures = new Map();\n  for (const original of originals?.values() ?? []) {\n    // Strict mode read the original capture itself. Explicit distinct-read\n    // mode retains its truthful measured transport, never the old acquisition.\n    const capture = original.transportCapture ?? original.capture;\n    const key = canonical(capture);\n    captures.set(key, Object.freeze({ ...capture }));\n    if (captures.size > 4096) refuse('RETENTION_CAPTURE_BOUND');\n  }\n  return Object.freeze([...captures].sort(([a], [b]) => a < b ? -1 : a > b ? 1 : 0)\n    .map(([, capture]) => capture));\n}\n// END validated coherent RAW transport retention\n\nfunction combineMetadata(metas, boundary, started, requestBudget) {"
+      ],
+      [
+        "      decodedEnvelope: decoded.decodedEnvelope, captureMode: decoded.captureMode ?? null });\n  await assertCoherentCurrentWorkInputs(workingInputs);",
+        "      decodedEnvelope: decoded.decodedEnvelope, captureMode: decoded.captureMode ?? null });\n  const transportCaptures = validatedTransportRetentionCaptures(originals);\n  await assertCoherentCurrentWorkInputs(workingInputs);"
+      ],
+      [
+        "  const entries = [], captureKeys = new Set();",
+        "  const entries = [], captureKeys = new Set(transportCaptures.map(canonical));"
+      ],
+      [
+        "  preparedStages.set(receipt, { workingInputs, stageIdentity, capacity: Object.freeze({ ...capacity }) });",
+        "  preparedStages.set(receipt, { workingInputs, stageIdentity, capacity: Object.freeze({ ...capacity }), transportCaptures });"
+      ],
+      [
+        "  capacityStage('installed', prepared.capacity);\n}",
+        "  capacityStage('installed', prepared.capacity);\n  return prepared.transportCaptures; // Available only after successful owned install.\n}"
+      ]
+    ]
+  },
+  {
+    "path": "scripts/plan-ravscore-current-history.mjs",
+    "before": {
+      "bytes": 80474,
+      "sha256": "7b5196b8267406cde0035a2c99ba94e81219f976efa2af5c584bc12e57a3171b"
+    },
+    "after": {
+      "bytes": 81845,
+      "sha256": "e9a6480b0c95afe7cc689d8870255b93ebe33f51554a397a1eab36b830ed13c2"
+    },
+    "hunks": [
+      [
+        "// Fixed diagnostic-only identity decomposition.",
+        "// RAW eviction protection only: the normal reader/collector has already\n// completed with authentic B/S. No capture here selects or admits a numeric row.\nexport function withInstalledCoherentRawTransportRetention(retention, transportCaptures) {\n  if (!object(retention) || retention.schemaVersion !== 1\n    || retention.kind !== 'COMMITTED_POST_H0_UNKNOWN_RAW_RETENTION'\n    || !Array.isArray(retention.captures) || !Array.isArray(transportCaptures)) refuse('RETENTION_CAPTURE_REQUIRED');\n  if (retention.captures.length > 4096 || transportCaptures.length > 4096) refuse('RETENTION_BOUND');\n  const captures = new Map();\n  for (const raw of [...retention.captures, ...transportCaptures]) {\n    const capture = canonicalSavedDmiOriginalCapture(raw);\n    if (!capture || !isDeepStrictEqual(capture, raw)) refuse('RETENTION_CAPTURE_REQUIRED');\n    captures.set(canonical(capture), capture);\n    if (captures.size > 4096) refuse('RETENTION_BOUND');\n  }\n  return { ...retention,\n    captures: [...captures].sort(([a], [b]) => a < b ? -1 : a > b ? 1 : 0).map(([, value]) => value) };\n}\n\n// Fixed diagnostic-only identity decomposition."
+      ],
+      [
+        "    await preamble.installPreparedCoherentCurrentWork(prepared);\n    // Re-enter the UNCHANGED normal reader/collector from the actual new bytes.\n    return readCommittedRawCurrentRetention(registry, checkpointFile, productionReferenceAt);",
+        "    const transportCaptures = await preamble.installPreparedCoherentCurrentWork(prepared);\n    // Re-enter the UNCHANGED normal reader/collector from the actual new bytes.\n    const retention = await readCommittedRawCurrentRetention(registry, checkpointFile, productionReferenceAt);\n    // Keep measured RAW alive until normal RAW-SAVE/new durable B/S. This union\n    // happens only after the complete recursive reader and BEFORE demand SAVE.\n    return withInstalledCoherentRawTransportRetention(retention, transportCaptures);"
+      ],
+      [
+        "338f6c7671ad76c8dadecb574e6974931cc08d9206af6a4541747c2cc3d0c574",
+        "1bdab356610e089958d1408f7d68acc1518005f27c1012116c05dd1c857cab9b"
+      ]
+    ]
+  }
+]);
+export function inverseCoherentRawTransportLifetimeTestInput(source, relative) {
+  if (typeof source !== 'string') return source;
+  const row = COHERENT_RAW_TRANSPORT_LIFETIME_TEST_REVIEW.find(row => row.path === relative);
+  if (!row) return source;
+  const raw = source.replace(/\r\n/g, '\n');
+  if (Buffer.byteLength(raw) !== row.after.bytes || digest(raw) !== row.after.sha256) return source;
+  let original = raw;
+  for (const [before, after] of [...row.hunks].reverse()) {
+    assert.equal(original.split(after).length, 2, 'COHERENT_RAW_TRANSPORT_LIFETIME_HUNK');
+    original = original.replace(after, before);
+  }
+  assert.equal(Buffer.byteLength(original), row.before.bytes, 'COHERENT_RAW_TRANSPORT_LIFETIME_BEFORE_SIZE');
+  assert.equal(digest(original), row.before.sha256, 'COHERENT_RAW_TRANSPORT_LIFETIME_BEFORE_SHA');
+  return original;
 }

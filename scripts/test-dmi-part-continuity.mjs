@@ -259,9 +259,262 @@ console.log('DMI PART continuity codec: roundtrip, tamper, time and size limits 
   assert.deepEqual(fullDecoded.nativeCurrentOriginals.bank, fullBank);
   const codec = await fs.readFile(new URL('./lib/dmi-part-continuity.mjs', import.meta.url), 'utf8');
   const coverage = codec.slice(codec.indexOf('function originalCoverage('), codec.indexOf('function createSavedOriginals('));
+  // Exact previous normal builder oracle; not a substituted product kernel.
+  const previousCoverageSource = String.raw`function originalCoverage(bank, identity, partId, point, hourly) {
+  const savedPart = { partId, zoneId: identity?.parentZoneId, waterPoint: point };
+  const expectedIdentity = dmiExpectedIdentityForPart(savedPart);
+  if (!expectedIdentity || !isDeepStrictEqual(identity, expectedIdentity)) originalFailure();
+  const byTime = new Map(hourly.map(row => [row.time, row]));
+  const proved = new Set();
+  if (bank !== null) {
+    // Cheap per-PART/reference bounds precede the full normal bank validator.
+    if (!Array.isArray(bank?.contexts) || !Array.isArray(bank?.nativeRows)
+      || !Array.isArray(bank?.selections)
+      || bank.contexts.some(row => row?.value?.partId !== partId)
+      || bank.selections.length > DMI_FORECAST_HOURS
+      || bank.selections.some(row => row?.partId !== partId)
+      || bank.nativeRows.length > 2 * bank.selections.length
+      || bank.contexts.length > bank.nativeRows.length) originalFailure();
+    const selections = bank.selections.map(selection => {
+      const row = byTime.get(selection.time), source = row?.sources?.current;
+      if (!row || proved.has(selection.time) || row.currentStateOnlyHold != null
+        || source?.provider !== 'dmi' || source.vectorSemanticsVersion !== 3
+        || !finite(row.currentUMps) || !finite(row.currentVMps)) originalFailure();
+      proved.add(selection.time);
+      return { part: savedPart, row };
+    });
+    // previousBank is fully validated/indexed by the NORMAL builder, once.
+    // Reprove the whole saved selection set in one batch from its own natives.
+    // No contexts, inferred originals, PASS-cache or new kernel API are used.
+    const rebuilt = buildProtectedDmiNativeCurrentProofs({
+      selections, contexts: [], previousBank: bank,
+    });
+    const selectedIdentity = ({ partId, time, forecastAgeHours, sourceSha256, tupleSha256 }) =>
+      ({ partId, time, forecastAgeHours, sourceSha256, tupleSha256 });
+    if (!isDeepStrictEqual(rebuilt.selections.map(selectedIdentity),
+      bank.selections.map(selectedIdentity))) originalFailure();
+    // Equivalent nativeIds/context choices need not be byte-identical.
+    // The original, normally validated bank is stored unchanged, not rebuilt.
+  }
+  return hourly.map(row => {
+    const source = row.sources?.current;
+    const any = [row.currentUMps, row.currentVMps, row.currentSpeedMps, row.currentDirectionDeg].some(finite);
+    let status = 'NO_CURRENT', sampling = null;
+    if (row.currentStateOnlyHold != null) status = 'STATE_ONLY_HOLD_NOT_NATIVE_PROOF';
+    else if (any && source?.vectorSemanticsVersion === 4) status = 'REGIONAL_CURRENT_NOT_NATIVE_PROOF';
+    else if (any && source?.provider === 'dmi' && source.vectorSemanticsVersion === 3) {
+      sampling = inspectDmiForecastGridSampling(source, 'current', row.time, identity).status;
+      status = !finite(row.currentUMps) || !finite(row.currentVMps) ? 'INCOMPLETE_CURRENT'
+        : proved.has(row.time) ? 'DMI_ORIGINAL_PROVED' : 'DMI_SELECTION_PROOF_NOT_STORED';
+    } else if (any) status = source ? 'OTHER_CURRENT_NOT_NATIVE_PROOF' : 'CURRENT_SOURCE_UNAVAILABLE';
+    return { time: row.time, status, sampling };
+  });
+}`;
+  const { isDeepStrictEqual } = await import('node:util');
+  const { inspectDmiForecastGridSampling } = await import('./lib/dmi-forecast-store.mjs');
+  const nativeLimits = (await import('./lib/protected-dmi-native-current-proofs.mjs')).PROTECTED_DMI_NATIVE_PROOF_LIMITS;
+  const previousCoverage = new Function('dmiExpectedIdentityForPart', 'isDeepStrictEqual',
+    'DMI_FORECAST_HOURS', 'originalFailure', 'finite', 'buildProtectedDmiNativeCurrentProofs',
+    'inspectDmiForecastGridSampling', 'return (' + previousCoverageSource + ');')(
+      dmiExpectedIdentityForPart, isDeepStrictEqual, DMI_FORECAST_HOURS,
+      () => { throw new Error('DMI_PART_CONTINUITY_NATIVE_ORIGINAL_INVALID'); },
+      value => typeof value === 'number' && Number.isFinite(value),
+      buildProtectedDmiNativeCurrentProofs, inspectDmiForecastGridSampling);
+  assert.equal((previousCoverageSource.match(/buildProtectedDmiNativeCurrentProofs\(/g) ?? []).length, 1);
+  assert.match(previousCoverageSource, /selections, contexts: \[\], previousBank: bank/);
+  assert.doesNotMatch(previousCoverageSource, /verifyProtectedDmiNativeCurrentProof|validateProtectedDmiNativeCurrentProofs/);
+  assert.equal((coverage.match(/validateProtectedDmiNativeCurrentProofs\(/g) ?? []).length, 1);
   assert.equal((coverage.match(/buildProtectedDmiNativeCurrentProofs\(/g) ?? []).length, 1);
-  assert.match(coverage, /selections, contexts: \[\], previousBank: bank/);
-  assert.doesNotMatch(coverage, /verifyProtectedDmiNativeCurrentProof|validateProtectedDmiNativeCurrentProofs/);
+  assert.match(coverage, /if \(originalUniqueNativeWork\(bank, expectedIdentity\) && selections.every/);
+  assert.match(coverage, /if \(!sameValidatedSelection\)/);
+  assert.match(coverage, /contexts: \[\], previousBank: bank/);
+  assert.doesNotMatch(coverage, /createProtectedDmiNativeCurrentInspector|verifyProtectedDmiNativeCurrentProof/);
+  // Compare the WHOLE normal canonical encoder, not merely accepted fixtures.
+  const kernel = (await fs.readFile(new URL('./lib/protected-dmi-native-current-proofs.mjs', import.meta.url), 'utf8')).replace(/\r\n/g, '\n');
+  const canonicalKernel = kernel.slice(kernel.indexOf('function canonical('), kernel.indexOf('function encoded(')).trimEnd();
+  const lfCodec = codec.replace(/\r\n/g, '\n');
+  const canonicalCodec = lfCodec.slice(lfCodec.indexOf('function originalCanonical('), lfCodec.indexOf('function originalHash(')).trimEnd();
+  const inverseCanonical = canonicalCodec.replaceAll('originalCanonical', 'canonical').replaceAll('NATIVE_LIMIT', 'LIMIT')
+    .replaceAll('originalPlain', 'plain')
+    .replace("  const fail = code => { throw new Error('DMI_NATIVE_PROOF_' + code); };\n", '');
+  assert.equal(inverseCanonical, canonicalKernel, 'Complete canonical domain/bounds/refusals unchanged');
+  const encode = sourceText => new Function('LIMIT', 'finite', 'plain', 'fail', 'return (' + sourceText + ');')(
+    nativeLimits, value => typeof value === 'number' && Number.isFinite(value),
+    value => value && typeof value === 'object' && !Array.isArray(value),
+    code => { throw new Error('DMI_NATIVE_PROOF_' + code); });
+  const oldCanonical = encode(canonicalKernel), newCanonical = encode(inverseCanonical);
+  const outcome = action => { try { return { ok: true, value: action() }; }
+    catch (error) { return { ok: false, code: error.message }; } };
+  let getterCalls = 0;
+  const getter = {}; Object.defineProperty(getter, 'x', { enumerable: true, get() { getterCalls++; return 1; } });
+  const symbols = { x: 1 }; symbols[Symbol('no')] = 1;
+  const cyclic = {}; cyclic.self = cyclic;
+  for (const value of [null, true, 'æ 😀', 0, -0, [1, { z: null, a: [false, 2] }], NaN, Infinity,
+    undefined, 1n, () => 1, new Array(1), [undefined], getter, symbols, Object.create(null), new Date(0),
+    cyclic, { toJSON() { throw new Error('MUST_NOT_CALL'); } },
+    Object.fromEntries(Array.from({ length: 257 }, (_, i) => [String(i), 1])),
+    'x'.repeat(70_000), new Proxy({}, { getPrototypeOf() { throw new Error('PROXY_REFUSED'); } })]) {
+    assert.deepEqual(outcome(() => newCanonical(value)), outcome(() => oldCanonical(value)));
+  }
+  assert.equal(getterCalls, 0, 'Neither encoder executes data-record getters');
+  const bankBefore = JSON.stringify(bank), rowsBefore = JSON.stringify(rows);
+  const compareCoverage = async (candidateRows, candidateBank = bank, candidatePart = part) => {
+    const candidateIdentity = dmiExpectedIdentityForPart(candidatePart);
+    const old = outcome(() => previousCoverage(candidateBank, candidateIdentity,
+      candidatePart.partId, candidatePart.waterPoint, candidateRows));
+    let actual;
+    try {
+      const packed = await packDmiPartContinuity(new Map([[candidatePart.partId, { zoneId: candidateIdentity.entityId,
+        point: candidatePart.waterPoint, hourly: candidateRows }]]), [candidatePart], start,
+      { nativeCurrentProofsByPart: new Map([[candidatePart.partId, candidateBank]]) });
+      actual = { ok: true, value: (await unpackDmiPartContinuity(packed, [candidatePart], at(1)))
+        .get(candidatePart.partId).nativeCurrentOriginals.coverage };
+    } catch (error) { actual = { ok: false, code: error.message }; }
+    assert.deepEqual(actual, old, 'Actual pack/unpack preserves previous builder acceptance and fixed refusals');
+  };
+  await compareCoverage(rows); await compareCoverage(fullRows, fullBank);
+  for (const change of [
+    value => { value[0].sources.current.forecastAgeHours += 1; },
+    value => { value[0].currentUMps += 0.01; },
+    value => { value[0].sources.current.contentSha256 = 'd'.repeat(64); },
+    value => { value[0].sources.current.privateExtra = undefined; },
+    value => { value[0].sources.current.privateExtra = NaN; },
+    value => { value[0].sources.current.privateExtra = new Array(1); },
+    value => { Object.defineProperty(value[0].sources.current, 'privateExtra', { enumerable: true,
+      get() { getterCalls++; throw new Error('MUST_NOT_CALL'); } }); },
+  ]) { const value = clone(rows); change(value); await compareCoverage(value); }
+  for (const change of [
+    value => { value.selections[0].time = at(120); },
+    value => { value.selections[0].tupleSha256 = 'd'.repeat(64); },
+    value => { value.nativeRows[0].value.uMps += 1; },
+  ]) { const value = clone(bank); change(value); await compareCoverage(rows, value); }
+  // A genuine second cohort supplies B0 because stored selection1 needs it.
+  // Inspector can prove B0, but stored selection0 is A0: exact identity rejects.
+  const nativeB = native.map(row => { const value = clone(row), s = value.sources.current;
+    s.modelRun = at(-6); s.leadTimeHours -= 6; s.itemId += '-cohort-b'; return value; });
+  const bulkB = { ...bulk, zones: { [identity.entityId]: { ...identity,
+    hourly: Object.fromEntries(nativeB.map(row => [row.time, row])) } } };
+  const rowsB = buildDmiForecastHourly({ ocean: nativeB.map(row => ({ step: row.time,
+    'current-u': row['current-u'], 'current-v': row['current-v'], provenance: row.sources })),
+    generatedAt: at(0), startAt: at(0), hours: DMI_FORECAST_HOURS }).hourly;
+  const mixedRows = clone(rows); mixedRows[1] = rowsB[1];
+  const mixedBank = buildProtectedDmiNativeCurrentProofs({ selections: [{ part, row: mixedRows[0] },
+    { part, row: mixedRows[1] }], contexts: [bulk, bulkB] });
+  await compareCoverage(mixedRows, mixedBank);
+  const switched = clone(mixedRows); switched[0] = rowsB[0];
+  const { createProtectedDmiNativeCurrentInspector: inspectNormal } = await import('./lib/protected-dmi-native-current-proofs.mjs');
+  assert.equal(inspectNormal({ previousBank: mixedBank }).inspect({ part, row: switched[0] }).ok, true,
+    'The negative distinguishes exact stored identity from merely available own-native proof');
+  await compareCoverage(switched, mixedBank);
+  assert.equal(outcome(() => previousCoverage(mixedBank, identity, part.partId, part.waterPoint, switched)).ok, false);
+  assert.equal(getterCalls, 0); assert.equal(JSON.stringify(bank), bankBefore); assert.equal(JSON.stringify(rows), rowsBefore);
+  // The narrower fast work selector is not evidence/admission. Existing normal
+  // role scopes can build a bank with individually valid entries but competing
+  // same-native-identity/time tuples. Normal full validation alone accepts the
+  // entry witnesses; the original candidate search MUST STILL reject conflict.
+  const { bindProtectedDmiNativeCurrentOriginalScopes, validateProtectedDmiNativeCurrentProofs }
+    = await import('./lib/protected-dmi-native-current-proofs.mjs');
+  const conflictingNative = native.map(row => { const value = clone(row); value['current-u'] += 0.01; return value; });
+  const conflictingBulk = { ...bulk, zones: { [identity.entityId]: { ...identity,
+    hourly: Object.fromEntries(conflictingNative.map(row => [row.time, row])) } } };
+  const conflictingRows = buildDmiForecastHourly({ ocean: conflictingNative.map(row => ({ step: row.time,
+    'current-u': row['current-u'], 'current-v': row['current-v'], provenance: row.sources })),
+    generatedAt: at(0), startAt: at(0), hours: DMI_FORECAST_HOURS }).hourly;
+  const scoped = bindProtectedDmiNativeCurrentOriginalScopes({ zones: {} }, [
+    { document: bulk, selections: [{ part, row: rows[0] }] },
+    { document: conflictingBulk, selections: [{ part, row: conflictingRows[1] }] },
+  ]);
+  const conflictRows = clone(rows); conflictRows[1] = conflictingRows[1];
+  const conflictBank = buildProtectedDmiNativeCurrentProofs({ selections: [{ part, row: conflictRows[0] },
+    { part, row: conflictRows[1] }], contexts: [scoped] });
+  assert.equal(validateProtectedDmiNativeCurrentProofs(conflictBank), conflictBank,
+    'Every chosen witness is normally reprojected, but that is not global conflict checking');
+  assert(new Set(conflictBank.nativeRows.map(record => Date.parse(record.value.time))).size < conflictBank.nativeRows.length);
+  assert.equal(outcome(() => previousCoverage(conflictBank, identity, part.partId, part.waterPoint, conflictRows)).code,
+    'DMI_NATIVE_PROOF_NATIVE_CONFLICT');
+  await compareCoverage(conflictRows, conflictBank);
+  // Exact peer counterexample: numeric nativeRows indices are unique, but an
+  // OWN iterator supplies the complete conflicting bank to normal validation.
+  // Full validation + numeric-only selection is NOT a sufficient shortcut.
+  const conflictNatives = [...conflictBank.nativeRows];
+  const uniqueNumericNatives = [...new Map(conflictNatives.map(record => [Date.parse(record.value.time), record])).values()];
+  const exoticBank = { ...conflictBank, nativeRows: uniqueNumericNatives };
+  Object.defineProperty(exoticBank.nativeRows, Symbol.iterator, {
+    value: function* () { yield* conflictNatives; }, configurable: true,
+  });
+  assert.equal(new Set(exoticBank.nativeRows.map(record => Date.parse(record.value.time))).size, exoticBank.nativeRows.length);
+  assert.equal(validateProtectedDmiNativeCurrentProofs(exoticBank), exoticBank,
+    'The ordinary validator sees the original full iterator domain, not just numeric indices');
+  assert.equal(outcome(() => previousCoverage(exoticBank, identity, part.partId, part.waterPoint, conflictRows)).code,
+    'DMI_NATIVE_PROOF_NATIVE_CONFLICT');
+  await compareCoverage(conflictRows, exoticBank);
+  // Fresh banks on BOTH sides: the normal schemaVersion read can legitimately
+  // invoke this getter and reveal the entire conflicting native pool. A NEW
+  // selector call must not pre-invoke it, and a prior oracle mutation must not
+  // conceal a fast-accept gap in the actual packer.
+  let topGetterCalls = 0;
+  const topGetterBank = () => {
+    const value = { ...conflictBank, nativeRows: [...uniqueNumericNatives] };
+    Object.defineProperty(value, 'schemaVersion', { enumerable: true, configurable: true, get() {
+      topGetterCalls++; value.nativeRows = conflictNatives; return 1;
+    } });
+    return value;
+  };
+  const oldTopBank = topGetterBank();
+  const oldTop = outcome(() => previousCoverage(oldTopBank, identity, part.partId, part.waterPoint, conflictRows));
+  assert.deepEqual(oldTop, { ok: false, code: 'DMI_NATIVE_PROOF_NATIVE_CONFLICT' });
+  assert.equal(topGetterCalls, 1, 'One old normal indexBank schemaVersion read, not a selector invocation');
+  const actualTopBank = topGetterBank();
+  await assert.rejects(packDmiPartContinuity(new Map([[part.partId, { zoneId: identity.entityId,
+    point: part.waterPoint, hourly: conflictRows }]]), [part], start,
+  { nativeCurrentProofsByPart: new Map([[part.partId, actualTopBank]]) }),
+  { message: oldTop.code });
+  assert.equal(topGetterCalls, 2, 'The actual fallback performs the SAME one old schemaVersion read');
+  // Current source arrays must likewise stay in the ordinary JSON domain;
+  // canonical Array.from and the normal forecast verifier's numeric map/loop
+  // must not be allowed to see different endpoint metadata in a fast accept.
+  const exoticSourceRows = clone(rows), ownSteps = clone(exoticSourceRows[0].sources.current.nativeSteps);
+  exoticSourceRows[0].sources.current.nativeSteps[0].itemId = 'NOT_THE_SELECTED_NATIVE_ITEM';
+  Object.defineProperty(exoticSourceRows[0].sources.current.nativeSteps, Symbol.iterator, {
+    value: function* () { yield* ownSteps; }, configurable: true,
+  });
+  assert.equal(outcome(() => previousCoverage(bank, identity, part.partId, part.waterPoint, exoticSourceRows)).ok, false);
+  await compareCoverage(exoticSourceRows);
+  for (const property of ['map', 'every']) {
+    const exotic = clone(bank);
+    Object.defineProperty(exotic.nativeRows, property, { value: Array.prototype[property], configurable: true });
+    await compareCoverage(rows, exotic);
+  }
+  // Ordinary shared readonly arrays are NOT cycles and must remain usable.
+  const sharedRows = clone(rows), sharedFields = sharedRows[0].sources.current.fieldSet;
+  sharedRows[1].sources.current.fieldSet = sharedFields;
+  await compareCoverage(sharedRows);
+  // Python's real seven-place wire identity is valid but not deep-equal to the
+  // central full-precision point. Keep that old, valid path via the builder.
+  const precisePart = { ...part, waterPoint: [8.00000004, 55.00000004] };
+  assert.equal(outcome(() => previousCoverage(bank, dmiExpectedIdentityForPart(precisePart),
+    precisePart.partId, precisePart.waterPoint, rows)).ok, true);
+  await compareCoverage(rows, bank, precisePart);
+  for (const point of [[8.1, 55], [8, 91]]) {
+    const changedPart = { ...part, waterPoint: point };
+    assert.equal(outcome(() => previousCoverage(bank, dmiExpectedIdentityForPart(changedPart),
+      changedPart.partId, changedPart.waterPoint, rows)).ok, false);
+    await compareCoverage(rows, bank, changedPart);
+  }
+  // NEW work selection may not execute getters which normal canonical refuses
+  // without invoking. Keep exact first fixed record-shape refusal through old
+  // builder fallback for BOTH context.zone and native.time metadata accessors.
+  let metadataGetterCalls = 0;
+  for (const field of ['zone', 'time']) {
+    const value = clone(bank);
+    const object = field === 'zone' ? value.contexts[0].value : value.nativeRows[0].value;
+    Object.defineProperty(object, field, { enumerable: true, configurable: true,
+      get() { metadataGetterCalls++; throw new Error('MUST_NOT_CALL_METADATA_GETTER'); } });
+    assert.equal(outcome(() => previousCoverage(value, identity, part.partId, part.waterPoint, rows)).code,
+      'DMI_NATIVE_PROOF_RECORD_SHAPE');
+    await compareCoverage(rows, value);
+  }
+  assert.equal(metadataGetterCalls, 0);
   // Exercise the actual updater's pure bank/gate functions, not a copied
   // implementation. All proof math and inspectors are the real normal kernel.
   const { createProtectedDmiNativeCurrentInspector } = await import('./lib/protected-dmi-native-current-proofs.mjs');
@@ -321,7 +574,6 @@ console.log('DMI PART continuity codec: roundtrip, tamper, time and size limits 
   // are synthetic test inputs; no GRIB/provider/B authentication is claimed.
   const { buildPartDmiForecastWithProtectedRetention, buildPrivateDmiRecoveryRecord } =
     await import('./lib/private-dmi-recovery-record.mjs');
-  const { inspectDmiForecastGridSampling } = await import('./lib/dmi-forecast-store.mjs');
   const capturedOld = clone(fullBulk);
   for (const native of Object.values(capturedOld.zones[identity.entityId].hourly)) {
     Object.assign(native.sources.current, { contentLengthBytes: 128, assetSizeBytes: 128 });

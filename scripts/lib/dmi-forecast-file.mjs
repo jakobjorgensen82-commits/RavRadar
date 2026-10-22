@@ -584,11 +584,11 @@ export async function writeDmiForecastRecords(file, index, zoneRecords, metadata
     let first = true;
     for (const [key, value] of Object.entries(metadata)) {
       if (!first) await append(',');
-      if (key === 'waterSourceContinuity') {
+      if (key === 'waterSourceContinuity' || key === 'partContinuity' && plain(value)) {
         // A qualified merged bank follows the same bounded recordwise path as
         // an unchanged indexed bank, never a whole-bank metadata stringify.
         if (!plain(value) || !Array.isArray(value.entries)) invalid('SHAPE_INVALID');
-        await append('"waterSourceContinuity":{');
+        await append(JSON.stringify(key) + ':{');
         let firstField = true;
         for (const [name, field] of Object.entries(value)) {
           if (!firstField) await append(',');
@@ -598,7 +598,8 @@ export async function writeDmiForecastRecords(file, index, zoneRecords, metadata
             for (let i = 0; i < field.length; i++) {
               if (i) await append(',');
               const text = JSON.stringify(field[i]);
-              if (Buffer.byteLength(text) > MAX_WATER_SOURCE_ENTRY_BYTES) invalid('RECORD_SIZE_LIMIT');
+              if (Buffer.byteLength(text) > (key === 'waterSourceContinuity'
+                ? MAX_WATER_SOURCE_ENTRY_BYTES : MAX_CONTINUITY_ENTRY_BYTES)) invalid('RECORD_SIZE_LIMIT');
               await append(text);
             }
             await append(']');
@@ -642,7 +643,7 @@ export async function writeDmiForecastRecords(file, index, zoneRecords, metadata
       first = false;
     }
     await append('}');
-    if (index.continuity) {
+    if (index.continuity && !plain(metadata.partContinuity)) {
       await append(',"partContinuity":{');
       for (const [key, value] of Object.entries(index.continuity.metadata)) {
         await append(`${JSON.stringify(key)}:${JSON.stringify(value)},`);

@@ -9,7 +9,8 @@ import { fileURLToPath } from 'node:url';
 import { isDeepStrictEqual } from 'node:util';
 import { discoverCommittedCoherentOriginalBootstrap, SAVED_FORECAST_121_ROLE }
   from './coherent-current-original-bootstrap.mjs';
-import { reprojectCommittedCoherentCurrentOriginals } from './reproject-coherent-current-originals.mjs';
+import { reprojectCommittedCoherentCurrentOriginals, COHERENT_DISTINCT_READ_CAPTURE_MODE }
+  from './reproject-coherent-current-originals.mjs';
 import { packDmiPartContinuity, unpackDmiPartContinuity } from './dmi-part-continuity.mjs';
 import { writeDmiForecastFileAtomic, readDmiForecastFile } from './dmi-forecast-file.mjs';
 import { buildRavScoreRawCurrentRetention } from '../plan-ravscore-current-history.mjs';
@@ -143,6 +144,40 @@ async function closedWorker(pythonExecutable, requestSha256) {
   return receipt.result;
 }
 
+
+// Shared fixed capture-cohort owner. This creates no authentication/admission;
+// national callers must use the unchanged normal reprojection and every bank
+// bound after the whole request/output is physically closed and hash-bound.
+export async function decodeCommittedCoherentOriginalRequests({ metadata, pythonExecutable, captureMode = null } = {}) {
+  // Caller still owns authenticated B/S and unchanged same-normal discovery.
+  // This explicit read mode is NOT authentication, restore completion or admission.
+  if (captureMode !== null && captureMode !== COHERENT_DISTINCT_READ_CAPTURE_MODE) refuse('METADATA_UNRESOLVED');
+  if (!['METADATA_BOUND', 'NO_BOOTSTRAP_REQUIRED'].includes(metadata?.summary?.status)
+    || !Array.isArray(metadata.privateRequests)
+    || (metadata.summary.status === 'NO_BOOTSTRAP_REQUIRED') !== (metadata.privateRequests.length === 0)) refuse('METADATA_UNRESOLVED');
+  if (metadata.privateRequests.length === 0) return { requestSha256: null, decodedEnvelope: null, decoderReceipt: null };
+  const requestFile = path.join(ROOT, '.cache/coherent-current-original-requests.json');
+  const requestDocument = captureMode === null ? metadata : { ...metadata, captureMode };
+  const requestBytes = Buffer.from(JSON.stringify(requestDocument) + '\n');
+  await writeExclusive(requestFile, requestBytes);
+  const requestSha256 = sha(requestBytes);
+  const decoderReceipt = await closedWorker(pythonExecutable, requestSha256);
+  const output = await readClosed(path.join(ROOT, '.cache/coherent-current-native-originals.json'));
+  if (decoderReceipt.bytes !== output.length || decoderReceipt.sha256 !== sha(output)
+    || !requestBytes.equals(await readClosed(requestFile))) refuse('DECODE_CHANGED');
+  let decodedEnvelope;
+  try { decodedEnvelope = JSON.parse(output); } catch { refuse('DECODE_SHAPE'); }
+  if (ownedHandles.size) refuse('FD_CLOSE_UNPROVED');
+  return { requestSha256, decodedEnvelope, decoderReceipt, ...(captureMode === null ? {} : { captureMode }) };
+}
+async function decodeCommittedCoherentOriginalProofs({ input, metadata, pythonExecutable }) {
+  const decoded = await decodeCommittedCoherentOriginalRequests({ metadata, pythonExecutable });
+  const projection = reprojectCommittedCoherentCurrentOriginals({ input, metadata,
+    ...(decoded.decoderReceipt === null ? {} : {
+      requestSha256: decoded.requestSha256, decodedEnvelope: decoded.decodedEnvelope }) });
+  return { projection, decoderReceipt: decoded.decoderReceipt };
+}
+
 export async function proveCachedCoherentCurrentOriginals({ input: normalInput, pythonExecutable } = {}) {
   const cache = await fs.lstat(path.join(ROOT, '.cache'));
   if (!cache.isDirectory() || cache.isSymbolicLink()) refuse('CACHE_ROOT');
@@ -150,21 +185,8 @@ export async function proveCachedCoherentCurrentOriginals({ input: normalInput, 
   if (input.registry?.partCount !== 1 || input.persistedHourlyByPart?.size !== 1) refuse('FIRST_PART_ONLY');
   const metadata = discoverCommittedCoherentOriginalBootstrap(input);
   if (!['METADATA_BOUND', 'NO_BOOTSTRAP_REQUIRED'].includes(metadata.summary.status)) refuse('METADATA_UNRESOLVED');
-  let projection, decoderReceipt = null;
-  if (metadata.summary.status === 'METADATA_BOUND') {
-    const requestFile = path.join(ROOT, '.cache/coherent-current-original-requests.json');
-    const requestBytes = Buffer.from(JSON.stringify(metadata) + '\n');
-    await writeExclusive(requestFile, requestBytes);
-    const requestSha256 = sha(requestBytes);
-    decoderReceipt = await closedWorker(pythonExecutable, requestSha256);
-    const output = await readClosed(path.join(ROOT, '.cache/coherent-current-native-originals.json'));
-    if (decoderReceipt.bytes !== output.length || decoderReceipt.sha256 !== sha(output)
-      || !requestBytes.equals(await readClosed(requestFile))) refuse('DECODE_CHANGED');
-    let decodedEnvelope;
-    try { decodedEnvelope = JSON.parse(output); } catch { refuse('DECODE_SHAPE'); }
-    projection = reprojectCommittedCoherentCurrentOriginals({ input, metadata,
-      requestSha256, decodedEnvelope });
-  } else projection = reprojectCommittedCoherentCurrentOriginals({ input, metadata });
+  const { projection, decoderReceipt } = await decodeCommittedCoherentOriginalProofs({
+    input, metadata, pythonExecutable });
   const saved = projection.privateProofBanks.filter(bank => bank.sourceRole === SAVED_FORECAST_121_ROLE);
   if (saved.length !== 1) refuse('SAVED_BANK_INVENTORY');
   const [[partId, persisted]] = input.persistedHourlyByPart;

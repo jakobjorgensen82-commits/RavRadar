@@ -1,3 +1,17 @@
+## 89.263 Originalfil og hentetid er to forskellige ting
+
+Kort fortalt: Den samme originale vejrfil kan hentes igen senere. Det gør ikke dens indhold nyere.
+
+Ved genopretning skal hele filens indhold, størrelse, modelkørsel, tidspunkt, sted og øvrige kildeoplysninger stemme med den gemte original. Den nye hentetid registreres sandfærdigt og holdes adskilt fra den oprindelige hentetid. Hverken en lignende fil eller et matchende filnavn er nok.
+
+Den normale afkoder skal stadig genskabe samme kilde, strømværdier og alder. Beviset bevares sammen med alle den gemte prognoses timer, så en senere opdatering kan fortsætte, selv om en arbejdsfil bliver erstattet. De oprindelige sikkerhedspakker og tidligere offentliggjorte scorer ændres ikke.
+
+Gentagen genopbygning kan undgås, når en gemt originalbank er entydig og stadig består den fulde kontrol af originaler, sted, kilde, tal og alder. Tvetydige tilfælde følger den almindelige fulde beregningsvej. En hurtigere læsning må ikke svække datakontrollen.
+
+Genskabte originalfiler skal også beskyttes mod almindelig cacheudskiftning, indtil den nye sikkerhedspakke er gemt varigt. En færdig arbejdsfil er ikke nok, hvis kørslen afbrydes inden da. Filbeskyttelsen ændrer ikke, hvilke strømværdier beregningen må bruge. Før nye filer hentes, skal faktisk ledig diskplads vurderes sammen med download- og cachegrænserne; der må ikke slettes originaler for at få plads.
+
+Genopretning bruger de eksisterende private lagre og normale kontroller. En lokal prøve eller en driftskvittering er ikke i sig selv bevis for fungerende offentlig vejrhentning. Det kræver faktisk levering og en efterfølgende almindelig opdatering. Manglende historik og prognosetimer skal fortsat vises ærligt.
+
 ## 89.262 Genskab originalbevis uden at ændre gemte tal
 
 Kort fortalt: En bevaret strømprognose skal fortsat kunne knyttes til sine egne originaler, selv om en nyere vejrfil har erstattet en arbejdsfil.

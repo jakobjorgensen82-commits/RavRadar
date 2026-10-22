@@ -14,6 +14,7 @@ import { nativeCurrentOriginalBankForPart } from './ravscore-recovery-source-pri
 import { buildProtectedDmiNativeCurrentProofs,
   PROTECTED_DMI_NATIVE_PROOF_LIMITS as LIMIT } from './protected-dmi-native-current-proofs.mjs';
 
+export const COHERENT_DISTINCT_READ_CAPTURE_MODE = 'AUTHENTICATED_ORIGINAL_WITH_DISTINCT_MEASURED_READ_CAPTURE';
 const SHA = /^[a-f0-9]{64}$/;
 const refuse = code => { throw new Error('COHERENT_CURRENT_REPROJECTION_' + code); };
 const keys = (value, fields) => value !== null && typeof value === 'object' && !Array.isArray(value)
@@ -38,9 +39,13 @@ function measuredBudget(scope) {
   };
 }
 
-function validateEnvelope(metadata, requestSha256, envelope, charge) {
+function validateEnvelope(metadata, requestSha256, envelope, charge, captureMode = null) {
+  if (captureMode !== null && captureMode !== COHERENT_DISTINCT_READ_CAPTURE_MODE) refuse('ENVELOPE_BINDING');
+  const distinct = captureMode === COHERENT_DISTINCT_READ_CAPTURE_MODE;
   if (!SHA.test(requestSha256 ?? '') || !keys(envelope, ['schemaVersion', 'kind', 'privateBinding',
-    'requestSha256', 'captureCount', 'privateOriginals', 'nativeAdmissionPerformed'])
+    'requestSha256', 'captureCount', 'privateOriginals', 'nativeAdmissionPerformed',
+    ...(distinct ? ['captureMode'] : [])])
+    || distinct && envelope.captureMode !== captureMode
     || envelope.schemaVersion !== 1 || envelope.kind !== 'COHERENT_CURRENT_ORIGINAL_DECODE'
     || envelope.requestSha256 !== requestSha256 || envelope.nativeAdmissionPerformed !== false
     || !equal(envelope.privateBinding, metadata.privateBinding)
@@ -51,11 +56,20 @@ function validateEnvelope(metadata, requestSha256, envelope, charge) {
   let bytes = Buffer.byteLength(text(envelope.privateBinding)) + 512;
   for (const original of envelope.privateOriginals) {
     charge();
-    if (!keys(original, ['requestId', 'partId', 'header', 'identity', 'row', 'capture'])
+    if (!keys(original, ['requestId', 'partId', 'header', 'identity', 'row', 'capture',
+      ...(distinct ? ['transportCapture'] : [])])
       || !byId.has(original.requestId) || decoded.has(original.requestId)) refuse('DECODE_REQUEST_INVENTORY');
     bytes += Buffer.byteLength(text(original, LIMIT.candidateBytesPerPart)) + 2;
     if (bytes > LIMIT.bankBytes) refuse('DECODE_BYTES_BOUND');
     const request = byId.get(original.requestId), source = original.row?.sources?.current;
+    // Explicit normal caller mode only: the native bank represents the old
+    // authenticated source, NOT a claim about when these bytes were re-read.
+    // The closed worker measured the truthful transport capture; all ten other
+    // capture fields must be EXACT. No manifest retag, time inference or tolerance.
+    if (distinct && (!keys(original.transportCapture, Object.keys(request.capture))
+      || !equal(canonicalSavedDmiOriginalCapture(original.transportCapture), original.transportCapture)
+      || Object.entries(request.capture).some(([key, value]) =>
+        key !== 'acquiredAt' && !equal(original.transportCapture[key], value)))) refuse('DECODE_NATIVE_IDENTITY');
     // No inferred generatedAt/cadence/age. Consume exactly the decoder header.
     if (!keys(original.header, ['currentVectorSemanticsVersion', 'currentVectorSelection', 'currentMaxDistanceKm'])
       || original.partId !== request.partId || !equal(original.capture, request.capture)
@@ -82,6 +96,14 @@ function validateEnvelope(metadata, requestSha256, envelope, charge) {
   if (decoded.size !== byId.size || !Number.isSafeInteger(envelope.captureCount)
     || envelope.captureCount !== captures.size || captures.size > 4096) refuse('DECODE_REQUEST_INVENTORY');
   return decoded;
+}
+
+// Validate the ONE global closed decoder envelope before recordwise subviews.
+// The returned map contains the exact decoded objects, not new receipts/PASS
+// tokens or selected candidates. Local subviews retain the whole request SHA.
+export function validatedCommittedCoherentCurrentOriginals({ metadata, requestSha256, decodedEnvelope, captureMode = null } = {}) {
+  return validateEnvelope(metadata, requestSha256, decodedEnvelope,
+    measuredBudget({ additionalSelectionHours: LIMIT.hoursPerPart }), captureMode);
 }
 
 // PART + ROLE local, actual header/wire identity only. Distinct hours share a
@@ -115,7 +137,7 @@ function packedContexts(originals, existingCount, charge) {
  * serialized/cloned WeakMap-scoped contexts do not acquire authority here.
  */
 export function reprojectCommittedCoherentCurrentOriginals({ input: options, metadata,
-  requestSha256, decodedEnvelope } = {}) {
+  requestSha256, decodedEnvelope, captureMode = null } = {}) {
   const input = { progressCandidate: null, historicalBulk: null, protectedCompanionContexts: [],
     persistedHourlyByPart: new Map(), liveCurrentPilot: null, ...options };
   const scope = coherentOriginalScopeLimits(input), MAX_REFERENCES = scope.maximumReferences;
@@ -125,7 +147,8 @@ export function reprojectCommittedCoherentCurrentOriginals({ input: options, met
     || !(metadata.summary?.status === 'METADATA_BOUND' && metadata.privateRequests.length > 0
       || scope.saved && metadata.summary?.status === 'NO_BOOTSTRAP_REQUIRED' && metadata.privateRequests.length === 0)) refuse('METADATA_REQUIRED');
   const noDecode = metadata.privateRequests.length === 0;
-  if (noDecode && (requestSha256 != null || decodedEnvelope != null)) refuse('UNEXPECTED_DECODE');
+  if (captureMode !== null && captureMode !== COHERENT_DISTINCT_READ_CAPTURE_MODE) refuse('ENVELOPE_BINDING');
+  if (noDecode && (requestSha256 != null || decodedEnvelope != null || captureMode !== null)) refuse('UNEXPECTED_DECODE');
   // Fresh same-normal discovery binds every supplied request/capture/reference.
   // Deliberately exclude nondeterministic summary.timing, never file-byte SHA.
   const fresh = discoverCommittedCoherentOriginalBootstrap(input);
@@ -134,7 +157,7 @@ export function reprojectCommittedCoherentCurrentOriginals({ input: options, met
     || !equal(stableSummary(metadata.summary), stableSummary(fresh.summary))
     || !equal(metadata.privateRequests, fresh.privateRequests)) refuse('METADATA_CHANGED');
   charge();
-  const decoded = noDecode ? new Map() : validateEnvelope(fresh, requestSha256, decodedEnvelope, charge);
+  const decoded = noDecode ? new Map() : validateEnvelope(fresh, requestSha256, decodedEnvelope, charge, captureMode);
   const byPart = new Map();
   for (const request of fresh.privateRequests) {
     charge();

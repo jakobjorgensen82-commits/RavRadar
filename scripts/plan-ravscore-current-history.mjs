@@ -300,6 +300,24 @@ export function buildRavScoreRawCurrentRetention({ registry, conditions, checkpo
     captures: [...captures].sort(([a], [b]) => a < b ? -1 : a > b ? 1 : 0).map(([, value]) => value) };
 }
 
+// RAW eviction protection only: the normal reader/collector has already
+// completed with authentic B/S. No capture here selects or admits a numeric row.
+export function withInstalledCoherentRawTransportRetention(retention, transportCaptures) {
+  if (!object(retention) || retention.schemaVersion !== 1
+    || retention.kind !== 'COMMITTED_POST_H0_UNKNOWN_RAW_RETENTION'
+    || !Array.isArray(retention.captures) || !Array.isArray(transportCaptures)) refuse('RETENTION_CAPTURE_REQUIRED');
+  if (retention.captures.length > 4096 || transportCaptures.length > 4096) refuse('RETENTION_BOUND');
+  const captures = new Map();
+  for (const raw of [...retention.captures, ...transportCaptures]) {
+    const capture = canonicalSavedDmiOriginalCapture(raw);
+    if (!capture || !isDeepStrictEqual(capture, raw)) refuse('RETENTION_CAPTURE_REQUIRED');
+    captures.set(canonical(capture), capture);
+    if (captures.size > 4096) refuse('RETENTION_BOUND');
+  }
+  return { ...retention,
+    captures: [...captures].sort(([a], [b]) => a < b ? -1 : a > b ? 1 : 0).map(([, value]) => value) };
+}
+
 // Fixed diagnostic-only identity decomposition. Detached probes are observations,
 // never source rows, endpoint evidence, admission or a replacement comparator.
 function current586IdentityDifferenceDetails(nativeSource, wireIdentity, forecastSource, expected) {
@@ -555,7 +573,8 @@ export function diagnoseCurrent586SelectedEndpoints(options = {}) {
   return result;
 }
 
-async function readCommittedRawCurrentRetention(registry, checkpointFile, productionReferenceAt) {
+async function readCommittedRawCurrentRetention(registry, checkpointFile, productionReferenceAt,
+  prepareCachedNativeOriginals = false) {
   const { verified, conditions, conditionsPath: file, conditionsSha256, verify } =
     await readCurrentPrivateRuntimeCompanionInput(productionReferenceAt);
   if (!checkpointFile) refuse('RETENTION_B_CHANGED');
@@ -570,6 +589,9 @@ async function readCommittedRawCurrentRetention(registry, checkpointFile, produc
   } finally { await fs.rm(work, { recursive: true }); }
   const protectedCompanionContexts = await readAuthenticatedCurrentCompanions(verified, conditions);
   const parts = Object.entries(registry.zones).flatMap(([zoneId, entries]) => entries.map(part => ({ ...part, zoneId })));
+  const preamble = prepareCachedNativeOriginals
+    ? await import('./prepare-cached-coherent-current-work.mjs') : null;
+  const workingInputs = preamble === null ? null : await preamble.snapshotCoherentCurrentWorkInputs();
   const forecast = await inspectDmiForecastFile(path.join(ROOT, 'data/live/dmi-forecast-cache.json'));
   const protectedBulk = await readDmiBulkDocument(path.join(ROOT, '.cache/deployed-dmi-bulk-cache.json'));
   const candidate = await readDmiBulkDocument(path.join(ROOT, '.cache/dmi-candidate-progress.json'), { optional: true });
@@ -581,6 +603,21 @@ async function readCommittedRawCurrentRetention(registry, checkpointFile, produc
   const boundary = { datasetId: verified.datasetId, productionReferenceAt: verified.productionReferenceAt,
     bundleContentSha256: verified.bundleContentSha256, checkpointGenerationSha256: checkpoint.generationSha256, conditionsSha256 };
   const liveCurrentPilot = await readLiveCurrentPilot(registry), zones = (await readFixed('data/zones.geojson')).json;
+  if (preamble !== null) {
+    await preamble.assertCoherentCurrentWorkInputs(workingInputs);
+    const prepared = await preamble.prepareCachedCoherentCurrentWork({
+      registry, conditions, checkpoint, boundary, zones, productionReferenceAt,
+      protectedBulk, progressCandidate: candidate ?? active, progressActive: active,
+      historicalBulk, protectedCompanionContexts, liveCurrentPilot, forecast,
+      workingInputs, pythonExecutable: process.env.PYTHON ?? 'python' });
+    await verify(); // ORIGINAL authenticated B/S, never the derived work file.
+    const transportCaptures = await preamble.installPreparedCoherentCurrentWork(prepared);
+    // Re-enter the UNCHANGED normal reader/collector from the actual new bytes.
+    const retention = await readCommittedRawCurrentRetention(registry, checkpointFile, productionReferenceAt);
+    // Keep measured RAW alive until normal RAW-SAVE/new durable B/S. This union
+    // happens only after the complete recursive reader and BEFORE demand SAVE.
+    return withInstalledCoherentRawTransportRetention(retention, transportCaptures);
+  }
   const all = new Map(), byPart = new Map(parts.map(part => [part.partId, part]));
   const collect = (part, persistedHourlyByPart) => {
     const result = buildRavScoreRawCurrentRetention({
@@ -921,7 +958,10 @@ function environmentBoolean(name) {
 
 
 async function main() {
-  const retainCommittedRaw = process.argv.length === 3 && process.argv[2] === '--retain-committed-raw';
+  const prepareCachedNativeOriginals = process.argv.length === 4
+    && process.argv[2] === '--retain-committed-raw' && process.argv[3] === '--prepare-cached-native-originals';
+  const retainCommittedRaw = prepareCachedNativeOriginals
+    || process.argv.length === 3 && process.argv[2] === '--retain-committed-raw';
   if (process.argv.length !== 2 && !retainCommittedRaw) refuse('ARGUMENTS_INVALID');
   const productionReferenceAt = workflowTargetHour(process.env.RAVRADAR_PRODUCTION_TARGET_HOUR);
   const baselineRequired = environmentBoolean('RAVRADAR_REQUIRE_PRIVATE_WEATHER_BASELINE');
@@ -931,6 +971,12 @@ async function main() {
   const coldPath = process.env[CURRENT_FAMILY_COLD_START_CONTEXT_ENV.path];
   const coldSha256 = process.env[CURRENT_FAMILY_COLD_START_CONTEXT_ENV.sha256];
   const coldRequested = coldPath !== undefined || coldSha256 !== undefined;
+  // Explicit default-OFF ordinary work derivation only. No isolated/cold/
+  // checkpoint/quick view may borrow current B/native evidence through this.
+  if (prepareCachedNativeOriginals && (!baselineRequired || stateLessRecovery || epochRequested
+    || checkpointOnly || coldRequested || environmentBoolean('QUICK_CONFIRMATION'))) {
+    refuse('CACHED_NATIVE_ORIGINAL_MODE_COLLISION');
+  }
   if (coldRequested && (!coldPath || !coldSha256 || epochRequested || checkpointOnly
     || stateLessRecovery || !baselineRequired || !retainCommittedRaw)) {
     refuse('CURRENT_FAMILY_COLD_START_MODE_COLLISION');
@@ -1008,7 +1054,8 @@ async function main() {
   } else if (retainCommittedRaw && !checkpointOnly && baselineRequired && epochView === null && !stateLessRecovery) {
     currentHistoryFailurePhase='COMMITTED_RAW_RETENTION';
     demand.schemaVersion = 2;
-    demand.rawRetention = await readCommittedRawCurrentRetention(registry.json, checkpointFile, productionReferenceAt);
+    demand.rawRetention = await readCommittedRawCurrentRetention(registry.json, checkpointFile, productionReferenceAt,
+      prepareCachedNativeOriginals);
   }
   // Existing private .cache only; no directory creation, original rewrite,
   // provider operation, public artifact, checkpoint save or state promotion.
@@ -1097,6 +1144,22 @@ export async function describeRavScoreCurrentHistoryFailure(error,phase='UNKNOWN
           &&relative==='scripts/lib/post-h0-dmi-original-dependencies.mjs'
           &&result.frame.sha256==='a49ea641f76af721c43a13a091aa102e0904a3730803859d7c5f5e29e7c516bc'
           &&at===18)result.code=originalDependencyCode;
+        // Diagnostic-only closed work/decode/reprojection codes. The first
+        // qualified frame and original Error remain intact if classification fails.
+        try {
+          const coherentFrames=new Map([
+            ['scripts/prepare-cached-coherent-current-work.mjs','1bdab356610e089958d1408f7d68acc1518005f27c1012116c05dd1c857cab9b'],
+            ['scripts/lib/prove-cached-coherent-current-originals.mjs','eea3a889a2ae3140a406735b5e7fe4a174c62b7ee72ab425834c1baf2588e26f'],
+            ['scripts/lib/reproject-coherent-current-originals.mjs','616d5fae83eefe561b52b0b5ecb8e0b0691beda356f8819d7bfab283cc77cb65'],
+          ]);
+          if(result.code==='RAVSCORE_CURRENT_HISTORY_DEMAND_REFUSED'
+            &&result.phase==='COMMITTED_RAW_RETENTION'&&prototype===Error.prototype
+            &&coherentFrames.get(relative)===result.frame.sha256){
+            const {coherentCurrentWorkFailureCode}=await import('./prepare-cached-coherent-current-work.mjs');
+            const code=coherentCurrentWorkFailureCode(error);
+            if(code!=='COHERENT_CURRENT_CACHED_PROOF_UNCLASSIFIED')result.code=code;
+          }
+        }catch{} // An unknown classifier never hides/replaces the actual first frame.
         break;
       }catch{} // Unknown frame stays unknown; diagnostic I/O cannot replace the failure.
     }

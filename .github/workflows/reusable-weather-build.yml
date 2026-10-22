@@ -1404,6 +1404,12 @@ jobs:
           const store = await inspectDmiForecastFile('data/live/dmi-forecast-cache.json');
           const manifest = JSON.parse(fs.readFileSync(
             (process.env.RAVRADAR_WEATHER_STATE_EPOCH_ORIGINAL_BUNDLE || process.env.RAVRADAR_NATIVE_IDENTITY_ORIGINAL_BUNDLE || process.env.RAVRADAR_PRIVATE_RUNTIME_BUNDLE) + '/manifest.json', 'utf8'));
+          // Schema is an ordinary work selector only; never an original-proof/PASS marker.
+          const continuitySchema = store.continuity?.metadata.schemaVersion;
+          if (store.hasPartContinuity && continuitySchema !== 1 && continuitySchema !== 2) {
+            throw new Error('Unknown DMI PART continuity schema');
+          }
+          fs.appendFileSync(process.env.GITHUB_OUTPUT, `continuity_schema=${continuitySchema ?? ''}\n`);
           if (store.hasPartContinuity) {
             fs.appendFileSync(process.env.GITHUB_OUTPUT, 'required=false\n');
           } else if (manifest.productionReferenceAt === '2026-09-27T02:00:00.000Z') {
@@ -2270,7 +2276,7 @@ jobs:
       - name: Plan bounded current history from the actual selected continuation
         id: current-history-demand
         if: inputs.completed_private_runtime != true && (steps.preflight.outputs.should_run == 'true' && steps.weather-source-handoff.outputs.reused != 'true' && (steps.operational-action.outputs.action == 'integrated' || steps.operational-action.outputs.action == 'integrated-historical-maintenance') && steps.historical-wave-transition.outputs.required != 'true')
-        run: node scripts/plan-ravscore-current-history.mjs --retain-committed-raw
+        run: node scripts/plan-ravscore-current-history.mjs --retain-committed-raw ${{ steps.dmi-part-continuity-donor.outputs.continuity_schema == '1' && steps.private-runtime-install.outcome == 'success' && steps.operational-model.outputs.model == 'integrated' && steps.operational-model.outputs.binding_current == 'true' && steps.operational-action.outputs.action == 'integrated' && steps.legacy-bootstrap.outputs.stateless_integrated_recovery != 'true' && inputs.completed_private_runtime != true && inputs.completed_private_runtime_pin == '' && inputs.completed_stage_source == '' && inputs.checkpoint_only != true && inputs.quick_confirmation != true && inputs.quick_progress_source == '' && inputs.current_family_cold_start != true && inputs.weather_state_epoch_bootstrap != true && inputs.weather_state_epoch_checkpoint_reentry != true && inputs.weather_state_epoch_raw_cache_key == '' && inputs.weather_state_epoch_archive_key == '' && inputs.weather_state_epoch_archive_catalog_sha256 == '' && inputs.native_sampling_identity_original_recovery != true && inputs.ravscore_integrated_weather_handoff_run_id == '' && inputs.produce_weather_handoff != true && inputs.ravscore_integrated_first_cutover != true && inputs.ravscore_integrated_return != true && (inputs.ravscore_candidate_g_rollback_mode == '' || inputs.ravscore_candidate_g_rollback_mode == 'none') && '--prepare-cached-native-originals' || '' }}
         env:
           RAVRADAR_R2_ACCOUNT_ID: ${{ (inputs.weather_state_epoch_bootstrap || inputs.current_family_cold_start) && secrets.RAVRADAR_R2_ACCOUNT_ID || '' }}
           RAVRADAR_R2_ACCESS_KEY_ID: ${{ (inputs.weather_state_epoch_bootstrap || inputs.current_family_cold_start) && secrets.RAVRADAR_R2_ACCESS_KEY_ID || '' }}

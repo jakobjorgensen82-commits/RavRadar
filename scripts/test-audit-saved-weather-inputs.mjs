@@ -27,7 +27,8 @@ import { buildIntegratedPartScoreSeries } from './lib/ravscore-integrated-runtim
 import { discoverCommittedCoherentOriginalBootstrap } from './lib/coherent-current-original-bootstrap.mjs';
 import { inverseCurrent586EndpointDiagnosticTestInput, CURRENT586_ENDPOINT_DIAGNOSTIC_TEST_REVIEW,
   inverseCurrent586IdentityRefinementTestInput, CURRENT586_IDENTITY_REFINEMENT_TEST_REVIEW,
-  inverseCurrent586SharedProjectionExportTestInput, CURRENT586_SHARED_PROJECTION_EXPORT_TEST_REVIEW } from './lib/alternative-c-caller-test-input.mjs';
+  inverseCurrent586SharedProjectionExportTestInput, CURRENT586_SHARED_PROJECTION_EXPORT_TEST_REVIEW,
+  inverseNationalCoherentWorkTestInput } from './lib/alternative-c-caller-test-input.mjs';
 import { buildCurrentSupplyMemory } from '../js/core/ravscore-current-supply-memory.js';
 import { spawnSync } from 'node:child_process';
 import { summarizeSealedCurrentPart, summarizeSealedCurrentNationalParts, validateSealedCurrentSourceTarget,
@@ -1530,21 +1531,21 @@ test('CURRENT586 fixed B-only endpoint diagnostic observes role evidence without
   assert.equal(JSON.stringify([...options.persistedHourlyByPart]), beforePersisted);
   const cleanup = auditSource.match(/    if \(work && !includeCurrent586Endpoints && \(baselinePackInvocation === null[\s\S]+?await fs\.rm\(work, \{ recursive: true, force: true \}\)\.catch\(\(\) => \{\}\);/)?.[0];
   assert(cleanup, 'qualify the actual new-mode finalizer, not a copied predicate');
-  for (const includeCurrent586Endpoints of [true, false]) {
+  for (const [includeCurrent586Endpoints, prepareCurrent586Originals] of [[true, false], [false, false], [false, true]]) {
     let removals = 0;
     const privateRoot = path.join(os.tmpdir(), 'synthetic-unclosed-audit');
     const firstError = new Error('synthetic-first-error');
     const scope = { work: path.join(privateRoot, 'saved-input-audit-owned'), privateRoot, path,
-      includeCurrent586Endpoints, includeCurrent586CachedOriginals: false, baselinePackInvocation: null,
+      includeCurrent586Endpoints, includeCurrent586CachedOriginals: false, prepareCurrent586Originals, baselinePackInvocation: null,
       privateWeatherPackJsonReadsClosed: () => false, firstError,
       fs: { realpath: async () => privateRoot, rm: async () => { removals++; } } };
     await assert.rejects(vm.runInNewContext('(async () => { try { throw firstError; } finally {' + cleanup + '} })()', scope),
       error => error === firstError, 'unknown close/cleanup cannot replace the original failure');
-    assert.equal(removals, includeCurrent586Endpoints ? 0 : 1,
+    assert.equal(removals, includeCurrent586Endpoints || prepareCurrent586Originals ? 0 : 1,
       'new-mode uncertain work is retained; old mode behavior is unchanged');
   }
   const row = CURRENT586_ENDPOINT_DIAGNOSTIC_TEST_REVIEW;
-  const exportedWhole = (await fs.readFile(new URL('./plan-ravscore-current-history.mjs', import.meta.url), 'utf8')).replace(/\r\n/g, '\n');
+  const exportedWhole = inverseNationalCoherentWorkTestInput((await fs.readFile(new URL('./plan-ravscore-current-history.mjs', import.meta.url), 'utf8')).replace(/\r\n/g, '\n'), row.path);
   const sharedExports = CURRENT586_SHARED_PROJECTION_EXPORT_TEST_REVIEW;
   assert.equal(Buffer.byteLength(exportedWhole), sharedExports.after.bytes);
   assert.equal(crypto.createHash('sha256').update(exportedWhole).digest('hex'), sharedExports.after.sha256);
@@ -1671,4 +1672,60 @@ test('CURRENT586 cached originals: exact worker refusal codes survive without ra
   await assert.rejects(vm.runInNewContext('(async () => { try { throw firstError; } finally {' + cleanup + '} })()', scope),
     error => error === firstError);
   assert.equal(removals, 0, 'unknown CURRENT worker/read ownership must not be discarded');
+});
+
+test('CURRENT586 restoration S facade: fixed checkpoint GET is default OFF',async()=>{
+  const query='?document_key=eq.ravscore-continuation-checkpoint&select=document_key,payload,version&limit=2';
+  let requested=0;
+  for(const includeCurrent586Checkpoint of [undefined,false]){
+    const clients=createReadOnlySavedWeatherClients({...credentials,includeCurrent586Checkpoint,
+      fetchImpl:async()=>{requested++;return Response.json([]);}});
+    await assert.rejects(clients.request(query),/REMOTE_TARGET_FORBIDDEN/);
+  }
+  assert.throws(()=>createReadOnlySavedWeatherClients({...credentials,includeCurrent586Checkpoint:'true',
+    fetchImpl:async()=>{requested++;return Response.json([]);}}),/READ_CREDENTIALS_UNAVAILABLE/);
+  assert.equal(requested,0);
+});
+
+test('CURRENT586 restoration S facade: only explicit fixed GET key and shape reach transport',async()=>{
+  const query='?document_key=eq.ravscore-continuation-checkpoint&select=document_key,payload,version&limit=2';
+  const expected=credentials.supabaseUrl+'/rest/v1/admin_documents'+query,calls=[];
+  const rows=[{document_key:'ravscore-continuation-checkpoint',payload:{synthetic:true},version:7}];
+  const clients=createReadOnlySavedWeatherClients({...credentials,includeCurrent586Checkpoint:true,
+    fetchImpl:async(url,options)=>{calls.push({url,method:options.method,redirect:options.redirect});return Response.json(rows);}});
+  assert.deepEqual(await clients.request(query),rows);
+  assert.deepEqual(calls,[{url:expected,method:'GET',redirect:'error'}]);
+  for(const target of [
+    expected.replace('storage.example.test','other.example.test'),expected+'&extra=true',expected+'&limit=2',
+    expected.replace('document_key,payload,version','document_key,version'),expected.replace('limit=2','limit=3'),
+    expected.replace('eq.ravscore-continuation-checkpoint','eq.another-checkpoint')]){
+    await assert.rejects(clients.guardedFetch(target),/REMOTE_TARGET_FORBIDDEN/);
+  }
+  await assert.rejects(clients.guardedFetch(expected,{method:'HEAD'}),/REMOTE_TARGET_FORBIDDEN/);
+  for(const method of ['POST','PUT','PATCH','DELETE'])await assert.rejects(clients.guardedFetch(expected,{method}),/REMOTE_WRITE_FORBIDDEN/);
+  await assert.rejects(clients.guardedFetch(expected,{body:'forbidden'}),/REMOTE_WRITE_FORBIDDEN/);
+  await assert.rejects(clients.storage.uploadImmutable(),/REMOTE_WRITE_FORBIDDEN/);
+  assert.equal(calls.length,1);
+});
+
+test('CURRENT586 restoration S facade: actual normal checkpoint body and shared request budgets stay bounded',async()=>{
+  const {PROTECTED_RAVSCORE_CHECKPOINT_RESTORE_MAXIMUM_RESPONSE_BYTES:maximum}=await import('./protected-ravscore-continuation-checkpoint.mjs');
+  assert.ok(maximum>2*1024*1024);
+  const query='?document_key=eq.ravscore-continuation-checkpoint&select=document_key,payload,version&limit=2';
+  const rows=[{document_key:'ravscore-continuation-checkpoint',payload:{padding:'x'.repeat(2*1024*1024)},version:7}];
+  const positive=createReadOnlySavedWeatherClients({...credentials,includeCurrent586Checkpoint:true,
+    fetchImpl:async()=>Response.json(rows)});
+  const actual=await positive.request(query);
+  assert.equal(actual[0].payload.padding.length,2*1024*1024);assert.equal(actual[0].version,7);
+  let requests=0;
+  const tooLarge=createReadOnlySavedWeatherClients({...credentials,includeCurrent586Checkpoint:true,
+    fetchImpl:async()=>{requests++;return new Response('{}',{headers:{'content-length':String(maximum+1)}});}});
+  await assert.rejects(tooLarge.request(query),/REMOTE_BODY_BOUND/);assert.equal(requests,1);
+  const onlyOnce=createReadOnlySavedWeatherClients({...credentials,includeCurrent586Checkpoint:true,maximumRequests:1,
+    fetchImpl:async()=>Response.json([])});
+  await onlyOnce.request(query);await assert.rejects(onlyOnce.request(query),/REMOTE_READ_BOUND/);
+  let now=0;
+  const timed=createReadOnlySavedWeatherClients({...credentials,includeCurrent586Checkpoint:true,
+    maximumMilliseconds:1000,clock:()=>now,fetchImpl:async()=>{now+=600;return Response.json([]);}});
+  await timed.request(query);await assert.rejects(timed.request(query),/REMOTE_READ_BOUND/);
 });

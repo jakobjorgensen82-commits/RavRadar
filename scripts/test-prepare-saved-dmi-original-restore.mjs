@@ -577,3 +577,62 @@ test('normal selected qualified same-original successor is not a missing-origina
   assert.equal(measured.rawFilesOpened, false);
   assert.doesNotMatch(JSON.stringify(measured), /SYNTHETIC|partId|currentUMps|currentVMps|itemId|Sha256|samplingPoint|nativeRows/);
 });
+
+function current586PlanFixture(){
+  const p={sourceHead:'94b2b6173747b9d1f7d261c5110042a657af0cac',
+    bundleContentSha256:'e9e7b9327df875133b7c2c00ef6440bc411ef2178a9edf9d6cb1ba1a3e7555c3',
+    modelBinding:{modelBundleSha256:'6d8f7cca203b5f7ee5155f3c0cdb39403a02fd0eb30fecaca5070ef9f814a805'},
+    expectedPartCount:673,expectedZoneCount:210,datasetId:'rr-synthetic-current586',
+    productionReferenceAt:'2026-10-21T02:00:00.000Z',generatedAt:'2026-10-21T02:01:00.000Z'};
+  const privateBinding={datasetId:p.datasetId,committedReferenceAt:p.productionReferenceAt,
+    targetReferenceAt:'2026-10-21T20:00:00.000Z',bundleContentSha256:p.bundleContentSha256,
+    conditionsSha256:'1'.repeat(64),checkpointGenerationSha256:'2'.repeat(64)};
+  const capture={collection:'dkss_nsbs',modelRun:'2026-10-21T00:00:00Z',validTime:'2026-10-21T01:00:00Z',
+    itemId:'synthetic-current-original',assetIdentitySha256:'3'.repeat(64),assetSizeBytes:8,
+    acquiredAt:'2026-10-21T00:10:00Z',contentLengthBytes:8,contentSha256:'4'.repeat(64),
+    itemCreatedAt:null,itemUpdatedAt:null};
+  const discoveries=Array.from({length:673},(_,index)=>({partId:'synthetic-part-'+index,result:{
+    summary:{status:index?'NO_BOOTSTRAP_REQUIRED':'METADATA_BOUND',counts:{partsVisited:1}},privateBinding,
+    privateRequests:index?[]:[{partId:'synthetic-part-0',capture,
+      selectionReferences:[{rowTime:'2026-10-21T03:00:00.000Z',sourceSha256:'5'.repeat(64),tupleSha256:'6'.repeat(64)}]}]}}));
+  const checkpoint={generationSha256:privateBinding.checkpointGenerationSha256};
+  return {source:p,privateBinding,discoveries,remoteCheckpoint:checkpoint,derivedCheckpoint:structuredClone(checkpoint),
+    remoteCheckpointVersion:7,executionHead,nonce:'a'.repeat(32)};
+}
+test('CURRENT586 exact restoration: full current B/S plan is not a failed-run progress checkpoint',async()=>{
+  const {buildCurrent586ExactOriginalPlan,validateCurrent586ExactOriginalPlan}=await import('./lib/current586-exact-original-plan.mjs');
+  const input=current586PlanFixture(),before=structuredClone(input),plan=buildCurrent586ExactOriginalPlan(input);
+  assert.deepEqual(input,before);assert.equal(plan.originals.length,1);assert.equal(plan.binding.partCount,673);
+  assert.equal(Object.hasOwn(plan.binding,'progressCacheKey'),false);
+  assert.equal(Object.hasOwn(plan.binding,'progressSource'),false);
+  assert.equal(plan.binding.failedRun,'39666991481');assert.equal(plan.binding.remoteCheckpointVersion,7);
+  assert.equal(validateCurrent586ExactOriginalPlan(plan,executionHead),plan);
+  for(const mutate of [
+    value=>value.binding.sourceHead='a'.repeat(40),value=>value.binding.protectedBundleSha256='b'.repeat(64),
+    value=>value.binding.modelBundleSha256='c'.repeat(64),value=>value.binding.targetReferenceAt='2026-10-21T21:00:00.000Z',
+    value=>value.binding.progressCacheKey='weather-private-progress-encrypted-v2-Linux-main-39666991481-1',
+    value=>value.binding.remoteCheckpointVersion=0,value=>value.binding.executionHead='d'.repeat(40)]){
+    const wrong=structuredClone(plan);mutate(wrong);assert.throws(()=>validateCurrent586ExactOriginalPlan(wrong,executionHead));
+  }
+});
+test('CURRENT586 exact restoration: remote S parity and whole673 metadata are required',async()=>{
+  const {buildCurrent586ExactOriginalPlan}=await import('./lib/current586-exact-original-plan.mjs');
+  for(const mutate of [
+    value=>value.remoteCheckpoint.generationSha256='f'.repeat(64),value=>value.discoveries.pop(),
+    value=>value.discoveries[1].partId=value.discoveries[0].partId,
+    value=>value.discoveries[1].result.summary.status='UNRESOLVED',
+    value=>value.discoveries[1].result.privateBinding={...value.privateBinding,conditionsSha256:'f'.repeat(64)}]){
+    const input=current586PlanFixture();mutate(input);assert.throws(()=>buildCurrent586ExactOriginalPlan(input));
+  }
+});
+test('CURRENT586 exact restoration: full11 capture dedup preserves independent acquisition',async()=>{
+  const {buildCurrent586ExactOriginalPlan}=await import('./lib/current586-exact-original-plan.mjs');
+  const input=current586PlanFixture(),request=input.discoveries[0].result.privateRequests[0];
+  input.discoveries[0].result.privateRequests.push(structuredClone(request));
+  assert.equal(buildCurrent586ExactOriginalPlan(input).originals.length,1);
+  input.discoveries[0].result.privateRequests[1].capture.acquiredAt='2026-10-21T00:11:00Z';
+  const plan=buildCurrent586ExactOriginalPlan(input);
+  assert.equal(plan.originals.length,2);assert.deepEqual(plan.originals.map(value=>value.acquiredAt),
+    ['2026-10-21T00:10:00Z','2026-10-21T00:11:00Z']);
+  assert.equal(input.discoveries[0].result.privateRequests[0].capture.acquiredAt,'2026-10-21T00:10:00Z');
+});

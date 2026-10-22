@@ -29,6 +29,7 @@ SAVED_MAX_REFERENCES = 2 * 673 * 121
 HISTORY_SCOPE = "BEFORE_RETENTION_COHERENT_MISSING_ENDPOINT_METADATA_ONLY"
 SAVED_SCOPE = "BEFORE_RETENTION_AND_EXACT_SAVED_PART_FORECAST_121_METADATA_ONLY"
 SAVED_ROLE = "saved-private-part-forecast-121-proof-only"
+DISTINCT_READ_CAPTURE_MODE = "AUTHENTICATED_ORIGINAL_WITH_DISTINCT_MEASURED_READ_CAPTURE"
 MAX_CAPTURES = 4096
 MAX_SECONDS = 600
 SHA = re.compile(r"[a-f0-9]{64}")
@@ -101,7 +102,15 @@ def read_inputs(producer, expected_sha):
         refuse("REQUEST_CHANGED")
     document = json.loads(raw, object_pairs_hook=producer._exact_unique_fields,
                           parse_constant=lambda _value: refuse("REQUEST_INVALID"))
-    if not isinstance(document, dict) or set(document) != {"summary", "privateBinding", "privateRequests"}:
+    if not isinstance(document, dict):
+        refuse("REQUEST_INVALID")
+    capture_mode = document.get("captureMode")
+    expected_keys = {"summary", "privateBinding", "privateRequests"}
+    if capture_mode is not None:
+        if capture_mode != DISTINCT_READ_CAPTURE_MODE:
+            refuse("REQUEST_INVALID")
+        expected_keys.add("captureMode")
+    if set(document) != expected_keys:
         refuse("REQUEST_INVALID")
     summary, binding, requests = (document[key] for key in ("summary", "privateBinding", "privateRequests"))
     if not isinstance(summary, dict) or summary.get("scope") not in (HISTORY_SCOPE, SAVED_SCOPE):
@@ -186,6 +195,8 @@ def read_inputs(producer, expected_sha):
                 refuse("REQUEST_INVALID")
         key = json.dumps(capture, sort_keys=True, separators=(",", ":"))
         job = jobs.setdefault(key, {"capture": capture, "requests": [], "zones": {}})
+        if capture_mode is not None:
+            job["captureMode"] = capture_mode
         job["requests"].append(request)
         job["zones"][part_id] = zone
         if len(jobs) > MAX_CAPTURES:
@@ -209,6 +220,13 @@ def raw_inventory(producer, jobs):
         refuse("MANIFEST_INVALID")
     wanted = {json.dumps(job["capture"], sort_keys=True, separators=(",", ":")): job for job in jobs}
     by_official_identity = {}
+    distinct_by_official = {}
+    for job in jobs:
+        if job.get("captureMode") == DISTINCT_READ_CAPTURE_MODE:
+            official = producer._raw_current_capture_key(job["capture"])
+            if official is None:
+                refuse("CAPTURE_INVALID")
+            distinct_by_official.setdefault(official, []).append(job)
     for name, asset in manifest["assets"].items():
         if not isinstance(asset, dict):
             continue
@@ -221,27 +239,38 @@ def raw_inventory(producer, jobs):
                               sort_keys=True, separators=(",", ":"))
         by_official_identity.setdefault(official, []).append(capture)
         key = json.dumps(capture, sort_keys=True, separators=(",", ":"))
-        if key not in wanted:
-            continue
-        job = wanted[key]
-        href = asset.get("canonicalHref")
-        if (not isinstance(name, str) or not isinstance(href, str)
-                or producer.asset_identity_sha256(href) != capture["assetIdentitySha256"]
-                or producer.cached_asset_path(href).name != name
-                or Path(name).name != name or name in (".", "..")):
-            refuse("RAW_MANIFEST_BINDING_INVALID")
-        if "path" in job:
-            refuse("RAW_CAPTURE_AMBIGUOUS")
-        path = producer.RAW_DIR / name
-        try:
-            info = path.lstat()
-        except FileNotFoundError:
-            refuse("RAW_CAPTURE_FILE_MISSING")
-        if not stat.S_ISREG(info.st_mode) or info.st_nlink != 1 or info.st_size != capture["contentLengthBytes"]:
-            refuse("RAW_FILE_INVALID")
-        if info.st_size > producer.MAX_DOWNLOAD_BYTES:
-            refuse("RAW_FILE_BOUND")
-        job["path"] = path
+        matching = [wanted[key]] if key in wanted else []
+        # Explicit caller mode only. DEFAULT still requires all eleven fields.
+        # Reuse the normal legacy identity key and exact capture comparator;
+        # no prefix, "latest", partial capture or unknown extra field may join.
+        for job in distinct_by_official.get(producer._raw_current_capture_key(capture), []):
+            if all(job is not other for other in matching):
+                matching.append(job)
+        for job in matching:
+            distinct = job.get("captureMode") == DISTINCT_READ_CAPTURE_MODE
+            if distinct and not producer._exact_same_capture(capture, job["capture"]):
+                refuse("OWNED_CAPTURE_MISMATCH")
+            href = asset.get("canonicalHref")
+            if (not isinstance(name, str) or not isinstance(href, str)
+                    or producer.asset_identity_sha256(href) != capture["assetIdentitySha256"]
+                    or producer.cached_asset_path(href).name != name
+                    or Path(name).name != name or name in (".", "..")):
+                refuse("RAW_MANIFEST_BINDING_INVALID")
+            if "path" in job:
+                refuse("RAW_CAPTURE_AMBIGUOUS")
+            path = producer.RAW_DIR / name
+            try:
+                info = path.lstat()
+            except FileNotFoundError:
+                refuse("RAW_CAPTURE_FILE_MISSING")
+            if not stat.S_ISREG(info.st_mode) or info.st_nlink != 1 or info.st_size != capture["contentLengthBytes"]:
+                refuse("RAW_FILE_INVALID")
+            if info.st_size > producer.MAX_DOWNLOAD_BYTES:
+                refuse("RAW_FILE_BOUND")
+            job["path"] = path
+            if distinct:
+                # Truthful observed manifest capture, NEVER copied onto the old request.
+                job["transportCapture"] = copy.deepcopy(capture)
     for job in jobs:
         if "path" not in job:
             official = json.dumps({key: value for key, value in job["capture"].items() if key != "acquiredAt"},
@@ -285,6 +314,31 @@ def decoded_row_matches(producer, request, point, row):
     return True
 
 
+def distinct_read_original_row(producer, request, point, row, transport_capture):
+    """Two complete captures; only ORIGINAL acquisition metadata is reconstructed.
+
+    The actual row first passes the unchanged CURRENT matcher against its actual
+    read capture. Only a detached original row may then use the B-authenticated
+    old acquiredAt. Both complete captures leave together; RAW stays untouched.
+    """
+    original_capture = request["capture"]
+    if (producer.canonical_current_source_asset(transport_capture) != transport_capture
+            or producer.canonical_current_source_asset(original_capture) != original_capture
+            or not producer._exact_same_capture(transport_capture, original_capture)
+            or request["nativeStep"].get("acquiredAt") != original_capture["acquiredAt"]):
+        return None
+    read_request = copy.deepcopy(request)
+    read_request["capture"] = copy.deepcopy(transport_capture)
+    read_request["nativeStep"]["acquiredAt"] = transport_capture["acquiredAt"]
+    if not decoded_row_matches(producer, read_request, point, row):
+        return None
+    original = copy.deepcopy(row)
+    original["sources"]["current"]["acquiredAt"] = original_capture["acquiredAt"]
+    if not decoded_row_matches(producer, request, point, original):
+        return None
+    return original
+
+
 def decode(producer, jobs, started):
     header = {"currentVectorSemanticsVersion": producer.CURRENT_VECTOR_SEMANTICS_VERSION,
               "currentVectorSelection": producer.CURRENT_VECTOR_SELECTION,
@@ -293,6 +347,17 @@ def decode(producer, jobs, started):
     for job in jobs:
         check_budget(started)
         capture = job["capture"]
+        capture_mode = job.get("captureMode")
+        if capture_mode not in (None, DISTINCT_READ_CAPTURE_MODE):
+            refuse("REQUEST_INVALID")
+        distinct = capture_mode == DISTINCT_READ_CAPTURE_MODE
+        if distinct and "transportCapture" not in job:
+            refuse("RAW_ACQUISITION_UNRESOLVED")
+        transport_capture = job["transportCapture"] if distinct else capture
+        if distinct and (producer.canonical_current_source_asset(capture) != capture
+                or producer.canonical_current_source_asset(transport_capture) != transport_capture
+                or not producer._exact_same_capture(transport_capture, capture)):
+            refuse("OWNED_CAPTURE_MISMATCH")
         collection, run, valid = (capture[key] for key in ("collection", "modelRun", "validTime"))
         zones = [job["zones"][key] for key in sorted(job["zones"])]
         document = {**header, "zones": {zone["id"]: {
@@ -313,16 +378,19 @@ def decode(producer, jobs, started):
             for request in job["requests"]:
                 point = stage["zones"].get(request["identity"]["entityId"])
                 row = (point.get("hourly") or {}).get(valid) if isinstance(point, dict) else None
-                if not decoded_row_matches(producer, request, point, row):
+                if distinct:
+                    if distinct_read_original_row(producer, request, point, row, transport_capture) is None:
+                        return False
+                elif not decoded_row_matches(producer, request, point, row):
                     return False
             return True
 
         with producer._grib_read_scope(job["path"], collection, run, valid) as reader:
             observed = producer.canonical_current_source_asset({
                 "collection": collection, "modelRun": run, "validTime": valid, **dict(reader.capture or {})})
-            if observed != capture:
+            if observed != transport_capture:
                 refuse("OWNED_CAPTURE_MISMATCH")
-            producer._exact_original_headers(reader, capture)  # every field, full EOF
+            producer._exact_original_headers(reader, transport_capture)  # every field, full EOF
             reader.handle.seek(0)
             reader.check()
             outcome = producer.process_grib_transactionally(
@@ -332,7 +400,7 @@ def decode(producer, jobs, started):
                 current_stage_validator=validate,
                 validation_error="COHERENT_CURRENT_ORIGINAL_DECODE_MISMATCH",
                 _owned_read=reader)
-            if outcome[2] or reader.handle.tell() != capture["contentLengthBytes"]:
+            if outcome[2] or reader.handle.tell() != transport_capture["contentLengthBytes"]:
                 refuse("EOF_UNPROVED")
             reader.check()
         # The outer owner must physically close, not just leave the nested
@@ -344,12 +412,21 @@ def decode(producer, jobs, started):
         for request in job["requests"]:
             point = document["zones"][request["identity"]["entityId"]]
             row = point["hourly"][valid]
-            if not decoded_row_matches(producer, request, point, row):
-                refuse("DECODE_CHANGED")
-            contexts.append({"requestId": request["requestId"], "partId": request["partId"],
-                             "header": copy.deepcopy(header),
-                             "identity": {key: copy.deepcopy(point[key]) for key in IDENTITY_KEYS},
-                             "row": copy.deepcopy(row), "capture": copy.deepcopy(capture)})
+            if distinct:
+                original_row = distinct_read_original_row(producer, request, point, row, transport_capture)
+                if original_row is None:
+                    refuse("DECODE_CHANGED")
+            else:
+                if not decoded_row_matches(producer, request, point, row):
+                    refuse("DECODE_CHANGED")
+                original_row = copy.deepcopy(row)
+            original = {"requestId": request["requestId"], "partId": request["partId"],
+                        "header": copy.deepcopy(header),
+                        "identity": {key: copy.deepcopy(point[key]) for key in IDENTITY_KEYS},
+                        "row": original_row, "capture": copy.deepcopy(capture)}
+            if distinct:
+                original["transportCapture"] = copy.deepcopy(transport_capture)
+            contexts.append(original)
         completed += 1
     return contexts, completed
 
@@ -420,6 +497,9 @@ def main(argv):
                "privateBinding": binding, "requestSha256": argv[1],
                "captureCount": capture_count, "privateOriginals": contexts,
                "nativeAdmissionPerformed": False}
+    capture_mode = jobs[0].get("captureMode")
+    if capture_mode is not None:
+        payload["captureMode"] = capture_mode
     summary = publish_private_exclusive(producer, payload)
     print(json.dumps(summary, sort_keys=True))
     return 0
