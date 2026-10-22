@@ -1,3 +1,7 @@
+## 22. oktober — næste P0-leverance er beviselig originalgenopbygning
+
+Den faktiske afgrænsede observation og lokalt målprøvede wire-/native-identitetsopdeling er delgrundlag, ikke færdiggørelse. Luk præcise capture-/RAW-/normaldekoder-/reprojektionskrav uden nye prioritetskandidater, talændringer, nulstilling eller lempet originaladmission; lever derefter sikkert og verificér en almindelig ny offentlig generation og dens efterfølger. Genbrug faktisk evidens og undgå gentagne fuldprøver uden ændrede forudsætninger. Alle fem hovedmål forbliver åbne til 18. november 2026.
+
 ## 17. oktober — 4.0.580: fysisk lukning og en anden gyldig filtype
 
 Den seneste præcise kildekontrol bestod PostgreSQL, men fejlede i én af 58 normale kommandogrupper ved pakkens B/S-rundtur. Observationen viste en anden gyldig, ikke-almindelig filtype efter lukning; det beviser hverken en konkret mappe eller en læk. Den tidlige isolerede prøve genfandt ikke fejlen. De senere baseline-, kapacitets- og trækontroller blev ikke kørt, og der kom intet leveringsartifact.

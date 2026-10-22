@@ -14,6 +14,8 @@ Den supplerende læsning må kun bruge de to fastlagte DMI-ledsagere fra den aut
 
 Når en kontrol af gemte originaler stopper, skal undersøgelsen bruge netop den pakke og mål-time, som faktisk indgik. Et gammelt fremdriftscheckpoint må ikke bruges som erstatning, hvis det ikke blev genbrugt. En skrivefri undersøgelse kan skelne mellem et manglende originalpunkt og en læser, der ikke har fået den rette gemte kilde. Den må hverken godkende nye vejrdata, ændre de gemte tal eller springe en normal sikkerhedskontrol over. Resultatet er årsagsgrundlag, ikke en færdig rettelse.
 
+Et strømtrin med samme tidspunkt er ikke nødvendigvis den samme original. Modelkørsel, datakilde, gitter, sted og dybde skal også stemme. Den interne undersøgelse må kun vise faste fejlkategorier, ikke private strømværdier eller identiteter. Flere kategorier kan gælde samtidig. En forskel mellem to slags kontrolsummer er heller ikke i sig selv bevis for et forkert kystpunkt; sammenligningen skal bruge den samme normale beregning på begge sider.
+
 Fungerende lagring er ikke det samme som komplette eller aktuelle vejrdata. Datakvalitet, dækning og historikkens længde vurderes særskilt. Manglende data skal fortsat vises ærligt og må ikke udfyldes med gæt. Private data og adgangsoplysninger må ikke følge den offentlige visning.
 
 ## 89.260 Gem arbejdet sikkert, også når måneden skifter

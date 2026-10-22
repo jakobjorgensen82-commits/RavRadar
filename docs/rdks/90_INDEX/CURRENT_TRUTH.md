@@ -1,3 +1,13 @@
+## 22. oktober — afgrænset observation gennemført; originalgenopbygning fortsat åben
+
+Den efterfølgende lokale observation kan desuden undersøge første fejl-kystdels egne fulde filoplysninger gennem de uændrede normale delprojektioner. Det er kun metadata: ingen RAW-fil åbnes, ingen originalbank bygges, og manglende eller tvetydige oplysninger giver ingen delvise dekoderopgaver. Hele det eksisterende post-H0-mål består lokalt med 23 prøver uden fejl eller skip; kilde-CI og faktisk aflæsning af fejlpakkens nye detaljer er fortsat åbne.
+
+Den skrivefri CURRENT586-undersøgelse er faktisk gennemført gennem den præcist kildekvalificerede kode. Den første observerede afvisning vedrører en bevaret korrigeret strømselektions manglende præcise native-original blandt de leverede kontekster; et andet gyldigt native-trin på samme tidspunkt beviser ikke den valgte original. Fysisk RAW-fravær og den fulde almindelige fejlkæde er fortsat uafklarede. Detaljer og faktisk scope står i det private checkpoint.
+
+Den lokale diagnoseforfining opdeler nu wire-identitet og den normale native-comparators feltgrupper uden værdier eller identiteter. Flere kategorier kan overlappe; de er ikke entydige årsager eller nye originalbeviser. Pilotens mål-fingerprint beregnes med den eksisterende normale Python-projektion, ikke hele registrets JSON-hash. En tidligere falsk sammenligning må ikke bruges som bevis for forkert geometri eller ugyldigt regionalt scope.
+
+De afgrænsede diagnose-/fingerprintprøver og det eksisterende kildeorakel består lokalt. Ingen ny version, modelbinding, SQL, numerisk admission eller vejrlevering er gennemført. En minimal genopbygning fra præcise gemte originaler undersøges; gamle originaler, historik, kildeprioritet, adminpunkter og alle normale før-score-kontroller bevares. Ingen ny nulstilling eller coherent-bypass. Alle fem hovedmål er fortsat åbne til 18. november 2026.
+
 ## 21. oktober — 4.0.586 faktisk installeret; almindelig efterfølger fejler fortsat før hentning
 
 De daterede afventninger om ukendt underkode nedenfor er historiske. ROOTs ene P0-linje er den aktuelle driftsstatus; lokale komponentprøver er ikke ny offentlig levering.

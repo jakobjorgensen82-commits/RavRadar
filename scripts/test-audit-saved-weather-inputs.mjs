@@ -17,12 +17,15 @@ import { buildPrivateWeatherComponentPack } from './lib/private-weather-componen
 import { weatherComponentProgressCache, WEATHER_PROGRESS_CIPHER_PATH } from './weather-component-progress-cache.mjs';
 import { inspectDmiForecastFile } from './lib/dmi-forecast-file.mjs';
 import { packDmiPartContinuity } from './lib/dmi-part-continuity.mjs';
-import { DMI_FORECAST_HOURS, buildDmiForecastHourly, inspectDmiNativeGridSampling } from './lib/dmi-forecast-store.mjs';
-import { dmiExpectedIdentityForPart } from './lib/ravscore-production-adapters.mjs';
+import { DMI_FORECAST_HOURS, buildDmiForecastHourly, inspectDmiNativeGridSampling, sameNativeIdentity } from './lib/dmi-forecast-store.mjs';
+import { dmiExpectedIdentityForPart, dmiOriginalWireIdentityMatchesCentralIdentity } from './lib/ravscore-production-adapters.mjs';
 import { ravScoreModelBinding } from '../js/core/ravscore-model-contract.js';
 import { diagnoseCurrent586SelectedEndpoints, buildRavScoreRawCurrentRetention } from './plan-ravscore-current-history.mjs';
 import { buildIntegratedPartScoreSeries } from './lib/ravscore-integrated-runtime.mjs';
-import { inverseCurrent586EndpointDiagnosticTestInput, CURRENT586_ENDPOINT_DIAGNOSTIC_TEST_REVIEW } from './lib/alternative-c-caller-test-input.mjs';
+import { discoverCommittedCoherentOriginalBootstrap } from './lib/coherent-current-original-bootstrap.mjs';
+import { inverseCurrent586EndpointDiagnosticTestInput, CURRENT586_ENDPOINT_DIAGNOSTIC_TEST_REVIEW,
+  inverseCurrent586IdentityRefinementTestInput, CURRENT586_IDENTITY_REFINEMENT_TEST_REVIEW,
+  inverseCurrent586SharedProjectionExportTestInput, CURRENT586_SHARED_PROJECTION_EXPORT_TEST_REVIEW } from './lib/alternative-c-caller-test-input.mjs';
 import { buildCurrentSupplyMemory } from '../js/core/ravscore-current-supply-memory.js';
 import { spawnSync } from 'node:child_process';
 import { summarizeSealedCurrentPart, summarizeSealedCurrentNationalParts, validateSealedCurrentSourceTarget,
@@ -1397,8 +1400,84 @@ test('CURRENT586 fixed B-only endpoint diagnostic observes role evidence without
     assert(result.roles['deployed-private-runtime'].contextMismatch[category] > 0,
       category + ': ' + JSON.stringify(result.roles['deployed-private-runtime'].contextMismatch));
     assert.throws(() => buildRavScoreRawCurrentRetention({ ...options, progressActive: changed }), missing);
+    if (category === 'identityMismatch') {
+      const detail = result.roles['deployed-private-runtime'].identityMismatchDetails;
+      assert.equal(detail.endpointSteps, result.roles['deployed-private-runtime'].contextMismatch.identityMismatch);
+      assert(detail.candidateOccurrences > 0);
+      assert.equal(detail.nativeGroups.collectionFamily, detail.nativeMismatch);
+      assert.equal(detail.wireMismatch, 0);
+      assert.equal(detail.nativeUnclassifiedMismatch, 0);
+      assert.equal(detail.countsMayOverlap, true);
+      assert.equal(detail.uniqueOriginalsClaimed, false);
+      assert.equal(detail.singularCauseClaimed, false);
+    }
     safeReport(result, 'secret-error-canary');
   }
+  // Exercise the actual private observational helper, not a duplicated comparator
+  // or a new public hook. These detached probes cannot admit a forecast/native row.
+  const actualPlanner = (await fs.readFile(new URL('./plan-ravscore-current-history.mjs', import.meta.url), 'utf8'))
+    .replace(/\r\n/g, '\n');
+  const helperBody = actualPlanner.match(/^function current586IdentityDifferenceDetails\([\s\S]+?^\}/m)?.[0];
+  assert(helperBody);
+  const observe = vm.runInNewContext('(' + helperBody + ')', {
+    sameNativeIdentity, dmiOriginalWireIdentityMatchesCentralIdentity, structuredClone });
+  const decompose = (...args) => JSON.parse(JSON.stringify(observe(...args)));
+  const nativeSource = f.native[0].sources.current, forecastSource = f.hourly[0].sources.current;
+  const inputsBefore = JSON.stringify([nativeSource, f.identity, forecastSource]);
+  const exact = decompose(nativeSource, f.identity, forecastSource, f.identity);
+  assert.equal(exact.wireMismatch, false); assert.equal(exact.nativeMismatch, false);
+  assert(Object.values(exact.nativeGroups).every(value => value === false));
+  for (const [group, mutate] of [
+    ['collectionFamily', value => { value.collection = 'secret-error-canary'; }],
+    ['modelRun', value => { value.modelRun = '2026-10-20T00:00:00Z'; }],
+    ['entity', value => { value.entityId += '-secret-error-canary'; }],
+    ['gridDefinition', value => { value.gridDefinitionSha256 = 'e'.repeat(64); }],
+    ['gridLocation', value => { value.gridPoint[0] += 0.01; }],
+    ['samplingLocation', value => { value.samplingPoint[0] += 0.01; }],
+    ['distance', value => { value.distanceKm += 0.005; }],
+    ['vector', value => { value.vectorSelection += '-different'; }],
+    ['spatial', value => { value.spatialSelection += '-different'; }],
+    ['layer', value => { value.verticalLayerRankM += 1; }],
+    ['fieldSet', value => { value.fieldSet = ['current-u']; }],
+  ]) {
+    const changed = structuredClone(forecastSource); mutate(changed);
+    const observed = decompose(nativeSource, f.identity, changed, f.identity);
+    assert.equal(observed.nativeMismatch, true, group);
+    assert.deepEqual(Object.keys(observed.nativeGroups).filter(key => observed.nativeGroups[key]), [group]);
+    assert.equal(observed.nativeUnclassifiedMismatch, false);
+    assert.equal(observed.wireMismatch, false);
+    safeReport(observed, 'secret-error-canary');
+  }
+  const tolerance = structuredClone(forecastSource);
+  tolerance.gridPoint[0] += 0.00000005; tolerance.distanceKm += 0.0005;
+  const tolerated = decompose(nativeSource, f.identity, tolerance, f.identity);
+  assert.equal(tolerated.nativeMismatch, false, 'normal native point/distance tolerances remain canonical');
+  assert(Object.values(tolerated.nativeGroups).every(value => value === false));
+  const double = structuredClone(forecastSource);
+  double.collection = 'dkss_nsbs'; double.modelRun = '2026-10-20T00:00:00Z';
+  const overlap = decompose(nativeSource, f.identity, double, f.identity);
+  assert.equal(overlap.nativeGroups.collectionFamily, true); assert.equal(overlap.nativeGroups.modelRun, true);
+  assert.equal(Object.values(overlap.nativeGroups).filter(Boolean).length, 2, 'groups are not singular causes');
+  for (const wire of [null, [], { ...f.identity, unexpected: true },
+    Object.fromEntries(Object.entries(f.identity).filter(([key]) => key !== 'entityId'))]) {
+    const observed = decompose(nativeSource, wire, forecastSource, f.identity);
+    assert.equal(observed.wireMismatch, true); assert.equal(observed.wireShapeMismatch, true);
+    assert.equal(observed.nativeMismatch, false);
+    safeReport(observed, 'secret-error-canary');
+  }
+  const wrongString = { ...f.identity, entityId: 'secret-error-canary' };
+  const stringResult = decompose(nativeSource, wrongString, forecastSource, f.identity);
+  assert.equal(stringResult.wireStringMismatch, true); assert.equal(stringResult.wirePointMismatch, false);
+  const wrongPoint = { ...f.identity, samplingPoint: [8.01, 55] };
+  const pointResult = decompose(nativeSource, wrongPoint, forecastSource, f.identity);
+  assert.equal(pointResult.wirePointMismatch, true); assert.equal(pointResult.wireStringMismatch, false);
+  const precisionIdentity = { ...f.identity, samplingPoint: [8.123456789, 55.123456789] };
+  const wirePrecision = { ...precisionIdentity, samplingPoint: [8.1234568, 55.1234568] };
+  assert.equal(decompose(nativeSource, wirePrecision, forecastSource, precisionIdentity).wireMismatch, false,
+    'normal exact Python seven-place relation is reused, not a diagnostic tolerance');
+  for (const observed of [exact, tolerated, overlap, stringResult, pointResult])
+    safeReport(observed, 'secret-error-canary');
+  assert.equal(JSON.stringify([nativeSource, f.identity, forecastSource]), inputsBefore);
   assert.equal(JSON.stringify(options), before);
   assert.equal(JSON.stringify([...options.persistedHourlyByPart]), beforePersisted);
   safeReport(observed, 'secret-error-canary');
@@ -1418,6 +1497,35 @@ test('CURRENT586 fixed B-only endpoint diagnostic observes role evidence without
   // functions. The installer's unknown internal close must not trigger removal
   // merely because the outer baselinePackInvocation stayed null.
   const auditSource = await fs.readFile(new URL('./audit-saved-weather-inputs.mjs', import.meta.url), 'utf8');
+  const metadataBody = auditSource.match(/^function current586BootstrapObservation\([\s\S]+?^\}/m)?.[0];
+  assert(metadataBody, 'exercise the actual first-failure report adapter');
+  const metadataObservation = vm.runInNewContext('(' + metadataBody + ')', {});
+  const metadata = metadataObservation({ discoverCommittedCoherentOriginalBootstrap }, options);
+  assert.equal(metadata.scope, 'FIRST_NORMAL_COLLECTOR_FAILURE_PART_METADATA_ONLY');
+  assert.equal(metadata.rawAvailability, 'NOT_PROBED');
+  assert.equal(metadata.nativeAdmissionPerformed, false);
+  safeReport(metadata, 'secret-error-canary');
+  const summaryOnly = metadataObservation({ discoverCommittedCoherentOriginalBootstrap: () => ({
+    summary: { status: 'METADATA_BOUND', rawAvailability: 'NOT_PROBED' },
+    privateRequests: [{ itemId: 'secret-error-canary' }], privateBinding: { datasetId: 'rr-synthetic-input' },
+  }) }, options);
+  assert.deepEqual(JSON.parse(JSON.stringify(summaryOnly)), {
+    status: 'METADATA_BOUND', rawAvailability: 'NOT_PROBED',
+    scope: 'FIRST_NORMAL_COLLECTOR_FAILURE_PART_METADATA_ONLY' });
+  for (const [message, expectedCode] of [
+    ['COHERENT_ORIGINAL_BOOTSTRAP_INPUT_BOUND', 'COHERENT_ORIGINAL_BOOTSTRAP_INPUT_BOUND'],
+    ['RAVSCORE_CURRENT_HISTORY_DEMAND_RETENTION_INPUT_INVALID', 'RAVSCORE_CURRENT_HISTORY_DEMAND_RETENTION_INPUT_INVALID'],
+    ['COHERENT_ORIGINAL_BOOTSTRAP_SECRET_CANARY', 'UNCLASSIFIED_METADATA_PREPARATION_REFUSAL'],
+    ['secret-error-canary', 'UNCLASSIFIED_METADATA_PREPARATION_REFUSAL'],
+  ]) {
+    const refused = metadataObservation({ discoverCommittedCoherentOriginalBootstrap: () => { throw new Error(message); } }, options);
+    assert.equal(refused.status, 'PREPARATION_REFUSED');
+    assert.equal(refused.refusalCode, expectedCode);
+    safeReport(refused, 'secret-error-canary');
+  }
+  assert.match(auditSource, /bootstrapMetadata = current586BootstrapObservation\(bootstrapApi, partInputs\)/);
+  assert.equal(JSON.stringify(options), before);
+  assert.equal(JSON.stringify([...options.persistedHourlyByPart]), beforePersisted);
   const cleanup = auditSource.match(/    if \(work && !includeCurrent586Endpoints && \(baselinePackInvocation === null[\s\S]+?await fs\.rm\(work, \{ recursive: true, force: true \}\)\.catch\(\(\) => \{\}\);/)?.[0];
   assert(cleanup, 'qualify the actual new-mode finalizer, not a copied predicate');
   for (const includeCurrent586Endpoints of [true, false]) {
@@ -1434,7 +1542,36 @@ test('CURRENT586 fixed B-only endpoint diagnostic observes role evidence without
       'new-mode uncertain work is retained; old mode behavior is unchanged');
   }
   const row = CURRENT586_ENDPOINT_DIAGNOSTIC_TEST_REVIEW;
-  const whole = (await fs.readFile(new URL('./plan-ravscore-current-history.mjs', import.meta.url), 'utf8')).replace(/\r\n/g, '\n');
+  const exportedWhole = (await fs.readFile(new URL('./plan-ravscore-current-history.mjs', import.meta.url), 'utf8')).replace(/\r\n/g, '\n');
+  const sharedExports = CURRENT586_SHARED_PROJECTION_EXPORT_TEST_REVIEW;
+  assert.equal(Buffer.byteLength(exportedWhole), sharedExports.after.bytes);
+  assert.equal(crypto.createHash('sha256').update(exportedWhole).digest('hex'), sharedExports.after.sha256);
+  const refinedWhole = inverseCurrent586SharedProjectionExportTestInput(exportedWhole, row.path);
+  assert.equal(Buffer.byteLength(refinedWhole), sharedExports.before.bytes);
+  assert.equal(crypto.createHash('sha256').update(refinedWhole).digest('hex'), sharedExports.before.sha256);
+  assert.equal(inverseCurrent586SharedProjectionExportTestInput(refinedWhole, row.path), refinedWhole,
+    'The export-only inverse must not remove the identity-refinement layer');
+  for (const edit of sharedExports.edits) {
+    assert.equal(exportedWhole.slice(edit.offset, edit.offset + edit.after.length), edit.after);
+    const changed = exportedWhole.slice(0, edit.offset) + (edit.after[0] === 'X' ? 'Y' : 'X') + exportedWhole.slice(edit.offset + 1);
+    assert.throws(() => inverseCurrent586SharedProjectionExportTestInput(changed, row.path), /ALTERNATIVE_C_TEST_INPUT_CHANGED/);
+  }
+  assert.throws(() => inverseCurrent586SharedProjectionExportTestInput(exportedWhole + '// unknown shared-export drift\n', row.path),
+    /ALTERNATIVE_C_TEST_INPUT_CHANGED/);
+  assert.throws(() => inverseCurrent586SharedProjectionExportTestInput(exportedWhole, 'scripts/unknown.mjs'),
+    /ALTERNATIVE_C_TEST_INPUT_CHANGED/);
+  const refinement = CURRENT586_IDENTITY_REFINEMENT_TEST_REVIEW;
+  const whole = inverseCurrent586IdentityRefinementTestInput(refinedWhole, row.path);
+  assert.equal(Buffer.byteLength(whole), refinement.before.bytes);
+  assert.equal(crypto.createHash('sha256').update(whole).digest('hex'), refinement.before.sha256);
+  assert.equal(inverseCurrent586IdentityRefinementTestInput(whole, row.path), whole);
+  for (const edit of refinement.edits) {
+    assert.equal(refinedWhole.slice(edit.offset, edit.offset + edit.after.length), edit.after);
+    const changed = refinedWhole.slice(0, edit.offset) + (edit.after[0] === 'X' ? 'Y' : 'X') + refinedWhole.slice(edit.offset + 1);
+    assert.throws(() => inverseCurrent586IdentityRefinementTestInput(changed, row.path), /ALTERNATIVE_C_TEST_INPUT_CHANGED/);
+  }
+  assert.throws(() => inverseCurrent586IdentityRefinementTestInput(refinedWhole + '// unknown refinement drift\n', row.path),
+    /ALTERNATIVE_C_TEST_INPUT_CHANGED/);
   const old = inverseCurrent586EndpointDiagnosticTestInput(whole, row.path);
   assert.equal(Buffer.byteLength(old), row.before.bytes);
   assert.equal(crypto.createHash('sha256').update(old).digest('hex'), row.before.sha256);
@@ -1446,4 +1583,40 @@ test('CURRENT586 fixed B-only endpoint diagnostic observes role evidence without
   }
   assert.throws(() => inverseCurrent586EndpointDiagnosticTestInput(whole + '// unknown drift\n', row.path),
     /ALTERNATIVE_C_TEST_INPUT_CHANGED/);
+});
+
+test('CURRENT586 pilot fingerprint uses the actual normal Python target projection, not full registry JSON', async t => {
+  const directory = await temp(t), registryPath = path.join(directory, 'data/live/coastal-parts-v2.json');
+  const registry = { schemaVersion: 2, partCount: 2, zones: {
+    'synthetic-parent-b': [{ partId: 'synthetic-part-b', sourceZoneId: 'synthetic-parent-b',
+      name: 'Does not enter target identity', waterPoint: [8.123456789, 55.123456789] }],
+    'synthetic-parent-a': [{ partId: 'synthetic-part-a', sourceZoneId: 'synthetic-parent-a',
+      name: 'Also excluded', waterPoint: [9.765432101, 56.765432101] }],
+  } };
+  await fs.mkdir(path.dirname(registryPath), { recursive: true });
+  await fs.writeFile(registryPath, JSON.stringify(registry));
+  const modulePath = path.join(directory, 'scripts/lib/copernicus_target_identity.py');
+  await fs.mkdir(path.dirname(modulePath), { recursive: true });
+  const originalModule = await fs.readFile(new URL('./lib/copernicus_target_identity.py', import.meta.url));
+  await fs.writeFile(modulePath, originalModule);
+  assert.deepEqual(await fs.readFile(modulePath), originalModule);
+  const audit = await fs.readFile(new URL('./audit-saved-weather-inputs.mjs', import.meta.url), 'utf8');
+  const literal = audit.match(/const pilotTargetFingerprint = \(await local\(\['-c',\s*('(?:\\.|[^'\\\r\n])*')\s*,/)?.[1];
+  assert(literal, 'extract exactly the actual fixed audit command, never a copied fingerprint algorithm');
+  const command = vm.runInNewContext(literal, Object.create(null));
+  const python = process.env.PYTHON ?? (process.platform === 'win32' ? 'python' : 'python3');
+  const run = async (body, cwd, args = []) => withoutSavedAuditSecrets(async () => {
+    const value = spawnSync(python, ['-c', body, ...args], { cwd, encoding: 'utf8',
+      env: { ...process.env, PYTHONDONTWRITEBYTECODE: '1' }, timeout: 20_000, maxBuffer: 1024 * 1024 });
+    assert.equal(value.error, undefined); assert.equal(value.status, 0);
+    assert.equal(value.stderr, ''); return value.stdout.trim();
+  });
+  const actual = await run(command, directory);
+  const expected = await run('from pathlib import Path; import sys; from scripts.lib.copernicus_target_identity import target_fingerprint, targets_from_registry; print(target_fingerprint(targets_from_registry(Path(sys.argv[1]))))',
+    repositoryRoot, [registryPath]);
+  assert.match(actual, /^sha256:[a-f0-9]{64}$/); assert.equal(actual, expected);
+  const fullRegistry = JSON.stringify(registry, (_key, value) => value && typeof value === 'object'
+    && !Array.isArray(value) ? Object.fromEntries(Object.keys(value).sort().map(key => [key, value[key]])) : value);
+  assert.notEqual(actual, 'sha256:' + crypto.createHash('sha256').update(fullRegistry).digest('hex'));
+  assert.match(audit, /pilotFingerprintAlgorithm: 'NORMAL_COPERNICUS_TARGET_IDENTITY'/);
 });
