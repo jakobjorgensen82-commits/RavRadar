@@ -1,3 +1,11 @@
+## 22. oktober — PR702 merget; originalgenopretning stopper før beskyttede læsninger
+
+PR702 har faktisk bestået den samlede præcise kildekontrol og er merget. Den første særskilte originalgenopretning stoppede derefter i SETUP med AUDIT_FAILED_CLOSED, før B/S-læsning, DMI-transport og cache-SAVE. Arbejdsmappen blev kun oprettet i den gamle checkpointgren, som CURRENT586 korrekt springer over. ROOTs normale to-tilstandsrepro viser samme SETUP-afslag uden mappen og næste DESCRIBE-afslag uden credentials efter mkdir 0700, med nul fjernkald.
+
+Den faktiske merge er main `3e132c136d9c42e9c2bb9094d9dfe5d544d75748`; første restore er `39798227333/1`. Hele loggen og den faktiske normale repro er bevaret i det private checkpoint. Det er en bevist lokal workflowforudsætning, ikke en observeret Supabase-/DMI-fejl eller datatab.
+
+Den afgrænsede rettelse opretter nu ét nyt privat arbejdsområde før begge restore-grene, afviser eksisterende sti og symbolske links og bruger mode 0700 med umask 077. Den gamle grens dobbelte mkdir fjernes. Alle historiske workflowpins og afslag bevares gennem en præcis additiv testinverse. ROOT har gennemgået og anvendt rettelsen; det eksisterende normale workflowmål er faktisk bestået med otte tilfælde. Den rettede eksterne kørsel er endnu ikke udført; dette er ikke bevis for tilgængelige originalfiler eller løst offentlig vejrhentning. Original B/S, RAW, tal, historik, fuld fil-/kildekontrol, eksklusiv skriver og den ene fysisk ejede SAVE er uændrede. Ingen nye produktionsdata, SQL eller aktivering følger af denne lokale forberedelse. Alle fem mål er åbne. Denne front erstatter kun modstridende ældre kørselsstatus nedenfor.
+
 ## 22. oktober — præcis cacheafgrænsning; samlet årsagsrettelse under kvalifikation
 
 PR701 er faktisk kildekvalificeret inklusive native Linux og PostgreSQL og merget. Den ene efterfølgende cacheprøve brugte den samme faktisk restaurerede RAW-snapshot og stoppede ved første krævede original: intet eksakt capturematch i manifestet og intet observeret filnavneprefix for assetidentiteten. Prefix er aldrig filbevis eller adgang til afkodning. Rapporten beviser ikke, hvornår en fil forsvandt, at alle originaler mangler, at DMI er forkert, eller at et datasæt fra før genstarten er anvendt.

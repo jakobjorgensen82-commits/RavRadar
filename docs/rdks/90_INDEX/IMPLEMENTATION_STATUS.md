@@ -1,3 +1,11 @@
+## 22. oktober — fælles privat restore-mappe før begge grene
+
+- [x] PR702 faktisk samlet kildekvalificeret og merget; de ældre CI-afventninger nedenfor er historiske.
+- [x] Første særskilte restore stopper i SETUP før B/S, DMI-transport og SAVE. ROOTs normale to-tilstandsrepro bekræfter manglende arbejdsmappe som den konkrete forudsætning; nul fjernkald.
+- [x] Forbered minimal fælles, eksklusiv mkdir 0700/umask 077 før checkpointbetingelsen, uden genbrug af eksisterende sti eller symlink og uden den gamle grens ekstra mkdir.
+- [x] ROOT-review/anvendelse og eksisterende normale workflowmål: faktisk otte PASS, med begge grenes rækkefølge-/ejerskabsoracle og præcis ydre inverse. Ingen historiske pins ændres.
+- [ ] Ny præcis kildekontrol, faktisk originaltransport/SAVE og derefter normal offentlig generation/efterfølger. Ingen nye originalers tilgængelighed eller produktionsgenopretning er bevist her.
+
 ## 22. oktober — faktisk cacheafgrænsning og samlet genopretningskandidat
 
 - [x] PR701: præcis samlet kildekontrol inklusive native Linux og PostgreSQL, normal merge og én ny skrivefri RAW-prøve med faktisk læst afgrænset rapport.

@@ -1,3 +1,9 @@
+## 22. oktober — ret den reproducerede fælles restore-forudsætning
+
+PR702 har faktisk bestået den samlede præcise kildekontrol og er merget. Den første særskilte originalgenopretning stoppede derefter i SETUP med AUDIT_FAILED_CLOSED, før B/S-læsning, DMI-transport og cache-SAVE. Arbejdsmappen blev kun oprettet i den gamle checkpointgren, som CURRENT586 korrekt springer over. ROOTs normale to-tilstandsrepro viser samme SETUP-afslag uden mappen og næste DESCRIBE-afslag uden credentials efter mkdir 0700, med nul fjernkald.
+
+Den afgrænsede rettelse opretter nu ét nyt privat arbejdsområde før begge restore-grene, afviser eksisterende sti og symbolske links og bruger mode 0700 med umask 077. Den gamle grens dobbelte mkdir fjernes. Alle historiske workflowpins og afslag bevares gennem en præcis additiv testinverse. ROOT har gennemgået og anvendt rettelsen; det eksisterende normale workflowmål er faktisk bestået med otte tilfælde. Den rettede eksterne kørsel er endnu ikke udført; dette er ikke bevis for tilgængelige originalfiler eller løst offentlig vejrhentning. Genbrug afsluttede produkt-/kapacitetsprøver; fortsæt kun med denne forudsætning, præcis kildekvalifikation og faktisk genopretning. Ældre PR702-afventninger nedenfor er dateret historik. SOURCE og assistentlevering forbliver inaktive; ingen ny version, SQL eller nulstilling.
+
 ## 22. oktober — genopret præcise originaler og bevar dem fremover
 
 PR701 har faktisk bestået den præcise normale kildekontrol, inklusive native Linux og PostgreSQL, og er merget. Den ene efterfølgende skrivefri cacheprøve fandt ved første krævede original hverken et præcist manifestmatch eller en observeret fil med samme assetprefix. Det beviser ikke sletning, fravær af alle originaler, ugyldige DMI-tal eller brug af datasættet før genstarten. Det private checkpoint indeholder den faktiske rapport; gentag ikke samme cacheprøve uden en konkret ændring.

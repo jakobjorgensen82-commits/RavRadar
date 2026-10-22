@@ -1,3 +1,9 @@
+## 22. oktober — ÅBEN: fælles restore-arbejdsmappe mangler i CURRENT586-grenen
+
+PR702 er faktisk kildekvalificeret og merget. Første særskilte restore stopper i SETUP/AUDIT_FAILED_CLOSED før B/S, DMI og SAVE: den eneste oprettelse af det private audit-område ligger i den korrekt fravalgte gamle checkpointgren. Den normale auditor reproducerer samme stop uden mappen og går videre til DESCRIBE uden credentials, når mappen findes; nul fjernkald. Dette er ikke en leverandørfejl eller bevis for manglende filer.
+
+En minimal fælles, eksklusiv oprettelse før begge grene er lokalt anvendt med eksisterende-sti-/symlinkafslag og private rettigheder. Det eksisterende normale workflowmål er faktisk bestået med otte tilfælde. Gammelt checkpointinstall, fuld kildekontrol, eksklusiv transportskriver og fysisk lukket SAVE bevares. Ny præcis CI og faktisk genopretning afventer fortsat. De allerede beståede kapacitets-/produktprøver gentages ikke; de beviser heller ikke denne eksterne levering.
+
 ## 22. oktober — ÅBEN: bevarede timer skal bevare deres originale bevis
 
 PR701 er faktisk native-/kildekvalificeret og merget. Den efterfølgende præcise cacheprøve fandt ved første krævede original hverken et eksakt manifestmatch eller et observeret assetprefix. Det er ikke sletningsbevis eller bevis for alle originalers fravær. Den ønskede gamle datasætoprydning er ikke udført.

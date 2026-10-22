@@ -12,6 +12,8 @@ Genskabte originalfiler skal også beskyttes mod almindelig cacheudskiftning, in
 
 Genopretning bruger de eksisterende private lagre og normale kontroller. En lokal prøve eller en driftskvittering er ikke i sig selv bevis for fungerende offentlig vejrhentning. Det kræver faktisk levering og en efterfølgende almindelig opdatering. Manglende historik og prognosetimer skal fortsat vises ærligt.
 
+En intern genopretning skal oprette sit eget lukkede arbejdsområde, før gemte kilder læses. Et eksisterende område eller et symbolsk link må ikke genbruges. Et stop i denne forberedelse siger ikke noget om leverandørdata eller originalfilers tilgængelighed. Faktisk genopretning og efterfølgende normal drift skal stadig bevises særskilt.
+
 ## 89.262 Genskab originalbevis uden at ændre gemte tal
 
 Kort fortalt: En bevaret strømprognose skal fortsat kunne knyttes til sine egne originaler, selv om en nyere vejrfil har erstattet en arbejdsfil.

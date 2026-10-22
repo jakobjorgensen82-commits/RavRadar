@@ -1,3 +1,9 @@
+## Ikke udgivet — fælles privat arbejdsmappe til præcis originalgenopretning
+
+- Retter den reproducerede SETUP-forudsætning efter PR702: opretter ét eksklusivt privat audit-område før både checkpoint- og CURRENT586-grenen, med umask 077 og mode 0700; eksisterende sti eller symlink afvises.
+- Fjerner kun den gamle grens dobbelte mkdir. Udvider det eksisterende workflowmål med begge grenes rækkefølge/ejerskab og en præcis additiv inverse; alle gamle hele workflowpins og sikkerhedsassertioner bevares.
+- Første faktiske restore nåede ikke B/S, DMI-transport eller SAVE. Normal lokal auditorrepro har nul fjernkald. Det normale workflowmål er bestået med otte tilfælde. Samlet kildekontrol og faktisk genopretning er fortsat åbne; ingen model-, versions-, SQL- eller talændring.
+
 ## Ikke udgivet — samlet genopretning og bevarelse af strømoriginaler
 
 - PR701 er faktisk native-/kildekvalificeret og merget. Den efterfølgende præcise prøve fandt ved første krævede original intet eksakt manifestmatch og intet observeret filnavneprefix. Prefix er aldrig adgang til en fil eller afkodning; der påstås ikke sletning eller fravær af alle originaler.
