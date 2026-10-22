@@ -1,3 +1,11 @@
+## 22. oktober — ÅBEN: lokal 587 er ikke installeret assistentleverance
+
+Lokal normal versions-/C98/I97/T12-/SQL-udstedelse og syv forbrugeres fixedpoint er nu faktisk gennemført. Den sammenhængende to-filskvalifikation har 29 PASS, og den særskilte normale bindings-prewrite-integration har 5 PASS; afsluttede mål skal ikke gentages for status. De gamle unissued-afventninger er historiske på netop disse lokale punkter.
+
+Fortsat åbent: præcis samlet 587-source-CI inklusive faktisk ny native PostgreSQL, autentisk ny schema2-B/S og almindelig efterfølger efter P0, ægte 586-prewrite, SQL-installation/genlæsning og senere-H0/offentlig levering. Generisk code-only skal fortsat afvise førsteinstallation. Lokal eller mockEdge-svarforbedring beviser ikke hosted AI-kvalitet. Sidste verificerede offentlige version er 586.
+
+P0/PR703-genopretningens aktuelle eksterne udfald styres alene af ROOTs private checkpoint. Repositoryets komprimerede cachekvote, faktisk runnerplads og RAW-/downloadbudgetter er forskellige grænser; kapacitets-/økonomivalget er stadig uafklaret. Ingen ældre cache er bevist overflødig her, og ingen sletning, kvoteændring eller ny backupdestination er godkendt. Historiske fejl, røde kvitteringer, originale data og alle afslag bevares.
+
 ## 22. oktober — ÅBEN: fælles restore-arbejdsmappe mangler i CURRENT586-grenen
 
 PR702 er faktisk kildekvalificeret og merget. Første særskilte restore stopper i SETUP/AUDIT_FAILED_CLOSED før B/S, DMI og SAVE: den eneste oprettelse af det private audit-område ligger i den korrekt fravalgte gamle checkpointgren. Den normale auditor reproducerer samme stop uden mappen og går videre til DESCRIBE uden credentials, når mappen findes; nul fjernkald. Dette er ikke en leverandørfejl eller bevis for manglende filer.
@@ -6979,3 +6987,7 @@ DEC-0185. Ingen oneoff eller nye providerkald i reparationsdeployet.
 # Aktuelt leveringsstop – 2026-09-29
 
 - **FEGGESUND-FORHÅNDSKONTROL – 4.0.510-KANDIDAT:** Normalrun `36567354134` stoppede efter leverandørerne, fordi forhåndskontrollen kun læste aktiv DMI-cache, mens scorebygningen også brugte gyldige beskyttede ældre bølger. Ingen færdig pakke eller deploy; krypteret fremdrift bevaret. Koden bruger nu samme beskyttede udvælger i begge veje, men exact-head CI og produktionsbevis mangler. En lokal grøn test lukker ikke issue.
+
+## 22. oktober — ÅBEN: ni-blads cost-komposition på c78 er fortsat ukørt
+
+De to tidligere særskilt målprøvede cost-pakker er privat sammenført med den frosne test-only fixture-/inventarkorrektion på faktisk c78b4aec: ni forskellige kode-/teststier og seks additive dokumenthunks. Hele aktuelle førbilleder er målt, mens alle nye P0-fronter og fælles mkdir-/121-timersbank-/RAW-/SAVE-ændringer bevares. Den gamle direkte12PASS/2FAIL-workflowprøve er fortsat historisk rød; en lukket testinverse og ét fuldt kvalificeret privat workflow er forberedt, ikke prøvet. Ægte original-parent/child kræver stadig faktisk rent commit; ingen dirty-waiver eller ny sourceadgang indføres. Gamle8/18/Candidate-G-delbeviser ommærkes ikke, og alle nationale positive kontroller bevares. Første nye nativefase skal udføres og uploades faktisk. Ét relevant normalt workflowmål, fuld ny28-trins kildekvalifikation, ægte senere genbrug/leveringslæser og målt tidsgevinst er åbne. Den normale vejrhentning, originale B/S, kildeprioritet, budgetter og øvrige mål ændres ikke af denne private plan.

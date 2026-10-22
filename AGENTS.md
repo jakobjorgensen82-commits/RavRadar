@@ -1,3 +1,11 @@
+## 22. oktober — lokal 4.0.587 er udstedt, ikke leveret
+
+4.0.587 er en lokal, udstedt kildekandidat, ikke installeret eller offentlig levering. Sidste verificerede offentlige version er fortsat 4.0.586. P0 og den almindelige vejrhentning har førsteprioritet; ROOTs aktuelle private checkpoint afgør PR703-forløbets eksterne slutstatus og genopretning. Denne kandidat afslutter hverken det forløb, cost-PR704s samlede kildekontrol eller den åbne cache-/kapacitets- og økonomibeslutning.
+
+Læs den nye 587-front i CODEX_START_HERE, CURRENT_TRUTH, IMPLEMENTATION_STATUS og håndbog 89.264. Den normale lokale versionssynk, C98/I97/T12, én ny append-only SQL og syv forbrugeres fixedpoint består; de 65 tidligere migrationer er byteuændrede, og geodatadiffene ændrer kun topversionen. Dette er ikke ny native PostgreSQL, præcis 587-CI, installation, faktisk ny schema2-B/S, offentlig vejr-/assistentvirkning eller hosted AI-kvalitet.
+
+Ægte 586-forgænger, hele oprindelige B/S-attester, numeriske værdier, historik, kildeprioritet, administratorpunkter, geometri, gamle SQL og afvisninger bevares. Ingen ny historiknulstilling, samme-H0-adgang, implicit statistik/SOURCE-aktivering, sletning, kvoteforøgelse eller offentlig ændring følger af lokal udstedelse. Normal afslutning er dokument-/håndbogssynk, præcis ny source-CI med faktisk ny native PostgreSQL-fase, kontrolleret førstegangs-prewrite på autentisk 586 B/S, SQL-installation/genlæsning og en faktisk strengt senere almindelig generation med bevaret schema2-originalbank og almindelig efterfølger. Generisk kode-only-plan må fortsat kun genlæse allerede installeret NEXT; den giver ikke førsteinstallationsadgang. Alle fem hovedmål er fortsat åbne til 18. november 2026; ældre modstridende status er dateret historik.
+
 ## 21. oktober — 4.0.586-originalkontinuitet lokalt udstedt, ikke installeret
 
 Læs ROOTs ene aktuelle P0-linje i CURRENT_TRUTH og seneste private checkpoint før de daterede afventninger nedenfor. Sidste verificerede almindelige offentlige levering er fortsat 39520623069/1 kl. 05.39 dansk tid; den passerede allerede originalbevarelsens retentionguard. Den senere 39608743697/1 stoppede før leverandører med manglende bevis for et valgt native-endepunkt blandt de leverede kontekster. Det beviser ikke leverandørsvigt, ugyldige DMI-tal eller fysisk fravær af alle originaler.

@@ -1,3 +1,11 @@
+## 22. oktober — aktiv 587-leveringskontrakt efter ægte 586
+
+AKTIVT: SpørgRavRadar skal bevare DA/DE/EN, eksisterende kontrollerede fakta/ID'er, safety/private-afslag, ukendt svar og ingen fundgaranti. Generelle forklaringer om bølgebevægelse ved bunden, strømtransport mellem revler og forskellen til materiale på stranden må ikke opfinde aktuelle værdier eller en sikker lokal konklusion. Aktuelle vejrtal kræver fortsat konkret zone og bundne data. Den enkle identifikationsgrammatik må kun bruge den eksisterende fagligt kontrollerede viden; et lokalt svar er ikke hosted AI-bevis.
+
+AKTIVT: Den nye familie skal afledes af hele den faktiske versionssynkroniserede kilde gennem de normale C→I→T-/SQL-builders. Hele autentiske 586-parentattestation, B/S, originale kilder, tal og historik skal bevares. Førsteinstallation kræver den særskilte normale autentificerede prewrite og sole-pending named-plan; generisk code-only må ikke få den tilladelse. Kun strengt senere almindelig H0 og normale partResults kan fortsætte; ingen ny samme-H0-hændelse eller nulstilling. Hele schema2-originalbanken, fremadrettet historik og retentionparitet skal bestå.
+
+Lokalt 587-fixedpoint, syntetiske kaldermål og65 uændrede gamle migrationer er nødvendige kildebeviser, ikke installation. Præcis ny source-/native PostgreSQL-kvalifikation, ægte ny schema2-B/S/efterfølger, faktisk kontrolleret installation/genlæsning og offentlig effekt er fortsat selvstændige krav. P0 har førsteprioritet; lager-/økonomivalg må ikke løses med uautoriseret sletning, pruning eller større kvote. SOURCE, statistik og automatisk retention forbliver inaktive.
+
 ## 20. oktober — varig statistikforberedelse uden historisk klientautoritet
 
 AKTIVT: Normal privat forberedelse skal fortsætte et faktisk eksisterende job over månedsskifte med samme periode, inputgrundlag og model. Kun serverens normale databasegenlæsning må udstede adgang til den gamle periode; klientinput, JSON-kopier og ukvitteret arbejde giver ingen ny skriveautoritet. Friskt samtykke og slettebarriere samt eksisterende tids-, række-, byte- og forespørgselsgrænser bevares. Timeout, ukendt skrivning og afvist kvittering må ikke udløse automatisk retry. Forberedelse og genlæsning er ikke anonym statistikfrigivelse. 004/005, retention og SOURCE aktiveres ikke af den sammenførte kilde.

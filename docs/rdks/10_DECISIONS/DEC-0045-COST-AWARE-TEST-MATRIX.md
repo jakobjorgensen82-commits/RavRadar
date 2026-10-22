@@ -54,3 +54,11 @@ Beslutningen ændrer kun placeringen og hyppigheden af dublerede kontroller. Den
 ## Produktionsbevis
 
 PR #37 blev merged som 3dc331ca. Exact-head-kildegaten og push-produktion 32468752244 bestod. Push-kørslen beholdt den tidlige kildekodegate og gennemførte derefter frisk data, fuld validering, releasegate, Supabase, artifact og Pages. Live viser 4.0.247 med 210 zoner og 673 kystdele.
+
+## Privat implementeringsplan 22. oktober 2026 — nativefase og tidlige afslag
+
+Denne uudsendte kildeplan konkretiserer den eksisterende omkostningsregel; den er ikke et nyt grønt produktionsbevis. Native586-fasen får en særskilt faktisk EXECUTED-kvittering og upload før den fulde kildekontrol. Senere genbrug kræver samme lukkede relevante Git-inputgraf og kommandoer, hele wrapper/test/workflow-kontrakt, samme observerede runtime, faktisk oprindelig EXECUTED-faseartifact med digest samt friske entydige run/job/PR-oplysninger. Historiske 584/585-originaler og kildekontrollen på hvert eksakt head bevares. Ukendt evidens, drift, senere fejl eller rerun medfører almindelig native udførelse; en genbrugt kvittering er aldrig ny SQL-eksekvering.
+
+Den nye upload gør denne fremtidige kildeworkflow til 28 trin. Gamle 27-trinskvitteringer og leveringslæsere ommærkes ikke. Første nye kvalificerbare fase skal udføres og uploades faktisk; samlet kildebevis, nationalgate og uændret-træ-kontrol består særskilt. De eksisterende konservative inputregler ændres ikke: blandt andet KNOWN-ISSUES, hele Python-proveniensmålet og de nye Candidate-G-blade er fortsat medregnede input.
+
+Candidate-G-audit må kun flytte allerede eksisterende, uafhængige marker-/installed-shape-/profilafslag før den uændrede tunge sealed-input-kontrol. Alle positive hash-, overlay-, 210/673-, ranking-, privacy- og publiceringskontroller samt alle 19 gamle CLI-tilfælde bevares. Syv additive rækkefølgeafslag er ikke erstatninger for de gamle mål. De to pakker har tidligere bestået deres egne normale lokale mål; den samlede efterfølger er endnu ukørt og uudsendt. Ingen ny testplatform, model/version/SQL, almindelig vejrhentning eller produktionsautoritet indføres.

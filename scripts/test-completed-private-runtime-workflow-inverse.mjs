@@ -651,8 +651,10 @@ test('current585 release inverse keeps every genuine584 workflow byte and refuse
 
 
 test('native original schema selector: actual installed schema1 alone selects ordinary preparation; all old routes stay old',async()=>{
-  // RAW actual YAML, deliberately NOT the historical projection above.
-  const source=(await fs.readFile(new URL('../.github/workflows/reusable-weather-build.yml',import.meta.url),'utf8')).replaceAll('\r\n','\n');
+  // Preserve this whole586 selector oracle through ONLY the exact whole587 inverse.
+  // The separate587 case below also checks the actual unchanged donor/argument.
+  const actual=(await fs.readFile(new URL('../.github/workflows/reusable-weather-build.yml',import.meta.url),'utf8')).replaceAll('\r\n','\n');
+  const source=inverseAssistant587CompletedWorkflow(actual,'build');
   const donor=coldStep(source,'Classify one-time DMI PART continuity donor');
   const plan=coldStep(source,'Plan bounded current history from the actual selected continuation');
   const review=nativeOriginalSchemaSelectorWorkflowReview;
@@ -736,4 +738,60 @@ test('native original schema selector: actual installed schema1 alone selects or
   // marker, source-priority candidate, score change or SQL operation is added.
   assert.equal(source.split('--prepare-cached-native-originals').length,2);
   assert.equal(source.split('--retain-committed-raw').length,2);
+});
+
+
+// New whole587 afterimage is not a repin of any historical oracle above.
+import {assistant587CompletedWorkflowReview,inverseAssistant587CompletedWorkflow}
+  from './lib/completed-private-runtime-workflow-review.mjs';
+test('assistant587 exact workflow inverse retains genuine586 and every historical mutation refusal',async()=>{
+  const actual=(await fs.readFile(new URL('../.github/workflows/reusable-weather-build.yml',import.meta.url),'utf8')).replaceAll('\r\n','\n');
+  const review=assistant587CompletedWorkflowReview;
+  assert.equal(Buffer.byteLength(actual),review.after.bytes);assert.equal(sha(actual),review.after.sha256);
+  const previous=inverseAssistant587CompletedWorkflow(actual,'build');
+  assert.equal(Buffer.byteLength(previous),nativeOriginalSchemaSelectorWorkflowReview.after.bytes);
+  assert.equal(sha(previous),nativeOriginalSchemaSelectorWorkflowReview.after.sha256);
+  assert.equal(inverseCompletedRuntimeWorkflow(actual,'build'),inverseCompletedRuntimeWorkflow(previous,'build'));
+  assert.equal(sha(inverseCompletedRuntimeWorkflow(actual,'build')),legacySha);
+  assert.equal(inverseAssistant587CompletedWorkflow(actual,'once'),actual);
+  assert.equal(inverseAssistant587CompletedWorkflow(previous,'build'),previous);
+  const donor='Classify one-time DMI PART continuity donor',planner='Plan bounded current history from the actual selected continuation';
+  assert.equal(coldStep(actual,donor),coldStep(previous,donor),'Actual donor/schema validation remains whole byteexact');
+  const command=source=>{
+    const lines=coldStep(source,planner).split('\n'),inlinePrefix='        run: ',scriptPrefix='          ';
+    const inline=lines.filter(line=>line.startsWith(inlinePrefix+'node scripts/plan-ravscore-current-history.mjs '));
+    const script=lines.filter(line=>line.startsWith(scriptPrefix+'node scripts/plan-ravscore-current-history.mjs '));
+    assert.equal(inline.length+script.length,1,'Exactly one actual planner node invocation, inline OR script');
+    return inline.length?inline[0].slice(inlinePrefix.length):script[0].slice(scriptPrefix.length);
+  };
+  const node=command(actual);assert.equal(node,command(previous),'Whole node argv including --retain-committed-raw and schema1 selector is unchanged');
+  const currentPlan=coldStep(actual,planner),previousPlan=coldStep(previous,planner);
+  const start=currentPlan.indexOf('        run: |\n'),end=currentPlan.indexOf('        env:\n',start);
+  assert(start>=0&&end>start);
+  const heap=[
+    '        run: |',
+    '          if test "'+String.fromCharCode(36)+'{{ steps.assistant-later-h0-source.outputs.required }}" = true; then',
+    '            export NODE_OPTIONS=--max-old-space-size=6144',
+    '          fi',
+    '          '+node,
+    '',
+  ].join('\n');
+  assert.equal(currentPlan.slice(start,end),heap,'Exact587 conditional heap block; no extra command, unconditional heap or selector rewrite');
+  assert(previousPlan.includes('        run: '+node+'\n'));assert(!previousPlan.includes('        run: |\n'));
+  assert.throws(()=>command(actual.replace('          '+node+'\n','          '+node+'\n          '+node+'\n')),
+    'Duplicate actual planner invocation is not accepted');
+  const fixed=actual.replaceAll('RavRadar/4.0.587','RavRadar/4.0.586');
+  const changed=[actual+'\n# UNREVIEWED587\n',actual.replace('RavRadar/4.0.587','RavRadar/4.0.586'),
+    actual.replace('test "'+String.fromCharCode(36)+'{{ steps.full-validation.outcome }}" = success','true'),
+    actual.replace('test "'+String.fromCharCode(36)+'{{ steps.release-gate.outcome }}" = success','true')];
+  for(const[offset,text,original]of review.hunks){
+    for(const replacement of [original,text+text,'?'+text.slice(1)]){
+      const partial=fixed.slice(0,offset)+replacement+fixed.slice(offset+text.length);
+      changed.push(partial.replaceAll('RavRadar/4.0.586','RavRadar/4.0.587'));
+    }
+  }
+  for(const source of changed){
+    assert.notEqual(source,actual);assert.equal(inverseAssistant587CompletedWorkflow(source,'build'),source);
+    assert.throws(()=>inverseCompletedRuntimeWorkflow(source,'build'));
+  }
 });

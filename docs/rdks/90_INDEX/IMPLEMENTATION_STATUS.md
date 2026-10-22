@@ -1,3 +1,15 @@
+## 22. oktober — lokal 587: udstedelse færdig, levering åben
+
+- [x] Sammenhængende privat kilde på faktisk 3b med gennemgåede 40 source-/teststier; normalt to-filsmål29 PASS/0 FAIL/0 SKIP. Tidligere semantik-/katalog-/roundtrip-kvitteringer genbruges uden ny statusgentagelse.
+- [x] Separat normal bindings-prewrite-integration: seks kildeblade og fem afgrænsede normale tilfælde bestået. Det er ikke autentificeret produktions-B/S eller SQL-eksekvering.
+- [x] Én normal version:set 4.0.587 med releasedAt 2026-10-22T18:14:03.047Z; geodata kun topversion; alle 65 tidligere migrationer uændrede.
+- [x] Normal afledning og lokal udstedelse af C98/I97/T12, migration 20261022181403 på 325.470 bytes, syv forbrugere og C/I/SQL/bindings-fixedpoint. Ingen samme-H0-adgang eller numerisk SQL-ændring.
+- [ ] ROOTs aktive P0/PR703-forløb, faktisk originalgenopretning, ny autentisk schema2-B/S og almindelig efterfølger; cache-/kapacitets- og økonomivalg er ikke afsluttet af 587.
+- [ ] Dokument-/håndbogs-/installationskopisynk og én præcis samlet 587-source-CI med faktisk ny native PostgreSQL. Gamle fase-/lokalresultater er ikke dette bevis.
+- [ ] Kontrolleret ægte 586-prewrite, SQL-installation/genlæsning, strengt senere almindelig generation og offentlig 587-assistent-/runtimekontrol. Sidste verificerede offentlige version er 586.
+
+Ingen SOURCE-/statistik-/retentionaktivering, nulstilling, pruning eller kvoteforøgelse. Alle fem hovedmål er åbne til 18. november 2026. Ældre afventninger er historik på de faktisk afsluttede lokale punkter; fejlede kvitteringer og gamle originaler bevares.
+
 ## 22. oktober — fælles privat restore-mappe før begge grene
 
 - [x] PR702 faktisk samlet kildekvalificeret og merget; de ældre CI-afventninger nedenfor er historiske.
@@ -10597,3 +10609,10 @@ snævert DMI-only uden for Candidate G-migrationsbroen.
 - [x] Kodemismatch mellem aktiv-only forhåndskontrol og beskyttet DMI-retention i scoring rettet i isoleret branch; 3 × 118 hashkontrol, score, kildeprioritet og no-loss bevares. Målrettede Feggesund-/DMI-tests grønne.
 - [ ] Exact-head source-CI, geodataversionsdiff, merge og naturligt produktionsbevis mangler. GitHub-vagten må først genaktiveres, når rettelsen er sikker; ekstern cron står aktiv.
 - [ ] Undersøg fortsat femfeltsdækning, tre delvise zoner, Baltic-shards og sen Limfjordsvandstand efter et faktisk grønt normalrun.
+
+## 22. oktober — privat samlet omkostningsplan på c78 efter PR703-kilden
+
+- [x] Privat komposition mod faktisk c78b4aec med ni forskellige kode-/teststier: de otte oprindelige cost-blade samt den eksisterende ordinary-stage-source-prøve. Workflow-order-bladet har desuden den særskilte lukkede fixture-/inventarkorrektion. Hele førbilleder matcher c78 og fysisk kilde; ROOT har anvendt dem alene i en isoleret kvalifikationskilde, uden aktiv levering eller historisk repinning. P0s fælles mkdir, 121-timersbank, RAW-/SAVE- og originalkrav bevares. Den normale statiske håndbogskopi og RDKS er kvalificeret; dette er ikke udført SQL eller ny CI.
+- [ ] De gamle delbeviser er fortsat kun deres oprindelige 8 native-, 18 caller- og ene hele Candidate-G-mål. Den gamle direkte workflow-order-prøve sluttede faktisk 12PASS/2FAIL. Den nye test-only inverse genskaber de samme gamle whole-oracles, og præcis ekstra privat workflow kvalificeres før det gamle inventar. Korrektionen er ukørt; child-fixturens ægte clean-committed-head-krav består, og intet senere child-afslag eller PASS er opfundet.
+- [ ] Efter ROOTs review og normal håndbogskopisynk/dokumentkontrol: ét eksisterende normalt workflow-order-mål på faktisk ren committed kombination. Ingen lokal52-minutters Candidate-G-gentagelse for status. Samlet ny eksakt28-trins Linux/source-kontrol med første nativefase faktisk EXECUTED, separat faseartifact og ægte slutproof kræves fortsat. PR703s27-trinsbevis er ikke denne kandidat.
+- [ ] Senere ærligt fasegenbrug, tilpasset28-trins leveringslæser og sammenlignelig tidsgevinst er åbne. Ukendt/forkert bevis giver normal udførelse; ingen minuttalsbesparelse, ny version/model/SQL, kilde-PR, aktivering, vejrhentning eller løst P0-forløb påstås af denne private forberedelse.

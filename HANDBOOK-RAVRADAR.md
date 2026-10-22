@@ -1,3 +1,15 @@
+## 89.264 Spørg RavRadar: forklaring er ikke en lokal vejrudsigt
+
+Kort fortalt: RavRadar kan forklare en mulighed uden at love et fund eller kende forholdene på en bestemt strand.
+
+Bølger kan sætte materiale ved bunden i bevægelse, og strøm kan føre det mellem revler og render. Det er ikke det samme som, at materialet når helt op på stranden. Derfor kan der ske transport under vand, selv om der ikke ses nyt opskyl. Revler, åbninger og læsider kan påvirke transporten, men de er mulige fælder, ikke garantier.
+
+SpørgRavRadar bruger sin eksisterende kontrollerede viden til generelle forklaringer og enkle spørgsmål om genkendelse på dansk, tysk og engelsk. Et lokalt regelsvar er ikke i sig selv bevis for kvaliteten af en ekstern AI-tjeneste. Vandstand og en høj score er heller ikke et løfte om ravfund.
+
+Spørgsmål om aktuelle vejrtal kræver en konkret zone og de faktisk tilknyttede data. Et generelt svar må ikke opfinde tal eller afgøre sikkert, hvad der ligger på en bestemt strand. Usikkerhed, manglende data og sikkerhedsgrænser skal stadig fremgå ærligt; private oplysninger må ikke bruges som offentlig viden.
+
+Disse svarforbedringer og en originalbevarende programovergang er lokalt forberedt og udstedt i 4.0.587. Sidste verificerede offentlige version er4.0.586. Lokal kildekontrol er ikke installation, ny vejrhentning eller offentlig effekt; det kræver særskilt kontrolleret levering og en almindelig efterfølgende opdatering. Lager-/økonomivalget og den aktuelle genopretning er fortsat særskilte åbne punkter; denne opdatering giver ingen tilladelse til sletning af originaler.
+
 ## 89.263 Originalfil og hentetid er to forskellige ting
 
 Kort fortalt: Den samme originale vejrfil kan hentes igen senere. Det gør ikke dens indhold nyere.
@@ -588,7 +600,7 @@ En særskilt, dokumenteret Storage-formatkant rettes samtidig: immutable upload 
 
 # RavRadar Håndbog
 
-**Håndbogsversion:** 4.0.586
+**Håndbogsversion:** 4.0.587
 
 Hvis genbrug af gemte data stopper, skal den første fejlfase og et kontrolleret kildested bevares uden private fejltekster eller værdier. Tidligere beståede kontroller frikender ikke automatisk en senere mål-time eller andre input. En bedre fejlrapport ændrer ikke beregningen og er ikke bevis for, at årsagen er rettet. Gemte originaler og sidste gyldige offentlige data bevares, mens fejlen undersøges.
 
@@ -7796,6 +7808,8 @@ RavRadar kontrollerer ny eller ukendt kildekode før de dyre datatrin. Den samme
 Det vigtigste sikkerhedsnet er uændret: Hver gang der bygges et nyt produktionsdatasæt, køres den fulde validering efter frisk DMI/Copernicus, beregninger og proveniens. Derefter skal releasegaten være grøn, før artifact, Supabase og Pages kan fortsætte. En kendt fejl eller reel usikkerhed kan aldrig tilsidesættes med henvisning til den hurtigere testplan.
 
 Den store browserkontrol af alle 210 zoner og 673 kystdele bruges ugentligt eller efter ændringer i score, brugerflade eller den offentlige datakontrakt. Små workflow- og dokumentationsændringer får målrettede kontroller. Det giver mere udviklingstid uden at reducere kontrollen dér, hvor rigtige datafejl faktisk kan opstå.
+
+Privat kildeplan, 22. oktober 2026: En allerede gennemført native databaseprøve kan fremover få sit eget verificerbare fasebevis, men kun ved præcis uændrede relevante input, runtime og friske GitHub-oplysninger. Den første nye kildekørsel skal stadig udføre prøven; gamle kørsler uden dette bevis godkendes ikke bagudrettet. Hele kildekontrollen kræves fortsat på hvert præcist PR-head, og fejl eller ukendt evidens giver normal fuld udførelse. Uafhængige ugyldige Candidate-G-markører og profiler kan afvises før dyre beregninger, men alle positive forløb beholder hele hash-, 210/673-, databevarelses- og publiceringskontrollen. De to rettelser er kun målprøvet hver for sig; samlet kilde- og Linux-kontrol, ægte upload/genbrug og faktisk tidsgevinst er endnu åbne. Dette ændrer ikke vejrhentning, scoremodel, originalkrav eller den aktuelle P0-status.
 
 ## Copernicus henter kun en verificeret DMI-strømtimes huller - 4.0.246-kandidat
 

@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import { verifyWorkflow as verifyCurrentNationalWorkflow, CURRENT_JOB as CURRENT_SOURCE_JOB, AFTER_JOB as REVIEWED90_SOURCE_JOB } from './national584-source-evidence.mjs';
 import { assertEarlyCompletedRuntimeStageOrder, inverseCompletedRuntimeWorkflow } from './lib/completed-private-runtime-workflow-review.mjs';
 import fs from 'node:fs';
+import crypto from 'node:crypto';
 import vm from 'node:vm';
 import { exactPagesAttemptStep } from './github-pages-attempt-evidence.mjs';
 import './test-weather-source-gate.mjs';
@@ -96,10 +97,36 @@ const productionWorkflowNames = new Set(
 );
 productionWorkflowNames.add('deploy-code-only-repair.yml');
 productionWorkflowNames.add('run-current-weather-once.yml');
-const workflowFiles = fs.readdirSync(workflowDirectory)
+const actualWorkflowFiles = fs.readdirSync(workflowDirectory)
   .filter((name) => /\.ya?ml$/i.test(name))
   .sort();
 const expectedWorkflowFiles = ['apply-weather-model-binding-only.yml', 'audit-native-current-grid.yml', 'audit-saved-weather-inputs.yml', 'audit-sealed-current-source.yml', 'build-ravscore-historical-wave-pilot.yml', 'deploy-code-only-repair.yml', 'deploy-trip-storage.yml', 'extract-private-geodanmark-layer.yml', 'migrate-private-runtime-to-r2.yml', 'monitor-trip-storage.yml', 'notify-weather-failure.yml', 'preserve-copernicus-current-shadow.yml', 'recover-live-ravscore-central.yml', 'recover-saved-dmi-originals.yml', 'recover-sealed-weather-36396834072.yml', 'retry-national-admin-roundtrip.yml', 'reusable-operational-reentry.yml', 'reusable-pages-deploy.yml', 'reusable-weather-build.yml', 'run-current-weather-once.yml', 'update-and-deploy.yml', 'validate-approved-public-coast.yml', 'validate-copernicus-current-pilot.yml', 'validate-local-part-system-candidate.yml', 'validate-pull-request.yml', 'validate-six-zone-recovery.yml', 'watch-missed-weather-schedule.yml'];
+// One already-existing private workflow is an exact new inventory layer,
+// not permission to ignore extra files or broaden historical consumers.
+const privateStudyName = 'private-trip-weather-study.yml';
+const privateStudySource = fs.readFileSync(`${workflowDirectory}/${privateStudyName}`, 'utf8').replace(/\r\n/g, '\n');
+function inversePrivateStudyWorkflowInventory(names, source) {
+  assert.deepEqual(names, [...expectedWorkflowFiles, privateStudyName].sort(),
+    'Only the whole legacy inventory plus the one reviewed private workflow');
+  assert.equal(crypto.createHash('sha256').update(source).digest('hex'),
+    '4c2e35641d7e95e19eedf901b49b9011917a05ef0957a9d7e7e222fb28d4f241',
+    'Whole existing private workflow; no changed caller, permissions or body');
+  assert.doesNotMatch(source, /pages: write|id-token: write|deploy-pages/);
+  return names.filter(name => name !== privateStudyName);
+}
+const workflowFiles = inversePrivateStudyWorkflowInventory(actualWorkflowFiles, privateStudySource);
+assert.deepEqual(workflowFiles, expectedWorkflowFiles,
+  'The complete unchanged historical workflow inventory is restored');
+for (const names of [
+  [...actualWorkflowFiles, 'unreviewed-workflow.yml'].sort(),
+  actualWorkflowFiles.filter(name => name !== privateStudyName),
+  [...actualWorkflowFiles, privateStudyName].sort(),
+  actualWorkflowFiles.filter(name => name !== expectedWorkflowFiles[0]),
+]) assert.throws(() => inversePrivateStudyWorkflowInventory(names, privateStudySource));
+for (const source of [privateStudySource + "\n# unreviewed change\n",
+  privateStudySource.replace("contents: read", "contents: write")]) {
+  assert.throws(() => inversePrivateStudyWorkflowInventory(actualWorkflowFiles, source));
+}
 if (JSON.stringify(workflowFiles) !== JSON.stringify(expectedWorkflowFiles)) {
   throw new Error(`Uventet workflowinventar: ${workflowFiles.join(', ') || '(tomt)'}. Kun produktionsworkflowet og de registrerede private, ikke-deployerende workflows må være aktive.`);
 }
@@ -249,6 +276,7 @@ for (const workflowName of sourceGateWorkflowNames) {
         'name: Restore Node22 for existing source validation',
         'name: Validate bounded native current diagnosis on artificial data only',
         'name: Validate native PostgreSQL checkpoint CAS on artificial data only',
+        'name: Upload independently completed native586 PostgreSQL phase',
       ], 'Only the exact ordered PR source-only steps may intervene; no unknown step');
       assert.doesNotMatch(intervening, /^\s+(?:if|continue-on-error):/m,
         'The PR ownership/native prefix must run unconditionally and fail closed');
@@ -390,6 +418,7 @@ const prGateOrder = [
   'name: Restore Node22 for existing source validation',
   'name: Validate bounded native current diagnosis on artificial data only',
   'name: Validate native PostgreSQL checkpoint CAS on artificial data only',
+  'name: Upload independently completed native586 PostgreSQL phase',
   'name: Validate source contracts and release governance',
   'name: Require validated source tree to remain unchanged',
   'name: Upload tree-content source validation proof',

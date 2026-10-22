@@ -1,3 +1,9 @@
+## 22. oktober — udstedt lokal 587 giver ingen leveringsautoritet
+
+AKTIVT: Genbrug de faktisk afsluttede lokale assistent-/kaldermål ved uændrede input; ommærk dem ikke som 587-native PostgreSQL, præcis source-CI, autentisk B/S-prewrite, SQL-installation, offentligt vejr eller hosted AI. Samlet ny kilde kræver sit eget præcise normale bevis. Genkør ikke version:set eller gamle lange mål blot for status.
+
+Første 586→587-installation skal bruge den eksisterende særskilte autentificerede prewrite/named-plan-rute. Generisk code-only forbliver installed-only; ukendt/afvist evidens giver ingen fallback eller autoritet. Strengt senere almindeligt H0, hele originalattesten, schema2-originalbank, tal og retentionparitet bevares. P0 og ROOTs ene writer har førsteprioritet; cachekapacitet/økonomi er fortsat uafklaret, og ingen sletning, ny kvote, nulstilling eller skjult aktivering er godkendt her.
+
 ## 20. oktober — kvalificér den nye 585-kilde uden at genudstede gammel autoritet
 
 585 skal have faktisk ny C/I/T- og PostgreSQL-kvalifikation; historiske 584-orakler og gammel native-evidens må ikke ommærkes som nye. Den lokale første-rå-fejl-rettelse bevarer også `undefined`, `null`, `false` og `0` gennem cleanup; dens modelimportregel accepterer kun den hele gennemgåede nye helper. Windows-LF-arbejdsvisning må ikke svække hashguards eller ændre udstedte SQL/JSON-originaler; eksakte fysiske backupbytes gendannes og genkontrolleres efter den normale lokale kommando.

@@ -1,11 +1,19 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
 import test from 'node:test';
-import {ORIGIN, WORKFLOW, JOB, STEP, COMMANDS, ACCOUNT_STATISTICS_ASSISTANT_COMMANDS, CURRENT_COMMANDS, NATIVE_SCRIPT, NEW_NATIVE_BLOCK,
+import {ORIGIN, WORKFLOW, JOB, STEP, COMMANDS, ACCOUNT_STATISTICS_ASSISTANT_COMMANDS, CURRENT586_COMMANDS as CURRENT_COMMANDS,
+  CURRENT_COMMANDS as ASSISTANT_LATER_H0_COMMANDS, NATIVE_SCRIPT as ASSISTANT_LATER_H0_SCRIPT, NEW_NATIVE_BLOCK,
   NON_NATIVE_TEST_INPUTS, NON_NATIVE_PROSE, nativeBlock, parseTree, verifyWorkflow,
   verifyInputTrees, verifyOriginMetadata, verifyOrigin, verifyEnvironment,
-  verifyLaterRuns, decideReuse, verifyCurrentPullRequest, FOLLOWUP_INPUTS} from './native-postgres-evidence.mjs';
+  verifyLaterRuns, decideReuse, verifyCurrentPullRequest, FOLLOWUP_INPUTS,
+  CURRENT586_PHASE_KIND,CURRENT586_PHASE_UPLOAD,CURRENT586_PHASE_UPLOAD_BLOCK,
+  ASSISTANT_LATER_H0_PHASE_KIND,verifyAssistantLaterH0PhaseReceipt,
+  inverseCurrent586PhaseUpload,verifyCurrent586Workflow,verifyCurrent586Runtime,
+  verifyCurrent586PhaseReceipt,verifyCurrent586Metadata,verifyCurrent586Artifact,decideCurrent586Reuse} from './native-postgres-evidence.mjs';
 
+// Keep every whole586 command assertion on its immutable predecessor view.
+// The actual new production command is independently checked below.
+const NATIVE_SCRIPT='set -euo pipefail\n'+CURRENT_COMMANDS.join('\n')+'\n';
 const copy = value => structuredClone(value);
 // Genuine reviewed P0 follow-up, not the potentially changed current PR tree.
 const REVIEWED_FOLLOWUP = 'c72d6730bd235954091416268e7af649b46452d9';
@@ -256,4 +264,189 @@ test('native continuity appends its real phase while the whole585 command stays 
   assert.equal(CURRENT_COMMANDS[1],ACCOUNT_STATISTICS_ASSISTANT_COMMANDS[1]+' --native-original-continuity');
   assert.notDeepEqual(CURRENT_COMMANDS,COMMANDS);
   assert.equal(NATIVE_SCRIPT,'set -euo pipefail\n'+CURRENT_COMMANDS.join('\n')+'\n');
+});
+
+test('assistant later-H0 appends its actual phase without retagging whole586 commands',()=>{
+  assert.equal(ASSISTANT_LATER_H0_COMMANDS.length,2);
+  assert.equal(ASSISTANT_LATER_H0_COMMANDS[0],CURRENT_COMMANDS[0]);
+  assert.equal(ASSISTANT_LATER_H0_COMMANDS[1],CURRENT_COMMANDS[1]+' --assistant-later-h0');
+  assert.notDeepEqual(ASSISTANT_LATER_H0_COMMANDS,CURRENT_COMMANDS);
+  assert.equal(ASSISTANT_LATER_H0_SCRIPT,'set -euo pipefail\n'+ASSISTANT_LATER_H0_COMMANDS.join('\n')+'\n');
+});
+
+
+test('current586 phase artifact is independent, exact, honest, and does not relax conservative native inputs',async()=>{
+  const workflow=await fs.readFile(WORKFLOW,'utf8');
+  assert.equal(workflow.split(CURRENT586_PHASE_UPLOAD_BLOCK).length,2);
+  verifyCurrent586Workflow(workflow,workflow);
+  assert.equal(inverseCurrent586PhaseUpload(workflow).includes(CURRENT586_PHASE_UPLOAD),false);
+  assert(workflow.indexOf('      - name: '+STEP)<workflow.indexOf(CURRENT586_PHASE_UPLOAD_BLOCK));
+  assert(workflow.indexOf(CURRENT586_PHASE_UPLOAD_BLOCK)<workflow.indexOf('      - name: Validate source contracts'));
+  for(const changed of [workflow.replace('retention-days: 30','retention-days: 29'),
+    workflow.replace('path: .cache/native-postgres-phase-proof.json','path: .cache/source-tree-content-proof.json'),
+    workflow.replace('npm run validate:source','true'),workflow+CURRENT586_PHASE_UPLOAD_BLOCK])
+    assert.throws(()=>verifyCurrent586Workflow(workflow,changed));
+  for(const file of ['docs/rdks/40_KNOWN_ISSUES/KNOWN-ISSUES.md','scripts/test-dmi-native-provenance.py',
+    'docs/handbook/any-other-document.md']){
+    const before=[...tree,[file,'100644','blob',oid]],after=[...tree,[file,'100644','blob',newOid]];
+    assert.throws(()=>verifyInputTrees(before,after),'These whole inputs remain conservatively retained');
+  }
+  verifyCurrent586Runtime(runtime,runtime);
+  for(const changed of [{...runtime,imageVersion:'20261022.1'},{...runtime,node:'v22.99.0'},
+    {...runtime,pgMajors:[16,16,17,16]},{...runtime,overrides:['PYTHONPATH']}])
+    assert.throws(()=>verifyCurrent586Runtime(changed,runtime));
+  const current={run:ORIGIN.run+20,attempt:1,head:newOid,pullRequest:700,branch:'synthetic-native586'};
+  const executed={phase:'NATIVE_ORIGINAL_CONTINUITY',status:'EXECUTED',executedInThisRun:true,origin:null,
+    current,commands:[...CURRENT_COMMANDS],eligibleForReuse:true,nativeInput:verifyInputTrees(tree,tree),runtime};
+  assert.equal(verifyCurrent586PhaseReceipt(executed,current).status,'EXECUTED');
+  const reused={...executed,status:'REUSED',executedInThisRun:false,
+    origin:{run:current.run-1,attempt:1,job:123,head:oid,artifactId:456,artifactDigest:'sha256:'+'c'.repeat(64)}};
+  assert.equal(verifyCurrent586PhaseReceipt(reused,current).status,'REUSED');
+  for(const mutate of [v=>v.executedInThisRun=true,v=>v.origin=null,v=>v.origin.attempt=2,
+    v=>v.commands=[...COMMANDS],v=>v.current={...current,head:oid},v=>v.eligibleForReuse=false]){
+    const bad=copy(reused);mutate(bad);assert.throws(()=>verifyCurrent586PhaseReceipt(bad,current));
+  }
+  assert.equal((await decideCurrent586Reuse({env:{}})).status,'EXECUTE');
+});
+
+test('current586 exact EXECUTED origin survives a later source failure; missing, stale, failed or changed evidence executes PG',async()=>{
+  const {createHash}=await import('node:crypto');
+  const hash=value=>createHash('sha256').update(value).digest('hex');
+  // A genuine small stored ZIP is passed to the same normal Python reader.
+  // These are artificial phase/transport inputs, never invented SQL execution.
+  const zipProof=raw=>{
+    const name=Buffer.from('native-postgres-phase-proof.json');let crc=0xffffffff;
+    for(const byte of raw){crc^=byte;for(let i=0;i<8;i++)crc=(crc>>>1)^((crc&1)?0xedb88320:0);}
+    crc=(crc^0xffffffff)>>>0;
+    const local=Buffer.alloc(30),central=Buffer.alloc(46),end=Buffer.alloc(22);
+    local.writeUInt32LE(0x04034b50);local.writeUInt16LE(20,4);local.writeUInt32LE(crc,14);
+    local.writeUInt32LE(raw.length,18);local.writeUInt32LE(raw.length,22);local.writeUInt16LE(name.length,26);
+    central.writeUInt32LE(0x02014b50);central.writeUInt16LE(20,4);central.writeUInt16LE(20,6);
+    central.writeUInt32LE(crc,16);central.writeUInt32LE(raw.length,20);central.writeUInt32LE(raw.length,24);
+    central.writeUInt16LE(name.length,28);
+    end.writeUInt32LE(0x06054b50);end.writeUInt16LE(1,8);end.writeUInt16LE(1,10);
+    end.writeUInt32LE(central.length+name.length,12);end.writeUInt32LE(local.length+name.length+raw.length,16);
+    return Buffer.concat([local,name,raw,central,name,end]);
+  };
+  const workflow=await fs.readFile(WORKFLOW,'utf8'),oldId=ORIGIN.run+10,currentId=oldId+2,number=700;
+  const branch='synthetic-native586',nativeInput=verifyInputTrees(tree,tree);
+  const oldRun={id:oldId,run_attempt:1,head_sha:oid,head_branch:branch,path:WORKFLOW,event:'pull_request',
+    repository:{full_name:ORIGIN.repository},head_repository:{full_name:ORIGIN.repository},
+    pull_requests:[{number}],status:'completed',conclusion:'failure',created_at:'2026-10-22T01:00:00Z'};
+  const current={...copy(oldRun),id:currentId,head_sha:newOid,status:'in_progress',conclusion:null};
+  const oldJobs={total_count:1,jobs:[{id:123,name:JOB,run_id:oldId,run_attempt:1,head_sha:oid,
+    status:'completed',conclusion:'failure',steps:[
+      ...Array.from({length:14},(_,i)=>({number:i+1,name:'synthetic prerequisite '+i,status:'completed',conclusion:'success'})),
+      {name:STEP,number:15,status:'completed',conclusion:'success',started_at:'2026-10-22T01:01:00Z',completed_at:'2026-10-22T01:02:00Z'},
+      {name:CURRENT586_PHASE_UPLOAD,number:16,status:'completed',conclusion:'success',completed_at:'2026-10-22T01:02:02Z'},
+      {name:'Validate source contracts and release governance',number:17,status:'completed',conclusion:'failure'},
+      {name:'Validate isolated restart and two ordinary national followers',number:18,status:'completed',conclusion:'skipped'},
+    ]}]};
+  const executed={phase:'NATIVE_ORIGINAL_CONTINUITY',status:'EXECUTED',executedInThisRun:true,origin:null,
+    current:{run:oldId,attempt:1,head:oid,pullRequest:number,branch},commands:[...CURRENT_COMMANDS],
+    eligibleForReuse:true,nativeInput,runtime};
+  const proof={schemaVersion:1,kind:CURRENT586_PHASE_KIND,repository:ORIGIN.repository,headSha:oid,
+    sourceTreeSha256:'sha256:'+'c'.repeat(64),privatePayloadIncluded:false,nativePostgres:executed};
+  const raw=Buffer.from(JSON.stringify(proof)),zip=zipProof(raw);
+  const artifact={id:456,name:'native586-phase-'+oldId+'-1-'+oid,expired:false,size_in_bytes:zip.length,
+    digest:'sha256:'+hash(zip),created_at:'2026-10-22T01:02:01Z',workflow_run:{id:oldId,head_sha:oid}};
+  const phase=verifyCurrent586Metadata(oldRun,oldJobs,executed.current);
+  assert.equal(phase.sourceConclusion,'failure','Only PG is reusable; the failed source remains failed');
+  assert.equal(verifyCurrent586Artifact(artifact,zip,raw,oldRun,phase).nativePostgres.status,'EXECUTED');
+  for(const mutate of [v=>v.expired=true,v=>v.digest='sha256:'+'d'.repeat(64),v=>v.size_in_bytes++,
+    v=>v.workflow_run.head_sha=newOid,v=>v.created_at='2026-10-22T01:03:00Z']){
+    const bad=copy(artifact);mutate(bad);assert.throws(()=>verifyCurrent586Artifact(bad,zip,raw,oldRun,phase));
+  }
+  const env={GITHUB_EVENT_NAME:'pull_request',GITHUB_REPOSITORY:ORIGIN.repository,PULL_REQUEST_NUMBER:String(number),
+    GITHUB_RUN_ATTEMPT:'1',GITHUB_HEAD_REF:branch,SOURCE_GATE_HEAD_SHA:newOid,GITHUB_RUN_ID:String(currentId)};
+  const pr={number,state:'open',base:{repo:{full_name:ORIGIN.repository},ref:'main'},
+    head:{repo:{full_name:ORIGIN.repository},sha:newOid,ref:branch}};
+  const lines=rows=>rows.map(([file,mode,type,id])=>mode+' '+type+' '+id+'\t'+file+'\0').join('');
+  const readGit=args=>{
+    if(['status','for-each-ref','merge-base'].includes(args[0]))return '';
+    if(args[0]==='rev-parse'&&args[1]==='HEAD^{commit}')return newOid;
+    if(args[0]==='rev-parse'&&args[1]==='--is-shallow-repository')return 'false';
+    if(args[0]==='rev-parse')return nativeInput.frozenGitTrees.find(row=>args[1]===row.head+'^{tree}').tree;
+    if(args[0]==='show'&&args[1].endsWith(':package.json'))return '{"version":"4.0.586"}';
+    if(args[0]==='show'&&args[1].endsWith(':'+WORKFLOW))return workflow;
+    if(args[0]==='show')return 'identical complete synthetic wrapper/test bytes';
+    if(args[0]==='ls-tree')return lines(tree);
+    throw new Error('Unexpected Git call');
+  };
+  const get=async route=>{
+    if(route.endsWith('/pulls/'+number))return copy(pr);
+    if(route.endsWith('/runs/'+oldId))return copy(oldRun);
+    if(route.endsWith('/runs/'+currentId))return copy(current);
+    if(route.endsWith('/runs/'+oldId+'/attempts/1/jobs?per_page=100'))return copy(oldJobs);
+    if(route.endsWith('/runs/'+oldId+'/artifacts?per_page=100'))return {total_count:1,artifacts:[copy(artifact)]};
+    if(route.endsWith('/artifacts/456/zip'))return zip;
+    if(route.includes('/workflows/'))return {total_count:2,workflow_runs:[copy(current),copy(oldRun)]};
+    throw new Error('Unexpected API call');
+  };
+  const options={env,get,readGit,getEnvironment:()=>copy(runtime)};
+  const accepted=await decideCurrent586Reuse(options);
+  assert.equal(accepted.status,'REUSED');assert.equal(accepted.executedInThisRun,false);
+  assert.equal(accepted.origin.run,oldId);assert.equal(accepted.origin.artifactDigest,artifact.digest);
+  const reusedRun={...copy(oldRun),id:oldId+1,head_sha:'d'.repeat(40)};
+  const reusedJobs=copy(oldJobs);Object.assign(reusedJobs.jobs[0],{id:124,run_id:reusedRun.id,head_sha:reusedRun.head_sha});
+  const reusedProof={...copy(proof),headSha:reusedRun.head_sha,nativePostgres:{...copy(accepted),
+    current:{...accepted.current,run:reusedRun.id,head:reusedRun.head_sha}}};
+  const reusedRaw=Buffer.from(JSON.stringify(reusedProof)),reusedZip=zipProof(reusedRaw);
+  const reusedArtifact={...copy(artifact),id:457,name:'native586-phase-'+reusedRun.id+'-1-'+reusedRun.head_sha,
+    size_in_bytes:reusedZip.length,digest:'sha256:'+hash(reusedZip),
+    workflow_run:{id:reusedRun.id,head_sha:reusedRun.head_sha}};
+  const getReused=async route=>{
+    if(route.endsWith('/runs/'+reusedRun.id))return copy(reusedRun);
+    if(route.endsWith('/runs/'+reusedRun.id+'/attempts/1/jobs?per_page=100'))return copy(reusedJobs);
+    if(route.endsWith('/runs/'+reusedRun.id+'/artifacts?per_page=100'))return {total_count:1,artifacts:[copy(reusedArtifact)]};
+    if(route.endsWith('/artifacts/457/zip'))return reusedZip;
+    if(route.includes('/workflows/'))return {total_count:3,workflow_runs:[copy(current),copy(reusedRun),copy(oldRun)]};
+    return get(route);
+  };
+  const viaLocator=await decideCurrent586Reuse({...options,get:getReused});
+  assert.equal(viaLocator.status,'REUSED');assert.equal(viaLocator.origin.run,oldId);
+  assert.notEqual(viaLocator.origin.run,reusedRun.id,'REUSED is a locator, never a new EXECUTED origin');
+  const failedLater=copy(reusedJobs);failedLater.jobs[0].steps[14].conclusion='failure';
+  assert.equal((await decideCurrent586Reuse({...options,get:route=>
+    route.endsWith('/runs/'+reusedRun.id+'/attempts/1/jobs?per_page=100')?failedLater:getReused(route)})).status,'EXECUTE');
+  for(const mutate of [v=>v.run_attempt=2,v=>v.head_sha=newOid,v=>v.status='in_progress',v=>v.conclusion='cancelled']){
+    const bad=copy(oldRun);mutate(bad);
+    assert.equal((await decideCurrent586Reuse({...options,get:route=>route.endsWith('/runs/'+oldId)?bad:get(route)})).status,'EXECUTE');
+  }
+  for(const mutate of [v=>v.jobs[0].steps[14].conclusion='failure',
+    v=>v.jobs[0].steps[15].conclusion='skipped',v=>v.jobs[0].steps[16].status='in_progress',
+    v=>v.jobs[0].steps.splice(15,1),v=>v.total_count=2]){
+    const bad=copy(oldJobs);mutate(bad);
+    assert.equal((await decideCurrent586Reuse({...options,get:route=>route.endsWith('/runs/'+oldId+'/attempts/1/jobs?per_page=100')?bad:get(route)})).status,'EXECUTE');
+  }
+  for(const file of ['supabase/migrations/new-native-input.sql','scripts/test-dmi-native-provenance.py',
+    'docs/rdks/40_KNOWN_ISSUES/KNOWN-ISSUES.md']){
+    const changed=[...tree,[file,'100644','blob',newOid]];
+    assert.equal((await decideCurrent586Reuse({...options,readGit:args=>
+      args[0]==='ls-tree'&&args.at(-1)==='HEAD'?lines(changed):readGit(args)})).status,'EXECUTE');
+  }
+  assert.equal((await decideCurrent586Reuse({...options,getEnvironment:()=>({...runtime,imageVersion:'20261022.1'})})).status,'EXECUTE');
+  assert.equal((await decideCurrent586Reuse({...options,get:async()=>{throw Error('Unavailable');}})).status,'EXECUTE');
+  assert.equal((await decideCurrent586Reuse({...options,get:route=>route.includes('/workflows/')?
+    {total_count:101,workflow_runs:[]}:get(route)})).status,'EXECUTE');
+  const missing={total_count:0,artifacts:[]};
+  assert.equal((await decideCurrent586Reuse({...options,get:route=>route.includes('/artifacts?')?missing:get(route)})).status,'EXECUTE');
+});
+
+test('assistant NEXT execution cannot be minted or reused as a whole586 phase',()=>{
+  const current={run:ORIGIN.run+20,attempt:1,head:newOid,pullRequest:700,branch:'synthetic-assistant-next'};
+  const next={phase:'ASSISTANT_LATER_H0',status:'EXECUTED',executedInThisRun:true,origin:null,
+    current,commands:[...ASSISTANT_LATER_H0_COMMANDS],eligibleForReuse:false};
+  assert.equal(verifyAssistantLaterH0PhaseReceipt(next,current).status,'EXECUTED');
+  assert.notEqual(ASSISTANT_LATER_H0_PHASE_KIND,CURRENT586_PHASE_KIND);
+  assert.throws(()=>verifyCurrent586PhaseReceipt(next,current));
+  const predecessor={...next,phase:'NATIVE_ORIGINAL_CONTINUITY',commands:[...CURRENT_COMMANDS]};
+  assert.equal(verifyCurrent586PhaseReceipt(predecessor,current).status,'EXECUTED');
+  assert.throws(()=>verifyAssistantLaterH0PhaseReceipt(predecessor,current));
+  for(const mutate of [v=>v.status='REUSED',v=>v.executedInThisRun=false,v=>v.origin={run:current.run-1},
+    v=>v.eligibleForReuse=true,v=>v.commands=[...CURRENT_COMMANDS],v=>v.current={...current,head:oid},
+    v=>v.phase='NATIVE_ORIGINAL_CONTINUITY']){
+    const changed=copy(next);mutate(changed);
+    assert.throws(()=>verifyAssistantLaterH0PhaseReceipt(changed,current));
+  }
 });
