@@ -1,3 +1,15 @@
+## 22. oktober — lokal 587: udstedelse færdig, levering åben
+
+- [x] Sammenhængende privat kilde på faktisk 3b med gennemgåede 40 source-/teststier; normalt to-filsmål29 PASS/0 FAIL/0 SKIP. Tidligere semantik-/katalog-/roundtrip-kvitteringer genbruges uden ny statusgentagelse.
+- [x] Separat normal bindings-prewrite-integration: seks kildeblade og fem afgrænsede normale tilfælde bestået. Det er ikke autentificeret produktions-B/S eller SQL-eksekvering.
+- [x] Én normal version:set 4.0.587 med releasedAt 2026-10-22T18:14:03.047Z; geodata kun topversion; alle 65 tidligere migrationer uændrede.
+- [x] Normal afledning og lokal udstedelse af C98/I97/T12, migration 20261022181403 på 325.470 bytes, syv forbrugere og C/I/SQL/bindings-fixedpoint. Ingen samme-H0-adgang eller numerisk SQL-ændring.
+- [ ] ROOTs aktive P0/PR703-forløb, faktisk originalgenopretning, ny autentisk schema2-B/S og almindelig efterfølger; cache-/kapacitets- og økonomivalg er ikke afsluttet af 587.
+- [ ] Dokument-/håndbogs-/installationskopisynk og én præcis samlet 587-source-CI med faktisk ny native PostgreSQL. Gamle fase-/lokalresultater er ikke dette bevis.
+- [ ] Kontrolleret ægte 586-prewrite, SQL-installation/genlæsning, strengt senere almindelig generation og offentlig 587-assistent-/runtimekontrol. Sidste verificerede offentlige version er 586.
+
+Ingen SOURCE-/statistik-/retentionaktivering, nulstilling, pruning eller kvoteforøgelse. Alle fem hovedmål er åbne til 18. november 2026. Ældre afventninger er historik på de faktisk afsluttede lokale punkter; fejlede kvitteringer og gamle originaler bevares.
+
 ## 22. oktober — fælles privat restore-mappe før begge grene
 
 - [x] PR702 faktisk samlet kildekvalificeret og merget; de ældre CI-afventninger nedenfor er historiske.

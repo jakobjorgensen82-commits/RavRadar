@@ -434,9 +434,16 @@ test('normal original584 staging forwards the selected R2 storage into the real 
 });
 
 test('current586 source registration preserves exact585 predecessor and distinct current native scope',async()=>{
-  const pkg=JSON.parse(await fs.readFile(new URL('../package.json',import.meta.url),'utf8'));
+  const actualPkg=JSON.parse(await fs.readFile(new URL('../package.json',import.meta.url),'utf8'));
   const {verifyPackage,verifyCurrentNativeCommands,CURRENT586_NATIVE_COMMANDS}=await import('./national584-source-evidence.mjs');
-  const {inverseReviewedAccountStatisticsAssistantSourceScripts}=await import('./lib/account-statistics-assistant-package-review.mjs');
+  const {inverseReviewedAccountStatisticsAssistantSourceScripts,inverseAssistantLaterH0SourceScripts}=await import('./lib/account-statistics-assistant-package-review.mjs');
+  const {ASSISTANT_LATER_H0_BINDING}=await import('./lib/assistant-later-h0-successor-source.mjs');
+  const later=Object.hasOwn(actualPkg.scripts,'test:assistant-later-h0-source');
+  if(later){
+    if(ASSISTANT_LATER_H0_BINDING===null)assert.throws(()=>verifyPackage(actualPkg),/ASSISTANT_LATER_H0_UNISSUED/);
+    else assert.doesNotThrow(()=>verifyPackage(actualPkg));
+  }
+  const pkg=later?{...actualPkg,version:'4.0.586',scripts:inverseAssistantLaterH0SourceScripts(actualPkg.scripts)}:actualPkg;
   assert.equal(pkg.version,'4.0.586');assert.doesNotThrow(()=>verifyPackage(pkg));
   assert.doesNotThrow(()=>inverseReviewedAccountStatisticsAssistantSourceScripts(pkg.scripts));
   const critical=pkg.scripts['test:ravscore-source-critical'],group='test:native-original-continuity-source';
@@ -457,4 +464,35 @@ test('current586 source registration preserves exact585 predecessor and distinct
   assert.throws(()=>verifyCurrentNativeCommands([...CURRENT586_NATIVE_COMMANDS],'4.0.585'));
   assert.throws(()=>verifyCurrentNativeCommands(CURRENT586_NATIVE_COMMANDS.map(c=>c.replace(' --native-original-continuity','')),'4.0.586'));
   assert.throws(()=>verifyCurrentNativeCommands([...CURRENT586_NATIVE_COMMANDS,CURRENT586_NATIVE_COMMANDS[1]],'4.0.586'));
+});
+
+test('assistant later-H0 registration keeps exact older scripts and refuses phase/order mutations',async()=>{
+  const pkg=JSON.parse(await fs.readFile(new URL('../package.json',import.meta.url),'utf8')),original=structuredClone(pkg);
+  const {ASSISTANT_LATER_H0_BINDING,requireAssistantLaterH0Release}=await import('./lib/assistant-later-h0-successor-source.mjs');
+  const {verifyPackage,verifyCurrentNativeCommands,ASSISTANT_LATER_H0_NATIVE_COMMANDS}=await import('./national584-source-evidence.mjs');
+  const {inverseAssistantLaterH0SourceScripts}=await import('./lib/account-statistics-assistant-package-review.mjs');
+  const prior=inverseAssistantLaterH0SourceScripts(pkg.scripts);
+  assert.equal(Object.hasOwn(prior,'test:assistant-later-h0-source'),false);
+  assert.equal(prior['test:native-original-continuity-source'],
+    'node scripts/build-native-original-continuity-successor.mjs --check && node --test scripts/test-native-original-continuity-callers.mjs');
+  assert.deepEqual(pkg,original,'A historical test view never rewrites actual package source');
+  if(ASSISTANT_LATER_H0_BINDING===null)assert.throws(()=>verifyPackage(pkg),/ASSISTANT_LATER_H0_UNISSUED/);
+  else{
+    assert.equal(pkg.version,requireAssistantLaterH0Release());assert.doesNotThrow(()=>verifyPackage(pkg));
+    assert.doesNotThrow(()=>verifyCurrentNativeCommands([...ASSISTANT_LATER_H0_NATIVE_COMMANDS],pkg.version));
+    assert.throws(()=>verifyCurrentNativeCommands(ASSISTANT_LATER_H0_NATIVE_COMMANDS.map(c=>c.replace(' --assistant-later-h0','')),pkg.version));
+  }
+  const native='npm run test:native-original-continuity-source',next='npm run test:assistant-later-h0-source';
+  for(const mode of ['missing','duplicate','reordered','changed-command','old-live-builder','unknown-command']){
+    const changed=structuredClone(pkg);
+    if(mode==='missing')delete changed.scripts['test:assistant-later-h0-source'];
+    if(mode==='duplicate')changed.scripts['test:ravscore-source-critical']=changed.scripts['test:ravscore-source-critical'].replace(next,next+' && '+next);
+    if(mode==='reordered')changed.scripts['test:ravscore-source-critical']=changed.scripts['test:ravscore-source-critical'].replace(native+' && '+next,next+' && '+native);
+    if(mode==='changed-command')changed.scripts['test:assistant-later-h0-source']+=' --unexpected';
+    if(mode==='old-live-builder')changed.scripts['test:native-original-continuity-source']=prior['test:native-original-continuity-source'];
+    if(mode==='unknown-command')changed.scripts['unknown-source-command']='node scripts/unreviewed.mjs';
+    assert.throws(()=>inverseAssistantLaterH0SourceScripts(changed.scripts));
+    assert.throws(()=>verifyPackage(changed));
+  }
+  assert.throws(()=>verifyPackage({...pkg,version:'0.0.0'}));
 });

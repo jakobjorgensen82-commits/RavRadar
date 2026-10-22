@@ -1,3 +1,13 @@
+## 22. oktober — lokal 587 udstedt; offentlig 586 og P0-forløbet er særskilte
+
+4.0.587 er en lokal, udstedt kildekandidat, ikke installeret eller offentlig levering. Sidste verificerede offentlige version er fortsat 4.0.586. P0 og den almindelige vejrhentning har førsteprioritet; ROOTs aktuelle private checkpoint afgør PR703-forløbets eksterne slutstatus og genopretning. Denne kandidat afslutter hverken det forløb, cost-PR704s samlede kildekontrol eller den åbne cache-/kapacitets- og økonomibeslutning.
+
+Faktisk lokal 587-status: releasedAt 2026-10-22T18:14:03.047Z; normal C98/I97/T12-konstruktion og udstedelse; append-only 20261022181403-migration på 325.470 bytes; syv normale forbrugere synkroniseret; C/I/SQL/bindings-fixedpoint bestået. Alle65 tidligere SQL-filer er byteuændrede, og kystdata/zoner har kun topversionssynk. Hele den sammenhængende lokale to-filskvalifikation bestod 29 PASS/0 FAIL/0 SKIP; den særskilte normale bindings-prewrite-kvalifikation bestod 5 PASS/0 FAIL/0 SKIP. Dette er lokale mål, ikke ægte produktions-B/S eller udført SQL.
+
+Assistenten har bevarede lokale faglige svar på DA/DE/EN, vandstand uden fundgaranti, bevægelse ved bunden/mellem revler uden nyt opskyl og enkel identifikationsgrammatik. De kontrollerede fakta, aktuelle zonekrav, safety/private-afslag og usikkerhed bevares. Lokal regelsvar-/mockEdge-evidens er ikke hosted AI-kvalitet eller offentlig 587-effekt.
+
+ÅBENT: endelig dokument-/installationskopisynk, præcis samlet 587-kilde/native PostgreSQL, faktisk ny schema2-B/S og almindelig efterfølger, autentisk prewrite/installation/genlæsning, almindelig senere-H0-levering og offentlig kontrol. Ægte 586-forgænger, hele oprindelige B/S-attester, numeriske værdier, historik, kildeprioritet, administratorpunkter, geometri, gamle SQL og afvisninger bevares. Ingen ny historiknulstilling, samme-H0-adgang, implicit statistik/SOURCE-aktivering, sletning, kvoteforøgelse eller offentlig ændring følger af lokal udstedelse. Alle fem hovedmål er åbne til 18. november 2026; tidligere status bevares som dateret historik.
+
 ## 22. oktober — PR702 merget; originalgenopretning stopper før beskyttede læsninger
 
 PR702 har faktisk bestået den samlede præcise kildekontrol og er merget. Den første særskilte originalgenopretning stoppede derefter i SETUP med AUDIT_FAILED_CLOSED, før B/S-læsning, DMI-transport og cache-SAVE. Arbejdsmappen blev kun oprettet i den gamle checkpointgren, som CURRENT586 korrekt springer over. ROOTs normale to-tilstandsrepro viser samme SETUP-afslag uden mappen og næste DESCRIBE-afslag uden credentials efter mkdir 0700, med nul fjernkald.

@@ -1,3 +1,15 @@
+## 89.264 Spørg RavRadar: forklaring er ikke en lokal vejrudsigt
+
+Kort fortalt: RavRadar kan forklare en mulighed uden at love et fund eller kende forholdene på en bestemt strand.
+
+Bølger kan sætte materiale ved bunden i bevægelse, og strøm kan føre det mellem revler og render. Det er ikke det samme som, at materialet når helt op på stranden. Derfor kan der ske transport under vand, selv om der ikke ses nyt opskyl. Revler, åbninger og læsider kan påvirke transporten, men de er mulige fælder, ikke garantier.
+
+SpørgRavRadar bruger sin eksisterende kontrollerede viden til generelle forklaringer og enkle spørgsmål om genkendelse på dansk, tysk og engelsk. Et lokalt regelsvar er ikke i sig selv bevis for kvaliteten af en ekstern AI-tjeneste. Vandstand og en høj score er heller ikke et løfte om ravfund.
+
+Spørgsmål om aktuelle vejrtal kræver en konkret zone og de faktisk tilknyttede data. Et generelt svar må ikke opfinde tal eller afgøre sikkert, hvad der ligger på en bestemt strand. Usikkerhed, manglende data og sikkerhedsgrænser skal stadig fremgå ærligt; private oplysninger må ikke bruges som offentlig viden.
+
+Disse svarforbedringer og en originalbevarende programovergang er lokalt forberedt og udstedt i 4.0.587. Sidste verificerede offentlige version er4.0.586. Lokal kildekontrol er ikke installation, ny vejrhentning eller offentlig effekt; det kræver særskilt kontrolleret levering og en almindelig efterfølgende opdatering. Lager-/økonomivalget og den aktuelle genopretning er fortsat særskilte åbne punkter; denne opdatering giver ingen tilladelse til sletning af originaler.
+
 ## 89.263 Originalfil og hentetid er to forskellige ting
 
 Kort fortalt: Den samme originale vejrfil kan hentes igen senere. Det gør ikke dens indhold nyere.
@@ -588,7 +600,7 @@ En særskilt, dokumenteret Storage-formatkant rettes samtidig: immutable upload 
 
 # RavRadar Håndbog
 
-**Håndbogsversion:** 4.0.586
+**Håndbogsversion:** 4.0.587
 
 Hvis genbrug af gemte data stopper, skal den første fejlfase og et kontrolleret kildested bevares uden private fejltekster eller værdier. Tidligere beståede kontroller frikender ikke automatisk en senere mål-time eller andre input. En bedre fejlrapport ændrer ikke beregningen og er ikke bevis for, at årsagen er rettet. Gemte originaler og sidste gyldige offentlige data bevares, mens fejlen undersøges.
 

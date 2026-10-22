@@ -1,3 +1,11 @@
+## 22. oktober — ÅBEN: lokal 587 er ikke installeret assistentleverance
+
+Lokal normal versions-/C98/I97/T12-/SQL-udstedelse og syv forbrugeres fixedpoint er nu faktisk gennemført. Den sammenhængende to-filskvalifikation har 29 PASS, og den særskilte normale bindings-prewrite-integration har 5 PASS; afsluttede mål skal ikke gentages for status. De gamle unissued-afventninger er historiske på netop disse lokale punkter.
+
+Fortsat åbent: præcis samlet 587-source-CI inklusive faktisk ny native PostgreSQL, autentisk ny schema2-B/S og almindelig efterfølger efter P0, ægte 586-prewrite, SQL-installation/genlæsning og senere-H0/offentlig levering. Generisk code-only skal fortsat afvise førsteinstallation. Lokal eller mockEdge-svarforbedring beviser ikke hosted AI-kvalitet. Sidste verificerede offentlige version er 586.
+
+P0/PR703-genopretningens aktuelle eksterne udfald styres alene af ROOTs private checkpoint. Repositoryets komprimerede cachekvote, faktisk runnerplads og RAW-/downloadbudgetter er forskellige grænser; kapacitets-/økonomivalget er stadig uafklaret. Ingen ældre cache er bevist overflødig her, og ingen sletning, kvoteændring eller ny backupdestination er godkendt. Historiske fejl, røde kvitteringer, originale data og alle afslag bevares.
+
 ## 22. oktober — ÅBEN: fælles restore-arbejdsmappe mangler i CURRENT586-grenen
 
 PR702 er faktisk kildekvalificeret og merget. Første særskilte restore stopper i SETUP/AUDIT_FAILED_CLOSED før B/S, DMI og SAVE: den eneste oprettelse af det private audit-område ligger i den korrekt fravalgte gamle checkpointgren. Den normale auditor reproducerer samme stop uden mappen og går videre til DESCRIBE uden credentials, når mappen findes; nul fjernkald. Dette er ikke en leverandørfejl eller bevis for manglende filer.

@@ -60,13 +60,37 @@ const NATIVE_CONTINUITY_REVIEWED = Object.freeze({
       './authenticated-frozen585-predecessor.mjs', '../check-native-original-continuity-predecessor-source.mjs']),
   }),
 });
+// Additive authentic586 -> later-H0 variants. Whole-source inventory only;
+// the original584/585/586 source variants above remain byte-identical.
+const ASSISTANT_LATER_H0_REVIEWED=Object.freeze({
+  'scripts/check-assistant-later-h0-predecessor-source.mjs':Object.freeze({
+    sha256:'2e529a7a4e1cca1ab7ac1c16dd7292ca78263bfb980eff95c3f5c6d845eca04d',imports:Object.freeze([])}),
+  'scripts/lib/authenticated-frozen586-predecessor.mjs':Object.freeze({
+    sha256:'d0ab8aa27c30aafdcc66ff120c748c05fbf4144c6aca71493a2c97710728137c',
+    imports:Object.freeze(['../check-assistant-later-h0-predecessor-source.mjs'])}),
+  'scripts/lib/established-native-current-origin.mjs':Object.freeze({
+    sha256:'5ebeea93ee7da95011ecc3c589e2a1a54a7ac821ad938997aea0b6444aa607bf',
+    imports:Object.freeze([...NATIVE_CONTINUITY_REVIEWED['scripts/lib/established-native-current-origin.mjs'].imports,
+      './authenticated-frozen586-predecessor.mjs'])}),
+});
+// Additive fixed binding-prewrite variants. All older whole-source imports
+// above remain exact; computed loads still use only the verified OLD586 host.
+const ASSISTANT_BINDING_PREWRITE_REVIEWED=Object.freeze({
+  'scripts/lib/authenticated-frozen586-predecessor.mjs':Object.freeze({
+    sha256:'4807e6e08c487a0cf7ed398dbe29be588c4bcb58b211778932cc9f36a0681df6',
+    imports:Object.freeze(['../check-assistant-later-h0-predecessor-source.mjs'])}),
+  'scripts/assistant-later-h0-binding-prewrite.mjs':Object.freeze({
+    sha256:'860d62ff21d2854ca2856bcb6998ba48859c0237f94b315c7736a1265e1be8de',
+    imports:Object.freeze(["./lib/assistant-later-h0-successor-source.mjs","./check-assistant-later-h0-predecessor-source.mjs","./lib/authenticated-frozen586-predecessor.mjs","./migrate-post-cutover-private-runtime.mjs","./integrated-cutover-readiness.mjs","./lib/dmi-forecast-file.mjs","./lib/dmi-part-continuity.mjs","./lib/protected-dmi-native-current-proofs.mjs","./lib/ravscore-recovery-source-priority.mjs","./lib/coherent-original-source-views.mjs","../js/core/ravscore-model-contract.js","./rollback-assets/ravscore-model-contract.js","./private-production-runtime-workflow.mjs","./lib/private-weather-component-pack.mjs"])}),
+});
 export function modelSourceRelativeModuleSpecifiers(source, file) {
-  if (!Object.hasOwn(REVIEWED, file) && !Object.hasOwn(NATIVE_CONTINUITY_REVIEWED, file))
+  if (!Object.hasOwn(REVIEWED, file) && !Object.hasOwn(NATIVE_CONTINUITY_REVIEWED, file)
+    && !Object.hasOwn(ASSISTANT_LATER_H0_REVIEWED,file) && !Object.hasOwn(ASSISTANT_BINDING_PREWRITE_REVIEWED,file))
     return exactRelativeModuleSpecifiers(source, file);
   if (typeof source !== 'string') throw new Error('Reviewed model source must be a string');
   const normalized = source.replace(/^\uFEFF/, '').replace(/\r\n?/g, '\n');
   const hash = crypto.createHash('sha256').update(normalized).digest('hex');
-  const reviewed = [REVIEWED[file], NATIVE_CONTINUITY_REVIEWED[file]].filter(Boolean)
+  const reviewed = [REVIEWED[file], NATIVE_CONTINUITY_REVIEWED[file],ASSISTANT_LATER_H0_REVIEWED[file],ASSISTANT_BINDING_PREWRITE_REVIEWED[file]].filter(Boolean)
     .find(variant => variant.sha256 === hash);
   if (!reviewed)
     throw new Error('Whole reviewed model import source changed: ' + file);

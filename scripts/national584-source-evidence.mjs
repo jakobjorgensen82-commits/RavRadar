@@ -8,7 +8,9 @@ import crypto from 'node:crypto';
 import {execFileSync,spawnSync} from 'node:child_process';
 import {fileURLToPath} from 'node:url';
 import {sourceTreeContentSha256} from './lib/source-tree-content.mjs';
-import {CURRENT586_PHASE_UPLOAD,inverseCurrent586PhaseUpload,verifyCurrent586PhaseReceipt} from './native-postgres-evidence.mjs';
+import {requireAssistantLaterH0Release} from './lib/assistant-later-h0-successor-source.mjs';
+import {CURRENT586_PHASE_UPLOAD,inverseCurrent586PhaseUpload,verifyCurrent586PhaseReceipt,
+  verifyAssistantLaterH0PhaseReceipt} from './native-postgres-evidence.mjs';
 
 export const ORIGIN=Object.freeze({
   repository:'jakobjorgensen82-commits/RavRadar',pullRequest:671,
@@ -40,6 +42,9 @@ export const CURRENT585_NATIVE_COMMANDS=Object.freeze([
   'node scripts/test-protected-ravscore-continuation-checkpoint.mjs --native-statistics-revision --native-sampling-identity --current-memory-warmup --established-native-current-origin --last-mile-enclosure --account-statistics-assistant',
 ]);
 export const CURRENT586_NATIVE_COMMANDS=Object.freeze([CURRENT585_NATIVE_COMMANDS[0],CURRENT585_NATIVE_COMMANDS[1]+' --native-original-continuity']);
+export const ASSISTANT_LATER_H0_PREDECESSOR_SOURCE_COMMAND='node --test '+CURRENT586_ROOT_TARGET;
+export const ASSISTANT_LATER_H0_SOURCE_COMMAND='node scripts/build-assistant-later-h0-successor.mjs --check';
+export const ASSISTANT_LATER_H0_NATIVE_COMMANDS=Object.freeze([CURRENT586_NATIVE_COMMANDS[0],CURRENT586_NATIVE_COMMANDS[1]+' --assistant-later-h0']);
 
 export const BEFORE_BLOCK='      - name: '+STEP+'\n        run: '+COMMAND+'\n';
 export const AFTER_BLOCK=[
@@ -165,7 +170,26 @@ export function verifyReviewed585Package(pkg){
     'Exactly one normal current585 caller target must remain in the package');
   assert.equal(pkg.scripts['test:last-mile-enclosure'].split('node scripts/national584-source-evidence.mjs source').length,2);
 }
+export function verifyAssistantLaterH0Package(pkg){
+  assert.equal(pkg.version,requireAssistantLaterH0Release(),'Only the actual fixed issued assistant release');
+  assert.equal(sha(JSON.stringify(Object.keys(pkg.scripts).sort().map(key=>[key,pkg.scripts[key]]))),'9df85408955c0449c92370f1af4451ff475f4cc10a4e92bcb440790793bda997','Whole reviewed NEXT source command plan');
+  assert.equal(pkg.scripts['test:account-statistics-assistant-source'],CURRENT586_PREDECESSOR_SOURCE_COMMAND);
+  assert.equal(pkg.scripts['test:native-original-continuity-source'],ASSISTANT_LATER_H0_PREDECESSOR_SOURCE_COMMAND);
+  assert.equal(pkg.scripts['test:assistant-later-h0-source'],ASSISTANT_LATER_H0_SOURCE_COMMAND);
+  const commands=pkg.scripts['test:ravscore-source-critical'].split(' && ');
+  const asa='npm run test:account-statistics-assistant-source',native='npm run test:native-original-continuity-source',
+    next='npm run test:assistant-later-h0-source';
+  for(const command of [asa,native,next])assert.equal(commands.filter(c=>c===command).length,1);
+  assert.equal(commands[commands.indexOf(asa)-1],'npm run test:last-mile-enclosure');
+  assert.equal(commands[commands.indexOf(asa)+1],native);
+  assert.equal(commands[commands.indexOf(native)+1],next);
+  assert.equal(commands[commands.indexOf(next)+1],'node scripts/sync-ravscore-model-binding.mjs --check');
+  for(const target of [CURRENT585_ROOT_TARGET,CURRENT586_ROOT_TARGET])
+    assert.equal(Object.values(pkg.scripts).join('\n').split(target).length,2,'Each genuine prior/current caller target remains once');
+  assert.equal(pkg.scripts['test:last-mile-enclosure'].split('node scripts/national584-source-evidence.mjs source').length,2);
+}
 export function verifyPackage(pkg){
+  if(Object.hasOwn(pkg.scripts??{},'test:assistant-later-h0-source'))return verifyAssistantLaterH0Package(pkg);
   if(pkg.version==='4.0.585')return verifyReviewed585Package(pkg);
   assert.equal(pkg.version,'4.0.586');
   assert.equal(pkg.scripts['test:account-statistics-assistant-source'],CURRENT586_PREDECESSOR_SOURCE_COMMAND);
@@ -181,6 +205,9 @@ export function verifyPackage(pkg){
   assert.equal(pkg.scripts['test:last-mile-enclosure'].split('node scripts/national584-source-evidence.mjs source').length,2);
 }
 export function verifyCurrentNativeCommands(commands,version){
+  if(!['4.0.585','4.0.586'].includes(version)){
+    assert.equal(version,requireAssistantLaterH0Release());assert.deepEqual(commands,ASSISTANT_LATER_H0_NATIVE_COMMANDS);return;
+  }
   assert(['4.0.585','4.0.586'].includes(version));
   assert.deepEqual(commands,version==='4.0.585'?CURRENT585_NATIVE_COMMANDS:CURRENT586_NATIVE_COMMANDS);
 }
@@ -201,6 +228,8 @@ async function currentContext() {
   assert.equal(proof.sourceTreeSha256,content('HEAD'));
   const native=proof.nativePostgres;
   if(pkg.version==='4.0.586')verifyCurrent586PhaseReceipt(native,{run:Number(env.GITHUB_RUN_ID),
+    attempt:Number(env.GITHUB_RUN_ATTEMPT),head,pullRequest:Number(env.PULL_REQUEST_NUMBER),branch:event.pull_request.head.ref});
+  else if(pkg.version!=='4.0.585')verifyAssistantLaterH0PhaseReceipt(native,{run:Number(env.GITHUB_RUN_ID),
     attempt:Number(env.GITHUB_RUN_ATTEMPT),head,pullRequest:Number(env.PULL_REQUEST_NUMBER),branch:event.pull_request.head.ref});
   else{
   assert.equal(native?.status,'EXECUTED');assert.equal(native.executedInThisRun,true);
@@ -353,7 +382,7 @@ async function main(){
     current585Native:{status:'EXECUTED',phase:'account-statistics-assistant',separatelyRequired:true},
     current585Source:{command:'npm run test:account-statistics-assistant-source',actualCommand:CURRENT585_SOURCE_COMMAND,separatelyRequired:true},
     current585NationalExecutionClaimed:false,providerOrProductionProof:false};
-  }else{
+  }else if(ctx.releaseVersion==='4.0.586'){
     assert.equal(ctx.releaseVersion,'4.0.586');
     current.historical584National={...result,historicalInput:historical,
       current:{head:ctx.head,run:ctx.run,attempt:ctx.attempt,pullRequest:ctx.pullRequest},
@@ -363,6 +392,20 @@ async function main(){
         origin:ctx.proof.nativePostgres.origin,phase:'native-original-continuity',separatelyRequired:true},
       current586Source:{command:'npm run test:native-original-continuity-source',actualCommand:CURRENT586_SOURCE_COMMAND,separatelyRequired:true},
       current585NationalExecutionClaimed:false,current586NationalExecutionClaimed:false,providerOrProductionProof:false};
+  }else{
+    assert.equal(ctx.releaseVersion,requireAssistantLaterH0Release());
+    current.historical584National={...result,historicalInput:historical,
+      current:{head:ctx.head,run:ctx.run,attempt:ctx.attempt,pullRequest:ctx.pullRequest},
+      current585PredecessorSource:{command:'npm run test:account-statistics-assistant-source',
+        actualCommand:CURRENT586_PREDECESSOR_SOURCE_COMMAND,scope:'GENUINE_FROZEN585_SOURCE_ONLY',separatelyRequired:true},
+      current586PredecessorNative:{status:'EXECUTED',phase:'native-original-continuity',scope:'GENUINE_FROZEN586',separatelyRequired:true},
+      current586PredecessorSource:{command:'npm run test:native-original-continuity-source',
+        actualCommand:ASSISTANT_LATER_H0_PREDECESSOR_SOURCE_COMMAND,scope:'GENUINE_FROZEN586_SOURCE_ONLY',separatelyRequired:true},
+      currentAssistantLaterH0Native:{status:'EXECUTED',phase:'assistant-later-h0',separatelyRequired:true},
+      currentAssistantLaterH0Source:{command:'npm run test:assistant-later-h0-source',
+        actualCommand:ASSISTANT_LATER_H0_SOURCE_COMMAND,separatelyRequired:true},
+      current585NationalExecutionClaimed:false,current586NationalExecutionClaimed:false,
+      currentAssistantLaterH0NationalExecutionClaimed:false,providerOrProductionProof:false};
   }
   await fs.writeFile(file,JSON.stringify(current)+'\n');
   console.log('Historical584 national '+result.status+'; frozen '+ORIGIN.head+'; CURRENT585 native/source remain separate.');

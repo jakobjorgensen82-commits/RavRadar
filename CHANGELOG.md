@@ -1,3 +1,11 @@
+## 4.0.587 — lokal kildekandidat, ikke offentligt leveret
+
+- Samler de allerede gennemgåede lokale DA/DE/EN-assistentforbedringer: vandstand uden fundgaranti, sammenhængende forklaring af bevægelse ved bunden/mellem revler uden nyt opskyl og enkel identifikationsgrammatik fra eksisterende kontrolleret viden. Generel kystgren, aktuelle zonekrav, safety/private-afslag og ærlig usikkerhed bevares; ingen hosted AI-kvalitet påstås.
+- Tilkobler den særskilte normale autentificerede 586-forgænger/prewrite og strengt senere almindelige H0-fortsættelse med hele schema2-originalbanken og original-/tal-/historikbevarelse. Generisk kode-only forbliver installed-only; ingen ny samme-H0-hændelse eller nulstilling.
+- Faktisk lokal udstedelse: releasedAt 2026-10-22T18:14:03.047Z, C98/I97/T12, én ny append-only 20261022181403-SQL på 325.470 bytes, syv forbrugeres fixedpoint,65 gamle migrationer byteuændrede og geodata kun topversion.
+- Sammenhængende lokalt to-filsmål 29 PASS/0 FAIL/0 SKIP og separat bindings-prewrite-mål 5 PASS/0 FAIL/0 SKIP er bestået. De er ikke ny native PostgreSQL, præcis 587-source-CI, ægte produktions-B/S, installation, offentlig vejrlevering eller hosted AI-bevis.
+- P0/PR703, ny schema2-B/S/ordinaryfollower, lager-/økonomivalg, samlet kilde-/databasekvalifikation og kontrolleret offentlig levering er fortsat åbne. Offentlig version er senest verificeret som 4.0.586. Ingen SOURCE/statistik/retentionaktivering eller sletning følger med.
+
 ## Privat kildeplan — ni kilde-/testblade for færre gentagelser
 
 - Samler de to tidligere gennemgåede nativefase-/Candidate-G-rettelser og den mindste lukkede test-only fixture-/inventarkorrektion: ni forskellige kode-/teststier. De oprindelige frozenpakker og historiske whole-oracles bevares; ingen ny produktmæssig genbrugsautoritet eller clean-head-waiver.
