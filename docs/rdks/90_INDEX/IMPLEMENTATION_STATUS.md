@@ -12,6 +12,8 @@
 - [ ] Verificér filbeskyttelse, plads og genbrug gennem faktisk normal RAW-SAVE og ny B/S; ingen pruning.
 - [ ] Præcis ny kildekvalifikation og faktisk originaltilgængelighed/plads.
 - Lokal `scripts/validate-source.ps1` er forsøgt, men stoppede før prøver på manglende runtime-afhængigheder. Det normale `setup-codex.ps1` kan ikke installere den fastlåste `eccodeslib` på Windows. Ingen pakkeversion eller produktkontrol ændres; fuld kvalifikation inklusive native Linux og PostgreSQL kræves på PR'ens præcise head. Portable RDKS-/håndbogs-/versions- og uændrede modelgrafkontroller består.
+- Første præcise PR702-kontrol stoppede i to JavaScript-kildeorakler før de native Python-prøver: den additive CURRENT586-workflowændring var ikke ført tilbage gennem det gamle hele kildeorakel, og en funktionsafgrænsning læste en ny separat hjælpefunktion med. Rettelsen skal bevare alle gamle sikkerhedsassertioner og kun korrigere kildeafgrænsningen; ingen produktadfærd eller hashaffejning. PostgreSQL og senere kildekontroller blev ikke nået.
+- [x] Begge berørte normale Node-prøvefiler består nu samlet lokalt med 25 tilfælde uden fejl eller skip. En præcis yderinverse genskaber hele det ægte gamle workflow før samtlige uændrede gamle orakler; funktionsprøven læser nu kun sin faktiske importerede funktion. Produkt-/workflowkode, gamle hashes og sikkerhedsassertioner er uændrede. Ny præcis GitHub-kontrol er fortsat påkrævet.
 - [ ] Kontrolleret genopretning, fuld native-reprojektion, normal save/upload/deploy og ny almindelig offentlig vejrgeneration med efterfølgende opbygning. Ingen SQL, nulstilling, pruning eller SOURCE-aktivering følger af lokale prøver.
 
 ## 22. oktober — præcis diagnose læst; fuld gemt prognose indgår i næste cacheprøve

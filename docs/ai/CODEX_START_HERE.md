@@ -12,6 +12,8 @@ Filbeskyttelse og særskilt fysisk/logisk pladskontrol er nu integreret lokalt m
 
 ## 22. oktober — særskilt cacheprøve, ikke en påstået vejrrettelse
 
+PR702 er nu under præcis kildekvalifikation. Første kontrol stoppede i to JavaScript-kildeafgrænsninger før native Python og PostgreSQL; de er rettet lokalt med 25 beståede normale tilfælde, uændrede gamle hashes og sikkerhedsassertioner. Produktkode og den beståede tætte nationale prøve er uændrede. Genbrug dem; kræv ny samlet CI før merge og faktisk offentlig levering bagefter.
+
 Den præcise identitetsdiagnose er faktisk kildekvalificeret, merget og læst. Første fejl vedrører modelkørslens identitet blandt de leverede native-kontekster; fysisk RAW-fravær og den fulde almindelige fejlkæde er ikke bevist. En særskilt frakoblet prøve forberedes i eksisterende saved-input-audit: faktisk restaureret RAW-cache, egne fulde captures, uændret normal afkoder, fysisk lukning, hel kilde-/tal-reprojektion samt normal 121-timers pakning/genlæsning i privat arbejdsmappe. Historik alene er utilstrækkelig; fremtidige gemte valg og de sidste støttetimer skal også bevises. Original B/S, gamle tal og alle produktionsstop bevares. Ingen almindelig vejrhentning, SQL eller aktivering følger af lokale prøver. Se privat checkpoint for målte identiteter, første fejl og faktisk status.
 
 ## 22. oktober — læs faktisk diagnose, ikke en antaget årsag

@@ -282,8 +282,11 @@ test('fixed private wx plan is exclusive, reports byte SHA only, and refuses sym
 });
 
 test('auth orchestration retains exact archived reader, normal baseline, GCM, final readback and closed-reader boundary', async () => {
-  const source = await fs.readFile(new URL('./audit-saved-weather-inputs.mjs', import.meta.url), 'utf8');
-  const body = source.split('export async function prepareAuthenticatedSavedDmiOriginalRestore(')[1].split('\nif (process.argv[1]')[0];
+  // Inspect precisely the existing imported normal function. New independent
+  // remote-readback helpers below it are not part of this orchestration body.
+  const body = Function.prototype.toString.call(prepareAuthenticatedSavedDmiOriginalRestore);
+  assert.match(body, /^async function prepareAuthenticatedSavedDmiOriginalRestore\(/);
+  assert.doesNotMatch(body, /verifyCurrent586OriginalPlanRemoteSources/);
   for (const call of ['createReadOnlySavedWeatherClients(credentials)', 'prepareSavedAuditProgressBaseline(',
     'withAuthenticatedWeatherProgress(', 'privateWeatherPackJsonReadsClosed(componentInvocation)',
     'prepare.savedDmiOriginalHistoryDemand(', 'prepare.collectSelectedSavedDmiOriginalCaptures(']) assert.ok(body.includes(call), call);
