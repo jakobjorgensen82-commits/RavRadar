@@ -1,3 +1,7 @@
+## 22. oktober — særskilt cacheprøve, ikke en påstået vejrrettelse
+
+Den præcise identitetsdiagnose er faktisk kildekvalificeret, merget og læst. Første fejl vedrører modelkørslens identitet blandt de leverede native-kontekster; fysisk RAW-fravær og den fulde almindelige fejlkæde er ikke bevist. En særskilt frakoblet prøve forberedes i eksisterende saved-input-audit: faktisk restaureret RAW-cache, egne fulde captures, uændret normal afkoder, fysisk lukning, hel kilde-/tal-reprojektion samt normal 121-timers pakning/genlæsning i privat arbejdsmappe. Historik alene er utilstrækkelig; fremtidige gemte valg og de sidste støttetimer skal også bevises. Original B/S, gamle tal og alle produktionsstop bevares. Ingen almindelig vejrhentning, SQL eller aktivering følger af lokale prøver. Se privat checkpoint for målte identiteter, første fejl og faktisk status.
+
 ## 22. oktober — læs faktisk diagnose, ikke en antaget årsag
 
 Den skrivefri CURRENT586-observation er gennemført. Den viser en manglende præcis native-original blandt leverede kontekster, ikke fysisk RAW-fravær eller fuld reproduktion af den almindelige kørsel. Lokal identitetsopdeling og normalt Python-mål-fingerprint er målprøvet, men ikke ny offentlig levering. Bevar alle originale data og normale original-/før-score-krav; spring ikke coherent-rækkers bevis over. Fortsæt fra CURRENT_TRUTH og det seneste private checkpoint. Alle fem hovedmål til 18. november 2026 er åbne.

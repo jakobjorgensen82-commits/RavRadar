@@ -1,3 +1,13 @@
+## 89.262 Genskab originalbevis uden at ændre gemte tal
+
+Kort fortalt: En bevaret strømprognose skal fortsat kunne knyttes til sine egne originaler, selv om en nyere vejrfil har erstattet en arbejdsfil.
+
+En særskilt intern prøve kan genlæse præcis den gemte originalfil og bruge den normale afkoder. Den skal genskabe samme kildeoplysninger, strømværdier, sted og alder. En lignende time eller et andet modelkørselsnavn er ikke en erstatning. Manglende filer, ændrede bytes eller uafsluttet læsning giver ikke et gyldigt bevis.
+
+Kontrollen omfatter både timer til den fremadrettede historik og hele den gemte prognose, også de sidste støttetimer. En privat arbejdsafledning kan pakkes og læses igen gennem det normale format, men den må hverken ændre det gamle udgangspunkt eller udgives for den oprindelige sikkerhedspakke. Originaler og tidligere offentliggjorte scorer bevares.
+
+Den forberedte prøve er ikke en ny vejrhentning, ændring af beregningsmodel eller offentlig genopretning. Lokale prøver og én undersøgt kystdel beviser ikke hele landet. Faktisk normal levering og efterfølgende sikker drift skal fortsat dokumenteres særskilt.
+
 ## 89.261 Bevar originalerne i det lager, de faktisk ligger i
 
 Kort fortalt: En programopdatering skal hente de bevarede originaler fra det rigtige private lager. Den må ikke flytte eller ændre dem for at komme videre.

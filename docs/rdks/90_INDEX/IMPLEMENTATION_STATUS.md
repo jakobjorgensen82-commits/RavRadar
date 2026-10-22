@@ -1,3 +1,13 @@
+## 22. oktober — præcis diagnose læst; fuld gemt prognose indgår i næste cacheprøve
+
+- [x] Privat reproduktion gennem normal Python-cachemerge, native kold genlæsning, JS-retention, faktisk schema1/schema2-pakning/genlæsning og collector. Alle 121 timer, gammel H0 og gamle originaler bevares; schema1 uden reservoir afvises, mens den eksisterende normale originalbank bevarer beviset. Ikke faktisk produktionsårsag eller RAW-sletningsbevis.
+- [ ] Gentag præcis kildekontrol efter rettelse af den nye native `current-only`-prøves ni-felts capture til normal elleve-felts input. Produktionswrapperen og dens fulde identitetsafslag lempes ikke; lokal syntakskontrol er ikke native Linux-bevis.
+- [x] Præcis kildekontrol, normal merge og faktisk afgrænset observation med de nye identitetsgrupper. Første observerede afvisning vedrører modelkørselsidentiteten; der påstås ikke fysisk RAW-tab, forskellige tidsinstanter eller fuldt nationalt årsagsbevis.
+- [x] Lokal proof-only-udvidelse med særskilt 121-timersrolle, herunder H0 og de sidste støttetimer, samt uændrede kilde-/tal-/alderskrav gennem normal kernel. En allerede bevist række må ikke mistes, blot fordi andre rækker kræver afkodning. Historikgrænser, RAW-grænser og samlet bytegrænse bevares.
+- [x] Syv normale bindingsforbrugere kontrolleret uændrede. Den separate audit/controller er ikke en ny indgående modelkilde; ingen inventory-undtagelse eller falsk I-genbinding anvendes.
+- [ ] Kvalificér samlet kilde, faktisk Linux/RAW/afkodning og normal paknings-/genlæsningskontrol på den autentificerede fejlpakke. Den første kystdel er ikke hele landet, selv ved bestået privat prøve.
+- [ ] Landsdækkende integration, sikker normal levering, ny offentlig vejrgeneration og efterfølgende selvstændig drift. SOURCE og de øvrige hovedmål forbliver åbne.
+
 ## 22. oktober — faktisk afgrænset diagnose og lokal identitetsopdeling
 
 - [x] Lokal første-fejl-PART-metadataundersøgelse med samme normale projektion, egne fulde captures, globalt afslag ved tvetydighed og særskilt NOT_PROBED for RAW. Hele post-H0-målet består 23/23; diagnose-/fingerprintmål, uændret I95, syv forbrugere og håndbog/RDKS består lokalt. Ingen RAW-/produktionsrettelse eller faktisk ny pakkediagnose følger af prøverne.

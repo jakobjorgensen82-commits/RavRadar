@@ -5939,6 +5939,87 @@ if scenario in {"current-only", "cached-current-history"}:
         assert not p._UNSETTLED_GRIB_READS
         assert fixture_path.read_bytes() == payload
         assert p.raw_cache_manifest_path().read_bytes() == fixture_manifest_bytes
+        # Add ONLY inside the existing native current-only fixture's two-order
+        # loop, after normal fd/manifest/bytes assertions and BEFORE snapshots.
+        # The actual file and native source above are the test's existing owned
+        # ecCodes fixture. No new test bank, fixture file, provider or decoder stub.
+        import time
+        wrapper_spec = importlib.util.spec_from_file_location(
+            "coherent_current_native_wrapper", source.with_name("decode-coherent-current-originals.py"))
+        wrapper = importlib.util.module_from_spec(wrapper_spec)
+        wrapper_spec.loader.exec_module(wrapper)
+        step_names = ("itemId", "assetIdentitySha256", "nativeValidTime", "leadTimeHours",
+                      "acquiredAt", "optionalFieldSet", "itemCreatedAt", "itemUpdatedAt",
+                      "nativeGridSampling", "gridPoint", "distanceKm")
+        # A RAW manifest row may omit the two optional item timestamps. The
+        # normal request boundary still requires the complete eleven-field
+        # canonical asset, including both absent timestamps as None.
+        wrapper_capture = p.canonical_current_source_asset(fixture_capture)
+        assert wrapper_capture is not None
+        assert set(wrapper_capture) == set(fixture_capture) | {"itemCreatedAt", "itemUpdatedAt"}
+        assert len(wrapper_capture) == 11
+        assert all(wrapper_capture[key] == value for key, value in fixture_capture.items())
+        assert wrapper_capture["itemCreatedAt"] is None and wrapper_capture["itemUpdatedAt"] is None
+        request = {"requestId": "a" * 64, "partId": current_zone["id"].removeprefix("PART::"),
+                   "identity": p.sampling_identity(current_zone), "nativeValidTime": when,
+                   "nativeStep": {key: copy.deepcopy(source_current[key]) for key in step_names if key in source_current},
+                   "capture": copy.deepcopy(wrapper_capture)}
+        job = {"capture": copy.deepcopy(wrapper_capture), "path": fixture_path,
+               "requests": [request], "zones": {request["partId"]: current_zone}}
+        before_inputs = copy.deepcopy((request, job, stage, stage_diagnostics, stage_outcomes))
+        decoded, completed = wrapper.decode(p, [job], time.monotonic())
+        assert completed == 1 and len(decoded) == 1
+        assert decoded[0]["row"]["sources"]["current"] == source_current
+        assert (decoded[0]["row"]["current-u"], decoded[0]["row"]["current-v"]) == (0., -.5)
+        assert set(decoded[0]["row"]) == {"time", "current-u", "current-v", "sources"}
+        assert set(decoded[0]["row"]["sources"]) == {"current"}
+        assert "generatedAt" not in decoded[0]["header"]
+        assert "forecastAgeHours" not in decoded[0]["row"]["sources"]["current"]
+        assert (request, job, stage, stage_diagnostics, stage_outcomes) == before_inputs
+        assert not p._UNSETTLED_GRIB_READS and fixture_path.read_bytes() == payload
+        assert p.raw_cache_manifest_path().read_bytes() == fixture_manifest_bytes
+        # The malformed nine-field fixture must remain refused; correcting the
+        # test request does not loosen the unchanged full capture comparison.
+        raw_manifest_job = copy.deepcopy(job)
+        raw_manifest_job["capture"] = copy.deepcopy(fixture_capture)
+        try:
+            wrapper.decode(p, [raw_manifest_job], time.monotonic())
+        except wrapper.Refused as error:
+            assert str(error) == "COHERENT_CURRENT_ORIGINAL_OWNED_CAPTURE_MISMATCH"
+        else:
+            raise AssertionError("coherent CURRENT wrapper admitted a noncanonical RAW manifest row")
+        assert fixture_path.read_bytes() == payload and not p._UNSETTLED_GRIB_READS
+        assert p.raw_cache_manifest_path().read_bytes() == fixture_manifest_bytes
+        # Existing full versus Python-seven-place identity guard; do not require
+        # exact central==wire point or introduce an independent nearby tolerance.
+        central_request = {**request, "identity": {**request["identity"], "samplingPoint": [8.00000004, 55.00000004]}}
+        rounded_wire = {**central_request["identity"], "samplingPoint": [8., 55.]}
+        assert wrapper.wire_matches(rounded_wire, central_request)
+        assert not wrapper.wire_matches({**rounded_wire, "samplingPoint": [8.00000001, 55.]}, central_request)
+        # A changed recorded native index must not be accepted just because the
+        # same file and valid time can be decoded. No output escapes on refusal.
+        wrong_job = copy.deepcopy(job)
+        wrong_job["requests"][0]["nativeStep"]["nativeGridSampling"]["elementIndex"] += 1
+        try:
+            wrapper.decode(p, [wrong_job], time.monotonic())
+        except RuntimeError as error:
+            assert str(error) == "COHERENT_CURRENT_ORIGINAL_DECODE_MISMATCH"
+        else:
+            raise AssertionError("coherent CURRENT wrapper admitted a different native element")
+        # All eleven capture fields remain authoritative; OLD's byte-identity
+        # bridge does not grant CURRENT an acquiredAt relabelling authority.
+        acquired_job = copy.deepcopy(job)
+        acquired_job["capture"]["acquiredAt"] = "2026-01-01T00:00:01Z"
+        if acquired_job["capture"]["acquiredAt"] == fixture_capture["acquiredAt"]:
+            acquired_job["capture"]["acquiredAt"] = "2026-01-01T00:00:02Z"
+        try:
+            wrapper.decode(p, [acquired_job], time.monotonic())
+        except wrapper.Refused as error:
+            assert str(error) == "COHERENT_CURRENT_ORIGINAL_OWNED_CAPTURE_MISMATCH"
+        else:
+            raise AssertionError("coherent CURRENT wrapper relabelled acquisition time")
+        assert fixture_path.read_bytes() == payload and not p._UNSETTLED_GRIB_READS
+        assert p.raw_cache_manifest_path().read_bytes() == fixture_manifest_bytes
         snapshots.append((fixture_path, payload))
     assert current_rows[0] == current_rows[1] and scalar_rows[0] == scalar_rows[1]
 
