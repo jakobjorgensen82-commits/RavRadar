@@ -393,23 +393,229 @@ export async function decideReuse({env=process.env,get=github,readGit=git,getEnv
   } catch { return {status:'EXECUTE',reason:'native-input-or-evidence-unavailable-or-different'}; }
 }
 
+
+// CURRENT586-only phase receipt. It never certifies the whole source gate.
+export const CURRENT586_PHASE_KIND='RAVRADAR_NATIVE586_POSTGRES_PHASE_V1';
+export const CURRENT586_PHASE_FILE='.cache/native-postgres-phase-proof.json';
+export const CURRENT586_PHASE_UPLOAD='Upload independently completed native586 PostgreSQL phase';
+export const CURRENT586_WORKFLOW_BASE_SHA256='7202708b50eb1a5d44c516f807258f8c7c6e823ee52242ba42670b45fc5ea705';
+export const CURRENT586_PHASE_UPLOAD_BLOCK=[
+  '      - name: '+CURRENT586_PHASE_UPLOAD,'        uses: actions/upload-artifact@v7','        with:',
+  '          name: native586-phase-$'+'{{ github.run_id }}-$'+'{{ github.run_attempt }}-$'+'{{ github.event.pull_request.head.sha }}',
+  '          path: '+CURRENT586_PHASE_FILE,'          if-no-files-found: error','          retention-days: 30','',
+].join('\n')+'\n';
+export function inverseCurrent586PhaseUpload(source){
+  source=lf(source);assert.equal(source.split(CURRENT586_PHASE_UPLOAD_BLOCK).length,2);
+  return source.replace(CURRENT586_PHASE_UPLOAD_BLOCK,'');
+}
+export function verifyCurrent586Workflow(before,after){
+  assert.equal(lf(before),lf(after),'The whole native586 workflow must remain identical');
+  assert.equal(sha(inverseCurrent586PhaseUpload(before)),CURRENT586_WORKFLOW_BASE_SHA256);
+  assert.equal(nativeBlock(before),NEW_NATIVE_BLOCK);
+}
+export function verifyCurrent586Runtime(current,prior){
+  assert.deepEqual(current,prior,'Every observed native runtime prerequisite must remain identical');
+  assert.equal(current.platform,'linux');assert.equal(current.arch,'x64');assert.equal(current.imageOS,'ubuntu24');
+  assert.match(current.imageVersion,/^[0-9.]+$/);assert.match(current.node,/^v22\./);
+  assert.match(current.python,/^Python 3\.12\./);assert.equal(current.pgBindir,'/usr/lib/postgresql/16/bin');
+  assert.deepEqual(current.pgMajors,[16,16,16,16]);assert.deepEqual(current.overrides,[]);
+  for(const key of ['pythonLocation','ldLibraryPath','git'])assert(typeof current[key]==='string'&&current[key].length>0);
+  assert.equal(current.ldLibraryPath,current.pythonLocation+'/lib');return current;
+}
+export function verifyCurrent586PhaseReceipt(native,current){
+  assert.equal(native?.phase,'NATIVE_ORIGINAL_CONTINUITY');assert.deepEqual(native.commands,CURRENT_COMMANDS);
+  assert.deepEqual(native.current,current);
+  assert(['EXECUTED','REUSED'].includes(native.status));assert.equal(typeof native.eligibleForReuse,'boolean');
+  assert.equal(native.executedInThisRun,native.status==='EXECUTED');
+  if(native.status==='EXECUTED')assert.equal(native.origin,null);
+  else{
+    assert.equal(native.eligibleForReuse,true);const origin=native.origin;
+    assert(Number.isSafeInteger(origin?.run)&&origin.run>ORIGIN.run&&origin.run<current.run);
+    assert.equal(origin.attempt,1);assert(Number.isSafeInteger(origin.job)&&origin.job>0);
+    assert.match(origin.head,/^[a-f0-9]{40}$/);assert(Number.isSafeInteger(origin.artifactId)&&origin.artifactId>0);
+    assert.match(origin.artifactDigest,/^sha256:[a-f0-9]{64}$/);
+  }
+  if(native.eligibleForReuse){
+    assert.match(native.nativeInput?.inputGitManifestSha256,/^[a-f0-9]{64}$/);
+    assert(Number.isSafeInteger(native.nativeInput.retainedEntries)&&native.nativeInput.retainedEntries>0);
+    assert.deepEqual(native.nativeInput.frozenGitTrees,FROZEN.map(([head,tree])=>({head,tree})));
+    verifyCurrent586Runtime(native.runtime,native.runtime);
+  }
+  return {status:native.status,executedInThisRun:native.executedInThisRun,origin:native.origin};
+}
+export function verifyCurrent586Metadata(run,jobs,current){
+  assert.equal(run.id,current.run);assert.equal(run.run_attempt,1);assert.equal(run.head_sha,current.head);
+  assert.equal(run.head_branch,current.branch);assert.equal(run.path,WORKFLOW);assert.equal(run.event,'pull_request');
+  assert.equal(run.repository?.full_name,ORIGIN.repository);assert.equal(run.head_repository?.full_name,ORIGIN.repository);
+  assert(run.pull_requests?.some(pr=>pr.number===current.pullRequest));
+  assert.equal(run.status,'completed');assert(['success','failure'].includes(run.conclusion));
+  assert(complete(jobs,'jobs'));const job=one(jobs.jobs.filter(row=>row.name===JOB));
+  assert.equal(job.run_id,run.id);assert.equal(job.run_attempt,1);assert.equal(job.head_sha,run.head_sha);
+  assert.equal(job.status,'completed');assert(['success','failure'].includes(job.conclusion));
+  assert(Number.isSafeInteger(job.id)&&job.id>0);
+  assert.deepEqual(job.steps.filter(row=>row.number<15).map(row=>row.number),Array.from({length:14},(_,i)=>i+1));
+  const pg=one(job.steps.filter(row=>row.name===STEP)),upload=one(job.steps.filter(row=>row.name===CURRENT586_PHASE_UPLOAD));
+  const source=one(job.steps.filter(row=>row.name==='Validate source contracts and release governance'));
+  assert.equal(pg.number,15);assert(successful(pg));assert(job.steps.filter(row=>row.number<15).every(successful));
+  assert.equal(upload.number,16);assert(successful(upload));assert.equal(source.number,17);
+  assert.equal(source.status,'completed');assert(['success','failure'].includes(source.conclusion));
+  assert(Date.parse(pg.started_at)<=Date.parse(pg.completed_at)&&Date.parse(pg.completed_at)<=Date.parse(upload.completed_at));
+  return {job:job.id,pgStartedAt:pg.started_at,uploadedAt:upload.completed_at,sourceConclusion:source.conclusion};
+}
+export function verifyCurrent586Artifact(metadata,zip,proofRaw,run,phase){
+  assert.equal(metadata.expired,false);assert.equal(metadata.workflow_run?.id,run.id);
+  assert.equal(metadata.workflow_run?.head_sha,run.head_sha);
+  assert.equal(metadata.name,'native586-phase-'+run.id+'-1-'+run.head_sha);
+  assert(Number.isSafeInteger(metadata.id)&&metadata.id>0);
+  assert(Number.isSafeInteger(metadata.size_in_bytes)&&metadata.size_in_bytes>0&&metadata.size_in_bytes<=65536);
+  assert.equal(zip.length,metadata.size_in_bytes);assert.match(metadata.digest,/^sha256:[a-f0-9]{64}$/);
+  assert.equal('sha256:'+sha(zip),metadata.digest);
+  assert(Date.parse(metadata.created_at)>=Date.parse(phase.pgStartedAt)&&Date.parse(metadata.created_at)<=Date.parse(phase.uploadedAt));
+  assert(proofRaw.length>0&&proofRaw.length<=32768);const proof=JSON.parse(proofRaw);
+  assert.equal(proof.schemaVersion,1);assert.equal(proof.kind,CURRENT586_PHASE_KIND);
+  assert.equal(proof.repository,ORIGIN.repository);assert.equal(proof.headSha,run.head_sha);
+  assert.equal(proof.privatePayloadIncluded,false);assert.match(proof.sourceTreeSha256,/^sha256:[a-f0-9]{64}$/);
+  verifyCurrent586PhaseReceipt(proof.nativePostgres,{run:run.id,attempt:1,head:run.head_sha,
+    pullRequest:one(run.pull_requests).number,branch:run.head_branch});return proof;
+}
+function decodeCurrent586Artifact(zip){
+  return execFileSync('python',['-c',
+    'import io,sys,zipfile; z=zipfile.ZipFile(io.BytesIO(sys.stdin.buffer.read())); assert z.namelist()==["native-postgres-phase-proof.json"]; i=z.infolist()[0]; assert not i.is_dir() and 0<i.file_size<=32768; sys.stdout.buffer.write(z.read(i))',
+  ],{input:zip,maxBuffer:32768,timeout:10000});
+}
+function current586Environment(){
+  const value=environment();
+  value.overrides=Object.keys(process.env).filter(key=>/^(?:PG|RAVRADAR_|PYTHONPATH$|PYTHONHOME$|NODE_OPTIONS$|NODE_PATH$|LD_PRELOAD$|GIT_(?:OBJECT|ALTERNATE|REPLACE|CONFIG|DIR$|WORK_TREE$|COMMON_DIR$|INDEX_FILE$|SHALLOW_FILE$|GRAFT_FILE$))/.test(key)).sort();
+  return value;
+}
+function current586LocalProof(env,readGit,getEnvironment){
+  assert.equal(env.GITHUB_EVENT_NAME,'pull_request');assert.equal(env.GITHUB_REPOSITORY,ORIGIN.repository);
+  assert.equal(env.GITHUB_RUN_ATTEMPT,'1');assert.match(env.SOURCE_GATE_HEAD_SHA,/^[a-f0-9]{40}$/);
+  assert(/^[1-9][0-9]*$/.test(env.PULL_REQUEST_NUMBER||''));
+  const run=Number(env.GITHUB_RUN_ID),pullRequest=Number(env.PULL_REQUEST_NUMBER);
+  assert(Number.isSafeInteger(run)&&run>ORIGIN.run&&Number.isSafeInteger(pullRequest));
+  assert(typeof env.GITHUB_HEAD_REF==='string'&&env.GITHUB_HEAD_REF.length>0&&env.GITHUB_HEAD_REF.length<=255);
+  assert.equal(readGit(['rev-parse','HEAD^{commit}']).trim(),env.SOURCE_GATE_HEAD_SHA);
+  assert.equal(readGit(['status','--porcelain','--untracked-files=no']).trim(),'');
+  assert.equal(readGit(['for-each-ref','refs/replace']).trim(),'');
+  assert.equal(readGit(['rev-parse','--is-shallow-repository']).trim(),'false');
+  for(const [head,tree]of FROZEN)assert.equal(readGit(['rev-parse',head+'^{tree}']).trim(),tree);
+  assert.equal(JSON.parse(readGit(['show','HEAD:package.json'])).version,'4.0.586');
+  const workflow=readGit(['show','HEAD:'+WORKFLOW]);verifyCurrent586Workflow(workflow,workflow);
+  const tree=parseTree(readGit(['ls-tree','-rz','--full-tree','HEAD']));
+  const nativeInput=verifyInputTrees(tree,tree),runtime=getEnvironment();verifyCurrent586Runtime(runtime,runtime);
+  return {eligibleForReuse:true,phase:'NATIVE_ORIGINAL_CONTINUITY',nativeInput,runtime,
+    current:{run,attempt:1,head:env.SOURCE_GATE_HEAD_SHA,pullRequest,branch:env.GITHUB_HEAD_REF}};
+}
+async function current586Reader(){
+  const directory=await fs.mkdtemp('.cache/native586-evidence-');let calls=0;const deadline=performance.now()+60000;
+  return async(route,{zip=false}={})=>{
+    assert(++calls<=24);const sequence=String(calls).padStart(2,'0');
+    const read=async(response,suffix)=>{
+      await fs.writeFile(path.join(directory,sequence+suffix+'.response.json'),JSON.stringify({status:response.status,
+        headers:Object.fromEntries(response.headers)})+'\n',{flag:'wx'});
+      const bytes=Buffer.from(await response.arrayBuffer());
+      await fs.writeFile(path.join(directory,sequence+suffix+'.body'),bytes,{flag:'wx'});return bytes;
+    };
+    const remaining=()=>{const ms=Math.floor(deadline-performance.now());assert(ms>0);return Math.min(15000,ms);};
+    const response=await fetch('https://api.github.com'+route,{headers:{Authorization:'Bearer '+process.env.GITHUB_TOKEN,
+      Accept:'application/vnd.github+json','X-GitHub-Api-Version':'2022-11-28'},redirect:'manual',signal:AbortSignal.timeout(remaining())});
+    let bytes=await read(response,'.api');
+    if(zip){
+      assert.equal(response.status,302);const target=new URL(response.headers.get('location'));
+      assert.equal(target.protocol,'https:');assert(!target.username&&!target.password);
+      const signed=await fetch(target,{redirect:'error',signal:AbortSignal.timeout(remaining())});
+      bytes=await read(signed,'.zip');assert(signed.ok);assert(bytes.length<=65536);return bytes;
+    }
+    assert(response.ok);assert(bytes.length<=2*1024*1024);return JSON.parse(bytes);
+  };
+}
+export async function decideCurrent586Reuse({env=process.env,get,readGit=git,getEnvironment=current586Environment}={}){
+  try{
+    const local=current586LocalProof(env,readGit,getEnvironment),repo='/repos/'+ORIGIN.repository,base=repo+'/actions';
+    get??=await current586Reader();
+    const current=await get(base+'/runs/'+local.current.run);
+    assert.equal(current.id,local.current.run);assert.equal(current.run_attempt,1);assert.equal(current.path,WORKFLOW);
+    assert.equal(current.head_sha,local.current.head);assert.equal(current.event,'pull_request');
+    assert.equal(current.repository?.full_name,ORIGIN.repository);assert.equal(current.head_branch,local.current.branch);
+    verifyCurrentPullRequest(await get(repo+'/pulls/'+local.current.pullRequest),current,local.current.pullRequest);
+    const query=new URLSearchParams({event:'pull_request',branch:local.current.branch,per_page:'100'});
+    const listing=await get(base+'/workflows/validate-pull-request.yml/runs?'+query);
+    assert(complete(listing,'workflow_runs'));assert.equal(new Set(listing.workflow_runs.map(row=>row.id)).size,listing.total_count);
+    assert(listing.workflow_runs.some(row=>row.id===current.id));
+    const prior=listing.workflow_runs.filter(row=>row.id<current.id).sort((a,b)=>b.id-a.id);assert(prior.length>0);
+    const load=async(row)=>{
+      assert.equal(row.run_attempt,1);
+      const run=await get(base+'/runs/'+row.id),jobs=await get(base+'/runs/'+row.id+'/attempts/1/jobs?per_page=100');
+      for(const key of ['id','run_attempt','head_sha','head_branch','path','event'])assert.equal(run[key],row[key]);
+      const ctx={run:run.id,attempt:1,head:run.head_sha,pullRequest:local.current.pullRequest,branch:local.current.branch};
+      const phase=verifyCurrent586Metadata(run,jobs,ctx);
+      const artifacts=await get(base+'/runs/'+run.id+'/artifacts?per_page=100');assert(complete(artifacts,'artifacts'));
+      const artifact=one(artifacts.artifacts.filter(value=>value.name==='native586-phase-'+run.id+'-1-'+run.head_sha));
+      assert(Number.isSafeInteger(artifact.size_in_bytes)&&artifact.size_in_bytes>0&&artifact.size_in_bytes<=65536);
+      assert.equal(artifact.expired,false);assert.match(artifact.digest,/^sha256:[a-f0-9]{64}$/);
+      const zip=await get(base+'/artifacts/'+artifact.id+'/zip',{zip:true});
+      const proof=verifyCurrent586Artifact(artifact,zip,decodeCurrent586Artifact(zip),run,phase);
+      assert.equal(proof.nativePostgres.eligibleForReuse,true);return {run,jobs,phase,artifact,proof};
+    };
+    let origin=await load(prior[0]);
+    if(origin.proof.nativePostgres.status==='REUSED'){
+      const locator=origin.proof.nativePostgres.origin;
+      const row=one(prior.filter(value=>value.id===locator.run));origin=await load(row);
+      assert.equal(origin.run.head_sha,locator.head);assert.equal(origin.phase.job,locator.job);
+      assert.equal(origin.artifact.id,locator.artifactId);assert.equal(origin.artifact.digest,locator.artifactDigest);
+    }
+    assert.equal(origin.proof.nativePostgres.status,'EXECUTED','A REUSED receipt is never a new SQL origin');
+    readGit(['merge-base','--is-ancestor',origin.run.head_sha,'HEAD']);
+    verifyCurrent586Workflow(readGit(['show',origin.run.head_sha+':'+WORKFLOW]),readGit(['show','HEAD:'+WORKFLOW]));
+    for(const file of REUSE_FILES)assert.equal(readGit(['show',origin.run.head_sha+':'+file]),readGit(['show','HEAD:'+file]),
+      'The native verifier and its complete existing test must be byte-identical');
+    const inputs=verifyInputTrees(parseTree(readGit(['ls-tree','-rz','--full-tree',origin.run.head_sha])),
+      parseTree(readGit(['ls-tree','-rz','--full-tree','HEAD'])),(file,side)=>readGit(['show',(side==='before'?origin.run.head_sha:'HEAD')+':'+file]));
+    for(const key of ['inputGitManifestSha256','retainedEntries','frozenGitTrees'])
+      assert.deepEqual(origin.proof.nativePostgres.nativeInput[key],inputs[key]);
+    verifyCurrent586Runtime(local.runtime,origin.proof.nativePostgres.runtime);
+    const later=listing.workflow_runs.filter(row=>row.id>origin.run.id),jobsByRun=new Map();
+    for(const row of later)if(row.id!==current.id)jobsByRun.set(row.id,
+      await get(base+'/runs/'+row.id+'/attempts/'+row.run_attempt+'/jobs?per_page=100'));
+    verifyLaterRuns({total_count:later.length,workflow_runs:later},jobsByRun,origin.run,current.id,local.current.branch);
+    verifyCurrent586Metadata(await get(base+'/runs/'+origin.run.id),
+      await get(base+'/runs/'+origin.run.id+'/attempts/1/jobs?per_page=100'),
+      {run:origin.run.id,attempt:1,head:origin.run.head_sha,pullRequest:local.current.pullRequest,branch:local.current.branch});
+    verifyCurrentPullRequest(await get(repo+'/pulls/'+local.current.pullRequest),current,local.current.pullRequest);
+    return {...local,status:'REUSED',executedInThisRun:false,commands:CURRENT_COMMANDS,
+      origin:{run:origin.run.id,attempt:1,job:origin.phase.job,head:origin.run.head_sha,
+        artifactId:origin.artifact.id,artifactDigest:origin.artifact.digest},
+      environmentEvidence:'same-hosted-image-and-observed-runtime-prerequisites-not-an-unobserved-binary-sha'};
+  }catch{return {status:'EXECUTE',reason:'native586-input-or-phase-evidence-unavailable-or-different'};}
+}
+
 async function record(receipt) {
   const file='.cache/source-tree-content-proof.json', proof=JSON.parse(await fs.readFile(file,'utf8'));
   assert.equal(proof.headSha,git(['rev-parse','HEAD^{commit}']).trim()); assert.equal(proof.repository,ORIGIN.repository);
   assert.equal(proof.contractId,'weather-source-gate-content-v2'); assert.equal(proof.privatePayloadIncluded,false);
   proof.nativePostgres=receipt; await fs.writeFile(file,JSON.stringify(proof)+'\n');
+  if(receipt.phase==='NATIVE_ORIGINAL_CONTINUITY')await fs.writeFile(CURRENT586_PHASE_FILE,JSON.stringify({
+    schemaVersion:1,kind:CURRENT586_PHASE_KIND,repository:proof.repository,headSha:proof.headSha,
+    sourceTreeSha256:proof.sourceTreeSha256,privatePayloadIncluded:false,nativePostgres:receipt,
+  })+'\n',{flag:'wx'});
 }
 async function main() {
   let receipt=JSON.stringify(CURRENT_COMMANDS) === JSON.stringify(COMMANDS) ? await decideReuse()
-    : {status:'EXECUTE',reason:'new-native-original-continuity-phase-requires-actual-execution'};
+    : await decideCurrent586Reuse();
   if(receipt.status!=='REUSED') {
     console.log('Native PostgreSQL: original commands required; reuse evidence absent or different.');
+    let before=null;try{before=current586LocalProof(process.env,git,current586Environment);}catch{/* No reuse on unknown prerequisites. */}
     const env={...process.env}; for(const key of ['GITHUB_TOKEN','SOURCE_GATE_HEAD_SHA','PULL_REQUEST_NUMBER'])delete env[key];
     const result=spawnSync('/usr/bin/bash',['--noprofile','--norc','-e','-o','pipefail','-c',NATIVE_SCRIPT],{env,stdio:'inherit'});
     if(result.error||result.status!==0){process.exitCode=result.status||1;return;}
     receipt={...receipt,status:'EXECUTED',executedInThisRun:true,origin:null,
       current:{run:Number(process.env.GITHUB_RUN_ID),attempt:Number(process.env.GITHUB_RUN_ATTEMPT),head:git(['rev-parse','HEAD^{commit}']).trim()},commands:CURRENT_COMMANDS};
-  } else console.log('Native PostgreSQL: REUSED from run '+ORIGIN.run+'/1, job '+ORIGIN.job+', head '+ORIGIN.head+'; no new SQL execution claimed.');
+    let after=null;try{after=current586LocalProof(process.env,git,current586Environment);assert.deepEqual(after,before);}
+    catch{after=null;}
+    receipt={...receipt,...(after??{eligibleForReuse:false,phase:'NATIVE_ORIGINAL_CONTINUITY'}),
+      current:{...receipt.current,pullRequest:Number(process.env.PULL_REQUEST_NUMBER),branch:process.env.GITHUB_HEAD_REF}};
+  } else console.log('Native PostgreSQL: REUSED from run '+receipt.origin.run+'/1, job '+receipt.origin.job+', head '+receipt.origin.head+'; no new SQL execution claimed.');
   await record(receipt);
 }
 if(process.argv[1]&&path.resolve(process.argv[1])===fileURLToPath(import.meta.url))await main();

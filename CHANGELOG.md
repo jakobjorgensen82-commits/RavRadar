@@ -1,3 +1,9 @@
+## Privat kildeplan — ni kilde-/testblade for færre gentagelser
+
+- Samler de to tidligere gennemgåede nativefase-/Candidate-G-rettelser og den mindste lukkede test-only fixture-/inventarkorrektion: ni forskellige kode-/teststier. De oprindelige frozenpakker og historiske whole-oracles bevares; ingen ny produktmæssig genbrugsautoritet eller clean-head-waiver.
+- Bevarer P0s fælles restore-mkdir, hele121-timers native-originalbank, RAW-/SAVE-krav, alle19 gamle audit-CLI-forløb og fulde positive210/673-/hash-/privacykrav. Ny kildekontrakt er28 trin med første nativefase faktisk udført og uploadet samt separat ægte slutproof.
+- Privat sammensat mod c78b4aec og anvendt alene i en isoleret kvalifikationskilde; ikke leveret. Ved denne kildeudstedelse mangler den normale clean-commit-workflowprøve og ny eksakt CI; faktisk senere udførelsesevidens føres i det private checkpoint. Gamle delbeviser og12PASS/2FAIL bevares som historik. Ingen dokumenteret tidsbesparelse, ny version/model/SQL, vejrhentning eller løst P0-forløb påstås.
+
 ## Ikke udgivet — fælles privat arbejdsmappe til præcis originalgenopretning
 
 - Retter den reproducerede SETUP-forudsætning efter PR702: opretter ét eksklusivt privat audit-område før både checkpoint- og CURRENT586-grenen, med umask 077 og mode 0700; eksisterende sti eller symlink afvises.

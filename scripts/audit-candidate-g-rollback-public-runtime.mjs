@@ -387,12 +387,9 @@ export async function auditCandidateGRollbackPublicRuntime({
   expectedZoneCount = EXPECTED_ZONES,
   expectedPartCount = EXPECTED_PARTS,
 } = {}) {
-  assertSealedStageInput(candidateFull, plan, {
-    expectedSourceHead,
-    expectedDatasetId,
-    expectedZoneCount,
-    expectedPartCount,
-  });
+  // Refuse independent marker/profile shapes before the national candidate
+  // hash/projection. These refusals never qualify or admit the candidate.
+  if (!exactKeys(plan, PLAN_FIELDS)) throw new Error('Candidate G sealed plan field set is incompatible');
   if (RAVSCORE_CALIBRATION_ELIGIBLE !== false) {
     throw new Error('Candidate G public rollback must remain calibration-ineligible');
   }
@@ -434,6 +431,14 @@ export async function auditCandidateGRollbackPublicRuntime({
     || new Set(stageMarker.installed.map(item => item.path)).size !== expectedInstalled.size) {
     throw new Error('Candidate G isolated stage installed-file seal is incompatible');
   }
+  assertScoreProfile(manifest?.ravScoreProfile, expectedBinding,
+    'Candidate G manifest score profile');
+  assertSealedStageInput(candidateFull, plan, {
+    expectedSourceHead,
+    expectedDatasetId,
+    expectedZoneCount,
+    expectedPartCount,
+  });
   const installedByPath = new Map(stageMarker.installed.map(item => [item.path, item]));
   const rollbackContractText = await fs.readFile(
     fileURLToPath(new URL('./rollback-assets/ravscore-model-contract.js', import.meta.url)), 'utf8');
@@ -543,8 +548,6 @@ export async function auditCandidateGRollbackPublicRuntime({
     },
     label: 'Candidate G public manifest runtime',
   });
-  assertScoreProfile(manifest.ravScoreProfile, expectedBinding,
-    'Candidate G manifest score profile');
   if (manifest.ravScoreAvailability?.allZonesActive !== true
     || manifest.ravScoreAvailability?.activeZoneCount !== expectedZoneCount
     || manifest.ravScoreAvailability?.totalZoneCount !== expectedZoneCount
