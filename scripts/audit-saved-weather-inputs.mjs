@@ -38,6 +38,12 @@ import { SAVED_DMI_ORIGINAL_SCOPES, savedDmiOriginalHistoryDemand,
   buildSavedDmiOriginalRestorePlan, writeSavedDmiOriginalRestorePlan }
   from './prepare-saved-dmi-original-restore.mjs';
 
+import { PROTECTED_RAVSCORE_CHECKPOINT_DOCUMENT_KEY, PROTECTED_RAVSCORE_CHECKPOINT_RESTORE_MAXIMUM_RESPONSE_BYTES }
+  from './protected-ravscore-continuation-checkpoint.mjs';
+import { requireCurrent586ExactOriginalExecution, buildCurrent586ExactOriginalPlan, writeCurrent586ExactOriginalPlan,
+  validateCurrent586ExactOriginalPlan, current586OriginalCanonical, assertCurrent586ClosedOriginalTransport }
+  from './lib/current586-exact-original-plan.mjs';
+
 const REPOSITORY = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 
 // Fixed actual failed ordinary attempt. Bundle/binding pins come from its
@@ -120,7 +126,8 @@ function current586BootstrapObservation(bootstrapApi, options) {
 }
 
 async function measureCurrent586Endpoints({ ctx, work, payloadRoot, source, conditions, manifest,
-  pythonExecutable, oldWorkflow, registryFetchImpl, cachedOriginalProof = false }) {
+  pythonExecutable, oldWorkflow, registryFetchImpl, cachedOriginalProof = false,
+  prepareCurrent586Originals = false, clients = null }) {
   const scratch = await noSymlinks(ctx.root, path.join(ctx.root, 'current586-source'));
   if (!(await fs.lstat(scratch)).isDirectory()) fail('CURRENT586_SCRATCH_INVALID');
   assertCurrent586Source(source, manifest);
@@ -191,6 +198,25 @@ async function measureCurrent586Endpoints({ ctx, work, payloadRoot, source, cond
   await checkpointApi.saveRavScoreContinuationCheckpoint({ sourcePath: path.join(payloadRoot, 'data/live/conditions.json'),
     checkpointPath, expectedPartCount: 673, repositoryRoot: scratch });
   const checkpoint = await readJson(checkpointPath, 256 * 1024 * 1024);
+  let remoteCheckpoint=null, remoteRows=null;
+  const checkpointQuery='?document_key=eq.'+encodeURIComponent(PROTECTED_RAVSCORE_CHECKPOINT_DOCUMENT_KEY)
+    +'&select=document_key,payload,version&limit=2';
+  if(prepareCurrent586Originals){
+    const remoteApi=await imported('scripts/protected-ravscore-continuation-checkpoint.mjs');
+    const remotePath=path.join(work,'remote-S/.cache/ravscore-continuation-checkpoint/checkpoint.json');
+    const request=async(suffix,options={})=>{
+      if(suffix!==checkpointQuery||Object.keys(options).length)fail('CURRENT586_SOURCE_MISMATCH');
+      const rows=await clients.request(suffix,options);
+      if(remoteRows!==null&&!same(remoteRows,rows))fail('CURRENT_GENERATION_CHANGED');
+      remoteRows=rows;return rows;
+    };
+    const restoredS=await remoteApi.restoreProtectedRavScoreContinuationCheckpoint({
+      checkpointPath:remotePath,targetReference:CURRENT586_ENDPOINT_AUDIT.targetReferenceAt,request});
+    if(restoredS.restored!==true||!Array.isArray(remoteRows)||remoteRows.length!==1
+      ||!Number.isSafeInteger(remoteRows[0].version)||remoteRows[0].version<1)fail('CURRENT586_SOURCE_MISMATCH');
+    remoteCheckpoint=await readJson(remotePath,256*1024*1024);
+    if(!same(remoteCheckpoint,checkpoint))fail('CURRENT586_SOURCE_MISMATCH');
+  }
   const boundary = { datasetId: source.datasetId, productionReferenceAt: source.productionReferenceAt,
     bundleContentSha256: source.bundleContentSha256, checkpointGenerationSha256: checkpoint.generationSha256,
     conditionsSha256: crypto.createHash('sha256').update(await fs.readFile(path.join(payloadRoot, 'data/live/conditions.json'))).digest('hex') };
@@ -199,6 +225,7 @@ async function measureCurrent586Endpoints({ ctx, work, payloadRoot, source, cond
   const active = await exists(activeFile) ? await bulk(activeFile) : null;
   const liveCurrentPilot = await withoutSavedAuditSecrets(() => pilotApi.readLiveCurrentPilot(registry));
   let aggregate = null, bootstrapMetadata = null, cachedProof = null, visitedParts = 0;
+  const restorationDiscoveries=[];let restorationBytes=2;
   const byPart = new Map();
   const registryByPart = new Map(Object.entries(registry.zones).flatMap(([zoneId, entries]) =>
     entries.map(part => [part.partId, { zoneId, part }])));
@@ -236,6 +263,13 @@ async function measureCurrent586Endpoints({ ctx, work, payloadRoot, source, cond
       boundary, zones: { features }, productionReferenceAt: CURRENT586_ENDPOINT_AUDIT.targetReferenceAt,
       protectedBulk, progressCandidate: candidate ?? active, progressActive: active, historicalBulk: null,
       protectedCompanionContexts: companions, persistedHourlyByPart: persisted, liveCurrentPilot };
+    if(prepareCurrent586Originals){
+      const result=bootstrapApi.discoverCommittedCoherentOriginalBootstrap({...partInputs,includeSavedForecast121:true});
+      if(!['METADATA_BOUND','NO_BOOTSTRAP_REQUIRED'].includes(result.summary.status))fail('CURRENT586_SOURCE_MISMATCH');
+      restorationBytes+=Buffer.byteLength(stable(result.privateRequests))+2;
+      if(restorationBytes>192*1024*1024)fail('CURRENT586_DIAGNOSTIC_BOUND');
+      restorationDiscoveries.push({partId:part.partId,result});visitedParts++;continue outer;
+    }
     aggregate = planner.diagnoseCurrent586SelectedEndpoints(partInputs);
     visitedParts++;
     if (aggregate.firstFailureCategory !== 'NO_NORMAL_COLLECTOR_REFUSAL') {
@@ -268,6 +302,16 @@ async function measureCurrent586Endpoints({ ctx, work, payloadRoot, source, cond
       }
       break outer;
     }
+  }
+  if(prepareCurrent586Originals){
+    if(visitedParts!==673||!same(remoteRows,await clients.request(checkpointQuery)))fail('CURRENT_GENERATION_CHANGED');
+    await verify();
+    const privateBinding={datasetId:boundary.datasetId,committedReferenceAt:boundary.productionReferenceAt,
+      targetReferenceAt:CURRENT586_ENDPOINT_AUDIT.targetReferenceAt,bundleContentSha256:boundary.bundleContentSha256,
+      conditionsSha256:boundary.conditionsSha256,checkpointGenerationSha256:boundary.checkpointGenerationSha256};
+    return {current586OriginalPlan:buildCurrent586ExactOriginalPlan({source,privateBinding,
+      discoveries:restorationDiscoveries,remoteCheckpoint,derivedCheckpoint:checkpoint,
+      remoteCheckpointVersion:remoteRows[0].version,executionHead:process.env.GITHUB_SHA})};
   }
   if (!aggregate) fail('AUDIT_COUNTER_INVALID');
   // The pilot hashes the normal sorted PART/parent/water-point projection,
@@ -386,12 +430,14 @@ export function createReadOnlySavedWeatherClients({
   accountId = process.env.RAVRADAR_R2_ACCOUNT_ID, accessKeyId = process.env.RAVRADAR_R2_ACCESS_KEY_ID,
   secretAccessKey = process.env.RAVRADAR_R2_SECRET_ACCESS_KEY, fetchImpl = globalThis.fetch,
   describeOnly = false, maximumRequests = 40, maximumMilliseconds = 300_000,
+  includeCurrent586Checkpoint = false,
   clock = () => performance.now(),
 } = {}) {
   let base;
   try { base = new URL(supabaseUrl); } catch { fail('READ_CREDENTIALS_UNAVAILABLE'); }
   if (base.protocol !== 'https:' || base.username || base.password || base.pathname !== '/' || base.search || base.hash
     || typeof serviceRoleKey !== 'string' || !serviceRoleKey.trim()
+    || typeof includeCurrent586Checkpoint !== 'boolean'
     || !integer(maximumRequests) || maximumRequests < 1 || maximumRequests > 40
     || !integer(maximumMilliseconds) || maximumMilliseconds < 1 || maximumMilliseconds > 300_000) fail('READ_CREDENTIALS_UNAVAILABLE');
   if (!describeOnly && (!/^[a-f0-9]{32}$/.test(accountId ?? '') || !accessKeyId || !secretAccessKey)) fail('READ_CREDENTIALS_UNAVAILABLE');
@@ -410,10 +456,15 @@ export function createReadOnlySavedWeatherClients({
       && [...url.searchParams.keys()].sort().join(',') === 'document_key,limit,select'
       && url.searchParams.get('document_key') === `eq.${policy.documentKey}`
       && url.searchParams.get('select') === 'document_key,payload,version' && url.searchParams.get('limit') === '2';
+    const checkpoint = includeCurrent586Checkpoint && method==='GET' && url.origin===base.origin
+      && url.pathname==='/rest/v1/admin_documents'
+      && [...url.searchParams.keys()].sort().join(',')==='document_key,limit,select'
+      && url.searchParams.get('document_key')==='eq.'+PROTECTED_RAVSCORE_CHECKPOINT_DOCUMENT_KEY
+      && url.searchParams.get('select')==='document_key,payload,version' && url.searchParams.get('limit')==='2';
     const bucket = method === 'HEAD' && url.origin === r2Origin && url.pathname === bucketPath && !url.search;
     const objectPath = url.pathname.startsWith(`${bucketPath}/`) ? url.pathname.slice(bucketPath.length + 1) : null;
     const archive = method === 'GET' && url.origin === r2Origin && !url.search && allowedObjects.has(objectPath);
-    if (url.username || url.password || url.hash || !(pointer || bucket || archive)) fail('REMOTE_TARGET_FORBIDDEN');
+    if (url.username || url.password || url.hash || !(pointer || checkpoint || bucket || archive)) fail('REMOTE_TARGET_FORBIDDEN');
     if (reading) fail('REMOTE_READ_CONCURRENT');
     if (timedOut || requests >= maximumRequests || networkMilliseconds >= maximumMilliseconds) fail('REMOTE_READ_BOUND');
     const started = clock();
@@ -457,7 +508,8 @@ export function createReadOnlySavedWeatherClients({
       }, () => {});
       response = await readWithinBudget(fetchPromise);
       if (response.redirected || response.status >= 300 && response.status < 400) fail('REMOTE_REDIRECT_FORBIDDEN');
-      const maximum = archive ? policy.maximumArchiveBytes : 2 * 1024 * 1024;
+      const maximum = checkpoint ? PROTECTED_RAVSCORE_CHECKPOINT_RESTORE_MAXIMUM_RESPONSE_BYTES
+        : archive ? policy.maximumArchiveBytes : 2 * 1024 * 1024;
       const declared = response.headers?.get?.('content-length');
       if (declared != null && (!/^\d+$/.test(declared) || Number(declared) > maximum)) fail('REMOTE_BODY_BOUND');
       if (method === 'HEAD') {
@@ -1103,7 +1155,7 @@ export async function auditSavedWeatherInputs({ mode, privateRoot, descriptorPat
   includeRawFilePresence = false, progressBaselineTargetHour = null, includeSelectedCurrentPreflight = false,
   includeCurrentWindowDiagnostic = false, includeCurrent586Endpoints = false,
   includeCurrent586CachedOriginals = false,
-  prepareCurrentForwardOriginals = false,
+  prepareCurrentForwardOriginals = false, prepareCurrent586Originals = false,
   repository = process.env.GITHUB_REPOSITORY, pythonExecutable = process.env.PYTHON ?? 'python',
   encryptionKey = process.env.WEATHER_PROGRESS_ENCRYPTION_KEY,
   masterSecret = process.env.WEATHER_PROGRESS_MASTER_SECRET,
@@ -1113,6 +1165,15 @@ export async function auditSavedWeatherInputs({ mode, privateRoot, descriptorPat
   let baselinePackInvocation = null;
   let normalProgressBaselineUsed = false;
   try {
+    if(typeof prepareCurrent586Originals!=='boolean')fail('MODE_INVALID');
+    if(prepareCurrent586Originals){
+      requireCurrent586ExactOriginalExecution();
+      if(mode!=='audit'||progressSource!==CURRENT586_ENDPOINT_AUDIT.progressSource
+        ||progressFile!=null||progressCacheKey!=null||progressBaselineTargetHour!==null
+        ||includeCurrent586Endpoints||includeCurrent586CachedOriginals||includeCurrentWindowDiagnostic
+        ||includeSelectedCurrentPreflight||includeRawManifest||includeRawFilePresence
+        ||rawCacheKey!==null||rawManifestSource!==null||prepareCurrentForwardOriginals)fail('MODE_INVALID');
+    }
     if (typeof includeCurrent586CachedOriginals !== 'boolean'
       || includeCurrent586CachedOriginals && (mode !== 'audit' || progressSource !== CURRENT586_ENDPOINT_AUDIT.progressSource
         || includeCurrent586Endpoints || progressFile != null || progressCacheKey != null || progressBaselineTargetHour !== null
@@ -1184,7 +1245,7 @@ export async function auditSavedWeatherInputs({ mode, privateRoot, descriptorPat
     // Reject malformed, same-hour and older targets before any remote read.
     validateProgressBaselineTargetHour(progressBaselineTargetHour, source);
     let cipher = null;
-    if (!includeCurrent586Endpoints && !includeCurrent586CachedOriginals) {
+    if (!includeCurrent586Endpoints && !includeCurrent586CachedOriginals && !prepareCurrent586Originals) {
     if (!/^\d+-[1-9]\d*$/.test(progressSource ?? '') || progressCacheKey !== `weather-private-progress-encrypted-v2-Linux-main-${progressSource}`
       || !/^[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+$/.test(repository ?? '')) fail('PROGRESS_IDENTITY_INVALID');
     cipher = await noSymlinks(ctx.root, progressFile);
@@ -1207,7 +1268,7 @@ export async function auditSavedWeatherInputs({ mode, privateRoot, descriptorPat
       importOld('scripts/lib/coastal-point-staging-contract.mjs'), importOld('scripts/lib/ravscore-sampling-context.mjs')]);
     if (!same(oldBinding.ravScoreModelBinding(), source.modelBinding)
       || !same(await oldWorkflow.privateRuntimeContractHashes({ repositoryRoot: predecessor }), source.contractHashes)) fail('PREDECESSOR_CONTRACT_MISMATCH');
-    const clients = createReadOnlySavedWeatherClients(credentials);
+    const clients = createReadOnlySavedWeatherClients({...credentials,includeCurrent586Checkpoint:prepareCurrent586Originals});
     if (!same(await oldProtected.describeCurrentProtectedPrivateProductionRuntime(clients), source)) fail('CURRENT_GENERATION_CHANGED');
     work = await fs.mkdtemp(path.join(ctx.root, 'saved-input-audit-'));
     const bundlePath = path.join(work, 'bundle');
@@ -1229,15 +1290,19 @@ export async function auditSavedWeatherInputs({ mode, privateRoot, descriptorPat
     const conditions = await readJson(path.join(payloadRoot, 'data/live/conditions.json'), 535_822_312);
     const parts = originalParts(conditions);
     const bStateTimes = authenticatedBStateTimes(conditions, parts, oldStaging, oldSampling);
-    if (includeCurrent586Endpoints || includeCurrent586CachedOriginals) {
+    if (includeCurrent586Endpoints || includeCurrent586CachedOriginals || prepareCurrent586Originals) {
       phase = includeCurrent586CachedOriginals ? 'CURRENT586_CACHED_ORIGINAL_PROOF' : 'CURRENT586_ENDPOINT_INSPECTION';
       const report = await measureCurrent586Endpoints({ ctx, work, payloadRoot, source,
         conditions, manifest, pythonExecutable, oldWorkflow, registryFetchImpl: credentials.fetchImpl ?? fetch,
-        cachedOriginalProof: includeCurrent586CachedOriginals });
+        cachedOriginalProof: includeCurrent586CachedOriginals, prepareCurrent586Originals, clients });
       if (!same(await oldProtected.describeCurrentProtectedPrivateProductionRuntime(clients), source)) fail('CURRENT_GENERATION_CHANGED');
+      const output=prepareCurrent586Originals?{...baseReport('AUDIT_COMPLETED'),
+        fixedScope:'CURRENT586_EXACT_ORIGINAL_RESTORE_39666991481_1',encryptedProgressRead:false,
+        remoteSActuallyRead:true,derivedSUsedAsRemoteS:false,sourceAdmissionPerformed:false,
+        originalRestorePreparation:await writeCurrent586ExactOriginalPlan({repositoryRoot:ctx.repository,plan:report.current586OriginalPlan})}:report;
       await fs.rm(work, { recursive: true, force: true }); work = null;
-      await fs.writeFile(safeOutput, JSON.stringify(report) + '\n', { flag: 'wx', mode: 0o600 });
-      return report;
+      await fs.writeFile(safeOutput, JSON.stringify(output) + '\n', { flag: 'wx', mode: 0o600 });
+      return output;
     }
     const baselineIndex = await forecastIndex(path.join(payloadRoot, 'data/live/dmi-forecast-cache.json'));
     phase = 'BASELINE_COMPONENT_AUTHENTICATION';
@@ -1416,7 +1481,7 @@ export async function auditSavedWeatherInputs({ mode, privateRoot, descriptorPat
     return report;
   } finally {
     if (work && !includeCurrent586Endpoints && (baselinePackInvocation === null || privateWeatherPackJsonReadsClosed(baselinePackInvocation))
-      && !includeCurrent586CachedOriginals
+      && !includeCurrent586CachedOriginals && !prepareCurrent586Originals
       && path.dirname(work) === await fs.realpath(privateRoot).catch(() => null)
       && path.basename(work).startsWith('saved-input-audit-')) await fs.rm(work, { recursive: true, force: true }).catch(() => {});
   }
@@ -1545,6 +1610,61 @@ export async function prepareAuthenticatedSavedDmiOriginalRestore({ privateRoot,
   }
 }
 
+// Fixed fresh B pointer + actual S readback; never a B/S write or a derived-S claim.
+export async function verifyCurrent586OriginalPlanRemoteSources({privateRoot,descriptorPath,outputPath,
+  repositoryRoot=REPOSITORY,completedTransport=false,...credentials}={}){
+  requireCurrent586ExactOriginalExecution();
+  if(typeof completedTransport!=='boolean')fail('MODE_INVALID');
+  const ctx=await context(privateRoot,repositoryRoot);
+  const source=identity(await readJson(await noSymlinks(ctx.root,descriptorPath)));
+  assertCurrent586Source(source);
+  const relative=completedTransport?'.cache/current586-exact-original-restore/plan.json':'.cache/dmi-grib/.original-recovery-plan.json';
+  const file=await noSymlinks(ctx.repository,path.join(ctx.repository,relative));
+  const stat=await fs.lstat(file,{bigint:true});
+  if(!stat.isFile()||stat.isSymbolicLink()||stat.nlink!==1n||stat.size<2n||stat.size>16n*1024n*1024n)fail('CURRENT586_SOURCE_MISMATCH');
+  const bytes=await fs.readFile(file),after=await fs.lstat(file,{bigint:true});
+  if(bytes.length!==Number(stat.size)||['dev','ino','size','mtimeNs','ctimeNs','nlink'].some(key=>stat[key]!==after[key]))fail('CURRENT586_SOURCE_MISMATCH');
+  const plan=validateCurrent586ExactOriginalPlan(JSON.parse(bytes),process.env.GITHUB_SHA);
+  if(completedTransport){
+    const receipt=await readJson(await noSymlinks(ctx.repository,path.join(ctx.repository,
+      '.cache/current586-exact-original-restore/receipt.json')),64*1024);
+    assertCurrent586ClosedOriginalTransport(receipt,plan,crypto.createHash('sha256').update(bytes).digest('hex'));
+  }
+  if(crypto.createHash('sha256').update(current586OriginalCanonical(source)).digest('hex')
+    !==plan.binding.sourceDescriptorSha256)fail('CURRENT586_SOURCE_MISMATCH');
+  const clients=createReadOnlySavedWeatherClients({...credentials,describeOnly:true,includeCurrent586Checkpoint:true});
+  if(!same(await protectedApi.describeCurrentProtectedPrivateProductionRuntime(clients),source))fail('CURRENT_GENERATION_CHANGED');
+  const temporary=await fs.mkdtemp(path.join(ctx.root,'current586-remote-readback-'));
+  let passed=false;
+  try{
+    const checkpointPath=path.join(temporary,'.cache/ravscore-continuation-checkpoint/checkpoint.json');
+    const api=await import('./protected-ravscore-continuation-checkpoint.mjs');
+    let rows=null;
+    const request=async(suffix,options={})=>{const value=await clients.request(suffix,options);
+      if(rows!==null&&!same(rows,value))fail('CURRENT_GENERATION_CHANGED');rows=value;return value;};
+    const restored=await api.restoreProtectedRavScoreContinuationCheckpoint({
+      checkpointPath,targetReference:CURRENT586_ENDPOINT_AUDIT.targetReferenceAt,request});
+    const checkpoint=await readJson(checkpointPath,256*1024*1024);
+    if(restored.restored!==true||!Array.isArray(rows)||rows.length!==1
+      ||rows[0].version!==plan.binding.remoteCheckpointVersion
+      ||checkpoint.generationSha256!==plan.binding.checkpointGenerationSha256
+      ||crypto.createHash('sha256').update(current586OriginalCanonical(checkpoint)).digest('hex')
+        !==plan.binding.remoteCheckpointSha256)fail('CURRENT586_SOURCE_MISMATCH');
+    const query='?document_key=eq.'+encodeURIComponent(PROTECTED_RAVSCORE_CHECKPOINT_DOCUMENT_KEY)
+      +'&select=document_key,payload,version&limit=2';
+    if(!same(rows,await clients.request(query))
+      ||!same(await protectedApi.describeCurrentProtectedPrivateProductionRuntime(clients),source))fail('CURRENT_GENERATION_CHANGED');
+    passed=true;
+    const report={...baseReport('CURRENT586_SOURCES_RECONFIRMED'),remoteSActuallyRead:true,
+      derivedSUsedAsRemoteS:false,remoteWrites:false,sourceAdmissionPerformed:false};
+    const output=await newOutput(ctx.root,outputPath);await fs.writeFile(output,JSON.stringify(report)+'\n',{flag:'wx',mode:0o600});
+    return report;
+  }finally{
+    // Unknown restore/read ownership or a failed readback retains private work.
+    if(passed)await fs.rm(temporary,{recursive:true,force:true});
+  }
+}
+
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
   try {
     const args = process.argv.slice(2), options = { mode: args.shift() };
@@ -1558,16 +1678,21 @@ if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.me
       '--include-current586-endpoints': 'includeCurrent586Endpoints',
       '--include-current586-cached-originals': 'includeCurrent586CachedOriginals',
       '--prepare-current-forward-originals': 'prepareCurrentForwardOriginals',
+      '--prepare-current586-originals': 'prepareCurrent586Originals',
       '--progress-baseline-target-hour': 'progressBaselineTargetHour' };
     while (args.length) { const key = args.shift(), value = args.shift();
       if (!names[key] || !value || value.startsWith('--') || Object.hasOwn(options, names[key])) fail('MODE_INVALID'); options[names[key]] = value; }
-    for (const key of ['includeRawManifest', 'includeRawFilePresence', 'includeSelectedCurrentPreflight', 'includeCurrentWindowDiagnostic', 'includeCurrent586Endpoints', 'includeCurrent586CachedOriginals', 'prepareCurrentForwardOriginals']) {
+    for (const key of ['includeRawManifest', 'includeRawFilePresence', 'includeSelectedCurrentPreflight', 'includeCurrentWindowDiagnostic', 'includeCurrent586Endpoints', 'includeCurrent586CachedOriginals', 'prepareCurrentForwardOriginals', 'prepareCurrent586Originals']) {
       if (!Object.hasOwn(options, key)) continue;
       if (!['true', 'false'].includes(options[key])) fail('MODE_INVALID');
       options[key] = options[key] === 'true';
     }
-    const report = await auditSavedWeatherInputs(options);
-    if (options.prepareCurrentForwardOriginals && report.status === 'AUDIT_COMPLETED' && report.originalRestorePreparation && process.env.GITHUB_OUTPUT) {
+    const {mode,...readbackOptions}=options;
+    if(['verify-current586-plan','verify-current586-closed'].includes(mode)
+      &&!same(Object.keys(readbackOptions).sort(),['descriptorPath','outputPath','privateRoot']))fail('MODE_INVALID');
+    const report = ['verify-current586-plan','verify-current586-closed'].includes(mode)
+      ? await verifyCurrent586OriginalPlanRemoteSources({...readbackOptions,completedTransport:mode==='verify-current586-closed'}) : await auditSavedWeatherInputs(options);
+    if ((options.prepareCurrentForwardOriginals || options.prepareCurrent586Originals) && report.status === 'AUDIT_COMPLETED' && report.originalRestorePreparation && process.env.GITHUB_OUTPUT) {
       const plan = report.originalRestorePreparation;
       await fs.appendFile(process.env.GITHUB_OUTPUT,
         `preparation_status=${plan.status}\nplan_sha256=${plan.planSha256}\noriginal_count=${plan.originalCount}\nplan_bytes=${plan.planBytes}\n`);

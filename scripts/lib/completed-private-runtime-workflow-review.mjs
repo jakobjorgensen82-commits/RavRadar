@@ -16,6 +16,7 @@ for (const row of Object.values(ordinaryStageWiringReview)) {
 Object.freeze(ordinaryStageWiringReview);
 // Exact586 then585 normal User-Agent inverses; every historical workflow byte remains the oracle.
 export function inverseRelease585WorkflowUserAgents(source, role) {
+  source = inverseNativeOriginalSchemaSelectorWorkflow(source, role);
   if (role === 'build' && sha(source) === '8223891e25cfb7fbcf57a536bcc55a1cbf59ed676f02172588192065ae4eccc0') {
     assert.equal(source.split('RavRadar/4.0.586').length, 6, 'Exactly five normal586 User-Agent fields');
     source = source.replaceAll('RavRadar/4.0.586', 'RavRadar/4.0.585');
@@ -234,4 +235,41 @@ export function inverseCompletedRuntimeWorkflow(source, role) {
   }
   assert.equal(sha(legacy), row.legacySha256, 'Whole historical workflow must survive the inverse');
   return legacy;
+}
+
+// Exact additional WORK-SELECTOR layer. Unknown bytes still reach and fail the
+// unchanged historical whole-workflow validators; no runtime authority here.
+export const nativeOriginalSchemaSelectorWorkflowReview = Object.freeze({
+  "path": ".github/workflows/reusable-weather-build.yml",
+  "before": {
+    "bytes": 285368,
+    "sha256": "8223891e25cfb7fbcf57a536bcc55a1cbf59ed676f02172588192065ae4eccc0"
+  },
+  "after": {
+    "bytes": 287147,
+    "sha256": "2d98a6d883c26d38e3665383f03a551167189ce587b7f21de261aecebdf5dbf5"
+  },
+  "hunks": [
+    [
+      "          if (store.hasPartContinuity) {",
+      "          // Schema is an ordinary work selector only; never an original-proof/PASS marker.\n          const continuitySchema = store.continuity?.metadata.schemaVersion;\n          if (store.hasPartContinuity && continuitySchema !== 1 && continuitySchema !== 2) {\n            throw new Error('Unknown DMI PART continuity schema');\n          }\n          fs.appendFileSync(process.env.GITHUB_OUTPUT, `continuity_schema=${continuitySchema ?? ''}\\n`);\n          if (store.hasPartContinuity) {"
+    ],
+    [
+      "        run: node scripts/plan-ravscore-current-history.mjs --retain-committed-raw",
+      "        run: node scripts/plan-ravscore-current-history.mjs --retain-committed-raw ${{ steps.dmi-part-continuity-donor.outputs.continuity_schema == '1' && steps.private-runtime-install.outcome == 'success' && steps.operational-model.outputs.model == 'integrated' && steps.operational-model.outputs.binding_current == 'true' && steps.operational-action.outputs.action == 'integrated' && steps.legacy-bootstrap.outputs.stateless_integrated_recovery != 'true' && inputs.completed_private_runtime != true && inputs.completed_private_runtime_pin == '' && inputs.completed_stage_source == '' && inputs.checkpoint_only != true && inputs.quick_confirmation != true && inputs.quick_progress_source == '' && inputs.current_family_cold_start != true && inputs.weather_state_epoch_bootstrap != true && inputs.weather_state_epoch_checkpoint_reentry != true && inputs.weather_state_epoch_raw_cache_key == '' && inputs.weather_state_epoch_archive_key == '' && inputs.weather_state_epoch_archive_catalog_sha256 == '' && inputs.native_sampling_identity_original_recovery != true && inputs.ravscore_integrated_weather_handoff_run_id == '' && inputs.produce_weather_handoff != true && inputs.ravscore_integrated_first_cutover != true && inputs.ravscore_integrated_return != true && (inputs.ravscore_candidate_g_rollback_mode == '' || inputs.ravscore_candidate_g_rollback_mode == 'none') && '--prepare-cached-native-originals' || '' }}"
+    ]
+  ]
+});
+export function inverseNativeOriginalSchemaSelectorWorkflow(source, role) {
+  if(role!=='build'||sha(source)!==nativeOriginalSchemaSelectorWorkflowReview.after.sha256)return source;
+  const row=nativeOriginalSchemaSelectorWorkflowReview;
+  assert.equal(Buffer.byteLength(source),row.after.bytes,'NATIVE_SCHEMA_SELECTOR_WHOLE_AFTER_SIZE');
+  let previous=source;
+  for(const[before,after]of [...row.hunks].reverse()){
+    assert.equal(previous.split(after).length,2,'NATIVE_SCHEMA_SELECTOR_EXACT_HUNK');
+    previous=previous.replace(after,before);
+  }
+  assert.equal(Buffer.byteLength(previous),row.before.bytes,'NATIVE_SCHEMA_SELECTOR_WHOLE_BEFORE_SIZE');
+  assert.equal(sha(previous),row.before.sha256,'NATIVE_SCHEMA_SELECTOR_WHOLE_BEFORE_SHA');
+  return previous;
 }

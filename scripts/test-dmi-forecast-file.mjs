@@ -340,6 +340,41 @@ test('actual forecast readers keep close-only failure hard', async t => {
   });
 });
 
+test('recordwise PART metadata replacement keeps independent entry limits and never copies the old bank twice', async t => {
+  const folder = await fixture(t), file = path.join(folder, 'source.json'), output = path.join(folder, 'copy.json');
+  const original = document();
+  await writeDmiForecastFileAtomic(file, original);
+  const sourceBytes = await fs.readFile(file), index = await inspectDmiForecastFile(file);
+  const replacement = { schemaVersion: 1, entries: [{ partId: 'NEW-PART',
+    gzipBase64: 'x'.repeat(1024 * 1024 + 1024) }] };
+  const metadata = { ...index.metadata, partContinuity: replacement };
+  const metadataBefore = JSON.stringify(metadata);
+  async function* rows() { yield ['ZONE', original.zones.ZONE]; }
+  const stringify = JSON.stringify;
+  const tracked = t.mock.method(JSON, 'stringify', function(value, ...args) {
+    assert.notEqual(value, replacement, 'The PART bank must never become one whole metadata string');
+    return Reflect.apply(stringify, this, [value, ...args]);
+  });
+  try { await writeDmiForecastRecords(output, index, rows(), metadata); }
+  finally { tracked.mock.restore(); }
+  assert.deepEqual(await readDmiForecastFile(output), { ...original, partContinuity: replacement });
+  assert.deepEqual(await fs.readFile(file), sourceBytes);
+  assert.equal(JSON.stringify(metadata), metadataBefore, 'The caller-owned replacement is unchanged');
+  const outputBytes = await fs.readFile(output), rejected = path.join(folder, 'rejected.json');
+  for (const invalidMetadata of [
+    { ...index.metadata, partContinuity: { schemaVersion: 1,
+      entries: [{ partId: 'NEW-PART', gzipBase64: 'x'.repeat(4 * 1024 * 1024) }] } },
+    { ...index.metadata, waterSourceContinuity: { schemaVersion: 1,
+      entries: [{ sourceKey: 'tidewater:NEW', gzipBase64: 'x'.repeat(1024 * 1024) }] } },
+  ]) {
+    await assert.rejects(writeDmiForecastRecords(rejected, index, rows(), invalidMetadata), /RECORD_SIZE_LIMIT/);
+    await assert.rejects(fs.stat(rejected), { code: 'ENOENT' });
+    assert.deepEqual(await fs.readFile(file), sourceBytes);
+    assert.deepEqual(await fs.readFile(output), outputBytes);
+  }
+  assert.deepEqual((await fs.readdir(folder)).sort(), ['copy.json', 'source.json']);
+});
+
 test('forecast reader accepts legacy formatting and atomic writer retains the same logical document', async t => {
   const folder = await fixture(t);
   const file = path.join(folder, 'forecast.json');

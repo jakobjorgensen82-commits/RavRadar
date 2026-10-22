@@ -2,9 +2,11 @@ import crypto from 'node:crypto';
 import { promisify } from 'node:util';
 import { gzip, gunzip } from 'node:zlib';
 import { DMI_FORECAST_HOURS, inspectDmiForecastGridSampling } from './dmi-forecast-store.mjs';
-import { isDeepStrictEqual } from 'node:util';
-import { dmiExpectedIdentityForPart } from './ravscore-production-adapters.mjs';
-import { buildProtectedDmiNativeCurrentProofs }
+import { isDeepStrictEqual, types } from 'node:util';
+import { dmiExpectedIdentityForPart, dmiOriginalWireIdentityMatchesCentralIdentity }
+  from './ravscore-production-adapters.mjs';
+import { buildProtectedDmiNativeCurrentProofs, validateProtectedDmiNativeCurrentProofs,
+  PROTECTED_DMI_NATIVE_PROOF_LIMITS as NATIVE_LIMIT }
   from './protected-dmi-native-current-proofs.mjs';
 
 const gzipAsync = promisify(gzip);
@@ -34,11 +36,132 @@ const exactKeys = (value, keys) => value && typeof value === 'object'
   && Object.keys(value).sort().join(',') === [...keys].sort().join(',');
 
 // Schema2 carries caller-supplied, already normally built ORIGINAL evidence.
-// A normal verification-only rebuild never replaces the saved original bank,
-// admits a score input, infers native evidence or repairs stored rows.
+// Verification never replaces the saved original bank, admits a score input,
+// infers native evidence or repairs stored rows.
 const ORIGINAL_SCOPE = 'EXACT_SAVED_PART_121_CURRENT_ROWS';
 const originalFailure = () => { throw new Error('DMI_PART_CONTINUITY_NATIVE_ORIGINAL_INVALID'); };
 const finite = value => typeof value === 'number' && Number.isFinite(value);
+const originalPlain = value => value !== null && typeof value === 'object' && !Array.isArray(value);
+// Byte-identical to the normal kernel's canonical/encoded framing, including
+// its complete record-domain refusals. No JSON coercion, toJSON/getter invocation
+// or permissive hash is substituted for the stored selection identity.
+function originalCanonical(value, depth = 0, budget = { bytes: 0, nodes: 0 }) {
+  const fail = code => { throw new Error('DMI_NATIVE_PROOF_' + code); };
+  if (depth > 32) fail('RECORD_BOUND');
+  if (++budget.nodes > 4096) fail('RECORD_BOUND');
+  const charge = text => {
+    budget.bytes += Buffer.byteLength(text);
+    if (budget.bytes > NATIVE_LIMIT.recordBytes) fail('RECORD_BOUND');
+    return text;
+  };
+  if (value === null || typeof value === 'boolean' || typeof value === 'string'
+    || finite(value)) {
+    if (typeof value === 'string' && value.length > NATIVE_LIMIT.recordBytes) fail('RECORD_BOUND');
+    return charge(JSON.stringify(value));
+  }
+  if (Array.isArray(value)) {
+    if (value.length > 4096) fail('RECORD_BOUND');
+    charge('[]' + ','.repeat(value.length));
+    return `[${Array.from(value, item => originalCanonical(item, depth + 1, budget)).join(',')}]`;
+  }
+  if (!originalPlain(value) || Object.getPrototypeOf(value) !== Object.prototype
+    || Object.getOwnPropertySymbols(value).length) fail('RECORD_SHAPE');
+  const fields = Object.keys(value).sort();
+  if (fields.length > 256) fail('RECORD_BOUND');
+  charge('{}' + ','.repeat(fields.length));
+  return `{${fields.map(key => {
+    if (key.length > NATIVE_LIMIT.recordBytes) fail('RECORD_BOUND');
+    const descriptor = Object.getOwnPropertyDescriptor(value, key);
+    if (!descriptor || !Object.hasOwn(descriptor, 'value')) fail('RECORD_SHAPE');
+    return `${charge(JSON.stringify(key) + ':')}${originalCanonical(descriptor.value, depth + 1, budget)}`;
+  }).join(',')}}`;
+}
+function originalHash(value) {
+  const text = originalCanonical(value);
+  if (Buffer.byteLength(text) > NATIVE_LIMIT.recordBytes) throw new Error('DMI_NATIVE_PROOF_RECORD_BOUND');
+  return digest(text);
+}
+// Only the ordinary JSON data domain can use a shortcut. These predicates are
+// work selection, NEVER proof/admission. Unknown/exotic/cyclic/bounded-out data
+// goes to the old builder; no getter or proxy is invoked by these probes.
+function originalWorkArray(value) {
+  if (!Array.isArray(value) || types.isProxy(value)
+    || Object.getPrototypeOf(value) !== Array.prototype) return false;
+  const length = Object.getOwnPropertyDescriptor(value, 'length');
+  if (!length || !Object.hasOwn(length, 'value') || length.value > 4096
+    || Reflect.ownKeys(value).length !== length.value + 1) return false;
+  for (let index = 0; index < length.value; index++) {
+    const descriptor = Object.getOwnPropertyDescriptor(value, String(index));
+    if (!descriptor || !Object.hasOwn(descriptor, 'value') || !descriptor.enumerable) return false;
+  }
+  return true;
+}
+function originalWorkRecord(value) {
+  const active = new Set(); let nodes = 0;
+  const visit = (item, depth) => {
+    if (depth > 32 || ++nodes > 4096) return false;
+    if (item === null || typeof item === 'boolean' || finite(item)) return true;
+    if (typeof item === 'string') return item.length <= NATIVE_LIMIT.recordBytes;
+    if (typeof item !== 'object' || types.isProxy(item) || active.has(item)) return false;
+    const array = Array.isArray(item);
+    if (array ? !originalWorkArray(item) : Object.getPrototypeOf(item) !== Object.prototype) return false;
+    const keys = Reflect.ownKeys(item);
+    if (!array && keys.length > 256) return false;
+    active.add(item);
+    for (const key of keys) {
+      if (array && key === 'length') continue;
+      const descriptor = Object.getOwnPropertyDescriptor(item, key);
+      if (typeof key !== 'string' || key.length > NATIVE_LIMIT.recordBytes || !descriptor
+        || !descriptor.enumerable || !Object.hasOwn(descriptor, 'value')
+        || !visit(descriptor.value, depth + 1)) return false;
+    }
+    active.delete(item); return true;
+  };
+  return visit(value, 0);
+}
+function originalWorkData(object, key) {
+  if (object === null || typeof object !== 'object' || types.isProxy(object)) return undefined;
+  const descriptor = Object.getOwnPropertyDescriptor(object, key);
+  return descriptor && Object.hasOwn(descriptor, 'value') ? descriptor.value : undefined;
+}
+function originalUniqueNativeWork(bank, identity) {
+  // No top-level getter may swap the checked arrays during normal validation.
+  // Exact kernel root shape as own enumerable DATA only; otherwise old path.
+  const rootKeys = ['schemaVersion', 'kind', 'scope', 'contexts', 'nativeRows', 'selections', 'bankSha256'];
+  if (bank === null || typeof bank !== 'object' || types.isProxy(bank)
+    || Object.getPrototypeOf(bank) !== Object.prototype
+    || Reflect.ownKeys(bank).length !== rootKeys.length
+    || rootKeys.some(key => {
+      const descriptor = Object.getOwnPropertyDescriptor(bank, key);
+      return !descriptor || !descriptor.enumerable || !Object.hasOwn(descriptor, 'value');
+    })) return false;
+  const data = originalWorkData;
+  const contexts = data(bank, 'contexts'), natives = data(bank, 'nativeRows'), stored = data(bank, 'selections');
+  if (![contexts, natives, stored].every(originalWorkArray)
+    || ![contexts, natives, stored].every(records => records.every(originalWorkRecord))
+    || !dmiOriginalWireIdentityMatchesCentralIdentity(identity, identity)) return false;
+  const keys = Object.keys(identity), times = new Set();
+  for (let index = 0; index < contexts.length; index++) {
+    const zone = data(data(data(contexts, String(index)), 'value'), 'zone');
+    if (!zone || typeof zone !== 'object' || types.isProxy(zone)
+      || Reflect.ownKeys(zone).length !== keys.length
+      || keys.some(key => data(zone, key) === undefined)) return false;
+    const point = data(zone, 'samplingPoint');
+    if (!Array.isArray(point) || types.isProxy(point)
+      || Reflect.ownKeys(point).length !== 3 || data(point, 'length') !== 2
+      || !finite(data(point, '0')) || !finite(data(point, '1'))
+      || keys.some(key => key !== 'samplingPoint' && typeof data(zone, key) !== 'string')
+      || !isDeepStrictEqual(zone, identity)) return false;
+  }
+  for (let index = 0; index < natives.length; index++) {
+    const time = data(data(data(natives, String(index)), 'value'), 'time');
+    if (typeof time !== 'string') return false;
+    const instant = Date.parse(time);
+    if (!Number.isFinite(instant) || times.has(instant)) return false;
+    times.add(instant);
+  }
+  return true;
+}
 function originalCoverage(bank, identity, partId, point, hourly) {
   const savedPart = { partId, zoneId: identity?.parentZoneId, waterPoint: point };
   const expectedIdentity = dmiExpectedIdentityForPart(savedPart);
@@ -62,16 +185,35 @@ function originalCoverage(bank, identity, partId, point, hourly) {
       proved.add(selection.time);
       return { part: savedPart, row };
     });
-    // previousBank is fully validated/indexed by the NORMAL builder, once.
-    // Reprove the whole saved selection set in one batch from its own natives.
-    // No contexts, inferred originals, PASS-cache or new kernel API are used.
-    const rebuilt = buildProtectedDmiNativeCurrentProofs({
-      selections, contexts: [], previousBank: bank,
-    });
     const selectedIdentity = ({ partId, time, forecastAgeHours, sourceSha256, tupleSha256 }) =>
       ({ partId, time, forecastAgeHours, sourceSha256, tupleSha256 });
-    if (!isDeepStrictEqual(rebuilt.selections.map(selectedIdentity),
-      bank.selections.map(selectedIdentity))) originalFailure();
+    let sameValidatedSelection = false;
+    if (originalUniqueNativeWork(bank, expectedIdentity) && selections.every(({ row }) => {
+      const source = originalWorkData(originalWorkData(row, 'sources'), 'current');
+      return typeof originalWorkData(row, 'time') === 'string' && originalWorkRecord(source)
+        && originalWorkRecord([originalWorkData(row, 'currentUMps'), originalWorkData(row, 'currentVMps')]);
+    })) {
+      // This normal validator reprojects EVERY stored entry from its actual
+      // nativeIds and binds the entire source/tuple/age before any fast accept.
+      validateProtectedDmiNativeCurrentProofs(bank);
+      const actual = selections.map(({ part, row }) => {
+        const sourceSha256 = originalHash(row.sources.current);
+        return { partId: part.partId, time: row.time,
+          forecastAgeHours: row.sources.current.forecastAgeHours, sourceSha256,
+          tupleSha256: originalHash([row.currentUMps, row.currentVMps]) };
+      });
+      sameValidatedSelection = isDeepStrictEqual(actual, bank.selections.map(selectedIdentity));
+    }
+    if (!sameValidatedSelection) {
+      // EXACT prior normal path for duplicate instants, alternate geometry,
+      // uncertain metadata shape or ANY changed row identity. No cheaper new
+      // refusal substitutes for the original projection/endpoint/age outcome.
+      const rebuilt = buildProtectedDmiNativeCurrentProofs({
+        selections, contexts: [], previousBank: bank,
+      });
+      if (!isDeepStrictEqual(rebuilt.selections.map(selectedIdentity),
+        bank.selections.map(selectedIdentity))) originalFailure();
+    }
     // Equivalent nativeIds/context choices need not be byte-identical.
     // The original, normally validated bank is stored unchanged, not rebuilt.
   }

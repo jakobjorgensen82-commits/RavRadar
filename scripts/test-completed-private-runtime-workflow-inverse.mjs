@@ -5,6 +5,8 @@ import fs from 'node:fs/promises';
 import test from 'node:test';
 import { inverseRelease585WorkflowUserAgents, ordinaryStageWiringReview, inverseOrdinaryCompletedStageWorkflowWiring, assertEarlyCompletedRuntimeStageOrder, inverseEarlyCompletedRuntimeStage, inverseCompletedRuntimeWorkflow, inverseOrdinaryFullHistoryCheckout, inversePairedPrivateRuntimePublication, inverseOriginWeatherReadCredentials, assertCurrentHistoryRawRetentionOrder, inverseCurrentHistoryRawRetentionOrder, inverseCurrentFamilyColdStartWorkflow, inverseRelease584WorkflowUserAgents } from './lib/completed-private-runtime-workflow-review.mjs';
 import { runInNewContext } from 'node:vm';
+import { inverseNativeOriginalSchemaSelectorWorkflow, nativeOriginalSchemaSelectorWorkflowReview }
+  from './lib/completed-private-runtime-workflow-review.mjs';
 import { spawnSync } from 'node:child_process';
 const sha = source => crypto.createHash('sha256').update(source).digest('hex');
 const read = async relative => {
@@ -622,7 +624,7 @@ test('actual optional wiring refuses every partial hunk, wrong role and changed 
 });
 
 test('current585 release inverse keeps every genuine584 workflow byte and refuses partial UA or unrelated drift', async () => {
-  const current586 = (await fs.readFile(new URL('../.github/workflows/reusable-weather-build.yml', import.meta.url), 'utf8')).replaceAll('\r\n', '\n');
+  const current586 = inverseNativeOriginalSchemaSelectorWorkflow((await fs.readFile(new URL('../.github/workflows/reusable-weather-build.yml', import.meta.url), 'utf8')).replaceAll('\r\n', '\n'), 'build');
   assert.equal(sha(current586), '8223891e25cfb7fbcf57a536bcc55a1cbf59ed676f02172588192065ae4eccc0');
   assert.equal(current586.split('RavRadar/4.0.586').length, 6, 'Exactly five genuine current586 User-Agent fields');
   assertEarlyCompletedRuntimeStageOrder(current586);
@@ -645,4 +647,93 @@ test('current585 release inverse keeps every genuine584 workflow byte and refuse
     assert.equal(inverseRelease585WorkflowUserAgents(changed, 'build'), changed);
     assert.throws(() => assertEarlyCompletedRuntimeStageOrder(changed));
   }
+});
+
+
+test('native original schema selector: actual installed schema1 alone selects ordinary preparation; all old routes stay old',async()=>{
+  // RAW actual YAML, deliberately NOT the historical projection above.
+  const source=(await fs.readFile(new URL('../.github/workflows/reusable-weather-build.yml',import.meta.url),'utf8')).replaceAll('\r\n','\n');
+  const donor=coldStep(source,'Classify one-time DMI PART continuity donor');
+  const plan=coldStep(source,'Plan bounded current history from the actual selected continuation');
+  const review=nativeOriginalSchemaSelectorWorkflowReview;
+  assert.equal(Buffer.byteLength(source),review.after.bytes);assert.equal(sha(source),review.after.sha256);
+  const previous=inverseNativeOriginalSchemaSelectorWorkflow(source,'build');
+  assert.equal(Buffer.byteLength(previous),review.before.bytes);assert.equal(sha(previous),review.before.sha256);
+  assert.equal(inverseCompletedRuntimeWorkflow(source,'build'),inverseCompletedRuntimeWorkflow(previous,'build'));
+  assert.equal(inverseNativeOriginalSchemaSelectorWorkflow(source,'once'),source);
+  assert(source.indexOf('        id: private-runtime-install\n')<source.indexOf('        id: dmi-part-continuity-donor\n'));
+  assert(source.indexOf('        id: dmi-part-continuity-donor\n')<source.indexOf('        id: current-history-demand\n'));
+  assert(donor.includes("steps.private-runtime-install.outcome == 'success'"));
+  assert(donor.includes("const store = await inspectDmiForecastFile('data/live/dmi-forecast-cache.json');"));
+  assert.equal(source.split('await inspectDmiForecastFile(').length,2,'Reuse the existing indexed read, not another full input route');
+  const start=donor.indexOf('          const continuitySchema = '),end=donor.indexOf('          if (store.hasPartContinuity) {',start);
+  assert(start>=0&&end>start);
+  const body=donor.slice(start,end).replace(/^          /gm,'');
+  const classify=store=>{
+    const writes=[];
+    runInNewContext(body,{store,process:{env:{GITHUB_OUTPUT:'SYNTHETIC_OWN_OUTPUT'}},
+      fs:{appendFileSync(file,text){assert.equal(file,'SYNTHETIC_OWN_OUTPUT');writes.push(text);}}});
+    assert.equal(writes.length,1);return writes[0];
+  };
+  for(const schema of [1,2])assert.equal(classify({hasPartContinuity:true,continuity:{metadata:{schemaVersion:schema}}}),
+    'continuity_schema='+schema+'\n');
+  assert.equal(classify({hasPartContinuity:false,continuity:null}),'continuity_schema=\n');
+  for(const schema of [undefined,null,0,3,'1',{},1.5])assert.throws(
+    ()=>classify({hasPartContinuity:true,continuity:{metadata:{schemaVersion:schema}}}),/Unknown DMI PART continuity schema/);
+  const match=plan.match(/^        run: node scripts\/plan-ravscore-current-history\.mjs --retain-committed-raw (\$\{\{ .+ \}\})$/m);
+  assert(match,'The existing exact argument variant must be the only selected suffix');
+  const expression=match[1];
+  const inputs={...coldInputs,completed_private_runtime_pin:'',completed_stage_source:'',
+    weather_state_epoch_raw_cache_key:'',weather_state_epoch_archive_key:'',weather_state_epoch_archive_catalog_sha256:'',
+    ravscore_integrated_weather_handoff_run_id:''};
+  const context={inputs,steps:{
+    'dmi-part-continuity-donor':{outputs:{continuity_schema:'1'}},
+    'private-runtime-install':{outcome:'success'},
+    'operational-model':{outputs:{model:'integrated',binding_current:'true'}},
+    'operational-action':{outputs:{action:'integrated'}},
+    'legacy-bootstrap':{outputs:{stateless_integrated_recovery:'false'}}}};
+  const selected=changed=>coldEvaluate(expression,changed);
+  assert.equal(selected(context),'--prepare-cached-native-originals');
+  for(const schema of ['2','','3','unknown']){
+    const changed=structuredClone(context);changed.steps['dmi-part-continuity-donor'].outputs.continuity_schema=schema;
+    assert.equal(selected(changed),'','Header2 or unknown never grants preparation/admission');
+  }
+  for(const flag of ['completed_private_runtime','checkpoint_only','quick_confirmation','current_family_cold_start',
+    'weather_state_epoch_bootstrap','weather_state_epoch_checkpoint_reentry','native_sampling_identity_original_recovery',
+    'produce_weather_handoff','ravscore_integrated_first_cutover','ravscore_integrated_return']){
+    const changed=structuredClone(context);changed.inputs[flag]=true;assert.equal(selected(changed),'',flag);
+  }
+  for(const locator of ['completed_private_runtime_pin','completed_stage_source','quick_progress_source',
+    'weather_state_epoch_raw_cache_key','weather_state_epoch_archive_key','weather_state_epoch_archive_catalog_sha256',
+    'ravscore_integrated_weather_handoff_run_id']){
+    const changed=structuredClone(context);changed.inputs[locator]='SYNTHETIC_EXPLICIT_REENTRY';
+    assert.equal(selected(changed),'',locator);
+  }
+  for(const mode of ['dry-run','execute']){
+    const changed=structuredClone(context);changed.inputs.ravscore_candidate_g_rollback_mode=mode;assert.equal(selected(changed),'');
+  }
+  const none=structuredClone(context);none.inputs.ravscore_candidate_g_rollback_mode='none';
+  assert.equal(selected(none),'--prepare-cached-native-originals');
+  for(const[item,key,field,bad]of [
+    ['private-runtime-install',null,'outcome','skipped'],
+    ['operational-model','outputs','model','candidate-g'],
+    ['operational-model','outputs','binding_current','false'],
+    ['operational-action','outputs','action','integrated-historical-maintenance'],
+    ['operational-action','outputs','action','integrated-cutover'],
+    ['legacy-bootstrap','outputs','stateless_integrated_recovery','true']]){
+    const changed=structuredClone(context),target=key?changed.steps[item][key]:changed.steps[item];target[field]=bad;
+    assert.equal(selected(changed),'',[item,field].join('.'));
+  }
+  // The new layer cannot consume mutation/partial copies as historical proof.
+  for(const[before,after]of review.hunks){
+    assert.equal(source.split(after).length,2);
+    for(const changed of [source.replace(after,before),source.replace(after,after+'\n# UNREVIEWED\n')]){
+      assert.equal(inverseNativeOriginalSchemaSelectorWorkflow(changed,'build'),changed);
+      assert.throws(()=>inverseCompletedRuntimeWorkflow(changed,'build'));
+    }
+  }
+  // Pure argument selection: no new input flag, provider, raw decoder, installed
+  // marker, source-priority candidate, score change or SQL operation is added.
+  assert.equal(source.split('--prepare-cached-native-originals').length,2);
+  assert.equal(source.split('--retain-committed-raw').length,2);
 });

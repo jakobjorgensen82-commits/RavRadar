@@ -11,6 +11,9 @@ import { acquireWeatherAcquisitionWriter, assertWeatherAcquisitionWriter,
   retainWeatherAcquisitionWriter, releaseWeatherAcquisitionWriter }
   from './lib/weather-acquisition-writer.mjs';
 
+import { validateCurrent586ExactOriginalPlan, requireCurrent586ExactOriginalExecution,
+  retainCurrent586ClosedOriginalTransport } from './lib/current586-exact-original-plan.mjs';
+
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const PLAN = path.join(ROOT, '.cache/dmi-grib/.original-recovery-plan.json');
 const SUPERVISOR = path.join(ROOT, 'scripts/run-dmi-bulk-supervised.py');
@@ -28,7 +31,7 @@ const PYTHON_DMI_EXACT_ORIGINAL_CODES = new Set(['UNCLASSIFIED', ...[
   'METADATA_UNAVAILABLE', 'ASSET_UNAVAILABLE',
   'HTTP_REJECTED', 'STAC_ROOT_REJECTED', 'METADATA_BOUND', 'METADATA_INVALID', 'REVISION_MISMATCH',
   'RAW_DIRECTORY_REJECTED', 'RAW_ENTRY_REJECTED', 'MANIFEST_REJECTED', 'HEADER_BOUND', 'HEADER_MISMATCH',
-  'CONTENT_MISMATCH', 'COLLISION', 'CACHE_BUDGET', 'DOWNLOAD_BUDGET', 'LENGTH_MISMATCH', 'PLAN_REJECTED',
+  'CONTENT_MISMATCH', 'COLLISION', 'CACHE_BUDGET', 'DOWNLOAD_BUDGET', 'DISK_BUDGET', 'LENGTH_MISMATCH', 'PLAN_REJECTED',
   'ASSET_BOUND', 'HEADER_REJECTED', 'MANIFEST_CHANGED', 'TRANSPORT_FAILED',
   'RUNTIME_BUDGET', 'CLEANUP_UNPROVED', 'IO_REJECTED',
 ].map(code => `DMI_EXACT_ORIGINAL_${code}`)]);
@@ -51,6 +54,13 @@ export function validateExactDmiOriginalRestorePlan(bytes, environment) {
   let plan;
   try { plan = JSON.parse(bytes.toString('utf8')); }
   catch { fail('DMI_EXACT_ORIGINAL_PLAN_REJECTED'); }
+  if(plan?.contractId==='dmi-current586-exact-original-restore-v1'){
+    requireCurrent586ExactOriginalExecution();
+    if(Buffer.compare(bytes,Buffer.from(canonical(plan)+'\n'))!==0)fail('DMI_EXACT_ORIGINAL_PLAN_REJECTED');
+    validateCurrent586ExactOriginalPlan(plan,environment.GITHUB_SHA);
+    if(plan.originals.length<1)fail('DMI_EXACT_ORIGINAL_PLAN_REJECTED');
+    return {planSha256:sha(bytes),originalCount:plan.originals.length,current586:true};
+  }
   // The preparation entry writes this exact representation. Reject duplicate
   // fields, alternate JSON spellings and trailing payload before any child.
   if (Buffer.compare(bytes, Buffer.from(canonical(plan) + '\n')) !== 0
@@ -117,7 +127,7 @@ async function readFixedPlan() {
     if (!same(await handle.stat({ bigint: true })) || !same(await fs.lstat(PLAN, { bigint: true }))) {
       fail('DMI_EXACT_ORIGINAL_PLAN_PATH_REJECTED');
     }
-    return { ...validateExactDmiOriginalRestorePlan(bytes, process.env), identity: st };
+    return { ...validateExactDmiOriginalRestorePlan(bytes, process.env), identity: st, bytes };
   } finally { await handle.close(); }
 }
 
@@ -185,11 +195,13 @@ export async function runExactDmiOriginalRestore() {
       writerClaimAcquired: false, remoteWrites: false, cacheSaved: false };
   }
   let lease, child, physicallyClosed = false, firstFailure = null, interrupted = false, result;
+  let current586Plan=null,startedAt=null;
   const interrupt = () => { interrupted = true; try { child?.kill('SIGTERM'); } catch {} };
   process.on('SIGTERM', interrupt); process.on('SIGINT', interrupt);
   try {
     // Inputs are checked again under the actual cooperative writer claim.
     const before = await readFixedPlan();
+    if(before.current586){current586Plan=before;startedAt=new Date().toISOString();}
     if (process.platform !== 'linux') fail('DMI_EXACT_ORIGINAL_RESTORE_PLATFORM_REFUSED');
     lease = await acquireWeatherAcquisitionWriter();
     await assertWeatherAcquisitionWriter(lease);
@@ -236,8 +248,12 @@ export async function runExactDmiOriginalRestore() {
   }
   if (firstFailure) throw firstFailure;
   if (interrupted) fail('DMI_EXACT_ORIGINAL_RESTORE_INTERRUPTED');
-  return { ...result, physicalGroupClosed: true, writerClaimReleased: true,
+  const completed={ ...result, physicalGroupClosed: true, writerClaimReleased: true,
     planRemoved: true, remoteWrites: false, cacheSaved: false };
+  if(current586Plan)completed.current586Transport=await retainCurrent586ClosedOriginalTransport({
+    repositoryRoot:ROOT,planBytes:current586Plan.bytes,planSha256:current586Plan.planSha256,result:completed,
+    startedAt,completedAt:new Date().toISOString()});
+  return completed;
 }
 
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
@@ -249,7 +265,8 @@ if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.me
   }
   catch (error) {
     console.error((PYTHON_DMI_EXACT_ORIGINAL_CODES.has(error?.code)
-      || /^DMI_EXACT_ORIGINAL_[A-Z_]{1,90}$/.test(error?.code ?? ''))
+      || /^DMI_EXACT_ORIGINAL_[A-Z_]{1,90}$/.test(error?.code ?? '')
+      || /^DMI_CURRENT586_ORIGINAL_[A-Z_]{1,90}$/.test(error?.code ?? ''))
       ? error.code : 'DMI_EXACT_ORIGINAL_RESTORE_REFUSED'); process.exitCode = 1;
   }
 }

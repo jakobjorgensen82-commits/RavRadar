@@ -107,8 +107,10 @@ def check_coherent_raw_inventory():
             assert capture is not None and len(capture) == 11
             original_manifest = producer.raw_cache_manifest_path().read_bytes()
 
-            def observe(reason=None):
+            def observe(reason=None, *, capture_mode=None):
                 jobs = [{"capture": copy.deepcopy(capture)}]
+                if capture_mode is not None:
+                    jobs[0]["captureMode"] = capture_mode
                 manifest_before = producer.raw_cache_manifest_path().read_bytes()
                 files_before = {file.name: file.read_bytes() for file in producer.RAW_DIR.iterdir()}
                 try:
@@ -120,6 +122,10 @@ def check_coherent_raw_inventory():
                 else:
                     assert reason is None
                     assert result == manifest_before and jobs[0]["path"] == raw_path
+                    if capture_mode is not None:
+                        measured = producer.canonical_current_source_asset(
+                            producer.load_raw_cache_manifest()["assets"][raw_path.name])
+                        assert jobs[0]["transportCapture"] == measured
                 assert jobs[0]["capture"] == capture
                 assert producer.raw_cache_manifest_path().read_bytes() == manifest_before
                 assert {file.name: file.read_bytes() for file in producer.RAW_DIR.iterdir()} == files_before
@@ -132,7 +138,23 @@ def check_coherent_raw_inventory():
             changed = copy.deepcopy(registered)
             changed["assets"][raw_path.name]["acquiredAt"] = "2026-10-21T01:01:00Z"
             producer.save_raw_cache_manifest(changed)
-            observe("RAW_ACQUISITION_UNRESOLVED")
+            observe("RAW_ACQUISITION_UNRESOLVED")  # DEFAULT rejection is unchanged.
+            observe(capture_mode="AUTHENTICATED_ORIGINAL_WITH_DISTINCT_MEASURED_READ_CAPTURE")
+            # Same existing inventory fixture, all ten non-acquisition fields.
+            different_fields = {
+                "collection": "dkss_lf", "modelRun": "2026-10-20T18:00:00Z",
+                "validTime": "2026-10-21T06:00:00Z", "itemId": "different-own-item",
+                "assetIdentitySha256": "f" * 64, "assetSizeBytes": None,
+                "contentLengthBytes": len(payload) + 1, "contentSha256": "e" * 64,
+                "itemCreatedAt": "2026-10-20T18:00:00Z", "itemUpdatedAt": "2026-10-20T19:00:00Z",
+            }
+            assert len(different_fields) == 10 and "acquiredAt" not in different_fields
+            for field, value in different_fields.items():
+                different = copy.deepcopy(changed)
+                different["assets"][raw_path.name][field] = value
+                producer.save_raw_cache_manifest(different)
+                observe("RAW_CAPTURE_METADATA_UNMATCHED_PREFIX_PRESENT",
+                        capture_mode="AUTHENTICATED_ORIGINAL_WITH_DISTINCT_MEASURED_READ_CAPTURE")
             for mutation in ("absent", "invalid", "different-model"):
                 changed = copy.deepcopy(registered)
                 if mutation == "absent":
@@ -6122,6 +6144,94 @@ if scenario in {"current-only", "cached-current-history"}:
             raise AssertionError("coherent CURRENT wrapper relabelled acquisition time")
         assert fixture_path.read_bytes() == payload and not p._UNSETTLED_GRIB_READS
         assert p.raw_cache_manifest_path().read_bytes() == fixture_manifest_bytes
+        # Reuse THESE actual GRIB bytes through normal manifest registration.
+        # Original source is obtained by the CURRENT decoder, never hand-built.
+        # A distinct local transport acquisition is not a restore-completed claim.
+        old_root, old_raw = p.ROOT, p.RAW_DIR
+        old_session = dict(p._RAW_CURRENT_SESSION_PROTECTED)
+        normal_root = directory / ("coherent-distinct-" + label)
+        (normal_root / ".cache/dmi-grib").mkdir(parents=True)
+        try:
+            p.ROOT, p.RAW_DIR = normal_root, normal_root / ".cache/dmi-grib"
+            p.save_raw_cache_manifest({"schemaVersion": 2, "assets": {}})
+            href = "https://opendataapi.dmi.dk/own-current-distinct-" + label + ".grib"
+            normal_path = p.cached_asset_path(href)
+            normal_path.write_bytes(payload)
+            p.register_raw_cache_asset(normal_path, href, "dkss_lf", when, when,
+                item_id="own-current-distinct-" + label, acquired_at=when,
+                expected_size=len(payload), content_sha256=hashlib.sha256(payload).hexdigest())
+            old_capture = p.canonical_current_source_asset(
+                p.load_raw_cache_manifest()["assets"][normal_path.name])
+            original_stage = {**decoded[0]["header"], "zones": {current_zone["id"]: {
+                **p.sampling_identity(current_zone), "hourly": {}, "gridPoints": {}, "collections": {}}}}
+            original_outcomes = {}
+            with p._grib_read_scope(normal_path, "dkss_lf", when, when) as original_reader:
+                normal_result = p.process_grib_transactionally(normal_path, "dkss_lf", when, when,
+                    [current_zone], original_stage, {}, current_part_outcomes=original_outcomes,
+                    allowed_parameters={"current-u", "current-v"}, _owned_read=original_reader)
+                assert normal_result[0] == {"current-u", "current-v"} and not normal_result[2]
+                assert original_outcomes["complete"] is True
+            assert original_reader.physically_closed and not p._UNSETTLED_GRIB_READS
+            original_row = copy.deepcopy(original_stage["zones"][current_zone["id"]]["hourly"][when])
+            original_source = original_row["sources"]["current"]
+            assert p.canonical_current_source_asset(original_source) == old_capture
+            new_acquired = "2026-01-01T00:00:01Z" if old_capture["acquiredAt"] != "2026-01-01T00:00:01Z" else "2026-01-01T00:00:02Z"
+            p.register_raw_cache_asset(normal_path, href, "dkss_lf", when, when,
+                item_id="own-current-distinct-" + label, acquired_at=new_acquired,
+                expected_size=len(payload), content_sha256=hashlib.sha256(payload).hexdigest())
+            read_capture = p.canonical_current_source_asset(
+                p.load_raw_cache_manifest()["assets"][normal_path.name])
+            assert read_capture["acquiredAt"] != old_capture["acquiredAt"]
+            assert all(read_capture[key] == value for key, value in old_capture.items() if key != "acquiredAt")
+            actual_manifest = p.raw_cache_manifest_path().read_bytes()
+            dual_request = {**request, "capture": copy.deepcopy(old_capture),
+                "nativeStep": {key: copy.deepcopy(original_source[key]) for key in step_names if key in original_source}}
+            strict_job = {"capture": copy.deepcopy(old_capture)}
+            try:
+                wrapper.raw_inventory(p, [strict_job])
+            except wrapper.Refused as error:
+                assert str(error) == "COHERENT_CURRENT_ORIGINAL_RAW_ACQUISITION_UNRESOLVED"
+            else:
+                raise AssertionError("DEFAULT acquisition-only refusal was weakened")
+            dual_job = {"capture": copy.deepcopy(old_capture), "captureMode": "AUTHENTICATED_ORIGINAL_WITH_DISTINCT_MEASURED_READ_CAPTURE",
+                "requests": [dual_request], "zones": {dual_request["partId"]: current_zone}}
+            wrapper.raw_inventory(p, [dual_job])
+            assert dual_job["transportCapture"] == read_capture and dual_job["capture"] == old_capture
+            dual_before = copy.deepcopy((dual_job, dual_request))
+            dual_rows, dual_completed = wrapper.decode(p, [dual_job], time.monotonic())
+            assert dual_completed == 1 and len(dual_rows) == 1
+            assert dual_rows[0]["row"] == original_row
+            assert dual_rows[0]["capture"] == old_capture and dual_rows[0]["transportCapture"] == read_capture
+            assert (dual_rows[0]["row"]["current-u"], dual_rows[0]["row"]["current-v"]) == (0., -.5)
+            assert (dual_job, dual_request) == dual_before
+            wrong_step = copy.deepcopy(dual_job)
+            wrong_step["requests"][0]["nativeStep"]["nativeGridSampling"]["elementIndex"] += 1
+            try:
+                wrapper.decode(p, [wrong_step], time.monotonic())
+            except RuntimeError as error:
+                assert str(error) == "COHERENT_CURRENT_ORIGINAL_DECODE_MISMATCH"
+            else:
+                raise AssertionError("distinct capture bypassed the actual old native step")
+            assert not p._UNSETTLED_GRIB_READS
+            changed_bytes = payload[:-1] + bytes([payload[-1] ^ 1])
+            assert len(changed_bytes) == len(payload)
+            normal_path.write_bytes(changed_bytes)
+            try:
+                try:
+                    wrapper.decode(p, [dual_job], time.monotonic())
+                except wrapper.Refused as error:
+                    assert str(error) == "COHERENT_CURRENT_ORIGINAL_OWNED_CAPTURE_MISMATCH"
+                else:
+                    raise AssertionError("distinct capture skipped full measured content SHA")
+            finally:
+                normal_path.write_bytes(payload)
+            assert normal_path.read_bytes() == payload
+            assert p.raw_cache_manifest_path().read_bytes() == actual_manifest
+            assert not p._UNSETTLED_GRIB_READS and not p._UNSETTLED_ASSET_DOWNLOADS
+        finally:
+            p.ROOT, p.RAW_DIR = old_root, old_raw
+            p._RAW_CURRENT_SESSION_PROTECTED.clear()
+            p._RAW_CURRENT_SESSION_PROTECTED.update(old_session)
         snapshots.append((fixture_path, payload))
     assert current_rows[0] == current_rows[1] and scalar_rows[0] == scalar_rows[1]
 

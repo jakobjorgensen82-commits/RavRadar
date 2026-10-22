@@ -100,6 +100,10 @@ class ExactOriginalTests(unittest.TestCase):
                         patch.object(producer, "_UNSETTLED_ASSET_DOWNLOADS", []),
                         patch.object(producer, "_UNSETTLED_GRIB_READS", []),
                         patch.object(producer, "asset_download_work_deadline", side_effect=lambda deadline: nullcontext())]
+        if not hasattr(producer.os, "statvfs"):
+            # Portable accounting fixture only; Linux uses actual statvfs.
+            self.patches.append(patch.object(producer.os, "statvfs",
+                return_value=types.SimpleNamespace(f_frsize=4096), create=True))
         for value in self.patches:
             value.start()
         producer.STAC_SESSION.get.side_effect = AssertionError("No actual metadata transport")
@@ -135,8 +139,8 @@ class ExactOriginalTests(unittest.TestCase):
                 protectedGeneratedAt="2026-10-14T15:01:00.000Z", modelBindingSha256="d" * 64, historyDemandSha256="e" * 64,
                 originalsSha256=hashlib.sha256(producer._exact_original_json(originals).encode()).hexdigest(), nonce="f" * 32))
 
-    def read_plan(self, plan, *, digest=None):
-        body = json.dumps(plan).encode()
+    def read_plan(self, plan, *, digest=None, body=None):
+        body = json.dumps(plan).encode() if body is None else body
         path = self.raw / ".original-recovery-plan.json"
         path.unlink(missing_ok=True)
         with path.open("xb") as handle:
@@ -505,15 +509,21 @@ class ExactOriginalTests(unittest.TestCase):
         existing = self.raw / "unrelated-original.grib"
         existing.write_bytes(b"unrelated immutable original")
         before = existing.read_bytes(), self.manifest.read_bytes()
-        _, used = producer._exact_raw_state()
+        manifest, used = producer._exact_raw_state()
         missing_bytes = first["contentLengthBytes"] + second["contentLengthBytes"]
+        capacity = producer._exact_original_check_disk_space(manifest, [first, second], used)
+        raw_total = capacity["requiredRawBytes"]
+        self.assertEqual(capacity["currentManifestBytes"], len(before[1]))
+        self.assertEqual(raw_total, used + missing_bytes + max(0,
+            capacity["prospectiveManifestBytes"] - len(before[1])))
+        self.assertGreater(raw_total, used + missing_bytes)
         for budget_name, code in (("RAW_CACHE_MAX_BYTES", "CACHE_BUDGET"),
                                   ("MAX_DOWNLOAD_BYTES", "DOWNLOAD_BUDGET")):
             with self.subTest(budget=budget_name), \
-                 patch.object(producer, "RAW_CACHE_MAX_BYTES", used + missing_bytes), \
+                 patch.object(producer, "RAW_CACHE_MAX_BYTES", raw_total), \
                  patch.object(producer, "MAX_DOWNLOAD_BYTES", missing_bytes), \
                  patch.object(producer, budget_name,
-                     used + missing_bytes - 1 if budget_name == "RAW_CACHE_MAX_BYTES" else missing_bytes - 1), \
+                     raw_total - 1 if budget_name == "RAW_CACHE_MAX_BYTES" else missing_bytes - 1), \
                  patch.object(producer, "resolve_exact_original_item", side_effect=AssertionError("metadata before total preflight")) as resolve, \
                  patch.object(producer, "download_asset", side_effect=AssertionError("download before total preflight")) as download, \
                  patch.object(producer, "prune_raw_cache", side_effect=AssertionError("pruning forbidden")) as prune:
@@ -526,6 +536,77 @@ class ExactOriginalTests(unittest.TestCase):
         producer.STAC_SESSION.get.assert_not_called()
         producer.DOWNLOAD_SESSION.get.assert_not_called()
 
+
+    def test_restore_physical_disk_capacity_precedes_metadata_and_body(self):
+        unit = 4096
+        filesystem = patch.object(producer.os, "statvfs",
+            return_value=types.SimpleNamespace(f_frsize=unit), create=True)
+        filesystem.start()
+        self.addCleanup(filesystem.stop)
+        allocated = lambda length: ((length + unit - 1) // unit) * unit
+        expected = capture()
+        plan = self.make_plan()
+        self.read_plan(plan)  # Existing real owned-file fixture; no transport.
+        original = copy.deepcopy(expected)
+        before = self.manifest.read_bytes()
+        manifest, used = producer._exact_raw_state()
+        with patch.object(producer.shutil, "disk_usage", return_value=types.SimpleNamespace(free=10**15)):
+            capacity = producer._exact_original_check_disk_space(manifest, [expected], used)
+            required = capacity["requiredFreeBytes"]
+        self.assertGreater(required, len(BODY) + 2 * (self.raw / ".original-recovery-plan.json").stat().st_size)
+        self.assertEqual(required % unit, 0)
+        many = [{**expected, "itemId": "small-" + str(index)} for index in range(7)]
+        with patch.object(producer.shutil, "disk_usage", return_value=types.SimpleNamespace(free=10**15)):
+            rounded_many = producer._exact_original_check_disk_space(manifest, many, used)["requiredFreeBytes"]
+        self.assertGreaterEqual(rounded_many - required, 6 * allocated(len(BODY)))
+        self.assertIn("DMI_EXACT_ORIGINAL_DISK_BUDGET", producer._EXACT_ORIGINAL_FAILURE_CODES)
+        with patch.object(producer.shutil, "disk_usage", return_value=types.SimpleNamespace(free=required - 1)) as usage, \
+             patch.object(producer, "prune_raw_cache", side_effect=AssertionError("no pruning")) as prune:
+            with self.expect_refusal("DISK_BUDGET"):
+                producer.restore_exact_original_assets([expected])
+            usage.assert_called_once_with(self.raw)
+            prune.assert_not_called()
+        producer.STAC_SESSION.get.assert_not_called()
+        producer.DOWNLOAD_SESSION.get.assert_not_called()
+        self.assertEqual(self.manifest.read_bytes(), before)
+        for observed in (OSError("private disk path must not escape"), types.SimpleNamespace(free=-1),
+                         types.SimpleNamespace(free=True), types.SimpleNamespace()):
+            options = {"side_effect": observed} if isinstance(observed, OSError) else {"return_value": observed}
+            with self.subTest(disk=type(observed).__name__), patch.object(producer.shutil, "disk_usage", **options):
+                with self.assertRaisesRegex(OSError, "^DMI_EXACT_ORIGINAL_DISK_STATE_UNAVAILABLE$"):
+                    producer.restore_exact_original_assets([expected])
+            self.assertEqual(self.manifest.read_bytes(), before)
+        for observed in (OSError("private filesystem path must not escape"),
+                         types.SimpleNamespace(f_frsize=0), types.SimpleNamespace(f_frsize=-1),
+                         types.SimpleNamespace(f_frsize=True), types.SimpleNamespace()):
+            options = {"side_effect": observed} if isinstance(observed, OSError) else {"return_value": observed}
+            with self.subTest(filesystem=type(observed).__name__), patch.object(producer.os, "statvfs", **options):
+                with self.assertRaisesRegex(OSError, "^DMI_EXACT_ORIGINAL_DISK_STATE_UNAVAILABLE$"):
+                    producer.restore_exact_original_assets([expected])
+        producer.STAC_SESSION.get.assert_not_called()
+        producer.DOWNLOAD_SESSION.get.assert_not_called()
+        producer.STAC_SESSION.get.assert_not_called()
+        producer.DOWNLOAD_SESSION.get.assert_not_called()
+        # Exact equality passes into the SAME normal STAC/download writer.
+        # Reuse the existing portable header/lease boundary; this is not GRIB proof.
+        producer.STAC_SESSION.get.side_effect = [metadata_response()]
+        producer.DOWNLOAD_SESSION.get.side_effect = [Response(BODY)]
+        with patch.object(producer.shutil, "disk_usage", return_value=types.SimpleNamespace(free=required)), \
+             patch.object(producer, "_verify_exact_original_file", side_effect=self.portable_locator_verification), \
+             patch.object(producer, "prune_raw_cache", side_effect=AssertionError("no pruning")) as prune:
+            report = producer.restore_exact_original_assets([expected])
+            prune.assert_not_called()
+        self.assertEqual((report["status"], report["downloadedBytes"]), ("RESTORED", len(BODY)))
+        producer.STAC_SESSION.get.assert_called_once()
+        producer.DOWNLOAD_SESSION.get.assert_called_once()
+        self.assertEqual(expected, original)
+        actual_manifest = self.manifest.read_bytes()
+        actual_growth = max(0, len(actual_manifest) - len(before))
+        # Independently check the actual writer's physical peak is covered,
+        # without treating a JSON codec/raw byte sum as the file size.
+        self.assertGreaterEqual(required, allocated(len(BODY)) + actual_growth + allocated(len(actual_manifest)))
+        self.assertEqual(producer.cached_asset_path(HREF).read_bytes(), BODY)
+
     def test_restore_mixed_plan_verifies_all_local_then_budgets_only_missing_bytes(self):
         local = capture()
         absent_href = HREF.replace("exact-original", "absent-original")
@@ -533,7 +614,13 @@ class ExactOriginalTests(unittest.TestCase):
                   "assetIdentitySha256": hashlib.sha256(absent_href.encode()).hexdigest()}
         target = self.local_original(local)
         before = target.read_bytes(), self.manifest.read_bytes()
-        _, used = producer._exact_raw_state()
+        manifest, used = producer._exact_raw_state()
+        capacity = producer._exact_original_check_disk_space(manifest, [absent], used)
+        raw_total = capacity["requiredRawBytes"]
+        self.assertEqual(capacity["currentManifestBytes"], len(before[1]))
+        self.assertEqual(raw_total, used + absent["contentLengthBytes"] + max(0,
+            capacity["prospectiveManifestBytes"] - len(before[1])))
+        self.assertGreater(raw_total, used + absent["contentLengthBytes"])
         events = []
 
         def verify(path, wanted, *, work_deadline, require_capture=False):
@@ -561,7 +648,7 @@ class ExactOriginalTests(unittest.TestCase):
         with patch.object(producer, "_verify_exact_original_file", side_effect=verify), \
              patch.object(producer, "resolve_exact_original_item", side_effect=resolve) as resolve_mock, \
              patch.object(producer, "download_asset", side_effect=download) as download_mock, \
-             patch.object(producer, "RAW_CACHE_MAX_BYTES", used + absent["contentLengthBytes"]), \
+             patch.object(producer, "RAW_CACHE_MAX_BYTES", raw_total), \
              patch.object(producer, "MAX_DOWNLOAD_BYTES", absent["contentLengthBytes"]), \
              patch.object(producer, "prune_raw_cache", side_effect=AssertionError("pruning forbidden")) as prune:
             report = producer.restore_exact_original_assets([absent, local, absent])
@@ -1076,6 +1163,82 @@ class ExactOriginalTests(unittest.TestCase):
         self.assertEqual(producer.DOWNLOAD_SESSION.get.call_count, 1)
         self.assertEqual(producer.DOWNLOAD_SESSION.get.call_args.args, (href,))
         self.assertFalse(producer.cached_asset_path(href).exists())
+
+
+    def current586_plan(self, originals=None):
+        old = self.make_plan(originals)
+        originals = old["originals"]
+        return dict(schemaVersion=1, contractId="dmi-current586-exact-original-restore-v1", originals=originals,
+            binding=dict(scope="CURRENT586_EXACT_ORIGINAL_RESTORE_39666991481_1",
+                failedRun="39666991481", failedAttempt=1, targetReferenceAt="2026-10-21T20:00:00.000Z",
+                sourceHead="94b2b6173747b9d1f7d261c5110042a657af0cac", executionHead=HEAD,
+                protectedBundleSha256="e9e7b9327df875133b7c2c00ef6440bc411ef2178a9edf9d6cb1ba1a3e7555c3",
+                protectedDatasetId="rr-current586-reader-test", protectedProductionReferenceAt="2026-10-21T02:00:00.000Z",
+                protectedGeneratedAt="2026-10-21T02:01:00.000Z", sourceDescriptorSha256="1" * 64,
+                modelBindingSha256="2" * 64, modelBundleSha256="6d8f7cca203b5f7ee5155f3c0cdb39403a02fd0eb30fecaca5070ef9f814a805",
+                conditionsSha256="3" * 64, checkpointGenerationSha256="4" * 64, remoteCheckpointSha256="5" * 64,
+                remoteCheckpointVersion=7, discoverySha256="6" * 64,
+                originalsSha256=old["binding"]["originalsSha256"], partCount=673, nonce="a" * 32))
+
+    def test_current586_plan_uses_actual_normal_reader_without_progress_or_transport(self):
+        plan = self.current586_plan()
+        before = copy.deepcopy(plan)
+        body = (producer._exact_original_json(plan) + "\n").encode()
+        self.assertEqual(self.read_plan(plan, body=body), before)
+        self.assertEqual(plan, before)
+        self.assertNotIn("progressSource", plan["binding"])
+        self.assertNotIn("progressCacheKey", plan["binding"])
+        self.assertEqual(plan["originals"][0]["acquiredAt"], capture()["acquiredAt"])
+        producer.STAC_SESSION.get.assert_not_called()
+        producer.DOWNLOAD_SESSION.get.assert_not_called()
+        if not NATIVE:
+            for name in ("codes_grib_new_from_file", "codes_get_array", "codes_get_elements"):
+                getattr(eccodes, name).assert_not_called()
+
+    def test_current586_plan_rejects_fixed_binding_shape_and_types_before_transport(self):
+        mutations = [
+            ("scope", "CURRENT586_WRONG"), ("failedRun", "39666991482"), ("failedAttempt", True),
+            ("sourceHead", "b" * 40), ("executionHead", "c" * 40),
+            ("protectedBundleSha256", "d" * 64), ("modelBundleSha256", "e" * 64),
+            ("targetReferenceAt", "2026-10-21T21:00:00.000Z"), ("partCount", 672),
+            ("remoteCheckpointVersion", 0), ("remoteCheckpointVersion", True),
+            ("checkpointGenerationSha256", "f" * 63), ("remoteCheckpointSha256", "f" * 63),
+            ("sourceDescriptorSha256", None), ("conditionsSha256", True),
+            ("protectedProductionReferenceAt", "2026-10-21T20:00:00.000Z"),
+            ("progressCacheKey", "weather-private-progress-encrypted-v2-Linux-main-39666991481-1"),
+        ]
+        for key, value in mutations:
+            plan = self.current586_plan()
+            plan["binding"][key] = value
+            with self.subTest(key=key, value=value), self.expect_refusal("PLAN_REJECTED"):
+                self.read_plan(plan, body=(producer._exact_original_json(plan) + "\n").encode())
+        producer.STAC_SESSION.get.assert_not_called()
+        producer.DOWNLOAD_SESSION.get.assert_not_called()
+
+    def test_current586_plan_requires_canonical_complete_unique_full_capture_bytes(self):
+        plan = self.current586_plan()
+        body = (producer._exact_original_json(plan) + "\n").encode()
+        for invalid in (json.dumps(plan).encode(), body + b"\n",
+                        body.replace(b'"schemaVersion":1', b'"schemaVersion":1,"schemaVersion":1', 1)):
+            with self.subTest(kind=invalid[:32]), self.expect_refusal("PLAN_REJECTED"):
+                self.read_plan(plan, body=invalid)
+        with self.expect_refusal("PLAN_REJECTED"):
+            self.read_plan(plan, body=body, digest="0" * 64)
+        duplicate = self.current586_plan([capture(), capture()])
+        with self.expect_refusal("PLAN_REJECTED"):
+            self.read_plan(duplicate, body=(producer._exact_original_json(duplicate) + "\n").encode())
+        extra = self.current586_plan()
+        extra["originals"][0]["href"] = HREF
+        extra["binding"]["originalsSha256"] = hashlib.sha256(
+            producer._exact_original_json(extra["originals"]).encode()).hexdigest()
+        with self.expect_refusal("CAPTURE_INVALID"):
+            self.read_plan(extra, body=(producer._exact_original_json(extra) + "\n").encode())
+        many = [dict(capture(), itemId="exact-original-item-" + str(index)) for index in range(4097)]
+        bound = self.current586_plan(many)
+        with self.expect_refusal("PLAN_REJECTED"):
+            self.read_plan(bound, body=(producer._exact_original_json(bound) + "\n").encode())
+        producer.STAC_SESSION.get.assert_not_called()
+        producer.DOWNLOAD_SESSION.get.assert_not_called()
 
 
 if NATIVE:

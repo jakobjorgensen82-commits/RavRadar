@@ -1,10 +1,22 @@
-## 22. oktober — faktisk cacheprøve og præcis lokal fejlskelnen
+## 22. oktober — faktisk cacheafgrænsning og samlet genopretningskandidat
 
-- [x] PR700: faktisk samlet kildekontrol inklusive native Linux og PostgreSQL, normal merge og én skrivefri RAW-prøve af præcis den faktisk anvendte cache.
-- [x] Læs faktisk afvisningsrapport. Den generiske kode beviser endnu ikke fysisk filfravær eller sletning.
-- [x] Reproducér kodekonflikten gennem normale registrerings-/manifestfunktioner og faktisk filfortegnelse. Lokal præcisering skelner manglende fil fra uoverensstemmende metadata med/uden filnavneprefix; prefix giver aldrig originalautoritet. Elleve tilfælde uden GRIB samt eksisterende JS-fejllæser består.
-- [ ] Ny samlet kildekontrol og faktisk afgrænsning på de samme gemte input. Den fulde Python-fil er ikke bestået på Windows på grund af den uændrede native læselås; Linux-kontrollen må ikke omgås.
-- [ ] Årsagsrettelse, ny almindelig offentlig vejrgeneration og efterfølgende sikker opbygning af den nye historik. Ingen sletning, ekstra nulstilling, SQL eller ny vejrhentning er udført af denne præcisering.
+- [x] PR701: præcis samlet kildekontrol inklusive native Linux og PostgreSQL, normal merge og én ny skrivefri RAW-prøve med faktisk læst afgrænset rapport.
+- [x] Første krævede capture har intet præcist manifestmatch og intet observeret assetprefix. Ingen påstand om sletning, alle manglende originaler eller fuld årsag alene ud fra dette.
+- [x] Verificér schema1/native-slot-mekanismen mod faktisk tidligere vellykket kilde og allerede gemt kørselsevidens. Genbrug afsluttede undersøgelser.
+- [x] Integrér lokalt de gennemgåede genopretnings-, dual-capture-, 121-timersbank- og controllerrettelser. Afgrænsede normale JS-/Python-kontraktmål består; originaler og alle strenge afslag bevares.
+- [x] Nye afgrænsede normale transportkalder-/planlæserprøver og schema1/schema2-workflowudvælgelse består lokalt. Faktisk native Linux er ikke dækket af disse mål.
+- [x] Ret det lokale nationale controllerstop efter 494 af 673 dele: den samlede normale prøve består nu med 673 × 121 numeriske timer, installation, rekursiv retention og efterfølgerens seks fremadrettede timer pr. del. Projektionsgrænsen på 600 sekunder er uændret. Det er eksisterende tætte syntetiske strømdata, ikke faktisk RAW-/femfamilie-/produktionsbevis.
+- [x] Lokal snæver kodekoptimering med fuld normal originalvalidering og gammel fuld vej ved tvetydighed: hele den normale kodekprøve består, inklusive sammenligning mod gammel beregning og konfliktnegativer. En kontrolleret før/efter-måling viser lokal tidsgevinst; national kapacitet er ikke dermed bevist.
+- [x] Lokal rettelse bevarer validerede, faktisk målte filcaptures gennem installation og den normale rekursive planlægning. Otte afgrænsede normale filbeskyttelses-/regressionsmål består; det er ikke faktisk RAW-SAVE eller holdbar B/S.
+- [x] Lokal exact-restore-kontrol med faktisk allokeringsenhed, særskilt fysisk ledig plads og prospektiv logisk manifestvækst er integreret. Hele den eksisterende portable genopretningsprøve består med 52 tilfælde. Linux-native og faktisk runnerplads er ikke bevist af dette.
+- [ ] Verificér filbeskyttelse, plads og genbrug gennem faktisk normal RAW-SAVE og ny B/S; ingen pruning.
+- [ ] Præcis ny kildekvalifikation og faktisk originaltilgængelighed/plads.
+- Lokal `scripts/validate-source.ps1` er forsøgt, men stoppede før prøver på manglende runtime-afhængigheder. Det normale `setup-codex.ps1` kan ikke installere den fastlåste `eccodeslib` på Windows. Ingen pakkeversion eller produktkontrol ændres; fuld kvalifikation inklusive native Linux og PostgreSQL kræves på PR'ens præcise head. Portable RDKS-/håndbogs-/versions- og uændrede modelgrafkontroller består.
+- Første præcise PR702-kontrol stoppede i to JavaScript-kildeorakler før de native Python-prøver: den additive CURRENT586-workflowændring var ikke ført tilbage gennem det gamle hele kildeorakel, og en funktionsafgrænsning læste en ny separat hjælpefunktion med. Rettelsen skal bevare alle gamle sikkerhedsassertioner og kun korrigere kildeafgrænsningen; ingen produktadfærd eller hashaffejning. PostgreSQL og senere kildekontroller blev ikke nået.
+- [x] Begge berørte normale Node-prøvefiler består nu samlet lokalt med 25 tilfælde uden fejl eller skip. En præcis yderinverse genskaber hele det ægte gamle workflow før samtlige uændrede gamle orakler; funktionsprøven læser nu kun sin faktiske importerede funktion. Produkt-/workflowkode, gamle hashes og sikkerhedsassertioner er uændrede. Ny præcis GitHub-kontrol er fortsat påkrævet.
+- [x] Næste præcise kontrol gennemførte de native Linux- og PostgreSQL-trin. Hele kildeplanen rapporterede én gammel kildekodesammenligning, ikke en ny vejrhentningsfejl; de efterfølgende nationale kontroller og kildeartifactet blev ikke nået.
+- [x] Den snævre prøveopfølgning genskaber hele den ægte tidligere cacheskriver før det uændrede historiske orakel. Tre normale mål består uden fejl eller skip: gammel mekanisk kontrol, ændringsnegativer og direkte recordvis PART-erstatning med særskilte bytegrænser, ingen dobbelt gammel bank og bevaret input/output ved afslag. Ingen produktkode, model eller sikkerhedskrav ændres. Ny præcis samlet CI er fortsat nødvendig; beståede uændrede produktprøver gentages ikke lokalt for status.
+- [ ] Kontrolleret genopretning, fuld native-reprojektion, normal save/upload/deploy og ny almindelig offentlig vejrgeneration med efterfølgende opbygning. Ingen SQL, nulstilling, pruning eller SOURCE-aktivering følger af lokale prøver.
 
 ## 22. oktober — præcis diagnose læst; fuld gemt prognose indgår i næste cacheprøve
 

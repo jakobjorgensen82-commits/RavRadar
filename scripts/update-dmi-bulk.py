@@ -17,6 +17,7 @@ import os
 import pathlib
 import re
 import signal
+import shutil
 import stat
 import sys
 import tempfile
@@ -4538,6 +4539,37 @@ def _exact_unique_fields(pairs):
     return document
 
 
+def _validate_current586_exact_original_restore_plan(plan):
+    """Separate CURRENT B/S metadata scope, never a progress/cache-hit claim."""
+    binding = plan.get("binding")
+    fields = {"scope", "failedRun", "failedAttempt", "targetReferenceAt", "sourceHead", "executionHead",
+              "protectedBundleSha256", "protectedDatasetId", "protectedProductionReferenceAt", "protectedGeneratedAt",
+              "sourceDescriptorSha256", "modelBindingSha256", "modelBundleSha256", "conditionsSha256",
+              "checkpointGenerationSha256", "remoteCheckpointSha256", "remoteCheckpointVersion",
+              "discoverySha256", "originalsSha256", "partCount", "nonce"}
+    fixed = {"scope": "CURRENT586_EXACT_ORIGINAL_RESTORE_39666991481_1", "failedRun": "39666991481",
+             "failedAttempt": 1, "targetReferenceAt": "2026-10-21T20:00:00.000Z",
+             "sourceHead": "94b2b6173747b9d1f7d261c5110042a657af0cac",
+             "protectedBundleSha256": "e9e7b9327df875133b7c2c00ef6440bc411ef2178a9edf9d6cb1ba1a3e7555c3",
+             "modelBundleSha256": "6d8f7cca203b5f7ee5155f3c0cdb39403a02fd0eb30fecaca5070ef9f814a805"}
+    if (not isinstance(binding, dict) or set(binding) != fields
+            or any(type(binding[key]) is not type(value) or binding[key] != value for key, value in fixed.items())
+            or binding["executionHead"] != os.getenv("GITHUB_SHA")
+            or not isinstance(binding["executionHead"], str) or not re.fullmatch(r"[a-f0-9]{40}", binding["executionHead"])
+            or type(binding["partCount"]) is not int or binding["partCount"] != 673
+            or type(binding["remoteCheckpointVersion"]) is not int or binding["remoteCheckpointVersion"] < 1
+            or not all(isinstance(binding[key], str) and re.fullmatch(r"[a-f0-9]{64}", binding[key])
+                       for key in ("sourceDescriptorSha256", "modelBindingSha256", "conditionsSha256",
+                                   "checkpointGenerationSha256", "remoteCheckpointSha256", "discoverySha256", "originalsSha256"))
+            or not isinstance(binding["protectedDatasetId"], str)
+            or not re.fullmatch(r"rr-[A-Za-z0-9][A-Za-z0-9._-]{0,127}", binding["protectedDatasetId"])
+            or not all(isinstance(binding[key], str) and canonical_time(binding[key]) for key in
+                       ("protectedProductionReferenceAt", "protectedGeneratedAt"))
+            or epoch(binding["protectedProductionReferenceAt"]) >= epoch(fixed["targetReferenceAt"])
+            or not isinstance(binding["nonce"], str) or not re.fullmatch(r"[a-f0-9]{32}", binding["nonce"])):
+        _exact_original_refuse("PLAN_REJECTED")
+
+
 def read_exact_original_restore_plan(*, observed_names=None):
     """A fixed private file plus caller-held byte witness, not bearer authority."""
     expected_sha = os.getenv("DMI_EXACT_ORIGINAL_PLAN_SHA256", "")
@@ -4564,28 +4596,33 @@ def read_exact_original_restore_plan(*, observed_names=None):
         _exact_original_refuse("PLAN_REJECTED")
     if (not isinstance(plan, dict) or set(plan) != {"schemaVersion", "contractId", "binding", "originals"}
             or type(plan["schemaVersion"]) is not int or plan["schemaVersion"] != 1
-            or plan["contractId"] != "dmi-exact-original-restore-v1"):
+            or plan["contractId"] not in {"dmi-exact-original-restore-v1", "dmi-current586-exact-original-restore-v1"}):
         _exact_original_refuse("PLAN_REJECTED")
     binding = plan["binding"]
-    if (not isinstance(binding, dict) or set(binding) != {
-            "progressSource", "progressCacheKey", "targetReferenceAt", "sourceHead", "executionHead",
-            "protectedBundleSha256", "protectedDatasetId", "protectedProductionReferenceAt",
-            "protectedGeneratedAt", "modelBindingSha256", "historyDemandSha256", "originalsSha256", "nonce"}
-            or (binding["progressSource"], binding["progressCacheKey"], binding["targetReferenceAt"]) not in (
-                ("38692413809-1", "weather-private-progress-encrypted-v2-Linux-main-38692413809-1", "2026-10-14T18:00:00.000Z"),
-                ("38768040429-1", "weather-private-progress-encrypted-v2-Linux-main-38768040429-1", "2026-10-15T16:00:00.000Z"),
-                ("39066350748-1", "weather-private-progress-encrypted-v2-Linux-main-39066350748-1", "2026-10-17T20:00:00.000Z"))
-            or not all(isinstance(binding[key], str) and re.fullmatch(r"[0-9a-f]{40}", binding[key])
-                       for key in ("sourceHead", "executionHead"))
-            or binding["executionHead"] != os.getenv("GITHUB_SHA")
-            or not all(isinstance(binding[key], str) and re.fullmatch(r"[0-9a-f]{64}", binding[key]) for key in (
-                "protectedBundleSha256", "modelBindingSha256", "historyDemandSha256", "originalsSha256"))
-            or not isinstance(binding["protectedDatasetId"], str)
-            or not re.fullmatch(r"rr-[a-zA-Z0-9._-]{1,180}", binding["protectedDatasetId"])
-            or not all(isinstance(binding[key], str) and canonical_time(binding[key]) for key in (
-                "protectedProductionReferenceAt", "protectedGeneratedAt"))
-            or not isinstance(binding["nonce"], str) or not re.fullmatch(r"[0-9a-f]{32}", binding["nonce"])):
-        _exact_original_refuse("PLAN_REJECTED")
+    if plan["contractId"] == "dmi-current586-exact-original-restore-v1":
+        if (_exact_original_json(plan) + "\n").encode("utf-8") != body:
+            _exact_original_refuse("PLAN_REJECTED")
+        _validate_current586_exact_original_restore_plan(plan)
+    else:
+        if (not isinstance(binding, dict) or set(binding) != {
+                "progressSource", "progressCacheKey", "targetReferenceAt", "sourceHead", "executionHead",
+                "protectedBundleSha256", "protectedDatasetId", "protectedProductionReferenceAt",
+                "protectedGeneratedAt", "modelBindingSha256", "historyDemandSha256", "originalsSha256", "nonce"}
+                or (binding["progressSource"], binding["progressCacheKey"], binding["targetReferenceAt"]) not in (
+                    ("38692413809-1", "weather-private-progress-encrypted-v2-Linux-main-38692413809-1", "2026-10-14T18:00:00.000Z"),
+                    ("38768040429-1", "weather-private-progress-encrypted-v2-Linux-main-38768040429-1", "2026-10-15T16:00:00.000Z"),
+                    ("39066350748-1", "weather-private-progress-encrypted-v2-Linux-main-39066350748-1", "2026-10-17T20:00:00.000Z"))
+                or not all(isinstance(binding[key], str) and re.fullmatch(r"[0-9a-f]{40}", binding[key])
+                           for key in ("sourceHead", "executionHead"))
+                or binding["executionHead"] != os.getenv("GITHUB_SHA")
+                or not all(isinstance(binding[key], str) and re.fullmatch(r"[0-9a-f]{64}", binding[key]) for key in (
+                    "protectedBundleSha256", "modelBindingSha256", "historyDemandSha256", "originalsSha256"))
+                or not isinstance(binding["protectedDatasetId"], str)
+                or not re.fullmatch(r"rr-[a-zA-Z0-9._-]{1,180}", binding["protectedDatasetId"])
+                or not all(isinstance(binding[key], str) and canonical_time(binding[key]) for key in (
+                    "protectedProductionReferenceAt", "protectedGeneratedAt"))
+                or not isinstance(binding["nonce"], str) or not re.fullmatch(r"[0-9a-f]{32}", binding["nonce"])):
+            _exact_original_refuse("PLAN_REJECTED")
     originals = plan["originals"]
     # Preserve independent captures of identical bytes. The preparation and
     # coordinator share this metadata bound; actual unique files are still
@@ -4652,6 +4689,72 @@ def _reuse_exact_original_file(capture, *, work_deadline, observed_names=None):
     return True
 
 
+def _exact_original_check_disk_space(manifest, missing, raw_used):
+    """Exact-restore only; reserve payload, atomic manifest and owned scratch.
+
+    A download temp and its no-clobber hardlink share payload blocks. The
+    manifest writer instead keeps the previous manifest beside a whole new
+    indent=2 UTF-8 .json.tmp. Bound the not-yet-resolved official href by the
+    existing 8192-character URL limit, at worst six JSON bytes per character.
+    This placeholder is size arithmetic only, never a path/source/URL.
+    Allocation rounding is an accounting preflight, not a filesystem-space
+    reservation or proof of future metadata/CoW/compression behavior.
+    """
+    try:
+        unit = os.statvfs(RAW_DIR).f_frsize
+        if type(unit) is not int or unit <= 0:
+            raise ValueError("invalid filesystem allocation unit")
+        allocated = lambda length: ((length + unit - 1) // unit) * unit
+        manifest_info = raw_cache_manifest_path().lstat()
+        blocks = getattr(manifest_info, "st_blocks", None)
+        # Give no existing-allocation credit when it cannot be measured.
+        manifest_credit = ((blocks * 512) // unit) * unit if type(blocks) is int and blocks >= 0 else 0
+        plan = RAW_DIR / ".original-recovery-plan.json"
+        try:
+            plan_bytes = plan.lstat().st_size
+        except FileNotFoundError:
+            plan_bytes = 0  # Direct offline/API caller has no archived plan.
+        encoded = lambda value: len((json.dumps(value, ensure_ascii=False, indent=2) + "\n").encode("utf-8"))
+        manifest_bound = encoded(manifest)
+        for capture in missing:
+            row = {**capture, "canonicalHref": "\x01" * 8192,
+                   "acquiredAt": "9999-12-31T23:59:59.999999Z",
+                   "bytes": capture["contentLengthBytes"],
+                   "lastUsedAt": "9999-12-31T23:59:59.999999Z"}
+            # cached_asset_path is 24 hex chars plus a suffix of the <=8192
+            # character URL. Repeated document framing overestimates growth.
+            manifest_bound += encoded({"schemaVersion": RAW_CACHE_MANIFEST_SCHEMA_VERSION,
+                                       "assets": {"\x01" * (24 + 8192): row}})
+        if type(raw_used) is not int or raw_used < 0:
+            raise ValueError("invalid RAW occupancy")
+        # RAW limits logical occupied bytes, not allocation fragments. used
+        # already includes the old manifest/plan: add only prospective growth.
+        raw_required = (raw_used + sum(capture["contentLengthBytes"] for capture in missing)
+                        + max(0, manifest_bound - manifest_info.st_size))
+        if raw_required > RAW_CACHE_MAX_BYTES:
+            _exact_original_refuse("CACHE_BUDGET")
+        # Existing files/plan already occupy disk. Additionally allow the
+        # prospective manifest growth plus a simultaneous whole manifest temp.
+        # The coordinator may archive the consumed plan and receipt afterwards:
+        # two whole plan lengths plus both existing 8192-byte pipe bounds cover
+        # that scratch conservatively, without an arbitrary free-space quota.
+        # Round EACH new file independently; many small originals cannot
+        # borrow the unallocated tail of another file. st_blocks is measured
+        # in 512-byte units and credited only in whole f_frsize fragments.
+        required = (sum(allocated(capture["contentLengthBytes"]) for capture in missing)
+                    + max(0, allocated(manifest_bound) - manifest_credit) + allocated(manifest_bound)
+                    + 2 * allocated(plan_bytes) + 2 * allocated(8192))
+        free = shutil.disk_usage(RAW_DIR).free
+        if type(free) is not int or free < 0:
+            raise ValueError("invalid disk free measurement")
+    except (OSError, UnicodeError, TypeError, ValueError, OverflowError, AttributeError):
+        raise OSError("DMI_EXACT_ORIGINAL_DISK_STATE_UNAVAILABLE") from None
+    if free < required:
+        _exact_original_refuse("DISK_BUDGET")
+    return {"requiredFreeBytes": required, "requiredRawBytes": raw_required,
+            "prospectiveManifestBytes": manifest_bound, "currentManifestBytes": manifest_info.st_size}
+
+
 def restore_exact_original_assets(originals, *, report=None, observed_names=None):
     """Only exact historical originals. No main, latest, replay, pruning or score."""
     if report is None:
@@ -4694,12 +4797,13 @@ def restore_exact_original_assets(originals, *, report=None, observed_names=None
             # The plan is already deduplicated by immutable capture identity.
             # Re-measure current RAW occupancy; local reuse consumes neither
             # download budget nor additional space. Never prune to make room.
-            _, used = _exact_raw_state(observed_names=observed_names)
+            manifest, used = _exact_raw_state(observed_names=observed_names)
             missing_bytes = sum(capture["contentLengthBytes"] for capture in missing)
             if used + missing_bytes > RAW_CACHE_MAX_BYTES:
                 _exact_original_refuse("CACHE_BUDGET")
             if missing_bytes > MAX_DOWNLOAD_BYTES:
                 _exact_original_refuse("DOWNLOAD_BUDGET")
+            _exact_original_check_disk_space(manifest, missing, used)
         for capture in missing:
             try:
                 href = resolve_exact_original_item(capture, work_deadline=WORK_DEADLINE)["href"]
@@ -4768,7 +4872,7 @@ _EXACT_ORIGINAL_FAILURE_CODES = frozenset("DMI_EXACT_ORIGINAL_" + code for code 
     "METADATA_UNAVAILABLE", "ASSET_UNAVAILABLE",
     "HTTP_REJECTED", "STAC_ROOT_REJECTED", "METADATA_BOUND", "METADATA_INVALID", "REVISION_MISMATCH",
     "RAW_DIRECTORY_REJECTED", "RAW_ENTRY_REJECTED", "MANIFEST_REJECTED", "HEADER_BOUND", "HEADER_MISMATCH",
-    "CONTENT_MISMATCH", "COLLISION", "CACHE_BUDGET", "DOWNLOAD_BUDGET", "LENGTH_MISMATCH", "PLAN_REJECTED",
+    "CONTENT_MISMATCH", "COLLISION", "CACHE_BUDGET", "DOWNLOAD_BUDGET", "DISK_BUDGET", "LENGTH_MISMATCH", "PLAN_REJECTED",
     "ASSET_BOUND", "HEADER_REJECTED", "MANIFEST_CHANGED", "TRANSPORT_FAILED",
 ))
 # End exact-original restore helpers; normal download defaults remain unchanged.

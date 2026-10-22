@@ -678,8 +678,43 @@ test('shared normal DMI recovery module is import-safe, outside I71, and byte-ex
     /complete genuine pre-extraction updater/);
 });
 
+// Exact TEST-ONLY outer inverse of the reviewed recordwise PART replacement.
+// The genuine95 module and every older mechanical-extraction oracle stay fixed.
+const RECORDWISE_PART_WRITER_REVIEW = Object.freeze({
+  before: Object.freeze({ bytes: 28925, sha256: 'ac1cbf3909daad48e126a23c1c724e942344750c8856308c2e2a74d842a053a6' }),
+  after: Object.freeze({ bytes: 29084, sha256: '75c10458973f5e3cdf2969b35c76698239e2baf696b4f0ff8fd4b466bdc3c536' }),
+  hunks: Object.freeze([
+    Object.freeze({
+      before: "      if (key === 'waterSourceContinuity') {\n        // A qualified merged bank follows the same bounded recordwise path as\n        // an unchanged indexed bank, never a whole-bank metadata stringify.\n        if (!plain(value) || !Array.isArray(value.entries)) invalid('SHAPE_INVALID');\n        await append('\"waterSourceContinuity\":{');\n",
+      after: "      if (key === 'waterSourceContinuity' || key === 'partContinuity' && plain(value)) {\n        // A qualified merged bank follows the same bounded recordwise path as\n        // an unchanged indexed bank, never a whole-bank metadata stringify.\n        if (!plain(value) || !Array.isArray(value.entries)) invalid('SHAPE_INVALID');\n        await append(JSON.stringify(key) + ':{');\n",
+    }),
+    Object.freeze({
+      before: "              if (Buffer.byteLength(text) > MAX_WATER_SOURCE_ENTRY_BYTES) invalid('RECORD_SIZE_LIMIT');\n",
+      after: "              if (Buffer.byteLength(text) > (key === 'waterSourceContinuity'\n                ? MAX_WATER_SOURCE_ENTRY_BYTES : MAX_CONTINUITY_ENTRY_BYTES)) invalid('RECORD_SIZE_LIMIT');\n",
+    }),
+    Object.freeze({
+      before: "    if (index.continuity) {\n      await append(',\"partContinuity\":{');\n",
+      after: "    if (index.continuity && !plain(metadata.partContinuity)) {\n      await append(',\"partContinuity\":{');\n",
+    }),
+  ]),
+});
+function inverseRecordwisePartWriter(source) {
+  assert.equal(typeof source, 'string', 'whole recordwise PART writer text');
+  const review = RECORDWISE_PART_WRITER_REVIEW;
+  if (Buffer.byteLength(source) === review.before.bytes && digest(source) === review.before.sha256) return source;
+  assert.equal(Buffer.byteLength(source), review.after.bytes, 'whole reviewed recordwise PART writer size');
+  assert.equal(digest(source), review.after.sha256, 'whole reviewed recordwise PART writer SHA');
+  for (const hunk of review.hunks) {
+    assert.equal(source.split(hunk.after).length, 2, 'exact reviewed recordwise PART writer hunk');
+    source = source.replace(hunk.after, () => hunk.before);
+  }
+  assert.equal(Buffer.byteLength(source), review.before.bytes, 'whole genuine95 recordwise writer size');
+  assert.equal(digest(source), review.before.sha256, 'whole genuine95 recordwise writer SHA');
+  return source;
+}
+
 test('main parser policy, public readers, serializer and record writer are preserved by mechanical extraction', async () => {
-  const source = await sourceText(new URL('./lib/dmi-forecast-file.mjs', import.meta.url));
+  const source = inverseRecordwisePartWriter(await sourceText(new URL('./lib/dmi-forecast-file.mjs', import.meta.url)));
   const branding = "// Actual in-process checkpoint state, not a cross-process owner or a receipt\n// that authorizes a replacement worker. Preserve an uncertain handle/stage.\nconst checkpointWriters = new Map(), checkpointStopErrors = new WeakSet();\nexport function isDmiForecastCheckpointStopUnproved(error) {\n  return checkpointStopErrors.has(error);\n}\n\n";
   assert.equal(source.split(branding).length, 2);
   let baseline = source.replace(branding, '');
@@ -706,6 +741,21 @@ test('main parser policy, public readers, serializer and record writer are prese
   assert.ok(start > 0 && end > start);
   assert.equal(digest(baseline.slice(0, start) + baseline.slice(end)),
     'ecf1e9813312af7244be828aa667b5753f543e8d052f8fda49dc4c562255826c');
+});
+
+test('recordwise PART writer has an exact outer inverse and refuses every changed reviewed hunk', async () => {
+  const actual = await sourceText(new URL('./lib/dmi-forecast-file.mjs', import.meta.url));
+  const original = inverseRecordwisePartWriter(actual);
+  assert.equal(digest(original), RECORDWISE_PART_WRITER_REVIEW.before.sha256);
+  assert.equal(inverseRecordwisePartWriter(original), original, 'The genuine95 source stays byte-identical');
+  for (const hunk of RECORDWISE_PART_WRITER_REVIEW.hunks) {
+    assert.equal(actual.split(hunk.after).length, 2);
+    const changed = actual.replace(hunk.after, () => hunk.before);
+    assert.notEqual(changed, actual);
+    assert.throws(() => inverseRecordwisePartWriter(changed), /whole reviewed recordwise PART writer|exact reviewed recordwise PART writer/);
+  }
+  assert.throws(() => inverseRecordwisePartWriter(actual + '// unreviewed drift\n'), /whole reviewed recordwise PART writer/);
+  assert.throws(() => inverseRecordwisePartWriter(null), /whole recordwise PART writer text/);
 });
 
 test('47 baseline commands plus genuine OLD, NEW native, epoch and pure diagnostic checks reach normal checkpoint integration exactly once', async () => {
