@@ -37,6 +37,8 @@ import {assertNativeOriginalContinuityCodeOnlyCaller} from './select-native-orig
 import { ownFileDescriptorIdentity, ownedFileDescriptorClosed } from './lib/private-weather-component-pack.mjs';
 import { classifyProductionTargetFreshness } from './check-production-target-freshness.mjs';
 
+import {ASSISTANT_LATER_H0_BINDING as ASSISTANT_LATER_FAMILY}
+  from './lib/assistant-later-h0-successor-source.mjs';
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const sha = raw => crypto.createHash('sha256').update(raw).digest('hex');
 const need = (condition, code) => assert(condition, 'PAIRED_PUBLICATION_' + code);
@@ -44,7 +46,7 @@ const json = async file => JSON.parse(await fs.readFile(file, 'utf8'));
 const identityKeys = ['sourceHead', 'datasetId', 'productionReferenceAt', 'generatedAt',
   'bundleContentSha256', 'modelBinding', 'contractHashes'];
 function reconcileFamily(descriptor) {
-  return [FAMILY, NEXT_FAMILY, METADATA_FAMILY, NATIVE_METADATA_FAMILY].filter(Boolean).find(family =>
+  return [FAMILY, NEXT_FAMILY, METADATA_FAMILY, NATIVE_METADATA_FAMILY, ASSISTANT_LATER_FAMILY].filter(Boolean).find(family =>
     descriptor?.modelBinding?.modelBundleSha256 === family.I
     && descriptor?.contractHashes?.continuationStateContractSha256 === family.T) ?? null;
 }

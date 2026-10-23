@@ -34,7 +34,7 @@ const sqlText = text => String(text).replace(/\r\n?/g, '\n');
 const NATIVE_PSQL_PHASES = new Set(['NATIVE_SETUP', 'CAS200_MIGRATION',
   'BASELINE_FIXTURES', 'BASELINE_ADMISSION', 'BASELINE_CAS_CASES',
   'ACCOUNT213', 'CURRENT220', 'STATISTICS230', 'NATIVE_IDENTITY0600', 'CURRENT_MEMORY_WARMUP',
-  'ESTABLISHED_NATIVE_CURRENT_ORIGIN', 'LAST_MILE_ENCLOSURE', 'ACCOUNT_STATISTICS_ASSISTANT', 'NATIVE_ORIGINAL_CONTINUITY', 'UNKNOWN']);
+  'ESTABLISHED_NATIVE_CURRENT_ORIGIN', 'LAST_MILE_ENCLOSURE', 'ACCOUNT_STATISTICS_ASSISTANT', 'NATIVE_ORIGINAL_CONTINUITY', 'ASSISTANT_LATER_H0', 'UNKNOWN']);
 const NATIVE_PSQL_STATES = Object.freeze({
   '22003':'SQL_RANGE', '22023':'SQL_PARAMETER', '22P02':'SQL_TEXT_FORMAT',
   '23502':'SQL_NOT_NULL', '23503':'SQL_FOREIGN_KEY', '23505':'SQL_UNIQUE',
@@ -627,7 +627,7 @@ export async function runNativeCheckpointSqlComparison({ repositoryRoot,
   sourceDocumentAt, atHour, saveCheckpoint, includeStatisticsRevision = false,
   includeNativeIdentity = false, includeCurrentMemoryWarmup = false, includeEstablishedNativeCurrentOrigin = false,
   includeLastMileEnclosure = false, includeAccountStatisticsAssistant = false,
-  includeNativeOriginalContinuity = false } = {}) {
+  includeNativeOriginalContinuity = false, includeAssistantLaterH0 = false } = {}) {
   assert.equal(typeof includeStatisticsRevision,'boolean');
   assert.equal(typeof includeNativeIdentity,'boolean');
   assert.equal(typeof includeCurrentMemoryWarmup,'boolean');
@@ -635,6 +635,12 @@ export async function runNativeCheckpointSqlComparison({ repositoryRoot,
   assert.equal(typeof includeLastMileEnclosure,'boolean');
   assert.equal(typeof includeAccountStatisticsAssistant,'boolean');
   assert.equal(typeof includeNativeOriginalContinuity,'boolean');
+  assert.equal(typeof includeAssistantLaterH0,'boolean');
+  assert(!includeAssistantLaterH0 || includeNativeOriginalContinuity,'Assistant later-H0 requires the genuine complete586 native phase');
+  if(includeAssistantLaterH0){
+    const {requireAssistantLaterH0Release}=await import('./assistant-later-h0-successor-source.mjs');
+    requireAssistantLaterH0Release(); // Before programs, host, factory or SQL.
+  }
   assert(!includeNativeOriginalContinuity || includeAccountStatisticsAssistant,
     'Native continuity requires the genuine complete585 native phase');
   if(includeNativeOriginalContinuity){
@@ -955,8 +961,21 @@ select public.native_checkpoint_attempt(${baseline},${version},(select payload f
     let nativeOriginalContinuity;
     if(includeNativeOriginalContinuity){
       nativePhase='NATIVE_ORIGINAL_CONTINUITY';
+      if(includeAssistantLaterH0){
+        const {withFrozen586CheckpointPostgresSource}=await import('../run-frozen586-assistant-later-h0-postgres-source.mjs');
+        nativeOriginalContinuity=await withFrozen586CheckpointPostgresSource(async({adapter,factory})=>
+          adapter.compareNativeOriginalContinuitySuccessor({psql,runSql,root,sourceDocumentAt:factory.sourceDocumentAt,
+            atHour:factory.atHour,saveCheckpoint:factory.saveRavScoreContinuationCheckpoint}));
+      }else{
       const {compareNativeOriginalContinuitySuccessor}=await import('./native-original-continuity-postgres.mjs');
       nativeOriginalContinuity=await compareNativeOriginalContinuitySuccessor({psql,runSql,root,sourceDocumentAt,atHour,saveCheckpoint});
+      }
+    }
+    let assistantLaterH0;
+    if(includeAssistantLaterH0){
+      nativePhase='ASSISTANT_LATER_H0';
+      const {compareAssistantLaterH0Successor}=await import('./assistant-later-h0-postgres.mjs');
+      assistantLaterH0=await compareAssistantLaterH0Successor({psql,runSql,root,sourceDocumentAt,atHour,saveCheckpoint});
     }
     return {kind:'NATIVE_POSTGRES_CHECKPOINT_CAS_COMPARISON',accountAssistant,currentGrid,
       ...(includeStatisticsRevision?{statisticsRevision}:{}),
@@ -966,6 +985,7 @@ select public.native_checkpoint_attempt(${baseline},${version},(select payload f
       ...(includeLastMileEnclosure?{lastMileEnclosure}:{}),
       ...(includeAccountStatisticsAssistant?{accountStatisticsAssistant}:{}),
       ...(includeNativeOriginalContinuity?{nativeOriginalContinuity}:{}),
+      ...(includeAssistantLaterH0?{assistantLaterH0}:{}),
       issuedSource:issued.sourceReceipt,postgresMajorVersion:programs.majorVersion,
       tcpEnabled:false,normalModelPartCount:673,sqlExecuted:true,migrationExecuted:true,
       migrationSQLSha256:hash(newSource),caseCount:reports.length,

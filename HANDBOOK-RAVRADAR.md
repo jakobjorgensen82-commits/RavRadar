@@ -1,3 +1,15 @@
+## 89.265 Spørg RavRadar: forklaring er ikke en lokal vejrudsigt
+
+Kort fortalt: RavRadar kan forklare en mulighed uden at love et fund eller kende forholdene på en bestemt strand.
+
+Bølger kan sætte materiale ved bunden i bevægelse, og strøm kan føre det mellem revler og render. Det er ikke det samme som, at materialet når helt op på stranden. Derfor kan der ske transport under vand, selv om der ikke ses nyt opskyl. Revler, åbninger og læsider kan påvirke transporten, men de er mulige fælder, ikke garantier.
+
+SpørgRavRadar bruger sin eksisterende kontrollerede viden til generelle forklaringer og enkle spørgsmål om genkendelse på dansk, tysk og engelsk. Et lokalt regelsvar er ikke i sig selv bevis for kvaliteten af en ekstern AI-tjeneste. Vandstand og en høj score er heller ikke et løfte om ravfund.
+
+Spørgsmål om aktuelle vejrtal kræver en konkret zone og de faktisk tilknyttede data. Et generelt svar må ikke opfinde tal eller afgøre sikkert, hvad der ligger på en bestemt strand. Usikkerhed, manglende data og sikkerhedsgrænser skal stadig fremgå ærligt; private oplysninger må ikke bruges som offentlig viden.
+
+Disse svarforbedringer og en originalbevarende programovergang er lokalt forberedt og udstedt i 4.0.587. Sidste verificerede offentlige version er4.0.586. Lokal kildekontrol er ikke installation, ny vejrhentning eller offentlig effekt; det kræver særskilt kontrolleret levering og en almindelig efterfølgende opdatering. Lager-/økonomivalget og den aktuelle genopretning er fortsat særskilte åbne punkter; denne opdatering giver ingen tilladelse til sletning af originaler.
+
 ## 89.264 Ny strømhistorik med bevaret arkiv
 
 Kort fortalt: RavRadar kan opbygge strømhistorik fra et nyt tidspunkt uden at ændre tidligere offentliggjorte scorer.
@@ -608,9 +620,17 @@ En særskilt, dokumenteret Storage-formatkant rettes samtidig: immutable upload 
 
 # RavRadar Håndbog
 
-**Håndbogsversion:** 4.0.586
+**Håndbogsversion:** 4.0.587
 
 Hvis genbrug af gemte data stopper, skal den første fejlfase og et kontrolleret kildested bevares uden private fejltekster eller værdier. Tidligere beståede kontroller frikender ikke automatisk en senere mål-time eller andre input. En bedre fejlrapport ændrer ikke beregningen og er ikke bevis for, at årsagen er rettet. Gemte originaler og sidste gyldige offentlige data bevares, mens fejlen undersøges.
+
+## Aktuel frossen kandidatkilde — 4.0.587, ikke installeret
+
+**Lokal kildebinding — RavScore 4.0.587, ikke installeret:** Den integrerede model er offentlig som modeltype; sidste særskilt verificerede offentlige release er fortsat 4.0.586. Denne 4.0.587-kilde er kun lokalt udstedt, ikke installeret eller offentliggjort. 4.0.587 er låst med `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b` og `modelBundleSha256=5584d8e59f8d21785fd08b32f9beb22cf879cdb4892a11ede24eb862d9a0dca2` over 97 kanonisk normaliserede transitive implementeringsfiler og de deklarerede forbrugere. Inaktiv Candidate G er bundet med `modelContractSha256=c73dac1b4376005e792580791d84eb79c9370e905a2a7fd0bdee857506a20cf8` og `modelBundleSha256=5c0b6a2c6ceb4ba9c5f224cb5d3fda693f300a8902da3f7561167f72cbab78b4` over 98 transitive filer. Fortsættelseskontrakten T12 er `continuationStateContractSha256=cd3a3648ad5093662871559aa39d77671eda27edf1f9edc82a104c5430a43a21` (`cd3a3648…`). Autoriteten er `version.json.releaseContract.modelBindings` og den allerede udstedte 20261022181403-migration; dette tillæg udsteder ingen ny binding og ændrer ikke nogen scoreformel. Tidligere bindingsafsnit nedenfor bevares som dateret historik.
+
+## Historiske kildeoversigter — 4.0.586 og tidligere
+
+De følgende tekster og deres daværende statusoverskrifter bevares som historik. De er ikke en anden aktiv 4.0.587-binding; den frosne kandidatkilde står ovenfor. Offentlig 4.0.586 er verificeret særskilt.
 
 ## Aktuel lokal kildebinding — 21. oktober 2026, 4.0.586 ikke installeret
 

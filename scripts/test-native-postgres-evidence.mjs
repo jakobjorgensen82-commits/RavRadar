@@ -1,14 +1,19 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
 import test from 'node:test';
-import {ORIGIN, WORKFLOW, JOB, STEP, COMMANDS, ACCOUNT_STATISTICS_ASSISTANT_COMMANDS, CURRENT_COMMANDS, NATIVE_SCRIPT, NEW_NATIVE_BLOCK,
+import {ORIGIN, WORKFLOW, JOB, STEP, COMMANDS, ACCOUNT_STATISTICS_ASSISTANT_COMMANDS, CURRENT586_COMMANDS as CURRENT_COMMANDS,
+  CURRENT_COMMANDS as ASSISTANT_LATER_H0_COMMANDS, NATIVE_SCRIPT as ASSISTANT_LATER_H0_SCRIPT, NEW_NATIVE_BLOCK,
   NON_NATIVE_TEST_INPUTS, NON_NATIVE_PROSE, nativeBlock, parseTree, verifyWorkflow,
   verifyInputTrees, verifyOriginMetadata, verifyOrigin, verifyEnvironment,
   verifyLaterRuns, decideReuse, verifyCurrentPullRequest, FOLLOWUP_INPUTS,
   CURRENT586_PHASE_KIND,CURRENT586_PHASE_UPLOAD,CURRENT586_PHASE_UPLOAD_BLOCK,
+  ASSISTANT_LATER_H0_PHASE_KIND,verifyAssistantLaterH0PhaseReceipt,
   inverseCurrent586PhaseUpload,verifyCurrent586Workflow,verifyCurrent586Runtime,
   verifyCurrent586PhaseReceipt,verifyCurrent586Metadata,verifyCurrent586Artifact,decideCurrent586Reuse} from './native-postgres-evidence.mjs';
 
+// Keep every whole586 command assertion on its immutable predecessor view.
+// The actual new production command is independently checked below.
+const NATIVE_SCRIPT='set -euo pipefail\n'+CURRENT_COMMANDS.join('\n')+'\n';
 const copy = value => structuredClone(value);
 // Genuine reviewed P0 follow-up, not the potentially changed current PR tree.
 const REVIEWED_FOLLOWUP = 'c72d6730bd235954091416268e7af649b46452d9';
@@ -261,6 +266,14 @@ test('native continuity appends its real phase while the whole585 command stays 
   assert.equal(NATIVE_SCRIPT,'set -euo pipefail\n'+CURRENT_COMMANDS.join('\n')+'\n');
 });
 
+test('assistant later-H0 appends its actual phase without retagging whole586 commands',()=>{
+  assert.equal(ASSISTANT_LATER_H0_COMMANDS.length,2);
+  assert.equal(ASSISTANT_LATER_H0_COMMANDS[0],CURRENT_COMMANDS[0]);
+  assert.equal(ASSISTANT_LATER_H0_COMMANDS[1],CURRENT_COMMANDS[1]+' --assistant-later-h0');
+  assert.notDeepEqual(ASSISTANT_LATER_H0_COMMANDS,CURRENT_COMMANDS);
+  assert.equal(ASSISTANT_LATER_H0_SCRIPT,'set -euo pipefail\n'+ASSISTANT_LATER_H0_COMMANDS.join('\n')+'\n');
+});
+
 
 test('current586 phase artifact is independent, exact, honest, and does not relax conservative native inputs',async()=>{
   const workflow=await fs.readFile(WORKFLOW,'utf8');
@@ -418,4 +431,22 @@ test('current586 exact EXECUTED origin survives a later source failure; missing,
     {total_count:101,workflow_runs:[]}:get(route)})).status,'EXECUTE');
   const missing={total_count:0,artifacts:[]};
   assert.equal((await decideCurrent586Reuse({...options,get:route=>route.includes('/artifacts?')?missing:get(route)})).status,'EXECUTE');
+});
+
+test('assistant NEXT execution cannot be minted or reused as a whole586 phase',()=>{
+  const current={run:ORIGIN.run+20,attempt:1,head:newOid,pullRequest:700,branch:'synthetic-assistant-next'};
+  const next={phase:'ASSISTANT_LATER_H0',status:'EXECUTED',executedInThisRun:true,origin:null,
+    current,commands:[...ASSISTANT_LATER_H0_COMMANDS],eligibleForReuse:false};
+  assert.equal(verifyAssistantLaterH0PhaseReceipt(next,current).status,'EXECUTED');
+  assert.notEqual(ASSISTANT_LATER_H0_PHASE_KIND,CURRENT586_PHASE_KIND);
+  assert.throws(()=>verifyCurrent586PhaseReceipt(next,current));
+  const predecessor={...next,phase:'NATIVE_ORIGINAL_CONTINUITY',commands:[...CURRENT_COMMANDS]};
+  assert.equal(verifyCurrent586PhaseReceipt(predecessor,current).status,'EXECUTED');
+  assert.throws(()=>verifyAssistantLaterH0PhaseReceipt(predecessor,current));
+  for(const mutate of [v=>v.status='REUSED',v=>v.executedInThisRun=false,v=>v.origin={run:current.run-1},
+    v=>v.eligibleForReuse=true,v=>v.commands=[...CURRENT_COMMANDS],v=>v.current={...current,head:oid},
+    v=>v.phase='NATIVE_ORIGINAL_CONTINUITY']){
+    const changed=copy(next);mutate(changed);
+    assert.throws(()=>verifyAssistantLaterH0PhaseReceipt(changed,current));
+  }
 });

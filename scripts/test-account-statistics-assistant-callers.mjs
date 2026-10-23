@@ -88,6 +88,41 @@ test('private-study005: the normal workflow stays OFF and DDL remains outside Wo
   assert.doesNotMatch(ddl,/catch\s*\{|recoveryAttempted|replace\(/);
   assert.doesNotMatch(source.slice(to),/await cf\(|model\.jobsMigration/);
 });
+test("private-study005: read-only plan substages preserve the whole original controller",async()=>{
+  const source=(await fs.readFile(new URL('./deploy-private-trip-study.mjs',import.meta.url),'utf8'))
+    .replace(/\r\n/g,'\n');
+  const edits=[
+    ["    stage='READ_ONLY_PLAN';run('node',['scripts/prepare-cloudflare-trip-storage.mjs','--existing-worker-repair']);",
+      "    stage='READ_ONLY_PLAN_EXISTING_STORAGE';run('node',['scripts/prepare-cloudflare-trip-storage.mjs','--existing-worker-repair']);"],
+    ["    const base=readOwnedJson(CONFIG);if(Object.hasOwn(base,'vars'))throw fail('UNEXPECTED_CONFIG');",
+      "    stage='READ_ONLY_PLAN_CONFIGURATION';\n    const base=readOwnedJson(CONFIG);if(Object.hasOwn(base,'vars'))throw fail('UNEXPECTED_CONFIG');"],
+    ["    originalFence=oldFence();model=privateTripStudySchemaModel();",
+      "    stage='READ_ONLY_PLAN_ORIGINAL_FENCE';originalFence=oldFence();\n    stage='READ_ONLY_PLAN_SCHEMA_MODEL';model=privateTripStudySchemaModel();"],
+    ["    const before=await inspect();const currentVersion=await attest(originalFence.workerVersionId);edge('d1');",
+      "    stage='READ_ONLY_PLAN_STATISTICS_SCHEMA';const before=await inspect();\n    stage='READ_ONLY_PLAN_WORKER_BINDINGS';const currentVersion=await attest(originalFence.workerVersionId);\n    stage='READ_ONLY_PLAN_EDGE_CONTRACT';edge('d1');"],
+    ["    plan={kind:'PRIVATE_TRIP_STUDY_CONTROL0_PLAN',sourceSha:env.GITHUB_SHA,runId:env.GITHUB_RUN_ID,",
+      "    stage='READ_ONLY_PLAN_RECEIPT';\n    plan={kind:'PRIVATE_TRIP_STUDY_CONTROL0_PLAN',sourceSha:env.GITHUB_SHA,runId:env.GITHUB_RUN_ID,"],
+  ];
+  const stagePattern=/stage='(READ_ONLY_PLAN_[A-Z_]+)'/g;
+  const stages=edits.flatMap(([,after])=>[...after.matchAll(stagePattern)].map(match=>match[1]));
+  assert.equal(stages.length,8);assert.equal(new Set(stages).size,8);
+  const verify=value=>{
+    assert.deepEqual([...value.matchAll(stagePattern)].map(match=>match[1]),stages);
+    let original=value;
+    for(const [before,after] of edits){
+      assert.equal(original.split(after).length,2);
+      original=original.replace(after,()=>before);
+    }
+    assert.equal(crypto.createHash('sha256').update(original).digest('hex'),
+      '7aa118fe89f33395695f5c58c2e7c2052966bd68fd77a89eca243591eec32dce',
+      'Only the exact eight stage assignments may differ from the whole reviewed controller');
+  };
+  verify(source);
+  const swapped=source.replace(/READ_ONLY_PLAN_(?:EXISTING_STORAGE|CONFIGURATION)/g,
+    stage=>stage===stages[0]?stages[1]:stages[0]);
+  for(const changed of [swapped,source.replace(stages[2],'READ_ONLY_PLAN_UNKNOWN'),
+    source+'\n// non-stage byte drift\n'])assert.throws(()=>verify(changed));
+});
 test('current585 model-import guard admits only the whole reviewed first-raw-error loader',async()=>{
   const file='scripts/check-account-statistics-assistant-predecessor-source.mjs';
   const source=(await fs.readFile(new URL('./check-account-statistics-assistant-predecessor-source.mjs',import.meta.url),'utf8'))
@@ -434,9 +469,16 @@ test('normal original584 staging forwards the selected R2 storage into the real 
 });
 
 test('current586 source registration preserves exact585 predecessor and distinct current native scope',async()=>{
-  const pkg=JSON.parse(await fs.readFile(new URL('../package.json',import.meta.url),'utf8'));
+  const actualPkg=JSON.parse(await fs.readFile(new URL('../package.json',import.meta.url),'utf8'));
   const {verifyPackage,verifyCurrentNativeCommands,CURRENT586_NATIVE_COMMANDS}=await import('./national584-source-evidence.mjs');
-  const {inverseReviewedAccountStatisticsAssistantSourceScripts}=await import('./lib/account-statistics-assistant-package-review.mjs');
+  const {inverseReviewedAccountStatisticsAssistantSourceScripts,inverseAssistantLaterH0SourceScripts}=await import('./lib/account-statistics-assistant-package-review.mjs');
+  const {ASSISTANT_LATER_H0_BINDING}=await import('./lib/assistant-later-h0-successor-source.mjs');
+  const later=Object.hasOwn(actualPkg.scripts,'test:assistant-later-h0-source');
+  if(later){
+    if(ASSISTANT_LATER_H0_BINDING===null)assert.throws(()=>verifyPackage(actualPkg),/ASSISTANT_LATER_H0_UNISSUED/);
+    else assert.doesNotThrow(()=>verifyPackage(actualPkg));
+  }
+  const pkg=later?{...actualPkg,version:'4.0.586',scripts:inverseAssistantLaterH0SourceScripts(actualPkg.scripts)}:actualPkg;
   assert.equal(pkg.version,'4.0.586');assert.doesNotThrow(()=>verifyPackage(pkg));
   assert.doesNotThrow(()=>inverseReviewedAccountStatisticsAssistantSourceScripts(pkg.scripts));
   const critical=pkg.scripts['test:ravscore-source-critical'],group='test:native-original-continuity-source';
@@ -457,4 +499,35 @@ test('current586 source registration preserves exact585 predecessor and distinct
   assert.throws(()=>verifyCurrentNativeCommands([...CURRENT586_NATIVE_COMMANDS],'4.0.585'));
   assert.throws(()=>verifyCurrentNativeCommands(CURRENT586_NATIVE_COMMANDS.map(c=>c.replace(' --native-original-continuity','')),'4.0.586'));
   assert.throws(()=>verifyCurrentNativeCommands([...CURRENT586_NATIVE_COMMANDS,CURRENT586_NATIVE_COMMANDS[1]],'4.0.586'));
+});
+
+test('assistant later-H0 registration keeps exact older scripts and refuses phase/order mutations',async()=>{
+  const pkg=JSON.parse(await fs.readFile(new URL('../package.json',import.meta.url),'utf8')),original=structuredClone(pkg);
+  const {ASSISTANT_LATER_H0_BINDING,requireAssistantLaterH0Release}=await import('./lib/assistant-later-h0-successor-source.mjs');
+  const {verifyPackage,verifyCurrentNativeCommands,ASSISTANT_LATER_H0_NATIVE_COMMANDS}=await import('./national584-source-evidence.mjs');
+  const {inverseAssistantLaterH0SourceScripts}=await import('./lib/account-statistics-assistant-package-review.mjs');
+  const prior=inverseAssistantLaterH0SourceScripts(pkg.scripts);
+  assert.equal(Object.hasOwn(prior,'test:assistant-later-h0-source'),false);
+  assert.equal(prior['test:native-original-continuity-source'],
+    'node scripts/build-native-original-continuity-successor.mjs --check && node --test scripts/test-native-original-continuity-callers.mjs');
+  assert.deepEqual(pkg,original,'A historical test view never rewrites actual package source');
+  if(ASSISTANT_LATER_H0_BINDING===null)assert.throws(()=>verifyPackage(pkg),/ASSISTANT_LATER_H0_UNISSUED/);
+  else{
+    assert.equal(pkg.version,requireAssistantLaterH0Release());assert.doesNotThrow(()=>verifyPackage(pkg));
+    assert.doesNotThrow(()=>verifyCurrentNativeCommands([...ASSISTANT_LATER_H0_NATIVE_COMMANDS],pkg.version));
+    assert.throws(()=>verifyCurrentNativeCommands(ASSISTANT_LATER_H0_NATIVE_COMMANDS.map(c=>c.replace(' --assistant-later-h0','')),pkg.version));
+  }
+  const native='npm run test:native-original-continuity-source',next='npm run test:assistant-later-h0-source';
+  for(const mode of ['missing','duplicate','reordered','changed-command','old-live-builder','unknown-command']){
+    const changed=structuredClone(pkg);
+    if(mode==='missing')delete changed.scripts['test:assistant-later-h0-source'];
+    if(mode==='duplicate')changed.scripts['test:ravscore-source-critical']=changed.scripts['test:ravscore-source-critical'].replace(next,next+' && '+next);
+    if(mode==='reordered')changed.scripts['test:ravscore-source-critical']=changed.scripts['test:ravscore-source-critical'].replace(native+' && '+next,next+' && '+native);
+    if(mode==='changed-command')changed.scripts['test:assistant-later-h0-source']+=' --unexpected';
+    if(mode==='old-live-builder')changed.scripts['test:native-original-continuity-source']=prior['test:native-original-continuity-source'];
+    if(mode==='unknown-command')changed.scripts['unknown-source-command']='node scripts/unreviewed.mjs';
+    assert.throws(()=>inverseAssistantLaterH0SourceScripts(changed.scripts));
+    assert.throws(()=>verifyPackage(changed));
+  }
+  assert.throws(()=>verifyPackage({...pkg,version:'0.0.0'}));
 });

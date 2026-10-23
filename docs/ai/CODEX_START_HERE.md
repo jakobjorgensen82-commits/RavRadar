@@ -1,3 +1,9 @@
+## 23. oktober — privat587-sammenføring; P0 og levering er fortsat særskilte
+
+Denne lokale587-arbejdsgren sammenfører den udstedte assistentkandidat med P0707s strømstart-, PART-bevarings- og zoneisolationskode. P0707 er fortsat en særskilt kildekandidat under præcis kontrol, ikke en ny offentlig vejrgeneration. 587 er stadig inaktiv og ikke installeret. Ingen test, ny model-/SQL-udstedelse eller produktionshandling er udført som del af denne sammenføring. Begge daterede evidensforløb nedenfor bevares; de bliver ikke et nyt samlet PASS.
+
+P0s håndbogsafsnit89.264 bevares. Det endnu ikke leverede assistentafsnit har nu89.265 med samme stabile ID og tekst. Ejerens godkendte nye strømstart med særskilt arkiv gælder P0;587s senere-H0-installationsgrænse, originale attester, alle65 gamle migrationer og den ene allerede udstedte587-migration bevares. Præcis ny samlet kildekontrol, ægte database-/førskrivningskontrol og faktisk levering/efterfølger er fortsat selvstændige åbne krav.
+
 ## 22. oktober — ny aktiv strømhistorik; samlet lokal rettelse, ikke produktionsbevis
 
 Ejerens nyeste beslutning tillader en ny aktiv strømstart uden gammel strømhistorik. Dette erstatter de ældre forbud mod endnu en nulstilling på netop dette punkt. Den valgte vej er den eksisterende current-family-kalder på den installerede 586-familie: autentisk gammel B/S og offentlig historik arkiveres og genlæses før arbejdsvisningen ændres; ingen gammel original må ommærkes som ny.
@@ -9,6 +15,16 @@ Startgrænsen, fysisk adskillelse og de eksisterende tidsreservers tilkobling er
 Senere afsluttet lokalt: normal syntetisk 210/673-kæde med ny start, almindelig efterfølger og faktisk B/S-gemning/genlæsning består. Den endelige fysiske helper er prøvet særskilt mod samme gemte autentificerede seed; begge bevisers afgrænsning står i IMPLEMENTATION_STATUS og privat checkpoint. Den lille produktkritiske kildegate består. Genkør ikke disse prøver blot for status; næste trin er samlet præcis kildekontrol og sikker levering. Fuld CLI, faktiske leverandørdata og offentlig virkning er ikke dermed bevist.
 
 Supabase Free og Cloudflare Free er et fast driftskrav, også ved fortsat opbygning. Dokumentér faktiske målinger og konservativ fremskrivning før løfte om holdbar gratis drift. En engangsarkivering er ikke en ny arkivering ved hver almindelig kørsel; gentagne nye starter kan derimod akkumulere særskilte arkiver. Ingen betalt plan, automatisk oprydning eller ændret bevaringskrav følger af denne præcisering.
+
+## 22. oktober — SpørgRavRadar 587: sammenhængende lokal kilde og ærlig leveringsgrænse
+
+4.0.587 er en lokal, udstedt kildekandidat, ikke installeret eller offentlig levering. Sidste verificerede offentlige version er fortsat 4.0.586. P0 og den almindelige vejrhentning har førsteprioritet; ROOTs aktuelle private checkpoint afgør PR703-forløbets eksterne slutstatus og genopretning. Denne kandidat afslutter hverken det forløb, cost-PR704s samlede kildekontrol eller den åbne cache-/kapacitets- og økonomibeslutning.
+
+Den isolerede normale kilde samler de gennemgåede assistentprerequisites, semantik, routing, schema2-kalder, undervandsforklaring og enkel identifikationsgrammatik samt den særskilte bindings-prewrite. Gamle rød-/grønne kvitteringer bevares, og afsluttede lokale mål gentages ikke for status. Lokale svar bruger kontrolleret viden; de er ikke hosted AI-bevis. Aktuelle vejrtal kræver fortsat konkret zone og bundne data, og safety/private-afslag, ukendt svar og ingen fundgaranti består.
+
+Faktisk lokal versionssynk har releasedAt 2026-10-22T18:14:03.047Z. Normal C→I→T-konstruktion, udstedelse af version 20261022181403 og 325.470 bytes append-only SQL samt synk af syv forbrugere og alle normale fixedpoint-checks er gennemført. C98/I97/T12 beskriver kildeinventarer, ikke en national vejrmåling. Alle65 gamle SQL-filer er uændrede; begge geodatafiler har kun ændret topversion.
+
+Normal afslutning er dokument-/håndbogssynk, præcis ny source-CI med faktisk ny native PostgreSQL-fase, kontrolleret førstegangs-prewrite på autentisk 586 B/S, SQL-installation/genlæsning og en faktisk strengt senere almindelig generation med bevaret schema2-originalbank og almindelig efterfølger. Generisk kode-only-plan må fortsat kun genlæse allerede installeret NEXT; den giver ikke førsteinstallationsadgang. Ægte 586-forgænger, hele oprindelige B/S-attester, numeriske værdier, historik, kildeprioritet, administratorpunkter, geometri, gamle SQL og afvisninger bevares. Ingen ny historiknulstilling, samme-H0-adgang, implicit statistik/SOURCE-aktivering, sletning, kvoteforøgelse eller offentlig ændring følger af lokal udstedelse. Se håndbog 89.265 og de konkrete 587-pins i MASTER_LOG. Genkør ikke version:set: det ville ændre releasedAt. Alle fem mål er åbne; tidligere afventninger er kun erstattet på de faktisk lokalt gennemførte punkter.
 
 ## 22. oktober — ret den reproducerede fælles restore-forudsætning
 

@@ -374,7 +374,7 @@ const rpcFailureIncludes = pattern => error => {
 // These assertions are not PostgreSQL/SQL/installation proof.
 if (!process.argv.includes('--native-postgres') && !process.argv.includes('--native-statistics-revision')
     && !process.argv.includes('--native-sampling-identity') && !process.argv.includes('--current-memory-warmup')
-    && !process.argv.includes('--account-statistics-assistant')) {
+    && !process.argv.includes('--account-statistics-assistant') && !process.argv.includes('--assistant-later-h0')) {
   const { nativePostgresFailureDiagnostic: diagnose,
     nativePostgresFailureAnnotation: annotate } =
       await import('./lib/checkpoint-cas-native-postgres.mjs');
@@ -525,7 +525,8 @@ if (process.argv.includes('--native-identity-source-only')) {
   process.exit(0);
 }
 
-const nativeOriginalContinuityNative = process.argv.includes('--native-original-continuity');
+const assistantLaterH0Native = process.argv.includes('--assistant-later-h0');
+const nativeOriginalContinuityNative = process.argv.includes('--native-original-continuity') || assistantLaterH0Native;
 const accountStatisticsAssistantNative = process.argv.includes('--account-statistics-assistant') || nativeOriginalContinuityNative;
 // Native PostgreSQL is a separate mandatory Linux source leaf, never a
 // MemoryCentral/Windows representation proof. Reuse these exact 673 builders
@@ -549,6 +550,7 @@ if (process.argv.includes('--native-postgres') || process.argv.includes('--nativ
       includeLastMileEnclosure: (process.argv.includes('--last-mile-enclosure') || accountStatisticsAssistantNative),
       includeAccountStatisticsAssistant: accountStatisticsAssistantNative,
       includeNativeOriginalContinuity: nativeOriginalContinuityNative,
+      includeAssistantLaterH0: assistantLaterH0Native,
     });
     console.log(JSON.stringify(report));
   } catch (error) {

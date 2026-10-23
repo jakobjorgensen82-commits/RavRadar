@@ -1,7 +1,7 @@
 {
   "schemaVersion": "rav-assistant-evals-v1",
   "knowledgeVersion": "rav-assistant-public-knowledge-v1",
-  "releaseVersion": "4.0.586",
+  "releaseVersion": "4.0.587",
   "ravScoreModelBinding": {
     "modelId": "RRS-COASTAL-PROCESS-INTEGRATED-1.1.0",
     "stateSchemaVersion": "6.0.0",
@@ -13,7 +13,7 @@
     "bestTimePolicyId": "score-history-water-tie-earliest-v3",
     "presentationPolicyId": "score-bands-35-55-75-exceptional90-v1",
     "modelContractSha256": "a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b",
-    "modelBundleSha256": "6d8f7cca203b5f7ee5155f3c0cdb39403a02fd0eb30fecaca5070ef9f814a805"
+    "modelBundleSha256": "5584d8e59f8d21785fd08b32f9beb22cf879cdb4892a11ede24eb862d9a0dca2"
   },
   "cases": [
     {
@@ -779,7 +779,7 @@
       "expectedDisposition": "answer",
       "expectedRoute": "remote-candidate",
       "requiredEvidenceIds": [
-        "transport.grid-not-surf-zone",
+        "transport.local-path-unresolved",
         "coast.sorting-and-traps"
       ]
     },
@@ -814,7 +814,7 @@
       "expectedDisposition": "answer",
       "expectedRoute": "remote-candidate",
       "requiredEvidenceIds": [
-        "transport.grid-not-surf-zone",
+        "transport.local-path-unresolved",
         "coast.sorting-and-traps"
       ]
     },
@@ -849,8 +849,83 @@
       "expectedDisposition": "answer",
       "expectedRoute": "remote-candidate",
       "requiredEvidenceIds": [
-        "transport.grid-not-surf-zone",
+        "transport.local-path-unresolved",
         "coast.sorting-and-traps"
+      ]
+    },
+    {
+      "id": "da-bar-channel-field-clues",
+      "locale": "da",
+      "category": "coastal-physics",
+      "question": "Kan ravsamlinger flytte sig mellem to revler uden nyt opskyl, og hvad kan jeg konkret observere fra stranden for at opdage det?",
+      "expectedDisposition": "answer",
+      "expectedRoute": "remote-candidate",
+      "requiredEvidenceIds": [
+        "transport.local-path-unresolved",
+        "coast.sorting-and-traps",
+        "field-signs.clues-not-proof"
+      ]
+    },
+    {
+      "id": "de-bar-channel-field-clues",
+      "locale": "de",
+      "category": "coastal-physics",
+      "question": "Können sich Bernsteinansammlungen zwischen zwei Sandbänken ohne neuen Spülsaum verlagern, und was kann ich vom Strand aus beobachten, um das zu erkennen?",
+      "expectedDisposition": "answer",
+      "expectedRoute": "remote-candidate",
+      "requiredEvidenceIds": [
+        "transport.local-path-unresolved",
+        "coast.sorting-and-traps",
+        "field-signs.clues-not-proof"
+      ]
+    },
+    {
+      "id": "en-bar-channel-field-clues",
+      "locale": "en",
+      "category": "coastal-physics",
+      "question": "Can amber accumulations shift between two sandbars without new wash, and what can I observe from the beach to notice it?",
+      "expectedDisposition": "answer",
+      "expectedRoute": "remote-candidate",
+      "requiredEvidenceIds": [
+        "transport.local-path-unresolved",
+        "coast.sorting-and-traps",
+        "field-signs.clues-not-proof"
+      ]
+    },
+    {
+      "id": "da-waterlevel-green-guarantee",
+      "locale": "da",
+      "category": "coastal-physics",
+      "question": "Hvad betyder vandstanden for ravjagt, og kan en grøn score garantere et fund?",
+      "expectedDisposition": "answer",
+      "expectedRoute": "remote-candidate",
+      "requiredEvidenceIds": [
+        "water-level.context",
+        "score.no-find-guarantee"
+      ]
+    },
+    {
+      "id": "de-waterlevel-green-guarantee",
+      "locale": "de",
+      "category": "coastal-physics",
+      "question": "Was bedeutet der Wasserstand für die Bernsteinsuche, und garantiert ein grüner Wert einen Fund?",
+      "expectedDisposition": "answer",
+      "expectedRoute": "remote-candidate",
+      "requiredEvidenceIds": [
+        "water-level.context",
+        "score.no-find-guarantee"
+      ]
+    },
+    {
+      "id": "en-waterlevel-green-guarantee",
+      "locale": "en",
+      "category": "coastal-physics",
+      "question": "What does the water level mean for amber hunting, and does a green score guarantee a find?",
+      "expectedDisposition": "answer",
+      "expectedRoute": "remote-candidate",
+      "requiredEvidenceIds": [
+        "water-level.context",
+        "score.no-find-guarantee"
       ]
     }
   ]

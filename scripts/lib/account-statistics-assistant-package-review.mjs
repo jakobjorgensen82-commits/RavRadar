@@ -43,9 +43,37 @@ function inverseReviewed585AccountStatisticsAssistantSourceScripts(scripts){
 
 // Additive exact current586 registration inverse; all old585 assertions above
 // still execute against their WHOLE unchanged canonical scripts hash.
+// Additive exact NEXT-to586 scripts inverse. No old review/hash is replaced.
+export function inverseAssistantLaterH0SourceScripts(scripts){
+  assert.equal(arguments.length,1);assert(scripts&&Object.getPrototypeOf(scripts)===Object.prototype);
+  assert(Object.values(scripts).every(value=>typeof value==='string'));
+  assert.equal(sha(canonical(scripts)),'9df85408955c0449c92370f1af4451ff475f4cc10a4e92bcb440790793bda997','Only the entire reviewed later-H0 command map');
+  assert.equal(scripts['test:native-original-continuity-source'],'node --test scripts/test-native-original-continuity-callers.mjs');
+  assert.equal(scripts['test:assistant-later-h0-source'],'node scripts/build-assistant-later-h0-successor.mjs --check');
+  const native='npm run test:native-original-continuity-source',next='npm run test:assistant-later-h0-source';
+  const actual=scripts['test:ravscore-source-critical'];
+  assert.equal(actual.split(native+' && '+next).length,2,'One exact predecessor then NEXT registration');
+  const expanded=expandSourceCommands(scripts,'validate:source:checks'),plan=buildSourceValidationPlan(scripts),dispatched=[];
+  assert.equal(runSourceValidation(plan,{execute(command){dispatched.push(command);return 0;},log(){}}),0);
+  assert.deepEqual(dispatched,[...plan.preflight,...plan.remaining,plan.gate]);
+  for(const command of ['node --test scripts/test-native-original-continuity-callers.mjs',
+    'node scripts/build-assistant-later-h0-successor.mjs --check']){
+    assert.equal(expanded.filter(c=>c===command).length,1);assert.equal(dispatched.filter(c=>c===command).length,1);
+  }
+  assert.equal(expanded.includes('node scripts/build-native-original-continuity-successor.mjs --check'),false,
+    'The genuine586 builder executes in its fixed source host, never on NEXT');
+  const prior={...scripts,'test:native-original-continuity-source':
+    'node scripts/build-native-original-continuity-successor.mjs --check && node --test scripts/test-native-original-continuity-callers.mjs',
+    'test:ravscore-source-critical':actual.replace(native+' && '+next,native)};
+  delete prior['test:assistant-later-h0-source'];
+  assert.equal(sha(canonical(prior)),'2340e00e085a5a6221e27a6caecf5dd85f6b8b6f6cd2ca8a845056c587befe57','Whole actual586 scripts before unchanged older inverses');
+  return prior;
+}
+
 export function inverseReviewedAccountStatisticsAssistantSourceScripts(scripts){
   assert.equal(arguments.length,1);assert(scripts&&Object.getPrototypeOf(scripts)===Object.prototype);
   assert(Object.values(scripts).every(value=>typeof value==='string'));
+  if(Object.hasOwn(scripts,'test:assistant-later-h0-source'))scripts=inverseAssistantLaterH0SourceScripts(scripts);
   if(!Object.hasOwn(scripts,'test:native-original-continuity-source'))
     return inverseReviewed585AccountStatisticsAssistantSourceScripts(scripts);
   assert.equal(scripts['test:native-original-continuity-source'],'node scripts/build-native-original-continuity-successor.mjs --check && node --test scripts/test-native-original-continuity-callers.mjs');
