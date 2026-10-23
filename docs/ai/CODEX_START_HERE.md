@@ -1,3 +1,11 @@
+## 24. oktober — kontinuerligt vejr først; afgrænset DMI-rettelse på 586
+
+Den almindelige vejrhentning er faktisk leveret med ny offentlig generation, original B før S og offentlig kontrol. Cron er genaktiveret med uændret tidsplan. Det er ikke fuld dækning eller bevist selvstændig drift: de fælles 100 timer har nul tab i alle fem vejrfamilier, mens de nye 18 timer har betydelige mangler. En undersøgt sen national time viser især manglende vindinput; dette må ikke kaldes et generelt tab af strømhistorik eller et rent Limfjordsproblem. Konkrete kørsler og tællinger står i det private checkpoint.
+
+P0 er kontinuerlig almindelig vejrhentning og dækning af alle forventede timer/zoner. Assistentlevering, SOURCE-aktivering og statistik venter. Kun de tre gennemgåede DMI-produkt-/testblade overføres fra den særskilte kandidat til installeret 4.0.586. En fuldt gennemgået fil med bevaret bedre kvalificeret strømvinder skal kunne afsluttes, gemmes og genbruges uden numerisk mutation. Faktiske tuple-/originalbeviser, parser, officiel filidentitet, targetregister og samplingkvittering kræves fortsat. Privat scalar-support, WAM og ikke-marine grene får ingen nulmutationsadgang.
+
+Porten ændrer ikke version, C/I/T, SQL-binding, kildeprioritet, adminpunkter, geometri eller scoreformel. Den nye normale kalder-/ledger-/genoptagelsesprøve består lokalt; egen præcis kilde-/native-kontrol og faktisk produktionseffekt er fortsat åbne. Genbrug ikke kandidatens 587-kvalifikation som 586-bevis. Alle fem mål er åbne til 18. november 2026. Ældre modstridende status nedenfor er dateret historik.
+
 ## 22. oktober — ny aktiv strømhistorik; samlet lokal rettelse, ikke produktionsbevis
 
 Ejerens nyeste beslutning tillader en ny aktiv strømstart uden gammel strømhistorik. Dette erstatter de ældre forbud mod endnu en nulstilling på netop dette punkt. Den valgte vej er den eksisterende current-family-kalder på den installerede 586-familie: autentisk gammel B/S og offentlig historik arkiveres og genlæses før arbejdsvisningen ændres; ingen gammel original må ommærkes som ny.

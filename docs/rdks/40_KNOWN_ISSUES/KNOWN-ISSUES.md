@@ -1,3 +1,9 @@
+## 24. oktober — ÅBEN P0: ny prognosehale og DMI-nulmutationsgenbrug
+
+Den almindelige nye vejrgeneration er faktisk offentligt leveret, og cron er aktiv med uændret plan. Den tidligere proceshukommelsesbarriere blev passeret i det faktiske fulde forløb; gentagen selvstændig drift er endnu ikke bevist. Der er nul femfamilietab på 100 fælles timer, men de nye 18 timer har store huller. Én sen national time viser især manglende vindinput; vandstand og temperatur har selvstændige mangler. Dette er ikke bevis for et generelt Limfjords- eller strømhistorikproblem.
+
+En særskilt dokumenteret DMI-fejl kan afvise en fuldt behandlet fil, når bedre kvalificerede strømvindere bevares uden mutation. Den gennemgåede trebladsrettelse er lokalt porteret til 586 og målprøvet gennem normal gemning, ledger og genoptagelse. Den har ikke endnu egen præcis kilde-/native-kvalifikation eller faktisk offentlig effekt og påstås ikke at løse alle vindhalens mangler. Assistent587/SOURCE/statistik er parkeret. Ingen nulstilling, større budgetter eller svækkede originalkrav.
+
 ## 23. oktober — ÅBEN P0: proceshukommelse før offentlig pakning
 
 Den seneste genoptagelse beregnede alle 673 dele og nåede originalattesteringen, men stoppede derefter med Node/V8 heap-OOM. Den offentlige runtime, ny B/S og Pages blev ikke skrevet. Det er en konkret kapacitetsfejl; hverken forkert DMI-data eller løsning af de tidligere tretten strøm-tab følger deraf.

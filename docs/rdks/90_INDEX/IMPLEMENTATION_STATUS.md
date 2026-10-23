@@ -1,3 +1,12 @@
+## 24. oktober — kontinuert 586-vejr og særskilt DMI-opfølgning
+
+- [x] Almindelig ny generation faktisk gemt B før S, deployet og offentligt verificeret; eksisterende cron genaktiveret med uændret tidsplan.
+- [x] Nul femfamilietab på 100 fælles timer. Nye 18 timers store huller holdes adskilt fra den bevarede fælles dækning; én undersøgt sen national time viser primært manglende vind, ikke generelt historiktab.
+- [x] Præcis treblads-DMI-port afkoblet fra assistent587: eksisterende 586-importclosure og uændrede model-/ABI-inventarer verificeret. Ingen version, C/I/T, SQL, geometri, kildeprioritet eller scoreformel ændres.
+- [x] Normal lokal sammenhængende prøve af stage → gemt nulmutations-step → officiel læser → ledger/ready → genoptagelse består, inklusive manglende/manipulerede beviser og uændrede scalar-/WAM-/ikke-marine afslag.
+- [ ] Egen præcis 586-kildekontrol inklusive nødvendig faktisk nativefase, sikker levering og målt effekt ved almindelig vejrhentning.
+- [ ] Alle forventede zone-/deltimer, feltvis dækning, ny hale, gyldig historik og gentagen drift uden Codex. Assistent, SOURCE og statistiklevering venter; alle fem hovedmål er åbne.
+
 ## 23. oktober — færdigbrugte komponent- og scoreejere før offentlig eksport
 
 - [x] PR710 faktisk præcist kildekvalificeret og merget; ny genoptagelse passerede de fire reserver, leverandørtrin og beregning af 673 dele.
