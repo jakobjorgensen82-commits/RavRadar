@@ -5,9 +5,11 @@ are used; only ecCodes/file transport is replaced with in-memory messages.
 """
 from __future__ import annotations
 
+import ast
 import copy
 import importlib.util
 import io
+import os
 import sys
 import tempfile
 import types
@@ -560,6 +562,91 @@ class SchedulingContinuityTests(unittest.TestCase):
             limit(1379.0, collections, 240.0, atmosphere_horizon_needed=True),
             limit(1379.0, collections, 240.0),
         )
+
+
+    def test_cold_child_policy_is_not_an_env_only_or_ordinary48h_grant(self):
+        selector = producer.cold_strict_current_lead_catch_up_requested
+        demand = {
+            "partId": "TEST", "zoneId": "ZONE", "parentZoneId": "ZONE",
+            "entityId": ZONE["id"], "samplingPoint": [ZONE["lon"], ZONE["lat"]],
+            "samplingContextKey": "sha256:" + "a" * 64,
+            "initialSource": "COLD_START", "initialStateAt": None, "initialStateSha256": None,
+            "startAt": RUN, "endAt": RUN,
+        }
+        target_only = producer.current_history_demands([demand], [ZONE], RUN,
+            archive_isolated_cold_start=True)
+        ordinary48 = producer.current_history_demands([{**demand,
+            "startAt": producer.canonical_time(datetime.fromisoformat(RUN.replace("Z", "+00:00"))
+                - timedelta(hours=48))}], [ZONE], RUN)
+        key = "RAVRADAR_DMI_STRICT_CURRENT_LEAD_POLICY"
+        with patch.dict(os.environ, {}, clear=True), patch.object(producer, "CACHE_ONLY", False):
+            self.assertFalse(selector(target_only, RUN))
+            os.environ[key] = "true"
+            self.assertFalse(selector(target_only, RUN))
+            os.environ[key] = "authenticated-current-family-cold-catch-up-v1"
+            self.assertFalse(selector({}, RUN))
+            self.assertFalse(selector(ordinary48, RUN))
+            self.assertFalse(selector(target_only, utc_hour(1)))
+            self.assertTrue(selector(target_only, RUN))
+            with patch.object(producer, "CACHE_ONLY", True):
+                self.assertFalse(selector(target_only, RUN))
+
+    def test_actual_cold_cap_guard_keeps_ordinary8_and_per_asset_critical_reserves(self):
+        tree = ast.parse(Path(producer.__file__).read_text("utf-8"))
+        main = next(node for node in tree.body if isinstance(node, ast.FunctionDef) and node.name == "main")
+        def assignment(name):
+            return next(node for node in ast.walk(main) if isinstance(node, ast.Assign)
+                and any(isinstance(target, ast.Name) and target.id == name for target in node.targets))
+        demand_read = assignment("current_history_requests")
+        policy = assignment("cold_strict_current_lead_catch_up")
+        self.assertEqual(demand_read.value.func.id, "read_current_history_demands")
+        self.assertLess(demand_read.lineno, policy.lineno,
+            "The selector must follow the actual normal archive/B/S/registry demand reader.")
+        turn = assignment("strict_current_lead_turn_attempt_limit")
+        effective = compile(ast.Expression(turn.value), producer.__file__, "eval")
+        ordinary = producer.bounded_strict_current_lead_attempt_limit(100000.0,
+            ["dkss_idw", "dkss_nsbs", "dkss_lf"], 240.0)
+        self.assertEqual(ordinary, 8)
+        def limit(selected, critical):
+            return eval(effective, {"MAX_ASSETS_PER_COLLECTION":producer.MAX_ASSETS_PER_COLLECTION},
+                {"cold_strict_current_lead_catch_up":selected,
+                 "collection_is_critical_current":critical,
+                 "strict_current_lead_attempt_limit":ordinary})
+        self.assertEqual(limit(False, True), ordinary)
+        self.assertEqual(limit(True, False), ordinary)
+        self.assertEqual(limit(True, True), producer.MAX_ASSETS_PER_COLLECTION)
+        self.assertGreater(limit(True, True), 8)
+        self.assertFalse(producer.strict_current_lead_attempt_available("dkss_idw","dkss_idw",8,ordinary))
+        self.assertTrue(producer.strict_current_lead_attempt_available("dkss_idw","dkss_idw",8,limit(True,True)))
+        self.assertFalse(producer.strict_current_lead_attempt_available("dkss_idw","dkss_idw",
+            producer.MAX_ASSETS_PER_COLLECTION,limit(True,True)))
+        cap = next(node for node in ast.walk(main) if isinstance(node, ast.If)
+            and any(isinstance(row, ast.Assign)
+                and any(isinstance(target, ast.Name) and target.id == "budget_stop_code" for target in row.targets)
+                and isinstance(row.value, ast.Constant) and row.value.value == "STRICT_CURRENT_LEAD_ATTEMPT_LIMIT"
+                for row in node.body))
+        gate = compile(ast.Expression(cap.test), producer.__file__, "eval")
+        state = {"collection":"dkss_idw", "strict_current_lead_collection":"dkss_idw",
+            "strict_current_lead_attempts":8,"strict_current_lead_turn_attempt_limit":limit(True,True),
+            "strict_current_lead_attempt_available":producer.strict_current_lead_attempt_available}
+        self.assertFalse(eval(gate,state))
+        state["strict_current_lead_turn_attempt_limit"] = ordinary
+        self.assertTrue(eval(gate,state))
+        siblings = next(value for node in ast.walk(main) for _key,value in ast.iter_fields(node)
+            if isinstance(value,list) and cap in value)
+        reserve = siblings[siblings.index(cap)+1]
+        self.assertIsInstance(reserve, ast.If)
+        self.assertIsInstance(reserve.test, ast.UnaryOp)
+        self.assertEqual(reserve.test.operand.func.attr,"can_start_asset")
+        self.assertEqual([keyword.arg for keyword in reserve.test.operand.keywords],["reserve_seconds","cost_family"])
+        self.assertEqual(reserve.test.operand.keywords[0].value.id,"reserve_for_pending_critical")
+        controller = producer.ProgressCheckpointController({},set(),{"bytes":0})
+        reserve_gate = compile(ast.Expression(reserve.test),producer.__file__,"eval")
+        scope = {"checkpoint_controller":controller,"reserve_for_pending_critical":300.0,"collection":"dkss_idw"}
+        with patch.object(producer,"runtime_remaining",return_value=395.0):
+            self.assertTrue(eval(reserve_gate,scope),"The critical reserve still stops the next cold asset.")
+        with patch.object(producer,"runtime_remaining",return_value=396.0):
+            self.assertFalse(eval(reserve_gate,scope))
 
     def test_h0_catalog_then_real_horizon_query_selects_future_native_assets(self):
         collection = "harmonie_dini_sf"

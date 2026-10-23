@@ -160,3 +160,112 @@ test('CLI diagnostics allow only the fixed helper-code catalogue, never raw unkn
   assert(text.includes("'CURRENT_FAMILY_COLD_CLI_REFUSED'"));
   assert(!text.includes('console.error(error.stack)'));
 });
+
+test('actual cold runDmi authenticates before selecting a fixed child-only scheduling policy', async () => {
+  const signature = 'async function runDmi() {', start = text.indexOf(signature);
+  const boundary = text.indexOf('\nif (process.argv[1]', start);
+  assert(start >= 0 && boundary > start);
+  const block = text.slice(start + signature.length, boundary).trim();
+  assert(block.endsWith('}'));
+  const AsyncFunction = Object.getPrototypeOf(async function () {}).constructor;
+  const execute = new AsyncFunction('paths', 'process', 'path', 'CURRENT_FAMILY_COLD_START_CONTEXT_ENV',
+    'requireFlag', 'loadCurrentFamilyColdStartForTarget', 'currentFamilyColdStartAcquisitionChoices',
+    'crypto', 'spawn', 'ROOT', 'STAGED_STOP_CODE', block.slice(0, -1));
+  const keys = {path:'RAVRADAR_CURRENT_FAMILY_COLD_START_CONTEXT_PATH',
+    sha256:'RAVRADAR_CURRENT_FAMILY_COLD_START_CONTEXT_SHA256'};
+  const selected = {workRoot:path.join(ROOT,'.cache','synthetic-cold-scope'),
+    targetReferenceAt:'2026-10-23T01:00:00.000Z'};
+  for (const authenticated of [false,true]) {
+    const authError = new Error('SYNTHETIC_CONTEXT_REJECTED'), childStop = new Error('STOP_BEFORE_CHILD');
+    const calls = [], capability = Object.freeze({});
+    const environment = {[keys.path]:path.join(selected.workRoot,'context.json'),[keys.sha256]:'a'.repeat(64),
+      RAVRADAR_DMI_STRICT_CURRENT_LEAD_POLICY:'foreign-parent-value'};
+    const before = {...environment};
+    const fakeProcess = {env:environment,on(){},off(){}};
+    await assert.rejects(execute(async()=>selected,fakeProcess,path,keys,
+      (ok,code)=>{assert(ok,code);},
+      async options=>{calls.push('authenticate');assert.deepEqual(options,{contextPath:environment[keys.path],
+        contextSha256:environment[keys.sha256],targetReferenceAt:selected.targetReferenceAt});
+        if(!authenticated)throw authError;return capability;},
+      cap=>{calls.push('choices');assert.equal(cap,capability);return {outputPath:'owned-candidate',
+        deployedFallbackPath:'owned-fallback',publishedBaselinePath:'owned-baseline'};},
+      crypto,(_command,_args,options)=>{calls.push('spawn');
+        assert.equal(options.env.RAVRADAR_DMI_STRICT_CURRENT_LEAD_POLICY,
+          'authenticated-current-family-cold-catch-up-v1');
+        assert.equal(options.env.DMI_BULK_OUTPUT_PATH,'owned-candidate');
+        assert.equal(options.env.DMI_BULK_DEPLOYED_FALLBACK_PATH,'owned-fallback');
+        assert.equal(options.env.DMI_BULK_PUBLISHED_BASELINE_PATH,'owned-baseline');
+        throw childStop;},ROOT,staged), error=>error===(authenticated?childStop:authError));
+    assert.deepEqual(calls,authenticated?['authenticate','choices','spawn']:['authenticate']);
+    assert.deepEqual(environment,before,'The real wrapper may only change its child env object.');
+  }
+});
+
+test('actual cold flags retain fresh defaults and admit only the fixed original progress hour', () => {
+  const start = text.indexOf('function flags() {'), end = text.indexOf('\nasync function paths()', start);
+  assert(start >= 0 && end > start);
+  const scope = Object.freeze({progressSource:'39886354260-1',targetReferenceAt:'2026-10-23T01:00:00.000Z'});
+  const execute = new Function('process','requireFlag','CURRENT_FAMILY_COLD_START_REENTRY_SCOPE',
+    text.slice(start,end) + '\nreturn flags();');
+  const environment = {RAVRADAR_CURRENT_FAMILY_COLD_START:'true',GITHUB_REF:'refs/heads/main',
+    GITHUB_EVENT_NAME:'workflow_dispatch',GITHUB_RUN_ID:'39999999999',GITHUB_RUN_ATTEMPT:'1',
+    RAVRADAR_PRODUCTION_TARGET_HOUR:'2026-10-23T01:00:00Z'};
+  const invoke = env => execute({env},(ok,code)=>{if(!ok)throw new Error(code);},scope);
+  assert.equal(invoke(environment),scope.targetReferenceAt);
+  const reentry = {...environment,QUICK_PROGRESS_SOURCE:scope.progressSource,
+    CHECKPOINT_TARGET_HOUR:environment.RAVRADAR_PRODUCTION_TARGET_HOUR};
+  assert.equal(invoke(reentry),scope.targetReferenceAt);
+  for (const changed of [
+    {...environment,CHECKPOINT_TARGET_HOUR:environment.RAVRADAR_PRODUCTION_TARGET_HOUR},
+    {...reentry,QUICK_PROGRESS_SOURCE:'39886354260-2'}, {...reentry,QUICK_PROGRESS_SOURCE:'39886354261-1'},
+    {...reentry,CHECKPOINT_TARGET_HOUR:''}, {...reentry,CHECKPOINT_ONLY:'true'},
+    {...reentry,RAVRADAR_PRODUCTION_TARGET_HOUR:'2026-10-23T02:00:00Z',CHECKPOINT_TARGET_HOUR:'2026-10-23T02:00:00Z'},
+    {...reentry,GITHUB_RUN_ATTEMPT:'2'}, {...reentry,RAVRADAR_WEATHER_STATE_EPOCH_BOOTSTRAP:'true'},
+    {...reentry,RAVRADAR_WEATHER_STATE_EPOCH_ARCHIVE_ID:'a'.repeat(64)},
+  ]) assert.throws(()=>invoke(changed));
+});
+
+test('actual same-archive wrapper orders exact cache, archive authentication, scoped restore and context publication', async () => {
+  const signature = 'async function reopen() {', start = text.indexOf(signature);
+  const end = text.indexOf('\nasync function runDmi()', start);
+  assert(start >= 0 && end > start);
+  const block = text.slice(start+signature.length,end).trim(); assert(block.endsWith('}'));
+  const execute = new (Object.getPrototypeOf(async function(){}).constructor)(
+    'process','requireFlag','CURRENT_FAMILY_COLD_START_CONTEXT_ENV','paths',
+    'CURRENT_FAMILY_COLD_START_REENTRY_SCOPE','capturePublic','reopenCurrentFamilyColdStart',
+    'weatherComponentProgressCache','ROOT','path','assertUsableDmiProgressRecovery',
+    'writeNew','currentFamilyColdStartAcquisitionChoices','appendEnvironment','console', block.slice(0,-1));
+  const scope = Object.freeze({progressSource:'39886354260-1',targetReferenceAt:'2026-10-23T01:00:00.000Z',archiveId:'a'.repeat(64)});
+  const keys = {path:'COLD_CONTEXT_PATH',sha256:'COLD_CONTEXT_SHA256'};
+  for (const fault of ['cache','archive','miss','hour','dmi',null]) {
+    const calls = [], cap = Object.freeze({}), temporary = path.resolve(ROOT,'.cache','synthetic-wrapper-reentry');
+    const selected = {targetReferenceAt:scope.targetReferenceAt,workRoot:path.join(temporary,'work'),publicRoot:path.join(temporary,'public')};
+    const env = {QUICK_PROGRESS_SOURCE:scope.progressSource,RUNNER_OS:'Linux',RUNNER_TEMP:temporary,
+      PROGRESS_CACHE_OUTCOME:fault==='cache'?'failure':'success',
+      PROGRESS_CACHE_MATCHED_KEY:'weather-private-progress-encrypted-v2-Linux-main-'+scope.progressSource};
+    const before = {...env}, expectedError = new Error('CONTROLLED_'+fault);
+    const invoke = ()=>execute({env},(ok,code)=>{if(!ok)throw new Error(code);},keys,async()=>selected,scope,
+      async root=>{calls.push('public');assert.equal(root,selected.publicRoot);},
+      async options=>{calls.push('archive');assert.deepEqual(options,{...selected,archiveId:scope.archiveId});
+        if(fault==='archive')throw expectedError;return {capability:cap,contextPath:'verified-context',contextSha256:'b'.repeat(64)};},
+      async options=>{calls.push('restore');assert.deepEqual(options,{mode:'restore',repositoryRoot:ROOT,
+        basePath:path.join(temporary,'weather-progress-base.json'),productionReferenceAt:scope.targetReferenceAt,
+        resumeOriginalTarget:true,currentFamilyColdStartCapability:cap});
+        return {status:fault==='miss'?'CACHE_MISS':'RESTORED',restored:fault!=='miss',fileCount:2,
+          restoredProductionReferenceAt:fault==='hour'?'2026-10-23T02:00:00.000Z':scope.targetReferenceAt,dmiProgress:{}};},
+      ROOT,path,(value,options)=>{calls.push('usable');assert.deepEqual(value,{});assert.deepEqual(options,{allowAbsent:false});
+        if(fault==='dmi')throw expectedError;},
+      async(file,bytes)=>{calls.push('report');assert.equal(file,path.join(temporary,'weather-progress-restore-report.json'));
+        assert.equal(JSON.parse(bytes).status,'RESTORED');},
+      value=>{calls.push('choices');assert.equal(value,cap);return {outputPath:path.join(ROOT,'.cache/dmi-candidate-progress.json'),
+        deployedFallbackPath:'verified-scalar-fallback',publishedBaselinePath:'verified-scalar-baseline'};},
+      async values=>{calls.push('publish');assert.deepEqual(values,{[keys.path]:'verified-context',[keys.sha256]:'b'.repeat(64),
+        DMI_BULK_DEPLOYED_FALLBACK_PATH:'verified-scalar-fallback',DMI_BULK_PUBLISHED_BASELINE_PATH:'verified-scalar-baseline'});},
+      {log:message=>{calls.push('notice');assert.equal(message,'CURRENT_FAMILY_COLD_REOPENED_SAME_ARCHIVE_AND_AUTHENTICATED_PROGRESS');}});
+    if (fault) await assert.rejects(invoke); else await invoke();
+    const expected = fault==='cache'?[]:fault==='archive'?['public','archive']:
+      ['miss','hour'].includes(fault)?['public','archive','restore']:fault==='dmi'?['public','archive','restore','usable']:
+        ['public','archive','restore','usable','report','choices','publish','notice'];
+    assert.deepEqual(calls,expected);assert.deepEqual(env,before);
+  }
+});

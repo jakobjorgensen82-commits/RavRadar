@@ -460,6 +460,86 @@ async function epochProgressFiles({ view, root, productionReferenceAt, originalR
   return files.filter(row => row.relativePath !== PRIVATE_WEATHER_COMPONENT_FILES.dmiActive);
 }
 
+// Typed cold-reentry scope only: no CLI flag, caller file list or JSON grant.
+const retainedColdProgressReaders = new Set();
+async function coldProgressFile(root, relativePath, {
+  expected = null, maximum = MAX_PACK_BYTES, json = false, copyTo = null,
+} = {}, lifetime) {
+  if (![CONDITIONS_PATH, 'data/live/coastal-parts-v2.json', PRIVATE_WEATHER_COMPONENT_PACK_FILE.relativePath].includes(relativePath)
+    || (expected !== null && (expected.relativePath !== relativePath
+      || !Number.isSafeInteger(expected.bytes) || expected.bytes < 1 || expected.bytes > maximum
+      || !SHA.test(expected.sha256)))) fail('COLD_PROGRESS_ORIGINAL_INVALID');
+  const file = await checkedPath(root, relativePath, { maximum });
+  const named = await fs.lstat(file, { bigint: true });
+  const opened = [];
+  const own = handle => {
+    const row = { handle, fd: handle.fd, identity: ownFileDescriptorIdentity(handle.fd) };
+    opened.push(row); return handle;
+  };
+  let first = null, result;
+  try {
+    const input = own(await fs.open(file, fsConstants.O_RDONLY | (fsConstants.O_NOFOLLOW ?? 0)));
+    const start = await input.stat({ bigint: true });
+    const fields = ['dev', 'ino', 'mode', 'nlink', 'size', 'mtimeNs', 'ctimeNs'];
+    if (!start.isFile() || start.nlink !== 1n || start.size < 1n || start.size > BigInt(maximum)
+      || fields.some(key => start[key] !== named[key])
+      || (expected !== null && start.size !== BigInt(expected.bytes))) fail('COLD_PROGRESS_ORIGINAL_CHANGED');
+    const bytes = Number(start.size), chunks = json ? [] : null;
+    const output = copyTo === null ? null : own(await fs.open(copyTo, 'wx', 0o600));
+    const hash = crypto.createHash('sha256');
+    for (let position = 0; position < bytes;) {
+      const chunk = await readExactly(input, Math.min(64 * 1024, bytes - position), position);
+      position += chunk.length; hash.update(chunk);
+      if (chunks) chunks.push(chunk);
+      if (output) await output.writeFile(chunk);
+    }
+    if ((await input.read(Buffer.alloc(1), 0, 1, bytes)).bytesRead !== 0) fail('COLD_PROGRESS_ORIGINAL_CHANGED');
+    const sha256 = hash.digest('hex');
+    if (expected !== null && sha256 !== expected.sha256) fail('COLD_PROGRESS_ORIGINAL_CHANGED');
+    await checkedPath(root, relativePath, { maximum });
+    for (const current of [await input.stat({ bigint: true }), await fs.lstat(file, { bigint: true })])
+      if (fields.some(key => current[key] !== start[key])) fail('COLD_PROGRESS_ORIGINAL_CHANGED');
+    if (output) {
+      await output.sync();
+      const actual = await output.stat({ bigint: true });
+      if (!actual.isFile() || actual.nlink !== 1n || actual.size !== start.size) fail('COLD_PROGRESS_COPY_CHANGED');
+      const destination = await fs.lstat(copyTo, { bigint: true });
+      if (fields.some(key => destination[key] !== actual[key])) fail('COLD_PROGRESS_COPY_CHANGED');
+    }
+    result = { bytes, sha256, ...(json ? { value: JSON.parse(Buffer.concat(chunks, bytes).toString('utf8')) } : {}) };
+  } catch (error) { first = { error }; }
+  for (const row of opened.reverse()) {
+    try { await row.handle.close(); } catch (error) { first ??= { error }; }
+    if (!await ownedFileDescriptorClosed(row.fd, row.identity)) {
+      lifetime.closed = false;
+      retainedColdProgressReaders.add(row.handle);
+      first ??= { error: Object.assign(new Error('COLD_PROGRESS_CLOSE_UNPROVED'), { progressCode: 'COLD_PROGRESS_CLOSE_UNPROVED' }) };
+    }
+  }
+  if (first !== null) throw first.error;
+  return result;
+}
+async function coldProgressScope(capability, root, base, productionReferenceAt, lifetime) {
+  const registry = await coldProgressFile(root, 'data/live/coastal-parts-v2.json',
+    { maximum: 16 * 1024 * 1024, json: true }, lifetime);
+  const { currentFamilyColdStartProgressUnionScope } = await import('./current-family-cold-start.mjs');
+  const scope = currentFamilyColdStartProgressUnionScope(capability, {
+    registry: registry.value, targetReferenceAt: new Date(productionReferenceAt).toISOString(),
+  });
+  if (!Object.isFrozen(scope) || scope.repositoryRoot !== root
+    || scope.protectedBundleContentSha256 !== base.protectedBundleContentSha256
+    || scope.registrySha256 !== 'sha256:' + registry.sha256
+    || scope.targetReferenceAt !== new Date(productionReferenceAt).toISOString()
+    || scope.conditionsFile?.relativePath !== CONDITIONS_PATH
+    || scope.conditionsFile?.sha256 !== base.baselineSha256
+    || scope.componentPackFile?.relativePath !== PRIVATE_WEATHER_COMPONENT_PACK_FILE.relativePath) {
+    fail('COLD_PROGRESS_SCOPE_MISMATCH');
+  }
+  const conditions = await coldProgressFile(root, CONDITIONS_PATH,
+    { expected: scope.conditionsFile, json: true }, lifetime);
+  return { scope, conditions: conditions.value };
+}
+
 export async function weatherComponentProgressCache({
   mode, repositoryRoot = process.cwd(), basePath,
   protectedBundleSha256,
@@ -469,17 +549,22 @@ export async function weatherComponentProgressCache({
   productionReferenceAt = process.env.RAVRADAR_PRODUCTION_TARGET_HOUR,
   resumeOriginalTarget = false,
   stateEpochInputView = null, epochOriginalRoot = null,
+  currentFamilyColdStartCapability = null,
   pythonExecutable, renameImpl, rollbackRenameImpl,
   maximumEncryptedBytes = MAX_CIPHER_BYTES,
 } = {}) {
   let temporary = null;
   let packInvocation = null;
   let unionInvocation = null;
+  const coldLifetime = { closed: true };
+  let coldPackInvocation = null;
   let cipherTemporary = null;
   let restoreInstalled = false;
   try {
     if (!['capture-base', 'save', 'restore'].includes(mode)) fail('MODE_INVALID');
     if (typeof resumeOriginalTarget !== 'boolean' || (resumeOriginalTarget && mode !== 'restore')) fail('ARGUMENT_INVALID');
+    if (currentFamilyColdStartCapability !== null
+      && (mode !== 'restore' || !resumeOriginalTarget || stateEpochInputView !== null || epochOriginalRoot !== null)) fail('ARGUMENT_INVALID');
     if (stateEpochInputView !== null) {
       if (mode !== 'restore' || !resumeOriginalTarget || typeof epochOriginalRoot !== 'string') fail('ARGUMENT_INVALID');
       const { assertWeatherStateEpochInputView } = await import('./lib/weather-state-epoch-input-view.mjs');
@@ -501,6 +586,8 @@ export async function weatherComponentProgressCache({
     }
     const key = keyBytes(encryptionKey, { masterSecret, repository });
     const base = await readBase(baselineFile, repository);
+    const coldBinding = currentFamilyColdStartCapability === null ? null
+      : await coldProgressScope(currentFamilyColdStartCapability, root, base, productionReferenceAt, coldLifetime);
     const cipherPath = path.join(root, WEATHER_PROGRESS_CIPHER_PATH);
     if (mode === 'save') {
       if (!Number.isSafeInteger(maximumEncryptedBytes) || maximumEncryptedBytes < 1024
@@ -604,12 +691,33 @@ export async function weatherComponentProgressCache({
       productionReferenceAt, pythonExecutable,
     }) : null;
     if (stateEpochInputView !== null) await epochActiveAbsent(root);
+    let coldCompleteFiles = null;
+    if (coldBinding !== null) {
+      // Verify/copy the WHOLE original pack before the normal unpack. Only its
+      // two OLD CURRENT donor descriptors are omitted from the later union.
+      const originalRoot = path.join(temporary.folder, 'cold-protected-original');
+      const originalPack = path.join(originalRoot, PRIVATE_WEATHER_COMPONENT_PACK_FILE.relativePath);
+      await fs.mkdir(originalRoot, { mode: 0o700 });
+      await fs.mkdir(path.dirname(originalPack), { mode: 0o700 });
+      await coldProgressFile(root, PRIVATE_WEATHER_COMPONENT_PACK_FILE.relativePath,
+        { expected: coldBinding.scope.componentPackFile, copyTo: originalPack }, coldLifetime);
+      coldPackInvocation = unpackPrivateWeatherComponentPack({ restoredRoot: originalRoot,
+        outputRoot: path.join(temporary.folder, 'cold-protected-verified'),
+        conditions: coldBinding.conditions, pythonExecutable });
+      const complete = await coldPackInvocation;
+      await coldProgressFile(originalRoot, PRIVATE_WEATHER_COMPONENT_PACK_FILE.relativePath,
+        { expected: coldBinding.scope.componentPackFile }, coldLifetime);
+      coldCompleteFiles = complete.filter(file =>
+        file.relativePath !== PRIVATE_WEATHER_COMPONENT_FILES.copernicusCurrentDonorBank
+        && file.relativePath !== PRIVATE_WEATHER_COMPONENT_FILES.openMeteoCurrentDonorBank);
+    }
     let reconciled;
     try {
       unionInvocation = mergeVerifiedProtectedProgressComponents({
         root, progressFiles: files, progressVerifiedRoot: path.join(temporary.folder, 'verified'),
         temporaryDirectory: temporary.folder,
         productionReferenceAt, pythonExecutable,
+        ...(coldCompleteFiles === null ? {} : { completeFiles: coldCompleteFiles }),
       });
       reconciled = await unionInvocation;
     } catch (error) {
@@ -622,6 +730,11 @@ export async function weatherComponentProgressCache({
     if (stateEpochInputView !== null) {
       await epochProgressView(stateEpochInputView, root, productionReferenceAt);
       await epochActiveAbsent(root);
+    }
+    if (coldBinding !== null) {
+      await coldProgressScope(currentFamilyColdStartCapability, root, base, productionReferenceAt, coldLifetime);
+      await coldProgressFile(root, PRIVATE_WEATHER_COMPONENT_PACK_FILE.relativePath,
+        { expected: coldBinding.scope.componentPackFile }, coldLifetime);
     }
     await installComponents(root, reconciled.files, { renameImpl, rollbackRenameImpl });
     restoreInstalled = true;
@@ -655,7 +768,9 @@ export async function weatherComponentProgressCache({
     if (cipherTemporary) await fs.unlink(cipherTemporary).catch(() => {});
     // Preserve earlier primary errors, especially failed rollback/union,
     // even when their best-effort temporary cleanup also fails.
-    if (temporary && (packInvocation === null || privateWeatherPackJsonReadsClosed(packInvocation))
+    if (temporary && coldLifetime.closed
+      && (coldPackInvocation === null || privateWeatherPackJsonReadsClosed(coldPackInvocation))
+      && (packInvocation === null || privateWeatherPackJsonReadsClosed(packInvocation))
       && (unionInvocation === null || protectedProgressPackJsonReadsClosed(unionInvocation))) {
       await temporary.cleanup().catch(() => {});
     }

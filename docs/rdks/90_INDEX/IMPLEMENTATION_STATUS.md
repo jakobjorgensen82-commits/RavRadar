@@ -1,3 +1,13 @@
+## 23. oktober — strømstartens faktiske stop og samme-arkiv-genoptagelse
+
+- [x] Første current-family-start nåede autentisk arkiv/readback, leverandører og beregning. No-loss standsede tretten strømtimer for én uændret del; de fire øvrige komponenter havde nul tab på de fælles timer. Ingen ny B/S eller offentlig vejrlevering.
+- [x] Det præcise gemte fremdriftscheckpoint er autentificeret skrivefrit. Det er leverandørinput, ikke et gemt færdigt beregningsresultat.
+- [x] Faktisk otteforsøgsstop hos førende DMI-strøm med tid tilbage afgrænset. Lokal autentificeret opstartsregel bruger eksisterende katalogloft uden større tids-/bytebudgetter; almindelig regel og reserve bevares. Tre normale Python-tilfælde og wrapperens autentifikationsrækkefølge består.
+- [x] Genoptagelsens lokale wrapper afviser forkert kilde, forsøg og mål-time og kræver samme arkiv samt faktisk genlæst checkpoint før offentliggørelse af lokal kontekst. De afgrænsede mode-/rækkefølgeprøver består; dette er ikke et ægte arkiv-/GCM-integrationsbevis.
+- [x] Privat normal prepare-capability/GCM-integration består med ægte original-target-validator: nye strømdata genbruges uden de to gamle CP-/OM-strømdonorer, øvrige komponenter samles, og originalpakke, checkpoint og gemt scoretilstand bevares. En ændret originalpakke afvises. Dette er syntetisk integration, ikke genåbning af det faktiske produktionsarkiv eller offentlig effekt.
+- [x] Det fundne kalder-scope er rettet lokalt på de fire fase-reservekontroller. Kontrollen ser sit oprindelige rene klokke-scope; den autentificerede genoptagelse beholder sine faste checkpointidentiteter. De faktiske fire kald består for ny og genoptaget cold samt ny og genoptaget epoch, med uændret reserve og afslag ved tidsoverskridelse. Gamle hele workfloworakler og deres manipulationsafslag består efter præcis testlæsertilpasning. Ingen ændring af budgetmodul, reserve, tidsgrænser eller andre genoptagelsesmåder.
+- [ ] Præcis samlet kildekontrol, sikker levering, faktisk genoptagelse med uændret no-loss, ny B/S/Pages/offentlig kontrol og almindelig efterfølger. De tretten timers fulde kildevalgsårsag, faktisk dækningsgrad og selvstændig drift er fortsat åbne.
+
 ## 23. oktober — testlæsere efter første PR707-kontrol
 
 - [x] Faktisk native PostgreSQL-trin bestået; dette er ikke samlet kildekvalifikation.

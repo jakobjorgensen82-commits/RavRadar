@@ -7,11 +7,14 @@ import path from 'node:path';
 import crypto from 'node:crypto';
 import { fileURLToPath } from 'node:url';
 import { spawn } from 'node:child_process';
-import { prepareCurrentFamilyColdStart, loadCurrentFamilyColdStartForTarget,
-  currentFamilyColdStartAcquisitionChoices, CURRENT_FAMILY_COLD_START_CONTEXT_ENV }
+import { prepareCurrentFamilyColdStart, reopenCurrentFamilyColdStart, loadCurrentFamilyColdStartForTarget,
+  currentFamilyColdStartAcquisitionChoices, CURRENT_FAMILY_COLD_START_CONTEXT_ENV,
+  CURRENT_FAMILY_COLD_START_REENTRY_SCOPE }
   from './current-family-cold-start.mjs';
 import { manifestBoundedPublicDetailsBytes } from './prepare-code-only-public-runtime.mjs';
 import { ownFileDescriptorIdentity, ownedFileDescriptorClosed } from './lib/private-weather-component-pack.mjs';
+import { weatherComponentProgressCache } from './weather-component-progress-cache.mjs';
+import { assertUsableDmiProgressRecovery } from './lib/verified-dmi-progress-inputs.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const sha = bytes => crypto.createHash('sha256').update(bytes).digest('hex');
@@ -48,13 +51,17 @@ function flags() {
     'COMPLETED_PRIVATE_RUNTIME', 'CHECKPOINT_ONLY', 'QUICK_CONFIRMATION', 'NATIVE_IDENTITY_RECOVERY',
     'PRODUCE_WEATHER_HANDOFF', 'RAVSCORE_INTEGRATED_FIRST_CUTOVER', 'RAVSCORE_INTEGRATED_RETURN'])
     requireFlag(!process.env[name] || process.env[name] === 'false', 'MODE_COLLISION');
-  for (const name of ['QUICK_PROGRESS_SOURCE', 'CHECKPOINT_TARGET_HOUR',
-    'RAVRADAR_WEATHER_STATE_EPOCH_ARCHIVE_ID', 'RAVRADAR_WEATHER_STATE_EPOCH_ARCHIVE_CATALOG_SHA256',
+  for (const name of ['RAVRADAR_WEATHER_STATE_EPOCH_ARCHIVE_ID', 'RAVRADAR_WEATHER_STATE_EPOCH_ARCHIVE_CATALOG_SHA256',
     'RAVRADAR_WEATHER_STATE_EPOCH_RAW_CACHE_KEY']) requireFlag(!process.env[name], 'MODE_COLLISION');
   requireFlag(process.env.GITHUB_REF === 'refs/heads/main' && process.env.GITHUB_EVENT_NAME === 'workflow_dispatch'
     && /^[1-9][0-9]*$/.test(process.env.GITHUB_RUN_ID ?? '') && process.env.GITHUB_RUN_ATTEMPT === '1', 'FIXED_WORKFLOW');
   const value = process.env.RAVRADAR_PRODUCTION_TARGET_HOUR;
   requireFlag(typeof value === 'string' && /^\d{4}-\d{2}-\d{2}T\d{2}:00:00(?:\.000)?Z$/.test(value), 'TARGET');
+  if (process.env.QUICK_PROGRESS_SOURCE) {
+    requireFlag(process.env.QUICK_PROGRESS_SOURCE === CURRENT_FAMILY_COLD_START_REENTRY_SCOPE.progressSource
+      && new Date(value).toISOString() === CURRENT_FAMILY_COLD_START_REENTRY_SCOPE.targetReferenceAt
+      && process.env.CHECKPOINT_TARGET_HOUR === value, 'REENTRY_SCOPE');
+  } else requireFlag(!process.env.CHECKPOINT_TARGET_HOUR, 'MODE_COLLISION');
   return new Date(value).toISOString();
 }
 async function paths() {
@@ -141,6 +148,7 @@ async function githubOutputs(values) {
   if (first) throw first;
 }
 async function prepare() {
+  requireFlag(!process.env.QUICK_PROGRESS_SOURCE, 'REENTRY_ACTION_REQUIRED');
   requireFlag(!process.env[CURRENT_FAMILY_COLD_START_CONTEXT_ENV.path]
     && !process.env[CURRENT_FAMILY_COLD_START_CONTEXT_ENV.sha256], 'CONTEXT_COLLISION');
   const selected = await paths(); await capturePublic(selected.publicRoot);
@@ -152,6 +160,37 @@ async function prepare() {
     DMI_BULK_DEPLOYED_FALLBACK_PATH: choices.deployedFallbackPath,
     DMI_BULK_PUBLISHED_BASELINE_PATH: choices.publishedBaselinePath });
   console.log('CURRENT_FAMILY_COLD_PREPARED_ARCHIVED_SINGLE_CANONICAL_WORKING_OUTPUT');
+}
+async function reopen() {
+  requireFlag(!process.env[CURRENT_FAMILY_COLD_START_CONTEXT_ENV.path]
+    && !process.env[CURRENT_FAMILY_COLD_START_CONTEXT_ENV.sha256], 'CONTEXT_COLLISION');
+  const selected = await paths();
+  requireFlag(process.env.QUICK_PROGRESS_SOURCE === CURRENT_FAMILY_COLD_START_REENTRY_SCOPE.progressSource
+    && process.env.RUNNER_OS === 'Linux'
+    && process.env.PROGRESS_CACHE_OUTCOME === 'success'
+    && process.env.PROGRESS_CACHE_MATCHED_KEY === 'weather-private-progress-encrypted-v2-Linux-main-'
+      + CURRENT_FAMILY_COLD_START_REENTRY_SCOPE.progressSource, 'EXACT_PROGRESS_REQUIRED');
+  await capturePublic(selected.publicRoot);
+  // Reopens only the independently reconstructed, byte-equal existing archive.
+  // No missing-object upload or new cold-start identity is permitted here.
+  const result = await reopenCurrentFamilyColdStart({ ...selected,
+    archiveId: CURRENT_FAMILY_COLD_START_REENTRY_SCOPE.archiveId });
+  const report = await weatherComponentProgressCache({ mode: 'restore', repositoryRoot: ROOT,
+    basePath: path.join(process.env.RUNNER_TEMP, 'weather-progress-base.json'),
+    productionReferenceAt: selected.targetReferenceAt, resumeOriginalTarget: true,
+    currentFamilyColdStartCapability: result.capability });
+  requireFlag(report.status === 'RESTORED' && report.restored === true && report.fileCount > 0
+    && report.restoredProductionReferenceAt === selected.targetReferenceAt, 'PROGRESS_RESTORE_REQUIRED');
+  assertUsableDmiProgressRecovery(report.dmiProgress, { allowAbsent: false });
+  await writeNew(path.join(process.env.RUNNER_TEMP, 'weather-progress-restore-report.json'),
+    Buffer.from(JSON.stringify(report) + '\n'));
+  const choices = currentFamilyColdStartAcquisitionChoices(result.capability);
+  requireFlag(choices.outputPath === path.join(ROOT, '.cache/dmi-candidate-progress.json'), 'CANONICAL_OUTPUT');
+  await appendEnvironment({ [CURRENT_FAMILY_COLD_START_CONTEXT_ENV.path]: result.contextPath,
+    [CURRENT_FAMILY_COLD_START_CONTEXT_ENV.sha256]: result.contextSha256,
+    DMI_BULK_DEPLOYED_FALLBACK_PATH: choices.deployedFallbackPath,
+    DMI_BULK_PUBLISHED_BASELINE_PATH: choices.publishedBaselinePath });
+  console.log('CURRENT_FAMILY_COLD_REOPENED_SAME_ARCHIVE_AND_AUTHENTICATED_PROGRESS');
 }
 async function runDmi() {
   const selected = await paths(), contextPath = process.env[CURRENT_FAMILY_COLD_START_CONTEXT_ENV.path],
@@ -173,7 +212,10 @@ async function runDmi() {
         env: { ...process.env, DMI_BULK_OUTPUT_PATH: choices.outputPath,
           DMI_BULK_DEPLOYED_FALLBACK_PATH: choices.deployedFallbackPath,
           DMI_BULK_PUBLISHED_BASELINE_PATH: choices.publishedBaselinePath,
-          RAVRADAR_COLD_STOP_FILE: receiptPath, RAVRADAR_COLD_STOP_NONCE: nonce } });
+          RAVRADAR_COLD_STOP_FILE: receiptPath, RAVRADAR_COLD_STOP_NONCE: nonce,
+          // Scheduling only, after this process authenticated the real context.
+          // No parent env/input, budget, native proof or numerical grant changes.
+          RAVRADAR_DMI_STRICT_CURRENT_LEAD_POLICY: 'authenticated-current-family-cold-catch-up-v1' } });
       child.once('error', failure => { error ??= failure; });
       child.once('close', (code, signal) => error ? reject(error) : resolve({ code, signal }));
     });
@@ -197,6 +239,7 @@ if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.me
   Promise.resolve().then(() => {
     requireFlag(process.argv.length === 3, 'ARGUMENTS');
     if (process.argv[2] === 'prepare') return prepare();
+    if (process.argv[2] === 'reopen') return reopen();
     if (process.argv[2] === 'run-dmi') return runDmi();
     fail('ACTION');
   }).catch(error => {
