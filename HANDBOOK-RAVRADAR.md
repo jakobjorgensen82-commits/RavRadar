@@ -40,6 +40,8 @@ Disse svarforbedringer og en originalbevarende programovergang er lokalt forbere
 
 Kort fortalt: RavRadar kan opbygge strømhistorik fra et nyt tidspunkt uden at ændre tidligere offentliggjorte scorer.
 
+En vejrfil kan være fuldt gennemgået, selv om en bedre og allerede kontrolleret strømværdi bliver bevaret. Nul ændrede rækker er derfor ikke alene tegn på, at filen mangler. Programmet skal stadig kontrollere den præcise kilde, de aktuelle kystdele, hele gennemgangen og de faktisk bevarede strømværdier. Samme beviser skal følge gemning og genbrug. En intern kvittering må ikke gøre ukendt eller forkert placeret strøm gyldig, og gamle strømtilstande får ingen ny adgang.
+
 En godkendt ny opstart skal holde det gamle arkiv adskilt fra de nye beregninger. Gamle strømværdier må ikke vende tilbage gennem gemte arbejdsfiler. Gyldige vind-, bølge-, vandstands- og temperaturdata bevares efter de normale kilderegler. En afventende ændring af administratorens kystpunkter må ikke annulleres som del af en sådan opstart.
 
 Timer før den nye start er ukendte, ikke nul strøm. Historikken vokser med nye gyldige timer, og prognosen skal fortsat vise usikkerheden ærligt. De nye data skal gemmes sammen med deres kildegrundlag, så næste almindelige opdatering kan fortsætte uden endnu en ny start.
@@ -649,6 +651,12 @@ En særskilt, dokumenteret Storage-formatkant rettes samtidig: immutable upload 
 **Håndbogsversion:** 4.0.588
 
 Hvis genbrug af gemte data stopper, skal den første fejlfase og et kontrolleret kildested bevares uden private fejltekster eller værdier. Tidligere beståede kontroller frikender ikke automatisk en senere mål-time eller andre input. En bedre fejlrapport ændrer ikke beregningen og er ikke bevis for, at årsagen er rettet. Gemte originaler og sidste gyldige offentlige data bevares, mens fejlen undersøges.
+
+## Aktuel lokal kildebinding — RavScore 4.0.588, ikke installeret
+
+Den integrerede model er offentlig som modeltype; denne SOURCE-kilde er kun lokalt udstedt, ikke installeret eller offentligt leveret. 4.0.588 er låst med `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b` og `modelBundleSha256=5fa3e96cb3cf0f47e6a10bd37d4e1b1b93f837bf0f221dbb49d2a6442289dbc8` over 153 kanonisk normaliserede transitive implementeringsfiler og de deklarerede forbrugere. Inaktiv Candidate G er bundet med `modelContractSha256=c73dac1b4376005e792580791d84eb79c9370e905a2a7fd0bdee857506a20cf8` og `modelBundleSha256=787fd4bb1abbf694ccce99e89a1c7faa15c20fee6957fe31f6db3ef5c4ea37a5` over 157 transitive filer. Autoriteten er `version.json.releaseContract.modelBindings` og den allerede udstedte `20261023182922_source_producer_original_bound_successor.sql`. Dette dokumenttillæg ændrer ingen modelbinding, scoreformel eller gammel migration. Samlet SOURCE-kvalifikation, installeret 587-forgænger, kontrolleret SOURCE-installation og offentlig virkning er fortsat særskilte åbne beviser.
+
+De følgende afsnits daværende status og hashes bevares ordret som historik, ikke som en anden aktiv 4.0.588-binding.
 
 ## Aktuel frossen kandidatkilde — 4.0.587, ikke installeret
 
@@ -7122,6 +7130,10 @@ Inddelingen af forespørgsler følger hele det centrale kystregister, så den ik
 Rettelsen er måltestet lokalt, men ikke endnu bevist i produktion. Den fjerner ikke den afsluttende kontrol af alle nødvendige vejrinput og aktiverer ikke i sig selv den nye scoremodel. Fuld historik er fortsat ikke et krav for at vise en prognose med gyldige direkte input.
 
 ## Beskyttet modelcheckpoint uden unødvendig dataflytning – lokal 4.0.321
+
+### Lokal fortsættelseskontrakt for 4.0.588, ikke installeret
+
+Den allerede udstedte T12 er `continuationStateContractSha256=e56c01e138e154c4603e3baf2063f5d9cfc0714adc38f66c3fa88c17cf0eda82` (`e56c01e1…`) over 12 normaliserede kildefiler. Den hører til den lokalt udstedte SOURCE-kilde med C157/I153 og den uændrede `20261023182922_source_producer_original_bound_successor.sql`. Denne dokumentopfølgning udsteder ingen ny kontrakt og beviser ikke installation, gemning, genbrug eller offentlig levering. Alle tidligere kontrakter, originaler og tids-/adgangskontroller bevares. De følgende afsnits daværende status er bevaret historik.
 
 ### Lokal kildeblok — 16. oktober 2026, 4.0.578 ikke installeret
 

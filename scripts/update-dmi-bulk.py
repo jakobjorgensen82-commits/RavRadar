@@ -1657,9 +1657,13 @@ def processed_step_source_for_official_asset(
     valid_time: Any,
     processing_signature: Any,
     official_asset: Any,
+    current_target_ids: list[str] | None = None,
+    current_target_registry_sha256: str | None = None,
 ) -> dict[str, Any] | None:
     if not isinstance(step, dict) or not isinstance(official_asset, dict):
         return None
+    zones_touched = step.get("zonesTouched")
+    no_mutation = type(zones_touched) is int and zones_touched == 0
     if (
         step.get("complete") is not True
         or step.get("parserVersion") != PARSER_VERSION
@@ -1668,7 +1672,7 @@ def processed_step_source_for_official_asset(
         or step.get("processingSignature") != processing_signature
         or not {"current-u", "current-v"}
             <= set(step.get("recognizedParameters") or [])
-        or int(step.get("zonesTouched") or 0) <= 0
+        or (not no_mutation and int(zones_touched or 0) <= 0)
     ):
         return None
     source = canonical_current_source_asset(step.get("sourceAsset"))
@@ -1687,6 +1691,32 @@ def processed_step_source_for_official_asset(
         or source["itemUpdatedAt"] != expected["itemUpdatedAt"]
     ):
         return None
+    if no_mutation:
+        # Only a newly completed marine traversal with the caller's actual
+        # target context may retain an already-qualified better winner.
+        # This receipt does not replace the caller's actual tuple/retained proof.
+        if (
+            collection not in MARINE_COLLECTIONS
+            or not isinstance(current_target_ids, list)
+            or not current_target_ids
+            or not isinstance(current_target_registry_sha256, str)
+            or not current_target_registry_sha256
+        ):
+            return None
+        try:
+            outcome = validate_current_part_outcome_proof(
+                step.get("currentPartOutcomeProof"),
+                current_target_ids,
+                current_target_registry_sha256,
+                processing_signature,
+                source,
+            )
+        except (TypeError, ValueError):
+            return None
+        if not current_grid_sampling_outcome_matches(
+            step.get("currentGridSamplingOutcome"), outcome,
+        ):
+            return None
     return source
 
 
@@ -1884,6 +1914,9 @@ def reusable_processed_steps(
             valid_time=valid_time,
             processing_signature=processing_signature,
             official_asset=official_asset,
+            # Private scalar support keeps its existing mutation requirement.
+            current_target_ids=current_target_ids if not private_support else None,
+            current_target_registry_sha256=current_target_registry_sha256,
         )
         if source is None:
             continue
@@ -12938,6 +12971,8 @@ def build_current_operational_ledger_result(
                     valid_time=valid_time,
                     processing_signature=processing_signature,
                     official_asset=official_asset,
+                    current_target_ids=part_ids,
+                    current_target_registry_sha256=registry_sha256,
                 )
                 if source_asset is None:
                     state = "LOCALLY_SKIPPED"
@@ -15927,22 +15962,35 @@ def main() -> int:
                     )
                 )
             required_for_family = REQUIRED_TARGETS[COLLECTION_FAMILY[collection]]
+            qualified_current_processed_times = (
+                qualified_current_processed_valid_times(
+                    previous_steps, current_target_ids=current_target_ids,
+                    required_valid_times=required_current_valid_times,
+                    qualified_pair_source_keys=qualified_current_pair_source_keys,
+                    qualified_covered_pair_keys=qualified_covered_current_pair_keys,
+                    private_support_zones=result.get("zones") or {},
+                    private_support_zone_ids=active_production_zone_ids,
+                )
+                if collection in MARINE_COLLECTIONS else set()
+            )
             previously_processed = {
                 valid for valid, step in previous_steps.items()
                 if step.get("complete") is True
                 and set(step.get("recognizedParameters") or []) >= required_for_family
-                and int(step.get("zonesTouched") or 0) > 0
+                and (
+                    int(step.get("zonesTouched") or 0) > 0
+                    or (
+                        collection in MARINE_COLLECTIONS
+                        and type(step.get("zonesTouched")) is int
+                        and step["zonesTouched"] == 0
+                        and valid in required_current_valid_times
+                        and valid in qualified_current_processed_times
+                    )
+                )
             }
             if collection in MARINE_COLLECTIONS:
                 previously_processed.intersection_update(
-                    qualified_current_processed_valid_times(
-                        previous_steps, current_target_ids=current_target_ids,
-                        required_valid_times=required_current_valid_times,
-                        qualified_pair_source_keys=qualified_current_pair_source_keys,
-                        qualified_covered_pair_keys=qualified_covered_current_pair_keys,
-                        private_support_zones=result.get("zones") or {},
-                        private_support_zone_ids=active_production_zone_ids,
-                    )
+                    qualified_current_processed_times
                 )
             previously_traversed = (
                 {
@@ -15999,7 +16047,15 @@ def main() -> int:
                     if step.get("complete") is True
                     and set(step.get("recognizedParameters") or [])
                         >= required_for_family
-                    and int(step.get("zonesTouched") or 0) > 0
+                    and (
+                        int(step.get("zonesTouched") or 0) > 0
+                        or (
+                            collection in MARINE_COLLECTIONS
+                            and type(step.get("zonesTouched")) is int
+                            and step["zonesTouched"] == 0
+                            and valid in previously_processed
+                        )
+                    )
                     and (collection not in MARINE_COLLECTIONS or valid in previously_processed)
                 }
                 traversed = (
@@ -16792,8 +16848,9 @@ def main() -> int:
                                 return reject("DKSS_STAGE_SOURCE_CAPTURE_MISSING")
                             if not REQUIRED_TARGETS["marine"] <= set(outcome[0]):
                                 return reject("DKSS_STAGE_REQUIRED_FIELDS_MISSING")
-                            if not outcome[1]:
-                                return reject("DKSS_STAGE_NO_TOUCHED_ZONES")
+                            # A fully read collection can retain better trusted
+                            # winners. The complete proof and exact unchanged-
+                            # tuple checks below, not mutation, validate it.
                             if not isinstance(part_outcomes, dict) or part_outcomes.get("complete") is not True:
                                 return reject("DKSS_STAGE_PART_OUTCOME_INCOMPLETE")
                             if part_outcomes.get("targetPartIds") != current_target_ids:
@@ -17153,7 +17210,11 @@ def main() -> int:
                 )
                 step_complete = bool(
                     set(step_recognized) >= required_for_family
-                    and len(touched) > 0
+                    and (
+                        len(touched) > 0
+                        or collection in MARINE_COLLECTIONS
+                        and step_part_outcome_proof is not None
+                    )
                     and (
                         wave_step_complete
                         if bootstrap_operational_wam

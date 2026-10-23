@@ -24,6 +24,10 @@ Næste afgrænsede arbejde er ROOTs versionsreservation og normal afledning på 
 
 P0 og den almindelige vejrhentning har fortsat førsteprioritet. ROOTs aktuelle private checkpoint er autoritet for faktiske kørsler, cron og offentlig status; denne SOURCE-front udleder intet nyt produktionsresultat. Faktisk 587-installation er en særskilt forudsætning før SOURCE-aktivering. Alle fem mål er fortsat åbne til 18. november 2026.
 
+## 23. oktober — DMI-filer med gyldige, uændrede strømvindere
+
+Denne lokale DMI-vedligeholdelse bygger på den genuine, kildekvalificerede 587-kandidat. En fuldt gennemgået marin fil må beholde en bedre, allerede kvalificeret strømvinder uden at blive klassificeret som ubehandlet. Ny adgang kræver eksakt kilde, parser, signature, aktuelle target-/registryoplysninger, fuldt udfaldsbevis og matchende samplingkvittering; faktisk tuple-/original-/retained-kontrol består. Den normale gemning, ledger og genoptagelse er prøvet sammen. Modelbindinger, lager-ABI, SQL og øvrige kilderegler ændres ikke. Præcis ny CI/nativekontrol og produktionseffekt står åbne. Daterede P0-/587-statusudsagn nedenfor er historik; faktisk løbende drift og installation skal læses i det private checkpoint.
+
 ## 23. oktober — privat587-sammenføring; P0 og levering er fortsat særskilte
 
 Denne lokale587-arbejdsgren sammenfører den udstedte assistentkandidat med P0707s strømstart-, PART-bevarings- og zoneisolationskode. P0707 er fortsat en særskilt kildekandidat under præcis kontrol, ikke en ny offentlig vejrgeneration. 587 er stadig inaktiv og ikke installeret. Ingen test, ny model-/SQL-udstedelse eller produktionshandling er udført som del af denne sammenføring. Begge daterede evidensforløb nedenfor bevares; de bliver ikke et nyt samlet PASS.
