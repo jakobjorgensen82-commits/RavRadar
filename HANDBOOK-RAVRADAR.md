@@ -1,5 +1,7 @@
 ## 89.266 Beregningskode og genererede kontroloplysninger
 
+Et historisk, kunstigt prøveforløb skal holde sin prøveklokke adskilt fra faktiske hentetider. En tom kildestage i den historiske H0-prøve bruger nu sin udtrykkelige referencetid; almindelige forløb og H1 bruger fortsat den faktiske klokke. Den normale tidsgrænse og ægte leverandørtider bevares. Fejlrapporten skelner de faste underforløb og medtager kun kvalificerede kildepositioner, aldrig rå private oplysninger. De afgrænsede normale Python- og JavaScript-prøver består lokalt; samlet kilde- og databasekvalifikation samt installation er fortsat åbne.
+
 Kort fortalt: En kontrolsum skal beskrive programmet, ikke være en del af sit eget beregningsinput.
 
 Status 23. oktober: Programversion 4.0.588 og dens beregnede kontroloplysninger er nu udstedt lokalt. Den normale brugskæde er sammenkoblet lokalt, og databasekildeteksten og de syv normale forbrugerkopier kan genberegnes til samme resultat. Versionssynkroniseringen skal ikke gentages. Databasekildeteksten er ikke kørt i produktionen.

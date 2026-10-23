@@ -1,5 +1,7 @@
 ## 23. oktober — 4.0.588 lokalt udstedt; SOURCE-kvalifikation og drift er åbne
 
+Opfølgning på den første SOURCE-kildekontrol: Nativefasen stoppede, og den bevarede fejlrapport fastslår endnu ikke hvilket underforløb der fejlede. Særskilt er en konkret konflikt i den syntetiske H0-fixtur reproduceret: en tom Copernicus-kildestage blev forseglet med vægurtid 49 timer efter prøvens reference og afvist af det uændrede firetimersværn. Kun denne historiske prøve bruger nu sin eksplicitte referenceklokke; almindelige forløb, H1 og ægte hentetider er uændrede. Faste H0/H1-faser og kvalificerede kildepositioner føres gennem den eksisterende første-fejlrapport uden rå private oplysninger. De to normale Python-indgange består med 7+1 prøver, og den normale Node22-checkpointprøve består. De fire berørte prøve-/nativeblade ligger uden for C157/I153/T12 og lager-ABI; udstedte pins og SQL bevares. Ny præcis samlet SOURCE-CI/nativefase, CURRENT, installation og offentlig effekt er fortsat åbne.
+
 Den normale SOURCE-workflowport er nu lokalt anvendt på den sammenførte genuine587/P0-kilde. Version:set 4.0.588 er udført præcis én gang og skal ikke gentages for status. Faktisk C157/I153/T12, binding/output, append-only SQL 20261023182922 og normal synk af de syv forbrugere er lokalt udstedt. De fem normale fixedpoint-kontroller sluttede med EXIT0 (5b00d9); dette er lokal kildeudstedelse, ikke SQL-eksekvering eller installation. De fulde pins står i DEC-0294 og CURRENT_TRUTH.
 
 - C157: 787fd4bb1abbf694ccce99e89a1c7faa15c20fee6957fe31f6db3ef5c4ea37a5.

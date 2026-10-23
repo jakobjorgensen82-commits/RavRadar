@@ -281,7 +281,7 @@ class SourceObserverPureTests(unittest.TestCase):
         try:
             raise AssertionError('PRIVATE_SENTINEL_ACTUAL_EXPECTED')
         except AssertionError as error:
-            for phase in ('BINDINGS', 'PROVIDERS', 'FOLLOWER'):
+            for phase in ('BINDINGS', 'PROVIDERS', 'FOLLOWER', 'PROVIDERS-H0', 'PROVIDERS-H1'):
                 observed = source_legacy_child_failure(error, phase)
                 self.assertEqual(observed['phase'], phase)
                 self.assertEqual(observed['exceptionType'], 'ASSERTION_ERROR')
@@ -2113,13 +2113,13 @@ def source_terminal_exception_callsite(error, root, source_rows):
 
 
 def source_legacy_child_failure(error, phase):
-    # Reuse the qualified real traceback/exception projection. The three
+    # Reuse the qualified real traceback/exception projection. The exact
     # command phases are observation only, never child success or SQL proof.
     try:
         projected = source_terminal_exception_projection(error, 'UNKNOWN',
             source_terminal_exception_callsite(error, ROOT, ()))
         return {'kind': 'SOURCE_LEGACY_CHILD_FIRST_FAILURE',
-            'phase': phase if phase in ('BINDINGS', 'PROVIDERS', 'FOLLOWER') else 'UNKNOWN',
+            'phase': phase if phase in ('BINDINGS', 'PROVIDERS', 'FOLLOWER', 'PROVIDERS-H0', 'PROVIDERS-H1') else 'UNKNOWN',
             **{key: projected[key] for key in ('exceptionType', 'osError', 'callsite')},
             'privatePayloadIncluded': False}
     except BaseException:
@@ -2128,7 +2128,10 @@ def source_legacy_child_failure(error, phase):
 
 SOURCE_PROVIDER_NEED_CODES = frozenset(["CURRENT_NATIVE_PROVIDER_ABSOLUTE_PATH","CURRENT_NATIVE_PROVIDER_ADMIN_COPY_CHANGED","CURRENT_NATIVE_PROVIDER_ADMIN_INPUT_MISSING","CURRENT_NATIVE_PROVIDER_BASIS_DESTINATION_EXISTS","CURRENT_NATIVE_PROVIDER_CLEAN_NATIVE_ACQUISITION_MODE","CURRENT_NATIVE_PROVIDER_ECCODES_REQUIRED","CURRENT_NATIVE_PROVIDER_EMPTY_NORMAL_STATION_SOURCE_REQUIRED","CURRENT_NATIVE_PROVIDER_EXACT_INITIAL_PHASE","CURRENT_NATIVE_PROVIDER_EXACT_INITIAL_PHASE_ARGUMENT","CURRENT_NATIVE_PROVIDER_EXACT_NODE_TARGET_ARGUMENTS","CURRENT_NATIVE_PROVIDER_EXISTING_FIXTURE_DIRECTORY","CURRENT_NATIVE_PROVIDER_EXISTING_OWNED_HOST","CURRENT_NATIVE_PROVIDER_EXTERNAL_NETWORK_REFUSED","CURRENT_NATIVE_PROVIDER_GRID_BOUND","CURRENT_NATIVE_PROVIDER_LINUX_PYTHON312_REQUIRED","CURRENT_NATIVE_PROVIDER_NODE24_REQUIRED","CURRENT_NATIVE_PROVIDER_NORMAL_BASIS_OUTPUT_MISSING","CURRENT_NATIVE_PROVIDER_NORMAL_BULK_READBACK","CURRENT_NATIVE_PROVIDER_NORMAL_CAPTURE_MISSING","CURRENT_NATIVE_PROVIDER_NORMAL_COPERNICUS_RESIDUALS_REQUIRE_DATA","CURRENT_NATIVE_PROVIDER_NORMAL_DECODE_INCOMPLETE","CURRENT_NATIVE_PROVIDER_NORMAL_DECODE_OUTCOMES_INCOMPLETE","CURRENT_NATIVE_PROVIDER_NORMAL_LEDGER_NOT_READY","CURRENT_NATIVE_PROVIDER_NORMAL_MODULE","CURRENT_NATIVE_PROVIDER_NORMAL_NATIVE_PAIR_REJECTED","CURRENT_NATIVE_PROVIDER_NORMAL_PART_TARGETS","CURRENT_NATIVE_PROVIDER_NORMAL_REGISTRY_210_673","CURRENT_NATIVE_PROVIDER_NO_ADOPTED_OLD_BULK","CURRENT_NATIVE_PROVIDER_RAW_CHANGED_AFTER_DECODE","CURRENT_NATIVE_PROVIDER_SAME_ACTION_RUNNER_TEMP","CURRENT_NATIVE_PROVIDER_STAC_HOST","CURRENT_NATIVE_PROVIDER_STAC_PAGE_BOUND","CURRENT_NATIVE_PROVIDER_STAC_ROUTE","CURRENT_NATIVE_PROVIDER_SYMLINK","CURRENT_NATIVE_PROVIDER_TARGET_HOUR","CURRENT_NATIVE_PROVIDER_WRITE_READBACK"])
 SOURCE_PROVIDER_FRAME_FILES = ('scripts/fixtures/source19-current-native-providers.py',
-    'scripts/update-dmi-bulk.py', 'scripts/test-source19-terminal-failure-proof-bank-v17-observer-native.py')
+    'scripts/update-dmi-bulk.py', 'scripts/test-source19-terminal-failure-proof-bank-v17-observer-native.py',
+    'scripts/fixtures/source19-current-initial-weather.py', 'scripts/lib/copernicus_current_source_stage.py')
+SOURCE_PROVIDER_CAPTURE_STEMS = {'PROVIDERS': 'legacy-providers-whole',
+    'PROVIDERS-H0': 'legacy-providers-h0-whole', 'PROVIDERS-H1': 'legacy-providers-h1-whole'}
 SOURCE_PROVIDER_SIGNALS = {-1: 'SIGHUP', -2: 'SIGINT', -3: 'SIGQUIT', -6: 'SIGABRT',
     -9: 'SIGKILL', -11: 'SIGSEGV', -13: 'SIGPIPE', -15: 'SIGTERM'}
 SOURCE_PROVIDER_HELPERS = {'scripts/fill-open-meteo-current-fallback.py': 'OPEN_METEO',
@@ -2202,10 +2205,13 @@ def source_provider_boundary_valid(value):
         return False
 
 
-def source_provider_process_failure(result, own):
+def source_provider_process_failure(result, own, *, phase='PROVIDERS'):
     # The existing subprocess/files are already closed+fsynced before this read.
     # Oversized/missing/changed streams stay incomplete and yield no parsed cause.
     try:
+        if type(phase) is not str or phase not in SOURCE_PROVIDER_CAPTURE_STEMS:
+            return None  # Refuse unknown capture selection before any path read.
+        stem = SOURCE_PROVIDER_CAPTURE_STEMS[phase]
         returncode = result.returncode if type(result) is subprocess.CompletedProcess else None
         if type(returncode) is not int or not -(2**31) <= returncode < 2**31:
             returncode = None
@@ -2213,7 +2219,7 @@ def source_provider_process_failure(result, own):
             else SOURCE_PROVIDER_SIGNALS.get(returncode, 'UNKNOWN'))
         streams, stderr = {}, None
         for name in ('stdout', 'stderr'):
-            relative = 'legacy-providers-whole.' + name
+            relative = stem + '.' + name
             meta = {'bytes': None, 'sha256': None, 'complete': False}
             try:
                 stat_result = (own / relative).lstat()
@@ -2238,7 +2244,7 @@ def source_provider_process_failure(result, own):
                 if source_provider_boundary_valid(value):
                     boundary = value
                     break
-        return {'kind': 'SOURCE_PROVIDER_PROCESS_FIRST_FAILURE', 'phase': 'PROVIDERS',
+        return {'kind': 'SOURCE_PROVIDER_PROCESS_FIRST_FAILURE', 'phase': phase,
             'returncode': returncode, 'signal': signal_name, **streams, 'boundary': boundary,
             'privatePayloadIncluded': False}
     except BaseException:
@@ -2320,6 +2326,113 @@ class SourceProviderEvidencePureTests(unittest.TestCase):
                 self.assertEqual(observed['boundary'], boundary)
             else:
                 self.assertIsNone(observed['boundary'])
+
+    def test_initial_h0_clock_preserves_normal_h1_and_the_real_stale_guard(self):
+        import ast
+        from datetime import datetime, timedelta, timezone
+        from lib.copernicus_current import (DMI_VERIFIER_CONTRACT_ID, OPERATIONAL_MATRIX_CONTRACT_ID,
+            canonical_sha256, empty_shadow, required_pairs_sha256)
+        from lib.copernicus_current_source_stage import build_source_stage, CopernicusSourceStageError
+        from lib.copernicus_target_identity import target_fingerprint
+        provider_file = Path(__file__).resolve().parent / 'fixtures/source19-current-native-providers.py'
+        provider_tree = ast.parse(provider_file.read_text(encoding='utf8'))
+        finish = [n for n in provider_tree.body if isinstance(n, ast.FunctionDef) and n.name == 'finish_normal_basis']
+        self.assertEqual(len(finish), 1)
+        calls = [n for n in ast.walk(finish[0]) if isinstance(n, ast.Call)
+            and isinstance(n.func, ast.Name) and n.func.id == 'build_source_stage']
+        self.assertEqual(len(calls), 1)
+        seals = [k.value for k in calls[0].keywords if k.arg == 'sealed_at']
+        self.assertEqual(len(seals), 1)
+        self.assertIsInstance(seals[0], ast.IfExp)
+        self.assertEqual(ast.unparse(seals[0].test), "initial_phase == 'h0'")
+        self.assertEqual(ast.unparse(seals[0].body), 'reference')
+        self.assertEqual(ast.unparse(seals[0].orelse), 'datetime.now(timezone.utc)')
+        seal_code = compile(ast.Expression(seals[0]), str(provider_file), 'eval')
+        # Reuse only the existing pure registry fixture, not its top-level suite.
+        fixture_path = ROOT / 'scripts/test-copernicus-current-source-stage.py'
+        tree = ast.parse(fixture_path.read_text(encoding='utf8'))
+        functions = [n for n in tree.body if isinstance(n, ast.FunctionDef) and n.name == 'registry']
+        targets = [n for n in tree.body if isinstance(n, ast.Assign)
+            and any(isinstance(t, ast.Name) and t.id == 'TARGET' for t in n.targets)]
+        self.assertEqual((len(functions), len(targets)), (1, 1))
+        target = ast.literal_eval(targets[0].value)
+        fixture_code = compile(ast.Module(body=functions, type_ignores=[]), str(fixture_path), 'exec')
+        hour = datetime.now(timezone.utc).replace(minute=0, second=0, microsecond=0)
+        for phase, age in ((None, 0), ('h1', 1), ('h0', 49)):
+            reference = hour - timedelta(hours=age)
+            values = dict(REFERENCE=reference, VALID_TIME=reference + timedelta(hours=117),
+                HISTORY_TIME=reference - timedelta(hours=1), TARGET=target, timedelta=timedelta,
+                DMI_VERIFIER_CONTRACT_ID=DMI_VERIFIER_CONTRACT_ID, OPERATIONAL_MATRIX_CONTRACT_ID=OPERATIONAL_MATRIX_CONTRACT_ID,
+                required_pairs_sha256=required_pairs_sha256, target_fingerprint=target_fingerprint)
+            exec(fixture_code, values)
+            registry = values['registry']('sha256:' + '0' * 64)
+            # Existing normal masked-pair fixture; no CP acquisition or admission.
+            registry.update(operationalRequiredPairs=[], operationalRequiredPairCount=0,
+                operationalDmiVerifiedPairCount=118, dmiVerifiedPairCount=165,
+                operationalPartCount=0, operationalRequiredPairsSha256=required_pairs_sha256([]))
+            shadow = empty_shadow(reference)
+            parameters = dict(registry=registry, shadow=shadow, target_identities={target['partId']: target},
+                shadow_sha256=canonical_sha256(shadow), attempts=[])
+            before = datetime.now(timezone.utc)
+            seal = eval(seal_code, dict(reference=reference, initial_phase=phase, datetime=datetime, timezone=timezone))
+            after = datetime.now(timezone.utc)
+            if phase == 'h0':
+                self.assertEqual(seal, reference)
+                try:
+                    build_source_stage(**parameters, sealed_at=before)
+                except CopernicusSourceStageError as error:
+                    self.assertEqual(str(error), 'Copernicus source-stage seal is stale')
+                    boundary = source_provider_boundary_failure(error)
+                    self.assertTrue(source_provider_boundary_valid(boundary))
+                    self.assertEqual(boundary['reason'], 'UNKNOWN')
+                    if sys.platform == 'linux' or boundary['callsite'] is not None:
+                        self.assertEqual(boundary['callsite']['module'], 'scripts/lib/copernicus_current_source_stage.py')
+                else:
+                    self.fail('Actual late seal must still fail the unchanged normal guard')
+            else:
+                self.assertLessEqual(before, seal)
+                self.assertLessEqual(seal, after)
+            stage = build_source_stage(**parameters, sealed_at=seal)
+            self.assertEqual((stage['status'], stage['requiredPairCount'], stage['missingPairCount']), ('READY', 0, 0))
+            self.assertEqual((shadow['acquisitions'], shadow['records']), ([], []))
+
+    def test_exact_h0_h1_capture_selection_never_reads_another_child(self):
+        phases = {'PROVIDERS': 'legacy-providers-whole', 'PROVIDERS-H0': 'legacy-providers-h0-whole',
+            'PROVIDERS-H1': 'legacy-providers-h1-whole'}
+        self.assertEqual(SOURCE_PROVIDER_CAPTURE_STEMS, phases)
+        with tempfile.TemporaryDirectory(prefix='rr-provider-phase-evidence-') as directory:
+            own = Path(directory).resolve()
+            for phase, stem in phases.items():
+                first = source_provider_boundary_failure(RuntimeError('CURRENT_NATIVE_PROVIDER_GRID_BOUND'))
+                later = source_provider_boundary_failure(RuntimeError('CURRENT_NATIVE_PROVIDER_NORMAL_LEDGER_NOT_READY'))
+                bodies = {'stdout': ('PRIVATE_' + phase).encode(),
+                    'stderr': (json.dumps(first) + '\n' + json.dumps(later) + '\nPRIVATE_' + phase).encode()}
+                for name, body in bodies.items():
+                    with (own / (stem + '.' + name)).open('xb') as stream:
+                        stream.write(body); stream.flush(); os.fsync(stream.fileno())
+                actual = source_provider_process_failure(subprocess.CompletedProcess(['PRIVATE'], 1), own, phase=phase)
+                self.assertEqual((actual['phase'], actual['returncode']), (phase, 1))
+                for name, body in bodies.items():
+                    self.assertEqual(actual[name]['bytes'], len(body))
+                    if actual[name]['complete']:
+                        self.assertEqual(actual[name]['sha256'], sha(body))
+                    elif sys.platform == 'linux':
+                        self.fail('Exact closed Linux capture must be complete')
+                if actual['stderr']['complete']:
+                    self.assertEqual(actual['boundary'], first)
+                self.assertNotIn('PRIVATE', json.dumps(actual))
+            (own / 'legacy-providers-h0-whole.stderr').unlink()
+            missing = source_provider_process_failure(None, own, phase='PROVIDERS-H0')
+            self.assertFalse(missing['stderr']['complete'])
+            self.assertIsNone(missing['stderr']['bytes'])
+            self.assertIsNone(missing['boundary'])
+            self.assertEqual(source_provider_process_failure(None, own),
+                source_provider_process_failure(None, own, phase='PROVIDERS'))
+        class NoPathRead:
+            def __truediv__(self, value):
+                raise AssertionError('No path may be read for an unknown phase')
+        for invalid in ('providers-h0', 'PROVIDERS-H2', '../PROVIDERS', '', None, []):
+            self.assertIsNone(source_provider_process_failure(None, NoPathRead(), phase=invalid))
 
     def test_malformed_boundary_headers_and_incomplete_stream_never_become_cause(self):
         fixed = source_provider_boundary_failure(RuntimeError('CURRENT_NATIVE_PROVIDER_GRID_BOUND'))
@@ -3116,9 +3229,9 @@ class SourceCurrentNative(SourceActualSUnionNative):
                     output.flush(); os.fsync(output.fileno()); errors.flush(); os.fsync(errors.fileno())
                 self.assertEqual(result.returncode, 0, 'SOURCE_LEGACY_COMPATIBILITY_CHILD_REFUSED')
             except BaseException as error:
-                if name == 'providers':
+                if name in ('providers', 'providers-h0', 'providers-h1'):
                     try:
-                        projected = source_provider_process_failure(result, own)
+                        projected = source_provider_process_failure(result, own, phase=name.upper())
                         if projected is not None:
                             print(json.dumps(projected, separators=(',', ':')), flush=True)
                     except BaseException:

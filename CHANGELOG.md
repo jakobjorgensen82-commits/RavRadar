@@ -1,5 +1,8 @@
 ## 23. oktober — 4.0.588 lokalt udstedt; SOURCE-kvalifikation og drift er åbne
 
+- Lokalt rettet: den syntetiske historiske H0-fixturs tomme Copernicus-stage bruger sin referenceklokke. Normal/H1, ægte hentetider og firetimersværnet er uændrede.
+- Lokalt udvidet: faste H0/H1-captures, underfaser og to kvalificerede kildepositioner i den eksisterende første-fejlrapport. Normale Python-indgange 7+1 og Node22-checkpointprøven består. Første fejlede SOURCE-nativekontrol har fortsat ukendt underårsag; ny samlet CI/native, installation og offentlig effekt mangler. Ingen ny C/I/T-, SQL- eller lager-ABI-overgang følger af de fire berørte prøve-/nativeblade.
+
 Den normale SOURCE-workflowport er nu lokalt anvendt på den sammenførte genuine587/P0-kilde. Version:set 4.0.588 er udført præcis én gang og skal ikke gentages for status. Faktisk C157/I153/T12, binding/output, append-only SQL 20261023182922 og normal synk af de syv forbrugere er lokalt udstedt. De fem normale fixedpoint-kontroller sluttede med EXIT0 (5b00d9); dette er lokal kildeudstedelse, ikke SQL-eksekvering eller installation. De fulde pins står i DEC-0294 og CURRENT_TRUTH.
 
 Den påviste indlæserkæde er lukket med fem additive, præcist whole-hash-bundne importinventarer for account-prewrite, account-runtime-transition, post-cutover-migrate, last-mile- og I71-kildehjælperne. De aktuelle fem filer var byteidentiske med de kendte ejere; alle gamle scannertabeller og almindelige relative imports bevares. Den afgrænsede normale inventarprøve bestod (027c35); ingen generel parserlempelse, filudelukkelse eller ny runtimeautoritet følger heraf.

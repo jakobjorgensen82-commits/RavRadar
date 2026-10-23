@@ -382,7 +382,8 @@ if (!process.argv.includes('--native-postgres') && !process.argv.includes('--nat
     && !process.argv.includes('--account-statistics-assistant') && !process.argv.includes('--assistant-later-h0')
     && !process.argv.includes('--source-producer') && !process.argv.includes('--current-source-native-profile')) {
   const { nativePostgresFailureDiagnostic: diagnose,
-    nativePostgresFailureAnnotation: annotate } =
+    nativePostgresFailureAnnotation: annotate, nativeProviderProcessFirstFailure,
+    nativePostgresChildFirstFailure } =
       await import('./lib/checkpoint-cas-native-postgres.mjs');
   assert.deepEqual(diagnose('CURRENT220', 'psql:<stdin>: ERROR: 42P01\n'),
     {phase:'CURRENT220',sqlState:'42P01',category:'SQL_UNDEFINED_TABLE'});
@@ -406,6 +407,41 @@ if (!process.argv.includes('--native-postgres') && !process.argv.includes('--nat
     '::error title=Native PostgreSQL source command::phase=UNKNOWN sqlstate=42501 category=SQL_PERMISSION');
   assert.equal(annotate('NATIVE_SETUP', ''),
     '::error title=Native PostgreSQL source command::phase=NATIVE_SETUP sqlstate=UNKNOWN category=PSQL_COMMAND_FAILURE');
+  // Fixed child phases and qualified source frames only; never native/SQL proof.
+  const providerFrames=['scripts/fixtures/source19-current-native-providers.py','scripts/update-dmi-bulk.py',
+    'scripts/test-source19-terminal-failure-proof-bank-v17-observer-native.py',
+    'scripts/fixtures/source19-current-initial-weather.py','scripts/lib/copernicus_current_source_stage.py'];
+  for(const module of providerFrames){
+    const source=await fs.readFile(module),callsite={module,sha256:crypto.createHash('sha256').update(source).digest('hex'),line:1};
+    for(const phase of ['PROVIDERS','PROVIDERS-H0','PROVIDERS-H1']){
+      const empty={bytes:0,complete:true,sha256:crypto.createHash('sha256').update('').digest('hex')};
+      const boundary={kind:'SOURCE_PROVIDER_BOUNDARY_FIRST_FAILURE',exceptionType:'UNKNOWN',reason:'UNKNOWN',
+        callsite,helper:'NONE',timeoutSeconds:null,privatePayloadIncluded:false};
+      const value={kind:'SOURCE_PROVIDER_PROCESS_FIRST_FAILURE',phase,returncode:1,signal:'NONE',
+        stdout:empty,stderr:{bytes:1,complete:true,sha256:'a'.repeat(64)},boundary,privatePayloadIncluded:false};
+      assert.deepEqual(nativeProviderProcessFirstFailure(value),value);
+      const later={kind:'SOURCE_LEGACY_CHILD_FIRST_FAILURE',phase:'UNKNOWN',exceptionType:'ASSERTION_ERROR',
+        osError:'NONE',callsite:null,privatePayloadIncluded:false};
+      assert.deepEqual(nativePostgresChildFirstFailure(JSON.stringify(value)+'\n'+JSON.stringify(later),''),value);
+      for(const bad of [
+        {...value,phase:'PROVIDERS-H2'}, {...value,phase:'providers-h0'}, {...value,raw:'PRIVATE'},
+        {...value,stderr:{bytes:1,complete:false,sha256:null}},
+        {...value,boundary:{...boundary,callsite:{...callsite,module:'scripts/lib/private-other.py'}}},
+        {...value,boundary:{...boundary,callsite:{...callsite,line:0}}},
+        {...value,boundary:{...boundary,reason:'PRIVATE'}},
+      ]){
+        assert.equal(nativeProviderProcessFirstFailure(bad),null);
+        assert.equal(nativePostgresChildFirstFailure(JSON.stringify(bad),''),null);
+      }
+    }
+  }
+  for(const phase of ['BINDINGS','PROVIDERS','FOLLOWER','UNKNOWN','PROVIDERS-H0','PROVIDERS-H1']){
+    const value={kind:'SOURCE_LEGACY_CHILD_FIRST_FAILURE',phase,exceptionType:'ASSERTION_ERROR',
+      osError:'NONE',callsite:null,privatePayloadIncluded:false};
+    assert.deepEqual(nativePostgresChildFirstFailure(JSON.stringify(value),''),value);
+    assert.equal(nativePostgresChildFirstFailure(JSON.stringify({...value,phase:'PROVIDERS-H2'}),''),null);
+    assert.equal(nativePostgresChildFirstFailure(JSON.stringify({...value,raw:'PRIVATE'}),''),null);
+  }
 }
 
 // Run the actual native SQL-prefix assertion before any historical PG phase.

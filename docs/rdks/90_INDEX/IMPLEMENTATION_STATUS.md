@@ -1,5 +1,9 @@
 ## 23. oktober — 4.0.588 lokalt udstedt; SOURCE-kvalifikation og drift er åbne
 
+- [x] Den særskilt reproducerede syntetiske H0-klokkekonflikt er lokalt rettet uden ændring af normal/H1-klokke, ægte hentetider eller firetimersværn.
+- [x] Faste H0/H1-underfaser og kvalificerede kildepositioner følger den normale første-fejlrapport; normale Python-indgange 7+1 og Node22-checkpointprøven består på den faktiske lokale komposition.
+- [ ] Første fejlede SOURCE-nativekontrol har fortsat ukendt første underårsag. Ny præcis samlet CI/nativefase, CURRENT, installation og offentlig virkning mangler. C157/I153/T12, lager-ABI og udstedt SQL er uændrede af disse fire prøve-/nativeblade.
+
 Den normale SOURCE-workflowport er nu lokalt anvendt på den sammenførte genuine587/P0-kilde. Version:set 4.0.588 er udført præcis én gang og skal ikke gentages for status. Faktisk C157/I153/T12, binding/output, append-only SQL 20261023182922 og normal synk af de syv forbrugere er lokalt udstedt. De fem normale fixedpoint-kontroller sluttede med EXIT0 (5b00d9); dette er lokal kildeudstedelse, ikke SQL-eksekvering eller installation. De fulde pins står i DEC-0294 og CURRENT_TRUTH.
 
 - [x] Normal workflowport lokalt anvendt; engangsversionssynk, C → I → T, binding/output, append-only SQL, syvforbrugersynk og fem normale fixedpoint-kontroller udført.

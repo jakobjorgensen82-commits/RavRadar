@@ -130,7 +130,7 @@ const SOURCE_PROVIDER_SIGNALS=new Map([[-1,'SIGHUP'],[-2,'SIGINT'],[-3,'SIGQUIT'
 export function nativeProviderProcessFirstFailure(value){
   try{
     if(!value||Object.keys(value).sort().join(',')!=='boundary,kind,phase,privatePayloadIncluded,returncode,signal,stderr,stdout'
-      ||value.kind!=='SOURCE_PROVIDER_PROCESS_FIRST_FAILURE'||value.phase!=='PROVIDERS'||value.privatePayloadIncluded!==false)return null;
+      ||value.kind!=='SOURCE_PROVIDER_PROCESS_FIRST_FAILURE'||!['PROVIDERS','PROVIDERS-H0','PROVIDERS-H1'].includes(value.phase)||value.privatePayloadIncluded!==false)return null;
     const code=value.returncode;
     if(code!==null&&(!Number.isSafeInteger(code)||code<-(2**31)||code>=2**31))return null;
     if(value.signal!==(code===null?'UNKNOWN':code>=0?'NONE':SOURCE_PROVIDER_SIGNALS.get(code)??'UNKNOWN'))return null;
@@ -156,7 +156,8 @@ export function nativeProviderProcessFirstFailure(value){
       const site=boundary.callsite;
       if(site!==null&&(!site||Object.keys(site).sort().join(',')!=='line,module,sha256'
         ||!['scripts/fixtures/source19-current-native-providers.py','scripts/update-dmi-bulk.py',
-          'scripts/test-source19-terminal-failure-proof-bank-v17-observer-native.py'].includes(site.module)
+          'scripts/test-source19-terminal-failure-proof-bank-v17-observer-native.py',
+          'scripts/fixtures/source19-current-initial-weather.py','scripts/lib/copernicus_current_source_stage.py'].includes(site.module)
         ||typeof site.sha256!=='string'||!/^[a-f0-9]{64}$/.test(site.sha256)
         ||!Number.isSafeInteger(site.line)||site.line<1||site.line>1000000))return null;
     }
@@ -192,7 +193,7 @@ export function nativePostgresChildFirstFailure(stdout,stderr){
         }
         if(value?.kind==='SOURCE_LEGACY_CHILD_FIRST_FAILURE'){
           if(Object.keys(value).sort().join(',')!=='callsite,exceptionType,kind,osError,phase,privatePayloadIncluded'
-            ||!['BINDINGS','PROVIDERS','FOLLOWER','UNKNOWN'].includes(value.phase)||value.privatePayloadIncluded!==false
+            ||!['BINDINGS','PROVIDERS','FOLLOWER','UNKNOWN','PROVIDERS-H0','PROVIDERS-H1'].includes(value.phase)||value.privatePayloadIncluded!==false
             ||!['ASSERTION_ERROR','FILE_NOT_FOUND_ERROR','PROCESS_LOOKUP_ERROR','PERMISSION_ERROR','OS_ERROR',
               'JSON_DECODE_ERROR','VALUE_ERROR','TYPE_ERROR','KEY_ERROR','INDEX_ERROR','RUNTIME_ERROR','OVERFLOW_ERROR','UNKNOWN'].includes(value.exceptionType)
             ||!['NONE','UNKNOWN','EACCES','EPERM','ENOENT','ESRCH','EBADF','EMFILE','ENFILE','EIO','EINVAL','EINTR','EAGAIN','ENOMEM','ENOSPC','EPIPE'].includes(value.osError))continue;

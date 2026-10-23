@@ -366,8 +366,12 @@ def finish_normal_basis(node, out, reference, producer, targets, document, *, in
     write_new(registry_path, registry)
     shadow = json.loads(cp.read_text())
     identities = {row["partId"]: row for row in targets}
+    # Only the explicitly synthetic historical H0 prefix uses its fixture clock.
+    # This empty CP stage has no acquisitions; real decoder acquisition times and
+    # the normal/H1 wall-clock seal are unchanged. No production clock override.
     stage = build_source_stage(registry=registry, shadow=shadow, target_identities=identities,
-        shadow_sha256=file_sha256(cp), attempts=[], sealed_at=datetime.now(timezone.utc))
+        shadow_sha256=file_sha256(cp), attempts=[],
+        sealed_at=reference if initial_phase == 'h0' else datetime.now(timezone.utc))
     atomic_write_source_stage(stage_path, stage, registry=registry, shadow=shadow,
         target_identities=identities, shadow_sha256=file_sha256(cp))
     save_document(regional, empty_document())

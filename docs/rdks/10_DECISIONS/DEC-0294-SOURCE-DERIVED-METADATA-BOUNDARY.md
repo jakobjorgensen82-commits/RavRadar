@@ -2,6 +2,8 @@
 
 ## Lokal opfølgning 23. oktober — faktisk udstedt, endnu ikke kvalificeret eller installeret
 
+Efter den første fejlede SOURCE-nativekontrol er dens første underårsag fortsat ukendt. En separat reproduceret H0-fixturkonflikt er lokalt rettet, og faste H0/H1-fejlprojektioner er sammenkoblet. De normale Python-indgange 7+1 og Node22-checkpointprøven består. De fire ændrede prøve-/nativeblade er uden for de faktiske C157/I153/T12-inventarer, producentinventaret og lager-ABI; denne delta kræver ingen genudstedelse af version, bindinger eller SQL. Ny præcis SOURCE-CI skal stadig udføre sin egen nativefase med EXECUTED, origin=null og eligibleForReuse=false; historisk 586/587-evidens kan ikke erstatte den.
+
 **Nyeste status:** IMPLEMENTERET OG LOKALT UDSTEDT som 4.0.588; fortsat inaktiv og ikke installeret. Denne opfølgning erstatter alene de ældre statusudsagn nedenfor om uudstedt version, manglende workflowport og afventende afledning. Hele den tidligere beslutningstekst bevares.
 
 Den normale SOURCE-workflowport er nu lokalt anvendt på den sammenførte genuine587/P0-kilde. Version:set 4.0.588 er udført præcis én gang og skal ikke gentages for status. Faktisk C157/I153/T12, binding/output, append-only SQL 20261023182922 og normal synk af de syv forbrugere er lokalt udstedt. De fem normale fixedpoint-kontroller sluttede med EXIT0 (5b00d9); dette er lokal kildeudstedelse, ikke SQL-eksekvering eller installation. De fulde pins står i DEC-0294 og CURRENT_TRUTH.
