@@ -8,7 +8,8 @@ import { runInNewContext } from 'node:vm';
 import { inverseNativeOriginalSchemaSelectorWorkflow, nativeOriginalSchemaSelectorWorkflowReview,
   inverseCurrentFamilyColdBudgetWorkflow, currentFamilyColdBudgetWorkflowReview }
   from './lib/completed-private-runtime-workflow-review.mjs';
-import { inverseCurrentFamilyColdCheckpointWorkflow, currentFamilyColdCheckpointWorkflowReview }
+import { inverseCurrentFamilyColdCheckpointWorkflow, currentFamilyColdCheckpointWorkflowReview,
+  inverseLatestColdProgressWorkflow, latestColdProgressWorkflowReview }
   from './lib/completed-private-runtime-workflow-review.mjs';
 import { spawnSync } from 'node:child_process';
 const sha = source => crypto.createHash('sha256').update(source).digest('hex');
@@ -769,11 +770,13 @@ test('cold budget inverse: exact five conditions preserve all native and earlier
 });
 
 
-// Current bytes are read WITHOUT a historical adapter. The old test bodies and
-// pins above remain unchanged; only their two direct reads remove this layer.
-const coldCheckpointActual = Object.fromEntries(await Promise.all(
+// Keep the original checkpoint cases on their WHOLE genuine predecessor.
+// The latest-progress afterimages are read and tested separately below.
+const latestColdProgressActual = Object.fromEntries(await Promise.all(
   Object.entries(currentFamilyColdCheckpointWorkflowReview.roles).map(async ([role, row]) =>
     [role, (await fs.readFile(new URL('../' + row.relativePath, import.meta.url), 'utf8')).replaceAll('\r\n', '\n')])));
+const coldCheckpointActual = Object.fromEntries(Object.entries(latestColdProgressActual).map(([role,source]) =>
+  [role,inverseLatestColdProgressWorkflow(source,role)]));
 
 test('same-archive cold checkpoint inverse admits only both exact new whole workflows and restores c59', () => {
   const review = currentFamilyColdCheckpointWorkflowReview;
@@ -978,4 +981,94 @@ test('same-archive actual scope and prepare/resolve seams bind source and target
       ].join('\n')) : previous;
     assert.equal(coldStep(actual.build, name), expected, name);
   }
+});
+
+test('latest saved progress inverse restores both exact earlier workflows and rejects every changed hunk',async()=>{
+  const review=latestColdProgressWorkflowReview;
+  assert.deepEqual(review.scope,{progressSource:'39886354260-1',latestProgressSource:'39933506923-1',
+    archiveId:'775f99a210b899eacd3ee056f4daae56c20fc3258e64691d4e0544aabd04d3fb',
+    targetReferenceAt:'2026-10-23T01:00:00.000Z',publicInputTarget:'2026-10-23T01:00:00Z'});
+  assert.equal(sha((await fs.readFile(new URL('./lib/current-family-cold-checkpoint-workflow-review.json',import.meta.url),'utf8')).replaceAll('\r\n','\n')),
+    '1ddb3f26ce9e674a7aac8bc045040c2c4aef6c9c968fa916a0753e1db096ae42','Every earlier checkpoint/budget edit and pin remains unchanged');
+  for(const [role,row] of Object.entries(review.roles)){
+    const source=latestColdProgressActual[role];
+    assert.equal(Buffer.byteLength(source),row.after.bytes);assert.equal(sha(source),row.after.sha256);
+    assert.equal(row.edits.length,role==='build'?3:2);
+    const old=inverseLatestColdProgressWorkflow(source,role);
+    assert.equal(old,coldCheckpointActual[role]);assert.equal(Buffer.byteLength(old),row.before.bytes);
+    assert.equal(sha(old),row.before.sha256);assert.equal(inverseLatestColdProgressWorkflow(old,role),old);
+    assert.equal(inverseCurrentFamilyColdCheckpointWorkflow(source,role),inverseCurrentFamilyColdCheckpointWorkflow(old,role));
+    assert.equal(inverseCompletedRuntimeWorkflow(source,role),inverseCompletedRuntimeWorkflow(old,role));
+    let previousOffset=source.length;
+    for(const [offset,actual,original] of row.edits){
+      assert(Number.isSafeInteger(offset)&&offset>=0&&offset+actual.length<=previousOffset);
+      previousOffset=offset;assert(actual.length>0&&original.length>0);
+      const at=source.indexOf(actual);assert(at>=0);assert.equal(source.indexOf(actual,at+1),-1);
+      for(const substitute of ['',actual+actual,'?'+actual.slice(1),original]){
+        const changed=source.slice(0,at)+substitute+source.slice(at+actual.length);
+        assert.notEqual(changed,source);
+        assert.throws(()=>inverseLatestColdProgressWorkflow(changed,role),/LATEST_COLD_PROGRESS_WORKFLOW/);
+        assert.throws(()=>inverseCompletedRuntimeWorkflow(changed,role));
+      }
+    }
+    for(const changed of [source+'\n# UNREVIEWED_LATEST_PROGRESS\n',
+      source.replace('39933506923-1','39933506923-2'),source.replace('2026-10-23T01:00:00Z','2026-10-23T02:00:00Z')]){
+      assert.notEqual(changed,source);
+      assert.throws(()=>inverseLatestColdProgressWorkflow(changed,role),/LATEST_COLD_PROGRESS_WORKFLOW/);
+      assert.throws(()=>inverseCompletedRuntimeWorkflow(changed,role));
+    }
+    assert.throws(()=>inverseLatestColdProgressWorkflow(source,role==='build'?'once':'build'),/LATEST_COLD_PROGRESS_WORKFLOW/);
+  }
+  assert.throws(()=>inverseLatestColdProgressWorkflow(null,'build'),/LATEST_COLD_PROGRESS_WORKFLOW_TYPE/);
+  assert.throws(()=>inverseLatestColdProgressWorkflow(latestColdProgressActual.build,'toString'),/LATEST_COLD_PROGRESS_WORKFLOW_ROLE/);
+  assert.throws(()=>inverseLatestColdProgressWorkflow(latestColdProgressActual.build),/LATEST_COLD_PROGRESS_WORKFLOW_ARGUMENTS/);
+  assert.throws(()=>inverseLatestColdProgressWorkflow(latestColdProgressActual.build,'build',true),/LATEST_COLD_PROGRESS_WORKFLOW_ARGUMENTS/);
+});
+
+test('actual latest progress cache selects the requested exact ID and keeps original target defaults and reserves',()=>{
+  const actual=latestColdProgressActual,ids=['39886354260-1','39933506923-1'];
+  const restore=coldStep(actual.build,'Restore encrypted private weather progress only');
+  const prefix=/^          restore-keys: (.+)$/m.exec(restore)?.[1],key=/^          key: (.+)$/m.exec(restore)?.[1];
+  assert(prefix&&key);assert(restore.includes('uses: actions/cache/restore@v6'));
+  const format=(value,...args)=>value.replace(/\{(\d+)\}/g,(_,n)=>String(args[Number(n)]));
+  for(const cold of [false,true])for(const progress of ['',...ids,'39886354260-2','39933506923-2','39933506924-1','protected-current']){
+    const context=coldOrdinaryContext(cold);context.inputs={...context.inputs,quick_progress_source:progress};
+    context.runner={os:'Linux'};context.github.run_id='999';context.github.run_attempt='1';context.format=format;
+    assert.equal(coldEvaluate(coldSelector(restore),context),!cold||ids.includes(progress));
+    assert.equal(coldEvaluate(prefix,context),progress===''?'weather-private-progress-encrypted-v2-Linux-main-':'');
+    const selected=key.replace(/\$\{\{ (.+?) \}\}/g,(_,expression)=>String(coldEvaluate(expression,context)));
+    assert.equal(selected,'weather-private-progress-encrypted-v2-Linux-main-'+(progress||'999-1'));
+  }
+  const manual=coldStep(actual.once,'Reject mixed caller-only cold-start modes before target selection');
+  assert(manual.includes('test "$PROGRESS" = 39886354260-1 || test "$PROGRESS" = 39933506923-1'));
+  assert(manual.includes('test "$TARGET" = 2026-10-23T01:00:00Z'));
+  assert(manual.includes('test "$GITHUB_RUN_ATTEMPT" = 1'));
+  const scope=coldStep(actual.build,'Require the explicit fresh caller-only cold-start scope');
+  const bind=coldStep(actual.build,'Bind production to resolved DMI current hour');
+  for(const step of [scope,bind])assert(step.includes('test "$QUICK_PROGRESS_SOURCE" = 39886354260-1 || test "$QUICK_PROGRESS_SOURCE" = 39933506923-1'));
+  assert(scope.includes('test "$RAVRADAR_PRODUCTION_TARGET_HOUR" = 2026-10-23T01:00:00Z'));
+  assert(scope.includes('test "$CHECKPOINT_TARGET_HOUR" = "$RAVRADAR_PRODUCTION_TARGET_HOUR"'));
+  assert(scope.includes('test "${{ inputs.checkpoint_only }}" = false'));
+  assert(bind.includes('test "$resolved_target" = "$RAVRADAR_PRODUCTION_TARGET_HOUR"'));
+  assert(bind.includes('test "$resolved_target" = 2026-10-23T01:00:00Z'));
+  assert(bind.indexOf('test "$resolved_target" = 2026-10-23T01:00:00Z')<bind.indexOf('echo "RAVRADAR_PRODUCTION_TARGET_HOUR=$resolved_target"'));
+  const caller=coldBlock(actual.once,'  build-and-prepare:');
+  const field=(text,name)=>{const matches=[...text.matchAll(new RegExp('^      '+name+': (.+)$','gm'))];assert.equal(matches.length,1);return matches[0][1];};
+  for(const progress of ['',...ids]){
+    const inputs={...coldInputs,current_family_cold_start:true,checkpoint_target_hour:'2026-10-23T01:00:00Z',
+      completed_stage_source:'',quick_progress_source:progress};
+    assert.equal(coldEvaluate(field(caller,'checkpoint_only'),{inputs}),false);
+    assert.equal(coldEvaluate(field(caller,'current_family_cold_start'),{inputs}),true);
+    assert.equal(coldEvaluate(field(caller,'extended_provider_bootstrap'),{inputs}),true);
+  }
+  for(const role of ['build','once']){
+    const previous=coldCheckpointActual[role];
+    assert.equal(coldBlock(actual[role],'      current_family_cold_start:').replace(/^        description:.*\n/m,''),
+      coldBlock(previous,'      current_family_cold_start:').replace(/^        description:.*\n/m,''));
+  }
+  for(const name of ['Prepare strict active DMI donor or resumable candidate',
+    'Require actual cold-start producer cessation before other consumers',
+    'Encrypt newly saved private weather progress before later production steps',
+    ...['dmi','copernicus','open-meteo','weather'].map(phase=>'Preserve the fixed epoch post-processing reserve before '+phase)])
+    assert.equal(coldStep(actual.build,name),coldStep(coldCheckpointActual.build,name),name+' remains byte-identical');
 });

@@ -1,3 +1,11 @@
+## 23. oktober — afsluttede nationale arbejdsforløb skal kunne frigives
+
+AKTIVT: Den normale updater må frigive sin lokale komponent-reference først efter vellykket awaitet holdbar komponentgemning og sin lokale score-reference først efter vellykket awaitet national originalattestering. Begge skal kunne frigives før offentlig eksport. Ingen delt map, originalrække, outputværdi, continuation, historik eller gemt fil må tømmes eller ændres for at frigive hukommelse. En fejl på en af grænserne skal fortsat kastes; uafsluttede ejere må ikke kaldes færdige.
+
+Rettelsen skal bevares gennem de almindelige kaldere og de gamle præcise kildeorakler. Lokale assertions viser livstid og databevarelse, ikke målt nationalt hukommelsesmaksimum. Faktisk offentlig pakning, no-loss, original B før S, deploy og almindelig efterfølger er fortsat nødvendige. Modelbinding, kildeprioritet, geometri, scoreformel og heapgrænse ændres ikke.
+
+Genbrug efter dette stop må indpasse netop det faktisk gemte seneste checkpoint i samme arkiv og oprindelige mål-time. Det skal stadig have præcis run-/forsøgsbundet cache-key, uændret originalgrundlag og autentificeret GCM samt brugbar DMI-fremdrift før udgivelse af lokal kontekst. Den ældre præcise adgang bevares; ukendt eller manglende cache må ikke blive til fallback eller ny start. Ingen generel latest-regel, cache-only-omgåelse, flyttet mål-time eller større budget følger af denne indpasning.
+
 ## 22. oktober — ny aktiv strømstart skal holde gennem næste genbrug
 
 AKTIVT: Ejerens nyeste beslutning tillader en ny aktiv strømstart uden tidligere strømhistorik. Bevar autentiske gamle sikkerhedspakker og offentliggjorte scorer, men gør dem ikke til nødvendige numeriske input for den nye drift. Første start må kun vælges efter arkiv og genlæsning; manglende historik forbliver UNKNOWN. Alle gamle strømindgange skal håndteres samlet, mens øvrige vejrkomponenter og vandkildebank bevares.

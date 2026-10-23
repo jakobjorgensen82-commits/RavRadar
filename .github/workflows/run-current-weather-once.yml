@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
     inputs:
       current_family_cold_start:
-        description: 'Archive authenticated current-family B/S for a fresh cold start, or reopen only its fixed 39886354260-1 checkpoint without another reset'
+        description: 'Archive authenticated current-family B/S for a fresh cold start, or reopen only fixed 39886354260-1 or 39933506923-1 progress without another reset'
         required: false
         type: boolean
         default: false
@@ -127,7 +127,7 @@ jobs:
           if test -z "$PROGRESS"; then
             test -z "$TARGET"
           else
-            test "$PROGRESS" = 39886354260-1
+            test "$PROGRESS" = 39886354260-1 || test "$PROGRESS" = 39933506923-1
             test "$TARGET" = 2026-10-23T01:00:00Z
           fi
           test "$EPOCH" = false

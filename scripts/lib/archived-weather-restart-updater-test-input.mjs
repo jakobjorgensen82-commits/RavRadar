@@ -3,6 +3,39 @@ import assert from 'node:assert/strict';
 import crypto from 'node:crypto';
 import fs from 'node:fs';
 const sha=value=>crypto.createHash('sha256').update(value).digest('hex');
+// TEST INPUT ONLY: retire completed caller owners, then restore the WHOLE
+// genuine d957 updater before every unchanged historical source oracle.
+export const FINALIZED_WEATHER_OWNERS_TEST_REVIEW = Object.freeze({
+  path: 'scripts/update-weather.mjs',
+  before: Object.freeze({ bytes: 250473, sha256: '15b4ab43f32d11d935546a1a6e7d8545f242d25927d3e4077bec60a87eea4d14' }),
+  after: Object.freeze({ bytes: 250741, sha256: '47b0bed78304a7ba072ed422aa3c67aeb7a77bb9b0a17ab96642e40bdebfba20' }),
+  hunks: Object.freeze([
+    Object.freeze([
+      '  output.weatherComponentInputs = await persistWeatherComponentSelections(weatherComponents);\n}',
+      '  output.weatherComponentInputs = await persistWeatherComponentSelections(weatherComponents);\n  // The selected-input snapshot is durable; retire only this finished owner.\n  weatherComponents = null;\n}',
+    ]),
+    Object.freeze([
+      "reportWeatherBuildStage('current-origin-ready');",
+      "// Retained output projections and the completed attestation no longer need\n// the full per-part production/recovery working owner.\ncoastalPartScoreBuild = null;\nreportWeatherBuildStage('current-origin-ready');",
+    ]),
+  ]),
+});
+export function inverseFinalizedWeatherOwnersTestInput(source, relative) {
+  assert.equal(arguments.length, 2, 'FINALIZED_WEATHER_OWNERS_ARGUMENTS');
+  assert.equal(typeof source, 'string', 'FINALIZED_WEATHER_OWNERS_TYPE');
+  const row = FINALIZED_WEATHER_OWNERS_TEST_REVIEW;
+  assert.equal(relative, row.path, 'FINALIZED_WEATHER_OWNERS_PATH');
+  if (Buffer.byteLength(source) === row.before.bytes && sha(source) === row.before.sha256) return source;
+  assert.equal(Buffer.byteLength(source), row.after.bytes, 'FINALIZED_WEATHER_OWNERS_AFTER_SIZE');
+  assert.equal(sha(source), row.after.sha256, 'FINALIZED_WEATHER_OWNERS_AFTER_WHOLE');
+  for (const [before, after] of [...row.hunks].reverse()) {
+    assert.equal(source.split(after).length, 2, 'FINALIZED_WEATHER_OWNERS_EXACT_HUNK');
+    source = source.replace(after, () => before);
+  }
+  assert.equal(Buffer.byteLength(source), row.before.bytes, 'FINALIZED_WEATHER_OWNERS_BEFORE_SIZE');
+  assert.equal(sha(source), row.before.sha256, 'FINALIZED_WEATHER_OWNERS_WHOLE_INVERSE');
+  return source;
+}
 // TEST INPUT ONLY: exact additive cold zone-history projection, before ALL
 // unchanged historical updater oracles. Never a runtime admission/flag.
 export const CURRENT_FAMILY_COLD_ZONE_HISTORY_TEST_REVIEW = Object.freeze({
@@ -21,6 +54,9 @@ export const CURRENT_FAMILY_COLD_ZONE_HISTORY_TEST_REVIEW = Object.freeze({
 export function inverseCurrentFamilyColdZoneHistoryTestInput(source, relative) {
   assert.equal(arguments.length, 2, 'COLD_ZONE_HISTORY_ARGUMENTS');
   assert.equal(typeof source, 'string', 'COLD_ZONE_HISTORY_TYPE');
+  if (relative === 'scripts/update-weather.mjs'
+    && (source.includes('\n  weatherComponents = null;') || source.includes('\ncoastalPartScoreBuild = null;')))
+    source = inverseFinalizedWeatherOwnersTestInput(source, relative);
   const row = CURRENT_FAMILY_COLD_ZONE_HISTORY_TEST_REVIEW;
   assert.equal(relative, row.path, 'COLD_ZONE_HISTORY_PATH');
   const size = Buffer.byteLength(source), whole = sha(source);
@@ -65,6 +101,9 @@ export const CURRENT_FAMILY_COLD_TARGET_TEST_REVIEW = Object.freeze([
 export function inverseCurrentFamilyColdTargetTestInput(source, relative) {
   assert.equal(arguments.length, 2, 'ALTERNATIVE_C_TEST_INPUT_CHANGED:COLD_TARGET_ARGUMENTS');
   assert.equal(typeof source, 'string', 'ALTERNATIVE_C_TEST_INPUT_CHANGED:COLD_TARGET_TYPE');
+  if (relative === 'scripts/update-weather.mjs'
+    && (source.includes('\n  weatherComponents = null;') || source.includes('\ncoastalPartScoreBuild = null;')))
+    source = inverseFinalizedWeatherOwnersTestInput(source, relative);
   if (relative === 'scripts/update-weather.mjs' && source.includes('The authenticated cold capability isolates only OLD numerical current'))
     source = inverseCurrentFamilyColdZoneHistoryTestInput(source, relative);
   const row = CURRENT_FAMILY_COLD_TARGET_TEST_REVIEW.find(row => row.path === relative);
@@ -284,6 +323,9 @@ export const CURRENT_NATIVE_ORIGINAL_PRODUCER_TEST_REVIEW = Object.freeze({
 export function inverseCurrentNativeOriginalProducerTestInput(source, relative) {
   assert.equal(arguments.length, 2, 'ALTERNATIVE_C_TEST_INPUT_CHANGED:NATIVE_ORIGINAL_ARGUMENTS');
   assert.equal(typeof source, 'string', 'ALTERNATIVE_C_TEST_INPUT_CHANGED:NATIVE_ORIGINAL_TYPE');
+  if (relative === 'scripts/update-weather.mjs'
+    && (source.includes('\n  weatherComponents = null;') || source.includes('\ncoastalPartScoreBuild = null;')))
+    source = inverseFinalizedWeatherOwnersTestInput(source, relative);
   if (relative === 'scripts/update-weather.mjs' && source.includes('The authenticated cold capability isolates only OLD numerical current'))
     source = inverseCurrentFamilyColdZoneHistoryTestInput(source, relative);
   const cold = CURRENT_FAMILY_COLD_TARGET_TEST_REVIEW.find(row => row.path === relative);

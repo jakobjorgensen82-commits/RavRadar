@@ -4754,6 +4754,8 @@ if (coastalPartScoreBuild?.candidateGRollbackRuntime) {
 }
 if (weatherComponents) {
   output.weatherComponentInputs = await persistWeatherComponentSelections(weatherComponents);
+  // The selected-input snapshot is durable; retire only this finished owner.
+  weatherComponents = null;
 }
 const currentProvenanceEnrichment = enrichCurrentProvenanceDocuments({
   conditions: output,
@@ -4776,6 +4778,9 @@ if (establishedNativeCurrentOrigin !== null) {
       partResults: coastalPartScoreBuild?.establishedNativeCurrentPartResults,
     });
 }
+// Retained output projections and the completed attestation no longer need
+// the full per-part production/recovery working owner.
+coastalPartScoreBuild = null;
 reportWeatherBuildStage('current-origin-ready');
 // Byg først de offentlige, begrænsede timefiler fra den komplette beregning i
 // hukommelsen. Gem derefter en komprimeret og hashbundet genstartspakke og fjern
