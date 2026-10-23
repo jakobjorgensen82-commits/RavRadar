@@ -1,3 +1,35 @@
+## 23. oktober — inaktiv privat PLAN-diagnostik, ikke en årsagsrettelse
+
+Det faktiske skrivefri PLAN-forsøg39873339236/1 fejlede; den konkrete årsag er UKENDT. Den private sammenføring tilføjer kun otte faste deltrinsnavne før de otte eksisterende PLAN-kald og én additiv normal kildeprøve. Ingen underliggende kald, kvote, SQL, sikkerhedsgrænse, genkørsel eller produktionsskrivning ændres; intet mål er kørt her. 004/005, statistik, SOURCE og automatisk retention aktiveres ikke af denne forberedelse. Første fejlevidens og alle eksisterende005-/587-prøver bevares.
+
+## 23. oktober — privat587-sammenføring; P0 og levering er fortsat særskilte
+
+Denne lokale587-arbejdsgren sammenfører den udstedte assistentkandidat med P0707s strømstart-, PART-bevarings- og zoneisolationskode. P0707 er fortsat en særskilt kildekandidat under præcis kontrol, ikke en ny offentlig vejrgeneration. 587 er stadig inaktiv og ikke installeret. Ingen test, ny model-/SQL-udstedelse eller produktionshandling er udført som del af denne sammenføring. Begge daterede evidensforløb nedenfor bevares; de bliver ikke et nyt samlet PASS.
+
+P0s håndbogsafsnit89.264 bevares. Det endnu ikke leverede assistentafsnit har nu89.265 med samme stabile ID og tekst. Ejerens godkendte nye strømstart med særskilt arkiv gælder P0;587s senere-H0-installationsgrænse, originale attester, alle65 gamle migrationer og den ene allerede udstedte587-migration bevares. Præcis ny samlet kildekontrol, ægte database-/førskrivningskontrol og faktisk levering/efterfølger er fortsat selvstændige åbne krav.
+
+## 23. oktober — præcis kildekontrol fandt fire testlæserkonflikter
+
+Den første PR707-kontrol bestod det native PostgreSQL-trin, men den samlede kildeplan stoppede på fire testfejl i tre kommandogrupper. To isolerede producentudtag manglede den normale ydre `coldInputs`-binding; en tredje prøve søgte efter det tidligere kaldernavn. Et helt kildeorakel manglede at føre den allerede gennemgåede zonehistoriktilføjelse tilbage før sine uændrede historiske pins. Fejlene er reproduceret gennem de eksisterende mål; produktkoden ændres ikke for at tilpasse prøverne.
+
+Den afgrænsede testopfølgning bevarer alle tidligere sikkerhedsassertioner, hele historiske kildeorakler og ændringsafslag. En ny præcis samlet kildekontrol og faktisk første vejrlevering med almindelig efterfølger er fortsat nødvendige. Ingen merge, ny vejrhentning, model-/SQL-ændring eller offentlig genopretning følger af de beståede deltrin. Alle fem hovedmål er åbne.
+
+## 22. oktober — aktuel P0: ny strømstart forberedes; offentlig genopretning er åben
+
+Den senest kontrollerede offentlige vejrpakke er fortsat fra 21. oktober. Den særskilte gamle-originalgenopretning stoppede senere på utilgængelig præcis metadata før ny vejrhentning, beregning, cachegemning eller deploy. Det beviser ikke ugyldige DMI-værdier eller at alle originaler mangler. Konkrete identiteter og målt status står i det private checkpoint; der er ikke udført en ny produktionskontrol i denne lokale sammenføring.
+
+Ejeren har godkendt at starte aktiv strømhistorik på ny. Den valgte løsning færdiggør eksisterende current-family-cold-start, ikke den gamle families overgang eller en lempet originalkontrol. Autentisk B/S og offentliggjorte scorer bevares særskilt. Gamle numeriske strømdata skal ud af alle genbrugte arbejdsvisninger; nye korrigerede data gemmes med schema2-originalbank, så næste almindelige opdatering kan fortsætte uden at genskabe gamle originaler.
+
+Lokalt integreret og målprøvet: første targetgrænse i normal planner/updater/Python-læser, fysisk isolation af gamle strøm-aliaser og prognosens PART-bank samt tilkobling til eksisterende 360-minutters job og 180-minutters efterbehandlingsreserve. Øvrige komponenter og vandkildebank bevares, nye arbejdsfiler røres ikke ved senere genlæsning, og pending-promotion afvises før arbejdsændringer. Leverandørbudgetter og almindelige 48/51-timersregler ændres ikke. Faktisk normal før/efterberegning viser uændrede C/I/T og lagrings-ABI. Den samlede autentificerede B/S-/efterfølgerkobling på endelig kode er stadig åben; lokale prøver beviser ikke national produktion.
+
+Ejerens præcisering: fremtidig drift skal passe til Supabase Free og Cloudflare Free. Faktiske forbrugstal og konservativ fremskrivning er fortsat nødvendige. Særskilte engangsarkiver fjernes ikke af normal CURRENT/PREVIOUS-retention; gentagne nye starter kan derfor øge lagret mængde. Der påstås hverken kvoteoverskridelse eller dokumenteret Free-drift uden måling.
+
+Efterfølgende lokalt slutbevis: Den normale syntetiske B/S-kæde består for 210 zoner/673 dele gennem ny start og almindelig efterfølger med delvist nye strømdata. Den gemmer/genlæser hele 121-timersbanken og beregner hver generations mål-time; den er ikke geografisk produktionsdækning. Den endelige fysiske helper er særskilt autentificeret/prøvet mod samme bevarede seed med uændrede B/S/arkivbytes. Den lille produktkritiske kildegate består også. Disse to koblede prøver er ikke ét fuldt CLI-/leverandør-/PostgreSQL-bevis.
+
+Sidste gennemgang reproducerede to rester i den lokale kandidat. PART-prognosebanken skal bevare sine gyldige vind-, bølge-, vandstands- og temperaturtimer, selv om gammel strøm fjernes. Private zoners gamle verificerede strøm-samples skal også isoleres ved den ægte nye start. Begge afgrænsede rettelser er nu integreret og består deres normale lagrings-/genlæsnings- og retentionprøver på ROOTs sammenførte kode. Gamle originaler, scalar-/stormhistorik og almindelig fortsættelse bevares; ingen modelbinding ændres.
+
+Den endelige helper har desuden bestået en afgrænset normal arkiv-/genlæsningsmåling med den allerede gemte 673 × 121-bank. Dette er ingen ny national scoreberegning; fixturetransport og null-scalarværdier begrænser kapacitetsbeviset. Faktisk lagerpeak og hele leverandør-/produktionsforløbet er åbne. Sikker levering, første nye offentlige generation, almindelig efterfølger og reel femfeltsdækning mangler. Ingen gammel cache er slettet, og den isolerede revision, statistik og automatisk sletning aktiveres ikke. Alle fem mål er åbne; tidligere modstridende afventninger nedenfor er historiske.
+
 ## 22. oktober — lokal 587 udstedt; offentlig 586 og P0-forløbet er særskilte
 
 4.0.587 er en lokal, udstedt kildekandidat, ikke installeret eller offentlig levering. Sidste verificerede offentlige version er fortsat 4.0.586. P0 og den almindelige vejrhentning har førsteprioritet; ROOTs aktuelle private checkpoint afgør PR703-forløbets eksterne slutstatus og genopretning. Denne kandidat afslutter hverken det forløb, cost-PR704s samlede kildekontrol eller den åbne cache-/kapacitets- og økonomibeslutning.

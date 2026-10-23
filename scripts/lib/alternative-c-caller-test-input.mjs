@@ -1,7 +1,8 @@
 // TEST INPUT ONLY. Reverse precisely the new C caller hunks before old oracles.
 import assert from 'node:assert/strict';
 import crypto from 'node:crypto';
-import { inverseArchivedWeatherRestartUpdater } from './archived-weather-restart-updater-test-input.mjs';
+import { inverseArchivedWeatherRestartUpdater, inverseCurrentFamilyColdTargetTestInput,
+  CURRENT_FAMILY_COLD_TARGET_TEST_REVIEW } from './archived-weather-restart-updater-test-input.mjs';
 const SOURCE_INPUTS=[
   {
     "path": "scripts/plan-ravscore-current-history.mjs",
@@ -860,6 +861,22 @@ export const COHERENT_RAW_TRANSPORT_LIFETIME_TEST_REVIEW = Object.freeze([
 ]);
 export function inverseCoherentRawTransportLifetimeTestInput(source, relative) {
   if (typeof source !== 'string') return source;
+  const assistant = ASSISTANT587_ORIGINAL_COMPANION_TEST_REVIEW.find(row => row.path === relative);
+  if (assistant && relative === 'scripts/plan-ravscore-current-history.mjs') {
+    const raw = source.replace(/\r\n/g, '\n');
+    // Only the complete authenticated 587 image enters this outer inverse.
+    // Unknown/mutated inputs still reach the unchanged strict OLD oracles.
+    if (Buffer.byteLength(raw) === assistant.after.bytes && digest(raw) === assistant.after.sha256) {
+      source = inverseAssistant587OriginalCompanionTestInput(raw, relative);
+    }
+  }
+  const cold = CURRENT_FAMILY_COLD_TARGET_TEST_REVIEW.find(row => row.path === relative);
+  if (cold && relative === 'scripts/plan-ravscore-current-history.mjs') {
+    const raw = source.replace(/\r\n/g, '\n');
+    if (Buffer.byteLength(raw) === cold.after.bytes && digest(raw) === cold.after.sha256) {
+      source = inverseCurrentFamilyColdTargetTestInput(raw, relative);
+    }
+  }
   const row = COHERENT_RAW_TRANSPORT_LIFETIME_TEST_REVIEW.find(row => row.path === relative);
   if (!row) return source;
   const raw = source.replace(/\r\n/g, '\n');
@@ -872,4 +889,76 @@ export function inverseCoherentRawTransportLifetimeTestInput(source, relative) {
   assert.equal(Buffer.byteLength(original), row.before.bytes, 'COHERENT_RAW_TRANSPORT_LIFETIME_BEFORE_SIZE');
   assert.equal(digest(original), row.before.sha256, 'COHERENT_RAW_TRANSPORT_LIFETIME_BEFORE_SHA');
   return original;
+}
+
+// TEST INPUT ONLY: exact already-reviewed 587 ORIGINAL-B caller deltas.
+// These whole images are reversed BEFORE unchanged historical P0 oracles.
+// No runtime reader, original admission, source binding or model input changes.
+export const ASSISTANT587_ORIGINAL_COMPANION_TEST_REVIEW = Object.freeze([
+  {
+    "path": "scripts/plan-ravscore-current-history.mjs",
+    "hunks": [
+      [
+        "  const { verified, conditions, conditionsPath: file, conditionsSha256, verify } =",
+        "  const { verified, conditions, originalConditions, conditionsPath: file, conditionsSha256, verify } ="
+      ],
+      [
+        "  const protectedCompanionContexts = await readAuthenticatedCurrentCompanions(verified, conditions);",
+        "  const protectedCompanionContexts = await readAuthenticatedCurrentCompanions(verified, originalConditions ?? conditions);"
+      ]
+    ],
+    "before": {
+      "bytes": 82258,
+      "sha256": "877506b01f8ce4b081b230345345e2b909dd5d24768c08feedbfc8690f30d515"
+    },
+    "after": {
+      "bytes": 82300,
+      "sha256": "f30a148853388df570b9496783cf3624b7efee056e2a504978aed325d0ac2e7a"
+    }
+  },
+  {
+    "path": "scripts/read-authenticated-dmi-current-companions.mjs",
+    "hunks": [
+      [
+        "  from './lib/private-weather-component-inventory.mjs';",
+        "  from './lib/private-weather-component-inventory.mjs';\nimport {readAuthenticatedFrozen586Predecessor,assertAuthenticatedFrozen586Snapshot}\n  from './lib/authenticated-frozen586-predecessor.mjs';\nimport {ravScoreModelBinding} from '../js/core/ravscore-model-contract.js';\nimport {readAssistantLaterH0RetentionInput} from './assistant-later-h0-runtime-transition.mjs';"
+      ],
+      [
+        "  const descriptor = JSON.parse(descriptorBytes.toString('utf8'));",
+        "  const descriptor = JSON.parse(descriptorBytes.toString('utf8'));\n  if(descriptor?.modelBinding?.modelBundleSha256==='6d8f7cca203b5f7ee5155f3c0cdb39403a02fd0eb30fecaca5070ef9f814a805'\n    &&ravScoreModelBinding().modelBundleSha256!==descriptor.modelBinding.modelBundleSha256){\n    const view=await readAssistantLaterH0RetentionInput(targetReferenceAt);\n    if(view.verified.bundleContentSha256!==descriptor.bundleContentSha256\n      ||!descriptorBytes.equals(await fs.readFile(descriptorPath)))refuse('RETENTION_B_CHANGED');\n    return view;\n  }"
+      ],
+      [
+        "export async function readCurrentPrivateRuntimeCompanions(targetReferenceAt) {",
+        "export async function readCurrentPrivateRuntimeCompanions(targetReferenceAt) {\n  // Called after the updater's genuine H0 origin check. Providers may already\n  // have changed unrelated WORKING weather; unpack only immutable original B.\n  if(ravScoreModelBinding().modelBundleSha256!=='6d8f7cca203b5f7ee5155f3c0cdb39403a02fd0eb30fecaca5070ef9f814a805'){\n    const descriptor=JSON.parse(await fs.readFile(path.join(process.env.RUNNER_TEMP,'private-runtime-current-source.json'),'utf8'));\n    if(descriptor?.modelBinding?.modelBundleSha256==='6d8f7cca203b5f7ee5155f3c0cdb39403a02fd0eb30fecaca5070ef9f814a805'){\n      const snapshot=assertAuthenticatedFrozen586Snapshot(await readAuthenticatedFrozen586Predecessor());\n      if(snapshot.descriptor.bundleContentSha256!==descriptor.bundleContentSha256)refuse('RETENTION_B_CHANGED');\n      const original=JSON.parse(await fs.readFile(snapshot.conditionsPath,'utf8'));\n      const contexts=await readAuthenticatedCurrentCompanions(snapshot.verified,original);\n      const fresh=assertAuthenticatedFrozen586Snapshot(await readAuthenticatedFrozen586Predecessor());\n      if(!isDeepStrictEqual(snapshot,fresh))refuse('RETENTION_B_CHANGED');return contexts;\n    }\n  }"
+      ],
+      [
+        "  const contexts = await readAuthenticatedCurrentCompanions(input.verified, input.conditions);",
+        "  const contexts = await readAuthenticatedCurrentCompanions(input.verified, input.originalConditions ?? input.conditions);"
+      ]
+    ],
+    "before": {
+      "bytes": 10252,
+      "sha256": "64bbc369d074e2b6d04db6ddcdb7eac04c8ec7e3bd9f7f5c1c97f879d332c250"
+    },
+    "after": {
+      "bytes": 12200,
+      "sha256": "d4e90536a6b77c938482c34ee21164b1b7cf2bf576ca410f10375b5640540af5"
+    }
+  }
+]);
+export function inverseAssistant587OriginalCompanionTestInput(source, relative) {
+  assert.equal(typeof source, 'string', 'ALTERNATIVE_C_TEST_INPUT_CHANGED:ASSISTANT587_TYPE');
+  const row = ASSISTANT587_ORIGINAL_COMPANION_TEST_REVIEW.find(row => row.path === relative);
+  assert(row, 'ALTERNATIVE_C_TEST_INPUT_CHANGED:ASSISTANT587_PATH');
+  source = source.replace(/\r\n/g, '\n');
+  if (Buffer.byteLength(source) === row.before.bytes && digest(source) === row.before.sha256) return source;
+  assert.equal(Buffer.byteLength(source), row.after.bytes, 'ALTERNATIVE_C_TEST_INPUT_CHANGED:ASSISTANT587_SIZE');
+  assert.equal(digest(source), row.after.sha256, 'ALTERNATIVE_C_TEST_INPUT_CHANGED:ASSISTANT587_WHOLE');
+  for (const [before, after] of [...row.hunks].reverse()) {
+    assert.equal(source.split(after).length, 2, 'ALTERNATIVE_C_TEST_INPUT_CHANGED:ASSISTANT587_HUNK');
+    source = source.replace(after, () => before);
+  }
+  assert.equal(Buffer.byteLength(source), row.before.bytes, 'ALTERNATIVE_C_TEST_INPUT_CHANGED:ASSISTANT587_BEFORE_SIZE');
+  assert.equal(digest(source), row.before.sha256, 'ALTERNATIVE_C_TEST_INPUT_CHANGED:ASSISTANT587_WHOLE_INVERSE');
+  return source;
 }

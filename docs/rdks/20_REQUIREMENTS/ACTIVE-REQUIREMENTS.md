@@ -1,3 +1,13 @@
+## 22. oktober — ny aktiv strømstart skal holde gennem næste genbrug
+
+AKTIVT: Ejerens nyeste beslutning tillader en ny aktiv strømstart uden tidligere strømhistorik. Bevar autentiske gamle sikkerhedspakker og offentliggjorte scorer, men gør dem ikke til nødvendige numeriske input for den nye drift. Første start må kun vælges efter arkiv og genlæsning; manglende historik forbliver UNKNOWN. Alle gamle strømindgange skal håndteres samlet, mens øvrige vejrkomponenter og vandkildebank bevares.
+
+Ny normal schema2-bank skal bevare korrigerede originale strømendepunkter for hele prognosen inklusive støttetimer. En almindelig efterfølger skal genbruge den uden endnu en nulstilling eller gammel RAW-genopretning. Ventende adminpunktpromotion må ikke ophæves. Ingen ændring af scoreformel, kildeprioritet, administratorpunkter, geometri eller modelbinding følger af denne beslutning. De normale databevarelses- og offentliggørelseskontroller består.
+
+## 22. oktober — drift skal passe til eksisterende Free-planer
+
+AKTIVT: Ejerens aktuelle krav er, at fremtidig RavRadar-drift skal passe til Supabase Free og Cloudflare Free, også når cache og historik bygges videre. Kontrollér faktisk periode, forbrug og relevante aktuelle officielle grænser; fremskriv konservativt ved normale kørsler og brugertrafik. Skeln faktisk abonnementsplan fra Free-sammenligning. Lokale komprimeringsmål er ikke kvotebevis. Ingen nye betalingsplaner, datatab, skjult pruning eller svækkelse af kontroller er tilladt. Gem målegrundlag og åbne afhængigheder privat.
+
 ## 22. oktober — aktiv 587-leveringskontrakt efter ægte 586
 
 AKTIVT: SpørgRavRadar skal bevare DA/DE/EN, eksisterende kontrollerede fakta/ID'er, safety/private-afslag, ukendt svar og ingen fundgaranti. Generelle forklaringer om bølgebevægelse ved bunden, strømtransport mellem revler og forskellen til materiale på stranden må ikke opfinde aktuelle værdier eller en sikker lokal konklusion. Aktuelle vejrtal kræver fortsat konkret zone og bundne data. Den enkle identifikationsgrammatik må kun bruge den eksisterende fagligt kontrollerede viden; et lokalt svar er ikke hosted AI-bevis.

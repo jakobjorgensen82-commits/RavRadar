@@ -1,3 +1,33 @@
+## 23. oktober — inaktiv privat PLAN-diagnostik, ikke en årsagsrettelse
+
+Det faktiske skrivefri PLAN-forsøg39873339236/1 fejlede; den konkrete årsag er UKENDT. Den private sammenføring tilføjer kun otte faste deltrinsnavne før de otte eksisterende PLAN-kald og én additiv normal kildeprøve. Ingen underliggende kald, kvote, SQL, sikkerhedsgrænse, genkørsel eller produktionsskrivning ændres; intet mål er kørt her. 004/005, statistik, SOURCE og automatisk retention aktiveres ikke af denne forberedelse. Første fejlevidens og alle eksisterende005-/587-prøver bevares.
+
+## 23. oktober — testlæsere efter første PR707-kontrol
+
+- [x] Faktisk native PostgreSQL-trin bestået; dette er ikke samlet kildekvalifikation.
+- [x] Fire konkrete prøvefejl reproduceret: to manglende ydre bindingsscopes, ét gammelt kalderudtag og én manglende ydre kildeinverse.
+- [x] De to normale producentudtag og 72-timersbroen består efter præcis fixturekorrektion. Hele det berørte normale post-H0-mål består med 54 tilfælde uden spring; alle gamle hunknegativer bevares, og fem nye ydermanipulationer afvises. Ingen produktkode ændres.
+- [ ] Præcis ny samlet kontrol af den afgrænsede testopfølgning, sikker levering og faktisk almindelig vejrhentning/efterfølger. Produktkode, C/I/T, gamle SQL-filer og originale vejrdata ændres ikke af testopfølgningen.
+
+## 22. oktober — aktiv strømstart med bevaret arkiv
+
+- [x] Ny ejerbeslutning afgrænset: aktiv strømhistorik må begynde på ny; autentisk arkiv og offentliggjorte scorer må ikke ommærkes eller slettes.
+- [x] Første targetgrænse integreret i normal planner/updater og kun accepteret af Python efter normal arkiv/B/S-kontrol. Fem målrettede Node-tilfælde samt den normale Python-arkivprøve består; almindelig 48/51-timersadfærd er bevaret.
+- [x] Eksisterende jobur og fire fasekontroller tilkoblet current-family-start; seks måltilfælde består. 360/180-minuttersrammer og leverandørlofter er uændrede; det er ikke et kapacitetsbevis.
+- [x] Lokal fysisk isolation af faste gamle strøm-aliaser og prognosebank med bevaret scalar-/vandkildegrundlag; normal storage-/pack-/genlæsningsprøve består på sammenført kode. Pending-promotion og fremmede/ændrede filer afvises; dette er ikke produktionseffekt.
+- [x] Tretten præcise historiske kilde-/workfloworakler består på sammenført kode uden ændring af gamle forventninger. Wrapperens faktiske fejlgren viser kun faste godkendte koder.
+- [x] Normal før/efterberegning beviser uændrede C/I/T, 21 private kompatibilitetsinput og lagrings-ABI; udstedt SQL er byteuændret. Ingen ny installation er udført.
+- [x] Normal syntetisk B/S-kæde for 210 zoner/673 dele: ny strømstart og almindelig efterfølger med delvist nye input, schema2-bank, gemning/genlæsning og byteparitet. Den endelige fysiske isolationshelper er særskilt prøvet mod samme gemte autentificerede seed uden gentaget beregning. Dette er to koblede lokale beviser, ikke fuld CLI, leverandørdata, geografisk dækning eller produktion.
+- [x] Den lille normale produktkritiske kildegate er gennemført på sammenført kode. Samlet præcis GitHub-/Linux-/databasekontrol er fortsat særskilt.
+- [x] Ret det reproducerede tab af øvrige vejrtimer, der kun findes i PART-prognosebanken. Den normale kodek-/pakke-/genlæsningsprøve bevarer to dele med alle 121 scalar-timer inklusive T+3, mens gammel strøm og native-strømbank holdes ude. ROOTs målprøve på sammenført kode består; dette er lokal bevaring, ikke offentlig levering.
+- [x] Isolér også gammel strøm i private zoners 24-/72-timers samples efter ægte cold-kvalifikation. Den normale retentionprøve viser bevarede scalar-/stormfelter og uændret almindelig vej; gamle originalbytes bevares. Ingen fælles modelkode ændres.
+- [x] Afgrænset kapacitetsmåling på den endelige helper med allerede gemt normal 673 × 121-bank, arkiv og tre genlæsninger består uden ny scoreberegning. Den syntetiske banks scalarværdier er null; faktisk lagerpeak, leverandørforløb og hele produktionsjobbet er fortsat åbne.
+- [ ] Præcis samlet kildekontrol, sikker levering, faktisk første nye vejrpakke og almindelig efterfølger med offentlig kontrol.
+- [ ] Reel dækning for alle forventede zone-/PART-timer, alle fem komponenter og selvstændig drift. De øvrige hovedmål forbliver åbne.
+- [ ] Supabase Free/Cloudflare Free: faktiske periodemålinger og konservativ fremskrivning af almindelig drift inklusive cache, historik og bevarede engangsarkiver.
+
+Gamle lokale delbeviser genbruges kun inden for deres faktiske input og omfang. Ingen produktionsstart eller oprydning er udført i denne sammenføring.
+
 ## 22. oktober — lokal 587: udstedelse færdig, levering åben
 
 - [x] Sammenhængende privat kilde på faktisk 3b med gennemgåede 40 source-/teststier; normalt to-filsmål29 PASS/0 FAIL/0 SKIP. Tidligere semantik-/katalog-/roundtrip-kvitteringer genbruges uden ny statusgentagelse.

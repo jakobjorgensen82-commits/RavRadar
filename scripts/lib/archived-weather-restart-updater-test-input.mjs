@@ -3,10 +3,84 @@ import assert from 'node:assert/strict';
 import crypto from 'node:crypto';
 import fs from 'node:fs';
 const sha=value=>crypto.createHash('sha256').update(value).digest('hex');
+// TEST INPUT ONLY: exact additive cold zone-history projection, before ALL
+// unchanged historical updater oracles. Never a runtime admission/flag.
+export const CURRENT_FAMILY_COLD_ZONE_HISTORY_TEST_REVIEW = Object.freeze({
+  "path": "scripts/update-weather.mjs",
+  "before": {
+    "bytes": 250072,
+    "sha256": "8185c3c5f5fa9b561348b9da4ec711daf6176759f6bb69f67f56a2fd1435fe2c"
+  },
+  "after": {
+    "bytes": 250473,
+    "sha256": "15b4ab43f32d11d935546a1a6e7d8545f242d25927d3e4077bec60a87eea4d14"
+  },
+  "offset": 202755,
+  "hunk": "// The authenticated cold capability isolates only OLD numerical current\n// samples. Scalar/storm history and the genuine B/S baseline stay unchanged.\nif (currentFamilyColdStart !== null) {\n  for (const zone of Object.values(previous.zones ?? {})) {\n    for (const key of ['samples24h', 'samples72h']) {\n      if (Array.isArray(zone?.[key])) zone[key] = withoutHistoricCurrent(zone[key]);\n    }\n  }\n}\n"
+});
+export function inverseCurrentFamilyColdZoneHistoryTestInput(source, relative) {
+  assert.equal(arguments.length, 2, 'COLD_ZONE_HISTORY_ARGUMENTS');
+  assert.equal(typeof source, 'string', 'COLD_ZONE_HISTORY_TYPE');
+  const row = CURRENT_FAMILY_COLD_ZONE_HISTORY_TEST_REVIEW;
+  assert.equal(relative, row.path, 'COLD_ZONE_HISTORY_PATH');
+  const size = Buffer.byteLength(source), whole = sha(source);
+  if (size === row.before.bytes && whole === row.before.sha256) return source;
+  assert.equal(size, row.after.bytes, 'COLD_ZONE_HISTORY_AFTER_SIZE');
+  assert.equal(whole, row.after.sha256, 'COLD_ZONE_HISTORY_AFTER_WHOLE');
+  assert.equal(source.slice(row.offset, row.offset + row.hunk.length), row.hunk, 'COLD_ZONE_HISTORY_HUNK');
+  const original = source.slice(0, row.offset) + source.slice(row.offset + row.hunk.length);
+  assert.equal(Buffer.byteLength(original), row.before.bytes, 'COLD_ZONE_HISTORY_BEFORE_SIZE');
+  assert.equal(sha(original), row.before.sha256, 'COLD_ZONE_HISTORY_WHOLE_INVERSE');
+  return original;
+}
 const bytes=fs.readFileSync(new URL('./archived-weather-restart-updater-test-input.json',import.meta.url),'utf8').replaceAll('\r\n','\n');
 assert.equal(sha(bytes),'8c2b48b2e89e01012bdc9c11ebf9bd171dcd46c84613ea8378f7db5bee370937',
   'ARCHIVED_RESTART_TEST_INPUT_REVIEW_CHANGED');
 const review=JSON.parse(bytes);
+// TEST INPUT ONLY: exact caller-only cold target delta. This is not archive,
+// current-origin, numeric admission or a production compatibility rule.
+export const CURRENT_FAMILY_COLD_TARGET_TEST_REVIEW = Object.freeze([
+  {
+    path: 'scripts/plan-ravscore-current-history.mjs',
+    before: { bytes: 81845, sha256: 'e9a6480b0c95afe7cc689d8870255b93ebe33f51554a397a1eab36b830ed13c2' },
+    after: { bytes: 82258, sha256: '877506b01f8ce4b081b230345345e2b909dd5d24768c08feedbfc8690f30d515' },
+    hunks: [[
+      "    demand.schemaVersion = 2;\n    demand.rawRetention = currentFamilyColdStartRawRetention(currentFamilyColdStart,",
+      "    // The first active view begins at its authenticated NEW target. The pure\n    // planner/model's normal 48h/51h rules are unchanged for every other caller.\n    for (const row of demand.demands) {\n      if (row.initialSource !== 'COLD_START' || row.initialStateAt !== null\n        || row.initialStateSha256 !== null) refuse('CURRENT_FAMILY_COLD_START_DEMAND');\n      row.startAt = productionReferenceAt;\n    }\n    demand.schemaVersion = 2;\n    demand.rawRetention = currentFamilyColdStartRawRetention(currentFamilyColdStart,",
+    ]],
+  },
+  {
+    path: 'scripts/update-weather.mjs',
+    before: { bytes: 250094, sha256: 'e4a3e26e3d010f6389bcba76ecf7ee0962852aeca17e06c3b5b6deed0bfb455d' },
+    after: { bytes: 250072, sha256: '8185c3c5f5fa9b561348b9da4ec711daf6176759f6bb69f67f56a2fd1435fe2c' },
+    hunks: [
+      ['      const replayStartAt = archivedRestartInputs !== null ? generatedAt',
+        '      const replayStartAt = coldInputs !== null ? generatedAt'],
+      ['        const progressiveInputRecord = archivedRestartInputs === null ? progressiveRecord',
+        '        const progressiveInputRecord = coldInputs === null ? progressiveRecord'],
+    ],
+  },
+].map(row => Object.freeze({ ...row, before: Object.freeze(row.before), after: Object.freeze(row.after),
+  hunks: Object.freeze(row.hunks.map(Object.freeze)) })));
+export function inverseCurrentFamilyColdTargetTestInput(source, relative) {
+  assert.equal(arguments.length, 2, 'ALTERNATIVE_C_TEST_INPUT_CHANGED:COLD_TARGET_ARGUMENTS');
+  assert.equal(typeof source, 'string', 'ALTERNATIVE_C_TEST_INPUT_CHANGED:COLD_TARGET_TYPE');
+  if (relative === 'scripts/update-weather.mjs' && source.includes('The authenticated cold capability isolates only OLD numerical current'))
+    source = inverseCurrentFamilyColdZoneHistoryTestInput(source, relative);
+  const row = CURRENT_FAMILY_COLD_TARGET_TEST_REVIEW.find(row => row.path === relative);
+  assert(row, 'ALTERNATIVE_C_TEST_INPUT_CHANGED:COLD_TARGET_PATH');
+  const size = Buffer.byteLength(source), whole = sha(source);
+  if (size === row.before.bytes && whole === row.before.sha256) return source;
+  assert.equal(size, row.after.bytes, 'ALTERNATIVE_C_TEST_INPUT_CHANGED:COLD_TARGET_AFTER_SIZE');
+  assert.equal(whole, row.after.sha256, 'ALTERNATIVE_C_TEST_INPUT_CHANGED:COLD_TARGET_AFTER_WHOLE');
+  for (const [before, after] of [...row.hunks].reverse()) {
+    assert.equal(source.split(after).length, 2, 'ALTERNATIVE_C_TEST_INPUT_CHANGED:COLD_TARGET_HUNK');
+    source = source.replace(after, () => before);
+  }
+  assert.equal(Buffer.byteLength(source), row.before.bytes, 'ALTERNATIVE_C_TEST_INPUT_CHANGED:COLD_TARGET_BEFORE_SIZE');
+  assert.equal(sha(source), row.before.sha256, 'ALTERNATIVE_C_TEST_INPUT_CHANGED:COLD_TARGET_BEFORE_WHOLE');
+  return source;
+}
 // The memory-lifetime fix is unbound caller code. Preserve the whole genuine
 // 954 updater before applying any unchanged archived/C/epoch source oracle.
 export const WEATHER_EXPORT_MEMORY_UPDATER_REVIEW=Object.freeze({
@@ -210,6 +284,12 @@ export const CURRENT_NATIVE_ORIGINAL_PRODUCER_TEST_REVIEW = Object.freeze({
 export function inverseCurrentNativeOriginalProducerTestInput(source, relative) {
   assert.equal(arguments.length, 2, 'ALTERNATIVE_C_TEST_INPUT_CHANGED:NATIVE_ORIGINAL_ARGUMENTS');
   assert.equal(typeof source, 'string', 'ALTERNATIVE_C_TEST_INPUT_CHANGED:NATIVE_ORIGINAL_TYPE');
+  if (relative === 'scripts/update-weather.mjs' && source.includes('The authenticated cold capability isolates only OLD numerical current'))
+    source = inverseCurrentFamilyColdZoneHistoryTestInput(source, relative);
+  const cold = CURRENT_FAMILY_COLD_TARGET_TEST_REVIEW.find(row => row.path === relative);
+  if (cold && Buffer.byteLength(source) === cold.after.bytes && sha(source) === cold.after.sha256) {
+    source = inverseCurrentFamilyColdTargetTestInput(source, relative);
+  }
   const row = CURRENT_NATIVE_ORIGINAL_PRODUCER_TEST_REVIEW.rows.find(item => item.path === relative);
   assert(row, 'ALTERNATIVE_C_TEST_INPUT_CHANGED:NATIVE_ORIGINAL_PATH');
   const size = Buffer.byteLength(source), whole = sha(source);

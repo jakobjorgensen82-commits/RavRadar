@@ -274,6 +274,9 @@ const scorerStart = producer.indexOf('function scoreCoastalPartsRuntime(');
 const publicStart = producer.indexOf('      const dmiRecord = buildPartDmiForecastWithProtectedRetention(', scorerStart);
 const nativeSetupStart = producer.indexOf('      const persistedNativeOriginals =', scorerStart);
 assert.ok(nativeSetupStart > scorerStart && nativeSetupStart < publicStart);
+const coldInputsStart = producer.indexOf('  const coldInputs = archivedRestartInputs ?? (currentFamilyColdStart === null ? null', scorerStart);
+assert.ok(coldInputsStart > scorerStart && coldInputsStart < nativeSetupStart,
+  'the actual product caller binds qualified/null cold inputs before both extracted projections');
 const publicEnd = producer.indexOf('      const routedWater = waterSourceRoutingContext', publicStart);
 assert.ok(publicStart > scorerStart && publicEnd > publicStart);
 const replayStart = producer.indexOf('      let deployedRecoverySource = null;', scorerStart);
@@ -320,6 +323,7 @@ const runPublicPartProjection = Function(
      const componentInputs = {};
      // This existing fixture follows the ordinary, non-archive call path.
      const archivedRestartInputs = null;
+     const coldInputs = null;
      if (replay) {
        const replayStartAt = productionAt;
        const protectedSameRunDmiRetentions = {current: {SAME_VALUES: 0, DIFFERENT_VALUES: 0},

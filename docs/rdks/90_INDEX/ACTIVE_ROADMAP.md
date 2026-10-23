@@ -1,3 +1,9 @@
+## 22. oktober — P0-rækkefølge efter ejerens nye strømstartbeslutning
+
+Færdiggør én samlet current-family-start: autentisk arkiv/readback → fysisk adskilt arbejdsvisning uden gamle strømdata → ny targetbundet anskaffelse og beregning → varigt gemt originalbank/B/S → offentlig levering → almindelig efterfølger. Gamle historik-/originalkrav må ikke smugles ind igen ved næste genbrug, og normale kilde-, model-, admin- og no-loss-kontroller bevares.
+
+Præcis kildekontrol og faktisk første/følgende drift mangler. Oprydning i gamle caches vurderes først mod bevarede arkiver og den faktisk nye drift; ingen blind sletning. Vejrhentning er førsteprioritet, SOURCE og øvrige installationer er inaktive, og alle fem hovedmål til 18. november er åbne.
+
 ## 20. oktober — aktuel rækkefølge og frist
 
 Ejerens gældende frist er 18. november 2026. CURRENT_TRUTH og det private

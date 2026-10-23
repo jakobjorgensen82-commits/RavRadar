@@ -1,8 +1,20 @@
+## 23. oktober — privat587-sammenføring; P0 og levering er fortsat særskilte
+
+Denne lokale587-arbejdsgren sammenfører den udstedte assistentkandidat med P0707s strømstart-, PART-bevarings- og zoneisolationskode. P0707 er fortsat en særskilt kildekandidat under præcis kontrol, ikke en ny offentlig vejrgeneration. 587 er stadig inaktiv og ikke installeret. Ingen test, ny model-/SQL-udstedelse eller produktionshandling er udført som del af denne sammenføring. Begge daterede evidensforløb nedenfor bevares; de bliver ikke et nyt samlet PASS.
+
+P0s håndbogsafsnit89.264 bevares. Det endnu ikke leverede assistentafsnit har nu89.265 med samme stabile ID og tekst. Ejerens godkendte nye strømstart med særskilt arkiv gælder P0;587s senere-H0-installationsgrænse, originale attester, alle65 gamle migrationer og den ene allerede udstedte587-migration bevares. Præcis ny samlet kildekontrol, ægte database-/førskrivningskontrol og faktisk levering/efterfølger er fortsat selvstændige åbne krav.
+
+## 22. oktober — afgrænset ny strømstart på installeret 586
+
+Læs nyeste CURRENT_TRUTH og privat checkpoint før de historiske statustekster. Ejeren har nu udtrykkeligt godkendt en ny aktiv strømhistorik med bevarede autentiske arkiver og offentliggjorte scorer. Den eksisterende current-family-start færdiggøres; gammel numerisk strøm må ikke vende tilbage gennem arbejdsfiler eller næste almindelige cachegenbrug. Normal målprøvet fysisk isolation og første targetgrænse er lokal kode, ikke offentlig drift. Ingen scoreformel, kildeprioritet, admin/geometri, modelbinding eller SQL ændres af denne rettelse.
+
+Den fremtidige opsætning skal passe til Supabase Free og Cloudflare Free, også ved almindelig historik-/cachevækst. Kravet giver ingen tilladelse til betalt opgradering, tab af originaler eller svækkede kontroller. Faktisk forbrug, aktuelle grænser og konservativ fremskrivning skal dokumenteres; komprimeringsmål eller lokal test alene er ikke bevis. Alle fem mål er åbne til 18. november. Tidligere modstridende afventninger nedenfor er dateret historik alene på disse punkter.
+
 ## 22. oktober — lokal 4.0.587 er udstedt, ikke leveret
 
 4.0.587 er en lokal, udstedt kildekandidat, ikke installeret eller offentlig levering. Sidste verificerede offentlige version er fortsat 4.0.586. P0 og den almindelige vejrhentning har førsteprioritet; ROOTs aktuelle private checkpoint afgør PR703-forløbets eksterne slutstatus og genopretning. Denne kandidat afslutter hverken det forløb, cost-PR704s samlede kildekontrol eller den åbne cache-/kapacitets- og økonomibeslutning.
 
-Læs den nye 587-front i CODEX_START_HERE, CURRENT_TRUTH, IMPLEMENTATION_STATUS og håndbog 89.264. Den normale lokale versionssynk, C98/I97/T12, én ny append-only SQL og syv forbrugeres fixedpoint består; de 65 tidligere migrationer er byteuændrede, og geodatadiffene ændrer kun topversionen. Dette er ikke ny native PostgreSQL, præcis 587-CI, installation, faktisk ny schema2-B/S, offentlig vejr-/assistentvirkning eller hosted AI-kvalitet.
+Læs den nye 587-front i CODEX_START_HERE, CURRENT_TRUTH, IMPLEMENTATION_STATUS og håndbog 89.265. Den normale lokale versionssynk, C98/I97/T12, én ny append-only SQL og syv forbrugeres fixedpoint består; de 65 tidligere migrationer er byteuændrede, og geodatadiffene ændrer kun topversionen. Dette er ikke ny native PostgreSQL, præcis 587-CI, installation, faktisk ny schema2-B/S, offentlig vejr-/assistentvirkning eller hosted AI-kvalitet.
 
 Ægte 586-forgænger, hele oprindelige B/S-attester, numeriske værdier, historik, kildeprioritet, administratorpunkter, geometri, gamle SQL og afvisninger bevares. Ingen ny historiknulstilling, samme-H0-adgang, implicit statistik/SOURCE-aktivering, sletning, kvoteforøgelse eller offentlig ændring følger af lokal udstedelse. Normal afslutning er dokument-/håndbogssynk, præcis ny source-CI med faktisk ny native PostgreSQL-fase, kontrolleret førstegangs-prewrite på autentisk 586 B/S, SQL-installation/genlæsning og en faktisk strengt senere almindelig generation med bevaret schema2-originalbank og almindelig efterfølger. Generisk kode-only-plan må fortsat kun genlæse allerede installeret NEXT; den giver ikke førsteinstallationsadgang. Alle fem hovedmål er fortsat åbne til 18. november 2026; ældre modstridende status er dateret historik.
 

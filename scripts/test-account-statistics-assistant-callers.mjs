@@ -88,6 +88,41 @@ test('private-study005: the normal workflow stays OFF and DDL remains outside Wo
   assert.doesNotMatch(ddl,/catch\s*\{|recoveryAttempted|replace\(/);
   assert.doesNotMatch(source.slice(to),/await cf\(|model\.jobsMigration/);
 });
+test("private-study005: read-only plan substages preserve the whole original controller",async()=>{
+  const source=(await fs.readFile(new URL('./deploy-private-trip-study.mjs',import.meta.url),'utf8'))
+    .replace(/\r\n/g,'\n');
+  const edits=[
+    ["    stage='READ_ONLY_PLAN';run('node',['scripts/prepare-cloudflare-trip-storage.mjs','--existing-worker-repair']);",
+      "    stage='READ_ONLY_PLAN_EXISTING_STORAGE';run('node',['scripts/prepare-cloudflare-trip-storage.mjs','--existing-worker-repair']);"],
+    ["    const base=readOwnedJson(CONFIG);if(Object.hasOwn(base,'vars'))throw fail('UNEXPECTED_CONFIG');",
+      "    stage='READ_ONLY_PLAN_CONFIGURATION';\n    const base=readOwnedJson(CONFIG);if(Object.hasOwn(base,'vars'))throw fail('UNEXPECTED_CONFIG');"],
+    ["    originalFence=oldFence();model=privateTripStudySchemaModel();",
+      "    stage='READ_ONLY_PLAN_ORIGINAL_FENCE';originalFence=oldFence();\n    stage='READ_ONLY_PLAN_SCHEMA_MODEL';model=privateTripStudySchemaModel();"],
+    ["    const before=await inspect();const currentVersion=await attest(originalFence.workerVersionId);edge('d1');",
+      "    stage='READ_ONLY_PLAN_STATISTICS_SCHEMA';const before=await inspect();\n    stage='READ_ONLY_PLAN_WORKER_BINDINGS';const currentVersion=await attest(originalFence.workerVersionId);\n    stage='READ_ONLY_PLAN_EDGE_CONTRACT';edge('d1');"],
+    ["    plan={kind:'PRIVATE_TRIP_STUDY_CONTROL0_PLAN',sourceSha:env.GITHUB_SHA,runId:env.GITHUB_RUN_ID,",
+      "    stage='READ_ONLY_PLAN_RECEIPT';\n    plan={kind:'PRIVATE_TRIP_STUDY_CONTROL0_PLAN',sourceSha:env.GITHUB_SHA,runId:env.GITHUB_RUN_ID,"],
+  ];
+  const stagePattern=/stage='(READ_ONLY_PLAN_[A-Z_]+)'/g;
+  const stages=edits.flatMap(([,after])=>[...after.matchAll(stagePattern)].map(match=>match[1]));
+  assert.equal(stages.length,8);assert.equal(new Set(stages).size,8);
+  const verify=value=>{
+    assert.deepEqual([...value.matchAll(stagePattern)].map(match=>match[1]),stages);
+    let original=value;
+    for(const [before,after] of edits){
+      assert.equal(original.split(after).length,2);
+      original=original.replace(after,()=>before);
+    }
+    assert.equal(crypto.createHash('sha256').update(original).digest('hex'),
+      '7aa118fe89f33395695f5c58c2e7c2052966bd68fd77a89eca243591eec32dce',
+      'Only the exact eight stage assignments may differ from the whole reviewed controller');
+  };
+  verify(source);
+  const swapped=source.replace(/READ_ONLY_PLAN_(?:EXISTING_STORAGE|CONFIGURATION)/g,
+    stage=>stage===stages[0]?stages[1]:stages[0]);
+  for(const changed of [swapped,source.replace(stages[2],'READ_ONLY_PLAN_UNKNOWN'),
+    source+'\n// non-stage byte drift\n'])assert.throws(()=>verify(changed));
+});
 test('current585 model-import guard admits only the whole reviewed first-raw-error loader',async()=>{
   const file='scripts/check-account-statistics-assistant-predecessor-source.mjs';
   const source=(await fs.readFile(new URL('./check-account-statistics-assistant-predecessor-source.mjs',import.meta.url),'utf8'))

@@ -1,3 +1,17 @@
+## 23. oktober — ÅBEN: samlet kildekvalifikation efter fire testlæserkonflikter
+
+Den første PR707-kontrol fandt fire reproducerede prøvefejl efter bestået native PostgreSQL: manglende ydre `coldInputs` i to udtag, et tidligere kaldernavn og en manglende præcis zonehistorik-inverse før gamle hele kildepins. Opfølgningen retter kun prøvernes afgrænsning og bevarer alle tidligere assertions og ændringsafslag. Den er ikke en ny produktrettelse eller bevis for fungerende vejrhentning. Ny samlet præcis kontrol, faktisk første generation og almindeligt genbrug er fortsat åbne; ingen produktionsændring er udført på dette grundlag.
+
+## 22. oktober — ÅBEN: samlet ny strømstart og næste almindelige genbrug
+
+Gamle schema1-prognoser kan bevare valgte strømværdier uden den native-originalbank, der kræves ved senere genbrug. Præcis genopretning kan ikke antages mulig, når de krævede gamle leverandørfiler ikke længere er tilgængelige. Dette er et bevarelses-/genbrugsproblem, ikke en konklusion om forkerte DMI-tal.
+
+Ejeren har godkendt en ny aktiv strømhistorik med bevaret gammelt arkiv. At nulstille scoretilstanden alene er utilstrækkeligt: gamle strøm-aliaser, ledsagere og prognosens PART-bank kan ellers komme tilbage gennem næste normale pakning. Første anskaffelses-/replaygrænse er lokalt rettet; fuld fysisk adskillelse og bevaring af nye originale endepunkter gennem normal B/S og efterfølger sammenføres fortsat.
+
+Sidste gennemgang reproducerede tab af scalar-timer i PART-prognosebanken og videreførsel af gammel strøm i private zoners historik-samples. Begge lokale huller er rettet og målprøvet gennem de normale kodek-/pakke-/genlæsnings- og retentionkaldere. Alle 121 scalar-timer inklusive støttetimer samt øvrige stormfelter bevares; gammel strøm, HOLD og native-strømbank holdes ude af den nye aktive arbejdsvisning. Den almindelige vej og gamle originalbytes bevares. Samlet CI og faktisk første generation/efterfølger er stadig nødvendige, før dette issue kan lukkes.
+
+Den eksisterende engangskalder havde heller ikke sine tidsfasekontroller tilkoblet det aktuelle cold-flag. Den lokale rettelse genbruger det eksisterende ur, fire fasegrænser og efterbehandlingsreserve uden højere caps. Dette er måltestet, ikke faktisk heljobskapacitet. Præcis CI, første offentlig levering og almindelig efterfølger kræves før lukning. Ingen gammel cache er slettet; faktisk adminpromotion skal bevares, ikke tavst bortfalde.
+
 ## 22. oktober — ÅBEN: lokal 587 er ikke installeret assistentleverance
 
 Lokal normal versions-/C98/I97/T12-/SQL-udstedelse og syv forbrugeres fixedpoint er nu faktisk gennemført. Den sammenhængende to-filskvalifikation har 29 PASS, og den særskilte normale bindings-prewrite-integration har 5 PASS; afsluttede mål skal ikke gentages for status. De gamle unissued-afventninger er historiske på netop disse lokale punkter.

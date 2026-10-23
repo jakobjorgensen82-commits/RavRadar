@@ -1048,6 +1048,13 @@ async function main() {
   if (currentFamilyColdStart !== null) {
     // This separate eviction policy is minted by the real archive capability;
     // it never describes OLD committed S dependencies as an empty ordinary set.
+    // The first active view begins at its authenticated NEW target. The pure
+    // planner/model's normal 48h/51h rules are unchanged for every other caller.
+    for (const row of demand.demands) {
+      if (row.initialSource !== 'COLD_START' || row.initialStateAt !== null
+        || row.initialStateSha256 !== null) refuse('CURRENT_FAMILY_COLD_START_DEMAND');
+      row.startAt = productionReferenceAt;
+    }
     demand.schemaVersion = 2;
     demand.rawRetention = currentFamilyColdStartRawRetention(currentFamilyColdStart,
       { registry: registry.json, targetReferenceAt: productionReferenceAt });

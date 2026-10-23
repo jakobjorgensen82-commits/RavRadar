@@ -1,4 +1,4 @@
-import { inverseAlternativeCCaller, inverseCurrentNativeOriginalConsumerTestInput, CURRENT_NATIVE_ORIGINAL_CONSUMER_TEST_REVIEW, inverseCurrent586EndpointDiagnosticTestInput, inverseCurrent586IdentityRefinementTestInput, inverseCurrent586SharedProjectionExportTestInput, inverseNationalCoherentWorkTestInput, NATIONAL_COHERENT_WORK_TEST_REVIEW, inverseNationalCapacityTestInput, NATIONAL_COHERENT_CAPACITY_TEST_REVIEW, inverseCoherentDistinctCaptureFramesTestInput, COHERENT_DISTINCT_CAPTURE_FRAME_TEST_REVIEW } from './lib/alternative-c-caller-test-input.mjs';
+import { inverseAssistant587OriginalCompanionTestInput, inverseAlternativeCCaller, inverseCurrentNativeOriginalConsumerTestInput, CURRENT_NATIVE_ORIGINAL_CONSUMER_TEST_REVIEW, inverseCurrent586EndpointDiagnosticTestInput, inverseCurrent586IdentityRefinementTestInput, inverseCurrent586SharedProjectionExportTestInput, inverseNationalCoherentWorkTestInput, NATIONAL_COHERENT_WORK_TEST_REVIEW, inverseNationalCapacityTestInput, NATIONAL_COHERENT_CAPACITY_TEST_REVIEW, inverseCoherentDistinctCaptureFramesTestInput, COHERENT_DISTINCT_CAPTURE_FRAME_TEST_REVIEW } from './lib/alternative-c-caller-test-input.mjs';
 import { inverseJointCoherentControllerTestInput, JOINT_NATIONAL_COHERENT_CONTROLLER_TEST_REVIEW } from './lib/alternative-c-caller-test-input.mjs';
 import { inverseCoherentRawTransportLifetimeTestInput, COHERENT_RAW_TRANSPORT_LIFETIME_TEST_REVIEW } from './lib/alternative-c-caller-test-input.mjs';
 import assert from 'node:assert/strict';
@@ -8,7 +8,15 @@ import { readFileSync } from 'node:fs';
 import vm from 'node:vm';
 import { collectPostH0DmiOriginalDependencies as collect, POST_H0_DMI_ENDPOINT_DIAGNOSTICS } from './lib/post-h0-dmi-original-dependencies.mjs';
 import { buildRavScoreRawCurrentRetention, describeRavScoreCurrentHistoryFailure,
-  withInstalledCoherentRawTransportRetention } from './plan-ravscore-current-history.mjs';
+  withInstalledCoherentRawTransportRetention, planRavScoreCurrentHistoryForPart } from './plan-ravscore-current-history.mjs';
+import { buildRavScoreProductionPartSeries, ravScoreOwnerCurrentHistoryStartAt,
+  selectRavScoreProductionInitialState }
+  from './lib/ravscore-production-part-pipeline.mjs';
+import { ravScoreRecoverySourceStartAt } from './lib/ravscore-recovery-replay.mjs';
+import { currentFamilyColdStartScoreInputs } from './current-family-cold-start.mjs';
+import { inverseCurrentFamilyColdTargetTestInput, CURRENT_FAMILY_COLD_TARGET_TEST_REVIEW,
+  inverseCurrentFamilyColdZoneHistoryTestInput, CURRENT_FAMILY_COLD_ZONE_HISTORY_TEST_REVIEW }
+  from './lib/archived-weather-restart-updater-test-input.mjs';
 import { buildPrivateDmiRecoveryRecord } from './lib/private-dmi-recovery-record.mjs';
 import { buildIntegratedPartScoreSeries } from './lib/ravscore-integrated-runtime.mjs';
 import { dmiExpectedIdentityForPart, verifiedIntegratedPartHourly } from './lib/ravscore-production-adapters.mjs';
@@ -73,6 +81,124 @@ function fixture({ coherent = [], collection = 'dkss_nsbs' } = {}) {
     options: { part, initialSelection: { source: 'EXISTING_INTEGRATED', state }, targetReferenceAt: at(6), recoverySources } };
 }
 const rowAt = (f, hours) => f.options.recoverySources[0].record.hourly.find(row => row.time === at(hours));
+
+// Existing normal source-body unit seam. These units begin AFTER the caller's
+// real archive/cold-capability validation; they do not mint that capability,
+// authenticate B/S, fetch providers or prove the full physical input view.
+function coldTargetCallerUnits() {
+  const planner = readFileSync(new URL('./plan-ravscore-current-history.mjs', import.meta.url), 'utf8');
+  const updater = readFileSync(new URL('./update-weather.mjs', import.meta.url), 'utf8');
+  const between = (source, first, next, from = 0) => {
+    const begin = source.indexOf(first, from), end = source.indexOf(next, begin + first.length);
+    assert(begin >= 0 && end > begin, 'Exact normal cold-target source boundary required');
+    return source.slice(begin, end);
+  };
+  const demand = between(planner, '  if (currentFamilyColdStart !== null) {',
+    '    demand.schemaVersion = 2;', planner.indexOf('  const demand = buildRavScoreCurrentHistoryDemand({'));
+  const replay = between(updater, '      const replayStartAt =', '      let deployedRecoverySource = null;',
+    updater.indexOf('      const nativeCadenceHoldHours ='));
+  const progressive = between(updater, '        const progressiveInputRecord =', '        progressiveRecoverySource =');
+  return {
+    demand: new Function('demand', 'currentFamilyColdStart', 'productionReferenceAt', 'refuse',
+      '"use strict";\n' + demand + '\n}\nreturn demand;'),
+    replay: new Function('coldInputs', 'archivedRestartInputs', 'generatedAt', 'part', 'zoneId',
+      'initialSelection', 'ravScoreOwnerCurrentHistoryStartAt', 'ravScoreRecoverySourceStartAt',
+      '"use strict";\n' + replay + '\nreturn replayStartAt;'),
+    progressive: new Function('coldInputs', 'archivedRestartInputs', 'progressiveRecord', 'generatedAt',
+      '"use strict";\n' + progressive + '\nreturn progressiveInputRecord;'),
+  };
+}
+
+test('cold target boundary: actual planner cold branch starts only at target, ordinary demand stays unchanged', () => {
+  const units = coldTargetCallerUnits(), f = fixture();
+  const cold = planRavScoreCurrentHistoryForPart({ part: f.part, targetReferenceAt: at(6), stateLessRecovery: true });
+  assert.equal(cold.initialSource, 'COLD_START');
+  assert.equal(cold.startAt, at(-42), 'The unchanged pure/model planner still describes its 48h cold window');
+  const before = JSON.stringify(cold), refuse = code => { throw new Error(code); };
+  const bounded = units.demand({ demands: [structuredClone(cold)] }, {}, at(6), refuse);
+  assert.equal(bounded.demands[0].startAt, at(6));
+  assert.equal(bounded.demands[0].endAt, at(6));
+  assert.deepEqual({ ...bounded.demands[0], startAt: cold.startAt }, cold);
+  assert.equal(JSON.stringify(cold), before);
+  const ordinary = { demands: [structuredClone(cold)] }, saved = JSON.stringify(ordinary);
+  assert.strictEqual(units.demand(ordinary, null, at(6), refuse), ordinary);
+  assert.equal(JSON.stringify(ordinary), saved, 'No capability means no changed ordinary planner bytes');
+  for (const mutation of [{ initialSource: 'INTEGRATED_CHECKPOINT' }, { initialStateAt: at(0) },
+    { initialStateSha256: 'sha256:' + 'a'.repeat(64) }]) {
+    assert.throws(() => units.demand({ demands: [{ ...cold, ...mutation }] }, {}, at(6), refuse),
+      /CURRENT_FAMILY_COLD_START_DEMAND/);
+  }
+});
+
+test('cold target boundary: actual updater shares target-only archived semantics and preserves normal 51h rule', () => {
+  const units = coldTargetCallerUnits(), f = fixture();
+  const evaluate = (coldInputs, archivedRestartInputs, state) => units.replay(coldInputs,
+    archivedRestartInputs, at(6), f.part, f.part.zoneId, { state }, ravScoreOwnerCurrentHistoryStartAt,
+    ravScoreRecoverySourceStartAt);
+  assert.equal(evaluate({}, null, null), at(6), 'Validated same-family cold inputs use this target only');
+  assert.equal(evaluate({}, {}, null), at(6), 'Existing archived restart still uses this target only');
+  assert.equal(evaluate(null, null, null), at(-42), 'Ordinary COLD does not silently acquire reset authority');
+  assert.equal(evaluate(null, null, f.options.initialSelection.state), at(-51), 'Ordinary pre-S model rule stays exact');
+  const source = { point: f.part.waterPoint, hourly: [{ time: at(-3), marker: 'ARCHIVE_ONLY' },
+    { time: at(6), marker: 'NEW_TARGET' }, { time: at(9), marker: 'NEW_FUTURE' }] };
+  const saved = JSON.stringify(source);
+  const cold = units.progressive({}, null, source, at(6));
+  assert.deepEqual(cold.hourly.map(row => row.time), [at(6), at(9)]);
+  assert.strictEqual(cold.point, source.point);
+  assert.strictEqual(units.progressive(null, null, source, at(6)), source);
+  assert.deepEqual(units.progressive({}, {}, source, at(6)), cold);
+  assert.equal(JSON.stringify(source), saved, 'Original source/context bytes are not changed by the view');
+});
+
+test('cold target boundary: real cold accessor rejects forged capabilities before any target privilege', () => {
+  const f = fixture(), scope = { registry: {}, targetReferenceAt: at(6) };
+  for (const handle of [null, {}, Object.freeze({}), { status: 'PASS' }, { currentFamilyColdStart: true }]) {
+    assert.throws(() => currentFamilyColdStartScoreInputs(handle, scope), /CURRENT_FAMILY_COLD_START_CAPABILITY/);
+  }
+  assert(f.part.partId);
+});
+
+test('cold target boundary: normal first state and follower need no pre-start DMI originals', () => {
+  const f = fixture({ coherent: [-3, 0, 3, 6, 9] });
+  const source = structuredClone(f.options.recoverySources[0]);
+  source.record.hourly = source.record.hourly.filter(row => Date.parse(row.time) >= Date.parse(at(0)));
+  const first = buildRavScoreProductionPartSeries({ part: f.part,
+    zone: { id: f.part.zoneId, onshoreDirectionDeg: 90 },
+    initialSelection: selectRavScoreProductionInitialState({ part: f.part,
+      targetReferenceAt: at(0), candidateGBootstrapMode: 'integrated-state-less-recovery',
+      candidateGSourceValidated: false }),
+    candidateGRollbackMeasuredColdStart: true, targetReferenceAt: at(0),
+    recoverySources: [], publicHourly: [source.record.hourly.find(row => row.time === at(0))],
+    requireNativeGridSampling: true });
+  const state = first.scores.find(row => row.time === at(0)).ravScoreModel.continuationState;
+  const candidate = first.candidateGRollbackScores.find(row => row.time === at(0)).candidateG.continuationState;
+  assert.equal(state.time, at(0)); assert.equal(candidate.time, at(0));
+  assert.equal(first.recovery.coldStartHistoryLineage.completeCausalPositionCount, 0);
+  assert.equal(first.recovery.coldStartHistoryLineage.boundedUnknownPositionCount, 48);
+  const demand = planRavScoreCurrentHistoryForPart({ part: f.part,
+    checkpointStates: { [f.part.partId]: state }, targetReferenceAt: at(6) });
+  assert.equal(demand.startAt, at(-51), 'Follower keeps the normal pre-S demand, not a new model bypass');
+  const options = { part: f.part, initialSelection: { source: 'INTEGRATED_CHECKPOINT', state },
+    targetReferenceAt: at(6), recoverySources: [source] };
+  assert.deepEqual(collect(options).captures, [], 'Coherent new originals do not require historical RAW reconstruction');
+  const replay = buildRavScoreRecoveryReplay({ ...options, initialState: state,
+    sourceRecords: [source], publicHourly: [source.record.hourly.find(row => row.time === at(6))],
+    requireNativeGridSampling: true });
+  assert.equal(replay.scoreStartAt, at(6));
+  assert(replay.hourly.every(row => Date.parse(row.time) > Date.parse(state.time)),
+    'Normal replay consumes only new hours after the preserved first state');
+  const follower = buildRavScoreProductionPartSeries({ part: f.part,
+    zone: { id: f.part.zoneId, onshoreDirectionDeg: 90 },
+    initialSelection: selectRavScoreProductionInitialState({ part: f.part,
+      checkpointStates: { [f.part.partId]: state }, targetReferenceAt: at(6) }),
+    previousCandidateGContinuation: candidate,
+    candidateGRollbackMeasuredWarmupContinuation: candidate.transportMemoryReady !== true,
+    targetReferenceAt: at(6), recoverySources: [source],
+    publicHourly: [source.record.hourly.find(row => row.time === at(6))], requireNativeGridSampling: true });
+  assert.equal(follower.ravScoreState.continuationState.time, at(6));
+  assert.equal(follower.candidateGState.continuationState.time, at(6));
+  assert.equal(JSON.stringify(source).includes('ARCHIVE_ONLY'), false);
+});
 
 test('actual planner checkpoint-only control omits only the new eviction projection', async () => {
   const source = inverseAlternativeCCaller(readFileSync(new URL('./plan-ravscore-current-history.mjs', import.meta.url), 'utf8').replace(/\r\n/g, '\n'), 'scripts/plan-ravscore-current-history.mjs');
@@ -622,6 +748,12 @@ test('native-original planner oracle preserves complete earlier source and actua
 });
 
 const POST_H0_FIXED_CLI_SOURCES=[
+  // Actual 587 companion imports link this complete existing static chain,
+  // also for ordinary fixtures that never enter the later-H0 transition.
+  'scripts/assistant-later-h0-runtime-transition.mjs',
+  'scripts/lib/assistant-later-h0-successor-source.mjs',
+  'scripts/lib/native-original-continuity-successor-source.mjs',
+  'scripts/lib/account-statistics-assistant-successor-source.mjs',
   'scripts/current-family-cold-start.mjs',
   'scripts/lib/post-h0-dmi-original-dependencies.mjs',
   'scripts/check-native-identity-frozen-i71-source.mjs',
@@ -2325,7 +2457,9 @@ test('coherent raw transport lifetime: actual install control flow releases priv
 
 test('coherent raw transport lifetime: exact outer inverse preserves joint and every old source oracle',()=>{
   for(const row of COHERENT_RAW_TRANSPORT_LIFETIME_TEST_REVIEW){
-    const file=new URL('../'+row.path,import.meta.url),raw=readFileSync(file,'utf8').replace(/\r\n/g,'\n');
+    const file=new URL('../'+row.path,import.meta.url),input=readFileSync(file,'utf8').replace(/\r\n/g,'\n');
+    const raw=row.path==='scripts/plan-ravscore-current-history.mjs'
+      ?inverseCurrentFamilyColdTargetTestInput(inverseAssistant587OriginalCompanionTestInput(input,row.path),row.path):input;
     assert.equal(Buffer.byteLength(raw),row.after.bytes);assert.equal(sha(raw),row.after.sha256);
     const before=inverseCoherentRawTransportLifetimeTestInput(raw,row.path);
     assert.equal(Buffer.byteLength(before),row.before.bytes);assert.equal(sha(before),row.before.sha256);
@@ -2340,4 +2474,63 @@ test('coherent raw transport lifetime: exact outer inverse preserves joint and e
       assert(union<raw.indexOf('async function main()'));
     }
   }
+});
+
+test('cold target inverse: complete exact modules precede unchanged historical oracles and reject every changed hunk',()=>{
+  for(const row of CURRENT_FAMILY_COLD_TARGET_TEST_REVIEW){
+    const actualComplete=readFileSync(new URL('../'+row.path,import.meta.url),'utf8').replace(/\r\n/g,'\n');
+    const complete=row.path==='scripts/plan-ravscore-current-history.mjs'
+      ?inverseAssistant587OriginalCompanionTestInput(actualComplete,row.path):actualComplete;
+    const outer=row.path===CURRENT_FAMILY_COLD_ZONE_HISTORY_TEST_REVIEW.path
+      ?CURRENT_FAMILY_COLD_ZONE_HISTORY_TEST_REVIEW:null;
+    if(outer){
+      assert.equal(Buffer.byteLength(complete),outer.after.bytes);assert.equal(sha(complete),outer.after.sha256);
+      assert.equal(complete.split(outer.hunk).length,2);
+    }
+    // Qualify the exact additive outer module before the unchanged target pins.
+    // Never repin an older oracle to accept the final caller wholesale.
+    const actual=outer?inverseCurrentFamilyColdZoneHistoryTestInput(complete,row.path):complete;
+    assert.equal(Buffer.byteLength(actual),row.after.bytes);assert.equal(sha(actual),row.after.sha256);
+    const before=inverseCurrentFamilyColdTargetTestInput(actual,row.path);
+    assert.equal(Buffer.byteLength(before),row.before.bytes);assert.equal(sha(before),row.before.sha256);
+    assert.equal(inverseCurrentFamilyColdTargetTestInput(before,row.path),before);
+    assert.equal(inverseAlternativeCCaller(actual,row.path),inverseAlternativeCCaller(before,row.path));
+    if(outer){
+      assert.equal(Buffer.byteLength(actual),outer.before.bytes);assert.equal(sha(actual),outer.before.sha256);
+      assert.equal(inverseCurrentFamilyColdTargetTestInput(complete,row.path),before);
+      assert.equal(inverseAlternativeCCaller(complete,row.path),inverseAlternativeCCaller(before,row.path));
+      assert.equal(complete.replace(outer.hunk,''),actual,
+        'Only the complete pinned outer predecessor is an idempotent historical input');
+      for(const changed of [complete.replace(outer.hunk,outer.hunk+outer.hunk),
+        complete.replace(outer.hunk,outer.hunk+'/*UNREVIEWED*/'),
+        complete.replace('zone[key] = withoutHistoricCurrent(zone[key]);','zone[key] = [];'),
+        '!'+complete.slice(1),complete+'\n']){
+        assert.notEqual(changed,complete);
+        assert.throws(()=>inverseCurrentFamilyColdZoneHistoryTestInput(changed,row.path),/COLD_ZONE_HISTORY/);
+        assert.throws(()=>inverseCurrentFamilyColdTargetTestInput(changed,row.path),/COLD_ZONE_HISTORY/);
+        assert.throws(()=>inverseAlternativeCCaller(changed,row.path),/COLD_ZONE_HISTORY/);
+      }
+    }
+    for(const[old,current]of row.hunks){
+      assert.equal(actual.split(current).length,2);
+      for(const changed of [actual.replace(current,old),actual.replace(current,current+current),
+        actual.replace(current,current+'/*UNREVIEWED*/')]){
+        assert.notEqual(changed,actual);
+        if(changed===before){
+          assert.equal(inverseCurrentFamilyColdTargetTestInput(changed,row.path),before,
+            'The complete one-hunk predecessor remains an explicitly pinned idempotent input');
+          assert.equal(inverseAlternativeCCaller(changed,row.path),inverseAlternativeCCaller(before,row.path));
+        }else{
+          assert.throws(()=>inverseCurrentFamilyColdTargetTestInput(changed,row.path),/ALTERNATIVE_C_TEST_INPUT_CHANGED/);
+          assert.throws(()=>inverseAlternativeCCaller(changed,row.path),/ALTERNATIVE_C_TEST_INPUT_CHANGED/);
+        }
+      }
+    }
+    for(const changed of ['!'+actual.slice(1),actual+'\n']){
+      assert.throws(()=>inverseCurrentFamilyColdTargetTestInput(changed,row.path),/ALTERNATIVE_C_TEST_INPUT_CHANGED/);
+      assert.throws(()=>inverseAlternativeCCaller(changed,row.path),/ALTERNATIVE_C_TEST_INPUT_CHANGED/);
+    }
+  }
+  assert.throws(()=>inverseCurrentFamilyColdTargetTestInput({},'scripts/update-weather.mjs'),/COLD_TARGET_TYPE/);
+  assert.throws(()=>inverseCurrentFamilyColdTargetTestInput('','scripts/unknown.mjs'),/COLD_TARGET_PATH/);
 });

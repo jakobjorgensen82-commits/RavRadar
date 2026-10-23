@@ -25,6 +25,10 @@ import { inspectPrivatePublicHourDeliveryPack } from './lib/public-hour-delivery
 import { withoutCurrent } from './lib/private-dmi-recovery-record.mjs';
 import { decodeDmiBulkWrapper, readDmiBulkDocument, writeDmiBulkDocument } from './lib/dmi-bulk-storage.mjs';
 import { ownFileDescriptorIdentity, ownedFileDescriptorClosed } from './lib/private-weather-component-pack.mjs';
+import { inspectDmiForecastFile, readDmiForecastRecord, writeDmiForecastRecords,
+  DMI_FORECAST_FILE_MAX_BYTES } from './lib/dmi-forecast-file.mjs';
+import { packDmiPartContinuity, unpackDmiPartContinuity, assertDmiPartContinuityTotalSize }
+  from './lib/dmi-part-continuity.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const CAPABILITIES = new WeakMap(), FAILED_CLOSES = new Map();
@@ -38,6 +42,30 @@ const SCALARS = Object.freeze(['wind-speed-10m', 'wind-dir-10m', 'wind-tail-u-10
   'dominant-wave-period', 'mean-wave-dir', 'sea-mean-deviation', 'water-temperature']);
 const SCALAR_COMPONENTS = Object.freeze(['wind', 'windTail', 'wave', 'waterLevel', 'waterTemperature']);
 const FIXED_CANDIDATE = path.join(ROOT, '.cache/dmi-candidate-progress.json');
+const FIXED_ACTIVE = path.join(ROOT, '.cache/dmi-active-complete.json');
+// Fixed mutable aliases only. OLD B/S/conditions and scalar reserve banks are
+// never retired. These files otherwise survive into the next ordinary pack.
+const RETIRED_CURRENT_FILES = Object.freeze({
+  active: '.cache/dmi-active-complete.json',
+  regional: '.cache/current-field-shadow.json',
+  copernicusShadow: '.cache/copernicus-current-shadow.json',
+  copernicusStage: '.cache/copernicus-current-source-stage.json',
+  copernicusDonor: '.cache/copernicus-current-donor-bank.json',
+  copernicusJournal: '.cache/copernicus-current-segment-journal.json',
+  openMeteoFallback: '.cache/open-meteo-current-fallback.json',
+  openMeteoDonor: '.cache/open-meteo-current-donor-bank.json',
+  pilot: 'data/live/current-pilot-history.json',
+  pointDmi: '.cache/coastal-point-staging/dmi.json',
+  pointState: '.cache/coastal-point-staging/state.json',
+  pointStatus: '.cache/coastal-point-staging/status.json',
+  pointInjection: '.cache/coastal-point-staging/activation-state-injection.json',
+  pointPromotion: '.cache/coastal-point-staging/pending-promotion.json',
+});
+const MIXED_BULK_FILES = Object.freeze({
+  bulk: 'data/live/dmi-bulk-cache.json', deployed: '.cache/deployed-dmi-bulk-cache.json',
+});
+const FORECAST_FILE = 'data/live/dmi-forecast-cache.json';
+const RETIRED_WORKING_FILES = Object.freeze({ ...RETIRED_CURRENT_FILES, ...MIXED_BULK_FILES, forecast: FORECAST_FILE });
 const sha = bytes => crypto.createHash('sha256').update(bytes).digest('hex');
 const same = (a, b, code) => { if (!equal(a, b)) fail(code); };
 const fail = code => { throw Object.assign(new Error('CURRENT_FAMILY_COLD_START_' + code),
@@ -61,7 +89,7 @@ async function noLinks(file) {
     at = path.join(at, segment); need(!(await fs.lstat(at)).isSymbolicLink(), 'SYMLINK');
   }
 }
-async function exactBytes(file, expected = null, maximum = 768 * MB) {
+async function exactBytes(file, expected = null, maximum = 768 * MB, digestOnly = false) {
   need(path.isAbsolute(file) && !FAILED_CLOSES.has(file), 'FILE_PATH'); await noLinks(file);
   const before = await fs.lstat(file, { bigint: true });
   need(before.isFile() && before.nlink === 1n && before.size > 0n && before.size <= BigInt(maximum), 'FILE_SIZE');
@@ -70,11 +98,24 @@ async function exactBytes(file, expected = null, maximum = 768 * MB) {
   try {
     handle = await fs.open(file, 'r'); fd = handle.fd; owned = ownFileDescriptorIdentity(fd);
     same(identity(await handle.stat({ bigint: true })), identity(before), 'FILE_CHANGED');
-    bytes = await handle.readFile(); need(bytes.length <= maximum && BigInt(bytes.length) === before.size, 'FILE_SIZE');
+    let measured;
+    if (digestOnly) {
+      const hash = crypto.createHash('sha256'), chunk = Buffer.alloc(256 * 1024); let size = 0;
+      for (;;) {
+        const read = await handle.read(chunk, 0, chunk.length, null);
+        if (read.bytesRead === 0) break;
+        size += read.bytesRead; need(size <= maximum, 'FILE_SIZE');
+        hash.update(chunk.subarray(0, read.bytesRead));
+      }
+      need(BigInt(size) === before.size, 'FILE_SIZE');
+      bytes = measured = { bytes: size, sha256: hash.digest('hex') };
+    } else {
+      bytes = await handle.readFile(); need(bytes.length <= maximum && BigInt(bytes.length) === before.size, 'FILE_SIZE');
+      measured = { bytes: bytes.length, sha256: sha(bytes) };
+    }
     same(identity(await handle.stat({ bigint: true })), identity(before), 'FILE_CHANGED');
     same(identity(await fs.lstat(file, { bigint: true })), identity(before), 'FILE_CHANGED');
-    if (expected) same({ bytes: bytes.length, sha256: sha(bytes) },
-      { bytes: expected.bytes, sha256: expected.sha256 }, 'FILE_IDENTITY');
+    if (expected) same(measured, { bytes: expected.bytes, sha256: expected.sha256 }, 'FILE_IDENTITY');
   } catch (error) { first = error; }
   if (handle) {
     try { await handle.close(); } catch (error) { first ??= error; }
@@ -201,6 +242,14 @@ async function authenticate({ workRoot, publicRoot, expectedRows = null, expecte
       publicPackReference: { archivedWithinOriginalBundle: true, relativePath: publicPack.relativePath,
         fileSha256: publicPack.sha256, bytes: publicPack.bytes, marker: compact.publicHourDelivery }, files: originalFiles } };
 }
+function decodedBulkBytes(bytes) {
+  const parsed = JSON.parse(bytes);
+  // Same stored/legacy dispatch as the normal readDmiBulkDocument reader,
+  // applied to descriptor-owned bytes so materialization is not identity drift.
+  need(plain(parsed), 'BULK_DOCUMENT');
+  if (Object.hasOwn(parsed, 'storageSchema')) return decodeDmiBulkWrapper(parsed, { storedBytes: bytes.length });
+  need(plain(parsed.zones), 'BULK_DOCUMENT'); return parsed;
+}
 function scalarBulk(document) {
   need(plain(document) && plain(document.zones), 'BULK_DOCUMENT');
   const zones = Object.fromEntries(Object.entries(document.zones).map(([zoneId, zone]) => {
@@ -233,13 +282,14 @@ async function acquisitions(state, workRoot) {
   const descriptor = state.verified.files.find(row => row.relativePath === 'data/live/dmi-bulk-cache.json');
   need(descriptor, 'B_BULK'); const file = path.join(state.payload, descriptor.relativePath);
   await exactBytes(file, descriptor, 256 * MB);
-  const document = scalarBulk(await readDmiBulkDocument(file));
+  const originalBulk = await readDmiBulkDocument(file), document = scalarBulk(originalBulk);
   await exactBytes(file, descriptor, 256 * MB);
   // Exactly one normal working-output exception. No caller chooses a path.
   // B (including its whole component pack) is already durably archived above.
   // Before replacing the normal installed working copy, identify its exact
   // original packed bytes or require its authentic absence, and retain them.
-  const original = await originalFixedCandidate(state);
+  const originals = await originalFixedAcquisitions(state), original = originals.candidate;
+  await assertNoPendingPointPromotion(originals);
   const before = await fs.lstat(FIXED_CANDIDATE).catch(error => {
     if (error.code === 'ENOENT') return null; throw error;
   });
@@ -260,6 +310,13 @@ async function acquisitions(state, workRoot) {
   else need(await fs.lstat(FIXED_CANDIDATE).then(() => false, error => {
     if (error.code === 'ENOENT') return true; throw error;
   }), 'UNOWNED_FIXED_CANDIDATE');
+  // The authenticated old active is archived, then moved out of future normal
+  // consumers. Never leave a scalar-only document under the READY active name.
+  const retiredInputs = {};
+  for (const id of Object.keys(RETIRED_CURRENT_FILES)) {
+    retiredInputs[id] = await retireFixedInput(originals.working[id], workRoot, id);
+  }
+  const retiredActive = retiredInputs.active;
   await writeDmiBulkDocument(FIXED_CANDIDATE, document);
   same(await readDmiBulkDocument(FIXED_CANDIDATE), document, 'CANDIDATE_SEED_READBACK');
   const installed = await exactBytes(FIXED_CANDIDATE, null, 256 * MB);
@@ -276,7 +333,25 @@ async function acquisitions(state, workRoot) {
     rows[role] = { path: destination, bytes: seedBytes.length, sha256: sha(seedBytes) };
   }
   rows.outputPath = { path: FIXED_CANDIDATE, bytes: installed.length, sha256: sha(installed) };
-  return { rows, predecessor, outputSeed: { path: seedPath, bytes: seedBytes.length, sha256: sha(seedBytes) } };
+  // The workflow materializes these OLD aliases before prepare. Authenticate
+  // decoded parity with B, preserving their actual physical representations.
+  for (const [id, relative] of Object.entries(MIXED_BULK_FILES)) {
+    const working = path.join(ROOT, relative), bytes = await exactBytes(working, null, 256 * MB);
+    same(decodedBulkBytes(bytes), originalBulk, 'FILE_IDENTITY');
+    const original = { descriptor: { bytes: bytes.length, sha256: sha(bytes) },
+      sourceSha256: descriptor.sha256, packSha256: null };
+    retiredInputs[id] = await retireFixedInput(original, workRoot, id);
+    await writeNew(working, seedBytes);
+    same(await readDmiBulkDocument(working), document, 'CANDIDATE_SEED_READBACK');
+  }
+  const forecast = state.verified.files.find(row => row.relativePath === FORECAST_FILE);
+  need(forecast, 'FILE_IDENTITY');
+  await exactBytes(path.join(state.payload, FORECAST_FILE), forecast, DMI_FORECAST_FILE_MAX_BYTES, true);
+  retiredInputs.forecast = await retireFixedInput({ descriptor: forecast, packSha256: null }, workRoot, 'forecast');
+  const forecastSeed = await seedScalarForecast(retiredInputs.forecast, workRoot,
+    state.snapshot?.originalConditions?.coastalParts?.parts);
+  return { rows, predecessor, retiredActive, retiredInputs, forecastSeed,
+    outputSeed: { path: seedPath, bytes: seedBytes.length, sha256: sha(seedBytes) } };
 }
 async function verifyScalarAcquisition(row, originalBulk) {
   const bytes = await exactBytes(row.path, row, 256 * MB);
@@ -289,33 +364,269 @@ async function verifyScalarAcquisition(row, originalBulk) {
 // This selects preservation identity only, NEVER current provenance/admission.
 // The whole pack is independently authenticated by the unchanged normal B
 // verifier, and its original bytes stay inside the generic immutable archive.
-async function originalFixedCandidate(state) {
+async function originalFixedAcquisitions(state) {
   const descriptor = state.verified.files.find(row => row.relativePath === '.cache/weather-component-inputs.pack');
-  if (!descriptor) return null;
-  const bytes = await exactBytes(path.join(state.payload, descriptor.relativePath), descriptor, 768 * MB);
-  const magic = Buffer.from('RR-WEATHER-COMPONENT-PACK-1\n');
-  need(bytes.subarray(0, magic.length).equals(magic) && bytes.length >= magic.length + 4, 'ORIGINAL_PACK_FORMAT');
-  const size = bytes.readUInt32BE(magic.length);
-  need(size >= 2 && size <= 32 * MB && magic.length + 4 + size <= bytes.length, 'ORIGINAL_PACK_HEADER');
-  const manifest = JSON.parse(bytes.subarray(magic.length + 4, magic.length + 4 + size));
-  need(manifest.kind === 'PRIVATE_WEATHER_COMPONENT_PACK' && manifest.schemaVersion === 1
-    && Array.isArray(manifest.files) && manifest.files.length <= 65536, 'ORIGINAL_PACK_HEADER');
-  let at = magic.length + 4 + size, selected = null; const paths = new Set();
-  for (const row of manifest.files) {
-    need(typeof row.relativePath === 'string' && !paths.has(row.relativePath)
-      && Number.isSafeInteger(row.bytes) && row.bytes > 0 && SHA.test(row.sha256 ?? '')
-      && at + row.bytes <= bytes.length, 'ORIGINAL_PACK_ENTRY');
-    paths.add(row.relativePath);
-    if (row.relativePath === '.cache/dmi-candidate-progress.json') {
-      need(row.bytes <= 256 * MB, 'ORIGINAL_CANDIDATE_SIZE');
-      const actual = Buffer.from(bytes.subarray(at, at + row.bytes));
-      need(sha(actual) === row.sha256, 'ORIGINAL_CANDIDATE_HASH');
-      selected = { descriptor: { bytes: row.bytes, sha256: row.sha256 }, bytes: actual,
-        packSha256: descriptor.sha256 };
+  const selected = { candidate: null, active: null, working: Object.fromEntries(
+    Object.keys(RETIRED_CURRENT_FILES).map(id => [id, null])) };
+  if (descriptor) {
+    const bytes = await exactBytes(path.join(state.payload, descriptor.relativePath), descriptor, 768 * MB);
+    const magic = Buffer.from('RR-WEATHER-COMPONENT-PACK-1\n');
+    need(bytes.subarray(0, magic.length).equals(magic) && bytes.length >= magic.length + 4, 'ORIGINAL_PACK_FORMAT');
+    const size = bytes.readUInt32BE(magic.length);
+    need(size >= 2 && size <= 32 * MB && magic.length + 4 + size <= bytes.length, 'ORIGINAL_PACK_HEADER');
+    const manifest = JSON.parse(bytes.subarray(magic.length + 4, magic.length + 4 + size));
+    need(manifest.kind === 'PRIVATE_WEATHER_COMPONENT_PACK' && manifest.schemaVersion === 1
+      && Array.isArray(manifest.files) && manifest.files.length <= 65536, 'ORIGINAL_PACK_HEADER');
+    let at = magic.length + 4 + size; const paths = new Set();
+    for (const row of manifest.files) {
+      need(typeof row.relativePath === 'string' && !paths.has(row.relativePath)
+        && Number.isSafeInteger(row.bytes) && row.bytes > 0 && SHA.test(row.sha256 ?? '')
+        && at + row.bytes <= bytes.length, 'ORIGINAL_PACK_ENTRY');
+      paths.add(row.relativePath);
+      const id = Object.keys(RETIRED_CURRENT_FILES).find(key => RETIRED_CURRENT_FILES[key] === row.relativePath);
+      if (id !== undefined || row.relativePath === '.cache/dmi-candidate-progress.json') {
+        need(row.bytes <= (id === undefined ? 256 : 768) * MB,
+          id === undefined ? 'ORIGINAL_CANDIDATE_SIZE' : 'FILE_SIZE');
+        const actual = bytes.subarray(at, at + row.bytes);
+        need(sha(actual) === row.sha256, id === undefined ? 'ORIGINAL_CANDIDATE_HASH' : 'FILE_IDENTITY');
+        const original = { descriptor: { bytes: row.bytes, sha256: row.sha256 }, bytes: actual,
+          packSha256: descriptor.sha256 };
+        if (id === undefined) selected.candidate = original;
+        else selected.working[id] = original;
+      }
+      at += row.bytes;
     }
-    at += row.bytes;
+    need(at === bytes.length, 'ORIGINAL_PACK_SIZE');
   }
-  need(at === bytes.length, 'ORIGINAL_PACK_SIZE'); return selected;
+  // Base shadows/pilot can also occur in the pack. Both genuine descriptions
+  // must agree; neither a caller receipt nor a newer working file replaces B.
+  for (const [id, relative] of Object.entries(RETIRED_CURRENT_FILES)) {
+    const base = state.verified.files.find(row => row.relativePath === relative);
+    if (!base) continue;
+    const bytes = await exactBytes(path.join(state.payload, relative), base, 768 * MB);
+    if (selected.working[id]) same(selected.working[id].bytes, bytes, 'FILE_IDENTITY');
+    else selected.working[id] = { descriptor: base, bytes, packSha256: null };
+  }
+  selected.active = selected.working.active; return selected;
+}
+async function assertNoPendingPointPromotion(originals) {
+  const original = originals.working.pointPromotion;
+  const working = path.join(ROOT, RETIRED_CURRENT_FILES.pointPromotion);
+  const before = await fs.lstat(working, { bigint: true }).catch(error => {
+    if (error.code === 'ENOENT') return null; throw error;
+  });
+  // Authentic absence requires absence in both B/pack and the working view.
+  // A changed/foreign/missing expected document is not a cancellation grant.
+  if (original === null) { need(before === null, 'FILE_IDENTITY'); return; }
+  need(before !== null, 'FILE_IDENTITY');
+  await exactBytes(working, original.descriptor, 768 * MB, true);
+  // Presence blocks even when it might be old/stale: only the existing normal
+  // activation path may validate readiness and fresh central compare-and-swap.
+  // This check precedes EVERY mutable working copy/retire/scalar operation.
+  fail('PENDING_POINT_PROMOTION');
+}
+async function retireFixedInput(original, workRoot, id) {
+  need(Object.hasOwn(RETIRED_WORKING_FILES, id), 'FILE_PATH');
+  const working = path.join(ROOT, RETIRED_WORKING_FILES[id]);
+  const maximum = id === 'forecast' ? DMI_FORECAST_FILE_MAX_BYTES : 768 * MB;
+  const before = await fs.lstat(working, { bigint: true }).catch(error => {
+    if (error.code === 'ENOENT') return null; throw error;
+  });
+  if (original === null) { need(before === null, 'FILE_IDENTITY'); return null; }
+  need(before !== null && before.isFile() && !before.isSymbolicLink() && before.nlink === 1n, 'FILE_IDENTITY');
+  await exactBytes(working, original.descriptor, maximum, true);
+  const preservedPath = path.join(workRoot, 'original-working-' + id + '.json');
+  await noLinks(workRoot);
+  need(await fs.lstat(preservedPath).then(() => false, error => {
+    if (error.code === 'ENOENT') return true; throw error;
+  }), 'FILE_PATH');
+  const identity = stat => [stat.dev, stat.ino, stat.size, stat.mtimeNs, stat.ctimeNs];
+  same(identity(await fs.lstat(working, { bigint: true })), identity(before), 'FILE_CHANGED');
+  // No copy+unlink fallback. Unknown move outcome stops with all moved bytes
+  // retained; the job must not blindly repeat prepare.
+  await fs.rename(working, preservedPath);
+  const moved = await fs.lstat(preservedPath, { bigint: true });
+  same([moved.dev, moved.ino, moved.size, moved.mtimeNs],
+    [before.dev, before.ino, before.size, before.mtimeNs], 'FILE_CHANGED');
+  await exactBytes(preservedPath, original.descriptor, maximum, true);
+  need(await fs.lstat(working).then(() => false, error => {
+    if (error.code === 'ENOENT') return true; throw error;
+  }), 'FILE_CHANGED');
+  return { path: preservedPath, bytes: original.descriptor.bytes, sha256: original.descriptor.sha256,
+    sourceSha256: original.sourceSha256 ?? original.descriptor.sha256, packSha256: original.packSha256 };
+}
+async function verifyRetiredInput(original, row, workRoot, id) {
+  if (original === null) { need(row === null, 'FILE_IDENTITY'); return; }
+  need(row?.path === path.join(workRoot, 'original-working-' + id + '.json')
+    && row.packSha256 === original.packSha256
+    && row.sourceSha256 === (original.sourceSha256 ?? original.descriptor.sha256), 'FILE_IDENTITY');
+  same({ bytes: row.bytes, sha256: row.sha256 },
+    { bytes: original.descriptor.bytes, sha256: original.descriptor.sha256 }, 'FILE_IDENTITY');
+  await exactBytes(row.path, original.descriptor,
+    id === 'forecast' ? DMI_FORECAST_FILE_MAX_BYTES : 768 * MB, true);
+  // Only OLD private copies are read. NEW producer files are never retired,
+  // overwritten or mistaken for evidence when the locator is loaded again.
+}
+async function verifyRetiredActive(original, context) {
+  await verifyRetiredInput(original, context.retiredActive, context.workRoot, 'active');
+}
+function scalarForecastRecord(record) {
+  const selected = withoutCurrent(record);
+  if (selected) selected.hourly = selected.hourly.map(row => {
+    const { currentStateOnlyHold: _hold, currentCoastNormalSpeedMps: _normal, ...rest } = row; return rest;
+  });
+  return selected;
+}
+// Validate the WHOLE saved envelope/domain/totals before any one-entry codec
+// view is made. Only descriptors/identity are retained; no decoded national bank.
+async function scalarPartInventory(index, originalParts) {
+  if (index.continuity === null) return null;
+  const { metadata, entries } = index.continuity;
+  same(Object.keys(metadata).sort(), ['schemaVersion', 'kind', 'productionReferenceAt',
+    'partCount', 'rawBytes', 'compressedBytes'].sort(), 'FILE_IDENTITY');
+  need([1, 2].includes(metadata.schemaVersion)
+    && metadata.kind === 'PRIVATE_DMI_PART_HOURLY_CONTINUITY'
+    && Number.isSafeInteger(metadata.partCount) && metadata.partCount >= 1 && metadata.partCount <= 673
+    && metadata.partCount === entries.length
+    && Number.isSafeInteger(metadata.rawBytes) && metadata.rawBytes >= 1
+    && Number.isSafeInteger(metadata.compressedBytes) && metadata.compressedBytes >= 1, 'FILE_IDENTITY');
+  hour(metadata.productionReferenceAt);
+  assertDmiPartContinuityTotalSize(metadata.rawBytes, metadata.compressedBytes);
+  const rows = []; let rawBytes = 0, compressedBytes = 0, lastId = null;
+  for (const descriptor of entries) {
+    const entry = await readDmiForecastRecord(index, descriptor);
+    need(plain(entry) && typeof entry.partId === 'string' && entry.partId.length > 0
+      && (lastId === null || entry.partId.localeCompare(lastId) > 0)
+      && Array.isArray(entry.point) && entry.point.length === 2 && entry.point.every(Number.isFinite)
+      && Number.isSafeInteger(entry.rawBytes) && entry.rawBytes >= 2
+      && Number.isSafeInteger(entry.compressedBytes) && entry.compressedBytes >= 2, 'FILE_IDENTITY');
+    rawBytes += entry.rawBytes; compressedBytes += entry.compressedBytes;
+    need(Number.isSafeInteger(rawBytes) && Number.isSafeInteger(compressedBytes), 'FILE_IDENTITY');
+    assertDmiPartContinuityTotalSize(rawBytes, compressedBytes);
+    // Schema2's ordinary reader needs the OLD authenticated parent-zone ID.
+    // Its point is always the saved entry point, never new admin geometry.
+    const oldPart = originalParts?.[entry.partId];
+    if (metadata.schemaVersion === 2) need(plain(oldPart) && oldPart.partId === entry.partId
+      && typeof oldPart.zoneId === 'string' && oldPart.zoneId.length > 0, 'FILE_IDENTITY');
+    rows.push({ descriptor, part: { partId: entry.partId, waterPoint: entry.point,
+      ...(metadata.schemaVersion === 2 ? { zoneId: oldPart.zoneId } : {}) } });
+    lastId = entry.partId;
+  }
+  need(rawBytes === metadata.rawBytes && compressedBytes === metadata.compressedBytes, 'FILE_IDENTITY');
+  return { metadata, rows };
+}
+async function readScalarPart(index, inventory, row) {
+  const entry = await readDmiForecastRecord(index, row.descriptor);
+  // Normal saved-original bank validation stays intact, including null-bank
+  // coverage and all corrupt-schema2 refusals. This grants no current admission.
+  const decoded = await unpackDmiPartContinuity({ ...inventory.metadata, partCount: 1,
+    rawBytes: entry.rawBytes, compressedBytes: entry.compressedBytes, entries: [entry] },
+  [row.part], inventory.metadata.productionReferenceAt);
+  need(decoded.size === 1 && decoded.has(row.part.partId), 'FILE_IDENTITY');
+  return decoded.get(row.part.partId);
+}
+async function scalarPartContinuity(index, originalParts) {
+  const inventory = await scalarPartInventory(index, originalParts);
+  if (inventory === null) return null;
+  const result = { ...inventory.metadata, schemaVersion: 1, rawBytes: 0, compressedBytes: 0, entries: [] };
+  for (const row of inventory.rows) {
+    const original = await readScalarPart(index, inventory, row);
+    const scalar = scalarForecastRecord({ ...original, zoneId: 'PART::' + row.part.partId });
+    // No options means the ordinary schema1 codec: scalar storage, not a
+    // fabricated native-original bank. OLD B and original schema2 bytes remain.
+    const one = await packDmiPartContinuity(new Map([[row.part.partId, scalar]]),
+      [row.part], inventory.metadata.productionReferenceAt);
+    result.entries.push(one.entries[0]); result.rawBytes += one.rawBytes;
+    result.compressedBytes += one.compressedBytes;
+    assertDmiPartContinuityTotalSize(result.rawBytes, result.compressedBytes);
+  }
+  return result;
+}
+async function verifyScalarParts(before, after, originalParts) {
+  const oldParts = await scalarPartInventory(before, originalParts);
+  const newParts = await scalarPartInventory(after, originalParts);
+  if (oldParts === null) { need(newParts === null, 'FILE_IDENTITY'); return; }
+  need(newParts !== null && newParts.metadata.schemaVersion === 1, 'FILE_IDENTITY');
+  const withoutSize = ({ rawBytes: _raw, compressedBytes: _compressed, schemaVersion: _schema, ...rest }) => rest;
+  same(withoutSize(newParts.metadata), withoutSize(oldParts.metadata), 'FILE_IDENTITY');
+  for (let i = 0; i < oldParts.rows.length; i++) {
+    const oldRow = oldParts.rows[i], newRow = newParts.rows[i];
+    same(newRow.part.partId, oldRow.part.partId, 'FILE_IDENTITY');
+    same(newRow.part.waterPoint, oldRow.part.waterPoint, 'FILE_IDENTITY');
+    const original = await readScalarPart(before, oldParts, oldRow);
+    const scalar = await readScalarPart(after, newParts, newRow);
+    same(scalar, { point: original.point, hourly: scalarForecastRecord(original).hourly }, 'FILE_IDENTITY');
+  }
+}
+async function verifyScalarForecast(original, seed, workRoot, originalParts) {
+  need(seed?.path === path.join(workRoot, 'scalar-forecast-seed.json'), 'FILE_PATH');
+  await exactBytes(seed.path, seed, DMI_FORECAST_FILE_MAX_BYTES, true);
+  const before = await inspectDmiForecastFile(original.path), after = await inspectDmiForecastFile(seed.path);
+  const metadata = { ...before.metadata }; delete metadata.partContinuity;
+  same(after.metadata, metadata, 'FILE_IDENTITY');
+  await verifyScalarParts(before, after, originalParts);
+  same([...after.zones.keys()], [...before.zones.keys()], 'FILE_IDENTITY');
+  for (const [id, row] of before.zones) {
+    same(await readDmiForecastRecord(after, after.zones.get(id)),
+      scalarForecastRecord(await readDmiForecastRecord(before, row)), 'FILE_IDENTITY');
+  }
+  const oldWater = before.waterSourceContinuity, newWater = after.waterSourceContinuity;
+  same(newWater?.metadata ?? null, oldWater?.metadata ?? null, 'FILE_IDENTITY');
+  need((newWater?.entries.length ?? 0) === (oldWater?.entries.length ?? 0), 'FILE_IDENTITY');
+  for (let i = 0; i < (oldWater?.entries.length ?? 0); i++) {
+    same(await readDmiForecastRecord(after, newWater.entries[i]),
+      await readDmiForecastRecord(before, oldWater.entries[i]), 'FILE_IDENTITY');
+  }
+  await exactBytes(original.path, original, DMI_FORECAST_FILE_MAX_BYTES, true);
+  await exactBytes(seed.path, seed, DMI_FORECAST_FILE_MAX_BYTES, true);
+}
+async function seedScalarForecast(original, workRoot, originalParts) {
+  const index = await inspectDmiForecastFile(original.path), metadata = { ...index.metadata };
+  delete metadata.partContinuity;
+  const continuity = await scalarPartContinuity(index, originalParts);
+  if (continuity !== null) metadata.partContinuity = continuity;
+  async function* zones() {
+    for (const [id, row] of index.zones) yield [id, scalarForecastRecord(await readDmiForecastRecord(index, row))];
+  }
+  const seedPath = path.join(workRoot, 'scalar-forecast-seed.json');
+  // The ordinary writer otherwise re-appends OLD native PART continuity. Use
+  // only the normal scalar projection, preserving independent SOURCE entries.
+  await writeDmiForecastRecords(seedPath, { ...index, continuity: null }, zones(), metadata);
+  const seed = { path: seedPath, ...await exactBytes(seedPath, null, DMI_FORECAST_FILE_MAX_BYTES, true) };
+  await verifyScalarForecast(original, seed, workRoot, originalParts);
+  const working = path.join(ROOT, FORECAST_FILE);
+  await noLinks(path.dirname(working));
+  // Exclusive copy of the normal recordwise result, not national stringify.
+  await fs.copyFile(seedPath, working, fs.constants.COPYFILE_EXCL);
+  await exactBytes(seedPath, seed, DMI_FORECAST_FILE_MAX_BYTES, true);
+  await exactBytes(working, seed, DMI_FORECAST_FILE_MAX_BYTES, true);
+  return seed;
+}
+async function verifyRetiredWorkingInputs(state, originals, context) {
+  need(plain(context.retiredInputs), 'FILE_IDENTITY');
+  same(Object.keys(context.retiredInputs).sort(), Object.keys(RETIRED_WORKING_FILES).sort(), 'FILE_IDENTITY');
+  for (const id of Object.keys(RETIRED_CURRENT_FILES)) {
+    await verifyRetiredInput(originals.working[id], context.retiredInputs[id], context.workRoot, id);
+  }
+  same(context.retiredActive, context.retiredInputs.active, 'FILE_IDENTITY');
+  const descriptor = state.verified.files.find(row => row.relativePath === 'data/live/dmi-bulk-cache.json');
+  need(descriptor, 'FILE_IDENTITY');
+  const originalBytes = await exactBytes(path.join(state.payload, descriptor.relativePath), descriptor, 256 * MB);
+  const originalBulk = decodedBulkBytes(originalBytes);
+  for (const id of Object.keys(MIXED_BULK_FILES)) {
+    const row = context.retiredInputs[id];
+    need(row?.path === path.join(context.workRoot, 'original-working-' + id + '.json')
+      && row.sourceSha256 === descriptor.sha256 && row.packSha256 === null, 'FILE_IDENTITY');
+    const bytes = await exactBytes(row.path, row, 256 * MB);
+    same(decodedBulkBytes(bytes), originalBulk, 'FILE_IDENTITY');
+  }
+  const forecast = state.verified.files.find(row => row.relativePath === FORECAST_FILE);
+  need(forecast, 'FILE_IDENTITY');
+  await exactBytes(path.join(state.payload, FORECAST_FILE), forecast, DMI_FORECAST_FILE_MAX_BYTES, true);
+  await verifyRetiredInput({ descriptor: forecast, packSha256: null }, context.retiredInputs.forecast,
+    context.workRoot, 'forecast');
+  await verifyScalarForecast(context.retiredInputs.forecast, context.forecastSeed, context.workRoot,
+    state.snapshot?.originalConditions?.coastalParts?.parts);
 }
 function mint(state, archive, context) {
   const archived = assertVerifiedWeatherStateEpochArchive(archive);
@@ -352,7 +663,8 @@ export async function prepareCurrentFamilyColdStart({ workRoot, publicRoot, targ
     targetReferenceAt, workRoot, publicRoot, archiveRoot, archiveId: archived.archiveId,
     archiveCatalogSha256: archived.archiveCatalogSha256, originalBoundary: rowIdentity(state.rows),
     sourceTuple: state.tuple, registrySha256: state.registrySha256,
-    acquisition: acquired.rows, outputSeed: acquired.outputSeed, fixedPredecessor: acquired.predecessor };
+    acquisition: acquired.rows, outputSeed: acquired.outputSeed, fixedPredecessor: acquired.predecessor,
+    retiredActive: acquired.retiredActive, retiredInputs: acquired.retiredInputs, forecastSeed: acquired.forecastSeed };
   const contextPath = path.join(workRoot, 'context.json'), bytes = jsonBytes(context);
   await writeNew(contextPath, bytes);
   return Object.freeze({ capability: mint(state, archive, context), contextPath, contextSha256: sha(bytes) });
@@ -381,7 +693,9 @@ export async function loadCurrentFamilyColdStartForTarget({ contextPath, context
   const originalBulk = scalarBulk(await readDmiBulkDocument(path.join(state.payload, 'data/live/dmi-bulk-cache.json')));
   need(context.outputSeed?.path === path.join(context.workRoot, 'acquisition-output-seed.json'), 'ACQUISITION_PATH');
   await verifyScalarAcquisition(context.outputSeed, originalBulk);
-  const original = await originalFixedCandidate(state);
+  const originals = await originalFixedAcquisitions(state), original = originals.candidate;
+  await verifyRetiredActive(originals.active, context);
+  await verifyRetiredWorkingInputs(state, originals, context);
   if (original === null) need(context.fixedPredecessor === null, 'ORIGINAL_CANDIDATE_CHANGED');
   else {
     const row = context.fixedPredecessor;

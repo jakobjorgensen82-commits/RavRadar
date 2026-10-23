@@ -5,13 +5,19 @@ import path from 'node:path';
 import crypto from 'node:crypto';
 import { fileURLToPath } from 'node:url';
 import { isDeepStrictEqual } from 'node:util';
-import { ownFileDescriptorIdentity, ownedFileDescriptorClosed } from './lib/private-weather-component-pack.mjs';
+import { ownFileDescriptorIdentity, ownedFileDescriptorClosed,
+  buildPrivateWeatherComponentPack, unpackPrivateWeatherComponentPack } from './lib/private-weather-component-pack.mjs';
 import {
   DMI_BULK_STORAGE_SCHEMA,
   decodeDmiBulkWrapper,
   readDmiBulkDocument,
   writeDmiBulkDocument,
 } from './lib/dmi-bulk-storage.mjs';
+import { inspectDmiForecastFile, readDmiForecastRecord, writeDmiForecastRecords,
+  readDmiForecastFile, writeDmiForecastFileAtomic, DMI_FORECAST_FILE_MAX_BYTES } from './lib/dmi-forecast-file.mjs';
+import { withoutCurrent } from './lib/private-dmi-recovery-record.mjs';
+import { packDmiPartContinuity, unpackDmiPartContinuity, assertDmiPartContinuityTotalSize }
+  from './lib/dmi-part-continuity.mjs';
 
 const source = Object.freeze({
   collection: 'dkss_lf', modelRun: '2026-09-08T12:00:00Z', itemId: 'private-test',
@@ -77,13 +83,17 @@ try {
   await fs.mkdir(path.join(coldRoot, '.cache'), { recursive: true });
   await fs.mkdir(workRoot);
   const cold = new Function('fs', 'path', 'crypto', 'equal', 'readDmiBulkDocument', 'writeDmiBulkDocument',
-    'decodeDmiBulkWrapper', 'ownFileDescriptorIdentity', 'ownedFileDescriptorClosed', 'ROOT',
+    'decodeDmiBulkWrapper', 'ownFileDescriptorIdentity', 'ownedFileDescriptorClosed',
+    'inspectDmiForecastFile', 'readDmiForecastRecord', 'writeDmiForecastRecords',
+    'DMI_FORECAST_FILE_MAX_BYTES', 'withoutCurrent', 'packDmiPartContinuity', 'unpackDmiPartContinuity', 'assertDmiPartContinuityTotalSize', 'ROOT',
     '"use strict";\n' + section('const CAPABILITIES =', 'export const CURRENT_FAMILY_COLD_START_CONTEXT_ENV')
       + section('const SCALARS =', 'async function sourceTuple()')
-      + section('function scalarBulk(', 'function mint(')
-      + '\nreturn { acquisitions, verifyScalarAcquisition };')(
+      + section('function decodedBulkBytes(', 'function mint(')
+      + '\nreturn { acquisitions, verifyScalarAcquisition, originalFixedAcquisitions, verifyRetiredActive, verifyRetiredWorkingInputs, retireFixedInput, verifyScalarForecast, retiredFiles: RETIRED_CURRENT_FILES };')(
     fs, path, crypto, isDeepStrictEqual, readDmiBulkDocument, writeDmiBulkDocument,
-    decodeDmiBulkWrapper, ownFileDescriptorIdentity, ownedFileDescriptorClosed, coldRoot);
+    decodeDmiBulkWrapper, ownFileDescriptorIdentity, ownedFileDescriptorClosed,
+    inspectDmiForecastFile, readDmiForecastRecord, writeDmiForecastRecords,
+    DMI_FORECAST_FILE_MAX_BYTES, withoutCurrent, packDmiPartContinuity, unpackDmiPartContinuity, assertDmiPartContinuityTotalSize, coldRoot);
   const scalarSource = { collection: 'dkss_nsbs', modelRun: '2026-10-18T00:00:00.000Z',
     itemId: 'synthetic-scalar-storage-only', provider: 'dmi', gridPoint: [1, 2],
     samplingPoint: [10, 56], samplingContext: 'synthetic-scalar-storage',
@@ -97,10 +107,116 @@ try {
   await writeDmiBulkDocument(bulkFile, { schemaVersion: 2, zones: { sample: { hourly } } });
   const before = await fs.readFile(bulkFile);
   const hash = bytes => crypto.createHash('sha256').update(bytes).digest('hex');
-  const state = { payload, verified: { files: [{ relativePath: 'data/live/dmi-bulk-cache.json',
-    bytes: before.length, sha256: hash(before) }] } };
+  const forecastRelative = 'data/live/dmi-forecast-cache.json', forecastFile = path.join(payload, forecastRelative);
+  // Two normal PART records contain scalar weather not present in bulk or
+  // zone rows. A CURRENT-only cold start must keep every one of these 121
+  // rows, including support rows 118..120, through normal save/restore.
+  const scalarParts = [
+    { partId: 'test-old-PART', zoneId: 'DK-B01-01', waterPoint: [10, 56] },
+    { partId: 'test-old-PART-B', zoneId: 'DK-B01-01', waterPoint: [10.1, 56.1] },
+  ];
+  const partReferenceAt = Object.keys(hourly)[0];
+  const partRecords = new Map(scalarParts.map((part, partIndex) => [part.partId, {
+    zoneId: 'PART::' + part.partId, point: part.waterPoint,
+    hourly: Object.keys(hourly).map((time, index) => ({ time,
+      windSpeedMps: 2 + partIndex + index / 1000, windDirectionDeg: 40 + index,
+      waveHeightM: 0.2 + index / 1000, wavePeriodS: 4 + partIndex,
+      waveDirectionDeg: 45 + index, waterLevelCm: index - 20, waterTemperatureC: 12 + partIndex,
+      currentUMps: 0.3, currentVMps: 0.4, currentSpeedMps: 0.5, currentDirectionDeg: 36,
+      currentCoastNormalSpeedMps: 0.1,
+      ...(index % 2 ? { currentStateOnlyHold: { synthetic: true } } : {}),
+      currentProvenance: { syntheticOld: true },
+      sources: Object.fromEntries(['wind', 'wave', 'waterLevel', 'waterTemperature', 'current'].map(component =>
+        [component, { ...scalarSource, itemId: 'saved-part-only-' + partIndex + '-' + component,
+          samplingPoint: part.waterPoint, ...(component === 'current' ? { vectorSemanticsVersion: 3 } : {}) }])),
+    })),
+  }]));
+  const partPack = await packDmiPartContinuity(partRecords, scalarParts, partReferenceAt,
+    { nativeCurrentProofsByPart: new Map(scalarParts.map(part => [part.partId, null])) });
+  const savedPartRows = await unpackDmiPartContinuity(partPack, scalarParts, partReferenceAt);
+  assert(savedPartRows.get(scalarParts[0].partId).nativeCurrentOriginals.coverage.some(row =>
+    row.status === 'DMI_SELECTION_PROOF_NOT_STORED' && row.sampling === 'source-invalid'));
+  const expectedScalarParts = new Map(scalarParts.map(part => [part.partId,
+    partRecords.get(part.partId).hourly.map(row => {
+      const clean = { ...row, sources: { ...row.sources } };
+      delete clean.sources.current;
+      for (const key of ['currentUMps', 'currentVMps', 'currentSpeedMps', 'currentDirectionDeg',
+        'currentProvenance', 'currentCoastNormalSpeedMps', 'currentStateOnlyHold']) delete clean[key];
+      return clean;
+    })]));
+  const assertScalarParts = async document => {
+    assert(document.partContinuity, 'CURRENT_ONLY_COLD_START_MUST_PRESERVE_SCALAR_PART_HOURS');
+    assert.equal(document.partContinuity.schemaVersion, 1, 'Only a scalar working view; no old native bank.');
+    const decoded = await unpackDmiPartContinuity(document.partContinuity, scalarParts, partReferenceAt);
+    assert.equal(decoded.size, scalarParts.length);
+    for (const part of scalarParts) {
+      assert.deepEqual(decoded.get(part.partId).hourly, expectedScalarParts.get(part.partId));
+      assert.equal(decoded.get(part.partId).nativeCurrentOriginals, undefined);
+    }
+  };
+  const forecastDocument = { schemaVersion: 2, runtime: { nextZoneCursor: 7 },
+    zones: { sample: { zoneId: 'sample', point: [10, 56], model: { completeness: {
+      current: true, currentVectorSelection: 'native', gridPoints: { 'current-u': [1, 2], wave: [1, 2] },
+    } }, hourly: [{ time: Object.keys(hourly)[0], windSpeedMps: 2, windDirectionDeg: 3,
+      waveHeightM: 4, wavePeriodS: 5, waveDirectionDeg: 6, waterTemperatureC: 7, waterLevelCm: 8,
+      currentUMps: 9, currentVMps: 10, currentSpeedMps: 11, currentDirectionDeg: 12,
+      currentCoastNormalSpeedMps: 13, currentStateOnlyHold: true, currentProvenance: { status: 'old-test' },
+      sources: { current: { provider: 'dmi' }, wind: { provider: 'dmi' }, waterLevel: { provider: 'dmi' } } }] } },
+    partContinuity: partPack,
+    waterSourceContinuity: { schemaVersion: 1, entries: [{ sourceKey: 'test-water-source',
+      hourly: [{ time: Object.keys(hourly)[0], waterLevelCm: 8 }] }] } };
+  await writeDmiForecastFileAtomic(forecastFile, forecastDocument);
+  const originalForecast = await fs.readFile(forecastFile);
+  const preservedPartSnapshot = { originalConditions: { coastalParts: {
+    parts: Object.fromEntries(scalarParts.map(part => [part.partId, part])),
+  } } };
+  const state = { payload, snapshot: preservedPartSnapshot, verified: { files: [{ relativePath: 'data/live/dmi-bulk-cache.json',
+    bytes: before.length, sha256: hash(before) },
+    { relativePath: forecastRelative, bytes: originalForecast.length, sha256: hash(originalForecast) }] } };
+  const resetMixed = async () => {
+    await fs.mkdir(path.join(coldRoot, 'data/live'), { recursive: true });
+    // OLD working bulk is legitimately materialized before prepare. Its raw
+    // bytes differ from the normal stored wrapper but decoded identity agrees.
+    await fs.writeFile(path.join(coldRoot, 'data/live/dmi-bulk-cache.json'), JSON.stringify(await readDmiBulkDocument(bulkFile)));
+    await fs.copyFile(bulkFile, path.join(coldRoot, '.cache/deployed-dmi-bulk-cache.json'));
+    await fs.copyFile(forecastFile, path.join(coldRoot, forecastRelative));
+  };
+  await resetMixed();
+  const baselinePath = path.join(coldRoot, 'data/live/conditions.json');
+  const checkpointPath = path.join(coldRoot, '.cache/ravscore-continuation-checkpoint/checkpoint.json');
+  await fs.mkdir(path.dirname(checkpointPath), { recursive: true });
+  await fs.writeFile(baselinePath, 'OLD authentication baseline');
+  await fs.writeFile(checkpointPath, 'OLD working S required by Python retention');
   const acquired = await cold.acquisitions(state, workRoot);
   assert.equal(acquired.predecessor, null);
+  const locator = value => ({ workRoot: path.dirname(value.outputSeed.path),
+    retiredActive: value.retiredActive, retiredInputs: value.retiredInputs, forecastSeed: value.forecastSeed });
+  await cold.verifyRetiredWorkingInputs(state, await cold.originalFixedAcquisitions(state), locator(acquired));
+  const scalarForecast = await readDmiForecastFile(path.join(coldRoot, forecastRelative));
+  await assertScalarParts(scalarForecast);
+  // The normal schema1 predecessor is also readable without inventing an
+  // original bank or admitting its CURRENT family to the scalar working view.
+  const legacyForecastFile = path.join(directory, 'schema1-original-forecast.json');
+  await writeDmiForecastFileAtomic(legacyForecastFile, { ...forecastDocument,
+    partContinuity: await packDmiPartContinuity(partRecords, scalarParts, partReferenceAt) });
+  const legacyForecastBytes = await fs.readFile(legacyForecastFile);
+  await cold.verifyScalarForecast({ path: legacyForecastFile, bytes: legacyForecastBytes.length,
+    sha256: hash(legacyForecastBytes) }, acquired.forecastSeed, workRoot,
+  preservedPartSnapshot.originalConditions.coastalParts.parts);
+  assert.deepEqual(scalarForecast.waterSourceContinuity, forecastDocument.waterSourceContinuity);
+  assert.deepEqual(scalarForecast.runtime, forecastDocument.runtime);
+  const scalarHour = scalarForecast.zones.sample.hourly[0];
+  for (const key of ['windSpeedMps', 'windDirectionDeg', 'waveHeightM', 'wavePeriodS',
+    'waveDirectionDeg', 'waterTemperatureC', 'waterLevelCm']) {
+    assert.equal(scalarHour[key], forecastDocument.zones.sample.hourly[0][key]);
+  }
+  for (const key of ['currentUMps', 'currentVMps', 'currentSpeedMps', 'currentDirectionDeg',
+    'currentProvenance', 'currentCoastNormalSpeedMps', 'currentStateOnlyHold']) assert.equal(Object.hasOwn(scalarHour, key), false);
+  assert.equal(Object.hasOwn(scalarHour.sources, 'current'), false);
+  assert.equal(scalarForecast.zones.sample.model.completeness.current, false);
+  assert.deepEqual(await fs.readFile(forecastFile), originalForecast);
+  assert.equal(await fs.readFile(baselinePath, 'utf8'), 'OLD authentication baseline');
+  assert.equal(await fs.readFile(checkpointPath, 'utf8'), 'OLD working S required by Python retention');
   const expected = { zones: { sample: { hourly: Object.fromEntries(Object.entries(hourly).map(([time, row]) => [
     time, { time, 'sea-mean-deviation': row['sea-mean-deviation'], sources: { waterLevel: scalarSource } },
   ])) } }, schemaVersion: 2 };
@@ -119,6 +235,267 @@ try {
   await cold.verifyScalarAcquisition(acquired.outputSeed, expected);
   await assert.rejects(cold.acquisitions(state, workRoot), /UNOWNED_FIXED_CANDIDATE/);
   assert.deepEqual(await fs.readFile(bulkFile), before, 'The authenticated original must remain byte-identical.');
+
+  // Regression: OLD active + a partial NEW DMI generation. Exercise the real
+  // pack producer/unpacker and constructor, not a synthetic READY exemption.
+  const candidatePath = path.join(coldRoot, '.cache/dmi-candidate-progress.json');
+  const activePath = path.join(coldRoot, '.cache/dmi-active-complete.json');
+  const oldDocument = { schemaVersion: 2, zones: { sample: { hourly } } };
+  await writeDmiBulkDocument(candidatePath, oldDocument);
+  await writeDmiBulkDocument(activePath, oldDocument);
+  const oldCandidate = await fs.readFile(candidatePath), oldActive = await fs.readFile(activePath);
+  const expectedRetired = ['.cache/dmi-active-complete.json', '.cache/current-field-shadow.json',
+    '.cache/copernicus-current-shadow.json', '.cache/copernicus-current-source-stage.json',
+    '.cache/copernicus-current-donor-bank.json', '.cache/copernicus-current-segment-journal.json',
+    '.cache/open-meteo-current-fallback.json', '.cache/open-meteo-current-donor-bank.json',
+    'data/live/current-pilot-history.json', '.cache/coastal-point-staging/dmi.json',
+    '.cache/coastal-point-staging/state.json', '.cache/coastal-point-staging/status.json',
+    '.cache/coastal-point-staging/activation-state-injection.json', '.cache/coastal-point-staging/pending-promotion.json'];
+  assert.deepEqual(Object.values(cold.retiredFiles), expectedRetired);
+  const currentOriginals = {};
+  for (const [id, relative] of Object.entries(cold.retiredFiles)) {
+    const target = path.join(coldRoot, relative); await fs.mkdir(path.dirname(target), { recursive: true });
+    if (id === 'pointPromotion') { currentOriginals[id] = null; continue; }
+    if (id !== 'active') await fs.writeFile(target, JSON.stringify({ schemaVersion: 1, oldCurrentInput: id }) + '\n');
+    currentOriginals[id] = await fs.readFile(target);
+  }
+  const pilotRelative = 'data/live/current-pilot-history.json';
+  await fs.copyFile(path.join(coldRoot, pilotRelative), path.join(payload, pilotRelative));
+  const pilotFile = { relativePath: pilotRelative, bytes: currentOriginals.pilot.length, sha256: hash(currentOriginals.pilot) };
+  // Scalar progress is deliberately retained, not swept with current inputs.
+  const cursorPath = path.join(coldRoot, '.cache/weather-component-fallback-cursor.json');
+  await fs.writeFile(cursorPath, '{"schemaVersion":1,"nextScalar":7}\n');
+  const scalarCursor = await fs.readFile(cursorPath);
+  await resetMixed();
+  const packed = await buildPrivateWeatherComponentPack({ repositoryRoot: coldRoot,
+    outputRoot: payload, conditions: {}, includeOperationalProgress: true });
+  const oldPack = await fs.readFile(packed.sourcePath);
+  const packedState = { payload, snapshot: preservedPartSnapshot, verified: { files: [...state.verified.files, pilotFile,
+    { relativePath: '.cache/weather-component-inputs.pack', bytes: oldPack.length, sha256: hash(oldPack) }] } };
+  // An armed admin promotion is NOT disposable current history. Authenticate
+  // its whole-pack presence/absence before ANY mutable working operation.
+  // These are storage-contract fixtures, not a synthetic READY/CAS grant.
+  const pendingPath = path.join(coldRoot, cold.retiredFiles.pointPromotion);
+  const pendingBytes = Buffer.from(JSON.stringify({ schemaVersion: 1,
+    preparedAt: '2026-10-18T00:00:00.000Z', documentKey: 'direction-reviews',
+    expectedVersion: 7, revisions: ['synthetic-request'], partIds: ['test-old-PART'],
+    payload: { schemaVersion: 3, zones: {} } }) + '\n');
+  await fs.writeFile(pendingPath, pendingBytes);
+  const pendingPayload = path.join(directory, 'pending-original-B'); await fs.mkdir(pendingPayload);
+  const pendingPack = await buildPrivateWeatherComponentPack({ repositoryRoot: coldRoot,
+    outputRoot: pendingPayload, conditions: {}, includeOperationalProgress: true });
+  for (const row of [...state.verified.files, pilotFile]) {
+    const target = path.join(pendingPayload, row.relativePath); await fs.mkdir(path.dirname(target), { recursive: true });
+    await fs.copyFile(path.join(payload, row.relativePath), target);
+  }
+  const pendingPackBytes = await fs.readFile(pendingPack.sourcePath);
+  const pendingState = { payload: pendingPayload, snapshot: preservedPartSnapshot, verified: { files: [...state.verified.files, pilotFile,
+    { relativePath: '.cache/weather-component-inputs.pack', bytes: pendingPackBytes.length, sha256: hash(pendingPackBytes) }] } };
+  const unchangedPaths = [...Object.values(cold.retiredFiles), '.cache/dmi-candidate-progress.json',
+    'data/live/dmi-bulk-cache.json', '.cache/deployed-dmi-bulk-cache.json', forecastRelative,
+    'data/live/conditions.json', '.cache/ravscore-continuation-checkpoint/checkpoint.json',
+    '.cache/weather-component-fallback-cursor.json'];
+  const workingSnapshot = async () => Promise.all(unchangedPaths.map(async relative => {
+    const file = path.join(coldRoot, relative);
+    try { return [relative, await fs.readFile(file)]; }
+    catch (error) { if (error.code === 'ENOENT') return [relative, null]; throw error; }
+  }));
+  for (const kind of ['authenticated', 'foreign', 'changed', 'missing']) {
+    await fs.writeFile(pendingPath, kind === 'changed' ? '{"changedPending":true}' : pendingBytes);
+    if (kind === 'missing') await fs.unlink(pendingPath);
+    const snapshot = await workingSnapshot();
+    const pendingWork = path.join(directory, 'pending-refusal-' + kind); await fs.mkdir(pendingWork);
+    await assert.rejects(cold.acquisitions(kind === 'foreign' ? packedState : pendingState, pendingWork),
+      error => error.code === 'CURRENT_FAMILY_COLD_START_' + (kind === 'authenticated' ? 'PENDING_POINT_PROMOTION' : 'FILE_IDENTITY'));
+    assert.deepEqual(await workingSnapshot(), snapshot,
+      'Pending refusal must preserve conditions/S/candidate/active/all mixed and staging working files.');
+    assert.deepEqual(await fs.readdir(pendingWork), [], 'Refuse before even the first working predecessor copy.');
+    assert.deepEqual(await fs.readFile(pendingPack.sourcePath), pendingPackBytes);
+    assert.deepEqual(await fs.readFile(packed.sourcePath), oldPack);
+  }
+  await fs.rm(pendingPath, { force: true });
+  const activeWork = path.join(directory, 'cold-active-work'); await fs.mkdir(activeWork);
+  const withActive = await cold.acquisitions(packedState, activeWork);
+  // OLD implementation fails HERE: it leaves the authenticated old active
+  // available to the later pack and next ordinary READY branch.
+  await assert.rejects(fs.access(activePath), error => error.code === 'ENOENT');
+  assert.deepEqual(await fs.readFile(withActive.retiredActive.path), oldActive);
+  assert.deepEqual(await fs.readFile(packed.sourcePath), oldPack);
+  assert.deepEqual(await fs.readFile(bulkFile), before);
+  const originalPair = await cold.originalFixedAcquisitions(packedState);
+  const context = locator(withActive);
+  await cold.verifyRetiredActive(originalPair.active, context);
+  await cold.verifyRetiredWorkingInputs(packedState, originalPair, context);
+  for (const [id, relative] of Object.entries(cold.retiredFiles)) {
+    await assert.rejects(fs.access(path.join(coldRoot, relative)), error => error.code === 'ENOENT');
+    if (currentOriginals[id] === null) assert.equal(withActive.retiredInputs[id], null);
+    else assert.deepEqual(await fs.readFile(withActive.retiredInputs[id].path), currentOriginals[id]);
+  }
+  assert.deepEqual(await fs.readFile(cursorPath), scalarCursor);
+  const newHour = Object.keys(hourly)[0];
+  const partial = { schemaVersion: 2, zones: { sample: { hourly: {
+    [newHour]: { time: newHour, 'sea-mean-deviation': 3, 'current-u': 0.03, 'current-v': 0.04,
+      sources: { current: { ...scalarSource, itemId: 'synthetic-new-partial-current' } } },
+  } } } };
+  await writeDmiBulkDocument(candidatePath, partial);
+  // Deliberately no READY promotion. The actual new pack/normal restore must
+  // contain the partial candidate, never the retired OLD active.
+  const nextRoot = path.join(directory, 'new-partial-pack');
+  await fs.mkdir(nextRoot);
+  const nextPack = await buildPrivateWeatherComponentPack({ repositoryRoot: coldRoot,
+    outputRoot: nextRoot, conditions: {}, includeOperationalProgress: true });
+  assert(nextPack);
+  const followerRoot = path.join(directory, 'ordinary-follower-inputs');
+  const restored = await unpackPrivateWeatherComponentPack({ restoredRoot: nextRoot,
+    outputRoot: followerRoot, conditions: {}, includeOperationalProgress: true });
+  assert(restored.some(row => row.relativePath === '.cache/dmi-candidate-progress.json'));
+  for (const relative of expectedRetired) assert(!restored.some(row => row.relativePath === relative),
+    'No OLD current/staging alias may enter the ordinary follower pack.');
+  assert(!restored.some(row => row.relativePath === '.cache/dmi-active-complete.json'));
+  await assert.rejects(fs.access(path.join(followerRoot, '.cache/dmi-active-complete.json')),
+    error => error.code === 'ENOENT');
+  assert.deepEqual(await readDmiBulkDocument(path.join(followerRoot, '.cache/dmi-candidate-progress.json')), partial);
+  const followerForecast = await readDmiForecastFile(path.join(followerRoot, forecastRelative));
+  await assertScalarParts(followerForecast);
+  assert.deepEqual(followerForecast.waterSourceContinuity, forecastDocument.waterSourceContinuity);
+  assert.deepEqual(await fs.readFile(path.join(followerRoot, '.cache/weather-component-fallback-cursor.json')), scalarCursor);
+  assert.deepEqual(await fs.readFile(packed.sourcePath), oldPack, 'The whole authenticated original pack is unchanged.');
+  // A later normal producer may legitimately create NEW active. Re-reading
+  // the retired OLD receipt must not remove or overwrite that new working file.
+  await writeDmiBulkDocument(activePath, partial);
+  const newActive = await fs.readFile(activePath);
+  // Re-load verification reads ONLY OLD preserved copies, even after all
+  // normal NEW producer paths have changed. It cannot remove a new product.
+  const newWorking = {};
+  for (const [id, relative] of Object.entries(cold.retiredFiles)) {
+    const target = path.join(coldRoot, relative); await fs.mkdir(path.dirname(target), { recursive: true });
+    if (id !== 'active') await fs.writeFile(target, JSON.stringify({ newProduct: id }));
+    newWorking[relative] = await fs.readFile(target);
+  }
+  await fs.writeFile(path.join(coldRoot, forecastRelative), '{"newProduct":"forecast"}');
+  await fs.writeFile(path.join(coldRoot, 'data/live/dmi-bulk-cache.json'), '{"newProduct":"bulk"}');
+  await fs.writeFile(path.join(coldRoot, '.cache/deployed-dmi-bulk-cache.json'), '{"newProduct":"deployed"}');
+  await cold.verifyRetiredActive(originalPair.active, context);
+  await cold.verifyRetiredWorkingInputs(packedState, originalPair, context);
+  for (const [relative, bytes] of Object.entries(newWorking)) assert.deepEqual(await fs.readFile(path.join(coldRoot, relative)), bytes);
+  assert.equal(await fs.readFile(path.join(coldRoot, forecastRelative), 'utf8'), '{"newProduct":"forecast"}');
+  assert.deepEqual(await fs.readFile(activePath), newActive);
+  await fs.writeFile(withActive.retiredActive.path, 'changed private receipt');
+  await assert.rejects(cold.verifyRetiredActive(originalPair.active, context), /FILE_IDENTITY/);
+  await fs.writeFile(withActive.retiredActive.path, oldActive);
+
+  // Each additional fixed path is bound to its own genuine whole-pack/base
+  // entry, not merely present in an allowlist. Test the same real owned move.
+  for (const [id, relative] of Object.entries(cold.retiredFiles)) {
+    if (id === 'active') continue;
+    await fs.writeFile(path.join(coldRoot, relative), 'foreign ' + id);
+    const negativeWork = path.join(directory, 'foreign-current-' + id); await fs.mkdir(negativeWork);
+    await assert.rejects(cold.retireFixedInput(originalPair.working[id], negativeWork, id), /FILE_IDENTITY/);
+    assert.equal(await fs.readFile(path.join(coldRoot, relative), 'utf8'), 'foreign ' + id);
+  }
+  await assert.rejects(cold.retireFixedInput(originalPair.active, activeWork, '../escape'), /FILE_PATH/);
+  await assert.rejects(cold.verifyRetiredWorkingInputs(packedState, originalPair, {
+    ...context, retiredInputs: { ...context.retiredInputs, foreign: null },
+  }), /FILE_IDENTITY/);
+  const realSeedBytes = await fs.readFile(withActive.forecastSeed.path);
+  for (const kind of ['old-part-bank', 'water-source-loss', 'scalar-loss', 'part-scalar-loss',
+    'part-current-return', 'part-total-drift', 'part-duplicate', 'part-digest-drift']) {
+    const bad = structuredClone(scalarForecast);
+    if (kind === 'old-part-bank') bad.partContinuity = forecastDocument.partContinuity;
+    if (kind === 'water-source-loss') delete bad.waterSourceContinuity;
+    if (kind === 'scalar-loss') bad.zones.sample.hourly[0].waveHeightM = null;
+    if (kind === 'part-total-drift') bad.partContinuity.rawBytes++;
+    if (kind === 'part-duplicate') bad.partContinuity.entries[1] = structuredClone(bad.partContinuity.entries[0]);
+    if (kind === 'part-digest-drift') bad.partContinuity.entries[0].compressedSha256 = '0'.repeat(64);
+    if (kind === 'part-scalar-loss' || kind === 'part-current-return') {
+      const lost = new Map(scalarParts.map(part => [part.partId, { zoneId: 'PART::' + part.partId,
+        point: part.waterPoint, hourly: structuredClone(expectedScalarParts.get(part.partId)) }]));
+      if (kind === 'part-scalar-loss') lost.get(scalarParts[0].partId).hourly[120].waveHeightM = null;
+      else Object.assign(lost.get(scalarParts[0].partId).hourly[120], partRecords.get(scalarParts[0].partId).hourly[120]);
+      bad.partContinuity = await packDmiPartContinuity(lost, scalarParts, partReferenceAt);
+    }
+    if (kind === 'part-duplicate') {
+      // The normal atomic writer rejects duplicate entries before installing
+      // them; this is an earlier safe refusal, not a verifier bypass.
+      await assert.rejects(writeDmiForecastFileAtomic(withActive.forecastSeed.path, bad), /DMI_FORECAST_FILE_SHAPE_INVALID/);
+      assert.deepEqual(await fs.readFile(withActive.forecastSeed.path), realSeedBytes);
+      continue;
+    }
+    await writeDmiForecastFileAtomic(withActive.forecastSeed.path, bad);
+    const bytes = await fs.readFile(withActive.forecastSeed.path);
+    await assert.rejects(cold.verifyScalarForecast(withActive.retiredInputs.forecast,
+      { path: withActive.forecastSeed.path, bytes: bytes.length, sha256: hash(bytes) }, activeWork,
+      preservedPartSnapshot.originalConditions.coastalParts.parts), kind === 'part-digest-drift'
+      ? /DMI_PART_CONTINUITY_COMPRESSED_DIGEST_INVALID/ : /FILE_IDENTITY/);
+    await fs.writeFile(withActive.forecastSeed.path, realSeedBytes);
+  }
+  await cold.verifyRetiredWorkingInputs(packedState, originalPair, context);
+  assert.deepEqual(await fs.readFile(forecastFile), originalForecast);
+  assert.equal(await fs.readFile(baselinePath, 'utf8'), 'OLD authentication baseline');
+  assert.equal(await fs.readFile(checkpointPath, 'utf8'), 'OLD working S required by Python retention');
+
+  // The two mixed stores require authentic OLD identity, not just parseable
+  // files. A representation-only change is accepted above; changed content or
+  // a missing expected forecast is not an empty-cache permission.
+  for (const kind of ['bulk-drift', 'forecast-drift', 'forecast-missing']) {
+    await fs.writeFile(candidatePath, oldCandidate);
+    for (const [id, relative] of Object.entries(cold.retiredFiles)) {
+      if (currentOriginals[id] === null) await fs.rm(path.join(coldRoot, relative), { force: true });
+      else await fs.writeFile(path.join(coldRoot, relative), currentOriginals[id]);
+    }
+    await resetMixed();
+    if (kind === 'bulk-drift') {
+      const drift = await readDmiBulkDocument(bulkFile);
+      drift.zones.sample.hourly[Object.keys(hourly)[0]]['sea-mean-deviation'] = 99;
+      await fs.writeFile(path.join(coldRoot, 'data/live/dmi-bulk-cache.json'), JSON.stringify(drift));
+    } else if (kind === 'forecast-drift') {
+      await fs.writeFile(path.join(coldRoot, forecastRelative), '{"zones":{}}');
+    } else await fs.unlink(path.join(coldRoot, forecastRelative));
+    const negativeWork = path.join(directory, 'mixed-' + kind); await fs.mkdir(negativeWork);
+    await assert.rejects(cold.acquisitions(packedState, negativeWork), /FILE_IDENTITY/);
+    assert.deepEqual(await fs.readFile(forecastFile), originalForecast);
+    assert.deepEqual(await fs.readFile(bulkFile), before);
+    assert.deepEqual(await fs.readFile(packed.sourcePath), oldPack);
+  }
+
+  // Normal local negatives: a missing, foreign, changed, linked or stale
+  // installed working file is never an authenticated absence.
+  for (const kind of ['missing', 'foreign', 'changed', 'symlink', 'stale-destination', 'rename-race']) {
+    await fs.writeFile(candidatePath, oldCandidate);
+    await fs.rm(activePath, { force: true });
+    await fs.writeFile(activePath, oldActive);
+    const negativeWork = path.join(directory, 'cold-active-' + kind); await fs.mkdir(negativeWork);
+    let selectedState = packedState;
+    if (kind === 'missing') await fs.unlink(activePath);
+    if (kind === 'foreign') {
+      selectedState = state; // Neither working file exists in the authentic pack.
+      await fs.unlink(candidatePath); // Reach the active guard, not the old candidate guard.
+    }
+    if (kind === 'changed') await fs.writeFile(activePath, 'changed old active');
+    if (kind === 'symlink') {
+      await fs.unlink(activePath);
+      await fs.symlink(payload, activePath, process.platform === 'win32' ? 'junction' : 'dir');
+    }
+    if (kind === 'stale-destination') await fs.writeFile(path.join(negativeWork, 'original-working-active.json'), 'foreign');
+    const normalRename = fs.rename;
+    if (kind === 'rename-race') {
+      // Inject an actual file mutation at the final move boundary. The real
+      // rename still runs; all normal hashes/inode/closure checks stay active.
+      fs.rename = async (from, to) => {
+        if (from === activePath) await fs.writeFile(activePath, 'raced working file');
+        return normalRename(from, to);
+      };
+    }
+    try { await assert.rejects(cold.acquisitions(selectedState, negativeWork), /FILE_IDENTITY|FILE_CHANGED|FILE_PATH|SYMLINK/); }
+    finally { fs.rename = normalRename; }
+    assert.deepEqual(await fs.readFile(packed.sourcePath), oldPack);
+    assert.deepEqual(await fs.readFile(bulkFile), before);
+    if (kind === 'rename-race') {
+      assert.equal(await fs.readFile(path.join(negativeWork, 'original-working-active.json'), 'utf8'), 'raced working file',
+        'Unexpected moved bytes stay private for diagnosis; no deletion or automatic retry.');
+    }
+  }
+
 } finally {
   await fs.rm(directory, { recursive: true, force: true });
 }

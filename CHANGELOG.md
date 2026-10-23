@@ -1,3 +1,7 @@
+## 23. oktober — inaktiv privat PLAN-diagnostik, ikke en årsagsrettelse
+
+Det faktiske skrivefri PLAN-forsøg39873339236/1 fejlede; den konkrete årsag er UKENDT. Den private sammenføring tilføjer kun otte faste deltrinsnavne før de otte eksisterende PLAN-kald og én additiv normal kildeprøve. Ingen underliggende kald, kvote, SQL, sikkerhedsgrænse, genkørsel eller produktionsskrivning ændres; intet mål er kørt her. 004/005, statistik, SOURCE og automatisk retention aktiveres ikke af denne forberedelse. Første fejlevidens og alle eksisterende005-/587-prøver bevares.
+
 ## 4.0.587 — lokal kildekandidat, ikke offentligt leveret
 
 - Samler de allerede gennemgåede lokale DA/DE/EN-assistentforbedringer: vandstand uden fundgaranti, sammenhængende forklaring af bevægelse ved bunden/mellem revler uden nyt opskyl og enkel identifikationsgrammatik fra eksisterende kontrolleret viden. Generel kystgren, aktuelle zonekrav, safety/private-afslag og ærlig usikkerhed bevares; ingen hosted AI-kvalitet påstås.
@@ -6,11 +10,24 @@
 - Sammenhængende lokalt to-filsmål 29 PASS/0 FAIL/0 SKIP og separat bindings-prewrite-mål 5 PASS/0 FAIL/0 SKIP er bestået. De er ikke ny native PostgreSQL, præcis 587-source-CI, ægte produktions-B/S, installation, offentlig vejrlevering eller hosted AI-bevis.
 - P0/PR703, ny schema2-B/S/ordinaryfollower, lager-/økonomivalg, samlet kilde-/databasekvalifikation og kontrolleret offentlig levering er fortsat åbne. Offentlig version er senest verificeret som 4.0.586. Ingen SOURCE/statistik/retentionaktivering eller sletning følger med.
 
-## Privat kildeplan — ni kilde-/testblade for færre gentagelser
+## Ikke udgivet — præcise prøvelæsere til den nye strømstart
+
+- Retter fire reproducerede testlæserkonflikter fra første PR707-kontrol uden at ændre produktkoden: eksplicit almindelig `coldInputs=null`, aktuelt kalderudtag og præcis ydre zonehistorik-inverse før de uændrede historiske kildeorakler. Alle gamle assertions og manipulationsafslag bevares.
+- Bestået native PostgreSQL er et delbevis; ny samlet præcis kildekontrol og faktisk vejrhentning/almindelig efterfølger mangler. Ingen ny version, modelbinding, SQL eller ændring af scoreformel, kilder, adminpunkter eller geometri.
+
+## Kildeleveret — ni kilde-/testblade for færre gentagelser
 
 - Samler de to tidligere gennemgåede nativefase-/Candidate-G-rettelser og den mindste lukkede test-only fixture-/inventarkorrektion: ni forskellige kode-/teststier. De oprindelige frozenpakker og historiske whole-oracles bevares; ingen ny produktmæssig genbrugsautoritet eller clean-head-waiver.
 - Bevarer P0s fælles restore-mkdir, hele121-timers native-originalbank, RAW-/SAVE-krav, alle19 gamle audit-CLI-forløb og fulde positive210/673-/hash-/privacykrav. Ny kildekontrakt er28 trin med første nativefase faktisk udført og uploadet samt separat ægte slutproof.
-- Privat sammensat mod c78b4aec og anvendt alene i en isoleret kvalifikationskilde; ikke leveret. Ved denne kildeudstedelse mangler den normale clean-commit-workflowprøve og ny eksakt CI; faktisk senere udførelsesevidens føres i det private checkpoint. Gamle delbeviser og12PASS/2FAIL bevares som historik. Ingen dokumenteret tidsbesparelse, ny version/model/SQL, vejrhentning eller løst P0-forløb påstås.
+- PR704 er kildeleveret efter faktisk bestået normal kontrol med alle28 trin, inklusive udført nativefase og slutproof; main er 7b6af21a. Gamle delbeviser og12PASS/2FAIL bevares som historik. Det dokumenterer ikke en ny vejrhentning, målt produktionsbesparelse eller løst P0-forløb; den nye strømstart kræver sin egen præcise kontrol og faktiske levering. Ingen ny version/model/SQL.
+
+## Ikke udgivet — afgrænset ny strømhistorik med bevaret arkiv
+
+- Færdiggør den eksisterende current-family-starts første targetgrænse og fysiske isolation af gamle strømindgange, inklusive gemt prognosebank. Øvrige vejrkomponenter, vandkildebank, autentiske originaler og offentliggjorte scorer bevares.
+- Afviser ventende punktpromotion før arbejdsændringer og genlæser kun de bevarede gamle kopier, så en ny producents filer ikke fjernes. Bevarer alle øvrige vejrtimer i PART-banken og isolerer gammel strøm i private zone-samples; normale lagrings-/genlæsnings- og retentionprøver består. Faste fejlkoder bevares uden private fejltekster.
+- Tilkobler eksisterende jobur og efterbehandlingsreserve uden længere leverandørbudgetter. Normale efterfølgerregler og offentlig no-loss er uændrede.
+- Sammenførte målprøver og normal før/efterberegning af bindinger består lokalt; C/I/T, storage-ABI og udstedt SQL er uændrede. Samlet præcis CI, første faktiske opstart og almindelig efterfølger er ikke afsluttet.
+- Fastholder Supabase Free og Cloudflare Free som krav med faktisk forbrugskontrol; lokal test eller komprimeringsgrad er ikke bevis for gratis drift.
 
 ## Ikke udgivet — fælles privat arbejdsmappe til præcis originalgenopretning
 

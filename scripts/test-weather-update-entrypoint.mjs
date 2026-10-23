@@ -1,6 +1,8 @@
 import {inverseReviewedAccountStatisticsAssistantSourceScripts} from './lib/account-statistics-assistant-package-review.mjs';
-import { inverseAlternativeCCaller } from './lib/alternative-c-caller-test-input.mjs';
-import { inverseCurrentNativeOriginalProducerTestInput, CURRENT_NATIVE_ORIGINAL_PRODUCER_TEST_REVIEW }
+import { inverseAlternativeCCaller, inverseAssistant587OriginalCompanionTestInput,
+  ASSISTANT587_ORIGINAL_COMPANION_TEST_REVIEW } from './lib/alternative-c-caller-test-input.mjs';
+import { inverseCurrentNativeOriginalProducerTestInput, CURRENT_NATIVE_ORIGINAL_PRODUCER_TEST_REVIEW,
+  inverseCurrentFamilyColdTargetTestInput }
   from './lib/archived-weather-restart-updater-test-input.mjs';
 import assert from 'node:assert/strict';
 import crypto from 'node:crypto';
@@ -1174,8 +1176,10 @@ test('native-original producer preserves exact whole archived inputs and rejects
   assert.deepEqual(CURRENT_NATIVE_ORIGINAL_PRODUCER_TEST_REVIEW.rows.map(row => row.path),
     ['scripts/update-weather.mjs', 'scripts/lib/private-dmi-recovery-record.mjs']);
   for (const row of CURRENT_NATIVE_ORIGINAL_PRODUCER_TEST_REVIEW.rows) {
-    const actual = (await fs.readFile(new URL('../' + row.path, import.meta.url), 'utf8')).replace(/\r\n/g, '\n');
-    assert.equal(Buffer.byteLength(actual), row.after.bytes, 'The new actual source must be tested, not an old projected body');
+    const raw = (await fs.readFile(new URL('../' + row.path, import.meta.url), 'utf8')).replace(/\r\n/g, '\n');
+    const actual = row.path === 'scripts/update-weather.mjs'
+      ? inverseCurrentFamilyColdTargetTestInput(raw, row.path) : raw;
+    assert.equal(Buffer.byteLength(actual), row.after.bytes, 'Exact native-original predecessor after only the reviewed cold-target inverse');
     assert.equal(digest(actual), row.after.sha256);
     const original = inverseCurrentNativeOriginalProducerTestInput(actual, row.path);
     assert.equal(digest(original), row.before.sha256);
@@ -1204,11 +1208,16 @@ test('actual native-original companion caller stays unprojected and declared in 
   assert.match(actual, /coastalPartsContract\.enabled\n  && coldInputs === null && stateEpochView === null\n  \? await readCurrentPrivateRuntimeCompanions\(generatedAt\) : \[\]/);
   assert.match(actual, /    archivedWeatherRestartView,\n    protectedNativeCurrentCompanionContexts,\n  \)/);
   assert.equal(actual.split('error.nativeOriginalProofCode = /^DMI_NATIVE_PROOF_[A-Z_]{1,80}$/.test(proof.code)').length, 2);
-  const planner = (await fs.readFile(new URL('./plan-ravscore-current-history.mjs', import.meta.url), 'utf8')).replace(/\r\n/g, '\n');
+  const actualPlanner = (await fs.readFile(new URL('./plan-ravscore-current-history.mjs', import.meta.url), 'utf8')).replace(/\r\n/g, '\n');
+  assert.match(actualPlanner, /const \{ verified, conditions, originalConditions, conditionsPath: file, conditionsSha256, verify \} =/);
+  assert.match(actualPlanner, /await readAuthenticatedCurrentCompanions\(verified, originalConditions \?\? conditions\)/);
+  const planner = inverseAssistant587OriginalCompanionTestInput(actualPlanner, 'scripts/plan-ravscore-current-history.mjs');
   assert.equal(planner.split("from './read-authenticated-dmi-current-companions.mjs';").length, 2);
   assert.match(planner, /await readCurrentPrivateRuntimeCompanionInput\(productionReferenceAt\)/);
   assert.match(planner, /await readAuthenticatedCurrentCompanions\(verified, conditions\)/);
-  const helper = (await fs.readFile(new URL('./read-authenticated-dmi-current-companions.mjs', import.meta.url), 'utf8')).replace(/\r\n/g, '\n');
+  const actualHelper = (await fs.readFile(new URL('./read-authenticated-dmi-current-companions.mjs', import.meta.url), 'utf8')).replace(/\r\n/g, '\n');
+  assert.match(actualHelper, /await readAuthenticatedCurrentCompanions\(input\.verified, input\.originalConditions \?\? input\.conditions\);\n  await input\.verify\(\);/);
+  const helper = inverseAssistant587OriginalCompanionTestInput(actualHelper, 'scripts/read-authenticated-dmi-current-companions.mjs');
   assert.match(helper, /await readAuthenticatedCurrentCompanions\(input\.verified, input\.conditions\);\n  await input\.verify\(\);/);
   assert.doesNotMatch(helper, /\.\/plan-ravscore-current-history|^await\s|^main\(/m);
   const { PRIVATE_RUNTIME_PRODUCER_SOURCE_FILES, PRIVATE_RUNTIME_CONTRACT_FILES } =
@@ -1217,4 +1226,38 @@ test('actual native-original companion caller stays unprojected and declared in 
     file === 'scripts/read-authenticated-dmi-current-companions.mjs').length, 1);
   assert.deepEqual(PRIVATE_RUNTIME_CONTRACT_FILES.fullRuntimeContractSha256,
     ['scripts/lib/private-weather-storage-abi.json'], 'Controller review is not a storage-ABI retag');
+});
+
+test('assistant587 original companion inverse preserves both whole predecessors and rejects changed caller deltas', async () => {
+  for (const row of ASSISTANT587_ORIGINAL_COMPANION_TEST_REVIEW) {
+    const actual = (await fs.readFile(new URL('../' + row.path, import.meta.url), 'utf8')).replace(/\r\n/g, '\n');
+    assert.equal(Buffer.byteLength(actual), row.after.bytes);
+    assert.equal(digest(actual), row.after.sha256);
+    const before = inverseAssistant587OriginalCompanionTestInput(actual, row.path);
+    assert.equal(Buffer.byteLength(before), row.before.bytes);
+    assert.equal(digest(before), row.before.sha256);
+    assert.equal(inverseAssistant587OriginalCompanionTestInput(before, row.path), before);
+    if (row.path === 'scripts/plan-ravscore-current-history.mjs') {
+      assert.equal(inverseAlternativeCCaller(actual, row.path), inverseAlternativeCCaller(before, row.path));
+    }
+    for (const [old, current] of row.hunks) {
+      assert.equal(actual.split(current).length, 2);
+      for (const changed of [actual.replace(current, () => old),
+        actual.replace(current, () => current + current), actual.replace(current, () => current + '/*UNREVIEWED*/')]) {
+        assert.notEqual(changed, actual);
+        assert.throws(() => inverseAssistant587OriginalCompanionTestInput(changed, row.path),
+          /ALTERNATIVE_C_TEST_INPUT_CHANGED:ASSISTANT587/);
+        if (row.path === 'scripts/plan-ravscore-current-history.mjs') {
+          assert.throws(() => inverseAlternativeCCaller(changed, row.path), /ALTERNATIVE_C_TEST_INPUT_CHANGED/);
+        }
+      }
+    }
+    for (const changed of ['!' + actual.slice(1), actual + '\n']) {
+      assert.throws(() => inverseAssistant587OriginalCompanionTestInput(changed, row.path),
+        /ALTERNATIVE_C_TEST_INPUT_CHANGED:ASSISTANT587/);
+    }
+  }
+  assert.throws(() => inverseAssistant587OriginalCompanionTestInput({}, 'scripts/plan-ravscore-current-history.mjs'),
+    /ASSISTANT587_TYPE/);
+  assert.throws(() => inverseAssistant587OriginalCompanionTestInput('', 'scripts/unknown.mjs'), /ASSISTANT587_PATH/);
 });

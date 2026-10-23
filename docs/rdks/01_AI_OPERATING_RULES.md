@@ -1,3 +1,7 @@
+## 22. oktober — arkiv og aktive strømdata er forskellige roller
+
+Den udtrykkeligt godkendte nye aktive strømstart må ikke forveksles med sletning eller genmærkning af gamle originaler. Ægte arkiv og genlæsning kommer før ændring af arbejdsfiler. Kun den validerede engangsstart får en ny startgrænse; almindelige kaldere og modelregler er uændrede. Bevis både lagring af den nye originalbank og næste almindelige genbrug. Lokal kode, syntetisk B/S og grønt kildebevis skal fortsat skelnes fra faktisk offentlig drift. Ventende adminpunktpromotion, ukendt skriveudfald eller aktiv writer må ikke tilsidesættes.
+
 ## 22. oktober — udstedt lokal 587 giver ingen leveringsautoritet
 
 AKTIVT: Genbrug de faktisk afsluttede lokale assistent-/kaldermål ved uændrede input; ommærk dem ikke som 587-native PostgreSQL, præcis source-CI, autentisk B/S-prewrite, SQL-installation, offentligt vejr eller hosted AI. Samlet ny kilde kræver sit eget præcise normale bevis. Genkør ikke version:set eller gamle lange mål blot for status.
