@@ -18,8 +18,9 @@ if (process.platform !== 'linux') {
   console.log('Native Linux supervisor-loss and owned GRIB provenance contracts not executed on this platform');
 }
 
+const transactionalCheckpointFile = 'test-dmi-transactional-checkpoint.py';
 test('DMI canonical-time parsing and transactional ledger (6 current cases)', { timeout: 160_000 }, () => {
-  const file = 'test-dmi-transactional-checkpoint.py';
+  const file = transactionalCheckpointFile;
   const result = spawnSync(python, ['-B', path.join(root, 'scripts', file),
     'CanonicalTimeParsingTests', 'CurrentLedgerCheckpointTests'], {
     cwd: root, env: environment, encoding: 'utf8', shell: false,
@@ -33,6 +34,22 @@ test('DMI canonical-time parsing and transactional ledger (6 current cases)', { 
     'The current parser and ledger classes must actually execute all six cases.');
   assert.match(result.stderr, /^OK\r?$/m,
     'The six current cases must finish without skipped tests.');
+});
+test('DMI retained current winner survives normal saved-step ledger and resume (1 case)', { timeout: 160_000 }, () => {
+  const file = transactionalCheckpointFile;
+  const result = spawnSync(python, ['-B', path.join(root, 'scripts', file),
+    'TransactionalAssetTests.test_retained_current_winner_closes_real_main_stage_without_mutation'], {
+    cwd: root, env: environment, encoding: 'utf8', shell: false,
+    timeout: 150_000, maxBuffer: 4 * 1024 * 1024, windowsHide: true,
+  });
+  assert.equal(result.error, undefined, `Synthetic Python runner failed: ${file}`);
+  assert.equal(result.signal, null, `Synthetic Python runner interrupted: ${file}`);
+  assert.equal(result.status, 0,
+    `${file}\n${result.stdout || ''}\n${result.stderr || ''}`);
+  assert.match(result.stderr, /^Ran 1 test in [^\r\n]+\r?$/m,
+    'The normal main, saved-step, ledger and resume case must actually execute once.');
+  assert.match(result.stderr, /^OK\r?$/m,
+    'The retained-winner case must finish without skipped tests.');
 });
 test('DMI cold strict-lead catch-up retains ordinary fairness and per-asset reserves (3 cases)', { timeout: 160_000 }, () => {
   const file = 'test-dmi-native-chain-continuity.py';

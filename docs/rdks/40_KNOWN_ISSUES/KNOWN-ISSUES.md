@@ -1,3 +1,7 @@
+## 23. oktober — DMI-filer med gyldige, uændrede strømvindere
+
+Den normale DMI-kæde kunne afvise en fuldt gennemgået marin fil, når en bedre, allerede betroet strømvinder blev bevaret og zonesTouched derfor var nul. Main, den fælles læser og to genoptagelsesfiltre skal behandles samlet; en rettelse af første stop alene lukker ikke ledgeren. Den afgrænsede lokale rettelse og normale gemning→ledger→genoptagelse-prøve består med alle kilde-/tuple-/originalværn bevaret. RETAINED_CURRENT_PART_TIME er fortsat udtrykkeligt nonfatal og ændres ikke. Linux/native og faktisk kvalifikation af de tidligere konkrete afslag står åbne. Tidligere P0-/587-driftsstatus nedenfor er dateret historik; se privat checkpoint.
+
 ## 23. oktober — privat dokumentunion for P0 og 587; ingen ny levering
 
 Denne private forberedelse bevarer begge grenes hele dokumenthistorik. Den uændrede 664a-assistentkandidat er særskilt præcist kildekvalificeret; det er ikke kvalifikation af den nye sammenføring eller en installeret 587. P0s seneste faktiske genoptagelse stoppede på proceshukommelse før ny B/S og offentlig levering. Den efterfølgende P0-kildekontrol og den operative status føres i ROOTs private checkpoint; denne pakke udleder ikke et nyt resultat. Faktisk P0-levering og almindelig efterfølger skal fortsat komme før kontrolleret 587-installation og hosted AI. Alle fem hovedmål er åbne. Ingen ny modelbinding, SQL-udstedelse, drift eller aktivering følger af dokumentunionen. Ældre modstridende ventestatus nedenfor bevares som dateret historik.

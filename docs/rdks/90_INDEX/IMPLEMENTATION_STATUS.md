@@ -1,3 +1,9 @@
+## 23. oktober — DMI-filer med gyldige, uændrede strømvindere
+
+- [x] Den kvalificerede marine nul-mutationsvej er lokalt forbundet gennem main, normal gemning/genlæsning, fælles kildekontrol, ledger/READY og genoptagelse.
+- [x] Den navngivne case er registreret én gang i den normale kalder; den eksisterende seks-case-kørsel og dens grænser bevares. Den nye normale enkeltcase samt model-/bindingskontrol består; tre persistente kontrakthashes er uændrede.
+- [ ] Præcis ny samlet CI/Linux/native og faktisk produktionseffekt. Et syntetisk PASS frikender ikke alle tidligere NO_TOUCHED-afslag. Dateret P0-/587-status nedenfor erstattes af faktisk evidens i det private checkpoint.
+
 ## 23. oktober — privat dokumentunion for P0 og 587; ingen ny levering
 
 Denne private forberedelse bevarer begge grenes hele dokumenthistorik. Den uændrede 664a-assistentkandidat er særskilt præcist kildekvalificeret; det er ikke kvalifikation af den nye sammenføring eller en installeret 587. P0s seneste faktiske genoptagelse stoppede på proceshukommelse før ny B/S og offentlig levering. Den efterfølgende P0-kildekontrol og den operative status føres i ROOTs private checkpoint; denne pakke udleder ikke et nyt resultat. Faktisk P0-levering og almindelig efterfølger skal fortsat komme før kontrolleret 587-installation og hosted AI. Alle fem hovedmål er åbne. Ingen ny modelbinding, SQL-udstedelse, drift eller aktivering følger af dokumentunionen. Ældre modstridende ventestatus nedenfor bevares som dateret historik.

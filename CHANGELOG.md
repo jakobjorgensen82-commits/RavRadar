@@ -1,3 +1,8 @@
+## 23. oktober — DMI-filer med gyldige, uændrede strømvindere
+
+- Lokalt rettet marine DMI-filer med fuldt gennemgået input og uændrede, allerede kvalificerede bedre strømvindere gennem main, gemning, fælles kildekontrol, ledger og genoptagelse.
+- Tilføjet én normal navngiven regression uden at erstatte de gamle seks cases. Model-/bindingskontrol består; de tre persistente kontrakthashes og udstedt SQL er uændrede. Ny præcis CI/nativekontrol og faktisk produktionseffekt står åbne; daterede P0-/587-statusudsagn nedenfor er historik.
+
 ## 23. oktober — privat dokumentunion for P0 og 587; ingen ny levering
 
 Denne private forberedelse bevarer begge grenes hele dokumenthistorik. Den uændrede 664a-assistentkandidat er særskilt præcist kildekvalificeret; det er ikke kvalifikation af den nye sammenføring eller en installeret 587. P0s seneste faktiske genoptagelse stoppede på proceshukommelse før ny B/S og offentlig levering. Den efterfølgende P0-kildekontrol og den operative status føres i ROOTs private checkpoint; denne pakke udleder ikke et nyt resultat. Faktisk P0-levering og almindelig efterfølger skal fortsat komme før kontrolleret 587-installation og hosted AI. Alle fem hovedmål er åbne. Ingen ny modelbinding, SQL-udstedelse, drift eller aktivering følger af dokumentunionen. Ældre modstridende ventestatus nedenfor bevares som dateret historik.

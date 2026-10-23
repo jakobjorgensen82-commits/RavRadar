@@ -1,3 +1,7 @@
+## 23. oktober — DMI-filer med gyldige, uændrede strømvindere
+
+En fuldt gennemgået marin DMI-fil må markeres behandlet uden numerisk overskrivning, når en allerede kvalificeret bedre vinder bevares. Præcis heltalsnul kræver normal officiel source/parser/signature, faktiske target-ID'er og registryhash, fuldt kanonisk udfaldsbevis samt matchende samplingkvittering. Ingen kvittering må erstatte faktiske tuples eller original-/retained-attestation. Samme kvalifikation skal følge normal gemning, ledger og genoptagelse. Privat scalar-support, WAM og ikke-marine grene beholder deres mutationskrav. Ukendt gridbevis får ingen ny anvendelsesret; kildeprioritet, gamle originaler, strømhukommelsesgrænser, scoreformel og no-loss bevares.
+
 ## 23. oktober — afsluttede nationale arbejdsforløb skal kunne frigives
 
 AKTIVT: Den normale updater må frigive sin lokale komponent-reference først efter vellykket awaitet holdbar komponentgemning og sin lokale score-reference først efter vellykket awaitet national originalattestering. Begge skal kunne frigives før offentlig eksport. Ingen delt map, originalrække, outputværdi, continuation, historik eller gemt fil må tømmes eller ændres for at frigive hukommelse. En fejl på en af grænserne skal fortsat kastes; uafsluttede ejere må ikke kaldes færdige.

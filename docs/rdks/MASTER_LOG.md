@@ -1,3 +1,7 @@
+## 23. oktober — DMI-filer med gyldige, uændrede strømvindere
+
+Samtaledelta: Den normale DMI-kæde håndterer nu lokalt en fuldt gennemgået marin fil, som ikke ændrer de allerede kvalificerede strømvindere. Samme normale mål følger main, faktisk gemt/genlæst step, fælles læser, ledger/READY og genoptagelse, inklusive afslag på ændrede eller manglende beviser. Én additiv normal CI-registrering bevarer de gamle seks parser-/ledgerprøver. Tre persistente kontrakthashes er målt uændrede, og normal model-/bindingskontrol består. Det er ikke faktisk kvalifikation af alle produktionens afslag, Linux-nativekontrol eller offentlig levering. Tidligere P0-/587-status herunder er dateret historik; aktuelle leveringsresultater står i det private checkpoint.
+
 ## 22. oktober — faktisk lokal 587-udstedelse, stadig ingen installation
 
 Samtaledelta: ROOT har samlet de gennemgåede assistentprerequisites, semantic9/routing11, schema2-kalder, undervands- og enkel identifikationsgren samt særskilt normal bindings-prewrite i én inaktiv normal kilde. Hele to-filsmålet bestod 29 PASS/0 FAIL/0 SKIP; prewrite-integrationen bestod 5 PASS/0 FAIL/0 SKIP. Tidligere lokale katalog-/Edge-/roundtrip-beviser og de faktiske røde kvitteringer bevares uden gentagelse eller ommærkning til hosted AI/produktion.

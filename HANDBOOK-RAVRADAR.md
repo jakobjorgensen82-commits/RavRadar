@@ -14,6 +14,8 @@ Disse svarforbedringer og en originalbevarende programovergang er lokalt forbere
 
 Kort fortalt: RavRadar kan opbygge strømhistorik fra et nyt tidspunkt uden at ændre tidligere offentliggjorte scorer.
 
+En vejrfil kan være fuldt gennemgået, selv om en bedre og allerede kontrolleret strømværdi bliver bevaret. Nul ændrede rækker er derfor ikke alene tegn på, at filen mangler. Programmet skal stadig kontrollere den præcise kilde, de aktuelle kystdele, hele gennemgangen og de faktisk bevarede strømværdier. Samme beviser skal følge gemning og genbrug. En intern kvittering må ikke gøre ukendt eller forkert placeret strøm gyldig, og gamle strømtilstande får ingen ny adgang.
+
 En godkendt ny opstart skal holde det gamle arkiv adskilt fra de nye beregninger. Gamle strømværdier må ikke vende tilbage gennem gemte arbejdsfiler. Gyldige vind-, bølge-, vandstands- og temperaturdata bevares efter de normale kilderegler. En afventende ændring af administratorens kystpunkter må ikke annulleres som del af en sådan opstart.
 
 Timer før den nye start er ukendte, ikke nul strøm. Historikken vokser med nye gyldige timer, og prognosen skal fortsat vise usikkerheden ærligt. De nye data skal gemmes sammen med deres kildegrundlag, så næste almindelige opdatering kan fortsætte uden endnu en ny start.
