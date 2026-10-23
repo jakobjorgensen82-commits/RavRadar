@@ -1,3 +1,11 @@
+## 23. oktober — P0707 kildeleveret og 587-fixtureopfølgning
+
+- [x] P0707 faktisk samlet kildekvalificeret og merget; tidligere kildeafventninger nedenfor er historiske.
+- [x] Præcis 587-kontrol gennemførte native PostgreSQL. Den samlede kontrol stoppede derefter på én konkret VM-fixturefejl, ikke en påvist produktions-/leverandørfejl.
+- [x] Manglende normal assistentselectors output reproduceret rød. Den ene berørte normale prøve består på faktisk Node22 efter minimal testrettelse, med bevarede hele inverse-/sikkerhedsassertioner og additive senere-assistent-, kandidat- og tom-output-tilfælde.
+- [ ] Ny samlet normal kildekontrol af den præcise rettede 587-head; native delbevis alene er ikke dette resultat. Ingen produktworkflow, runtime, C/I/T eller SQL ændres af testrettelsen.
+- [ ] Faktisk ny vejrlevering, almindelig efterfølger, reel femfeltsdækning/kapacitet og kontrolleret 587-installation/offentlig effekt. Aktuel driftsevidens står i det private checkpoint; alle fem hovedmål er åbne.
+
 ## 23. oktober — inaktiv privat PLAN-diagnostik, ikke en årsagsrettelse
 
 Det faktiske skrivefri PLAN-forsøg39873339236/1 fejlede; den konkrete årsag er UKENDT. Den private sammenføring tilføjer kun otte faste deltrinsnavne før de otte eksisterende PLAN-kald og én additiv normal kildeprøve. Ingen underliggende kald, kvote, SQL, sikkerhedsgrænse, genkørsel eller produktionsskrivning ændres; intet mål er kørt her. 004/005, statistik, SOURCE og automatisk retention aktiveres ikke af denne forberedelse. Første fejlevidens og alle eksisterende005-/587-prøver bevares.

@@ -1,3 +1,9 @@
+## 23. oktober — præcis rettelse af assistentovergangens testopsætning
+
+- Den samlede 587-kildekontrol bestod native PostgreSQL, men fandt én reproduceret testfejl: VM-opsætningen manglede det normale `assistant-later-h0-source.outputs.required`. Produktets eksisterende selector leverer dette output; der ændres ingen workflow- eller runtimekode for at tilpasse testen.
+- Den ene berørte normale prøve består med faktisk Node22 efter fixturrettelsen. Tidligere hele workflow-inverser og ændringsafslag bevares; senere assistentvej, tomme output og kandidatveje kontrolleres særskilt. Ny samlet kontrol på den præcise rettede head og offentlig 587-levering er fortsat åbne.
+- P0707 er siden faktisk kildekvalificeret og merget; første faktiske nye vejrpakke, almindelig efterfølger og reel dækning er særskilte produktionskrav. Ingen ny version, modelbinding, SQL, kildeprioritet, geometri eller scoreformel ændres af denne testrettelse.
+
 ## 23. oktober — inaktiv privat PLAN-diagnostik, ikke en årsagsrettelse
 
 Det faktiske skrivefri PLAN-forsøg39873339236/1 fejlede; den konkrete årsag er UKENDT. Den private sammenføring tilføjer kun otte faste deltrinsnavne før de otte eksisterende PLAN-kald og én additiv normal kildeprøve. Ingen underliggende kald, kvote, SQL, sikkerhedsgrænse, genkørsel eller produktionsskrivning ændres; intet mål er kørt her. 004/005, statistik, SOURCE og automatisk retention aktiveres ikke af denne forberedelse. Første fejlevidens og alle eksisterende005-/587-prøver bevares.

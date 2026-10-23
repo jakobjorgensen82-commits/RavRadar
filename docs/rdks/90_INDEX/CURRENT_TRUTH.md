@@ -1,3 +1,11 @@
+## 23. oktober — P0707 kildeleveret; 587-testfixture rettet, samlet kontrol åben
+
+P0707 har faktisk bestået sin præcise samlede kildekontrol og er merget. Det erstatter kun ældre afventninger om denne kildelevering; første nye offentlige vejrpakke, almindelig genbrugende efterfølger, faktisk dækning og Free-kapacitet er fortsat særskilte krav. Den aktuelle kørsel og dens faktiske effekt følges i det private checkpoint, ikke ud fra ældre PR703-status nedenfor.
+
+587s præcise kildekontrol bestod native PostgreSQL, men den efterfølgende samlede kildeprøve fandt én TypeError i testens VM-opsætning: den nye normale assistentselectors output var ikke repræsenteret i fixturen. Den virkelige selector skriver et boolesk `required`-output; produktets workflow og runtime ændres ikke for at få testen grøn. Den ene berørte prøve er reproduceret rød og består efter præcis fixturekorrektion med faktisk Node22. Hele tidligere workflow-inverser, almindelige/kandidatveje og manipulationsafslag bevares; tomt output og senere assistentvej afprøves additivt.
+
+Dette er ikke ny samlet kildekvalifikation, installation eller offentlig 587-effekt. Den rettede head skal gennem den normale præcise kontrol; allerede udførte deltrin ommærkes ikke til samlet PASS. C/I/T, alle gamle SQL-filer, originaler, tal og historik bevares. Revision, statistik og automatisk retention forbliver inaktive; alle fem hovedmål er åbne. Denne front erstatter kun modstridende ældre ventestatus, som bevares som dateret historik.
+
 ## 23. oktober — inaktiv privat PLAN-diagnostik, ikke en årsagsrettelse
 
 Det faktiske skrivefri PLAN-forsøg39873339236/1 fejlede; den konkrete årsag er UKENDT. Den private sammenføring tilføjer kun otte faste deltrinsnavne før de otte eksisterende PLAN-kald og én additiv normal kildeprøve. Ingen underliggende kald, kvote, SQL, sikkerhedsgrænse, genkørsel eller produktionsskrivning ændres; intet mål er kørt her. 004/005, statistik, SOURCE og automatisk retention aktiveres ikke af denne forberedelse. Første fejlevidens og alle eksisterende005-/587-prøver bevares.
