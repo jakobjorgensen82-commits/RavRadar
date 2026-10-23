@@ -1,3 +1,14 @@
+## 23. oktober — privat sammenføring af P0 og 587; samlet kvalifikation er åben
+
+P0-genoptagelsen og den udstedte 587-assistentkandidat forberedes til én kildeintegration, men er to adskilte evidensforløb. Den tidligere P0-beregning standsede på tretten strømtimer i no-loss uden ny B/S eller offentlig levering. 587s senere source17-stop skyldtes et historisk testorakel for seneste migration; den præcise lokale rettelse består, mens samlet kvalifikation af den nye komposition stadig mangler. Gamle native- og lokalresultater ommærkes ikke til dette bevis. P0s faktiske genoptagelse/offentlige levering og almindelige efterfølger skal være dokumenteret før den kontrollerede 587-installation og hosted AI-kontrol. Ingen nye modelbindinger, SQL-udstedelse eller aktivering af SOURCE, statistik eller retention følger af sammenføringen.
+
+## Ikke udgivet — samme strømstart genoptages uden gamle strømdonorer
+
+- Retter et faktisk observeret lokalt otteforsøgsstop hos førende DMI-strøm alene efter ægte autentificeret opstart; det eksisterende katalogloft og alle tids-, byte-, proces- og reservegrænser bevares. Almindelige kørsler ændres ikke. Dette beviser ikke hele årsagen til de tretten strømtimer, som no-loss afviste efter første beregning.
+- Forbereder samme arkiv, samme oprindelige mål-time og præcist krypteret leverandørcheckpoint uden ny nulstilling eller tavs cachemiss-fallback. Hele gamle originalpakke valideres, men netop gamle CP-/OM-strømdonorer genindføres ikke i aktiv union; øvrige komponenter og nye data bevares.
+- Privat normal prepare-capability/GCM/original-target-integration består; det er ikke produktionsarkivets genåbning. Retter også den påviste konflikt i kalder-scope på de fire fase-reserver. De faktiske kald består for begge cold- og begge epoch-måder uden at ændre budgetmodul, tidsgrænser eller almindelig drift.
+- Bevarer normal beregning, kildeprioritet, originaler, historiske scorer, no-loss og fulde B/S-/Pages-kontroller. Ægte samlet integration, præcis CI, offentlig levering og almindelig efterfølger er endnu ikke afsluttet. Ingen ny version, model, SQL, kystpunkter eller geometri.
+
 ## 23. oktober — præcis rettelse af assistentovergangens testopsætning
 
 - Den samlede 587-kildekontrol bestod native PostgreSQL, men fandt én reproduceret testfejl: VM-opsætningen manglede det normale `assistant-later-h0-source.outputs.required`. Produktets eksisterende selector leverer dette output; der ændres ingen workflow- eller runtimekode for at tilpasse testen.

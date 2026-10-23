@@ -40,8 +40,9 @@ test('committed source reuse compares all calculation objects and only exact sto
   const actual = Buffer.from(inverseRelease585WorkflowUserAgents(currentBuild.toString('utf8'), 'build'));
   assert.equal(sha(actual), 'b509a5131c64f9df9a431fdf9f99b082fb14c88de8bf9c3ad3e33b8ddc77de57');
   const previous = ordinaryStageCalculationWorkflow(actual);
-  const actualOnce = Buffer.from((await fs.readFile(new URL('../.github/workflows/run-current-weather-once.yml', import.meta.url), 'utf8'))
+  const currentOnce = Buffer.from((await fs.readFile(new URL('../.github/workflows/run-current-weather-once.yml', import.meta.url), 'utf8'))
     .replaceAll('\r\n', '\n'));
+  const actualOnce = Buffer.from(inverseRelease585WorkflowUserAgents(currentOnce.toString('utf8'), 'once'));
   const previousOnce = ordinaryStageCalculationWorkflow(actualOnce);
   assert.equal(sha(previous), 'f0254a092c0baa188370c207b218e15ad7c9e616138d15234e6f323f101178c6');
   assert.equal(sha(previousOnce), '445964fbbc697ec86848744a9413897d3418b011c4218fb10336734b5e5055a2');
@@ -95,6 +96,7 @@ test('committed source reuse compares all calculation objects and only exact sto
   const changes = [
     // The test-only inverse grants no new runtime source-reuse authority.
     ...(!currentBuild.equals(actual) ? [['.github/workflows/reusable-weather-build.yml', currentBuild]] : []),
+    ...(!currentOnce.equals(actualOnce) ? [['.github/workflows/run-current-weather-once.yml', currentOnce]] : []),
     ['scripts/update-weather.mjs', '// SYNTHETIC changed calculation\n'],
     ['js/core/model-fixture.js', 'export const synthetic = 2;\n'],
     ['data/admin/coastal-fixture.json', '{"synthetic":true,"onshore":180}\n'],

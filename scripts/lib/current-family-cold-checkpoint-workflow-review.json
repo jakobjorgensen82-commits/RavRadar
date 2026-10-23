@@ -1,0 +1,102 @@
+{
+  "schemaVersion": 1,
+  "kind": "TEST_ONLY_EXACT_CURRENT_FAMILY_COLD_CHECKPOINT_WORKFLOW_INVERSE",
+  "baseHead": "c59e840b0fc5cc0eb3148ffbf62f4e1de54a55ab",
+  "scope": {
+    "progressSource": "39886354260-1",
+    "targetReferenceAt": "2026-10-23T01:00:00Z"
+  },
+  "roles": {
+    "build": {
+      "relativePath": ".github/workflows/reusable-weather-build.yml",
+      "before": {
+        "bytes": 287375,
+        "sha256": "ed1da3a8fcef9965d10b47fb8fbc79ce384e7fd705d3d2b2be6375f8e47ca93f"
+      },
+      "after": {
+        "bytes": 289762,
+        "sha256": "39327f1ef42a4c0450c9aa3e2922dc9be9f96f12b50f45ff7a11c56dd3a9b4c7"
+      },
+      "edits": [
+        [
+          172282,
+          "      - name: Preserve the fixed epoch post-processing reserve before weather\n        if: inputs.completed_private_runtime != true && ((inputs.weather_state_epoch_bootstrap == true || inputs.current_family_cold_start == true) && steps.preflight.outputs.should_run == 'true')\n        env:\n          QUICK_PROGRESS_SOURCE: ${{ inputs.current_family_cold_start != true && inputs.quick_progress_source || '' }}\n          CHECKPOINT_TARGET_HOUR: ${{ inputs.current_family_cold_start != true && inputs.checkpoint_only && inputs.production_target_hour || '' }}\n        run: node scripts/weather-state-epoch-budget.mjs weather\n",
+          "      - name: Preserve the fixed epoch post-processing reserve before weather\n        if: inputs.completed_private_runtime != true && ((inputs.weather_state_epoch_bootstrap == true || inputs.current_family_cold_start == true) && steps.preflight.outputs.should_run == 'true')\n        run: node scripts/weather-state-epoch-budget.mjs weather\n"
+        ],
+        [
+          166562,
+          "      - name: Preserve the fixed epoch post-processing reserve before open-meteo\n        if: inputs.completed_private_runtime != true && ((inputs.weather_state_epoch_bootstrap == true || inputs.current_family_cold_start == true) && steps.preflight.outputs.should_run == 'true')\n        env:\n          QUICK_PROGRESS_SOURCE: ${{ inputs.current_family_cold_start != true && inputs.quick_progress_source || '' }}\n          CHECKPOINT_TARGET_HOUR: ${{ inputs.current_family_cold_start != true && inputs.checkpoint_only && inputs.production_target_hour || '' }}\n        run: node scripts/weather-state-epoch-budget.mjs open-meteo\n",
+          "      - name: Preserve the fixed epoch post-processing reserve before open-meteo\n        if: inputs.completed_private_runtime != true && ((inputs.weather_state_epoch_bootstrap == true || inputs.current_family_cold_start == true) && steps.preflight.outputs.should_run == 'true')\n        run: node scripts/weather-state-epoch-budget.mjs open-meteo\n"
+        ],
+        [
+          163941,
+          "      - name: Preserve the fixed epoch post-processing reserve before copernicus\n        if: inputs.completed_private_runtime != true && ((inputs.weather_state_epoch_bootstrap == true || inputs.current_family_cold_start == true) && steps.preflight.outputs.should_run == 'true')\n        env:\n          QUICK_PROGRESS_SOURCE: ${{ inputs.current_family_cold_start != true && inputs.quick_progress_source || '' }}\n          CHECKPOINT_TARGET_HOUR: ${{ inputs.current_family_cold_start != true && inputs.checkpoint_only && inputs.production_target_hour || '' }}\n        run: node scripts/weather-state-epoch-budget.mjs copernicus\n",
+          "      - name: Preserve the fixed epoch post-processing reserve before copernicus\n        if: inputs.completed_private_runtime != true && ((inputs.weather_state_epoch_bootstrap == true || inputs.current_family_cold_start == true) && steps.preflight.outputs.should_run == 'true')\n        run: node scripts/weather-state-epoch-budget.mjs copernicus\n"
+        ],
+        [
+          143050,
+          "      - name: Preserve the fixed epoch post-processing reserve before dmi\n        if: inputs.completed_private_runtime != true && ((inputs.weather_state_epoch_bootstrap == true || inputs.current_family_cold_start == true) && steps.preflight.outputs.should_run == 'true')\n        env:\n          QUICK_PROGRESS_SOURCE: ${{ inputs.current_family_cold_start != true && inputs.quick_progress_source || '' }}\n          CHECKPOINT_TARGET_HOUR: ${{ inputs.current_family_cold_start != true && inputs.checkpoint_only && inputs.production_target_hour || '' }}\n        run: node scripts/weather-state-epoch-budget.mjs dmi\n",
+          "      - name: Preserve the fixed epoch post-processing reserve before dmi\n        if: inputs.completed_private_runtime != true && ((inputs.weather_state_epoch_bootstrap == true || inputs.current_family_cold_start == true) && steps.preflight.outputs.should_run == 'true')\n        run: node scripts/weather-state-epoch-budget.mjs dmi\n"
+        ],
+        [
+          159819,
+          "          if test \"${{ steps.weather-source-handoff.outputs.reused }}\" = \"true\"; then\n            test \"$resolved_target\" = \"${{ steps.weather-source-handoff.outputs.target_hour }}\"\n          fi\n          if test \"${{ inputs.current_family_cold_start }}\" = true && test -n \"$QUICK_PROGRESS_SOURCE\"; then\n            test \"$QUICK_PROGRESS_SOURCE\" = 39886354260-1\n            test \"$resolved_target\" = \"$RAVRADAR_PRODUCTION_TARGET_HOUR\"\n            test \"$resolved_target\" = 2026-10-23T01:00:00Z\n          fi\n          echo \"RAVRADAR_PRODUCTION_TARGET_HOUR=$resolved_target\" >> \"$GITHUB_ENV\"\n\n      - name: Inspect target-bound Copernicus source stage after fresh DMI\n",
+          "          if test \"${{ steps.weather-source-handoff.outputs.reused }}\" = \"true\"; then\n            test \"$resolved_target\" = \"${{ steps.weather-source-handoff.outputs.target_hour }}\"\n          fi\n          echo \"RAVRADAR_PRODUCTION_TARGET_HOUR=$resolved_target\" >> \"$GITHUB_ENV\"\n\n      - name: Inspect target-bound Copernicus source stage after fresh DMI\n"
+        ],
+        [
+          132853,
+          "          RAVRADAR_R2_SECRET_ACCESS_KEY: ${{ inputs.current_family_cold_start && secrets.RAVRADAR_R2_SECRET_ACCESS_KEY || '' }}\n          SUPABASE_URL: ${{ inputs.current_family_cold_start && secrets.SUPABASE_URL || '' }}\n          SUPABASE_SERVICE_ROLE_KEY: ${{ inputs.current_family_cold_start && secrets.SUPABASE_SERVICE_ROLE_KEY || '' }}\n          WEATHER_PROGRESS_MASTER_SECRET: ${{ inputs.current_family_cold_start && inputs.quick_progress_source != '' && secrets.SUPABASE_SERVICE_ROLE_KEY || '' }}\n          PROGRESS_CACHE_MATCHED_KEY: ${{ steps.component-progress-cache.outputs.cache-matched-key }}\n          PROGRESS_CACHE_OUTCOME: ${{ steps.component-progress-cache.outcome }}\n        run: |\n          set -euo pipefail\n          mkdir -p .cache data/live \"$RUNNER_TEMP/dmi-active-proof\"\n          if test \"${{ inputs.current_family_cold_start }}\" = true; then\n            if test -n \"$QUICK_PROGRESS_SOURCE\"; then\n              node scripts/run-current-family-cold-start.mjs reopen\n            else\n              node scripts/run-current-family-cold-start.mjs prepare\n            fi\n            echo \"strict_active_ready=false\" >> \"$GITHUB_OUTPUT\"\n            echo \"candidate_seeded=true\" >> \"$GITHUB_OUTPUT\"\n            exit 0\n",
+          "          RAVRADAR_R2_SECRET_ACCESS_KEY: ${{ inputs.current_family_cold_start && secrets.RAVRADAR_R2_SECRET_ACCESS_KEY || '' }}\n          SUPABASE_URL: ${{ inputs.current_family_cold_start && secrets.SUPABASE_URL || '' }}\n          SUPABASE_SERVICE_ROLE_KEY: ${{ inputs.current_family_cold_start && secrets.SUPABASE_SERVICE_ROLE_KEY || '' }}\n        run: |\n          set -euo pipefail\n          mkdir -p .cache data/live \"$RUNNER_TEMP/dmi-active-proof\"\n          if test \"${{ inputs.current_family_cold_start }}\" = true; then\n            node scripts/run-current-family-cold-start.mjs prepare\n            echo \"strict_active_ready=false\" >> \"$GITHUB_OUTPUT\"\n            echo \"candidate_seeded=true\" >> \"$GITHUB_OUTPUT\"\n            exit 0\n"
+        ],
+        [
+          101173,
+          "          # the next scheduled run begins again from protected storage.\n\n      - name: Require recovered progress before short confirmation\n        if: inputs.current_family_cold_start != true && inputs.completed_private_runtime != true && (inputs.quick_confirmation == true || inputs.quick_progress_source != '')\n        shell: bash\n        env:\n          QUICK_PROGRESS_SOURCE: ${{ inputs.quick_progress_source }}\n",
+          "          # the next scheduled run begins again from protected storage.\n\n      - name: Require recovered progress before short confirmation\n        if: inputs.completed_private_runtime != true && (inputs.quick_confirmation == true || inputs.quick_progress_source != '')\n        shell: bash\n        env:\n          QUICK_PROGRESS_SOURCE: ${{ inputs.quick_progress_source }}\n"
+        ],
+        [
+          94091,
+          "        # conditions bytes and bundle hash. This also permits the exact 11Z\n        # recovery to resume its own progress after a later no-loss stop;\n        # a snapshot from the 15Z anchor is rejected by the binder below.\n        if: (inputs.current_family_cold_start != true || inputs.quick_progress_source == '39886354260-1') && inputs.completed_private_runtime != true && (inputs.native_sampling_identity_original_recovery != true && (inputs.weather_state_epoch_bootstrap != true || inputs.weather_state_epoch_checkpoint_reentry == true) && github.ref == 'refs/heads/main' && github.event_name != 'pull_request' && github.event_name != 'pull_request_target' && steps.private-runtime-install.outcome == 'success' && steps.weather-source-handoff.outputs.reused != 'true' && !(inputs.quick_confirmation && inputs.quick_progress_source == 'protected-current'))\n        uses: actions/cache/restore@v6\n        with:\n          path: .cache/weather-private-progress.encrypted\n",
+          "        # conditions bytes and bundle hash. This also permits the exact 11Z\n        # recovery to resume its own progress after a later no-loss stop;\n        # a snapshot from the 15Z anchor is rejected by the binder below.\n        if: inputs.current_family_cold_start != true && inputs.completed_private_runtime != true && (inputs.native_sampling_identity_original_recovery != true && (inputs.weather_state_epoch_bootstrap != true || inputs.weather_state_epoch_checkpoint_reentry == true) && github.ref == 'refs/heads/main' && github.event_name != 'pull_request' && github.event_name != 'pull_request_target' && steps.private-runtime-install.outcome == 'success' && steps.weather-source-handoff.outputs.reused != 'true' && !(inputs.quick_confirmation && inputs.quick_progress_source == 'protected-current'))\n        uses: actions/cache/restore@v6\n        with:\n          path: .cache/weather-private-progress.encrypted\n"
+        ],
+        [
+          17277,
+          "          test \"${{ inputs.completed_private_runtime }}\" = false\n          test \"${{ inputs.quick_confirmation }}\" = false\n          test \"${{ inputs.checkpoint_only }}\" = false\n          if test -n \"$QUICK_PROGRESS_SOURCE\"; then\n            test \"$QUICK_PROGRESS_SOURCE\" = 39886354260-1\n            test \"$RAVRADAR_PRODUCTION_TARGET_HOUR\" = 2026-10-23T01:00:00Z\n            test \"$CHECKPOINT_TARGET_HOUR\" = \"$RAVRADAR_PRODUCTION_TARGET_HOUR\"\n          else\n            test -z \"$CHECKPOINT_TARGET_HOUR\"\n          fi\n          test \"${{ inputs.produce_weather_handoff }}\" = false\n          test \"${{ inputs.ravscore_integrated_first_cutover }}\" = false\n          test \"${{ inputs.ravscore_integrated_return }}\" = false\n",
+          "          test \"${{ inputs.completed_private_runtime }}\" = false\n          test \"${{ inputs.quick_confirmation }}\" = false\n          test \"${{ inputs.checkpoint_only }}\" = false\n          test -z \"${{ inputs.quick_progress_source }}\"\n          test \"${{ inputs.produce_weather_handoff }}\" = false\n          test \"${{ inputs.ravscore_integrated_first_cutover }}\" = false\n          test \"${{ inputs.ravscore_integrated_return }}\" = false\n"
+        ],
+        [
+          10402,
+          "      NATIVE_IDENTITY_RECOVERY: ${{ inputs.native_sampling_identity_original_recovery }}\n      EXTENDED_PROVIDER_BOOTSTRAP: ${{ inputs.extended_provider_bootstrap }}\n      PRODUCE_HANDOFF: ${{ inputs.produce_weather_handoff }}\n      CHECKPOINT_TARGET_HOUR: ${{ (inputs.checkpoint_only || (inputs.current_family_cold_start && inputs.quick_progress_source != '')) && inputs.production_target_hour || '' }}\n      RAVRADAR_WEATHER_STATE_EPOCH_ARCHIVE_ID: ${{ inputs.weather_state_epoch_archive_key }}\n      RAVRADAR_WEATHER_STATE_EPOCH_ARCHIVE_CATALOG_SHA256: ${{ inputs.weather_state_epoch_archive_catalog_sha256 }}\n      RAVRADAR_PRIVATE_RUNTIME_ROOT: /tmp/ravradar-private-production-runtime\n",
+          "      NATIVE_IDENTITY_RECOVERY: ${{ inputs.native_sampling_identity_original_recovery }}\n      EXTENDED_PROVIDER_BOOTSTRAP: ${{ inputs.extended_provider_bootstrap }}\n      PRODUCE_HANDOFF: ${{ inputs.produce_weather_handoff }}\n      CHECKPOINT_TARGET_HOUR: ${{ inputs.checkpoint_only && inputs.production_target_hour || '' }}\n      RAVRADAR_WEATHER_STATE_EPOCH_ARCHIVE_ID: ${{ inputs.weather_state_epoch_archive_key }}\n      RAVRADAR_WEATHER_STATE_EPOCH_ARCHIVE_CATALOG_SHA256: ${{ inputs.weather_state_epoch_archive_catalog_sha256 }}\n      RAVRADAR_PRIVATE_RUNTIME_ROOT: /tmp/ravradar-private-production-runtime\n"
+        ]
+      ]
+    },
+    "once": {
+      "relativePath": ".github/workflows/run-current-weather-once.yml",
+      "before": {
+        "bytes": 54389,
+        "sha256": "ca7f15673910e1176ba68c190b9f08c85d8274efb31dc36dbceca1b3838360b3"
+      },
+      "after": {
+        "bytes": 54587,
+        "sha256": "790776231568428e7ea9b4943e6d4719177fb5bf7f4c03b648b16ee85f7f83e0"
+      },
+      "edits": [
+        [
+          46588,
+          "      weather_state_epoch_archive_catalog_sha256: ${{ inputs.weather_state_epoch_checkpoint_reentry && inputs.weather_state_epoch_archive_catalog_sha256 || needs.state-epoch-prewrite.outputs.archive_catalog_sha256 }}\n      quick_confirmation: ${{ inputs.quick_confirmation }}\n      quick_progress_source: ${{ inputs.quick_progress_source }}\n      checkpoint_only: ${{ inputs.current_family_cold_start != true && inputs.checkpoint_target_hour != '' && inputs.completed_stage_source == '' }}\n      native_sampling_identity_original_recovery: ${{ inputs.native_sampling_identity_original_recovery }}\n      produce_weather_handoff: false\n      produce_weather_handoff_confirmation: ''\n",
+          "      weather_state_epoch_archive_catalog_sha256: ${{ inputs.weather_state_epoch_checkpoint_reentry && inputs.weather_state_epoch_archive_catalog_sha256 || needs.state-epoch-prewrite.outputs.archive_catalog_sha256 }}\n      quick_confirmation: ${{ inputs.quick_confirmation }}\n      quick_progress_source: ${{ inputs.quick_progress_source }}\n      checkpoint_only: ${{ inputs.checkpoint_target_hour != '' && inputs.completed_stage_source == '' }}\n      native_sampling_identity_original_recovery: ${{ inputs.native_sampling_identity_original_recovery }}\n      produce_weather_handoff: false\n      produce_weather_handoff_confirmation: ''\n"
+        ],
+        [
+          4985,
+          "          test \"$GITHUB_RUN_ATTEMPT\" = 1\n          test \"$COMPLETED\" = false\n          test \"$QUICK\" = false\n          if test -z \"$PROGRESS\"; then\n            test -z \"$TARGET\"\n          else\n            test \"$PROGRESS\" = 39886354260-1\n            test \"$TARGET\" = 2026-10-23T01:00:00Z\n          fi\n          test \"$EPOCH\" = false\n          test \"$REENTRY\" = false\n          test \"$NATIVE\" = false\n",
+          "          test \"$GITHUB_RUN_ATTEMPT\" = 1\n          test \"$COMPLETED\" = false\n          test \"$QUICK\" = false\n          test -z \"$PROGRESS\"\n          test -z \"$TARGET\"\n          test \"$EPOCH\" = false\n          test \"$REENTRY\" = false\n          test \"$NATIVE\" = false\n"
+        ],
+        [
+          45,
+          "  workflow_dispatch:\n    inputs:\n      current_family_cold_start:\n        description: 'Archive authenticated current-family B/S for a fresh cold start, or reopen only its fixed 39886354260-1 checkpoint without another reset'\n        required: false\n        type: boolean\n        default: false\n",
+          "  workflow_dispatch:\n    inputs:\n      current_family_cold_start:\n        description: 'Archive authenticated current-family B/S and measure a new cold start without changing model/SQL; fresh one-off only'\n        required: false\n        type: boolean\n        default: false\n"
+        ]
+      ]
+    }
+  }
+}

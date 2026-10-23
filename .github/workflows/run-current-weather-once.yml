@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
     inputs:
       current_family_cold_start:
-        description: 'Archive authenticated current-family B/S and measure a new cold start without changing model/SQL; fresh one-off only'
+        description: 'Archive authenticated current-family B/S for a fresh cold start, or reopen only its fixed 39886354260-1 checkpoint without another reset'
         required: false
         type: boolean
         default: false
@@ -124,8 +124,12 @@ jobs:
           test "$GITHUB_RUN_ATTEMPT" = 1
           test "$COMPLETED" = false
           test "$QUICK" = false
-          test -z "$PROGRESS"
-          test -z "$TARGET"
+          if test -z "$PROGRESS"; then
+            test -z "$TARGET"
+          else
+            test "$PROGRESS" = 39886354260-1
+            test "$TARGET" = 2026-10-23T01:00:00Z
+          fi
           test "$EPOCH" = false
           test "$REENTRY" = false
           test "$NATIVE" = false
@@ -905,7 +909,7 @@ jobs:
       weather_state_epoch_archive_catalog_sha256: ${{ inputs.weather_state_epoch_checkpoint_reentry && inputs.weather_state_epoch_archive_catalog_sha256 || needs.state-epoch-prewrite.outputs.archive_catalog_sha256 }}
       quick_confirmation: ${{ inputs.quick_confirmation }}
       quick_progress_source: ${{ inputs.quick_progress_source }}
-      checkpoint_only: ${{ inputs.checkpoint_target_hour != '' && inputs.completed_stage_source == '' }}
+      checkpoint_only: ${{ inputs.current_family_cold_start != true && inputs.checkpoint_target_hour != '' && inputs.completed_stage_source == '' }}
       native_sampling_identity_original_recovery: ${{ inputs.native_sampling_identity_original_recovery }}
       produce_weather_handoff: false
       produce_weather_handoff_confirmation: ''

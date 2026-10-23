@@ -1,3 +1,13 @@
+## 23. oktober — privat sammenføring af P0 og 587; samlet kvalifikation er åben
+
+P0-genoptagelsen og den udstedte 587-assistentkandidat forberedes til én kildeintegration, men er to adskilte evidensforløb. Den tidligere P0-beregning standsede på tretten strømtimer i no-loss uden ny B/S eller offentlig levering. 587s senere source17-stop skyldtes et historisk testorakel for seneste migration; den præcise lokale rettelse består, mens samlet kvalifikation af den nye komposition stadig mangler. Gamle native- og lokalresultater ommærkes ikke til dette bevis. P0s faktiske genoptagelse/offentlige levering og almindelige efterfølger skal være dokumenteret før den kontrollerede 587-installation og hosted AI-kontrol. Ingen nye modelbindinger, SQL-udstedelse eller aktivering af SOURCE, statistik eller retention følger af sammenføringen.
+
+## 23. oktober — ÅBEN: tretten strøm-tab efter faktisk beregnet ny start
+
+Første current-family-start beregnede en ny kandidat, men no-loss afviste tretten tidligere gyldige strømtimer for én uændret kystdel. Ingen ny offentlig generation. Et lokalt DMI-otteforsøgsstop med tid tilbage er faktisk observeret; fuld årsag gennem CP-/OM-kildevalg og offentlig materialisering er ikke dermed bevist. Kun den autentificerede opstart får lokalt adgang til det eksisterende katalogloft, med uændrede tids-/byte-/reservegrænser.
+
+Det præcise krypterede checkpoint er autentificeret og bevarer leverandørinput, ikke afsluttet beregning. Genoptagelse skal genåbne samme autentiske arkiv og mål-time uden en ny start. Normal beskyttet komponentunion kan ellers føre gamle CP-/OM-strømdonorer tilbage; den typed, arkivbundne vej skal udelade netop disse gamle donorindgange efter fuld originalpakkevalidering, mens øvrige komponenter og nye checkpointdata bevares. Ægte integration, præcis kildekontrol, faktisk genoptagelse/no-loss, B/S/Pages/offentlig effekt og almindelig efterfølger mangler. Ingen sikkerhedsgate eller numerisk kildeautoritet må erstattes af et cachehit, en skjult pil eller en lokal prøve.
+
 ## 23. oktober — ÅBEN: samlet kildekvalifikation efter fire testlæserkonflikter
 
 Den første PR707-kontrol fandt fire reproducerede prøvefejl efter bestået native PostgreSQL: manglende ydre `coldInputs` i to udtag, et tidligere kaldernavn og en manglende præcis zonehistorik-inverse før gamle hele kildepins. Opfølgningen retter kun prøvernes afgrænsning og bevarer alle tidligere assertions og ændringsafslag. Den er ikke en ny produktrettelse eller bevis for fungerende vejrhentning. Ny samlet præcis kontrol, faktisk første generation og almindeligt genbrug er fortsat åbne; ingen produktionsændring er udført på dette grundlag.

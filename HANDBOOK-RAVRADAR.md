@@ -22,6 +22,8 @@ Strømdelen ser 48 timer bagud fra det tidspunkt, prognosen gælder for. Fremtid
 
 En vellykket opstart er ikke nok til at dokumentere stabil drift. Gemning, genlæsning, offentlig levering og mindst én efterfølgende almindelig opdatering skal også være kontrolleret. Beregningsmodel, kildeprioritet og kystpunkter ændres ikke af denne driftsform.
 
+Genoptagelse af en afbrudt opstart er ikke en ny start. Det samme bevarede arkiv, starttidspunkt og præcise gemte checkpoint skal kunne kontrolleres igen. Gamle strømdata må heller ikke vende tilbage gennem samling af gemte komponentpakker; øvrige vejrdata bevares efter de normale regler. Et checkpoint med hentede data indeholder ikke nødvendigvis den færdige beregning. Der må kun loves genbrug af det, som faktisk er gemt og verificeret. De oprindelige tidsgrænser og reserver til efterbehandling gælder også ved genoptagelse.
+
 Driften skal passe til Supabase Free og Cloudflare Free. Det kræver måling af faktisk forbrug og en forsigtig fremskrivning, også for bevarede arkiver. En lille komprimeret fil eller en lokal prøve er ikke i sig selv bevis for, at hele driften holder sig inden for de gratis grænser.
 
 ## 89.263 Originalfil og hentetid er to forskellige ting
