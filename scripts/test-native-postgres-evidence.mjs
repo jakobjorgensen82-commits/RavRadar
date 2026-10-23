@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
+import crypto from 'node:crypto';
 import test from 'node:test';
 import {ORIGIN, WORKFLOW, JOB, STEP, COMMANDS, ACCOUNT_STATISTICS_ASSISTANT_COMMANDS, CURRENT586_COMMANDS as CURRENT_COMMANDS,
   CURRENT_COMMANDS as ASSISTANT_LATER_H0_COMMANDS, NATIVE_SCRIPT as ASSISTANT_LATER_H0_SCRIPT, NEW_NATIVE_BLOCK,
@@ -8,8 +9,30 @@ import {ORIGIN, WORKFLOW, JOB, STEP, COMMANDS, ACCOUNT_STATISTICS_ASSISTANT_COMM
   verifyLaterRuns, decideReuse, verifyCurrentPullRequest, FOLLOWUP_INPUTS,
   CURRENT586_PHASE_KIND,CURRENT586_PHASE_UPLOAD,CURRENT586_PHASE_UPLOAD_BLOCK,
   ASSISTANT_LATER_H0_PHASE_KIND,verifyAssistantLaterH0PhaseReceipt,
+  SOURCE_PRODUCER_COMMANDS,SOURCE_PRODUCER_NATIVE_SCRIPT,SOURCE_PRODUCER_PHASE_KIND,
+  SOURCE_PRODUCER_PHASE_UPLOAD,SOURCE_PRODUCER_PHASE_UPLOAD_BLOCK,
+  inverseSourceProducerPhaseUpload,verifySourceProducerPhaseReceipt,
   inverseCurrent586PhaseUpload,verifyCurrent586Workflow,verifyCurrent586Runtime,
   verifyCurrent586PhaseReceipt,verifyCurrent586Metadata,verifyCurrent586Artifact,decideCurrent586Reuse} from './native-postgres-evidence.mjs';
+
+import {SOURCE_NODE24_CAPTURE,SOURCE_NODE24_ENV,inverseSourceNode24Workflow,verifyWorkflow as verifyNationalWorkflow}
+  from './national584-source-evidence.mjs';
+import {SOURCE_PRODUCER_BINDING,SOURCE_PRODUCER_OUTPUT,
+  requireSourceProducerBinding,requireSourceProducerOutput}
+  from './lib/source-producer-successor-source.mjs';
+
+// TEST ONLY: the exact reviewed SOURCE CI changes are inverted before the
+// unchanged whole586/historical584 assertions. Unknown bytes never fall back.
+function sourcePrWorkflowBeforeSourceForTest(value){
+  const source=String(value).replace(/\r\n/g,'\n');
+  const hash=text=>crypto.createHash('sha256').update(text).digest('hex');
+  assert.equal(hash(source),'8070f5160f2599900c3f1dafc96f6fbd6d8ce0740353f1aa52e7f801456efc7a',
+    'Whole reviewed SOURCE CI workflow, not selected markers');
+  const prior=inverseSourceProducerPhaseUpload(inverseSourceNode24Workflow(source));
+  assert.equal(hash(prior),'b8236a832c5145efee9bd97d1cdb552fa86453dffa086aaa63d61b533b9eefbb',
+    'Whole genuine JOINT587 workflow before only the SOURCE CI delta');
+  return prior;
+}
 
 // Keep every whole586 command assertion on its immutable predecessor view.
 // The actual new production command is independently checked below.
@@ -276,7 +299,7 @@ test('assistant later-H0 appends its actual phase without retagging whole586 com
 
 
 test('current586 phase artifact is independent, exact, honest, and does not relax conservative native inputs',async()=>{
-  const workflow=await fs.readFile(WORKFLOW,'utf8');
+  const workflow=sourcePrWorkflowBeforeSourceForTest(await fs.readFile(WORKFLOW,'utf8'));
   assert.equal(workflow.split(CURRENT586_PHASE_UPLOAD_BLOCK).length,2);
   verifyCurrent586Workflow(workflow,workflow);
   assert.equal(inverseCurrent586PhaseUpload(workflow).includes(CURRENT586_PHASE_UPLOAD),false);
@@ -328,7 +351,7 @@ test('current586 exact EXECUTED origin survives a later source failure; missing,
     end.writeUInt32LE(central.length+name.length,12);end.writeUInt32LE(local.length+name.length+raw.length,16);
     return Buffer.concat([local,name,raw,central,name,end]);
   };
-  const workflow=await fs.readFile(WORKFLOW,'utf8'),oldId=ORIGIN.run+10,currentId=oldId+2,number=700;
+  const workflow=sourcePrWorkflowBeforeSourceForTest(await fs.readFile(WORKFLOW,'utf8')),oldId=ORIGIN.run+10,currentId=oldId+2,number=700;
   const branch='synthetic-native586',nativeInput=verifyInputTrees(tree,tree);
   const oldRun={id:oldId,run_attempt:1,head_sha:oid,head_branch:branch,path:WORKFLOW,event:'pull_request',
     repository:{full_name:ORIGIN.repository},head_repository:{full_name:ORIGIN.repository},
@@ -448,5 +471,75 @@ test('assistant NEXT execution cannot be minted or reused as a whole586 phase',(
     v=>v.phase='NATIVE_ORIGINAL_CONTINUITY']){
     const changed=copy(next);mutate(changed);
     assert.throws(()=>verifyAssistantLaterH0PhaseReceipt(changed,current));
+  }
+});
+
+test('SOURCE pre-merge commands are distinct from exact586 and587 inventories',()=>{
+  assert(Object.isFrozen(SOURCE_PRODUCER_COMMANDS));
+  assert.equal(SOURCE_PRODUCER_COMMANDS.length,2);
+  assert.equal(SOURCE_PRODUCER_COMMANDS[0],ACCOUNT_STATISTICS_ASSISTANT_COMMANDS[0]);
+  assert.equal(SOURCE_PRODUCER_COMMANDS[1],ACCOUNT_STATISTICS_ASSISTANT_COMMANDS[1]+' --source-producer');
+  assert.equal(SOURCE_PRODUCER_NATIVE_SCRIPT,'set -euo pipefail\n'+SOURCE_PRODUCER_COMMANDS.join('\n')+'\n');
+  assert.notDeepEqual(SOURCE_PRODUCER_COMMANDS,CURRENT_COMMANDS);
+  assert.notDeepEqual(SOURCE_PRODUCER_COMMANDS,ASSISTANT_LATER_H0_COMMANDS);
+  assert.doesNotMatch(SOURCE_PRODUCER_COMMANDS[1],/ --(?:native-original-continuity|assistant-later-h0|current-source-native-profile)\b/);
+  assert.notEqual(SOURCE_PRODUCER_PHASE_KIND,CURRENT586_PHASE_KIND);
+  assert.notEqual(SOURCE_PRODUCER_PHASE_KIND,ASSISTANT_LATER_H0_PHASE_KIND);
+  assert.equal(SOURCE_PRODUCER_PHASE_UPLOAD,'Upload independently completed SOURCE PostgreSQL phase');
+  assert(SOURCE_PRODUCER_PHASE_UPLOAD_BLOCK.includes('name: source-producer-phase-'));
+  assert(!SOURCE_PRODUCER_PHASE_UPLOAD_BLOCK.includes('native586-phase-'));
+});
+
+test('actual SOURCE CI has an exact whole inverse; old586 workflow rules remain separate',async()=>{
+  const actual=(await fs.readFile(WORKFLOW,'utf8')).replace(/\r\n/g,'\n');
+  const prior=sourcePrWorkflowBeforeSourceForTest(actual);
+  verifyNationalWorkflow(actual);verifyNationalWorkflow(prior);
+  verifyCurrent586Workflow(prior,prior);
+  assert.throws(()=>verifyCurrent586Workflow(actual,actual),'SOURCE is not an unchanged whole586 workflow');
+  assert.equal(actual.split(SOURCE_PRODUCER_PHASE_UPLOAD_BLOCK).length,2);
+  assert.equal(actual.split(CURRENT586_PHASE_UPLOAD_BLOCK).length,1);
+  assert(actual.indexOf('      - name: '+STEP)<actual.indexOf(SOURCE_PRODUCER_PHASE_UPLOAD_BLOCK));
+  assert(actual.indexOf(SOURCE_PRODUCER_PHASE_UPLOAD_BLOCK)<actual.indexOf('      - name: Validate source contracts'));
+  for(const changed of [
+    actual.replace(SOURCE_NODE24_CAPTURE,''),actual.replace(SOURCE_NODE24_ENV,''),
+    actual.replace(SOURCE_NODE24_CAPTURE,SOURCE_NODE24_CAPTURE+SOURCE_NODE24_CAPTURE),
+    actual.replace(SOURCE_NODE24_ENV,SOURCE_NODE24_ENV+SOURCE_NODE24_ENV),
+    actual.replace(SOURCE_NODE24_CAPTURE,SOURCE_NODE24_CAPTURE.replace('$GITHUB_OUTPUT','$GITHUB_ENV')),
+    actual.replace(SOURCE_PRODUCER_PHASE_UPLOAD_BLOCK,''),
+    actual.replace(SOURCE_PRODUCER_PHASE_UPLOAD_BLOCK,SOURCE_PRODUCER_PHASE_UPLOAD_BLOCK+SOURCE_PRODUCER_PHASE_UPLOAD_BLOCK),
+    actual.replace(SOURCE_PRODUCER_PHASE_UPLOAD_BLOCK,CURRENT586_PHASE_UPLOAD_BLOCK),
+    actual.replace('source-producer-phase-','native586-phase-'),
+    actual.replace('npm run validate:source','true'),actual+'\n# unrelated workflow drift\n',
+  ])assert.throws(()=>sourcePrWorkflowBeforeSourceForTest(changed));
+  assert.throws(()=>sourcePrWorkflowBeforeSourceForTest(prior),'An old workflow is not SOURCE workflow admission');
+});
+
+test('SOURCE pure receipt shape never mints SQL proof or aliases native586/587 reuse',()=>{
+  // Artificial metadata only; there is no native execution, artifact or grant.
+  const current={run:ORIGIN.run+30,attempt:1,head:newOid,pullRequest:700,branch:'synthetic-source-contract'};
+  const receipt={phase:'SOURCE_PRODUCER',status:'EXECUTED',executedInThisRun:true,origin:null,
+    current,commands:[...SOURCE_PRODUCER_COMMANDS],eligibleForReuse:false,
+    sourceProducerBinding:SOURCE_PRODUCER_BINDING,sourceProducerOutput:SOURCE_PRODUCER_OUTPUT,
+    currentSourceNativeProfileClaimed:false,productionProof:false};
+  assert.throws(()=>verifyCurrent586PhaseReceipt(receipt,current));
+  assert.throws(()=>verifyAssistantLaterH0PhaseReceipt(receipt,current));
+  if(SOURCE_PRODUCER_BINDING===null){
+    assert.equal(SOURCE_PRODUCER_OUTPUT,null);
+    assert.throws(()=>verifySourceProducerPhaseReceipt(receipt,current),/SOURCE_PRODUCER_UNISSUED/);
+    return; // Honest unissued refusal, never a positive SOURCE/native result.
+  }
+  requireSourceProducerBinding();requireSourceProducerOutput();
+  assert.equal(verifySourceProducerPhaseReceipt(receipt,current).status,'EXECUTED');
+  for(const mutate of [
+    value=>value.status='REUSED',value=>value.executedInThisRun=false,
+    value=>value.origin={run:current.run-1},value=>value.eligibleForReuse=true,
+    value=>value.commands=[...CURRENT_COMMANDS],value=>value.commands=[...ASSISTANT_LATER_H0_COMMANDS],
+    value=>value.current={...current,head:oid},value=>value.phase='NATIVE_ORIGINAL_CONTINUITY',
+    value=>value.sourceProducerBinding.C=(value.sourceProducerBinding.C[0]==='0'?'1':'0')+value.sourceProducerBinding.C.slice(1),
+    value=>value.sourceProducerOutput.migrationSha256=(value.sourceProducerOutput.migrationSha256[0]==='0'?'1':'0')+value.sourceProducerOutput.migrationSha256.slice(1),
+    value=>value.currentSourceNativeProfileClaimed=true,value=>value.productionProof=true,
+  ]){
+    const changed=copy(receipt);mutate(changed);
+    assert.throws(()=>verifySourceProducerPhaseReceipt(changed,current));
   }
 });

@@ -97,7 +97,7 @@ const productionWorkflowNames = new Set(
 );
 productionWorkflowNames.add('deploy-code-only-repair.yml');
 productionWorkflowNames.add('run-current-weather-once.yml');
-const actualWorkflowFiles = fs.readdirSync(workflowDirectory)
+const observedWorkflowFiles = fs.readdirSync(workflowDirectory)
   .filter((name) => /\.ya?ml$/i.test(name))
   .sort();
 const expectedWorkflowFiles = ['apply-weather-model-binding-only.yml', 'audit-native-current-grid.yml', 'audit-saved-weather-inputs.yml', 'audit-sealed-current-source.yml', 'build-ravscore-historical-wave-pilot.yml', 'deploy-code-only-repair.yml', 'deploy-trip-storage.yml', 'extract-private-geodanmark-layer.yml', 'migrate-private-runtime-to-r2.yml', 'monitor-trip-storage.yml', 'notify-weather-failure.yml', 'preserve-copernicus-current-shadow.yml', 'recover-live-ravscore-central.yml', 'recover-saved-dmi-originals.yml', 'recover-sealed-weather-36396834072.yml', 'retry-national-admin-roundtrip.yml', 'reusable-operational-reentry.yml', 'reusable-pages-deploy.yml', 'reusable-weather-build.yml', 'run-current-weather-once.yml', 'update-and-deploy.yml', 'validate-approved-public-coast.yml', 'validate-copernicus-current-pilot.yml', 'validate-local-part-system-candidate.yml', 'validate-pull-request.yml', 'validate-six-zone-recovery.yml', 'watch-missed-weather-schedule.yml'];
@@ -114,6 +114,37 @@ function inversePrivateStudyWorkflowInventory(names, source) {
   assert.doesNotMatch(source, /pages: write|id-token: write|deploy-pages/);
   return names.filter(name => name !== privateStudyName);
 }
+// The manual CURRENT profile can be present before main qualification, but it
+// is never invoked by this source test. Project only its exact whole reviewed
+// file out before every unchanged historical/private-study inventory assertion.
+const sourceNativeProfileWorkflowName = 'validate-current-source-native-profile.yml';
+const sourceNativeProfileWorkflowSource = fs.readFileSync(
+  `${workflowDirectory}/${sourceNativeProfileWorkflowName}`, 'utf8',
+).replace(/\r\n/g, '\n');
+function inverseSourceNativeProfileWorkflowInventory(names, source) {
+  assert.deepEqual(names, [...expectedWorkflowFiles, privateStudyName, sourceNativeProfileWorkflowName].sort(),
+    'Only the complete old inventory plus the exact inactive CURRENT workflow');
+  assert.equal(crypto.createHash('sha256').update(source).digest('hex'),
+    '6ece41eaed6d57c54f063acda8d0598ff1eb1d0541aed32920f70e45c475dbda',
+    'Whole default-OFF post-green-main workflow; no trigger or authority substitution');
+  assert.doesNotMatch(source, /pages: write|id-token: write|deploy-pages|continue-on-error:/);
+  return names.filter(name => name !== sourceNativeProfileWorkflowName);
+}
+const actualWorkflowFiles = inverseSourceNativeProfileWorkflowInventory(
+  observedWorkflowFiles, sourceNativeProfileWorkflowSource,
+);
+for (const names of [
+  [...observedWorkflowFiles, 'unreviewed-workflow.yml'].sort(),
+  observedWorkflowFiles.filter(name => name !== sourceNativeProfileWorkflowName),
+  [...observedWorkflowFiles, sourceNativeProfileWorkflowName].sort(),
+  observedWorkflowFiles.filter(name => name !== privateStudyName),
+  observedWorkflowFiles.filter(name => name !== expectedWorkflowFiles[0]),
+]) assert.throws(() => inverseSourceNativeProfileWorkflowInventory(names, sourceNativeProfileWorkflowSource));
+for (const source of [
+  sourceNativeProfileWorkflowSource + '\n# unreviewed change\n',
+  sourceNativeProfileWorkflowSource.replace('        default: false\n', '        default: true\n'),
+  sourceNativeProfileWorkflowSource.replace('  contents: read\n', '  contents: write\n'),
+]) assert.throws(() => inverseSourceNativeProfileWorkflowInventory(observedWorkflowFiles, source));
 const workflowFiles = inversePrivateStudyWorkflowInventory(actualWorkflowFiles, privateStudySource);
 assert.deepEqual(workflowFiles, expectedWorkflowFiles,
   'The complete unchanged historical workflow inventory is restored');

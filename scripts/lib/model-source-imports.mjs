@@ -83,14 +83,142 @@ const ASSISTANT_BINDING_PREWRITE_REVIEWED=Object.freeze({
     sha256:'860d62ff21d2854ca2856bcb6998ba48859c0237f94b315c7736a1265e1be8de',
     imports:Object.freeze(["./lib/assistant-later-h0-successor-source.mjs","./check-assistant-later-h0-predecessor-source.mjs","./lib/authenticated-frozen586-predecessor.mjs","./migrate-post-cutover-private-runtime.mjs","./integrated-cutover-readiness.mjs","./lib/dmi-forecast-file.mjs","./lib/dmi-part-continuity.mjs","./lib/protected-dmi-native-current-proofs.mjs","./lib/ravscore-recovery-source-priority.mjs","./lib/coherent-original-source-views.mjs","../js/core/ravscore-model-contract.js","./rollback-assets/ravscore-model-contract.js","./private-production-runtime-workflow.mjs","./lib/private-weather-component-pack.mjs"])}),
 });
+// Additive genuine587 -> SOURCE parent-ingress variants only. The actual
+// c03 ordinary586/metadata585 tables and readers above remain unchanged.
+// Each whole image selects one finite inventory; unknown bytes still fail.
+const GENUINE587_PARENT_INGRESS_REVIEWED=Object.freeze({
+  'scripts/lib/established-native-current-origin.mjs':Object.freeze({
+    sha256:'0f6ab7de39f2d445412a72ecf706b46d1e3ab2f8f90e40b1be822da854d23c92',
+    imports:Object.freeze([...ASSISTANT_LATER_H0_REVIEWED['scripts/lib/established-native-current-origin.mjs'].imports,
+      './authenticated-frozen587-predecessor.mjs', '../check-source-producer-587-predecessor-source.mjs'])}),
+  'scripts/lib/authenticated-frozen587-predecessor.mjs':Object.freeze({
+    sha256:'1a349f83c3d7c54314b01ea015daa6f30f308c1417925e249ef76f5c3ad66d4a',
+    imports:Object.freeze(['../check-source-producer-587-predecessor-source.mjs'])}),
+  'scripts/check-source-producer-587-predecessor-source.mjs':Object.freeze({
+    sha256:'45b34682a62199e6a180dcb3c876e9c0cc8e5caebaa031824d311004169ec070',
+    imports:Object.freeze([])}),
+});
+// Exact additive core-runtime inventory for the genuine587 -> SOURCE port.
+// All c03 and parent-ingress tables above remain byte-identical.
+const SOURCE587_CORE_RUNTIME_REVIEWED=Object.freeze({
+  'scripts/source-producer-runtime-transition.mjs':Object.freeze({
+    sha256:'16d2ea51c1e0da6971710d608924bc12f56bc0cf34367d78dd61f10c9aed9104',
+    imports:Object.freeze([
+      './lib/bounded-json-writer.mjs',
+      './lib/established-native-current-origin.mjs',
+      './lib/authenticated-frozen587-predecessor.mjs',
+      './check-source-producer-587-predecessor-source.mjs',
+      './lib/source-producer-successor-source.mjs',
+      '../js/core/ravscore-model-contract.js',
+      './rollback-assets/ravscore-model-contract.js',
+      './private-production-runtime-workflow.mjs',
+      './ravscore-continuation-checkpoint.mjs',
+      './migrate-post-cutover-private-runtime.mjs',
+      './protected-private-production-runtime.mjs'
+    ])}),
+});
+// Exact additive G1 reconcile inventory on the genuine587 parent.
+// All existing foundation tables remain unchanged; no scanner fallback.
+const GENUINE587_G1_RECONCILE_REVIEWED=Object.freeze({
+  'scripts/reconcile-private-runtime-checkpoint.mjs':Object.freeze({
+    sha256:'5088bf0e120208a352b8ea5e3799cd7f5ba31c50b5214031dc28289ccefe11f7',
+    imports:Object.freeze([
+      './protected-private-production-runtime.mjs',
+      './private-production-runtime-bundle.mjs',
+      './private-production-runtime-workflow.mjs',
+      './ravscore-continuation-checkpoint.mjs',
+      './protected-ravscore-continuation-checkpoint.mjs',
+      './lib/established-native-current-origin-successor-source.mjs',
+      './lib/last-mile-enclosure-successor-source.mjs',
+      './check-last-mile-enclosure-predecessor-source.mjs',
+      './lib/account-statistics-assistant-successor-source.mjs',
+      './check-account-statistics-assistant-predecessor-source.mjs',
+      './lib/established-native-current-origin.mjs',
+      './account-statistics-assistant-prewrite.mjs',
+      './lib/native-original-continuity-successor-source.mjs',
+      './check-native-original-continuity-predecessor-source.mjs',
+      './select-native-original-continuity-code-only-source.mjs',
+      './lib/private-weather-component-pack.mjs',
+      './check-production-target-freshness.mjs',
+      './lib/assistant-later-h0-successor-source.mjs',
+      './lib/source-producer-successor-source.mjs',
+      './select-source-producer-code-only-source.mjs',
+      './check-source-producer-587-predecessor-source.mjs'
+    ])}),
+});
+// Exact additive protected-restore result owner on the genuine587 parent.
+// Whole source only: identical six import owners, never JSON/result admission.
+const GENUINE587_PROTECTED_RESTORE_REVIEWED=Object.freeze({
+  'scripts/protected-private-production-runtime.mjs':Object.freeze({
+    sha256:'07be758050a350c687cfaba4bbe7721176eda973220abbcce6bbb2596220ab58',
+    imports:Object.freeze(['./private-production-runtime-bundle.mjs', './lib/supabase-admin-rest.mjs', '../js/core/ravscore-model-contract.js',
+      './lib/r2-private-runtime-storage.mjs', './lib/private-weather-component-inventory.mjs', './lib/bounded-conditions-predecessor-transition.mjs']),
+  }),
+});
+// Two exact historical reconcile inventories used by the preserved prewrite oracle.
+// Source recognition only: no runtime/numeric admission and no c832 V2 fallback.
+// Both row bodies are byte-identical to their reviewed historical scanner.
+const SOURCE_PREWRITE_HISTORICAL_RECONCILE_PRIOR_REVIEWED=Object.freeze({
+  "scripts/reconcile-private-runtime-checkpoint.mjs": Object.freeze({
+    sha256: "c646e24b5e7ee4a1b1a71917819eb49e9b38c9e123d5b631211207e033f6a052",
+    imports: Object.freeze([
+      "./protected-private-production-runtime.mjs",
+      "./private-production-runtime-bundle.mjs",
+      "./private-production-runtime-workflow.mjs",
+      "./ravscore-continuation-checkpoint.mjs",
+      "./protected-ravscore-continuation-checkpoint.mjs",
+      "./lib/established-native-current-origin-successor-source.mjs",
+      "./lib/last-mile-enclosure-successor-source.mjs",
+      "./check-last-mile-enclosure-predecessor-source.mjs",
+      "./lib/account-statistics-assistant-successor-source.mjs",
+      "./lib/source-producer-successor-source.mjs",
+      "./check-source-producer-predecessor-source.mjs",
+      "./lib/established-native-current-origin.mjs",
+      "./check-account-statistics-assistant-predecessor-source.mjs",
+      "./account-statistics-assistant-prewrite.mjs",
+      "./lib/private-weather-component-pack.mjs",
+      "./check-production-target-freshness.mjs"
+    ]),
+  }),
+});
+const SOURCE_PREWRITE_HISTORICAL_RECONCILE_CODE_ONLY_REVIEWED=Object.freeze({
+  'scripts/reconcile-private-runtime-checkpoint.mjs': Object.freeze({
+    sha256:'0d39bb342673321abf6481a4a3527bb3717dc4b2604688550d23e5d928b467f4',
+    imports:Object.freeze([
+      './protected-private-production-runtime.mjs',
+      './private-production-runtime-bundle.mjs',
+      './private-production-runtime-workflow.mjs',
+      './ravscore-continuation-checkpoint.mjs',
+      './protected-ravscore-continuation-checkpoint.mjs',
+      './lib/established-native-current-origin-successor-source.mjs',
+      './lib/last-mile-enclosure-successor-source.mjs',
+      './check-last-mile-enclosure-predecessor-source.mjs',
+      './lib/account-statistics-assistant-successor-source.mjs',
+      './lib/source-producer-successor-source.mjs',
+      './select-source-producer-code-only-source.mjs',
+      './check-source-producer-predecessor-source.mjs',
+      './lib/established-native-current-origin.mjs',
+      './check-account-statistics-assistant-predecessor-source.mjs',
+      './account-statistics-assistant-prewrite.mjs',
+      './lib/private-weather-component-pack.mjs',
+      './check-production-target-freshness.mjs',
+    ]),
+  }),
+});
 export function modelSourceRelativeModuleSpecifiers(source, file) {
   if (!Object.hasOwn(REVIEWED, file) && !Object.hasOwn(NATIVE_CONTINUITY_REVIEWED, file)
-    && !Object.hasOwn(ASSISTANT_LATER_H0_REVIEWED,file) && !Object.hasOwn(ASSISTANT_BINDING_PREWRITE_REVIEWED,file))
+    && !Object.hasOwn(ASSISTANT_LATER_H0_REVIEWED,file) && !Object.hasOwn(ASSISTANT_BINDING_PREWRITE_REVIEWED,file)
+    && !Object.hasOwn(GENUINE587_PARENT_INGRESS_REVIEWED,file)
+    && !Object.hasOwn(SOURCE587_CORE_RUNTIME_REVIEWED,file)
+    && !Object.hasOwn(GENUINE587_G1_RECONCILE_REVIEWED,file)
+    && !Object.hasOwn(GENUINE587_PROTECTED_RESTORE_REVIEWED,file)
+    && !Object.hasOwn(SOURCE_PREWRITE_HISTORICAL_RECONCILE_PRIOR_REVIEWED,file)
+    && !Object.hasOwn(SOURCE_PREWRITE_HISTORICAL_RECONCILE_CODE_ONLY_REVIEWED,file))
     return exactRelativeModuleSpecifiers(source, file);
   if (typeof source !== 'string') throw new Error('Reviewed model source must be a string');
   const normalized = source.replace(/^\uFEFF/, '').replace(/\r\n?/g, '\n');
   const hash = crypto.createHash('sha256').update(normalized).digest('hex');
-  const reviewed = [REVIEWED[file], NATIVE_CONTINUITY_REVIEWED[file],ASSISTANT_LATER_H0_REVIEWED[file],ASSISTANT_BINDING_PREWRITE_REVIEWED[file]].filter(Boolean)
+  const reviewed = [REVIEWED[file], NATIVE_CONTINUITY_REVIEWED[file],ASSISTANT_LATER_H0_REVIEWED[file],ASSISTANT_BINDING_PREWRITE_REVIEWED[file],GENUINE587_PARENT_INGRESS_REVIEWED[file],SOURCE587_CORE_RUNTIME_REVIEWED[file],GENUINE587_G1_RECONCILE_REVIEWED[file],GENUINE587_PROTECTED_RESTORE_REVIEWED[file],SOURCE_PREWRITE_HISTORICAL_RECONCILE_PRIOR_REVIEWED[file],SOURCE_PREWRITE_HISTORICAL_RECONCILE_CODE_ONLY_REVIEWED[file]].filter(Boolean)
     .find(variant => variant.sha256 === hash);
   if (!reviewed)
     throw new Error('Whole reviewed model import source changed: ' + file);

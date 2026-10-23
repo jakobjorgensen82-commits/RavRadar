@@ -1,5 +1,25 @@
 # DEC-0249 – fortsæt fra rigtig vejrpakke og gem kortere Copernicus-kald
 
+## Tillæg 2026-10-23 — historiske testkald følger hele ejerleddet
+
+De færdigbrugte arbejdsreferencers nye levetid kræver også det eksisterende præcise ydre testinverse-led hos de direkte historiske testkaldere. Cold-target-prøven sammenlignede ellers den nye fulde updater med den gamle hele kilde før inversen. Historikprøvens negative mutationer ramte tilsvarende det nye ejerled, før de kunne afprøve deres uændrede cold-zone-afslag. Det er to konkrete testkaldsfejl; de begrunder ikke ændring af produktkode, gamle kontrolsummer eller fejlkrav.
+
+Begge testkald bruger nu den allerede gennemgåede hele færdige-ejerinverse før de gamle oraklers egne prøver. Den faktiske nye updater bruges fortsat i historikprøvens normale adfærdsprøver. Alle gamle kildepins, mutationer og forventede afslag bevares; der tilføjes ingen bredere fejlregex eller generel kildeundtagelse. Den normale post-H0-fil består lokalt med 54 prøver uden skip. Den selvstændige historikprøve er påvist rød før og grøn efter kalderrettelsen, så et efterfølgende artifact-stop er fanget før næste afsendelse.
+
+Disse to testkald og dokumentationen ændrer ikke model, data, kilder, budgetter eller kontrolkæde. Det præcise nye head skal fortsat bestå sin normale kildekontrol. Faktisk hukommelsesvirkning, CP-anskaffelse, privat gemning, offentlig no-loss, deploy og almindelig efterfølger er endnu ikke bevist af de lokale prøver.
+
+## Tillæg 2026-10-23 — sen CP-anskaffelse og uændret beregnings-H0
+
+Den normale samme-H0-genoptagelse viste et konkret CP-stop før credentials og netværk. Piloten gav sit indledende source-stage faktisk ny anskaffelsestid, mens den eksisterende negative forsøgs-/stagekontrakt kræver højst fire timers afstand til H0. En genbrugelig gammel stage efterfølgende beviser ikke ny hentning. Der er ikke påvist en begrundelse for at svække firetimersgrænsen eller flytte det autentificerede H0.
+
+Kun piloten adskiller derfor tidsrollerne. Inden for fire timer bevares hidtidige argumenter og output. Ved senere operationel anskaffelse får nye immutable request-/positive vidner den faktiske anskaffelses UTC-heltime som deres egen reference; kun par i dette vidnes 0..117-timersinterval bestilles. Registry/H0, DMI-hulmatrix, challenge-plan, providerprioritet, originale model-/anskaffelsestider og de faktiske shadow-/donorskrivetider ændres ikke. Tidligere manglende par uden for vidnets eget interval forbliver uafklarede, medmindre gyldige gemte originaler allerede dækker dem.
+
+Invocationens autentiske Baltic-/AMM15-vidner holdes til positiv donorcertificering uafhængigt af den afledte H0-journal. Det eksisterende negative filter er uændret; et gammelt eller fremtidigt pair-match må ikke autorisere en anden anskaffelses AMM15. Den allerede eksisterende segmentjournal kan binde ydre H0/base-bank og samtidig bevare hvert entries originale egen reference. Normal replay danner positive certifikater før negativ filtrering, og journalen fjernes først efter faktisk bank → shadow → stage-commit. Proceslokal køfremgang er ikke et udmattelsesbevis.
+
+Kun den sene afledte IN_PROGRESS-stage bruger den eksisterende H0-rebaseprojektionstid, ikke en påstået anskaffelsestid. Der opfindes ikke et tidligt READY-seal. Også fuld positiv dækning går derfor gennem den eksisterende checkpoint-/IN_PROGRESS-slutgren frem for en OPERATIONAL_COMPLETE-shadow, som normalt kræver READY. Den almindelige efterkontrol skal stadig godkende samme shadow, positive beviser, journal og challenge-plan. Refresh bevarer no-degradation og eksisterende originaler; faktisk nulresultat kan højst føre til senere nyt arbejde, ikke falsk negativ autoritet.
+
+Normal CLI-regression er faktisk rød mod ægte uændret forgænger og grøn med den lokale kandidat. Source-stage, pilot, journal, dataset-updating og aged-DMI-challenge er prøvet; normal downstream-checker, refresh, afbrudt konsolidering, replay, anden-fsync-fejl og bevarede originale filer indgår. Friske bank/shadow/stage er byteidentiske ved samme proces-hashseed. Ingen validator/schema, kildeprioritet, budget, model-/SQL-udstedelse eller geometri ændres. Præcis slutkompositionens kildekontrol, faktisk ny anskaffelse, offentlig no-loss og almindelig efterfølger mangler fortsat. De tretten produktionspars dækning er ikke bevist af disse lokale prøver.
+
 ## Tillæg 2026-10-22 — ny aktiv strømstart med varig almindelig fortsættelse
 
 Ejerens nyeste direkte beslutning tillader en ny aktiv strømhistorik, hvis den giver en holdbar vej til normal drift. Den erstatter ældre forbud mod endnu en nulstilling alene for den afgrænsede, arkivbevarende current-family-start. Ægte gamle B/S, kildeoriginaler og offentliggjorte scorer må ikke ommærkes eller slettes; ny start er ikke tilladelse til at svække numerisk adgang eller offentlig no-loss.

@@ -17,7 +17,10 @@ import {requireLastMileEnclosureBinding} from './lib/last-mile-enclosure-success
 import {ESTABLISHED_NATIVE_CURRENT_ORIGIN_BINDING} from './lib/established-native-current-origin-successor-source.mjs';
 
 const ROOT=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
-const nativeCurrent=fs.readFileSync(path.join(ROOT,'.github/workflows/deploy-code-only-repair.yml'),'utf8').replace(/\r\n/g,'\n');
+import {SOURCE_PRODUCER_CURRENT_WORKFLOW_SHA256,inverseCurrentSourceProducerWorkflow} from './lib/source-producer-current-workflow-review.mjs';
+const actualSourceCurrent=fs.readFileSync(path.join(ROOT,'.github/workflows/deploy-code-only-repair.yml'),'utf8').replace(/\r\n/g,'\n');
+const nativeCurrent=crypto.createHash('sha256').update(actualSourceCurrent).digest('hex')===SOURCE_PRODUCER_CURRENT_WORKFLOW_SHA256
+  ? inverseCurrentSourceProducerWorkflow(actualSourceCurrent) : actualSourceCurrent;
 const actualCurrent=inverseNativeOriginalContinuityWorkflow(nativeCurrent);
 const current=inverseAccountStatisticsAssistantWorkflow(actualCurrent);
 const actual=inverseArchivedProductionGate(current);

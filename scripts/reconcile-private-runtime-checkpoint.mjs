@@ -39,6 +39,11 @@ import { classifyProductionTargetFreshness } from './check-production-target-fre
 
 import {ASSISTANT_LATER_H0_BINDING as ASSISTANT_LATER_FAMILY}
   from './lib/assistant-later-h0-successor-source.mjs';
+import {SOURCE_PRODUCER_BINDING as SOURCE_FAMILY,requireSourceProducerOutput}
+  from './lib/source-producer-successor-source.mjs';
+import {assertSourceProducerCodeOnlyCaller} from './select-source-producer-code-only-source.mjs';
+import {withAuthenticated587PredecessorSource} from './check-source-producer-587-predecessor-source.mjs';
+import {assertEstablishedNativeCurrent587MetadataCheckpoint} from './lib/established-native-current-origin.mjs';
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const sha = raw => crypto.createHash('sha256').update(raw).digest('hex');
 const need = (condition, code) => assert(condition, 'PAIRED_PUBLICATION_' + code);
@@ -46,7 +51,7 @@ const json = async file => JSON.parse(await fs.readFile(file, 'utf8'));
 const identityKeys = ['sourceHead', 'datasetId', 'productionReferenceAt', 'generatedAt',
   'bundleContentSha256', 'modelBinding', 'contractHashes'];
 function reconcileFamily(descriptor) {
-  return [FAMILY, NEXT_FAMILY, METADATA_FAMILY, NATIVE_METADATA_FAMILY, ASSISTANT_LATER_FAMILY].filter(Boolean).find(family =>
+  return [FAMILY, NEXT_FAMILY, METADATA_FAMILY, NATIVE_METADATA_FAMILY, ASSISTANT_LATER_FAMILY, SOURCE_FAMILY].filter(Boolean).find(family =>
     descriptor?.modelBinding?.modelBundleSha256 === family.I
     && descriptor?.contractHashes?.continuationStateContractSha256 === family.T) ?? null;
 }
@@ -80,6 +85,48 @@ export function assertSavedPrivateRuntimeCheckpointReconcileRequest(env = proces
     'RAVRADAR_CURRENT_FAMILY_COLD_START_CONTEXT_PATH',
     'RAVRADAR_CURRENT_FAMILY_COLD_START_CONTEXT_SHA256']) need(env[key] === undefined, 'SAVED_MODE_COLLISION');
 }
+// SOURCE is an additional fixed in-process caller, not a widened ordinary or
+// saved request. This pure request guard never issues owner/origin authority.
+export function assertSourcePrivateRuntimeCheckpointReconcileRequest(env = process.env) {
+  need(env.INPUT_OPERATION === 'source', 'SOURCE_REQUEST');
+  need(['integrated', 'integrated-historical-maintenance'].includes(env.OPERATIONAL_ACTION),
+    'SOURCE_OPERATIONAL_ACTION');
+  for (const key of ['COMPLETED_PRIVATE_RUNTIME', 'CHECKPOINT_ONLY', 'QUICK_CONFIRMATION',
+    'RAVRADAR_WEATHER_STATE_EPOCH_BOOTSTRAP', 'RAVRADAR_WEATHER_STATE_EPOCH_CHECKPOINT_REENTRY',
+    'NATIVE_IDENTITY_RECOVERY', 'CURRENT_FAMILY_COLD_START', 'PRODUCE_HANDOFF'])
+    need(env[key] === 'false', 'SOURCE_MODE_COLLISION');
+  need(env.QUICK_PROGRESS_SOURCE === '' && env.CHECKPOINT_TARGET_HOUR === '', 'SOURCE_MODE_COLLISION');
+  for (const key of ['RAVRADAR_ARCHIVED_WEATHER_RESTART_CONTEXT_PATH',
+    'RAVRADAR_ARCHIVED_WEATHER_RESTART_CONTEXT_SHA256',
+    'RAVRADAR_CURRENT_FAMILY_COLD_START_CONTEXT_PATH',
+    'RAVRADAR_CURRENT_FAMILY_COLD_START_CONTEXT_SHA256'])
+    need(env[key] === undefined || env[key] === '', 'SOURCE_MODE_COLLISION');
+}
+export async function reconcileSourcePrivateRuntimeCheckpoint(options = {}) {
+  // Check the real current request again; no caller-supplied action can rename
+  // the historical mode to ordinary or borrow the separate saved CLI grant.
+  assertSourcePrivateRuntimeCheckpointReconcileRequest();
+  need(options.operationalAction === process.env.OPERATIONAL_ACTION, 'SOURCE_ACTION_CHANGED');
+  const repositoryRoot = process.env.GITHUB_WORKSPACE;
+  const target = process.env.RAVRADAR_PRODUCTION_TARGET_HOUR;
+  need(typeof repositoryRoot === 'string' && path.isAbsolute(repositoryRoot)
+    && options.repositoryRoot === repositoryRoot, 'SOURCE_ROOT_CHANGED');
+  need(typeof target === 'string' && /^\d{4}-\d\d-\d\dT\d\d:00:00(?:\.000)?Z$/.test(target)
+    && Number.isFinite(Date.parse(target))
+    && options.targetReferenceAt === new Date(target).toISOString(), 'SOURCE_TARGET_CHANGED');
+  need(options.expected && typeof options.expected === 'object' && !Array.isArray(options.expected),
+    'SOURCE_CURRENT_EXPECTATION_REQUIRED');
+  // Binding comes from the actually imported current model; source hashes come
+  // from the original captured repository. Old expected timestamps choose no
+  // family. The unchanged authenticated core still verifies CURRENT B/install,
+  // original bytes, pointer version, normal S/CAS and full independent readback.
+  const current = await buildPrivateRuntimeExpectation({ repositoryRoot,
+    targetReferenceAt: options.targetReferenceAt });
+  need(same(options.expected.modelBinding, current.modelBinding)
+    && same(options.expected.contractHashes, current.contractHashes), 'SOURCE_CURRENT_EXPECTATION');
+  return reconcileAuthenticatedPrivateRuntimeCheckpoint(options);
+}
+
 const checkpointQuery = '?document_key=eq.ravscore-continuation-checkpoint&select=document_key,payload,version&limit=2';
 async function readCheckpointRows(request) {
   const rows = await request(checkpointQuery, {}, 'read');
@@ -93,6 +140,9 @@ async function restoreReconcilePredecessor({ family, checkpointPath, targetRefer
   const rows = await readCheckpointRows(request);
   // Reader selection is NOT numerical admission. Normal current validation
   // remains unchanged; only an exact older140000 S gets its genuine old reader.
+  const old587 = family === SOURCE_FAMILY && rows.length === 1
+    && rows[0].payload.modelBinding?.modelBundleSha256 === ASSISTANT_LATER_FAMILY.I
+    && rows[0].payload.continuationStateContractSha256 === ASSISTANT_LATER_FAMILY.T;
   const old585 = family === NATIVE_METADATA_FAMILY && rows.length === 1
     && rows[0].payload.modelBinding?.modelBundleSha256 === METADATA_FAMILY.I
     && rows[0].payload.continuationStateContractSha256 === METADATA_FAMILY.T;
@@ -107,7 +157,11 @@ async function restoreReconcilePredecessor({ family, checkpointPath, targetRefer
   };
   const options = { checkpointPath, targetReference, request: checkedRequest };
   let restored;
-  if(old585) restored = await withAuthenticated585PredecessorSource(async sourceRoot=>{
+  if(old587) restored = await withAuthenticated587PredecessorSource(async sourceRoot=>{
+    const reader=await import(pathToFileURL(path.join(sourceRoot,'scripts/protected-ravscore-continuation-checkpoint.mjs')).href);
+    return reader.restoreProtectedRavScoreContinuationCheckpoint(options);
+  });
+  else if(old585) restored = await withAuthenticated585PredecessorSource(async sourceRoot=>{
     const reader=await import(pathToFileURL(path.join(sourceRoot,'scripts/protected-ravscore-continuation-checkpoint.mjs')).href);
     return reader.restoreProtectedRavScoreContinuationCheckpoint(options);
   });
@@ -121,7 +175,7 @@ async function restoreReconcilePredecessor({ family, checkpointPath, targetRefer
     return reader.restoreProtectedRavScoreContinuationCheckpoint(options);
   });
   else restored = await restoreProtectedRavScoreContinuationCheckpoint(options);
-  return { restored, rows, predecessorFamily: old585 ? METADATA_FAMILY : old584 ? NEXT_FAMILY : old ? FAMILY : family };
+  return { restored, rows, predecessorFamily: old587 ? ASSISTANT_LATER_FAMILY : old585 ? METADATA_FAMILY : old584 ? NEXT_FAMILY : old ? FAMILY : family };
 }
 async function readPointer(request) {
   const key = PROTECTED_PRIVATE_RUNTIME_POLICY.documentKey;
@@ -207,9 +261,48 @@ export async function reconcileNativeOriginalContinuityPrivateRuntimeCheckpoint(
     && source.contractHashes?.continuationStateContractSha256 === NATIVE_METADATA_FAMILY.T, 'NATIVE_METADATA_CURRENT_FAMILY');
   return reconcileAuthenticatedPrivateRuntimeCheckpoint({...options,request});
 }
+// A separate exact code-only caller. Never rename it INPUT_OPERATION=source or
+// borrow the old585 caller. The shared core below still authenticates CURRENT
+// B, exact installed bytes, original587 metadata, normal CAS and full readback.
+export async function reconcileSourceCodeOnlyPrivateRuntimeCheckpoint(options){
+  requireSourceProducerOutput(); // FIRST, before options, environment or clients.
+  assert.equal(arguments.length,1);assert(options&&Object.getPrototypeOf(options)===Object.prototype);
+  assert.deepEqual(Object.keys(options).sort(),['bundlePath','privateRoot']);
+  assertSourceProducerCodeOnlyCaller(process.env);
+  need(process.env.RAVRADAR_SOURCE_PRODUCER_SOURCE_ACTIVE==='true'
+    &&process.env.RAVRADAR_SOURCE_PRODUCER_PHASE==='installed'
+    &&process.env.RAVRADAR_SOURCE_PRODUCER_UPGRADE_OPT_IN==='false','SOURCE_CODE_ONLY_INSTALLED');
+  need(['predecessor','current'].includes(process.env.RAVRADAR_SOURCE_PRODUCER_CURRENT_FAMILY),
+    'SOURCE_CODE_ONLY_FAMILY');
+  need(process.env.INPUT_OPERATION===undefined||process.env.INPUT_OPERATION==='', 'SOURCE_CODE_ONLY_NOT_SOURCE_REQUEST');
+  need(['integrated','integrated-historical-maintenance'].includes(process.env.OPERATIONAL_ACTION),
+    'SOURCE_CODE_ONLY_OPERATIONAL_ACTION');
+  if(process.env.RAVRADAR_SOURCE_PRODUCER_CURRENT_FAMILY==='predecessor'){
+    for(const key of ['RAVRADAR_SOURCE_PRODUCER_METADATA_ONLY','RAVRADAR_SOURCE_PRODUCER_ORIGINALS_VERIFIED',
+      'RAVRADAR_SOURCE_PRODUCER_NOLOSS_VERIFIED','RAVRADAR_SOURCE_PRODUCER_PREWRITE_VERIFIED'])
+      need(process.env[key]==='true','SOURCE_CODE_ONLY_METADATA_PREPARATION');
+  }
+  const gitEnvironment=Object.fromEntries(['PATH','Path','SystemRoot','WINDIR','TEMP','TMP','LANG','LC_ALL']
+    .filter(key=>typeof process.env[key]==='string').map(key=>[key,process.env[key]]));
+  const read=args=>execFileSync('git',['-C',ROOT,...args],{encoding:'utf8',timeout:30000,maxBuffer:65536,env:gitEnvironment}).trim();
+  need(read(['rev-parse','HEAD^{commit}'])===process.env.GITHUB_SHA
+    &&read(['rev-parse','origin/main^{commit}'])===process.env.GITHUB_SHA,'SOURCE_CODE_ONLY_MAIN');
+  const {documentRequest:request}=createProtectedPrivateRuntimeClients();
+  const selected=await describeCurrentProtectedPrivateProductionRuntime({request});
+  need(SOURCE_FAMILY!==null&&selected.modelBinding?.modelBundleSha256===SOURCE_FAMILY.I
+    &&selected.contractHashes?.continuationStateContractSha256===SOURCE_FAMILY.T,'SOURCE_CODE_ONLY_CURRENT_B');
+  const target=process.env.RAVRADAR_PRODUCTION_TARGET_HOUR;
+  need(typeof target==='string'&&/^\d{4}-\d\d-\d\dT\d\d:00:00(?:\.000)?Z$/.test(target)
+    &&Number.isFinite(Date.parse(target))&&selected.productionReferenceAt===new Date(target).toISOString(),
+    'SOURCE_CODE_ONLY_EXACT_TARGET');
+  assertSourceProducerCodeOnlyCaller(process.env);
+  return reconcileAuthenticatedPrivateRuntimeCheckpoint({...options,repositoryRoot:ROOT,request,
+    expectedCurrentIdentity:selected});
+}
+
 async function reconcileAuthenticatedPrivateRuntimeCheckpoint({ repositoryRoot = ROOT, privateRoot, bundlePath,
   checkpointPath = path.join(repositoryRoot, '.cache/ravscore-continuation-checkpoint/checkpoint.json'),
-  expected, now = new Date().toISOString(), operationalAction = process.env.OPERATIONAL_ACTION,
+  expected, expectedCurrentIdentity, now = new Date().toISOString(), operationalAction = process.env.OPERATIONAL_ACTION,
   request, checkpointRequest, checkpointVersionRequest, rpcRequest } = {}) {
   // Both public entry points have their distinct fixed request guard above.
   request ??= createProtectedPrivateRuntimeClients({ storageBackend: 'supabase' }).documentRequest;
@@ -221,6 +314,8 @@ async function reconcileAuthenticatedPrivateRuntimeCheckpoint({ repositoryRoot =
   const Srequest = (...args) => { counts.checkpointReads++; return checkpointRequest(...args); };
   const Sversion = (...args) => { counts.checkpointVersionReads++; return checkpointVersionRequest(...args); };
   const before = await readPointer(pointerRequest), current = before.pointer.current;
+  if(expectedCurrentIdentity!==undefined)for(const key of identityKeys)
+    need(same(current[key],expectedCurrentIdentity[key]),'SOURCE_CODE_ONLY_CURRENT_CHANGED');
   const family = reconcileFamily(current); need(family !== null, 'UNSUPPORTED_FAMILY');
   classifyProductionTargetFreshness({ target: current.productionReferenceAt, now, maximumAgeMinutes: 150 });
   need(path.isAbsolute(privateRoot) && path.isAbsolute(bundlePath) && path.dirname(bundlePath) === privateRoot, 'B_PATH');
@@ -271,6 +366,14 @@ async function reconcileAuthenticatedPrivateRuntimeCheckpoint({ repositoryRoot =
     if (!same(derived, saved)) {
       // Missing/older SAME-family S alone can advance. Same-time conflict and
       // S-ahead-B are hard stops. A newer S may already be refused by restore.
+      let exact587MetadataOnly = false;
+      if(family === SOURCE_FAMILY && saved !== null
+        && predecessor.predecessorFamily === ASSISTANT_LATER_FAMILY && saved.productionReferenceAt === current.productionReferenceAt){
+        exact587MetadataOnly = await assertEstablishedNativeCurrent587MetadataCheckpoint({
+          descriptor:current,conditions:JSON.parse(original.raw.toString('utf8')),
+          centralContract:JSON.parse(registry.raw.toString('utf8')),previousCheckpoint:saved,incomingCheckpoint:derived});
+        need(exact587MetadataOnly === true,'SAME_H0_587_METADATA_ORIGINALS');
+      }
       let exact584MetadataOnly = false;
       if(family === METADATA_FAMILY && saved !== null
         && predecessor.predecessorFamily === NEXT_FAMILY && saved.productionReferenceAt === current.productionReferenceAt){
@@ -287,7 +390,7 @@ async function reconcileAuthenticatedPrivateRuntimeCheckpoint({ repositoryRoot =
           centralContract:JSON.parse(registry.raw.toString('utf8')),previousCheckpoint:saved,incomingCheckpoint:derived});
         need(exact585MetadataOnly === true,'SAME_H0_NATIVE_METADATA_ORIGINALS');
       }
-      need(exact584MetadataOnly || exact585MetadataOnly || saved === null || (saved.modelBinding.modelBundleSha256 === predecessor.predecessorFamily.I
+      need(exact587MetadataOnly || exact584MetadataOnly || exact585MetadataOnly || saved === null || (saved.modelBinding.modelBundleSha256 === predecessor.predecessorFamily.I
         && saved.continuationStateContractSha256 === predecessor.predecessorFamily.T
         && Date.parse(saved.productionReferenceAt) < Date.parse(current.productionReferenceAt)), 'S_NOT_BEHIND');
       await stable();

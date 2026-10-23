@@ -58,7 +58,8 @@ function flags() {
   const value = process.env.RAVRADAR_PRODUCTION_TARGET_HOUR;
   requireFlag(typeof value === 'string' && /^\d{4}-\d{2}-\d{2}T\d{2}:00:00(?:\.000)?Z$/.test(value), 'TARGET');
   if (process.env.QUICK_PROGRESS_SOURCE) {
-    requireFlag(process.env.QUICK_PROGRESS_SOURCE === CURRENT_FAMILY_COLD_START_REENTRY_SCOPE.progressSource
+    requireFlag((process.env.QUICK_PROGRESS_SOURCE === CURRENT_FAMILY_COLD_START_REENTRY_SCOPE.progressSource
+      || process.env.QUICK_PROGRESS_SOURCE === CURRENT_FAMILY_COLD_START_REENTRY_SCOPE.latestProgressSource)
       && new Date(value).toISOString() === CURRENT_FAMILY_COLD_START_REENTRY_SCOPE.targetReferenceAt
       && process.env.CHECKPOINT_TARGET_HOUR === value, 'REENTRY_SCOPE');
   } else requireFlag(!process.env.CHECKPOINT_TARGET_HOUR, 'MODE_COLLISION');
@@ -165,11 +166,12 @@ async function reopen() {
   requireFlag(!process.env[CURRENT_FAMILY_COLD_START_CONTEXT_ENV.path]
     && !process.env[CURRENT_FAMILY_COLD_START_CONTEXT_ENV.sha256], 'CONTEXT_COLLISION');
   const selected = await paths();
-  requireFlag(process.env.QUICK_PROGRESS_SOURCE === CURRENT_FAMILY_COLD_START_REENTRY_SCOPE.progressSource
+  requireFlag((process.env.QUICK_PROGRESS_SOURCE === CURRENT_FAMILY_COLD_START_REENTRY_SCOPE.progressSource
+    || process.env.QUICK_PROGRESS_SOURCE === CURRENT_FAMILY_COLD_START_REENTRY_SCOPE.latestProgressSource)
     && process.env.RUNNER_OS === 'Linux'
     && process.env.PROGRESS_CACHE_OUTCOME === 'success'
     && process.env.PROGRESS_CACHE_MATCHED_KEY === 'weather-private-progress-encrypted-v2-Linux-main-'
-      + CURRENT_FAMILY_COLD_START_REENTRY_SCOPE.progressSource, 'EXACT_PROGRESS_REQUIRED');
+      + process.env.QUICK_PROGRESS_SOURCE, 'EXACT_PROGRESS_REQUIRED');
   await capturePublic(selected.publicRoot);
   // Reopens only the independently reconstructed, byte-equal existing archive.
   // No missing-object upload or new cold-start identity is permitted here.

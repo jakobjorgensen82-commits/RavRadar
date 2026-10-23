@@ -26,6 +26,10 @@ Genoptagelse af en afbrudt opstart er ikke en ny start. Det samme bevarede arkiv
 
 Driften skal passe til Supabase Free og Cloudflare Free. Det kræver måling af faktisk forbrug og en forsigtig fremskrivning, også for bevarede arkiver. En lille komprimeret fil eller en lokal prøve er ikke i sig selv bevis for, at hele driften holder sig inden for de gratis grænser.
 
+Store midlertidige arbejdsforløb skal frigives, når de er færdigbrugt. Komponentdata skal først være gemt varigt, og originalkontrollen skal først være afsluttet. Derefter kan programmet slippe sine lokale arbejdsreferencer uden at ændre de gemte vejrdata, historikken eller de færdige scorer. Det er ikke sletning af cache eller originaler. En lokal prøve beviser ikke, at hele vejrhentningen kan gennemføres; den offentlige pakning og næste almindelige opdatering skal også lykkes.
+
+En genoptaget beregning beholder sit oprindelige starttidspunkt, selv om der hentes flere leverandørdata senere. Hentetiden og leverandørens egne tider skal stadig være de rigtige. Nye gyldige data kan gemmes uden at gøre et sent eller gammelt forsøg til et nyt bevis for, at leverandøren ikke har mere. Ukendte timer bliver ikke udfyldt alene ved at flytte et tidsstempel.
+
 ## 89.263 Originalfil og hentetid er to forskellige ting
 
 Kort fortalt: Den samme originale vejrfil kan hentes igen senere. Det gør ikke dens indhold nyere.

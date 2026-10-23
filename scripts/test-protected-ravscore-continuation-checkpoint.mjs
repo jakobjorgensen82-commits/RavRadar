@@ -3,6 +3,11 @@ import crypto from 'node:crypto';
 import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
+// SOURCE is opt-in: refuse unissued output before model/T calculation or native I/O.
+if (process.argv.includes('--source-producer') || process.argv.includes('--current-source-native-profile')) {
+  const { requireSourceProducerOutput } = await import('./lib/source-producer-successor-source.mjs');
+  requireSourceProducerOutput();
+}
 import { buildIntegratedRavScoreStateSeries } from '../js/core/ravscore-integrated-state-pipeline.js';
 import { buildCandidateGDerivedStateSeries } from '../js/core/ravscore-candidate-g-state-pipeline.js';
 import {
@@ -374,7 +379,8 @@ const rpcFailureIncludes = pattern => error => {
 // These assertions are not PostgreSQL/SQL/installation proof.
 if (!process.argv.includes('--native-postgres') && !process.argv.includes('--native-statistics-revision')
     && !process.argv.includes('--native-sampling-identity') && !process.argv.includes('--current-memory-warmup')
-    && !process.argv.includes('--account-statistics-assistant') && !process.argv.includes('--assistant-later-h0')) {
+    && !process.argv.includes('--account-statistics-assistant') && !process.argv.includes('--assistant-later-h0')
+    && !process.argv.includes('--source-producer') && !process.argv.includes('--current-source-native-profile')) {
   const { nativePostgresFailureDiagnostic: diagnose,
     nativePostgresFailureAnnotation: annotate } =
       await import('./lib/checkpoint-cas-native-postgres.mjs');
@@ -525,18 +531,22 @@ if (process.argv.includes('--native-identity-source-only')) {
   process.exit(0);
 }
 
+const currentSourceNativeProfile = process.argv.includes('--current-source-native-profile');
+const sourceProducerNative = process.argv.includes('--source-producer') || currentSourceNativeProfile;
 const assistantLaterH0Native = process.argv.includes('--assistant-later-h0');
 const nativeOriginalContinuityNative = process.argv.includes('--native-original-continuity') || assistantLaterH0Native;
-const accountStatisticsAssistantNative = process.argv.includes('--account-statistics-assistant') || nativeOriginalContinuityNative;
+const accountStatisticsAssistantNative = process.argv.includes('--account-statistics-assistant') || nativeOriginalContinuityNative || sourceProducerNative;
 // Native PostgreSQL is a separate mandatory Linux source leaf, never a
 // MemoryCentral/Windows representation proof. Reuse these exact 673 builders
 // and the normal checkpoint saver; do not run the simulated RPC tests here.
 if (process.argv.includes('--native-postgres') || process.argv.includes('--native-statistics-revision')
     || process.argv.includes('--native-sampling-identity') || process.argv.includes('--current-memory-warmup')
     || process.argv.includes('--established-native-current-origin') || (process.argv.includes('--last-mile-enclosure') || accountStatisticsAssistantNative)) {
+  let classifySourceFailure = null;
   try {
-    const { runNativeCheckpointSqlComparison } =
+    const { runNativeCheckpointSqlComparison, nativePostgresExceptionCode } =
       await import('./lib/checkpoint-cas-native-postgres.mjs');
+    if (sourceProducerNative) classifySourceFailure = nativePostgresExceptionCode;
     const report = await runNativeCheckpointSqlComparison({
       repositoryRoot: path.resolve('.'), sourceDocumentAt, atHour,
       saveCheckpoint: saveRavScoreContinuationCheckpoint,
@@ -551,10 +561,13 @@ if (process.argv.includes('--native-postgres') || process.argv.includes('--nativ
       includeAccountStatisticsAssistant: accountStatisticsAssistantNative,
       includeNativeOriginalContinuity: nativeOriginalContinuityNative,
       includeAssistantLaterH0: assistantLaterH0Native,
+      includeSourceProducer: sourceProducerNative,
+      includeCurrentSourceNativeProfile: currentSourceNativeProfile,
     });
     console.log(JSON.stringify(report));
   } catch (error) {
-    const category = /^NATIVE_POSTGRES_[A-Z0-9_]+$/.test(error?.message ?? '')
+    const category = sourceProducerNative && classifySourceFailure !== null ? classifySourceFailure(error)
+      : /^NATIVE_POSTGRES_[A-Z0-9_]+$/.test(error?.message ?? '')
       ? error.message : error?.code === 'ERR_ASSERTION'
         ? 'NATIVE_POSTGRES_ASSERTION_FAILED' : 'NATIVE_POSTGRES_UNKNOWN_FAILURE';
     console.error(JSON.stringify({ kind: 'NATIVE_POSTGRES_CHECKPOINT_CAS_COMPARISON',

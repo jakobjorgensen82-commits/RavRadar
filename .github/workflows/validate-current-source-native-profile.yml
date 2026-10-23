@@ -1,0 +1,111 @@
+name: Validate opt-in CURRENT source native profile
+
+on:
+  workflow_dispatch:
+    inputs:
+      run_current_native_profile:
+        description: 'Run the isolated post-green CURRENT profile; never production'
+        required: true
+        type: boolean
+        default: false
+      expected_main_head:
+        description: 'Exact merged main with already completed live source proof'
+        required: true
+        type: string
+
+permissions:
+  contents: read
+  actions: read
+  pull-requests: read
+
+concurrency:
+  group: ravradar-current-source-native-profile
+  cancel-in-progress: false
+
+jobs:
+  validate-current-source-native-profile:
+    if: inputs.run_current_native_profile == true
+    runs-on: ubuntu-24.04
+    # The unchanged native caller bounds its CURRENT child at 240 minutes.
+    # This source-only outer bound also contains its preceding normal PG chain.
+    timeout-minutes: 360
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+          ref: ${{ github.sha }}
+          persist-credentials: false
+
+      - name: Require the exact current merged main
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          EXPECTED_MAIN_HEAD: ${{ inputs.expected_main_head }}
+        run: |
+          set -euo pipefail
+          test "$GITHUB_REPOSITORY" = jakobjorgensen82-commits/RavRadar
+          test "$GITHUB_EVENT_NAME" = workflow_dispatch
+          test "$GITHUB_REF" = refs/heads/main
+          [[ "$EXPECTED_MAIN_HEAD" =~ ^[a-f0-9]{40}$ ]]
+          test "$GITHUB_SHA" = "$EXPECTED_MAIN_HEAD"
+          test "$(git rev-parse HEAD^{commit})" = "$GITHUB_SHA"
+          test "$(gh api "repos/$GITHUB_REPOSITORY/git/ref/heads/main" --jq '.object.sha')" = "$GITHUB_SHA"
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+
+      - name: Require the normally issued SOURCE before native preparation
+        run: >-
+          node --input-type=module -e
+          "import {requireSourceProducerOutput} from './scripts/lib/source-producer-successor-source.mjs';requireSourceProducerOutput();"
+
+      # This entry never creates its own green proof or runs the first PR gate.
+      # The normal checker requires prior live evidence for this exact tree.
+      - name: Verify prior live exact-content source validation
+        id: source-proof
+        run: node scripts/weather-source-gate.mjs check
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+
+      - name: Stop unless the exact source already has live green proof
+        env:
+          SOURCE_REQUIRED: ${{ steps.source-proof.outputs.required }}
+        run: test "$SOURCE_REQUIRED" = false
+
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.12'
+
+      - name: Install the existing native acquisition dependencies
+        run: >-
+          python -m pip install --disable-pip-version-check
+          -r requirements-dmi.txt
+          -r requirements-geometry.txt
+          -r requirements-copernicus.txt
+
+      - name: Install the same locked local SDK without scripts
+        working-directory: .github/actions/save-owned-dmi-grib
+        env:
+          npm_config_cache: ${{ github.workspace }}/.github/actions/save-owned-dmi-grib/.npm-cache
+        run: npm ci --ignore-scripts --no-audit --no-fund
+
+      - name: Reconfirm main and run only the explicit normal CURRENT profile
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD^{commit})" = "$GITHUB_SHA"
+          test "$(gh api "repos/$GITHUB_REPOSITORY/git/ref/heads/main" --jq '.object.sha')" = "$GITHUB_SHA"
+          test -z "$(git status --short --untracked-files=no)"
+          node scripts/test-protected-ravscore-continuation-checkpoint.mjs --current-source-native-profile
+
+      - name: Require tracked source to remain unchanged
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD^{commit})" = "$GITHUB_SHA"
+          test -z "$(git status --short --untracked-files=no)"

@@ -639,6 +639,7 @@ function mint(state, archive, context) {
 }
 export const CURRENT_FAMILY_COLD_START_REENTRY_SCOPE = Object.freeze({
   progressSource: '39886354260-1',
+  latestProgressSource: '39933506923-1',
   archiveId: '775f99a210b899eacd3ee056f4daae56c20fc3258e64691d4e0544aabd04d3fb',
   targetReferenceAt: '2026-10-23T01:00:00.000Z',
 });
