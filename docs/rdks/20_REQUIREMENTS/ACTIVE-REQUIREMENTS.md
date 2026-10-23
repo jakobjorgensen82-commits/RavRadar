@@ -6,6 +6,12 @@ Rettelsen skal bevares gennem de almindelige kaldere og de gamle præcise kildeo
 
 Genbrug efter dette stop må indpasse netop det faktisk gemte seneste checkpoint i samme arkiv og oprindelige mål-time. Det skal stadig have præcis run-/forsøgsbundet cache-key, uændret originalgrundlag og autentificeret GCM samt brugbar DMI-fremdrift før udgivelse af lokal kontekst. Den ældre præcise adgang bevares; ukendt eller manglende cache må ikke blive til fallback eller ny start. Ingen generel latest-regel, cache-only-omgåelse, flyttet mål-time eller større budget følger af denne indpasning.
 
+## 23. oktober — sen anskaffelse må ikke flytte beregningens reference
+
+AKTIVT: En genoptaget operationel CP-hentning skal bevare sit oprindelige registry/H0, DMI-hulgrundlag og challenge-plan. Nye faktiske anskaffelser kan kun få originale vidner inden for deres egen faktiske UTC-heltimereferences 0..117-timersinterval. Anskaffelses-/modeltider og gamle vidner må ikke ommærkes. Invocationens nye Baltic-/AMM15-vidner skal bevares gennem positiv donorcertificering, før den uændrede H0-journalfiltering afgør kortlivet negativ adgang.
+
+Sene afledte stage-projektioner følger eksisterende H0-rebase-semantik og forbliver IN_PROGRESS, også ved fuld positiv dækning. De må ikke kaldes faktisk anskaffelsestid, READY eller OPERATIONAL_COMPLETE. Shadow/donor bevarer den faktiske opdateringstid. Manglende par før det nye vidnes interval må ikke efterdateres eller påstås hentet. Normal gemmerækkefølge, replay, refresh/no-degradation, firetimersgrænse, kildeorden, budgets og no-loss bevares. Forløb inden for den gamle grænse skal bevare sine oprindelige resultater.
+
 ## 22. oktober — ny aktiv strømstart skal holde gennem næste genbrug
 
 AKTIVT: Ejerens nyeste beslutning tillader en ny aktiv strømstart uden tidligere strømhistorik. Bevar autentiske gamle sikkerhedspakker og offentliggjorte scorer, men gør dem ikke til nødvendige numeriske input for den nye drift. Første start må kun vælges efter arkiv og genlæsning; manglende historik forbliver UNKNOWN. Alle gamle strømindgange skal håndteres samlet, mens øvrige vejrkomponenter og vandkildebank bevares.
