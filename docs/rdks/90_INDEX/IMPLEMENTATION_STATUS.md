@@ -1,3 +1,10 @@
+## 23. oktober — testlæsere efter første PR707-kontrol
+
+- [x] Faktisk native PostgreSQL-trin bestået; dette er ikke samlet kildekvalifikation.
+- [x] Fire konkrete prøvefejl reproduceret: to manglende ydre bindingsscopes, ét gammelt kalderudtag og én manglende ydre kildeinverse.
+- [x] De to normale producentudtag og 72-timersbroen består efter præcis fixturekorrektion. Hele det berørte normale post-H0-mål består med 54 tilfælde uden spring; alle gamle hunknegativer bevares, og fem nye ydermanipulationer afvises. Ingen produktkode ændres.
+- [ ] Præcis ny samlet kontrol af den afgrænsede testopfølgning, sikker levering og faktisk almindelig vejrhentning/efterfølger. Produktkode, C/I/T, gamle SQL-filer og originale vejrdata ændres ikke af testopfølgningen.
+
 ## 22. oktober — aktiv strømstart med bevaret arkiv
 
 - [x] Ny ejerbeslutning afgrænset: aktiv strømhistorik må begynde på ny; autentisk arkiv og offentliggjorte scorer må ikke ommærkes eller slettes.

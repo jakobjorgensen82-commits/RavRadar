@@ -1860,7 +1860,7 @@ test('normal private recovery maps the complete 72h bridge without widening publ
     buildNewestValidRavScoreRecoverySources,
     ravScoreOwnerCurrentHistoryStartAt, ravScoreRecoverySourceStartAt: recovery.ravScoreRecoverySourceStartAt,
     part, zoneId: part.zoneId, initialSelection, generatedAt: at(120), feature,
-    archivedRestartInputs: null,
+    coldInputs: null,
     deployedBulkCache: old, historicalDmiBulkCache: null, bulkCache: fresh,
     protectedCompanionContexts: [],
     persistedNativeOriginals: null,
@@ -1869,7 +1869,7 @@ test('normal private recovery maps the complete 72h bridge without widening publ
     protectedSameRunDmiRetentions: { current: { SAME_VALUES: 0, DIFFERENT_VALUES: 0 },
       wave: { SAME_VALUES: 0, DIFFERENT_VALUES: 0 } } };
   const actualRecovery = Function(...Object.keys(callScope),
-    slice(source, '      const replayStartAt = archivedRestartInputs !== null ? generatedAt',
+    slice(source, '      const replayStartAt = coldInputs !== null ? generatedAt',
       '      let productionSeries;')
     + ';return { replayStartAt, deployedRecoverySource, progressiveRecoverySource, recoverySources };')(
     ...Object.values(callScope));

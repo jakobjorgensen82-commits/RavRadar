@@ -1,3 +1,7 @@
+## 23. oktober — ÅBEN: samlet kildekvalifikation efter fire testlæserkonflikter
+
+Den første PR707-kontrol fandt fire reproducerede prøvefejl efter bestået native PostgreSQL: manglende ydre `coldInputs` i to udtag, et tidligere kaldernavn og en manglende præcis zonehistorik-inverse før gamle hele kildepins. Opfølgningen retter kun prøvernes afgrænsning og bevarer alle tidligere assertions og ændringsafslag. Den er ikke en ny produktrettelse eller bevis for fungerende vejrhentning. Ny samlet præcis kontrol, faktisk første generation og almindeligt genbrug er fortsat åbne; ingen produktionsændring er udført på dette grundlag.
+
 ## 22. oktober — ÅBEN: samlet ny strømstart og næste almindelige genbrug
 
 Gamle schema1-prognoser kan bevare valgte strømværdier uden den native-originalbank, der kræves ved senere genbrug. Præcis genopretning kan ikke antages mulig, når de krævede gamle leverandørfiler ikke længere er tilgængelige. Dette er et bevarelses-/genbrugsproblem, ikke en konklusion om forkerte DMI-tal.

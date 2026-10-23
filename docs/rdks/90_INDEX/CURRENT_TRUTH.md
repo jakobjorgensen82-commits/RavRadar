@@ -1,3 +1,9 @@
+## 23. oktober — præcis kildekontrol fandt fire testlæserkonflikter
+
+Den første PR707-kontrol bestod det native PostgreSQL-trin, men den samlede kildeplan stoppede på fire testfejl i tre kommandogrupper. To isolerede producentudtag manglede den normale ydre `coldInputs`-binding; en tredje prøve søgte efter det tidligere kaldernavn. Et helt kildeorakel manglede at føre den allerede gennemgåede zonehistoriktilføjelse tilbage før sine uændrede historiske pins. Fejlene er reproduceret gennem de eksisterende mål; produktkoden ændres ikke for at tilpasse prøverne.
+
+Den afgrænsede testopfølgning bevarer alle tidligere sikkerhedsassertioner, hele historiske kildeorakler og ændringsafslag. En ny præcis samlet kildekontrol og faktisk første vejrlevering med almindelig efterfølger er fortsat nødvendige. Ingen merge, ny vejrhentning, model-/SQL-ændring eller offentlig genopretning følger af de beståede deltrin. Alle fem hovedmål er åbne.
+
 ## 22. oktober — aktuel P0: ny strømstart forberedes; offentlig genopretning er åben
 
 Den senest kontrollerede offentlige vejrpakke er fortsat fra 21. oktober. Den særskilte gamle-originalgenopretning stoppede senere på utilgængelig præcis metadata før ny vejrhentning, beregning, cachegemning eller deploy. Det beviser ikke ugyldige DMI-værdier eller at alle originaler mangler. Konkrete identiteter og målt status står i det private checkpoint; der er ikke udført en ny produktionskontrol i denne lokale sammenføring.

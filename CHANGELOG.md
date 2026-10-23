@@ -1,3 +1,8 @@
+## Ikke udgivet — præcise prøvelæsere til den nye strømstart
+
+- Retter fire reproducerede testlæserkonflikter fra første PR707-kontrol uden at ændre produktkoden: eksplicit almindelig `coldInputs=null`, aktuelt kalderudtag og præcis ydre zonehistorik-inverse før de uændrede historiske kildeorakler. Alle gamle assertions og manipulationsafslag bevares.
+- Bestået native PostgreSQL er et delbevis; ny samlet præcis kildekontrol og faktisk vejrhentning/almindelig efterfølger mangler. Ingen ny version, modelbinding, SQL eller ændring af scoreformel, kilder, adminpunkter eller geometri.
+
 ## Kildeleveret — ni kilde-/testblade for færre gentagelser
 
 - Samler de to tidligere gennemgåede nativefase-/Candidate-G-rettelser og den mindste lukkede test-only fixture-/inventarkorrektion: ni forskellige kode-/teststier. De oprindelige frozenpakker og historiske whole-oracles bevares; ingen ny produktmæssig genbrugsautoritet eller clean-head-waiver.

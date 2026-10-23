@@ -14,7 +14,8 @@ import { buildRavScoreProductionPartSeries, ravScoreOwnerCurrentHistoryStartAt,
   from './lib/ravscore-production-part-pipeline.mjs';
 import { ravScoreRecoverySourceStartAt } from './lib/ravscore-recovery-replay.mjs';
 import { currentFamilyColdStartScoreInputs } from './current-family-cold-start.mjs';
-import { inverseCurrentFamilyColdTargetTestInput, CURRENT_FAMILY_COLD_TARGET_TEST_REVIEW }
+import { inverseCurrentFamilyColdTargetTestInput, CURRENT_FAMILY_COLD_TARGET_TEST_REVIEW,
+  inverseCurrentFamilyColdZoneHistoryTestInput, CURRENT_FAMILY_COLD_ZONE_HISTORY_TEST_REVIEW }
   from './lib/archived-weather-restart-updater-test-input.mjs';
 import { buildPrivateDmiRecoveryRecord } from './lib/private-dmi-recovery-record.mjs';
 import { buildIntegratedPartScoreSeries } from './lib/ravscore-integrated-runtime.mjs';
@@ -2471,12 +2472,37 @@ test('coherent raw transport lifetime: exact outer inverse preserves joint and e
 
 test('cold target inverse: complete exact modules precede unchanged historical oracles and reject every changed hunk',()=>{
   for(const row of CURRENT_FAMILY_COLD_TARGET_TEST_REVIEW){
-    const actual=readFileSync(new URL('../'+row.path,import.meta.url),'utf8').replace(/\r\n/g,'\n');
+    const complete=readFileSync(new URL('../'+row.path,import.meta.url),'utf8').replace(/\r\n/g,'\n');
+    const outer=row.path===CURRENT_FAMILY_COLD_ZONE_HISTORY_TEST_REVIEW.path
+      ?CURRENT_FAMILY_COLD_ZONE_HISTORY_TEST_REVIEW:null;
+    if(outer){
+      assert.equal(Buffer.byteLength(complete),outer.after.bytes);assert.equal(sha(complete),outer.after.sha256);
+      assert.equal(complete.split(outer.hunk).length,2);
+    }
+    // Qualify the exact additive outer module before the unchanged target pins.
+    // Never repin an older oracle to accept the final caller wholesale.
+    const actual=outer?inverseCurrentFamilyColdZoneHistoryTestInput(complete,row.path):complete;
     assert.equal(Buffer.byteLength(actual),row.after.bytes);assert.equal(sha(actual),row.after.sha256);
     const before=inverseCurrentFamilyColdTargetTestInput(actual,row.path);
     assert.equal(Buffer.byteLength(before),row.before.bytes);assert.equal(sha(before),row.before.sha256);
     assert.equal(inverseCurrentFamilyColdTargetTestInput(before,row.path),before);
     assert.equal(inverseAlternativeCCaller(actual,row.path),inverseAlternativeCCaller(before,row.path));
+    if(outer){
+      assert.equal(Buffer.byteLength(actual),outer.before.bytes);assert.equal(sha(actual),outer.before.sha256);
+      assert.equal(inverseCurrentFamilyColdTargetTestInput(complete,row.path),before);
+      assert.equal(inverseAlternativeCCaller(complete,row.path),inverseAlternativeCCaller(before,row.path));
+      assert.equal(complete.replace(outer.hunk,''),actual,
+        'Only the complete pinned outer predecessor is an idempotent historical input');
+      for(const changed of [complete.replace(outer.hunk,outer.hunk+outer.hunk),
+        complete.replace(outer.hunk,outer.hunk+'/*UNREVIEWED*/'),
+        complete.replace('zone[key] = withoutHistoricCurrent(zone[key]);','zone[key] = [];'),
+        '!'+complete.slice(1),complete+'\n']){
+        assert.notEqual(changed,complete);
+        assert.throws(()=>inverseCurrentFamilyColdZoneHistoryTestInput(changed,row.path),/COLD_ZONE_HISTORY/);
+        assert.throws(()=>inverseCurrentFamilyColdTargetTestInput(changed,row.path),/COLD_ZONE_HISTORY/);
+        assert.throws(()=>inverseAlternativeCCaller(changed,row.path),/COLD_ZONE_HISTORY/);
+      }
+    }
     for(const[old,current]of row.hunks){
       assert.equal(actual.split(current).length,2);
       for(const changed of [actual.replace(current,old),actual.replace(current,current+current),
