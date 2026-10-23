@@ -6,6 +6,93 @@ import fs from 'node:fs';
 const review = JSON.parse(fs.readFileSync(new URL('./completed-private-runtime-workflow-review.json', import.meta.url), 'utf8'));
 const coldReview = JSON.parse(fs.readFileSync(new URL('./current-family-cold-start-workflow-review.json', import.meta.url), 'utf8'));
 const sha = value => crypto.createHash('sha256').update(value).digest('hex');
+// TEST INPUT ONLY: two exact saved-progress IDs in the same archive/hour.
+// Unknown bytes remain rejected by the unchanged historical workflow oracles.
+export const latestColdProgressWorkflowReview = {
+  "scope": {
+    "progressSource": "39886354260-1",
+    "latestProgressSource": "39933506923-1",
+    "archiveId": "775f99a210b899eacd3ee056f4daae56c20fc3258e64691d4e0544aabd04d3fb",
+    "targetReferenceAt": "2026-10-23T01:00:00.000Z",
+    "publicInputTarget": "2026-10-23T01:00:00Z"
+  },
+  "roles": {
+    "build": {
+      "relativePath": ".github/workflows/reusable-weather-build.yml",
+      "before": {
+        "bytes": 289762,
+        "sha256": "39327f1ef42a4c0450c9aa3e2922dc9be9f96f12b50f45ff7a11c56dd3a9b4c7"
+      },
+      "after": {
+        "bytes": 289911,
+        "sha256": "ac548056ad2929dd64fae6ae3b22e2697f568b245b55903e4a86580a9539eab3"
+      },
+      "edits": [
+        [
+          160393,
+          "          if test \"${{ inputs.current_family_cold_start }}\" = true && test -n \"$QUICK_PROGRESS_SOURCE\"; then\n            test \"$QUICK_PROGRESS_SOURCE\" = 39886354260-1 || test \"$QUICK_PROGRESS_SOURCE\" = 39933506923-1\n",
+          "          if test \"${{ inputs.current_family_cold_start }}\" = true && test -n \"$QUICK_PROGRESS_SOURCE\"; then\n            test \"$QUICK_PROGRESS_SOURCE\" = 39886354260-1\n"
+        ],
+        [
+          94364,
+          "        if: (inputs.current_family_cold_start != true || inputs.quick_progress_source == '39886354260-1' || inputs.quick_progress_source == '39933506923-1') && inputs.completed_private_runtime != true && (inputs.native_sampling_identity_original_recovery != true && (inputs.weather_state_epoch_bootstrap != true || inputs.weather_state_epoch_checkpoint_reentry == true) && github.ref == 'refs/heads/main' && github.event_name != 'pull_request' && github.event_name != 'pull_request_target' && steps.private-runtime-install.outcome == 'success' && steps.weather-source-handoff.outputs.reused != 'true' && !(inputs.quick_confirmation && inputs.quick_progress_source == 'protected-current'))\n",
+          "        if: (inputs.current_family_cold_start != true || inputs.quick_progress_source == '39886354260-1') && inputs.completed_private_runtime != true && (inputs.native_sampling_identity_original_recovery != true && (inputs.weather_state_epoch_bootstrap != true || inputs.weather_state_epoch_checkpoint_reentry == true) && github.ref == 'refs/heads/main' && github.event_name != 'pull_request' && github.event_name != 'pull_request_target' && steps.private-runtime-install.outcome == 'success' && steps.weather-source-handoff.outputs.reused != 'true' && !(inputs.quick_confirmation && inputs.quick_progress_source == 'protected-current'))\n"
+        ],
+        [
+          17455,
+          "          if test -n \"$QUICK_PROGRESS_SOURCE\"; then\n            test \"$QUICK_PROGRESS_SOURCE\" = 39886354260-1 || test \"$QUICK_PROGRESS_SOURCE\" = 39933506923-1\n",
+          "          if test -n \"$QUICK_PROGRESS_SOURCE\"; then\n            test \"$QUICK_PROGRESS_SOURCE\" = 39886354260-1\n"
+        ]
+      ]
+    },
+    "once": {
+      "relativePath": ".github/workflows/run-current-weather-once.yml",
+      "before": {
+        "bytes": 54587,
+        "sha256": "790776231568428e7ea9b4943e6d4719177fb5bf7f4c03b648b16ee85f7f83e0"
+      },
+      "after": {
+        "bytes": 54634,
+        "sha256": "3f0bbc19336918f20586c92432dc2fb46985d3657d842209a26e788426dcf814"
+      },
+      "edits": [
+        [
+          5189,
+          "            test \"$PROGRESS\" = 39886354260-1 || test \"$PROGRESS\" = 39933506923-1\n",
+          "            test \"$PROGRESS\" = 39886354260-1\n"
+        ],
+        [
+          111,
+          "        description: 'Archive authenticated current-family B/S for a fresh cold start, or reopen only fixed 39886354260-1 or 39933506923-1 progress without another reset'\n",
+          "        description: 'Archive authenticated current-family B/S for a fresh cold start, or reopen only its fixed 39886354260-1 checkpoint without another reset'\n"
+        ]
+      ]
+    }
+  }
+};
+for (const row of Object.values(latestColdProgressWorkflowReview.roles)) {
+  row.edits.forEach(Object.freeze); Object.freeze(row.edits);
+  Object.freeze(row.before); Object.freeze(row.after); Object.freeze(row);
+}
+Object.freeze(latestColdProgressWorkflowReview.roles);
+Object.freeze(latestColdProgressWorkflowReview.scope);
+Object.freeze(latestColdProgressWorkflowReview);
+export function inverseLatestColdProgressWorkflow(source, role) {
+  assert.equal(arguments.length, 2, 'LATEST_COLD_PROGRESS_WORKFLOW_ARGUMENTS');
+  assert.equal(typeof source, 'string', 'LATEST_COLD_PROGRESS_WORKFLOW_TYPE');
+  assert(Object.hasOwn(latestColdProgressWorkflowReview.roles, role), 'LATEST_COLD_PROGRESS_WORKFLOW_ROLE');
+  const row = latestColdProgressWorkflowReview.roles[role];
+  if (Buffer.byteLength(source) === row.before.bytes && sha(source) === row.before.sha256) return source;
+  assert.equal(Buffer.byteLength(source), row.after.bytes, 'LATEST_COLD_PROGRESS_WORKFLOW_AFTER_SIZE');
+  assert.equal(sha(source), row.after.sha256, 'LATEST_COLD_PROGRESS_WORKFLOW_AFTER_SHA');
+  for (const [offset, actual, original] of row.edits) {
+    assert.equal(source.slice(offset, offset + actual.length), actual, 'LATEST_COLD_PROGRESS_WORKFLOW_EXACT_HUNK');
+    source = source.slice(0, offset) + original + source.slice(offset + actual.length);
+  }
+  assert.equal(Buffer.byteLength(source), row.before.bytes, 'LATEST_COLD_PROGRESS_WORKFLOW_BEFORE_SIZE');
+  assert.equal(sha(source), row.before.sha256, 'LATEST_COLD_PROGRESS_WORKFLOW_BEFORE_SHA');
+  return source;
+}
 // TEST INPUT ONLY: the fixed same-archive/same-hour checkpoint caller delta.
 // Runtime authentication remains in the cold kernel/GCM wrapper, never here.
 export const currentFamilyColdCheckpointWorkflowReview = JSON.parse(fs.readFileSync(
@@ -20,6 +107,9 @@ Object.freeze(currentFamilyColdCheckpointWorkflowReview);
 export function inverseCurrentFamilyColdCheckpointWorkflow(source, role) {
   assert.equal(arguments.length, 2, 'COLD_CHECKPOINT_WORKFLOW_ARGUMENTS');
   assert.equal(typeof source, 'string', 'COLD_CHECKPOINT_WORKFLOW_TYPE');
+  if (Object.hasOwn(latestColdProgressWorkflowReview.roles, role)
+    && sha(source) === latestColdProgressWorkflowReview.roles[role].after.sha256)
+    source = inverseLatestColdProgressWorkflow(source, role);
   assert(Object.hasOwn(currentFamilyColdCheckpointWorkflowReview.roles, role), 'COLD_CHECKPOINT_WORKFLOW_ROLE');
   const row = currentFamilyColdCheckpointWorkflowReview.roles[role];
   if (Buffer.byteLength(source) === row.before.bytes && sha(source) === row.before.sha256) return source;
@@ -318,6 +408,10 @@ export const nativeOriginalSchemaSelectorWorkflowReview = Object.freeze({
   ]
 });
 export function inverseNativeOriginalSchemaSelectorWorkflow(source, role) {
+  source = inverseAssistant587LatestColdCombinedTo664aWorkflow(source, role);
+  if (Object.hasOwn(latestColdProgressWorkflowReview.roles, role)
+    && sha(source) === latestColdProgressWorkflowReview.roles[role].after.sha256)
+    source = inverseLatestColdProgressWorkflow(source, role);
   source=inverseAssistant587ColdCheckpointCombinedToF83Workflow(source,role);
   if (Object.hasOwn(currentFamilyColdCheckpointWorkflowReview.roles, role) &&
       sha(source) === currentFamilyColdCheckpointWorkflowReview.roles[role].after.sha256) {
@@ -522,5 +616,182 @@ export function inverseAssistant587ColdCheckpointCombinedToD5Workflow(source, ro
   }
   assert.equal(Buffer.byteLength(previous), row.p0Parent.bytes, 'ASSISTANT587_CHECKPOINT_D5_SIZE');
   assert.equal(sha(previous), row.p0Parent.sha256, 'ASSISTANT587_CHECKPOINT_D5_SHA');
+  return previous;
+}
+
+// TEST INPUT ONLY: exact disjoint 664a + PR712 composition. Both whole Git
+// parents remain separate historical oracles. No runtime or binding authority.
+export const assistant587LatestColdCombinedWorkflowReview = {
+  "kind": "EXACT_TEST_INPUT_ASSISTANT587_P0712_COMPOSITION",
+  "relativePath": ".github/workflows/reusable-weather-build.yml",
+  "commonParent": {
+    "commit": "d957e9579f2d6b3ef2281a1d65a9cb1ff4c39909",
+    "bytes": 289762,
+    "sha256": "39327f1ef42a4c0450c9aa3e2922dc9be9f96f12b50f45ff7a11c56dd3a9b4c7"
+  },
+  "p0Parent": {
+    "commit": "2b1d7a95d4201ef39e10cc9d7e52cd0f4d6243aa",
+    "bytes": 289911,
+    "sha256": "ac548056ad2929dd64fae6ae3b22e2697f568b245b55903e4a86580a9539eab3"
+  },
+  "assistantParent": {
+    "commit": "664aeb46966cd0ec182599a90bcaacc6c4b609ab",
+    "bytes": 292737,
+    "sha256": "de7c80a9bb2738fd28782dec572b1e6c3c484177316ac8f668213333a9f52cb5"
+  },
+  "combined": {
+    "bytes": 292886,
+    "sha256": "e4c022274fe0d05fd3e10aff59d7a3165c67b92847a196c7ee793df68a666600"
+  },
+  "to664a": [
+    [
+      163368,
+      "          if test \"${{ inputs.current_family_cold_start }}\" = true && test -n \"$QUICK_PROGRESS_SOURCE\"; then\n            test \"$QUICK_PROGRESS_SOURCE\" = 39886354260-1 || test \"$QUICK_PROGRESS_SOURCE\" = 39933506923-1\n",
+      "          if test \"${{ inputs.current_family_cold_start }}\" = true && test -n \"$QUICK_PROGRESS_SOURCE\"; then\n            test \"$QUICK_PROGRESS_SOURCE\" = 39886354260-1\n"
+    ],
+    [
+      96966,
+      "        if: (inputs.current_family_cold_start != true || inputs.quick_progress_source == '39886354260-1' || inputs.quick_progress_source == '39933506923-1') && inputs.completed_private_runtime != true && (inputs.native_sampling_identity_original_recovery != true && (inputs.weather_state_epoch_bootstrap != true || inputs.weather_state_epoch_checkpoint_reentry == true) && github.ref == 'refs/heads/main' && github.event_name != 'pull_request' && github.event_name != 'pull_request_target' && steps.private-runtime-install.outcome == 'success' && steps.weather-source-handoff.outputs.reused != 'true' && !(inputs.quick_confirmation && inputs.quick_progress_source == 'protected-current'))\n",
+      "        if: (inputs.current_family_cold_start != true || inputs.quick_progress_source == '39886354260-1') && inputs.completed_private_runtime != true && (inputs.native_sampling_identity_original_recovery != true && (inputs.weather_state_epoch_bootstrap != true || inputs.weather_state_epoch_checkpoint_reentry == true) && github.ref == 'refs/heads/main' && github.event_name != 'pull_request' && github.event_name != 'pull_request_target' && steps.private-runtime-install.outcome == 'success' && steps.weather-source-handoff.outputs.reused != 'true' && !(inputs.quick_confirmation && inputs.quick_progress_source == 'protected-current'))\n"
+    ],
+    [
+      17455,
+      "          if test -n \"$QUICK_PROGRESS_SOURCE\"; then\n            test \"$QUICK_PROGRESS_SOURCE\" = 39886354260-1 || test \"$QUICK_PROGRESS_SOURCE\" = 39933506923-1\n",
+      "          if test -n \"$QUICK_PROGRESS_SOURCE\"; then\n            test \"$QUICK_PROGRESS_SOURCE\" = 39886354260-1\n"
+    ]
+  ],
+  "to2b": [
+    [
+      180717,
+      "          WEATHER_USER_AGENT: \"RavRadar/4.0.587 (${{ github.server_url }}/${{ github.repository }})\"\n",
+      "          WEATHER_USER_AGENT: \"RavRadar/4.0.586 (${{ github.server_url }}/${{ github.repository }})\"\n"
+    ],
+    [
+      153474,
+      "          WEATHER_USER_AGENT: \"RavRadar/4.0.587 (${{ github.server_url }}/${{ github.repository }})\"\n",
+      "          WEATHER_USER_AGENT: \"RavRadar/4.0.586 (${{ github.server_url }}/${{ github.repository }})\"\n"
+    ],
+    [
+      143093,
+      "          SUPABASE_URL: ${{ (inputs.weather_state_epoch_bootstrap || inputs.current_family_cold_start || steps.assistant-later-h0-source.outputs.required == 'true') && secrets.SUPABASE_URL || '' }}\n          SUPABASE_SERVICE_ROLE_KEY: ${{ (inputs.weather_state_epoch_bootstrap || inputs.current_family_cold_start || steps.assistant-later-h0-source.outputs.required == 'true') && secrets.SUPABASE_SERVICE_ROLE_KEY || '' }}\n",
+      "          SUPABASE_URL: ${{ (inputs.weather_state_epoch_bootstrap || inputs.current_family_cold_start) && secrets.SUPABASE_URL || '' }}\n          SUPABASE_SERVICE_ROLE_KEY: ${{ (inputs.weather_state_epoch_bootstrap || inputs.current_family_cold_start) && secrets.SUPABASE_SERVICE_ROLE_KEY || '' }}\n"
+    ],
+    [
+      142528,
+      "          OPERATIONAL_ACTION: ${{ steps.operational-action.outputs.action }}\n",
+      ""
+    ],
+    [
+      140927,
+      "        run: |\n          if test \"${{ steps.assistant-later-h0-source.outputs.required }}\" = true; then\n            export NODE_OPTIONS=--max-old-space-size=6144\n          fi\n          node scripts/plan-ravscore-current-history.mjs --retain-committed-raw ${{ steps.dmi-part-continuity-donor.outputs.continuity_schema == '1' && steps.private-runtime-install.outcome == 'success' && steps.operational-model.outputs.model == 'integrated' && steps.operational-model.outputs.binding_current == 'true' && steps.operational-action.outputs.action == 'integrated' && steps.legacy-bootstrap.outputs.stateless_integrated_recovery != 'true' && inputs.completed_private_runtime != true && inputs.completed_private_runtime_pin == '' && inputs.completed_stage_source == '' && inputs.checkpoint_only != true && inputs.quick_confirmation != true && inputs.quick_progress_source == '' && inputs.current_family_cold_start != true && inputs.weather_state_epoch_bootstrap != true && inputs.weather_state_epoch_checkpoint_reentry != true && inputs.weather_state_epoch_raw_cache_key == '' && inputs.weather_state_epoch_archive_key == '' && inputs.weather_state_epoch_archive_catalog_sha256 == '' && inputs.native_sampling_identity_original_recovery != true && inputs.ravscore_integrated_weather_handoff_run_id == '' && inputs.produce_weather_handoff != true && inputs.ravscore_integrated_first_cutover != true && inputs.ravscore_integrated_return != true && (inputs.ravscore_candidate_g_rollback_mode == '' || inputs.ravscore_candidate_g_rollback_mode == 'none') && '--prepare-cached-native-originals' || '' }}\n",
+      "        run: node scripts/plan-ravscore-current-history.mjs --retain-committed-raw ${{ steps.dmi-part-continuity-donor.outputs.continuity_schema == '1' && steps.private-runtime-install.outcome == 'success' && steps.operational-model.outputs.model == 'integrated' && steps.operational-model.outputs.binding_current == 'true' && steps.operational-action.outputs.action == 'integrated' && steps.legacy-bootstrap.outputs.stateless_integrated_recovery != 'true' && inputs.completed_private_runtime != true && inputs.completed_private_runtime_pin == '' && inputs.completed_stage_source == '' && inputs.checkpoint_only != true && inputs.quick_confirmation != true && inputs.quick_progress_source == '' && inputs.current_family_cold_start != true && inputs.weather_state_epoch_bootstrap != true && inputs.weather_state_epoch_checkpoint_reentry != true && inputs.weather_state_epoch_raw_cache_key == '' && inputs.weather_state_epoch_archive_key == '' && inputs.weather_state_epoch_archive_catalog_sha256 == '' && inputs.native_sampling_identity_original_recovery != true && inputs.ravscore_integrated_weather_handoff_run_id == '' && inputs.produce_weather_handoff != true && inputs.ravscore_integrated_first_cutover != true && inputs.ravscore_integrated_return != true && (inputs.ravscore_candidate_g_rollback_mode == '' || inputs.ravscore_candidate_g_rollback_mode == 'none') && '--prepare-cached-native-originals' || '' }}\n"
+    ],
+    [
+      123226,
+      "          WEATHER_USER_AGENT: \"RavRadar/4.0.587 (${{ github.server_url }}/${{ github.repository }})\"\n",
+      "          WEATHER_USER_AGENT: \"RavRadar/4.0.586 (${{ github.server_url }}/${{ github.repository }})\"\n"
+    ],
+    [
+      121669,
+      "          WEATHER_USER_AGENT: \"RavRadar/4.0.587 (${{ github.server_url }}/${{ github.repository }})\"\n",
+      "          WEATHER_USER_AGENT: \"RavRadar/4.0.586 (${{ github.server_url }}/${{ github.repository }})\"\n"
+    ],
+    [
+      82664,
+      "          if test \"${{ steps.assistant-later-h0-source.outputs.required }}\" = true; then\n            test \"${{ steps.assistant-later-h0-prepare.outcome }}\" = success\n            NODE_OPTIONS=--max-old-space-size=6144 node scripts/assistant-later-h0-runtime-transition.mjs install\n            exit 0\n          fi\n",
+      ""
+    ],
+    [
+      81217,
+      "          SUPABASE_URL: ${{ (inputs.weather_state_epoch_bootstrap || steps.assistant-later-h0-source.outputs.required == 'true') && secrets.SUPABASE_URL || '' }}\n          SUPABASE_SERVICE_ROLE_KEY: ${{ (inputs.weather_state_epoch_bootstrap || steps.assistant-later-h0-source.outputs.required == 'true') && secrets.SUPABASE_SERVICE_ROLE_KEY || '' }}\n",
+      "          SUPABASE_URL: ${{ inputs.weather_state_epoch_bootstrap && secrets.SUPABASE_URL || '' }}\n          SUPABASE_SERVICE_ROLE_KEY: ${{ inputs.weather_state_epoch_bootstrap && secrets.SUPABASE_SERVICE_ROLE_KEY || '' }}\n"
+    ],
+    [
+      80766,
+      "          OPERATIONAL_ACTION: ${{ steps.operational-action.outputs.action }}\n",
+      ""
+    ],
+    [
+      69700,
+      "        if: steps.assistant-later-h0-source.outputs.required != 'true' && steps.preflight.outputs.should_run == 'true' && inputs.native_sampling_identity_original_recovery != true && inputs.weather_state_epoch_bootstrap != true && steps.private-runtime-state.outputs.available == 'true'\n",
+      "        if: steps.preflight.outputs.should_run == 'true' && inputs.native_sampling_identity_original_recovery != true && inputs.weather_state_epoch_bootstrap != true && steps.private-runtime-state.outputs.available == 'true'\n"
+    ],
+    [
+      59379,
+      "        if: steps.assistant-later-h0-source.outputs.required != 'true' && steps.preflight.outputs.should_run == 'true' && inputs.native_sampling_identity_original_recovery != true && inputs.weather_state_epoch_bootstrap != true && !(steps.operational-action.outputs.action == 'integrated-cutover' && steps.operational-model.outputs.legacy_source_required == 'true')\n",
+      "        if: steps.preflight.outputs.should_run == 'true' && inputs.native_sampling_identity_original_recovery != true && inputs.weather_state_epoch_bootstrap != true && !(steps.operational-action.outputs.action == 'integrated-cutover' && steps.operational-model.outputs.legacy_source_required == 'true')\n"
+    ],
+    [
+      55052,
+      "        if: steps.assistant-later-h0-source.outputs.required != 'true' && steps.paired-checkpoint-route.outputs.required != 'true' && steps.preflight.outputs.should_run == 'true' && inputs.native_sampling_identity_original_recovery != true && inputs.weather_state_epoch_bootstrap != true && steps.exact-weather-recovery.outputs.required != 'true' && steps.historical-wave-predecessor.outputs.transition_kind != 'owner-current-domain-original' && !(steps.operational-action.outputs.action == 'integrated-cutover' && steps.operational-model.outputs.legacy_source_required == 'true') && steps.ravscore-checkpoint-cache.outputs.cache-matched-key == '' && steps.historical-wave-predecessor.outputs.transition_kind != 'current-grid-sampling-original'\n",
+      "        if: steps.paired-checkpoint-route.outputs.required != 'true' && steps.preflight.outputs.should_run == 'true' && inputs.native_sampling_identity_original_recovery != true && inputs.weather_state_epoch_bootstrap != true && steps.exact-weather-recovery.outputs.required != 'true' && steps.historical-wave-predecessor.outputs.transition_kind != 'owner-current-domain-original' && !(steps.operational-action.outputs.action == 'integrated-cutover' && steps.operational-model.outputs.legacy_source_required == 'true') && steps.ravscore-checkpoint-cache.outputs.cache-matched-key == '' && steps.historical-wave-predecessor.outputs.transition_kind != 'current-grid-sampling-original'\n"
+    ],
+    [
+      53979,
+      "        if: steps.assistant-later-h0-source.outputs.required != 'true' && steps.paired-checkpoint-route.outputs.required != 'true' && steps.preflight.outputs.should_run == 'true' && inputs.native_sampling_identity_original_recovery != true && inputs.weather_state_epoch_bootstrap != true && steps.exact-weather-recovery.outputs.required != 'true' && steps.historical-wave-predecessor.outputs.transition_kind != 'owner-current-domain-original' && !(steps.operational-action.outputs.action == 'integrated-cutover' && steps.operational-model.outputs.legacy_source_required == 'true') && steps.historical-wave-predecessor.outputs.transition_kind != 'current-grid-sampling-original'\n",
+      "        if: steps.paired-checkpoint-route.outputs.required != 'true' && steps.preflight.outputs.should_run == 'true' && inputs.native_sampling_identity_original_recovery != true && inputs.weather_state_epoch_bootstrap != true && steps.exact-weather-recovery.outputs.required != 'true' && steps.historical-wave-predecessor.outputs.transition_kind != 'owner-current-domain-original' && !(steps.operational-action.outputs.action == 'integrated-cutover' && steps.operational-model.outputs.legacy_source_required == 'true') && steps.historical-wave-predecessor.outputs.transition_kind != 'current-grid-sampling-original'\n"
+    ],
+    [
+      52909,
+      "        if: steps.assistant-later-h0-source.outputs.required != 'true' && steps.preflight.outputs.should_run == 'true' && inputs.weather_state_epoch_bootstrap != true && inputs.weather_state_epoch_checkpoint_reentry != true && inputs.native_sampling_identity_original_recovery != true && inputs.checkpoint_only != true && inputs.quick_confirmation != true && inputs.completed_private_runtime != true && steps.operational-action.outputs.action == 'integrated'\n",
+      "        if: steps.preflight.outputs.should_run == 'true' && inputs.weather_state_epoch_bootstrap != true && inputs.weather_state_epoch_checkpoint_reentry != true && inputs.native_sampling_identity_original_recovery != true && inputs.checkpoint_only != true && inputs.quick_confirmation != true && inputs.completed_private_runtime != true && steps.operational-action.outputs.action == 'integrated'\n"
+    ],
+    [
+      51724,
+      "        if: steps.assistant-later-h0-source.outputs.required != 'true' && steps.preflight.outputs.should_run == 'true' && inputs.weather_state_epoch_bootstrap != true && !(steps.operational-action.outputs.action == 'integrated-cutover' && steps.operational-model.outputs.legacy_source_required == 'true')\n",
+      "        if: steps.preflight.outputs.should_run == 'true' && inputs.weather_state_epoch_bootstrap != true && !(steps.operational-action.outputs.action == 'integrated-cutover' && steps.operational-model.outputs.legacy_source_required == 'true')\n"
+    ],
+    [
+      49054,
+      "        if: steps.assistant-later-h0-source.outputs.required != 'true' && steps.preflight.outputs.should_run == 'true' && inputs.native_sampling_identity_original_recovery != true && inputs.weather_state_epoch_bootstrap != true && !(steps.operational-action.outputs.action == 'integrated-cutover' && steps.operational-model.outputs.legacy_source_required == 'true')\n",
+      "        if: steps.preflight.outputs.should_run == 'true' && inputs.native_sampling_identity_original_recovery != true && inputs.weather_state_epoch_bootstrap != true && !(steps.operational-action.outputs.action == 'integrated-cutover' && steps.operational-model.outputs.legacy_source_required == 'true')\n"
+    ],
+    [
+      47283,
+      "      # Separate authentic586 -> later ordinary H0. Not a code-only install,\n      # SAME_H0 event, parent rewrite or generic historical fallback.\n      - name: Select only authentic586 for the normal assistant successor\n        id: assistant-later-h0-source\n        if: inputs.weather_state_epoch_bootstrap != true && inputs.current_family_cold_start != true && inputs.native_sampling_identity_original_recovery != true && steps.preflight.outputs.should_run == 'true' && (steps.operational-action.outputs.action == 'integrated' || steps.operational-action.outputs.action == 'integrated-historical-maintenance')\n        env:\n          OPERATIONAL_ACTION: ${{ steps.operational-action.outputs.action }}\n        run: node scripts/assistant-later-h0-runtime-transition.mjs select\n\n      - name: Prepare the whole original-preserving586 working view\n        id: assistant-later-h0-prepare\n        if: steps.assistant-later-h0-source.outputs.required == 'true'\n        shell: bash\n        env:\n          NODE_OPTIONS: --max-old-space-size=6144\n          OPERATIONAL_ACTION: ${{ steps.operational-action.outputs.action }}\n          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}\n          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}\n          RAVRADAR_R2_ACCOUNT_ID: ${{ secrets.RAVRADAR_R2_ACCOUNT_ID }}\n          RAVRADAR_R2_ACCESS_KEY_ID: ${{ secrets.RAVRADAR_R2_ACCESS_KEY_ID }}\n          RAVRADAR_R2_SECRET_ACCESS_KEY: ${{ secrets.RAVRADAR_R2_SECRET_ACCESS_KEY }}\n        run: |\n          set -euo pipefail\n          mkdir -p \"$RAVRADAR_PRIVATE_RUNTIME_ROOT\"\n          node scripts/assistant-later-h0-runtime-transition.mjs prepare\n\n",
+      ""
+    ],
+    [
+      32786,
+      "          WEATHER_USER_AGENT: \"RavRadar/4.0.587 (${{ github.server_url }}/${{ github.repository }})\"\n",
+      "          WEATHER_USER_AGENT: \"RavRadar/4.0.586 (${{ github.server_url }}/${{ github.repository }})\"\n"
+    ]
+  ]
+};
+for (const key of ['to664a', 'to2b']) {
+  assistant587LatestColdCombinedWorkflowReview[key].forEach(Object.freeze);
+  Object.freeze(assistant587LatestColdCombinedWorkflowReview[key]);
+}
+for (const key of ['commonParent', 'p0Parent', 'assistantParent', 'combined'])
+  Object.freeze(assistant587LatestColdCombinedWorkflowReview[key]);
+Object.freeze(assistant587LatestColdCombinedWorkflowReview);
+export function inverseAssistant587LatestColdCombinedTo664aWorkflow(source, role) {
+  assert.equal(arguments.length, 2, 'ASSISTANT587_LATEST_COMBINED_ARGUMENTS');
+  assert.equal(typeof source, 'string', 'ASSISTANT587_LATEST_COMBINED_TYPE');
+  const row = assistant587LatestColdCombinedWorkflowReview;
+  if (role !== 'build' || sha(source) !== row.combined.sha256) return source;
+  assert.equal(Buffer.byteLength(source), row.combined.bytes, 'ASSISTANT587_LATEST_COMBINED_SIZE');
+  let previous = source;
+  for (const [offset, actual, original] of row.to664a) {
+    assert.equal(previous.slice(offset, offset + actual.length), actual, 'ASSISTANT587_LATEST_664A_EXACT_HUNK');
+    previous = previous.slice(0, offset) + original + previous.slice(offset + actual.length);
+  }
+  assert.equal(Buffer.byteLength(previous), row.assistantParent.bytes, 'ASSISTANT587_LATEST_664A_SIZE');
+  assert.equal(sha(previous), row.assistantParent.sha256, 'ASSISTANT587_LATEST_664A_SHA');
+  return previous;
+}
+export function inverseAssistant587LatestColdCombinedTo2bWorkflow(source, role) {
+  assert.equal(arguments.length, 2, 'ASSISTANT587_LATEST_COMBINED_ARGUMENTS');
+  assert.equal(typeof source, 'string', 'ASSISTANT587_LATEST_COMBINED_TYPE');
+  const row = assistant587LatestColdCombinedWorkflowReview;
+  if (role !== 'build' || sha(source) !== row.combined.sha256) return source;
+  assert.equal(Buffer.byteLength(source), row.combined.bytes, 'ASSISTANT587_LATEST_COMBINED_SIZE');
+  let previous = source;
+  for (const [offset, actual, original] of row.to2b) {
+    assert.equal(previous.slice(offset, offset + actual.length), actual, 'ASSISTANT587_LATEST_2B_EXACT_HUNK');
+    previous = previous.slice(0, offset) + original + previous.slice(offset + actual.length);
+  }
+  assert.equal(Buffer.byteLength(previous), row.p0Parent.bytes, 'ASSISTANT587_LATEST_2B_SIZE');
+  assert.equal(sha(previous), row.p0Parent.sha256, 'ASSISTANT587_LATEST_2B_SHA');
   return previous;
 }

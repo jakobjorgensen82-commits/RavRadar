@@ -8,11 +8,18 @@ import crypto from 'node:crypto';
 import { spawn } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { test } from 'node:test';
+import { assertUsableDmiProgressRecovery } from './lib/verified-dmi-progress-inputs.mjs';
 const ROOT = process.env.RAVRADAR_PRIVATE_COLD_WRAPPER_TEST_ROOT
   ?? path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const CLI = process.env.RAVRADAR_PRIVATE_COLD_CLI_TEST_SOURCE
   ?? path.join(ROOT, 'scripts/run-current-family-cold-start.mjs');
 const text = await fs.readFile(CLI, 'utf8');
+const kernelText = await fs.readFile(path.join(ROOT,'scripts/current-family-cold-start.mjs'),'utf8');
+const scopeLiteral = /export const CURRENT_FAMILY_COLD_START_REENTRY_SCOPE = Object\.freeze\((\{[\s\S]*?\})\);/.exec(kernelText)?.[1];
+assert(scopeLiteral && !scopeLiteral.includes('${'));
+const reentryScope = Object.freeze(new Function('return ('+scopeLiteral+');')());
+assert.deepEqual(reentryScope,{progressSource:'39886354260-1',latestProgressSource:'39933506923-1',
+  targetReferenceAt:'2026-10-23T01:00:00.000Z',archiveId:'775f99a210b899eacd3ee056f4daae56c20fc3258e64691d4e0544aabd04d3fb'});
 const literal = /const STAGED_STOP_CODE = (`[\s\S]*?`);/.exec(text)?.[1];
 assert(literal && !literal.includes('${'), 'The staged adapter must remain a literal.');
 const staged = new Function('return ' + literal)();
@@ -204,7 +211,7 @@ test('actual cold runDmi authenticates before selecting a fixed child-only sched
 test('actual cold flags retain fresh defaults and admit only the fixed original progress hour', () => {
   const start = text.indexOf('function flags() {'), end = text.indexOf('\nasync function paths()', start);
   assert(start >= 0 && end > start);
-  const scope = Object.freeze({progressSource:'39886354260-1',targetReferenceAt:'2026-10-23T01:00:00.000Z'});
+  const scope = reentryScope;
   const execute = new Function('process','requireFlag','CURRENT_FAMILY_COLD_START_REENTRY_SCOPE',
     text.slice(start,end) + '\nreturn flags();');
   const environment = {RAVRADAR_CURRENT_FAMILY_COLD_START:'true',GITHUB_REF:'refs/heads/main',
@@ -214,10 +221,13 @@ test('actual cold flags retain fresh defaults and admit only the fixed original 
   assert.equal(invoke(environment),scope.targetReferenceAt);
   const reentry = {...environment,QUICK_PROGRESS_SOURCE:scope.progressSource,
     CHECKPOINT_TARGET_HOUR:environment.RAVRADAR_PRODUCTION_TARGET_HOUR};
-  assert.equal(invoke(reentry),scope.targetReferenceAt);
+  for(const progressSource of [scope.progressSource,scope.latestProgressSource])
+    assert.equal(invoke({...reentry,QUICK_PROGRESS_SOURCE:progressSource}),scope.targetReferenceAt);
   for (const changed of [
     {...environment,CHECKPOINT_TARGET_HOUR:environment.RAVRADAR_PRODUCTION_TARGET_HOUR},
     {...reentry,QUICK_PROGRESS_SOURCE:'39886354260-2'}, {...reentry,QUICK_PROGRESS_SOURCE:'39886354261-1'},
+    {...reentry,QUICK_PROGRESS_SOURCE:'39933506923-2'}, {...reentry,QUICK_PROGRESS_SOURCE:'39933506924-1'},
+    {...reentry,QUICK_PROGRESS_SOURCE:'39933506923'}, {...reentry,QUICK_PROGRESS_SOURCE:'protected-current'},
     {...reentry,CHECKPOINT_TARGET_HOUR:''}, {...reentry,CHECKPOINT_ONLY:'true'},
     {...reentry,RAVRADAR_PRODUCTION_TARGET_HOUR:'2026-10-23T02:00:00Z',CHECKPOINT_TARGET_HOUR:'2026-10-23T02:00:00Z'},
     {...reentry,GITHUB_RUN_ATTEMPT:'2'}, {...reentry,RAVRADAR_WEATHER_STATE_EPOCH_BOOTSTRAP:'true'},
@@ -235,26 +245,34 @@ test('actual same-archive wrapper orders exact cache, archive authentication, sc
     'CURRENT_FAMILY_COLD_START_REENTRY_SCOPE','capturePublic','reopenCurrentFamilyColdStart',
     'weatherComponentProgressCache','ROOT','path','assertUsableDmiProgressRecovery',
     'writeNew','currentFamilyColdStartAcquisitionChoices','appendEnvironment','console', block.slice(0,-1));
-  const scope = Object.freeze({progressSource:'39886354260-1',targetReferenceAt:'2026-10-23T01:00:00.000Z',archiveId:'a'.repeat(64)});
+  const scope = reentryScope;
   const keys = {path:'COLD_CONTEXT_PATH',sha256:'COLD_CONTEXT_SHA256'};
-  for (const fault of ['cache','archive','miss','hour','dmi',null]) {
+  for(const progressSource of [scope.progressSource,scope.latestProgressSource])
+  for (const fault of ['cache','cache-missing','matched-key','matched-other','source',
+    'archive','restore','miss','not-restored','empty','hour','dmi-absent','dmi',null]) {
     const calls = [], cap = Object.freeze({}), temporary = path.resolve(ROOT,'.cache','synthetic-wrapper-reentry');
     const selected = {targetReferenceAt:scope.targetReferenceAt,workRoot:path.join(temporary,'work'),publicRoot:path.join(temporary,'public')};
-    const env = {QUICK_PROGRESS_SOURCE:scope.progressSource,RUNNER_OS:'Linux',RUNNER_TEMP:temporary,
-      PROGRESS_CACHE_OUTCOME:fault==='cache'?'failure':'success',
-      PROGRESS_CACHE_MATCHED_KEY:'weather-private-progress-encrypted-v2-Linux-main-'+scope.progressSource};
+    const otherSource = progressSource===scope.progressSource?scope.latestProgressSource:scope.progressSource;
+    const env = {QUICK_PROGRESS_SOURCE:fault==='source'?progressSource.replace(/-1$/,'-2'):progressSource,
+      RUNNER_OS:'Linux',RUNNER_TEMP:temporary,
+      PROGRESS_CACHE_OUTCOME:fault==='cache'?'failure':fault==='cache-missing'?'':'success',
+      PROGRESS_CACHE_MATCHED_KEY:fault==='matched-key'?'':
+        'weather-private-progress-encrypted-v2-Linux-main-'+(fault==='matched-other'?otherSource:progressSource)};
     const before = {...env}, expectedError = new Error('CONTROLLED_'+fault);
-    const invoke = ()=>execute({env},(ok,code)=>{if(!ok)throw new Error(code);},keys,async()=>selected,scope,
+    const invoke = ()=>execute({env},(ok,code)=>{if(!ok)throw new Error('CURRENT_FAMILY_COLD_CLI_'+code);},keys,async()=>selected,scope,
       async root=>{calls.push('public');assert.equal(root,selected.publicRoot);},
       async options=>{calls.push('archive');assert.deepEqual(options,{...selected,archiveId:scope.archiveId});
         if(fault==='archive')throw expectedError;return {capability:cap,contextPath:'verified-context',contextSha256:'b'.repeat(64)};},
       async options=>{calls.push('restore');assert.deepEqual(options,{mode:'restore',repositoryRoot:ROOT,
         basePath:path.join(temporary,'weather-progress-base.json'),productionReferenceAt:scope.targetReferenceAt,
         resumeOriginalTarget:true,currentFamilyColdStartCapability:cap});
-        return {status:fault==='miss'?'CACHE_MISS':'RESTORED',restored:fault!=='miss',fileCount:2,
-          restoredProductionReferenceAt:fault==='hour'?'2026-10-23T02:00:00.000Z':scope.targetReferenceAt,dmiProgress:{}};},
-      ROOT,path,(value,options)=>{calls.push('usable');assert.deepEqual(value,{});assert.deepEqual(options,{allowAbsent:false});
-        if(fault==='dmi')throw expectedError;},
+        if(fault==='restore')throw expectedError;
+        return {status:fault==='miss'?'CACHE_MISS':'RESTORED',restored:!['miss','not-restored'].includes(fault),fileCount:fault==='empty'?0:2,
+          restoredProductionReferenceAt:fault==='hour'?'2026-10-23T02:00:00.000Z':scope.targetReferenceAt,
+          dmiProgress:fault==='dmi-absent'?undefined:{forecast:{status:fault==='dmi'?'NOT_PRESENT':'MERGED',
+            recoveredComponents:0,rejectedRecords:0,runtimeRecovered:false}}};},
+      ROOT,path,(value,options)=>{calls.push('usable');assert.deepEqual(options,{allowAbsent:false});
+        return assertUsableDmiProgressRecovery(value,options);},
       async(file,bytes)=>{calls.push('report');assert.equal(file,path.join(temporary,'weather-progress-restore-report.json'));
         assert.equal(JSON.parse(bytes).status,'RESTORED');},
       value=>{calls.push('choices');assert.equal(value,cap);return {outputPath:path.join(ROOT,'.cache/dmi-candidate-progress.json'),
@@ -262,9 +280,15 @@ test('actual same-archive wrapper orders exact cache, archive authentication, sc
       async values=>{calls.push('publish');assert.deepEqual(values,{[keys.path]:'verified-context',[keys.sha256]:'b'.repeat(64),
         DMI_BULK_DEPLOYED_FALLBACK_PATH:'verified-scalar-fallback',DMI_BULK_PUBLISHED_BASELINE_PATH:'verified-scalar-baseline'});},
       {log:message=>{calls.push('notice');assert.equal(message,'CURRENT_FAMILY_COLD_REOPENED_SAME_ARCHIVE_AND_AUTHENTICATED_PROGRESS');}});
-    if (fault) await assert.rejects(invoke); else await invoke();
-    const expected = fault==='cache'?[]:fault==='archive'?['public','archive']:
-      ['miss','hour'].includes(fault)?['public','archive','restore']:fault==='dmi'?['public','archive','restore','usable']:
+    const cacheFaults=['cache','cache-missing','matched-key','matched-other','source'];
+    if (fault) await assert.rejects(invoke,error=>{
+      if(['archive','restore'].includes(fault))return error===expectedError;
+      return error.message===(cacheFaults.includes(fault)?'CURRENT_FAMILY_COLD_CLI_EXACT_PROGRESS_REQUIRED':
+        ['dmi','dmi-absent'].includes(fault)?'DMI_FORECAST_PROGRESS_RECOVERY_REQUIRED':'CURRENT_FAMILY_COLD_CLI_PROGRESS_RESTORE_REQUIRED');
+    }); else await invoke();
+    const expected = cacheFaults.includes(fault)?[]:fault==='archive'?['public','archive']:
+      ['restore','miss','not-restored','empty','hour'].includes(fault)?['public','archive','restore']:
+        ['dmi','dmi-absent'].includes(fault)?['public','archive','restore','usable']:
         ['public','archive','restore','usable','report','choices','publish','notice'];
     assert.deepEqual(calls,expected);assert.deepEqual(env,before);
   }

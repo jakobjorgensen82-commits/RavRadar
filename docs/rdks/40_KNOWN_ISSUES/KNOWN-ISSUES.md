@@ -1,3 +1,19 @@
+## 23. oktober — privat dokumentunion for P0 og 587; ingen ny levering
+
+Denne private forberedelse bevarer begge grenes hele dokumenthistorik. Den uændrede 664a-assistentkandidat er særskilt præcist kildekvalificeret; det er ikke kvalifikation af den nye sammenføring eller en installeret 587. P0s seneste faktiske genoptagelse stoppede på proceshukommelse før ny B/S og offentlig levering. Den efterfølgende P0-kildekontrol og den operative status føres i ROOTs private checkpoint; denne pakke udleder ikke et nyt resultat. Faktisk P0-levering og almindelig efterfølger skal fortsat komme før kontrolleret 587-installation og hosted AI. Alle fem hovedmål er åbne. Ingen ny modelbinding, SQL-udstedelse, drift eller aktivering følger af dokumentunionen. Ældre modstridende ventestatus nedenfor bevares som dateret historik.
+
+## 23. oktober — ÅBEN P0: proceshukommelse før offentlig pakning
+
+Den seneste genoptagelse beregnede alle 673 dele og nåede originalattesteringen, men stoppede derefter med Node/V8 heap-OOM. Den offentlige runtime, ny B/S og Pages blev ikke skrevet. Det er en konkret kapacitetsfejl; hverken forkert DMI-data eller løsning af de tidligere tretten strøm-tab følger deraf.
+
+Afgrænset rettelse under kvalifikation: frigiv kun de to færdigbrugte lokale komponent-/scoreejere efter deres sidste awaitede gemme-/originalgrænse. Bevar delte outputreferencer, alle originaler, fejl og historik. Ingen blind heapforøgelse, modelændring, nulstilling eller tømt map. Faktisk produktionseffekt og hele den efterfølgende normale kæde er fortsat åbne; konkrete log- og checkpointidentiteter står privat.
+
+## 23. oktober — ÅBEN: Copernicus-anskaffelse ved genoptaget fast H0
+
+Den gemte normale log og de præcise normale kald viser et stop før credentials/netværk: piloten bygger sit første source-stage med faktisk anskaffelsestid, men stage-validatoren kræver højst fire timers afstand til den fastlåste produktionstime. Nye forsøgsbeviser har samme grænse; alene at ændre stage-tiden er derfor ikke en løsning. Den bevarede gamle stage kan efterfølgende være genbrugelig uden at have hentet noget nyt.
+
+Positive integritetsgyldige records og deres oprindelige beviser skal bevares uafhængigt af kortlivede negative forsøgsbeviser. En særskilt lokal pilotrettelse er nu indpasset med egen faktisk sen witness-reference, begrænset requestinterval og separate invocation-vidner før positiv certificering. H0-negative forsøg filtreres uændret; faktiske anskaffelses-/shadow-/donortider bevares, og den afledte H0-projektion forbliver IN_PROGRESS uden et falsk READY-seal. Normale lokale mål inklusive replay, refresh og downstream-checker består efter ægte CLI-RED mod forgængeren; friske outputbytes er bevist uændrede ved samme hashseed. Præcis samlet kildekontrol og faktisk levering/anskaffelse er stadig åbne. De tretten tidligere tabspars samlede CP/OM-dækning er ukendt, selv om denne DMI-ledger ikke leverer dem. Ingen validator, firetimersgrænse, H0, kildeorden eller databevarelseskrav lempes.
+
 ## 23. oktober — privat sammenføring af P0 og 587; samlet kvalifikation er åben
 
 P0-genoptagelsen og den udstedte 587-assistentkandidat forberedes til én kildeintegration, men er to adskilte evidensforløb. Den tidligere P0-beregning standsede på tretten strømtimer i no-loss uden ny B/S eller offentlig levering. 587s senere source17-stop skyldtes et historisk testorakel for seneste migration; den præcise lokale rettelse består, mens samlet kvalifikation af den nye komposition stadig mangler. Gamle native- og lokalresultater ommærkes ikke til dette bevis. P0s faktiske genoptagelse/offentlige levering og almindelige efterfølger skal være dokumenteret før den kontrollerede 587-installation og hosted AI-kontrol. Ingen nye modelbindinger, SQL-udstedelse eller aktivering af SOURCE, statistik eller retention følger af sammenføringen.
