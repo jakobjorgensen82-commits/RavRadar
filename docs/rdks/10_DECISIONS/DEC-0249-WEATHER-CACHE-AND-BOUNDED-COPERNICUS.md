@@ -1,5 +1,13 @@
 # DEC-0249 – fortsæt fra rigtig vejrpakke og gem kortere Copernicus-kald
 
+## Tillæg 2026-10-23 — historiske testkald følger hele ejerleddet
+
+De færdigbrugte arbejdsreferencers nye levetid kræver også det eksisterende præcise ydre testinverse-led hos de direkte historiske testkaldere. Cold-target-prøven sammenlignede ellers den nye fulde updater med den gamle hele kilde før inversen. Historikprøvens negative mutationer ramte tilsvarende det nye ejerled, før de kunne afprøve deres uændrede cold-zone-afslag. Det er to konkrete testkaldsfejl; de begrunder ikke ændring af produktkode, gamle kontrolsummer eller fejlkrav.
+
+Begge testkald bruger nu den allerede gennemgåede hele færdige-ejerinverse før de gamle oraklers egne prøver. Den faktiske nye updater bruges fortsat i historikprøvens normale adfærdsprøver. Alle gamle kildepins, mutationer og forventede afslag bevares; der tilføjes ingen bredere fejlregex eller generel kildeundtagelse. Den normale post-H0-fil består lokalt med 54 prøver uden skip. Den selvstændige historikprøve er påvist rød før og grøn efter kalderrettelsen, så et efterfølgende artifact-stop er fanget før næste afsendelse.
+
+Disse to testkald og dokumentationen ændrer ikke model, data, kilder, budgetter eller kontrolkæde. Det præcise nye head skal fortsat bestå sin normale kildekontrol. Faktisk hukommelsesvirkning, CP-anskaffelse, privat gemning, offentlig no-loss, deploy og almindelig efterfølger er endnu ikke bevist af de lokale prøver.
+
 ## Tillæg 2026-10-23 — sen CP-anskaffelse og uændret beregnings-H0
 
 Den normale samme-H0-genoptagelse viste et konkret CP-stop før credentials og netværk. Piloten gav sit indledende source-stage faktisk ny anskaffelsestid, mens den eksisterende negative forsøgs-/stagekontrakt kræver højst fire timers afstand til H0. En genbrugelig gammel stage efterfølgende beviser ikke ny hentning. Der er ikke påvist en begrundelse for at svække firetimersgrænsen eller flytte det autentificerede H0.
