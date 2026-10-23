@@ -1,3 +1,19 @@
+## 23. oktober — færdigbrugte komponent- og scoreejere før offentlig eksport
+
+- [x] PR710 faktisk præcist kildekvalificeret og merget; ny genoptagelse passerede de fire reserver, leverandørtrin og beregning af 673 dele.
+- [x] Faktisk stop afgrænset til Node/V8 heap-OOM efter originalattestering og før offentlig runtime. Ingen ny B/S eller Pages; tidligere tretten-strømpars no-loss er ikke nået eller frikendt.
+- [x] Sidste reelle brug kortlagt: komponentejeren efter awaitet holdbar gemning; scoreejeren efter awaitet originalattestering. Delte outputreferencer og WeakMap-kontrol kan bevares uden at holde de afsluttede fulde arbejdsforløb i live.
+- [x] To præcise lokale livstidsfrigivelser; normalt mål med 18 PASS, nul fejl/spring. Faktisk kalderudsnit, rigtig komponentgemning, alle 673 syntetiske resultatejere, await-rækkefølge, outputbytes og fejlidentitet bevares. Hele historiske kildeorakler består uændret. Første testdispatch-kollision er bevaret og rettet uden produktændring.
+- [x] Normal modelbygger og alle tre private kompatibilitetskontrakter verificeret uændrede; udstedt model og SQL genudstedes ikke.
+- [x] Seneste RAW- og krypterede fremdriftscache findes som præcise fjernposter. Kun metadata er læst; indhold, originaler og mål-time skal stadig autentificeres ved restore.
+- [x] Afgrænset lokal indpasning af netop seneste checkpoint gennem alle fire normale ejere, med bevaret gammel præcis adgang, arkiv/H0, GCM og afslag ved mismatch eller manglende DMI. Wrapperens otte tilfælde består. Workflowmålet har 56 PASS/ét eksisterende Windows-spring, men exit 1 på en efterfølgende asynkron Git-stigrænse; frosset objekt findes og samme enkeltlæsning består med midlertidig longpaths. Samlet Linux-kontrol er ikke bevist af dette.
+- [x] Særskilt CP-stop bevist før netværk: indledende stage bruger ny anskaffelsestid mod fast H0 uden for fire timer. Bevaret gammel stage er ikke ny CP-hentning.
+- [x] Lokal pilotrettelse adskiller sen faktisk anskaffelsesreference og invocationens positive vidner fra den uændrede H0-negative journal. Eget requestinterval, faktiske shadow-/donortider og ærlig IN_PROGRESS bevares; ingen falsk READY/OPERATIONAL_COMPLETE, hævet firetimersgrænse, ny start eller ændret validator.
+- [x] Ægte normal CLI RED mod uændret forgænger og GREEN med rettelsen. Berørte source-stage/pilot/journal/dataset/challenge-mål består; fresh bank/shadow/stage er byteidentiske ved samme hashseed. Replay, refresh, anden-fsync-fejl, bevarede originaler og downstream-checker afprøves gennem eksisterende normale kald. Ingen hosted anskaffelse følger af lokale prøver.
+- [ ] Den samlede CP/OM-dækning af tretten tidligere tabspar og den installerede rettelses faktiske virkning er ukendt; den endelige kombination kræver ny præcis kildekontrol og normal produktionsprøve.
+- [ ] Præcis samlet kildekontrol, sikker levering, faktisk genbrug af gemt fremgang og målt heljobskapacitet gennem offentlig pakning, no-loss, B før S og Pages.
+- [ ] Én efterfølgende almindelig kørsel og først derefter uændret planlægning. Ingen test eller lokal referencefrigivelse er alene færdiggørelse.
+
 ## 23. oktober — strømstartens faktiske stop og samme-arkiv-genoptagelse
 
 - [x] Første current-family-start nåede autentisk arkiv/readback, leverandører og beregning. No-loss standsede tretten strømtimer for én uændret del; de fire øvrige komponenter havde nul tab på de fælles timer. Ingen ny B/S eller offentlig vejrlevering.

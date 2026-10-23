@@ -347,6 +347,28 @@ def selected_reference(value: str | None, registry: dict[str, Any]) -> datetime:
     return registry_reference
 
 
+def acquisition_witness_reference(reference: datetime, acquisition_at: datetime) -> datetime:
+    """Give a late positive witness its real acquisition hour, never a new H0."""
+    if (acquisition_at - reference).total_seconds() > FUTURE_ACQUISITION_FRESHNESS_HOURS * 3600:
+        return acquisition_at.replace(minute=0, second=0, microsecond=0)
+    return reference
+
+
+def source_stage_projection_time(reference: datetime, updated_at: datetime) -> datetime:
+    """Late IN_PROGRESS is an H0 projection, as in normal stage rebase.
+
+    This is not an acquisition/write timestamp. Shadow/donor updatedAt and all
+    immutable acquisition/witness times remain the actual observed times. The
+    unchanged H0 journal filter must remove expired negative evidence first.
+    """
+    return reference if acquisition_witness_reference(reference, updated_at) != reference else updated_at
+
+
+def within_witness_window(valid_time: str, witness_reference: datetime) -> bool:
+    hours = (parse_time(valid_time, "witness request valid time") - witness_reference).total_seconds() / 3600
+    return 0 <= hours <= 117
+
+
 def spatial_shards(targets: list[dict[str, Any]], product: dict[str, Any]) -> list[dict[str, Any]]:
     """Create fixed-cell, bounded and ordering-independent request shards."""
     buckets: dict[tuple[int, int], list[dict[str, Any]]] = {}
@@ -1023,6 +1045,9 @@ def persist_source_stage_progress(
     validated_donor_candidate: dict[str, Any] | None = None,
 ) -> PersistedSourceStageProgress:
     """Commit values plus positive proof before disposable shadow/journal files."""
+    projection_time = source_stage_projection_time(
+        parse_time(registry["productionReferenceAt"], "Registry reference"), updated_at
+    )
     targets = list(target_identities.values())
     positive = stage_positive_evidence(donor_state or {})
     normalized_bank: dict[str, Any] | None = None
@@ -1159,7 +1184,7 @@ def persist_source_stage_progress(
                     target_identities=target_identities,
                     shadow_sha256=shadow_sha256,
                     attempts=attempts,
-                    updated_at=updated_at,
+                    updated_at=projection_time,
                     **positive,
                 )
             )
@@ -1256,7 +1281,7 @@ def persist_source_stage_progress(
                 target_identities=target_identities,
                 shadow_sha256=shadow_sha256,
                 attempts=attempts,
-                updated_at=updated_at,
+                updated_at=projection_time,
                 **positive,
             )
             atomic_write_source_stage_progress(
@@ -1508,9 +1533,11 @@ def build_honest_residual_stage(
     arguments = dict(registry=registry, shadow=shadow, target_identities=target_identities,
                      shadow_sha256=shadow_sha256, attempts=attempts,
                      positive_admissions=positive_admissions, admission_attempts=admission_attempts)
-    if all_exhausted:
+    if all_exhausted and acquisition_witness_reference(reference, sealed_at) == reference:
         return build_source_stage(**arguments, sealed_at=sealed_at)
-    return build_source_stage_progress(**arguments, updated_at=sealed_at)
+    return build_source_stage_progress(
+        **arguments, updated_at=source_stage_projection_time(reference, sealed_at)
+    )
 
 
 def fill_bounded_advisory_history(
@@ -1753,6 +1780,7 @@ def run_bounded_operational_refresh(
                 )
 
     attempts = list(source_attempts)
+    witness_reference = acquisition_witness_reference(reference, acquisition_at)
     original_acquisitions = list(existing.get("acquisitions") or [])
     original_records = list(existing.get("records") or [])
     new_acquisitions: list[dict[str, Any]] = []
@@ -1796,7 +1824,7 @@ def run_bounded_operational_refresh(
                 product["source"]: current_reference_attempt_pairs(
                     attempts,
                     source=product["source"],
-                    reference=reference,
+                    reference=witness_reference,
                 )
                 for product in PRODUCTS
             }
@@ -1805,6 +1833,8 @@ def run_bounded_operational_refresh(
             challenge_keys = {(row["partId"], row["validTime"]) for row in (registry.get("agedDmiChallengePlan") or {}).get("challengePairs", [])}
             for pair_row in current_missing:
                 pair = (pair_row["partId"], pair_row["validTime"])
+                if witness_reference != reference and not within_witness_window(pair[1], witness_reference):
+                    continue
                 target = target_by_id[pair[0]]
                 refresh_source = next(
                     (
@@ -1843,6 +1873,8 @@ def run_bounded_operational_refresh(
                 if acquired_at >= acquisition_at:
                     continue
                 pair = (ref["partId"], ref["validTime"])
+                if witness_reference != reference and not within_witness_window(pair[1], witness_reference):
+                    continue
                 selected_source = ref["source"]
                 refresh_source: str | None = None
                 if selected_source == "copernicus-baltic-nemo":
@@ -1955,7 +1987,7 @@ def run_bounded_operational_refresh(
                     for row in raw_records
                 ]
                 source_attempt = make_source_attempt(
-                    production_reference_at=reference,
+                    production_reference_at=witness_reference,
                     acquisition_at=acquisition_at,
                     product=product,
                     shard_id=shard["shardId"],
@@ -2094,7 +2126,7 @@ def run_bounded_operational_refresh(
             candidate_dir = Path(raw_candidate_dir)
             candidate_shadow_path = candidate_dir / args.shadow.name
             candidate_stage_path = candidate_dir / args.source_stage.name
-            if missing:
+            if missing or witness_reference != reference:
                 candidate_shadow = atomic_write_shadow_checkpoint(
                     candidate_shadow_path,
                     acquisitions=acquisitions,
@@ -2124,14 +2156,14 @@ def run_bounded_operational_refresh(
                     target_identities=target_identities,
                 )
             candidate_shadow_sha256 = file_sha256(candidate_shadow_path)
-            if missing:
+            if missing or witness_reference != reference:
                 candidate_stage = build_source_stage_progress(
                     registry=registry,
                     shadow=candidate_shadow,
                     target_identities=target_identities,
                     shadow_sha256=candidate_shadow_sha256,
                     attempts=attempts,
-                    updated_at=acquisition_at,
+                    updated_at=source_stage_projection_time(reference, acquisition_at),
                     **stage_positive_evidence(candidate_bank),
                 )
                 atomic_write_source_stage_progress(
@@ -2208,6 +2240,9 @@ def main() -> int:
             raise RuntimeError("Copernicus target registry contains a changed central target identity")
     target_identities = {row["partId"]: row for row in authoritative_targets}
     operational_contract = registry["schemaVersion"] == 3
+    witness_reference = acquisition_witness_reference(reference, acquisition_at) if operational_contract else reference
+    late_acquisition = witness_reference != reference
+    invocation_attempts: list[dict[str, Any]] = []
     if args.checkpoint_only and not operational_contract:
         raise RuntimeError("Copernicus checkpoint-only requires the operational registry")
     required_pairs = (
@@ -2361,6 +2396,10 @@ def main() -> int:
                     source_attempts,
                     entry["attempt"],
                 )
+        # Authenticated replay witnesses precede positive certification. They
+        # must not be lost when the disposable H0 negative journal is filtered.
+        if late_acquisition:
+            invocation_attempts = list(source_attempts)
         merged_acquisitions, merged_records = merge_cache_evidence(
             donor_state["shadow"],
             journal_acquisitions,
@@ -2526,9 +2565,9 @@ def main() -> int:
         existing = initial_checkpoint.shadow
     attempted_pairs_by_source = {
         product["source"]: current_reference_attempt_pairs(
-            source_attempts,
+            invocation_attempts if late_acquisition else source_attempts,
             source=product["source"],
-            reference=reference,
+            reference=witness_reference,
         )
         for product in PRODUCTS
     }
@@ -2593,6 +2632,7 @@ def main() -> int:
                     pair for pair in source_required_pairs
                     if pair[0] in shard_part_ids
                     and ((pair in challenge_keys) == bool(work.get("agedDmiChallenge")))
+                    and (not late_acquisition or within_witness_window(pair[1], witness_reference))
                 }
                 if not critical_shard_pairs:
                     if (
@@ -2715,7 +2755,7 @@ def main() -> int:
                         for row in raw_records
                     ]
                     source_attempt = make_source_attempt(
-                        production_reference_at=reference,
+                        production_reference_at=witness_reference,
                         acquisition_at=acquisition_at,
                         product=product,
                         shard_id=shard["shardId"],
@@ -2783,6 +2823,8 @@ def main() -> int:
                     source_attempts,
                     source_attempt,
                 )
+                if late_acquisition:
+                    invocation_attempts = replace_stale_shard_attempt(invocation_attempts, source_attempt)
                 attempted_pairs_by_source[product["source"]].update({
                     (pair["partId"], pair["validTime"])
                     for pair in source_attempt["requestedPairs"]
@@ -2799,7 +2841,7 @@ def main() -> int:
                     working_bank = _advance_validated_copernicus_donor_bank(
                         donor_delta,
                         targets=authoritative_targets,
-                        attempts=source_attempts,
+                        attempts=invocation_attempts if late_acquisition else source_attempts,
                         previous_bank=working_bank,
                         production_reference_at=reference,
                         **stage_positive_evidence(working_bank),
@@ -3032,7 +3074,7 @@ def main() -> int:
         raise RuntimeError(
             "One or more Copernicus shards failed; validated shard checkpoints were preserved"
         )
-    if missing:
+    if missing or late_acquisition:
         if operational_contract:
             # Operational residual is handed to the next provider immediately.
             # Advisory -48h history is never allowed to delay regional/OM

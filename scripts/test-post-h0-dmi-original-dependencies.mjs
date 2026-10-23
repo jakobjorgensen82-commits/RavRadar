@@ -15,7 +15,8 @@ import { buildRavScoreProductionPartSeries, ravScoreOwnerCurrentHistoryStartAt,
 import { ravScoreRecoverySourceStartAt } from './lib/ravscore-recovery-replay.mjs';
 import { currentFamilyColdStartScoreInputs } from './current-family-cold-start.mjs';
 import { inverseCurrentFamilyColdTargetTestInput, CURRENT_FAMILY_COLD_TARGET_TEST_REVIEW,
-  inverseCurrentFamilyColdZoneHistoryTestInput, CURRENT_FAMILY_COLD_ZONE_HISTORY_TEST_REVIEW }
+  inverseCurrentFamilyColdZoneHistoryTestInput, CURRENT_FAMILY_COLD_ZONE_HISTORY_TEST_REVIEW,
+  inverseFinalizedWeatherOwnersTestInput, FINALIZED_WEATHER_OWNERS_TEST_REVIEW }
   from './lib/archived-weather-restart-updater-test-input.mjs';
 import { buildPrivateDmiRecoveryRecord } from './lib/private-dmi-recovery-record.mjs';
 import { buildIntegratedPartScoreSeries } from './lib/ravscore-integrated-runtime.mjs';
@@ -2472,7 +2473,9 @@ test('coherent raw transport lifetime: exact outer inverse preserves joint and e
 
 test('cold target inverse: complete exact modules precede unchanged historical oracles and reject every changed hunk',()=>{
   for(const row of CURRENT_FAMILY_COLD_TARGET_TEST_REVIEW){
-    const complete=readFileSync(new URL('../'+row.path,import.meta.url),'utf8').replace(/\r\n/g,'\n');
+    const current=readFileSync(new URL('../'+row.path,import.meta.url),'utf8').replace(/\r\n/g,'\n');
+    const complete=row.path===FINALIZED_WEATHER_OWNERS_TEST_REVIEW.path
+      ?inverseFinalizedWeatherOwnersTestInput(current,row.path):current;
     const outer=row.path===CURRENT_FAMILY_COLD_ZONE_HISTORY_TEST_REVIEW.path
       ?CURRENT_FAMILY_COLD_ZONE_HISTORY_TEST_REVIEW:null;
     if(outer){

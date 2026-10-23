@@ -6,6 +6,93 @@ import fs from 'node:fs';
 const review = JSON.parse(fs.readFileSync(new URL('./completed-private-runtime-workflow-review.json', import.meta.url), 'utf8'));
 const coldReview = JSON.parse(fs.readFileSync(new URL('./current-family-cold-start-workflow-review.json', import.meta.url), 'utf8'));
 const sha = value => crypto.createHash('sha256').update(value).digest('hex');
+// TEST INPUT ONLY: two exact saved-progress IDs in the same archive/hour.
+// Unknown bytes remain rejected by the unchanged historical workflow oracles.
+export const latestColdProgressWorkflowReview = {
+  "scope": {
+    "progressSource": "39886354260-1",
+    "latestProgressSource": "39933506923-1",
+    "archiveId": "775f99a210b899eacd3ee056f4daae56c20fc3258e64691d4e0544aabd04d3fb",
+    "targetReferenceAt": "2026-10-23T01:00:00.000Z",
+    "publicInputTarget": "2026-10-23T01:00:00Z"
+  },
+  "roles": {
+    "build": {
+      "relativePath": ".github/workflows/reusable-weather-build.yml",
+      "before": {
+        "bytes": 289762,
+        "sha256": "39327f1ef42a4c0450c9aa3e2922dc9be9f96f12b50f45ff7a11c56dd3a9b4c7"
+      },
+      "after": {
+        "bytes": 289911,
+        "sha256": "ac548056ad2929dd64fae6ae3b22e2697f568b245b55903e4a86580a9539eab3"
+      },
+      "edits": [
+        [
+          160393,
+          "          if test \"${{ inputs.current_family_cold_start }}\" = true && test -n \"$QUICK_PROGRESS_SOURCE\"; then\n            test \"$QUICK_PROGRESS_SOURCE\" = 39886354260-1 || test \"$QUICK_PROGRESS_SOURCE\" = 39933506923-1\n",
+          "          if test \"${{ inputs.current_family_cold_start }}\" = true && test -n \"$QUICK_PROGRESS_SOURCE\"; then\n            test \"$QUICK_PROGRESS_SOURCE\" = 39886354260-1\n"
+        ],
+        [
+          94364,
+          "        if: (inputs.current_family_cold_start != true || inputs.quick_progress_source == '39886354260-1' || inputs.quick_progress_source == '39933506923-1') && inputs.completed_private_runtime != true && (inputs.native_sampling_identity_original_recovery != true && (inputs.weather_state_epoch_bootstrap != true || inputs.weather_state_epoch_checkpoint_reentry == true) && github.ref == 'refs/heads/main' && github.event_name != 'pull_request' && github.event_name != 'pull_request_target' && steps.private-runtime-install.outcome == 'success' && steps.weather-source-handoff.outputs.reused != 'true' && !(inputs.quick_confirmation && inputs.quick_progress_source == 'protected-current'))\n",
+          "        if: (inputs.current_family_cold_start != true || inputs.quick_progress_source == '39886354260-1') && inputs.completed_private_runtime != true && (inputs.native_sampling_identity_original_recovery != true && (inputs.weather_state_epoch_bootstrap != true || inputs.weather_state_epoch_checkpoint_reentry == true) && github.ref == 'refs/heads/main' && github.event_name != 'pull_request' && github.event_name != 'pull_request_target' && steps.private-runtime-install.outcome == 'success' && steps.weather-source-handoff.outputs.reused != 'true' && !(inputs.quick_confirmation && inputs.quick_progress_source == 'protected-current'))\n"
+        ],
+        [
+          17455,
+          "          if test -n \"$QUICK_PROGRESS_SOURCE\"; then\n            test \"$QUICK_PROGRESS_SOURCE\" = 39886354260-1 || test \"$QUICK_PROGRESS_SOURCE\" = 39933506923-1\n",
+          "          if test -n \"$QUICK_PROGRESS_SOURCE\"; then\n            test \"$QUICK_PROGRESS_SOURCE\" = 39886354260-1\n"
+        ]
+      ]
+    },
+    "once": {
+      "relativePath": ".github/workflows/run-current-weather-once.yml",
+      "before": {
+        "bytes": 54587,
+        "sha256": "790776231568428e7ea9b4943e6d4719177fb5bf7f4c03b648b16ee85f7f83e0"
+      },
+      "after": {
+        "bytes": 54634,
+        "sha256": "3f0bbc19336918f20586c92432dc2fb46985d3657d842209a26e788426dcf814"
+      },
+      "edits": [
+        [
+          5189,
+          "            test \"$PROGRESS\" = 39886354260-1 || test \"$PROGRESS\" = 39933506923-1\n",
+          "            test \"$PROGRESS\" = 39886354260-1\n"
+        ],
+        [
+          111,
+          "        description: 'Archive authenticated current-family B/S for a fresh cold start, or reopen only fixed 39886354260-1 or 39933506923-1 progress without another reset'\n",
+          "        description: 'Archive authenticated current-family B/S for a fresh cold start, or reopen only its fixed 39886354260-1 checkpoint without another reset'\n"
+        ]
+      ]
+    }
+  }
+};
+for (const row of Object.values(latestColdProgressWorkflowReview.roles)) {
+  row.edits.forEach(Object.freeze); Object.freeze(row.edits);
+  Object.freeze(row.before); Object.freeze(row.after); Object.freeze(row);
+}
+Object.freeze(latestColdProgressWorkflowReview.roles);
+Object.freeze(latestColdProgressWorkflowReview.scope);
+Object.freeze(latestColdProgressWorkflowReview);
+export function inverseLatestColdProgressWorkflow(source, role) {
+  assert.equal(arguments.length, 2, 'LATEST_COLD_PROGRESS_WORKFLOW_ARGUMENTS');
+  assert.equal(typeof source, 'string', 'LATEST_COLD_PROGRESS_WORKFLOW_TYPE');
+  assert(Object.hasOwn(latestColdProgressWorkflowReview.roles, role), 'LATEST_COLD_PROGRESS_WORKFLOW_ROLE');
+  const row = latestColdProgressWorkflowReview.roles[role];
+  if (Buffer.byteLength(source) === row.before.bytes && sha(source) === row.before.sha256) return source;
+  assert.equal(Buffer.byteLength(source), row.after.bytes, 'LATEST_COLD_PROGRESS_WORKFLOW_AFTER_SIZE');
+  assert.equal(sha(source), row.after.sha256, 'LATEST_COLD_PROGRESS_WORKFLOW_AFTER_SHA');
+  for (const [offset, actual, original] of row.edits) {
+    assert.equal(source.slice(offset, offset + actual.length), actual, 'LATEST_COLD_PROGRESS_WORKFLOW_EXACT_HUNK');
+    source = source.slice(0, offset) + original + source.slice(offset + actual.length);
+  }
+  assert.equal(Buffer.byteLength(source), row.before.bytes, 'LATEST_COLD_PROGRESS_WORKFLOW_BEFORE_SIZE');
+  assert.equal(sha(source), row.before.sha256, 'LATEST_COLD_PROGRESS_WORKFLOW_BEFORE_SHA');
+  return source;
+}
 // TEST INPUT ONLY: the fixed same-archive/same-hour checkpoint caller delta.
 // Runtime authentication remains in the cold kernel/GCM wrapper, never here.
 export const currentFamilyColdCheckpointWorkflowReview = JSON.parse(fs.readFileSync(
@@ -20,6 +107,9 @@ Object.freeze(currentFamilyColdCheckpointWorkflowReview);
 export function inverseCurrentFamilyColdCheckpointWorkflow(source, role) {
   assert.equal(arguments.length, 2, 'COLD_CHECKPOINT_WORKFLOW_ARGUMENTS');
   assert.equal(typeof source, 'string', 'COLD_CHECKPOINT_WORKFLOW_TYPE');
+  if (Object.hasOwn(latestColdProgressWorkflowReview.roles, role)
+    && sha(source) === latestColdProgressWorkflowReview.roles[role].after.sha256)
+    source = inverseLatestColdProgressWorkflow(source, role);
   assert(Object.hasOwn(currentFamilyColdCheckpointWorkflowReview.roles, role), 'COLD_CHECKPOINT_WORKFLOW_ROLE');
   const row = currentFamilyColdCheckpointWorkflowReview.roles[role];
   if (Buffer.byteLength(source) === row.before.bytes && sha(source) === row.before.sha256) return source;
@@ -318,6 +408,9 @@ export const nativeOriginalSchemaSelectorWorkflowReview = Object.freeze({
   ]
 });
 export function inverseNativeOriginalSchemaSelectorWorkflow(source, role) {
+  if (Object.hasOwn(latestColdProgressWorkflowReview.roles, role)
+    && sha(source) === latestColdProgressWorkflowReview.roles[role].after.sha256)
+    source = inverseLatestColdProgressWorkflow(source, role);
   if (Object.hasOwn(currentFamilyColdCheckpointWorkflowReview.roles, role) &&
       sha(source) === currentFamilyColdCheckpointWorkflowReview.roles[role].after.sha256) {
     source = inverseCurrentFamilyColdCheckpointWorkflow(source, role);

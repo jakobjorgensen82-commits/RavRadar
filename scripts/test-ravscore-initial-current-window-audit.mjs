@@ -2,17 +2,21 @@ import { inverseAlternativeCCaller } from './lib/alternative-c-caller-test-input
 import { inverseArchivedWeatherRestartUpdater, inverseWeatherExportMemoryUpdater,
  WEATHER_EXPORT_MEMORY_UPDATER_REVIEW, inverseCurrentNativeOriginalProducerTestInput,
  CURRENT_NATIVE_ORIGINAL_PRODUCER_TEST_REVIEW,
- inverseCurrentFamilyColdTargetTestInput } from './lib/archived-weather-restart-updater-test-input.mjs';
+ inverseCurrentFamilyColdTargetTestInput, inverseFinalizedWeatherOwnersTestInput,
+ FINALIZED_WEATHER_OWNERS_TEST_REVIEW } from './lib/archived-weather-restart-updater-test-input.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
 import path from 'node:path';
+import os from 'node:os';
 import crypto from 'node:crypto';
 import { fileURLToPath } from 'node:url';
 import { summarizeRavScoreInitialCurrentWindow } from './lib/ravscore-initial-current-window-audit.mjs';
 import { buildRavScoreProductionPartSeries } from './lib/ravscore-production-part-pipeline.mjs';
 import { inspectDmiForecastGridSampling } from './lib/dmi-forecast-store.mjs';
 import { dmiExpectedIdentityForPart } from './lib/ravscore-production-adapters.mjs';
+import { createWeatherComponentSelectionHistory } from './lib/weather-component-selection-history.mjs';
+import { persistWeatherComponentSelections } from './lib/weather-component-runtime.mjs';
 const ROOT=path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const hash=value=>crypto.createHash('sha256').update(value).digest('hex');
 const HOUR_MS=3_600_000, base=Date.parse('2026-08-29T00:00:00.000Z');
@@ -217,4 +221,144 @@ test('missing exact native hold support produces unavailable with no fabricated 
  const{options}=fixture();options.recoverySources[0].record.hourly.find(row=>row.time===holeAt).currentStateOnlyHold={schemaVersion:1,kind:'INVALID_SYNTHETIC_HOLD'};
  const value=diagnose(options);assert.equal(value.status,'UNAVAILABLE');assert.equal(value.fallbackPerformed,false);
  assert.equal(Object.hasOwn(value,'integrated'),false);
+});
+
+test('finished-owner inverse restores exact d957 and retains every historical updater oracle',async()=>{
+ const current=(await fs.readFile(path.join(ROOT,'scripts/update-weather.mjs'),'utf8')).replaceAll('\r\n','\n');
+ const row=FINALIZED_WEATHER_OWNERS_TEST_REVIEW,relative=row.path;
+ assert.equal(Buffer.byteLength(current),row.after.bytes);assert.equal(hash(current),row.after.sha256);
+ const genuine=inverseFinalizedWeatherOwnersTestInput(current,relative);
+ assert.equal(Buffer.byteLength(genuine),250473);
+ assert.equal(hash(genuine),'15b4ab43f32d11d935546a1a6e7d8545f242d25927d3e4077bec60a87eea4d14');
+ assert.equal(inverseFinalizedWeatherOwnersTestInput(genuine,relative),genuine);
+ const oldReaders=[
+  value=>inverseCurrentFamilyColdTargetTestInput(value,relative),
+  value=>inverseCurrentNativeOriginalProducerTestInput(value,relative),
+  inverseWeatherExportMemoryUpdater,inverseArchivedWeatherRestartUpdater,
+  value=>inverseAlternativeCCaller(value,relative),
+ ];
+ for(const reader of oldReaders)assert.equal(reader(current),reader(genuine));
+ for(const [before,after] of row.hunks){
+  assert.equal(current.split(after).length,2);
+  for(const changed of [current.replace(after,()=>before),current.replace(after,()=>after+after),
+   current.replace(after,()=>after+'\n// changed finalized-owner hunk')]){
+   assert.notEqual(changed,current);
+   assert.throws(()=>inverseFinalizedWeatherOwnersTestInput(changed,relative),/FINALIZED_WEATHER_OWNERS_/);
+   for(const reader of oldReaders)assert.throws(()=>reader(changed));
+  }
+ }
+ for(const changed of [current+'// unrelated drift\n',current.replace('weatherComponents = null;','weatherComponents = undefined;')])
+  assert.throws(()=>inverseFinalizedWeatherOwnersTestInput(changed,relative),/FINALIZED_WEATHER_OWNERS_/);
+});
+
+test('actual final caller releases all673 owners only after durable selection and awaited origin',async t=>{
+ const current=(await fs.readFile(path.join(ROOT,'scripts/update-weather.mjs'),'utf8')).replaceAll('\r\n','\n');
+ const old=inverseFinalizedWeatherOwnersTestInput(current,'scripts/update-weather.mjs');
+ const begin='output.coastalParts = coastalPartScoreBuild?.integratedRuntime',
+  end="reportWeatherBuildStage('current-origin-ready');";
+ const body=source=>{
+  assert.equal(source.split(begin).length,2);assert.equal(source.split(end).length,2);
+  return source.slice(source.indexOf(begin),source.indexOf(end)+end.length);
+ };
+ const AsyncFunction=Object.getPrototypeOf(async function(){}).constructor;
+ const run=source=>new AsyncFunction('scope',`
+  let {weatherComponents,coastalPartScoreBuild}=scope;
+  const {output,coastalPartsContract,generatedAt,buildFurWaterRoutingDiagnostic,
+   ravScoreModelBinding,candidateGRollbackModelBinding,CANDIDATE_G_OPERATIONAL_ROLLBACK_ID,
+   CANDIDATE_G_MEASURED_WARMUP_STATUS,CANDIDATE_G_MEASURED_WARMUP_EVIDENCE_POLICY,
+   persistWeatherComponentSelections,enrichCurrentProvenanceDocuments,dmiBulkCache,
+   nextDmiForecastStore,writeDmiForecastStoreCheckpoint,console,establishedNativeCurrentOrigin,
+   buildEstablishedNativeCurrentOriginAttestation,reportWeatherBuildStage}=scope;
+  scope.inspect=()=>({weatherComponents,coastalPartScoreBuild});
+  try { ${body(source)};return {error:null,...scope.inspect()}; }
+  catch(error){return {error,...scope.inspect()};}
+ `);
+ const actual=run(current),historical=run(old);
+ const deferred=()=>{let resolve;const promise=new Promise(yes=>{resolve=yes;});return {promise,resolve};};
+ for(const route of ['ordinary','cold'])for(const failure of [null,'persist','origin']){
+  await t.test(`${route}/${failure??'success'}`,async()=>{
+   const directory=await fs.mkdtemp(path.join(os.tmpdir(),'rr-finished-owners-'));
+   try{
+    const execute=async(invoke,retires)=>{
+     const ids=Array.from({length:673},(_,i)=>`CALLER-LIFETIME-${i}`);
+     const parts=ids.map(partId=>({partId,zoneId:'CALLER-LIFETIME-ZONE',waterPoint:[8,55]}));
+     // Synthetic data exercise only this caller's ownership/await boundaries.
+     // Neither these route labels nor the injected consumer mint origin or
+     // numeric authority; genuine origin/model validators are unchanged.
+     const projections=Object.fromEntries(ids.map((id,i)=>[id,{score:i%101,
+      continuation:{time:targetAt,retainedValue:i}}]));
+     const resultOwners=new Map(ids.map(id=>[id,{scores:[projections[id]],
+      recovery:{hourly:[{time:targetAt,unsharedWorkingValue:id}]}}]));
+     const scoreOwner={integratedRuntime:{parts:projections},weatherSourceAge:{fixture:1},
+      currentSourceDomainTransitions:{retained:{unchanged:true}},
+      candidateGRollbackRuntime:route==='ordinary'?{parts:projections}:null,
+      candidateGWarmupRuntime:route==='cold'?{parts:projections}:null,
+      establishedNativeCurrentPartResults:resultOwners};
+     const selectionOwner={historyPath:path.join(directory,retires?'actual.json':'old.json'),
+      inputs:{componentSelectionHistory:createWeatherComponentSelectionHistory(null,{parts,
+       retentionStartAt:targetAt,retentionEndAt:targetAt}),
+       privateWorkingIndices:new Map(ids.map(id=>[id,{working:true}]))},
+      sourceMarker:{fixture:'CALLER_LIFETIME_ONLY'}};
+     if(failure==='persist')selectionOwner.historyPath=path.join(directory,'absent','selection.json');
+     const output={},persistEntered=deferred(),persistRelease=deferred(),originEntered=deferred(),originRelease=deferred();
+     const originValue=Object.freeze({fixture:'CALLER_BOUNDARY_VALUE_ONLY',route});
+     const original=JSON.stringify({scoreOwner,projections,results:[...resultOwners]});
+     const events=[];let primary=null;
+     const scope={weatherComponents:selectionOwner,coastalPartScoreBuild:scoreOwner,
+      output,coastalPartsContract:{partCount:673},generatedAt:targetAt,
+      buildFurWaterRoutingDiagnostic:()=>null,ravScoreModelBinding:()=>({fixture:'I'}),
+      candidateGRollbackModelBinding:()=>({fixture:'G'}),CANDIDATE_G_OPERATIONAL_ROLLBACK_ID:'fixture',
+      CANDIDATE_G_MEASURED_WARMUP_STATUS:'fixture',CANDIDATE_G_MEASURED_WARMUP_EVIDENCE_POLICY:'fixture',
+      persistWeatherComponentSelections:async prepared=>{
+       assert.equal(prepared,selectionOwner);persistEntered.resolve();await persistRelease.promise;
+       try{return await persistWeatherComponentSelections(prepared);}
+       catch(error){primary=error;throw error;}
+      },
+      enrichCurrentProvenanceDocuments:({conditions})=>{assert.equal(conditions,output);events.push('provenance');return {skipped:false};},
+      dmiBulkCache:{},nextDmiForecastStore:{},writeDmiForecastStoreCheckpoint:async()=>{events.push('checkpoint');},
+      console:{log(){}},establishedNativeCurrentOrigin:originValue,
+      buildEstablishedNativeCurrentOriginAttestation:async(handle,options)=>{
+       assert.equal(handle,originValue);assert.equal(options.conditions,output);
+       assert.equal(options.partResults,resultOwners);assert.equal(options.partResults.size,673);
+       originEntered.resolve();await originRelease.promise;
+       if(failure==='origin'){primary=new Error('CALLER_FINALIZER_FAILURE');throw primary;}
+       return Object.freeze({fixture:'CALLER_RESULT_ONLY',route});
+      },reportWeatherBuildStage:stage=>events.push(stage)};
+     const pending=invoke(scope);await persistEntered.promise;
+     assert.equal(scope.inspect().weatherComponents,selectionOwner);
+     assert.equal(scope.inspect().coastalPartScoreBuild,scoreOwner);
+     assert.equal(scope.inspect().coastalPartScoreBuild.establishedNativeCurrentPartResults.size,673);
+     assert.equal(Object.hasOwn(output,'weatherComponentInputs'),false);
+     persistRelease.resolve();
+     if(failure!=='persist'){
+      await originEntered.promise;
+      assert.equal(scope.inspect().weatherComponents,retires?null:selectionOwner);
+      assert.equal(scope.inspect().coastalPartScoreBuild,scoreOwner);
+      assert.equal(scope.inspect().coastalPartScoreBuild.establishedNativeCurrentPartResults.size,673);
+      assert.equal(Object.hasOwn(output,'privateEstablishedNativeCurrentOrigin'),false);
+      assert.deepEqual(events,['provenance','checkpoint']);originRelease.resolve();
+     }
+     const result=await pending;
+     assert.equal(JSON.stringify({scoreOwner,projections,results:[...resultOwners]}),original,
+      'retirement must not clear shared maps or mutate one of the673 original rows');
+     assert.equal(output.coastalParts,scoreOwner.integratedRuntime);
+     assert.equal(Object.keys(output.coastalParts.parts).length,673);
+     if(failure){
+      assert.equal(result.error,primary);assert.equal(result.coastalPartScoreBuild,scoreOwner);
+      assert.equal(result.weatherComponents,failure==='persist'||!retires?selectionOwner:null);
+      assert.equal(events.includes('current-origin-ready'),false);
+     }else{
+      assert.equal(result.error,null);assert.equal(result.weatherComponents,retires?null:selectionOwner);
+      assert.equal(result.coastalPartScoreBuild,retires?null:scoreOwner);
+      assert.deepEqual(events,['provenance','checkpoint','current-origin-ready']);
+     }
+     const persisted=failure==='persist'?null:await fs.readFile(selectionOwner.historyPath,'utf8');
+     if(persisted)assert.equal(output.weatherComponentInputs.selectedComponentsSha256,hash(persisted));
+     return {output:JSON.stringify(output),persisted,events};
+    };
+    assert.deepEqual(await execute(actual,true),await execute(historical,false),
+     'the actual new caller must preserve the whole output, saved selection bytes and failure order');
+   }finally{await fs.rm(directory,{recursive:true,force:true});}
+  });
+ }
 });

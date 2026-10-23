@@ -1,3 +1,15 @@
+## 23. oktober — ÅBEN P0: proceshukommelse før offentlig pakning
+
+Den seneste genoptagelse beregnede alle 673 dele og nåede originalattesteringen, men stoppede derefter med Node/V8 heap-OOM. Den offentlige runtime, ny B/S og Pages blev ikke skrevet. Det er en konkret kapacitetsfejl; hverken forkert DMI-data eller løsning af de tidligere tretten strøm-tab følger deraf.
+
+Afgrænset rettelse under kvalifikation: frigiv kun de to færdigbrugte lokale komponent-/scoreejere efter deres sidste awaitede gemme-/originalgrænse. Bevar delte outputreferencer, alle originaler, fejl og historik. Ingen blind heapforøgelse, modelændring, nulstilling eller tømt map. Faktisk produktionseffekt og hele den efterfølgende normale kæde er fortsat åbne; konkrete log- og checkpointidentiteter står privat.
+
+## 23. oktober — ÅBEN: Copernicus-anskaffelse ved genoptaget fast H0
+
+Den gemte normale log og de præcise normale kald viser et stop før credentials/netværk: piloten bygger sit første source-stage med faktisk anskaffelsestid, men stage-validatoren kræver højst fire timers afstand til den fastlåste produktionstime. Nye forsøgsbeviser har samme grænse; alene at ændre stage-tiden er derfor ikke en løsning. Den bevarede gamle stage kan efterfølgende være genbrugelig uden at have hentet noget nyt.
+
+Positive integritetsgyldige records og deres oprindelige beviser skal bevares uafhængigt af kortlivede negative forsøgsbeviser. En særskilt lokal pilotrettelse er nu indpasset med egen faktisk sen witness-reference, begrænset requestinterval og separate invocation-vidner før positiv certificering. H0-negative forsøg filtreres uændret; faktiske anskaffelses-/shadow-/donortider bevares, og den afledte H0-projektion forbliver IN_PROGRESS uden et falsk READY-seal. Normale lokale mål inklusive replay, refresh og downstream-checker består efter ægte CLI-RED mod forgængeren; friske outputbytes er bevist uændrede ved samme hashseed. Præcis samlet kildekontrol og faktisk levering/anskaffelse er stadig åbne. De tretten tidligere tabspars samlede CP/OM-dækning er ukendt, selv om denne DMI-ledger ikke leverer dem. Ingen validator, firetimersgrænse, H0, kildeorden eller databevarelseskrav lempes.
+
 ## 23. oktober — ÅBEN: tretten strøm-tab efter faktisk beregnet ny start
 
 Første current-family-start beregnede en ny kandidat, men no-loss afviste tretten tidligere gyldige strømtimer for én uændret kystdel. Ingen ny offentlig generation. Et lokalt DMI-otteforsøgsstop med tid tilbage er faktisk observeret; fuld årsag gennem CP-/OM-kildevalg og offentlig materialisering er ikke dermed bevist. Kun den autentificerede opstart får lokalt adgang til det eksisterende katalogloft, med uændrede tids-/byte-/reservegrænser.

@@ -1,3 +1,13 @@
+## Ikke udgivet — frigiv afsluttede arbejdsforløb før offentlig eksport
+
+- Afgrænser den seneste faktiske beregningsfejl til Node/V8-hukommelse efter national originalattestering, før offentlig runtime; ikke en deploy- eller DMI-værdifejl.
+- Frigiver lokalt to komponent-/scoreejere efter deres sidste vellykkede awaitede grænse. Ingen original, map, historik, score eller delt outputværdi ændres. Model, SQL, heapgrænse, kildeprioritet og geometri bevares.
+- Normalt lokalt mål består med 18 tilfælde og bevarede hele historiske kildeorakler. Normal modelbygger og alle tre private kompatibilitetskontrakter er uændrede. Samlet kildekontrol, faktisk kapacitet og ny offentlig generation med almindelig efterfølger er stadig nødvendige. Den tidligere tretten-strømpars no-loss er ikke nået i det fejlede forsøg og er ikke frikendt. Ingen ny version.
+
+- Indpasser lokalt kun den senest gemte præcise fremdrift i samme arkiv og mål-time, med bevaret ældre adgang. Hele key, autentificeret GCM, originalgrundlag og faktisk DMI-genbrug kræves stadig; ingen vilkårlig cache, ny start, større budgetter eller genbrug af ikke-gemt beregning. Wrapperens otte tilfælde består. Workflowmålets 56 PASS/ét eksisterende Windows-spring er ikke et grønt mål: en efterfølgende asynkron Git-læsning ramte en lokal stigrænse. Samme objektlæsning består med midlertidig longpaths; præcis Linux-kontrol afventer.
+- Retter lokalt det særskilt beviste CP-stop før netværk ved sen genoptagelse: oprindeligt H0 bevares, nye uforanderlige anskaffelsesvidner får egen faktisk reference og requestgrænse, og positiv donorcertificering sker før uændret filtrering af den negative H0-journal. Reelle anskaffelses-/model-/shadow-/donortider bevares; sen afledt stage er ærligt IN_PROGRESS, aldrig tilbagedateret READY/OPERATIONAL_COMPLETE.
+- Normale lokale source-stage/pilot/journal/dataset/challenge-mål består efter ægte CLI-RED mod uændret forgænger, med fresh bytebevarelse ved samme hashseed, replay, refresh og downstream-kontrol. To gamle prøvekonflikter er særskilt reproduceret mod forgængeren, uden ændring eller waiver. Dette er ikke præcis samlet Linux-kontrol, hosted CP-hentning eller bevis for dækning af de tretten tidligere tabspar. Firetimersgrænse, kildeprioritet, validatorer og no-loss bevares.
+
 ## Ikke udgivet — samme strømstart genoptages uden gamle strømdonorer
 
 - Retter et faktisk observeret lokalt otteforsøgsstop hos førende DMI-strøm alene efter ægte autentificeret opstart; det eksisterende katalogloft og alle tids-, byte-, proces- og reservegrænser bevares. Almindelige kørsler ændres ikke. Dette beviser ikke hele årsagen til de tretten strømtimer, som no-loss afviste efter første beregning.
