@@ -1,3 +1,27 @@
+## 89.266 Beregningskode og genererede kontroloplysninger
+
+Kort fortalt: En kontrolsum skal beskrive programmet, ikke være en del af sit eget beregningsinput.
+
+Status 23. oktober: Programversion 4.0.588 og dens beregnede kontroloplysninger er nu udstedt lokalt. Den normale brugskæde er sammenkoblet lokalt, og databasekildeteksten og de syv normale forbrugerkopier kan genberegnes til samme resultat. Versionssynkroniseringen skal ikke gentages. Databasekildeteksten er ikke kørt i produktionen.
+
+Den konkrete kæde af fem historiske kildeindlæsere er nu registreret med præcise kontroller af hele filerne. Den øvrige kode og de gamle kildefortegnelser bevares; det er ikke en generel undtagelse for ukendte programafhængigheder. Afgrænsede lokale kontroller består, men de erstatter ikke en samlet ny kilde- og databasekvalifikation.
+
+Rigtig databaseprøve, præcis samlet CI, kapacitet og kontrolleret installation er fortsat åbne. Overgangen kræver faktisk installeret 587 som særskilt forudsætning; den særlige CURRENT-kvalifikation hører først til efter grønt main. Ny offentlig virkning, almindelig efterfølger og dokumenteret egnethed til begge Free-planer skal stadig bevises.
+
+De tidligere formuleringer nedenfor om planlagt, endnu uudstedt version og manglende sammenkobling bevares som den tidligere planstatus; kun disse punkter er erstattet af denne opfølgning. Gamle originaler, tidligere offentliggjorte tal og P0-vejrhentningens særskilte status bevares.
+
+RavRadar skal kunne kontrollere, at programversion, faktiske kildefiler og de oplysninger, der afledes af dem, passer sammen. Derfor holdes de genererede kontroloplysninger i én strengt afgrænset datafil. Det giver ikke adgang til at udelade vilkårlig kode, ændre vejrtal eller springe sikkerhedskontroller over.
+
+Den normale kontrol skal stadig omfatte programmets rigtige afhængigheder og ejere. En historisk prøve bevares med sine oprindelige kilder, men må ikke erstatte afprøvning af den nye samlede pakke. En lokal markering, importprøve eller fil uden for den kontrollerede kilde er ikke bevis for ny drift.
+
+Ved en ny programrelease skal oplysningerne afledes på ny fra den samlede, versionssynkroniserede kode. Derefter skal de normale database- og forbrugerkopier kunne genberegnes til præcis samme resultat. Gamle originaler og tidligere offentliggjorte tal bevares; en gammel, aldrig installeret databasekandidat må ikke genmærkes som den nye.
+
+Fejl skal bevare deres første faktiske udfald og skelne mellem afslutning, afbrydelse og tidsgrænse. Rå private oplysninger må ikke følge en offentlig fejlrapport. Et bedre logudtræk eller en bestået delprøve betyder ikke i sig selv, at den bagvedliggende fejl er løst.
+
+Den sammenførte SOURCE-revision er planlagt til 4.0.588, men den nye version og dens kontroloplysninger er endnu ikke udstedt. Det almindelige forløb, som skal bruge revisionen, er heller ikke færdigt sammenkoblet endnu. Kildekontrol, rigtig databaseprøve, kapacitet, kontrolleret overgang fra faktisk installeret 587 og offentlig virkning skal stadig dokumenteres. Den særlige CURRENT-prøve hører først til efter grønt main; en test af dens opsætning er ikke selve kørslen.
+
+Den almindelige vejrhentning og dens aktuelle status er et særskilt P0-forløb. Denne lokale forberedelse aktiverer ikke revisionen og ændrer ikke kildernes prioritet, scorer eller historik. Kravet om drift inden for Supabase Free og Cloudflare Free kræver faktiske målinger, også over tid.
+
 ## 89.265 Spørg RavRadar: forklaring er ikke en lokal vejrudsigt
 
 Kort fortalt: RavRadar kan forklare en mulighed uden at love et fund eller kende forholdene på en bestemt strand.
@@ -620,7 +644,7 @@ En særskilt, dokumenteret Storage-formatkant rettes samtidig: immutable upload 
 
 # RavRadar Håndbog
 
-**Håndbogsversion:** 4.0.587
+**Håndbogsversion:** 4.0.588
 
 Hvis genbrug af gemte data stopper, skal den første fejlfase og et kontrolleret kildested bevares uden private fejltekster eller værdier. Tidligere beståede kontroller frikender ikke automatisk en senere mål-time eller andre input. En bedre fejlrapport ændrer ikke beregningen og er ikke bevis for, at årsagen er rettet. Gemte originaler og sidste gyldige offentlige data bevares, mens fejlen undersøges.
 

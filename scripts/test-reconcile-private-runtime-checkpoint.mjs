@@ -371,7 +371,7 @@ test('ordinary paired publication is genuinely new, exact-invertible and cannot 
   const Sstep = step(raw, 'Publish atomic RavScore checkpoint to protected admin storage');
   const evalIf = (block, action, required, input = {}, assistantRequired = 'false') => runInNewContext(block.match(/^        if: (.+)$/m)[1]
     .replace(/\bsteps\.([a-z][a-z0-9-]*)/g, (_, id) => 'steps[' + JSON.stringify(id) + ']'), {
-      inputs: { weather_state_epoch_bootstrap: false, weather_state_epoch_checkpoint_reentry: false,
+      inputs: { source_normal_producer: false, weather_state_epoch_bootstrap: false, weather_state_epoch_checkpoint_reentry: false,
         native_sampling_identity_original_recovery: false, checkpoint_only: false, quick_confirmation: false,
         completed_private_runtime: false, ...input },
       steps: { preflight: { outputs: { should_run: 'true' } }, 'operational-action': { outputs: { action } },
@@ -382,6 +382,10 @@ test('ordinary paired publication is genuinely new, exact-invertible and cannot 
     assert.equal(evalIf(step(raw, 'Reconcile only authenticated CURRENT B to its exact protected S before providers'), action, 'true'), false);
   }
   assert.equal(evalIf(step(raw, 'Reconcile only authenticated CURRENT B to its exact protected S before providers'), 'integrated', 'true'), true);
+  for (const name of ['Select current-family paired checkpoint restoration before any S restore',
+    'Reconcile only authenticated CURRENT B to its exact protected S before providers',
+    'Publish atomic RavScore checkpoint to protected admin storage'])
+    assert.equal(evalIf(step(raw, name), 'integrated', 'true', { source_normal_producer: true }), false);
   for (const flag of ['weather_state_epoch_bootstrap', 'weather_state_epoch_checkpoint_reentry',
     'native_sampling_identity_original_recovery', 'checkpoint_only', 'quick_confirmation', 'completed_private_runtime'])
     for (const name of ['Select current-family paired checkpoint restoration before any S restore',

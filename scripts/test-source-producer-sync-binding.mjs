@@ -4,6 +4,8 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import fs from 'node:fs/promises';
 import crypto from 'node:crypto';
+import {modelSourceRelativeModuleSpecifiers} from './lib/model-source-imports.mjs';
+import {exactRelativeModuleSpecifiers} from './lib/static-module-closure.mjs';
 import {runInNewContext} from 'node:vm';
 import {computeCandidateGRollbackBundle,renderCandidateGRollbackGeneratedModule,CANDIDATE_G_ROLLBACK_BUNDLE_EXCLUDED_MODULES}
   from './build-candidate-g-rollback-bundle.mjs';
@@ -46,6 +48,146 @@ test('SOURCE derived output is strict data, never executable source or an altern
   assert.throws(()=>sourceProducerDerivedMetadataFromText(raw,{}));
 });
 
+test('SOURCE connected archive loaders retain every current dependency and reject unknown bytes',async()=>{
+  const rows=[
+  {
+    "file": "scripts/account-statistics-assistant-prewrite.mjs",
+    "sha256": "44c1ef4edaab1d446cf7696eb5dcacfd49a618ee8788997ce88c740fe59a7761",
+    "imports": [
+      "./account-statistics-assistant-runtime-transition.mjs",
+      "./migrate-post-cutover-private-runtime.mjs",
+      "./check-account-statistics-assistant-predecessor-source.mjs",
+      "./lib/account-statistics-assistant-successor-source.mjs",
+      "../js/core/ravscore-model-contract.js",
+      "./rollback-assets/ravscore-model-contract.js",
+      "./private-production-runtime-workflow.mjs",
+      "./protected-private-production-runtime.mjs",
+      "./protected-ravscore-continuation-checkpoint.mjs"
+    ],
+    "computed": [
+      [
+        "import(pathToFileURL(path.join(frozenRoot,p)).href)",
+        1
+      ]
+    ]
+  },
+  {
+    "file": "scripts/account-statistics-assistant-runtime-transition.mjs",
+    "sha256": "f3101b3d5d6c7df7dd42d560d2a9d99c6dbee6cc6904397c95c6256f8144d8fd",
+    "imports": [
+      "./lib/bounded-json-writer.mjs",
+      "./lib/established-native-current-origin.mjs",
+      "./lib/authenticated-frozen584-predecessor.mjs",
+      "./check-account-statistics-assistant-predecessor-source.mjs",
+      "./lib/account-statistics-assistant-successor-source.mjs",
+      "../js/core/ravscore-model-contract.js",
+      "./rollback-assets/ravscore-model-contract.js",
+      "./private-production-runtime-workflow.mjs",
+      "./ravscore-continuation-checkpoint.mjs",
+      "./migrate-post-cutover-private-runtime.mjs",
+      "./protected-private-production-runtime.mjs"
+    ],
+    "computed": [
+      [
+        "import(pathToFileURL(path.join(frozenRoot,p)).href)",
+        2
+      ],
+      [
+        "import(pathToFileURL(path.join(root,'scripts/protected-ravscore-continuation-checkpoint.mjs')).href)",
+        1
+      ]
+    ]
+  },
+  {
+    "file": "scripts/migrate-post-cutover-private-runtime.mjs",
+    "sha256": "1b097d22f4102dc80f8d2c917dbaead896ceb3e7b8f364992d3422c4d010d9f6",
+    "imports": [
+      "./private-production-runtime-workflow.mjs",
+      "./lib/private-weather-component-inventory.mjs",
+      "./lib/public-hour-delivery-pack.mjs",
+      "./lib/rebind-public-hour-pack-exact.mjs",
+      "./lib/private-conditions-hourly.mjs",
+      "./public-conditions-lib.mjs",
+      "../js/core/ravscore-public-runtime-contract.js",
+      "./lib/coastal-point-staging-contract.mjs",
+      "../js/core/ravscore-model-contract.js",
+      "../js/core/ravscore-public-profile-contract.js",
+      "../js/core/ravscore-integrated-state-pipeline.js",
+      "../js/core/ravscore-integrated.js",
+      "../js/core/ravscore-public-model.js",
+      "./lib/ravscore-production-adapters.mjs",
+      "./lib/ravscore-integrated-runtime.mjs",
+      "./audit-ravscore-integrated-public-runtime.mjs",
+      "./rollback-assets/ravscore-model-contract.js",
+      "./runtime-binding-registry.mjs",
+      "./lib/bounded-json-writer.mjs",
+      "./lib/ravscore-production-part-pipeline.mjs",
+      "./lib/dmi-marine-zone-exclusions.mjs",
+      "./lib/bounded-conditions-predecessor-transition.mjs",
+      "./private-production-runtime-bundle.mjs",
+      "./protected-private-production-runtime.mjs",
+      "./check-native-identity-frozen-i71-source.mjs"
+    ],
+    "computed": [
+      [
+        "import(`${stagingUrl.href}${query}`)",
+        1
+      ],
+      [
+        "import(`${integratedUrl.href}${query}`)",
+        1
+      ],
+      [
+        "import(`${candidateUrl.href}${query}`)",
+        1
+      ],
+      [
+        "import(pathToFileURL(path.join(predecessor,\n    'scripts/private-production-runtime-bundle.mjs')).href)",
+        1
+      ],
+      [
+        "import(pathToFileURL(path.join(frozenRoot, relative)).href)",
+        1
+      ]
+    ]
+  },
+  {
+    "file": "scripts/check-last-mile-enclosure-predecessor-source.mjs",
+    "sha256": "ab211de90959b87ca342a7db803a43f4ed90fe97d6a37ea648314c75c53337c3",
+    "imports": [],
+    "computed": []
+  },
+  {
+    "file": "scripts/check-native-identity-frozen-i71-source.mjs",
+    "sha256": "21f08e71ee3384b7e5d8a9294d356536ce0d866ffc562f7ecf94a4f547f35e77",
+    "imports": [],
+    "computed": []
+  }
+];
+  for(const row of rows){
+    const source=(await fs.readFile(new URL('../'+row.file,import.meta.url),'utf8')).replace(/^\uFEFF/,'').replace(/\r\n?/g,'\n');
+    assert.equal(crypto.createHash('sha256').update(source).digest('hex'),row.sha256);
+    const imports=modelSourceRelativeModuleSpecifiers(source,row.file);
+    assert(Object.isFrozen(imports));assert.deepEqual(imports,row.imports);
+    assert.equal(new Set(imports).size,row.imports.length);
+    assert.deepEqual(modelSourceRelativeModuleSpecifiers('\uFEFF'+source.replaceAll('\n','\r\n'),row.file),imports);
+    assert.throws(()=>exactRelativeModuleSpecifiers(source,row.file),/non-literal or unparsed dynamic import/);
+    if(row.computed.length){
+      let literal=source;
+      for(const [expression,count]of row.computed){
+        assert.equal(literal.split(expression).length-1,count);
+        literal=literal.replaceAll(expression,"import('node:fs')");
+      }
+      assert.deepEqual(exactRelativeModuleSpecifiers(literal,row.file),row.imports,'All ordinary imports remain bound');
+    }
+    for(const changed of [source+'\n',source+"\nimport './hidden.mjs';\n",
+      row.computed.length?source.replace(row.computed[0][0],'import(unknown)'):source.replace(/^const HEAD\s*=/m,'const CHANGED_HEAD=')]){
+      assert(changed!==source,'Each exact-source mutation must change its actual input');
+      assert.throws(()=>modelSourceRelativeModuleSpecifiers(changed,row.file),/Whole reviewed model import source changed/);
+    }
+    assert.throws(()=>modelSourceRelativeModuleSpecifiers(source,'unreviewed.mjs'),/non-literal or unparsed dynamic import/);
+  }
+});
 test('SOURCE actual C/I closures bind implementation without hashing their own derived output',async()=>{
   const [candidate,integrated]=await Promise.all([computeCandidateGRollbackBundle(),computeRavScoreModelBundle()]);
   const implementation=[
@@ -57,6 +199,11 @@ test('SOURCE actual C/I closures bind implementation without hashing their own d
     'scripts/integrated-cutover-readiness.mjs',
     'scripts/lib/private-weather-component-pack.mjs',
     'scripts/lib/ravscore-production-part-pipeline.mjs',
+    'scripts/account-statistics-assistant-prewrite.mjs',
+    'scripts/account-statistics-assistant-runtime-transition.mjs',
+    'scripts/migrate-post-cutover-private-runtime.mjs',
+    'scripts/check-last-mile-enclosure-predecessor-source.mjs',
+    'scripts/check-native-identity-frozen-i71-source.mjs',
   ];
   assert.deepEqual(MODEL_RELEASE_ONLY_DEPENDENCIES,['scripts/ravscore-operational-activation.mjs']);
   assert.deepEqual(RAVSCORE_MODEL_BUNDLE_EXCLUDED_MODULES,[

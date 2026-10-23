@@ -1,3 +1,37 @@
+## 23. oktober — 4.0.588 lokalt udstedt; SOURCE-kvalifikation og drift er åbne
+
+Den normale SOURCE-workflowport er nu lokalt anvendt på den sammenførte genuine587/P0-kilde. Version:set 4.0.588 er udført præcis én gang og skal ikke gentages for status. Faktisk C157/I153/T12, binding/output, append-only SQL 20261023182922 og normal synk af de syv forbrugere er lokalt udstedt. De fem normale fixedpoint-kontroller sluttede med EXIT0 (5b00d9); dette er lokal kildeudstedelse, ikke SQL-eksekvering eller installation. De fulde pins står i DEC-0294 og CURRENT_TRUTH.
+
+- C157: 787fd4bb1abbf694ccce99e89a1c7faa15c20fee6957fe31f6db3ef5c4ea37a5.
+- I153: 5fa3e96cb3cf0f47e6a10bd37d4e1b1b93f837bf0f221dbb49d2a6442289dbc8.
+- T12: e56c01e138e154c4603e3baf2063f5d9cfc0714adc38f66c3fa88c17cf0eda82.
+- Kanonisk SOURCE-output: 97b0429f163965f943981c475880be15e14139ff0e0dbeda96cde4c99c1675f3.
+- Checkpointkontrakt: acd12ffdbe2b9c18dfbe57711a240cab1c1f59a45dc94f6580e43ff9265dbae0.
+- Migration 20261023182922_source_producer_original_bound_successor.sql: 344.469 bytes; SHA256 b4cac55d2b2164f32d5fe0cc405c7aabce55590b10d86809b1325af21adf17d5.
+- Trippolitik: 62364701e81c53d00a39dcb03a793f524c831f26e046a213d11ce23a5d1348aa.
+
+Den påviste indlæserkæde er lukket med fem additive, præcist whole-hash-bundne importinventarer for account-prewrite, account-runtime-transition, post-cutover-migrate, last-mile- og I71-kildehjælperne. De aktuelle fem filer var byteidentiske med de kendte ejere; alle gamle scannertabeller og almindelige relative imports bevares. Den afgrænsede normale inventarprøve bestod (027c35); ingen generel parserlempelse, filudelukkelse eller ny runtimeautoritet følger heraf.
+
+Den normale lokale prøve 67024 havde 76 PASS, 2 fejl og 1 Windows-skip. De to konkrete lokale fixture-/miljøfejl er lukket ved målrettet opfølgning 4393 med EXIT0; hele målet er ikke gentaget. De ni SOURCE-workflowtilfælde består. Dette må ikke kaldes samlet grønt SOURCE-CI, native PostgreSQL eller offentlig effekt.
+
+ÅBENT: præcis samlet SOURCE-kvalifikation/native PostgreSQL/CI, kontrolleret installation og genlæsning, national kapacitet og almindelig efterfølger, efter-main CURRENT samt offentlig virkning og dokumenteret drift på Supabase Free/Cloudflare Free. Faktisk installeret 587 er stadig en særskilt forudsætning for SOURCE-overgangen. P0-vejrhentningen er fortsat aktiv og ejes af ROOT; denne dokumentopfølgning udleder intet nyt produktionsresultat. Alle fem mål er åbne til 18. november 2026.
+
+De ældre formuleringer nedenfor om manglende workflowport, uudstedt version/metadata og afventende afledning er bevaret planhistorik og erstattet kun på disse konkrete punkter. Gamle migrationsoriginaler, autentiske B/S, originaler, offentliggjorte scorer og de historiske orakler bevares.
+
+## 23. oktober — planlagt 4.0.588: samlet SOURCE-kilde, endnu ikke udstedt
+
+Den normale workflowintegration er særskilt ÅBEN: reusable-weather-build og run-current-weather-once er endnu ikke koblet til source_normal_producer, selv om action, entry og tail er fysisk samlet. Denne kaldersammenføring skal afsluttes og gennemgås før C/I/T-/SQL-udstedelse, præcis CI eller aktivering; fysisk kildekomposition er ikke en lukket normal rute.
+
+Den samlede SOURCE-kilde er nu lokalt sammenført med den ægte 587-assistentkandidat og den nyere P0-kilde. Den planlagte apprelease er 4.0.588; versionssynk, nye faktiske C/I/T, SOURCE-output og append-only migration er endnu ikke udstedt. Lokal Git-sammenføring og statisk review er ikke samlet kildekontrol, native PostgreSQL, installeret 587/SOURCE eller offentlig drift.
+
+Den faktiske lokale sammenføring har den ægte 664a-assistentkandidat, P0s 384-kilde og main67ae som forfædre. De gennemgåede SOURCE-ejere er samlet uden at genmærke en gammel 585/586-kilde. Dette siger kun noget om den lokale kilde og dens ancestry; ingen ny komplet SOURCE-prøve eller installeret baseline udledes heraf.
+
+Den tidligere isolerede SOURCE-4.0.586 og dens 020000/030000/040000-kandidater, C145/I141 og daterede lokale prøver er historiske kildebeviser, ikke den nye sammenførings binding, installationskæde eller PASS. Ægte 587-forgænger, de 66 nuværende migrationsoriginaler, gamle B/S-attester og offentliggjorte scorer bevares; de må ikke genmærkes.
+
+Egne afledte kontroloplysninger holdes som streng, kanonisk data i scripts/lib/source-producer-binding.generated.json, ikke som literaler i deres eget C/I-input. De normale modelbyggere binder fortsat den reelle implementering; den navngivne datafil og det eksisterende aktiveringsværktøj er de præcise afgrænsninger, ikke en generel SOURCE-undtagelse. Den fysiske producentfortegnelse og kontrollen af committede, uændrede kilder består. Se DEC-0294 og håndbog 89.266.
+
+P0 og den almindelige vejrhentning har fortsat førsteprioritet. ROOTs aktuelle private checkpoint er autoritet for faktiske kørsler, cron og offentlig status; denne SOURCE-front udleder intet nyt produktionsresultat. Faktisk 587-installation er en særskilt forudsætning før SOURCE-aktivering. Alle fem mål er fortsat åbne til 18. november 2026.
+
 ## 23. oktober — privat dokumentunion for P0 og 587; ingen ny levering
 
 Denne private forberedelse bevarer begge grenes hele dokumenthistorik. Den uændrede 664a-assistentkandidat er særskilt præcist kildekvalificeret; det er ikke kvalifikation af den nye sammenføring eller en installeret 587. P0s seneste faktiske genoptagelse stoppede på proceshukommelse før ny B/S og offentlig levering. Den efterfølgende P0-kildekontrol og den operative status føres i ROOTs private checkpoint; denne pakke udleder ikke et nyt resultat. Faktisk P0-levering og almindelig efterfølger skal fortsat komme før kontrolleret 587-installation og hosted AI. Alle fem hovedmål er åbne. Ingen ny modelbinding, SQL-udstedelse, drift eller aktivering følger af dokumentunionen. Ældre modstridende ventestatus nedenfor bevares som dateret historik.

@@ -10,7 +10,7 @@ import {ASSISTANT_LATER_H0_BINDING,ASSISTANT_LATER_H0_OUTPUT,
   requireAssistantLaterH0Binding,requireAssistantLaterH0Output,readAssistantLaterH0CanonicalSource,
   assistantLaterH0Definition} from './assistant-later-h0-successor-source.mjs';
 
-export const SOURCE_PRODUCER_PROPOSED_RELEASE=null; // Unknown future release: normal whole-source issuance only.
+export const SOURCE_PRODUCER_PROPOSED_RELEASE='4.0.588'; // Reserved local SOURCE successor; normal whole-source issuance remains required.
 // ROOT reserves/derives these only after the complete real source is frozen.
 // Own hashes are generated DATA, never literals inside their own C/I input.
 const metadata=assertSourceProducerDerivedMetadata(derivedMetadata);
