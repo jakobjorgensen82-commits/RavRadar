@@ -761,6 +761,58 @@ def check_archive_isolated_raw_retention():
                 write(".cache/ravscore-current-history-demand.json", history)
                 assert read() == {} and p._RAW_CURRENT_PROTECTED == {}, "validated local archive scope did not enable bounded LRU"
                 assert not p._RAW_CURRENT_SESSION_PROTECTED, "policy must not invent a marine receipt"
+                # Real JS planner + its normal post-capability cold selection,
+                # then the complete fixed Python demand/catalog/B/S reader.
+                # The surrounding archive is this existing SYNTHETIC fixture;
+                # no JS archive capability or numerical admission is issued.
+                import subprocess
+                planner_case = r'''
+import fs from 'node:fs';
+import { pathToFileURL } from 'node:url';
+const [plannerPath, target] = process.argv.slice(2);
+const { planRavScoreCurrentHistoryForPart } = await import(pathToFileURL(plannerPath));
+const part = { partId: 'TEST', zoneId: 'ZONE-TEST', waterPoint: [2, 1], onshoreDirectionDeg: 90 };
+const row = planRavScoreCurrentHistoryForPart({ part, targetReferenceAt: new Date(target).toISOString(), stateLessRecovery: true });
+const ordinary = structuredClone(row), demand = { demands: [row] };
+const source = fs.readFileSync(plannerPath, 'utf8');
+const from = source.indexOf('  if (currentFamilyColdStart !== null) {', source.indexOf('  const demand = buildRavScoreCurrentHistoryDemand({'));
+const until = source.indexOf('    demand.schemaVersion = 2;', from);
+if (from < 0 || until <= from) throw Error('NORMAL_COLD_DEMAND_BOUNDARY_REQUIRED');
+new Function('demand', 'currentFamilyColdStart', 'productionReferenceAt', 'refuse',
+  '"use strict";\n' + source.slice(from, until) + '\n}')(demand, {}, row.endAt, code => { throw Error(code); });
+process.stdout.write(JSON.stringify({ ordinary, cold: demand.demands[0] }));
+'''
+                planned = json.loads(subprocess.check_output(["node", "--input-type=module", "-e", planner_case, "COLD_TARGET_UNIT",
+                    str(ROOT / "scripts/plan-ravscore-current-history.mjs"), target], text=True))
+                assert p.epoch(planned["ordinary"]["startAt"]) == p.epoch(target) - 48 * 3600
+                assert p.epoch(planned["cold"]["startAt"]) == p.epoch(target), "actual JS cold selection retained old history"
+                targeted = copy.deepcopy(history); targeted["demands"] = [planned["cold"]]
+                write(".cache/ravscore-current-history-demand.json", targeted)
+                resolved = read()
+                assert set(resolved) == {zone["id"]}
+                assert p.epoch(resolved[zone["id"]]["startAt"]) == p.epoch(target)
+                assert p.epoch(resolved[zone["id"]]["endAt"]) == p.epoch(target)
+                # A flag, absent archive or CACHE_ONLY must not grant this
+                # smaller window. Ordinary 48h demands remain unchanged.
+                try: p.current_history_demands([planned["cold"]], [zone], target)
+                except ValueError: pass
+                else: raise AssertionError("target-only demand acquired authority without validated archive")
+                assert set(p.current_history_demands([planned["ordinary"]], [zone], target)) == {zone["id"]}
+                unscoped = copy.deepcopy(targeted); unscoped.pop("rawRetention"); unscoped["schemaVersion"] = 1
+                write(".cache/ravscore-current-history-demand.json", unscoped)
+                with patch.dict(os.environ, {"DMI_BULK_REQUIRE_COMMITTED_RAW_RETENTION": "false"}):
+                    try: read()
+                    except (p.AssetDownloadCleanupUnproven, ValueError, OSError): pass
+                    else: raise AssertionError("unscoped target-only demand was accepted")
+                write(".cache/ravscore-current-history-demand.json", targeted)
+                original_cache_only = p.CACHE_ONLY
+                try:
+                    p.CACHE_ONLY = True
+                    try: read()
+                    except ValueError: pass
+                    else: raise AssertionError("CACHE_ONLY skipped archive validation but acquired target-only scope")
+                finally: p.CACHE_ONLY = original_cache_only
+                write(".cache/ravscore-current-history-demand.json", history)
                 negatives = []
                 for key, value in (("archiveId", "0" * 64), ("archiveCatalogSha256", "0" * 64),
                                    ("pointerVersion", 8), ("pointerVersion", True), ("checkpointVersion", 10),

@@ -52,6 +52,11 @@ producerFixture = producerFixture.slice(0, producerFixture.lastIndexOf('console.
   .replace('waterPoint: [8, 55]', 'waterPoint: [10, 55]');
 // This also retains all existing no-active-context, POINT_ACTIVATION, saved
 // tuple and publicDefault assertions; none are removed to fit the new path.
+const coldNullBinding = '     const coldInputs = null;';
+assert.equal(producerFixture.split(coldNullBinding).length, 2);
+assert.throws(() => evaluate(producerFixture.replace(coldNullBinding, ''), 'true'),
+  error => error instanceof ReferenceError && error.message === 'coldInputs is not defined',
+  'the exact missing fixture binding still reproduces the original caller failure');
 const fixture = evaluate(producerFixture,
   '({runPublicPartProjection, row, bulk, part, identity, asNative})');
 const om = evaluate(prefix('scripts/test-open-meteo-live-runtime.mjs',

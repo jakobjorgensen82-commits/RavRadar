@@ -1,7 +1,8 @@
 // TEST INPUT ONLY. Reverse precisely the new C caller hunks before old oracles.
 import assert from 'node:assert/strict';
 import crypto from 'node:crypto';
-import { inverseArchivedWeatherRestartUpdater } from './archived-weather-restart-updater-test-input.mjs';
+import { inverseArchivedWeatherRestartUpdater, inverseCurrentFamilyColdTargetTestInput,
+  CURRENT_FAMILY_COLD_TARGET_TEST_REVIEW } from './archived-weather-restart-updater-test-input.mjs';
 const SOURCE_INPUTS=[
   {
     "path": "scripts/plan-ravscore-current-history.mjs",
@@ -860,6 +861,13 @@ export const COHERENT_RAW_TRANSPORT_LIFETIME_TEST_REVIEW = Object.freeze([
 ]);
 export function inverseCoherentRawTransportLifetimeTestInput(source, relative) {
   if (typeof source !== 'string') return source;
+  const cold = CURRENT_FAMILY_COLD_TARGET_TEST_REVIEW.find(row => row.path === relative);
+  if (cold && relative === 'scripts/plan-ravscore-current-history.mjs') {
+    const raw = source.replace(/\r\n/g, '\n');
+    if (Buffer.byteLength(raw) === cold.after.bytes && digest(raw) === cold.after.sha256) {
+      source = inverseCurrentFamilyColdTargetTestInput(raw, relative);
+    }
+  }
   const row = COHERENT_RAW_TRANSPORT_LIFETIME_TEST_REVIEW.find(row => row.path === relative);
   if (!row) return source;
   const raw = source.replace(/\r\n/g, '\n');

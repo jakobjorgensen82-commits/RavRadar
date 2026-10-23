@@ -290,7 +290,7 @@ jobs:
 
     steps:
       - name: Record the actual epoch build start before checkout
-        if: inputs.weather_state_epoch_bootstrap == true
+        if: inputs.weather_state_epoch_bootstrap == true || inputs.current_family_cold_start == true
         shell: bash
         run: |
           set -euo pipefail
@@ -2323,7 +2323,7 @@ jobs:
           fi
 
       - name: Preserve the fixed epoch post-processing reserve before dmi
-        if: inputs.completed_private_runtime != true && (inputs.weather_state_epoch_bootstrap == true && steps.preflight.outputs.should_run == 'true')
+        if: inputs.completed_private_runtime != true && ((inputs.weather_state_epoch_bootstrap == true || inputs.current_family_cold_start == true) && steps.preflight.outputs.should_run == 'true')
         run: node scripts/weather-state-epoch-budget.mjs dmi
 
       - name: Update DMI bulk model cache
@@ -2591,7 +2591,7 @@ jobs:
           fi
 
       - name: Preserve the fixed epoch post-processing reserve before copernicus
-        if: inputs.completed_private_runtime != true && (inputs.weather_state_epoch_bootstrap == true && steps.preflight.outputs.should_run == 'true')
+        if: inputs.completed_private_runtime != true && ((inputs.weather_state_epoch_bootstrap == true || inputs.current_family_cold_start == true) && steps.preflight.outputs.should_run == 'true')
         run: node scripts/weather-state-epoch-budget.mjs copernicus
 
       - name: Fill only exact-hour DMI gaps from Copernicus
@@ -2628,7 +2628,7 @@ jobs:
           --require-source-stage-reusable
 
       - name: Preserve the fixed epoch post-processing reserve before open-meteo
-        if: inputs.completed_private_runtime != true && (inputs.weather_state_epoch_bootstrap == true && steps.preflight.outputs.should_run == 'true')
+        if: inputs.completed_private_runtime != true && ((inputs.weather_state_epoch_bootstrap == true || inputs.current_family_cold_start == true) && steps.preflight.outputs.should_run == 'true')
         run: node scripts/weather-state-epoch-budget.mjs open-meteo
 
       - name: Fill only the exact remaining current gaps from Open-Meteo
@@ -2718,7 +2718,7 @@ jobs:
           --dmi .cache/dmi-candidate-progress.json
 
       - name: Preserve the fixed epoch post-processing reserve before weather
-        if: inputs.completed_private_runtime != true && (inputs.weather_state_epoch_bootstrap == true && steps.preflight.outputs.should_run == 'true')
+        if: inputs.completed_private_runtime != true && ((inputs.weather_state_epoch_bootstrap == true || inputs.current_family_cold_start == true) && steps.preflight.outputs.should_run == 'true')
         run: node scripts/weather-state-epoch-budget.mjs weather
 
       - name: Update central weather cache

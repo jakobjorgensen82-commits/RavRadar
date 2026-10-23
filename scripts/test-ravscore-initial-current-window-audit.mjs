@@ -1,7 +1,8 @@
 import { inverseAlternativeCCaller } from './lib/alternative-c-caller-test-input.mjs';
 import { inverseArchivedWeatherRestartUpdater, inverseWeatherExportMemoryUpdater,
  WEATHER_EXPORT_MEMORY_UPDATER_REVIEW, inverseCurrentNativeOriginalProducerTestInput,
- CURRENT_NATIVE_ORIGINAL_PRODUCER_TEST_REVIEW } from './lib/archived-weather-restart-updater-test-input.mjs';
+ CURRENT_NATIVE_ORIGINAL_PRODUCER_TEST_REVIEW,
+ inverseCurrentFamilyColdTargetTestInput } from './lib/archived-weather-restart-updater-test-input.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
@@ -89,7 +90,7 @@ test('diagnostic source delta preserves every genuine historical updater oracle'
  assert.throws(()=>inverse(updater+'// unrelated source drift\n'),/genuine 903307 updater/);
 });
 test('memory-export caller delta has an exact genuine954 inverse before every historical source oracle',async()=>{
- const current=(await fs.readFile(path.join(ROOT,'scripts/update-weather.mjs'),'utf8')).replace(/\r\n/g,'\n');
+ const current=inverseCurrentFamilyColdTargetTestInput((await fs.readFile(path.join(ROOT,'scripts/update-weather.mjs'),'utf8')).replace(/\r\n/g,'\n'),'scripts/update-weather.mjs');
  const nativeOriginalReview=CURRENT_NATIVE_ORIGINAL_PRODUCER_TEST_REVIEW.rows.find(row=>row.path==='scripts/update-weather.mjs');
  assert(nativeOriginalReview);
  assert.equal(hash(current),nativeOriginalReview.after.sha256,'actual final native-original updater before this historical memory oracle');

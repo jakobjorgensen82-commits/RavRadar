@@ -1,3 +1,7 @@
+## 22. oktober — arkiv og aktive strømdata er forskellige roller
+
+Den udtrykkeligt godkendte nye aktive strømstart må ikke forveksles med sletning eller genmærkning af gamle originaler. Ægte arkiv og genlæsning kommer før ændring af arbejdsfiler. Kun den validerede engangsstart får en ny startgrænse; almindelige kaldere og modelregler er uændrede. Bevis både lagring af den nye originalbank og næste almindelige genbrug. Lokal kode, syntetisk B/S og grønt kildebevis skal fortsat skelnes fra faktisk offentlig drift. Ventende adminpunktpromotion, ukendt skriveudfald eller aktiv writer må ikke tilsidesættes.
+
 ## 20. oktober — kvalificér den nye 585-kilde uden at genudstede gammel autoritet
 
 585 skal have faktisk ny C/I/T- og PostgreSQL-kvalifikation; historiske 584-orakler og gammel native-evidens må ikke ommærkes som nye. Den lokale første-rå-fejl-rettelse bevarer også `undefined`, `null`, `false` og `0` gennem cleanup; dens modelimportregel accepterer kun den hele gennemgåede nye helper. Windows-LF-arbejdsvisning må ikke svække hashguards eller ændre udstedte SQL/JSON-originaler; eksakte fysiske backupbytes gendannes og genkontrolleres efter den normale lokale kommando.

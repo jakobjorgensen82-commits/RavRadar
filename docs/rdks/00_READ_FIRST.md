@@ -1,3 +1,7 @@
+## 22. oktober — læs den nye beslutning om aktiv strømstart først
+
+Nyeste menneskelige beslutning tillader en ny aktiv strømhistorik med bevaret autentisk arkiv. Læs den nye front i CODEX_START_HERE, CURRENT_TRUTH, IMPLEMENTATION_STATUS og DEC-0249 samt det private checkpoint. Den lokale rettelse er ikke en gennemført genstart eller offentlig levering. Den almindelige efterfølger er et selvstændigt afslutningskrav; alle fem mål til 18. november er fortsat åbne.
+
 ## 21. oktober — faktisk 586-installation er ikke en ny almindelig vejrgeneration
 
 Læs den nye front i CODEX_START_HERE, ROOTs ene P0-linje i CURRENT_TRUTH, IMPLEMENTATION_STATUS og det private checkpoint før ældre afventninger. 586 er faktisk installeret og offentligt verificeret med samme gemte vejr; den almindelige efterfølger fejlede før leverandører på manglende native-endepunktsbevis. Krypteret fremdrift blev ikke genbrugt, og intet nyt beregningscheckpoint blev lavet. Cron er faktisk pauset. Næste afgrænsede CURRENT-only-audit må ikke genmærke gamle scopes, svække kontrollen eller ændre produktionsdata. Alle fem hovedmål er fortsat åbne til 18. november 2026.

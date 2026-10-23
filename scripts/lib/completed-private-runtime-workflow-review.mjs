@@ -6,6 +6,36 @@ import fs from 'node:fs';
 const review = JSON.parse(fs.readFileSync(new URL('./completed-private-runtime-workflow-review.json', import.meta.url), 'utf8'));
 const coldReview = JSON.parse(fs.readFileSync(new URL('./current-family-cold-start-workflow-review.json', import.meta.url), 'utf8'));
 const sha = value => crypto.createHash('sha256').update(value).digest('hex');
+// TEST INPUT ONLY: the exact five current-family cold budget conditions.
+// No epoch request, provider cap, clock authority or runtime rule is issued.
+export const currentFamilyColdBudgetWorkflowReview = Object.freeze({
+  before: Object.freeze({ bytes: 287147, sha256: '2d98a6d883c26d38e3665383f03a551167189ce587b7f21de261aecebdf5dbf5' }),
+  after: Object.freeze({ bytes: 287375, sha256: 'ed1da3a8fcef9965d10b47fb8fbc79ce384e7fd705d3d2b2be6375f8e47ca93f' }),
+  hunks: Object.freeze([
+    ["      - name: Record the actual epoch build start before checkout\n        if: inputs.weather_state_epoch_bootstrap == true\n        shell: bash",
+      "      - name: Record the actual epoch build start before checkout\n        if: inputs.weather_state_epoch_bootstrap == true || inputs.current_family_cold_start == true\n        shell: bash"],
+    ...['dmi', 'copernicus', 'open-meteo', 'weather'].map(phase => [
+      `      - name: Preserve the fixed epoch post-processing reserve before ${phase}\n        if: inputs.completed_private_runtime != true && (inputs.weather_state_epoch_bootstrap == true && steps.preflight.outputs.should_run == 'true')\n        run: node scripts/weather-state-epoch-budget.mjs ${phase}`,
+      `      - name: Preserve the fixed epoch post-processing reserve before ${phase}\n        if: inputs.completed_private_runtime != true && ((inputs.weather_state_epoch_bootstrap == true || inputs.current_family_cold_start == true) && steps.preflight.outputs.should_run == 'true')\n        run: node scripts/weather-state-epoch-budget.mjs ${phase}`,
+    ]),
+  ].map(Object.freeze)),
+});
+export function inverseCurrentFamilyColdBudgetWorkflow(source, role) {
+  assert.equal(arguments.length, 2, 'COLD_BUDGET_WORKFLOW_ARGUMENTS');
+  assert.equal(typeof source, 'string', 'COLD_BUDGET_WORKFLOW_TYPE');
+  assert.equal(role, 'build', 'COLD_BUDGET_WORKFLOW_ROLE');
+  const row = currentFamilyColdBudgetWorkflowReview;
+  if (Buffer.byteLength(source) === row.before.bytes && sha(source) === row.before.sha256) return source;
+  assert.equal(Buffer.byteLength(source), row.after.bytes, 'COLD_BUDGET_WORKFLOW_AFTER_SIZE');
+  assert.equal(sha(source), row.after.sha256, 'COLD_BUDGET_WORKFLOW_AFTER_SHA');
+  for (const [before, after] of [...row.hunks].reverse()) {
+    assert.equal(source.split(after).length, 2, 'COLD_BUDGET_WORKFLOW_EXACT_HUNK');
+    source = source.replace(after, () => before);
+  }
+  assert.equal(Buffer.byteLength(source), row.before.bytes, 'COLD_BUDGET_WORKFLOW_BEFORE_SIZE');
+  assert.equal(sha(source), row.before.sha256, 'COLD_BUDGET_WORKFLOW_BEFORE_SHA');
+  return source;
+}
 // Test-only exact optional-stage wiring inverse. Both entire reviewed afterimages
 // restore the previous workflows; no caller, selector or command is ignored.
 export const ordinaryStageWiringReview = JSON.parse(fs.readFileSync(
@@ -261,6 +291,9 @@ export const nativeOriginalSchemaSelectorWorkflowReview = Object.freeze({
   ]
 });
 export function inverseNativeOriginalSchemaSelectorWorkflow(source, role) {
+  if (role === 'build' && sha(source) === currentFamilyColdBudgetWorkflowReview.after.sha256) {
+    source = inverseCurrentFamilyColdBudgetWorkflow(source, role);
+  }
   if(role!=='build'||sha(source)!==nativeOriginalSchemaSelectorWorkflowReview.after.sha256)return source;
   const row=nativeOriginalSchemaSelectorWorkflowReview;
   assert.equal(Buffer.byteLength(source),row.after.bytes,'NATIVE_SCHEMA_SELECTOR_WHOLE_AFTER_SIZE');

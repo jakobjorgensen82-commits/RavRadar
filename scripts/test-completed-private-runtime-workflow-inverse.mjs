@@ -5,7 +5,8 @@ import fs from 'node:fs/promises';
 import test from 'node:test';
 import { inverseRelease585WorkflowUserAgents, ordinaryStageWiringReview, inverseOrdinaryCompletedStageWorkflowWiring, assertEarlyCompletedRuntimeStageOrder, inverseEarlyCompletedRuntimeStage, inverseCompletedRuntimeWorkflow, inverseOrdinaryFullHistoryCheckout, inversePairedPrivateRuntimePublication, inverseOriginWeatherReadCredentials, assertCurrentHistoryRawRetentionOrder, inverseCurrentHistoryRawRetentionOrder, inverseCurrentFamilyColdStartWorkflow, inverseRelease584WorkflowUserAgents } from './lib/completed-private-runtime-workflow-review.mjs';
 import { runInNewContext } from 'node:vm';
-import { inverseNativeOriginalSchemaSelectorWorkflow, nativeOriginalSchemaSelectorWorkflowReview }
+import { inverseNativeOriginalSchemaSelectorWorkflow, nativeOriginalSchemaSelectorWorkflowReview,
+  inverseCurrentFamilyColdBudgetWorkflow, currentFamilyColdBudgetWorkflowReview }
   from './lib/completed-private-runtime-workflow-review.mjs';
 import { spawnSync } from 'node:child_process';
 const sha = source => crypto.createHash('sha256').update(source).digest('hex');
@@ -651,8 +652,11 @@ test('current585 release inverse keeps every genuine584 workflow byte and refuse
 
 
 test('native original schema selector: actual installed schema1 alone selects ordinary preparation; all old routes stay old',async()=>{
-  // RAW actual YAML, deliberately NOT the historical projection above.
-  const source=(await fs.readFile(new URL('../.github/workflows/reusable-weather-build.yml',import.meta.url),'utf8')).replaceAll('\r\n','\n');
+  // The raw cold-budget layer is tested separately below. This older selector
+  // oracle first removes only that reviewed layer, not its own native delta.
+  // First remove only the complete exact newer budget layer; the whole native
+  // selector source, every old pin and all its mutation negatives stay intact.
+  const source=inverseCurrentFamilyColdBudgetWorkflow((await fs.readFile(new URL('../.github/workflows/reusable-weather-build.yml',import.meta.url),'utf8')).replaceAll('\r\n','\n'),'build');
   const donor=coldStep(source,'Classify one-time DMI PART continuity donor');
   const plan=coldStep(source,'Plan bounded current history from the actual selected continuation');
   const review=nativeOriginalSchemaSelectorWorkflowReview;
@@ -736,4 +740,28 @@ test('native original schema selector: actual installed schema1 alone selects or
   // marker, source-priority candidate, score change or SQL operation is added.
   assert.equal(source.split('--prepare-cached-native-originals').length,2);
   assert.equal(source.split('--retain-committed-raw').length,2);
+});
+
+test('cold budget inverse: exact five conditions preserve all native and earlier workflow oracles',async()=>{
+  const source=(await fs.readFile(new URL('../.github/workflows/reusable-weather-build.yml',import.meta.url),'utf8')).replaceAll('\r\n','\n');
+  const row=currentFamilyColdBudgetWorkflowReview;
+  assert.equal(Buffer.byteLength(source),row.after.bytes);assert.equal(sha(source),row.after.sha256);
+  assert.equal(row.hunks.length,5);
+  const before=inverseCurrentFamilyColdBudgetWorkflow(source,'build');
+  assert.equal(sha(before),nativeOriginalSchemaSelectorWorkflowReview.after.sha256);
+  assert.equal(inverseCurrentFamilyColdBudgetWorkflow(before,'build'),before);
+  assert.equal(inverseNativeOriginalSchemaSelectorWorkflow(source,'build'),inverseNativeOriginalSchemaSelectorWorkflow(before,'build'));
+  assert.equal(inverseCompletedRuntimeWorkflow(source,'build'),inverseCompletedRuntimeWorkflow(before,'build'));
+  assert.equal(sha(inverseCompletedRuntimeWorkflow(source,'build')),legacySha);
+  for(const[old,current]of row.hunks){
+    assert.equal(source.split(current).length,2);
+    for(const changed of [source.replace(current,old),source.replace(current,current+current),
+      source.replace(current,current+'\n# UNREVIEWED_COLD_BUDGET\n')]){
+      assert.notEqual(changed,source);
+      assert.throws(()=>inverseCurrentFamilyColdBudgetWorkflow(changed,'build'),/COLD_BUDGET_WORKFLOW/);
+      assert.throws(()=>inverseCompletedRuntimeWorkflow(changed,'build'));
+    }
+  }
+  assert.throws(()=>inverseCurrentFamilyColdBudgetWorkflow(source+'\n','build'),/COLD_BUDGET_WORKFLOW/);
+  assert.throws(()=>inverseCurrentFamilyColdBudgetWorkflow(source,'once'),/COLD_BUDGET_WORKFLOW_ROLE/);
 });
