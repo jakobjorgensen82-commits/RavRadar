@@ -8,7 +8,7 @@ import crypto from 'node:crypto';
 import { fileURLToPath } from 'node:url';
 import { isDeepStrictEqual as equal } from 'node:util';
 import { createProtectedPrivateRuntimeClients, describeCurrentProtectedPrivateProductionRuntime,
-  validateProtectedPrivateRuntimePointer } from './protected-private-production-runtime.mjs';
+  validateProtectedPrivateRuntimePointer, PROTECTED_PRIVATE_RUNTIME_POLICY } from './protected-private-production-runtime.mjs';
 import { createProtectedRavScoreCheckpointRequester, restoreProtectedRavScoreContinuationCheckpoint }
   from './protected-ravscore-continuation-checkpoint.mjs';
 import { verifyPrivateProductionRuntimeBundle } from './private-production-runtime-bundle.mjs';
@@ -25,6 +25,7 @@ import { inspectPrivatePublicHourDeliveryPack } from './lib/public-hour-delivery
 import { withoutCurrent } from './lib/private-dmi-recovery-record.mjs';
 import { decodeDmiBulkWrapper, readDmiBulkDocument, writeDmiBulkDocument } from './lib/dmi-bulk-storage.mjs';
 import { ownFileDescriptorIdentity, ownedFileDescriptorClosed } from './lib/private-weather-component-pack.mjs';
+import { PRIVATE_WEATHER_COMPONENT_PACK_FILE } from './lib/private-weather-component-inventory.mjs';
 import { inspectDmiForecastFile, readDmiForecastRecord, writeDmiForecastRecords,
   DMI_FORECAST_FILE_MAX_BYTES } from './lib/dmi-forecast-file.mjs';
 import { packDmiPartContinuity, unpackDmiPartContinuity, assertDmiPartContinuityTotalSize }
@@ -636,7 +637,64 @@ function mint(state, archive, context) {
   const capability = Object.freeze({}); CAPABILITIES.set(capability, { state, archive, archived, context });
   return capability;
 }
+export const CURRENT_FAMILY_COLD_START_REENTRY_SCOPE = Object.freeze({
+  progressSource: '39886354260-1',
+  archiveId: '775f99a210b899eacd3ee056f4daae56c20fc3258e64691d4e0544aabd04d3fb',
+  targetReferenceAt: '2026-10-23T01:00:00.000Z',
+});
+// This is a transport boundary, not normal uploadImmutable's HEAD/PUT path.
+// Source B can only be captured by its already authenticated exact object keys;
+// archived objects can only be read under this exact immutable archive ID.
+function readOnlyExistingColdArchiveStorage(objects, archiveId) {
+  need(SHA.test(archiveId ?? '') && Array.isArray(objects) && objects.length >= 1 && objects.length <= 8, 'ARCHIVED_SOURCE');
+  const sourceKeys = new Set(objects.map(row => row.objectPath));
+  need(sourceKeys.size === objects.length, 'ARCHIVED_SOURCE');
+  const root = 'bundles/sha256/' + archiveId, catalog = root + '.json.gz';
+  const archived = key => typeof key === 'string' && (key === catalog
+    || new RegExp('^' + root + '/part-[0-9]{3}-[a-f0-9]{64}\\.json\\.gz\\.part$').test(key));
+  const account = process.env.RAVRADAR_R2_ACCOUNT_ID;
+  need(/^[a-f0-9]{32}$/.test(account ?? ''), 'ARCHIVED_SOURCE');
+  const origin = 'https://' + account + '.eu.r2.cloudflarestorage.com';
+  // Fixed actual bucket. No Supabase Storage fallback, listing or mutating verb.
+  const bucket = '/' + PROTECTED_PRIVATE_RUNTIME_POLICY.bucketId;
+  const transport = createProtectedPrivateRuntimeClients({ storageBackend: 'r2',
+    fetchImpl: async (target, options = {}) => {
+      let url; try { url = new URL(target); } catch { fail('ARCHIVED_SOURCE'); }
+      const method = String(options.method ?? 'GET').toUpperCase();
+      const key = url.pathname.startsWith(bucket + '/') ? url.pathname.slice(bucket.length + 1) : null;
+      need(!url.username && !url.password && !url.search && !url.hash && url.origin === origin
+        && options.body == null && (method === 'HEAD' && url.pathname === bucket
+          || method === 'GET' && (sourceKeys.has(key) || archived(key))), 'ARCHIVED_SOURCE');
+      return fetch(url.href, { ...options, redirect: 'error' });
+    } }).storage;
+  return Object.freeze({
+    async ensurePrivateBucket() { return transport.ensurePrivateBucket({ allowCreate: false }); },
+    async download(key) {
+      need(sourceKeys.has(key) || archived(key), 'ARCHIVED_SOURCE');
+      return transport.download(key);
+    },
+    async uploadImmutable(key, bytes) {
+      need(archived(key) && Buffer.isBuffer(bytes), 'ARCHIVED_SOURCE');
+      const existing = await transport.download(key);
+      need(Buffer.isBuffer(existing) && existing.equals(bytes), 'ARCHIVED_SOURCE');
+      // No upload call, PUT fallback, replacement, creation or retention action.
+    },
+    async anonymousStatus(key) {
+      need(archived(key), 'ARCHIVED_SOURCE'); return transport.anonymousStatus(key);
+    },
+  });
+}
 export async function prepareCurrentFamilyColdStart({ workRoot, publicRoot, targetReferenceAt } = {}) {
+  return prepareCurrentFamilyColdStartOwned({ workRoot, publicRoot, targetReferenceAt });
+}
+export async function reopenCurrentFamilyColdStart({ workRoot, publicRoot, targetReferenceAt, archiveId } = {}) {
+  need(archiveId === CURRENT_FAMILY_COLD_START_REENTRY_SCOPE.archiveId
+    && targetReferenceAt === CURRENT_FAMILY_COLD_START_REENTRY_SCOPE.targetReferenceAt, 'ARCHIVED_SOURCE');
+  return prepareCurrentFamilyColdStartOwned({ workRoot, publicRoot, targetReferenceAt,
+    expectedExistingArchiveId: archiveId });
+}
+async function prepareCurrentFamilyColdStartOwned({ workRoot, publicRoot, targetReferenceAt,
+  expectedExistingArchiveId = null } = {}) {
   targetReferenceAt = hour(targetReferenceAt);
   need(path.isAbsolute(workRoot ?? '') && path.isAbsolute(publicRoot ?? ''), 'WORK_PATHS');
   workRoot = path.resolve(workRoot); publicRoot = path.resolve(publicRoot);
@@ -647,7 +705,9 @@ export async function prepareCurrentFamilyColdStart({ workRoot, publicRoot, targ
   const state = await authenticate({ workRoot, publicRoot });
   need(Date.parse(targetReferenceAt) > Date.parse(state.descriptor.productionReferenceAt), 'TARGET_NOT_NEWER');
   const archiveRoot = path.join(workRoot, 'archive'), objects = objectsOf(state.descriptor);
-  const capture = await createWeatherStateEpochCaptureStorage({ storage: state.clients.storage, captureRoot: archiveRoot, objects });
+  const storage = expectedExistingArchiveId === null ? state.clients.storage
+    : readOnlyExistingColdArchiveStorage(objects, expectedExistingArchiveId);
+  const capture = await createWeatherStateEpochCaptureStorage({ storage, captureRoot: archiveRoot, objects });
   for (const object of objects) await capture.storage.download(object.objectPath);
   const verifyOriginalSnapshot = async ({ captureFiles, archivedFiles }) => {
     same(captureFiles.map(({ index, objectPath, objectBytes, objectSha256 }) => ({ index, objectPath, objectBytes, objectSha256 })),
@@ -656,7 +716,10 @@ export async function prepareCurrentFamilyColdStart({ workRoot, publicRoot, targ
       expectedTuple: state.tuple, expectedRegistry: state.registry });
     return { ...fresh.snapshot, files: archivedFiles ?? state.snapshot.files };
   };
-  const archive = await saveWeatherStateEpochArchive({ capture: capture.capture, storage: state.clients.storage,
+  // The common archive kernel stays model-byte-identical. In reopen mode the
+  // fixed readonly facade rejects another computed archive prefix before its
+  // first object GET; only the bucket's read-only HEAD can precede that refusal.
+  const archive = await saveWeatherStateEpochArchive({ capture: capture.capture, storage,
     targetReferenceAt, verifyOriginalSnapshot });
   const archived = assertVerifiedWeatherStateEpochArchive(archive), acquired = await acquisitions(state, workRoot);
   const context = { schemaVersion: 1, kind: 'CURRENT_FAMILY_CALLER_ONLY_COLD_START_LOCATOR',
@@ -721,6 +784,16 @@ function scoped(capability, { registry, targetReferenceAt } = {}) {
   const value = CAPABILITIES.get(capability); need(value, 'CAPABILITY');
   same(registry, value.state.registry, 'REGISTRY_CHANGED');
   need(targetReferenceAt === value.context.targetReferenceAt, 'TARGET_CHANGED'); return value;
+}
+export function currentFamilyColdStartProgressUnionScope(capability, scope) {
+  const value = scoped(capability, scope), files = value.state.verified.files;
+  const conditionsFile = files.find(row => row.relativePath === 'data/live/conditions.json');
+  const componentPackFile = files.find(row => row.relativePath === PRIVATE_WEATHER_COMPONENT_PACK_FILE.relativePath);
+  need(conditionsFile && componentPackFile, 'FILE_IDENTITY');
+  return Object.freeze({ repositoryRoot: ROOT,
+    protectedBundleContentSha256: value.state.descriptor.bundleContentSha256,
+    conditionsFile: Object.freeze({ ...conditionsFile }), componentPackFile: Object.freeze({ ...componentPackFile }),
+    targetReferenceAt: value.context.targetReferenceAt, registrySha256: value.context.registrySha256 });
 }
 export function currentFamilyColdStartScoreInputs(capability, scope) {
   const value = scoped(capability, scope);

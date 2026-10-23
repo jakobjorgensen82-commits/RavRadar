@@ -241,7 +241,7 @@ jobs:
       NATIVE_IDENTITY_RECOVERY: ${{ inputs.native_sampling_identity_original_recovery }}
       EXTENDED_PROVIDER_BOOTSTRAP: ${{ inputs.extended_provider_bootstrap }}
       PRODUCE_HANDOFF: ${{ inputs.produce_weather_handoff }}
-      CHECKPOINT_TARGET_HOUR: ${{ inputs.checkpoint_only && inputs.production_target_hour || '' }}
+      CHECKPOINT_TARGET_HOUR: ${{ (inputs.checkpoint_only || (inputs.current_family_cold_start && inputs.quick_progress_source != '')) && inputs.production_target_hour || '' }}
       RAVRADAR_WEATHER_STATE_EPOCH_ARCHIVE_ID: ${{ inputs.weather_state_epoch_archive_key }}
       RAVRADAR_WEATHER_STATE_EPOCH_ARCHIVE_CATALOG_SHA256: ${{ inputs.weather_state_epoch_archive_catalog_sha256 }}
       RAVRADAR_PRIVATE_RUNTIME_ROOT: /tmp/ravradar-private-production-runtime
@@ -345,7 +345,13 @@ jobs:
           test "${{ inputs.completed_private_runtime }}" = false
           test "${{ inputs.quick_confirmation }}" = false
           test "${{ inputs.checkpoint_only }}" = false
-          test -z "${{ inputs.quick_progress_source }}"
+          if test -n "$QUICK_PROGRESS_SOURCE"; then
+            test "$QUICK_PROGRESS_SOURCE" = 39886354260-1
+            test "$RAVRADAR_PRODUCTION_TARGET_HOUR" = 2026-10-23T01:00:00Z
+            test "$CHECKPOINT_TARGET_HOUR" = "$RAVRADAR_PRODUCTION_TARGET_HOUR"
+          else
+            test -z "$CHECKPOINT_TARGET_HOUR"
+          fi
           test "${{ inputs.produce_weather_handoff }}" = false
           test "${{ inputs.ravscore_integrated_first_cutover }}" = false
           test "${{ inputs.ravscore_integrated_return }}" = false
@@ -1593,7 +1599,7 @@ jobs:
         # conditions bytes and bundle hash. This also permits the exact 11Z
         # recovery to resume its own progress after a later no-loss stop;
         # a snapshot from the 15Z anchor is rejected by the binder below.
-        if: inputs.current_family_cold_start != true && inputs.completed_private_runtime != true && (inputs.native_sampling_identity_original_recovery != true && (inputs.weather_state_epoch_bootstrap != true || inputs.weather_state_epoch_checkpoint_reentry == true) && github.ref == 'refs/heads/main' && github.event_name != 'pull_request' && github.event_name != 'pull_request_target' && steps.private-runtime-install.outcome == 'success' && steps.weather-source-handoff.outputs.reused != 'true' && !(inputs.quick_confirmation && inputs.quick_progress_source == 'protected-current'))
+        if: (inputs.current_family_cold_start != true || inputs.quick_progress_source == '39886354260-1') && inputs.completed_private_runtime != true && (inputs.native_sampling_identity_original_recovery != true && (inputs.weather_state_epoch_bootstrap != true || inputs.weather_state_epoch_checkpoint_reentry == true) && github.ref == 'refs/heads/main' && github.event_name != 'pull_request' && github.event_name != 'pull_request_target' && steps.private-runtime-install.outcome == 'success' && steps.weather-source-handoff.outputs.reused != 'true' && !(inputs.quick_confirmation && inputs.quick_progress_source == 'protected-current'))
         uses: actions/cache/restore@v6
         with:
           path: .cache/weather-private-progress.encrypted
@@ -1691,7 +1697,7 @@ jobs:
           # the next scheduled run begins again from protected storage.
 
       - name: Require recovered progress before short confirmation
-        if: inputs.completed_private_runtime != true && (inputs.quick_confirmation == true || inputs.quick_progress_source != '')
+        if: inputs.current_family_cold_start != true && inputs.completed_private_runtime != true && (inputs.quick_confirmation == true || inputs.quick_progress_source != '')
         shell: bash
         env:
           QUICK_PROGRESS_SOURCE: ${{ inputs.quick_progress_source }}
@@ -2204,11 +2210,18 @@ jobs:
           RAVRADAR_R2_SECRET_ACCESS_KEY: ${{ inputs.current_family_cold_start && secrets.RAVRADAR_R2_SECRET_ACCESS_KEY || '' }}
           SUPABASE_URL: ${{ inputs.current_family_cold_start && secrets.SUPABASE_URL || '' }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ inputs.current_family_cold_start && secrets.SUPABASE_SERVICE_ROLE_KEY || '' }}
+          WEATHER_PROGRESS_MASTER_SECRET: ${{ inputs.current_family_cold_start && inputs.quick_progress_source != '' && secrets.SUPABASE_SERVICE_ROLE_KEY || '' }}
+          PROGRESS_CACHE_MATCHED_KEY: ${{ steps.component-progress-cache.outputs.cache-matched-key }}
+          PROGRESS_CACHE_OUTCOME: ${{ steps.component-progress-cache.outcome }}
         run: |
           set -euo pipefail
           mkdir -p .cache data/live "$RUNNER_TEMP/dmi-active-proof"
           if test "${{ inputs.current_family_cold_start }}" = true; then
-            node scripts/run-current-family-cold-start.mjs prepare
+            if test -n "$QUICK_PROGRESS_SOURCE"; then
+              node scripts/run-current-family-cold-start.mjs reopen
+            else
+              node scripts/run-current-family-cold-start.mjs prepare
+            fi
             echo "strict_active_ready=false" >> "$GITHUB_OUTPUT"
             echo "candidate_seeded=true" >> "$GITHUB_OUTPUT"
             exit 0
@@ -2537,6 +2550,11 @@ jobs:
           resolved_target="${{ steps.copernicus-targets.outputs.target_hour }}"
           if test "${{ steps.weather-source-handoff.outputs.reused }}" = "true"; then
             test "$resolved_target" = "${{ steps.weather-source-handoff.outputs.target_hour }}"
+          fi
+          if test "${{ inputs.current_family_cold_start }}" = true && test -n "$QUICK_PROGRESS_SOURCE"; then
+            test "$QUICK_PROGRESS_SOURCE" = 39886354260-1
+            test "$resolved_target" = "$RAVRADAR_PRODUCTION_TARGET_HOUR"
+            test "$resolved_target" = 2026-10-23T01:00:00Z
           fi
           echo "RAVRADAR_PRODUCTION_TARGET_HOUR=$resolved_target" >> "$GITHUB_ENV"
 

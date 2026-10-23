@@ -1,3 +1,13 @@
+## 23. oktober — første strømstart beregnet; tretten strømtimer standser no-loss
+
+Den præcist kvalificerede current-family-start har faktisk arkiveret og genlæst sit oprindelige grundlag, gennemført leverandørkæden og beregnet en kandidat. Den offentlige tabsbarriere standsede derefter tretten tidligere gyldige strømtimer for én uændret kystdel. Vind, bølger, vandstand og temperatur havde nul tab på de sammenlignede fælles timer. Ingen ny beskyttet slutpakke eller offentlig vejrlevering blev nået. Dette erstatter den ældre afventning af selve første beregningsforsøg, ikke kravet om faktisk offentlig genopretning og almindelig efterfølger.
+
+Faktisk DMI-evidens viser, at den førende strømkollektion standsede efter otte forsøg, selv om der var tid tilbage i det eksisterende budget. Den lokale rettelse giver kun den ægte, autentificerede opstart adgang til det allerede fastsatte katalogloft; almindelige kørsler beholder otteforsøgsreglen. Leverandørers tids-/bytegrænser, efterbehandlingsreserve og kildeprioritet ændres ikke. Dette er en påvist begrænsning, ikke bevis for hele årsagen til de tretten tab.
+
+Det gemte krypterede checkpoint er faktisk autentificeret; det indeholder leverandørfremdrift, ikke den færdige beregning. Samme arkiv og oprindelige mål-time skal derfor genåbnes uden en ny nulstilling. Normal genbrug må ikke genindføre gamle CP-/OM-strømdonorer fra den beskyttede komponentpakke: hele originalpakken kontrolleres, og kun de to gamle strøm-donorindgange holdes ude af den aktive union. Øvrige vejrkomponenter, nye fremdriftsdata, originaler og offentliggjorte scorer bevares. Et manglende eller afvigende checkpoint må ikke blive til en tavs ny start.
+
+Den afgrænsede sammenføring og dens normale integrationsprøver er under arbejde. Ny præcis kildekontrol, sikker levering, ny B/S, Pages, offentlig femfeltskontrol og almindelig efterfølger er stadig åbne. Ingen model-, SQL-, geometri- eller scoreformelændring eller lempelse af no-loss følger heraf. Det private checkpoint ejer konkrete kørsels- og arkividentiteter. Alle fem hovedmål er åbne.
+
 ## 23. oktober — præcis kildekontrol fandt fire testlæserkonflikter
 
 Den første PR707-kontrol bestod det native PostgreSQL-trin, men den samlede kildeplan stoppede på fire testfejl i tre kommandogrupper. To isolerede producentudtag manglede den normale ydre `coldInputs`-binding; en tredje prøve søgte efter det tidligere kaldernavn. Et helt kildeorakel manglede at føre den allerede gennemgåede zonehistoriktilføjelse tilbage før sine uændrede historiske pins. Fejlene er reproduceret gennem de eksisterende mål; produktkoden ændres ikke for at tilpasse prøverne.

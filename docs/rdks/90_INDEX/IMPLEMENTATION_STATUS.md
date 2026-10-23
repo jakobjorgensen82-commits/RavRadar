@@ -1,3 +1,12 @@
+## 23. oktober — strømstartens faktiske stop og samme-arkiv-genoptagelse
+
+- [x] Første current-family-start nåede autentisk arkiv/readback, leverandører og beregning. No-loss standsede tretten strømtimer for én uændret del; de fire øvrige komponenter havde nul tab på de fælles timer. Ingen ny B/S eller offentlig vejrlevering.
+- [x] Det præcise gemte fremdriftscheckpoint er autentificeret skrivefrit. Det er leverandørinput, ikke et gemt færdigt beregningsresultat.
+- [x] Faktisk otteforsøgsstop hos førende DMI-strøm med tid tilbage afgrænset. Lokal autentificeret opstartsregel bruger eksisterende katalogloft uden større tids-/bytebudgetter; almindelig regel og reserve bevares. Tre normale Python-tilfælde og wrapperens autentifikationsrækkefølge består.
+- [x] Genoptagelsens lokale wrapper afviser forkert kilde, forsøg og mål-time og kræver samme arkiv samt faktisk genlæst checkpoint før offentliggørelse af lokal kontekst. De afgrænsede mode-/rækkefølgeprøver består; dette er ikke et ægte arkiv-/GCM-integrationsbevis.
+- [ ] Færdiggør ægte genåbnings-/GCM-integrationsprøve med normal original-target-validator og union af øvrige komponenter uden de to gamle CP-/OM-strømdonorer. Bevar hele originalpakken og alle nye fremdriftsdata.
+- [ ] Præcis samlet kildekontrol, sikker levering, faktisk genoptagelse med uændret no-loss, ny B/S/Pages/offentlig kontrol og almindelig efterfølger. De tretten timers fulde kildevalgsårsag, faktisk dækningsgrad og selvstændig drift er fortsat åbne.
+
 ## 23. oktober — testlæsere efter første PR707-kontrol
 
 - [x] Faktisk native PostgreSQL-trin bestået; dette er ikke samlet kildekvalifikation.

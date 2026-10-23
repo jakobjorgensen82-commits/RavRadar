@@ -8,6 +8,8 @@ import { runInNewContext } from 'node:vm';
 import { inverseNativeOriginalSchemaSelectorWorkflow, nativeOriginalSchemaSelectorWorkflowReview,
   inverseCurrentFamilyColdBudgetWorkflow, currentFamilyColdBudgetWorkflowReview }
   from './lib/completed-private-runtime-workflow-review.mjs';
+import { inverseCurrentFamilyColdCheckpointWorkflow, currentFamilyColdCheckpointWorkflowReview }
+  from './lib/completed-private-runtime-workflow-review.mjs';
 import { spawnSync } from 'node:child_process';
 const sha = source => crypto.createHash('sha256').update(source).digest('hex');
 const read = async relative => {
@@ -656,7 +658,7 @@ test('native original schema selector: actual installed schema1 alone selects or
   // oracle first removes only that reviewed layer, not its own native delta.
   // First remove only the complete exact newer budget layer; the whole native
   // selector source, every old pin and all its mutation negatives stay intact.
-  const source=inverseCurrentFamilyColdBudgetWorkflow((await fs.readFile(new URL('../.github/workflows/reusable-weather-build.yml',import.meta.url),'utf8')).replaceAll('\r\n','\n'),'build');
+  const source=inverseCurrentFamilyColdBudgetWorkflow(inverseCurrentFamilyColdCheckpointWorkflow((await fs.readFile(new URL('../.github/workflows/reusable-weather-build.yml',import.meta.url),'utf8')).replaceAll('\r\n','\n'),'build'),'build');
   const donor=coldStep(source,'Classify one-time DMI PART continuity donor');
   const plan=coldStep(source,'Plan bounded current history from the actual selected continuation');
   const review=nativeOriginalSchemaSelectorWorkflowReview;
@@ -743,7 +745,7 @@ test('native original schema selector: actual installed schema1 alone selects or
 });
 
 test('cold budget inverse: exact five conditions preserve all native and earlier workflow oracles',async()=>{
-  const source=(await fs.readFile(new URL('../.github/workflows/reusable-weather-build.yml',import.meta.url),'utf8')).replaceAll('\r\n','\n');
+  const source=inverseCurrentFamilyColdCheckpointWorkflow((await fs.readFile(new URL('../.github/workflows/reusable-weather-build.yml',import.meta.url),'utf8')).replaceAll('\r\n','\n'),'build');
   const row=currentFamilyColdBudgetWorkflowReview;
   assert.equal(Buffer.byteLength(source),row.after.bytes);assert.equal(sha(source),row.after.sha256);
   assert.equal(row.hunks.length,5);
@@ -764,4 +766,198 @@ test('cold budget inverse: exact five conditions preserve all native and earlier
   }
   assert.throws(()=>inverseCurrentFamilyColdBudgetWorkflow(source+'\n','build'),/COLD_BUDGET_WORKFLOW/);
   assert.throws(()=>inverseCurrentFamilyColdBudgetWorkflow(source,'once'),/COLD_BUDGET_WORKFLOW_ROLE/);
+});
+
+
+// Current bytes are read WITHOUT a historical adapter. The old test bodies and
+// pins above remain unchanged; only their two direct reads remove this layer.
+const coldCheckpointActual = Object.fromEntries(await Promise.all(
+  Object.entries(currentFamilyColdCheckpointWorkflowReview.roles).map(async ([role, row]) =>
+    [role, (await fs.readFile(new URL('../' + row.relativePath, import.meta.url), 'utf8')).replaceAll('\r\n', '\n')])));
+
+test('same-archive cold checkpoint inverse admits only both exact new whole workflows and restores c59', () => {
+  const review = currentFamilyColdCheckpointWorkflowReview;
+  assert.equal(review.baseHead, 'c59e840b0fc5cc0eb3148ffbf62f4e1de54a55ab');
+  assert.deepEqual(review.scope, { progressSource: '39886354260-1', targetReferenceAt: '2026-10-23T01:00:00Z' });
+  assert.deepEqual(Object.keys(review.roles), ['build', 'once']);
+  for (const [role, row] of Object.entries(review.roles)) {
+    const source = coldCheckpointActual[role];
+    assert.equal(Buffer.byteLength(source), row.after.bytes); assert.equal(sha(source), row.after.sha256);
+    assert.equal(row.edits.length, role === 'build' ? 6 : 3);
+    const old = inverseCurrentFamilyColdCheckpointWorkflow(source, role);
+    assert.equal(Buffer.byteLength(old), row.before.bytes); assert.equal(sha(old), row.before.sha256);
+    assert.equal(inverseCurrentFamilyColdCheckpointWorkflow(old, role), old);
+    assert.equal(inverseCompletedRuntimeWorkflow(source, role), inverseCompletedRuntimeWorkflow(old, role));
+    let prior = source.length;
+    for (const [offset, actual, original] of row.edits) {
+      assert(Number.isSafeInteger(offset) && offset >= 0 && offset + actual.length <= prior);
+      prior = offset; assert(actual.length > 0); assert(original.length > 0);
+      assert.equal(source.slice(offset, offset + actual.length), actual);
+      for (const replacement of ['', actual + actual, '?' + actual.slice(1), original]) {
+        const changed = source.slice(0, offset) + replacement + source.slice(offset + actual.length);
+        assert.notEqual(changed, source);
+        assert.throws(() => inverseCurrentFamilyColdCheckpointWorkflow(changed, role), /COLD_CHECKPOINT_WORKFLOW/);
+        assert.throws(() => inverseCompletedRuntimeWorkflow(changed, role));
+      }
+    }
+    for (const changed of [source + '\n# UNREVIEWED\n', source.replace('39886354260-1', '39886354260-2'),
+      source.replace('2026-10-23T01:00:00Z', '2026-10-23T02:00:00Z')]) {
+      assert.notEqual(changed, source);
+      assert.throws(() => inverseCurrentFamilyColdCheckpointWorkflow(changed, role), /COLD_CHECKPOINT_WORKFLOW/);
+      assert.throws(() => inverseCompletedRuntimeWorkflow(changed, role));
+    }
+    const wrongRole = role === 'build' ? 'once' : 'build';
+    assert.throws(() => inverseCurrentFamilyColdCheckpointWorkflow(source, wrongRole), /COLD_CHECKPOINT_WORKFLOW/);
+    assert.throws(() => inverseCompletedRuntimeWorkflow(source, wrongRole));
+  }
+  assert.throws(() => inverseCurrentFamilyColdCheckpointWorkflow(null, 'build'), /COLD_CHECKPOINT_WORKFLOW_TYPE/);
+  assert.throws(() => inverseCurrentFamilyColdCheckpointWorkflow(coldCheckpointActual.build, 'toString'), /COLD_CHECKPOINT_WORKFLOW_ROLE/);
+  assert.throws(() => inverseCurrentFamilyColdCheckpointWorkflow(coldCheckpointActual.build), /COLD_CHECKPOINT_WORKFLOW_ARGUMENTS/);
+  assert.throws(() => inverseCurrentFamilyColdCheckpointWorkflow(coldCheckpointActual.build, 'build', true), /COLD_CHECKPOINT_WORKFLOW_ARGUMENTS/);
+});
+
+test('same-archive actual selectors retain ordinary defaults and exclude checkpoint_only from cold', () => {
+  const actual = coldCheckpointActual;
+  const old = Object.fromEntries(Object.entries(actual).map(([role, source]) =>
+    [role, inverseCurrentFamilyColdCheckpointWorkflow(source, role)]));
+  const field = (source, key) => {
+    const rows = [...source.matchAll(new RegExp('^      ' + key + ': (.+)$', 'gm'))];
+    assert.equal(rows.length, 1); return rows[0][1];
+  };
+  for (const [role, source] of Object.entries(actual)) {
+    const inventory = text => [...text.matchAll(/^      ([a-z_]+):\n/gm)].map(row => row[1]);
+    assert.deepEqual(inventory(source), inventory(old[role]), 'No new public input');
+    const input = coldBlock(source, '      current_family_cold_start:');
+    assert.match(input, /^        required: false$/m);
+    assert.match(input, /^        type: boolean$/m);
+    assert.match(input, /^        default: false$/m);
+    if (role === 'build') assert.equal(coldBlock(source, '    secrets:'), coldBlock(old[role], '    secrets:'));
+  }
+  const caller = coldBlock(actual.once, '  build-and-prepare:');
+  for (const cold of [undefined, false, true]) for (const target of ['', '2026-10-23T01:00:00Z'])
+    for (const completed of ['', '123-1-' + 'a'.repeat(40)]) {
+      const inputs = { ...coldInputs, checkpoint_target_hour: target, completed_stage_source: completed };
+      if (cold !== undefined) inputs.current_family_cold_start = cold;
+      else delete inputs.current_family_cold_start;
+      assert.equal(coldEvaluate(field(caller, 'checkpoint_only'), { inputs }), cold !== true && target !== '' && completed === '');
+      assert.equal(coldEvaluate(field(caller, 'current_family_cold_start'), { inputs }), cold === true);
+      assert.equal(coldEvaluate(field(caller, 'extended_provider_bootstrap'), { inputs }), cold === true);
+    }
+  for (const cold of [false, true]) for (const checkpoint of [false, true]) for (const progress of ['', '39886354260-1']) {
+    const inputs = { ...coldInputs, current_family_cold_start: cold, checkpoint_only: checkpoint,
+      quick_progress_source: progress, production_target_hour: '2026-10-23T01:00:00Z' };
+    assert.equal(coldEvaluate(field(actual.build, 'CHECKPOINT_TARGET_HOUR'), { inputs }),
+      checkpoint || (cold && progress !== '') ? inputs.production_target_hour : '');
+  }
+  assert.equal(coldStep(actual.once, 'Lock the requested original checkpoint hour without provider work'),
+    coldStep(old.once, 'Lock the requested original checkpoint hour without provider work'));
+  assert(coldStep(actual.once, 'Lock the requested original checkpoint hour without provider work')
+    .includes('--target "$CHECKPOINT_TARGET_HOUR" --maximum-age-minutes 90'));
+  assert(actual.once.includes('group: ravradar-weather-production-v2\n  queue: max\n  cancel-in-progress: false'));
+});
+
+test('same-archive actual cache selectors admit only the fixed cold source with no prefix and defer only cold quick proof', () => {
+  const source = coldCheckpointActual.build;
+  const restore = coldStep(source, 'Restore encrypted private weather progress only');
+  const requireProgress = coldStep(source, 'Require recovered progress before short confirmation');
+  const prefix = /^          restore-keys: (.+)$/m.exec(restore)?.[1]; assert(prefix);
+  const key = /^          key: (.+)$/m.exec(restore)?.[1]; assert(key);
+  const format = (value, ...args) => value.replace(/\{(\d+)\}/g, (_, n) => String(args[Number(n)]));
+  for (const cold of [false, true]) for (const progress of ['', '39886354260-1', '39886354260-2', 'protected-current']) {
+    const context = coldOrdinaryContext(cold);
+    context.inputs = { ...context.inputs, quick_progress_source: progress };
+    context.runner = { os: 'Linux' }; context.format = format;
+    assert.equal(coldEvaluate(coldSelector(restore), context), !cold || progress === '39886354260-1');
+    assert.equal(coldEvaluate(coldSelector(requireProgress), context), !cold && progress !== '');
+    assert.equal(coldEvaluate(prefix, context), progress === '' ? 'weather-private-progress-encrypted-v2-Linux-main-' : '');
+  }
+  const context = coldOrdinaryContext(true);
+  context.inputs = { ...context.inputs, quick_progress_source: '39886354260-1' };
+  context.runner = { os: 'Linux' }; context.github.run_id = '999'; context.github.run_attempt = '1'; context.format = format;
+  const actualKey = key.replace(/\$\{\{ (.+?) \}\}/g, (_, expression) => String(coldEvaluate(expression, context)));
+  assert.equal(actualKey, 'weather-private-progress-encrypted-v2-Linux-main-39886354260-1');
+  for (const [field, value] of [['completed_private_runtime', true], ['native_sampling_identity_original_recovery', true],
+    ['weather_state_epoch_bootstrap', true]]) {
+    const changed = structuredClone({ inputs: context.inputs, github: context.github, steps: context.steps });
+    changed.inputs[field] = value; assert.equal(coldEvaluate(coldSelector(restore), changed), false, field);
+  }
+  for (const event of ['pull_request', 'pull_request_target']) {
+    const changed = { ...context, github: { ...context.github, event_name: event } };
+    assert.equal(coldEvaluate(coldSelector(restore), changed), false);
+  }
+  for (const [step, field, value] of [['private-runtime-install', 'outcome', 'failure'],
+    ['weather-source-handoff', 'outputs', { reused: 'true' }]]) {
+    const changed = structuredClone({ inputs: context.inputs, github: context.github, steps: context.steps });
+    changed.steps[step][field] = value; assert.equal(coldEvaluate(coldSelector(restore), changed), false);
+  }
+  const old = inverseCurrentFamilyColdCheckpointWorkflow(source, 'build');
+  assert.equal(coldStep(source, 'Bind optional progress to the exact protected baseline'),
+    coldStep(old, 'Bind optional progress to the exact protected baseline'), 'Captured OLD B baseline is byte-for-byte unchanged');
+});
+
+test('same-archive actual scope and prepare/resolve seams bind source and target before provider use or rebinding', () => {
+  const actual = coldCheckpointActual;
+  const manual = coldStep(actual.once, 'Reject mixed caller-only cold-start modes before target selection');
+  const fixedManual = [
+    '          if test -z "$PROGRESS"; then',
+    '            test -z "$TARGET"',
+    '          else',
+    '            test "$PROGRESS" = 39886354260-1',
+    '            test "$TARGET" = 2026-10-23T01:00:00Z',
+    '          fi',
+  ].join('\n');
+  assert.equal(manual.split(fixedManual).length, 2);
+  assert(actual.once.indexOf(manual) < actual.once.indexOf('      - name: Lock the requested original checkpoint hour without provider work\n'));
+  const reusable = coldStep(actual.build, 'Require the explicit fresh caller-only cold-start scope');
+  const fixedReusable = [
+    '          if test -n "$QUICK_PROGRESS_SOURCE"; then',
+    '            test "$QUICK_PROGRESS_SOURCE" = 39886354260-1',
+    '            test "$RAVRADAR_PRODUCTION_TARGET_HOUR" = 2026-10-23T01:00:00Z',
+    '            test "$CHECKPOINT_TARGET_HOUR" = "$RAVRADAR_PRODUCTION_TARGET_HOUR"',
+    '          else',
+    '            test -z "$CHECKPOINT_TARGET_HOUR"',
+    '          fi',
+  ].join('\n');
+  assert.equal(reusable.split(fixedReusable).length, 2);
+  assert(reusable.includes('test "${{ inputs.checkpoint_only }}" = false'));
+  assert(actual.build.indexOf(reusable) < actual.build.indexOf('      - name: Restore encrypted private weather progress only\n'));
+  const prepare = coldStep(actual.build, 'Prepare strict active DMI donor or resumable candidate');
+  const branch = [
+    '          if test "${{ inputs.current_family_cold_start }}" = true; then',
+    '            if test -n "$QUICK_PROGRESS_SOURCE"; then',
+    '              node scripts/run-current-family-cold-start.mjs reopen',
+    '            else',
+    '              node scripts/run-current-family-cold-start.mjs prepare',
+    '            fi',
+    '            echo "strict_active_ready=false" >> "$GITHUB_OUTPUT"',
+    '            echo "candidate_seeded=true" >> "$GITHUB_OUTPUT"',
+    '            exit 0',
+    '          fi',
+  ].join('\n');
+  assert.equal(prepare.split(branch).length, 2);
+  assert(prepare.includes('PROGRESS_CACHE_MATCHED_KEY: ${{ steps.component-progress-cache.outputs.cache-matched-key }}'));
+  assert(prepare.includes('PROGRESS_CACHE_OUTCOME: ${{ steps.component-progress-cache.outcome }}'));
+  const secret = /^          WEATHER_PROGRESS_MASTER_SECRET: (.+)$/m.exec(prepare)?.[1]; assert(secret);
+  for (const cold of [false, true]) for (const progress of ['', '39886354260-1'])
+    assert.equal(coldEvaluate(secret, { inputs: { ...coldInputs, current_family_cold_start: cold, quick_progress_source: progress },
+      secrets: { SUPABASE_SERVICE_ROLE_KEY: 'SYNTHETIC_SECRET' } }), cold && progress !== '' ? 'SYNTHETIC_SECRET' : '');
+  const bind = coldStep(actual.build, 'Bind production to resolved DMI current hour');
+  const fixedResolve = [
+    '          if test "${{ inputs.current_family_cold_start }}" = true && test -n "$QUICK_PROGRESS_SOURCE"; then',
+    '            test "$QUICK_PROGRESS_SOURCE" = 39886354260-1',
+    '            test "$resolved_target" = "$RAVRADAR_PRODUCTION_TARGET_HOUR"',
+    '            test "$resolved_target" = 2026-10-23T01:00:00Z',
+    '          fi',
+  ].join('\n');
+  assert.equal(bind.split(fixedResolve).length, 2);
+  assert(bind.indexOf(fixedResolve) < bind.indexOf('echo "RAVRADAR_PRODUCTION_TARGET_HOUR=$resolved_target" >> "$GITHUB_ENV"'));
+  const old = inverseCurrentFamilyColdCheckpointWorkflow(actual.build, 'build');
+  for (const name of ['Require actual cold-start producer cessation before other consumers',
+    'Encrypt newly saved private weather progress before later production steps',
+    'Preserve the fixed epoch post-processing reserve before dmi',
+    'Preserve the fixed epoch post-processing reserve before copernicus',
+    'Preserve the fixed epoch post-processing reserve before open-meteo',
+    'Preserve the fixed epoch post-processing reserve before weather']) {
+    assert.equal(coldStep(actual.build, name), coldStep(old, name), name);
+  }
 });

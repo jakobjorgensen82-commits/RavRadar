@@ -4,6 +4,7 @@ import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import test from 'node:test';
+import { createR2PrivateRuntimeStorage } from './lib/r2-private-runtime-storage.mjs';
 import { createWeatherStateEpochCaptureStorage, saveWeatherStateEpochArchive,
   rehydrateLocalWeatherStateEpochArchive, assertVerifiedWeatherStateEpochArchive,
   materializeWeatherStateEpochArchive, WEATHER_STATE_EPOCH_PUBLIC_FILES } from './lib/weather-state-epoch-archive.mjs';
@@ -185,4 +186,72 @@ test('first genuine-validator refusal survives cleanup and never authorizes SAVE
     assert.deepEqual(await fs.readFile(f.originals.files[0].sourcePath), source);
     await assert.rejects(f.capture.storage.download(f.object.objectPath), /CAPTURE_CLOSED/);
   } finally { await fs.rm(f.root, { recursive: true, force: true }); }
+});
+
+test('existing archive reopen uses actual readonly factory and dense normal save/readback without PUT or creation',async()=>{
+  const body=await fs.readFile(new URL('./current-family-cold-start.mjs',import.meta.url),'utf8');
+  const start=body.indexOf('function readOnlyExistingColdArchiveStorage(');
+  const end=body.indexOf('\nexport async function prepareCurrentFamilyColdStart(',start);
+  assert(start>=0&&end>start);
+  const factorySource=body.slice(start,end);
+  for(const mode of ['same','missing','changed','wrong-identity']){
+    const f=await fixture();try{
+      await f.capture.storage.download(f.object.objectPath);
+      const initial=await saveWeatherStateEpochArchive({capture:f.capture.capture,storage:f.storage,
+        targetReferenceAt:target,verifyOriginalSnapshot:f.verifyOriginalSnapshot});
+      const saved=assertVerifiedWeatherStateEpochArchive(initial),prefix='bundles/sha256/'+saved.archiveId;
+      const firstArchiveKey=[...f.stored.keys()].find(key=>key.startsWith(prefix+'/'));
+      if(mode==='missing')f.stored.delete(firstArchiveKey);
+      if(mode==='changed')f.stored.set(firstArchiveKey,Buffer.from('changed-existing-object'));
+      const before=new Map([...f.stored].map(([key,value])=>[key,Buffer.from(value)])),oldWrites=f.writes.length;
+      const calls=[],account='a'.repeat(32),bucket='ravradar-private-production-runtime';
+      const network=async(target,options={})=>{
+        const url=new URL(target),method=options.method??'GET';calls.push({method,path:url.pathname});
+        assert(['GET','HEAD'].includes(method));assert.equal(url.search,'');assert.equal(options.body,undefined);
+        if(method==='HEAD'){assert.equal(url.pathname,'/'+bucket);return new Response(null,{status:200});}
+        if(!new Headers(options.headers).has('authorization'))return new Response(null,{status:403});
+        const key=url.pathname.slice(('/'+bucket+'/').length);
+        assert(key===f.object.objectPath||key===prefix+'.json.gz'||key.startsWith(prefix+'/'));
+        return f.stored.has(key)?new Response(f.stored.get(key),{status:200}):new Response(null,{status:404});
+      };
+      // The actual factory installs its own GET/HEAD boundary around the real
+      // normal R2 signer/body reader. The only replaced layer is HTTP transport.
+      const create=({storageBackend,fetchImpl})=>{
+        assert.equal(storageBackend,'r2');
+        return {storage:createR2PrivateRuntimeStorage({accountId:account,accessKeyId:'synthetic',
+          secretAccessKey:'synthetic',bucketId:bucket,maximumObjectBytes:50_000_000,fetchImpl,
+          delayImpl:async()=>{}})};
+      };
+      const factory=new Function('need','SHA','process','createProtectedPrivateRuntimeClients','fetch',
+        'PROTECTED_PRIVATE_RUNTIME_POLICY',factorySource+'\nreturn readOnlyExistingColdArchiveStorage;')(
+        (ok,code)=>{if(!ok)throw new Error('CURRENT_FAMILY_COLD_START_'+code);},/^[a-f0-9]{64}$/,
+        {env:{RAVRADAR_R2_ACCOUNT_ID:account}},create,network,{bucketId:bucket});
+      const requestedArchiveId=mode==='wrong-identity'?'0'.repeat(64):saved.archiveId;
+      const readonly=factory([f.object],requestedArchiveId);
+      assert.deepEqual(Object.keys(readonly).sort(),['anonymousStatus','download','ensurePrivateBucket','uploadImmutable']);
+      const transportCount=calls.length;
+      await assert.rejects(readonly.download('bundles/sha256/'+'1'.repeat(64)+'.json.gz'),/ARCHIVED_SOURCE/);
+      await assert.rejects(readonly.uploadImmutable(f.object.objectPath,f.raw),/ARCHIVED_SOURCE/);
+      assert.equal(calls.length,transportCount);
+      const storage=readonly;
+      const capture=await createWeatherStateEpochCaptureStorage({storage,captureRoot:path.join(f.root,'reopened-archive'),objects:[f.object]});
+      await capture.storage.download(f.object.objectPath);
+      const operation=saveWeatherStateEpochArchive({capture:capture.capture,storage,targetReferenceAt:target,
+        verifyOriginalSnapshot:f.verifyOriginalSnapshot});
+      if(mode==='same'){
+        const result=assertVerifiedWeatherStateEpochArchive(await operation);
+        assert.equal(result.archiveId,saved.archiveId);assert.equal(result.archiveCatalogSha256,saved.archiveCatalogSha256);
+      }else await assert.rejects(operation,mode==='wrong-identity'?/ARCHIVED_SOURCE/:undefined);
+      if(mode==='wrong-identity'){
+        assert(calls.some(row=>row.method==='HEAD'),'The unchanged common writer may check the bucket read-only.');
+        assert(calls.filter(row=>row.method==='GET').every(row=>row.path==='/'+bucket+'/'+f.object.objectPath),
+          'A different computed archive ID is refused before the first archive object GET.');
+        await assert.rejects(capture.storage.download(f.object.objectPath),/CAPTURE_CLOSED/);
+      }
+      assert.equal(f.writes.length,oldWrites,'The normal mutating upload is never called.');
+      assert.deepEqual([...f.stored.keys()].sort(),[...before.keys()].sort());
+      for(const[key,bytes]of before)assert.deepEqual(f.stored.get(key),bytes);
+      assert(calls.every(row=>['GET','HEAD'].includes(row.method)));
+    }finally{await fs.rm(f.root,{recursive:true,force:true});}
+  }
 });

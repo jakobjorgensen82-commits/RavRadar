@@ -4140,3 +4140,120 @@ test('normal SAVE CP launch preserves inherited runner tracking without forwardi
     assert.equal(Object.hasOwn(observed.options.env, 'RUNNER_TRACKING_ID'), trackingPresent);
   });
 });
+
+test('cold progress union requires its typed restore route before any installation', async t => {
+  const f = await fixture(t);
+  await f.saveAndTransfer();
+  await write(f.target, 'data/live/coastal-parts-v2.json', { partCount: 1, zones: {} });
+  const cipher = await fs.readFile(path.join(f.target, WEATHER_PROGRESS_CIPHER_PATH));
+  const base = await fs.readFile(f.targetBase);
+  for (const options of [
+    { mode: 'capture-base', resumeOriginalTarget: true },
+    { mode: 'save', resumeOriginalTarget: true },
+    { mode: 'restore', resumeOriginalTarget: false },
+    { mode: 'restore', resumeOriginalTarget: true, stateEpochInputView: {} },
+    { mode: 'restore', resumeOriginalTarget: true, epochOriginalRoot: f.source },
+  ]) {
+    const result = await f.call(options.mode, f.target,
+      { currentFamilyColdStartCapability: Object.freeze({}), ...options });
+    assert.equal(result.code, 'ARGUMENT_INVALID');
+    assert.equal(result.restored, false);
+  }
+  for (const counterfeit of [true, Object.freeze({}),
+    Object.freeze({ repositoryRoot: f.target, protectedBundleContentSha256: protectedBundleSha256 })]) {
+    const result = await f.call('restore', f.target, { resumeOriginalTarget: true,
+      productionReferenceAt: reference, currentFamilyColdStartCapability: counterfeit });
+    assert.equal(result.restored, false, 'A caller object/boolean is not the genuine WeakMap capability.');
+    assert.equal(result.productionAuthority, false);
+  }
+  await f.assertTargetOriginal();
+  assert.deepEqual(await fs.readFile(f.targetBase), base);
+  assert.deepEqual(await fs.readFile(path.join(f.target, WEATHER_PROGRESS_CIPHER_PATH)), cipher);
+});
+
+test('cold progress original reader checks whole bytes and real FD closure (unit boundary, not cold admission)', async t => {
+  const text = await fs.readFile(new URL('./weather-component-progress-cache.mjs', import.meta.url), 'utf8');
+  const start = text.indexOf('const retainedColdProgressReaders = new Set();');
+  const end = text.indexOf('async function coldProgressScope(', start);
+  assert.ok(start >= 0 && end > start);
+  const { constants } = await import('node:fs');
+  const { ownFileDescriptorIdentity, ownedFileDescriptorClosed } = await import('./lib/private-weather-component-pack.mjs');
+  const { PRIVATE_WEATHER_COMPONENT_PACK_FILE } = await import('./lib/private-weather-component-inventory.mjs');
+  const refuse = code => { throw Object.assign(new Error(code), { progressCode: code }); };
+  const readExactly = async (handle, length, position) => {
+    const bytes = Buffer.alloc(length); let offset = 0;
+    while (offset < length) {
+      const read = await handle.read(bytes, offset, length - offset, position + offset);
+      if (!read.bytesRead) refuse('SNAPSHOT_INVALID');
+      offset += read.bytesRead;
+    }
+    return bytes;
+  };
+  // Extract only the actual private FD reader; this supplies NO capability,
+  // source validator, GCM authentication, pack admission or union replacement.
+  const makeReader = io => new Function('fs', 'crypto', 'fsConstants',
+    'ownFileDescriptorIdentity', 'ownedFileDescriptorClosed', 'checkedPath', 'readExactly',
+    'fail', 'MAX_PACK_BYTES', 'CONDITIONS_PATH', 'PRIVATE_WEATHER_COMPONENT_PACK_FILE', 'SHA',
+    text.slice(start, end) + '\nreturn { read: coldProgressFile, retained: retainedColdProgressReaders };')(
+    io, crypto, constants, ownFileDescriptorIdentity, ownedFileDescriptorClosed,
+    async (root, relative) => path.join(root, relative), readExactly, refuse, 768 * 1024 * 1024,
+    'data/live/conditions.json', PRIVATE_WEATHER_COMPONENT_PACK_FILE, /^[0-9a-f]{64}$/);
+  const f = await fixture(t), relativePath = 'data/live/conditions.json';
+  const bytes = await fs.readFile(path.join(f.target, relativePath));
+  const expected = { relativePath, bytes: bytes.length,
+    sha256: crypto.createHash('sha256').update(bytes).digest('hex') };
+  const measured = makeReader(fs), lifetime = { closed: true };
+  const copy = path.join(f.folder, 'cold-owned-copy.json');
+  const read = await measured.read(f.target, relativePath, { expected, json: true, copyTo: copy }, lifetime);
+  assert.equal(read.sha256, expected.sha256);
+  assert.deepEqual(read.value, JSON.parse(bytes));
+  assert.deepEqual(await fs.readFile(copy), bytes);
+  assert.equal(lifetime.closed, true);
+  assert.equal(measured.retained.size, 0);
+  await assert.rejects(measured.read(f.target, relativePath,
+    { expected: { ...expected, sha256: '0'.repeat(64) } }, lifetime),
+  { progressCode: 'COLD_PROGRESS_ORIGINAL_CHANGED' });
+  await assert.rejects(measured.read(f.target, relativePath, { maximum: bytes.length - 1 }, lifetime),
+    { progressCode: 'COLD_PROGRESS_ORIGINAL_CHANGED' });
+  await assert.rejects(measured.read(f.target, relativePath, { expected, copyTo: copy }, lifetime), { code: 'EEXIST' });
+
+  let held = null;
+  const sentinel = new Error('synthetic first read error');
+  const io = Object.create(fs);
+  io.open = async (...args) => {
+    held = await fs.open(...args);
+    return { fd: held.fd, stat: (...values) => held.stat(...values),
+      read: async () => { throw sentinel; }, close: async () => {} };
+  };
+  const unclosed = makeReader(io), openLifetime = { closed: true };
+  try {
+    await assert.rejects(unclosed.read(f.target, relativePath, { expected }, openLifetime),
+      error => error === sentinel);
+    assert.equal(openLifetime.closed, false);
+    assert.equal(unclosed.retained.size, 1);
+    assert.ok((await held.stat()).isFile(), 'Unknown close retains the actual original descriptor.');
+  } finally { if (held !== null) await held.close(); }
+  assert.deepEqual(await fs.readFile(path.join(f.target, relativePath)), bytes);
+});
+
+test('cold completeFiles removes only the two OLD current donor descriptors (unit routing, not admission)', async () => {
+  const text = await fs.readFile(new URL('./weather-component-progress-cache.mjs', import.meta.url), 'utf8');
+  const start = text.indexOf('      coldCompleteFiles = complete.filter(file =>');
+  const end = text.indexOf(';', start);
+  assert.ok(start >= 0 && end > start);
+  const select = new Function('complete', 'PRIVATE_WEATHER_COMPONENT_FILES',
+    'let coldCompleteFiles;\n' + text.slice(start, end + 1) + '\nreturn coldCompleteFiles;');
+  const complete = Object.values(files).map(relativePath => Object.freeze({ relativePath, sourcePath: relativePath }));
+  const before = [...complete];
+  const expected = complete.filter(file => ![files.copernicusCurrentDonorBank, files.openMeteoCurrentDonorBank].includes(file.relativePath));
+  const selected = select(complete, files);
+  assert.deepEqual(selected, expected);
+  assert.deepEqual(complete, before);
+  assert.equal(complete.length - selected.length, 2);
+  for (const row of selected) assert.ok(complete.includes(row), 'Every retained descriptor is the exact original row.');
+  assert.ok(selected.some(row => row.relativePath === files.copernicusBank));
+  assert.ok(selected.some(row => row.relativePath === files.openMeteoBank));
+  assert.ok(selected.some(row => row.relativePath === files.dmiCandidate));
+  // Neither a missing OLD donor nor a caller-created row gains admission here:
+  // the production call reaches this filter ONLY after the genuine full unpack.
+});

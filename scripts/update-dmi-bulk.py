@@ -1462,6 +1462,25 @@ def bounded_strict_current_lead_attempt_limit(
     return max(1, min(8, int(available // STRICT_CURRENT_TURN_RESERVE_SECONDS)))
 
 
+def cold_strict_current_lead_catch_up_requested(current_history_requests, reference):
+    """Scheduling only, AFTER the normal archive-bound demand reader.
+
+    The child selector cannot grant archive/current/native admission. A normal
+    cold48h or warm history demand cannot select this target-only policy.
+    """
+    if (os.getenv("RAVRADAR_DMI_STRICT_CURRENT_LEAD_POLICY")
+            != "authenticated-current-family-cold-catch-up-v1"
+            or CACHE_ONLY or not isinstance(current_history_requests, dict)
+            or not current_history_requests):
+        return False
+    target = canonical_time(reference)
+    return bool(target and all(
+        isinstance(row, dict) and row.get("initialStateAt") is None
+        and row.get("startAt") == target and row.get("endAt") == target
+        for row in current_history_requests.values()
+    ))
+
+
 def asset_identity_sha256(href: Any) -> str | None:
     text = str(href or "").strip()
     if not text:
@@ -15458,6 +15477,21 @@ def main() -> int:
         0,
         int(schedule_coverage.get("strictCurrentLeadAttemptLimit") or 0),
     )
+    cold_strict_current_lead_catch_up = bool(
+        strict_current_lead_collection
+        and cold_strict_current_lead_catch_up_requested(
+            current_history_requests, locked_production_reference,
+        )
+    )
+    if cold_strict_current_lead_catch_up:
+        schedule_coverage["strictCurrentLeadColdCatchUp"] = {
+            "policy": "authenticated-current-family-cold-catch-up-v1",
+            "selected": True, "applied": False,
+            "ordinaryFairnessAttemptLimit": strict_current_lead_attempt_limit,
+            "effectiveAttemptLimit": MAX_ASSETS_PER_COLLECTION,
+            "effectiveBound": "EXISTING_COLLECTION_ASSET_SELECTION_AND_PER_ASSET_BUDGET",
+            "numericAdmissionIssued": False,
+        }
 
     collection_turns = [] if CACHE_ONLY else operational_collection_turns(
         scheduled, schedule_coverage, result.get("collectionState") or {},
@@ -15477,6 +15511,11 @@ def main() -> int:
         collection_is_critical_wam = collection in critical_wam_collections
         collection_is_critical_current = (
             not collection_is_maintenance and collection in strict_current_collections
+        )
+        strict_current_lead_turn_attempt_limit = (
+            MAX_ASSETS_PER_COLLECTION
+            if cold_strict_current_lead_catch_up and collection_is_critical_current
+            else strict_current_lead_attempt_limit
         )
         if (
             not collection_is_critical_atmosphere
@@ -16517,7 +16556,7 @@ def main() -> int:
                         collection,
                         strict_current_lead_collection,
                         strict_current_lead_attempts,
-                        strict_current_lead_attempt_limit,
+                        strict_current_lead_turn_attempt_limit,
                     )
                 ):
                     budget_stop = (
@@ -16548,6 +16587,9 @@ def main() -> int:
                     run_info["strictCurrentLeadAssetsAttempted"] = (
                         strict_current_lead_attempts
                     )
+                    if (cold_strict_current_lead_catch_up and collection_is_critical_current
+                            and strict_current_lead_attempts > strict_current_lead_attempt_limit):
+                        schedule_coverage["strictCurrentLeadColdCatchUp"]["applied"] = True
                 if collection_is_critical_atmosphere:
                     critical_atmosphere_attempts += 1
                     run_info["criticalAtmosphereAssetsAttempted"] = (
@@ -17865,7 +17907,7 @@ def main() -> int:
                                     critical_atmosphere_attempt_limit
                                     if budget_stop_code
                                         == "ATMOSPHERE_FOUNDATION_ATTEMPT_LIMIT"
-                                    else strict_current_lead_attempt_limit,
+                                    else strict_current_lead_turn_attempt_limit,
                                 "attemptedAssets":
                                     atmosphere_horizon_attempts
                                     if budget_stop_code == "ATMOSPHERE_HORIZON_ATTEMPT_LIMIT"

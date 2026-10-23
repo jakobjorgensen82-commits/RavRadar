@@ -6,6 +6,33 @@ import fs from 'node:fs';
 const review = JSON.parse(fs.readFileSync(new URL('./completed-private-runtime-workflow-review.json', import.meta.url), 'utf8'));
 const coldReview = JSON.parse(fs.readFileSync(new URL('./current-family-cold-start-workflow-review.json', import.meta.url), 'utf8'));
 const sha = value => crypto.createHash('sha256').update(value).digest('hex');
+// TEST INPUT ONLY: the fixed same-archive/same-hour checkpoint caller delta.
+// Runtime authentication remains in the cold kernel/GCM wrapper, never here.
+export const currentFamilyColdCheckpointWorkflowReview = JSON.parse(fs.readFileSync(
+  new URL('./current-family-cold-checkpoint-workflow-review.json', import.meta.url), 'utf8'));
+for (const row of Object.values(currentFamilyColdCheckpointWorkflowReview.roles)) {
+  row.edits.forEach(Object.freeze); Object.freeze(row.edits);
+  Object.freeze(row.before); Object.freeze(row.after); Object.freeze(row);
+}
+Object.freeze(currentFamilyColdCheckpointWorkflowReview.roles);
+Object.freeze(currentFamilyColdCheckpointWorkflowReview.scope);
+Object.freeze(currentFamilyColdCheckpointWorkflowReview);
+export function inverseCurrentFamilyColdCheckpointWorkflow(source, role) {
+  assert.equal(arguments.length, 2, 'COLD_CHECKPOINT_WORKFLOW_ARGUMENTS');
+  assert.equal(typeof source, 'string', 'COLD_CHECKPOINT_WORKFLOW_TYPE');
+  assert(Object.hasOwn(currentFamilyColdCheckpointWorkflowReview.roles, role), 'COLD_CHECKPOINT_WORKFLOW_ROLE');
+  const row = currentFamilyColdCheckpointWorkflowReview.roles[role];
+  if (Buffer.byteLength(source) === row.before.bytes && sha(source) === row.before.sha256) return source;
+  assert.equal(Buffer.byteLength(source), row.after.bytes, 'COLD_CHECKPOINT_WORKFLOW_AFTER_SIZE');
+  assert.equal(sha(source), row.after.sha256, 'COLD_CHECKPOINT_WORKFLOW_AFTER_SHA');
+  for (const [offset, actual, original] of row.edits) {
+    assert.equal(source.slice(offset, offset + actual.length), actual, 'COLD_CHECKPOINT_WORKFLOW_EXACT_HUNK');
+    source = source.slice(0, offset) + original + source.slice(offset + actual.length);
+  }
+  assert.equal(Buffer.byteLength(source), row.before.bytes, 'COLD_CHECKPOINT_WORKFLOW_BEFORE_SIZE');
+  assert.equal(sha(source), row.before.sha256, 'COLD_CHECKPOINT_WORKFLOW_BEFORE_SHA');
+  return source;
+}
 // TEST INPUT ONLY: the exact five current-family cold budget conditions.
 // No epoch request, provider cap, clock authority or runtime rule is issued.
 export const currentFamilyColdBudgetWorkflowReview = Object.freeze({
@@ -291,6 +318,10 @@ export const nativeOriginalSchemaSelectorWorkflowReview = Object.freeze({
   ]
 });
 export function inverseNativeOriginalSchemaSelectorWorkflow(source, role) {
+  if (Object.hasOwn(currentFamilyColdCheckpointWorkflowReview.roles, role) &&
+      sha(source) === currentFamilyColdCheckpointWorkflowReview.roles[role].after.sha256) {
+    source = inverseCurrentFamilyColdCheckpointWorkflow(source, role);
+  }
   if (role === 'build' && sha(source) === currentFamilyColdBudgetWorkflowReview.after.sha256) {
     source = inverseCurrentFamilyColdBudgetWorkflow(source, role);
   }

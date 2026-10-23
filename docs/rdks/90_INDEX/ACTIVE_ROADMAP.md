@@ -1,3 +1,9 @@
+## 23. oktober — P0: genoptag den beregnede opstarts leverandørinput, ikke endnu en ny start
+
+Første current-family-start stoppede faktisk i offentlig no-loss efter beregning. Prioritér samlet rettelse af det observerede DMI-forsøgsstop og samme-arkiv/samme-mål-time-genoptagelse fra det autentificerede leverandørcheckpoint. Hold gamle CP-/OM-strømdonorer ude af aktiv union uden at ændre originaler, øvrige vejrkomponenter eller normal efterfølger. Færdig beregning findes ikke i dette checkpoint; den må ikke loves genbrugt.
+
+Gennemfør ægte integrationsprøve, præcis kildekontrol og sikker levering før én genoptagelse. Bevar alle efterfølgende B/S-, no-loss- og Pages-kontroller; verificér offentlig effekt og derefter almindelig drift. Ingen ny nulstilling, SOURCE-aktivering, større budgetter eller model-/SQL-/scoreændring. Private identiteter og aktuelle trin står i checkpointet; alle fem hovedmål er åbne.
+
 ## 22. oktober — P0-rækkefølge efter ejerens nye strømstartbeslutning
 
 Færdiggør én samlet current-family-start: autentisk arkiv/readback → fysisk adskilt arbejdsvisning uden gamle strømdata → ny targetbundet anskaffelse og beregning → varigt gemt originalbank/B/S → offentlig levering → almindelig efterfølger. Gamle historik-/originalkrav må ikke smugles ind igen ved næste genbrug, og normale kilde-, model-, admin- og no-loss-kontroller bevares.

@@ -1,3 +1,9 @@
+## Ikke udgivet — samme strømstart genoptages uden gamle strømdonorer
+
+- Retter et faktisk observeret lokalt otteforsøgsstop hos førende DMI-strøm alene efter ægte autentificeret opstart; det eksisterende katalogloft og alle tids-, byte-, proces- og reservegrænser bevares. Almindelige kørsler ændres ikke. Dette beviser ikke hele årsagen til de tretten strømtimer, som no-loss afviste efter første beregning.
+- Forbereder samme arkiv, samme oprindelige mål-time og præcist krypteret leverandørcheckpoint uden ny nulstilling eller tavs cachemiss-fallback. Hele gamle originalpakke valideres, men netop gamle CP-/OM-strømdonorer genindføres ikke i aktiv union; øvrige komponenter og nye data bevares.
+- Bevarer normal beregning, kildeprioritet, originaler, historiske scorer, no-loss og fulde B/S-/Pages-kontroller. Ægte samlet integration, præcis CI, offentlig levering og almindelig efterfølger er endnu ikke afsluttet. Ingen ny version, model, SQL, kystpunkter eller geometri.
+
 ## Ikke udgivet — præcise prøvelæsere til den nye strømstart
 
 - Retter fire reproducerede testlæserkonflikter fra første PR707-kontrol uden at ændre produktkoden: eksplicit almindelig `coldInputs=null`, aktuelt kalderudtag og præcis ydre zonehistorik-inverse før de uændrede historiske kildeorakler. Alle gamle assertions og manipulationsafslag bevares.

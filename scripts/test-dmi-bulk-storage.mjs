@@ -16,6 +16,7 @@ import {
 import { inspectDmiForecastFile, readDmiForecastRecord, writeDmiForecastRecords,
   readDmiForecastFile, writeDmiForecastFileAtomic, DMI_FORECAST_FILE_MAX_BYTES } from './lib/dmi-forecast-file.mjs';
 import { withoutCurrent } from './lib/private-dmi-recovery-record.mjs';
+import { PRIVATE_WEATHER_COMPONENT_PACK_FILE } from './lib/private-weather-component-inventory.mjs';
 import { packDmiPartContinuity, unpackDmiPartContinuity, assertDmiPartContinuityTotalSize }
   from './lib/dmi-part-continuity.mjs';
 
@@ -495,6 +496,50 @@ try {
         'Unexpected moved bytes stay private for diagnosis; no deletion or automatic retry.');
     }
   }
+
+  // Actual caller wrappers: check fixed reopening/ordinary forwarding only.
+  // This controlled return is NOT a genuine cold capability or GCM proof.
+  const tupleBody = section('export const CURRENT_FAMILY_COLD_START_REENTRY_SCOPE =', 'function readOnlyExistingColdArchiveStorage(')
+    .replace('export const CURRENT_FAMILY_COLD_START_REENTRY_SCOPE =', 'const CURRENT_FAMILY_COLD_START_REENTRY_SCOPE =');
+  const wrapperBody = section('export async function prepareCurrentFamilyColdStart(', 'async function prepareCurrentFamilyColdStartOwned(')
+    .replace('export async function prepareCurrentFamilyColdStart(', 'async function prepareCurrentFamilyColdStart(')
+    .replace('export async function reopenCurrentFamilyColdStart(', 'async function reopenCurrentFamilyColdStart(');
+  const calls = [], returned = Object.freeze({ capability: Object.freeze({}), contextPath:'controlled-only', contextSha256:'0'.repeat(64) });
+  const wrappers = new Function('need','prepareCurrentFamilyColdStartOwned',tupleBody+wrapperBody
+    +'\nreturn {prepareCurrentFamilyColdStart,reopenCurrentFamilyColdStart,scope:CURRENT_FAMILY_COLD_START_REENTRY_SCOPE};')(
+    (ok,code)=>{if(!ok)throw new Error('CURRENT_FAMILY_COLD_START_'+code);},
+    async options=>{calls.push(options);return returned;});
+  assert(Object.isFrozen(wrappers.scope));
+  assert.equal(wrappers.scope.progressSource,'39886354260-1');
+  const options={workRoot:'controlled-work',publicRoot:'controlled-public',targetReferenceAt:wrappers.scope.targetReferenceAt};
+  assert.equal(await wrappers.prepareCurrentFamilyColdStart(options),returned);
+  assert.deepEqual(calls.pop(),options,'Normal prepare does not get the reopening option.');
+  for(const mutation of [{archiveId:'0'.repeat(64)},{targetReferenceAt:'2026-10-23T02:00:00.000Z'},
+    {archiveId:undefined},{targetReferenceAt:undefined}]){
+    await assert.rejects(wrappers.reopenCurrentFamilyColdStart({...options,archiveId:wrappers.scope.archiveId,...mutation}),/ARCHIVED_SOURCE/);
+    assert.equal(calls.length,0);
+  }
+  assert.equal(await wrappers.reopenCurrentFamilyColdStart({...options,archiveId:wrappers.scope.archiveId}),returned);
+  assert.deepEqual(calls.pop(),{...options,expectedExistingArchiveId:wrappers.scope.archiveId});
+  const ownedBody=section('async function prepareCurrentFamilyColdStartOwned(', 'export async function loadCurrentFamilyColdStartForTarget(');
+  assert(ownedBody.indexOf('await saveWeatherStateEpochArchive(')<ownedBody.indexOf('await acquisitions(state, workRoot)'));
+  assert(ownedBody.includes(': readOnlyExistingColdArchiveStorage(objects, expectedExistingArchiveId)'));
+  assert(ownedBody.indexOf(': readOnlyExistingColdArchiveStorage(objects, expectedExistingArchiveId)')
+    <ownedBody.indexOf('await createWeatherStateEpochCaptureStorage('));
+  assert(ownedBody.includes('targetReferenceAt, verifyOriginalSnapshot });'));
+  assert(!ownedBody.includes('verifyOriginalSnapshot, expectedExistingArchiveId'),
+    'The common archive kernel keeps its exact installed model-bound API and bytes.');
+  // The real WeakMap/scoped accessor refuses fabricated objects before looking
+  // up paths or descriptors. A genuine reopened-capability/GCM roundtrip remains
+  // the combined integration target, not a fabricated unit positive.
+  const accessBody=section('function scoped(', 'export function currentFamilyColdStartScoreInputs(')
+    .replace('export function currentFamilyColdStartProgressUnionScope(', 'function currentFamilyColdStartProgressUnionScope(');
+  const union = new Function('equal','ROOT','PRIVATE_WEATHER_COMPONENT_PACK_FILE',
+    section('const CAPABILITIES =','export const CURRENT_FAMILY_COLD_START_CONTEXT_ENV')
+    +section('const sha =','function hour(')+accessBody+'\nreturn currentFamilyColdStartProgressUnionScope;')(
+      isDeepStrictEqual,coldRoot,PRIVATE_WEATHER_COMPONENT_PACK_FILE);
+  for(const value of [null,{},Object.freeze({status:'VERIFIED'})])
+    assert.throws(()=>union(value,{registry:{},targetReferenceAt:wrappers.scope.targetReferenceAt}),/CAPABILITY/);
 
 } finally {
   await fs.rm(directory, { recursive: true, force: true });

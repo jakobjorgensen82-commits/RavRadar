@@ -34,6 +34,24 @@ test('DMI canonical-time parsing and transactional ledger (6 current cases)', { 
   assert.match(result.stderr, /^OK\r?$/m,
     'The six current cases must finish without skipped tests.');
 });
+test('DMI cold strict-lead catch-up retains ordinary fairness and per-asset reserves (3 cases)', { timeout: 160_000 }, () => {
+  const file = 'test-dmi-native-chain-continuity.py';
+  const result = spawnSync(python, ['-B', path.join(root, 'scripts', file),
+    'SchedulingContinuityTests.test_idw_lead_can_catch_up_multiple_hours_without_stealing_reserves',
+    'SchedulingContinuityTests.test_cold_child_policy_is_not_an_env_only_or_ordinary48h_grant',
+    'SchedulingContinuityTests.test_actual_cold_cap_guard_keeps_ordinary8_and_per_asset_critical_reserves'], {
+    cwd: root, env: environment, encoding: 'utf8', shell: false,
+    timeout: 150_000, maxBuffer: 4 * 1024 * 1024, windowsHide: true,
+  });
+  assert.equal(result.error, undefined, `Synthetic Python runner failed: ${file}`);
+  assert.equal(result.signal, null, `Synthetic Python runner interrupted: ${file}`);
+  assert.equal(result.status, 0,
+    `${file}\n${result.stdout || ''}\n${result.stderr || ''}`);
+  assert.match(result.stderr, /^Ran 3 tests in [^\r\n]+\r?$/m,
+    'All three ordinary/cold scheduling and reserve cases must actually execute.');
+  assert.match(result.stderr, /^OK\r?$/m,
+    'The scheduling cases must finish without skipped tests.');
+});
 for (const file of [
   'test-copernicus-bounded-retry-4.0.289.py',
   'test-regional-current-operational.py',
