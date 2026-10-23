@@ -119,3 +119,67 @@ test('actual workflow starts the cold clock before checkout and gates every prov
   }
   assert.equal(selected(clock, {}), false);
 });
+
+test('actual reserve callers isolate only cold locator metadata and preserve epoch continuation', async t => {
+  const workflow = await fs.readFile(new URL('../.github/workflows/reusable-weather-build.yml', import.meta.url), 'utf8');
+  const job = workflow.slice(0, workflow.indexOf('\n    steps:\n'));
+  const body = name => {
+    const marker = '      - name: ' + name + '\n', start = workflow.indexOf(marker);
+    assert(start >= 0);
+    const end = workflow.indexOf('\n      - ', start + marker.length);
+    return workflow.slice(start, end < 0 ? undefined : end);
+  };
+  const value = (source, name, inputs) => {
+    const rows = [...source.matchAll(new RegExp('^ +' + name + ': \\$\\{\\{ (.+) \\}\\}$', 'gm'))];
+    assert.equal(rows.length, 1, 'One actual workflow scope field: ' + name);
+    return String(new Function('inputs', 'return (' + rows[0][1] + ');')(inputs));
+  };
+  const directory = await fs.mkdtemp(path.join(os.tmpdir(), 'rr-cold-reserve-call-'));
+  t.after(async () => {
+    assert.equal(path.dirname(directory), path.resolve(os.tmpdir()));
+    assert(path.basename(directory).startsWith('rr-cold-reserve-call-'));
+    await fs.rm(directory, { recursive: true, force: true });
+  });
+  const clock = path.join(directory, 'weather-state-epoch-job-start-ms.txt');
+  await fs.writeFile(clock, String(Date.now() - 5 * 60000) + '\n', { flag: 'wx', mode: 0o600 });
+  for (const kind of ['cold-fresh', 'cold-reentry', 'epoch-fresh', 'epoch-reentry']) {
+    const cold = kind.startsWith('cold'), reentry = kind.endsWith('reentry');
+    const inputs = { current_family_cold_start: cold, checkpoint_only: !cold && reentry,
+      quick_progress_source: reentry ? '39886354260-1' : '', production_target_hour: '2026-10-23T01:00:00Z' };
+    const outer = Object.freeze({ ...(cold ? coldEnvironment : environment), RUNNER_TEMP: directory,
+      RAVRADAR_WEATHER_STATE_EPOCH_CHECKPOINT_REENTRY: !cold && reentry ? 'true' : 'false',
+      CHECKPOINT_ONLY: inputs.checkpoint_only ? 'true' : 'false',
+      EXTENDED_BOOTSTRAP: !cold && reentry ? 'false' : 'true',
+      RAVRADAR_WEATHER_STATE_EPOCH_ARCHIVE_ID: 'a'.repeat(64),
+      RAVRADAR_WEATHER_STATE_EPOCH_ARCHIVE_CATALOG_SHA256: 'b'.repeat(64),
+      RAVRADAR_WEATHER_STATE_EPOCH_RAW_CACHE_KEY: 'dmi-grib-v4-Linux-2026-W43-39886354260-1',
+      RAVRADAR_PRODUCTION_TARGET_HOUR: inputs.production_target_hour,
+      QUICK_PROGRESS_SOURCE: value(job, 'QUICK_PROGRESS_SOURCE', inputs),
+      CHECKPOINT_TARGET_HOUR: value(job, 'CHECKPOINT_TARGET_HOUR', inputs) });
+    if (cold && reentry)
+      await assert.rejects(weatherStateEpochBudgetCli(['dmi'], outer), /COLD_PHASE_SCOPE/);
+    for (const phase of Object.keys(WEATHER_STATE_EPOCH_PHASE_MINUTES)) {
+      const step = body('Preserve the fixed epoch post-processing reserve before ' + phase);
+      const local = { ...outer,
+        QUICK_PROGRESS_SOURCE: value(step, 'QUICK_PROGRESS_SOURCE', inputs),
+        CHECKPOINT_TARGET_HOUR: value(step, 'CHECKPOINT_TARGET_HOUR', inputs) };
+      assert.equal(local.QUICK_PROGRESS_SOURCE, cold ? '' : outer.QUICK_PROGRESS_SOURCE);
+      assert.equal(local.CHECKPOINT_TARGET_HOUR, cold ? '' : outer.CHECKPOINT_TARGET_HOUR);
+      const result = await weatherStateEpochBudgetCli([phase], local);
+      assert.equal(result.phase, phase);
+      assert.equal(result.requiredMinutes, !cold && reentry ? 180 : WEATHER_STATE_EPOCH_PHASE_MINUTES[phase]);
+      assert.equal(result.reserveMinutes, 180);
+      assert.equal(result.admission, 'NO_ADMISSION'); assert.equal(result.performanceProof, false);
+      assert.equal(outer.QUICK_PROGRESS_SOURCE, inputs.quick_progress_source);
+      assert.equal(outer.CHECKPOINT_TARGET_HOUR, reentry ? inputs.production_target_hour : '');
+    }
+    if (cold && reentry) {
+      await fs.writeFile(clock, String(Date.now() - 181 * 60000) + '\n');
+      const step = body('Preserve the fixed epoch post-processing reserve before weather');
+      await assert.rejects(weatherStateEpochBudgetCli(['weather'], { ...outer,
+        QUICK_PROGRESS_SOURCE: value(step, 'QUICK_PROGRESS_SOURCE', inputs),
+        CHECKPOINT_TARGET_HOUR: value(step, 'CHECKPOINT_TARGET_HOUR', inputs) }), /RESERVE_EXHAUSTED/);
+      await fs.writeFile(clock, String(Date.now() - 5 * 60000) + '\n');
+    }
+  }
+});

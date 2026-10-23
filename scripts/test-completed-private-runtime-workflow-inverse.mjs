@@ -783,23 +783,33 @@ test('same-archive cold checkpoint inverse admits only both exact new whole work
   for (const [role, row] of Object.entries(review.roles)) {
     const source = coldCheckpointActual[role];
     assert.equal(Buffer.byteLength(source), row.after.bytes); assert.equal(sha(source), row.after.sha256);
-    assert.equal(row.edits.length, role === 'build' ? 6 : 3);
+    assert.equal(row.edits.length, role === 'build' ? 10 : 3);
     const old = inverseCurrentFamilyColdCheckpointWorkflow(source, role);
     assert.equal(Buffer.byteLength(old), row.before.bytes); assert.equal(sha(old), row.before.sha256);
     assert.equal(inverseCurrentFamilyColdCheckpointWorkflow(old, role), old);
     assert.equal(inverseCompletedRuntimeWorkflow(source, role), inverseCompletedRuntimeWorkflow(old, role));
-    let prior = source.length;
-    for (const [offset, actual, original] of row.edits) {
+    let layerSource = source, prior = source.length;
+    for (const [index, [offset, actual, original]] of row.edits.entries()) {
+      if (role === 'build' && index === 4) {
+        assert.equal(Buffer.byteLength(layerSource), 288646);
+        assert.equal(sha(layerSource), '2b4677beed11b2d5b421e580a223531ac668fb96ca26c8d44516af155b533bd1');
+        prior = layerSource.length;
+      }
       assert(Number.isSafeInteger(offset) && offset >= 0 && offset + actual.length <= prior);
       prior = offset; assert(actual.length > 0); assert(original.length > 0);
-      assert.equal(source.slice(offset, offset + actual.length), actual);
+      assert.equal(layerSource.slice(offset, offset + actual.length), actual);
+      const currentOffset = source.indexOf(actual);
+      assert(currentOffset >= 0);
+      assert.equal(source.indexOf(actual, currentOffset + 1), -1);
       for (const replacement of ['', actual + actual, '?' + actual.slice(1), original]) {
-        const changed = source.slice(0, offset) + replacement + source.slice(offset + actual.length);
+        const changed = source.slice(0, currentOffset) + replacement + source.slice(currentOffset + actual.length);
         assert.notEqual(changed, source);
         assert.throws(() => inverseCurrentFamilyColdCheckpointWorkflow(changed, role), /COLD_CHECKPOINT_WORKFLOW/);
         assert.throws(() => inverseCompletedRuntimeWorkflow(changed, role));
       }
+      layerSource = layerSource.slice(0, offset) + original + layerSource.slice(offset + actual.length);
     }
+    assert.equal(layerSource, old);
     for (const changed of [source + '\n# UNREVIEWED\n', source.replace('39886354260-1', '39886354260-2'),
       source.replace('2026-10-23T01:00:00Z', '2026-10-23T02:00:00Z')]) {
       assert.notEqual(changed, source);
@@ -958,6 +968,14 @@ test('same-archive actual scope and prepare/resolve seams bind source and target
     'Preserve the fixed epoch post-processing reserve before copernicus',
     'Preserve the fixed epoch post-processing reserve before open-meteo',
     'Preserve the fixed epoch post-processing reserve before weather']) {
-    assert.equal(coldStep(actual.build, name), coldStep(old, name), name);
+    const previous = coldStep(old, name);
+    const expected = name.startsWith('Preserve the fixed epoch post-processing reserve before ')
+      ? previous.replace('        run:', [
+        '        env:',
+        "          QUICK_PROGRESS_SOURCE: ${{ inputs.current_family_cold_start != true && inputs.quick_progress_source || '' }}",
+        "          CHECKPOINT_TARGET_HOUR: ${{ inputs.current_family_cold_start != true && inputs.checkpoint_only && inputs.production_target_hour || '' }}",
+        '        run:',
+      ].join('\n')) : previous;
+    assert.equal(coldStep(actual.build, name), expected, name);
   }
 });

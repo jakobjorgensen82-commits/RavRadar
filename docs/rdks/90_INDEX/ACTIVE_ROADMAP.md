@@ -2,7 +2,7 @@
 
 Første current-family-start stoppede faktisk i offentlig no-loss efter beregning. Prioritér samlet rettelse af det observerede DMI-forsøgsstop og samme-arkiv/samme-mål-time-genoptagelse fra det autentificerede leverandørcheckpoint. Hold gamle CP-/OM-strømdonorer ude af aktiv union uden at ændre originaler, øvrige vejrkomponenter eller normal efterfølger. Færdig beregning findes ikke i dette checkpoint; den må ikke loves genbrugt.
 
-Gennemfør ægte integrationsprøve, præcis kildekontrol og sikker levering før én genoptagelse. Bevar alle efterfølgende B/S-, no-loss- og Pages-kontroller; verificér offentlig effekt og derefter almindelig drift. Ingen ny nulstilling, SOURCE-aktivering, større budgetter eller model-/SQL-/scoreændring. Private identiteter og aktuelle trin står i checkpointet; alle fem hovedmål er åbne.
+Privat normal prepare-capability/GCM-integration og de rettede fire fasekalderes normale målprøve består. Færdiggør præcis kildekontrol og sikker levering før én faktisk genåbning/genoptagelse af det oprindelige arkiv. Bevar alle efterfølgende B/S-, no-loss- og Pages-kontroller; verificér offentlig effekt og derefter almindelig drift. Ingen ny nulstilling, SOURCE-aktivering, større budgetter eller model-/SQL-/scoreændring. Private identiteter og aktuelle trin står i checkpointet; alle fem hovedmål er åbne.
 
 ## 22. oktober — P0-rækkefølge efter ejerens nye strømstartbeslutning
 
