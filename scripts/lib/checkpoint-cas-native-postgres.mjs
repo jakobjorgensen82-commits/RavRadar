@@ -5,7 +5,6 @@ import os from 'node:os';
 import path from 'node:path';
 import { execFile } from 'node:child_process';
 import { fileURLToPath, pathToFileURL } from 'node:url';
-import { exactRelativeModuleSpecifiers } from './static-module-closure.mjs';
 import { accountAssistantCatalogQuery, verifyAccountAssistantCatalogMetadata }
   from '../verify-account-assistant-schema.mjs';
 
@@ -370,9 +369,14 @@ async function issued213Factory(root) {
   const factory = slice('const PART_COUNT =', 'const safeShape =')
     + slice('const samples =', 'const sourceDocument =');
   assert.equal(hash(factory), '71ce29ec98e43bfa02017a145c4438346f1d8a1f4323526ec58e4b1081d81e36');
-  const scanner = 'scripts/lib/static-module-closure.mjs';
-  assert.equal(sqlText(await fs.readFile(path.join(ISSUED_ROOT, scanner), 'utf8')),
-    String(await read(scanner)), 'Use the actual reviewed issued static scanner');
+  // Kun den historiske closure bruger sin hele genuine044d-scanner.
+  // Den aktuelle scanner og dens rettede deklarationsgrammatik ændres ikke.
+  const scannerSource = await read('scripts/lib/static-module-closure.mjs');
+  assert.equal(scannerSource.length, 6790, 'Exact issued scanner byte length');
+  assert.equal(hash(scannerSource), '675f91e7942143a78636e219e54bd7fa0ff25ddcd1998657dd215105054938b0',
+    'Exact issued scanner whole bytes');
+  const { exactRelativeModuleSpecifiers } = await import(
+    'data:text/javascript;base64,' + scannerSource.toString('base64'));
   const tSource = String(await read(ISSUED_T));
   const declaration = /export const RAVSCORE_CONTINUATION_IMPLEMENTATION_FILES = Object\.freeze\(\[\n((?:  '[A-Za-z0-9_./-]+',\n)+)\]\);/.exec(tSource);
   assert(declaration, 'Exact historical T declaration required');

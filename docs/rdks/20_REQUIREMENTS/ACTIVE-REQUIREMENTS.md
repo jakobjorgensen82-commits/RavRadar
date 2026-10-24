@@ -1,3 +1,11 @@
+## 25. oktober — lokal SOURCE588-sammenføring med brugerdata, deling og checkpointrettelser
+
+Denne lokale sammenføring bevarer SOURCE588-forløbet og de indgående 719/720-beslutninger, herunder begge normale checkpointdestinationer. SOURCE forbliver inaktiv med uændret C157/I153/T12 og originale migrationer. De indgående 587-noter er forælderens daterede evidens, ikke en ommærkning af denne kilde eller et samlet SOURCE-PASS. 587 er endnu ikke installeret; cron er slået fra, og P0-kontrollen håndteres særskilt af ROOT.
+
+Tre nye browsermodulers importversioner følger kun 587 → 588, så de bruger samme auth-singleton som den lokale SOURCE-app. Det ændrer ikke score, model eller data. Den normale browsermodul-versionskontrol er lokalt bestået; endelig SOURCE-kilde-/nativekontrol, installation og offentlig virkning er fortsat åbne. Statistik og automatisk sletning forbliver inaktive, og rapportfrigivelse samt særskilt Worker-levering får ingen ny autoritet.
+
+Mål 1 om den nationale numeriske strømrettelse er lukket af ROOT på faktisk normal produktionskædeevidens; det genåbnes ikke uden modstridende evidens. De fire øvrige hovedområder er åbne. De bevarede ældre udsagn om fem åbne mål eller afventet sammenføring er dateret historik på netop disse punkter; dækningsgrad og kontinuerlig vejrhentning er fortsat P0.
+
 ## 24. oktober — aktiv SOURCE-fixturegrænse
 
 Den syntetiske startprøves gitter var bygget omkring kystdelenes vandpunkter alene. Den normale datalæser undersøger også hele zoners punkter og sine faste nabopunkter, og et normalt opslag kunne derfor falde uden for prøvegridet. Prøveinputtet dækker nu collectionens faktiske decode-rækker med både parent/PART og hele det normale probe-område.
@@ -9,6 +17,14 @@ Main715 er kildekvalificeret og merget. Det er en særskilt P0-levering; driftse
 ## 24. oktober — bevaret 587-kravhistorik ved SOURCE-sammenføring
 
 Den følgende 587-note bevares fra den tidligere lokale sammenføring. Dens kørsels- og kvalifikationsudsagn er dateret historik, ikke en ny status for driften eller denne SOURCE-kandidat. Begge oprindelige kravhistorikker bevares; faktisk installeret 587 og SOURCEs egen samlede kontrol er fortsat særskilte krav.
+
+## 24. oktober — AKTIV: snæver Free-autoritet til offentlig prognosedeling
+
+Ejeren har udtrykkeligt godkendt oprettelse af kun `ravradar-prognosedeling` på den eksisterende Cloudflare Free-konto og `jakob-jorgensen82.workers.dev`. Den fælles faste delingsadresse er `https://ravradar-prognosedeling.jakob-jorgensen82.workers.dev/`. Autoriteten omfatter ikke ny database, billedlager, DNS-ændring, nøgler eller betalingsplan. Konfigurationen må ikke tilføje assets-/DB-/KV-/R2-bindinger, egne routes, cron eller secrets. Det eksisterende offentlige logo må læses uden nyt billedlager.
+
+Deling skal bruge den faktisk verificerede zone, hele time, søgemåde og DA/DE/EN-sprog. Brugeren vælger selv destination og opslagstekst. Score skal komme fra de eksisterende offentlige data og den normale kontrol af bytes, kontrolsum, model, sted, time og udløb; queryparametre, headere eller miljø må ikke udstede score-/kildeautoritet. Ukendt eller udløbet grundlag må ikke erstattes med en nærmeste time. Ny delt tid følger Europe/Copenhagen inklusive sommer-/vintertid, ikke et fast CET-mærke.
+
+Levering skal ske særskilt efter den normale præcise kildekontrol og uden ændring af almindelige vejr-/Pages-workflows. Aktiv versionsgenlæsning, faktisk hosted GET/HEAD, Free-kapacitet og browser-/Facebook-accept kræves; lokal bundle, Node-prøve eller HTTP 200 er ikke tilstrækkeligt. Ekstern cache og ændrede/udløbne offentlige data skal beskrives ærligt. Score er ikke en garanti for fund. Ingen produktionsændring under writer, ingen model-/SQL-udstedelse eller automatisk udvidelse af andre tilladelser. Alle fem hovedmål er fortsat åbne til 18. november.
 
 ## 24. oktober — lokal 587-sammenføring med den leverede DMI-kilde
 

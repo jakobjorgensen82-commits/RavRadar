@@ -1,7 +1,9 @@
 import { exceptionalScoreMark, scoreRating } from "./js/core/score-presentation.js?v=4.0.588";
-import { loadConditions, loadConditionDetails, mergeConditionDetails, loadZones, loadDataManifest, refreshPublicRuntimeGeneration, mapForecastTimeline, loadMapForecastHour } from "./js/services/data-service.js?v=4.0.588";
+import { loadConditions, loadConditionDetails, mergeConditionDetails, loadZones, loadDataManifest, refreshPublicRuntimeGeneration, mapForecastTimeline, loadMapForecastHour } from "./js/services/data-service.js?v=4.0.588&ui=forecast-share-20261024";
 import { createMapForecastController, exactMapZoneScore, mapCoastalPartsForDisplay } from './js/services/map-forecast-view.js?v=4.0.588';
 import { bindMapTimeline, mapTimelineDate } from './js/ui/map-timeline.js?v=4.0.588&ui=timeline-days-20261018';
+import { readForecastShare } from './js/services/forecast-share-contract.js?v=4.0.588&ui=forecast-share-20261024';
+import { mountForecastShareControl, openForecastShareSelection } from './js/ui/forecast-share.js?v=4.0.588&ui=forecast-share-20261024';
 import { submitTripEvidenceObservation, syncPendingObservations } from "./js/services/observation-service.js?v=4.0.588";
 import { consumeAuthCallback } from "./js/services/auth-service.js?v=4.0.588";
 import { createMap, installFlowArrows, refreshZoneStyles, renderZones } from "./js/map/map-view.js?v=4.0.588";
@@ -10,7 +12,7 @@ import { bindZoneInfoInteractions, showZoneInfo } from "./js/ui/info-panel.js?v=
 import { openAccountDialog } from "./js/ui/account-panel.js?v=4.0.588&ui=account-20261006";
 import { openDeveloperDialog } from "./js/ui/developer-panel.js?v=4.0.588";
 import { askRavRadar, quickQuestions, ravQuestionNeedsConditionDetails, assistantTopicForQuestion, assistantLocalFollowupAnswer } from "./js/services/rav-assistant.js?v=4.0.588";
-import { formatDateTime, formatNumber, getLanguage, getLocale, t } from "./js/i18n.js?v=4.0.588";
+import { formatDateTime, formatNumber, getLanguage, getLocale, t, setLanguage, applyDocumentTranslations } from "./js/i18n.js?v=4.0.588";
 import { buildLocalZoneScore, isCurrentForecastHour, selectLocalBestForDay } from "./js/core/local-zone-score.js?v=4.0.588";
 import { addNationalRanking, compareNationalRankingRows } from "./js/core/zone-ranking.js?v=4.0.588";
 import { createPublicTripEvidenceRuntime } from './js/services/trip-evidence-runtime.js?v=4.0.588';
@@ -18,6 +20,10 @@ import { createPublicPageResumeHandler, createServiceWorkerControllerChangeHandl
 import { forecastDateKeyInTimeZone, visibleForecastDays } from './js/core/forecast-calendar.js?v=4.0.588';
 import { assertRavScoreModelBinding } from './js/core/ravscore-model-contract.js?v=4.0.588';
 
+const incomingForecastShare=readForecastShare(location.href);
+if(incomingForecastShare.status==='valid'){
+  setLanguage(incomingForecastShare.selection.language);applyDocumentTranslations();
+}
 const state = { mode:"waders", selectedZone:null, zoneLayer:null, zones:null, conditions:{ available:false,zones:{} }, flowArrows:null, currentScores:new Map(), forecastGroups:new Map(), forecastRenderId:0 };
 const RUNTIME_SNAPSHOT_TEXT = Object.freeze({
   da:Object.freeze({
@@ -66,7 +72,19 @@ const mapForecast=createMapForecastController({
   loadHour:time=>loadMapForecastHour({manifest:activeManifest,conditions:state.conditions,time}),
   onCommit:handleMapForecastCommit,
 });
-const mapTimelineUi=bindMapTimeline(document.querySelector('#mapTimeline'),mapForecast);
+let forecastShareControlCleanup=()=>{},forecastShareUserIntent=0;
+function noteForecastShareUserIntent(){forecastShareUserIntent++;}
+const mapTimelineHost=document.querySelector('#mapTimeline');
+for(const event of ['click','input','change'])mapTimelineHost?.addEventListener(event,noteForecastShareUserIntent,true);
+const mapTimelineUi=bindMapTimeline(mapTimelineHost,mapForecast);
+function showForecastShareNotice(message){
+  let notice=document.querySelector('#forecastShareNotice');
+  if(!notice&&message){
+    notice=document.createElement('p');notice.id='forecastShareNotice';notice.className='notice';
+    notice.setAttribute('role','status');document.querySelector('#mapTimeline')?.insertAdjacentElement('afterend',notice);
+  }
+  if(notice){notice.textContent=message;notice.hidden=!message;}
+}
 function handleMapForecastCommit(frame){
   mapScores.clear();
   if(!coreViewReady)return;
@@ -167,6 +185,7 @@ function showSelectedZoneParts({preserveView=false,scroll=true}={}) {
 }
 
 function renderSelectedZone() {
+  forecastShareControlCleanup();forecastShareControlCleanup=()=>{};
   if(!state.selectedZone)return;
   infoPanel.hidden=false;
   const frame=mapFrame(),condition=mapConditions().zones?.[state.selectedZone.id]||{},display=mapDisplayFor(state.selectedZone);
@@ -174,8 +193,19 @@ function renderSelectedZone() {
   const history=frame?{}:condition.history||{};
   showZoneInfo(infoPanel,state.selectedZone,display.result,display.weather,state.mode,{ forecast:condition.forecast,history,bestByDate,displayContext:display.context,mapForecastTime:frame?.time??null });
   if(frame){const label=document.createElement('p');label.className='map-timeline-zone-time';label.textContent=t('map.timeline.shown',{time:mapTimelineDate(frame.time)});infoPanel.prepend(label);}
+  const shareGeneration=mapForecast.snapshot().generation;
+  forecastShareControlCleanup=mountForecastShareControl(infoPanel,{selection:{zoneId:state.selectedZone.id,time:mapForecast.committed?.time,
+    mode:state.mode,language:getLanguage()},zoneName:state.selectedZone.name,result:display.result,
+    pageUrl:new URL('./',document.baseURI).href,isSelectionCurrent:selection=>{
+      try{
+        const current=mapForecast.snapshot(),timeline=mapForecastTimeline({manifest:activeManifest,conditions:state.conditions});
+        return current.generation===shareGeneration&&timeline.generation===shareGeneration&&current.committedTime===selection.time
+          &&state.selectedZone?.id===selection.zoneId&&state.mode===selection.mode&&getLanguage()===selection.language
+          &&timeline.times.includes(selection.time);
+      }catch{return false;}
+    }});
   bindZoneInfoInteractions(infoPanel,state.selectedZone,state.mode,history,{onShowLocalParts:showSelectedZoneParts});
-  infoPanel.querySelector("[data-close-zone]")?.addEventListener("click", closeZone);
+  infoPanel.querySelector("[data-close-zone]")?.addEventListener("click",()=>{noteForecastShareUserIntent();closeZone();});
 }
 
 function openZone(zone,{scroll=true}={}) {
@@ -193,6 +223,7 @@ function openZone(zone,{scroll=true}={}) {
 }
 
 function closeZone() {
+  forecastShareControlCleanup();forecastShareControlCleanup=()=>{};
   resetAssistantTopic();
   state.selectedZone=null;
   selectedZonePartsVisible=false;
@@ -210,7 +241,7 @@ function renderRanking() {
   ranking.innerHTML=rows.length?rows.map((item,index)=>`<button class="ranking-item" type="button" data-zone-id="${item.zone.id}"><span class="rank">${index+1}</span><span><strong>${item.zone.name}</strong><small>${item.zone.region}</small><small class="ranking-best-place">${t('ranking.bestPlace')}: ${item.result.score}</small>${scoreQualityMarker(item.result)}</span><b class="rank-score ${scoreRating(item.rankingDisplayScore).level}" title="${t('ranking.areaScore')}">${item.rankingDisplayScore}${exceptionalScoreMark(item.rankingDisplayScore)}</b></button>`).join(""):`<p class="ranking-empty">${t('ranking.waiting')}</p>`;
   const snapshotReference=emergencySnapshotReferenceAt();
   if(snapshotReference)ranking.insertAdjacentHTML('afterbegin',`<p class='ranking-empty runtime-snapshot-note'>${runtimeSnapshotText('ranking',{time:formatDateTime(snapshotReference)})}</p>`);
-  ranking.querySelectorAll("button").forEach(button=>button.addEventListener("click",()=>openZone(state.zones.features.find(item=>item.properties.id===button.dataset.zoneId).properties)));
+  ranking.querySelectorAll("button").forEach(button=>button.addEventListener("click",()=>{noteForecastShareUserIntent();openZone(state.zones.features.find(item=>item.properties.id===button.dataset.zoneId).properties);}));
 }
 
 function groupHoursForZone(zone) {
@@ -309,7 +340,7 @@ async function renderNationalForecast() {
   if(renderId!==state.forecastRenderId)return false;
 
   const list=nationalForecast.querySelector(".national-forecast-list");
-  const render=index=>{nationalForecast.querySelectorAll(".national-day-tab").forEach((button,i)=>button.classList.toggle("active",i===index)); const rows=data[index].rows; list.style.setProperty("--national-column-rows",String(Math.max(1,Math.min(10,rows.length)))); list.innerHTML=rows.length?rows.map((item,i)=>`<button type="button" class="national-zone-row" data-zone-id="${item.zone.id}"><span class="rank">${i+1}</span><span><strong>${item.zone.name}</strong><small>${item.recommended?(item.isNow?t('forecast.bestNow'):t('forecast.bestAt',{time:formatDateTime(item.hour.time,{hour:'2-digit',minute:'2-digit'})})):t('forecast.seeHourly')}</small><small class="ranking-best-place">${t('ranking.bestPlace')}: ${item.result.score}</small>${scoreQualityMarker(item.result)}</span><b class="rank-score ${scoreRating(item.rankingDisplayScore).level}" title="${t('ranking.areaScore')}">${item.rankingDisplayScore}${exceptionalScoreMark(item.rankingDisplayScore)}</b></button>`).join(""):`<p class="ranking-empty">${t('forecast.noData')}</p>`; list.querySelectorAll("button").forEach(button=>button.addEventListener("click",()=>{mapForecast.now();openZone(state.zones.features.find(f=>f.properties.id===button.dataset.zoneId).properties);}));};
+  const render=index=>{nationalForecast.querySelectorAll(".national-day-tab").forEach((button,i)=>button.classList.toggle("active",i===index)); const rows=data[index].rows; list.style.setProperty("--national-column-rows",String(Math.max(1,Math.min(10,rows.length)))); list.innerHTML=rows.length?rows.map((item,i)=>`<button type="button" class="national-zone-row" data-zone-id="${item.zone.id}"><span class="rank">${i+1}</span><span><strong>${item.zone.name}</strong><small>${item.recommended?(item.isNow?t('forecast.bestNow'):t('forecast.bestAt',{time:formatDateTime(item.hour.time,{hour:'2-digit',minute:'2-digit'})})):t('forecast.seeHourly')}</small><small class="ranking-best-place">${t('ranking.bestPlace')}: ${item.result.score}</small>${scoreQualityMarker(item.result)}</span><b class="rank-score ${scoreRating(item.rankingDisplayScore).level}" title="${t('ranking.areaScore')}">${item.rankingDisplayScore}${exceptionalScoreMark(item.rankingDisplayScore)}</b></button>`).join(""):`<p class="ranking-empty">${t('forecast.noData')}</p>`; list.querySelectorAll("button").forEach(button=>button.addEventListener("click",()=>{noteForecastShareUserIntent();mapForecast.now();openZone(state.zones.features.find(f=>f.properties.id===button.dataset.zoneId).properties);}));};
   nationalForecast.querySelectorAll(".national-day-tab").forEach((button,index)=>button.addEventListener("click",()=>render(index))); render(0);
   return true;
 }
@@ -405,7 +436,7 @@ async function reevaluateConditionRuntime(){
       // Prepare the complete replacement before mutating the active runtime.
       const replacementZones=update.zones?projectPublicCoastlines(update.zones):null;
       const replacementLayer=replacementZones
-        ?renderZones(map,replacementZones,()=>({available:false,level:'unavailable'}),zone=>openZone(zone,{scroll:false}),{fitBounds:false})
+        ?renderZones(map,replacementZones,()=>({available:false,level:'unavailable'}),zone=>{noteForecastShareUserIntent();openZone(zone,{scroll:false});},{fitBounds:false})
         :null;
       const selectionChanged=update.changed||previous.available!==next.available
         || previous.publicRuntimeAvailability?.selectedReferenceAt!==next.publicRuntimeAvailability?.selectedReferenceAt;
@@ -524,7 +555,7 @@ async function submitAssistantQuestion(question){
 }
 const quickBox=document.querySelector("#assistantQuickQuestions");quickBox.innerHTML=quickQuestions().map(q=>`<button type="button">${q}</button>`).join("");quickBox.querySelectorAll("button").forEach(button=>button.addEventListener("click",()=>submitAssistantQuestion(button.textContent)));document.querySelector("#assistantButton").addEventListener("click",()=>{resetAssistantTopic();assistantDialog.showModal();});document.querySelector("#assistantForm").addEventListener("submit",async event=>{event.preventDefault();const field=event.currentTarget.elements.question;const q=field.value;field.value="";await submitAssistantQuestion(q);});
 
-document.querySelectorAll(".mode-button").forEach(button=>button.addEventListener("click",()=>setMode(button.dataset.mode)));
+document.querySelectorAll(".mode-button").forEach(button=>button.addEventListener("click",()=>{noteForecastShareUserIntent();setMode(button.dataset.mode);}));
 document.querySelector("#accountButton").addEventListener("click",async()=>{await ensureConditionDetails().catch(()=>{});openAccountDialog(accountDialog,userDataContext());});
 tripButton.addEventListener('click',async()=>{
   if(!publicTripEvidenceRuntime)return;
@@ -560,7 +591,7 @@ try {
   performance.mark?.('ravradar:zones-loaded');
   // De lokale kystdele leverer den præcise synlige geometri, men samles under
   // hovedzonen som ét klikmål, én scorefarve og kun to ydre zonemarkeringer.
-  state.zoneLayer=renderZones(map,zones,()=>({available:false,level:'unavailable'}),zone=>openZone(zone,{scroll:false}));
+  state.zoneLayer=renderZones(map,zones,()=>({available:false,level:'unavailable'}),zone=>{noteForecastShareUserIntent();openZone(zone,{scroll:false});});
   dataStatus.textContent=t('data.checking');
   // 3: samlet landsdatasæt hentes; dataset-id forhindrer blanding.
   const conditions=await loadConditions({manifest});state.conditions=conditions;
@@ -579,6 +610,9 @@ try {
   await yieldToBrowser();
   performance.mark?.('ravradar:ready');
   coreViewReady=true;
+  openForecastShareSelection({incoming:incomingForecastShare,controller:mapForecast,zones:state.zones,
+    setMode,openZone,notice:showForecastShareNotice,language:getLanguage(),
+    isStillRequested:()=>forecastShareUserIntent===0&&!state.selectedZone});
   window.dispatchEvent(new CustomEvent('ravradar:ready',{detail:{generatedAt:conditions.generatedAt||null,datasetId:conditions.datasetId||null}}));
   const forecastCompleted=await renderNationalForecast();
   if(forecastCompleted)performance.mark?.('ravradar:forecast-ready');

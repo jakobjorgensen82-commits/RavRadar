@@ -18,7 +18,7 @@ addEventListener('pageshow', event => {
 initialiseI18n();
 await initializeUserDataSafety();
 performance.mark?.('ravradar:storage-ready');
-await import("./app.js?v=4.0.588&copy=footer-20261005&ui=account-timeline-now-20261018");
+await import("./app.js?v=4.0.588&copy=footer-20261005&ui=forecast-share-20261024");
 appImported = true;
 performance.mark?.('ravradar:app-imported');
 void import("./js/services/visit-counter.js?v=4.0.588")

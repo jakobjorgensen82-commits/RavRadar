@@ -1,3 +1,17 @@
+## 25. oktober — præcis workflowprøve for brugerdata og versionsbundne browserprøver
+
+Den lokale brugerdata-kilde retter et påvist orakelgab: den aktuelle 006-/eksport-workflowfil genkendes på hele sin hash og føres gennem entydige inverse ændringer tilbage til den uændrede historiske workflowkontrol. Ændrede installationsflag, myndighed, eksportkalder, frister og samtidighed afvises fortsat. Produktworkflowet og dets sikkerhedsgrænser ændres ikke for at få prøven grøn.
+
+Rapportens normale browserprøve læser nu releaseversionen fra package.json til de samme otte eksplicitte importkontroller. Alle eksisterende VM-, adgangs-, kontoskift- og racekontroller bevares; det er ikke bevis for installeret statistik eller offentlig rapport. Slutkilden skal fortsat bestå sin normale kontrol før levering. Den numeriske strømrettelse er særskilt produktionsverificeret; de fire øvrige hovedområder er åbne. 587-installation og den efterfølgende offentlige generation er stadig udestående, og SOURCE samt statistik og automatisk sletning forbliver inaktive.
+
+## 25. oktober — lokal SOURCE588-sammenføring med brugerdata, deling og checkpointrettelser
+
+Denne lokale sammenføring bevarer SOURCE588-forløbet og de indgående 719/720-beslutninger, herunder begge normale checkpointdestinationer. SOURCE forbliver inaktiv med uændret C157/I153/T12 og originale migrationer. De indgående 587-noter er forælderens daterede evidens, ikke en ommærkning af denne kilde eller et samlet SOURCE-PASS. 587 er endnu ikke installeret; cron er slået fra, og P0-kontrollen håndteres særskilt af ROOT.
+
+Tre nye browsermodulers importversioner følger kun 587 → 588, så de bruger samme auth-singleton som den lokale SOURCE-app. Det ændrer ikke score, model eller data. Den normale browsermodul-versionskontrol er lokalt bestået; endelig SOURCE-kilde-/nativekontrol, installation og offentlig virkning er fortsat åbne. Statistik og automatisk sletning forbliver inaktive, og rapportfrigivelse samt særskilt Worker-levering får ingen ny autoritet.
+
+Mål 1 om den nationale numeriske strømrettelse er lukket af ROOT på faktisk normal produktionskædeevidens; det genåbnes ikke uden modstridende evidens. De fire øvrige hovedområder er åbne. De bevarede ældre udsagn om fem åbne mål eller afventet sammenføring er dateret historik på netop disse punkter; dækningsgrad og kontinuerlig vejrhentning er fortsat P0.
+
 ## Ikke udgivet — normal CP-fuldførelse i SOURCE-fixturen
 
 - Bruger den normale coverage-sealer og faktisk genlæsning før source-stage, så et checkpoint ikke forveksles med færdig indsamling. Det strenge DMI-registry, nul-restkrav, originaler og manglende advisory-historik bevares.
@@ -22,6 +36,38 @@
 - Bevarer håndbogens metadata, stabile ID'er og alle eksisterende afsnit; kun de to forklarende afsnit i 89.267 suppleres.
 - Ingen ny version, C/I/T-udstedelse, SQL-definition eller aktivering. 587s præcise kontrol og installation samt SOURCEs samlede kvalifikation og offentlige virkning er stadig åbne; P0 og alle fem mål til 18. november består.
 
+## Ikke udgivet — fælles brugerdata-/delingskilde med checkpointrettelser
+
+- Bevarer begge ægte Git-historikker, begge rettede checkpointdestinationer, hele destinationsregressionen og alle tidligere dokumentafsnit.
+- Bevarer hele brugerdata-/delingskoden og alle 66 Supabase-migrationer uden ny version, model-/SQL-udstedelse eller produktionsændring.
+- Den tidligere brugerdata-/delingskilde har bestået sin samlede kontrol; den nye komposition kræver sin egen normale kvalifikation. Offentlig I97 og de særskilte leveringskrav kommer fortsat før brugerdata-/Worker-/UI-levering.
+
+## Ikke udgivet — ægte fælles kandidat uden nyt model- eller SQL-delta
+
+- Den isolerede app-/assistentprøve medtager appens egne delings-livstidsbindinger. Den rigtige oprydning, nulstilling, fejlkast og alle tidligere kontroludsagn bevares; produktkoden ændres ikke af testrettelsen.
+- Sammenfører de to 587-forløb med hele disjunkte kodeejere og begge dokumenthistorikker. Model, geodata, gamle migrationer og almindelig vejrlevering bevares; ingen ny version eller aktivering.
+- Kvalifikation af den præcise slutkilde er påkrævet. Ældre målprøver og Node-læsning på 586 er ikke bevis for den nye samlede kandidat eller hosted Free-drift; den genuine 587-bundle er 141,04 KiB.
+- Bevarer statistik-OFF, offentligt uudstedt rapport og inaktiv automatisk sletning. Fund/ikke-fund ommærkes ikke til oplevet turkvalitet. Alle fem hovedmål og de faktiske leveringskrav består.
+
+## Ikke udgivet — offentlig prognosedeling på særskilt Free-Worker
+
+- Forbereder deling af den faktisk viste zone, time, søgemåde og sprog via den faste adresse til ravradar-prognosedeling. Brugeren vælger selv destination og opslagstekst; der deles ikke en nyberegnet eller brugerbestemt score.
+- Genbruger den eksisterende offentlige datalæser og dens kontrol af størrelse, kontrolsum, modelbinding og udløb. Den tynde Worker-indgang og konfiguration har ingen database, billedlager, KV/R2, assets-binding, egne DNS-ruter, cron eller secrets.
+- Ejerens nye godkendelse gælder kun denne ene Worker på den eksisterende Free-konto og workers.dev. Levering skal ske særskilt efter normal kildekontrol og uden ændring af det almindelige vejr-/Pages-workflow.
+- 129 normale lokale tilfælde består. Lokal bundle er 140,75 KiB; en Node-læsning af rigtige offentlige data gav en korrekt forhåndsvisning. Det er ikke Worker-oprettelse, målt Free-kapacitet eller faktisk Facebook-kontrol. Disse leveringskrav er fortsat åbne. Ingen versions-, model- eller SQL-udstedelse. Se håndbog 89.268.
+
+## 24. oktober — privat userdata-sammenføring med genuine 587 og P0
+
+Den private 006-/ejerrapportkandidat er lokalt sammenført med genuine 587-kilden og de særskilt main-leverede P0-rettelser til DMI-køobservation og fair tidsandel. Dette er ikke præcis samlet kildekvalifikation, installation, aktiveret statistik eller offentlig rapport. Begge grenes fulde historik bevares; de daterede afventninger nedenfor om netop P0-main-leveringerne er historik.
+
+4.0.587, C98/I97/T12, 66 gamle Supabase-migrationer, originale 004/005 og den særskilte 006-kandidats standard OFF-/plan-grænser bevares. De 29 faktisk beståede account-tilfælde er fortsat deres oprindelige bevis, ikke et nyt samlet PASS. Præcis samlet kilde-/nativekontrol, faktisk schema-/Workerinventory, kontrolleret OFF-installation/genlæsning og ejerens browseraccept er åbne. Ingen statistik- eller frigivelsesautoritet følger af sammenføringen. Kontinuerligt vejr og dækningsgrad er P0; alle fem mål er fortsat åbne.
+
+## Ikke udgivet — korrekt checkpointdestination før assistentbinding på 4.0.587
+
+- Retter de midlertidige scorecheckpointstier både før SQL og i den efterfølgende almindelige vejrhentnings overgang til den dedikerede cachesti, som den uændrede normale læser kræver.
+- Tilføjer én regression gennem den ægte frosne 586-læser og begge kalderes faktiske destinationskonstruktioner: tidligere stier afvises før requester; rettede stier når requester uden at skrive data.
+- Bevarer afgrænset fejlaflæsning, alle tidligere hele importvarianter, modelbindinger, SQL, originaler og sikkerhedskontroller. Lokal reproduktion/rettelse er ikke bevis for installation eller fungerende offentlig assistent.
+
 ## Ikke udgivet — fair tidsandel til første kritiske havmodel på 4.0.586
 
 - Erstatter første kritiske havmodels faste ottefilersstop med den normale filgrænse og samme tidsfordeling, som allerede beskytter de øvrige ventende familier.
@@ -34,6 +80,28 @@
 - Tilføjer `firstTurnOrder` med klassifikationsprioritet, faste årsagskategorier, faktisk køplacering og korrekt startmarkør pr. samling.
 - Bevarer første observation gennem senere omplanlægning uden at ændre kø, kildeadgang, budgetter eller tal.
 - Leverer ingen scalar-plan eller prioriteringsændring. Lokal målprøve består; præcis samlet kildekontrol og faktisk driftsobservation afventer.
+
+
+## Ikke udgivet — privat ejeroversigt for afsluttede månedsrapporter, uændret 4.0.587
+
+- Gemmer en korrekt afsluttet rapport under dens faktiske lukkede måned, også når et ældre job afsluttes senere. Bevarer originalbinding, frisk samtykke-/slettekontrol, sidste VERIFY og insert-only genlæsning.
+- Tilføjer frisk beskyttet ejeroversigt og en læsbar tabel med de eksisterende 40 støjede celler i 20 rækker. Viser faktisk måned og fund/ikke-fund; ingen enkeltdata, ny estimator, summation eller automatisk RavScore-ændring.
+- Bevarer kontoskift-/logoutafslag, aktuelle full_admin-rettigheder, ingen ældre fallback, OFF/default-plan og den gennemgåede 006-installationsarm.
+- Hele normale account-callers består lokalt med 29/0/0; browsermiljø og transport er syntetiske. Installation, faktisk hosted browser, Free-kapacitet, anonymitet og tilladt statistikfrigivelse er fortsat åbne. Ingen ny version, modelbinding eller SQL-udstedelse.
+
+## Ikke udgivet — oprindelig modelbinding i statistikjob, uændret 4.0.587
+
+- Bevarer et gemt statistikjobs fulde oprindelige modelgrundlag gennem programopdateringer, alle kvitteringer og sidste genlæsning. Kun serverens faktiske jobvalg giver adgang; nyeste statistikvalg og sletning kontrolleres fortsat. Ukendte gamle hashes bevares og afvises.
+- Forbereder særskilt 006-installation med eksplicit false-default tilladelse, eksakt kontrol0-schema, faktisk Worker-OFF, engangsintention, stop ved ukendt skriveudfald og præcis genlæsning. 004/005, deres data og privacybudgetter bevares.
+- Retter fælles modullæsers forveksling af Array.from i deklarationseksport med re-export. Indlejrede imports og alle ukendte-/dynamiske afslag består; DP-koden ændres ikke.
+- Hele normale account-callers består lokalt med 28/0/0, inklusive rollover og Workerindsamling. Tre normale model-/bindingschecks består; ingen ny version, C/I/T eller RavScore-SQL-binding udstedes.
+- Synkroniserer håndbogens eksisterende 89.260 og dens statiske installationskopi uden ændring af SQL-definitioner. Præcis ny CI, faktisk installation, hosted kapacitet, anonym statistik og offentlig effekt er ikke gennemført. Aggregate og automatisk retention aktiveres ikke.
+
+## 24. oktober — lokal 587-sammenføring med den leverede DMI-kilde
+
+DMI-rettelsen er præcist kildekvalificeret og merget særskilt på den installerede 586-familie. Den senest afsluttede naturlige vejrhentning er offentligt verificeret; den næste almindelige kørsel er ved denne lokale sammenføring fortsat i DMI-arbejdet. Det er ikke offentlig 587, bevist fuld dækning eller en afsluttet assistentlevering. Kontinuerligt vejr og alle forventede timer/zoners dækning har fortsat førsteprioritet; ingen produktionsændring må ske under den aktive writer.
+
+Den særskilte 587-kandidat har bestået sin præcise kildekontrol. Den nye lokale kombination kræver sit eget samlede bevis; den tidligere afbrudte 587+DMI-kontrol er ikke et helt PASS. Alle produktblade, udstedte modelbindinger, migrationsfiler og den eksisterende SQL uden for håndbogsliteralen bevares. Assistentens håndbogsafsnit 89.265 og stabile ID er uændrede; det særskilte DMI-afsnit har 89.267. Begge dokumenthistorikker nedenfor bevares. Installation, hosted AI og faktisk 587-virkning er åbne; alle fem hovedmål er åbne til 18. november 2026.
 
 
 ## 24. oktober — SOURCE-prøvens WAM-identitet rettet lokalt

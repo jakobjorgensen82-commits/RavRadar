@@ -4,6 +4,7 @@ import { isCalibrationEligibleForBinding } from '../../js/services/calibration-e
 import { AGGREGATE_LIMITS, assertAggregateRequest, assertAggregateRequestEnvelope } from '../../supabase/functions/_shared/trip-aggregate-contract.js';
 import { assertReviewPolicyAnchor, POLICY_ANCHOR } from './trip-aggregate-policy-gate.js';
 import { qualifyTripWeatherAggregateRow } from './trip-aggregate-row.js';
+import { readAggregateJobOriginalBinding } from './trip-aggregate-job-binding.js';
 
 // PRIVATE INACTIVE implementation of input scan only. No HTTP route, proposal,
 // noise, report, budget charge or contribution/WeakMap deserialization exists.
@@ -20,7 +21,7 @@ const SUBJECT = /^usr_v1_[A-Za-z0-9_-]{43}$/;
 const ROW_FIELDS = ['storage_schema_version','owner_subject','owner_kind','trip_id',
   'client_observation_id','observed_at','submitted_at','payload_json','payload_sha256','source','created_at'];
 const META_FIELDS = ROW_FIELDS.filter(key => key !== 'payload_json');
-const HEADER_FIELDS = ['job_key','period_start','period_end','source_cutoff','execution_id','binding_sha256','policy_sha256',
+const HEADER_FIELDS = ['job_key','period_start','period_end','source_cutoff','execution_id','binding_sha256','model_binding_json','policy_sha256',
   'accounting_sha256','preference_sha256','initial_erasure_sha256','erasure_revision','input_accounts',
   'phase','revision','next_shard','after_id','rows_read','payload_bytes','winner_count',
   'preference_count','erased_count','synthetic_count','ineligible_count','repeat_count','scan_steps',
@@ -89,7 +90,7 @@ const existingRequests=new WeakMap();
 export function assertServerSelectedAggregateRequest(request, now=Date.now()) {
   const issued=existingRequests.get(request);
   if(!issued) return assertAggregateRequest(request,ravScoreModelBinding(),now);
-  assertAggregateRequestEnvelope(request,ravScoreModelBinding(),now);
+  assertAggregateRequestEnvelope(request,issued.binding,now);
   if(canonicalJson(request)!==issued.request) fail('AGGREGATE_JOB_REQUEST_CHANGED');
   return request;
 }
@@ -110,6 +111,8 @@ async function read(q, control, key) {
     || !['SCANNING','READY_INPUT','FAILED','INVALIDATED'].includes(row.phase)
     || Object.entries(COUNTERS).some(([name, maximum]) => !integer(row[name], maximum))
     || ['job_key','binding_sha256','policy_sha256','accounting_sha256','preference_sha256','initial_erasure_sha256'].some(name => !SHA.test(row[name]))
+    || !(row.model_binding_json === null || (typeof row.model_binding_json === 'string'
+      && row.model_binding_json.length > 0 && new TextEncoder().encode(row.model_binding_json).length <= 4096))
     || typeof row.source_cutoff !== 'string' || !Number.isFinite(Date.parse(row.source_cutoff))
     || new Date(row.source_cutoff).toISOString() !== row.source_cutoff
     || !(row.after_id === '' || UUID.test(row.after_id))
@@ -138,11 +141,7 @@ async function invalidate(q, control, row, reason) {
     revision=revision+1,lease_token=null,lease_until_ms=null where job_key=? and revision=? and phase in ('SCANNING','READY_INPUT')`,
   [reason, row.job_key, row.revision]);
 }
-async function assertBasis(q, databases, row, info, request) {
-  if (row.period_start !== request.period.start || row.period_end !== request.period.end
-    || row.binding_sha256 !== info.bindingSha || row.policy_sha256 !== POLICY_ANCHOR.policy_sha256
-    || row.accounting_sha256 !== POLICY_ANCHOR.accounting_sha256
-    || Date.parse(row.source_cutoff) > Date.parse(request.preferenceSnapshot.snapshotAt)) fail('AGGREGATE_JOB_BINDING_CHANGED');
+async function assertFreshJobConsent(q, databases, row, info, request) {
   if (row.preference_sha256 !== info.preferenceSha) {
     await invalidate(q, databases[0], row, 'CONSENT_CHANGED'); fail('AGGREGATE_JOB_CONSENT_CHANGED');
   }
@@ -150,21 +149,36 @@ async function assertBasis(q, databases, row, info, request) {
   if (row.erasure_revision !== info.erasureRevision) {
     await invalidate(q, databases[0], row, 'OWNER_ERASURE_CHANGED'); fail('AGGREGATE_OWNER_SET_CHANGED');
   }
+}
+async function assertBasis(q, databases, row, info, request) {
+  if (row.period_start !== request.period.start || row.period_end !== request.period.end
+    || row.binding_sha256 !== info.bindingSha || row.policy_sha256 !== POLICY_ANCHOR.policy_sha256
+    || row.accounting_sha256 !== POLICY_ANCHOR.accounting_sha256
+    || (row.model_binding_json !== null && row.model_binding_json !== canonicalJson(request.modelBinding))
+    || Date.parse(row.source_cutoff) > Date.parse(request.preferenceSnapshot.snapshotAt)) fail('AGGREGATE_JOB_BINDING_CHANGED');
+  await assertFreshJobConsent(q, databases, row, info, request);
   if (['FAILED','INVALIDATED'].includes(row.phase)) fail('AGGREGATE_JOB_TERMINAL');
 }
 
 async function issueExistingRequest(q,databases,request,row,now) {
   if(!row) fail('AGGREGATE_JOB_MISSING');
-  const selected={...request,period:{start:row.period_start,end:row.period_end}};
+  let selected={...request,period:{start:row.period_start,end:row.period_end}};
   assertAggregateRequestEnvelope(selected,ravScoreModelBinding(),now);
   await assertReviewPolicyAnchor(q.wrappedControl);
   const info={key:await sha256Hex(canonicalJson({ledgerId:POLICY_ANCHOR.ledger_id,period:selected.period})),
-    bindingSha:await sha256Hex(canonicalJson(selected.modelBinding)),
     preferenceSha:await sha256Hex(canonicalJson(selected.preferenceSnapshot.accounts)),
     erasureRevision:await epoch(q,databases[0])};
   if(row.job_key!==info.key) fail('AGGREGATE_JOB_STATE_INVALID');
+  if(Date.parse(row.source_cutoff)>Date.parse(selected.preferenceSnapshot.snapshotAt)) fail('AGGREGATE_JOB_BINDING_CHANGED');
+  // Nyere OFF/ON-revision eller sletning kontrolleres også, hvis en gammel
+  // hash ikke kan opløses. Ukendt binding må ikke skjule samtykkets ændring.
+  await assertFreshJobConsent(q,databases,row,info,selected);
+  const binding=await readAggregateJobOriginalBinding(row.model_binding_json,row.binding_sha256);
+  selected={...selected,modelBinding:binding};
+  assertAggregateRequestEnvelope(selected,binding,now);
+  info.bindingSha=await sha256Hex(canonicalJson(binding));
   await assertBasis(q,databases,row,info,selected);
-  existingRequests.set(selected,{key:row.job_key,request:canonicalJson(selected)});
+  existingRequests.set(selected,{key:row.job_key,request:canonicalJson(selected),binding});
   return selected;
 }
 // The wire still names only the previous closed month. Selection is a bounded
@@ -205,11 +219,11 @@ export async function startTripWeatherAggregateJob(databases, request, { now = D
     })) fail('AGGREGATE_TOMBSTONE_INVALID');
     const erasureSha = await sha256Hex(canonicalJson(tombstones.map(item => item.owner_subject)));
     await q.run(control, `insert into trip_weather_aggregate_jobs
-      (job_key,period_start,period_end,source_cutoff,execution_id,binding_sha256,policy_sha256,accounting_sha256,
+      (job_key,period_start,period_end,source_cutoff,execution_id,binding_sha256,model_binding_json,policy_sha256,accounting_sha256,
        preference_sha256,initial_erasure_sha256,erasure_revision,input_accounts)
-      select ?,?,?,?,?,?,?,?,?,?,?,? from trip_weather_aggregate_job_control where singleton=1 and erasure_revision=?
+      select ?,?,?,?,?,?,?,?,?,?,?,?,? from trip_weather_aggregate_job_control where singleton=1 and erasure_revision=?
       and not exists(select 1 from trip_weather_aggregate_jobs where job_key=?)`,
-    [info.key,request.period.start,request.period.end,request.preferenceSnapshot.snapshotAt,AGGREGATE_JOB_EXECUTION.id,info.bindingSha,
+    [info.key,request.period.start,request.period.end,request.preferenceSnapshot.snapshotAt,AGGREGATE_JOB_EXECUTION.id,info.bindingSha,canonicalJson(request.modelBinding),
       POLICY_ANCHOR.policy_sha256,POLICY_ANCHOR.accounting_sha256,info.preferenceSha,erasureSha,
       info.erasureRevision,request.preferenceSnapshot.accounts.length,info.erasureRevision,info.key]);
     row = await read(q, control, info.key);

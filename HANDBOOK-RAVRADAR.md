@@ -1,3 +1,17 @@
+## 89.268 Del en offentlig prognose
+
+Kort fortalt: Et delingslink peger på det valgte sted, tidspunkt og søgemåde. Du vælger selv, hvor det deles, og hvad du skriver til det.
+
+Du kan dele den viste prognose eller kopiere linket fra den valgte zone. Linket bruger dit valgte sted, den præcise time, søgemåden strand eller waders samt dansk, tysk eller engelsk. Visningen erstatter ikke en manglende time med et andet tidspunkt.
+
+Forhåndsvisningen bruger RavRadars allerede offentliggjorte score og viser de relevante forbehold, for eksempel ufuldstændig historik eller delvis dækning. Deling beregner ikke en ny score og ændrer ikke vejrdata. En score er en beregnet vurdering, ikke en garanti for fund.
+
+Dato og klokkeslæt vises i dansk lokal tid med den rigtige sommer- eller vintertid. Sted, tidspunkt og søgemåde skal læses sammen med scoren. Linkets sprogvalg ændrer kun præsentationen, ikke datagrundlaget.
+
+Et link er ikke en permanent kopi af prognosen. Nye offentlige data kan ændre visningen for samme sted og time, og en gammel time kan udløbe. Hvis data ikke længere kan kontrolleres eller er udløbet, må visningen ikke gætte en score. Facebook og andre modtagere kan gemme en tidligere forhåndsvisning, så opslagets kort kan være forsinket i forhold til det link, du åbner.
+
+Telefonens eller browserens delingsmenu bestemmer de tilgængelige destinationer. Du vælger selv destination og opslagstekst; RavRadar sender ikke automatisk et opslag. Delingssiden læser kun den offentlige prognose og bruger det eksisterende RavRadar-logo, ikke private ture eller kontodata.
+
 ## 89.267 Gyldige vejrdata kan bevares uden overskrivning
 
 Hentetiden fordeles mellem de kritiske vejrmodeller, så hver model kan arbejde, mens der stadig er reserveret tid til de øvrige. Et fast filantal fortæller ikke, hvor lang tid filerne tager. Tiden og den fælles downloadgrænse skal derfor begge respekteres. Flere behandlede filer er heller ikke i sig selv bevis for bedre dækning; det afgøres af de gyldige værdier i hele prognosen.
@@ -139,6 +153,18 @@ Statistikkens to ekstra lagerdele skal tillades særskilt. Tilladelsen til den f
 Den nye installationsforberedelse er privat og afgrænset prøvet, ikke installeret. Fire målprøver på normal programkode består, men en nødvendig lokal formatkontrol kunne ikke køres, fordi parseren mangler. Faktisk databaselevering, håndtering af ukendte skriveudfald og serverens processor- og hukommelsesforbrug skal stadig dokumenteres. Selvrapporterede ture er ikke bevis for ægte ture eller korrekt historisk vejr, og skjulte bruger-ID'er er ikke i sig selv anonymitet. Anonymitet, rapporternes samlede spor og tilladt frigivelse skal kontrolleres særskilt, før statistik kan bruges.
 
 Rettelsen er lokalt sammenført og afgrænset prøvet, men endnu ikke leveret offentligt. Samlet statistik og dens særskilte lagerinstallation er fortsat slået fra. Der loves hverken dokumenteret anonymitet, en fungerende automatisk sletning eller mailvarsling ud fra denne prøve. Den nye måldato er 18. november 2026; ældre frister og leveringsstatus nedenfor er dateret historik.
+
+Supplerende forberedelse: Et gemt statistikjob skal også beholde sit fulde oprindelige modelgrundlag, når programmet senere opdateres. Et ældre job må ikke ommærkes som et nyt. Kun serverens genlæsning af det faktisk gemte arbejde kan give adgang til at fortsætte; brugerens anmodning eller en kopieret kvittering er ikke nok. Kan det gamle grundlag ikke genkendes sikkert, bevares arbejdet og afvises frem for at blive gættet eller sprunget tavst over.
+
+Nyeste statistikvalg og sletning skal kontrolleres igen under fortsættelsen. Statistikpræferencen er som udgangspunkt slået til, men et senere fravalg må ikke overskrives af et forsinket tilvalg. Kunstige testture må ikke indgå i statistik eller bevis for modellen. En skjult identifikator eller en stor nok gruppe er ikke alene bevis for anonymitet; gentagne rapporters samlede oplysninger skal også vurderes.
+
+Den ekstra lagerændring til det oprindelige modelgrundlag kræver sin egen udtrykkelige tilladelse. De eksisterende tabeller og data bevares. Statistik skal beviseligt være slået fra før ændringen, lageret skal læses korrekt tilbage, og den nye serverversion skal igen bekræfte, at statistik er slået fra. Et ukendt skriveudfald giver ikke lov til at gentage ændringen.
+
+Denne supplerende løsning er lokalt prøvet, men ikke installeret eller aktiveret. Den aktuelle installation af de tidligere statistikdele er ikke dokumenteret af denne prøve; ældre statusudsagn er dateret historik. Faktisk drift på de gratis grænser, dokumenteret anonymitet, backupfrister og tilladt frigivelse er fortsat åbne krav. Automatisk sletning forbliver slået fra uden fungerende varsling. Ingen ny scoreformel eller ændret kildeprioritet følger af forberedelsen.
+
+En færdig månedsrapport skal beholde den måned, arbejdet faktisk vedrører, også når det afsluttes senere. Den gemmes uden at overskrive en tidligere rapport for samme måned. En privat ejeroversigt kan vise den nyeste faktisk gemte rapport efter en frisk adgangskontrol. Manglende eller ændrede svar må ikke erstattes med en ældre rapport. Kontoskift og logout fjerner visningen, og en download kræver en ny kontrol.
+
+Den forberedte oversigt viser faktisk måned og støjede gruppetal i 20 rækker: vind, bølger, strøm og vandstandsændring, hver med fem intervaller og fund/ikke-fund. De 40 tal er ikke præcise turantal og må ikke lægges sammen på tværs af grupper. Fund er ikke det samme som en god oplevelse, og ikke-fund er ikke det samme som en dårlig oplevelse. Ingen enkeltpersoner eller enkelte ture vises, og rapporten ændrer ikke RavScore. Denne rapportvej er lokalt prøvet, ikke installeret eller aktiveret. Faktisk drift, gratis kapacitet og dokumenteret anonymitet, også på tværs af flere rapporter, skal stadig kontrolleres. Statistik er fortsat slået fra i leveringsforløbet; dette er ikke offentliggjort statistik.
 
 ## 89.259 Bedre spørgsmål og ærlige turrapporter – 4.0.585-kandidat
 

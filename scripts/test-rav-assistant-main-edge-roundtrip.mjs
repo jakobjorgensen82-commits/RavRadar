@@ -672,6 +672,11 @@ try {
     const mapScoresEnd = appSource.indexOf('const mapForecast=', mapScoresStart);
     assert.ok(mapScoresStart >= 0 && mapScoresEnd > mapScoresStart);
     const mapScoresBlock = appSource.slice(mapScoresStart, mapScoresEnd);
+    // Brug appens egne lifecycle-bindinger; ingen erstatning for closeZone eller dens fejl.
+    const shareLifecycleStart = appSource.indexOf('let forecastShareControlCleanup=');
+    const shareLifecycleEnd = appSource.indexOf('const mapTimelineHost=', shareLifecycleStart);
+    assert.ok(shareLifecycleStart >= 0 && shareLifecycleEnd > shareLifecycleStart);
+    const shareLifecycleBlock = appSource.slice(shareLifecycleStart, shareLifecycleEnd);
     const modeLine = appSource.split(/\r?\n/).find(line => line.startsWith('function setMode('));
     assert.ok(modeLine);
     const question = 'Når strømmen går langs stranden i stedet for mod land, er det så stadig godt at lede efter rav?';
@@ -735,7 +740,7 @@ try {
             classList: { remove() {} } }; },
         },
       });
-      vm.runInContext(mapScoresBlock + '\n' + mapFrameBlock + '\n' + appBlock + '\n' + zoneBlock + '\n' + modeLine, context, { filename: 'actual-app-assistant-and-lifecycle.js' });
+      vm.runInContext(mapScoresBlock + '\n' + shareLifecycleBlock + '\n' + mapFrameBlock + '\n' + appBlock + '\n' + zoneBlock + '\n' + modeLine, context, { filename: 'actual-app-assistant-and-lifecycle.js' });
       assert.equal(vm.runInContext('mapFrame()', context), null, 'Use the whole actual app mapFrame, not a function stub.');
       return { state, display, context,
         submit: vm.runInContext('submitAssistantQuestion', context),
@@ -748,6 +753,32 @@ try {
         waitHeld: async () => { for (let i = 0; i < 25 && !release; i++) await new Promise(resolve => setImmediate(resolve)); assert.equal(typeof release, 'function'); },
         release: () => { assert.equal(typeof release, 'function'); release(); release = null; },
       };
+    }
+    if (fieldDaylightOnly === false) {
+      // Samme normale VM-kalder: rigtig closeZone, callback-observation og uændret fejlkast.
+      const lifecycle = uiFixture();
+      assert.equal(vm.runInContext('typeof forecastShareControlCleanup', lifecycle.context), 'function');
+      assert.equal(vm.runInContext('forecastShareUserIntent', lifecycle.context), 0);
+      vm.runInContext('noteForecastShareUserIntent()', lifecycle.context);
+      assert.equal(vm.runInContext('forecastShareUserIntent', lifecycle.context), 1);
+      let cleanupCalls = 0;
+      lifecycle.context.forecastShareCleanupProbe = () => { cleanupCalls += 1; };
+      vm.runInContext('forecastShareControlCleanup=forecastShareCleanupProbe', lifecycle.context);
+      lifecycle.openZone({ id: 'synthetic-share-cleanup' }, { scroll: false });
+      lifecycle.closeZone();
+      assert.equal(cleanupCalls, 1);
+      assert.equal(lifecycle.state.selectedZone, null);
+      assert.equal(lifecycle.context.infoPanel.hidden, true);
+      assert.equal(vm.runInContext('forecastShareControlCleanup===forecastShareCleanupProbe', lifecycle.context), false);
+      lifecycle.closeZone();
+      assert.equal(cleanupCalls, 1, 'Den gamle oprydning må ikke genbruges efter closeZone.');
+      assert.equal(vm.runInContext('forecastShareUserIntent', lifecycle.context), 1);
+      const cleanupError = new Error('SYNTHETIC_SHARE_CLEANUP_FAILURE');
+      lifecycle.context.forecastShareCleanupProbe = () => { throw cleanupError; };
+      vm.runInContext('forecastShareControlCleanup=forecastShareCleanupProbe', lifecycle.context);
+      lifecycle.openZone({ id: 'synthetic-share-cleanup-error' }, { scroll: false });
+      assert.throws(() => lifecycle.closeZone(), error => error === cleanupError);
+      assert.equal(lifecycle.state.selectedZone.id, 'synthetic-share-cleanup-error');
     }
     if (fieldDaylightOnly === 'origin-identification') {
       reset(); controlledProviderResponse=null; responseMutation=null;
