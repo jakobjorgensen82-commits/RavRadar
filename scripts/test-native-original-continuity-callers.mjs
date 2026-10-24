@@ -648,7 +648,7 @@ test('assistant binding prewrite diagnostic keeps real CLI guards and bounded co
   assert(catalog.includes("imports:ASSISTANT_BINDING_PREWRITE_REVIEWED['scripts/assistant-later-h0-binding-prewrite.mjs'].imports"));
 });
 
-test('assistant binding prewrite destination passes the genuine frozen586 protected-S path contract',async()=>{
+test('assistant binding and ordinary transition destinations satisfy the genuine frozen586 protected-S path contract',async()=>{
   const {runInNewContext}=await import('node:vm');
   const {withAuthenticated586PredecessorSource}=await import('./check-assistant-later-h0-predecessor-source.mjs');
   const source=await fs.readFile(path.join(ROOT,'scripts/assistant-later-h0-binding-prewrite.mjs'),'utf8');
@@ -656,24 +656,36 @@ test('assistant binding prewrite destination passes the genuine frozen586 protec
   const matches=[...locations.matchAll(/const p=(\{[\s\S]*?\});/g)];
   assert.equal(matches.length,1,'Use the actual normal destination constructor, not a copied test path');
   assert(source.includes('checkpointPath:p.originalS,targetReference:selected.productionReferenceAt'));
+  const ordinary=await fs.readFile(path.join(ROOT,'scripts/assistant-later-h0-runtime-transition.mjs'),'utf8');
+  const actualPaths=ordinary.slice(ordinary.indexOf('function paths(){'),ordinary.indexOf('async function inventory(root){'));
+  const checkpointConstant=[...ordinary.matchAll(/,CP='([^']+)';/g)];assert.equal(checkpointConstant.length,1);
+  assert(ordinary.includes('checkpointPath:p.originalSPath,'));
   await withAuthenticated586PredecessorSource(async frozenRoot=>{
     // No target is created: a missing synthetic protected row stops before write.
     const root=path.join(frozenRoot,'fixture-binding-original');
     const targets=runInNewContext('('+matches[0][1]+')',{path,root});
     assert.equal(targets.root,root);
+    const ordinaryTargets=runInNewContext(actualPaths+'\npaths();',{assert,path,ROOT,CP:checkpointConstant[0][1],
+      process:{env:{RAVRADAR_PRIVATE_RUNTIME_ROOT:root,RAVRADAR_PRIVATE_RUNTIME_BUNDLE:path.join(root,'bundle')}}});
+    assert.equal(ordinaryTargets.privateRoot,root);
     const normal=await import(pathToFileURL(path.join(frozenRoot,'scripts/protected-ravscore-continuation-checkpoint.mjs')).href);
     let requests=0;
     const request=async()=>{requests++;return [];};
-    await assert.rejects(normal.restoreProtectedRavScoreContinuationCheckpoint({
-      checkpointPath:path.join(root,'original-S.json'),targetReference:'2026-10-24T16:00:00.000Z',request,
-    }),/dedicated \.cache path/);
-    assert.equal(requests,0,'The previous caller target is rejected before protected I/O');
-    const result=await normal.restoreProtectedRavScoreContinuationCheckpoint({
-      checkpointPath:targets.originalS,targetReference:'2026-10-24T16:00:00.000Z',request,
-    });
-    assert.equal(requests,1,'The actual caller target must reach the genuine reader');
-    assert.equal(result.reason,'protected-checkpoint-not-found');assert.equal(result.targetUnchanged,true);
-    await assert.rejects(fs.access(targets.originalS),/ENOENT/);
+    for(const previous of ['original-S.json','assistant586-original-checkpoint.json']){
+      await assert.rejects(normal.restoreProtectedRavScoreContinuationCheckpoint({
+        checkpointPath:path.join(root,previous),targetReference:'2026-10-24T16:00:00.000Z',request,
+      }),/dedicated \.cache path/);
+      assert.equal(requests,0,'Each previous caller target is rejected before protected I/O');
+    }
+    for(const checkpointPath of [targets.originalS,ordinaryTargets.originalSPath]){
+      const before=requests;
+      const result=await normal.restoreProtectedRavScoreContinuationCheckpoint({
+        checkpointPath,targetReference:'2026-10-24T16:00:00.000Z',request,
+      });
+      assert.equal(requests,before+1,'Each actual caller target must reach the genuine reader');
+      assert.equal(result.reason,'protected-checkpoint-not-found');assert.equal(result.targetUnchanged,true);
+      await assert.rejects(fs.access(checkpointPath),/ENOENT/);
+    }
     await assert.rejects(fs.access(root),/ENOENT/);
   });
 });

@@ -1,7 +1,7 @@
 ## Ikke udgivet — korrekt checkpointdestination før assistentbinding på 4.0.587
 
-- Retter kalderens midlertidige scorecheckpointsti til den dedikerede cachesti, som den uændrede normale læser kræver.
-- Tilføjer én regression gennem den ægte frosne 586-læser og kalderens faktiske destinationskonstruktion: tidligere sti afvises før requester; rettet sti når requester uden at skrive data.
+- Retter de midlertidige scorecheckpointstier både før SQL og i den efterfølgende almindelige vejrhentnings overgang til den dedikerede cachesti, som den uændrede normale læser kræver.
+- Tilføjer én regression gennem den ægte frosne 586-læser og begge kalderes faktiske destinationskonstruktioner: tidligere stier afvises før requester; rettede stier når requester uden at skrive data.
 - Bevarer afgrænset fejlaflæsning, alle tidligere hele importvarianter, modelbindinger, SQL, originaler og sikkerhedskontroller. Lokal reproduktion/rettelse er ikke bevis for installation eller fungerende offentlig assistent.
 
 ## Ikke udgivet — fair tidsandel til første kritiske havmodel på 4.0.586
