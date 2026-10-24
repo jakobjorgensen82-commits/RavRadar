@@ -12,7 +12,7 @@ export const RAV_ASSISTANT_RAVSCORE_MODEL_BINDING = Object.freeze({
   bestTimePolicyId: "score-history-water-tie-earliest-v3",
   presentationPolicyId: "score-bands-35-55-75-exceptional90-v1",
   modelContractSha256: "a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b",
-  modelBundleSha256: "6d8f7cca203b5f7ee5155f3c0cdb39403a02fd0eb30fecaca5070ef9f814a805",
+  modelBundleSha256: "5fa3e96cb3cf0f47e6a10bd37d4e1b1b93f837bf0f221dbb49d2a6442289dbc8",
 });
 
 export const RAV_ASSISTANT_KNOWLEDGE_SCHEMA = "rav-assistant-public-knowledge-v1";
@@ -20,7 +20,7 @@ export const RAV_ASSISTANT_KNOWLEDGE_SCHEMA = "rav-assistant-public-knowledge-v1
 // public knowledge document by the Edge contract test and sent with every
 // assistant response so Pages can reject a split model/knowledge deployment.
 export const RAV_ASSISTANT_KNOWLEDGE_SHA256 =
-  "72d84309e5ed5e4a180fc02b2d476041fcd65a576336a949df0bd43e87774378";
+  "ddefdc8f624014509787bce4852b63f81588f6dd954a17d76307afddb677d105";
 export const RAV_ASSISTANT_BINDING_HEADERS = Object.freeze({
   modelId: "x-ravradar-model-id",
   modelStateVersion: "x-ravradar-model-state-version",
@@ -46,6 +46,9 @@ export const RAV_ASSISTANT_FACTS = Object.freeze([
   { id: "wind.indirect-not-bottom-current", text: "Wind acts mainly indirectly by building waves, affecting surface layers and water level, and moving light wash. Wind direction alone does not reliably show the direction of bottom-bound amber, and no wind direction is universally best because coast orientation and the preceding sequence matter." },
   { id: "waves.height-not-enough", text: "Wave height alone is not enough to describe mobilisation. Wave period, duration, water depth and seabed also matter; long waves reach deeper than short waves of the same height, and a brief peak is not equivalent to hours of developed sea." },
   { id: "transport.grid-not-surf-zone", text: "Per-part verified model-grid current is relative coastal-zone transport evidence. When used, an owner-approved regional proxy and distance are disclosed; it is not a local grid point. RavRadar resolves no surf-zone undertow, feeder or longshore currents, rip currents, or exact bar/channel paths. A causal energy-weighted average of wave direction uses current and earlier hours only, never future hours. With a four-hour half-life, older hours gradually count less. It can attenuate existing supply by up to 15 percent in the 50-percent delivery component and never create or increase supply. It can remove at most 7.5 raw RavScore points before final rounding; the displayed integer can move by 8 points. It is not a physical landing fraction and does not remove structural last-mile uncertainty." },
+  { id: "transport.grid-evidence-scope", text: "Per-part verified model-grid current is relative coastal-zone transport evidence. When used, an owner-approved regional proxy and distance are disclosed; it is not a local grid point." },
+  { id: "transport.local-path-unresolved", text: "RavRadar resolves no surf-zone undertow, feeder or longshore currents, rip currents, or exact bar/channel paths. Structural last-mile uncertainty remains." },
+  { id: "transport.wave-approach-attenuation", text: "A causal energy-weighted average of wave direction uses current and earlier hours only, never future hours. With a four-hour half-life, older hours gradually count less. It can attenuate existing supply by up to 15 percent in the 50-percent delivery component and never create or increase supply. It can remove at most 7.5 raw RavScore points before final rounding; the displayed integer can move by 8 points. It is not a physical landing fraction and does not remove structural last-mile uncertainty." },
   { id: "mobilisation.wave-memory", text: "RavScore's mobilisation component is a relative wave-energy prior based on wave height squared times wave period. Its four-hour build and 48-hour half-life are tested working priors; RavRadar does not observe local amber inventory or actual movement, and these are neither universal natural limits nor find-calibrated rules." },
   { id: "water-level.context", text: "Falling water can accompany some seaward movement. Lower water can also expose material already delivered or retained behind bars and along edges, making a smaller area easier to search; this does not prove that the fall concentrated it. Without local bathymetry this context gives no RavScore points and is not proof that amber arrived or that all amber left." },
   { id: "coast.sorting-and-traps", text: "Bars, channels, gaps, groynes, piers, coastal bends, beach slope, swash and backwash can slow, redirect, retain or release light material very locally. Transitions, ends and both sides of a structure are possible traps, never guarantees that amber is present." },
@@ -92,7 +95,7 @@ export const RAV_ASSISTANT_UNCERTAIN_REPLIES = Object.freeze({
 
 const SECURITY_PATTERN = /api.?key|password|passwort|adgangskode|supabase|database|datenbank|sql|source code|kildekode|quellcode|system.?prompt|systeminstruk|admin|token|secret|hemmelig|geheim|credential|hack/i;
 const OUT_OF_SCOPE_PATTERN = /(?<![\p{L}\p{N}_])(?:roulade|biskuitrolle|swiss roll|kage|kuchen|cake|fodbold|fußball|football|opskrift|rezept|recipe|politik|politics|aktie|stock price|matematik|math homework|cykeldæk|fahrradreifen|bicycle tyre|weekendtur|wochenendreise|weekend trip|paris)(?![\p{L}\p{N}_])/iu;
-const AMBER_DOMAIN_PATTERN = /(?<![\p{L}\p{N}_])(?:rav\p{L}*|bernstein\p{L}*|succinit|succinite|copal|kopal|amber\p{L}*|harpiks|harz|resin|fossili[sz]|inklusion|einschluss|inclusion|fluorescen|fluoreszenz|fluorescen[ct]e|uv.?light|395\s*nm|fosfor|phosphor|phosphorus|danefæ|kesse|kescher|kyst|küste|coast|strand|beach|hav|meer|sea|bølge|welle|wave|strøm|strömung|current|vandstand|wasserstand|water level|wader|wathose|opskyl|spülsaum|wash line|tang|seegras|seaweed|revle|sandbank|sandbar|revlehul|brandungsrückstrom|rip current|rende|rinne|channel|høfde|buhne|groyne|opdrift|auftrieb|buoyancy|massefylde|dichte|density|saltation|sediment|geologi|geology|geologie|istid|eiszeit|ice age)(?![\p{L}\p{N}_])/iu;
+const AMBER_DOMAIN_PATTERN = /(?<![\p{L}\p{N}_])(?:rav\p{L}*|bernstein\p{L}*|succinit|succinite|copal|kopal|amber\p{L}*|harpiks|harz|resin|fossili[sz]|inklusion|einschluss|inclusion|fluorescen|fluoreszenz|fluorescen[ct]e|uv.?light|395\s*nm|fosfor|phosphor|phosphorus|danefæ|kesse|kescher|kyst|küste|coast|strand(?:en|e(?:ne)?)?|beach|hav|meer|sea|bølge|welle|wave|strøm|strömung|current|vandstand|wasserstand|water level|wader|wathose|opskyl(?:let)?|spülsaum|wash line|tang|seegras|seaweed|revle(?:r(?:ne)?|n)?|sandbank|sandbar|revlehul|brandungsrückstrom|rip current|rende(?:n|rne)?|rinne|channel|høfde|buhne|groyne|opdrift|auftrieb|buoyancy|massefylde|dichte|density|saltation|sediment|geologi|geology|geologie|istid|eiszeit|ice age)(?![\p{L}\p{N}_])/iu;
 
 // Refuse explicit requests for other users' private finds before provider use.
 const PRIVATE_FIND_REQUEST_PATTERN = /(?<!\p{L})(?:vis(?:e)?|hent(?:e)?|udlever(?:e)?|afslør(?:e)?|show|retrieve|reveal|list|zeig(?:e|en)?|nenn(?:e|en)?)(?!\p{L})(?=[\s\S]*(?:andre brugeres|andres|other users?['’]?|other people['’]?s|anderer (?:nutzer|benutzer)))(?=[\s\S]*(?:privat\p{L}*|præcise? positioner|precise locations|genauen? standorte))(?=[\s\S]*(?:ravfund|fundsteder|ture|positioner|bernsteinfunde?|standorte|amber finds|find locations|trips|locations))/iu;
@@ -312,13 +315,15 @@ export function assistantSystemInstruction() {
     "Use RavRadar's exact public terminology: in Danish write rav, jagtbarhed, strømevidens and mobiliseringsmulighed; in German write Bernstein, Suchbarkeit, Strömungsevidenz and Mobilisierungsmöglichkeit; in English write amber, huntability, current evidence and mobilisation opportunity. Never create hybrid words across languages.",
     "evidenceIds must contain only IDs from the supplied facts that directly support the answer. Out-of-scope answers must use an empty evidenceIds array.",
     "The server publishes canonical fact units, not your prose. Include every necessary ID for all supported parts. When using supplied selected-zone values, also include public-context.selected-zone-only; never substitute invented values. Mark relevant unsupported parts uncertain.",
+    "For the reviewed compound questions about moving material between bars/channels and observing beach wash, cover every supported part. Physical model limits, local redistribution and observable field signs are distinct facets. A partial selection of evidence is not a complete answer; do not invent evidence or drop another selected fact to fit.",
+    "For the reviewed compound question about water level and whether a green score guarantees a find, cite both water-level.context and score.no-find-guarantee. Neither facet alone answers the whole question; keep every qualification and do not invent local water levels.",
     "Disposition semantics are strict: use answer for every relevant question that the supplied facts can answer, including safety boundaries, missing data and explaining that a find cannot be guaranteed. Use out_of_scope only for an unrelated topic. Use uncertain only for a relevant question that the supplied facts and selected-zone context cannot answer.",
     "An amber-specific physical-property question or an unfamiliar term for amber-hunting equipment remains relevant even when it is absent from the supplied facts. Lack of supporting facts is uncertainty, not an unrelated topic. Use uncertain, state the limit or ask for clarification, and never invent a property, a device or instructions for its use. A relevant word does not make an unrelated or private request permissible.",
     "For example, asking why a rubbed amber piece attracts paper, or how an unfamiliar amber-hunting instrument works, is in-domain. Answer only the parts supported by supplied facts; otherwise use uncertain with a brief clarification. Do not use the fixed out-of-scope reply for a relevant question merely because its answer is not in the facts.",
     "Uncertainty never licenses speculation: do not suggest unsupported causes, properties or uses, even with words such as may, might or possibly. When no supplied fact supports the explanation, state only that you cannot answer reliably or ask for clarification.",
     "Disposition examples: ‘Can you guarantee a find?’ is answer because the no-find-guarantee fact answers it. ‘Does this score mean safe?’ is answer because the safety-boundary fact answers it. ‘What happens when coherent zone data are missing?’ is answer because the local-missing fact answers it. The answer may explain uncertainty, but its disposition is still answer when a supplied fact supports it.",
     "For a relevant answer, include every supplied fact ID that is necessary to support the main claim. In particular, safety uses safety.not-a-safety-rating, no-find guarantees use score.no-find-guarantee, missing coherent data uses score.local-missing, and the waders wind question uses huntability.waders-wind-led.",
-    "For strong seaward-current questions cite transport.current-led and sequence.release-transport-deposition. For falling-water questions cite water-level.context. For questions about the exact final path across bars and channels cite transport.grid-not-surf-zone and coast.sorting-and-traps.",
+    "For strong seaward-current questions cite transport.current-led and sequence.release-transport-deposition. For falling-water questions cite water-level.context. For questions about the exact final path across bars and channels cite transport.local-path-unresolved and coast.sorting-and-traps; for observable wash clues also cite field-signs.clues-not-proof. Use transport.grid-evidence-scope for verified model-grid or regional-proxy scope and transport.wave-approach-attenuation for the causal wave-direction mean, memory and numerical attenuation limits. The unchanged transport.grid-not-surf-zone is a complete legacy unit, not an alias for only one of these narrower facts. Select every necessary fact for the actual question, not unrelated model detail; the server never drops an additional selected ID to fit.",
     "For a RavScore weights question, state that the integrated coastal-process model is the only public score model and cite both score.integrated-only and score.weights-20-50-30.",
     "For origin, density, wind, waves, layered current, coastal traps, field signs, UV identification, destructive tests, systematic technique, and event-sequence questions, cite the matching supplied fact IDs. Do not turn clues or possible traps into proof or guarantees.",
     `Fixed out-of-scope replies: ${JSON.stringify(RAV_ASSISTANT_REFUSALS)}`,
@@ -457,6 +462,18 @@ const CANONICAL_FACT_TRANSLATIONS = Object.freeze({
   "transport.grid-not-surf-zone": {
     "da": "Verificeret modelgridstrøm pr. kystdel er relativ transportevidens for kystzonen. Brug af en ejergodkendt regional proxy og dens afstand oplyses; den er ikke et lokalt gridpunkt. RavRadar opløser ikke undertow, fødestrømme, langsgående brændingsstrøm, ripstrømme eller præcise ruter ved revler/render. Et kausalt energivægtet middel af bølgeretningen bruger kun nuværende og tidligere timer, aldrig fremtidige. Med fire timers halveringstid tæller ældre timer gradvist mindre. Det kan kun dæmpe eksisterende forsyning med op til 15 % i leveringsdelen på 50 %, aldrig skabe eller øge forsyning. Det kan højst fjerne 7,5 rå RavScore-point før afrunding; det viste heltal kan flytte sig 8 point. Det er ikke en fysisk landingsandel og fjerner ikke den strukturelle usikkerhed på den sidste vej ind.",
     "de": "Verifizierte Modellgitterströmung je Küstenabschnitt ist relative Transportevidenz zur Küstenzone. Eine genutzte, vom Eigentümer genehmigte Regionalproxy samt Abstand wird genannt; sie ist kein örtlicher Gitterpunkt. RavRadar löst weder Unter-, Zubringer-, Längs- oder Rippströmungen der Brandungszone noch genaue Routen durch Bänke/Rinnen auf. Das kausale energiegewichtete Wellenrichtungsmittel nutzt nur aktuelle und frühere, nie künftige Stunden. Bei vier Stunden Halbwertszeit zählen ältere Stunden weniger. Es kann bestehende Versorgung im 50-%-Lieferanteil höchstens um 15 % dämpfen, nie erzeugen oder erhöhen. Vor Rundung entfallen höchstens 7,5 rohe BernsteinScore-Punkte; die angezeigte ganze Zahl kann sich um 8 ändern. Das ist kein physischer Anlandungsanteil und beseitigt die strukturelle Unsicherheit des letzten Wegstücks nicht."
+  },
+  "transport.grid-evidence-scope": {
+    "da": "Verificeret modelgridstrøm pr. kystdel er relativ transportevidens for kystzonen. Brug af en ejergodkendt regional proxy og dens afstand oplyses; den er ikke et lokalt gridpunkt.",
+    "de": "Verifizierte Modellgitterströmung je Küstenabschnitt ist relative Transportevidenz zur Küstenzone. Eine genutzte, vom Eigentümer genehmigte Regionalproxy samt Abstand wird genannt; sie ist kein örtlicher Gitterpunkt."
+  },
+  "transport.local-path-unresolved": {
+    "da": "RavRadar opløser ikke undertow, fødestrømme, langsgående brændingsstrøm, ripstrømme eller præcise ruter ved revler/render. Den strukturelle usikkerhed på den sidste vej ind består.",
+    "de": "RavRadar löst weder Unter-, Zubringer-, Längs- oder Rippströmungen der Brandungszone noch genaue Routen durch Bänke/Rinnen auf. Die strukturelle Unsicherheit des letzten Wegstücks bleibt bestehen."
+  },
+  "transport.wave-approach-attenuation": {
+    "da": "Et kausalt energivægtet middel af bølgeretningen bruger kun nuværende og tidligere timer, aldrig fremtidige. Med fire timers halveringstid tæller ældre timer gradvist mindre. Det kan kun dæmpe eksisterende forsyning med op til 15 % i leveringsdelen på 50 %, aldrig skabe eller øge forsyning. Det kan højst fjerne 7,5 rå RavScore-point før afrunding; det viste heltal kan flytte sig 8 point. Det er ikke en fysisk landingsandel og fjerner ikke den strukturelle usikkerhed på den sidste vej ind.",
+    "de": "Das kausale energiegewichtete Wellenrichtungsmittel nutzt nur aktuelle und frühere, nie künftige Stunden. Bei vier Stunden Halbwertszeit zählen ältere Stunden weniger. Es kann bestehende Versorgung im 50-%-Lieferanteil höchstens um 15 % dämpfen, nie erzeugen oder erhöhen. Vor Rundung entfallen höchstens 7,5 rohe BernsteinScore-Punkte; die angezeigte ganze Zahl kann sich um 8 ändern. Das ist kein physischer Anlandungsanteil und beseitigt die strukturelle Unsicherheit des letzten Wegstücks nicht."
   },
   "mobilisation.wave-memory": {
     "da": "RavScores mobiliseringsdel er en relativ bølgeenergi-prior baseret på bølgehøjde i anden ganget med bølgeperiode. Dens fire timers opbygning og 48 timers halveringstid er afprøvede arbejdsantagelser. RavRadar observerer ikke lokale ravlagre eller faktisk bevægelse; værdierne er hverken universelle naturlige grænser eller fundkalibrerede regler.",
@@ -714,6 +731,47 @@ const CANONICAL_FACT_UNIONS = Object.freeze([
 }) }),
 ]);
 
+// A finite whole-question grammar, not a generic keyword or provider claim.
+// Unrecognized questions retain the existing validator; extra clauses are not
+// silently swallowed. These alternatives cover the reviewed DA/DE/EN family.
+const BAR_OBSERVATION_QUESTIONS = Object.freeze({
+  da:/^(?:kan ravsamlinger flytte sig mellem to revler(?:ne)? uden nyt opskyl,? og hvad kan jeg (?:konkret )?observere fra strand(?:en|ene) for at opdage det|kan materialet flyttes mellem revler(?:ne)? og render(?:ne)?,? og hvilke spor i opskyllet kan jeg se fra strand(?:en|ene))[?!.]*$/iu,
+  de:/^(?:können sich bernsteinansammlungen zwischen zwei sandbänken ohne neuen spülsaum verlagern,? und was kann ich vom strand aus beobachten,? um das zu erkennen|kann sich material zwischen sandbänken und rinnen verlagern,? und welche spülsaumzeichen kann ich vom strand aus erkennen)[?!.]*$/iu,
+  en:/^(?:can amber accumulations shift between two sandbars without new wash,? and what can i observe from the beach to notice it|can material move between bars and channels,? and which wash clues can i observe from the beach)[?!.]*$/iu,
+});
+const BAR_OBSERVATION_FACETS = Object.freeze([
+  Object.freeze({id:"local-path-boundary", anyOf:Object.freeze([
+    "transport.local-path-unresolved", "transport.grid-not-surf-zone",
+  ])}),
+  Object.freeze({id:"local-coastal-redistribution", anyOf:Object.freeze(["coast.sorting-and-traps"])}),
+  Object.freeze({id:"observable-field-signs", anyOf:Object.freeze(["field-signs.clues-not-proof"])}),
+]);
+
+// One separate reviewed water-level/no-find family. The complete original
+// question must match; words or a provider/context claim cannot certify it.
+const WATER_LEVEL_GUARANTEE_QUESTIONS = Object.freeze({
+  da:/^hvad betyder vandstanden for ravjagt,? og kan en grøn score garantere et fund[?!.]*$/iu,
+  de:/^was bedeutet der wasserstand für die bernsteinsuche,? und garantiert ein grüner wert einen fund[?!.]*$/iu,
+  en:/^what does the water level mean for amber hunting,? and does a green score guarantee a find[?!.]*$/iu,
+});
+const WATER_LEVEL_GUARANTEE_FACETS = Object.freeze([
+  Object.freeze({id:"water-level-context", anyOf:Object.freeze(["water-level.context"])}),
+  Object.freeze({id:"no-find-guarantee", anyOf:Object.freeze(["score.no-find-guarantee"])}),
+]);
+
+export function assistantQuestionEvidenceCoverage(question, locale, evidenceIds) {
+  if (!RAV_ASSISTANT_LOCALES.includes(locale) || typeof question !== "string") return null;
+  const normalized = question.trim().replace(/\s+/gu, " ");
+  const facets = BAR_OBSERVATION_QUESTIONS[locale].test(normalized) ? BAR_OBSERVATION_FACETS
+    : question.length <= 600 && WATER_LEVEL_GUARANTEE_QUESTIONS[locale].test(normalized)
+      ? WATER_LEVEL_GUARANTEE_FACETS : null;
+  if (!facets) return null;
+  const selected = new Set(Array.isArray(evidenceIds) ? evidenceIds : []);
+  const missingFacets = facets
+    .filter(facet => !facet.anyOf.some(id => selected.has(id))).map(facet => facet.id);
+  return { complete:missingFacets.length === 0, missingFacets };
+}
+
 function composeCanonicalAssistantResult(evidenceIds, locale, disposition, context) {
   const pending = new Set(evidenceIds);
   const units = [];
@@ -740,7 +798,7 @@ function composeCanonicalAssistantResult(evidenceIds, locale, disposition, conte
   return { answer, disposition, evidenceIds };
 }
 
-export function validateAssistantResult(value, locale, context = {}) {
+export function validateAssistantResult(value, locale, context = {}, question = null) {
   if (!RAV_ASSISTANT_LOCALES.includes(locale)) return null;
   if (!value || typeof value !== "object" || Array.isArray(value)) return null;
   const expectedKeys = ["answer", "disposition", "evidenceIds", "locale", "schemaVersion"];
@@ -752,8 +810,12 @@ export function validateAssistantResult(value, locale, context = {}) {
   if (!Array.isArray(value.evidenceIds) || value.evidenceIds.length > RAV_ASSISTANT_FACTS.length) return null;
   const evidenceIds = [...new Set(value.evidenceIds)];
   if (evidenceIds.length !== value.evidenceIds.length || evidenceIds.some((id) => typeof id !== "string" || !RAV_ASSISTANT_FACTS.some((fact) => fact.id === id))) return null;
+  // Only the normal server caller supplies the original request question.
+  // A provider/context-supplied coverage claim is never used or accepted.
+  const questionCoverage = assistantQuestionEvidenceCoverage(question, locale, evidenceIds);
   if (value.disposition === "out_of_scope") {
     if (evidenceIds.length) return null;
+    if (questionCoverage) return { answer:CANONICAL_FOCUS_REPLIES[locale], disposition:"uncertain", evidenceIds:[] };
     return { answer: RAV_ASSISTANT_REFUSALS[locale], disposition: value.disposition, evidenceIds };
   }
   if (value.disposition === "answer" && !evidenceIds.length) return null;
@@ -762,6 +824,9 @@ export function validateAssistantResult(value, locale, context = {}) {
     // uncertain. Keep the validated schema, locale and security checks above;
     // never publish a guessed cause or use without any bound public evidence.
     return { answer: RAV_ASSISTANT_UNCERTAIN_REPLIES[locale], disposition: value.disposition, evidenceIds };
+  }
+  if (questionCoverage && !questionCoverage.complete) {
+    return { answer:CANONICAL_FOCUS_REPLIES[locale], disposition:"uncertain", evidenceIds:[] };
   }
   if (value.disposition === "answer" && evidenceIds.length === 2 && evidenceIds.includes("score.integrated-only") && evidenceIds.includes("score.weights-20-50-30")) {
     return { answer: RAV_ASSISTANT_WEIGHT_ANSWERS[locale], disposition: value.disposition, evidenceIds };

@@ -1,5 +1,5 @@
 // Public display copy deliberately outside the sealed scientific model closure.
-import { registerI18nMessages } from '../i18n.js?v=4.0.586';
+import { registerI18nMessages } from '../i18n.js?v=4.0.588';
 registerI18nMessages({
   da: {
     'map.timeline.title': 'Kortets tidspunkt', 'map.timeline.now': 'Nu',

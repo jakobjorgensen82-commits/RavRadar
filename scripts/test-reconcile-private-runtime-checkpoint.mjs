@@ -369,23 +369,47 @@ test('ordinary paired publication is genuinely new, exact-invertible and cannot 
   assert.equal(inverseCompletedRuntimeWorkflow(raw, 'build'), inverseCompletedRuntimeWorkflow(previous, 'build'));
   const step = (text, name) => text.split(/(?=^      - name:)/m).find(block => block.startsWith('      - name: ' + name + '\n'));
   const Sstep = step(raw, 'Publish atomic RavScore checkpoint to protected admin storage');
-  const evalIf = (block, action, required, input = {}) => runInNewContext(block.match(/^        if: (.+)$/m)[1]
+  const evalIf = (block, action, required, input = {}, assistantRequired = 'false') => runInNewContext(block.match(/^        if: (.+)$/m)[1]
     .replace(/\bsteps\.([a-z][a-z0-9-]*)/g, (_, id) => 'steps[' + JSON.stringify(id) + ']'), {
-      inputs: { weather_state_epoch_bootstrap: false, weather_state_epoch_checkpoint_reentry: false,
+      inputs: { source_normal_producer: false, weather_state_epoch_bootstrap: false, weather_state_epoch_checkpoint_reentry: false,
         native_sampling_identity_original_recovery: false, checkpoint_only: false, quick_confirmation: false,
         completed_private_runtime: false, ...input },
       steps: { preflight: { outputs: { should_run: 'true' } }, 'operational-action': { outputs: { action } },
-        'paired-checkpoint-route': { outputs: { required } } } });
+        'paired-checkpoint-route': { outputs: { required } },
+        'assistant-later-h0-source': { outputs: { required: assistantRequired } } } });
   for (const action of ['candidate-dry-run', 'candidate-maintenance', 'integrated-historical-maintenance', 'UNKNOWN']) {
     assert.equal(evalIf(step(raw, 'Select current-family paired checkpoint restoration before any S restore'), action, 'true'), false);
     assert.equal(evalIf(step(raw, 'Reconcile only authenticated CURRENT B to its exact protected S before providers'), action, 'true'), false);
   }
   assert.equal(evalIf(step(raw, 'Reconcile only authenticated CURRENT B to its exact protected S before providers'), 'integrated', 'true'), true);
+  for (const name of ['Select current-family paired checkpoint restoration before any S restore',
+    'Reconcile only authenticated CURRENT B to its exact protected S before providers',
+    'Publish atomic RavScore checkpoint to protected admin storage'])
+    assert.equal(evalIf(step(raw, name), 'integrated', 'true', { source_normal_producer: true }), false);
   for (const flag of ['weather_state_epoch_bootstrap', 'weather_state_epoch_checkpoint_reentry',
     'native_sampling_identity_original_recovery', 'checkpoint_only', 'quick_confirmation', 'completed_private_runtime'])
     for (const name of ['Select current-family paired checkpoint restoration before any S restore',
       'Reconcile only authenticated CURRENT B to its exact protected S before providers'])
       assert.equal(evalIf(step(raw, name), 'integrated', 'true', { [flag]: true }), false);
+  const pairedSelector = step(raw, 'Select current-family paired checkpoint restoration before any S restore');
+  const pairedReconcile = step(raw, 'Reconcile only authenticated CURRENT B to its exact protected S before providers');
+  // select writes required=false normally; a skipped step exposes an empty
+  // output. The later-assistant route must skip paired select and leave its
+  // required output empty, so the downstream paired reconciliation cannot run.
+  for (const assistantRequired of ['false', ''])
+    assert.equal(evalIf(pairedSelector, 'integrated', '', {}, assistantRequired), true);
+  const assertLaterAssistantExcluded = (selector, action) => {
+    const selected = evalIf(selector, action, '', {}, 'true');
+    assert.equal(selected, false);
+    assert.equal(evalIf(pairedReconcile, action, selected ? 'true' : '', {}, 'true'), false);
+  };
+  for (const action of ['integrated', 'candidate-dry-run', 'candidate-maintenance', 'integrated-historical-maintenance', 'UNKNOWN'])
+    assertLaterAssistantExcluded(pairedSelector, action);
+  for (const required of ['', 'false'])
+    assert.equal(evalIf(pairedReconcile, 'integrated', required), false);
+  const missingAssistantExclusion = pairedSelector.replace("steps.assistant-later-h0-source.outputs.required != 'true' && ", '');
+  assert.notEqual(missingAssistantExclusion, pairedSelector);
+  assert.throws(() => assertLaterAssistantExcluded(missingAssistantExclusion, 'integrated'), { code: 'ERR_ASSERTION' });
   const ordinary = { OPERATIONAL_ACTION: 'integrated', COMPLETED_PRIVATE_RUNTIME: 'false', CHECKPOINT_ONLY: 'false',
     QUICK_CONFIRMATION: 'false', RAVRADAR_WEATHER_STATE_EPOCH_BOOTSTRAP: 'false',
     RAVRADAR_WEATHER_STATE_EPOCH_CHECKPOINT_REENTRY: 'false', NATIVE_IDENTITY_RECOVERY: 'false' };

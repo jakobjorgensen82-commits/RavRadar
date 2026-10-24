@@ -5,7 +5,11 @@ import assert from 'node:assert/strict';
 import crypto from 'node:crypto';
 import fs from 'node:fs/promises';
 import test from 'node:test';
-import {inverseCurrent586PhaseUpload} from './native-postgres-evidence.mjs';
+import './test-source-producer-prewrite.mjs';
+import './test-source-native-node24-workflow.mjs';
+import {inverseCurrent586PhaseUpload,inverseSourceProducerPhaseUpload,SOURCE_PRODUCER_COMMANDS}
+  from './native-postgres-evidence.mjs';
+import {inverseSourceNode24Workflow} from './national584-source-evidence.mjs';
 import {DatabaseSync} from 'node:sqlite';
 import {privateTripStudySchemaModel,classifyPrivateTripStudySchema,privateTripStudyMigrationSteps}
   from './deploy-private-trip-study.mjs';
@@ -15,6 +19,44 @@ import path from 'node:path';
 import {fileURLToPath,pathToFileURL} from 'node:url';
 import {withFrozen585AccountStatisticsAssistantTestHost}
   from './lib/frozen585-account-statistics-assistant-test-host.mjs';
+
+// TEST ONLY: the exact reviewed SOURCE CI changes are inverted before the
+// unchanged whole586/historical584 assertions. Unknown bytes never fall back.
+function sourcePrWorkflowBeforeSourceForTest(value){
+  const source=String(value).replace(/\r\n/g,'\n');
+  const hash=text=>crypto.createHash('sha256').update(text).digest('hex');
+  assert.equal(hash(source),'8070f5160f2599900c3f1dafc96f6fbd6d8ce0740353f1aa52e7f801456efc7a',
+    'Whole reviewed SOURCE CI workflow, not selected markers');
+  const prior=inverseSourceProducerPhaseUpload(inverseSourceNode24Workflow(source));
+  assert.equal(hash(prior),'b8236a832c5145efee9bd97d1cdb552fa86453dffa086aaa63d61b533b9eefbb',
+    'Whole genuine JOINT587 workflow before only the SOURCE CI delta');
+  return prior;
+}
+
+// The existing normal fixedc03 DATA factory already materializes package.json.
+// This test reads genuine587 bytes, never retags actual SOURCE package metadata.
+let frozen587PackageBytesPromise;
+async function genuine587PackageForTest(){
+  const actual=JSON.parse(await fs.readFile(new URL('../package.json',import.meta.url),'utf8'));
+  const {requireAssistantLaterH0Release}=await import('./lib/assistant-later-h0-successor-source.mjs');
+  if(actual.version===requireAssistantLaterH0Release())return actual; // Ordinary587 path unchanged.
+  const {verifySourceProducerPackage}=await import('./national584-source-evidence.mjs');
+  verifySourceProducerPackage(actual); // Refuse unknown/unissued changed source before DATA materialization.
+  frozen587PackageBytesPromise??=(async()=>{
+    const {withAuthenticated587PredecessorSource}=await import('./check-source-producer-587-predecessor-source.mjs');
+    return withAuthenticated587PredecessorSource(async sourceRoot=>{
+      const bytes=await fs.readFile(path.join(sourceRoot,'package.json'));
+      assert.equal(crypto.createHash('sha256').update(bytes).digest('hex'),
+        '85614c466a1364662dbfb5fdde854a2d50face533b25684eae88c5d0fe246e77',
+        'Whole actual fixedc03 genuine587 package, no version or scripts rewrite');
+      return bytes;
+    });
+  })();
+  const prior=JSON.parse(await frozen587PackageBytesPromise);
+  assert.equal(prior.version,requireAssistantLaterH0Release());
+  assert.deepEqual(prior.scripts,actual.scripts,'Only the exact preserved genuine587 command plan');
+  return prior;
+}
 
 // Existing normal controller and unchanged real SQL, synthetic in-memory D1
 // metadata only. These cases neither install D1 nor prove Worker CPU/privacy.
@@ -87,6 +129,41 @@ test('private-study005: the normal workflow stays OFF and DDL remains outside Wo
   assert.match(ddl,/if\(!result\.length\|\|result\.length>64\|\|result\.some\(row=>row\?\.success!==true\)\)throw fail\(stage\)/);
   assert.doesNotMatch(ddl,/catch\s*\{|recoveryAttempted|replace\(/);
   assert.doesNotMatch(source.slice(to),/await cf\(|model\.jobsMigration/);
+});
+test("private-study005: read-only plan substages preserve the whole original controller",async()=>{
+  const source=(await fs.readFile(new URL('./deploy-private-trip-study.mjs',import.meta.url),'utf8'))
+    .replace(/\r\n/g,'\n');
+  const edits=[
+    ["    stage='READ_ONLY_PLAN';run('node',['scripts/prepare-cloudflare-trip-storage.mjs','--existing-worker-repair']);",
+      "    stage='READ_ONLY_PLAN_EXISTING_STORAGE';run('node',['scripts/prepare-cloudflare-trip-storage.mjs','--existing-worker-repair']);"],
+    ["    const base=readOwnedJson(CONFIG);if(Object.hasOwn(base,'vars'))throw fail('UNEXPECTED_CONFIG');",
+      "    stage='READ_ONLY_PLAN_CONFIGURATION';\n    const base=readOwnedJson(CONFIG);if(Object.hasOwn(base,'vars'))throw fail('UNEXPECTED_CONFIG');"],
+    ["    originalFence=oldFence();model=privateTripStudySchemaModel();",
+      "    stage='READ_ONLY_PLAN_ORIGINAL_FENCE';originalFence=oldFence();\n    stage='READ_ONLY_PLAN_SCHEMA_MODEL';model=privateTripStudySchemaModel();"],
+    ["    const before=await inspect();const currentVersion=await attest(originalFence.workerVersionId);edge('d1');",
+      "    stage='READ_ONLY_PLAN_STATISTICS_SCHEMA';const before=await inspect();\n    stage='READ_ONLY_PLAN_WORKER_BINDINGS';const currentVersion=await attest(originalFence.workerVersionId);\n    stage='READ_ONLY_PLAN_EDGE_CONTRACT';edge('d1');"],
+    ["    plan={kind:'PRIVATE_TRIP_STUDY_CONTROL0_PLAN',sourceSha:env.GITHUB_SHA,runId:env.GITHUB_RUN_ID,",
+      "    stage='READ_ONLY_PLAN_RECEIPT';\n    plan={kind:'PRIVATE_TRIP_STUDY_CONTROL0_PLAN',sourceSha:env.GITHUB_SHA,runId:env.GITHUB_RUN_ID,"],
+  ];
+  const stagePattern=/stage='(READ_ONLY_PLAN_[A-Z_]+)'/g;
+  const stages=edits.flatMap(([,after])=>[...after.matchAll(stagePattern)].map(match=>match[1]));
+  assert.equal(stages.length,8);assert.equal(new Set(stages).size,8);
+  const verify=value=>{
+    assert.deepEqual([...value.matchAll(stagePattern)].map(match=>match[1]),stages);
+    let original=value;
+    for(const [before,after] of edits){
+      assert.equal(original.split(after).length,2);
+      original=original.replace(after,()=>before);
+    }
+    assert.equal(crypto.createHash('sha256').update(original).digest('hex'),
+      '7aa118fe89f33395695f5c58c2e7c2052966bd68fd77a89eca243591eec32dce',
+      'Only the exact eight stage assignments may differ from the whole reviewed controller');
+  };
+  verify(source);
+  const swapped=source.replace(/READ_ONLY_PLAN_(?:EXISTING_STORAGE|CONFIGURATION)/g,
+    stage=>stage===stages[0]?stages[1]:stages[0]);
+  for(const changed of [swapped,source.replace(stages[2],'READ_ONLY_PLAN_UNKNOWN'),
+    source+'\n// non-stage byte drift\n'])assert.throws(()=>verify(changed));
 });
 test('current585 model-import guard admits only the whole reviewed first-raw-error loader',async()=>{
   const file='scripts/check-account-statistics-assistant-predecessor-source.mjs';
@@ -283,7 +360,7 @@ test('historical584 national evidence inverts only the reviewed current90-minute
   const recorded=git('show',fixture+':'+WORKFLOW).toString();
   const currentWorkflow=(await fs.readFile(new URL('../.github/workflows/validate-pull-request.yml',import.meta.url),'utf8')).replace(/\r\n/g,'\n');
   verifyCurrentWorkflow(currentWorkflow);
-  const actual=inverseCurrent586PhaseUpload(currentWorkflow);
+  const actual=inverseCurrent586PhaseUpload(sourcePrWorkflowBeforeSourceForTest(currentWorkflow));
   verifyCurrentWorkflow(actual);
   const current=inverseCandidatePublicSourceRunLine(actual).replace(CURRENT_JOB,AFTER_JOB);
   const hash=value=>crypto.createHash('sha256').update(value).digest('hex');
@@ -318,7 +395,7 @@ test('source-PR-only180-minute job preserves genuine120 and90 workflows and reje
     env:{...process.env,GIT_NO_LAZY_FETCH:'1',GIT_NO_REPLACE_OBJECTS:'1'}}).toString();
   const currentWorkflow=(await fs.readFile(new URL('../.github/workflows/validate-pull-request.yml',import.meta.url),'utf8')).replace(/\r\n/g,'\n');
   verifyWorkflow(currentWorkflow);
-  const actual=inverseCurrent586PhaseUpload(currentWorkflow);
+  const actual=inverseCurrent586PhaseUpload(sourcePrWorkflowBeforeSourceForTest(currentWorkflow));
   const predecessorHead='bb8d354e0d889080b5f7182b2962f05fbb8fd2e7';
   const predecessor=execFileSync('git',['show',predecessorHead+':'+WORKFLOW],{maxBuffer:65536,timeout:30000,
     env:{...process.env,GIT_NO_LAZY_FETCH:'1',GIT_NO_REPLACE_OBJECTS:'1'}}).toString();
@@ -434,9 +511,16 @@ test('normal original584 staging forwards the selected R2 storage into the real 
 });
 
 test('current586 source registration preserves exact585 predecessor and distinct current native scope',async()=>{
-  const pkg=JSON.parse(await fs.readFile(new URL('../package.json',import.meta.url),'utf8'));
+  const actualPkg=await genuine587PackageForTest();
   const {verifyPackage,verifyCurrentNativeCommands,CURRENT586_NATIVE_COMMANDS}=await import('./national584-source-evidence.mjs');
-  const {inverseReviewedAccountStatisticsAssistantSourceScripts}=await import('./lib/account-statistics-assistant-package-review.mjs');
+  const {inverseReviewedAccountStatisticsAssistantSourceScripts,inverseAssistantLaterH0SourceScripts}=await import('./lib/account-statistics-assistant-package-review.mjs');
+  const {ASSISTANT_LATER_H0_BINDING}=await import('./lib/assistant-later-h0-successor-source.mjs');
+  const later=Object.hasOwn(actualPkg.scripts,'test:assistant-later-h0-source');
+  if(later){
+    if(ASSISTANT_LATER_H0_BINDING===null)assert.throws(()=>verifyPackage(actualPkg),/ASSISTANT_LATER_H0_UNISSUED/);
+    else assert.doesNotThrow(()=>verifyPackage(actualPkg));
+  }
+  const pkg=later?{...actualPkg,version:'4.0.586',scripts:inverseAssistantLaterH0SourceScripts(actualPkg.scripts)}:actualPkg;
   assert.equal(pkg.version,'4.0.586');assert.doesNotThrow(()=>verifyPackage(pkg));
   assert.doesNotThrow(()=>inverseReviewedAccountStatisticsAssistantSourceScripts(pkg.scripts));
   const critical=pkg.scripts['test:ravscore-source-critical'],group='test:native-original-continuity-source';
@@ -457,4 +541,86 @@ test('current586 source registration preserves exact585 predecessor and distinct
   assert.throws(()=>verifyCurrentNativeCommands([...CURRENT586_NATIVE_COMMANDS],'4.0.585'));
   assert.throws(()=>verifyCurrentNativeCommands(CURRENT586_NATIVE_COMMANDS.map(c=>c.replace(' --native-original-continuity','')),'4.0.586'));
   assert.throws(()=>verifyCurrentNativeCommands([...CURRENT586_NATIVE_COMMANDS,CURRENT586_NATIVE_COMMANDS[1]],'4.0.586'));
+});
+
+test('assistant later-H0 registration keeps exact older scripts and refuses phase/order mutations',async()=>{
+  const pkg=await genuine587PackageForTest(),original=structuredClone(pkg);
+  const {ASSISTANT_LATER_H0_BINDING,requireAssistantLaterH0Release}=await import('./lib/assistant-later-h0-successor-source.mjs');
+  const {verifyPackage,verifyCurrentNativeCommands,ASSISTANT_LATER_H0_NATIVE_COMMANDS}=await import('./national584-source-evidence.mjs');
+  const {inverseAssistantLaterH0SourceScripts}=await import('./lib/account-statistics-assistant-package-review.mjs');
+  const prior=inverseAssistantLaterH0SourceScripts(pkg.scripts);
+  assert.equal(Object.hasOwn(prior,'test:assistant-later-h0-source'),false);
+  assert.equal(prior['test:native-original-continuity-source'],
+    'node scripts/build-native-original-continuity-successor.mjs --check && node --test scripts/test-native-original-continuity-callers.mjs');
+  assert.deepEqual(pkg,original,'A historical test view never rewrites actual package source');
+  if(ASSISTANT_LATER_H0_BINDING===null)assert.throws(()=>verifyPackage(pkg),/ASSISTANT_LATER_H0_UNISSUED/);
+  else{
+    assert.equal(pkg.version,requireAssistantLaterH0Release());assert.doesNotThrow(()=>verifyPackage(pkg));
+    assert.doesNotThrow(()=>verifyCurrentNativeCommands([...ASSISTANT_LATER_H0_NATIVE_COMMANDS],pkg.version));
+    assert.throws(()=>verifyCurrentNativeCommands(ASSISTANT_LATER_H0_NATIVE_COMMANDS.map(c=>c.replace(' --assistant-later-h0','')),pkg.version));
+  }
+  const native='npm run test:native-original-continuity-source',next='npm run test:assistant-later-h0-source';
+  for(const mode of ['missing','duplicate','reordered','changed-command','old-live-builder','unknown-command']){
+    const changed=structuredClone(pkg);
+    if(mode==='missing')delete changed.scripts['test:assistant-later-h0-source'];
+    if(mode==='duplicate')changed.scripts['test:ravscore-source-critical']=changed.scripts['test:ravscore-source-critical'].replace(next,next+' && '+next);
+    if(mode==='reordered')changed.scripts['test:ravscore-source-critical']=changed.scripts['test:ravscore-source-critical'].replace(native+' && '+next,next+' && '+native);
+    if(mode==='changed-command')changed.scripts['test:assistant-later-h0-source']+=' --unexpected';
+    if(mode==='old-live-builder')changed.scripts['test:native-original-continuity-source']=prior['test:native-original-continuity-source'];
+    if(mode==='unknown-command')changed.scripts['unknown-source-command']='node scripts/unreviewed.mjs';
+    assert.throws(()=>inverseAssistantLaterH0SourceScripts(changed.scripts));
+    assert.throws(()=>verifyPackage(changed));
+  }
+  assert.throws(()=>verifyPackage({...pkg,version:'0.0.0'}));
+});
+
+test('actual SOURCE package/native registration remains distinct from genuine587 DATA oracles',async()=>{
+  const sourceBytes=await fs.readFile(new URL('../package.json',import.meta.url));
+  const actual=JSON.parse(sourceBytes);
+  const registrationTargets=['./test-source-producer-prewrite.mjs','./test-source-native-node24-workflow.mjs'];
+  const caller=(await fs.readFile(new URL('./test-account-statistics-assistant-callers.mjs',import.meta.url),'utf8')).replace(/\r\n/g,'\n');
+  for(const target of registrationTargets)assert.equal(caller.split("import '"+target+"';\n").length,2,
+    'Exactly one normal account import of '+target);
+  const {expandSourceCommands}=await import('./validate-source-once.mjs');
+  const commands=expandSourceCommands(actual.scripts,'validate:source:checks');
+  assert.equal(commands.filter(command=>command==='node --test scripts/test-account-statistics-assistant-callers.mjs').length,1,
+    'The actual unchanged 9df plan dispatches the registering account target once');
+  for(const target of registrationTargets)assert.equal(commands.filter(command=>command.split(' ').includes('scripts/'+target.slice(2))).length,0,
+    'No direct command duplicates the imported '+target);
+  const {SOURCE_PRODUCER_BINDING,SOURCE_PRODUCER_OUTPUT,SOURCE_PRODUCER_PROPOSED_RELEASE,
+    requireSourceProducerBinding,requireSourceProducerOutput}=await import('./lib/source-producer-successor-source.mjs');
+  const {verifyPackage,verifySourceProducerPackage,verifyCurrentNativeCommands,
+    ASSISTANT_LATER_H0_NATIVE_COMMANDS}=await import('./national584-source-evidence.mjs');
+  const {requireAssistantLaterH0Release}=await import('./lib/assistant-later-h0-successor-source.mjs');
+  if(SOURCE_PRODUCER_BINDING===null){
+    assert.equal(SOURCE_PRODUCER_OUTPUT,null);assert.equal(SOURCE_PRODUCER_PROPOSED_RELEASE,null);
+    assert.throws(()=>verifySourceProducerPackage(actual),/SOURCE_PRODUCER_UNISSUED/);
+    return; // No invented version/tuple to manufacture a positive SOURCE case.
+  }
+  requireSourceProducerBinding();requireSourceProducerOutput();
+  assert.equal(actual.version,SOURCE_PRODUCER_PROPOSED_RELEASE);
+  assert.doesNotThrow(()=>verifySourceProducerPackage(actual));
+  assert.doesNotThrow(()=>verifyPackage(actual));
+  assert.doesNotThrow(()=>verifyCurrentNativeCommands(SOURCE_PRODUCER_COMMANDS,actual.version));
+  assert.throws(()=>verifyCurrentNativeCommands(ASSISTANT_LATER_H0_NATIVE_COMMANDS,actual.version));
+  assert.throws(()=>verifyCurrentNativeCommands(SOURCE_PRODUCER_COMMANDS,requireAssistantLaterH0Release()));
+  const old=await genuine587PackageForTest();
+  assert.equal(old.version,requireAssistantLaterH0Release());
+  assert.notEqual(old.version,actual.version);
+  assert.deepEqual(old.scripts,actual.scripts);
+  assert.doesNotThrow(()=>verifyPackage(old)); // The actual old587 rule is still tested separately.
+  assert.doesNotThrow(()=>verifyCurrentNativeCommands(ASSISTANT_LATER_H0_NATIVE_COMMANDS,old.version));
+  for(const mode of ['version','missing','duplicate','reordered','command','unknown-command']){
+    const changed=structuredClone(actual),key='test:assistant-later-h0-source',marker='npm run '+key;
+    if(mode==='version')changed.version='0.0.0';
+    if(mode==='missing')delete changed.scripts[key];
+    if(mode==='duplicate')changed.scripts['test:ravscore-source-critical']=changed.scripts['test:ravscore-source-critical'].replace(marker,marker+' && '+marker);
+    if(mode==='reordered')changed.scripts['test:ravscore-source-critical']=changed.scripts['test:ravscore-source-critical'].replace('npm run test:native-original-continuity-source && '+marker,marker+' && npm run test:native-original-continuity-source');
+    if(mode==='command')changed.scripts[key]+=' --unexpected';
+    if(mode==='unknown-command')changed.scripts['unreviewed-source-command']='node scripts/unreviewed.mjs';
+    assert.throws(()=>verifySourceProducerPackage(changed));
+    assert.throws(()=>verifyPackage(changed));
+  }
+  assert.deepEqual(await fs.readFile(new URL('../package.json',import.meta.url)),sourceBytes,
+    'Genuine historical DATA views never rewrite actual SOURCE package bytes');
 });

@@ -1,4 +1,4 @@
-import { inverseAlternativeCCaller, inverseCurrentNativeOriginalConsumerTestInput, CURRENT_NATIVE_ORIGINAL_CONSUMER_TEST_REVIEW, inverseCurrent586EndpointDiagnosticTestInput, inverseCurrent586IdentityRefinementTestInput, inverseCurrent586SharedProjectionExportTestInput, inverseNationalCoherentWorkTestInput, NATIONAL_COHERENT_WORK_TEST_REVIEW, inverseNationalCapacityTestInput, NATIONAL_COHERENT_CAPACITY_TEST_REVIEW, inverseCoherentDistinctCaptureFramesTestInput, COHERENT_DISTINCT_CAPTURE_FRAME_TEST_REVIEW } from './lib/alternative-c-caller-test-input.mjs';
+import { inverseAssistant587OriginalCompanionTestInput, inverseAlternativeCCaller, inverseCurrentNativeOriginalConsumerTestInput, CURRENT_NATIVE_ORIGINAL_CONSUMER_TEST_REVIEW, inverseCurrent586EndpointDiagnosticTestInput, inverseCurrent586IdentityRefinementTestInput, inverseCurrent586SharedProjectionExportTestInput, inverseNationalCoherentWorkTestInput, NATIONAL_COHERENT_WORK_TEST_REVIEW, inverseNationalCapacityTestInput, NATIONAL_COHERENT_CAPACITY_TEST_REVIEW, inverseCoherentDistinctCaptureFramesTestInput, COHERENT_DISTINCT_CAPTURE_FRAME_TEST_REVIEW } from './lib/alternative-c-caller-test-input.mjs';
 import { inverseJointCoherentControllerTestInput, JOINT_NATIONAL_COHERENT_CONTROLLER_TEST_REVIEW } from './lib/alternative-c-caller-test-input.mjs';
 import { inverseCoherentRawTransportLifetimeTestInput, COHERENT_RAW_TRANSPORT_LIFETIME_TEST_REVIEW } from './lib/alternative-c-caller-test-input.mjs';
 import assert from 'node:assert/strict';
@@ -749,6 +749,12 @@ test('native-original planner oracle preserves complete earlier source and actua
 });
 
 const POST_H0_FIXED_CLI_SOURCES=[
+  // Actual 587 companion imports link this complete existing static chain,
+  // also for ordinary fixtures that never enter the later-H0 transition.
+  'scripts/assistant-later-h0-runtime-transition.mjs',
+  'scripts/lib/assistant-later-h0-successor-source.mjs',
+  'scripts/lib/native-original-continuity-successor-source.mjs',
+  'scripts/lib/account-statistics-assistant-successor-source.mjs',
   'scripts/current-family-cold-start.mjs',
   'scripts/lib/post-h0-dmi-original-dependencies.mjs',
   'scripts/check-native-identity-frozen-i71-source.mjs',
@@ -2454,7 +2460,7 @@ test('coherent raw transport lifetime: exact outer inverse preserves joint and e
   for(const row of COHERENT_RAW_TRANSPORT_LIFETIME_TEST_REVIEW){
     const file=new URL('../'+row.path,import.meta.url),input=readFileSync(file,'utf8').replace(/\r\n/g,'\n');
     const raw=row.path==='scripts/plan-ravscore-current-history.mjs'
-      ?inverseCurrentFamilyColdTargetTestInput(input,row.path):input;
+      ?inverseCurrentFamilyColdTargetTestInput(inverseAssistant587OriginalCompanionTestInput(input,row.path),row.path):input;
     assert.equal(Buffer.byteLength(raw),row.after.bytes);assert.equal(sha(raw),row.after.sha256);
     const before=inverseCoherentRawTransportLifetimeTestInput(raw,row.path);
     assert.equal(Buffer.byteLength(before),row.before.bytes);assert.equal(sha(before),row.before.sha256);
@@ -2473,9 +2479,11 @@ test('coherent raw transport lifetime: exact outer inverse preserves joint and e
 
 test('cold target inverse: complete exact modules precede unchanged historical oracles and reject every changed hunk',()=>{
   for(const row of CURRENT_FAMILY_COLD_TARGET_TEST_REVIEW){
-    const current=readFileSync(new URL('../'+row.path,import.meta.url),'utf8').replace(/\r\n/g,'\n');
+    const actualComplete=readFileSync(new URL('../'+row.path,import.meta.url),'utf8').replace(/\r\n/g,'\n');
     const complete=row.path===FINALIZED_WEATHER_OWNERS_TEST_REVIEW.path
-      ?inverseFinalizedWeatherOwnersTestInput(current,row.path):current;
+      ?inverseFinalizedWeatherOwnersTestInput(actualComplete,row.path)
+      :row.path==='scripts/plan-ravscore-current-history.mjs'
+        ?inverseAssistant587OriginalCompanionTestInput(actualComplete,row.path):actualComplete;
     const outer=row.path===CURRENT_FAMILY_COLD_ZONE_HISTORY_TEST_REVIEW.path
       ?CURRENT_FAMILY_COLD_ZONE_HISTORY_TEST_REVIEW:null;
     if(outer){

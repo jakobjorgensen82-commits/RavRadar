@@ -3,13 +3,22 @@ import assert from 'node:assert/strict';
 import crypto from 'node:crypto';
 import fs from 'node:fs/promises';
 import test from 'node:test';
+import { inverseSourceNormalWorkflowForHistoricalOracle } from './lib/source-normal-workflow-review.mjs';
+await import('./test-source-normal-workflow.mjs');
 import { inverseRelease585WorkflowUserAgents, ordinaryStageWiringReview, inverseOrdinaryCompletedStageWorkflowWiring, assertEarlyCompletedRuntimeStageOrder, inverseEarlyCompletedRuntimeStage, inverseCompletedRuntimeWorkflow, inverseOrdinaryFullHistoryCheckout, inversePairedPrivateRuntimePublication, inverseOriginWeatherReadCredentials, assertCurrentHistoryRawRetentionOrder, inverseCurrentHistoryRawRetentionOrder, inverseCurrentFamilyColdStartWorkflow, inverseRelease584WorkflowUserAgents } from './lib/completed-private-runtime-workflow-review.mjs';
 import { runInNewContext } from 'node:vm';
 import { inverseNativeOriginalSchemaSelectorWorkflow, nativeOriginalSchemaSelectorWorkflowReview,
-  inverseCurrentFamilyColdBudgetWorkflow, currentFamilyColdBudgetWorkflowReview }
+  inverseCurrentFamilyColdBudgetWorkflow, currentFamilyColdBudgetWorkflowReview,
+  assistant587ColdBudgetCombinedWorkflowReview, inverseAssistant587ColdBudgetCombinedTo707Workflow,
+  inverseAssistant587ColdBudgetCombinedTo587Workflow }
   from './lib/completed-private-runtime-workflow-review.mjs';
 import { inverseCurrentFamilyColdCheckpointWorkflow, currentFamilyColdCheckpointWorkflowReview,
-  inverseLatestColdProgressWorkflow, latestColdProgressWorkflowReview }
+  assistant587ColdCheckpointCombinedWorkflowReview,
+  inverseAssistant587ColdCheckpointCombinedToF83Workflow, inverseAssistant587ColdCheckpointCombinedToD5Workflow }
+  from './lib/completed-private-runtime-workflow-review.mjs';
+import { inverseLatestColdProgressWorkflow, latestColdProgressWorkflowReview,
+  assistant587LatestColdCombinedWorkflowReview,
+  inverseAssistant587LatestColdCombinedTo664aWorkflow, inverseAssistant587LatestColdCombinedTo2bWorkflow }
   from './lib/completed-private-runtime-workflow-review.mjs';
 import { spawnSync } from 'node:child_process';
 const sha = source => crypto.createHash('sha256').update(source).digest('hex');
@@ -655,11 +664,10 @@ test('current585 release inverse keeps every genuine584 workflow byte and refuse
 
 
 test('native original schema selector: actual installed schema1 alone selects ordinary preparation; all old routes stay old',async()=>{
-  // The raw cold-budget layer is tested separately below. This older selector
-  // oracle first removes only that reviewed layer, not its own native delta.
-  // First remove only the complete exact newer budget layer; the whole native
-  // selector source, every old pin and all its mutation negatives stay intact.
-  const source=inverseCurrentFamilyColdBudgetWorkflow(inverseCurrentFamilyColdCheckpointWorkflow((await fs.readFile(new URL('../.github/workflows/reusable-weather-build.yml',import.meta.url),'utf8')).replaceAll('\r\n','\n'),'build'),'build');
+  // Remove only the exact combined parent layers before the unchanged586 oracle.
+  const actual=inverseAssistant587ColdCheckpointCombinedToF83Workflow(inverseAssistant587LatestColdCombinedTo664aWorkflow((await fs.readFile(new URL('../.github/workflows/reusable-weather-build.yml',import.meta.url),'utf8')).replaceAll('\r\n','\n'),'build'),'build');
+  const source=inverseCurrentFamilyColdBudgetWorkflow(inverseAssistant587CompletedWorkflow(
+    inverseAssistant587ColdBudgetCombinedTo707Workflow(actual,'build'),'build'),'build');
   const donor=coldStep(source,'Classify one-time DMI PART continuity donor');
   const plan=coldStep(source,'Plan bounded current history from the actual selected continuation');
   const review=nativeOriginalSchemaSelectorWorkflowReview;
@@ -745,8 +753,64 @@ test('native original schema selector: actual installed schema1 alone selects or
   assert.equal(source.split('--retain-committed-raw').length,2);
 });
 
+
+// New whole587 afterimage is not a repin of any historical oracle above.
+import {assistant587CompletedWorkflowReview,inverseAssistant587CompletedWorkflow}
+  from './lib/completed-private-runtime-workflow-review.mjs';
+test('assistant587 exact workflow inverse retains genuine586 and every historical mutation refusal',async()=>{
+  const actual=inverseAssistant587ColdBudgetCombinedTo587Workflow(inverseAssistant587ColdCheckpointCombinedToF83Workflow(inverseAssistant587LatestColdCombinedTo664aWorkflow((await fs.readFile(new URL('../.github/workflows/reusable-weather-build.yml',import.meta.url),'utf8')).replaceAll('\r\n','\n'),'build'),'build'),'build');
+  const review=assistant587CompletedWorkflowReview;
+  assert.equal(Buffer.byteLength(actual),review.after.bytes);assert.equal(sha(actual),review.after.sha256);
+  const previous=inverseAssistant587CompletedWorkflow(actual,'build');
+  assert.equal(Buffer.byteLength(previous),nativeOriginalSchemaSelectorWorkflowReview.after.bytes);
+  assert.equal(sha(previous),nativeOriginalSchemaSelectorWorkflowReview.after.sha256);
+  assert.equal(inverseCompletedRuntimeWorkflow(actual,'build'),inverseCompletedRuntimeWorkflow(previous,'build'));
+  assert.equal(sha(inverseCompletedRuntimeWorkflow(actual,'build')),legacySha);
+  assert.equal(inverseAssistant587CompletedWorkflow(actual,'once'),actual);
+  assert.equal(inverseAssistant587CompletedWorkflow(previous,'build'),previous);
+  const donor='Classify one-time DMI PART continuity donor',planner='Plan bounded current history from the actual selected continuation';
+  assert.equal(coldStep(actual,donor),coldStep(previous,donor),'Actual donor/schema validation remains whole byteexact');
+  const command=source=>{
+    const lines=coldStep(source,planner).split('\n'),inlinePrefix='        run: ',scriptPrefix='          ';
+    const inline=lines.filter(line=>line.startsWith(inlinePrefix+'node scripts/plan-ravscore-current-history.mjs '));
+    const script=lines.filter(line=>line.startsWith(scriptPrefix+'node scripts/plan-ravscore-current-history.mjs '));
+    assert.equal(inline.length+script.length,1,'Exactly one actual planner node invocation, inline OR script');
+    return inline.length?inline[0].slice(inlinePrefix.length):script[0].slice(scriptPrefix.length);
+  };
+  const node=command(actual);assert.equal(node,command(previous),'Whole node argv including --retain-committed-raw and schema1 selector is unchanged');
+  const currentPlan=coldStep(actual,planner),previousPlan=coldStep(previous,planner);
+  const start=currentPlan.indexOf('        run: |\n'),end=currentPlan.indexOf('        env:\n',start);
+  assert(start>=0&&end>start);
+  const heap=[
+    '        run: |',
+    '          if test "'+String.fromCharCode(36)+'{{ steps.assistant-later-h0-source.outputs.required }}" = true; then',
+    '            export NODE_OPTIONS=--max-old-space-size=6144',
+    '          fi',
+    '          '+node,
+    '',
+  ].join('\n');
+  assert.equal(currentPlan.slice(start,end),heap,'Exact587 conditional heap block; no extra command, unconditional heap or selector rewrite');
+  assert(previousPlan.includes('        run: '+node+'\n'));assert(!previousPlan.includes('        run: |\n'));
+  assert.throws(()=>command(actual.replace('          '+node+'\n','          '+node+'\n          '+node+'\n')),
+    'Duplicate actual planner invocation is not accepted');
+  const fixed=actual.replaceAll('RavRadar/4.0.587','RavRadar/4.0.586');
+  const changed=[actual+'\n# UNREVIEWED587\n',actual.replace('RavRadar/4.0.587','RavRadar/4.0.586'),
+    actual.replace('test "'+String.fromCharCode(36)+'{{ steps.full-validation.outcome }}" = success','true'),
+    actual.replace('test "'+String.fromCharCode(36)+'{{ steps.release-gate.outcome }}" = success','true')];
+  for(const[offset,text,original]of review.hunks){
+    for(const replacement of [original,text+text,'?'+text.slice(1)]){
+      const partial=fixed.slice(0,offset)+replacement+fixed.slice(offset+text.length);
+      changed.push(partial.replaceAll('RavRadar/4.0.586','RavRadar/4.0.587'));
+    }
+  }
+  for(const source of changed){
+    assert.notEqual(source,actual);assert.equal(inverseAssistant587CompletedWorkflow(source,'build'),source);
+    assert.throws(()=>inverseCompletedRuntimeWorkflow(source,'build'));
+  }
+});
+
 test('cold budget inverse: exact five conditions preserve all native and earlier workflow oracles',async()=>{
-  const source=inverseCurrentFamilyColdCheckpointWorkflow((await fs.readFile(new URL('../.github/workflows/reusable-weather-build.yml',import.meta.url),'utf8')).replaceAll('\r\n','\n'),'build');
+  const source=inverseAssistant587ColdBudgetCombinedTo707Workflow(inverseAssistant587ColdCheckpointCombinedToF83Workflow(inverseAssistant587LatestColdCombinedTo664aWorkflow((await fs.readFile(new URL('../.github/workflows/reusable-weather-build.yml',import.meta.url),'utf8')).replaceAll('\r\n','\n'),'build'),'build'),'build');
   const row=currentFamilyColdBudgetWorkflowReview;
   assert.equal(Buffer.byteLength(source),row.after.bytes);assert.equal(sha(source),row.after.sha256);
   assert.equal(row.hunks.length,5);
@@ -769,12 +833,50 @@ test('cold budget inverse: exact five conditions preserve all native and earlier
   assert.throws(()=>inverseCurrentFamilyColdBudgetWorkflow(source,'once'),/COLD_BUDGET_WORKFLOW_ROLE/);
 });
 
+test('assistant587 plus cold budget: actual combined whole source retains both parents and every older oracle',async()=>{
+  const actual=inverseAssistant587ColdCheckpointCombinedToF83Workflow(inverseAssistant587LatestColdCombinedTo664aWorkflow((await fs.readFile(new URL('../.github/workflows/reusable-weather-build.yml',import.meta.url),'utf8')).replaceAll('\r\n','\n'),'build'),'build');
+  const row=assistant587ColdBudgetCombinedWorkflowReview;
+  assert.equal(Buffer.byteLength(actual),row.combined.bytes);assert.equal(sha(actual),row.combined.sha256);
+  const p0707=inverseAssistant587ColdBudgetCombinedTo707Workflow(actual,'build');
+  const assistant587=inverseAssistant587ColdBudgetCombinedTo587Workflow(actual,'build');
+  assert.equal(Buffer.byteLength(p0707),row.p0707Parent.bytes);assert.equal(sha(p0707),row.p0707Parent.sha256);
+  assert.equal(Buffer.byteLength(assistant587),row.assistant587Parent.bytes);assert.equal(sha(assistant587),row.assistant587Parent.sha256);
+  assert.equal(inverseCurrentFamilyColdBudgetWorkflow(p0707,'build'),inverseAssistant587CompletedWorkflow(assistant587,'build'));
+  assert.equal(inverseCompletedRuntimeWorkflow(actual,'build'),inverseCompletedRuntimeWorkflow(p0707,'build'));
+  assert.equal(inverseCompletedRuntimeWorkflow(actual,'build'),inverseCompletedRuntimeWorkflow(assistant587,'build'));
+  assert.equal(sha(inverseCompletedRuntimeWorkflow(actual,'build')),legacySha);
+  for(const name of ['Classify one-time DMI PART continuity donor','Plan bounded current history from the actual selected continuation'])
+    assert.equal(coldStep(actual,name),coldStep(assistant587,name),'Actual combined donor, planner argv, conditional heap and read guards remain whole587');
+  const changed=[actual+'\n# UNREVIEWED_COMPOSITION\n',actual.replace('RavRadar/4.0.587','RavRadar/4.0.586')];
+  for(const[before,after]of currentFamilyColdBudgetWorkflowReview.hunks){
+    assert.equal(actual.split(after).length,2);
+    changed.push(actual.replace(after,before),actual.replace(after,after+after),actual.replace(after,'?'+after.slice(1)));
+  }
+  for(const[,after,before]of assistant587CompletedWorkflowReview.hunks){
+    const offsets=[];
+    for(let at=actual.indexOf(after);at!==-1;at=actual.indexOf(after,at+1))offsets.push(at);
+    assert(offsets.length>0,'Actual combined assistant hunk is preserved');
+    for(const at of offsets)for(const replacement of [before,after+after,'?'+after.slice(1)])
+      changed.push(actual.slice(0,at)+replacement+actual.slice(at+after.length));
+  }
+  for(const source of changed){
+    assert.notEqual(source,actual);
+    assert.equal(inverseAssistant587ColdBudgetCombinedTo707Workflow(source,'build'),source);
+    assert.equal(inverseAssistant587ColdBudgetCombinedTo587Workflow(source,'build'),source);
+    assert.throws(()=>inverseCompletedRuntimeWorkflow(source,'build'));
+  }
+  for(const role of ['once','unknown']){
+    assert.equal(inverseAssistant587ColdBudgetCombinedTo707Workflow(actual,role),actual);
+    assert.equal(inverseAssistant587ColdBudgetCombinedTo587Workflow(actual,role),actual);
+  }
+});
 
-// Keep the original checkpoint cases on their WHOLE genuine predecessor.
-// The latest-progress afterimages are read and tested separately below.
+
+// Keep both genuine P0 inputs separate: latest PR712 and its whole PR710
+// predecessor. All existing historical test bodies and pins stay unchanged.
 const latestColdProgressActual = Object.fromEntries(await Promise.all(
   Object.entries(currentFamilyColdCheckpointWorkflowReview.roles).map(async ([role, row]) =>
-    [role, (await fs.readFile(new URL('../' + row.relativePath, import.meta.url), 'utf8')).replaceAll('\r\n', '\n')])));
+    [role, inverseAssistant587LatestColdCombinedTo2bWorkflow((await fs.readFile(new URL('../' + row.relativePath, import.meta.url), 'utf8')).replaceAll('\r\n', '\n'), role)])));
 const coldCheckpointActual = Object.fromEntries(Object.entries(latestColdProgressActual).map(([role,source]) =>
   [role,inverseLatestColdProgressWorkflow(source,role)]));
 
@@ -983,6 +1085,69 @@ test('same-archive actual scope and prepare/resolve seams bind source and target
   }
 });
 
+test('assistant587 plus PR710 checkpoint: actual whole composition preserves both exact parents and every oracle', async () => {
+  const actual = inverseAssistant587LatestColdCombinedTo664aWorkflow((await fs.readFile(new URL('../.github/workflows/reusable-weather-build.yml', import.meta.url), 'utf8')).replaceAll('\r\n', '\n'), 'build');
+  const row = assistant587ColdCheckpointCombinedWorkflowReview;
+  assert.equal(row.p0Parent.commit, 'd5d2f5e95c55c3096fa7b03890289c7d2cba307a');
+  assert.equal(row.assistantParent.commit, 'f83da62fc5a90d65190dfb715539eb30070beb22');
+  assert.equal(Buffer.byteLength(actual), row.combined.bytes); assert.equal(sha(actual), row.combined.sha256);
+  assert.equal(row.toF83.length, 11); assert.equal(row.toD5.length, 19);
+  const f83 = inverseAssistant587ColdCheckpointCombinedToF83Workflow(actual, 'build');
+  const d5 = inverseAssistant587ColdCheckpointCombinedToD5Workflow(actual, 'build');
+  for (const [text, pin] of [[f83, row.assistantParent], [d5, row.p0Parent]]) {
+    assert.equal(Buffer.byteLength(text), pin.bytes); assert.equal(sha(text), pin.sha256);
+    assert.equal(inverseCompletedRuntimeWorkflow(actual, 'build'), inverseCompletedRuntimeWorkflow(text, 'build'));
+  }
+  assert.equal(d5, coldCheckpointActual.build);
+  assert.equal(inverseAssistant587ColdBudgetCombinedTo707Workflow(f83, 'build'),
+    inverseCurrentFamilyColdCheckpointWorkflow(d5, 'build'), 'Both exact parents retain the whole common65 workflow');
+  assert.equal(sha(inverseCompletedRuntimeWorkflow(actual, 'build')), legacySha);
+  for (const [edits, parent] of [[row.toF83, f83], [row.toD5, d5]]) {
+    let previous = actual, prior = actual.length;
+    for (const [offset, current, old] of edits) {
+      assert(Number.isSafeInteger(offset) && offset >= 0 && offset + current.length <= prior);
+      prior = offset;
+      assert.equal(previous.slice(offset, offset + current.length), current);
+      previous = previous.slice(0, offset) + old + previous.slice(offset + current.length);
+    }
+    assert.equal(previous, parent, 'Entire fixed projection, not selected fields');
+  }
+});
+
+test('assistant587 plus PR710 checkpoint: partial cross-parent mutations never enter a historical inverse', async () => {
+  const actual = inverseAssistant587LatestColdCombinedTo664aWorkflow((await fs.readFile(new URL('../.github/workflows/reusable-weather-build.yml', import.meta.url), 'utf8')).replaceAll('\r\n', '\n'), 'build');
+  const row = assistant587ColdCheckpointCombinedWorkflowReview;
+  assert.equal(sha(actual), row.combined.sha256);
+  const changed = [
+    actual + '\n# UNREVIEWED_PR710_ASSISTANT587\n',
+    actual.replace('39886354260-1', '39886354260-2'),
+    actual.replace('2026-10-23T01:00:00Z', '2026-10-23T02:00:00Z'),
+    actual.replace('RavRadar/4.0.587', 'RavRadar/4.0.586'),
+  ];
+  for (const edits of [row.toF83, row.toD5]) for (const [offset, current, old] of edits) {
+    assert.equal(actual.slice(offset, offset + current.length), current);
+    for (const replacement of ['', current + current, '?' + current.slice(1), old]) {
+      const candidate = actual.slice(0, offset) + replacement + actual.slice(offset + current.length);
+      if (candidate !== actual) changed.push(candidate);
+    }
+  }
+  for (const source of changed) {
+    assert.notEqual(source, actual);
+    assert.equal(inverseAssistant587ColdCheckpointCombinedToF83Workflow(source, 'build'), source);
+    assert.equal(inverseAssistant587ColdCheckpointCombinedToD5Workflow(source, 'build'), source);
+    assert.throws(() => inverseCompletedRuntimeWorkflow(source, 'build'));
+  }
+  for (const project of [inverseAssistant587ColdCheckpointCombinedToF83Workflow,
+    inverseAssistant587ColdCheckpointCombinedToD5Workflow]) {
+    for (const role of ['once', 'unknown']) assert.equal(project(actual, role), actual);
+    for (const parent of [inverseAssistant587ColdCheckpointCombinedToF83Workflow(actual, 'build'),
+      inverseAssistant587ColdCheckpointCombinedToD5Workflow(actual, 'build')]) assert.equal(project(parent, 'build'), parent);
+    assert.throws(() => project(actual), /ASSISTANT587_CHECKPOINT_ARGUMENTS/);
+    assert.throws(() => project(actual, 'build', true), /ASSISTANT587_CHECKPOINT_ARGUMENTS/);
+    assert.throws(() => project(null, 'build'), /ASSISTANT587_CHECKPOINT_TYPE/);
+  }
+});
+
 test('latest saved progress inverse restores both exact earlier workflows and rejects every changed hunk',async()=>{
   const review=latestColdProgressWorkflowReview;
   assert.deepEqual(review.scope,{progressSource:'39886354260-1',latestProgressSource:'39933506923-1',
@@ -1071,4 +1236,77 @@ test('actual latest progress cache selects the requested exact ID and keeps orig
     'Encrypt newly saved private weather progress before later production steps',
     ...['dmi','copernicus','open-meteo','weather'].map(phase=>'Preserve the fixed epoch post-processing reserve before '+phase)])
     assert.equal(coldStep(actual.build,name),coldStep(coldCheckpointActual.build,name),name+' remains byte-identical');
+});
+
+test('assistant587 plus PR712 latest progress: actual whole composition preserves both exact Git parents', async () => {
+  const actual = inverseSourceNormalWorkflowForHistoricalOracle((await fs.readFile(new URL('../.github/workflows/reusable-weather-build.yml', import.meta.url), 'utf8')).replaceAll('\r\n', '\n'), 'build');
+  const row = assistant587LatestColdCombinedWorkflowReview;
+  assert.equal(row.p0Parent.commit, '2b1d7a95d4201ef39e10cc9d7e52cd0f4d6243aa');
+  assert.equal(row.assistantParent.commit, '664aeb46966cd0ec182599a90bcaacc6c4b609ab');
+  assert.equal(row.commonParent.commit, 'd957e9579f2d6b3ef2281a1d65a9cb1ff4c39909');
+  assert.equal(Buffer.byteLength(actual), row.combined.bytes); assert.equal(sha(actual), row.combined.sha256);
+  assert.equal(row.to664a.length, 3); assert.equal(row.to2b.length, 19);
+  const assistant = inverseAssistant587LatestColdCombinedTo664aWorkflow(actual, 'build');
+  const p0 = inverseAssistant587LatestColdCombinedTo2bWorkflow(actual, 'build');
+  for (const [source, pin] of [[assistant, row.assistantParent], [p0, row.p0Parent]]) {
+    assert.equal(Buffer.byteLength(source), pin.bytes); assert.equal(sha(source), pin.sha256);
+    assert.equal(inverseCompletedRuntimeWorkflow(actual, 'build'), inverseCompletedRuntimeWorkflow(source, 'build'));
+  }
+  assert.equal(p0, latestColdProgressActual.build);
+  const common = inverseLatestColdProgressWorkflow(p0, 'build');
+  assert.equal(common, inverseAssistant587ColdCheckpointCombinedToD5Workflow(assistant, 'build'));
+  assert.equal(Buffer.byteLength(common), row.commonParent.bytes); assert.equal(sha(common), row.commonParent.sha256);
+  assert.equal(sha(inverseCompletedRuntimeWorkflow(actual, 'build')), legacySha);
+  for (const [edits, parent] of [[row.to664a, assistant], [row.to2b, p0]]) {
+    let previous = actual, prior = actual.length;
+    for (const [offset, current, old] of edits) {
+      assert(Number.isSafeInteger(offset) && offset >= 0 && offset + current.length <= prior);
+      prior = offset;
+      assert.equal(previous.slice(offset, offset + current.length), current);
+      previous = previous.slice(0, offset) + old + previous.slice(offset + current.length);
+    }
+    assert.equal(previous, parent, 'Entire fixed parent projection, not selected fields');
+  }
+  // Evaluate the genuine combined selector, not a normalized historic workflow.
+  const restore = coldStep(actual, 'Restore encrypted private weather progress only');
+  for (const cold of [false, true]) for (const progress of ['', '39886354260-1', '39933506923-1', '39933506923-2', 'protected-current']) {
+    const context = coldOrdinaryContext(cold);
+    context.inputs = { ...context.inputs, quick_progress_source: progress };
+    assert.equal(coldEvaluate(coldSelector(restore), context), !cold || ['39886354260-1', '39933506923-1'].includes(progress));
+  }
+});
+
+test('assistant587 plus PR712 latest progress: partial parent mutations never enter any historical inverse', async () => {
+  const actual = inverseSourceNormalWorkflowForHistoricalOracle((await fs.readFile(new URL('../.github/workflows/reusable-weather-build.yml', import.meta.url), 'utf8')).replaceAll('\r\n', '\n'), 'build');
+  const row = assistant587LatestColdCombinedWorkflowReview;
+  assert.equal(sha(actual), row.combined.sha256);
+  const changed = [
+    actual + '\n# UNREVIEWED_PR712_ASSISTANT587\n',
+    actual.replace('39933506923-1', '39933506923-2'),
+    actual.replace('39886354260-1', '39886354260-2'),
+    actual.replace('2026-10-23T01:00:00Z', '2026-10-23T02:00:00Z'),
+    actual.replace('RavRadar/4.0.587', 'RavRadar/4.0.586'),
+  ];
+  for (const edits of [row.to664a, row.to2b]) for (const [offset, current, old] of edits) {
+    assert.equal(actual.slice(offset, offset + current.length), current);
+    for (const replacement of ['', current + current, '?' + current.slice(1), old]) {
+      const candidate = actual.slice(0, offset) + replacement + actual.slice(offset + current.length);
+      if (candidate !== actual) changed.push(candidate);
+    }
+  }
+  for (const source of changed) {
+    assert.notEqual(source, actual);
+    assert.equal(inverseAssistant587LatestColdCombinedTo664aWorkflow(source, 'build'), source);
+    assert.equal(inverseAssistant587LatestColdCombinedTo2bWorkflow(source, 'build'), source);
+    assert.throws(() => inverseCompletedRuntimeWorkflow(source, 'build'));
+  }
+  for (const project of [inverseAssistant587LatestColdCombinedTo664aWorkflow,
+    inverseAssistant587LatestColdCombinedTo2bWorkflow]) {
+    for (const role of ['once', 'unknown']) assert.equal(project(actual, role), actual);
+    for (const parent of [inverseAssistant587LatestColdCombinedTo664aWorkflow(actual, 'build'),
+      inverseAssistant587LatestColdCombinedTo2bWorkflow(actual, 'build')]) assert.equal(project(parent, 'build'), parent);
+    assert.throws(() => project(actual), /ASSISTANT587_LATEST_COMBINED_ARGUMENTS/);
+    assert.throws(() => project(actual, 'build', true), /ASSISTANT587_LATEST_COMBINED_ARGUMENTS/);
+    assert.throws(() => project(null, 'build'), /ASSISTANT587_LATEST_COMBINED_TYPE/);
+  }
 });

@@ -96,7 +96,7 @@ test('actual workflow starts the cold clock before checkout and gates every prov
   const selected = (name, inputs, shouldRun = 'true') => {
     const condition = /^        if: (.+)$/m.exec(body(name)); assert(condition);
     return Boolean(new Function('inputs', 'steps', 'return (' + condition[1] + ');')(
-      inputs, { preflight: { outputs: { should_run: shouldRun } } }));
+      { source_normal_producer: false, ...inputs }, { preflight: { outputs: { should_run: shouldRun } } }));
   };
   const clock = 'Record the actual epoch build start before checkout';
   assert(workflow.indexOf('date +%s%3N') < workflow.indexOf('uses: actions/checkout'));
@@ -109,6 +109,7 @@ test('actual workflow starts the cold clock before checkout and gates every prov
       ['weather', 'Update central weather cache']]) {
       const gate = 'Preserve the fixed epoch post-processing reserve before ' + phase;
       assert.equal(selected(gate, inputs), true);
+      assert.equal(selected(gate, { ...inputs, source_normal_producer: true }), false);
       assert.equal(selected(gate, inputs, 'false'), false);
       assert.equal(selected(gate, { ...inputs, completed_private_runtime: true }), false);
       assert.equal(selected(gate, {}), false);

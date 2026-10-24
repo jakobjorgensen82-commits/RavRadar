@@ -1,23 +1,23 @@
-import { PUBLIC_CONFIG } from "../../config.js?v=4.0.586";
-import { localRavKnowledgeAnswer, matchLocalRavKnowledge, localRavQuestionRequiresWholeAnswer } from "../../knowledge/rav-assistant-local-v2.js?v=4.0.586";
-import { buildLocalZoneScore, selectLocalBestForDay } from "../core/local-zone-score.js?v=4.0.586";
-import { addNationalRanking, compareNationalRankingRows } from "../core/zone-ranking.js?v=4.0.586";
-import { forecastDateKeyForDayOffset } from "../core/forecast-calendar.js?v=4.0.586";
+import { PUBLIC_CONFIG } from "../../config.js?v=4.0.588";
+import { localRavKnowledgeAnswer, matchLocalRavKnowledge, localRavQuestionRequiresWholeAnswer } from "../../knowledge/rav-assistant-local-v2.js?v=4.0.588";
+import { buildLocalZoneScore, selectLocalBestForDay } from "../core/local-zone-score.js?v=4.0.588";
+import { addNationalRanking, compareNationalRankingRows } from "../core/zone-ranking.js?v=4.0.588";
+import { forecastDateKeyForDayOffset } from "../core/forecast-calendar.js?v=4.0.588";
 import {
   RAVSCORE_CALIBRATION_ELIGIBLE,
   ravScoreModelBinding,
-} from "../core/ravscore-model-contract.js?v=4.0.586";
-import { sameRavScoreModelBinding } from "../core/ravscore-public-runtime-contract.js?v=4.0.586";
-import { presentActiveRavScoreExplanation } from "../core/ravscore-integrated-explanation-presenter.js?v=4.0.586";
-import { bestTimeSelectionReasonI18nKey } from "../core/best-time-policy.js?v=4.0.586";
-import { formatDateTime, formatNumber, getLanguage, normaliseLanguage, t } from "../i18n.js?v=4.0.586";
+} from "../core/ravscore-model-contract.js?v=4.0.588";
+import { sameRavScoreModelBinding } from "../core/ravscore-public-runtime-contract.js?v=4.0.588";
+import { presentActiveRavScoreExplanation } from "../core/ravscore-integrated-explanation-presenter.js?v=4.0.588";
+import { bestTimeSelectionReasonI18nKey } from "../core/best-time-policy.js?v=4.0.588";
+import { formatDateTime, formatNumber, getLanguage, normaliseLanguage, t } from "../i18n.js?v=4.0.588";
 
 // Compatibility name for existing source-contract tests. The implementation
 // now selects the only adapter matching the artifact's exact active binding.
 const presentIntegratedRavScoreExplanation = presentActiveRavScoreExplanation;
 const ACTIVE_RAVSCORE_MODEL_BINDING = ravScoreModelBinding();
 const RAV_ASSISTANT_KNOWLEDGE_SCHEMA = 'rav-assistant-public-knowledge-v1';
-const RAV_ASSISTANT_KNOWLEDGE_SHA256 = '72d84309e5ed5e4a180fc02b2d476041fcd65a576336a949df0bd43e87774378';
+const RAV_ASSISTANT_KNOWLEDGE_SHA256 = 'ddefdc8f624014509787bce4852b63f81588f6dd954a17d76307afddb677d105';
 const RAV_ASSISTANT_BINDING_HEADERS = Object.freeze({
   modelId:'x-ravradar-model-id',
   modelStateVersion:'x-ravradar-model-state-version',
@@ -217,8 +217,22 @@ function isBeginnerSearchQuestion(value) {
   ].some(pattern => pattern.test(text));
 }
 
+// Only complete, simple identification questions reuse the existing local
+// identification answer. Extra clauses retain their ordinary route.
+function isSimpleIdentificationQuestion(value) {
+  const raw = String(value || '').trim();
+  if (raw.length > 600) return false;
+  const text = raw.normalize('NFKC').replace(/\s+/gu, ' ');
+  return [
+    /^(?:hvordan kan (?:jeg|vi) kende rav fra sten(?: på stranden)?|hvordan skelner (?:jeg|vi) rav fra sten(?: ved stranden)?)[?!.]*$/iu,
+    /^wie (?:kann ich|können wir) bernstein von steinen unterscheiden(?: am strand)?[?!.]*$/iu,
+    /^how (?:can|do) (?:i|we) (?:tell amber (?:apart )?from stones|distinguish amber from stones)(?: on the beach)?[?!.]*$/iu,
+  ].some(pattern => pattern.test(text));
+}
+
 export function classifyRavQuestion(question) {
   const text = String(question || '').trim();
+  if (isSimpleIdentificationQuestion(text)) return 'identification';
   if (isBeginnerSearchQuestion(text)) return 'beginner-search';
   if (isOriginIdentificationQuestion(text)) return 'origin-identification';
   if (practicalSearchPlan(text)) return 'practical-search-plan';
@@ -605,6 +619,9 @@ export async function askRavRadar(question, context = {}, options = {}) {
   if (SECURITY_PATTERN.test(raw) || OUT_OF_SCOPE_PATTERN.test(raw)) return t('assistant.refusal', {}, language);
   const safe = raw.slice(0, 600);
   const route = routeRavQuestion(raw);
+  if (isSimpleIdentificationQuestion(safe) && !isSimpleIdentificationQuestion(raw)) {
+    return t('assistant.unknown', {}, language);
+  }
   if (classifyRavQuestion(safe) === 'beginner-search' && !isBeginnerSearchQuestion(raw)) {
     return t('assistant.unknown', {}, language);
   }

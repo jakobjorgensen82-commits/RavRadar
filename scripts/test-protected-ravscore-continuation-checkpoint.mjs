@@ -3,6 +3,11 @@ import crypto from 'node:crypto';
 import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
+// SOURCE is opt-in: refuse unissued output before model/T calculation or native I/O.
+if (process.argv.includes('--source-producer') || process.argv.includes('--current-source-native-profile')) {
+  const { requireSourceProducerOutput } = await import('./lib/source-producer-successor-source.mjs');
+  requireSourceProducerOutput();
+}
 import { buildIntegratedRavScoreStateSeries } from '../js/core/ravscore-integrated-state-pipeline.js';
 import { buildCandidateGDerivedStateSeries } from '../js/core/ravscore-candidate-g-state-pipeline.js';
 import {
@@ -374,9 +379,11 @@ const rpcFailureIncludes = pattern => error => {
 // These assertions are not PostgreSQL/SQL/installation proof.
 if (!process.argv.includes('--native-postgres') && !process.argv.includes('--native-statistics-revision')
     && !process.argv.includes('--native-sampling-identity') && !process.argv.includes('--current-memory-warmup')
-    && !process.argv.includes('--account-statistics-assistant')) {
+    && !process.argv.includes('--account-statistics-assistant') && !process.argv.includes('--assistant-later-h0')
+    && !process.argv.includes('--source-producer') && !process.argv.includes('--current-source-native-profile')) {
   const { nativePostgresFailureDiagnostic: diagnose,
-    nativePostgresFailureAnnotation: annotate } =
+    nativePostgresFailureAnnotation: annotate, nativeProviderProcessFirstFailure,
+    nativePostgresChildFirstFailure } =
       await import('./lib/checkpoint-cas-native-postgres.mjs');
   assert.deepEqual(diagnose('CURRENT220', 'psql:<stdin>: ERROR: 42P01\n'),
     {phase:'CURRENT220',sqlState:'42P01',category:'SQL_UNDEFINED_TABLE'});
@@ -400,6 +407,77 @@ if (!process.argv.includes('--native-postgres') && !process.argv.includes('--nat
     '::error title=Native PostgreSQL source command::phase=UNKNOWN sqlstate=42501 category=SQL_PERMISSION');
   assert.equal(annotate('NATIVE_SETUP', ''),
     '::error title=Native PostgreSQL source command::phase=NATIVE_SETUP sqlstate=UNKNOWN category=PSQL_COMMAND_FAILURE');
+  // Fixed child phases and qualified source frames only; never native/SQL proof.
+  const providerFrames=['scripts/fixtures/source19-current-native-providers.py','scripts/update-dmi-bulk.py',
+    'scripts/test-source19-terminal-failure-proof-bank-v17-observer-native.py',
+    'scripts/fixtures/source19-current-initial-weather.py','scripts/lib/copernicus_current_source_stage.py'];
+  for(const module of providerFrames){
+    const source=await fs.readFile(module),callsite={module,sha256:crypto.createHash('sha256').update(source).digest('hex'),line:1};
+    for(const phase of ['PROVIDERS','PROVIDERS-H0','PROVIDERS-H1']){
+      const empty={bytes:0,complete:true,sha256:crypto.createHash('sha256').update('').digest('hex')};
+      const boundary={kind:'SOURCE_PROVIDER_BOUNDARY_FIRST_FAILURE',exceptionType:'UNKNOWN',reason:'UNKNOWN',
+        callsite,helper:'NONE',timeoutSeconds:null,privatePayloadIncluded:false};
+      const value={kind:'SOURCE_PROVIDER_PROCESS_FIRST_FAILURE',phase,returncode:1,signal:'NONE',
+        stdout:empty,stderr:{bytes:1,complete:true,sha256:'a'.repeat(64)},boundary,privatePayloadIncluded:false};
+      assert.deepEqual(nativeProviderProcessFirstFailure(value),value);
+      const later={kind:'SOURCE_LEGACY_CHILD_FIRST_FAILURE',phase:'UNKNOWN',exceptionType:'ASSERTION_ERROR',
+        osError:'NONE',callsite:null,privatePayloadIncluded:false};
+      assert.deepEqual(nativePostgresChildFirstFailure(JSON.stringify(value)+'\n'+JSON.stringify(later),''),value);
+      if(phase!=='PROVIDERS'){
+        for(const [collection,hourOffset] of [['wam_nsb',0],['wam_dw',120]]){
+          for(const [reason,admitted] of [['STAGE_ADMISSION_FALSE',false],['NATIVE_OWNER_INCOMPLETE',true]]){
+            const summary={requiredCount:7,acceptedCount:0,rejectedCount:7,acceptedLineageCount:0,
+              acceptedLineageEvidenceCount:0,rejectedByCode:{INVALID_WAVE_TUPLE:0,MISSING_WAVE_DIRECTION:0,
+                INVALID_WAVE_DIRECTION:0,ASSET_PROVENANCE_MISMATCH:0,INVALID_WAVE_PROVENANCE:7},
+              rejectedByCodeKnown:true,unknownRejectionCodeCount:0,coherent:false,complete:false};
+            const outcome={hasHeight:true,hasPeriod:true,hasDirection:true,parameterCount:3,touchedCount:0,
+              interrupted:false,messagesSeen:3,zoneLookups:21};
+            const wamAdmission={kind:'SOURCE_INITIAL_WAM_ADMISSION_DIAGNOSTIC',collection,hourOffset,reason,
+              admitted,summary,outcome,privatePayloadIncluded:false};
+            const observed={...value,wamAdmission};
+            assert.deepEqual(nativeProviderProcessFirstFailure(observed),observed);
+            assert.deepEqual(nativePostgresChildFirstFailure(JSON.stringify(observed)+'\n'+JSON.stringify(later),''),observed);
+            for(const bad of [
+              {...observed,phase:'PROVIDERS'}, {...observed,returncode:0}, {...observed,raw:'PRIVATE'},
+              {...observed,wamAdmission:{...wamAdmission,raw:'PRIVATE'}},
+              {...observed,wamAdmission:{...wamAdmission,admitted:!admitted}},
+              {...observed,wamAdmission:{...wamAdmission,summary:{...summary,raw:'PRIVATE'}}},
+              {...observed,wamAdmission:{...wamAdmission,outcome:{...outcome,raw:'PRIVATE'}}},
+              {...observed,wamAdmission:{...wamAdmission,summary:{...summary,acceptedCount:-1}}},
+              {...observed,wamAdmission:{...wamAdmission,summary:{...summary,unknownRejectionCodeCount:0.5}}},
+              {...observed,wamAdmission:{...wamAdmission,summary:{...summary,
+                rejectedByCode:{...summary.rejectedByCode,INVALID_WAVE_PROVENANCE:1_000_001}}}},
+              {...observed,wamAdmission:{...wamAdmission,summary:{...summary,
+                rejectedByCode:{...summary.rejectedByCode,PRIVATE:0}}}},
+              {...observed,wamAdmission:{...wamAdmission,outcome:{...outcome,messagesSeen:true}}},
+              {...observed,wamAdmission:{...wamAdmission,outcome:{...outcome,touchedCount:'PRIVATE'}}},
+              ...(admitted?[{...observed,wamAdmission:{...wamAdmission,summary:{...summary,complete:true}}}]:[]),
+            ]){
+              assert.equal(nativeProviderProcessFirstFailure(bad),null);
+              assert.equal(nativePostgresChildFirstFailure(JSON.stringify(bad),''),null);
+            }
+          }
+        }
+      }
+      for(const bad of [
+        {...value,phase:'PROVIDERS-H2'}, {...value,phase:'providers-h0'}, {...value,raw:'PRIVATE'},
+        {...value,stderr:{bytes:1,complete:false,sha256:null}},
+        {...value,boundary:{...boundary,callsite:{...callsite,module:'scripts/lib/private-other.py'}}},
+        {...value,boundary:{...boundary,callsite:{...callsite,line:0}}},
+        {...value,boundary:{...boundary,reason:'PRIVATE'}},
+      ]){
+        assert.equal(nativeProviderProcessFirstFailure(bad),null);
+        assert.equal(nativePostgresChildFirstFailure(JSON.stringify(bad),''),null);
+      }
+    }
+  }
+  for(const phase of ['BINDINGS','PROVIDERS','FOLLOWER','UNKNOWN','PROVIDERS-H0','PROVIDERS-H1']){
+    const value={kind:'SOURCE_LEGACY_CHILD_FIRST_FAILURE',phase,exceptionType:'ASSERTION_ERROR',
+      osError:'NONE',callsite:null,privatePayloadIncluded:false};
+    assert.deepEqual(nativePostgresChildFirstFailure(JSON.stringify(value),''),value);
+    assert.equal(nativePostgresChildFirstFailure(JSON.stringify({...value,phase:'PROVIDERS-H2'}),''),null);
+    assert.equal(nativePostgresChildFirstFailure(JSON.stringify({...value,raw:'PRIVATE'}),''),null);
+  }
 }
 
 // Run the actual native SQL-prefix assertion before any historical PG phase.
@@ -525,17 +603,22 @@ if (process.argv.includes('--native-identity-source-only')) {
   process.exit(0);
 }
 
-const nativeOriginalContinuityNative = process.argv.includes('--native-original-continuity');
-const accountStatisticsAssistantNative = process.argv.includes('--account-statistics-assistant') || nativeOriginalContinuityNative;
+const currentSourceNativeProfile = process.argv.includes('--current-source-native-profile');
+const sourceProducerNative = process.argv.includes('--source-producer') || currentSourceNativeProfile;
+const assistantLaterH0Native = process.argv.includes('--assistant-later-h0');
+const nativeOriginalContinuityNative = process.argv.includes('--native-original-continuity') || assistantLaterH0Native;
+const accountStatisticsAssistantNative = process.argv.includes('--account-statistics-assistant') || nativeOriginalContinuityNative || sourceProducerNative;
 // Native PostgreSQL is a separate mandatory Linux source leaf, never a
 // MemoryCentral/Windows representation proof. Reuse these exact 673 builders
 // and the normal checkpoint saver; do not run the simulated RPC tests here.
 if (process.argv.includes('--native-postgres') || process.argv.includes('--native-statistics-revision')
     || process.argv.includes('--native-sampling-identity') || process.argv.includes('--current-memory-warmup')
     || process.argv.includes('--established-native-current-origin') || (process.argv.includes('--last-mile-enclosure') || accountStatisticsAssistantNative)) {
+  let classifySourceFailure = null;
   try {
-    const { runNativeCheckpointSqlComparison } =
+    const { runNativeCheckpointSqlComparison, nativePostgresExceptionCode } =
       await import('./lib/checkpoint-cas-native-postgres.mjs');
+    if (sourceProducerNative) classifySourceFailure = nativePostgresExceptionCode;
     const report = await runNativeCheckpointSqlComparison({
       repositoryRoot: path.resolve('.'), sourceDocumentAt, atHour,
       saveCheckpoint: saveRavScoreContinuationCheckpoint,
@@ -549,10 +632,14 @@ if (process.argv.includes('--native-postgres') || process.argv.includes('--nativ
       includeLastMileEnclosure: (process.argv.includes('--last-mile-enclosure') || accountStatisticsAssistantNative),
       includeAccountStatisticsAssistant: accountStatisticsAssistantNative,
       includeNativeOriginalContinuity: nativeOriginalContinuityNative,
+      includeAssistantLaterH0: assistantLaterH0Native,
+      includeSourceProducer: sourceProducerNative,
+      includeCurrentSourceNativeProfile: currentSourceNativeProfile,
     });
     console.log(JSON.stringify(report));
   } catch (error) {
-    const category = /^NATIVE_POSTGRES_[A-Z0-9_]+$/.test(error?.message ?? '')
+    const category = sourceProducerNative && classifySourceFailure !== null ? classifySourceFailure(error)
+      : /^NATIVE_POSTGRES_[A-Z0-9_]+$/.test(error?.message ?? '')
       ? error.message : error?.code === 'ERR_ASSERTION'
         ? 'NATIVE_POSTGRES_ASSERTION_FAILED' : 'NATIVE_POSTGRES_UNKNOWN_FAILURE';
     console.error(JSON.stringify({ kind: 'NATIVE_POSTGRES_CHECKPOINT_CAS_COMPARISON',

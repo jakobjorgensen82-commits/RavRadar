@@ -1,4 +1,4 @@
-## 89.265 Gyldige vejrdata kan bevares uden overskrivning
+## 89.267 Gyldige vejrdata kan bevares uden overskrivning
 
 Kort fortalt: En ny gennemgang af en vejrfil behøver ikke ændre en allerede bedre, gyldig strømværdi.
 
@@ -6,9 +6,53 @@ Programmet skal stadig kunne dokumentere den gennemgåede fil, de rigtige kystde
 
 Dækning opgøres over alle forventede timer og zoner for vind, bølger, strøm, vandstand og vandtemperatur. En brugbar score er ikke det samme som komplette data i alle fem kategorier. Bevarede fælles timer og nye timer sidst i prognosen skal vurderes særskilt; ingen kildeprioritet eller beregningsformel ændres af denne bevaring.
 
+## 89.266 Beregningskode og genererede kontroloplysninger
+
+En fejlrapport må kun påstå, at en kontrol har godkendt data, når dens faktiske udfald er observeret. En afbrydelse før kontrollen er ikke en godkendelse. Faste fejlkategorier og optællinger kan forbedre en intern fejlanalyse uden at udlevere rådata; de er ikke bevis for en løst bagvedliggende fejl eller ny offentlig drift.
+
+Status 24. oktober: En kunstig startprøve dækkede kun de lokale kystdeles punkter, men den normale datalæser undersøger også hele zoners punkter og deres faste nabopunkter. Prøvens gitter omslutter nu alle disse faktiske opslag. Produktionslæseren, administratorens punkter, afstanden mellem prøvepunkterne, tidsbudgetter, bindinger og gamle databasekilder er uændrede. Lokal kodegennemgang er ikke en faktisk bestået native- eller GitHub-kontrol og ændrer ikke produktionen. Den kildekvalificerede, mergede DMI-rettelse på main er et særskilt P0-forløb; dens driftseffekt skal vurderes ved en almindelig vejrhentning.
+
+Et historisk, kunstigt prøveforløb skal holde sin prøveklokke adskilt fra faktiske hentetider. En tom kildestage i den historiske H0-prøve bruger nu sin udtrykkelige referencetid; almindelige forløb og H1 bruger fortsat den faktiske klokke. Den normale tidsgrænse og ægte leverandørtider bevares. Fejlrapporten skelner de faste underforløb og medtager kun kvalificerede kildepositioner, aldrig rå private oplysninger. De afgrænsede normale Python- og JavaScript-prøver består lokalt; samlet kilde- og databasekvalifikation samt installation er fortsat åbne.
+
+Kort fortalt: En kontrolsum skal beskrive programmet, ikke være en del af sit eget beregningsinput.
+
+Status 23. oktober: Programversion 4.0.588 og dens beregnede kontroloplysninger er nu udstedt lokalt. Den normale brugskæde er sammenkoblet lokalt, og databasekildeteksten og de syv normale forbrugerkopier kan genberegnes til samme resultat. Versionssynkroniseringen skal ikke gentages. Databasekildeteksten er ikke kørt i produktionen.
+
+Den konkrete kæde af fem historiske kildeindlæsere er nu registreret med præcise kontroller af hele filerne. Den øvrige kode og de gamle kildefortegnelser bevares; det er ikke en generel undtagelse for ukendte programafhængigheder. Afgrænsede lokale kontroller består, men de erstatter ikke en samlet ny kilde- og databasekvalifikation.
+
+Rigtig databaseprøve, præcis samlet CI, kapacitet og kontrolleret installation er fortsat åbne. Overgangen kræver faktisk installeret 587 som særskilt forudsætning; den særlige CURRENT-kvalifikation hører først til efter grønt main. Ny offentlig virkning, almindelig efterfølger og dokumenteret egnethed til begge Free-planer skal stadig bevises.
+
+De tidligere formuleringer nedenfor om planlagt, endnu uudstedt version og manglende sammenkobling bevares som den tidligere planstatus; kun disse punkter er erstattet af denne opfølgning. Gamle originaler, tidligere offentliggjorte tal og P0-vejrhentningens særskilte status bevares.
+
+RavRadar skal kunne kontrollere, at programversion, faktiske kildefiler og de oplysninger, der afledes af dem, passer sammen. Derfor holdes de genererede kontroloplysninger i én strengt afgrænset datafil. Det giver ikke adgang til at udelade vilkårlig kode, ændre vejrtal eller springe sikkerhedskontroller over.
+
+Den normale kontrol skal stadig omfatte programmets rigtige afhængigheder og ejere. En historisk prøve bevares med sine oprindelige kilder, men må ikke erstatte afprøvning af den nye samlede pakke. En lokal markering, importprøve eller fil uden for den kontrollerede kilde er ikke bevis for ny drift.
+
+Ved en ny programrelease skal oplysningerne afledes på ny fra den samlede, versionssynkroniserede kode. Derefter skal de normale database- og forbrugerkopier kunne genberegnes til præcis samme resultat. Gamle originaler og tidligere offentliggjorte tal bevares; en gammel, aldrig installeret databasekandidat må ikke genmærkes som den nye.
+
+Fejl skal bevare deres første faktiske udfald og skelne mellem afslutning, afbrydelse og tidsgrænse. Rå private oplysninger må ikke følge en offentlig fejlrapport. Et bedre logudtræk eller en bestået delprøve betyder ikke i sig selv, at den bagvedliggende fejl er løst.
+
+Den sammenførte SOURCE-revision er planlagt til 4.0.588, men den nye version og dens kontroloplysninger er endnu ikke udstedt. Det almindelige forløb, som skal bruge revisionen, er heller ikke færdigt sammenkoblet endnu. Kildekontrol, rigtig databaseprøve, kapacitet, kontrolleret overgang fra faktisk installeret 587 og offentlig virkning skal stadig dokumenteres. Den særlige CURRENT-prøve hører først til efter grønt main; en test af dens opsætning er ikke selve kørslen.
+
+Den almindelige vejrhentning og dens aktuelle status er et særskilt P0-forløb. Denne lokale forberedelse aktiverer ikke revisionen og ændrer ikke kildernes prioritet, scorer eller historik. Kravet om drift inden for Supabase Free og Cloudflare Free kræver faktiske målinger, også over tid.
+
+## 89.265 Spørg RavRadar: forklaring er ikke en lokal vejrudsigt
+
+Kort fortalt: RavRadar kan forklare en mulighed uden at love et fund eller kende forholdene på en bestemt strand.
+
+Bølger kan sætte materiale ved bunden i bevægelse, og strøm kan føre det mellem revler og render. Det er ikke det samme som, at materialet når helt op på stranden. Derfor kan der ske transport under vand, selv om der ikke ses nyt opskyl. Revler, åbninger og læsider kan påvirke transporten, men de er mulige fælder, ikke garantier.
+
+SpørgRavRadar bruger sin eksisterende kontrollerede viden til generelle forklaringer og enkle spørgsmål om genkendelse på dansk, tysk og engelsk. Et lokalt regelsvar er ikke i sig selv bevis for kvaliteten af en ekstern AI-tjeneste. Vandstand og en høj score er heller ikke et løfte om ravfund.
+
+Spørgsmål om aktuelle vejrtal kræver en konkret zone og de faktisk tilknyttede data. Et generelt svar må ikke opfinde tal eller afgøre sikkert, hvad der ligger på en bestemt strand. Usikkerhed, manglende data og sikkerhedsgrænser skal stadig fremgå ærligt; private oplysninger må ikke bruges som offentlig viden.
+
+Disse svarforbedringer og en originalbevarende programovergang er lokalt forberedt og udstedt i 4.0.587. Sidste verificerede offentlige version er4.0.586. Lokal kildekontrol er ikke installation, ny vejrhentning eller offentlig effekt; det kræver særskilt kontrolleret levering og en almindelig efterfølgende opdatering. Lager-/økonomivalget og den aktuelle genopretning er fortsat særskilte åbne punkter; denne opdatering giver ingen tilladelse til sletning af originaler.
+
 ## 89.264 Ny strømhistorik med bevaret arkiv
 
 Kort fortalt: RavRadar kan opbygge strømhistorik fra et nyt tidspunkt uden at ændre tidligere offentliggjorte scorer.
+
+En vejrfil kan være fuldt gennemgået, selv om en bedre og allerede kontrolleret strømværdi bliver bevaret. Nul ændrede rækker er derfor ikke alene tegn på, at filen mangler. Programmet skal stadig kontrollere den præcise kilde, de aktuelle kystdele, hele gennemgangen og de faktisk bevarede strømværdier. Samme beviser skal følge gemning og genbrug. En intern kvittering må ikke gøre ukendt eller forkert placeret strøm gyldig, og gamle strømtilstande får ingen ny adgang.
 
 En godkendt ny opstart skal holde det gamle arkiv adskilt fra de nye beregninger. Gamle strømværdier må ikke vende tilbage gennem gemte arbejdsfiler. Gyldige vind-, bølge-, vandstands- og temperaturdata bevares efter de normale kilderegler. En afventende ændring af administratorens kystpunkter må ikke annulleres som del af en sådan opstart.
 
@@ -616,9 +660,23 @@ En særskilt, dokumenteret Storage-formatkant rettes samtidig: immutable upload 
 
 # RavRadar Håndbog
 
-**Håndbogsversion:** 4.0.586
+**Håndbogsversion:** 4.0.588
 
 Hvis genbrug af gemte data stopper, skal den første fejlfase og et kontrolleret kildested bevares uden private fejltekster eller værdier. Tidligere beståede kontroller frikender ikke automatisk en senere mål-time eller andre input. En bedre fejlrapport ændrer ikke beregningen og er ikke bevis for, at årsagen er rettet. Gemte originaler og sidste gyldige offentlige data bevares, mens fejlen undersøges.
+
+## Aktuel lokal kildebinding — RavScore 4.0.588, ikke installeret
+
+Den integrerede model er offentlig som modeltype; denne SOURCE-kilde er kun lokalt udstedt, ikke installeret eller offentligt leveret. 4.0.588 er låst med `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b` og `modelBundleSha256=5fa3e96cb3cf0f47e6a10bd37d4e1b1b93f837bf0f221dbb49d2a6442289dbc8` over 153 kanonisk normaliserede transitive implementeringsfiler og de deklarerede forbrugere. Inaktiv Candidate G er bundet med `modelContractSha256=c73dac1b4376005e792580791d84eb79c9370e905a2a7fd0bdee857506a20cf8` og `modelBundleSha256=787fd4bb1abbf694ccce99e89a1c7faa15c20fee6957fe31f6db3ef5c4ea37a5` over 157 transitive filer. Autoriteten er `version.json.releaseContract.modelBindings` og den allerede udstedte `20261023182922_source_producer_original_bound_successor.sql`. Dette dokumenttillæg ændrer ingen modelbinding, scoreformel eller gammel migration. Samlet SOURCE-kvalifikation, installeret 587-forgænger, kontrolleret SOURCE-installation og offentlig virkning er fortsat særskilte åbne beviser.
+
+De følgende afsnits daværende status og hashes bevares ordret som historik, ikke som en anden aktiv 4.0.588-binding.
+
+## Aktuel frossen kandidatkilde — 4.0.587, ikke installeret
+
+**Lokal kildebinding — RavScore 4.0.587, ikke installeret:** Den integrerede model er offentlig som modeltype; sidste særskilt verificerede offentlige release er fortsat 4.0.586. Denne 4.0.587-kilde er kun lokalt udstedt, ikke installeret eller offentliggjort. 4.0.587 er låst med `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b` og `modelBundleSha256=5584d8e59f8d21785fd08b32f9beb22cf879cdb4892a11ede24eb862d9a0dca2` over 97 kanonisk normaliserede transitive implementeringsfiler og de deklarerede forbrugere. Inaktiv Candidate G er bundet med `modelContractSha256=c73dac1b4376005e792580791d84eb79c9370e905a2a7fd0bdee857506a20cf8` og `modelBundleSha256=5c0b6a2c6ceb4ba9c5f224cb5d3fda693f300a8902da3f7561167f72cbab78b4` over 98 transitive filer. Fortsættelseskontrakten T12 er `continuationStateContractSha256=cd3a3648ad5093662871559aa39d77671eda27edf1f9edc82a104c5430a43a21` (`cd3a3648…`). Autoriteten er `version.json.releaseContract.modelBindings` og den allerede udstedte 20261022181403-migration; dette tillæg udsteder ingen ny binding og ændrer ikke nogen scoreformel. Tidligere bindingsafsnit nedenfor bevares som dateret historik.
+
+## Historiske kildeoversigter — 4.0.586 og tidligere
+
+De følgende tekster og deres daværende statusoverskrifter bevares som historik. De er ikke en anden aktiv 4.0.587-binding; den frosne kandidatkilde står ovenfor. Offentlig 4.0.586 er verificeret særskilt.
 
 ## Aktuel lokal kildebinding — 21. oktober 2026, 4.0.586 ikke installeret
 
@@ -7084,6 +7142,10 @@ Inddelingen af forespørgsler følger hele det centrale kystregister, så den ik
 Rettelsen er måltestet lokalt, men ikke endnu bevist i produktion. Den fjerner ikke den afsluttende kontrol af alle nødvendige vejrinput og aktiverer ikke i sig selv den nye scoremodel. Fuld historik er fortsat ikke et krav for at vise en prognose med gyldige direkte input.
 
 ## Beskyttet modelcheckpoint uden unødvendig dataflytning – lokal 4.0.321
+
+### Lokal fortsættelseskontrakt for 4.0.588, ikke installeret
+
+Den allerede udstedte T12 er `continuationStateContractSha256=e56c01e138e154c4603e3baf2063f5d9cfc0714adc38f66c3fa88c17cf0eda82` (`e56c01e1…`) over 12 normaliserede kildefiler. Den hører til den lokalt udstedte SOURCE-kilde med C157/I153 og den uændrede `20261023182922_source_producer_original_bound_successor.sql`. Denne dokumentopfølgning udsteder ingen ny kontrakt og beviser ikke installation, gemning, genbrug eller offentlig levering. Alle tidligere kontrakter, originaler og tids-/adgangskontroller bevares. De følgende afsnits daværende status er bevaret historik.
 
 ### Lokal kildeblok — 16. oktober 2026, 4.0.578 ikke installeret
 

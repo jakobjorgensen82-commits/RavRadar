@@ -6,6 +6,9 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import {execFileSync, spawnSync} from 'node:child_process';
 import {fileURLToPath} from 'node:url';
+import {requireAssistantLaterH0Release} from './lib/assistant-later-h0-successor-source.mjs';
+import {requireSourceProducerBinding,requireSourceProducerOutput}
+  from './lib/source-producer-successor-source.mjs';
 
 export const ORIGIN = Object.freeze({
   repository: 'jakobjorgensen82-commits/RavRadar', pullRequest: 671,
@@ -24,9 +27,15 @@ export const COMMANDS = Object.freeze([
 // COMMANDS remains the exact immutable historical receipt inventory.
 // The new production command cannot reuse that old SQL proof.
 export const ACCOUNT_STATISTICS_ASSISTANT_COMMANDS = Object.freeze([COMMANDS[0],COMMANDS[1]+' --account-statistics-assistant']);
-export const CURRENT_COMMANDS = Object.freeze([ACCOUNT_STATISTICS_ASSISTANT_COMMANDS[0],
+export const CURRENT586_COMMANDS = Object.freeze([ACCOUNT_STATISTICS_ASSISTANT_COMMANDS[0],
   ACCOUNT_STATISTICS_ASSISTANT_COMMANDS[1]+' --native-original-continuity']);
+export const CURRENT_COMMANDS = Object.freeze([CURRENT586_COMMANDS[0],CURRENT586_COMMANDS[1]+' --assistant-later-h0']);
 export const NATIVE_SCRIPT = 'set -euo pipefail\n' + CURRENT_COMMANDS.join('\n') + '\n';
+// SOURCE owns a separate genuine585 -> genuine586 -> genuine587 -> SOURCE
+// comparison. Its normal flag must not be combined with either legacy flag.
+export const SOURCE_PRODUCER_COMMANDS = Object.freeze([ACCOUNT_STATISTICS_ASSISTANT_COMMANDS[0],
+  ACCOUNT_STATISTICS_ASSISTANT_COMMANDS[1]+' --source-producer']);
+export const SOURCE_PRODUCER_NATIVE_SCRIPT = 'set -euo pipefail\n' + SOURCE_PRODUCER_COMMANDS.join('\n') + '\n';
 
 // Explicit CURRENT non-native test consumers only. Historical copies of these
 // files are NOT excluded: unchanged frozen loaders read exact old Git blobs.
@@ -423,7 +432,7 @@ export function verifyCurrent586Runtime(current,prior){
   assert.equal(current.ldLibraryPath,current.pythonLocation+'/lib');return current;
 }
 export function verifyCurrent586PhaseReceipt(native,current){
-  assert.equal(native?.phase,'NATIVE_ORIGINAL_CONTINUITY');assert.deepEqual(native.commands,CURRENT_COMMANDS);
+  assert.equal(native?.phase,'NATIVE_ORIGINAL_CONTINUITY');assert.deepEqual(native.commands,CURRENT586_COMMANDS);
   assert.deepEqual(native.current,current);
   assert(['EXECUTED','REUSED'].includes(native.status));assert.equal(typeof native.eligibleForReuse,'boolean');
   assert.equal(native.executedInThisRun,native.status==='EXECUTED');
@@ -583,39 +592,81 @@ export async function decideCurrent586Reuse({env=process.env,get,readGit=git,get
       await get(base+'/runs/'+origin.run.id+'/attempts/1/jobs?per_page=100'),
       {run:origin.run.id,attempt:1,head:origin.run.head_sha,pullRequest:local.current.pullRequest,branch:local.current.branch});
     verifyCurrentPullRequest(await get(repo+'/pulls/'+local.current.pullRequest),current,local.current.pullRequest);
-    return {...local,status:'REUSED',executedInThisRun:false,commands:CURRENT_COMMANDS,
+    return {...local,status:'REUSED',executedInThisRun:false,commands:CURRENT586_COMMANDS,
       origin:{run:origin.run.id,attempt:1,job:origin.phase.job,head:origin.run.head_sha,
         artifactId:origin.artifact.id,artifactDigest:origin.artifact.digest},
       environmentEvidence:'same-hosted-image-and-observed-runtime-prerequisites-not-an-unobserved-binary-sha'};
   }catch{return {status:'EXECUTE',reason:'native586-input-or-phase-evidence-unavailable-or-different'};}
 }
 
+// The uploaded filename is retained for workflow compatibility, not as a 586 identity.
+// NEXT is a distinct actual execution and can never seed the CURRENT586 reuse reader.
+export const ASSISTANT_LATER_H0_PHASE_KIND='RAVRADAR_ASSISTANT_LATER_H0_POSTGRES_PHASE_V1';
+export function verifyAssistantLaterH0PhaseReceipt(native,current){
+  assert.equal(native?.phase,'ASSISTANT_LATER_H0');assert.deepEqual(native.commands,CURRENT_COMMANDS);
+  assert.deepEqual(native.current,current);assert.equal(native.status,'EXECUTED');
+  assert.equal(native.executedInThisRun,true);assert.equal(native.origin,null);
+  assert.equal(native.eligibleForReuse,false);
+  return {status:native.status,executedInThisRun:native.executedInThisRun,origin:native.origin};
+}
+
+// The shared receipt pathname is a container, never a native586 phase identity.
+export const SOURCE_PRODUCER_PHASE_KIND='RAVRADAR_SOURCE_PRODUCER_POSTGRES_PHASE_V1';
+export const SOURCE_PRODUCER_PHASE_UPLOAD='Upload independently completed SOURCE PostgreSQL phase';
+export const SOURCE_PRODUCER_PHASE_UPLOAD_BLOCK=[
+  '      - name: '+SOURCE_PRODUCER_PHASE_UPLOAD,'        uses: actions/upload-artifact@v7','        with:',
+  '          name: source-producer-phase-$'+'{{ github.run_id }}-$'+'{{ github.run_attempt }}-$'+'{{ github.event.pull_request.head.sha }}',
+  '          path: '+CURRENT586_PHASE_FILE,'          if-no-files-found: error','          retention-days: 30','',
+].join('\n')+'\n';
+export function inverseSourceProducerPhaseUpload(source){
+  source=lf(source);assert.equal(source.split(SOURCE_PRODUCER_PHASE_UPLOAD_BLOCK).length,2);
+  assert(!source.includes('      - name: '+CURRENT586_PHASE_UPLOAD+'\n'),
+    'The actual workflow contains one phase upload, never both families');
+  return source.replace(SOURCE_PRODUCER_PHASE_UPLOAD_BLOCK,CURRENT586_PHASE_UPLOAD_BLOCK);
+}
+export function verifySourceProducerPhaseReceipt(native,current){
+  const binding=requireSourceProducerBinding(),output=requireSourceProducerOutput();
+  assert.equal(native?.phase,'SOURCE_PRODUCER');assert.deepEqual(native.commands,SOURCE_PRODUCER_COMMANDS);
+  assert.deepEqual(native.current,current);assert.equal(native.status,'EXECUTED');
+  assert.equal(native.executedInThisRun,true);assert.equal(native.origin,null);
+  assert.equal(native.eligibleForReuse,false);
+  assert.deepEqual(native.sourceProducerBinding,binding);assert.deepEqual(native.sourceProducerOutput,output);
+  assert.equal(native.currentSourceNativeProfileClaimed,false);assert.equal(native.productionProof,false);
+  return {status:native.status,executedInThisRun:native.executedInThisRun,origin:native.origin};
+}
+
 async function record(receipt) {
   const file='.cache/source-tree-content-proof.json', proof=JSON.parse(await fs.readFile(file,'utf8'));
   assert.equal(proof.headSha,git(['rev-parse','HEAD^{commit}']).trim()); assert.equal(proof.repository,ORIGIN.repository);
   assert.equal(proof.contractId,'weather-source-gate-content-v2'); assert.equal(proof.privatePayloadIncluded,false);
+  const current={run:Number(process.env.GITHUB_RUN_ID),attempt:Number(process.env.GITHUB_RUN_ATTEMPT),
+    head:proof.headSha,pullRequest:Number(process.env.PULL_REQUEST_NUMBER),branch:process.env.GITHUB_HEAD_REF};
+  if(receipt.phase==='NATIVE_ORIGINAL_CONTINUITY')verifyCurrent586PhaseReceipt(receipt,current);
+  else if(receipt.phase==='SOURCE_PRODUCER')verifySourceProducerPhaseReceipt(receipt,current);
+  else verifyAssistantLaterH0PhaseReceipt(receipt,current);
   proof.nativePostgres=receipt; await fs.writeFile(file,JSON.stringify(proof)+'\n');
-  if(receipt.phase==='NATIVE_ORIGINAL_CONTINUITY')await fs.writeFile(CURRENT586_PHASE_FILE,JSON.stringify({
-    schemaVersion:1,kind:CURRENT586_PHASE_KIND,repository:proof.repository,headSha:proof.headSha,
-    sourceTreeSha256:proof.sourceTreeSha256,privatePayloadIncluded:false,nativePostgres:receipt,
+  await fs.writeFile(CURRENT586_PHASE_FILE,JSON.stringify({
+    schemaVersion:1,kind:receipt.phase==='NATIVE_ORIGINAL_CONTINUITY'?CURRENT586_PHASE_KIND:
+      receipt.phase==='SOURCE_PRODUCER'?SOURCE_PRODUCER_PHASE_KIND:ASSISTANT_LATER_H0_PHASE_KIND,
+    repository:proof.repository,headSha:proof.headSha,sourceTreeSha256:proof.sourceTreeSha256,
+    privatePayloadIncluded:false,nativePostgres:receipt,
   })+'\n',{flag:'wx'});
 }
 async function main() {
-  let receipt=JSON.stringify(CURRENT_COMMANDS) === JSON.stringify(COMMANDS) ? await decideReuse()
-    : await decideCurrent586Reuse();
-  if(receipt.status!=='REUSED') {
-    console.log('Native PostgreSQL: original commands required; reuse evidence absent or different.');
-    let before=null;try{before=current586LocalProof(process.env,git,current586Environment);}catch{/* No reuse on unknown prerequisites. */}
-    const env={...process.env}; for(const key of ['GITHUB_TOKEN','SOURCE_GATE_HEAD_SHA','PULL_REQUEST_NUMBER'])delete env[key];
-    const result=spawnSync('/usr/bin/bash',['--noprofile','--norc','-e','-o','pipefail','-c',NATIVE_SCRIPT],{env,stdio:'inherit'});
-    if(result.error||result.status!==0){process.exitCode=result.status||1;return;}
-    receipt={...receipt,status:'EXECUTED',executedInThisRun:true,origin:null,
-      current:{run:Number(process.env.GITHUB_RUN_ID),attempt:Number(process.env.GITHUB_RUN_ATTEMPT),head:git(['rev-parse','HEAD^{commit}']).trim()},commands:CURRENT_COMMANDS};
-    let after=null;try{after=current586LocalProof(process.env,git,current586Environment);assert.deepEqual(after,before);}
-    catch{after=null;}
-    receipt={...receipt,...(after??{eligibleForReuse:false,phase:'NATIVE_ORIGINAL_CONTINUITY'}),
-      current:{...receipt.current,pullRequest:Number(process.env.PULL_REQUEST_NUMBER),branch:process.env.GITHUB_HEAD_REF}};
-  } else console.log('Native PostgreSQL: REUSED from run '+receipt.origin.run+'/1, job '+receipt.origin.job+', head '+receipt.origin.head+'; no new SQL execution claimed.');
+  requireSourceProducerOutput(); // Actual SOURCE issuance before evidence I/O or native launch.
+  requireAssistantLaterH0Release(); // The genuine587 predecessor remains separately issued.
+  const pending={status:'EXECUTE',reason:'new-source-producer-native-phase-requires-actual-execution'};
+  console.log('SOURCE PostgreSQL: actual pre-merge commands required; no native586 or assistant-phase reuse claimed.');
+  const env={...process.env}; for(const key of ['GITHUB_TOKEN','SOURCE_GATE_HEAD_SHA','PULL_REQUEST_NUMBER'])delete env[key];
+  const result=spawnSync('/usr/bin/bash',['--noprofile','--norc','-e','-o','pipefail','-c',SOURCE_PRODUCER_NATIVE_SCRIPT],{env,stdio:'inherit'});
+  if(result.error||result.status!==0){process.exitCode=result.status||1;return;}
+  const receipt={...pending,status:'EXECUTED',executedInThisRun:true,origin:null,
+    phase:'SOURCE_PRODUCER',eligibleForReuse:false,
+    current:{run:Number(process.env.GITHUB_RUN_ID),attempt:Number(process.env.GITHUB_RUN_ATTEMPT),
+      head:git(['rev-parse','HEAD^{commit}']).trim(),pullRequest:Number(process.env.PULL_REQUEST_NUMBER),
+      branch:process.env.GITHUB_HEAD_REF},commands:SOURCE_PRODUCER_COMMANDS,
+    sourceProducerBinding:requireSourceProducerBinding(),sourceProducerOutput:requireSourceProducerOutput(),
+    currentSourceNativeProfileClaimed:false,productionProof:false};
   await record(receipt);
 }
 if(process.argv[1]&&path.resolve(process.argv[1])===fileURLToPath(import.meta.url))await main();

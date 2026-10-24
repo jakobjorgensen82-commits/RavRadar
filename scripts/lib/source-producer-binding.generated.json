@@ -1,0 +1,18 @@
+{
+  "schemaVersion": "source-producer-derived-metadata-v1",
+  "version": "20261023182922",
+  "binding": {
+    "version": "20261023182922",
+    "C": "787fd4bb1abbf694ccce99e89a1c7faa15c20fee6957fe31f6db3ef5c4ea37a5",
+    "I": "5fa3e96cb3cf0f47e6a10bd37d4e1b1b93f837bf0f221dbb49d2a6442289dbc8",
+    "T": "e56c01e138e154c4603e3baf2063f5d9cfc0714adc38f66c3fa88c17cf0eda82",
+    "candidateManifestSha256": "787fd4bb1abbf694ccce99e89a1c7faa15c20fee6957fe31f6db3ef5c4ea37a5",
+    "integratedManifestSha256": "5fa3e96cb3cf0f47e6a10bd37d4e1b1b93f837bf0f221dbb49d2a6442289dbc8"
+  },
+  "output": {
+    "canonicalSha256": "97b0429f163965f943981c475880be15e14139ff0e0dbeda96cde4c99c1675f3",
+    "checkpointContractSha256": "acd12ffdbe2b9c18dfbe57711a240cab1c1f59a45dc94f6580e43ff9265dbae0",
+    "migrationSha256": "b4cac55d2b2164f32d5fe0cc405c7aabce55590b10d86809b1325af21adf17d5",
+    "tripBindingPolicySha256": "62364701e81c53d00a39dcb03a793f524c831f26e046a213d11ce23a5d1348aa"
+  }
+}

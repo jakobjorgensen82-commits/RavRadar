@@ -12,6 +12,10 @@ import { unpackPrivateWeatherComponentCompanions, privateWeatherPackJsonReadsClo
   from './lib/private-weather-component-pack.mjs';
 import { PRIVATE_WEATHER_COMPONENT_FILES, PRIVATE_WEATHER_COMPONENT_PACK_FILE }
   from './lib/private-weather-component-inventory.mjs';
+import {readAuthenticatedFrozen586Predecessor,assertAuthenticatedFrozen586Snapshot}
+  from './lib/authenticated-frozen586-predecessor.mjs';
+import {ravScoreModelBinding} from '../js/core/ravscore-model-contract.js';
+import {readAssistantLaterH0RetentionInput} from './assistant-later-h0-runtime-transition.mjs';
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 
 function refuse(reason) {
@@ -131,6 +135,13 @@ export async function readCurrentPrivateRuntimeCompanionInput(targetReferenceAt)
     || descriptorInfo.size > 2 * 1024 * 1024) refuse('RETENTION_B_CHANGED');
   const descriptorBytes = await fs.readFile(descriptorPath);
   const descriptor = JSON.parse(descriptorBytes.toString('utf8'));
+  if(descriptor?.modelBinding?.modelBundleSha256==='6d8f7cca203b5f7ee5155f3c0cdb39403a02fd0eb30fecaca5070ef9f814a805'
+    &&ravScoreModelBinding().modelBundleSha256!==descriptor.modelBinding.modelBundleSha256){
+    const view=await readAssistantLaterH0RetentionInput(targetReferenceAt);
+    if(view.verified.bundleContentSha256!==descriptor.bundleContentSha256
+      ||!descriptorBytes.equals(await fs.readFile(descriptorPath)))refuse('RETENTION_B_CHANGED');
+    return view;
+  }
   let before = null;
   const verify = async () => {
     const verified = await verifyPrivateProductionRuntimeBundle({ privateRoot, bundlePath,
@@ -161,8 +172,21 @@ export async function readCurrentPrivateRuntimeCompanionInput(targetReferenceAt)
 // and only outside all isolated first-active numeric-history views. Missing B
 // throws; an authenticated legacy B with no pack honestly returns no contexts.
 export async function readCurrentPrivateRuntimeCompanions(targetReferenceAt) {
+  // Called after the updater's genuine H0 origin check. Providers may already
+  // have changed unrelated WORKING weather; unpack only immutable original B.
+  if(ravScoreModelBinding().modelBundleSha256!=='6d8f7cca203b5f7ee5155f3c0cdb39403a02fd0eb30fecaca5070ef9f814a805'){
+    const descriptor=JSON.parse(await fs.readFile(path.join(process.env.RUNNER_TEMP,'private-runtime-current-source.json'),'utf8'));
+    if(descriptor?.modelBinding?.modelBundleSha256==='6d8f7cca203b5f7ee5155f3c0cdb39403a02fd0eb30fecaca5070ef9f814a805'){
+      const snapshot=assertAuthenticatedFrozen586Snapshot(await readAuthenticatedFrozen586Predecessor());
+      if(snapshot.descriptor.bundleContentSha256!==descriptor.bundleContentSha256)refuse('RETENTION_B_CHANGED');
+      const original=JSON.parse(await fs.readFile(snapshot.conditionsPath,'utf8'));
+      const contexts=await readAuthenticatedCurrentCompanions(snapshot.verified,original);
+      const fresh=assertAuthenticatedFrozen586Snapshot(await readAuthenticatedFrozen586Predecessor());
+      if(!isDeepStrictEqual(snapshot,fresh))refuse('RETENTION_B_CHANGED');return contexts;
+    }
+  }
   const input = await readCurrentPrivateRuntimeCompanionInput(targetReferenceAt);
-  const contexts = await readAuthenticatedCurrentCompanions(input.verified, input.conditions);
+  const contexts = await readAuthenticatedCurrentCompanions(input.verified, input.originalConditions ?? input.conditions);
   await input.verify();
   return contexts;
 }
