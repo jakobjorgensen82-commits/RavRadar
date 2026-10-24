@@ -2,6 +2,12 @@
 
 Nyeste menneskelige beslutning tillader en ny aktiv strømhistorik med bevaret autentisk arkiv. Læs den nye front i CODEX_START_HERE, CURRENT_TRUTH, IMPLEMENTATION_STATUS og DEC-0249 samt det private checkpoint. Den lokale rettelse er ikke en gennemført genstart eller offentlig levering. Den almindelige efterfølger er et selvstændigt afslutningskrav; alle fem mål til 18. november er fortsat åbne.
 
+## 22. oktober — læs lokal 587 adskilt fra faktisk drift
+
+4.0.587 er en lokal, udstedt kildekandidat, ikke installeret eller offentlig levering. Sidste verificerede offentlige version er fortsat 4.0.586. P0 og den almindelige vejrhentning har førsteprioritet; ROOTs aktuelle private checkpoint afgør PR703-forløbets eksterne slutstatus og genopretning. Denne kandidat afslutter hverken det forløb, cost-PR704s samlede kildekontrol eller den åbne cache-/kapacitets- og økonomibeslutning.
+
+Læs CODEX_START_HERE, CURRENT_TRUTH, IMPLEMENTATION_STATUS, ACTIVE-REQUIREMENTS og håndbog 89.265 før ældre daterede afventninger. Lokal C98/I97/T12-/SQL-udstedelse og syv forbrugeres fixedpoint er faktisk gennemført, men er ikke 587-source-CI, native PostgreSQL, installation eller offentlig effekt. Ægte 586-forgænger, hele oprindelige B/S-attester, numeriske værdier, historik, kildeprioritet, administratorpunkter, geometri, gamle SQL og afvisninger bevares. Ingen ny historiknulstilling, samme-H0-adgang, implicit statistik/SOURCE-aktivering, sletning, kvoteforøgelse eller offentlig ændring følger af lokal udstedelse. Alle fem mål er åbne til 18. november 2026.
+
 ## 21. oktober — faktisk 586-installation er ikke en ny almindelig vejrgeneration
 
 Læs den nye front i CODEX_START_HERE, ROOTs ene P0-linje i CURRENT_TRUTH, IMPLEMENTATION_STATUS og det private checkpoint før ældre afventninger. 586 er faktisk installeret og offentligt verificeret med samme gemte vejr; den almindelige efterfølger fejlede før leverandører på manglende native-endepunktsbevis. Krypteret fremdrift blev ikke genbrugt, og intet nyt beregningscheckpoint blev lavet. Cron er faktisk pauset. Næste afgrænsede CURRENT-only-audit må ikke genmærke gamle scopes, svække kontrollen eller ændre produktionsdata. Alle fem hovedmål er fortsat åbne til 18. november 2026.

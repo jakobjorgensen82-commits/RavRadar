@@ -1,3 +1,23 @@
+## 23. oktober — DMI-filer med gyldige, uændrede strømvindere
+
+Samtaledelta: Den normale DMI-kæde håndterer nu lokalt en fuldt gennemgået marin fil, som ikke ændrer de allerede kvalificerede strømvindere. Samme normale mål følger main, faktisk gemt/genlæst step, fælles læser, ledger/READY og genoptagelse, inklusive afslag på ændrede eller manglende beviser. Én additiv normal CI-registrering bevarer de gamle seks parser-/ledgerprøver. Tre persistente kontrakthashes er målt uændrede, og normal model-/bindingskontrol består. Det er ikke faktisk kvalifikation af alle produktionens afslag, Linux-nativekontrol eller offentlig levering. Tidligere P0-/587-status herunder er dateret historik; aktuelle leveringsresultater står i det private checkpoint.
+
+## 22. oktober — faktisk lokal 587-udstedelse, stadig ingen installation
+
+Samtaledelta: ROOT har samlet de gennemgåede assistentprerequisites, semantic9/routing11, schema2-kalder, undervands- og enkel identifikationsgren samt særskilt normal bindings-prewrite i én inaktiv normal kilde. Hele to-filsmålet bestod 29 PASS/0 FAIL/0 SKIP; prewrite-integrationen bestod 5 PASS/0 FAIL/0 SKIP. Tidligere lokale katalog-/Edge-/roundtrip-beviser og de faktiske røde kvitteringer bevares uden gentagelse eller ommærkning til hosted AI/produktion.
+
+Faktisk én version:set 4.0.587 gav releasedAt 2026-10-22T18:14:03.047Z. ROOTs normale strukturelle afledning e21a90 og lokale udstedelses-/fixedpoint-kvittering 6792c1 afledte fra hele den faktiske kilde:
+
+- Migration: 20261022181403_assistant_later_h0_original_bound_successor.sql; 325.470 bytes; SHA256 b14ec45f920a86b9b055f4c30c716695fee767e25564249ac22ca448e1776fa7.
+- C98: 5c0b6a2c6ceb4ba9c5f224cb5d3fda693f300a8902da3f7561167f72cbab78b4.
+- I97: 5584d8e59f8d21785fd08b32f9beb22cf879cdb4892a11ede24eb862d9a0dca2.
+- T12: cd3a3648ad5093662871559aa39d77671eda27edf1f9edc82a104c5430a43a21.
+- Kanonisk kilde: b14e0f9905bed1a4a2be13870bd2af54f82ebdcf4703847548b227ad2051ad04; checkpoint 207733bbbea2aa2f7747685a1a626b63d740aee3b607cfb920fabe50619e6596; trippolitik 831d5472a32eb22339253e2b0734bd9cc9b478e48ec6caf078e2fd42de646d67.
+
+Normal builder--write oprettede kun den nye fil; alle 65 gamle SQL er byteuændrede. Geodata har kun topversionssynk, syv normale forbrugere er synkroniseret, og C/I/SQL/bindings-checks består. Hele 586-kanoniske inverse, parentattestation og numeriske SQL-regler bevares; der er ingen ny samme-H0-adgang. Disse pins er lokal kildeudstedelse, ikke native PostgreSQL, installation eller offentlig generation.
+
+4.0.587 er en lokal, udstedt kildekandidat, ikke installeret eller offentlig levering. Sidste verificerede offentlige version er fortsat 4.0.586. P0 og den almindelige vejrhentning har førsteprioritet; ROOTs aktuelle private checkpoint afgør PR703-forløbets eksterne slutstatus og genopretning. Denne kandidat afslutter hverken det forløb, cost-PR704s samlede kildekontrol eller den åbne cache-/kapacitets- og økonomibeslutning. Normal afslutning er dokument-/håndbogssynk, præcis ny source-CI med faktisk ny native PostgreSQL-fase, kontrolleret førstegangs-prewrite på autentisk 586 B/S, SQL-installation/genlæsning og en faktisk strengt senere almindelig generation med bevaret schema2-originalbank og almindelig efterfølger. Generisk kode-only-plan må fortsat kun genlæse allerede installeret NEXT; den giver ikke førsteinstallationsadgang. Ægte 586-forgænger, hele oprindelige B/S-attester, numeriske værdier, historik, kildeprioritet, administratorpunkter, geometri, gamle SQL og afvisninger bevares. Ingen ny historiknulstilling, samme-H0-adgang, implicit statistik/SOURCE-aktivering, sletning, kvoteforøgelse eller offentlig ændring følger af lokal udstedelse. RDKS, changelog og begge håndbøger skal beskrive denne præcise grænse; den statiske installationskopi synkroniseres kun med det eksisterende script. Gamle daterede tekster og originaler bevares.
+
 ## 22. oktober — observation er årsagsgrundlag, ikke en færdig vejrrettelse
 
 Samtaledelta: Ejeren afviser en samlet rettelse baseret på gæt. Den faktiske CURRENT586-observation er nu gennemført og afgrænser en manglende præcis original blandt de leverede kontekster. En lokal udvidelse opdeler kun faste wire-/native-identitetskategorier med mulighed for overlap og retter fingerprint-sammenligningen til den eksisterende normale Python-projektion. Ingen private værdier eller identiteter rapporteres, og hverken kildevalg, originaladmission, tidsbudgetter, score, geometri eller SQL ændres. Lokale mål er ikke faktisk originalgenopbygning eller ny offentlig vejrhentning. Alle fem mål er fortsat åbne; detaljeret kørsels- og diagnostikevidens gemmes privat.

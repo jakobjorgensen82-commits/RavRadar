@@ -13,6 +13,8 @@ import {ACCOUNT_STATISTICS_ASSISTANT_BINDING,accountStatisticsAssistantMigration
   from './lib/account-statistics-assistant-successor-source.mjs';
 import {NATIVE_ORIGINAL_CONTINUITY_BINDING,nativeOriginalContinuityMigration,requireNativeOriginalContinuityOutput}
   from './lib/native-original-continuity-successor-source.mjs';
+import {ASSISTANT_LATER_H0_BINDING,assistantLaterH0Migration,requireAssistantLaterH0Output}
+  from './lib/assistant-later-h0-successor-source.mjs';
 
 // Keep the payload-free operational control report inside this existing cheap
 // workflow command so the source gate does not grow another process.
@@ -744,9 +746,20 @@ assert.equal(casTimeoutSettings.at(-1)?.timeout, '55s',
   'the final migration order must retain the established checkpoint-only 55s timeout');
 if(ACCOUNT_STATISTICS_ASSISTANT_BINDING!==null)requireAccountStatisticsAssistantOutput();
 if(NATIVE_ORIGINAL_CONTINUITY_BINDING!==null)requireNativeOriginalContinuityOutput();
-assert.equal(casTimeoutSettings.at(-1).migration,
+if(ASSISTANT_LATER_H0_BINDING!==null)requireAssistantLaterH0Output();
+const assistantTimeoutMigration=ASSISTANT_LATER_H0_BINDING===null
+  ? null : assistantLaterH0Migration().filename;
+// Preserve the entire old latest-migration oracle, excluding only issued587.
+const predecessorCasTimeoutSettings=assistantTimeoutMigration===null ? casTimeoutSettings
+  : casTimeoutSettings.filter(row=>row.migration!==assistantTimeoutMigration);
+assert.equal(predecessorCasTimeoutSettings.at(-1).migration,
   NATIVE_ORIGINAL_CONTINUITY_BINDING!==null ? nativeOriginalContinuityMigration().filename
     : ACCOUNT_STATISTICS_ASSISTANT_BINDING===null ? lastMileEnclosureMigration().filename : accountStatisticsAssistantMigration().filename);
+assert.equal(predecessorCasTimeoutSettings.at(-1).timeout,'55s',
+  'the unchanged issued predecessor retains its original scoped55s timeout');
+if(assistantTimeoutMigration!==null)assert.deepEqual(casTimeoutSettings,
+  [...predecessorCasTimeoutSettings,{migration:assistantTimeoutMigration,timeout:'55s'}],
+  'Only one exact issued587 scoped55s successor may follow the whole predecessor timeout inventory');
 if(ACCOUNT_STATISTICS_ASSISTANT_BINDING!==null)assert.deepEqual(
   casTimeoutSettings.find(item=>item.migration===accountStatisticsAssistantMigration().filename),
   {migration:accountStatisticsAssistantMigration().filename,timeout:'55s'},
