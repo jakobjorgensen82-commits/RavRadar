@@ -1,3 +1,13 @@
+## 24. oktober — ÅBEN: første kritiske havmodel afkortes før sin tidsandel
+
+Gemte logs beviser otte fuldførte filer og det eksplicitte leadloft i to almindelige kørsler med forskellige første modeller. En lokal kandidat bruger samme eksisterende tidsreserve for alle almindelige kritiske havmodeller og bevarer resten af enkeltpassagen. Den normale målkalder består lokalt; produktionseffekt og samlet dækning er åbne. Det fælles bytebudget kan fortsat begrænse senere familier. Native-DMI-mangel og fravær af en lovligt valgt scalarværdi skal fortsat skelnes; første-køobservationen er nødvendig for den særskilte rangfølgeanalyse.
+
+
+## 24. oktober — ÅBEN: manglende observation af DMI's faktiske køvalg
+
+Samlede critical-tal kan ikke skelne markerede inputmangler fra native opgraderinger. Den løbende anskaffelsesplan ændres under kørslen og er ikke et uændret startbillede. Den snævre observation gemmer derfor hver samlings første sorterede kø særskilt. Den dokumenterer hverken senere restkøer, udførte downloads, mangler på tværs af alle leverandører eller offentlig dækning. En kørettelse afventer konkret årsagsbevis; budget- og kildekrav lempes ikke. Lokal målprøve er bestået; præcis samlet kildekontrol og faktisk driftsobservation er åbne.
+
+
 ## 24. oktober — lokal 587-sammenføring med den leverede DMI-kilde
 
 DMI-rettelsen er præcist kildekvalificeret og merget særskilt på den installerede 586-familie. Den senest afsluttede naturlige vejrhentning er offentligt verificeret; den næste almindelige kørsel er ved denne lokale sammenføring fortsat i DMI-arbejdet. Det er ikke offentlig 587, bevist fuld dækning eller en afsluttet assistentlevering. Kontinuerligt vejr og alle forventede timer/zoners dækning har fortsat førsteprioritet; ingen produktionsændring må ske under den aktive writer.

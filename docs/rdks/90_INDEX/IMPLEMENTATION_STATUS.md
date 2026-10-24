@@ -1,3 +1,26 @@
+## 24. oktober — privat 587-sammenføring med P0s køobservation og fair tidsandel
+
+Den præcist kvalificerede 587-kilde på 888e bevares, og de afgrænsede P0-ændringer fra 717 forberedes ovenpå. 716s køobservation er særskilt kildeleveret på den installerede 586-familie; 717s fair tidsandel afventer fortsat sin præcise samlede kontrol og sikre main-levering. Denne private sammenføring er hverken anvendt, prøvet, installeret eller offentliggjort. Fejler 717, må dette efterbillede ikke leveres.
+
+Begge fulde dokumenthistorikker nedenfor bevares. 587s udstedte C98/I97/T12, 66 migrationsfiler, geodata og originale overgangsgrænser ændres ikke. Den endelige ægte Git-sammenføring og dens egen normale native-/kildekontrol er stadig nødvendige; 888es tidligere PASS må ikke genmærkes som samlet bevis. Ingen levering under aktiv writer. Alle fem hovedmål er fortsat åbne.
+
+## 24. oktober — lokal fair tidsfordeling for første kritiske havmodel
+
+- [x] Samme ottefilersstop påvist for forskellige leadmodeller i to gemte normale kørsler; kodehistorikken daterer kontrakten til september.
+- [x] Afgrænset lokal produktrettelse: eksisterende fair tidsreserve bruges også for almindelig lead; normal enkeltpassage, per-fil-kontrol, gammel maintenancegrænse og cold-reservationer bevares.
+- [x] Faktisk normal målkalder består fire Python-tilfælde med niende fil og beskyttet tid; normal modelbinding er uændret. Ingen nye kildegatekommandoer.
+- [ ] Samlet kontrol af den præcise kandidat, sikker levering og faktisk dækning på hele 118 × 210-aksen samt underdele.
+- [ ] Samspil mellem filernes rang, kvalificeret scalarværdi, native opgradering og fælles bytebudget. Nettoeffekt er endnu ikke bevist; alle fem mål er åbne.
+
+
+## 24. oktober — afgrænset observation af DMI-køens første tur
+
+- [x] Observation-only udskilt fra scalar-kandidaten på eksisterende 586; ingen ændret sortering, kildeadgang, budget, modelbinding eller SQL.
+- [x] Den normale lokale målprøve består på den isolerede kilde: faktisk rækkefølge, adskilt klassifikationsprioritet, korrekt rotationsmarkør, bevarede input og afslag uden private værdier.
+- [ ] Præcis samlet kildekontrol og faktisk første-tursrapport fra almindelig vejrhentning.
+- [ ] Påvist årsag og nyttig rettelse af de resterende dækningshuller. Scalar-kandidaten er fortsat inaktiv og medfølger ikke; alle fem hovedmål er åbne.
+
+
 ## 24. oktober — lokal 587-sammenføring med den leverede DMI-kilde
 
 DMI-rettelsen er præcist kildekvalificeret og merget særskilt på den installerede 586-familie. Den senest afsluttede naturlige vejrhentning er offentligt verificeret; den næste almindelige kørsel er ved denne lokale sammenføring fortsat i DMI-arbejdet. Det er ikke offentlig 587, bevist fuld dækning eller en afsluttet assistentlevering. Kontinuerligt vejr og alle forventede timer/zoners dækning har fortsat førsteprioritet; ingen produktionsændring må ske under den aktive writer.

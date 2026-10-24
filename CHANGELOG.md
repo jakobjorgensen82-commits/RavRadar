@@ -1,3 +1,17 @@
+## Ikke udgivet — fair tidsandel til første kritiske havmodel på 4.0.586
+
+- Erstatter første kritiske havmodels faste ottefilersstop med den normale filgrænse og samme tidsfordeling, som allerede beskytter de øvrige ventende familier.
+- Bevarer normal enkeltpassage, vedligeholdelsesgrænse, autentificeret engangsstart, samlet budget og kontroller før hver fil.
+- Den normale kildeprøve får ét nyt tilfælde i sin eksisterende kalder. Lokal målprøve består; samlet kildekontrol, levering og målt effekt afventer. Det fælles bytebudget er fortsat en begrænsning.
+
+
+## Ikke udgivet — afgrænset DMI-køobservation på 4.0.586
+
+- Tilføjer `firstTurnOrder` med klassifikationsprioritet, faste årsagskategorier, faktisk køplacering og korrekt startmarkør pr. samling.
+- Bevarer første observation gennem senere omplanlægning uden at ændre kø, kildeadgang, budgetter eller tal.
+- Leverer ingen scalar-plan eller prioriteringsændring. Lokal målprøve består; præcis samlet kildekontrol og faktisk driftsobservation afventer.
+
+
 ## 24. oktober — lokal 587-sammenføring med den leverede DMI-kilde
 
 DMI-rettelsen er præcist kildekvalificeret og merget særskilt på den installerede 586-familie. Den senest afsluttede naturlige vejrhentning er offentligt verificeret; den næste almindelige kørsel er ved denne lokale sammenføring fortsat i DMI-arbejdet. Det er ikke offentlig 587, bevist fuld dækning eller en afsluttet assistentlevering. Kontinuerligt vejr og alle forventede timer/zoners dækning har fortsat førsteprioritet; ingen produktionsændring må ske under den aktive writer.

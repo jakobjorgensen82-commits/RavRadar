@@ -1,3 +1,25 @@
+## 24. oktober — privat 587-sammenføring med P0s køobservation og fair tidsandel
+
+Den præcist kvalificerede 587-kilde på 888e bevares, og de afgrænsede P0-ændringer fra 717 forberedes ovenpå. 716s køobservation er særskilt kildeleveret på den installerede 586-familie; 717s fair tidsandel afventer fortsat sin præcise samlede kontrol og sikre main-levering. Denne private sammenføring er hverken anvendt, prøvet, installeret eller offentliggjort. Fejler 717, må dette efterbillede ikke leveres.
+
+Begge fulde dokumenthistorikker nedenfor bevares. 587s udstedte C98/I97/T12, 66 migrationsfiler, geodata og originale overgangsgrænser ændres ikke. Den endelige ægte Git-sammenføring og dens egen normale native-/kildekontrol er stadig nødvendige; 888es tidligere PASS må ikke genmærkes som samlet bevis. Ingen levering under aktiv writer. Alle fem hovedmål er fortsat åbne.
+
+## 24. oktober — lokal rettelse af den første havmodels tidsfordeling
+
+To gemte almindelige kørsler viser, at første DKSS-model stoppede efter otte faktisk behandlede filer. De øvrige havmodeller fik længere ture. Den sene vedligeholdelsespassage genoptager ikke resterende kritiske filer. Begrænsningen forklarer derfor forskellen i behandlet filantal, men identificerer ikke i sig selv manglende værdier eller alle prognosehalens årsager.
+
+Den afgrænsede lokale kandidat lader også den første almindelige kritiske havmodel bruge den eksisterende tidsfordeling mellem ventende familier. Den normale filgrænse og kontrol før hver fil gælder; de øvrige DKSS-/WAM-familier og HARMONIE beholder deres tidsreserver. Der tilføjes ingen ekstra passage eller genindgang. Vedligeholdelsens gamle loft og den autentificerede engangsstarts reservationer bevares. Samlet hente-/køretid, bytegrænse, kildevalg, numerisk adgang, scoreformel, adminpunkter, geometri, 4.0.586 og SQL bevares.
+
+Den normale målkalder med fire planlægningstilfælde består lokalt, inklusive den faktiske hovedløkkes niende fil, reservestop, alle tre leadfamilier og engangsstart. Præcis samlet kildekontrol, sikker levering og faktisk dækningsvirkning er åbne. Downloadbytes er fælles mellem familierne; mere tid til første model kan omfordele, ikke garantere større samlet dækning. Alle fem mål er fortsat åbne til 18. november; kontinuerligt vejr og alle forventede zone-/timer er P0.
+
+
+## 24. oktober — mål DMI-køen før yderligere prioriteringsændring
+
+Den afgrænsede opfølgning registrerer kun hver DKSS-samlings første faktisk sorterede kø: klassifikationens prioritet og faste mangelkategorier, gyldige tider, køplacering og turens rotationsmarkør. Senere omplanlægning overskriver ikke observationen. Første tur for én samling er ikke hele jobbets fælles før-DMI-tilstand.
+
+En kritisk fil kan også være en native strømopgradering og beviser derfor ikke et tomt vejrhul på tværs af leverandører. Kø, budgetter, kildevalg, originalkrav og numeriske data ændres ikke. Den større lokale scalar-kandidat medfølger ikke. Version 4.0.586, modelbinding og SQL bevares. Den isolerede normale målprøve består; præcis samlet kildekontrol og observation fra en kommende almindelig kørsel mangler. Bedre dækning påstås ikke. Alle fem mål er fortsat åbne til 18. november; kontinuerligt vejr og reel time-/zonedækning er P0.
+
+
 ## 24. oktober — lokal 587-sammenføring med den leverede DMI-kilde
 
 DMI-rettelsen er præcist kildekvalificeret og merget særskilt på den installerede 586-familie. Den senest afsluttede naturlige vejrhentning er offentligt verificeret; den næste almindelige kørsel er ved denne lokale sammenføring fortsat i DMI-arbejdet. Det er ikke offentlig 587, bevist fuld dækning eller en afsluttet assistentlevering. Kontinuerligt vejr og alle forventede timer/zoners dækning har fortsat førsteprioritet; ingen produktionsændring må ske under den aktive writer.

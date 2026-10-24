@@ -3,6 +3,17 @@
 **Dato:** 2026-09-28
 **Status:** Besluttet af ejeren; lokal 4.0.505, liveeffekt afventer
 
+## Afgrænset opfølgning 2026-10-24 — almindelig første havmodel
+
+To gemte normale kørsler viser, at den første kritiske DKSS-model stoppede ved otte filer, mens de øvrige modeller fortsatte. Den eksisterende sene vedligeholdelse genoptager ikke kritiske restfiler. Den lokale efterfølger bruger derfor den allerede eksisterende fair tidsreserve også ved første almindelige kritiske DKSS-tur. Dens filgrænse følger den normale samlingsgrænse; kontrollen af tid og efterbehandling sker fortsat før hvert faktisk forsøg.
+
+Dette genbruger én normal tur, de samme ventende familier og deres reserver. Vedligeholdelsens tidligere loft og den autentificerede engangsstarts reservepolitik bevares. Hverken firetimersplan, samlet hente-/jobtid, bytebudget, numerisk kildeadgang eller kildeprioritet ændres. Det fælles bytebudget reserverer ikke bytes pr. familie; større samlet dækningsgevinst må derfor først påstås efter faktiske sammenlignelige timer fra almindelige kørsler.
+
+Normal lokal målkalder består. Præcis samlet kildekontrol, sikker levering og faktisk effekt er åbne. Dette er en konkret opfølgning til observeret tidsfordeling; DEC-0251/0261's krav om faktiske mangler, stabil cursor og kildekontrol består.
+
+Ejerens præcisering 24. oktober fastholder, at nyere gyldige prognoser fortsat skal kunne erstatte allerede udfyldte fremtidige timer, også når RavScore falder. Prioritering af tomme huller må ikke fastlåse tidligere valgte værdier. Normal kvalifikation af nyere modelkørsel eller officiel revision og kildeprioriteten bevares; en ny hentetid alene beviser ikke nyere data. Hentebudget og faktisk leverandørtilgængelighed betyder, at alle dækkede timer ikke nødvendigvis genhentes i hver kørsel. Den eksisterende komponentselektionsprøve med ni beståede tilfælde genbruges som afgrænset kontraktbevis, ikke som garanti for frisk hentning eller offentlig opdatering af hver time.
+
+
 **Senere ændring:** DEC-0259 flytter selve tidsudløseren fra GitHubs
 `schedule` til det ene eksisterende cron-job.org-job. Firetimerskadence,
 leverandørrotation, tidsbudgetter og datakrav herunder består.
