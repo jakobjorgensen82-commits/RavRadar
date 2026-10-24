@@ -1,3 +1,18 @@
+## 24. oktober — lokal 587-sammenføring med den leverede DMI-kilde
+
+DMI-rettelsen er præcist kildekvalificeret og merget særskilt på den installerede 586-familie. Den senest afsluttede naturlige vejrhentning er offentligt verificeret; den næste almindelige kørsel er ved denne lokale sammenføring fortsat i DMI-arbejdet. Det er ikke offentlig 587, bevist fuld dækning eller en afsluttet assistentlevering. Kontinuerligt vejr og alle forventede timer/zoners dækning har fortsat førsteprioritet; ingen produktionsændring må ske under den aktive writer.
+
+Den særskilte 587-kandidat har bestået sin præcise kildekontrol. Den nye lokale kombination kræver sit eget samlede bevis; den tidligere afbrudte 587+DMI-kontrol er ikke et helt PASS. Alle produktblade, udstedte modelbindinger, migrationsfiler og den eksisterende SQL uden for håndbogsliteralen bevares. Assistentens håndbogsafsnit 89.265 og stabile ID er uændrede; det særskilte DMI-afsnit har 89.267. Begge dokumenthistorikker nedenfor bevares. Installation, hosted AI og faktisk 587-virkning er åbne; alle fem hovedmål er åbne til 18. november 2026.
+
+## 24. oktober — kontinuert 586-vejr og særskilt DMI-opfølgning
+
+- [x] Almindelig ny generation faktisk gemt B før S, deployet og offentligt verificeret; eksisterende cron genaktiveret med uændret tidsplan.
+- [x] Nul femfamilietab på 100 fælles timer. Nye 18 timers store huller holdes adskilt fra den bevarede fælles dækning; én undersøgt sen national time viser primært manglende vind, ikke generelt historiktab.
+- [x] Præcis treblads-DMI-port afkoblet fra assistent587: eksisterende 586-importclosure og uændrede model-/ABI-inventarer verificeret. Ingen version, C/I/T, SQL, geometri, kildeprioritet eller scoreformel ændres.
+- [x] Normal lokal sammenhængende prøve af stage → gemt nulmutations-step → officiel læser → ledger/ready → genoptagelse består, inklusive manglende/manipulerede beviser og uændrede scalar-/WAM-/ikke-marine afslag.
+- [ ] Egen præcis 586-kildekontrol inklusive nødvendig faktisk nativefase, sikker levering og målt effekt ved almindelig vejrhentning.
+- [ ] Alle forventede zone-/deltimer, feltvis dækning, ny hale, gyldig historik og gentagen drift uden Codex. Assistent, SOURCE og statistiklevering venter; alle fem hovedmål er åbne.
+
 ## 23. oktober — DMI-filer med gyldige, uændrede strømvindere
 
 - [x] Den kvalificerede marine nul-mutationsvej er lokalt forbundet gennem main, normal gemning/genlæsning, fælles kildekontrol, ledger/READY og genoptagelse.

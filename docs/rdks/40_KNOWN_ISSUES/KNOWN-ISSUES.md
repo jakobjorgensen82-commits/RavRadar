@@ -1,3 +1,15 @@
+## 24. oktober — lokal 587-sammenføring med den leverede DMI-kilde
+
+DMI-rettelsen er præcist kildekvalificeret og merget særskilt på den installerede 586-familie. Den senest afsluttede naturlige vejrhentning er offentligt verificeret; den næste almindelige kørsel er ved denne lokale sammenføring fortsat i DMI-arbejdet. Det er ikke offentlig 587, bevist fuld dækning eller en afsluttet assistentlevering. Kontinuerligt vejr og alle forventede timer/zoners dækning har fortsat førsteprioritet; ingen produktionsændring må ske under den aktive writer.
+
+Den særskilte 587-kandidat har bestået sin præcise kildekontrol. Den nye lokale kombination kræver sit eget samlede bevis; den tidligere afbrudte 587+DMI-kontrol er ikke et helt PASS. Alle produktblade, udstedte modelbindinger, migrationsfiler og den eksisterende SQL uden for håndbogsliteralen bevares. Assistentens håndbogsafsnit 89.265 og stabile ID er uændrede; det særskilte DMI-afsnit har 89.267. Begge dokumenthistorikker nedenfor bevares. Installation, hosted AI og faktisk 587-virkning er åbne; alle fem hovedmål er åbne til 18. november 2026.
+
+## 24. oktober — ÅBEN P0: ny prognosehale og DMI-nulmutationsgenbrug
+
+Den almindelige nye vejrgeneration er faktisk offentligt leveret, og cron er aktiv med uændret plan. Den tidligere proceshukommelsesbarriere blev passeret i det faktiske fulde forløb; gentagen selvstændig drift er endnu ikke bevist. Der er nul femfamilietab på 100 fælles timer, men de nye 18 timer har store huller. Én sen national time viser især manglende vindinput; vandstand og temperatur har selvstændige mangler. Dette er ikke bevis for et generelt Limfjords- eller strømhistorikproblem.
+
+En særskilt dokumenteret DMI-fejl kan afvise en fuldt behandlet fil, når bedre kvalificerede strømvindere bevares uden mutation. Den gennemgåede trebladsrettelse er lokalt porteret til 586 og målprøvet gennem normal gemning, ledger og genoptagelse. Den har ikke endnu egen præcis kilde-/native-kvalifikation eller faktisk offentlig effekt og påstås ikke at løse alle vindhalens mangler. Assistent587/SOURCE/statistik er parkeret. Ingen nulstilling, større budgetter eller svækkede originalkrav.
+
 ## 23. oktober — DMI-filer med gyldige, uændrede strømvindere
 
 Den normale DMI-kæde kunne afvise en fuldt gennemgået marin fil, når en bedre, allerede betroet strømvinder blev bevaret og zonesTouched derfor var nul. Main, den fælles læser og to genoptagelsesfiltre skal behandles samlet; en rettelse af første stop alene lukker ikke ledgeren. Den afgrænsede lokale rettelse og normale gemning→ledger→genoptagelse-prøve består med alle kilde-/tuple-/originalværn bevaret. RETAINED_CURRENT_PART_TIME er fortsat udtrykkeligt nonfatal og ændres ikke. Linux/native og faktisk kvalifikation af de tidligere konkrete afslag står åbne. Tidligere P0-/587-driftsstatus nedenfor er dateret historik; se privat checkpoint.

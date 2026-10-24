@@ -1,3 +1,17 @@
+## 24. oktober — lokal 587-sammenføring med den leverede DMI-kilde
+
+DMI-rettelsen er præcist kildekvalificeret og merget særskilt på den installerede 586-familie. Den senest afsluttede naturlige vejrhentning er offentligt verificeret; den næste almindelige kørsel er ved denne lokale sammenføring fortsat i DMI-arbejdet. Det er ikke offentlig 587, bevist fuld dækning eller en afsluttet assistentlevering. Kontinuerligt vejr og alle forventede timer/zoners dækning har fortsat førsteprioritet; ingen produktionsændring må ske under den aktive writer.
+
+Den særskilte 587-kandidat har bestået sin præcise kildekontrol. Den nye lokale kombination kræver sit eget samlede bevis; den tidligere afbrudte 587+DMI-kontrol er ikke et helt PASS. Alle produktblade, udstedte modelbindinger, migrationsfiler og den eksisterende SQL uden for håndbogsliteralen bevares. Assistentens håndbogsafsnit 89.265 og stabile ID er uændrede; det særskilte DMI-afsnit har 89.267. Begge dokumenthistorikker nedenfor bevares. Installation, hosted AI og faktisk 587-virkning er åbne; alle fem hovedmål er åbne til 18. november 2026.
+
+## 24. oktober — faktisk nyt offentligt vejr; dækning og kontinuitet er P0
+
+Den almindelige 4.0.586-kørsel har faktisk gemt nye originaler B før S, gennemført Pages og bestået offentlig kontrol. Cron er igen aktiv med uændret firetimersplan. De 100 fælles prognosetimer bevarer alle fem vejrfamilier uden gyldig-til-tom-tab; det frikender ikke mangler i de nye 18 timer. Én sen national time har manglende vind som dominerende scoreafvisning samt særskilte vandstands-/temperaturhuller. Fuld dækning, tilstrækkelig historik og gentagen autonom drift er fortsat åbne. Det private checkpoint er autoritativt for aktuelle kørselstal og identiteter.
+
+Den afgrænsede DMI-opfølgning overfører kun den gennemgåede nulmutationsrettelse og dens normale mål fra assistentkandidaten til eksisterende 586. Den bevarer en allerede bedre kvalificeret strømvinder og accepterer en fuld gennemgang alene med de sædvanlige officielle fil-/parser-/target-/udfalds- og samplingbeviser. Gemning, ledger og genoptagelse kræver stadig faktiske kvalificerede tuples eller normale retained-originalbeviser; en kvittering skaber ingen data. Scalar-support, WAM og ikke-marine mutationskrav består.
+
+Lokalt består den sammenhængende normale målprøve. Præcis egen 586-kilde-/nativekontrol, sikker merge og faktisk efterfølgende vejreffekt er endnu ikke bevist. Ingen ny version, C/I/T, lagrings-ABI, SQL eller genstart følger af denne port. Assistent587, SOURCE og statistikaktivering er parkeret efter ejerens P0-prioritet. Alle fem hovedmål er åbne til 18. november 2026; ældre modstridende status er historik.
+
 ## 23. oktober — DMI-filer med gyldige, uændrede strømvindere
 
 Lokalt rettet: En fuldt gennemgået marin DMI-fil må beholde bedre, allerede kvalificerede strømvindere uden at blive fejlklassificeret alene på grund af nul ændrede rækker. Den fælles læser kræver ved præcis heltalsnul eksakt officiel source/parser/signature, faktiske target-ID'er og registryhash, kanonisk fuldt udfaldsbevis og matchende samplingkvittering. De normale actual-/native-/original-/retained-værn består gennem ledger og genoptagelse. Den faktisk normale enkeltcase og model-/bindingskontrol består; alle tre persistente kontrakthashes er målt uændrede. Præcis ny CI/Linux/native og produktionseffekt er åbne. De faktiske tidligere NO_TOUCHED-afslag er ikke individuelt frikendt. Ældre P0-/587-statusudsagn nedenfor er historik; skiftende drift og installation føres i det private checkpoint.

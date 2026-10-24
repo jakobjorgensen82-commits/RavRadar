@@ -5,6 +5,12 @@
   "updatedAt": "2026-10-23",
   "sections": [
     {
+      "id": "qualified-weather-without-overwrite-2026-10-24",
+      "chapter": "89.267",
+      "title": "Gyldige vejrdata kan bevares uden overskrivning",
+      "body": "<div class=\"reader-guide\"><strong>Kort fortalt:</strong> En ny gennemgang af en vejrfil behøver ikke ændre en allerede bedre, gyldig strømværdi.</div><p>Programmet skal stadig kunne dokumentere den gennemgåede fil, de rigtige kystdele og den bevarede værdis oprindelse. At en fil er gennemgået er ikke i sig selv bevis for, at en manglende time er blevet udfyldt. De samme krav gælder, når data gemmes og bruges ved næste opdatering.</p><p>Dækning opgøres over alle forventede timer og zoner for vind, bølger, strøm, vandstand og vandtemperatur. En brugbar score er ikke det samme som komplette data i alle fem kategorier. Bevarede fælles timer og nye timer sidst i prognosen skal vurderes særskilt; ingen kildeprioritet eller beregningsformel ændres af denne bevaring.</p>"
+    },
+    {
       "id": "assistant-explanation-and-local587-release-2026-10-22",
       "chapter": "89.265",
       "title": "Spørg RavRadar: forklaring er ikke en lokal vejrudsigt",

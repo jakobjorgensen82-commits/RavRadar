@@ -1,3 +1,17 @@
+## 24. oktober — lokal 587-sammenføring med den leverede DMI-kilde
+
+DMI-rettelsen er præcist kildekvalificeret og merget særskilt på den installerede 586-familie. Den senest afsluttede naturlige vejrhentning er offentligt verificeret; den næste almindelige kørsel er ved denne lokale sammenføring fortsat i DMI-arbejdet. Det er ikke offentlig 587, bevist fuld dækning eller en afsluttet assistentlevering. Kontinuerligt vejr og alle forventede timer/zoners dækning har fortsat førsteprioritet; ingen produktionsændring må ske under den aktive writer.
+
+Den særskilte 587-kandidat har bestået sin præcise kildekontrol. Den nye lokale kombination kræver sit eget samlede bevis; den tidligere afbrudte 587+DMI-kontrol er ikke et helt PASS. Alle produktblade, udstedte modelbindinger, migrationsfiler og den eksisterende SQL uden for håndbogsliteralen bevares. Assistentens håndbogsafsnit 89.265 og stabile ID er uændrede; det særskilte DMI-afsnit har 89.267. Begge dokumenthistorikker nedenfor bevares. Installation, hosted AI og faktisk 587-virkning er åbne; alle fem hovedmål er åbne til 18. november 2026.
+
+## 24. oktober — kontinuerligt vejr først; afgrænset DMI-rettelse på 586
+
+Den almindelige vejrhentning er faktisk leveret med ny offentlig generation, original B før S og offentlig kontrol. Cron er genaktiveret med uændret tidsplan. Det er ikke fuld dækning eller bevist selvstændig drift: de fælles 100 timer har nul tab i alle fem vejrfamilier, mens de nye 18 timer har betydelige mangler. En undersøgt sen national time viser især manglende vindinput; dette må ikke kaldes et generelt tab af strømhistorik eller et rent Limfjordsproblem. Konkrete kørsler og tællinger står i det private checkpoint.
+
+P0 er kontinuerlig almindelig vejrhentning og dækning af alle forventede timer/zoner. Assistentlevering, SOURCE-aktivering og statistik venter. Kun de tre gennemgåede DMI-produkt-/testblade overføres fra den særskilte kandidat til installeret 4.0.586. En fuldt gennemgået fil med bevaret bedre kvalificeret strømvinder skal kunne afsluttes, gemmes og genbruges uden numerisk mutation. Faktiske tuple-/originalbeviser, parser, officiel filidentitet, targetregister og samplingkvittering kræves fortsat. Privat scalar-support, WAM og ikke-marine grene får ingen nulmutationsadgang.
+
+Porten ændrer ikke version, C/I/T, SQL-binding, kildeprioritet, adminpunkter, geometri eller scoreformel. Den nye normale kalder-/ledger-/genoptagelsesprøve består lokalt; egen præcis kilde-/native-kontrol og faktisk produktionseffekt er fortsat åbne. Genbrug ikke kandidatens 587-kvalifikation som 586-bevis. Alle fem mål er åbne til 18. november 2026. Ældre modstridende status nedenfor er dateret historik.
+
 ## 23. oktober — DMI-filer med gyldige, uændrede strømvindere
 
 Denne lokale DMI-vedligeholdelse bygger på den genuine, kildekvalificerede 587-kandidat. En fuldt gennemgået marin fil må beholde en bedre, allerede kvalificeret strømvinder uden at blive klassificeret som ubehandlet. Ny adgang kræver eksakt kilde, parser, signature, aktuelle target-/registryoplysninger, fuldt udfaldsbevis og matchende samplingkvittering; faktisk tuple-/original-/retained-kontrol består. Den normale gemning, ledger og genoptagelse er prøvet sammen. Modelbindinger, lager-ABI, SQL og øvrige kilderegler ændres ikke. Præcis ny CI/nativekontrol og produktionseffekt står åbne. Daterede P0-/587-statusudsagn nedenfor er historik; faktisk løbende drift og installation skal læses i det private checkpoint.

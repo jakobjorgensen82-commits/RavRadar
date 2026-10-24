@@ -1,3 +1,16 @@
+## 24. oktober — lokal 587-sammenføring med den leverede DMI-kilde
+
+DMI-rettelsen er præcist kildekvalificeret og merget særskilt på den installerede 586-familie. Den senest afsluttede naturlige vejrhentning er offentligt verificeret; den næste almindelige kørsel er ved denne lokale sammenføring fortsat i DMI-arbejdet. Det er ikke offentlig 587, bevist fuld dækning eller en afsluttet assistentlevering. Kontinuerligt vejr og alle forventede timer/zoners dækning har fortsat førsteprioritet; ingen produktionsændring må ske under den aktive writer.
+
+Den særskilte 587-kandidat har bestået sin præcise kildekontrol. Den nye lokale kombination kræver sit eget samlede bevis; den tidligere afbrudte 587+DMI-kontrol er ikke et helt PASS. Alle produktblade, udstedte modelbindinger, migrationsfiler og den eksisterende SQL uden for håndbogsliteralen bevares. Assistentens håndbogsafsnit 89.265 og stabile ID er uændrede; det særskilte DMI-afsnit har 89.267. Begge dokumenthistorikker nedenfor bevares. Installation, hosted AI og faktisk 587-virkning er åbne; alle fem hovedmål er åbne til 18. november 2026.
+
+## Ikke udgivet — afgrænset DMI-cacheopfølgning på 4.0.586
+
+- Bevarer bedre allerede kvalificerede strømvindere uden at afvise en ellers fuldt gennemgået marin DMI-fil alene på nul numeriske ændringer.
+- Kræver stadig officiel filidentitet, parser/signatur, faktisk targetregister, udfaldsbevis, samplingkvittering og faktiske tuple-/originalbeviser ved normal gemning, ledger og genoptagelse. Scalar-support, WAM og ikke-marine grene ændres ikke.
+- Overfører kun de tre gennemgåede DMI-/testblade; assistent587, modelbindinger, SQL, version, scoreformel, geometri og kildeprioritet er uændrede. Normal lokal målprøve består; egen præcis kilde-/native-kontrol og faktisk vejr-/cacheeffekt er åbne.
+- Registrerer faktisk offentlig almindelig levering og genaktiveret uændret cron, uden at forveksle nul tab på fælles timer med fuld ny prognosehale.
+
 ## 23. oktober — DMI-filer med gyldige, uændrede strømvindere
 
 - Lokalt rettet marine DMI-filer med fuldt gennemgået input og uændrede, allerede kvalificerede bedre strømvindere gennem main, gemning, fælles kildekontrol, ledger og genoptagelse.

@@ -1,3 +1,15 @@
+## 24. oktober — lokal 587-sammenføring med den leverede DMI-kilde
+
+DMI-rettelsen er præcist kildekvalificeret og merget særskilt på den installerede 586-familie. Den senest afsluttede naturlige vejrhentning er offentligt verificeret; den næste almindelige kørsel er ved denne lokale sammenføring fortsat i DMI-arbejdet. Det er ikke offentlig 587, bevist fuld dækning eller en afsluttet assistentlevering. Kontinuerligt vejr og alle forventede timer/zoners dækning har fortsat førsteprioritet; ingen produktionsændring må ske under den aktive writer.
+
+Den særskilte 587-kandidat har bestået sin præcise kildekontrol. Den nye lokale kombination kræver sit eget samlede bevis; den tidligere afbrudte 587+DMI-kontrol er ikke et helt PASS. Alle produktblade, udstedte modelbindinger, migrationsfiler og den eksisterende SQL uden for håndbogsliteralen bevares. Assistentens håndbogsafsnit 89.265 og stabile ID er uændrede; det særskilte DMI-afsnit har 89.267. Begge dokumenthistorikker nedenfor bevares. Installation, hosted AI og faktisk 587-virkning er åbne; alle fem hovedmål er åbne til 18. november 2026.
+
+## 24. oktober — bevaret kvalificeret strømvinder gennem cachegenbrug
+
+AKTIVT: En fuldt gennemgået marin DMI-fil kan afsluttes uden numerisk ændring, hvis en bedre allerede kvalificeret strømvinder bevares. Præcist heltalsnul kræver officiel fil-/parser-/signaturidentitet, faktisk targetregister, fuldt kanonisk udfaldsbevis og matchende samplingkvittering. Normal ledger og genoptagelse kræver fortsat faktiske kvalificerede tuples eller retained-originalbeviser. En kvittering må ikke skabe dækning eller opgradere ukendt gridbevis. Privat scalar-support, WAM og ikke-marine grene beholder mutationskravet.
+
+Rettelsen leveres særskilt på installeret 586 uden assistent587, ny modelbinding eller SQL. Kontinuerlig vejrhentning og alle timer/zoners femfamiliedækning har førsteprioritet. Lokalt eller source-grønt er ikke faktisk cachegenbrug eller offentlig effekt.
+
 ## 23. oktober — DMI-filer med gyldige, uændrede strømvindere
 
 En fuldt gennemgået marin DMI-fil må markeres behandlet uden numerisk overskrivning, når en allerede kvalificeret bedre vinder bevares. Præcis heltalsnul kræver normal officiel source/parser/signature, faktiske target-ID'er og registryhash, fuldt kanonisk udfaldsbevis samt matchende samplingkvittering. Ingen kvittering må erstatte faktiske tuples eller original-/retained-attestation. Samme kvalifikation skal følge normal gemning, ledger og genoptagelse. Privat scalar-support, WAM og ikke-marine grene beholder deres mutationskrav. Ukendt gridbevis får ingen ny anvendelsesret; kildeprioritet, gamle originaler, strømhukommelsesgrænser, scoreformel og no-loss bevares.
