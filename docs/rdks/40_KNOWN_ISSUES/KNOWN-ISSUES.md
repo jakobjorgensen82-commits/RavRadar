@@ -1,3 +1,9 @@
+## 24. oktober — afgrænset rettelse af checkpointdestination før assistentbinding
+
+En normal målprøve gennem den ægte, uændrede 586-checkpointlæser reproducerer en konkret kalderfejl: den valgte destination opfyldte ikke læserens dedikerede cachesti. Kun kalderens destination flyttes under den allerede ejede midlertidige rod til den normale `.cache/ravscore-continuation-checkpoint/checkpoint.json`. Læserens sti-, original-, autentificerings- og databevarelseskrav lempes ikke. Den samme prøve består efter rettelsen, når en syntetisk manglende række når den normale requester uden at oprette en fil. Det er ikke bevis for gyldige produktionsoriginaler eller for, at dette var den første fejl i installationsforsøget.
+
+Den afgrænsede første-fejlobservation bevares. Ældre hele kildevarianter og deres importer bevares; den rettede kalder får sin egen præcise kildekontrolsum. Modelbindinger, SQL, geodata, vejrdata, scoreformel, tidsplan og releaseversion 4.0.587 ændres ikke. Håndbogens eksisterende brugerfunktion og den udstedte migrationskopi er uændrede. Samlet kildekontrol, installation, efterfølgende almindelig vejrhentning og offentlig effekt mangler fortsat. Seneste offentlige vejrgeneration er fortsat 586; alle fem hovedmål er åbne.
+
 ## 24. oktober — ÅBEN: første kritiske havmodel afkortes før sin tidsandel
 
 Gemte logs beviser otte fuldførte filer og det eksplicitte leadloft i to almindelige kørsler med forskellige første modeller. En lokal kandidat bruger samme eksisterende tidsreserve for alle almindelige kritiske havmodeller og bevarer resten af enkeltpassagen. Den normale målkalder består lokalt; produktionseffekt og samlet dækning er åbne. Det fælles bytebudget kan fortsat begrænse senere familier. Native-DMI-mangel og fravær af en lovligt valgt scalarværdi skal fortsat skelnes; første-køobservationen er nødvendig for den særskilte rangfølgeanalyse.

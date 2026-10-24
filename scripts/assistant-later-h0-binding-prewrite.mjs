@@ -175,7 +175,7 @@ async function locations(prepare){
   await noLinks(root);const info=await fs.lstat(root);assert(info.isDirectory()&&(info.mode&0o777)===0o700);
   assert.equal(await fs.realpath(root),root);
   const p={root,bundle:path.join(root,'bundle'),originals:path.join(root,'originals'),
-    originalS:path.join(root,'original-S.json'),baseline:path.join(root,'baseline.json')};
+    originalS:path.join(root,'.cache','ravscore-continuation-checkpoint','checkpoint.json'),baseline:path.join(root,'baseline.json')};
   // Locations select only the already owned originals, never family authority.
   process.env.RAVRADAR_PRIVATE_RUNTIME_ROOT=root;process.env.RAVRADAR_PRIVATE_RUNTIME_BUNDLE=p.bundle;return p;
 }

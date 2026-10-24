@@ -1,3 +1,9 @@
+## Ikke udgivet — korrekt checkpointdestination før assistentbinding på 4.0.587
+
+- Retter kalderens midlertidige scorecheckpointsti til den dedikerede cachesti, som den uændrede normale læser kræver.
+- Tilføjer én regression gennem den ægte frosne 586-læser og kalderens faktiske destinationskonstruktion: tidligere sti afvises før requester; rettet sti når requester uden at skrive data.
+- Bevarer afgrænset fejlaflæsning, alle tidligere hele importvarianter, modelbindinger, SQL, originaler og sikkerhedskontroller. Lokal reproduktion/rettelse er ikke bevis for installation eller fungerende offentlig assistent.
+
 ## Ikke udgivet — fair tidsandel til første kritiske havmodel på 4.0.586
 
 - Erstatter første kritiske havmodels faste ottefilersstop med den normale filgrænse og samme tidsfordeling, som allerede beskytter de øvrige ventende familier.

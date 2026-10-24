@@ -3,7 +3,7 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
 import path from 'node:path';
-import {fileURLToPath} from 'node:url';
+import {fileURLToPath,pathToFileURL} from 'node:url';
 import test from 'node:test';
 import {NATIVE_ORIGINAL_CONTINUITY_BINDING as BINDING,NATIVE_ORIGINAL_CONTINUITY_OUTPUT as OUTPUT,
   NATIVE_ORIGINAL_CONTINUITY_BEFORE as OLD,requireNativeOriginalContinuityBinding,
@@ -646,4 +646,34 @@ test('assistant binding prewrite diagnostic keeps real CLI guards and bounded co
   assert(catalog.includes("sha256:'860d62ff21d2854ca2856bcb6998ba48859c0237f94b315c7736a1265e1be8de'"));
   assert(catalog.includes("sha256:'fa16454cd00e516c4fe3c3b80f3445c73a32ce2162c0258b493e5a88e61c3d25'"));
   assert(catalog.includes("imports:ASSISTANT_BINDING_PREWRITE_REVIEWED['scripts/assistant-later-h0-binding-prewrite.mjs'].imports"));
+});
+
+test('assistant binding prewrite destination passes the genuine frozen586 protected-S path contract',async()=>{
+  const {runInNewContext}=await import('node:vm');
+  const {withAuthenticated586PredecessorSource}=await import('./check-assistant-later-h0-predecessor-source.mjs');
+  const source=await fs.readFile(path.join(ROOT,'scripts/assistant-later-h0-binding-prewrite.mjs'),'utf8');
+  const locations=source.slice(source.indexOf('async function locations(prepare){'),source.indexOf('async function centralProof(){'));
+  const matches=[...locations.matchAll(/const p=(\{[\s\S]*?\});/g)];
+  assert.equal(matches.length,1,'Use the actual normal destination constructor, not a copied test path');
+  assert(source.includes('checkpointPath:p.originalS,targetReference:selected.productionReferenceAt'));
+  await withAuthenticated586PredecessorSource(async frozenRoot=>{
+    // No target is created: a missing synthetic protected row stops before write.
+    const root=path.join(frozenRoot,'fixture-binding-original');
+    const targets=runInNewContext('('+matches[0][1]+')',{path,root});
+    assert.equal(targets.root,root);
+    const normal=await import(pathToFileURL(path.join(frozenRoot,'scripts/protected-ravscore-continuation-checkpoint.mjs')).href);
+    let requests=0;
+    const request=async()=>{requests++;return [];};
+    await assert.rejects(normal.restoreProtectedRavScoreContinuationCheckpoint({
+      checkpointPath:path.join(root,'original-S.json'),targetReference:'2026-10-24T16:00:00.000Z',request,
+    }),/dedicated \.cache path/);
+    assert.equal(requests,0,'The previous caller target is rejected before protected I/O');
+    const result=await normal.restoreProtectedRavScoreContinuationCheckpoint({
+      checkpointPath:targets.originalS,targetReference:'2026-10-24T16:00:00.000Z',request,
+    });
+    assert.equal(requests,1,'The actual caller target must reach the genuine reader');
+    assert.equal(result.reason,'protected-checkpoint-not-found');assert.equal(result.targetUnchanged,true);
+    await assert.rejects(fs.access(targets.originalS),/ENOENT/);
+    await assert.rejects(fs.access(root),/ENOENT/);
+  });
 });
