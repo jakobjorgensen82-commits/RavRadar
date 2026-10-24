@@ -1,3 +1,11 @@
+## 24. oktober — AKTIV: snæver Free-autoritet til offentlig prognosedeling
+
+Ejeren har udtrykkeligt godkendt oprettelse af kun `ravradar-prognosedeling` på den eksisterende Cloudflare Free-konto og `jakob-jorgensen82.workers.dev`. Den fælles faste delingsadresse er `https://ravradar-prognosedeling.jakob-jorgensen82.workers.dev/`. Autoriteten omfatter ikke ny database, billedlager, DNS-ændring, nøgler eller betalingsplan. Konfigurationen må ikke tilføje assets-/DB-/KV-/R2-bindinger, egne routes, cron eller secrets. Det eksisterende offentlige logo må læses uden nyt billedlager.
+
+Deling skal bruge den faktisk verificerede zone, hele time, søgemåde og DA/DE/EN-sprog. Brugeren vælger selv destination og opslagstekst. Score skal komme fra de eksisterende offentlige data og den normale kontrol af bytes, kontrolsum, model, sted, time og udløb; queryparametre, headere eller miljø må ikke udstede score-/kildeautoritet. Ukendt eller udløbet grundlag må ikke erstattes med en nærmeste time. Ny delt tid følger Europe/Copenhagen inklusive sommer-/vintertid, ikke et fast CET-mærke.
+
+Levering skal ske særskilt efter den normale præcise kildekontrol og uden ændring af almindelige vejr-/Pages-workflows. Aktiv versionsgenlæsning, faktisk hosted GET/HEAD, Free-kapacitet og browser-/Facebook-accept kræves; lokal bundle, Node-prøve eller HTTP 200 er ikke tilstrækkeligt. Ekstern cache og ændrede/udløbne offentlige data skal beskrives ærligt. Score er ikke en garanti for fund. Ingen produktionsændring under writer, ingen model-/SQL-udstedelse eller automatisk udvidelse af andre tilladelser. Alle fem hovedmål er fortsat åbne til 18. november.
+
 ## 24. oktober — lokal 587-sammenføring med den leverede DMI-kilde
 
 DMI-rettelsen er præcist kildekvalificeret og merget særskilt på den installerede 586-familie. Den senest afsluttede naturlige vejrhentning er offentligt verificeret; den næste almindelige kørsel er ved denne lokale sammenføring fortsat i DMI-arbejdet. Det er ikke offentlig 587, bevist fuld dækning eller en afsluttet assistentlevering. Kontinuerligt vejr og alle forventede timer/zoners dækning har fortsat førsteprioritet; ingen produktionsændring må ske under den aktive writer.

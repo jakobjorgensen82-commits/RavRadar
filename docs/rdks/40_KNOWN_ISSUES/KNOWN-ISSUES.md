@@ -1,3 +1,19 @@
+## 24. oktober — fælles 587-kandidat for brugerdata og prognosedeling
+
+Den isolerede app-/assistentprøve medtager nu appens egne delings-livstidsbindinger sammen med de faktiske zonefunktioner. Den manglende VM-deklaration er rettet i testen, ikke ved at fjerne produktets oprydning eller skjule fejl. Alle tidligere kontroludsagn bevares; den ekstra regression følger den rigtige lukning, nulstilling og samme fejlkast. Det ændrer ikke appen, viden, modelbindinger, SQL eller den almindelige vejrhentning.
+
+Brugerdatarettelsen og prognosedelingen er nu lokalt sammenført gennem begge ægte Git-historikker. De disjunkte produktejere er bevaret hele, og kun de fælles dokumenter og håndbogsliteralen er samlet. C98/I97/T12, 66 gamle Supabase-migrationer, geodata og den almindelige vejr-/Pages-vej bevares. Sammenføringen er ikke i sig selv kildekvalifikation, installation eller offentlig virkning; den præcise slutkilde skal bestå sin normale kontrol før levering.
+
+Ældre 29-/129-prøver nedenfor er deres forældres beviser. Den tidligere kompilerede Node-forhåndsvisning mod offentlige data var udført på 586, ikke den nye 587-kandidat. Den genuine 587-bundle er lokalt bygget til 141,04 KiB uden bindings, men beviser ikke en oprettet Worker, gyldig hosted score, Free-kapacitet eller Facebook-visning. Disse krav er særskilte. Skiftende kvitteringer og den aktuelle test-/driftsstatus hører til i det private checkpoint.
+
+Brugerdatajobbet forbliver globalt slået fra, rapportens offentlige frigivelse er uudstedt, og automatisk sletning er inaktiv. Brugerens statistikpræference har fortsat default ON og frisk fravalgskontrol. Fund-/ikke-fund-rapporten er ikke en måling af oplevet god eller dårlig tur og lukker ikke alene målets statistikdel. 006 kræver faktisk genlæst Worker-OFF og de forudgående præcise skemaer; en lokal konfiguration er ikke bevis for installation. Kontinuerligt vejr er P0, og ingen produktion ændres under aktiv writer. Alle fem mål er åbne.
+
+## 24. oktober — ÅBEN: prognosedeling mangler faktisk hosted-/Free-/Facebook-bevis
+
+129 normale lokale tilfælde, en bindingfri bundle på 140,75 KiB og en rigtig offentlig datalæsning i Node er gennemført. De beviser ikke Cloudflares faktiske CPU-/hukommelsesforbrug, aktiv Worker-version, offentlig browserdeling eller Facebooks egen forhåndsvisningscache. En HTTP-succes alene er heller ikke bevis for en gyldig score; datakontrol og præcis valgt time skal være bestået.
+
+Ejeren har godkendt netop ravradar-prognosedeling på eksisterende Free/account workers.dev, ikke nye databaser, billedlager, DNS, nøgler eller betalingsplan. En særskilt normal release og den faktiske hosted-/Free-/Facebook-kontrol skal afsluttes før funktionen kaldes klar. Ingen almindelig vejr-/Pages-workflowændring eller produktionsskrivning under writer. Et delt link er ikke et frosset datasæt: nye offentlige data, udløb og ekstern cache kan ændre eller forsinke visningen. Ingen fundgaranti eller ny scoreberegning følger af deling.
+
 ## 24. oktober — privat userdata-sammenføring med genuine 587 og P0
 
 Den private 006-/ejerrapportkandidat er lokalt sammenført med genuine 587-kilden og de særskilt main-leverede P0-rettelser til DMI-køobservation og fair tidsandel. Dette er ikke præcis samlet kildekvalifikation, installation, aktiveret statistik eller offentlig rapport. Begge grenes fulde historik bevares; de daterede afventninger nedenfor om netop P0-main-leveringerne er historik.

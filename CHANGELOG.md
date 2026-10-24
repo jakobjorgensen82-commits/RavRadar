@@ -1,3 +1,17 @@
+## Ikke udgivet — ægte fælles kandidat uden nyt model- eller SQL-delta
+
+- Den isolerede app-/assistentprøve medtager appens egne delings-livstidsbindinger. Den rigtige oprydning, nulstilling, fejlkast og alle tidligere kontroludsagn bevares; produktkoden ændres ikke af testrettelsen.
+- Sammenfører de to 587-forløb med hele disjunkte kodeejere og begge dokumenthistorikker. Model, geodata, gamle migrationer og almindelig vejrlevering bevares; ingen ny version eller aktivering.
+- Kvalifikation af den præcise slutkilde er påkrævet. Ældre målprøver og Node-læsning på 586 er ikke bevis for den nye samlede kandidat eller hosted Free-drift; den genuine 587-bundle er 141,04 KiB.
+- Bevarer statistik-OFF, offentligt uudstedt rapport og inaktiv automatisk sletning. Fund/ikke-fund ommærkes ikke til oplevet turkvalitet. Alle fem hovedmål og de faktiske leveringskrav består.
+
+## Ikke udgivet — offentlig prognosedeling på særskilt Free-Worker
+
+- Forbereder deling af den faktisk viste zone, time, søgemåde og sprog via den faste adresse til ravradar-prognosedeling. Brugeren vælger selv destination og opslagstekst; der deles ikke en nyberegnet eller brugerbestemt score.
+- Genbruger den eksisterende offentlige datalæser og dens kontrol af størrelse, kontrolsum, modelbinding og udløb. Den tynde Worker-indgang og konfiguration har ingen database, billedlager, KV/R2, assets-binding, egne DNS-ruter, cron eller secrets.
+- Ejerens nye godkendelse gælder kun denne ene Worker på den eksisterende Free-konto og workers.dev. Levering skal ske særskilt efter normal kildekontrol og uden ændring af det almindelige vejr-/Pages-workflow.
+- 129 normale lokale tilfælde består. Lokal bundle er 140,75 KiB; en Node-læsning af rigtige offentlige data gav en korrekt forhåndsvisning. Det er ikke Worker-oprettelse, målt Free-kapacitet eller faktisk Facebook-kontrol. Disse leveringskrav er fortsat åbne. Ingen versions-, model- eller SQL-udstedelse. Se håndbog 89.268.
+
 ## 24. oktober — privat userdata-sammenføring med genuine 587 og P0
 
 Den private 006-/ejerrapportkandidat er lokalt sammenført med genuine 587-kilden og de særskilt main-leverede P0-rettelser til DMI-køobservation og fair tidsandel. Dette er ikke præcis samlet kildekvalifikation, installation, aktiveret statistik eller offentlig rapport. Begge grenes fulde historik bevares; de daterede afventninger nedenfor om netop P0-main-leveringerne er historik.

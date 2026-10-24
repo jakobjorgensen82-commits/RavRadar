@@ -1,3 +1,17 @@
+## 89.268 Del en offentlig prognose
+
+Kort fortalt: Et delingslink peger på det valgte sted, tidspunkt og søgemåde. Du vælger selv, hvor det deles, og hvad du skriver til det.
+
+Du kan dele den viste prognose eller kopiere linket fra den valgte zone. Linket bruger dit valgte sted, den præcise time, søgemåden strand eller waders samt dansk, tysk eller engelsk. Visningen erstatter ikke en manglende time med et andet tidspunkt.
+
+Forhåndsvisningen bruger RavRadars allerede offentliggjorte score og viser de relevante forbehold, for eksempel ufuldstændig historik eller delvis dækning. Deling beregner ikke en ny score og ændrer ikke vejrdata. En score er en beregnet vurdering, ikke en garanti for fund.
+
+Dato og klokkeslæt vises i dansk lokal tid med den rigtige sommer- eller vintertid. Sted, tidspunkt og søgemåde skal læses sammen med scoren. Linkets sprogvalg ændrer kun præsentationen, ikke datagrundlaget.
+
+Et link er ikke en permanent kopi af prognosen. Nye offentlige data kan ændre visningen for samme sted og time, og en gammel time kan udløbe. Hvis data ikke længere kan kontrolleres eller er udløbet, må visningen ikke gætte en score. Facebook og andre modtagere kan gemme en tidligere forhåndsvisning, så opslagets kort kan være forsinket i forhold til det link, du åbner.
+
+Telefonens eller browserens delingsmenu bestemmer de tilgængelige destinationer. Du vælger selv destination og opslagstekst; RavRadar sender ikke automatisk et opslag. Delingssiden læser kun den offentlige prognose og bruger det eksisterende RavRadar-logo, ikke private ture eller kontodata.
+
 ## 89.267 Gyldige vejrdata kan bevares uden overskrivning
 
 Hentetiden fordeles mellem de kritiske vejrmodeller, så hver model kan arbejde, mens der stadig er reserveret tid til de øvrige. Et fast filantal fortæller ikke, hvor lang tid filerne tager. Tiden og den fælles downloadgrænse skal derfor begge respekteres. Flere behandlede filer er heller ikke i sig selv bevis for bedre dækning; det afgøres af de gyldige værdier i hele prognosen.

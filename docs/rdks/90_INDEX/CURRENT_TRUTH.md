@@ -1,3 +1,21 @@
+## 24. oktober — fælles 587-kandidat for brugerdata og prognosedeling
+
+Den isolerede app-/assistentprøve medtager nu appens egne delings-livstidsbindinger sammen med de faktiske zonefunktioner. Den manglende VM-deklaration er rettet i testen, ikke ved at fjerne produktets oprydning eller skjule fejl. Alle tidligere kontroludsagn bevares; den ekstra regression følger den rigtige lukning, nulstilling og samme fejlkast. Det ændrer ikke appen, viden, modelbindinger, SQL eller den almindelige vejrhentning.
+
+Brugerdatarettelsen og prognosedelingen er nu lokalt sammenført gennem begge ægte Git-historikker. De disjunkte produktejere er bevaret hele, og kun de fælles dokumenter og håndbogsliteralen er samlet. C98/I97/T12, 66 gamle Supabase-migrationer, geodata og den almindelige vejr-/Pages-vej bevares. Sammenføringen er ikke i sig selv kildekvalifikation, installation eller offentlig virkning; den præcise slutkilde skal bestå sin normale kontrol før levering.
+
+Ældre 29-/129-prøver nedenfor er deres forældres beviser. Den tidligere kompilerede Node-forhåndsvisning mod offentlige data var udført på 586, ikke den nye 587-kandidat. Den genuine 587-bundle er lokalt bygget til 141,04 KiB uden bindings, men beviser ikke en oprettet Worker, gyldig hosted score, Free-kapacitet eller Facebook-visning. Disse krav er særskilte. Skiftende kvitteringer og den aktuelle test-/driftsstatus hører til i det private checkpoint.
+
+Brugerdatajobbet forbliver globalt slået fra, rapportens offentlige frigivelse er uudstedt, og automatisk sletning er inaktiv. Brugerens statistikpræference har fortsat default ON og frisk fravalgskontrol. Fund-/ikke-fund-rapporten er ikke en måling af oplevet god eller dårlig tur og lukker ikke alene målets statistikdel. 006 kræver faktisk genlæst Worker-OFF og de forudgående præcise skemaer; en lokal konfiguration er ikke bevis for installation. Kontinuerligt vejr er P0, og ingen produktion ændres under aktiv writer. Alle fem mål er åbne.
+
+## 24. oktober — prognosedeling er lokalt kontrolleret, ikke offentligt leveret
+
+Ny eksplicit ejerautoritet omfatter kun `ravradar-prognosedeling` på eksisterende Cloudflare Free/account workers.dev, med fast adresse `https://ravradar-prognosedeling.jakob-jorgensen82.workers.dev/`. Der er ingen tilladelse til ny database, billedlager, DNS-ændring, nøgler eller betalingsplan. Delingen genbruger eksisterende publicscore og normal offentlig datakontrol; den ændrer ikke vejr, scoremodel eller private data. Brugeren vælger selv destination og opslagstekst.
+
+Faktisk lokal evidens: 129 normale tilfælde bestået, bindingfri bundle på 140,75 KiB og Node-kørsel af den kompilerede kode mod rigtige offentlige data med score 23/100 i forhåndsvisningen. Den konkrete score er alene et prøveudfald, ikke et permanent produktudsagn. Ingen Worker er dermed bevist oprettet eller leveret; Free-forbrug, hosted GET/HEAD, UI og Facebook-forhåndsvisning er endnu åbne.
+
+Levering forberedes som et særskilt normalt forløb efter præcis kildekontrol, ikke gennem ændring af det almindelige vejr-/Pages-workflow og aldrig under aktiv produktionswriter. Ingen versions- eller C/I/T-/SQL-udstedelse. Alle fem hovedmål er fortsat åbne til 18. november; vejr og dækning har førsteprioritet. Ældre status nedenfor bevares som historik, og kun den snævre Worker-tilladelse er udvidet.
+
 ## 24. oktober — privat userdata-sammenføring med genuine 587 og P0
 
 Den private 006-/ejerrapportkandidat er lokalt sammenført med genuine 587-kilden og de særskilt main-leverede P0-rettelser til DMI-køobservation og fair tidsandel. Dette er ikke præcis samlet kildekvalifikation, installation, aktiveret statistik eller offentlig rapport. Begge grenes fulde historik bevares; de daterede afventninger nedenfor om netop P0-main-leveringerne er historik.
