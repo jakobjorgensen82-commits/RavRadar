@@ -1,3 +1,10 @@
+## Ikke udgivet — fair tidsandel til første kritiske havmodel på 4.0.586
+
+- Erstatter første kritiske havmodels faste ottefilersstop med den normale filgrænse og samme tidsfordeling, som allerede beskytter de øvrige ventende familier.
+- Bevarer normal enkeltpassage, vedligeholdelsesgrænse, autentificeret engangsstart, samlet budget og kontroller før hver fil.
+- Den normale kildeprøve får ét nyt tilfælde i sin eksisterende kalder. Lokal målprøve består; samlet kildekontrol, levering og målt effekt afventer. Det fælles bytebudget er fortsat en begrænsning.
+
+
 ## Ikke udgivet — afgrænset DMI-køobservation på 4.0.586
 
 - Tilføjer `firstTurnOrder` med klassifikationsprioritet, faste årsagskategorier, faktisk køplacering og korrekt startmarkør pr. samling.

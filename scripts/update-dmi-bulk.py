@@ -15575,6 +15575,10 @@ def main() -> int:
         0,
         int(schedule_coverage.get("strictCurrentLeadAttemptLimit") or 0),
     )
+    schedule_coverage["strictCurrentLeadCriticalAttemptLimit"] = (
+        MAX_ASSETS_PER_COLLECTION if strict_current_lead_collection else 0
+    )
+    schedule_coverage["strictCurrentLeadOrdinaryCriticalPolicy"] = "FAIR_PENDING_CRITICAL_TIME"
     cold_strict_current_lead_catch_up = bool(
         strict_current_lead_collection
         and cold_strict_current_lead_catch_up_requested(
@@ -15585,7 +15589,7 @@ def main() -> int:
         schedule_coverage["strictCurrentLeadColdCatchUp"] = {
             "policy": "authenticated-current-family-cold-catch-up-v1",
             "selected": True, "applied": False,
-            "ordinaryFairnessAttemptLimit": strict_current_lead_attempt_limit,
+            "ordinaryFairnessAttemptLimit": MAX_ASSETS_PER_COLLECTION,
             "effectiveAttemptLimit": MAX_ASSETS_PER_COLLECTION,
             "effectiveBound": "EXISTING_COLLECTION_ASSET_SELECTION_AND_PER_ASSET_BUDGET",
             "numericAdmissionIssued": False,
@@ -15612,7 +15616,7 @@ def main() -> int:
         )
         strict_current_lead_turn_attempt_limit = (
             MAX_ASSETS_PER_COLLECTION
-            if cold_strict_current_lead_catch_up and collection_is_critical_current
+            if collection_is_critical_current
             else strict_current_lead_attempt_limit
         )
         if (
@@ -15644,7 +15648,10 @@ def main() -> int:
             collection_is_critical_wam
             or (
                 collection_is_critical_current
-                and collection != strict_current_lead_collection
+                and (
+                    collection != strict_current_lead_collection
+                    or not cold_strict_current_lead_catch_up
+                )
             )
         ):
             reserve_for_pending_critical = max(
@@ -16720,8 +16727,9 @@ def main() -> int:
                     run_info["strictCurrentLeadAssetsAttempted"] = (
                         strict_current_lead_attempts
                     )
-                    if (cold_strict_current_lead_catch_up and collection_is_critical_current
-                            and strict_current_lead_attempts > strict_current_lead_attempt_limit):
+                    if cold_strict_current_lead_catch_up and collection_is_critical_current:
+                        # A real attempt used the authenticated cold reservation
+                        # policy, which remains exempt from ordinary fair sharing.
                         schedule_coverage["strictCurrentLeadColdCatchUp"]["applied"] = True
                 if collection_is_critical_atmosphere:
                     critical_atmosphere_attempts += 1
