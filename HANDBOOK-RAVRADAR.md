@@ -1,5 +1,7 @@
 ## 89.265 Gyldige vejrdata kan bevares uden overskrivning
 
+For at forstå de resterende huller registrerer programmet rækkefølgen, når hver DMI-samling starter sin første tur. Registreringen viser, om køens egen klassifikation angiver manglende input eller opgradering. Det er ikke i sig selv bevis for et hul på tværs af alle leverandører. Registreringen ændrer ikke rækkefølgen og udfylder ikke selv et hul. Senere omplanlægninger og den faktisk offentliggjorte dækning skal vurderes særskilt.
+
 Kort fortalt: En ny gennemgang af en vejrfil behøver ikke ændre en allerede bedre, gyldig strømværdi.
 
 Programmet skal stadig kunne dokumentere den gennemgåede fil, de rigtige kystdele og den bevarede værdis oprindelse. At en fil er gennemgået er ikke i sig selv bevis for, at en manglende time er blevet udfyldt. De samme krav gælder, når data gemmes og bruges ved næste opdatering.

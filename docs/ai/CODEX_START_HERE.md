@@ -1,3 +1,10 @@
+## 24. oktober — mål DMI-køen før yderligere prioriteringsændring
+
+Den afgrænsede opfølgning registrerer kun hver DKSS-samlings første faktisk sorterede kø: klassifikationens prioritet og faste mangelkategorier, gyldige tider, køplacering og turens rotationsmarkør. Senere omplanlægning overskriver ikke observationen. Første tur for én samling er ikke hele jobbets fælles før-DMI-tilstand.
+
+En kritisk fil kan også være en native strømopgradering og beviser derfor ikke et tomt vejrhul på tværs af leverandører. Kø, budgetter, kildevalg, originalkrav og numeriske data ændres ikke. Den større lokale scalar-kandidat medfølger ikke. Version 4.0.586, modelbinding og SQL bevares. Den isolerede normale målprøve består; præcis samlet kildekontrol og observation fra en kommende almindelig kørsel mangler. Bedre dækning påstås ikke. Alle fem mål er fortsat åbne til 18. november; kontinuerligt vejr og reel time-/zonedækning er P0.
+
+
 ## 24. oktober — kontinuerligt vejr først; afgrænset DMI-rettelse på 586
 
 Den almindelige vejrhentning er faktisk leveret med ny offentlig generation, original B før S og offentlig kontrol. Cron er genaktiveret med uændret tidsplan. Det er ikke fuld dækning eller bevist selvstændig drift: de fælles 100 timer har nul tab i alle fem vejrfamilier, mens de nye 18 timer har betydelige mangler. En undersøgt sen national time viser især manglende vindinput; dette må ikke kaldes et generelt tab af strømhistorik eller et rent Limfjordsproblem. Konkrete kørsler og tællinger står i det private checkpoint.
