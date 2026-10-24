@@ -112,6 +112,10 @@ Den ekstra lagerændring til det oprindelige modelgrundlag kræver sin egen udtr
 
 Denne supplerende løsning er lokalt prøvet, men ikke installeret eller aktiveret. Den aktuelle installation af de tidligere statistikdele er ikke dokumenteret af denne prøve; ældre statusudsagn er dateret historik. Faktisk drift på de gratis grænser, dokumenteret anonymitet, backupfrister og tilladt frigivelse er fortsat åbne krav. Automatisk sletning forbliver slået fra uden fungerende varsling. Ingen ny scoreformel eller ændret kildeprioritet følger af forberedelsen.
 
+En færdig månedsrapport skal beholde den måned, arbejdet faktisk vedrører, også når det afsluttes senere. Den gemmes uden at overskrive en tidligere rapport for samme måned. En privat ejeroversigt kan vise den nyeste faktisk gemte rapport efter en frisk adgangskontrol. Manglende eller ændrede svar må ikke erstattes med en ældre rapport. Kontoskift og logout fjerner visningen, og en download kræver en ny kontrol.
+
+Den forberedte oversigt viser faktisk måned og støjede gruppetal i 20 rækker: vind, bølger, strøm og vandstandsændring, hver med fem intervaller og fund/ikke-fund. De 40 tal er ikke præcise turantal og må ikke lægges sammen på tværs af grupper. Fund er ikke det samme som en god oplevelse, og ikke-fund er ikke det samme som en dårlig oplevelse. Ingen enkeltpersoner eller enkelte ture vises, og rapporten ændrer ikke RavScore. Denne rapportvej er lokalt prøvet, ikke installeret eller aktiveret. Faktisk drift, gratis kapacitet og dokumenteret anonymitet, også på tværs af flere rapporter, skal stadig kontrolleres. Statistik er fortsat slået fra i leveringsforløbet; dette er ikke offentliggjort statistik.
+
 ## 89.259 Bedre spørgsmål og ærlige turrapporter – 4.0.585-kandidat
 
 Kort fortalt: Den forberedte 585-opdatering skal forstå flere almindelige og sammensatte spørgsmål uden at gætte på manglende oplysninger. Den er endnu ikke offentligt leveret.

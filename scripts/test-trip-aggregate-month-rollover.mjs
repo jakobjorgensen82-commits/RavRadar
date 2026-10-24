@@ -144,6 +144,7 @@ test('normal month rollover resumes only actual persisted job with fresh basis',
     assert.equal((await normal.post(path,oldPlain)).status,400);
     await assert.rejects(advance(normal.f.d1,oldPlain),{message:'AGGREGATE_PERIOD_INVALID'});
     const report=await normal.invoke();assert.deepEqual(report.period,oldPeriod);
+    await verifyPrivateOwnerReportDelivery(report);
     assert.equal(normal.f.header().phase,'READY_INPUT');assert.deepEqual(normal.f.accounting(),[1,0]);
     assert.equal(report.publicReleaseIssued,false);assert.deepEqual(normal.f.originals(),original);
     const ledger=plain(normal.f.dbs[0].prepare('select * from trip_weather_aggregate_releases').all());
@@ -370,3 +371,154 @@ test('normal persisted model binding survives later releases without retagging o
     }
   }finally{fixtures.forEach(f=>f.close());Date.now=oldClock;globalThis.fetch=oldFetch;}
 });
+
+// Samme normale SQLite/Worker/klientrapport ovenfor; kun admintransport og DOM er syntetiske.
+async function verifyPrivateOwnerReportDelivery(report){
+  const {publishPrivateTripStudyAdmin,PRIVATE_STUDY_ADMIN_ACCESS_SQL,PRIVATE_STUDY_ADMIN_FUNCTIONS}
+    =await import('./lib/private-trip-study-admin-transport.mjs');
+  const {isExactCalibrationModelBinding}=await import('../js/services/calibration-eligibility.js');
+  const vm=await import('node:vm');
+  const key='trip-weather-study-'+report.period.start.slice(0,7);
+  assert.notDeepEqual(report.period,previousClosedAggregateMonth(),'positiv prøve er faktisk det afsluttede gamle job');
+  const service='sb_secret_synthetic_private_transport_existing_key_only_00000',access='synthetic-existing-management-key-000000000';
+  const catalogue=()=>[{metadata:{rls:true,ownerRestricted:true,anonSelect:false,authenticatedSelect:true,publicSelect:false,unsafeRoles:false,
+    policies:[{name:'ravradar_admin_documents_read',permissive:'PERMISSIVE',roles:['authenticated'],command:'SELECT',
+      qual:"public.is_ravradar_owner() or public.has_ravradar_permission('full_admin') or public.has_ravradar_permission(public.ravradar_document_permission(document_key))"},
+    {name:'ravradar_ravscore_checkpoint_no_direct_read',permissive:'RESTRICTIVE',roles:['authenticated'],command:'SELECT',
+      qual:"document_key <> 'ravscore-continuation-checkpoint'"}],functions:structuredClone(PRIVATE_STUDY_ADMIN_FUNCTIONS)}}];
+  const transport=(mode='normal')=>{
+    let row=null,writes=0,reads=0;
+    return{state:()=>({row,writes,reads}),fetchImpl:async(input,init)=>{
+      const url=new URL(input);assert.equal(init.redirect,'error');assert.equal(init.cache,'no-store');
+      if(url.origin==='https://api.supabase.com'){
+        assert.equal(url.pathname,'/v1/projects/afqhhdrkjfjtpadntdzo/database/query');assert.equal(init.method,'POST');
+        assert.equal(JSON.parse(init.body).query,PRIVATE_STUDY_ADMIN_ACCESS_SQL);
+        const result=catalogue();if(mode==='broad')result[0].metadata.policies[0].qual='true';
+        return new Response(JSON.stringify(result));
+      }
+      assert.equal(url.origin,'https://afqhhdrkjfjtpadntdzo.supabase.co');assert.equal(url.pathname,'/rest/v1/admin_documents');
+      assert.equal(init.headers.apikey,service);assert.equal(init.headers.Authorization,undefined);
+      if(init.method==='GET'){reads++;assert.equal(url.searchParams.get('document_key'),'eq.'+key);
+        return new Response(JSON.stringify(row?[row]:[]));}
+      assert.equal(init.method,'POST');assert.equal(row,null);assert.equal(url.search,'');assert.equal(init.headers.Prefer,'return=minimal');
+      const body=JSON.parse(init.body);assert.equal(body.document_key,key);assert.equal(body.updated_by,null);
+      writes++;row={document_key:key,payload:body.payload,version:1};
+      if(mode==='lost')throw Error('SYNTHETIC_WRITE_REPLY_LOST');
+      return new Response(null,{status:201});
+    }};
+  };
+  const publish=backend=>publishPrivateTripStudyAdmin(report,{serviceRoleKey:service,accessToken:access,fetchImpl:backend.fetchImpl});
+  const backend=transport(),first=await publish(backend),again=await publish(backend);
+  assert.equal(first.documentKey,key);assert.equal(first.replay,false);assert.equal(again.replay,true);
+  assert.equal(backend.state().writes,1);assert.deepEqual(backend.state().row.payload,report);
+  assert.doesNotMatch(JSON.stringify(first),/usr_v1_|trip_id|noisyCount|payload|ledger/);
+  const lost=transport('lost');await assert.rejects(()=>publish(lost),/WRITE_OUTCOME_UNKNOWN/);
+  assert.equal(lost.state().writes,1);assert.equal((await publish(lost)).replay,true);assert.equal(lost.state().writes,1);
+  const denied=transport('broad');await assert.rejects(()=>publish(denied),/ACCESS_UNVERIFIED/);
+  assert.equal(denied.state().reads,0);assert.equal(denied.state().writes,0);
+  backend.state().row.payload=structuredClone(report);backend.state().row.payload.cells[0].noisyCount=(report.cells[0].noisyCount+1)%1001;
+  await assert.rejects(()=>publish(backend),/DOCUMENT_CONFLICT/);assert.equal(backend.state().writes,1);
+  const source=fs.readFileSync(new URL('../js/services/private-trip-study.js',import.meta.url),'utf8').replace(/\r\n/g,'\n');
+  const serviceImports=[
+    "import {PUBLIC_CONFIG} from '../../config.js?v=4.0.587';",
+    "import {readAdminDocumentNow} from './admin-document-store.js?v=4.0.587';",
+    "import {myAccess,hasPermission} from './permissions-service.js?v=4.0.587';",
+    "import {requireFreshSession,authIdentityEpoch,currentSession,authorizedFetch} from './auth-service.js?v=4.0.587';",
+    "import {isExactCalibrationModelBinding} from './calibration-eligibility.js?v=4.0.587';",
+  ];
+  let serviceBody=source;for(const line of serviceImports){assert.equal(serviceBody.split(line).length,2);serviceBody=serviceBody.replace(line,'');}
+  serviceBody=serviceBody.replace('export function assertPrivateTripStudyDisplayReport','function assertPrivateTripStudyDisplayReport')
+    .replace('export async function readPrivateTripStudyForOwner','async function readPrivateTripStudyForOwner');
+  const viewer=(mode='normal')=>{
+    const state={owner:'synthetic-owner',epoch:1,active:true,permission:true,reads:0,metadata:0,access:0};
+    const metadata={document_key:key,version:1};
+    const environment={Date,structuredClone,isExactCalibrationModelBinding,PUBLIC_CONFIG:{supabaseUrl:'https://synthetic.supabase.co'},
+      currentSession:()=>({user:{id:state.owner}}),authIdentityEpoch:()=>state.epoch,requireFreshSession:async()=>{},
+      hasPermission:a=>a.permissions.has('full_admin'),myAccess:async()=>{state.access++;return{profile:{id:state.owner,is_active:state.active},permissions:new Set(state.permission?['full_admin']:[])};},
+      authorizedFetch:async(input,init,options)=>{
+        const url=new URL(input);assert.equal(url.pathname,'/rest/v1/admin_documents');assert.equal(url.searchParams.get('select'),'document_key,version');
+        assert.equal(url.searchParams.get('document_key'),'like.trip-weather-study-*');assert.equal(url.searchParams.get('order'),'document_key.desc');
+        assert.equal(url.searchParams.get('limit'),'1');assert.equal(init.cache,'no-store');assert.equal(options.expectedUserId,'synthetic-owner');
+        state.metadata++;const item={...metadata};
+        if(mode==='invalid-key')item.document_key='trip-weather-study-unknown';
+        if(mode==='race'&&state.metadata===2)item.version++;
+        if(mode==='identity'){state.owner='other';state.epoch++;}
+        return{response:{ok:true},body:mode==='absent'?[]:[item]};
+      },
+      readAdminDocumentNow:async selected=>{state.reads++;assert.equal(selected,metadata.document_key);
+        if(mode==='permission')state.permission=false;if(mode==='logout'){state.owner=null;state.epoch++;}
+        const payload=structuredClone(report);if(mode==='payload')payload.extra='SYNTHETIC_FORBIDDEN';
+        if(mode==='period')payload.period=previousClosedAggregateMonth();
+        return mode==='missing'?null:{version:mode==='version'?2:metadata.version,payload};},
+    };
+    const api=vm.runInNewContext(serviceBody+'\n({readPrivateTripStudyForOwner,assertPrivateTripStudyDisplayReport});',environment);
+    return{api,state,metadata,environment};
+  };
+  const v=viewer();assert.deepEqual(await v.api.readPrivateTripStudyForOwner(),report);assert.equal(v.state.metadata,2);assert.equal(v.state.reads,1);
+  // En senere indsat ældre rapport må ikke vælges over den allerede sete nyere måned.
+  const older=previousClosedAggregateMonth(Date.parse(report.period.start));v.metadata.document_key='trip-weather-study-'+older.start.slice(0,7);
+  await assert.rejects(()=>v.api.readPrivateTripStudyForOwner(),/UNAVAILABLE/);assert.equal(v.state.reads,1);
+  for(const mode of ['absent','invalid-key','race','identity','permission','logout','payload','period','version','missing']){
+    const bad=viewer(mode);await assert.rejects(()=>bad.api.readPrivateTripStudyForOwner(),/UNAVAILABLE/);
+    assert(bad.state.reads<=1,'ingen fallback til en anden rapport');
+  }
+  for(const mode of ['inactive','ordinary']){const bad=viewer();if(mode==='inactive')bad.state.active=false;else bad.state.permission=false;
+    await assert.rejects(()=>bad.api.readPrivateTripStudyForOwner(),/UNAVAILABLE/);assert.equal(bad.state.metadata,0);}
+  const uiSource=fs.readFileSync(new URL('../js/ui/admin-private-trip-study.js',import.meta.url),'utf8').replace(/\r\n/g,'\n');
+  let uiBody=uiSource;
+  for(const line of [
+    "import {readPrivateTripStudyForOwner,assertPrivateTripStudyDisplayReport} from '../services/private-trip-study.js?v=4.0.587';",
+    "import {myAccess,hasPermission} from '../services/permissions-service.js?v=4.0.587';",
+    "import {requireFreshSession,authIdentityEpoch,currentSession,onAuthChange} from '../services/auth-service.js?v=4.0.587';",
+  ]){assert.equal(uiBody.split(line).length,2);uiBody=uiBody.replace(line,'');}
+  uiBody=uiBody.replace('export function mountPrivateTripStudyCard','function mountPrivateTripStudyCard');
+  const ui=(mode='normal')=>{
+    const state={owner:'synthetic-owner',epoch:1,permission:true,reads:0,access:0,downloads:[],listeners:new Set()};
+    let document;
+    class Element{
+      constructor(tag){this.tagName=tag;this.children=[];this.parentNode=null;this.dataset={};this.attributes={};this.textContent='';}
+      append(...nodes){for(const node of nodes){node.remove();node.parentNode=this;this.children.push(node);}}
+      remove(){if(this.parentNode)this.parentNode.children=this.parentNode.children.filter(x=>x!==this);this.parentNode=null;}
+      replaceChildren(...nodes){for(const child of [...this.children])child.remove();this.append(...nodes);}
+      get isConnected(){return this===document.body||Boolean(this.parentNode?.isConnected);}
+      setAttribute(k,value){this.attributes[k]=value;}
+      querySelector(selector){return this.children.find(x=>selector==='[data-private-trip-study]'?'privateTripStudy'in x.dataset:x.tagName===selector)
+        ??this.children.map(x=>x.querySelector(selector)).find(Boolean)??null;}
+      click(){if(this.tagName==='a')state.downloads.push(this.download);else return this.onclick?.();}
+    }
+    document={body:new Element('body'),createElement:tag=>new Element(tag)};
+    const host=new Element('section');document.body.append(host);
+    const access=()=>({profile:{id:state.owner,is_active:true},permissions:new Set(state.permission?['full_admin']:[])});
+    const context={Date,Intl,Map,WeakMap,Blob,document,setTimeout:fn=>fn(),URL:{createObjectURL:()=> 'blob:synthetic',revokeObjectURL(){}},
+      requireFreshSession:async()=>{},authIdentityEpoch:()=>state.epoch,currentSession:()=>({user:{id:state.owner}}),
+      onAuthChange:fn=>{state.listeners.add(fn);return()=>state.listeners.delete(fn);},
+      myAccess:async()=>{state.access++;if(mode==='final-permission'&&state.access===2)state.permission=false;return access();},
+      hasPermission:a=>a.permissions.has('full_admin'),assertPrivateTripStudyDisplayReport:viewer().api.assertPrivateTripStudyDisplayReport,
+      readPrivateTripStudyForOwner:async()=>{state.reads++;
+        if(mode==='identity'){state.owner='other';state.epoch++;}if(mode==='detach')host.replaceChildren();
+        if(mode==='failure')throw Error('SYNTHETIC_INTERNAL');return structuredClone(report);},
+    };
+    const mount=vm.runInNewContext(uiBody+'\nmountPrivateTripStudyCard;',context),card=mount(host,access());
+    return{state,host,card,mount,access};
+  };
+  const displayed=ui();await displayed.card.querySelector('button').click();
+  const table=displayed.card.querySelector('table');assert(table);const rows=table.querySelector('tbody').children;
+  assert.equal(rows.length,20);assert.equal(rows.reduce((n,row)=>n+row.children.length-2,0),40);
+  assert.equal(rows[0].children[0].textContent,'Vind (m/s)');assert.equal(rows[0].children[1].textContent,'0–under 4');
+  assert.equal(rows[15].children[1].textContent,'Under −0,1');
+  for(const [metric,offset] of [['windSpeedMs',0],['waveHeightM',5],['currentSpeedMs',10],['waterLevelTrendM3h',15]])
+    for(let i=0;i<5;i++)for(const [outcome,column] of [['find',2],['no-find',3]])
+      assert.equal(rows[offset+i].children[column].textContent,String(report.cells.find(c=>c.cell===metric+':'+i+':'+outcome).noisyCount));
+  assert.match(displayed.card.children[2].textContent,new RegExp(String(new Date(report.period.start).getUTCFullYear())));
+  assert.equal(displayed.state.downloads.length,0);
+  await displayed.card.children.filter(x=>x.tagName==='button')[1].click();
+  assert.deepEqual(displayed.state.downloads,['ravradar-tur-vejrstatistik-'+report.period.start.slice(0,7)+'.json']);
+  assert.equal(displayed.state.reads,2,'JSON-eksport genlæser rapport og adgang, ikke tidligere UI-data');
+  displayed.state.owner=null;displayed.state.epoch++;for(const fn of [...displayed.state.listeners])fn();
+  assert.equal(displayed.card.isConnected,false);assert.equal(displayed.card.querySelector('table'),null);
+  for(const mode of ['identity','detach','final-permission','failure']){
+    const bad=ui(mode);await bad.card.querySelector('button').click();assert.equal(bad.state.downloads.length,0);
+    assert.equal(bad.card.querySelector('table'),null);
+  }
+  const remounted=ui();remounted.mount(remounted.host,remounted.access());assert.equal(remounted.state.listeners.size,1);
+}

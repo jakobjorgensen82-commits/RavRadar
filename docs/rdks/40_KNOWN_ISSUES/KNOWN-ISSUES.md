@@ -1,3 +1,9 @@
+## 24. oktober — lokal månedsrapportvej lukket; drift og anonymitet åbne
+
+Den gamle rapporttransport krævede senest lukkede kalendermåned og afviste dermed et korrekt færdiggjort ældre job. Den afgrænsede rettelse bruger den normale validering af rapportens faktiske lukkede periode og dens insert-only månedsnøgle; ingen ommærkning eller overskrivning af tidligere rapporter. Frisk ejeroversigt og læsbar 20/40-tabel er nu med i den hele normale 29/29-prøve. Fejl, ændret nyeste nøgle/version eller tabt adgang må ikke udløse en ældre cachefallback. Sessionsvis beskyttelse er ikke vedvarende antirollback.
+
+Rapporten er privat og ikke frigivet som offentlig statistik. Fund/ikke-fund er ikke bevis for en god/dårlig oplevelse; støjede gruppetal er ikke præcise turantal eller i sig selv juridisk anonymitetsbevis. Selvrapportering dokumenterer heller ikke autentisk historisk vejr. Gentagne rapporters overlap/differens, faktisk Free-kapacitet, installation og hosted browser er åbne. 004/005-produktionsinstallation er ikke afklaret her, og 006 er ikke installeret af dette arbejde. Statistik og automatisk retention aktiveres ikke; fungerende varsling mangler fortsat. Ingen ny model-/SQL-binding, scoreændring eller produktionshandling følger af det lokale PASS. Ældre status bevares som historik.
+
 ## 24. oktober — lokal jobbinding rettet; statistiklevering og anonymitet er åbne
 
 Den normale fortsættelse kunne vælge et ældre gemt job og derefter sammenligne det med dagens modelbinding. Den særskilte lokale rettelse bevarer hele den oprindelige tuple, udsteder adgang alene efter faktisk databasegenlæsning og kræver samme originale binding gennem alle kvitteringer og sidste VERIFY. Ukendte gamle hashes forbliver et reelt, databevarende afslag; gamle job ommærkes ikke til nye eller springes over for at skjule blokering. Nye job bevarer hele grundlaget til senere programopdateringer inden for samme understøttede schema/policy.

@@ -733,3 +733,56 @@ test('private-study006: deklarationer bevarer nested-importkontrol og re-exporta
   for(const source of ["export { y } from computed;","export * from computed;","export * as ns from computed;"])
     assert.throws(()=>exactRelativeModuleSpecifiers(source,'ordinary.js'),/unparsed static module specifier/);
 });
+
+test('private-study006: privat eksport bevarer hele installationsarm og normale adgangsgrænser',async()=>{
+  const read=async file=>(await fs.readFile(new URL('../'+file,import.meta.url),'utf8')).replace(/\r\n/g,'\n');
+  const sha=text=>crypto.createHash('sha256').update(text).digest('hex');
+  const workflow=await read('.github/workflows/private-trip-weather-study.yml');
+  const validate=source=>{
+    assert.equal(sha(source),'bdde67e93ae059a520e21305af42c1566080faa0da786fc670d7f28dc0285949');
+    const marker='\n  private-study-export:\n';assert.equal(source.split(marker).length,2);
+    const after=source.slice(source.indexOf(marker));
+    assert.match(after,/needs: validate-operation\n    if: \$\{\{ inputs.operation == 'export' \}\}/);
+    assert.match(after,/group: ravradar-trip-storage-production\n      cancel-in-progress: false/);
+    assert.match(after,/timeout-minutes: 5/);
+    assert.match(after,/TRIP_STORAGE_OPERATION: private-study-export/);
+    assert.equal(after.split('run: node scripts/publish-private-trip-weather-study.mjs').length,2);
+    assert.doesNotMatch(after,/allow_00[456]|APPLY_ALLOWED|CLOUDFLARE_API_TOKEN|SUPABASE_DB_PASSWORD|GITHUB_WORKFLOW:|deploy-private-trip-study|upload-artifact/);
+    let original=source.slice(0,source.indexOf(marker));
+    for(const [current,prior] of [
+      ['description: Skrivefri plan, kontrolleret installation med statistik slået fra eller privat rapporteksport',
+        'description: Read-only plan or controlled installation with statistics disabled'],
+      ['options: [plan, deliver, export]','options: [plan, deliver]'],
+      ['plan|deliver|export) ;;','plan|deliver) ;;'],
+    ]){assert.equal(original.split(current).length,2);original=original.replace(current,prior);}
+    assert.equal(sha(original),'b7272558358a939c1142d68cc6b9c79ff1b9953748189329ca2a87c148930548');
+    assert.match(original,/group: ravradar-weather-production-v2\n  queue: max\n  cancel-in-progress: false/);
+    assert.match(original,/supabase\/setup-cli@3c2f5e2ae34c34e428e8e206e2c4d21fa2d20fbf/);
+    assert.match(original,/version: 2\.117\.0/);
+  };
+  validate(workflow);
+  for(const [before,after] of [['default: plan','default: export'],['cancel-in-progress: false','cancel-in-progress: true'],
+    ["inputs.operation == 'export'","inputs.operation != 'deliver'"],['node scripts/publish-private-trip-weather-study.mjs','node scripts/deploy-private-trip-study.mjs']]){
+    assert(workflow.includes(before));assert.throws(()=>validate(workflow.replace(before,after)));
+  }
+  const publisher=await read('scripts/publish-private-trip-weather-study.mjs');
+  assert.equal(sha(publisher),'5b087741711e31ad64401be9a8bbfc4ffb0bfe53bd7e68a50a9fe08cd947d6dc');
+  const dashboard=await read('js/ui/admin-dashboard.js');
+  let original=dashboard;
+  for(const [current,prior] of [
+    ["import { mountPrivateTripStudyCard } from './admin-private-trip-study.js?v=4.0.587';\nimport { analyzeObservations }",'import { analyzeObservations }'],
+    ["content.insertAdjacentHTML('afterbegin',moduleGuide());bindModuleGuide();if(state.tab==='learning')mountPrivateTripStudyCard(content,state.access);}",
+      "content.insertAdjacentHTML('afterbegin',moduleGuide());bindModuleGuide();}"],
+  ]){assert.equal(original.split(current).length,2);original=original.replace(current,prior);}
+  assert.equal(sha(original),'cabbc3c638bf0330fe4b505e69dd72c4892f54753885a2fe0031154cf31daca2');
+  // Faktisk normal render, ikke en alternativ dashboardkalder.
+  const render=dashboard.match(/^function render\(\)\{[^\n]+\}/m)?.[0];assert(render);
+  const start=dashboard.indexOf('function renderLearning(){'),end=dashboard.indexOf('\n\nconst saveBadge=',start);assert(start>=0&&end>start);
+  let mounts=0;
+  const context={state:{tab:'learning',stationMap:null},content:{insertAdjacentHTML(){}},analyzeObservations:()=>({}),
+    activePublicRavScoreState:()=>({ok:false}),activeModelUnavailableCard:()=>'SYNTHETIC_UNAVAILABLE_MODEL',
+    moduleGuide:()=>'',bindModuleGuide(){},destroyCoastlineEditor(){},destroyDirectionMap(){},mountPrivateTripStudyCard(){mounts++;}};
+  for(const name of new Set([...render.matchAll(/(?:\:|\|\|)(render\w+)/g)].map(x=>x[1])))context[name]=()=>{};
+  vm.runInNewContext(dashboard.slice(start,end)+';'+render+';render();',context);assert.equal(mounts,1);
+  context.state.tab='dashboard';vm.runInNewContext('render();',context);assert.equal(mounts,1);
+});

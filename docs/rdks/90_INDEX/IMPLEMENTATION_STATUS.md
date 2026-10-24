@@ -1,3 +1,12 @@
+## 24. oktober — privat rapport fra faktisk afsluttet måned
+
+- [x] Seks gennemgåede produktblade er lokalt sammenført oven på 006-kandidaten: eksisterende kontrolleret eksport, beskyttet insert-only admintransport, frisk ejerlæser, læsbar tabel og de præcise dashboard-/workflowarme. 006-controller, klient, job, scanner, gamle SQL og standard OFF-/plan-grænser bevares.
+- [x] Hele normale account-callers: 29 PASS, 0 FAIL, 0 SKIP på 35,125 sekunder. Rollover importeres én gang; faktisk afsluttet gammel periode føres gennem normal rapporttransport og browserkode. Identitets-, adgangs-, versions-, skriveudfalds- og ingen-tilbagefaldsafslag er med. Ingen separat gentagelse af rollover.
+- [x] Ejeroversigten viser rapportens faktiske måned og 20 rækker/40 støjede fund-/ikke-fund-celler uden individdata, summer, ny estimator eller automatisk scoreændring. JSON-download genlæser adgang og rapport.
+- [ ] Endelige dokument-/modelkontroller og præcis samlet kilde-CI på leveringskandidaten; det lokale resultat er ikke hosted drift.
+- [ ] Faktisk schema-/Workerinventory, kontrolleret OFF-installation/genlæsning og browseraccept i sikkert vindue. Denne rapportvej aktiverer ikke statistik eller en offentlig frigivelse.
+- [ ] Free-kapacitet, samlet anonymitet/overlap, tilladt frigivelse, backupfrister og fungerende varsel før automatisk retention. Alle fem hovedmål er fortsat åbne; skiftende P0-status føres i checkpointet.
+
 ## 24. oktober — statistikjob beholder deres oprindelige binding
 
 - [x] Separat privat kerne, 006-kontroller og parserårsagsrettelse gennemgået og anvendt alene i isoleret normal testvært på ægte 888e-base. 587-kandidaten og produktionen er ikke ændret af denne prøve.

@@ -1,3 +1,10 @@
+## Ikke udgivet — privat ejeroversigt for afsluttede månedsrapporter, uændret 4.0.587
+
+- Gemmer en korrekt afsluttet rapport under dens faktiske lukkede måned, også når et ældre job afsluttes senere. Bevarer originalbinding, frisk samtykke-/slettekontrol, sidste VERIFY og insert-only genlæsning.
+- Tilføjer frisk beskyttet ejeroversigt og en læsbar tabel med de eksisterende 40 støjede celler i 20 rækker. Viser faktisk måned og fund/ikke-fund; ingen enkeltdata, ny estimator, summation eller automatisk RavScore-ændring.
+- Bevarer kontoskift-/logoutafslag, aktuelle full_admin-rettigheder, ingen ældre fallback, OFF/default-plan og den gennemgåede 006-installationsarm.
+- Hele normale account-callers består lokalt med 29/0/0; browsermiljø og transport er syntetiske. Installation, faktisk hosted browser, Free-kapacitet, anonymitet og tilladt statistikfrigivelse er fortsat åbne. Ingen ny version, modelbinding eller SQL-udstedelse.
+
 ## Ikke udgivet — oprindelig modelbinding i statistikjob, uændret 4.0.587
 
 - Bevarer et gemt statistikjobs fulde oprindelige modelgrundlag gennem programopdateringer, alle kvitteringer og sidste genlæsning. Kun serverens faktiske jobvalg giver adgang; nyeste statistikvalg og sletning kontrolleres fortsat. Ukendte gamle hashes bevares og afvises.

@@ -4,10 +4,10 @@ on:
   workflow_dispatch:
     inputs:
       operation:
-        description: Read-only plan or controlled installation with statistics disabled
+        description: Skrivefri plan, kontrolleret installation med statistik slået fra eller privat rapporteksport
         type: choice
         default: plan
-        options: [plan, deliver]
+        options: [plan, deliver, export]
       allow_004:
         description: Allow one exact control0-only004 attempt when absent
         type: boolean
@@ -41,7 +41,7 @@ jobs:
         shell: bash
         run: |
           case "$PRIVATE_STUDY_OPERATION" in
-            plan|deliver) ;;
+            plan|deliver|export) ;;
             *) echo 'PRIVATE_STUDY_OPERATION_INVALID' >&2; exit 1 ;;
           esac
 
@@ -89,3 +89,37 @@ jobs:
             weather-source-proof-v2-${{ runner.os }}-${{ github.sha }}-
       - name: Fixed private-study controller verifies actual source before any write
         run: node scripts/deploy-private-trip-study.mjs
+
+  private-study-export:
+    needs: validate-operation
+    if: ${{ inputs.operation == 'export' }}
+    concurrency:
+      group: ravradar-trip-storage-production
+      cancel-in-progress: false
+    name: Produce only private monthly blob in existing protected admin storage
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      GITHUB_TOKEN: ${{ github.token }}
+      TRIP_STORAGE_OPERATION: private-study-export
+      SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+      SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+      CLOUDFLARE_TRIP_GATEWAY_URL: ${{ secrets.CLOUDFLARE_TRIP_GATEWAY_URL }}
+      TRIP_GATEWAY_SHARED_SECRET: ${{ secrets.TRIP_GATEWAY_SHARED_SECRET }}
+      TRIP_PSEUDONYM_SECRET_V1: ${{ secrets.TRIP_PSEUDONYM_SECRET_V1 }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+      - name: Restore source-content validation locator
+        uses: actions/cache/restore@v6
+        with:
+          path: .cache/weather-source-validation.json
+          key: weather-source-proof-v2-${{ runner.os }}-${{ github.sha }}-${{ github.run_id }}-${{ github.run_attempt }}-private-study-export
+          restore-keys: |
+            weather-source-proof-v2-${{ runner.os }}-${{ github.sha }}-
+      - name: Fixed source and access checks then insert-only protected aggregate blob
+        run: node scripts/publish-private-trip-weather-study.mjs
