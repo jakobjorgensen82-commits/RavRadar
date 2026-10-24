@@ -1,3 +1,10 @@
+## Ikke udgivet — afgrænset DMI-cacheopfølgning på 4.0.586
+
+- Bevarer bedre allerede kvalificerede strømvindere uden at afvise en ellers fuldt gennemgået marin DMI-fil alene på nul numeriske ændringer.
+- Kræver stadig officiel filidentitet, parser/signatur, faktisk targetregister, udfaldsbevis, samplingkvittering og faktiske tuple-/originalbeviser ved normal gemning, ledger og genoptagelse. Scalar-support, WAM og ikke-marine grene ændres ikke.
+- Overfører kun de tre gennemgåede DMI-/testblade; assistent587, modelbindinger, SQL, version, scoreformel, geometri og kildeprioritet er uændrede. Normal lokal målprøve består; egen præcis kilde-/native-kontrol og faktisk vejr-/cacheeffekt er åbne.
+- Registrerer faktisk offentlig almindelig levering og genaktiveret uændret cron, uden at forveksle nul tab på fælles timer med fuld ny prognosehale.
+
 ## Ikke udgivet — frigiv afsluttede arbejdsforløb før offentlig eksport
 
 - Afgrænser den seneste faktiske beregningsfejl til Node/V8-hukommelse efter national originalattestering, før offentlig runtime; ikke en deploy- eller DMI-værdifejl.

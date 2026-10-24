@@ -1,3 +1,11 @@
+## 24. oktober — faktisk nyt offentligt vejr; dækning og kontinuitet er P0
+
+Den almindelige 4.0.586-kørsel har faktisk gemt nye originaler B før S, gennemført Pages og bestået offentlig kontrol. Cron er igen aktiv med uændret firetimersplan. De 100 fælles prognosetimer bevarer alle fem vejrfamilier uden gyldig-til-tom-tab; det frikender ikke mangler i de nye 18 timer. Én sen national time har manglende vind som dominerende scoreafvisning samt særskilte vandstands-/temperaturhuller. Fuld dækning, tilstrækkelig historik og gentagen autonom drift er fortsat åbne. Det private checkpoint er autoritativt for aktuelle kørselstal og identiteter.
+
+Den afgrænsede DMI-opfølgning overfører kun den gennemgåede nulmutationsrettelse og dens normale mål fra assistentkandidaten til eksisterende 586. Den bevarer en allerede bedre kvalificeret strømvinder og accepterer en fuld gennemgang alene med de sædvanlige officielle fil-/parser-/target-/udfalds- og samplingbeviser. Gemning, ledger og genoptagelse kræver stadig faktiske kvalificerede tuples eller normale retained-originalbeviser; en kvittering skaber ingen data. Scalar-support, WAM og ikke-marine mutationskrav består.
+
+Lokalt består den sammenhængende normale målprøve. Præcis egen 586-kilde-/nativekontrol, sikker merge og faktisk efterfølgende vejreffekt er endnu ikke bevist. Ingen ny version, C/I/T, lagrings-ABI, SQL eller genstart følger af denne port. Assistent587, SOURCE og statistikaktivering er parkeret efter ejerens P0-prioritet. Alle fem hovedmål er åbne til 18. november 2026; ældre modstridende status er historik.
+
 ## 23. oktober — aktuel P0: beregnet kandidat stopper på proceshukommelse
 
 PR710 er præcist kildekvalificeret og merget. Den efterfølgende genoptagelse af samme arkiv og mål-time passerede de fire fase-reserver, leverandørkæden og beregningen af alle 673 kystdele. Derefter stoppede Node med faktisk heap-OOM før den offentlige runtime var skrevet. Den tidligere no-loss-barriere for tretten strømpar blev ikke nået i dette forsøg og er derfor ikke frikendt. Ingen ny B/S eller offentlig vejrlevering er bevist.

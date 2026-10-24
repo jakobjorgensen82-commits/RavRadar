@@ -1,3 +1,11 @@
+## 89.265 Gyldige vejrdata kan bevares uden overskrivning
+
+Kort fortalt: En ny gennemgang af en vejrfil behøver ikke ændre en allerede bedre, gyldig strømværdi.
+
+Programmet skal stadig kunne dokumentere den gennemgåede fil, de rigtige kystdele og den bevarede værdis oprindelse. At en fil er gennemgået er ikke i sig selv bevis for, at en manglende time er blevet udfyldt. De samme krav gælder, når data gemmes og bruges ved næste opdatering.
+
+Dækning opgøres over alle forventede timer og zoner for vind, bølger, strøm, vandstand og vandtemperatur. En brugbar score er ikke det samme som komplette data i alle fem kategorier. Bevarede fælles timer og nye timer sidst i prognosen skal vurderes særskilt; ingen kildeprioritet eller beregningsformel ændres af denne bevaring.
+
 ## 89.264 Ny strømhistorik med bevaret arkiv
 
 Kort fortalt: RavRadar kan opbygge strømhistorik fra et nyt tidspunkt uden at ændre tidligere offentliggjorte scorer.

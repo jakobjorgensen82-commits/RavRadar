@@ -1,3 +1,9 @@
+## 24. oktober — bevaret kvalificeret strømvinder gennem cachegenbrug
+
+AKTIVT: En fuldt gennemgået marin DMI-fil kan afsluttes uden numerisk ændring, hvis en bedre allerede kvalificeret strømvinder bevares. Præcist heltalsnul kræver officiel fil-/parser-/signaturidentitet, faktisk targetregister, fuldt kanonisk udfaldsbevis og matchende samplingkvittering. Normal ledger og genoptagelse kræver fortsat faktiske kvalificerede tuples eller retained-originalbeviser. En kvittering må ikke skabe dækning eller opgradere ukendt gridbevis. Privat scalar-support, WAM og ikke-marine grene beholder mutationskravet.
+
+Rettelsen leveres særskilt på installeret 586 uden assistent587, ny modelbinding eller SQL. Kontinuerlig vejrhentning og alle timer/zoners femfamiliedækning har førsteprioritet. Lokalt eller source-grønt er ikke faktisk cachegenbrug eller offentlig effekt.
+
 ## 23. oktober — afsluttede nationale arbejdsforløb skal kunne frigives
 
 AKTIVT: Den normale updater må frigive sin lokale komponent-reference først efter vellykket awaitet holdbar komponentgemning og sin lokale score-reference først efter vellykket awaitet national originalattestering. Begge skal kunne frigives før offentlig eksport. Ingen delt map, originalrække, outputværdi, continuation, historik eller gemt fil må tømmes eller ændres for at frigive hukommelse. En fejl på en af grænserne skal fortsat kastes; uafsluttede ejere må ikke kaldes færdige.
