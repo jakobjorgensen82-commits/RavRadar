@@ -6,6 +6,12 @@ Worker-indgangen og de målrettede normale prøver er lokalt anvendt: 129 tilfæ
 
 Dette tillæg erstatter kun tidligere manglende tilladelse til netop denne Worker, ikke de øvrige leveringsgrænser. Kontinuerligt vejr og dækning er fortsat P0; alle fem hovedmål er åbne til 18. november. Version, modelbinding, SQL og de eksisterende historiske afsnit bevares. Se håndbog 89.268 og det private checkpoint for kvitteringer; skiftende driftsidentiteter hører ikke til i håndbogen.
 
+## 24. oktober — privat 587-sammenføring med P0s køobservation og fair tidsandel
+
+Den præcist kvalificerede 587-kilde på 888e bevares, og de afgrænsede P0-ændringer fra 717 forberedes ovenpå. 716s køobservation er særskilt kildeleveret på den installerede 586-familie; 717s fair tidsandel afventer fortsat sin præcise samlede kontrol og sikre main-levering. Denne private sammenføring er hverken anvendt, prøvet, installeret eller offentliggjort. Fejler 717, må dette efterbillede ikke leveres.
+
+Begge fulde dokumenthistorikker nedenfor bevares. 587s udstedte C98/I97/T12, 66 migrationsfiler, geodata og originale overgangsgrænser ændres ikke. Den endelige ægte Git-sammenføring og dens egen normale native-/kildekontrol er stadig nødvendige; 888es tidligere PASS må ikke genmærkes som samlet bevis. Ingen levering under aktiv writer. Alle fem hovedmål er fortsat åbne.
+
 ## 24. oktober — lokal rettelse af den første havmodels tidsfordeling
 
 To gemte almindelige kørsler viser, at første DKSS-model stoppede efter otte faktisk behandlede filer. De øvrige havmodeller fik længere ture. Den sene vedligeholdelsespassage genoptager ikke resterende kritiske filer. Begrænsningen forklarer derfor forskellen i behandlet filantal, men identificerer ikke i sig selv manglende værdier eller alle prognosehalens årsager.
@@ -22,6 +28,12 @@ Den afgrænsede opfølgning registrerer kun hver DKSS-samlings første faktisk s
 En kritisk fil kan også være en native strømopgradering og beviser derfor ikke et tomt vejrhul på tværs af leverandører. Kø, budgetter, kildevalg, originalkrav og numeriske data ændres ikke. Den større lokale scalar-kandidat medfølger ikke. Version 4.0.586, modelbinding og SQL bevares. Den isolerede normale målprøve består; præcis samlet kildekontrol og observation fra en kommende almindelig kørsel mangler. Bedre dækning påstås ikke. Alle fem mål er fortsat åbne til 18. november; kontinuerligt vejr og reel time-/zonedækning er P0.
 
 
+## 24. oktober — lokal 587-sammenføring med den leverede DMI-kilde
+
+DMI-rettelsen er præcist kildekvalificeret og merget særskilt på den installerede 586-familie. Den senest afsluttede naturlige vejrhentning er offentligt verificeret; den næste almindelige kørsel er ved denne lokale sammenføring fortsat i DMI-arbejdet. Det er ikke offentlig 587, bevist fuld dækning eller en afsluttet assistentlevering. Kontinuerligt vejr og alle forventede timer/zoners dækning har fortsat førsteprioritet; ingen produktionsændring må ske under den aktive writer.
+
+Den særskilte 587-kandidat har bestået sin præcise kildekontrol. Den nye lokale kombination kræver sit eget samlede bevis; den tidligere afbrudte 587+DMI-kontrol er ikke et helt PASS. Alle produktblade, udstedte modelbindinger, migrationsfiler og den eksisterende SQL uden for håndbogsliteralen bevares. Assistentens håndbogsafsnit 89.265 og stabile ID er uændrede; det særskilte DMI-afsnit har 89.267. Begge dokumenthistorikker nedenfor bevares. Installation, hosted AI og faktisk 587-virkning er åbne; alle fem hovedmål er åbne til 18. november 2026.
+
 ## 24. oktober — kontinuerligt vejr først; afgrænset DMI-rettelse på 586
 
 Den almindelige vejrhentning er faktisk leveret med ny offentlig generation, original B før S og offentlig kontrol. Cron er genaktiveret med uændret tidsplan. Det er ikke fuld dækning eller bevist selvstændig drift: de fælles 100 timer har nul tab i alle fem vejrfamilier, mens de nye 18 timer har betydelige mangler. En undersøgt sen national time viser især manglende vindinput; dette må ikke kaldes et generelt tab af strømhistorik eller et rent Limfjordsproblem. Konkrete kørsler og tællinger står i det private checkpoint.
@@ -29,6 +41,16 @@ Den almindelige vejrhentning er faktisk leveret med ny offentlig generation, ori
 P0 er kontinuerlig almindelig vejrhentning og dækning af alle forventede timer/zoner. Assistentlevering, SOURCE-aktivering og statistik venter. Kun de tre gennemgåede DMI-produkt-/testblade overføres fra den særskilte kandidat til installeret 4.0.586. En fuldt gennemgået fil med bevaret bedre kvalificeret strømvinder skal kunne afsluttes, gemmes og genbruges uden numerisk mutation. Faktiske tuple-/originalbeviser, parser, officiel filidentitet, targetregister og samplingkvittering kræves fortsat. Privat scalar-support, WAM og ikke-marine grene får ingen nulmutationsadgang.
 
 Porten ændrer ikke version, C/I/T, SQL-binding, kildeprioritet, adminpunkter, geometri eller scoreformel. Den nye normale kalder-/ledger-/genoptagelsesprøve består lokalt; egen præcis kilde-/native-kontrol og faktisk produktionseffekt er fortsat åbne. Genbrug ikke kandidatens 587-kvalifikation som 586-bevis. Alle fem mål er åbne til 18. november 2026. Ældre modstridende status nedenfor er dateret historik.
+
+## 23. oktober — DMI-filer med gyldige, uændrede strømvindere
+
+Denne lokale DMI-vedligeholdelse bygger på den genuine, kildekvalificerede 587-kandidat. En fuldt gennemgået marin fil må beholde en bedre, allerede kvalificeret strømvinder uden at blive klassificeret som ubehandlet. Ny adgang kræver eksakt kilde, parser, signature, aktuelle target-/registryoplysninger, fuldt udfaldsbevis og matchende samplingkvittering; faktisk tuple-/original-/retained-kontrol består. Den normale gemning, ledger og genoptagelse er prøvet sammen. Modelbindinger, lager-ABI, SQL og øvrige kilderegler ændres ikke. Præcis ny CI/nativekontrol og produktionseffekt står åbne. Daterede P0-/587-statusudsagn nedenfor er historik; faktisk løbende drift og installation skal læses i det private checkpoint.
+
+## 23. oktober — privat587-sammenføring; P0 og levering er fortsat særskilte
+
+Denne lokale587-arbejdsgren sammenfører den udstedte assistentkandidat med P0707s strømstart-, PART-bevarings- og zoneisolationskode. P0707 er fortsat en særskilt kildekandidat under præcis kontrol, ikke en ny offentlig vejrgeneration. 587 er stadig inaktiv og ikke installeret. Ingen test, ny model-/SQL-udstedelse eller produktionshandling er udført som del af denne sammenføring. Begge daterede evidensforløb nedenfor bevares; de bliver ikke et nyt samlet PASS.
+
+P0s håndbogsafsnit89.264 bevares. Det endnu ikke leverede assistentafsnit har nu89.265 med samme stabile ID og tekst. Ejerens godkendte nye strømstart med særskilt arkiv gælder P0;587s senere-H0-installationsgrænse, originale attester, alle65 gamle migrationer og den ene allerede udstedte587-migration bevares. Præcis ny samlet kildekontrol, ægte database-/førskrivningskontrol og faktisk levering/efterfølger er fortsat selvstændige åbne krav.
 
 ## 22. oktober — ny aktiv strømhistorik; samlet lokal rettelse, ikke produktionsbevis
 
@@ -41,6 +63,16 @@ Startgrænsen, fysisk adskillelse og de eksisterende tidsreservers tilkobling er
 Senere afsluttet lokalt: normal syntetisk 210/673-kæde med ny start, almindelig efterfølger og faktisk B/S-gemning/genlæsning består. Den endelige fysiske helper er prøvet særskilt mod samme gemte autentificerede seed; begge bevisers afgrænsning står i IMPLEMENTATION_STATUS og privat checkpoint. Den lille produktkritiske kildegate består. Genkør ikke disse prøver blot for status; næste trin er samlet præcis kildekontrol og sikker levering. Fuld CLI, faktiske leverandørdata og offentlig virkning er ikke dermed bevist.
 
 Supabase Free og Cloudflare Free er et fast driftskrav, også ved fortsat opbygning. Dokumentér faktiske målinger og konservativ fremskrivning før løfte om holdbar gratis drift. En engangsarkivering er ikke en ny arkivering ved hver almindelig kørsel; gentagne nye starter kan derimod akkumulere særskilte arkiver. Ingen betalt plan, automatisk oprydning eller ændret bevaringskrav følger af denne præcisering.
+
+## 22. oktober — SpørgRavRadar 587: sammenhængende lokal kilde og ærlig leveringsgrænse
+
+4.0.587 er en lokal, udstedt kildekandidat, ikke installeret eller offentlig levering. Sidste verificerede offentlige version er fortsat 4.0.586. P0 og den almindelige vejrhentning har førsteprioritet; ROOTs aktuelle private checkpoint afgør PR703-forløbets eksterne slutstatus og genopretning. Denne kandidat afslutter hverken det forløb, cost-PR704s samlede kildekontrol eller den åbne cache-/kapacitets- og økonomibeslutning.
+
+Den isolerede normale kilde samler de gennemgåede assistentprerequisites, semantik, routing, schema2-kalder, undervandsforklaring og enkel identifikationsgrammatik samt den særskilte bindings-prewrite. Gamle rød-/grønne kvitteringer bevares, og afsluttede lokale mål gentages ikke for status. Lokale svar bruger kontrolleret viden; de er ikke hosted AI-bevis. Aktuelle vejrtal kræver fortsat konkret zone og bundne data, og safety/private-afslag, ukendt svar og ingen fundgaranti består.
+
+Faktisk lokal versionssynk har releasedAt 2026-10-22T18:14:03.047Z. Normal C→I→T-konstruktion, udstedelse af version 20261022181403 og 325.470 bytes append-only SQL samt synk af syv forbrugere og alle normale fixedpoint-checks er gennemført. C98/I97/T12 beskriver kildeinventarer, ikke en national vejrmåling. Alle65 gamle SQL-filer er uændrede; begge geodatafiler har kun ændret topversion.
+
+Normal afslutning er dokument-/håndbogssynk, præcis ny source-CI med faktisk ny native PostgreSQL-fase, kontrolleret førstegangs-prewrite på autentisk 586 B/S, SQL-installation/genlæsning og en faktisk strengt senere almindelig generation med bevaret schema2-originalbank og almindelig efterfølger. Generisk kode-only-plan må fortsat kun genlæse allerede installeret NEXT; den giver ikke førsteinstallationsadgang. Ægte 586-forgænger, hele oprindelige B/S-attester, numeriske værdier, historik, kildeprioritet, administratorpunkter, geometri, gamle SQL og afvisninger bevares. Ingen ny historiknulstilling, samme-H0-adgang, implicit statistik/SOURCE-aktivering, sletning, kvoteforøgelse eller offentlig ændring følger af lokal udstedelse. Se håndbog 89.265 og de konkrete 587-pins i MASTER_LOG. Genkør ikke version:set: det ville ændre releasedAt. Alle fem mål er åbne; tidligere afventninger er kun erstattet på de faktisk lokalt gennemførte punkter.
 
 ## 22. oktober — ret den reproducerede fælles restore-forudsætning
 

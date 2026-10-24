@@ -1,6 +1,6 @@
 {
   "schemaVersion": "rav-assistant-public-knowledge-v1",
-  "releaseVersion": "4.0.586",
+  "releaseVersion": "4.0.587",
   "ravScoreModelBinding": {
     "modelId": "RRS-COASTAL-PROCESS-INTEGRATED-1.1.0",
     "stateSchemaVersion": "6.0.0",
@@ -12,7 +12,7 @@
     "bestTimePolicyId": "score-history-water-tie-earliest-v3",
     "presentationPolicyId": "score-bands-35-55-75-exceptional90-v1",
     "modelContractSha256": "a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b",
-    "modelBundleSha256": "6d8f7cca203b5f7ee5155f3c0cdb39403a02fd0eb30fecaca5070ef9f814a805"
+    "modelBundleSha256": "5584d8e59f8d21785fd08b32f9beb22cf879cdb4892a11ede24eb862d9a0dca2"
   },
   "scoreModel": {
     "id": "RRS-COASTAL-PROCESS-INTEGRATED-1.1.0",
@@ -120,6 +120,18 @@
     {
       "id": "transport.grid-not-surf-zone",
       "text": "Per-part verified model-grid current is relative coastal-zone transport evidence. When used, an owner-approved regional proxy and distance are disclosed; it is not a local grid point. RavRadar resolves no surf-zone undertow, feeder or longshore currents, rip currents, or exact bar/channel paths. A causal energy-weighted average of wave direction uses current and earlier hours only, never future hours. With a four-hour half-life, older hours gradually count less. It can attenuate existing supply by up to 15 percent in the 50-percent delivery component and never create or increase supply. It can remove at most 7.5 raw RavScore points before final rounding; the displayed integer can move by 8 points. It is not a physical landing fraction and does not remove structural last-mile uncertainty."
+    },
+    {
+      "id": "transport.grid-evidence-scope",
+      "text": "Per-part verified model-grid current is relative coastal-zone transport evidence. When used, an owner-approved regional proxy and distance are disclosed; it is not a local grid point."
+    },
+    {
+      "id": "transport.local-path-unresolved",
+      "text": "RavRadar resolves no surf-zone undertow, feeder or longshore currents, rip currents, or exact bar/channel paths. Structural last-mile uncertainty remains."
+    },
+    {
+      "id": "transport.wave-approach-attenuation",
+      "text": "A causal energy-weighted average of wave direction uses current and earlier hours only, never future hours. With a four-hour half-life, older hours gradually count less. It can attenuate existing supply by up to 15 percent in the 50-percent delivery component and never create or increase supply. It can remove at most 7.5 raw RavScore points before final rounding; the displayed integer can move by 8 points. It is not a physical landing fraction and does not remove structural last-mile uncertainty."
     },
     {
       "id": "mobilisation.wave-memory",

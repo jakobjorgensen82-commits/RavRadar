@@ -575,7 +575,7 @@ export function diagnoseCurrent586SelectedEndpoints(options = {}) {
 
 async function readCommittedRawCurrentRetention(registry, checkpointFile, productionReferenceAt,
   prepareCachedNativeOriginals = false) {
-  const { verified, conditions, conditionsPath: file, conditionsSha256, verify } =
+  const { verified, conditions, originalConditions, conditionsPath: file, conditionsSha256, verify } =
     await readCurrentPrivateRuntimeCompanionInput(productionReferenceAt);
   if (!checkpointFile) refuse('RETENTION_B_CHANGED');
   const work = await fs.mkdtemp(path.join(os.tmpdir(), 'rr-raw-retention-'));
@@ -587,7 +587,7 @@ async function readCommittedRawCurrentRetention(registry, checkpointFile, produc
     checkpoint = JSON.parse(await fs.readFile(output, 'utf8'));
     if (!isDeepStrictEqual(checkpoint, checkpointFile.json)) refuse('RETENTION_B_S_DIFFER');
   } finally { await fs.rm(work, { recursive: true }); }
-  const protectedCompanionContexts = await readAuthenticatedCurrentCompanions(verified, conditions);
+  const protectedCompanionContexts = await readAuthenticatedCurrentCompanions(verified, originalConditions ?? conditions);
   const parts = Object.entries(registry.zones).flatMap(([zoneId, entries]) => entries.map(part => ({ ...part, zoneId })));
   const preamble = prepareCachedNativeOriginals
     ? await import('./prepare-cached-coherent-current-work.mjs') : null;

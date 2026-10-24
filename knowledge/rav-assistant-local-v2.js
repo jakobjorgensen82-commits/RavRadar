@@ -284,7 +284,7 @@ function materialColourScope(question) {
 // topic. Existing fully covered field compositions still get first refusal.
 export function localRavQuestionRequiresWholeAnswer(question) {
   const text = String(question || '').trim().normalize('NFKC');
-  const starter = String.raw`(?:hvor|hvordan|hvorfor|hvad|hvilk(?:et|en|e)|kan|er|betyder|wo|wie|warum|was|welch(?:e|es|er)|kann(?:st)?|können|ist|bedeutet|where|how|why|what|which|can|is|does)\b`;
+  const starter = String.raw`(?:hvor|hvordan|hvorfor|hvad|hvilk(?:et|en|e)|kan|er|betyder|wo|wie|warum|was|welch(?:e|es|er)|kann(?:st)?|können|ist|bedeutet|garantiert|where|how|why|what|which|can|is|does)\b`;
   const clauses = text.split(new RegExp(
     String.raw`[?？]\s*(?=\p{L})|[,:.;]\s*(?:(?:og|und|and)\s+)?(?=${starter})|\s+(?:og|und|and)\s+(?=${starter})`, 'iu'));
   return clauses.filter(clause => clause.trim()).length > 1;

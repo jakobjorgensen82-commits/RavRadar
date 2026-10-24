@@ -1,9 +1,9 @@
 // INACTIVE HOST-NEUTRAL HANDLER. No Worker/Edge registration, credentials,
 // domain route, scheduled generation, database or image storage is provided.
 // Activation requires a separately reviewed public host and exact route binding.
-import { loadPublicForecastShareSelection } from '../../js/services/data-service.js?v=4.0.586';
+import { loadPublicForecastShareSelection } from '../../js/services/data-service.js?v=4.0.587';
 import { readForecastShare, forecastShareUrl, forecastShareCopy, forecastShareDate,
-  forecastShareScoreText, FORECAST_SHARE_BRAND_PATH } from '../../js/services/forecast-share-contract.js?v=4.0.586';
+  forecastShareScoreText, FORECAST_SHARE_BRAND_PATH } from '../../js/services/forecast-share-contract.js?v=4.0.587';
 
 const PUBLIC_PAGE = 'https://ravradar.dk/';
 const escape = value => String(value).replace(/[&<>"']/g, char => ({
