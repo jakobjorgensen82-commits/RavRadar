@@ -1,10 +1,10 @@
-## 24. oktober — præcis måling af SOURCE-prøvens WAM-afvisning
+## 24. oktober — SOURCE-prøvens WAM-identitet rettet lokalt
 
-Den faktiske SOURCE-kontrol stopper i den syntetiske WAM-starts normale filadgangskontrol. Den præcise indre afvisningsbetingelse er fortsat ukendt; dette er ikke påvist som en fejl i den aktive vejrhentning. Samme fulde fixture beholder alle 121 timer, felter og normale kaldere, men undersøger WAM før de øvrige scalar-/vindopskrifter efter den uændrede strømforberedelse.
+Den bevarede SOURCE-kontrol afviste første WAM-asset i PROVIDERS-H0: 212 krævede mål, 0 accepterede og 212 ASSET_PROVENANCE_MISMATCH. Fixtureasset manglede assetIdentitySha256, så den normale MappingWaveAsset læste tom hash mod RAW-capturens kanoniske hash. Feltet sættes nu med normal asset_identity_sha256(href). Dette er en påvist prøveinputfejl, ikke en produktions-/DMI-fejl.
 
-Fejlrapporten medtager kun faste kategorier og optællinger. Den må kun rapportere godkendelse, når callbacken faktisk har returneret sandt; en afbrydelse før callbacken er ikke godkendelse. De ni normale syntetiske Python-prøver og den normale Node-checkpointprøve inklusive de nye positive/negative JS-forbrugertilfælde består lokalt. Det er ikke ecCodes, PostgreSQL, samlet kildekvalifikation eller en løst WAM-årsag.
+To additive fixture-/testhunks er lokalt anvendt. Den nye prøve bruger de faktiske identitets- og MappingWaveAsset-definitioner for begge WAM-familier og kontrollerer også den gamle manglende-felt-adfærd. ROOTs normale --provider-diagnostic-unit bestod: 10 prøver, EXIT0, 0,702 s (6b93c9). De tidligere ni Python-prøver og Node-checkpointprøven bevares som særskilt historik; den nye prøve afkoder ikke GRIB og beviser ikke native-admission.
 
-Kun fire prøve-/kontrolblade ændres. C157/I153/T12, produktkode, udstedt SQL, gamle originaler, kildeprioritet, scoreformel, administratorpunkter og geometri bevares. Model og alle syv bindinger er genkontrolleret uændrede. SOURCE forbliver inaktiv; faktisk installeret 587 og alle normale kontroller er fortsat forudsætninger. Kontinuerligt vejr og reel dækning er P0, og alle fem hovedmål er åbne.
+Samme rettede fixture bruges for alle 121 offsets i både H0 og H1; felter, kaldere og admissionkrav bevares. Produktkode, 4.0.588, C157/I153/T12, de syv bindinger, udstedt SQL og originaler ændres ikke. Den tidligere ukendte årsag er afklaret på dette konkrete punkt; native H0/H1, efterfølger, PostgreSQL, ny præcis samlet CI, CURRENT, installation og offentlig effekt er fortsat åbne. SOURCE er inaktiv, faktisk installeret 587 er en særskilt forudsætning, kontinuerligt vejr er P0, og alle fem hovedmål er åbne.
 
 ## 4.0.588 — lokal SOURCE-fixtureopfølgning 24. oktober 2026
 

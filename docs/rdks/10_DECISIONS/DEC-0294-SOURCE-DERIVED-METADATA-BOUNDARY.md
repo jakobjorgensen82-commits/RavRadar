@@ -1,6 +1,14 @@
 # DEC-0294 – SOURCE-kode og dens genererede kontrolmetadata
 
-## Lokal opfølgning 23. oktober — faktisk udstedt, endnu ikke kvalificeret eller installeret
+## Lokal opfølgning 24. oktober — påvist WAM-fixtureidentitet, native-forløb fortsat åbent
+
+Den bevarede SOURCE713-kontrol på c94 stoppede i PROVIDERS-H0 ved første wam_nsb-asset: 212 krævede mål, 0 accepterede og 212 ASSET_PROVENANCE_MISMATCH, uden afbrudt decode. scripts/fixtures/source19-current-initial-weather.py manglede assetIdentitySha256 i sit asset. Normal register_raw_cache_asset havde allerede registreret den kanoniske href-hash; official_wave_asset_identity kunne beregne samme fallback uden at ændre asset, mens MappingWaveAsset læste det manglende felt som tom streng. Den uændrede provenancekontrol afviste derfor sammenligningen.
+
+To additive hunks er nu lokalt anvendt: fixturefeltet bruger normal asset_identity_sha256(href), og den eksisterende Python-prøvefil har fået test_initial_wam_asset_uses_normal_canonical_mapping_identity. Prøven udtrækker den faktiske asset-tildeling og de faktiske rene identitets-/MappingWaveAsset-definitioner; begge WAM-familier, kanonisering, uændret input og gammel manglende-felt-adfærd kontrolleres. ROOT kørte det normale --provider-diagnostic-unit én gang med EXIT0: 10 prøver på 0,702 s (6b93c9). Det er ikke en GRIB-decode eller native-admission.
+
+Begge H0/H1-kaldere bruger samme rettede fixture for alle 121 offsets. Den normale updater, admission, model-/kildevalg, 4.0.588, C157/I153/T12, de syv bindinger, lager-ABI og udstedt SQL bevares uden ny udstedelse. Kun den konkrete ukendte WAM-årsag er nu afklaret; de ældre målinger nedenfor bevares som historik. Faktisk native H0/H1, efterfølger, PostgreSQL, ny præcis samlet SOURCE-CI, CURRENT, kontrolleret installation og offentlig effekt er fortsat åbne. SOURCE er inaktiv; installeret 587 er en separat forudsætning, og P0-vejrhentningen påvirkes ikke.
+
+## Historisk lokal opfølgning 23. oktober — faktisk udstedt, endnu ikke kvalificeret eller installeret
 
 Efter den første fejlede SOURCE-nativekontrol er dens første underårsag fortsat ukendt. En separat reproduceret H0-fixturkonflikt er lokalt rettet, og faste H0/H1-fejlprojektioner er sammenkoblet. De normale Python-indgange 7+1 og Node22-checkpointprøven består. De fire ændrede prøve-/nativeblade er uden for de faktiske C157/I153/T12-inventarer, producentinventaret og lager-ABI; denne delta kræver ingen genudstedelse af version, bindinger eller SQL. Ny præcis SOURCE-CI skal stadig udføre sin egen nativefase med EXECUTED, origin=null og eligibleForReuse=false; historisk 586/587-evidens kan ikke erstatte den.
 

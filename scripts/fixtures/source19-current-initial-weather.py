@@ -150,6 +150,7 @@ def add_initial_weather(eccodes, producer, targets, zones, document, reference, 
                 item_id=item_id, item_created_at=text(reference), item_updated_at=text(reference),
                 acquired_at=text(datetime.now(timezone.utc)), expected_size=size, content_sha256=content_sha)
             asset = {"valid": valid, "id": item_id, "href": href, "size": size,
+                     "assetIdentitySha256": producer.asset_identity_sha256(href),
                      "itemCreatedAt": text(reference), "itemUpdatedAt": text(reference)}
             summary = {}
             if collection in producer.WAVE_BOOTSTRAP_COLLECTIONS:

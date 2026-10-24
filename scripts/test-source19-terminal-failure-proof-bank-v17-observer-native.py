@@ -2348,6 +2348,54 @@ class SourceProviderEvidencePureTests(unittest.TestCase):
                 else:
                     self.assertNotIn('wamAdmission', result)
 
+    def test_initial_wam_asset_uses_normal_canonical_mapping_identity(self):
+        # Use the actual fixture assignment and normal pure identity owners.
+        # This does not decode GRIB, invoke admission or claim native success.
+        import ast
+        from datetime import datetime, timezone
+        from types import SimpleNamespace
+        from typing import Any
+        fixture = ROOT / 'scripts/fixtures/source19-current-initial-weather.py'
+        fixture_tree = ast.parse(fixture.read_text(encoding='utf8'))
+        add = next(node for node in fixture_tree.body if isinstance(node, ast.FunctionDef)
+            and node.name == 'add_initial_weather')
+        assignments = [node for node in ast.walk(add) if isinstance(node, ast.Assign)
+            and any(isinstance(target, ast.Name) and target.id == 'asset' for target in node.targets)]
+        self.assertEqual(len(assignments), 1)
+        assignment = compile(ast.Module(body=assignments, type_ignores=[]), str(fixture), 'exec')
+        owner = ROOT / 'scripts/update-dmi-bulk.py'
+        owner_tree = ast.parse(owner.read_text(encoding='utf8'))
+        names = {'asset_identity_sha256', 'MappingWaveAsset'}
+        definitions = [node for node in owner_tree.body
+            if isinstance(node, (ast.FunctionDef, ast.ClassDef)) and node.name in names]
+        self.assertEqual([node.name for node in definitions], ['asset_identity_sha256', 'MappingWaveAsset'])
+        owners = {'hashlib': hashlib, 'Any': Any}
+        exec(compile(ast.Module(body=definitions, type_ignores=[]), str(owner), 'exec'), owners)
+        producer = SimpleNamespace(**{name: owners[name] for name in names})
+        reference = datetime(2026, 10, 24, tzinfo=timezone.utc)
+        text = lambda value: value.strftime('%Y-%m-%dT%H:%M:%SZ')
+        for collection in ('wam_nsb', 'wam_dw'):
+            canonical = 'https://current-source-native.invalid/initial-assets/' + collection + '/2026102400/0.grib'
+            expected = hashlib.sha256(canonical.encode('utf8')).hexdigest()
+            for suffix in ('', '?synthetic=1#synthetic'):
+                with self.subTest(collection=collection, suffix=suffix):
+                    scope = dict(producer=producer, reference=reference, text=text,
+                        valid=text(reference), item_id='SYNTHETIC-INITIAL-' + collection.upper() + '-0',
+                        href=canonical + suffix, size=123)
+                    exec(assignment, scope)
+                    asset = scope['asset']
+                    before = dict(asset)
+                    selected = producer.MappingWaveAsset(asset, text(reference))
+                    self.assertEqual(asset['assetIdentitySha256'], expected)
+                    self.assertEqual(selected.asset_identity_sha256, expected)
+                    self.assertEqual(selected.valid_time, asset['valid'])
+                    self.assertEqual(selected.item_id, asset['id'])
+                    self.assertEqual(selected.model_run, text(reference))
+                    self.assertEqual(asset, before)
+                    missing = dict(asset); del missing['assetIdentitySha256']
+                    self.assertEqual(producer.MappingWaveAsset(missing, text(reference)).asset_identity_sha256, '')
+                    self.assertNotEqual(producer.MappingWaveAsset(missing, text(reference)).asset_identity_sha256, expected)
+
     def test_wam_incomplete_diagnostic_requires_observed_admission(self):
         # Exercise only the fixture's real callback branch with synthetic control
         # flow. No GRIB decoder, provider, native grant or production proof runs.

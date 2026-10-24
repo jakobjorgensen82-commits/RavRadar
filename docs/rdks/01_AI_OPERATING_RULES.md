@@ -1,3 +1,7 @@
+## 24. oktober — påvist WAM-fixtureårsag; native-kvalifikation er åben
+
+SOURCE-startprøvens asset manglede assetIdentitySha256, så normal MappingWaveAsset læste tom hash mod den registrerede kanoniske hash. Kun fixturefeltet og én identitetsprøve er tilføjet; ROOTs normale lokale Python-mål består med 10 prøver (6b93c9, EXIT0, 0,702 s). Se DEC-0294 og den opdaterede WAM-front i CODEX_START_HERE/CURRENT_TRUTH/IMPLEMENTATION_STATUS. Dette er ikke en produktions-/DMI-fejl eller native H0/H1-, CI- eller installationsbevis. 4.0.588, C157/I153/T12, udstedt SQL og gamle originaler bevares; SOURCE er inaktiv, 587-forudsætningen og P0-vejrhentningens særskilte prioritet består.
+
 ## 23. oktober — 4.0.588 lokalt udstedt; SOURCE-kvalifikation og drift er åbne
 
 Den normale SOURCE-workflowport er nu lokalt anvendt på den sammenførte genuine587/P0-kilde. Version:set 4.0.588 er udført præcis én gang og skal ikke gentages for status. Faktisk C157/I153/T12, binding/output, append-only SQL 20261023182922 og normal synk af de syv forbrugere er lokalt udstedt. De fem normale fixedpoint-kontroller sluttede med EXIT0 (5b00d9); dette er lokal kildeudstedelse, ikke SQL-eksekvering eller installation. De fulde pins står i DEC-0294 og CURRENT_TRUTH.
