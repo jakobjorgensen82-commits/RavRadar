@@ -46,6 +46,70 @@ export function assertAssistantBindingPrewriteCaller(){
   for(const [key,value] of Object.entries(e))if(/PREWRITE_(?:VERIFIED|REQUIRED)$/.test(key))assert.notEqual(value,'true');
   requireAssistantLaterH0Output();return requireAssistantLaterH0Binding();
 }
+
+// Observation only: the first owned callsite survives nested cleanup/catches.
+// No raw message, stack, payload, path or caller-provided label is projected.
+const prewriteSites=Object.freeze({
+  CLI:['ARGUMENTS'],SOURCE:['CURRENT_SOURCE'],PATHS:['OWNED_DESTINATION'],
+  PREPARE:['FROZEN_SOURCE','MODULES','CLIENTS','CURRENT_B','B_FAMILY','B_RESTORE','B_DISPOSITION',
+    'B_UNPACK','S_RESTORE','S_DISPOSITION','SNAPSHOT','ORIGINAL_FILES','FRESH_SNAPSHOT','BASELINE_WRITE'],
+  PLAN:['EXACT_MIGRATION_PLAN'],VERIFY:['UNCHANGED_ORIGINALS'],
+});
+const prewriteErrors=new WeakMap();
+const prewriteCategories=Object.freeze({
+  ERR_ASSERTION:'ASSERTION',ENOENT:'FILE_NOT_FOUND',EEXIST:'EXISTING_DESTINATION',
+  EACCES:'FILE_ACCESS',EPERM:'FILE_ACCESS',ELOOP:'FILE_LINK',ENOSPC:'FILE_CAPACITY',
+  EIO:'FILE_IO',ERR_MODULE_NOT_FOUND:'MODULE_UNAVAILABLE',ETIMEDOUT:'TIMEOUT',
+  ABORT_ERR:'ABORTED',ECONNRESET:'TRANSPORT',EPIPE:'TRANSPORT',ENOTFOUND:'TRANSPORT',
+  EAI_AGAIN:'TRANSPORT',ECONNREFUSED:'TRANSPORT',
+  ERR_CHILD_PROCESS_STDIO_MAXBUFFER:'PROCESS_OUTPUT_BOUND',
+  SUPABASE_RESPONSE_BODY_TRANSPORT:'BODY_TRANSPORT',
+  PROTECTED_PRIVATE_RUNTIME_NO_COMPATIBLE_GENERATION:'B_NO_COMPATIBLE_GENERATION',
+  PROTECTED_PRIVATE_RUNTIME_INELIGIBLE:'B_INELIGIBLE',
+  FROZEN586_PREDECESSOR_OLD_FAMILY:'SNAPSHOT_OLD_FAMILY',
+  FROZEN586_PREDECESSOR_PRODUCER_SEMANTICS_CHANGED:'SNAPSHOT_PRODUCER_SEMANTICS',
+  FROZEN586_PREDECESSOR_PRODUCER_POLICY_CHANGED:'SNAPSHOT_PRODUCER_POLICY',
+  FROZEN586_PREDECESSOR_ATTESTATION_REQUIRED:'SNAPSHOT_ATTESTATION',
+  FROZEN586_PREDECESSOR_B_S_DIFFER:'SNAPSHOT_B_S_DIFFER',
+  FROZEN586_PREDECESSOR_S_MISSING:'SNAPSHOT_S_MISSING',
+  FROZEN586_PREDECESSOR_S_VERSION:'SNAPSHOT_S_VERSION',
+  FROZEN586_PREDECESSOR_S_CHANGED:'SNAPSHOT_S_CHANGED',
+  FROZEN586_PREDECESSOR_SOURCE_CHANGED:'SNAPSHOT_SOURCE_CHANGED',
+  FROZEN586_PREDECESSOR_REGISTRY_CHANGED:'SNAPSHOT_REGISTRY_CHANGED',
+  FROZEN586_PREDECESSOR_B_CONDITIONS_CHANGED:'SNAPSHOT_CONDITIONS_CHANGED',
+  FROZEN586_PREDECESSOR_CLOSE_UNPROVED:'SNAPSHOT_CLOSE_UNPROVED',
+});
+const prewriteWeakKey=e=>e!==null&&(typeof e==='object'||typeof e==='function');
+function prewriteCategory(error){
+  try{
+    const descriptor=prewriteWeakKey(error)?Object.getOwnPropertyDescriptor(error,'code'):null;
+    const code=descriptor&&Object.hasOwn(descriptor,'value')?descriptor.value:undefined;
+    if(typeof code==='string'&&Object.hasOwn(prewriteCategories,code))return prewriteCategories[code];
+    if(Number.isInteger(code))return 'PROCESS_EXIT';
+    if(error instanceof SyntaxError)return 'PARSE_SYNTAX';
+  }catch{} // Hostile diagnostic properties never replace the first error.
+  return 'UNCLASSIFIED_ERROR';
+}
+async function prewriteAt(phase,site,work){
+  if(!Object.hasOwn(prewriteSites,phase)||!prewriteSites[phase].includes(site))
+    throw new TypeError('ASSISTANT_PREWRITE_DIAGNOSTIC_SITE_INVALID');
+  try{return await work();}
+  catch(error){
+    if(prewriteWeakKey(error)&&!prewriteErrors.has(error))
+      prewriteErrors.set(error,Object.freeze({kind:'ASSISTANT_BINDING_ORIGINAL_PREWRITE_DIAGNOSTIC',
+        phase,site,category:prewriteCategory(error)}));
+    throw error;
+  }
+}
+function prewriteDiagnostic(error){
+  return (prewriteWeakKey(error)&&prewriteErrors.get(error))||Object.freeze({
+    kind:'ASSISTANT_BINDING_ORIGINAL_PREWRITE_DIAGNOSTIC',phase:'UNKNOWN',site:'UNRECORDED',category:'UNCLASSIFIED_ERROR'});
+}
+function emitPrewriteRefusal(error){
+  console.error('ASSISTANT_BINDING_ORIGINAL_PREWRITE_REFUSED');
+  console.error(JSON.stringify(prewriteDiagnostic(error)));
+}
+
 async function source(fresh=false){
   const binding=assertAssistantBindingPrewriteCaller();await readAssistantLaterH0CanonicalSource();
   assert.equal(ravScoreModelBinding().modelBundleSha256,binding.I);
@@ -111,7 +175,7 @@ async function locations(prepare){
   await noLinks(root);const info=await fs.lstat(root);assert(info.isDirectory()&&(info.mode&0o777)===0o700);
   assert.equal(await fs.realpath(root),root);
   const p={root,bundle:path.join(root,'bundle'),originals:path.join(root,'originals'),
-    originalS:path.join(root,'original-S.json'),baseline:path.join(root,'baseline.json')};
+    originalS:path.join(root,'.cache','ravscore-continuation-checkpoint','checkpoint.json'),baseline:path.join(root,'baseline.json')};
   // Locations select only the already owned originals, never family authority.
   process.env.RAVRADAR_PRIVATE_RUNTIME_ROOT=root;process.env.RAVRADAR_PRIVATE_RUNTIME_BUNDLE=p.bundle;return p;
 }
@@ -140,27 +204,34 @@ async function originalFiles(p,snapshot){
   same(await boundedJson(p.originalS,16*1024*1024),snapshot.checkpoint);
 }
 async function prepare(p){
-  await withAuthenticated586PredecessorSource(async frozenRoot=>{
+  await prewriteAt('PREPARE','FROZEN_SOURCE',()=>withAuthenticated586PredecessorSource(async frozenRoot=>{
     const load=file=>import(pathToFileURL(path.join(frozenRoot,file)).href);
-    const [b,bundle,workflow,model,s]=await Promise.all([
+    const [b,bundle,workflow,model,s]=await prewriteAt('PREPARE','MODULES',()=>Promise.all([
       load('scripts/protected-private-production-runtime.mjs'),load('scripts/private-production-runtime-bundle.mjs'),
       load('scripts/private-production-runtime-workflow.mjs'),load('js/core/ravscore-model-contract.js'),
-      load('scripts/protected-ravscore-continuation-checkpoint.mjs')]);
-    const clients=b.createProtectedPrivateRuntimeClients(),selected=await b.describeCurrentProtectedPrivateProductionRuntime({request:clients.documentRequest});
-    same(selected.modelBinding,model.ravScoreModelBinding());same(selected.contractHashes,await workflow.privateRuntimeContractHashes({repositoryRoot:frozenRoot}));
+      load('scripts/protected-ravscore-continuation-checkpoint.mjs')]));
+    const clients=await prewriteAt('PREPARE','CLIENTS',()=>b.createProtectedPrivateRuntimeClients());
+    const selected=await prewriteAt('PREPARE','CURRENT_B',()=>b.describeCurrentProtectedPrivateProductionRuntime({request:clients.documentRequest}));
+    await prewriteAt('PREPARE','B_FAMILY',async()=>{
+      same(selected.modelBinding,model.ravScoreModelBinding());same(selected.contractHashes,await workflow.privateRuntimeContractHashes({repositoryRoot:frozenRoot}));
+    });
     const expected={modelBinding:selected.modelBinding,contractHashes:selected.contractHashes,datasetId:selected.datasetId,
       productionReferenceAt:selected.productionReferenceAt,generatedAt:selected.generatedAt,bundleContentSha256:selected.bundleContentSha256,
       targetReferenceAt:selected.productionReferenceAt,minimumReferenceAt:selected.productionReferenceAt,minimumGeneratedAt:selected.generatedAt};
-    const restored=await b.restoreProtectedPrivateProductionRuntime({privateRoot:p.root,bundlePath:p.bundle,repositoryRoot:frozenRoot,
-      expected,request:clients.documentRequest,storage:clients.storage});assert.equal(restored.restored,true);assert.equal(restored.rollbackSelected,false);
-    await bundle.restorePrivateProductionRuntimeBundle({privateRoot:p.root,bundlePath:p.bundle,repositoryRoot:frozenRoot,expected,
-      outputPath:p.originals,targetReferenceAt:selected.productionReferenceAt,minimumReferenceAt:selected.productionReferenceAt,minimumGeneratedAt:selected.generatedAt});
-    const saved=await s.restoreProtectedRavScoreContinuationCheckpoint({checkpointPath:p.originalS,targetReference:selected.productionReferenceAt,
-      request:s.createProtectedRavScoreCheckpointRequester()});assert.equal(saved.restored,true);
-  });
-  const handle=await readAuthenticatedFrozen586Predecessor(),snapshot=assertAuthenticatedFrozen586Snapshot(handle);
-  await originalFiles(p,snapshot);await assertAuthenticatedFrozen586SnapshotFresh(handle);
-  await fs.writeFile(p.baseline,JSON.stringify(baseline(snapshot,await centralProof()))+'\n',{flag:'wx',mode:0o600});
+    const restored=await prewriteAt('PREPARE','B_RESTORE',()=>b.restoreProtectedPrivateProductionRuntime({privateRoot:p.root,bundlePath:p.bundle,repositoryRoot:frozenRoot,
+      expected,request:clients.documentRequest,storage:clients.storage}));
+    await prewriteAt('PREPARE','B_DISPOSITION',()=>{assert.equal(restored.restored,true);assert.equal(restored.rollbackSelected,false);});
+    await prewriteAt('PREPARE','B_UNPACK',()=>bundle.restorePrivateProductionRuntimeBundle({privateRoot:p.root,bundlePath:p.bundle,repositoryRoot:frozenRoot,expected,
+      outputPath:p.originals,targetReferenceAt:selected.productionReferenceAt,minimumReferenceAt:selected.productionReferenceAt,minimumGeneratedAt:selected.generatedAt}));
+    const saved=await prewriteAt('PREPARE','S_RESTORE',()=>s.restoreProtectedRavScoreContinuationCheckpoint({checkpointPath:p.originalS,targetReference:selected.productionReferenceAt,
+      request:s.createProtectedRavScoreCheckpointRequester()}));
+    await prewriteAt('PREPARE','S_DISPOSITION',()=>assert.equal(saved.restored,true));
+  }));
+  const handle=await prewriteAt('PREPARE','SNAPSHOT',()=>readAuthenticatedFrozen586Predecessor());
+  const snapshot=await prewriteAt('PREPARE','SNAPSHOT',()=>assertAuthenticatedFrozen586Snapshot(handle));
+  await prewriteAt('PREPARE','ORIGINAL_FILES',()=>originalFiles(p,snapshot));
+  await prewriteAt('PREPARE','FRESH_SNAPSHOT',()=>assertAuthenticatedFrozen586SnapshotFresh(handle));
+  await prewriteAt('PREPARE','BASELINE_WRITE',async()=>fs.writeFile(p.baseline,JSON.stringify(baseline(snapshot,await centralProof()))+'\n',{flag:'wx',mode:0o600}));
   // Identity comparison only. This file can NEVER replace fresh authentication.
 }
 async function plan(){
@@ -211,13 +282,13 @@ async function verify(p){
   await source(true);await assertAuthenticatedFrozen586SnapshotFresh(handle);return checked;
 }
 async function main(){
-  assert.equal(process.argv.length,3);assert(['prepare','plan','verify'].includes(process.argv[2]));
-  await source();const mode=process.argv[2];
-  if(mode==='plan'){await plan();console.log('ASSISTANT_BINDING_EXACT_PLAN_ONLY');return;}
-  const p=await locations(mode==='prepare');
+  await prewriteAt('CLI','ARGUMENTS',()=>{assert.equal(process.argv.length,3);assert(['prepare','plan','verify'].includes(process.argv[2]));});
+  await prewriteAt('SOURCE','CURRENT_SOURCE',()=>source());const mode=process.argv[2];
+  if(mode==='plan'){await prewriteAt('PLAN','EXACT_MIGRATION_PLAN',()=>plan());console.log('ASSISTANT_BINDING_EXACT_PLAN_ONLY');return;}
+  const p=await prewriteAt('PATHS','OWNED_DESTINATION',()=>locations(mode==='prepare'));
   if(mode==='prepare'){await prepare(p);console.log('ASSISTANT_BINDING_ORIGINALS_PRESERVED_NO_ADMISSION');}
-  else console.log(JSON.stringify({kind:'ASSISTANT_BINDING_FRESH_ORIGINALS_VERIFIED_NO_ADMISSION',...await verify(p),privatePayloadIncluded:false}));
+  else console.log(JSON.stringify({kind:'ASSISTANT_BINDING_FRESH_ORIGINALS_VERIFIED_NO_ADMISSION',...await prewriteAt('VERIFY','UNCHANGED_ORIGINALS',()=>verify(p)),privatePayloadIncluded:false}));
 }
-if(process.argv[1]&&path.resolve(process.argv[1])===fileURLToPath(import.meta.url))main().catch(()=>{
-  console.error('ASSISTANT_BINDING_ORIGINAL_PREWRITE_REFUSED');process.exitCode=1;
+if(process.argv[1]&&path.resolve(process.argv[1])===fileURLToPath(import.meta.url))main().catch(error=>{
+  emitPrewriteRefusal(error);process.exitCode=1;
 });

@@ -1,3 +1,9 @@
+## 24. oktober — brugerdata og deling sammenført med begge checkpointrettelser
+
+Den fælles 587-kilde indeholder nu begge afgrænsede checkpointdestinationer og den bevarede første-fejlobservation fra assistentovergangen. Begge ægte forældrehistorikker og alle gamle dokumentafsnit bevares. De fire produktejere er hele fra checkpointrettelsen; den øvrige brugerdata-/delingskode er hel fra dens kvalificerede forælder. Der ændres ikke version, modelbinding, SQL eller geodata.
+
+Brugerdata-/delingsforælderens samlede kontrol er faktisk bestået. Den er ikke den nye slutkompositions kvalifikation: den sammenførte kilde skal bestå sin egen normale kontrol, og tidligere delbeviser ommærkes ikke. Ingen installation, Worker-oprettelse eller offentlig effekt følger af sammenføringen. Den særskilte assistentovergang og dens almindelige efterfølgende vejrgeneration skal først levere offentlig I97. Kontinuerligt vejr er P0; statistik og automatisk sletning er fortsat inaktive, og alle fem hovedmål er åbne.
+
 ## 24. oktober — fælles 587-kandidat for brugerdata og prognosedeling
 
 Den isolerede app-/assistentprøve medtager nu appens egne delings-livstidsbindinger sammen med de faktiske zonefunktioner. Den manglende VM-deklaration er rettet i testen, ikke ved at fjerne produktets oprydning eller skjule fejl. Alle tidligere kontroludsagn bevares; den ekstra regression følger den rigtige lukning, nulstilling og samme fejlkast. Det ændrer ikke appen, viden, modelbindinger, SQL eller den almindelige vejrhentning.
@@ -19,6 +25,12 @@ Ejeren har godkendt netop ravradar-prognosedeling på eksisterende Free/account 
 Den private 006-/ejerrapportkandidat er lokalt sammenført med genuine 587-kilden og de særskilt main-leverede P0-rettelser til DMI-køobservation og fair tidsandel. Dette er ikke præcis samlet kildekvalifikation, installation, aktiveret statistik eller offentlig rapport. Begge grenes fulde historik bevares; de daterede afventninger nedenfor om netop P0-main-leveringerne er historik.
 
 4.0.587, C98/I97/T12, 66 gamle Supabase-migrationer, originale 004/005 og den særskilte 006-kandidats standard OFF-/plan-grænser bevares. De 29 faktisk beståede account-tilfælde er fortsat deres oprindelige bevis, ikke et nyt samlet PASS. Præcis samlet kilde-/nativekontrol, faktisk schema-/Workerinventory, kontrolleret OFF-installation/genlæsning og ejerens browseraccept er åbne. Ingen statistik- eller frigivelsesautoritet følger af sammenføringen. Kontinuerligt vejr og dækningsgrad er P0; alle fem mål er fortsat åbne.
+
+## 24. oktober — afgrænset rettelse af checkpointdestination før assistentbinding
+
+En normal målprøve gennem den ægte, uændrede 586-checkpointlæser reproducerer samme konkrete stifejl både før SQL-installationen og i den efterfølgende almindelige vejrhentnings overgang. Begge aktuelle kaldere vælger nu den normale `.cache/ravscore-continuation-checkpoint/checkpoint.json` under deres allerede ejede midlertidige rod. Læserens sti-, original-, autentificerings- og databevarelseskrav lempes ikke. Prøven bruger begge faktiske destinationskonstruktioner; hver tidligere sti afvises før requester, og begge rettede stier når en syntetisk manglende række uden at oprette filer. Det er ikke bevis for gyldige produktionsoriginaler eller for, at dette var den første fejl i installationsforsøget.
+
+Den afgrænsede første-fejlobservation bevares. Ældre hele kildevarianter og deres importer bevares; den rettede kalder får sin egen præcise kildekontrolsum. Modelbindinger, SQL, geodata, vejrdata, scoreformel, tidsplan og releaseversion 4.0.587 ændres ikke. Håndbogens eksisterende brugerfunktion og den udstedte migrationskopi er uændrede. Samlet kildekontrol, installation, efterfølgende almindelig vejrhentning og offentlig effekt mangler fortsat. Seneste offentlige vejrgeneration er fortsat 586; alle fem hovedmål er åbne.
 
 ## 24. oktober — ÅBEN: første kritiske havmodel afkortes før sin tidsandel
 

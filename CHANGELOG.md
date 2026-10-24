@@ -1,3 +1,9 @@
+## Ikke udgivet — fælles brugerdata-/delingskilde med checkpointrettelser
+
+- Bevarer begge ægte Git-historikker, begge rettede checkpointdestinationer, hele destinationsregressionen og alle tidligere dokumentafsnit.
+- Bevarer hele brugerdata-/delingskoden og alle 66 Supabase-migrationer uden ny version, model-/SQL-udstedelse eller produktionsændring.
+- Den tidligere brugerdata-/delingskilde har bestået sin samlede kontrol; den nye komposition kræver sin egen normale kvalifikation. Offentlig I97 og de særskilte leveringskrav kommer fortsat før brugerdata-/Worker-/UI-levering.
+
 ## Ikke udgivet — ægte fælles kandidat uden nyt model- eller SQL-delta
 
 - Den isolerede app-/assistentprøve medtager appens egne delings-livstidsbindinger. Den rigtige oprydning, nulstilling, fejlkast og alle tidligere kontroludsagn bevares; produktkoden ændres ikke af testrettelsen.
@@ -17,6 +23,12 @@
 Den private 006-/ejerrapportkandidat er lokalt sammenført med genuine 587-kilden og de særskilt main-leverede P0-rettelser til DMI-køobservation og fair tidsandel. Dette er ikke præcis samlet kildekvalifikation, installation, aktiveret statistik eller offentlig rapport. Begge grenes fulde historik bevares; de daterede afventninger nedenfor om netop P0-main-leveringerne er historik.
 
 4.0.587, C98/I97/T12, 66 gamle Supabase-migrationer, originale 004/005 og den særskilte 006-kandidats standard OFF-/plan-grænser bevares. De 29 faktisk beståede account-tilfælde er fortsat deres oprindelige bevis, ikke et nyt samlet PASS. Præcis samlet kilde-/nativekontrol, faktisk schema-/Workerinventory, kontrolleret OFF-installation/genlæsning og ejerens browseraccept er åbne. Ingen statistik- eller frigivelsesautoritet følger af sammenføringen. Kontinuerligt vejr og dækningsgrad er P0; alle fem mål er fortsat åbne.
+
+## Ikke udgivet — korrekt checkpointdestination før assistentbinding på 4.0.587
+
+- Retter de midlertidige scorecheckpointstier både før SQL og i den efterfølgende almindelige vejrhentnings overgang til den dedikerede cachesti, som den uændrede normale læser kræver.
+- Tilføjer én regression gennem den ægte frosne 586-læser og begge kalderes faktiske destinationskonstruktioner: tidligere stier afvises før requester; rettede stier når requester uden at skrive data.
+- Bevarer afgrænset fejlaflæsning, alle tidligere hele importvarianter, modelbindinger, SQL, originaler og sikkerhedskontroller. Lokal reproduktion/rettelse er ikke bevis for installation eller fungerende offentlig assistent.
 
 ## Ikke udgivet — fair tidsandel til første kritiske havmodel på 4.0.586
 
