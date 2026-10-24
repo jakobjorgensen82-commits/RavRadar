@@ -29,7 +29,7 @@ function paths(){
   assert(path.isAbsolute(privateRoot??'')&&path.isAbsolute(bundlePath??'')&&path.dirname(bundlePath)===privateRoot);
   const rel=path.relative(ROOT,privateRoot);assert(rel==='..'||rel.startsWith('..'+path.sep)||path.isAbsolute(rel));
   return {privateRoot,bundlePath,sourceRoot:path.join(privateRoot,'assistant586-original'),
-    workRoot:path.join(privateRoot,'assistant586-working'),originalSPath:path.join(privateRoot,'assistant586-original-checkpoint.json'),descriptorPath:path.join(privateRoot,'assistant586-original-descriptor.json')};
+    workRoot:path.join(privateRoot,'assistant586-working'),originalSPath:path.join(privateRoot,CP),descriptorPath:path.join(privateRoot,'assistant586-original-descriptor.json')};
 }
 async function inventory(root){const rows=[];
   for(const file of await assertExactRuntimeInventory(root)){
