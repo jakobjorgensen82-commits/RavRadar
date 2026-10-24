@@ -8,6 +8,8 @@ Dækning opgøres over alle forventede timer og zoner for vind, bølger, strøm,
 
 ## 89.266 Beregningskode og genererede kontroloplysninger
 
+En fejlrapport må kun påstå, at en kontrol har godkendt data, når dens faktiske udfald er observeret. En afbrydelse før kontrollen er ikke en godkendelse. Faste fejlkategorier og optællinger kan forbedre en intern fejlanalyse uden at udlevere rådata; de er ikke bevis for en løst bagvedliggende fejl eller ny offentlig drift.
+
 Status 24. oktober: En kunstig startprøve dækkede kun de lokale kystdeles punkter, men den normale datalæser undersøger også hele zoners punkter og deres faste nabopunkter. Prøvens gitter omslutter nu alle disse faktiske opslag. Produktionslæseren, administratorens punkter, afstanden mellem prøvepunkterne, tidsbudgetter, bindinger og gamle databasekilder er uændrede. Lokal kodegennemgang er ikke en faktisk bestået native- eller GitHub-kontrol og ændrer ikke produktionen. Den kildekvalificerede, mergede DMI-rettelse på main er et særskilt P0-forløb; dens driftseffekt skal vurderes ved en almindelig vejrhentning.
 
 Et historisk, kunstigt prøveforløb skal holde sin prøveklokke adskilt fra faktiske hentetider. En tom kildestage i den historiske H0-prøve bruger nu sin udtrykkelige referencetid; almindelige forløb og H1 bruger fortsat den faktiske klokke. Den normale tidsgrænse og ægte leverandørtider bevares. Fejlrapporten skelner de faste underforløb og medtager kun kvalificerede kildepositioner, aldrig rå private oplysninger. De afgrænsede normale Python- og JavaScript-prøver består lokalt; samlet kilde- og databasekvalifikation samt installation er fortsat åbne.

@@ -7,8 +7,10 @@ from __future__ import annotations
 
 import copy
 import hashlib
+import json
 import math
 import os
+import sys
 from datetime import datetime, timedelta, timezone
 
 
@@ -70,6 +72,45 @@ def grid(eccodes, producer, decode_zones, reference, offset, destination, collec
         os.fsync(output.fileno())
 
 
+WAM_REJECTION_CODES = (
+    "INVALID_WAVE_TUPLE", "MISSING_WAVE_DIRECTION", "INVALID_WAVE_DIRECTION",
+    "ASSET_PROVENANCE_MISMATCH", "INVALID_WAVE_PROVENANCE",
+)
+
+
+def wave_admission_diagnostic(producer, collection, offset, measured, outcome, admitted, reason):
+    """Fixed observation only: no target, lineage, field value or admission grant."""
+    def count(value):
+        return value if type(value) is int and 0 <= value <= 1_000_000 else None
+    rejected = measured.get("rejectedByCode")
+    rejected_known = type(rejected) is dict
+    rejected = rejected if rejected_known else {}
+    return {"kind": "SOURCE_INITIAL_WAM_ADMISSION_DIAGNOSTIC", "collection": collection,
+        "hourOffset": offset, "reason": reason, "admitted": admitted,
+        "summary": {**{key: count(measured.get(key)) for key in (
+            "requiredCount", "acceptedCount", "rejectedCount", "acceptedLineageCount",
+            "acceptedLineageEvidenceCount")},
+            "rejectedByCode": {key: count(rejected.get(key, 0)) if rejected_known else None
+                               for key in WAM_REJECTION_CODES},
+            "rejectedByCodeKnown": rejected_known,
+            "unknownRejectionCodeCount": count(len(set(rejected) - set(WAM_REJECTION_CODES))) if rejected_known else None,
+            "coherent": producer.wave_asset_cache_proof_coherent(measured),
+            "complete": producer.wave_asset_cache_proof_coherent(measured, require_complete=True)},
+        "outcome": {"hasHeight": "significant-wave-height" in outcome[0],
+            "hasPeriod": "dominant-wave-period" in outcome[0], "hasDirection": "mean-wave-dir" in outcome[0],
+            "parameterCount": count(len(outcome[0])), "touchedCount": count(len(outcome[1])),
+            "interrupted": outcome[2], "messagesSeen": count(outcome[3]), "zoneLookups": count(outcome[4])},
+        "privatePayloadIncluded": False}
+
+
+def emit_wave_admission_diagnostic(*args):
+    try:
+        print(json.dumps(wave_admission_diagnostic(*args), separators=(",", ":"), allow_nan=False),
+              file=sys.stderr, flush=True)
+    except BaseException:
+        pass  # Observation failure must not replace the real admission result.
+
+
 def add_initial_weather(eccodes, producer, targets, zones, document, reference, out, originals):
     """Only provider INPUT leaves; normal updater must still prove 210/673 READY.
 
@@ -80,12 +121,14 @@ def add_initial_weather(eccodes, producer, targets, zones, document, reference, 
     need(reference.tzinfo is not None and reference.minute == reference.second == 0, "REFERENCE")
     diagnostics = document["diagnostics"]
     recipes = {
-        "dkss_nsbs": ((82, .2, "sea-mean-deviation"), (80, 285.15, "water-temperature")),
-        "harmonie_dini_sf": (("10u", 5., "wind-u-10m"), ("10v", 2., "wind-v-10m")),
+        # Same actual full-fixture admission, before 242 scalar/wind assets.
+        # The provider has already decoded and verified its 121 current hours.
         "wam_nsb": (("swh", .6, "significant-wave-height"), ("pp1d", 6., "dominant-wave-period"),
                     ("mwd", 90., "mean-wave-dir")),
         "wam_dw": (("swh", .6, "significant-wave-height"), ("pp1d", 6., "dominant-wave-period"),
                    ("mwd", 90., "mean-wave-dir")),
+        "dkss_nsbs": ((82, .2, "sea-mean-deviation"), (80, 285.15, "water-temperature")),
+        "harmonie_dini_sf": (("10u", 5., "wind-u-10m"), ("10v", 2., "wind-v-10m")),
     }
     observations = []
     for collection, fields in recipes.items():
@@ -116,18 +159,29 @@ def add_initial_weather(eccodes, producer, targets, zones, document, reference, 
                 need(identity is not None, "NORMAL_OFFICIAL_WAVE_IDENTITY")
                 selected = producer.MappingWaveAsset(asset, text(reference), official_identity=identity)
                 before = copy.deepcopy(document)
+                admission_result = None
 
                 def admit(staged, _private, outcome):
+                    nonlocal admission_result
                     measured = producer.private_wave_bootstrap_asset_summary(staged, relevant, collection, selected)
                     summary.clear()
                     summary.update(measured)
-                    return producer.operational_wave_asset_stage_admissible(
+                    admitted = producer.operational_wave_asset_stage_admissible(
                         before, staged, relevant, collection, selected, measured, outcome)
+                    admission_result = admitted
+                    if not admitted:
+                        emit_wave_admission_diagnostic(producer, collection, offset, measured, outcome,
+                            admitted, "STAGE_ADMISSION_FALSE")
+                    return admitted
 
                 outcome = producer.process_grib_transactionally(file, collection, text(reference), valid,
                     decode_zones, document, diagnostics, allowed_parameters={row[2] for row in fields},
                     stage_validator=admit, locked_operational_reference=text(reference))
-                need(producer.wave_asset_cache_proof_coherent(summary, require_complete=True),
+                complete = producer.wave_asset_cache_proof_coherent(summary, require_complete=True)
+                if not complete and admission_result is True:
+                    emit_wave_admission_diagnostic(producer, collection, offset, summary, outcome,
+                        admission_result, "NATIVE_OWNER_INCOMPLETE")
+                need(complete,
                      "NORMAL_WAVE_NATIVE_OWNER_NOT_COMPLETE")
                 run = document.setdefault("runs", {}).setdefault(collection, {})
                 run.update(referenceTime=text(reference), parserVersion=producer.PARSER_VERSION,

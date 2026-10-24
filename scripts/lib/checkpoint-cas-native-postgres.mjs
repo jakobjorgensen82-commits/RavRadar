@@ -127,9 +127,35 @@ export function currentSourceNativeFirstFailure(stdout){
 }
 const SOURCE_PROVIDER_NEED_CODES=new Set(["CURRENT_NATIVE_PROVIDER_ABSOLUTE_PATH","CURRENT_NATIVE_PROVIDER_ADMIN_COPY_CHANGED","CURRENT_NATIVE_PROVIDER_ADMIN_INPUT_MISSING","CURRENT_NATIVE_PROVIDER_BASIS_DESTINATION_EXISTS","CURRENT_NATIVE_PROVIDER_CLEAN_NATIVE_ACQUISITION_MODE","CURRENT_NATIVE_PROVIDER_ECCODES_REQUIRED","CURRENT_NATIVE_PROVIDER_EMPTY_NORMAL_STATION_SOURCE_REQUIRED","CURRENT_NATIVE_PROVIDER_EXACT_INITIAL_PHASE","CURRENT_NATIVE_PROVIDER_EXACT_INITIAL_PHASE_ARGUMENT","CURRENT_NATIVE_PROVIDER_EXACT_NODE_TARGET_ARGUMENTS","CURRENT_NATIVE_PROVIDER_EXISTING_FIXTURE_DIRECTORY","CURRENT_NATIVE_PROVIDER_EXISTING_OWNED_HOST","CURRENT_NATIVE_PROVIDER_EXTERNAL_NETWORK_REFUSED","CURRENT_NATIVE_PROVIDER_GRID_BOUND","CURRENT_NATIVE_PROVIDER_LINUX_PYTHON312_REQUIRED","CURRENT_NATIVE_PROVIDER_NODE24_REQUIRED","CURRENT_NATIVE_PROVIDER_NORMAL_BASIS_OUTPUT_MISSING","CURRENT_NATIVE_PROVIDER_NORMAL_BULK_READBACK","CURRENT_NATIVE_PROVIDER_NORMAL_CAPTURE_MISSING","CURRENT_NATIVE_PROVIDER_NORMAL_COPERNICUS_RESIDUALS_REQUIRE_DATA","CURRENT_NATIVE_PROVIDER_NORMAL_DECODE_INCOMPLETE","CURRENT_NATIVE_PROVIDER_NORMAL_DECODE_OUTCOMES_INCOMPLETE","CURRENT_NATIVE_PROVIDER_NORMAL_LEDGER_NOT_READY","CURRENT_NATIVE_PROVIDER_NORMAL_MODULE","CURRENT_NATIVE_PROVIDER_NORMAL_NATIVE_PAIR_REJECTED","CURRENT_NATIVE_PROVIDER_NORMAL_PART_TARGETS","CURRENT_NATIVE_PROVIDER_NORMAL_REGISTRY_210_673","CURRENT_NATIVE_PROVIDER_NO_ADOPTED_OLD_BULK","CURRENT_NATIVE_PROVIDER_RAW_CHANGED_AFTER_DECODE","CURRENT_NATIVE_PROVIDER_SAME_ACTION_RUNNER_TEMP","CURRENT_NATIVE_PROVIDER_STAC_HOST","CURRENT_NATIVE_PROVIDER_STAC_PAGE_BOUND","CURRENT_NATIVE_PROVIDER_STAC_ROUTE","CURRENT_NATIVE_PROVIDER_SYMLINK","CURRENT_NATIVE_PROVIDER_TARGET_HOUR","CURRENT_NATIVE_PROVIDER_WRITE_READBACK"]);
 const SOURCE_PROVIDER_SIGNALS=new Map([[-1,'SIGHUP'],[-2,'SIGINT'],[-3,'SIGQUIT'],[-6,'SIGABRT'],[-9,'SIGKILL'],[-11,'SIGSEGV'],[-13,'SIGPIPE'],[-15,'SIGTERM']]);
+function sourceInitialWamAdmissionValid(value){
+  // A fixed failed-admission observation, never a SQL/native/PASS grant.
+  try{
+    const exact=(item,keys)=>item!==null&&typeof item==='object'&&!Array.isArray(item)
+      &&Object.keys(item).sort().join(',')===[...keys].sort().join(',');
+    if(!exact(value,['kind','collection','hourOffset','reason','admitted','summary','outcome','privatePayloadIncluded'])
+      ||value.kind!=='SOURCE_INITIAL_WAM_ADMISSION_DIAGNOSTIC'||!['wam_nsb','wam_dw'].includes(value.collection)
+      ||!Number.isSafeInteger(value.hourOffset)||value.hourOffset<0||value.hourOffset>120
+      ||typeof value.admitted!=='boolean'||value.privatePayloadIncluded!==false)return false;
+    const counts=['requiredCount','acceptedCount','rejectedCount','acceptedLineageCount','acceptedLineageEvidenceCount'];
+    const rejected=['INVALID_WAVE_TUPLE','MISSING_WAVE_DIRECTION','INVALID_WAVE_DIRECTION','ASSET_PROVENANCE_MISMATCH','INVALID_WAVE_PROVENANCE'];
+    const {summary,outcome}=value;
+    if(!exact(summary,[...counts,'rejectedByCode','rejectedByCodeKnown','unknownRejectionCodeCount','coherent','complete'])
+      ||!exact(summary.rejectedByCode,rejected)
+      ||!['rejectedByCodeKnown','coherent','complete'].every(key=>typeof summary[key]==='boolean')
+      ||!exact(outcome,['hasHeight','hasPeriod','hasDirection','parameterCount','touchedCount','interrupted','messagesSeen','zoneLookups'])
+      ||!['hasHeight','hasPeriod','hasDirection','interrupted'].every(key=>typeof outcome[key]==='boolean'))return false;
+    const numbers=[...counts.map(key=>summary[key]),summary.unknownRejectionCodeCount,
+      ...Object.values(summary.rejectedByCode),...['parameterCount','touchedCount','messagesSeen','zoneLookups'].map(key=>outcome[key])];
+    if(!numbers.every(item=>item===null||Number.isSafeInteger(item)&&item>=0&&item<=1_000_000))return false;
+    return value.reason==='STAGE_ADMISSION_FALSE'&&value.admitted===false
+      ||value.reason==='NATIVE_OWNER_INCOMPLETE'&&value.admitted===true&&summary.complete===false;
+  }catch{return false;}
+}
 export function nativeProviderProcessFirstFailure(value){
   try{
-    if(!value||Object.keys(value).sort().join(',')!=='boundary,kind,phase,privatePayloadIncluded,returncode,signal,stderr,stdout'
+    const keys=value&&Object.keys(value).sort().join(',');
+    if(!value||!['boundary,kind,phase,privatePayloadIncluded,returncode,signal,stderr,stdout',
+        'boundary,kind,phase,privatePayloadIncluded,returncode,signal,stderr,stdout,wamAdmission'].includes(keys)
       ||value.kind!=='SOURCE_PROVIDER_PROCESS_FIRST_FAILURE'||!['PROVIDERS','PROVIDERS-H0','PROVIDERS-H1'].includes(value.phase)||value.privatePayloadIncluded!==false)return null;
     const code=value.returncode;
     if(code!==null&&(!Number.isSafeInteger(code)||code<-(2**31)||code>=2**31))return null;
@@ -141,6 +167,8 @@ export function nativeProviderProcessFirstFailure(value){
         if(stream.bytes===null||stream.bytes>16*1024*1024||typeof stream.sha256!=='string'||!/^[a-f0-9]{64}$/.test(stream.sha256))return null;
       }else if(stream.sha256!==null)return null;
     }
+    if(Object.hasOwn(value,'wamAdmission')&&(!['PROVIDERS-H0','PROVIDERS-H1'].includes(value.phase)
+      ||code===0||!value.stderr.complete||!sourceInitialWamAdmissionValid(value.wamAdmission)))return null;
     const boundary=value.boundary;
     if(boundary!==null){
       if(!value.stderr.complete||Object.keys(boundary).sort().join(',')!=='callsite,exceptionType,helper,kind,privatePayloadIncluded,reason,timeoutSeconds'

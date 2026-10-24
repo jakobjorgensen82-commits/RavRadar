@@ -423,6 +423,42 @@ if (!process.argv.includes('--native-postgres') && !process.argv.includes('--nat
       const later={kind:'SOURCE_LEGACY_CHILD_FIRST_FAILURE',phase:'UNKNOWN',exceptionType:'ASSERTION_ERROR',
         osError:'NONE',callsite:null,privatePayloadIncluded:false};
       assert.deepEqual(nativePostgresChildFirstFailure(JSON.stringify(value)+'\n'+JSON.stringify(later),''),value);
+      if(phase!=='PROVIDERS'){
+        for(const [collection,hourOffset] of [['wam_nsb',0],['wam_dw',120]]){
+          for(const [reason,admitted] of [['STAGE_ADMISSION_FALSE',false],['NATIVE_OWNER_INCOMPLETE',true]]){
+            const summary={requiredCount:7,acceptedCount:0,rejectedCount:7,acceptedLineageCount:0,
+              acceptedLineageEvidenceCount:0,rejectedByCode:{INVALID_WAVE_TUPLE:0,MISSING_WAVE_DIRECTION:0,
+                INVALID_WAVE_DIRECTION:0,ASSET_PROVENANCE_MISMATCH:0,INVALID_WAVE_PROVENANCE:7},
+              rejectedByCodeKnown:true,unknownRejectionCodeCount:0,coherent:false,complete:false};
+            const outcome={hasHeight:true,hasPeriod:true,hasDirection:true,parameterCount:3,touchedCount:0,
+              interrupted:false,messagesSeen:3,zoneLookups:21};
+            const wamAdmission={kind:'SOURCE_INITIAL_WAM_ADMISSION_DIAGNOSTIC',collection,hourOffset,reason,
+              admitted,summary,outcome,privatePayloadIncluded:false};
+            const observed={...value,wamAdmission};
+            assert.deepEqual(nativeProviderProcessFirstFailure(observed),observed);
+            assert.deepEqual(nativePostgresChildFirstFailure(JSON.stringify(observed)+'\n'+JSON.stringify(later),''),observed);
+            for(const bad of [
+              {...observed,phase:'PROVIDERS'}, {...observed,returncode:0}, {...observed,raw:'PRIVATE'},
+              {...observed,wamAdmission:{...wamAdmission,raw:'PRIVATE'}},
+              {...observed,wamAdmission:{...wamAdmission,admitted:!admitted}},
+              {...observed,wamAdmission:{...wamAdmission,summary:{...summary,raw:'PRIVATE'}}},
+              {...observed,wamAdmission:{...wamAdmission,outcome:{...outcome,raw:'PRIVATE'}}},
+              {...observed,wamAdmission:{...wamAdmission,summary:{...summary,acceptedCount:-1}}},
+              {...observed,wamAdmission:{...wamAdmission,summary:{...summary,unknownRejectionCodeCount:0.5}}},
+              {...observed,wamAdmission:{...wamAdmission,summary:{...summary,
+                rejectedByCode:{...summary.rejectedByCode,INVALID_WAVE_PROVENANCE:1_000_001}}}},
+              {...observed,wamAdmission:{...wamAdmission,summary:{...summary,
+                rejectedByCode:{...summary.rejectedByCode,PRIVATE:0}}}},
+              {...observed,wamAdmission:{...wamAdmission,outcome:{...outcome,messagesSeen:true}}},
+              {...observed,wamAdmission:{...wamAdmission,outcome:{...outcome,touchedCount:'PRIVATE'}}},
+              ...(admitted?[{...observed,wamAdmission:{...wamAdmission,summary:{...summary,complete:true}}}]:[]),
+            ]){
+              assert.equal(nativeProviderProcessFirstFailure(bad),null);
+              assert.equal(nativePostgresChildFirstFailure(JSON.stringify(bad),''),null);
+            }
+          }
+        }
+      }
       for(const bad of [
         {...value,phase:'PROVIDERS-H2'}, {...value,phase:'providers-h0'}, {...value,raw:'PRIVATE'},
         {...value,stderr:{bytes:1,complete:false,sha256:null}},

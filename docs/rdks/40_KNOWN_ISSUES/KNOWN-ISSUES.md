@@ -1,3 +1,11 @@
+## 24. oktober — præcis måling af SOURCE-prøvens WAM-afvisning
+
+Den faktiske SOURCE-kontrol stopper i den syntetiske WAM-starts normale filadgangskontrol. Den præcise indre afvisningsbetingelse er fortsat ukendt; dette er ikke påvist som en fejl i den aktive vejrhentning. Samme fulde fixture beholder alle 121 timer, felter og normale kaldere, men undersøger WAM før de øvrige scalar-/vindopskrifter efter den uændrede strømforberedelse.
+
+Fejlrapporten medtager kun faste kategorier og optællinger. Den må kun rapportere godkendelse, når callbacken faktisk har returneret sandt; en afbrydelse før callbacken er ikke godkendelse. De ni normale syntetiske Python-prøver og den normale Node-checkpointprøve inklusive de nye positive/negative JS-forbrugertilfælde består lokalt. Det er ikke ecCodes, PostgreSQL, samlet kildekvalifikation eller en løst WAM-årsag.
+
+Kun fire prøve-/kontrolblade ændres. C157/I153/T12, produktkode, udstedt SQL, gamle originaler, kildeprioritet, scoreformel, administratorpunkter og geometri bevares. Model og alle syv bindinger er genkontrolleret uændrede. SOURCE forbliver inaktiv; faktisk installeret 587 og alle normale kontroller er fortsat forudsætninger. Kontinuerligt vejr og reel dækning er P0, og alle fem hovedmål er åbne.
+
 ## 24. oktober — SOURCE-startprøvens grid; native-kvalifikation er åben
 
 Den syntetiske startprøves gitter var bygget omkring kystdelenes vandpunkter alene. Den normale datalæser undersøger også hele zoners punkter og sine faste nabopunkter, og et normalt opslag kunne derfor falde uden for prøvegridet. Prøveinputtet dækker nu collectionens faktiske decode-rækker med både parent/PART og hele det normale probe-område.

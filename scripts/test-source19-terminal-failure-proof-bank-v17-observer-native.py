@@ -2205,6 +2205,40 @@ def source_provider_boundary_valid(value):
         return False
 
 
+def source_initial_wam_admission_valid(value):
+    # Fixed diagnostic only. Invalid/incoherent counts may remain null/false;
+    # this schema never turns an admission refusal into native success.
+    try:
+        if (type(value) is not dict or set(value) != {'kind', 'collection', 'hourOffset', 'reason',
+                'admitted', 'summary', 'outcome', 'privatePayloadIncluded'}
+                or value['kind'] != 'SOURCE_INITIAL_WAM_ADMISSION_DIAGNOSTIC'
+                or value['collection'] not in ('wam_nsb', 'wam_dw')
+                or type(value['hourOffset']) is not int or not 0 <= value['hourOffset'] <= 120
+                or type(value['admitted']) is not bool or value['privatePayloadIncluded'] is not False):
+            return False
+        summary, outcome = value['summary'], value['outcome']
+        counts = ('requiredCount', 'acceptedCount', 'rejectedCount', 'acceptedLineageCount', 'acceptedLineageEvidenceCount')
+        rejected = ('INVALID_WAVE_TUPLE', 'MISSING_WAVE_DIRECTION', 'INVALID_WAVE_DIRECTION',
+                    'ASSET_PROVENANCE_MISMATCH', 'INVALID_WAVE_PROVENANCE')
+        if (type(summary) is not dict or set(summary) != {*counts, 'rejectedByCode',
+                'rejectedByCodeKnown', 'unknownRejectionCodeCount', 'coherent', 'complete'}
+                or type(summary['rejectedByCode']) is not dict or set(summary['rejectedByCode']) != set(rejected)
+                or any(type(summary[key]) is not bool for key in ('rejectedByCodeKnown', 'coherent', 'complete'))
+                or type(outcome) is not dict or set(outcome) != {'hasHeight', 'hasPeriod', 'hasDirection',
+                    'parameterCount', 'touchedCount', 'interrupted', 'messagesSeen', 'zoneLookups'}
+                or any(type(outcome[key]) is not bool for key in ('hasHeight', 'hasPeriod', 'hasDirection', 'interrupted'))):
+            return False
+        numbers = [*(summary[key] for key in counts), summary['unknownRejectionCodeCount'],
+            *summary['rejectedByCode'].values(), *(outcome[key] for key in
+                ('parameterCount', 'touchedCount', 'messagesSeen', 'zoneLookups'))]
+        if any(item is not None and (type(item) is not int or not 0 <= item <= 1_000_000) for item in numbers):
+            return False
+        return ((value['reason'] == 'STAGE_ADMISSION_FALSE' and value['admitted'] is False)
+            or (value['reason'] == 'NATIVE_OWNER_INCOMPLETE' and value['admitted'] is True and summary['complete'] is False))
+    except (KeyError, TypeError):
+        return False
+
+
 def source_provider_process_failure(result, own, *, phase='PROVIDERS'):
     # The existing subprocess/files are already closed+fsynced before this read.
     # Oversized/missing/changed streams stay incomplete and yield no parsed cause.
@@ -2232,7 +2266,7 @@ def source_provider_process_failure(result, own, *, phase='PROVIDERS'):
             except (OSError, ValueError, AssertionError, RuntimeError):
                 pass
             streams[name] = meta
-        boundary = None
+        boundary, wam_admission = None, None
         if stderr is not None:
             for line in stderr.splitlines():
                 if len(line) > 4096:
@@ -2241,18 +2275,144 @@ def source_provider_process_failure(result, own, *, phase='PROVIDERS'):
                     value = json.loads(line)
                 except (ValueError, UnicodeDecodeError):
                     continue
-                if source_provider_boundary_valid(value):
+                if boundary is None and source_provider_boundary_valid(value):
                     boundary = value
-                    break
+                if (wam_admission is None and phase in ('PROVIDERS-H0', 'PROVIDERS-H1')
+                        and source_initial_wam_admission_valid(value)):
+                    wam_admission = value
         return {'kind': 'SOURCE_PROVIDER_PROCESS_FIRST_FAILURE', 'phase': phase,
             'returncode': returncode, 'signal': signal_name, **streams, 'boundary': boundary,
-            'privatePayloadIncluded': False}
+            'privatePayloadIncluded': False,
+            **({'wamAdmission': wam_admission} if wam_admission is not None and returncode != 0 else {})}
     except BaseException:
         return None
 
 
 
 class SourceProviderEvidencePureTests(unittest.TestCase):
+    def test_initial_wam_order_and_fixed_late_refusal_survive_existing_capture(self):
+        # Pure fixture/diagnostic test, not an authored admission or native PASS.
+        import ast
+        import copy
+        from types import SimpleNamespace
+        file = ROOT / 'scripts/fixtures/source19-current-initial-weather.py'
+        tree = ast.parse(file.read_text(encoding='utf8'))
+        add = next(node for node in tree.body if isinstance(node, ast.FunctionDef) and node.name == 'add_initial_weather')
+        recipes = next(node.value for node in ast.walk(add) if isinstance(node, ast.Assign)
+            and any(isinstance(target, ast.Name) and target.id == 'recipes' for target in node.targets))
+        self.assertEqual(list(ast.literal_eval(recipes)), ['wam_nsb', 'wam_dw', 'dkss_nsbs', 'harmonie_dini_sf'])
+        loops = [node for node in ast.walk(add) if isinstance(node, ast.For) and isinstance(node.target, ast.Name)
+            and node.target.id == 'offset']
+        self.assertEqual(len(loops), 1)
+        self.assertEqual(ast.unparse(loops[0].iter), 'range(121)')
+        spec = importlib.util.spec_from_file_location('source_initial_wam_fixed_diagnostic', file)
+        initial = importlib.util.module_from_spec(spec); spec.loader.exec_module(initial)
+        producer = SimpleNamespace(wave_asset_cache_proof_coherent=lambda *_args, **_kwargs: False)
+        measured = {'requiredCount': 7, 'acceptedCount': 0, 'rejectedCount': 7,
+            'acceptedLineageCount': 0, 'acceptedLineageEvidenceCount': 0,
+            'rejectedByCode': {'INVALID_WAVE_PROVENANCE': 7, 'PRIVATE_SENTINEL': 1}}
+        outcome = ({'significant-wave-height', 'dominant-wave-period', 'mean-wave-dir'}, set(), False, 3, 21)
+        for offset in (0, 120):
+            value = initial.wave_admission_diagnostic(producer, 'wam_nsb', offset, measured, outcome,
+                False, 'STAGE_ADMISSION_FALSE')
+            self.assertTrue(source_initial_wam_admission_valid(value))
+            self.assertFalse(value['summary']['coherent']); self.assertFalse(value['admitted'])
+            self.assertEqual(value['summary']['unknownRejectionCodeCount'], 1)
+            self.assertNotIn('PRIVATE_SENTINEL', json.dumps(value))
+            malformed = initial.wave_admission_diagnostic(producer, 'wam_dw', offset,
+                {**measured, 'acceptedCount': 'PRIVATE_SENTINEL', 'rejectedByCode': None},
+                outcome, True, 'NATIVE_OWNER_INCOMPLETE')
+            self.assertTrue(source_initial_wam_admission_valid(malformed))
+            self.assertIsNone(malformed['summary']['acceptedCount'])
+            self.assertFalse(malformed['summary']['rejectedByCodeKnown'])
+            self.assertIsNone(malformed['summary']['unknownRejectionCodeCount'])
+            self.assertTrue(all(item is None for item in malformed['summary']['rejectedByCode'].values()))
+            self.assertNotIn('PRIVATE_SENTINEL', json.dumps(malformed))
+            for key, bad in (('collection', 'PRIVATE_SENTINEL'), ('hourOffset', 121), ('admitted', 1), ('reason', 'UNKNOWN')):
+                changed = copy.deepcopy(value); changed[key] = bad
+                self.assertFalse(source_initial_wam_admission_valid(changed))
+            changed = copy.deepcopy(value); changed['summary']['rejectedByCode']['PRIVATE_SENTINEL'] = 1
+            self.assertFalse(source_initial_wam_admission_valid(changed))
+            boundary = source_provider_boundary_failure(RuntimeError('PRIVATE_SENTINEL'))
+            with tempfile.TemporaryDirectory(prefix='rr-provider-wam-diagnostic-') as directory:
+                own = Path(directory).resolve()
+                # Boundary first deliberately exercises scanning beyond the old break.
+                for name, raw in (('stdout', b''), ('stderr', (json.dumps(boundary) + '\n' + json.dumps(value) + '\n').encode())):
+                    with (own / ('legacy-providers-h0-whole.' + name)).open('xb') as stream:
+                        stream.write(raw); stream.flush(); os.fsync(stream.fileno())
+                result = source_provider_process_failure(subprocess.CompletedProcess([], 1), own, phase='PROVIDERS-H0')
+                self.assertEqual(result['returncode'], 1)
+                if result['stderr']['complete']:
+                    self.assertEqual(result['wamAdmission'], value)
+                    self.assertEqual(result['boundary'], boundary)
+                else:
+                    self.assertNotIn('wamAdmission', result)
+
+    def test_wam_incomplete_diagnostic_requires_observed_admission(self):
+        # Exercise only the fixture's real callback branch with synthetic control
+        # flow. No GRIB decoder, provider, native grant or production proof runs.
+        import ast
+        import copy
+        from types import SimpleNamespace
+        from datetime import datetime, timezone
+        file = ROOT / 'scripts/fixtures/source19-current-initial-weather.py'
+        tree = ast.parse(file.read_text(encoding='utf8'))
+        add = next(node for node in tree.body if isinstance(node, ast.FunctionDef) and node.name == 'add_initial_weather')
+        branches = [node for node in ast.walk(add) if isinstance(node, ast.If) and any(
+            isinstance(item, ast.Assign) and isinstance(item.value, ast.Call)
+            and isinstance(item.value.func, ast.Attribute)
+            and item.value.func.attr == 'process_grib_transactionally' for item in node.body)]
+        self.assertEqual(len(branches), 1)
+        wrapper = ast.parse('def exercise():\n    pass\n')
+        wrapper.body[0].body = copy.deepcopy(branches[0].body)
+        program = compile(ast.fix_missing_locations(wrapper), str(file), 'exec')
+        spec = importlib.util.spec_from_file_location('source_initial_wam_observed_admission', file)
+        initial = importlib.util.module_from_spec(spec); spec.loader.exec_module(initial)
+        for callback_runs in (False, True):
+            with self.subTest(callback_runs=callback_runs):
+                calls, emitted = [], []
+                outcome = (set(), set(), not callback_runs, 0, 0)
+                measured = {'requiredCount': 1, 'acceptedCount': 0, 'rejectedCount': 1,
+                    'acceptedLineageCount': 0, 'acceptedLineageEvidenceCount': 0,
+                    'rejectedByCode': {'INVALID_WAVE_PROVENANCE': 1}}
+
+                def actual_synthetic_admission(*args):
+                    calls.append('admission')
+                    return True
+
+                def transaction(*args, stage_validator, **kwargs):
+                    if callback_runs:
+                        self.assertIs(stage_validator({}, None, outcome), True)
+                    return outcome
+
+                producer = SimpleNamespace(
+                    official_wave_asset_identity=lambda *args: {'synthetic': True},
+                    MappingWaveAsset=lambda *args, **kwargs: object(),
+                    private_wave_bootstrap_asset_summary=lambda *args: measured,
+                    operational_wave_asset_stage_admissible=actual_synthetic_admission,
+                    process_grib_transactionally=transaction,
+                    wave_asset_cache_proof_coherent=lambda *args, **kwargs: False)
+                scope = dict(vars(initial))
+                scope.update(producer=producer, document={}, summary={}, relevant=[], collection='wam_nsb',
+                    reference=datetime(2026, 10, 24, tzinfo=timezone.utc), asset={}, offset=0,
+                    file=Path('synthetic-unused.grib'), valid='2026-10-24T00:00:00Z',
+                    decode_zones=[], diagnostics={}, fields=[],
+                    emit_wave_admission_diagnostic=lambda *args: emitted.append(
+                        initial.wave_admission_diagnostic(*args)))
+                exec(program, scope)
+                with self.assertRaisesRegex(RuntimeError,
+                        '^CURRENT_NATIVE_INITIAL_WEATHER_NORMAL_WAVE_NATIVE_OWNER_NOT_COMPLETE$'):
+                    scope['exercise']()
+                self.assertEqual(calls, ['admission'] if callback_runs else [])
+                self.assertEqual(len(emitted), 1 if callback_runs else 0)
+                if callback_runs:
+                    value = emitted[0]
+                    self.assertTrue(source_initial_wam_admission_valid(value))
+                    self.assertIs(value['admitted'], True)
+                    self.assertEqual(value['reason'], 'NATIVE_OWNER_INCOMPLETE')
+                    self.assertIs(value['outcome']['interrupted'], False)
+                    self.assertIs(value['summary']['complete'], False)
+
     def test_exact_provider_need_catalog_matches_all_literal_source_sites(self):
         import ast
         tree = ast.parse((ROOT / SOURCE_PROVIDER_FRAME_FILES[0]).read_text(encoding='utf8'))
