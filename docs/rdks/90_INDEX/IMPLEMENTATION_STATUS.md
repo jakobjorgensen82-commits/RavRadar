@@ -1,3 +1,32 @@
+## 24. oktober — privat userdata-sammenføring med genuine 587 og P0
+
+Den private 006-/ejerrapportkandidat er lokalt sammenført med genuine 587-kilden og de særskilt main-leverede P0-rettelser til DMI-køobservation og fair tidsandel. Dette er ikke præcis samlet kildekvalifikation, installation, aktiveret statistik eller offentlig rapport. Begge grenes fulde historik bevares; de daterede afventninger nedenfor om netop P0-main-leveringerne er historik.
+
+4.0.587, C98/I97/T12, 66 gamle Supabase-migrationer, originale 004/005 og den særskilte 006-kandidats standard OFF-/plan-grænser bevares. De 29 faktisk beståede account-tilfælde er fortsat deres oprindelige bevis, ikke et nyt samlet PASS. Præcis samlet kilde-/nativekontrol, faktisk schema-/Workerinventory, kontrolleret OFF-installation/genlæsning og ejerens browseraccept er åbne. Ingen statistik- eller frigivelsesautoritet følger af sammenføringen. Kontinuerligt vejr og dækningsgrad er P0; alle fem mål er fortsat åbne.
+
+## 24. oktober — privat 587-sammenføring med P0s køobservation og fair tidsandel
+
+Den præcist kvalificerede 587-kilde på 888e bevares, og de afgrænsede P0-ændringer fra 717 forberedes ovenpå. 716s køobservation er særskilt kildeleveret på den installerede 586-familie; 717s fair tidsandel afventer fortsat sin præcise samlede kontrol og sikre main-levering. Denne private sammenføring er hverken anvendt, prøvet, installeret eller offentliggjort. Fejler 717, må dette efterbillede ikke leveres.
+
+Begge fulde dokumenthistorikker nedenfor bevares. 587s udstedte C98/I97/T12, 66 migrationsfiler, geodata og originale overgangsgrænser ændres ikke. Den endelige ægte Git-sammenføring og dens egen normale native-/kildekontrol er stadig nødvendige; 888es tidligere PASS må ikke genmærkes som samlet bevis. Ingen levering under aktiv writer. Alle fem hovedmål er fortsat åbne.
+
+## 24. oktober — lokal fair tidsfordeling for første kritiske havmodel
+
+- [x] Samme ottefilersstop påvist for forskellige leadmodeller i to gemte normale kørsler; kodehistorikken daterer kontrakten til september.
+- [x] Afgrænset lokal produktrettelse: eksisterende fair tidsreserve bruges også for almindelig lead; normal enkeltpassage, per-fil-kontrol, gammel maintenancegrænse og cold-reservationer bevares.
+- [x] Faktisk normal målkalder består fire Python-tilfælde med niende fil og beskyttet tid; normal modelbinding er uændret. Ingen nye kildegatekommandoer.
+- [ ] Samlet kontrol af den præcise kandidat, sikker levering og faktisk dækning på hele 118 × 210-aksen samt underdele.
+- [ ] Samspil mellem filernes rang, kvalificeret scalarværdi, native opgradering og fælles bytebudget. Nettoeffekt er endnu ikke bevist; alle fem mål er åbne.
+
+
+## 24. oktober — afgrænset observation af DMI-køens første tur
+
+- [x] Observation-only udskilt fra scalar-kandidaten på eksisterende 586; ingen ændret sortering, kildeadgang, budget, modelbinding eller SQL.
+- [x] Den normale lokale målprøve består på den isolerede kilde: faktisk rækkefølge, adskilt klassifikationsprioritet, korrekt rotationsmarkør, bevarede input og afslag uden private værdier.
+- [ ] Præcis samlet kildekontrol og faktisk første-tursrapport fra almindelig vejrhentning.
+- [ ] Påvist årsag og nyttig rettelse af de resterende dækningshuller. Scalar-kandidaten er fortsat inaktiv og medfølger ikke; alle fem hovedmål er åbne.
+
+
 ## 24. oktober — privat rapport fra faktisk afsluttet måned
 
 - [x] Seks gennemgåede produktblade er lokalt sammenført oven på 006-kandidaten: eksisterende kontrolleret eksport, beskyttet insert-only admintransport, frisk ejerlæser, læsbar tabel og de præcise dashboard-/workflowarme. 006-controller, klient, job, scanner, gamle SQL og standard OFF-/plan-grænser bevares.

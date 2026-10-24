@@ -1,3 +1,23 @@
+## 24. oktober — privat userdata-sammenføring med genuine 587 og P0
+
+Den private 006-/ejerrapportkandidat er lokalt sammenført med genuine 587-kilden og de særskilt main-leverede P0-rettelser til DMI-køobservation og fair tidsandel. Dette er ikke præcis samlet kildekvalifikation, installation, aktiveret statistik eller offentlig rapport. Begge grenes fulde historik bevares; de daterede afventninger nedenfor om netop P0-main-leveringerne er historik.
+
+4.0.587, C98/I97/T12, 66 gamle Supabase-migrationer, originale 004/005 og den særskilte 006-kandidats standard OFF-/plan-grænser bevares. De 29 faktisk beståede account-tilfælde er fortsat deres oprindelige bevis, ikke et nyt samlet PASS. Præcis samlet kilde-/nativekontrol, faktisk schema-/Workerinventory, kontrolleret OFF-installation/genlæsning og ejerens browseraccept er åbne. Ingen statistik- eller frigivelsesautoritet følger af sammenføringen. Kontinuerligt vejr og dækningsgrad er P0; alle fem mål er fortsat åbne.
+
+## Ikke udgivet — fair tidsandel til første kritiske havmodel på 4.0.586
+
+- Erstatter første kritiske havmodels faste ottefilersstop med den normale filgrænse og samme tidsfordeling, som allerede beskytter de øvrige ventende familier.
+- Bevarer normal enkeltpassage, vedligeholdelsesgrænse, autentificeret engangsstart, samlet budget og kontroller før hver fil.
+- Den normale kildeprøve får ét nyt tilfælde i sin eksisterende kalder. Lokal målprøve består; samlet kildekontrol, levering og målt effekt afventer. Det fælles bytebudget er fortsat en begrænsning.
+
+
+## Ikke udgivet — afgrænset DMI-køobservation på 4.0.586
+
+- Tilføjer `firstTurnOrder` med klassifikationsprioritet, faste årsagskategorier, faktisk køplacering og korrekt startmarkør pr. samling.
+- Bevarer første observation gennem senere omplanlægning uden at ændre kø, kildeadgang, budgetter eller tal.
+- Leverer ingen scalar-plan eller prioriteringsændring. Lokal målprøve består; præcis samlet kildekontrol og faktisk driftsobservation afventer.
+
+
 ## Ikke udgivet — privat ejeroversigt for afsluttede månedsrapporter, uændret 4.0.587
 
 - Gemmer en korrekt afsluttet rapport under dens faktiske lukkede måned, også når et ældre job afsluttes senere. Bevarer originalbinding, frisk samtykke-/slettekontrol, sidste VERIFY og insert-only genlæsning.

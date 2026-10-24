@@ -2429,6 +2429,69 @@ def prioritize_dkss_primary_assets(
     )
 
 
+def dkss_first_turn_order_diagnostic(
+    *, collection: str, model_run: str, production_reference: datetime,
+    ordered_assets: list[dict[str, Any]], requirements: dict[str, dict[str, Any]],
+    required_valid_times: set[str], cursor: str | None, maintenance: bool, primary_mode: bool,
+) -> dict[str, Any]:
+    """Detached observations of an existing queue; never recalculate coverage.
+
+    A critical asset may be a native upgrade, not a value hole. Keep the
+    original reason and actual initial order before later LF replans mutate
+    requirements. This is the first turn of each collection, NOT the input
+    state before every provider in the job. No IDs, paths or values escape.
+    """
+    unavailable = {"available": False, "reasonCode": "DKSS_START_ORDER_UNAVAILABLE"}
+    if (primary_mode is not True or collection not in MARINE_COLLECTIONS or len(ordered_assets) > 512
+            or not required_valid_times or not canonical_time(model_run)):
+        return unavailable
+    allowed_kinds = {"configuration", "current", "currentUpgrade", "regionalCurrent",
+                     "waterLevel", "waterTemperature", "windTail"}
+    rows = []
+    for asset in ordered_assets:
+        valid = canonical_time(asset.get("valid"))
+        row = requirements.get(valid)
+        if not valid or not isinstance(row, dict):
+            return unavailable
+        kinds = row.get("missingComponentKinds")
+        native_priority = row.get("criticalPriority")
+        counts = [row.get(key) for key in (
+            "currentMissingPairCount", "currentUpgradePairCount", "regionalCurrentPotentialPairCount",
+        )]
+        if (type(native_priority) is not int or native_priority not in (0, 1, 2)
+                or not isinstance(kinds, list)
+                or any(not isinstance(kind, str) or kind not in allowed_kinds for kind in kinds)
+                or any(type(count) is not int or count < 0 for count in counts)):
+            return unavailable
+        current_missing, current_upgrade, regional_missing = counts
+        rows.append({
+            "rank": len(rows) + 1, "validTime": valid,
+            "publicHour": valid in required_valid_times,
+            "strideHour": stride_selected(valid, model_run),
+            "classifierPriority": native_priority,
+            "missingComponentKinds": sorted(set(kinds)),
+            "currentMissingPairCount": current_missing,
+            "currentUpgradePairCount": current_upgrade,
+            "regionalCurrentPotentialPairCount": regional_missing,
+        })
+    return {
+        "schemaVersion": 1, "available": True,
+        "scope": "COLLECTION_FIRST_TURN_QUEUE_NOT_WHOLE_RUN_START",
+        "productionReferenceAt": canonical_time(production_reference),
+        "modelRun": canonical_time(model_run), "collection": collection,
+        "cursorValidTime": canonical_time(cursor) if cursor else None,
+        "cursorKind": "nativeRefresh" if maintenance is True else "criticalNative",
+        "maintenance": maintenance is True,
+        "assetCount": len(rows),
+        "classifierPriorityCounts": {
+            str(priority): sum(row["classifierPriority"] == priority for row in rows)
+            for priority in (0, 1, 2)
+        },
+        "orderedHours": rows,
+        "coverageProof": False, "skipAuthority": False, "sourceAdmission": False,
+    }
+
+
 def critical_native_cursor_for_run(
     state: dict[str, Any], previous_run: dict[str, Any],
     required_valid_times: set[str],
@@ -15512,6 +15575,10 @@ def main() -> int:
         0,
         int(schedule_coverage.get("strictCurrentLeadAttemptLimit") or 0),
     )
+    schedule_coverage["strictCurrentLeadCriticalAttemptLimit"] = (
+        MAX_ASSETS_PER_COLLECTION if strict_current_lead_collection else 0
+    )
+    schedule_coverage["strictCurrentLeadOrdinaryCriticalPolicy"] = "FAIR_PENDING_CRITICAL_TIME"
     cold_strict_current_lead_catch_up = bool(
         strict_current_lead_collection
         and cold_strict_current_lead_catch_up_requested(
@@ -15522,7 +15589,7 @@ def main() -> int:
         schedule_coverage["strictCurrentLeadColdCatchUp"] = {
             "policy": "authenticated-current-family-cold-catch-up-v1",
             "selected": True, "applied": False,
-            "ordinaryFairnessAttemptLimit": strict_current_lead_attempt_limit,
+            "ordinaryFairnessAttemptLimit": MAX_ASSETS_PER_COLLECTION,
             "effectiveAttemptLimit": MAX_ASSETS_PER_COLLECTION,
             "effectiveBound": "EXISTING_COLLECTION_ASSET_SELECTION_AND_PER_ASSET_BUDGET",
             "numericAdmissionIssued": False,
@@ -15549,7 +15616,7 @@ def main() -> int:
         )
         strict_current_lead_turn_attempt_limit = (
             MAX_ASSETS_PER_COLLECTION
-            if cold_strict_current_lead_catch_up and collection_is_critical_current
+            if collection_is_critical_current
             else strict_current_lead_attempt_limit
         )
         if (
@@ -15581,7 +15648,10 @@ def main() -> int:
             collection_is_critical_wam
             or (
                 collection_is_critical_current
-                and collection != strict_current_lead_collection
+                and (
+                    collection != strict_current_lead_collection
+                    or not cold_strict_current_lead_catch_up
+                )
             )
         ):
             reserve_for_pending_critical = max(
@@ -15947,6 +16017,20 @@ def main() -> int:
                 if collection_is_maintenance:
                     assets = rotate_native_refresh_assets(
                         assets, state.get("nativeRefreshCursorValidTime"),
+                    )
+                # Freeze the first actual collection queue. byCollection and
+                # its requirements are otherwise updated during later turns.
+                first_turn_orders = acquisition_plan_diagnostics.setdefault("firstTurnOrder", {})
+                if collection not in first_turn_orders:
+                    first_turn_orders[collection] = dkss_first_turn_order_diagnostic(
+                        collection=collection, model_run=run,
+                        production_reference=locked_production_reference,
+                        ordered_assets=assets, requirements=acquisition_requirements,
+                        required_valid_times=required_current_valid_times,
+                        cursor=(state.get("nativeRefreshCursorValidTime")
+                                if collection_is_maintenance else critical_native_cursor_at_turn_start),
+                        maintenance=collection_is_maintenance,
+                        primary_mode=DKSS_PRIMARY_MODE,
                     )
             if (
                 collection in MARINE_COLLECTIONS
@@ -16643,8 +16727,9 @@ def main() -> int:
                     run_info["strictCurrentLeadAssetsAttempted"] = (
                         strict_current_lead_attempts
                     )
-                    if (cold_strict_current_lead_catch_up and collection_is_critical_current
-                            and strict_current_lead_attempts > strict_current_lead_attempt_limit):
+                    if cold_strict_current_lead_catch_up and collection_is_critical_current:
+                        # A real attempt used the authenticated cold reservation
+                        # policy, which remains exempt from ordinary fair sharing.
                         schedule_coverage["strictCurrentLeadColdCatchUp"]["applied"] = True
                 if collection_is_critical_atmosphere:
                     critical_atmosphere_attempts += 1
