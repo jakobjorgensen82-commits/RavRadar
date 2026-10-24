@@ -1,3 +1,10 @@
+## Ikke udgivet — afgrænset DMI-køobservation på 4.0.586
+
+- Tilføjer `firstTurnOrder` med klassifikationsprioritet, faste årsagskategorier, faktisk køplacering og korrekt startmarkør pr. samling.
+- Bevarer første observation gennem senere omplanlægning uden at ændre kø, kildeadgang, budgetter eller tal.
+- Leverer ingen scalar-plan eller prioriteringsændring. Lokal målprøve består; præcis samlet kildekontrol og faktisk driftsobservation afventer.
+
+
 ## Ikke udgivet — afgrænset DMI-cacheopfølgning på 4.0.586
 
 - Bevarer bedre allerede kvalificerede strømvindere uden at afvise en ellers fuldt gennemgået marin DMI-fil alene på nul numeriske ændringer.

@@ -1,3 +1,8 @@
+## 24. oktober — ÅBEN: manglende observation af DMI's faktiske køvalg
+
+Samlede critical-tal kan ikke skelne markerede inputmangler fra native opgraderinger. Den løbende anskaffelsesplan ændres under kørslen og er ikke et uændret startbillede. Den snævre observation gemmer derfor hver samlings første sorterede kø særskilt. Den dokumenterer hverken senere restkøer, udførte downloads, mangler på tværs af alle leverandører eller offentlig dækning. En kørettelse afventer konkret årsagsbevis; budget- og kildekrav lempes ikke. Lokal målprøve er bestået; præcis samlet kildekontrol og faktisk driftsobservation er åbne.
+
+
 ## 24. oktober — ÅBEN P0: ny prognosehale og DMI-nulmutationsgenbrug
 
 Den almindelige nye vejrgeneration er faktisk offentligt leveret, og cron er aktiv med uændret plan. Den tidligere proceshukommelsesbarriere blev passeret i det faktiske fulde forløb; gentagen selvstændig drift er endnu ikke bevist. Der er nul femfamilietab på 100 fælles timer, men de nye 18 timer har store huller. Én sen national time viser især manglende vindinput; vandstand og temperatur har selvstændige mangler. Dette er ikke bevis for et generelt Limfjords- eller strømhistorikproblem.

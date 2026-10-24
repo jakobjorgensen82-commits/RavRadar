@@ -1,3 +1,11 @@
+## 24. oktober — afgrænset observation af DMI-køens første tur
+
+- [x] Observation-only udskilt fra scalar-kandidaten på eksisterende 586; ingen ændret sortering, kildeadgang, budget, modelbinding eller SQL.
+- [x] Den normale lokale målprøve består på den isolerede kilde: faktisk rækkefølge, adskilt klassifikationsprioritet, korrekt rotationsmarkør, bevarede input og afslag uden private værdier.
+- [ ] Præcis samlet kildekontrol og faktisk første-tursrapport fra almindelig vejrhentning.
+- [ ] Påvist årsag og nyttig rettelse af de resterende dækningshuller. Scalar-kandidaten er fortsat inaktiv og medfølger ikke; alle fem hovedmål er åbne.
+
+
 ## 24. oktober — kontinuert 586-vejr og særskilt DMI-opfølgning
 
 - [x] Almindelig ny generation faktisk gemt B før S, deployet og offentligt verificeret; eksisterende cron genaktiveret med uændret tidsplan.
