@@ -236,6 +236,7 @@ def prepare(node, target, initial_phase=None):
         part_ids = sorted(row["partId"] for row in targets)
         registry_sha = target_fingerprint(targets)
         observed_steps = {}
+        current_observation_started = producer.time.monotonic()
         for offset in OFFSETS:
             valid = time_text(reference + timedelta(hours=offset))
             href = "https://current-source-native.invalid/assets/dkss_nsbs/" + reference.strftime("%Y%m%d%H") + "/" + str(offset) + ".grib"
@@ -316,12 +317,14 @@ def prepare(node, target, initial_phase=None):
         bind_catalog_run_headers(producer, document, official)
         producer.seal_current_operational_checkpoint(document, targets, reference, official)
         need(producer.current_operational_cache_ready(document, targets, reference), "NORMAL_LEDGER_NOT_READY")
+        current_observation_ended = producer.time.monotonic()
         initial_observations = None
         if initial_phase:
             initial_weather = module('source_current_initial_weather',
                 ROOT / 'scripts/fixtures/source19-current-initial-weather.py')
             initial_observations = initial_weather.add_initial_weather(
-                eccodes, producer, targets, zones, document, reference, out, originals)
+                eccodes, producer, targets, zones, document, reference, out, originals,
+                current_observation=(current_observation_started, current_observation_ended))
         write_dmi_bulk_document(out / BASIS[0], document)
         need(read_dmi_bulk_document(out / BASIS[0])["zoneRegistrySignature"] == signature, "NORMAL_BULK_READBACK")
         atomic_write_shadow_checkpoint(out / BASIS[2], acquisitions=[], records=[],

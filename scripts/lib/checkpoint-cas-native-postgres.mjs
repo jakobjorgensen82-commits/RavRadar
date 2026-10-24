@@ -153,11 +153,34 @@ function sourceInitialWamAdmissionValid(value){
       ||value.reason==='NATIVE_OWNER_INCOMPLETE'&&value.admitted===true&&summary.complete===false;
   }catch{return false;}
 }
+function sourceInitialWamCompletionValid(value){
+  try{
+    const exact=(item,keys)=>item!==null&&typeof item==='object'&&!Array.isArray(item)
+      &&Object.keys(item).sort().join(',')===[...keys].sort().join(',');
+    if(!exact(value,['kind','collection','hourOffset','callbackInvoked','admitted','outcome',
+        'deadlineReached','elapsedMs','privatePayloadIncluded'])
+      ||value.kind!=='SOURCE_INITIAL_WAM_COMPLETION_DIAGNOSTIC'
+      ||!['wam_nsb','wam_dw'].includes(value.collection)
+      ||!Number.isSafeInteger(value.hourOffset)||value.hourOffset<0||value.hourOffset>120
+      ||typeof value.callbackInvoked!=='boolean'
+      ||(value.callbackInvoked?typeof value.admitted!=='boolean':value.admitted!==null)
+      ||typeof value.deadlineReached!=='boolean'||value.privatePayloadIncluded!==false
+      ||!exact(value.outcome,['interrupted'])||typeof value.outcome.interrupted!=='boolean')return false;
+    const keys=['beforeCurrent','afterCurrent','beforeWam','afterWam'];
+    if(!exact(value.elapsedMs,keys))return false;
+    const values=keys.map(key=>value.elapsedMs[key]);
+    if(!values.every(item=>item===null||Number.isSafeInteger(item)&&item>=0&&item<=86_400_000))return false;
+    const observed=values.filter(item=>item!==null);
+    return observed.every((item,index)=>index===0||item>=observed[index-1]);
+  }catch{return false;}
+}
 export function nativeProviderProcessFirstFailure(value){
   try{
     const keys=value&&Object.keys(value).sort().join(',');
     if(!value||!['boundary,kind,phase,privatePayloadIncluded,returncode,signal,stderr,stdout',
-        'boundary,kind,phase,privatePayloadIncluded,returncode,signal,stderr,stdout,wamAdmission'].includes(keys)
+        'boundary,kind,phase,privatePayloadIncluded,returncode,signal,stderr,stdout,wamAdmission',
+        'boundary,kind,phase,privatePayloadIncluded,returncode,signal,stderr,stdout,wamCompletion',
+        'boundary,kind,phase,privatePayloadIncluded,returncode,signal,stderr,stdout,wamAdmission,wamCompletion'].includes(keys)
       ||value.kind!=='SOURCE_PROVIDER_PROCESS_FIRST_FAILURE'||!['PROVIDERS','PROVIDERS-H0','PROVIDERS-H1'].includes(value.phase)||value.privatePayloadIncluded!==false)return null;
     const code=value.returncode;
     if(code!==null&&(!Number.isSafeInteger(code)||code<-(2**31)||code>=2**31))return null;
@@ -191,6 +214,9 @@ export function nativeProviderProcessFirstFailure(value){
         ||typeof site.sha256!=='string'||!/^[a-f0-9]{64}$/.test(site.sha256)
         ||!Number.isSafeInteger(site.line)||site.line<1||site.line>1000000))return null;
     }
+    if(Object.hasOwn(value,'wamCompletion')&&(!['PROVIDERS-H0','PROVIDERS-H1'].includes(value.phase)
+      ||code===null||code===0||!value.stderr.complete||!sourceInitialWamCompletionValid(value.wamCompletion)
+      ||boundary?.reason!=='CURRENT_NATIVE_INITIAL_WEATHER_NORMAL_WAVE_NATIVE_OWNER_NOT_COMPLETE'))return null;
     return value; // Diagnostic only: never process/SQL/native success proof.
   }catch{return null;}
 }

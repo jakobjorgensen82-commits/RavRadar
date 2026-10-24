@@ -2241,6 +2241,33 @@ def source_initial_wam_admission_valid(value):
         return False
 
 
+def source_initial_wam_completion_valid(value):
+    # Closed failure-only telemetry; elapsed time is not a deadline extension.
+    try:
+        if (type(value) is not dict or set(value) != {'kind', 'collection', 'hourOffset',
+                'callbackInvoked', 'admitted', 'outcome', 'deadlineReached', 'elapsedMs', 'privatePayloadIncluded'}
+                or value['kind'] != 'SOURCE_INITIAL_WAM_COMPLETION_DIAGNOSTIC'
+                or value['collection'] not in ('wam_nsb', 'wam_dw')
+                or type(value['hourOffset']) is not int or not 0 <= value['hourOffset'] <= 120
+                or type(value['callbackInvoked']) is not bool
+                or (type(value['admitted']) is not bool if value['callbackInvoked'] else value['admitted'] is not None)
+                or type(value['deadlineReached']) is not bool or value['privatePayloadIncluded'] is not False
+                or type(value['outcome']) is not dict or set(value['outcome']) != {'interrupted'}
+                or type(value['outcome']['interrupted']) is not bool):
+            return False
+        keys = ('beforeCurrent', 'afterCurrent', 'beforeWam', 'afterWam')
+        elapsed = value['elapsedMs']
+        if type(elapsed) is not dict or set(elapsed) != set(keys):
+            return False
+        values = [elapsed[key] for key in keys]
+        if any(item is not None and (type(item) is not int or not 0 <= item <= 86_400_000) for item in values):
+            return False
+        observed = [item for item in values if item is not None]
+        return observed == sorted(observed)
+    except (KeyError, TypeError):
+        return False
+
+
 def source_provider_process_failure(result, own, *, phase='PROVIDERS'):
     # The existing subprocess/files are already closed+fsynced before this read.
     # Oversized/missing/changed streams stay incomplete and yield no parsed cause.
@@ -2268,7 +2295,7 @@ def source_provider_process_failure(result, own, *, phase='PROVIDERS'):
             except (OSError, ValueError, AssertionError, RuntimeError):
                 pass
             streams[name] = meta
-        boundary, wam_admission = None, None
+        boundary, wam_admission, wam_completion = None, None, None
         if stderr is not None:
             for line in stderr.splitlines():
                 if len(line) > 4096:
@@ -2282,10 +2309,16 @@ def source_provider_process_failure(result, own, *, phase='PROVIDERS'):
                 if (wam_admission is None and phase in ('PROVIDERS-H0', 'PROVIDERS-H1')
                         and source_initial_wam_admission_valid(value)):
                     wam_admission = value
+                if (wam_completion is None and phase in ('PROVIDERS-H0', 'PROVIDERS-H1')
+                        and source_initial_wam_completion_valid(value)):
+                    wam_completion = value
         return {'kind': 'SOURCE_PROVIDER_PROCESS_FIRST_FAILURE', 'phase': phase,
             'returncode': returncode, 'signal': signal_name, **streams, 'boundary': boundary,
             'privatePayloadIncluded': False,
-            **({'wamAdmission': wam_admission} if wam_admission is not None and returncode != 0 else {})}
+            **({'wamAdmission': wam_admission} if wam_admission is not None and returncode != 0 else {}),
+            **({'wamCompletion': wam_completion} if wam_completion is not None and returncode not in (None, 0)
+                and boundary is not None and boundary['reason'] ==
+                'CURRENT_NATIVE_INITIAL_WEATHER_NORMAL_WAVE_NATIVE_OWNER_NOT_COMPLETE' else {})}
     except BaseException:
         return None
 
@@ -2420,7 +2453,7 @@ class SourceProviderEvidencePureTests(unittest.TestCase):
         initial = importlib.util.module_from_spec(spec); spec.loader.exec_module(initial)
         for callback_runs in (False, True):
             with self.subTest(callback_runs=callback_runs):
-                calls, emitted = [], []
+                calls, emitted, completions = [], [], []
                 outcome = (set(), set(), not callback_runs, 0, 0)
                 measured = {'requiredCount': 1, 'acceptedCount': 0, 'rejectedCount': 1,
                     'acceptedLineageCount': 0, 'acceptedLineageEvidenceCount': 0,
@@ -2447,6 +2480,8 @@ class SourceProviderEvidencePureTests(unittest.TestCase):
                     reference=datetime(2026, 10, 24, tzinfo=timezone.utc), asset={}, offset=0,
                     file=Path('synthetic-unused.grib'), valid='2026-10-24T00:00:00Z',
                     decode_zones=[], diagnostics={}, fields=[],
+                    current_observation=(1001, 1590), wam_observation_started=1591,
+                    emit_wave_completion_diagnostic=lambda *args: completions.append(args),
                     emit_wave_admission_diagnostic=lambda *args: emitted.append(
                         initial.wave_admission_diagnostic(*args)))
                 exec(program, scope)
@@ -2455,6 +2490,11 @@ class SourceProviderEvidencePureTests(unittest.TestCase):
                     scope['exercise']()
                 self.assertEqual(calls, ['admission'] if callback_runs else [])
                 self.assertEqual(len(emitted), 1 if callback_runs else 0)
+                self.assertEqual(len(completions), 1)
+                self.assertEqual(completions[0][1:3], ('wam_nsb', 0))
+                self.assertIs(completions[0][3], callback_runs)
+                self.assertIs(completions[0][4], True if callback_runs else None)
+                self.assertIs(completions[0][5][2], not callback_runs)
                 if callback_runs:
                     value = emitted[0]
                     self.assertTrue(source_initial_wam_admission_valid(value))
@@ -2463,6 +2503,70 @@ class SourceProviderEvidencePureTests(unittest.TestCase):
                     self.assertIs(value['outcome']['interrupted'], False)
                     self.assertIs(value['summary']['complete'], False)
 
+
+    def test_wam_completion_fixed_observation_and_closed_projection(self):
+        import contextlib
+        import copy
+        import io
+        from types import SimpleNamespace
+        file = ROOT / 'scripts/fixtures/source19-current-initial-weather.py'
+        spec = importlib.util.spec_from_file_location('source_initial_wam_completion', file)
+        initial = importlib.util.module_from_spec(spec); spec.loader.exec_module(initial)
+        boundary = source_provider_boundary_failure(RuntimeError(
+            'CURRENT_NATIVE_INITIAL_WEATHER_NORMAL_WAVE_NATIVE_OWNER_NOT_COMPLETE'))
+        for invoked, admitted, elapsed, interrupted in ((False, None, 600, True), (True, True, 599, False)):
+            producer = SimpleNamespace(STARTED=1000, WORK_DEADLINE=1600,
+                time=SimpleNamespace(monotonic=lambda: 1000 + elapsed))
+            output = io.StringIO()
+            with contextlib.redirect_stderr(output):
+                initial.emit_wave_completion_diagnostic(producer, 'wam_dw', 120, invoked,
+                    admitted, (set(), set(), interrupted, 0, 0), (1001, 1590), 1591)
+            value = json.loads(output.getvalue())
+            self.assertTrue(source_initial_wam_completion_valid(value))
+            self.assertIs(value['callbackInvoked'], invoked)
+            self.assertIs(value['admitted'], admitted)
+            self.assertIs(value['deadlineReached'], elapsed == 600)
+            self.assertEqual(value['elapsedMs'], dict(beforeCurrent=1000, afterCurrent=590000,
+                beforeWam=591000, afterWam=elapsed * 1000))
+            self.assertNotIn('PRIVATE', output.getvalue())
+            for key, bad in (('collection', 'UNKNOWN'), ('collection', 'wam_dw\nPRIVATE'),
+                    ('hourOffset', True), ('hourOffset', 121), ('callbackInvoked', 1),
+                    ('admitted', True if not invoked else None), ('deadlineReached', 1),
+                    ('privatePayloadIncluded', True), ('raw', 'PRIVATE')):
+                changed = copy.deepcopy(value); changed[key] = bad
+                self.assertFalse(source_initial_wam_completion_valid(changed))
+            for bad in (-1, 86_400_001, 0.5, True, 'PRIVATE'):
+                changed = copy.deepcopy(value); changed['elapsedMs']['afterWam'] = bad
+                self.assertFalse(source_initial_wam_completion_valid(changed))
+            for field, item in (('outcome', {'interrupted': False, 'raw': 'PRIVATE'}),
+                    ('elapsedMs', {**value['elapsedMs'], 'raw': 0}),
+                    ('elapsedMs', {**value['elapsedMs'], 'beforeCurrent': 600001})):
+                changed = copy.deepcopy(value); changed[field] = item
+                self.assertFalse(source_initial_wam_completion_valid(changed))
+            for phase, stem in SOURCE_PROVIDER_CAPTURE_STEMS.items():
+                with tempfile.TemporaryDirectory(prefix='rr-wam-completion-') as directory:
+                    own = Path(directory).resolve()
+                    for name, raw in (('stdout', b''), ('stderr',
+                            (json.dumps(value) + '\n' + json.dumps(boundary) + '\n').encode())):
+                        with (own / (stem + '.' + name)).open('xb') as stream:
+                            stream.write(raw); stream.flush(); os.fsync(stream.fileno())
+                    result = source_provider_process_failure(subprocess.CompletedProcess([], 1), own, phase=phase)
+                    if result['stderr']['complete'] and phase != 'PROVIDERS':
+                        self.assertEqual(result['wamCompletion'], value)
+                    else:
+                        self.assertNotIn('wamCompletion', result)
+                    success = source_provider_process_failure(subprocess.CompletedProcess([], 0), own, phase=phase)
+                    self.assertNotIn('wamCompletion', success)
+        # Out-of-bound/unavailable clock data stays unknown, never a fabricated duration.
+        producer = SimpleNamespace(STARTED=1000, WORK_DEADLINE=1600,
+            time=SimpleNamespace(monotonic=lambda: 1000 + 86401))
+        output = io.StringIO()
+        with contextlib.redirect_stderr(output):
+            initial.emit_wave_completion_diagnostic(producer, 'wam_nsb', 0, False, None,
+                (set(), set(), True, 0, 0), None, None)
+        value = json.loads(output.getvalue())
+        self.assertEqual(value['elapsedMs'], dict.fromkeys(('beforeCurrent', 'afterCurrent', 'beforeWam', 'afterWam')))
+        self.assertTrue(source_initial_wam_completion_valid(value))
 
     def test_initial_weather_need_catalog_uses_actual_fixture_and_both_consumers(self):
         import ast

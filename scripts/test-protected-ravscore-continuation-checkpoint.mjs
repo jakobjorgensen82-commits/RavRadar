@@ -453,6 +453,17 @@ if (!process.argv.includes('--native-postgres') && !process.argv.includes('--nat
             const observed={...value,wamAdmission};
             assert.deepEqual(nativeProviderProcessFirstFailure(observed),observed);
             assert.deepEqual(nativePostgresChildFirstFailure(JSON.stringify(observed)+'\n'+JSON.stringify(later),''),observed);
+            if(admitted){
+              const combined={...observed,boundary:{...boundary,exceptionType:'RUNTIME_ERROR',
+                reason:'CURRENT_NATIVE_INITIAL_WEATHER_NORMAL_WAVE_NATIVE_OWNER_NOT_COMPLETE'},
+                wamCompletion:{kind:'SOURCE_INITIAL_WAM_COMPLETION_DIAGNOSTIC',collection,hourOffset,
+                  callbackInvoked:true,admitted:true,outcome:{interrupted:false},deadlineReached:false,
+                  elapsedMs:{beforeCurrent:1000,afterCurrent:590000,beforeWam:591000,afterWam:599000},
+                  privatePayloadIncluded:false}};
+              assert.ok(Buffer.byteLength(JSON.stringify(combined))<=2048);
+              assert.deepEqual(nativeProviderProcessFirstFailure(combined),combined);
+              assert.deepEqual(nativePostgresChildFirstFailure(JSON.stringify(combined),''),combined);
+            }
             for(const bad of [
               {...observed,phase:'PROVIDERS'}, {...observed,returncode:0}, {...observed,raw:'PRIVATE'},
               {...observed,wamAdmission:{...wamAdmission,raw:'PRIVATE'}},
@@ -473,6 +484,38 @@ if (!process.argv.includes('--native-postgres') && !process.argv.includes('--nat
               assert.equal(nativePostgresChildFirstFailure(JSON.stringify(bad),''),null);
             }
           }
+        }
+      }
+      if(phase!=='PROVIDERS'){
+        for(const [callbackInvoked,admitted,interrupted] of [[false,null,true],[true,true,false]]){
+          const wamCompletion={kind:'SOURCE_INITIAL_WAM_COMPLETION_DIAGNOSTIC',collection:'wam_nsb',hourOffset:0,
+            callbackInvoked,admitted,outcome:{interrupted},deadlineReached:true,
+            elapsedMs:{beforeCurrent:1000,afterCurrent:590000,beforeWam:591000,afterWam:600000},
+            privatePayloadIncluded:false};
+          const fixed={...value,boundary:{...boundary,exceptionType:'RUNTIME_ERROR',
+            reason:'CURRENT_NATIVE_INITIAL_WEATHER_NORMAL_WAVE_NATIVE_OWNER_NOT_COMPLETE'},wamCompletion};
+          assert.deepEqual(nativeProviderProcessFirstFailure(fixed),fixed);
+          assert.deepEqual(nativePostgresChildFirstFailure(JSON.stringify(fixed)+'\n'+JSON.stringify(later),''),fixed);
+          for(const bad of [
+            {...fixed,phase:'PROVIDERS'}, {...fixed,returncode:0}, {...fixed,returncode:null,signal:'UNKNOWN'},
+            {...fixed,boundary}, {...fixed,wamCompletion:{...wamCompletion,raw:'PRIVATE'}},
+            {...fixed,wamCompletion:{...wamCompletion,collection:'wam_nsb\nPRIVATE'}},
+            {...fixed,wamCompletion:{...wamCompletion,hourOffset:121}},
+            {...fixed,wamCompletion:{...wamCompletion,admitted:callbackInvoked?null:true}},
+            {...fixed,wamCompletion:{...wamCompletion,callbackInvoked:1}},
+            {...fixed,wamCompletion:{...wamCompletion,deadlineReached:1}},
+            {...fixed,wamCompletion:{...wamCompletion,outcome:{interrupted,raw:'PRIVATE'}}},
+            ...[-1,86_400_001,0.5,true,'PRIVATE'].map(afterWam=>({...fixed,wamCompletion:{...wamCompletion,
+              elapsedMs:{...wamCompletion.elapsedMs,afterWam}}})),
+            {...fixed,wamCompletion:{...wamCompletion,elapsedMs:{...wamCompletion.elapsedMs,beforeCurrent:600001}}},
+            {...fixed,wamCompletion:{...wamCompletion,elapsedMs:{...wamCompletion.elapsedMs,raw:0}}},
+          ]){
+            assert.equal(nativeProviderProcessFirstFailure(bad),null);
+            assert.equal(nativePostgresChildFirstFailure(JSON.stringify(bad),''),null);
+          }
+          const unknown={...fixed,wamCompletion:{...wamCompletion,elapsedMs:{
+            beforeCurrent:null,afterCurrent:null,beforeWam:null,afterWam:null}}};
+          assert.deepEqual(nativeProviderProcessFirstFailure(unknown),unknown);
         }
       }
       for(const bad of [

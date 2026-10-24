@@ -193,6 +193,35 @@ function evaluate(expression, state) {
     () => true, () => state.cancelled, () => !state.failed, () => state.failed,
     () => state.files ? 'hash' : '', (a, b) => String(a).startsWith(b), (a, b) => a?.includes(b) ?? false);
 }
+test('critical source gate preserves the exact old release oracle and actual release-after-validation-failure route', () => {
+  const gate = read('scripts/source-critical-gate.mjs');
+  assert.equal(count(gate, "import { inverseSourceNormalWorkflowForHistoricalOracle } from './lib/source-normal-workflow-review.mjs';"), 1);
+  assert(gate.includes("const buildWorkflow = inverseSourceNormalWorkflowForHistoricalOracle("));
+  assert(gate.includes("read('.github/workflows/reusable-weather-build.yml').replaceAll('\\r\\n', '\\n'), 'build');"));
+  const release = named(actual.build, 'release-gate');
+  const old = named(prior.build, 'release-gate');
+  const state = { inputs: { source_normal_producer: false }, failed: true, cancelled: false,
+    steps: { preflight: { outputs: { should_run: 'true' } },
+      'operational-action': { outputs: { action: 'integrated' } } } };
+  assert(release.condition.includes('always()'));
+  assert.equal(evaluate(old.condition, state), true);
+  assert.equal(evaluate(release.condition, state), true, 'A failed validation must not suppress the independent release attempt');
+  assert.equal(evaluate(release.condition, { ...state, inputs: { source_normal_producer: true } }), false,
+    'SOURCE uses its own producer controls, never both routes');
+  for(const [shouldRun, action] of [['false', 'integrated'], ['true', 'integrated-cutover']]){
+    const closed = { ...state, steps: { preflight: { outputs: { should_run: shouldRun } },
+      'operational-action': { outputs: { action } } } };
+    assert.equal(evaluate(release.condition, closed), false);
+    assert.equal(evaluate(old.condition, closed), false);
+  }
+  assert.equal(count(actual.build, release.condition), 1);
+  for(const replacement of [release.condition.replace('always() && ', ''),
+    release.condition + ' && success()', release.condition + release.condition]){
+    const changed = actual.build.replace(release.condition, replacement);
+    assert.throws(() => inverseSourceNormalWorkflowForHistoricalOracle(changed, 'build'),
+      'No weakened, duplicated or success-only condition may obtain the old oracle');
+  }
+});
 test('default legacy step selectors stay equivalent across outcome/mode cases; true SOURCE excludes every legacy-only step', () => {
   const oldSteps = steps(prior.build).filter(row => row.name);
   const current = steps(actual.build);

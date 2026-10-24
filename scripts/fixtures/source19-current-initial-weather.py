@@ -111,7 +111,28 @@ def emit_wave_admission_diagnostic(*args):
         pass  # Observation failure must not replace the real admission result.
 
 
-def add_initial_weather(eccodes, producer, targets, zones, document, reference, out, originals):
+def emit_wave_completion_diagnostic(producer, collection, offset, callback_invoked,
+                                    admitted, outcome, current_observation, wam_started):
+    """Observe the failed need only; never alter its deadline/admission result."""
+    try:
+        now = producer.time.monotonic()
+        def elapsed(value):
+            delta = (value - producer.STARTED) * 1000 if type(value) in (int, float) else None
+            return int(delta) if delta is not None and math.isfinite(delta) and 0 <= delta <= 86_400_000 else None
+        current = current_observation if type(current_observation) is tuple and len(current_observation) == 2 else (None, None)
+        value = {"kind": "SOURCE_INITIAL_WAM_COMPLETION_DIAGNOSTIC",
+            "collection": collection, "hourOffset": offset, "callbackInvoked": callback_invoked,
+            "admitted": admitted, "outcome": {"interrupted": outcome[2]},
+            "deadlineReached": now >= producer.WORK_DEADLINE,
+            "elapsedMs": {"beforeCurrent": elapsed(current[0]), "afterCurrent": elapsed(current[1]),
+                "beforeWam": elapsed(wam_started), "afterWam": elapsed(now)},
+            "privatePayloadIncluded": False}
+        print(json.dumps(value, separators=(",", ":"), allow_nan=False), file=sys.stderr, flush=True)
+    except BaseException:
+        pass  # A failed observation must not replace the original need failure.
+
+
+def add_initial_weather(eccodes, producer, targets, zones, document, reference, out, originals, *, current_observation=None):
     """Only provider INPUT leaves; normal updater must still prove 210/673 READY.
 
     WAM uses its real same-asset admission/owner validators, including unchanged
@@ -120,6 +141,7 @@ def add_initial_weather(eccodes, producer, targets, zones, document, reference, 
     """
     need(reference.tzinfo is not None and reference.minute == reference.second == 0, "REFERENCE")
     diagnostics = document["diagnostics"]
+    wam_observation_started = producer.time.monotonic()
     recipes = {
         # Same actual full-fixture admission, before 242 scalar/wind assets.
         # The provider has already decoded and verified its 121 current hours.
@@ -161,9 +183,11 @@ def add_initial_weather(eccodes, producer, targets, zones, document, reference, 
                 selected = producer.MappingWaveAsset(asset, text(reference), official_identity=identity)
                 before = copy.deepcopy(document)
                 admission_result = None
+                callback_invoked = False
 
                 def admit(staged, _private, outcome):
-                    nonlocal admission_result
+                    nonlocal admission_result, callback_invoked
+                    callback_invoked = True
                     measured = producer.private_wave_bootstrap_asset_summary(staged, relevant, collection, selected)
                     summary.clear()
                     summary.update(measured)
@@ -182,6 +206,9 @@ def add_initial_weather(eccodes, producer, targets, zones, document, reference, 
                 if not complete and admission_result is True:
                     emit_wave_admission_diagnostic(producer, collection, offset, summary, outcome,
                         admission_result, "NATIVE_OWNER_INCOMPLETE")
+                if not complete:
+                    emit_wave_completion_diagnostic(producer, collection, offset, callback_invoked,
+                        admission_result, outcome, current_observation, wam_observation_started)
                 need(complete,
                      "NORMAL_WAVE_NATIVE_OWNER_NOT_COMPLETE")
                 run = document.setdefault("runs", {}).setdefault(collection, {})
