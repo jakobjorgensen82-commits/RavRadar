@@ -1,3 +1,9 @@
+## Ikke udgivet — normal ucommittet baseline i SOURCEs WAM-fixture
+
+- Fjerner fixturens gentagne fulde dokumentkopi og bruger samme førreference som de normale WAM-kaldere. Produktionskode og copy-on-write-admission ændres ikke.
+- Tilføjer én regression i den eksisterende normale prøve med faktisk parser, validator, commit og negativt tupleafslag; alle gamle assertions bevares.
+- Den native fælles arbejdsfrist er påvist som det seneste stop, men tidsbesparelse og fuld H0/H1-kapacitet er endnu ikke målt. Den lokale identitets-/syntakskontrol er ikke et native-PASS. Ingen nye budgetter, version, C/I/T, SQL eller produktionsaktivering; SOURCE forbliver inaktiv.
+
 ## Ikke udgivet — faste SOURCE-fejlkoder uden ændret databehandling
 
 - Medtager de ni eksisterende INITIAL_WEATHER-assertionkoder i begge faste diagnoselæsere. Ukendt tekst, ekstra felter og forkert exceptiontype afvises stadig.

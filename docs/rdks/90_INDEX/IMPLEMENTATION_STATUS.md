@@ -1,3 +1,11 @@
+## 24. oktober — SOURCE-fixturens fulde dokumentkopi fjernet
+
+Den bevarede nativekontrol har nu påvist den fælles arbejdsfrist som stopårsag i første leverandørfase, før WAM-validatoren blev kaldt. Det er ikke en påvist SQL- eller admissionfejl. Fixturen tog en fuld kopi af det voksende dokument for hver WAM-fil; de normale produktionskaldere bruger allerede den endnu ucommittede original gennem samme copy-on-write-transaktion.
+
+Kun fixturens førreference er ændret til den normale kontrakt. En additiv regression i den eksisterende WAM-prøve følger den rigtige parser, transaktion og validator og kontrollerer både commit og reelt afslag uden ændring af originalens zoner. Hele de gamle assertions er bevaret. Den lokale delkontrol beviser kun førreferencens objektidentitet og gyldig syntaks; den normale Linux-prøve og faktisk H0/H1-kapacitet er endnu ikke bestået. Tidsgevinsten er ikke målt.
+
+De eksisterende frister, 121 offsets, 673 dele, kildeprioritet, numeriske regler, originalbeviser, C157/I153/T12 og SQL bevares. SOURCE er fortsat inaktiv på 4.0.588. Installation og offentlig effekt er åbne, og kontinuerlig vejrhentning er P0. Den nye påviste fristårsag erstatter kun den tidligere usikkerhed om netop dette afslag; ældre delprøver forbliver deres egne beviser.
+
 ## 24. oktober — faste fejlårsager fra SOURCEs første vejrfase
 
 Den seneste samlede SOURCE-kontrol er afvist i den første leverandørfase. Ni bogstavelige assertionkoder fra den eksisterende vejrfixture manglede i de faste Python- og JavaScript-læsere og blev derfor vist som ukendte. Den snævre rettelse medtager nu kun disse koder; fritekst, private payloads og forkerte rapporttyper afvises fortsat. Gamle assertioner er bevaret.

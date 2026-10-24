@@ -181,7 +181,7 @@ def add_initial_weather(eccodes, producer, targets, zones, document, reference, 
                 identity = producer.official_wave_asset_identity(collection, text(reference), asset)
                 need(identity is not None, "NORMAL_OFFICIAL_WAVE_IDENTITY")
                 selected = producer.MappingWaveAsset(asset, text(reference), official_identity=identity)
-                before = copy.deepcopy(document)
+                before = document
                 admission_result = None
                 callback_invoked = False
 
