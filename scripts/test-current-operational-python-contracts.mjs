@@ -51,12 +51,13 @@ test('DMI retained current winner survives normal saved-step ledger and resume (
   assert.match(result.stderr, /^OK\r?$/m,
     'The retained-winner case must finish without skipped tests.');
 });
-test('DMI cold strict-lead catch-up retains ordinary fairness and per-asset reserves (3 cases)', { timeout: 160_000 }, () => {
+test('DMI ordinary/cold lead turns retain fair time and per-asset reserves (4 cases)', { timeout: 160_000 }, () => {
   const file = 'test-dmi-native-chain-continuity.py';
   const result = spawnSync(python, ['-B', path.join(root, 'scripts', file),
     'SchedulingContinuityTests.test_idw_lead_can_catch_up_multiple_hours_without_stealing_reserves',
     'SchedulingContinuityTests.test_cold_child_policy_is_not_an_env_only_or_ordinary48h_grant',
-    'SchedulingContinuityTests.test_actual_cold_cap_guard_keeps_ordinary8_and_per_asset_critical_reserves'], {
+    'SchedulingContinuityTests.test_actual_cold_cap_guard_keeps_shared_asset_bound_and_per_asset_critical_reserves',
+    'SchedulingContinuityTests.test_ordinary_lead_can_pass_eight_only_with_actual_fair_time_remaining'], {
     cwd: root, env: environment, encoding: 'utf8', shell: false,
     timeout: 150_000, maxBuffer: 4 * 1024 * 1024, windowsHide: true,
   });
@@ -64,8 +65,8 @@ test('DMI cold strict-lead catch-up retains ordinary fairness and per-asset rese
   assert.equal(result.signal, null, `Synthetic Python runner interrupted: ${file}`);
   assert.equal(result.status, 0,
     `${file}\n${result.stdout || ''}\n${result.stderr || ''}`);
-  assert.match(result.stderr, /^Ran 3 tests in [^\r\n]+\r?$/m,
-    'All three ordinary/cold scheduling and reserve cases must actually execute.');
+  assert.match(result.stderr, /^Ran 4 tests in [^\r\n]+\r?$/m,
+    'All four ordinary/cold scheduling and reserve cases must actually execute.');
   assert.match(result.stderr, /^OK\r?$/m,
     'The scheduling cases must finish without skipped tests.');
 });

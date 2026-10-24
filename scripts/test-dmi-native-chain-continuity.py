@@ -552,12 +552,80 @@ class WaveSemanticsTests(unittest.TestCase):
 
 
 class SchedulingContinuityTests(unittest.TestCase):
+    def test_ordinary_lead_can_pass_eight_only_with_actual_fair_time_remaining(self):
+        main = ast.parse(Path(producer.__file__).read_text("utf-8"))
+        reserve_branch = next(node for node in ast.walk(main)
+            if isinstance(node, ast.If) and len(node.body) == 1
+            and isinstance(node.body[0], ast.Assign)
+            and any(isinstance(target, ast.Name)
+                    and target.id == "reserve_for_pending_critical"
+                    for target in node.body[0].targets)
+            and any(isinstance(call, ast.Call) and isinstance(call.func, ast.Name)
+                    and call.func.id == "fair_pending_critical_runtime_reserve"
+                    for call in ast.walk(node.body[0].value)))
+        reserve_code = compile(ast.Module(body=[reserve_branch], type_ignores=[]),
+            producer.__file__, "exec")
+        collections = ["dkss_lf", "dkss_idw", "dkss_nsbs"]
+        remaining = [3193.0]
+        current_reserve, _ = producer.strict_current_runtime_reserve(collections, remaining[0])
+        wave_reserve, _ = producer.wam_runtime_reserve(
+            ["wam_dw", "wam_nsb"], remaining[0],
+            lead_reserve_seconds=sum(current_reserve.values()))
+        pending_current, pending_wam = collections[1:], ["wam_dw", "wam_nsb"]
+        minimum = sum(current_reserve[name] for name in pending_current) + sum(wave_reserve.values()) + 120.0
+        scope = dict(collection="dkss_lf", strict_current_lead_collection="dkss_lf",
+            collection_is_critical_wam=False, collection_is_critical_current=True,
+            cold_strict_current_lead_catch_up=False,
+            pending_critical_wam=pending_wam, pending_critical_current=pending_current,
+            critical_wam_reserve=wave_reserve, strict_current_reserve=current_reserve,
+            reserve_for_pending_critical=minimum, runtime_remaining=lambda: remaining[0],
+            fair_pending_critical_runtime_reserve=producer.fair_pending_critical_runtime_reserve)
+        exec(reserve_code, scope)
+        protected = max(minimum, producer.fair_pending_critical_runtime_reserve(
+            pending_wam, pending_current, remaining[0], wave_reserve, current_reserve))
+        self.assertEqual(scope["reserve_for_pending_critical"], protected,
+            "The ordinary FIRST marine family must protect the same fair pending share.")
+        for lead in collections:
+            ordinary_scope = {**scope, "collection": lead,
+                "strict_current_lead_collection": lead,
+                "pending_critical_current": [name for name in collections if name != lead],
+                "reserve_for_pending_critical": minimum}
+            exec(reserve_code, ordinary_scope)
+            self.assertEqual(ordinary_scope["reserve_for_pending_critical"], protected)
+            cold_scope = {**ordinary_scope, "cold_strict_current_lead_catch_up": True,
+                "reserve_for_pending_critical": minimum}
+            exec(reserve_code, cold_scope)
+            self.assertEqual(cold_scope["reserve_for_pending_critical"], minimum,
+                "The existing authenticated one-off keeps its original reservation policy.")
+        turn = next(node for node in ast.walk(main) if isinstance(node, ast.Assign)
+            and any(isinstance(target, ast.Name) and target.id == "strict_current_lead_turn_attempt_limit"
+                    for target in node.targets))
+        legacy_limit = producer.bounded_strict_current_lead_attempt_limit(remaining[0], collections,
+            sum(wave_reserve.values()), atmosphere_horizon_needed=True)
+        limit = eval(compile(ast.Expression(turn.value), producer.__file__, "eval"),
+            {"MAX_ASSETS_PER_COLLECTION": producer.MAX_ASSETS_PER_COLLECTION},
+            {"collection_is_critical_current": True, "strict_current_lead_attempt_limit": legacy_limit,
+             "cold_strict_current_lead_catch_up": False})
+        self.assertTrue(producer.strict_current_lead_attempt_available("dkss_lf", "dkss_lf", 8, limit),
+            "A ninth file must not be rejected solely because eight earlier files were attempted.")
+        controller = producer.ProgressCheckpointController({}, set(), {"bytes": 0})
+        controller.observe_asset_duration(12.0, cost_family="dkss_lf")
+        with patch.object(producer, "runtime_remaining", side_effect=lambda: remaining[0]):
+            remaining[0] -= 8 * 12.0
+            self.assertTrue(controller.can_start_asset(reserve_seconds=protected, cost_family="dkss_lf"))
+            remaining[0] = protected
+            self.assertFalse(controller.can_start_asset(reserve_seconds=protected, cost_family="dkss_lf"),
+                "Removing the arbitrary count cap must not consume the other families' time.")
+        self.assertEqual(pending_current, collections[1:])
+        self.assertEqual(pending_wam, ["wam_dw", "wam_nsb"])
+
     def test_idw_lead_can_catch_up_multiple_hours_without_stealing_reserves(self):
         limit = producer.bounded_strict_current_lead_attempt_limit
         collections = ["dkss_idw", "dkss_nsbs", "dkss_lf"]
         self.assertGreater(limit(1379.0, collections, 240.0), 1)
         self.assertLessEqual(limit(1379.0, collections, 240.0), 8)
         self.assertEqual(limit(300.0, collections, 240.0), 1)
+        self.assertEqual(limit(300.0, [], 240.0), 0)
         self.assertLessEqual(
             limit(1379.0, collections, 240.0, atmosphere_horizon_needed=True),
             limit(1379.0, collections, 240.0),
@@ -591,7 +659,7 @@ class SchedulingContinuityTests(unittest.TestCase):
             with patch.object(producer, "CACHE_ONLY", True):
                 self.assertFalse(selector(target_only, RUN))
 
-    def test_actual_cold_cap_guard_keeps_ordinary8_and_per_asset_critical_reserves(self):
+    def test_actual_cold_cap_guard_keeps_shared_asset_bound_and_per_asset_critical_reserves(self):
         tree = ast.parse(Path(producer.__file__).read_text("utf-8"))
         main = next(node for node in tree.body if isinstance(node, ast.FunctionDef) and node.name == "main")
         def assignment(name):
@@ -612,7 +680,7 @@ class SchedulingContinuityTests(unittest.TestCase):
                 {"cold_strict_current_lead_catch_up":selected,
                  "collection_is_critical_current":critical,
                  "strict_current_lead_attempt_limit":ordinary})
-        self.assertEqual(limit(False, True), ordinary)
+        self.assertEqual(limit(False, True), producer.MAX_ASSETS_PER_COLLECTION)
         self.assertEqual(limit(True, False), ordinary)
         self.assertEqual(limit(True, True), producer.MAX_ASSETS_PER_COLLECTION)
         self.assertGreater(limit(True, True), 8)
@@ -631,6 +699,8 @@ class SchedulingContinuityTests(unittest.TestCase):
             "strict_current_lead_attempt_available":producer.strict_current_lead_attempt_available}
         self.assertFalse(eval(gate,state))
         state["strict_current_lead_turn_attempt_limit"] = ordinary
+        self.assertTrue(eval(gate,state))
+        state["strict_current_lead_attempts"] = producer.MAX_ASSETS_PER_COLLECTION
         self.assertTrue(eval(gate,state))
         siblings = next(value for node in ast.walk(main) for _key,value in ast.iter_fields(node)
             if isinstance(value,list) and cap in value)

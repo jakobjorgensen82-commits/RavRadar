@@ -1,3 +1,12 @@
+## 24. oktober — lokal fair tidsfordeling for første kritiske havmodel
+
+- [x] Samme ottefilersstop påvist for forskellige leadmodeller i to gemte normale kørsler; kodehistorikken daterer kontrakten til september.
+- [x] Afgrænset lokal produktrettelse: eksisterende fair tidsreserve bruges også for almindelig lead; normal enkeltpassage, per-fil-kontrol, gammel maintenancegrænse og cold-reservationer bevares.
+- [x] Faktisk normal målkalder består fire Python-tilfælde med niende fil og beskyttet tid; normal modelbinding er uændret. Ingen nye kildegatekommandoer.
+- [ ] Samlet kontrol af den præcise kandidat, sikker levering og faktisk dækning på hele 118 × 210-aksen samt underdele.
+- [ ] Samspil mellem filernes rang, kvalificeret scalarværdi, native opgradering og fælles bytebudget. Nettoeffekt er endnu ikke bevist; alle fem mål er åbne.
+
+
 ## 24. oktober — afgrænset observation af DMI-køens første tur
 
 - [x] Observation-only udskilt fra scalar-kandidaten på eksisterende 586; ingen ændret sortering, kildeadgang, budget, modelbinding eller SQL.
