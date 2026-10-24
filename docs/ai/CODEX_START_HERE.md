@@ -1,3 +1,11 @@
+## 24. oktober — faste fejlårsager fra SOURCEs første vejrfase
+
+Den seneste samlede SOURCE-kontrol er afvist i den første leverandørfase. Ni bogstavelige assertionkoder fra den eksisterende vejrfixture manglede i de faste Python- og JavaScript-læsere og blev derfor vist som ukendte. Den snævre rettelse medtager nu kun disse koder; fritekst, private payloads og forkerte rapporttyper afvises fortsat. Gamle assertioner er bevaret.
+
+Den normale Python-diagnoseprøve består 12 tilfælde, og den normale Node-checkpointprøve består på den faktisk sammenførte kilde. De tre normale model-/bindingskontroller består uden ny C/I/T-udstedelse. Det er ikke bevis for den afviste native H0-årsag eller for fuld SOURCE-kvalifikation. En mulig decoderfrist er kun en hypotese; budgetter, admission, originale data, SQL og produktion ændres ikke. Næste kontrol skal vise den konkrete faste årsag gennem den eksisterende native-kalder.
+
+587s præcise samlede kildekontrol er nu bestået, men installation og offentlig effekt mangler stadig. SOURCE forbliver inaktiv på 4.0.588 med C157/I153/T12. Ældre daterede afventninger nedenfor bevares som historik; alle fem hovedmål er åbne, og kontinuerligt vejr og dækningsgrad er P0.
+
 ## 24. oktober — privat SOURCE-sammenføring med nyere vejrrettelser
 
 DMI-køobservationen og den afgrænsede fair tidsandel er nu kildeleveret på main. De daterede afventninger nedenfor om netop disse main-leveringer bevares som historik. Det er ikke i sig selv bevis for bedre dækning. Den lokale SOURCE-sammenføring indeholder nu de samme afgrænsede rettelser, men er endnu ikke samlet kvalificeret eller aktiveret. Begge grenes fulde historik bevares.

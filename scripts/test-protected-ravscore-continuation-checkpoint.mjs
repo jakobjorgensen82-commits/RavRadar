@@ -423,6 +423,22 @@ if (!process.argv.includes('--native-postgres') && !process.argv.includes('--nat
       const later={kind:'SOURCE_LEGACY_CHILD_FIRST_FAILURE',phase:'UNKNOWN',exceptionType:'ASSERTION_ERROR',
         osError:'NONE',callsite:null,privatePayloadIncluded:false};
       assert.deepEqual(nativePostgresChildFirstFailure(JSON.stringify(value)+'\n'+JSON.stringify(later),''),value);
+      if(module==='scripts/fixtures/source19-current-initial-weather.py'&&phase!=='PROVIDERS'){
+        for(const reason of ["CURRENT_NATIVE_INITIAL_WEATHER_CURRENT_LEDGER_CHANGED","CURRENT_NATIVE_INITIAL_WEATHER_ECCODES_FIELD_CLASSIFICATION","CURRENT_NATIVE_INITIAL_WEATHER_GRID_BOUND","CURRENT_NATIVE_INITIAL_WEATHER_NORMAL_FULL_WEATHER_DECODE_INCOMPLETE","CURRENT_NATIVE_INITIAL_WEATHER_NORMAL_OFFICIAL_WAVE_IDENTITY","CURRENT_NATIVE_INITIAL_WEATHER_NORMAL_TARGETS_REQUIRED","CURRENT_NATIVE_INITIAL_WEATHER_NORMAL_WAVE_NATIVE_OWNER_NOT_COMPLETE","CURRENT_NATIVE_INITIAL_WEATHER_RAW_CHANGED_AFTER_DECODE","CURRENT_NATIVE_INITIAL_WEATHER_REFERENCE"]){
+          const fixed={...value,boundary:{...boundary,exceptionType:'RUNTIME_ERROR',reason}};
+          assert.deepEqual(nativeProviderProcessFirstFailure(fixed),fixed);
+          assert.deepEqual(nativePostgresChildFirstFailure(JSON.stringify(fixed)+'\n'+JSON.stringify(later),''),fixed);
+          for(const bad of [
+            {...fixed,boundary:{...fixed.boundary,reason:reason+' PRIVATE'}},
+            {...fixed,boundary:{...fixed.boundary,reason:'CURRENT_NATIVE_INITIAL_WEATHER_PRIVATE'}},
+            {...fixed,boundary:{...fixed.boundary,exceptionType:'VALUE_ERROR'}},
+            {...fixed,boundary:{...fixed.boundary,raw:'PRIVATE'}},
+          ]){
+            assert.equal(nativeProviderProcessFirstFailure(bad),null);
+            assert.equal(nativePostgresChildFirstFailure(JSON.stringify(bad),''),null);
+          }
+        }
+      }
       if(phase!=='PROVIDERS'){
         for(const [collection,hourOffset] of [['wam_nsb',0],['wam_dw',120]]){
           for(const [reason,admitted] of [['STAGE_ADMISSION_FALSE',false],['NATIVE_OWNER_INCOMPLETE',true]]){

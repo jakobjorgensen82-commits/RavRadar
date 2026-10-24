@@ -1,3 +1,9 @@
+## Ikke udgivet — faste SOURCE-fejlkoder uden ændret databehandling
+
+- Medtager de ni eksisterende INITIAL_WEATHER-assertionkoder i begge faste diagnoselæsere. Ukendt tekst, ekstra felter og forkert exceptiontype afvises stadig.
+- Bevarer alle gamle assertioner og tilføjer målrettede kontroller i de normale Python- og Node-kaldere. Python 12/12 og den normale checkpointkontrakt består lokalt; faktisk native H0-årsag og samlet SOURCE-kvalifikation er stadig åbne.
+- Ingen ny version, C/I/T-udstedelse, budget-, decoder-, admission-, original-, SQL- eller produktionsændring. En mulig fristoverskridelse er ikke en bevist årsag. SOURCE er inaktiv; den nu kildekvalificerede 587 er endnu ikke installeret.
+
 ## Ikke udgivet — privat dokumentunion for SOURCE og nyere P0-kilde
 
 - Bevarer begge grenes daterede historik og føjer kun den kildeleverede DMI-køobservation og fair tidsandel til SOURCEs dokumentation. Ældre afventninger om disse main-leveringer er historik, ikke ny driftsstatus.

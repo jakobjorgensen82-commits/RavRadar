@@ -2127,6 +2127,8 @@ def source_legacy_child_failure(error, phase):
 
 
 SOURCE_PROVIDER_NEED_CODES = frozenset(["CURRENT_NATIVE_PROVIDER_ABSOLUTE_PATH","CURRENT_NATIVE_PROVIDER_ADMIN_COPY_CHANGED","CURRENT_NATIVE_PROVIDER_ADMIN_INPUT_MISSING","CURRENT_NATIVE_PROVIDER_BASIS_DESTINATION_EXISTS","CURRENT_NATIVE_PROVIDER_CLEAN_NATIVE_ACQUISITION_MODE","CURRENT_NATIVE_PROVIDER_ECCODES_REQUIRED","CURRENT_NATIVE_PROVIDER_EMPTY_NORMAL_STATION_SOURCE_REQUIRED","CURRENT_NATIVE_PROVIDER_EXACT_INITIAL_PHASE","CURRENT_NATIVE_PROVIDER_EXACT_INITIAL_PHASE_ARGUMENT","CURRENT_NATIVE_PROVIDER_EXACT_NODE_TARGET_ARGUMENTS","CURRENT_NATIVE_PROVIDER_EXISTING_FIXTURE_DIRECTORY","CURRENT_NATIVE_PROVIDER_EXISTING_OWNED_HOST","CURRENT_NATIVE_PROVIDER_EXTERNAL_NETWORK_REFUSED","CURRENT_NATIVE_PROVIDER_GRID_BOUND","CURRENT_NATIVE_PROVIDER_LINUX_PYTHON312_REQUIRED","CURRENT_NATIVE_PROVIDER_NODE24_REQUIRED","CURRENT_NATIVE_PROVIDER_NORMAL_BASIS_OUTPUT_MISSING","CURRENT_NATIVE_PROVIDER_NORMAL_BULK_READBACK","CURRENT_NATIVE_PROVIDER_NORMAL_CAPTURE_MISSING","CURRENT_NATIVE_PROVIDER_NORMAL_COPERNICUS_RESIDUALS_REQUIRE_DATA","CURRENT_NATIVE_PROVIDER_NORMAL_DECODE_INCOMPLETE","CURRENT_NATIVE_PROVIDER_NORMAL_DECODE_OUTCOMES_INCOMPLETE","CURRENT_NATIVE_PROVIDER_NORMAL_LEDGER_NOT_READY","CURRENT_NATIVE_PROVIDER_NORMAL_MODULE","CURRENT_NATIVE_PROVIDER_NORMAL_NATIVE_PAIR_REJECTED","CURRENT_NATIVE_PROVIDER_NORMAL_PART_TARGETS","CURRENT_NATIVE_PROVIDER_NORMAL_REGISTRY_210_673","CURRENT_NATIVE_PROVIDER_NO_ADOPTED_OLD_BULK","CURRENT_NATIVE_PROVIDER_RAW_CHANGED_AFTER_DECODE","CURRENT_NATIVE_PROVIDER_SAME_ACTION_RUNNER_TEMP","CURRENT_NATIVE_PROVIDER_STAC_HOST","CURRENT_NATIVE_PROVIDER_STAC_PAGE_BOUND","CURRENT_NATIVE_PROVIDER_STAC_ROUTE","CURRENT_NATIVE_PROVIDER_SYMLINK","CURRENT_NATIVE_PROVIDER_TARGET_HOUR","CURRENT_NATIVE_PROVIDER_WRITE_READBACK"])
+SOURCE_INITIAL_WEATHER_NEED_CODES = frozenset(["CURRENT_NATIVE_INITIAL_WEATHER_CURRENT_LEDGER_CHANGED","CURRENT_NATIVE_INITIAL_WEATHER_ECCODES_FIELD_CLASSIFICATION","CURRENT_NATIVE_INITIAL_WEATHER_GRID_BOUND","CURRENT_NATIVE_INITIAL_WEATHER_NORMAL_FULL_WEATHER_DECODE_INCOMPLETE","CURRENT_NATIVE_INITIAL_WEATHER_NORMAL_OFFICIAL_WAVE_IDENTITY","CURRENT_NATIVE_INITIAL_WEATHER_NORMAL_TARGETS_REQUIRED","CURRENT_NATIVE_INITIAL_WEATHER_NORMAL_WAVE_NATIVE_OWNER_NOT_COMPLETE","CURRENT_NATIVE_INITIAL_WEATHER_RAW_CHANGED_AFTER_DECODE","CURRENT_NATIVE_INITIAL_WEATHER_REFERENCE"])
+SOURCE_PROVIDER_FAILURE_CODES = SOURCE_PROVIDER_NEED_CODES | SOURCE_INITIAL_WEATHER_NEED_CODES
 SOURCE_PROVIDER_FRAME_FILES = ('scripts/fixtures/source19-current-native-providers.py',
     'scripts/update-dmi-bulk.py', 'scripts/test-source19-terminal-failure-proof-bank-v17-observer-native.py',
     'scripts/fixtures/source19-current-initial-weather.py', 'scripts/lib/copernicus_current_source_stage.py')
@@ -2173,7 +2175,7 @@ def source_provider_boundary_failure(error):
         reason = 'UNKNOWN'
         if type(error) is RuntimeError:
             text = str(error)
-            if text in SOURCE_PROVIDER_NEED_CODES:
+            if text in SOURCE_PROVIDER_FAILURE_CODES:
                 reason = text
         return {'kind': 'SOURCE_PROVIDER_BOUNDARY_FIRST_FAILURE', 'exceptionType': exception_type,
             'reason': reason, 'callsite': site, 'helper': helper, 'timeoutSeconds': timeout,
@@ -2189,7 +2191,7 @@ def source_provider_boundary_valid(value):
                 or value['kind'] != 'SOURCE_PROVIDER_BOUNDARY_FIRST_FAILURE'
                 or value['privatePayloadIncluded'] is not False
                 or value['exceptionType'] not in (*SOURCE_TERMINAL_EXCEPTION_TYPES, 'SUBPROCESS_TIMEOUT', 'SUBPROCESS_EXIT')
-                or value['reason'] not in (*SOURCE_PROVIDER_NEED_CODES, 'UNKNOWN')
+                or value['reason'] not in (*SOURCE_PROVIDER_FAILURE_CODES, 'UNKNOWN')
                 or value['helper'] not in (*SOURCE_PROVIDER_HELPERS.values(), 'NONE', 'UNKNOWN')
                 or value['timeoutSeconds'] is not None and (type(value['timeoutSeconds']) is not int or value['timeoutSeconds'] not in (30, 120))
                 or value['timeoutSeconds'] is not None and value['exceptionType'] != 'SUBPROCESS_TIMEOUT'
@@ -2460,6 +2462,114 @@ class SourceProviderEvidencePureTests(unittest.TestCase):
                     self.assertEqual(value['reason'], 'NATIVE_OWNER_INCOMPLETE')
                     self.assertIs(value['outcome']['interrupted'], False)
                     self.assertIs(value['summary']['complete'], False)
+
+
+    def test_initial_weather_need_catalog_uses_actual_fixture_and_both_consumers(self):
+        import ast
+        file = ROOT / 'scripts/fixtures/source19-current-initial-weather.py'
+        tree = ast.parse(file.read_text(encoding='utf8'))
+        codes = set()
+        for node in ast.walk(tree):
+            if isinstance(node, ast.Call) and isinstance(node.func, ast.Name) and node.func.id == 'need':
+                self.assertEqual(len(node.args), 2)
+                self.assertIsInstance(node.args[1], ast.Constant)
+                self.assertIs(type(node.args[1].value), str)
+                codes.add('CURRENT_NATIVE_INITIAL_WEATHER_' + node.args[1].value)
+        self.assertEqual(len(codes), 9)
+        need_node = next(node for node in tree.body if isinstance(node, ast.FunctionDef) and node.name == 'need')
+        scope = {}
+        exec(compile(ast.Module(body=[need_node], type_ignores=[]), str(file), 'exec'), scope)
+        for code in sorted(codes):
+            with self.subTest(code=code):
+                try:
+                    scope['need'](False, code.removeprefix('CURRENT_NATIVE_INITIAL_WEATHER_'))
+                except RuntimeError as error:
+                    observed = source_provider_boundary_failure(error)
+                    self.assertEqual(observed['reason'], code)
+                    self.assertTrue(source_provider_boundary_valid(observed))
+                    if observed['callsite'] is not None:
+                        self.assertEqual(observed['callsite']['module'], 'scripts/fixtures/source19-current-initial-weather.py')
+                else:
+                    self.fail('The unchanged fixture assertion must still fail')
+        self.assertEqual(codes, SOURCE_INITIAL_WEATHER_NEED_CODES)
+        self.assertEqual(SOURCE_PROVIDER_FAILURE_CODES, SOURCE_PROVIDER_NEED_CODES | codes)
+        javascript = (ROOT / 'scripts/lib/checkpoint-cas-native-postgres.mjs').read_text(encoding='utf8')
+        rows = re.findall(r'const SOURCE_INITIAL_WEATHER_NEED_CODES=new Set\((\[[^\n]+\])\);', javascript)
+        self.assertEqual(len(rows), 1)
+        self.assertEqual(set(json.loads(rows[0])), codes)
+        for raw in ('CURRENT_NATIVE_INITIAL_WEATHER_PRIVATE_SENTINEL',
+                    'CURRENT_NATIVE_INITIAL_WEATHER_GRID_BOUND\nPRIVATE_SENTINEL'):
+            observed = source_provider_boundary_failure(RuntimeError(raw))
+            self.assertEqual(observed['reason'], 'UNKNOWN')
+            self.assertTrue(source_provider_boundary_valid(observed))
+            self.assertNotIn('PRIVATE_SENTINEL', json.dumps(observed))
+
+    def test_initial_fixture_default_deadline_reaches_need_before_admission(self):
+        # Actual source branches, synthetic clock/control flow only: no decoder,
+        # GRIB/original admission, provider invocation or native/SQL proof.
+        import ast
+        import copy
+        from types import SimpleNamespace
+        owner = ROOT / 'scripts/update-dmi-bulk.py'
+        tree = ast.parse(owner.read_text(encoding='utf8'))
+        names = {'MAX_RUNTIME_SECONDS', 'STARTED', 'FINALIZE_RESERVE_SECONDS', 'WORK_DEADLINE'}
+        assignments = [node for node in tree.body if isinstance(node, ast.Assign)
+            and any(isinstance(target, ast.Name) and target.id in names for target in node.targets)]
+        self.assertEqual(len(assignments), 4)
+        functions = [node for node in tree.body if isinstance(node, ast.FunctionDef)
+            and node.name in ('runtime_remaining', 'should_stop_work')]
+        self.assertEqual(len(functions), 2)
+        process = next(node for node in tree.body if isinstance(node, ast.FunctionDef) and node.name == 'process_grib')
+        guards = [node for node in ast.walk(process) if isinstance(node, ast.If)
+            and isinstance(node.test, ast.Call) and isinstance(node.test.func, ast.Name)
+            and node.test.func.id == 'should_stop_work']
+        self.assertEqual(len(guards), 1)
+        probe = ast.Module(body=[ast.While(test=ast.Constant(True),
+            body=[copy.deepcopy(guards[0]), ast.Break()], orelse=[])], type_ignores=[])
+        probe_code = compile(ast.fix_missing_locations(probe), str(owner), 'exec')
+        transaction = next(node for node in tree.body if isinstance(node, ast.FunctionDef)
+            and node.name == 'process_grib_transactionally')
+        interruptions = [node for node in ast.walk(transaction) if isinstance(node, ast.If)
+            and isinstance(node.test, ast.Name) and node.test.id == 'interrupted']
+        self.assertEqual(len(interruptions), 1)
+        wrapper = ast.parse('def settle():\n    pass\n')
+        wrapper.body[0].body = [copy.deepcopy(interruptions[0])]
+        transaction_code = compile(ast.fix_missing_locations(wrapper), str(owner), 'exec')
+        fixture = ROOT / 'scripts/fixtures/source19-current-initial-weather.py'
+        fixture_tree = ast.parse(fixture.read_text(encoding='utf8'))
+        need_node = next(node for node in fixture_tree.body if isinstance(node, ast.FunctionDef) and node.name == 'need')
+        demands = [node for node in ast.walk(fixture_tree) if isinstance(node, ast.Expr)
+            and isinstance(node.value, ast.Call) and isinstance(node.value.func, ast.Name)
+            and node.value.func.id == 'need' and len(node.value.args) == 2
+            and isinstance(node.value.args[1], ast.Constant)
+            and node.value.args[1].value == 'NORMAL_WAVE_NATIVE_OWNER_NOT_COMPLETE']
+        self.assertEqual(len(demands), 1)
+        for phase, start in (('H0', 1000), ('H1', 5000), ('ordinary', 9000)):
+            with self.subTest(phase=phase):
+                clock = [start]
+                scope = {'os': SimpleNamespace(getenv=lambda _key, default: default),
+                         'time': SimpleNamespace(monotonic=lambda: clock[0])}
+                exec(compile(ast.Module(body=assignments + functions, type_ignores=[]), str(owner), 'exec'), scope)
+                self.assertEqual((scope['MAX_RUNTIME_SECONDS'], scope['FINALIZE_RESERVE_SECONDS']), (780, 180))
+                self.assertEqual(scope['WORK_DEADLINE'], start + 600)
+                for elapsed, expected in ((599, False), (600, True)):
+                    clock[0] = start + elapsed
+                    scope['interrupted'] = False
+                    exec(probe_code, scope)
+                    self.assertIs(scope['interrupted'], expected)
+                restored = []
+                scope.update(diagnostics={}, diagnostics_snapshot={}, failure_flush=None,
+                             restore_mapping=lambda *_args: restored.append(True))
+                exec(transaction_code, scope)
+                self.assertEqual(scope['settle'](), (set(), set(), True, 0, 0))
+                self.assertEqual(restored, [True])
+                scope['complete'] = False
+                exec(compile(ast.Module(body=[need_node], type_ignores=[]), str(fixture), 'exec'), scope)
+                with self.assertRaisesRegex(RuntimeError,
+                        '^CURRENT_NATIVE_INITIAL_WEATHER_NORMAL_WAVE_NATIVE_OWNER_NOT_COMPLETE$'):
+                    exec(compile(ast.Module(body=demands, type_ignores=[]), str(fixture), 'exec'), scope)
+        # The real pre-callback branch already has a separate assertion above.
+        # This proves a possible refusal, not the lost CI child's elapsed time.
 
     def test_exact_provider_need_catalog_matches_all_literal_source_sites(self):
         import ast
