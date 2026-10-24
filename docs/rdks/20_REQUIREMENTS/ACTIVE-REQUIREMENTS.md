@@ -1,8 +1,18 @@
+## 24. oktober — lokal 587-sammenføring med den leverede DMI-kilde
+
+DMI-rettelsen er præcist kildekvalificeret og merget særskilt på den installerede 586-familie. Den senest afsluttede naturlige vejrhentning er offentligt verificeret; den næste almindelige kørsel er ved denne lokale sammenføring fortsat i DMI-arbejdet. Det er ikke offentlig 587, bevist fuld dækning eller en afsluttet assistentlevering. Kontinuerligt vejr og alle forventede timer/zoners dækning har fortsat førsteprioritet; ingen produktionsændring må ske under den aktive writer.
+
+Den særskilte 587-kandidat har bestået sin præcise kildekontrol. Den nye lokale kombination kræver sit eget samlede bevis; den tidligere afbrudte 587+DMI-kontrol er ikke et helt PASS. Alle produktblade, udstedte modelbindinger, migrationsfiler og den eksisterende SQL uden for håndbogsliteralen bevares. Assistentens håndbogsafsnit 89.265 og stabile ID er uændrede; det særskilte DMI-afsnit har 89.267. Begge dokumenthistorikker nedenfor bevares. Installation, hosted AI og faktisk 587-virkning er åbne; alle fem hovedmål er åbne til 18. november 2026.
+
 ## 24. oktober — bevaret kvalificeret strømvinder gennem cachegenbrug
 
 AKTIVT: En fuldt gennemgået marin DMI-fil kan afsluttes uden numerisk ændring, hvis en bedre allerede kvalificeret strømvinder bevares. Præcist heltalsnul kræver officiel fil-/parser-/signaturidentitet, faktisk targetregister, fuldt kanonisk udfaldsbevis og matchende samplingkvittering. Normal ledger og genoptagelse kræver fortsat faktiske kvalificerede tuples eller retained-originalbeviser. En kvittering må ikke skabe dækning eller opgradere ukendt gridbevis. Privat scalar-support, WAM og ikke-marine grene beholder mutationskravet.
 
 Rettelsen leveres særskilt på installeret 586 uden assistent587, ny modelbinding eller SQL. Kontinuerlig vejrhentning og alle timer/zoners femfamiliedækning har førsteprioritet. Lokalt eller source-grønt er ikke faktisk cachegenbrug eller offentlig effekt.
+
+## 23. oktober — DMI-filer med gyldige, uændrede strømvindere
+
+En fuldt gennemgået marin DMI-fil må markeres behandlet uden numerisk overskrivning, når en allerede kvalificeret bedre vinder bevares. Præcis heltalsnul kræver normal officiel source/parser/signature, faktiske target-ID'er og registryhash, fuldt kanonisk udfaldsbevis samt matchende samplingkvittering. Ingen kvittering må erstatte faktiske tuples eller original-/retained-attestation. Samme kvalifikation skal følge normal gemning, ledger og genoptagelse. Privat scalar-support, WAM og ikke-marine grene beholder deres mutationskrav. Ukendt gridbevis får ingen ny anvendelsesret; kildeprioritet, gamle originaler, strømhukommelsesgrænser, scoreformel og no-loss bevares.
 
 ## 23. oktober — afsluttede nationale arbejdsforløb skal kunne frigives
 
@@ -27,6 +37,14 @@ Ny normal schema2-bank skal bevare korrigerede originale strømendepunkter for h
 ## 22. oktober — drift skal passe til eksisterende Free-planer
 
 AKTIVT: Ejerens aktuelle krav er, at fremtidig RavRadar-drift skal passe til Supabase Free og Cloudflare Free, også når cache og historik bygges videre. Kontrollér faktisk periode, forbrug og relevante aktuelle officielle grænser; fremskriv konservativt ved normale kørsler og brugertrafik. Skeln faktisk abonnementsplan fra Free-sammenligning. Lokale komprimeringsmål er ikke kvotebevis. Ingen nye betalingsplaner, datatab, skjult pruning eller svækkelse af kontroller er tilladt. Gem målegrundlag og åbne afhængigheder privat.
+
+## 22. oktober — aktiv 587-leveringskontrakt efter ægte 586
+
+AKTIVT: SpørgRavRadar skal bevare DA/DE/EN, eksisterende kontrollerede fakta/ID'er, safety/private-afslag, ukendt svar og ingen fundgaranti. Generelle forklaringer om bølgebevægelse ved bunden, strømtransport mellem revler og forskellen til materiale på stranden må ikke opfinde aktuelle værdier eller en sikker lokal konklusion. Aktuelle vejrtal kræver fortsat konkret zone og bundne data. Den enkle identifikationsgrammatik må kun bruge den eksisterende fagligt kontrollerede viden; et lokalt svar er ikke hosted AI-bevis.
+
+AKTIVT: Den nye familie skal afledes af hele den faktiske versionssynkroniserede kilde gennem de normale C→I→T-/SQL-builders. Hele autentiske 586-parentattestation, B/S, originale kilder, tal og historik skal bevares. Førsteinstallation kræver den særskilte normale autentificerede prewrite og sole-pending named-plan; generisk code-only må ikke få den tilladelse. Kun strengt senere almindelig H0 og normale partResults kan fortsætte; ingen ny samme-H0-hændelse eller nulstilling. Hele schema2-originalbanken, fremadrettet historik og retentionparitet skal bestå.
+
+Lokalt 587-fixedpoint, syntetiske kaldermål og65 uændrede gamle migrationer er nødvendige kildebeviser, ikke installation. Præcis ny source-/native PostgreSQL-kvalifikation, ægte ny schema2-B/S/efterfølger, faktisk kontrolleret installation/genlæsning og offentlig effekt er fortsat selvstændige krav. P0 har førsteprioritet; lager-/økonomivalg må ikke løses med uautoriseret sletning, pruning eller større kvote. SOURCE, statistik og automatisk retention forbliver inaktive.
 
 ## 20. oktober — varig statistikforberedelse uden historisk klientautoritet
 

@@ -213,11 +213,16 @@ export async function deployPrivateTripStudy(){
     exactMain();stage='SOURCE_PROOF';
     const sourceProof=run('node',['scripts/weather-source-gate.mjs','check']);
     if(!/^Source gate: required=false; reason=[^\r\n]+$/m.test(sourceProof))throw fail(stage);
-    stage='READ_ONLY_PLAN';run('node',['scripts/prepare-cloudflare-trip-storage.mjs','--existing-worker-repair']);
+    stage='READ_ONLY_PLAN_EXISTING_STORAGE';run('node',['scripts/prepare-cloudflare-trip-storage.mjs','--existing-worker-repair']);
+    stage='READ_ONLY_PLAN_CONFIGURATION';
     const base=readOwnedJson(CONFIG);if(Object.hasOwn(base,'vars'))throw fail('UNEXPECTED_CONFIG');
     config=assertConfiguration({...base,vars:{...VARS}});fs.writeFileSync(CONFIG,JSON.stringify(config)+'\n',{mode:0o600});
-    originalFence=oldFence();model=privateTripStudySchemaModel();
-    const before=await inspect();const currentVersion=await attest(originalFence.workerVersionId);edge('d1');
+    stage='READ_ONLY_PLAN_ORIGINAL_FENCE';originalFence=oldFence();
+    stage='READ_ONLY_PLAN_SCHEMA_MODEL';model=privateTripStudySchemaModel();
+    stage='READ_ONLY_PLAN_STATISTICS_SCHEMA';const before=await inspect();
+    stage='READ_ONLY_PLAN_WORKER_BINDINGS';const currentVersion=await attest(originalFence.workerVersionId);
+    stage='READ_ONLY_PLAN_EDGE_CONTRACT';edge('d1');
+    stage='READ_ONLY_PLAN_RECEIPT';
     plan={kind:'PRIVATE_TRIP_STUDY_CONTROL0_PLAN',sourceSha:env.GITHUB_SHA,runId:env.GITHUB_RUN_ID,
       workerVersionId:currentVersion,migrationSha256:MIGRATION_SHA,configurationSha256:hash(canonical(config)),
       jobsMigrationSha256:JOBS_MIGRATION_SHA,
