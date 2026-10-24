@@ -1,3 +1,19 @@
+## 24. oktober — privat SOURCE-sammenføring med nyere vejrrettelser
+
+DMI-køobservationen og den afgrænsede fair tidsandel er nu kildeleveret på main. De daterede afventninger nedenfor om netop disse main-leveringer bevares som historik. Det er ikke i sig selv bevis for bedre dækning. Den lokale SOURCE-sammenføring indeholder nu de samme afgrænsede rettelser, men er endnu ikke samlet kvalificeret eller aktiveret. Begge grenes fulde historik bevares.
+
+Den sammenførte 587-kilde afventer sin egen præcise kildekontrol og er ikke installeret. SOURCE forbliver inaktiv på den allerede lokalt udstedte 4.0.588 med uændret C157/I153/T12, originale migrationer og bindingsforbrugere. Gamle delprøver er fortsat deres egne beviser, ikke et nyt samlet PASS. Faktisk installeret 587, SOURCEs normale native-/kildekontrol, kontrolleret installation og offentlig effekt er særskilte åbne krav. Kontinuerligt vejr og dækningsgrad er P0; aktuelle kørselstal og offentlig status følges i ROOTs private checkpoint. Alle fem mål er åbne til 18. november 2026.
+
+## 24. oktober — ÅBEN: første kritiske havmodel afkortes før sin tidsandel
+
+Gemte logs beviser otte fuldførte filer og det eksplicitte leadloft i to almindelige kørsler med forskellige første modeller. En lokal kandidat bruger samme eksisterende tidsreserve for alle almindelige kritiske havmodeller og bevarer resten af enkeltpassagen. Den normale målkalder består lokalt; produktionseffekt og samlet dækning er åbne. Det fælles bytebudget kan fortsat begrænse senere familier. Native-DMI-mangel og fravær af en lovligt valgt scalarværdi skal fortsat skelnes; første-køobservationen er nødvendig for den særskilte rangfølgeanalyse.
+
+
+## 24. oktober — ÅBEN: manglende observation af DMI's faktiske køvalg
+
+Samlede critical-tal kan ikke skelne markerede inputmangler fra native opgraderinger. Den løbende anskaffelsesplan ændres under kørslen og er ikke et uændret startbillede. Den snævre observation gemmer derfor hver samlings første sorterede kø særskilt. Den dokumenterer hverken senere restkøer, udførte downloads, mangler på tværs af alle leverandører eller offentlig dækning. En kørettelse afventer konkret årsagsbevis; budget- og kildekrav lempes ikke. Lokal målprøve er bestået; præcis samlet kildekontrol og faktisk driftsobservation er åbne.
+
+
 ## 24. oktober — SOURCE-prøvens WAM-identitet rettet lokalt
 
 Den bevarede SOURCE-kontrol afviste første WAM-asset i PROVIDERS-H0: 212 krævede mål, 0 accepterede og 212 ASSET_PROVENANCE_MISMATCH. Fixtureasset manglede assetIdentitySha256, så den normale MappingWaveAsset læste tom hash mod RAW-capturens kanoniske hash. Feltet sættes nu med normal asset_identity_sha256(href). Dette er en påvist prøveinputfejl, ikke en produktions-/DMI-fejl.

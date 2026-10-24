@@ -6,6 +6,16 @@ Kun de to afgrænsede fixture-/testblade ændres. Produktionslæser, administrat
 
 Main715 er kildekvalificeret og merget. Det er en særskilt P0-levering; driftseffekten skal vurderes ved den efterfølgende almindelige vejrhentning. Skiftende kørselsdetaljer hører til det private checkpoint. Denne SOURCE-opfølgning giver ingen ny produktions-, bindings- eller installationsautoritet.
 
+## 24. oktober — bevaret 587-kravhistorik ved SOURCE-sammenføring
+
+Den følgende 587-note bevares fra den tidligere lokale sammenføring. Dens kørsels- og kvalifikationsudsagn er dateret historik, ikke en ny status for driften eller denne SOURCE-kandidat. Begge oprindelige kravhistorikker bevares; faktisk installeret 587 og SOURCEs egen samlede kontrol er fortsat særskilte krav.
+
+## 24. oktober — lokal 587-sammenføring med den leverede DMI-kilde
+
+DMI-rettelsen er præcist kildekvalificeret og merget særskilt på den installerede 586-familie. Den senest afsluttede naturlige vejrhentning er offentligt verificeret; den næste almindelige kørsel er ved denne lokale sammenføring fortsat i DMI-arbejdet. Det er ikke offentlig 587, bevist fuld dækning eller en afsluttet assistentlevering. Kontinuerligt vejr og alle forventede timer/zoners dækning har fortsat førsteprioritet; ingen produktionsændring må ske under den aktive writer.
+
+Den særskilte 587-kandidat har bestået sin præcise kildekontrol. Den nye lokale kombination kræver sit eget samlede bevis; den tidligere afbrudte 587+DMI-kontrol er ikke et helt PASS. Alle produktblade, udstedte modelbindinger, migrationsfiler og den eksisterende SQL uden for håndbogsliteralen bevares. Assistentens håndbogsafsnit 89.265 og stabile ID er uændrede; det særskilte DMI-afsnit har 89.267. Begge dokumenthistorikker nedenfor bevares. Installation, hosted AI og faktisk 587-virkning er åbne; alle fem hovedmål er åbne til 18. november 2026.
+
 ## 24. oktober — bevaret kvalificeret strømvinder gennem cachegenbrug
 
 AKTIVT: En fuldt gennemgået marin DMI-fil kan afsluttes uden numerisk ændring, hvis en bedre allerede kvalificeret strømvinder bevares. Præcist heltalsnul kræver officiel fil-/parser-/signaturidentitet, faktisk targetregister, fuldt kanonisk udfaldsbevis og matchende samplingkvittering. Normal ledger og genoptagelse kræver fortsat faktiske kvalificerede tuples eller retained-originalbeviser. En kvittering må ikke skabe dækning eller opgradere ukendt gridbevis. Privat scalar-support, WAM og ikke-marine grene beholder mutationskravet.

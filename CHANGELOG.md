@@ -1,3 +1,23 @@
+## Ikke udgivet — privat dokumentunion for SOURCE og nyere P0-kilde
+
+- Bevarer begge grenes daterede historik og føjer kun den kildeleverede DMI-køobservation og fair tidsandel til SOURCEs dokumentation. Ældre afventninger om disse main-leveringer er historik, ikke ny driftsstatus.
+- Bevarer håndbogens metadata, stabile ID'er og alle eksisterende afsnit; kun de to forklarende afsnit i 89.267 suppleres.
+- Ingen ny version, C/I/T-udstedelse, SQL-definition eller aktivering. 587s præcise kontrol og installation samt SOURCEs samlede kvalifikation og offentlige virkning er stadig åbne; P0 og alle fem mål til 18. november består.
+
+## Ikke udgivet — fair tidsandel til første kritiske havmodel på 4.0.586
+
+- Erstatter første kritiske havmodels faste ottefilersstop med den normale filgrænse og samme tidsfordeling, som allerede beskytter de øvrige ventende familier.
+- Bevarer normal enkeltpassage, vedligeholdelsesgrænse, autentificeret engangsstart, samlet budget og kontroller før hver fil.
+- Den normale kildeprøve får ét nyt tilfælde i sin eksisterende kalder. Lokal målprøve består; samlet kildekontrol, levering og målt effekt afventer. Det fælles bytebudget er fortsat en begrænsning.
+
+
+## Ikke udgivet — afgrænset DMI-køobservation på 4.0.586
+
+- Tilføjer `firstTurnOrder` med klassifikationsprioritet, faste årsagskategorier, faktisk køplacering og korrekt startmarkør pr. samling.
+- Bevarer første observation gennem senere omplanlægning uden at ændre kø, kildeadgang, budgetter eller tal.
+- Leverer ingen scalar-plan eller prioriteringsændring. Lokal målprøve består; præcis samlet kildekontrol og faktisk driftsobservation afventer.
+
+
 ## 24. oktober — SOURCE-prøvens WAM-identitet rettet lokalt
 
 Den bevarede SOURCE-kontrol afviste første WAM-asset i PROVIDERS-H0: 212 krævede mål, 0 accepterede og 212 ASSET_PROVENANCE_MISMATCH. Fixtureasset manglede assetIdentitySha256, så den normale MappingWaveAsset læste tom hash mod RAW-capturens kanoniske hash. Feltet sættes nu med normal asset_identity_sha256(href). Dette er en påvist prøveinputfejl, ikke en produktions-/DMI-fejl.

@@ -1,3 +1,32 @@
+## 24. oktober — privat SOURCE-sammenføring med nyere vejrrettelser
+
+DMI-køobservationen og den afgrænsede fair tidsandel er nu kildeleveret på main. De daterede afventninger nedenfor om netop disse main-leveringer bevares som historik. Det er ikke i sig selv bevis for bedre dækning. Den lokale SOURCE-sammenføring indeholder nu de samme afgrænsede rettelser, men er endnu ikke samlet kvalificeret eller aktiveret. Begge grenes fulde historik bevares.
+
+Den sammenførte 587-kilde afventer sin egen præcise kildekontrol og er ikke installeret. SOURCE forbliver inaktiv på den allerede lokalt udstedte 4.0.588 med uændret C157/I153/T12, originale migrationer og bindingsforbrugere. Gamle delprøver er fortsat deres egne beviser, ikke et nyt samlet PASS. Faktisk installeret 587, SOURCEs normale native-/kildekontrol, kontrolleret installation og offentlig effekt er særskilte åbne krav. Kontinuerligt vejr og dækningsgrad er P0; aktuelle kørselstal og offentlig status følges i ROOTs private checkpoint. Alle fem mål er åbne til 18. november 2026.
+
+## 24. oktober — privat 587-sammenføring med P0s køobservation og fair tidsandel
+
+Den præcist kvalificerede 587-kilde på 888e bevares, og de afgrænsede P0-ændringer fra 717 forberedes ovenpå. 716s køobservation er særskilt kildeleveret på den installerede 586-familie; 717s fair tidsandel afventer fortsat sin præcise samlede kontrol og sikre main-levering. Denne private sammenføring er hverken anvendt, prøvet, installeret eller offentliggjort. Fejler 717, må dette efterbillede ikke leveres.
+
+Begge fulde dokumenthistorikker nedenfor bevares. 587s udstedte C98/I97/T12, 66 migrationsfiler, geodata og originale overgangsgrænser ændres ikke. Den endelige ægte Git-sammenføring og dens egen normale native-/kildekontrol er stadig nødvendige; 888es tidligere PASS må ikke genmærkes som samlet bevis. Ingen levering under aktiv writer. Alle fem hovedmål er fortsat åbne.
+
+## 24. oktober — lokal fair tidsfordeling for første kritiske havmodel
+
+- [x] Samme ottefilersstop påvist for forskellige leadmodeller i to gemte normale kørsler; kodehistorikken daterer kontrakten til september.
+- [x] Afgrænset lokal produktrettelse: eksisterende fair tidsreserve bruges også for almindelig lead; normal enkeltpassage, per-fil-kontrol, gammel maintenancegrænse og cold-reservationer bevares.
+- [x] Faktisk normal målkalder består fire Python-tilfælde med niende fil og beskyttet tid; normal modelbinding er uændret. Ingen nye kildegatekommandoer.
+- [ ] Samlet kontrol af den præcise kandidat, sikker levering og faktisk dækning på hele 118 × 210-aksen samt underdele.
+- [ ] Samspil mellem filernes rang, kvalificeret scalarværdi, native opgradering og fælles bytebudget. Nettoeffekt er endnu ikke bevist; alle fem mål er åbne.
+
+
+## 24. oktober — afgrænset observation af DMI-køens første tur
+
+- [x] Observation-only udskilt fra scalar-kandidaten på eksisterende 586; ingen ændret sortering, kildeadgang, budget, modelbinding eller SQL.
+- [x] Den normale lokale målprøve består på den isolerede kilde: faktisk rækkefølge, adskilt klassifikationsprioritet, korrekt rotationsmarkør, bevarede input og afslag uden private værdier.
+- [ ] Præcis samlet kildekontrol og faktisk første-tursrapport fra almindelig vejrhentning.
+- [ ] Påvist årsag og nyttig rettelse af de resterende dækningshuller. Scalar-kandidaten er fortsat inaktiv og medfølger ikke; alle fem hovedmål er åbne.
+
+
 ## 24. oktober — SOURCE-prøvens WAM-identitet rettet lokalt
 
 Den bevarede SOURCE-kontrol afviste første WAM-asset i PROVIDERS-H0: 212 krævede mål, 0 accepterede og 212 ASSET_PROVENANCE_MISMATCH. Fixtureasset manglede assetIdentitySha256, så den normale MappingWaveAsset læste tom hash mod RAW-capturens kanoniske hash. Feltet sættes nu med normal asset_identity_sha256(href). Dette er en påvist prøveinputfejl, ikke en produktions-/DMI-fejl.

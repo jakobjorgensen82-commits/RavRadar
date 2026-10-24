@@ -1,3 +1,31 @@
+## 24. oktober — privat SOURCE-sammenføring med nyere vejrrettelser
+
+DMI-køobservationen og den afgrænsede fair tidsandel er nu kildeleveret på main. De daterede afventninger nedenfor om netop disse main-leveringer bevares som historik. Det er ikke i sig selv bevis for bedre dækning. Den lokale SOURCE-sammenføring indeholder nu de samme afgrænsede rettelser, men er endnu ikke samlet kvalificeret eller aktiveret. Begge grenes fulde historik bevares.
+
+Den sammenførte 587-kilde afventer sin egen præcise kildekontrol og er ikke installeret. SOURCE forbliver inaktiv på den allerede lokalt udstedte 4.0.588 med uændret C157/I153/T12, originale migrationer og bindingsforbrugere. Gamle delprøver er fortsat deres egne beviser, ikke et nyt samlet PASS. Faktisk installeret 587, SOURCEs normale native-/kildekontrol, kontrolleret installation og offentlig effekt er særskilte åbne krav. Kontinuerligt vejr og dækningsgrad er P0; aktuelle kørselstal og offentlig status følges i ROOTs private checkpoint. Alle fem mål er åbne til 18. november 2026.
+
+## 24. oktober — privat 587-sammenføring med P0s køobservation og fair tidsandel
+
+Den præcist kvalificerede 587-kilde på 888e bevares, og de afgrænsede P0-ændringer fra 717 forberedes ovenpå. 716s køobservation er særskilt kildeleveret på den installerede 586-familie; 717s fair tidsandel afventer fortsat sin præcise samlede kontrol og sikre main-levering. Denne private sammenføring er hverken anvendt, prøvet, installeret eller offentliggjort. Fejler 717, må dette efterbillede ikke leveres.
+
+Begge fulde dokumenthistorikker nedenfor bevares. 587s udstedte C98/I97/T12, 66 migrationsfiler, geodata og originale overgangsgrænser ændres ikke. Den endelige ægte Git-sammenføring og dens egen normale native-/kildekontrol er stadig nødvendige; 888es tidligere PASS må ikke genmærkes som samlet bevis. Ingen levering under aktiv writer. Alle fem hovedmål er fortsat åbne.
+
+## 24. oktober — lokal rettelse af den første havmodels tidsfordeling
+
+To gemte almindelige kørsler viser, at første DKSS-model stoppede efter otte faktisk behandlede filer. De øvrige havmodeller fik længere ture. Den sene vedligeholdelsespassage genoptager ikke resterende kritiske filer. Begrænsningen forklarer derfor forskellen i behandlet filantal, men identificerer ikke i sig selv manglende værdier eller alle prognosehalens årsager.
+
+Den afgrænsede lokale kandidat lader også den første almindelige kritiske havmodel bruge den eksisterende tidsfordeling mellem ventende familier. Den normale filgrænse og kontrol før hver fil gælder; de øvrige DKSS-/WAM-familier og HARMONIE beholder deres tidsreserver. Der tilføjes ingen ekstra passage eller genindgang. Vedligeholdelsens gamle loft og den autentificerede engangsstarts reservationer bevares. Samlet hente-/køretid, bytegrænse, kildevalg, numerisk adgang, scoreformel, adminpunkter, geometri, 4.0.586 og SQL bevares.
+
+Den normale målkalder med fire planlægningstilfælde består lokalt, inklusive den faktiske hovedløkkes niende fil, reservestop, alle tre leadfamilier og engangsstart. Præcis samlet kildekontrol, sikker levering og faktisk dækningsvirkning er åbne. Downloadbytes er fælles mellem familierne; mere tid til første model kan omfordele, ikke garantere større samlet dækning. Alle fem mål er fortsat åbne til 18. november; kontinuerligt vejr og alle forventede zone-/timer er P0.
+
+
+## 24. oktober — mål DMI-køen før yderligere prioriteringsændring
+
+Den afgrænsede opfølgning registrerer kun hver DKSS-samlings første faktisk sorterede kø: klassifikationens prioritet og faste mangelkategorier, gyldige tider, køplacering og turens rotationsmarkør. Senere omplanlægning overskriver ikke observationen. Første tur for én samling er ikke hele jobbets fælles før-DMI-tilstand.
+
+En kritisk fil kan også være en native strømopgradering og beviser derfor ikke et tomt vejrhul på tværs af leverandører. Kø, budgetter, kildevalg, originalkrav og numeriske data ændres ikke. Den større lokale scalar-kandidat medfølger ikke. Version 4.0.586, modelbinding og SQL bevares. Den isolerede normale målprøve består; præcis samlet kildekontrol og observation fra en kommende almindelig kørsel mangler. Bedre dækning påstås ikke. Alle fem mål er fortsat åbne til 18. november; kontinuerligt vejr og reel time-/zonedækning er P0.
+
+
 ## 24. oktober — SOURCE-prøvens WAM-identitet rettet lokalt
 
 Den bevarede SOURCE-kontrol afviste første WAM-asset i PROVIDERS-H0: 212 krævede mål, 0 accepterede og 212 ASSET_PROVENANCE_MISMATCH. Fixtureasset manglede assetIdentitySha256, så den normale MappingWaveAsset læste tom hash mod RAW-capturens kanoniske hash. Feltet sættes nu med normal asset_identity_sha256(href). Dette er en påvist prøveinputfejl, ikke en produktions-/DMI-fejl.
