@@ -1,3 +1,11 @@
+## 24. oktober — afgrænset godkendelse af offentlig prognosedeling
+
+Ejeren har udtrykkeligt godkendt kun Worker-navnet `ravradar-prognosedeling` på den eksisterende Cloudflare Free-konto med workers.dev-subdomænet `jakob-jorgensen82.workers.dev`. Den faste delingsadresse er `https://ravradar-prognosedeling.jakob-jorgensen82.workers.dev/`. Ingen ny database, billedlager, DNS-ændring, nøgle eller betalingsplan er godkendt. De eksisterende offentlige prognoser og det offentlige logo genbruges; ingen privat vejr-/konto-/turkilde må indføres.
+
+Worker-indgangen og de målrettede normale prøver er lokalt anvendt: 129 tilfælde består, bundle er 140,75 KiB uden bindings, og den kompilerede kode har i Node læst rigtige offentlige data med korrekt forhåndsvisning. Disse beviser er ikke Cloudflare-drift, Free-kapacitet eller Facebook-visning. Oprettelse, aktiv versionsgenlæsning, faktisk ressourceforbrug og hosted browser-/Facebook-accept mangler. Samlet kilde skal kvalificeres præcist før særskilt kontrolleret levering; det almindelige vejr-/Pages-workflow ændres ikke. Ingen produktionsskrivning under aktiv writer.
+
+Dette tillæg erstatter kun tidligere manglende tilladelse til netop denne Worker, ikke de øvrige leveringsgrænser. Kontinuerligt vejr og dækning er fortsat P0; alle fem hovedmål er åbne til 18. november. Version, modelbinding, SQL og de eksisterende historiske afsnit bevares. Se håndbog 89.268 og det private checkpoint for kvitteringer; skiftende driftsidentiteter hører ikke til i håndbogen.
+
 ## 24. oktober — lokal rettelse af den første havmodels tidsfordeling
 
 To gemte almindelige kørsler viser, at første DKSS-model stoppede efter otte faktisk behandlede filer. De øvrige havmodeller fik længere ture. Den sene vedligeholdelsespassage genoptager ikke resterende kritiske filer. Begrænsningen forklarer derfor forskellen i behandlet filantal, men identificerer ikke i sig selv manglende værdier eller alle prognosehalens årsager.

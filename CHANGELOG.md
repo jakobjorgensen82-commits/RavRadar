@@ -1,3 +1,10 @@
+## Ikke udgivet — offentlig prognosedeling på særskilt Free-Worker
+
+- Forbereder deling af den faktisk viste zone, time, søgemåde og sprog via den faste adresse til ravradar-prognosedeling. Brugeren vælger selv destination og opslagstekst; der deles ikke en nyberegnet eller brugerbestemt score.
+- Genbruger den eksisterende offentlige datalæser og dens kontrol af størrelse, kontrolsum, modelbinding og udløb. Den tynde Worker-indgang og konfiguration har ingen database, billedlager, KV/R2, assets-binding, egne DNS-ruter, cron eller secrets.
+- Ejerens nye godkendelse gælder kun denne ene Worker på den eksisterende Free-konto og workers.dev. Levering skal ske særskilt efter normal kildekontrol og uden ændring af det almindelige vejr-/Pages-workflow.
+- 129 normale lokale tilfælde består. Lokal bundle er 140,75 KiB; en Node-læsning af rigtige offentlige data gav en korrekt forhåndsvisning. Det er ikke Worker-oprettelse, målt Free-kapacitet eller faktisk Facebook-kontrol. Disse leveringskrav er fortsat åbne. Ingen versions-, model- eller SQL-udstedelse. Se håndbog 89.268.
+
 ## Ikke udgivet — fair tidsandel til første kritiske havmodel på 4.0.586
 
 - Erstatter første kritiske havmodels faste ottefilersstop med den normale filgrænse og samme tidsfordeling, som allerede beskytter de øvrige ventende familier.

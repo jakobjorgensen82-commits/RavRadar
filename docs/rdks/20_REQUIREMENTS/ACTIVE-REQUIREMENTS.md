@@ -1,3 +1,11 @@
+## 24. oktober — AKTIV: snæver Free-autoritet til offentlig prognosedeling
+
+Ejeren har udtrykkeligt godkendt oprettelse af kun `ravradar-prognosedeling` på den eksisterende Cloudflare Free-konto og `jakob-jorgensen82.workers.dev`. Den fælles faste delingsadresse er `https://ravradar-prognosedeling.jakob-jorgensen82.workers.dev/`. Autoriteten omfatter ikke ny database, billedlager, DNS-ændring, nøgler eller betalingsplan. Konfigurationen må ikke tilføje assets-/DB-/KV-/R2-bindinger, egne routes, cron eller secrets. Det eksisterende offentlige logo må læses uden nyt billedlager.
+
+Deling skal bruge den faktisk verificerede zone, hele time, søgemåde og DA/DE/EN-sprog. Brugeren vælger selv destination og opslagstekst. Score skal komme fra de eksisterende offentlige data og den normale kontrol af bytes, kontrolsum, model, sted, time og udløb; queryparametre, headere eller miljø må ikke udstede score-/kildeautoritet. Ukendt eller udløbet grundlag må ikke erstattes med en nærmeste time. Ny delt tid følger Europe/Copenhagen inklusive sommer-/vintertid, ikke et fast CET-mærke.
+
+Levering skal ske særskilt efter den normale præcise kildekontrol og uden ændring af almindelige vejr-/Pages-workflows. Aktiv versionsgenlæsning, faktisk hosted GET/HEAD, Free-kapacitet og browser-/Facebook-accept kræves; lokal bundle, Node-prøve eller HTTP 200 er ikke tilstrækkeligt. Ekstern cache og ændrede/udløbne offentlige data skal beskrives ærligt. Score er ikke en garanti for fund. Ingen produktionsændring under writer, ingen model-/SQL-udstedelse eller automatisk udvidelse af andre tilladelser. Alle fem hovedmål er fortsat åbne til 18. november.
+
 ## 24. oktober — bevaret kvalificeret strømvinder gennem cachegenbrug
 
 AKTIVT: En fuldt gennemgået marin DMI-fil kan afsluttes uden numerisk ændring, hvis en bedre allerede kvalificeret strømvinder bevares. Præcist heltalsnul kræver officiel fil-/parser-/signaturidentitet, faktisk targetregister, fuldt kanonisk udfaldsbevis og matchende samplingkvittering. Normal ledger og genoptagelse kræver fortsat faktiske kvalificerede tuples eller retained-originalbeviser. En kvittering må ikke skabe dækning eller opgradere ukendt gridbevis. Privat scalar-support, WAM og ikke-marine grene beholder mutationskravet.

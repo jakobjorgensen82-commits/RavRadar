@@ -1,3 +1,9 @@
+## 24. oktober — ÅBEN: prognosedeling mangler faktisk hosted-/Free-/Facebook-bevis
+
+129 normale lokale tilfælde, en bindingfri bundle på 140,75 KiB og en rigtig offentlig datalæsning i Node er gennemført. De beviser ikke Cloudflares faktiske CPU-/hukommelsesforbrug, aktiv Worker-version, offentlig browserdeling eller Facebooks egen forhåndsvisningscache. En HTTP-succes alene er heller ikke bevis for en gyldig score; datakontrol og præcis valgt time skal være bestået.
+
+Ejeren har godkendt netop ravradar-prognosedeling på eksisterende Free/account workers.dev, ikke nye databaser, billedlager, DNS, nøgler eller betalingsplan. En særskilt normal release og den faktiske hosted-/Free-/Facebook-kontrol skal afsluttes før funktionen kaldes klar. Ingen almindelig vejr-/Pages-workflowændring eller produktionsskrivning under writer. Et delt link er ikke et frosset datasæt: nye offentlige data, udløb og ekstern cache kan ændre eller forsinke visningen. Ingen fundgaranti eller ny scoreberegning følger af deling.
+
 ## 24. oktober — ÅBEN: første kritiske havmodel afkortes før sin tidsandel
 
 Gemte logs beviser otte fuldførte filer og det eksplicitte leadloft i to almindelige kørsler med forskellige første modeller. En lokal kandidat bruger samme eksisterende tidsreserve for alle almindelige kritiske havmodeller og bevarer resten af enkeltpassagen. Den normale målkalder består lokalt; produktionseffekt og samlet dækning er åbne. Det fælles bytebudget kan fortsat begrænse senere familier. Native-DMI-mangel og fravær af en lovligt valgt scalarværdi skal fortsat skelnes; første-køobservationen er nødvendig for den særskilte rangfølgeanalyse.

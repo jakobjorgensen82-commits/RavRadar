@@ -1,3 +1,13 @@
+## 24. oktober — prognosedeling: lokal kilde og åbne leveringskrav
+
+- [x] Eksplicit ejerautoritet til kun ravradar-prognosedeling på eksisterende Free/account workers.dev; ingen database, billedlager, DNS-ændring, nøgler eller betalingsplan.
+- [x] Tynd Worker-indgang genbruger hele den eksisterende handler/læser. UI bruger den faste delingsadresse; brugeren bestemmer destination og opslagstekst.
+- [x] Faktisk normal lokal prøve: 129 beståede tilfælde, inklusive GET/HEAD, metode-/ruteafslag, forhåndsvisning, offentlige kildegrænser, kontrolsum/model og udløb. Ingen netkald i målprøven.
+- [x] Lokal bundle på 140,75 KiB uden bindings samt separat Node-læsning af rigtige offentlige data. Dette er ikke hosted accept eller dokumenteret Free-kapacitet.
+- [ ] Præcis samlet kildekvalifikation og særskilt normal release med aktiv versionsgenlæsning; ingen ændring af almindelig vejr-/Pages-levering.
+- [ ] Faktisk hosted GET/HEAD og gyldig største offentlige fil, målte Free-ressourcegrænser, browserdeling og Facebook-visning inklusive cache-/udløbsadfærd.
+- [ ] Alle fem hovedmål frem mod 18. november. Kontinuerligt vejr og reel dækning forbliver P0; ingen produktionsændring under writer.
+
 ## 24. oktober — lokal fair tidsfordeling for første kritiske havmodel
 
 - [x] Samme ottefilersstop påvist for forskellige leadmodeller i to gemte normale kørsler; kodehistorikken daterer kontrakten til september.
