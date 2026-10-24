@@ -2818,6 +2818,121 @@ class SourceProviderEvidencePureTests(unittest.TestCase):
             self.assertEqual((stage['status'], stage['requiredPairCount'], stage['missingPairCount']), ('READY', 0, 0))
             self.assertEqual((shadow['acquisitions'], shadow['records']), ([], []))
 
+    def test_initial_cp_completion_uses_normal_seal_and_closure(self):
+        import ast
+        import copy
+        from datetime import datetime, timedelta, timezone
+        from lib.copernicus_current import (DMI_VERIFIER_CONTRACT_ID, OPERATIONAL_MATRIX_CONTRACT_ID,
+            required_pairs_sha256, atomic_write_shadow_checkpoint, atomic_write_shadow,
+            make_coverage_collection, file_sha256)
+        from lib.copernicus_current_source_stage import build_source_stage
+        from lib.copernicus_target_identity import target_fingerprint
+        from lib.current_operational_closure import _copernicus_state, CurrentOperationalClosureError
+
+        provider_file = ROOT / 'scripts/fixtures/source19-current-native-providers.py'
+        provider_tree = ast.parse(provider_file.read_text(encoding='utf8'))
+        finish, = [n for n in provider_tree.body if isinstance(n, ast.FunctionDef)
+            and n.name == 'finish_normal_basis']
+        need_node, = [n for n in provider_tree.body if isinstance(n, ast.FunctionDef) and n.name == 'need']
+        # Run the actual fixture's completion statements, not a second finalizer.
+        # Stop before the unchanged regional/OM subprocesses: no native/provider/PG.
+        start, = [i for i, n in enumerate(finish.body) if isinstance(n, ast.Assign)
+            and any(isinstance(t, ast.Name) and t.id == 'shadow' for t in n.targets)
+            and isinstance(n.value, ast.Call) and isinstance(n.value.func, ast.Attribute)
+            and n.value.func.attr == 'loads'][:1]
+        stop, = [i for i, n in enumerate(finish.body) if isinstance(n, ast.Expr)
+            and isinstance(n.value, ast.Call) and isinstance(n.value.func, ast.Name)
+            and n.value.func.id == 'save_document']
+        imports = [n for n in finish.body if isinstance(n, ast.ImportFrom)
+            and n.module in ('lib.copernicus_current', 'lib.copernicus_current_source_stage')]
+        self.assertEqual(len(imports), 2)
+        self.assertLess(start, stop)
+        completion_code = compile(ast.Module(body=[*imports, need_node, *finish.body[start:stop]],
+            type_ignores=[]), str(provider_file), 'exec')
+        fixture_path = ROOT / 'scripts/test-copernicus-current-source-stage.py'
+        fixture_tree = ast.parse(fixture_path.read_text(encoding='utf8'))
+        registry_fn, = [n for n in fixture_tree.body if isinstance(n, ast.FunctionDef) and n.name == 'registry']
+        target_node, = [n for n in fixture_tree.body if isinstance(n, ast.Assign)
+            and any(isinstance(t, ast.Name) and t.id == 'TARGET' for t in n.targets)]
+        target = ast.literal_eval(target_node.value)
+        registry_code = compile(ast.Module(body=[registry_fn], type_ignores=[]), str(fixture_path), 'exec')
+        hour = datetime.now(timezone.utc).replace(minute=0, second=0, microsecond=0)
+        for phase, age in ((None, 0), ('h1', 1), ('h0', 49)):
+            with self.subTest(phase=phase), tempfile.TemporaryDirectory(prefix='rr-provider-cp-seal-') as directory:
+                reference = hour - timedelta(hours=age)
+                clock = reference if phase == 'h0' else datetime.now(timezone.utc)
+                values = dict(REFERENCE=reference, VALID_TIME=reference + timedelta(hours=117),
+                    HISTORY_TIME=reference - timedelta(hours=1), TARGET=target, timedelta=timedelta,
+                    DMI_VERIFIER_CONTRACT_ID=DMI_VERIFIER_CONTRACT_ID,
+                    OPERATIONAL_MATRIX_CONTRACT_ID=OPERATIONAL_MATRIX_CONTRACT_ID,
+                    required_pairs_sha256=required_pairs_sha256, target_fingerprint=target_fingerprint)
+                exec(registry_code, values)
+                registry = values['registry']('sha256:' + '0' * 64)
+                registry.update(operationalRequiredPairs=[], operationalRequiredPairCount=0,
+                    operationalDmiVerifiedPairCount=118, dmiVerifiedPairCount=165,
+                    operationalPartCount=0, operationalRequiredPairsSha256=required_pairs_sha256([]))
+                identities = {target['partId']: target}
+                cp, stage_path = Path(directory) / 'shadow.json', Path(directory) / 'stage.json'
+                shadow = atomic_write_shadow_checkpoint(cp, acquisitions=[], records=[],
+                    updated_at=clock, target_identities=identities)
+                originals = copy.deepcopy((shadow['acquisitions'], shadow['records']))
+
+                def stage_for(document):
+                    return build_source_stage(registry=registry, shadow=document,
+                        target_identities=identities, shadow_sha256=file_sha256(cp), attempts=[], sealed_at=clock)
+
+                def inspect(document, stage):
+                    return _copernicus_state(registry=registry, shadow=document,
+                        shadow_sha256=file_sha256(cp), source_stage=stage,
+                        target_by_id=identities, reference=reference)
+
+                # Exact former gap: a valid READY stage is not a collection seal.
+                old_stage = stage_for(shadow)
+                self.assertEqual(old_stage['status'], 'READY')
+                self.assertEqual(shadow['collections'], [])
+                with self.assertRaises(CurrentOperationalClosureError) as refused:
+                    inspect(shadow, old_stage)
+                self.assertEqual(refused.exception.code, 'COPERNICUS_COMPLETE_SEAL_INVALID')
+
+                scope = dict(json=json, cp=cp, stage_path=stage_path, targets=[target],
+                    registry=registry, reference=reference, initial_phase=phase,
+                    datetime=datetime, timezone=timezone)
+                exec(completion_code, scope)
+                saved = json.loads(cp.read_text(encoding='utf8'))
+                stage = json.loads(stage_path.read_text(encoding='utf8'))
+                self.assertEqual(saved, scope['shadow'])
+                self.assertEqual(stage['shadowSha256'], file_sha256(cp))
+                self.assertEqual((saved['acquisitions'], saved['records']), originals)
+                actual = inspect(saved, stage)
+                self.assertEqual((actual[0], actual[1], actual[2]), ([], [], []))
+                self.assertEqual(len(actual[3]), len(registry['advisoryHistoryRequiredPairs']))
+                self.assertEqual(len(saved['collections']), 1)
+                self.assertEqual(saved['collections'][0]['status'], 'OPERATIONAL_COMPLETE')
+                self.assertEqual(saved['collections'][0]['advisoryHistoryAvailablePairCount'], 0)
+                self.assertEqual(saved['collections'][0]['advisoryHistoryMissingPairCount'], len(actual[3]))
+
+                # Removing the real collection cannot be rescued by another READY.
+                missing_seal = atomic_write_shadow_checkpoint(cp, acquisitions=saved['acquisitions'],
+                    records=saved['records'], updated_at=clock, target_identities=identities)
+                with self.assertRaises(CurrentOperationalClosureError) as refused:
+                    inspect(missing_seal, stage_for(missing_seal))
+                self.assertEqual(refused.exception.code, 'COPERNICUS_COMPLETE_SEAL_INVALID')
+
+                # A genuinely constructed seal for a different advisory matrix is
+                # internally valid but must not satisfy this registry's closure.
+                wrong_collection = make_coverage_collection(production_reference_at=reference,
+                    target_registry_sha256=registry['targetRegistrySha256'],
+                    dmi_current_input_sha256=registry['dmiCurrentInputSha256'],
+                    required_pairs=[], record_refs=[], sealed_at=clock,
+                    advisory_history_required_pairs=[], advisory_history_record_refs=[])
+                wrong_shadow = atomic_write_shadow(cp, acquisitions=saved['acquisitions'],
+                    records=saved['records'], collection=wrong_collection,
+                    updated_at=clock, target_identities=identities)
+                with self.assertRaises(CurrentOperationalClosureError) as refused:
+                    inspect(wrong_shadow, stage_for(wrong_shadow))
+                self.assertEqual(refused.exception.code, 'COPERNICUS_COMPLETE_SEAL_INVALID')
+                self.assertEqual((wrong_shadow['acquisitions'], wrong_shadow['records']), originals)
+
     def test_exact_h0_h1_capture_selection_never_reads_another_child(self):
         phases = {'PROVIDERS': 'legacy-providers-whole', 'PROVIDERS-H0': 'legacy-providers-h0-whole',
             'PROVIDERS-H1': 'legacy-providers-h1-whole'}

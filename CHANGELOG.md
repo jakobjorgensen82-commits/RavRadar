@@ -1,3 +1,9 @@
+## Ikke udgivet — normal CP-fuldførelse i SOURCE-fixturen
+
+- Bruger den normale coverage-sealer og faktisk genlæsning før source-stage, så et checkpoint ikke forveksles med færdig indsamling. Det strenge DMI-registry, nul-restkrav, originaler og manglende advisory-historik bevares.
+- Tilføjer én regression i den eksisterende provider-diagnoseprøve; 14 tests består med ægte sealer, writer, source-stage og closure samt bevaret afslag på manglende/forkert attest.
+- Ingen produkt-, kildeprioritets-, budget-, versions-, C/I/T-, SQL- eller aktiveringsændring. Endelig sammenføring og præcis native-/kildekvalifikation er åbne; SOURCE er inaktiv. En lokal prøve er ikke H0/H1- eller kapacitetsbevis.
+
 ## Ikke udgivet — normal ucommittet baseline i SOURCEs WAM-fixture
 
 - Fjerner fixturens gentagne fulde dokumentkopi og bruger samme førreference som de normale WAM-kaldere. Produktionskode og copy-on-write-admission ændres ikke.

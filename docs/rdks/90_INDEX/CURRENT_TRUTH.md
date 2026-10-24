@@ -1,3 +1,13 @@
+## 25. oktober — normal CP-fuldførelse før SOURCE-fixturens closure
+
+Den seneste nativekontrol er nået forbi første vejrfixture og OM-genbrug, men stopper derefter med `COPERNICUS_COMPLETE_SEAL_INVALID`. Fixturen gav en gemt CP-mellemtilstand videre med en færdig source-stage uden pilotens normale collection-forsegling. Den normale closure afviser dette korrekt; produktionskontrollen skal ikke lempes.
+
+Fixturen bruger nu de eksisterende selectors, `make_coverage_collection`, atomisk gemning og fysisk genlæsning før source-stage. Det strenge DMI-registry og kravet om nul operationelle CP-restpar bevares. Originale records, manglende advisory-historik og den afgrænsede syntetiske H0-klokke bevares; normal/H1 bruger fortsat faktisk UTC. Ingen COMPLETE-status håndskrives.
+
+Den eksisterende provider-diagnoseprøve består 14 tests, inklusive normal fuldførelse og afslag på en manglende eller forkert attest. Alle gamle assertions er bevaret. Dette er et lokalt metadata-/closure-bevis, ikke bestået national DMI-, H0/H1-, PostgreSQL- eller kapacitetskontrol. Slutkilden skal stadig sammenføres med de nyere 719/720-rettelser og kvalificeres præcist. SOURCE er inaktiv på 4.0.588 med uændret C157/I153/T12, produktvalidatorer, budgetter, ABI og SQL. Den kontrollerede 587-installation og faktisk offentlig effekt er fortsat åbne.
+
+Den allerede offentligt leverede numeriske strømrettelse er særskilt efterprøvet gennem den normale produktionskæde: valgte prognose- og anvendte historiktimer bindes til deres originale native endepunkter før scoring og ved cachegenbrug. Dette delmål er verificeret og skal ikke genåbnes uden ny modstridende evidens. Dækningshuller, fuld historik, revision, brugerdata, assistent og selvstændig drift er fortsat særskilte åbne krav. Ældre daterede afventninger nedenfor er historik.
+
 ## 24. oktober — SOURCE-fixturens fulde dokumentkopi fjernet
 
 Den bevarede nativekontrol har nu påvist den fælles arbejdsfrist som stopårsag i første leverandørfase, før WAM-validatoren blev kaldt. Det er ikke en påvist SQL- eller admissionfejl. Fixturen tog en fuld kopi af det voksende dokument for hver WAM-fil; de normale produktionskaldere bruger allerede den endnu ucommittede original gennem samme copy-on-write-transaktion.

@@ -348,7 +348,8 @@ def prepare(node, target, initial_phase=None):
 
 def finish_normal_basis(node, out, reference, producer, targets, document, *, initial_phase=None):
     """Actual existing normal producers, never authored READY/closure/pilot data."""
-    from lib.copernicus_current import file_sha256
+    from lib.copernicus_current import (file_sha256, select_required_records,
+        make_coverage_collection, atomic_write_shadow)
     from lib.copernicus_current_source_stage import build_source_stage, atomic_write_source_stage
     from lib.current_field_shadow import empty_document, save_document
     targets_path = ROOT / "data/live/coastal-parts-v2.json"
@@ -369,6 +370,26 @@ def finish_normal_basis(node, out, reference, producer, targets, document, *, in
     write_new(registry_path, registry)
     shadow = json.loads(cp.read_text())
     identities = {row["partId"]: row for row in targets}
+    # Complete the same normal CP collection as the pilot's finalizer. The
+    # strict DMI registry above, not an authored flag, proves the empty residual.
+    # Advisory-history gaps remain gaps; no CP acquisitions/records are invented.
+    record_refs, missing = select_required_records(registry["operationalRequiredPairs"],
+        shadow["acquisitions"], shadow["records"], reference,
+        aged_dmi_challenge_plan=registry.get("agedDmiChallengePlan"))
+    need(not missing, "NORMAL_COPERNICUS_RESIDUALS_REQUIRE_DATA")
+    advisory_refs, _advisory_missing = select_required_records(
+        registry["advisoryHistoryRequiredPairs"], shadow["acquisitions"], shadow["records"], reference)
+    completion_at = reference if initial_phase == 'h0' else datetime.now(timezone.utc)
+    collection = make_coverage_collection(production_reference_at=reference,
+        target_registry_sha256=registry["targetRegistrySha256"],
+        dmi_current_input_sha256=registry["dmiCurrentInputSha256"],
+        required_pairs=registry["operationalRequiredPairs"], record_refs=record_refs,
+        sealed_at=completion_at,
+        advisory_history_required_pairs=registry["advisoryHistoryRequiredPairs"],
+        advisory_history_record_refs=advisory_refs)
+    atomic_write_shadow(cp, acquisitions=shadow["acquisitions"], records=shadow["records"],
+        collection=collection, updated_at=completion_at, target_identities=identities)
+    shadow = json.loads(cp.read_text())
     # Only the explicitly synthetic historical H0 prefix uses its fixture clock.
     # This empty CP stage has no acquisitions; real decoder acquisition times and
     # the normal/H1 wall-clock seal are unchanged. No production clock override.
