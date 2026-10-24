@@ -1,4 +1,14 @@
+## 89.267 Gyldige vejrdata kan bevares uden overskrivning
+
+Kort fortalt: En ny gennemgang af en vejrfil behøver ikke ændre en allerede bedre, gyldig strømværdi.
+
+Programmet skal stadig kunne dokumentere den gennemgåede fil, de rigtige kystdele og den bevarede værdis oprindelse. At en fil er gennemgået er ikke i sig selv bevis for, at en manglende time er blevet udfyldt. De samme krav gælder, når data gemmes og bruges ved næste opdatering.
+
+Dækning opgøres over alle forventede timer og zoner for vind, bølger, strøm, vandstand og vandtemperatur. En brugbar score er ikke det samme som komplette data i alle fem kategorier. Bevarede fælles timer og nye timer sidst i prognosen skal vurderes særskilt; ingen kildeprioritet eller beregningsformel ændres af denne bevaring.
+
 ## 89.266 Beregningskode og genererede kontroloplysninger
+
+Status 24. oktober: En kunstig startprøve dækkede kun de lokale kystdeles punkter, men den normale datalæser undersøger også hele zoners punkter og deres faste nabopunkter. Prøvens gitter omslutter nu alle disse faktiske opslag. Produktionslæseren, administratorens punkter, afstanden mellem prøvepunkterne, tidsbudgetter, bindinger og gamle databasekilder er uændrede. Lokal kodegennemgang er ikke en faktisk bestået native- eller GitHub-kontrol og ændrer ikke produktionen. Den kildekvalificerede, mergede DMI-rettelse på main er et særskilt P0-forløb; dens driftseffekt skal vurderes ved en almindelig vejrhentning.
 
 Et historisk, kunstigt prøveforløb skal holde sin prøveklokke adskilt fra faktiske hentetider. En tom kildestage i den historiske H0-prøve bruger nu sin udtrykkelige referencetid; almindelige forløb og H1 bruger fortsat den faktiske klokke. Den normale tidsgrænse og ægte leverandørtider bevares. Fejlrapporten skelner de faste underforløb og medtager kun kvalificerede kildepositioner, aldrig rå private oplysninger. De afgrænsede normale Python- og JavaScript-prøver består lokalt; samlet kilde- og databasekvalifikation samt installation er fortsat åbne.
 

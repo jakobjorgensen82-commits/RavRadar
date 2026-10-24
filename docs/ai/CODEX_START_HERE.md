@@ -1,3 +1,19 @@
+## 24. oktober — SOURCE588: prøvegrid og produktionsgrænse
+
+Den syntetiske startprøves gitter var bygget omkring kystdelenes vandpunkter alene. Den normale datalæser undersøger også hele zoners punkter og sine faste nabopunkter, og et normalt opslag kunne derfor falde uden for prøvegridet. Prøveinputtet dækker nu collectionens faktiske decode-rækker med både parent/PART og hele det normale probe-område.
+
+Kun de to afgrænsede fixture-/testblade ændres. Produktionslæser, administratorpunkter, geometri, gitterafstand, kildeprioritet, tidsbudgetter, C157/I153/T12 og udstedte SQL-originaler bevares. Den lokale kodegennemgang og tekstinverse er ikke en bestået native-/GitHub-kontrol eller produktionseffekt; rettelsen skal gennem den normale præcise SOURCE-kildekontrol. Faktisk installeret 587 er fortsat en særskilt forudsætning før senere SOURCE-aktivering.
+
+Main715 er kildekvalificeret og merget. Det er en særskilt P0-levering; driftseffekten skal vurderes ved den efterfølgende almindelige vejrhentning. Skiftende kørselsdetaljer hører til det private checkpoint. Denne SOURCE-opfølgning giver ingen ny produktions-, bindings- eller installationsautoritet.
+
+## 24. oktober — kontinuerligt vejr først; afgrænset DMI-rettelse på 586
+
+Den almindelige vejrhentning er faktisk leveret med ny offentlig generation, original B før S og offentlig kontrol. Cron er genaktiveret med uændret tidsplan. Det er ikke fuld dækning eller bevist selvstændig drift: de fælles 100 timer har nul tab i alle fem vejrfamilier, mens de nye 18 timer har betydelige mangler. En undersøgt sen national time viser især manglende vindinput; dette må ikke kaldes et generelt tab af strømhistorik eller et rent Limfjordsproblem. Konkrete kørsler og tællinger står i det private checkpoint.
+
+P0 er kontinuerlig almindelig vejrhentning og dækning af alle forventede timer/zoner. Assistentlevering, SOURCE-aktivering og statistik venter. Kun de tre gennemgåede DMI-produkt-/testblade overføres fra den særskilte kandidat til installeret 4.0.586. En fuldt gennemgået fil med bevaret bedre kvalificeret strømvinder skal kunne afsluttes, gemmes og genbruges uden numerisk mutation. Faktiske tuple-/originalbeviser, parser, officiel filidentitet, targetregister og samplingkvittering kræves fortsat. Privat scalar-support, WAM og ikke-marine grene får ingen nulmutationsadgang.
+
+Porten ændrer ikke version, C/I/T, SQL-binding, kildeprioritet, adminpunkter, geometri eller scoreformel. Den nye normale kalder-/ledger-/genoptagelsesprøve består lokalt; egen præcis kilde-/native-kontrol og faktisk produktionseffekt er fortsat åbne. Genbrug ikke kandidatens 587-kvalifikation som 586-bevis. Alle fem mål er åbne til 18. november 2026. Ældre modstridende status nedenfor er dateret historik.
+
 ## 23. oktober — 4.0.588 lokalt udstedt; SOURCE-kvalifikation og drift er åbne
 
 Den normale SOURCE-workflowport er nu lokalt anvendt på den sammenførte genuine587/P0-kilde. Version:set 4.0.588 er udført præcis én gang og skal ikke gentages for status. Faktisk C157/I153/T12, binding/output, append-only SQL 20261023182922 og normal synk af de syv forbrugere er lokalt udstedt. De fem normale fixedpoint-kontroller sluttede med EXIT0 (5b00d9); dette er lokal kildeudstedelse, ikke SQL-eksekvering eller installation. De fulde pins står i DEC-0294 og CURRENT_TRUTH.

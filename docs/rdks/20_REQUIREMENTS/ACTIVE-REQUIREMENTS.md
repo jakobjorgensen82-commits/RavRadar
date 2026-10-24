@@ -1,3 +1,17 @@
+## 24. oktober — aktiv SOURCE-fixturegrænse
+
+Den syntetiske startprøves gitter var bygget omkring kystdelenes vandpunkter alene. Den normale datalæser undersøger også hele zoners punkter og sine faste nabopunkter, og et normalt opslag kunne derfor falde uden for prøvegridet. Prøveinputtet dækker nu collectionens faktiske decode-rækker med både parent/PART og hele det normale probe-område.
+
+Kun de to afgrænsede fixture-/testblade ændres. Produktionslæser, administratorpunkter, geometri, gitterafstand, kildeprioritet, tidsbudgetter, C157/I153/T12 og udstedte SQL-originaler bevares. Den lokale kodegennemgang og tekstinverse er ikke en bestået native-/GitHub-kontrol eller produktionseffekt; rettelsen skal gennem den normale præcise SOURCE-kildekontrol. Faktisk installeret 587 er fortsat en særskilt forudsætning før senere SOURCE-aktivering.
+
+Main715 er kildekvalificeret og merget. Det er en særskilt P0-levering; driftseffekten skal vurderes ved den efterfølgende almindelige vejrhentning. Skiftende kørselsdetaljer hører til det private checkpoint. Denne SOURCE-opfølgning giver ingen ny produktions-, bindings- eller installationsautoritet.
+
+## 24. oktober — bevaret kvalificeret strømvinder gennem cachegenbrug
+
+AKTIVT: En fuldt gennemgået marin DMI-fil kan afsluttes uden numerisk ændring, hvis en bedre allerede kvalificeret strømvinder bevares. Præcist heltalsnul kræver officiel fil-/parser-/signaturidentitet, faktisk targetregister, fuldt kanonisk udfaldsbevis og matchende samplingkvittering. Normal ledger og genoptagelse kræver fortsat faktiske kvalificerede tuples eller retained-originalbeviser. En kvittering må ikke skabe dækning eller opgradere ukendt gridbevis. Privat scalar-support, WAM og ikke-marine grene beholder mutationskravet.
+
+Rettelsen leveres særskilt på installeret 586 uden assistent587, ny modelbinding eller SQL. Kontinuerlig vejrhentning og alle timer/zoners femfamiliedækning har førsteprioritet. Lokalt eller source-grønt er ikke faktisk cachegenbrug eller offentlig effekt.
+
 ## 23. oktober — 4.0.588 lokalt udstedt; SOURCE-kvalifikation og drift er åbne
 
 Historiske, syntetiske SOURCE-prøveforløb skal bruge deres eksplicitte prøveklokke ved en tom H0-kildestage; normale forløb og H1 skal fortsat bruge den faktiske klokke. Ingen ægte acquisitiontid eller firetimersvalidator må ændres for at få en prøve igennem. Fejlrapporteringen skal skelne de faste H0/H1-underfaser og kun udlede afgrænsede årsager fra hele, kvalificerede captures. Lokale Python- og JavaScript-prøver er ikke ny SOURCE-native/CI, CURRENT eller installation; den nye kilde skal stadig gennemføre sin egen faktiske EXECUTED-fase.

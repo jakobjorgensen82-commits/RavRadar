@@ -1,3 +1,20 @@
+## 24. oktober — afgrænset SOURCE-fixtureopfølgning
+
+Den syntetiske startprøves gitter var bygget omkring kystdelenes vandpunkter alene. Den normale datalæser undersøger også hele zoners punkter og sine faste nabopunkter, og et normalt opslag kunne derfor falde uden for prøvegridet. Prøveinputtet dækker nu collectionens faktiske decode-rækker med både parent/PART og hele det normale probe-område.
+
+Kun de to afgrænsede fixture-/testblade ændres. Produktionslæser, administratorpunkter, geometri, gitterafstand, kildeprioritet, tidsbudgetter, C157/I153/T12 og udstedte SQL-originaler bevares. Den lokale kodegennemgang og tekstinverse er ikke en bestået native-/GitHub-kontrol eller produktionseffekt; rettelsen skal gennem den normale præcise SOURCE-kildekontrol. Faktisk installeret 587 er fortsat en særskilt forudsætning før senere SOURCE-aktivering.
+
+Main715 er kildekvalificeret og merget. Det er en særskilt P0-levering; driftseffekten skal vurderes ved den efterfølgende almindelige vejrhentning. Skiftende kørselsdetaljer hører til det private checkpoint. Denne SOURCE-opfølgning giver ingen ny produktions-, bindings- eller installationsautoritet.
+
+## 24. oktober — kontinuert 586-vejr og særskilt DMI-opfølgning
+
+- [x] Almindelig ny generation faktisk gemt B før S, deployet og offentligt verificeret; eksisterende cron genaktiveret med uændret tidsplan.
+- [x] Nul femfamilietab på 100 fælles timer. Nye 18 timers store huller holdes adskilt fra den bevarede fælles dækning; én undersøgt sen national time viser primært manglende vind, ikke generelt historiktab.
+- [x] Præcis treblads-DMI-port afkoblet fra assistent587: eksisterende 586-importclosure og uændrede model-/ABI-inventarer verificeret. Ingen version, C/I/T, SQL, geometri, kildeprioritet eller scoreformel ændres.
+- [x] Normal lokal sammenhængende prøve af stage → gemt nulmutations-step → officiel læser → ledger/ready → genoptagelse består, inklusive manglende/manipulerede beviser og uændrede scalar-/WAM-/ikke-marine afslag.
+- [ ] Egen præcis 586-kildekontrol inklusive nødvendig faktisk nativefase, sikker levering og målt effekt ved almindelig vejrhentning.
+- [ ] Alle forventede zone-/deltimer, feltvis dækning, ny hale, gyldig historik og gentagen drift uden Codex. Assistent, SOURCE og statistiklevering venter; alle fem hovedmål er åbne.
+
 ## 23. oktober — 4.0.588 lokalt udstedt; SOURCE-kvalifikation og drift er åbne
 
 - [x] Den særskilt reproducerede syntetiske H0-klokkekonflikt er lokalt rettet uden ændring af normal/H1-klokke, ægte hentetider eller firetimersværn.

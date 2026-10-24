@@ -1,3 +1,19 @@
+## 24. oktober — SOURCE588-fixture rettet lokalt, ikke kvalificeret
+
+Den syntetiske startprøves gitter var bygget omkring kystdelenes vandpunkter alene. Den normale datalæser undersøger også hele zoners punkter og sine faste nabopunkter, og et normalt opslag kunne derfor falde uden for prøvegridet. Prøveinputtet dækker nu collectionens faktiske decode-rækker med både parent/PART og hele det normale probe-område.
+
+Kun de to afgrænsede fixture-/testblade ændres. Produktionslæser, administratorpunkter, geometri, gitterafstand, kildeprioritet, tidsbudgetter, C157/I153/T12 og udstedte SQL-originaler bevares. Den lokale kodegennemgang og tekstinverse er ikke en bestået native-/GitHub-kontrol eller produktionseffekt; rettelsen skal gennem den normale præcise SOURCE-kildekontrol. Faktisk installeret 587 er fortsat en særskilt forudsætning før senere SOURCE-aktivering.
+
+Main715 er kildekvalificeret og merget. Det er en særskilt P0-levering; driftseffekten skal vurderes ved den efterfølgende almindelige vejrhentning. Skiftende kørselsdetaljer hører til det private checkpoint. Denne SOURCE-opfølgning giver ingen ny produktions-, bindings- eller installationsautoritet.
+
+## 24. oktober — faktisk nyt offentligt vejr; dækning og kontinuitet er P0
+
+Den almindelige 4.0.586-kørsel har faktisk gemt nye originaler B før S, gennemført Pages og bestået offentlig kontrol. Cron er igen aktiv med uændret firetimersplan. De 100 fælles prognosetimer bevarer alle fem vejrfamilier uden gyldig-til-tom-tab; det frikender ikke mangler i de nye 18 timer. Én sen national time har manglende vind som dominerende scoreafvisning samt særskilte vandstands-/temperaturhuller. Fuld dækning, tilstrækkelig historik og gentagen autonom drift er fortsat åbne. Det private checkpoint er autoritativt for aktuelle kørselstal og identiteter.
+
+Den afgrænsede DMI-opfølgning overfører kun den gennemgåede nulmutationsrettelse og dens normale mål fra assistentkandidaten til eksisterende 586. Den bevarer en allerede bedre kvalificeret strømvinder og accepterer en fuld gennemgang alene med de sædvanlige officielle fil-/parser-/target-/udfalds- og samplingbeviser. Gemning, ledger og genoptagelse kræver stadig faktiske kvalificerede tuples eller normale retained-originalbeviser; en kvittering skaber ingen data. Scalar-support, WAM og ikke-marine mutationskrav består.
+
+Lokalt består den sammenhængende normale målprøve. Præcis egen 586-kilde-/nativekontrol, sikker merge og faktisk efterfølgende vejreffekt er endnu ikke bevist. Ingen ny version, C/I/T, lagrings-ABI, SQL eller genstart følger af denne port. Assistent587, SOURCE og statistikaktivering er parkeret efter ejerens P0-prioritet. Alle fem hovedmål er åbne til 18. november 2026; ældre modstridende status er historik.
+
 ## 23. oktober — 4.0.588 lokalt udstedt; SOURCE-kvalifikation og drift er åbne
 
 Opfølgning på den første SOURCE-kildekontrol: Nativefasen stoppede, og den bevarede fejlrapport fastslår endnu ikke hvilket underforløb der fejlede. Særskilt er en konkret konflikt i den syntetiske H0-fixtur reproduceret: en tom Copernicus-kildestage blev forseglet med vægurtid 49 timer efter prøvens reference og afvist af det uændrede firetimersværn. Kun denne historiske prøve bruger nu sin eksplicitte referenceklokke; almindelige forløb, H1 og ægte hentetider er uændrede. Faste H0/H1-faser og kvalificerede kildepositioner føres gennem den eksisterende første-fejlrapport uden rå private oplysninger. De to normale Python-indgange består med 7+1 prøver, og den normale Node22-checkpointprøve består. De fire berørte prøve-/nativeblade ligger uden for C157/I153/T12 og lager-ABI; udstedte pins og SQL bevares. Ny præcis samlet SOURCE-CI/nativefase, CURRENT, installation og offentlig effekt er fortsat åbne.

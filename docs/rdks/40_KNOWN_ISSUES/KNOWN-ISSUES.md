@@ -1,3 +1,17 @@
+## 24. oktober — SOURCE-startprøvens grid; native-kvalifikation er åben
+
+Den syntetiske startprøves gitter var bygget omkring kystdelenes vandpunkter alene. Den normale datalæser undersøger også hele zoners punkter og sine faste nabopunkter, og et normalt opslag kunne derfor falde uden for prøvegridet. Prøveinputtet dækker nu collectionens faktiske decode-rækker med både parent/PART og hele det normale probe-område.
+
+Kun de to afgrænsede fixture-/testblade ændres. Produktionslæser, administratorpunkter, geometri, gitterafstand, kildeprioritet, tidsbudgetter, C157/I153/T12 og udstedte SQL-originaler bevares. Den lokale kodegennemgang og tekstinverse er ikke en bestået native-/GitHub-kontrol eller produktionseffekt; rettelsen skal gennem den normale præcise SOURCE-kildekontrol. Faktisk installeret 587 er fortsat en særskilt forudsætning før senere SOURCE-aktivering.
+
+Main715 er kildekvalificeret og merget. Det er en særskilt P0-levering; driftseffekten skal vurderes ved den efterfølgende almindelige vejrhentning. Skiftende kørselsdetaljer hører til det private checkpoint. Denne SOURCE-opfølgning giver ingen ny produktions-, bindings- eller installationsautoritet.
+
+## 24. oktober — ÅBEN P0: ny prognosehale og DMI-nulmutationsgenbrug
+
+Den almindelige nye vejrgeneration er faktisk offentligt leveret, og cron er aktiv med uændret plan. Den tidligere proceshukommelsesbarriere blev passeret i det faktiske fulde forløb; gentagen selvstændig drift er endnu ikke bevist. Der er nul femfamilietab på 100 fælles timer, men de nye 18 timer har store huller. Én sen national time viser især manglende vindinput; vandstand og temperatur har selvstændige mangler. Dette er ikke bevis for et generelt Limfjords- eller strømhistorikproblem.
+
+En særskilt dokumenteret DMI-fejl kan afvise en fuldt behandlet fil, når bedre kvalificerede strømvindere bevares uden mutation. Den gennemgåede trebladsrettelse er lokalt porteret til 586 og målprøvet gennem normal gemning, ledger og genoptagelse. Den har ikke endnu egen præcis kilde-/native-kvalifikation eller faktisk offentlig effekt og påstås ikke at løse alle vindhalens mangler. Assistent587/SOURCE/statistik er parkeret. Ingen nulstilling, større budgetter eller svækkede originalkrav.
+
 ## 23. oktober — 4.0.588 lokalt udstedt; SOURCE-kvalifikation og drift er åbne
 
 Åbent SOURCE-kontrolissue: Den første nativefase fejlede uden en kvalificeret identifikation af det første underforløb. Det må ikke tilskrives H0 som bevist produktionsårsag. En separat normal prøve påviser og retter lokalt den historiske H0-fixturs vægurtidsforsegling mod en 49 timer ældre reference. H0/H1-rapportering og to konkrete kvalificerede kildepositioner er lokalt sammenkoblet; normale Python-indgange 7+1 og Node22-checkpointprøven består. Ægte hentetider, firetimersværn, C/I/T, lager-ABI og SQL bevares. Samlet ny SOURCE-native/CI og faktisk drift er fortsat åbne.

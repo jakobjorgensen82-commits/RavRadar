@@ -3164,6 +3164,88 @@ class CurrentSourceNormalProtocolFixture(CurrentSourceSdkProtocolFixture):
 
 
 class SourceCurrentNative(SourceActualSUnionNative):
+    def test_initial_weather_grid_covers_normal_parent_and_probe_inputs(self):
+        # Geometry only: real ecCodes bytes and the normal immutable target /
+        # nearest readers, never READY, scores, origin or a provider download.
+        import eccodes
+        from datetime import datetime, timezone
+        spec = importlib.util.spec_from_file_location('source_initial_grid_providers',
+            ROOT / 'scripts/fixtures/source19-current-native-providers.py')
+        providers = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(providers)
+        old_path = list(sys.path)
+        producer = None
+        try:
+            sys.path.insert(0, str(ROOT / 'scripts'))
+            producer = providers.module('source_initial_grid_normal_decoder', ROOT / 'scripts/update-dmi-bulk.py')
+            initial = providers.module('source_initial_grid_fixture', ROOT / 'scripts/fixtures/source19-current-initial-weather.py')
+            targets = [
+                {'partId': 'synthetic-west-part', 'parentZoneId': 'SYNTHETIC-WEST', 'waterPoint': [8., 56.]},
+                {'partId': 'synthetic-limfjord-part', 'parentZoneId': 'SYNTHETIC-LIMFJORD', 'waterPoint': [9., 57.]},
+            ]
+            geo = {'features': [
+                {'properties': {'id': 'SYNTHETIC-WEST', 'coastType': 'west', 'dataPoint': [8.5, 56.5]}},
+                {'properties': {'id': 'SYNTHETIC-LIMFJORD', 'coastType': 'limfjord', 'dataPoint': [9.5, 57.5]}},
+            ]}
+            zones = producer.build_operational_zone_config(geo, targets)
+            self.assertEqual(len(zones), 4)
+            reference = datetime(2026, 1, 1, tzinfo=timezone.utc)
+            with tempfile.TemporaryDirectory(prefix='rr-source-initial-grid-') as owned:
+                owned = Path(owned)
+                old = owned / 'old-part-only.grib'
+                # This unchanged recipe has the former initial grid's exact
+                # PART-only .04-degree envelope, irrespective of field values.
+                providers.fixture_grid(eccodes, targets, reference, 0, old)
+                with old.open('rb') as stream:
+                    gid = eccodes.codes_grib_new_from_file(stream)
+                    try:
+                        for zone in (zones[1], zones[3]):  # parent and PART probe
+                            with self.assertRaises(producer.DmiGridLookupError) as failure:
+                                producer.nearest_candidates(gid, 'wam_dw', zone)
+                            self.assertEqual(failure.exception.failure_code, 'NEAREST_GRID_OUT_OF_AREA')
+                    finally:
+                        eccodes.codes_release(gid)
+                recipes = (
+                    ('dkss_nsbs', ((82, .2, 'sea-mean-deviation'),)),
+                    ('harmonie_dini_sf', (('10u', 5., 'wind-u-10m'),)),
+                    ('wam_nsb', (('swh', .6, 'significant-wave-height'),)),
+                    ('wam_dw', (('swh', .6, 'significant-wave-height'),)),
+                )
+                for collection, fields in recipes:
+                    decode_zones = (producer.relevant_zones(collection, zones)
+                        if collection in producer.WAVE_BOOTSTRAP_COLLECTIONS else zones)
+                    self.assertTrue(any(not row.get('coastalPart') for row in decode_zones))
+                    file = owned / (collection + '.grib')
+                    initial.grid(eccodes, producer, decode_zones, reference, 0, file, collection, fields)
+                    before = file.read_bytes()
+                    with file.open('rb') as stream:
+                        gid = eccodes.codes_grib_new_from_file(stream)
+                        try:
+                            self.assertEqual(producer.classify_parameter(gid, collection), fields[0][2])
+                            self.assertAlmostEqual(eccodes.codes_get(gid, 'iDirectionIncrementInDegrees'), .02)
+                            self.assertAlmostEqual(eccodes.codes_get(gid, 'jDirectionIncrementInDegrees'), .02)
+                            cells = eccodes.codes_get(gid, 'Ni') * eccodes.codes_get(gid, 'Nj')
+                            self.assertGreater(cells, 1)
+                            self.assertLessEqual(cells, 1_000_000)
+                            for zone in decode_zones:
+                                completed = []
+                                def native_lookup(latitude, longitude):
+                                    found = eccodes.codes_grib_find_nearest(gid, latitude, longitude, npoints=4)
+                                    completed.append(True)  # only a completed real lookup counts
+                                    return found
+                                self.assertTrue(producer.nearest_candidates(gid, collection, zone,
+                                    nearest_lookup=native_lookup))
+                                count = 49 if collection in producer.MARINE_COLLECTIONS and zone['coastType'] == 'limfjord' else 33
+                                self.assertEqual(len(completed), count, 'ALL_NORMAL_PROBES_MUST_COMPLETE')
+                        finally:
+                            eccodes.codes_release(gid)
+                    self.assertEqual(file.read_bytes(), before, 'NATIVE_GRID_READ_CHANGED_ORIGINAL')
+        finally:
+            sys.path[:] = old_path
+            if producer is not None:
+                producer.STAC_SESSION.close()
+                producer.DOWNLOAD_SESSION.close()
+
     def owned_current_host(self, head, *, with_sdk):
         # SAME existing native ownership/layout, shared by two explicit cases.
         # No main/source/ACTIVE proof is created here. FULLCURRENT authenticates
@@ -3566,7 +3648,8 @@ def run_current_native_profile_cli():
                     pass
             current_native_post64_module().emit_current_native_failure(error[1], phase='CURRENT_CASE')
             super().addFailure(test, error)
-    selected = ('SourceCurrentNative.test_source_legacy_compatibility' if args.source_legacy_compatibility
+    selected = (('SourceCurrentNative.test_initial_weather_grid_covers_normal_parent_and_probe_inputs',
+                 'SourceCurrentNative.test_source_legacy_compatibility') if args.source_legacy_compatibility
         else 'SourceCurrentNative.test_current_normal_source_profile')
     unittest.main(argv=[sys.argv[0]], defaultTest=selected,
         testRunner=unittest.TextTestRunner(resultclass=CurrentNativeFixedFirstResult))

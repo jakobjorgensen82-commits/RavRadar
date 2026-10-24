@@ -21,13 +21,18 @@ def text(value):
     return value.astimezone(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
 
 
-def grid(eccodes, producer, targets, reference, offset, destination, collection, fields):
+def grid(eccodes, producer, decode_zones, reference, offset, destination, collection, fields):
     """Same real ecCodes sample/write recipe; no made-up digest or capture."""
     step = .02
-    west = math.floor((min(row["waterPoint"][0] for row in targets) - .04) / step) * step
-    east = math.ceil((max(row["waterPoint"][0] for row in targets) + .04) / step) * step
-    south = math.floor((min(row["waterPoint"][1] for row in targets) - .04) / step) * step
-    north = math.ceil((max(row["waterPoint"][1] for row in targets) + .04) / step) * step
+    # The normal decoder probes parents as well as PARTs: its cardinal radii
+    # reach .14 degrees, or .26 for marine Limfjord targets. Diagonals and
+    # smaller radii fit inside that envelope; retain the original two-cell rim.
+    envelope = [(row["lon"], row["lat"], .26 if collection in producer.MARINE_COLLECTIONS
+                 and row.get("coastType") == "limfjord" else .14) for row in decode_zones]
+    west = math.floor((min(lon-radius for lon, _lat, radius in envelope) - 2*step) / step) * step
+    east = math.ceil((max(lon+radius for lon, _lat, radius in envelope) + 2*step) / step) * step
+    south = math.floor((min(lat-radius for _lon, lat, radius in envelope) - 2*step) / step) * step
+    north = math.ceil((max(lat+radius for _lon, lat, radius in envelope) + 2*step) / step) * step
     ni, nj = round((east-west)/step)+1, round((north-south)/step)+1
     need(1 < ni*nj <= 1_000_000, "GRID_BOUND")
     with destination.open("xb") as output:
@@ -94,7 +99,7 @@ def add_initial_weather(eccodes, producer, targets, zones, document, reference, 
             href = ("https://current-source-native.invalid/initial-assets/" + collection + "/"
                     + reference.strftime("%Y%m%d%H") + "/" + str(offset) + ".grib")
             file = producer.cached_asset_path(href)
-            grid(eccodes, producer, targets, reference, offset, file, collection, fields)
+            grid(eccodes, producer, decode_zones, reference, offset, file, collection, fields)
             raw = file.read_bytes()
             content_sha, size = hashlib.sha256(raw).hexdigest(), len(raw)
             item_id = "SYNTHETIC-INITIAL-" + collection.upper() + "-" + str(offset)

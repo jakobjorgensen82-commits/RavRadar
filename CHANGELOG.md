@@ -1,3 +1,18 @@
+## 4.0.588 — lokal SOURCE-fixtureopfølgning 24. oktober 2026
+
+Den syntetiske startprøves gitter var bygget omkring kystdelenes vandpunkter alene. Den normale datalæser undersøger også hele zoners punkter og sine faste nabopunkter, og et normalt opslag kunne derfor falde uden for prøvegridet. Prøveinputtet dækker nu collectionens faktiske decode-rækker med både parent/PART og hele det normale probe-område.
+
+Kun de to afgrænsede fixture-/testblade ændres. Produktionslæser, administratorpunkter, geometri, gitterafstand, kildeprioritet, tidsbudgetter, C157/I153/T12 og udstedte SQL-originaler bevares. Den lokale kodegennemgang og tekstinverse er ikke en bestået native-/GitHub-kontrol eller produktionseffekt; rettelsen skal gennem den normale præcise SOURCE-kildekontrol. Faktisk installeret 587 er fortsat en særskilt forudsætning før senere SOURCE-aktivering.
+
+Main715 er kildekvalificeret og merget. Det er en særskilt P0-levering; driftseffekten skal vurderes ved den efterfølgende almindelige vejrhentning. Skiftende kørselsdetaljer hører til det private checkpoint. Denne SOURCE-opfølgning giver ingen ny produktions-, bindings- eller installationsautoritet.
+
+## Ikke udgivet — afgrænset DMI-cacheopfølgning på 4.0.586
+
+- Bevarer bedre allerede kvalificerede strømvindere uden at afvise en ellers fuldt gennemgået marin DMI-fil alene på nul numeriske ændringer.
+- Kræver stadig officiel filidentitet, parser/signatur, faktisk targetregister, udfaldsbevis, samplingkvittering og faktiske tuple-/originalbeviser ved normal gemning, ledger og genoptagelse. Scalar-support, WAM og ikke-marine grene ændres ikke.
+- Overfører kun de tre gennemgåede DMI-/testblade; assistent587, modelbindinger, SQL, version, scoreformel, geometri og kildeprioritet er uændrede. Normal lokal målprøve består; egen præcis kilde-/native-kontrol og faktisk vejr-/cacheeffekt er åbne.
+- Registrerer faktisk offentlig almindelig levering og genaktiveret uændret cron, uden at forveksle nul tab på fælles timer med fuld ny prognosehale.
+
 ## 23. oktober — 4.0.588 lokalt udstedt; SOURCE-kvalifikation og drift er åbne
 
 - Lokalt rettet: den syntetiske historiske H0-fixturs tomme Copernicus-stage bruger sin referenceklokke. Normal/H1, ægte hentetider og firetimersværnet er uændrede.
