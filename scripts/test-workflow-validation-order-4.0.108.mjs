@@ -287,7 +287,43 @@ assert.match(shareControllerSource, /fs\.writeSync\(descriptor, JSON\.stringify\
 // One already-existing private workflow is an exact new inventory layer,
 // not permission to ignore extra files or broaden historical consumers.
 const privateStudyName = 'private-trip-weather-study.yml';
-const privateStudySource = fs.readFileSync(`${workflowDirectory}/${privateStudyName}`, 'utf8').replace(/\r\n/g, '\n');
+const privateStudyActualSource = fs.readFileSync(`${workflowDirectory}/${privateStudyName}`, 'utf8').replace(/\r\n/g, '\n');
+function inversePrivateStudy006ExportWorkflow(source) {
+  const sha = value => crypto.createHash('sha256').update(value).digest('hex');
+  assert.equal(sha(source), 'bdde67e93ae059a520e21305af42c1566080faa0da786fc670d7f28dc0285949',
+    'Exact reviewed006/export workflow before the unchanged historical oracle');
+  const marker = '\n  private-study-export:\n';
+  assert.equal(source.split(marker).length, 2);
+  let prior = source.slice(0, source.indexOf(marker));
+  for (const [current, original] of [
+    ['description: Skrivefri plan, kontrolleret installation med statistik slået fra eller privat rapporteksport',
+      'description: Read-only plan or controlled installation with statistics disabled'],
+    ['options: [plan, deliver, export]', 'options: [plan, deliver]'],
+    ['      allow_006:\n        description: Tillad ét præcist006-forsøg på control0 efter004/005 og faktisk Worker-OFF; statistik forbliver deaktiveret\n        type: boolean\n        default: false\n', ''],
+    ['plan|deliver|export) ;;', 'plan|deliver) ;;'],
+    ["      TRIP_PRIVATE_STUDY_JOB_BINDING_APPLY_ALLOWED: ${{ inputs.allow_006 && 'true' || 'false' }}\n", ''],
+  ]) {
+    assert.equal(prior.split(current).length, 2, 'Each exact new workflow edit occurs once');
+    prior = prior.replace(current, original);
+  }
+  assert.equal(sha(prior), '4c2e35641d7e95e19eedf901b49b9011917a05ef0957a9d7e7e222fb28d4f241',
+    'Whole original private-study workflow, not a changed historical descriptor');
+  return prior;
+}
+const privateStudySource = inversePrivateStudy006ExportWorkflow(privateStudyActualSource);
+for (const [current, changed] of [
+  ['      allow_006:', '      allow_006_unreviewed:'],
+  ["inputs.allow_006 && 'true' || 'false'", 'true'],
+  ['TRIP_PRIVATE_STUDY_JOB_BINDING_APPLY_ALLOWED:', 'TRIP_PRIVATE_STUDY_APPLY_ALLOWED:'],
+  ["inputs.operation == 'plan' || inputs.operation == 'deliver'", 'always()'],
+  ['TRIP_STORAGE_OPERATION: private-study-export', 'TRIP_STORAGE_OPERATION: existing-private-study-upgrade'],
+  ['run: node scripts/publish-private-trip-weather-study.mjs', 'run: node scripts/deploy-private-trip-study.mjs'],
+  ['timeout-minutes: 35', 'timeout-minutes: 350'],
+  ['cancel-in-progress: false', 'cancel-in-progress: true'],
+]) {
+  assert.ok(privateStudyActualSource.includes(current));
+  assert.throws(() => inversePrivateStudy006ExportWorkflow(privateStudyActualSource.replace(current, changed)));
+}
 function inversePrivateStudyWorkflowInventory(names, source) {
   assert.deepEqual(names, [...expectedWorkflowFiles, privateStudyName].sort(),
     'Only the whole legacy inventory plus the one reviewed private workflow');

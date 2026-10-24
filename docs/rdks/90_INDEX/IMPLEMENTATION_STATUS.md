@@ -1,3 +1,9 @@
+## 25. oktober — præcis workflowprøve for brugerdata og versionsbundne browserprøver
+
+Den lokale brugerdata-kilde retter et påvist orakelgab: den aktuelle 006-/eksport-workflowfil genkendes på hele sin hash og føres gennem entydige inverse ændringer tilbage til den uændrede historiske workflowkontrol. Ændrede installationsflag, myndighed, eksportkalder, frister og samtidighed afvises fortsat. Produktworkflowet og dets sikkerhedsgrænser ændres ikke for at få prøven grøn.
+
+Rapportens normale browserprøve læser nu releaseversionen fra package.json til de samme otte eksplicitte importkontroller. Alle eksisterende VM-, adgangs-, kontoskift- og racekontroller bevares; det er ikke bevis for installeret statistik eller offentlig rapport. Slutkilden skal fortsat bestå sin normale kontrol før levering. Den numeriske strømrettelse er særskilt produktionsverificeret; de fire øvrige hovedområder er åbne. 587-installation og den efterfølgende offentlige generation er stadig udestående, og SOURCE samt statistik og automatisk sletning forbliver inaktive.
+
 ## 24. oktober — brugerdata og deling sammenført med begge checkpointrettelser
 
 Den fælles 587-kilde indeholder nu begge afgrænsede checkpointdestinationer og den bevarede første-fejlobservation fra assistentovergangen. Begge ægte forældrehistorikker og alle gamle dokumentafsnit bevares. De fire produktejere er hele fra checkpointrettelsen; den øvrige brugerdata-/delingskode er hel fra dens kvalificerede forælder. Der ændres ikke version, modelbinding, SQL eller geodata.

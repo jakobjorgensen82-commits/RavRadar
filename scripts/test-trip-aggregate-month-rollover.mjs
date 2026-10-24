@@ -419,12 +419,13 @@ async function verifyPrivateOwnerReportDelivery(report){
   backend.state().row.payload=structuredClone(report);backend.state().row.payload.cells[0].noisyCount=(report.cells[0].noisyCount+1)%1001;
   await assert.rejects(()=>publish(backend),/DOCUMENT_CONFLICT/);assert.equal(backend.state().writes,1);
   const source=fs.readFileSync(new URL('../js/services/private-trip-study.js',import.meta.url),'utf8').replace(/\r\n/g,'\n');
+  const moduleVersion=JSON.parse(fs.readFileSync(new URL('../package.json',import.meta.url),'utf8')).version;
   const serviceImports=[
-    "import {PUBLIC_CONFIG} from '../../config.js?v=4.0.587';",
-    "import {readAdminDocumentNow} from './admin-document-store.js?v=4.0.587';",
-    "import {myAccess,hasPermission} from './permissions-service.js?v=4.0.587';",
-    "import {requireFreshSession,authIdentityEpoch,currentSession,authorizedFetch} from './auth-service.js?v=4.0.587';",
-    "import {isExactCalibrationModelBinding} from './calibration-eligibility.js?v=4.0.587';",
+    `import {PUBLIC_CONFIG} from '../../config.js?v=${moduleVersion}';`,
+    `import {readAdminDocumentNow} from './admin-document-store.js?v=${moduleVersion}';`,
+    `import {myAccess,hasPermission} from './permissions-service.js?v=${moduleVersion}';`,
+    `import {requireFreshSession,authIdentityEpoch,currentSession,authorizedFetch} from './auth-service.js?v=${moduleVersion}';`,
+    `import {isExactCalibrationModelBinding} from './calibration-eligibility.js?v=${moduleVersion}';`,
   ];
   let serviceBody=source;for(const line of serviceImports){assert.equal(serviceBody.split(line).length,2);serviceBody=serviceBody.replace(line,'');}
   serviceBody=serviceBody.replace('export function assertPrivateTripStudyDisplayReport','function assertPrivateTripStudyDisplayReport')
@@ -467,9 +468,9 @@ async function verifyPrivateOwnerReportDelivery(report){
   const uiSource=fs.readFileSync(new URL('../js/ui/admin-private-trip-study.js',import.meta.url),'utf8').replace(/\r\n/g,'\n');
   let uiBody=uiSource;
   for(const line of [
-    "import {readPrivateTripStudyForOwner,assertPrivateTripStudyDisplayReport} from '../services/private-trip-study.js?v=4.0.587';",
-    "import {myAccess,hasPermission} from '../services/permissions-service.js?v=4.0.587';",
-    "import {requireFreshSession,authIdentityEpoch,currentSession,onAuthChange} from '../services/auth-service.js?v=4.0.587';",
+    `import {readPrivateTripStudyForOwner,assertPrivateTripStudyDisplayReport} from '../services/private-trip-study.js?v=${moduleVersion}';`,
+    `import {myAccess,hasPermission} from '../services/permissions-service.js?v=${moduleVersion}';`,
+    `import {requireFreshSession,authIdentityEpoch,currentSession,onAuthChange} from '../services/auth-service.js?v=${moduleVersion}';`,
   ]){assert.equal(uiBody.split(line).length,2);uiBody=uiBody.replace(line,'');}
   uiBody=uiBody.replace('export function mountPrivateTripStudyCard','function mountPrivateTripStudyCard');
   const ui=(mode='normal')=>{
