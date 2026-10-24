@@ -1,3 +1,13 @@
+## 24. oktober — statistikjob beholder deres oprindelige binding
+
+- [x] Separat privat kerne, 006-kontroller og parserårsagsrettelse gennemgået og anvendt alene i isoleret normal testvært på ægte 888e-base. 587-kandidaten og produktionen er ikke ændret af denne prøve.
+- [x] Hele normale account-callers: 28 PASS, 0 FAIL, 0 SKIP på 35,832 sekunder. De to normale rolloverprøver, fremtidig originaltuple, ACK/VERIFY, OFF/sletning, næste måned, Workerindsamling og nye parsertilfælde er med. Den tidligere 9 PASS/1 FAIL bevares som førbevis for parserfejlen, ikke som produktionsfejl.
+- [x] Normale integrated- og Candidate G-bundlechecks samt bindingssynk består. C/I/T og syv forbrugere er uændrede; parseren er builderkontrolkode, selv om den ikke er et direkte model-/ABI-inventarblad.
+- [x] Eksisterende 004/005, originale jobdata, gamle testorakler og alle tids-, privacy- og samtykkegrænser er bevaret. 006-tilladelsen er særskilt og false som standard; Worker skal være faktisk OFF før ændringen og efter opdatering.
+- [ ] Dokument-/håndbogskontrol og præcis samlet kilde-CI på den endelige leveringskandidat. Lokale prøver er ikke hosted- eller native-produktionsbevis.
+- [ ] Frisk faktisk schema-/Workerinventory, kontrolleret installation/genlæsning og offentlig brugerforløbskontrol i sikkert vindue. 004/005-installationsstatus er uafklaret her; 006 er ikke installeret.
+- [ ] Frisk READY_INPUT til PERSISTED på faktisk Free-kapacitet, anonymitet inklusive gentagne rapporters overlap, tilladt statistikfrigivelse, backupfrister og fungerende varsling før automatisk retention. Alle fem hovedmål er fortsat åbne til 18. november 2026.
+
 ## 24. oktober — lokal 587-sammenføring med den leverede DMI-kilde
 
 DMI-rettelsen er præcist kildekvalificeret og merget særskilt på den installerede 586-familie. Den senest afsluttede naturlige vejrhentning er offentligt verificeret; den næste almindelige kørsel er ved denne lokale sammenføring fortsat i DMI-arbejdet. Det er ikke offentlig 587, bevist fuld dækning eller en afsluttet assistentlevering. Kontinuerligt vejr og alle forventede timer/zoners dækning har fortsat førsteprioritet; ingen produktionsændring må ske under den aktive writer.

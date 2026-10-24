@@ -1,3 +1,11 @@
+## Ikke udgivet — oprindelig modelbinding i statistikjob, uændret 4.0.587
+
+- Bevarer et gemt statistikjobs fulde oprindelige modelgrundlag gennem programopdateringer, alle kvitteringer og sidste genlæsning. Kun serverens faktiske jobvalg giver adgang; nyeste statistikvalg og sletning kontrolleres fortsat. Ukendte gamle hashes bevares og afvises.
+- Forbereder særskilt 006-installation med eksplicit false-default tilladelse, eksakt kontrol0-schema, faktisk Worker-OFF, engangsintention, stop ved ukendt skriveudfald og præcis genlæsning. 004/005, deres data og privacybudgetter bevares.
+- Retter fælles modullæsers forveksling af Array.from i deklarationseksport med re-export. Indlejrede imports og alle ukendte-/dynamiske afslag består; DP-koden ændres ikke.
+- Hele normale account-callers består lokalt med 28/0/0, inklusive rollover og Workerindsamling. Tre normale model-/bindingschecks består; ingen ny version, C/I/T eller RavScore-SQL-binding udstedes.
+- Synkroniserer håndbogens eksisterende 89.260 og dens statiske installationskopi uden ændring af SQL-definitioner. Præcis ny CI, faktisk installation, hosted kapacitet, anonym statistik og offentlig effekt er ikke gennemført. Aggregate og automatisk retention aktiveres ikke.
+
 ## 24. oktober — lokal 587-sammenføring med den leverede DMI-kilde
 
 DMI-rettelsen er præcist kildekvalificeret og merget særskilt på den installerede 586-familie. Den senest afsluttede naturlige vejrhentning er offentligt verificeret; den næste almindelige kørsel er ved denne lokale sammenføring fortsat i DMI-arbejdet. Det er ikke offentlig 587, bevist fuld dækning eller en afsluttet assistentlevering. Kontinuerligt vejr og alle forventede timer/zoners dækning har fortsat førsteprioritet; ingen produktionsændring må ske under den aktive writer.

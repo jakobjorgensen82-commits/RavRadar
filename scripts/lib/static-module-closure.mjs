@@ -160,6 +160,10 @@ export function exactRelativeModuleSpecifiers(source, label = 'module') {
       index += 3;
       continue;
     }
+    // En deklarations-export har ingen module-specifier. Fortsæt dog token
+    // for token, så import(...) inde i initialisering/funktion stadig kontrolleres.
+    if (token.value === 'export' && next?.type === 'id'
+      && ['const', 'let', 'var', 'function', 'class', 'default', 'async'].includes(next.value)) continue;
     const end = statementEnd(items, index + 1);
     if (token.value === 'import' && next?.type === 'string') {
       if (next.value.startsWith('./') || next.value.startsWith('../')) values.add(next.value);

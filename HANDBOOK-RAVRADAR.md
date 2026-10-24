@@ -104,6 +104,14 @@ Den nye installationsforberedelse er privat og afgrænset prøvet, ikke installe
 
 Rettelsen er lokalt sammenført og afgrænset prøvet, men endnu ikke leveret offentligt. Samlet statistik og dens særskilte lagerinstallation er fortsat slået fra. Der loves hverken dokumenteret anonymitet, en fungerende automatisk sletning eller mailvarsling ud fra denne prøve. Den nye måldato er 18. november 2026; ældre frister og leveringsstatus nedenfor er dateret historik.
 
+Supplerende forberedelse: Et gemt statistikjob skal også beholde sit fulde oprindelige modelgrundlag, når programmet senere opdateres. Et ældre job må ikke ommærkes som et nyt. Kun serverens genlæsning af det faktisk gemte arbejde kan give adgang til at fortsætte; brugerens anmodning eller en kopieret kvittering er ikke nok. Kan det gamle grundlag ikke genkendes sikkert, bevares arbejdet og afvises frem for at blive gættet eller sprunget tavst over.
+
+Nyeste statistikvalg og sletning skal kontrolleres igen under fortsættelsen. Statistikpræferencen er som udgangspunkt slået til, men et senere fravalg må ikke overskrives af et forsinket tilvalg. Kunstige testture må ikke indgå i statistik eller bevis for modellen. En skjult identifikator eller en stor nok gruppe er ikke alene bevis for anonymitet; gentagne rapporters samlede oplysninger skal også vurderes.
+
+Den ekstra lagerændring til det oprindelige modelgrundlag kræver sin egen udtrykkelige tilladelse. De eksisterende tabeller og data bevares. Statistik skal beviseligt være slået fra før ændringen, lageret skal læses korrekt tilbage, og den nye serverversion skal igen bekræfte, at statistik er slået fra. Et ukendt skriveudfald giver ikke lov til at gentage ændringen.
+
+Denne supplerende løsning er lokalt prøvet, men ikke installeret eller aktiveret. Den aktuelle installation af de tidligere statistikdele er ikke dokumenteret af denne prøve; ældre statusudsagn er dateret historik. Faktisk drift på de gratis grænser, dokumenteret anonymitet, backupfrister og tilladt frigivelse er fortsat åbne krav. Automatisk sletning forbliver slået fra uden fungerende varsling. Ingen ny scoreformel eller ændret kildeprioritet følger af forberedelsen.
+
 ## 89.259 Bedre spørgsmål og ærlige turrapporter – 4.0.585-kandidat
 
 Kort fortalt: Den forberedte 585-opdatering skal forstå flere almindelige og sammensatte spørgsmål uden at gætte på manglende oplysninger. Den er endnu ikke offentligt leveret.

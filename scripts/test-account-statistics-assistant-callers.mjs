@@ -4,6 +4,9 @@
 import assert from 'node:assert/strict';
 import crypto from 'node:crypto';
 import fs from 'node:fs/promises';
+import fsSync from 'node:fs';
+import vm from 'node:vm';
+import {exactRelativeModuleSpecifiers} from './lib/static-module-closure.mjs';
 import test from 'node:test';
 import {inverseCurrent586PhaseUpload} from './native-postgres-evidence.mjs';
 import {DatabaseSync} from 'node:sqlite';
@@ -88,9 +91,35 @@ test('private-study005: the normal workflow stays OFF and DDL remains outside Wo
   assert.doesNotMatch(ddl,/catch\s*\{|recoveryAttempted|replace\(/);
   assert.doesNotMatch(source.slice(to),/await cf\(|model\.jobsMigration/);
 });
+
+async function privateStudy005ControllerView(source){
+  const descriptor=JSON.parse(await fs.readFile(new URL('./lib/private-trip-study-binding-review.json',import.meta.url),'utf8'));
+  const hash=value=>crypto.createHash('sha256').update(value).digest('hex');
+  // Kun denne hele count-successor må projiceres til den frosne006-controller.
+  assert.equal(hash(source),'1dc1101146afbda2ff242cc759b0dfb1e7b172a93ab430a041778ef1e36a01f8');
+  const countAfter="  if(!Array.isArray(rows)||rows.length>41)throw fail('SCHEMA_METADATA');",
+    countBefore="  if(!Array.isArray(rows)||rows.length>40)throw fail('SCHEMA_METADATA');";
+  assert.equal(source.split(countAfter).length,2);
+  source=source.replace(countAfter,()=>countBefore);
+  assert.equal(hash(source),'458d7b774aa146f298ba07b8c005d998676903ccc26016a03f1b19fc59d726fd');
+  assert.equal(descriptor.kind,'PRIVATE_TRIP_STUDY_006_TEST_ONLY_INVERSE');
+  assert.equal(descriptor.file,'scripts/deploy-private-trip-study.mjs');
+  assert.equal(descriptor.beforeSha256,'a15b33d1ae183456908faa6a405807c5921f67c609f28d61f78655e841943167');
+  assert.equal(descriptor.afterSha256,'458d7b774aa146f298ba07b8c005d998676903ccc26016a03f1b19fc59d726fd');
+  assert.equal(hash(source),descriptor.afterSha256);
+  assert.equal(descriptor.edits.length,17);
+  let before=source;
+  for(const edit of [...descriptor.edits].reverse()){
+    assert.equal(typeof edit.before,'string');assert.equal(typeof edit.after,'string');
+    assert.equal(before.split(edit.after).length,2);before=before.replace(edit.after,()=>edit.before);
+  }
+  assert.equal(hash(before),descriptor.beforeSha256);
+  return before;
+}
+
 test("private-study005: read-only plan substages preserve the whole original controller",async()=>{
-  const source=(await fs.readFile(new URL('./deploy-private-trip-study.mjs',import.meta.url),'utf8'))
-    .replace(/\r\n/g,'\n');
+  const source=await privateStudy005ControllerView((await fs.readFile(new URL('./deploy-private-trip-study.mjs',import.meta.url),'utf8'))
+    .replace(/\r\n/g,'\n'));
   const edits=[
     ["    stage='READ_ONLY_PLAN';run('node',['scripts/prepare-cloudflare-trip-storage.mjs','--existing-worker-repair']);",
       "    stage='READ_ONLY_PLAN_EXISTING_STORAGE';run('node',['scripts/prepare-cloudflare-trip-storage.mjs','--existing-worker-repair']);"],
@@ -123,6 +152,123 @@ test("private-study005: read-only plan substages preserve the whole original con
   for(const changed of [swapped,source.replace(stages[2],'READ_ONLY_PLAN_UNKNOWN'),
     source+'\n// non-stage byte drift\n'])assert.throws(()=>verify(changed));
 });
+
+test('private-study006: præcis ny skemalæsning bevarer gamle objekter og afviser delvis installation',async()=>{
+  const model=privateTripStudySchemaModel(),[initial,release,jobs]=await privateStudySql(),db=new DatabaseSync(':memory:');
+  const migration=await fs.readFile(new URL('../cloudflare/trip-gateway/migrations/006_trip_weather_aggregate_job_binding.sql',import.meta.url),'utf8');
+  const proposal=await fs.readFile(new URL('./fixtures/aggregate-job-binding-006-proposal.sql.txt',import.meta.url),'utf8');
+  assert.equal(migration,proposal);assert.equal(model.bindingMigration,migration);
+  assert.equal(crypto.createHash('sha256').update(migration).digest('hex'),'cd3cb6862e811bb01ab1279e28e8fb30f894db8c9516ef50314cd10d7cfc9d7b');
+  try{
+    db.exec(initial);db.exec(release);db.exec(jobs);
+    const before=privateStudySnapshot(db),anchor=db.prepare('select * from trip_weather_aggregate_policy_anchor').all(),
+      control=db.prepare('select * from trip_weather_aggregate_job_control').all();
+    db.exec(migration);const after=privateStudySnapshot(db);
+    const classification=classifyPrivateTripStudySchema(model,privateStudyShards(after));
+    assert.equal(classification.state,'EXACT_004_005_006');
+    assert.match(classification.expectedBindingControlSchemaSha256,/^[a-f0-9]{64}$/);
+    const additions=after.filter(row=>!before.some(old=>old.name===row.name));
+    assert.deepEqual(additions.map(row=>row.name).sort(),['trip_weather_aggregate_job_binding_immutable','trip_weather_aggregate_job_binding_required']);
+    assert.deepEqual(after.filter(row=>before.some(old=>old.name===row.name)&&row.name!=='trip_weather_aggregate_jobs'),
+      before.filter(row=>row.name!=='trip_weather_aggregate_jobs'));
+    assert.deepEqual(db.prepare('select * from trip_weather_aggregate_policy_anchor').all(),anchor);
+    assert.deepEqual(db.prepare('select * from trip_weather_aggregate_job_control').all(),control);
+    for(const table of ['trip_weather_aggregate_releases','trip_weather_aggregate_account_charges','trip_weather_aggregate_jobs'])
+      assert.equal(db.prepare('select count(*) n from '+table).get().n,0);
+    const denied=rows=>assert.throws(()=>classifyPrivateTripStudySchema(model,privateStudyShards(rows)),
+      error=>error.stage==='PARTIAL_OR_CHANGED_STATISTICS_SCHEMA');
+    for(const row of additions)denied(after.filter(item=>item.name!==row.name));
+    denied(after.map(row=>row.name==='trip_weather_aggregate_jobs'?{...row,sql:row.sql.replace('4096','4097')}:row));
+    denied(after.map(row=>row.name==='trip_weather_aggregate_job_binding_immutable'?{...row,sql:row.sql.replace('IS NOT','!=')}:row));
+    for(const shard of [1,9]){
+      const shards=privateStudyShards(after);shards[shard]=additions;
+      assert.throws(()=>classifyPrivateTripStudySchema(model,shards),error=>error.stage==='NON_CONTROL_STATISTICS_SCHEMA');
+    }
+    assert.throws(()=>db.exec(migration));
+  }finally{db.close();}
+});
+test('private-study006: præcis metadataakse er 18/39/41 og 42 afvises',async()=>{
+  const model=privateTripStudySchemaModel(),[initial,release,jobs]=await privateStudySql(),db=new DatabaseSync(':memory:');
+  assert.equal(model.metadata.length,18);assert.equal(model.jobsMetadata.length,39);
+  assert.equal(model.bindingMetadata.length,41);
+  try{
+    db.exec(initial);db.exec(release);db.exec(jobs);db.exec(model.bindingMigration);
+    const exact=privateStudySnapshot(db);
+    assert.equal(exact.length,41);
+    assert.equal(classifyPrivateTripStudySchema(model,privateStudyShards(exact)).state,'EXACT_004_005_006');
+    assert.throws(()=>classifyPrivateTripStudySchema(model,privateStudyShards([...exact,{...exact[0]}])),
+      error=>error.stage==='SCHEMA_METADATA');
+    assert.throws(()=>classifyPrivateTripStudySchema(model,privateStudyShards(exact.slice(0,-1))),
+      error=>error.stage==='PARTIAL_OR_CHANGED_STATISTICS_SCHEMA');
+  }finally{db.close();}
+});
+test('private-study006: særskilt tilladelse og præcis genindgang giver ingen DDL-gentagelse',()=>{
+  assert.deepEqual(privateTripStudyMigrationSteps('EXACT_004_005'),[]);
+  assert.deepEqual(privateTripStudyMigrationSteps('EXACT_004_005',{allow004:true,allow005:true}),[]);
+  assert.deepEqual(privateTripStudyMigrationSteps('EXACT_004_005',{allow006:true}),['006']);
+  assert.deepEqual(privateTripStudyMigrationSteps('EXACT',{allow005:true,allow006:true}),['005','006']);
+  assert.deepEqual(privateTripStudyMigrationSteps('ABSENT',{allow004:true,allow005:true,allow006:true}),['004','005','006']);
+  assert.deepEqual(privateTripStudyMigrationSteps('EXACT_004_005_006'),[]);
+  assert.deepEqual(privateTripStudyMigrationSteps('EXACT_004_005_006',{allow004:true,allow005:true,allow006:true}),[]);
+  assert.throws(()=>privateTripStudyMigrationSteps('ABSENT',{allow005:true,allow006:true}),error=>error.stage==='004_APPLY_NOT_ALLOWED');
+  for(const state of ['ABSENT','EXACT'])
+    assert.throws(()=>privateTripStudyMigrationSteps(state,{allow004:true,allow006:true}),error=>error.stage==='005_APPLY_NOT_ALLOWED');
+  for(const allow006 of ['true',1,null])
+    assert.throws(()=>privateTripStudyMigrationSteps('EXACT_004_005',{allow006}),error=>error.stage==='AUTHORITY');
+  for(const state of ['EXACT_006','EXACT_004_006','UNKNOWN'])
+    assert.throws(()=>privateTripStudyMigrationSteps(state,{allow006:true}),error=>error.stage==='AUTHORITY');
+});
+test('private-study006: faktisk controllerkrop fastholder OFF, genlæsning, engangsskrivning og fuld historisk inverse',async()=>{
+  const source=(await fs.readFile(new URL('./deploy-private-trip-study.mjs',import.meta.url),'utf8')).replace(/\r\n/g,'\n'),
+    workflow=await fs.readFile(new URL('../.github/workflows/private-trip-weather-study.yml',import.meta.url),'utf8');
+  const original=await privateStudy005ControllerView(source);
+  await assert.rejects(()=>privateStudy005ControllerView(original));
+  for(const changed of [source+'\n// ukendt ændring\n',
+    source.replace('rows.length>41','rows.length>42'),source.replace('rows.length>41','rows.length>40'),
+    source.replace("await attest(currentVersion,true);","await attest(currentVersion);"),
+    source.replace("await verifySchema('EXACT_004_005');","await verifySchema('EXACT');")])
+    await assert.rejects(()=>privateStudy005ControllerView(changed));
+  assert.match(workflow,/allow_006:\s*\n\s+description:[^\n]+\n\s+type: boolean\s*\n\s+default: false/);
+  assert.match(workflow,/TRIP_PRIVATE_STUDY_JOB_BINDING_APPLY_ALLOWED: \$\{\{ inputs\.allow_006 && 'true' \|\| 'false' \}\}/);
+  const preOff=source.indexOf("if(migrationSteps.includes('006')){stage='PRE_BINDING_WORKER_OFF';await attest(currentVersion,true);}"),
+    quiesce=source.indexOf("    quiesce();stage='PRE_APPLY_REVALIDATION';"),ddlStart=source.indexOf('    for(const migration of migrationSteps){'),
+    ddlEnd=source.indexOf('    let version;',ddlStart),ddl=source.slice(ddlStart,ddlEnd);
+  assert(preOff>0&&preOff<quiesce&&quiesce<ddlStart&&ddlEnd>ddlStart);
+  assert.match(ddl,/if\(migration==='006'\)\{\n\s+await verifySchema\('EXACT_004_005'\);await attest\(currentVersion,true\);exactMain\(\);lease\(600\);/);
+  assert.match(ddl,/fs\.writeFileSync\(binding\?BINDING_INTENT:jobs\?JOBS_INTENT:INTENT,[^\n]+\{flag:'wx',mode:0o600\}\)/);
+  assert.match(ddl,/await verifySchema\(binding\?'EXACT_004_005_006':jobs\?'EXACT_004_005':'EXACT'\)/);
+  assert.equal([...ddl.matchAll(/await cf\(/g)].length,1);
+  assert.match(ddl,/config\.d1_databases\[0\]\.database_id/);
+  assert.match(ddl,/sql:binding\?model\.bindingMigration:jobs\?model\.jobsMigration:model\.migration/);
+  assert.doesNotMatch(ddl,/catch\s*\{|recoveryAttempted|replace\(/);
+  assert.doesNotMatch(source.slice(ddlEnd),/await cf\(|model\.bindingMigration|model\.jobsMigration/);
+  assert.match(source,/if\(env\.TRIP_PRIVATE_STUDY_MODE==='plan'\)return\{\.\.\.plan,operation:'READ_ONLY_PLAN',schemaApplied:false,workerUpdated:false\}/);
+  assert.match(source,/const replace=async\(\)=>\{\n\s+stage='WORKER_REPLACE';if\(!schemaVerified\)throw fail\(stage\);await verifySchema\(\);await attest\(\);exactMain\(\);lease\(600\)/);
+  assert.match(source,/await attest\(versions\[0\]\[1\],true\);return versions\[0\]\[1\]/);
+  assert.match(source,/stage='RESTORE';await verifySchema\(\);await attest\(version,true\);exactMain\(\);lease\(1\)/);
+});
+test('private-study006: den normale Worker-importindsamler medtager hele det nye bindingsblad',async()=>{
+  const source=(await fs.readFile(new URL('./deploy-private-trip-study.mjs',import.meta.url),'utf8')).replace(/\r\n/g,'\n');
+  await privateStudy005ControllerView(source);
+  const start=source.indexOf('function workerSources(){'),end=source.indexOf('\nfunction normalized(',start);
+  assert(start>0&&end>start);
+  const invoke=filesystem=>vm.runInNewContext(source.slice(start,end)+'\nworkerSources();',{
+    fs:filesystem,path,exactRelativeModuleSpecifiers,
+    hash:value=>crypto.createHash('sha256').update(value).digest('hex'),
+    fail:stage=>Object.assign(new Error('PRIVATE_TRIP_STUDY_DELIVERY_FAILED'),{stage}),
+  });
+  const rows=JSON.parse(JSON.stringify(invoke(fsSync))),name='cloudflare/trip-gateway/trip-aggregate-job-binding.js';
+  const actual=await fs.readFile(new URL('../'+name,import.meta.url));
+  assert.deepEqual(rows.filter(row=>row.file===name),[{file:name,bytes:actual.length,
+    sha256:crypto.createHash('sha256').update(actual).digest('hex')}]);
+  assert(rows.some(row=>row.file==='cloudflare/trip-gateway/trip-aggregate-job.js'));
+  assert(rows.length<=128);assert(rows.reduce((n,row)=>n+row.bytes,0)<=8*1024*1024);
+  assert.throws(()=>invoke({...fsSync,lstatSync(file){
+    if(path.resolve(file)===path.resolve(name))return {isSymbolicLink:()=>true};
+    return fsSync.lstatSync(file);
+  }}),error=>error.stage==='WORKER_SOURCE_PATH');
+});
+
 test('current585 model-import guard admits only the whole reviewed first-raw-error loader',async()=>{
   const file='scripts/check-account-statistics-assistant-predecessor-source.mjs';
   const source=(await fs.readFile(new URL('./check-account-statistics-assistant-predecessor-source.mjs',import.meta.url),'utf8'))
@@ -530,4 +676,60 @@ test('assistant later-H0 registration keeps exact older scripts and refuses phas
     assert.throws(()=>verifyPackage(changed));
   }
   assert.throws(()=>verifyPackage({...pkg,version:'0.0.0'}));
+});
+
+test('private-study006: deklarations-export må ikke forveksle Array.from med en re-export',async()=>{
+  const file='scripts/lib/static-module-closure.mjs',
+    source=(await fs.readFile(new URL('./lib/static-module-closure.mjs',import.meta.url),'utf8')).replace(/\r\n/g,'\n');
+  const hash=value=>crypto.createHash('sha256').update(value).digest('hex');
+  assert.equal(hash(source),'bb64f60e1a700897f6dd982b8fe9c3ed85fbb48fd3dfd0b2f46f65e3dc91b17e');
+  const current="    // En deklarations-export har ingen module-specifier. Fortsæt dog token\n"
+    +"    // for token, så import(...) inde i initialisering/funktion stadig kontrolleres.\n"
+    +"    if (token.value === 'export' && next?.type === 'id'\n"
+    +"      && ['const', 'let', 'var', 'function', 'class', 'default', 'async'].includes(next.value)) continue;\n"
+    +"    const end = statementEnd(items, index + 1);";
+  assert.equal(source.split(current).length,2);
+  const original=source.replace(current,"    const end = statementEnd(items, index + 1);");
+  assert.equal(hash(original),'675f91e7942143a78636e219e54bd7fa0ff25ddcd1998657dd215105054938b0');
+  assert.equal(original.split('export function exactRelativeModuleSpecifiers(').length,2);
+  const oldScanner=vm.runInNewContext(original.replace('export function exactRelativeModuleSpecifiers(','function exactRelativeModuleSpecifiers(')
+    +'\nexactRelativeModuleSpecifiers;');
+  const dpFile='cloudflare/trip-gateway/trip-aggregate-dp.js',
+    dp=(await fs.readFile(new URL('../'+dpFile,import.meta.url),'utf8')).replace(/\r\n/g,'\n');
+  assert.equal(hash(dp),'ffd3389017064fce904ec2f8f850b4e60248db0e29185f9a0ed83021be73117b');
+  assert.throws(()=>oldScanner(dp,dpFile),/contains an unparsed static module specifier/);
+  assert.deepEqual(exactRelativeModuleSpecifiers(dp,dpFile),[
+    '../../supabase/functions/_shared/trip-storage.js','../../js/services/calibration-eligibility.js']);
+  for(const declarations of [
+    "export const rows = Array.from({ length: 1 });",
+    "export let rows = Array.from({ length: 1 });",
+    "export var rows = Array.from({ length: 1 });",
+    "export function rows() { return Array.from({ length: 1 }); }",
+    "export async function rows() { return Array.from({ length: 1 }); }",
+    "export class Rows { static all() { return Array.from({ length: 1 }); } }",
+    "export default Array.from({ length: 1 });",
+  ])assert.deepEqual(exactRelativeModuleSpecifiers(declarations,file),[]);
+});
+test('private-study006: deklarationer bevarer nested-importkontrol og re-exportafslag',()=>{
+  const wrappers=[
+    expression=>'export const value = '+expression+';',
+    expression=>'export let value = '+expression+';',
+    expression=>'export var value = '+expression+';',
+    expression=>'export function read() { return '+expression+'; }',
+    expression=>'export async function read() { return '+expression+'; }',
+    expression=>'export class Reader { read() { return '+expression+'; } }',
+    expression=>'export default '+expression+';',
+  ];
+  for(const wrap of wrappers){
+    assert.deepEqual(exactRelativeModuleSpecifiers(wrap("import('./actual-child.js')"),'ordinary.js'),['./actual-child.js']);
+    for(const dynamic of ['import(variable)',"import('./child.js' + suffix)","import(`./${name}.js`)",'import(unknown.path)'])
+      assert.throws(()=>exactRelativeModuleSpecifiers(wrap(dynamic),'ordinary.js'),/non-literal or unparsed dynamic import/);
+  }
+  const mixed="import './before.js'; export const x = Array.from([]); "
+    +"export { y } from './named.js'; export * from '../star.js'; "
+    +"export * as ns from './namespace.js'; export default import('./after.js');";
+  assert.deepEqual(exactRelativeModuleSpecifiers(mixed,'ordinary.js'),
+    ['./before.js','./named.js','../star.js','./namespace.js','./after.js']);
+  for(const source of ["export { y } from computed;","export * from computed;","export * as ns from computed;"])
+    assert.throws(()=>exactRelativeModuleSpecifiers(source,'ordinary.js'),/unparsed static module specifier/);
 });
