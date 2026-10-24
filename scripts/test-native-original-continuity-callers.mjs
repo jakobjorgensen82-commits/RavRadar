@@ -530,3 +530,120 @@ test('assistant binding original prewrite exact source-import variants reject ch
     '900e9452cdf7cb4ed2ec73cebfd451510a1ae71dc55402fb06a66c4b256c1792',
     'b62351eb51f1871d970295957f6d4882f9a996db95ee8e7ff10b638306acc65a'])assert(source.includes(preserved));
 });
+
+
+// Additive observation-only cases through the actual prepare/CLI bodies.
+// These injected failures do not claim live B/S, network, original admission or SQL.
+test('assistant binding prewrite fixed diagnostics preserve prepare order and first error',async()=>{
+  const {runInNewContext}=await import('node:vm');
+  const source=await fs.readFile(path.join(ROOT,'scripts/assistant-later-h0-binding-prewrite.mjs'),'utf8');
+  const diagnostic=source.slice(source.indexOf('const prewriteSites='),source.indexOf('async function source(fresh=false){'));
+  const actualPrepare=source.slice(source.indexOf('async function prepare(p){'),source.indexOf('async function plan(){'));
+  const loader="const load=file=>import(pathToFileURL(path.join(frozenRoot,file)).href);";
+  assert.equal(actualPrepare.split(loader).length,2);
+  const executablePrepare=actualPrepare.replace(loader,'const load=file=>fixtureLoad(file);');
+  assert.equal(executablePrepare.replace('const load=file=>fixtureLoad(file);',loader),actualPrepare);
+  const selected={modelBinding:{fixed:'binding'},contractHashes:{fixed:'contracts'},datasetId:'synthetic',
+    productionReferenceAt:'2026-10-24T16:00:00.000Z',generatedAt:'2026-10-24T18:00:00.000Z',bundleContentSha256:'a'.repeat(64)};
+  const expectedCalls=['FROZEN_SOURCE','MODULES','CLIENTS','CURRENT_B','B_FAMILY','B_RESTORE','B_UNPACK',
+    'S_REQUESTER','S_RESTORE','SOURCE_CLEANUP','SNAPSHOT','SNAPSHOT_ACCESSOR','ORIGINAL_FILES','FRESH_SNAPSHOT','CENTRAL','BASELINE_WRITE'];
+  for(const failure of [null,'FROZEN_SOURCE','MODULES','CLIENTS','CURRENT_B','B_FAMILY','B_RESTORE','B_UNPACK',
+    'S_REQUESTER','S_RESTORE','SOURCE_CLEANUP','SNAPSHOT','SNAPSHOT_ACCESSOR','ORIGINAL_FILES','FRESH_SNAPSHOT','CENTRAL','BASELINE_WRITE']){
+    const calls=[],lines=[],error=Object.assign(new Error('PRIVATE_OBSERVATION_CANARY'),{code:'ERR_ASSERTION'});
+    let privateReads=0;
+    for(const name of ['message','stack','actual','expected','cause'])
+      Object.defineProperty(error,name,{get(){privateReads++;throw new Error('PRIVATE_GETTER');}});
+    const tick=name=>{calls.push(name);if(name===failure)throw error;};
+    const models={};
+    models['scripts/protected-private-production-runtime.mjs']={
+      createProtectedPrivateRuntimeClients(){tick('CLIENTS');return {documentRequest:'private-request',storage:'private-storage'};},
+      async describeCurrentProtectedPrivateProductionRuntime(options){assert.deepEqual({...options},{request:'private-request'});tick('CURRENT_B');return selected;},
+      async restoreProtectedPrivateProductionRuntime(options){
+        tick('B_RESTORE');assert.equal(options.expected.targetReferenceAt,selected.productionReferenceAt);
+        assert.equal(options.expected.minimumReferenceAt,selected.productionReferenceAt);
+        assert.equal(options.expected.minimumGeneratedAt,selected.generatedAt);
+        assert.equal(options.storage,'private-storage');return {restored:true,rollbackSelected:false};},
+    };
+    models['scripts/private-production-runtime-bundle.mjs']={async restorePrivateProductionRuntimeBundle(options){
+      tick('B_UNPACK');assert.equal(options.targetReferenceAt,selected.productionReferenceAt);assert.equal(options.outputPath,'originals');}};
+    models['scripts/private-production-runtime-workflow.mjs']={async privateRuntimeContractHashes(){tick('B_FAMILY');return selected.contractHashes;}};
+    models['js/core/ravscore-model-contract.js']={ravScoreModelBinding:()=>selected.modelBinding};
+    models['scripts/protected-ravscore-continuation-checkpoint.mjs']={
+      createProtectedRavScoreCheckpointRequester(){tick('S_REQUESTER');return 's-request';},
+      async restoreProtectedRavScoreContinuationCheckpoint(options){tick('S_RESTORE');assert.equal(options.request,'s-request');return {restored:true};},
+    };
+    let loaded=0;
+    const context={assert,SyntaxError,console:{error:line=>lines.push(line)},same:assert.deepEqual,
+      fixtureLoad:file=>{if(loaded++===0)tick('MODULES');return Promise.resolve(models[file]);},
+      async withAuthenticated586PredecessorSource(use){
+        tick('FROZEN_SOURCE');let first,failed=false,result;
+        try{result=await use('frozen-root');}catch(e){first=e;failed=true;}
+        try{tick('SOURCE_CLEANUP');}catch(e){if(!failed){first=e;failed=true;}}
+        if(failed)throw first;return result;
+      },
+      async readAuthenticatedFrozen586Predecessor(){tick('SNAPSHOT');return 'opaque-fixture-handle';},
+      assertAuthenticatedFrozen586Snapshot(handle){assert.equal(handle,'opaque-fixture-handle');tick('SNAPSHOT_ACCESSOR');return selected;},
+      async originalFiles(){tick('ORIGINAL_FILES');},
+      async assertAuthenticatedFrozen586SnapshotFresh(handle){assert.equal(handle,'opaque-fixture-handle');tick('FRESH_SNAPSHOT');},
+      async centralProof(){tick('CENTRAL');return {};},baseline:()=>({synthetic:true}),
+      fs:{async writeFile(file,text,options){tick('BASELINE_WRITE');assert.equal(file,'baseline');
+        assert.equal(options.flag,'wx');assert.equal(options.mode,0o600);}},
+    };
+    const api=runInNewContext(diagnostic+'\n'+executablePrepare+
+      '\n({prepare,prewriteAt,prewriteDiagnostic,emitPrewriteRefusal});',context,{filename:'actual-assistant-binding-prepare-diagnostic.js'});
+    const invoke=()=>api.prepare({root:'private-root',bundle:'bundle',originals:'originals',originalS:'s',baseline:'baseline'});
+    if(failure===null){await invoke();assert.deepEqual(calls,expectedCalls);assert.equal(lines.length,0);}
+    else{
+      await assert.rejects(invoke(),e=>e===error);
+      const site={SOURCE_CLEANUP:'FROZEN_SOURCE',S_REQUESTER:'S_RESTORE',SNAPSHOT_ACCESSOR:'SNAPSHOT',CENTRAL:'BASELINE_WRITE'}[failure]??failure;
+      assert.deepEqual(JSON.parse(JSON.stringify(api.prewriteDiagnostic(error))),{
+        kind:'ASSISTANT_BINDING_ORIGINAL_PREWRITE_DIAGNOSTIC',phase:'PREPARE',site,category:'ASSERTION'});
+      assert.equal(calls.filter(value=>value===failure).length,1,'failed operation is never retried');
+      if(!['FROZEN_SOURCE','SOURCE_CLEANUP'].includes(failure))assert(calls.includes('SOURCE_CLEANUP'));
+      assert.equal(calls.includes('BASELINE_WRITE'),failure==='BASELINE_WRITE');
+      await assert.rejects(api.prewriteAt('VERIFY','UNCHANGED_ORIGINALS',()=>{throw error;}),e=>e===error);
+      assert.equal(api.prewriteDiagnostic(error).site,site,'outer catch cannot replace the first callsite');
+      api.emitPrewriteRefusal(error);assert.equal(lines[0],'ASSISTANT_BINDING_ORIGINAL_PREWRITE_REFUSED');
+      assert.equal(lines.length,2);assert.doesNotMatch(lines.join('\n'),/PRIVATE_OBSERVATION|PRIVATE_GETTER|message|stack|actual|expected|cause|private-request|private-storage/);
+    }
+    assert.equal(privateReads,0);
+  }
+});
+
+test('assistant binding prewrite diagnostic keeps real CLI guards and bounded code projection',async()=>{
+  const {runInNewContext}=await import('node:vm');
+  const source=await fs.readFile(path.join(ROOT,'scripts/assistant-later-h0-binding-prewrite.mjs'),'utf8');
+  const diagnostic=source.slice(source.indexOf('const prewriteSites='),source.indexOf('async function source(fresh=false){'));
+  const main=source.slice(source.indexOf('async function main(){'),source.indexOf('\nif(process.argv[1]'));
+  let calls=0;
+  const context={assert,SyntaxError,process:{argv:['node','private-script','unknown']},console:{log(){},error(){}},
+    source:async()=>{calls++;throw Object.assign(new Error('PRIVATE_CANARY'),{code:'ENOENT'});}};
+  const api=runInNewContext(diagnostic+'\n'+main+
+    '\n({main,prewriteAt,prewriteDiagnostic,emitPrewriteRefusal});',context,{filename:'actual-assistant-binding-cli-diagnostic.js'});
+  let error;try{await api.main();}catch(e){error=e;}
+  assert.equal(api.prewriteDiagnostic(error).phase,'CLI');assert.equal(api.prewriteDiagnostic(error).category,'ASSERTION');assert.equal(calls,0);
+  context.process.argv[2]='prepare';try{await api.main();}catch(e){error=e;}
+  assert.equal(api.prewriteDiagnostic(error).phase,'SOURCE');assert.equal(api.prewriteDiagnostic(error).category,'FILE_NOT_FOUND');assert.equal(calls,1);
+  for(const [code,category]of [['ERR_ASSERTION','ASSERTION'],['EEXIST','EXISTING_DESTINATION'],
+    ['PROTECTED_PRIVATE_RUNTIME_NO_COMPATIBLE_GENERATION','B_NO_COMPATIBLE_GENERATION'],
+    ['FROZEN586_PREDECESSOR_B_S_DIFFER','SNAPSHOT_B_S_DIFFER'],[1,'PROCESS_EXIT'],['PRIVATE_CANARY','UNCLASSIFIED_ERROR']]){
+    const original=Object.assign(new Error('PRIVATE_CANARY'),{code});
+    await assert.rejects(api.prewriteAt('PREPARE','SNAPSHOT',()=>{throw original;}),e=>e===original);
+    assert.equal(api.prewriteDiagnostic(original).category,category);
+  }
+  let reads=0;
+  const hostile=new Error('PRIVATE_CANARY');Object.defineProperty(hostile,'code',{get(){reads++;throw new Error('PRIVATE_CANARY');}});
+  await assert.rejects(api.prewriteAt('PREPARE','SNAPSHOT',()=>{throw hostile;}),e=>e===hostile);
+  assert.equal(reads,0);assert.equal(api.prewriteDiagnostic(hostile).category,'UNCLASSIFIED_ERROR');
+  await assert.rejects(api.prewriteAt('PRIVATE_CANARY','UNKNOWN',()=>{calls++;}),/DIAGNOSTIC_SITE_INVALID/);assert.equal(calls,1);
+  for(const primitive of ['PRIVATE_CANARY',null,undefined]){
+    await assert.rejects(api.prewriteAt('PREPARE','SNAPSHOT',()=>Promise.reject(primitive)),e=>e===primitive);
+    assert.equal(api.prewriteDiagnostic(primitive).category,'UNCLASSIFIED_ERROR');
+  }
+  const value=Object.freeze({synthetic:true});assert.equal(await api.prewriteAt('PREPARE','SNAPSHOT',()=>value),value);
+  assert.match(source,/main\(\)\.catch\(error=>\{\s+emitPrewriteRefusal\(error\);process\.exitCode=1;/);
+  const catalog=await fs.readFile(path.join(ROOT,'scripts/lib/model-source-imports.mjs'),'utf8');
+  assert(catalog.includes("sha256:'860d62ff21d2854ca2856bcb6998ba48859c0237f94b315c7736a1265e1be8de'"));
+  assert(catalog.includes("sha256:'fa16454cd00e516c4fe3c3b80f3445c73a32ce2162c0258b493e5a88e61c3d25'"));
+  assert(catalog.includes("imports:ASSISTANT_BINDING_PREWRITE_REVIEWED['scripts/assistant-later-h0-binding-prewrite.mjs'].imports"));
+});
