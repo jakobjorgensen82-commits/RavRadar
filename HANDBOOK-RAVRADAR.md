@@ -7578,6 +7578,10 @@ Rettelsen påvirker ikke Candidate G, RavScore, vejr, zoner, geometri, land-/van
 
 ## Offentlig Om RavRadar-side – 4.0.279
 
+På Om-siden ligger afsnittet Sådan virker RavRadar mellem MobilePay-støtte og kontakt. Det forklarer strømvinkel og historik, bølger, vind, vandstand, temperatur samt forskellen mellem waders og strand. RavScore beskrives som en modelvurdering af forholdene, ikke som en fundprocent eller fundgaranti.
+
+En lokal strømfigur viser 8 centimeter hvert sekund ved forskellige retninger, blandt andet 0, 90 og 180 grader. Skyderen ændrer kun retningen, ikke farten eller RavScore. Figuren henter ingen aktuelle vejrdata. Afsnittet og figurens forklaringer følger Om-sidens eksisterende valg af dansk, tysk eller engelsk; kontakt, frivillig støtte og tilbagefunktionen bevares.
+
 RavRadar har en offentlig **Om RavRadar**-side, som nås fra topmenuen ved konto, **Start ravtur** og **Spørg RavRadar**. Siden præsenterer Jakob Jørgensen, projektets idé, det frivillige arbejde og en direkte mailkontakt.
 
 Siden forklarer, at RavScore vurderer de aktuelle forhold for den enkelte kyststrækning, men ikke hvor meget rav der grundlæggende findes i landsdelen. Derfor kan 95 point i Limfjorden godt være et dårligere fundvalg end 75 point ved Sæby. Den forklarer også, at komplekse vejr-, hav- og kystforhold kræver generaliseringer; noget tilsyneladende forkert kan være en fejl eller en nødvendig forenkling af hensyn til helheden.
@@ -7662,6 +7666,8 @@ Candidate G var den daværende aktive model med **20 % søgeforhold, 50 % transp
 4.0.269 er produktionsverificeret. PR #120 bestod exact-head `32703138969` på `37de330c` og blev merged som `d745e0ba`. Produktion `32703271897` udgav `rr-20260824080543-210` på 210 zoner og 673 kystdele efter frisk vejr, fuld validering og releasegate. Den offentlige browseraudit bestod 420 aktuelle visninger, 2.100 femdøgnsvisninger og 673 kystdelsreferencer uden kontrol-, konsol-, side- eller HTTP-fejl.
 
 ## Grundbog i ravjagt og almindeligt brugersprog – 4.0.268
+
+I den nuværende danske Grundbog kaldes redskabet til at samle rav i vandet en ravkese.
 
 > **Historisk revisionsspor:** Dette afsnit bevarer 4.0.268's daværende Candidate G-forklaring. Grundbogens aktive modeltekst følger nu den integrerede kontrakt i kapitel 54 og har ingen 13-timers helscore-gate.
 

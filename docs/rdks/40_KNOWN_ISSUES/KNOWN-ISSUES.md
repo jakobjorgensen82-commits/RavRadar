@@ -1,3 +1,11 @@
+## 25. oktober — tekstleverance afventer samlet kontrol, offentlig 587 er nået
+
+De tidligere Pages-/overgangsblokeringer nedenfor er historiske: den normale fulde kæde har nu leveret offentlig 4.0.587/I97, og cron er genaktiveret. Det lukker ikke opfølgning på kontinuerlig vejrhentning, dækning eller de øvrige åbne hovedmål.
+
+Grundbogens tre gamle testforventninger for positiv knowledge-kontrolsum, HTTP429 og opfølgningsguard er rettet præcist mod den godkendte klient, og hele det normale mål består i den private ordkomposition. De gamle failures er bevaret; der er ingen assistentproduktrettelse eller bevis for hosted AI i tekstpakken. De fem fejl, ejeren har påvist i offentlig 587, herunder kese-/vind-/capabilities-/ugedags-/partitioneringsadfærd, er ikke frikendt. Den særskilte produktrettelse er en privat, uanvendt kandidat under målprøve; ingen assistentproduktblade indgår her.
+
+Om-afsnittet er godkendt og lokalt integreret, men endnu ikke offentligt leveret. Seks normale lokale kontroller og den afgrænsede DA/DE/EN-browserforhåndsvisning er bestået. Det normale Om-måls nye additive assertions samt RDKS, sikkerhed, håndbogens læsehjælp, tabsfri håndbogsfletning og releaseversionskontrol består; installationskopiens SQL-prefix/suffix er uændret. Offline er ikke prøvet, og slutkompositionens præcise kilde-/leveringskontrol afventer. Den almindelige Pages-modulclosure-test har ikke Om som HTML-rod; et grønt resultat dér kan ikke alene bevise den nye kæde. Om-målet udvides derfor med præcis placering, 11 kapitler, godkendt ravlygtetekst, lokal figur og navngivne cacheposter. Ingen guards, model-/SQL-bindinger eller negative kontroller lempes.
+
 ## 25. oktober — råhistorikkens originalgrænse efter 587-overgang
 
 Den nye kildekontrol bestod native PostgreSQL, men standsede på to gamle testlæserforventninger i den normale entrypointgruppe. Kun disse testinput føres gennem den eksisterende strenge P0-inverse før de uændrede hele companion-orakler; selve nye kalders kilde kontrolleres fortsat direkte. Ingen produktkontrol eller gammel pin ændres. Ny samlet kontrol og offentlig effekt er stadig åbne.

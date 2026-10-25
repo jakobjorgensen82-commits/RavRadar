@@ -1,3 +1,9 @@
+## Ikke offentliggjort — Sådan virker RavRadar og ravkese i Grundbogen
+
+Ejeren har godkendt det nye afsnit Sådan virker RavRadar mellem MobilePay-støtte og kontakt på Om-siden. Det forklarer den eksisterende score og dens usikkerhed på dansk, tysk og engelsk. Strømfiguren viser retning ved 8 centimeter hvert sekund, ikke RavScore-point; den ændrer ingen vejrdata eller model. Den godkendte forklaring om vindens betydning for udsynet med en ravlygte er bevaret. Eksisterende kontakt, støtte, sprogvalg og tilbagefunktion bevares, og Om-sidens nye filer får en særskilt cachekæde.
+
+Den danske Grundbog bruger ravkese i de to sætninger om redskabet ved revlerne og i vandkanten. HTML-fallback og dansk runtime-tekst følges ad; tysk, engelsk og faglige regler ændres ikke. De tre præcise gamle testforventninger er tilpasset den godkendte klient uden assistentproduktændring. Dette er en samlet lokal kildeforberedelse oven på offentligt leveret 4.0.587, ikke en allerede offentliggjort tekstændring eller ny version, modelbinding eller SQL.
+
 ## 25. oktober — original B-kontrol adskilt fra assistentens arbejdsdata
 
 Den efterfølgende kildekontrol fandt to gamle testlæserforventninger til plannerens førbillede. De bruger nu den allerede gennemgåede, strenge hele P0-inverse før de uændrede historiske orakler; den faktiske nye destrukturering kontrolleres direkte. Gamle kontrolsummer, assertions og mutationsafslag bevares. Dette er kun testkompatibilitet, ikke en ny produkt-, model-, SQL- eller håndbogsændring.

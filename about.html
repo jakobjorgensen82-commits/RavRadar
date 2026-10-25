@@ -15,7 +15,7 @@
   <link rel="icon" type="image/png" sizes="192x192" href="assets/icons/ravradar-192.png">
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="apple-touch-icon" href="assets/icons/apple-touch-icon.png">
-  <link rel="stylesheet" href="about.css?v=4.0.587">
+  <link rel="stylesheet" href="about.css?v=4.0.587&ui=about-explainer-20261025">
 </head>
 <body>
   <header class="site-header">
@@ -141,6 +141,231 @@
       </div>
     </section>
 
+    <article id="rr-about-explainer" class="section" aria-labelledby="rr-explainer-title" data-i18n-html="about.explainer">
+      <div class="rr-intro">
+        <p class="rr-kicker">Sådan virker RavRadar</p>
+        <h2 id="rr-explainer-title">Sådan bliver hav og vejr til RavScore</h2>
+        <p class="rr-lead">Hvor er forholdene mest lovende, og hvornår er det værd at tage afsted? RavRadar hjælper dig med at sammenligne kyster og tidspunkter ved at samle hav- og vejrprognoser i én vurdering.</p>
+        <p>Bag kortets farver ligger tre spørgsmål: Kan bølgerne have sat materiale i bevægelse? Har strømmen understøttet transport mod kysten? Og hvor gode er forholdene til at lede? Svarene afhænger både af kystens retning, forholdene i den valgte time og forløbet inden.</p>
+        <div class="rr-note"><p><strong>RavScore vurderer forholdene — ikke mængden af rav.</strong> En score på 80 betyder ikke 80 procent fundchance. Den fortæller, at modellens tegn samlet er mere lovende end ved en lav score, ikke at stranden nødvendigvis er fuld af rav.</p></div>
+        <p>Til den hurtige turplanlægning: Vælg strand eller waders, sammenlign steder og tider, og åbn zonen for at læse forklaringen. Herunder kan du se, hvad der ligger bag vurderingen.</p>
+      </div>
+      <nav class="rr-toc" aria-label="Indhold i forklaringen">
+        <a href="#rr-data">Data</a><a href="#rr-coast">Den lokale kyst</a><a href="#rr-score">Scoren</a><a href="#rr-current">Strøm</a><a href="#rr-waves">Bølger</a><a href="#rr-wind">Vind og søgemåde</a><a href="#rr-water">Vandstand</a><a href="#rr-history">Tid og usikkerhed</a><a href="#rr-map">Kortet</a><a href="#rr-zone">Zonen</a>
+      </nav>
+
+      <section class="rr-chapter" id="rr-data">
+        <p class="rr-kicker">1 · Datagrundlaget</p>
+        <h3>Fra leverandørernes prognoser til din skærm</h3>
+        <p>RavRadar henter automatisk prognoser for vind, bølger, strøm, vandstand og vandtemperatur. DMI er førstevalg. De forskellige oplysninger kommer fra forskellige vejr- og havmodeller; de er ikke målinger fra en vejrstation på hver strand.</p>
+        <p>Hvor de relevante DMI-data mangler, kan bestemte oplysninger suppleres med Copernicus Marine og derefter Open-Meteo. Der vælges en kilde til den enkelte oplysning, det enkelte sted og den enkelte time — ikke én leverandør til hele Danmark. Vandstand følger sin egen DMI-kæde og udfyldes ikke med et gæt fra de andre kilder.</p>
+        <p>Før beregningen kontrollerer RavRadar blandt andet dataenes kilde, sted og tidspunkt. Gyldige oplysninger gemmes til genbrug i en <em>cache</em>. Det gør det muligt at bygge videre på tidligere hentninger, men låser ikke vejrudsigten fast: Nyere, gyldige data kan overtage efter den fastlagte kildeprioritet.</p>
+        <figure aria-label="Fra leverandørernes data til brugerens kort">
+          <ol class="rr-process">
+            <li><strong>Hent</strong>Vejr- og havprognoser</li>
+            <li><strong>Kontrollér</strong>Kilde, sted og time</li>
+            <li><strong>Saml</strong>Nye og gyldige gemte data</li>
+            <li><strong>Beregn</strong>RavScore for kyst og time</li>
+            <li><strong>Vis</strong>Kort, tider og forklaringer</li>
+          </ol>
+          <figcaption>Når du besøger siden, læser du den færdige prognose. Dit besøg starter ikke en ny vejrhentning hos leverandørerne.</figcaption>
+        </figure>
+        <p class="rr-source-links">Om leverandørernes data: <a href="https://www.dmi.dk/friedata/dokumentation/data/forecast-data-wave-model-wam" target="_blank" rel="noopener noreferrer">DMI's bølgemodel</a>, <a href="https://www.dmi.dk/friedata/dokumentation/data/forecast-data-storm-surge-model-dkss" target="_blank" rel="noopener noreferrer">DMI's havmodel</a>, <a href="https://data.marine.copernicus.eu/product/BALTICSEA_ANALYSISFORECAST_PHY_003_006/description" target="_blank" rel="noopener noreferrer">Copernicus Marine</a> og <a href="https://open-meteo.com/en/docs/marine-weather-api" target="_blank" rel="noopener noreferrer">Open-Meteo</a>.</p>
+      </section>
+
+      <section class="rr-chapter" id="rr-coast">
+        <p class="rr-kicker">2 · Den lokale kyst</p>
+        <h3>Den samme strøm rammer ikke alle kyster ens</h3>
+        <p>RavRadars kystkort omfatter 210 zoner med i alt 673 lokale kystdele. En stor zone kan rumme kyster, der vender i forskellige retninger. Derfor er det ikke tilstrækkeligt at sige, at eksempelvis østgående strøm er god eller dårlig i hele området.</p>
+        <p>Hver kystdel har et fastlagt punkt på land og et på havet. Retningen fra havpunktet mod landpunktet angiver, hvad “ind mod land” betyder netop dér. Strømmens retning sammenholdes med denne retning — ikke blot med nord, syd, øst og vest.</p>
+        <p>På en vestvendt kyst ligger havet mod vest, så en østgående strøm har retning mod land. På en østvendt kyst kan den samme strøm gå væk fra land. Derfor kan to nærliggende kyster få forskellige vurderinger, selv om leverandørens strømdata ligner hinanden.</p>
+        <p>Leverandørernes havmodeller beregner strømmen i et net af punkter. RavRadar bruger de relevante modeldata ved kystdelens havområde. Det er stadig en modelværdi — ikke en strømmåler placeret præcis dér, hvor du står med din ravkese.</p>
+      </section>
+
+      <section class="rr-chapter" id="rr-score">
+        <p class="rr-kicker">3 · RavScore fra 0 til 100</p>
+        <h3>Tre delvurderinger bliver til én samlet score</h3>
+        <p>RavScore ligger mellem 0 og 100. Udgangspunktet er tre delvurderinger, også fra 0 til 100, som tæller forskelligt i det samlede resultat.</p>
+        <figure>
+          <div class="rr-weightbar" role="img" aria-label="RavScore vægtes med 50 procent strøm mod kysten over tid, 30 procent bølgernes mulighed for at flytte rav og 20 procent søgeforhold">
+            <span class="rr-transport">Transport<br>50 %</span><span class="rr-mobilisation">Bevægelse<br>30 %</span><span class="rr-huntability">Søgning<br>20 %</span>
+          </div>
+          <figcaption>Vægtningen er modellens arbejdsregel. Den er ikke en dokumenteret procentfordeling af årsagerne til virkelige ravfund.</figcaption>
+        </figure>
+        <dl>
+          <dt>Strøm mod kysten over tid · 50 %</dt><dd>Har strømforløbet understøttet transport mod kysten eller trukket i den modsatte retning? Bølgernes forløb og retning indgår som en begrænset korrektion, men kan ikke erstatte strømmen.</dd>
+          <dt>Bølgernes mulighed for at flytte rav · 30 %</dt><dd>Hvor meget peger bølgernes energi og forløb på, at tilgængeligt materiale kan være sat i bevægelse? Det er en vurdering af påvirkningen, ikke en optælling af rav.</dd>
+          <dt>Søgeforhold · 20 %</dt><dd>Hvor gode er vind- og bølgeforholdene til den valgte søgemåde: i vandet med waders eller på stranden?</dd>
+        </dl>
+        <div class="rr-example">
+          <p class="rr-small">Regneeksempel med tilstrækkelig historik — ikke aktuelle vejrdata</p>
+          <p>Transport 70, bølgepåvirkning 60 og søgeforhold 80 giver:</p>
+          <p class="rr-calculation">35 + 18 + 16 = 69</p>
+          <p class="rr-small">Halvdelen af 70, 30 procent af 60 og 20 procent af 80. Her behøver modellens ekstra begrænsninger ikke sænke summen.</p>
+        </div>
+        <h4>Hvorfor er slutscoren ikke altid bare summen?</h4>
+        <p>Gode forhold i ét led skal ikke uden videre kunne opveje meget svage forhold i et andet. Derfor har modellen også disse begrænsninger:</p>
+        <ul>
+          <li><strong>En svag fysisk sammenhæng dæmper resultatet.</strong> Hvis transport eller bevægelse er meget lav, sænkes den vægtede sum lidt. Godt søgevejr kan ikke alene gøre den fysiske situation god.</li>
+          <li><strong>Waders har et ekstra loft.</strong> Slutscoren kan ikke overstige delscoren for søgeforhold. Et andet eksempel: Giver beregningen før dette loft 69, men søgeforholdene kun 40, bliver waders-scoren højst 40.</li>
+          <li><strong>Ved beregnet udtømning efter fralandsstrøm kan scoren blive nul.</strong> Hvis et faktisk udgående strømforløb har bragt transportpotentialet helt ned på nul, sættes også slutscoren til nul. Det er ikke nok, at den aktuelle pil peger lidt udad, eller at tidligere strømdata er ukendte.</li>
+        </ul>
+        <p>Til sidst vises scoren som et helt tal. Manglende historik håndteres særskilt; den forklaring finder du under <a href="#rr-history">tid og usikkerhed</a>.</p>
+      </section>
+
+      <section class="rr-chapter" id="rr-current">
+        <p class="rr-kicker">4 · Strømmens vinkel</p>
+        <h3>Det er ikke nok, at strømmen er stærk</h3>
+        <p>Retningen er lige så vigtig. En strøm kan deles i en del, der går langs kysten, og en del, der går på tværs. Det er den kystrettede del — mod eller væk fra land — der bruges til at opbygge eller nedbryde transportpotentialet.</p>
+        <p>En strøm lige ind mod kysten giver det største indgående bidrag ved samme hastighed. Skrå strøm giver mindre. En strøm helt parallelt med kysten giver intet direkte ind- eller udgående bidrag i denne del af modellen. Det betyder ikke, at den er fysisk ligegyldig; materiale kan også flyttes langs en kyst, men RavRadar følger ikke hvert ravstykkes vej mellem nabostrande.</p>
+        <figure class="rr-angle-figure">
+          <h4>Hvor meget af strømmen går mod land?</h4>
+          <p><strong>Vand kan bevæge sig hurtigt uden at komme nærmere stranden.</strong> Det sker, hvis strømmen løber langs kysten. Derfor ser RavRadar ikke kun på strømmens fart, men også på dens retning i forhold til kysten.</p>
+          <p>I figuren følger vandet den blå pil. Vi har valgt en fart på <strong>8 centimeter hvert sekund</strong> som et enkelt eksempel. Når du flytter skyderen, ændrer du kun retningen — ikke farten.</p>
+          <p>Når pilen peger lige mod land, går hele bevægelsen ind mod kysten. Når den peger skråt, går bevægelsen både langs kysten og ind mod den. Vandet deler sig ikke i to strømme; det er én skrå bevægelse, som vi beskriver i to retninger.</p>
+          <svg class="rr-angle-drawing" role="img" aria-labelledby="rr-angle-title rr-angle-desc">
+            <title id="rr-angle-title">Strømmen sammenholdt med kystens retning</title>
+            <desc id="rr-angle-desc">En principtegning med hav til venstre og land til højre. Flyt vinklen nedenfor for at se, hvor meget af en strøm der går på tværs af kysten.</desc>
+          </svg>
+          <div class="rr-angle-controls">
+            <label for="rr-current-angle">Strømmens vinkel fra direkte mod land: <strong id="rr-angle-value">45°</strong></label>
+            <input id="rr-current-angle" type="range" min="0" max="180" value="45" step="15">
+            <div class="rr-age-labels" aria-hidden="true"><span>0°<br>Mod land</span><span style="text-align:center">90°<br>Langs kysten</span><span>180°<br>Væk fra land</span></div>
+            <div id="rr-angle-result" class="rr-angle-result" aria-live="polite">Flyt skyderen for at se, hvor meget nærmere eller længere fra kysten vandet kommer på ét sekund.</div>
+          </div>
+          <div class="rr-angle-key"><span><i class="rr-key-line" aria-hidden="true"></i>Vandets bevægelse</span><span><i class="rr-key-line rr-key-projection" aria-hidden="true"></i>Bevægelsen mod eller væk fra kysten</span></div>
+          <figcaption>Et tænkt eksempel, ikke aktuelle vejrdata. Figuren forklarer retningen; den beregner ikke RavScore eller ravets præcise rute.</figcaption>
+        </figure>
+        <p>Vinklens betydning ændres glidende, ikke i faste vinkeltrin. Ved 45 grader er den kystrettede hastighed cirka 71 procent af den samlede hastighed. En stærk, skrå strøm kan derfor give et større indgående bidrag end en meget svag strøm lige mod land. Om bidraget er stort nok til at tælle, afhænger også af styrken.</p>
+
+        <h4>Styrke og varighed arbejder sammen</h4>
+        <p>Transportpotentialet er modellens hukommelse for strømforløbet. Tænk på det som en beholder med plads til 0–100 point: Strøm mod land kan fylde op, og strøm væk fra land kan tære på det opbyggede potentiale. Det er ikke en beholder med en kendt mængde rav i.</p>
+        <p>Et kort øjeblik med pålandsstrøm giver derfor ikke automatisk en høj score. Omvendt forsvinder et godt forløb ikke nødvendigvis, fordi strømmen kort vender. Både styrke og varighed tæller, og efterhånden som gamle timer falder ud af hukommelsen, kan vurderingen også ændre sig.</p>
+        <details class="rr-technical">
+          <summary>De konkrete styrke- og pointgrænser</summary>
+          <p>Den kystrettede hastighed skal overstige 3 cm/s (0,03 m/s) for at bidrage. Fra 15 cm/s (0,15 m/s) tæller den som fuld styrke. Mellem de to grænser stiger styrkebidraget gradvist. Grænserne gælder i begge retninger.</p>
+          <p>En fuldt vægtet time med fuld indgående styrke kan lægge højst 10 point til transportpotentialet. En tilsvarende udgående time kan trække højst 8 fra. Svagere kystrettet strøm og ældre, lavere vægtede timer tæller mindre. Det er point i transportpotentialet — ikke 10 eller 8 point direkte på den samlede RavScore.</p>
+          <p>Der findes derfor ikke ét antal timer med pålandsstrøm, som altid giver grøn score. Startniveau, strømstyrke, vinkel, alder, bølgeforløb og søgemåde spiller sammen.</p>
+        </details>
+        <figure>
+          <div class="rr-age" role="img" aria-label="Strømhistorikken går 48 timer tilbage. De seneste 24 timer vægtes fuldt; ældre timer får gradvis mindre vægt og ingen vægt ved 48 timer.">
+            <div class="rr-age-old"><strong>Ældre strømforløb</strong><br>Betydningen aftager glidende</div>
+            <div class="rr-age-new"><strong>De seneste 24 timer</strong><br>Fuld tidsvægt</div>
+          </div>
+          <div class="rr-age-labels"><span>48 timer før</span><span>24 timer før</span><span>Scoretidspunktet</span></div>
+          <figcaption>Strømmens hukommelse. Bølgernes hukommelse har andre tidsregler og kan række længere tilbage.</figcaption>
+        </figure>
+      </section>
+
+      <section class="rr-chapter" id="rr-waves">
+        <p class="rr-kicker">5 · Bølger</p>
+        <h3>Bølgerne kan sætte materiale i bevægelse</h3>
+        <p>Rav kan ligge ved bunden, i kystnære aflejringer eller blandt andet materiale. Bølger kan være med til at løsne og flytte det, hvis det er tilgængeligt. RavRadar bruger bølgehøjden og bølgeperioden som en indikator for denne mulighed.</p>
+        <p>Bølgehøjde fortæller ikke hele historien. Også <em>bølgeperioden</em> — tiden mellem bølgerne — indgår. To situationer med samme bølgehøjde kan derfor give forskelligt bidrag. RavRadar bruger dem sammen som en indikator for bølgeenergi, ikke som en direkte måling af, hvad der sker ved havbunden.</p>
+        <p>Bølgepåvirkningen bygges gradvist op i modellen og aftager langsommere bagefter. Derfor kan tidligere bølgeaktivitet stadig tælle, når havet er blevet roligere. Det betyder ikke, at modellen ved, hvor længe et bestemt stykke rav bliver liggende.</p>
+        <div class="rr-duo" aria-label="Bølgernes to forskellige roller">
+          <div><h4>Hvad kan være sat i bevægelse?</h4><p>Bølgerne bidrager til delscoren “Bølgernes mulighed for at flytte rav”. Tidligere bølgeaktivitet kan stadig tælle, selv om havet er blevet roligere.</p></div>
+          <div><h4>Hvordan er det at lede nu?</h4><p>De aktuelle bølger påvirker søgeforholdene. Store bølger kan altså både øge mobiliseringssignalet og gøre selve ravjagten vanskeligere.</p></div>
+        </div>
+        <p>Bølgernes forløb og retning indgår desuden som en begrænset korrektion af transportleddet. Den kan dæmpe det strømunderstøttede bidrag, men ikke skabe transport ud af ingenting. RavRadar beregner ikke præcist, hvor rav lander bag en bestemt revle.</p>
+        <details class="rr-technical">
+          <summary>Sådan regner modellen med bølgeenergi og hukommelse</summary>
+          <p>Energiindikatoren er bølgehøjden ganget med sig selv og derefter med bølgeperioden. Dobbelt højde giver derfor fire gange så stor indikator ved samme periode — men ikke fire gange så høj RavScore. Indikatoren omsættes først til et deltal mellem 0 og 100.</p>
+          <p>Ved opbygning bruger modellen en halveringstid på 4 timer og ved aftagning 48 timer. Det betyder, at afstanden til et uændret nyt niveau halveres på henholdsvis 4 og 48 timer. Det er en regel for modellens tilpasning, ikke ravets levetid på stranden.</p>
+        </details>
+        <p class="rr-source-links">Baggrund om bølgernes højde, energi og periode: <a href="https://www.dmi.dk/hav-og-is/temaforside-monsterbolger/bolgeteori" target="_blank" rel="noopener noreferrer">DMI's forklaring af bølger</a>. RavRadars tidsregler og vægte er modellens egne arbejdsregler.</p>
+      </section>
+
+      <section class="rr-chapter" id="rr-wind">
+        <p class="rr-kicker">6 · Vind og søgemåde</p>
+        <h3>Fralandsvind er ikke det samme som fralandsstrøm</h3>
+        <p>Vind kan påvirke havet gennem bølger, vandstand og strøm. Men vindretningen fortæller ikke i sig selv, hvilken vej modelstrømmen går. RavRadar giver derfor ikke automatisk transportpoint, bare fordi vinden blæser mod land.</p>
+        <p>Vindens direkte rolle i scoren er søgeforholdene. Mere vind kan gøre vandoverfladen urolig, så det bliver sværere at se ned til bunden med en ravlygte. Vindens indirekte påvirkning af havet afspejles gennem de særskilte prognoser for blandt andet bølger og strøm — ikke gennem ekstra transportpoint for vindretningen alene.</p>
+        <h4>Hvorfor kan stranden og waders få forskellige scorer?</h4>
+        <p>Fordi den samme havtilstand ikke er lige egnet til begge former for jagt. Waders-vurderingen reagerer mere på vanskelige vind- og bølgeforhold, og den har loftet fra afsnittet om scoren: Gode transportforhold må ikke skjule, at det er svært at lede i vandet. Strandvurderingen har ikke dette ekstra loft.</p>
+        <p>I waders-vurderingen er vinden styrende, mens bølger kan forringe søgeforholdene yderligere. Du kan derfor ikke forvente, at store bølger udlignes af en fordelagtig strømretning. Vælg altid den søgemåde, du faktisk har tænkt dig at bruge.</p>
+        <p>Et forløb med bølgeaktivitet efterfulgt af roligere søgeforhold kan derfor se lovende ud i modellen. Det er ikke en regel om, at man altid skal vente til efter blæsevejr, og det er ikke et løfte om, at der er rav tilbage.</p>
+        <div class="rr-note"><p><strong>En grøn score er ikke en sikkerhedsgodkendelse.</strong> RavRadar vurderer ikke din erfaring, lokale render, pludselige bølger eller en sikker vandybde. Søgeforhold og sikkerhed er ikke det samme.</p></div>
+      </section>
+
+      <section class="rr-chapter" id="rr-water">
+        <p class="rr-kicker">7 · De andre havoplysninger</p>
+        <h3>Vandstand og temperatur er nyttige — uden at give ekstra point</h3>
+        <h4>Vandstand</h4>
+        <p>Vandstanden hjælper dig med at vurdere, hvor vandkanten og de tilgængelige søgeområder kan ligge. Lavere vand kan blotlægge steder, som ellers er dækket. Højere vand kan flytte den aktive kystzone indad. Det er ikke i sig selv bevis for, at der er kommet rav ind.</p>
+        <p>Centimetertallet beskriver vandstanden i prognosen — ikke vanddybden dér, hvor du står. Det kan ikke bruges til at afgøre, hvor langt det er sikkert at gå ud.</p>
+        <p>Ændringen over tre timer ser fremad: Den sammenligner den valgte time med tre timer senere. Et minus betyder lavere vand senere; et plus betyder højere vand. Et lavt vandniveau kan altså godt være stigende, og et højt niveau faldende. Ændringen er ikke kun et mål for tidevand.</p>
+        <p>Tre-timersændringen kan mangle, selv om vandstanden for den valgte time findes. Den kræver også en gyldig prognose for tidspunktet tre timer senere.</p>
+        <p>Vandstand giver ikke direkte RavScore-point. Står to tidspunkter helt lige i score og historikkvalitet, kan lavere vand og derefter ikke-stigende vand dog afgøre, hvilket waders-tidspunkt der fremhæves. Det ændrer ikke selve scoren.</p>
+        <h4>Vandtemperatur</h4>
+        <p>Vandtemperaturen vises som en ekstra oplysning om forholdene. Den giver ikke en særskilt bonus eller straf i den nuværende scoremodel. Du skal derfor ikke læse en høj score som en vurdering af, om temperaturen passer til din tur.</p>
+      </section>
+
+      <section class="rr-chapter" id="rr-history">
+        <p class="rr-kicker">8 · Tid og usikkerhed</p>
+        <h3>En pil viser et øjeblik. Scoren bygger også på timerne før.</h3>
+        <p>Du kan godt se en strømpil væk fra land og samtidig se en forholdsvis høj score. Det kan skyldes, at timerne inden havde et stærkt indgående forløb. Du kan også se en pil mod land uden en høj score, fordi påvirkningen endnu er svag eller kort, fordi bølgerne har bidraget lidt, eller fordi søgeforholdene er dårlige.</p>
+        <p>“Historik” betyder timerne før <em>det tidspunkt, du ser på</em> — ikke nødvendigvis før i dag. Ser du fredag på mandagens prognose, kan mandagens score bygge på prognoserne for strømmen lørdag og søndag. Det er stadig prognoser, ikke allerede oplevet vejr. Der bruges ikke tirsdagsvejr til at forklare mandagens score.</p>
+        <h4>Hvad betyder “Vejrhistorik under opbygning”?</h4>
+        <p>Der er forskel på manglende vejrdata for den valgte time og manglende viden om timerne inden. Mangler nødvendige aktuelle input, kan scoren være utilgængelig. Findes de aktuelle input, men er det tidligere forløb delvist ukendt, kan modellen vise en forsigtig score sammen med et interval.</p>
+        <p>Intervallet viser, hvor meget netop den manglende historik kan påvirke beregningen. Den viste score tager udgangspunkt i den forsigtige ende. Ukendte timer regnes ikke som dokumenteret nul strøm eller vindstille. Intervallet er hverken en fundchance eller et samlet mål for al usikkerhed i vejret og ravjagten.</p>
+        <p>To steder med næsten samme score kan derfor have forskelligt grundlag. Læs historikmarkeringen og intervallet med, især når du sammenligner meget tætte resultater.</p>
+        <p>“Historik fuldstændig” betyder derfor ikke, at alle lokale forhold er kendt, eller at prognosen er sikker. Modellen kender stadig ikke det lokale ravlager og alle forhold helt inde ved stranden.</p>
+        <p>Et hul i én kystdels aktuelle data behøver ikke fjerne vurderingen af hele zonen. Andre dele kan stadig have gyldige scorer. Se derfor også, om zoneoplysningerne kun dækker en del af området.</p>
+      </section>
+
+      <section class="rr-chapter" id="rr-map">
+        <p class="rr-kicker">9 · Fra beregning til kort</p>
+        <h3>Farver, pile og tidsskyder viser forskellige ting</h3>
+        <p>Kystens farve viser RavScore for den valgte søgemåde og den viste time. Pile viser retning, mens farven samler flere forhold og deres forløb. Derfor behøver pil og farve ikke fortælle den samme enkle historie.</p>
+        <div class="rr-bandlist" aria-label="RavScore-farver">
+          <span><i class="rr-dot" style="--dot:#168252" aria-hidden="true"></i>75–100 · God</span>
+          <span><i class="rr-dot" style="--dot:#d7a107" aria-hidden="true"></i>55–74 · Middel</span>
+          <span><i class="rr-dot" style="--dot:#d77d20" aria-hidden="true"></i>35–54 · Svag</span>
+          <span><i class="rr-dot" style="--dot:#ce4c40" aria-hidden="true"></i>0–34 · Dårlig</span>
+          <span><i class="rr-dot" style="--dot:#3f4e53" aria-hidden="true"></i>Ingen data · ikke en nulscore</span>
+        </div>
+        <p>En stjerne markerer en særligt høj modelscore, fra 90 og op. Hverken den grønne farve eller stjernen fortæller, hvor meget rav der faktisk ligger.</p>
+        <dl>
+          <dt>Den blå pil · strømretning</dt><dd>Viser den vej, vandet bevæger sig i modeldataene. Den er ikke en tegning af ravets præcise rute.</dd>
+          <dt>Den hvide pil · vindretning</dt><dd>Viser vindens bevægelse på kortet. I talvisningen angives vinden efter den almindelige regel: hvor den kommer fra. Vestenvind kommer fra vest og bevæger sig mod øst.</dd>
+          <dt>Tidsskyderen</dt><dd>Viser kortet for en anden tilgængelig prognosetime. Den tydelige dag, dato og tid fortæller, hvilket tidspunkt du ser. “Nu” bringer kortet tilbage til den aktuelle prognosetime.</dd>
+        </dl>
+        <p>Skyderen vælger en allerede beregnet prognosetime. Den ændrer ikke scoremodellen og starter ikke en ny vejrhentning. Hvor langt du kan se frem, afhænger af de tilgængelige timer i den aktuelle prognose.</p>
+      </section>
+
+      <section class="rr-chapter" id="rr-zone">
+        <p class="rr-kicker">10 · Når du åbner en zone</p>
+        <h3>Brug forklaringen — ikke kun det store tal</h3>
+        <p>Når en strækning ser interessant ud, åbner du zonen for at se, hvad vurderingen bygger på. Begynd med at kontrollere søgemåde, dag og klokkeslæt. En god score mandag morgen er ikke nødvendigvis en god score mandag eftermiddag.</p>
+        <dl>
+          <dt>Hvorfor denne score?</dt><dd>Forklarer de tre delvurderinger for det sted og tidspunkt, du ser. Her kan du skelne mellem gode transportforhold, bølgernes forudgående påvirkning og forholdene for at lede nu.</dd>
+          <dt>Vind, bølger, strøm, vandstand og temperatur</dt><dd>Viser de konkrete prognoseoplysninger bag vurderingen eller som ekstra kontekst. Brug dem til at forstå en ændring i scoren — ikke som fem ens pointgivende faktorer.</dd>
+          <dt>Historikkvalitet og interval</dt><dd>Fortæller, om det forudgående forløb er tilstrækkeligt kendt, eller om den viste vurdering er præget af manglende historik.</dd>
+          <dt>Femdøgnsprognose og bedste tidspunkt</dt><dd>Hjælper med at sammenligne kommende dage og finde den mest lovende tilgængelige time. Dagens bedste tidspunkt betyder ikke, at hele dagen har den samme score.</dd>
+          <dt>Hele området og bedste sted</dt><dd>En enkelt kystdel kan have gode forhold, selv om resten af zonen er svagere. Områdevurderingen er ikke et simpelt gennemsnit: Den tager hensyn til det bedste sted og til, hvor bredt de gode forhold støttes af flere kystdele. Derfor kan tallet afvige fra den bedste lokale score.</dd>
+          <dt>Den tekniske forklaring</dt><dd>Giver mere indsigt i beregningen, hvis du vil gå videre. Du behøver ikke forstå de tekniske felter for at bruge kortet og de almindelige forklaringer.</dd>
+        </dl>
+        <p>Har du flyttet tidsskyderen og trykker på en zone på kortet, følger zonevisningen den valgte prognosetime. Åbner du derimod en zone fra forsiden gennem femdøgnsprognosen, nulstilles kortets tidsvalg til “Nu”. Aktuelt-listen viser fortsat forholdene nu. Tidsangivelsen er derfor vigtig, når du sammenligner visninger.</p>
+        <h4>En enkel måde at planlægge turen på</h4>
+        <ol class="rr-reading-steps">
+          <li><strong>Vælg søgemåde.</strong> Start med strand eller waders, så vurderingen passer til din tur.</li>
+          <li><strong>Sammenlign steder og tider.</strong> Se kortet og femdøgnsprognosen. Brug skyderen til at undersøge, om et lovende tidspunkt holder sig godt, eller kun er en enkelt god time.</li>
+          <li><strong>Læs forklaringen i zonen.</strong> Se, hvad der løfter og begrænser scoren, og hvor godt det tidligere forløb er kendt.</li>
+          <li><strong>Kontrollér prognosen igen inden afgang.</strong> Nye leverandørdata kan ændre vurderingen. Ved kysten er dine egne observationer og en selvstændig sikkerhedsvurdering stadig nødvendige.</li>
+        </ol>
+      </section>
+
+      <section class="rr-chapter">
+        <p class="rr-kicker">11 · Det vigtige forbehold</p>
+        <h3>En god prognose er ikke det samme som en strand fuld af rav</h3>
+        <p>RavRadar ser ikke det aktuelle pindelag, undersøger ikke stranden med et kamera og ved ikke, om andre allerede har samlet det tilgængelige rav. Modellen kender heller ikke den præcise mængde rav i havbunden eller alle lokale revler, render og læforhold.</p>
+        <p>En grøn strækning kan derfor være tom — også for pindelag — og du kan finde rav ved en lav score. Forskellige kyster har heller ikke samme grundlæggende ravrigdom. Scoren vurderer forholdene; den dokumenterer ikke, at en bestemt kyst rummer mere rav end en anden.</p>
+        <p>Modellens vægte, tidsregler og grænser er valgte arbejdsregler, ikke naturkonstanter. RavScore er endnu ikke kalibreret til en bestemt fundchance ud fra et repræsentativt sæt virkelige ture. Det er netop derfor, tallet skal læses som en hjælp til at sammenligne muligheder, ikke som en fundgaranti.</p>
+        <div class="rr-note"><p><strong>Kort sagt:</strong> Brug kortet til at finde muligheder, zoneforklaringen til at forstå dem og dine egne observationer til at vurdere stedet. RavRadar hjælper med beslutningen — det afgør ikke, hvad du finder.</p></div>
+      </section>
+    </article>
+
     <section class="section contact-card" data-i18n-html="about.contact">
       <div><p class="eyebrow">Kontakt</p><h2>Har du ris, ros eller erfaringer fra kysten?</h2><p>Jeg vil gerne høre fra dig, hvis du opdager en fejl, har en idé eller vil dele en erfaring, som kan gøre RavRadar bedre.</p></div>
       <a class="mail-button" href="mailto:RavRadar@outlook.dk">Skriv til RavRadar</a>
@@ -148,6 +373,6 @@
   </main>
 
   <script src="assets/about/qrcode.min.js?v=4.0.587"></script>
-  <script type="module" src="js/ui/about.js?v=4.0.587"></script>
+  <script type="module" src="js/ui/about.js?v=4.0.587&ui=about-explainer-20261025"></script>
 </body>
 </html>

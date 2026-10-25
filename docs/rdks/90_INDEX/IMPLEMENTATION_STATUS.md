@@ -1,3 +1,16 @@
+## 25. oktober — samlet Om-/Grundbog-forberedelse efter offentlig 587
+
+- [x] Normal fuld vejrkæde har faktisk leveret offentlig 4.0.587/I97. Cron er genaktiveret; løbende almindelig drift og dækning følges i privat checkpoint.
+- [x] Ejeren har godkendt Om-afsnittet og offentliggørelse. Den godkendte danske tekst, præcise ravlygtetekst og illustration med 8 centimeter hvert sekund er lokalt integreret med DE/EN, afgrænset CSS og navngiven cachekæde.
+- [x] Grundbogens fire danske ordforekomster er afgrænset til ravkese. Tidligere normale lærings- og C98/I97-resultater genbruges; de eksisterende sprog-/kontraktassertions består efter de præcise testforventninger for knowledge-kontrolsum, HTTP429 og opfølgning.
+- [x] Seks normale lokale kontroller på den integrerede branch: eksisterende sprog-/kontraktassertions inklusive ny Om-import, iOS-retur, versionsclosure, C98, I97 og syv bindingsforbrugere.
+- [x] Normal lokal browserforhåndsvisning: placering, 11 kapitler, bevaret QR-indhold, tastatur 0/90/180 samt dansk ved 390 pixels og tysk/engelsk ved 320 pixels uden vandret overløb. Normalt sprogskift og genindlæsning er kontrolleret; dansk og normal visningsbredde er gendannet.
+- [x] Det normale Om-måls nye additive assertions, RDKS, sikkerhed, håndbogens læsehjælp, tabsfri håndbogsfletning og releaseversionskontrol. Den normale installationskopi er synkroniseret med uændret SQL-prefix/suffix og præcis håndbogspayload.
+- [ ] Offlinekontrol er ikke kørt.
+- [ ] Præcis kildekontrol og offentlig levering af de nye tekster. Lokale resultater er ikke et bevis for fungerende ekstern AI.
+
+Ingen ny version, C/I/T, SQL, model- eller geodataændring. Numerisk strømmål er lukket, fire øvrige områder er åbne; SOURCE, samlet statistik og automatisk sletning forbliver inaktive. Alle daterede førbilleder nedenfor bevares.
+
 ## 25. oktober — afgrænset mobilstart-orakel efter faktisk vejrberegning
 
 - [x] Almindelig vejrhentning passerede den kvalificerede original-/arbejdsrettelse, leverandører, beregning, runtimekontrol og hård no-loss.
