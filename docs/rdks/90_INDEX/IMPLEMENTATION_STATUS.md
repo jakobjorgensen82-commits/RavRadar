@@ -1,3 +1,13 @@
+## 25. oktober — afgrænset mobilstart-orakel efter faktisk vejrberegning
+
+- [x] Almindelig vejrhentning passerede den kvalificerede original-/arbejdsrettelse, leverandører, beregning, runtimekontrol og hård no-loss.
+- [x] Den konkrete Pages-blokering er afgrænset: artifactkontrollen har 54 PASS og ét gammelt mobilstart-literal. De tre normale release-/bindingsmål består.
+- [x] Kun testens præcise turstartliteral er lokalt ændret til den godkendte self-reported-kalder; hele samme mål er reproduceret rød→grøn med øvrige krav og produktinput uændret.
+- [ ] Ny præcis samlet kildekontrol og faktisk offentlig levering. Lokalt grønt mål er ikke deploy eller fungerende ekstern AI.
+- [ ] Særskilt operationel admin-synkafvisning samt normal autentificeret genoptagelse fra gemt beregning. Ingen profilguard må lempes eller operationel fejl skjules.
+
+Ingen produkt-, model-, SQL- eller versionsændring følger af denne testrettelse. Cron, SOURCE, samlet statistik og automatisk sletning er inaktive. Privat checkpoint ejer aktuelle beviser og næste konkrete trin. Numerisk strømmål er lukket; fire øvrige hovedområder er åbne. De daterede førbilleder nedenfor bevares.
+
 ## 25. oktober — snæver original-/arbejdsgrænse for den installerede assistentbinding
 
 - [x] Native PostgreSQL faktisk bestået på første præcise P0-kilde; den senere sourcefejl er afgrænset til to historiske entrypoint-testlæsere.

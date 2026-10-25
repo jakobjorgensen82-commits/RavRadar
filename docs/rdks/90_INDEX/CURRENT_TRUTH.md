@@ -1,3 +1,9 @@
+## 25. oktober — artifactets gamle turstartforventning er den konkrete Pages-blokering
+
+Den efterfølgende almindelige vejrhentning nåede igennem leverandører, beregning, runtimekontrol og hård no-loss, men blev ikke offentligt leveret. Artifactrapporten har 54 beståede mål og én fejl i mobil-/live-cachekontrollen; de tre release-/bindingsmål består. Den gamle test kræver startWithPrompt() uden argument, mens den godkendte faktiske app starter med observationOrigin:'self-reported'. Præcis denne ene forventning rettes; alle andre assertions bevares. Samme normale mål er faktisk reproduceret rød→grøn, men det er ikke ny samlet kilde- eller produktionskvalifikation.
+
+Den særskilte protected-admin-sync afviste central profil og undersøges fortsat; et grønt jobstep er ikke en vellykket operation. Gemte beregnings-/genoptagelsesdata skal autentificeres gennem den normale eksisterende vej før providerfri fortsættelse. Ingen ny modelbinding, SQL, version, scoreændring eller kontrolsvækkelse følger af testrettelsen. Præcis kildekontrol og faktisk ny offentlig levering er åbne. Cron og de tilbageholdte aktiveringer er inaktive; privat checkpoint er autoritet for kørsel og næste trin. Numerisk strømmål er lukket, fire øvrige mål er åbne; ældre førbilleder nedenfor bevares.
+
 ## 25. oktober — originalkontrol og afledt arbejdsvisning er to forskellige byteidentiteter
 
 Den efterfølgende præcise kontrol bestod native PostgreSQL og fandt to testlæserkonflikter i den normale entrypointgruppe, ikke en ny SQL- eller produktionsfejl. Den afgrænsede opfølgning bruger den eksisterende strenge P0-inverse før alle gamle hele companion-orakler og bevarer deres pins og mutationsafslag. Det faktiske nye kald kontrolleres direkte. Kun de berørte normale mål genprøves lokalt; ny samlet kildekontrol og faktisk almindelig levering er fortsat nødvendige.
