@@ -1,3 +1,33 @@
+## 25. oktober — mål faktisk genlæsning før en kapacitetsrettelse
+
+Den seneste nationale SOURCE-prøve nåede READBACK efter 85,366 sekunder, men afsluttede ikke inden den uændrede 120-sekundersgrænse. Det er faseindgang, ikke genlæsningstid. Den lokale måling opdeler nu den eksisterende genlæsning i inspektion, parentlæsning, partlæsning, fuld udpakning og lighedskontrol. Kun faste faser og afsluttede millisekunder følger den eksisterende første-fejlrapport; ingen rådata, nye transportveje eller gættede gennemløbstal tilføjes.
+
+Alle normale læsninger, afslag, ét helt unpack og samtlige 673×121 timekontroller bevares. De fire mål-/nativeblade ændrer hverken produktvalidatorer, frister, budgetter, C157/I153/T12, SQL eller geodata. De 15 lokale Python-diagnoseprøver og hele normale Node-DEFAULT-mål består; faktisk Linux-underfase, H0/H1 og samlet SOURCE-kvalifikation er fortsat åbne. Ægte 587-PostgreSQL må ikke ommærkes som nyt SOURCE-bevis.
+
+Offentlig 587/I97 og en almindelig vejrgenerations faktiske B/S, Pages og offentlige kontrol er nu gennemført i ROOTs særskilte P0-forløb. SOURCE forbliver inaktiv; denne måleændring er ikke installation, produktionsrettelse eller dokumenteret tidsgevinst. Numerisk strømmål er lukket; de fire øvrige hovedområder er åbne. Ældre daterede afventninger bevares som historik alene på disse konkret opdaterede punkter.
+
+## 23. oktober — 4.0.588 lokalt udstedt; SOURCE-kvalifikation og drift er åbne
+
+Den normale SOURCE-workflowport er nu lokalt anvendt på den sammenførte genuine587/P0-kilde. Version:set 4.0.588 er udført præcis én gang og skal ikke gentages for status. Faktisk C157/I153/T12, binding/output, append-only SQL 20261023182922 og normal synk af de syv forbrugere er lokalt udstedt. De fem normale fixedpoint-kontroller sluttede med EXIT0 (5b00d9); dette er lokal kildeudstedelse, ikke SQL-eksekvering eller installation. De fulde pins står i DEC-0294 og CURRENT_TRUTH.
+
+Den påviste indlæserkæde er lukket med fem additive, præcist whole-hash-bundne importinventarer for account-prewrite, account-runtime-transition, post-cutover-migrate, last-mile- og I71-kildehjælperne. De aktuelle fem filer var byteidentiske med de kendte ejere; alle gamle scannertabeller og almindelige relative imports bevares. Den afgrænsede normale inventarprøve bestod (027c35); ingen generel parserlempelse, filudelukkelse eller ny runtimeautoritet følger heraf.
+
+Den normale lokale prøve 67024 havde 76 PASS, 2 fejl og 1 Windows-skip. De to konkrete lokale fixture-/miljøfejl er lukket ved målrettet opfølgning 4393 med EXIT0; hele målet er ikke gentaget. De ni SOURCE-workflowtilfælde består. Dette må ikke kaldes samlet grønt SOURCE-CI, native PostgreSQL eller offentlig effekt.
+
+ÅBENT: præcis samlet SOURCE-kvalifikation/native PostgreSQL/CI, kontrolleret installation og genlæsning, national kapacitet og almindelig efterfølger, efter-main CURRENT samt offentlig virkning og dokumenteret drift på Supabase Free/Cloudflare Free. Faktisk installeret 587 er stadig en særskilt forudsætning for SOURCE-overgangen. P0-vejrhentningen er fortsat aktiv og ejes af ROOT; denne dokumentopfølgning udleder intet nyt produktionsresultat. Alle fem mål er åbne til 18. november 2026.
+
+De ældre formuleringer nedenfor om manglende workflowport, uudstedt version/metadata og afventende afledning er bevaret planhistorik og erstattet kun på disse konkrete punkter. Gamle migrationsoriginaler, autentiske B/S, originaler, offentliggjorte scorer og de historiske orakler bevares.
+
+## 23. oktober — planlagt 4.0.588: genuine587/P0/SOURCE er lokalt samlet
+
+Den normale workflowintegration er særskilt ÅBEN: reusable-weather-build og run-current-weather-once er endnu ikke koblet til source_normal_producer, selv om action, entry og tail er fysisk samlet. Denne kaldersammenføring skal afsluttes og gennemgås før C/I/T-/SQL-udstedelse, præcis CI eller aktivering; fysisk kildekomposition er ikke en lukket normal rute.
+
+Samtaledelta: Den gennemgåede SOURCE-kilde er samlet lokalt med genuine 587 og den nyere P0-kilde gennem normal Git-sammenføring. Apprelease 4.0.588 er planlagt, ikke versionssynkroniseret eller udstedt. Ingen nye C/I/T, SOURCE-output, migrationsfil, samlet prøve, installation eller offentlig levering påstås af denne dokumentforberedelse.
+
+Den afgrænsede dokumentation tilføjer DEC-0294s faktiske metadata-/selvhashgrænse og håndbog 89.266 med samme stabile web-ID. Gamle isolerede SOURCE-4.0.586-bindinger og 020000/030000/040000-kandidater er historiske, ikke den nye installationskæde. De 66 nuværende migrationsoriginaler, genuine 587-forgænger og den nyere P0-kildes almindelige defaults bevares.
+
+Næste normale afledning er engangsversionssynk → C → I → T → strenge genererede SOURCE-data og SQL-output → én ny append-only migration → syvforbrugersynk → fixedpoint. Faktiske værdier og prøver skal føres her efter udførelse; de må ikke udfyldes på forhånd. P0s faktiske vejrhentning og alle produktionshandlinger ejes fortsat af ROOT og føres i det aktuelle private checkpoint. Alle fem mål til 18. november er åbne.
+
 ## 25. oktober — ejeren har godkendt Om-forklaringen og ravkese
 
 Samtaledelta: Ejeren har udtrykkeligt godkendt, at det nye afsnit Sådan virker RavRadar offentliggøres. Det godkendte danske udkast bevares fagligt, herunder strømfiguren med 8 centimeter hvert sekund og sætningen: »Mere vind kan gøre vandoverfladen urolig, så det bliver sværere at se ned til bunden med en ravlygte.« Afsnittet indpasses på den eksisterende Om-side mellem rigtig MobilePay-støtte og kontakt, med DA/DE/EN og uden privat udkastbanner eller ekstra sidehoved. Den danske Grundbog skal bruge ravkese i de fire afgrænsede ordforekomster; tysk og engelsk ændres ikke.

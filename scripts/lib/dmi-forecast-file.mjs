@@ -4,6 +4,7 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import crypto from 'node:crypto';
 import { TextDecoder } from 'node:util';
+import { sourceUnionBirthFileOpened, sourceUnionBirthFileClosed } from './source-union-birth-journal.mjs';
 import { PROTECTED_PRIVATE_RUNTIME_POLICY } from '../protected-private-production-runtime.mjs';
 import { WATER_SOURCE_CONTINUITY_MAX_SOURCES } from './water-source-continuity-contract.mjs';
 
@@ -29,6 +30,8 @@ const safeId = value => typeof value === 'string' && value.length > 0 && value.l
 // Actual in-process checkpoint state, not a cross-process owner or a receipt
 // that authorizes a replacement worker. Preserve an uncertain handle/stage.
 const checkpointWriters = new Map(), checkpointStopErrors = new WeakSet();
+// SOURCE failures retain the actual wx handle; never convert uncertainty to unlink/retry.
+const sourceUnionForecastWriters = new Set();
 export function isDmiForecastCheckpointStopUnproved(error) {
   return checkpointStopErrors.has(error);
 }
@@ -571,15 +574,20 @@ export async function writeDmiForecastFileAtomic(file, document) {
 
 // A record-at-a-time output stage for recovery. The existing installComponents
 // transaction owns the eventual baseline replacement. No partial stage escapes.
-export async function writeDmiForecastRecords(file, index, zoneRecords, metadata = index.metadata) {
+export async function writeDmiForecastRecords(file, index, zoneRecords, metadata = index.metadata, sourceUnionBirthJournal = null) {
   const handle = await fs.open(file, 'wx', 0o600);
+  const sourceWriter = sourceUnionBirthJournal !== null;
+  if (sourceWriter) sourceUnionForecastWriters.add(handle);
+  const sourceHash = sourceWriter ? crypto.createHash('sha256') : null;
   let bytes = 0;
   const append = async text => {
     bytes += Buffer.byteLength(text);
     if (bytes > DMI_FORECAST_FILE_MAX_BYTES) invalid('INVALID_SIZE');
     await handle.writeFile(text);
+    if (sourceWriter) sourceHash.update(text);
   };
   try {
+    if (sourceWriter) await sourceUnionBirthFileOpened(sourceUnionBirthJournal, file, handle);
     await append('{');
     let first = true;
     for (const [key, value] of Object.entries(metadata)) {
@@ -659,10 +667,15 @@ export async function writeDmiForecastRecords(file, index, zoneRecords, metadata
     }
     await append('}\n');
     await handle.sync();
+    const sourceIdentity = sourceWriter ? await handle.stat({ bigint: true }) : null;
     await handle.close();
+    // The journal checks the captured numeric FD is physically EBADF and the named inode is unchanged.
+    if (sourceWriter) await sourceUnionBirthFileClosed(sourceUnionBirthJournal, file, handle, sourceIdentity, bytes, sourceHash.digest('hex'));
     await inspectDmiForecastFile(file);
+    if (sourceWriter) sourceUnionForecastWriters.delete(handle);
     return { bytes, maximumBytes: DMI_FORECAST_FILE_MAX_BYTES };
   } catch (error) {
+    if (sourceWriter) throw error; // Preserve the first raw failure and retained output/handle.
     await handle.close().catch(() => {});
     await fs.unlink(file).catch(() => {});
     throw error;

@@ -13,6 +13,9 @@ import {NATIVE_ORIGINAL_CONTINUITY_BINDING,NATIVE_ORIGINAL_CONTINUITY_ALIASES,na
 import {ASSISTANT_LATER_H0_BINDING,ASSISTANT_LATER_H0_ALIASES,assistantLaterH0Migration,
   readAssistantLaterH0CanonicalSource,requireAssistantLaterH0Output}
   from './lib/assistant-later-h0-successor-source.mjs';
+import {SOURCE_PRODUCER_BINDING,SOURCE_PRODUCER_ALIASES,sourceProducerMigration,
+  readSourceProducerCanonicalSource,requireSourceProducerOutput}
+  from './lib/source-producer-successor-source.mjs';
 import {
   assertRavScoreModelBinding,
   ravScoreModelBinding,
@@ -37,7 +40,8 @@ const SQL_BINDING_PATHS = Object.freeze([
   'supabase/INSTALL-RAVRADAR-4.0.56-SECURITY.sql',
 ]);
 const CHECKPOINT_METADATA_CAS_MIGRATION_PATH =
-  ASSISTANT_LATER_H0_BINDING !== null ? 'supabase/migrations/' + assistantLaterH0Migration().filename
+  SOURCE_PRODUCER_BINDING !== null ? 'supabase/migrations/' + sourceProducerMigration().filename
+    : ASSISTANT_LATER_H0_BINDING !== null ? 'supabase/migrations/' + assistantLaterH0Migration().filename
     : NATIVE_ORIGINAL_CONTINUITY_BINDING !== null ? 'supabase/migrations/' + nativeOriginalContinuityMigration().filename
     : ACCOUNT_STATISTICS_ASSISTANT_BINDING === null ? null : 'supabase/migrations/' + accountStatisticsAssistantMigration().filename;
 const CHECKPOINT_METADATA_CAS_MARKER = 'RAVSCORE_CHECKPOINT_METADATA_CAS_GENERATED';
@@ -149,6 +153,24 @@ export function assistantLaterH0CheckpointInspectionView(source){
   return view;
 }
 
+// SOURCE succeeds genuine587, not the older LF585 parent. Authenticate the
+// entire issued canonical first; only the inspection view omits the six
+// preserved original definitions and their generated-marker comments.
+// Returned/synchronized SQL keeps all original definitions and projections.
+export function sourceProducerCheckpointInspectionView(source){
+  const pins=requireSourceProducerOutput(); // Unissued before input inspection.
+  assert.equal(arguments.length,1);assert.equal(typeof source,'string');
+  assert.equal(crypto.createHash('sha256').update(source).digest('hex'),pins.canonicalSha256,
+    'SOURCE checkpoint inspection requires the entire issued canonical source');
+  let view=source;
+  for(const row of [...SOURCE_PRODUCER_ALIASES.slice(0,2),
+    ...ASSISTANT_LATER_H0_ALIASES,...NATIVE_ORIGINAL_CONTINUITY_ALIASES.slice(0,2)]){
+    const original=exactFunctionDefinition(view,'public.'+row.name,'Exact preserved original SOURCE alias');
+    view=view.slice(0,original.start)+view.slice(original.end);
+  }
+  return view;
+}
+
 export function checkpointMetadataCasBlock(source, binding, candidateBinding, continuationHash) {
   const label = `${CHECKPOINT_METADATA_CAS_MIGRATION_PATH} checkpoint metadata CAS`;
   const outer = exactGeneratedBlock(source, CHECKPOINT_METADATA_CAS_MARKER, label);
@@ -157,7 +179,9 @@ export function checkpointMetadataCasBlock(source, binding, candidateBinding, co
   // them from this current-binding-only inspection view. The returned SQL still
   // contains every original byte; no alias is rebound, hidden or rewritten.
   let currentView=source;
-  if(ASSISTANT_LATER_H0_BINDING!==null||ASSISTANT_LATER_H0_ALIASES.some(row=>source.includes('function public.'+row.name+'(')))
+  if(SOURCE_PRODUCER_BINDING!==null||SOURCE_PRODUCER_ALIASES.slice(0,2).some(row=>source.includes('function public.'+row.name+'(')))
+    currentView=sourceProducerCheckpointInspectionView(source);
+  else if(ASSISTANT_LATER_H0_BINDING!==null||ASSISTANT_LATER_H0_ALIASES.some(row=>source.includes('function public.'+row.name+'(')))
     currentView=assistantLaterH0CheckpointInspectionView(source);
   else if(NATIVE_ORIGINAL_CONTINUITY_BINDING!==null||NATIVE_ORIGINAL_CONTINUITY_ALIASES.slice(0,2).some(row=>source.includes('function public.'+row.name+'(')))
     currentView=nativeOriginalContinuityCheckpointInspectionView(source);
@@ -347,7 +371,8 @@ function synchronizeAccountSchema(source, accountSource, relative) {
 }
 
 export async function synchronizeRavScoreModelBinding({ write = false, root = ROOT } = {}) {
-  if(ASSISTANT_LATER_H0_BINDING!==null)requireAssistantLaterH0Output();
+  if(SOURCE_PRODUCER_BINDING!==null)requireSourceProducerOutput();
+  else if(ASSISTANT_LATER_H0_BINDING!==null)requireAssistantLaterH0Output();
   else if(NATIVE_ORIGINAL_CONTINUITY_BINDING!==null)requireNativeOriginalContinuityOutput();
   else requireAccountStatisticsAssistantOutput();
   const binding = ravScoreModelBinding();
@@ -358,7 +383,8 @@ export async function synchronizeRavScoreModelBinding({ write = false, root = RO
 
   // Sparse immutable successor is reconstructed only as a pinned READ view.
   const { canonicalSource: checkpointMigration, statisticsSchema2Source: accountSource } =
-    await (ASSISTANT_LATER_H0_BINDING!==null?readAssistantLaterH0CanonicalSource
+    await (SOURCE_PRODUCER_BINDING!==null?readSourceProducerCanonicalSource
+      :ASSISTANT_LATER_H0_BINDING!==null?readAssistantLaterH0CanonicalSource
       :NATIVE_ORIGINAL_CONTINUITY_BINDING!==null?readNativeOriginalContinuityCanonicalSource
       :readAccountStatisticsAssistantCanonicalSource)({ migrationsDirectory: path.join(root, 'supabase/migrations') });
   const checkpointBlock = checkpointMetadataCasBlock(

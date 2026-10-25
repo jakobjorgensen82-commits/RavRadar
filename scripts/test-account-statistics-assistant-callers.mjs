@@ -4,8 +4,15 @@
 import assert from 'node:assert/strict';
 import crypto from 'node:crypto';
 import fs from 'node:fs/promises';
+import fsSync from 'node:fs';
+import vm from 'node:vm';
+import {exactRelativeModuleSpecifiers} from './lib/static-module-closure.mjs';
 import test from 'node:test';
-import {inverseCurrent586PhaseUpload} from './native-postgres-evidence.mjs';
+import './test-source-producer-prewrite.mjs';
+import './test-source-native-node24-workflow.mjs';
+import {inverseCurrent586PhaseUpload,inverseSourceProducerPhaseUpload,SOURCE_PRODUCER_COMMANDS}
+  from './native-postgres-evidence.mjs';
+import {inverseSourceNode24Workflow} from './national584-source-evidence.mjs';
 import {DatabaseSync} from 'node:sqlite';
 import {privateTripStudySchemaModel,classifyPrivateTripStudySchema,privateTripStudyMigrationSteps}
   from './deploy-private-trip-study.mjs';
@@ -15,6 +22,44 @@ import path from 'node:path';
 import {fileURLToPath,pathToFileURL} from 'node:url';
 import {withFrozen585AccountStatisticsAssistantTestHost}
   from './lib/frozen585-account-statistics-assistant-test-host.mjs';
+
+// TEST ONLY: the exact reviewed SOURCE CI changes are inverted before the
+// unchanged whole586/historical584 assertions. Unknown bytes never fall back.
+function sourcePrWorkflowBeforeSourceForTest(value){
+  const source=String(value).replace(/\r\n/g,'\n');
+  const hash=text=>crypto.createHash('sha256').update(text).digest('hex');
+  assert.equal(hash(source),'8070f5160f2599900c3f1dafc96f6fbd6d8ce0740353f1aa52e7f801456efc7a',
+    'Whole reviewed SOURCE CI workflow, not selected markers');
+  const prior=inverseSourceProducerPhaseUpload(inverseSourceNode24Workflow(source));
+  assert.equal(hash(prior),'b8236a832c5145efee9bd97d1cdb552fa86453dffa086aaa63d61b533b9eefbb',
+    'Whole genuine JOINT587 workflow before only the SOURCE CI delta');
+  return prior;
+}
+
+// The existing normal fixedc03 DATA factory already materializes package.json.
+// This test reads genuine587 bytes, never retags actual SOURCE package metadata.
+let frozen587PackageBytesPromise;
+async function genuine587PackageForTest(){
+  const actual=JSON.parse(await fs.readFile(new URL('../package.json',import.meta.url),'utf8'));
+  const {requireAssistantLaterH0Release}=await import('./lib/assistant-later-h0-successor-source.mjs');
+  if(actual.version===requireAssistantLaterH0Release())return actual; // Ordinary587 path unchanged.
+  const {verifySourceProducerPackage}=await import('./national584-source-evidence.mjs');
+  verifySourceProducerPackage(actual); // Refuse unknown/unissued changed source before DATA materialization.
+  frozen587PackageBytesPromise??=(async()=>{
+    const {withAuthenticated587PredecessorSource}=await import('./check-source-producer-587-predecessor-source.mjs');
+    return withAuthenticated587PredecessorSource(async sourceRoot=>{
+      const bytes=await fs.readFile(path.join(sourceRoot,'package.json'));
+      assert.equal(crypto.createHash('sha256').update(bytes).digest('hex'),
+        '85614c466a1364662dbfb5fdde854a2d50face533b25684eae88c5d0fe246e77',
+        'Whole actual fixedc03 genuine587 package, no version or scripts rewrite');
+      return bytes;
+    });
+  })();
+  const prior=JSON.parse(await frozen587PackageBytesPromise);
+  assert.equal(prior.version,requireAssistantLaterH0Release());
+  assert.deepEqual(prior.scripts,actual.scripts,'Only the exact preserved genuine587 command plan');
+  return prior;
+}
 
 // Existing normal controller and unchanged real SQL, synthetic in-memory D1
 // metadata only. These cases neither install D1 nor prove Worker CPU/privacy.
@@ -88,9 +133,35 @@ test('private-study005: the normal workflow stays OFF and DDL remains outside Wo
   assert.doesNotMatch(ddl,/catch\s*\{|recoveryAttempted|replace\(/);
   assert.doesNotMatch(source.slice(to),/await cf\(|model\.jobsMigration/);
 });
+
+async function privateStudy005ControllerView(source){
+  const descriptor=JSON.parse(await fs.readFile(new URL('./lib/private-trip-study-binding-review.json',import.meta.url),'utf8'));
+  const hash=value=>crypto.createHash('sha256').update(value).digest('hex');
+  // Kun denne hele count-successor må projiceres til den frosne006-controller.
+  assert.equal(hash(source),'1dc1101146afbda2ff242cc759b0dfb1e7b172a93ab430a041778ef1e36a01f8');
+  const countAfter="  if(!Array.isArray(rows)||rows.length>41)throw fail('SCHEMA_METADATA');",
+    countBefore="  if(!Array.isArray(rows)||rows.length>40)throw fail('SCHEMA_METADATA');";
+  assert.equal(source.split(countAfter).length,2);
+  source=source.replace(countAfter,()=>countBefore);
+  assert.equal(hash(source),'458d7b774aa146f298ba07b8c005d998676903ccc26016a03f1b19fc59d726fd');
+  assert.equal(descriptor.kind,'PRIVATE_TRIP_STUDY_006_TEST_ONLY_INVERSE');
+  assert.equal(descriptor.file,'scripts/deploy-private-trip-study.mjs');
+  assert.equal(descriptor.beforeSha256,'a15b33d1ae183456908faa6a405807c5921f67c609f28d61f78655e841943167');
+  assert.equal(descriptor.afterSha256,'458d7b774aa146f298ba07b8c005d998676903ccc26016a03f1b19fc59d726fd');
+  assert.equal(hash(source),descriptor.afterSha256);
+  assert.equal(descriptor.edits.length,17);
+  let before=source;
+  for(const edit of [...descriptor.edits].reverse()){
+    assert.equal(typeof edit.before,'string');assert.equal(typeof edit.after,'string');
+    assert.equal(before.split(edit.after).length,2);before=before.replace(edit.after,()=>edit.before);
+  }
+  assert.equal(hash(before),descriptor.beforeSha256);
+  return before;
+}
+
 test("private-study005: read-only plan substages preserve the whole original controller",async()=>{
-  const source=(await fs.readFile(new URL('./deploy-private-trip-study.mjs',import.meta.url),'utf8'))
-    .replace(/\r\n/g,'\n');
+  const source=await privateStudy005ControllerView((await fs.readFile(new URL('./deploy-private-trip-study.mjs',import.meta.url),'utf8'))
+    .replace(/\r\n/g,'\n'));
   const edits=[
     ["    stage='READ_ONLY_PLAN';run('node',['scripts/prepare-cloudflare-trip-storage.mjs','--existing-worker-repair']);",
       "    stage='READ_ONLY_PLAN_EXISTING_STORAGE';run('node',['scripts/prepare-cloudflare-trip-storage.mjs','--existing-worker-repair']);"],
@@ -123,6 +194,123 @@ test("private-study005: read-only plan substages preserve the whole original con
   for(const changed of [swapped,source.replace(stages[2],'READ_ONLY_PLAN_UNKNOWN'),
     source+'\n// non-stage byte drift\n'])assert.throws(()=>verify(changed));
 });
+
+test('private-study006: præcis ny skemalæsning bevarer gamle objekter og afviser delvis installation',async()=>{
+  const model=privateTripStudySchemaModel(),[initial,release,jobs]=await privateStudySql(),db=new DatabaseSync(':memory:');
+  const migration=await fs.readFile(new URL('../cloudflare/trip-gateway/migrations/006_trip_weather_aggregate_job_binding.sql',import.meta.url),'utf8');
+  const proposal=await fs.readFile(new URL('./fixtures/aggregate-job-binding-006-proposal.sql.txt',import.meta.url),'utf8');
+  assert.equal(migration,proposal);assert.equal(model.bindingMigration,migration);
+  assert.equal(crypto.createHash('sha256').update(migration).digest('hex'),'cd3cb6862e811bb01ab1279e28e8fb30f894db8c9516ef50314cd10d7cfc9d7b');
+  try{
+    db.exec(initial);db.exec(release);db.exec(jobs);
+    const before=privateStudySnapshot(db),anchor=db.prepare('select * from trip_weather_aggregate_policy_anchor').all(),
+      control=db.prepare('select * from trip_weather_aggregate_job_control').all();
+    db.exec(migration);const after=privateStudySnapshot(db);
+    const classification=classifyPrivateTripStudySchema(model,privateStudyShards(after));
+    assert.equal(classification.state,'EXACT_004_005_006');
+    assert.match(classification.expectedBindingControlSchemaSha256,/^[a-f0-9]{64}$/);
+    const additions=after.filter(row=>!before.some(old=>old.name===row.name));
+    assert.deepEqual(additions.map(row=>row.name).sort(),['trip_weather_aggregate_job_binding_immutable','trip_weather_aggregate_job_binding_required']);
+    assert.deepEqual(after.filter(row=>before.some(old=>old.name===row.name)&&row.name!=='trip_weather_aggregate_jobs'),
+      before.filter(row=>row.name!=='trip_weather_aggregate_jobs'));
+    assert.deepEqual(db.prepare('select * from trip_weather_aggregate_policy_anchor').all(),anchor);
+    assert.deepEqual(db.prepare('select * from trip_weather_aggregate_job_control').all(),control);
+    for(const table of ['trip_weather_aggregate_releases','trip_weather_aggregate_account_charges','trip_weather_aggregate_jobs'])
+      assert.equal(db.prepare('select count(*) n from '+table).get().n,0);
+    const denied=rows=>assert.throws(()=>classifyPrivateTripStudySchema(model,privateStudyShards(rows)),
+      error=>error.stage==='PARTIAL_OR_CHANGED_STATISTICS_SCHEMA');
+    for(const row of additions)denied(after.filter(item=>item.name!==row.name));
+    denied(after.map(row=>row.name==='trip_weather_aggregate_jobs'?{...row,sql:row.sql.replace('4096','4097')}:row));
+    denied(after.map(row=>row.name==='trip_weather_aggregate_job_binding_immutable'?{...row,sql:row.sql.replace('IS NOT','!=')}:row));
+    for(const shard of [1,9]){
+      const shards=privateStudyShards(after);shards[shard]=additions;
+      assert.throws(()=>classifyPrivateTripStudySchema(model,shards),error=>error.stage==='NON_CONTROL_STATISTICS_SCHEMA');
+    }
+    assert.throws(()=>db.exec(migration));
+  }finally{db.close();}
+});
+test('private-study006: præcis metadataakse er 18/39/41 og 42 afvises',async()=>{
+  const model=privateTripStudySchemaModel(),[initial,release,jobs]=await privateStudySql(),db=new DatabaseSync(':memory:');
+  assert.equal(model.metadata.length,18);assert.equal(model.jobsMetadata.length,39);
+  assert.equal(model.bindingMetadata.length,41);
+  try{
+    db.exec(initial);db.exec(release);db.exec(jobs);db.exec(model.bindingMigration);
+    const exact=privateStudySnapshot(db);
+    assert.equal(exact.length,41);
+    assert.equal(classifyPrivateTripStudySchema(model,privateStudyShards(exact)).state,'EXACT_004_005_006');
+    assert.throws(()=>classifyPrivateTripStudySchema(model,privateStudyShards([...exact,{...exact[0]}])),
+      error=>error.stage==='SCHEMA_METADATA');
+    assert.throws(()=>classifyPrivateTripStudySchema(model,privateStudyShards(exact.slice(0,-1))),
+      error=>error.stage==='PARTIAL_OR_CHANGED_STATISTICS_SCHEMA');
+  }finally{db.close();}
+});
+test('private-study006: særskilt tilladelse og præcis genindgang giver ingen DDL-gentagelse',()=>{
+  assert.deepEqual(privateTripStudyMigrationSteps('EXACT_004_005'),[]);
+  assert.deepEqual(privateTripStudyMigrationSteps('EXACT_004_005',{allow004:true,allow005:true}),[]);
+  assert.deepEqual(privateTripStudyMigrationSteps('EXACT_004_005',{allow006:true}),['006']);
+  assert.deepEqual(privateTripStudyMigrationSteps('EXACT',{allow005:true,allow006:true}),['005','006']);
+  assert.deepEqual(privateTripStudyMigrationSteps('ABSENT',{allow004:true,allow005:true,allow006:true}),['004','005','006']);
+  assert.deepEqual(privateTripStudyMigrationSteps('EXACT_004_005_006'),[]);
+  assert.deepEqual(privateTripStudyMigrationSteps('EXACT_004_005_006',{allow004:true,allow005:true,allow006:true}),[]);
+  assert.throws(()=>privateTripStudyMigrationSteps('ABSENT',{allow005:true,allow006:true}),error=>error.stage==='004_APPLY_NOT_ALLOWED');
+  for(const state of ['ABSENT','EXACT'])
+    assert.throws(()=>privateTripStudyMigrationSteps(state,{allow004:true,allow006:true}),error=>error.stage==='005_APPLY_NOT_ALLOWED');
+  for(const allow006 of ['true',1,null])
+    assert.throws(()=>privateTripStudyMigrationSteps('EXACT_004_005',{allow006}),error=>error.stage==='AUTHORITY');
+  for(const state of ['EXACT_006','EXACT_004_006','UNKNOWN'])
+    assert.throws(()=>privateTripStudyMigrationSteps(state,{allow006:true}),error=>error.stage==='AUTHORITY');
+});
+test('private-study006: faktisk controllerkrop fastholder OFF, genlæsning, engangsskrivning og fuld historisk inverse',async()=>{
+  const source=(await fs.readFile(new URL('./deploy-private-trip-study.mjs',import.meta.url),'utf8')).replace(/\r\n/g,'\n'),
+    workflow=await fs.readFile(new URL('../.github/workflows/private-trip-weather-study.yml',import.meta.url),'utf8');
+  const original=await privateStudy005ControllerView(source);
+  await assert.rejects(()=>privateStudy005ControllerView(original));
+  for(const changed of [source+'\n// ukendt ændring\n',
+    source.replace('rows.length>41','rows.length>42'),source.replace('rows.length>41','rows.length>40'),
+    source.replace("await attest(currentVersion,true);","await attest(currentVersion);"),
+    source.replace("await verifySchema('EXACT_004_005');","await verifySchema('EXACT');")])
+    await assert.rejects(()=>privateStudy005ControllerView(changed));
+  assert.match(workflow,/allow_006:\s*\n\s+description:[^\n]+\n\s+type: boolean\s*\n\s+default: false/);
+  assert.match(workflow,/TRIP_PRIVATE_STUDY_JOB_BINDING_APPLY_ALLOWED: \$\{\{ inputs\.allow_006 && 'true' \|\| 'false' \}\}/);
+  const preOff=source.indexOf("if(migrationSteps.includes('006')){stage='PRE_BINDING_WORKER_OFF';await attest(currentVersion,true);}"),
+    quiesce=source.indexOf("    quiesce();stage='PRE_APPLY_REVALIDATION';"),ddlStart=source.indexOf('    for(const migration of migrationSteps){'),
+    ddlEnd=source.indexOf('    let version;',ddlStart),ddl=source.slice(ddlStart,ddlEnd);
+  assert(preOff>0&&preOff<quiesce&&quiesce<ddlStart&&ddlEnd>ddlStart);
+  assert.match(ddl,/if\(migration==='006'\)\{\n\s+await verifySchema\('EXACT_004_005'\);await attest\(currentVersion,true\);exactMain\(\);lease\(600\);/);
+  assert.match(ddl,/fs\.writeFileSync\(binding\?BINDING_INTENT:jobs\?JOBS_INTENT:INTENT,[^\n]+\{flag:'wx',mode:0o600\}\)/);
+  assert.match(ddl,/await verifySchema\(binding\?'EXACT_004_005_006':jobs\?'EXACT_004_005':'EXACT'\)/);
+  assert.equal([...ddl.matchAll(/await cf\(/g)].length,1);
+  assert.match(ddl,/config\.d1_databases\[0\]\.database_id/);
+  assert.match(ddl,/sql:binding\?model\.bindingMigration:jobs\?model\.jobsMigration:model\.migration/);
+  assert.doesNotMatch(ddl,/catch\s*\{|recoveryAttempted|replace\(/);
+  assert.doesNotMatch(source.slice(ddlEnd),/await cf\(|model\.bindingMigration|model\.jobsMigration/);
+  assert.match(source,/if\(env\.TRIP_PRIVATE_STUDY_MODE==='plan'\)return\{\.\.\.plan,operation:'READ_ONLY_PLAN',schemaApplied:false,workerUpdated:false\}/);
+  assert.match(source,/const replace=async\(\)=>\{\n\s+stage='WORKER_REPLACE';if\(!schemaVerified\)throw fail\(stage\);await verifySchema\(\);await attest\(\);exactMain\(\);lease\(600\)/);
+  assert.match(source,/await attest\(versions\[0\]\[1\],true\);return versions\[0\]\[1\]/);
+  assert.match(source,/stage='RESTORE';await verifySchema\(\);await attest\(version,true\);exactMain\(\);lease\(1\)/);
+});
+test('private-study006: den normale Worker-importindsamler medtager hele det nye bindingsblad',async()=>{
+  const source=(await fs.readFile(new URL('./deploy-private-trip-study.mjs',import.meta.url),'utf8')).replace(/\r\n/g,'\n');
+  await privateStudy005ControllerView(source);
+  const start=source.indexOf('function workerSources(){'),end=source.indexOf('\nfunction normalized(',start);
+  assert(start>0&&end>start);
+  const invoke=filesystem=>vm.runInNewContext(source.slice(start,end)+'\nworkerSources();',{
+    fs:filesystem,path,exactRelativeModuleSpecifiers,
+    hash:value=>crypto.createHash('sha256').update(value).digest('hex'),
+    fail:stage=>Object.assign(new Error('PRIVATE_TRIP_STUDY_DELIVERY_FAILED'),{stage}),
+  });
+  const rows=JSON.parse(JSON.stringify(invoke(fsSync))),name='cloudflare/trip-gateway/trip-aggregate-job-binding.js';
+  const actual=await fs.readFile(new URL('../'+name,import.meta.url));
+  assert.deepEqual(rows.filter(row=>row.file===name),[{file:name,bytes:actual.length,
+    sha256:crypto.createHash('sha256').update(actual).digest('hex')}]);
+  assert(rows.some(row=>row.file==='cloudflare/trip-gateway/trip-aggregate-job.js'));
+  assert(rows.length<=128);assert(rows.reduce((n,row)=>n+row.bytes,0)<=8*1024*1024);
+  assert.throws(()=>invoke({...fsSync,lstatSync(file){
+    if(path.resolve(file)===path.resolve(name))return {isSymbolicLink:()=>true};
+    return fsSync.lstatSync(file);
+  }}),error=>error.stage==='WORKER_SOURCE_PATH');
+});
+
 test('current585 model-import guard admits only the whole reviewed first-raw-error loader',async()=>{
   const file='scripts/check-account-statistics-assistant-predecessor-source.mjs';
   const source=(await fs.readFile(new URL('./check-account-statistics-assistant-predecessor-source.mjs',import.meta.url),'utf8'))
@@ -318,7 +506,7 @@ test('historical584 national evidence inverts only the reviewed current90-minute
   const recorded=git('show',fixture+':'+WORKFLOW).toString();
   const currentWorkflow=(await fs.readFile(new URL('../.github/workflows/validate-pull-request.yml',import.meta.url),'utf8')).replace(/\r\n/g,'\n');
   verifyCurrentWorkflow(currentWorkflow);
-  const actual=inverseCurrent586PhaseUpload(currentWorkflow);
+  const actual=inverseCurrent586PhaseUpload(sourcePrWorkflowBeforeSourceForTest(currentWorkflow));
   verifyCurrentWorkflow(actual);
   const current=inverseCandidatePublicSourceRunLine(actual).replace(CURRENT_JOB,AFTER_JOB);
   const hash=value=>crypto.createHash('sha256').update(value).digest('hex');
@@ -353,7 +541,7 @@ test('source-PR-only180-minute job preserves genuine120 and90 workflows and reje
     env:{...process.env,GIT_NO_LAZY_FETCH:'1',GIT_NO_REPLACE_OBJECTS:'1'}}).toString();
   const currentWorkflow=(await fs.readFile(new URL('../.github/workflows/validate-pull-request.yml',import.meta.url),'utf8')).replace(/\r\n/g,'\n');
   verifyWorkflow(currentWorkflow);
-  const actual=inverseCurrent586PhaseUpload(currentWorkflow);
+  const actual=inverseCurrent586PhaseUpload(sourcePrWorkflowBeforeSourceForTest(currentWorkflow));
   const predecessorHead='bb8d354e0d889080b5f7182b2962f05fbb8fd2e7';
   const predecessor=execFileSync('git',['show',predecessorHead+':'+WORKFLOW],{maxBuffer:65536,timeout:30000,
     env:{...process.env,GIT_NO_LAZY_FETCH:'1',GIT_NO_REPLACE_OBJECTS:'1'}}).toString();
@@ -469,7 +657,7 @@ test('normal original584 staging forwards the selected R2 storage into the real 
 });
 
 test('current586 source registration preserves exact585 predecessor and distinct current native scope',async()=>{
-  const actualPkg=JSON.parse(await fs.readFile(new URL('../package.json',import.meta.url),'utf8'));
+  const actualPkg=await genuine587PackageForTest();
   const {verifyPackage,verifyCurrentNativeCommands,CURRENT586_NATIVE_COMMANDS}=await import('./national584-source-evidence.mjs');
   const {inverseReviewedAccountStatisticsAssistantSourceScripts,inverseAssistantLaterH0SourceScripts}=await import('./lib/account-statistics-assistant-package-review.mjs');
   const {ASSISTANT_LATER_H0_BINDING}=await import('./lib/assistant-later-h0-successor-source.mjs');
@@ -502,7 +690,7 @@ test('current586 source registration preserves exact585 predecessor and distinct
 });
 
 test('assistant later-H0 registration keeps exact older scripts and refuses phase/order mutations',async()=>{
-  const pkg=JSON.parse(await fs.readFile(new URL('../package.json',import.meta.url),'utf8')),original=structuredClone(pkg);
+  const pkg=await genuine587PackageForTest(),original=structuredClone(pkg);
   const {ASSISTANT_LATER_H0_BINDING,requireAssistantLaterH0Release}=await import('./lib/assistant-later-h0-successor-source.mjs');
   const {verifyPackage,verifyCurrentNativeCommands,ASSISTANT_LATER_H0_NATIVE_COMMANDS}=await import('./national584-source-evidence.mjs');
   const {inverseAssistantLaterH0SourceScripts}=await import('./lib/account-statistics-assistant-package-review.mjs');
@@ -530,4 +718,172 @@ test('assistant later-H0 registration keeps exact older scripts and refuses phas
     assert.throws(()=>verifyPackage(changed));
   }
   assert.throws(()=>verifyPackage({...pkg,version:'0.0.0'}));
+});
+
+test('actual SOURCE package/native registration remains distinct from genuine587 DATA oracles',async()=>{
+  const sourceBytes=await fs.readFile(new URL('../package.json',import.meta.url));
+  const actual=JSON.parse(sourceBytes);
+  const registrationTargets=['./test-source-producer-prewrite.mjs','./test-source-native-node24-workflow.mjs'];
+  const caller=(await fs.readFile(new URL('./test-account-statistics-assistant-callers.mjs',import.meta.url),'utf8')).replace(/\r\n/g,'\n');
+  for(const target of registrationTargets)assert.equal(caller.split("import '"+target+"';\n").length,2,
+    'Exactly one normal account import of '+target);
+  const {expandSourceCommands}=await import('./validate-source-once.mjs');
+  const commands=expandSourceCommands(actual.scripts,'validate:source:checks');
+  assert.equal(commands.filter(command=>command==='node --test scripts/test-account-statistics-assistant-callers.mjs').length,1,
+    'The actual unchanged 9df plan dispatches the registering account target once');
+  for(const target of registrationTargets)assert.equal(commands.filter(command=>command.split(' ').includes('scripts/'+target.slice(2))).length,0,
+    'No direct command duplicates the imported '+target);
+  const {SOURCE_PRODUCER_BINDING,SOURCE_PRODUCER_OUTPUT,SOURCE_PRODUCER_PROPOSED_RELEASE,
+    requireSourceProducerBinding,requireSourceProducerOutput}=await import('./lib/source-producer-successor-source.mjs');
+  const {verifyPackage,verifySourceProducerPackage,verifyCurrentNativeCommands,
+    ASSISTANT_LATER_H0_NATIVE_COMMANDS}=await import('./national584-source-evidence.mjs');
+  const {requireAssistantLaterH0Release}=await import('./lib/assistant-later-h0-successor-source.mjs');
+  if(SOURCE_PRODUCER_BINDING===null){
+    assert.equal(SOURCE_PRODUCER_OUTPUT,null);assert.equal(SOURCE_PRODUCER_PROPOSED_RELEASE,null);
+    assert.throws(()=>verifySourceProducerPackage(actual),/SOURCE_PRODUCER_UNISSUED/);
+    return; // No invented version/tuple to manufacture a positive SOURCE case.
+  }
+  requireSourceProducerBinding();requireSourceProducerOutput();
+  assert.equal(actual.version,SOURCE_PRODUCER_PROPOSED_RELEASE);
+  assert.doesNotThrow(()=>verifySourceProducerPackage(actual));
+  assert.doesNotThrow(()=>verifyPackage(actual));
+  assert.doesNotThrow(()=>verifyCurrentNativeCommands(SOURCE_PRODUCER_COMMANDS,actual.version));
+  assert.throws(()=>verifyCurrentNativeCommands(ASSISTANT_LATER_H0_NATIVE_COMMANDS,actual.version));
+  assert.throws(()=>verifyCurrentNativeCommands(SOURCE_PRODUCER_COMMANDS,requireAssistantLaterH0Release()));
+  const old=await genuine587PackageForTest();
+  assert.equal(old.version,requireAssistantLaterH0Release());
+  assert.notEqual(old.version,actual.version);
+  assert.deepEqual(old.scripts,actual.scripts);
+  assert.doesNotThrow(()=>verifyPackage(old)); // The actual old587 rule is still tested separately.
+  assert.doesNotThrow(()=>verifyCurrentNativeCommands(ASSISTANT_LATER_H0_NATIVE_COMMANDS,old.version));
+  for(const mode of ['version','missing','duplicate','reordered','command','unknown-command']){
+    const changed=structuredClone(actual),key='test:assistant-later-h0-source',marker='npm run '+key;
+    if(mode==='version')changed.version='0.0.0';
+    if(mode==='missing')delete changed.scripts[key];
+    if(mode==='duplicate')changed.scripts['test:ravscore-source-critical']=changed.scripts['test:ravscore-source-critical'].replace(marker,marker+' && '+marker);
+    if(mode==='reordered')changed.scripts['test:ravscore-source-critical']=changed.scripts['test:ravscore-source-critical'].replace('npm run test:native-original-continuity-source && '+marker,marker+' && npm run test:native-original-continuity-source');
+    if(mode==='command')changed.scripts[key]+=' --unexpected';
+    if(mode==='unknown-command')changed.scripts['unreviewed-source-command']='node scripts/unreviewed.mjs';
+    assert.throws(()=>verifySourceProducerPackage(changed));
+    assert.throws(()=>verifyPackage(changed));
+  }
+  assert.deepEqual(await fs.readFile(new URL('../package.json',import.meta.url)),sourceBytes,
+    'Genuine historical DATA views never rewrite actual SOURCE package bytes');
+});
+
+test('private-study006: deklarations-export må ikke forveksle Array.from med en re-export',async()=>{
+  const file='scripts/lib/static-module-closure.mjs',
+    source=(await fs.readFile(new URL('./lib/static-module-closure.mjs',import.meta.url),'utf8')).replace(/\r\n/g,'\n');
+  const hash=value=>crypto.createHash('sha256').update(value).digest('hex');
+  assert.equal(hash(source),'bb64f60e1a700897f6dd982b8fe9c3ed85fbb48fd3dfd0b2f46f65e3dc91b17e');
+  const current="    // En deklarations-export har ingen module-specifier. Fortsæt dog token\n"
+    +"    // for token, så import(...) inde i initialisering/funktion stadig kontrolleres.\n"
+    +"    if (token.value === 'export' && next?.type === 'id'\n"
+    +"      && ['const', 'let', 'var', 'function', 'class', 'default', 'async'].includes(next.value)) continue;\n"
+    +"    const end = statementEnd(items, index + 1);";
+  assert.equal(source.split(current).length,2);
+  const original=source.replace(current,"    const end = statementEnd(items, index + 1);");
+  assert.equal(hash(original),'675f91e7942143a78636e219e54bd7fa0ff25ddcd1998657dd215105054938b0');
+  assert.equal(original.split('export function exactRelativeModuleSpecifiers(').length,2);
+  const oldScanner=vm.runInNewContext(original.replace('export function exactRelativeModuleSpecifiers(','function exactRelativeModuleSpecifiers(')
+    +'\nexactRelativeModuleSpecifiers;');
+  const dpFile='cloudflare/trip-gateway/trip-aggregate-dp.js',
+    dp=(await fs.readFile(new URL('../'+dpFile,import.meta.url),'utf8')).replace(/\r\n/g,'\n');
+  assert.equal(hash(dp),'ffd3389017064fce904ec2f8f850b4e60248db0e29185f9a0ed83021be73117b');
+  assert.throws(()=>oldScanner(dp,dpFile),/contains an unparsed static module specifier/);
+  assert.deepEqual(exactRelativeModuleSpecifiers(dp,dpFile),[
+    '../../supabase/functions/_shared/trip-storage.js','../../js/services/calibration-eligibility.js']);
+  for(const declarations of [
+    "export const rows = Array.from({ length: 1 });",
+    "export let rows = Array.from({ length: 1 });",
+    "export var rows = Array.from({ length: 1 });",
+    "export function rows() { return Array.from({ length: 1 }); }",
+    "export async function rows() { return Array.from({ length: 1 }); }",
+    "export class Rows { static all() { return Array.from({ length: 1 }); } }",
+    "export default Array.from({ length: 1 });",
+  ])assert.deepEqual(exactRelativeModuleSpecifiers(declarations,file),[]);
+});
+test('private-study006: deklarationer bevarer nested-importkontrol og re-exportafslag',()=>{
+  const wrappers=[
+    expression=>'export const value = '+expression+';',
+    expression=>'export let value = '+expression+';',
+    expression=>'export var value = '+expression+';',
+    expression=>'export function read() { return '+expression+'; }',
+    expression=>'export async function read() { return '+expression+'; }',
+    expression=>'export class Reader { read() { return '+expression+'; } }',
+    expression=>'export default '+expression+';',
+  ];
+  for(const wrap of wrappers){
+    assert.deepEqual(exactRelativeModuleSpecifiers(wrap("import('./actual-child.js')"),'ordinary.js'),['./actual-child.js']);
+    for(const dynamic of ['import(variable)',"import('./child.js' + suffix)","import(`./${name}.js`)",'import(unknown.path)'])
+      assert.throws(()=>exactRelativeModuleSpecifiers(wrap(dynamic),'ordinary.js'),/non-literal or unparsed dynamic import/);
+  }
+  const mixed="import './before.js'; export const x = Array.from([]); "
+    +"export { y } from './named.js'; export * from '../star.js'; "
+    +"export * as ns from './namespace.js'; export default import('./after.js');";
+  assert.deepEqual(exactRelativeModuleSpecifiers(mixed,'ordinary.js'),
+    ['./before.js','./named.js','../star.js','./namespace.js','./after.js']);
+  for(const source of ["export { y } from computed;","export * from computed;","export * as ns from computed;"])
+    assert.throws(()=>exactRelativeModuleSpecifiers(source,'ordinary.js'),/unparsed static module specifier/);
+});
+
+test('private-study006: privat eksport bevarer hele installationsarm og normale adgangsgrænser',async()=>{
+  const read=async file=>(await fs.readFile(new URL('../'+file,import.meta.url),'utf8')).replace(/\r\n/g,'\n');
+  const sha=text=>crypto.createHash('sha256').update(text).digest('hex');
+  const workflow=await read('.github/workflows/private-trip-weather-study.yml');
+  const validate=source=>{
+    assert.equal(sha(source),'bdde67e93ae059a520e21305af42c1566080faa0da786fc670d7f28dc0285949');
+    const marker='\n  private-study-export:\n';assert.equal(source.split(marker).length,2);
+    const after=source.slice(source.indexOf(marker));
+    assert.match(after,/needs: validate-operation\n    if: \$\{\{ inputs.operation == 'export' \}\}/);
+    assert.match(after,/group: ravradar-trip-storage-production\n      cancel-in-progress: false/);
+    assert.match(after,/timeout-minutes: 5/);
+    assert.match(after,/TRIP_STORAGE_OPERATION: private-study-export/);
+    assert.equal(after.split('run: node scripts/publish-private-trip-weather-study.mjs').length,2);
+    assert.doesNotMatch(after,/allow_00[456]|APPLY_ALLOWED|CLOUDFLARE_API_TOKEN|SUPABASE_DB_PASSWORD|GITHUB_WORKFLOW:|deploy-private-trip-study|upload-artifact/);
+    let original=source.slice(0,source.indexOf(marker));
+    for(const [current,prior] of [
+      ['description: Skrivefri plan, kontrolleret installation med statistik slået fra eller privat rapporteksport',
+        'description: Read-only plan or controlled installation with statistics disabled'],
+      ['options: [plan, deliver, export]','options: [plan, deliver]'],
+      ['plan|deliver|export) ;;','plan|deliver) ;;'],
+    ]){assert.equal(original.split(current).length,2);original=original.replace(current,prior);}
+    assert.equal(sha(original),'b7272558358a939c1142d68cc6b9c79ff1b9953748189329ca2a87c148930548');
+    assert.match(original,/group: ravradar-weather-production-v2\n  queue: max\n  cancel-in-progress: false/);
+    assert.match(original,/supabase\/setup-cli@3c2f5e2ae34c34e428e8e206e2c4d21fa2d20fbf/);
+    assert.match(original,/version: 2\.117\.0/);
+  };
+  validate(workflow);
+  for(const [before,after] of [['default: plan','default: export'],['cancel-in-progress: false','cancel-in-progress: true'],
+    ["inputs.operation == 'export'","inputs.operation != 'deliver'"],['node scripts/publish-private-trip-weather-study.mjs','node scripts/deploy-private-trip-study.mjs']]){
+    assert(workflow.includes(before));assert.throws(()=>validate(workflow.replace(before,after)));
+  }
+  const publisher=await read('scripts/publish-private-trip-weather-study.mjs');
+  assert.equal(sha(publisher),'5b087741711e31ad64401be9a8bbfc4ffb0bfe53bd7e68a50a9fe08cd947d6dc');
+  const dashboard=await read('js/ui/admin-dashboard.js');
+  let original=dashboard;
+  // Exact SOURCE588 query/release-version view before the unchanged719 oracle.
+  // The VM below still renders the actual current dashboard body.
+  if(sha(original)==='08f17fc40aa5c986ed869d8f202d9bf7c83b8490920cb354d4768c7585970731'){
+    assert.equal(original.split('4.0.588').length,22);
+    original=original.replaceAll('4.0.588','4.0.587');
+  }
+  assert.equal(sha(original),'aa2466f85e4590e19c0af2dcb698e4f5c4406a0b9c1b6ac3e6f431007ebe2a4b',
+    'Only the exact current SOURCE version view or genuine719 dashboard');
+  for(const [current,prior] of [
+    ["import { mountPrivateTripStudyCard } from './admin-private-trip-study.js?v=4.0.587';\nimport { analyzeObservations }",'import { analyzeObservations }'],
+    ["content.insertAdjacentHTML('afterbegin',moduleGuide());bindModuleGuide();if(state.tab==='learning')mountPrivateTripStudyCard(content,state.access);}",
+      "content.insertAdjacentHTML('afterbegin',moduleGuide());bindModuleGuide();}"],
+  ]){assert.equal(original.split(current).length,2);original=original.replace(current,prior);}
+  assert.equal(sha(original),'cabbc3c638bf0330fe4b505e69dd72c4892f54753885a2fe0031154cf31daca2');
+  // Faktisk normal render, ikke en alternativ dashboardkalder.
+  const render=dashboard.match(/^function render\(\)\{[^\n]+\}/m)?.[0];assert(render);
+  const start=dashboard.indexOf('function renderLearning(){'),end=dashboard.indexOf('\n\nconst saveBadge=',start);assert(start>=0&&end>start);
+  let mounts=0;
+  const context={state:{tab:'learning',stationMap:null},content:{insertAdjacentHTML(){}},analyzeObservations:()=>({}),
+    activePublicRavScoreState:()=>({ok:false}),activeModelUnavailableCard:()=>'SYNTHETIC_UNAVAILABLE_MODEL',
+    moduleGuide:()=>'',bindModuleGuide(){},destroyCoastlineEditor(){},destroyDirectionMap(){},mountPrivateTripStudyCard(){mounts++;}};
+  for(const name of new Set([...render.matchAll(/(?:\:|\|\|)(render\w+)/g)].map(x=>x[1])))context[name]=()=>{};
+  vm.runInNewContext(dashboard.slice(start,end)+';'+render+';render();',context);assert.equal(mounts,1);
+  context.state.tab='dashboard';vm.runInNewContext('render();',context);assert.equal(mounts,1);
 });

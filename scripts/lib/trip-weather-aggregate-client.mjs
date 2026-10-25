@@ -112,7 +112,7 @@ export async function readTripWeatherAggregate({ supabaseUrl, serviceRoleKey,
       modelBinding: ravScoreModelBinding(), preferenceSnapshot: { schemaVersion: 2,
         snapshotAt: new Date(now).toISOString(), accounts: before } };
     assertAggregateRequest(request, ravScoreModelBinding(), now);
-    const send=async(pathname,bodyRequest)=>{
+    const send=async(pathname,bodyRequest,expectedResponseBinding=null)=>{
       if(pathname===AGGREGATE_PATH)assertAggregateRequest(bodyRequest,ravScoreModelBinding());
       else assertAggregateRequestEnvelope(bodyRequest,ravScoreModelBinding());
       const body=JSON.stringify(bodyRequest),timestamp=String(Date.now());
@@ -123,16 +123,20 @@ export async function readTripWeatherAggregate({ supabaseUrl, serviceRoleKey,
       if(answer.ok!==true)aggregateFail('AGGREGATE_RESPONSE_INVALID');
       if(pathname===AGGREGATE_PATH){
         assertClosedAggregatePeriod(answer.report?.period);
-        assertAggregatePreparationReport(answer.report,{...bodyRequest,period:answer.report.period});
+        // Den signerede anmodning er fortsat aktuel. Kun serverens normale
+        // DB-valg kan returnere et ældre job; svaret valideres som fuld tuple.
+        assertAggregatePreparationReport(answer.report,{...bodyRequest,period:answer.report.period,
+          modelBinding:answer.report.modelBinding});
       }
       else{
         await assertPrivateNoisyProposal(answer.report);
-        if(answer.report.period.start!==bodyRequest.period.start||answer.report.period.end!==bodyRequest.period.end)
+        if(answer.report.period.start!==bodyRequest.period.start||answer.report.period.end!==bodyRequest.period.end
+          || expectedResponseBinding===null || canonicalJson(answer.report.modelBinding)!==canonicalJson(expectedResponseBinding))
           aggregateFail('AGGREGATE_RESPONSE_INVALID');
       }
       return answer;
     };
-    let after=before, priorRevision=-1, prepared=false, selectedPeriod=null;
+    let after=before, priorRevision=-1, prepared=false, selectedPeriod=null, selectedBinding=null;
     // Only an authenticated, strictly newer pending ACK permits another step.
     // A timeout/unknown write/rejection is NEVER retried here. The durable job
     // may be reconciled by a later ordinary invocation with fresh inventories.
@@ -144,7 +148,8 @@ export async function readTripWeatherAggregate({ supabaseUrl, serviceRoleKey,
       after=await snapshot();
       if(canonicalJson(before)!==canonicalJson(after))aggregateFail('AGGREGATE_PREFERENCES_CHANGED');
       if(selectedPeriod&&canonicalJson(selectedPeriod)!==canonicalJson(result.report.period))aggregateFail('AGGREGATE_JOB_SELECTION_CHANGED');
-      selectedPeriod=result.report.period;
+      if(selectedBinding&&canonicalJson(selectedBinding)!==canonicalJson(result.report.modelBinding))aggregateFail('AGGREGATE_JOB_SELECTION_CHANGED');
+      selectedPeriod=result.report.period;selectedBinding=result.report.modelBinding;
       if(result.report.status==='WITHHELD_RELEASE_POLICY_UNISSUED'){prepared=true;break;}
       if(result.report.revision<=priorRevision)aggregateFail('AGGREGATE_PROGRESS_NOT_ADVANCED');
       priorRevision=result.report.revision;
@@ -153,7 +158,7 @@ export async function readTripWeatherAggregate({ supabaseUrl, serviceRoleKey,
     // A delayed/lost preparation response cannot authorize an obsolete frozen
     // report. Fresh signed acknowledgement reads only an EXISTING proposal and
     // the normal control-shard erasure barrier; it never creates/resamples.
-    const verified=await send(AGGREGATE_VERIFY_PATH,{...request,period:selectedPeriod,preferenceSnapshot:{schemaVersion:2,snapshotAt:new Date(Date.now()).toISOString(),accounts:after}});
+    const verified=await send(AGGREGATE_VERIFY_PATH,{...request,period:selectedPeriod,preferenceSnapshot:{schemaVersion:2,snapshotAt:new Date(Date.now()).toISOString(),accounts:after}},selectedBinding);
     if(canonicalJson(after)!==canonicalJson(await snapshot()))aggregateFail('AGGREGATE_PREFERENCES_CHANGED');
     return verified.report;
   };

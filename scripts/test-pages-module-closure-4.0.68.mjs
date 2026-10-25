@@ -33,6 +33,14 @@ if(rsync.error?.code==='ENOENT'){
  }
 }else if(rsync.status!==0) throw new Error(`Kunne ikke bygge testartifact: ${rsync.stderr||rsync.stdout||rsync.error?.message}`);
 
+// Delingsbackend følger den eksisterende scripts/-udelukkelse. Gamle
+// eksponerbare placeringer må heller ikke efterlades som ekstra kopier.
+for(const backend of ['scripts/forecast-share/handler.mjs','scripts/forecast-share/worker.mjs',
+ 'scripts/forecast-share/wrangler.jsonc','server/forecast-share-handler.mjs',
+ 'cloudflare/forecast-share/worker.mjs','cloudflare/forecast-share/wrangler.jsonc']){
+ try{await fs.access(path.join(site,backend));throw new Error(`Delingsbackend findes i Pages-artifactet: ${backend}`);}
+ catch(error){if(error?.code!=='ENOENT')throw error;}
+}
 const entryHtml=['index.html','admin.html','jordrav.html'];
 const queue=[];
 for(const rel of entryHtml){

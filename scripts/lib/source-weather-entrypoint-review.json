@@ -1,0 +1,233 @@
+{
+  "schemaVersion": 1,
+  "kind": "TEST_ONLY_EXACT_SOURCE_WEATHER_ENTRYPOINT_INVERSE",
+  "productionAuthority": false,
+  "predecessorHead": "54fab9ca0f5e4b2965440440e40d8f89a903e82e",
+  "sourceHead": "e5c9716829c8e4f6bff30cf79d602ed45ed6896b",
+  "roles": {
+    "writer": {
+      "path": "scripts/lib/dmi-forecast-file.mjs",
+      "predecessor": {
+        "bytes": 29084,
+        "sha256": "75c10458973f5e3cdf2969b35c76698239e2baf696b4f0ff8fd4b466bdc3c536"
+      },
+      "actual": {
+        "bytes": 30187,
+        "sha256": "be9c4caf7fda54d0bfc3cde9fc711a1ab9b8435d58127fb395402ff3fd4fb9e5"
+      },
+      "edits": [
+        {
+          "sourceHunk": 4,
+          "offset": 29376,
+          "originalOffset": 28769,
+          "current": "    }\n    await append('}\\n');\n    await handle.sync();\n    const sourceIdentity = sourceWriter ? await handle.stat({ bigint: true }) : null;\n    await handle.close();\n    // The journal checks the captured numeric FD is physically EBADF and the named inode is unchanged.\n    if (sourceWriter) await sourceUnionBirthFileClosed(sourceUnionBirthJournal, file, handle, sourceIdentity, bytes, sourceHash.digest('hex'));\n    await inspectDmiForecastFile(file);\n    if (sourceWriter) sourceUnionForecastWriters.delete(handle);\n    return { bytes, maximumBytes: DMI_FORECAST_FILE_MAX_BYTES };\n  } catch (error) {\n    if (sourceWriter) throw error; // Preserve the first raw failure and retained output/handle.\n    await handle.close().catch(() => {});\n    await fs.unlink(file).catch(() => {});\n    throw error;\n",
+          "original": "    }\n    await append('}\\n');\n    await handle.sync();\n    await handle.close();\n    await inspectDmiForecastFile(file);\n    return { bytes, maximumBytes: DMI_FORECAST_FILE_MAX_BYTES };\n  } catch (error) {\n    await handle.close().catch(() => {});\n    await fs.unlink(file).catch(() => {});\n    throw error;\n",
+          "currentSha256": "27023f0d9f322e2247072fc042a27d3bf972c94e687f3343899e3c1407eabc2a",
+          "originalSha256": "d86831ed6314dbdfc107e53ebc491ee6c33d1918ce30c9ae6263c14c60432311",
+          "beforeSha256": "be9c4caf7fda54d0bfc3cde9fc711a1ab9b8435d58127fb395402ff3fd4fb9e5",
+          "afterSha256": "05ad496dd4955972669707b5c30af4c4bf055085148bc6052957e7e20ebc60b1"
+        },
+        {
+          "sourceHunk": 3,
+          "offset": 25114,
+          "originalOffset": 24870,
+          "current": "\n// A record-at-a-time output stage for recovery. The existing installComponents\n// transaction owns the eventual baseline replacement. No partial stage escapes.\nexport async function writeDmiForecastRecords(file, index, zoneRecords, metadata = index.metadata, sourceUnionBirthJournal = null) {\n  const handle = await fs.open(file, 'wx', 0o600);\n  const sourceWriter = sourceUnionBirthJournal !== null;\n  if (sourceWriter) sourceUnionForecastWriters.add(handle);\n  const sourceHash = sourceWriter ? crypto.createHash('sha256') : null;\n  let bytes = 0;\n  const append = async text => {\n    bytes += Buffer.byteLength(text);\n    if (bytes > DMI_FORECAST_FILE_MAX_BYTES) invalid('INVALID_SIZE');\n    await handle.writeFile(text);\n    if (sourceWriter) sourceHash.update(text);\n  };\n  try {\n    if (sourceWriter) await sourceUnionBirthFileOpened(sourceUnionBirthJournal, file, handle);\n    await append('{');\n    let first = true;\n    for (const [key, value] of Object.entries(metadata)) {\n",
+          "original": "\n// A record-at-a-time output stage for recovery. The existing installComponents\n// transaction owns the eventual baseline replacement. No partial stage escapes.\nexport async function writeDmiForecastRecords(file, index, zoneRecords, metadata = index.metadata) {\n  const handle = await fs.open(file, 'wx', 0o600);\n  let bytes = 0;\n  const append = async text => {\n    bytes += Buffer.byteLength(text);\n    if (bytes > DMI_FORECAST_FILE_MAX_BYTES) invalid('INVALID_SIZE');\n    await handle.writeFile(text);\n  };\n  try {\n    await append('{');\n    let first = true;\n    for (const [key, value] of Object.entries(metadata)) {\n",
+          "currentSha256": "3f3ffb12c4f3e0e7f8f666e1ae41216c675dc791de00c1ae1500e55ade69da34",
+          "originalSha256": "68a3d24174fe172f6a188f2b65a99a55ad852b00f281deab284a5b0b3827281e",
+          "beforeSha256": "05ad496dd4955972669707b5c30af4c4bf055085148bc6052957e7e20ebc60b1",
+          "afterSha256": "0e64256e52dcd03fe6a5499b749eae46cc2f92951b904bf7597e204bbaa72f73"
+        },
+        {
+          "sourceHunk": 2,
+          "offset": 1674,
+          "originalOffset": 1567,
+          "current": "// Actual in-process checkpoint state, not a cross-process owner or a receipt\n// that authorizes a replacement worker. Preserve an uncertain handle/stage.\nconst checkpointWriters = new Map(), checkpointStopErrors = new WeakSet();\n// SOURCE failures retain the actual wx handle; never convert uncertainty to unlink/retry.\nconst sourceUnionForecastWriters = new Set();\nexport function isDmiForecastCheckpointStopUnproved(error) {\n  return checkpointStopErrors.has(error);\n}\n",
+          "original": "// Actual in-process checkpoint state, not a cross-process owner or a receipt\n// that authorizes a replacement worker. Preserve an uncertain handle/stage.\nconst checkpointWriters = new Map(), checkpointStopErrors = new WeakSet();\nexport function isDmiForecastCheckpointStopUnproved(error) {\n  return checkpointStopErrors.has(error);\n}\n",
+          "currentSha256": "6d19eb3cce4c1f6055b7dfbd8b7d3d634b4d0846f5352e08218f9764afa08833",
+          "originalSha256": "7230ca2efc1f6dddaecbb71862fa099f764ecf055a7462b72ae7ae6c0269bbfd",
+          "beforeSha256": "0e64256e52dcd03fe6a5499b749eae46cc2f92951b904bf7597e204bbaa72f73",
+          "afterSha256": "7a1d672015a88c0108fd32acd64fe4b21ed57730554309af5c1b2ad22e4eb5d6"
+        },
+        {
+          "sourceHunk": 1,
+          "offset": 188,
+          "originalOffset": 188,
+          "current": "import path from 'node:path';\nimport crypto from 'node:crypto';\nimport { TextDecoder } from 'node:util';\nimport { sourceUnionBirthFileOpened, sourceUnionBirthFileClosed } from './source-union-birth-journal.mjs';\nimport { PROTECTED_PRIVATE_RUNTIME_POLICY } from '../protected-private-production-runtime.mjs';\nimport { WATER_SOURCE_CONTINUITY_MAX_SOURCES } from './water-source-continuity-contract.mjs';\n\n",
+          "original": "import path from 'node:path';\nimport crypto from 'node:crypto';\nimport { TextDecoder } from 'node:util';\nimport { PROTECTED_PRIVATE_RUNTIME_POLICY } from '../protected-private-production-runtime.mjs';\nimport { WATER_SOURCE_CONTINUITY_MAX_SOURCES } from './water-source-continuity-contract.mjs';\n\n",
+          "currentSha256": "6e0a634d286dec588e8173624864f10d9bd29f4baed0caf6473e351a6ae2e555",
+          "originalSha256": "916d1c682d780de2f00eb55c8e88f100b9d005c9618502f234b092ad929ff9ed",
+          "beforeSha256": "7a1d672015a88c0108fd32acd64fe4b21ed57730554309af5c1b2ad22e4eb5d6",
+          "afterSha256": "75c10458973f5e3cdf2969b35c76698239e2baf696b4f0ff8fd4b466bdc3c536"
+        }
+      ]
+    },
+    "manifest": {
+      "path": "js/core/ravscore-model-bundle.generated.js",
+      "predecessor": {
+        "bytes": 16604,
+        "sha256": "0bc72099225349d25554e48b95268640c52acb381b5e5f6d601e1ca1f879b434"
+      },
+      "actual": {
+        "bytes": 25588,
+        "sha256": "b31bcb81108727c4146e01536ce2d116089125596853a1a1304ed80eb089be06"
+      },
+      "edits": [
+        {
+          "sourceHunk": 14,
+          "offset": 23558,
+          "originalOffset": 16171,
+          "current": "      \"sha256\": \"e5c20048add873a1fcf890c23f922b4ea5394ab88b867cf8d4914cde215d88bf\"\n    },\n    {\n      \"path\": \"scripts/ravscore-operational-pages-recovery.mjs\",\n      \"sha256\": \"ef4c6b24df000e52d275f37602ea5469ee9a0e3e789fd59cc0432cb71c7965ff\"\n    },\n    {\n      \"path\": \"scripts/reconcile-private-runtime-checkpoint.mjs\",\n      \"sha256\": \"5088bf0e120208a352b8ea5e3799cd7f5ba31c50b5214031dc28289ccefe11f7\"\n    },\n    {\n      \"path\": \"scripts/rollback-assets/ravscore-model-bundle.generated.js\",\n      \"sha256\": \"4b537dbe2aac7e6e51cbb5559b51bb10692cad8bcd32a43dc830c6fe6129ed39\"\n    },\n    {\n      \"path\": \"scripts/rollback-assets/ravscore-model-contract.js\",\n      \"sha256\": \"ba1c670fb3aaf30ff01b6c04583296c0a5da395866f28f03569285f7b0a2c135\"\n    },\n    {\n      \"path\": \"scripts/runtime-binding-registry.mjs\",\n      \"sha256\": \"ae0b7a9350774f6328d364ffdadbe8bd25f69b675be19a034830481c850af46c\"\n    },\n    {\n      \"path\": \"scripts/select-native-original-continuity-code-only-source.mjs\",\n      \"sha256\": \"57a36bafa8d73ac3f0e2b643f958f5c1e3edd2144f69fa1cd39c71124e00bb3c\"\n    },\n    {\n      \"path\": \"scripts/select-source-producer-code-only-source.mjs\",\n      \"sha256\": \"fd1c7e4d80abd114fab3d763db9770e1a56888c2c8f93148fb5ce5f9a91fca22\"\n    },\n    {\n      \"path\": \"scripts/source-normal-producer-entry.mjs\",\n      \"sha256\": \"2cfbd327801e1a408e5bfb9659ba4bbce2bf583340f712c55240d8acf0f2d2cc\"\n    },\n    {\n      \"path\": \"scripts/source-normal-producer-tail.mjs\",\n      \"sha256\": \"5a416bb29b81d85e1280669233f750461c6baa4dae0a214be302a398440029ea\"\n    },\n    {\n      \"path\": \"scripts/verify-account-assistant-schema.mjs\",\n      \"sha256\": \"8bc595c8d1bef55d71cba5234c78256ff5797a0f33d17fe6a0146c9b08bddccd\"\n    },\n    {\n      \"path\": \"scripts/weather-component-progress-cache.mjs\",\n      \"sha256\": \"a719c4b9a0457e05e34393d3de22518f7a9629a8ab6a0a1a47d2a1c90847bd74\"\n    },\n    {\n      \"path\": \"scripts/weather-operational-control-summary.mjs\",\n      \"sha256\": \"2b5fbc630ca494c35c28bc6b06a80188b04b82424245569914210b1d32a7d03a\"\n    }\n  ]\n});\n",
+          "original": "      \"sha256\": \"e5c20048add873a1fcf890c23f922b4ea5394ab88b867cf8d4914cde215d88bf\"\n    },\n    {\n      \"path\": \"scripts/rollback-assets/ravscore-model-bundle.generated.js\",\n      \"sha256\": \"5ba96b9db528804b92f190cceb9684352ebbc7d9ceb2f827dac6955ffcd41155\"\n    },\n    {\n      \"path\": \"scripts/rollback-assets/ravscore-model-contract.js\",\n      \"sha256\": \"ba1c670fb3aaf30ff01b6c04583296c0a5da395866f28f03569285f7b0a2c135\"\n    }\n  ]\n});\n",
+          "currentSha256": "7214d6aeac84e7ad2d758dd024dde004c09e9b5a37bac0a8388f6a29fef3e5fa",
+          "originalSha256": "cd0dff3a3d2731ba6221e39a2a0fc50dd75ba14ee052523fb4fe607cb2819304",
+          "beforeSha256": "b31bcb81108727c4146e01536ce2d116089125596853a1a1304ed80eb089be06",
+          "afterSha256": "17c30ffebfba79c58535f8fd16f9bee7d4f706da74fdee7d63a2b2b8b7b1829c"
+        },
+        {
+          "sourceHunk": 13,
+          "offset": 22273,
+          "originalOffset": 15216,
+          "current": "      \"sha256\": \"26b0831e60dcb438d9e3d7647a775825d1472d962a622d0089a2e3306e1f0cf2\"\n    },\n    {\n      \"path\": \"scripts/migrate-post-cutover-private-runtime.mjs\",\n      \"sha256\": \"1b097d22f4102dc80f8d2c917dbaead896ceb3e7b8f364992d3422c4d010d9f6\"\n    },\n    {\n      \"path\": \"scripts/private-production-runtime-bundle.mjs\",\n      \"sha256\": \"2eeff25c6d6e769c7a5d9b414bfed574e0105e7cb24d0bd1578e7700781d5529\"\n    },\n    {\n      \"path\": \"scripts/private-production-runtime-workflow.mjs\",\n      \"sha256\": \"7cfd0ad33a3099bf0fb2f86e6d4a9d975b1cd61ec1dccf23e072843a98e80e4b\"\n    },\n    {\n      \"path\": \"scripts/private-runtime-second-restore-expectation.mjs\",\n      \"sha256\": \"08dee89aaebe0c0cafbfe12b864eff006ce3a780f7fdb81c237f75e39a1d7cdc\"\n    },\n    {\n      \"path\": \"scripts/protected-private-production-runtime.mjs\",\n      \"sha256\": \"07be758050a350c687cfaba4bbe7721176eda973220abbcce6bbb2596220ab58\"\n    },\n    {\n      \"path\": \"scripts/protected-ravscore-continuation-checkpoint.mjs\",\n",
+          "original": "      \"sha256\": \"26b0831e60dcb438d9e3d7647a775825d1472d962a622d0089a2e3306e1f0cf2\"\n    },\n    {\n      \"path\": \"scripts/private-production-runtime-bundle.mjs\",\n      \"sha256\": \"2eeff25c6d6e769c7a5d9b414bfed574e0105e7cb24d0bd1578e7700781d5529\"\n    },\n    {\n      \"path\": \"scripts/private-production-runtime-workflow.mjs\",\n      \"sha256\": \"63df9af3803f9b745dc5a6e201808d1f413e5cb70b8ee9e8dd63debd307c27c5\"\n    },\n    {\n      \"path\": \"scripts/protected-private-production-runtime.mjs\",\n      \"sha256\": \"e41b0434e14dd181c5ca3f6313456274c4fa5fcc9e97029e49f300ae0d4e4762\"\n    },\n    {\n      \"path\": \"scripts/protected-ravscore-continuation-checkpoint.mjs\",\n",
+          "currentSha256": "e8bf554d21099afbe2a7c081e9944e4f95108eddd5797227418c009c32143c2a",
+          "originalSha256": "6e788d6fc593601451f44f1169d3c26548d4fd22910509e713d7bab421ff25d7",
+          "beforeSha256": "17c30ffebfba79c58535f8fd16f9bee7d4f706da74fdee7d63a2b2b8b7b1829c",
+          "afterSha256": "6d0d04f883d59a0405bd23619b9d5ea7fae10d6c90faecae1c4091bf4c8758f2"
+        },
+        {
+          "sourceHunk": 12,
+          "offset": 21497,
+          "originalOffset": 14744,
+          "current": "      \"sha256\": \"eb2672566579e46529514b7227085bd9bef9b8e8f23b6d5df7b71dcbb9889ec4\"\n    },\n    {\n      \"path\": \"scripts/lib/weather-history-retention.mjs\",\n      \"sha256\": \"105fd5cf75a22e7c0d520f3faa95f07e97870df5b2e3769b8bde9fb98c222fb5\"\n    },\n    {\n      \"path\": \"scripts/lib/weather-reserve-admission.mjs\",\n      \"sha256\": \"c847fadb22e02e92a872726f97a4e5ea648ce08fb171f36558e6727110439c24\"\n    },\n    {\n      \"path\": \"scripts/lib/weather-source-gate.mjs\",\n      \"sha256\": \"e0aa76c7553a16748f17cc316b2da95d7298b4c7c9fafd57fc9d8cc2aff3a0e9\"\n    },\n    {\n      \"path\": \"scripts/lib/weather-state-epoch-archive.mjs\",\n      \"sha256\": \"e3ee3638edd722723442feb41fee751184e9c943aba89b06922fde738febfc1a\"\n    },\n",
+          "original": "      \"sha256\": \"eb2672566579e46529514b7227085bd9bef9b8e8f23b6d5df7b71dcbb9889ec4\"\n    },\n    {\n      \"path\": \"scripts/lib/weather-reserve-admission.mjs\",\n      \"sha256\": \"c847fadb22e02e92a872726f97a4e5ea648ce08fb171f36558e6727110439c24\"\n    },\n    {\n      \"path\": \"scripts/lib/weather-state-epoch-archive.mjs\",\n      \"sha256\": \"e3ee3638edd722723442feb41fee751184e9c943aba89b06922fde738febfc1a\"\n    },\n",
+          "currentSha256": "cc2ade8f40acef5cd670f1a31b64c98fbdec558f5b866ee59849f46f326dc64f",
+          "originalSha256": "fb70abe296024503a42a64f11bbeace027c7ad776fcd7d80d4e1c4b4d57e5b01",
+          "beforeSha256": "6d0d04f883d59a0405bd23619b9d5ea7fae10d6c90faecae1c4091bf4c8758f2",
+          "afterSha256": "130a4f0f1be055c9370b288a6879430c5bf9adef6cdc5c04a506fd0ce7cc1ba5"
+        },
+        {
+          "sourceHunk": 11,
+          "offset": 18964,
+          "originalOffset": 14273,
+          "current": "      \"sha256\": \"5e3465826e7dc7caac4cc8b0da1d1117a3b51dac157973d09aa7c2b7baa44cf4\"\n    },\n    {\n      \"path\": \"scripts/lib/rebind-public-hour-pack-exact.mjs\",\n      \"sha256\": \"75baa904a9fa466393e5c8889e0590fa7d333b074ba3824b0e94405a7a7dc5e2\"\n    },\n    {\n      \"path\": \"scripts/lib/saved-dmi-original-capture.mjs\",\n      \"sha256\": \"b46ba3c64599e0b18c808fe6b027dca4e55a9c5e6aaf095681ca0374808a6921\"\n    },\n    {\n      \"path\": \"scripts/lib/source-producer-derived-metadata.mjs\",\n      \"sha256\": \"362a7345e424aa1fd4c76ba1c5a123d81d2c7272f73c6a7db8a074c82bde0778\"\n    },\n    {\n      \"path\": \"scripts/lib/source-producer-successor-source.mjs\",\n      \"sha256\": \"8febe4ac0224e33115c30b8b7d99cf43b8e5aff7db2547630e0295d30ac7e22e\"\n    },\n    {\n      \"path\": \"scripts/lib/source-tree-content.mjs\",\n      \"sha256\": \"ebf2c31976600c9c72ee87465791c683b88bb9980f5cf0262a05d977cc8c87c3\"\n    },\n    {\n      \"path\": \"scripts/lib/source-union-birth-journal.mjs\",\n      \"sha256\": \"a233a120bb2b05c76339f8064f50091b2832a054642c00e7d33a24ce94fefc5f\"\n    },\n    {\n      \"path\": \"scripts/lib/supabase-admin-rest.mjs\",\n      \"sha256\": \"ce6213930e27ceec1c125f98ac4706aa92df14b228d055a20c37a864d84f8724\"\n    },\n    {\n      \"path\": \"scripts/lib/verified-dmi-progress-inputs.mjs\",\n      \"sha256\": \"0ea08f33003a5a19dbea0cd7c208f441368fe437fa5c9c00d87451248beeb0e6\"\n    },\n    {\n      \"path\": \"scripts/lib/verified-open-meteo-generation-union.mjs\",\n      \"sha256\": \"c6ddb28d0bdc0dd8362a47f153e07a410ebb2a0ccdb046fe4355a3304cfd6106\"\n    },\n    {\n      \"path\": \"scripts/lib/verified-protected-progress-components.mjs\",\n      \"sha256\": \"ecb5ecb9a7ee2936dbd144d204db7d898c763fd459016b8910896d760ab90db0\"\n    },\n    {\n      \"path\": \"scripts/lib/water-level-continuity.mjs\",\n      \"sha256\": \"263c3cce062d2231a537a127840b3fa05bdd2f0912b0d04a25595b554e467f99\"\n    },\n    {\n      \"path\": \"scripts/lib/water-source-continuity-contract.mjs\",\n      \"sha256\": \"eec22865cae71ed0c2613272b899adb9b4713166cc3c82522712accb4fcfb180\"\n    },\n    {\n      \"path\": \"scripts/lib/water-source-forecast-routing.mjs\",\n      \"sha256\": \"b8fc1869330c390ccd84bcc79e90b4cd780fba04743081cbe58ba33b341de03f\"\n    },\n    {\n      \"path\": \"scripts/lib/weather-component-needs.mjs\",\n      \"sha256\": \"ca9aec224943f63aadca805b17a5b0af7ef4ffce7351710588c75ca83907c3bf\"\n    },\n    {\n      \"path\": \"scripts/lib/weather-component-selection-history.mjs\",\n      \"sha256\": \"eaf41bd0fc8e72b80e291745ea8049f06170bb9f06892721bbdccb434e00c8cd\"\n    },\n",
+          "original": "      \"sha256\": \"5e3465826e7dc7caac4cc8b0da1d1117a3b51dac157973d09aa7c2b7baa44cf4\"\n    },\n    {\n      \"path\": \"scripts/lib/supabase-admin-rest.mjs\",\n      \"sha256\": \"ce6213930e27ceec1c125f98ac4706aa92df14b228d055a20c37a864d84f8724\"\n    },\n    {\n      \"path\": \"scripts/lib/weather-component-selection-history.mjs\",\n      \"sha256\": \"eaf41bd0fc8e72b80e291745ea8049f06170bb9f06892721bbdccb434e00c8cd\"\n    },\n",
+          "currentSha256": "d6e53a1b1314c6fc92bed326041e095fa2e4e5e2985d56fcac9fcb2f7c25518f",
+          "originalSha256": "bdb07d7cbf6b06a99cebbe39f80238c7d49a5770e92694df4acb829a10972fda",
+          "beforeSha256": "130a4f0f1be055c9370b288a6879430c5bf9adef6cdc5c04a506fd0ce7cc1ba5",
+          "afterSha256": "b4cdfce4fa10eae2107d6fa8c9e85907e469df51085e2bee9e8a027e41b54748"
+        },
+        {
+          "sourceHunk": 10,
+          "offset": 17044,
+          "originalOffset": 12513,
+          "current": "      \"sha256\": \"3fedc43197cc655721c6e5ade0271f00e7be73216d3c515dedb0e2a57400028d\"\n    },\n    {\n      \"path\": \"scripts/lib/public-delivery-nested-binding.mjs\",\n      \"sha256\": \"1e954452290922e10b0682abf1a6dd85f26a3d3bd9d520f9712d3bb8661f54b4\"\n    },\n    {\n      \"path\": \"scripts/lib/public-hour-delivery-pack.mjs\",\n      \"sha256\": \"10a1bab2155b7eedd791045209a514f41bda08e3dc9470840729b87967fb7f6d\"\n    },\n",
+          "original": "      \"sha256\": \"3fedc43197cc655721c6e5ade0271f00e7be73216d3c515dedb0e2a57400028d\"\n    },\n    {\n      \"path\": \"scripts/lib/public-hour-delivery-pack.mjs\",\n      \"sha256\": \"10a1bab2155b7eedd791045209a514f41bda08e3dc9470840729b87967fb7f6d\"\n    },\n",
+          "currentSha256": "624a936aab0057e561c2df6d8c888638d521c7d82fbe17c255d146b6d70bafbc",
+          "originalSha256": "a4d6969791c7ee90cc11e5e893f59d96bafd90a8a65c316d7d9bf55098e38780",
+          "beforeSha256": "b4cdfce4fa10eae2107d6fa8c9e85907e469df51085e2bee9e8a027e41b54748",
+          "afterSha256": "5cfc183318b937a3ee6b437087ed01dbc94a32c01228001d845a4c3f0e1737ab"
+        },
+        {
+          "sourceHunk": 9,
+          "offset": 15925,
+          "originalOffset": 11708,
+          "current": "      \"sha256\": \"0a46cdf5788f267599268a9ce5499dda645fc444929754bfded5d29dd30ef435\"\n    },\n    {\n      \"path\": \"scripts/lib/open-meteo-usable-part-bank.mjs\",\n      \"sha256\": \"4ce9a6b07382cd89d592ecdf4974d439edfaece18b16e749fee07a43ea58e32d\"\n    },\n    {\n      \"path\": \"scripts/lib/private-conditions-hourly.mjs\",\n      \"sha256\": \"ea5fe3d5b801edd1cf8670b7d2bc3d7dbb870be70f26c56a01a8a21b2755dc0e\"\n    },\n    {\n      \"path\": \"scripts/lib/private-dmi-recovery-record.mjs\",\n      \"sha256\": \"7a967fb362304bcaa0590fccc7bab19092a3bcee013aa9682ce0afc3cf3f7e1b\"\n    },\n    {\n      \"path\": \"scripts/lib/private-weather-component-inventory.mjs\",\n      \"sha256\": \"125e1a2acee5bff8d16ac549e96004dc8c80bbcea684782c45b3cfc666edba3c\"\n    },\n    {\n      \"path\": \"scripts/lib/private-weather-component-pack.mjs\",\n      \"sha256\": \"3c91d7d3672f07d9edc4e0c07d53a9325d3028652bafc31bcb9c8443af167c7b\"\n    },\n    {\n      \"path\": \"scripts/lib/private-weather-progress-files.mjs\",\n",
+          "original": "      \"sha256\": \"0a46cdf5788f267599268a9ce5499dda645fc444929754bfded5d29dd30ef435\"\n    },\n    {\n      \"path\": \"scripts/lib/private-conditions-hourly.mjs\",\n      \"sha256\": \"ea5fe3d5b801edd1cf8670b7d2bc3d7dbb870be70f26c56a01a8a21b2755dc0e\"\n    },\n    {\n      \"path\": \"scripts/lib/private-weather-component-inventory.mjs\",\n      \"sha256\": \"125e1a2acee5bff8d16ac549e96004dc8c80bbcea684782c45b3cfc666edba3c\"\n    },\n    {\n      \"path\": \"scripts/lib/private-weather-component-pack.mjs\",\n      \"sha256\": \"e6c3b6443253f0628711f065b96e9237cf3aa29a308c771d00b838277c751516\"\n    },\n    {\n      \"path\": \"scripts/lib/private-weather-progress-files.mjs\",\n",
+          "currentSha256": "671500f8afe092794af95b580ee09eb5814a3ddfafd26910eae701e5eb51e5ef",
+          "originalSha256": "95290eb6aabd718b4e60139a10c34cc27810c81ddfc4f012dc5858f027904701",
+          "beforeSha256": "5cfc183318b937a3ee6b437087ed01dbc94a32c01228001d845a4c3f0e1737ab",
+          "afterSha256": "10ace8080ccc1378754833877629766fe908f320a905893e5b0a8b3c70be207c"
+        },
+        {
+          "sourceHunk": 8,
+          "offset": 14800,
+          "originalOffset": 11078,
+          "current": "      \"sha256\": \"6e1c6a28cb3cf704d760e5c6f52dade2e0c81112e1299a1264b3a9502851a75b\"\n    },\n    {\n      \"path\": \"scripts/lib/native-original-continuity-successor-source.mjs\",\n      \"sha256\": \"52c04b86be994c50ec7485b5d0b79231c78e5a2eb63cec8c812df5ff5250345c\"\n    },\n    {\n      \"path\": \"scripts/lib/native-sampling-identity-successor-source.mjs\",\n      \"sha256\": \"a7b77c586e72e0c67be225c7fa773152d5dc3c41b5f5ea47e55504eee495d5ba\"\n    },\n    {\n      \"path\": \"scripts/lib/native0600-original-successor-source.mjs\",\n      \"sha256\": \"bcc2ac876cafcd61ea434bc9658302224e8f061ca048905d5682222eccf348c3\"\n    },\n    {\n      \"path\": \"scripts/lib/open-meteo-forecast-window.mjs\",\n      \"sha256\": \"a286cc97ce6bc7dbee19eb986fdeef4c64809357ee99b571573768ae86ce2d79\"\n    },\n    {\n      \"path\": \"scripts/lib/open-meteo-hourly-components.mjs\",\n      \"sha256\": \"79518ec13546c78ff4ecbacc16d80c06d091b4c45f7d529e0ea2fef8af70b07f\"\n    },\n",
+          "original": "      \"sha256\": \"6e1c6a28cb3cf704d760e5c6f52dade2e0c81112e1299a1264b3a9502851a75b\"\n    },\n    {\n      \"path\": \"scripts/lib/native-sampling-identity-successor-source.mjs\",\n      \"sha256\": \"a7b77c586e72e0c67be225c7fa773152d5dc3c41b5f5ea47e55504eee495d5ba\"\n    },\n    {\n      \"path\": \"scripts/lib/open-meteo-hourly-components.mjs\",\n      \"sha256\": \"79518ec13546c78ff4ecbacc16d80c06d091b4c45f7d529e0ea2fef8af70b07f\"\n    },\n",
+          "currentSha256": "69d046fa5688df741e7b684307c418034aab74cd2022499f6938a749ab1fb90a",
+          "originalSha256": "1221d0ee20a0aba73c17f69330083603d128b76a6879daaede1b58a4d9f37255",
+          "beforeSha256": "10ace8080ccc1378754833877629766fe908f320a905893e5b0a8b3c70be207c",
+          "afterSha256": "6c0a618544f6fcaa96ceb714f2ec5895cb39672f2f53b54a7d4d25c2e0d676d9"
+        },
+        {
+          "sourceHunk": 7,
+          "offset": 12774,
+          "originalOffset": 10160,
+          "current": "      \"sha256\": \"fe51cae3131bc7e91022fc3ede69bc4587409b720bb8c1226d87cee2bff46f1d\"\n    },\n    {\n      \"path\": \"scripts/lib/dmi-forecast-file.mjs\",\n      \"sha256\": \"be9c4caf7fda54d0bfc3cde9fc711a1ab9b8435d58127fb395402ff3fd4fb9e5\"\n    },\n    {\n      \"path\": \"scripts/lib/dmi-forecast-store.mjs\",\n      \"sha256\": \"a525ef4ae0109336541758b7fc4de661e4b1977397fd7e5bcba71eed83c9bc99\"\n    },\n    {\n      \"path\": \"scripts/lib/dmi-marine-run-seam-recovery.mjs\",\n      \"sha256\": \"40ad4fadf89307659c6dcad0567935ccbc7ec17cdc09d525e5271ad58496fabe\"\n    },\n    {\n      \"path\": \"scripts/lib/dmi-marine-zone-exclusions.mjs\",\n      \"sha256\": \"d560dda981a8f0bdec49bbca05abb60cc6a26699784b345b1b258e7f1668ac28\"\n    },\n    {\n      \"path\": \"scripts/lib/dmi-part-continuity.mjs\",\n      \"sha256\": \"9270a0946e80091321e57c5ae22881090ea8018b548b9255557ffede987ae671\"\n    },\n    {\n      \"path\": \"scripts/lib/dmi-wave-tuple-proof.mjs\",\n      \"sha256\": \"81a65c28673bc3ef3e30ff1ab001ecd8b14c8f3af285acab48c60b84e7b3362e\"\n    },\n    {\n      \"path\": \"scripts/lib/established-native-current-origin-successor-source.mjs\",\n      \"sha256\": \"9f985630a0985af396d1510d9387b76596e81ca57774fbb6c0d8789598333f9b\"\n    },\n    {\n      \"path\": \"scripts/lib/established-native-current-origin.mjs\",\n      \"sha256\": \"0f6ab7de39f2d445412a72ecf706b46d1e3ab2f8f90e40b1be822da854d23c92\"\n    },\n    {\n      \"path\": \"scripts/lib/feggesund-wave-proxy.mjs\",\n      \"sha256\": \"fcc6c9af2c8d58c85514d5ac8e7af9645392fe7816187d08e18bf78cbef55292\"\n    },\n    {\n      \"path\": \"scripts/lib/fur-water-routing-diagnostic.mjs\",\n      \"sha256\": \"e868ecf40fad36a8ab121f8fd57c9c9b625e9d88ba5553bb602ae20976bdf4d7\"\n    },\n    {\n      \"path\": \"scripts/lib/last-mile-enclosure-successor-source.mjs\",\n      \"sha256\": \"0e09687c7541493fe10fe9c21f95cf42c9423732f2665664674e629d9825625d\"\n    },\n    {\n      \"path\": \"scripts/lib/live-current-pilot.mjs\",\n      \"sha256\": \"552a709d34b828086061f148841245b32f6f4d25c3d1e8249681bda83ad45ad9\"\n    },\n",
+          "original": "      \"sha256\": \"fe51cae3131bc7e91022fc3ede69bc4587409b720bb8c1226d87cee2bff46f1d\"\n    },\n    {\n      \"path\": \"scripts/lib/dmi-forecast-store.mjs\",\n      \"sha256\": \"a525ef4ae0109336541758b7fc4de661e4b1977397fd7e5bcba71eed83c9bc99\"\n    },\n    {\n      \"path\": \"scripts/lib/dmi-marine-zone-exclusions.mjs\",\n      \"sha256\": \"d560dda981a8f0bdec49bbca05abb60cc6a26699784b345b1b258e7f1668ac28\"\n    },\n    {\n      \"path\": \"scripts/lib/established-native-current-origin.mjs\",\n      \"sha256\": \"5ebeea93ee7da95011ecc3c589e2a1a54a7ac821ad938997aea0b6444aa607bf\"\n    },\n    {\n      \"path\": \"scripts/lib/feggesund-wave-proxy.mjs\",\n      \"sha256\": \"fcc6c9af2c8d58c85514d5ac8e7af9645392fe7816187d08e18bf78cbef55292\"\n    },\n    {\n      \"path\": \"scripts/lib/live-current-pilot.mjs\",\n      \"sha256\": \"552a709d34b828086061f148841245b32f6f4d25c3d1e8249681bda83ad45ad9\"\n    },\n",
+          "currentSha256": "7e483692472ae93a53ddb59db264d3caa0635704df8c200ffb1fed65dc6e8ece",
+          "originalSha256": "5860451e5e5cbc8dae5435428733e2c40bc29a39478265a15cb7ae209e685ca3",
+          "beforeSha256": "6c0a618544f6fcaa96ceb714f2ec5895cb39672f2f53b54a7d4d25c2e0d676d9",
+          "afterSha256": "f8424d72b33a32be6313c7d76df27ca6d75395aeab373ae656f8fabd542b14df"
+        },
+        {
+          "sourceHunk": 6,
+          "offset": 12305,
+          "originalOffset": 9859,
+          "current": "      \"sha256\": \"f86aa7b2df9500942c5b4218f7cf777c6e32391722c091d3beabe4ef9f12636c\"\n    },\n    {\n      \"path\": \"scripts/lib/current-memory-warmup-successor-source.mjs\",\n      \"sha256\": \"399e7e4690513b1db64a010c03b041d529caccfc0785fb34ab4c1b68ea5894b6\"\n    },\n    {\n      \"path\": \"scripts/lib/current-transport-history.mjs\",\n      \"sha256\": \"c7d5b4226aee7846e307d5d314fa336ef6143cfa6c0eca966b0f567b97c1ce9d\"\n    },\n",
+          "original": "      \"sha256\": \"f86aa7b2df9500942c5b4218f7cf777c6e32391722c091d3beabe4ef9f12636c\"\n    },\n    {\n      \"path\": \"scripts/lib/current-transport-history.mjs\",\n      \"sha256\": \"c7d5b4226aee7846e307d5d314fa336ef6143cfa6c0eca966b0f567b97c1ce9d\"\n    },\n",
+          "currentSha256": "ea07c97803345986077fdbdcea6bd8760d3b2efdf0b4116fce8f849ade951eda",
+          "originalSha256": "ca3488a81011672fc7422e1f33318acbd952e5b36e4caa978e198e9f1c270b4b",
+          "beforeSha256": "f8424d72b33a32be6313c7d76df27ca6d75395aeab373ae656f8fabd542b14df",
+          "afterSha256": "bb0e9839e1b641e4ec1be40bbf6675cc5e28d53c4075ce482a2e65e5e8044dfb"
+        },
+        {
+          "sourceHunk": 5,
+          "offset": 10863,
+          "originalOffset": 8731,
+          "current": "      \"sha256\": \"4807e6e08c487a0cf7ed398dbe29be588c4bcb58b211778932cc9f36a0681df6\"\n    },\n    {\n      \"path\": \"scripts/lib/authenticated-frozen587-predecessor.mjs\",\n      \"sha256\": \"1a349f83c3d7c54314b01ea015daa6f30f308c1417925e249ef76f5c3ad66d4a\"\n    },\n    {\n      \"path\": \"scripts/lib/bounded-conditions-predecessor-transition.mjs\",\n      \"sha256\": \"5783e5aa4a0c0f9b794a7ff196d64119359d9b30372e1dce4aa481f2c4219425\"\n    },\n    {\n      \"path\": \"scripts/lib/bounded-json-writer.mjs\",\n      \"sha256\": \"d25c6199a18e7227e5160b58d56454abc4c9eaed52a678a55b8bb0dd00369583\"\n    },\n    {\n      \"path\": \"scripts/lib/coastal-point-stage-dmi-adapter.mjs\",\n      \"sha256\": \"f4dd1e46e70b5c39de014940c8451617c10541f4b5d27e7743387a6c2cd5e8e7\"\n    },\n",
+          "original": "      \"sha256\": \"4807e6e08c487a0cf7ed398dbe29be588c4bcb58b211778932cc9f36a0681df6\"\n    },\n    {\n      \"path\": \"scripts/lib/bounded-conditions-predecessor-transition.mjs\",\n      \"sha256\": \"5783e5aa4a0c0f9b794a7ff196d64119359d9b30372e1dce4aa481f2c4219425\"\n    },\n    {\n      \"path\": \"scripts/lib/coastal-point-stage-dmi-adapter.mjs\",\n      \"sha256\": \"f4dd1e46e70b5c39de014940c8451617c10541f4b5d27e7743387a6c2cd5e8e7\"\n    },\n",
+          "currentSha256": "7e798a13c4f40b9c428a7afccfe89e10f9ed502d3b9a190f456c7158e1dfbe35",
+          "originalSha256": "2915be7ea0dbb2fe6c5e0e36cf56715628965e32b7a8ced1e3eecdc668af6c3e",
+          "beforeSha256": "bb0e9839e1b641e4ec1be40bbf6675cc5e28d53c4075ce482a2e65e5e8044dfb",
+          "afterSha256": "a0602ede775b502bf704ffa26f9c0dea3558ace494063194d7ab982ee516e435"
+        },
+        {
+          "sourceHunk": 4,
+          "offset": 8542,
+          "originalOffset": 7719,
+          "current": "      \"sha256\": \"2e529a7a4e1cca1ab7ac1c16dd7292ca78263bfb980eff95c3f5c6d845eca04d\"\n    },\n    {\n      \"path\": \"scripts/check-last-mile-enclosure-predecessor-source.mjs\",\n      \"sha256\": \"ab211de90959b87ca342a7db803a43f4ed90fe97d6a37ea648314c75c53337c3\"\n    },\n    {\n      \"path\": \"scripts/check-native-current-reanalysis-predecessor-source.mjs\",\n      \"sha256\": \"1c08778a28bc3931b42430eaa94d9659dd279f42528c5306631b971c4405928d\"\n    },\n    {\n      \"path\": \"scripts/check-native-identity-frozen-i71-source.mjs\",\n      \"sha256\": \"21f08e71ee3384b7e5d8a9294d356536ce0d866ffc562f7ecf94a4f547f35e77\"\n    },\n    {\n      \"path\": \"scripts/check-native-original-continuity-predecessor-source.mjs\",\n      \"sha256\": \"17b3ce539b1f296fb75bf592fcd7393569f0dd3614974e6d7d06a836a0020922\"\n    },\n    {\n      \"path\": \"scripts/check-production-target-freshness.mjs\",\n      \"sha256\": \"a4c3cf8417a761691173ee50970b2764dac8a58d97017da783c1c2aed5dab0c0\"\n    },\n    {\n      \"path\": \"scripts/check-source-producer-587-predecessor-source.mjs\",\n      \"sha256\": \"45b34682a62199e6a180dcb3c876e9c0cc8e5caebaa031824d311004169ec070\"\n    },\n    {\n      \"path\": \"scripts/current-family-cold-start.mjs\",\n      \"sha256\": \"f32c547f80f8c79844371edb9698b32b144ca1d2f914ab67f485f2abcf8215b5\"\n    },\n    {\n      \"path\": \"scripts/integrated-cutover-readiness.mjs\",\n      \"sha256\": \"22c1e440583c4312f6a78f54f891fc7c0d6f8c54cb8435ec2103a412c1800283\"\n    },\n    {\n      \"path\": \"scripts/lib/account-assistant-successor-source.mjs\",\n      \"sha256\": \"eb35dc46cc6792da5ddff026de0bd61258f240a6b037565c29869873afb08bc5\"\n    },\n    {\n      \"path\": \"scripts/lib/account-statistics-assistant-successor-source.mjs\",\n      \"sha256\": \"f063a7481b4ea604dc8fc6ebf32fc1d990ad8ebc01eb96bb9cdd474ee90a36b1\"\n    },\n    {\n      \"path\": \"scripts/lib/assistant-later-h0-successor-source.mjs\",\n      \"sha256\": \"e675ad7077f4fca277cbe9b7e8f8ec30241228e8ff9f8d7f2f2a10d38cb12074\"\n    },\n    {\n      \"path\": \"scripts/lib/authenticated-frozen584-predecessor.mjs\",\n      \"sha256\": \"900e9452cdf7cb4ed2ec73cebfd451510a1ae71dc55402fb06a66c4b256c1792\"\n    },\n",
+          "original": "      \"sha256\": \"2e529a7a4e1cca1ab7ac1c16dd7292ca78263bfb980eff95c3f5c6d845eca04d\"\n    },\n    {\n      \"path\": \"scripts/check-native-current-reanalysis-predecessor-source.mjs\",\n      \"sha256\": \"1c08778a28bc3931b42430eaa94d9659dd279f42528c5306631b971c4405928d\"\n    },\n    {\n      \"path\": \"scripts/check-native-original-continuity-predecessor-source.mjs\",\n      \"sha256\": \"17b3ce539b1f296fb75bf592fcd7393569f0dd3614974e6d7d06a836a0020922\"\n    },\n    {\n      \"path\": \"scripts/lib/account-assistant-successor-source.mjs\",\n      \"sha256\": \"eb35dc46cc6792da5ddff026de0bd61258f240a6b037565c29869873afb08bc5\"\n    },\n    {\n      \"path\": \"scripts/lib/authenticated-frozen584-predecessor.mjs\",\n      \"sha256\": \"900e9452cdf7cb4ed2ec73cebfd451510a1ae71dc55402fb06a66c4b256c1792\"\n    },\n",
+          "currentSha256": "1eecd2e4770fc4abe6a6bcb73abc47fc62a156619f685e88bfe8e3b45685d70c",
+          "originalSha256": "3d3a2930c994786b0d6417dc9e756915835beda5e1ef16d489c4290d8bbaf190",
+          "beforeSha256": "a0602ede775b502bf704ffa26f9c0dea3558ace494063194d7ab982ee516e435",
+          "afterSha256": "daaeee0352528fd180d3574e78ef5a42d420aec1d6d4cd9df6416370492a8797"
+        },
+        {
+          "sourceHunk": 3,
+          "offset": 7530,
+          "originalOffset": 7371,
+          "current": "      \"sha256\": \"c9a387ca9ed30d4c5a9932eb1b1133a99ae651c23c822b7d0ad1c8adbd8c43a6\"\n    },\n    {\n      \"path\": \"scripts/account-statistics-assistant-prewrite.mjs\",\n      \"sha256\": \"44c1ef4edaab1d446cf7696eb5dcacfd49a618ee8788997ce88c740fe59a7761\"\n    },\n    {\n      \"path\": \"scripts/account-statistics-assistant-runtime-transition.mjs\",\n      \"sha256\": \"f3101b3d5d6c7df7dd42d560d2a9d99c6dbee6cc6904397c95c6256f8144d8fd\"\n    },\n    {\n      \"path\": \"scripts/audit-ravscore-integrated-public-runtime.mjs\",\n      \"sha256\": \"07d8fc98990b355ba31a588a0a307aac7872bffad93799258f1d85f36697382a\"\n    },\n    {\n      \"path\": \"scripts/build-statistics-preference-revision.mjs\",\n      \"sha256\": \"2196c4362615f6ea0541578553984fb280769ec650cd3319de6feadd52cba00e\"\n    },\n    {\n      \"path\": \"scripts/check-account-statistics-assistant-predecessor-source.mjs\",\n      \"sha256\": \"10ccdee12b112bcc323689c331a7bb068b7f47ae1ac60d535caf2d4523f465c1\"\n    },\n",
+          "original": "      \"sha256\": \"c9a387ca9ed30d4c5a9932eb1b1133a99ae651c23c822b7d0ad1c8adbd8c43a6\"\n    },\n    {\n      \"path\": \"scripts/check-account-statistics-assistant-predecessor-source.mjs\",\n      \"sha256\": \"10ccdee12b112bcc323689c331a7bb068b7f47ae1ac60d535caf2d4523f465c1\"\n    },\n",
+          "currentSha256": "53e61a3273e8e0b6ebe01c38fe851da23f8dcbf7fd7435e18bd6bf73f345ef1d",
+          "originalSha256": "dab5bbc7f12a0847891e749603a642d66804698eabb60d5295fba6f45f5dbd4b",
+          "beforeSha256": "daaeee0352528fd180d3574e78ef5a42d420aec1d6d4cd9df6416370492a8797",
+          "afterSha256": "d90e51c9a8b1a246d0984a726a08d09e2ff35b72c4557889dddb3f40efdb01d4"
+        },
+        {
+          "sourceHunk": 2,
+          "offset": 5612,
+          "originalOffset": 5599,
+          "current": "      \"sha256\": \"6007df10b9c2298df6d2c506cc03adc35c2bd578ee10924cbbe506a91dd04b81\"\n    },\n    {\n      \"path\": \"js/core/water-station-routing.js\",\n      \"sha256\": \"46a0930e382fcbefb08c4e1f66868cc54f91396b7bbaa6243c1ca88ba6e7434b\"\n    },\n    {\n      \"path\": \"js/core/wave-approach.js\",\n      \"sha256\": \"1dda08cdd8e8e0eedbd5e426237372e2dba3c076af4da26f757066fb91d5076c\"\n    },\n",
+          "original": "      \"sha256\": \"6007df10b9c2298df6d2c506cc03adc35c2bd578ee10924cbbe506a91dd04b81\"\n    },\n    {\n      \"path\": \"js/core/wave-approach.js\",\n      \"sha256\": \"1dda08cdd8e8e0eedbd5e426237372e2dba3c076af4da26f757066fb91d5076c\"\n    },\n",
+          "currentSha256": "76f4ad1b6911a88561210bda0a5add1c1e6d6ca69aa13b5f07e5d6fffd5a2aaa",
+          "originalSha256": "b50bd08dd39045996fd81ce98d7deab5a1ae8b7a717bb07a66ec90a0f4f24044",
+          "beforeSha256": "d90e51c9a8b1a246d0984a726a08d09e2ff35b72c4557889dddb3f40efdb01d4",
+          "afterSha256": "8a3e7fbf040314e499ec5559e0a99f69c4a518ac000e55db6769c8934d3ced3c"
+        },
+        {
+          "sourceHunk": 1,
+          "offset": 0,
+          "originalOffset": 0,
+          "current": "// Generated by scripts/build-ravscore-model-bundle.mjs. Do not edit manually.\nexport const GENERATED_RAVSCORE_MODEL_CONTRACT_SHA256 = 'a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b';\nexport const GENERATED_RAVSCORE_MODEL_BUNDLE_SHA256 = '5fa3e96cb3cf0f47e6a10bd37d4e1b1b93f837bf0f221dbb49d2a6442289dbc8';\nexport const GENERATED_RAVSCORE_MODEL_BUNDLE_MANIFEST = Object.freeze({\n  \"schemaVersion\": \"1.0.0\",\n  \"normalizationId\": \"lexer-esm-relative-import-closure-utf8-lf-static-cachebuster-derived-data-v3\",\n  \"contractSha256\": \"a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b\",\n  \"entrypoints\": [\n    \"js/core/best-time-selector.js\",\n",
+          "original": "// Generated by scripts/build-ravscore-model-bundle.mjs. Do not edit manually.\nexport const GENERATED_RAVSCORE_MODEL_CONTRACT_SHA256 = 'a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b';\nexport const GENERATED_RAVSCORE_MODEL_BUNDLE_SHA256 = '5584d8e59f8d21785fd08b32f9beb22cf879cdb4892a11ede24eb862d9a0dca2';\nexport const GENERATED_RAVSCORE_MODEL_BUNDLE_MANIFEST = Object.freeze({\n  \"schemaVersion\": \"1.0.0\",\n  \"normalizationId\": \"lexer-esm-relative-import-closure-utf8-lf-static-cachebuster-v2\",\n  \"contractSha256\": \"a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b\",\n  \"entrypoints\": [\n    \"js/core/best-time-selector.js\",\n",
+          "currentSha256": "6e62775f8b5db8b383751a6e645a18cc7b751c4249bd9519ccab82cd17a5c607",
+          "originalSha256": "0c10554dd05df2faa0046b4271a7704f2a10947ee0bd22640c7752286feb9c1e",
+          "beforeSha256": "8a3e7fbf040314e499ec5559e0a99f69c4a518ac000e55db6769c8934d3ced3c",
+          "afterSha256": "0bc72099225349d25554e48b95268640c52acb381b5e5f6d601e1ca1f879b434"
+        }
+      ]
+    }
+  }
+}

@@ -2,6 +2,8 @@
 // Inputs have already passed the encrypted pack's authentication and hashes.
 import fs from 'node:fs/promises';
 import path from 'node:path';
+import crypto from 'node:crypto';
+import { sourceUnionBirthFileOpened, sourceUnionBirthFileClosed } from './source-union-birth-journal.mjs';
 import { PRIVATE_WEATHER_PROGRESS_ONLY_FILES as FILES } from './private-weather-progress-files.mjs';
 import { DMI_FORECAST_HOURS, normalizeForecastHourly } from './dmi-forecast-store.mjs';
 import { eligibleDmiForecastComponentSource as verifiedDmiForecastComponentSource } from './ravscore-production-adapters.mjs';
@@ -16,6 +18,8 @@ const CLOCK_SKEW = 5 * 60_000;
 // Stations and central geometry remain small JSON inputs. The national
 // forecast has a separate shared, recordwise capacity contract.
 const SMALL_JSON_MAX_BYTES = 256 * 1024 * 1024;
+// SOURCE owns uncertain wx handles through its later physical close/retention gate.
+const sourceUnionStationWriters = new Set();
 const COMPONENTS = ['wind', 'wave', 'current', 'waterLevel', 'waterTemperature'];
 const FIELDS = {
   wind: ['windSpeedMps', 'windDirectionDeg', 'windProvenance'],
@@ -298,7 +302,7 @@ async function inspectForecast(file, role) {
 // The files have been authenticated by the outer pack. Keep only small
 // indexes plus one pair of zones in memory, and keep protected PART continuity.
 async function reconcileForecastFile({ root, file, temporaryDirectory, productionReferenceAt,
-  restoredAt, recoverRuntimeCursor, setPhase }) {
+  restoredAt, recoverRuntimeCursor, setPhase, sourceUnionBirthJournal }) {
   const complete = await inspectForecast(path.join(root, file.relativePath), 'FORECAST_BASE');
   const progress = await inspectForecast(file.sourcePath, 'FORECAST_PROGRESS');
   const features = (await readJson(path.join(root, 'data/zones.geojson'), 'ACTIVE_ZONES')).features;
@@ -342,9 +346,10 @@ async function reconcileForecastFile({ root, file, temporaryDirectory, productio
     }
   }
   setPhase('SAVE');
-  const written = await writeDmiForecastRecords(sourcePath, complete, records(), metadata);
+  const written = await writeDmiForecastRecords(sourcePath, complete, records(), metadata, sourceUnionBirthJournal);
   if (stats.recoveredComponents || stats.runtimeRecovered) stats.status = 'MERGED';
-  else await fs.unlink(sourcePath);
+  else if (sourceUnionBirthJournal === null) await fs.unlink(sourcePath);
+  // A SOURCE no-change file remains a born, closed, hashed catalog artifact, not an admitted donor.
   return { sourcePath, stats, code: stats.rejectedRecords ? 'DMI_FORECAST_RECORDS_REJECTED' : null,
     capacity: { baselineBytes: complete.bytes, progressBytes: progress.bytes, mergedBytes: written.bytes,
       largestInputRecordBytes: Math.max(complete.largestRecordBytes, progress.largestRecordBytes),
@@ -364,7 +369,7 @@ export function assertUsableDmiProgressRecovery(summary, { allowAbsent = true } 
 
 export async function reconcileDmiProgressFiles({
   root, files, temporaryDirectory, productionReferenceAt, restoredAt = new Date().toISOString(),
-  recoverRuntimeCursor = true,
+  recoverRuntimeCursor = true, sourceUnionBirthJournal = null,
 }) {
   const extras = new Set(Object.values(FILES));
   const selected = files.filter(file => extras.has(file.relativePath));
@@ -380,7 +385,7 @@ export async function reconcileDmiProgressFiles({
     try {
       if (forecast) {
         const result = await reconcileForecastFile({ root, file, temporaryDirectory,
-          productionReferenceAt, restoredAt, recoverRuntimeCursor, setPhase: value => { phase = value; } });
+          productionReferenceAt, restoredAt, recoverRuntimeCursor, sourceUnionBirthJournal, setPhase: value => { phase = value; } });
         summary.forecast = result.stats;
         summary.forecastCapacity = result.capacity;
         if (result.code) summary.codes.push(result.code);
@@ -400,9 +405,21 @@ export async function reconcileDmiProgressFiles({
       const bytes = Buffer.from(`${JSON.stringify(result.document)}\n`);
       if (bytes.length > SMALL_JSON_MAX_BYTES) throw new Error('invalid');
       const sourcePath = path.join(temporaryDirectory, `merged-dmi-progress-${name}.json`);
-      await fs.writeFile(sourcePath, bytes, { flag: 'wx', mode: 0o600 });
+      if (sourceUnionBirthJournal === null) await fs.writeFile(sourcePath, bytes, { flag: 'wx', mode: 0o600 });
+      else {
+        const handle = await fs.open(sourcePath, 'wx', 0o600);
+        sourceUnionStationWriters.add(handle); // Retain before the first journal/stat/write await.
+        await sourceUnionBirthFileOpened(sourceUnionBirthJournal, sourcePath, handle);
+        await handle.writeFile(bytes);
+        await handle.sync();
+        const identity = await handle.stat({ bigint: true });
+        await handle.close();
+        await sourceUnionBirthFileClosed(sourceUnionBirthJournal, sourcePath, handle, identity, bytes.length, crypto.createHash('sha256').update(bytes).digest('hex'));
+        sourceUnionStationWriters.delete(handle);
+      }
       output.push({ ...file, sourcePath });
     } catch (error) {
+      if (sourceUnionBirthJournal !== null) throw error; // Never hide SOURCE journal/write failure as a safe cache miss.
       summary[name] = forecast
         ? { status: 'REJECTED', recoveredComponents: 0, rejectedRecords: 0, runtimeRecovered: false }
         : { status: 'RETAINED', recoveredObservations: 0, rejectedRecords: 0 };

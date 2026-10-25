@@ -5,7 +5,6 @@ import os from 'node:os';
 import path from 'node:path';
 import { execFile } from 'node:child_process';
 import { fileURLToPath, pathToFileURL } from 'node:url';
-import { exactRelativeModuleSpecifiers } from './static-module-closure.mjs';
 import { accountAssistantCatalogQuery, verifyAccountAssistantCatalogMetadata }
   from '../verify-account-assistant-schema.mjs';
 
@@ -34,7 +33,9 @@ const sqlText = text => String(text).replace(/\r\n?/g, '\n');
 const NATIVE_PSQL_PHASES = new Set(['NATIVE_SETUP', 'CAS200_MIGRATION',
   'BASELINE_FIXTURES', 'BASELINE_ADMISSION', 'BASELINE_CAS_CASES',
   'ACCOUNT213', 'CURRENT220', 'STATISTICS230', 'NATIVE_IDENTITY0600', 'CURRENT_MEMORY_WARMUP',
-  'ESTABLISHED_NATIVE_CURRENT_ORIGIN', 'LAST_MILE_ENCLOSURE', 'ACCOUNT_STATISTICS_ASSISTANT', 'NATIVE_ORIGINAL_CONTINUITY', 'ASSISTANT_LATER_H0', 'UNKNOWN']);
+  'ESTABLISHED_NATIVE_CURRENT_ORIGIN', 'LAST_MILE_ENCLOSURE', 'ACCOUNT_STATISTICS_ASSISTANT', 'NATIVE_ORIGINAL_CONTINUITY', 'ASSISTANT_LATER_H0', 'SOURCE_PRODUCER',
+  'SOURCE_CURRENT_FULL_BOOTSTRAP', 'SOURCE_CURRENT_FULL_READBACK', 'SOURCE_LEGACY_COMPATIBILITY',
+  'SOURCE_LEGACY_FOLLOWER', 'SOURCE_LEGACY_BINDINGS', 'SOURCE_LEGACY_PROVIDERS', 'NATIVE_CLEANUP', 'UNKNOWN']);
 const NATIVE_PSQL_STATES = Object.freeze({
   '22003':'SQL_RANGE', '22023':'SQL_PARAMETER', '22P02':'SQL_TEXT_FORMAT',
   '23502':'SQL_NOT_NULL', '23503':'SQL_FOREIGN_KEY', '23505':'SQL_UNIQUE',
@@ -61,6 +62,299 @@ export function nativePostgresFailureAnnotation(phase, stderr) {
   return '::error title=Native PostgreSQL source command::phase=' + safe.phase
     + ' sqlstate=' + safe.sqlState + ' category=' + safe.category;
 }
+
+// SOURCE-only diagnostics and child capture, copied from the reviewed v2 owner.
+const NATIVE_EXCEPTION_CODES=new Set(['NATIVE_POSTGRES_ASSERTION_FAILED','NATIVE_POSTGRES_UNKNOWN_FAILURE',
+  'NATIVE_POSTGRES_SQL_COMMAND_FAILED','NATIVE_POSTGRES_SOURCE_LEGACY_COMPATIBILITY_REFUSED',
+  'NATIVE_POSTGRES_UNAVAILABLE_ON_THIS_HOST','NATIVE_POSTGRES_PG_CONFIG_UNAVAILABLE',
+  'NATIVE_POSTGRES_COMPLETE_EXISTING_BINARIES_UNAVAILABLE']);
+export function nativePostgresExceptionCode(error) {
+  try {
+    // Node appends actual/expected after a custom assertion message. Only its
+    // fixed first line is a code; never emit the assertion's values or diff.
+    const first = typeof error?.message === 'string' ? error.message.split(/\r?\n/, 1)[0] : '';
+    if (NATIVE_EXCEPTION_CODES.has(first)) return first;
+    return error?.code === 'ERR_ASSERTION' ? 'NATIVE_POSTGRES_ASSERTION_FAILED' : 'NATIVE_POSTGRES_UNKNOWN_FAILURE';
+  } catch { return 'NATIVE_POSTGRES_UNKNOWN_FAILURE'; }
+}
+export async function nativePostgresExceptionDiagnostic(error, phase) {
+  const result = {kind:'NATIVE_POSTGRES_FIRST_FAILURE',
+    phase:NATIVE_PSQL_PHASES.has(phase)?phase:'UNKNOWN',code:nativePostgresExceptionCode(error),
+    frame:null,privatePayloadIncluded:false};
+  try {
+    const root=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'../..');
+    const stack=error?.stack;
+    if(typeof stack!=='string'||stack.length>2*1024*1024)return result;
+    for(const line of stack.split(/\r?\n/)){
+      const match=/^\s+at (?:[^\r\n()]* \()?((?:file:\/\/\/)[^\r\n()]+):(\d+):(\d+)\)?$/.exec(line);
+      if(!match)continue;
+      try{
+        const url=new URL(match[1]);if(url.host||url.search||url.hash)continue;
+        const file=fileURLToPath(url),relative=path.relative(root,file).split(path.sep).join('/');
+        if(!/^(?:scripts|js\/core)\/[A-Za-z0-9_./-]+\.(?:mjs|js)$/.test(relative)
+          ||relative.split('/').includes('..')||await fs.realpath(file)!==file)continue;
+        const before=await fs.lstat(file,{bigint:true});
+        if(!before.isFile()||before.isSymbolicLink()||before.nlink!==1n||before.size>2n*1024n*1024n)continue;
+        const body=await fs.readFile(file),after=await fs.lstat(file,{bigint:true});
+        const identity=value=>[value.dev,value.ino,value.size,value.mtimeNs,value.ctimeNs];
+        if(!identity(before).every((value,index)=>value===identity(after)[index])||BigInt(body.length)!==before.size)continue;
+        const at=Number(match[2]),column=Number(match[3]);
+        if(!Number.isSafeInteger(at)||at<1||at>body.toString('utf8').split(/\r?\n/).length
+          ||!Number.isSafeInteger(column)||column<1||column>100000)continue;
+        result.frame={module:relative,sha256:hash(body),line:at,column};break;
+      }catch{} // An unqualified frame stays unknown; never expose its path.
+    }
+  }catch{} // Diagnostic failure cannot replace the original error.
+  return result;
+}
+export async function emitNativePostgresFirstFailure(error,phase){
+  try{console.error(JSON.stringify(await nativePostgresExceptionDiagnostic(error,phase)));}catch{}
+}
+export function currentSourceNativeFirstFailure(stdout){
+  const fixedReasons=new Set(["SOURCE_CURRENT_PROFILE_PENDING_FULL_PG_SCHEMA","SOURCE_CURRENT_PROFILE_PENDING_GENUINE_CENTRAL_PROFILE","SOURCE_CURRENT_PROFILE_PENDING_NORMAL_POST64_API","SOURCE_CURRENT_PROFILE_PENDING_LOCKED_SDK","SOURCE_CURRENT_PROFILE_PENDING_ACTUAL_GREEN_SOURCE_GATE","SOURCE_CURRENT_PROFILE_PG_CONTEXT","SOURCE_CURRENT_PROFILE_PG_OWNER_CHANGED","SOURCE_CURRENT_PROFILE_ACTUAL_PG_CALL_FAILED","CURRENT_POST64_SOURCE_UNISSUED","CURRENT_POST64_OWN_PARENT_REQUIRED","CURRENT_POST64_NORMAL_POLICY_REQUIRED","CURRENT_POST64_ORIGINAL_BYTES_CHANGED","CURRENT_POST64_OBJECT_BYTES_CHANGED","CURRENT_POST64_OBJECT_IDENTITY_CHANGED","CURRENT_POST64_OWNER_CHANGED","CURRENT_POST64_CHECKPOINT_BODY","CURRENT_POST64_POINTER_CAS","CURRENT_POST64_POINTER_VERSION","CURRENT_POST64_CENTRAL_CAS_BODY","CURRENT_POST64_DOCUMENT_INSERT","CURRENT_POST64_IMMUTABLE_HEADERS","CURRENT_POST64_OBJECT_DIGEST_KEY","CURRENT_POST64_PART_DIGEST_KEY","CURRENT_POST64_BODY_BOUND","CURRENT_POST64_BODY_TRUNCATED","CURRENT_POST64_REMOVE_NOT_CREATED","CURRENT_POST64_REMOVE_REFERENCED_OR_UNKNOWN","CURRENT_POST64_WRITE_READBACK","CURRENT_NATIVE_ACTIVATION_GENUINE_SOURCE_REQUIRED","UNKNOWN","GENUINE_SOURCE_INPUT_MISSING","SOURCE_UNISSUED","GENUINE_SOURCE_SEAL_REQUIRED","NORMAL_ACTIVATION_REFUSED","CANDIDATE_PUBLIC_PACK_REBUILD_REQUIRED","NONPUBLIC_FETCH","GENUINE_PREFIX_INPUT_MISSING","CANDIDATE_NORMAL_CONTINUATION_NOT_READY","CANDIDATE_NORMAL_NATIONAL_NOT_READY","NORMAL_INITIALIZATION_REFUSED"]);
+  let firstProfileFailure=null;
+  for(const line of stdout.split(/\r?\n/)){
+    if(line.length>2048)continue;let value;try{value=JSON.parse(line);}catch{continue;}
+    if(value?.kind!=='CURRENT_SOURCE_NATIVE_FIRST_FAILURE')continue;
+    assert.deepEqual(Object.keys(value).sort(),['kind','phase','privatePayloadIncluded','reason','route','sqlstate']);
+    assert(['CURRENT_CASE','PG_SQL','POST64_TRANSPORT','CENTRAL_ACTIVATION','UNKNOWN'].includes(value.phase));
+    assert(['CHECKPOINT_CAS','OPERATIONAL_CAS','POINTER_CAS','STORAGE','NONE','UNKNOWN'].includes(value.route));
+    assert(fixedReasons.has(value.reason));assert.equal(value.privatePayloadIncluded,false);
+    assert(/^(?:[0-9A-Z]{5}|UNKNOWN)$/.test(value.sqlstate));firstProfileFailure=value;break;
+  }
+  return firstProfileFailure;
+}
+const SOURCE_PROVIDER_NEED_CODES=new Set(["CURRENT_NATIVE_PROVIDER_ABSOLUTE_PATH","CURRENT_NATIVE_PROVIDER_ADMIN_COPY_CHANGED","CURRENT_NATIVE_PROVIDER_ADMIN_INPUT_MISSING","CURRENT_NATIVE_PROVIDER_BASIS_DESTINATION_EXISTS","CURRENT_NATIVE_PROVIDER_CLEAN_NATIVE_ACQUISITION_MODE","CURRENT_NATIVE_PROVIDER_ECCODES_REQUIRED","CURRENT_NATIVE_PROVIDER_EMPTY_NORMAL_STATION_SOURCE_REQUIRED","CURRENT_NATIVE_PROVIDER_EXACT_INITIAL_PHASE","CURRENT_NATIVE_PROVIDER_EXACT_INITIAL_PHASE_ARGUMENT","CURRENT_NATIVE_PROVIDER_EXACT_NODE_TARGET_ARGUMENTS","CURRENT_NATIVE_PROVIDER_EXISTING_FIXTURE_DIRECTORY","CURRENT_NATIVE_PROVIDER_EXISTING_OWNED_HOST","CURRENT_NATIVE_PROVIDER_EXTERNAL_NETWORK_REFUSED","CURRENT_NATIVE_PROVIDER_GRID_BOUND","CURRENT_NATIVE_PROVIDER_LINUX_PYTHON312_REQUIRED","CURRENT_NATIVE_PROVIDER_NODE24_REQUIRED","CURRENT_NATIVE_PROVIDER_NORMAL_BASIS_OUTPUT_MISSING","CURRENT_NATIVE_PROVIDER_NORMAL_BULK_READBACK","CURRENT_NATIVE_PROVIDER_NORMAL_CAPTURE_MISSING","CURRENT_NATIVE_PROVIDER_NORMAL_COPERNICUS_RESIDUALS_REQUIRE_DATA","CURRENT_NATIVE_PROVIDER_NORMAL_DECODE_INCOMPLETE","CURRENT_NATIVE_PROVIDER_NORMAL_DECODE_OUTCOMES_INCOMPLETE","CURRENT_NATIVE_PROVIDER_NORMAL_LEDGER_NOT_READY","CURRENT_NATIVE_PROVIDER_NORMAL_MODULE","CURRENT_NATIVE_PROVIDER_NORMAL_NATIVE_PAIR_REJECTED","CURRENT_NATIVE_PROVIDER_NORMAL_PART_TARGETS","CURRENT_NATIVE_PROVIDER_NORMAL_REGISTRY_210_673","CURRENT_NATIVE_PROVIDER_NO_ADOPTED_OLD_BULK","CURRENT_NATIVE_PROVIDER_RAW_CHANGED_AFTER_DECODE","CURRENT_NATIVE_PROVIDER_SAME_ACTION_RUNNER_TEMP","CURRENT_NATIVE_PROVIDER_STAC_HOST","CURRENT_NATIVE_PROVIDER_STAC_PAGE_BOUND","CURRENT_NATIVE_PROVIDER_STAC_ROUTE","CURRENT_NATIVE_PROVIDER_SYMLINK","CURRENT_NATIVE_PROVIDER_TARGET_HOUR","CURRENT_NATIVE_PROVIDER_WRITE_READBACK"]);
+const SOURCE_INITIAL_WEATHER_NEED_CODES=new Set(["CURRENT_NATIVE_INITIAL_WEATHER_CURRENT_LEDGER_CHANGED","CURRENT_NATIVE_INITIAL_WEATHER_ECCODES_FIELD_CLASSIFICATION","CURRENT_NATIVE_INITIAL_WEATHER_GRID_BOUND","CURRENT_NATIVE_INITIAL_WEATHER_NORMAL_FULL_WEATHER_DECODE_INCOMPLETE","CURRENT_NATIVE_INITIAL_WEATHER_NORMAL_OFFICIAL_WAVE_IDENTITY","CURRENT_NATIVE_INITIAL_WEATHER_NORMAL_TARGETS_REQUIRED","CURRENT_NATIVE_INITIAL_WEATHER_NORMAL_WAVE_NATIVE_OWNER_NOT_COMPLETE","CURRENT_NATIVE_INITIAL_WEATHER_RAW_CHANGED_AFTER_DECODE","CURRENT_NATIVE_INITIAL_WEATHER_REFERENCE"]);
+const SOURCE_PROVIDER_FAILURE_CODES=new Set([...SOURCE_PROVIDER_NEED_CODES,...SOURCE_INITIAL_WEATHER_NEED_CODES]);
+const SOURCE_PROVIDER_SIGNALS=new Map([[-1,'SIGHUP'],[-2,'SIGINT'],[-3,'SIGQUIT'],[-6,'SIGABRT'],[-9,'SIGKILL'],[-11,'SIGSEGV'],[-13,'SIGPIPE'],[-15,'SIGTERM']]);
+function sourceInitialWamAdmissionValid(value){
+  // A fixed failed-admission observation, never a SQL/native/PASS grant.
+  try{
+    const exact=(item,keys)=>item!==null&&typeof item==='object'&&!Array.isArray(item)
+      &&Object.keys(item).sort().join(',')===[...keys].sort().join(',');
+    if(!exact(value,['kind','collection','hourOffset','reason','admitted','summary','outcome','privatePayloadIncluded'])
+      ||value.kind!=='SOURCE_INITIAL_WAM_ADMISSION_DIAGNOSTIC'||!['wam_nsb','wam_dw'].includes(value.collection)
+      ||!Number.isSafeInteger(value.hourOffset)||value.hourOffset<0||value.hourOffset>120
+      ||typeof value.admitted!=='boolean'||value.privatePayloadIncluded!==false)return false;
+    const counts=['requiredCount','acceptedCount','rejectedCount','acceptedLineageCount','acceptedLineageEvidenceCount'];
+    const rejected=['INVALID_WAVE_TUPLE','MISSING_WAVE_DIRECTION','INVALID_WAVE_DIRECTION','ASSET_PROVENANCE_MISMATCH','INVALID_WAVE_PROVENANCE'];
+    const {summary,outcome}=value;
+    if(!exact(summary,[...counts,'rejectedByCode','rejectedByCodeKnown','unknownRejectionCodeCount','coherent','complete'])
+      ||!exact(summary.rejectedByCode,rejected)
+      ||!['rejectedByCodeKnown','coherent','complete'].every(key=>typeof summary[key]==='boolean')
+      ||!exact(outcome,['hasHeight','hasPeriod','hasDirection','parameterCount','touchedCount','interrupted','messagesSeen','zoneLookups'])
+      ||!['hasHeight','hasPeriod','hasDirection','interrupted'].every(key=>typeof outcome[key]==='boolean'))return false;
+    const numbers=[...counts.map(key=>summary[key]),summary.unknownRejectionCodeCount,
+      ...Object.values(summary.rejectedByCode),...['parameterCount','touchedCount','messagesSeen','zoneLookups'].map(key=>outcome[key])];
+    if(!numbers.every(item=>item===null||Number.isSafeInteger(item)&&item>=0&&item<=1_000_000))return false;
+    return value.reason==='STAGE_ADMISSION_FALSE'&&value.admitted===false
+      ||value.reason==='NATIVE_OWNER_INCOMPLETE'&&value.admitted===true&&summary.complete===false;
+  }catch{return false;}
+}
+function sourceInitialWamCompletionValid(value){
+  try{
+    const exact=(item,keys)=>item!==null&&typeof item==='object'&&!Array.isArray(item)
+      &&Object.keys(item).sort().join(',')===[...keys].sort().join(',');
+    if(!exact(value,['kind','collection','hourOffset','callbackInvoked','admitted','outcome',
+        'deadlineReached','elapsedMs','privatePayloadIncluded'])
+      ||value.kind!=='SOURCE_INITIAL_WAM_COMPLETION_DIAGNOSTIC'
+      ||!['wam_nsb','wam_dw'].includes(value.collection)
+      ||!Number.isSafeInteger(value.hourOffset)||value.hourOffset<0||value.hourOffset>120
+      ||typeof value.callbackInvoked!=='boolean'
+      ||(value.callbackInvoked?typeof value.admitted!=='boolean':value.admitted!==null)
+      ||typeof value.deadlineReached!=='boolean'||value.privatePayloadIncluded!==false
+      ||!exact(value.outcome,['interrupted'])||typeof value.outcome.interrupted!=='boolean')return false;
+    const keys=['beforeCurrent','afterCurrent','beforeWam','afterWam'];
+    if(!exact(value.elapsedMs,keys))return false;
+    const values=keys.map(key=>value.elapsedMs[key]);
+    if(!values.every(item=>item===null||Number.isSafeInteger(item)&&item>=0&&item<=86_400_000))return false;
+    const observed=values.filter(item=>item!==null);
+    return observed.every((item,index)=>index===0||item>=observed[index-1]);
+  }catch{return false;}
+}
+function sourceForecastStageValid(value){
+  try{
+    const exact=(item,keys)=>item!==null&&typeof item==='object'&&!Array.isArray(item)
+      &&Object.keys(item).sort().join(',')===[...keys].sort().join(',');
+    const stages=['READ_INPUT','QUALIFY','PACK','WRITE','READBACK','COMPLETE'];
+    const bounded=(item,maximum)=>Number.isSafeInteger(item)&&item>=0&&item<=maximum;
+    if(!exact(value,['kind','phase','elapsedMs','phaseElapsedMs','completedMs','parentRecords',
+        'partCount','qualifiedCurrentRows','bulkZoneCount','packRawBytes','packCompressedBytes',
+        'forecastBytes','privatePayloadIncluded',...(Object.hasOwn(value??{},'readback')?['readback']:[])])
+      ||value.kind!=='SOURCE_FORECAST_STAGE_OBSERVATION'||!stages.includes(value.phase)
+      ||value.privatePayloadIncluded!==false)return false;
+    const rank=stages.indexOf(value.phase);
+    if(!['elapsedMs','phaseElapsedMs'].every(key=>bounded(value[key],86_400_000))
+      ||!bounded(value.parentRecords,210)||!bounded(value.partCount,673)
+      ||!Number.isSafeInteger(value.qualifiedCurrentRows)||value.qualifiedCurrentRows!==value.partCount*121
+      ||!exact(value.completedMs,stages.slice(0,-1)))return false;
+    for(const [index,stage] of stages.slice(0,-1).entries()){
+      if(index<rank?!bounded(value.completedMs[stage],86_400_000):value.completedMs[stage]!==null)return false;
+    }
+    const accounted=Object.values(value.completedMs).reduce((sum,item)=>sum+(item??0),0)+value.phaseElapsedMs;
+    if(value.elapsedMs<accounted||value.elapsedMs>accounted+5||rank===5&&value.phaseElapsedMs!==0)return false;
+    if(rank===0){
+      if(['parentRecords','partCount','qualifiedCurrentRows'].some(key=>value[key]!==0)||value.bulkZoneCount!==null)return false;
+    }else if(!bounded(value.bulkZoneCount,1_000_000)||value.bulkZoneCount===0)return false;
+    if(rank>=2&&value.partCount!==673)return false;
+    for(const [key,maximum,available] of [['packRawBytes',2147483648,rank>=3],
+        ['packCompressedBytes',167772160,rank>=3],['forecastBytes',Number.MAX_SAFE_INTEGER,rank>=4]]){
+      if(available?(!bounded(value[key],maximum)||value[key]===0):value[key]!==null)return false;
+    }
+    if(Object.hasOwn(value,'readback')){
+      const readback=value.readback,stages=['INSPECT','PARENT_READ','PART_READ','UNPACK','EQUALITY','COMPLETE'];
+      if(rank<4||!exact(readback,['phase','completedMs'])||!stages.includes(readback.phase)
+        ||!exact(readback.completedMs,stages.slice(0,-1)))return false;
+      const subrank=stages.indexOf(readback.phase);
+      if((rank===5)!==(subrank===5))return false;
+      for(const [index,stage] of stages.slice(0,-1).entries()){
+        if(index<subrank?!bounded(readback.completedMs[stage],86_400_000):readback.completedMs[stage]!==null)return false;
+      }
+      const subtotal=Object.values(readback.completedMs).reduce((sum,item)=>sum+(item??0),0);
+      const total=rank===5?value.completedMs.READBACK:value.phaseElapsedMs;
+      if(total<subtotal||total>subtotal+5)return false;
+    }
+    return true;
+  }catch{return false;}
+}
+export function nativeProviderProcessFirstFailure(value){
+  try{
+    const keys=value&&Object.keys(value).sort().join(',');
+    if(!value||!['boundary,kind,phase,privatePayloadIncluded,returncode,signal,stderr,stdout',
+        'boundary,forecastStage,kind,phase,privatePayloadIncluded,returncode,signal,stderr,stdout',
+        'boundary,kind,phase,privatePayloadIncluded,returncode,signal,stderr,stdout,wamAdmission',
+        'boundary,kind,phase,privatePayloadIncluded,returncode,signal,stderr,stdout,wamCompletion',
+        'boundary,kind,phase,privatePayloadIncluded,returncode,signal,stderr,stdout,wamAdmission,wamCompletion'].includes(keys)
+      ||value.kind!=='SOURCE_PROVIDER_PROCESS_FIRST_FAILURE'||!['PROVIDERS','PROVIDERS-H0','PROVIDERS-H1'].includes(value.phase)||value.privatePayloadIncluded!==false)return null;
+    const code=value.returncode;
+    if(code!==null&&(!Number.isSafeInteger(code)||code<-(2**31)||code>=2**31))return null;
+    if(value.signal!==(code===null?'UNKNOWN':code>=0?'NONE':SOURCE_PROVIDER_SIGNALS.get(code)??'UNKNOWN'))return null;
+    for(const stream of [value.stdout,value.stderr]){
+      if(!stream||Object.keys(stream).sort().join(',')!=='bytes,complete,sha256'||typeof stream.complete!=='boolean'
+        ||stream.bytes!==null&&(!Number.isSafeInteger(stream.bytes)||stream.bytes<0))return null;
+      if(stream.complete){
+        if(stream.bytes===null||stream.bytes>16*1024*1024||typeof stream.sha256!=='string'||!/^[a-f0-9]{64}$/.test(stream.sha256))return null;
+      }else if(stream.sha256!==null)return null;
+    }
+    if(Object.hasOwn(value,'wamAdmission')&&(!['PROVIDERS-H0','PROVIDERS-H1'].includes(value.phase)
+      ||code===0||!value.stderr.complete||!sourceInitialWamAdmissionValid(value.wamAdmission)))return null;
+    const boundary=value.boundary;
+    if(boundary!==null){
+      if(!value.stderr.complete||Object.keys(boundary).sort().join(',')!=='callsite,exceptionType,helper,kind,privatePayloadIncluded,reason,timeoutSeconds'
+        ||boundary.kind!=='SOURCE_PROVIDER_BOUNDARY_FIRST_FAILURE'||boundary.privatePayloadIncluded!==false
+        ||!['ASSERTION_ERROR','FILE_NOT_FOUND_ERROR','PROCESS_LOOKUP_ERROR','PERMISSION_ERROR','OS_ERROR','JSON_DECODE_ERROR',
+          'VALUE_ERROR','TYPE_ERROR','KEY_ERROR','INDEX_ERROR','RUNTIME_ERROR','OVERFLOW_ERROR','UNKNOWN','SUBPROCESS_TIMEOUT','SUBPROCESS_EXIT'].includes(boundary.exceptionType)
+        ||boundary.reason!=='UNKNOWN'&&!SOURCE_PROVIDER_FAILURE_CODES.has(boundary.reason)
+        ||!['OPEN_METEO','CLOSURE','LIVE_PILOT','FORECAST','REGISTRY','NONE','UNKNOWN'].includes(boundary.helper)
+        ||boundary.timeoutSeconds!==null&&![30,120].includes(boundary.timeoutSeconds)
+        ||boundary.timeoutSeconds!==null&&boundary.exceptionType!=='SUBPROCESS_TIMEOUT'
+        ||boundary.reason!=='UNKNOWN'&&boundary.exceptionType!=='RUNTIME_ERROR'
+        ||!['SUBPROCESS_TIMEOUT','SUBPROCESS_EXIT'].includes(boundary.exceptionType)&&boundary.helper!=='NONE')return null;
+      const site=boundary.callsite;
+      if(site!==null&&(!site||Object.keys(site).sort().join(',')!=='line,module,sha256'
+        ||!['scripts/fixtures/source19-current-native-providers.py','scripts/update-dmi-bulk.py',
+          'scripts/test-source19-terminal-failure-proof-bank-v17-observer-native.py',
+          'scripts/fixtures/source19-current-initial-weather.py','scripts/lib/copernicus_current_source_stage.py'].includes(site.module)
+        ||typeof site.sha256!=='string'||!/^[a-f0-9]{64}$/.test(site.sha256)
+        ||!Number.isSafeInteger(site.line)||site.line<1||site.line>1000000))return null;
+    }
+    if(Object.hasOwn(value,'wamCompletion')&&(!['PROVIDERS-H0','PROVIDERS-H1'].includes(value.phase)
+      ||code===null||code===0||!value.stderr.complete||!sourceInitialWamCompletionValid(value.wamCompletion)
+      ||boundary?.reason!=='CURRENT_NATIVE_INITIAL_WEATHER_NORMAL_WAVE_NATIVE_OWNER_NOT_COMPLETE'))return null;
+    if(Object.hasOwn(value,'forecastStage')&&(code===null||code===0||!value.stderr.complete
+      ||boundary?.helper!=='FORECAST'||!['SUBPROCESS_TIMEOUT','SUBPROCESS_EXIT'].includes(boundary?.exceptionType)
+      ||!sourceForecastStageValid(value.forecastStage)))return null;
+    return value; // Diagnostic only: never process/SQL/native success proof.
+  }catch{return null;}
+}
+export function nativePostgresChildFirstFailure(stdout,stderr){
+  // Same fixed CURRENT child projection, plus the native caller's own bounded
+  // exception projection. Unknown/malformed records are never printed raw.
+  try{
+    for(const stream of [stdout,stderr]){
+      if(typeof stream!=='string'||Buffer.byteLength(stream)>2*1024*1024)continue;
+      for(const line of stream.split(/\r?\n/)){
+        if(line.length>2048)continue;let value;try{value=JSON.parse(line);}catch{continue;}
+        if(value?.kind==='SOURCE_PROVIDER_PROCESS_FIRST_FAILURE'){
+          const fixed=nativeProviderProcessFirstFailure(value);if(fixed)return fixed;continue;
+        }
+        if(value?.kind==='CURRENT_SOURCE_NATIVE_FIRST_FAILURE'){
+          try{const fixed=currentSourceNativeFirstFailure(line);if(fixed)return fixed;}catch{}
+          continue;
+        }
+        if(value?.kind==='NATIVE_POSTGRES_FIRST_FAILURE'){
+          if(Object.keys(value).sort().join(',')!=='code,frame,kind,phase,privatePayloadIncluded'
+            ||!NATIVE_PSQL_PHASES.has(value.phase)||!NATIVE_EXCEPTION_CODES.has(value.code)
+            ||value.privatePayloadIncluded!==false)continue;
+          const frame=value.frame;
+          if(frame!==null&&(Object.keys(frame).sort().join(',')!=='column,line,module,sha256'
+            ||!/^(?:scripts|js\/core)\/[A-Za-z0-9_./-]+\.(?:mjs|js)$/.test(frame.module)
+            ||frame.module.split('/').includes('..')||!/^[a-f0-9]{64}$/.test(frame.sha256)
+            ||!Number.isSafeInteger(frame.line)||frame.line<1||frame.line>1000000
+            ||!Number.isSafeInteger(frame.column)||frame.column<1||frame.column>100000))continue;
+          return value;
+        }
+        if(value?.kind==='SOURCE_LEGACY_CHILD_FIRST_FAILURE'){
+          if(Object.keys(value).sort().join(',')!=='callsite,exceptionType,kind,osError,phase,privatePayloadIncluded'
+            ||!['BINDINGS','PROVIDERS','FOLLOWER','UNKNOWN','PROVIDERS-H0','PROVIDERS-H1'].includes(value.phase)||value.privatePayloadIncluded!==false
+            ||!['ASSERTION_ERROR','FILE_NOT_FOUND_ERROR','PROCESS_LOOKUP_ERROR','PERMISSION_ERROR','OS_ERROR',
+              'JSON_DECODE_ERROR','VALUE_ERROR','TYPE_ERROR','KEY_ERROR','INDEX_ERROR','RUNTIME_ERROR','OVERFLOW_ERROR','UNKNOWN'].includes(value.exceptionType)
+            ||!['NONE','UNKNOWN','EACCES','EPERM','ENOENT','ESRCH','EBADF','EMFILE','ENFILE','EIO','EINVAL','EINTR','EAGAIN','ENOMEM','ENOSPC','EPIPE'].includes(value.osError))continue;
+          const site=value.callsite;
+          if(site!==null&&(Object.keys(site).sort().join(',')!=='line,module,sha256'
+            ||!/^scripts\/[A-Za-z0-9_/-]+\.py$/.test(site.module)||!/^[a-f0-9]{64}$/.test(site.sha256)
+            ||!Number.isSafeInteger(site.line)||site.line<1||site.line>1000000))continue;
+          return value;
+        }
+      }
+    }
+  }catch{}
+  return null;
+}
+
+export function nativePostgresCaptureComplete(error){
+  try{return !error||typeof error.code==='number'&&error.killed!==true&&!error.signal;}
+  catch{return false;}
+}
+function nativeProcessFailureCategory(error){
+  try{
+    if(!error)return 'NONE';
+    if(error.code==='ERR_CHILD_PROCESS_STDIO_MAXBUFFER')return 'STDIO_BOUND';
+    if(error.killed===true||error.signal)return 'DEADLINE_OR_SIGNAL';
+    return typeof error.code==='number'?'EXIT_NONZERO':'SPAWN_OR_UNKNOWN';
+  }catch{return 'UNKNOWN';}
+}
+// Only the SOURCE legacy child uses capture; the ordinary command below is unchanged.
+const sourceLegacyCommand = (file, args, { input, env, timeout = 20_000, privateLogsRoot = null } = {}) => new Promise(resolve => {
+  const child = execFile(file, args, { env, timeout, maxBuffer: 2 * 1024 * 1024,
+    ...(privateLogsRoot!==null?{encoding:'buffer'}:{}) },
+    async (error, stdout, stderr) => {
+      const result={code:error?(error.code??'NATIVE_EXECFILE_UNKNOWN_ERROR'):0,
+        stdout:String(stdout??''),sqlState:nativePostgresFailureDiagnostic('UNKNOWN',stderr).sqlState};
+      if(privateLogsRoot!==null){
+        result.privateLogsPreserved=false;
+        try{
+          for(const [name,body]of [['stdout',stdout],['stderr',stderr]]){
+            const handle=await fs.open(path.join(privateLogsRoot,'source-legacy-child-captured.'+name),'wx',0o600);
+            try{await handle.writeFile(Buffer.isBuffer(body)?body:Buffer.from(String(body??'')));await handle.sync();}finally{await handle.close();}
+          }
+          result.privateLogsComplete=nativePostgresCaptureComplete(error);
+          await fs.writeFile(path.join(privateLogsRoot,'capture.json'),JSON.stringify({
+            kind:'NATIVE_POSTGRES_CHILD_CAPTURE',complete:result.privateLogsComplete,
+            processFailure:nativeProcessFailureCategory(error),
+            stdout:{bytes:Buffer.isBuffer(stdout)?stdout.length:Buffer.byteLength(String(stdout??'')),sha256:hash(stdout??'')},
+            stderr:{bytes:Buffer.isBuffer(stderr)?stderr.length:Buffer.byteLength(String(stderr??'')),sha256:hash(stderr??'')}},null,2)+'\n',{flag:'wx',mode:0o600});
+          result.privateLogsPreserved=true;result.stderr=String(stderr??'');
+          if(!result.privateLogsComplete){try{console.error(JSON.stringify({kind:'NATIVE_POSTGRES_CHILD_CAPTURE',
+            complete:false,processFailure:nativeProcessFailureCategory(error),privatePayloadIncluded:false}));}catch{}}
+        }catch{} // Preserve the original process outcome, including capture failure.
+      }
+      resolve(result);
+    });
+  child.stdin?.on('error', () => {}); // Outcome is owned by execFile's actual close/error callback.
+  child.stdin?.end(input ?? '');
+});
 
 const command = (file, args, { input, env, timeout = 20_000 } = {}) => new Promise(resolve => {
   const child = execFile(file, args, { env, timeout, maxBuffer: 2 * 1024 * 1024 },
@@ -124,9 +418,14 @@ async function issued213Factory(root) {
   const factory = slice('const PART_COUNT =', 'const safeShape =')
     + slice('const samples =', 'const sourceDocument =');
   assert.equal(hash(factory), '71ce29ec98e43bfa02017a145c4438346f1d8a1f4323526ec58e4b1081d81e36');
-  const scanner = 'scripts/lib/static-module-closure.mjs';
-  assert.equal(sqlText(await fs.readFile(path.join(ISSUED_ROOT, scanner), 'utf8')),
-    String(await read(scanner)), 'Use the actual reviewed issued static scanner');
+  // Kun den historiske closure bruger sin hele genuine044d-scanner.
+  // Den aktuelle scanner og dens rettede deklarationsgrammatik ændres ikke.
+  const scannerSource = await read('scripts/lib/static-module-closure.mjs');
+  assert.equal(scannerSource.length, 6790, 'Exact issued scanner byte length');
+  assert.equal(hash(scannerSource), '675f91e7942143a78636e219e54bd7fa0ff25ddcd1998657dd215105054938b0',
+    'Exact issued scanner whole bytes');
+  const { exactRelativeModuleSpecifiers } = await import(
+    'data:text/javascript;base64,' + scannerSource.toString('base64'));
   const tSource = String(await read(ISSUED_T));
   const declaration = /export const RAVSCORE_CONTINUATION_IMPLEMENTATION_FILES = Object\.freeze\(\[\n((?:  '[A-Za-z0-9_./-]+',\n)+)\]\);/.exec(tSource);
   assert(declaration, 'Exact historical T declaration required');
@@ -627,7 +926,18 @@ export async function runNativeCheckpointSqlComparison({ repositoryRoot,
   sourceDocumentAt, atHour, saveCheckpoint, includeStatisticsRevision = false,
   includeNativeIdentity = false, includeCurrentMemoryWarmup = false, includeEstablishedNativeCurrentOrigin = false,
   includeLastMileEnclosure = false, includeAccountStatisticsAssistant = false,
-  includeNativeOriginalContinuity = false, includeAssistantLaterH0 = false } = {}) {
+  includeNativeOriginalContinuity = false, includeAssistantLaterH0 = false,
+  includeSourceProducer = false, includeCurrentSourceNativeProfile = false } = {}) {
+  assert.equal(typeof includeCurrentSourceNativeProfile,'boolean');
+  assert.equal(typeof includeSourceProducer,'boolean');
+  if(includeSourceProducer || includeCurrentSourceNativeProfile){
+    const {requireSourceProducerOutput}=await import('./source-producer-successor-source.mjs');
+    requireSourceProducerOutput(); // BEFORE nativePrograms/filesystem/process I/O.
+  }
+  assert(!includeCurrentSourceNativeProfile || includeSourceProducer,'CURRENT profile requires the unchanged SOURCE PG phase');
+  assert(!includeSourceProducer || includeAccountStatisticsAssistant,'SOURCE requires the genuine complete585 native phase');
+  assert(!includeSourceProducer || (!includeNativeOriginalContinuity && !includeAssistantLaterH0),
+    'SOURCE uses its own genuine frozen586/587 chain, not the ordinary current-release flags');
   assert.equal(typeof includeStatisticsRevision,'boolean');
   assert.equal(typeof includeNativeIdentity,'boolean');
   assert.equal(typeof includeCurrentMemoryWarmup,'boolean');
@@ -758,7 +1068,14 @@ begin
     'elapsedMs',extract(epoch from (clock_timestamp()-started))*1000);
 end $$;
 grant execute on function public.native_checkpoint_attempt(boolean,bigint,jsonb) to service_role,anon,authenticated;`;
-    await psql(setup);
+    let currentFullPostgres=null;
+    if(includeCurrentSourceNativeProfile){
+      nativePhase='SOURCE_CURRENT_FULL_BOOTSTRAP';
+      const full=await import('./source-current-full-postgres-bootstrap.mjs');
+      currentFullPostgres=await full.bootstrapSourceCurrentFullPostgres({repositoryRoot,psql,setup});
+    }else{
+      await psql(setup);
+    }
     const calibrationSignature='public.ravradar_trip_v3_calibration_truth_allowed(text,jsonb,boolean,text,text,text,text)';
     const calibrationAcl=JSON.parse(await psql("select jsonb_build_object("
       + "'public',exists(select 1 from pg_proc p cross join lateral aclexplode(coalesce(p.proacl,acldefault('f',p.proowner))) a"
@@ -948,7 +1265,12 @@ select public.native_checkpoint_attempt(${baseline},${version},(select payload f
     let accountStatisticsAssistant;
     if(includeAccountStatisticsAssistant){
       nativePhase='ACCOUNT_STATISTICS_ASSISTANT';
-      if(includeNativeOriginalContinuity){
+      if(includeSourceProducer){
+        const {withFrozen585CheckpointPostgresSource}=await import('../run-frozen585-checkpoint-postgres-source.mjs');
+        accountStatisticsAssistant=await withFrozen585CheckpointPostgresSource(async({adapter,factory})=>
+          adapter.compareAccountStatisticsAssistantSuccessor({psql,runSql,root,sourceDocumentAt:factory.sourceDocumentAt,
+            atHour:factory.atHour,saveCheckpoint:factory.saveRavScoreContinuationCheckpoint}));
+      }else if(includeNativeOriginalContinuity){
         const {withFrozen585CheckpointPostgresSource}=await import('../run-frozen585-native-continuity-postgres-source.mjs');
         accountStatisticsAssistant=await withFrozen585CheckpointPostgresSource(async({adapter,factory})=>
           adapter.compareAccountStatisticsAssistantSuccessor({psql,runSql,root,sourceDocumentAt:factory.sourceDocumentAt,
@@ -959,7 +1281,13 @@ select public.native_checkpoint_attempt(${baseline},${version},(select payload f
       }
     }
     let nativeOriginalContinuity;
-    if(includeNativeOriginalContinuity){
+    if(includeSourceProducer){
+      nativePhase='NATIVE_ORIGINAL_CONTINUITY';
+      const {withFrozen586CheckpointPostgresSource}=await import('../run-frozen586-source-producer-postgres-source.mjs');
+      nativeOriginalContinuity=await withFrozen586CheckpointPostgresSource(async({adapter,factory})=>
+        adapter.compareNativeOriginalContinuitySuccessor({psql,runSql,root,sourceDocumentAt:factory.sourceDocumentAt,
+          atHour:factory.atHour,saveCheckpoint:factory.saveRavScoreContinuationCheckpoint}));
+    }else if(includeNativeOriginalContinuity){
       nativePhase='NATIVE_ORIGINAL_CONTINUITY';
       if(includeAssistantLaterH0){
         const {withFrozen586CheckpointPostgresSource}=await import('../run-frozen586-assistant-later-h0-postgres-source.mjs');
@@ -972,10 +1300,124 @@ select public.native_checkpoint_attempt(${baseline},${version},(select payload f
       }
     }
     let assistantLaterH0;
-    if(includeAssistantLaterH0){
+    if(includeSourceProducer){
+      nativePhase='ASSISTANT_LATER_H0';
+      const {withFrozen587CheckpointPostgresSource}=await import('../run-frozen587-source-producer-postgres-source.mjs');
+      assistantLaterH0=await withFrozen587CheckpointPostgresSource(async({adapter,factory})=>
+        adapter.compareAssistantLaterH0Successor({psql,runSql,root,sourceDocumentAt:factory.sourceDocumentAt,
+          atHour:factory.atHour,saveCheckpoint:factory.saveRavScoreContinuationCheckpoint}));
+    }else if(includeAssistantLaterH0){
       nativePhase='ASSISTANT_LATER_H0';
       const {compareAssistantLaterH0Successor}=await import('./assistant-later-h0-postgres.mjs');
       assistantLaterH0=await compareAssistantLaterH0Successor({psql,runSql,root,sourceDocumentAt,atHour,saveCheckpoint});
+    }
+    let sourceProducer;
+    if(includeSourceProducer){
+      nativePhase='SOURCE_PRODUCER';
+      try{
+        const {compareSourceProducerSuccessor}=await import('./source-producer-postgres.mjs');
+        sourceProducer=await compareSourceProducerSuccessor({psql,runSql,root,sourceDocumentAt,atHour,saveCheckpoint});
+      }catch(error){statisticsRevisionFailure={error};throw error;}
+    }
+    let currentSourceNativeProfile;
+    let sourceLegacyCompatibility;
+    if(includeSourceProducer&&!includeCurrentSourceNativeProfile){
+      nativePhase='SOURCE_LEGACY_COMPATIBILITY';
+      // The normal pre-merge --source-producer phase, AFTER genuine585/586/587
+      // and SOURCE SQL comparison. No GitHub/main proof or SOURCE19 activation.
+      assert.deepEqual(await readOwner(),owner);
+      const head=(await command('git',['-C',repositoryRoot,'rev-parse','HEAD'],{env})).stdout.trim();
+      assert.match(head,/^[a-f0-9]{40}$/);
+      // Source CI has restored Node22 for the unchanged native SQL matrix.
+      // Only this later normal CURRENT-input child requires the ACTUAL Node24
+      // executable observed in the preceding dedicated acquisition cohort.
+      const node24=process.env.RAVRADAR_SOURCE_NATIVE_NODE24_PATH;
+      assert(typeof node24==='string'&&path.isAbsolute(node24)&&!/[\r\n\0]/.test(node24),
+        'SOURCE_LEGACY_ACTUAL_NODE24_PATH_REQUIRED');
+      assert.equal(await fs.realpath(node24),node24,'SOURCE_LEGACY_NODE24_PATH_ALIASED');
+      const runtime=await command(node24,['--version'],{env});
+      assert.equal(runtime.code,0);assert.match(runtime.stdout.trim(),/^v24\.\d+\.\d+$/,
+        'SOURCE_LEGACY_ACTUAL_NODE24_REQUIRED');
+      // Private test evidence is outside the PG directory's unchanged normal
+      // cleanup. Capture failure is UNKNOWN observation, not a new process result.
+      let privateLogsRoot=null;
+      try{
+        const parent=path.join(repositoryRoot,'.cache');await fs.mkdir(parent,{recursive:true});
+        privateLogsRoot=await fs.mkdtemp(path.join(parent,'native-pg-source-legacy-diagnostics-'));
+      }catch{}
+      const invocation=await sourceLegacyCommand(process.env.PYTHON||'python3',
+        ['-I','-B',path.join(repositoryRoot,'scripts/run-source19-terminal-native-bank.py'),
+          '--source-legacy-compatibility','--node24-path',node24],
+        {input:JSON.stringify({kind:'SOURCE_CURRENT_SAME_NATIVE_PG',pgRoot:root,psql:programs.psql,head,server:owner}),
+          env,timeout:240*60*1000,privateLogsRoot});
+      if(invocation.code!==0&&invocation.privateLogsPreserved&&invocation.privateLogsComplete){
+        const first=nativePostgresChildFirstFailure(invocation.stdout,invocation.stderr);
+        try{if(first)console.error(JSON.stringify(first));}catch{}
+      }
+      assert.equal(invocation.code,0,'NATIVE_POSTGRES_SOURCE_LEGACY_COMPATIBILITY_REFUSED');
+      const reports=invocation.stdout.split(/\r?\n/).flatMap(line=>{
+        if(line.length>2048)return [];try{const value=JSON.parse(line);
+          return value?.kind==='SOURCE_LEGACY_COMPATIBILITY_SYNTHETIC'?[value]:[];}catch{return [];}
+      });
+      assert.equal(reports.length,1,'Actual child must emit exactly one bounded legacy report');
+      const actual=reports[0];
+      assert.deepEqual(Object.keys(actual).sort(),['kind','sameH0MetadataPreserved','ordinaryFollowerCount','zoneCount',
+        'partCount','hourCount','normalBThenS','wholeReadback','originalBytesRetained','actionInvoked','sdkInvoked',
+        'sourceAdmission','mainProof','activeProfileIssued','sqlExecuted','productionProof','retentionCleanup','nativePayloadValidation'].sort());
+      for(const key of ['sameH0MetadataPreserved','normalBThenS','wholeReadback','originalBytesRetained'])assert.equal(actual[key],true);
+      for(const key of ['actionInvoked','sdkInvoked','sourceAdmission','mainProof','activeProfileIssued','sqlExecuted','productionProof'])
+        assert.equal(actual[key],false);
+      assert.equal(actual.ordinaryFollowerCount,1);assert.equal(actual.zoneCount,210);
+      assert.equal(actual.partCount,673);assert.equal(actual.hourCount,118);
+      assert.equal(typeof actual.retentionCleanup.complete,'boolean');
+      assert(Number.isSafeInteger(actual.retentionCleanup.failureCount)&&actual.retentionCleanup.failureCount>=0);
+      const native=actual.nativePayloadValidation;
+      assert.deepEqual(Object.keys(native).sort(),['actualReadOnlyCallCount','sourceModel','current','follower'].sort());
+      assert.equal(native.actualReadOnlyCallCount,2);
+      const expectedModel=(await import('./source-producer-successor-source.mjs')).requireSourceProducerBinding();
+      assert.deepEqual(native.sourceModel,{C:expectedModel.C,I:expectedModel.I,T:expectedModel.T});
+      for(const name of ['current','follower']){
+        const pin=native[name];
+        assert.deepEqual(Object.keys(pin).sort(),['bytes','sha256','targetReferenceAt']);
+        assert(Number.isSafeInteger(pin.bytes)&&pin.bytes>=2&&pin.bytes<=16*1024*1024);
+        assert.match(pin.sha256,/^[a-f0-9]{64}$/);
+        assert.match(pin.targetReferenceAt,/^\d{4}-\d{2}-\d{2}T\d{2}:00:00\.000Z$/);
+        assert.equal(new Date(pin.targetReferenceAt).toISOString(),pin.targetReferenceAt);
+      }
+      assert.equal(Date.parse(native.follower.targetReferenceAt)-Date.parse(native.current.targetReferenceAt),3600000);
+      assert.deepEqual(await readOwner(),owner);
+      sourceLegacyCompatibility=actual;
+    }
+    if(includeCurrentSourceNativeProfile){
+      try{
+      nativePhase='SOURCE_CURRENT_FULL_READBACK';
+      const full=await import('./source-current-full-postgres-bootstrap.mjs');
+      await full.verifySourceCurrentFullPostgres({repositoryRoot,psql,bootstrap:currentFullPostgres});
+      // SAME existing owned Unix-socket server AFTER every unchanged old/SOURCE
+      // comparison. Its normal finally still owns actual server stop/cleanup.
+      nativePhase='SOURCE_PRODUCER';
+      assert.deepEqual(await readOwner(),owner);
+      const head=(await command('git',['-C',repositoryRoot,'rev-parse','HEAD'],{env})).stdout.trim();
+      assert.match(head,/^[a-f0-9]{40}$/);
+      const profileEnvironment={...env,
+        ...(process.env.GITHUB_TOKEN?{GITHUB_TOKEN:process.env.GITHUB_TOKEN}:{}),
+        ...(process.env.GITHUB_REPOSITORY?{GITHUB_REPOSITORY:process.env.GITHUB_REPOSITORY}:{})};
+      const invocation=await command(process.env.PYTHON||'python3',
+        ['-I','-B',path.join(repositoryRoot,'scripts/run-source19-terminal-native-bank.py'),
+          '--current-source-profile','--node24-path',process.execPath],
+        {input:JSON.stringify({kind:'SOURCE_CURRENT_SAME_NATIVE_PG',pgRoot:root,psql:programs.psql,head,server:owner}),
+          env:profileEnvironment,timeout:240*60*1000});
+      const firstProfileFailure=currentSourceNativeFirstFailure(invocation.stdout);
+      if(firstProfileFailure||invocation.code!==0){
+        const fixed=firstProfileFailure??{kind:'CURRENT_SOURCE_NATIVE_FIRST_FAILURE',phase:'UNKNOWN',
+          reason:'MISSING_CHILD_FIXED_REPORT',sqlstate:invocation.sqlState??'UNKNOWN',route:'NONE',privatePayloadIncluded:false};
+        console.error(JSON.stringify(fixed));
+        const error=new Error('NATIVE_POSTGRES_CURRENT_PROFILE_REFUSED phase='+fixed.phase+' reason='+fixed.reason
+          +' sqlstate='+fixed.sqlstate+' route='+fixed.route);error.currentNativeFailure=Object.freeze(fixed);throw error;
+      }
+      assert.deepEqual(await readOwner(),owner);
+      currentSourceNativeProfile={sameHost:true,actualNativeProcessCompleted:true,productionProof:false};
+      }catch(error){statisticsRevisionFailure={error};throw error;}
     }
     return {kind:'NATIVE_POSTGRES_CHECKPOINT_CAS_COMPARISON',accountAssistant,currentGrid,
       ...(includeStatisticsRevision?{statisticsRevision}:{}),
@@ -984,12 +1426,23 @@ select public.native_checkpoint_attempt(${baseline},${version},(select payload f
       ...(includeEstablishedNativeCurrentOrigin?{establishedNativeCurrentOrigin}:{}),
       ...(includeLastMileEnclosure?{lastMileEnclosure}:{}),
       ...(includeAccountStatisticsAssistant?{accountStatisticsAssistant}:{}),
-      ...(includeNativeOriginalContinuity?{nativeOriginalContinuity}:{}),
-      ...(includeAssistantLaterH0?{assistantLaterH0}:{}),
+      ...(includeNativeOriginalContinuity || includeSourceProducer?{nativeOriginalContinuity}:{}),
+      ...(includeAssistantLaterH0 || includeSourceProducer?{assistantLaterH0}:{}),
+      ...(includeSourceProducer?{sourceProducer}:{}),
+      ...(includeSourceProducer&&!includeCurrentSourceNativeProfile?{sourceLegacyCompatibility}:{}),
+      ...(includeCurrentSourceNativeProfile?{currentSourceNativeProfile}:{}),
       issuedSource:issued.sourceReceipt,postgresMajorVersion:programs.majorVersion,
       tcpEnabled:false,normalModelPartCount:673,sqlExecuted:true,migrationExecuted:true,
       migrationSQLSha256:hash(newSource),caseCount:reports.length,
       oldCasDefinitionSha256:hash(oldCas),newCasDefinitionSha256:hash(newCas),reports};
+  } catch(error) {
+    if(includeSourceProducer){
+      // Preserve the first failure from every new SOURCE leg, including its
+      // frozen585/586/587 factories, before the unchanged PG finally runs.
+      if(statisticsRevisionFailure===null)statisticsRevisionFailure={error};
+      await emitNativePostgresFirstFailure(error,nativePhase);
+    }
+    throw error;
   } finally {
     try {
     if (started) {
@@ -1005,10 +1458,21 @@ select public.native_checkpoint_attempt(${baseline},${version},(select payload f
     assert.ok(path.dirname(resolved)===temp && path.basename(resolved).startsWith('rr-checkpoint-pg-'));
     if (cleanupAllowed && (!started || stopped)) await fs.rm(resolved,{recursive:true,force:false});
     } catch (cleanupError) {
+      if(includeSourceProducer)await emitNativePostgresFirstFailure(cleanupError,'NATIVE_CLEANUP');
       // Keep the first revision failure; unknown/failed stop retains the same
       // owned directory. Never turn physical cleanup failure into success.
       if (statisticsRevisionFailure!==null) throw statisticsRevisionFailure.error;
       throw cleanupError;
     }
   }
+}
+
+// Current-only normal seam. Refuse before touching caller operands or native I/O.
+export async function runNativeSourceProducerSqlComparison(options){
+  const {requireSourceProducerOutput}=await import('./source-producer-successor-source.mjs');
+  requireSourceProducerOutput();
+  assert.equal(arguments.length,1);
+  return runNativeCheckpointSqlComparison({...options,includeStatisticsRevision:true,includeNativeIdentity:true,
+    includeCurrentMemoryWarmup:true,includeEstablishedNativeCurrentOrigin:true,includeLastMileEnclosure:true,
+    includeAccountStatisticsAssistant:true,includeSourceProducer:true});
 }

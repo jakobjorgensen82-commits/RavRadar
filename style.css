@@ -449,3 +449,6 @@ body.zone-focus .info-panel { scroll-margin-top:12px; }
  .dashboard .map-column .map-shell{flex:1 1 auto;min-height:390px}
  .dashboard .map-column #map{height:100%;min-height:390px}
 }
+
+/* Forecast sharing is display-only; the normal map timeline keeps its own date format. */
+.forecast-share-button{margin-top:14px}.forecast-share-time{font-weight:750}.forecast-share-score{padding:12px;border-radius:10px;background:var(--surface-soft);line-height:1.5}.forecast-share-dialog input{width:100%;min-height:44px;padding:9px;border:1px solid var(--line);border-radius:9px;font:inherit}.forecast-share-dialog .button-row{margin-top:18px}.forecast-share-dialog .dialog-content{overflow-wrap:anywhere}

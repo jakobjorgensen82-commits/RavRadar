@@ -1,3 +1,29 @@
+## 24. oktober — påvist WAM-fixtureårsag; native-kvalifikation er åben
+
+SOURCE-startprøvens asset manglede assetIdentitySha256, så normal MappingWaveAsset læste tom hash mod den registrerede kanoniske hash. Kun fixturefeltet og én identitetsprøve er tilføjet; ROOTs normale lokale Python-mål består med 10 prøver (6b93c9, EXIT0, 0,702 s). Se DEC-0294 og den opdaterede WAM-front i CODEX_START_HERE/CURRENT_TRUTH/IMPLEMENTATION_STATUS. Dette er ikke en produktions-/DMI-fejl eller native H0/H1-, CI- eller installationsbevis. 4.0.588, C157/I153/T12, udstedt SQL og gamle originaler bevares; SOURCE er inaktiv, 587-forudsætningen og P0-vejrhentningens særskilte prioritet består.
+
+## 23. oktober — 4.0.588 lokalt udstedt; SOURCE-kvalifikation og drift er åbne
+
+Den normale SOURCE-workflowport er nu lokalt anvendt på den sammenførte genuine587/P0-kilde. Version:set 4.0.588 er udført præcis én gang og skal ikke gentages for status. Faktisk C157/I153/T12, binding/output, append-only SQL 20261023182922 og normal synk af de syv forbrugere er lokalt udstedt. De fem normale fixedpoint-kontroller sluttede med EXIT0 (5b00d9); dette er lokal kildeudstedelse, ikke SQL-eksekvering eller installation. De fulde pins står i DEC-0294 og CURRENT_TRUTH.
+
+Den påviste indlæserkæde er lukket med fem additive, præcist whole-hash-bundne importinventarer for account-prewrite, account-runtime-transition, post-cutover-migrate, last-mile- og I71-kildehjælperne. De aktuelle fem filer var byteidentiske med de kendte ejere; alle gamle scannertabeller og almindelige relative imports bevares. Den afgrænsede normale inventarprøve bestod (027c35); ingen generel parserlempelse, filudelukkelse eller ny runtimeautoritet følger heraf.
+
+Den normale lokale prøve 67024 havde 76 PASS, 2 fejl og 1 Windows-skip. De to konkrete lokale fixture-/miljøfejl er lukket ved målrettet opfølgning 4393 med EXIT0; hele målet er ikke gentaget. De ni SOURCE-workflowtilfælde består. Dette må ikke kaldes samlet grønt SOURCE-CI, native PostgreSQL eller offentlig effekt.
+
+ÅBENT: præcis samlet SOURCE-kvalifikation/native PostgreSQL/CI, kontrolleret installation og genlæsning, national kapacitet og almindelig efterfølger, efter-main CURRENT samt offentlig virkning og dokumenteret drift på Supabase Free/Cloudflare Free. Faktisk installeret 587 er stadig en særskilt forudsætning for SOURCE-overgangen. P0-vejrhentningen er fortsat aktiv og ejes af ROOT; denne dokumentopfølgning udleder intet nyt produktionsresultat. Alle fem mål er åbne til 18. november 2026.
+
+De ældre formuleringer nedenfor om manglende workflowport, uudstedt version/metadata og afventende afledning er bevaret planhistorik og erstattet kun på disse konkrete punkter. Gamle migrationsoriginaler, autentiske B/S, originaler, offentliggjorte scorer og de historiske orakler bevares.
+
+## 23. oktober — planlagt 4.0.588: samlet SOURCE-kilde, endnu ikke udstedt
+
+Den normale workflowintegration er særskilt ÅBEN: reusable-weather-build og run-current-weather-once er endnu ikke koblet til source_normal_producer, selv om action, entry og tail er fysisk samlet. Denne kaldersammenføring skal afsluttes og gennemgås før C/I/T-/SQL-udstedelse, præcis CI eller aktivering; fysisk kildekomposition er ikke en lukket normal rute.
+
+AKTIVT: Afled den nye SOURCE-identitet fra hele den reelle versionssynkroniserede kilde. Den kanoniske genererede JSON-datafil er højst 8 KiB, har faste felter og kan ikke bruges som kalderautoritet eller alternativ tuple. Bevar de normale C/I-implementeringskilder, producentens fysiske committed-source-kontrol og lager-ABI-grænsen. fullRuntimeContractSha256 er lager-ABI, ikke et nyt samlet bytebevis for alle producentfiler.
+
+Bevar genuine 587 og alle gamle migrationsoriginaler. Ny SQL er append-only; test-only historiske inverser er aldrig adgang til runtime, database eller genbrug. Før-merge SOURCE-native-kontrol skal mærkes SOURCE og må ikke udgives som native586/587. CURRENT kræver separat, faktisk grønt main-bevis og eksplicit normal opt-in; strukturelle tests er ikke en CURRENT-kørsel.
+
+P0 og den almindelige vejrhentning har fortsat førsteprioritet. ROOTs aktuelle private checkpoint er autoritet for faktiske kørsler, cron og offentlig status; denne SOURCE-front udleder intet nyt produktionsresultat. Faktisk 587-installation er en særskilt forudsætning før SOURCE-aktivering. Alle fem mål er fortsat åbne til 18. november 2026.
+
 ## 22. oktober — arkiv og aktive strømdata er forskellige roller
 
 Den udtrykkeligt godkendte nye aktive strømstart må ikke forveksles med sletning eller genmærkning af gamle originaler. Ægte arkiv og genlæsning kommer før ændring af arbejdsfiler. Kun den validerede engangsstart får en ny startgrænse; almindelige kaldere og modelregler er uændrede. Bevis både lagring af den nye originalbank og næste almindelige genbrug. Lokal kode, syntetisk B/S og grønt kildebevis skal fortsat skelnes fra faktisk offentlig drift. Ventende adminpunktpromotion, ukendt skriveudfald eller aktiv writer må ikke tilsidesættes.

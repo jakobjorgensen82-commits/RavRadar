@@ -1,3 +1,73 @@
+## 25. oktober — mål faktisk genlæsning før en kapacitetsrettelse
+
+Den seneste nationale SOURCE-prøve nåede READBACK efter 85,366 sekunder, men afsluttede ikke inden den uændrede 120-sekundersgrænse. Det er faseindgang, ikke genlæsningstid. Den lokale måling opdeler nu den eksisterende genlæsning i inspektion, parentlæsning, partlæsning, fuld udpakning og lighedskontrol. Kun faste faser og afsluttede millisekunder følger den eksisterende første-fejlrapport; ingen rådata, nye transportveje eller gættede gennemløbstal tilføjes.
+
+Alle normale læsninger, afslag, ét helt unpack og samtlige 673×121 timekontroller bevares. De fire mål-/nativeblade ændrer hverken produktvalidatorer, frister, budgetter, C157/I153/T12, SQL eller geodata. De 15 lokale Python-diagnoseprøver og hele normale Node-DEFAULT-mål består; faktisk Linux-underfase, H0/H1 og samlet SOURCE-kvalifikation er fortsat åbne. Ægte 587-PostgreSQL må ikke ommærkes som nyt SOURCE-bevis.
+
+Offentlig 587/I97 og en almindelig vejrgenerations faktiske B/S, Pages og offentlige kontrol er nu gennemført i ROOTs særskilte P0-forløb. SOURCE forbliver inaktiv; denne måleændring er ikke installation, produktionsrettelse eller dokumenteret tidsgevinst. Numerisk strømmål er lukket; de fire øvrige hovedområder er åbne. Ældre daterede afventninger bevares som historik alene på disse konkret opdaterede punkter.
+
+## 25. oktober — fuld SOURCE-fixturegenlæsning med færre samtidige kopier
+
+Den faktiske Linux-kontrol nåede FORECASTs READBACK efter 86,246 sekunder, men afsluttede ikke inden den uændrede 120-sekundersgrænse. Tiden er faseindgang, ikke afsluttet genlæsning; den konkrete fordeling mellem læsning, udpakning og sammenligning er ukendt. Det er den isolerede revisionsprøve, ikke en ny fejl i den almindelige vejrhentning.
+
+Den lokale fixture slipper nu kun sine egne overflødige bulk-, parent- og packreferencer efter sidste brug. Genlæsningen bruger den eksisterende inspektion og recordlæser uden at beholde ubrugte parentresultater. Samtlige parentlæsninger, fil-/hash-/lukningsafslag, ét helt unpack og alle 673×121 timesammenligninger bevares. Ingen produkt-API, tidsfrist, kildevalg, numerik, C/I/T eller SQL ændres. Mindre retention er ikke bevis for tilstrækkelig kapacitet; ny faktisk Linux/native- og samlet kildekontrol er fortsat nødvendig. Se DEC-0294 og privat checkpoint.
+
+Den komplette normale læser-/kalderkollektion består nu lokalt med 68 PASS, ingen fejl og ét eksisterende Windows-skip. De gamle SOURCE-mismatch er lukket alene i testinput: hele gennemgåede writer- og manifestbytes føres præcist tilbage til deres genuine587-orakler, mens den faktiske I153-udvidelse kontrolleres særskilt positivt. Alle gamle assertions og pins samt afslag på ændrede hunks består. Mobilprøven forventer samme eksplicit selvrapporterede turstart som den faktiske app og består også her. Dette er ikke native-/kapacitets- eller samlet CI-bevis.
+
+587-SQL er installeret og genlæst. Den særskilte almindelige P0-kørsel nåede beregning og private gemningstrin, men stoppede før Pages på den gamle mobiltestliteral. Dens afgrænsede rettelse og normale genoptagelse håndteres særskilt af ROOT; denne SOURCE-kilde er ikke offentlig levering. SOURCE, samlet statistik og automatisk sletning forbliver inaktive. Den numeriske strømrettelse er lukket; fire øvrige hovedområder er åbne. Ældre daterede afventninger nedenfor erstattes kun på disse konkrete punkter.
+
+## 25. oktober — lokal SOURCE588-sammenføring med brugerdata, deling og checkpointrettelser
+
+Denne lokale sammenføring bevarer SOURCE588-forløbet og de indgående 719/720-beslutninger, herunder begge normale checkpointdestinationer. SOURCE forbliver inaktiv med uændret C157/I153/T12 og originale migrationer. De indgående 587-noter er forælderens daterede evidens, ikke en ommærkning af denne kilde eller et samlet SOURCE-PASS. 587 er endnu ikke installeret; cron er slået fra, og P0-kontrollen håndteres særskilt af ROOT.
+
+Tre nye browsermodulers importversioner følger kun 587 → 588, så de bruger samme auth-singleton som den lokale SOURCE-app. Det ændrer ikke score, model eller data. Den normale browsermodul-versionskontrol er lokalt bestået; endelig SOURCE-kilde-/nativekontrol, installation og offentlig virkning er fortsat åbne. Statistik og automatisk sletning forbliver inaktive, og rapportfrigivelse samt særskilt Worker-levering får ingen ny autoritet.
+
+Mål 1 om den nationale numeriske strømrettelse er lukket af ROOT på faktisk normal produktionskædeevidens; det genåbnes ikke uden modstridende evidens. De fire øvrige hovedområder er åbne. De bevarede ældre udsagn om fem åbne mål eller afventet sammenføring er dateret historik på netop disse punkter; dækningsgrad og kontinuerlig vejrhentning er fortsat P0.
+
+## 24. oktober — faste fejlårsager fra SOURCEs første vejrfase
+
+Den seneste samlede SOURCE-kontrol er afvist i den første leverandørfase. Ni bogstavelige assertionkoder fra den eksisterende vejrfixture manglede i de faste Python- og JavaScript-læsere og blev derfor vist som ukendte. Den snævre rettelse medtager nu kun disse koder; fritekst, private payloads og forkerte rapporttyper afvises fortsat. Gamle assertioner er bevaret.
+
+Den normale Python-diagnoseprøve består 12 tilfælde, og den normale Node-checkpointprøve består på den faktisk sammenførte kilde. De tre normale model-/bindingskontroller består uden ny C/I/T-udstedelse. Det er ikke bevis for den afviste native H0-årsag eller for fuld SOURCE-kvalifikation. En mulig decoderfrist er kun en hypotese; budgetter, admission, originale data, SQL og produktion ændres ikke. Næste kontrol skal vise den konkrete faste årsag gennem den eksisterende native-kalder.
+
+587s præcise samlede kildekontrol er nu bestået, men installation og offentlig effekt mangler stadig. SOURCE forbliver inaktiv på 4.0.588 med C157/I153/T12. Ældre daterede afventninger nedenfor bevares som historik; alle fem hovedmål er åbne, og kontinuerligt vejr og dækningsgrad er P0.
+
+## 24. oktober — privat SOURCE-sammenføring med nyere vejrrettelser
+
+DMI-køobservationen og den afgrænsede fair tidsandel er nu kildeleveret på main. De daterede afventninger nedenfor om netop disse main-leveringer bevares som historik. Det er ikke i sig selv bevis for bedre dækning. Den lokale SOURCE-sammenføring indeholder nu de samme afgrænsede rettelser, men er endnu ikke samlet kvalificeret eller aktiveret. Begge grenes fulde historik bevares.
+
+Den sammenførte 587-kilde afventer sin egen præcise kildekontrol og er ikke installeret. SOURCE forbliver inaktiv på den allerede lokalt udstedte 4.0.588 med uændret C157/I153/T12, originale migrationer og bindingsforbrugere. Gamle delprøver er fortsat deres egne beviser, ikke et nyt samlet PASS. Faktisk installeret 587, SOURCEs normale native-/kildekontrol, kontrolleret installation og offentlig effekt er særskilte åbne krav. Kontinuerligt vejr og dækningsgrad er P0; aktuelle kørselstal og offentlig status følges i ROOTs private checkpoint. Alle fem mål er åbne til 18. november 2026.
+
+## 24. oktober — fælles 587-kandidat for brugerdata og prognosedeling
+
+Den isolerede app-/assistentprøve medtager nu appens egne delings-livstidsbindinger sammen med de faktiske zonefunktioner. Den manglende VM-deklaration er rettet i testen, ikke ved at fjerne produktets oprydning eller skjule fejl. Alle tidligere kontroludsagn bevares; den ekstra regression følger den rigtige lukning, nulstilling og samme fejlkast. Det ændrer ikke appen, viden, modelbindinger, SQL eller den almindelige vejrhentning.
+
+Brugerdatarettelsen og prognosedelingen er nu lokalt sammenført gennem begge ægte Git-historikker. De disjunkte produktejere er bevaret hele, og kun de fælles dokumenter og håndbogsliteralen er samlet. C98/I97/T12, 66 gamle Supabase-migrationer, geodata og den almindelige vejr-/Pages-vej bevares. Sammenføringen er ikke i sig selv kildekvalifikation, installation eller offentlig virkning; den præcise slutkilde skal bestå sin normale kontrol før levering.
+
+Ældre 29-/129-prøver nedenfor er deres forældres beviser. Den tidligere kompilerede Node-forhåndsvisning mod offentlige data var udført på 586, ikke den nye 587-kandidat. Den genuine 587-bundle er lokalt bygget til 141,04 KiB uden bindings, men beviser ikke en oprettet Worker, gyldig hosted score, Free-kapacitet eller Facebook-visning. Disse krav er særskilte. Skiftende kvitteringer og den aktuelle test-/driftsstatus hører til i det private checkpoint.
+
+Brugerdatajobbet forbliver globalt slået fra, rapportens offentlige frigivelse er uudstedt, og automatisk sletning er inaktiv. Brugerens statistikpræference har fortsat default ON og frisk fravalgskontrol. Fund-/ikke-fund-rapporten er ikke en måling af oplevet god eller dårlig tur og lukker ikke alene målets statistikdel. 006 kræver faktisk genlæst Worker-OFF og de forudgående præcise skemaer; en lokal konfiguration er ikke bevis for installation. Kontinuerligt vejr er P0, og ingen produktion ændres under aktiv writer. Alle fem mål er åbne.
+
+## 24. oktober — afgrænset godkendelse af offentlig prognosedeling
+
+Ejeren har udtrykkeligt godkendt kun Worker-navnet `ravradar-prognosedeling` på den eksisterende Cloudflare Free-konto med workers.dev-subdomænet `jakob-jorgensen82.workers.dev`. Den faste delingsadresse er `https://ravradar-prognosedeling.jakob-jorgensen82.workers.dev/`. Ingen ny database, billedlager, DNS-ændring, nøgle eller betalingsplan er godkendt. De eksisterende offentlige prognoser og det offentlige logo genbruges; ingen privat vejr-/konto-/turkilde må indføres.
+
+Worker-indgangen og de målrettede normale prøver er lokalt anvendt: 129 tilfælde består, bundle er 140,75 KiB uden bindings, og den kompilerede kode har i Node læst rigtige offentlige data med korrekt forhåndsvisning. Disse beviser er ikke Cloudflare-drift, Free-kapacitet eller Facebook-visning. Oprettelse, aktiv versionsgenlæsning, faktisk ressourceforbrug og hosted browser-/Facebook-accept mangler. Samlet kilde skal kvalificeres præcist før særskilt kontrolleret levering; det almindelige vejr-/Pages-workflow ændres ikke. Ingen produktionsskrivning under aktiv writer.
+
+Dette tillæg erstatter kun tidligere manglende tilladelse til netop denne Worker, ikke de øvrige leveringsgrænser. Kontinuerligt vejr og dækning er fortsat P0; alle fem hovedmål er åbne til 18. november. Version, modelbinding, SQL og de eksisterende historiske afsnit bevares. Se håndbog 89.268 og det private checkpoint for kvitteringer; skiftende driftsidentiteter hører ikke til i håndbogen.
+
+## 24. oktober — privat userdata-sammenføring med genuine 587 og P0
+
+Den private 006-/ejerrapportkandidat er lokalt sammenført med genuine 587-kilden og de særskilt main-leverede P0-rettelser til DMI-køobservation og fair tidsandel. Dette er ikke præcis samlet kildekvalifikation, installation, aktiveret statistik eller offentlig rapport. Begge grenes fulde historik bevares; de daterede afventninger nedenfor om netop P0-main-leveringerne er historik.
+
+4.0.587, C98/I97/T12, 66 gamle Supabase-migrationer, originale 004/005 og den særskilte 006-kandidats standard OFF-/plan-grænser bevares. De 29 faktisk beståede account-tilfælde er fortsat deres oprindelige bevis, ikke et nyt samlet PASS. Præcis samlet kilde-/nativekontrol, faktisk schema-/Workerinventory, kontrolleret OFF-installation/genlæsning og ejerens browseraccept er åbne. Ingen statistik- eller frigivelsesautoritet følger af sammenføringen. Kontinuerligt vejr og dækningsgrad er P0; alle fem mål er fortsat åbne.
+
+## 24. oktober — lokal 587-sammenføring med den leverede DMI-kilde
+
+DMI-rettelsen er præcist kildekvalificeret og merget særskilt på den installerede 586-familie. Den senest afsluttede naturlige vejrhentning er offentligt verificeret; den næste almindelige kørsel er ved denne lokale sammenføring fortsat i DMI-arbejdet. Det er ikke offentlig 587, bevist fuld dækning eller en afsluttet assistentlevering. Kontinuerligt vejr og alle forventede timer/zoners dækning har fortsat førsteprioritet; ingen produktionsændring må ske under den aktive writer.
+
+Den særskilte 587-kandidat har bestået sin præcise kildekontrol. Den nye lokale kombination kræver sit eget samlede bevis; den tidligere afbrudte 587+DMI-kontrol er ikke et helt PASS. Alle produktblade, udstedte modelbindinger, migrationsfiler og den eksisterende SQL uden for håndbogsliteralen bevares. Assistentens håndbogsafsnit 89.265 og stabile ID er uændrede; det særskilte DMI-afsnit har 89.267. Begge dokumenthistorikker nedenfor bevares. Installation, hosted AI og faktisk 587-virkning er åbne; alle fem hovedmål er åbne til 18. november 2026.
+
 ## 25. oktober — offentlig 587 og afgrænset Om-/Grundbog-kandidat
 
 Den normale fulde vejrkæde har leveret offentlig 4.0.587/I97, og cron er genaktiveret. Ældre fronter nedenfor om manglende Pages/offentlig I97 er historiske. P0 er fortsat kontinuerlig almindelig vejrhentning og faktisk dækning; skiftende writer- og kørselsidentiteter føres i privat checkpoint.
@@ -34,11 +104,21 @@ Den afgrænsede opfølgning registrerer kun hver DKSS-samlings første faktisk s
 En kritisk fil kan også være en native strømopgradering og beviser derfor ikke et tomt vejrhul på tværs af leverandører. Kø, budgetter, kildevalg, originalkrav og numeriske data ændres ikke. Den større lokale scalar-kandidat medfølger ikke. Version 4.0.586, modelbinding og SQL bevares. Den isolerede normale målprøve består; præcis samlet kildekontrol og observation fra en kommende almindelig kørsel mangler. Bedre dækning påstås ikke. Alle fem mål er fortsat åbne til 18. november; kontinuerligt vejr og reel time-/zonedækning er P0.
 
 
-## 24. oktober — lokal 587-sammenføring med den leverede DMI-kilde
+## 24. oktober — SOURCE-prøvens WAM-identitet rettet lokalt
 
-DMI-rettelsen er præcist kildekvalificeret og merget særskilt på den installerede 586-familie. Den senest afsluttede naturlige vejrhentning er offentligt verificeret; den næste almindelige kørsel er ved denne lokale sammenføring fortsat i DMI-arbejdet. Det er ikke offentlig 587, bevist fuld dækning eller en afsluttet assistentlevering. Kontinuerligt vejr og alle forventede timer/zoners dækning har fortsat førsteprioritet; ingen produktionsændring må ske under den aktive writer.
+Den bevarede SOURCE-kontrol afviste første WAM-asset i PROVIDERS-H0: 212 krævede mål, 0 accepterede og 212 ASSET_PROVENANCE_MISMATCH. Fixtureasset manglede assetIdentitySha256, så den normale MappingWaveAsset læste tom hash mod RAW-capturens kanoniske hash. Feltet sættes nu med normal asset_identity_sha256(href). Dette er en påvist prøveinputfejl, ikke en produktions-/DMI-fejl.
 
-Den særskilte 587-kandidat har bestået sin præcise kildekontrol. Den nye lokale kombination kræver sit eget samlede bevis; den tidligere afbrudte 587+DMI-kontrol er ikke et helt PASS. Alle produktblade, udstedte modelbindinger, migrationsfiler og den eksisterende SQL uden for håndbogsliteralen bevares. Assistentens håndbogsafsnit 89.265 og stabile ID er uændrede; det særskilte DMI-afsnit har 89.267. Begge dokumenthistorikker nedenfor bevares. Installation, hosted AI og faktisk 587-virkning er åbne; alle fem hovedmål er åbne til 18. november 2026.
+To additive fixture-/testhunks er lokalt anvendt. Den nye prøve bruger de faktiske identitets- og MappingWaveAsset-definitioner for begge WAM-familier og kontrollerer også den gamle manglende-felt-adfærd. ROOTs normale --provider-diagnostic-unit bestod: 10 prøver, EXIT0, 0,702 s (6b93c9). De tidligere ni Python-prøver og Node-checkpointprøven bevares som særskilt historik; den nye prøve afkoder ikke GRIB og beviser ikke native-admission.
+
+Samme rettede fixture bruges for alle 121 offsets i både H0 og H1; felter, kaldere og admissionkrav bevares. Produktkode, 4.0.588, C157/I153/T12, de syv bindinger, udstedt SQL og originaler ændres ikke. Den tidligere ukendte årsag er afklaret på dette konkrete punkt; native H0/H1, efterfølger, PostgreSQL, ny præcis samlet CI, CURRENT, installation og offentlig effekt er fortsat åbne. SOURCE er inaktiv, faktisk installeret 587 er en særskilt forudsætning, kontinuerligt vejr er P0, og alle fem hovedmål er åbne.
+
+## 24. oktober — SOURCE588: prøvegrid og produktionsgrænse
+
+Den syntetiske startprøves gitter var bygget omkring kystdelenes vandpunkter alene. Den normale datalæser undersøger også hele zoners punkter og sine faste nabopunkter, og et normalt opslag kunne derfor falde uden for prøvegridet. Prøveinputtet dækker nu collectionens faktiske decode-rækker med både parent/PART og hele det normale probe-område.
+
+Kun de to afgrænsede fixture-/testblade ændres. Produktionslæser, administratorpunkter, geometri, gitterafstand, kildeprioritet, tidsbudgetter, C157/I153/T12 og udstedte SQL-originaler bevares. Den lokale kodegennemgang og tekstinverse er ikke en bestået native-/GitHub-kontrol eller produktionseffekt; rettelsen skal gennem den normale præcise SOURCE-kildekontrol. Faktisk installeret 587 er fortsat en særskilt forudsætning før senere SOURCE-aktivering.
+
+Main715 er kildekvalificeret og merget. Det er en særskilt P0-levering; driftseffekten skal vurderes ved den efterfølgende almindelige vejrhentning. Skiftende kørselsdetaljer hører til det private checkpoint. Denne SOURCE-opfølgning giver ingen ny produktions-, bindings- eller installationsautoritet.
 
 ## 24. oktober — kontinuerligt vejr først; afgrænset DMI-rettelse på 586
 
@@ -47,6 +127,32 @@ Den almindelige vejrhentning er faktisk leveret med ny offentlig generation, ori
 P0 er kontinuerlig almindelig vejrhentning og dækning af alle forventede timer/zoner. Assistentlevering, SOURCE-aktivering og statistik venter. Kun de tre gennemgåede DMI-produkt-/testblade overføres fra den særskilte kandidat til installeret 4.0.586. En fuldt gennemgået fil med bevaret bedre kvalificeret strømvinder skal kunne afsluttes, gemmes og genbruges uden numerisk mutation. Faktiske tuple-/originalbeviser, parser, officiel filidentitet, targetregister og samplingkvittering kræves fortsat. Privat scalar-support, WAM og ikke-marine grene får ingen nulmutationsadgang.
 
 Porten ændrer ikke version, C/I/T, SQL-binding, kildeprioritet, adminpunkter, geometri eller scoreformel. Den nye normale kalder-/ledger-/genoptagelsesprøve består lokalt; egen præcis kilde-/native-kontrol og faktisk produktionseffekt er fortsat åbne. Genbrug ikke kandidatens 587-kvalifikation som 586-bevis. Alle fem mål er åbne til 18. november 2026. Ældre modstridende status nedenfor er dateret historik.
+
+## 23. oktober — 4.0.588 lokalt udstedt; SOURCE-kvalifikation og drift er åbne
+
+Den normale SOURCE-workflowport er nu lokalt anvendt på den sammenførte genuine587/P0-kilde. Version:set 4.0.588 er udført præcis én gang og skal ikke gentages for status. Faktisk C157/I153/T12, binding/output, append-only SQL 20261023182922 og normal synk af de syv forbrugere er lokalt udstedt. De fem normale fixedpoint-kontroller sluttede med EXIT0 (5b00d9); dette er lokal kildeudstedelse, ikke SQL-eksekvering eller installation. De fulde pins står i DEC-0294 og CURRENT_TRUTH.
+
+Den påviste indlæserkæde er lukket med fem additive, præcist whole-hash-bundne importinventarer for account-prewrite, account-runtime-transition, post-cutover-migrate, last-mile- og I71-kildehjælperne. De aktuelle fem filer var byteidentiske med de kendte ejere; alle gamle scannertabeller og almindelige relative imports bevares. Den afgrænsede normale inventarprøve bestod (027c35); ingen generel parserlempelse, filudelukkelse eller ny runtimeautoritet følger heraf.
+
+Den normale lokale prøve 67024 havde 76 PASS, 2 fejl og 1 Windows-skip. De to konkrete lokale fixture-/miljøfejl er lukket ved målrettet opfølgning 4393 med EXIT0; hele målet er ikke gentaget. De ni SOURCE-workflowtilfælde består. Dette må ikke kaldes samlet grønt SOURCE-CI, native PostgreSQL eller offentlig effekt.
+
+ÅBENT: præcis samlet SOURCE-kvalifikation/native PostgreSQL/CI, kontrolleret installation og genlæsning, national kapacitet og almindelig efterfølger, efter-main CURRENT samt offentlig virkning og dokumenteret drift på Supabase Free/Cloudflare Free. Faktisk installeret 587 er stadig en særskilt forudsætning for SOURCE-overgangen. P0-vejrhentningen er fortsat aktiv og ejes af ROOT; denne dokumentopfølgning udleder intet nyt produktionsresultat. Alle fem mål er åbne til 18. november 2026.
+
+De ældre formuleringer nedenfor om manglende workflowport, uudstedt version/metadata og afventende afledning er bevaret planhistorik og erstattet kun på disse konkrete punkter. Gamle migrationsoriginaler, autentiske B/S, originaler, offentliggjorte scorer og de historiske orakler bevares.
+
+## 23. oktober — planlagt 4.0.588: samlet SOURCE-kilde, endnu ikke udstedt
+
+Den normale workflowintegration er særskilt ÅBEN: reusable-weather-build og run-current-weather-once er endnu ikke koblet til source_normal_producer, selv om action, entry og tail er fysisk samlet. Denne kaldersammenføring skal afsluttes og gennemgås før C/I/T-/SQL-udstedelse, præcis CI eller aktivering; fysisk kildekomposition er ikke en lukket normal rute.
+
+Den samlede SOURCE-kilde er nu lokalt sammenført med den ægte 587-assistentkandidat og den nyere P0-kilde. Den planlagte apprelease er 4.0.588; versionssynk, nye faktiske C/I/T, SOURCE-output og append-only migration er endnu ikke udstedt. Lokal Git-sammenføring og statisk review er ikke samlet kildekontrol, native PostgreSQL, installeret 587/SOURCE eller offentlig drift.
+
+Den tidligere isolerede SOURCE-4.0.586 og dens 020000/030000/040000-kandidater, C145/I141 og daterede lokale prøver er historiske kildebeviser, ikke den nye sammenførings binding, installationskæde eller PASS. Ægte 587-forgænger, de 66 nuværende migrationsoriginaler, gamle B/S-attester og offentliggjorte scorer bevares; de må ikke genmærkes.
+
+Egne afledte kontroloplysninger holdes som streng, kanonisk data i scripts/lib/source-producer-binding.generated.json, ikke som literaler i deres eget C/I-input. De normale modelbyggere binder fortsat den reelle implementering; den navngivne datafil og det eksisterende aktiveringsværktøj er de præcise afgrænsninger, ikke en generel SOURCE-undtagelse. Den fysiske producentfortegnelse og kontrollen af committede, uændrede kilder består. Se DEC-0294 og håndbog 89.266.
+
+Næste afgrænsede arbejde er ROOTs versionsreservation og normal afledning på hele den sammenførte kilde, ikke aktivering eller kopiering af den gamle isolerede release. Defaultadfærd, P0s præcise checkpoint, schema2-originalbank/121-timerskontrakt, scalar PART, originalbevarelse og B før S bevares. Åbne beviser må ikke erstattes af nye markører eller opdigtede tuple-/PASS-værdier.
+
+P0 og den almindelige vejrhentning har fortsat førsteprioritet. ROOTs aktuelle private checkpoint er autoritet for faktiske kørsler, cron og offentlig status; denne SOURCE-front udleder intet nyt produktionsresultat. Faktisk 587-installation er en særskilt forudsætning før SOURCE-aktivering. Alle fem mål er fortsat åbne til 18. november 2026.
 
 ## 23. oktober — DMI-filer med gyldige, uændrede strømvindere
 

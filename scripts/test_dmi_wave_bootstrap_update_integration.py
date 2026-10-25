@@ -2463,6 +2463,88 @@ class ResumeAndFailClosedTests(unittest.TestCase):
             capture["contentSha256"],
         )
 
+    def test_initial_wam_fixture_keeps_real_uncommitted_baseline_until_admission(self) -> None:
+        """Genbrug normal parser/proveniens/admission; ingen native kapacitetsmåling."""
+        import ast
+
+        fixture = ROOT / "scripts/fixtures/source19-current-initial-weather.py"
+        tree = ast.parse(fixture.read_text(encoding="utf8"))
+        owner = next(node for node in tree.body if isinstance(node, ast.FunctionDef)
+                     and node.name == "add_initial_weather")
+        assignments = [node for node in ast.walk(owner) if isinstance(node, ast.Assign)
+                       and any(isinstance(target, ast.Name) and target.id == "before"
+                               for target in node.targets)]
+        self.assertEqual(len(assignments), 1)
+        assignment = compile(ast.Module(body=assignments, type_ignores=[]), str(fixture), "exec")
+        normal_transaction = producer.process_grib_transactionally
+        normal_admission = producer.operational_wave_asset_stage_admissible
+
+        for damage_rejected_tuple in (False, True):
+            with self.subTest(damage_rejected_tuple=damage_rejected_tuple):
+                observed = {"transactions": 0, "admissions": 0}
+
+                def transaction(*args, **kwargs):
+                    observed["transactions"] += 1
+                    baseline = args[5]
+                    observed["baseline"] = baseline
+                    observed["snapshot"] = copy.deepcopy(baseline)
+                    observed["zone_root"] = baseline["zones"]
+                    scope = {"copy": copy, "document": baseline}
+                    # Den faktiske fixturelinje, ikke en testskrevet reference.
+                    exec(assignment, scope)
+                    self.assertIs(scope["before"], baseline)
+                    observed["before"] = scope["before"]
+                    return normal_transaction(*args, **kwargs)
+
+                def admission(before, staged, zones, collection, asset, summary, outcome):
+                    observed["admissions"] += 1
+                    baseline = observed["baseline"]
+                    self.assertIs(before, baseline)
+                    self.assertIs(observed["before"], baseline)
+                    self.assertEqual(baseline, observed["snapshot"])
+                    self.assertIs(baseline["zones"], observed["zone_root"])
+                    self.assertIsNot(staged, baseline)
+                    self.assertIsNot(staged["zones"], baseline["zones"])
+                    accepted_id, rejected_id = (zone["id"] for zone in zones)
+                    self.assertIsNot(staged["zones"][accepted_id]["hourly"],
+                                     baseline["zones"][accepted_id]["hourly"])
+                    self.assertNotIn(TARGET, baseline["zones"][accepted_id]["hourly"])
+                    self.assertIn(TARGET, staged["zones"][accepted_id]["hourly"])
+                    if damage_rejected_tuple:
+                        # Ægte tupleafslag: ændr kun staging for den afviste søskende.
+                        staged["zones"][rejected_id]["hourly"][TARGET] = {
+                            "significant-wave-height": 1.0,
+                        }
+                    admitted = normal_admission(observed["before"], staged, zones,
+                                                collection, asset, summary, outcome)
+                    self.assertIs(admitted, not damage_rejected_tuple)
+                    self.assertEqual(baseline, observed["snapshot"])
+                    self.assertIs(baseline["zones"], observed["zone_root"])
+                    return admitted
+
+                with (
+                    patch.object(producer, "process_grib_transactionally", side_effect=transaction),
+                    patch.object(producer, "operational_wave_asset_stage_admissible", side_effect=admission),
+                ):
+                    if damage_rejected_tuple:
+                        with self.assertRaisesRegex(
+                            RuntimeError, "^synthetic real-parser WAM admission$"
+                        ):
+                            self.test_real_parser_path_admits_one_part_and_preserves_rejected_sibling()
+                    else:
+                        # Hele den eksisterende prøves afsluttende assertions køres også.
+                        self.test_real_parser_path_admits_one_part_and_preserves_rejected_sibling()
+
+                self.assertEqual(observed["transactions"], 1)
+                self.assertEqual(observed["admissions"], 1)
+                self.assertEqual(observed["zone_root"], observed["snapshot"]["zones"])
+                if damage_rejected_tuple:
+                    self.assertEqual(observed["baseline"], observed["snapshot"])
+                    self.assertIs(observed["baseline"]["zones"], observed["zone_root"])
+                else:
+                    self.assertIsNot(observed["baseline"]["zones"], observed["zone_root"])
+                    self.assertNotEqual(observed["baseline"], observed["snapshot"])
+
     def test_669_of_670_wave_asset_preserves_valid_parts_atomically(self) -> None:
         with tempfile.TemporaryDirectory(prefix="rr-grib-transaction-") as owned_directory:
             owned_path = Path(owned_directory) / "synthetic.grib"

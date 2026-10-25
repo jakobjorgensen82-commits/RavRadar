@@ -1,0 +1,469 @@
+{
+  "schemaVersion": 1,
+  "kind": "TEST_ONLY_EXACT_CURRENT_SOURCE_WORKFLOW_INVERSE",
+  "role": "code-only-repair",
+  "productionAuthority": false,
+  "normalization": "EXACT_UTF8_LF_ONLY_NO_VERSION_REWRITE",
+  "predecessorHead": "664aeb46966cd0ec182599a90bcaacc6c4b609ab",
+  "predecessorTree": "65f3fdb129fe28c9675c9d177067beb155deb60a",
+  "predecessorSha256": "1d6c90aa36c648b3848b859f86d122e442340971d36aa64a59d7a3395ece7240",
+  "actualSha256": "1645d7f3306c8ad19f4f1e120058878fb4b66cd594c8dacf8acdb138c750f2d6",
+  "edits": [
+    {
+      "label": "Actual SOURCE contract readback Apply the sole SOURCE compatibility binding after every artifact gate and fresh originals",
+      "offset": 185146,
+      "current": "--input-type=module <<'NODE'\n          import { verifyIntegratedDatabaseReadback } from './scripts/integrated-cutover-readiness.mjs';\n          await verifyIntegratedDatabaseReadback({url:process.env.SUPABASE_URL,\n            serviceRoleKey:process.env.SUPABASE_SERVICE_ROLE_KEY,sourcePhase:'source-producer'});\n          NODE",
+      "original": "scripts/integrated-cutover-readiness.mjs verify-db",
+      "beforeSha256": "1645d7f3306c8ad19f4f1e120058878fb4b66cd594c8dacf8acdb138c750f2d6",
+      "afterSha256": "63147e8ead4ac9d023910d6a345c46cb4d4e692b064d98ee19d539b6416b6095"
+    },
+    {
+      "label": "Actual SOURCE contract readback Require actually installed SOURCE contracts before installed reentry",
+      "offset": 53592,
+      "current": "--input-type=module <<'NODE'\n          import { verifyIntegratedDatabaseReadback } from './scripts/integrated-cutover-readiness.mjs';\n          await verifyIntegratedDatabaseReadback({url:process.env.SUPABASE_URL,\n            serviceRoleKey:process.env.SUPABASE_SERVICE_ROLE_KEY,sourcePhase:'source-producer'});\n          NODE",
+      "original": "scripts/integrated-cutover-readiness.mjs verify-db",
+      "beforeSha256": "63147e8ead4ac9d023910d6a345c46cb4d4e692b064d98ee19d539b6416b6095",
+      "afterSha256": "5185bf49eb0c1cb17f500a28c4e2ccb02c2f948639ced7edfb417d736345874d"
+    },
+    {
+      "label": "SOURCE historical seal hard",
+      "offset": 227762,
+      "current": "CODE_ONLY_METADATA",
+      "original": "ACCOUNT_STATISTICS_ASSISTANT",
+      "beforeSha256": "5185bf49eb0c1cb17f500a28c4e2ccb02c2f948639ced7edfb417d736345874d",
+      "afterSha256": "a052caa19619d8b51c7656ec13954c2ab1f34e88a4cc56ecd49659cc9fe9c7a5"
+    },
+    {
+      "label": "SOURCE handoff reports actual post-B S publisher",
+      "offset": 231666,
+      "current": "CODE_ONLY_METADATA",
+      "original": "ACCOUNT_STATISTICS_ASSISTANT",
+      "beforeSha256": "a052caa19619d8b51c7656ec13954c2ab1f34e88a4cc56ecd49659cc9fe9c7a5",
+      "afterSha256": "838d9314a8a565cc3412253053912a554fa8e2ac34a60a569db45be9199a9fe5"
+    },
+    {
+      "label": "SOURCE assistant Edge actual readback and existing retry policy",
+      "offset": 224890,
+      "current": "if test \"${RAVRADAR_SOURCE_PRODUCER_SOURCE_ACTIVE:-false}\" = true; then\n            test \"$RAVRADAR_SOURCE_PRODUCER_PHASE\" = installed\n            test \"$RAVRADAR_SOURCE_PRODUCER_UPGRADE_OPT_IN\" = false\n            test \"$RAVRADAR_SOURCE_NORMAL_PRODUCER\" = false\n            test \"${{ steps.current-private-publish.outcome }}\" = success\n            test \"${{ steps.established-native-current-origin-checkpoint-publish.outcome }}\" = success\n            test \"${{ steps.source-producer-checkpoint-readback.outputs.equivalent }}\" = true\n            test \"${{ steps.source-producer-checkpoint-readback.outcome }}\" = success\n          fi\n          assistant_deploy_attempts=3\n          if test \"${RAVRADAR_NATIVE_ORIGINAL_CONTINUITY_SOURCE_ACTIVE:-false}\" = true \\\n              || test \"${RAVRADAR_CODE_ONLY_METADATA",
+      "original": "assistant_deploy_attempts=3\n          if test \"${RAVRADAR_NATIVE_ORIGINAL_CONTINUITY_SOURCE_ACTIVE:-false}\" = true \\\n              || test \"${RAVRADAR_ACCOUNT_STATISTICS_ASSISTANT",
+      "beforeSha256": "838d9314a8a565cc3412253053912a554fa8e2ac34a60a569db45be9199a9fe5",
+      "afterSha256": "1656aed8cc0b0a1fdf6a27fcb2c4ae847b56e090709539bc2ec4722b8db88964"
+    },
+    {
+      "label": "SOURCE trip Edges require B/S/readback",
+      "offset": 222268,
+      "current": "SOURCE_PRODUCER_SOURCE_ACTIVE:-false}\" = true; then\n            test \"$RAVRADAR_SOURCE_PRODUCER_PHASE\" = installed\n            test \"$RAVRADAR_SOURCE_PRODUCER_UPGRADE_OPT_IN\" = false\n            test \"$RAVRADAR_SOURCE_NORMAL_PRODUCER\" = false\n            test \"${{ steps.current-private-publish.outcome }}\" = success\n            test \"${{ steps.established-native-current-origin-checkpoint-publish.outcome }}\" = success\n            test \"${{ steps.source-producer-checkpoint-readback.outputs.equivalent }}\" = true\n            test \"${{ steps.source-producer-checkpoint-readback.outcome }}\" = success\n          fi\n          if test \"${RAVRADAR_",
+      "original": "",
+      "beforeSha256": "1656aed8cc0b0a1fdf6a27fcb2c4ae847b56e090709539bc2ec4722b8db88964",
+      "afterSha256": "0cf2d26665c6bbd759ef005457d483fbff7f87e913c3f1362ce6e87c32d7e807"
+    },
+    {
+      "label": "SOURCE whole S readback before Edges",
+      "offset": 188438,
+      "current": "Read back the whole actually published SOURCE S before any Edge or Pages write\n        id: source-producer-checkpoint-readback\n        if: env.RAVRADAR_SOURCE_PRODUCER_SOURCE_ACTIVE == 'true'\n        shell: bash\n        env:\n          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}\n          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}\n        run: |\n          set -euo pipefail\n          test \"$RAVRADAR_SOURCE_PRODUCER_PHASE\" = installed\n          test \"$RAVRADAR_SOURCE_PRODUCER_UPGRADE_OPT_IN\" = false\n          test \"$RAVRADAR_SOURCE_NORMAL_PRODUCER\" = false\n          test \"${{ steps.current-private-publish.outcome }}\" = success\n          test \"${{ steps.established-native-current-origin-checkpoint-publish.outcome }}\" = success\n          # Reconciliation is intentionally NOT used here: local S now exists.\n          # The normal fresh restore reads the whole remote JSONB payload and\n          # validates its original checksums before exact local equivalence.\n          node --input-type=module <<'NODE'\n          import assert from 'node:assert/strict';\n          import fs from 'node:fs/promises';\n          import { requireSourceProducerOutput } from './scripts/lib/source-producer-successor-source.mjs';\n          import { assertSourceProducerCodeOnlyCaller } from './scripts/select-source-producer-code-only-source.mjs';\n          import { restoreProtectedRavScoreContinuationCheckpoint } from './scripts/protected-ravscore-continuation-checkpoint.mjs';\n          try {\n            requireSourceProducerOutput();\n            assertSourceProducerCodeOnlyCaller(process.env);\n            const result = await restoreProtectedRavScoreContinuationCheckpoint({\n              targetReference:process.env.RAVRADAR_PRODUCTION_TARGET_HOUR,\n            });\n            assert.equal(result.reason,'protected-checkpoint-equivalent');\n            assert.equal(result.restored,false);\n            assert.equal(result.targetUnchanged,true);\n            assertSourceProducerCodeOnlyCaller(process.env);\n            console.log('SOURCE whole central S read back and equivalent to the normally saved local S; original checksums verified.');\n            await fs.appendFile(process.env.GITHUB_OUTPUT,'equivalent=true\\n');\n          } catch {\n            console.error('SOURCE_PRODUCER_S_READBACK_REFUSED');\n            process.exitCode=1;\n          }\n          NODE\n\n      - name: ",
+      "original": "",
+      "beforeSha256": "0cf2d26665c6bbd759ef005457d483fbff7f87e913c3f1362ce6e87c32d7e807",
+      "afterSha256": "3110e230d07f8945a1f3a43bc384ecaa07c69a0f1fac15476659a14c1d5db9c7"
+    },
+    {
+      "label": "SOURCE sole conditional SQL after artifact gates",
+      "offset": 180947,
+      "current": "Apply the sole SOURCE compatibility binding after every artifact gate and fresh originals\n        id: source-producer-sql\n        if: env.RAVRADAR_SOURCE_PRODUCER_SOURCE_ACTIVE == 'true' && env.RAVRADAR_SOURCE_PRODUCER_PHASE == 'before'\n        shell: bash\n        env:\n          RAVRADAR_R2_ACCOUNT_ID: ${{ secrets.RAVRADAR_R2_ACCOUNT_ID }}\n          RAVRADAR_R2_ACCESS_KEY_ID: ${{ secrets.RAVRADAR_R2_ACCESS_KEY_ID }}\n          RAVRADAR_R2_SECRET_ACCESS_KEY: ${{ secrets.RAVRADAR_R2_SECRET_ACCESS_KEY }}\n          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}\n          SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}\n          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}\n          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}\n        run: |\n          set -euo pipefail\n          test \"$RAVRADAR_SOURCE_PRODUCER_CURRENT_FAMILY\" = predecessor\n          test \"$RAVRADAR_SOURCE_NORMAL_PRODUCER\" = false\n          test \"${{ steps.migrated-private-install.outcome }}\" = success\n          test \"${{ steps.runtime-audit.outputs.runtime_audit_outcome }}\" = success\n          test \"${{ steps.current-private-spec.outcome }}\" = success\n          test \"${{ steps.current-private-bundle.outcome }}\" = success\n          test \"${{ steps.pages-prebuild.outcome }}\" = success\n          test \"${{ steps.pages-preflight-privacy.outcome }}\" = success\n          git fetch --no-tags --prune origin +refs/heads/main:refs/remotes/origin/main\n          test \"$(git rev-parse HEAD^{commit})\" = \"$GITHUB_SHA\"\n          test \"$(git rev-parse origin/main^{commit})\" = \"$GITHUB_SHA\"\n          (cd \"${{ steps.migration-view.outputs.workdir }}\" && supabase migration list --linked) | tee \"$RUNNER_TEMP/code-only-source-producer-final-list.txt\"\n          (cd \"${{ steps.migration-view.outputs.workdir }}\" && supabase db push --linked --dry-run --skip-vault) 2>&1 | tee \"$RUNNER_TEMP/code-only-source-producer-final-dry-run.txt\"\n          env -u SUPABASE_DB_PASSWORD node scripts/source-producer-prewrite.mjs --slot final\n          source_sql_plan=\"$(node scripts/verify-source-producer-plan.mjs --phase before \\\n            --migration-list \"$RUNNER_TEMP/code-only-source-producer-final-list.txt\" \\\n            --dry-run \"$RUNNER_TEMP/code-only-source-producer-final-dry-run.txt\" \\\n            --migrations-directory \"${{ steps.migration-view.outputs.workdir }}/supabase/migrations\")\"\n          # Exactly one SQL mutation. Never repeat an unknown write: resolve\n          # its outcome through actual history, dry-run and contract readback.\n          sql_status=0\n          case \"$source_sql_plan\" in\n            SOURCE_PRODUCER_SQL_WRITE_REQUIRED=true)\n              (cd \"${{ steps.migration-view.outputs.workdir }}\" && supabase db push --linked --skip-vault) || sql_status=$?\n              ;;\n            SOURCE_PRODUCER_SQL_WRITE_REQUIRED=false)\n              echo 'Exact SOURCE SQL was already installed; continue authenticated587 metadata handoff without SQL replay.'\n              ;;\n            *) echo 'Unknown verified SOURCE SQL plan.' >&2; exit 1 ;;\n          esac\n          (cd \"${{ steps.migration-view.outputs.workdir }}\" && supabase migration list --linked) | tee \"$RUNNER_TEMP/code-only-source-producer-applied.txt\"\n          (cd \"${{ steps.migration-view.outputs.workdir }}\" && supabase db push --linked --dry-run --skip-vault) 2>&1 | tee \"$RUNNER_TEMP/code-only-source-producer-readback-dry-run.txt\"\n          RAVRADAR_SOURCE_PRODUCER_PHASE=installed RAVRADAR_SOURCE_PRODUCER_UPGRADE_OPT_IN=false \\\n            node scripts/verify-source-producer-plan.mjs --phase installed \\\n            --migration-list \"$RUNNER_TEMP/code-only-source-producer-applied.txt\" \\\n            --dry-run \"$RUNNER_TEMP/code-only-source-producer-readback-dry-run.txt\" \\\n            --migrations-directory \"${{ steps.migration-view.outputs.workdir }}/supabase/migrations\"\n          env -u SUPABASE_DB_PASSWORD node scripts/integrated-cutover-readiness.mjs verify-db\n          env -u SUPABASE_DB_PASSWORD node scripts/verify-statistics-preference-revision-schema.mjs\n          if test \"$sql_status\" -ne 0; then\n            echo 'SOURCE SQL response was uncertain; exact installed history and full contracts were subsequently read back. No replay.'\n          fi\n          echo 'RAVRADAR_SOURCE_PRODUCER_UPGRADE_OPT_IN=false' >> \"$GITHUB_ENV\"\n          echo 'RAVRADAR_SOURCE_PRODUCER_PHASE=installed' >> \"$GITHUB_ENV\"\n\n      - name: ",
+      "original": "",
+      "beforeSha256": "3110e230d07f8945a1f3a43bc384ecaa07c69a0f1fac15476659a14c1d5db9c7",
+      "afterSha256": "7d91a60bdfbf6c139deb62f09a52feb8d4cd8eedc3f0f9eb33ea71de0889ef5b"
+    },
+    {
+      "label": "SOURCE audit failure is hard",
+      "offset": 150981,
+      "current": "CODE_ONLY_METADATA",
+      "original": "ACCOUNT_STATISTICS_ASSISTANT",
+      "beforeSha256": "7d91a60bdfbf6c139deb62f09a52feb8d4cd8eedc3f0f9eb33ea71de0889ef5b",
+      "afterSha256": "deb9005be778ae4c7651e93ef104db3807a34fb27339d2f17224b94545944438"
+    },
+    {
+      "label": "SOURCE current B/S pairing",
+      "offset": 100960,
+      "current": "SOURCE B with actual S before any local checkpoint build\n        id: source-producer-checkpoint-paired\n        if: env.RAVRADAR_SOURCE_PRODUCER_SOURCE_ACTIVE == 'true' && env.RAVRADAR_SOURCE_PRODUCER_CURRENT_FAMILY == 'current'\n        shell: bash\n        env:\n          OPERATIONAL_ACTION: ${{ steps.operational-action.outputs.action }}\n          RAVRADAR_R2_ACCOUNT_ID: ${{ secrets.RAVRADAR_R2_ACCOUNT_ID }}\n          RAVRADAR_R2_ACCESS_KEY_ID: ${{ secrets.RAVRADAR_R2_ACCESS_KEY_ID }}\n          RAVRADAR_R2_SECRET_ACCESS_KEY: ${{ secrets.RAVRADAR_R2_SECRET_ACCESS_KEY }}\n          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}\n          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}\n        run: |\n          set -euo pipefail\n          test \"${{ steps.current-private-install.outcome }}\" = success\n          test \"$RAVRADAR_SOURCE_PRODUCER_PHASE\" = installed\n          test \"$RAVRADAR_SOURCE_PRODUCER_UPGRADE_OPT_IN\" = false\n          # The normal reconcile API requires local S to be absent. It reads\n          # actual CURRENT B and central S; no previous report is authority.\n          node scripts/reconcile-source-producer-code-only.mjs\n\n      - name: Pair already-current ",
+      "original": "",
+      "beforeSha256": "deb9005be778ae4c7651e93ef104db3807a34fb27339d2f17224b94545944438",
+      "afterSha256": "eb6a5c6fe8a1bb09fd92fe8054faf766f042904ca27dbfdda460d2471fb397c7"
+    },
+    {
+      "label": "SOURCE migrated handoff preserves native and account",
+      "offset": 98580,
+      "current": "CODE_ONLY_METADATA_SOURCE_ACTIVE != 'true') || (env.RAVRADAR_ACCOUNT_STATISTICS_ASSISTANT_CURRENT_FAMILY == 'predecessor') || (env.RAVRADAR_SOURCE_PRODUCER_CURRENT_FAMILY == 'predecessor') || (env.RAVRADAR_NATIVE_ORIGINAL_CONTINUITY",
+      "original": "ACCOUNT_STATISTICS_ASSISTANT_SOURCE_ACTIVE != 'true') || (env.RAVRADAR_ACCOUNT_STATISTICS_ASSISTANT",
+      "beforeSha256": "eb6a5c6fe8a1bb09fd92fe8054faf766f042904ca27dbfdda460d2471fb397c7",
+      "afterSha256": "51ffe4aa7f31600867851288ff46d67ddc4f11aa472e0be79dcd7a4b619fc971"
+    },
+    {
+      "label": "SOURCE prepared original587 before existing stages",
+      "offset": 94946,
+      "current": "the exact saved registry for original587 SOURCE metadata preparation\n        if: env.RAVRADAR_SOURCE_PRODUCER_SOURCE_ACTIVE == 'true' && env.RAVRADAR_SOURCE_PRODUCER_CURRENT_FAMILY == 'predecessor'\n        run: >-\n          node scripts/prepare-code-only-public-runtime.mjs --stage-public-coastal-registry-only\n          --repository-root \"${{ github.workspace }}\" --snapshot-root \"${{ env.RAVRADAR_CODE_ONLY_PUBLIC_SNAPSHOT }}\"\n\n      - name: Prepare only the exact authenticated587 SOURCE metadata handoff\n        if: env.RAVRADAR_SOURCE_PRODUCER_SOURCE_ACTIVE == 'true' && env.RAVRADAR_SOURCE_PRODUCER_CURRENT_FAMILY == 'predecessor'\n        run: node scripts/source-producer-prewrite.mjs --slot prepare\n        env:\n          RAVRADAR_R2_ACCOUNT_ID: ${{ secrets.RAVRADAR_R2_ACCOUNT_ID }}\n          RAVRADAR_R2_ACCESS_KEY_ID: ${{ secrets.RAVRADAR_R2_ACCESS_KEY_ID }}\n          RAVRADAR_R2_SECRET_ACCESS_KEY: ${{ secrets.RAVRADAR_R2_SECRET_ACCESS_KEY }}\n          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}\n          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}\n\n      - name: Stage ",
+      "original": "",
+      "beforeSha256": "51ffe4aa7f31600867851288ff46d67ddc4f11aa472e0be79dcd7a4b619fc971",
+      "afterSha256": "581c3a2a31dd6f9243101625d2424263e7e15a72060b13edf39951a41e320932"
+    },
+    {
+      "label": "SOURCE hard failure Preflight complete Pages artifact for private runtime material",
+      "offset": 164038,
+      "current": "${{ env.RAVRADAR_SOURCE_PRODUCER_SOURCE_ACTIVE != 'true' }}",
+      "original": "true",
+      "beforeSha256": "581c3a2a31dd6f9243101625d2424263e7e15a72060b13edf39951a41e320932",
+      "afterSha256": "0994ebf8543693391a58dd564e44f1830f135a62f9c8946b62d758dd36f68e0b"
+    },
+    {
+      "label": "SOURCE hard failure Prebuild lean GitHub Pages artifact before production writes",
+      "offset": 161865,
+      "current": "${{ env.RAVRADAR_SOURCE_PRODUCER_SOURCE_ACTIVE != 'true' }}",
+      "original": "true",
+      "beforeSha256": "0994ebf8543693391a58dd564e44f1830f135a62f9c8946b62d758dd36f68e0b",
+      "afterSha256": "4d9ae91026636e8a20b0a64924e73136b7ed9422af9a80a4478396253ba49905"
+    },
+    {
+      "label": "SOURCE hard failure Create current private runtime bundle atomically",
+      "offset": 161003,
+      "current": "${{ env.RAVRADAR_SOURCE_PRODUCER_SOURCE_ACTIVE != 'true' }}",
+      "original": "true",
+      "beforeSha256": "4d9ae91026636e8a20b0a64924e73136b7ed9422af9a80a4478396253ba49905",
+      "afterSha256": "55e0e7773108e01a17f3661d9cd26876c793d847e8cc8bb0e3fe836d5b522986"
+    },
+    {
+      "label": "SOURCE hard failure Build current private production runtime specification",
+      "offset": 160557,
+      "current": "${{ env.RAVRADAR_SOURCE_PRODUCER_SOURCE_ACTIVE != 'true' }}",
+      "original": "true",
+      "beforeSha256": "55e0e7773108e01a17f3661d9cd26876c793d847e8cc8bb0e3fe836d5b522986",
+      "afterSha256": "831ca6a1017320304da3736254825ac3626bac58893306096918a48c26936df3"
+    },
+    {
+      "label": "SOURCE hard failure Try installing current-compatible private runtime",
+      "offset": 77539,
+      "current": "${{ env.RAVRADAR_SOURCE_PRODUCER_SOURCE_ACTIVE != 'true' }}",
+      "original": "true",
+      "beforeSha256": "831ca6a1017320304da3736254825ac3626bac58893306096918a48c26936df3",
+      "afterSha256": "90cb81a37fe348e2b5a28d329abb5a71d2d3b8219832348bd2ebd11898bea090"
+    },
+    {
+      "label": "SOURCE hard failure Try verifying current-compatible private runtime",
+      "offset": 76207,
+      "current": "${{ env.RAVRADAR_SOURCE_PRODUCER_SOURCE_ACTIVE != 'true' }}",
+      "original": "true",
+      "beforeSha256": "90cb81a37fe348e2b5a28d329abb5a71d2d3b8219832348bd2ebd11898bea090",
+      "afterSha256": "740b4b03e7ca664f54cb71a8fe95f4328635bbb7f25a80321b18cbe70b1750b4"
+    },
+    {
+      "label": "SOURCE hard failure Try newest current-compatible private runtime",
+      "offset": 74246,
+      "current": "${{ env.RAVRADAR_SOURCE_PRODUCER_SOURCE_ACTIVE != 'true' }}",
+      "original": "true",
+      "beforeSha256": "740b4b03e7ca664f54cb71a8fe95f4328635bbb7f25a80321b18cbe70b1750b4",
+      "afterSha256": "e2dde9a4a2bc25f93ae7285d0e30ab3686aacea57a188a166b1e09f7c4d23624"
+    },
+    {
+      "label": "Do not current-restore old SOURCE predecessor",
+      "offset": 74106,
+      "current": " && (env.RAVRADAR_SOURCE_PRODUCER_CURRENT_FAMILY != 'predecessor')",
+      "original": "",
+      "beforeSha256": "e2dde9a4a2bc25f93ae7285d0e30ab3686aacea57a188a166b1e09f7c4d23624",
+      "afterSha256": "25d0bc26ea492d8e3570752ca836d727a0dde16dac501ab93566cdc8a8ff4bde"
+    },
+    {
+      "label": "SOURCE route preserves ordinary guard: Deploy exact rebound trip Edges without Worker or D1 replay",
+      "offset": 211869,
+      "current": "CODE_ONLY_METADATA",
+      "original": "ACCOUNT_STATISTICS_ASSISTANT",
+      "beforeSha256": "25d0bc26ea492d8e3570752ca836d727a0dde16dac501ab93566cdc8a8ff4bde",
+      "afterSha256": "507bd93b01aa0e725f61177801baf49b912367a25129857ba5f49eb337fee758"
+    },
+    {
+      "label": "SOURCE route preserves ordinary guard: Publish measured continuation only after verified warmup private runtime",
+      "offset": 180627,
+      "current": "CODE_ONLY_METADATA",
+      "original": "ACCOUNT_STATISTICS_ASSISTANT",
+      "beforeSha256": "507bd93b01aa0e725f61177801baf49b912367a25129857ba5f49eb337fee758",
+      "afterSha256": "b656c2598f392eb5ceb493d6f4551f3494f84359ab32490e0f278b33ae8e2722"
+    },
+    {
+      "label": "SOURCE route preserves ordinary guard: Publish measured continuation checkpoint without promoting rollback readiness",
+      "offset": 159708,
+      "current": "CODE_ONLY_METADATA_SOURCE_ACTIVE != 'true')) && (env.RAVRADAR_CODE_ONLY_METADATA",
+      "original": "ACCOUNT_STATISTICS_ASSISTANT_SOURCE_ACTIVE != 'true')) && (env.RAVRADAR_ACCOUNT_STATISTICS_ASSISTANT",
+      "beforeSha256": "b656c2598f392eb5ceb493d6f4551f3494f84359ab32490e0f278b33ae8e2722",
+      "afterSha256": "39cd00aeee77cd2c059f87450367abde5408b39788f885ddb8aea9bcbfc0474b"
+    },
+    {
+      "label": "SOURCE route preserves ordinary guard: Read back migration and database binding",
+      "offset": 125123,
+      "current": "CODE_ONLY_METADATA",
+      "original": "ACCOUNT_STATISTICS_ASSISTANT",
+      "beforeSha256": "39cd00aeee77cd2c059f87450367abde5408b39788f885ddb8aea9bcbfc0474b",
+      "afterSha256": "d2faba1838d97a01fce1773421da995af67893eb913409cc00cd23fa680b6be8"
+    },
+    {
+      "label": "SOURCE route preserves ordinary guard: Apply exact dry-run-verified post-cutover binding",
+      "offset": 121799,
+      "current": "CODE_ONLY_METADATA",
+      "original": "ACCOUNT_STATISTICS_ASSISTANT",
+      "beforeSha256": "d2faba1838d97a01fce1773421da995af67893eb913409cc00cd23fa680b6be8",
+      "afterSha256": "08035b62c563564c57bdb43ef705ec4d565a864befd16726993e3161382bb6bf"
+    },
+    {
+      "label": "SOURCE route preserves ordinary guard: Reconfirm current main before the database binding write",
+      "offset": 120983,
+      "current": "CODE_ONLY_METADATA",
+      "original": "ACCOUNT_STATISTICS_ASSISTANT",
+      "beforeSha256": "08035b62c563564c57bdb43ef705ec4d565a864befd16726993e3161382bb6bf",
+      "afterSha256": "82108bb259e03afabc43be0990d8d4026b5eb7bc0610f17d0e5d401ed5426964"
+    },
+    {
+      "label": "SOURCE route preserves ordinary guard: Dry-run and require only the latest exact integrated migration",
+      "offset": 118839,
+      "current": "CODE_ONLY_METADATA",
+      "original": "ACCOUNT_STATISTICS_ASSISTANT",
+      "beforeSha256": "82108bb259e03afabc43be0990d8d4026b5eb7bc0610f17d0e5d401ed5426964",
+      "afterSha256": "f973c20e351a515304ca347ce6869827242216e49b02f5d3671195ed69c9b3b3"
+    },
+    {
+      "label": "SOURCE route preserves ordinary guard: Prepare exact authenticated seed metadata and private origin",
+      "offset": 94350,
+      "current": "CODE_ONLY_METADATA",
+      "original": "ACCOUNT_STATISTICS_ASSISTANT",
+      "beforeSha256": "f973c20e351a515304ca347ce6869827242216e49b02f5d3671195ed69c9b3b3",
+      "afterSha256": "023c8e1b03815f9423edeb074c5bbbbb317842d7dd375db985b7342266a62458"
+    },
+    {
+      "label": "SOURCE route preserves ordinary guard: Verify actual already-installed contracts before seed metadata reentry",
+      "offset": 93683,
+      "current": "CODE_ONLY_METADATA",
+      "original": "ACCOUNT_STATISTICS_ASSISTANT",
+      "beforeSha256": "023c8e1b03815f9423edeb074c5bbbbb317842d7dd375db985b7342266a62458",
+      "afterSha256": "8b6d28411aa23ec58018b9e61298f1e269306f16eefb98c7ec2fca0134044919"
+    },
+    {
+      "label": "SOURCE route preserves ordinary guard: Stage the exact saved public coastal registry before seed metadata",
+      "offset": 92970,
+      "current": "CODE_ONLY_METADATA",
+      "original": "ACCOUNT_STATISTICS_ASSISTANT",
+      "beforeSha256": "8b6d28411aa23ec58018b9e61298f1e269306f16eefb98c7ec2fca0134044919",
+      "afterSha256": "e451ae1d0302d6d40d2b14aedd6c78742845d7502debb3d59c12b2f05f11f5f2"
+    },
+    {
+      "label": "SOURCE route preserves ordinary guard: Rebind saved private runtime to current source without changing measurements",
+      "offset": 90194,
+      "current": "CODE_ONLY_METADATA",
+      "original": "ACCOUNT_STATISTICS_ASSISTANT",
+      "beforeSha256": "e451ae1d0302d6d40d2b14aedd6c78742845d7502debb3d59c12b2f05f11f5f2",
+      "afterSha256": "6924b4afcf4a3197e1f8bc033e37bf624c2efcaa94571c957088f072ec4c138f"
+    },
+    {
+      "label": "SOURCE route preserves ordinary guard: Select only the exact authenticated0200 origin metadata bridge",
+      "offset": 89616,
+      "current": "CODE_ONLY_METADATA",
+      "original": "ACCOUNT_STATISTICS_ASSISTANT",
+      "beforeSha256": "6924b4afcf4a3197e1f8bc033e37bf624c2efcaa94571c957088f072ec4c138f",
+      "afterSha256": "a0bc8d2c4ef2c76ab2a7f61ff7151eeb3ca15f0c6943c24211407834d77bbe27"
+    },
+    {
+      "label": "SOURCE route preserves ordinary guard: Verify and unpack exact predecessor private runtime",
+      "offset": 88770,
+      "current": "CODE_ONLY_METADATA",
+      "original": "ACCOUNT_STATISTICS_ASSISTANT",
+      "beforeSha256": "a0bc8d2c4ef2c76ab2a7f61ff7151eeb3ca15f0c6943c24211407834d77bbe27",
+      "afterSha256": "41fa9df3bf9de615652e4ad7452cca9704007deaebdc7f087868153d4e8d1003"
+    },
+    {
+      "label": "SOURCE route preserves ordinary guard: Restore exact predecessor private runtime",
+      "offset": 87094,
+      "current": "CODE_ONLY_METADATA",
+      "original": "ACCOUNT_STATISTICS_ASSISTANT",
+      "beforeSha256": "41fa9df3bf9de615652e4ad7452cca9704007deaebdc7f087868153d4e8d1003",
+      "afterSha256": "49b9db7db3e30028c452400287ff15c4ee1a016cd5d0b2f43ac864d5700cada1"
+    },
+    {
+      "label": "SOURCE route preserves ordinary guard: Prove the saved predecessor runtime is no longer client-readable",
+      "offset": 86123,
+      "current": "CODE_ONLY_METADATA",
+      "original": "ACCOUNT_STATISTICS_ASSISTANT",
+      "beforeSha256": "49b9db7db3e30028c452400287ff15c4ee1a016cd5d0b2f43ac864d5700cada1",
+      "afterSha256": "f95a2ef6b66942112b45e08ae184febcfc5f82df718f493ccfed715cc48f642b"
+    },
+    {
+      "label": "SOURCE route preserves ordinary guard: Install and import-check the exact predecessor restore compatibility closure",
+      "offset": 83906,
+      "current": "CODE_ONLY_METADATA",
+      "original": "ACCOUNT_STATISTICS_ASSISTANT",
+      "beforeSha256": "f95a2ef6b66942112b45e08ae184febcfc5f82df718f493ccfed715cc48f642b",
+      "afterSha256": "a5de8f393b30308969ccb0902fbf9b7ea5622574fe0ff107f95b2a642066e220"
+    },
+    {
+      "label": "SOURCE route preserves ordinary guard: Verify installed current050000 predecessor before userdata preparation",
+      "offset": 82164,
+      "current": "CODE_ONLY_METADATA",
+      "original": "ACCOUNT_STATISTICS_ASSISTANT",
+      "beforeSha256": "a5de8f393b30308969ccb0902fbf9b7ea5622574fe0ff107f95b2a642066e220",
+      "afterSha256": "1f423f901d333b7c44b67b4f17587d2069db5bffad88cbf5fc0d9d6256399c89"
+    },
+    {
+      "label": "SOURCE route preserves ordinary guard: Build exact predecessor private-runtime expectation",
+      "offset": 81452,
+      "current": "CODE_ONLY_METADATA",
+      "original": "ACCOUNT_STATISTICS_ASSISTANT",
+      "beforeSha256": "1f423f901d333b7c44b67b4f17587d2069db5bffad88cbf5fc0d9d6256399c89",
+      "afterSha256": "0bd24e3afc464973a698d1c16759b6a5cb3b5644ca090941d76334562cf82486"
+    },
+    {
+      "label": "SOURCE route preserves ordinary guard: Prepare exact predecessor source for bounded binding migration",
+      "offset": 80012,
+      "current": "CODE_ONLY_METADATA",
+      "original": "ACCOUNT_STATISTICS_ASSISTANT",
+      "beforeSha256": "0bd24e3afc464973a698d1c16759b6a5cb3b5644ca090941d76334562cf82486",
+      "afterSha256": "37f5689a82fd211d3b1d93af1dcad9af89de1b63130d5ce1750bc456b45a3ffd"
+    },
+    {
+      "label": "SOURCE route preserves ordinary guard: Describe exact target private runtime source for bounded migration",
+      "offset": 79150,
+      "current": "CODE_ONLY_METADATA",
+      "original": "ACCOUNT_STATISTICS_ASSISTANT",
+      "beforeSha256": "37f5689a82fd211d3b1d93af1dcad9af89de1b63130d5ce1750bc456b45a3ffd",
+      "afterSha256": "ae0ce8d43f097dee7d9bd45f9035fceebd5eb4215810fb062d7b4f0b98b47415"
+    },
+    {
+      "label": "SOURCE route preserves ordinary guard: Require authenticated exact original before owner binding migration",
+      "offset": 78535,
+      "current": "CODE_ONLY_METADATA",
+      "original": "ACCOUNT_STATISTICS_ASSISTANT",
+      "beforeSha256": "ae0ce8d43f097dee7d9bd45f9035fceebd5eb4215810fb062d7b4f0b98b47415",
+      "afterSha256": "a200a24c533bc6f72fbc7da601eb9a310d6f2bc340cac8e1277f64100d09d330"
+    },
+    {
+      "label": "SOURCE route preserves ordinary guard: Prepare exact original binding for owner current-domain release",
+      "offset": 73328,
+      "current": "CODE_ONLY_METADATA",
+      "original": "ACCOUNT_STATISTICS_ASSISTANT",
+      "beforeSha256": "a200a24c533bc6f72fbc7da601eb9a310d6f2bc340cac8e1277f64100d09d330",
+      "afterSha256": "7a8e46e8c467d57eb41f6f77e68353c31f0373a97b167a22fa6ab0af4279355f"
+    },
+    {
+      "label": "SOURCE route preserves ordinary guard: Select only an already-installed established-origin successor before private work",
+      "offset": 48307,
+      "current": "CODE_ONLY_METADATA",
+      "original": "ACCOUNT_STATISTICS_ASSISTANT",
+      "beforeSha256": "7a8e46e8c467d57eb41f6f77e68353c31f0373a97b167a22fa6ab0af4279355f",
+      "afterSha256": "0afa05c83d7363680eb905515771993b28aede5360ea8fd9c45cbc4d402e493d"
+    },
+    {
+      "label": "SOURCE route preserves ordinary guard: Require originals before the pending assistant binding",
+      "offset": 44609,
+      "current": "CODE_ONLY_METADATA",
+      "original": "ACCOUNT_STATISTICS_ASSISTANT",
+      "beforeSha256": "0afa05c83d7363680eb905515771993b28aede5360ea8fd9c45cbc4d402e493d",
+      "afterSha256": "0dcc08460bd9cbc17493d6cc7c2e91de8363bd9b6adaf6f6643be64c9920479b"
+    },
+    {
+      "label": "SOURCE route preserves ordinary guard: Select only the exact installed last-mile saved-weather source",
+      "offset": 38743,
+      "current": "CODE_ONLY_METADATA",
+      "original": "ACCOUNT_STATISTICS_ASSISTANT",
+      "beforeSha256": "0dcc08460bd9cbc17493d6cc7c2e91de8363bd9b6adaf6f6643be64c9920479b",
+      "afterSha256": "8d7ec6a64a2ea9cfadd547f855cad71af7dc87744516ff97e0d4a293c7d9902a"
+    },
+    {
+      "label": "SOURCE original587 stage",
+      "offset": 70941,
+      "current": "SOURCE CURRENT family and restore only genuine original587 if needed\n        if: env.RAVRADAR_SOURCE_PRODUCER_SOURCE_ACTIVE == 'true'\n        shell: bash\n        env:\n          RAVRADAR_R2_ACCOUNT_ID: ${{ secrets.RAVRADAR_R2_ACCOUNT_ID }}\n          RAVRADAR_R2_ACCESS_KEY_ID: ${{ secrets.RAVRADAR_R2_ACCESS_KEY_ID }}\n          RAVRADAR_R2_SECRET_ACCESS_KEY: ${{ secrets.RAVRADAR_R2_SECRET_ACCESS_KEY }}\n          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}\n          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}\n        run: |\n          set -euo pipefail\n          mkdir -p \"$RAVRADAR_PRIVATE_RUNTIME_ROOT\"\n          node scripts/stage-source-producer-originals.mjs\n\n      - name: Select actual ",
+      "original": "",
+      "beforeSha256": "8d7ec6a64a2ea9cfadd547f855cad71af7dc87744516ff97e0d4a293c7d9902a",
+      "afterSha256": "b12e93937003476c1be97e849727a19150137d387344d61d7252c508f7669274"
+    },
+    {
+      "label": "SOURCE installed guards",
+      "offset": 52547,
+      "current": "SOURCE contracts before installed reentry\n        if: env.RAVRADAR_SOURCE_PRODUCER_SOURCE_ACTIVE == 'true' && env.RAVRADAR_SOURCE_PRODUCER_PHASE == 'installed'\n        shell: bash\n        env:\n          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}\n          SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}\n          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}\n          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}\n        run: |\n          set -euo pipefail\n          (cd \"${{ steps.migration-view.outputs.workdir }}\" && supabase db push --linked --dry-run --skip-vault) 2>&1 | tee \"$RUNNER_TEMP/code-only-source-producer-installed-dry-run.txt\"\n          node scripts/verify-source-producer-plan.mjs --phase installed \\\n            --migration-list \"$RUNNER_TEMP/code-only-migrations-before.txt\" \\\n            --dry-run \"$RUNNER_TEMP/code-only-source-producer-installed-dry-run.txt\" \\\n            --migrations-directory \"${{ steps.migration-view.outputs.workdir }}/supabase/migrations\"\n          env -u SUPABASE_DB_PASSWORD node scripts/integrated-cutover-readiness.mjs verify-db\n          env -u SUPABASE_DB_PASSWORD node scripts/verify-statistics-preference-revision-schema.mjs\n\n      - name: Require actually installed ",
+      "original": "",
+      "beforeSha256": "b12e93937003476c1be97e849727a19150137d387344d61d7252c508f7669274",
+      "afterSha256": "402a91366617fdbaf6eac65db06951d0e9be2b71334b3593e1a52af33425e184"
+    },
+    {
+      "label": "SOURCE first branch 9",
+      "offset": 49854,
+      "current": "SOURCE_PRODUCER_SOURCE_ACTIVE:-false}\" = true; then\n            WORKDIR=\"${{ steps.migration-view.outputs.workdir }}\" node --input-type=module <<'NODE'\n          import fs from 'node:fs/promises';\n          import { hydrateSourceProducerRemoteMigrationHistory } from './scripts/integrated-cutover-readiness.mjs';\n          await hydrateSourceProducerRemoteMigrationHistory({workdir:process.env.WORKDIR,\n            migrationListText:await fs.readFile(process.env.RUNNER_TEMP+'/code-only-migrations-before.txt','utf8')});\n          NODE\n          elif test \"${RAVRADAR_",
+      "original": "",
+      "beforeSha256": "402a91366617fdbaf6eac65db06951d0e9be2b71334b3593e1a52af33425e184",
+      "afterSha256": "0c66726cd0b84f9c9745dbdc514f72d6b4b25fa5bf31c2f59daac33548063f0e"
+    },
+    {
+      "label": "SOURCE first branch 6",
+      "offset": 40909,
+      "current": "SOURCE_PRODUCER_SOURCE_ACTIVE:-false}\" = true; then\n            WORKDIR=\"$migration_workdir\" node --input-type=module <<'NODE'\n          import { prepareSourceProducerCutoverWorkdir } from './scripts/integrated-cutover-readiness.mjs';\n          await prepareSourceProducerCutoverWorkdir({workdir:process.env.WORKDIR});\n          NODE\n          elif test \"${RAVRADAR_",
+      "original": "",
+      "beforeSha256": "0c66726cd0b84f9c9745dbdc514f72d6b4b25fa5bf31c2f59daac33548063f0e",
+      "afterSha256": "14974bccdc61ee5269caf36c838a8084068c61ebc648ff3af4170bb9178ccb9c"
+    },
+    {
+      "label": "Route OR3 only no authority",
+      "offset": 37564,
+      "current": "Route metadata sources without sharing their authority\n        shell: bash\n        run: |\n          set -euo pipefail\n          active=false\n          if test \"${RAVRADAR_SOURCE_PRODUCER_SOURCE_ACTIVE:-false}\" = true \\\n              || test \"${RAVRADAR_NATIVE_ORIGINAL_CONTINUITY_SOURCE_ACTIVE:-false}\" = true \\\n              || test \"${RAVRADAR_ACCOUNT_STATISTICS_ASSISTANT_SOURCE_ACTIVE:-false}\" = true; then\n            active=true\n          fi\n          echo \"RAVRADAR_CODE_ONLY_METADATA_SOURCE_ACTIVE=$active\" >> \"$GITHUB_ENV\"\n\n      - name: ",
+      "original": "",
+      "beforeSha256": "14974bccdc61ee5269caf36c838a8084068c61ebc648ff3af4170bb9178ccb9c",
+      "afterSha256": "51a00564f551b86266deecb779984ad82555dbd6562e36dfa62de5d199f70514"
+    },
+    {
+      "label": "Preserve account selector default",
+      "offset": 37409,
+      "current": " && env.RAVRADAR_SOURCE_PRODUCER_SOURCE_ACTIVE != 'true'",
+      "original": "",
+      "beforeSha256": "51a00564f551b86266deecb779984ad82555dbd6562e36dfa62de5d199f70514",
+      "afterSha256": "8900da5c89161f596800c1fbf691e6c79071c945d0ddbb75c70a2c694514b71e"
+    },
+    {
+      "label": "Preserve native selector default",
+      "offset": 37103,
+      "current": "if: env.RAVRADAR_SOURCE_PRODUCER_SOURCE_ACTIVE != 'true'\n        ",
+      "original": "",
+      "beforeSha256": "8900da5c89161f596800c1fbf691e6c79071c945d0ddbb75c70a2c694514b71e",
+      "afterSha256": "971322847da8416e545268b97ae04e0614a45397f4f5324c1fec9f5f9ec65294"
+    },
+    {
+      "label": "SOURCE selector",
+      "offset": 36903,
+      "current": "SOURCE source phase without admission\n        run: node scripts/select-source-producer-code-only-source.mjs\n\n      - name: Select the issued ",
+      "original": "",
+      "beforeSha256": "971322847da8416e545268b97ae04e0614a45397f4f5324c1fec9f5f9ec65294",
+      "afterSha256": "33ef4ccc72602dda59873d5ff7fff5618cbd3b702fa0ebedd84b72aafc757043"
+    },
+    {
+      "label": "SOURCE fixed job env",
+      "offset": 15277,
+      "current": "RAVRADAR_SOURCE_PRODUCER_UPGRADE_OPT_IN: ${{ inputs.upgrade_source_producer == true && 'true' || 'false' }}\n      RAVRADAR_SOURCE_PRODUCER_PHASE: ${{ inputs.upgrade_source_producer == true && 'before' || 'installed' }}\n      RAVRADAR_SOURCE_PRODUCER_CONFIRMATION: ${{ inputs.confirmation }}\n      RAVRADAR_SOURCE_PRODUCER_SAVED_WEATHER: ${{ inputs.publish_newest_saved_weather == true && 'true' || 'false' }}\n      RAVRADAR_SOURCE_PRODUCER_RECOVERY_RUN_ID: ${{ inputs.recover_public_run_id }}\n      RAVRADAR_SOURCE_PRODUCER_RECOVERY_GATE_RESULT: ${{ needs.operational-recovery-gate.result }}\n      RAVRADAR_SOURCE_PRODUCER_WRITER_ACTIVE: 'false'\n      RAVRADAR_SOURCE_PRODUCER_METADATA_ONLY: 'false'\n      # This compatibility install never activates the SOURCE19 weather producer.\n      RAVRADAR_SOURCE_NORMAL_PRODUCER: 'false'\n      ",
+      "original": "",
+      "beforeSha256": "33ef4ccc72602dda59873d5ff7fff5618cbd3b702fa0ebedd84b72aafc757043",
+      "afterSha256": "a060c5ee9cf6e12bad4794d1a26972ee14f166fe6d77e92fed6607f3c3807044"
+    },
+    {
+      "label": "SOURCE exclusive authority",
+      "offset": 4614,
+      "current": "\n          if test \"$UPGRADE_SOURCE_PRODUCER\" = true; then\n            test \"$UPGRADE_NATIVE_ORIGINAL_CONTINUITY\" != true\n            test \"$UPGRADE_ACCOUNT_STATISTICS_ASSISTANT\" != true\n            test \"$UPGRADE_EXISTING_OWNER_EXPORT\" != true\n            test \"$UPGRADE_ACCOUNT_ASSISTANT\" != true\n            test \"$UPGRADE_STATISTICS_REVISION\" != true\n            test \"$UPGRADE_ESTABLISHED_NATIVE_CURRENT_ORIGIN\" != true\n            test \"$UPGRADE_LAST_MILE_ENCLOSURE\" != true\n            test \"$RESTART_ARCHIVED_WEATHER\" != true\n            test \"$SAVED_WEATHER\" != true\n            test -z \"$RECOVER_PUBLIC_RUN_ID\"\n            test \"$RECOVER_PUBLIC_RUN_ATTEMPT\" = 1\n            test \"$GITHUB_RUN_ATTEMPT\" = 1\n            test \"$CONFIRMATION\" = DEPLOY-CODE-ONLY-REPAIR\n          fi",
+      "original": "",
+      "beforeSha256": "a060c5ee9cf6e12bad4794d1a26972ee14f166fe6d77e92fed6607f3c3807044",
+      "afterSha256": "377f3ad11eb579668700398277e0e5efab668d73633fe090a986d9494267253b"
+    },
+    {
+      "label": "SOURCE authority env",
+      "offset": 4392,
+      "current": "          UPGRADE_SOURCE_PRODUCER: ${{ inputs.upgrade_source_producer }}\n",
+      "original": "",
+      "beforeSha256": "377f3ad11eb579668700398277e0e5efab668d73633fe090a986d9494267253b",
+      "afterSha256": "4e895c5080d6e45b67d85ddcdf6b33ecf9dc9ee62385d75974d53107a958706b"
+    },
+    {
+      "label": "SOURCE input default OFF",
+      "offset": 1577,
+      "current": "upgrade_source_producer:\n        description: \"Installer kun den udstedte SOURCE-kompatibilitetsbinding fra autentiske587-originaler; SOURCE19-producenten forbliver OFF\"\n        required: false\n        default: false\n        type: boolean\n      ",
+      "original": "",
+      "beforeSha256": "4e895c5080d6e45b67d85ddcdf6b33ecf9dc9ee62385d75974d53107a958706b",
+      "afterSha256": "1d6c90aa36c648b3848b859f86d122e442340971d36aa64a59d7a3395ece7240"
+    }
+  ]
+}

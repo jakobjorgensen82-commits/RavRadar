@@ -3,6 +3,7 @@
 import assert from 'node:assert/strict';
 import crypto from 'node:crypto';
 import fs from 'node:fs';
+import { inverseSourceNormalWorkflowForHistoricalOracle } from './source-normal-workflow-review.mjs';
 const review = JSON.parse(fs.readFileSync(new URL('./completed-private-runtime-workflow-review.json', import.meta.url), 'utf8'));
 const coldReview = JSON.parse(fs.readFileSync(new URL('./current-family-cold-start-workflow-review.json', import.meta.url), 'utf8'));
 const sha = value => crypto.createHash('sha256').update(value).digest('hex');
@@ -768,6 +769,7 @@ Object.freeze(assistant587LatestColdCombinedWorkflowReview);
 export function inverseAssistant587LatestColdCombinedTo664aWorkflow(source, role) {
   assert.equal(arguments.length, 2, 'ASSISTANT587_LATEST_COMBINED_ARGUMENTS');
   assert.equal(typeof source, 'string', 'ASSISTANT587_LATEST_COMBINED_TYPE');
+  source = inverseSourceNormalWorkflowForHistoricalOracle(source, role);
   const row = assistant587LatestColdCombinedWorkflowReview;
   if (role !== 'build' || sha(source) !== row.combined.sha256) return source;
   assert.equal(Buffer.byteLength(source), row.combined.bytes, 'ASSISTANT587_LATEST_COMBINED_SIZE');
@@ -783,6 +785,7 @@ export function inverseAssistant587LatestColdCombinedTo664aWorkflow(source, role
 export function inverseAssistant587LatestColdCombinedTo2bWorkflow(source, role) {
   assert.equal(arguments.length, 2, 'ASSISTANT587_LATEST_COMBINED_ARGUMENTS');
   assert.equal(typeof source, 'string', 'ASSISTANT587_LATEST_COMBINED_TYPE');
+  source = inverseSourceNormalWorkflowForHistoricalOracle(source, role);
   const row = assistant587LatestColdCombinedWorkflowReview;
   if (role !== 'build' || sha(source) !== row.combined.sha256) return source;
   assert.equal(Buffer.byteLength(source), row.combined.bytes, 'ASSISTANT587_LATEST_COMBINED_SIZE');
