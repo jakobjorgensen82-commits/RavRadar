@@ -27,6 +27,7 @@ import {
 } from '../js/core/ravscore-public-runtime-contract.js';
 import {
   auditIntegratedRavScorePublicRuntime,
+  projectFurWaterRoutingPresence,
   candidateGReferenceMatchesProduction,
   publicModeFormulaIsConsistent,
 } from './audit-ravscore-integrated-public-runtime.mjs';
@@ -1825,5 +1826,136 @@ assert.ok(audit(small, staleManifest, 1, 1).errors
 const nonCompactStartup = { ...smallPackage, startupText: JSON.stringify(smallPackage.startup, null, 2) };
 assert.ok(audit(small, nonCompactStartup, 1, 1).errors
   .includes('PUBLIC_STARTUP_NOT_COMPACT'));
+
+// Additive normal report diagnostics; no new producer, router or test harness.
+{
+  const metadata = { datasetId: 'rr-synthetic-fur-report',
+    productionReferenceAt: REFERENCE_AT, generatedAt: REFERENCE_AT };
+  const observedRow = (direct = false, routed = true) => ({
+    directPartValuePresent: direct, selectedSourceCount: 1,
+    verifiedSelectedSourceCount: Number(routed), permittedSelectedSourceCount: Number(routed),
+    routedValuePresent: routed, outputValuePresent: direct || routed,
+    previousSourceSetAvailable: null,
+  });
+  const normalDiagnostic = () => ({
+    schemaVersion: 1, kind: 'PRIVATE_FUR_WATER_ROUTING_DIAGNOSTIC',
+    privacyClass: 'PRIVATE_PRODUCTION_RUNTIME', ...metadata,
+    trace: { partId: 'dk-b05-17-national-part-04', zoneId: 'DK-B05-17',
+      contextSha256: '1'.repeat(64), configurationSha256: '2'.repeat(64),
+      selectionSha256: '3'.repeat(64), selectedSourceIdentitiesSha256: ['4'.repeat(64)],
+      previousDiagnosticDatasetId: null,
+      hours: { [REFERENCE_AT]: observedRow() } },
+  });
+  const unknown = projectFurWaterRoutingPresence(metadata);
+  assert.equal(unknown.status, 'TRACE_NOT_RECORDED');
+  assert.equal(unknown.expectedHourCount, RAVSCORE_PUBLIC_FORECAST_HOURS);
+  assert.equal(unknown.hours.length, 118);
+  assert.equal(unknown.hours[0].time, REFERENCE_AT);
+  assert.equal(unknown.hours.at(-1).time, time(117));
+  const unknownRows = result => {
+    assert.equal(result.hours.length, RAVSCORE_PUBLIC_FORECAST_HOURS);
+    for (const row of result.hours) {
+      assert.equal(row.observation, 'UNKNOWN');
+      for (const key of ['directPartValuePresent', 'routedValuePresent',
+        'outputValuePresent', 'previousSourceSetAvailable']) assert.equal(row[key], null);
+    }
+    assert.equal(result.contextSha256, null);
+    assert.equal(result.selectedSourceIdentitiesSha256, null);
+  };
+  unknownRows(unknown);
+  const input = { ...metadata, furWaterRoutingDiagnostic: normalDiagnostic(),
+    privateUnrelated: { currentU: 0.42, sourceKey: 'SYNTHETIC_PRIVATE_SENTINEL' } };
+  const original = structuredClone(input);
+  const sparse = projectFurWaterRoutingPresence(input);
+  assert.equal(sparse.status, 'RECORDED_NORMAL_DIAGNOSTIC');
+  assert.deepEqual(sparse.hours[0], { time: REFERENCE_AT, observation: 'OBSERVED',
+    directPartValuePresent: false, routedValuePresent: true, outputValuePresent: true,
+    previousSourceSetAvailable: null });
+  assert.equal(sparse.hours[1].observation, 'UNKNOWN');
+  assert.equal(sparse.hours[1].outputValuePresent, null);
+  assert.deepEqual(input, original, 'Pure presence projection never mutates input');
+  sparse.selectedSourceIdentitiesSha256.push('5'.repeat(64));
+  assert.deepEqual(input, original, 'Projected hash lists do not alias private input');
+  for (const mutate of [
+    value => { value.furWaterRoutingDiagnostic = null; },
+    value => { value.furWaterRoutingDiagnostic.datasetId = 'rr-another-generation'; },
+    value => { value.furWaterRoutingDiagnostic.productionReferenceAt = time(1); },
+    value => { value.furWaterRoutingDiagnostic.generatedAt = time(1); },
+    value => { value.furWaterRoutingDiagnostic.trace.hours[REFERENCE_AT].routedValuePresent = 'true'; },
+    value => { value.furWaterRoutingDiagnostic.trace.hours[time(118)] = observedRow(); },
+    value => { value.furWaterRoutingDiagnostic.trace.hours[REFERENCE_AT].privateValue = 'SYNTHETIC_PRIVATE_SENTINEL'; },
+    value => { value.furWaterRoutingDiagnostic.trace.privateValues = [0.42, 0.71]; },
+    value => { value.furWaterRoutingDiagnostic.trace.selectedSourceIdentitiesSha256.push('not-a-hash'); },
+  ]) {
+    const changed = structuredClone(input); mutate(changed);
+    const before = structuredClone(changed), result = projectFurWaterRoutingPresence(changed);
+    assert.equal(result.status, 'TRACE_IDENTITY_OR_FORMAT_INVALID');
+    unknownRows(result);
+    assert.deepEqual(changed, before);
+    assert.equal(JSON.stringify(result).includes('SYNTHETIC_PRIVATE_SENTINEL'), false);
+  }
+  for (const changed of [
+    { ...metadata, datasetId: 'SYNTHETIC_PRIVATE_SENTINEL' },
+    { ...metadata, productionReferenceAt: 'invalid' },
+    { ...metadata, productionReferenceAt: '2026-08-29T12:01:00.000Z' },
+    { ...metadata, generatedAt: time(-1) },
+  ]) {
+    const result = projectFurWaterRoutingPresence(changed);
+    assert.equal(result.status, 'CONDITIONS_IDENTITY_INVALID');
+    assert.ok(result.hours.every(row => row.observation === 'UNKNOWN' && row.outputValuePresent === null));
+    if (changed.productionReferenceAt !== REFERENCE_AT) assert.equal(result.hours.length, 0);
+    assert.equal(JSON.stringify(result).includes('SYNTHETIC_PRIVATE_SENTINEL'), false);
+  }
+  const complete = normalDiagnostic();
+  complete.trace.hours = Object.fromEntries(publicForecastOffsets.map((offset) => [
+    time(offset), observedRow(offset % 3 === 0, offset % 2 === 0),
+  ]));
+  const completeReport = projectFurWaterRoutingPresence({ ...metadata, furWaterRoutingDiagnostic: complete });
+  assert.equal(completeReport.status, 'RECORDED_NORMAL_DIAGNOSTIC');
+  assert.equal(completeReport.hours.filter(row => row.observation === 'OBSERVED').length, 118);
+  for (const key of ['tPlus3Proved', 'nationalQueueProved', 'historicalCausalityProved',
+    'rawValuesIncluded', 'sourceOrPartIdsIncluded']) assert.equal(completeReport[key], false);
+  assert.deepEqual(Object.keys(completeReport).sort(), [
+    'schemaVersion', 'kind', 'status', 'datasetId', 'productionReferenceAt', 'generatedAt',
+    'expectedHourCount', 'contextSha256', 'configurationSha256', 'selectionSha256',
+    'selectedSourceIdentitiesSha256', 'hours', 'rawValuesIncluded', 'sourceOrPartIdsIncluded',
+    'tPlus3Proved', 'nationalQueueProved', 'historicalCausalityProved',
+  ].sort());
+  assert.deepEqual(Object.keys(completeReport.hours[0]).sort(), [
+    'time', 'observation', 'directPartValuePresent', 'routedValuePresent',
+    'outputValuePresent', 'previousSourceSetAvailable',
+  ].sort());
+  const text = JSON.stringify(completeReport);
+  for (const forbidden of ['partId', 'zoneId', 'sourceKey', 'stationId',
+    'waterLevelCm', 'currentU', 'currentV', 'samplingPoint', 'coordinates',
+    'SYNTHETIC_PRIVATE_SENTINEL', 'dk-b05-17-national-part-04', 'DK-B05-17'])
+    assert.equal(text.includes(forbidden), false, forbidden);
+  assert.ok(Buffer.byteLength(text) <= 32 * 1024, 'Presence-only 118-hour report is bounded');
+
+  const auditInput = structuredClone(small);
+  auditInput.datasetId = metadata.datasetId;
+  const packageBefore = publicPackage(auditInput);
+  const baseline = audit(auditInput, packageBefore, 1, 1);
+  const prior = structuredClone(auditInput);
+  auditInput.furWaterRoutingDiagnostic = normalDiagnostic();
+  const before = structuredClone(auditInput), withDiagnostic = audit(auditInput, packageBefore, 1, 1);
+  const withoutAddedSection = report => {
+    const { furWaterRoutingPresence, ...legacy } = report; return legacy;
+  };
+  assert.deepEqual(withoutAddedSection(withDiagnostic), withoutAddedSection(baseline),
+    'All prior audit results, status, errors and counts remain exactly unchanged');
+  assert.deepEqual(auditInput, before, 'Normal audit leaves full private conditions unchanged');
+  assert.equal(withDiagnostic.furWaterRoutingPresence.status, 'RECORDED_NORMAL_DIAGNOSTIC');
+  assert.equal(withDiagnostic.furWaterRoutingPresence.hours[0].routedValuePresent, true);
+  assert.equal(compactJson(buildPublicConditions(auditInput)), compactJson(buildPublicConditions(prior)),
+    'The private diagnostic report does not enter public startup');
+  assert.equal(compactJson(buildPublicConditionDetails(auditInput)), compactJson(buildPublicConditionDetails(prior)),
+    'The private diagnostic report does not enter public details');
+  auditInput.furWaterRoutingDiagnostic.trace.privateValues = [0.42, 0.71];
+  const invalidReport = audit(auditInput, packageBefore, 1, 1);
+  assert.equal(invalidReport.furWaterRoutingPresence.status, 'TRACE_IDENTITY_OR_FORMAT_INVALID');
+  assert.deepEqual(withoutAddedSection(invalidReport), withoutAddedSection(baseline),
+    'Invalid observation metadata must not become a new weather/audit acceptance rule');
+}
 
 console.log('Integreret RavScore public runtimeaudit: 210/673 og datasikre negative fixtures bestået.');

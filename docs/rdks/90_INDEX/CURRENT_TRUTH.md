@@ -1,3 +1,11 @@
+## 25. oktober — varig privat Fur-rapport uden ekstra vejrhentning
+
+Den lokale runtimeaudit udvides med en afgrænset Fur-rapport på de samme 118 forventede timer. Den bruger de allerede indlæste data og den eksisterende private rapportvej; ingen ny workflowfil, leverandørhentning, stor pakkegenlæsning eller upload indføres. Kun observeret tilstedeværelse og faste hashes medtages. Manglende eller ugyldige observationer er UNKNOWN/null, ikke opfundne mangler eller værdier.
+
+Den normale målprøve for 210/673 består, inklusive de gamle assertions, uændrede fejl/status/optællinger, ingen ændring af input samt uændret offentlig startup/details. De syv bindingsforbrugere er fortsat synkroniserede. Det er lokal evidens, ikke præcis kilde-CI eller faktisk rapport fra en ny almindelig generation.
+
+Rapporten ændrer ikke routing, kildeprioritet, scoreformel, geometri, C/I/T, SQL eller nogen acceptgrænse. Den beviser ikke T+3, national køprioritet eller årsagen i en gammel kørsel og afslutter ikke Fur-opgaven. Offentlig levering og kontrol af en faktisk ny generations rapport er fortsat åbne. P0-vejrhentningen har førsteprioritet; aktuelle kørsler og næste trin står i det private checkpoint. Ældre daterede fronter bevares som historik.
+
 ## 25. oktober — normal indgang ved assistentens senere vejrtime
 
 Den seneste almindelige kørsel stoppede før leverandører, fordi assistentovergangens kontrol krævede navnet på den ældre top-level-indgang. GitHub bevarer den faktiske top-level-kalders identitet i genbrugte workflows; den nyere almindelige indgang var derfor ikke et ugyldigt kald. En målrettet prøve gennem den faktiske select-kalder har reproduceret præcis fejlen.
