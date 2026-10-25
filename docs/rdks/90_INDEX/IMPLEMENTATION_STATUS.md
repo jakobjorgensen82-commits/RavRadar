@@ -1,3 +1,9 @@
+## 25. oktober — lokal sammenføring af kvalificeret brugerdata-/delingskilde og P0-originalgrænse
+
+Den ægte, præcist kildekvalificerede PR719-forælder er nu lokalt sammenført med P0-rettelsen, der skelner original B fra assistentens arbejdsdata. Forælderens beståede kontrol er ikke kvalifikation af denne slutkomposition; dens normale samlede kontrol og sikre levering skal fortsat gennemføres. Begge daterede dokumenthistorikker nedenfor bevares uændrede.
+
+Sammenføringen udsteder hverken ny version, SQL eller modelbinding og ændrer ikke geodata eller produktion. Den særskilte 587-databaseovergang er faktisk installeret og genlæst; det er ikke offentlig Edge-/Pages-levering. Mål 1 om den numeriske strømrettelse er lukket; de fire øvrige hovedområder er åbne. Offentlig I97 afventer fortsat normal P0-vejrhentning og offentlig kontrol. Statistik, automatisk retention og SOURCE forbliver OFF. Ældre modstridende afventninger nedenfor er historik, ikke den aktuelle leveringsstatus.
+
 ## 25. oktober — præcis workflowprøve for brugerdata og versionsbundne browserprøver
 
 Den lokale brugerdata-kilde retter et påvist orakelgab: den aktuelle 006-/eksport-workflowfil genkendes på hele sin hash og føres gennem entydige inverse ændringer tilbage til den uændrede historiske workflowkontrol. Ændrede installationsflag, myndighed, eksportkalder, frister og samtidighed afvises fortsat. Produktworkflowet og dets sikkerhedsgrænser ændres ikke for at få prøven grøn.
@@ -35,6 +41,14 @@ Brugerdatajobbet forbliver globalt slået fra, rapportens offentlige frigivelse 
 Den private 006-/ejerrapportkandidat er lokalt sammenført med genuine 587-kilden og de særskilt main-leverede P0-rettelser til DMI-køobservation og fair tidsandel. Dette er ikke præcis samlet kildekvalifikation, installation, aktiveret statistik eller offentlig rapport. Begge grenes fulde historik bevares; de daterede afventninger nedenfor om netop P0-main-leveringerne er historik.
 
 4.0.587, C98/I97/T12, 66 gamle Supabase-migrationer, originale 004/005 og den særskilte 006-kandidats standard OFF-/plan-grænser bevares. De 29 faktisk beståede account-tilfælde er fortsat deres oprindelige bevis, ikke et nyt samlet PASS. Præcis samlet kilde-/nativekontrol, faktisk schema-/Workerinventory, kontrolleret OFF-installation/genlæsning og ejerens browseraccept er åbne. Ingen statistik- eller frigivelsesautoritet følger af sammenføringen. Kontinuerligt vejr og dækningsgrad er P0; alle fem mål er fortsat åbne.
+
+## 25. oktober — snæver original-/arbejdsgrænse for den installerede assistentbinding
+
+- [x] Faktisk 587-SQL-installation og databasegenlæsning; dette er ikke offentlig Edge-/Pages- eller AI-effekt.
+- [x] Første konkrete normale stop afgrænset til raw-retentionens blanding af original B-identitet og arbejdskopiens conditions-kontrolsum, før providerarbejde.
+- [x] Lokal producentrettelse holder originalkontrolsum og arbejdsfilernes egne kontrolsummer adskilt; oprindelig B-fortegnelse og frisk autentificeret genkontrol kræves stadig. Arbejds-S-generation og Python-afvisninger bevares.
+- [ ] Præcis ny kildekvalifikation og faktisk almindelig vejrhentning med B før S, Edge-/Pages-levering og offentlig kontrol.
+- [ ] De fire øvrige hovedmål; SOURCE, statistik og automatisk sletning forbliver inaktive. Kontinuerligt vejr og alle forventede zone-/timer er P0.
 
 ## 24. oktober — afgrænset rettelse af checkpointdestination før assistentbinding
 

@@ -1,3 +1,9 @@
+## 25. oktober — lokal sammenføring af kvalificeret brugerdata-/delingskilde og P0-originalgrænse
+
+Den ægte, præcist kildekvalificerede PR719-forælder er nu lokalt sammenført med P0-rettelsen, der skelner original B fra assistentens arbejdsdata. Forælderens beståede kontrol er ikke kvalifikation af denne slutkomposition; dens normale samlede kontrol og sikre levering skal fortsat gennemføres. Begge daterede dokumenthistorikker nedenfor bevares uændrede.
+
+Sammenføringen udsteder hverken ny version, SQL eller modelbinding og ændrer ikke geodata eller produktion. Den særskilte 587-databaseovergang er faktisk installeret og genlæst; det er ikke offentlig Edge-/Pages-levering. Mål 1 om den numeriske strømrettelse er lukket; de fire øvrige hovedområder er åbne. Offentlig I97 afventer fortsat normal P0-vejrhentning og offentlig kontrol. Statistik, automatisk retention og SOURCE forbliver OFF. Ældre modstridende afventninger nedenfor er historik, ikke den aktuelle leveringsstatus.
+
 ## 25. oktober — præcis workflowprøve for brugerdata og versionsbundne browserprøver
 
 Den lokale brugerdata-kilde retter et påvist orakelgab: den aktuelle 006-/eksport-workflowfil genkendes på hele sin hash og føres gennem entydige inverse ændringer tilbage til den uændrede historiske workflowkontrol. Ændrede installationsflag, myndighed, eksportkalder, frister og samtidighed afvises fortsat. Produktworkflowet og dets sikkerhedsgrænser ændres ikke for at få prøven grøn.
@@ -31,6 +37,12 @@ Ejeren har godkendt netop ravradar-prognosedeling på eksisterende Free/account 
 Den private 006-/ejerrapportkandidat er lokalt sammenført med genuine 587-kilden og de særskilt main-leverede P0-rettelser til DMI-køobservation og fair tidsandel. Dette er ikke præcis samlet kildekvalifikation, installation, aktiveret statistik eller offentlig rapport. Begge grenes fulde historik bevares; de daterede afventninger nedenfor om netop P0-main-leveringerne er historik.
 
 4.0.587, C98/I97/T12, 66 gamle Supabase-migrationer, originale 004/005 og den særskilte 006-kandidats standard OFF-/plan-grænser bevares. De 29 faktisk beståede account-tilfælde er fortsat deres oprindelige bevis, ikke et nyt samlet PASS. Præcis samlet kilde-/nativekontrol, faktisk schema-/Workerinventory, kontrolleret OFF-installation/genlæsning og ejerens browseraccept er åbne. Ingen statistik- eller frigivelsesautoritet følger af sammenføringen. Kontinuerligt vejr og dækningsgrad er P0; alle fem mål er fortsat åbne.
+
+## 25. oktober — råhistorikkens originalgrænse efter 587-overgang
+
+Påvist normalfejl: den bevarede originale B-pakke og den migrerede arbejdskopi har forskellige conditions-bytes. Råhistorikplanen brugte arbejdskopiens kontrolsum i original B-grænsen, og den uændrede Python-kontrol afviste dette før DMI-providerarbejde. Det efterfølgende ledger-startafslag er en følge af, at normal opdatering ikke blev nået; der er ikke påvist en særskilt Copernicus-providerårsag.
+
+Lokal rettelse: originalkontrolsummen beregnes og kontrolleres særskilt mod den autentificerede B-fortegnelse, mens arbejdssti, arbejdskontrolsum, sourceHashes og den faktiske arbejds-S-generation bevares. Der gives ingen ny fallback-, råfil-, numerisk eller historisk adgang, og ændrede originaler skal stadig afvises. Præcis samlet kontrol og faktisk offentlig virkning er åbne. Den installerede 587-SQL geninstalleres ikke automatisk; ukendt skriveudfald kræver genlæsning.
 
 ## 24. oktober — afgrænset rettelse af checkpointdestination før assistentbinding
 

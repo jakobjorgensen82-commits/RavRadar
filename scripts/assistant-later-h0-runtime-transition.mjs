@@ -165,9 +165,16 @@ async function readWorking(targetReferenceAt,installing){
     same(fresh,snapshot,'Fresh authenticated original B/S/source unchanged');
     return snapshot.verified;
   };
+  // Retention protects the ORIGINAL B bytes, separately from the migrated
+  // working conditions used to derive the actual installed working S.
+  const originalBytes=await fs.readFile(snapshot.conditionsPath),originalConditionsSha256=sha(originalBytes);
+  const originalEntry=snapshot.verified.files.find(row=>row.relativePath==='data/live/conditions.json');
+  assert(originalEntry,'Original B conditions inventory');
+  same({bytes:originalBytes.length,sha256:originalConditionsSha256},
+    {bytes:originalEntry.bytes,sha256:originalEntry.sha256},'Original B conditions bytes');
   await verify();
-  return {verified:snapshot.verified,conditions:result.conditions,originalConditions:await json(snapshot.conditionsPath),
-    conditionsPath,conditionsSha256:sha(bytes),verify};
+  return {verified:snapshot.verified,conditions:result.conditions,originalConditions:JSON.parse(originalBytes),
+    originalConditionsSha256,conditionsPath,conditionsSha256:sha(bytes),verify};
 }
 export async function readAssistantLaterH0RetentionInput(targetReferenceAt){
   assert.equal(arguments.length,1);return readWorking(targetReferenceAt,false);
