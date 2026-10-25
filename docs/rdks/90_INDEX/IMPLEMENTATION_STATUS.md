@@ -1,3 +1,25 @@
+## 25. oktober — lokal SOURCE/P0-sammenføring, ikke samlet kvalifikation
+
+- [x] Kvalificeret P0-kilde fra main lokalt sammenført; original B-grænse, arbejdsdata og begge dokumenthistorikker bevares.
+- [x] Lokal FORECAST-diagnostik: 15 Python-tilfælde og normal Node-DEFAULT-checkpointprøve bestået; ingen frist- eller budgetændring.
+- [ ] Faktisk Linux-FORECAST-underfase, native PostgreSQL og præcis samlet SOURCE-kvalifikation; de lokale mål er ikke disse beviser.
+- [ ] Den aktive almindelige P0-vejrhentnings nye B/S, offentlig I97 og efterfølger. 587-SQL er installeret og genlæst, men lokal sammenføring er ikke offentlig levering.
+- [ ] Fire øvrige hovedområder; den numeriske strømrettelse er lukket. SOURCE, statistik og automatisk sletning forbliver inaktive. Ingen ny version, modelbinding eller SQL udstedes her.
+
+Begge daterede forløb nedenfor bevares som historik; senere P0-kvalifikation erstatter ikke den nye samlede SOURCE-kontrol.
+
+## 25. oktober — snæver original-/arbejdsgrænse for den installerede assistentbinding
+
+- [x] Native PostgreSQL faktisk bestået på første præcise P0-kilde; den senere sourcefejl er afgrænset til to historiske entrypoint-testlæsere.
+- [x] Kun de to læserinput tilkoblet den eksisterende strenge P0-inverse; direkte ny kalderkontrol, gamle hele pins og alle mutationsafslag bevares. Ingen ny produkt-, model-, SQL- eller håndbogsændring.
+- [ ] Ny samlet kildekontrol og faktisk almindelig levering; det tidligere nativebevis er ikke et nyt samlet PASS.
+
+- [x] Faktisk 587-SQL-installation og databasegenlæsning; dette er ikke offentlig Edge-/Pages- eller AI-effekt.
+- [x] Første konkrete normale stop afgrænset til raw-retentionens blanding af original B-identitet og arbejdskopiens conditions-kontrolsum, før providerarbejde.
+- [x] Lokal producentrettelse holder originalkontrolsum og arbejdsfilernes egne kontrolsummer adskilt; oprindelig B-fortegnelse og frisk autentificeret genkontrol kræves stadig. Arbejds-S-generation og Python-afvisninger bevares.
+- [ ] Præcis ny kildekvalifikation og faktisk almindelig vejrhentning med B før S, Edge-/Pages-levering og offentlig kontrol.
+- [ ] De fire øvrige hovedmål; SOURCE, statistik og automatisk sletning forbliver inaktive. Kontinuerligt vejr og alle forventede zone-/timer er P0.
+
 ## 25. oktober — præcis workflowprøve for brugerdata og versionsbundne browserprøver
 
 Den lokale brugerdata-kilde retter et påvist orakelgab: den aktuelle 006-/eksport-workflowfil genkendes på hele sin hash og føres gennem entydige inverse ændringer tilbage til den uændrede historiske workflowkontrol. Ændrede installationsflag, myndighed, eksportkalder, frister og samtidighed afvises fortsat. Produktworkflowet og dets sikkerhedsgrænser ændres ikke for at få prøven grøn.

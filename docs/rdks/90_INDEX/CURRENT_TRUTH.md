@@ -1,3 +1,19 @@
+## 25. oktober — lokal SOURCE-sammenføring med kvalificeret P0-kilde
+
+Den inaktive SOURCE-kilde er lokalt sammenført med main-rettelsen, som adskiller original B-kontrol fra den afledte arbejdskopi. Arbejds-S, originaler og strenge historiske orakler bevares. Ingen ny version, modelbinding eller SQL er udstedt her. Begge daterede historikker nedenfor bevares; en kvalificeret P0-forælder er ikke samlet SOURCE-kvalifikation.
+
+Den lokale FORECAST-observation har bestået 15 Python-diagnosetilfælde og den normale Node-DEFAULT-checkpointprøve. Det beviser hverken native PostgreSQL eller den faktiske Linux-FORECAST-underfase. Ingen frist eller budget er ændret. 587-SQL-installation og genlæsning er faktisk gennemført; ny B/S, offentlig I97 og almindelig efterfølger afventer fortsat den særskilte aktive P0-vejrhentning og dens kontrol. SOURCE, statistik og automatisk sletning forbliver inaktive. Den numeriske strømrettelse er lukket; fire øvrige hovedområder er åbne.
+
+## 25. oktober — originalkontrol og afledt arbejdsvisning er to forskellige byteidentiteter
+
+Den efterfølgende præcise kontrol bestod native PostgreSQL og fandt to testlæserkonflikter i den normale entrypointgruppe, ikke en ny SQL- eller produktionsfejl. Den afgrænsede opfølgning bruger den eksisterende strenge P0-inverse før alle gamle hele companion-orakler og bevarer deres pins og mutationsafslag. Det faktiske nye kald kontrolleres direkte. Kun de berørte normale mål genprøves lokalt; ny samlet kildekontrol og faktisk almindelig levering er fortsat nødvendige.
+
+Den faktiske 587-installation har bestået originalbevarelse, præcis SQL-plan, installation og databasegenlæsning. Edge- og Pages-trin blev bevidst ikke udført dér; dette er ikke offentlig 587 eller fungerende ekstern AI. Den efterfølgende almindelige vejrhentning stoppede før DMI-providerarbejdet: raw-retentionen blandede den autentificerede originale B-identitet med kontrolsummen for den migrerede arbejdskopis conditions. Den efterfølgende gamle ledger afvises korrekt mod den nye låste prognosestart; dette er ikke en påvist Copernicus-providerfejl.
+
+Den lokale rettelse udleder en særskilt originalkontrolsum fra faktisk læste originalbytes, matcher hele størrelse og SHA-256 til den verificerede B-fortegnelse og genkontrollerer de autentificerede originaler. Kun B-grænsen bruger denne kontrolsum. Arbejdskopiens kontrolsum, sourceHashes og den reelle arbejds-S-generation bevares. Den almindelige uændrede Python-kontrol skal fortsat afvise ændrede originaler. Ingen ny model-/SQL-udstedelse, nulstilling eller historieomskrivning. Målrettede prøver, præcis samlet kildekontrol og faktisk normal levering skal dokumenteres hver for sig i checkpointet.
+
+Den numeriske strømrettelse er særskilt produktionsverificeret; fire øvrige hovedområder er åbne. Vejrhentning og reel dækning er P0. SOURCE, statistik og automatisk sletning er fortsat inaktive. Morgenens aftalte vejrhentning må ikke forsinkes af nye sideleverancer; tidsplan og krav om ingen overlap bevares.
+
 ## 25. oktober — præcis workflowprøve for brugerdata og versionsbundne browserprøver
 
 Den lokale brugerdata-kilde retter et påvist orakelgab: den aktuelle 006-/eksport-workflowfil genkendes på hele sin hash og føres gennem entydige inverse ændringer tilbage til den uændrede historiske workflowkontrol. Ændrede installationsflag, myndighed, eksportkalder, frister og samtidighed afvises fortsat. Produktworkflowet og dets sikkerhedsgrænser ændres ikke for at få prøven grøn.

@@ -173,10 +173,43 @@ function sourceInitialWamCompletionValid(value){
     return observed.every((item,index)=>index===0||item>=observed[index-1]);
   }catch{return false;}
 }
+function sourceForecastStageValid(value){
+  try{
+    const exact=(item,keys)=>item!==null&&typeof item==='object'&&!Array.isArray(item)
+      &&Object.keys(item).sort().join(',')===[...keys].sort().join(',');
+    const stages=['READ_INPUT','QUALIFY','PACK','WRITE','READBACK','COMPLETE'];
+    const bounded=(item,maximum)=>Number.isSafeInteger(item)&&item>=0&&item<=maximum;
+    if(!exact(value,['kind','phase','elapsedMs','phaseElapsedMs','completedMs','parentRecords',
+        'partCount','qualifiedCurrentRows','bulkZoneCount','packRawBytes','packCompressedBytes',
+        'forecastBytes','privatePayloadIncluded'])
+      ||value.kind!=='SOURCE_FORECAST_STAGE_OBSERVATION'||!stages.includes(value.phase)
+      ||value.privatePayloadIncluded!==false)return false;
+    const rank=stages.indexOf(value.phase);
+    if(!['elapsedMs','phaseElapsedMs'].every(key=>bounded(value[key],86_400_000))
+      ||!bounded(value.parentRecords,210)||!bounded(value.partCount,673)
+      ||!Number.isSafeInteger(value.qualifiedCurrentRows)||value.qualifiedCurrentRows!==value.partCount*121
+      ||!exact(value.completedMs,stages.slice(0,-1)))return false;
+    for(const [index,stage] of stages.slice(0,-1).entries()){
+      if(index<rank?!bounded(value.completedMs[stage],86_400_000):value.completedMs[stage]!==null)return false;
+    }
+    const accounted=Object.values(value.completedMs).reduce((sum,item)=>sum+(item??0),0)+value.phaseElapsedMs;
+    if(value.elapsedMs<accounted||value.elapsedMs>accounted+5||rank===5&&value.phaseElapsedMs!==0)return false;
+    if(rank===0){
+      if(['parentRecords','partCount','qualifiedCurrentRows'].some(key=>value[key]!==0)||value.bulkZoneCount!==null)return false;
+    }else if(!bounded(value.bulkZoneCount,1_000_000)||value.bulkZoneCount===0)return false;
+    if(rank>=2&&value.partCount!==673)return false;
+    for(const [key,maximum,available] of [['packRawBytes',2147483648,rank>=3],
+        ['packCompressedBytes',167772160,rank>=3],['forecastBytes',Number.MAX_SAFE_INTEGER,rank>=4]]){
+      if(available?(!bounded(value[key],maximum)||value[key]===0):value[key]!==null)return false;
+    }
+    return true;
+  }catch{return false;}
+}
 export function nativeProviderProcessFirstFailure(value){
   try{
     const keys=value&&Object.keys(value).sort().join(',');
     if(!value||!['boundary,kind,phase,privatePayloadIncluded,returncode,signal,stderr,stdout',
+        'boundary,forecastStage,kind,phase,privatePayloadIncluded,returncode,signal,stderr,stdout',
         'boundary,kind,phase,privatePayloadIncluded,returncode,signal,stderr,stdout,wamAdmission',
         'boundary,kind,phase,privatePayloadIncluded,returncode,signal,stderr,stdout,wamCompletion',
         'boundary,kind,phase,privatePayloadIncluded,returncode,signal,stderr,stdout,wamAdmission,wamCompletion'].includes(keys)
@@ -216,6 +249,9 @@ export function nativeProviderProcessFirstFailure(value){
     if(Object.hasOwn(value,'wamCompletion')&&(!['PROVIDERS-H0','PROVIDERS-H1'].includes(value.phase)
       ||code===null||code===0||!value.stderr.complete||!sourceInitialWamCompletionValid(value.wamCompletion)
       ||boundary?.reason!=='CURRENT_NATIVE_INITIAL_WEATHER_NORMAL_WAVE_NATIVE_OWNER_NOT_COMPLETE'))return null;
+    if(Object.hasOwn(value,'forecastStage')&&(code===null||code===0||!value.stderr.complete
+      ||boundary?.helper!=='FORECAST'||!['SUBPROCESS_TIMEOUT','SUBPROCESS_EXIT'].includes(boundary?.exceptionType)
+      ||!sourceForecastStageValid(value.forecastStage)))return null;
     return value; // Diagnostic only: never process/SQL/native success proof.
   }catch{return null;}
 }

@@ -1,3 +1,15 @@
+## 25. oktober — lokal SOURCE-sammenføring og afgrænset FORECAST-observation
+
+P0-rettelsen på main er lokalt sammenført med den inaktive SOURCE-kilde. Original B-kontrol, arbejdsdata og de strenge historiske orakler bevares; ingen ny version, modelbinding, SQL eller produktionsændring følger af sammenføringen.
+
+De lokale FORECAST-diagnoseprøver bestod med 15 Python-tilfælde samt den normale Node-DEFAULT-checkpointprøve. Det er ikke native PostgreSQL, en målt Linux-FORECAST-fase eller samlet SOURCE-kvalifikation. Ingen frist eller budget er ændret. SOURCE forbliver inaktiv; begge daterede historikker nedenfor bevares.
+
+## 25. oktober — original B-kontrol adskilt fra assistentens arbejdsdata
+
+Den efterfølgende kildekontrol fandt to gamle testlæserforventninger til plannerens førbillede. De bruger nu den allerede gennemgåede, strenge hele P0-inverse før de uændrede historiske orakler; den faktiske nye destrukturering kontrolleres direkte. Gamle kontrolsummer, assertions og mutationsafslag bevares. Dette er kun testkompatibilitet, ikke en ny produkt-, model-, SQL- eller håndbogsændring.
+
+Den afgrænsede 587-rettelse bevarer originalpakkens egen conditions-kontrolsum i raw-retentionens B-grænse. Den afledte arbejdskopis sti og kontrolsum samt den faktisk installerede arbejds-S-generation bevares særskilt. Begge kildeled kontrolleres fortsat; Python-grænsen lempes ikke. Ingen ændring af vejrdata, scoreformel, modelbinding, gamle migrationer, kildeprioritet eller geometri. Præcis kildekontrol og en ny almindelig vejrgenerations offentlige effekt er fortsat særskilte krav.
+
 ## 25. oktober — præcis workflowprøve for brugerdata og versionsbundne browserprøver
 
 Den lokale brugerdata-kilde retter et påvist orakelgab: den aktuelle 006-/eksport-workflowfil genkendes på hele sin hash og føres gennem entydige inverse ændringer tilbage til den uændrede historiske workflowkontrol. Ændrede installationsflag, myndighed, eksportkalder, frister og samtidighed afvises fortsat. Produktworkflowet og dets sikkerhedsgrænser ændres ikke for at få prøven grøn.

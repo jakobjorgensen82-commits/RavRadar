@@ -423,6 +423,45 @@ if (!process.argv.includes('--native-postgres') && !process.argv.includes('--nat
       const later={kind:'SOURCE_LEGACY_CHILD_FIRST_FAILURE',phase:'UNKNOWN',exceptionType:'ASSERTION_ERROR',
         osError:'NONE',callsite:null,privatePayloadIncluded:false};
       assert.deepEqual(nativePostgresChildFirstFailure(JSON.stringify(value)+'\n'+JSON.stringify(later),''),value);
+      if(module==='scripts/fixtures/source19-current-native-providers.py'){
+        const stages=['READ_INPUT','QUALIFY','PACK','WRITE','READBACK','COMPLETE'];
+        for(const [rank,stage] of stages.entries()){
+          const forecastStage={kind:'SOURCE_FORECAST_STAGE_OBSERVATION',phase:stage,
+            elapsedMs:rank*10,phaseElapsedMs:0,
+            completedMs:Object.fromEntries(stages.slice(0,-1).map((name,index)=>[name,index<rank?10:null])),
+            parentRecords:rank===0?0:210,partCount:rank>=2?673:0,qualifiedCurrentRows:rank>=2?673*121:0,
+            bulkZoneCount:rank===0?null:883,packRawBytes:rank>=3?1000:null,
+            packCompressedBytes:rank>=3?500:null,forecastBytes:rank>=4?2000:null,privatePayloadIncluded:false};
+          for(const exceptionType of ['SUBPROCESS_TIMEOUT','SUBPROCESS_EXIT']){
+            const observed={...value,boundary:{...boundary,exceptionType,helper:'FORECAST'},forecastStage};
+            assert.ok(Buffer.byteLength(JSON.stringify(observed))<=2048);
+            assert.deepEqual(nativeProviderProcessFirstFailure(observed),observed);
+            assert.deepEqual(nativePostgresChildFirstFailure(JSON.stringify(observed)+'\n'+JSON.stringify(later),''),observed);
+            for(const bad of [
+              {...observed,returncode:0}, {...observed,returncode:null,signal:'UNKNOWN'},
+              {...observed,stderr:{bytes:1,complete:false,sha256:null}},
+              {...observed,boundary:{...observed.boundary,helper:'CLOSURE'}},
+              {...observed,boundary:{...observed.boundary,exceptionType:'UNKNOWN',helper:'NONE'}},
+              {...observed,forecastStage:{...forecastStage,raw:'PRIVATE'}},
+              {...observed,forecastStage:{...forecastStage,phase:stage+'\nPRIVATE'}},
+              {...observed,forecastStage:{...forecastStage,privatePayloadIncluded:true}},
+              ...[-1,674,true,0.5,'PRIVATE'].map(partCount=>({...observed,forecastStage:{...forecastStage,partCount}})),
+              {...observed,forecastStage:{...forecastStage,qualifiedCurrentRows:forecastStage.qualifiedCurrentRows+1}},
+              {...observed,forecastStage:{...forecastStage,completedMs:{...forecastStage.completedMs,PRIVATE:0}}},
+              {...observed,forecastStage:{...forecastStage,elapsedMs:-1}},
+              {...observed,forecastStage:{...forecastStage,phaseElapsedMs:true}},
+              {...observed,forecastStage:{...forecastStage,elapsedMs:forecastStage.elapsedMs+6}},
+              {...observed,forecastStage:{...forecastStage,forecastBytes:rank>=4?null:1}},
+              {...observed,forecastStage:{...forecastStage,packRawBytes:rank>=3?null:1}},
+              {...observed,forecastStage:{...forecastStage,bulkZoneCount:rank===0?1:null}},
+              {...observed,wamCompletion:{}},
+            ]){
+              assert.equal(nativeProviderProcessFirstFailure(bad),null);
+              assert.equal(nativePostgresChildFirstFailure(JSON.stringify(bad),''),null);
+            }
+          }
+        }
+      }
       if(module==='scripts/fixtures/source19-current-initial-weather.py'&&phase!=='PROVIDERS'){
         for(const reason of ["CURRENT_NATIVE_INITIAL_WEATHER_CURRENT_LEDGER_CHANGED","CURRENT_NATIVE_INITIAL_WEATHER_ECCODES_FIELD_CLASSIFICATION","CURRENT_NATIVE_INITIAL_WEATHER_GRID_BOUND","CURRENT_NATIVE_INITIAL_WEATHER_NORMAL_FULL_WEATHER_DECODE_INCOMPLETE","CURRENT_NATIVE_INITIAL_WEATHER_NORMAL_OFFICIAL_WAVE_IDENTITY","CURRENT_NATIVE_INITIAL_WEATHER_NORMAL_TARGETS_REQUIRED","CURRENT_NATIVE_INITIAL_WEATHER_NORMAL_WAVE_NATIVE_OWNER_NOT_COMPLETE","CURRENT_NATIVE_INITIAL_WEATHER_RAW_CHANGED_AFTER_DECODE","CURRENT_NATIVE_INITIAL_WEATHER_REFERENCE"]){
           const fixed={...value,boundary:{...boundary,exceptionType:'RUNTIME_ERROR',reason}};

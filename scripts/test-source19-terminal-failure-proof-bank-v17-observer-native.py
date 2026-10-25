@@ -2268,6 +2268,72 @@ def source_initial_wam_completion_valid(value):
         return False
 
 
+SOURCE_FORECAST_STAGES = ('READ_INPUT', 'QUALIFY', 'PACK', 'WRITE', 'READBACK', 'COMPLETE')
+
+
+def source_forecast_stage_valid(value):
+    # Fixed, last-observed progress only; COMPLETE is not child/native success.
+    try:
+        if (type(value) is not dict or set(value) != {'kind', 'phase', 'elapsedMs', 'phaseElapsedMs',
+                'completedMs', 'parentRecords', 'partCount', 'qualifiedCurrentRows', 'bulkZoneCount',
+                'packRawBytes', 'packCompressedBytes', 'forecastBytes', 'privatePayloadIncluded'}
+                or value['kind'] != 'SOURCE_FORECAST_STAGE_OBSERVATION'
+                or value['phase'] not in SOURCE_FORECAST_STAGES
+                or value['privatePayloadIncluded'] is not False):
+            return False
+        rank = SOURCE_FORECAST_STAGES.index(value['phase'])
+        bounded = lambda item, maximum: type(item) is int and 0 <= item <= maximum
+        if (not all(bounded(value[key], 86_400_000) for key in ('elapsedMs', 'phaseElapsedMs'))
+                or not bounded(value['parentRecords'], 210) or not bounded(value['partCount'], 673)
+                or type(value['qualifiedCurrentRows']) is not int
+                or value['qualifiedCurrentRows'] != value['partCount'] * 121):
+            return False
+        completed = value['completedMs']
+        if type(completed) is not dict or set(completed) != set(SOURCE_FORECAST_STAGES[:-1]):
+            return False
+        for index, stage in enumerate(SOURCE_FORECAST_STAGES[:-1]):
+            if (not bounded(completed[stage], 86_400_000) if index < rank else completed[stage] is not None):
+                return False
+        accounted = sum(item for item in completed.values() if item is not None) + value['phaseElapsedMs']
+        if not accounted <= value['elapsedMs'] <= accounted + 5:
+            return False
+        if rank == 5 and value['phaseElapsedMs'] != 0:
+            return False
+        if rank == 0:
+            if any(value[key] != 0 for key in ('parentRecords', 'partCount', 'qualifiedCurrentRows')) or value['bulkZoneCount'] is not None:
+                return False
+        elif not bounded(value['bulkZoneCount'], 1_000_000) or value['bulkZoneCount'] == 0:
+            return False
+        if rank >= 2 and value['partCount'] != 673:
+            return False
+        for key, maximum, available in (('packRawBytes', 2147483648, rank >= 3),
+                ('packCompressedBytes', 167772160, rank >= 3), ('forecastBytes', 2**53 - 1, rank >= 4)):
+            valid = bounded(value[key], maximum) and value[key] > 0 if available else value[key] is None
+            if not valid:
+                return False
+        return True
+    except (KeyError, TypeError, ValueError):
+        return False
+
+
+def source_forecast_stage_follows(previous, value):
+    if not source_forecast_stage_valid(value):
+        return False
+    if previous is None:
+        return value['phase'] == 'READ_INPUT'
+    before, after = (SOURCE_FORECAST_STAGES.index(item['phase']) for item in (previous, value))
+    if not (after == before + 1 or after == before == 1):
+        return False
+    if any(value[key] < previous[key] for key in ('elapsedMs', 'parentRecords', 'partCount', 'qualifiedCurrentRows')):
+        return False
+    if after == before and value['phaseElapsedMs'] < previous['phaseElapsedMs']:
+        return False
+    for key in ('bulkZoneCount', 'packRawBytes', 'packCompressedBytes', 'forecastBytes'):
+        if previous[key] is not None and value[key] != previous[key]:
+            return False
+    return all(value['completedMs'][key] == item for key, item in previous['completedMs'].items() if item is not None)
+
+
 def source_provider_process_failure(result, own, *, phase='PROVIDERS'):
     # The existing subprocess/files are already closed+fsynced before this read.
     # Oversized/missing/changed streams stay incomplete and yield no parsed cause.
@@ -2296,6 +2362,7 @@ def source_provider_process_failure(result, own, *, phase='PROVIDERS'):
                 pass
             streams[name] = meta
         boundary, wam_admission, wam_completion = None, None, None
+        forecast_stage, forecast_invalid = None, False
         if stderr is not None:
             for line in stderr.splitlines():
                 if len(line) > 4096:
@@ -2304,6 +2371,11 @@ def source_provider_process_failure(result, own, *, phase='PROVIDERS'):
                     value = json.loads(line)
                 except (ValueError, UnicodeDecodeError):
                     continue
+                if type(value) is dict and value.get('kind') == 'SOURCE_FORECAST_STAGE_OBSERVATION':
+                    if not forecast_invalid and source_forecast_stage_follows(forecast_stage, value):
+                        forecast_stage = value
+                    else:
+                        forecast_invalid = True
                 if boundary is None and source_provider_boundary_valid(value):
                     boundary = value
                 if (wam_admission is None and phase in ('PROVIDERS-H0', 'PROVIDERS-H1')
@@ -2315,6 +2387,11 @@ def source_provider_process_failure(result, own, *, phase='PROVIDERS'):
         return {'kind': 'SOURCE_PROVIDER_PROCESS_FIRST_FAILURE', 'phase': phase,
             'returncode': returncode, 'signal': signal_name, **streams, 'boundary': boundary,
             'privatePayloadIncluded': False,
+            **({'forecastStage': forecast_stage} if forecast_stage is not None and not forecast_invalid
+                and returncode not in (None, 0) and boundary is not None
+                and boundary['helper'] == 'FORECAST'
+                and boundary['exceptionType'] in ('SUBPROCESS_TIMEOUT', 'SUBPROCESS_EXIT')
+                and wam_admission is None and wam_completion is None else {}),
             **({'wamAdmission': wam_admission} if wam_admission is not None and returncode != 0 else {}),
             **({'wamCompletion': wam_completion} if wam_completion is not None and returncode not in (None, 0)
                 and boundary is not None and boundary['reason'] ==
@@ -2325,6 +2402,89 @@ def source_provider_process_failure(result, own, *, phase='PROVIDERS'):
 
 
 class SourceProviderEvidencePureTests(unittest.TestCase):
+
+    def test_forecast_fixed_last_phase_preserves_normal_capture_and_failure(self):
+        import copy
+        stages = SOURCE_FORECAST_STAGES
+        records = []
+        for rank, phase in enumerate(stages):
+            records.append({'kind': 'SOURCE_FORECAST_STAGE_OBSERVATION', 'phase': phase,
+                'elapsedMs': rank * 10, 'phaseElapsedMs': 0,
+                'completedMs': {name: 10 if index < rank else None for index, name in enumerate(stages[:-1])},
+                'parentRecords': 0 if rank == 0 else 210, 'partCount': 673 if rank >= 2 else 0,
+                'qualifiedCurrentRows': 673 * 121 if rank >= 2 else 0,
+                'bulkZoneCount': None if rank == 0 else 883,
+                'packRawBytes': 1000 if rank >= 3 else None,
+                'packCompressedBytes': 500 if rank >= 3 else None,
+                'forecastBytes': 2000 if rank >= 4 else None, 'privatePayloadIncluded': False})
+        previous = None
+        for record in records:
+            self.assertTrue(source_forecast_stage_valid(record))
+            self.assertTrue(source_forecast_stage_follows(previous, record))
+            previous = record
+        tick = copy.deepcopy(records[1])
+        tick.update(elapsedMs=15, phaseElapsedMs=5, partCount=32, qualifiedCurrentRows=32 * 121)
+        self.assertTrue(source_forecast_stage_follows(records[1], tick))
+        self.assertTrue(source_forecast_stage_follows(tick, records[2]))
+        for phase, stem in SOURCE_PROVIDER_CAPTURE_STEMS.items():
+            with tempfile.TemporaryDirectory(prefix='rr-provider-forecast-diagnostic-') as directory:
+                own = Path(directory).resolve()
+                boundary = source_provider_boundary_failure(subprocess.TimeoutExpired(
+                    ['node', str(ROOT / 'scripts/fixtures/source19-current-provider-forecast.mjs')], 119.5))
+                self.assertEqual(boundary['helper'], 'FORECAST')
+                self.assertIsNone(boundary['timeoutSeconds'])  # Never invent an exact timeout from a remainder.
+                for observed in (records[:2] + [tick], records[:4], records):
+                    raw = ('PRIVATE_SENTINEL\n' + '\n'.join(json.dumps(row) for row in observed + [boundary]) + '\n').encode()
+                    for name, body in (('stdout', b'owned stdout\n'), ('stderr', raw)):
+                        with (own / (stem + '.' + name)).open('wb') as stream:
+                            stream.write(body); stream.flush(); os.fsync(stream.fileno())
+                    result = subprocess.CompletedProcess([], 1)
+                    report = source_provider_process_failure(result, own, phase=phase)
+                    self.assertEqual(report['returncode'], 1)
+                    self.assertEqual(report['stderr']['bytes'], len(raw))
+                    self.assertEqual((own / (stem + '.stderr')).read_bytes(), raw)
+                    if report['stderr']['complete']:
+                        self.assertEqual(report['forecastStage'], observed[-1])
+                        self.assertEqual(report['boundary'], boundary)
+                        self.assertEqual(report['stderr']['sha256'], sha(raw))
+                    else:
+                        self.assertNotEqual(sys.platform, 'linux',
+                            'Exact closed Linux capture must be complete')
+                        self.assertIsNone(report['stderr']['sha256'])
+                        self.assertIsNone(report['boundary'])
+                        self.assertNotIn('forecastStage', report)
+                    self.assertNotIn('PRIVATE_SENTINEL', json.dumps(report))
+                    self.assertLessEqual(len(json.dumps(report, separators=(',', ':')).encode()), 2048)
+                    self.assertNotIn('forecastStage', source_provider_process_failure(
+                        subprocess.CompletedProcess([], 0), own, phase=phase))
+                for change in ({'phase': 'PACK\nPRIVATE_SENTINEL'}, {'extra': 'PRIVATE_SENTINEL'},
+                        {'partCount': 674}, {'qualifiedCurrentRows': True}, {'elapsedMs': -1},
+                        {'elapsedMs': 0.5}, {'packRawBytes': 0}, {'privatePayloadIncluded': True}):
+                    bad = {**records[3], **change}
+                    self.assertFalse(source_forecast_stage_valid(bad))
+                    raw = ('\n'.join(json.dumps(row) for row in records[:4] + [bad, boundary]) + '\n').encode()
+                    (own / (stem + '.stderr')).write_bytes(raw)
+                    report = source_provider_process_failure(subprocess.CompletedProcess([], 1), own, phase=phase)
+                    self.assertNotIn('forecastStage', report)
+                    if report['stderr']['complete']:
+                        self.assertEqual(report['boundary'], boundary)
+                        self.assertEqual(report['stderr']['sha256'], sha(raw))
+                    else:
+                        self.assertNotEqual(sys.platform, 'linux',
+                            'Exact closed Linux capture must be complete')
+                        self.assertIsNone(report['boundary'])
+                        self.assertIsNone(report['stderr']['sha256'])
+                    self.assertNotIn('PRIVATE_SENTINEL', json.dumps(report))
+                # Out-of-order, missing first phase and wrong helper never gain an observation.
+                for rows in ([records[0], records[2]], [records[3]], records + [records[1]]):
+                    (own / (stem + '.stderr')).write_bytes(
+                        ('\n'.join(json.dumps(row) for row in rows + [boundary]) + '\n').encode())
+                    self.assertNotIn('forecastStage', source_provider_process_failure(result, own, phase=phase))
+                other = {**boundary, 'helper': 'CLOSURE'}
+                (own / (stem + '.stderr')).write_bytes(
+                    ('\n'.join(json.dumps(row) for row in records + [other]) + '\n').encode())
+                self.assertNotIn('forecastStage', source_provider_process_failure(result, own, phase=phase))
+
     def test_initial_wam_order_and_fixed_late_refusal_survive_existing_capture(self):
         # Pure fixture/diagnostic test, not an authored admission or native PASS.
         import ast

@@ -861,6 +861,13 @@ export const COHERENT_RAW_TRANSPORT_LIFETIME_TEST_REVIEW = Object.freeze([
 ]);
 export function inverseCoherentRawTransportLifetimeTestInput(source, relative) {
   if (typeof source !== 'string') return source;
+  const boundary = ASSISTANT587_ORIGINAL_RAW_BOUNDARY_TEST_REVIEW;
+  if (relative === boundary.path) {
+    const raw = source.replace(/\r\n/g, '\n');
+    if (Buffer.byteLength(raw) === boundary.after.bytes && digest(raw) === boundary.after.sha256) {
+      source = inverseAssistant587OriginalRawBoundaryTestInput(raw, relative);
+    }
+  }
   const assistant = ASSISTANT587_ORIGINAL_COMPANION_TEST_REVIEW.find(row => row.path === relative);
   if (assistant && relative === 'scripts/plan-ravscore-current-history.mjs') {
     const raw = source.replace(/\r\n/g, '\n');
@@ -960,5 +967,46 @@ export function inverseAssistant587OriginalCompanionTestInput(source, relative) 
   }
   assert.equal(Buffer.byteLength(source), row.before.bytes, 'ALTERNATIVE_C_TEST_INPUT_CHANGED:ASSISTANT587_BEFORE_SIZE');
   assert.equal(digest(source), row.before.sha256, 'ALTERNATIVE_C_TEST_INPUT_CHANGED:ASSISTANT587_WHOLE_INVERSE');
+  return source;
+}
+
+// TEST INPUT ONLY: whole original-B RAW boundary fix before ALL older oracles.
+// The fd2b whole planner is recovered exactly; no product guard is normalized.
+export const ASSISTANT587_ORIGINAL_RAW_BOUNDARY_TEST_REVIEW = Object.freeze({
+  "path": "scripts/plan-ravscore-current-history.mjs",
+  "before": {
+    "bytes": 82300,
+    "sha256": "f30a148853388df570b9496783cf3624b7efee056e2a504978aed325d0ac2e7a"
+  },
+  "after": {
+    "bytes": 82634,
+    "sha256": "62ae03e2627d92afceff607bbee91d69252b486f4a7b0a7b7d53cedeb5f05142"
+  },
+  "hunks": [
+    [
+      "  const { verified, conditions, originalConditions, conditionsPath: file, conditionsSha256, verify } =",
+      "  const { verified, conditions, originalConditions, originalConditionsSha256,\n    conditionsPath: file, conditionsSha256, verify } ="
+    ],
+    [
+      "  const boundary = { datasetId: verified.datasetId, productionReferenceAt: verified.productionReferenceAt,\n    bundleContentSha256: verified.bundleContentSha256, checkpointGenerationSha256: checkpoint.generationSha256, conditionsSha256 };",
+      "  const rawConditionsSha256 = originalConditionsSha256 ?? conditionsSha256;\n  const originalEntry = verified.files.find(row => row.relativePath === 'data/live/conditions.json');\n  if (!originalEntry || originalEntry.sha256 !== rawConditionsSha256) refuse('RETENTION_B_CHANGED');\n  const boundary = { datasetId: verified.datasetId, productionReferenceAt: verified.productionReferenceAt,\n    bundleContentSha256: verified.bundleContentSha256, checkpointGenerationSha256: checkpoint.generationSha256,\n    conditionsSha256: rawConditionsSha256 };"
+    ]
+  ]
+});
+export function inverseAssistant587OriginalRawBoundaryTestInput(source, relative) {
+  assert.equal(arguments.length, 2, 'ALTERNATIVE_C_TEST_INPUT_CHANGED:ORIGINAL_RAW_ARGUMENTS');
+  assert.equal(typeof source, 'string', 'ALTERNATIVE_C_TEST_INPUT_CHANGED:ORIGINAL_RAW_TYPE');
+  const row = ASSISTANT587_ORIGINAL_RAW_BOUNDARY_TEST_REVIEW;
+  assert.equal(relative, row.path, 'ALTERNATIVE_C_TEST_INPUT_CHANGED:ORIGINAL_RAW_PATH');
+  source = source.replace(/\r\n/g, '\n');
+  if (Buffer.byteLength(source) === row.before.bytes && digest(source) === row.before.sha256) return source;
+  assert.equal(Buffer.byteLength(source), row.after.bytes, 'ALTERNATIVE_C_TEST_INPUT_CHANGED:ORIGINAL_RAW_SIZE');
+  assert.equal(digest(source), row.after.sha256, 'ALTERNATIVE_C_TEST_INPUT_CHANGED:ORIGINAL_RAW_WHOLE');
+  for (const [before, after] of [...row.hunks].reverse()) {
+    assert.equal(source.split(after).length, 2, 'ALTERNATIVE_C_TEST_INPUT_CHANGED:ORIGINAL_RAW_HUNK');
+    source = source.replace(after, () => before);
+  }
+  assert.equal(Buffer.byteLength(source), row.before.bytes, 'ALTERNATIVE_C_TEST_INPUT_CHANGED:ORIGINAL_RAW_BEFORE_SIZE');
+  assert.equal(digest(source), row.before.sha256, 'ALTERNATIVE_C_TEST_INPUT_CHANGED:ORIGINAL_RAW_WHOLE_INVERSE');
   return source;
 }
