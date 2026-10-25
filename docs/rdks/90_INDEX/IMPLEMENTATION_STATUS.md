@@ -1,5 +1,9 @@
 ## 25. oktober — snæver original-/arbejdsgrænse for den installerede assistentbinding
 
+- [x] Native PostgreSQL faktisk bestået på første præcise P0-kilde; den senere sourcefejl er afgrænset til to historiske entrypoint-testlæsere.
+- [x] Kun de to læserinput tilkoblet den eksisterende strenge P0-inverse; direkte ny kalderkontrol, gamle hele pins og alle mutationsafslag bevares. Ingen ny produkt-, model-, SQL- eller håndbogsændring.
+- [ ] Ny samlet kildekontrol og faktisk almindelig levering; det tidligere nativebevis er ikke et nyt samlet PASS.
+
 - [x] Faktisk 587-SQL-installation og databasegenlæsning; dette er ikke offentlig Edge-/Pages- eller AI-effekt.
 - [x] Første konkrete normale stop afgrænset til raw-retentionens blanding af original B-identitet og arbejdskopiens conditions-kontrolsum, før providerarbejde.
 - [x] Lokal producentrettelse holder originalkontrolsum og arbejdsfilernes egne kontrolsummer adskilt; oprindelig B-fortegnelse og frisk autentificeret genkontrol kræves stadig. Arbejds-S-generation og Python-afvisninger bevares.

@@ -1,5 +1,7 @@
 ## 25. oktober — original B-kontrol adskilt fra assistentens arbejdsdata
 
+Den efterfølgende kildekontrol fandt to gamle testlæserforventninger til plannerens førbillede. De bruger nu den allerede gennemgåede, strenge hele P0-inverse før de uændrede historiske orakler; den faktiske nye destrukturering kontrolleres direkte. Gamle kontrolsummer, assertions og mutationsafslag bevares. Dette er kun testkompatibilitet, ikke en ny produkt-, model-, SQL- eller håndbogsændring.
+
 Den afgrænsede 587-rettelse bevarer originalpakkens egen conditions-kontrolsum i raw-retentionens B-grænse. Den afledte arbejdskopis sti og kontrolsum samt den faktisk installerede arbejds-S-generation bevares særskilt. Begge kildeled kontrolleres fortsat; Python-grænsen lempes ikke. Ingen ændring af vejrdata, scoreformel, modelbinding, gamle migrationer, kildeprioritet eller geometri. Præcis kildekontrol og en ny almindelig vejrgenerations offentlige effekt er fortsat særskilte krav.
 
 ## Ikke udgivet — korrekt checkpointdestination før assistentbinding på 4.0.587
