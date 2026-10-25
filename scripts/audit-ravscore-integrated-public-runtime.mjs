@@ -92,6 +92,7 @@ import {
   sha256Text,
 } from './public-conditions-lib.mjs';
 import { hydratePrivateConditionsHourly } from './lib/private-conditions-hourly.mjs';
+import { validFurWaterRoutingDiagnostic } from './lib/fur-water-routing-diagnostic.mjs';
 
 const DEFAULT_INPUT = 'data/live/conditions.json';
 const DEFAULT_STARTUP = 'data/live/public-conditions.json';
@@ -1082,6 +1083,50 @@ function verifiedFeggesundCoverageSummary(coastal, parts) {
   };
 }
 
+// Additive diagnostics only: never a routing decision, score or audit gate.
+export function projectFurWaterRoutingPresence(full) {
+  const canonicalInstant = value => typeof value === 'string'
+    && Number.isFinite(Date.parse(value)) && new Date(value).toISOString() === value;
+  const productionReferenceAt = canonicalInstant(full?.productionReferenceAt)
+    && Date.parse(full.productionReferenceAt) % 3_600_000 === 0
+    ? full.productionReferenceAt : null;
+  const generatedAt = canonicalInstant(full?.generatedAt) ? full.generatedAt : null;
+  const datasetId = typeof full?.datasetId === 'string' && full.datasetId.length <= 160
+    && /^rr-[A-Za-z0-9._-]+$/.test(full.datasetId) ? full.datasetId : null;
+  const identityValid = datasetId !== null && productionReferenceAt !== null
+    && generatedAt !== null && generatedAt >= productionReferenceAt;
+  const present = full !== null && typeof full === 'object'
+    && Object.hasOwn(full, 'furWaterRoutingDiagnostic');
+  const diagnostic = present ? full.furWaterRoutingDiagnostic : null;
+  const qualified = identityValid && present
+    && validFurWaterRoutingDiagnostic(diagnostic, { datasetId })
+    && diagnostic.productionReferenceAt === productionReferenceAt
+    && diagnostic.generatedAt === generatedAt;
+  const trace = qualified ? diagnostic.trace : null;
+  const hours = productionReferenceAt === null ? [] : Array.from(
+    { length: RAVSCORE_PUBLIC_FORECAST_HOURS }, (_, offset) => {
+      const time = new Date(Date.parse(productionReferenceAt) + offset * 3_600_000).toISOString();
+      const row = trace?.hours[time];
+      return { time, observation: row ? 'OBSERVED' : 'UNKNOWN',
+        directPartValuePresent: row?.directPartValuePresent ?? null,
+        routedValuePresent: row?.routedValuePresent ?? null,
+        outputValuePresent: row?.outputValuePresent ?? null,
+        previousSourceSetAvailable: row?.previousSourceSetAvailable ?? null };
+    },
+  );
+  return { schemaVersion: 1, kind: 'FUR_WATER_ROUTING_PRESENCE_REPORT',
+    status: !identityValid ? 'CONDITIONS_IDENTITY_INVALID'
+      : !present ? 'TRACE_NOT_RECORDED'
+        : qualified ? 'RECORDED_NORMAL_DIAGNOSTIC' : 'TRACE_IDENTITY_OR_FORMAT_INVALID',
+    datasetId, productionReferenceAt, generatedAt, expectedHourCount: hours.length,
+    contextSha256: trace?.contextSha256 ?? null,
+    configurationSha256: trace?.configurationSha256 ?? null,
+    selectionSha256: trace?.selectionSha256 ?? null,
+    selectedSourceIdentitiesSha256: trace ? [...trace.selectedSourceIdentitiesSha256] : null,
+    hours, rawValuesIncluded: false, sourceOrPartIdsIncluded: false,
+    tPlus3Proved: false, nationalQueueProved: false, historicalCausalityProved: false };
+}
+
 export function auditIntegratedRavScorePublicRuntime(full, {
   startup,
   startupText = startup ? compactJson(startup) : '',
@@ -2043,6 +2088,7 @@ export function auditIntegratedRavScorePublicRuntime(full, {
     status: result.errors.length ? 'failed' : 'passed',
     datasetId: full.datasetId,
     productionReferenceAt: full.productionReferenceAt,
+    furWaterRoutingPresence: projectFurWaterRoutingPresence(full),
     model: {
       modelId: RAVSCORE_MODEL_ID,
       stateSchemaVersion: RAVSCORE_STATE_SCHEMA_VERSION,

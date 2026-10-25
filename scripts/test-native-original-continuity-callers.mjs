@@ -911,7 +911,8 @@ test('assistant public587 successor reads only whole genuine issued587 canonical
 });
 
 // Faste587-kilde-/snapshotmål. Ingen ny tuple, B/S-kvittering, SQL eller runtimeadgang.
-import {withAuthenticated587PredecessorSource} from './check-assistant-later-h0-predecessor-source.mjs';
+import {withAuthenticated587PredecessorSource,withAuthenticated588PredecessorSource}
+  from './check-assistant-later-h0-predecessor-source.mjs';
 import {readAuthenticatedFrozen587Predecessor,assertAuthenticatedFrozen587Snapshot,
   assertAuthenticatedFrozen587SnapshotFresh} from './lib/authenticated-frozen586-predecessor.mjs';
 test('assistant public587 fixed readers refuse caller profiles and JSON handles before I/O',async t=>{
@@ -956,7 +957,12 @@ test('assistant public587 genuine DATA host keeps fixed family and exact produce
   const {runInNewContext}=await import('node:vm'),{createHash}=await import('node:crypto');
   const hash=value=>createHash('sha256').update(value).digest('hex');
   const actualAuth=await fs.readFile(path.join(ROOT,'scripts/lib/authenticated-frozen586-predecessor.mjs'),'utf8');
-  const profileSource=actualAuth.slice(actualAuth.indexOf('const FROZEN587=Object.freeze({'),actualAuth.indexOf('const snapshot586='));
+  const profileStart='const FROZEN587=Object.freeze({',profileEnd='const FROZEN588=Object.freeze({';
+  const start=actualAuth.indexOf(profileStart),end=actualAuth.indexOf(profileEnd);
+  assert(start>0&&end>start,'The complete587 declaration must precede the actual next588 declaration');
+  assert.equal(actualAuth.indexOf(profileStart,start+1),-1,'Exactly one fixed587 profile declaration');
+  assert.equal(actualAuth.indexOf(profileEnd,end+1),-1,'Exactly one actual next588 profile declaration');
+  const profileSource=actualAuth.slice(start,end);
   const profile=runInNewContext(profileSource+'\nFROZEN587;',{Object,withAuthenticated587PredecessorSource});
   assert.equal(profile.sourceHead,'aab72babd27175a4276c2a2f1965c74bb021b4af');
   const actualProducer=actualAuth.slice(actualAuth.indexOf('async function qualifyProducer('),actualAuth.indexOf('async function fixedPaths('));
@@ -1111,7 +1117,8 @@ test('assistant public587 active facade is fixed and refuses UNISSUED before I/O
   assert(Object.isFrozen(ACTIVE_ASSISTANT_SUCCESSOR));
   assert.equal(ACTIVE_ASSISTANT_SUCCESSOR.before,ASSISTANT_PUBLIC587_SUCCESSOR_BEFORE);
   assert.equal(ACTIVE_ASSISTANT_SUCCESSOR.requireOutput,requireAssistantPublic587SuccessorOutput);
-  assert.equal(DEFAULT_CUTOVER_SOURCE_PHASE,'assistant-public587-successor');
+  assert.equal(ACTIVE_ASSISTANT_SUCCESSOR.sourcePhase,'assistant-public587-successor');
+  assert.equal(DEFAULT_CUTOVER_SOURCE_PHASE,'source-producer');
   if(ACTIVE_ASSISTANT_SUCCESSOR.binding!==null){
     requireAssistantPublic587SuccessorRelease();
     const required=assistantPublic587SuccessorRequiredMigrations();
@@ -1242,7 +1249,12 @@ test('assistant public587 operative import variants remain whole-source bound',a
     assert(prewrite.includes("FROZEN587_PREDECESSOR_"+row[1]+":'"+row[2]+"'"));
   const pkg=JSON.parse(await fs.readFile(path.join(ROOT,'package.json'),'utf8'));
   assert.equal(pkg.scripts['test:assistant-later-h0-source'],
-    'node scripts/build-assistant-later-h0-successor.mjs --public587-successor --check');
+    "node --input-type=module -e \"import {withAuthenticated588PredecessorSource} from './scripts/check-assistant-later-h0-predecessor-source.mjs';await withAuthenticated588PredecessorSource(async()=>{});\"");
+  await withAuthenticated588PredecessorSource(async frozenRoot=>{
+    const historicalPkg=JSON.parse(await fs.readFile(path.join(frozenRoot,'package.json'),'utf8'));
+    assert.equal(historicalPkg.scripts['test:assistant-later-h0-source'],
+      'node scripts/build-assistant-later-h0-successor.mjs --public587-successor --check');
+  });
 });
 
 test('assistant public587 late Edge route preserves exact prior profile and ordinary gates',async()=>{

@@ -1,3 +1,32 @@
+## 89.270 Sikker SOURCE-overgang — lokal 589 udstedt, ikke installeret
+
+**Kort fortalt:** Den fulde SOURCE589-kandidat er lokalt udstedt med egne normale bindinger og én ny migration. Den er ikke installeret eller bevis for nye offentlige vejrdata.
+
+B er den private vejrpakke, og S er den centralt gemte beregningstilstand. Første overgang må kun bruge den eksisterende kontrollerede rute ved den samme præcise referencetime, SAME_H0. Hele de autentiske originale 588 B/S kontrolleres først. Metadata forberedes uden nyt vejr; de normale artifactgates og en frisk slutkontrol skal derefter bestå.
+
+Kun en præcist krævet ny SQL-installation må udføres, højst én gang og med fuld genlæsning. Allerede installeret SQL gentages ikke. Efter genlæsningen gemmes og genlæses B på den beskyttede destination før S. Hele den faktisk centrale S genlæses, før Edge-funktioner og den offentlige side må leveres. Et ukendt skriveudfald er ikke en kvittering eller tilladelse til at gentage handlingen. Senere almindelige SOURCE-opdateringer kræver faktisk installeret 589 med de aktuelle modelledsagere; gamle testarkiver eller 588-planer giver ingen adgang.
+
+Programmet skal stadig dokumentere fysisk stop og afslutning af egne underprocesser, eksklusiv skrivning (WRITE), journalens rigtige ejer og første fejl samt holdbar gemning, upload og genbrug. Den eksisterende originale B/S-før-T-kontrakt bevares. Et procesnummer, en fil eller en journalpost beviser ikke i sig selv ejerskab, originalindhold eller, at alle processer er afsluttet. Fejlworkerens fireminuttersgrænse og de øvrige faste tids- og bytegrænser forlænges ikke.
+
+De syv kystzoners dkss_lf-undtagelse gælder fortsat kun vandstand, ikke strøm, strømhukommelse eller vandtemperatur; Limfjordens egne zoner beholder relevante data. Den aktuelle time og timen tre timer senere skal have sammenligneligt kildebevis ved T+3. Faktisk kold og videreført bevaring, den særskilte Fur-årsag og national heljobskapacitet for 210 zoner og 673 dele skal fortsat dokumenteres gennem normale forløb. En lokal prøve er ikke et samlet produktionsbevis. Afsluttede numeriske 588/P0-delbeviser bevares uden genåbning.
+
+Før den første SQL-installation måles det allerede færdige B med den normale archive-pakker og den faktisk valgte R2-backend. Aktuelt optaget plads plus præcise nye archive-bytes må højst være 2.000.000.000 bytes, uden at regne senere oprydning som ledig plads. Måleperioden bindes til B-, archive- og descriptor-hashes. Resultatet er en observation med NO_ADMISSION, ikke en pladsreservation eller garanti for senere led. Ukendt eller forkert backend giver ikke et erstatningsestimat. De friske kontroller ved hver nødvendig PUT består. S er ikke en ekstra R2-upload, og almindelige vejropdateringer får ikke dette ekstra engangstrin.
+
+ROOT har lokalt udstedt 4.0.589, modelbinding og den ene nye migration på de samlede slutbytes. De normale bygge-, SOURCE-, bindings- og releasekontroller genfinder samme resultat. De krævede målrettede prøver, præcise kilde-, native- og databasekontroller samt faktisk levering og normal efterfølger skal stadig dokumenteres. Alle gamle afsnit, udstedte migrationer, originaler, scoreformel, kildeprioritet, administratorpunkter og geometri bevares. Historiske testvisninger er kun testkilder, aldrig driftsautoritet.
+
+Denne dokumentforberedelse indeholder ingen frisk verifikation af offentlig 588-levering. Faktisk status skal læses i ROOTs seneste private checkpoint (CP), sammen med writerstatus og afsluttede delbeviser. Ingen aktuel driftsbaseline fastlåses her. Alle fem hovedmål følges mod 18. november 2026; denne kandidat færdigmelder ikke et hovedmål eller selvstændig drift og aktiverer ikke statistik eller automatisk sletning.
+
+## 89.269 Offentlig klientkode og beskyttede oplysninger har forskellige roller
+
+Kort fortalt: At en side indeholder programkode til en privat administratorfunktion betyder ikke, at den private rapport er indlejret i hjemmesiden.
+
+Offentlige klientfiler kan beskrive, hvordan en beskyttet funktion bruges. Selve oplysningerne skal stadig læses gennem den normale adgangskontrol. Leveringskontrollen må kun godkende de præcist gennemgåede klientfiler; ændret indhold og private datakopier skal fortsat afvises.
+
+Den centrale modelaktivering og den tilhørende profil skal kontrolleres sammen. En ny lokal versionsskabelon er ikke i sig selv bevis for, at den centrale aktivering allerede er skiftet. Almindelig synkronisering må læse den verificerede aktive profil, men må ikke overtage den særskilte aktiveringsarbejdsgangs skriveansvar.
+
+En gemt beregning og en offentlig levering er forskellige trin. Efter et sent stop skal den faktisk gemte generations identitet og hele genoptagelsesvejen kontrolleres, før data kan leveres. Kontrollen ændrer ikke vejrdata eller scoremodellen.
+
+
 ## 89.268 Del en offentlig prognose
 
 Kort fortalt: Et delingslink peger på det valgte sted, tidspunkt og søgemåde. Du vælger selv, hvor det deles, og hvad du skriver til det.
@@ -662,11 +691,15 @@ En særskilt, dokumenteret Storage-formatkant rettes samtidig: immutable upload 
 
 # RavRadar Håndbog
 
-**Håndbogsversion:** 4.0.588
+**Håndbogsversion:** 4.0.589
 
 Hvis genbrug af gemte data stopper, skal den første fejlfase og et kontrolleret kildested bevares uden private fejltekster eller værdier. Tidligere beståede kontroller frikender ikke automatisk en senere mål-time eller andre input. En bedre fejlrapport ændrer ikke beregningen og er ikke bevis for, at årsagen er rettet. Gemte originaler og sidste gyldige offentlige data bevares, mens fejlen undersøges.
 
-## Aktuel frossen kandidatkilde — 4.0.588, ikke installeret
+## Aktuel frossen kandidatkilde — 4.0.589, ikke installeret
+
+Den integrerede model er offentlig under senest verificerede 4.0.587; 588-bindingen er installeret, men dens nye offentlige levering er endnu ikke verificeret. 4.0.589 er låst med `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b` og `modelBundleSha256=3ddde48a08cdb1628b989518bc6bfc8039cafc154377f3079d14ba6a3b251236` over 151 kanonisk normaliserede transitive implementeringsfiler og de deklarerede forbrugere. Inaktiv Candidate G har uændret fysisk kontrakt og `modelBundleSha256=cb8b3248e8e5afe76742fed96b5a1cbb49520dd31985d95517eff74d26f964f5` over 155 transitive filer. T12 er `continuationStateContractSha256=d3688726c4a2c288803cc1c4902500bc853a603ba3fa5be662dc31b95cf82b2a` (`d3688726…`). Autoriteten er `version.json.releaseContract.modelBindings` og den lokalt udstedte append-only 20261025220000_source_producer_original_bound_successor.sql. Alle 67 tidligere migrationer, autentiske originaler, offentliggjorte scorer, fysiske scoreformler, kildeprioritet, administratorpunkter og geometri bevares. Lokal udstedelse og fixedpoint er ikke native PostgreSQL, installation, faktisk offentlig effekt eller en almindelig efterfølger.
+
+## Historisk frossen kandidatkilde — 4.0.588
 
 Den integrerede model er offentligt leveret under 4.0.587. Den nye 4.0.588-kilde er kun lokalt udstedt. 4.0.588 er låst med `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b` og `modelBundleSha256=5348f3ae7401d3a09dd180d45690f56b3cfec4a30af5a4928bdd9581f9d8ebac` over 97 kanonisk normaliserede transitive implementeringsfiler og de deklarerede forbrugere. Inaktiv Candidate G har uændret fysisk kontrakt og `modelBundleSha256=00905533cd243ffce8e507beedbc39c8dba26e635b59fa154e6f9ab20575780c` over 98 transitive filer. T12 er `continuationStateContractSha256=d98559d56d7bfe9b141cf1ddab73cddffb688a3b6766f5f9f3779b226f573701` (`d98559d5…`). Autoriteten er `version.json.releaseContract.modelBindings` og den nye append-only 20261025110000-migration. Hele de autentiske 587-originaler og tidligere scorer bevares; kun en strengt senere generation kan bruge overgangen. Fysiske scoreformler ændres ikke. Lokal kildeudstedelse er ikke PostgreSQL, installation eller offentlig effekt.
 

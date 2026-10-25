@@ -133,8 +133,77 @@ const packJsonReadLifetimes = new WeakMap();
 // A missing, copied, foreign, or pending invocation supplies no close evidence.
 export function privateWeatherPackJsonReadsClosed(invocation) {
   const state = packJsonReadLifetimes.get(invocation);
-  return state?.settled === true && state.closed === true;
+  return state?.settled === true && state.closed === true && state.pendingCp.size === 0;
 }
+// SOURCE context only selects the strict route; P's real owner lookup is
+// mandatory. No Promise, JSON report, flag or child.close supplies authority.
+const retainedCpInventorySubtrees = new Set();
+// Read-only linkage to the context supplied to the actual normal pack factory.
+// This does not prove settlement, closure, source admission or owner authority.
+export function sourcePackInvocationContext(invocation) {
+  const state = packJsonReadLifetimes.get(invocation);
+  if (!state || state.invocation !== invocation || state.sourceInventoryContext === null) {
+    fail('WEATHER_PACK_SOURCE_INVOCATION_REQUIRED');
+  }
+  return state.sourceInventoryContext;
+}
+export function sourceCpInventoryInput(invocation) {
+  const state = packJsonReadLifetimes.get(invocation);
+  if (!state || !state.cpInput || state.cpInput.invocation !== invocation) {
+    fail('WEATHER_PACK_CP_SOURCE_INPUT_REQUIRED');
+  }
+  return state.cpInput;
+}
+export function sourceCpInventoryObservation(invocation) {
+  const state = packJsonReadLifetimes.get(invocation);
+  if (!state || state.settled !== true) fail('WEATHER_PACK_CP_OBSERVATION_UNAVAILABLE');
+  return Object.freeze({ invocation, visited: state.cpVisited,
+    context: state.sourceInventoryContext, input: state.cpInput,
+    result: state.cpResult, manifest: state.componentManifest,
+    root: state.root, rootIdentity: state.rootIdentity });
+}
+async function sourceCpStorageInventory(root, bank, readState) {
+  const temporary = await fs.mkdtemp(path.join(os.tmpdir(), 'rr-cp-storage-inventory-'));
+  const temporaryOwner = { temporary, readState };
+  retainedCpInventorySubtrees.add(temporaryOwner); // Retain before the first stat can fail.
+  const born = await fs.lstat(temporary, { bigint: true });
+  if (!born.isDirectory() || born.isSymbolicLink()) fail('WEATHER_PACK_CP_SOURCE_DIRECTORY_CHANGED');
+  const outputDirectoryIdentity = Object.freeze({ dev: born.dev, ino: born.ino, mode: born.mode, nlink: born.nlink });
+  const token = Object.freeze({});
+  const input = Object.freeze({ invocation: readState.invocation,
+    context: readState.sourceInventoryContext, token, root, rootIdentity: readState.rootIdentity,
+    bankPath: path.join(root, PRIVATE_WEATHER_COMPONENT_FILES.copernicusBank),
+    cacheDirectory: path.join(root, CP_PREFIX), outputDirectory: temporary, outputDirectoryIdentity,
+    bank, manifest: readState.componentManifest });
+  if (readState.cpInput !== null) fail('WEATHER_PACK_CP_SOURCE_INPUT_REUSED');
+  temporaryOwner.input = input;
+  readState.cpInput = input;
+  readState.pendingCp.add(token);
+  try {
+    const owner = await import('../source-normal-producer-tail.mjs');
+    if (typeof owner.runSourceOriginalCpInventory !== 'function'
+      || typeof owner.assertSourceOriginalCpInventoryResult !== 'function') {
+      fail('WEATHER_PACK_CP_SOURCE_OWNER_UNAVAILABLE');
+    }
+    const result = await owner.runSourceOriginalCpInventory(readState.invocation);
+    const actual = owner.assertSourceOriginalCpInventoryResult(readState.invocation, result);
+    if (!actual || !actual.inventory) fail('WEATHER_PACK_CP_SOURCE_RESULT_REQUIRED');
+    readState.cpResult = result;
+    readState.pendingCp.delete(token); // Only the genuine P result assertion may clear it.
+    const inventory = actual.inventory;
+    if (inventory.kind !== 'CP_COMPONENT_STORAGE_INVENTORY' || inventory.schemaVersion !== 1
+      || inventory.bankSha256 !== bank.bankSha256 || !Array.isArray(inventory.files)
+      || inventory.files.length > MAX_FILES) fail('WEATHER_PACK_CP_INVENTORY_INVALID');
+    return inventory.files;
+  } catch (error) {
+    if (readState.pendingCp.has(token)) retainedCpInventorySubtrees.add({ input, error, readState });
+    throw error; // Keep even raw null/zero; no fallback, retry or owner release.
+  }
+  // Success and failure both retain the SOURCE-owned directory. A closed
+  // kernel cohort authorizes neither recursive deletion nor a changed root.
+  // Only P's actual own-inode/catalog/FD finalizer may remove these files.
+}
+
 async function readSmallJson(file, maximumBytes = MAX_JSON_BYTES, readState) {
   const stat = await fs.lstat(file);
   if (!stat.isFile() || stat.isSymbolicLink() || stat.size > maximumBytes) fail('WEATHER_PACK_JSON_SIZE_INVALID');
@@ -159,6 +228,7 @@ async function readSmallJson(file, maximumBytes = MAX_JSON_BYTES, readState) {
   return value;
 }
 async function cpStorageInventory(root, bank, pythonExecutable, readState) {
+  if (readState.sourceInventoryContext !== null) return sourceCpStorageInventory(root, bank, readState);
   const temporary = await fs.mkdtemp(path.join(os.tmpdir(), 'rr-cp-storage-inventory-'));
   let inventoryFailed = false;
   try {
@@ -267,6 +337,7 @@ async function sourceInventory(root, conditions, {
     fail('WEATHER_PACK_REQUIRED_INPUT_MISSING_OR_CHANGED');
   }
   if (presence.copernicusProgress && !presence.copernicusBank) fail('WEATHER_PACK_CP_PROGRESS_WITHOUT_BANK');
+  readState.cpVisited = Boolean(banks.copernicusBank);
   if (banks.copernicusBank) {
     const originals = await cpStorageInventory(root, banks.copernicusBank, pythonExecutable, readState);
     const seen = new Set();
@@ -290,8 +361,11 @@ async function sourceInventory(root, conditions, {
 }
 
 export function buildPrivateWeatherComponentPack(options = {}) {
-  const state = { settled: false, closed: true };
+  const state = { settled: false, closed: true, pendingCp: new Set(), cpInput: null, root: null, rootIdentity: null,
+    cpVisited: null, cpResult: null, componentManifest: null,
+    sourceInventoryContext: options.sourceInventoryContext ?? null, invocation: null };
   const invocation = buildPackWithJsonReadLifetime(options, state);
+  state.invocation = invocation;
   packJsonReadLifetimes.set(invocation, state);
   invocation.then(() => { state.settled = true; }, () => { state.settled = true; });
   return invocation;
@@ -466,16 +540,60 @@ async function buildPackWithJsonReadLifetime({
   return { ...PRIVATE_WEATHER_COMPONENT_PACK_FILE, sourcePath: destination };
 }
 
+// SOURCE-only ownership journal, populated at the actual mkdir/wx/close calls.
+async function sourcePackOutputDirectory(state, directory) {
+  const relative = path.relative(state.root, directory);
+  if (relative.startsWith('..') || path.isAbsolute(relative)) fail('WEATHER_PACK_OUTPUT_DIRECTORY_INVALID');
+  let current = state.root;
+  for (const segment of relative ? relative.split(path.sep) : []) {
+    current = path.join(current, segment);
+    if (!state.sourceDirectories.has(current)) {
+      const row = { path: current, birth: null };
+      state.sourceDirectories.set(current, row); // Retain an uncertain mkdir; never adopt an EEXIST path.
+      await fs.mkdir(current, { mode: 0o700 });
+      const born = await fs.lstat(current, { bigint: true });
+      if (!born.isDirectory() || born.isSymbolicLink()) fail('WEATHER_PACK_OUTPUT_DIRECTORY_INVALID');
+      row.birth = Object.freeze({ dev: born.dev, ino: born.ino, mode: born.mode, nlink: born.nlink });
+    }
+    const row = state.sourceDirectories.get(current), named = await fs.lstat(current, { bigint: true });
+    if (!row.birth || !named.isDirectory() || named.isSymbolicLink()
+      || ['dev', 'ino', 'mode'].some(key => row.birth[key] !== named[key])
+      || await fs.realpath(current) !== current) fail('WEATHER_PACK_OUTPUT_DIRECTORY_CHANGED');
+  }
+}
+export function sourcePackOutputCatalog(invocation) {
+  const state = packJsonReadLifetimes.get(invocation);
+  if (!state || !state.sourceInventoryContext || !privateWeatherPackJsonReadsClosed(invocation)
+    || !state.rootIdentity || !state.componentManifest || !state.sourceDirectories
+    || state.sourceOutputs.length !== state.componentManifest.files.length
+    || state.sourceOutputs.some(row => !row.complete || !row.closed || !row.closeAttempted
+      || row.firstFailure !== null || !row.birth || !row.stat)
+    || [...state.sourceDirectories.values()].some(row => !row.birth)) fail('WEATHER_PACK_OUTPUT_CATALOG_UNPROVED');
+  state.sourceOutputCatalog ??= Object.freeze({ invocation, context: state.sourceInventoryContext,
+    root: state.root, rootIdentity: state.rootIdentity, manifest: state.componentManifest,
+    directories: Object.freeze([...state.sourceDirectories.values()].map(row => Object.freeze({ ...row }))),
+    files: Object.freeze(state.sourceOutputs.map(row => Object.freeze({ path: row.path,
+      relativePath: row.relativePath, birth: Object.freeze(Object.fromEntries(['dev', 'ino', 'mode', 'nlink', 'size', 'mtimeNs', 'ctimeNs'].map(key => [key, row.birth[key]]))),
+      stat: Object.freeze(Object.fromEntries(['dev', 'ino', 'mode', 'nlink', 'size', 'mtimeNs', 'ctimeNs'].map(key => [key, row.stat[key]]))),
+      bytes: row.bytes, sha256: row.sha256,
+      closed: row.closed, closeAttempted: row.closeAttempted }))) });
+  return state.sourceOutputCatalog;
+}
+
 // Partial private materialization only: no native/READY/selection authority.
 // The caller verifies B before/after, supplies its exact pack descriptor, owns
 // a fresh private stage, and uses the existing DMI file reader on returned files.
 export function unpackPrivateWeatherComponentCompanions({
   restoredRoot, outputRoot, conditions, expectedPackDescriptor,
 } = {}) {
-  const state = { settled: false, closed: true };
+  const state = { settled: false, closed: true, pendingCp: new Set(), cpInput: null, root: null, rootIdentity: null,
+    sourceDirectories: new Map(), sourceOutputs: [], sourceOutputCatalog: null,
+    cpVisited: null, cpResult: null, componentManifest: null,
+    sourceInventoryContext: null, invocation: null };
   const invocation = unpackPackWithJsonReadLifetime(
     { restoredRoot, outputRoot, conditions }, state,
     { expectedPackDescriptor });
+  state.invocation = invocation;
   packJsonReadLifetimes.set(invocation, state);
   invocation.then(() => { state.settled = true; }, () => { state.settled = true; });
   return invocation;
@@ -499,8 +617,12 @@ function companionPackDescriptor(value) {
 }
 
 export function unpackPrivateWeatherComponentPack(options = {}) {
-  const state = { settled: false, closed: true };
+  const state = { settled: false, closed: true, pendingCp: new Set(), cpInput: null, root: null, rootIdentity: null,
+    sourceDirectories: new Map(), sourceOutputs: [], sourceOutputCatalog: null,
+    cpVisited: null, cpResult: null, componentManifest: null,
+    sourceInventoryContext: options.sourceInventoryContext ?? null, invocation: null };
   const invocation = unpackPackWithJsonReadLifetime(options, state);
+  state.invocation = invocation;
   packJsonReadLifetimes.set(invocation, state);
   invocation.then(() => { state.settled = true; }, () => { state.settled = true; });
   return invocation;
@@ -588,6 +710,14 @@ async function unpackPackWithJsonReadLifetime({
     inputDescriptorIdentity = ownFileDescriptorIdentity(inputFd);
     if (companionDescriptor) await requireCompanionOriginal();
     await fs.mkdir(output, { mode: 0o700 }); // caller passes a new private stage
+    if (readState.sourceInventoryContext !== null) {
+      readState.root = output;
+      const bornRoot = await fs.lstat(output, { bigint: true });
+      if (!bornRoot.isDirectory() || bornRoot.isSymbolicLink()) fail('WEATHER_PACK_CP_SOURCE_DIRECTORY_CHANGED');
+      readState.rootIdentity = Object.freeze({ dev: bornRoot.dev, ino: bornRoot.ino,
+        mode: bornRoot.mode, nlink: bornRoot.nlink });
+      readState.sourceDirectories.set(output, { path: output, birth: readState.rootIdentity });
+    }
     if (!(await read(MAGIC.length)).equals(MAGIC)) fail('WEATHER_PACK_FORMAT_INVALID');
     const length = (await read(4)).readUInt32BE();
     if (length < 2 || length > MAX_MANIFEST_BYTES) fail('WEATHER_PACK_MANIFEST_SIZE_INVALID');
@@ -606,6 +736,7 @@ async function unpackPackWithJsonReadLifetime({
       if (total > MAX_PACK_BYTES) fail('WEATHER_PACK_SIZE_LIMIT');
     }
     if (total !== source.bytes) fail('WEATHER_PACK_SIZE_INVALID');
+    readState.componentManifest = manifest; // Actual own unpack manifest, never caller JSON.
     for (const file of manifest.files) {
       // Reuse the same manifest, bounds and sequential read/whole-pack digest.
       // Unselected entries are still fully checked, but never unpacked/parsed.
@@ -619,28 +750,46 @@ async function unpackPackWithJsonReadLifetime({
         continue;
       }
       const destination = path.join(output, file.relativePath);
-      await fs.mkdir(path.dirname(destination), { recursive: true, mode: 0o700 });
+      if (readState.sourceInventoryContext !== null) await sourcePackOutputDirectory(readState, path.dirname(destination));
+      else await fs.mkdir(path.dirname(destination), { recursive: true, mode: 0o700 });
       const hash = crypto.createHash('sha256');
       const destinationHandle = await fs.open(destination, 'wx', 0o600);
+      const journal = readState.sourceInventoryContext === null ? null : { path: destination,
+        relativePath: file.relativePath, bytes: file.bytes, sha256: file.sha256, handle: destinationHandle,
+        birth: null, stat: null, closeAttempted: false, closed: false, complete: false, firstFailure: null };
+      if (journal) readState.sourceOutputs.push(journal);
       let destinationFd, destinationDescriptorIdentity;
       let copyFailed = false;
       try {
         destinationFd = destinationHandle.fd; // Own output, before another await.
         destinationDescriptorIdentity = ownFileDescriptorIdentity(destinationFd);
+        if (journal) {
+          journal.birth = await destinationHandle.stat({ bigint: true });
+          if (!journal.birth.isFile() || journal.birth.nlink !== 1n || journal.birth.size !== 0n) fail('WEATHER_PACK_OUTPUT_BIRTH_INVALID');
+        }
         for (let remaining = file.bytes; remaining > 0;) {
           const chunk = await read(Math.min(64 * 1024, remaining));
           remaining -= chunk.length;
           hash.update(chunk);
           await destinationHandle.writeFile(chunk);
         }
+        if (journal) {
+          await destinationHandle.sync();
+          journal.stat = await destinationHandle.stat({ bigint: true });
+          if (!journal.stat.isFile() || journal.stat.nlink !== 1n || journal.stat.size !== BigInt(file.bytes)
+            || ['dev', 'ino', 'mode'].some(key => journal.birth[key] !== journal.stat[key])) fail('WEATHER_PACK_OUTPUT_CHANGED');
+        }
       } catch (error) {
+        if (journal) journal.firstFailure ??= [error];
         copyFailed = true;
         throw error;
       } finally {
         let closeFailure;
+        if (journal) journal.closeAttempted = true;
         try { await destinationHandle.close(); }
-        catch (error) { closeFailure = { error }; }
+        catch (error) { closeFailure = { error }; if (journal) journal.firstFailure ??= [error]; }
         const closed = await ownedFileDescriptorClosed(destinationFd, destinationDescriptorIdentity);
+        if (journal) journal.closed = closed;
         if (!closed) {
           readState.closed = false;
           retainedJsonReaders.add(destinationHandle);
@@ -649,6 +798,7 @@ async function unpackPackWithJsonReadLifetime({
         if (!copyFailed && closeFailure) throw closeFailure.error;
       }
       if (hash.digest('hex') !== file.sha256) fail('WEATHER_PACK_ENTRY_HASH_INVALID');
+      if (journal) journal.complete = true;
     }
     if (companionDescriptor) {
       if (position !== companionDescriptor.bytes

@@ -8,7 +8,8 @@ import path from 'node:path';
 import {fileURLToPath,pathToFileURL} from 'node:url';
 import {execFile as callbackExec} from 'node:child_process';
 import {promisify,isDeepStrictEqual} from 'node:util';
-import {withAuthenticated586PredecessorSource,withAuthenticated587PredecessorSource}
+import {withAuthenticated586PredecessorSource,withAuthenticated587PredecessorSource,
+  withAuthenticated588PredecessorSource,assertFrozen588CodeSourceSelected}
   from '../check-assistant-later-h0-predecessor-source.mjs';
 
 const ROOT=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'../..');
@@ -16,7 +17,7 @@ const exec=promisify(callbackExec),failedCloses=new Map();
 // Ukendt fysisk FD-lukning blokerer samme sti på tværs af begge familier.
 // Opaque snapshots og friskhedsfunktioner tilhører derimod kun én fast profil.
 function fixedSnapshot(profile){
-  assert(profile===FROZEN586||profile===FROZEN587,'FROZEN_PREDECESSOR_UNKNOWN_PROFILE');
+  assert(profile===FROZEN586||profile===FROZEN587||profile===FROZEN588||profile===STAGED588,'FROZEN_PREDECESSOR_UNKNOWN_PROFILE');
   const contexts=new WeakMap(),refreshers=new WeakMap();
   const SOURCE=profile.sourceHead;
 const SHA=/^[a-f0-9]{64}$/, HEAD=/^[a-f0-9]{40}$/, MB=1024*1024;
@@ -97,8 +98,9 @@ async function qualifyProducer(producer,frozenRoot){
   return Object.freeze({consumerHead:head,producerHead:producer,sourceFamilyHead:SOURCE,ownerPolicyGitBlob:POLICY_BLOB});
 }
 async function fixedPaths(){
-  const privateRoot=process.env.RAVRADAR_PRIVATE_RUNTIME_ROOT;
-  const bundlePath=process.env.RAVRADAR_PRIVATE_RUNTIME_BUNDLE;
+  // Fixed caller roles only: SOURCE prewrite must not borrow the current-output bundle.
+  const privateRoot=process.env[profile===STAGED588?'RAVRADAR_PREDECESSOR_PRIVATE_ROOT':'RAVRADAR_PRIVATE_RUNTIME_ROOT'];
+  const bundlePath=process.env[profile===STAGED588?'RAVRADAR_PREDECESSOR_PRIVATE_BUNDLE':'RAVRADAR_PRIVATE_RUNTIME_BUNDLE'];
   need(typeof privateRoot==='string'&&path.isAbsolute(privateRoot)&&typeof bundlePath==='string'
     &&path.isAbsolute(bundlePath),'FIXED_WORKFLOW_PATHS');
   const root=path.resolve(privateRoot),bundle=path.resolve(bundlePath);
@@ -241,7 +243,19 @@ const FROZEN587=Object.freeze({
   assertionPath:'scripts/lib/established-native-current-origin-587-assertion.mjs',
   assertionExport:'assertFrozen587OriginSnapshotData',
   temporaryPrefix:'rr-frozen587-snapshot-',errorPrefix:'FROZEN587_PREDECESSOR_'});
-const snapshot586=fixedSnapshot(FROZEN586),snapshot587=fixedSnapshot(FROZEN587);
+const FROZEN588=Object.freeze({
+  sourceHead:'4845e6c6622333ad4e8454b0b43f5f94ae42233e',
+  requiredSha:Object.freeze([
+    '5fa3fe20041a82a7e287e21f4562f6bb82ffab253c69e0754208bb6e5c907b69',
+    '8e979128a682a7324d7defcc3d2d2dfa5edc85ebc22d4ae714810aa085490758']),
+  withSource:withAuthenticated588PredecessorSource,
+  assertionPath:'scripts/lib/established-native-current-origin-588-assertion.mjs',
+  assertionExport:'assertFrozen588OriginSnapshotData',
+  temporaryPrefix:'rr-frozen588-snapshot-',errorPrefix:'FROZEN588_PREDECESSOR_'});
+// Same actual588 code, distinct fixed workflow paths and distinct opaque capability banks.
+const STAGED588=Object.freeze({...FROZEN588,temporaryPrefix:'rr-staged588-snapshot-',errorPrefix:'STAGED588_PREDECESSOR_'});
+const snapshot586=fixedSnapshot(FROZEN586),snapshot587=fixedSnapshot(FROZEN587),snapshot588=fixedSnapshot(FROZEN588),
+  staged588=fixedSnapshot(STAGED588);
 // Kun disse navngivne indgange; ingen caller-valgt profil, root, head eller tuple.
 export async function readAuthenticatedFrozen586Predecessor(){
   return snapshot586.read(...arguments);
@@ -260,4 +274,28 @@ export function assertAuthenticatedFrozen587Snapshot(handle){
 }
 export async function assertAuthenticatedFrozen587SnapshotFresh(handle){
   return snapshot587.fresh(...arguments);
+}
+
+// No588 snapshot is manufactured from a code pin or serialized production data.
+export async function readAuthenticatedFrozen588Predecessor(){
+  assertFrozen588CodeSourceSelected(); // Before paths/I/O while the proposed code freeze is unselected.
+  return snapshot588.read(...arguments);
+}
+export function assertAuthenticatedFrozen588Snapshot(handle){
+  return snapshot588.snapshot(...arguments);
+}
+export async function assertAuthenticatedFrozen588SnapshotFresh(handle){
+  return snapshot588.fresh(...arguments);
+}
+
+// SOURCE's normal staging owns PREDECESSOR paths; no CURRENT/path fallback.
+export async function readAuthenticatedStaged588Predecessor(){
+  assertFrozen588CodeSourceSelected();
+  return staged588.read(...arguments);
+}
+export function assertAuthenticatedStaged588Snapshot(handle){
+  return staged588.snapshot(...arguments);
+}
+export async function assertAuthenticatedStaged588SnapshotFresh(handle){
+  return staged588.fresh(...arguments);
 }

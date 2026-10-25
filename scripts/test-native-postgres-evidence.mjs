@@ -15,6 +15,17 @@ import {ORIGIN, WORKFLOW, JOB, STEP, COMMANDS, ACCOUNT_STATISTICS_ASSISTANT_COMM
 // The actual new production command is independently checked below.
 const NATIVE_SCRIPT='set -euo pipefail\n'+CURRENT_COMMANDS.join('\n')+'\n';
 const copy = value => structuredClone(value);
+// TEST ONLY. First qualify the whole actual SOURCE caller, then restore only
+// its two exact known inverses before the unchanged genuine586 receipt oracle.
+import {verifyWorkflow as verifyActualSourceWorkflow,inverseSourceNode24Workflow}
+  from './national584-source-evidence.mjs';
+function historical586WorkflowView(actual){
+  verifyActualSourceWorkflow(actual);
+  const historical=inverseSourceNode24Workflow(inverseSourceProducerPhaseUpload(actual));
+  verifyCurrent586Workflow(historical,historical);
+  return historical;
+}
+
 // Genuine reviewed P0 follow-up, not the potentially changed current PR tree.
 const REVIEWED_FOLLOWUP = 'c72d6730bd235954091416268e7af649b46452d9';
 const REVIEWED_FOLLOWUP_TREE = 'b2b49abd10c186115759f3792ecc8fd312049126';
@@ -276,7 +287,7 @@ test('assistant later-H0 appends its actual phase without retagging whole586 com
 
 
 test('current586 phase artifact is independent, exact, honest, and does not relax conservative native inputs',async()=>{
-  const workflow=await fs.readFile(WORKFLOW,'utf8');
+  const workflow=historical586WorkflowView(await fs.readFile(WORKFLOW,'utf8'));
   assert.equal(workflow.split(CURRENT586_PHASE_UPLOAD_BLOCK).length,2);
   verifyCurrent586Workflow(workflow,workflow);
   assert.equal(inverseCurrent586PhaseUpload(workflow).includes(CURRENT586_PHASE_UPLOAD),false);
@@ -328,7 +339,7 @@ test('current586 exact EXECUTED origin survives a later source failure; missing,
     end.writeUInt32LE(central.length+name.length,12);end.writeUInt32LE(local.length+name.length+raw.length,16);
     return Buffer.concat([local,name,raw,central,name,end]);
   };
-  const workflow=await fs.readFile(WORKFLOW,'utf8'),oldId=ORIGIN.run+10,currentId=oldId+2,number=700;
+  const workflow=historical586WorkflowView(await fs.readFile(WORKFLOW,'utf8')),oldId=ORIGIN.run+10,currentId=oldId+2,number=700;
   const branch='synthetic-native586',nativeInput=verifyInputTrees(tree,tree);
   const oldRun={id:oldId,run_attempt:1,head_sha:oid,head_branch:branch,path:WORKFLOW,event:'pull_request',
     repository:{full_name:ORIGIN.repository},head_repository:{full_name:ORIGIN.repository},
@@ -468,19 +479,20 @@ test('public587 successor native commands append588 without retagging whole587 i
   assert.deepEqual(ASSISTANT_PUBLIC587_SUCCESSOR_COMMANDS,[ASSISTANT_LATER_H0_COMMANDS[0],
     ASSISTANT_LATER_H0_COMMANDS[1]+' --assistant-public587-successor']);
   assert.equal(ASSISTANT_PUBLIC587_SUCCESSOR_SCRIPT,'set -euo pipefail\n'+ASSISTANT_PUBLIC587_SUCCESSOR_COMMANDS.join('\n')+'\n');
-  assert.equal(ACTIVE_COMMANDS,ASSISTANT_PUBLIC587_SUCCESSOR_COMMANDS);
-  assert.equal(ACTIVE_NATIVE_SCRIPT,ASSISTANT_PUBLIC587_SUCCESSOR_SCRIPT);
+  assert.equal(ACTIVE_COMMANDS,SOURCE_PRODUCER_COMMANDS);
+  assert.equal(ACTIVE_NATIVE_SCRIPT,SOURCE_PRODUCER_NATIVE_SCRIPT);
+  assert.notDeepEqual(ACTIVE_COMMANDS,ASSISTANT_PUBLIC587_SUCCESSOR_COMMANDS);
   assert.notDeepEqual(ACTIVE_COMMANDS,ASSISTANT_LATER_H0_COMMANDS);
   const source=await fs.readFile('scripts/native-postgres-evidence.mjs','utf8');
   const main=source.slice(source.indexOf('async function main() {'));
   assert(main.indexOf('requireAssistantPublic587SuccessorRelease()')<main.indexOf('spawnSync('));
   assert(main.includes("'-c',ACTIVE_NATIVE_SCRIPT]"));
-  assert(main.includes("phase:'ASSISTANT_PUBLIC587_SUCCESSOR',eligibleForReuse:false"));
+  assert(main.includes("phase:'SOURCE_PRODUCER',eligibleForReuse:false"));
   assert(main.includes('commands:ACTIVE_COMMANDS'));
   assert(!main.includes('await decideReuse('));assert(!main.includes('await decideCurrent586Reuse('));
   const target=await fs.readFile('scripts/test-protected-ravscore-continuation-checkpoint.mjs','utf8');
   assert(target.indexOf('requireAssistantPublic587SuccessorRelease();')<target.indexOf('const PART_COUNT ='));
-  assert(target.includes("const assistantPublic587SuccessorNative = process.argv.includes('--assistant-public587-successor');"));
+  assert(target.includes("const assistantPublic587SuccessorNative = process.argv.includes('--assistant-public587-successor') || sourceProducerNative;"));
   assert(target.includes("process.argv.includes('--assistant-later-h0') || assistantPublic587SuccessorNative"));
   assert(target.includes('includeAssistantPublic587Successor: assistantPublic587SuccessorNative'));
 });
@@ -580,4 +592,69 @@ test('public587 native wiring keeps same owned host and all old negative-case fa
   assert(adapter.includes('assertWholeMetadataInverse(original,payload,NEXT)'));
   assert(adapter.includes('assert.notEqual((await runSql(sql)).code,0'));
   assert(adapter.includes("normalProtectedJsonbRoundtrip:true,originalDigestsPreserved:true"));
+});
+
+// Additive SOURCE receipt guards. No test invokes PostgreSQL or manufactures issuance.
+import {SOURCE_PRODUCER_COMMANDS,SOURCE_PRODUCER_NATIVE_SCRIPT,SOURCE_PRODUCER_PHASE_KIND,
+  SOURCE_PRODUCER_PHASE_UPLOAD_BLOCK,inverseSourceProducerPhaseUpload,verifySourceProducerPhaseReceipt}
+  from './native-postgres-evidence.mjs';
+import {SOURCE_PRODUCER_BINDING,requireSourceProducerBinding,requireSourceProducerOutput}
+  from './lib/source-producer-successor-source.mjs';
+
+test('SOURCE active native commands append to the complete588 prefix and refuse before evidence I/O',async()=>{
+  assert.deepEqual(SOURCE_PRODUCER_COMMANDS,[ASSISTANT_PUBLIC587_SUCCESSOR_COMMANDS[0],
+    ASSISTANT_PUBLIC587_SUCCESSOR_COMMANDS[1]+' --source-producer']);
+  assert.equal(SOURCE_PRODUCER_NATIVE_SCRIPT,'set -euo pipefail\n'+SOURCE_PRODUCER_COMMANDS.join('\n')+'\n');
+  assert.equal(ACTIVE_COMMANDS,SOURCE_PRODUCER_COMMANDS);
+  assert.equal(ACTIVE_NATIVE_SCRIPT,SOURCE_PRODUCER_NATIVE_SCRIPT);
+  assert.notEqual(SOURCE_PRODUCER_PHASE_KIND,ASSISTANT_PUBLIC587_SUCCESSOR_PHASE_KIND);
+  assert.notEqual(SOURCE_PRODUCER_PHASE_KIND,ASSISTANT_LATER_H0_PHASE_KIND);
+  assert.notEqual(SOURCE_PRODUCER_PHASE_KIND,CURRENT586_PHASE_KIND);
+  const source=await fs.readFile('scripts/native-postgres-evidence.mjs','utf8');
+  const main=source.slice(source.indexOf('async function main() {'));
+  const guard=main.indexOf('requireSourceProducerOutput();');
+  assert(guard>=0&&guard<main.indexOf('requireAssistantPublic587SuccessorRelease();'));
+  assert(guard<main.indexOf('const env=')&&guard<main.indexOf('spawnSync(')&&guard<main.indexOf('await record('));
+  assert(main.includes("phase:'SOURCE_PRODUCER',eligibleForReuse:false"));
+  assert(main.includes('currentSourceNativeProfileClaimed:false,productionProof:false'));
+  assert(!main.includes('await decideReuse(')&&!main.includes('await decideCurrent586Reuse('));
+  const target=await fs.readFile('scripts/test-protected-ravscore-continuation-checkpoint.mjs','utf8');
+  assert(target.indexOf('requireSourceProducerOutput();')<target.indexOf('const PART_COUNT ='));
+  assert(target.includes("const sourceProducerNative = process.argv.includes('--source-producer') || currentSourceNativeProfile;"));
+  assert(target.includes('includeSourceProducer: sourceProducerNative'));
+});
+
+test('SOURCE receipt refuses UNISSUED before inspecting operands and cannot reuse or impersonate588',()=>{
+  const current={run:ORIGIN.run+40,attempt:1,head:newOid,pullRequest:702,branch:'synthetic-source'};
+  if(SOURCE_PRODUCER_BINDING===null){
+    let reads=0;const poison=new Proxy({},{get(){reads++;throw new Error('UNEXPECTED_OPERAND');}});
+    assert.throws(()=>verifySourceProducerPhaseReceipt(poison,poison),/SOURCE_PRODUCER_UNISSUED/);
+    assert.equal(reads,0);return;
+  }
+  const next={phase:'SOURCE_PRODUCER',status:'EXECUTED',executedInThisRun:true,origin:null,
+    current,commands:[...SOURCE_PRODUCER_COMMANDS],eligibleForReuse:false,
+    sourceProducerBinding:requireSourceProducerBinding(),sourceProducerOutput:requireSourceProducerOutput(),
+    currentSourceNativeProfileClaimed:false,productionProof:false};
+  assert.equal(verifySourceProducerPhaseReceipt(next,current).status,'EXECUTED');
+  assert.throws(()=>verifyAssistantPublic587SuccessorPhaseReceipt(next,current));
+  assert.throws(()=>verifyAssistantLaterH0PhaseReceipt(next,current));
+  assert.throws(()=>verifyCurrent586PhaseReceipt(next,current));
+  for(const mutate of [v=>v.status='REUSED',v=>v.executedInThisRun=false,v=>v.origin={run:current.run-1},
+    v=>v.eligibleForReuse=true,v=>v.commands=[...ASSISTANT_PUBLIC587_SUCCESSOR_COMMANDS],
+    v=>v.commands=[...ASSISTANT_LATER_H0_COMMANDS],v=>v.current={...current,head:oid},
+    v=>v.phase='ASSISTANT_PUBLIC587_SUCCESSOR',v=>v.sourceProducerBinding=null,v=>v.sourceProducerOutput=null,
+    v=>v.currentSourceNativeProfileClaimed=true,v=>v.productionProof=true]){
+    const changed=copy(next);mutate(changed);
+    assert.throws(()=>verifySourceProducerPhaseReceipt(changed,current));
+  }
+});
+
+test('SOURCE upload inverse is exact, single, and restores the whole older upload block',()=>{
+  const current='before\n'+SOURCE_PRODUCER_PHASE_UPLOAD_BLOCK+'after\n';
+  assert.equal(inverseSourceProducerPhaseUpload(current),'before\n'+CURRENT586_PHASE_UPLOAD_BLOCK+'after\n');
+  for(const bad of [current.replace(SOURCE_PRODUCER_PHASE_UPLOAD_BLOCK,''),
+    current+SOURCE_PRODUCER_PHASE_UPLOAD_BLOCK,current+CURRENT586_PHASE_UPLOAD_BLOCK,
+    current.replace('name: source-producer-phase-','name: native586-phase-'),
+    current.replace('retention-days: 30','retention-days: 31')])
+    assert.throws(()=>inverseSourceProducerPhaseUpload(bad));
 });

@@ -1,3 +1,27 @@
+## 25. oktober — lokal 4.0.589 udstedt; faktisk SOURCE-drift er stadig åben
+
+Den fulde SOURCE589-kilde er nu lokalt udstedt gennem den normale rækkefølge med én versionssynkronisering, fysisk afledte C/I/T, faktisk normal outputafledning, én ny append-only migration og synkronisering af alle syv forbrugere. De normale friske bygge-, SOURCE-, bindings- og releasekontroller er et fast punkt på de samme slutbytes. Det er ikke installeret SQL, PostgreSQL-eksekvering, præcis ny kilde-CI eller offentlig produktionseffekt.
+
+De fem P0-ejere fra den gennemgåede leveringskandidat er med i den isolerede kilde; deres særskilte aktuelle GitHub-kontrol giver endnu ingen ny leveringspåstand. Hele 588-originaler, gamle migrationer, offentliggjorte scorer, scoreformel, kildeprioritet, administratorpunkter og geometri bevares. Den nye SQL er kun lokalt genereret; ingen produktion ændres af udstedelsen, og versionssynkroniseringen gentages ikke.
+
+Før sikker SOURCE-levering skal de relevante normale prøver på de udstedte bytes, præcis kilde-/native-/kapacitetskontrol og faktisk autentisk 588 B/S-førskrivningskontrol bestå. Den valgte fulde SAME_H0-overgang kræver frisk slutkontrol, højst én nødvendig SQL-installation/genlæsning, B før S og hel faktisk remote-S-genlæsning før Edges/Pages; senere almindelige kald skal beviseligt bruge installeret 589. T+3, syvzoneafgrænsning, Fur, processtop, skrivning, holdbarhed og national 210/673-virkning er stadig åbne krav. Se håndbog 89.270 og ROOTs private checkpoint for faktisk P0-/writerstatus. Alle fem mål følges til 18. november 2026; statistik og automatisk sletning aktiveres ikke. Ældre statusafsnit er historik på disse konkrete punkter.
+
+## 25. oktober — lokal 4.0.589 under udstedelse, ikke installeret
+
+Den normale versionssynkronisering til 4.0.589 er udført én gang. SOURCE-kandidaten er stadig lokalt inaktiv: de endelige model-/outputbindinger og den ene nye append-only migration er endnu ikke udstedt. Den påviste private hjælpeimportfejl er rettet uden ændring af den gamle bygger; frisk ESM-indlæsning består. Ingen ny SQL, vejrhentning, databaseændring eller offentlig effekt følger heraf.
+
+De fem gennemgåede P0-ejere fra den nye kildekandidat er indarbejdet lokalt, så SOURCE ikke genindfører navnekollisionen i Pages-privacy eller den for strenge enkelte centrale profilkontrol. P0-kandidaten har sin egen fortsat åbne præcise GitHub-kontrol; lokal overførsel er ikke det kildebevis eller en offentlig levering. Håndbogens SOURCE-afsnit har nu 89.270, og det særskilte P0-afsnit beholder 89.269. Alle gamle afsnit og beslutninger bevares.
+
+Målet og fristen 18. november 2026 er uændrede. P0-levering/genoptagelse har førsteprioritet. Fuld lokal udstedelse, præcis SOURCE-kilde-/native-/kapacitetskontrol, sikker førstegangsinstallation, ny offentlig generation og almindelig efterfølger er fortsat nødvendige; statistik og automatisk sletning aktiveres ikke.
+
+## 25. oktober — fuld SOURCE589 forberedt, endnu UNISSUED
+
+Samtaledeltaet samler den valgte fulde SOURCE589-rute, ikke kun en skjult kompatibilitetsgren: autentiske originale 588 B/S og SAME_H0-metadata-prepare uden nyt vejr, artifactgates/frisk final-prewrite, højst én krævet SQL med normal genlæsning, derefter B→S→hel faktisk remoteS→Edges/Pages. Senere almindelige kald kræver faktisk installed 589; historiske testarkiver og gammel588-plan er ikke operativ autoritet, og ukendte writes gentages ikke.
+
+Fysiske proces-/WRITE-/journal-/original-B/S-før-T-kontrakter og uændret fireminutters fejlworker består. Syvzoner kun vandstand, sammenlignelig T+3, Fur og national 210/673-kapacitet skal fortsat bevises gennem normale ejere uden genåbning af afsluttede 588/P0-delbeviser. Før-SQL genbruger normal pakker/færdigt B og faktisk R2-usage under fast 2.000.000.000B uden cleanupkredit; hashbundet NO_ADMISSION-observation er ikke reservation eller samlet kapacitets-PASS, og S er ikke ekstra R2-upload.
+
+Dette er lokal dokumentforberedelse, ikke versions-/model-/SQL-udstedelse, installation eller offentlig levering. ROOT opdaterer på slutbytes; CP bærer faktisk offentlig 588, writer og skiftende evidens. Alle fem mål/18. november 2026 består. Gamle afsnit og alle udstedte migrationer bevares; statistik og automatisk retention aktiveres ikke. Se håndbog 89.269.
+
 ## 25. oktober — manuel turgenindsendelse bevarer originalen
 
 Den normale manuelle turkalder er rettet efter reproduceret nyt tidsstempel og manglende ejer-/indholdsafvisning ved samme ID. Genforsøg bruger den præcise oprindelige registrering og kræver stadig ny normal kvittering. Ændret ejer, indhold eller kø afvises før skrivning eller transport; manglende oprindeligt anonymt ID erstattes ikke. Seks regressioner går fra rødt til grønt, og hele den normale uploadprøve består i den samlede 588-komposition. De to berørte kildeblade er uden for C98/I97/T12, som bevares sammen med alle 67 SQL-filer. Den private ratingpakke indgår ikke. Ny præcis samlet kildekontrol og offentlig virkning udestår; ingen produktionsændring under aktiv writer.

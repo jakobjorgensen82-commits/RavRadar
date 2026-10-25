@@ -11,6 +11,15 @@ export const SOURCE_BINDING_PREFLIGHT = Object.freeze([
   'node scripts/sync-ravscore-model-binding.mjs --check',
 ]);
 
+// One reviewed native argv image, never a shell or general quoted-command parser.
+const FIXED588_FACTORY_PROGRAM = "import {withAuthenticated588PredecessorSource} from './scripts/check-assistant-later-h0-predecessor-source.mjs';await withAuthenticated588PredecessorSource(async()=>{});";
+const FIXED588_FACTORY_COMMAND = "node --input-type=module -e \"import {withAuthenticated588PredecessorSource} from './scripts/check-assistant-later-h0-predecessor-source.mjs';await withAuthenticated588PredecessorSource(async()=>{});\"";
+function sourceCommandArgv(command) {
+  if (command === FIXED588_FACTORY_COMMAND) return ['node', '--input-type=module', '-e', FIXED588_FACTORY_PROGRAM];
+  assert.match(command, /^(node|python)(?: [A-Za-z0-9_./:-]+)+$/, `Unsupported source command: ${command}`);
+  return command.split(' ');
+}
+
 export function expandSourceCommands(scripts, name, parents = []) {
   assert.ok(!parents.includes(name), `Cyclic source test script: ${name}`);
   assert.ok(typeof scripts[name] === 'string' && scripts[name].trim(), `Missing test script: ${name}`);
@@ -19,7 +28,7 @@ export function expandSourceCommands(scripts, name, parents = []) {
     if (nested) return expandSourceCommands(scripts, nested[1], [...parents, name]);
     // Current source commands are literal node/python invocations. New shell
     // syntax needs explicit support, never silent dropping or shell execution.
-    assert.match(command, /^(node|python)(?: [A-Za-z0-9_./:-]+)+$/, `Unsupported source command: ${command}`);
+    sourceCommandArgv(command);
     return [command];
   });
 }
@@ -28,6 +37,8 @@ export function buildSourceValidationPlan(scripts) {
   assert.equal(scripts['validate:source'], 'node scripts/validate-source-once.mjs');
   assert.equal(scripts['source:critical-gate'], 'node scripts/source-critical-gate.mjs');
   const commands = expandSourceCommands(scripts, 'validate:source:checks');
+  assert.ok(commands.filter(command => command === FIXED588_FACTORY_COMMAND).length <= 1,
+    'The exact fixed588 factory may be dispatched at most once');
   const gate = scripts['source:critical-gate'];
   assert.equal(commands.filter(command => command === gate).length, 1, 'Exactly one critical source gate is required');
   assert.equal(commands.at(-1), gate, 'The critical source gate must remain the terminal source check');
@@ -38,15 +49,15 @@ export function buildSourceValidationPlan(scripts) {
   };
 }
 
-function executeCommand(command) {
-  const [program, ...args] = command.split(' ');
-  const result = spawnSync(program === 'node' ? process.execPath : program, args, {
+function executeCommand(command, spawn = spawnSync) {
+  const [program, ...args] = sourceCommandArgv(command);
+  const result = spawn(program === 'node' ? process.execPath : program, args, {
     cwd: process.cwd(), stdio: 'inherit', shell: false,
   });
   return result.status === 0 && !result.error && !result.signal ? 0 : 1;
 }
 
-export function runSourceValidation(plan, { execute = executeCommand, log = console.log } = {}) {
+export function runSourceValidation(plan, { spawn = spawnSync, execute = command => executeCommand(command, spawn), log = console.log } = {}) {
   const failures = [];
   for (const command of plan.preflight) {
     log(`SOURCE binding preflight: ${command}`);

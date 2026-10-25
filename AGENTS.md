@@ -1,3 +1,20 @@
+## 25. oktober — lokal 4.0.589 udstedt; faktisk SOURCE-drift er stadig åben
+
+Den fulde SOURCE589-kilde er nu lokalt udstedt gennem den normale rækkefølge med én versionssynkronisering, fysisk afledte C/I/T, faktisk normal outputafledning, én ny append-only migration og synkronisering af alle syv forbrugere. De normale friske bygge-, SOURCE-, bindings- og releasekontroller er et fast punkt på de samme slutbytes. Det er ikke installeret SQL, PostgreSQL-eksekvering, præcis ny kilde-CI eller offentlig produktionseffekt.
+
+De fem P0-ejere fra den gennemgåede leveringskandidat er med i den isolerede kilde; deres særskilte aktuelle GitHub-kontrol giver endnu ingen ny leveringspåstand. Hele 588-originaler, gamle migrationer, offentliggjorte scorer, scoreformel, kildeprioritet, administratorpunkter og geometri bevares. Den nye SQL er kun lokalt genereret; ingen produktion ændres af udstedelsen, og versionssynkroniseringen gentages ikke.
+
+Før sikker SOURCE-levering skal de relevante normale prøver på de udstedte bytes, præcis kilde-/native-/kapacitetskontrol og faktisk autentisk 588 B/S-førskrivningskontrol bestå. Den valgte fulde SAME_H0-overgang kræver frisk slutkontrol, højst én nødvendig SQL-installation/genlæsning, B før S og hel faktisk remote-S-genlæsning før Edges/Pages; senere almindelige kald skal beviseligt bruge installeret 589. T+3, syvzoneafgrænsning, Fur, processtop, skrivning, holdbarhed og national 210/673-virkning er stadig åbne krav. Se håndbog 89.270 og ROOTs private checkpoint for faktisk P0-/writerstatus. Alle fem mål følges til 18. november 2026; statistik og automatisk sletning aktiveres ikke. Ældre statusafsnit er historik på disse konkrete punkter.
+
+## 25. oktober — klientkode er ikke privat vejrdata; central profil læses som et par
+
+Den seneste almindelige vejrhentning nåede leverandører, beregning og gemning af beskyttet B/S. Pages blev derefter afvist alene på navnene på to nye, normale JavaScript-klienter til administratorens statistikvisning. Den eksisterende navnekontrol må ikke forveksle offentlig programkode med privat rapportindhold. En særskilt administrator-synkronisering havde desuden afvist den aktive centrale profil mod den nyere lokale skabelon før den operationelle aktivering.
+
+Den afgrænsede lokale efterfølger tillader kun de to præcise klientstier, når hver er en regulær fil med de fulde, uændrede bytes fra den aktuelle kilde. Alle andre private navne, JSON-referencer, symlinks, afvigende klientbytes og private payload-fingeraftryk kontrolleres fortsat. Administrator-synkronisering skal genbruge den eksisterende strenge resolver på et frisk, samlet læst operation/profil-par; skabelonen valideres stadig lokalt, og generisk synkronisering skriver aldrig nogen af de to aktiveringsdokumenter.
+
+Dette er lokal fejlrettelse, ikke offentlig levering eller dokumenteret genoptagelse. De normale målprøver, præcis samlet kildekontrol og sikker genbrug af den faktisk nyeste gemte beregning skal fortsat bestå. Bevar allerede offentliggjorte data, originaler, modelbinding, SQL, scoreformel, kildeprioritet og geometri. SOURCE, statistikfrigivelse og automatisk sletning aktiveres ikke. Aktuel cron-/kørselsstatus og genoptagelsesidentiteter føres kun i privat checkpoint; ældre statusfronter er historik på de konkret erstattede punkter.
+
+
 ## 23. oktober — privat587-sammenføring; P0 og levering er fortsat særskilte
 
 Denne lokale587-arbejdsgren sammenfører den udstedte assistentkandidat med P0707s strømstart-, PART-bevarings- og zoneisolationskode. P0707 er fortsat en særskilt kildekandidat under præcis kontrol, ikke en ny offentlig vejrgeneration. 587 er stadig inaktiv og ikke installeret. Ingen test, ny model-/SQL-udstedelse eller produktionshandling er udført som del af denne sammenføring. Begge daterede evidensforløb nedenfor bevares; de bliver ikke et nyt samlet PASS.

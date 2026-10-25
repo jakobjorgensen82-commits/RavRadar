@@ -38,6 +38,10 @@ const EXPECTED_PUBLIC_PATHS = Object.freeze({
 const ZONE_REGISTRY_FILE = 'data/zones.geojson';
 const PUBLIC_VERSION_FILE = 'version.json';
 const PUBLIC_JORDRAV_PROFILE_FILE = 'data/jordrav/context-20261006/profiles.json';
+const PUBLIC_CLIENT_MODULES = new Set([
+  'js/services/private-trip-study.js',
+  'js/ui/admin-private-trip-study.js',
+]);
 
 const SHA256_PATTERN = /^[a-f0-9]{64}$/;
 const SEMVER_PATTERN = /^\d+\.\d+\.\d+$/;
@@ -98,6 +102,26 @@ function privatePathReason(value) {
     if (/candidate[-_.]?g.*recovery|continuation.*recovery/.test(segment)) return 'private recovery';
   }
   return null;
+}
+
+async function isExactPublicClientModule(entry) {
+  if (entry.kind !== 'file' || !PUBLIC_CLIENT_MODULES.has(entry.relative)) return false;
+  // Only the two reviewed browser files may have a private-looking entry name.
+  // Neither JSON references nor private payload fingerprints use this exception.
+  const source = new URL(`../${entry.relative}`, import.meta.url);
+  try {
+    const [sourceStat, artifactStat] = await Promise.all([
+      fs.lstat(source), fs.lstat(entry.absolute),
+    ]);
+    if (!sourceStat.isFile() || sourceStat.isSymbolicLink()
+      || !artifactStat.isFile() || artifactStat.isSymbolicLink()) return false;
+    const [sourceBytes, artifactBytes] = await Promise.all([
+      fs.readFile(source), fs.readFile(entry.absolute),
+    ]);
+    return sourceBytes.equals(artifactBytes);
+  } catch {
+    return false;
+  }
 }
 
 function isPathLikeString(value) {
@@ -596,7 +620,9 @@ export async function auditPagesArtifactPrivacy(siteRoot, {
     if (pathKeys.has(key)) issues.push(`case-normalized path collision at ${safePath(entry.relative)}`);
     pathKeys.set(key, entry.relative);
     const reason = privatePathReason(entry.relative);
-    if (reason) issues.push(`${reason} path at ${safePath(entry.relative)}`);
+    if (reason && !(reason === 'private artifact' && await isExactPublicClientModule(entry))) {
+      issues.push(`${reason} path at ${safePath(entry.relative)}`);
+    }
     if (key === 'data/live' && entry.relative !== 'data/live') {
       issues.push(`non-canonical live directory at ${safePath(entry.relative)}`);
     }

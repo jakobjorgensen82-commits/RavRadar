@@ -39,6 +39,7 @@ import {
   restoreExactProtectedPrivateWeatherPair,
   restoreExactPreviousDmiBulkDonor,
   restoreProtectedPrivateProductionRuntime,
+  protectedPrivateRuntimeRestoreVerification,
   isExactDmiMarineSeamPredecessor,
   isExactDmiSchedulerPredecessor,
   isExactWeatherRotationPredecessor,
@@ -1575,6 +1576,15 @@ try {
   assert.equal(restoredFirst.rollbackSelected, false);
   assert.equal(restoredFirst.currentGenerationRejected, false);
   assert.equal(restoredFirst.rejectedGenerationCount, 0);
+  const actualRestoreVerification=protectedPrivateRuntimeRestoreVerification(restoredFirst);
+  assert.equal(actualRestoreVerification.bundlePath,await fs.realpath(restoreBundle));
+  assert.equal(actualRestoreVerification.bundleContentSha256,restoredFirst.bundleContentSha256);
+  assert(Object.isFrozen(actualRestoreVerification));
+  assert(Object.isFrozen(actualRestoreVerification.manifest));
+  assert(Object.isFrozen(actualRestoreVerification.files));
+  assert.equal(protectedPrivateRuntimeRestoreVerification(restoredFirst),actualRestoreVerification);
+  for(const foreign of [null,{},structuredClone(restoredFirst),{...restoredFirst}])
+    assert.throws(()=>protectedPrivateRuntimeRestoreVerification(foreign),/PRIVATE_RUNTIME_NORMAL_RESTORE_RESULT_REQUIRED/);
   assert.equal(
     storage.downloads() - downloadsBeforeCurrentRestore,
     1,

@@ -66,9 +66,50 @@ export function inverseAssistantPublic587SuccessorSourceScripts(scripts){
   return prior;
 }
 
+// TEST ONLY. Qualify the complete actual SOURCE plan before its exact two-key
+// inverse. The native dispatcher is checked on CURRENT bytes by the normal test.
+const SOURCE_FIXED588_FACTORY_COMMAND="node --input-type=module -e \"import {withAuthenticated588PredecessorSource} from './scripts/check-assistant-later-h0-predecessor-source.mjs';await withAuthenticated588PredecessorSource(async()=>{});\"";
+export function inverseSourceProducerSourceScripts(scripts){
+  assert.equal(arguments.length,1);assert(scripts&&Object.getPrototypeOf(scripts)===Object.prototype);
+  assert(Object.values(scripts).every(value=>typeof value==='string'));
+  assert.equal(sha(canonical(scripts)),'930ed5f01ad883e8310606fed1b12409dddd1a39ccccf3b61069677560d277ca','Only the whole deduplicated SOURCE command map');
+  assert.equal(scripts['test:assistant-later-h0-source'],SOURCE_FIXED588_FACTORY_COMMAND);
+  const current='npm run test:assistant-later-h0-source && node scripts/build-source-producer-successor.mjs --check && node --test scripts/test-source-producer-prewrite.mjs && node scripts/sync-ravscore-model-binding.mjs --check';
+  const previous='npm run test:assistant-later-h0-source && node scripts/sync-ravscore-model-binding.mjs --check';
+  const critical=scripts['test:ravscore-source-critical'];
+  assert.equal(critical.split(current).length,2,'Exactly one ordered SOURCE builder/prewrite registration');
+  const expanded=expandSourceCommands(scripts,'validate:source:checks'),plan=buildSourceValidationPlan(scripts),dispatched=[];
+  assert.equal(expanded.length,73,'Deduplication removes an operand, not a normal command');
+  assert.equal(runSourceValidation(plan,{execute(command){dispatched.push(command);return 0;},log(){}}),0);
+  assert.deepEqual(dispatched,[...plan.preflight,...plan.remaining,plan.gate]);
+  for(const rows of [expanded,dispatched])for(const command of [SOURCE_FIXED588_FACTORY_COMMAND,
+    'node scripts/build-source-producer-successor.mjs --check','node --test scripts/test-source-producer-prewrite.mjs'])
+    assert.equal(rows.filter(value=>value===command).length,1,'Actual fixed588/SOURCE checks remain once');
+  const invoked=expanded.flatMap(command=>command.split(' '));
+  assert.equal(invoked.filter(value=>value==='scripts/test-source-normal-workflow.mjs').length,0);
+  assert.equal(invoked.filter(value=>value==='scripts/test-reusable-production-workflows.mjs').length,1,
+    'The complete structural target remains reached through its existing normal import chain');
+  const reviewedCritical=critical.replace('node --test scripts/test-source-producer-prewrite.mjs',
+    'node --test scripts/test-source-producer-prewrite.mjs scripts/test-source-normal-workflow.mjs');
+  const reviewed={...scripts,'test:ravscore-source-critical':reviewedCritical};
+  assert.equal(sha(canonical(reviewed)),'47e6338aa670cfaa39d30f529d4a9d77fc2494d60476757ca30b95f3da283f51',
+    'The entire original SOURCE plan is retained as a never-dispatched historical view');
+  const reviewedCurrent=current.replace('node --test scripts/test-source-producer-prewrite.mjs',
+    'node --test scripts/test-source-producer-prewrite.mjs scripts/test-source-normal-workflow.mjs');
+  assert.equal(reviewedCritical.split(reviewedCurrent).length,2);
+  const prior={...reviewed,'test:assistant-later-h0-source':
+    'node scripts/build-assistant-later-h0-successor.mjs --public587-successor --check',
+    'test:ravscore-source-critical':reviewedCritical.replace(reviewedCurrent,previous)};
+  assert.equal(sha(canonical(prior)),'fe8e112b4e4e30d948aeecf764db02369bdfc90ba1d0d681af5733b27443b06b',
+    'Exact two-key inverse preserves the entire actual588 command map before all old assertions');
+  return prior;
+}
+
 export function inverseAssistantLaterH0SourceScripts(scripts){
   assert.equal(arguments.length,1);assert(scripts&&Object.getPrototypeOf(scripts)===Object.prototype);
   assert(Object.values(scripts).every(value=>typeof value==='string'));
+  if(scripts['test:assistant-later-h0-source']===SOURCE_FIXED588_FACTORY_COMMAND)
+    scripts=inverseSourceProducerSourceScripts(scripts);
   if(scripts['test:assistant-later-h0-source']==='node scripts/build-assistant-later-h0-successor.mjs --public587-successor --check')
     scripts=inverseAssistantPublic587SuccessorSourceScripts(scripts);
   assert.equal(sha(canonical(scripts)),'9df85408955c0449c92370f1af4451ff475f4cc10a4e92bcb440790793bda997','Only the entire reviewed later-H0 command map');

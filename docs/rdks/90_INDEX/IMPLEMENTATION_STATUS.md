@@ -1,3 +1,48 @@
+## 25. oktober — lokal 4.0.589 udstedt; faktisk SOURCE-drift er stadig åben
+
+Den fulde SOURCE589-kilde er nu lokalt udstedt gennem den normale rækkefølge med én versionssynkronisering, fysisk afledte C/I/T, faktisk normal outputafledning, én ny append-only migration og synkronisering af alle syv forbrugere. De normale friske bygge-, SOURCE-, bindings- og releasekontroller er et fast punkt på de samme slutbytes. Det er ikke installeret SQL, PostgreSQL-eksekvering, præcis ny kilde-CI eller offentlig produktionseffekt.
+
+De fem P0-ejere fra den gennemgåede leveringskandidat er med i den isolerede kilde; deres særskilte aktuelle GitHub-kontrol giver endnu ingen ny leveringspåstand. Hele 588-originaler, gamle migrationer, offentliggjorte scorer, scoreformel, kildeprioritet, administratorpunkter og geometri bevares. Den nye SQL er kun lokalt genereret; ingen produktion ændres af udstedelsen, og versionssynkroniseringen gentages ikke.
+
+Før sikker SOURCE-levering skal de relevante normale prøver på de udstedte bytes, præcis kilde-/native-/kapacitetskontrol og faktisk autentisk 588 B/S-førskrivningskontrol bestå. Den valgte fulde SAME_H0-overgang kræver frisk slutkontrol, højst én nødvendig SQL-installation/genlæsning, B før S og hel faktisk remote-S-genlæsning før Edges/Pages; senere almindelige kald skal beviseligt bruge installeret 589. T+3, syvzoneafgrænsning, Fur, processtop, skrivning, holdbarhed og national 210/673-virkning er stadig åbne krav. Se håndbog 89.270 og ROOTs private checkpoint for faktisk P0-/writerstatus. Alle fem mål følges til 18. november 2026; statistik og automatisk sletning aktiveres ikke. Ældre statusafsnit er historik på disse konkrete punkter.
+
+## 25. oktober — klientkode er ikke privat vejrdata; central profil læses som et par
+
+Den seneste almindelige vejrhentning nåede leverandører, beregning og gemning af beskyttet B/S. Pages blev derefter afvist alene på navnene på to nye, normale JavaScript-klienter til administratorens statistikvisning. Den eksisterende navnekontrol må ikke forveksle offentlig programkode med privat rapportindhold. En særskilt administrator-synkronisering havde desuden afvist den aktive centrale profil mod den nyere lokale skabelon før den operationelle aktivering.
+
+Den afgrænsede lokale efterfølger tillader kun de to præcise klientstier, når hver er en regulær fil med de fulde, uændrede bytes fra den aktuelle kilde. Alle andre private navne, JSON-referencer, symlinks, afvigende klientbytes og private payload-fingeraftryk kontrolleres fortsat. Administrator-synkronisering skal genbruge den eksisterende strenge resolver på et frisk, samlet læst operation/profil-par; skabelonen valideres stadig lokalt, og generisk synkronisering skriver aldrig nogen af de to aktiveringsdokumenter.
+
+Dette er lokal fejlrettelse, ikke offentlig levering eller dokumenteret genoptagelse. De normale målprøver, præcis samlet kildekontrol og sikker genbrug af den faktisk nyeste gemte beregning skal fortsat bestå. Bevar allerede offentliggjorte data, originaler, modelbinding, SQL, scoreformel, kildeprioritet og geometri. SOURCE, statistikfrigivelse og automatisk sletning aktiveres ikke. Aktuel cron-/kørselsstatus og genoptagelsesidentiteter føres kun i privat checkpoint; ældre statusfronter er historik på de konkret erstattede punkter.
+
+
+## 25. oktober — SOURCE589: forberedelse er ikke udstedelse eller installation
+
+Den fulde kandidat er lokalt forberedt og UNISSUED. Den eksisterende eksplicitte SAME_H0-kæde er prepare fra autentiske originale 588 B/S uden nyt vejr → artifactgates/frisk final-prewrite → højst én krævet SQL/genlæsning → B → S → hel faktisk remoteS → Edges/Pages. Senere almindelige kald må kun bruge faktisk installeret 589; ukendt udfald eller historiske testarkiver giver ingen admission. Alle gamle 588/P0-afsnit og udstedte SQL-originaler bevares.
+
+- [ ] ROOT udsteder og synkroniserer én gang på de reelle samlede slutbytes, inklusive normal statisk håndbogsseed, og gennemfører de nødvendige præcise kilde-/native-/PostgreSQL-kontroller.
+- [ ] Den faktiske kontrollerede førstegangskæde og en senere normal installed 589-efterfølger dokumenteres; ingen gentagelse af en allerede udført eller ukendt SQL-write.
+- [ ] Fysisk processtop/reap, eksklusiv WRITE, journalens ejerskabs-/første-fejl-kontrakt og holdbar gemning, originale B/S før T og uændret fireminutters fejlworker bevises gennem normale ejere.
+- [ ] Syvzone-vandstandsbevaring, sammenlignelig T+3, Fur-årsag og national heljobskapacitet 210/673 bevises uden at genåbne afsluttede numeriske 588/P0-delbeviser.
+- [ ] Faktisk B-størrelse og frisk R2-usage bindes før SQL med fast 2.000.000.000B, uden cleanupkredit. Observationen er NO_ADMISSION, ikke reservation eller garanti; friske PUT-kontroller består, S er ikke ekstra R2-upload, og almindelige kald får intet ekstra måletrin.
+
+Denne forberedelse fastslår hverken faktisk offentlig 588-levering eller aktuel writerstatus; begge føres i CP. Alle fem mål og 18. november 2026 står fast. Lokale delmål er ikke offentlig effekt, aktiveret statistik/retention eller samlet driftsbevis. Se håndbog 89.270; gamle afsnit er dateret historik på netop disse statuspunkter.
+
+## 25. oktober — søgemåden følger den delte score
+
+Den lokale prognosedelingsrettelse medtager nu strand eller waders i både den statiske forhåndsvisnings beskrivelse og den synlige delingsside på dansk, tysk og engelsk. Tidspunkt, sted og score må ikke læses uden søgemåden. Den eksisterende håndbog 89.268 kræver allerede denne sammenhæng og er fortsat gældende.
+
+Rettelsen ændrer kun den fælles beskrivelsestekst. De seks normale sprog-/søgemådetilfælde kontrollerer nu både OG-beskrivelsen og den synlige tekst; alle tidligere assertions bevares. Hele den normale tidsskyder-/delingsprøve består lokalt med 129 tilfælde på den faktiske 588-kilde uden netkald. Score, datoformat uden tidszonesuffiks, URL, kildekontrol, udløb, logo og manglende-data-adfærd er uændrede.
+
+Det er lokal kilde- og testfremdrift, ikke en installeret Worker eller bevis for Facebook-forhåndsvisning, indlæsningshastighed eller Free-kapacitet. Disse faktiske leveringskrav er fortsat åbne; ingen database, billedlager, ny vejrhentning eller produktionsændring følger af tekstrettelsen. P0 og den aktuelle almindelige vejrhentning har førsteprioritet. Den præcise kilde skal kvalificeres før sikker levering.
+
+## 25. oktober — varig privat Fur-rapport uden ekstra vejrhentning
+
+Den lokale runtimeaudit udvides med en afgrænset Fur-rapport på de samme 118 forventede timer. Den bruger de allerede indlæste data og den eksisterende private rapportvej; ingen ny workflowfil, leverandørhentning, stor pakkegenlæsning eller upload indføres. Kun observeret tilstedeværelse og faste hashes medtages. Manglende eller ugyldige observationer er UNKNOWN/null, ikke opfundne mangler eller værdier.
+
+Den normale målprøve for 210/673 består, inklusive de gamle assertions, uændrede fejl/status/optællinger, ingen ændring af input samt uændret offentlig startup/details. De syv bindingsforbrugere er fortsat synkroniserede. Det er lokal evidens, ikke præcis kilde-CI eller faktisk rapport fra en ny almindelig generation.
+
+Rapporten ændrer ikke routing, kildeprioritet, scoreformel, geometri, C/I/T, SQL eller nogen acceptgrænse. Den beviser ikke T+3, national køprioritet eller årsagen i en gammel kørsel og afslutter ikke Fur-opgaven. Offentlig levering og kontrol af en faktisk ny generations rapport er fortsat åbne. P0-vejrhentningen har førsteprioritet; aktuelle kørsler og næste trin står i det private checkpoint. Ældre daterede fronter bevares som historik.
+
 ## 25. oktober — normal indgang ved assistentens senere vejrtime
 
 Den seneste almindelige kørsel stoppede før leverandører, fordi assistentovergangens kontrol krævede navnet på den ældre top-level-indgang. GitHub bevarer den faktiske top-level-kalders identitet i genbrugte workflows; den nyere almindelige indgang var derfor ikke et ugyldigt kald. En målrettet prøve gennem den faktiske select-kalder har reproduceret præcis fejlen.

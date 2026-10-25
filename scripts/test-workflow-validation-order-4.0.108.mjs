@@ -4,7 +4,12 @@ import {
   activeForecastShareDeployment, forecastShareVersionFromDeploy,
   assertForecastShareRemoteShape, readForecastShareJson, FORECAST_SHARE_READ_KINDS,
 } from './deploy-forecast-share.mjs';
-import { verifyWorkflow as verifyCurrentNationalWorkflow, CURRENT_JOB as CURRENT_SOURCE_JOB, AFTER_JOB as REVIEWED90_SOURCE_JOB } from './national584-source-evidence.mjs';
+import { verifyWorkflow as verifyCurrentNationalWorkflow, verifyPackage as verifyCurrentNationalPackage,
+  inverseSourceNode24Workflow, SOURCE_NODE24_CAPTURE, SOURCE_NODE24_ENV,
+  SOURCE_PRODUCER_SOURCE_COMMAND, SOURCE_PRODUCER_PREDECESSOR_SOURCE_COMMAND,
+  CURRENT_JOB as CURRENT_SOURCE_JOB, AFTER_JOB as REVIEWED90_SOURCE_JOB } from './national584-source-evidence.mjs';
+import { inverseSourceProducerPhaseUpload, SOURCE_PRODUCER_PHASE_UPLOAD_BLOCK, CURRENT586_PHASE_UPLOAD_BLOCK }
+  from './native-postgres-evidence.mjs';
 import { assertEarlyCompletedRuntimeStageOrder, inverseCompletedRuntimeWorkflow } from './lib/completed-private-runtime-workflow-review.mjs';
 import fs from 'node:fs';
 import crypto from 'node:crypto';
@@ -108,6 +113,10 @@ const physicalWorkflowFiles = fs.readdirSync(workflowDirectory)
 const expectedWorkflowFiles = ['apply-weather-model-binding-only.yml', 'audit-native-current-grid.yml', 'audit-saved-weather-inputs.yml', 'audit-sealed-current-source.yml', 'build-ravscore-historical-wave-pilot.yml', 'deploy-code-only-repair.yml', 'deploy-trip-storage.yml', 'extract-private-geodanmark-layer.yml', 'migrate-private-runtime-to-r2.yml', 'monitor-trip-storage.yml', 'notify-weather-failure.yml', 'preserve-copernicus-current-shadow.yml', 'recover-live-ravscore-central.yml', 'recover-saved-dmi-originals.yml', 'recover-sealed-weather-36396834072.yml', 'retry-national-admin-roundtrip.yml', 'reusable-operational-reentry.yml', 'reusable-pages-deploy.yml', 'reusable-weather-build.yml', 'run-current-weather-once.yml', 'update-and-deploy.yml', 'validate-approved-public-coast.yml', 'validate-copernicus-current-pilot.yml', 'validate-local-part-system-candidate.yml', 'validate-pull-request.yml', 'validate-six-zone-recovery.yml', 'watch-missed-weather-schedule.yml'];
 // Exact outer inventory for the separately dispatched public share Worker.
 const forecastShareName = 'deploy-forecast-share.yml';
+const sourceNativeProfileWorkflowName = 'validate-current-source-native-profile.yml';
+// Compose two whole exact outer inventories; neither admits the other's workflow.
+const observedWorkflowFiles = physicalWorkflowFiles.filter(name => name !== forecastShareName);
+const shareWorkflowFiles = physicalWorkflowFiles.filter(name => name !== sourceNativeProfileWorkflowName);
 const forecastShareSource = fs.readFileSync(`${workflowDirectory}/${forecastShareName}`, 'utf8').replace(/\r\n/g, '\n');
 function inverseForecastShareWorkflowInventory(names, source) {
   assert.deepEqual(names, [...expectedWorkflowFiles, 'private-trip-weather-study.yml', forecastShareName].sort());
@@ -115,18 +124,18 @@ function inverseForecastShareWorkflowInventory(names, source) {
     'b03274d75ba0d4c6edab84aadff682c7faf99433a15d71b498dc0ea5674bcc1a');
   return names.filter(name => name !== forecastShareName);
 }
-const actualWorkflowFiles = inverseForecastShareWorkflowInventory(physicalWorkflowFiles, forecastShareSource);
+const actualWorkflowFiles = inverseForecastShareWorkflowInventory(shareWorkflowFiles, forecastShareSource);
 for (const names of [
-  [...physicalWorkflowFiles, 'unknown-share.yml'].sort(),
-  physicalWorkflowFiles.filter(name => name !== forecastShareName),
-  [...physicalWorkflowFiles, forecastShareName].sort(),
-  physicalWorkflowFiles.filter(name => name !== expectedWorkflowFiles[0]),
+  [...shareWorkflowFiles, 'unknown-share.yml'].sort(),
+  shareWorkflowFiles.filter(name => name !== forecastShareName),
+  [...shareWorkflowFiles, forecastShareName].sort(),
+  shareWorkflowFiles.filter(name => name !== expectedWorkflowFiles[0]),
 ]) assert.throws(() => inverseForecastShareWorkflowInventory(names, forecastShareSource));
 for (const source of [forecastShareSource + '\n# drift\n',
   forecastShareSource.replace('contents: read', 'contents: write'),
   forecastShareSource.replace('cancel-in-progress: false', 'cancel-in-progress: true'),
   forecastShareSource.replace(' = false', ' = true')]) {
-  assert.throws(() => inverseForecastShareWorkflowInventory(physicalWorkflowFiles, source));
+  assert.throws(() => inverseForecastShareWorkflowInventory(shareWorkflowFiles, source));
 }
 for (const marker of ['workflow_dispatch:', 'expected_main:', 'DEPLOY-FORECAST-SHARE',
   'group: ravradar-weather-production-v2', 'queue: max', 'cancel-in-progress: false',
@@ -333,6 +342,38 @@ function inversePrivateStudyWorkflowInventory(names, source) {
   assert.doesNotMatch(source, /pages: write|id-token: write|deploy-pages/);
   return names.filter(name => name !== privateStudyName);
 }
+// The manual CURRENT profile can be present before main qualification, but it
+// is never invoked by this source test. Project only its exact whole reviewed
+// file out before every unchanged historical/private-study inventory assertion.
+const sourceNativeProfileWorkflowSource = fs.readFileSync(
+  `${workflowDirectory}/${sourceNativeProfileWorkflowName}`, 'utf8',
+).replace(/\r\n/g, '\n');
+function inverseSourceNativeProfileWorkflowInventory(names, source) {
+  assert.deepEqual(names, [...expectedWorkflowFiles, privateStudyName, sourceNativeProfileWorkflowName].sort(),
+    'Only the complete old inventory plus the exact inactive CURRENT workflow');
+  assert.equal(crypto.createHash('sha256').update(source).digest('hex'),
+    '6ece41eaed6d57c54f063acda8d0598ff1eb1d0541aed32920f70e45c475dbda',
+    'Whole default-OFF post-green-main workflow; no trigger or authority substitution');
+  assert.doesNotMatch(source, /pages: write|id-token: write|deploy-pages|continue-on-error:/);
+  return names.filter(name => name !== sourceNativeProfileWorkflowName);
+}
+const sourceRestoredWorkflowFiles = inverseSourceNativeProfileWorkflowInventory(
+  observedWorkflowFiles, sourceNativeProfileWorkflowSource,
+);
+assert.deepEqual(sourceRestoredWorkflowFiles, actualWorkflowFiles,
+  'Both independently exact inventory inverses restore the same historical view');
+for (const names of [
+  [...observedWorkflowFiles, 'unreviewed-workflow.yml'].sort(),
+  observedWorkflowFiles.filter(name => name !== sourceNativeProfileWorkflowName),
+  [...observedWorkflowFiles, sourceNativeProfileWorkflowName].sort(),
+  observedWorkflowFiles.filter(name => name !== privateStudyName),
+  observedWorkflowFiles.filter(name => name !== expectedWorkflowFiles[0]),
+]) assert.throws(() => inverseSourceNativeProfileWorkflowInventory(names, sourceNativeProfileWorkflowSource));
+for (const source of [
+  sourceNativeProfileWorkflowSource + '\n# unreviewed change\n',
+  sourceNativeProfileWorkflowSource.replace('        default: false\n', '        default: true\n'),
+  sourceNativeProfileWorkflowSource.replace('  contents: read\n', '  contents: write\n'),
+]) assert.throws(() => inverseSourceNativeProfileWorkflowInventory(observedWorkflowFiles, source));
 const workflowFiles = inversePrivateStudyWorkflowInventory(actualWorkflowFiles, privateStudySource);
 assert.deepEqual(workflowFiles, expectedWorkflowFiles,
   'The complete unchanged historical workflow inventory is restored');
@@ -470,9 +511,31 @@ assert.deepEqual(
   ['deploy-trip-storage.yml', 'reusable-weather-build.yml', 'validate-copernicus-current-pilot.yml', 'validate-pull-request.yml'],
   'Alle workflows med validate:source skal være kendte og dækket af dependency-paritetsgaten.',
 );
+const actualPullRequestValidation = fs.readFileSync(`${workflowDirectory}/validate-pull-request.yml`, 'utf8').replace(/\r\n/g, '\n');
+verifyCurrentNationalWorkflow(actualPullRequestValidation);
+// Only an exact historical assertion view; qualify the actual whole PR workflow first.
+const historicalPullRequestValidation = inverseSourceNode24Workflow(inverseSourceProducerPhaseUpload(actualPullRequestValidation));
+for (const changed of [
+  actualPullRequestValidation.replace(SOURCE_PRODUCER_PHASE_UPLOAD_BLOCK, ''),
+  actualPullRequestValidation + SOURCE_PRODUCER_PHASE_UPLOAD_BLOCK,
+  actualPullRequestValidation.replace('name: source-producer-phase-', 'name: native586-phase-'),
+  actualPullRequestValidation + CURRENT586_PHASE_UPLOAD_BLOCK,
+]) assert.throws(() => inverseSourceProducerPhaseUpload(changed));
+for (const changed of [
+  actualPullRequestValidation.replace(SOURCE_NODE24_CAPTURE, ''),
+  actualPullRequestValidation + SOURCE_NODE24_CAPTURE,
+  actualPullRequestValidation.replace(SOURCE_NODE24_ENV, ''),
+  actualPullRequestValidation + SOURCE_NODE24_ENV,
+  actualPullRequestValidation.replace('node24_path=%s', 'unreviewed_node24_path=%s'),
+]) assert.throws(() => inverseSourceNode24Workflow(changed));
+assert.equal(actualPullRequestValidation.split(SOURCE_NODE24_ENV).length, 2,
+  'The observed Node24 executable is confined to the one real native PG step');
+assert.ok(actualPullRequestValidation.indexOf(SOURCE_NODE24_CAPTURE)
+  < actualPullRequestValidation.indexOf('      - name: Restore Node22 for existing source validation\n'));
 let sourceGatePathCount = 0;
 for (const workflowName of sourceGateWorkflowNames) {
-  const workflow = fs.readFileSync(`${workflowDirectory}/${workflowName}`, 'utf8').replace(/\r\n/g, '\n');
+  const workflow = workflowName === 'validate-pull-request.yml' ? historicalPullRequestValidation
+    : fs.readFileSync(`${workflowDirectory}/${workflowName}`, 'utf8').replace(/\r\n/g, '\n');
   let searchFrom = 0;
   while (true) {
     const sourceGateRun = workflow.indexOf('npm run validate:source', searchFrom);
@@ -581,9 +644,7 @@ if (/\b(?:push|pull_request|schedule|workflow_run):/.test(historicalWavePilot)) 
 if (/\.nc(?:\s|$)/m.test(historicalWavePilot)) {
   throw new Error('Den historiske bølgepilot må ikke uploade NetCDF-filer.');
 }
-const actualPullRequestValidation = fs.readFileSync(`${workflowDirectory}/validate-pull-request.yml`, 'utf8').replace(/\r\n/g, '\n');
-verifyCurrentNationalWorkflow(actualPullRequestValidation);
-const pullRequestValidation = actualPullRequestValidation.replace(CURRENT_SOURCE_JOB, REVIEWED90_SOURCE_JOB);
+const pullRequestValidation = historicalPullRequestValidation.replace(CURRENT_SOURCE_JOB, REVIEWED90_SOURCE_JOB);
 for (const marker of [
   'pull_request:',
   'permissions:\n  contents: read',
@@ -646,6 +707,17 @@ if (prGateOrder.some((position, index) => position < 0 || (index > 0 && position
   throw new Error('PR-kildegatens exact-head, digest, validering, renhed og proofupload står i forkert rækkefølge.');
 }
 const packageJson = JSON.parse(fs.readFileSync('package.json', 'utf8'));
+verifyCurrentNationalPackage(packageJson); // Full SOURCE plan, exact two-script inverse, then whole588/587 plans.
+for (const mutate of [
+  pkg => { pkg.scripts['test:ravscore-source-critical'] = pkg.scripts['test:ravscore-source-critical'].replace(SOURCE_PRODUCER_SOURCE_COMMAND, 'node scripts/unreviewed-source.mjs'); },
+  pkg => { pkg.scripts['test:ravscore-source-critical'] += ' && '+SOURCE_PRODUCER_SOURCE_COMMAND; },
+  pkg => { pkg.scripts['test:assistant-later-h0-source'] = SOURCE_PRODUCER_PREDECESSOR_SOURCE_COMMAND+' --unreviewed'; },
+  pkg => { pkg.scripts['test:unreviewed-source-group'] = 'node scripts/unreviewed-source.mjs'; },
+  pkg => { delete pkg.scripts['test:account-statistics-assistant-source']; },
+]) {
+  const changed = structuredClone(packageJson); mutate(changed);
+  assert.throws(() => verifyCurrentNationalPackage(changed), 'No missing, duplicated, changed or extra normal source command');
+}
 if (packageJson?.scripts?.['validate:source'] !== 'node scripts/validate-source-once.mjs') {
   throw new Error('validate:source skal bruge den fælles kritiske testplan.');
 }

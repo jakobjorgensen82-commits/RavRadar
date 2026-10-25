@@ -240,6 +240,96 @@ try {
   await fs.rm(cleanRoot, { recursive: true, force: true });
 }
 
+// These are public browser modules, not private runtime payloads. Bind the
+// exception to the actual checked-out source, never just a filename or suffix.
+const publicClientModules = [
+  'js/services/private-trip-study.js',
+  'js/ui/admin-private-trip-study.js',
+];
+for (const relative of publicClientModules) {
+  const sourceBytes = await fs.readFile(new URL(`../${relative}`, import.meta.url));
+  async function writeClientModule(root, bytes = sourceBytes, targetRelative = relative) {
+    const target = path.join(root, targetRelative);
+    await fs.mkdir(path.dirname(target), { recursive: true });
+    await fs.writeFile(target, bytes);
+  }
+
+  const publicModuleRoot = await freshFixture();
+  const originalCwd = process.cwd();
+  try {
+    await writeClientModule(publicModuleRoot);
+    // Source identity must be anchored to this auditor's checkout, not cwd.
+    process.chdir(publicModuleRoot);
+    const result = await auditPagesArtifactPrivacy(publicModuleRoot);
+    assert.equal(result.datasetId, datasetId);
+  } finally {
+    process.chdir(originalCwd);
+    await fs.rm(publicModuleRoot, { recursive: true, force: true });
+  }
+
+  await expectRejected(`modified public client module: ${relative}`, async root => {
+    await writeClientModule(root, Buffer.concat([sourceBytes, Buffer.from('\n// unexpected artifact mutation\n')]));
+  }, /private artifact path/);
+
+  await expectRejected(`unapproved public client sibling: ${relative}`, async root => {
+    await writeClientModule(root, sourceBytes, relative.replace(/\.js$/, '.copy.js'));
+  }, /private artifact path/);
+
+  await expectRejected(`public client path is a directory: ${relative}`, async root => {
+    await fs.mkdir(path.join(root, relative), { recursive: true });
+  }, /private artifact path/);
+
+  for (const reference of [`./${relative}?v=synthetic`, `./${relative.replace('private', '%70rivate')}`]) {
+    await expectRejected(`public client name remains private in JSON references: ${reference}`, async root => {
+      const target = path.join(root, 'assets', 'opaque-reference.json');
+      await fs.mkdir(path.dirname(target), { recursive: true });
+      await fs.writeFile(target, jsonText({ href: reference }));
+    }, /private artifact reference/);
+  }
+
+  const clientFingerprintRoot = await freshFixture();
+  const clientPrivateRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'ravradar-client-fingerprints-'));
+  try {
+    await writeClientModule(clientFingerprintRoot);
+    const privateManifestPath = path.join(clientPrivateRoot, 'manifest.json');
+    await fs.writeFile(privateManifestPath, jsonText({
+      schemaVersion: '1.0.0',
+      kind: 'RAVRADAR_PRIVATE_PRODUCTION_RUNTIME_BUNDLE',
+      privacyClass: 'PRIVATE_PRODUCTION_RUNTIME',
+      fileCount: 1,
+      files: [{
+        id: 'synthetic-private-client-collision',
+        relativePath: relative,
+        bytes: sourceBytes.length,
+        sha256: sha256(sourceBytes),
+        privacyClass: 'PRIVATE_PRODUCTION_RUNTIME',
+      }],
+    }));
+    await assert.rejects(
+      auditPagesArtifactPrivacy(clientFingerprintRoot, { privateManifestPath, requirePrivateManifest: true }),
+      error => error instanceof PagesArtifactPrivacyError
+        && /exact private runtime payload fingerprint/.test(error.message),
+      `private fingerprint still wins over public source identity: ${relative}`,
+    );
+  } finally {
+    await fs.rm(clientFingerprintRoot, { recursive: true, force: true });
+    await fs.rm(clientPrivateRoot, { recursive: true, force: true });
+  }
+
+  await expectRejected(`symbolic link at public client path: ${relative}`, async root => {
+    const link = path.join(root, relative);
+    await fs.mkdir(path.dirname(link), { recursive: true });
+    try {
+      await fs.symlink(new URL(`../${relative}`, import.meta.url), link, 'file');
+    } catch (error) {
+      if (error?.code !== 'EPERM') throw error;
+      const target = path.join(root, 'link-target');
+      await fs.mkdir(target);
+      await fs.symlink(target, link, 'junction');
+    }
+  }, /symbolic link/);
+}
+
 await expectRejected('private point hidden in public land-mask file',async root=>{
   const mapRoot=path.join(root,'data','map');await fs.mkdir(mapRoot,{recursive:true});
   const document=JSON.parse(await fs.readFile('data/map/current-arrow-land-mask.json','utf8'));
