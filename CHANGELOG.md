@@ -1,3 +1,11 @@
+## 25. oktober — normal indgang ved assistentens senere vejrtime
+
+Den seneste almindelige kørsel stoppede før leverandører, fordi assistentovergangens kontrol krævede navnet på den ældre top-level-indgang. GitHub bevarer den faktiske top-level-kalders identitet i genbrugte workflows; den nyere almindelige indgang var derfor ikke et ugyldigt kald. En målrettet prøve gennem den faktiske select-kalder har reproduceret præcis fejlen.
+
+Kun den aktive 587→588-familie får en særskilt kontrol for de to eksisterende almindelige indgange. Hovedgren, event, forsøg, commitformat, operation og alle afslag på blandede genoptagelses-/nulstillings-/kode-only-modes bevares. Den historiske 586→587-kontrol er uændret. Identiteten omskrives ikke, og gammel original- eller målvalidering springes ikke over. Den samme aktive kontrol bruges ved select, prepare og installation af arbejdsvisningen.
+
+Den nye målprøve er rød før og grøn efter rettelsen; hele den normale kalderprøve består med 32 prøver uden skip. Den installerede 588-binding skal ikke geninstalleres. Offentlig vejr-/assistentvirkning og normal efterfølger er fortsat åbne, indtil den præcise kildekontrol og faktiske levering er gennemført. Senest gyldige offentlige 587-data bevares. Ingen ny version, SQL, C/I/T, scoreformel, kildeprioritet, administratorpunkter eller geometri; SOURCE, statistik og automatisk retention forbliver inaktive. Aktuelle kørselstal og evidens står i privat checkpoint. Ældre statusfronter er historiske på disse konkrete punkter.
+
 ## 25. oktober — samme manuelle tur skal genforsøges uden ændrede originaler
 
 Den normale manuelle indsendelse kunne ved samme tur-ID danne et nyt indsendelsestidspunkt og ændre registreringen ved genforsøg. Fejlen er reproduceret i de faktiske normale kaldere. Rettelsen genbruger den fulde oprindelige registrering, kræver samme ejer og uændret indhold og afviser en modstridende kø før skrivning eller transport. Et allerede sendt forsøg kræver stadig en frisk normal serverkvittering; et ukendt udfald kaldes ikke gemt. Ny konto efter afventning afvises fortsat.

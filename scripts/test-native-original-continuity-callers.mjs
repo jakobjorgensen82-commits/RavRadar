@@ -1051,6 +1051,62 @@ import {DEFAULT_CUTOVER_SOURCE_PHASE,assistantPublic587SuccessorRequiredMigratio
 import {synchronizeRavScoreModelBinding,assistantPublic587SuccessorCheckpointInspectionView}
   from './sync-ravscore-model-binding.mjs';
 
+test('assistant public587 ordinary caller uses real top-level workflow identity before selecting original data',async t=>{
+  const entrypoints=await Promise.all(['update-and-deploy.yml','run-current-weather-once.yml'].map(async file=>{
+    const source=await fs.readFile(path.join(ROOT,'.github/workflows',file),'utf8');
+    const match=/^name: (.+)$/m.exec(source);assert(match,'Actual top-level caller has a fixed name');
+    assert(source.includes('uses: ./.github/workflows/reusable-weather-build.yml'));
+    return match[1].trim();
+  }));
+  assert.deepEqual(entrypoints,['Update weather and deploy RavRadar','Run current RavRadar weather once']);
+  const descriptor={modelBinding:{modelBundleSha256:ACTIVE_ASSISTANT_SUCCESSOR.before.I},
+    contractHashes:{continuationStateContractSha256:ACTIVE_ASSISTANT_SUCCESSOR.before.T},
+    productionReferenceAt:'2026-10-25T12:00:00.000Z'};
+  const ordinaryOnly=['CHECKPOINT_ONLY','QUICK_CONFIRMATION','COMPLETED_PRIVATE_RUNTIME',
+    'NATIVE_IDENTITY_RECOVERY','RAVRADAR_WEATHER_STATE_EPOCH_BOOTSTRAP',
+    'RAVRADAR_WEATHER_STATE_EPOCH_CHECKPOINT_REENTRY','RESTART_ARCHIVED_WEATHER','PUBLISH_NEWEST_SAVED_WEATHER'];
+  const base={GITHUB_WORKFLOW:entrypoints[1],GITHUB_REF:'refs/heads/main',GITHUB_EVENT_NAME:'workflow_dispatch',
+    GITHUB_RUN_ATTEMPT:'1',GITHUB_SHA:'a'.repeat(40),OPERATIONAL_ACTION:'integrated',
+    RUNNER_TEMP:path.join(ROOT,'.cache','synthetic-caller-no-files'),
+    RAVRADAR_PRODUCTION_TARGET_HOUR:'2026-10-25T16:00:00.000Z',
+    ...Object.fromEntries(ordinaryOnly.map(key=>[key,'false']))};
+  const keys=Object.keys(base),prior=Object.fromEntries(keys.map(key=>[key,process.env[key]]));
+  let reads=0;
+  t.mock.method(fs,'readFile',async(file,encoding)=>{
+    assert.equal(file,path.join(base.RUNNER_TEMP,'private-runtime-current-source.json'));
+    assert.equal(encoding,'utf8');reads++;return JSON.stringify(descriptor);
+  });
+  t.mock.method(globalThis,'fetch',()=>{throw new Error('NO_NETWORK_IN_CALLER_SELECTION');});
+  for(const method of ['writeFile','appendFile','mkdir','mkdtemp','rm','unlink','rename'])
+    t.mock.method(fs,method,()=>{throw new Error('NO_WRITE_IN_CALLER_SELECTION');});
+  try{
+    for(const name of entrypoints)for(const event of ['workflow_dispatch','schedule'])
+      for(const action of ['integrated','integrated-historical-maintenance']){
+        Object.assign(process.env,base,{GITHUB_WORKFLOW:name,GITHUB_EVENT_NAME:event,OPERATIONAL_ACTION:action});
+        const before={...process.env};assert.equal(await selectAssistantLaterH0Source(),true);
+        assert.deepEqual({...process.env},before,'The actual caller identity is never rewritten');
+      }
+    assert.equal(reads,8);
+    for(const [key,value]of [...Object.entries({GITHUB_WORKFLOW:'Deploy RavRadar code-only repair',
+      GITHUB_REF:'refs/heads/other',GITHUB_EVENT_NAME:'push',GITHUB_RUN_ATTEMPT:'0',
+      GITHUB_SHA:'A'.repeat(40),OPERATIONAL_ACTION:'integrated-cutover'}),
+      ...ordinaryOnly.map(key=>[key,'true'])]){
+      Object.assign(process.env,base,{[key]:value});await assert.rejects(selectAssistantLaterH0Source());
+    }
+    for(const target of ['2026-10-25T12:00:00.000Z','2026-10-25T11:00:00.000Z','invalid']){
+      Object.assign(process.env,base,{RAVRADAR_PRODUCTION_TARGET_HOUR:target});
+      await assert.rejects(selectAssistantLaterH0Source());
+    }
+    for(const family of [ACTIVE_ASSISTANT_SUCCESSOR.requireBinding().I,ASSISTANT_LATER_H0_BEFORE.I,'f'.repeat(64)]){
+      descriptor.modelBinding.modelBundleSha256=family;
+      Object.assign(process.env,base,{GITHUB_WORKFLOW:'Not an ordinary caller',RAVRADAR_PRODUCTION_TARGET_HOUR:'invalid'});
+      assert.equal(await selectAssistantLaterH0Source(),false,'Only the exact predecessor selects the transition');
+    }
+  }finally{
+    t.mock.restoreAll();for(const key of keys){if(prior[key]===undefined)delete process.env[key];else process.env[key]=prior[key];}
+  }
+});
+
 test('assistant public587 active facade is fixed and refuses UNISSUED before I/O',async t=>{
   assert(Object.isFrozen(ACTIVE_ASSISTANT_SUCCESSOR));
   assert.equal(ACTIVE_ASSISTANT_SUCCESSOR.before,ASSISTANT_PUBLIC587_SUCCESSOR_BEFORE);

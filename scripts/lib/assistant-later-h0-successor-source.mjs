@@ -242,11 +242,25 @@ export function assertAssistantPublic587SuccessorTarget(descriptor,targetReferen
   assert(Date.parse(targetReferenceAt)>Date.parse(descriptor.productionReferenceAt),'ASSISTANT_PUBLIC587_SUCCESSOR_STRICTLY_LATER');
   return true; // Ren data-/tidskontrol, ingen autentificering eller kapabilitet.
 }
+export function assertAssistantPublic587SuccessorCaller(env){
+  assert.equal(arguments.length,1);
+  // GitHub retains the top-level caller identity inside reusable workflows.
+  // These are the two existing ordinary entrances, not caller-selected aliases.
+  assert(['Update weather and deploy RavRadar','Run current RavRadar weather once'].includes(env.GITHUB_WORKFLOW));
+  assert.equal(env.GITHUB_REF,'refs/heads/main');
+  assert(['workflow_dispatch','schedule'].includes(env.GITHUB_EVENT_NAME));
+  assert.match(env.GITHUB_RUN_ATTEMPT??'',/^[1-9][0-9]{0,5}$/);assert.match(env.GITHUB_SHA??'',/^[a-f0-9]{40}$/);
+  assert(['integrated','integrated-historical-maintenance'].includes(env.OPERATIONAL_ACTION));
+  for(const key of ['CHECKPOINT_ONLY','QUICK_CONFIRMATION','COMPLETED_PRIVATE_RUNTIME',
+    'NATIVE_IDENTITY_RECOVERY','RAVRADAR_WEATHER_STATE_EPOCH_BOOTSTRAP',
+    'RAVRADAR_WEATHER_STATE_EPOCH_CHECKPOINT_REENTRY','RESTART_ARCHIVED_WEATHER',
+    'PUBLISH_NEWEST_SAVED_WEATHER'])assert.notEqual(env[key],'true','ASSISTANT_LATER_H0_ORDINARY_ONLY');
+}
 export const ACTIVE_ASSISTANT_SUCCESSOR=Object.freeze({
   sourcePhase:'assistant-public587-successor',before:ASSISTANT_PUBLIC587_SUCCESSOR_BEFORE,
   binding:ASSISTANT_PUBLIC587_SUCCESSOR_BINDING,output:ASSISTANT_PUBLIC587_SUCCESSOR_OUTPUT,
   requireBinding:requireAssistantPublic587SuccessorBinding,requireOutput:requireAssistantPublic587SuccessorOutput,
   requireRelease:requireAssistantPublic587SuccessorRelease,migration:assistantPublic587SuccessorMigration,
   readCanonicalSource:readAssistantPublic587SuccessorCanonicalSource,
-  assertTarget:assertAssistantPublic587SuccessorTarget,assertCaller:assertAssistantLaterH0Caller,
+  assertTarget:assertAssistantPublic587SuccessorTarget,assertCaller:assertAssistantPublic587SuccessorCaller,
 });
