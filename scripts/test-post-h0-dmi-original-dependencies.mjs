@@ -724,6 +724,9 @@ test('original RAW boundary oracle: exact new whole planner recovers fd2b before
   assert.equal(inverseAssistant587OriginalRawBoundaryTestInput(original, row.path), original);
   assert.equal(inverseCoherentRawTransportLifetimeTestInput(current, row.path),
     inverseCoherentRawTransportLifetimeTestInput(original, row.path));
+  assert.equal(inverseAssistant587OriginalCompanionTestInput(
+    inverseAssistant587OriginalRawBoundaryTestInput(current, row.path), row.path),
+    inverseAssistant587OriginalCompanionTestInput(original, row.path));
   assert.equal(inverseNationalCoherentWorkTestInput(current, row.path),
     inverseNationalCoherentWorkTestInput(original, row.path));
   let replay = original;
@@ -2499,7 +2502,8 @@ test('coherent raw transport lifetime: exact outer inverse preserves joint and e
   for(const row of COHERENT_RAW_TRANSPORT_LIFETIME_TEST_REVIEW){
     const file=new URL('../'+row.path,import.meta.url),input=readFileSync(file,'utf8').replace(/\r\n/g,'\n');
     const raw=row.path==='scripts/plan-ravscore-current-history.mjs'
-      ?inverseCurrentFamilyColdTargetTestInput(inverseAssistant587OriginalCompanionTestInput(input,row.path),row.path):input;
+      ?inverseCurrentFamilyColdTargetTestInput(inverseAssistant587OriginalCompanionTestInput(
+        inverseAssistant587OriginalRawBoundaryTestInput(input,row.path),row.path),row.path):input;
     assert.equal(Buffer.byteLength(raw),row.after.bytes);assert.equal(sha(raw),row.after.sha256);
     const before=inverseCoherentRawTransportLifetimeTestInput(raw,row.path);
     assert.equal(Buffer.byteLength(before),row.before.bytes);assert.equal(sha(before),row.before.sha256);
@@ -2522,7 +2526,8 @@ test('cold target inverse: complete exact modules precede unchanged historical o
     const complete=row.path===FINALIZED_WEATHER_OWNERS_TEST_REVIEW.path
       ?inverseFinalizedWeatherOwnersTestInput(actualComplete,row.path)
       :row.path==='scripts/plan-ravscore-current-history.mjs'
-        ?inverseAssistant587OriginalCompanionTestInput(actualComplete,row.path):actualComplete;
+        ?inverseAssistant587OriginalCompanionTestInput(
+          inverseAssistant587OriginalRawBoundaryTestInput(actualComplete,row.path),row.path):actualComplete;
     const outer=row.path===CURRENT_FAMILY_COLD_ZONE_HISTORY_TEST_REVIEW.path
       ?CURRENT_FAMILY_COLD_ZONE_HISTORY_TEST_REVIEW:null;
     if(outer){
