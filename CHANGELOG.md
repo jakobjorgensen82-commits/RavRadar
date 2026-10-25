@@ -1,3 +1,7 @@
+## 25. oktober — lokal SOURCE-fixture følger de normale originaler
+
+Den nationale prøve pakker nu den oprindelige DMI-record, som den normale updater gør, frem for en afledt kvalificeret kopi med gentaget provenance. Alle kvalifikationer, originale kildefelter, den hele udpakning og 673×121 lighedskontroller bevares. Kun den faste forecastleaf følger sin normale ejers eksisterende filgrænse i inputkopien; øvrige lofter og alle hash-/JSON-/filkontroller bevares. Normal codec/læser og uændret model-/SQL-fixedpoint består lokalt. Faktisk Linux-kapacitet, H0/H1 og samlet SOURCE-kvalifikation er åbne; SOURCE er ikke aktiveret, og produktionsvejret eller scoremodellen ændres ikke af disse prøvefiler.
+
 ## 25. oktober — mål faktisk genlæsning før en kapacitetsrettelse
 
 Den seneste nationale SOURCE-prøve nåede READBACK efter 85,366 sekunder, men afsluttede ikke inden den uændrede 120-sekundersgrænse. Det er faseindgang, ikke genlæsningstid. Den lokale måling opdeler nu den eksisterende genlæsning i inspektion, parentlæsning, partlæsning, fuld udpakning og lighedskontrol. Kun faste faser og afsluttede millisekunder følger den eksisterende første-fejlrapport; ingen rådata, nye transportveje eller gættede gennemløbstal tilføjes.

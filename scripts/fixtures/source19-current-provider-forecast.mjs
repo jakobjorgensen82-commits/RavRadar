@@ -82,9 +82,10 @@ export async function prepareNativeCurrentForecast(target,initialPhase=null){
         assert.equal(row.currentProvenance?.provider,'dmi');assert.equal(row.currentProvenance?.status,'verified');
         assert(Number.isFinite(row.currentUMps)&&Number.isFinite(row.currentVMps));qualifiedNativeRows++;
       }
-      // The normal adapters/pack serialize actual selected/qualified values;
-      // no handcrafted forecast point, provenance, interpolation or state.
-      parts.push(part);records.set(part.partId,{...record,hourly:qualified});
+      // Qualify every row above, then persist the unchanged original DMI record.
+      // The normal selectedDmiPartRecords owner packs before score sanitization;
+      // derived *Provenance views are recreated by its normal scoring adapters.
+      parts.push(part);records.set(part.partId,record);
       counts.partCount=parts.length;counts.qualifiedCurrentRows=qualifiedNativeRows;
       if(parts.length%32===0)observe('QUALIFY',counts);
     }

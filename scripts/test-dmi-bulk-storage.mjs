@@ -541,6 +541,104 @@ try {
   for(const value of [null,{},Object.freeze({status:'VERIFIED'})])
     assert.throws(()=>union(value,{registry:{},targetReferenceAt:wrappers.scope.targetReferenceAt}),/CAPABILITY/);
 
+  // SOURCE native input-copy unit: use the actual private caller closures, as
+  // above, without exporting a helper or starting the national native factory.
+  {
+    const fixtureText = await fs.readFile(path.join(productRoot, 'scripts/fixtures/source19-current-normal-inputs.mjs'), 'utf8');
+    const fragment = (start, end) => {
+      assert.equal(fixtureText.split(start).length, 2); assert.equal(fixtureText.split(end).length, 2);
+      const at = fixtureText.indexOf(start), to = fixtureText.indexOf(end, at + start.length);
+      assert(to > at); return fixtureText.slice(at, to);
+    };
+    const body = fragment('const sha =', 'const load =') + fragment('const inside =', 'function hour(')
+      + fragment('async function noLinks(', 'function cloneSource(');
+    const actual = io => new Function('assert', 'crypto', 'fs', 'path', 'isDeepStrictEqual', 'DMI_FORECAST_FILE_MAX_BYTES',
+      '"use strict";\n' + body + '\nreturn {copyInputs, ADMIN, PROVIDERS};')(
+        assert, crypto, io, path, isDeepStrictEqual, DMI_FORECAST_FILE_MAX_BYTES);
+    const normal = actual(fs), forecast = 'data/live/dmi-forecast-cache.json';
+    const leaves = [forecast, 'data/live/dmi-bulk-cache.json', 'data/zones.geojson'];
+    let sequence = 0;
+    const sample = async (name, raw = Buffer.from('{"normal":{"retained":true}}\n')) => {
+      const root = path.join(directory, 'source19-copy-' + sequence++), input = path.join(root, 'input'), output = path.join(root, 'output');
+      const source = path.join(input, name), target = path.join(output, name);
+      await fs.mkdir(path.dirname(source), {recursive: true}); await fs.writeFile(source, raw);
+      return {input, output, source, target, raw, row: {relativePath: name, bytes: raw.length, sha256: hash(raw)},
+        allowed: normal.ADMIN.includes(name) ? normal.ADMIN : normal.PROVIDERS};
+    };
+    const copy = (value, caller = normal) => caller.copyInputs(value.input, value.output, [value.row], value.allowed);
+    for (const name of leaves) {
+      const value = await sample(name);
+      assert.deepEqual([...await copy(value)], [name]);
+      assert.deepEqual(await fs.readFile(value.target), value.raw);
+    }
+
+    // Rejection-only stat probes: no large/sparse file, fake successful read,
+    // reduced bound, or capacity claim. At the selected exact bound, stop at
+    // readFile BEFORE returning bytes; one byte above it must stop earlier.
+    assert(DMI_FORECAST_FILE_MAX_BYTES > 256 * 1024 * 1024);
+    for (const name of leaves) for (const side of ['source', 'target']) for (const delta of [0, 1]) {
+      const value = await sample(name), focus = value[side], stop = new Error('size-probe-before-byte-return');
+      const maximum = name === forecast ? DMI_FORECAST_FILE_MAX_BYTES : 256 * 1024 * 1024;
+      let readReached = false;
+      const probe = actual({...fs,
+        lstat: async (file, options) => {
+          const stat = await fs.lstat(file, options);
+          return file === focus && options?.bigint
+            ? Object.assign(Object.create(Object.getPrototypeOf(stat)), stat, {size: BigInt(maximum + delta)}) : stat;
+        },
+        readFile: async (file, ...args) => {
+          if (file === focus) {readReached = true; throw stop;}
+          return fs.readFile(file, ...args);
+        },
+      });
+      await assert.rejects(copy(value, probe), delta === 0 ? error => error === stop : {code: 'ERR_ASSERTION'});
+      assert.equal(readReached, delta === 0, name + ' ' + side + ' exact owner/default bound');
+    }
+
+    // Real small files still face whole-byte identity, full JSON and recursive
+    // fixture-only refusal before any target exists.
+    for (const kind of ['hash', 'bytes', 'json', 'fixtureOnly', 'syntheticDetails', 'syntheticPublicProjection']) {
+      const raw = Buffer.from(kind === 'json' ? '{"incomplete":' : kind.startsWith('synthetic') || kind === 'fixtureOnly'
+        ? JSON.stringify({nested: [{[kind]: false}]}) : '{"normal":true}');
+      const value = await sample(forecast, raw);
+      if (kind === 'hash') value.row.sha256 = '0'.repeat(64);
+      if (kind === 'bytes') value.row.bytes++;
+      await assert.rejects(copy(value), kind === 'json' ? SyntaxError : kind === 'hash' || kind === 'bytes'
+        ? /Actual prepared provider\/admin input/ : /Not a normal full-runtime input/);
+      await assert.rejects(fs.lstat(value.target), {code: 'ENOENT'});
+    }
+    const invalidPath = await sample(forecast);
+    await assert.rejects(normal.copyInputs(invalidPath.input, invalidPath.output,
+      [{...invalidPath.row, relativePath: '../escape.json'}], ['../escape.json']), {code: 'ERR_ASSERTION'});
+    await assert.rejects(normal.copyInputs(invalidPath.input, invalidPath.output,
+      [{...invalidPath.row, relativePath: forecast + '.foreign'}], normal.PROVIDERS), /Only exact normal input leaves/);
+    for (const side of ['input', 'output']) {
+      const value = await sample(forecast), link = value[side] + '-link';
+      // Precreate the real parent instead of creating it through the link.
+      // Resolve only the owned target, never the exposed link path.
+      await fs.mkdir(path.dirname(value.target), {recursive: true});
+      await fs.symlink(await fs.realpath(value[side]), link, process.platform === 'win32' ? 'junction' : 'dir');
+      assert((await fs.lstat(link)).isSymbolicLink());
+      assert((await fs.stat(path.join(link, path.dirname(forecast)))).isDirectory());
+      value[side] = link;
+      await assert.rejects(copy(value), /Private native path contains a link/);
+    }
+
+    // The actual before/after identity and single-link guards remain active;
+    // inject only rejecting metadata changes around the real small read.
+    for (const field of ['nlink', 'dev', 'ino', 'size', 'mtimeNs', 'ctimeNs']) {
+      const value = await sample(forecast); let stats = 0;
+      const changed = actual({...fs, lstat: async (file, options) => {
+        const stat = await fs.lstat(file, options);
+        if (file !== value.source || !options?.bigint) return stat;
+        if (++stats !== (field === 'nlink' ? 1 : 2)) return stat;
+        return Object.assign(Object.create(Object.getPrototypeOf(stat)), stat, {[field]: stat[field] + 1n});
+      }});
+      await assert.rejects(copy(value, changed), field === 'nlink' ? {code: 'ERR_ASSERTION'} : /Input changed while reading/);
+      await assert.rejects(fs.lstat(value.target), {code: 'ENOENT'});
+    }
+  }
+
 } finally {
   await fs.rm(directory, { recursive: true, force: true });
 }

@@ -1,3 +1,14 @@
+## 25. oktober — SOURCE-fixturen pakker originaler og følger forecastens ejergrænse
+
+Den gennemførte Linux-måling skelner nu faseindgang fra varighed: normal inspektion samt parent- og PART-læsning var afsluttet, før den fulde udpakning begyndte efter 96,582 sekunder. Den uændrede 120-sekundersgrænse blev nået uden afsluttet unpack/lighedskontrol. Det er ikke bevis for en fejl i produktcodec eller tab af originale data.
+
+Normal vejropdatering gemmer den oprindelige DMI-record før sin afledte kvalificerede visning. Den nationale fixture gjorde i stedet den kvalificerede visning til det pakkede input og gentog derved provenance. Den lokale rettelse pakker samme oprindelige record som normalproducenten; kvalifikation, alle originale kildefelter, én hel udpakning og samtlige 673×121 timesammenligninger bevares. Ingen metadata strippes, og forventningsværdien er ikke læst tilbage fra codecoutput.
+
+Den faste forecastleaf bruger nu sin eksisterende normale eksportgrænse ved både kilde- og destinationslæsning. Andre input beholder det generiske loft. Sti/link/filidentitet, fuld størrelse og SHA-256, JSON- og fixture-only-afvisning samt byteidentisk genlæsning bevares. Det retter en konkret loftskonflikt, ikke dokumenteret heap-/CPU-kapacitet; helstrengsparsing er fortsat en særskilt grænse.
+
+Normal codec- og læserkontrol er bestået lokalt; uændret C157/I153/T12 og SQL-fixedpoint er genkontrolleret. Faktisk ny Linux-kapacitet, H0/H1, efterfølger og samlet SOURCE-kvalifikation er stadig åbne. Ingen frist, produktvalidator, lager-ABI, geometri, kildeprioritet eller scoreformel er ændret. SOURCE forbliver inaktiv. Den særskilte konto-/assistentbinding installeret i produktionen er ikke denne SOURCE-binding; en senere SOURCE-levering skal bygge på den faktisk aktuelle forgænger, ikke ommærke den gamle.
+
+
 ## 25. oktober — mål faktisk genlæsning før en kapacitetsrettelse
 
 Den seneste nationale SOURCE-prøve nåede READBACK efter 85,366 sekunder, men afsluttede ikke inden den uændrede 120-sekundersgrænse. Det er faseindgang, ikke genlæsningstid. Den lokale måling opdeler nu den eksisterende genlæsning i inspektion, parentlæsning, partlæsning, fuld udpakning og lighedskontrol. Kun faste faser og afsluttede millisekunder følger den eksisterende første-fejlrapport; ingen rådata, nye transportveje eller gættede gennemløbstal tilføjes.

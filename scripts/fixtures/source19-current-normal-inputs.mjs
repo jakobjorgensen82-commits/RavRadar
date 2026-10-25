@@ -6,6 +6,7 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import {execFileSync} from 'node:child_process';
 import {fileURLToPath, pathToFileURL} from 'node:url';
+import {DMI_FORECAST_FILE_MAX_BYTES} from '../lib/dmi-forecast-file.mjs';
 import {isDeepStrictEqual} from 'node:util';
 import {requireSourceProducerOutput, requireSourceProducerBinding,
   SOURCE_PRODUCER_BEFORE} from '../lib/source-producer-successor-source.mjs';
@@ -96,13 +97,16 @@ async function copyInputs(inputRoot, outputRoot, rows, allowed) {
     assert(allowed.includes(name) && !seen.has(name), 'Only exact normal input leaves'); seen.add(name);
     assert(Number.isSafeInteger(row.bytes) && row.bytes > 0); assert.match(row.sha256, /^[a-f0-9]{64}$/);
     const source = path.join(inputRoot, name), target = path.join(outputRoot, name);
-    assert(inside(inputRoot, source) && inside(outputRoot, target)); const raw = await read(source);
+    assert(inside(inputRoot, source) && inside(outputRoot, target));
+    // Only this fixed forecast leaf uses its existing normal owner's file bound.
+    const maximum = name === 'data/live/dmi-forecast-cache.json' ? DMI_FORECAST_FILE_MAX_BYTES : undefined;
+    const raw = await read(source, maximum);
     same({bytes: raw.length, sha256: sha(raw)}, {bytes: row.bytes, sha256: row.sha256}, 'Actual prepared provider/admin input');
     // These are runtime input leaves in a fresh, owned Git work copy, not old
     // model code or originals. The later source-clean comparison excludes no code.
     refuseFixtureOnly(JSON.parse(raw)); await fs.mkdir(path.dirname(target), {recursive: true});
     await noLinks(path.dirname(target)); await fs.writeFile(target, raw);
-    same(await read(target), raw, 'Actual copied provider/admin input');
+    same(await read(target, maximum), raw, 'Actual copied provider/admin input');
   }
   return seen;
 }
