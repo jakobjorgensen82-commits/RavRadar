@@ -1,3 +1,13 @@
+## 89.269 Offentlig klientkode og beskyttede oplysninger har forskellige roller
+
+Kort fortalt: At en side indeholder programkode til en privat administratorfunktion betyder ikke, at den private rapport er indlejret i hjemmesiden.
+
+Offentlige klientfiler kan beskrive, hvordan en beskyttet funktion bruges. Selve oplysningerne skal stadig læses gennem den normale adgangskontrol. Leveringskontrollen må kun godkende de præcist gennemgåede klientfiler; ændret indhold og private datakopier skal fortsat afvises.
+
+Den centrale modelaktivering og den tilhørende profil skal kontrolleres sammen. En ny lokal versionsskabelon er ikke i sig selv bevis for, at den centrale aktivering allerede er skiftet. Almindelig synkronisering må læse den verificerede aktive profil, men må ikke overtage den særskilte aktiveringsarbejdsgangs skriveansvar.
+
+En gemt beregning og en offentlig levering er forskellige trin. Efter et sent stop skal den faktisk gemte generations identitet og hele genoptagelsesvejen kontrolleres, før data kan leveres. Kontrollen ændrer ikke vejrdata eller scoremodellen.
+
 ## 89.268 Del en offentlig prognose
 
 Kort fortalt: Et delingslink peger på det valgte sted, tidspunkt og søgemåde. Du vælger selv, hvor det deles, og hvad du skriver til det.

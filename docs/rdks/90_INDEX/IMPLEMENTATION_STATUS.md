@@ -1,3 +1,11 @@
+## 25. oktober — klientkode er ikke privat vejrdata; central profil læses som et par
+
+Den seneste almindelige vejrhentning nåede leverandører, beregning og gemning af beskyttet B/S. Pages blev derefter afvist alene på navnene på to nye, normale JavaScript-klienter til administratorens statistikvisning. Den eksisterende navnekontrol må ikke forveksle offentlig programkode med privat rapportindhold. En særskilt administrator-synkronisering havde desuden afvist den aktive centrale profil mod den nyere lokale skabelon før den operationelle aktivering.
+
+Den afgrænsede lokale efterfølger tillader kun de to præcise klientstier, når hver er en regulær fil med de fulde, uændrede bytes fra den aktuelle kilde. Alle andre private navne, JSON-referencer, symlinks, afvigende klientbytes og private payload-fingeraftryk kontrolleres fortsat. Administrator-synkronisering skal genbruge den eksisterende strenge resolver på et frisk, samlet læst operation/profil-par; skabelonen valideres stadig lokalt, og generisk synkronisering skriver aldrig nogen af de to aktiveringsdokumenter.
+
+Dette er lokal fejlrettelse, ikke offentlig levering eller dokumenteret genoptagelse. De normale målprøver, præcis samlet kildekontrol og sikker genbrug af den faktisk nyeste gemte beregning skal fortsat bestå. Bevar allerede offentliggjorte data, originaler, modelbinding, SQL, scoreformel, kildeprioritet og geometri. SOURCE, statistikfrigivelse og automatisk sletning aktiveres ikke. Aktuel cron-/kørselsstatus og genoptagelsesidentiteter føres kun i privat checkpoint; ældre statusfronter er historik på de konkret erstattede punkter.
+
 ## 25. oktober — søgemåden følger den delte score
 
 Den lokale prognosedelingsrettelse medtager nu strand eller waders i både den statiske forhåndsvisnings beskrivelse og den synlige delingsside på dansk, tysk og engelsk. Tidspunkt, sted og score må ikke læses uden søgemåden. Den eksisterende håndbog 89.268 kræver allerede denne sammenhæng og er fortsat gældende.
