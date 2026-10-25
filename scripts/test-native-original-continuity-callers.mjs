@@ -462,7 +462,8 @@ test('assistant binding original prewrite caller rejects old flags, replay and w
     RAVRADAR_ASSISTANT_BINDING_PREWRITE_VERIFIED:'true',RAVRADAR_ASSISTANT_BINDING_PREWRITE_REQUIRED:'true',
     RESTART_ARCHIVED_WEATHER:'true',PUBLISH_NEWEST_SAVED_WEATHER:'true',CHECKPOINT_ONLY:'true',QUICK_CONFIRMATION:'true'})){
     withBindingPrewriteEnv({[key]:value},()=>assert.throws(()=>assertAssistantBindingPrewriteCaller(),error=>
-      error instanceof assert.AssertionError&&!/ASSISTANT_LATER_H0_(?:SQL_)?UNISSUED/.test(error.message),key));
+      error instanceof assert.AssertionError&&!/ASSISTANT_LATER_H0_(?:SQL_)?UNISSUED/.test(error.message)
+        &&!/ASSISTANT_PUBLIC587_SUCCESSOR_(?:SQL_)?UNISSUED/.test(error.message),key));
   }
   assert.throws(()=>assertAssistantBindingPrewriteCaller({}));
 });
@@ -471,14 +472,14 @@ test('assistant binding original prewrite keeps one bank pass and normal owned r
   const prepare=source.slice(source.indexOf('async function prepare(p){'),source.indexOf('async function plan(){'));
   const plan=source.slice(source.indexOf('async function plan(){'),source.indexOf('async function boundedJsonText'));
   const verify=source.slice(source.indexOf('async function verify(p){'),source.indexOf('async function main(){'));
-  assert(!prepare.includes('await bank('));assert(!plan.includes('readAuthenticatedFrozen586Predecessor'));
+  assert(!prepare.includes('await bank('));assert(!plan.includes('readAuthenticatedFrozen587Predecessor'));
   for(const normal of ['identity=ownFileDescriptorIdentity(fd)','await ownedFileDescriptorClosed(fd,identity)',
     'current.dev===parent.dev&&current.ino===parent.ino','await handle.read(buffer','await handle.stat({bigint:true})',
     'failedCloses.set(absolute,handle)','await ownedRead(file,maximum,true)'])assert(source.includes(normal),normal);
   assert(!source.includes('createReadStream'));assert(!source.includes('await fs.readFile(file)'));
   assert.equal((source.match(/await bank\(p,snapshot\)/g)||[]).length,1);
   assert(verify.indexOf('await bank(p,snapshot)')<verify.indexOf('await source(true)'));
-  assert(verify.indexOf('await source(true)')<verify.indexOf('await assertAuthenticatedFrozen586SnapshotFresh(handle)'));
+  assert(verify.indexOf('await source(true)')<verify.indexOf('await assertAuthenticatedFrozen587SnapshotFresh(handle)'));
   for(const normal of ['inspectDmiForecastFile(file)','readDmiForecastRecord(index,entryDescriptor)',
     'unpackDmiPartContinuity(',"createProtectedDmiNativeCurrentInspector({contexts:[],previousBank:original})",
     'saved121DirectSelection(row)','inspector.inspect({part,row}).ok','assertRestoredOriginalInventory(p.originals',
@@ -517,7 +518,7 @@ test('assistant binding original prewrite workflow keeps locks, exact normal cen
     'f33e7f723ffe970bd6bbff5085ec65110d18953f5e7fb78b2609be2e5b57cc45');
   const readiness=await fs.readFile(path.join(ROOT,'scripts/integrated-cutover-readiness.mjs'),'utf8');
   assert(readiness.includes('...(ASSISTANT_LATER_H0_BINDING === null ? [] : [assistantLaterH0Migration()]),'));
-  assert(readiness.includes("assert.ok(remote.has(assistantLaterH0Migration().version),'ASSISTANT_LATER_H0_PREWRITE_ROUTE_REQUIRED')"));
+  assert(readiness.includes("assert.ok(remote.has(assistantPublic587SuccessorMigration().version),'ASSISTANT_PUBLIC587_SUCCESSOR_PREWRITE_ROUTE_REQUIRED')"));
 });
 test('assistant binding original prewrite exact source-import variants reject changed bytes and preserve old variants',async()=>{
   for(const file of ['scripts/lib/authenticated-frozen586-predecessor.mjs','scripts/assistant-later-h0-binding-prewrite.mjs']){
@@ -575,16 +576,16 @@ test('assistant binding prewrite fixed diagnostics preserve prepare order and fi
     let loaded=0;
     const context={assert,SyntaxError,console:{error:line=>lines.push(line)},same:assert.deepEqual,
       fixtureLoad:file=>{if(loaded++===0)tick('MODULES');return Promise.resolve(models[file]);},
-      async withAuthenticated586PredecessorSource(use){
+      async withAuthenticated587PredecessorSource(use){
         tick('FROZEN_SOURCE');let first,failed=false,result;
         try{result=await use('frozen-root');}catch(e){first=e;failed=true;}
         try{tick('SOURCE_CLEANUP');}catch(e){if(!failed){first=e;failed=true;}}
         if(failed)throw first;return result;
       },
-      async readAuthenticatedFrozen586Predecessor(){tick('SNAPSHOT');return 'opaque-fixture-handle';},
-      assertAuthenticatedFrozen586Snapshot(handle){assert.equal(handle,'opaque-fixture-handle');tick('SNAPSHOT_ACCESSOR');return selected;},
+      async readAuthenticatedFrozen587Predecessor(){tick('SNAPSHOT');return 'opaque-fixture-handle';},
+      assertAuthenticatedFrozen587Snapshot(handle){assert.equal(handle,'opaque-fixture-handle');tick('SNAPSHOT_ACCESSOR');return selected;},
       async originalFiles(){tick('ORIGINAL_FILES');},
-      async assertAuthenticatedFrozen586SnapshotFresh(handle){assert.equal(handle,'opaque-fixture-handle');tick('FRESH_SNAPSHOT');},
+      async assertAuthenticatedFrozen587SnapshotFresh(handle){assert.equal(handle,'opaque-fixture-handle');tick('FRESH_SNAPSHOT');},
       async centralProof(){tick('CENTRAL');return {};},baseline:()=>({synthetic:true}),
       fs:{async writeFile(file,text,options){tick('BASELINE_WRITE');assert.equal(file,'baseline');
         assert.equal(options.flag,'wx');assert.equal(options.mode,0o600);}},
@@ -626,7 +627,9 @@ test('assistant binding prewrite diagnostic keeps real CLI guards and bounded co
   assert.equal(api.prewriteDiagnostic(error).phase,'SOURCE');assert.equal(api.prewriteDiagnostic(error).category,'FILE_NOT_FOUND');assert.equal(calls,1);
   for(const [code,category]of [['ERR_ASSERTION','ASSERTION'],['EEXIST','EXISTING_DESTINATION'],
     ['PROTECTED_PRIVATE_RUNTIME_NO_COMPATIBLE_GENERATION','B_NO_COMPATIBLE_GENERATION'],
-    ['FROZEN586_PREDECESSOR_B_S_DIFFER','SNAPSHOT_B_S_DIFFER'],[1,'PROCESS_EXIT'],['PRIVATE_CANARY','UNCLASSIFIED_ERROR']]){
+    ['FROZEN586_PREDECESSOR_B_S_DIFFER','SNAPSHOT_B_S_DIFFER'],
+    ['FROZEN587_PREDECESSOR_B_S_DIFFER','SNAPSHOT_B_S_DIFFER'],
+    ['FROZEN587_PREDECESSOR_PRODUCER_POLICY_CHANGED','SNAPSHOT_PRODUCER_POLICY'],[1,'PROCESS_EXIT'],['PRIVATE_CANARY','UNCLASSIFIED_ERROR']]){
     const original=Object.assign(new Error('PRIVATE_CANARY'),{code});
     await assert.rejects(api.prewriteAt('PREPARE','SNAPSHOT',()=>{throw original;}),e=>e===original);
     assert.equal(api.prewriteDiagnostic(original).category,category);
@@ -833,4 +836,379 @@ print('NORMAL_RAW_BOUNDARY_PASS old-working-hash-refused original-and-working-di
   assert.deepEqual(await fs.readFile(originalPath),original);assert.deepEqual(await fs.readFile(conditionsPath),working);
   assert.deepEqual(await fs.readFile(path.join(root,'.cache/ravscore-continuation-checkpoint/checkpoint.json')),checkpointBytes);
   complete=true;
+});
+
+// Additiv, endnu uafviklet 587→588-konstruktørkontrakt. Ingen SQL-/B/S-admission.
+import {createHash as successorHash} from 'node:crypto';
+import {
+  ASSISTANT_PUBLIC587_SUCCESSOR_BEFORE,ASSISTANT_PUBLIC587_SUCCESSOR_BINDING,
+  ASSISTANT_PUBLIC587_SUCCESSOR_OUTPUT,ASSISTANT_PUBLIC587_SUCCESSOR_RELEASE,
+  ASSISTANT_PUBLIC587_SUCCESSOR_ALIASES,requireAssistantPublic587SuccessorBinding,
+  requireAssistantPublic587SuccessorOutput,requireAssistantPublic587SuccessorRelease,
+  assistantPublic587SuccessorMigration,readAssistantPublic587PredecessorCanonicalSource,
+  readAssistantLaterH0CanonicalSource,readAssistantPublic587SuccessorCanonicalSource
+} from './lib/assistant-later-h0-successor-source.mjs';
+import {prepareAssistantPublic587SuccessorStructure}
+  from './build-assistant-later-h0-successor.mjs';
+test('assistant public587 successor is fixed and UNISSUED before I/O',async t=>{
+  assert.equal(ASSISTANT_PUBLIC587_SUCCESSOR_BEFORE.sourceHead,'aab72babd27175a4276c2a2f1965c74bb021b4af');
+  assert.equal(ASSISTANT_PUBLIC587_SUCCESSOR_BEFORE.sourceTree,'959f63d40c3980e804caa750da227cbd96e34a49');
+  if(ASSISTANT_PUBLIC587_SUCCESSOR_BINDING!==null){
+    requireAssistantPublic587SuccessorRelease();const next=requireAssistantPublic587SuccessorBinding();
+    const whole=await readAssistantPublic587SuccessorCanonicalSource();
+    assert.equal(whole.admission,'NO_ADMISSION');
+    assert.equal(whole.migration.version,next.version);
+    assert.equal(successorHash('sha256').update(whole.canonicalSource).digest('hex'),
+      requireAssistantPublic587SuccessorOutput().canonicalSha256);
+    return; // Udstedt kilde kontrolleres faktisk; det er ikke installeret/native bevis.
+  }
+  assert.equal(ASSISTANT_PUBLIC587_SUCCESSOR_BINDING,null);
+  assert.equal(ASSISTANT_PUBLIC587_SUCCESSOR_OUTPUT,null);
+  assert.equal(ASSISTANT_PUBLIC587_SUCCESSOR_RELEASE,null);
+  assert.deepEqual(ASSISTANT_PUBLIC587_SUCCESSOR_ALIASES.map(row=>row.name),
+    ['ravradar_ravscore_checkpoint_ask587_state_valid','ravradar_ravscore_checkpoint_ask587_payload_valid']);
+  let io=0;
+  for(const name of ['readFile','writeFile','appendFile','mkdir','mkdtemp','realpath','lstat'])
+    t.mock.method(fs,name,()=>{io++;throw new Error('UNEXPECTED_IO');});
+  t.mock.method(globalThis,'fetch',()=>{io++;throw new Error('UNEXPECTED_NETWORK');});
+  try{
+    for(const requireIssued of [requireAssistantPublic587SuccessorBinding,requireAssistantPublic587SuccessorOutput,
+      requireAssistantPublic587SuccessorRelease,assistantPublic587SuccessorMigration])
+      assert.throws(()=>requireIssued(),/ASSISTANT_PUBLIC587_SUCCESSOR_UNISSUED/);
+    for(const options of [{version:ASSISTANT_PUBLIC587_SUCCESSOR_BEFORE.version},
+      {version:'20261101000000',profile:'586'},{version:'20261101000000',C:'0'.repeat(64)},
+      {version:'20261101000000',repositoryRoot:ROOT},{version:'20261101000000',sourceHead:'0'.repeat(40)},
+      {version:'20261101000000',canonicalSource:'SYNTHETIC_NOT_AUTHORITY'}])
+      await assert.rejects(prepareAssistantPublic587SuccessorStructure(options),error=>error.code==='ERR_ASSERTION');
+    await assert.rejects(readAssistantPublic587SuccessorCanonicalSource(),/ASSISTANT_PUBLIC587_SUCCESSOR_UNISSUED/);
+    assert.equal(io,0,'Udstedelsesafslag og ukendte input må ikke nå fysisk kilde');
+  }finally{t.mock.restoreAll();}
+});
+test('assistant public587 successor reads only whole genuine issued587 canonical source',async t=>{
+  const old=await readAssistantLaterH0CanonicalSource();
+  const next=await readAssistantPublic587PredecessorCanonicalSource();
+  assert.equal(next.canonicalSource,old.canonicalSource,'Hele udstedte587-kilde genbruges uden alias som ny runtime');
+  assert.equal(next.admission,'NO_ADMISSION');
+  assert.equal(next.migration.filename,'20261022181403_assistant_later_h0_original_bound_successor.sql');
+  assert.equal(successorHash('sha256').update(next.canonicalSource).digest('hex'),ASSISTANT_PUBLIC587_SUCCESSOR_BEFORE.canonicalSha256);
+  assert.deepEqual({C:ASSISTANT_PUBLIC587_SUCCESSOR_BEFORE.C,I:ASSISTANT_PUBLIC587_SUCCESSOR_BEFORE.I,
+    T:ASSISTANT_PUBLIC587_SUCCESSOR_BEFORE.T,version:ASSISTANT_PUBLIC587_SUCCESSOR_BEFORE.version},
+    ASSISTANT_LATER_H0_BINDING);
+  const actualRead=fs.readFile;
+  let changed=0;
+  t.mock.method(fs,'readFile',async function(file,...args){
+    const value=await actualRead.call(fs,file,...args);
+    if(path.basename(String(file))===next.migration.filename){
+      changed++;assert(Buffer.isBuffer(value));return Buffer.concat([value,Buffer.from(' ')]);
+    }
+    return value;
+  });
+  try{
+    await assert.rejects(readAssistantPublic587PredecessorCanonicalSource(),error=>error.code==='ERR_ASSERTION');
+    assert.equal(changed,1,'Én hel migrationsmutation afvises ved den normale hashkontrol');
+  }finally{t.mock.restoreAll();}
+  await assert.rejects(readAssistantPublic587PredecessorCanonicalSource({sourceHead:'0'.repeat(40)}));
+});
+
+// Faste587-kilde-/snapshotmål. Ingen ny tuple, B/S-kvittering, SQL eller runtimeadgang.
+import {withAuthenticated587PredecessorSource} from './check-assistant-later-h0-predecessor-source.mjs';
+import {readAuthenticatedFrozen587Predecessor,assertAuthenticatedFrozen587Snapshot,
+  assertAuthenticatedFrozen587SnapshotFresh} from './lib/authenticated-frozen586-predecessor.mjs';
+test('assistant public587 fixed readers refuse caller profiles and JSON handles before I/O',async t=>{
+  let io=0,callbacks=0,operands=0;
+  const poison=new Proxy({},{get(){operands++;throw new Error('UNEXPECTED_OPERAND');}});
+  for(const name of ['readFile','writeFile','appendFile','mkdir','mkdtemp','realpath','lstat'])
+    t.mock.method(fs,name,()=>{io++;throw new Error('UNEXPECTED_IO');});
+  t.mock.method(globalThis,'fetch',()=>{io++;throw new Error('UNEXPECTED_NETWORK');});
+  try{
+    await assert.rejects(withAuthenticated587PredecessorSource(()=>{callbacks++;},poison),{code:'ERR_ASSERTION'});
+    await assert.rejects(withAuthenticated587PredecessorSource(poison),{code:'ERR_ASSERTION'});
+    await assert.rejects(readAuthenticatedFrozen587Predecessor(poison),/FROZEN587_PREDECESSOR_ARGUMENTS/);
+    for(const value of [{},Object.freeze({status:'PASS'}),{sourceFamilyHead:'aab72babd27175a4276c2a2f1965c74bb021b4af'}]){
+      assert.throws(()=>assertAuthenticatedFrozen587Snapshot(value),/FROZEN587_PREDECESSOR_HANDLE/);
+      await assert.rejects(assertAuthenticatedFrozen587SnapshotFresh(value),/FROZEN587_PREDECESSOR_HANDLE/);
+      assert.throws(()=>assertAuthenticatedFrozen586Snapshot(value),/FROZEN586_PREDECESSOR_HANDLE/);
+      await assert.rejects(assertAuthenticatedFrozen586SnapshotFresh(value),/FROZEN586_PREDECESSOR_HANDLE/);
+    }
+    assert.throws(()=>assertAuthenticatedFrozen587Snapshot({},poison),/FROZEN587_PREDECESSOR_ARGUMENTS/);
+    await assert.rejects(assertAuthenticatedFrozen587SnapshotFresh({},poison),/FROZEN587_PREDECESSOR_ARGUMENTS/);
+    assert.equal(io,0);assert.equal(callbacks,0);assert.equal(operands,0);
+  }finally{t.mock.restoreAll();}
+});
+test('assistant public587 import variants bind whole sources and reject every unknown mutation',async()=>{
+  for(const [file,expected]of [
+    ['scripts/check-assistant-later-h0-predecessor-source.mjs',[]],
+    ['scripts/lib/authenticated-frozen586-predecessor.mjs',['../check-assistant-later-h0-predecessor-source.mjs']],
+  ]){
+    const source=await fs.readFile(path.join(ROOT,file),'utf8');
+    assert.deepEqual([...modelSourceRelativeModuleSpecifiers(source,file)],expected);
+    assert.throws(()=>modelSourceRelativeModuleSpecifiers(source+'\n// unknown mutation\n',file),/Whole reviewed model import source changed/);
+    assert.throws(()=>modelSourceRelativeModuleSpecifiers({},file),/Reviewed model source must be a string/);
+    const withUnknownImport=source+"\nimport './unreviewed-source.mjs';\n";
+    assert.throws(()=>modelSourceRelativeModuleSpecifiers(withUnknownImport,file),/Whole reviewed model import source changed/);
+  }
+  const catalog=await fs.readFile(path.join(ROOT,'scripts/lib/model-source-imports.mjs'),'utf8');
+  for(const old of ['2e529a7a4e1cca1ab7ac1c16dd7292ca78263bfb980eff95c3f5c6d845eca04d',
+    'd0ab8aa27c30aafdcc66ff120c748c05fbf4144c6aca71493a2c97710728137c',
+    '4807e6e08c487a0cf7ed398dbe29be588c4bcb58b211778932cc9f36a0681df6'])assert(catalog.includes(old));
+});
+test('assistant public587 genuine DATA host keeps fixed family and exact producer ancestor policy seam',async()=>{
+  const {runInNewContext}=await import('node:vm'),{createHash}=await import('node:crypto');
+  const hash=value=>createHash('sha256').update(value).digest('hex');
+  const actualAuth=await fs.readFile(path.join(ROOT,'scripts/lib/authenticated-frozen586-predecessor.mjs'),'utf8');
+  const profileSource=actualAuth.slice(actualAuth.indexOf('const FROZEN587=Object.freeze({'),actualAuth.indexOf('const snapshot586='));
+  const profile=runInNewContext(profileSource+'\nFROZEN587;',{Object,withAuthenticated587PredecessorSource});
+  assert.equal(profile.sourceHead,'aab72babd27175a4276c2a2f1965c74bb021b4af');
+  const actualProducer=actualAuth.slice(actualAuth.indexOf('async function qualifyProducer('),actualAuth.indexOf('async function fixedPaths('));
+  const actualRequired=actualAuth.slice(actualAuth.indexOf('const REQUIRED='),actualAuth.indexOf('const REQUIRED_SHA='));
+  const actualPolicy=actualAuth.slice(actualAuth.indexOf('const POLICY='),actualAuth.indexOf('const ATTEST='));
+  assert(actualProducer.startsWith('async function qualifyProducer('));assert(actualProducer.endsWith('}\n'));
+  let verifiedRoot;
+  await withAuthenticated587PredecessorSource(async frozenRoot=>{
+    verifiedRoot=frozenRoot;
+    const candidate=await import(pathToFileURL(path.join(frozenRoot,'scripts/rollback-assets/ravscore-model-bundle.generated.js')).href);
+    const integrated=await import(pathToFileURL(path.join(frozenRoot,'js/core/ravscore-model-bundle.generated.js')).href);
+    assert.equal(candidate.GENERATED_RAVSCORE_MODEL_BUNDLE_MANIFEST.files.length,98);
+    assert.equal(integrated.GENERATED_RAVSCORE_MODEL_BUNDLE_MANIFEST.files.length,97);
+    assert.equal(candidate.GENERATED_RAVSCORE_MODEL_BUNDLE_SHA256,'5c0b6a2c6ceb4ba9c5f224cb5d3fda693f300a8902da3f7561167f72cbab78b4');
+    assert.equal(integrated.GENERATED_RAVSCORE_MODEL_BUNDLE_SHA256,'5584d8e59f8d21785fd08b32f9beb22cf879cdb4892a11ede24eb862d9a0dca2');
+    const origin=await fs.readFile(path.join(frozenRoot,'scripts/lib/established-native-current-origin.mjs'));
+    const assertion=await fs.readFile(path.join(frozenRoot,profile.assertionPath));
+    assert.equal(hash(origin),'5ebeea93ee7da95011ecc3c589e2a1a54a7ac821ad938997aea0b6444aa607bf');
+    assert.deepEqual(assertion.subarray(0,origin.length),origin,'Hele normale origin-krop bevares, ikke kun udvalgte felter');
+    const suffix=assertion.subarray(origin.length).toString('utf8');
+    assert(suffix.includes('assertFrozen587OriginSnapshotData'));assert(!suffix.includes('assertFrozen586OriginSnapshotData'));
+    assert(suffix.includes('validateMetadata585Attestation'));assert(suffix.includes('validateMetadata584Attestation'));
+    assert(suffix.includes('else validateAttestation('));assert(!suffix.includes('new WeakMap'));
+    assert.equal(hash(await fs.readFile(path.join(frozenRoot,'supabase/migrations/20261022181403_assistant_later_h0_original_bound_successor.sql'))),
+      'b14ec45f920a86b9b055f4c30c716695fee767e25564249ac22ca448e1776fa7');
+
+    // Den ægte funktion og ægte frosne filbytes; Git-svar er syntetiske kontrollerede INPUTS.
+    // Dette beviser ikke en virkelig generations forfædre, B/S eller snapshotadgang.
+    const sourceFamily=profile.sourceHead,producer='b'.repeat(40),consumer='c'.repeat(40);
+    const files=['scripts/lib/established-native-current-origin.mjs','scripts/lib/ravscore-production-part-pipeline.mjs'];
+    const policy='scripts/lib/dmi-marine-zone-exclusions.json',policyBlob='a4f65f8eb0396dbe3c3da442ebcb9a06d99d3287';
+    assert.notEqual(producer,sourceFamily);
+    for(const refusal of [null,'ANCESTOR','FROZEN_SOURCE_CHANGED','PRODUCER_SEMANTICS_CHANGED',
+      'FROZEN_POLICY_CHANGED','PRODUCER_POLICY_CHANGED','SOURCE_POLICY_CHANGED','SOURCE_HEAD','PRODUCER']){
+      const calls=[],ancestorError=new Error('SYNTHETIC_ANCESTOR_REFUSAL');
+      const git=async args=>{
+        calls.push([...args]);
+        if(args[0]==='merge-base'){
+          assert.deepEqual([...args],['merge-base','--is-ancestor',producer,consumer]);
+          if(refusal==='ANCESTOR')throw ancestorError;return '';
+        }
+        assert.equal(args[0],'rev-parse');
+        if(args[1]==='HEAD')return consumer;
+        for(const [index,file]of files.entries()){
+          if(args[1]===sourceFamily+':'+file)return String(index+1).repeat(40);
+          if(args[1]===producer+':'+file)return refusal==='PRODUCER_SEMANTICS_CHANGED'?'f'.repeat(40):String(index+1).repeat(40);
+        }
+        for(const [head,code]of [[sourceFamily,'FROZEN_POLICY_CHANGED'],[producer,'PRODUCER_POLICY_CHANGED'],['HEAD','SOURCE_POLICY_CHANGED']])
+          if(args[1]===head+':'+policy)return refusal===code?'0'.repeat(40):policyBlob;
+        assert.fail('Ukendt Git-operand i normal producer-seam');
+      };
+      const context={Object,HEAD:/^[a-f0-9]{40}$/,SOURCE:sourceFamily,REQUIRED_SHA:profile.requiredSha,
+        path,sha:hash,git,process:{env:{GITHUB_SHA:refusal==='SOURCE_HEAD'?'d'.repeat(40):consumer}},
+        need(value,code){if(!value)throw Object.assign(new Error(code),{code});},
+        fs:{async readFile(file){
+          const raw=await fs.readFile(file);
+          return refusal==='FROZEN_SOURCE_CHANGED'?Buffer.concat([raw,Buffer.from(' ')]):raw;
+        }}};
+      const qualify=runInNewContext(actualRequired+actualPolicy+actualProducer+'\nqualifyProducer;',context);
+      if(refusal===null){
+        const result=await qualify(producer,frozenRoot);
+        assert.deepEqual({...result},{consumerHead:consumer,producerHead:producer,sourceFamilyHead:sourceFamily,ownerPolicyGitBlob:policyBlob});
+        assert(calls.some(row=>row[0]==='merge-base'),'Senere producent accepteres kun gennem den uændrede ancestor-kontrol');
+      }else await assert.rejects(qualify(refusal==='PRODUCER'?'invalid':producer,frozenRoot),
+        error=>refusal==='ANCESTOR'?error===ancestorError:error.code===refusal);
+    }
+    // Normal frozen587 protected-S-læser: kanonisk sti, ingen syntetisk PASS/restore.
+    const normal=await import(pathToFileURL(path.join(frozenRoot,'scripts/protected-ravscore-continuation-checkpoint.mjs')).href);
+    let requests=0;const request=async()=>{requests++;return [];};
+    const target=path.join(frozenRoot,'no-created-fixture','.cache','ravscore-continuation-checkpoint','checkpoint.json');
+    await assert.rejects(normal.restoreProtectedRavScoreContinuationCheckpoint({
+      checkpointPath:path.join(frozenRoot,'original-S.json'),targetReference:'2026-10-25T00:00:00.000Z',request,
+    }),/dedicated \.cache path/);
+    assert.equal(requests,0);
+    const result=await normal.restoreProtectedRavScoreContinuationCheckpoint({
+      checkpointPath:target,targetReference:'2026-10-25T00:00:00.000Z',request,
+    });
+    assert.equal(requests,1);assert.equal(result.reason,'protected-checkpoint-not-found');assert.equal(result.targetUnchanged,true);
+    await assert.rejects(fs.access(target),/ENOENT/);
+  });
+  await assert.rejects(fs.access(verifiedRoot),/ENOENT/);
+});
+
+// Faste aktive587→588-kaldere. DATA-/kontraktmål, ikke autentificeret produktions-B/S.
+import {ACTIVE_ASSISTANT_SUCCESSOR,assertAssistantPublic587SuccessorTarget}
+  from './lib/assistant-later-h0-successor-source.mjs';
+import {selectAssistantLaterH0Source} from './assistant-later-h0-runtime-transition.mjs';
+import {DEFAULT_CUTOVER_SOURCE_PHASE,assistantPublic587SuccessorRequiredMigrations,
+  assertAssistantPublic587SuccessorMigrationPlan,assertAssistantPublic587SuccessorMigrationsApplied,
+  assertSupabaseMigrationPlan,assertSupabaseMigrationsApplied,buildIntegratedCutoverReadiness}
+  from './integrated-cutover-readiness.mjs';
+import {synchronizeRavScoreModelBinding,assistantPublic587SuccessorCheckpointInspectionView}
+  from './sync-ravscore-model-binding.mjs';
+
+test('assistant public587 active facade is fixed and refuses UNISSUED before I/O',async t=>{
+  assert(Object.isFrozen(ACTIVE_ASSISTANT_SUCCESSOR));
+  assert.equal(ACTIVE_ASSISTANT_SUCCESSOR.before,ASSISTANT_PUBLIC587_SUCCESSOR_BEFORE);
+  assert.equal(ACTIVE_ASSISTANT_SUCCESSOR.requireOutput,requireAssistantPublic587SuccessorOutput);
+  assert.equal(DEFAULT_CUTOVER_SOURCE_PHASE,'assistant-public587-successor');
+  if(ACTIVE_ASSISTANT_SUCCESSOR.binding!==null){
+    requireAssistantPublic587SuccessorRelease();
+    const required=assistantPublic587SuccessorRequiredMigrations();
+    assert.equal(required.length,57);assert.equal(required.at(-2).version,ASSISTANT_PUBLIC587_SUCCESSOR_BEFORE.version);
+    assert.equal(required.at(-1).version,ACTIVE_ASSISTANT_SUCCESSOR.requireBinding().version);
+    const whole=await ACTIVE_ASSISTANT_SUCCESSOR.readCanonicalSource();
+    const view=assistantPublic587SuccessorCheckpointInspectionView(whole.canonicalSource);
+    for(const alias of [...ASSISTANT_PUBLIC587_SUCCESSOR_ALIASES,
+      {name:'ravradar_ravscore_checkpoint_ask586_state_valid'},{name:'ravradar_ravscore_checkpoint_ask586_payload_valid'},
+      {name:'ravradar_ravscore_checkpoint_noc585_state_valid'},{name:'ravradar_ravscore_checkpoint_noc585_payload_valid'}]){
+      assert(whole.canonicalSource.includes('function public.'+alias.name+'('));
+      assert(!view.includes('create or replace function public.'+alias.name+'('));
+      assert(view.includes('revoke all on function public.'+alias.name+'('),
+        'Kontrolvisningen bevarer originalens eksplicitte adgangsafslag');
+    }
+    for(const changed of [whole.canonicalSource+'\n',whole.canonicalSource.replace('ask587_state_valid','ask587_unknown_valid')])
+      assert.throws(()=>assistantPublic587SuccessorCheckpointInspectionView(changed));
+    return;
+  }
+  let io=0;
+  for(const name of ['readFile','writeFile','appendFile','mkdir','mkdtemp','realpath','lstat','readdir'])
+    t.mock.method(fs,name,()=>{io++;throw new Error('UNEXPECTED_IO');});
+  t.mock.method(globalThis,'fetch',()=>{io++;throw new Error('UNEXPECTED_NETWORK');});
+  try{
+    for(const invoke of [selectAssistantLaterH0Source,prepareAssistantLaterH0Runtime,installAssistantLaterH0Runtime,
+      ()=>readAssistantLaterH0RetentionInput('2026-10-25T20:00:00.000Z'),
+      ()=>synchronizeRavScoreModelBinding({write:true}),()=>assertAssistantPublic587SuccessorMigrationPlan({}),
+      ()=>assertSupabaseMigrationPlan({}),()=>buildIntegratedCutoverReadiness('a'.repeat(40),{})])
+      await assert.rejects(invoke,/ASSISTANT_PUBLIC587_SUCCESSOR_UNISSUED/);
+    for(const invoke of [assistantPublic587SuccessorRequiredMigrations,
+      ()=>assertAssistantPublic587SuccessorMigrationsApplied(''),
+      ()=>assertSupabaseMigrationsApplied(''),()=>assistantPublic587SuccessorCheckpointInspectionView('')])
+      assert.throws(invoke,/ASSISTANT_PUBLIC587_SUCCESSOR_UNISSUED/);
+    withBindingPrewriteEnv({},()=>assert.throws(()=>assertAssistantBindingPrewriteCaller(),/ASSISTANT_PUBLIC587_SUCCESSOR_UNISSUED/));
+    assert.equal(io,0);
+  }finally{t.mock.restoreAll();}
+});
+
+test('assistant public587 target preserves fixed original binding and strictly later hour',()=>{
+  const descriptor={modelBinding:{modelBundleSha256:ASSISTANT_PUBLIC587_SUCCESSOR_BEFORE.I},
+    contractHashes:{continuationStateContractSha256:ASSISTANT_PUBLIC587_SUCCESSOR_BEFORE.T},
+    productionReferenceAt:'2026-10-25T16:00:00.000Z'},before=structuredClone(descriptor);
+  assert.equal(assertAssistantPublic587SuccessorTarget(descriptor,'2026-10-25T17:00:00.000Z'),true);
+  for(const hour of ['2026-10-25T16:00:00.000Z','2026-10-25T15:00:00.000Z','2026-10-25T17:01:00.000Z','invalid'])
+    assert.throws(()=>assertAssistantPublic587SuccessorTarget(descriptor,hour));
+  for(const changed of [
+    {...descriptor,modelBinding:{modelBundleSha256:ASSISTANT_LATER_H0_BEFORE.I}},
+    {...descriptor,contractHashes:{continuationStateContractSha256:ASSISTANT_LATER_H0_BEFORE.T}},
+    {...descriptor,modelBinding:{modelBundleSha256:'f'.repeat(64)}},
+  ])assert.throws(()=>assertAssistantPublic587SuccessorTarget(changed,'2026-10-25T17:00:00.000Z'));
+  assert.throws(()=>assertAssistantPublic587SuccessorTarget(descriptor,'2026-10-25T17:00:00.000Z',{}));
+  assert.deepEqual(descriptor,before);
+});
+
+test('assistant public587 origin retains whole parent and pair refusals in the actual normal arm',async()=>{
+  const {runInNewContext}=await import('node:vm');
+  const source=await fs.readFile(path.join(ROOT,'scripts/lib/established-native-current-origin.mjs'),'utf8');
+  const begin='async function readFrozen587LaterOrigin(',end='\nasync function readOrigin(';
+  assert.equal(source.split(begin).length,2);assert.equal(source.split(end).length,2);
+  const body=source.slice(source.indexOf(begin),source.indexOf(end));
+  assert(!source.includes("from './assistant-later-h0-successor-source.mjs'"),'Ingen I-selvhashcyklus');
+  const identity=source.slice(source.indexOf('async function sourceIdentity('),source.indexOf('function registryParts('));
+  for(const exact of ["I_MANIFEST.files.find","sha(physical) === row.sha256","['diff', '--exit-code', 'HEAD', '--', ...leaves]",
+    "HEAD:scripts/lib/dmi-marine-zone-exclusions.json","'SOURCE_POLICY_CHANGED'"])assert(identity.includes(exact),exact);
+  for(const change of [null,'family','same-hour','earlier-hour','snapshot','registry','old-T','old-C','current-I',
+    'parent','pair-value','candidate-value','extra-key','pointer','registry-read']){
+    // Lille DATA-fixture i den eksisterende VM-kaldersøm. Den kvalificerer
+    // hverken 673 dele, et ægte opaque snapshot eller en produktionsattest.
+    const old=ASSISTANT_PUBLIC587_SUCCESSOR_BEFORE,next={I:'1'.repeat(64),C:'2'.repeat(64),T:'3'.repeat(64)};
+    const descriptor={modelBinding:{modelBundleSha256:old.I},contractHashes:{continuationStateContractSha256:old.T},
+      datasetId:'synthetic',productionReferenceAt:'2026-10-25T16:00:00.000Z'};
+    const originalI={modelBundleSha256:old.I,value:1,extra:{retained:true}},originalG={modelBundleSha256:old.C,value:2};
+    const central={synthetic:true},parent={whole:{retained:[1,null]}},before={version:1};
+    const snapshot={descriptor:structuredClone(descriptor),centralContract:central,attestation:parent,
+      checkpoint:{modelBinding:{modelBundleSha256:old.I},candidateGRollbackCompanion:{
+        modelBinding:{modelBundleSha256:old.C},states:{part:originalG}},states:{part:originalI},generationSha256:'4'.repeat(64)}};
+    const conditions={datasetId:descriptor.datasetId,productionReferenceAt:descriptor.productionReferenceAt,
+      privateEstablishedNativeCurrentOrigin:parent};
+    const pair={integrated:{...structuredClone(originalI),modelBundleSha256:next.I},
+      candidate:{...structuredClone(originalG),modelBundleSha256:next.C}};
+    const currentSource={integrated:next.I,candidate:next.C,continuation:next.T};
+    let target='2026-10-25T17:00:00.000Z',pointer=before,registry=central,authenticated=0;
+    if(change==='family')descriptor.modelBinding.modelBundleSha256=ASSISTANT_LATER_H0_BEFORE.I;
+    if(change==='same-hour')target=descriptor.productionReferenceAt;
+    if(change==='earlier-hour')target='2026-10-25T15:00:00.000Z';
+    if(change==='snapshot')snapshot.descriptor.datasetId='changed';
+    if(change==='registry')snapshot.centralContract={changed:true};
+    if(change==='old-T'){descriptor.contractHashes.continuationStateContractSha256='5'.repeat(64);snapshot.descriptor=structuredClone(descriptor);}
+    if(change==='old-C')snapshot.checkpoint.candidateGRollbackCompanion.modelBinding.modelBundleSha256='6'.repeat(64);
+    if(change==='current-I')currentSource.integrated='7'.repeat(64);
+    if(change==='parent')conditions.privateEstablishedNativeCurrentOrigin={changed:true};
+    if(change==='pair-value')pair.integrated.value++;
+    if(change==='candidate-value')pair.candidate.value++;
+    if(change==='extra-key')pair.integrated.unknown=true;
+    if(change==='pointer')pointer={version:2};
+    if(change==='registry-read')registry={changed:true};
+    const contexts=new WeakMap(),opaque=Object.freeze({}),parts=new Map(),pairs=new Map([['part',pair]]);
+    const need=(value,code)=>{if(!value)throw new Error(code);};
+    const invoke=runInNewContext(body+'\nreadFrozen587LaterOrigin;',{
+      need,same:(a,b)=>JSON.stringify(a)===JSON.stringify(b),process:{env:{RAVRADAR_PRODUCTION_TARGET_HOUR:target}},
+      readAuthenticatedFrozen587Predecessor:async()=>{authenticated++;return opaque;},
+      assertAuthenticatedFrozen587Snapshot:handle=>{assert.equal(handle,opaque);return snapshot;},
+      privateRuntimeContractHashes:async()=>({continuationStateContractSha256:next.T}),
+      ravScoreModelBinding:()=>({modelBundleSha256:next.I}),candidateBinding:()=>({modelBundleSha256:next.C}),
+      pairsFromConditions:()=>pairs,readPointer:async()=>pointer,json:async()=>registry,
+      ROOT,path,MB:1024*1024,ATTEST:'privateEstablishedNativeCurrentOrigin',contexts,structuredClone,
+    },{filename:'actual-public587-origin-arm-data-only.js'});
+    const args={descriptor,before,request:null,conditions,central,parts,currentSource};
+    if(change===null){
+      const handle=await invoke(args),stored=contexts.get(handle);assert(stored);
+      assert.equal(stored.generationSha256,snapshot.checkpoint.generationSha256);
+      assert.equal(stored.pairs,pairs);assert.equal(stored.finalized,false);assert.equal(stored.consumedParts.size,0);
+    }else await assert.rejects(invoke(args));
+    assert.equal(authenticated,['family','same-hour','earlier-hour'].includes(change)?0:1);
+  }
+});
+
+test('assistant public587 operative import variants remain whole-source bound',async()=>{
+  for(const file of ['scripts/assistant-later-h0-binding-prewrite.mjs','scripts/lib/established-native-current-origin.mjs']){
+    const source=(await fs.readFile(path.join(ROOT,file),'utf8')).replace(/\r\n?/g,'\n');
+    const imports=modelSourceRelativeModuleSpecifiers(source,file);assert(Object.isFrozen(imports));
+    for(const changed of [source+'\n',source+"\nimport './unknown.mjs';\n"])
+      assert.throws(()=>modelSourceRelativeModuleSpecifiers(changed,file),/Whole reviewed model import source changed/);
+    assert.throws(()=>modelSourceRelativeModuleSpecifiers({},file),/must be a string/);
+  }
+  const prewrite=await fs.readFile(path.join(ROOT,'scripts/assistant-later-h0-binding-prewrite.mjs'),'utf8');
+  for(const row of prewrite.matchAll(/FROZEN586_PREDECESSOR_([A-Z_]+):'([A-Z_]+)'/g))
+    assert(prewrite.includes("FROZEN587_PREDECESSOR_"+row[1]+":'"+row[2]+"'"));
+  const pkg=JSON.parse(await fs.readFile(path.join(ROOT,'package.json'),'utf8'));
+  assert.equal(pkg.scripts['test:assistant-later-h0-source'],
+    'node scripts/build-assistant-later-h0-successor.mjs --public587-successor --check');
+});
+
+test('assistant public587 late Edge route preserves exact prior profile and ordinary gates',async()=>{
+  const {deferCurrentGridBindingEdges,currentGridEdgePublicationRequired}=
+    await import('./lib/production-workflow-sources.mjs');
+  if(ACTIVE_ASSISTANT_SUCCESSOR.binding===null){
+    await assert.rejects(currentGridEdgePublicationRequired({},'integrated-historical-maintenance'),
+      /ASSISTANT_PUBLIC587_SUCCESSOR_UNISSUED/);
+    assert.equal(deferCurrentGridBindingEdges('20990101000000'),false);return;
+  }
+  const next=ACTIVE_ASSISTANT_SUCCESSOR.requireBinding(),binding=ravScoreModelBinding();
+  assert.equal(binding.modelBundleSha256,next.I);
+  assert.equal(deferCurrentGridBindingEdges(ACTIVE_ASSISTANT_SUCCESSOR.migration().version),true);
+  const old={model:'integrated',status:'INTEGRATED_ACTIVE',pending:false,
+    modelBinding:{...binding,modelBundleSha256:ASSISTANT_PUBLIC587_SUCCESSOR_BEFORE.I}};
+  assert.equal(await currentGridEdgePublicationRequired(old,'integrated-historical-maintenance'),true);
+  assert.equal(await currentGridEdgePublicationRequired({...old,modelBinding:binding},'integrated-historical-maintenance'),false);
+  for(const changed of [{...old,pending:true},{...old,status:'UNKNOWN'},{...old,model:'candidate'},
+    {...old,modelBinding:{...old.modelBinding,modelBundleSha256:ASSISTANT_LATER_H0_BEFORE.I}},
+    {...old,modelBinding:{...old.modelBinding,modelContractSha256:'f'.repeat(64)}}])
+    await assert.rejects(currentGridEdgePublicationRequired(changed,'integrated-historical-maintenance'));
+  for(const action of ['integrated','code-only','unknown'])
+    await assert.rejects(currentGridEdgePublicationRequired(old,action));
+  assert.equal(deferCurrentGridBindingEdges('20990101000000'),false);
 });

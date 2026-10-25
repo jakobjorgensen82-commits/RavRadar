@@ -1,3 +1,9 @@
+## 25. oktober — lokal sammenføring af brugerdata, prognosedeling og udstedt 588
+
+Den normale adgangs-/eksportprøve havde en historisk 587-forventning til dashboardets importversioner. Den samlede kilde har 588-importer; produktet skal ikke ændres tilbage for at bestå prøven. En præcis ydre testvisning kræver hele den aktuelle fil, ændrer kun de tyve importversioner og versionsliteralen og genfinder derefter hele den uændrede 719-fil. Ændret import, versionsliteral eller renderkrop afvises; den faktiske aktuelle fil bruges stadig til rendering. Alle tidligere inverse kontroller bevares. De berørte lokale adgangs-/eksport- og klient-/Edge-prøver består, men den samlede kilde kræver fortsat egen præcis GitHub-kontrol og sikker levering.
+
+Den kvalificerede 719-forælder er lokalt sammenført med den særskilt udstedte 588-kilde. Begge dokumenthistorikker og produktfunktioner bevares; browserimporterne følger 588 uden ændring af den udstedte modelbinding eller migrationerne. Dette er ikke kvalifikation af den samlede head, installation eller offentlig levering. Offentlig 587 er nået, og det numeriske strømmål er lukket; fire hovedområder er fortsat åbne. Statistik, automatisk sletning og SOURCE forbliver inaktive. De private rating- og same-ID-kandidater indgår ikke. Ældre daterede statusafsnit nedenfor bevares som historik.
+
 ## 25. oktober — lokal sammenføring af kvalificeret brugerdata-/delingskilde og P0-originalgrænse
 
 Den ægte, præcist kildekvalificerede PR719-forælder er nu lokalt sammenført med P0-rettelsen, der skelner original B fra assistentens arbejdsdata. Forælderens beståede kontrol er ikke kvalifikation af denne slutkomposition; dens normale samlede kontrol og sikre levering skal fortsat gennemføres. Begge daterede dokumenthistorikker nedenfor bevares uændrede.
@@ -37,6 +43,20 @@ Ejeren har godkendt netop ravradar-prognosedeling på eksisterende Free/account 
 Den private 006-/ejerrapportkandidat er lokalt sammenført med genuine 587-kilden og de særskilt main-leverede P0-rettelser til DMI-køobservation og fair tidsandel. Dette er ikke præcis samlet kildekvalifikation, installation, aktiveret statistik eller offentlig rapport. Begge grenes fulde historik bevares; de daterede afventninger nedenfor om netop P0-main-leveringerne er historik.
 
 4.0.587, C98/I97/T12, 66 gamle Supabase-migrationer, originale 004/005 og den særskilte 006-kandidats standard OFF-/plan-grænser bevares. De 29 faktisk beståede account-tilfælde er fortsat deres oprindelige bevis, ikke et nyt samlet PASS. Præcis samlet kilde-/nativekontrol, faktisk schema-/Workerinventory, kontrolleret OFF-installation/genlæsning og ejerens browseraccept er åbne. Ingen statistik- eller frigivelsesautoritet følger af sammenføringen. Kontinuerligt vejr og dækningsgrad er P0; alle fem mål er fortsat åbne.
+
+## 25. oktober — ÅBEN offentlig assistent: hele spørgsmål, kalender og national projektion
+
+Ejers fem fejl i offentlig 587 er reproduceret som konkrete klient-/læsefejl. Lokal rettelse og de normale mål dækker kese/ravkese, capabilities, vind, efterspurgt dag og den allerede beregnede nationale prognoseprojektion. Det er ikke en ændring af scoremodellen eller en konklusion om manglende national data. Emne-/privacygrænser og afvisning af ukendte kvalifikationer bevares.
+
+Én faktisk offentlig ekstern case gav kun et delvist svar. Det eksisterende kuraterede care-faktum er derfor styrket og kravet om fuldt understøttet svar præciseret; berørte normale mål består lokalt. Dette beviser ikke semantisk fulddækning eller samlet ekstern-AI-kvalitet. Den nye 4.0.588-binding og dens originale B/S-kaldere er lokalt udstedt med egen append-only migration; direkte bindingskontroller består. Hele den normale kilde-/databasekontrol, sikker installation og offentlig accept er fortsat åbne. Der må ikke meldes løst alene på lokale mål eller HTTP 200.
+
+## 25. oktober — tekstleverance afventer samlet kontrol, offentlig 587 er nået
+
+De tidligere Pages-/overgangsblokeringer nedenfor er historiske: den normale fulde kæde har nu leveret offentlig 4.0.587/I97, og cron er genaktiveret. Det lukker ikke opfølgning på kontinuerlig vejrhentning, dækning eller de øvrige åbne hovedmål.
+
+Grundbogens tre gamle testforventninger for positiv knowledge-kontrolsum, HTTP429 og opfølgningsguard er rettet præcist mod den godkendte klient, og hele det normale mål består i den private ordkomposition. De gamle failures er bevaret; der er ingen assistentproduktrettelse eller bevis for hosted AI i tekstpakken. De fem fejl, ejeren har påvist i offentlig 587, herunder kese-/vind-/capabilities-/ugedags-/partitioneringsadfærd, er ikke frikendt. Den særskilte produktrettelse er en privat, uanvendt kandidat under målprøve; ingen assistentproduktblade indgår her.
+
+Om-afsnittet er godkendt og lokalt integreret, men endnu ikke offentligt leveret. Seks normale lokale kontroller og den afgrænsede DA/DE/EN-browserforhåndsvisning er bestået. Det normale Om-måls nye additive assertions samt RDKS, sikkerhed, håndbogens læsehjælp, tabsfri håndbogsfletning og releaseversionskontrol består; installationskopiens SQL-prefix/suffix er uændret. Offline er ikke prøvet, og slutkompositionens præcise kilde-/leveringskontrol afventer. Den almindelige Pages-modulclosure-test har ikke Om som HTML-rod; et grønt resultat dér kan ikke alene bevise den nye kæde. Om-målet udvides derfor med præcis placering, 11 kapitler, godkendt ravlygtetekst, lokal figur og navngivne cacheposter. Ingen guards, model-/SQL-bindinger eller negative kontroller lempes.
 
 ## 25. oktober — råhistorikkens originalgrænse efter 587-overgang
 

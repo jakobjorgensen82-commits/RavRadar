@@ -95,16 +95,36 @@ const ASSISTANT_BINDING_CHECKPOINT_TARGET_REVIEWED=Object.freeze({
     sha256:'e1ee53aa55de4a49e68f7aff0182d3d3ff301740b330424a35d8e77da613ad8e',
     imports:ASSISTANT_BINDING_PREWRITE_REVIEWED['scripts/assistant-later-h0-binding-prewrite.mjs'].imports}),
 });
+// Faste586/587-læsere med adskilte private profiler; ingen ny importvej eller fallback.
+const ASSISTANT_PUBLIC587_SOURCE_REVIEWED=Object.freeze({
+  'scripts/check-assistant-later-h0-predecessor-source.mjs':Object.freeze({
+    sha256:'36719b093953b7381acd88e9a69b81bbf4532066a044af3ecfa5039a44625e0a',imports:Object.freeze([])}),
+  'scripts/lib/authenticated-frozen586-predecessor.mjs':Object.freeze({
+    sha256:'c9a22ee662475bc26ea820d46ba4cb17dbd8020195423b8212ea62c6ac16617e',
+    imports:ASSISTANT_BINDING_PREWRITE_REVIEWED['scripts/lib/authenticated-frozen586-predecessor.mjs'].imports}),
+});
+// Faste aktive587→588-kaldere. Begge tidligere hele varianter bevares;
+// samme finite importmængder, ingen scannerfallback eller model-selvreference.
+const ASSISTANT_PUBLIC587_OPERATIVE_REVIEWED=Object.freeze({
+  'scripts/assistant-later-h0-binding-prewrite.mjs':Object.freeze({
+    sha256:'869d93119cb9ba2968b39259ecd3d6500797f17ec514c7df39b04dbf8328e0e8',
+    imports:ASSISTANT_BINDING_PREWRITE_REVIEWED['scripts/assistant-later-h0-binding-prewrite.mjs'].imports}),
+  'scripts/lib/established-native-current-origin.mjs':Object.freeze({
+    sha256:'5fa3fe20041a82a7e287e21f4562f6bb82ffab253c69e0754208bb6e5c907b69',
+    imports:ASSISTANT_LATER_H0_REVIEWED['scripts/lib/established-native-current-origin.mjs'].imports}),
+});
 export function modelSourceRelativeModuleSpecifiers(source, file) {
   if (!Object.hasOwn(REVIEWED, file) && !Object.hasOwn(NATIVE_CONTINUITY_REVIEWED, file)
     && !Object.hasOwn(ASSISTANT_LATER_H0_REVIEWED,file) && !Object.hasOwn(ASSISTANT_BINDING_PREWRITE_REVIEWED,file)
     && !Object.hasOwn(ASSISTANT_BINDING_DIAGNOSTIC_REVIEWED,file)
-    && !Object.hasOwn(ASSISTANT_BINDING_CHECKPOINT_TARGET_REVIEWED,file))
+    && !Object.hasOwn(ASSISTANT_BINDING_CHECKPOINT_TARGET_REVIEWED,file)
+    && !Object.hasOwn(ASSISTANT_PUBLIC587_SOURCE_REVIEWED,file)
+    && !Object.hasOwn(ASSISTANT_PUBLIC587_OPERATIVE_REVIEWED,file))
     return exactRelativeModuleSpecifiers(source, file);
   if (typeof source !== 'string') throw new Error('Reviewed model source must be a string');
   const normalized = source.replace(/^\uFEFF/, '').replace(/\r\n?/g, '\n');
   const hash = crypto.createHash('sha256').update(normalized).digest('hex');
-  const reviewed = [REVIEWED[file], NATIVE_CONTINUITY_REVIEWED[file],ASSISTANT_LATER_H0_REVIEWED[file],ASSISTANT_BINDING_PREWRITE_REVIEWED[file],ASSISTANT_BINDING_DIAGNOSTIC_REVIEWED[file],ASSISTANT_BINDING_CHECKPOINT_TARGET_REVIEWED[file]].filter(Boolean)
+  const reviewed = [REVIEWED[file], NATIVE_CONTINUITY_REVIEWED[file],ASSISTANT_LATER_H0_REVIEWED[file],ASSISTANT_BINDING_PREWRITE_REVIEWED[file],ASSISTANT_BINDING_DIAGNOSTIC_REVIEWED[file],ASSISTANT_BINDING_CHECKPOINT_TARGET_REVIEWED[file],ASSISTANT_PUBLIC587_SOURCE_REVIEWED[file],ASSISTANT_PUBLIC587_OPERATIVE_REVIEWED[file]].filter(Boolean)
     .find(variant => variant.sha256 === hash);
   if (!reviewed)
     throw new Error('Whole reviewed model import source changed: ' + file);

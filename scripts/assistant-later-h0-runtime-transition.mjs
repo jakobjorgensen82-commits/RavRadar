@@ -6,10 +6,11 @@ import {createReadStream} from 'node:fs';
 import path from 'node:path';
 import {fileURLToPath,pathToFileURL} from 'node:url';
 import {isDeepStrictEqual as equal} from 'node:util';
-import {ASSISTANT_LATER_H0_BEFORE as OLD,requireAssistantLaterH0Binding,requireAssistantLaterH0Output,
-  assertAssistantLaterH0Target,assertAssistantLaterH0Caller} from './lib/assistant-later-h0-successor-source.mjs';
-import {withAuthenticated586PredecessorSource} from './check-assistant-later-h0-predecessor-source.mjs';
-import {readAuthenticatedFrozen586Predecessor,assertAuthenticatedFrozen586Snapshot} from './lib/authenticated-frozen586-predecessor.mjs';
+import {ACTIVE_ASSISTANT_SUCCESSOR as ACTIVE} from './lib/assistant-later-h0-successor-source.mjs';
+const {before:OLD,requireBinding:requireActiveAssistantBinding,requireOutput:requireActiveAssistantOutput,
+  assertTarget:assertActiveAssistantTarget,assertCaller:assertActiveAssistantCaller}=ACTIVE;
+import {withAuthenticated587PredecessorSource} from './check-assistant-later-h0-predecessor-source.mjs';
+import {readAuthenticatedFrozen587Predecessor,assertAuthenticatedFrozen587Snapshot} from './lib/authenticated-frozen586-predecessor.mjs';
 import {describeCurrentProtectedPrivateProductionRuntime,describeTargetProtectedPrivateProductionRuntime,createProtectedPrivateRuntimeClients} from './protected-private-production-runtime.mjs';
 import {migratePostCutoverPrivateRuntime,assertMetadataOnlyMigrationResult,assertRestoredOriginalInventory,
   assertExactRuntimeInventory,validatePredecessorIdentity} from './migrate-post-cutover-private-runtime.mjs';
@@ -28,8 +29,8 @@ function paths(){
   const privateRoot=process.env.RAVRADAR_PRIVATE_RUNTIME_ROOT,bundlePath=process.env.RAVRADAR_PRIVATE_RUNTIME_BUNDLE;
   assert(path.isAbsolute(privateRoot??'')&&path.isAbsolute(bundlePath??'')&&path.dirname(bundlePath)===privateRoot);
   const rel=path.relative(ROOT,privateRoot);assert(rel==='..'||rel.startsWith('..'+path.sep)||path.isAbsolute(rel));
-  return {privateRoot,bundlePath,sourceRoot:path.join(privateRoot,'assistant586-original'),
-    workRoot:path.join(privateRoot,'assistant586-working'),originalSPath:path.join(privateRoot,CP),descriptorPath:path.join(privateRoot,'assistant586-original-descriptor.json')};
+  return {privateRoot,bundlePath,sourceRoot:path.join(privateRoot,'assistant587-original'),
+    workRoot:path.join(privateRoot,'assistant587-working'),originalSPath:path.join(privateRoot,CP),descriptorPath:path.join(privateRoot,'assistant587-original-descriptor.json')};
 }
 async function inventory(root){const rows=[];
   for(const file of await assertExactRuntimeInventory(root)){
@@ -61,7 +62,7 @@ function checkpointInverse(original,prepared,next){
   same(inverse,original,'Whole S inverse including every value/history/unknown field');
 }
 async function projectOriginal(p,snapshot,frozenRoot,outputRoot,reportPath,checkpointPath){
-  const next=requireAssistantLaterH0Binding(),contracts=await privateRuntimeContractHashes();
+  const next=requireActiveAssistantBinding(),contracts=await privateRuntimeContractHashes();
   assert.equal(ravScoreModelBinding().modelBundleSha256,next.I);
   assert.equal(candidateBinding().modelBundleSha256,next.C);
   assert.equal(contracts.continuationStateContractSha256,next.T);
@@ -87,21 +88,22 @@ async function projectOriginal(p,snapshot,frozenRoot,outputRoot,reportPath,check
   return {checkpoint,report,conditions:prepared};
 }
 export async function selectAssistantLaterH0Source(){
-  assert.equal(arguments.length,0);
+  assert.equal(arguments.length,0);requireActiveAssistantOutput();
+  assert.equal(ravScoreModelBinding().modelBundleSha256,requireActiveAssistantBinding().I);
   const descriptor=await json(path.join(process.env.RUNNER_TEMP,'private-runtime-current-source.json'));
   if(descriptor?.modelBinding?.modelBundleSha256!==OLD.I||ravScoreModelBinding().modelBundleSha256===OLD.I)return false;
-  requireAssistantLaterH0Output();assertAssistantLaterH0Caller(process.env);
-  assertAssistantLaterH0Target(descriptor,targetHour());return true;
+  requireActiveAssistantOutput();assertActiveAssistantCaller(process.env);
+  assertActiveAssistantTarget(descriptor,targetHour());return true;
 }
 export async function prepareAssistantLaterH0Runtime(){
-  assert.equal(arguments.length,0);requireAssistantLaterH0Output();assertAssistantLaterH0Caller(process.env);
+  assert.equal(arguments.length,0);requireActiveAssistantOutput();assertActiveAssistantCaller(process.env);
   const p=paths(),target=targetHour();
   const clients=createProtectedPrivateRuntimeClients();
   const selected=await describeCurrentProtectedPrivateProductionRuntime({request:clients.documentRequest});
-  assertAssistantLaterH0Target(selected,target);
+  assertActiveAssistantTarget(selected,target);
   await noLinks(p.privateRoot);assert(await absent(p.bundlePath)&&await absent(p.sourceRoot)&&await absent(p.workRoot)
     &&await absent(p.originalSPath)&&await absent(p.descriptorPath));
-  await withAuthenticated586PredecessorSource(async frozenRoot=>{
+  await withAuthenticated587PredecessorSource(async frozenRoot=>{
     const load=file=>import(pathToFileURL(path.join(frozenRoot,file)).href);
     const old=await load('scripts/protected-private-production-runtime.mjs'),bundle=await load('scripts/private-production-runtime-bundle.mjs');
     const oldWorkflow=await load('scripts/private-production-runtime-workflow.mjs'),oldModel=await load('js/core/ravscore-model-contract.js');
@@ -120,14 +122,14 @@ export async function prepareAssistantLaterH0Runtime(){
     const originalSRestore=await oldProtectedS.restoreProtectedRavScoreContinuationCheckpoint({checkpointPath:p.originalSPath,
       targetReference:selected.productionReferenceAt,request:oldProtectedS.createProtectedRavScoreCheckpointRequester()});
     assert.equal(originalSRestore.restored,true,'Actual old normal protected S restore, no reconstruction receipt');
-    const handle=await readAuthenticatedFrozen586Predecessor(),snapshot=assertAuthenticatedFrozen586Snapshot(handle);
+    const handle=await readAuthenticatedFrozen587Predecessor(),snapshot=assertAuthenticatedFrozen587Snapshot(handle);
     sameIdentity(snapshot.descriptor,selected);
     const targetDescriptor=await describeTargetProtectedPrivateProductionRuntime({request:clients.documentRequest,
       targetReferenceAt:selected.productionReferenceAt,datasetId:selected.datasetId,bundleContentSha256:selected.bundleContentSha256});
     sameIdentity(targetDescriptor,snapshot.descriptor);validatePredecessorIdentity(targetDescriptor,selected.sourceHead);
     await fs.writeFile(p.descriptorPath,JSON.stringify(targetDescriptor)+'\n',{flag:'wx',mode:0o600});
-    const checkpointPath=path.join(p.privateRoot,'assistant586-working-checkpoint.json');
-    const result=await projectOriginal(p,snapshot,frozenRoot,p.workRoot,path.join(p.privateRoot,'assistant586-working-report.json'),checkpointPath);
+    const checkpointPath=path.join(p.privateRoot,'assistant587-working-checkpoint.json');
+    const result=await projectOriginal(p,snapshot,frozenRoot,p.workRoot,path.join(p.privateRoot,'assistant587-working-report.json'),checkpointPath);
     const loaded=await loadRavScoreContinuationCheckpointForTarget({checkpointPath,targetReference:target});
     assert.equal(loaded.loaded,true);
     same(await describeCurrentProtectedPrivateProductionRuntime({request:clients.documentRequest}),selected,'Pointer unchanged after preparation');
@@ -135,15 +137,15 @@ export async function prepareAssistantLaterH0Runtime(){
   return {prepared:true,admission:'NO_ADMISSION',sameH0Capability:false,originalsPreserved:true};
 }
 async function readWorking(targetReferenceAt,installing){
-  requireAssistantLaterH0Output();assertAssistantLaterH0Caller(process.env);
-  const p=paths(),handle=await readAuthenticatedFrozen586Predecessor(),snapshot=assertAuthenticatedFrozen586Snapshot(handle);
-  assertAssistantLaterH0Target(snapshot.descriptor,targetReferenceAt);
+  requireActiveAssistantOutput();assertActiveAssistantCaller(process.env);
+  const p=paths(),handle=await readAuthenticatedFrozen587Predecessor(),snapshot=assertAuthenticatedFrozen587Snapshot(handle);
+  assertActiveAssistantTarget(snapshot.descriptor,targetReferenceAt);
   const descriptorBytes=await fs.readFile(p.descriptorPath);const retainedDescriptor=validatePredecessorIdentity(JSON.parse(descriptorBytes),snapshot.descriptor.sourceHead);
   sameIdentity(retainedDescriptor,snapshot.descriptor);
-  const parent=await fs.realpath(p.privateRoot),work=await fs.mkdtemp(path.join(parent,'assistant586-reproject-'));
+  const parent=await fs.realpath(p.privateRoot),work=await fs.mkdtemp(path.join(parent,'assistant587-reproject-'));
   // Retain private scratch on an unknown failure. No recursive guessed cleanup.
   const firstInventory=await inventory(p.workRoot);
-  const result=await withAuthenticated586PredecessorSource(async frozenRoot=>{
+  const result=await withAuthenticated587PredecessorSource(async frozenRoot=>{
     const projected=path.join(work,'runtime'),checkpointPath=path.join(work,'checkpoint.json');
     const result=await projectOriginal(p,snapshot,frozenRoot,projected,path.join(work,'report.json'),checkpointPath);
     same(await inventory(projected),firstInventory,'Whole normal migration reproduction, ALL runtime bytes');
@@ -161,7 +163,7 @@ async function readWorking(targetReferenceAt,installing){
   const verify=async()=>{
     same(await inventory(p.workRoot),firstInventory,'Prepared full runtime unchanged');
     same(await fs.readFile(p.descriptorPath),descriptorBytes,'Original descriptor unchanged');
-    const fresh=assertAuthenticatedFrozen586Snapshot(await readAuthenticatedFrozen586Predecessor());
+    const fresh=assertAuthenticatedFrozen587Snapshot(await readAuthenticatedFrozen587Predecessor());
     same(fresh,snapshot,'Fresh authenticated original B/S/source unchanged');
     return snapshot.verified;
   };
@@ -180,7 +182,7 @@ export async function readAssistantLaterH0RetentionInput(targetReferenceAt){
   assert.equal(arguments.length,1);return readWorking(targetReferenceAt,false);
 }
 export async function installAssistantLaterH0Runtime(){
-  assert.equal(arguments.length,0);requireAssistantLaterH0Output();await readWorking(targetHour(),true);
+  assert.equal(arguments.length,0);requireActiveAssistantOutput();await readWorking(targetHour(),true);
   return {installedWorkingView:true,admission:'NO_ADMISSION',originalsPreserved:true,sameH0Capability:false};
 }
 async function main(){

@@ -1,8 +1,14 @@
-const APP_VERSION = "4.0.587";
+const APP_VERSION = "4.0.588";
 const CACHE_PREFIX = "ravradar-app-";
 const CACHE = `${CACHE_PREFIX}${APP_VERSION.replaceAll('.', '-')}`;
 const STATIC = [
   "./","./index.html","./about.html","./learn.html","./admin.html",`./about.css?v=${APP_VERSION}`,`./learn.css?v=${APP_VERSION}`,`./admin.css?v=${APP_VERSION}`,`./js/i18n.js?v=${APP_VERSION}`,`./js/ui/about.js?v=${APP_VERSION}`,`./js/ui/about-i18n.js?v=${APP_VERSION}`,`./js/ui/learn-i18n.js?v=${APP_VERSION}`,`./js/ui/learn-i18n-de.js?v=${APP_VERSION}`,`./js/ui/learn-i18n-en.js?v=${APP_VERSION}`,`./js/ui/admin-dashboard.js?v=${APP_VERSION}`,`./style.css?v=${APP_VERSION}`,`./bootstrap.js?v=${APP_VERSION}`,`./app.js?v=${APP_VERSION}`,
+  `./about.css?v=${APP_VERSION}&ui=about-explainer-20261025`,
+  `./js/ui/about.js?v=${APP_VERSION}&ui=about-explainer-20261025`,
+  `./js/ui/about-i18n.js?v=${APP_VERSION}&ui=about-explainer-20261025`,
+  `./js/ui/about-explainer.js?v=${APP_VERSION}&ui=about-explainer-20261025`,
+  `./js/ui/about-explainer-i18n.js?v=${APP_VERSION}&ui=about-explainer-20261025`,
+  `./js/core/about-home-return.js?v=${APP_VERSION}`,
   `./assets/about/qrcode.min.js?v=${APP_VERSION}`,
   "./config.js","./manifest.webmanifest","./version.json",
   "./js/core/ravscore-model-contract.js","./js/core/score-presentation.js","./js/core/best-time-policy.js","./js/core/forecast-calendar.js","./js/core/local-zone-score.js","./js/core/ravscore-integrated-explanation-presenter.js",

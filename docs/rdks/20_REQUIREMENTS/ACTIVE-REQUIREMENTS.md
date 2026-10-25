@@ -1,3 +1,7 @@
+## 25. oktober — lokal sammenføring af brugerdata, prognosedeling og udstedt 588
+
+Den kvalificerede 719-forælder er lokalt sammenført med den særskilt udstedte 588-kilde. Begge dokumenthistorikker og produktfunktioner bevares; browserimporterne følger 588 uden ændring af den udstedte modelbinding eller migrationerne. Dette er ikke kvalifikation af den samlede head, installation eller offentlig levering. Offentlig 587 er nået, og det numeriske strømmål er lukket; fire hovedområder er fortsat åbne. Statistik, automatisk sletning og SOURCE forbliver inaktive. De private rating- og same-ID-kandidater indgår ikke. Ældre daterede statusafsnit nedenfor bevares som historik.
+
 ## 24. oktober — AKTIV: snæver Free-autoritet til offentlig prognosedeling
 
 Ejeren har udtrykkeligt godkendt oprettelse af kun `ravradar-prognosedeling` på den eksisterende Cloudflare Free-konto og `jakob-jorgensen82.workers.dev`. Den fælles faste delingsadresse er `https://ravradar-prognosedeling.jakob-jorgensen82.workers.dev/`. Autoriteten omfatter ikke ny database, billedlager, DNS-ændring, nøgler eller betalingsplan. Konfigurationen må ikke tilføje assets-/DB-/KV-/R2-bindinger, egne routes, cron eller secrets. Det eksisterende offentlige logo må læses uden nyt billedlager.
@@ -5,6 +9,12 @@ Ejeren har udtrykkeligt godkendt oprettelse af kun `ravradar-prognosedeling` på
 Deling skal bruge den faktisk verificerede zone, hele time, søgemåde og DA/DE/EN-sprog. Brugeren vælger selv destination og opslagstekst. Score skal komme fra de eksisterende offentlige data og den normale kontrol af bytes, kontrolsum, model, sted, time og udløb; queryparametre, headere eller miljø må ikke udstede score-/kildeautoritet. Ukendt eller udløbet grundlag må ikke erstattes med en nærmeste time. Ny delt tid følger Europe/Copenhagen inklusive sommer-/vintertid, ikke et fast CET-mærke.
 
 Levering skal ske særskilt efter den normale præcise kildekontrol og uden ændring af almindelige vejr-/Pages-workflows. Aktiv versionsgenlæsning, faktisk hosted GET/HEAD, Free-kapacitet og browser-/Facebook-accept kræves; lokal bundle, Node-prøve eller HTTP 200 er ikke tilstrækkeligt. Ekstern cache og ændrede/udløbne offentlige data skal beskrives ærligt. Score er ikke en garanti for fund. Ingen produktionsændring under writer, ingen model-/SQL-udstedelse eller automatisk udvidelse af andre tilladelser. Alle fem hovedmål er fortsat åbne til 18. november.
+
+## 25. oktober — hele assistentspørgsmålet og den faktisk efterspurgte prognosedag
+
+Ejerens fem offentlige fejlsvar skal rettes som produktadfærd. Almindelige ravspørgsmål, herunder kese/ravkese, egne funktioner og god vind, må ikke afvises som uvedkommende. Bedste område på en navngiven dag skal bruge den tilsvarende eksisterende validerede nationale prognose, ikke falde stiltiende tilbage til i dag eller kræve alle zonepakker. Tvetydig dato, ukendt kvalifikation eller manglende gyldig projektion skal håndteres ærligt. Score, kildeprioritet og rå vejrdata ændres ikke.
+
+Et svar på et sammensat spørgsmål må ikke bestå kvalitetskontrollen ved kun at besvare ét led. Den nye care-viden genbruger eksisterende faglig kuratering, ikke en diagnose af et bestemt fund. Hele inputtets sikkerhed og privacy, begrænset ekstern kontekst, sprog, kvoter og normal fallback bevares. Lokal måltest, installeret kode og HTTP 200 er forskellige trin; faktisk offentlig afprøvning er fortsat et afslutningskrav. Den nye binding må ikke svække originalbevarelse, historik eller writergrænser.
 
 ## 24. oktober — lokal 587-sammenføring med den leverede DMI-kilde
 

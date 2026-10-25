@@ -1,3 +1,9 @@
+## 25. oktober — lokal sammenføring af brugerdata, prognosedeling og udstedt 588
+
+Den normale adgangs-/eksportprøve havde en historisk 587-forventning til dashboardets importversioner. Den samlede kilde har 588-importer; produktet skal ikke ændres tilbage for at bestå prøven. En præcis ydre testvisning kræver hele den aktuelle fil, ændrer kun de tyve importversioner og versionsliteralen og genfinder derefter hele den uændrede 719-fil. Ændret import, versionsliteral eller renderkrop afvises; den faktiske aktuelle fil bruges stadig til rendering. Alle tidligere inverse kontroller bevares. De berørte lokale adgangs-/eksport- og klient-/Edge-prøver består, men den samlede kilde kræver fortsat egen præcis GitHub-kontrol og sikker levering.
+
+Den kvalificerede 719-forælder er lokalt sammenført med den særskilt udstedte 588-kilde. Begge dokumenthistorikker og produktfunktioner bevares; browserimporterne følger 588 uden ændring af den udstedte modelbinding eller migrationerne. Dette er ikke kvalifikation af den samlede head, installation eller offentlig levering. Offentlig 587 er nået, og det numeriske strømmål er lukket; fire hovedområder er fortsat åbne. Statistik, automatisk sletning og SOURCE forbliver inaktive. De private rating- og same-ID-kandidater indgår ikke. Ældre daterede statusafsnit nedenfor bevares som historik.
+
 ## 25. oktober — lokal sammenføring af kvalificeret brugerdata-/delingskilde og P0-originalgrænse
 
 Den ægte, præcist kildekvalificerede PR719-forælder er nu lokalt sammenført med P0-rettelsen, der skelner original B fra assistentens arbejdsdata. Forælderens beståede kontrol er ikke kvalifikation af denne slutkomposition; dens normale samlede kontrol og sikre levering skal fortsat gennemføres. Begge daterede dokumenthistorikker nedenfor bevares uændrede.
@@ -35,6 +41,18 @@ Rapportens normale browserprøve læser nu releaseversionen fra package.json til
 Den private 006-/ejerrapportkandidat er lokalt sammenført med genuine 587-kilden og de særskilt main-leverede P0-rettelser til DMI-køobservation og fair tidsandel. Dette er ikke præcis samlet kildekvalifikation, installation, aktiveret statistik eller offentlig rapport. Begge grenes fulde historik bevares; de daterede afventninger nedenfor om netop P0-main-leveringerne er historik.
 
 4.0.587, C98/I97/T12, 66 gamle Supabase-migrationer, originale 004/005 og den særskilte 006-kandidats standard OFF-/plan-grænser bevares. De 29 faktisk beståede account-tilfælde er fortsat deres oprindelige bevis, ikke et nyt samlet PASS. Præcis samlet kilde-/nativekontrol, faktisk schema-/Workerinventory, kontrolleret OFF-installation/genlæsning og ejerens browseraccept er åbne. Ingen statistik- eller frigivelsesautoritet følger af sammenføringen. Kontinuerligt vejr og dækningsgrad er P0; alle fem mål er fortsat åbne.
+
+## Ikke offentliggjort — assistentens spørgsmål, kalenderdag og nationale prognoser
+
+- Retter de påviste kese-/ravkese-, funktions- og vindspørgsmål samt kalenderafgrænsning og læsning af den allerede beregnede nationale prognose. Hele inputtets emne-, sikkerheds- og privacygrænser bevares; scoremodel og leverandørdata ændres ikke.
+- Styrker eksisterende fagligt kurateret viden om ravets overflade, sprækker og opbevaring på DA/DE/EN efter en faktisk, men kun delvist besvaret ekstern case. Modellen skal besvare alle understøttede led eller vise usikkerhed; dette promptkrav er ikke i sig selv et kvalitetsbevis.
+- Normale afgrænsede mål består lokalt. Den nødvendige originalbevarende 587→588-port og lokale 4.0.588-binding med append-only migration er udstedt. Præcis samlet kilde-/databasekontrol, installation og offentlig accept er åbne. Ingen ny offentlig release følger alene af den lokale rettelse.
+
+## Ikke offentliggjort — Sådan virker RavRadar og ravkese i Grundbogen
+
+Ejeren har godkendt det nye afsnit Sådan virker RavRadar mellem MobilePay-støtte og kontakt på Om-siden. Det forklarer den eksisterende score og dens usikkerhed på dansk, tysk og engelsk. Strømfiguren viser retning ved 8 centimeter hvert sekund, ikke RavScore-point; den ændrer ingen vejrdata eller model. Den godkendte forklaring om vindens betydning for udsynet med en ravlygte er bevaret. Eksisterende kontakt, støtte, sprogvalg og tilbagefunktion bevares, og Om-sidens nye filer får en særskilt cachekæde.
+
+Den danske Grundbog bruger ravkese i de to sætninger om redskabet ved revlerne og i vandkanten. HTML-fallback og dansk runtime-tekst følges ad; tysk, engelsk og faglige regler ændres ikke. De tre præcise gamle testforventninger er tilpasset den godkendte klient uden assistentproduktændring. Dette er en samlet lokal kildeforberedelse oven på offentligt leveret 4.0.587, ikke en allerede offentliggjort tekstændring eller ny version, modelbinding eller SQL.
 
 ## 25. oktober — original B-kontrol adskilt fra assistentens arbejdsdata
 

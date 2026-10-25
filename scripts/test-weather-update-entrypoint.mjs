@@ -1,6 +1,7 @@
 import {inverseReviewedAccountStatisticsAssistantSourceScripts} from './lib/account-statistics-assistant-package-review.mjs';
 import { inverseAlternativeCCaller, inverseAssistant587OriginalCompanionTestInput,
   ASSISTANT587_ORIGINAL_COMPANION_TEST_REVIEW,
+  inverseAssistant588OriginalCompanionTestInput, ASSISTANT588_ORIGINAL_COMPANION_TEST_REVIEW,
   inverseAssistant587OriginalRawBoundaryTestInput } from './lib/alternative-c-caller-test-input.mjs';
 import { inverseCurrentNativeOriginalProducerTestInput, CURRENT_NATIVE_ORIGINAL_PRODUCER_TEST_REVIEW,
   inverseCurrentFamilyColdTargetTestInput }
@@ -1223,7 +1224,8 @@ test('actual native-original companion caller stays unprojected and declared in 
   assert.match(planner, /await readAuthenticatedCurrentCompanions\(verified, conditions\)/);
   const actualHelper = (await fs.readFile(new URL('./read-authenticated-dmi-current-companions.mjs', import.meta.url), 'utf8')).replace(/\r\n/g, '\n');
   assert.match(actualHelper, /await readAuthenticatedCurrentCompanions\(input\.verified, input\.originalConditions \?\? input\.conditions\);\n  await input\.verify\(\);/);
-  const helper = inverseAssistant587OriginalCompanionTestInput(actualHelper, 'scripts/read-authenticated-dmi-current-companions.mjs');
+  const genuine587Helper = inverseAssistant588OriginalCompanionTestInput(actualHelper, 'scripts/read-authenticated-dmi-current-companions.mjs');
+  const helper = inverseAssistant587OriginalCompanionTestInput(genuine587Helper, 'scripts/read-authenticated-dmi-current-companions.mjs');
   assert.match(helper, /await readAuthenticatedCurrentCompanions\(input\.verified, input\.conditions\);\n  await input\.verify\(\);/);
   assert.doesNotMatch(helper, /\.\/plan-ravscore-current-history|^await\s|^main\(/m);
   const { PRIVATE_RUNTIME_PRODUCER_SOURCE_FILES, PRIVATE_RUNTIME_CONTRACT_FILES } =
@@ -1238,7 +1240,8 @@ test('assistant587 original companion inverse preserves both whole predecessors 
   for (const row of ASSISTANT587_ORIGINAL_COMPANION_TEST_REVIEW) {
     const rawActual = (await fs.readFile(new URL('../' + row.path, import.meta.url), 'utf8')).replace(/\r\n/g, '\n');
     const actual = row.path === 'scripts/plan-ravscore-current-history.mjs'
-      ? inverseAssistant587OriginalRawBoundaryTestInput(rawActual, row.path) : rawActual;
+      ? inverseAssistant587OriginalRawBoundaryTestInput(rawActual, row.path)
+      : inverseAssistant588OriginalCompanionTestInput(rawActual, row.path);
     assert.equal(Buffer.byteLength(actual), row.after.bytes);
     assert.equal(digest(actual), row.after.sha256);
     const before = inverseAssistant587OriginalCompanionTestInput(actual, row.path);
@@ -1268,4 +1271,38 @@ test('assistant587 original companion inverse preserves both whole predecessors 
   assert.throws(() => inverseAssistant587OriginalCompanionTestInput({}, 'scripts/plan-ravscore-current-history.mjs'),
     /ASSISTANT587_TYPE/);
   assert.throws(() => inverseAssistant587OriginalCompanionTestInput('', 'scripts/unknown.mjs'), /ASSISTANT587_PATH/);
+});
+
+test('assistant588 companion route preserves genuine587 whole bytes and rejects every altered delta', async () => {
+  const row = ASSISTANT588_ORIGINAL_COMPANION_TEST_REVIEW;
+  const actual = (await fs.readFile(new URL('../' + row.path, import.meta.url), 'utf8')).replace(/\r\n/g, '\n');
+  assert.equal(Buffer.byteLength(actual), row.after.bytes);
+  assert.equal(digest(actual), row.after.sha256);
+  const before = inverseAssistant588OriginalCompanionTestInput(actual, row.path);
+  assert.equal(Buffer.byteLength(before), row.before.bytes);
+  assert.equal(digest(before), row.before.sha256);
+  assert.equal(inverseAssistant588OriginalCompanionTestInput(before, row.path), before);
+  const genuine587 = ASSISTANT587_ORIGINAL_COMPANION_TEST_REVIEW.find(item => item.path === row.path);
+  assert.deepEqual(row.before, genuine587.after, 'The outer view is the exact original587 caller, not a repin');
+  assert.equal(Buffer.byteLength(inverseAssistant587OriginalCompanionTestInput(before, row.path)), genuine587.before.bytes);
+  const { ACTIVE_ASSISTANT_SUCCESSOR } = await import('./lib/assistant-later-h0-successor-source.mjs');
+  assert.equal(ACTIVE_ASSISTANT_SUCCESSOR.before.I,
+    '5584d8e59f8d21785fd08b32f9beb22cf879cdb4892a11ede24eb862d9a0dca2');
+  assert.equal(actual.split(ACTIVE_ASSISTANT_SUCCESSOR.before.I).length, 4, 'All three guards select exactly the active genuine587 predecessor');
+  assert.match(actual, /import \{readAuthenticatedFrozen587Predecessor,assertAuthenticatedFrozen587Snapshot\}/);
+  assert.equal(actual.split('assertAuthenticatedFrozen587Snapshot(await readAuthenticatedFrozen587Predecessor())').length, 3);
+  assert.doesNotMatch(actual, /readAuthenticatedFrozen586Predecessor|assertAuthenticatedFrozen586Snapshot|6d8f7cca203b5f7ee5155f3c0cdb39403a02fd0eb30fecaca5070ef9f814a805/);
+  for (const [old, current] of row.hunks) {
+    assert.equal(actual.split(current).length, 2);
+    for (const changed of [actual.replace(current, () => old),
+      actual.replace(current, () => current + current), actual.replace(current, () => current + '/*UNREVIEWED*/')]) {
+      assert.notEqual(changed, actual);
+      assert.throws(() => inverseAssistant588OriginalCompanionTestInput(changed, row.path),
+        /ALTERNATIVE_C_TEST_INPUT_CHANGED:ASSISTANT588/);
+    }
+  }
+  for (const changed of ['!' + actual.slice(1), actual + '\n'])
+    assert.throws(() => inverseAssistant588OriginalCompanionTestInput(changed, row.path), /ASSISTANT588/);
+  assert.throws(() => inverseAssistant588OriginalCompanionTestInput({}, row.path), /ASSISTANT588_TYPE/);
+  assert.throws(() => inverseAssistant588OriginalCompanionTestInput(actual, 'scripts/unknown.mjs'), /ASSISTANT588_PATH/);
 });

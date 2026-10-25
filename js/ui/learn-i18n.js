@@ -1,6 +1,6 @@
-import './learn-i18n-de.js?v=4.0.587';
-import './learn-i18n-en.js?v=4.0.587';
-import { initialiseI18n, registerI18nMessages } from '../i18n.js?v=4.0.587';
+import './learn-i18n-de.js?v=4.0.588';
+import './learn-i18n-en.js?v=4.0.588';
+import { initialiseI18n, registerI18nMessages } from '../i18n.js?v=4.0.588';
 
 registerI18nMessages({ da:{
   'static.back':'Tilbage til RavRadar', 'learn.meta.title':'Lær ravjagt – RavRadar',
@@ -15,8 +15,8 @@ registerI18nMessages({ da:{
   'learn.journey.1.title':'På havbunden', 'learn.journey.1.body':'Kan normalt ikke samles op. Strøm, bølger og turbulens kan senere sætte det i bevægelse.',
   'learn.journey.2.title':'I vandsøjlen uden for revlerne', 'learn.journey.2.body':'Er ikke inden for rækkevidde endnu. Strøm kan føre det mod revlerne, langs kysten eller væk.',
   'learn.journey.3.title':'På ydersiden af revlerne', 'learn.journey.3.body':'Kan nogle steder nås ved lavt vand. Bølger og strøm kan føre det over eller gennem revlesystemet.',
-  'learn.journey.4.title':'Mellem revler og strand', 'learn.journey.4.body':'Kan nås med ketcher ved højere vand og nogle steder med hånden ved lavere vand. Lokale render og strømveje er afgørende.',
-  'learn.journey.5.title':'I vandkanten', 'learn.journey.5.body':'Kan samles op med ketcher eller hænder. Opskyl og tilbageskyl afgør, om det bliver afleveret eller ført ud igen.',
+  'learn.journey.4.title':'Mellem revler og strand', 'learn.journey.4.body':'Kan nås med ravkese ved højere vand og nogle steder med hånden ved lavere vand. Lokale render og strømveje er afgørende.',
+  'learn.journey.5.title':'I vandkanten', 'learn.journey.5.body':'Kan samles op med ravkese eller hænder. Opskyl og tilbageskyl afgør, om det bliver afleveret eller ført ud igen.',
   'learn.journey.6.title':'På stranden', 'learn.journey.6.body':'Kan samles op, indtil nyt vand, vind, sand eller andre strandgæster flytter det.',
   'learn.journey.note':'Vigtigt: Tegningen viser mulige placeringer og transporttrin, ikke en garanti for, at rav altid følger samme rute.',
   'learn.journey.thanks':'Tak til Rav Jagt for hans illustrationer og hjælpen undervejs med RavRadar.',

@@ -1,3 +1,9 @@
+## 25. oktober — lokal sammenføring af brugerdata, prognosedeling og udstedt 588
+
+Den normale adgangs-/eksportprøve havde en historisk 587-forventning til dashboardets importversioner. Den samlede kilde har 588-importer; produktet skal ikke ændres tilbage for at bestå prøven. En præcis ydre testvisning kræver hele den aktuelle fil, ændrer kun de tyve importversioner og versionsliteralen og genfinder derefter hele den uændrede 719-fil. Ændret import, versionsliteral eller renderkrop afvises; den faktiske aktuelle fil bruges stadig til rendering. Alle tidligere inverse kontroller bevares. De berørte lokale adgangs-/eksport- og klient-/Edge-prøver består, men den samlede kilde kræver fortsat egen præcis GitHub-kontrol og sikker levering.
+
+Den kvalificerede 719-forælder er lokalt sammenført med den særskilt udstedte 588-kilde. Begge dokumenthistorikker og produktfunktioner bevares; browserimporterne følger 588 uden ændring af den udstedte modelbinding eller migrationerne. Dette er ikke kvalifikation af den samlede head, installation eller offentlig levering. Offentlig 587 er nået, og det numeriske strømmål er lukket; fire hovedområder er fortsat åbne. Statistik, automatisk sletning og SOURCE forbliver inaktive. De private rating- og same-ID-kandidater indgår ikke. Ældre daterede statusafsnit nedenfor bevares som historik.
+
 ## 25. oktober — lokal sammenføring af kvalificeret brugerdata-/delingskilde og P0-originalgrænse
 
 Den ægte, præcist kildekvalificerede PR719-forælder er nu lokalt sammenført med P0-rettelsen, der skelner original B fra assistentens arbejdsdata. Forælderens beståede kontrol er ikke kvalifikation af denne slutkomposition; dens normale samlede kontrol og sikre levering skal fortsat gennemføres. Begge daterede dokumenthistorikker nedenfor bevares uændrede.
@@ -41,6 +47,42 @@ Brugerdatajobbet forbliver globalt slået fra, rapportens offentlige frigivelse 
 Den private 006-/ejerrapportkandidat er lokalt sammenført med genuine 587-kilden og de særskilt main-leverede P0-rettelser til DMI-køobservation og fair tidsandel. Dette er ikke præcis samlet kildekvalifikation, installation, aktiveret statistik eller offentlig rapport. Begge grenes fulde historik bevares; de daterede afventninger nedenfor om netop P0-main-leveringerne er historik.
 
 4.0.587, C98/I97/T12, 66 gamle Supabase-migrationer, originale 004/005 og den særskilte 006-kandidats standard OFF-/plan-grænser bevares. De 29 faktisk beståede account-tilfælde er fortsat deres oprindelige bevis, ikke et nyt samlet PASS. Præcis samlet kilde-/nativekontrol, faktisk schema-/Workerinventory, kontrolleret OFF-installation/genlæsning og ejerens browseraccept er åbne. Ingen statistik- eller frigivelsesautoritet følger af sammenføringen. Kontinuerligt vejr og dækningsgrad er P0; alle fem mål er fortsat åbne.
+
+## 25. oktober — assistentens konkrete produktrettelse efter fem ejerpåviste fejlsvar
+
+- [x] Lokal rettelse af kese/ravkese, egne funktioner og generelt vindspørgsmål med bevaret kontrol af hele inputtet.
+- [x] Lokal kalenderafgrænsning og brug af eksisterende valideret national prognoseprojektion uden ny scoring eller fuld zonehentning.
+- [x] Normale afgrænsede assistent-, sprog- og kalenderprøver; tidligere negative resultater bevares med deres faktiske scope.
+- [x] Én normal offentlig browsercase gennem ekstern vej; kun delvis besvarelse, ikke kvalitets-PASS.
+- [x] Eksisterende kurateret care-faktum og helspørgsmålsinstruks styrket på DA/DE/EN; normale Edge-, main/Edge- og i18n-mål består lokalt.
+- [x] Lokal originalbevarende 587→588-port og 4.0.588-binding med egen append-only migration, faktiske C/I/T og syv synkroniserede forbrugere; direkte bindingskontroller består.
+- [ ] Hele normale kalder-/kildekontrollen og faktisk PostgreSQL på den præcise nye head; det tidligere 587-bevis er ikke et nyt 588-PASS.
+- [ ] Præcis samlet kildekontrol, sikker installation og faktisk offentlig afprøvning af ejerens fem spørgsmål samt DA/DE/EN-variationer. Lokal test og HTTP 200 alene lukker ikke punktet.
+
+Offentlig 587 og igangværende almindelig drift bevares; ingen produktion under aktiv writer. SOURCE, samlet statistik og automatisk sletning er fortsat inaktive. Ældre daterede førbilleder nedenfor bevares.
+
+## 25. oktober — samlet Om-/Grundbog-forberedelse efter offentlig 587
+
+- [x] Normal fuld vejrkæde har faktisk leveret offentlig 4.0.587/I97. Cron er genaktiveret; løbende almindelig drift og dækning følges i privat checkpoint.
+- [x] Ejeren har godkendt Om-afsnittet og offentliggørelse. Den godkendte danske tekst, præcise ravlygtetekst og illustration med 8 centimeter hvert sekund er lokalt integreret med DE/EN, afgrænset CSS og navngiven cachekæde.
+- [x] Grundbogens fire danske ordforekomster er afgrænset til ravkese. Tidligere normale lærings- og C98/I97-resultater genbruges; de eksisterende sprog-/kontraktassertions består efter de præcise testforventninger for knowledge-kontrolsum, HTTP429 og opfølgning.
+- [x] Seks normale lokale kontroller på den integrerede branch: eksisterende sprog-/kontraktassertions inklusive ny Om-import, iOS-retur, versionsclosure, C98, I97 og syv bindingsforbrugere.
+- [x] Normal lokal browserforhåndsvisning: placering, 11 kapitler, bevaret QR-indhold, tastatur 0/90/180 samt dansk ved 390 pixels og tysk/engelsk ved 320 pixels uden vandret overløb. Normalt sprogskift og genindlæsning er kontrolleret; dansk og normal visningsbredde er gendannet.
+- [x] Det normale Om-måls nye additive assertions, RDKS, sikkerhed, håndbogens læsehjælp, tabsfri håndbogsfletning og releaseversionskontrol. Den normale installationskopi er synkroniseret med uændret SQL-prefix/suffix og præcis håndbogspayload.
+- [ ] Offlinekontrol er ikke kørt.
+- [ ] Præcis kildekontrol og offentlig levering af de nye tekster. Lokale resultater er ikke et bevis for fungerende ekstern AI.
+
+Ingen ny version, C/I/T, SQL, model- eller geodataændring. Numerisk strømmål er lukket, fire øvrige områder er åbne; SOURCE, samlet statistik og automatisk sletning forbliver inaktive. Alle daterede førbilleder nedenfor bevares.
+
+## 25. oktober — afgrænset mobilstart-orakel efter faktisk vejrberegning
+
+- [x] Almindelig vejrhentning passerede den kvalificerede original-/arbejdsrettelse, leverandører, beregning, runtimekontrol og hård no-loss.
+- [x] Den konkrete Pages-blokering er afgrænset: artifactkontrollen har 54 PASS og ét gammelt mobilstart-literal. De tre normale release-/bindingsmål består.
+- [x] Kun testens præcise turstartliteral er lokalt ændret til den godkendte self-reported-kalder; hele samme mål er reproduceret rød→grøn med øvrige krav og produktinput uændret.
+- [ ] Ny præcis samlet kildekontrol og faktisk offentlig levering. Lokalt grønt mål er ikke deploy eller fungerende ekstern AI.
+- [ ] Særskilt operationel admin-synkafvisning samt normal autentificeret genoptagelse fra gemt beregning. Ingen profilguard må lempes eller operationel fejl skjules.
+
+Ingen produkt-, model-, SQL- eller versionsændring følger af denne testrettelse. Cron, SOURCE, samlet statistik og automatisk sletning er inaktive. Privat checkpoint ejer aktuelle beviser og næste konkrete trin. Numerisk strømmål er lukket; fire øvrige hovedområder er åbne. De daterede førbilleder nedenfor bevares.
 
 ## 25. oktober — snæver original-/arbejdsgrænse for den installerede assistentbinding
 

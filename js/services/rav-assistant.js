@@ -1,23 +1,23 @@
-import { PUBLIC_CONFIG } from "../../config.js?v=4.0.587";
-import { localRavKnowledgeAnswer, matchLocalRavKnowledge, localRavQuestionRequiresWholeAnswer } from "../../knowledge/rav-assistant-local-v2.js?v=4.0.587";
-import { buildLocalZoneScore, selectLocalBestForDay } from "../core/local-zone-score.js?v=4.0.587";
-import { addNationalRanking, compareNationalRankingRows } from "../core/zone-ranking.js?v=4.0.587";
-import { forecastDateKeyForDayOffset } from "../core/forecast-calendar.js?v=4.0.587";
+import { PUBLIC_CONFIG } from "../../config.js?v=4.0.588";
+import { localRavKnowledgeAnswer, matchLocalRavKnowledge, localRavQuestionRequiresWholeAnswer } from "../../knowledge/rav-assistant-local-v2.js?v=4.0.588";
+import { buildLocalZoneScore, selectLocalBestForDay } from "../core/local-zone-score.js?v=4.0.588";
+import { addNationalRanking, compareNationalRankingRows } from "../core/zone-ranking.js?v=4.0.588";
+import { forecastDateKeyForDayOffset, forecastDateKeyInTimeZone, visibleForecastDays } from "../core/forecast-calendar.js?v=4.0.588";
 import {
   RAVSCORE_CALIBRATION_ELIGIBLE,
   ravScoreModelBinding,
-} from "../core/ravscore-model-contract.js?v=4.0.587";
-import { sameRavScoreModelBinding } from "../core/ravscore-public-runtime-contract.js?v=4.0.587";
-import { presentActiveRavScoreExplanation } from "../core/ravscore-integrated-explanation-presenter.js?v=4.0.587";
-import { bestTimeSelectionReasonI18nKey } from "../core/best-time-policy.js?v=4.0.587";
-import { formatDateTime, formatNumber, getLanguage, normaliseLanguage, t } from "../i18n.js?v=4.0.587";
+} from "../core/ravscore-model-contract.js?v=4.0.588";
+import { sameRavScoreModelBinding, ravScorePublicHorizonValidUntil } from "../core/ravscore-public-runtime-contract.js?v=4.0.588";
+import { presentActiveRavScoreExplanation } from "../core/ravscore-integrated-explanation-presenter.js?v=4.0.588";
+import { bestTimeSelectionReasonI18nKey } from "../core/best-time-policy.js?v=4.0.588";
+import { formatDateTime, formatNumber, getLanguage, normaliseLanguage, t } from "../i18n.js?v=4.0.588";
 
 // Compatibility name for existing source-contract tests. The implementation
 // now selects the only adapter matching the artifact's exact active binding.
 const presentIntegratedRavScoreExplanation = presentActiveRavScoreExplanation;
 const ACTIVE_RAVSCORE_MODEL_BINDING = ravScoreModelBinding();
 const RAV_ASSISTANT_KNOWLEDGE_SCHEMA = 'rav-assistant-public-knowledge-v1';
-const RAV_ASSISTANT_KNOWLEDGE_SHA256 = 'ddefdc8f624014509787bce4852b63f81588f6dd954a17d76307afddb677d105';
+const RAV_ASSISTANT_KNOWLEDGE_SHA256 = '714bba9ca2a735f28712ddb6c2f604dfbe74a60e4abb85728be94a2896453a57';
 const RAV_ASSISTANT_BINDING_HEADERS = Object.freeze({
   modelId:'x-ravradar-model-id',
   modelStateVersion:'x-ravradar-model-state-version',
@@ -28,11 +28,11 @@ const RAV_ASSISTANT_BINDING_HEADERS = Object.freeze({
 });
 
 const SECURITY_PATTERN = /api.?key|api[\s\u2010-\u2015-]*(?:nøgle|schlüssel|schluessel)|password|passwort|adgangskode|supabase|database|datenbank|sql|source code|kildekode|quellcode|system.?prompt|systeminstruk|admin|token|secret|hemmelig|geheim/i;
-const OUT_OF_SCOPE_PATTERN = /(?<![\p{L}\p{N}_])(?:roulade|biskuitrolle|swiss roll|kage|kuchen|cake|fodbold|fußball|football|opskrift|rezept|recipe|politik|politics|aktie|stock price|matematik|math homework)(?![\p{L}\p{N}_])/iu;
+const OUT_OF_SCOPE_PATTERN = /(?<![\p{L}\p{N}_])(?:roulade|biskuitrolle|swiss roll|(?:chokolade|æble|pande)?kage(?:n|r|rne)?|(?:schokoladen|apfel|käse)?kuchen(?:s)?|(?:cup|pan)?cakes?|fodbold|fußball|football|(?:bage|kage|mad)?opskrift(?:en|er|erne)?|(?:back|koch|kuchen)?rezept(?:s|e|en)?|recipes?|politik|politics|aktie|stock price|matematik|math homework)(?![\p{L}\p{N}_])/iu;
 const AMBER_DOMAIN_PATTERN = /(?<![\p{L}\p{N}_])(?:rav\p{L}*|bernstein\p{L}*|succinit|succinite|copal|kopal|amber\p{L}*|harpiks|harz|resin|fossili[sz]|inklusion|einschluss|inclusion|fluorescen|fluoreszenz|fluorescen[ct]e|uv.?light|395\s*nm|fosfor|phosphor|phosphorus|danefæ|kesse|kescher|kyst|küste|coast|strand|beach|hav|meer|sea|bølge|welle|wave|strøm|strömung|current|vandstand|wasserstand|water level|wader|wathose|opskyl|spülsaum|wash line|tang|seegras|seaweed|revle|sandbank|sandbar|revlehul|brandungsrückstrom|rip current|rende|rinne|channel|høfde|buhne|groyne|opdrift|auftrieb|buoyancy|massefylde|dichte|density|saltation|sediment|geologi|geology|geologie|istid|eiszeit|ice age)(?![\p{L}\p{N}_])/iu;
 const INTENT_PATTERNS = Object.freeze({
   coast:/revle|sandbanke|rende|høfde|mole|kystknæk|læside|strandhældning|sandbank|rinne|buhne|küstenknick|leeseite|strandneigung|sandbar|channel|groyne|(?<![\p{L}\p{N}_])pier(?![\p{L}\p{N}_])|coastal bend|lee side|beach slope/iu,
-  'best-place':/bedste (?:sted|område)|hvor (?:skal|bør) (?:jeg|vi).*(?:lede|tage|køre)|hvor er (?:det )?bedst|køre hen|bester ort|bestes gebiet|wo (?:soll|sollte) (?:ich|wir).*(?:suchen|fahren)|wo ist es am besten|wohin fahren|best (?:place|area)|where should (?:i|we).*(?:search|go|drive)|where is best|drive to/iu,
+  'best-place':/bedste (?:sted|område)|hvor (?:skal|bør) (?:jeg|vi).*(?:lede|tage|køre)|hvor er (?:det )?bedst|køre hen|bester ort|bestes gebiet|wo (?:soll|sollte) (?:ich|wir).*(?:suchen|fahren)|wo ist es am besten|wohin fahren|best (?:place|area)|where should (?:i|we).*(?:search|go|drive)|where is (?:it )?best|drive to/iu,
   'best-time':/bedste tidspunkt|hvornår er (?:det )?bedste tidspunkt|hvilket tidspunkt|hvornår (?:skal|bør) (?:jeg|vi)|beste zeit|wann ist die beste zeit|zu welcher zeit|wann (?:soll|sollte) (?:ich|wir)|best time|what time|when is the best time|when should (?:i|we)/iu,
   score:/hvorfor.*score|score.*hvorfor|trækker op|trækker ned|warum.*score|score.*warum|warum.*ravscore|why.*score|score.*why/iu,
   safety:/sikkerhed|farlig|risiko|er det sikkert(?:\?|$| at)|sikkert at (?:gå|vade)|sicherheit|gefährlich|ist (?:es|das) sicher(?:\?|$| zu)|sicher zu waten|safety|danger|\brisk\b|is it safe(?:\?|$| to)|safe to (?:go|wade)/iu,
@@ -179,6 +179,82 @@ function tomorrowQuestion(question) {
   return /i morgen|imorgen|morgen|tomorrow/i.test(String(question || ''));
 }
 
+// Known word forms only. Raw safety, length and whole-question checks still
+// run on the original input; this is not a general spelling corrector.
+function normalizeLocalQuestion(question) {
+  return String(question || '').trim().normalize('NFKC').replace(/\s+/gu, ' ')
+    .replace(/(?<![\p{L}\p{N}_])(?:rav)?kes{1,2}e(?:n|r|rne)?(?![\p{L}\p{N}_])/giu, 'kesse');
+}
+
+function generalLocalIntent(question) {
+  const text = normalizeLocalQuestion(question);
+  if (/^(?:hvad kan (?:du|ravradar)(?: hjælpe (?:mig|os) med)?|hvad kan jeg spørge (?:dig|ravradar) om|hvilke spørgsmål kan du svare på|was kannst du(?: für mich tun)?|wobei kannst du (?:mir|uns) helfen|what can you (?:do|help (?:me|us) with)|what can i ask you)[?!.]*$/iu.test(text)) return 'capabilities';
+  if (/^(?:hvad er (?:er )?(?:(?:en|et) )?kesse(?: til ravjagt)?|(?:hvad bruger (?:man|jeg|vi)|hvordan bruger (?:jeg|vi|man)) (?:en )?kesse(?: til ravjagt)?|was ist (?:ein )?(?:bernstein)?kescher|what is (?:an? )?amber net)[?!.]*$/iu.test(text)) return 'amber-net';
+  if (/^(?:(?:hvad er (?:en )?god vind|hvilken (?:vind|vindretning) er (?:god|bedst))(?: til (?:rav|ravjagt))?|hvad betyder vinden for ravjagt|(?:was ist (?:ein )?guter wind|welcher wind ist (?:gut|am besten))(?: (?:für die bernsteinsuche|für bernstein))?|(?:what is (?:a )?good wind|which wind is best)(?: for (?:amber|amber hunting))?)[?!.]*$/iu.test(text)) return 'wind';
+  return null;
+}
+
+const FORECAST_WEEKDAYS = Object.freeze([
+  'søndag|sonntag|sunday', 'mandag|montag|monday', 'tirsdag|dienstag|tuesday',
+  'onsdag|mittwoch|wednesday', 'torsdag|donnerstag|thursday',
+  'fredag|freitag|friday', 'lørdag|samstag|saturday',
+]);
+const FORECAST_MONTHS = Object.freeze([
+  'januar|january', 'februar|february', 'marts|märz|maerz|march', 'april',
+  'maj|mai|may', 'juni|june', 'juli|july', 'august', 'september',
+  'oktober|october', 'november', 'december|dezember',
+]);
+
+// Resolve a civil Copenhagen date, never a weekday-to-today fallback. Unknown
+// qualifiers and conflicting dates require clarification, not a remote score.
+function requestedForecastDate(question, now) {
+  let text = normalizeLocalQuestion(question).toLowerCase();
+  const today = forecastDateKeyForDayOffset(now, 0);
+  const dates = new Set();
+  let invalid = false;
+  const take = date => { if (date) dates.add(date); else invalid = true; return ' DATE '; };
+  const civil = (year, month, day) => {
+    const date = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+    const parsed = new Date(`${date}T12:00:00.000Z`);
+    return /^\d{4}-\d{2}-\d{2}$/u.test(date) && Number.isFinite(parsed.getTime())
+      && parsed.toISOString().slice(0, 10) === date ? date : null;
+  };
+  if (/(?<!\p{L})(?:næste|nächste\p{L}*|kommende\p{L}*|next)(?!\p{L})/iu.test(text)) return null;
+  text = text.replace(/(?<!\d)(\d{4})-(\d{2})-(\d{2})(?!\d)/gu,
+    (_, year, month, day) => take(civil(year, Number(month), Number(day))));
+  text = text.replace(/(?<!\d)(\d{1,2})[/.](\d{1,2})(?:[/.](\d{4}))?(?!\d)/gu,
+    (_, day, month, year) => take(civil(year || today.slice(0, 4), Number(month), Number(day))));
+  FORECAST_MONTHS.forEach((names, index) => {
+    text = text.replace(new RegExp(`(?<![\\p{L}\\d])(\\d{1,2})\\.? (?:${names})(?: (\\d{4}))?(?![\\p{L}\\d])`, 'gu'),
+      (_, day, year) => take(civil(year || today.slice(0, 4), index + 1, Number(day))));
+    text = text.replace(new RegExp(`(?<!\\p{L})(?:${names}) (\\d{1,2})(?:,? (\\d{4}))?(?![\\p{L}\\d])`, 'gu'),
+      (_, day, year) => take(civil(year || today.slice(0, 4), index + 1, Number(day))));
+  });
+  for (const [pattern, offset] of [
+    [/(?<!\p{L})(?:i overmorgen|übermorgen|day after tomorrow)(?!\p{L})/gu, 2],
+    [/(?<!\p{L})(?:i morgen|imorgen|morgen|tomorrow)(?!\p{L})/gu, 1],
+    [/(?<!\p{L})(?:i dag|idag|heute|today)(?!\p{L})/gu, 0],
+  ]) text = text.replace(pattern, () => take(forecastDateKeyForDayOffset(now, offset)));
+  const weekday = new Date(`${today}T12:00:00.000Z`).getUTCDay();
+  FORECAST_WEEKDAYS.forEach((names, index) => {
+    text = text.replace(new RegExp(`(?<!\\p{L})(?:${names})(?!\\p{L})`, 'gu'),
+      () => take(forecastDateKeyForDayOffset(now, (index - weekday + 7) % 7)));
+  });
+  // Consume only the date slot and its ordinary preposition. An unknown
+  // suffix (including a place, time-of-day or second request) is not dropped.
+  text = text.replace(/(?:(?:på|den|am|on|for|für)\s+)?DATE/gu, ' ')
+    .replace(/\s+/gu, ' ').trim().replace(/[?!.]+$/u, '').trim();
+  const request = /^(?:bedste (?:sted|steder|område|områder|tidspunkt)|hvor er (?:det )?bedst(?: at (?:lede|søge)(?: efter rav)?)?|hvor (?:skal|bør) (?:jeg|vi) (?:lede|søge|tage hen|køre hen)(?: efter rav)?|hvornår (?:er (?:det )?bedste tidspunkt|skal (?:jeg|vi) (?:lede|søge)(?: efter rav)?)|hvilket tidspunkt|(?:bester ort|bestes gebiet|beste zeit)|wo ist es am besten|wohin fahren|wo (?:soll|sollte) (?:ich|wir) (?:suchen|fahren)|wann ist die beste zeit|zu welcher zeit|best (?:place|area|time)|where is (?:it )?best|where should (?:i|we) (?:search|go|drive)|when is the best time|what time|when should (?:i|we) (?:search|go))$/iu;
+  if (invalid || dates.size > 1 || !request.test(text)) return null;
+  return dates.size ? [...dates][0] : today;
+}
+
+function forecastDayLabel(date, now, language) {
+  if (date === forecastDateKeyForDayOffset(now, 0)) return t('assistant.local.today', {}, language);
+  if (date === forecastDateKeyForDayOffset(now, 1)) return t('assistant.local.tomorrow', {}, language);
+  return formatDateTime(`${date}T12:00:00.000Z`, { weekday:'long', day:'numeric', month:'long' }, language);
+}
+
 function clock(iso, language) {
   return formatDateTime(iso, { weekday:'short', hour:'2-digit', minute:'2-digit' }, language);
 }
@@ -231,7 +307,9 @@ function isSimpleIdentificationQuestion(value) {
 }
 
 export function classifyRavQuestion(question) {
-  const text = String(question || '').trim();
+  const text = normalizeLocalQuestion(question);
+  const general = generalLocalIntent(text);
+  if (general) return general;
   if (isSimpleIdentificationQuestion(text)) return 'identification';
   if (isBeginnerSearchQuestion(text)) return 'beginner-search';
   if (isOriginIdentificationQuestion(text)) return 'origin-identification';
@@ -261,16 +339,20 @@ export function routeRavQuestion(question) {
   }
   const intent = classifyRavQuestion(text);
   if (intent !== 'unknown') return 'local-deterministic';
+  // A recognised local weather/tool term with an unknown qualification is
+  // uncertain, not unrelated. It supplies no additional remote vocabulary.
+  if (/(?<![\p{L}\p{N}_])(?:kesse|vind|vinden|wind)(?![\p{L}\p{N}_])/iu.test(normalizeLocalQuestion(text))
+    || /^(?:hvad kan (?:du|ravradar)|was kannst du|what can you)(?!\p{L})/iu.test(text)) return 'local-deterministic';
   return AMBER_DOMAIN_PATTERN.test(text) ? 'remote-candidate' : 'fixed-refusal';
 }
 
-export function ravQuestionNeedsConditionDetails(question) {
+export function ravQuestionNeedsConditionDetails(question, context = {}) {
+  if (classifyRavQuestion(question) === 'best-place' && context.conditions?.nationalForecast) return false;
   if (matchLocalRavKnowledge(question)) return false;
   return ['best-place', 'best-time', 'score'].includes(classifyRavQuestion(question));
 }
 
-function allScored(context, dayOffset = 0, now = Date.now()) {
-  const date = forecastDateKeyForDayOffset(now, dayOffset);
+function allScored(context, date, now = Date.now()) {
   const mode = context.mode || 'waders';
   return (context.zones?.features || []).map(feature => {
     const zone = feature.properties;
@@ -279,10 +361,9 @@ function allScored(context, dayOffset = 0, now = Date.now()) {
   }).filter(Boolean).sort(compareNationalRankingRows);
 }
 
-function selectedScored(context, dayOffset = 0, now = Date.now()) {
+function selectedScored(context, date, now = Date.now()) {
   const zone = context.zone;
   if (!zone) return [];
-  const date = forecastDateKeyForDayOffset(now, dayOffset);
   const coastalParts = context.conditions?.coastalParts;
   const mode = context.mode || 'waders';
   const selected = selectLocalBestForDay({ coastalParts, zoneId:zone.id, mode, date, now });
@@ -323,24 +404,87 @@ function scoreAnswer(context, language) {
 }
 
 function bestPlace(context, question, language, now) {
-  const tomorrow = tomorrowQuestion(question);
-  const rows = allScored(context, tomorrow ? 1 : 0, now).slice(0, 5);
+  const date = requestedForecastDate(question, now);
+  if (!date) return t('assistant.local.dateUnclear', {}, language);
+  const prepared = preparedNationalDay(context, date, now);
+  if (prepared?.status === 'outside') return t('assistant.local.dateOutside', {}, language);
+  if (prepared?.status === 'unavailable') return t('assistant.local.rankingUnavailable', {}, language);
+  // A visited zone or a single-hour projection is not a whole-country input.
+  const rows = (prepared ? prepared.rows : context.conditions?.detailsAvailable === false
+    ? [] : allScored(context, date, now)).slice(0, 5);
+  if (prepared?.pastRemoved && !rows.length) return t('assistant.local.noRemainingRanking', {}, language);
   if (!rows.length) return t('assistant.local.noRanking', {}, language);
-  const day = t(tomorrow ? 'assistant.local.tomorrow' : 'assistant.local.today', {}, language);
+  const day = forecastDayLabel(date, now, language);
   const qualityNotice=rows.some(item=>item.result.scoreQuality==='HISTORY_INCOMPLETE')
     ? `\n\n${t('assistant.local.historyRankingCaveat',{},language)}`:'';
+  const remainingNotice = prepared?.pastRemoved ? `\n\n${t('assistant.local.remainingRanking', {}, language)}` : '';
   return `${t('assistant.local.bestPlaces', { day }, language)}\n\n${rows.map((item, index) => t('assistant.local.rankLine', {
     rank:index + 1, zone:item.zone.name, score:item.rankingDisplayScore ?? item.result.score, time:clock(item.hour.time, language)
-  }, language)+(scoreRangeNotice(item.result,language)?` · ${scoreRangeNotice(item.result,language)}`:'')).join('\n')}\n\n${t('assistant.local.rankingBasis', {}, language)}${qualityNotice}`;
+  }, language)+(scoreRangeNotice(item.result,language)?` · ${scoreRangeNotice(item.result,language)}`:'')).join('\n')}\n\n${t('assistant.local.rankingBasis', {}, language)}${qualityNotice}${remainingNotice}`;
+}
+
+// Consume only the canonical projection nested in these conditions. The
+// normal data-service has already authenticated its dataset, generation and
+// model; no detached ranking input, shard fetch or score recomputation.
+function preparedNationalDay(context, date, now) {
+  const conditions = context.conditions;
+  const forecast = conditions?.nationalForecast;
+  if (!forecast) return null;
+  const mode = context.mode || 'waders';
+  const availability = conditions.publicRuntimeAvailability;
+  let validUntil;
+  try { validUntil = ravScorePublicHorizonValidUntil(conditions.productionReferenceAt); }
+  catch { return { status:'unavailable' }; }
+  if (!['waders','beach'].includes(mode) || conditions.available !== true
+    || typeof conditions.datasetId !== 'string' || !conditions.datasetId
+    || !Number.isFinite(Date.parse(conditions.productionReferenceAt))
+    || forecast.schemaVersion !== 2
+    || !sameRavScoreModelBinding(conditions.ravScoreRuntime?.modelBinding, ACTIVE_RAVSCORE_MODEL_BINDING)
+    || !sameRavScoreModelBinding(forecast.modelBinding, conditions.ravScoreRuntime.modelBinding)
+    || (context.modelBinding && !sameRavScoreModelBinding(context.modelBinding, forecast.modelBinding))
+    || availability?.datasetId !== conditions.datasetId
+    || availability?.productionReferenceAt !== conditions.productionReferenceAt
+    || availability?.generatedAt !== conditions.generatedAt
+    || availability?.validUntil !== validUntil
+    || !sameRavScoreModelBinding(availability?.modelBinding, forecast.modelBinding)
+    || !Number.isFinite(now) || !Number.isFinite(Date.parse(conditions.generatedAt))
+    || now < Date.parse(conditions.generatedAt) || now < Date.parse(conditions.productionReferenceAt)
+    || now > Date.parse(validUntil)
+    || !Array.isArray(forecast.modes?.[mode])) return { status:'unavailable' };
+  const days = visibleForecastDays(forecast.modes[mode], { now });
+  const matches = days.filter(day => day.date === date);
+  if (!matches.length) return { status:'outside' };
+  if (matches.length !== 1 || !Array.isArray(matches[0].rows)) return { status:'unavailable' };
+  const rows = [], seen = new Set();
+  let pastRemoved = false;
+  const currentHour = Math.floor(now / 3600000) * 3600000;
+  for (const row of matches[0].rows) {
+    if (!row || typeof row !== 'object' || Array.isArray(row)) return { status:'unavailable' };
+    const zone = context.zones?.features?.find(feature => feature.properties?.id === row.zoneId)?.properties;
+    const time = Date.parse(row.time);
+    const quality = publicScoreQuality(row, true);
+    if (!zone || seen.has(row.zoneId) || !Number.isFinite(time)
+      || time < Date.parse(conditions.productionReferenceAt) || time > Date.parse(validUntil)
+      || forecastDateKeyInTimeZone(time) !== date
+      || finite(row.score) === null || row.score < 0 || row.score > 100
+      || finite(row.rankingScore) === null || finite(row.rankingDisplayScore) === null
+      || quality.scoreQuality === 'UNAVAILABLE') return { status:'unavailable' };
+    seen.add(row.zoneId);
+    if (time < currentHour) { pastRemoved = true; continue; }
+    rows.push({ zone, hour:{ time:row.time }, result:{ ...quality, available:true, score:row.score },
+      rankingScore:row.rankingScore, rankingDisplayScore:row.rankingDisplayScore });
+  }
+  return { status:'available', rows, pastRemoved };
 }
 
 function bestTime(context, question, language, now) {
   if (!context.zone) return t('assistant.local.noZoneTime', {}, language);
-  const tomorrow = tomorrowQuestion(question);
-  const rows = selectedScored(context, tomorrow ? 1 : 0, now).slice(0, 3);
+  const date = requestedForecastDate(question, now);
+  if (!date) return t('assistant.local.dateUnclear', {}, language);
+  const rows = selectedScored(context, date, now).slice(0, 3);
   if (!rows.length) return t('assistant.local.noZoneForecast', {}, language);
   const best = rows[0];
-  const day = t(tomorrow ? 'assistant.local.tomorrow' : 'assistant.local.today', {}, language);
+  const day = forecastDayLabel(date, now, language);
   const alternatives = rows.slice(1).map(item => `${clock(item.hour.time, language)} (${item.result.score})`).join(', ') || t('assistant.local.noNextTimes', {}, language);
   const reason = best.selectionReason
     ? t(bestTimeSelectionReasonI18nKey(best.selectionReason), {}, language)
@@ -497,6 +641,8 @@ function localAnswer(question, context, language, now = Date.now()) {
   const plan = practicalSearchPlan(question);
   if (plan) return practicalSearchPlanAnswer(plan, language);
   const intent = classifyRavQuestion(question);
+  if (intent === 'capabilities') return t('assistant.local.capabilities', {}, language);
+  if (intent === 'amber-net') return localRavKnowledgeAnswer('Hvad er en kesse til ravjagt?', language);
   if (intent === 'practical-alongshore') {
     const topic = matchLocalRavKnowledge('Kan strøm langs kysten flytte rav?');
     const answer = topic.answers[language] + '\n\n' + t('assistant.local.signs', {}, language);
@@ -617,6 +763,8 @@ export async function askRavRadar(question, context = {}, options = {}) {
   const raw = String(question || '').trim();
   if (!raw) throw new Error(t('assistant.empty', {}, language));
   if (SECURITY_PATTERN.test(raw) || OUT_OF_SCOPE_PATTERN.test(raw)) return t('assistant.refusal', {}, language);
+  // Do not silently answer a recognised prefix while dropping the suffix.
+  if (raw.length > 600) return t('assistant.unknown', {}, language);
   const safe = raw.slice(0, 600);
   const route = routeRavQuestion(raw);
   if (isSimpleIdentificationQuestion(safe) && !isSimpleIdentificationQuestion(raw)) {

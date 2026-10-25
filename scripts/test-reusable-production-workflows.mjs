@@ -13,7 +13,9 @@ import {ACCOUNT_STATISTICS_ASSISTANT_BINDING,accountStatisticsAssistantMigration
   from './lib/account-statistics-assistant-successor-source.mjs';
 import {NATIVE_ORIGINAL_CONTINUITY_BINDING,nativeOriginalContinuityMigration,requireNativeOriginalContinuityOutput}
   from './lib/native-original-continuity-successor-source.mjs';
-import {ASSISTANT_LATER_H0_BINDING,assistantLaterH0Migration,requireAssistantLaterH0Output}
+import {ASSISTANT_LATER_H0_BINDING,assistantLaterH0Migration,requireAssistantLaterH0Output,
+  ASSISTANT_PUBLIC587_SUCCESSOR_BINDING,assistantPublic587SuccessorMigration,
+  requireAssistantPublic587SuccessorOutput,readAssistantPublic587SuccessorCanonicalSource}
   from './lib/assistant-later-h0-successor-source.mjs';
 
 // Keep the payload-free operational control report inside this existing cheap
@@ -738,12 +740,28 @@ assert.doesNotMatch(checkpointTimeoutMigration, /alter (?:role|database)/i);
 // A later binding migration must not silently undo DEC-0249's scoped 55s
 // setting. Checking the old corrective file alone missed the Top20 reset.
 const migrationsUrl = new URL('../supabase/migrations/', import.meta.url);
-const casTimeoutSettings = fs.readdirSync(migrationsUrl).filter(name => name.endsWith('.sql'))
+let casTimeoutSettings = fs.readdirSync(migrationsUrl).filter(name => name.endsWith('.sql'))
   .sort().flatMap(name => [...fs.readFileSync(new URL(name, migrationsUrl), 'utf8').matchAll(
     /alter function public\.ravradar_ravscore_checkpoint_cas\(bigint,timestamptz,jsonb\)\s+set statement_timeout = '([^']+)';/g,
   )].map(match => ({ migration: name, timeout: match[1] })));
 assert.equal(casTimeoutSettings.at(-1)?.timeout, '55s',
   'the final migration order must retain the established checkpoint-only 55s timeout');
+// Kontrollér først hele den nye, kildeudstedte588-migration. Den uændrede
+// gamle587-/forgængerprøve nedenfor ser kun dens præcise ene55s-efterfølger fjernet.
+if(ASSISTANT_PUBLIC587_SUCCESSOR_BINDING!==null){
+  requireAssistantPublic587SuccessorOutput();
+  await readAssistantPublic587SuccessorCanonicalSource();
+  const successor=assistantPublic587SuccessorMigration().filename;
+  const actualTimeoutInventory=casTimeoutSettings;
+  assert.equal(actualTimeoutInventory.filter(row=>row.migration===successor).length,1,
+    'Den udstedte588-migration skal have præcis én scoped55s-indstilling');
+  assert.deepEqual(actualTimeoutInventory.at(-1),{migration:successor,timeout:'55s'},
+    'Den eksakte udstedte588-migration skal være sidste scoped55s-efterfølger');
+  casTimeoutSettings=actualTimeoutInventory.slice(0,-1);
+  assert.deepEqual(actualTimeoutInventory,
+    [...casTimeoutSettings,{migration:successor,timeout:'55s'}],
+    'Hele den tidligere timeoutinventar bevares foran præcis én udstedt588-migration');
+}
 if(ACCOUNT_STATISTICS_ASSISTANT_BINDING!==null)requireAccountStatisticsAssistantOutput();
 if(NATIVE_ORIGINAL_CONTINUITY_BINDING!==null)requireNativeOriginalContinuityOutput();
 if(ASSISTANT_LATER_H0_BINDING!==null)requireAssistantLaterH0Output();

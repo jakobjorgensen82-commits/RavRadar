@@ -12,7 +12,7 @@ import { unpackPrivateWeatherComponentCompanions, privateWeatherPackJsonReadsClo
   from './lib/private-weather-component-pack.mjs';
 import { PRIVATE_WEATHER_COMPONENT_FILES, PRIVATE_WEATHER_COMPONENT_PACK_FILE }
   from './lib/private-weather-component-inventory.mjs';
-import {readAuthenticatedFrozen586Predecessor,assertAuthenticatedFrozen586Snapshot}
+import {readAuthenticatedFrozen587Predecessor,assertAuthenticatedFrozen587Snapshot}
   from './lib/authenticated-frozen586-predecessor.mjs';
 import {ravScoreModelBinding} from '../js/core/ravscore-model-contract.js';
 import {readAssistantLaterH0RetentionInput} from './assistant-later-h0-runtime-transition.mjs';
@@ -135,7 +135,7 @@ export async function readCurrentPrivateRuntimeCompanionInput(targetReferenceAt)
     || descriptorInfo.size > 2 * 1024 * 1024) refuse('RETENTION_B_CHANGED');
   const descriptorBytes = await fs.readFile(descriptorPath);
   const descriptor = JSON.parse(descriptorBytes.toString('utf8'));
-  if(descriptor?.modelBinding?.modelBundleSha256==='6d8f7cca203b5f7ee5155f3c0cdb39403a02fd0eb30fecaca5070ef9f814a805'
+  if(descriptor?.modelBinding?.modelBundleSha256==='5584d8e59f8d21785fd08b32f9beb22cf879cdb4892a11ede24eb862d9a0dca2'
     &&ravScoreModelBinding().modelBundleSha256!==descriptor.modelBinding.modelBundleSha256){
     const view=await readAssistantLaterH0RetentionInput(targetReferenceAt);
     if(view.verified.bundleContentSha256!==descriptor.bundleContentSha256
@@ -174,14 +174,14 @@ export async function readCurrentPrivateRuntimeCompanionInput(targetReferenceAt)
 export async function readCurrentPrivateRuntimeCompanions(targetReferenceAt) {
   // Called after the updater's genuine H0 origin check. Providers may already
   // have changed unrelated WORKING weather; unpack only immutable original B.
-  if(ravScoreModelBinding().modelBundleSha256!=='6d8f7cca203b5f7ee5155f3c0cdb39403a02fd0eb30fecaca5070ef9f814a805'){
+  if(ravScoreModelBinding().modelBundleSha256!=='5584d8e59f8d21785fd08b32f9beb22cf879cdb4892a11ede24eb862d9a0dca2'){
     const descriptor=JSON.parse(await fs.readFile(path.join(process.env.RUNNER_TEMP,'private-runtime-current-source.json'),'utf8'));
-    if(descriptor?.modelBinding?.modelBundleSha256==='6d8f7cca203b5f7ee5155f3c0cdb39403a02fd0eb30fecaca5070ef9f814a805'){
-      const snapshot=assertAuthenticatedFrozen586Snapshot(await readAuthenticatedFrozen586Predecessor());
+    if(descriptor?.modelBinding?.modelBundleSha256==='5584d8e59f8d21785fd08b32f9beb22cf879cdb4892a11ede24eb862d9a0dca2'){
+      const snapshot=assertAuthenticatedFrozen587Snapshot(await readAuthenticatedFrozen587Predecessor());
       if(snapshot.descriptor.bundleContentSha256!==descriptor.bundleContentSha256)refuse('RETENTION_B_CHANGED');
       const original=JSON.parse(await fs.readFile(snapshot.conditionsPath,'utf8'));
       const contexts=await readAuthenticatedCurrentCompanions(snapshot.verified,original);
-      const fresh=assertAuthenticatedFrozen586Snapshot(await readAuthenticatedFrozen586Predecessor());
+      const fresh=assertAuthenticatedFrozen587Snapshot(await readAuthenticatedFrozen587Predecessor());
       if(!isDeepStrictEqual(snapshot,fresh))refuse('RETENTION_B_CHANGED');return contexts;
     }
   }

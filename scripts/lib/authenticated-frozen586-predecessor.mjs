@@ -8,25 +8,28 @@ import path from 'node:path';
 import {fileURLToPath,pathToFileURL} from 'node:url';
 import {execFile as callbackExec} from 'node:child_process';
 import {promisify,isDeepStrictEqual} from 'node:util';
-import {withAuthenticated586PredecessorSource}
+import {withAuthenticated586PredecessorSource,withAuthenticated587PredecessorSource}
   from '../check-assistant-later-h0-predecessor-source.mjs';
 
 const ROOT=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'../..');
-const exec=promisify(callbackExec), contexts=new WeakMap(), refreshers=new WeakMap(), failedCloses=new Map();
-const SOURCE='7df56f36f705db641b3f9476ee8ca1b4c4cfed0c';
+const exec=promisify(callbackExec),failedCloses=new Map();
+// Ukendt fysisk FD-lukning blokerer samme sti på tværs af begge familier.
+// Opaque snapshots og friskhedsfunktioner tilhører derimod kun én fast profil.
+function fixedSnapshot(profile){
+  assert(profile===FROZEN586||profile===FROZEN587,'FROZEN_PREDECESSOR_UNKNOWN_PROFILE');
+  const contexts=new WeakMap(),refreshers=new WeakMap();
+  const SOURCE=profile.sourceHead;
 const SHA=/^[a-f0-9]{64}$/, HEAD=/^[a-f0-9]{40}$/, MB=1024*1024;
 const REQUIRED=Object.freeze(['scripts/lib/established-native-current-origin.mjs',
   'scripts/lib/ravscore-production-part-pipeline.mjs']);
-const REQUIRED_SHA=Object.freeze([
-  'b67f460aa9b01ff9d0ff03bfbbed5c9d570425196bf929f9bd8d7b4b67b586b1',
-  '8e979128a682a7324d7defcc3d2d2dfa5edc85ebc22d4ae714810aa085490758']);
+const REQUIRED_SHA=profile.requiredSha;
 const POLICY='scripts/lib/dmi-marine-zone-exclusions.json';
 const POLICY_BLOB='a4f65f8eb0396dbe3c3da442ebcb9a06d99d3287';
 const ATTEST='privateEstablishedNativeCurrentOrigin';
 const same=isDeepStrictEqual;
 const sha=raw=>crypto.createHash('sha256').update(raw).digest('hex');
-const fail=code=>{throw Object.assign(new Error('FROZEN586_PREDECESSOR_'+code),
-  {code:'FROZEN586_PREDECESSOR_'+code});};
+const fail=code=>{throw Object.assign(new Error(profile.errorPrefix+code),
+  {code:profile.errorPrefix+code});};
 const need=(value,code)=>{if(!value)fail(code);};
 const environment=()=>Object.fromEntries(['PATH','Path','SystemRoot','WINDIR','TEMP','TMP','LANG','LC_ALL']
   .filter(key=>typeof process.env[key]==='string').map(key=>[key,process.env[key]]));
@@ -70,8 +73,8 @@ async function ownedBytes(file,maximum,{ownFileDescriptorIdentity,ownedFileDescr
   if(handle){
     try{await handle.close();}catch(error){if(!hasFirst){first=error;hasFirst=true;}}
     if(!await ownedFileDescriptorClosed(fd,identity)){failedCloses.set(absolute,handle);
-      if(!hasFirst){first=Object.assign(new Error('FROZEN586_PREDECESSOR_CLOSE_UNPROVED'),
-        {code:'FROZEN586_PREDECESSOR_CLOSE_UNPROVED'});hasFirst=true;}}
+      if(!hasFirst){first=Object.assign(new Error(profile.errorPrefix+'CLOSE_UNPROVED'),
+        {code:profile.errorPrefix+'CLOSE_UNPROVED'});hasFirst=true;}}
   }
   if(hasFirst)throw first;return raw;
 }
@@ -104,18 +107,18 @@ async function fixedPaths(){
   need(await fs.realpath(root)===root&&await fs.realpath(bundle)===bundle,'FIXED_WORKFLOW_PATHS');
   return {privateRoot:root,bundlePath:bundle};
 }
-export async function readAuthenticatedFrozen586Predecessor(){
+async function readAuthenticatedPredecessor(){
   need(arguments.length===0,'ARGUMENTS');
   // These normal workflow paths select already restored immutable B; they are
   // not authority. No consumed 0200/140000 upgrade flag is reused as permission.
   const paths=await fixedPaths();
-  return withAuthenticated586PredecessorSource(async frozenRoot=>{
+  return profile.withSource(async frozenRoot=>{
     const load=file=>import(pathToFileURL(path.join(frozenRoot,file)).href);
     const [protectedB,protectedS,bundle,normalS,workflow,model,dataAssertions,descriptorIO]=await Promise.all([
       load('scripts/protected-private-production-runtime.mjs'),load('scripts/protected-ravscore-continuation-checkpoint.mjs'),
       load('scripts/private-production-runtime-bundle.mjs'),load('scripts/ravscore-continuation-checkpoint.mjs'),
       load('scripts/private-production-runtime-workflow.mjs'),load('js/core/ravscore-model-contract.js'),
-      load('scripts/lib/established-native-current-origin-586-assertion.mjs'),load('scripts/lib/private-weather-component-pack.mjs')]);
+      load(profile.assertionPath),load('scripts/lib/private-weather-component-pack.mjs')]);
     const read=async(file,max)=>ownedBytes(file,max,descriptorIO);
     const centralPath=path.join(ROOT,'data/live/coastal-parts-v2.json');
     const central=JSON.parse((await read(centralPath,16*MB)).toString('utf8'));
@@ -142,7 +145,7 @@ export async function readAuthenticatedFrozen586Predecessor(){
     need(inventory&&inventory.bytes===originalBytes.length&&inventory.sha256===sha(originalBytes),'B_CONDITIONS_CHANGED');
     const conditions=JSON.parse(originalBytes.toString('utf8'));
     need(conditions[ATTEST]!==undefined,'ATTESTATION_REQUIRED');
-    const parent=await fs.realpath(os.tmpdir()),work=await fs.mkdtemp(path.join(parent,'rr-frozen586-snapshot-'));
+    const parent=await fs.realpath(os.tmpdir()),work=await fs.mkdtemp(path.join(parent,profile.temporaryPrefix));
     const workIdentity=await fs.lstat(work,{bigint:true}),workParents=await noLinks(work);
     let saved,savedIdentity,derived,first,SRows,checkpointVersion,hasFirst=false;
     try{
@@ -165,7 +168,7 @@ export async function readAuthenticatedFrozen586Predecessor(){
       need(same(derived,saved),'B_S_DIFFER');
       // Normal loader validated original state/companion/generation digests.
       // The frozen data assertions do not substitute for that protected load.
-      await dataAssertions.assertFrozen586OriginSnapshotData({descriptor,conditions,centralContract:central,checkpoint:saved});
+      await dataAssertions[profile.assertionExport]({descriptor,conditions,centralContract:central,checkpoint:saved});
       need(same(await pointer(),before),'SOURCE_CHANGED');
       need(same(await checkpointRequest('?document_key=eq.'+encodeURIComponent(SKey)
         +'&select=document_key,payload,version&limit=2',{},'read'),SRows),'S_CHANGED');
@@ -205,14 +208,56 @@ export async function readAuthenticatedFrozen586Predecessor(){
 }
 // Snapshot-only accessor: cannot mint a handle from JSON, choose a family,
 // authorize ForPart/finalizer, or issue SAME_H0_MODEL_METADATA admission.
-export function assertAuthenticatedFrozen586Snapshot(handle){
+function assertAuthenticatedSnapshot(handle){
   need(arguments.length===1,'ARGUMENTS');const context=contexts.get(handle);need(context,'HANDLE');
   return freeze(structuredClone(context));
 }
 
 // Refuses serialized contexts and stale/ABA S versions. Does not mint or
 // return runtime/SQL authority, re-decode banks, project or replace originals.
-export async function assertAuthenticatedFrozen586SnapshotFresh(handle){
+async function assertAuthenticatedSnapshotFresh(handle){
   need(arguments.length===1,'ARGUMENTS');const refresh=refreshers.get(handle);need(refresh,'HANDLE');
   await refresh();
+}
+
+  return Object.freeze({read:readAuthenticatedPredecessor,snapshot:assertAuthenticatedSnapshot,
+    fresh:assertAuthenticatedSnapshotFresh});
+}
+const FROZEN586=Object.freeze({
+  sourceHead:'7df56f36f705db641b3f9476ee8ca1b4c4cfed0c',
+  requiredSha:Object.freeze([
+    'b67f460aa9b01ff9d0ff03bfbbed5c9d570425196bf929f9bd8d7b4b67b586b1',
+    '8e979128a682a7324d7defcc3d2d2dfa5edc85ebc22d4ae714810aa085490758']),
+  withSource:withAuthenticated586PredecessorSource,
+  assertionPath:'scripts/lib/established-native-current-origin-586-assertion.mjs',
+  assertionExport:'assertFrozen586OriginSnapshotData',
+  temporaryPrefix:'rr-frozen586-snapshot-',errorPrefix:'FROZEN586_PREDECESSOR_'});
+const FROZEN587=Object.freeze({
+  sourceHead:'aab72babd27175a4276c2a2f1965c74bb021b4af',
+  requiredSha:Object.freeze([
+    '5ebeea93ee7da95011ecc3c589e2a1a54a7ac821ad938997aea0b6444aa607bf',
+    '8e979128a682a7324d7defcc3d2d2dfa5edc85ebc22d4ae714810aa085490758']),
+  withSource:withAuthenticated587PredecessorSource,
+  assertionPath:'scripts/lib/established-native-current-origin-587-assertion.mjs',
+  assertionExport:'assertFrozen587OriginSnapshotData',
+  temporaryPrefix:'rr-frozen587-snapshot-',errorPrefix:'FROZEN587_PREDECESSOR_'});
+const snapshot586=fixedSnapshot(FROZEN586),snapshot587=fixedSnapshot(FROZEN587);
+// Kun disse navngivne indgange; ingen caller-valgt profil, root, head eller tuple.
+export async function readAuthenticatedFrozen586Predecessor(){
+  return snapshot586.read(...arguments);
+}
+export function assertAuthenticatedFrozen586Snapshot(handle){
+  return snapshot586.snapshot(...arguments);
+}
+export async function assertAuthenticatedFrozen586SnapshotFresh(handle){
+  return snapshot586.fresh(...arguments);
+}
+export async function readAuthenticatedFrozen587Predecessor(){
+  return snapshot587.read(...arguments);
+}
+export function assertAuthenticatedFrozen587Snapshot(handle){
+  return snapshot587.snapshot(...arguments);
+}
+export async function assertAuthenticatedFrozen587SnapshotFresh(handle){
+  return snapshot587.fresh(...arguments);
 }

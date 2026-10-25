@@ -354,7 +354,7 @@ try {
       "Can material move between bars and channels, and which wash clues can I observe from the beach?"
     ]
   },
-  "newHash": "ddefdc8f624014509787bce4852b63f81588f6dd954a17d76307afddb677d105"
+  "newHash": "714bba9ca2a735f28712ddb6c2f604dfbe74a60e4abb85728be94a2896453a57"
 };
     const atomIds = fixture.atoms.map(atom => atom.id);
     const publicKnowledge = JSON.parse(await readFile(new URL('../knowledge/rav-assistant-public-v1.json', import.meta.url), 'utf8'));
@@ -364,7 +364,7 @@ try {
     const legacyFacts = publicKnowledge.facts.filter(fact => !atomIds.includes(fact.id));
     assert.equal(legacyFacts.length, 39);
     assert.equal(createHash('sha256').update(JSON.stringify(legacyFacts)).digest('hex'),
-      '72d84309e5ed5e4a180fc02b2d476041fcd65a576336a949df0bd43e87774378');
+      'e90e1b6f0fda9c5e65ee44ed389817f3bdb6c79b3e01cf88a84ef380d0250656');
     assert.equal(createHash('sha256').update(JSON.stringify(publicKnowledge.facts)).digest('hex'), fixture.newHash);
     assert.equal(contract.RAV_ASSISTANT_KNOWLEDGE_SHA256, fixture.newHash);
     assert.deepEqual(publicKnowledge.ravScoreModelBinding, binding);
@@ -1667,7 +1667,7 @@ try {
     const publicKnowledge = JSON.parse(await readFile(new URL('../knowledge/rav-assistant-public-v1.json', import.meta.url), 'utf8'));
     assert.equal(publicKnowledge.facts.length, 42);
     assert.deepEqual(publicKnowledge.facts, contract.RAV_ASSISTANT_FACTS);
-    assert.equal(contract.RAV_ASSISTANT_KNOWLEDGE_SHA256, 'ddefdc8f624014509787bce4852b63f81588f6dd954a17d76307afddb677d105');
+    assert.equal(contract.RAV_ASSISTANT_KNOWLEDGE_SHA256, '714bba9ca2a735f28712ddb6c2f604dfbe74a60e4abb85728be94a2896453a57');
     assert.equal(Object.keys(headerValues).length, 6);
     const laboratory = {
   "da": "Laboratorier kan kombinere FTIR, Raman, mikroskopi, massefylde og andre analyser for at skelne naturmateriale, behandling og imitation. Ingen enkelt måling besvarer altid både ægthed, behandling, oprindelse og alder. FTIR og Raman giver nyttig evidens om ravets kemi og ændringer. Sammenligning af overflade og indre kan vise forskelle, men naturlig variation og varmebehandling kan give overlappende signaler. Ét spektrum fastslår ikke i sig selv en præcis alder eller et entydigt forvitringsstadium. En faglig vurdering kombinerer sammenlignende spektre, andre analysemetoder og prøvens geologiske kontekst; spektroskopi er ikke generelt ude af stand til at påvise behandling.",

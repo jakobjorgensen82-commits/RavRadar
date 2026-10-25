@@ -34,7 +34,9 @@ SpørgRavRadar bruger sin eksisterende kontrollerede viden til generelle forklar
 
 Spørgsmål om aktuelle vejrtal kræver en konkret zone og de faktisk tilknyttede data. Et generelt svar må ikke opfinde tal eller afgøre sikkert, hvad der ligger på en bestemt strand. Usikkerhed, manglende data og sikkerhedsgrænser skal stadig fremgå ærligt; private oplysninger må ikke bruges som offentlig viden.
 
-Disse svarforbedringer og en originalbevarende programovergang er lokalt forberedt og udstedt i 4.0.587. Sidste verificerede offentlige version er4.0.586. Lokal kildekontrol er ikke installation, ny vejrhentning eller offentlig effekt; det kræver særskilt kontrolleret levering og en almindelig efterfølgende opdatering. Lager-/økonomivalget og den aktuelle genopretning er fortsat særskilte åbne punkter; denne opdatering giver ingen tilladelse til sletning af originaler.
+4.0.587 er nu offentligt leveret med bevarede originaler. Det beviser ikke i sig selv, at alle spørgsmål besvares godt. Den efterfølgende rettelse af almindelige formuleringer, efterspurgt kalenderdag og brug af den allerede beregnede nationale prognose indgår i den lokale 4.0.588-kandidat med udstedt binding; kontrolleret levering og offentlig afprøvning mangler stadig. Et svar skal dække hele spørgsmålet eller tydeligt sige, hvad der ikke kan afgøres. Hverken et sikkert delsvar, lokal kildekontrol eller en vellykket netforbindelse er i sig selv samlet kvalitetsbevis. Ingen ændring af scoreformel eller sletning af originaler følger af denne rettelse.
+
+Rav er forholdsvis blødt. Overfladen kan blive mat eller mørkere ved påvirkning over tid, og varme, stærkt lys og ustabile forhold kan give skader. Det afgør ikke alene et funds alder eller oprindelse. Opbevar fund stabilt, moderat og uden stærkt lys, adskilt fra hårde genstande. Et robust fund kan skylles forsigtigt; sprækker, en skrøbelig overflade eller usædvanlige indeslutninger kræver ekstra forsigtighed. Varme, opløsningsmidler og olier er ikke en sikker genvej.
 
 ## 89.264 Ny strømhistorik med bevaret arkiv
 
@@ -660,11 +662,15 @@ En særskilt, dokumenteret Storage-formatkant rettes samtidig: immutable upload 
 
 # RavRadar Håndbog
 
-**Håndbogsversion:** 4.0.587
+**Håndbogsversion:** 4.0.588
 
 Hvis genbrug af gemte data stopper, skal den første fejlfase og et kontrolleret kildested bevares uden private fejltekster eller værdier. Tidligere beståede kontroller frikender ikke automatisk en senere mål-time eller andre input. En bedre fejlrapport ændrer ikke beregningen og er ikke bevis for, at årsagen er rettet. Gemte originaler og sidste gyldige offentlige data bevares, mens fejlen undersøges.
 
-## Aktuel frossen kandidatkilde — 4.0.587, ikke installeret
+## Aktuel frossen kandidatkilde — 4.0.588, ikke installeret
+
+Den integrerede model er offentligt leveret under 4.0.587. Den nye 4.0.588-kilde er kun lokalt udstedt. 4.0.588 er låst med `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b` og `modelBundleSha256=5348f3ae7401d3a09dd180d45690f56b3cfec4a30af5a4928bdd9581f9d8ebac` over 97 kanonisk normaliserede transitive implementeringsfiler og de deklarerede forbrugere. Inaktiv Candidate G har uændret fysisk kontrakt og `modelBundleSha256=00905533cd243ffce8e507beedbc39c8dba26e635b59fa154e6f9ab20575780c` over 98 transitive filer. T12 er `continuationStateContractSha256=d98559d56d7bfe9b141cf1ddab73cddffb688a3b6766f5f9f3779b226f573701` (`d98559d5…`). Autoriteten er `version.json.releaseContract.modelBindings` og den nye append-only 20261025110000-migration. Hele de autentiske 587-originaler og tidligere scorer bevares; kun en strengt senere generation kan bruge overgangen. Fysiske scoreformler ændres ikke. Lokal kildeudstedelse er ikke PostgreSQL, installation eller offentlig effekt.
+
+## Historisk frossen kandidatkilde — 4.0.587
 
 **Lokal kildebinding — RavScore 4.0.587, ikke installeret:** Den integrerede model er offentlig som modeltype; sidste særskilt verificerede offentlige release er fortsat 4.0.586. Denne 4.0.587-kilde er kun lokalt udstedt, ikke installeret eller offentliggjort. 4.0.587 er låst med `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b` og `modelBundleSha256=5584d8e59f8d21785fd08b32f9beb22cf879cdb4892a11ede24eb862d9a0dca2` over 97 kanonisk normaliserede transitive implementeringsfiler og de deklarerede forbrugere. Inaktiv Candidate G er bundet med `modelContractSha256=c73dac1b4376005e792580791d84eb79c9370e905a2a7fd0bdee857506a20cf8` og `modelBundleSha256=5c0b6a2c6ceb4ba9c5f224cb5d3fda693f300a8902da3f7561167f72cbab78b4` over 98 transitive filer. Fortsættelseskontrakten T12 er `continuationStateContractSha256=cd3a3648ad5093662871559aa39d77671eda27edf1f9edc82a104c5430a43a21` (`cd3a3648…`). Autoriteten er `version.json.releaseContract.modelBindings` og den allerede udstedte 20261022181403-migration; dette tillæg udsteder ingen ny binding og ændrer ikke nogen scoreformel. Tidligere bindingsafsnit nedenfor bevares som dateret historik.
 
@@ -7604,6 +7610,10 @@ Rettelsen påvirker ikke Candidate G, RavScore, vejr, zoner, geometri, land-/van
 
 ## Offentlig Om RavRadar-side – 4.0.279
 
+På Om-siden ligger afsnittet Sådan virker RavRadar mellem MobilePay-støtte og kontakt. Det forklarer strømvinkel og historik, bølger, vind, vandstand, temperatur samt forskellen mellem waders og strand. RavScore beskrives som en modelvurdering af forholdene, ikke som en fundprocent eller fundgaranti.
+
+En lokal strømfigur viser 8 centimeter hvert sekund ved forskellige retninger, blandt andet 0, 90 og 180 grader. Skyderen ændrer kun retningen, ikke farten eller RavScore. Figuren henter ingen aktuelle vejrdata. Afsnittet og figurens forklaringer følger Om-sidens eksisterende valg af dansk, tysk eller engelsk; kontakt, frivillig støtte og tilbagefunktionen bevares.
+
 RavRadar har en offentlig **Om RavRadar**-side, som nås fra topmenuen ved konto, **Start ravtur** og **Spørg RavRadar**. Siden præsenterer Jakob Jørgensen, projektets idé, det frivillige arbejde og en direkte mailkontakt.
 
 Siden forklarer, at RavScore vurderer de aktuelle forhold for den enkelte kyststrækning, men ikke hvor meget rav der grundlæggende findes i landsdelen. Derfor kan 95 point i Limfjorden godt være et dårligere fundvalg end 75 point ved Sæby. Den forklarer også, at komplekse vejr-, hav- og kystforhold kræver generaliseringer; noget tilsyneladende forkert kan være en fejl eller en nødvendig forenkling af hensyn til helheden.
@@ -7688,6 +7698,8 @@ Candidate G var den daværende aktive model med **20 % søgeforhold, 50 % transp
 4.0.269 er produktionsverificeret. PR #120 bestod exact-head `32703138969` på `37de330c` og blev merged som `d745e0ba`. Produktion `32703271897` udgav `rr-20260824080543-210` på 210 zoner og 673 kystdele efter frisk vejr, fuld validering og releasegate. Den offentlige browseraudit bestod 420 aktuelle visninger, 2.100 femdøgnsvisninger og 673 kystdelsreferencer uden kontrol-, konsol-, side- eller HTTP-fejl.
 
 ## Grundbog i ravjagt og almindeligt brugersprog – 4.0.268
+
+I den nuværende danske Grundbog kaldes redskabet til at samle rav i vandet en ravkese.
 
 > **Historisk revisionsspor:** Dette afsnit bevarer 4.0.268's daværende Candidate G-forklaring. Grundbogens aktive modeltekst følger nu den integrerede kontrakt i kapitel 54 og har ingen 13-timers helscore-gate.
 
