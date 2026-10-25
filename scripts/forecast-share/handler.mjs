@@ -43,7 +43,7 @@ export async function handleForecastShare(request, { shareBaseUrl, fetchPublic =
     ? verified.zoneName + (present ? ' · ' + copy.score + ' ' + verified.result.score + '/100' : ' · ' + copy.title) + ' · RavRadar'
     : copy.title + ' · RavRadar';
   const description = selection
-    ? forecastShareDate(selection.time, selection.language) + ' · '
+    ? forecastShareDate(selection.time, selection.language) + ' · ' + copy[selection.mode] + ' · '
       + (present ? forecastShareScoreText(verified.result, selection.language) : copy.unavailable)
       + ' ' + copy.disclaimer
     : copy.invalid;

@@ -229,6 +229,10 @@ try{
     assert.ok(result.html.startsWith('<!doctype html><html lang="'+language+'">'));
     assert.ok(result.html.includes('<meta property="og:title" content="'));
     assert.ok(result.html.includes(forecastShareCopy(language).score+' '+expected.score+'/100'));
+    const modeMarker=escapeShareAttribute(' · '+forecastShareCopy(language)[mode]+' · ');
+    assert.ok((result.html.match(/<meta property="og:description" content="([^"]*)">/)?.[1]??'').includes(modeMarker)
+      &&(result.html.match(/<\/h1><p>([^<]*)<\/p>/)?.[1]??'').includes(modeMarker),
+      'Both OG and visible forecast text must name the exact selected search mode');
     assert.ok(result.html.includes('<meta property="og:url" content="'+escapeShareAttribute(url)+'">'));
     assert.ok(result.html.includes('<link rel="canonical" href="'+escapeShareAttribute(url)+'">'));
     assert.ok(result.html.includes('<meta property="og:image" content="https://ravradar.dk/assets/icons/ravradar-512.png">'));

@@ -1,3 +1,11 @@
+## 25. oktober — søgemåden følger den delte score
+
+Den lokale prognosedelingsrettelse medtager nu strand eller waders i både den statiske forhåndsvisnings beskrivelse og den synlige delingsside på dansk, tysk og engelsk. Tidspunkt, sted og score må ikke læses uden søgemåden. Den eksisterende håndbog 89.268 kræver allerede denne sammenhæng og er fortsat gældende.
+
+Rettelsen ændrer kun den fælles beskrivelsestekst. De seks normale sprog-/søgemådetilfælde kontrollerer nu både OG-beskrivelsen og den synlige tekst; alle tidligere assertions bevares. Hele den normale tidsskyder-/delingsprøve består lokalt med 129 tilfælde på den faktiske 588-kilde uden netkald. Score, datoformat uden tidszonesuffiks, URL, kildekontrol, udløb, logo og manglende-data-adfærd er uændrede.
+
+Det er lokal kilde- og testfremdrift, ikke en installeret Worker eller bevis for Facebook-forhåndsvisning, indlæsningshastighed eller Free-kapacitet. Disse faktiske leveringskrav er fortsat åbne; ingen database, billedlager, ny vejrhentning eller produktionsændring følger af tekstrettelsen. P0 og den aktuelle almindelige vejrhentning har førsteprioritet. Den præcise kilde skal kvalificeres før sikker levering.
+
 ## 25. oktober — varig privat Fur-rapport uden ekstra vejrhentning
 
 Den lokale runtimeaudit udvides med en afgrænset Fur-rapport på de samme 118 forventede timer. Den bruger de allerede indlæste data og den eksisterende private rapportvej; ingen ny workflowfil, leverandørhentning, stor pakkegenlæsning eller upload indføres. Kun observeret tilstedeværelse og faste hashes medtages. Manglende eller ugyldige observationer er UNKNOWN/null, ikke opfundne mangler eller værdier.
