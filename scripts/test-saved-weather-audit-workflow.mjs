@@ -2,7 +2,26 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import test from 'node:test';
 
-const text = fs.readFileSync('.github/workflows/audit-saved-weather-inputs.yml', 'utf8').replace(/\r\n/g, '\n');
+import crypto from 'node:crypto';
+import os from 'node:os';
+import path from 'node:path';
+import fsp from 'node:fs/promises';
+import { RAW_SNAPSHOT_COMPARE_PROFILE, inspectRawSnapshotInventory, compareRawSnapshotInventories,
+  planRawSnapshotCompareDisk, rawSnapshotCompareLocations, assertRawSnapshotCompareFresh } from './audit-saved-weather-inputs.mjs';
+
+const rawCompareWorkflow = fs.readFileSync('.github/workflows/audit-saved-weather-inputs.yml', 'utf8').replace(/\r\n/g, '\n');
+const rawCompareInput = '      include_raw_inventory_compare:\n'
+  + '        description: "Kun fast RAW925 mod924: hele inventaret og stream-SHA; aldrig dependency-, slette- eller admissionsbevis"\n'
+  + '        required: false\n        default: false\n        type: boolean\n\n';
+const rawCompareJobMarker = '\n  raw-inventory-compare:\n';
+const rawCompareJob = rawCompareWorkflow.split(rawCompareJobMarker)[1];
+assert.equal(rawCompareWorkflow.split(rawCompareJobMarker).length, 2, 'one isolated opt-in sibling only');
+assert.equal(rawCompareWorkflow.split(rawCompareInput).length, 2, 'one exact default-OFF input only');
+const text = rawCompareWorkflow.split(rawCompareJobMarker)[0].replace(rawCompareInput, '')
+  .replace('  audit:\n    if: inputs.include_raw_inventory_compare != true\n', '  audit:\n');
+assert.equal(crypto.createHash('sha256').update(text).digest('hex'),
+  '2772625366db6c0425b6e7a42ad2d09f16cd0d60ddd9eeb90a6efba524b8e53f',
+  'all issued legacy workflow branches/defaults/stops must remain byte-identical after exact opt-in inverse');
 const gh = value => '${{ ' + value + ' }}';
 
 test('sealed-source diagnosis is fixed-artifact, source-gated, read-only and secret-separated', () => {
@@ -259,4 +278,166 @@ test('CURRENT586 cached originals have one independent default-off exact-cache p
   assert.match(run, /--progress-source 39666991481-1/);
   assert.doesNotMatch(run, /progress-file|WEATHER_PROGRESS_MASTER_SECRET|include-current586-endpoints|update-weather|deploy|publish/);
   assert.doesNotMatch(text, /(?:contents|actions|pull-requests|pages|id-token): write|actions\/cache\/save|gh workflow run|--publish/);
+});
+
+function rawInventoryFixtureRow(collection, tag) {
+  const href = 'https://example.invalid/' + collection + '/' + tag + '.grib';
+  const identity = crypto.createHash('sha256').update(href).digest('hex');
+  const name = identity.slice(0, 24) + '.grib';
+  return [name, { collection, modelRun: '2026-10-20T00:00:00Z', validTime: '2026-10-20T01:00:00Z',
+    itemId: tag, assetIdentitySha256: identity, assetSizeBytes: 4, acquiredAt: '2026-10-20T00:00:00.123456Z',
+    contentLengthBytes: 4, contentSha256: crypto.createHash('sha256').update('data').digest('hex'), itemCreatedAt: null, itemUpdatedAt: null,
+    canonicalHref: href, bytes: 4, lastUsedAt: '2026-10-21T00:00:00Z' }];
+}
+async function rawInventoryFixture(directory, rows, orphan = false) {
+  await fsp.mkdir(directory);
+  for (const [name] of rows) await fsp.writeFile(path.join(directory, name), 'data', { flag: 'wx' });
+  if (orphan) await fsp.writeFile(path.join(directory, 'unmanifested.grib'), 'data', { flag: 'wx' });
+  await fsp.writeFile(path.join(directory, 'asset-manifest.json'),
+    JSON.stringify({ schemaVersion: 2, assets: Object.fromEntries(rows) }, null, 2) + '\n', { flag: 'wx' });
+}
+async function rawInventoryTemporary(run) {
+  const root = await fsp.mkdtemp(path.join(os.tmpdir(), 'rr-raw-inventory-test-'));
+  try { return await run(root); } finally { await fsp.rm(root, { recursive: true, force: true }); }
+}
+test('RAW snapshot inventory default remains exact and fixed restores preserve normal path/version and ownership seam', () => {
+  assert.match(rawCompareWorkflow, /audit:\n    if: inputs\.include_raw_inventory_compare != true/);
+  assert.match(rawCompareJob, /if: inputs\.include_raw_inventory_compare == true/);
+  assert.equal((rawCompareJob.match(/uses: actions\/cache\/restore@v6/g) ?? []).length, 2);
+  assert.equal((rawCompareJob.match(/path: \.cache\/dmi-grib\n/g) ?? []).length, 2);
+  assert.equal((rawCompareJob.match(/fail-on-cache-miss: true/g) ?? []).length, 2);
+  assert(rawCompareJob.includes(RAW_SNAPSHOT_COMPARE_PROFILE.version));
+  assert(rawCompareJob.includes('9250979458:39520623069:dmi-grib-v4-Linux-2026-W43-39520623069-1:2729841089'));
+  assert(rawCompareJob.includes('9242307361:39491014140:dmi-grib-v4-Linux-2026-W43-39491014140-1:2790259985'));
+  assert(!rawCompareJob.includes(RAW_SNAPSHOT_COMPARE_PROFILE.unselected.key));
+  assert(rawCompareJob.indexOf('raw-inventory-preflight') < rawCompareJob.indexOf('id: raw-latest'));
+  assert(rawCompareJob.indexOf('raw-inventory-park-latest') < rawCompareJob.indexOf('id: raw-previous'));
+  assert.match(rawCompareJob, /RAW_SNAPSHOT_CACHE_HIT: \$\{\{ steps\.raw-latest\.outputs\.cache-hit \}\}/);
+  assert.match(rawCompareJob, /RAW_SNAPSHOT_MATCHED_KEY: \$\{\{ steps\.raw-previous\.outputs\.cache-matched-key \}\}/);
+  assert.doesNotMatch(rawCompareJob, /restore-keys:|cache\/save|secrets\.|SUPABASE|DMI_API|weather-private-progress|protected-private|npm run|--publish|--migrate|\/logs/);
+  const implementation = fs.readFileSync('scripts/audit-saved-weather-inputs.mjs', 'utf8');
+  const rawOnly = implementation.split('// Fixed inventory comparison.')[1]?.split('\nif (process.argv[1]')[0];
+  assert(rawOnly);
+  assert.match(rawOnly, /await fs\.rename\(ctx\.raw, latestPath\)/);
+  assert.match(rawOnly, /await rawCompareAbsent\(latestPath\)/);
+  assert.match(rawOnly, /await rawCompareAbsent\(ctx\.raw\)/);
+  assert.doesNotMatch(rawOnly, /createReadOnlySavedWeatherClients|protectedApi\.|\.rm\(|readFile\([^)]*\.grib|fetch\(|saveCache|admission\s*:/);
+});
+test('RAW snapshot inventory measures all six collections and metadata and actual-content subset without claiming dependencies or deletion safety', async () => {
+  await rawInventoryTemporary(async root => {
+    const collections = ['dkss_idw', 'dkss_nsbs', 'dkss_lf', 'wam_dw', 'wam_nsb', 'harmonie_dini_sf'];
+    const rows = collections.map((collection, index) => rawInventoryFixtureRow(collection, 'item' + index));
+    const a = path.join(root, 'latest'), b = path.join(root, 'previous');
+    await rawInventoryFixture(a, [...rows, rawInventoryFixtureRow('wam_dw', 'extra')], true);
+    await rawInventoryFixture(b, rows, true);
+    const result = await compareRawSnapshotInventories(await inspectRawSnapshotInventory(a), await inspectRawSnapshotInventory(b));
+    assert.equal(result.metadataSubset, true);
+    assert.equal(result.previous.manifestRows, 6);
+    assert.equal(result.previous.orphanFiles, 1);
+    assert.deepEqual(Object.values(result.previous.collections), [1, 1, 1, 1, 1, 1]);
+    assert.equal(result.contentShaActuallyVerified, true);
+    assert.equal(result.streamedPhysicalHashingPerformed, true);
+    assert.equal(result.physicalContentSubset, true);
+    assert.equal(result.actualOlderFilesSubsetPreserved, true);
+    assert.equal(result.originalDependencyProof, false);
+    assert.equal(result.sourceAdmissionPerformed, false);
+    assert.equal(result.deletionSafetyEstablished, false);
+    assert.doesNotMatch(JSON.stringify(result), /example\.invalid|item0|\.grib|eeeeeeee/);
+  });
+});
+test('RAW snapshot inventory reports non-subset for missing non-marine captures and unmanifested files', async () => {
+  await rawInventoryTemporary(async root => {
+    const a = path.join(root, 'latest'), b = path.join(root, 'previous');
+    const row = rawInventoryFixtureRow('dkss_lf', 'same');
+    await rawInventoryFixture(a, [row]);
+    await rawInventoryFixture(b, [row, rawInventoryFixtureRow('wam_nsb', 'wave'), rawInventoryFixtureRow('harmonie_dini_sf', 'wind')], true);
+    const result = await compareRawSnapshotInventories(await inspectRawSnapshotInventory(a), await inspectRawSnapshotInventory(b));
+    assert.equal(result.metadataSubset, false);
+    assert.equal(result.captureMetadataSubset, false);
+    assert.equal(result.physicalMetadataSubset, false);
+    assert.equal(result.previousCaptureMetadataAbsentFromLatest, 2);
+    assert.equal(result.previousPhysicalMetadataAbsentFromLatest, 3);
+    assert.equal(result.previous.orphanFiles, 1);
+  });
+});
+test('RAW snapshot inventory cannot turn missing files, invalid captures or malformed/duplicate documents into empty subset', async () => {
+  await rawInventoryTemporary(async root => {
+    const row = rawInventoryFixtureRow('dkss_lf', 'same');
+    const a = path.join(root, 'latest'), b = path.join(root, 'previous');
+    await rawInventoryFixture(a, [row]); await rawInventoryFixture(b, [row]);
+    await fsp.unlink(path.join(b, row[0]));
+    let result = await compareRawSnapshotInventories(await inspectRawSnapshotInventory(a), await inspectRawSnapshotInventory(b));
+    assert.equal(result.metadataSubset, null); assert.equal(result.previous.missingFiles, 1);
+    await fsp.writeFile(path.join(b, row[0]), 'bad');
+    result = await compareRawSnapshotInventories(await inspectRawSnapshotInventory(a), await inspectRawSnapshotInventory(b));
+    assert.equal(result.metadataSubset, null); assert.equal(result.previous.sizeMismatchFiles, 1);
+    const invalid = { schemaVersion: 2, assets: { [row[0]]: { ...row[1], collection: 'unknown_collection' } } };
+    await fsp.writeFile(path.join(b, 'asset-manifest.json'), JSON.stringify(invalid, null, 2) + '\n');
+    result = await compareRawSnapshotInventories(await inspectRawSnapshotInventory(a), await inspectRawSnapshotInventory(b));
+    assert.equal(result.metadataSubset, null); assert.equal(result.previous.invalidCaptureRows, 1);
+    for (const value of ['{"schemaVersion":2,"assets":{}}\n',
+      '{\n  "schemaVersion": 2,\n  "assets": {},\n  "assets": {}\n}\n', '{bad json}\n']) {
+      await fsp.writeFile(path.join(b, 'asset-manifest.json'), value);
+      await assert.rejects(inspectRawSnapshotInventory(b), /RAW_SNAPSHOT_COMPARE_MANIFEST_REJECTED/);
+    }
+  });
+});
+test('RAW snapshot inventory refuses symlink layouts, aliases, changed inputs and stale destination copies', async () => {
+  await rawInventoryTemporary(async root => {
+    const row = rawInventoryFixtureRow('dkss_lf', 'same');
+    const a = path.join(root, 'latest'), b = path.join(root, 'previous');
+    await rawInventoryFixture(a, [row]); await rawInventoryFixture(b, [row]);
+    const one = await inspectRawSnapshotInventory(a);
+    await assert.rejects(compareRawSnapshotInventories(one, one), /RAW_SNAPSHOT_COMPARE_STALE_COPIES/);
+    const two = await inspectRawSnapshotInventory(b);
+    await fsp.writeFile(path.join(b, 'new-orphan.grib'), 'data');
+    await assert.rejects(compareRawSnapshotInventories(one, two), /RAW_SNAPSHOT_COMPARE_INVENTORY_CHANGED/);
+    await fsp.symlink(a, path.join(b, 'linked'), process.platform === 'win32' ? 'junction' : 'dir');
+    await assert.rejects(inspectRawSnapshotInventory(b), /RAW_SNAPSHOT_COMPARE_LAYOUT_REJECTED/);
+    const workspace = path.join(root, 'workspace'), temporary = path.join(root, 'temporary');
+    await fsp.mkdir(workspace); await fsp.mkdir(temporary);
+    const ctx = await rawSnapshotCompareLocations({ workspace, temporary, runId: '123', runAttempt: '1' });
+    assert.equal(ctx.raw, path.join(workspace, '.cache/dmi-grib'));
+    assert.equal(ctx.private, path.join(temporary, 'ravradar-raw-inventory-compare-123-1'));
+    await assertRawSnapshotCompareFresh(ctx);
+    await fsp.mkdir(ctx.private);
+    await assert.rejects(assertRawSnapshotCompareFresh(ctx), /RAW_SNAPSHOT_COMPARE_STALE_COPIES/);
+    await fsp.rmdir(ctx.private);
+    await fsp.mkdir(ctx.raw, { recursive: true });
+    await assert.rejects(assertRawSnapshotCompareFresh(ctx), /RAW_SNAPSHOT_COMPARE_STALE_COPIES/);
+  });
+});
+test('RAW snapshot inventory disk plan uses measured free disk and labels producer budget as unproven expansion', () => {
+  const planned = 2n * 4_294_967_296n + 2_790_259_985n;
+  const first = planRawSnapshotCompareDisk({ bavail: planned, bsize: 1n });
+  assert.equal(first.sufficient, true);
+  assert.equal(first.plannedRequiredBytes, String(planned));
+  assert.equal(first.archiveExpansionBoundProven, false);
+  assert.equal(first.normalRestoreMayStillFailForDisk, true);
+  assert.equal(planRawSnapshotCompareDisk({ bavail: planned - 1n, bsize: 1n }).sufficient, false);
+  assert.equal(planRawSnapshotCompareDisk({ bavail: 0n, bsize: 4096n }, 'second').sufficient, false);
+  assert.throws(() => planRawSnapshotCompareDisk({ bavail: 10, bsize: 4096 }), /DISK_MEASUREMENT_UNAVAILABLE/);
+});
+
+test('RAW snapshot inventory distinguishes same-size changed bytes and declared SHA conflicts from metadata subset', async () => {
+  await rawInventoryTemporary(async root => {
+    const row = rawInventoryFixtureRow('dkss_lf', 'same');
+    const a = path.join(root, 'latest'), b = path.join(root, 'previous');
+    await rawInventoryFixture(a, [row], true); await rawInventoryFixture(b, [row], true);
+    await fsp.writeFile(path.join(b, 'unmanifested.grib'), 'else');
+    let result = await compareRawSnapshotInventories(await inspectRawSnapshotInventory(a), await inspectRawSnapshotInventory(b));
+    assert.equal(result.metadataSubset, true);
+    assert.equal(result.physicalContentSubset, false);
+    assert.equal(result.previousPhysicalContentAbsentFromLatest, 1);
+    assert.equal(result.actualOlderFilesSubsetPreserved, false);
+    const conflicting = { schemaVersion: 2, assets: { [row[0]]: { ...row[1], contentSha256: 'e'.repeat(64) } } };
+    for (const directory of [a, b]) await fsp.writeFile(path.join(directory, 'asset-manifest.json'), JSON.stringify(conflicting, null, 2) + '\n');
+    result = await compareRawSnapshotInventories(await inspectRawSnapshotInventory(a), await inspectRawSnapshotInventory(b));
+    assert.equal(result.metadataSubset, true);
+    assert.equal(result.contentShaActuallyVerified, false);
+    assert.equal(result.previous.manifestHashConflictFiles, 1);
+    assert.equal(result.latest.manifestHashConflictFiles, 1);
+    assert.equal(result.actualOlderFilesSubsetPreserved, false);
+    assert.equal(result.deletionSafetyEstablished, false);
+  });
 });

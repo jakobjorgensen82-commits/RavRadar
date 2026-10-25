@@ -1665,7 +1665,306 @@ export async function verifyCurrent586OriginalPlanRemoteSources({privateRoot,des
   }
 }
 
+
+// Fixed inventory comparison. SHA proves only the named files' actual contents,
+// never dependency closure, native admission or deletion safety. Legacy modes stay unchanged.
+export const RAW_SNAPSHOT_COMPARE_PROFILE = Object.freeze({
+  version: '9d434ae81d3120176028232ea936fc3f9dc0ed030022ff6d98bec91aa9cf117a',
+  canonicalPath: '.cache/dmi-grib', producerConfiguredBudgetBytes: 4_294_967_296,
+  latest: Object.freeze({ id: 9250979458, producer: '39520623069', attempt: '1',
+    head: '72099f03520f14e0e9da4f21666d9d2ee6c7e556',
+    key: 'dmi-grib-v4-Linux-2026-W43-39520623069-1', archiveBytes: 2729841089 }),
+  previous: Object.freeze({ id: 9242307361, producer: '39491014140', attempt: '1',
+    head: '72099f03520f14e0e9da4f21666d9d2ee6c7e556',
+    key: 'dmi-grib-v4-Linux-2026-W43-39491014140-1', archiveBytes: 2790259985 }),
+  // Named evidence only: NOT restored or selected by this first comparison.
+  unselected: Object.freeze({ id: 9231176491, producer: '39456448707', attempt: '1',
+    head: '8110e8b5d35d3ab43580c8bdcfceedbb1d5aecd8',
+    key: 'dmi-grib-v4-Linux-2026-W43-39456448707-1', archiveBytes: 2664571881 }),
+});
+const RAW_COMPARE_COLLECTIONS = Object.freeze(['dkss_idw', 'dkss_nsbs', 'dkss_lf', 'wam_dw', 'wam_nsb', 'harmonie_dini_sf']);
+const RAW_COMPARE_FIELDS = Object.freeze(['collection', 'modelRun', 'validTime', 'itemId',
+  'assetIdentitySha256', 'assetSizeBytes', 'acquiredAt', 'contentLengthBytes', 'contentSha256',
+  'itemCreatedAt', 'itemUpdatedAt']);
+const RAW_COMPARE_ROW_FIELDS = [...RAW_COMPARE_FIELDS, 'canonicalHref', 'bytes', 'lastUsedAt'].sort();
+const rawCompareReceipts = new WeakMap();
+function rawCompareRefuse(code = 'INVENTORY_REJECTED') {
+  const error = new Error('RAW_SNAPSHOT_COMPARE_' + code); error.rawCompareCode = code; throw error;
+}
+function rawCompareStamp(stat) {
+  return ['dev', 'ino', 'mode', 'nlink', 'size', 'mtimeNs', 'ctimeNs'].map(key => String(stat[key])).join(':');
+}
+function rawCompareTime(value) {
+  if (typeof value !== 'string' || value.length > 64) return false;
+  const match = /^(\d{4}-\d\d-\d\d)[T ](\d\d:\d\d:\d\d)(?:\.\d{1,9})?(Z|[+-]\d\d:\d\d)$/.exec(value);
+  if (!match) return false;
+  const local = Date.parse(match[1] + 'T' + match[2] + '.000Z');
+  return Number.isFinite(local) && new Date(local).toISOString().slice(0, 19) === match[1] + 'T' + match[2]
+    && (match[3] === 'Z' || Number(match[3].slice(1, 3)) <= 23 && Number(match[3].slice(4, 6)) <= 59)
+    && Number.isFinite(Date.parse(value));
+}
+function rawCompareCapture(name, row) {
+  if (!object(row) || !same(Object.keys(row).sort(), RAW_COMPARE_ROW_FIELDS)
+    || !RAW_COMPARE_COLLECTIONS.includes(row.collection)
+    || typeof row.itemId !== 'string' || !row.itemId.trim() || row.itemId.length > 8192
+    || !['modelRun', 'validTime', 'acquiredAt', 'lastUsedAt'].every(key => rawCompareTime(row[key]))
+    || !['itemCreatedAt', 'itemUpdatedAt'].every(key => row[key] === null || rawCompareTime(row[key]))
+    || !['assetIdentitySha256', 'contentSha256'].every(key => /^[a-f0-9]{64}$/.test(row[key] ?? ''))
+    || !Number.isSafeInteger(row.contentLengthBytes) || row.contentLengthBytes <= 0
+    || row.bytes !== row.contentLengthBytes
+    || row.assetSizeBytes !== null && row.assetSizeBytes !== row.contentLengthBytes
+    || typeof row.canonicalHref !== 'string' || !row.canonicalHref || row.canonicalHref.length > 8192
+    || row.canonicalHref !== row.canonicalHref.split('?')[0].split('#')[0]
+    || rawSha(row.canonicalHref) !== row.assetIdentitySha256) return null;
+  const suffix = path.posix.extname(row.canonicalHref);
+  if (name !== row.assetIdentitySha256.slice(0, 24) + (suffix && suffix !== '.' ? suffix : '.grib')) return null;
+  return JSON.stringify(RAW_COMPARE_FIELDS.map(key => row[key]));
+}
+async function rawCompareTree(directory) {
+  const root = path.resolve(directory);
+  if (await fs.realpath(root) !== root) rawCompareRefuse('LAYOUT_REJECTED');
+  const rootStat = await fs.lstat(root, { bigint: true });
+  if (!rootStat.isDirectory() || rootStat.isSymbolicLink()) rawCompareRefuse('LAYOUT_REJECTED');
+  const entries = new Map(), pending = [''];
+  let logicalBytes = 0, directories = 0;
+  while (pending.length) {
+    const relative = pending.shift(), absolute = path.join(root, relative);
+    for (const name of (await fs.readdir(absolute)).sort()) {
+      const child = relative ? relative + '/' + name : name;
+      if (child.includes('\\') || child.split('/').some(part => !part || part === '.' || part === '..')
+        || child.length > 4096 || entries.size >= RAW_INVENTORY_MAX_FILES) rawCompareRefuse('LAYOUT_REJECTED');
+      const stat = await fs.lstat(path.join(root, child), { bigint: true });
+      if (stat.isSymbolicLink() || !stat.isFile() && !stat.isDirectory()
+        || stat.isFile() && stat.nlink !== 1n) rawCompareRefuse('LAYOUT_REJECTED');
+      if (stat.size > BigInt(Number.MAX_SAFE_INTEGER)) rawCompareRefuse('INVENTORY_BOUND');
+      const type = stat.isFile() ? 'regular' : 'directory';
+      entries.set(child, { type, bytes: Number(stat.size), stamp: rawCompareStamp(stat) });
+      if (type === 'directory') {
+        if (child.split('/').length >= 16) rawCompareRefuse('LAYOUT_REJECTED');
+        pending.push(child); directories++;
+      } else {
+        logicalBytes += Number(stat.size);
+        if (!Number.isSafeInteger(logicalBytes)) rawCompareRefuse('INVENTORY_BOUND');
+      }
+    }
+  }
+  return { root, rootIdentity: [rootStat.dev, rootStat.ino].map(String).join(':'),
+    stamp: rawCompareStamp(rootStat), entries, logicalBytes, directories };
+}
+function rawCompareTreeSame(a, b) {
+  return a.rootIdentity === b.rootIdentity && a.stamp === b.stamp && a.entries.size === b.entries.size
+    && [...a.entries].every(([name, value]) => b.entries.get(name)?.stamp === value.stamp);
+}
+async function rawCompareFileSha(directory, name, expected) {
+  const file = path.join(directory, name);
+  const handle = await fs.open(file, fs.constants.O_RDONLY | (fs.constants.O_NOFOLLOW ?? 0));
+  try {
+    const before = await handle.stat({ bigint: true });
+    if (!before.isFile() || before.nlink !== 1n || rawCompareStamp(before) !== expected.stamp)
+      rawCompareRefuse('INVENTORY_CHANGED');
+    const digest = crypto.createHash('sha256');
+    let bytes = 0;
+    for await (const chunk of handle.createReadStream({ autoClose: false })) { bytes += chunk.length; digest.update(chunk); }
+    const after = await handle.stat({ bigint: true });
+    if (bytes !== expected.bytes || rawCompareStamp(after) !== expected.stamp)
+      rawCompareRefuse('INVENTORY_CHANGED');
+    return digest.digest('hex');
+  } finally { await handle.close(); }
+}
+export async function inspectRawSnapshotInventory(directory) {
+  const before = await rawCompareTree(directory);
+  const manifest = before.entries.get('asset-manifest.json');
+  if (!manifest || manifest.type !== 'regular' || manifest.bytes < 2 || manifest.bytes > RAW_MANIFEST_MAX_BYTES)
+    rawCompareRefuse('MANIFEST_REJECTED');
+  const bytes = await fs.readFile(path.join(before.root, 'asset-manifest.json'), 'utf8');
+  let document;
+  try { document = JSON.parse(bytes); } catch { rawCompareRefuse('MANIFEST_REJECTED'); }
+  // The exact producers use Python indent=2 + LF. Roundtrip rejects duplicate
+  // keys, noncanonical/unknown documents and numeric ambiguity, not as empty.
+  if (!object(document) || !same(Object.keys(document).sort(), ['assets', 'schemaVersion'])
+    || document.schemaVersion !== 2 || !object(document.assets)
+    || JSON.stringify(document, null, 2) + '\n' !== bytes) rawCompareRefuse('MANIFEST_REJECTED');
+  const rows = Object.entries(document.assets);
+  if (rows.length > RAW_INVENTORY_MAX_FILES) rawCompareRefuse('INVENTORY_BOUND');
+  const counts = { manifestRows: rows.length, validCaptureRows: 0, invalidCaptureRows: 0,
+    missingFiles: 0, sizeMismatchFiles: 0, manifestHashConflictFiles: 0, regularFiles: 0, orphanFiles: 0,
+    directories: before.directories, logicalBytes: before.logicalBytes,
+    collections: Object.fromEntries(RAW_COMPARE_COLLECTIONS.map(key => [key, 0])) };
+  const captures = new Set(), physical = new Set(), physicalContent = new Set(), hashes = new Map();
+  const referenced = new Set(rows.map(([name]) => name));
+  for (const [name, entry] of before.entries) {
+    if (entry.type === 'regular' && name !== 'asset-manifest.json')
+      hashes.set(name, await rawCompareFileSha(before.root, name, entry));
+  }
+  for (const [name, row] of rows) {
+    const capture = rawCompareCapture(name, row);
+    if (!capture) { counts.invalidCaptureRows++; continue; }
+    counts.validCaptureRows++; counts.collections[row.collection]++;
+    captures.add(JSON.stringify([name, capture]));
+    const entry = before.entries.get(name);
+    if (!entry || entry.type !== 'regular') counts.missingFiles++;
+    else if (entry.bytes !== row.contentLengthBytes) counts.sizeMismatchFiles++;
+    else if (hashes.get(name) !== row.contentSha256) counts.manifestHashConflictFiles++;
+  }
+  for (const [name, entry] of before.entries) {
+    if (entry.type !== 'regular') continue;
+    counts.regularFiles++;
+    // The manifest itself is read in full, not compared as a byte-proven RAW.
+    if (name === 'asset-manifest.json') continue;
+    physical.add(JSON.stringify([name, entry.type, entry.bytes]));
+    physicalContent.add(JSON.stringify([name, entry.type, entry.bytes, hashes.get(name)]));
+    if (!referenced.has(name)) counts.orphanFiles++;
+  }
+  const after = await rawCompareTree(directory);
+  if (!rawCompareTreeSame(before, after)) rawCompareRefuse('INVENTORY_CHANGED');
+  const report = { status: 'INVENTORIED', counts,
+    qualified: counts.invalidCaptureRows === 0 && counts.missingFiles === 0
+      && counts.sizeMismatchFiles === 0 && counts.directories === 0 };
+  rawCompareReceipts.set(report, { tree: before, captures, physical, physicalContent,
+    manifest: document, manifestSha256: rawSha(bytes) });
+  return report;
+}
+export async function compareRawSnapshotInventories(latest, previous) {
+  const a = rawCompareReceipts.get(latest), b = rawCompareReceipts.get(previous);
+  if (!a || !b || a.tree.rootIdentity === b.tree.rootIdentity
+    || inside(a.tree.root, b.tree.root) || inside(b.tree.root, a.tree.root)) rawCompareRefuse('STALE_COPIES');
+  if (!rawCompareTreeSame(a.tree, await rawCompareTree(a.tree.root))
+    || !rawCompareTreeSame(b.tree, await rawCompareTree(b.tree.root))) rawCompareRefuse('INVENTORY_CHANGED');
+  const metadataQualified = latest.qualified && previous.qualified;
+  const absentCaptures = [...b.captures].filter(value => !a.captures.has(value)).length;
+  const absentPhysical = [...b.physical].filter(value => !a.physical.has(value)).length;
+  const absentContent = [...b.physicalContent].filter(value => !a.physicalContent.has(value)).length;
+  const declaredContentVerified = metadataQualified && latest.counts.manifestHashConflictFiles === 0
+    && previous.counts.manifestHashConflictFiles === 0;
+  return { schemaVersion: 1, kind: 'RAW_SNAPSHOT_INVENTORY_COMPARE_SAFE',
+    status: metadataQualified ? 'METADATA_COMPARED' : 'INVENTORY_INCOMPLETE',
+    latest: latest.counts, previous: previous.counts,
+    previousCaptureMetadataAbsentFromLatest: absentCaptures,
+    previousPhysicalMetadataAbsentFromLatest: absentPhysical,
+    previousPhysicalContentAbsentFromLatest: absentContent,
+    captureMetadataSubset: metadataQualified ? absentCaptures === 0 : null,
+    physicalMetadataSubset: metadataQualified ? absentPhysical === 0 : null,
+    metadataSubset: metadataQualified ? absentCaptures === 0 && absentPhysical === 0 : null,
+    streamedPhysicalHashingPerformed: true, contentShaActuallyVerified: declaredContentVerified,
+    physicalContentSubset: metadataQualified ? absentContent === 0 : null,
+    actualOlderFilesSubsetPreserved: metadataQualified
+      ? declaredContentVerified && absentCaptures === 0 && absentContent === 0 : null,
+    originalDependencyProof: false,
+    sourceAdmissionPerformed: false, deletionSafetyEstablished: false };
+}
+export function planRawSnapshotCompareDisk(stat, stage = 'first') {
+  if (!['first', 'second'].includes(stage) || typeof stat?.bavail !== 'bigint' || typeof stat?.bsize !== 'bigint'
+    || stat.bavail < 0n || stat.bsize <= 0n) rawCompareRefuse('DISK_MEASUREMENT_UNAVAILABLE');
+  const available = stat.bavail * stat.bsize, budget = BigInt(RAW_SNAPSHOT_COMPARE_PROFILE.producerConfiguredBudgetBytes);
+  const required = stage === 'first' ? 2n * budget + BigInt(RAW_SNAPSHOT_COMPARE_PROFILE.previous.archiveBytes)
+    : budget + BigInt(RAW_SNAPSHOT_COMPARE_PROFILE.previous.archiveBytes);
+  return { stage, availableBytes: available.toString(), plannedRequiredBytes: required.toString(),
+    sufficient: available >= required, basis: 'PRODUCER_CONFIGURED_BUDGET_NOT_PROVEN_ARCHIVE_EXPANSION',
+    archiveExpansionBoundProven: false, normalRestoreMayStillFailForDisk: true };
+}
+export async function rawSnapshotCompareLocations({ workspace, temporary, runId, runAttempt }) {
+  if (!/^[1-9][0-9]{0,19}$/.test(runId ?? '') || !/^[1-9][0-9]{0,3}$/.test(runAttempt ?? ''))
+    rawCompareRefuse('LAYOUT_REJECTED');
+  const repository = path.resolve(workspace), temp = path.resolve(temporary);
+  if (await fs.realpath(repository) !== repository || await fs.realpath(temp) !== temp)
+    rawCompareRefuse('LAYOUT_REJECTED');
+  const cacheParent = path.join(repository, '.cache');
+  try { const stat = await fs.lstat(cacheParent); if (!stat.isDirectory() || stat.isSymbolicLink()) rawCompareRefuse('LAYOUT_REJECTED'); }
+  catch (error) { if (error.code !== 'ENOENT') throw error; }
+  const repoStat = await fs.stat(repository, { bigint: true }), tempStat = await fs.stat(temp, { bigint: true });
+  if (repoStat.dev !== tempStat.dev) rawCompareRefuse('RENAME_FILESYSTEM_MISMATCH');
+  return { repository, temp, raw: path.join(repository, RAW_SNAPSHOT_COMPARE_PROFILE.canonicalPath),
+    private: path.join(temp, 'ravradar-raw-inventory-compare-' + runId + '-' + runAttempt), runId, runAttempt };
+}
+async function rawCompareAbsent(file) {
+  try { await fs.lstat(file); } catch (error) { if (error.code === 'ENOENT') return; throw error; }
+  rawCompareRefuse('STALE_COPIES');
+}
+export async function assertRawSnapshotCompareFresh(ctx) {
+  await rawCompareAbsent(ctx.raw); await rawCompareAbsent(ctx.private);
+}
+async function rawCompareOwner(ctx) {
+  if (await fs.realpath(ctx.private) !== ctx.private) rawCompareRefuse('LAYOUT_REJECTED');
+  const owner = await fs.lstat(path.join(ctx.private, 'owner.json'), { bigint: true });
+  if (!owner.isFile() || owner.nlink !== 1n || owner.size > 4096n) rawCompareRefuse('LAYOUT_REJECTED');
+  const value = JSON.parse(await fs.readFile(path.join(ctx.private, 'owner.json'), 'utf8'));
+  const stat = await fs.lstat(ctx.private, { bigint: true });
+  if (value.runId !== ctx.runId || value.runAttempt !== ctx.runAttempt
+    || value.rootIdentity !== [stat.dev, stat.ino].map(String).join(':')) rawCompareRefuse('STALE_COPIES');
+}
+async function rawCompareDisk(ctx, stage) {
+  let measured;
+  try { measured = await fs.statfs(ctx.repository, { bigint: true }); } catch { rawCompareRefuse('DISK_MEASUREMENT_UNAVAILABLE'); }
+  const plan = planRawSnapshotCompareDisk(measured, stage);
+  if (!plan.sufficient) rawCompareRefuse('DISK_PLANNED_BUDGET_INSUFFICIENT');
+  return plan;
+}
+async function rawCompareWriteReceipt(ctx, role, report) {
+  const value = rawCompareReceipts.get(report);
+  if (!['latest', 'previous'].includes(role) || !value) rawCompareRefuse('INVENTORY_REJECTED');
+  // Private, owned temp only; never uploaded or printed. Includes full manifest
+  // metadata (including volatile usage fields), all actual names/types/sizes,
+  // streamed SHA and inode measurements, without any GRIB values/decoding.
+  await fs.writeFile(path.join(ctx.private, role + '-inventory.private.json'), JSON.stringify({
+    schemaVersion: 1, snapshot: RAW_SNAPSHOT_COMPARE_PROFILE[role], cacheVersion: RAW_SNAPSHOT_COMPARE_PROFILE.version,
+    rootIdentity: value.tree.rootIdentity, rootStamp: value.tree.stamp, manifestSha256: value.manifestSha256,
+    manifest: value.manifest, measurements: [...value.tree.entries],
+    captureKeys: [...value.captures], physicalMetadata: [...value.physical],
+    physicalContent: [...value.physicalContent], safeCounts: report.counts,
+    originalDependencyProof: false, deletionSafetyEstablished: false,
+  }) + '\n', { flag: 'wx', mode: 0o600 });
+}
+async function runRawSnapshotCompareCommand(command) {
+  if (process.argv.length !== 3 || process.env.GITHUB_EVENT_NAME !== 'workflow_dispatch'
+    || process.env.GITHUB_REF !== 'refs/heads/main' || process.env.RAW_INVENTORY_COMPARE_APPROVED !== 'true'
+    || path.resolve(process.env.GITHUB_WORKSPACE ?? '.') !== REPOSITORY) rawCompareRefuse('MODE_REJECTED');
+  const ctx = await rawSnapshotCompareLocations({ workspace: REPOSITORY, temporary: process.env.RUNNER_TEMP,
+    runId: process.env.GITHUB_RUN_ID, runAttempt: process.env.GITHUB_RUN_ATTEMPT });
+  if (command === 'raw-inventory-preflight') {
+    await assertRawSnapshotCompareFresh(ctx);
+    const disk = await rawCompareDisk(ctx, 'first');
+    await fs.mkdir(ctx.private, { mode: 0o700 });
+    const stat = await fs.lstat(ctx.private, { bigint: true });
+    await fs.writeFile(path.join(ctx.private, 'owner.json'), JSON.stringify({ runId: ctx.runId,
+      runAttempt: ctx.runAttempt, rootIdentity: [stat.dev, stat.ino].map(String).join(':') }) + '\n', { flag: 'wx', mode: 0o600 });
+    return { kind: 'RAW_SNAPSHOT_DISK_PLAN_SAFE', disk, deletionSafetyEstablished: false };
+  }
+  await rawCompareOwner(ctx);
+  const latestPath = path.join(ctx.private, 'latest');
+  const expected = command === 'raw-inventory-park-latest' ? RAW_SNAPSHOT_COMPARE_PROFILE.latest : RAW_SNAPSHOT_COMPARE_PROFILE.previous;
+  if (process.env.RAW_SNAPSHOT_CACHE_HIT !== 'true' || process.env.RAW_SNAPSHOT_MATCHED_KEY !== expected.key)
+    rawCompareRefuse('CACHE_IDENTITY_REJECTED');
+  if (command === 'raw-inventory-park-latest') {
+    await rawCompareAbsent(latestPath);
+    await rawCompareTree(ctx.raw);
+    await fs.rename(ctx.raw, latestPath); // Same device, fresh owned destination; never a remote/cache SAVE.
+    await rawCompareAbsent(ctx.raw);
+    const latest = await inspectRawSnapshotInventory(latestPath), stat = await fs.lstat(latestPath, { bigint: true });
+    await fs.writeFile(path.join(ctx.private, 'latest-root.json'), JSON.stringify({
+      rootIdentity: [stat.dev, stat.ino].map(String).join(':') }) + '\n', { flag: 'wx', mode: 0o600 });
+    await rawCompareWriteReceipt(ctx, 'latest', latest);
+    return { kind: 'RAW_SNAPSHOT_FIRST_PARKED_SAFE', counts: latest.counts, disk: await rawCompareDisk(ctx, 'second'),
+      deletionSafetyEstablished: false };
+  }
+  if (command !== 'raw-inventory-compare') rawCompareRefuse('MODE_REJECTED');
+  const saved = JSON.parse(await fs.readFile(path.join(ctx.private, 'latest-root.json'), 'utf8'));
+  const latest = await inspectRawSnapshotInventory(latestPath), previous = await inspectRawSnapshotInventory(ctx.raw);
+  if (rawCompareReceipts.get(latest).tree.rootIdentity !== saved.rootIdentity) rawCompareRefuse('STALE_COPIES');
+  const report = await compareRawSnapshotInventories(latest, previous);
+  await rawCompareWriteReceipt(ctx, 'previous', previous);
+  await fs.writeFile(path.join(ctx.private, 'summary-safe.json'), JSON.stringify(report) + '\n', { flag: 'wx', mode: 0o600 });
+  return report;
+}
+
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
+  if (['raw-inventory-preflight', 'raw-inventory-park-latest', 'raw-inventory-compare'].includes(process.argv[2])) {
+    try { console.log(JSON.stringify(await runRawSnapshotCompareCommand(process.argv[2]))); }
+    catch (error) {
+      console.error(JSON.stringify({ status: 'RAW_SNAPSHOT_COMPARE_FAILED',
+        code: error.rawCompareCode ?? 'INVENTORY_REJECTED', sourceAdmissionPerformed: false, deletionSafetyEstablished: false }));
+      process.exitCode = 1;
+    }
+  } else {
   try {
     const args = process.argv.slice(2), options = { mode: args.shift() };
     const names = { '--private-root': 'privateRoot', '--descriptor': 'descriptorPath', '--predecessor-root': 'predecessorRoot',
@@ -1700,4 +1999,5 @@ if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.me
     console.log(JSON.stringify(report));
     if (report.status === 'AUDIT_FAILED_CLOSED') process.exitCode = 1;
   } catch { console.error('SAVED_WEATHER_INPUT_AUDIT_FAILED_CLOSED'); process.exitCode = 1; }
+  }
 }
