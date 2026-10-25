@@ -29,7 +29,8 @@ import { withAuthenticated584PredecessorSource } from '../check-account-statisti
 import { assertAuthenticatedFrozen585Snapshot } from './authenticated-frozen585-predecessor.mjs';
 import { withAuthenticated585PredecessorSource } from '../check-native-original-continuity-predecessor-source.mjs';
 
-import {readAuthenticatedFrozen586Predecessor,assertAuthenticatedFrozen586Snapshot}
+import {readAuthenticatedFrozen586Predecessor,assertAuthenticatedFrozen586Snapshot,
+  readAuthenticatedFrozen587Predecessor,assertAuthenticatedFrozen587Snapshot}
   from './authenticated-frozen586-predecessor.mjs';
 
 export const ESTABLISHED_NATIVE_CURRENT_SEMANTIC_CONTRACT = 'established-native-current-continuation-v1';
@@ -424,6 +425,53 @@ async function readFrozen586LaterOrigin({descriptor,before,request,conditions,ce
   return handle;
 }
 
+// Én fast ægte587-forgænger. Aktuel kilde bindes af sourceIdentity/hele I-manifestet;
+// controllerens outputpins importeres ikke i modelkernen (ingen selvhashcyklus).
+async function readFrozen587LaterOrigin({descriptor,before,request,conditions,central,parts,currentSource}){
+  const oldI='5584d8e59f8d21785fd08b32f9beb22cf879cdb4892a11ede24eb862d9a0dca2';
+  need(descriptor.modelBinding.modelBundleSha256===oldI&&currentSource.integrated!==oldI,'587_FAMILY');
+  const target=Date.parse(process.env.RAVRADAR_PRODUCTION_TARGET_HOUR??'');
+  need(Number.isFinite(target)&&target%3600000===0&&target>Date.parse(descriptor.productionReferenceAt),'587_LATER_TARGET');
+  const snapshot=assertAuthenticatedFrozen587Snapshot(await readAuthenticatedFrozen587Predecessor());
+  need(same(snapshot.descriptor,descriptor)&&same(snapshot.centralContract,central),'587_ORIGINAL_CHANGED');
+  const contracts=await privateRuntimeContractHashes(),I=ravScoreModelBinding(),C=candidateBinding();
+  need(descriptor.contractHashes.continuationStateContractSha256==='cd3a3648ad5093662871559aa39d77671eda27edf1f9edc82a104c5430a43a21'
+    &&snapshot.checkpoint.candidateGRollbackCompanion.modelBinding.modelBundleSha256==='5c0b6a2c6ceb4ba9c5f224cb5d3fda693f300a8902da3f7561167f72cbab78b4',
+    '587_FIXED_ORIGINAL_BINDING');
+  need(I.modelBundleSha256===currentSource.integrated&&C.modelBundleSha256===currentSource.candidate
+    &&contracts.continuationStateContractSha256===currentSource.continuation
+    &&C.modelBundleSha256!==snapshot.checkpoint.candidateGRollbackCompanion.modelBinding.modelBundleSha256
+    &&contracts.continuationStateContractSha256!==descriptor.contractHashes.continuationStateContractSha256,
+    '587_ISSUED_CURRENT_SOURCE');
+  need(same({...snapshot.checkpoint.modelBinding,modelBundleSha256:I.modelBundleSha256},I)
+    &&same({...snapshot.checkpoint.candidateGRollbackCompanion.modelBinding,modelBundleSha256:C.modelBundleSha256},C)
+    &&same({...descriptor.contractHashes,continuationStateContractSha256:contracts.continuationStateContractSha256},contracts),
+    '587_METADATA_ONLY');
+  need(conditions.datasetId===descriptor.datasetId&&conditions.productionReferenceAt===descriptor.productionReferenceAt
+    &&same(conditions[ATTEST],snapshot.attestation),'587_WHOLE_PARENT_CHANGED');
+  const pairs=pairsFromConditions(conditions,parts);
+  need(same([...pairs.keys()].sort(),Object.keys(snapshot.checkpoint.states).sort())
+    &&same([...pairs.keys()].sort(),Object.keys(snapshot.checkpoint.candidateGRollbackCompanion.states).sort()),'587_PARTS');
+  for(const[id,pair]of pairs){
+    const originalI=snapshot.checkpoint.states[id],originalG=snapshot.checkpoint.candidateGRollbackCompanion.states[id];
+    const inverseI=structuredClone(pair.integrated),inverseG=structuredClone(pair.candidate);
+    need(inverseI.modelBundleSha256===I.modelBundleSha256,'587_CURRENT_PAIR_BINDING');
+    inverseI.modelBundleSha256=originalI.modelBundleSha256;
+    if(Object.hasOwn(inverseG,'modelBundleSha256')){
+      need(inverseG.modelBundleSha256===C.modelBundleSha256,'587_CURRENT_CANDIDATE_BINDING');
+      inverseG.modelBundleSha256=originalG.modelBundleSha256;
+    }
+    need(same(inverseI,originalI)&&same(inverseG,originalG),'587_WHOLE_PAIR_INVERSE');
+  }
+  need(same(await readPointer(request),before),'SOURCE_CHANGED');
+  need(same(await json(path.join(ROOT,'data/live/coastal-parts-v2.json'),16*MB),central),'REGISTRY_CHANGED');
+  const handle=Object.freeze({});
+  contexts.set(handle,{seed:false,descriptor:structuredClone(descriptor),generationSha256:snapshot.checkpoint.generationSha256,
+    parentAttestationSha256:snapshot.attestation.attestationSha256,central,parts,pairs,currentSource,
+    consumedParts:new Set(),finalized:false});
+  return handle;
+}
+
 async function readOrigin(centralContract, seedOnly) {
   const currentSource = await sourceIdentity();
   const registry = await json(path.join(ROOT, 'data/live/coastal-parts-v2.json'), 16 * MB);
@@ -444,6 +492,8 @@ async function readOrigin(centralContract, seedOnly) {
   if (!seed && descriptor.modelBinding.modelBundleSha256 !== currentSource.integrated) {
     if(descriptor.modelBinding.modelBundleSha256==='6d8f7cca203b5f7ee5155f3c0cdb39403a02fd0eb30fecaca5070ef9f814a805')
       return readFrozen586LaterOrigin({descriptor,before,request,conditions,central,parts,currentSource});
+    if(descriptor.modelBinding.modelBundleSha256==='5584d8e59f8d21785fd08b32f9beb22cf879cdb4892a11ede24eb862d9a0dca2')
+      return readFrozen587LaterOrigin({descriptor,before,request,conditions,central,parts,currentSource});
     need(conditions[ATTEST] === undefined, 'UNSUPPORTED_ATTESTED_FAMILY');
     need(!(descriptor.datasetId === SEED.datasetId && descriptor.productionReferenceAt === SEED.referenceAt
       && descriptor.modelBinding.modelBundleSha256 === SEED.I), 'SEED_CONTENT_CHANGED');

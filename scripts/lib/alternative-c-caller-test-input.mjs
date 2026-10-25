@@ -1010,3 +1010,61 @@ export function inverseAssistant587OriginalRawBoundaryTestInput(source, relative
   assert.equal(digest(source), row.before.sha256, 'ALTERNATIVE_C_TEST_INPUT_CHANGED:ORIGINAL_RAW_WHOLE_INVERSE');
   return source;
 }
+
+// TEST INPUT ONLY: the fixed public587 -> assistant588 companion route.
+// Preserve the whole genuine587 caller before its unchanged historical oracles.
+// This is not authentication, source admission or a runtime fallback.
+export const ASSISTANT588_ORIGINAL_COMPANION_TEST_REVIEW = Object.freeze({
+  "path": "scripts/read-authenticated-dmi-current-companions.mjs",
+  "before": {
+    "bytes": 12200,
+    "sha256": "d4e90536a6b77c938482c34ee21164b1b7cf2bf576ca410f10375b5640540af5"
+  },
+  "after": {
+    "bytes": 12200,
+    "sha256": "5cbaa9abb7d96e49c2e8b83fa168733181621f0e7ad028d82e25dfaa395c8e14"
+  },
+  "hunks": [
+    [
+      "import {readAuthenticatedFrozen586Predecessor,assertAuthenticatedFrozen586Snapshot}",
+      "import {readAuthenticatedFrozen587Predecessor,assertAuthenticatedFrozen587Snapshot}"
+    ],
+    [
+      "  if(descriptor?.modelBinding?.modelBundleSha256==='6d8f7cca203b5f7ee5155f3c0cdb39403a02fd0eb30fecaca5070ef9f814a805'\n    &&",
+      "  if(descriptor?.modelBinding?.modelBundleSha256==='5584d8e59f8d21785fd08b32f9beb22cf879cdb4892a11ede24eb862d9a0dca2'\n    &&"
+    ],
+    [
+      "  if(ravScoreModelBinding().modelBundleSha256!=='6d8f7cca203b5f7ee5155f3c0cdb39403a02fd0eb30fecaca5070ef9f814a805'){",
+      "  if(ravScoreModelBinding().modelBundleSha256!=='5584d8e59f8d21785fd08b32f9beb22cf879cdb4892a11ede24eb862d9a0dca2'){"
+    ],
+    [
+      "    if(descriptor?.modelBinding?.modelBundleSha256==='6d8f7cca203b5f7ee5155f3c0cdb39403a02fd0eb30fecaca5070ef9f814a805'){",
+      "    if(descriptor?.modelBinding?.modelBundleSha256==='5584d8e59f8d21785fd08b32f9beb22cf879cdb4892a11ede24eb862d9a0dca2'){"
+    ],
+    [
+      "      const snapshot=assertAuthenticatedFrozen586Snapshot(await readAuthenticatedFrozen586Predecessor());",
+      "      const snapshot=assertAuthenticatedFrozen587Snapshot(await readAuthenticatedFrozen587Predecessor());"
+    ],
+    [
+      "      const fresh=assertAuthenticatedFrozen586Snapshot(await readAuthenticatedFrozen586Predecessor());",
+      "      const fresh=assertAuthenticatedFrozen587Snapshot(await readAuthenticatedFrozen587Predecessor());"
+    ]
+  ]
+});
+
+export function inverseAssistant588OriginalCompanionTestInput(source, relative) {
+  assert.equal(typeof source, 'string', 'ALTERNATIVE_C_TEST_INPUT_CHANGED:ASSISTANT588_TYPE');
+  const row = ASSISTANT588_ORIGINAL_COMPANION_TEST_REVIEW;
+  assert.equal(relative, row.path, 'ALTERNATIVE_C_TEST_INPUT_CHANGED:ASSISTANT588_PATH');
+  source = source.replace(/\r\n/g, '\n');
+  if (Buffer.byteLength(source) === row.before.bytes && digest(source) === row.before.sha256) return source;
+  assert.equal(Buffer.byteLength(source), row.after.bytes, 'ALTERNATIVE_C_TEST_INPUT_CHANGED:ASSISTANT588_SIZE');
+  assert.equal(digest(source), row.after.sha256, 'ALTERNATIVE_C_TEST_INPUT_CHANGED:ASSISTANT588_WHOLE');
+  for (const [before, after] of [...row.hunks].reverse()) {
+    assert.equal(source.split(after).length, 2, 'ALTERNATIVE_C_TEST_INPUT_CHANGED:ASSISTANT588_HUNK');
+    source = source.replace(after, () => before);
+  }
+  assert.equal(Buffer.byteLength(source), row.before.bytes, 'ALTERNATIVE_C_TEST_INPUT_CHANGED:ASSISTANT588_BEFORE_SIZE');
+  assert.equal(digest(source), row.before.sha256, 'ALTERNATIVE_C_TEST_INPUT_CHANGED:ASSISTANT588_WHOLE_INVERSE');
+  return source;
+}

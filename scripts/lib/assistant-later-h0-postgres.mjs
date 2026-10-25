@@ -1,4 +1,4 @@
-// Native TEST phase only, AFTER genuine frozen586 in the SAME owned PG host.
+// Native TEST phases only, AFTER genuine frozen586/587 in the SAME owned PG host.
 // Never an installer, model issuer, runtime-origin issuer or production reader.
 import assert from 'node:assert/strict';
 import crypto from 'node:crypto';
@@ -8,9 +8,14 @@ import {fileURLToPath} from 'node:url';
 import {ASSISTANT_LATER_H0_BEFORE as OLD,ASSISTANT_LATER_H0_ALIASES as ALIASES,
   requireAssistantLaterH0Binding,requireAssistantLaterH0Output,assistantLaterH0Migration,
   readAssistantLaterH0PredecessorCanonicalSource,readAssistantLaterH0CanonicalSource,
-  assistantLaterH0Definition as definition} from './assistant-later-h0-successor-source.mjs';
+  assistantLaterH0Definition as definition,
+  ASSISTANT_PUBLIC587_SUCCESSOR_BEFORE,ASSISTANT_PUBLIC587_SUCCESSOR_ALIASES,
+  requireAssistantPublic587SuccessorBinding,requireAssistantPublic587SuccessorOutput,assistantPublic587SuccessorMigration,
+  readAssistantPublic587PredecessorCanonicalSource,readAssistantPublic587SuccessorCanonicalSource}
+  from './assistant-later-h0-successor-source.mjs';
 import {currentMemoryWarmupPreservationInventorySql} from './current-memory-warmup-postgres.mjs';
-import {expectedCheckpointCasContract,expectedTripBindingPolicy,assistantLaterH0RequiredMigrations}
+import {expectedCheckpointCasContract,expectedTripBindingPolicy,assistantLaterH0RequiredMigrations,
+  assistantPublic587SuccessorRequiredMigrations}
   from '../integrated-cutover-readiness.mjs';
 import {statisticsPreferenceRevisionCatalogQuery,verifyStatisticsPreferenceRevisionCatalogMetadata}
   from '../verify-account-assistant-schema.mjs';
@@ -77,26 +82,51 @@ function assertWholeMetadataInverse(original,prepared,next){
   inverse.candidateGRollbackCompanion.generationSha256=original.candidateGRollbackCompanion.generationSha256;
   assert.deepEqual(inverse,original,'Whole673-state original metadata inverse including all unknown fields');
 }
+const LEGACY586=Object.freeze({
+  before:OLD,aliases:ALIASES,prefix:PREFIX,oldPrefix:OLD_PREFIX,previousRelease:586,
+  requireBinding:requireAssistantLaterH0Binding,requireOutput:requireAssistantLaterH0Output,
+  requiredMigrations:assistantLaterH0RequiredMigrations,migration:assistantLaterH0Migration,
+  readBefore:readAssistantLaterH0PredecessorCanonicalSource,readAfter:readAssistantLaterH0CanonicalSource,
+  sourcePhase:'assistant-later-h0',migrationCount:56,oidSlots:33,contractBodies:36,
+  fixtureStem:'assistant-later-h0',olderFixtures:Object.freeze([]),
+  resultKind:'ASSISTANT_LATER_H0_SUCCESSOR',failureKind:'ASSISTANT_LATER_H0_NATIVE_FIRST_FAILURE'});
+const PUBLIC587=Object.freeze({
+  before:ASSISTANT_PUBLIC587_SUCCESSOR_BEFORE,aliases:ASSISTANT_PUBLIC587_SUCCESSOR_ALIASES,
+  prefix:'assistant-public587-successor-current-',oldPrefix:'assistant-later-h0-current-',previousRelease:587,
+  requireBinding:requireAssistantPublic587SuccessorBinding,requireOutput:requireAssistantPublic587SuccessorOutput,
+  requiredMigrations:assistantPublic587SuccessorRequiredMigrations,migration:assistantPublic587SuccessorMigration,
+  readBefore:readAssistantPublic587PredecessorCanonicalSource,readAfter:readAssistantPublic587SuccessorCanonicalSource,
+  sourcePhase:'assistant-public587-successor',migrationCount:57,oidSlots:35,contractBodies:38,
+  fixtureStem:'assistant-public587-successor',olderFixtures:Object.freeze(['native-original-continuity-current-same']),
+  resultKind:'ASSISTANT_PUBLIC587_SUCCESSOR',failureKind:'ASSISTANT_PUBLIC587_SUCCESSOR_NATIVE_FIRST_FAILURE'});
 export async function compareAssistantLaterH0Successor(options){
+  return compareFixedSuccessor(LEGACY586,...arguments);
+}
+export async function compareAssistantPublic587Successor(options){
+  return compareFixedSuccessor(PUBLIC587,...arguments);
+}
+async function compareFixedSuccessor(profile,options){
+  assert(profile===LEGACY586||profile===PUBLIC587,'ASSISTANT_NATIVE_UNKNOWN_PROFILE');
+  const OLD=profile.before,ALIASES=profile.aliases,PREFIX=profile.prefix,OLD_PREFIX=profile.oldPrefix;
   let phase='SOURCE';
   try{
-    const NEXT=requireAssistantLaterH0Binding(),PINS=requireAssistantLaterH0Output(); // Before options, programs, files or SQL.
-    assert.equal(arguments.length,1);
+    const NEXT=profile.requireBinding(),PINS=profile.requireOutput(); // Before options, programs, files or SQL.
+    assert.equal(arguments.length,2);
     const {psql,runSql,root,sourceDocumentAt,atHour,saveCheckpoint}=options;
     for(const fn of [psql,runSql,sourceDocumentAt,atHour,saveCheckpoint])assert.equal(typeof fn,'function');
-    const inventory=assistantLaterH0RequiredMigrations();assert.equal(inventory.length,56);
+    const inventory=profile.requiredMigrations();assert.equal(inventory.length,profile.migrationCount);
     assert.equal(inventory.at(-2).version,OLD.version);assert.equal(inventory.at(-1).version,NEXT.version);
-    const before=await readAssistantLaterH0PredecessorCanonicalSource(),after=await readAssistantLaterH0CanonicalSource();
-    const migration=assistantLaterH0Migration(),file=path.join(ROOT,'supabase/migrations',migration.filename),stat=await fs.lstat(file);
+    const before=await profile.readBefore(),after=await profile.readAfter();
+    const migration=profile.migration(),file=path.join(ROOT,'supabase/migrations',migration.filename),stat=await fs.lstat(file);
     assert(stat.isFile()&&!stat.isSymbolicLink());
     const sql=await fs.readFile(file,'utf8');
     assert.equal(sha(sql),PINS.migrationSha256);assert.equal(sha(before.canonicalSource),OLD.canonicalSha256);
     assert.equal(sha(after.canonicalSource),PINS.canonicalSha256);assertAssistantLaterH0TransactionBounds(sql);
-    const expected={checkpoint:await expectedCheckpointCasContract({sourcePhase:'assistant-later-h0'}),
-      trip:await expectedTripBindingPolicy({sourcePhase:'assistant-later-h0'})};
+    const expected={checkpoint:await expectedCheckpointCasContract({sourcePhase:profile.sourcePhase}),
+      trip:await expectedTripBindingPolicy({sourcePhase:profile.sourcePhase})};
     assert.equal(expected.checkpoint.sha256,PINS.checkpointContractSha256);assert.equal(expected.trip.sha256,PINS.tripBindingPolicySha256);
     phase='BEFORE_VERSION';assert.equal(await psql('select max(version) from supabase_migrations.schema_migrations;'),OLD.version);
-    phase='GENUINE586_BANK';const originals={};
+    phase='GENUINE'+profile.previousRelease+'_BANK';const originals={};
     for(const[name,hour]of [['same',49],['newer',50]]){
       const {payload}=await readFixture(psql,OLD_PREFIX+name);
       assert.equal(payload.partCount,673);assert.equal(Object.keys(payload.states).length,673);
@@ -111,8 +141,8 @@ export async function compareAssistantLaterH0Successor(options){
     const allNames=[...names,...ALIASES.map(row=>row.name)];assert.equal(new Set(allNames).size,names.length+2);
     const contractSource=definition(after.canonicalSource,CP+'contract');
     const validatorArray=/v_validator_oids oid\[\] := array\[([\s\S]+?)\n  \];/.exec(contractSource);assert(validatorArray);
-    assert.equal((validatorArray[1].match(/pg_catalog\.to_regprocedure\(/g)??[]).length,33);
-    assert.equal((contractSource.match(/\|\| v_[a-z0-9_]+_definition/g)??[]).length+1,36);
+    assert.equal((validatorArray[1].match(/pg_catalog\.to_regprocedure\(/g)??[]).length,profile.oidSlots);
+    assert.equal((contractSource.match(/\|\| v_[a-z0-9_]+_definition/g)??[]).length+1,profile.contractBodies);
     phase='BEFORE_CATALOG';const catalogBefore=JSON.parse(await psql(catalogSql(names)));
     assert.deepEqual(Object.keys(catalogBefore).sort(),[...names].sort());
     for(const name of names)assert.equal(catalogBefore[name].body,sha(body(definition(before.canonicalSource,name))));
@@ -185,7 +215,7 @@ export async function compareAssistantLaterH0Successor(options){
     }
     phase='NORMAL_JSONB_ROUNDTRIP';const {bytes,payload}=await readFixture(psql,PREFIX+'same');
     assert.deepEqual(payload,current.same);assert.notEqual(bytes.toString('utf8'),JSON.stringify(current.same));
-    const checkpointPath=path.join(root,'assistant-later-h0-jsonb/.cache/ravscore-continuation-checkpoint/checkpoint.json');
+    const checkpointPath=path.join(root,profile.fixtureStem+'-jsonb/.cache/ravscore-continuation-checkpoint/checkpoint.json');
     const request=async()=>[{document_key:KEY,payload,version:1}];
     const restored=await restoreProtectedRavScoreContinuationCheckpoint({checkpointPath,targetReference:atHour(49),request});
     assert.equal(restored.restored,true);assert.equal(restored.objectMemberOrderRestored,true);
@@ -198,14 +228,14 @@ export async function compareAssistantLaterH0Successor(options){
       ['newer-current',PREFIX+'same',PREFIX+'newer',1,null,'updated',2],
       ['wrong-version',PREFIX+'same',PREFIX+'newer',0,'40001',null,1],
       ['regression',PREFIX+'newer',PREFIX+'same',1,'22023',null,1],
-      ['strict-later-586',OLD_PREFIX+'same',PREFIX+'newer',1,null,'updated',2],
-      ['strict-later-586-wrong-version',OLD_PREFIX+'same',PREFIX+'newer',0,'40001',null,1],
-      ['same-H0-586-refused',OLD_PREFIX+'same',PREFIX+'same',1,'22023',null,1],
-      ['same-H0-586-changed-refused',OLD_PREFIX+'same',PREFIX+'changed',1,'22023',null,1],
-      ['same-H0-newer586-refused',OLD_PREFIX+'newer',PREFIX+'newer',1,'22023',null,1],
-      ['earlier-586-refused',OLD_PREFIX+'newer',PREFIX+'same',1,'22023',null,1],
+      ['strict-later-'+profile.previousRelease,OLD_PREFIX+'same',PREFIX+'newer',1,null,'updated',2],
+      ['strict-later-'+profile.previousRelease+'-wrong-version',OLD_PREFIX+'same',PREFIX+'newer',0,'40001',null,1],
+      ['same-H0-'+profile.previousRelease+'-refused',OLD_PREFIX+'same',PREFIX+'same',1,'22023',null,1],
+      ['same-H0-'+profile.previousRelease+'-changed-refused',OLD_PREFIX+'same',PREFIX+'changed',1,'22023',null,1],
+      ['same-H0-newer'+profile.previousRelease+'-refused',OLD_PREFIX+'newer',PREFIX+'newer',1,'22023',null,1],
+      ['earlier-'+profile.previousRelease+'-refused',OLD_PREFIX+'newer',PREFIX+'same',1,'22023',null,1],
     ];
-    for(const central of ['account-statistics-assistant-current-same','last-mile-584-same','origin-current-same','identity-same','after0600-same',
+    for(const central of [...profile.olderFixtures,'account-statistics-assistant-current-same','last-mile-584-same','origin-current-same','identity-same','after0600-same',
       'grid-current',...['ffc','249','c1ac'].map(family=>'original-'+family)])
       cases.push(['same-older-'+central,central,PREFIX+'same',1,'22023',null,1],
         ['newer-older-'+central,central,PREFIX+'newer',1,'22023',null,1]);
@@ -214,11 +244,11 @@ export async function compareAssistantLaterH0Successor(options){
       ['field',"jsonb_set(payload,'{unknownField}','true'::jsonb)"],
       ['part',"payload #- '{states,part-001}'"],
       ['T',"jsonb_set(payload,'{continuationStateContractSha256}',to_jsonb(repeat('e',64)))"]]){
-      const name='assistant-later-h0-invalid-'+kind.toLowerCase();
+      const name=profile.fixtureStem+'-invalid-'+kind.toLowerCase();
       await psql("insert into native_checkpoint_payloads select '"+name+"',"+expression+" from native_checkpoint_payloads where name='"+OLD_PREFIX+"same';");
       assert.equal(await psql('select public.'+ALIASES[1].name+"((select payload from native_checkpoint_payloads where name='"+name+"'),'"+atHour(49)+"');"),'f');
       cases.push([name,name,PREFIX+'newer',1,'22023',null,1]);
-      const incomingName='assistant-later-h0-incoming-invalid-'+kind.toLowerCase();
+      const incomingName=profile.fixtureStem+'-incoming-invalid-'+kind.toLowerCase();
       await psql("insert into native_checkpoint_payloads select '"+incomingName+"',"+expression+" from native_checkpoint_payloads where name='"+PREFIX+"same';");
       assert.equal(await psql('select public.'+CP+"payload_valid((select payload from native_checkpoint_payloads where name='"+incomingName+"'),'"+atHour(49)+"');"),'f');
       cases.push([incomingName,PREFIX+'same',incomingName,1,'22023',null,1]);
@@ -237,15 +267,15 @@ export async function compareAssistantLaterH0Successor(options){
     assert.equal(await psql('select count(*) from admin_document_versions;'),'0');
     assert.deepEqual(JSON.parse(await psql(catalogSql(allNames))),catalogAfter);
     for(const[file,pin]of archivePins)assert.equal(sha(await fs.readFile(path.join(ROOT,'supabase/migrations',file))),pin);
-    return {kind:'ASSISTANT_LATER_H0_SUCCESSOR',sourceMigrationInventory:56,sqlExecuted:true,wholeMigrationExecuted:true,
-      migrationVersion:migration.version,partCount:673,checkpointOidSlots:33,contractBodies:36,
+    return {kind:profile.resultKind,sourceMigrationInventory:profile.migrationCount,sqlExecuted:true,wholeMigrationExecuted:true,
+      migrationVersion:migration.version,partCount:673,checkpointOidSlots:profile.oidSlots,contractBodies:profile.contractBodies,
       oldFunctionsAndOidsPreserved:true,allOriginalDefinitionsPreserved:true,privateAliases:2,
       beforeGuardCases:guards.length,exactCheckpointContract:true,exactTripContract:true,schema2Catalog:true,
-      normalProtectedJsonbRoundtrip:true,originalDigestsPreserved:true,trueOld586Fixtures:true,currentNormalFixtures:true,
-      old586ModelNotRetagged:true,wholeMetadataInverse:true,strictlyLater586ToNextOnly:true,
+      normalProtectedJsonbRoundtrip:true,originalDigestsPreserved:true,['trueOld'+profile.previousRelease+'Fixtures']:true,currentNormalFixtures:true,
+      ['old'+profile.previousRelease+'ModelNotRetagged']:true,wholeMetadataInverse:true,['strictlyLater'+profile.previousRelease+'ToNextOnly']:true,
       productionSeedAuthenticated:false,sqlIsNotOriginAuthentication:true,reports};
   }catch(error){
-    try{console.error(JSON.stringify({kind:'ASSISTANT_LATER_H0_NATIVE_FIRST_FAILURE',phase,
+    try{console.error(JSON.stringify({kind:profile.failureKind,phase,
       category:error?.code==='ERR_ASSERTION'?'ASSERTION_FAILED':'NATIVE_CALL_FAILED',privatePayloadIncluded:false}));}catch{}
     throw error; // Preserve the actual first failure; no retry or alternate SQL path.
   }

@@ -1,3 +1,9 @@
+## 25. oktober — assistentens fem offentlige fejlsvar kræver en særskilt produktlevering
+
+Ejeren har påvist fem ubrugelige svar i offentlig 587: kese, egne funktioner, god vind samt bedste område mandag og tirsdag. Den lokale rettelse dækker hele spørgsmålet, kalenderdato og hjemmesidens validerede nationale prognoseprojektion uden ny beregning eller zonehentning. De normale afgrænsede klient-, sprog-, kalender- og Edge-mål består; det er ikke offentlig levering. En faktisk ekstern browsercase gav kun et delvist fagligt svar. Det eksisterende bevaringsfaktum og helspørgsmålsinstruksen er derfor styrket med allerede kurateret viden; nye normale mål består, men hosted kvalitet er stadig åben.
+
+587 er faktisk offentligt leveret. Den næste assistentkandidat kræver egen sikker 587→588-binding med ægte originaler, normale kaldere, PostgreSQL, kildekontrol og offentlig afprøvning. Den lokale 4.0.588-kilde er nu udstedt med egen originalbevarende migration og syv synkroniserede forbrugere, men er ikke installeret; hverken tidligere grønne mål eller HTTP 200 er et nyt leveringsbevis. SOURCE, samlet statistik og automatisk sletning forbliver inaktive. Ingen main-/produktionsændring under aktiv vejrhentning. Brug det private checkpoint til aktuelle identiteter og næste trin.
+
 ## 25. oktober — offentlig 587 og afgrænset Om-/Grundbog-kandidat
 
 Den normale fulde vejrkæde har leveret offentlig 4.0.587/I97, og cron er genaktiveret. Ældre fronter nedenfor om manglende Pages/offentlig I97 er historiske. P0 er fortsat kontinuerlig almindelig vejrhentning og faktisk dækning; skiftende writer- og kørselsidentiteter føres i privat checkpoint.

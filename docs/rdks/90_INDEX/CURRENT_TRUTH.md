@@ -1,3 +1,9 @@
+## 25. oktober — assistentens spørgsmålsforståelse og dato-/rangering er lokalt rettet, ikke offentlig
+
+De fem ejerpåviste svar er reelle produktfejl, ikke bevis for manglende nationale prognoser. Den afgrænsede klientrettelse genkender kese/ravkese, egne funktioner og god vind samt udleder efterspurgt kalenderdag og bruger den eksisterende validerede nationale rangering. Hele inputtets emne- og sikkerhedskontrol går fortsat forud; ukendte kvalifikationer må ikke skjules af et delmatch. Ingen scoreformel, kildeprioritet eller vejrdata ændres, og der hentes ikke 210 zonepakker for et nationalt svar.
+
+De normale mål består lokalt, inklusive variationer, negative tilfælde, datoer og i18n. Én faktisk offentlig ekstern-AI-case i 587 gav kun delvis besvarelse. Eksisterende kurateret viden om ravets overflade, sprækker og opbevaring samt kravet om at dække hele spørgsmålet er styrket på DA/DE/EN; de tre berørte normale mål består. Dette er stadig ikke samlet hosted kvalitetsaccept. Den originalbevarende 587→588-port er anvendt, og 4.0.588-bindingen, dens append-only migration og syv forbrugere er lokalt udstedt og kontrolleret. Det er ikke installation eller offentlig levering; den præcise normale kilde-/databasekontrol og offentlige accept mangler stadig. Tidligere udsagn nedenfor om uanvendt kandidat er historiske på netop den lokale anvendelse; den offentlige rettelse er fortsat åben.
+
 ## 25. oktober — offentlig 587 og godkendt Om-/Grundbog-tekst
 
 Den normale fulde vejrkæde har nu faktisk leveret offentlig 4.0.587/I97. Den tidligere åbne Pages-blokering og teksten om fortsat offentlig 586 nedenfor er historiske førbilleder, ikke den aktuelle leveringsstatus. Cron er genaktiveret, og almindelig vejrhentning fortsætter. Kontinuerlig drift og faktisk dækning er fortsat P0; skiftende kørselstal, identiteter og writerstatus føres i det private checkpoint.

@@ -1,3 +1,9 @@
+## Ikke offentliggjort — assistentens spørgsmål, kalenderdag og nationale prognoser
+
+- Retter de påviste kese-/ravkese-, funktions- og vindspørgsmål samt kalenderafgrænsning og læsning af den allerede beregnede nationale prognose. Hele inputtets emne-, sikkerheds- og privacygrænser bevares; scoremodel og leverandørdata ændres ikke.
+- Styrker eksisterende fagligt kurateret viden om ravets overflade, sprækker og opbevaring på DA/DE/EN efter en faktisk, men kun delvist besvaret ekstern case. Modellen skal besvare alle understøttede led eller vise usikkerhed; dette promptkrav er ikke i sig selv et kvalitetsbevis.
+- Normale afgrænsede mål består lokalt. Den nødvendige originalbevarende 587→588-port og lokale 4.0.588-binding med append-only migration er udstedt. Præcis samlet kilde-/databasekontrol, installation og offentlig accept er åbne. Ingen ny offentlig release følger alene af den lokale rettelse.
+
 ## Ikke offentliggjort — Sådan virker RavRadar og ravkese i Grundbogen
 
 Ejeren har godkendt det nye afsnit Sådan virker RavRadar mellem MobilePay-støtte og kontakt på Om-siden. Det forklarer den eksisterende score og dens usikkerhed på dansk, tysk og engelsk. Strømfiguren viser retning ved 8 centimeter hvert sekund, ikke RavScore-point; den ændrer ingen vejrdata eller model. Den godkendte forklaring om vindens betydning for udsynet med en ravlygte er bevaret. Eksisterende kontakt, støtte, sprogvalg og tilbagefunktion bevares, og Om-sidens nye filer får en særskilt cachekæde.

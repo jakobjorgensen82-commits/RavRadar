@@ -14,11 +14,35 @@ import {checkpointCasContractFromCanonicalSource,tripBindingPolicyFromCanonicalS
 import {ASSISTANT_LATER_H0_BEFORE as OLD,ASSISTANT_LATER_H0_ALIASES as ALIASES,
   readAssistantLaterH0PredecessorCanonicalSource,assistantLaterH0Definition as definition,
   assistantLaterH0CheckpointContractFromBase,requireAssistantLaterH0Binding,
-  requireAssistantLaterH0Output,assistantLaterH0Migration} from './lib/assistant-later-h0-successor-source.mjs';
+  requireAssistantLaterH0Output,assistantLaterH0Migration,
+  ASSISTANT_PUBLIC587_SUCCESSOR_BEFORE,ASSISTANT_PUBLIC587_SUCCESSOR_ALIASES,
+  readAssistantPublic587PredecessorCanonicalSource,assistantPublic587SuccessorCheckpointContractFromBase,
+  requireAssistantPublic587SuccessorBinding,requireAssistantPublic587SuccessorOutput,
+  requireAssistantPublic587SuccessorRelease,assistantPublic587SuccessorMigration}
+  from './lib/assistant-later-h0-successor-source.mjs';
 const ROOT=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..'),CP='ravradar_ravscore_checkpoint_';
 const sha=v=>crypto.createHash('sha256').update(v).digest('hex');
 const once=(s,a,b)=>{assert.equal(s.split(a).length,2,'One exact source insertion');return s.replace(a,()=>b);};
-function metadata(source,next,inventory){
+// Kun disse to interne profilobjekter må vælge en forgænger.
+// Ingen eksport eller caller-/miljøvalgt profil, rod, binding eller SQL-kilde.
+const LEGACY586=Object.freeze({
+  previous:OLD,aliases:ALIASES,previousRelease:586,validatorCount:31,
+  readPredecessor:readAssistantLaterH0PredecessorCanonicalSource,
+  checkpointFromBase:assistantLaterH0CheckpointContractFromBase,
+  contractTail:"    || E'\\n-- native-original-continuity-same-h0-projection --\\n' || v_noc_same_h0_projection_definition;",
+  kind:'ASSISTANT_LATER_H0_SUCCESSOR_STRUCTURE'});
+const PUBLIC587=Object.freeze({
+  previous:ASSISTANT_PUBLIC587_SUCCESSOR_BEFORE,aliases:ASSISTANT_PUBLIC587_SUCCESSOR_ALIASES,
+  previousRelease:587,validatorCount:33,
+  readPredecessor:readAssistantPublic587PredecessorCanonicalSource,
+  checkpointFromBase:assistantPublic587SuccessorCheckpointContractFromBase,
+  contractTail:"    || E'\\n-- assistant-later-h0-original586-payload-validator --\\n' || v_ask586_payload_definition;",
+  kind:'ASSISTANT_PUBLIC587_SUCCESSOR_STRUCTURE'});
+function fixedProfile(profile){
+  assert(profile===LEGACY586||profile===PUBLIC587,'ASSISTANT_SUCCESSOR_UNKNOWN_PROFILE');
+  return profile;
+}
+function metadata(source,next,inventory,OLD){
   for(const key of ['C','I','T'])assert.equal(source.split(OLD[key]).length-1,inventory[key]??0);
   const forward=new Map(['C','I','T'].map(k=>[OLD[k],next[k]]));
   const backward=new Map([...forward].map(([a,b])=>[b,a]));
@@ -27,6 +51,17 @@ function metadata(source,next,inventory){
 }
 export async function prepareAssistantLaterH0SuccessorStructure({version}){
   assert.equal(arguments.length,1);
+  return prepareStructure(LEGACY586,version);
+}
+export async function prepareAssistantPublic587SuccessorStructure(options){
+  assert.equal(arguments.length,1);
+  assert(options&&Object.getPrototypeOf(options)===Object.prototype);
+  assert.deepEqual(Object.keys(options),['version'],'Kun normal tidsstempelinput; ingen caller-valgt profil eller tuple');
+  return prepareStructure(PUBLIC587,options.version);
+}
+async function prepareStructure(profile,version){
+  fixedProfile(profile);
+  const OLD=profile.previous,ALIASES=profile.aliases;
   assert.match(version,/^[0-9]{14}$/);assert(version>OLD.version);
   // Version is a FUTURE ordinary constructor input, not issued by this call.
   // No caller-supplied C/I/T; the normal coherent physical graph is authority.
@@ -38,7 +73,7 @@ export async function prepareAssistantLaterH0SuccessorStructure({version}){
     renderGeneratedBundleModule(I));
   const next={version,C:C.modelBundleSha256,I:I.modelBundleSha256,T:await ravScoreContinuationImplementationSha256()};
   assert.equal(new Set(['C','I','T'].flatMap(k=>[OLD[k],next[k]])).size,6);
-  const prior=await readAssistantLaterH0PredecessorCanonicalSource(),before=prior.canonicalSource;
+  const prior=await profile.readPredecessor(),before=prior.canonicalSource;
   assert.equal(sha(before),OLD.canonicalSha256);
   const [stateAlias,payloadAlias]=ALIASES.map(r=>r.name);
   for(const row of ALIASES)assert(!before.includes('function public.'+row.name+'('));
@@ -53,7 +88,7 @@ export async function prepareAssistantLaterH0SuccessorStructure({version}){
   const changes=[],add=(name,after)=>changes.push({name,before:definition(before,name),after});
   for(const [suffix,inventory] of [['integrated_state_valid',{I:1}],['payload_valid',{I:1,C:1,T:1}],
     ['integrated_state_reason',{I:1}],['payload_reason',{I:1,C:1,T:1}]])
-    add(CP+suffix,metadata(definition(before,CP+suffix),next,inventory));
+    add(CP+suffix,metadata(definition(before,CP+suffix),next,inventory,OLD));
   let trip=definition(before,'ravradar_trip_v3_binding_allowed');
   for(const key of ['I','C'])trip=once(trip,"        '"+OLD[key]+"'\n      )","        '"+OLD[key]+"',\n        '"+next[key]+"'\n      )");
   add('ravradar_trip_v3_binding_allowed',trip);
@@ -61,22 +96,22 @@ export async function prepareAssistantLaterH0SuccessorStructure({version}){
   const at=casBefore.indexOf(prefix);assert(at>=0);
   const branch=prefix+"      and p_payload ->> 'continuationStateContractSha256' = '"+next.T+"'\n"
     +'      and public.'+payloadAlias+'(v_payload,v_central_reference)\n    then\n'
-    +'      -- Authenticated immutable586 predecessor; only a strictly LATER ordinary generation.\n'
+    +'      -- Authenticated immutable'+profile.previousRelease+' predecessor; only a strictly LATER ordinary generation.\n'
     +'      v_central_is_compatible_predecessor := false;\n';
   const cas=casBefore.slice(0,at)+branch+casBefore.slice(at);
   assert.equal(cas.replace(branch,''),casBefore,'Whole normal CAS inverse; same-target code is untouched');
   add(CP+'cas',cas);
-  const contractBefore=definition(before,CP+'contract'),vars=['v_ask586_state_definition','v_ask586_payload_definition'];
+  const contractBefore=definition(before,CP+'contract'),vars=['v_ask'+profile.previousRelease+'_state_definition','v_ask'+profile.previousRelease+'_payload_definition'];
   let contract=once(contractBefore,'declare\n','declare\n  '+vars.join(' text;\n  ')+' text;\n');
   const oid=/  v_validator_oids oid\[\] := array\[([\s\S]*?)\n  \];/.exec(contract);assert(oid);
-  const count=[...oid[1].matchAll(/pg_catalog\.to_regprocedure\(/g)].length;assert.equal(count,31);
+  const count=[...oid[1].matchAll(/pg_catalog\.to_regprocedure\(/g)].length;assert.equal(count,profile.validatorCount);
   const extra=ALIASES.map(row=>"    pg_catalog.to_regprocedure('public."+row.name+row.signature+"')").join(',\n');
   contract=once(contract,oid[0],oid[0].slice(0,-5)+',\n'+extra+'\n  ];');
   const loads=vars.map((v,i)=>"  select pg_catalog.btrim(p.prosrc, E' \\n\\r\\t') into "+v+'\n'
     +'  from pg_catalog.pg_proc p where p.oid = v_validator_oids['+(count+i+1)+'];\n').join('\n');
   contract=once(contract,'  v_checkpoint_definition := v_canonical_time_definition',loads+'\n  v_checkpoint_definition := v_canonical_time_definition');
-  const tail="    || E'\\n-- native-original-continuity-same-h0-projection --\\n' || v_noc_same_h0_projection_definition;";
-  contract=once(contract,tail,tail.slice(0,-1)+vars.map((v,i)=>"\n    || E'\\n-- assistant-later-h0-original586-"
+  const tail=profile.contractTail;
+  contract=once(contract,tail,tail.slice(0,-1)+vars.map((v,i)=>"\n    || E'\\n-- assistant-later-h0-original"+profile.previousRelease+"-"
     +(i===0?'state':'payload')+"-validator --\\n' || "+v).join('')+';');
   contract=once(contract,"where m.version::text = '"+OLD.version+"'","where m.version::text = '"+version+"'");
   add(CP+'contract',contract);
@@ -84,13 +119,13 @@ export async function prepareAssistantLaterH0SuccessorStructure({version}){
   let canonicalSource=before;for(const row of changes)canonicalSource=once(canonicalSource,row.before,row.after);
   canonicalSource=once(canonicalSource,changes[0].after,addition+changes[0].after);
   let inverse=once(canonicalSource,addition,'');for(const row of [...changes].reverse())inverse=once(inverse,row.after,row.before);
-  assert.equal(inverse,before,'Whole genuine586 canonical inverse');
+  assert.equal(inverse,before,'Whole genuine'+profile.previousRelease+' canonical inverse');
   for(const original of prior.originalDefinitions)assert.equal(definition(canonicalSource,original.name),original.definition);
   for(const name of [...before.matchAll(/^create or replace function public\.([a-z0-9_]+)\(/gm)].map(m=>m[1]))
     if(!changes.some(row=>row.name===name))assert.equal(definition(canonicalSource,name),definition(before,name),'Every untouched historical function whole');
-  const checkpoint=assistantLaterH0CheckpointContractFromBase(canonicalSource,
+  const checkpoint=profile.checkpointFromBase(canonicalSource,
     checkpointCasContractFromCanonicalSource(canonicalSource,{sourcePhase:'native-original-continuity'}));
-  return Object.freeze({schemaVersion:1,kind:'ASSISTANT_LATER_H0_SUCCESSOR_STRUCTURE',admission:'NO_ADMISSION',
+  return Object.freeze({schemaVersion:1,kind:profile.kind,admission:'NO_ADMISSION',
     nextBinding:next,aliases,changes,canonicalSource,canonicalSha256:sha(canonicalSource),
     checkpointContractSha256:checkpoint.sha256,tripBindingPolicySha256:tripBindingPolicyFromCanonicalSource(canonicalSource).sha256,
     originalCanonicalSha256:sha(before),wholeCanonicalInverse:true,sameH0Capability:false,
@@ -184,7 +219,9 @@ function preservationQuery(signatures){
 
 
 
-function wrap(core,prior){
+function wrap(core,prior,profile=LEGACY586){
+  fixedProfile(profile);const OLD=profile.previous;
+  assert.equal(core.kind,profile.kind);
   assert(core.wholeCanonicalInverse&&!core.sameH0Capability&&!core.numericalSqlRulesChanged);
   assert.equal(sha(prior.canonicalSource),OLD.canonicalSha256);assert.equal(prior.statisticsSchemaVersion,2);
   const names=[...prior.canonicalSource.matchAll(/^create or replace function public\.((?:ravradar_ravscore_checkpoint_[a-z0-9_]+)|version_admin_document|ravradar_trip_v3_binding_allowed)\(/gm)].map(m=>m[1]);
@@ -199,12 +236,12 @@ function wrap(core,prior){
   const snapshot=preservationQuery(signatures);
   const prefix=['do $assistant_later_h0_successor$',
     'declare original_catalog jsonb; after_catalog jsonb; account_observed jsonb; function_name text;','begin',
-    "  if (select max(version::text) from supabase_migrations.schema_migrations) is distinct from '"+OLD.version+"' then raise exception 'ASSISTANT_LATER_H0_EXACT_INSTALLED586_REQUIRED'; end if;",
+    "  if (select max(version::text) from supabase_migrations.schema_migrations) is distinct from '"+OLD.version+"' then raise exception 'ASSISTANT_LATER_H0_EXACT_INSTALLED"+profile.previousRelease+"_REQUIRED'; end if;",
     "  if exists(select 1 from supabase_migrations.schema_migrations where version::text=any(array['20261014140000','20261015030000','20261016030000'])) then raise exception 'ASSISTANT_LATER_H0_ARCHIVED_PHASE_MUST_BE_ABSENT'; end if;",
     "  if not exists(select 1 from supabase_migrations.schema_migrations where version::text='20261013230000') then raise exception 'ASSISTANT_LATER_H0_INSTALLED230_REQUIRED'; end if;",
     '  lock table public.account_activity_journal,public.account_statistics_preferences in access share mode;'].join('\n');
-  const migration=['-- Original-preserving post586 assistant strictly-later-H0 successor; SOURCE ONLY.',
-    '-- Existing586 and older originals/projections and ALL numerical SQL guards preserved.',
+  const migration=['-- Original-preserving post'+profile.previousRelease+' assistant strictly-later-H0 successor; SOURCE ONLY.',
+    '-- Existing'+profile.previousRelease+' and older originals/projections and ALL numerical SQL guards preserved.',
     'begin;',"set local statement_timeout = '55s';","set local lock_timeout = '5s';",prefix,...absent,
     ...definitions.map(definitionGuard),schema2Guard(prior.statisticsExpected),'  '+snapshot+' into original_catalog;',...ddl,
     ...names.map(name=>definitionGuard(definition(core.canonicalSource,name))),...core.aliases.map(row=>definitionGuard(row.definition)),
@@ -224,16 +261,32 @@ export async function buildAssistantLaterH0BindingSuccessor(options){
   return Object.freeze({...result,sameH0Capability:false,admission:'NO_ADMISSION'});
 }
 
+export async function buildAssistantPublic587BindingSuccessor(options){
+  assert.equal(arguments.length,1);
+  const core=await prepareAssistantPublic587SuccessorStructure(options);
+  const prior=await readAssistantPublic587PredecessorCanonicalSource();
+  const result=wrap(core,prior,PUBLIC587);
+  assert.equal(result.migrationIssued,false);assert.equal(result.productionAuthority,false);
+  return Object.freeze({...result,sameH0Capability:false,admission:'NO_ADMISSION'});
+}
+
 async function main(){
-  assert(process.argv.length===2||(process.argv.length===3&&['--check','--write'].includes(process.argv[2])));
-  const issued=requireAssistantLaterH0Binding(),pins=requireAssistantLaterH0Output();
-  // A normal CLI verifies an already issued tuple; it never selects one.
-  const result=await buildAssistantLaterH0BindingSuccessor({version:issued.version});
+  const args=process.argv.slice(2),public587=args[0]==='--public587-successor';
+  if(public587)args.shift();
+  assert(args.length===0||(args.length===1&&['--check','--write'].includes(args[0])));
+  // Den nye faste indgang afviser UNISSUED før konstruktør, fil-I/O eller SQL.
+  // Den oprindelige indgang vælger fortsat præcis den allerede udstedte 587.
+  const issued=public587?requireAssistantPublic587SuccessorBinding():requireAssistantLaterH0Binding();
+  const pins=public587?requireAssistantPublic587SuccessorOutput():requireAssistantLaterH0Output();
+  if(public587)requireAssistantPublic587SuccessorRelease();
+  const result=public587?await buildAssistantPublic587BindingSuccessor({version:issued.version})
+    :await buildAssistantLaterH0BindingSuccessor({version:issued.version});
   assert.deepEqual(result.nextBinding,issued,'Only the actual physical issued C/I/T');
   assert.deepEqual({migrationSha256:result.migrationSha256,canonicalSha256:result.afterCanonicalSha256,
     checkpointContractSha256:result.checkpointContractSha256,tripBindingPolicySha256:result.tripBindingPolicySha256},pins);
-  const file=path.join(ROOT,'supabase/migrations',assistantLaterH0Migration().filename);
-  if(process.argv[2]==='--write')await fs.writeFile(file,result.migration,{flag:'wx'});
+  const migration=public587?assistantPublic587SuccessorMigration():assistantLaterH0Migration();
+  const file=path.join(ROOT,'supabase/migrations',migration.filename);
+  if(args[0]==='--write')await fs.writeFile(file,result.migration,{flag:'wx'});
   else assert.deepEqual(await fs.readFile(file),Buffer.from(result.migration));
   console.log('Exact original-preserving assistant later-H0 metadata source checked; no installation or state admission.');
 }

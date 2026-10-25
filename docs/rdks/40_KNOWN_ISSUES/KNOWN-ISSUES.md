@@ -1,3 +1,9 @@
+## 25. oktober — ÅBEN offentlig assistent: hele spørgsmål, kalender og national projektion
+
+Ejers fem fejl i offentlig 587 er reproduceret som konkrete klient-/læsefejl. Lokal rettelse og de normale mål dækker kese/ravkese, capabilities, vind, efterspurgt dag og den allerede beregnede nationale prognoseprojektion. Det er ikke en ændring af scoremodellen eller en konklusion om manglende national data. Emne-/privacygrænser og afvisning af ukendte kvalifikationer bevares.
+
+Én faktisk offentlig ekstern case gav kun et delvist svar. Det eksisterende kuraterede care-faktum er derfor styrket og kravet om fuldt understøttet svar præciseret; berørte normale mål består lokalt. Dette beviser ikke semantisk fulddækning eller samlet ekstern-AI-kvalitet. Den nye 4.0.588-binding og dens originale B/S-kaldere er lokalt udstedt med egen append-only migration; direkte bindingskontroller består. Hele den normale kilde-/databasekontrol, sikker installation og offentlig accept er fortsat åbne. Der må ikke meldes løst alene på lokale mål eller HTTP 200.
+
 ## 25. oktober — tekstleverance afventer samlet kontrol, offentlig 587 er nået
 
 De tidligere Pages-/overgangsblokeringer nedenfor er historiske: den normale fulde kæde har nu leveret offentlig 4.0.587/I97, og cron er genaktiveret. Det lukker ikke opfølgning på kontinuerlig vejrhentning, dækning eller de øvrige åbne hovedmål.

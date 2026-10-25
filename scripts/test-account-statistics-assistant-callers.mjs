@@ -469,7 +469,7 @@ test('normal original584 staging forwards the selected R2 storage into the real 
 });
 
 test('current586 source registration preserves exact585 predecessor and distinct current native scope',async()=>{
-  const actualPkg=JSON.parse(await fs.readFile(new URL('../package.json',import.meta.url),'utf8'));
+  const actualPkg=await reviewed587PackageViewForUnchangedOracles(JSON.parse(await fs.readFile(new URL('../package.json',import.meta.url),'utf8')));
   const {verifyPackage,verifyCurrentNativeCommands,CURRENT586_NATIVE_COMMANDS}=await import('./national584-source-evidence.mjs');
   const {inverseReviewedAccountStatisticsAssistantSourceScripts,inverseAssistantLaterH0SourceScripts}=await import('./lib/account-statistics-assistant-package-review.mjs');
   const {ASSISTANT_LATER_H0_BINDING}=await import('./lib/assistant-later-h0-successor-source.mjs');
@@ -502,7 +502,7 @@ test('current586 source registration preserves exact585 predecessor and distinct
 });
 
 test('assistant later-H0 registration keeps exact older scripts and refuses phase/order mutations',async()=>{
-  const pkg=JSON.parse(await fs.readFile(new URL('../package.json',import.meta.url),'utf8')),original=structuredClone(pkg);
+  const pkg=await reviewed587PackageViewForUnchangedOracles(JSON.parse(await fs.readFile(new URL('../package.json',import.meta.url),'utf8'))),original=structuredClone(pkg);
   const {ASSISTANT_LATER_H0_BINDING,requireAssistantLaterH0Release}=await import('./lib/assistant-later-h0-successor-source.mjs');
   const {verifyPackage,verifyCurrentNativeCommands,ASSISTANT_LATER_H0_NATIVE_COMMANDS}=await import('./national584-source-evidence.mjs');
   const {inverseAssistantLaterH0SourceScripts}=await import('./lib/account-statistics-assistant-package-review.mjs');
@@ -530,4 +530,111 @@ test('assistant later-H0 registration keeps exact older scripts and refuses phas
     assert.throws(()=>verifyPackage(changed));
   }
   assert.throws(()=>verifyPackage({...pkg,version:'0.0.0'}));
+});
+
+
+// TEST ONLY: qualify the real fixed588 plan before the unchanged587/586 oracles.
+async function reviewed587PackageViewForUnchangedOracles(pkg){
+  const {ASSISTANT_PUBLIC587_SUCCESSOR_SOURCE_COMMAND,verifyAssistantPublic587SuccessorPackage}
+    =await import('./national584-source-evidence.mjs');
+  if(pkg.scripts['test:assistant-later-h0-source']!==ASSISTANT_PUBLIC587_SUCCESSOR_SOURCE_COMMAND)return pkg;
+  const original=structuredClone(pkg);
+  const {ASSISTANT_PUBLIC587_SUCCESSOR_BINDING,requireAssistantLaterH0Release}
+    =await import('./lib/assistant-later-h0-successor-source.mjs');
+  const {inverseAssistantPublic587SuccessorSourceScripts}=await import('./lib/account-statistics-assistant-package-review.mjs');
+  if(ASSISTANT_PUBLIC587_SUCCESSOR_BINDING===null)
+    assert.throws(()=>verifyAssistantPublic587SuccessorPackage(pkg),/ASSISTANT_PUBLIC587_SUCCESSOR_UNISSUED/);
+  else assert.doesNotThrow(()=>verifyAssistantPublic587SuccessorPackage(pkg));
+  const prior=inverseAssistantPublic587SuccessorSourceScripts(pkg.scripts);
+  assert.deepEqual(pkg,original,'Active verification and historical views cannot edit the source package');
+  return {...pkg,version:requireAssistantLaterH0Release(),scripts:prior};
+}
+
+test('public587 successor source registration dispatches actual588 once before exact whole587 inverse',async()=>{
+  const actual=JSON.parse(await fs.readFile(new URL('../package.json',import.meta.url),'utf8')),original=structuredClone(actual);
+  const {ASSISTANT_LATER_H0_SOURCE_COMMAND,ASSISTANT_PUBLIC587_SUCCESSOR_SOURCE_COMMAND,
+    verifyAssistantLaterH0Package,verifyAssistantPublic587SuccessorPackage}=await import('./national584-source-evidence.mjs');
+  const {ASSISTANT_PUBLIC587_SUCCESSOR_BINDING,requireAssistantLaterH0Release}
+    =await import('./lib/assistant-later-h0-successor-source.mjs');
+  const {inverseAssistantPublic587SuccessorSourceScripts,inverseAssistantLaterH0SourceScripts}
+    =await import('./lib/account-statistics-assistant-package-review.mjs');
+  assert([ASSISTANT_LATER_H0_SOURCE_COMMAND,ASSISTANT_PUBLIC587_SUCCESSOR_SOURCE_COMMAND].includes(actual.scripts['test:assistant-later-h0-source']));
+  const next={...actual,version:'4.0.588',scripts:{...actual.scripts,
+    'test:assistant-later-h0-source':ASSISTANT_PUBLIC587_SUCCESSOR_SOURCE_COMMAND}};
+  const prior=inverseAssistantPublic587SuccessorSourceScripts(next.scripts);
+  const sha=scripts=>crypto.createHash('sha256').update(JSON.stringify(Object.keys(scripts).sort().map(key=>[key,scripts[key]]))).digest('hex');
+  assert.equal(sha(next.scripts),'fe8e112b4e4e30d948aeecf764db02369bdfc90ba1d0d681af5733b27443b06b');
+  assert.equal(sha(prior),'9df85408955c0449c92370f1af4451ff475f4cc10a4e92bcb440790793bda997');
+  assert.equal(prior['test:assistant-later-h0-source'],ASSISTANT_LATER_H0_SOURCE_COMMAND);
+  assert.deepEqual(inverseAssistantLaterH0SourceScripts(next.scripts),inverseAssistantLaterH0SourceScripts(prior));
+  assert.doesNotThrow(()=>verifyAssistantLaterH0Package({...actual,version:requireAssistantLaterH0Release(),scripts:prior}));
+  if(ASSISTANT_PUBLIC587_SUCCESSOR_BINDING===null)
+    assert.throws(()=>verifyAssistantPublic587SuccessorPackage(next),/ASSISTANT_PUBLIC587_SUCCESSOR_UNISSUED/);
+  else{
+    assert.equal(actual.version,'4.0.588');
+    assert.equal(actual.scripts['test:assistant-later-h0-source'],ASSISTANT_PUBLIC587_SUCCESSOR_SOURCE_COMMAND);
+    assert.doesNotThrow(()=>verifyAssistantPublic587SuccessorPackage(actual));
+  }
+  for(const mutate of [v=>v['test:assistant-later-h0-source']=ASSISTANT_LATER_H0_SOURCE_COMMAND,
+    v=>v['test:assistant-later-h0-source']+=' --unexpected',
+    v=>delete v['test:assistant-later-h0-source'],v=>v['unreviewed']='true',
+    v=>v['test:ravscore-source-critical']+=' && npm run test:assistant-later-h0-source',
+    v=>v['test:ravscore-source-critical']=v['test:ravscore-source-critical'].replace(
+      'npm run test:native-original-continuity-source && npm run test:assistant-later-h0-source',
+      'npm run test:assistant-later-h0-source && npm run test:native-original-continuity-source')]){
+    const changed=structuredClone(next.scripts);mutate(changed);
+    assert.throws(()=>inverseAssistantPublic587SuccessorSourceScripts(changed));
+    assert.throws(()=>verifyAssistantPublic587SuccessorPackage({...next,scripts:changed}));
+  }
+  assert.deepEqual(actual,original);
+});
+
+test('public587 successor national binding preserves587 commands and requires distinct588 native receipt',async()=>{
+  const {ASSISTANT_LATER_H0_SOURCE_COMMAND,ASSISTANT_LATER_H0_NATIVE_COMMANDS,
+    ASSISTANT_PUBLIC587_SUCCESSOR_SOURCE_COMMAND,ASSISTANT_PUBLIC587_SUCCESSOR_NATIVE_COMMANDS,
+    verifyCurrentNativeCommands}=await import('./national584-source-evidence.mjs');
+  const {CURRENT_COMMANDS,ASSISTANT_PUBLIC587_SUCCESSOR_COMMANDS,
+    verifyAssistantLaterH0PhaseReceipt,verifyAssistantPublic587SuccessorPhaseReceipt}=await import('./native-postgres-evidence.mjs');
+  const {ASSISTANT_PUBLIC587_SUCCESSOR_BINDING}=await import('./lib/assistant-later-h0-successor-source.mjs');
+  assert.equal(ASSISTANT_LATER_H0_SOURCE_COMMAND,'node scripts/build-assistant-later-h0-successor.mjs --check');
+  assert.equal(ASSISTANT_PUBLIC587_SUCCESSOR_SOURCE_COMMAND,'node scripts/build-assistant-later-h0-successor.mjs --public587-successor --check');
+  assert.deepEqual(ASSISTANT_LATER_H0_NATIVE_COMMANDS,CURRENT_COMMANDS);
+  assert.deepEqual(ASSISTANT_PUBLIC587_SUCCESSOR_NATIVE_COMMANDS,ASSISTANT_PUBLIC587_SUCCESSOR_COMMANDS);
+  assert.doesNotThrow(()=>verifyCurrentNativeCommands(CURRENT_COMMANDS,'4.0.587'));
+  assert.throws(()=>verifyCurrentNativeCommands(ASSISTANT_PUBLIC587_SUCCESSOR_COMMANDS,'4.0.587'));
+  if(ASSISTANT_PUBLIC587_SUCCESSOR_BINDING===null)
+    assert.throws(()=>verifyCurrentNativeCommands(ASSISTANT_PUBLIC587_SUCCESSOR_COMMANDS,'4.0.588'),/ASSISTANT_PUBLIC587_SUCCESSOR_UNISSUED/);
+  else{
+    assert.doesNotThrow(()=>verifyCurrentNativeCommands(ASSISTANT_PUBLIC587_SUCCESSOR_COMMANDS,'4.0.588'));
+    assert.throws(()=>verifyCurrentNativeCommands(CURRENT_COMMANDS,'4.0.588'));
+  }
+  const current={run:123,attempt:1,head:'a'.repeat(40),pullRequest:123,branch:'synthetic-public587-successor'};
+  const old={phase:'ASSISTANT_LATER_H0',status:'EXECUTED',executedInThisRun:true,origin:null,
+    current,commands:[...CURRENT_COMMANDS],eligibleForReuse:false};
+  const next={...old,phase:'ASSISTANT_PUBLIC587_SUCCESSOR',commands:[...ASSISTANT_PUBLIC587_SUCCESSOR_COMMANDS]};
+  assert.doesNotThrow(()=>verifyAssistantLaterH0PhaseReceipt(old,current));
+  assert.doesNotThrow(()=>verifyAssistantPublic587SuccessorPhaseReceipt(next,current));
+  assert.throws(()=>verifyAssistantLaterH0PhaseReceipt(next,current));
+  assert.throws(()=>verifyAssistantPublic587SuccessorPhaseReceipt(old,current));
+  for(const mutate of [v=>v.status='REUSED',v=>v.origin={run:122},v=>v.eligibleForReuse=true,
+    v=>v.executedInThisRun=false,v=>v.commands=[...CURRENT_COMMANDS]]){
+    const changed=structuredClone(next);mutate(changed);
+    assert.throws(()=>verifyAssistantPublic587SuccessorPhaseReceipt(changed,current));
+  }
+});
+
+test('public587 national entry refuses unissued before I/O and leaves historical584 reuse scope unchanged',async()=>{
+  const source=await fs.readFile(new URL('./national584-source-evidence.mjs',import.meta.url),'utf8');
+  const main=source.slice(source.indexOf('async function main(){'));
+  assert(main.indexOf('requireAssistantPublic587SuccessorRelease();')<main.indexOf('await requireSourceEnvironment();'));
+  assert(source.includes("else if(pkg.version==='4.0.587')verifyAssistantLaterH0PhaseReceipt"));
+  assert(source.includes("else if(pkg.version!=='4.0.585')verifyAssistantPublic587SuccessorPhaseReceipt"));
+  assert(source.includes("current587PredecessorNative:{status:'EXECUTED',phase:'assistant-later-h0',scope:'GENUINE_FROZEN587'"));
+  assert(source.includes("currentAssistantPublic587SuccessorNative:{status:'EXECUTED',phase:'assistant-public587-successor'"));
+  assert(source.includes("actualCommand:ASSISTANT_PUBLIC587_SUCCESSOR_SOURCE_COMMAND,separatelyRequired:true"));
+  assert(source.includes('currentAssistantPublic587SuccessorNationalExecutionClaimed:false'));
+  assert(source.includes("sourceScope:'HISTORICAL_584_ONLY'"));
+  assert(source.includes("try{result=await authenticatedReuse(ctx);}"));
+  assert(source.includes("catch{result=await executeHistorical();"));
+  assert(source.includes("providerOrProductionProof:false"));
 });

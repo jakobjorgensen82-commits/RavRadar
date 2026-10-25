@@ -1,3 +1,16 @@
+## 25. oktober — assistentens konkrete produktrettelse efter fem ejerpåviste fejlsvar
+
+- [x] Lokal rettelse af kese/ravkese, egne funktioner og generelt vindspørgsmål med bevaret kontrol af hele inputtet.
+- [x] Lokal kalenderafgrænsning og brug af eksisterende valideret national prognoseprojektion uden ny scoring eller fuld zonehentning.
+- [x] Normale afgrænsede assistent-, sprog- og kalenderprøver; tidligere negative resultater bevares med deres faktiske scope.
+- [x] Én normal offentlig browsercase gennem ekstern vej; kun delvis besvarelse, ikke kvalitets-PASS.
+- [x] Eksisterende kurateret care-faktum og helspørgsmålsinstruks styrket på DA/DE/EN; normale Edge-, main/Edge- og i18n-mål består lokalt.
+- [x] Lokal originalbevarende 587→588-port og 4.0.588-binding med egen append-only migration, faktiske C/I/T og syv synkroniserede forbrugere; direkte bindingskontroller består.
+- [ ] Hele normale kalder-/kildekontrollen og faktisk PostgreSQL på den præcise nye head; det tidligere 587-bevis er ikke et nyt 588-PASS.
+- [ ] Præcis samlet kildekontrol, sikker installation og faktisk offentlig afprøvning af ejerens fem spørgsmål samt DA/DE/EN-variationer. Lokal test og HTTP 200 alene lukker ikke punktet.
+
+Offentlig 587 og igangværende almindelig drift bevares; ingen produktion under aktiv writer. SOURCE, samlet statistik og automatisk sletning er fortsat inaktive. Ældre daterede førbilleder nedenfor bevares.
+
 ## 25. oktober — samlet Om-/Grundbog-forberedelse efter offentlig 587
 
 - [x] Normal fuld vejrkæde har faktisk leveret offentlig 4.0.587/I97. Cron er genaktiveret; løbende almindelig drift og dækning følges i privat checkpoint.

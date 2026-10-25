@@ -1,3 +1,6 @@
+import { inverseAssistant588OriginalCompanionTestInput, ASSISTANT588_ORIGINAL_COMPANION_TEST_REVIEW } from './lib/alternative-c-caller-test-input.mjs';
+import path from 'node:path';
+import { isDeepStrictEqual } from 'node:util';
 import { ASSISTANT587_ORIGINAL_RAW_BOUNDARY_TEST_REVIEW, inverseAssistant587OriginalRawBoundaryTestInput } from './lib/alternative-c-caller-test-input.mjs';
 import { inverseAssistant587OriginalCompanionTestInput, inverseAlternativeCCaller, inverseCurrentNativeOriginalConsumerTestInput, CURRENT_NATIVE_ORIGINAL_CONSUMER_TEST_REVIEW, inverseCurrent586EndpointDiagnosticTestInput, inverseCurrent586IdentityRefinementTestInput, inverseCurrent586SharedProjectionExportTestInput, inverseNationalCoherentWorkTestInput, NATIONAL_COHERENT_WORK_TEST_REVIEW, inverseNationalCapacityTestInput, NATIONAL_COHERENT_CAPACITY_TEST_REVIEW, inverseCoherentDistinctCaptureFramesTestInput, COHERENT_DISTINCT_CAPTURE_FRAME_TEST_REVIEW } from './lib/alternative-c-caller-test-input.mjs';
 import { inverseJointCoherentControllerTestInput, JOINT_NATIONAL_COHERENT_CONTROLLER_TEST_REVIEW } from './lib/alternative-c-caller-test-input.mjs';
@@ -2580,4 +2583,146 @@ test('cold target inverse: complete exact modules precede unchanged historical o
   }
   assert.throws(()=>inverseCurrentFamilyColdTargetTestInput({},'scripts/update-weather.mjs'),/COLD_TARGET_TYPE/);
   assert.throws(()=>inverseCurrentFamilyColdTargetTestInput('','scripts/unknown.mjs'),/COLD_TARGET_PATH/);
+});
+
+// Small DATA callers through the two complete, whole-pinned normal functions.
+// This existing source-body seam checks routing/ownership calls only: it does
+// not authenticate B/GCM, mint a production opaque handle or unpack originals.
+function assistant588CompanionCallerUnits(dependencies) {
+  const row = ASSISTANT588_ORIGINAL_COMPANION_TEST_REVIEW;
+  const source = readFileSync(new URL('../' + row.path, import.meta.url), 'utf8').replace(/\r\n/g, '\n');
+  assert.equal(Buffer.byteLength(source), row.after.bytes);
+  assert.equal(sha(source), row.after.sha256);
+  const genuine587 = inverseAssistant588OriginalCompanionTestInput(source, row.path);
+  assert.equal(Buffer.byteLength(genuine587), row.before.bytes);
+  assert.equal(sha(genuine587), row.before.sha256);
+  const first = 'export async function readCurrentPrivateRuntimeCompanionInput(targetReferenceAt) {';
+  const next = '\n// The updater invokes this only AFTER';
+  const second = 'export async function readCurrentPrivateRuntimeCompanions(targetReferenceAt) {';
+  const end = '\nexport { readAuthenticatedCurrentCompanions };';
+  for (const boundary of [first, next, second, end]) assert.equal(source.split(boundary).length, 2);
+  const input = source.slice(source.indexOf(first), source.indexOf(next)).replace('export async function', 'async function');
+  const companions = source.slice(source.indexOf(second), source.indexOf(end)).replace('export async function', 'async function');
+  return new Function('dependencies', '"use strict";\n'
+    + 'const {fs,path,process,crypto,isDeepStrictEqual,ROOT,refuse,ravScoreModelBinding,'
+    + 'readAssistantLaterH0RetentionInput,verifyPrivateProductionRuntimeBundle,'
+    + 'readAuthenticatedFrozen587Predecessor,assertAuthenticatedFrozen587Snapshot,'
+    + 'readAuthenticatedCurrentCompanions}=dependencies;\n'
+    + input + '\n' + companions
+    + '\nreturn {input:readCurrentPrivateRuntimeCompanionInput,companions:readCurrentPrivateRuntimeCompanions};')(dependencies);
+}
+
+function assistant588CompanionData({ descriptorI = '5584d8e59f8d21785fd08b32f9beb22cf879cdb4892a11ede24eb862d9a0dca2',
+  currentI = '5348f3ae7401d3a09dd180d45690f56b3cfec4a30af5a4928bdd9581f9d8ebac', fault = null } = {}) {
+  const root = path.resolve('SYNTHETIC-COMPANION-DATA-NO-DISK');
+  const privateRoot = path.join(root, 'private'), tempRoot = path.join(root, 'runner');
+  const descriptorPath = path.join(tempRoot, 'private-runtime-current-source.json');
+  const originalPath = path.join(privateRoot, 'bundle', 'payload', 'data', 'live', 'conditions.json');
+  const descriptor = { modelBinding: { modelBundleSha256: descriptorI }, bundleContentSha256: 'b'.repeat(64) };
+  const original = { datasetId: 'SYNTHETIC-ORIGINAL587', productionReferenceAt: at(0) };
+  const originalBytes = Buffer.from(JSON.stringify(original));
+  const working = { datasetId: 'SYNTHETIC-WORK588', productionReferenceAt: at(1) };
+  const verified = { bundleContentSha256: descriptor.bundleContentSha256 };
+  const snapshot = { descriptor, verified, conditionsPath: originalPath };
+  const view = { verified, originalConditions: original, originalConditionsSha256: sha(originalBytes),
+    conditions: working, conditionsPath: path.join(root, 'working', 'conditions.json'),
+    conditionsSha256: sha(JSON.stringify(working)), verify: async () => { calls.push('view-verify'); } };
+  const contexts = [{ kind: 'SYNTHETIC-UNPACKED-ORIGINAL' }], calls = [], handles = new WeakMap();
+  let descriptorReads = 0, reads = 0;
+  const dependencies = { path, crypto, isDeepStrictEqual, ROOT: root,
+    process: { env: { RAVRADAR_PRIVATE_RUNTIME_ROOT: privateRoot,
+      RAVRADAR_PRIVATE_RUNTIME_BUNDLE: path.join(privateRoot, 'bundle'), RUNNER_TEMP: tempRoot } },
+    fs: {
+      lstat: async file => { assert.equal(file, descriptorPath); return { isFile: () => true, isSymbolicLink: () => false, size: 200 }; },
+      readFile: async (file, encoding) => {
+        if (file === descriptorPath) {
+          descriptorReads++;
+          const value = Buffer.from(JSON.stringify(descriptor)
+            + (fault === 'descriptor-changed' && descriptorReads > 1 ? ' ' : ''));
+          return encoding ? value.toString(encoding) : value;
+        }
+        assert.equal(file, originalPath, 'Only the authenticated original conditions path is read');
+        calls.push('original-read'); return encoding ? originalBytes.toString(encoding) : originalBytes;
+      },
+    },
+    refuse: code => { throw new Error('RAVSCORE_CURRENT_HISTORY_DEMAND_' + code); },
+    ravScoreModelBinding: () => ({ modelBundleSha256: currentI }),
+    readAssistantLaterH0RetentionInput: async target => {
+      calls.push('retention'); assert.equal(target, at(1));
+      return fault === 'view-b-changed' ? { ...view, verified: { bundleContentSha256: 'c'.repeat(64) } } : view;
+    },
+    verifyPrivateProductionRuntimeBundle: async () => {
+      calls.push('ordinary'); throw new Error('SYNTHETIC_ORDINARY_VERIFIER_STOP');
+    },
+    readAuthenticatedFrozen587Predecessor: async () => {
+      calls.push('auth587'); reads++;
+      if (fault === 'auth-failed') throw new Error('SYNTHETIC_AUTH_FAILURE');
+      const handle = Object.freeze({});
+      handles.set(handle, fault === 'refresh-changed' && reads === 2
+        ? { ...snapshot, conditionsPath: originalPath + '.changed' }
+        : fault === 'snapshot-b-changed' ? { ...snapshot, descriptor: { ...descriptor, bundleContentSha256: 'c'.repeat(64) } } : snapshot);
+      return handle;
+    },
+    assertAuthenticatedFrozen587Snapshot: handle => {
+      assert(handles.has(handle), 'Only the returned DATA handle may reach the assertion seam');
+      calls.push('assert587'); return handles.get(handle);
+    },
+    readAuthenticatedCurrentCompanions: async (actualVerified, actualOriginal) => {
+      calls.push('unpack');
+      assert.strictEqual(actualVerified, verified); assert.deepEqual(actualOriginal, original);
+      assert.notDeepEqual(actualOriginal, working, 'Never unpack old B against working588 conditions');
+      if (fault === 'unpack-failed') throw new Error('SYNTHETIC_UNPACK_FAILURE');
+      return contexts;
+    },
+  };
+  return { units: assistant588CompanionCallerUnits(dependencies), calls, view, contexts };
+}
+
+test('DATA assistant588 planner companion selects fixed original587 and preserves the full working view', async () => {
+  const f = assistant588CompanionData();
+  const actual = await f.units.input(at(1));
+  assert.strictEqual(actual, f.view);
+  assert.notEqual(actual.originalConditionsSha256, actual.conditionsSha256);
+  assert.notEqual(actual.originalConditions.datasetId, actual.conditions.datasetId);
+  assert.deepEqual(f.calls, ['retention']);
+  await actual.verify();
+  assert.deepEqual(f.calls, ['retention', 'view-verify']);
+  for (const fault of ['view-b-changed', 'descriptor-changed']) {
+    const invalid = assistant588CompanionData({ fault });
+    await assert.rejects(invalid.units.input(at(1)), /RETENTION_B_CHANGED/);
+    assert.deepEqual(invalid.calls, ['retention']);
+  }
+  for (const descriptorI of ['6d8f7cca203b5f7ee5155f3c0cdb39403a02fd0eb30fecaca5070ef9f814a805',
+    '5348f3ae7401d3a09dd180d45690f56b3cfec4a30af5a4928bdd9581f9d8ebac', 'f'.repeat(64)]) {
+    const ordinary = assistant588CompanionData({ descriptorI });
+    await assert.rejects(ordinary.units.input(at(1)), /SYNTHETIC_ORDINARY_VERIFIER_STOP/);
+    assert.deepEqual(ordinary.calls, ['ordinary'], 'No old-family fallback or invented transition');
+  }
+});
+
+test('DATA assistant588 updater companion authenticates original587 twice and preserves first refusal', async () => {
+  const f = assistant588CompanionData();
+  assert.strictEqual(await f.units.companions(at(1)), f.contexts);
+  assert.deepEqual(f.calls, ['auth587', 'assert587', 'original-read', 'unpack', 'auth587', 'assert587']);
+  for (const [fault, reason, expectedCalls] of [
+    ['snapshot-b-changed', /RETENTION_B_CHANGED/, ['auth587', 'assert587']],
+    ['refresh-changed', /RETENTION_B_CHANGED/, ['auth587', 'assert587', 'original-read', 'unpack', 'auth587', 'assert587']],
+    ['auth-failed', /SYNTHETIC_AUTH_FAILURE/, ['auth587']],
+    ['unpack-failed', /SYNTHETIC_UNPACK_FAILURE/, ['auth587', 'assert587', 'original-read', 'unpack']],
+  ]) {
+    const invalid = assistant588CompanionData({ fault });
+    await assert.rejects(invalid.units.companions(at(1)), reason);
+    assert.deepEqual(invalid.calls, expectedCalls);
+  }
+  for (const descriptorI of ['6d8f7cca203b5f7ee5155f3c0cdb39403a02fd0eb30fecaca5070ef9f814a805',
+    '5348f3ae7401d3a09dd180d45690f56b3cfec4a30af5a4928bdd9581f9d8ebac', 'f'.repeat(64)]) {
+    const ordinary = assistant588CompanionData({ descriptorI });
+    await assert.rejects(ordinary.units.companions(at(1)), /SYNTHETIC_ORDINARY_VERIFIER_STOP/);
+    assert.deepEqual(ordinary.calls, ['ordinary'], 'No frozen586 fallback');
+  }
+  const originalSameFamily = assistant588CompanionData({
+    currentI: '5584d8e59f8d21785fd08b32f9beb22cf879cdb4892a11ede24eb862d9a0dca2',
+  });
+  await assert.rejects(originalSameFamily.units.companions(at(1)), /SYNTHETIC_ORDINARY_VERIFIER_STOP/);
+  assert.deepEqual(originalSameFamily.calls, ['ordinary']);
 });

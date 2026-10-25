@@ -14,7 +14,7 @@ import { inverseCurrentFamilyColdCheckpointWorkflow, currentFamilyColdCheckpoint
   assistant587ColdCheckpointCombinedWorkflowReview,
   inverseAssistant587ColdCheckpointCombinedToF83Workflow, inverseAssistant587ColdCheckpointCombinedToD5Workflow }
   from './lib/completed-private-runtime-workflow-review.mjs';
-import { inverseLatestColdProgressWorkflow, latestColdProgressWorkflowReview,
+import { inverseRelease588WorkflowUserAgents, inverseLatestColdProgressWorkflow, latestColdProgressWorkflowReview,
   assistant587LatestColdCombinedWorkflowReview,
   inverseAssistant587LatestColdCombinedTo664aWorkflow, inverseAssistant587LatestColdCombinedTo2bWorkflow }
   from './lib/completed-private-runtime-workflow-review.mjs';
@@ -1237,7 +1237,7 @@ test('actual latest progress cache selects the requested exact ID and keeps orig
 });
 
 test('assistant587 plus PR712 latest progress: actual whole composition preserves both exact Git parents', async () => {
-  const actual = (await fs.readFile(new URL('../.github/workflows/reusable-weather-build.yml', import.meta.url), 'utf8')).replaceAll('\r\n', '\n');
+  const actual = inverseRelease588WorkflowUserAgents((await fs.readFile(new URL('../.github/workflows/reusable-weather-build.yml', import.meta.url), 'utf8')).replaceAll('\r\n', '\n'), 'build');
   const row = assistant587LatestColdCombinedWorkflowReview;
   assert.equal(row.p0Parent.commit, '2b1d7a95d4201ef39e10cc9d7e52cd0f4d6243aa');
   assert.equal(row.assistantParent.commit, '664aeb46966cd0ec182599a90bcaacc6c4b609ab');
@@ -1275,7 +1275,7 @@ test('assistant587 plus PR712 latest progress: actual whole composition preserve
 });
 
 test('assistant587 plus PR712 latest progress: partial parent mutations never enter any historical inverse', async () => {
-  const actual = (await fs.readFile(new URL('../.github/workflows/reusable-weather-build.yml', import.meta.url), 'utf8')).replaceAll('\r\n', '\n');
+  const actual = inverseRelease588WorkflowUserAgents((await fs.readFile(new URL('../.github/workflows/reusable-weather-build.yml', import.meta.url), 'utf8')).replaceAll('\r\n', '\n'), 'build');
   const row = assistant587LatestColdCombinedWorkflowReview;
   assert.equal(sha(actual), row.combined.sha256);
   const changed = [
@@ -1307,4 +1307,37 @@ test('assistant587 plus PR712 latest progress: partial parent mutations never en
     assert.throws(() => project(actual, 'build', true), /ASSISTANT587_LATEST_COMBINED_ARGUMENTS/);
     assert.throws(() => project(null, 'build'), /ASSISTANT587_LATEST_COMBINED_TYPE/);
   }
+});
+
+test('release588 exact five UA fields preserve whole587 and every historical refusal',async()=>{
+  const actual=(await fs.readFile(new URL('../.github/workflows/reusable-weather-build.yml',import.meta.url),'utf8')).replaceAll('\r\n','\n');
+  assert.equal(Buffer.byteLength(actual),292886);
+  assert.equal(sha(actual),'998d3a8e11a1088363a84bfd4a0d64f7117eacc059a3cf5c0ca895f7a85e22b3');
+  assert.equal(actual.split('RavRadar/4.0.588').length,6);
+  assert.equal(actual.includes('RavRadar/4.0.587'),false);
+  const previous=inverseRelease588WorkflowUserAgents(actual,'build');
+  assert.equal(sha(previous),'e4c022274fe0d05fd3e10aff59d7a3165c67b92847a196c7ee793df68a666600');
+  assert.equal(previous,actual.replaceAll('RavRadar/4.0.588','RavRadar/4.0.587'));
+  assert.equal(inverseRelease588WorkflowUserAgents(previous,'build'),previous);
+  assert.equal(sha(inverseCompletedRuntimeWorkflow(actual,'build')),legacySha);
+  for(const project of [inverseAssistant587LatestColdCombinedTo664aWorkflow,
+    inverseAssistant587LatestColdCombinedTo2bWorkflow])
+    assert.equal(project(actual,'build'),project(previous,'build'));
+  for(const role of ['once','unknown']){
+    assert.equal(inverseRelease588WorkflowUserAgents(actual,role),actual);
+    assert.equal(inverseRelease588WorkflowUserAgents(previous,role),previous);
+  }
+  const mutations=[actual+'\n# UNREVIEWED588\n',
+    actual.replace('RavRadar/4.0.588','RavRadar/4.0.587'),
+    actual.replaceAll('RavRadar/4.0.588','RavRadar/4.0.589'),
+    actual.replace('RavRadar/4.0.588','RavRadar/4.0.588 RavRadar/4.0.588'),
+    actual.replace('test "${{ steps.full-validation.outcome }}" = success','true')];
+  for(const changed of mutations){
+    assert.notEqual(changed,actual);
+    assert.equal(inverseRelease588WorkflowUserAgents(changed,'build'),changed);
+    assert.throws(()=>inverseCompletedRuntimeWorkflow(changed,'build'));
+  }
+  assert.throws(()=>inverseRelease588WorkflowUserAgents(actual),/RELEASE588_WORKFLOW_ARGUMENTS/);
+  assert.throws(()=>inverseRelease588WorkflowUserAgents(actual,'build',true),/RELEASE588_WORKFLOW_ARGUMENTS/);
+  assert.throws(()=>inverseRelease588WorkflowUserAgents(null,'build'),/RELEASE588_WORKFLOW_TYPE/);
 });

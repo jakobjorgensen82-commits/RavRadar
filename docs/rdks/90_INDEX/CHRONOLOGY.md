@@ -1,3 +1,7 @@
+## 25. oktober 2026 — offentlig 587 og lokal 4.0.588-assistentkilde
+
+Den normale fulde vejrkæde har faktisk leveret offentlig 587/I97, og cron er genaktiveret. Fem ejerpåviste assistentfejlsvar kræver nu egen produktlevering: spørgsmålsforståelse, kalenderdag, eksisterende national rangering og fuldt understøttede faglige svar. 4.0.588 med originalbevarende append-only migration og faktiske nye C/I/T er lokalt udstedt, men ikke installeret eller offentliggjort. Normale direkte bindingskontroller består; præcis samlet kilde-/databasekontrol, sikker levering og offentlig accept er fortsat åbne. Det numeriske strømmål er lukket; fire øvrige hovedområder er åbne. Kontinuerligt vejr og reel dækning er P0. Se MASTER_LOG, CURRENT_TRUTH og privat checkpoint for de adskilte bevisgrænser.
+
 ## 21. oktober 2026 — 4.0.586 faktisk installeret; almindelig efterfølger fejler før leverandører
 
 Den præcise 586-kildekontrol med native PostgreSQL og kode-only-levering er faktisk gennemført, inklusive SQL-readback, B før S, tre serverfunktioner, Pages og offentlig kontrol. Det bevarer samme gemte vejr. Den almindelige efterfølger stopper fortsat på manglende native-endepunktsbevis før leverandører, nyt beregningscheckpoint og deploy. Loggen beviser afvist genbrug af krypteret fremdrift, ikke fysisk tab af originaler. Cron er faktisk pauset; en særskilt CURRENT-only-audit forberedes uden produktionsskrivning eller ændret model. Alle fem hovedmål til 18. november er åbne; se CURRENT_TRUTH og privat checkpoint.

@@ -1,3 +1,9 @@
+## 25. oktober — hele assistentspørgsmålet og den faktisk efterspurgte prognosedag
+
+Ejerens fem offentlige fejlsvar skal rettes som produktadfærd. Almindelige ravspørgsmål, herunder kese/ravkese, egne funktioner og god vind, må ikke afvises som uvedkommende. Bedste område på en navngiven dag skal bruge den tilsvarende eksisterende validerede nationale prognose, ikke falde stiltiende tilbage til i dag eller kræve alle zonepakker. Tvetydig dato, ukendt kvalifikation eller manglende gyldig projektion skal håndteres ærligt. Score, kildeprioritet og rå vejrdata ændres ikke.
+
+Et svar på et sammensat spørgsmål må ikke bestå kvalitetskontrollen ved kun at besvare ét led. Den nye care-viden genbruger eksisterende faglig kuratering, ikke en diagnose af et bestemt fund. Hele inputtets sikkerhed og privacy, begrænset ekstern kontekst, sprog, kvoter og normal fallback bevares. Lokal måltest, installeret kode og HTTP 200 er forskellige trin; faktisk offentlig afprøvning er fortsat et afslutningskrav. Den nye binding må ikke svække originalbevarelse, historik eller writergrænser.
+
 ## 24. oktober — lokal 587-sammenføring med den leverede DMI-kilde
 
 DMI-rettelsen er præcist kildekvalificeret og merget særskilt på den installerede 586-familie. Den senest afsluttede naturlige vejrhentning er offentligt verificeret; den næste almindelige kørsel er ved denne lokale sammenføring fortsat i DMI-arbejdet. Det er ikke offentlig 587, bevist fuld dækning eller en afsluttet assistentlevering. Kontinuerligt vejr og alle forventede timer/zoners dækning har fortsat førsteprioritet; ingen produktionsændring må ske under den aktive writer.
