@@ -1,3 +1,11 @@
+## 25. oktober — originalkontrol og afledt arbejdsvisning er to forskellige byteidentiteter
+
+Den faktiske 587-installation har bestået originalbevarelse, præcis SQL-plan, installation og databasegenlæsning. Edge- og Pages-trin blev bevidst ikke udført dér; dette er ikke offentlig 587 eller fungerende ekstern AI. Den efterfølgende almindelige vejrhentning stoppede før DMI-providerarbejdet: raw-retentionen blandede den autentificerede originale B-identitet med kontrolsummen for den migrerede arbejdskopis conditions. Den efterfølgende gamle ledger afvises korrekt mod den nye låste prognosestart; dette er ikke en påvist Copernicus-providerfejl.
+
+Den lokale rettelse udleder en særskilt originalkontrolsum fra faktisk læste originalbytes, matcher hele størrelse og SHA-256 til den verificerede B-fortegnelse og genkontrollerer de autentificerede originaler. Kun B-grænsen bruger denne kontrolsum. Arbejdskopiens kontrolsum, sourceHashes og den reelle arbejds-S-generation bevares. Den almindelige uændrede Python-kontrol skal fortsat afvise ændrede originaler. Ingen ny model-/SQL-udstedelse, nulstilling eller historieomskrivning. Målrettede prøver, præcis samlet kildekontrol og faktisk normal levering skal dokumenteres hver for sig i checkpointet.
+
+Den numeriske strømrettelse er særskilt produktionsverificeret; fire øvrige hovedområder er åbne. Vejrhentning og reel dækning er P0. SOURCE, statistik og automatisk sletning er fortsat inaktive. Morgenens aftalte vejrhentning må ikke forsinkes af nye sideleverancer; tidsplan og krav om ingen overlap bevares.
+
 ## 24. oktober — afgrænset rettelse af checkpointdestination før assistentbinding
 
 En normal målprøve gennem den ægte, uændrede 586-checkpointlæser reproducerer samme konkrete stifejl både før SQL-installationen og i den efterfølgende almindelige vejrhentnings overgang. Begge aktuelle kaldere vælger nu den normale `.cache/ravscore-continuation-checkpoint/checkpoint.json` under deres allerede ejede midlertidige rod. Læserens sti-, original-, autentificerings- og databevarelseskrav lempes ikke. Prøven bruger begge faktiske destinationskonstruktioner; hver tidligere sti afvises før requester, og begge rettede stier når en syntetisk manglende række uden at oprette filer. Det er ikke bevis for gyldige produktionsoriginaler eller for, at dette var den første fejl i installationsforsøget.

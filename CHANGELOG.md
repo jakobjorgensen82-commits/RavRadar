@@ -1,3 +1,7 @@
+## 25. oktober — original B-kontrol adskilt fra assistentens arbejdsdata
+
+Den afgrænsede 587-rettelse bevarer originalpakkens egen conditions-kontrolsum i raw-retentionens B-grænse. Den afledte arbejdskopis sti og kontrolsum samt den faktisk installerede arbejds-S-generation bevares særskilt. Begge kildeled kontrolleres fortsat; Python-grænsen lempes ikke. Ingen ændring af vejrdata, scoreformel, modelbinding, gamle migrationer, kildeprioritet eller geometri. Præcis kildekontrol og en ny almindelig vejrgenerations offentlige effekt er fortsat særskilte krav.
+
 ## Ikke udgivet — korrekt checkpointdestination før assistentbinding på 4.0.587
 
 - Retter de midlertidige scorecheckpointstier både før SQL og i den efterfølgende almindelige vejrhentnings overgang til den dedikerede cachesti, som den uændrede normale læser kræver.

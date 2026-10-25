@@ -1,3 +1,4 @@
+import { ASSISTANT587_ORIGINAL_RAW_BOUNDARY_TEST_REVIEW, inverseAssistant587OriginalRawBoundaryTestInput } from './lib/alternative-c-caller-test-input.mjs';
 import { inverseAssistant587OriginalCompanionTestInput, inverseAlternativeCCaller, inverseCurrentNativeOriginalConsumerTestInput, CURRENT_NATIVE_ORIGINAL_CONSUMER_TEST_REVIEW, inverseCurrent586EndpointDiagnosticTestInput, inverseCurrent586IdentityRefinementTestInput, inverseCurrent586SharedProjectionExportTestInput, inverseNationalCoherentWorkTestInput, NATIONAL_COHERENT_WORK_TEST_REVIEW, inverseNationalCapacityTestInput, NATIONAL_COHERENT_CAPACITY_TEST_REVIEW, inverseCoherentDistinctCaptureFramesTestInput, COHERENT_DISTINCT_CAPTURE_FRAME_TEST_REVIEW } from './lib/alternative-c-caller-test-input.mjs';
 import { inverseJointCoherentControllerTestInput, JOINT_NATIONAL_COHERENT_CONTROLLER_TEST_REVIEW } from './lib/alternative-c-caller-test-input.mjs';
 import { inverseCoherentRawTransportLifetimeTestInput, COHERENT_RAW_TRANSPORT_LIFETIME_TEST_REVIEW } from './lib/alternative-c-caller-test-input.mjs';
@@ -710,6 +711,44 @@ test('normal native originals consumers: A2 bank retention companions and newer 
   assert.equal(JSON.stringify(oldDocument),oldBefore);assert.equal(JSON.stringify(partialDocument),partialBefore);
   assert.deepEqual(await fs.readFile(file),saved);
   complete=true;
+});
+
+test('original RAW boundary oracle: exact new whole planner recovers fd2b before every old oracle', () => {
+  const row = ASSISTANT587_ORIGINAL_RAW_BOUNDARY_TEST_REVIEW;
+  const current = readFileSync(new URL('../' + row.path, import.meta.url), 'utf8').replace(/\r\n/g, '\n');
+  assert.equal(Buffer.byteLength(current), row.after.bytes);
+  assert.equal(sha(current), row.after.sha256);
+  const original = inverseAssistant587OriginalRawBoundaryTestInput(current, row.path);
+  assert.equal(Buffer.byteLength(original), row.before.bytes);
+  assert.equal(sha(original), row.before.sha256);
+  assert.equal(inverseAssistant587OriginalRawBoundaryTestInput(original, row.path), original);
+  assert.equal(inverseCoherentRawTransportLifetimeTestInput(current, row.path),
+    inverseCoherentRawTransportLifetimeTestInput(original, row.path));
+  assert.equal(inverseNationalCoherentWorkTestInput(current, row.path),
+    inverseNationalCoherentWorkTestInput(original, row.path));
+  let replay = original;
+  for (const [before, after] of row.hunks) {
+    assert.equal(replay.split(before).length, 2);
+    replay = replay.replace(before, () => after);
+    assert.equal(current.split(after).length, 2);
+    const changed = current.replace(after, () => 'X' + after.slice(1));
+    assert.notEqual(changed, current);
+    assert.throws(() => inverseAssistant587OriginalRawBoundaryTestInput(changed, row.path),
+      /ALTERNATIVE_C_TEST_INPUT_CHANGED/);
+    assert.throws(() => inverseNationalCoherentWorkTestInput(changed, row.path),
+      /ALTERNATIVE_C_TEST_INPUT_CHANGED/);
+  }
+  assert.equal(replay, current);
+  assert.throws(() => inverseAssistant587OriginalRawBoundaryTestInput(current + '// unreviewed drift\n', row.path),
+    /ALTERNATIVE_C_TEST_INPUT_CHANGED/);
+  assert.throws(() => inverseNationalCoherentWorkTestInput(current + '// unreviewed drift\n', row.path),
+    /ALTERNATIVE_C_TEST_INPUT_CHANGED/);
+  assert.throws(() => inverseAssistant587OriginalRawBoundaryTestInput(current, 'scripts/unknown.mjs'),
+    /ALTERNATIVE_C_TEST_INPUT_CHANGED/);
+  assert.throws(() => inverseAssistant587OriginalRawBoundaryTestInput({}, row.path),
+    /ALTERNATIVE_C_TEST_INPUT_CHANGED/);
+  assert.throws(() => inverseAssistant587OriginalRawBoundaryTestInput(current, row.path, true),
+    /ALTERNATIVE_C_TEST_INPUT_CHANGED/);
 });
 
 test('native-original planner oracle preserves complete earlier source and actual collector identity', () => {
