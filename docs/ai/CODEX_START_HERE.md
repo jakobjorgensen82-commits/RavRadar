@@ -1,3 +1,11 @@
+## 25. oktober — præcis mobilkontrol efter selvrapporteret turstart
+
+Den almindelige vejrhentning passerede den rettede original-/arbejdsgrænse, leverandører, beregning, runtimekontrol og hård databevarelse. Den stoppede før Pages-upload, fordi én af de 55 artifactkontroller stadig krævede den gamle turstart uden argument. Appens godkendte 587-kalder bruger allerede observationOrigin:'self-reported'. Den lokale rettelse ændrer kun denne ene præcise testliteral; øvrige layout-, GPS-, parallelstart-, cache-, manifest- og privacykrav bevares. Hele samme normale mål er reproduceret rød og derefter grøn med uændrede faktiske input.
+
+Dette er ikke en produkt-, model-, versions- eller SQL-ændring og ikke offentlig levering. Den særskilte operationelle admin-synkafvisning af central profil undersøges fortsat; den må ikke skjules eller udlægges som lukket af mobilprøven. Den nye kilde skal kvalificeres normalt, og de faktisk gemte beregnings-/genoptagelsesdata foretrækkes frem for ny vejrhentning. Ingen kontrol må springes over. Aktuel evidens, checkpointvalg og skriveudfald står privat hos ROOT.
+
+587-SQL er installeret og genlæst; ny Edge-/Pages-levering og offentlig I97 mangler stadig. Cron, SOURCE, samlet statistik og automatisk sletning forbliver inaktive. Det nationale numeriske strømmål er lukket; fire øvrige hovedområder er åbne. Ældre daterede afventninger nedenfor erstattes kun på de konkrete dokumenterede punkter.
+
 ## 24. oktober — privat 587-sammenføring med P0s køobservation og fair tidsandel
 
 Den præcist kvalificerede 587-kilde på 888e bevares, og de afgrænsede P0-ændringer fra 717 forberedes ovenpå. 716s køobservation er særskilt kildeleveret på den installerede 586-familie; 717s fair tidsandel afventer fortsat sin præcise samlede kontrol og sikre main-levering. Denne private sammenføring er hverken anvendt, prøvet, installeret eller offentliggjort. Fejler 717, må dette efterbillede ikke leveres.
