@@ -1,6 +1,7 @@
 import {inverseReviewedAccountStatisticsAssistantSourceScripts} from './lib/account-statistics-assistant-package-review.mjs';
 import { inverseAlternativeCCaller, inverseAssistant587OriginalCompanionTestInput,
-  ASSISTANT587_ORIGINAL_COMPANION_TEST_REVIEW } from './lib/alternative-c-caller-test-input.mjs';
+  ASSISTANT587_ORIGINAL_COMPANION_TEST_REVIEW,
+  inverseAssistant587OriginalRawBoundaryTestInput } from './lib/alternative-c-caller-test-input.mjs';
 import { inverseCurrentNativeOriginalProducerTestInput, CURRENT_NATIVE_ORIGINAL_PRODUCER_TEST_REVIEW,
   inverseCurrentFamilyColdTargetTestInput }
   from './lib/archived-weather-restart-updater-test-input.mjs';
@@ -1209,9 +1210,14 @@ test('actual native-original companion caller stays unprojected and declared in 
   assert.match(actual, /    archivedWeatherRestartView,\n    protectedNativeCurrentCompanionContexts,\n  \)/);
   assert.equal(actual.split('error.nativeOriginalProofCode = /^DMI_NATIVE_PROOF_[A-Z_]{1,80}$/.test(proof.code)').length, 2);
   const actualPlanner = (await fs.readFile(new URL('./plan-ravscore-current-history.mjs', import.meta.url), 'utf8')).replace(/\r\n/g, '\n');
-  assert.match(actualPlanner, /const \{ verified, conditions, originalConditions, conditionsPath: file, conditionsSha256, verify \} =/);
+  assert.match(actualPlanner, /const \{ verified, conditions, originalConditions, originalConditionsSha256,\n    conditionsPath: file, conditionsSha256, verify \} =/);
   assert.match(actualPlanner, /await readAuthenticatedCurrentCompanions\(verified, originalConditions \?\? conditions\)/);
-  const planner = inverseAssistant587OriginalCompanionTestInput(actualPlanner, 'scripts/plan-ravscore-current-history.mjs');
+  const originalBoundaryPlanner = inverseAssistant587OriginalRawBoundaryTestInput(actualPlanner, 'scripts/plan-ravscore-current-history.mjs');
+  assert.notEqual(originalBoundaryPlanner, actualPlanner, 'The actual original-B boundary is checked before older whole-source oracles');
+  assert.match(originalBoundaryPlanner, /const \{ verified, conditions, originalConditions, conditionsPath: file, conditionsSha256, verify \} =/);
+  assert.throws(() => inverseAssistant587OriginalRawBoundaryTestInput(actualPlanner + '\n', 'scripts/plan-ravscore-current-history.mjs'),
+    /ALTERNATIVE_C_TEST_INPUT_CHANGED:ORIGINAL_RAW/);
+  const planner = inverseAssistant587OriginalCompanionTestInput(originalBoundaryPlanner, 'scripts/plan-ravscore-current-history.mjs');
   assert.equal(planner.split("from './read-authenticated-dmi-current-companions.mjs';").length, 2);
   assert.match(planner, /await readCurrentPrivateRuntimeCompanionInput\(productionReferenceAt\)/);
   assert.match(planner, /await readAuthenticatedCurrentCompanions\(verified, conditions\)/);
@@ -1230,7 +1236,9 @@ test('actual native-original companion caller stays unprojected and declared in 
 
 test('assistant587 original companion inverse preserves both whole predecessors and rejects changed caller deltas', async () => {
   for (const row of ASSISTANT587_ORIGINAL_COMPANION_TEST_REVIEW) {
-    const actual = (await fs.readFile(new URL('../' + row.path, import.meta.url), 'utf8')).replace(/\r\n/g, '\n');
+    const rawActual = (await fs.readFile(new URL('../' + row.path, import.meta.url), 'utf8')).replace(/\r\n/g, '\n');
+    const actual = row.path === 'scripts/plan-ravscore-current-history.mjs'
+      ? inverseAssistant587OriginalRawBoundaryTestInput(rawActual, row.path) : rawActual;
     assert.equal(Buffer.byteLength(actual), row.after.bytes);
     assert.equal(digest(actual), row.after.sha256);
     const before = inverseAssistant587OriginalCompanionTestInput(actual, row.path);

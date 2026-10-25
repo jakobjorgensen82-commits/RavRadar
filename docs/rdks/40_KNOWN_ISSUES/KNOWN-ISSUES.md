@@ -1,3 +1,11 @@
+## 25. oktober — råhistorikkens originalgrænse efter 587-overgang
+
+Den nye kildekontrol bestod native PostgreSQL, men standsede på to gamle testlæserforventninger i den normale entrypointgruppe. Kun disse testinput føres gennem den eksisterende strenge P0-inverse før de uændrede hele companion-orakler; selve nye kalders kilde kontrolleres fortsat direkte. Ingen produktkontrol eller gammel pin ændres. Ny samlet kontrol og offentlig effekt er stadig åbne.
+
+Påvist normalfejl: den bevarede originale B-pakke og den migrerede arbejdskopi har forskellige conditions-bytes. Råhistorikplanen brugte arbejdskopiens kontrolsum i original B-grænsen, og den uændrede Python-kontrol afviste dette før DMI-providerarbejde. Det efterfølgende ledger-startafslag er en følge af, at normal opdatering ikke blev nået; der er ikke påvist en særskilt Copernicus-providerårsag.
+
+Lokal rettelse: originalkontrolsummen beregnes og kontrolleres særskilt mod den autentificerede B-fortegnelse, mens arbejdssti, arbejdskontrolsum, sourceHashes og den faktiske arbejds-S-generation bevares. Der gives ingen ny fallback-, råfil-, numerisk eller historisk adgang, og ændrede originaler skal stadig afvises. Præcis samlet kontrol og faktisk offentlig virkning er åbne. Den installerede 587-SQL geninstalleres ikke automatisk; ukendt skriveudfald kræver genlæsning.
+
 ## 24. oktober — afgrænset rettelse af checkpointdestination før assistentbinding
 
 En normal målprøve gennem den ægte, uændrede 586-checkpointlæser reproducerer samme konkrete stifejl både før SQL-installationen og i den efterfølgende almindelige vejrhentnings overgang. Begge aktuelle kaldere vælger nu den normale `.cache/ravscore-continuation-checkpoint/checkpoint.json` under deres allerede ejede midlertidige rod. Læserens sti-, original-, autentificerings- og databevarelseskrav lempes ikke. Prøven bruger begge faktiske destinationskonstruktioner; hver tidligere sti afvises før requester, og begge rettede stier når en syntetisk manglende række uden at oprette filer. Det er ikke bevis for gyldige produktionsoriginaler eller for, at dette var den første fejl i installationsforsøget.

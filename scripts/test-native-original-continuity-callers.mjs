@@ -689,3 +689,148 @@ test('assistant binding and ordinary transition destinations satisfy the genuine
     await assert.rejects(fs.access(root),/ENOENT/);
   });
 });
+// Afgrænset data-/kalderprøve: ingen autentificeret B/S, GRIB eller ny adgang.
+test('assistant later-H0 original RAW boundary preserves working hashes and actual S generation',async t=>{
+  const {createHash}=await import('node:crypto'),{compileFunction}=await import('node:vm');
+  const {spawnSync}=await import('node:child_process'),os=await import('node:os');
+  const sha=value=>createHash('sha256').update(value).digest('hex');
+  const read=async relative=>(await fs.readFile(path.join(ROOT,relative),'utf8')).replace(/\r\n/g,'\n');
+  const ordinary=await read('scripts/assistant-later-h0-runtime-transition.mjs');
+  const planner=await read('scripts/plan-ravscore-current-history.mjs');
+  const cut=(text,begin,end)=>{
+    assert.equal(text.split(begin).length,2);assert.equal(text.split(end).length,2);
+    const a=text.indexOf(begin)+begin.length,b=text.indexOf(end,a);assert(b>a);return text.slice(a,b);
+  };
+  // De faktiske retur-/boundarykonstruktioner; ingen kopi af en alternativ læser.
+  const returned=cut(ordinary,'    return snapshot.verified;\n  };\n',
+    '\n}\nexport async function readAssistantLaterH0RetentionInput');
+  const construct=compileFunction('return (async()=>{'+returned+'})();',
+    ['snapshot','result','conditionsPath','bytes','verify','fs','sha','same','assert','json']);
+  const boundarySource=cut(planner,
+    '    ? await readDmiBulkDocument(process.env.DMI_PART_CONTINUITY_DONOR_PATH) : null;\n',
+    '  const liveCurrentPilot = await readLiveCurrentPilot(registry), zones = (await readFixed(\'data/zones.geojson\')).json;');
+  const boundary=compileFunction(boundarySource+'\nreturn boundary;',
+    ['verified','checkpoint','originalConditionsSha256','conditionsSha256','refuse']);
+  const hashes=planner.match(/sourceHashes: (\{ conditions: baseline\?\.sha256 \?\? null,[\s\S]*?activation: activation\?\.sha256 \?\? null \})/g);
+  assert.equal(hashes?.length,1);
+  const sourceHashes=compileFunction('return ('+hashes[0].slice('sourceHashes: '.length)+');',
+    ['baseline','checkpointFile','activation']);
+  const tmp=await fs.realpath(os.tmpdir()),root=await fs.mkdtemp(path.join(tmp,'rr-original-raw-boundary-'));
+  const owned=await fs.lstat(root,{bigint:true});let complete=false;
+  t.after(async()=>{
+    assert.equal(await fs.realpath(root),root);assert.equal(path.dirname(root),tmp);
+    const now=await fs.lstat(root,{bigint:true});assert.equal(now.dev,owned.dev);assert.equal(now.ino,owned.ino);
+    if(complete)await fs.rm(root,{recursive:true}); // Kun denne fødselskontrollerede prøve.
+  });
+  const write=async(relative,bytes)=>{const file=path.join(root,relative);
+    await fs.mkdir(path.dirname(file),{recursive:true});await fs.writeFile(file,bytes,{flag:'wx'});return file;};
+  const original=Buffer.from('{"synthetic":"original586","coastalParts":{}}\n');
+  const working=Buffer.from('{"synthetic":"working587","coastalParts":{}}\n');
+  const originalPath=await write('private/bundle/payload/data/live/conditions.json',original);
+  const conditionsPath=await write('data/live/conditions.json',working);
+  const checkpoint={generationSha256:sha('new-working-S'),synthetic:'working-checkpoint'};
+  const checkpointBytes=Buffer.from(JSON.stringify(checkpoint)+'\n');
+  await write('.cache/ravscore-continuation-checkpoint/checkpoint.json',checkpointBytes);
+  const verified={datasetId:'rr-synthetic-original-boundary',productionReferenceAt:'2026-10-24T16:00:00.000Z',
+    bundleContentSha256:sha('synthetic-original-B'),files:[{relativePath:'data/live/conditions.json',
+      bytes:original.length,sha256:sha(original)}]};
+  await write('private/bundle/manifest.json',JSON.stringify(verified)+'\n');
+  const snapshot={verified,conditionsPath:originalPath},result={conditions:JSON.parse(working)};
+  let verifiedCalls=0;
+  // Inert kaldestedsgrænse, IKKE en falsk autentificeringsfunktion eller opaque handle.
+  const verify=async()=>{verifiedCalls++;return verified;};
+  const invoke=(view=snapshot,check=verify)=>construct(view,result,conditionsPath,working,check,fs,sha,
+    assert.deepEqual,assert,async file=>JSON.parse(await fs.readFile(file,'utf8')));
+  const value=await invoke();
+  assert.equal(verifiedCalls,1,'Returen afventer den eksisterende friske fuldkontrol');
+  assert.strictEqual(value.verify,verify);assert.strictEqual(value.verified,verified);
+  assert.strictEqual(value.conditions,result.conditions);assert.equal(value.conditionsPath,conditionsPath);
+  assert.equal(value.conditionsSha256,sha(working));
+  assert.deepEqual(value.originalConditions,JSON.parse(original));
+  const refuse=code=>{throw new Error(code);};
+  const bound=boundary(value.verified,checkpoint,value.originalConditionsSha256,value.conditionsSha256,refuse);
+  const actualHashes=sourceHashes({sha256:'sha256:'+sha(working)},{sha256:'sha256:'+sha(checkpointBytes)},null);
+  assert.deepEqual(actualHashes,{conditions:'sha256:'+sha(working),checkpoint:'sha256:'+sha(checkpointBytes),activation:null});
+  const partBytes=Buffer.from('{"zones":{"SYNTHETIC":[{"partId":"PART","waterPoint":[1,2]}]}}');
+  const demand={schemaVersion:2,kind:'RAVSCORE_CURRENT_HISTORY_ACQUISITION_DEMAND',
+    productionReferenceAt:'2026-10-24T20:00:00.000Z',modelBinding:{synthetic:true},
+    registrySha256:'sha256:'+sha(partBytes),sourceHashes:actualHashes,demands:[],
+    rawRetention:{schemaVersion:1,kind:'COMMITTED_POST_H0_UNKNOWN_RAW_RETENTION',boundary:bound,captures:[]}};
+  await write('.cache/ravscore-current-history-demand.json',JSON.stringify(demand)+'\n');
+  // Den uændrede normale Python-læser/configurator, med samme import-safe
+  // ecCodes-seam som test-dmi-native-provenance.py; ingen dekodning/netværk.
+  const python=String.raw`
+import importlib.util, json, os, pathlib, socket, sys, types
+repo, root = map(pathlib.Path, sys.argv[1:])
+sys.path.insert(0, str(repo / 'scripts'))
+def no_network(*args, **kwargs): raise AssertionError('UNEXPECTED_NETWORK')
+socket.create_connection = no_network
+socket.socket.connect = no_network
+eccodes = types.ModuleType('eccodes')
+eccodes.OutOfAreaError = type('OutOfAreaError', (Exception,), {})
+for name in ('codes_get','codes_get_array','codes_get_elements','codes_grib_find_nearest','codes_grib_new_from_file','codes_release'):
+    setattr(eccodes, name, no_network)
+sys.modules['eccodes'] = eccodes
+spec = importlib.util.spec_from_file_location('raw_boundary_normal_producer', repo / 'scripts/update-dmi-bulk.py')
+p = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(p)
+p.ROOT, p.RAW_DIR, p.CACHE_ONLY = root, root / '.cache/dmi-grib', False
+f = root / '.cache/ravscore-current-history-demand.json'
+os.environ.update(DMI_BULK_REQUIRE_COMMITTED_RAW_RETENTION='true', DMI_BULK_CURRENT_HISTORY_DEMAND_PATH=str(f),
+    RAVRADAR_PRIVATE_RUNTIME_ROOT=str(root/'private'), RAVRADAR_PRIVATE_RUNTIME_BUNDLE=str(root/'private/bundle'))
+raw = f.read_bytes(); document = json.loads(raw)
+parts = b'{"zones":{"SYNTHETIC":[{"partId":"PART","waterPoint":[1,2]}]}}'
+read = lambda: p.read_current_history_demands(json.loads(parts), parts, [{'partId':'PART'}], [], document['productionReferenceAt'])
+assert read() == {}
+assert p._RAW_CURRENT_PROTECTED == {}
+def refused(change, expected):
+    changed = json.loads(raw); change(changed); f.write_text(json.dumps(changed), encoding='utf-8')
+    try: read()
+    except (ValueError, p.AssetDownloadCleanupUnproven) as error: assert str(error) == expected, str(error)
+    else: raise AssertionError('EXPECTED_REFUSAL')
+    finally: f.write_bytes(raw)
+refused(lambda x: x['rawRetention']['boundary'].update(conditionsSha256=x['sourceHashes']['conditions'][7:]), 'DMI_RAW_CURRENT_B_BOUNDARY_CHANGED')
+refused(lambda x: x['rawRetention']['boundary'].update(checkpointGenerationSha256='0'*64), 'DMI_RAW_CURRENT_B_BOUNDARY_CHANGED')
+refused(lambda x: x['sourceHashes'].update(conditions='sha256:'+x['rawRetention']['boundary']['conditionsSha256']), 'DMI_CURRENT_HISTORY_DEMAND_INPUT_MISMATCH')
+original = root/'private/bundle/payload/data/live/conditions.json'
+saved = original.read_bytes(); original.write_bytes(saved+b' ')
+try: read()
+except p.AssetDownloadCleanupUnproven as error: assert str(error) == 'DMI_RAW_CURRENT_B_BOUNDARY_CHANGED'
+else: raise AssertionError('CHANGED_ORIGINAL_ACCEPTED')
+finally: original.write_bytes(saved)
+working = root/'data/live/conditions.json'
+saved = working.read_bytes(); working.write_bytes(saved+b' ')
+try: read()
+except ValueError as error: assert str(error) == 'DMI_CURRENT_HISTORY_DEMAND_INPUT_MISMATCH'
+else: raise AssertionError('CHANGED_WORKING_ACCEPTED')
+finally: working.write_bytes(saved)
+assert read() == {}
+print('NORMAL_RAW_BOUNDARY_PASS old-working-hash-refused original-and-working-distinct new-S-preserved')
+`;
+  const child=spawnSync(process.env.PYTHON||'python',['-B','-c',python,ROOT,root],
+    {cwd:ROOT,encoding:'utf8',timeout:30000,maxBuffer:1024*1024,
+      env:{...process.env,PYTHONDONTWRITEBYTECODE:'1',PYTHONUTF8:'1'}});
+  assert.equal(child.error,undefined);assert.equal(child.signal,null);
+  assert.equal(child.status,0,child.stderr);assert.match(child.stdout,/^NORMAL_RAW_BOUNDARY_PASS /);
+  assert.equal(value.originalConditionsSha256,sha(original));
+  assert.notEqual(value.originalConditionsSha256,value.conditionsSha256);
+  assert.equal(bound.conditionsSha256,sha(original));assert.equal(bound.checkpointGenerationSha256,checkpoint.generationSha256);
+  assert.equal(boundary(verified,checkpoint,undefined,sha(original),refuse).conditionsSha256,sha(original),
+    'Normal ikke-overgang beholder den eksisterende hash');
+  for(const hash of [sha(working),'0'.repeat(64)])assert.throws(
+    ()=>boundary(verified,checkpoint,hash,sha(working),refuse),/RETENTION_B_CHANGED/);
+  assert.throws(()=>boundary({...verified,files:[]},checkpoint,sha(original),sha(working),refuse),/RETENTION_B_CHANGED/);
+  const first=new Error('SYNTHETIC_FRESH_VERIFY_REFUSED');
+  await assert.rejects(invoke(snapshot,async()=>{throw first;}),error=>error===first);
+  for(const entry of [null,{...verified.files[0],bytes:original.length+1},
+    {...verified.files[0],sha256:sha(working)}]){
+    const calls=verifiedCalls;
+    await assert.rejects(invoke({...snapshot,verified:{...verified,files:entry?[entry]:[]}}));
+    assert.equal(verifiedCalls,calls,'Forkert originalinventar afvises før retur');
+  }
+  await fs.writeFile(originalPath,Buffer.concat([original,Buffer.from(' ')]));
+  await assert.rejects(invoke(),/Original B conditions bytes/);await fs.writeFile(originalPath,original);
+  assert.deepEqual(await fs.readFile(originalPath),original);assert.deepEqual(await fs.readFile(conditionsPath),working);
+  assert.deepEqual(await fs.readFile(path.join(root,'.cache/ravscore-continuation-checkpoint/checkpoint.json')),checkpointBytes);
+  complete=true;
+});

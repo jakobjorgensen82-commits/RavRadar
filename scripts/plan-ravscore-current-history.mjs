@@ -575,7 +575,8 @@ export function diagnoseCurrent586SelectedEndpoints(options = {}) {
 
 async function readCommittedRawCurrentRetention(registry, checkpointFile, productionReferenceAt,
   prepareCachedNativeOriginals = false) {
-  const { verified, conditions, originalConditions, conditionsPath: file, conditionsSha256, verify } =
+  const { verified, conditions, originalConditions, originalConditionsSha256,
+    conditionsPath: file, conditionsSha256, verify } =
     await readCurrentPrivateRuntimeCompanionInput(productionReferenceAt);
   if (!checkpointFile) refuse('RETENTION_B_CHANGED');
   const work = await fs.mkdtemp(path.join(os.tmpdir(), 'rr-raw-retention-'));
@@ -600,8 +601,12 @@ async function readCommittedRawCurrentRetention(registry, checkpointFile, produc
   // a guessed document or a freshly resealed/copy-labelled native receipt.
   const historicalBulk = process.env.DMI_PART_CONTINUITY_DONOR_PATH
     ? await readDmiBulkDocument(process.env.DMI_PART_CONTINUITY_DONOR_PATH) : null;
+  const rawConditionsSha256 = originalConditionsSha256 ?? conditionsSha256;
+  const originalEntry = verified.files.find(row => row.relativePath === 'data/live/conditions.json');
+  if (!originalEntry || originalEntry.sha256 !== rawConditionsSha256) refuse('RETENTION_B_CHANGED');
   const boundary = { datasetId: verified.datasetId, productionReferenceAt: verified.productionReferenceAt,
-    bundleContentSha256: verified.bundleContentSha256, checkpointGenerationSha256: checkpoint.generationSha256, conditionsSha256 };
+    bundleContentSha256: verified.bundleContentSha256, checkpointGenerationSha256: checkpoint.generationSha256,
+    conditionsSha256: rawConditionsSha256 };
   const liveCurrentPilot = await readLiveCurrentPilot(registry), zones = (await readFixed('data/zones.geojson')).json;
   if (preamble !== null) {
     await preamble.assertCoherentCurrentWorkInputs(workingInputs);

@@ -1,3 +1,15 @@
+## 25. oktober — snæver original-/arbejdsgrænse for den installerede assistentbinding
+
+- [x] Native PostgreSQL faktisk bestået på første præcise P0-kilde; den senere sourcefejl er afgrænset til to historiske entrypoint-testlæsere.
+- [x] Kun de to læserinput tilkoblet den eksisterende strenge P0-inverse; direkte ny kalderkontrol, gamle hele pins og alle mutationsafslag bevares. Ingen ny produkt-, model-, SQL- eller håndbogsændring.
+- [ ] Ny samlet kildekontrol og faktisk almindelig levering; det tidligere nativebevis er ikke et nyt samlet PASS.
+
+- [x] Faktisk 587-SQL-installation og databasegenlæsning; dette er ikke offentlig Edge-/Pages- eller AI-effekt.
+- [x] Første konkrete normale stop afgrænset til raw-retentionens blanding af original B-identitet og arbejdskopiens conditions-kontrolsum, før providerarbejde.
+- [x] Lokal producentrettelse holder originalkontrolsum og arbejdsfilernes egne kontrolsummer adskilt; oprindelig B-fortegnelse og frisk autentificeret genkontrol kræves stadig. Arbejds-S-generation og Python-afvisninger bevares.
+- [ ] Præcis ny kildekvalifikation og faktisk almindelig vejrhentning med B før S, Edge-/Pages-levering og offentlig kontrol.
+- [ ] De fire øvrige hovedmål; SOURCE, statistik og automatisk sletning forbliver inaktive. Kontinuerligt vejr og alle forventede zone-/timer er P0.
+
 ## 24. oktober — afgrænset rettelse af checkpointdestination før assistentbinding
 
 En normal målprøve gennem den ægte, uændrede 586-checkpointlæser reproducerer samme konkrete stifejl både før SQL-installationen og i den efterfølgende almindelige vejrhentnings overgang. Begge aktuelle kaldere vælger nu den normale `.cache/ravscore-continuation-checkpoint/checkpoint.json` under deres allerede ejede midlertidige rod. Læserens sti-, original-, autentificerings- og databevarelseskrav lempes ikke. Prøven bruger begge faktiske destinationskonstruktioner; hver tidligere sti afvises før requester, og begge rettede stier når en syntetisk manglende række uden at oprette filer. Det er ikke bevis for gyldige produktionsoriginaler eller for, at dette var den første fejl i installationsforsøget.
