@@ -1,3 +1,7 @@
+## 25. oktober — manuel turgenindsendelse bevarer originalen
+
+Den normale manuelle turkalder er rettet efter reproduceret nyt tidsstempel og manglende ejer-/indholdsafvisning ved samme ID. Genforsøg bruger den præcise oprindelige registrering og kræver stadig ny normal kvittering. Ændret ejer, indhold eller kø afvises før skrivning eller transport; manglende oprindeligt anonymt ID erstattes ikke. Seks regressioner går fra rødt til grønt, og hele den normale uploadprøve består i den samlede 588-komposition. De to berørte kildeblade er uden for C98/I97/T12, som bevares sammen med alle 67 SQL-filer. Den private ratingpakke indgår ikke. Ny præcis samlet kildekontrol og offentlig virkning udestår; ingen produktionsændring under aktiv writer.
+
 ## 25. oktober — brugerdata og deling sammenført med udstedt 588
 
 Den kvalificerede brugerdata-/delingskilde er lokalt sammenført med assistentens udstedte 588. Begge ægte historier, alle 67 migrationer og hele C98/I97/T12 bevares; der udstedes ingen ny binding. Den historiske dashboardprøves 587-importforventning er først reproduceret og derefter håndteret med en helfilskontrolleret, test-only versionsinverse. Den aktuelle rendering og gamle afvisninger bevares. Berørte normale lokale prøver består; ny præcis samlet kildekontrol, installation og offentlig virkning er fortsat åbne. Statistik, automatisk sletning, SOURCE og de private rating-/same-ID-kandidater aktiveres ikke. Almindelig vejrhentning har førsteprioritet, og ingen produktion ændres under aktiv writer.

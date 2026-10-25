@@ -915,6 +915,10 @@ De 23 normale målprøver består efter faktisk lokal integration, uden fejl ell
 
 ## 89.208 Egne ture, sikker eksport og afgrænsede assistentopfølgninger
 
+Hvis en manuel turindberetning afbrydes, skal et genforsøg sende den samme oprindelige tur med det samme tidspunkt. Det må ikke oprette en ny registrering eller ændre turens indhold. En anden konto må ikke overtage turen, og en ændret tur skal afvises, før noget gemmes eller sendes.
+
+Et genforsøg kræver stadig en ny bekræftelse fra lageret, før turen vises som gemt. Den klargjorte rettelse har bestået den normale lokale prøve; præcis kildekontrol og offentlig afprøvning mangler fortsat. Den ændrer ikke statistikvalg, scoremodel eller vejrdata.
+
 Den anden kildekontrol stoppede i en testobservatør: ni native-prøver bestod, og én afviste et procesnavn. Den afviste tekst er ukendt. npm ændrer dokumenteret sit procesnavn under opstart. Testen følger nu kun disse afgrænsede navnetilstande efter dobbelt kontrol af den samme fastholdte procesidentitet og præcise programfil. Alle øvrige ejerskabs-, låse-, luknings- og tidskontroller bevares. En lokal helperprøve med 17 syntetiske delkontroller består; næste præcise Linux- og fulde kildekontrol mangler stadig. Produktfunktioner, bindinger og offentlig drift ændres ikke af denne testrettelse.
 
 Den første kildekontrol fandt to forældede testopstillinger. De følger nu de eksisterende sikkerhedskrav og appens faktiske emnetilstand. De normale målprøver består; gamle kontroller bevares. Produktfunktioner og modelbindinger ændres ikke af denne testrettelse. Ny præcis kildekontrol og offentlig levering mangler stadig.

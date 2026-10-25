@@ -1,3 +1,9 @@
+## 25. oktober — samme manuelle tur skal genforsøges uden ændrede originaler
+
+Den normale manuelle indsendelse kunne ved samme tur-ID danne et nyt indsendelsestidspunkt og ændre registreringen ved genforsøg. Fejlen er reproduceret i de faktiske normale kaldere. Rettelsen genbruger den fulde oprindelige registrering, kræver samme ejer og uændret indhold og afviser en modstridende kø før skrivning eller transport. Et allerede sendt forsøg kræver stadig en frisk normal serverkvittering; et ukendt udfald kaldes ikke gemt. Ny konto efter afventning afvises fortsat.
+
+Den afgrænsede rettelse og seks regressioner er sammenført med brugerdata-/delingskilden. Hele den normale uploadprøve består lokalt med alle tidligere tilfælde bevaret. Den ændrer ikke C98/I97/T12, SQL, score, kildeprioritet, geometri, statistik eller retention. Det er ikke hosted accept eller offentlig levering: den samlede præcise sluthead og det normale leveringsforløb skal stadig bestå. Den private frivillige ratingpakke indgår ikke.
+
 ## 25. oktober — lokal sammenføring af brugerdata, prognosedeling og udstedt 588
 
 Den normale adgangs-/eksportprøve havde en historisk 587-forventning til dashboardets importversioner. Den samlede kilde har 588-importer; produktet skal ikke ændres tilbage for at bestå prøven. En præcis ydre testvisning kræver hele den aktuelle fil, ændrer kun de tyve importversioner og versionsliteralen og genfinder derefter hele den uændrede 719-fil. Ændret import, versionsliteral eller renderkrop afvises; den faktiske aktuelle fil bruges stadig til rendering. Alle tidligere inverse kontroller bevares. De berørte lokale adgangs-/eksport- og klient-/Edge-prøver består, men den samlede kilde kræver fortsat egen præcis GitHub-kontrol og sikker levering.
