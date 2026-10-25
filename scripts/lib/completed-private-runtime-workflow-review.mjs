@@ -6,6 +6,21 @@ import fs from 'node:fs';
 const review = JSON.parse(fs.readFileSync(new URL('./completed-private-runtime-workflow-review.json', import.meta.url), 'utf8'));
 const coldReview = JSON.parse(fs.readFileSync(new URL('./current-family-cold-start-workflow-review.json', import.meta.url), 'utf8'));
 const sha = value => crypto.createHash('sha256').update(value).digest('hex');
+// Kun kontrolvisning af de fem normale versions-UA'er. Hele nye og gamle
+// workflowbytes er fastbundet; ukendte billeder går uændret til gamle afslag.
+export function inverseRelease588WorkflowUserAgents(source,role){
+  assert.equal(arguments.length,2,'RELEASE588_WORKFLOW_ARGUMENTS');
+  assert.equal(typeof source,'string','RELEASE588_WORKFLOW_TYPE');
+  if(role!=='build'||sha(source)!=='998d3a8e11a1088363a84bfd4a0d64f7117eacc059a3cf5c0ca895f7a85e22b3')return source;
+  assert.equal(Buffer.byteLength(source),292886,'RELEASE588_WORKFLOW_SIZE');
+  assert.equal(source.split('RavRadar/4.0.588').length,6,'Præcis fem normale 588 User-Agent-felter');
+  assert.equal(source.includes('RavRadar/4.0.587'),false,'Ingen blandet versions-UA');
+  const previous=source.replaceAll('RavRadar/4.0.588','RavRadar/4.0.587');
+  assert.equal(Buffer.byteLength(previous),292886,'RELEASE588_PREDECESSOR_SIZE');
+  assert.equal(sha(previous),'e4c022274fe0d05fd3e10aff59d7a3165c67b92847a196c7ee793df68a666600',
+    'Hele det autentiske 587-workflow bevares før de historiske orakler');
+  return previous;
+}
 // TEST INPUT ONLY: two exact saved-progress IDs in the same archive/hour.
 // Unknown bytes remain rejected by the unchanged historical workflow oracles.
 export const latestColdProgressWorkflowReview = {
@@ -768,6 +783,7 @@ Object.freeze(assistant587LatestColdCombinedWorkflowReview);
 export function inverseAssistant587LatestColdCombinedTo664aWorkflow(source, role) {
   assert.equal(arguments.length, 2, 'ASSISTANT587_LATEST_COMBINED_ARGUMENTS');
   assert.equal(typeof source, 'string', 'ASSISTANT587_LATEST_COMBINED_TYPE');
+  source = inverseRelease588WorkflowUserAgents(source, role);
   const row = assistant587LatestColdCombinedWorkflowReview;
   if (role !== 'build' || sha(source) !== row.combined.sha256) return source;
   assert.equal(Buffer.byteLength(source), row.combined.bytes, 'ASSISTANT587_LATEST_COMBINED_SIZE');
@@ -783,6 +799,7 @@ export function inverseAssistant587LatestColdCombinedTo664aWorkflow(source, role
 export function inverseAssistant587LatestColdCombinedTo2bWorkflow(source, role) {
   assert.equal(arguments.length, 2, 'ASSISTANT587_LATEST_COMBINED_ARGUMENTS');
   assert.equal(typeof source, 'string', 'ASSISTANT587_LATEST_COMBINED_TYPE');
+  source = inverseRelease588WorkflowUserAgents(source, role);
   const row = assistant587LatestColdCombinedWorkflowReview;
   if (role !== 'build' || sha(source) !== row.combined.sha256) return source;
   assert.equal(Buffer.byteLength(source), row.combined.bytes, 'ASSISTANT587_LATEST_COMBINED_SIZE');

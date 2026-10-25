@@ -1,31 +1,32 @@
-import { analyzeObservations } from '../services/learning-analysis.js?v=4.0.587';
-import { historicalSummary } from '../services/historical-analysis.js?v=4.0.587';
-import { loadZoneRegistry } from '../services/zone-registry.js?v=4.0.587';
-import { recommendWaterStationBracket } from '../core/water-station-routing.js?v=4.0.587';
-import { loadAdminDocument, queueAdminDocumentSave, saveAdminDocumentNow, onAdminSaveStatus, centralAdminStorageEnabled, adminStorageHealth } from '../services/admin-document-store.js?v=4.0.587';
-import { listProfiles, savePermissions, PERMISSIONS, EXPERT_PERMISSIONS, myAccess, hasPermission } from '../services/permissions-service.js?v=4.0.587';
-import { authEnabled, currentSession, requireFreshSession, testConnection, signOut } from '../services/auth-service.js?v=4.0.587';
-import { auditCurrentDirection } from '../core/current-direction-audit.js?v=4.0.587';
-import { renderCoastlineEditor, destroyCoastlineEditor } from './admin-coastline-editor.js?v=4.0.587';
-import { createDirectionEditor } from './admin-direction-editor.js?v=4.0.587';
-import { runFullPersistenceTest } from '../services/persistence-test-service.js?v=4.0.587';
-import { runFullSiteFunctionTest } from '../services/site-function-test-service.js?v=4.0.587';
-import { submitHandbookReview, listHandbookReviews, updateHandbookReview, exportLocalHandbookDrafts, localHandbookDraftCount, listLocalHandbookDrafts, deleteLocalHandbookDraft, retryLocalHandbookDraft, archiveHandbookReview } from '../services/handbook-review-store.js?v=4.0.587';
-import { loadVisitorReport } from '../services/visitor-report-service.js?v=4.0.587';
-import { decodeRuntimeDiagnosticsEnvelope } from '../services/protected-runtime-envelope.js?v=4.0.587';
-import { sanitizeTrustedHtml } from '../services/html-sanitizer.js?v=4.0.587';
-import { projectAdminObservationDto } from '../services/calibration-eligibility.js?v=4.0.587';
+import { mountPrivateTripStudyCard } from './admin-private-trip-study.js?v=4.0.588';
+import { analyzeObservations } from '../services/learning-analysis.js?v=4.0.588';
+import { historicalSummary } from '../services/historical-analysis.js?v=4.0.588';
+import { loadZoneRegistry } from '../services/zone-registry.js?v=4.0.588';
+import { recommendWaterStationBracket } from '../core/water-station-routing.js?v=4.0.588';
+import { loadAdminDocument, queueAdminDocumentSave, saveAdminDocumentNow, onAdminSaveStatus, centralAdminStorageEnabled, adminStorageHealth } from '../services/admin-document-store.js?v=4.0.588';
+import { listProfiles, savePermissions, PERMISSIONS, EXPERT_PERMISSIONS, myAccess, hasPermission } from '../services/permissions-service.js?v=4.0.588';
+import { authEnabled, currentSession, requireFreshSession, testConnection, signOut } from '../services/auth-service.js?v=4.0.588';
+import { auditCurrentDirection } from '../core/current-direction-audit.js?v=4.0.588';
+import { renderCoastlineEditor, destroyCoastlineEditor } from './admin-coastline-editor.js?v=4.0.588';
+import { createDirectionEditor } from './admin-direction-editor.js?v=4.0.588';
+import { runFullPersistenceTest } from '../services/persistence-test-service.js?v=4.0.588';
+import { runFullSiteFunctionTest } from '../services/site-function-test-service.js?v=4.0.588';
+import { submitHandbookReview, listHandbookReviews, updateHandbookReview, exportLocalHandbookDrafts, localHandbookDraftCount, listLocalHandbookDrafts, deleteLocalHandbookDraft, retryLocalHandbookDraft, archiveHandbookReview } from '../services/handbook-review-store.js?v=4.0.588';
+import { loadVisitorReport } from '../services/visitor-report-service.js?v=4.0.588';
+import { decodeRuntimeDiagnosticsEnvelope } from '../services/protected-runtime-envelope.js?v=4.0.588';
+import { sanitizeTrustedHtml } from '../services/html-sanitizer.js?v=4.0.588';
+import { projectAdminObservationDto } from '../services/calibration-eligibility.js?v=4.0.588';
 import {
  applyAdminObservationModelPolicy,
  resolveAdminActivePublicRavScore,
-} from './admin-active-ravscore.js?v=4.0.587';
+} from './admin-active-ravscore.js?v=4.0.588';
 import {
  loadConditions,
  loadDataManifest,
  loadZones,
-} from '../services/data-service.js?v=4.0.587';
+} from '../services/data-service.js?v=4.0.588';
 
-const VERSION='4.0.587';
+const VERSION='4.0.588';
 const SITE_TEST_MODE=new URLSearchParams(location.search).has('ravradarAdminSiteTest');
 const WATER_ROUTING_KEY='ravradar-water-station-routing-v1';
 const DIRECTION_REVIEW_KEY='ravradar-direction-reviews-v1';
@@ -170,7 +171,7 @@ const MODULE_GUIDES={
 };
 function moduleGuide(){const g=MODULE_GUIDES[state.tab]||MODULE_GUIDES.dashboard;return `<article class="admin-card module-guide"><div class="module-guide-head"><div><span class="eyebrow">Hjælp til modulet</span><h2>${esc(g.title)}</h2><p>${esc(g.purpose)}</p></div><button class="admin-button secondary" id="toggleModuleGuide" aria-expanded="true">Skjul guide</button></div><div id="moduleGuideBody"><ol class="guided-steps">${g.steps.map((x,i)=>`<li><span>${i+1}</span><div>${esc(x)}</div></li>`).join('')}</ol><div class="guide-result"><b>Vigtigt:</b> ${esc(g.result)}</div></div></article>`}
 function bindModuleGuide(){const b=document.querySelector('#toggleModuleGuide'),body=document.querySelector('#moduleGuideBody');if(!b||!body)return;b.onclick=()=>{const hidden=body.hidden=!body.hidden;b.textContent=hidden?'Vis guide':'Skjul guide';b.setAttribute('aria-expanded',String(!hidden));};}
-function render(){if(state.tab!=='coastlineEditor')destroyCoastlineEditor();if(state.tab!=='directionAudit')destroyDirectionMap();if(state.tab!=='waterStations'&&state.stationMap){state.stationMap.remove();state.stationMap=null;}({dashboard:renderDashboard,weather:renderWeather,waterStations:renderWaterStations,zones:renderZones,coastlineEditor:renderAdminCoastlineEditor,directionAudit:renderDirectionAudit,observations:renderObservations,history:renderHistory,visitors:renderVisitors,learning:renderLearning,users:renderUsers,handbook:renderHandbook,documentation:renderDocumentation,system:renderSystem}[state.tab]||renderDashboard)();content.insertAdjacentHTML('afterbegin',moduleGuide());bindModuleGuide();}
+function render(){if(state.tab!=='coastlineEditor')destroyCoastlineEditor();if(state.tab!=='directionAudit')destroyDirectionMap();if(state.tab!=='waterStations'&&state.stationMap){state.stationMap.remove();state.stationMap=null;}({dashboard:renderDashboard,weather:renderWeather,waterStations:renderWaterStations,zones:renderZones,coastlineEditor:renderAdminCoastlineEditor,directionAudit:renderDirectionAudit,observations:renderObservations,history:renderHistory,visitors:renderVisitors,learning:renderLearning,users:renderUsers,handbook:renderHandbook,documentation:renderDocumentation,system:renderSystem}[state.tab]||renderDashboard)();content.insertAdjacentHTML('afterbegin',moduleGuide());bindModuleGuide();if(state.tab==='learning')mountPrivateTripStudyCard(content,state.access);}
 
 function scoreAvailabilityCard(){
  const active=activePublicRavScoreState();

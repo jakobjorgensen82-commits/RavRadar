@@ -1,5 +1,11 @@
 # DEC-0091 – Bred, versionsbundet og read-only viden i Spørg RavRadar
 
+## Tillæg 2026-10-25 — hele spørgsmålet og samme offentlige prognose
+
+De konkrete ejerfejl kræver produktrettelser, ikke flere generiske afvisninger. Kese/ravkese, egne funktioner og almindelig vind forklares gennem den normale lokale viden. Efterspurgt kalenderdag og national rangering læses fra hjemmesidens allerede validerede projektion uden ny scoring eller fuld zonehentning. Hele inputtet kontrolleres før match; tvetydige datoer og ukendte kvalifikationer må ikke blive et sikkert delsvar.
+
+En faktisk offentlig ekstern case besvarede kun en del af et sammensat spørgsmål. Det eksisterende care-faktum er derfor styrket med allerede kurateret DA/DE/EN-viden om overflade, sprækker og opbevaring, og prompten kræver alle understøttede led eller ærlig usikkerhed. Faktaliste, sikkerhedsgrænser, kvoter og read-only-kontrakt bevares. Normale lokale mål og de direkte kontroller af den nu udstedte 4.0.588-binding består; præcis samlet kilde-/databasekontrol, installation og faktisk offentlig kvalitetsaccept mangler stadig. HTTP 200 eller et lokalt regelsvar er ikke samlet AI-accept.
+
 ## 9. oktober 2026 – lokal 4.0.553-rettelse af score-til-fund-svar
 
 Faktisk offentlig browserafprøvning viser fjernsvar, der udleder reduceret

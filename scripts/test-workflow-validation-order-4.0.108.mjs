@@ -1,4 +1,9 @@
 import assert from 'node:assert/strict';
+import {
+  assertForecastShareConfiguration, assertForecastShareAuthority,
+  activeForecastShareDeployment, forecastShareVersionFromDeploy,
+  assertForecastShareRemoteShape, readForecastShareJson, FORECAST_SHARE_READ_KINDS,
+} from './deploy-forecast-share.mjs';
 import { verifyWorkflow as verifyCurrentNationalWorkflow, CURRENT_JOB as CURRENT_SOURCE_JOB, AFTER_JOB as REVIEWED90_SOURCE_JOB } from './national584-source-evidence.mjs';
 import { assertEarlyCompletedRuntimeStageOrder, inverseCompletedRuntimeWorkflow } from './lib/completed-private-runtime-workflow-review.mjs';
 import fs from 'node:fs';
@@ -97,14 +102,228 @@ const productionWorkflowNames = new Set(
 );
 productionWorkflowNames.add('deploy-code-only-repair.yml');
 productionWorkflowNames.add('run-current-weather-once.yml');
-const actualWorkflowFiles = fs.readdirSync(workflowDirectory)
+const physicalWorkflowFiles = fs.readdirSync(workflowDirectory)
   .filter((name) => /\.ya?ml$/i.test(name))
   .sort();
 const expectedWorkflowFiles = ['apply-weather-model-binding-only.yml', 'audit-native-current-grid.yml', 'audit-saved-weather-inputs.yml', 'audit-sealed-current-source.yml', 'build-ravscore-historical-wave-pilot.yml', 'deploy-code-only-repair.yml', 'deploy-trip-storage.yml', 'extract-private-geodanmark-layer.yml', 'migrate-private-runtime-to-r2.yml', 'monitor-trip-storage.yml', 'notify-weather-failure.yml', 'preserve-copernicus-current-shadow.yml', 'recover-live-ravscore-central.yml', 'recover-saved-dmi-originals.yml', 'recover-sealed-weather-36396834072.yml', 'retry-national-admin-roundtrip.yml', 'reusable-operational-reentry.yml', 'reusable-pages-deploy.yml', 'reusable-weather-build.yml', 'run-current-weather-once.yml', 'update-and-deploy.yml', 'validate-approved-public-coast.yml', 'validate-copernicus-current-pilot.yml', 'validate-local-part-system-candidate.yml', 'validate-pull-request.yml', 'validate-six-zone-recovery.yml', 'watch-missed-weather-schedule.yml'];
+// Exact outer inventory for the separately dispatched public share Worker.
+const forecastShareName = 'deploy-forecast-share.yml';
+const forecastShareSource = fs.readFileSync(`${workflowDirectory}/${forecastShareName}`, 'utf8').replace(/\r\n/g, '\n');
+function inverseForecastShareWorkflowInventory(names, source) {
+  assert.deepEqual(names, [...expectedWorkflowFiles, 'private-trip-weather-study.yml', forecastShareName].sort());
+  assert.equal(crypto.createHash('sha256').update(source).digest('hex'),
+    'b03274d75ba0d4c6edab84aadff682c7faf99433a15d71b498dc0ea5674bcc1a');
+  return names.filter(name => name !== forecastShareName);
+}
+const actualWorkflowFiles = inverseForecastShareWorkflowInventory(physicalWorkflowFiles, forecastShareSource);
+for (const names of [
+  [...physicalWorkflowFiles, 'unknown-share.yml'].sort(),
+  physicalWorkflowFiles.filter(name => name !== forecastShareName),
+  [...physicalWorkflowFiles, forecastShareName].sort(),
+  physicalWorkflowFiles.filter(name => name !== expectedWorkflowFiles[0]),
+]) assert.throws(() => inverseForecastShareWorkflowInventory(names, forecastShareSource));
+for (const source of [forecastShareSource + '\n# drift\n',
+  forecastShareSource.replace('contents: read', 'contents: write'),
+  forecastShareSource.replace('cancel-in-progress: false', 'cancel-in-progress: true'),
+  forecastShareSource.replace(' = false', ' = true')]) {
+  assert.throws(() => inverseForecastShareWorkflowInventory(physicalWorkflowFiles, source));
+}
+for (const marker of ['workflow_dispatch:', 'expected_main:', 'DEPLOY-FORECAST-SHARE',
+  'group: ravradar-weather-production-v2', 'queue: max', 'cancel-in-progress: false',
+  'node-version: 22', 'node scripts/weather-source-gate.mjs check',
+  'steps.source-proof.outputs.required', 'node scripts/deploy-forecast-share.mjs']) {
+  assert.ok(forecastShareSource.includes(marker), marker);
+}
+assert.doesNotMatch(forecastShareSource, /continue-on-error:|workflow_run:|schedule:|secrets: inherit|SUPABASE|deploy-pages|pages: write|id-token: write/);
+assert.deepEqual([...forecastShareSource.matchAll(/secrets\.([A-Z0-9_]+)/g)].map(match => match[1]).sort(),
+  ['CLOUDFLARE_ACCOUNT_ID', 'CLOUDFLARE_API_TOKEN']);
+const shareConfig = { name: 'ravradar-prognosedeling', main: 'worker.mjs',
+  compatibility_date: '2026-10-24', workers_dev: true, preview_urls: false };
+assertForecastShareConfiguration(shareConfig);
+for (const changed of [{ ...shareConfig, name: 'ravradar-trip-gateway' },
+  ...['assets', 'routes', 'triggers', 'vars', 'd1_databases', 'kv_namespaces', 'r2_buckets', 'env']
+    .map(key => ({ ...shareConfig, [key]: [] }))]) assert.throws(() => assertForecastShareConfiguration(changed));
+const shareAuthority = {
+  GITHUB_REPOSITORY: 'jakobjorgensen82-commits/RavRadar', GITHUB_EVENT_NAME: 'workflow_dispatch',
+  GITHUB_REF: 'refs/heads/main', GITHUB_RUN_ATTEMPT: '1', GITHUB_RUN_ID: '1',
+  EXPECTED_MAIN: 'a'.repeat(40), GITHUB_SHA: 'a'.repeat(40), SOURCE_REQUIRED: 'false',
+  SHARE_CONFIRMATION: 'DEPLOY-FORECAST-SHARE', CLOUDFLARE_ACCOUNT_ID: 'b'.repeat(32),
+  CLOUDFLARE_API_TOKEN: 'synthetic-token', GITHUB_TOKEN: 'synthetic-token',
+};
+assertForecastShareAuthority(shareAuthority);
+for (const [key, value] of Object.entries({ GITHUB_REF: 'refs/heads/other',
+  GITHUB_EVENT_NAME: 'push', GITHUB_RUN_ATTEMPT: '2', SOURCE_REQUIRED: 'true',
+  EXPECTED_MAIN: 'c'.repeat(40), SHARE_CONFIRMATION: '', CLOUDFLARE_ACCOUNT_ID: '' })) {
+  assert.throws(() => assertForecastShareAuthority({ ...shareAuthority, [key]: value }));
+}
+const shareVersion = '11111111-1111-4111-8111-111111111111';
+const shareDeployment = { id: '22222222-2222-4222-8222-222222222222',
+  strategy: 'percentage', versions: [{ version_id: shareVersion, percentage: 100 }] };
+assert.equal(forecastShareVersionFromDeploy(`Current Version ID: ${shareVersion}\n`), shareVersion);
+for (const output of ['', `Current Version ID: ${shareVersion}\nCurrent Version ID: ${shareVersion}\n`]) {
+  assert.throws(() => forecastShareVersionFromDeploy(output));
+}
+assert.equal(activeForecastShareDeployment({ deployments: [shareDeployment] }, shareVersion).versionId, shareVersion);
+for (const changed of [{ deployments: [] }, { deployments: [{ ...shareDeployment, strategy: 'other' }] },
+  { deployments: [{ ...shareDeployment, versions: [{ version_id: shareVersion, percentage: 50 }] }] }]) {
+  assert.throws(() => activeForecastShareDeployment(changed, shareVersion));
+}
+assert.throws(() => activeForecastShareDeployment({ deployments: [shareDeployment] },
+  '33333333-3333-4333-8333-333333333333'));
+const shareRemote = { script: { id: 'ravradar-prognosedeling', has_assets: false, has_modules: true },
+  version: { id: shareVersion, resources: { bindings: [] } }, routes: [], domains: [],
+  schedules: { schedules: [] }, subdomain: { enabled: true, previews_enabled: false } };
+assertForecastShareRemoteShape(shareRemote, shareVersion);
+for (const mutate of [
+  value => { delete value.script.has_assets; },
+  value => { value.script.has_assets = true; },
+  value => { value.version.resources.bindings.push({ type: 'secret_text', name: 'unexpected' }); },
+  value => { delete value.version.resources.bindings; },
+  value => { value.routes.push({ pattern: 'example.test/*' }); },
+  value => { value.domains.push({ hostname: 'example.test' }); },
+  value => { value.schedules.schedules.push({ cron: '* * * * *' }); },
+  value => { value.subdomain.previews_enabled = true; },
+]) {
+  const changed = structuredClone(shareRemote); mutate(changed);
+  assert.throws(() => assertForecastShareRemoteShape(changed, shareVersion));
+}
+const shareControllerSource = fs.readFileSync('scripts/deploy-forecast-share.mjs', 'utf8');
+assert.equal((shareControllerSource.match(/await deployImpl\(/g) ?? []).length, 1,
+  'Only one awaited deploy; no retry loop or rollback');
+assert.ok(shareControllerSource.indexOf('assertRavScoreModelBinding(manifest.ravScoreModelBinding)')
+  < shareControllerSource.indexOf('await deployImpl('));
+assert.ok(shareControllerSource.indexOf('await remote(versionId)') > shareControllerSource.indexOf('await deployImpl('));
+assert.match(shareControllerSource, /UNKNOWN_NO_RETRY/);
+assert.match(shareControllerSource, /terminationConfirmed/);
+assert.doesNotMatch(shareControllerSource, /execSync\(|process\.exit\(|secrets set|db push|wrangler.*rollback/);
+
+
+// V2: fixed read diagnostics and durable issued-version evidence, before readback.
+assert.deepEqual(FORECAST_SHARE_READ_KINDS, [
+  'GH_MAIN', 'CF_SCRIPTS', 'CF_DEPLOYMENTS', 'CF_VERSION', 'CF_ROUTES',
+  'CF_DOMAINS', 'CF_CRON', 'CF_SCRIPT_SUBDOMAIN', 'CF_ACCOUNT_SUBDOMAIN', 'PUBLIC_MANIFEST',
+]);
+for (const readKind of FORECAST_SHARE_READ_KINDS) {
+  const value = await readForecastShareJson('https://example.test/synthetic',
+    {}, async () => new Response('{"ok":true}', { status: 200 }), readKind);
+  assert.deepEqual(value, { value: { ok: true }, readKind, httpStatus: 200 });
+  await assert.rejects(() => readForecastShareJson('https://example.test/do-not-report',
+    { Authorization: 'synthetic-secret' },
+    async () => new Response('private-body-must-not-escape', { status: 403 }), readKind),
+  error => {
+    assert.equal(error.code, 'SHARE_READ_FAILED');
+    assert.equal(error.message, 'SHARE_READ_FAILED');
+    assert.deepEqual(Object.keys(error).sort(), ['code', 'httpStatus', 'readKind']);
+    assert.equal(error.readKind, readKind);
+    assert.equal(error.httpStatus, 403);
+    assert.doesNotMatch(JSON.stringify(error), /example|synthetic-secret|private-body/);
+    return true;
+  });
+}
+await assert.rejects(() => readForecastShareJson('https://example.test/synthetic', {},
+  async () => { throw Object.assign(new Error('secret transport URL'), { code: 'PRIVATE_CODE' }); }, 'GH_MAIN'),
+error => error.code === 'SHARE_READ_FAILED' && error.readKind === 'GH_MAIN' && error.httpStatus === null);
+await assert.rejects(() => readForecastShareJson('https://example.test/synthetic', {},
+  async () => new Response('not-json', { status: 200 }), 'PUBLIC_MANIFEST'),
+error => error.code === 'SHARE_READ_JSON' && error.readKind === 'PUBLIC_MANIFEST' && error.httpStatus === 200);
+let invalidKindReads = 0;
+await assert.rejects(() => readForecastShareJson('https://example.test/synthetic', {},
+  async () => { invalidKindReads++; return new Response('{}'); }, 'https://untrusted-kind.test'),
+  error => error.code === 'SHARE_READ_KIND');
+assert.equal(invalidKindReads, 0);
+for (const [mutate, code] of [
+  [value => { delete value.script.has_assets; }, 'SHARE_REMOTE_ASSETS'],
+  [value => { delete value.script.has_modules; }, 'SHARE_REMOTE_MODULES'],
+  [value => { value.version.id = '33333333-3333-4333-8333-333333333333'; }, 'SHARE_REMOTE_VERSION'],
+]) {
+  const changed = structuredClone(shareRemote); mutate(changed);
+  assert.throws(() => assertForecastShareRemoteShape(changed, shareVersion), error => error.code === code);
+}
+const shareReceiptStart = shareControllerSource.indexOf('    const versionId = forecastShareVersionFromDeploy(deployed.stdout);');
+const shareReceiptEnd = shareControllerSource.indexOf('    active = await remote(versionId);', shareReceiptStart)
+  + '    active = await remote(versionId);'.length;
+assert.ok(shareReceiptStart >= 0 && shareReceiptEnd > shareReceiptStart);
+const shareIssuedReceipts = [];
+const shareReadbackFailure = Object.assign(new Error('synthetic read refusal'),
+  { code: 'SHARE_READ_FAILED', readKind: 'CF_ROUTES', httpStatus: 403 });
+await assert.rejects(vm.runInNewContext('(async () => { let stage = "DEPLOY", active = null;\n'
+  + shareControllerSource.slice(shareReceiptStart, shareReceiptEnd) + '\n})()', {
+  forecastShareVersionFromDeploy, deployed: { stdout: `Current Version ID: ${shareVersion}\n` },
+  expectedMain: 'a'.repeat(40), terminationConfirmed: true,
+  report: value => shareIssuedReceipts.push(JSON.parse(JSON.stringify(value))),
+  remote: async versionId => {
+    assert.equal(versionId, shareVersion);
+    assert.equal(shareIssuedReceipts.length, 1, 'Issued version must be saved before readback can fail');
+    throw shareReadbackFailure;
+  },
+}), error => error === shareReadbackFailure);
+assert.deepEqual(shareIssuedReceipts, [{ kind: 'FORECAST_SHARE_DEPLOY_RECEIPT_V1', stage: 'DEPLOY_RECEIPT',
+  versionId: shareVersion, sourceSha: 'a'.repeat(40), terminationConfirmed: true }]);
+const shareStopStart = shareControllerSource.indexOf("    const receipt = { kind: 'FORECAST_SHARE_RELEASE_STOP_V1'");
+const shareStopEnd = shareControllerSource.indexOf('    report(receipt); throw Object.assign(fail(receipt.outcome), { receipt });', shareStopStart)
+  + '    report(receipt); throw Object.assign(fail(receipt.outcome), { receipt });'.length;
+assert.ok(shareStopStart >= 0 && shareStopEnd > shareStopStart);
+for (const [readKind, httpStatus, expectedKind, expectedStatus] of [
+  ['CF_ROUTES', 403, 'CF_ROUTES', 403],
+  ['https://secret.example/', '403', null, null],
+  ['CF_VERSION', 999, 'CF_VERSION', null],
+]) {
+  const reports = [];
+  assert.throws(() => vm.runInNewContext(shareControllerSource.slice(shareStopStart, shareStopEnd), {
+    stage: 'POSTWRITE_READBACK', expectedMain: 'a'.repeat(40), writeIssued: true, terminationConfirmed: true,
+    FORECAST_SHARE_READ_KINDS,
+    error: { code: 'SHARE_READ_FAILED', readKind, httpStatus, message: 'private body', url: 'private URL' },
+    report: value => reports.push(JSON.parse(JSON.stringify(value))),
+    fail: code => Object.assign(new Error(code), { code }),
+  }), error => error.code === 'UNKNOWN_NO_RETRY');
+  assert.equal(reports.length, 1);
+  assert.equal(reports[0].readKind, expectedKind);
+  assert.equal(reports[0].httpStatus, expectedStatus);
+  assert.equal(reports[0].outcome, 'UNKNOWN_NO_RETRY');
+  assert.doesNotMatch(JSON.stringify(reports), /secret\.example|private body|private URL/);
+}
+assert.match(shareControllerSource, /fs\.writeSync\(descriptor, JSON\.stringify\(value\) \+ '\\n'\); fs\.fsyncSync\(descriptor\)/);
+
 // One already-existing private workflow is an exact new inventory layer,
 // not permission to ignore extra files or broaden historical consumers.
 const privateStudyName = 'private-trip-weather-study.yml';
-const privateStudySource = fs.readFileSync(`${workflowDirectory}/${privateStudyName}`, 'utf8').replace(/\r\n/g, '\n');
+const privateStudyActualSource = fs.readFileSync(`${workflowDirectory}/${privateStudyName}`, 'utf8').replace(/\r\n/g, '\n');
+function inversePrivateStudy006ExportWorkflow(source) {
+  const sha = value => crypto.createHash('sha256').update(value).digest('hex');
+  assert.equal(sha(source), 'bdde67e93ae059a520e21305af42c1566080faa0da786fc670d7f28dc0285949',
+    'Exact reviewed006/export workflow before the unchanged historical oracle');
+  const marker = '\n  private-study-export:\n';
+  assert.equal(source.split(marker).length, 2);
+  let prior = source.slice(0, source.indexOf(marker));
+  for (const [current, original] of [
+    ['description: Skrivefri plan, kontrolleret installation med statistik slået fra eller privat rapporteksport',
+      'description: Read-only plan or controlled installation with statistics disabled'],
+    ['options: [plan, deliver, export]', 'options: [plan, deliver]'],
+    ['      allow_006:\n        description: Tillad ét præcist006-forsøg på control0 efter004/005 og faktisk Worker-OFF; statistik forbliver deaktiveret\n        type: boolean\n        default: false\n', ''],
+    ['plan|deliver|export) ;;', 'plan|deliver) ;;'],
+    ["      TRIP_PRIVATE_STUDY_JOB_BINDING_APPLY_ALLOWED: ${{ inputs.allow_006 && 'true' || 'false' }}\n", ''],
+  ]) {
+    assert.equal(prior.split(current).length, 2, 'Each exact new workflow edit occurs once');
+    prior = prior.replace(current, original);
+  }
+  assert.equal(sha(prior), '4c2e35641d7e95e19eedf901b49b9011917a05ef0957a9d7e7e222fb28d4f241',
+    'Whole original private-study workflow, not a changed historical descriptor');
+  return prior;
+}
+const privateStudySource = inversePrivateStudy006ExportWorkflow(privateStudyActualSource);
+for (const [current, changed] of [
+  ['      allow_006:', '      allow_006_unreviewed:'],
+  ["inputs.allow_006 && 'true' || 'false'", 'true'],
+  ['TRIP_PRIVATE_STUDY_JOB_BINDING_APPLY_ALLOWED:', 'TRIP_PRIVATE_STUDY_APPLY_ALLOWED:'],
+  ["inputs.operation == 'plan' || inputs.operation == 'deliver'", 'always()'],
+  ['TRIP_STORAGE_OPERATION: private-study-export', 'TRIP_STORAGE_OPERATION: existing-private-study-upgrade'],
+  ['run: node scripts/publish-private-trip-weather-study.mjs', 'run: node scripts/deploy-private-trip-study.mjs'],
+  ['timeout-minutes: 35', 'timeout-minutes: 350'],
+  ['cancel-in-progress: false', 'cancel-in-progress: true'],
+]) {
+  assert.ok(privateStudyActualSource.includes(current));
+  assert.throws(() => inversePrivateStudy006ExportWorkflow(privateStudyActualSource.replace(current, changed)));
+}
 function inversePrivateStudyWorkflowInventory(names, source) {
   assert.deepEqual(names, [...expectedWorkflowFiles, privateStudyName].sort(),
     'Only the whole legacy inventory plus the one reviewed private workflow');

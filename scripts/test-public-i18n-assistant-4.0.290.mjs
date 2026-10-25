@@ -113,7 +113,7 @@ globalThis.fetch = async (url, options) => {
       'x-ravradar-model-contract-sha256':binding.modelContractSha256,
       'x-ravradar-model-bundle-sha256':binding.modelBundleSha256,
       'x-ravradar-assistant-knowledge-schema':'rav-assistant-public-knowledge-v1',
-      'x-ravradar-assistant-knowledge-sha256':'ddefdc8f624014509787bce4852b63f81588f6dd954a17d76307afddb677d105',
+      'x-ravradar-assistant-knowledge-sha256':'714bba9ca2a735f28712ddb6c2f604dfbe74a60e4abb85728be94a2896453a57',
     }),
     json:async () => ({ answer:'Rav kan være meget gammelt, men et konkret stykke kan ikke dateres sikkert ud fra udseendet alene.' }),
   };
@@ -198,7 +198,7 @@ const tripDialog = await fs.readFile(path.join(ROOT, 'js/ui/trip-evidence-dialog
 const app = await fs.readFile(path.join(ROOT, 'app.js'), 'utf8');
 assert.match(tripDialog, /type: 'search'[\s\S]*findZoneMatches\(zones, query\)[\s\S]*appendOptions\(select, matches/, 'Tur- og fundformularen skal filtrere rullemenuen til alle delstrengsmatches.');
 assert.match(tripDialog, /createElement\('select', \{ name: 'zoneId'/, 'Den eksisterende zonerullemenu skal bevares.');
-assert.match(app, /if\(followup===null&&ravQuestionNeedsConditionDetails\(clean\)\)await ensureConditionDetails\(\)/, 'Lokale faktasvar og kendte opfølgninger må ikke gøre prognosedetaljer til en forudsætning.');
+assert.match(app, /if\(followup===null&&ravQuestionNeedsConditionDetails\(clean,assistantContext\(\)\)\)await ensureConditionDetails\(\)/, 'Lokale faktasvar og kendte opfølgninger må ikke gøre prognosedetaljer til en forudsætning.');
 assert.match(indexHtml, /data-i18n="footer\.weatherSea"/);
 assert.match(indexHtml, /data-i18n="footer\.licenseSuffix"/);
 assert.doesNotMatch(indexHtml.match(/<dialog id="developerDialog"[\s\S]*?<\/dialog>/)?.[0] || '', /data-i18n/, 'Udviklerfladen skal forblive dansk.');

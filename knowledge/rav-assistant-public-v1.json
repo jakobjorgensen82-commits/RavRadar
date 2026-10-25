@@ -1,6 +1,6 @@
 {
   "schemaVersion": "rav-assistant-public-knowledge-v1",
-  "releaseVersion": "4.0.587",
+  "releaseVersion": "4.0.588",
   "ravScoreModelBinding": {
     "modelId": "RRS-COASTAL-PROCESS-INTEGRATED-1.1.0",
     "stateSchemaVersion": "6.0.0",
@@ -12,7 +12,7 @@
     "bestTimePolicyId": "score-history-water-tie-earliest-v3",
     "presentationPolicyId": "score-bands-35-55-75-exceptional90-v1",
     "modelContractSha256": "a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b",
-    "modelBundleSha256": "5584d8e59f8d21785fd08b32f9beb22cf879cdb4892a11ede24eb862d9a0dca2"
+    "modelBundleSha256": "5348f3ae7401d3a09dd180d45690f56b3cfec4a30af5a4928bdd9581f9d8ebac"
   },
   "scoreModel": {
     "id": "RRS-COASTAL-PROCESS-INTEGRATED-1.1.0",
@@ -195,7 +195,7 @@
     },
     {
       "id": "care.preventive-conservation",
-      "text": "Amber is soft, heat-sensitive and vulnerable to strong light, solvents and unstable conditions. Clean an ordinary robust find gently with lukewarm water, avoid hot needles, fire, alcohol, acetone and oils, and keep unusual inclusions stable for specialist assessment."
+      "text": "Amber is soft and can be scratched. Weathering can make its surface darker or matt; this does not establish its age or origin. High heat, prolonged strong light and unstable conditions can alter the surface and promote cracking. Store amber in darkness or low light at a stable, moderate temperature without large humidity swings, separate from hard objects. Clean an ordinary robust find gently with lukewarm water; stop if it is cracked, fragile or may contain an important inclusion. Avoid hot needles, fire, alcohol, acetone, other solvents and oils, and keep unusual inclusions stable for specialist assessment. These are general guidelines, not a diagnosis of a particular find."
     },
     {
       "id": "safety.rip-current",

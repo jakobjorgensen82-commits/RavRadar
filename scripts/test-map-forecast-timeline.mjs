@@ -9,6 +9,9 @@ import { bindMapTimeline, mapTimelineDate, mapTimelineDayTicks } from '../js/ui/
 import '../js/ui/map-timeline-copy.js?v=4.0.579';
 import { buildSelectedHourFlowArrows } from '../js/map/map-view.js';
 import * as service from '../js/services/data-service.js';
+import { openForecastShareSelection, mountForecastShareControl } from '../js/ui/forecast-share.js';
+import { FORECAST_SHARE_BASE_URL, forecastShareUrl, forecastShareCopy } from '../js/services/forecast-share-contract.js';
+import forecastShareWorker from './forecast-share/worker.mjs';
 import { publicDeliveryGeneration } from '../js/core/public-delivery-contract.js';
 import { showZoneInfo, bindZoneInfoInteractions } from '../js/ui/info-panel.js';
 import { buildLocalZoneScore, selectLocalBestForDay, isCurrentForecastHour } from '../js/core/local-zone-score.js';
@@ -106,6 +109,192 @@ try{
     assert.equal(value.time,h1);assert.equal(value.score,43+(i%5)+(mode==='beach'?1:0));
     assert.equal(value.localWeather.time,h1);
   }cases++;
+
+  // Demand-only sharing uses the same normal projected zone document and
+  // registry as this existing full-domain fixture. No real network or score
+  // producer is substituted; response bodies use the platform stream API.
+  const shareZoneId=rankedZoneIds[0],shareRow=zoneDocuments.get(shareZoneId);
+  const shareSelection={zoneId:shareZoneId,time:h1,mode:'waders',language:'da'};
+  function shareFixture({mutateDocument=null,mutateManifest=null,zoneText=null,registryText=zoneRegistryText,onRead=()=>{}}={}){
+    const target=structuredClone(manifest),document=structuredClone(shareRow.document);
+    if(mutateDocument){
+      mutateDocument(document);
+      const text=compactJson(document),sha256=sha256Text(text);
+      target.detailDelivery.zones[shareZoneId]={path:'./forecast/'+sha256+'.json',sha256,bytes:Buffer.byteLength(text)};
+    }
+    if(mutateManifest)mutateManifest(target);
+    const entry=target.detailDelivery.zones[shareZoneId],path='./data/live/'+entry.path.slice(2);
+    const documents=new Map([['./data/live/manifest.json',compactJson(target)],
+      [path,zoneText??compactJson(document)],['./data/zones.geojson',registryText]]);
+    const reads=[];
+    return{reads,fetchPublic:async(path,options)=>{
+      reads.push(path);assert.equal(options.cache,'no-store');assert.ok(options.signal);
+      onRead(path);assert.ok(documents.has(path),'Only the existing three fixed public inputs may be requested');
+      return new Response(documents.get(path),{status:200,headers:{'Content-Type':'application/json'}});
+    }};
+  }
+  for(const mode of ['waders','beach']){
+    const fixture=shareFixture(),selection={...shareSelection,mode};
+    const shared=await service.loadPublicForecastShareSelection(selection,fixture);
+    const normal=exactMapZoneScore({conditions:a.conditions,time:h1,zoneId:shareZoneId,mode});
+    assert.equal(shared.result.score,normal.score);assert.equal(shared.result.time,h1);
+    assert.equal(shared.zoneName,JSON.parse(zoneRegistryText).features.find(row=>row.properties.id===shareZoneId).properties.name);
+    assert.deepEqual(shared.selection,selection);assert.equal(fixture.reads.length,3);
+    assert.deepEqual(Object.keys(shared.result).sort(),['available','localCoverage','score','scoreQuality','time']);
+    assert.equal(Object.isFrozen(shared.result),true);cases++;
+  }
+  for(const [zoneText,reason] of [
+    [shareRow.text+' ',/FORECAST_SHARE_BYTES_INVALID/],
+    [shareRow.text.replace('map-timeline-synthetic','Map-timeline-synthetic'),/FORECAST_SHARE_BINDING_INVALID/],
+  ]){
+    await assert.rejects(()=>service.loadPublicForecastShareSelection(shareSelection,shareFixture({zoneText})),reason);cases++;
+  }
+  for(const [mutateDocument,reason] of [
+    [document=>{const score=document.coastalParts.zones[shareZoneId].hourly[1].waders;
+      score.modelBinding={...score.modelBinding,modelBundleSha256:'0'.repeat(64)};},/model|bundle/i],
+    [document=>{const part=Object.values(document.coastalParts.parts)[0];
+      part.ravScoreEvidenceTrust={...part.ravScoreEvidenceTrust,status:'UNVERIFIED'};},/VERIFIED_ONLY/],
+    [document=>{document.coastalParts.zones[shareZoneId].hourly[1].time=h2;},/row time mismatch/],
+  ]){
+    await assert.rejects(()=>service.loadPublicForecastShareSelection(shareSelection,shareFixture({mutateDocument})),reason);cases++;
+  }
+  await assert.rejects(()=>service.loadPublicForecastShareSelection(shareSelection,shareFixture({
+    mutateManifest:target=>{target.ravScoreModelBinding.modelBundleSha256='0'.repeat(64);},
+  })),/model|bundle/i);cases++;
+  await assert.rejects(()=>service.loadPublicForecastShareSelection(shareSelection,shareFixture({
+    registryText:zoneRegistryText.replace('Zone 1','Zone X'),
+  })),/FORECAST_SHARE_BINDING_INVALID/);cases++;
+  for(const selection of [{...shareSelection,zoneId:'not-in-manifest'},
+    {...shareSelection,time:new Date(Date.parse(last)+3600000).toISOString()}]){
+    const fixture=shareFixture();assert.equal(await service.loadPublicForecastShareSelection(selection,fixture),null);
+    assert.deepEqual(fixture.reads,['./data/live/manifest.json']);cases++;
+  }
+  const elapsed=shareFixture({onRead:path=>{
+    if(path==='./data/zones.geojson')Date.now=()=>freshNow+2*3600000;
+  }});
+  try{assert.equal(await service.loadPublicForecastShareSelection(shareSelection,elapsed),null,
+    'A selected hour that expires during I/O must not borrow the new current hour');}
+  finally{Date.now=()=>freshNow;}cases++;
+
+  // Faktisk Worker-indgang -> uændret handler -> den eksisterende normale læser.
+  // Kun transporten er syntetisk; shareFixture leverer de samme autentificerbare
+  // manifest-/zone-/registerbytes som ovenfor. Ingen ny model eller prognose bygges.
+  const shareBase='https://ravradar-prognosedeling.jakob-jorgensen82.workers.dev/';
+  assert.equal(FORECAST_SHARE_BASE_URL,shareBase);
+  const workerConfig=JSON.parse(await fs.readFile(new URL('./forecast-share/wrangler.jsonc',import.meta.url),'utf8'));
+  assert.deepEqual(workerConfig,{name:'ravradar-prognosedeling',main:'worker.mjs',
+    compatibility_date:'2026-10-24',workers_dev:true,preview_urls:false},
+    'Ingen assets, routes, databaser, KV, R2, cron, vars eller secrets i konfigurationen');cases++;
+  const escapeShareAttribute=value=>String(value).replaceAll('&','&amp;').replaceAll('"','&quot;');
+  async function shareWorkerRequest(url,{fixture=shareFixture(),method='GET',headers={},body=null}={}){
+    const originalFetch=globalThis.fetch,upstream=[];
+    globalThis.fetch=async(input,options)=>{
+      const target=new URL(input);
+      upstream.push({url:target.href,redirect:options.redirect,credentials:options.credentials,headers:options.headers});
+      return fixture.fetchPublic('.'+target.pathname,options);
+    };
+    try{
+      const request=new Request(url,{method,headers,...(body===null?{}:{body})});
+      const response=await forecastShareWorker.fetch(request,{
+        shareBaseUrl:'https://forged.invalid/',PUBLIC_PAGE:'https://forged.invalid/',
+        fetchPublic:()=>assert.fail('Miljøet må ikke udskifte den normale transport'),
+      });
+      const html=await response.text();
+      // Kontroller uden for handlerens fail-closed catch: et forkert upstreamkald
+      // må ikke skjules som blot en utilgængelig prognose i denne prøve.
+      for(const call of upstream){
+        const target=new URL(call.url);
+        assert.equal(target.origin,'https://ravradar.dk');
+        assert.equal(target.search,'');assert.equal(target.hash,'');
+        assert.equal(target.username,'');assert.equal(target.password,'');
+        assert.ok(['/data/live/manifest.json','/data/zones.geojson'].includes(target.pathname)
+          || /^\/data\/live\/forecast\/[a-f0-9]{64}\.json$/.test(target.pathname));
+        assert.equal(call.redirect,'error');assert.equal(call.credentials,'omit');
+        assert.deepEqual(call.headers,{Accept:'application/json'});
+      }
+      return{response,html,reads:fixture.reads,upstream};
+    }finally{globalThis.fetch=originalFetch;}
+  }
+  for(const language of ['da','de','en'])for(const mode of ['waders','beach']){
+    const selection={...shareSelection,language,mode},url=forecastShareUrl(shareBase,selection);
+    const expected=exactMapZoneScore({conditions:a.conditions,time:h1,zoneId:shareZoneId,mode});
+    const result=await shareWorkerRequest(url,{headers:{Authorization:'Bearer synthetic',Cookie:'synthetic=1',
+      'X-Forwarded-Host':'forged.invalid','X-Share-Base-Url':'https://forged.invalid/'}});
+    assert.equal(result.response.status,200);assert.equal(result.reads.length,3);
+    assert.equal(result.response.headers.get('content-type'),'text/html; charset=utf-8');
+    assert.equal(result.response.headers.get('cache-control'),'no-store');
+    assert.equal(result.response.headers.get('referrer-policy'),'no-referrer');
+    assert.equal(result.response.headers.get('x-content-type-options'),'nosniff');
+    assert.equal(result.response.headers.get('content-security-policy'),"default-src 'none'; base-uri 'none'; frame-ancestors 'none'; form-action 'none'");
+    assert.ok(result.html.startsWith('<!doctype html><html lang="'+language+'">'));
+    assert.ok(result.html.includes('<meta property="og:title" content="'));
+    assert.ok(result.html.includes(forecastShareCopy(language).score+' '+expected.score+'/100'));
+    assert.ok(result.html.includes('<meta property="og:url" content="'+escapeShareAttribute(url)+'">'));
+    assert.ok(result.html.includes('<link rel="canonical" href="'+escapeShareAttribute(url)+'">'));
+    assert.ok(result.html.includes('<meta property="og:image" content="https://ravradar.dk/assets/icons/ravradar-512.png">'));
+    assert.ok(result.html.includes('href="'+escapeShareAttribute(forecastShareUrl('https://ravradar.dk/',selection))+'"'));
+    assert.doesNotMatch(result.html,/<script|forged\.invalid|synthetic=|Bearer synthetic|modelBundleSha256|coastalParts/);cases++;
+  }
+  const shareUrl=forecastShareUrl(shareBase,shareSelection);
+  const head=await shareWorkerRequest(shareUrl,{method:'HEAD'});
+  assert.equal(head.response.status,200);assert.equal(head.html,'');assert.equal(head.reads.length,3);
+  assert.equal(head.response.headers.get('content-type'),'text/html; charset=utf-8');
+  assert.equal(head.response.headers.get('cache-control'),'no-store');cases++;
+  for(const method of ['POST','PUT','PATCH','DELETE','OPTIONS']){
+    const result=await shareWorkerRequest(shareUrl,{method,body:'{"score":100,"upstream":"https://forged.invalid/"}'});
+    assert.equal(result.response.status,405);assert.equal(result.response.headers.get('allow'),'GET, HEAD');
+    assert.equal(result.html,'');assert.equal(result.upstream.length,0);cases++;
+  }
+  for(const url of [shareUrl.replace('https:','http:'),shareUrl.replace('ravradar-prognosedeling.','other.'),
+    shareUrl.replace('/?','/other?')]){
+    const result=await shareWorkerRequest(url);assert.equal(result.response.status,503);
+    assert.equal(result.upstream.length,0);assert.doesNotMatch(result.html,/\d+\/100/);cases++;
+  }
+  for(const extra of ['&score=100','&upstream=https%3A%2F%2Fforged.invalid%2F','&shareBaseUrl=https%3A%2F%2Fforged.invalid%2F','&zone=another']){
+    const result=await shareWorkerRequest(shareUrl+extra);assert.equal(result.response.status,400);
+    assert.equal(result.upstream.length,0);assert.doesNotMatch(result.html,/\d+\/100|forged\.invalid/);cases++;
+  }
+  const facebook=await shareWorkerRequest(shareUrl+'&fbclid=synthetic');
+  assert.equal(facebook.response.status,200);assert.equal(facebook.reads.length,3);
+  assert.doesNotMatch(facebook.html,/fbclid|synthetic/);
+  assert.ok(facebook.html.includes('content="'+escapeShareAttribute(shareUrl)+'"'));cases++;
+  const unavailableShare=async(fixture,url=shareUrl)=>{
+    const result=await shareWorkerRequest(url,{fixture});
+    assert.equal(result.response.status,200);
+    assert.ok(result.html.includes(forecastShareCopy('da').unavailable));
+    assert.doesNotMatch(result.html,/\d+\/100|FORECAST_SHARE_|modelBundleSha256|forged\.invalid/);
+    return result;
+  };
+  for(const fixture of [
+    shareFixture({zoneText:shareRow.text+' '}),
+    shareFixture({zoneText:shareRow.text.replace('map-timeline-synthetic','Map-timeline-synthetic')}),
+    shareFixture({mutateManifest:target=>{target.ravScoreModelBinding.modelBundleSha256='0'.repeat(64);}}),
+    shareFixture({mutateDocument:document=>{
+      const row=document.coastalParts.zones[shareZoneId].hourly[1].waders;
+      row.modelBinding={...row.modelBinding,modelBundleSha256:'0'.repeat(64)};
+    }}),
+    shareFixture({registryText:zoneRegistryText.replace('Zone 1','Zone X')}),
+  ]){await unavailableShare(fixture);cases++;}
+  const forgedPath=await unavailableShare(shareFixture({mutateManifest:target=>{
+    target.detailDelivery.zones[shareZoneId].path='https://forged.invalid/forecast.json';
+  }}));
+  assert.deepEqual(forgedPath.reads,['./data/live/manifest.json']);cases++;
+  const outside=await unavailableShare(shareFixture(),forecastShareUrl(shareBase,{...shareSelection,
+    time:new Date(Date.parse(last)+3600000).toISOString()}));
+  assert.deepEqual(outside.reads,['./data/live/manifest.json']);cases++;
+  try{
+    Date.now=()=>freshNow+2*3600000;
+    const expired=await unavailableShare(shareFixture());
+    assert.deepEqual(expired.reads,['./data/live/manifest.json']);
+  }finally{Date.now=()=>freshNow;}cases++;
+  try{
+    const expiredDuringRead=await unavailableShare(shareFixture({onRead:path=>{
+      if(path==='./data/zones.geojson')Date.now=()=>freshNow+2*3600000;
+    }}));
+    assert.equal(expiredDuringRead.reads.length,3);
+  }finally{Date.now=()=>freshNow;}cases++;
+
+
   const broken={...a.conditions,coastalParts:{...a.conditions.coastalParts,zones:{...a.conditions.coastalParts.zones,
     'zone-1':{...a.conditions.coastalParts.zones['zone-1'],hourly:[{...a.conditions.coastalParts.zones['zone-1'].hourly[0],time:h2}]}}}};
   assert.equal(exactMapZoneScore({conditions:broken,time:h1,zoneId:'zone-1',mode:'waders'}),null,'Missing exact time never chooses nearest row');cases++;
@@ -140,15 +329,17 @@ try{
   // Actual UI event wiring with a minimal owned DOM, plus a bounded scheduler
   // and deferred network seam. Real keyboard/touch/browser paint are ROOT gates.
   class Element{
-    constructor(){this.style={};this.attributes={};this.dataset={};this.listeners=new Map();this.children=[];this.hidden=false;this.textContent='';this.value='0';}
+    constructor(){this.style={};this.attributes={};this.dataset={};this.listeners=new Map();this.children=[];this.hidden=false;this.textContent='';this.value='0';this.isConnected=true;}
     setAttribute(key,value){this.attributes[key]=String(value);}
     addEventListener(key,listener){this.listeners.set(key,listener);}
-    append(node){this.children.push(node);}replaceChildren(){this.children=[];}
-    dispatch(type){this.listeners.get(type)?.({type,target:this,currentTarget:this});}
+    append(...nodes){this.children.push(...nodes);}replaceChildren(){this.children=[];}
+    dispatch(type){return this.listeners.get(type)?.({type,target:this,currentTarget:this});}
+    showModal(){this.open=true;}close(){this.open=false;this.dispatch('close');}
+    remove(){this.isConnected=false;}focus(){this.focused=true;}select(){this.selected=true;}
     set innerHTML(value){this.html=value;this.nodes=new Map([...value.matchAll(/data-map-time-[a-z]+/g)].map(([key])=>['['+key+']',new Element()]));}
     querySelector(selector){return this.nodes.get(selector);}
   }
-  globalThis.document={createElement:()=>new Element()};globalThis.localStorage={getItem:()=> 'da'};
+  globalThis.document={createElement:()=>new Element(),body:new Element()};globalThis.localStorage={getItem:()=> 'da'};
   let timer=0;const timers=new Map(),calls=[],commits=[];
   const controller=createMapForecastController({schedule:fn=>{timers.set(++timer,fn);return timer;},cancel:key=>timers.delete(key),
     loadHour:(time,generation)=>new Promise((resolve,reject)=>calls.push({time,generation,resolve,reject})),onCommit:frame=>commits.push(frame)});
@@ -187,6 +378,50 @@ try{
     assert.match(label,/18/);assert.match(label,/14[.:]00/);
   }cases++;
   assert.notEqual(mapTimelineDate('2026-10-25T00:00:00.000Z','da'),mapTimelineDate('2026-10-25T01:00:00.000Z','da'),'Repeated DST hour must have distinct zone labels');cases++;
+
+  // The normal startup selector owns no newer user intention. Check before
+  // any setMode/localStorage/controller mutation, and again before openZone.
+  const repeated=['2026-10-25T00:00:00.000Z','2026-10-25T01:00:00.000Z'];
+  const start='2026-10-24T23:00:00.000Z';
+  for(const selectedTime of repeated)for(const scenario of ['ready','prior-user','later-user','generation','rollover','error']){
+    const calls=[],opens=[],modes=[],notices=[];let intent=0;
+    const sharedController=createMapForecastController({loadHour:(time,generation)=>new Promise((resolve,reject)=>calls.push({time,generation,resolve,reject}))});
+    sharedController.configure({generation:'share-A',times:[start,...repeated],live:{time:start,conditions:{}}});
+    if(scenario==='prior-user')intent++; // Same final mode is still a newer explicit choice.
+    openForecastShareSelection({incoming:{status:'valid',selection:{zoneId:'Z',time:selectedTime,mode:'beach',language:'da'}},
+      controller:sharedController,zones:{features:[{properties:{id:'Z'}}]},
+      setMode:mode=>modes.push(mode),openZone:zone=>opens.push(zone.id),notice:value=>notices.push(value),
+      isStillRequested:()=>intent===0});
+    if(scenario==='prior-user'){
+      assert.equal(modes.length,0);assert.equal(calls.length,0);
+      assert.equal(sharedController.snapshot().requestedTime,start);
+    }else{
+      await turn();assert.equal(calls.length,1);assert.equal(calls[0].time,selectedTime);
+      assert.equal(sharedController.snapshot().committedTime,start,'Pending link is not the displayed hour');
+      if(scenario==='later-user'){intent++;sharedController.now();}
+      if(scenario==='generation')sharedController.configure({generation:'share-B',times:[start,...repeated],live:{time:start,conditions:{}}});
+      if(scenario==='rollover'){
+        const advanced=new Date(Date.parse(selectedTime)+3600000).toISOString();
+        sharedController.configure({generation:'share-A',times:[advanced],live:{time:advanced,conditions:{}}});
+      }
+      if(scenario==='error')calls[0].reject(Error('UNAVAILABLE'));
+      else calls[0].resolve({generation:'share-A',time:selectedTime,conditions:{}});
+      await turn();await turn();
+      if(scenario==='ready'){assert.deepEqual(opens,['Z']);assert.equal(sharedController.snapshot().committedTime,selectedTime);}
+      else assert.deepEqual(opens,[],'A late shared response cannot replace a newer user/time/generation');
+      assert.equal(calls.length,1,'No fallback or retry');
+    }
+    sharedController.destroy();cases++;
+  }
+  for(const incoming of [{status:'invalid'},{status:'valid',selection:{zoneId:'missing',time:repeated[0],mode:'waders',language:'da'}},
+    {status:'valid',selection:{zoneId:'Z',time:'2026-10-26T00:00:00.000Z',mode:'waders',language:'da'}}]){
+    const sharedController=createMapForecastController({loadHour:()=>{throw Error('NO_FALLBACK_FETCH');}});
+    sharedController.configure({generation:'A',times:repeated,live:{time:repeated[0],conditions:{}}});
+    openForecastShareSelection({incoming,controller:sharedController,zones:{features:[{properties:{id:'Z'}}]},
+      setMode:()=>assert.fail('No mode mutation'),openZone:()=>assert.fail('No zone substitution'),notice:()=>{}});
+    assert.equal(sharedController.snapshot().committedTime,repeated[0]);sharedController.destroy();cases++;
+  }
+
   assert.equal(mapTimelineDayTicks(['2026-10-17T21:00:00.000Z','2026-10-17T22:00:00.000Z']).length,2,'Day ticks follow Copenhagen midnight');cases++;
   const app=await fs.readFile(new URL('../app.js',import.meta.url),'utf8'),html=await fs.readFile(new URL('../index.html',import.meta.url),'utf8');
   assert.ok(html.indexOf('class="map-shell"')<html.indexOf('id="mapTimeline"')&&html.indexOf('id="mapTimeline"')<html.indexOf('class="legend"'));
@@ -207,12 +442,13 @@ try{
     addEventListener(event,callback){this.events.set(event,callback);}
     click(){this.events.get('click')?.();}
   }
-  const mapCallbacks=[...appSource.matchAll(/zone=>openZone\(zone,\{scroll:false\}\)/g)].map(row=>row[0]);
+  const mapCallbacks=[...appSource.matchAll(/zone=>\{noteForecastShareUserIntent\(\);openZone\(zone,\{scroll:false\}\);\}/g)].map(row=>row[0]);
   assert.equal(mapCallbacks.length,2,'Both actual map callbacks keep their old selected-hour entrypoint');
   for(const language of ['da','de','en'])for(const mode of ['waders','beach']){
     globalThis.localStorage={getItem:()=>language};
-    const panelCalls=[],loaded=[],errors=[];
-    const panel={innerHTML:'',hidden:true,querySelector:()=>null,addEventListener(){},removeEventListener(){},
+    const panelCalls=[],shareCalls=[],loaded=[],errors=[];
+    const panel={innerHTML:'',hidden:true,querySelector:selector=>selector==='.zone-header'
+      ?{insertAdjacentElement:(_position,button)=>{panel.shareButton=button;}}:null,addEventListener(){},removeEventListener(){},
       prepend(){},scrollIntoView(){},replaceChildren(){this.innerHTML='';}};
     const list={style:{setProperty(){}},buttons:[],querySelectorAll:()=>list.buttons,
       set innerHTML(html){this.html=html;this.buttons=[...html.matchAll(/data-zone-id="([^"]+)"/g)].map(row=>new Button({zoneId:row[1]}));}};
@@ -223,9 +459,11 @@ try{
       zones:features,zoneLayer:{selectZone(){}},conditions:live,flowArrows:{refresh(){}}};
     const context={state:uiState,Map,Promise,Date,Intl,console:{warn(){},error:error=>errors.push(error)},
       infoPanel:panel,nationalForecast:national,coreViewReady:false,selectedZonePartsVisible:false,
+      URL,forecastShareUserIntent:0,forecastShareControlCleanup:()=>{},mapForecastTimeline:service.mapForecastTimeline,
+      mountForecastShareControl:(host,options)=>{shareCalls.push(options);return mountForecastShareControl(host,options);},
       activeManifest:manifest,runtimeGeneration:1,pendingZoneDetails:new Map(),conditionDetailsPromise:null,conditionDetailsReady:false,
       performance:{mark(){}},mapScores:new Map(),resetAssistantTopic(){},
-      document:{querySelector:()=>null,createElement:()=>({}),body:{classList:{add(){},remove(){}}}},
+      document:{baseURI:'https://ravradar.invalid/',querySelector:()=>null,createElement:()=>({}),body:{classList:{add(){},remove(){}}}},
       map:{setView(){},getZoom:()=>7,invalidateSize(){}},requestAnimationFrame:callback=>callback(),
       refreshZoneStyles(){},showSelectedZoneParts(){},renderRanking(){},yieldToBrowser:async()=>{},
       hasNumber:Number.isFinite,isCurrentForecastHour,forecastDateKeyInTimeZone,visibleForecastDays,
@@ -244,6 +482,7 @@ try{
     context.mapForecast=controller;
     vm.createContext(context);
     vm.runInContext([
+      fragment('function noteForecastShareUserIntent()','const mapTimelineHost'),
       fragment('function handleMapForecastCommit(frame)','function configureMapTimeline()'),
       fragment('function refreshMapDisplay()','let publicTripEvidenceRuntime'),
       fragment('function emergencySnapshotReferenceAt()','function resultFor(zone)'),
@@ -260,6 +499,12 @@ try{
     const mapOpen=vm.runInContext('('+mapCallbacks[0]+')',context),zone=features.features.find(row=>row.properties.id===rankedZoneIds[0]).properties;
     mapOpen(zone);assert.equal(controller.snapshot().committedTime,h1);
     assert.equal(panelCalls.at(-1)[5].mapForecastTime,h1);
+    assert.equal(shareCalls.at(-1).selection.time,h1);assert.equal(shareCalls.at(-1).selection.mode,mode);
+    panel.shareButton.dispatch('click');const earlierShareDialog=globalThis.document.body.children.at(-1);
+    assert.equal(earlierShareDialog.open,true,'Actual app mounts a share dialog for its committed hour');
+    const generatedShareInput=earlierShareDialog.children[1].children.find(node=>node.type==='text');
+    assert.equal(generatedShareInput.value,forecastShareUrl(FORECAST_SHARE_BASE_URL,shareCalls.at(-1).selection),
+      'Den faktiske UI ignorerer Pages-adressen og bruger den faste godkendte Worker-rute');
     assert.doesNotMatch(panel.innerHTML,/data-forecast-section|data-tide-section/);
     assert.equal(loaded.length,0,'A future map click keeps the existing single-hour route');
     assert.equal(await context.renderNationalForecast(),true);
@@ -268,6 +513,7 @@ try{
     const lastTab=national.tabs.at(-1);lastTab.click();
     const selectedDayMarkup=list.html,firstButton=list.buttons[0];assert.ok(firstButton);
     firstButton.click();const pending=context.conditionDetailsPromise;if(pending)await pending;
+    assert.equal(earlierShareDialog.isConnected,false,'Top20/Now must dispose an already open future-hour dialog');
     assert.equal(controller.snapshot().committedTime,generatedAt,'National forecast zone click must synchronously select existing Now');
     assert.equal(controller.snapshot().requestedTime,generatedAt);
     assert.equal(panelCalls.at(-1)[5].mapForecastTime,null);
@@ -295,6 +541,30 @@ try{
     assert.equal(controller.snapshot().requestedTime,generatedAt);
     assert.equal(panelCalls.at(-1)[5].mapForecastTime,null);assert.match(panel.innerHTML,/data-forecast-section/);
     assert.equal(errors.length,0);assert.equal(JSON.stringify(live),before,'Original live input is unchanged');
+    // The actual caller's fresh timeline check, not a synthetic age predicate,
+    // rejects both copy/share after the real selected hour has rolled out.
+    for(const actionIndex of [0,1]){
+      context.renderSelectedZone();panel.shareButton.dispatch('click');
+      const expiredDialog=globalThis.document.body.children.at(-1);
+      assert.equal(expiredDialog.open,true);
+      const options=shareCalls.at(-1);assert.equal(options.isSelectionCurrent(options.selection),true);
+      Date.now=()=>freshNow+3600000;
+      try{
+        assert.equal(options.isSelectionCurrent(options.selection),false);
+        const actions=expiredDialog.children[1].children.find(node=>node.className==='button-row');
+        await actions.children[actionIndex].dispatch('click');
+        assert.equal(expiredDialog.isConnected,false,'Rollover closes the old score before any share/copy call');
+      }finally{Date.now=()=>freshNow;}
+    }
+    context.renderSelectedZone();panel.shareButton.dispatch('click');
+    const replacedDialog=globalThis.document.body.children.at(-1);assert.equal(replacedDialog.open,true);
+    controller.configure({generation:'synthetic-next-generation',times:horizonTimes,
+      live:{time:generatedAt,conditions:live}});
+    assert.equal(replacedDialog.isConnected,false,'Actual controller commit -> app render closes the old generation dialog');
+    controller.configure({generation:timeline.generation,times:horizonTimes,live:{time:generatedAt,conditions:live}});
+    panel.shareButton.dispatch('click');const closingDialog=globalThis.document.body.children.at(-1);
+    assert.equal(closingDialog.open,true);context.closeZone();
+    assert.equal(closingDialog.isConnected,false,'Actual closeZone disposes the owned dialog');
     controller.destroy();cases++;
   }
   globalThis.localStorage={getItem:()=> 'da'};

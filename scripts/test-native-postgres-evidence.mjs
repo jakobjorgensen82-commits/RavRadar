@@ -450,3 +450,134 @@ test('assistant NEXT execution cannot be minted or reused as a whole586 phase',(
     assert.throws(()=>verifyAssistantLaterH0PhaseReceipt(changed,current));
   }
 });
+
+// Additive588 source/receipt guards only. Actual PG execution remains the normal native target.
+import {
+  ASSISTANT_PUBLIC587_SUCCESSOR_COMMANDS,ASSISTANT_PUBLIC587_SUCCESSOR_SCRIPT,
+  ACTIVE_COMMANDS,ACTIVE_NATIVE_SCRIPT,ASSISTANT_PUBLIC587_SUCCESSOR_PHASE_KIND,
+  verifyAssistantPublic587SuccessorPhaseReceipt,
+} from './native-postgres-evidence.mjs';
+import {ASSISTANT_PUBLIC587_SUCCESSOR_BINDING,requireAssistantPublic587SuccessorOutput}
+  from './lib/assistant-later-h0-successor-source.mjs';
+import {withFrozen587CheckpointPostgresSource} from './run-frozen586-assistant-later-h0-postgres-source.mjs';
+import {compareAssistantPublic587Successor} from './lib/assistant-later-h0-postgres.mjs';
+import {runNativeCheckpointSqlComparison,nativePostgresFailureDiagnostic}
+  from './lib/checkpoint-cas-native-postgres.mjs';
+
+test('public587 successor native commands append588 without retagging whole587 identities',async()=>{
+  assert.deepEqual(ASSISTANT_PUBLIC587_SUCCESSOR_COMMANDS,[ASSISTANT_LATER_H0_COMMANDS[0],
+    ASSISTANT_LATER_H0_COMMANDS[1]+' --assistant-public587-successor']);
+  assert.equal(ASSISTANT_PUBLIC587_SUCCESSOR_SCRIPT,'set -euo pipefail\n'+ASSISTANT_PUBLIC587_SUCCESSOR_COMMANDS.join('\n')+'\n');
+  assert.equal(ACTIVE_COMMANDS,ASSISTANT_PUBLIC587_SUCCESSOR_COMMANDS);
+  assert.equal(ACTIVE_NATIVE_SCRIPT,ASSISTANT_PUBLIC587_SUCCESSOR_SCRIPT);
+  assert.notDeepEqual(ACTIVE_COMMANDS,ASSISTANT_LATER_H0_COMMANDS);
+  const source=await fs.readFile('scripts/native-postgres-evidence.mjs','utf8');
+  const main=source.slice(source.indexOf('async function main() {'));
+  assert(main.indexOf('requireAssistantPublic587SuccessorRelease()')<main.indexOf('spawnSync('));
+  assert(main.includes("'-c',ACTIVE_NATIVE_SCRIPT]"));
+  assert(main.includes("phase:'ASSISTANT_PUBLIC587_SUCCESSOR',eligibleForReuse:false"));
+  assert(main.includes('commands:ACTIVE_COMMANDS'));
+  assert(!main.includes('await decideReuse('));assert(!main.includes('await decideCurrent586Reuse('));
+  const target=await fs.readFile('scripts/test-protected-ravscore-continuation-checkpoint.mjs','utf8');
+  assert(target.indexOf('requireAssistantPublic587SuccessorRelease();')<target.indexOf('const PART_COUNT ='));
+  assert(target.includes("const assistantPublic587SuccessorNative = process.argv.includes('--assistant-public587-successor');"));
+  assert(target.includes("process.argv.includes('--assistant-later-h0') || assistantPublic587SuccessorNative"));
+  assert(target.includes('includeAssistantPublic587Successor: assistantPublic587SuccessorNative'));
+});
+
+test('public587 successor receipt requires its own executed command and rejects every predecessor receipt',()=>{
+  const current={run:ORIGIN.run+30,attempt:1,head:newOid,pullRequest:701,branch:'synthetic-public587-successor'};
+  const next={phase:'ASSISTANT_PUBLIC587_SUCCESSOR',status:'EXECUTED',executedInThisRun:true,origin:null,
+    current,commands:[...ASSISTANT_PUBLIC587_SUCCESSOR_COMMANDS],eligibleForReuse:false};
+  assert.equal(verifyAssistantPublic587SuccessorPhaseReceipt(next,current).status,'EXECUTED');
+  assert.notEqual(ASSISTANT_PUBLIC587_SUCCESSOR_PHASE_KIND,ASSISTANT_LATER_H0_PHASE_KIND);
+  assert.notEqual(ASSISTANT_PUBLIC587_SUCCESSOR_PHASE_KIND,CURRENT586_PHASE_KIND);
+  assert.throws(()=>verifyAssistantLaterH0PhaseReceipt(next,current));
+  assert.throws(()=>verifyCurrent586PhaseReceipt(next,current));
+  for(const [phase,commands]of [['ASSISTANT_LATER_H0',ASSISTANT_LATER_H0_COMMANDS],
+    ['NATIVE_ORIGINAL_CONTINUITY',CURRENT_COMMANDS]]){
+    assert.throws(()=>verifyAssistantPublic587SuccessorPhaseReceipt({...next,phase,commands:[...commands]},current));
+  }
+  for(const mutate of [v=>v.status='REUSED',v=>v.executedInThisRun=false,v=>v.origin={run:current.run-1},
+    v=>v.eligibleForReuse=true,v=>v.commands=[...ASSISTANT_LATER_H0_COMMANDS],v=>v.commands=[...CURRENT_COMMANDS],
+    v=>v.current={...current,head:oid},v=>v.phase='ASSISTANT_LATER_H0']){
+    const changed=copy(next);mutate(changed);
+    assert.throws(()=>verifyAssistantPublic587SuccessorPhaseReceipt(changed,current));
+  }
+});
+
+test('public587 native source and adapter reject unissued or extra operands before owned work',async t=>{
+  let io=0,operands=0,callbacks=0;
+  const poison=new Proxy({},{get(){operands++;throw new Error('UNEXPECTED_OPERAND');}});
+  for(const name of ['readFile','writeFile','appendFile','mkdir','mkdtemp','realpath','lstat'])
+    t.mock.method(fs,name,()=>{io++;throw new Error('UNEXPECTED_IO');});
+  t.mock.method(globalThis,'fetch',()=>{io++;throw new Error('UNEXPECTED_NETWORK');});
+  try{
+    if(ASSISTANT_PUBLIC587_SUCCESSOR_BINDING===null){
+      assert.throws(()=>requireAssistantPublic587SuccessorOutput(),/ASSISTANT_PUBLIC587_SUCCESSOR_UNISSUED/);
+      await assert.rejects(compareAssistantPublic587Successor(poison),/ASSISTANT_PUBLIC587_SUCCESSOR_UNISSUED/);
+      await assert.rejects(withFrozen587CheckpointPostgresSource(()=>{callbacks++;}),/ASSISTANT_PUBLIC587_SUCCESSOR_UNISSUED/);
+    }else{
+      requireAssistantPublic587SuccessorOutput();
+      await assert.rejects(compareAssistantPublic587Successor(poison,poison),{code:'ERR_ASSERTION'});
+      await assert.rejects(withFrozen587CheckpointPostgresSource(()=>{callbacks++;},poison),{code:'ERR_ASSERTION'});
+    }
+    assert.equal(io,0);assert.equal(operands,0);assert.equal(callbacks,0);
+  }finally{t.mock.restoreAll();}
+});
+
+test('public587 native phase requires complete587 and refuses UNISSUED before native programs',async()=>{
+  await assert.rejects(runNativeCheckpointSqlComparison({includeAssistantPublic587Successor:true}),
+    /Public587 successor requires the genuine complete587 native phase/);
+  await assert.rejects(runNativeCheckpointSqlComparison({includeAssistantPublic587Successor:'true'}),{code:'ERR_ASSERTION'});
+  if(ASSISTANT_PUBLIC587_SUCCESSOR_BINDING===null)await assert.rejects(runNativeCheckpointSqlComparison({
+    includeStatisticsRevision:true,includeNativeIdentity:true,includeCurrentMemoryWarmup:true,
+    includeEstablishedNativeCurrentOrigin:true,includeLastMileEnclosure:true,includeAccountStatisticsAssistant:true,
+    includeNativeOriginalContinuity:true,includeAssistantLaterH0:true,includeAssistantPublic587Successor:true,
+  }),/ASSISTANT_PUBLIC587_SUCCESSOR_UNISSUED/);
+  assert.deepEqual(nativePostgresFailureDiagnostic('ASSISTANT_PUBLIC587_SUCCESSOR','ERROR: 40001\n'),
+    {phase:'ASSISTANT_PUBLIC587_SUCCESSOR',sqlState:'40001',category:'SQL_CAS_CONFLICT'});
+});
+
+test('public587 native source owns genuine whole587 adapter and factory with unchanged older pins',async()=>{
+  const source=await fs.readFile('scripts/run-frozen586-assistant-later-h0-postgres-source.mjs','utf8');
+  for(const pin of [
+    '7df56f36f705db641b3f9476ee8ca1b4c4cfed0c','57192d6d5cfbd8709f3558ad8afaaf10dd6cafe0',
+    '6690b4abd7f75c8011f4646c60236a0f88ab2563477b2dce76bcdadbaa0c27b6',
+    '8111a107b16ffdf6fdc9b2b5d50be837b18105da0b1f9e2aec4988b345640bce',
+    'aab72babd27175a4276c2a2f1965c74bb021b4af','959f63d40c3980e804caa750da227cbd96e34a49',
+    '51f12b62222bd998362186456323685ee52f26d3b6af38823428850acb4c20da',
+    'e87ee5406f02681e6c5a6848ed8481e11168088d0799f7b399bfe7715edf17b0',
+    '832098498476efe1b119472f16fe6e254496640b2e7ad5bf23d5518088926ed2',
+  ])assert(source.includes(pin),pin);
+  assert(source.includes('profile===FROZEN586||profile===FROZEN587'));
+  assert(source.includes('withSource:withAuthenticated587PredecessorSource,requireOutput:requireAssistantPublic587SuccessorOutput'));
+  assert(source.includes('assert.equal(raw.length,row.bytes);assert.equal(sha(raw),row.sha256)'));
+  assert(source.includes("fs.writeFile(target,row.raw,{flag:'wx',mode:0o600})"));
+  assert(source.includes('await fs.readFile(target),raw'));
+  assert(source.includes("phase='ADAPTER_IMPORT'"));assert(source.includes("phase='FACTORY_IMPORT'"));
+});
+
+test('public587 native wiring keeps same owned host and all old negative-case families before588',async()=>{
+  const source=await fs.readFile('scripts/lib/checkpoint-cas-native-postgres.mjs','utf8');
+  const start=source.indexOf("nativePhase='ASSISTANT_LATER_H0';");
+  const end=source.indexOf("nativePhase='ASSISTANT_PUBLIC587_SUCCESSOR';");
+  assert(start>=0&&end>start);
+  const previous=source.slice(start,end);
+  assert(previous.includes('withFrozen587CheckpointPostgresSource(async({adapter,factory})=>'));
+  assert(previous.includes('adapter.compareAssistantLaterH0Successor({psql,runSql,root,sourceDocumentAt:factory.sourceDocumentAt,'));
+  assert(previous.includes('atHour:factory.atHour,saveCheckpoint:factory.saveRavScoreContinuationCheckpoint}'));
+  assert(source.slice(end).includes('compareAssistantPublic587Successor({psql,runSql,root,sourceDocumentAt,atHour,saveCheckpoint})'));
+  assert(source.includes("await fs.mkdtemp(path.join(os.tmpdir(), 'rr-checkpoint-pg-'))"));
+  const adapter=await fs.readFile('scripts/lib/assistant-later-h0-postgres.mjs','utf8');
+  assert(adapter.includes("sourcePhase:'assistant-later-h0',migrationCount:56,oidSlots:33,contractBodies:36"));
+  assert(adapter.includes("sourcePhase:'assistant-public587-successor',migrationCount:57,oidSlots:35,contractBodies:38"));
+  assert(adapter.includes("olderFixtures:Object.freeze(['native-original-continuity-current-same'])"));
+  for(const retained of ["'account-statistics-assistant-current-same'","'last-mile-584-same'","'origin-current-same'",
+    "'identity-same'","'after0600-same'","'grid-current'","['ffc','249','c1ac']",
+    "['value',","['field',","['part',","['T',","'same-current-numeric-change'","'wrong-version'","'regression'"])
+    assert(adapter.includes(retained),retained);
+  assert(adapter.includes('assertWholeMetadataInverse(original,payload,NEXT)'));
+  assert(adapter.includes('assert.notEqual((await runSql(sql)).code,0'));
+  assert(adapter.includes("normalProtectedJsonbRoundtrip:true,originalDigestsPreserved:true"));
+});

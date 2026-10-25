@@ -1,3 +1,63 @@
+## 25. oktober — samme manuelle tur skal genforsøges uden ændrede originaler
+
+Den normale manuelle indsendelse kunne ved samme tur-ID danne et nyt indsendelsestidspunkt og ændre registreringen ved genforsøg. Fejlen er reproduceret i de faktiske normale kaldere. Rettelsen genbruger den fulde oprindelige registrering, kræver samme ejer og uændret indhold og afviser en modstridende kø før skrivning eller transport. Et allerede sendt forsøg kræver stadig en frisk normal serverkvittering; et ukendt udfald kaldes ikke gemt. Ny konto efter afventning afvises fortsat.
+
+Den afgrænsede rettelse og seks regressioner er sammenført med brugerdata-/delingskilden. Hele den normale uploadprøve består lokalt med alle tidligere tilfælde bevaret. Den ændrer ikke C98/I97/T12, SQL, score, kildeprioritet, geometri, statistik eller retention. Det er ikke hosted accept eller offentlig levering: den samlede præcise sluthead og det normale leveringsforløb skal stadig bestå. Den private frivillige ratingpakke indgår ikke.
+
+## 25. oktober — lokal sammenføring af brugerdata, prognosedeling og udstedt 588
+
+Den normale adgangs-/eksportprøve havde en historisk 587-forventning til dashboardets importversioner. Den samlede kilde har 588-importer; produktet skal ikke ændres tilbage for at bestå prøven. En præcis ydre testvisning kræver hele den aktuelle fil, ændrer kun de tyve importversioner og versionsliteralen og genfinder derefter hele den uændrede 719-fil. Ændret import, versionsliteral eller renderkrop afvises; den faktiske aktuelle fil bruges stadig til rendering. Alle tidligere inverse kontroller bevares. De berørte lokale adgangs-/eksport- og klient-/Edge-prøver består, men den samlede kilde kræver fortsat egen præcis GitHub-kontrol og sikker levering.
+
+Den kvalificerede 719-forælder er lokalt sammenført med den særskilt udstedte 588-kilde. Begge dokumenthistorikker og produktfunktioner bevares; browserimporterne følger 588 uden ændring af den udstedte modelbinding eller migrationerne. Dette er ikke kvalifikation af den samlede head, installation eller offentlig levering. Offentlig 587 er nået, og det numeriske strømmål er lukket; fire hovedområder er fortsat åbne. Statistik, automatisk sletning og SOURCE forbliver inaktive. De private rating- og same-ID-kandidater indgår ikke. Ældre daterede statusafsnit nedenfor bevares som historik.
+
+## 25. oktober — lokal sammenføring af kvalificeret brugerdata-/delingskilde og P0-originalgrænse
+
+Den ægte, præcist kildekvalificerede PR719-forælder er nu lokalt sammenført med P0-rettelsen, der skelner original B fra assistentens arbejdsdata. Forælderens beståede kontrol er ikke kvalifikation af denne slutkomposition; dens normale samlede kontrol og sikre levering skal fortsat gennemføres. Begge daterede dokumenthistorikker nedenfor bevares uændrede.
+
+Sammenføringen udsteder hverken ny version, SQL eller modelbinding og ændrer ikke geodata eller produktion. Den særskilte 587-databaseovergang er faktisk installeret og genlæst; det er ikke offentlig Edge-/Pages-levering. Mål 1 om den numeriske strømrettelse er lukket; de fire øvrige hovedområder er åbne. Offentlig I97 afventer fortsat normal P0-vejrhentning og offentlig kontrol. Statistik, automatisk retention og SOURCE forbliver OFF. Ældre modstridende afventninger nedenfor er historik, ikke den aktuelle leveringsstatus.
+
+## 25. oktober — præcis workflowprøve for brugerdata og versionsbundne browserprøver
+
+Den lokale brugerdata-kilde retter et påvist orakelgab: den aktuelle 006-/eksport-workflowfil genkendes på hele sin hash og føres gennem entydige inverse ændringer tilbage til den uændrede historiske workflowkontrol. Ændrede installationsflag, myndighed, eksportkalder, frister og samtidighed afvises fortsat. Produktworkflowet og dets sikkerhedsgrænser ændres ikke for at få prøven grøn.
+
+Rapportens normale browserprøve læser nu releaseversionen fra package.json til de samme otte eksplicitte importkontroller. Alle eksisterende VM-, adgangs-, kontoskift- og racekontroller bevares; det er ikke bevis for installeret statistik eller offentlig rapport. Slutkilden skal fortsat bestå sin normale kontrol før levering. Den numeriske strømrettelse er særskilt produktionsverificeret; de fire øvrige hovedområder er åbne. 587-installation og den efterfølgende offentlige generation er stadig udestående, og SOURCE samt statistik og automatisk sletning forbliver inaktive.
+
+## 24. oktober — brugerdata og deling sammenført med begge checkpointrettelser
+
+Den fælles 587-kilde indeholder nu begge afgrænsede checkpointdestinationer og den bevarede første-fejlobservation fra assistentovergangen. Begge ægte forældrehistorikker og alle gamle dokumentafsnit bevares. De fire produktejere er hele fra checkpointrettelsen; den øvrige brugerdata-/delingskode er hel fra dens kvalificerede forælder. Der ændres ikke version, modelbinding, SQL eller geodata.
+
+Brugerdata-/delingsforælderens samlede kontrol er faktisk bestået. Den er ikke den nye slutkompositions kvalifikation: den sammenførte kilde skal bestå sin egen normale kontrol, og tidligere delbeviser ommærkes ikke. Ingen installation, Worker-oprettelse eller offentlig effekt følger af sammenføringen. Den særskilte assistentovergang og dens almindelige efterfølgende vejrgeneration skal først levere offentlig I97. Kontinuerligt vejr er P0; statistik og automatisk sletning er fortsat inaktive, og alle fem hovedmål er åbne.
+
+## 24. oktober — fælles 587-kandidat for brugerdata og prognosedeling
+
+Den isolerede app-/assistentprøve medtager nu appens egne delings-livstidsbindinger sammen med de faktiske zonefunktioner. Den manglende VM-deklaration er rettet i testen, ikke ved at fjerne produktets oprydning eller skjule fejl. Alle tidligere kontroludsagn bevares; den ekstra regression følger den rigtige lukning, nulstilling og samme fejlkast. Det ændrer ikke appen, viden, modelbindinger, SQL eller den almindelige vejrhentning.
+
+Brugerdatarettelsen og prognosedelingen er nu lokalt sammenført gennem begge ægte Git-historikker. De disjunkte produktejere er bevaret hele, og kun de fælles dokumenter og håndbogsliteralen er samlet. C98/I97/T12, 66 gamle Supabase-migrationer, geodata og den almindelige vejr-/Pages-vej bevares. Sammenføringen er ikke i sig selv kildekvalifikation, installation eller offentlig virkning; den præcise slutkilde skal bestå sin normale kontrol før levering.
+
+Ældre 29-/129-prøver nedenfor er deres forældres beviser. Den tidligere kompilerede Node-forhåndsvisning mod offentlige data var udført på 586, ikke den nye 587-kandidat. Den genuine 587-bundle er lokalt bygget til 141,04 KiB uden bindings, men beviser ikke en oprettet Worker, gyldig hosted score, Free-kapacitet eller Facebook-visning. Disse krav er særskilte. Skiftende kvitteringer og den aktuelle test-/driftsstatus hører til i det private checkpoint.
+
+Brugerdatajobbet forbliver globalt slået fra, rapportens offentlige frigivelse er uudstedt, og automatisk sletning er inaktiv. Brugerens statistikpræference har fortsat default ON og frisk fravalgskontrol. Fund-/ikke-fund-rapporten er ikke en måling af oplevet god eller dårlig tur og lukker ikke alene målets statistikdel. 006 kræver faktisk genlæst Worker-OFF og de forudgående præcise skemaer; en lokal konfiguration er ikke bevis for installation. Kontinuerligt vejr er P0, og ingen produktion ændres under aktiv writer. Alle fem mål er åbne.
+
+## 24. oktober — prognosedeling er lokalt kontrolleret, ikke offentligt leveret
+
+Ny eksplicit ejerautoritet omfatter kun `ravradar-prognosedeling` på eksisterende Cloudflare Free/account workers.dev, med fast adresse `https://ravradar-prognosedeling.jakob-jorgensen82.workers.dev/`. Der er ingen tilladelse til ny database, billedlager, DNS-ændring, nøgler eller betalingsplan. Delingen genbruger eksisterende publicscore og normal offentlig datakontrol; den ændrer ikke vejr, scoremodel eller private data. Brugeren vælger selv destination og opslagstekst.
+
+Faktisk lokal evidens: 129 normale tilfælde bestået, bindingfri bundle på 140,75 KiB og Node-kørsel af den kompilerede kode mod rigtige offentlige data med score 23/100 i forhåndsvisningen. Den konkrete score er alene et prøveudfald, ikke et permanent produktudsagn. Ingen Worker er dermed bevist oprettet eller leveret; Free-forbrug, hosted GET/HEAD, UI og Facebook-forhåndsvisning er endnu åbne.
+
+Levering forberedes som et særskilt normalt forløb efter præcis kildekontrol, ikke gennem ændring af det almindelige vejr-/Pages-workflow og aldrig under aktiv produktionswriter. Ingen versions- eller C/I/T-/SQL-udstedelse. Alle fem hovedmål er fortsat åbne til 18. november; vejr og dækning har førsteprioritet. Ældre status nedenfor bevares som historik, og kun den snævre Worker-tilladelse er udvidet.
+
+## 24. oktober — privat userdata-sammenføring med genuine 587 og P0
+
+Den private 006-/ejerrapportkandidat er lokalt sammenført med genuine 587-kilden og de særskilt main-leverede P0-rettelser til DMI-køobservation og fair tidsandel. Dette er ikke præcis samlet kildekvalifikation, installation, aktiveret statistik eller offentlig rapport. Begge grenes fulde historik bevares; de daterede afventninger nedenfor om netop P0-main-leveringerne er historik.
+
+4.0.587, C98/I97/T12, 66 gamle Supabase-migrationer, originale 004/005 og den særskilte 006-kandidats standard OFF-/plan-grænser bevares. De 29 faktisk beståede account-tilfælde er fortsat deres oprindelige bevis, ikke et nyt samlet PASS. Præcis samlet kilde-/nativekontrol, faktisk schema-/Workerinventory, kontrolleret OFF-installation/genlæsning og ejerens browseraccept er åbne. Ingen statistik- eller frigivelsesautoritet følger af sammenføringen. Kontinuerligt vejr og dækningsgrad er P0; alle fem mål er fortsat åbne.
+
+## 25. oktober — assistentens spørgsmålsforståelse og dato-/rangering er lokalt rettet, ikke offentlig
+
+De fem ejerpåviste svar er reelle produktfejl, ikke bevis for manglende nationale prognoser. Den afgrænsede klientrettelse genkender kese/ravkese, egne funktioner og god vind samt udleder efterspurgt kalenderdag og bruger den eksisterende validerede nationale rangering. Hele inputtets emne- og sikkerhedskontrol går fortsat forud; ukendte kvalifikationer må ikke skjules af et delmatch. Ingen scoreformel, kildeprioritet eller vejrdata ændres, og der hentes ikke 210 zonepakker for et nationalt svar.
+
+De normale mål består lokalt, inklusive variationer, negative tilfælde, datoer og i18n. Én faktisk offentlig ekstern-AI-case i 587 gav kun delvis besvarelse. Eksisterende kurateret viden om ravets overflade, sprækker og opbevaring samt kravet om at dække hele spørgsmålet er styrket på DA/DE/EN; de tre berørte normale mål består. Dette er stadig ikke samlet hosted kvalitetsaccept. Den originalbevarende 587→588-port er anvendt, og 4.0.588-bindingen, dens append-only migration og syv forbrugere er lokalt udstedt og kontrolleret. Det er ikke installation eller offentlig levering; den præcise normale kilde-/databasekontrol og offentlige accept mangler stadig. Tidligere udsagn nedenfor om uanvendt kandidat er historiske på netop den lokale anvendelse; den offentlige rettelse er fortsat åben.
+
 ## 25. oktober — offentlig 587 og godkendt Om-/Grundbog-tekst
 
 Den normale fulde vejrkæde har nu faktisk leveret offentlig 4.0.587/I97. Den tidligere åbne Pages-blokering og teksten om fortsat offentlig 586 nedenfor er historiske førbilleder, ikke den aktuelle leveringsstatus. Cron er genaktiveret, og almindelig vejrhentning fortsætter. Kontinuerlig drift og faktisk dækning er fortsat P0; skiftende kørselstal, identiteter og writerstatus føres i det private checkpoint.
@@ -53,6 +113,24 @@ Den afgrænsede opfølgning registrerer kun hver DKSS-samlings første faktisk s
 
 En kritisk fil kan også være en native strømopgradering og beviser derfor ikke et tomt vejrhul på tværs af leverandører. Kø, budgetter, kildevalg, originalkrav og numeriske data ændres ikke. Den større lokale scalar-kandidat medfølger ikke. Version 4.0.586, modelbinding og SQL bevares. Den isolerede normale målprøve består; præcis samlet kildekontrol og observation fra en kommende almindelig kørsel mangler. Bedre dækning påstås ikke. Alle fem mål er fortsat åbne til 18. november; kontinuerligt vejr og reel time-/zonedækning er P0.
 
+
+## 24. oktober — privat månedsrapport, lokalt sammenhængende prøvet
+
+Et korrekt afsluttet ældre statistikjob kan nu gemmes under rapportens egen validerede, lukkede måned. Den normale klient bevarer servervalgt originalbinding, frisk kontrol af statistikvalg og sletning samt sidste VERIFY. Gemningen er insert-only i det eksisterende beskyttede adminlager; en eksisterende månedsrapport overskrives ikke, og ukendt skriveudfald giver ikke automatisk gentagelse.
+
+Den friske ejeroversigt vælger den højeste faktisk gemte månedsnøgle, genlæser netop den rapport og bekræfter nøgle/version og adgang igen. Fejl giver ikke tilbagefald til en ældre rapport. Visningen viser faktisk måned og 20 rækker med de 40 eksisterende støjede celler for fund/ikke-fund. Det er ikke gode/dårlige oplevelser, præcise turantal eller en ny estimator; ingen automatisk RavScore-ændring. Kontoskift/logout fjerner visningen, og download kræver ny læsning. Beskyttelsen mod tilbagerulning i browseren er sessionsvis, ikke et vedvarende revisionsbevis.
+
+ROOTs hele normale account-callers består nu med 29 PASS, 0 FAIL og 0 SKIP, inklusive den allerede importerede normale rollover-, SQLite-/Worker-/klient-/transport- og browserkodekæde. Dette er lokalt kontraktbevis, ikke hosted browser, installation eller offentlig statistik. De tidligere 28 er førpakkens bevarede resultat. Statistik aktiveres ikke; den normale OFF-kontrakt, udelukkelse af kendte testture og nyeste OFF/ON/sletning består. Faktisk installation, Free-kapacitet, anonymitet inklusive overlap/differens og tilladt frigivelse er fortsat åbne. P0-vejret har førsteprioritet, ingen produktionsændring under writer; alle fem mål er åbne til 18. november. Se håndbog 89.260 og aktuelt privat checkpoint.
+
+## 24. oktober — oprindeligt modelgrundlag for gemte statistikjob, lokalt prøvet
+
+Den særskilte brugerdataforberedelse bevarer et statistikjobs fulde oprindelige modelgrundlag ved senere programopdateringer. Nye job gemmer den normale aktuelle tuple sammen med dens hash; fortsættelse kræver faktisk servergenlæsning, uændret job/policy og frisk kontrol af statistikvalg og sletning. Klienten starter fortsat med den aktuelle binding, mens alle kvitteringer og den sidste genlæsning skal svare til det servervalgte originale job. En klientvalgt gammel tuple eller JSON-kopi giver ingen adgang. Kendte gamle hash-only-job kan kun genkendes ved hele uændrede, kildebundne tuples; ukendte bevares og afvises, ikke slettes, ommærkes eller springes tavst over. Nye job bærer selv hele tuplen, så løsningen ikke afhænger af en fast liste over fremtidige versioner. Ændret schema eller policy får ingen automatisk kompatibilitet.
+
+Den nye særskilte 006-ændring bevarer 004/005 og kræver eksplicit tilladelse, eksakt forudsætning og kontrol0 som eneste destination. Faktisk aktiv Worker med statistik OFF kontrolleres før DDL; eksklusiv intention, ingen gentagelse ved ukendt skriveudfald og eksakt genlæsning består. Ny Worker skal igen være verificeret OFF, før leveringen går videre. Normal schemaoptælling omfatter 41 metadataobjekter inklusive SQLite-autoindekser; det ændrer ikke noget statistik- eller privacybudget. Den normale Workerindsamler afslørede samtidig en eksisterende parserfejl: Array.from i export const blev forvekslet med re-export. Rettelsen skelner deklarationer, men bevarer kontrollen af indlejrede imports og ukendte modulehenvisninger.
+
+ROOT har faktisk kørt hele den normale account-callers-fil: 28 bestået, nul fejl og nul udeladelser, inklusive begge rolloverprøver, rigtig Workerindsamling og de to nye parserprøver. De tre normale model-/bindingskontroller består med uændrede C/I/T og syv forbrugere. Det er lokalt kontraktbevis, ikke præcis ny samlet kilde-CI, installation eller hosted drift. Ingen ny version, model-/SQL-binding eller offentlig 587 følger af pakken.
+
+Aktuel installation af 004/005 og tilstedeværelse af faktiske produktionsjob er ikke dokumenteret i denne forberedelse; ældre kategoriske udsagn om uinstalleret status er historik, ikke en ny inventorymåling. 006 er ikke installeret her. Statistikaktivering, dokumenteret anonymitet og samlet rapportspor, Free-kapacitet og faktisk leveringskontrol er åbne. Testture forbliver udelukket, nyeste OFF/ON og sletning skal respekteres, og automatisk retention forbliver OFF uden fungerende varsling. Pseudonymer eller gruppestørrelse er ikke alene anonymisering. Kontinuerligt vejr har førsteprioritet; ingen produktionsændring under aktiv writer. Alle fem mål er åbne til 18. november 2026. Se håndbog 89.260 og det aktuelle private checkpoint; tidligere afsnit bevares som dateret historik.
 
 ## 24. oktober — lokal 587-sammenføring med den leverede DMI-kilde
 

@@ -1,27 +1,27 @@
-import { PUBLIC_CONFIG } from '../../config.js?v=4.0.587';
-import { collectOwnTripExport } from './own-trip-export.js?v=4.0.587';
-import { assertAuthIdentitySettled, authIdentityEpoch, authorizedFetch, currentSession, requireFreshSession } from './auth-service.js?v=4.0.587';
+import { PUBLIC_CONFIG } from '../../config.js?v=4.0.588';
+import { collectOwnTripExport } from './own-trip-export.js?v=4.0.588';
+import { assertAuthIdentitySettled, authIdentityEpoch, authorizedFetch, currentSession, requireFreshSession } from './auth-service.js?v=4.0.588';
 import {
   TRIP_EVIDENCE_SCHEMA_VERSION,
   assertObservationTripQualityBinding,
   assertTripEvidencePrivacy,
   migrateLegacyUnattestedObservationColumns,
   toObservationTripColumns
-} from './trip-evidence-contract.js?v=4.0.587';
+} from './trip-evidence-contract.js?v=4.0.588';
 import {
   observationOriginFields,
   assertTripObservationNestedPrivacy,
   expectedCalibrationEligibility,
   projectTripStoragePayload,
   tripEvidenceIntegrityIssues
-} from './calibration-eligibility.js?v=4.0.587';
+} from './calibration-eligibility.js?v=4.0.588';
 import {
   RAVSCORE_MODEL_ID,
   assertRavScoreModelBinding,
   ravScoreModelBinding
-} from '../core/ravscore-model-contract.js?v=4.0.587';
-import { ACCOUNT_TRIP_REPORT_SOURCE, HISTORICAL_SNAPSHOT_UNAVAILABLE } from './account-trip-report-contract.js?v=4.0.587';
-import { markTripEvidenceSubmitted, tripEvidenceStorageKeys } from './trip-evidence-store.js?v=4.0.587';
+} from '../core/ravscore-model-contract.js?v=4.0.588';
+import { ACCOUNT_TRIP_REPORT_SOURCE, HISTORICAL_SNAPSHOT_UNAVAILABLE } from './account-trip-report-contract.js?v=4.0.588';
+import { markTripEvidenceSubmitted, tripEvidenceStorageKeys } from './trip-evidence-store.js?v=4.0.588';
 const enabled=Boolean(PUBLIC_CONFIG.supabaseUrl&&PUBLIC_CONFIG.supabasePublishableKey);
 const LOCAL_KEY='ravradar-observations-v2';
 const OUTBOX_KEY='ravradar-observation-outbox-v1';
@@ -393,11 +393,17 @@ export async function submitAccountTripReportObservation(columns){
   assertTripEvidencePrivacy(columns);
   let session=currentSession();
   if(session?.access_token&&!session?.user?.id)session=await requireFreshSession();
-  if(authIdentityEpoch()!==identity||(currentSession()?.user?.id||null)!==(session?.user?.id||null))throw new Error('Kontoen blev ændret. Prøv igen fra den rigtige konto.');
+  const assertOwner=()=>{
+    if(authIdentityEpoch()!==identity||(currentSession()?.user?.id||null)!==(session?.user?.id||null))
+      throw new Error('Kontoen blev ændret. Prøv igen fra den rigtige konto.');
+  };
+  assertOwner();
   if(!session?.user?.id)throw new Error('Log ind, før du indberetter en tur fra din konto.');
-  const existing=readMigratedRows(LOCAL_KEY).find(row=>row.trip_id===columns.trip_id);
+  // Inspect without rewriting legacy storage before owner/content checks.
+  const existing=readStoredObservationRows(LOCAL_KEY).find(row=>row?.trip_id===columns.trip_id);
+  if(existing&&existing.user_id!==session.user.id)throw new Error('Log ind med den konto, som turen tilhører, før den kan sendes.');
   if(existing&&!sameObservationValue(observationOriginFields(existing),observationOriginFields(columns)))throw new Error('Den gemte tur er ændret og kan ikke sendes som samme tur.');
-  const submittedAt=new Date().toISOString();
+  const submittedAt=existing?existing.submitted_at:new Date().toISOString();
   const row={
     ...observationOriginFields(columns),
     id:existing?.id||columns.trip_id,
@@ -409,7 +415,7 @@ export async function submitAccountTripReportObservation(columns){
     hunt_mode:columns.hunt_mode,
     result:columns.result,
     grams:columns.grams,
-    anonymous_id:existing?.anonymous_id||anonymousId(),
+    anonymous_id:existing?existing.anonymous_id:anonymousId(),
     user_id:session.user.id,
     trip_id:columns.trip_id,
     gps:null,
@@ -449,6 +455,19 @@ export async function submitAccountTripReportObservation(columns){
     sync_status:enabled?'pending':'local'
   };
   assertTripEvidencePrivacy(row);
+  if(existing){
+    if(!sameObservationValue(remoteObservationPayload(existing),remoteObservationPayload(row)))
+      throw new Error('Den gemte tur er ændret og kan ikke sendes som samme tur.');
+    const pending=readStoredObservationRows(OUTBOX_KEY).find(value=>value?.id===existing.id);
+    if(pending&&!sameObservationValue(remoteObservationPayload(pending),remoteObservationPayload(existing)))
+      throw new Error('Den gemte tur er ændret og kan ikke sendes som samme tur.');
+    if(!enabled)return {stored:'local',row:existing};
+    // As for started trips, retry the original body, never a new capture time.
+    enqueue(existing);
+    const status=await syncPendingObservations();
+    assertOwner();
+    return tripObservationReceipt(existing,status);
+  }
   upsertLocal(row);if(!enabled)return {stored:'local',row};enqueue(row);const status=await syncPendingObservations();return tripObservationReceipt(row,status);
 }
 if(typeof window!=='undefined'){window.addEventListener('online',()=>syncPendingObservations().catch(()=>{}));}

@@ -8,13 +8,12 @@ import path from 'node:path';
 import {fileURLToPath,pathToFileURL} from 'node:url';
 import {execFile as callbackExec} from 'node:child_process';
 import {promisify,isDeepStrictEqual as equal} from 'node:util';
-import {requireAssistantLaterH0Binding,requireAssistantLaterH0Output,readAssistantLaterH0CanonicalSource,
-  assistantLaterH0Migration} from './lib/assistant-later-h0-successor-source.mjs';
-import {withAuthenticated586PredecessorSource} from './check-assistant-later-h0-predecessor-source.mjs';
-import {readAuthenticatedFrozen586Predecessor,assertAuthenticatedFrozen586Snapshot,
-  assertAuthenticatedFrozen586SnapshotFresh} from './lib/authenticated-frozen586-predecessor.mjs';
+import {ACTIVE_ASSISTANT_SUCCESSOR as ACTIVE} from './lib/assistant-later-h0-successor-source.mjs';
+import {withAuthenticated587PredecessorSource} from './check-assistant-later-h0-predecessor-source.mjs';
+import {readAuthenticatedFrozen587Predecessor,assertAuthenticatedFrozen587Snapshot,
+  assertAuthenticatedFrozen587SnapshotFresh} from './lib/authenticated-frozen586-predecessor.mjs';
 import {assertRestoredOriginalInventory} from './migrate-post-cutover-private-runtime.mjs';
-import {assertAssistantLaterH0MigrationPlan} from './integrated-cutover-readiness.mjs';
+import {assertAssistantPublic587SuccessorMigrationPlan} from './integrated-cutover-readiness.mjs';
 import {inspectDmiForecastFile,readDmiForecastRecord} from './lib/dmi-forecast-file.mjs';
 import {unpackDmiPartContinuity,assertDmiPartContinuityTotalSize} from './lib/dmi-part-continuity.mjs';
 import {createProtectedDmiNativeCurrentInspector} from './lib/protected-dmi-native-current-proofs.mjs';
@@ -44,7 +43,7 @@ export function assertAssistantBindingPrewriteCaller(){
     'RAVRADAR_NATIVE_IDENTITY_RECOVERY_OPT_IN',
     'RESTART_ARCHIVED_WEATHER','PUBLISH_NEWEST_SAVED_WEATHER','CHECKPOINT_ONLY','QUICK_CONFIRMATION'])assert.notEqual(e[key],'true');
   for(const [key,value] of Object.entries(e))if(/PREWRITE_(?:VERIFIED|REQUIRED)$/.test(key))assert.notEqual(value,'true');
-  requireAssistantLaterH0Output();return requireAssistantLaterH0Binding();
+  ACTIVE.requireOutput();return ACTIVE.requireBinding();
 }
 
 // Observation only: the first owned callsite survives nested cleanup/catches.
@@ -78,6 +77,18 @@ const prewriteCategories=Object.freeze({
   FROZEN586_PREDECESSOR_REGISTRY_CHANGED:'SNAPSHOT_REGISTRY_CHANGED',
   FROZEN586_PREDECESSOR_B_CONDITIONS_CHANGED:'SNAPSHOT_CONDITIONS_CHANGED',
   FROZEN586_PREDECESSOR_CLOSE_UNPROVED:'SNAPSHOT_CLOSE_UNPROVED',
+  FROZEN587_PREDECESSOR_OLD_FAMILY:'SNAPSHOT_OLD_FAMILY',
+  FROZEN587_PREDECESSOR_PRODUCER_SEMANTICS_CHANGED:'SNAPSHOT_PRODUCER_SEMANTICS',
+  FROZEN587_PREDECESSOR_PRODUCER_POLICY_CHANGED:'SNAPSHOT_PRODUCER_POLICY',
+  FROZEN587_PREDECESSOR_ATTESTATION_REQUIRED:'SNAPSHOT_ATTESTATION',
+  FROZEN587_PREDECESSOR_B_S_DIFFER:'SNAPSHOT_B_S_DIFFER',
+  FROZEN587_PREDECESSOR_S_MISSING:'SNAPSHOT_S_MISSING',
+  FROZEN587_PREDECESSOR_S_VERSION:'SNAPSHOT_S_VERSION',
+  FROZEN587_PREDECESSOR_S_CHANGED:'SNAPSHOT_S_CHANGED',
+  FROZEN587_PREDECESSOR_SOURCE_CHANGED:'SNAPSHOT_SOURCE_CHANGED',
+  FROZEN587_PREDECESSOR_REGISTRY_CHANGED:'SNAPSHOT_REGISTRY_CHANGED',
+  FROZEN587_PREDECESSOR_B_CONDITIONS_CHANGED:'SNAPSHOT_CONDITIONS_CHANGED',
+  FROZEN587_PREDECESSOR_CLOSE_UNPROVED:'SNAPSHOT_CLOSE_UNPROVED',
 });
 const prewriteWeakKey=e=>e!==null&&(typeof e==='object'||typeof e==='function');
 function prewriteCategory(error){
@@ -111,7 +122,7 @@ function emitPrewriteRefusal(error){
 }
 
 async function source(fresh=false){
-  const binding=assertAssistantBindingPrewriteCaller();await readAssistantLaterH0CanonicalSource();
+  const binding=assertAssistantBindingPrewriteCaller();await ACTIVE.readCanonicalSource();
   assert.equal(ravScoreModelBinding().modelBundleSha256,binding.I);
   assert.equal(candidateBinding().modelBundleSha256,binding.C);
   assert.equal((await privateRuntimeContractHashes({repositoryRoot:ROOT})).continuationStateContractSha256,binding.T);
@@ -204,7 +215,7 @@ async function originalFiles(p,snapshot){
   same(await boundedJson(p.originalS,16*1024*1024),snapshot.checkpoint);
 }
 async function prepare(p){
-  await prewriteAt('PREPARE','FROZEN_SOURCE',()=>withAuthenticated586PredecessorSource(async frozenRoot=>{
+  await prewriteAt('PREPARE','FROZEN_SOURCE',()=>withAuthenticated587PredecessorSource(async frozenRoot=>{
     const load=file=>import(pathToFileURL(path.join(frozenRoot,file)).href);
     const [b,bundle,workflow,model,s]=await prewriteAt('PREPARE','MODULES',()=>Promise.all([
       load('scripts/protected-private-production-runtime.mjs'),load('scripts/private-production-runtime-bundle.mjs'),
@@ -227,10 +238,10 @@ async function prepare(p){
       request:s.createProtectedRavScoreCheckpointRequester()}));
     await prewriteAt('PREPARE','S_DISPOSITION',()=>assert.equal(saved.restored,true));
   }));
-  const handle=await prewriteAt('PREPARE','SNAPSHOT',()=>readAuthenticatedFrozen586Predecessor());
-  const snapshot=await prewriteAt('PREPARE','SNAPSHOT',()=>assertAuthenticatedFrozen586Snapshot(handle));
+  const handle=await prewriteAt('PREPARE','SNAPSHOT',()=>readAuthenticatedFrozen587Predecessor());
+  const snapshot=await prewriteAt('PREPARE','SNAPSHOT',()=>assertAuthenticatedFrozen587Snapshot(handle));
   await prewriteAt('PREPARE','ORIGINAL_FILES',()=>originalFiles(p,snapshot));
-  await prewriteAt('PREPARE','FRESH_SNAPSHOT',()=>assertAuthenticatedFrozen586SnapshotFresh(handle));
+  await prewriteAt('PREPARE','FRESH_SNAPSHOT',()=>assertAuthenticatedFrozen587SnapshotFresh(handle));
   await prewriteAt('PREPARE','BASELINE_WRITE',async()=>fs.writeFile(p.baseline,JSON.stringify(baseline(snapshot,await centralProof()))+'\n',{flag:'wx',mode:0o600}));
   // Identity comparison only. This file can NEVER replace fresh authentication.
 }
@@ -238,8 +249,8 @@ async function plan(){
   const migrationListText=await boundedJsonText(path.join(process.env.RUNNER_TEMP,'weather-binding-migrations-plan.txt'));
   const dryRunText=await boundedJsonText(path.join(process.env.RUNNER_TEMP,'weather-binding-migrations-dry-run.txt'));
   const directory=process.env.RAVRADAR_BINDING_MIGRATION_WORKDIR;assert(path.isAbsolute(directory??''));
-  const result=await assertAssistantLaterH0MigrationPlan({migrationListText,dryRunText,migrationsDirectory:path.join(directory,'supabase/migrations')});
-  same(result.pendingVersions,[assistantLaterH0Migration().version]); // Installed/uncertain outcome is NOT a replay grant.
+  const result=await assertAssistantPublic587SuccessorMigrationPlan({migrationListText,dryRunText,migrationsDirectory:path.join(directory,'supabase/migrations')});
+  same(result.pendingVersions,[ACTIVE.migration().version]); // Installed/uncertain outcome is NOT a replay grant.
 }
 async function boundedJsonText(file){const {raw}=await ownedRead(file,128*1024,true);return raw.toString('utf8');}
 async function bank(p,snapshot){
@@ -274,12 +285,12 @@ async function bank(p,snapshot){
 }
 async function verify(p){
   await plan();const previous=await boundedJson(p.baseline,256*1024);
-  const handle=await readAuthenticatedFrozen586Predecessor(),snapshot=assertAuthenticatedFrozen586Snapshot(handle);
+  const handle=await readAuthenticatedFrozen587Predecessor(),snapshot=assertAuthenticatedFrozen587Snapshot(handle);
   same(previous,baseline(snapshot,await centralProof()));await originalFiles(p,snapshot);
   const checked=await bank(p,snapshot);await originalFiles(p,snapshot);
   // No full B/S re-authentication or bank replay here: the lexical normal
   // pointer/S-version guard rechecks the authentic handle AFTER the bank pass.
-  await source(true);await assertAuthenticatedFrozen586SnapshotFresh(handle);return checked;
+  await source(true);await assertAuthenticatedFrozen587SnapshotFresh(handle);return checked;
 }
 async function main(){
   await prewriteAt('CLI','ARGUMENTS',()=>{assert.equal(process.argv.length,3);assert(['prepare','plan','verify'].includes(process.argv[2]));});

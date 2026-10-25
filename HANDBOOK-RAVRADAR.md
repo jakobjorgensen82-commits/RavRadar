@@ -1,3 +1,17 @@
+## 89.268 Del en offentlig prognose
+
+Kort fortalt: Et delingslink peger på det valgte sted, tidspunkt og søgemåde. Du vælger selv, hvor det deles, og hvad du skriver til det.
+
+Du kan dele den viste prognose eller kopiere linket fra den valgte zone. Linket bruger dit valgte sted, den præcise time, søgemåden strand eller waders samt dansk, tysk eller engelsk. Visningen erstatter ikke en manglende time med et andet tidspunkt.
+
+Forhåndsvisningen bruger RavRadars allerede offentliggjorte score og viser de relevante forbehold, for eksempel ufuldstændig historik eller delvis dækning. Deling beregner ikke en ny score og ændrer ikke vejrdata. En score er en beregnet vurdering, ikke en garanti for fund.
+
+Dato og klokkeslæt vises i dansk lokal tid med den rigtige sommer- eller vintertid. Sted, tidspunkt og søgemåde skal læses sammen med scoren. Linkets sprogvalg ændrer kun præsentationen, ikke datagrundlaget.
+
+Et link er ikke en permanent kopi af prognosen. Nye offentlige data kan ændre visningen for samme sted og time, og en gammel time kan udløbe. Hvis data ikke længere kan kontrolleres eller er udløbet, må visningen ikke gætte en score. Facebook og andre modtagere kan gemme en tidligere forhåndsvisning, så opslagets kort kan være forsinket i forhold til det link, du åbner.
+
+Telefonens eller browserens delingsmenu bestemmer de tilgængelige destinationer. Du vælger selv destination og opslagstekst; RavRadar sender ikke automatisk et opslag. Delingssiden læser kun den offentlige prognose og bruger det eksisterende RavRadar-logo, ikke private ture eller kontodata.
+
 ## 89.267 Gyldige vejrdata kan bevares uden overskrivning
 
 Hentetiden fordeles mellem de kritiske vejrmodeller, så hver model kan arbejde, mens der stadig er reserveret tid til de øvrige. Et fast filantal fortæller ikke, hvor lang tid filerne tager. Tiden og den fælles downloadgrænse skal derfor begge respekteres. Flere behandlede filer er heller ikke i sig selv bevis for bedre dækning; det afgøres af de gyldige værdier i hele prognosen.
@@ -20,7 +34,9 @@ SpørgRavRadar bruger sin eksisterende kontrollerede viden til generelle forklar
 
 Spørgsmål om aktuelle vejrtal kræver en konkret zone og de faktisk tilknyttede data. Et generelt svar må ikke opfinde tal eller afgøre sikkert, hvad der ligger på en bestemt strand. Usikkerhed, manglende data og sikkerhedsgrænser skal stadig fremgå ærligt; private oplysninger må ikke bruges som offentlig viden.
 
-Disse svarforbedringer og en originalbevarende programovergang er lokalt forberedt og udstedt i 4.0.587. Sidste verificerede offentlige version er4.0.586. Lokal kildekontrol er ikke installation, ny vejrhentning eller offentlig effekt; det kræver særskilt kontrolleret levering og en almindelig efterfølgende opdatering. Lager-/økonomivalget og den aktuelle genopretning er fortsat særskilte åbne punkter; denne opdatering giver ingen tilladelse til sletning af originaler.
+4.0.587 er nu offentligt leveret med bevarede originaler. Det beviser ikke i sig selv, at alle spørgsmål besvares godt. Den efterfølgende rettelse af almindelige formuleringer, efterspurgt kalenderdag og brug af den allerede beregnede nationale prognose indgår i den lokale 4.0.588-kandidat med udstedt binding; kontrolleret levering og offentlig afprøvning mangler stadig. Et svar skal dække hele spørgsmålet eller tydeligt sige, hvad der ikke kan afgøres. Hverken et sikkert delsvar, lokal kildekontrol eller en vellykket netforbindelse er i sig selv samlet kvalitetsbevis. Ingen ændring af scoreformel eller sletning af originaler følger af denne rettelse.
+
+Rav er forholdsvis blødt. Overfladen kan blive mat eller mørkere ved påvirkning over tid, og varme, stærkt lys og ustabile forhold kan give skader. Det afgør ikke alene et funds alder eller oprindelse. Opbevar fund stabilt, moderat og uden stærkt lys, adskilt fra hårde genstande. Et robust fund kan skylles forsigtigt; sprækker, en skrøbelig overflade eller usædvanlige indeslutninger kræver ekstra forsigtighed. Varme, opløsningsmidler og olier er ikke en sikker genvej.
 
 ## 89.264 Ny strømhistorik med bevaret arkiv
 
@@ -107,6 +123,18 @@ Statistikkens to ekstra lagerdele skal tillades særskilt. Tilladelsen til den f
 Den nye installationsforberedelse er privat og afgrænset prøvet, ikke installeret. Fire målprøver på normal programkode består, men en nødvendig lokal formatkontrol kunne ikke køres, fordi parseren mangler. Faktisk databaselevering, håndtering af ukendte skriveudfald og serverens processor- og hukommelsesforbrug skal stadig dokumenteres. Selvrapporterede ture er ikke bevis for ægte ture eller korrekt historisk vejr, og skjulte bruger-ID'er er ikke i sig selv anonymitet. Anonymitet, rapporternes samlede spor og tilladt frigivelse skal kontrolleres særskilt, før statistik kan bruges.
 
 Rettelsen er lokalt sammenført og afgrænset prøvet, men endnu ikke leveret offentligt. Samlet statistik og dens særskilte lagerinstallation er fortsat slået fra. Der loves hverken dokumenteret anonymitet, en fungerende automatisk sletning eller mailvarsling ud fra denne prøve. Den nye måldato er 18. november 2026; ældre frister og leveringsstatus nedenfor er dateret historik.
+
+Supplerende forberedelse: Et gemt statistikjob skal også beholde sit fulde oprindelige modelgrundlag, når programmet senere opdateres. Et ældre job må ikke ommærkes som et nyt. Kun serverens genlæsning af det faktisk gemte arbejde kan give adgang til at fortsætte; brugerens anmodning eller en kopieret kvittering er ikke nok. Kan det gamle grundlag ikke genkendes sikkert, bevares arbejdet og afvises frem for at blive gættet eller sprunget tavst over.
+
+Nyeste statistikvalg og sletning skal kontrolleres igen under fortsættelsen. Statistikpræferencen er som udgangspunkt slået til, men et senere fravalg må ikke overskrives af et forsinket tilvalg. Kunstige testture må ikke indgå i statistik eller bevis for modellen. En skjult identifikator eller en stor nok gruppe er ikke alene bevis for anonymitet; gentagne rapporters samlede oplysninger skal også vurderes.
+
+Den ekstra lagerændring til det oprindelige modelgrundlag kræver sin egen udtrykkelige tilladelse. De eksisterende tabeller og data bevares. Statistik skal beviseligt være slået fra før ændringen, lageret skal læses korrekt tilbage, og den nye serverversion skal igen bekræfte, at statistik er slået fra. Et ukendt skriveudfald giver ikke lov til at gentage ændringen.
+
+Denne supplerende løsning er lokalt prøvet, men ikke installeret eller aktiveret. Den aktuelle installation af de tidligere statistikdele er ikke dokumenteret af denne prøve; ældre statusudsagn er dateret historik. Faktisk drift på de gratis grænser, dokumenteret anonymitet, backupfrister og tilladt frigivelse er fortsat åbne krav. Automatisk sletning forbliver slået fra uden fungerende varsling. Ingen ny scoreformel eller ændret kildeprioritet følger af forberedelsen.
+
+En færdig månedsrapport skal beholde den måned, arbejdet faktisk vedrører, også når det afsluttes senere. Den gemmes uden at overskrive en tidligere rapport for samme måned. En privat ejeroversigt kan vise den nyeste faktisk gemte rapport efter en frisk adgangskontrol. Manglende eller ændrede svar må ikke erstattes med en ældre rapport. Kontoskift og logout fjerner visningen, og en download kræver en ny kontrol.
+
+Den forberedte oversigt viser faktisk måned og støjede gruppetal i 20 rækker: vind, bølger, strøm og vandstandsændring, hver med fem intervaller og fund/ikke-fund. De 40 tal er ikke præcise turantal og må ikke lægges sammen på tværs af grupper. Fund er ikke det samme som en god oplevelse, og ikke-fund er ikke det samme som en dårlig oplevelse. Ingen enkeltpersoner eller enkelte ture vises, og rapporten ændrer ikke RavScore. Denne rapportvej er lokalt prøvet, ikke installeret eller aktiveret. Faktisk drift, gratis kapacitet og dokumenteret anonymitet, også på tværs af flere rapporter, skal stadig kontrolleres. Statistik er fortsat slået fra i leveringsforløbet; dette er ikke offentliggjort statistik.
 
 ## 89.259 Bedre spørgsmål og ærlige turrapporter – 4.0.585-kandidat
 
@@ -634,11 +662,15 @@ En særskilt, dokumenteret Storage-formatkant rettes samtidig: immutable upload 
 
 # RavRadar Håndbog
 
-**Håndbogsversion:** 4.0.587
+**Håndbogsversion:** 4.0.588
 
 Hvis genbrug af gemte data stopper, skal den første fejlfase og et kontrolleret kildested bevares uden private fejltekster eller værdier. Tidligere beståede kontroller frikender ikke automatisk en senere mål-time eller andre input. En bedre fejlrapport ændrer ikke beregningen og er ikke bevis for, at årsagen er rettet. Gemte originaler og sidste gyldige offentlige data bevares, mens fejlen undersøges.
 
-## Aktuel frossen kandidatkilde — 4.0.587, ikke installeret
+## Aktuel frossen kandidatkilde — 4.0.588, ikke installeret
+
+Den integrerede model er offentligt leveret under 4.0.587. Den nye 4.0.588-kilde er kun lokalt udstedt. 4.0.588 er låst med `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b` og `modelBundleSha256=5348f3ae7401d3a09dd180d45690f56b3cfec4a30af5a4928bdd9581f9d8ebac` over 97 kanonisk normaliserede transitive implementeringsfiler og de deklarerede forbrugere. Inaktiv Candidate G har uændret fysisk kontrakt og `modelBundleSha256=00905533cd243ffce8e507beedbc39c8dba26e635b59fa154e6f9ab20575780c` over 98 transitive filer. T12 er `continuationStateContractSha256=d98559d56d7bfe9b141cf1ddab73cddffb688a3b6766f5f9f3779b226f573701` (`d98559d5…`). Autoriteten er `version.json.releaseContract.modelBindings` og den nye append-only 20261025110000-migration. Hele de autentiske 587-originaler og tidligere scorer bevares; kun en strengt senere generation kan bruge overgangen. Fysiske scoreformler ændres ikke. Lokal kildeudstedelse er ikke PostgreSQL, installation eller offentlig effekt.
+
+## Historisk frossen kandidatkilde — 4.0.587
 
 **Lokal kildebinding — RavScore 4.0.587, ikke installeret:** Den integrerede model er offentlig som modeltype; sidste særskilt verificerede offentlige release er fortsat 4.0.586. Denne 4.0.587-kilde er kun lokalt udstedt, ikke installeret eller offentliggjort. 4.0.587 er låst med `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b` og `modelBundleSha256=5584d8e59f8d21785fd08b32f9beb22cf879cdb4892a11ede24eb862d9a0dca2` over 97 kanonisk normaliserede transitive implementeringsfiler og de deklarerede forbrugere. Inaktiv Candidate G er bundet med `modelContractSha256=c73dac1b4376005e792580791d84eb79c9370e905a2a7fd0bdee857506a20cf8` og `modelBundleSha256=5c0b6a2c6ceb4ba9c5f224cb5d3fda693f300a8902da3f7561167f72cbab78b4` over 98 transitive filer. Fortsættelseskontrakten T12 er `continuationStateContractSha256=cd3a3648ad5093662871559aa39d77671eda27edf1f9edc82a104c5430a43a21` (`cd3a3648…`). Autoriteten er `version.json.releaseContract.modelBindings` og den allerede udstedte 20261022181403-migration; dette tillæg udsteder ingen ny binding og ændrer ikke nogen scoreformel. Tidligere bindingsafsnit nedenfor bevares som dateret historik.
 
@@ -882,6 +914,10 @@ En kvittering fortæller kun, at dette turkildetrin er bekræftet. Lagerets tomm
 De 23 normale målprøver består efter faktisk lokal integration, uden fejl eller skip. De 16 gamle testkroppe er bevaret. Forløberens præcise GitHub-kildekontrol er også bestået; ældre afventende CI-status nedenfor er historik. Det er ikke installation eller offentlig levering af 575. Denne følgeintegrations egen kildekontrol og levering afventes. Ingen rigtig tur er slettet, og modelbindinger, scoreformel, administratorpunkter, geometri og originaler er uændrede. Alle fem hovedmål er fortsat åbne.
 
 ## 89.208 Egne ture, sikker eksport og afgrænsede assistentopfølgninger
+
+Hvis en manuel turindberetning afbrydes, skal et genforsøg sende den samme oprindelige tur med det samme tidspunkt. Det må ikke oprette en ny registrering eller ændre turens indhold. En anden konto må ikke overtage turen, og en ændret tur skal afvises, før noget gemmes eller sendes.
+
+Et genforsøg kræver stadig en ny bekræftelse fra lageret, før turen vises som gemt. Den klargjorte rettelse har bestået den normale lokale prøve; præcis kildekontrol og offentlig afprøvning mangler fortsat. Den ændrer ikke statistikvalg, scoremodel eller vejrdata.
 
 Den anden kildekontrol stoppede i en testobservatør: ni native-prøver bestod, og én afviste et procesnavn. Den afviste tekst er ukendt. npm ændrer dokumenteret sit procesnavn under opstart. Testen følger nu kun disse afgrænsede navnetilstande efter dobbelt kontrol af den samme fastholdte procesidentitet og præcise programfil. Alle øvrige ejerskabs-, låse-, luknings- og tidskontroller bevares. En lokal helperprøve med 17 syntetiske delkontroller består; næste præcise Linux- og fulde kildekontrol mangler stadig. Produktfunktioner, bindinger og offentlig drift ændres ikke af denne testrettelse.
 

@@ -44,9 +44,33 @@ function inverseReviewed585AccountStatisticsAssistantSourceScripts(scripts){
 // Additive exact current586 registration inverse; all old585 assertions above
 // still execute against their WHOLE unchanged canonical scripts hash.
 // Additive exact NEXT-to586 scripts inverse. No old review/hash is replaced.
+// Additive fixed588-to587 command inverse. Qualify the actual new command
+// through the normal planner before entering any unchanged historical oracle.
+export function inverseAssistantPublic587SuccessorSourceScripts(scripts){
+  assert.equal(arguments.length,1);assert(scripts&&Object.getPrototypeOf(scripts)===Object.prototype);
+  assert(Object.values(scripts).every(value=>typeof value==='string'));
+  assert.equal(sha(canonical(scripts)),'fe8e112b4e4e30d948aeecf764db02369bdfc90ba1d0d681af5733b27443b06b','Only the entire reviewed public587 successor command map');
+  const current='node scripts/build-assistant-later-h0-successor.mjs --public587-successor --check',
+    previous='node scripts/build-assistant-later-h0-successor.mjs --check';
+  assert.equal(scripts['test:assistant-later-h0-source'],current);
+  const expanded=expandSourceCommands(scripts,'validate:source:checks'),plan=buildSourceValidationPlan(scripts),dispatched=[];
+  assert.equal(runSourceValidation(plan,{execute(command){dispatched.push(command);return 0;},log(){}}),0);
+  assert.deepEqual(dispatched,[...plan.preflight,...plan.remaining,plan.gate]);
+  for(const rows of [expanded,dispatched]){
+    assert.equal(rows.filter(command=>command===current).length,1,'Actual588 builder is dispatched exactly once');
+    assert.equal(rows.includes(previous),false,'The old default builder never runs on current588');
+    assert.equal(rows.filter(command=>command==='node --test scripts/test-native-original-continuity-callers.mjs').length,1);
+  }
+  const prior={...scripts,'test:assistant-later-h0-source':previous};
+  assert.equal(sha(canonical(prior)),'9df85408955c0449c92370f1af4451ff475f4cc10a4e92bcb440790793bda997','Whole genuine587 scripts before unchanged older inverses');
+  return prior;
+}
+
 export function inverseAssistantLaterH0SourceScripts(scripts){
   assert.equal(arguments.length,1);assert(scripts&&Object.getPrototypeOf(scripts)===Object.prototype);
   assert(Object.values(scripts).every(value=>typeof value==='string'));
+  if(scripts['test:assistant-later-h0-source']==='node scripts/build-assistant-later-h0-successor.mjs --public587-successor --check')
+    scripts=inverseAssistantPublic587SuccessorSourceScripts(scripts);
   assert.equal(sha(canonical(scripts)),'9df85408955c0449c92370f1af4451ff475f4cc10a4e92bcb440790793bda997','Only the entire reviewed later-H0 command map');
   assert.equal(scripts['test:native-original-continuity-source'],'node --test scripts/test-native-original-continuity-callers.mjs');
   assert.equal(scripts['test:assistant-later-h0-source'],'node scripts/build-assistant-later-h0-successor.mjs --check');

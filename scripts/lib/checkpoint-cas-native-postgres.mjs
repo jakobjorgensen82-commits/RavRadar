@@ -5,7 +5,6 @@ import os from 'node:os';
 import path from 'node:path';
 import { execFile } from 'node:child_process';
 import { fileURLToPath, pathToFileURL } from 'node:url';
-import { exactRelativeModuleSpecifiers } from './static-module-closure.mjs';
 import { accountAssistantCatalogQuery, verifyAccountAssistantCatalogMetadata }
   from '../verify-account-assistant-schema.mjs';
 
@@ -34,7 +33,7 @@ const sqlText = text => String(text).replace(/\r\n?/g, '\n');
 const NATIVE_PSQL_PHASES = new Set(['NATIVE_SETUP', 'CAS200_MIGRATION',
   'BASELINE_FIXTURES', 'BASELINE_ADMISSION', 'BASELINE_CAS_CASES',
   'ACCOUNT213', 'CURRENT220', 'STATISTICS230', 'NATIVE_IDENTITY0600', 'CURRENT_MEMORY_WARMUP',
-  'ESTABLISHED_NATIVE_CURRENT_ORIGIN', 'LAST_MILE_ENCLOSURE', 'ACCOUNT_STATISTICS_ASSISTANT', 'NATIVE_ORIGINAL_CONTINUITY', 'ASSISTANT_LATER_H0', 'UNKNOWN']);
+  'ESTABLISHED_NATIVE_CURRENT_ORIGIN', 'LAST_MILE_ENCLOSURE', 'ACCOUNT_STATISTICS_ASSISTANT', 'NATIVE_ORIGINAL_CONTINUITY', 'ASSISTANT_LATER_H0', 'ASSISTANT_PUBLIC587_SUCCESSOR', 'UNKNOWN']);
 const NATIVE_PSQL_STATES = Object.freeze({
   '22003':'SQL_RANGE', '22023':'SQL_PARAMETER', '22P02':'SQL_TEXT_FORMAT',
   '23502':'SQL_NOT_NULL', '23503':'SQL_FOREIGN_KEY', '23505':'SQL_UNIQUE',
@@ -124,9 +123,14 @@ async function issued213Factory(root) {
   const factory = slice('const PART_COUNT =', 'const safeShape =')
     + slice('const samples =', 'const sourceDocument =');
   assert.equal(hash(factory), '71ce29ec98e43bfa02017a145c4438346f1d8a1f4323526ec58e4b1081d81e36');
-  const scanner = 'scripts/lib/static-module-closure.mjs';
-  assert.equal(sqlText(await fs.readFile(path.join(ISSUED_ROOT, scanner), 'utf8')),
-    String(await read(scanner)), 'Use the actual reviewed issued static scanner');
+  // Kun den historiske closure bruger sin hele genuine044d-scanner.
+  // Den aktuelle scanner og dens rettede deklarationsgrammatik ændres ikke.
+  const scannerSource = await read('scripts/lib/static-module-closure.mjs');
+  assert.equal(scannerSource.length, 6790, 'Exact issued scanner byte length');
+  assert.equal(hash(scannerSource), '675f91e7942143a78636e219e54bd7fa0ff25ddcd1998657dd215105054938b0',
+    'Exact issued scanner whole bytes');
+  const { exactRelativeModuleSpecifiers } = await import(
+    'data:text/javascript;base64,' + scannerSource.toString('base64'));
   const tSource = String(await read(ISSUED_T));
   const declaration = /export const RAVSCORE_CONTINUATION_IMPLEMENTATION_FILES = Object\.freeze\(\[\n((?:  '[A-Za-z0-9_./-]+',\n)+)\]\);/.exec(tSource);
   assert(declaration, 'Exact historical T declaration required');
@@ -627,7 +631,8 @@ export async function runNativeCheckpointSqlComparison({ repositoryRoot,
   sourceDocumentAt, atHour, saveCheckpoint, includeStatisticsRevision = false,
   includeNativeIdentity = false, includeCurrentMemoryWarmup = false, includeEstablishedNativeCurrentOrigin = false,
   includeLastMileEnclosure = false, includeAccountStatisticsAssistant = false,
-  includeNativeOriginalContinuity = false, includeAssistantLaterH0 = false } = {}) {
+  includeNativeOriginalContinuity = false, includeAssistantLaterH0 = false,
+  includeAssistantPublic587Successor = false } = {}) {
   assert.equal(typeof includeStatisticsRevision,'boolean');
   assert.equal(typeof includeNativeIdentity,'boolean');
   assert.equal(typeof includeCurrentMemoryWarmup,'boolean');
@@ -636,6 +641,13 @@ export async function runNativeCheckpointSqlComparison({ repositoryRoot,
   assert.equal(typeof includeAccountStatisticsAssistant,'boolean');
   assert.equal(typeof includeNativeOriginalContinuity,'boolean');
   assert.equal(typeof includeAssistantLaterH0,'boolean');
+  assert.equal(typeof includeAssistantPublic587Successor,'boolean');
+  assert(!includeAssistantPublic587Successor || includeAssistantLaterH0,
+    'Public587 successor requires the genuine complete587 native phase');
+  if(includeAssistantPublic587Successor){
+    const {requireAssistantPublic587SuccessorRelease}=await import('./assistant-later-h0-successor-source.mjs');
+    requireAssistantPublic587SuccessorRelease(); // UNISSUED before programs, host, factory or SQL.
+  }
   assert(!includeAssistantLaterH0 || includeNativeOriginalContinuity,'Assistant later-H0 requires the genuine complete586 native phase');
   if(includeAssistantLaterH0){
     const {requireAssistantLaterH0Release}=await import('./assistant-later-h0-successor-source.mjs');
@@ -974,8 +986,21 @@ select public.native_checkpoint_attempt(${baseline},${version},(select payload f
     let assistantLaterH0;
     if(includeAssistantLaterH0){
       nativePhase='ASSISTANT_LATER_H0';
-      const {compareAssistantLaterH0Successor}=await import('./assistant-later-h0-postgres.mjs');
-      assistantLaterH0=await compareAssistantLaterH0Successor({psql,runSql,root,sourceDocumentAt,atHour,saveCheckpoint});
+      if(includeAssistantPublic587Successor){
+        const {withFrozen587CheckpointPostgresSource}=await import('../run-frozen586-assistant-later-h0-postgres-source.mjs');
+        assistantLaterH0=await withFrozen587CheckpointPostgresSource(async({adapter,factory})=>
+          adapter.compareAssistantLaterH0Successor({psql,runSql,root,sourceDocumentAt:factory.sourceDocumentAt,
+            atHour:factory.atHour,saveCheckpoint:factory.saveRavScoreContinuationCheckpoint}));
+      }else{
+        const {compareAssistantLaterH0Successor}=await import('./assistant-later-h0-postgres.mjs');
+        assistantLaterH0=await compareAssistantLaterH0Successor({psql,runSql,root,sourceDocumentAt,atHour,saveCheckpoint});
+      }
+    }
+    let assistantPublic587Successor;
+    if(includeAssistantPublic587Successor){
+      nativePhase='ASSISTANT_PUBLIC587_SUCCESSOR';
+      const {compareAssistantPublic587Successor}=await import('./assistant-later-h0-postgres.mjs');
+      assistantPublic587Successor=await compareAssistantPublic587Successor({psql,runSql,root,sourceDocumentAt,atHour,saveCheckpoint});
     }
     return {kind:'NATIVE_POSTGRES_CHECKPOINT_CAS_COMPARISON',accountAssistant,currentGrid,
       ...(includeStatisticsRevision?{statisticsRevision}:{}),
@@ -986,6 +1011,7 @@ select public.native_checkpoint_attempt(${baseline},${version},(select payload f
       ...(includeAccountStatisticsAssistant?{accountStatisticsAssistant}:{}),
       ...(includeNativeOriginalContinuity?{nativeOriginalContinuity}:{}),
       ...(includeAssistantLaterH0?{assistantLaterH0}:{}),
+      ...(includeAssistantPublic587Successor?{assistantPublic587Successor}:{}),
       issuedSource:issued.sourceReceipt,postgresMajorVersion:programs.majorVersion,
       tcpEnabled:false,normalModelPartCount:673,sqlExecuted:true,migrationExecuted:true,
       migrationSQLSha256:hash(newSource),caseCount:reports.length,
