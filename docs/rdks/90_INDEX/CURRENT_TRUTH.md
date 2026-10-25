@@ -1,3 +1,11 @@
+## 25. oktober — mål faktisk genlæsning før en kapacitetsrettelse
+
+Den seneste nationale SOURCE-prøve nåede READBACK efter 85,366 sekunder, men afsluttede ikke inden den uændrede 120-sekundersgrænse. Det er faseindgang, ikke genlæsningstid. Den lokale måling opdeler nu den eksisterende genlæsning i inspektion, parentlæsning, partlæsning, fuld udpakning og lighedskontrol. Kun faste faser og afsluttede millisekunder følger den eksisterende første-fejlrapport; ingen rådata, nye transportveje eller gættede gennemløbstal tilføjes.
+
+Alle normale læsninger, afslag, ét helt unpack og samtlige 673×121 timekontroller bevares. De fire mål-/nativeblade ændrer hverken produktvalidatorer, frister, budgetter, C157/I153/T12, SQL eller geodata. De 15 lokale Python-diagnoseprøver og hele normale Node-DEFAULT-mål består; faktisk Linux-underfase, H0/H1 og samlet SOURCE-kvalifikation er fortsat åbne. Ægte 587-PostgreSQL må ikke ommærkes som nyt SOURCE-bevis.
+
+Offentlig 587/I97 og en almindelig vejrgenerations faktiske B/S, Pages og offentlige kontrol er nu gennemført i ROOTs særskilte P0-forløb. SOURCE forbliver inaktiv; denne måleændring er ikke installation, produktionsrettelse eller dokumenteret tidsgevinst. Numerisk strømmål er lukket; de fire øvrige hovedområder er åbne. Ældre daterede afventninger bevares som historik alene på disse konkret opdaterede punkter.
+
 ## 25. oktober — SOURCE-fixturens nationale genlæsning beholder alle kontroller
 
 SOURCEs faktiske FORECAST-underproces blev standset på den eksisterende 120-sekundersgrænse efter READBACK-indgang ved 86,246 sekunder. Det beviser ikke afsluttet READBACK, H0/H1 eller native PostgreSQL. Den lokale rettelse frigiver alene fixtureejede referencer efter sidste brug og kasserer ubrugte parentresultater efter deres normale fulde genlæsning. Normal inspektion, samtlige recordlæsninger, hele continuity-pakkens metadata/digests/totals, ét fuldt unpack og alle 673×121 deepEqual bevares. Ingen timeout, produktmodul, binding eller SQL ændres. Faktisk tidsgevinst og kapacitet er endnu ikke bevist; se DEC-0294 og checkpointet.

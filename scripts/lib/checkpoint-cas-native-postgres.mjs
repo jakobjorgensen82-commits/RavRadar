@@ -181,7 +181,7 @@ function sourceForecastStageValid(value){
     const bounded=(item,maximum)=>Number.isSafeInteger(item)&&item>=0&&item<=maximum;
     if(!exact(value,['kind','phase','elapsedMs','phaseElapsedMs','completedMs','parentRecords',
         'partCount','qualifiedCurrentRows','bulkZoneCount','packRawBytes','packCompressedBytes',
-        'forecastBytes','privatePayloadIncluded'])
+        'forecastBytes','privatePayloadIncluded',...(Object.hasOwn(value??{},'readback')?['readback']:[])])
       ||value.kind!=='SOURCE_FORECAST_STAGE_OBSERVATION'||!stages.includes(value.phase)
       ||value.privatePayloadIncluded!==false)return false;
     const rank=stages.indexOf(value.phase);
@@ -201,6 +201,19 @@ function sourceForecastStageValid(value){
     for(const [key,maximum,available] of [['packRawBytes',2147483648,rank>=3],
         ['packCompressedBytes',167772160,rank>=3],['forecastBytes',Number.MAX_SAFE_INTEGER,rank>=4]]){
       if(available?(!bounded(value[key],maximum)||value[key]===0):value[key]!==null)return false;
+    }
+    if(Object.hasOwn(value,'readback')){
+      const readback=value.readback,stages=['INSPECT','PARENT_READ','PART_READ','UNPACK','EQUALITY','COMPLETE'];
+      if(rank<4||!exact(readback,['phase','completedMs'])||!stages.includes(readback.phase)
+        ||!exact(readback.completedMs,stages.slice(0,-1)))return false;
+      const subrank=stages.indexOf(readback.phase);
+      if((rank===5)!==(subrank===5))return false;
+      for(const [index,stage] of stages.slice(0,-1).entries()){
+        if(index<subrank?!bounded(readback.completedMs[stage],86_400_000):readback.completedMs[stage]!==null)return false;
+      }
+      const subtotal=Object.values(readback.completedMs).reduce((sum,item)=>sum+(item??0),0);
+      const total=rank===5?value.completedMs.READBACK:value.phaseElapsedMs;
+      if(total<subtotal||total>subtotal+5)return false;
     }
     return true;
   }catch{return false;}

@@ -2269,12 +2269,13 @@ def source_initial_wam_completion_valid(value):
 
 
 SOURCE_FORECAST_STAGES = ('READ_INPUT', 'QUALIFY', 'PACK', 'WRITE', 'READBACK', 'COMPLETE')
+SOURCE_FORECAST_READBACK_STAGES = ('INSPECT', 'PARENT_READ', 'PART_READ', 'UNPACK', 'EQUALITY', 'COMPLETE')
 
 
 def source_forecast_stage_valid(value):
     # Fixed, last-observed progress only; COMPLETE is not child/native success.
     try:
-        if (type(value) is not dict or set(value) != {'kind', 'phase', 'elapsedMs', 'phaseElapsedMs',
+        if (type(value) is not dict or set(value) - {'readback'} != {'kind', 'phase', 'elapsedMs', 'phaseElapsedMs',
                 'completedMs', 'parentRecords', 'partCount', 'qualifiedCurrentRows', 'bulkZoneCount',
                 'packRawBytes', 'packCompressedBytes', 'forecastBytes', 'privatePayloadIncluded'}
                 or value['kind'] != 'SOURCE_FORECAST_STAGE_OBSERVATION'
@@ -2311,6 +2312,23 @@ def source_forecast_stage_valid(value):
             valid = bounded(value[key], maximum) and value[key] > 0 if available else value[key] is None
             if not valid:
                 return False
+        if 'readback' in value:
+            readback = value['readback']
+            if (rank < 4 or type(readback) is not dict or set(readback) != {'phase', 'completedMs'}
+                    or readback['phase'] not in SOURCE_FORECAST_READBACK_STAGES):
+                return False
+            subrank = SOURCE_FORECAST_READBACK_STAGES.index(readback['phase'])
+            times = readback['completedMs']
+            if ((rank == 5) != (subrank == 5) or type(times) is not dict
+                    or set(times) != set(SOURCE_FORECAST_READBACK_STAGES[:-1])):
+                return False
+            for index, stage in enumerate(SOURCE_FORECAST_READBACK_STAGES[:-1]):
+                if (not bounded(times[stage], 86_400_000) if index < subrank else times[stage] is not None):
+                    return False
+            subtotal = sum(item for item in times.values() if item is not None)
+            total = completed['READBACK'] if rank == 5 else value['phaseElapsedMs']
+            if not subtotal <= total <= subtotal + 5:
+                return False
         return True
     except (KeyError, TypeError, ValueError):
         return False
@@ -2322,7 +2340,18 @@ def source_forecast_stage_follows(previous, value):
     if previous is None:
         return value['phase'] == 'READ_INPUT'
     before, after = (SOURCE_FORECAST_STAGES.index(item['phase']) for item in (previous, value))
-    if not (after == before + 1 or after == before == 1):
+    if not (after == before + 1 or after == before == 1
+            or after == before == 4 and 'readback' in previous and 'readback' in value):
+        return False
+    if 'readback' in previous:
+        if 'readback' not in value:
+            return False
+        old, new = previous['readback'], value['readback']
+        if SOURCE_FORECAST_READBACK_STAGES.index(new['phase']) != SOURCE_FORECAST_READBACK_STAGES.index(old['phase']) + 1:
+            return False
+        if any(new['completedMs'][key] != item for key, item in old['completedMs'].items() if item is not None):
+            return False
+    elif 'readback' in value and not (before == 3 and after == 4 and value['readback']['phase'] == 'INSPECT'):
         return False
     if any(value[key] < previous[key] for key in ('elapsedMs', 'parentRecords', 'partCount', 'qualifiedCurrentRows')):
         return False
@@ -2426,6 +2455,43 @@ class SourceProviderEvidencePureTests(unittest.TestCase):
         tick.update(elapsedMs=15, phaseElapsedMs=5, partCount=32, qualifiedCurrentRows=32 * 121)
         self.assertTrue(source_forecast_stage_follows(records[1], tick))
         self.assertTrue(source_forecast_stage_follows(tick, records[2]))
+        readback_records = []
+        previous = records[3]
+        for rank, phase in enumerate(SOURCE_FORECAST_READBACK_STAGES):
+            record = copy.deepcopy(records[4])
+            record.update(elapsedMs=40 + rank * 10, phaseElapsedMs=rank * 10)
+            record['readback'] = {'phase': phase, 'completedMs': {
+                name: 10 if index < rank else None
+                for index, name in enumerate(SOURCE_FORECAST_READBACK_STAGES[:-1])}}
+            if phase == 'COMPLETE':
+                record.update(phase='COMPLETE', phaseElapsedMs=0)
+                record['completedMs']['READBACK'] = 50
+            self.assertTrue(source_forecast_stage_valid(record))
+            self.assertTrue(source_forecast_stage_follows(previous, record))
+            readback_records.append(record)
+            previous = record
+        for change in ({'phase': 'INSPECT\nPRIVATE_SENTINEL'}, {'extra': 'PRIVATE_SENTINEL'},
+                {'completedMs': {}}, {'completedMs': {**readback_records[1]['readback']['completedMs'], 'INSPECT': True}},
+                {'completedMs': {**readback_records[1]['readback']['completedMs'], 'INSPECT': 4}},
+                {'completedMs': {**readback_records[1]['readback']['completedMs'], 'PRIVATE': 0}}):
+            bad = {**readback_records[1], 'readback': {**readback_records[1]['readback'], **change}}
+            self.assertFalse(source_forecast_stage_valid(bad))
+        for bad in ({**records[3], 'readback': readback_records[0]['readback']},
+                {**readback_records[-1], 'phase': 'READBACK'}, {**readback_records[0], 'phase': 'COMPLETE'},
+                {**readback_records[0], 'readback': None}):
+            self.assertFalse(source_forecast_stage_valid(bad))
+        lost = {key: item for key, item in readback_records[1].items() if key != 'readback'}
+        changed = copy.deepcopy(readback_records[2])
+        changed['readback']['completedMs'].update(INSPECT=9, PARENT_READ=11)
+        self.assertTrue(source_forecast_stage_valid(changed))
+        bad_readback_series = (
+            records[:4] + readback_records[1:2],
+            records[:4] + readback_records[:1] * 2,
+            records[:4] + readback_records[:2] + readback_records[:1],
+            records[:4] + readback_records[:1] + [lost],
+            records[:4] + readback_records[:2] + [changed])
+        for rows in bad_readback_series:
+            self.assertFalse(source_forecast_stage_follows(rows[-2], rows[-1]))
         for phase, stem in SOURCE_PROVIDER_CAPTURE_STEMS.items():
             with tempfile.TemporaryDirectory(prefix='rr-provider-forecast-diagnostic-') as directory:
                 own = Path(directory).resolve()
@@ -2433,7 +2499,8 @@ class SourceProviderEvidencePureTests(unittest.TestCase):
                     ['node', str(ROOT / 'scripts/fixtures/source19-current-provider-forecast.mjs')], 119.5))
                 self.assertEqual(boundary['helper'], 'FORECAST')
                 self.assertIsNone(boundary['timeoutSeconds'])  # Never invent an exact timeout from a remainder.
-                for observed in (records[:2] + [tick], records[:4], records):
+                for observed in (records[:2] + [tick], records[:4], records,
+                        *(records[:4] + readback_records[:index + 1] for index in range(len(readback_records)))):
                     raw = ('PRIVATE_SENTINEL\n' + '\n'.join(json.dumps(row) for row in observed + [boundary]) + '\n').encode()
                     for name, body in (('stdout', b'owned stdout\n'), ('stderr', raw)):
                         with (own / (stem + '.' + name)).open('wb') as stream:
@@ -2476,7 +2543,7 @@ class SourceProviderEvidencePureTests(unittest.TestCase):
                         self.assertIsNone(report['stderr']['sha256'])
                     self.assertNotIn('PRIVATE_SENTINEL', json.dumps(report))
                 # Out-of-order, missing first phase and wrong helper never gain an observation.
-                for rows in ([records[0], records[2]], [records[3]], records + [records[1]]):
+                for rows in ([records[0], records[2]], [records[3]], records + [records[1]], *bad_readback_series):
                     (own / (stem + '.stderr')).write_bytes(
                         ('\n'.join(json.dumps(row) for row in rows + [boundary]) + '\n').encode())
                     self.assertNotIn('forecastStage', source_provider_process_failure(result, own, phase=phase))

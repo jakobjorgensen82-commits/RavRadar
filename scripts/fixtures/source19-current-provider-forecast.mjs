@@ -18,12 +18,21 @@ import {writeDmiForecastFileAtomic,inspectDmiForecastFile,readDmiForecastRecord,
 function createForecastStageObservation(){
   const started=performance.now();let phase='READ_INPUT',phaseStarted=started;
   const completedMs={READ_INPUT:null,QUALIFY:null,PACK:null,WRITE:null,READBACK:null};
-  return (next,counts)=>{
+  let readback=null,readbackStarted=null;
+  return (next,counts,nextReadback=null)=>{
     const now=performance.now();
+    if(nextReadback!==null){
+      if(readback===null)readback={phase:nextReadback,
+        completedMs:{INSPECT:null,PARENT_READ:null,PART_READ:null,UNPACK:null,EQUALITY:null}};
+      else readback.completedMs[readback.phase]=Math.floor(now-readbackStarted);
+      readback.phase=nextReadback;readbackStarted=now;
+    }
     if(next!==phase){completedMs[phase]=Math.floor(now-phaseStarted);phase=next;phaseStarted=now;}
     const value={kind:'SOURCE_FORECAST_STAGE_OBSERVATION',phase,
       elapsedMs:Math.floor(now-started),phaseElapsedMs:Math.floor(now-phaseStarted),
-      completedMs:{...completedMs},...counts,privatePayloadIncluded:false};
+      completedMs:{...completedMs},...counts,
+      ...(readback===null?{}:{readback:{phase:readback.phase,completedMs:{...readback.completedMs}}}),
+      privatePayloadIncluded:false};
     const bytes=Buffer.from(JSON.stringify(value)+'\n');let offset=0;
     while(offset<bytes.length){
       const written=writeSync(2,bytes,offset,bytes.length-offset);
@@ -92,10 +101,12 @@ export async function prepareNativeCurrentForecast(target,initialPhase=null){
   const parentRecords=Object.keys(zones).length;
   // The atomic writer has settled; retain no unused parent/packed owner here.
   zones=null;partContinuity=null;
-  observe('READBACK',counts);
+  observe('READBACK',counts,'INSPECT');
   const index=await inspectDmiForecastFile(file);
+  observe('READBACK',counts,'PARENT_READ');
   // Keep every normal parent reread/hash/identity/close refusal, then discard its value.
   for(const descriptor of index.zones.values())await readDmiForecastRecord(index,descriptor);
+  observe('READBACK',counts,'PART_READ');
   let readbackPack=index.metadata.partContinuity;
   if(index.continuity){
     const entries=[];
@@ -104,9 +115,11 @@ export async function prepareNativeCurrentForecast(target,initialPhase=null){
   }
   // This fixture does not write waterSourceContinuity; preserve the normal optional read.
   if(index.waterSourceContinuity)await readDmiWaterSourceContinuity(index);
+  observe('READBACK',counts,'UNPACK');
   const restored=await unpackDmiPartContinuity(readbackPack,parts,at);
+  observe('READBACK',counts,'EQUALITY');
   for(const part of parts)assert.deepEqual(restored.get(part.partId).hourly,records.get(part.partId).hourly);
-  observe('COMPLETE',counts);
+  observe('COMPLETE',counts,'COMPLETE');
   return {parentRecords,partCount:parts.length,qualifiedCurrentRows:qualifiedNativeRows,
     otherWeatherComplete:false,scoreProduced:false,actionInvoked:false,productionProof:false};
 }

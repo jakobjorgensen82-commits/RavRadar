@@ -437,6 +437,36 @@ if (!process.argv.includes('--native-postgres') && !process.argv.includes('--nat
             assert.ok(Buffer.byteLength(JSON.stringify(observed))<=2048);
             assert.deepEqual(nativeProviderProcessFirstFailure(observed),observed);
             assert.deepEqual(nativePostgresChildFirstFailure(JSON.stringify(observed)+'\n'+JSON.stringify(later),''),observed);
+            if(rank>=4){
+              const substages=['INSPECT','PARENT_READ','PART_READ','UNPACK','EQUALITY','COMPLETE'];
+              for(const [subrank,subphase] of substages.entries()){
+                if((rank===5)!==(subrank===5))continue;
+                const detailed={...observed,forecastStage:{...forecastStage,
+                  elapsedMs:40+subrank*10,phaseElapsedMs:rank===5?0:subrank*10,
+                  completedMs:{...forecastStage.completedMs,READBACK:rank===5?50:null},
+                  readback:{phase:subphase,completedMs:Object.fromEntries(substages.slice(0,-1)
+                    .map((name,index)=>[name,index<subrank?10:null]))}}};
+                assert.ok(Buffer.byteLength(JSON.stringify(detailed))<=2048);
+                assert.deepEqual(nativeProviderProcessFirstFailure(detailed),detailed);
+                assert.deepEqual(nativePostgresChildFirstFailure(JSON.stringify(detailed)+'\n'+JSON.stringify(later),''),detailed);
+                const readback=detailed.forecastStage.readback;
+                for(const badReadback of [null,{...readback,raw:'PRIVATE'},
+                  {...readback,phase:subphase+'\nPRIVATE'}, {...readback,completedMs:{}},
+                  {...readback,completedMs:{...readback.completedMs,PRIVATE:0}},
+                  ...[-1,true,0.5,'PRIVATE'].map(INSPECT=>({...readback,completedMs:{...readback.completedMs,INSPECT}})),
+                  {...readback,completedMs:{...readback.completedMs,EQUALITY:rank===5?null:0}},
+                ]){
+                  const bad={...detailed,forecastStage:{...detailed.forecastStage,readback:badReadback}};
+                  assert.equal(nativeProviderProcessFirstFailure(bad),null);
+                  assert.equal(nativePostgresChildFirstFailure(JSON.stringify(bad),''),null);
+                }
+                const wrongPhase={...detailed,forecastStage:{...detailed.forecastStage,phase:rank===5?'READBACK':'COMPLETE'}};
+                assert.equal(nativeProviderProcessFirstFailure(wrongPhase),null);
+                const drift={...detailed,forecastStage:{...detailed.forecastStage,
+                  readback:{...readback,completedMs:{...readback.completedMs,INSPECT:subrank>0?4:0}}}};
+                assert.equal(nativeProviderProcessFirstFailure(drift),null);
+              }
+            }
             for(const bad of [
               {...observed,returncode:0}, {...observed,returncode:null,signal:'UNKNOWN'},
               {...observed,stderr:{bytes:1,complete:false,sha256:null}},

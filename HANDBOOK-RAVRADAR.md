@@ -26,6 +26,8 @@ Dækning opgøres over alle forventede timer og zoner for vind, bølger, strøm,
 
 ## 89.266 Beregningskode og genererede kontroloplysninger
 
+Opfølgning 25. oktober: Den nationale prøve nåede genlæsningen, men afsluttede ikke inden sin uændrede frist. Den eksisterende fejlrapport kan nu skelne inspektion, læsning, udpakning og sammenligning uden rå private oplysninger. Alle normale læsninger og timekontroller bevares. Beståede lokale diagnoseprøver er ikke bevis for Linux-kapacitet eller en løst tidsfejl. 587 er nu særskilt offentligt leveret; SOURCE-revisionen er fortsat inaktiv, og dens nye samlede kvalifikation og installation mangler.
+
 Opfølgning 24. oktober: Den næste fejl var en manglende filidentitet i det kunstige bølgeinput. Den normale kontrol sammenlignede derfor den registrerede fils identitet med et tomt felt og afviste alle 212 mål i første WAM-fil. Prøveinputtet bruger nu den normale beregning af filidentiteten; selve læseren og godkendelseskravene er uændrede. En lokal prøve bruger de rigtige identitetsfunktioner, og det normale Python-mål består med ti prøver. Det beviser den afgrænsede identitetsrettelse, ikke et gennemført oprindeligt eller fremadrettet startforløb (H0/H1), samlet kilde- eller databasekvalifikation eller installation. Begge startforløb bruger den samme rettede prøve. Det er ikke en påvist fejl i den aktive vejrhentning; version, bindinger og gamle databasekilder bevares.
 
 En fejlrapport må kun påstå, at en kontrol har godkendt data, når dens faktiske udfald er observeret. En afbrydelse før kontrollen er ikke en godkendelse. Faste fejlkategorier og optællinger kan forbedre en intern fejlanalyse uden at udlevere rådata; de er ikke bevis for en løst bagvedliggende fejl eller ny offentlig drift.
