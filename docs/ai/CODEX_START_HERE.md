@@ -68,6 +68,20 @@ DMI-rettelsen er præcist kildekvalificeret og merget særskilt på den installe
 
 Den særskilte 587-kandidat har bestået sin præcise kildekontrol. Den nye lokale kombination kræver sit eget samlede bevis; den tidligere afbrudte 587+DMI-kontrol er ikke et helt PASS. Alle produktblade, udstedte modelbindinger, migrationsfiler og den eksisterende SQL uden for håndbogsliteralen bevares. Assistentens håndbogsafsnit 89.265 og stabile ID er uændrede; det særskilte DMI-afsnit har 89.267. Begge dokumenthistorikker nedenfor bevares. Installation, hosted AI og faktisk 587-virkning er åbne; alle fem hovedmål er åbne til 18. november 2026.
 
+## 25. oktober — offentlig 587 og afgrænset Om-/Grundbog-kandidat
+
+Den normale fulde vejrkæde har leveret offentlig 4.0.587/I97, og cron er genaktiveret. Ældre fronter nedenfor om manglende Pages/offentlig I97 er historiske. P0 er fortsat kontinuerlig almindelig vejrhentning og faktisk dækning; skiftende writer- og kørselsidentiteter føres i privat checkpoint.
+
+Ejeren har godkendt offentliggørelse af Sådan virker RavRadar mellem MobilePay og kontakt samt den danske ravkese-rettelse. Den lokale kandidat bevarer den godkendte artikel, ravlygtetekst, DA/DE/EN og lokal strømfigur ved 8 centimeter hvert sekund. Seks normale lokale mål og den afgrænsede browserforhåndsvisning består. Det normale Om-måls nye additive assertions, RDKS, sikkerhed, håndbogens læsehjælp, tabsfri håndbogsfletning og releaseversionskontrol består. Installationskopien er synkroniseret med uændret SQL-prefix/suffix. Offline er ikke prøvet; præcis kildekontrol og offentlig levering af teksterne afventer. Normal browserkontrol er allerede autoriseret. Ingen ny version, modelbinding, SQL eller assistentproduktrettelse følger med; de fem offentligt påviste assistentfejl er fortsat et særskilt produktspor, som ikke frikendes af sprog-/kontraktassertions eller browserkontrol af Om-siden. Numerisk strømmål er lukket, fire øvrige områder er åbne; SOURCE, samlet statistik og automatisk sletning er inaktive.
+
+## 25. oktober — præcis mobilkontrol efter selvrapporteret turstart
+
+Den almindelige vejrhentning passerede den rettede original-/arbejdsgrænse, leverandører, beregning, runtimekontrol og hård databevarelse. Den stoppede før Pages-upload, fordi én af de 55 artifactkontroller stadig krævede den gamle turstart uden argument. Appens godkendte 587-kalder bruger allerede observationOrigin:'self-reported'. Den lokale rettelse ændrer kun denne ene præcise testliteral; øvrige layout-, GPS-, parallelstart-, cache-, manifest- og privacykrav bevares. Hele samme normale mål er reproduceret rød og derefter grøn med uændrede faktiske input.
+
+Dette er ikke en produkt-, model-, versions- eller SQL-ændring og ikke offentlig levering. Den særskilte operationelle admin-synkafvisning af central profil undersøges fortsat; den må ikke skjules eller udlægges som lukket af mobilprøven. Den nye kilde skal kvalificeres normalt, og de faktisk gemte beregnings-/genoptagelsesdata foretrækkes frem for ny vejrhentning. Ingen kontrol må springes over. Aktuel evidens, checkpointvalg og skriveudfald står privat hos ROOT.
+
+587-SQL er installeret og genlæst; ny Edge-/Pages-levering og offentlig I97 mangler stadig. Cron, SOURCE, samlet statistik og automatisk sletning forbliver inaktive. Det nationale numeriske strømmål er lukket; fire øvrige hovedområder er åbne. Ældre daterede afventninger nedenfor erstattes kun på de konkrete dokumenterede punkter.
+
 ## 24. oktober — privat 587-sammenføring med P0s køobservation og fair tidsandel
 
 Den præcist kvalificerede 587-kilde på 888e bevares, og de afgrænsede P0-ændringer fra 717 forberedes ovenpå. 716s køobservation er særskilt kildeleveret på den installerede 586-familie; 717s fair tidsandel afventer fortsat sin præcise samlede kontrol og sikre main-levering. Denne private sammenføring er hverken anvendt, prøvet, installeret eller offentliggjort. Fejler 717, må dette efterbillede ikke leveres.

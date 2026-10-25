@@ -28,6 +28,12 @@ Den afgrænsede dokumentation tilføjer DEC-0294s faktiske metadata-/selvhashgr�
 
 Næste normale afledning er engangsversionssynk → C → I → T → strenge genererede SOURCE-data og SQL-output → én ny append-only migration → syvforbrugersynk → fixedpoint. Faktiske værdier og prøver skal føres her efter udførelse; de må ikke udfyldes på forhånd. P0s faktiske vejrhentning og alle produktionshandlinger ejes fortsat af ROOT og føres i det aktuelle private checkpoint. Alle fem mål til 18. november er åbne.
 
+## 25. oktober — ejeren har godkendt Om-forklaringen og ravkese
+
+Samtaledelta: Ejeren har udtrykkeligt godkendt, at det nye afsnit Sådan virker RavRadar offentliggøres. Det godkendte danske udkast bevares fagligt, herunder strømfiguren med 8 centimeter hvert sekund og sætningen: »Mere vind kan gøre vandoverfladen urolig, så det bliver sværere at se ned til bunden med en ravlygte.« Afsnittet indpasses på den eksisterende Om-side mellem rigtig MobilePay-støtte og kontakt, med DA/DE/EN og uden privat udkastbanner eller ekstra sidehoved. Den danske Grundbog skal bruge ravkese i de fire afgrænsede ordforekomster; tysk og engelsk ændres ikke.
+
+Offentlig 4.0.587/I97 er faktisk leveret, og cron er genaktiveret. Den nye tekstkandidat er kun lokalt integreret. Seks normale lokale mål og afgrænset browserforhåndsvisning er bestået; det normale Om-måls additive assertions, RDKS, sikkerhed, håndbogens læsehjælp, tabsfri håndbogsfletning og releaseversionskontrol består også. Installationskopiens SQL-prefix/suffix er uændret; offline og præcis kilde-/offentlig levering af teksterne afventer. Gamle fejlevidenser og dokumenthistorikker bevares. Model, SQL, geodata og assistentprodukt ændres ikke. Godkendelsen omfatter normal browserkontrol, ikke en påstand om allerede offentlig tekstlevering.
+
 ## 23. oktober — DMI-filer med gyldige, uændrede strømvindere
 
 Samtaledelta: Den normale DMI-kæde håndterer nu lokalt en fuldt gennemgået marin fil, som ikke ændrer de allerede kvalificerede strømvindere. Samme normale mål følger main, faktisk gemt/genlæst step, fælles læser, ledger/READY og genoptagelse, inklusive afslag på ændrede eller manglende beviser. Én additiv normal CI-registrering bevarer de gamle seks parser-/ledgerprøver. Tre persistente kontrakthashes er målt uændrede, og normal model-/bindingskontrol består. Det er ikke faktisk kvalifikation af alle produktionens afslag, Linux-nativekontrol eller offentlig levering. Tidligere P0-/587-status herunder er dateret historik; aktuelle leveringsresultater står i det private checkpoint.

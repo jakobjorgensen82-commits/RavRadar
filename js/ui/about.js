@@ -1,4 +1,5 @@
-import './about-i18n.js?v=4.0.588';
+import './about-i18n.js?v=4.0.588&ui=about-explainer-20261025';
+import { installAboutExplainer } from './about-explainer.js?v=4.0.588&ui=about-explainer-20261025';
 import { installAboutHomeReturn } from '../core/about-home-return.js?v=4.0.588';
 
 installAboutHomeReturn({
@@ -7,6 +8,8 @@ installAboutHomeReturn({
   locationObject:location,
   documentObject:document,
 });
+
+installAboutExplainer(document.querySelector('#rr-about-explainer'));
 
 const mobilePayUrl='https://qr.mobilepay.dk/box/8f2b226a-fd43-43f2-8610-1fa0df857c63/pay-in';
 const qrTarget=document.querySelector('#mobilepay-qr');
