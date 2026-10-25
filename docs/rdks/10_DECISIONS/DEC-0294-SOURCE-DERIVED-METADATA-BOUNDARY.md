@@ -1,5 +1,19 @@
 # DEC-0294 – SOURCE-kode og dens genererede kontrolmetadata
 
+## Lokal opfølgning 25. oktober — national READBACK uden unødvendig retention
+
+Den faktiske Linux/Node24-FORECAST nåede READBACK efter 86,246 sekunder med 673 dele og 81.433 kvalificerede timesrækker, men underprocessen afsluttede ikke inden den eksisterende 120-sekundersgrænse. READBACKs varighed og dens indre fordeling er ukendt. Den indre continuity-pakke er fortsat schema1; dens genlæsning går ikke gennem schema2-originalbankens kontrol. Ingen GC- eller bestemt læserunderfase er bevist som rodårsag.
+
+Kun fixtureejeren ændres. Bulk og parentopslag slippes efter afsluttet kvalifikation; zoner og den oprindelige komprimerede pakke slippes først efter den afventede atomiske gemning og optælling af de samme parentnøgler. Forventede records og underdele muteres ikke. Den eksisterende fulde inspektion og hver normal parent-/continuity-recordlæsning bruges i samme rækkefølge; ubrugte parentreturværdier beholdes blot ikke. Optional water-source-læsning bevares. Ét uændret unpack kontrollerer hele pakken med dens oprindelige domæne, rækkefølge, digests, tidsakse og totals, før alle 673×121 rækker sammenlignes uændret.
+
+Det reducerer overflødige samtidige referencer; det er ikke et målt løfte om peakheap eller CPU-tid. Alle tidligere assertioner og fysisk fil-/lukningskontrol bevares. Ingen per-PART-subsetpakke, ny helper-API, tvungen GC, ekstra instrumenteringsrunde eller forhøjet frist indføres. Fixturefilen er uden for C157/I153/T12 og producentinventaret; udstedt version, binding, lager-ABI og SQL genudstedes ikke.
+
+Normal codec-/læserkontrol og faktisk ny Linux-FORECAST på de nye committede bytes kræves. H0/H1, efterfølger, hele native- og kildekvalifikationen samt senere installation/offentlig effekt er fortsat åbne. SOURCE er inaktiv. Denne prøveændring ændrer ikke den særskilte almindelige P0-vejrhentning eller giver nogen ny produktionsautoritet. Evidens og de konkrete lokale prøveudfald står i det private checkpoint; de daterede førbilleder nedenfor bevares.
+
+## Lokal opfølgning 25. oktober — gamle testinput og den faktiske SOURCE-udvidelse
+
+Den senere normale lokale læserkollektion fandt tre afslag med to historiske testinputårsager: den korrekt udvidede SOURCE-I153 blev læst af den gamle udtræknings fraværsassertion, og den aktuelle 30.187-byte SOURCE-writer manglede sin ydre inverse før de gamle recordwise-pins. Kun test/support er tilpasset med hele pinbundne writer-/manifestinverser tilbage til genuine587. Alle gamle assertions, 28.925-/29.084-byte-pins og mutationsafslag bevares; faktisk I153 og hvert ændret SOURCE-hunk kontrolleres særskilt. Hele normale kollektion er derefter faktisk bestået lokalt: 68 PASS, nul fejl og ét eksisterende Windows-skip. Produktwriteren, I153, C157, SQL og adgang er uændrede. Mobilprøvens ene præcise turstartliteral matcher desuden den faktiske godkendte self-reported-kalder; hele det normale mobilmål består. Ingen af disse mål er native-kapacitets- eller samlet SOURCE-kvalifikation.
+
 ## Lokal opfølgning 24. oktober — påvist WAM-fixtureidentitet, native-forløb fortsat åbent
 
 Den bevarede SOURCE713-kontrol på c94 stoppede i PROVIDERS-H0 ved første wam_nsb-asset: 212 krævede mål, 0 accepterede og 212 ASSET_PROVENANCE_MISMATCH, uden afbrudt decode. scripts/fixtures/source19-current-initial-weather.py manglede assetIdentitySha256 i sit asset. Normal register_raw_cache_asset havde allerede registreret den kanoniske href-hash; official_wave_asset_identity kunne beregne samme fallback uden at ændre asset, mens MappingWaveAsset læste det manglende felt som tom streng. Den uændrede provenancekontrol afviste derfor sammenligningen.

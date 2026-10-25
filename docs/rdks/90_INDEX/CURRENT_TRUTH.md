@@ -1,3 +1,11 @@
+## 25. oktober — SOURCE-fixturens nationale genlæsning beholder alle kontroller
+
+SOURCEs faktiske FORECAST-underproces blev standset på den eksisterende 120-sekundersgrænse efter READBACK-indgang ved 86,246 sekunder. Det beviser ikke afsluttet READBACK, H0/H1 eller native PostgreSQL. Den lokale rettelse frigiver alene fixtureejede referencer efter sidste brug og kasserer ubrugte parentresultater efter deres normale fulde genlæsning. Normal inspektion, samtlige recordlæsninger, hele continuity-pakkens metadata/digests/totals, ét fuldt unpack og alle 673×121 deepEqual bevares. Ingen timeout, produktmodul, binding eller SQL ændres. Faktisk tidsgevinst og kapacitet er endnu ikke bevist; se DEC-0294 og checkpointet.
+
+Den hele normale læser-/kalderkollektion består lokalt med 68 PASS, nul fejl og ét eksisterende Windows-skip. Test-only whole-inverser bevarer de gamle genuine587-writer-/manifestorakler og alle gamle pins/assertions; den faktiske SOURCE-I153 og ændrede-hunk-afslag kontrolleres særskilt. Produktets udvidede binding rulles ikke tilbage. Den præcise mobilstartforventning er også bragt i overensstemmelse med appens godkendte self-reported-kald; hele mobilmålet består. Ingen ny produkt-API, modelbinding eller SQL følger heraf.
+
+587-SQL er faktisk installeret og genlæst. Den almindelige P0-kørsel nåede beregning og private gemningstrin, men stoppede før Pages på den gamle mobiltestliteral; ROOT ejer den særskilte rettelse, genoptagelse og offentlige kontrol. SOURCE er fortsat inaktiv og giver ikke genoptagelsen ny autoritet. Statistik og automatisk sletning er inaktive; den numeriske strømrettelse er lukket, fire øvrige mål er åbne. De ældre daterede udsagn nedenfor bevares som historik på disse konkrete punkter.
+
 ## 25. oktober — lokal SOURCE-sammenføring med kvalificeret P0-kilde
 
 Den inaktive SOURCE-kilde er lokalt sammenført med main-rettelsen, som adskiller original B-kontrol fra den afledte arbejdskopi. Arbejds-S, originaler og strenge historiske orakler bevares. Ingen ny version, modelbinding eller SQL er udstedt her. Begge daterede historikker nedenfor bevares; en kvalificeret P0-forælder er ikke samlet SOURCE-kvalifikation.

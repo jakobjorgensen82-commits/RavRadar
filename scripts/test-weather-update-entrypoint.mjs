@@ -1,4 +1,6 @@
 import {inverseReviewedAccountStatisticsAssistantSourceScripts} from './lib/account-statistics-assistant-package-review.mjs';
+import { inverseSourceWeatherEntrypointTestInput, SOURCE_WEATHER_ENTRYPOINT_REVIEW }
+  from './lib/source-weather-entrypoint-review.mjs';
 import { inverseAlternativeCCaller, inverseAssistant587OriginalCompanionTestInput,
   ASSISTANT587_ORIGINAL_COMPANION_TEST_REVIEW,
   inverseAssistant587OriginalRawBoundaryTestInput } from './lib/alternative-c-caller-test-input.mjs';
@@ -20,6 +22,8 @@ const sourceText = async file => {
   let source = (await fs.readFile(file, 'utf8')).replace(/\r\n/g, '\n');
   if (file instanceof URL && file.href === new URL('./lib/private-dmi-recovery-record.mjs', import.meta.url).href)
     source = inverseCurrentNativeOriginalProducerTestInput(source, 'scripts/lib/private-dmi-recovery-record.mjs');
+  if (file instanceof URL && file.href === new URL('./lib/dmi-forecast-file.mjs', import.meta.url).href)
+    source = inverseSourceWeatherEntrypointTestInput(source, 'writer');
   return file === producerPath ? inverseSavedCurrentForwardOriginalPlan(inverseAlternativeCCaller(source, 'scripts/update-weather.mjs')) : source;
 };
 const digest = value => crypto.createHash('sha256').update(value).digest('hex');
@@ -663,8 +667,12 @@ test('shared normal DMI recovery module is import-safe, outside I71, and byte-ex
     'buildPrivateDmiRecoveryRecord', 'mergeHourlyPreferDmi']) assert.equal(typeof normal[name], 'function');
   assert.doesNotMatch(shared, /from ['"]node:|\b(?:process\.|fetch\(|await\s)/);
   assert.doesNotMatch(shared, /from ['"].*update-weather/);
+  // Only this historical assertion reads the exact genuine587 pre-SOURCE view.
+  // The real expanded SOURCE manifest remains unchanged and is checked below.
+  const manifestSource = inverseSourceWeatherEntrypointTestInput(
+    await sourceText(new URL('../js/core/ravscore-model-bundle.generated.js', import.meta.url)), 'manifest');
   const { GENERATED_RAVSCORE_MODEL_BUNDLE_MANIFEST: manifest } =
-    await import('../js/core/ravscore-model-bundle.generated.js');
+    await import('data:text/javascript;base64,' + Buffer.from(manifestSource).toString('base64'));
   for (const file of ['scripts/update-weather.mjs', 'scripts/lib/private-dmi-recovery-record.mjs']) {
     assert.equal(manifest.files.some(entry => entry.path === file), false,
       'normal orchestration extraction must not enter the unchanged model closure');
@@ -759,6 +767,59 @@ test('recordwise PART writer has an exact outer inverse and refuses every change
   }
   assert.throws(() => inverseRecordwisePartWriter(actual + '// unreviewed drift\n'), /whole reviewed recordwise PART writer/);
   assert.throws(() => inverseRecordwisePartWriter(null), /whole recordwise PART writer text/);
+});
+
+
+test('SOURCE writer view preserves the whole genuine587 input and refuses every changed SOURCE hunk', async () => {
+  const role = 'writer', row = SOURCE_WEATHER_ENTRYPOINT_REVIEW.roles[role];
+  const actual = (await fs.readFile(new URL('./lib/dmi-forecast-file.mjs', import.meta.url), 'utf8')).replace(/\r\n/g, '\n');
+  assert.equal(Buffer.byteLength(actual), row.actual.bytes);
+  assert.equal(digest(actual), row.actual.sha256);
+  const prior = inverseSourceWeatherEntrypointTestInput(actual, role);
+  assert.equal(digest(prior), RECORDWISE_PART_WRITER_REVIEW.after.sha256);
+  assert.equal(inverseSourceWeatherEntrypointTestInput(prior, role), prior);
+  assert.equal(digest(inverseRecordwisePartWriter(prior)), RECORDWISE_PART_WRITER_REVIEW.before.sha256);
+  for (const edit of row.edits) {
+    assert.equal(actual.slice(edit.offset, edit.offset + edit.current.length), edit.current);
+    const changed = actual.slice(0, edit.offset) + edit.original + actual.slice(edit.offset + edit.current.length);
+    assert.notEqual(changed, actual);
+    assert.throws(() => inverseSourceWeatherEntrypointTestInput(changed, role), /SOURCE weather/);
+  }
+  assert.throws(() => inverseSourceWeatherEntrypointTestInput(actual + '// unknown\n', role), /SOURCE weather/);
+  assert.throws(() => inverseSourceWeatherEntrypointTestInput('#' + actual.slice(1), role), /SOURCE weather/);
+  assert.throws(() => inverseSourceWeatherEntrypointTestInput(actual, 'manifest'), /SOURCE weather/);
+  assert.throws(() => inverseSourceWeatherEntrypointTestInput(actual, 'unknown'), /SOURCE weather/);
+  assert.throws(() => inverseSourceWeatherEntrypointTestInput(null, role), /SOURCE weather/);
+});
+
+test('SOURCE expanded manifest stays genuine while only the old oracle gets its whole587 view', async () => {
+  const role = 'manifest', row = SOURCE_WEATHER_ENTRYPOINT_REVIEW.roles[role];
+  const actual = await sourceText(new URL('../js/core/ravscore-model-bundle.generated.js', import.meta.url));
+  assert.equal(Buffer.byteLength(actual), row.actual.bytes);
+  assert.equal(digest(actual), row.actual.sha256);
+  const current = await import('../js/core/ravscore-model-bundle.generated.js');
+  assert.equal(current.GENERATED_RAVSCORE_MODEL_BUNDLE_SHA256, '5fa3e96cb3cf0f47e6a10bd37d4e1b1b93f837bf0f221dbb49d2a6442289dbc8');
+  assert.equal(current.GENERATED_RAVSCORE_MODEL_BUNDLE_MANIFEST.files.length, 153);
+  assert.equal(current.GENERATED_RAVSCORE_MODEL_BUNDLE_MANIFEST.files.find(entry =>
+    entry.path === 'scripts/lib/private-dmi-recovery-record.mjs')?.sha256,
+    '7a967fb362304bcaa0590fccc7bab19092a3bcee013aa9682ce0afc3cf3f7e1b');
+  assert.equal(current.GENERATED_RAVSCORE_MODEL_BUNDLE_MANIFEST.files.find(entry =>
+    entry.path === 'scripts/lib/dmi-forecast-file.mjs')?.sha256, SOURCE_WEATHER_ENTRYPOINT_REVIEW.roles.writer.actual.sha256);
+  const prior = inverseSourceWeatherEntrypointTestInput(actual, role);
+  const historical = await import('data:text/javascript;base64,' + Buffer.from(prior).toString('base64'));
+  assert.equal(historical.GENERATED_RAVSCORE_MODEL_BUNDLE_SHA256, '5584d8e59f8d21785fd08b32f9beb22cf879cdb4892a11ede24eb862d9a0dca2');
+  assert.equal(historical.GENERATED_RAVSCORE_MODEL_BUNDLE_MANIFEST.files.length, 97);
+  assert.equal(inverseSourceWeatherEntrypointTestInput(prior, role), prior);
+  for (const edit of row.edits) {
+    assert.equal(actual.slice(edit.offset, edit.offset + edit.current.length), edit.current);
+    const changed = actual.slice(0, edit.offset) + edit.original + actual.slice(edit.offset + edit.current.length);
+    assert.notEqual(changed, actual);
+    assert.throws(() => inverseSourceWeatherEntrypointTestInput(changed, role), /SOURCE weather/);
+  }
+  assert.throws(() => inverseSourceWeatherEntrypointTestInput(actual + '// unknown\n', role), /SOURCE weather/);
+  assert.throws(() => inverseSourceWeatherEntrypointTestInput('#' + actual.slice(1), role), /SOURCE weather/);
+  assert.throws(() => inverseSourceWeatherEntrypointTestInput(actual, 'writer'), /SOURCE weather/);
+  assert.throws(() => inverseSourceWeatherEntrypointTestInput(null, role), /SOURCE weather/);
 });
 
 test('47 baseline commands plus genuine OLD, NEW native, epoch and pure diagnostic checks reach normal checkpoint integration exactly once', async () => {

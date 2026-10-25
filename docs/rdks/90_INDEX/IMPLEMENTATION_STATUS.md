@@ -1,3 +1,14 @@
+## 25. oktober — afgrænset retention i den nationale SOURCE-fixture
+
+- [x] Faktisk FORECAST-timeout afgrænset til efter READBACK-indgang; 86,246 sekunder er ikke afslutningstid.
+- [x] Lokal fixture frigiver egne referencer efter sidste brug og beholder ikke ubrugte parentresultater. Alle normale læsninger og afslag, ét helt unpack og alle 673×121 timesammenligninger bevares.
+- [x] Hele normale læser-/kalderkollektion: 68 PASS, ingen fejl, ét eksisterende Windows-skip. Præcise test-only whole-inverser bevarer gamle genuine587-orakler og alle tidligere assertions/pins; faktisk SOURCE-I153 og ændrede hunks kontrolleres særskilt.
+- [x] Mobilprøvens ene turstartliteral matcher nu appens eksplicitte self-reported-kald; hele det normale mobilmål består på SOURCE-kompositionen. Ingen produktfil ændres.
+- [ ] Faktisk Linux-kapacitet inden den uændrede 120-sekundersgrænse, H0/H1, efterfølger, native PostgreSQL og præcis samlet SOURCE-kvalifikation. Lokal kilde eller codecprøve lukker ikke disse krav.
+- [ ] SOURCE-installation, almindelig produktionsanvendelse og offentlig effekt. SOURCE forbliver inaktiv; produktmoduler, C/I/T, SQL, budgetter og data er uændrede af fixturerettelsen.
+
+587-SQL er installeret og genlæst. P0-kørslen nåede beregning og private gemningstrin, men stoppede før Pages på det gamle mobiltestliteral. Den særskilte P0-rettelse, normal genoptagelse og offentlig kontrol ejes af ROOT og det private checkpoint. Numerisk strømmål er lukket; de fire øvrige hovedområder er åbne. Ældre daterede afventninger nedenfor bevares som historik alene på de konkrete erstattede punkter.
+
 ## 25. oktober — lokal SOURCE/P0-sammenføring, ikke samlet kvalifikation
 
 - [x] Kvalificeret P0-kilde fra main lokalt sammenført; original B-grænse, arbejdsdata og begge dokumenthistorikker bevares.

@@ -1,3 +1,13 @@
+## 25. oktober — fuld SOURCE-fixturegenlæsning med færre samtidige kopier
+
+Den faktiske Linux-kontrol nåede FORECASTs READBACK efter 86,246 sekunder, men afsluttede ikke inden den uændrede 120-sekundersgrænse. Tiden er faseindgang, ikke afsluttet genlæsning; den konkrete fordeling mellem læsning, udpakning og sammenligning er ukendt. Det er den isolerede revisionsprøve, ikke en ny fejl i den almindelige vejrhentning.
+
+Den lokale fixture slipper nu kun sine egne overflødige bulk-, parent- og packreferencer efter sidste brug. Genlæsningen bruger den eksisterende inspektion og recordlæser uden at beholde ubrugte parentresultater. Samtlige parentlæsninger, fil-/hash-/lukningsafslag, ét helt unpack og alle 673×121 timesammenligninger bevares. Ingen produkt-API, tidsfrist, kildevalg, numerik, C/I/T eller SQL ændres. Mindre retention er ikke bevis for tilstrækkelig kapacitet; ny faktisk Linux/native- og samlet kildekontrol er fortsat nødvendig. Se DEC-0294 og privat checkpoint.
+
+Den komplette normale læser-/kalderkollektion består nu lokalt med 68 PASS, ingen fejl og ét eksisterende Windows-skip. De gamle SOURCE-mismatch er lukket alene i testinput: hele gennemgåede writer- og manifestbytes føres præcist tilbage til deres genuine587-orakler, mens den faktiske I153-udvidelse kontrolleres særskilt positivt. Alle gamle assertions og pins samt afslag på ændrede hunks består. Mobilprøven forventer samme eksplicit selvrapporterede turstart som den faktiske app og består også her. Dette er ikke native-/kapacitets- eller samlet CI-bevis.
+
+587-SQL er installeret og genlæst. Den særskilte almindelige P0-kørsel nåede beregning og private gemningstrin, men stoppede før Pages på den gamle mobiltestliteral. Dens afgrænsede rettelse og normale genoptagelse håndteres særskilt af ROOT; denne SOURCE-kilde er ikke offentlig levering. SOURCE, samlet statistik og automatisk sletning forbliver inaktive. Den numeriske strømrettelse er lukket; fire øvrige hovedområder er åbne. Ældre daterede afventninger nedenfor erstattes kun på disse konkrete punkter.
+
 ## 25. oktober — lokal SOURCE588-sammenføring med brugerdata, deling og checkpointrettelser
 
 Denne lokale sammenføring bevarer SOURCE588-forløbet og de indgående 719/720-beslutninger, herunder begge normale checkpointdestinationer. SOURCE forbliver inaktiv med uændret C157/I153/T12 og originale migrationer. De indgående 587-noter er forælderens daterede evidens, ikke en ommærkning af denne kilde eller et samlet SOURCE-PASS. 587 er endnu ikke installeret; cron er slået fra, og P0-kontrollen håndteres særskilt af ROOT.

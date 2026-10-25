@@ -10,7 +10,8 @@ import {bulkZoneToForecastRecord,buildPrivateDmiRecoveryRecord} from '../lib/pri
 import {dmiExpectedIdentityForPart,verifiedIntegratedPartHourly,
   assertDmiPartHourlyGridSamplingApplicable} from '../lib/ravscore-production-adapters.mjs';
 import {packDmiPartContinuity,unpackDmiPartContinuity} from '../lib/dmi-part-continuity.mjs';
-import {writeDmiForecastFileAtomic,readDmiForecastFile} from '../lib/dmi-forecast-file.mjs';
+import {writeDmiForecastFileAtomic,inspectDmiForecastFile,readDmiForecastRecord,
+  readDmiWaterSourceContinuity} from '../lib/dmi-forecast-file.mjs';
 
 // Fixed test telemetry only. The existing parent owns/fsyncs whole stderr.
 // A failed write remains an ordinary I/O error; no private error text is emitted.
@@ -49,11 +50,11 @@ export async function prepareNativeCurrentForecast(target,initialPhase=null){
   const registry=JSON.parse(await fs.readFile(path.join(ROOT,'data/live/coastal-parts-v2.json')));
   const zoneRegistry=JSON.parse(await fs.readFile(path.join(ROOT,'data/zones.geojson')));
   assert.equal(registry.zoneCount,210);assert.equal(registry.partCount,673);
-  const bulk=await readDmiBulkDocument(path.join(out,'data/live/dmi-bulk-cache.json'));
+  let bulk=await readDmiBulkDocument(path.join(out,'data/live/dmi-bulk-cache.json'));
   counts.bulkZoneCount=Object.keys(bulk.zones??{}).length;
   observe('QUALIFY',counts);
-  const parents=new Map(zoneRegistry.features.map(feature=>[feature.properties.id,feature]));
-  const zones={},parts=[],records=new Map();let qualifiedNativeRows=0;
+  let parents=new Map(zoneRegistry.features.map(feature=>[feature.properties.id,feature])),zones={};
+  const parts=[],records=new Map();let qualifiedNativeRows=0;
   for(const [zoneId,rows]of Object.entries(registry.zones)){
     const parent=parents.get(zoneId);assert(parent);
     const parentRecord=bulkZoneToForecastRecord(parent,bulk,at,null,{startAt:at});
@@ -80,17 +81,33 @@ export async function prepareNativeCurrentForecast(target,initialPhase=null){
     }
   }
   assert.equal(parts.length,673);assert.equal(qualifiedNativeRows,673*121);
+  // Release only fixture-owned roots after qualification; expected records stay intact.
+  bulk=null;parents=null;
   observe('PACK',counts);
-  const partContinuity=await packDmiPartContinuity(records,parts,at);
+  let partContinuity=await packDmiPartContinuity(records,parts,at);
   counts.packRawBytes=partContinuity.rawBytes;counts.packCompressedBytes=partContinuity.compressedBytes;
   observe('WRITE',counts);
   const written=await writeDmiForecastFileAtomic(file,{schemaVersion:2,generatedAt:at,zones,partContinuity});
   counts.forecastBytes=written.bytes;
+  const parentRecords=Object.keys(zones).length;
+  // The atomic writer has settled; retain no unused parent/packed owner here.
+  zones=null;partContinuity=null;
   observe('READBACK',counts);
-  const readback=await readDmiForecastFile(file),restored=await unpackDmiPartContinuity(readback.partContinuity,parts,at);
+  const index=await inspectDmiForecastFile(file);
+  // Keep every normal parent reread/hash/identity/close refusal, then discard its value.
+  for(const descriptor of index.zones.values())await readDmiForecastRecord(index,descriptor);
+  let readbackPack=index.metadata.partContinuity;
+  if(index.continuity){
+    const entries=[];
+    for(const descriptor of index.continuity.entries)entries.push(await readDmiForecastRecord(index,descriptor));
+    readbackPack={...index.continuity.metadata,entries};
+  }
+  // This fixture does not write waterSourceContinuity; preserve the normal optional read.
+  if(index.waterSourceContinuity)await readDmiWaterSourceContinuity(index);
+  const restored=await unpackDmiPartContinuity(readbackPack,parts,at);
   for(const part of parts)assert.deepEqual(restored.get(part.partId).hourly,records.get(part.partId).hourly);
   observe('COMPLETE',counts);
-  return {parentRecords:Object.keys(zones).length,partCount:parts.length,qualifiedCurrentRows:qualifiedNativeRows,
+  return {parentRecords,partCount:parts.length,qualifiedCurrentRows:qualifiedNativeRows,
     otherWeatherComplete:false,scoreProduced:false,actionInvoked:false,productionProof:false};
 }
 if(process.argv[1]&&fileURLToPath(import.meta.url)===path.resolve(process.argv[1])){
