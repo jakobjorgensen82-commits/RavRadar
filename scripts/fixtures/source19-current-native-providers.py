@@ -59,6 +59,119 @@ def write_new(path, value):
     need(path.read_bytes() == raw, "WRITE_READBACK")
 
 
+# Historical normal admin INPUT authority, not a fresh central read or an issuer.
+# The complete repository source remains unchanged; only this owned fixture OUT
+# receives the existing normal review/hydration operation before any decoding.
+NORMAL_ADMIN_AUDIT = "data/diagnostics/coastal-geometry-v2-live-comparison.json"
+NORMAL_ADMIN_AUDIT_SHA256 = "3efa0b99e28ab1dadf8278e3394986c962fc37b478571342311d110030c231d7"
+NORMAL_ADMIN_INPUTS = ("data/zones.geojson", "data/admin/coastline-overrides.json", "data/admin/direction-reviews.json",
+    "data/geometry-v2/active-national-coastal-parts/manifest.json",
+    *["data/geometry-v2/active-national-coastal-parts/" + name for name in
+      ("coastal-parts.geojson", "part-names.json", "point-pairs.json", "dmi-grid-proof.json")])
+
+
+def write_bytes_new(path, raw):
+    path.parent.mkdir(parents=True, exist_ok=True)
+    no_links(path.parent)
+    with path.open("xb") as output:
+        output.write(raw)
+        output.flush()
+        os.fsync(output.fileno())
+    need(path.read_bytes() == raw, "ADMIN_WRITE_READBACK")
+
+
+def normal_admin_fixture_basis(out):
+    no_links(ROOT)
+    no_links(out)
+    audit_path = ROOT / NORMAL_ADMIN_AUDIT
+    no_links(audit_path)
+    need(audit_path.is_file() and digest(audit_path) == NORMAL_ADMIN_AUDIT_SHA256, "ADMIN_AUDIT_IDENTITY")
+    audit = json.loads(audit_path.read_text(encoding="utf-8"))
+    deleted = audit["centrallyDeletedZoneIds"]
+    need(isinstance(deleted, list) and deleted and all(isinstance(x, str) and x for x in deleted)
+         and len(set(deleted)) == len(deleted), "ADMIN_AUDIT_TOMBSTONES")
+    raw = (ROOT / "data/zones.geojson").read_bytes()
+    original = json.loads(raw)
+    registry = json.loads((ROOT / "data/live/coastal-parts-v2.json").read_text(encoding="utf-8"))
+    need(registry["zoneCount"] == len(registry["zones"]) == 210 and registry["partCount"] == 673, "NORMAL_REGISTRY_210_673")
+    original_ids = [feature["properties"]["id"] for feature in original["features"]]
+    need(len(original_ids) == len(set(original_ids)) and set(deleted).issubset(original_ids), "ADMIN_SOURCE_IDENTITIES")
+    expected = dict(original)
+    expected["features"] = [feature for feature in original["features"] if feature["properties"]["id"] not in deleted]
+    expected_ids = [feature["properties"]["id"] for feature in expected["features"]]
+    need(len(expected_ids) == 210 and set(expected_ids) == set(registry["zones"]), "NORMAL_ADMIN_ZONE_IDS")
+    return raw, audit_path.read_bytes(), deleted, expected, registry
+
+
+def assert_staged_normal_admin_inputs(out, rows):
+    source_raw, audit_raw, deleted, expected, registry = normal_admin_fixture_basis(out)
+    archive = out / ".cache/native-admin-inputs"
+    need((archive / "source-zones.geojson").read_bytes() == source_raw, "ADMIN_SOURCE_ARCHIVE_CHANGED")
+    need((archive / "source-audit.json").read_bytes() == audit_raw, "ADMIN_AUDIT_ARCHIVE_CHANGED")
+    actual = json.loads((out / "data/zones.geojson").read_text(encoding="utf-8"))
+    actual_ids = [feature["properties"]["id"] for feature in actual["features"]]
+    need(len(actual_ids) == 210 and len(set(actual_ids)) == 210
+         and set(actual_ids) == set(registry["zones"]), "NORMAL_ADMIN_ZONE_IDS")
+    canonical = lambda value: json.dumps(value, ensure_ascii=False, allow_nan=False, separators=(",", ":")).encode("utf-8")
+    need(canonical(actual) == canonical(expected), "NORMAL_ADMIN_RETAINED_FEATURES_CHANGED")
+    need(isinstance(rows, list) and rows and len({row["relativePath"] for row in rows}) == len(rows), "ADMIN_INPUT_MANIFEST")
+    for row in rows:
+        need(set(row) == {"relativePath", "bytes", "sha256"} and row["relativePath"] in NORMAL_ADMIN_INPUTS, "ADMIN_INPUT_MANIFEST")
+        file = out / row["relativePath"]
+        no_links(file)
+        need(file.is_file() and file.stat().st_size == row["bytes"] and digest(file) == row["sha256"], "ADMIN_STAGED_INPUT_CHANGED")
+    return True
+
+
+def prepare_staged_normal_admin_inputs(out):
+    source_raw, audit_raw, deleted, expected, registry = normal_admin_fixture_basis(out)
+    archive = out / ".cache/native-admin-inputs"
+    archive.mkdir(parents=True, exist_ok=False)
+    write_bytes_new(archive / "source-zones.geojson", source_raw)
+    write_bytes_new(archive / "source-audit.json", audit_raw)
+    reviews_relative = "data/admin/direction-reviews.json"
+    for relative in NORMAL_ADMIN_INPUTS:
+        if relative == reviews_relative:
+            continue
+        source = ROOT / relative
+        if not source.exists():
+            need(relative == "data/admin/coastline-overrides.json", "ADMIN_INPUT_MISSING")
+            continue
+        no_links(source)
+        need(source.is_file(), "ADMIN_INPUT_NOT_FILE")
+        write_bytes_new(out / relative, source.read_bytes())
+    source_reviews = ROOT / reviews_relative
+    reviews = {"zones": {}}
+    if source_reviews.exists():
+        no_links(source_reviews)
+        raw = source_reviews.read_bytes()
+        write_bytes_new(archive / "source-direction-reviews.json", raw)
+        reviews = json.loads(raw)
+    need(isinstance(reviews, dict), "ADMIN_REVIEWS_SHAPE")
+    entries = reviews.get("zones", reviews)
+    need(isinstance(entries, dict), "ADMIN_REVIEWS_SHAPE")
+    for zone_id in deleted:
+        previous = entries.get(zone_id)
+        need(previous is None or (isinstance(previous, dict)
+             and (previous.get("deleted") is True or previous.get("status") == "deleted")), "ADMIN_TOMBSTONE_CONFLICT")
+        entries[zone_id] = {**(previous or {}), "deleted": True, "status": "deleted"}
+    write_new(out / reviews_relative, reviews)
+    subprocess.run([sys.executable, "-B", str(ROOT / "scripts/apply-central-zone-reviews.py"),
+        "--zones", str(out / "data/zones.geojson"), "--reviews", str(out / reviews_relative),
+        "--coastlines", str(out / "data/admin/coastline-overrides.json")],
+        cwd=ROOT, stdin=subprocess.DEVNULL, check=True, timeout=30)
+    rows = [{"relativePath": relative, "bytes": (out / relative).stat().st_size, "sha256": digest(out / relative)}
+            for relative in NORMAL_ADMIN_INPUTS if (out / relative).is_file()]
+    assert_staged_normal_admin_inputs(out, rows)
+    write_new(archive / "hydration-proof.json", {"syntheticTestInput": True, "productionProof": False,
+        "freshCentralRead": False, "auditSha256": NORMAL_ADMIN_AUDIT_SHA256,
+        "sourceZoneSha256": hashlib.sha256(source_raw).hexdigest(), "sourceZoneCount": len(expected["features"]) + len(deleted),
+        "hydratedZoneCount": len(expected["features"]), "registryZoneCount": registry["zoneCount"],
+        "partCount": registry["partCount"], "deletedZoneIds": deleted,
+        "exactRegistryIdentities": True, "retainedFeaturesUnchanged": True})
+    return rows
+
+
 def module(name, file):
     spec = importlib.util.spec_from_file_location(name, file)
     need(spec is not None and spec.loader is not None, "NORMAL_MODULE")
@@ -187,6 +300,7 @@ def prepare(node, target, initial_phase=None, *, predecessor587=False):
     # Do not decode against a stale, hand-built or one-part native registry.
     subprocess.run([str(node), str(ROOT / "scripts/build-public-coastal-parts-v2.mjs")],
         cwd=ROOT, stdin=subprocess.DEVNULL, check=True, timeout=30)
+    admin_rows = prepare_staged_normal_admin_inputs(out)
     raw_dir = out / ".cache/dmi-grib"
     raw_dir.parent.mkdir(parents=True, exist_ok=True)
     raw_dir.mkdir(exist_ok=False)
@@ -205,6 +319,7 @@ def prepare(node, target, initial_phase=None, *, predecessor587=False):
         os.chdir(ROOT)
         sys.path.insert(0, str(ROOT / "scripts"))
         producer = module("current_native_real_dmi_decoder", ROOT / "scripts/update-dmi-bulk.py")
+        producer.ZONES_PATH = out / "data/zones.geojson"
         need(not producer.CACHE_ONLY and not producer.API_KEY, "CLEAN_NATIVE_ACQUISITION_MODE")
         producer.STAC_SESSION.get = forbidden
         producer.DOWNLOAD_SESSION.get = forbidden
@@ -215,7 +330,7 @@ def prepare(node, target, initial_phase=None, *, predecessor587=False):
         targets = load_targets(ROOT / "data/live/coastal-parts-v2.json")
         registry = json.loads((ROOT / "data/live/coastal-parts-v2.json").read_text())
         need(len(targets) == registry["partCount"] == 673 and registry["zoneCount"] == 210, "NORMAL_REGISTRY_210_673")
-        zones = producer.build_operational_zone_config(json.loads((ROOT / "data/zones.geojson").read_text()), targets)
+        zones = producer.build_operational_zone_config(json.loads((out / "data/zones.geojson").read_text()), targets)
         need(len({row["id"] for row in zones if row.get("coastalPart")}) == 673, "NORMAL_PART_TARGETS")
         signature = producer.sampling_registry_signature()
         # A missing normal station input has the documented empty fallback.
@@ -332,7 +447,7 @@ def prepare(node, target, initial_phase=None, *, predecessor587=False):
         atomic_write_shadow_checkpoint(out / BASIS[2], acquisitions=[], records=[],
             updated_at=reference, target_identities={row["partId"]: row for row in targets})
         finish_normal_basis(node, out, reference, producer, targets, document,
-            initial_phase=initial_phase, predecessor587=predecessor587)
+            initial_phase=initial_phase, predecessor587=predecessor587, admin_rows=admin_rows)
         write_new(out / "native-provider-stac-wire.json", {"syntheticTestInput": True,
             "stacRoot": producer.STAC_ROOT, "collections": catalogs})
         write_new(out / "native-provider-raw-inputs.json", {"syntheticTestInput": True,
@@ -349,7 +464,7 @@ def prepare(node, target, initial_phase=None, *, predecessor587=False):
         os.environ.update(previous_env)
 
 
-def finish_normal_basis(node, out, reference, producer, targets, document, *, initial_phase=None, predecessor587=False):
+def finish_normal_basis(node, out, reference, producer, targets, document, *, initial_phase=None, predecessor587=False, admin_rows):
     """Actual existing normal producers, never authored READY/closure/pilot data."""
     from lib.copernicus_current import (file_sha256, select_required_records,
         make_coverage_collection, atomic_write_shadow)
@@ -426,24 +541,8 @@ def finish_normal_basis(node, out, reference, producer, targets, document, *, in
     # no invented inventory, forecast value, source routing or status. The real
     # updater creates its full lifecycle document later from these empty inputs.
     write_new(out / BASIS[5], {"stations": []})
-    admin = ("data/zones.geojson", "data/admin/coastline-overrides.json", "data/admin/direction-reviews.json",
-        "data/geometry-v2/active-national-coastal-parts/manifest.json",
-        *["data/geometry-v2/active-national-coastal-parts/" + name for name in
-          ("coastal-parts.geojson", "part-names.json", "point-pairs.json", "dmi-grid-proof.json")])
-    admin_rows = []
-    for relative in admin:
-        source = ROOT / relative
-        if not source.exists():
-            need(relative in {"data/admin/coastline-overrides.json", "data/admin/direction-reviews.json"}, "ADMIN_INPUT_MISSING")
-            continue
-        target = out / relative
-        target.parent.mkdir(parents=True, exist_ok=True)
-        with target.open("xb") as output:
-            output.write(source.read_bytes())
-            output.flush()
-            os.fsync(output.fileno())
-        need(digest(target) == digest(source), "ADMIN_COPY_CHANGED")
-        admin_rows.append({"relativePath": relative, "bytes": target.stat().st_size, "sha256": digest(target)})
+    # Already normally hydrated before provider construction; no late source recopy.
+    assert_staged_normal_admin_inputs(out, admin_rows)
     provider_files = (*BASIS, ".cache/copernicus-current-source-stage.json", ".cache/current-field-shadow.json",
         ".cache/open-meteo-current-donor-bank.json")
     provider_rows = []

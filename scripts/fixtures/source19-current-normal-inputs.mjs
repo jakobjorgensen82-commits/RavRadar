@@ -730,6 +730,14 @@ async function produceNativeInputs(options,initial,observation) {
       events:[...backend.events],normalNationalRollbackQualified:false,initialCentralActivation:'UNRUN',
       actionInvoked:false,sdkInvoked:false,sourceOwnerIssued:false,wholeSourceIntegrationProved:false,productionProof:false});
     observation.phase='SOURCE_LEGACY_PRODUCER_SOURCE_METADATA';
+    // Same normal admin INPUTS as every genuine585/586/587/588 host. This is
+    // AFTER source-clean and the initial-only return, never a tracked-code waiver.
+    await copyInputs(inputRoot, ROOT, options.adminInputs, ADMIN);
+    const currentZones = await json(path.join(ROOT, 'data/zones.geojson'));
+    same(currentZones.features.map(feature=>feature.properties.id).sort(),Object.keys(registry585.zones).sort(),
+      'Exact normally hydrated CURRENT parent identities before SOURCE metadata');
+    const currentRegistry = await (await load(ROOT, 'scripts/build-public-coastal-parts-v2.mjs')).build();
+    same(currentRegistry, registry585, 'Same full normal registry after CURRENT admin input materialization');
     process.chdir(ROOT); process.env.PRIVATE_RUNTIME_REPOSITORY_ROOT = ROOT; process.env.GITHUB_SHA = currentHead;
     process.env.RAVRADAR_PREDECESSOR_PRIVATE_ROOT = saved588.privateRoot;
     process.env.RAVRADAR_PREDECESSOR_PRIVATE_BUNDLE = saved588.bundlePath;
@@ -914,6 +922,19 @@ export async function prepareCurrentSourceNativeFromInitialProfile(){
   await fs.mkdir(work,{recursive:false,mode:0o700});const identity=await fs.lstat(work,{bigint:true});
   const beforeEnv={...process.env},beforeCwd=process.cwd();let first;
   try{
+    // Same audited normal admin INPUTS as the already prepared genuine588
+    // prefix. Keep this AFTER source-clean, never inside the initial-only path.
+    const adminInputRoot=path.join(own,'fixture-initial-h0');
+    const adminOptions=JSON.parse(await read(path.join(adminInputRoot,'current-source-native-options.json'),1024*1024));
+    assert.equal(adminOptions.profile,'current-source-native-initial');
+    assert.equal(path.resolve(adminOptions.inputRoot),adminInputRoot);
+    assert.equal(adminOptions.targetReferenceAt,initial.frozen585ForwardReferenceAt);
+    await copyInputs(adminInputRoot,ROOT,adminOptions.adminInputs,ADMIN);
+    const currentZones=await json(path.join(ROOT,'data/zones.geojson'));
+    same(currentZones.features.map(feature=>feature.properties.id).sort(),Object.keys(initial.registry.zones).sort(),
+      'Exact normally hydrated CURRENT-from-initial parent identities');
+    same(await(await load(ROOT,'scripts/build-public-coastal-parts-v2.mjs')).build(),initial.registry,
+      'Same full normal prefix registry after CURRENT-from-initial admin materialization');
     const B=await load(ROOT,'scripts/protected-private-production-runtime.mjs');
     const S=await load(ROOT,'scripts/protected-ravscore-continuation-checkpoint.mjs');
     const clients=B.createProtectedPrivateRuntimeClients({storageBackend:'supabase'});

@@ -1058,6 +1058,42 @@ import {synchronizeRavScoreModelBinding,assistantPublic587SuccessorCheckpointIns
   from './sync-ravscore-model-binding.mjs';
 
 test('assistant public587 ordinary caller uses real top-level workflow identity before selecting original data',async t=>{
+// Historisk588-selectorfunktion; ikke bevis for kørsel af hele runtime-modulet.
+  await withAuthenticated588PredecessorSource(async frozenRoot=>{
+    const {execFileSync}=await import('node:child_process');
+    const environment=Object.fromEntries(['PATH','Path','SystemRoot','WINDIR','TEMP','TMP','LANG','LC_ALL']
+      .filter(key=>typeof process.env[key]==='string').map(key=>[key,process.env[key]]));
+    Object.assign(environment,{GIT_NO_LAZY_FETCH:'1',GIT_NO_REPLACE_OBJECTS:'1',GIT_TERMINAL_PROMPT:'0',
+      GIT_CONFIG_COUNT:'1',GIT_CONFIG_KEY_0:'protocol.allow',GIT_CONFIG_VALUE_0:'never'});
+    const raw=execFileSync('git',['-C',ROOT,'cat-file','blob',
+      '4845e6c6622333ad4e8454b0b43f5f94ae42233e:scripts/assistant-later-h0-runtime-transition.mjs'],
+      {env:environment,timeout:30000,maxBuffer:65536});
+    const digest=bytes=>successorHash('sha256').update(bytes).digest('hex');
+    assert.equal(raw.length,16050);assert.equal(digest(raw),'4900c63b8060b71c37503e22580f807723e9b3eb2ec5a5390edd0a657035dd1d');
+    const source=raw.toString('utf8');
+    const clip=(begin,end)=>{
+      assert.equal(source.split(begin).length,2);assert.equal(source.split(end).length,2);
+      assert(source.indexOf(begin)<source.indexOf(end));return source.slice(source.indexOf(begin),source.indexOf(end));
+    };
+    const bindings=clip('const {before:OLD,requireBinding:requireActiveAssistantBinding,requireOutput:requireActiveAssistantOutput,',
+      "\nimport {withAuthenticated587PredecessorSource}");
+    const jsonStart='const json=async p=>JSON.parse(await fs.readFile(p,';
+    assert.equal(source.split(jsonStart).length,2);
+    const json=source.slice(source.indexOf(jsonStart),source.indexOf('\n',source.indexOf(jsonStart))+1);
+    const target=clip('function targetHour(){','\nfunction checkpointInverse(');
+    const selection=clip('export async function selectAssistantLaterH0Source(){','\nexport async function prepareAssistantLaterH0Runtime(){');
+    for(const [part,expected]of [[bindings,'5bba9abf79cb0459d86b2dde97437d885aaaf5c5f3cc836b86b6a2b3077578dd'],[json,'1b38661cd7405b21fe2b55baab3a1d15ede096fa97385a2abfae8eb0e69406ac'],
+      [target,'e69e96245062d052d6bf91c5ff6abcd8c94640e6cabd8f25dde8161d3936de34'],[selection,'002ccd078b0eddf4c4e403dc4ab1e2a68ed7e802e1c3b4d0926932af7872793c']])assert.equal(digest(part),expected);
+    const {ACTIVE_ASSISTANT_SUCCESSOR,ASSISTANT_LATER_H0_BEFORE}=
+      await import(pathToFileURL(path.join(frozenRoot,'scripts/lib/assistant-later-h0-successor-source.mjs')).href);
+    const {ravScoreModelBinding}=await import(pathToFileURL(path.join(frozenRoot,'js/core/ravscore-model-contract.js')).href);
+    // Samme Node-realm, faktisk588-model og uændrede lokale hjælpe-/selectorbytes.
+    // Ingen helmodul-import, overlay, håndskrevet modeltuple eller ændret produktguard.
+    const selectAssistantLaterH0Source=new Function('assert','fs','path','process','ACTIVE','ravScoreModelBinding',
+      "'use strict';\n"+bindings+'\n'+json+'\n'+target+'\n'+selection.replace(/^export /,'')+
+      '\nreturn selectAssistantLaterH0Source;')(assert,fs,path,process,ACTIVE_ASSISTANT_SUCCESSOR,ravScoreModelBinding);
+    try{
+      await (async()=>{
   const entrypoints=await Promise.all(['update-and-deploy.yml','run-current-weather-once.yml'].map(async file=>{
     const source=await fs.readFile(path.join(ROOT,'.github/workflows',file),'utf8');
     const match=/^name: (.+)$/m.exec(source);assert(match,'Actual top-level caller has a fixed name');
@@ -1111,6 +1147,9 @@ test('assistant public587 ordinary caller uses real top-level workflow identity 
   }finally{
     t.mock.restoreAll();for(const key of keys){if(prior[key]===undefined)delete process.env[key];else process.env[key]=prior[key];}
   }
+      })();
+    }finally{t.mock.restoreAll();}
+  });
 });
 
 test('assistant public587 active facade is fixed and refuses UNISSUED before I/O',async t=>{
@@ -1258,8 +1297,53 @@ test('assistant public587 operative import variants remain whole-source bound',a
 });
 
 test('assistant public587 late Edge route preserves exact prior profile and ordinary gates',async()=>{
-  const {deferCurrentGridBindingEdges,currentGridEdgePublicationRequired}=
-    await import('./lib/production-workflow-sources.mjs');
+// Denne ene historiske case bruger ægte588; den aktuelle589-case bevares særskilt.
+  await withAuthenticated588PredecessorSource(async frozenRoot=>{
+    const {execFileSync}=await import('node:child_process');
+    const leaf='scripts/lib/production-workflow-sources.mjs';
+    const frozenHead='4845e6c6622333ad4e8454b0b43f5f94ae42233e';
+    const expectedSha='480267d37aa808491c70fb4c8fc2d711ca99b5fbf4318eaa5abda31e48711798';
+    const environment=Object.fromEntries(['PATH','Path','SystemRoot','WINDIR','TEMP','TMP','LANG','LC_ALL']
+      .filter(key=>typeof process.env[key]==='string').map(key=>[key,process.env[key]]));
+    Object.assign(environment,{GIT_NO_LAZY_FETCH:'1',GIT_NO_REPLACE_OBJECTS:'1',GIT_TERMINAL_PROMPT:'0',
+      GIT_CONFIG_COUNT:'1',GIT_CONFIG_KEY_0:'protocol.allow',GIT_CONFIG_VALUE_0:'never'});
+    // Én fast samme4845-leaf, aldrig caller-valgt root/head eller aktuel589-helper.
+    const original=execFileSync('git',['-C',ROOT,'cat-file','blob',frozenHead+':'+leaf],
+      {env:environment,timeout:30000,maxBuffer:65536});
+    const digest=bytes=>successorHash('sha256').update(bytes).digest('hex');
+    assert.equal(original.length,15752);assert.equal(digest(original),expectedSha);
+    const inventory=(await fs.readdir(frozenRoot,{recursive:true})).sort();
+    const target=path.join(frozenRoot,leaf),parent=path.dirname(target);
+    assert.equal(await fs.realpath(parent),parent);
+    await assert.rejects(fs.lstat(target),{code:'ENOENT'},'Kun én beviseligt fraværende kildeleaf');
+    const handle=await fs.open(target,'wx+',0o600);
+    let sealed,first,failed=false;
+    const identity=stat=>[stat.dev,stat.ino,stat.birthtimeNs,stat.size,stat.mtimeNs,stat.ctimeNs];
+    const verifyLeaf=async()=>{
+      const before=await handle.stat({bigint:true});
+      assert(before.isFile()&&before.nlink===1n&&before.ino>0n);
+      assert.deepEqual(identity(before),sealed);
+      const named=await fs.lstat(target,{bigint:true});
+      assert(named.isFile()&&!named.isSymbolicLink()&&named.nlink===1n);
+      assert.deepEqual(identity(named),sealed);assert.equal(await fs.realpath(parent),parent);
+      const captured=Buffer.alloc(original.length);let offset=0;
+      while(offset<captured.length){
+        const {bytesRead}=await handle.read(captured,offset,captured.length-offset,offset);
+        assert(bytesRead>0);offset+=bytesRead;
+      }
+      assert.equal((await handle.read(Buffer.alloc(1),0,1,captured.length)).bytesRead,0);
+      assert.deepEqual(captured,original);assert.equal(digest(captured),expectedSha);
+      assert.deepEqual(identity(await handle.stat({bigint:true})),sealed);
+      assert.deepEqual(identity(await fs.lstat(target,{bigint:true})),sealed);
+    };
+    try{
+      await handle.writeFile(original);await handle.sync();
+      sealed=identity(await handle.stat({bigint:true}));await verifyLeaf();
+      const {deferCurrentGridBindingEdges,currentGridEdgePublicationRequired}=await import(pathToFileURL(target).href);
+      const {ACTIVE_ASSISTANT_SUCCESSOR,ASSISTANT_PUBLIC587_SUCCESSOR_BEFORE,ASSISTANT_LATER_H0_BEFORE}=
+        await import(pathToFileURL(path.join(frozenRoot,'scripts/lib/assistant-later-h0-successor-source.mjs')).href);
+      const {ravScoreModelBinding}=await import(pathToFileURL(path.join(frozenRoot,'js/core/ravscore-model-contract.js')).href);
+      await (async()=>{
   if(ACTIVE_ASSISTANT_SUCCESSOR.binding===null){
     await assert.rejects(currentGridEdgePublicationRequired({},'integrated-historical-maintenance'),
       /ASSISTANT_PUBLIC587_SUCCESSOR_UNISSUED/);
@@ -1279,4 +1363,17 @@ test('assistant public587 late Edge route preserves exact prior profile and ordi
   for(const action of ['integrated','code-only','unknown'])
     await assert.rejects(currentGridEdgePublicationRequired(old,action));
   assert.equal(deferCurrentGridBindingEdges('20990101000000'),false);
+      })();
+    }catch(error){first=error;failed=true;}
+    try{
+      try{await verifyLeaf();}finally{await handle.close();}
+      const final=await fs.lstat(target,{bigint:true});
+      assert(final.isFile()&&!final.isSymbolicLink()&&final.nlink===1n);
+      assert.deepEqual(identity(final),sealed);await fs.unlink(target);
+      await assert.rejects(fs.lstat(target),{code:'ENOENT'});
+      assert.deepEqual((await fs.readdir(frozenRoot,{recursive:true})).sort(),inventory,
+        'Hele oprindelige inventar er bevaret før fabrikkens egen fulde bytekontrol');
+    }catch(error){if(!failed){first=error;failed=true;}}
+    if(failed)throw first;
+  });
 });

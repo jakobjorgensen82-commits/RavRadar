@@ -115,6 +115,113 @@ test('SOURCE fixture accepts ONLY the exact normal derived registry and keeps ev
 });
 
 
+test('SOURCE normal admin fixture hydrates the audited tombstone before providers and preserves every other feature',async()=>{
+  const own=await fs.realpath(await fs.mkdtemp(path.join(os.tmpdir(),'rr-source-normal-admin-')));
+  try{
+    const fixture=path.join(ROOT,'scripts/fixtures/source19-current-native-providers.py');
+    const python=String.raw`
+import hashlib, importlib.util, json, os, sys
+from pathlib import Path
+fixture, out = Path(sys.argv[1]), Path(sys.argv[2])
+spec = importlib.util.spec_from_file_location("normal_admin_fixture_under_test", fixture)
+provider = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(provider)
+root = provider.ROOT
+tracked = [root / name for name in (*provider.NORMAL_ADMIN_INPUTS, provider.NORMAL_ADMIN_AUDIT) if (root / name).exists()]
+before = {str(file): file.read_bytes() for file in tracked}
+rows = provider.prepare_staged_normal_admin_inputs(out)
+assert provider.assert_staged_normal_admin_inputs(out, rows) is True
+proof = json.loads((out / ".cache/native-admin-inputs/hydration-proof.json").read_text(encoding="utf-8"))
+original = json.loads((out / ".cache/native-admin-inputs/source-zones.geojson").read_bytes())
+actual_file = out / "data/zones.geojson"
+actual_raw = actual_file.read_bytes()
+actual = json.loads(actual_raw)
+registry = json.loads((root / "data/live/coastal-parts-v2.json").read_text(encoding="utf-8"))
+assert len(original["features"]) == 211 and len(actual["features"]) == 210
+assert sorted(feature["properties"]["id"] for feature in actual["features"]) == sorted(registry["zones"])
+expected = dict(original)
+expected["features"] = [feature for feature in original["features"]
+                        if feature["properties"]["id"] not in proof["deletedZoneIds"]]
+assert actual == expected
+assert proof["syntheticTestInput"] is True and proof["productionProof"] is False and proof["freshCentralRead"] is False
+assert proof["auditSha256"] == "3efa0b99e28ab1dadf8278e3394986c962fc37b478571342311d110030c231d7"
+assert proof["exactRegistryIdentities"] is True and proof["retainedFeaturesUnchanged"] is True
+def reject_changed_document(document, expected_code):
+    raw = json.dumps(document, ensure_ascii=False, separators=(",", ":")).encode("utf-8") + b"\n"
+    actual_file.write_bytes(raw)
+    altered_rows = [{**row, **({"bytes": len(raw), "sha256": hashlib.sha256(raw).hexdigest()}
+                    if row["relativePath"] == "data/zones.geojson" else {})} for row in rows]
+    try:
+        provider.assert_staged_normal_admin_inputs(out, altered_rows)
+        raise AssertionError("Altered normal admin input was accepted")
+    except RuntimeError as error:
+        assert str(error) == "CURRENT_NATIVE_PROVIDER_" + expected_code
+    finally:
+        actual_file.write_bytes(actual_raw)
+wrong_ids = json.loads(actual_raw)
+wrong_ids["features"][0]["properties"]["id"] = "UNKNOWN-SAME-COUNT"
+reject_changed_document(wrong_ids, "NORMAL_ADMIN_ZONE_IDS")
+changed_feature = json.loads(actual_raw)
+changed_feature["features"][0]["properties"]["unexpectedFixtureMutation"] = True
+reject_changed_document(changed_feature, "NORMAL_ADMIN_RETAINED_FEATURES_CHANGED")
+assert provider.assert_staged_normal_admin_inputs(out, rows) is True
+try:
+    provider.prepare_staged_normal_admin_inputs(out)
+    raise AssertionError("Existing owned admin archive was overwritten")
+except FileExistsError:
+    pass
+assert all(file.read_bytes() == before[str(file)] for file in tracked)
+assert (out / ".cache/native-admin-inputs/source-zones.geojson").read_bytes() == before[str(root / "data/zones.geojson")]
+print(json.dumps({"syntheticTestInput": True, "originalZones": 211, "hydratedZones": 210,
+    "parts": registry["partCount"], "exactIds": True, "otherFieldsUnchanged": True,
+    "sourceBytesUnchanged": True, "wrongSameCountRefused": True, "changedFeatureRefused": True,
+    "existingArchiveRefused": True, "productionProof": False}, separators=(",", ":")))
+`;
+    const output=execFileSync(process.env.PYTHON||'python',['-B','-c',python,fixture,own],
+      {encoding:'utf8',cwd:ROOT,timeout:30000,maxBuffer:1024*1024,
+        env:{...process.env,PYTHONDONTWRITEBYTECODE:'1'}});
+    assert.deepEqual(JSON.parse(output.trim().split(/\r?\n/).at(-1)),{
+      syntheticTestInput:true,originalZones:211,hydratedZones:210,parts:673,exactIds:true,
+      otherFieldsUnchanged:true,sourceBytesUnchanged:true,wrongSameCountRefused:true,
+      changedFeatureRefused:true,existingArchiveRefused:true,productionProof:false});
+  }finally{
+    assert.equal(path.dirname(own),await fs.realpath(os.tmpdir()));
+    assert(path.basename(own).startsWith('rr-source-normal-admin-'));
+    await fs.rm(own,{recursive:true,force:true});
+  }
+});
+
+test('SOURCE all normal callers share staged admin only after strict source-clean and the initial return',async()=>{
+  const provider=await fs.readFile(new URL('./fixtures/source19-current-native-providers.py',import.meta.url),'utf8');
+  const forecast=await fs.readFile(new URL('./fixtures/source19-current-provider-forecast.mjs',import.meta.url),'utf8');
+  const source=await fs.readFile(new URL('./fixtures/source19-current-normal-inputs.mjs',import.meta.url),'utf8');
+  const preparation=provider.indexOf('    admin_rows = prepare_staged_normal_admin_inputs(out)');
+  assert(preparation>provider.indexOf('str(ROOT / "scripts/build-public-coastal-parts-v2.mjs")'));
+  assert(preparation<provider.indexOf('    raw_dir = out / ".cache/dmi-grib"'),'Exact IDs are checked before native bytes/decoding');
+  assert(provider.includes('producer.ZONES_PATH = out / "data/zones.geojson"'));
+  assert(provider.indexOf('producer.ZONES_PATH = out / "data/zones.geojson"')<provider.indexOf('signature = producer.sampling_registry_signature()'));
+  assert(provider.includes('zones = producer.build_operational_zone_config(json.loads((out / "data/zones.geojson").read_text()), targets)'));
+  assert(provider.includes('assert_staged_normal_admin_inputs(out, admin_rows)'),'The same manifest is reread before options emission');
+  assert(forecast.includes("const zoneRegistry=JSON.parse(await fs.readFile(path.join(out,'data/zones.geojson')))"));
+  const clean=source.indexOf('await assertCurrentNativeSourceWithDerivedRegistry({repositoryRoot:ROOT,');
+  const initialReturn=source.indexOf("    if(initial)return Object.freeze({profile:'current-source-native-initial'");
+  const materialize=source.indexOf('    await copyInputs(inputRoot, ROOT, options.adminInputs, ADMIN);');
+  const transition=source.indexOf("    const transition = await load(ROOT, 'scripts/source-producer-runtime-transition.mjs');");
+  assert(clean>=0&&clean<initialReturn&&initialReturn<materialize&&materialize<transition,
+    'The initial-only profile leaves CURRENT source untouched; SOURCE metadata uses the same normal admin inputs');
+  assert(source.includes('currentZones.features.map(feature=>feature.properties.id).sort(),Object.keys(registry585.zones).sort()'));
+  assert(source.includes("same(currentRegistry, registry585, 'Same full normal registry after CURRENT admin input materialization')"));
+  const fromInitial=source.slice(source.indexOf('export async function prepareCurrentSourceNativeFromInitialProfile(){'));
+  const fromInitialClean=fromInitial.indexOf('await assertCurrentNativeSourceWithDerivedRegistry({repositoryRoot:ROOT,');
+  const fromInitialAdmin=fromInitial.indexOf('await copyInputs(adminInputRoot,ROOT,adminOptions.adminInputs,ADMIN);');
+  const fromInitialTransition=fromInitial.indexOf("const transition=await load(ROOT,'scripts/source-producer-runtime-transition.mjs');");
+  assert(fromInitialClean>=0&&fromInitialClean<fromInitialAdmin&&fromInitialAdmin<fromInitialTransition,
+    'The real from-initial profile also materializes the same normal admin only after source-clean');
+  assert(fromInitial.includes('assert.equal(adminOptions.targetReferenceAt,initial.frozen585ForwardReferenceAt)'));
+  assert(fromInitial.includes('currentZones.features.map(feature=>feature.properties.id).sort(),Object.keys(initial.registry.zones).sort()'));
+  assert(fromInitial.includes('Same full normal prefix registry after CURRENT-from-initial admin materialization'));
+});
+
 // These observations execute no producer/provider/SQL route and grant no
 // admission. Read the actual private helper body; authenticate real Git blobs.
 async function producerObservationHarness(root, producer, logs=[]){

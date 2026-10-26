@@ -57,7 +57,9 @@ export async function prepareNativeCurrentForecast(target,initialPhase=null){
     packRawBytes:null,packCompressedBytes:null,forecastBytes:null};
   observe('READ_INPUT',counts);
   const registry=JSON.parse(await fs.readFile(path.join(ROOT,'data/live/coastal-parts-v2.json')));
-  const zoneRegistry=JSON.parse(await fs.readFile(path.join(ROOT,'data/zones.geojson')));
+  const zoneRegistry=JSON.parse(await fs.readFile(path.join(out,'data/zones.geojson')));
+  assert.deepEqual(zoneRegistry.features.map(feature=>feature.properties.id).sort(),Object.keys(registry.zones).sort(),
+    'Exact normally hydrated parent identities before forecast qualification');
   assert.equal(registry.zoneCount,210);assert.equal(registry.partCount,673);
   let bulk=await readDmiBulkDocument(path.join(out,'data/live/dmi-bulk-cache.json'));
   counts.bulkZoneCount=Object.keys(bulk.zones??{}).length;

@@ -509,7 +509,7 @@ function assertPublicDocuments({ manifest, startup, details, coastalParts, zoneR
 async function verifyOnce({
   baseUrl,
   sourceHead,
-  expectedManifest,
+  manifest,
   expectedModel,
   expectedBinding,
   expectedContractText,
@@ -519,15 +519,6 @@ async function verifyOnce({
   fetchImpl,
   knownSourceRepair = null,
 } = {}) {
-  const manifestBytes = await fetchBytes(fetchImpl,
-    withCacheBuster(baseUrl, 'data/live/manifest.json', sourceHead, observationNonce),
-    'manifest.json');
-  let manifest;
-  try { manifest = JSON.parse(manifestBytes.toString('utf8')); }
-  catch { throw new Error('Deployed operational manifest is not JSON'); }
-  if (!same(manifest, expectedManifest)) {
-    throw new Error('Deployed operational manifest differs from the sealed artifact');
-  }
   const fetched = {};
   for (const relative of PUBLIC_FILES) {
     fetched[relative] = await fetchBytes(fetchImpl,
@@ -648,9 +639,9 @@ export async function verifyRavScoreOperationalPagesDeployment({
   expectedPublicClosure = null,
   observationNonce = null,
   fetchImpl = globalThis.fetch,
-  // Pages may report a successful deploy before every edge serves the new
-  // manifest. Keep the exact sealed-artifact check, but allow propagation.
-  attempts = 36,
+  // Pages may serve its previous manifest for up to ten minutes after deploy.
+  // Only that exact-manifest wait retries; the complete package is checked once.
+  attempts = 121,
   retryDelayMs = 5_000,
   knownSourceRepairId = null,
 } = {}) {
@@ -664,7 +655,10 @@ export async function verifyRavScoreOperationalPagesDeployment({
     || typeof fetchImpl !== 'function'
     || !Number.isSafeInteger(attempts)
     || attempts < 1
-    || attempts > 36) {
+    || attempts > 121
+    || !Number.isSafeInteger(retryDelayMs)
+    || retryDelayMs < 0
+    || retryDelayMs > 5_000) {
     throw new Error('Operational Pages verification inputs are incompatible');
   }
   assertExactPublicRavScoreModelBindingShape(sealedBinding,
@@ -684,28 +678,38 @@ export async function verifyRavScoreOperationalPagesDeployment({
       !== knownSourceRepair.sourcePublicClosureSha256)) {
     throw new Error('Operational Pages source repair does not match its exact pinned source');
   }
-  let lastError;
+  let manifest, matchedObservationNonce;
   for (let attempt = 1; attempt <= attempts; attempt += 1) {
+    const manifestObservationNonce = `${observationNonce}-${attempt}`;
     try {
-      return await verifyOnce({
-        baseUrl,
-        sourceHead,
-        expectedManifest,
-        expectedModel,
-        expectedBinding: sealedBinding,
-        expectedContractText,
-        expectedBundleText,
-        expectedPublicClosure: sealedPublicClosure,
-        observationNonce: `${observationNonce}-${attempt}`,
-        fetchImpl,
-        knownSourceRepair,
-      });
+      const manifestBytes = await fetchBytes(fetchImpl,
+        withCacheBuster(baseUrl, 'data/live/manifest.json', sourceHead, manifestObservationNonce),
+        'manifest.json');
+      try { manifest = JSON.parse(manifestBytes.toString('utf8')); }
+      catch { throw new Error('Deployed operational manifest is not JSON'); }
+      if (!same(manifest, expectedManifest)) {
+        throw new Error('Deployed operational manifest differs from the sealed artifact');
+      }
+      matchedObservationNonce = manifestObservationNonce;
+      break;
     } catch (error) {
-      lastError = error;
-      if (attempt < attempts) await new Promise(resolve => setTimeout(resolve, retryDelayMs));
+      if (attempt === attempts) throw error;
+      await new Promise(resolve => setTimeout(resolve, retryDelayMs));
     }
   }
-  throw lastError;
+  return verifyOnce({
+    baseUrl,
+    sourceHead,
+    manifest,
+    expectedModel,
+    expectedBinding: sealedBinding,
+    expectedContractText,
+    expectedBundleText,
+    expectedPublicClosure: sealedPublicClosure,
+    observationNonce: matchedObservationNonce,
+    fetchImpl,
+    knownSourceRepair,
+  });
 }
 
 function argumentValue(argv, name) {

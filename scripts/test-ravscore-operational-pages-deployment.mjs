@@ -565,6 +565,110 @@ function resealPublicDocuments(fixture) {
   fixture.files.set('/data/live/manifest.json', jsonBytes(fixture.manifest));
 }
 
+async function verifyManifestOnlyPropagationContract() {
+  const implementation = sealedImplementation(integratedModelBinding(), 'integrated');
+  const { binding, contractText, bundleText, publicClosure } = implementation;
+  const fixture = buildFixture(binding, 'integrated');
+  fixture.files.set('/js/core/ravscore-model-contract.js', Buffer.from(contractText));
+  fixture.files.set('/js/core/ravscore-model-bundle.generated.js', Buffer.from(bundleText));
+  for (const [relative, source] of implementation.sources)
+    fixture.files.set('/' + relative, Buffer.from(source));
+  const options = {
+    baseUrl: 'https://ravradar.example.test/', sourceHead,
+    expectedManifest: fixture.manifest, expectedModel: 'integrated', expectedBinding: binding,
+    expectedContractText: contractText, expectedBundleText: bundleText,
+    expectedPublicClosure: publicClosure, observationNonce: 'fixture-manifest-propagation',
+    retryDelayMs: 0,
+  };
+  const manifestPath = '/data/live/manifest.json';
+  const currentFetch = mockFetch(fixture.files);
+  const counts = new Map(), manifestNonces = new Set();
+  let manifestReads = 0;
+  const delayedFetch = async (url, init) => {
+    const parsed = new URL(url), relative = parsed.pathname;
+    counts.set(relative, (counts.get(relative) ?? 0) + 1);
+    if (relative === manifestPath) {
+      manifestReads++;
+      assert.equal(manifestNonces.has(parsed.searchParams.get('ravscore-observation')), false);
+      manifestNonces.add(parsed.searchParams.get('ravscore-observation'));
+      if (manifestReads <= 40) {
+        assert.equal(counts.size, 1, 'stale manifest polling must not fetch payloads');
+        return response(jsonBytes({ datasetId: 'previous-generation' }));
+      }
+    }
+    return currentFetch(url, init);
+  };
+  const propagated = await verifyRavScoreOperationalPagesDeployment({
+    ...options, fetchImpl: delayedFetch,
+  });
+  assert.equal(propagated.status, 'passed');
+  assert.equal(manifestReads, 41, 'default polling must survive more than 36 stale observations');
+  assert.equal(manifestNonces.size, 41);
+  const expectedPayloadReads = new Map();
+  for (const relative of [
+    '/data/live/public-conditions.json', '/data/live/public-condition-details.json',
+    '/data/live/coastal-parts-v2.json', '/data/zones.geojson',
+    '/js/core/ravscore-model-contract.js', '/js/core/ravscore-model-bundle.generated.js',
+    ...publicClosure.htmlEntrypoints.map(item => '/' + item.path),
+    ...publicClosure.files.map(item => '/' + item.path),
+  ]) expectedPayloadReads.set(relative, (expectedPayloadReads.get(relative) ?? 0) + 1);
+  assert.deepEqual(new Map([...counts].filter(([relative]) => relative !== manifestPath)),
+    expectedPayloadReads, 'one unchanged complete verification pass follows manifest match');
+
+  for (const [label, alteredManifest] of [
+    ['old generation', { datasetId: 'previous-generation' }],
+    ['same dataset with changed manifest', { ...fixture.manifest, publicConditionsBytes: fixture.manifest.publicConditionsBytes + 1 }],
+  ]) {
+    let reads = 0, payloadReads = 0;
+    await assert.rejects(verifyRavScoreOperationalPagesDeployment({
+      ...options,
+      fetchImpl: async url => {
+        if (new URL(url).pathname !== manifestPath) {
+          payloadReads++;
+          throw new Error('unexpected payload fetch before exact manifest');
+        }
+        reads++;
+        return response(jsonBytes(alteredManifest));
+      },
+    }), /manifest differs from the sealed artifact/, label);
+    assert.equal(reads, 121, label + ' exhausts only the bounded manifest phase');
+    assert.equal(payloadReads, 0, label + ' must never qualify by dataset id alone');
+  }
+
+  const mutatedCounts = new Map();
+  const mutatedFetch = async (url, init) => {
+    const relative = new URL(url).pathname;
+    mutatedCounts.set(relative, (mutatedCounts.get(relative) ?? 0) + 1);
+    if (relative === '/data/live/public-condition-details.json')
+      return response(Buffer.from('detail mutation after exact manifest'));
+    return currentFetch(url, init);
+  };
+  await assert.rejects(verifyRavScoreOperationalPagesDeployment({
+    ...options, fetchImpl: mutatedFetch,
+  }), /artifact digest mismatch.*public-condition-details/);
+  assert.equal(mutatedCounts.get(manifestPath), 1);
+  assert.equal(mutatedCounts.size, 5, 'only manifest and the four original payloads precede digest rejection');
+  for (const [relative, count] of mutatedCounts)
+    assert.equal(count, 1, relative + ' must fail immediately without a full-package retry');
+
+  for (const [key, invalidValues] of [
+    ['attempts', [0, 122, 1.5, -1, NaN, Infinity, '121', null]],
+    ['retryDelayMs', [-1, 5001, 0.5, NaN, Infinity, '0', null]],
+  ]) {
+    for (const invalid of invalidValues) {
+      let fetches = 0;
+      await assert.rejects(verifyRavScoreOperationalPagesDeployment({
+        ...options, [key]: invalid,
+        fetchImpl: async () => { fetches++; throw new Error('invalid polling inputs must not fetch'); },
+      }), /verification inputs are incompatible/, key + ' must be a bounded safe integer');
+      assert.equal(fetches, 0);
+    }
+  }
+  console.log('Manifest-only propagation: 40 stale then exact, 121 bounded mismatches, same-id drift, single payload pass and input bounds: passed.');
+}
+
+await verifyManifestOnlyPropagationContract();
+
 for (const [mode, baseBinding] of [
   ['integrated', integratedModelBinding()],
   ['candidate-g', candidateModelBinding()],
