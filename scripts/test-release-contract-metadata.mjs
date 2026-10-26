@@ -5,6 +5,7 @@ import crypto from 'node:crypto';
 import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
+import { pathToFileURL } from 'node:url';
 
 import {
   PRODUCTION_OUTCOME_SCHEMA_VERSION,
@@ -23,6 +24,8 @@ import { readCurrentGridCanonicalSource } from './lib/current-grid-successor-sou
 import { synchronizeReleaseContractMetadata } from './sync-release-contract-metadata.mjs';
 import { computeCandidateGRollbackBundle } from './build-candidate-g-rollback-bundle.mjs';
 import { RELEASE_GATE_TEST_FILES } from './lib/release-gate-test-plan.mjs';
+import { withFrozenCurrentGridReleaseMetadataTestSource }
+  from './lib/frozen-current-grid-release-metadata-test-source.mjs';
 
 const REPOSITORY_ROOT = path.resolve('.');
 const MEASURED_WARMUP_BINDING_CHECK =
@@ -232,98 +235,6 @@ function checkpointOuterBlock(source, label) {
   return normalized.slice(start, end + CHECKPOINT_OUTER_END.length);
 }
 
-async function copyFixtureFile(root, relative) {
-  const destination = path.join(root, relative);
-  await fs.mkdir(path.dirname(destination), { recursive: true });
-  await fs.copyFile(path.join(REPOSITORY_ROOT, relative), destination);
-}
-
-async function createModelBindingSyncFixture({ migrationTransform = null } = {}) {
-  const root = await fs.mkdtemp(path.join(os.tmpdir(), 'ravradar-model-binding-sync-'));
-  try {
-    const fixturePaths = new Set([
-      ...SYNC_WRITABLE_PATHS,
-      ...SYNC_MIGRATION_PATHS,
-      ...RAVSCORE_CONTINUATION_IMPLEMENTATION_FILES,
-    ]);
-    for (const relative of fixturePaths) await copyFixtureFile(root, relative);
-
-    const canonicalMigration = await fs.readFile(
-      path.join(root, CHECKPOINT_MIGRATION_PATH),
-      'utf8',
-    );
-    const { canonicalSource } = await readCurrentGridCanonicalSource({
-      migrationsDirectory: path.join(root, 'supabase/migrations'),
-    });
-    const canonicalBlock = checkpointOuterBlock(canonicalSource, CHECKPOINT_MIGRATION_PATH);
-    for (const relative of [
-      'supabase/schema.sql',
-      'supabase/INSTALL-RAVRADAR-4.0.56-SECURITY.sql',
-    ]) {
-      const destination = path.join(root, relative);
-      const sql = await fs.readFile(destination, 'utf8');
-      const hasBegin = sql.includes(CHECKPOINT_OUTER_BEGIN);
-      const hasEnd = sql.includes(CHECKPOINT_OUTER_END);
-      assert.equal(hasBegin, hasEnd, `${relative} has a partial checkpoint outer block`);
-      if (!hasBegin) {
-        await fs.writeFile(destination, `${sql.trimEnd()}\n\n${canonicalBlock}\n`, 'utf8');
-      }
-    }
-
-    const driftPath = path.join(root, 'knowledge/rav-assistant-public-v1.json');
-    const driftDocument = JSON.parse(await fs.readFile(driftPath, 'utf8'));
-    driftDocument.ravScoreModelBinding.modelBundleSha256 = '0'.repeat(64);
-    await fs.writeFile(driftPath, `${JSON.stringify(driftDocument, null, 2)}\n`, 'utf8');
-
-    if (migrationTransform) {
-      // A sparse successor does not redefine every historical validator.
-      // Corrupt the exact immutable source leaf that really owns the hunk;
-      // never pretend a no-op transformation exercises source pinning.
-      for (const relative of [CHECKPOINT_MIGRATION_PATH,
-        'supabase/migrations/20261010130000_owner_export_origin_bound_successor.sql',
-        'supabase/migrations/20261012200000_checkpoint_cas_single_projection_successor.sql',
-        'supabase/migrations/20261013210000_account_assistant_original_bound_successor.sql']) {
-        const source = await fs.readFile(path.join(root, relative), 'utf8');
-        const corrupted = migrationTransform(source);
-        if (corrupted === source) continue;
-        fixtureImmutableFaults.set(root, { relative,
-          originalSha256: sourceSha(source), corruptedSha256: sourceSha(corrupted) });
-        await fs.writeFile(path.join(root, relative), corrupted, 'utf8');
-        break;
-      }
-      assert(fixtureImmutableFaults.has(root), 'The immutable-source fault must change actual fixture bytes');
-    }
-    return root;
-  } catch (error) {
-    await fs.rm(root, { recursive: true, force: true });
-    throw error;
-  }
-}
-
-async function snapshotFixturePaths(root, relativePaths) {
-  return new Map(await Promise.all(relativePaths.map(async relative => [
-    relative,
-    await fs.readFile(path.join(root, relative)),
-  ])));
-}
-
-async function assertFixturePathsUnchanged(root, snapshot) {
-  for (const [relative, expectedBytes] of snapshot) {
-    const actualBytes = await fs.readFile(path.join(root, relative));
-    assert.deepEqual(actualBytes, expectedBytes, `${relative} changed despite failed prevalidation`);
-  }
-}
-
-async function removeModelBindingSyncFixture(root) {
-  assert.equal(
-    path.dirname(path.resolve(root)),
-    path.resolve(os.tmpdir()),
-    'model-binding test cleanup must stay directly inside the system temp directory',
-  );
-  await fs.rm(root, { recursive: true, force: true });
-  fixtureImmutableFaults.delete(root);
-}
-
 const versionDocument = JSON.parse(await fs.readFile('version.json', 'utf8'));
 const expected = buildReleaseContractMetadata({ releaseVersion: versionDocument.version });
 
@@ -425,6 +336,122 @@ assert.throws(
 const verification = await synchronizeReleaseContractMetadata();
 assert.deepEqual(verification.changed, []);
 assert.deepEqual(verification.releaseContract, expected);
+
+// Current SOURCE589 uses the actual normal synchronizer and its issued inputs.
+// The SOURCE-specific canonical positives/negatives remain in the normal
+// test-source-producer-sync-binding owner; no historical tuple is relabelled.
+const sourceSynchronization = await synchronizeRavScoreModelBinding();
+assert.deepEqual(sourceSynchronization.changed, []);
+await assert.rejects(synchronizeRavScoreModelBinding({ sourcePhase: 'unknown' }),
+  /Unknown binding-sync source phase/);
+
+// Only the historical fixture oracles use their genuine current-grid context.
+// All historical fixture functions and assertions below remain byte-unchanged.
+await withFrozenCurrentGridReleaseMetadataTestSource(async sourceRoot => {
+  const load = relative => import(pathToFileURL(path.join(sourceRoot, relative)).href);
+  const { checkpointMetadataCasBlock, synchronizeRavScoreModelBinding } =
+    await load('scripts/sync-ravscore-model-binding.mjs');
+  const { readCurrentGridCanonicalSource } = await load('scripts/lib/current-grid-successor-source.mjs');
+  const { RAVSCORE_CONTINUATION_IMPLEMENTATION_FILES, ravScoreContinuationImplementationSha256 } =
+    await load('scripts/lib/ravscore-continuation-implementation-contract.mjs');
+  const { buildReleaseContractMetadata } = await load('scripts/lib/release-contract-metadata.mjs');
+  const historicalVersion = JSON.parse(await fs.readFile(path.join(sourceRoot, 'version.json'), 'utf8'));
+  const expected = buildReleaseContractMetadata({ releaseVersion: historicalVersion.version });
+  const REPOSITORY_ROOT = sourceRoot;
+  const CHECKPOINT_CONTINUATION_HASH = await ravScoreContinuationImplementationSha256({ repositoryRoot: sourceRoot });
+  const fixtureImmutableFaults = new Map();
+
+async function copyFixtureFile(root, relative) {
+  const destination = path.join(root, relative);
+  await fs.mkdir(path.dirname(destination), { recursive: true });
+  await fs.copyFile(path.join(REPOSITORY_ROOT, relative), destination);
+}
+
+async function createModelBindingSyncFixture({ migrationTransform = null } = {}) {
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), 'ravradar-model-binding-sync-'));
+  try {
+    const fixturePaths = new Set([
+      ...SYNC_WRITABLE_PATHS,
+      ...SYNC_MIGRATION_PATHS,
+      ...RAVSCORE_CONTINUATION_IMPLEMENTATION_FILES,
+    ]);
+    for (const relative of fixturePaths) await copyFixtureFile(root, relative);
+
+    const canonicalMigration = await fs.readFile(
+      path.join(root, CHECKPOINT_MIGRATION_PATH),
+      'utf8',
+    );
+    const { canonicalSource } = await readCurrentGridCanonicalSource({
+      migrationsDirectory: path.join(root, 'supabase/migrations'),
+    });
+    const canonicalBlock = checkpointOuterBlock(canonicalSource, CHECKPOINT_MIGRATION_PATH);
+    for (const relative of [
+      'supabase/schema.sql',
+      'supabase/INSTALL-RAVRADAR-4.0.56-SECURITY.sql',
+    ]) {
+      const destination = path.join(root, relative);
+      const sql = await fs.readFile(destination, 'utf8');
+      const hasBegin = sql.includes(CHECKPOINT_OUTER_BEGIN);
+      const hasEnd = sql.includes(CHECKPOINT_OUTER_END);
+      assert.equal(hasBegin, hasEnd, `${relative} has a partial checkpoint outer block`);
+      if (!hasBegin) {
+        await fs.writeFile(destination, `${sql.trimEnd()}\n\n${canonicalBlock}\n`, 'utf8');
+      }
+    }
+
+    const driftPath = path.join(root, 'knowledge/rav-assistant-public-v1.json');
+    const driftDocument = JSON.parse(await fs.readFile(driftPath, 'utf8'));
+    driftDocument.ravScoreModelBinding.modelBundleSha256 = '0'.repeat(64);
+    await fs.writeFile(driftPath, `${JSON.stringify(driftDocument, null, 2)}\n`, 'utf8');
+
+    if (migrationTransform) {
+      // A sparse successor does not redefine every historical validator.
+      // Corrupt the exact immutable source leaf that really owns the hunk;
+      // never pretend a no-op transformation exercises source pinning.
+      for (const relative of [CHECKPOINT_MIGRATION_PATH,
+        'supabase/migrations/20261010130000_owner_export_origin_bound_successor.sql',
+        'supabase/migrations/20261012200000_checkpoint_cas_single_projection_successor.sql',
+        'supabase/migrations/20261013210000_account_assistant_original_bound_successor.sql']) {
+        const source = await fs.readFile(path.join(root, relative), 'utf8');
+        const corrupted = migrationTransform(source);
+        if (corrupted === source) continue;
+        fixtureImmutableFaults.set(root, { relative,
+          originalSha256: sourceSha(source), corruptedSha256: sourceSha(corrupted) });
+        await fs.writeFile(path.join(root, relative), corrupted, 'utf8');
+        break;
+      }
+      assert(fixtureImmutableFaults.has(root), 'The immutable-source fault must change actual fixture bytes');
+    }
+    return root;
+  } catch (error) {
+    await fs.rm(root, { recursive: true, force: true });
+    throw error;
+  }
+}
+
+async function snapshotFixturePaths(root, relativePaths) {
+  return new Map(await Promise.all(relativePaths.map(async relative => [
+    relative,
+    await fs.readFile(path.join(root, relative)),
+  ])));
+}
+
+async function assertFixturePathsUnchanged(root, snapshot) {
+  for (const [relative, expectedBytes] of snapshot) {
+    const actualBytes = await fs.readFile(path.join(root, relative));
+    assert.deepEqual(actualBytes, expectedBytes, `${relative} changed despite failed prevalidation`);
+  }
+}
+
+async function removeModelBindingSyncFixture(root) {
+  assert.equal(
+    path.dirname(path.resolve(root)),
+    path.resolve(os.tmpdir()),
+    'model-binding test cleanup must stay directly inside the system temp directory',
+  );
+  await fs.rm(root, { recursive: true, force: true });
+  fixtureImmutableFaults.delete(root);
+}
 
 {
   const root = await createModelBindingSyncFixture();
@@ -554,5 +581,7 @@ for (const failureCase of migrationFailureCases) {
     await removeModelBindingSyncFixture(root);
   }
 }
+
+});
 
 console.log('OK: deterministic releaseContract v1 and immutable-migration model-binding sync remain fail-closed without runtime or private state.');

@@ -1,3 +1,11 @@
+## 26. oktober — den historiske synkroniseringsprøve har sin ægte kildekontekst
+
+Den normale release-metadata-prøve blev afvist, fordi den implicitte SOURCE589-synkronisator blev kaldt med en gammel current-grid-fixture. Den manglende 589-migration i den fixture var en testkontekstfejl, ikke bevis for en produktionsfejl eller en ny forklaring på den særskilte legacy-efterfølgers processtop.
+
+Alle gamle fixturefunktioner og kontroludsagn er byteuændrede i den normale prøveejer. Kun denne blok bruger nu den autentiske, hele hashbundne 877b9b8-kontekst med fast Git-head/tree: 81 kildeblade og 29 originale SQL-filer. Aktuel589 kontrolleres særskilt med den normale synkronisator og sine reelle udstedte input; ukendt kildefase afvises før I/O. Ingen gammel binding eller evidens ommærkes.
+
+Den tidligere røde release-metadata-prøve består nu. Hele det normale SOURCE-synkroniseringsmål består også 6/6 uden fejl eller skip. Det er to lokale normale mål, ikke ny samlet Linux-/native-/PostgreSQL-CI, installation eller offentlig levering. Version, C/I/T, gamle SQL, originaler, scoreformel, kildeprioritet og central admin/geometri er uændrede. Den særskilte procesårsag og SOURCE-levering er fortsat åbne; aktuel drift står i ROOTs private checkpoint. Se håndbog 89.271. Alle tidligere hele statusfronter bevares som dateret historik.
+
 ## 26. oktober — SOURCE-followerens indre procesårsag er stadig ukendt
 
 Den seneste præcise SOURCE-kontrol stoppede i den normale legacy-efterfølger. Den bevarede rapport viser alene FOLLOWER/ASSERTION_ERROR ved kravet om returkode nul; indre Node-årsag, faktisk signal og et kvalificeret nyt artifact mangler. Den tidligere 211-/tombstoneafvisning er et særskilt ældre fejlforløb og må ikke bruges som årsag til denne nye afvisning.

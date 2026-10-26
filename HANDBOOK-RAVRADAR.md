@@ -14,6 +14,10 @@ Derefter består de normale kontroller af den genbrugte prognose, private oplysn
 
 **Kort fortalt:** Den fulde SOURCE589-kandidat er lokalt udstedt med egne normale bindinger og én ny migration. Den er ikke installeret eller bevis for nye offentlige vejrdata.
 
+En ældre lokal synkroniseringsprøve brugte utilsigtet den nye 589-synkronisator med en gammel current-grid-testpakke. Det var en testkontekstfejl, ikke en produktionsfejl eller årsagen til den særskilte procesafvisning. Alle gamle fixturefunktioner og kontroludsagn er byteuændrede og bruger nu deres autentiske, hele hashbundne historiske kildekontekst: 81 kildeblade og 29 originale SQL-filer med fast Git-head/tree. Aktuel589 kontrolleres særskilt med sin normale synkronisator og reelle udstedte input; ukendt kildefase stopper før fillæsning.
+
+Den tidligere røde normale release-metadata-prøve består nu, og hele SOURCE-synkroniseringsmålet består 6/6 uden fejl eller skip. Det er to lokale mål, ikke ny samlet Linux-, native- eller database-CI, installation eller offentlig levering. Ingen version, C/I/T, gammel SQL, originaldata, scoreformel, kildeprioritet eller central admin/geometri ændres. Den særskilte procesårsag og faktisk SOURCE-levering er fortsat åbne.
+
 Den lokale sammenføring bevarer nu både de nyeste almindelige koderettelser og revisionens særskilte installationsvej. De 52 berørte kalder- og workflowtilfælde består uden springede prøver. De kontrollerer blandt andet, at en allerede installeret model ikke geninstalleres, og at vejrpakken gemmes før beregningstilstanden. Historiske prøver holdes adskilt fra den nye model. Dette er fortsat lokal kontrol, ikke en installeret revision eller offentlig drift.
 
 Den seneste isolerede SOURCE-prøve stoppede ved sin normale efterfølger. Den bevarede log viser et fejlet procesresultat, men endnu ikke den indre Node-årsag eller et faktisk signal. Den tidligere fejl med den slettede ekstra zone er et særskilt ældre forløb; den nye afvisning beviser ikke, at zonefejlen er gentaget.
