@@ -1,3 +1,9 @@
+## 26. oktober — SOURCE bevarer den gennemgåede rettelse til prognosedeling
+
+Den lokale SOURCE589-kilde er sammenført med den gennemgåede main-/Pages-/delingskilde gennem begge ægte Git-historikker. Den afgrænsede delingskontrol og dens additive normale regressioner er med; alle tidligere SOURCE-kontroludsagn, begge selectors, den strengere workflowrute og begge hele dokumenthistorikker bevares. Håndbogens installationskopi følger kun den kanoniske håndbog; der ændres ikke øvrig SQL, C/I/T, version, scorer, vejrdata, kildeprioritet, central admin eller geometri.
+
+Sammenføringen er lokal kilde, ikke en ny samlet kildekontrol, installation, offentlig delingsforhåndsvisning eller kapacitetsgodkendelse. De normale integrations-, dokument- og bindingskontroller samt én ny præcis SOURCE-kontrol kræves fortsat. Den tidligere røde SOURCE-kontrol og dens dokumenterede hukommelsesfejl ommærkes ikke; SOURCE og statistik forbliver inaktive. Aktuel drift og leveringsvindue føres privat, og alle fem mål til 18. november består. Alle ældre afsnit bevares som dateret historik.
+
 ## 26. oktober — SOURCE-prøven får den normale beregningshukommelse
 
 En ny afsluttet, isoleret SOURCE-kontrol har dokumenteret V8-hukommelsesudtømning og SIGABRT i prøveprocessen under den normale 585-updater. Det er ikke en fejl i den almindelige vejrhentning, data eller PostgreSQL. Prøvens rene miljø fjerner fortsat NODE_OPTIONS; den ene legacy-follower havde derfor ikke det eksplicitte old-space-loft, som den normale vejrberegning allerede bruger. Den præcise historiske standardgrænse og samlede RAM-belastning er ikke målt. Ældre UNKNOWN-beskrivelser erstattes kun på denne konkrete nye observation.
@@ -25,6 +31,11 @@ Den lokale test-/fixtureændring observerer de eksisterende faste faseindgange s
 De to normale Node-mål består uden skip. Pythonobservationsmålet består på Windows; den fysiske Linux-SIGKILL-prøve er ikke kørt her. Producentobservationsmålet var først rødt på den nye fasemarkør og består efter additiv adskillelse af faseloggen fra de oprindelige fejlrapporter med alle gamle assertions bevaret. Hele den normale afledte registerprøve gav 6 PASS og 1 FAIL på Windows' Python-alias. Kun det fejlede adminfixturemål blev derefter genkørt med korrekt absolut PYTHON og bestod; hele prøven er ikke genkørt. De normale lokale C/I-kontroller består på uændrede udstedte C/I/T- og SQL-bytes. Disse lokale delbeviser er ikke en rettet procesårsag eller samlet ny kildekontrol.
 
 Ny præcis SOURCE-kilde-/Linux-/native-/PostgreSQL-kontrol, kvalificeret årsag, sikker installation, national kapacitet og faktisk almindelig efterfølger er fortsat åbne. SOURCE-revisionen er inaktiv. P0 og den almindelige vejrhentning har fortsat førsteprioritet; aktuelle kørsler, offentlig dækning og leveringsudfald føres i ROOTs private checkpoint. Alle fem mål til 18. november 2026 består. Gamle kilde-/original-/SQL-bytes, offentliggjorte scorer, scoreformel, kildeprioritet, central admin og geometri bevares. Se håndbog 89.271; alle tidligere hele dokumentafsnit nedenfor bevares som dateret historik.
+## 26. oktober — delingskontrol sammenført med gennemgået Pages-rettelse
+
+Den afgrænsede prognosedelingsrettelse og den gennemgåede Pages-rettelse er samlet lokalt med den aktuelle installerede 588-rute. Begge forældres præcise kildekontroller har faktisk bestået; det kvalificerer ikke denne nye samlede head. Den eksisterende normale målprøve, dokumentkontroller og én præcis samlet kildekontrol skal fortsat bestå før sikker levering. Begge hele dokumenthistorikker og håndbogsændringer bevares; installationskopien følger den kanoniske håndbog uden anden SQL-ændring.
+
+Ingen Worker er installeret af sammenføringen, og hverken prognosedelingens offentlige forhåndsvisning eller Free-kapacitet er bevist. Aktuel vejrhentning, den tidligere røde offentlige kontrol og næste leveringsvindue føres privat. Score, vejrdata, C/I/T, version og geometri ændres ikke; SOURCE og statistik aktiveres ikke. Ingen produktionsændring må ske under aktiv writer.
 
 ## 26. oktober — midlertidigt afvist filkald skal ikke genstarte hele kontrollen
 
@@ -69,6 +80,13 @@ Samtaledeltaet samler den valgte fulde SOURCE589-rute, ikke kun en skjult kompat
 Fysiske proces-/WRITE-/journal-/original-B/S-før-T-kontrakter og uændret fireminutters fejlworker består. Syvzoner kun vandstand, sammenlignelig T+3, Fur og national 210/673-kapacitet skal fortsat bevises gennem normale ejere uden genåbning af afsluttede 588/P0-delbeviser. Før-SQL genbruger normal pakker/færdigt B og faktisk R2-usage under fast 2.000.000.000B uden cleanupkredit; hashbundet NO_ADMISSION-observation er ikke reservation eller samlet kapacitets-PASS, og S er ikke ekstra R2-upload.
 
 Dette er lokal dokumentforberedelse, ikke versions-/model-/SQL-udstedelse, installation eller offentlig levering. ROOT opdaterer på slutbytes; CP bærer faktisk offentlig 588, writer og skiftende evidens. Alle fem mål/18. november 2026 består. Gamle afsnit og alle udstedte migrationer bevares; statistik og automatisk retention aktiveres ikke. Se håndbog 89.269.
+## 26. oktober — offentlig 588 og afgrænset kontrol af prognosedeling
+
+588 er faktisk offentliggjort med de bevarede vejrdata; det er ikke bevis for fuld ny leverandørdækning. Den almindelige vejrhentning og den separate SOURCE-kvalifikation følges i det private checkpoint. Ingen produktionsændring må ske under aktiv writer, og alle fem mål til 18. november består.
+
+Prognosedelingens første kontrollerede installation stoppede før skrivning i Cloudflares svarkontrol. HTTP200 alene er ikke API-succes, og den oprindelige konvoluts årsag er ukendt. Den lokale rettelse bruger den dokumenterede ufiltrerede kontoliste, kontrollerer alle domæneposter og afviser fortsat ethvert domæne på den præcise Worker, også i et andet miljø. Kun faste svarkategorier og højst otte numeriske fejlkoder bevares ved samme stop; rå svar, beskeder og kontodata offentliggøres ikke. Alle øvrige skrive-, kapacitets- og adgangsgrænser består.
+
+Den normale syntetiske prøve skal bruge de to præcise hjælpefunktioner uden deres moduleksport i sin eksisterende VM; produktkoden og afvisningskontrollen lempes ikke. Præcis samlet kildekontrol, sikker installation, offentlig forhåndsvisning og målt Free-forbrug er fortsat åbne. Ingen ny version, modelbinding, SQL, vejrdata, scoreformel, adminpunkter, geometri, tjeneste ud over den allerede godkendte Worker eller automatisk genforsøg følger af denne kildeændring. Håndbog 89.268 præciserer leveringsgrænsen; ældre dateret afventningsstatus er historik på de konkret afsluttede punkter.
 
 ## 25. oktober — manuel turgenindsendelse bevarer originalen
 

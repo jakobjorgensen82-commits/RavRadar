@@ -3,6 +3,7 @@ import {
   assertForecastShareConfiguration, assertForecastShareAuthority,
   activeForecastShareDeployment, forecastShareVersionFromDeploy,
   assertForecastShareRemoteShape, readForecastShareJson, FORECAST_SHARE_READ_KINDS,
+  forecastShareDomainsForWorker, forecastShareCfEnvelopeDiagnostic,
 } from './deploy-forecast-share.mjs';
 import { verifyWorkflow as verifyCurrentNationalWorkflow, verifyPackage as verifyCurrentNationalPackage,
   inverseSourceNode24Workflow, SOURCE_NODE24_CAPTURE, SOURCE_NODE24_ENV,
@@ -207,6 +208,135 @@ assert.match(shareControllerSource, /terminationConfirmed/);
 assert.doesNotMatch(shareControllerSource, /execSync\(|process\.exit\(|secrets set|db push|wrangler.*rollback/);
 
 
+
+// V3: one complete account-level domains snapshot, then exact local service selection.
+const shareOtherDomain = { id: 'synthetic-other-domain', service: 'unrelated-worker',
+  environment: 'production', hostname: 'unrelated.example.test' };
+const shareAllDomains = result => ({ success: true, errors: [], messages: [], result,
+  result_info: { count: result.length, page: 1, per_page: Math.max(20, result.length),
+    total_count: result.length, total_pages: result.length ? 1 : 0 } });
+assert.deepEqual(forecastShareDomainsForWorker(shareAllDomains([])), []);
+assert.deepEqual(forecastShareDomainsForWorker(shareAllDomains([shareOtherDomain])), []);
+assert.deepEqual(forecastShareDomainsForWorker({ success: true, errors: [], result: [] }), []);
+const shareOwnDomain = { ...shareOtherDomain, id: 'synthetic-share-domain',
+  service: 'ravradar-prognosedeling' };
+for (const environment of ['production', 'staging', '']) {
+  const domain = { ...shareOwnDomain, environment };
+  const domains = forecastShareDomainsForWorker(shareAllDomains([shareOtherDomain, domain]));
+  assert.deepEqual(domains, [domain]);
+  assert.throws(() => assertForecastShareRemoteShape({ ...shareRemote, domains }, shareVersion),
+    error => error.code === 'SHARE_REMOTE_DOMAINS',
+    'Another environment may not hide an already-attached share-Worker domain');
+}
+assert.deepEqual(forecastShareDomainsForWorker(shareAllDomains([
+  { ...shareOtherDomain, service: 'RavRadar-prognosedeling' },
+  { ...shareOtherDomain, id: 'other-prefix', service: 'ravradar-prognosedeling-test' },
+])), [], 'Only the exact fixed service name is selected; no case-folding or prefix adoption');
+for (const changed of [
+  { success: false, errors: [], result: [] },
+  { success: true, result: [] },
+  { success: true, errors: [{ code: 1000, message: 'private message' }], result: [] },
+  { success: true, errors: [], result: null },
+  { ...shareAllDomains([]), result_info: null },
+  { ...shareAllDomains([]), result_info: [] },
+  { ...shareAllDomains([]), result_info: { count: -1 } },
+  { ...shareAllDomains([]), result_info: { page: '1' } },
+  { ...shareAllDomains([]), result_info: { total_pages: 2 } },
+  { ...shareAllDomains([]), result_info: { total_count: 1 } },
+  { ...shareAllDomains([]), result_info: { count: 1 } },
+  { ...shareAllDomains([]), result_info: { cursors: { after: 'unknown' } } },
+  { ...shareAllDomains([shareOtherDomain]), result_info: { per_page: 0 } },
+  { ...shareAllDomains([shareOtherDomain]), result_info: { total_pages: 0 } },
+  shareAllDomains([shareOtherDomain, { ...shareOtherDomain }]),
+  ...[null, [], {}, { ...shareOtherDomain, id: '' },
+    { ...shareOtherDomain, service: null }, { ...shareOtherDomain, service: ' ' },
+    { ...shareOtherDomain, service: ' ravradar-prognosedeling' },
+    { ...shareOtherDomain, service: 'ravradar-prognosedeling\u0000' },
+    { ...shareOtherDomain, environment: undefined }, { ...shareOtherDomain, hostname: '' }]
+    .map(domain => shareAllDomains([domain])),
+]) assert.throws(() => forecastShareDomainsForWorker(changed));
+
+// Exercise the existing normal cf/readDomains/remote closures, not a new deploy path.
+// Only the two exact module exports lose their keyword in this synthetic VM scope.
+const shareListHelpersStart = shareControllerSource.indexOf('function assertCompleteList(envelope) {');
+const shareListHelpersEnd = shareControllerSource.indexOf('export async function deployForecastShare(',
+  shareListHelpersStart);
+const shareRemoteStart = shareControllerSource.indexOf('    const readStatuses = new Map();');
+const shareRemoteEnd = shareControllerSource.indexOf("    stage = 'PREWRITE_READS';", shareRemoteStart);
+const shareFailStart = shareControllerSource.indexOf('const fail = code =>');
+const shareFailEnd = shareControllerSource.indexOf('\n\n', shareFailStart);
+assert.ok(shareListHelpersStart >= 0 && shareListHelpersEnd > shareListHelpersStart
+  && shareRemoteStart >= 0 && shareRemoteEnd > shareRemoteStart
+  && shareFailStart >= 0 && shareFailEnd > shareFailStart);
+const shareListHelpers = shareControllerSource.slice(shareListHelpersStart, shareListHelpersEnd);
+assert.equal(shareListHelpers.split('export function forecastShareDomainsForWorker(').length, 2);
+assert.equal(shareListHelpers.split('export function forecastShareCfEnvelopeDiagnostic(').length, 2);
+const shareNormalRemoteSource = shareControllerSource.slice(shareFailStart, shareFailEnd) + '\n'
+  + shareListHelpers.replace('export function forecastShareDomainsForWorker(',
+    'function forecastShareDomainsForWorker(')
+    .replace('export function forecastShareCfEnvelopeDiagnostic(',
+      'function forecastShareCfEnvelopeDiagnostic(')
+  + shareControllerSource.slice(shareRemoteStart, shareRemoteEnd);
+assert.doesNotMatch(shareNormalRemoteSource, /workers\/domains\?/);
+assert.equal((shareNormalRemoteSource.match(/await cf\('\/workers\/domains', 'CF_DOMAINS'\)/g) ?? []).length, 1);
+async function syntheticShareRemote({ present, domains, expectedVersion = null, allowAbsent = false }) {
+  const calls = [];
+  const result = vm.runInNewContext('(async () => {\n' + shareNormalRemoteSource
+    + '\nreturn remote(expectedVersion, allowAbsent);\n})()', {
+    expectedVersion, allowAbsent, FORECAST_SHARE_WORKER: 'ravradar-prognosedeling',
+    cfBase: 'https://synthetic.example.test', cfHeaders: {},
+    cfEnvelopeDiagnostic: null, forecastShareCfEnvelopeDiagnostic,
+    readForecastShareJson, activeForecastShareDeployment, assertForecastShareRemoteShape,
+    fetchImpl: async (url, options) => {
+      assert.equal(options.method, 'GET');
+      assert.equal(options.redirect, 'error');
+      assert.equal(options.cache, 'no-store');
+      const route = url.slice('https://synthetic.example.test'.length);
+      calls.push(route);
+      const scriptBase = '/workers/scripts/ravradar-prognosedeling';
+      let value;
+      if (route === '/workers/scripts') value = { success: true, errors: [],
+        result: present ? [shareRemote.script] : [] };
+      else if (route === '/workers/domains') value = domains;
+      else if (route === scriptBase + '/deployments') value = { success: true, errors: [],
+        result: { deployments: [shareDeployment] } };
+      else if (route === scriptBase + '/versions/' + shareVersion) {
+        value = { success: true, errors: [], result: shareRemote.version };
+      } else if (route === '/workers/services/ravradar-prognosedeling/environments/production/routes?show_zonename=true') {
+        value = { success: true, errors: [], result: [] };
+      } else if (route === scriptBase + '/schedules') {
+        value = { success: true, errors: [], result: shareRemote.schedules };
+      } else if (route === scriptBase + '/subdomain') {
+        value = { success: true, errors: [], result: shareRemote.subdomain };
+      } else assert.fail('Unexpected normal sharing read');
+      return new Response(JSON.stringify(value), { status: 200 });
+    },
+  });
+  return { result, calls };
+}
+const shareAbsentRead = await syntheticShareRemote({ present: false,
+  domains: shareAllDomains([shareOtherDomain]), allowAbsent: true });
+assert.equal(await shareAbsentRead.result, null);
+assert.deepEqual(shareAbsentRead.calls, ['/workers/scripts', '/workers/domains']);
+const shareExistingRead = await syntheticShareRemote({ present: true,
+  domains: shareAllDomains([shareOtherDomain]), expectedVersion: shareVersion });
+assert.equal((await shareExistingRead.result).versionId, shareVersion);
+assert.equal(shareExistingRead.calls.filter(value => value === '/workers/domains').length, 1);
+for (const present of [false, true]) {
+  const shareUnknownEnvelope = await syntheticShareRemote({ present,
+    domains: { success: false, errors: [{ code: 1000, message: 'private refusal' }], result: [] },
+    allowAbsent: true });
+  await assert.rejects(shareUnknownEnvelope.result, error =>
+    error.code === 'SHARE_CF_READ' && error.readKind === 'CF_DOMAINS' && error.httpStatus === 200);
+  const shareAttachedRead = await syntheticShareRemote({ present,
+    domains: shareAllDomains([shareOwnDomain]), allowAbsent: true });
+  await assert.rejects(shareAttachedRead.result, error => error.code === 'SHARE_REMOTE_DOMAINS');
+  const shareIncompleteRead = await syntheticShareRemote({ present,
+    domains: { ...shareAllDomains([]), result_info: { total_pages: 2 } }, allowAbsent: true });
+  await assert.rejects(shareIncompleteRead.result, error =>
+    error.code === 'SHARE_LIST_INCOMPLETE' && error.readKind === 'CF_DOMAINS' && error.httpStatus === 200);
+}
+
 // V2: fixed read diagnostics and durable issued-version evidence, before readback.
 assert.deepEqual(FORECAST_SHARE_READ_KINDS, [
   'GH_MAIN', 'CF_SCRIPTS', 'CF_DEPLOYMENTS', 'CF_VERSION', 'CF_ROUTES',
@@ -291,6 +421,108 @@ for (const [readKind, httpStatus, expectedKind, expectedStatus] of [
   assert.equal(reports[0].outcome, 'UNKNOWN_NO_RETRY');
   assert.doesNotMatch(JSON.stringify(reports), /secret\.example|private body|private URL/);
 }
+
+// V4: the normal CF failure and normal receipt keep only bounded, closed diagnostics.
+const shareUnknownCfDiagnostic = { kind: 'FORECAST_SHARE_CF_ENVELOPE_V1',
+  envelope: 'UNKNOWN', success: 'UNKNOWN', errors: 'UNKNOWN',
+  errorCodes: [], errorCodesStatus: 'UNKNOWN' };
+for (const unknown of [null, undefined, true, 10092, 'private raw value', []]) {
+  assert.deepEqual(forecastShareCfEnvelopeDiagnostic(unknown), shareUnknownCfDiagnostic);
+}
+assert.deepEqual(forecastShareCfEnvelopeDiagnostic({ success: false, errors: [] }), {
+  ...shareUnknownCfDiagnostic, envelope: 'OBJECT', success: 'FALSE',
+  errors: 'EMPTY', errorCodesStatus: 'COMPLETE' });
+assert.deepEqual(forecastShareCfEnvelopeDiagnostic({ success: true, errors: [] }), {
+  ...shareUnknownCfDiagnostic, envelope: 'OBJECT', success: 'TRUE',
+  errors: 'EMPTY', errorCodesStatus: 'COMPLETE' });
+for (const errors of [undefined, null, {}, 'private errors']) {
+  assert.deepEqual(forecastShareCfEnvelopeDiagnostic({ success: 'false', errors }), {
+    ...shareUnknownCfDiagnostic, envelope: 'OBJECT' });
+}
+const sharePrivateCfMarker = 'synthetic-private-value-must-never-escape';
+const shareSafeCfDiagnostic = forecastShareCfEnvelopeDiagnostic({
+  success: false, result: { account: sharePrivateCfMarker }, message: sharePrivateCfMarker,
+  source: { path: sharePrivateCfMarker }, hostname: sharePrivateCfMarker, token: sharePrivateCfMarker,
+  errors: [{ code: 10092, message: sharePrivateCfMarker, source: { pointer: sharePrivateCfMarker } },
+    { code: 10000, documentation_url: sharePrivateCfMarker }],
+});
+assert.deepEqual(shareSafeCfDiagnostic, { kind: 'FORECAST_SHARE_CF_ENVELOPE_V1',
+  envelope: 'OBJECT', success: 'FALSE', errors: 'NONEMPTY',
+  errorCodes: [10092, 10000], errorCodesStatus: 'COMPLETE' });
+assert.doesNotMatch(JSON.stringify(shareSafeCfDiagnostic), /synthetic-private-value|hostname|token|pointer|message|account/);
+for (const code of ['10092', -1, 0, 999, 1000.5, 10_000_000, NaN, Infinity, null, {}]) {
+  const diagnostic = forecastShareCfEnvelopeDiagnostic({ success: false, errors: [{ code }] });
+  assert.deepEqual(diagnostic.errorCodes, []);
+  assert.equal(diagnostic.errorCodesStatus, 'UNKNOWN');
+}
+for (const entry of [null, false, 'private', [], {}]) {
+  assert.equal(forecastShareCfEnvelopeDiagnostic({ errors: [entry] }).errorCodesStatus, 'UNKNOWN');
+}
+assert.deepEqual(forecastShareCfEnvelopeDiagnostic({ errors: [{ code: 1000 }, { code: 9_999_999 }] }).errorCodes,
+  [1000, 9_999_999]);
+assert.deepEqual(forecastShareCfEnvelopeDiagnostic({
+  errors: Array.from({ length: 9 }, (_, index) => ({ code: 10000 + index })),
+}), { kind: 'FORECAST_SHARE_CF_ENVELOPE_V1', envelope: 'OBJECT', success: 'UNKNOWN',
+  errors: 'NONEMPTY', errorCodes: Array.from({ length: 8 }, (_, index) => 10000 + index),
+  errorCodesStatus: 'LIMITED' });
+const shareCfNormalReadStart = shareControllerSource.indexOf('    const readStatuses = new Map();');
+const shareCfNormalReadEnd = shareControllerSource.indexOf('    const readDomains = async () => {',
+  shareCfNormalReadStart);
+const shareCfDiagnosticDeclaration = '  let expectedMain, active = null, cfEnvelopeDiagnostic = null;';
+assert.equal(shareControllerSource.split(shareCfDiagnosticDeclaration).length, 2,
+  'Diagnostic state is private to this one normal invocation');
+assert.ok(shareCfNormalReadStart >= 0 && shareCfNormalReadEnd > shareCfNormalReadStart);
+const shareCfNormalRead = shareControllerSource.slice(shareCfNormalReadStart, shareCfNormalReadEnd);
+for (const [raw, expectedDiagnostic] of [
+  [{ success: false, errors: [{ code: 10092, message: sharePrivateCfMarker }] }, {
+    kind: 'FORECAST_SHARE_CF_ENVELOPE_V1', envelope: 'OBJECT', success: 'FALSE',
+    errors: 'NONEMPTY', errorCodes: [10092], errorCodesStatus: 'COMPLETE',
+  }],
+  [{ success: true, errors: { message: sharePrivateCfMarker } }, {
+    ...shareUnknownCfDiagnostic, envelope: 'OBJECT', success: 'TRUE',
+  }],
+  [{ success: 'false', errors: [] }, {
+    ...shareUnknownCfDiagnostic, envelope: 'OBJECT', errors: 'EMPTY', errorCodesStatus: 'COMPLETE',
+  }],
+  [null, shareUnknownCfDiagnostic],
+]) {
+  const receipts = []; let reads = 0;
+  await assert.rejects(vm.runInNewContext('(async () => {\n'
+    + shareCfDiagnosticDeclaration + '\n' + shareCfNormalRead
+    + '\ntry { await cf("/workers/domains", "CF_DOMAINS"); } catch (error) {\n'
+    + shareControllerSource.slice(shareStopStart, shareStopEnd) + '\n}\n})()', {
+    stage: 'PREWRITE_READS', writeIssued: false, terminationConfirmed: null,
+    FORECAST_SHARE_READ_KINDS, forecastShareCfEnvelopeDiagnostic, readForecastShareJson,
+    cfBase: 'https://synthetic.example.test', cfHeaders: { Authorization: 'synthetic-not-logged' },
+    fetchImpl: async (url, options) => {
+      reads++; assert.equal(url, 'https://synthetic.example.test/workers/domains');
+      assert.equal(options.method, 'GET');
+      return new Response(JSON.stringify(raw), { status: 200 });
+    },
+    fail: code => Object.assign(new Error(code), { code }),
+    report: value => receipts.push(JSON.parse(JSON.stringify(value))),
+  }), error => error.code === 'REFUSED_BEFORE_WRITE');
+  assert.equal(reads, 1);
+  assert.equal(receipts.length, 1);
+  assert.deepEqual(receipts[0], { kind: 'FORECAST_SHARE_RELEASE_STOP_V1',
+    stage: 'PREWRITE_READS', sourceSha: null, code: 'SHARE_CF_READ', readKind: 'CF_DOMAINS',
+    httpStatus: 200, cfEnvelope: expectedDiagnostic, writeIssued: false,
+    terminationConfirmed: null, outcome: 'REFUSED_BEFORE_WRITE' });
+  assert.doesNotMatch(JSON.stringify(receipts), /synthetic-private-value|synthetic-not-logged|synthetic\.example|hostname|pointer|account/);
+}
+const shareForgedDiagnostics = [];
+assert.throws(() => vm.runInNewContext(shareControllerSource.slice(shareStopStart, shareStopEnd), {
+  stage: 'POSTWRITE_READBACK', expectedMain: 'a'.repeat(40), writeIssued: true, terminationConfirmed: true,
+  FORECAST_SHARE_READ_KINDS, forecastShareCfEnvelopeDiagnostic, cfEnvelopeDiagnostic: null,
+  error: { code: 'SHARE_CF_READ', readKind: 'CF_DOMAINS', httpStatus: 200,
+    cfEnvelope: { message: sharePrivateCfMarker, errorCodes: [sharePrivateCfMarker] } },
+  fail: code => Object.assign(new Error(code), { code }),
+  report: value => shareForgedDiagnostics.push(JSON.parse(JSON.stringify(value))),
+}), error => error.code === 'UNKNOWN_NO_RETRY');
+assert.deepEqual(shareForgedDiagnostics[0].cfEnvelope, shareUnknownCfDiagnostic,
+  'An error-supplied payload is not the private diagnostic state');
+assert.doesNotMatch(JSON.stringify(shareForgedDiagnostics), /synthetic-private-value/);
+
 assert.match(shareControllerSource, /fs\.writeSync\(descriptor, JSON\.stringify\(value\) \+ '\\n'\); fs\.fsyncSync\(descriptor\)/);
 
 // One already-existing private workflow is an exact new inventory layer,
