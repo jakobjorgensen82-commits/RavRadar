@@ -1,3 +1,11 @@
+## 26. oktober — producentens første fejl skal kunne genfindes
+
+En senere samlet revisionskontrol stoppede fortsat inde i den normale producentkæde uden en kvalificeret kildeframe. De to tidligere fixturefejl er rettet, men er ikke et samlet PASS. Den særskilte arkivopstart består nu i en isoleret Windows-prøve; dette er ikke hele Linux-producenten, PostgreSQL eller en ny offentlig vejrgeneration.
+
+Den lokale årsagsobservation markerer elleve faktiske producentdeltrin og bevarer samme femfeltsrapport, resultat, exception og adgangskontroller. Første fejl rapporteres før den eksisterende oprydning; en ydre wrapper kan ikke erstatte den. En historisk kildeframe kræver præcis ejet kildekopi, faktisk fast Git-head/tree og hele uændrede filbytes lig commitblobbet. Kun en faktisk autentificeret kalder må foretrækkes frem for dens generiske fail/need-wrapper. Ukendt forbliver ukendt; ingen rå fejltekst, værdier eller absolutte stier udskrives.
+
+Git-kald i denne rent diagnostiske kildeaflæsning følger en monoton ti-sekunders frist. De normale mål består lokalt 27/27 uden skip; Linux-symlinkgrenen og den fulde Linux-/native-/databasekæde er ikke dermed kørt. Ny præcis kildekontrol og den konkrete producentårsag er fortsat åbne. C/I/T, udstedt SQL, vejrdata, scorer, kildeprioritet, administratorpunkter, geometri og produktion ændres ikke. Alle fem mål til 18. november består; aktuelle kørsler står kun i privat checkpoint. Se håndbog 89.270.
+
 ## 26. oktober — to konkrete fejl i den isolerede SOURCE-prøve
 
 Den nye lukkede fejlrapport har lokaliseret et forkert modulnavn i den normale legacy-producent. Kaldet skal bruge den allerede eksisterende, ægte 585 DATA-fabrik; der oprettes ingen aliasfabrik eller ny datakilde. Den første afvisning er dermed ikke længere en ukendt databasefejl. Det er fortsat ikke en fejl i den almindelige vejrhentning.

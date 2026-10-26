@@ -14,6 +14,7 @@ import {ASSISTANT_PUBLIC587_SUCCESSOR_BEFORE as ISSUED587}
   from '../lib/assistant-later-h0-successor-source.mjs';
 import {assertFrozen588CodeSourceSelected} from '../check-assistant-later-h0-predecessor-source.mjs';
 import {build as buildNormalRegistry} from '../build-public-coastal-parts-v2.mjs';
+import {nativePostgresExceptionDiagnostic} from '../lib/checkpoint-cas-native-postgres.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
 const OLD_HEAD = 'd8a52e3e4cbaed1557cc56fe01f5f0a2b0d657d7';
@@ -138,6 +139,104 @@ async function copyInputs(inputRoot, outputRoot, rows, allowed) {
   }
   return seen;
 }
+
+// SOURCE_PRODUCER_OBSERVATION_BEGIN
+// Observation only: these fixed owned source roots cannot admit data or a host.
+// Keep a failed producer's original exception/result and five-field report.
+async function sourceProducerFailureFrame(error, observation) {
+  try {
+    const deadline=performance.now()+10_000;
+    const remaining=()=>{const value=Math.floor(deadline-performance.now());
+      assert(value>0,'SOURCE_PRODUCER_DIAGNOSTIC_DEADLINE');return Math.min(value,2000);};
+    const diagnosticGit=(root,...args)=>execFileSync('git',['-c','core.autocrlf=false','-C',root,...args],
+      {encoding:'utf8',timeout:remaining(),maxBuffer:2*1024*1024,stdio:['ignore','pipe','pipe'],
+        env:{...process.env,GIT_NO_LAZY_FETCH:'1',GIT_NO_REPLACE_OBJECTS:'1',GIT_TERMINAL_PROMPT:'0'}}).trim();
+    const stack=error?.stack, own=path.dirname(ROOT), work=observation.work;
+    if(typeof stack!=='string'||stack.length>2*1024*1024||typeof work!=='string'
+      ||!['current-source-native-inputs','current-source-native-initial-inputs'].includes(path.basename(work))
+      ||path.dirname(work)!==own||path.basename(ROOT)!=='current-source-native'
+      ||!path.basename(own).startsWith('rr-source19-union-native-'))return null;
+    await noLinks(work);
+    const owners=[
+      {root:ROOT,head:observation.sourceHead,tree:observation.sourceTree},
+      {root:path.join(work,'normal-old140000'),head:OLD_HEAD,tree:OLD_TREE},
+      {root:path.join(work,'normal-initial-operative585'),head:OPERATIVE_INITIAL_HEAD,tree:OPERATIVE_INITIAL_TREE},
+      {root:path.join(work,'normal586'),head:HEAD586,tree:TREE586},
+      {root:path.join(work,observation.initial?'normal-initial-operative587':'normal-operative587'),head:OPERATIVE587_HEAD,tree:OPERATIVE587_TREE},
+      {root:path.join(work,observation.initial?'normal-initial-operative588':'normal-operative588'),head:OPERATIVE588_HEAD,tree:OPERATIVE588_TREE},
+    ];
+    const verified=new Map(), files=new Map(), attemptedFiles=new Set();let fallback=null;
+    for(const line of stack.split(/\r?\n/).slice(0,64)){
+      if(performance.now()>=deadline)break;
+      try{
+      const named=/^\s+at ([^\r\n()]+) \((file:\/\/\/[^\r\n()]+):(\d+):(\d+)\)$/.exec(line);
+      const bare=named?null:/^\s+at (file:\/\/\/[^\r\n()]+):(\d+):(\d+)$/.exec(line);
+      if(!named&&!bare)continue;
+      const [,name,urlText,lineText,columnText]=named??[bare[0],'',bare[1],bare[2],bare[3]];
+      const url=new URL(urlText);if(url.host||url.hash)continue;
+      const file=fileURLToPath(url),owner=owners.find(row=>inside(row.root,file));
+      if(!owner||!/^[a-f0-9]{40}$/.test(owner.head??'')||!/^[a-f0-9]{40}$/.test(owner.tree??''))continue;
+      const relative=path.relative(owner.root,file).split(path.sep).join('/');
+      if(!/^(?:scripts|js\/core)\/[A-Za-z0-9_./-]+\.(?:mjs|js)$/.test(relative)||relative.split('/').includes('..'))continue;
+      // This is the existing fixed second585 import, not arbitrary URL access.
+      if(url.search&&!(owner.head===OPERATIVE_INITIAL_HEAD&&url.search==='?source-native-initial-forward'
+        &&['scripts/update-weather.mjs','scripts/generate-public-conditions.mjs'].includes(relative)))continue;
+      if(!verified.has(owner.root)){
+        await noLinks(owner.root);
+        verified.set(owner.root,diagnosticGit(owner.root,'rev-parse','HEAD')===owner.head
+          &&diagnosticGit(owner.root,'rev-parse','HEAD^{tree}')===owner.tree);
+      }
+      if(!verified.get(owner.root))continue;
+      if(!files.has(file)){
+        if(attemptedFiles.has(file))continue;
+        if(attemptedFiles.size>=8)break;
+        attemptedFiles.add(file);
+        await noLinks(file);
+        const before=await fs.lstat(file,{bigint:true});
+        if(!before.isFile()||before.isSymbolicLink()||before.nlink!==1n||before.size>2n*1024n*1024n)continue;
+        const body=await fs.readFile(file),after=await fs.lstat(file,{bigint:true});
+        const identity=value=>[value.dev,value.ino,value.size,value.mtimeNs,value.ctimeNs];
+        if(!identity(before).every((value,index)=>value===identity(after)[index])
+          ||BigInt(body.length)!==before.size||await fs.realpath(file)!==file)continue;
+        const committed=execFileSync('git',['-C',owner.root,'cat-file','blob',owner.head+':'+relative],
+          {timeout:remaining(),maxBuffer:2*1024*1024,stdio:['ignore','pipe','pipe'],
+            env:{...process.env,GIT_NO_LAZY_FETCH:'1',GIT_NO_REPLACE_OBJECTS:'1',GIT_TERMINAL_PROMPT:'0'}});
+        if(!body.equals(committed))continue;
+        files.set(file,{body,owner,relative,identity:identity(before)});
+      }
+      const qualified=files.get(file),at=Number(lineText),column=Number(columnText);
+      if(!Number.isSafeInteger(at)||at<1||at>qualified.body.toString('utf8').split(/\r?\n/).length
+        ||!Number.isSafeInteger(column)||column<1||column>100000)continue;
+      if(diagnosticGit(owner.root,'rev-parse','HEAD')!==owner.head||diagnosticGit(owner.root,'rev-parse','HEAD^{tree}')!==owner.tree)continue;
+      const last=await fs.lstat(file,{bigint:true});
+      if(!last.isFile()||last.isSymbolicLink()||last.nlink!==1n||!qualified.identity.every((value,index)=>
+        value===[last.dev,last.ino,last.size,last.mtimeNs,last.ctimeNs][index]))continue;
+      const frame={module:relative,sha256:sha(qualified.body),line:at,column};
+      // Preserve a genuine guard as fallback, but prefer its real caller when
+      // both source frames authenticate. Never invent an eval/AsyncFunction frame.
+      if(/^(?:async )?(?:Object\.)?(?:fail|need)$/.test(name)){fallback??=frame;continue;}
+      return frame;
+      }catch{} // One absent/changed/unqualified source cannot qualify or hide a later genuine caller.
+    }
+    return fallback;
+  }catch{return null;} // Observation failure never replaces the actual throw.
+}
+async function reportSourceProducerFailure(error,observation){
+  if(!observation.failureReported){
+    try{
+      const report=await nativePostgresExceptionDiagnostic(error,observation.phase);
+      report.frame=await sourceProducerFailureFrame(error,observation)??report.frame;
+      console.error(JSON.stringify(report));
+      observation.failureReported=true;
+    }catch{} // Raw error text/values/absolute paths never become diagnostics.
+  }
+}
+async function observeNativeInputs(options, initial) {
+  const observation={phase:'SOURCE_LEGACY_PRODUCER_SETUP',work:null,sourceHead:null,sourceTree:null,initial,failureReported:false};
+  try{return await produceNativeInputs(options,initial,observation);}
+  catch(error){await reportSourceProducerFailure(error,observation);throw error;}
+}
+// SOURCE_PRODUCER_OBSERVATION_END
 
 function cloneSource(head, tree, destination) {
   execFileSync('git', ['-c', 'core.autocrlf=false', 'clone', '--shared', '--no-hardlinks', '--no-checkout', ROOT, destination],
@@ -326,7 +425,8 @@ async function saveNormal(root, privateRoot, backend, sourceHead, sameReferenceS
 // STRICTLY_LATER_H0 587 caller. No tuple, checkpoint, origin or ACTIVE row is
 // authored here. B is always published/read back before S; original stores stay.
 async function advanceGenuine585Through587({work,host585,saved585,inputRoot,adminInputs,
-  successorProviderInputs,targetReferenceAt,backend,registry,initial,publicReader}) {
+  successorProviderInputs,targetReferenceAt,backend,registry,initial,publicReader,observation}) {
+  observation.phase='SOURCE_LEGACY_PRODUCER_NATIVE586';
   const native=path.join(work,'normal586');cloneSource(HEAD586,TREE586,native);
   await copyInputs(inputRoot,native,adminInputs,ADMIN);
   same(await(await load(native,'scripts/build-public-coastal-parts-v2.mjs')).build(),registry,
@@ -348,6 +448,7 @@ async function advanceGenuine585Through587({work,host585,saved585,inputRoot,admi
   assert.equal(saved586.referenceAt,saved585.referenceAt);
   assert.equal(saved586.manifest.modelBinding.modelBundleSha256,'6d8f7cca203b5f7ee5155f3c0cdb39403a02fd0eb30fecaca5070ef9f814a805');
   assert.equal(saved586.manifest.contractHashes.continuationStateContractSha256,'d2d93920aacc4be877da22c7b9e31e21426e647227a2c5018ee14b3a267500c7');
+  observation.phase='SOURCE_LEGACY_PRODUCER_FOLLOWER587';
   const host587=path.join(work,initial?'normal-initial-operative587':'normal-operative587');
   cloneSource(OPERATIVE587_HEAD,OPERATIVE587_TREE,host587);
   await copyInputs(inputRoot,host587,adminInputs,ADMIN);
@@ -391,7 +492,8 @@ async function advanceGenuine585Through587({work,host585,saved585,inputRoot,admi
 // CODE source. Its B/S is produced below, never inferred from this source pin.
 // The historical585/586/587 hosts and every original remain separately owned.
 async function advanceGenuine587Through588({work,saved587,inputRoot,adminInputs,
-  successorProviderInputs,targetReferenceAt,backend,registry,initial,publicReader}) {
+  successorProviderInputs,targetReferenceAt,backend,registry,initial,publicReader,observation}) {
+  observation.phase='SOURCE_LEGACY_PRODUCER_FOLLOWER588';
   assertFrozen588CodeSourceSelected();
   assert.equal(Date.parse(targetReferenceAt)-Date.parse(saved587.referenceAt),3600000,
     'Actual ACTIVE588 caller is STRICTLY later than genuine587');
@@ -440,18 +542,18 @@ async function advanceGenuine587Through588({work,saved587,inputRoot,adminInputs,
  */
 export async function produceCurrentSourceNativeInputs(options) {
   requireSourceProducerOutput(); requireSourceProducerBinding();
-  assert.equal(arguments.length,1);return produceNativeInputs(options,false);
+  assert.equal(arguments.length,1);return observeNativeInputs(options,false);
 }
 // Fixed synthetic OLD initialization before the CURRENT H0. This is not a
 // production restart, arbitrary parent import or phase callback. Both actual
 // normal585 generations and all original B/S outputs remain in their owned host.
 export async function produceFrozen585NativeInitialInputs(options) {
   requireSourceProducerOutput(); requireSourceProducerBinding();
-  assert.equal(arguments.length,1);return produceNativeInputs(options,true);
+  assert.equal(arguments.length,1);return observeNativeInputs(options,true);
 }
-async function produceNativeInputs(options,initial) {
+async function produceNativeInputs(options,initial,observation) {
   requireSourceProducerOutput(); const next = requireSourceProducerBinding(); // BEFORE getters, filesystem, Git, transport or updater.
-  assert.equal(arguments.length, 2); assert.equal(typeof initial,'boolean');
+  assert.equal(arguments.length, 3); assert.equal(typeof initial,'boolean');
   exact(options, ['profile','workRoot','inputRoot','adminInputs','providerInputs','targetReferenceAt',
     'forwardProviderInputs','successorProviderInputs','successorTargetReferenceAt',
     'predecessor587ProviderInputs','predecessor587TargetReferenceAt']);
@@ -488,6 +590,7 @@ async function produceNativeInputs(options,initial) {
   await noLinks(path.dirname(work)); await noLinks(inputRoot); await fs.mkdir(work, {recursive: false, mode: 0o700});
   const workStat = await fs.lstat(work, {bigint: true}), currentHead = git(ROOT, 'rev-parse', 'HEAD');
   assert.match(currentHead, /^[a-f0-9]{40}$/);
+  observation.work=work;observation.sourceHead=currentHead;observation.sourceTree=git(ROOT,'rev-parse','HEAD^{tree}');
   await assertCurrentNativeSourceWithDerivedRegistry({repositoryRoot:ROOT,
     proofPath:path.join(work,'normal-registry-source-check.json')});
   const beforeEnv = {...process.env}, beforeCwd = process.cwd(), beforeFetch = globalThis.fetch; let restoreTransport, first;
@@ -524,6 +627,7 @@ async function produceNativeInputs(options,initial) {
     const registry585 = await (await load(host585, 'scripts/build-public-coastal-parts-v2.mjs')).build();
     assert.equal(registry585.zoneCount, 210); assert.equal(registry585.partCount, 673);
     same(JSON.parse(await read(path.join(ROOT, REGISTRY))), registry585, 'Same actual normal admin registry in CURRENT and585');
+    observation.phase='SOURCE_LEGACY_PRODUCER_ARCHIVE';
     const archiveSeed = await createArchivedOnlyOldSeed({work, inputRoot, adminInputs: options.adminInputs,
       registry: registry585, target, backend});
     const publicReader={root:archiveSeed.publicRoot};
@@ -551,15 +655,18 @@ async function produceNativeInputs(options,initial) {
       assert([undefined, 'false'].includes(process.env[name]), 'No ambient exceptional mode: ' + name);
     assert(process.env.RAVSCORE_FIRST_CUTOVER_BOOTSTRAP_MODE === undefined);
     process.chdir(host585);
+    observation.phase='SOURCE_LEGACY_PRODUCER_UPDATER585';
     await load(host585, 'scripts/update-weather.mjs');
     await load(host585, 'scripts/generate-public-conditions.mjs');
     same(await json(path.join(host585, REGISTRY)), registry585, 'Registry unchanged through normal updater/public');
+    observation.phase='SOURCE_LEGACY_PRODUCER_SAVE585';
     const private585 = path.join(work, 'saved585'); await fs.mkdir(private585);
     let saved585 = await saveNormal(host585, private585, backend, producerHead);
     const first585=saved585;
     assert.equal(saved585.manifest.modelBinding.modelBundleSha256, before585.I);
     assert.equal(saved585.manifest.contractHashes.continuationStateContractSha256, before585.T);
     {
+      observation.phase='SOURCE_LEGACY_PRODUCER_RESTORE585';
       // Same normal restore/install/readback callers as the ordinary follower;
       // no state field, previous hour, score or READY bit is authored here.
       const workflow585=await load(host585,'scripts/private-production-runtime-workflow.mjs');
@@ -589,6 +696,7 @@ async function produceNativeInputs(options,initial) {
       assert.equal(process.env.RAVRADAR_ARCHIVED_WEATHER_RESTART_CONTEXT_SHA256,archive.contextSha256);
       delete process.env.RAVRADAR_ARCHIVED_WEATHER_RESTART_CONTEXT_PATH;
       delete process.env.RAVRADAR_ARCHIVED_WEATHER_RESTART_CONTEXT_SHA256;
+      observation.phase='SOURCE_LEGACY_PRODUCER_FOLLOWER585';
       await copyInputs(path.join(own,'fixture-initial-h1'),host585,options.forwardProviderInputs,PROVIDERS);
       process.env.RAVRADAR_PRODUCTION_TARGET_HOUR=finalTarget;
       // Native test-only fixed second invocation. Ordinary module source and
@@ -596,6 +704,7 @@ async function produceNativeInputs(options,initial) {
       await import(pathToFileURL(path.join(host585,'scripts/update-weather.mjs')).href+'?source-native-initial-forward');
       await import(pathToFileURL(path.join(host585,'scripts/generate-public-conditions.mjs')).href+'?source-native-initial-forward');
       same(await json(path.join(host585,REGISTRY)),registry585,'Same normal registry through both585 generations');
+      observation.phase='SOURCE_LEGACY_PRODUCER_SAVE585';
       const forwardPrivate=path.join(work,'saved585-forward');await fs.mkdir(forwardPrivate);
       saved585=await saveNormal(host585,forwardPrivate,backend,producerHead);
       assert.equal(saved585.referenceAt,finalTarget);
@@ -603,10 +712,11 @@ async function produceNativeInputs(options,initial) {
     }
     const {host587,saved586,saved587}=await advanceGenuine585Through587({work,host585,saved585,inputRoot,
       adminInputs:options.adminInputs,successorProviderInputs:options.predecessor587ProviderInputs,
-      targetReferenceAt:predecessor587Target,backend,registry:registry585,initial,publicReader});
+      targetReferenceAt:predecessor587Target,backend,registry:registry585,initial,publicReader,observation});
     const {host588,saved588}=await advanceGenuine587Through588({work,saved587,inputRoot,
       adminInputs:options.adminInputs,successorProviderInputs:options.successorProviderInputs,
-      targetReferenceAt:successorTarget,backend,registry:registry585,initial,publicReader});
+      targetReferenceAt:successorTarget,backend,registry:registry585,initial,publicReader,observation});
+    observation.phase='SOURCE_LEGACY_PRODUCER_FINISH';
     if(initial)return Object.freeze({profile:'current-source-native-initial',workRoot:work,sourceRoot:host588,
       first585,saved585,saved586,saved587,saved588,referenceAt:successorTarget,initialReferenceAt:target,
       frozen585ForwardReferenceAt:finalTarget,
@@ -614,6 +724,7 @@ async function produceNativeInputs(options,initial) {
       registry:structuredClone(registry585),documents:backend.documents,objects:backend.objects,
       events:[...backend.events],normalNationalRollbackQualified:false,initialCentralActivation:'UNRUN',
       actionInvoked:false,sdkInvoked:false,sourceOwnerIssued:false,wholeSourceIntegrationProved:false,productionProof:false});
+    observation.phase='SOURCE_LEGACY_PRODUCER_SOURCE_METADATA';
     process.chdir(ROOT); process.env.PRIVATE_RUNTIME_REPOSITORY_ROOT = ROOT; process.env.GITHUB_SHA = currentHead;
     process.env.RAVRADAR_PREDECESSOR_PRIVATE_ROOT = saved588.privateRoot;
     process.env.RAVRADAR_PREDECESSOR_PRIVATE_BUNDLE = saved588.bundlePath;
@@ -628,6 +739,7 @@ async function produceNativeInputs(options,initial) {
     const current = await saveNormal(ROOT, privateCurrent, backend, currentHead, {
       predecessorManifest: saved588.manifest, migrationReport: await json(prepared.normalBReportPath),
     });
+    observation.phase='SOURCE_LEGACY_PRODUCER_FINISH';
     assert.equal(current.manifest.modelBinding.modelBundleSha256, next.I);
     assert.equal(current.manifest.contractHashes.continuationStateContractSha256, next.T);
     same(await json(path.join(ROOT, REGISTRY)), registry585, 'Same registry retained through actual CURRENT B/S');
@@ -639,7 +751,7 @@ async function produceNativeInputs(options,initial) {
       registry: structuredClone(registry585), documents: backend.documents, objects: backend.objects,
       events: [...backend.events], actionInvoked: false, sdkInvoked: false, sourceOwnerIssued: false,
       wholeSourceIntegrationProved: false, productionProof: false});
-  } catch (error) { first = error; throw error; }
+  } catch (error) { first = error; await reportSourceProducerFailure(error,observation); throw error; }
   finally {
     let cleanupFailure;
     const clean = operation => { try { operation(); } catch (error) { cleanupFailure ??= error; } };

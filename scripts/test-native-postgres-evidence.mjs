@@ -684,7 +684,19 @@ test('legacy Node observations preserve five fields and the actual outer parser 
   const {nativePostgresExceptionDiagnostic:diagnose,nativePostgresChildFirstFailure:parse}=
     await import('./lib/checkpoint-cas-native-postgres.mjs');
   const phases=['SOURCE_LEGACY_SETUP','SOURCE_LEGACY_PRODUCER','SOURCE_LEGACY_ORIGINALS',
-    'SOURCE_LEGACY_RESTORE','SOURCE_LEGACY_UPDATER','SOURCE_LEGACY_SAVE','SOURCE_LEGACY_READBACK'];
+    'SOURCE_LEGACY_RESTORE','SOURCE_LEGACY_UPDATER','SOURCE_LEGACY_SAVE','SOURCE_LEGACY_READBACK',
+    'SOURCE_LEGACY_PRODUCER_SETUP',
+    'SOURCE_LEGACY_PRODUCER_ARCHIVE',
+    'SOURCE_LEGACY_PRODUCER_UPDATER585',
+    'SOURCE_LEGACY_PRODUCER_SAVE585',
+    'SOURCE_LEGACY_PRODUCER_RESTORE585',
+    'SOURCE_LEGACY_PRODUCER_FOLLOWER585',
+    'SOURCE_LEGACY_PRODUCER_NATIVE586',
+    'SOURCE_LEGACY_PRODUCER_FOLLOWER587',
+    'SOURCE_LEGACY_PRODUCER_FOLLOWER588',
+    'SOURCE_LEGACY_PRODUCER_SOURCE_METADATA',
+    'SOURCE_LEGACY_PRODUCER_FINISH',
+  ];
   const codes=['ENOENT','ENOSPC','EACCES','EPERM','ENOMEM','EMFILE','EPIPE','ERR_MODULE_NOT_FOUND','MODULE_NOT_FOUND'];
   const errors=[...codes.map(code=>({code})),...['TypeError','SyntaxError','RangeError','ReferenceError'].map(name=>({name}))];
   for(const phase of phases)for(const fields of errors){
