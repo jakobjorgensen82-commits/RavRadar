@@ -1,3 +1,13 @@
+## 26. oktober — manifestkontrol er lokalt rettet; levering er åben
+
+- [x] Reproduceret: den gamle 36-grænse afviser et target, som først vises efter flere manifestobservationer.
+- [x] Lokal tofaserettelse: højst 121 forsøg med fem sekunders mellemrum mod hele det præcise manifest; derpå én uændret fuld pakkekontrol.
+- [x] Normale regressioner består for mere end 36 gamle svar, vedvarende mismatch uden payloadhentning, samme-ID-manifestafvigelse, detaljemutation efter match og lukkede inputgrænser. Hele den eksisterende Pages-målprøve er kørt én gang og består.
+- [ ] Præcis kilde-CI og sikker levering af rettelsen. Lokal grøn prøve er ikke produktionsbevis.
+- [ ] Den oprindelige røde GitHub-kørsel og den udeblevne centrale almindelige reseal er ikke efterfølgende gjort grønne af en senere offentlig læsekontrol.
+
+En senere fuld offentlig kontrol genfinder det forseglede target med alle filer og 210/673. Den manglende oprindelige HTTP-respons betyder, at den præcise historiske cacheårsag stadig er ukendt. SOURCE, versions-/C/I/T-/SQL-overgange, vejrdata, scoremodel, kilder og geometri ændres ikke. Se DEC-0194-tillæg og håndbog 89.270; aktuelle kørsler føres privat.
+
 ## 25. oktober — klientkode er ikke privat vejrdata; central profil læses som et par
 
 Den seneste almindelige vejrhentning nåede leverandører, beregning og gemning af beskyttet B/S. Pages blev derefter afvist alene på navnene på to nye, normale JavaScript-klienter til administratorens statistikvisning. Den eksisterende navnekontrol må ikke forveksle offentlig programkode med privat rapportindhold. En særskilt administrator-synkronisering havde desuden afvist den aktive centrale profil mod den nyere lokale skabelon før den operationelle aktivering.

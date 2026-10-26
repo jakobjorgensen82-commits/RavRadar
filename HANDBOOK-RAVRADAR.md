@@ -1,3 +1,15 @@
+## 89.270 Nye prognoser skal kunne genfindes på den offentlige side
+
+Kort fortalt: Et deploy kan være færdigt hos leveringssystemet, før alle kopier af hjemmesiden viser den nye prognose.
+
+Derfor begynder leveringskontrollen med prognosens lille indholdsfortegnelse, som kaldes manifestet. Den beskriver blandt andet datasættet og kontrolsummerne for de filer, som hører sammen. Hele fortegnelsen skal svare præcis til den pakke, der blev gjort klar; et matchende datasæt-navn er ikke nok.
+
+GitHub Pages kan bruge op til ti minutter på at vise en ændring. I dette tidsrum kan RavRadar kontrollere fortegnelsen igen med fem sekunders mellemrum, højst 121 gange. Ventetiden medfører ikke, at alle de store prognosefiler hentes igen for hver kontrol.
+
+Når fortegnelsen stemmer, kontrolleres selve datafilerne og hjemmesidens tilhørende programkode i én gennemgang. Det kontrolleres stadig, at de rigtige filer hører sammen, at kontrolsummerne passer, og at pakken omfatter de forventede 210 zoner og 673 kystdele. Hvis en anden fil stadig er gammel eller ændret, bliver leveringen ikke godkendt.
+
+Ventetiden ændrer hverken vejrhentningen, beregningen eller scoremodellen. En kvittering fra leveringssystemet og en færdigkontrolleret offentlig prognose er to forskellige ting. Først den sidste viser, at den samlede pakke faktisk kan læses korrekt.
+
 ## 89.269 Offentlig klientkode og beskyttede oplysninger har forskellige roller
 
 Kort fortalt: At en side indeholder programkode til en privat administratorfunktion betyder ikke, at den private rapport er indlejret i hjemmesiden.
