@@ -6,6 +6,12 @@ De fem P0-ejere fra den gennemgåede leveringskandidat er med i den isolerede ki
 
 Før sikker SOURCE-levering skal de relevante normale prøver på de udstedte bytes, præcis kilde-/native-/kapacitetskontrol og faktisk autentisk 588 B/S-førskrivningskontrol bestå. Den valgte fulde SAME_H0-overgang kræver frisk slutkontrol, højst én nødvendig SQL-installation/genlæsning, B før S og hel faktisk remote-S-genlæsning før Edges/Pages; senere almindelige kald skal beviseligt bruge installeret 589. T+3, syvzoneafgrænsning, Fur, processtop, skrivning, holdbarhed og national 210/673-virkning er stadig åbne krav. Se håndbog 89.271 og ROOTs private checkpoint for faktisk P0-/writerstatus. Alle fem mål følges til 18. november 2026; statistik og automatisk sletning aktiveres ikke. Ældre statusafsnit er historik på disse konkrete punkter.
 
+## 26. oktober — præcis manifestventen uden gentagen fuldpakkelæsning
+
+Den normale Pages-kontrol er lokalt opdelt i manifestventen og én fuld pakkekontrol. Standardgrænsen er 121 observationer med fem sekunders mellemrum; hele det kanoniske manifest skal matche, før nogen af pakkens øvrige filer hentes. De eksisterende acceptkontroller og tidligere prøveassertions er bevaret. Den konkrete normale reproduktion er rød før og grøn efter, og hele den normale Pages-målprøve består lokalt én gang.
+
+Ti minutters offentliggørelsesvindue og en faktisk max-age=600-header er forenelige med forsinket manifestation, men den første afviste HTTP-respons blev ikke bevaret. Den senere offentlige fuldkontrol er alene læsebevis for det eksisterende target; den gør ikke den røde GitHub-kørsel eller manglende centrale reseal grøn. Præcis kilde-CI og sikker levering udestår. Ingen version, C/I/T, SQL, numerisk model, kilder eller geometri ændres. Se DEC-0194-tillæg og håndbog 89.270; detaljeret evidens står privat.
+
 ## 25. oktober — lokal 4.0.589 under udstedelse, ikke installeret
 
 Den normale versionssynkronisering til 4.0.589 er udført én gang. SOURCE-kandidaten er stadig lokalt inaktiv: de endelige model-/outputbindinger og den ene nye append-only migration er endnu ikke udstedt. Den påviste private hjælpeimportfejl er rettet uden ændring af den gamle bygger; frisk ESM-indlæsning består. Ingen ny SQL, vejrhentning, databaseændring eller offentlig effekt følger heraf.

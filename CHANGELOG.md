@@ -6,6 +6,14 @@ Den lokale fixture følger nu den eksisterende normale reviewkalder før RAW/GRI
 
 Den første lokale test-source-native-derived-registry bestod 7/7 uden fejl eller skip på 13,05 sekunder; den udvidede normale kaldsrækkefølgeprøve for begge CURRENT-indgange består særskilt 1/1 uden skip på 0,16 sekunder, men er ikke fuld Linux-eksekvering. De normale lokale C/I-/diffkontroller og Pages-porten består. Den historiske ordinary588-selectorcase består fokuseret 1/1 på SHA-bundne ægte588-funktionsbytes og ægte ACTIVE/model, ikke gennem helmodulet; den særskilte aktuelle SOURCE589-Edgecase består også 1/1. Den tidligere 31/32-log bevares som historik, og intet af dette er samlet kilde-CI. De tidligere 28/28- og små writer/reader-prøver er bevaret historik, ikke samlet kvalifikation af denne rettelse. Øvrige SOURCE-integrationsmål, præcis ny Linux-/native-/PostgreSQL-kontrol, SOURCE-installation og faktisk normal efterfølger er fortsat åbne; dette er ikke et samlet grønt forløb. Gamle source-/original-/SQL-bytes, C/I/T, scoreformel, kildeprioritet og central admin/geometri bevares; ingen produktionsændring følger af lokal fixturekode. Aktuel drift står i privat checkpoint. Alle fem mål til 18. november består. Se håndbog 89.271; tidligere UNKNOWN-status er kun erstattet på den nu fundne inputårsag.
 
+## 26. oktober — afgrænset ventetid ved offentliggørelse, uændret 4.0.588
+
+- Lokal rettelse: vent kun på hele det forseglede manifest i op til 121 forsøg med fem sekunders mellemrum, før én fuld uændret pakkekontrol gennemføres.
+- Bevar alle digest-, envelope-, 210/673-, delivery- og browserkontroller. Samme dataset-ID eller et delvist match giver ingen adgang; øvrige filafvigelser afvises straks.
+- Normal rød/grøn reproduktion og hele den eksisterende Pages-målprøve består lokalt. Præcis kildekontrol og levering udestår; ingen versions-, model-, SQL-, vejr- eller scorerettelse følger med.
+
+En senere offentlig fuldkontrol af det tidligere target ændrer ikke den røde GitHub-kørsel eller dens manglende centrale reseal. Den oprindelige HTTP-respons mangler, så cacheforklaringen er ikke historisk bevist. Håndbog 89.270 og DEC-0194-tillæg beskriver afgrænsningen.
+
 ## 26. oktober — producentens første fejl skal kunne genfindes
 
 En senere samlet revisionskontrol stoppede fortsat inde i den normale producentkæde uden en kvalificeret kildeframe. De to tidligere fixturefejl er rettet, men er ikke et samlet PASS. Den særskilte arkivopstart består nu i en isoleret Windows-prøve; dette er ikke hele Linux-producenten, PostgreSQL eller en ny offentlig vejrgeneration.
