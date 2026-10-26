@@ -1,3 +1,11 @@
+## 26. oktober — offentlig 588 og afgrænset kontrol af prognosedeling
+
+588 er faktisk offentliggjort med de bevarede vejrdata; det er ikke bevis for fuld ny leverandørdækning. Den almindelige vejrhentning og den separate SOURCE-kvalifikation følges i det private checkpoint. Ingen produktionsændring må ske under aktiv writer, og alle fem mål til 18. november består.
+
+Prognosedelingens første kontrollerede installation stoppede før skrivning i Cloudflares svarkontrol. HTTP200 alene er ikke API-succes, og den oprindelige konvoluts årsag er ukendt. Den lokale rettelse bruger den dokumenterede ufiltrerede kontoliste, kontrollerer alle domæneposter og afviser fortsat ethvert domæne på den præcise Worker, også i et andet miljø. Kun faste svarkategorier og højst otte numeriske fejlkoder bevares ved samme stop; rå svar, beskeder og kontodata offentliggøres ikke. Alle øvrige skrive-, kapacitets- og adgangsgrænser består.
+
+Den normale syntetiske prøve skal bruge de to præcise hjælpefunktioner uden deres moduleksport i sin eksisterende VM; produktkoden og afvisningskontrollen lempes ikke. Præcis samlet kildekontrol, sikker installation, offentlig forhåndsvisning og målt Free-forbrug er fortsat åbne. Ingen ny version, modelbinding, SQL, vejrdata, scoreformel, adminpunkter, geometri, tjeneste ud over den allerede godkendte Worker eller automatisk genforsøg følger af denne kildeændring. Håndbog 89.268 præciserer leveringsgrænsen; ældre dateret afventningsstatus er historik på de konkret afsluttede punkter.
+
 ## 25. oktober — manuel turgenindsendelse bevarer originalen
 
 Den normale manuelle turkalder er rettet efter reproduceret nyt tidsstempel og manglende ejer-/indholdsafvisning ved samme ID. Genforsøg bruger den præcise oprindelige registrering og kræver stadig ny normal kvittering. Ændret ejer, indhold eller kø afvises før skrivning eller transport; manglende oprindeligt anonymt ID erstattes ikke. Seks regressioner går fra rødt til grønt, og hele den normale uploadprøve består i den samlede 588-komposition. De to berørte kildeblade er uden for C98/I97/T12, som bevares sammen med alle 67 SQL-filer. Den private ratingpakke indgår ikke. Ny præcis samlet kildekontrol og offentlig virkning udestår; ingen produktionsændring under aktiv writer.

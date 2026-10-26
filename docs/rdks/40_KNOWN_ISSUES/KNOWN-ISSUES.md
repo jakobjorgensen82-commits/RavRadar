@@ -1,3 +1,11 @@
+## 26. oktober — offentlig 588 og afgrænset kontrol af prognosedeling
+
+588 er faktisk offentliggjort med de bevarede vejrdata; det er ikke bevis for fuld ny leverandørdækning. Den almindelige vejrhentning og den separate SOURCE-kvalifikation følges i det private checkpoint. Ingen produktionsændring må ske under aktiv writer, og alle fem mål til 18. november består.
+
+Prognosedelingens første kontrollerede installation stoppede før skrivning i Cloudflares svarkontrol. HTTP200 alene er ikke API-succes, og den oprindelige konvoluts årsag er ukendt. Den lokale rettelse bruger den dokumenterede ufiltrerede kontoliste, kontrollerer alle domæneposter og afviser fortsat ethvert domæne på den præcise Worker, også i et andet miljø. Kun faste svarkategorier og højst otte numeriske fejlkoder bevares ved samme stop; rå svar, beskeder og kontodata offentliggøres ikke. Alle øvrige skrive-, kapacitets- og adgangsgrænser består.
+
+Den normale syntetiske prøve skal bruge de to præcise hjælpefunktioner uden deres moduleksport i sin eksisterende VM; produktkoden og afvisningskontrollen lempes ikke. Præcis samlet kildekontrol, sikker installation, offentlig forhåndsvisning og målt Free-forbrug er fortsat åbne. Ingen ny version, modelbinding, SQL, vejrdata, scoreformel, adminpunkter, geometri, tjeneste ud over den allerede godkendte Worker eller automatisk genforsøg følger af denne kildeændring. Håndbog 89.268 præciserer leveringsgrænsen; ældre dateret afventningsstatus er historik på de konkret afsluttede punkter.
+
 ## 25. oktober — søgemåden følger den delte score
 
 Den lokale prognosedelingsrettelse medtager nu strand eller waders i både den statiske forhåndsvisnings beskrivelse og den synlige delingsside på dansk, tysk og engelsk. Tidspunkt, sted og score må ikke læses uden søgemåden. Den eksisterende håndbog 89.268 kræver allerede denne sammenhæng og er fortsat gældende.

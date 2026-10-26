@@ -121,11 +121,68 @@ function assertCompleteList(envelope) {
   return envelope.result;
 }
 
+// The documented unfiltered endpoint returns the account's complete SinglePage.
+// Classify every row before ignoring a different service. Any domain attached to
+// this exact Worker, including another environment, remains forbidden.
+export function forecastShareDomainsForWorker(envelope) {
+  if (envelope?.success !== true || !Array.isArray(envelope.errors) || envelope.errors.length) {
+    throw fail('SHARE_CF_READ');
+  }
+  const domains = assertCompleteList(envelope);
+  const info = envelope.result_info;
+  if (info !== undefined) {
+    const fields = ['count', 'page', 'per_page', 'total_count', 'total_pages'];
+    if (!info || typeof info !== 'object' || Array.isArray(info)
+      || Object.entries(info).some(([key, value]) => !fields.includes(key)
+        || !Number.isSafeInteger(value) || value < 0)
+      || (info.count !== undefined && info.count !== domains.length)
+      || (info.per_page !== undefined && info.per_page < domains.length)
+      || (info.total_pages === 0 && domains.length !== 0)) throw fail('SHARE_LIST_INCOMPLETE');
+  }
+  const ids = new Set();
+  for (const domain of domains) {
+    if (!domain || typeof domain !== 'object' || Array.isArray(domain)
+      || typeof domain.id !== 'string' || !domain.id.trim() || ids.has(domain.id)
+      || typeof domain.service !== 'string' || !domain.service.trim()
+      || domain.service !== domain.service.trim() || /[\u0000-\u0020\u007f]/.test(domain.service)
+      || typeof domain.environment !== 'string'
+      || typeof domain.hostname !== 'string' || !domain.hostname.trim()) {
+      throw fail('SHARE_DOMAIN_UNKNOWN');
+    }
+    ids.add(domain.id);
+  }
+  return domains.filter(domain => domain.service === FORECAST_SHARE_WORKER);
+}
+
+// Only fixed categories and at most eight seven-digit numeric provider codes.
+// The caller receives a new closed object; no message, source, result or account
+// field is copied, and no unknown value is coerced to a string or number.
+export function forecastShareCfEnvelopeDiagnostic(value) {
+  const object = value !== null && typeof value === 'object' && !Array.isArray(value);
+  const errors = object && Array.isArray(value.errors) ? value.errors : null;
+  const errorCodes = [];
+  let errorCodesStatus = errors === null ? 'UNKNOWN' : errors.length > 8 ? 'LIMITED' : 'COMPLETE';
+  for (let index = 0; errors !== null && index < Math.min(errors.length, 8); index++) {
+    const entry = errors[index];
+    const code = entry !== null && typeof entry === 'object' && !Array.isArray(entry) ? entry.code : null;
+    if (Number.isSafeInteger(code) && code >= 1000 && code <= 9_999_999) errorCodes.push(code);
+    else errorCodesStatus = 'UNKNOWN';
+  }
+  return {
+    kind: 'FORECAST_SHARE_CF_ENVELOPE_V1',
+    envelope: object ? 'OBJECT' : 'UNKNOWN',
+    success: object && value.success === true ? 'TRUE'
+      : object && value.success === false ? 'FALSE' : 'UNKNOWN',
+    errors: errors === null ? 'UNKNOWN' : errors.length ? 'NONEMPTY' : 'EMPTY',
+    errorCodes, errorCodesStatus,
+  };
+}
+
 export async function deployForecastShare({ env = process.env, fetchImpl = globalThis.fetch,
   deployImpl = deployTripWorker, git = args => execFileSync('git', args, { encoding: 'utf8' }).trim(),
   now = () => Date.now(), report = () => {} } = {}) {
   let stage = 'AUTHORITY', writeIssued = false, terminationConfirmed = null;
-  let expectedMain, active = null;
+  let expectedMain, active = null, cfEnvelopeDiagnostic = null;
   try {
     assertForecastShareAuthority(env);
     expectedMain = env.EXPECTED_MAIN;
@@ -156,18 +213,26 @@ export async function deployForecastShare({ env = process.env, fetchImpl = globa
       const data = observed.value;
       readStatuses.set(readKind, observed.httpStatus);
       if (data?.success !== true || !Array.isArray(data.errors) || data.errors.length) {
+        cfEnvelopeDiagnostic = forecastShareCfEnvelopeDiagnostic(data);
         throw Object.assign(fail('SHARE_CF_READ'), { readKind, httpStatus: observed.httpStatus });
       }
       return data;
+    };
+    const readDomains = async () => {
+      const envelope = await cf('/workers/domains', 'CF_DOMAINS');
+      try { return forecastShareDomainsForWorker(envelope); }
+      catch (error) {
+        throw Object.assign(error, { readKind: 'CF_DOMAINS',
+          httpStatus: readStatuses.get('CF_DOMAINS') ?? null });
+      }
     };
     const scriptBase = '/workers/scripts/' + FORECAST_SHARE_WORKER;
     const remote = async (expectedVersion = null, allowAbsent = false) => {
       const scripts = assertCompleteList(await cf('/workers/scripts', 'CF_SCRIPTS'));
       const selected = scripts.filter(item => item?.id === FORECAST_SHARE_WORKER);
       if (!selected.length && allowAbsent) {
-        // This account-level read is possible even before the first script exists.
-        empty(assertCompleteList(await cf('/workers/domains?service=' + FORECAST_SHARE_WORKER
-          + '&environment=production', 'CF_DOMAINS')), 'SHARE_REMOTE_DOMAINS');
+        // Do not query a service that has not been created; classify the account list.
+        empty(await readDomains(), 'SHARE_REMOTE_DOMAINS');
         return null;
       }
       if (selected.length !== 1) throw fail('SHARE_REMOTE_SCRIPT');
@@ -176,8 +241,7 @@ export async function deployForecastShare({ env = process.env, fetchImpl = globa
       // This exact service route endpoint is also used by pinned Wrangler 4.28.1 getWorkerConfig.
       const routes = assertCompleteList(await cf('/workers/services/' + FORECAST_SHARE_WORKER
         + '/environments/production/routes?show_zonename=true', 'CF_ROUTES'));
-      const domains = assertCompleteList(await cf('/workers/domains?service=' + FORECAST_SHARE_WORKER
-        + '&environment=production', 'CF_DOMAINS'));
+      const domains = await readDomains();
       const schedules = (await cf(scriptBase + '/schedules', 'CF_CRON')).result;
       const subdomain = (await cf(scriptBase + '/subdomain', 'CF_SCRIPT_SUBDOMAIN')).result;
       try {
@@ -238,6 +302,8 @@ export async function deployForecastShare({ env = process.env, fetchImpl = globa
       readKind: FORECAST_SHARE_READ_KINDS.includes(error?.readKind) ? error.readKind : null,
       httpStatus: Number.isInteger(error?.httpStatus) && error.httpStatus >= 100 && error.httpStatus <= 599
         ? error.httpStatus : null,
+      ...(error?.code === 'SHARE_CF_READ' ? { cfEnvelope: cfEnvelopeDiagnostic
+        ?? forecastShareCfEnvelopeDiagnostic(null) } : {}),
       writeIssued, terminationConfirmed, outcome: writeIssued ? 'UNKNOWN_NO_RETRY' : 'REFUSED_BEFORE_WRITE' };
     report(receipt); throw Object.assign(fail(receipt.outcome), { receipt });
   }

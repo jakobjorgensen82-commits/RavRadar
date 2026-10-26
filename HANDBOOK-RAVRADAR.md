@@ -12,6 +12,8 @@ En gemt beregning og en offentlig levering er forskellige trin. Efter et sent st
 
 Kort fortalt: Et delingslink peger på det valgte sted, tidspunkt og søgemåde. Du vælger selv, hvor det deles, og hvad du skriver til det.
 
+Delingsforhåndsvisningen har sin egen kontrollerede levering og skal være afprøvet på den offentlige adresse, før den regnes som klar. En lokal test eller et vellykket HTTP-svar er ikke nok. Den bruger ikke private kontooplysninger og kræver hverken en ny database eller et billedlager. Gratis kapacitet skal dokumenteres ved måling, ikke antages ud fra løsningens størrelse.
+
 Du kan dele den viste prognose eller kopiere linket fra den valgte zone. Linket bruger dit valgte sted, den præcise time, søgemåden strand eller waders samt dansk, tysk eller engelsk. Visningen erstatter ikke en manglende time med et andet tidspunkt.
 
 Forhåndsvisningen bruger RavRadars allerede offentliggjorte score og viser de relevante forbehold, for eksempel ufuldstændig historik eller delvis dækning. Deling beregner ikke en ny score og ændrer ikke vejrdata. En score er en beregnet vurdering, ikke en garanti for fund.
