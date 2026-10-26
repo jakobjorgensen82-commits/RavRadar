@@ -1,3 +1,11 @@
+## 26. oktober — første SOURCE-fejl skal kunne placeres uden rå data
+
+Den præcise SOURCE589-kontrol er stoppet i den normale legacy-Node-kæde efter beståede bindings- og fire syntetiske providerindgange. Rapporten bevarede kun UNKNOWN og ingen kildeframe; den konkrete årsag er derfor fortsat ukendt. Det er ikke bevis for en ny fejl i almindelig vejrhentning eller for endnu en fejl i den afledte kortfil. Begge tidligere fejlforløb bevares særskilt i privat checkpoint.
+
+Den afgrænsede kildeændring bevarer samme femfeltsrapport og alle proces-, original-, SQL- og adgangsgrænser. Den kan kun vise lukkede fejlkategorier fra faktisk Node-code/name og faste underfaser for setup, producent, originalkontrol, restore, updater, save og readback. Vilkårlige beskeder, stier, SQL og værdier offentliggøres ikke; den oprindelige exception genkastes uændret. Bindings-/argumentfejl før transport-try fanges også. Den normale observationsprøve består lokalt 22/22; det er ikke ny PostgreSQL, rodårsagsrettelse eller produktionsbevis.
+
+Præcis ny kilde-/Linux-kontrol skal skaffe den manglende årsagsevidens, før SOURCE kan frigives. Den eksisterende direkte legacy-Node-indgang er den mindste hele producent-/efterfølgerreproduktion, men kræver den rigtige Linux-host og de normale syntetiske providerinput; Windows eller opdigtet PG-kontekst erstatter dem ikke. Ingen ny version, C/I/T, SQL-installation, vejrdata, scoreformel, kildeprioritet, admin eller geometri ændres her. Alle fem mål til 18. november består; den aktive almindelige writer og faktisk offentlig 588 følges privat. Se håndbog 89.270; SOURCE er fortsat ikke installeret.
+
 ## 26. oktober — normal afledt kortfil er ikke ændret kildekode
 
 SOURCE589s præcise kildekontrol nåede den normale legacy-efterfølger, men stoppede før dens beregning: leverandørfiksturen havde normalt genbygget den sporede kystdelsfil, mens indgangen stadig krævede et helt tomt Git-diff. En separat normal byggerkørsel reproducerede forskellen uden ændring af de operative input.

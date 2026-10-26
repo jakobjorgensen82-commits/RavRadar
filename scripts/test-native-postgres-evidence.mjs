@@ -658,3 +658,83 @@ test('SOURCE upload inverse is exact, single, and restores the whole older uploa
     current.replace('retention-days: 30','retention-days: 31')])
     assert.throws(()=>inverseSourceProducerPhaseUpload(bad));
 });
+
+// Pure additive legacy failure observations. No PostgreSQL/provider/process
+// execution or admission is performed by these unit cases.
+test('legacy Node categories use only actual closed code/name and never arbitrary messages',async()=>{
+  const {nativePostgresExceptionCode:classify}=await import('./lib/checkpoint-cas-native-postgres.mjs');
+  const codes={ENOENT:'ENOENT',ENOSPC:'ENOSPC',EACCES:'EACCES',EPERM:'EPERM',ENOMEM:'ENOMEM',
+    EMFILE:'EMFILE',EPIPE:'EPIPE',ERR_MODULE_NOT_FOUND:'MODULE_NOT_FOUND',MODULE_NOT_FOUND:'MODULE_NOT_FOUND'};
+  for(const [code,suffix]of Object.entries(codes))
+    assert.equal(classify({code,message:'PRIVATE_PATH_AND_VALUE'}),'NATIVE_POSTGRES_NODE_'+suffix);
+  for(const [make,suffix]of [[TypeError,'TYPE_ERROR'],[SyntaxError,'SYNTAX_ERROR'],
+    [RangeError,'RANGE_ERROR'],[ReferenceError,'REFERENCE_ERROR']])
+    assert.equal(classify(new make('PRIVATE_PATH_AND_VALUE')),'NATIVE_POSTGRES_NODE_'+suffix);
+  assert.equal(classify({code:'ERR_ASSERTION',message:'custom\nPRIVATE_ACTUAL_EXPECTED'}),
+    'NATIVE_POSTGRES_ASSERTION_FAILED');
+  assert.equal(classify({message:'NATIVE_POSTGRES_SQL_COMMAND_FAILED\nPRIVATE_SQL'}),
+    'NATIVE_POSTGRES_SQL_COMMAND_FAILED');
+  for(const error of [null,undefined,false,0,'ENOENT',{code:'PRIVATE',name:'Error',message:'ENOENT'},
+    {message:'NATIVE_POSTGRES_NODE_ENOENT'},{name:'TypeError_PRIVATE'},
+    Object.defineProperty({},'code',{get(){throw new Error('PRIVATE_GETTER');}})])
+    assert.equal(classify(error),'NATIVE_POSTGRES_UNKNOWN_FAILURE');
+});
+
+test('legacy Node observations preserve five fields and the actual outer parser accepts only closed additive enums',async()=>{
+  const {nativePostgresExceptionDiagnostic:diagnose,nativePostgresChildFirstFailure:parse}=
+    await import('./lib/checkpoint-cas-native-postgres.mjs');
+  const phases=['SOURCE_LEGACY_SETUP','SOURCE_LEGACY_PRODUCER','SOURCE_LEGACY_ORIGINALS',
+    'SOURCE_LEGACY_RESTORE','SOURCE_LEGACY_UPDATER','SOURCE_LEGACY_SAVE','SOURCE_LEGACY_READBACK'];
+  const codes=['ENOENT','ENOSPC','EACCES','EPERM','ENOMEM','EMFILE','EPIPE','ERR_MODULE_NOT_FOUND','MODULE_NOT_FOUND'];
+  const errors=[...codes.map(code=>({code})),...['TypeError','SyntaxError','RangeError','ReferenceError'].map(name=>({name}))];
+  for(const phase of phases)for(const fields of errors){
+    const observed=await diagnose({...fields,message:'PRIVATE_PATH_AND_VALUE',stack:''},phase);
+    assert.deepEqual(Object.keys(observed).sort(),['code','frame','kind','phase','privatePayloadIncluded']);
+    assert.equal(observed.kind,'NATIVE_POSTGRES_FIRST_FAILURE');assert.equal(observed.phase,phase);
+    assert.equal(observed.frame,null);assert.equal(observed.privatePayloadIncluded,false);
+    assert(!JSON.stringify(observed).includes('PRIVATE_PATH_AND_VALUE'));
+    const later={...observed,phase:'SOURCE_LEGACY_COMPATIBILITY',
+      code:'NATIVE_POSTGRES_SOURCE_LEGACY_COMPATIBILITY_REFUSED'};
+    assert.deepEqual(parse(JSON.stringify(observed)+'\n'+JSON.stringify(later),''),observed);
+    assert.deepEqual(parse('',JSON.stringify(observed)),observed);
+    for(const changed of [{...observed,raw:'PRIVATE'}, {...observed,phase:phase+'_PRIVATE'},
+      {...observed,code:'NATIVE_POSTGRES_NODE_PRIVATE'}, {...observed,privatePayloadIncluded:true}])
+      assert.equal(parse(JSON.stringify(changed),''),null);
+  }
+  assert.equal((await diagnose({code:'PRIVATE',stack:''},'PRIVATE')).phase,'UNKNOWN');
+});
+
+test('legacy CLI marks real boundaries and catches before its inner transport try without changing the normal routes',async()=>{
+  const source=await fs.readFile('scripts/test-source-producer-legacy-compatibility.mjs','utf8');
+  const start=source.indexOf('export async function runSourceProducerLegacyCompatibility(){'),
+    main=source.indexOf('if(process.argv[1]&&path.resolve(process.argv[1])===fileURLToPath(import.meta.url)){');
+  assert(start>=0&&main>start);
+  const body=source.slice(start,main),cli=source.slice(main);
+  const boundaries=[
+    ['SOURCE_LEGACY_SETUP','  requireSourceProducerOutput();'],
+    ['SOURCE_LEGACY_PRODUCER',"  const {produceCurrentSourceNativeInputs}=await load("],
+    ['SOURCE_LEGACY_ORIGINALS',"  assert.equal(produced.profile,"],
+    ['SOURCE_LEGACY_RESTORE',"    for(const name of ['RAVRADAR_ARCHIVED_WEATHER_RESTART_CONTEXT_PATH'"],
+    ['SOURCE_LEGACY_UPDATER',"    await load('scripts/update-weather.mjs');"],
+    ['SOURCE_LEGACY_SAVE',"    const followerRoot=path.join(produced.workRoot,'saved-legacy-follower');"],
+    ['SOURCE_LEGACY_READBACK','    const loaded=await normalS.loadRavScoreContinuationCheckpointForTarget('],
+    ['SOURCE_LEGACY_SAVE','    const spec=await workflow.buildPrivateRuntimeCreateSpec({repositoryRoot:ROOT});'],
+    ['SOURCE_LEGACY_READBACK',"    const restored=path.join(followerRoot,'restored');"],
+  ];
+  let cursor=0;
+  for(const [phase,normalCall]of boundaries){
+    const mark=body.indexOf("sourceLegacyPhase='"+phase+"';",cursor),call=body.indexOf(normalCall,cursor);
+    assert(mark>=cursor&&call>mark,'Phase precedes its actual unchanged normal call: '+phase);cursor=call+normalCall.length;
+  }
+  assert(body.indexOf("sourceLegacyPhase='SOURCE_LEGACY_PRODUCER';")<body.indexOf('let restoreTransport,hasFirst=false;'));
+  assert(cli.indexOf('  try{')<cli.indexOf('requireSourceProducerOutput();'));
+  assert(cli.includes('catch(error){await emitNativePostgresFirstFailure(error,sourceLegacyPhase);throw error;}'));
+  assert(body.includes('}catch(error){hasFirst=true;throw error;}'));
+  assert(body.includes("if(cleanup&&!hasFirst)throw cleanup;"));
+  assert(body.includes("if(cleanup&&hasFirst)console.error('SOURCE_LEGACY_COMPATIBILITY_CLEANUP_REFUSED');"));
+  const python=await fs.readFile('scripts/test-source19-terminal-failure-proof-bank-v17-observer-native.py','utf8');
+  const relay=python.slice(python.indexOf('# Whole child files above precede selection.'),
+    python.indexOf('break  # The Node parent independently validates every field.'));
+  assert(relay.includes("value.get('kind') == 'NATIVE_POSTGRES_FIRST_FAILURE'"));
+  assert(relay.includes("print(json.dumps(value, separators=(',', ':')), flush=True)"));
+});

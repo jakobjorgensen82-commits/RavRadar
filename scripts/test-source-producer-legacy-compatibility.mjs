@@ -17,6 +17,8 @@ const CHECKPOINT='.cache/ravscore-continuation-checkpoint/checkpoint.json';
 const CONDITIONS='data/live/conditions.json';
 const REGISTRY='data/live/coastal-parts-v2.json';
 const PACK='.cache/public-hour-delivery.pack';
+// Private observation state only; never a source/SQL/production admission.
+let sourceLegacyPhase='SOURCE_LEGACY_BINDINGS';
 const load=relative=>import(pathToFileURL(path.join(ROOT,relative)).href);
 const json=async file=>JSON.parse(await fs.readFile(file,'utf8'));
 const same=(left,right,label)=>assert(isDeepStrictEqual(left,right),label);
@@ -61,6 +63,7 @@ function sameCheckpointExceptExactMetadata(old,next,binding){
 // and authenticates the old origin. This helper adds a genuine ordinary next
 // hour, rather than treating unchanged same-H0 metadata as a follower result.
 export async function runSourceProducerLegacyCompatibility(){
+  sourceLegacyPhase='SOURCE_LEGACY_SETUP';
   requireSourceProducerOutput();const binding=requireSourceProducerBinding(); // BEFORE host/input I/O.
   assert.equal(arguments.length,0);assert.equal(process.platform,'linux');
   assert.equal(Number(process.versions.node.split('.')[0]),24);
@@ -83,10 +86,12 @@ export async function runSourceProducerLegacyCompatibility(){
     forwardProviderInputs:h1.providerInputs,successorProviderInputs:successor.providerInputs,
     successorTargetReferenceAt:successor.targetReferenceAt,
     predecessor587ProviderInputs:prior587.providerInputs,predecessor587TargetReferenceAt:prior587.targetReferenceAt};
+  sourceLegacyPhase='SOURCE_LEGACY_PRODUCER';
   const {produceCurrentSourceNativeInputs}=await load('scripts/fixtures/source19-current-normal-inputs.mjs');
   // Same existing normal producer, now genuine585 H0/H1 ->586 ->587 ->588 ->SOURCE.
   // No CURRENT action, handwritten pack, ACTIVE row or supplied model tuple.
   const produced=await produceCurrentSourceNativeInputs(options);
+  sourceLegacyPhase='SOURCE_LEGACY_ORIGINALS';
   assert.equal(produced.profile,'current-source-native');assert.equal(produced.current.sourceHead,sourceHead);
   for(const key of ['actionInvoked','sdkInvoked','sourceOwnerIssued','wholeSourceIntegrationProved','productionProof'])
     assert.equal(produced[key],false);
@@ -119,6 +124,7 @@ export async function runSourceProducerLegacyCompatibility(){
   const protectedS=await load('scripts/protected-ravscore-continuation-checkpoint.mjs');
   const beforeEnv={...process.env},beforeCwd=process.cwd();let restoreTransport,hasFirst=false;
   try{
+    sourceLegacyPhase='SOURCE_LEGACY_RESTORE';
     for(const name of ['RAVRADAR_ARCHIVED_WEATHER_RESTART_CONTEXT_PATH','RAVRADAR_ARCHIVED_WEATHER_RESTART_CONTEXT_SHA256',
       'RAVRADAR_CURRENT_FAMILY_COLD_START_CONTEXT_PATH','RAVRADAR_CURRENT_FAMILY_COLD_START_CONTEXT_SHA256',
       'RAVRADAR_WEATHER_STATE_EPOCH_CONTEXT_PATH','RAVRADAR_WEATHER_STATE_EPOCH_CONTEXT_SHA256',
@@ -152,6 +158,7 @@ export async function runSourceProducerLegacyCompatibility(){
     process.env.RAVRADAR_PRODUCTION_TARGET_HOUR=target;
     // ONE real normal legacy updater: it already generates the complete public
     // runtime AND hour pack. Do not run generate-public-conditions a second time.
+    sourceLegacyPhase='SOURCE_LEGACY_UPDATER';
     await load('scripts/update-weather.mjs');
     const packed=await json(path.join(ROOT,CONDITIONS)),full=hydratePrivateConditionsHourly(packed);
     assert.equal(full.productionReferenceAt,target);
@@ -172,6 +179,7 @@ export async function runSourceProducerLegacyCompatibility(){
     const pack=await inspectPrivatePublicHourDeliveryPack({packPath:path.join(ROOT,PACK),conditions:packed});
     same(pack.manifest.entries.map(row=>row.time),times,'Actual normal public pack closes118 hours');
     assert.equal(pack.manifest.modelBinding.modelBundleSha256,binding.I);
+    sourceLegacyPhase='SOURCE_LEGACY_SAVE';
     const followerRoot=path.join(produced.workRoot,'saved-legacy-follower');await fs.mkdir(followerRoot,{mode:0o700});
     const checkpointPath=path.join(followerRoot,CHECKPOINT);
     await normalS.saveRavScoreContinuationCheckpoint({repositoryRoot:ROOT,sourcePath:path.join(ROOT,CONDITIONS),checkpointPath});
@@ -180,8 +188,10 @@ export async function runSourceProducerLegacyCompatibility(){
     assert.equal(follower.candidateGRollbackCompanion.modelBinding.modelBundleSha256,binding.C);
     assert.equal(follower.continuationStateContractSha256,binding.T);
     same(Object.keys(follower.states).sort(),Object.keys(currentCheckpoint.states).sort(),'673 actual follower states');
+    sourceLegacyPhase='SOURCE_LEGACY_READBACK';
     const loaded=await normalS.loadRavScoreContinuationCheckpointForTarget({checkpointPath,targetReference:target,repositoryRoot:ROOT});
     assert.equal(loaded.loaded,true);
+    sourceLegacyPhase='SOURCE_LEGACY_SAVE';
     const spec=await workflow.buildPrivateRuntimeCreateSpec({repositoryRoot:ROOT});
     assert(spec.files.some(row=>row.relativePath===PACK));
     const bundlePath=path.join(followerRoot,'created'),now=full.generatedAt;
@@ -194,6 +204,7 @@ export async function runSourceProducerLegacyCompatibility(){
       request:backend.documentRequest,rpcRequest:backend.checkpointRpc});
     assert.equal(S.published,true);
     same(backend.events.filter(event=>['B_CAS','S_CAS'].includes(event)),['B_CAS','S_CAS'],'Normal B-before-S');
+    sourceLegacyPhase='SOURCE_LEGACY_READBACK';
     const restored=path.join(followerRoot,'restored');
     const BReadback=await protectedB.restoreProtectedPrivateProductionRuntime({repositoryRoot:ROOT,privateRoot:followerRoot,
       bundlePath:restored,expected,now,request:backend.documentRequest,storage:backend.storage});
@@ -226,8 +237,10 @@ export async function runSourceProducerLegacyCompatibility(){
 }
 
 if(process.argv[1]&&path.resolve(process.argv[1])===fileURLToPath(import.meta.url)){
-  requireSourceProducerOutput();requireSourceProducerBinding();
-  assert.deepEqual(process.argv.slice(2),[]);
-  try{console.log(JSON.stringify(await runSourceProducerLegacyCompatibility()));}
-  catch(error){await emitNativePostgresFirstFailure(error,'SOURCE_LEGACY_FOLLOWER');throw error;}
+  try{
+    requireSourceProducerOutput();requireSourceProducerBinding();
+    assert.deepEqual(process.argv.slice(2),[]);
+    console.log(JSON.stringify(await runSourceProducerLegacyCompatibility()));
+  }
+  catch(error){await emitNativePostgresFirstFailure(error,sourceLegacyPhase);throw error;}
 }
