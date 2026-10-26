@@ -1,3 +1,11 @@
+## 26. oktober — installeret kode-only følger den aktuelle udstedte familie
+
+En almindelig vejrhentning har faktisk leveret nyt offentligt vejr med central slutregistrering. Et efterfølgende providerfrit rettelsesdeploy stoppede derimod før offentlig skrivning: den gamle 586-selector krævede stadig sin historiske binding, selv om 588 var installeret. Den gamle 585-selector og to senere origin-planvalg havde samme generationsproblem. Dette er ikke fejl i DMI-data eller i den afsluttede almindelige vejrhentning.
+
+Den lokale efterfølger vælger kun den aktuelle udstedte assistentfamilie efter præcis kontrol af C/I/T, kildefase, normal main-kalder og alle opgraderings-/genoptagelsesflag. Den eksisterende aktuelle migrationskontrol skal bevise hele den installerede historie, tom plan og præcis database-/schema2-genlæsning. Denne rute udfører ingen SQL-apply, kræver autentificeret current-runtime før historisk fallback og gemmer B før S. Gamle 585/586/origin-installationsplaner og deres afslag udvides ikke.
+
+Den normale kaldermålprøve består lokalt med 39 tilfælde uden fejl eller skip. Præcis ny kildekontrol, sikker levering og faktisk providerfri effekt er fortsat åbne. Dette er den præcise aktive 588-familie; SOURCE589 har en anden standardfase og skal integreres udtrykkeligt før aktivering, ikke få gammel evidens ommærket. Ingen version, C/I/T, gammel SQL, scoreformel, kilder eller geometri ændres. Se DEC-0148-tillæg og håndbog 89.272; kørselsstatus og detaljeret evidens står privat.
+
 ## 26. oktober — vent på præcist offentliggjort manifest før pakkekontrol
 
 Pages kan melde deploy gennemført, før alle offentlige kopier viser den nye indholdsfortegnelse. Det dokumenterede publiceringsvindue på op til ti minutter og den observerede offentlige cacheheader med max-age=600 begrunder en længere, afgrænset manifestkontrol. Det oprindelige HTTP-manifest ved den seneste afvisning blev ikke bevaret; cache er derfor ikke bevist som den præcise historiske årsag.

@@ -599,6 +599,10 @@ jobs:
         if: env.RAVRADAR_NATIVE_ORIGINAL_CONTINUITY_SOURCE_ACTIVE != 'true'
         run: node scripts/select-account-statistics-assistant-code-only-source.mjs
 
+      - name: Select the current installed code-only source without historical upgrade authority
+        if: env.RAVRADAR_NATIVE_ORIGINAL_CONTINUITY_SOURCE_ACTIVE != 'true' && env.RAVRADAR_ACCOUNT_STATISTICS_ASSISTANT_SOURCE_ACTIVE != 'true'
+        run: node scripts/select-native-original-continuity-code-only-source.mjs --current-installed
+
       - name: Describe newest protected runtime for saved-weather continuation
         if: inputs.restart_archived_weather != true
         run: >-
@@ -739,7 +743,7 @@ jobs:
           NODE
 
       - name: Select only an already-installed established-origin successor before private work
-        if: (((steps.operational-action.outputs.action == 'integrated' || steps.operational-action.outputs.action == 'integrated-historical-maintenance') && (inputs.restart_archived_weather != true)) && (steps.saved-last-mile-source.outputs.required != 'true')) && (env.RAVRADAR_ACCOUNT_STATISTICS_ASSISTANT_SOURCE_ACTIVE != 'true') && (env.RAVRADAR_NATIVE_ORIGINAL_CONTINUITY_SOURCE_ACTIVE != 'true')
+        if: (((steps.operational-action.outputs.action == 'integrated' || steps.operational-action.outputs.action == 'integrated-historical-maintenance') && (inputs.restart_archived_weather != true)) && (steps.saved-last-mile-source.outputs.required != 'true')) && (env.RAVRADAR_ACCOUNT_STATISTICS_ASSISTANT_SOURCE_ACTIVE != 'true') && (env.RAVRADAR_NATIVE_ORIGINAL_CONTINUITY_SOURCE_ACTIVE != 'true') && (env.RAVRADAR_CURRENT_INSTALLED_CODE_ONLY_SOURCE_ACTIVE != 'true')
         shell: bash
         run: |
           set -euo pipefail
@@ -794,6 +798,24 @@ jobs:
               --workdir "${{ steps.migration-view.outputs.workdir }}" \
               --migration-list "$RUNNER_TEMP/code-only-migrations-before.txt"
           fi
+
+      - name: Require the current exact installed source and empty SQL plan before private work
+        if: env.RAVRADAR_CURRENT_INSTALLED_CODE_ONLY_SOURCE_ACTIVE == 'true'
+        shell: bash
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: |
+          set -euo pipefail
+          (cd "${{ steps.migration-view.outputs.workdir }}" && supabase db push --linked --dry-run --skip-vault) 2>&1 | tee "$RUNNER_TEMP/code-only-current-installed-dry-run.txt"
+          node scripts/select-native-original-continuity-code-only-source.mjs --verify-current-installed-plan \
+            --migration-list "$RUNNER_TEMP/code-only-migrations-before.txt" \
+            --dry-run "$RUNNER_TEMP/code-only-current-installed-dry-run.txt" \
+            --migrations-directory "${{ steps.migration-view.outputs.workdir }}/supabase/migrations"
+          env -u SUPABASE_DB_PASSWORD node scripts/integrated-cutover-readiness.mjs verify-db
+          env -u SUPABASE_DB_PASSWORD node scripts/verify-statistics-preference-revision-schema.mjs
 
       - name: Require actually installed native-original-continuity without SQL replay
         if: env.RAVRADAR_NATIVE_ORIGINAL_CONTINUITY_SOURCE_ACTIVE == 'true' && env.RAVRADAR_NATIVE_ORIGINAL_CONTINUITY_PHASE == 'installed'
@@ -1150,6 +1172,14 @@ jobs:
           RAVRADAR_R2_SECRET_ACCESS_KEY: ${{ secrets.RAVRADAR_R2_SECRET_ACCESS_KEY }}
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+
+      - name: Require authenticated current runtime before any historical fallback
+        if: env.RAVRADAR_CURRENT_INSTALLED_CODE_ONLY_SOURCE_ACTIVE == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "${{ steps.current-private-install.outcome }}" = success
+          test "${{ steps.owner-current-original.outputs.transition_kind }}" = ''
 
       - name: Require authenticated exact original before owner binding migration
         if: (((steps.owner-current-original.outputs.transition_kind == 'owner-current-domain-original') && (inputs.restart_archived_weather != true)) && (steps.saved-last-mile-source.outputs.required != 'true')) && (env.RAVRADAR_ACCOUNT_STATISTICS_ASSISTANT_SOURCE_ACTIVE != 'true') && (env.RAVRADAR_NATIVE_ORIGINAL_CONTINUITY_SOURCE_ACTIVE != 'true')
@@ -1786,7 +1816,7 @@ jobs:
           test "$(git rev-parse origin/main^{commit})" = "$EXPECTED_HEAD_SHA"
 
       - name: Apply exact dry-run-verified post-cutover binding
-        if: (((steps.operational-action.outputs.action == 'integrated' || steps.operational-action.outputs.action == 'integrated-historical-maintenance') && (inputs.restart_archived_weather != true)) && (steps.saved-last-mile-source.outputs.required != 'true')) && (env.RAVRADAR_ACCOUNT_STATISTICS_ASSISTANT_SOURCE_ACTIVE != 'true') && (env.RAVRADAR_NATIVE_ORIGINAL_CONTINUITY_SOURCE_ACTIVE != 'true')
+        if: (((steps.operational-action.outputs.action == 'integrated' || steps.operational-action.outputs.action == 'integrated-historical-maintenance') && (inputs.restart_archived_weather != true)) && (steps.saved-last-mile-source.outputs.required != 'true')) && (env.RAVRADAR_ACCOUNT_STATISTICS_ASSISTANT_SOURCE_ACTIVE != 'true') && (env.RAVRADAR_NATIVE_ORIGINAL_CONTINUITY_SOURCE_ACTIVE != 'true') && (env.RAVRADAR_CURRENT_INSTALLED_CODE_ONLY_SOURCE_ACTIVE != 'true')
         shell: bash
         env:
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
@@ -1844,12 +1874,19 @@ jobs:
             --migration-list "$RUNNER_TEMP/code-only-migrations-applied.txt"
           node scripts/integrated-cutover-readiness.mjs verify-db
           (cd "${{ steps.migration-view.outputs.workdir }}" && supabase db push --linked --dry-run --skip-vault) 2>&1 | tee "$RUNNER_TEMP/code-only-statistics-installed-dry-run.txt"
-          RAVRADAR_ESTABLISHED_NATIVE_CURRENT_ORIGIN_UPGRADE_OPT_IN=false node scripts/verify-established-native-current-origin-plan.mjs \
-            --phase installed --migration-list "$RUNNER_TEMP/code-only-migrations-applied.txt" \
-            --dry-run "$RUNNER_TEMP/code-only-statistics-installed-dry-run.txt" \
-            --migrations-directory "${{ steps.migration-view.outputs.workdir }}/supabase/migrations"
-          echo "RAVRADAR_ESTABLISHED_NATIVE_CURRENT_ORIGIN_UPGRADE_OPT_IN=false" >> "$GITHUB_ENV"
-          echo "RAVRADAR_ESTABLISHED_NATIVE_CURRENT_ORIGIN_PHASE=installed" >> "$GITHUB_ENV"
+          if test "${RAVRADAR_CURRENT_INSTALLED_CODE_ONLY_SOURCE_ACTIVE:-false}" = true; then
+            node scripts/select-native-original-continuity-code-only-source.mjs --verify-current-installed-plan \
+              --migration-list "$RUNNER_TEMP/code-only-migrations-applied.txt" \
+              --dry-run "$RUNNER_TEMP/code-only-statistics-installed-dry-run.txt" \
+              --migrations-directory "${{ steps.migration-view.outputs.workdir }}/supabase/migrations"
+          else
+            RAVRADAR_ESTABLISHED_NATIVE_CURRENT_ORIGIN_UPGRADE_OPT_IN=false node scripts/verify-established-native-current-origin-plan.mjs \
+              --phase installed --migration-list "$RUNNER_TEMP/code-only-migrations-applied.txt" \
+              --dry-run "$RUNNER_TEMP/code-only-statistics-installed-dry-run.txt" \
+              --migrations-directory "${{ steps.migration-view.outputs.workdir }}/supabase/migrations"
+            echo "RAVRADAR_ESTABLISHED_NATIVE_CURRENT_ORIGIN_UPGRADE_OPT_IN=false" >> "$GITHUB_ENV"
+            echo "RAVRADAR_ESTABLISHED_NATIVE_CURRENT_ORIGIN_PHASE=installed" >> "$GITHUB_ENV"
+          fi
           node scripts/verify-statistics-preference-revision-schema.mjs
 
       - name: Read unchanged Candidate quality before owner-export upgrade
@@ -2375,7 +2412,7 @@ jobs:
 
       - name: Publish measured continuation checkpoint without promoting rollback readiness
         id: checkpoint-publish
-        if: (((((steps.checkpoint-disposition.outputs.disposition == 'READY_PUBLISHED' || steps.checkpoint-disposition.outputs.disposition == 'MEASURED_WARMUP_PUBLISHED') && env.RAVRADAR_ESTABLISHED_NATIVE_CURRENT_ORIGIN_EDGE_REQUIRED != 'true') && (inputs.restart_archived_weather != true)) && (steps.saved-last-mile-source.outputs.required != 'true')) && (env.RAVRADAR_ACCOUNT_STATISTICS_ASSISTANT_SOURCE_ACTIVE != 'true')) && (env.RAVRADAR_ACCOUNT_STATISTICS_ASSISTANT_SOURCE_ACTIVE != 'true') && (env.RAVRADAR_NATIVE_ORIGINAL_CONTINUITY_SOURCE_ACTIVE != 'true')
+        if: (((((steps.checkpoint-disposition.outputs.disposition == 'READY_PUBLISHED' || steps.checkpoint-disposition.outputs.disposition == 'MEASURED_WARMUP_PUBLISHED') && env.RAVRADAR_ESTABLISHED_NATIVE_CURRENT_ORIGIN_EDGE_REQUIRED != 'true') && (inputs.restart_archived_weather != true)) && (steps.saved-last-mile-source.outputs.required != 'true')) && (env.RAVRADAR_ACCOUNT_STATISTICS_ASSISTANT_SOURCE_ACTIVE != 'true')) && (env.RAVRADAR_ACCOUNT_STATISTICS_ASSISTANT_SOURCE_ACTIVE != 'true') && (env.RAVRADAR_NATIVE_ORIGINAL_CONTINUITY_SOURCE_ACTIVE != 'true') && (env.RAVRADAR_CURRENT_INSTALLED_CODE_ONLY_SOURCE_ACTIVE != 'true')
         run: >-
           node scripts/protected-ravscore-continuation-checkpoint.mjs
           --publish
@@ -2693,7 +2730,7 @@ jobs:
       # then restore current B normally instead of requiring the replaced old S.
       - name: Publish measured continuation only after verified warmup private runtime
         id: established-native-current-origin-checkpoint-publish
-        if: (steps.checkpoint-disposition.outputs.disposition == 'READY_PUBLISHED' || steps.checkpoint-disposition.outputs.disposition == 'MEASURED_WARMUP_PUBLISHED') && (env.RAVRADAR_ESTABLISHED_NATIVE_CURRENT_ORIGIN_EDGE_REQUIRED == 'true' || inputs.restart_archived_weather == true || steps.saved-last-mile-source.outputs.required == 'true' || env.RAVRADAR_ACCOUNT_STATISTICS_ASSISTANT_SOURCE_ACTIVE == 'true' || env.RAVRADAR_NATIVE_ORIGINAL_CONTINUITY_SOURCE_ACTIVE == 'true') && steps.current-private-publish.outcome == 'success'
+        if: (steps.checkpoint-disposition.outputs.disposition == 'READY_PUBLISHED' || steps.checkpoint-disposition.outputs.disposition == 'MEASURED_WARMUP_PUBLISHED') && (env.RAVRADAR_ESTABLISHED_NATIVE_CURRENT_ORIGIN_EDGE_REQUIRED == 'true' || inputs.restart_archived_weather == true || steps.saved-last-mile-source.outputs.required == 'true' || env.RAVRADAR_ACCOUNT_STATISTICS_ASSISTANT_SOURCE_ACTIVE == 'true' || env.RAVRADAR_NATIVE_ORIGINAL_CONTINUITY_SOURCE_ACTIVE == 'true' || env.RAVRADAR_CURRENT_INSTALLED_CODE_ONLY_SOURCE_ACTIVE == 'true') && steps.current-private-publish.outcome == 'success'
         run: >-
           node scripts/protected-ravscore-continuation-checkpoint.mjs
           --publish
@@ -3298,7 +3335,7 @@ jobs:
             --arg checkpointRuntimeAuditSha256 "${{ steps.checkpoint-disposition.outputs.runtime_audit_sha256 }}" \
             --arg checkpointBuildOutcome "${{ steps.checkpoint-build.outcome }}" \
             --arg checkpointSaveOutcome "${{ steps.checkpoint-save.outcome }}" \
-            --arg checkpointPublishOutcome "${{ (env.RAVRADAR_ESTABLISHED_NATIVE_CURRENT_ORIGIN_EDGE_REQUIRED == 'true' || inputs.restart_archived_weather == true || steps.saved-last-mile-source.outputs.required == 'true' || env.RAVRADAR_ACCOUNT_STATISTICS_ASSISTANT_SOURCE_ACTIVE == 'true' || env.RAVRADAR_NATIVE_ORIGINAL_CONTINUITY_SOURCE_ACTIVE == 'true') && steps.established-native-current-origin-checkpoint-publish.outcome || steps.checkpoint-publish.outcome }}" \
+            --arg checkpointPublishOutcome "${{ (env.RAVRADAR_ESTABLISHED_NATIVE_CURRENT_ORIGIN_EDGE_REQUIRED == 'true' || inputs.restart_archived_weather == true || steps.saved-last-mile-source.outputs.required == 'true' || env.RAVRADAR_ACCOUNT_STATISTICS_ASSISTANT_SOURCE_ACTIVE == 'true' || env.RAVRADAR_NATIVE_ORIGINAL_CONTINUITY_SOURCE_ACTIVE == 'true' || env.RAVRADAR_CURRENT_INSTALLED_CODE_ONLY_SOURCE_ACTIVE == 'true') && steps.established-native-current-origin-checkpoint-publish.outcome || steps.checkpoint-publish.outcome }}" \
             --arg codeOnlyReuseReportSha256 "$code_only_sha256" \
             --arg sourceRepairId "${{ steps.public-source.outputs.repair_id }}" \
             --argjson codeOnlyRepair '${{ inputs.publish_newest_saved_weather != true && inputs.restart_archived_weather != true }}' \

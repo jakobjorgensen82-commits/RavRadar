@@ -9,7 +9,8 @@ import {spawnSync} from 'node:child_process';
 import {fileURLToPath} from 'node:url';
 import {inverseArchivedWeatherRestartWorkflow} from './lib/archived-weather-restart-workflow-review.mjs';
 import {inverseArchivedProductionGate} from './lib/archived-production-gate-review.mjs';
-import {NATIVE_ORIGINAL_CONTINUITY_WORKFLOW_SHA256,inverseNativeOriginalContinuityWorkflow} from './lib/native-original-continuity-workflow-review.mjs';
+import {NATIVE_ORIGINAL_CONTINUITY_WORKFLOW_SHA256,CURRENT_INSTALLED_CODE_ONLY_WORKFLOW_SHA256,
+  inverseCurrentInstalledCodeOnlyWorkflow,inverseNativeOriginalContinuityWorkflow} from './lib/native-original-continuity-workflow-review.mjs';
 import {inverseAccountStatisticsAssistantWorkflow,inverseAccountStatisticsAssistantOffAttestation,inverseAccountStatisticsAssistantStorageTransport} from './lib/account-statistics-assistant-workflow-review.mjs';
 import {expandValidationCommands} from './run-validation-collection.mjs';
 import {lastMileEnclosureRequiredMigrations} from './integrated-cutover-readiness.mjs';
@@ -17,12 +18,33 @@ import {requireLastMileEnclosureBinding} from './lib/last-mile-enclosure-success
 import {ESTABLISHED_NATIVE_CURRENT_ORIGIN_BINDING} from './lib/established-native-current-origin-successor-source.mjs';
 
 const ROOT=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
-const nativeCurrent=fs.readFileSync(path.join(ROOT,'.github/workflows/deploy-code-only-repair.yml'),'utf8').replace(/\r\n/g,'\n');
+const actualCurrentCodeOnly=fs.readFileSync(path.join(ROOT,'.github/workflows/deploy-code-only-repair.yml'),'utf8').replace(/\r\n/g,'\n');
+const nativeCurrent=crypto.createHash('sha256').update(actualCurrentCodeOnly).digest('hex')===CURRENT_INSTALLED_CODE_ONLY_WORKFLOW_SHA256
+  ? inverseCurrentInstalledCodeOnlyWorkflow(actualCurrentCodeOnly):actualCurrentCodeOnly;
 const actualCurrent=inverseNativeOriginalContinuityWorkflow(nativeCurrent);
 const current=inverseAccountStatisticsAssistantWorkflow(actualCurrent);
 const actual=inverseArchivedProductionGate(current);
 const sha=value=>crypto.createHash('sha256').update(value).digest('hex');
 const historical=inverseArchivedWeatherRestartWorkflow(actual);
+test('current installed code-only routing qualifies its whole additive layer before unchanged historical oracles',()=>{
+  assert.equal(sha(actualCurrentCodeOnly),CURRENT_INSTALLED_CODE_ONLY_WORKFLOW_SHA256);
+  assert.equal(sha(nativeCurrent),NATIVE_ORIGINAL_CONTINUITY_WORKFLOW_SHA256);
+  assert.equal(inverseCurrentInstalledCodeOnlyWorkflow(actualCurrentCodeOnly),nativeCurrent);
+  assert.equal(inverseNativeOriginalContinuityWorkflow(actualCurrentCodeOnly),actualCurrent);
+  assert.equal(inverseAccountStatisticsAssistantWorkflow(actualCurrentCodeOnly),current);
+  assert.equal(inverseArchivedWeatherRestartWorkflow(actualCurrentCodeOnly),historical);
+  for(const changed of [actualCurrentCodeOnly+'\n',
+    actualCurrentCodeOnly.replace('--current-installed','--unknown-installed'),
+    actualCurrentCodeOnly.replace('RAVRADAR_CURRENT_INSTALLED_CODE_ONLY_SOURCE_ACTIVE','UNKNOWN_ROUTE'),
+    actualCurrentCodeOnly.replace('test "${{ steps.current-private-install.outcome }}" = success',
+      'test "${{ steps.current-private-install.outcome }}" != success')]){
+    assert.notEqual(changed,actualCurrentCodeOnly);
+    assert.throws(()=>inverseCurrentInstalledCodeOnlyWorkflow(changed));
+    assert.throws(()=>inverseNativeOriginalContinuityWorkflow(changed));
+    assert.throws(()=>inverseAccountStatisticsAssistantWorkflow(changed));
+    assert.throws(()=>inverseArchivedWeatherRestartWorkflow(changed));
+  }
+});
 const bashPath=['C:/Program Files/Git/bin/bash.exe','C:/Program Files/Git/usr/bin/bash.exe',
   path.join(os.homedir(),'.cache/codex-runtimes/codex-primary-runtime/dependencies/native/git/usr/bin/sh.exe'),
   '/bin/bash','/usr/bin/bash'].find(value=>fs.existsSync(value));

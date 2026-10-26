@@ -1,3 +1,12 @@
+## 26. oktober — lokal aktuel installed-only-rute, uændret 4.0.588
+
+- Reproduceret det konkrete gamle 586-bindingskrav ved normal kode-only på installeret 588; samme fejlklasse i 585 og de efterfølgende origin-planer håndteres samlet.
+- Vælg den udstedte aktuelle C/I/T-familie med alle opgraderinger slået fra. Kræv tom plan, faktisk installeret historie og database-/schema2-genlæsning uden SQL-apply.
+- Kræv autentificeret current-runtime, ingen automatisk historisk fallback og B før S. Gamle førskrivningsplaner og afslag bevares.
+- Hele normale kaldermål består lokalt med 39 tilfælde. Præcis kilde-CI, sikker levering og offentlig effekt udestår; SOURCE589 får ikke implicit adgang.
+
+Ingen ny version, modelbinding, gammel SQL, scoreformel, kildeprioritet eller geometri. Se håndbog 89.272 og DEC-0148-tillæg; detaljeret driftsevidens føres privat.
+
 ## 26. oktober — afgrænset ventetid ved offentliggørelse, uændret 4.0.588
 
 - Lokal rettelse: vent kun på hele det forseglede manifest i op til 121 forsøg med fem sekunders mellemrum, før én fuld uændret pakkekontrol gennemføres.
