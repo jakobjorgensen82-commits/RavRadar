@@ -214,7 +214,10 @@ async function sourceProducerFailureFrame(error, observation) {
       const frame={module:relative,sha256:sha(qualified.body),line:at,column};
       // Preserve a genuine guard as fallback, but prefer its real caller when
       // both source frames authenticate. Never invent an eval/AsyncFunction frame.
-      if(/^(?:async )?(?:Object\.)?(?:fail|need)$/.test(name)){fallback??=frame;continue;}
+      const fixed585DmiInvalid=name==='invalid'&&frame.module==='scripts/lib/dmi-forecast-file.mjs'
+        &&frame.sha256==='ac1cbf3909daad48e126a23c1c724e942344750c8856308c2e2a74d842a053a6'
+        &&frame.line===23;
+      if(/^(?:async )?(?:Object\.)?(?:fail|need)$/.test(name)||fixed585DmiInvalid){fallback??=frame;continue;}
       return frame;
       }catch{} // One absent/changed/unqualified source cannot qualify or hide a later genuine caller.
     }
@@ -657,6 +660,7 @@ async function produceNativeInputs(options,initial,observation) {
     process.chdir(host585);
     observation.phase='SOURCE_LEGACY_PRODUCER_UPDATER585';
     await load(host585, 'scripts/update-weather.mjs');
+    observation.phase='SOURCE_LEGACY_PRODUCER_PUBLIC585';
     await load(host585, 'scripts/generate-public-conditions.mjs');
     same(await json(path.join(host585, REGISTRY)), registry585, 'Registry unchanged through normal updater/public');
     observation.phase='SOURCE_LEGACY_PRODUCER_SAVE585';
@@ -702,6 +706,7 @@ async function produceNativeInputs(options,initial,observation) {
       // Native test-only fixed second invocation. Ordinary module source and
       // all model/state contracts stay identical; query avoids ESM run caching.
       await import(pathToFileURL(path.join(host585,'scripts/update-weather.mjs')).href+'?source-native-initial-forward');
+      observation.phase='SOURCE_LEGACY_PRODUCER_PUBLIC585';
       await import(pathToFileURL(path.join(host585,'scripts/generate-public-conditions.mjs')).href+'?source-native-initial-forward');
       same(await json(path.join(host585,REGISTRY)),registry585,'Same normal registry through both585 generations');
       observation.phase='SOURCE_LEGACY_PRODUCER_SAVE585';

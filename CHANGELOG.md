@@ -1,10 +1,16 @@
+## 26. oktober — præcis DMI-filårsag uden rå fejltekst
+
+SOURCE589-kontrollen har nu lokaliseret sin første bevarede afvisning til den ægte 585-læsers generiske DMI-filguard; den konkrete underkode er stadig ukendt. Den lokale observationsrettelse genkender kun læserens 17 faktiske faste guardkoder ved eksakt hel besked, foretrækker en autentificeret kalder frem for den præcist hash-/navne-/linjebundne invalid-wrapper og adskiller updater fra public-generering. Samme fem rapportfelter, oprindelige exception og alle adgangs-/datakontroller bevares; ingen rå fejltekst eller private værdier vises.
+
+De to eksisterende normale mål består lokalt 28/28 uden fejl eller skip. Én særskilt lille syntetisk normal writer→585-reader-rundtur består også, men frikender ikke national filstørrelse eller pakning og forklarer ikke CI-afvisningen. Ny præcis Linux-/native-/databasekontrol, den konkrete årsag og SOURCE-installation er fortsat åbne. Dette er observerbarhed, ikke en årsagsrettelse eller produktionslevering; C/I/T, SQL, score, kilder, admin/geometri og almindelig vejrhentning er uændrede. Aktuel drift følger ROOTs private checkpoint, og alle fem mål til 18. november består. Se håndbog 89.271.
+
 ## 26. oktober — producentens første fejl skal kunne genfindes
 
 En senere samlet revisionskontrol stoppede fortsat inde i den normale producentkæde uden en kvalificeret kildeframe. De to tidligere fixturefejl er rettet, men er ikke et samlet PASS. Den særskilte arkivopstart består nu i en isoleret Windows-prøve; dette er ikke hele Linux-producenten, PostgreSQL eller en ny offentlig vejrgeneration.
 
 Den lokale årsagsobservation markerer elleve faktiske producentdeltrin og bevarer samme femfeltsrapport, resultat, exception og adgangskontroller. Første fejl rapporteres før den eksisterende oprydning; en ydre wrapper kan ikke erstatte den. En historisk kildeframe kræver præcis ejet kildekopi, faktisk fast Git-head/tree og hele uændrede filbytes lig commitblobbet. Kun en faktisk autentificeret kalder må foretrækkes frem for dens generiske fail/need-wrapper. Ukendt forbliver ukendt; ingen rå fejltekst, værdier eller absolutte stier udskrives.
 
-Git-kald i denne rent diagnostiske kildeaflæsning følger en monoton ti-sekunders frist. De normale mål består lokalt 27/27 uden skip; Linux-symlinkgrenen og den fulde Linux-/native-/databasekæde er ikke dermed kørt. Ny præcis kildekontrol og den konkrete producentårsag er fortsat åbne. C/I/T, udstedt SQL, vejrdata, scorer, kildeprioritet, administratorpunkter, geometri og produktion ændres ikke. Alle fem mål til 18. november består; aktuelle kørsler står kun i privat checkpoint. Se håndbog 89.270.
+Git-kald i denne rent diagnostiske kildeaflæsning følger en monoton ti-sekunders frist. De normale mål består lokalt 27/27 uden skip; Linux-symlinkgrenen og den fulde Linux-/native-/databasekæde er ikke dermed kørt. Ny præcis kildekontrol og den konkrete producentårsag er fortsat åbne. C/I/T, udstedt SQL, vejrdata, scorer, kildeprioritet, administratorpunkter, geometri og produktion ændres ikke. Alle fem mål til 18. november består; aktuelle kørsler står kun i privat checkpoint. Se håndbog 89.271.
 
 ## 26. oktober — to konkrete fejl i den isolerede SOURCE-prøve
 
@@ -12,7 +18,7 @@ Den nye lukkede fejlrapport har lokaliseret et forkert modulnavn i den normale l
 
 Den fremadrettede gennemgang fandt desuden, at et byteidentisk udtrukket arkivfragment bruger path, som den normale AsyncFunction-indgang ikke gav videre. Kun den eksplicitte parameter og det tilsvarende argument tilføjes; de frosne recipebytes, originale labels og alle efterfølgende kontroller bevares. Begge fejl er særskilt reproduceret rødt og grønt gennem den eksisterende normale målprøve uden PostgreSQL eller produktionsdata.
 
-Kun fixturekald og additive måltilfælde ændres. Alle gamle assertions, udstedte C/I/T og SQL, originalbevarelse, scoreformel, kildeprioritet, central admin og geometri bevares. Ny præcis samlet kilde-/Linux-/nativekontrol og faktisk SOURCE-installation er fortsat åbne krav; lokal import- og argumentkontrol er ikke et samlet PASS. P0-vejrhentningen fortsætter uændret, og aktuelle kørsler står i det private checkpoint. Alle fem mål til 18. november består. Se håndbog 89.270; ældre UNKNOWN-status er kun erstattet på de nu konkret lokaliserede fixturefejl.
+Kun fixturekald og additive måltilfælde ændres. Alle gamle assertions, udstedte C/I/T og SQL, originalbevarelse, scoreformel, kildeprioritet, central admin og geometri bevares. Ny præcis samlet kilde-/Linux-/nativekontrol og faktisk SOURCE-installation er fortsat åbne krav; lokal import- og argumentkontrol er ikke et samlet PASS. P0-vejrhentningen fortsætter uændret, og aktuelle kørsler står i det private checkpoint. Alle fem mål til 18. november består. Se håndbog 89.271; ældre UNKNOWN-status er kun erstattet på de nu konkret lokaliserede fixturefejl.
 
 ## 26. oktober — første SOURCE-fejl skal kunne placeres uden rå data
 
@@ -22,7 +28,7 @@ Den afgrænsede kildeændring bevarer samme femfeltsrapport og alle proces-, ori
 
 Helikoptergennemgangen har desuden reproduceret en senere testfejl før næste samlede forsøg: én gammel bootstrapprøve læste det nye SOURCE-workflow direkte med den gamle guardforventning. Kun dens læseindgang bruger nu den allerede eksisterende, hele hashbundne historiske workflowvisning. Alle gamle kontroludsagn bevares, og de faktiske SOURCE-guards kontrolleres fortsat særskilt gennem den normale prøve. Den præcise målprøve er rød før og grøn efter rettelsen. Det er ikke årsagen til den tidligere ukendte Node-fejl og ændrer ikke produktworkflowet.
 
-Præcis ny kilde-/Linux-kontrol skal skaffe den manglende årsagsevidens, før SOURCE kan frigives. Den eksisterende direkte legacy-Node-indgang er den mindste hele producent-/efterfølgerreproduktion, men kræver den rigtige Linux-host og de normale syntetiske providerinput; Windows eller opdigtet PG-kontekst erstatter dem ikke. Ingen ny version, C/I/T, SQL-installation, vejrdata, scoreformel, kildeprioritet, admin eller geometri ændres her. Alle fem mål til 18. november består; den aktive almindelige writer og faktisk offentlig 588 følges privat. Se håndbog 89.270; SOURCE er fortsat ikke installeret.
+Præcis ny kilde-/Linux-kontrol skal skaffe den manglende årsagsevidens, før SOURCE kan frigives. Den eksisterende direkte legacy-Node-indgang er den mindste hele producent-/efterfølgerreproduktion, men kræver den rigtige Linux-host og de normale syntetiske providerinput; Windows eller opdigtet PG-kontekst erstatter dem ikke. Ingen ny version, C/I/T, SQL-installation, vejrdata, scoreformel, kildeprioritet, admin eller geometri ændres her. Alle fem mål til 18. november består; den aktive almindelige writer og faktisk offentlig 588 følges privat. Se håndbog 89.271; SOURCE er fortsat ikke installeret.
 
 ## 26. oktober — normal afledt kortfil er ikke ændret kildekode
 
@@ -38,7 +44,7 @@ Den fulde SOURCE589-kilde er nu lokalt udstedt gennem den normale rækkefølge m
 
 De fem P0-ejere fra den gennemgåede leveringskandidat er med i den isolerede kilde; deres særskilte aktuelle GitHub-kontrol giver endnu ingen ny leveringspåstand. Hele 588-originaler, gamle migrationer, offentliggjorte scorer, scoreformel, kildeprioritet, administratorpunkter og geometri bevares. Den nye SQL er kun lokalt genereret; ingen produktion ændres af udstedelsen, og versionssynkroniseringen gentages ikke.
 
-Før sikker SOURCE-levering skal de relevante normale prøver på de udstedte bytes, præcis kilde-/native-/kapacitetskontrol og faktisk autentisk 588 B/S-førskrivningskontrol bestå. Den valgte fulde SAME_H0-overgang kræver frisk slutkontrol, højst én nødvendig SQL-installation/genlæsning, B før S og hel faktisk remote-S-genlæsning før Edges/Pages; senere almindelige kald skal beviseligt bruge installeret 589. T+3, syvzoneafgrænsning, Fur, processtop, skrivning, holdbarhed og national 210/673-virkning er stadig åbne krav. Se håndbog 89.270 og ROOTs private checkpoint for faktisk P0-/writerstatus. Alle fem mål følges til 18. november 2026; statistik og automatisk sletning aktiveres ikke. Ældre statusafsnit er historik på disse konkrete punkter.
+Før sikker SOURCE-levering skal de relevante normale prøver på de udstedte bytes, præcis kilde-/native-/kapacitetskontrol og faktisk autentisk 588 B/S-førskrivningskontrol bestå. Den valgte fulde SAME_H0-overgang kræver frisk slutkontrol, højst én nødvendig SQL-installation/genlæsning, B før S og hel faktisk remote-S-genlæsning før Edges/Pages; senere almindelige kald skal beviseligt bruge installeret 589. T+3, syvzoneafgrænsning, Fur, processtop, skrivning, holdbarhed og national 210/673-virkning er stadig åbne krav. Se håndbog 89.271 og ROOTs private checkpoint for faktisk P0-/writerstatus. Alle fem mål følges til 18. november 2026; statistik og automatisk sletning aktiveres ikke. Ældre statusafsnit er historik på disse konkrete punkter.
 
 ## 25. oktober — klientkode er ikke privat vejrdata; central profil læses som et par
 
@@ -55,7 +61,7 @@ Den lokale kandidat samler den valgte fulde SOURCE589-rute, ikke kun en skjult k
 
 Fysiske proces-/WRITE-/journal-/original-B/S-før-T-kontrakter og uændret fireminutters fejlworker består. Syvzoner kun vandstand, sammenlignelig T+3, Fur og national 210/673-kapacitet skal fortsat bevises gennem normale ejere uden genåbning af afsluttede 588/P0-delbeviser. Før-SQL genbruger normal pakker/færdigt B og faktisk R2-usage under fast 2.000.000.000B uden cleanupkredit; hashbundet NO_ADMISSION-observation er ikke reservation eller samlet kapacitets-PASS, og S er ikke ekstra R2-upload.
 
-Dette er lokal dokumentforberedelse, ikke versions-/model-/SQL-udstedelse, installation eller offentlig levering. ROOT opdaterer på slutbytes; CP bærer faktisk offentlig 588, writer og skiftende evidens. Alle fem mål/18. november 2026 består. Gamle afsnit og alle udstedte migrationer bevares; statistik og automatisk retention aktiveres ikke. Se håndbog 89.270.
+Dette er lokal dokumentforberedelse, ikke versions-/model-/SQL-udstedelse, installation eller offentlig levering. ROOT opdaterer på slutbytes; CP bærer faktisk offentlig 588, writer og skiftende evidens. Alle fem mål/18. november 2026 består. Gamle afsnit og alle udstedte migrationer bevares; statistik og automatisk retention aktiveres ikke. Se håndbog 89.271.
 
 ## 25. oktober — søgemåden følger den delte score
 

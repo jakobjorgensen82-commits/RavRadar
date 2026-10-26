@@ -153,6 +153,7 @@ test('SOURCE producer reports real fixed operation boundaries and preserves the 
   const boundaries=[
     ["SOURCE_LEGACY_PRODUCER_ARCHIVE","    const archiveSeed = await createArchivedOnlyOldSeed("],
     ["SOURCE_LEGACY_PRODUCER_UPDATER585","    await load(host585, 'scripts/update-weather.mjs');"],
+    ["SOURCE_LEGACY_PRODUCER_PUBLIC585","    await load(host585, 'scripts/generate-public-conditions.mjs');"],
     ["SOURCE_LEGACY_PRODUCER_SAVE585","    const private585 = path.join(work, 'saved585');"],
     ["SOURCE_LEGACY_PRODUCER_RESTORE585","      const workflow585=await load(host585,"],
     ["SOURCE_LEGACY_PRODUCER_FOLLOWER585","      await copyInputs(path.join(own,'fixture-initial-h1'),host585,"],
@@ -240,6 +241,41 @@ test('SOURCE producer frames require an exact owned fixed Git source and prefer 
   const queryFrame=await h.sourceProducerFailureFrame({...error,
     stack:'Error\n    at normalFollower ('+pathToFileURL(queryFile).href+'?source-native-initial-forward:1:1)'},observation);
   assert.deepEqual(queryFrame,{module:relative,sha256:hash(queryBody),line:1,column:1});
+  // This one extra fallback tuple is bound to the actual immutable585 module,
+  // its complete bytes, exact wrapper line and exact stack name.
+  const dmiModule='scripts/lib/dmi-forecast-file.mjs',dmiBody=git(producer585,'cat-file','blob',
+    h.pins.OPERATIVE_INITIAL_HEAD+':'+dmiModule),dmiFile=path.join(producer585,dmiModule);
+  assert.equal(hash(dmiBody),'ac1cbf3909daad48e126a23c1c724e942344750c8856308c2e2a74d842a053a6');
+  await fs.mkdir(path.dirname(dmiFile),{recursive:true});await fs.writeFile(dmiFile,dmiBody);
+  const dmiUrl=pathToFileURL(dmiFile).href,callerUrl=pathToFileURL(queryFile).href;
+  const stackFor=(name,line,source=dmiUrl)=>'Error\n    at '+name+' ('+source+':'+line+':33)\n    at actualFileConsumer ('+callerUrl+':1:1)';
+  const callerFrame={module:relative,sha256:hash(queryBody),line:1,column:1};
+  assert.deepEqual(await h.sourceProducerFailureFrame({stack:stackFor('invalid',23)},observation),callerFrame);
+  const invalidFallback=await h.sourceProducerFailureFrame({stack:'Error\n    at invalid ('+dmiUrl+':23:33)'},observation);
+  assert.deepEqual(invalidFallback,{module:dmiModule,sha256:hash(dmiBody),line:23,column:33});
+  for(const [name,line]of [['invalid',22],['invalidOther',23],['Object.invalid',23]]){
+    assert.deepEqual(await h.sourceProducerFailureFrame({stack:stackFor(name,line)},observation),
+      {module:dmiModule,sha256:hash(dmiBody),line,column:33},'Wrong name or line is not a fallback exemption');
+  }
+  assert.deepEqual(await h.sourceProducerFailureFrame({stack:stackFor('invalid',23,callerUrl)},observation),
+    {module:relative,sha256:hash(queryBody),line:23,column:33},'Wrong module is not a fallback exemption');
+  await fs.appendFile(dmiFile,'\n');
+  assert.equal(await h.sourceProducerFailureFrame({stack:'Error\n    at invalid ('+dmiUrl+':23:33)'},observation),null,
+    'Changed working bytes cannot supply even the fallback frame');
+  await fs.writeFile(dmiFile,dmiBody);
+  // The actual65db module has a different authenticated whole hash. Its name
+  // and line alone must not acquire the special585 fallback behavior.
+  execFileSync('git',['-c','core.autocrlf=false','clone','--shared','--no-hardlinks','--no-checkout',ROOT,root],
+    {env:gitEnvironment,timeout:30000,stdio:['ignore','pipe','pipe']});
+  const currentHead='65db5331bd2a2a89a31261ad7951d87449ecdb26',currentTree='ae317cc1547abb85a9e89b49471cd9e0481d43fe';
+  git(root,'update-ref','--no-deref','HEAD',currentHead);
+  assert.equal(git(root,'rev-parse','HEAD^{tree}').toString().trim(),currentTree);
+  const currentDmi=git(root,'cat-file','blob',currentHead+':'+dmiModule),currentFile=path.join(root,dmiModule);
+  assert.notEqual(hash(currentDmi),hash(dmiBody));
+  await fs.mkdir(path.dirname(currentFile),{recursive:true});await fs.writeFile(currentFile,currentDmi);
+  assert.deepEqual(await h.sourceProducerFailureFrame({stack:stackFor('invalid',23,pathToFileURL(currentFile).href)},
+    {...observation,sourceHead:currentHead,sourceTree:currentTree}),
+    {module:dmiModule,sha256:hash(currentDmi),line:23,column:33},'A different genuine module hash gets no585 exemption');
   assert.equal(await h.sourceProducerFailureFrame({stack:''},observation),null);
   assert.equal(await h.sourceProducerFailureFrame(error,{...observation,work:path.join(own,'wrong-work')}),null);
   // Only these newly created, fixed diagnostic work copies are disposable.

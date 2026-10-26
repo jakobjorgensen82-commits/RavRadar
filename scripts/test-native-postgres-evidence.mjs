@@ -680,6 +680,42 @@ test('legacy Node categories use only actual closed code/name and never arbitrar
     assert.equal(classify(error),'NATIVE_POSTGRES_UNKNOWN_FAILURE');
 });
 
+test('operative585 DMI file observations accept only the complete fixed authenticated message inventory',async()=>{
+  const {execFileSync}=await import('node:child_process'),{createHash}=await import('node:crypto');
+  const {nativePostgresExceptionCode:classify,nativePostgresExceptionDiagnostic:diagnose,
+    nativePostgresChildFirstFailure:parse}=await import('./lib/checkpoint-cas-native-postgres.mjs');
+  const blob=execFileSync('git',['cat-file','blob',
+    'e7c2e14a6403870e8a1df6c91862980640684733:scripts/lib/dmi-forecast-file.mjs'],
+    {stdio:['ignore','pipe','pipe'],timeout:30000,maxBuffer:2*1024*1024,
+      env:{...process.env,GIT_NO_LAZY_FETCH:'1',GIT_NO_REPLACE_OBJECTS:'1',GIT_TERMINAL_PROMPT:'0'}});
+  assert.equal(createHash('sha256').update(blob).digest('hex'),
+    'ac1cbf3909daad48e126a23c1c724e942344750c8856308c2e2a74d842a053a6');
+  const codes=["BOUNDS_INVALID","CHANGED","CLEANUP_UNPROVED","DUPLICATE_KEY","INVALID_FILE","INVALID_JSON","INVALID_KEY","INVALID_SIZE","MISSING","PUBLICATION_UNPROVED","READ_UNAVAILABLE","RECORD_DESCRIPTOR_INVALID","RECORD_SIZE_LIMIT","SHAPE_INVALID","STRUCTURE_LIMIT","WRITE_CONTENT_CHANGED","WRITE_INCOMPLETE"];
+  const operands=[...blob.toString('utf8').matchAll(/\binvalid\(([^)]*)\)/g)].map(match=>match[1]);
+  const literal=value=>/^'[A-Z_]+'$/.test(value),dynamic=operands.filter(value=>!literal(value));
+  assert.deepEqual(dynamic,["error?.code === 'ENOENT' ? 'MISSING' : 'READ_UNAVAILABLE'"]);
+  assert.deepEqual([...new Set([...operands.filter(literal).map(value=>value.slice(1,-1)),
+    'MISSING','READ_UNAVAILABLE'])].sort(),codes,'Enum is exactly the old reader source, not a guessed new family');
+  for(const code of codes){
+    const message='DMI_FORECAST_FILE_'+code,expected='NATIVE_POSTGRES_DMI_FORECAST_'+code;
+    assert.equal(classify(new Error(message)),expected);
+    const observed=await diagnose({message,stack:''},'SOURCE_LEGACY_PRODUCER_PUBLIC585');
+    assert.deepEqual(observed,{kind:'NATIVE_POSTGRES_FIRST_FAILURE',phase:'SOURCE_LEGACY_PRODUCER_PUBLIC585',
+      code:expected,frame:null,privatePayloadIncluded:false});
+    assert.deepEqual(parse(JSON.stringify(observed),''),observed);
+    for(const wrong of [' '+message,message+' ',message+'\nPRIVATE',message+'\r\n',message+':PRIVATE',
+      message+'_PRIVATE',message.toLowerCase(),expected]){
+      assert.equal(classify({message:wrong}), 'NATIVE_POSTGRES_UNKNOWN_FAILURE');
+    }
+  }
+  for(const message of ['DMI_FORECAST_FILE_ENOENT','DMI_FORECAST_FILE_UNKNOWN','DMI_FORECAST_FILE_',
+    'PRIVATE DMI_FORECAST_FILE_INVALID_JSON']){
+    assert.equal(classify({message}), 'NATIVE_POSTGRES_UNKNOWN_FAILURE');
+  }
+  assert.equal(classify(Object.defineProperty({},'message',{get(){throw Error('PRIVATE_GETTER');}})),
+    'NATIVE_POSTGRES_UNKNOWN_FAILURE');
+});
+
 test('legacy Node observations preserve five fields and the actual outer parser accepts only closed additive enums',async()=>{
   const {nativePostgresExceptionDiagnostic:diagnose,nativePostgresChildFirstFailure:parse}=
     await import('./lib/checkpoint-cas-native-postgres.mjs');
@@ -688,6 +724,7 @@ test('legacy Node observations preserve five fields and the actual outer parser 
     'SOURCE_LEGACY_PRODUCER_SETUP',
     'SOURCE_LEGACY_PRODUCER_ARCHIVE',
     'SOURCE_LEGACY_PRODUCER_UPDATER585',
+    'SOURCE_LEGACY_PRODUCER_PUBLIC585',
     'SOURCE_LEGACY_PRODUCER_SAVE585',
     'SOURCE_LEGACY_PRODUCER_RESTORE585',
     'SOURCE_LEGACY_PRODUCER_FOLLOWER585',
