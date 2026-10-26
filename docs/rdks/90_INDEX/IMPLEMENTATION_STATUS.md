@@ -10,6 +10,16 @@ De to normale Node-mål består uden skip. Pythonobservationsmålet består på 
 
 Ny præcis SOURCE-kilde-/Linux-/native-/PostgreSQL-kontrol, kvalificeret årsag, sikker installation, national kapacitet og faktisk almindelig efterfølger er fortsat åbne. SOURCE-revisionen er inaktiv. P0 og den almindelige vejrhentning har fortsat førsteprioritet; aktuelle kørsler, offentlig dækning og leveringsudfald føres i ROOTs private checkpoint. Alle fem mål til 18. november 2026 består. Gamle kilde-/original-/SQL-bytes, offentliggjorte scorer, scoreformel, kildeprioritet, central admin og geometri bevares. Se håndbog 89.271; alle tidligere hele dokumentafsnit nedenfor bevares som dateret historik.
 
+## 26. oktober — samme fil kan genlæses efter midlertidig HTTP-afvisning
+
+- [x] Afgrænset den offentlige slutfejl til faktisk HTTP 503; senere samme fil har HTTP 200 og fuld korrekt kontrolsum. Det er ikke en ny vejrhentningsfejl.
+- [x] Den installerede kode-only-rute har faktisk bestået tom databaseplan, autentificeret current-runtime og B før S, men offentlig slutregistrering er fortsat uafklaret.
+- [x] Lokal begrænset 502/503/504-gentagelse med fælles tre-ekstra-forsøg og højst tre forsøg pr. fil; godkendte filer genhentes ikke, øvrige hårde afslag bevares.
+- [x] Hele det normale Pages-mål består én gang, inklusive alle tidligere og nye negative tilfælde.
+- [ ] Præcis ny kildekontrol, sikker levering og faktisk fuld offentlig kontrol/slutregistrering. Gamle røde kørsler forbliver røde.
+
+Ingen ny modelbinding, version, SQL, målinger, historik, kildeprioritet eller geometri. SOURCE og alle fem hovedmål er fortsat særskilte. Se DEC-0194 og håndbog 89.270; aktuel drift føres privat.
+
 ## 26. oktober — aktuelle kode-only-fasevalg, lokal fremdrift
 
 - [x] Faktisk almindelig ny vejrgeneration er offentligt verificeret og centralt slutregistreret; dette er særskilt fra rettelsesdeployet.
