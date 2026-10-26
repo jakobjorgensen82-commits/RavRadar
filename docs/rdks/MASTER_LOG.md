@@ -1,3 +1,9 @@
+## 26. oktober — præcis manifestventen uden gentagen fuldpakkelæsning
+
+Den normale Pages-kontrol er lokalt opdelt i manifestventen og én fuld pakkekontrol. Standardgrænsen er 121 observationer med fem sekunders mellemrum; hele det kanoniske manifest skal matche, før nogen af pakkens øvrige filer hentes. De eksisterende acceptkontroller og tidligere prøveassertions er bevaret. Den konkrete normale reproduktion er rød før og grøn efter, og hele den normale Pages-målprøve består lokalt én gang.
+
+Ti minutters offentliggørelsesvindue og en faktisk max-age=600-header er forenelige med forsinket manifestation, men den første afviste HTTP-respons blev ikke bevaret. Den senere offentlige fuldkontrol er alene læsebevis for det eksisterende target; den gør ikke den røde GitHub-kørsel eller manglende centrale reseal grøn. Præcis kilde-CI og sikker levering udestår. Ingen version, C/I/T, SQL, numerisk model, kilder eller geometri ændres. Se DEC-0194-tillæg og håndbog 89.270; detaljeret evidens står privat.
+
 ## 25. oktober — manuel turgenindsendelse bevarer originalen
 
 Den normale manuelle turkalder er rettet efter reproduceret nyt tidsstempel og manglende ejer-/indholdsafvisning ved samme ID. Genforsøg bruger den præcise oprindelige registrering og kræver stadig ny normal kvittering. Ændret ejer, indhold eller kø afvises før skrivning eller transport; manglende oprindeligt anonymt ID erstattes ikke. Seks regressioner går fra rødt til grønt, og hele den normale uploadprøve består i den samlede 588-komposition. De to berørte kildeblade er uden for C98/I97/T12, som bevares sammen med alle 67 SQL-filer. Den private ratingpakke indgår ikke. Ny præcis samlet kildekontrol og offentlig virkning udestår; ingen produktionsændring under aktiv writer.

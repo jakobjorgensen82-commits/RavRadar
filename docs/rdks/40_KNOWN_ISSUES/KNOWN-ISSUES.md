@@ -1,3 +1,9 @@
+## 26. oktober — sent manifestmatch og manglende almindelig reseal er særskilte forhold
+
+Manifestventens for korte lokale grænse er reproduceret og rettet i den normale verifier. Kun manifestet genprøves i højst 121 forsøg med fem sekunders mellemrum; hele det forseglede indhold skal matche. Alle efterfølgende fil- og kontraktkontroller udføres én gang og afviser fortsat afvigelser. De normale lokale prøver består; præcis kilde-CI og offentlig levering af rettelsen er åbne.
+
+Den seneste Pages-accept efterfulgt af offentlig kontrolfejl må ikke kaldes et bevist cacheproblem: den oprindelige HTTP-respons mangler. En senere normal fuldkontrol af samme target består, men den oprindelige GitHub-kørsel er fortsat rød. Almindelig integrated-reseal sker først efter offentlig verifikation, så den manglende centrale registrering er et selvstændigt åbent driftsforhold, ikke løst af længere manifestventen. Ingen ny genoptagelsesvej eller lempet guard indføres her. Se DEC-0194-tillæg, DEC-0197 og håndbog 89.270.
+
 ## 25. oktober — søgemåden følger den delte score
 
 Den lokale prognosedelingsrettelse medtager nu strand eller waders i både den statiske forhåndsvisnings beskrivelse og den synlige delingsside på dansk, tysk og engelsk. Tidspunkt, sted og score må ikke læses uden søgemåden. Den eksisterende håndbog 89.268 kræver allerede denne sammenhæng og er fortsat gældende.

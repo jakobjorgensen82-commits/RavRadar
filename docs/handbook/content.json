@@ -2,8 +2,14 @@
   "schemaVersion": "2.0",
   "handbookVersion": "4.0.588",
   "title": "RavRadar Håndbog",
-  "updatedAt": "2026-10-25",
+  "updatedAt": "2026-10-26",
   "sections": [
+    {
+      "id": "exact-public-manifest-propagation-2026-10-26",
+      "chapter": "89.270",
+      "title": "Nye prognoser skal kunne genfindes på den offentlige side",
+      "body": "<div class=\"reader-guide\"><strong>Kort fortalt:</strong> Et deploy kan være færdigt hos leveringssystemet, før alle kopier af hjemmesiden viser den nye prognose.</div><p>Derfor begynder leveringskontrollen med prognosens lille indholdsfortegnelse, som kaldes manifestet. Den beskriver blandt andet datasættet og kontrolsummerne for de filer, som hører sammen. Hele fortegnelsen skal svare præcis til den pakke, der blev gjort klar; et matchende datasæt-navn er ikke nok.</p><p>GitHub Pages kan bruge op til ti minutter på at vise en ændring. I dette tidsrum kan RavRadar kontrollere fortegnelsen igen med fem sekunders mellemrum, højst 121 gange. Ventetiden medfører ikke, at alle de store prognosefiler hentes igen for hver kontrol.</p><p>Når fortegnelsen stemmer, kontrolleres selve datafilerne og hjemmesidens tilhørende programkode i én gennemgang. Det kontrolleres stadig, at de rigtige filer hører sammen, at kontrolsummerne passer, og at pakken omfatter de forventede 210 zoner og 673 kystdele. Hvis en anden fil stadig er gammel eller ændret, bliver leveringen ikke godkendt.</p><p>Ventetiden ændrer hverken vejrhentningen, beregningen eller scoremodellen. En kvittering fra leveringssystemet og en færdigkontrolleret offentlig prognose er to forskellige ting. Først den sidste viser, at den samlede pakke faktisk kan læses korrekt.</p>"
+    },
     {
       "id": "public-client-code-and-sealed-central-profile-2026-10-25",
       "chapter": "89.269",

@@ -1,3 +1,11 @@
+## 26. oktober — vent på præcist offentliggjort manifest før pakkekontrol
+
+Pages kan melde deploy gennemført, før alle offentlige kopier viser den nye indholdsfortegnelse. Det dokumenterede publiceringsvindue på op til ti minutter og den observerede offentlige cacheheader med max-age=600 begrunder en længere, afgrænset manifestkontrol. Det oprindelige HTTP-manifest ved den seneste afvisning blev ikke bevaret; cache er derfor ikke bevist som den præcise historiske årsag.
+
+Den lokale rettelse prøver kun det lille manifest igen: som standard højst 121 observationer med fem sekunders mellemrum. Hele det kanoniske manifest skal være præcis lig det forseglede target; samme dataset-ID er utilstrækkeligt. Efter match gennemføres alle eksisterende digest-, envelope-, 210/673-, delivery- og browserkontroller én gang. Afvigende øvrige offentlige filer stopper straks uden en ydre genprøvning af hele pakken. Ingen acceptgrænse, vejrdata eller modelbinding ændres.
+
+Den nye normale reproduktion fejlede før rettelsen og består efter, og hele den eksisterende Pages-målprøve består lokalt. En senere fuld offentlig kontrol af samme gemte target består også, men er ikke bevis for leveret rettelse: den oprindelige GitHub-kørsel er fortsat rød, og dens manglende centrale almindelige reseal er et særskilt åbent trin. Præcis kilde-CI og sikker levering af rettelsen udestår. Detaljerede kørselsidentiteter og aflæsninger står i privat checkpoint. Se håndbog 89.270 og tillægget til DEC-0194; ældre historik bevares.
+
 ## 25. oktober — klientkode er ikke privat vejrdata; central profil læses som et par
 
 Den seneste almindelige vejrhentning nåede leverandører, beregning og gemning af beskyttet B/S. Pages blev derefter afvist alene på navnene på to nye, normale JavaScript-klienter til administratorens statistikvisning. Den eksisterende navnekontrol må ikke forveksle offentlig programkode med privat rapportindhold. En særskilt administrator-synkronisering havde desuden afvist den aktive centrale profil mod den nyere lokale skabelon før den operationelle aktivering.

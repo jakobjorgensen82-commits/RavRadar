@@ -1,3 +1,11 @@
+## 26. oktober — afgrænset ventetid ved offentliggørelse, uændret 4.0.588
+
+- Lokal rettelse: vent kun på hele det forseglede manifest i op til 121 forsøg med fem sekunders mellemrum, før én fuld uændret pakkekontrol gennemføres.
+- Bevar alle digest-, envelope-, 210/673-, delivery- og browserkontroller. Samme dataset-ID eller et delvist match giver ingen adgang; øvrige filafvigelser afvises straks.
+- Normal rød/grøn reproduktion og hele den eksisterende Pages-målprøve består lokalt. Præcis kildekontrol og levering udestår; ingen versions-, model-, SQL-, vejr- eller scorerettelse følger med.
+
+En senere offentlig fuldkontrol af det tidligere target ændrer ikke den røde GitHub-kørsel eller dens manglende centrale reseal. Den oprindelige HTTP-respons mangler, så cacheforklaringen er ikke historisk bevist. Håndbog 89.270 og DEC-0194-tillæg beskriver afgrænsningen.
+
 ## 25. oktober — klientkode er ikke privat vejrdata; central profil læses som et par
 
 Den seneste almindelige vejrhentning nåede leverandører, beregning og gemning af beskyttet B/S. Pages blev derefter afvist alene på navnene på to nye, normale JavaScript-klienter til administratorens statistikvisning. Den eksisterende navnekontrol må ikke forveksle offentlig programkode med privat rapportindhold. En særskilt administrator-synkronisering havde desuden afvist den aktive centrale profil mod den nyere lokale skabelon før den operationelle aktivering.

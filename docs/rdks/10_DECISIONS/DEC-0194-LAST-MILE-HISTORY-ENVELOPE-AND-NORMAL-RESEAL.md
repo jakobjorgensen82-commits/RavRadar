@@ -72,3 +72,13 @@ Den skal gennemføre den historiske bindingsovergang, vise den aktuelle time,
 genopbygge lokale femdøgnsprognoser og bevise, at state kan genlæses.
 Scheduler forbliver pauset indtil dette og en efterfølgende normal
 cachevedligeholdelse er verificeret. Ingen oneoff.
+
+## Tillæg 26. oktober 2026 — eksakt manifestventen før én fuld pakkekontrol
+
+Den normale Pages-verifikation skal kunne afvente platformens dokumenterede publiceringsvindue på op til ti minutter. En faktisk offentlig aflæsning viste også max-age=600. Dette er begrundelse for en robust ventemekanisme, ikke bevis for den præcise historiske fejlårsag: den oprindelige HTTP-respons ved afvisningen blev ikke bevaret.
+
+Kun manifestet genprøves, som standard højst 121 gange med fem sekunders mellemrum. Forsøgsantal skal være et sikkert heltal fra 1 til 121; intervallet et sikkert heltal fra 0 til 5000 millisekunder. Hele det kanoniske manifest skal matche den forseglede pakke. Dataset-ID alene er aldrig tilstrækkeligt.
+
+Efter match gennemføres alle hidtidige digest-, envelope-, 210/673-, delivery- og browserkontroller én gang, uden en ydre fuldpakke-genprøvning. En afvigelse i en anden fil stopper straks. Gamle originaler, dataværdier, modelbindinger, SQL, kildeprioritet og geometri ændres ikke.
+
+Den konkrete normale reproduktion er rød før og grøn efter rettelsen; hele den eksisterende normale Pages-målprøve består lokalt. Præcis kilde-CI og sikker levering af rettelsen er fortsat åbne. En senere normal offentlig fuldkontrol af det tidligere target er et selvstændigt læsebevis: den gør ikke den oprindelige røde GitHub-kørsel grøn og fuldfører ikke den udeblevne centrale ordinary-reseal. DEC-0197s særskilte afbrydelsesvindue må ikke erklæres lukket af denne rettelse. Kørselsidentiteter og detaljeret HTTP-evidens føres i privat checkpoint.
