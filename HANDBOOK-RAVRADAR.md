@@ -4,6 +4,8 @@
 
 Fejllæsningen skal kunne skelne selve producenten fra genlæsning, normal efterfølger og gemning. Den viser kun faste trin og fejlkategorier, ikke rå fejltekst eller private værdier. En bedre fejlrapport er ikke i sig selv en rettet årsag eller tilladelse til at omgå en afvisning.
 
+Gamle workflowprøver læser den allerede eksisterende, hele historiske kontrolvisning, når deres kontroludsagn beskriver den gamle rute. De faktiske nye SOURCE-guards skal stadig prøves særskilt. Et gammelt tekstkrav må ikke få produktworkflowet rullet tilbage eller svækket; en sådan testfejl er særskilt fra en ukendt fejl i selve legacy-producenten.
+
 Native-prøvens normale forberedelse genbygger kortets afledte kystdelsfil. Det er ikke en kodeændring. Prøven kræver stadig, at alle andre sporede filer er uændrede, og at hele den afledte fil er byteidentisk med det normale byggeresultat fra de samme kilde- og administratorinput. Et filnavn alene giver ingen undtagelse. Rettelsen er lokalt prøvet; en ny præcis Linux-, native- og databasekæde samt faktisk levering mangler stadig.
 
 B er den private vejrpakke, og S er den centralt gemte beregningstilstand. Første overgang må kun bruge den eksisterende kontrollerede rute ved den samme præcise referencetime, SAME_H0. Hele de autentiske originale 588 B/S kontrolleres først. Metadata forberedes uden nyt vejr; de normale artifactgates og en frisk slutkontrol skal derefter bestå.
