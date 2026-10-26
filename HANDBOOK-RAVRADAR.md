@@ -1,3 +1,15 @@
+## 89.272 En kodeopdatering skal bruge den allerede installerede model
+
+Kort fortalt: En rettelse af hjemmesidens programkode behøver ikke hente vejret igen eller geninstallere en gammel model.
+
+RavRadar bevarer gamle bindings- og installationsfiler, så tidligere data stadig kan kontrolleres. At en gammel fil findes, betyder derfor ikke, at dens installation skal køres igen. Ved en kodeopdatering skal den aktuelle udstedte model og den faktisk installerede database passe præcist sammen.
+
+Den afgrænsede installed-only-rute kontrollerer først den aktuelle kilde og kræver, at alle særskilte opgraderinger er slået fra. Databasens installationshistorik genlæses, og planen må ikke indeholde nye installationer. Databasens kontrakter og dataskema kontrolleres fortsat. Denne rute udfører ingen SQL-installation.
+
+De gemte vejrdata skal kunne hentes og kontrolleres gennem deres normale beskyttede vej. En fejl her giver ikke adgang til at vælge en gammel datageneration som reserve. Originaler, historik, målinger og scorer skal bevares. Den beskyttede vejrpakke gemmes før den tilhørende beregningstilstand, så et afbrudt forløb ikke efterlader en ny tilstand uden dens data.
+
+Derefter består de normale kontroller af den genbrugte prognose, private oplysninger, hjemmesidens filer og den offentlige levering. En vellykket lokal prøve er ikke bevis for, at rettelsen allerede er online. En senere modelgeneration skal kvalificeres gennem sin egen præcise bindingsvej; den overtager ikke automatisk en ældre generations installationsadgang.
+
 ## 89.270 Nye prognoser skal kunne genfindes på den offentlige side
 
 Kort fortalt: Et deploy kan være færdigt hos leveringssystemet, før alle kopier af hjemmesiden viser den nye prognose.

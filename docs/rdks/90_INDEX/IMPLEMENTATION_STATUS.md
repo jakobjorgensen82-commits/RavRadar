@@ -1,3 +1,15 @@
+## 26. oktober — aktuelle kode-only-fasevalg, lokal fremdrift
+
+- [x] Faktisk almindelig ny vejrgeneration er offentligt verificeret og centralt slutregistreret; dette er særskilt fra rettelsesdeployet.
+- [x] Rettelsesdeployets gamle 586-krav er reproduceret på aktuel 588. 585-selectorens samme problem og de to gamle origin-planvalg er kortlagt samlet.
+- [x] Den lokale aktuelle rute kræver udstedt aktiv C/I/T, normal kalder og opgraderinger slået fra, tom installeret SQL-plan samt normal database-/schema2-genlæsning. Ingen SQL-apply eller historisk fallback efter afvist current-runtime; B gemmes før S.
+- [x] Hele normale native-kaldermål består lokalt: 39 tilfælde, ingen fejl eller skip. Historiske planer og frosne originaler bevares.
+- [x] Det additive whole-inverse-lag bevarer hele den tidligere workflowfil. Alle 15 normale historiske workflowmål består uden skip; lokale RDKS-, model- og syv bindingskontroller består. Det er ikke samlet kilde- eller produktionsbevis.
+- [ ] Præcis ny kilde-CI, sikkert providerfrit rettelsesdeploy og faktisk offentlig effekt.
+- [ ] SOURCE589-integration af den aktuelle kildefase før aktivering; den lokale 588-rute kvalificerer ikke en senere familie.
+
+Ingen versions-, C/I/T-, SQL- eller numerisk modelovergang følger af denne controllerrettelse. Alle øvrige mål og kontroller består. Se DEC-0148 og håndbog 89.272; aktuelle kørsler står i privat checkpoint.
+
 ## 26. oktober — manifestkontrol er lokalt rettet; levering er åben
 
 - [x] Reproduceret: den gamle 36-grænse afviser et target, som først vises efter flere manifestobservationer.

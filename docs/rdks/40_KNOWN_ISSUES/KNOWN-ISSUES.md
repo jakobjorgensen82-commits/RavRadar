@@ -1,3 +1,9 @@
+## 26. oktober — udstedte historiske controllere må ikke vælges som aktuelle
+
+Et providerfrit rettelsesdeploy blev afvist før offentlig skrivning, fordi den bevarede 586-controller stadig blev valgt på den installerede 588-kilde. Samme anvendelighedsfejl fandtes i 585-selector og to senere origin-planvalg. At gamle bindinger fortsat findes er nødvendigt for arkivbevis, ikke bevis for at deres installationsrute er aktuel.
+
+Den lokale rettelse har en præcis aktuel installed-only-grænse med fuld C/I/T-/kalderkontrol og alle opgraderinger slået fra. Normal migrationsplan, databasegenlæsning, original-/no-loss-, privacy-, artifact- og deploykontrol bevares. Den udfører ingen SQL-apply; current-runtime skal kunne autentificeres, og B publiceres før S. Den normale kaldermålprøve består lokalt med 39 tilfælde. Samlet kildebevis og faktisk levering er åbne. SOURCE589 kræver sin egen eksplicitte faseintegration; der accepteres ikke automatisk en ukendt eller blot nyere familie. Se DEC-0148 og håndbog 89.272.
+
 ## 26. oktober — sent manifestmatch og manglende almindelig reseal er særskilte forhold
 
 Manifestventens for korte lokale grænse er reproduceret og rettet i den normale verifier. Kun manifestet genprøves i højst 121 forsøg med fem sekunders mellemrum; hele det forseglede indhold skal matche. Alle efterfølgende fil- og kontraktkontroller udføres én gang og afviser fortsat afvigelser. De normale lokale prøver består; præcis kilde-CI og offentlig levering af rettelsen er åbne.

@@ -1,3 +1,9 @@
+## 26. oktober — bevar historiske beviser uden at genvælge gammel installation
+
+Den normale code-only-rute blev konkret afvist på et bevaret 586-I-krav efter faktisk 588-installation. Hele efterkæden blev gennemgået før rettelse: samme 585-selectorproblem og to gamle origin-planvalg er omfattet. Den lokale aktuelle installed-only-rute kræver udstedt C/I/T, normal kalder, alle opgraderinger slået fra, tom migrationsplan, faktisk historie og normal DB-/schema2-genlæsning. SQL-apply og historisk fallback er ikke tilladt i denne rute; beskyttet B publiceres før S.
+
+Den normale kalderfil består lokalt med 39 tilfælde uden fejl eller skip. Det additive historiske testinverse-lag bevarer hele den tidligere workflowfil; alle 15 normale workflowmål består uden skip. RDKS, model og syv bindingskontroller består lokalt. Samlet præcist kildebevis, sikkert rettelsesdeploy og offentlig virkning er fortsat åbne. Den almindelige vejrhentning har særskilt leveret nyt offentligt vejr og central slutregistrering. SOURCE589s forskellige aktive fase kræver særskilt integration før aktivering; gamle 588-resultater må ikke ommærkes. Version, C/I/T, SQL, model, kilder og geometri bevares. Se håndbog 89.272 og DEC-0148; private kørselsidentiteter føres i checkpoint.
+
 ## 26. oktober — præcis manifestventen uden gentagen fuldpakkelæsning
 
 Den normale Pages-kontrol er lokalt opdelt i manifestventen og én fuld pakkekontrol. Standardgrænsen er 121 observationer med fem sekunders mellemrum; hele det kanoniske manifest skal matche, før nogen af pakkens øvrige filer hentes. De eksisterende acceptkontroller og tidligere prøveassertions er bevaret. Den konkrete normale reproduktion er rød før og grøn efter, og hele den normale Pages-målprøve består lokalt én gang.

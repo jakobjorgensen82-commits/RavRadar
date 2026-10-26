@@ -9,7 +9,8 @@ import {NATIVE_ORIGINAL_CONTINUITY_BINDING as BINDING,NATIVE_ORIGINAL_CONTINUITY
   NATIVE_ORIGINAL_CONTINUITY_BEFORE as OLD,requireNativeOriginalContinuityBinding,
   requireNativeOriginalContinuityOutput,nativeOriginalContinuityMigration,
   readNativeOriginalContinuityCanonicalSource} from './lib/native-original-continuity-successor-source.mjs';
-import {assertNativeOriginalContinuityCodeOnlyCaller,selectNativeOriginalContinuityCodeOnlySource}
+import {assertNativeOriginalContinuityCodeOnlyCaller,selectNativeOriginalContinuityCodeOnlySource,
+  selectCurrentInstalledCodeOnlySource,verifyCurrentInstalledCodeOnlyPlan}
   from './select-native-original-continuity-code-only-source.mjs';
 import {assertNativeOriginalContinuityPlanCaller,selectNativeOriginalContinuityRoute,
   verifyNativeOriginalContinuityPlan} from './verify-native-original-continuity-plan.mjs';
@@ -76,6 +77,142 @@ test('native continuity fixed before/installed caller pairs preserve their input
     for(const key of mixed)assert.throws(()=>assertNativeOriginalContinuityCodeOnlyCaller({...env,[key]:'true'}),key);
   }
   assert.throws(()=>assertNativeOriginalContinuityCodeOnlyCaller(caller(),{}));
+});
+
+const installedCodeOnlyCaller=()=>({
+  ...caller(true),CONFIRMATION:'DEPLOY-CODE-ONLY-REPAIR',
+  RAVRADAR_ACCOUNT_STATISTICS_ASSISTANT_UPGRADE_OPT_IN:'false',
+  RAVRADAR_ACCOUNT_STATISTICS_ASSISTANT_PHASE:'installed',
+  RAVRADAR_ESTABLISHED_NATIVE_CURRENT_ORIGIN_UPGRADE_OPT_IN:'false',
+  RAVRADAR_LAST_MILE_ENCLOSURE_UPGRADE_OPT_IN:'false',
+  RAVRADAR_USERDATA_UPGRADE_OPT_IN:'false',RAVRADAR_ACCOUNT_ASSISTANT_UPGRADE_OPT_IN:'false',
+  RAVRADAR_STATISTICS_REVISION_UPGRADE_OPT_IN:'false',
+  ...Object.fromEntries(['UPGRADE_EXISTING_OWNER_EXPORT','UPGRADE_ACCOUNT_ASSISTANT',
+    'UPGRADE_STATISTICS_REVISION','UPGRADE_ESTABLISHED_NATIVE_CURRENT_ORIGIN',
+    'UPGRADE_LAST_MILE_ENCLOSURE','UPGRADE_ACCOUNT_STATISTICS_ASSISTANT',
+    'UPGRADE_NATIVE_ORIGINAL_CONTINUITY','RESTART_ARCHIVED_WEATHER','PUBLISH_NEWEST_SAVED_WEATHER',
+    'COMPLETED_PRIVATE_RUNTIME','CHECKPOINT_ONLY','QUICK_CONFIRMATION',
+    'RAVRADAR_WEATHER_STATE_EPOCH_BOOTSTRAP','RAVRADAR_WEATHER_STATE_EPOCH_CHECKPOINT_REENTRY',
+    'NATIVE_IDENTITY_RECOVERY'].map(key=>[key,'false'])),
+});
+test('current installed code-only routing leaves both historical source phases inactive',async t=>{
+  const environment=Object.freeze(installedCodeOnlyCaller());
+  await t.test('native586 is not the current588 source',async()=>{
+    assert.equal(await selectNativeOriginalContinuityCodeOnlySource(environment),false);
+  });
+  await t.test('metadata585 is not the current588 source',async()=>{
+    const {selectAccountStatisticsAssistantCodeOnlySource}=await import('./select-account-statistics-assistant-code-only-source.mjs');
+    assert.equal(await selectAccountStatisticsAssistantCodeOnlySource(environment),false);
+  });
+  assert.deepEqual(environment,installedCodeOnlyCaller(),'Selection never mutates caller authority');
+});
+
+test('current installed code-only source requires actual active issuance and the complete caller',async()=>{
+  const environment=Object.freeze(installedCodeOnlyCaller());
+  assert.deepEqual(await selectCurrentInstalledCodeOnlySource(environment),{
+    sourcePhase:ACTIVE_ASSISTANT_SUCCESSOR.sourcePhase,
+    migrationVersion:ACTIVE_ASSISTANT_SUCCESSOR.requireBinding().version});
+  for(const [key,value]of Object.entries(environment)){
+    if(key==='RAVRADAR_NATIVE_ORIGINAL_CONTINUITY_PHASE'
+      ||key==='RAVRADAR_ACCOUNT_STATISTICS_ASSISTANT_PHASE'
+      ||key==='RAVRADAR_NATIVE_ORIGINAL_CONTINUITY_CONFIRMATION'
+      ||key.endsWith('_ORIGINALS_VERIFIED')||key.endsWith('_NOLOSS_VERIFIED')||key.endsWith('_PREWRITE_VERIFIED'))continue;
+    const changed={...environment,[key]:value==='false'?'true':value==='true'?'false':'INVALID'};
+    await assert.rejects(selectCurrentInstalledCodeOnlySource(changed),{code:'ERR_ASSERTION'},key);
+    const missing={...environment};delete missing[key];
+    await assert.rejects(selectCurrentInstalledCodeOnlySource(missing),{code:'ERR_ASSERTION'},'missing '+key);
+  }
+  for(const key of ['RAVRADAR_CURRENT_MEMORY_WARMUP_UPGRADE_OPT_IN','RAVRADAR_CURRENT_GRID_UPGRADE_OPT_IN',
+    'RAVRADAR_KNOWLEDGE_UPGRADE_OPT_IN','RAVRADAR_ASSISTANT_SAME_H0_UPGRADE_OPT_IN',
+    'RAVRADAR_CURRENT_FAMILY_EPOCH_UPGRADE_OPT_IN'])
+    await assert.rejects(selectCurrentInstalledCodeOnlySource({...environment,[key]:'true'}));
+  await assert.rejects(selectNativeOriginalContinuityCodeOnlySource({...environment,
+    RAVRADAR_NATIVE_ORIGINAL_CONTINUITY_UPGRADE_OPT_IN:'true',RAVRADAR_NATIVE_ORIGINAL_CONTINUITY_PHASE:'before'}));
+  const {selectAccountStatisticsAssistantCodeOnlySource}=await import('./select-account-statistics-assistant-code-only-source.mjs');
+  await assert.rejects(selectAccountStatisticsAssistantCodeOnlySource({...environment,
+    RAVRADAR_ACCOUNT_STATISTICS_ASSISTANT_UPGRADE_OPT_IN:'true'}));
+});
+
+test('current installed code-only actual selection body rejects unknown or partial I C T before admission',async()=>{
+  const {runInNewContext}=await import('node:vm');
+  const source=await fs.readFile(path.join(ROOT,'scripts/select-native-original-continuity-code-only-source.mjs'),'utf8');
+  const start='export async function selectCurrentInstalledCodeOnlySource(environment=process.env){';
+  const end='\nexport async function verifyCurrentInstalledCodeOnlyPlan(options){';
+  assert.equal(source.split(start).length,2);assert.equal(source.split(end).length,2);
+  const body=source.slice(source.indexOf(start),source.indexOf(end)).replace(/^export /,'');
+  const next=ACTIVE_ASSISTANT_SUCCESSOR.requireBinding();
+  for(const change of [null,'I','C','T','missing-I','missing-C','missing-T','unissued']){
+    const observed={I:next.I,C:next.C,T:next.T};let continuationCalls=0;
+    if(['I','C','T'].includes(change))observed[change]='f'.repeat(64);
+    if(change?.startsWith('missing-'))delete observed[change.slice(8)];
+    const unavailable=Object.assign(new Error('SYNTHETIC_UNISSUED'),{code:'UNISSUED'});
+    const actual=runInNewContext(body+'\nselectCurrentInstalledCodeOnlySource;',{
+      assert,process:{env:{}},ACTIVE:{requireOutput(){if(change==='unissued')throw unavailable;},
+        requireBinding:()=>next,requireRelease:()=>ACTIVE_ASSISTANT_SUCCESSOR.requireRelease(),
+        sourcePhase:ACTIVE_ASSISTANT_SUCCESSOR.sourcePhase},
+      ravScoreModelBinding:()=>({modelBundleSha256:observed.I}),
+      candidateBinding:()=>({modelBundleSha256:observed.C}),
+      async ravScoreContinuationImplementationSha256(){continuationCalls++;return observed.T;},
+    },{filename:'actual-current-installed-code-only-selection-body.js'});
+    if(change===null)assert.equal((await actual(installedCodeOnlyCaller())).sourcePhase,ACTIVE_ASSISTANT_SUCCESSOR.sourcePhase);
+    else await assert.rejects(actual(installedCodeOnlyCaller()));
+    assert.equal(continuationCalls,['I','C','missing-I','missing-C','unissued'].includes(change)?0:1);
+  }
+});
+
+test('current installed code-only plan uses the normal active migration contract and refuses every pending write',async()=>{
+  const required=assistantPublic587SuccessorRequiredMigrations(),next=required.at(-1);
+  const full='Local | Remote | Time (UTC)\n'+required.map(row=>`${row.version} | ${row.version} | synthetic-plan-response`).join('\n');
+  const noop='DRY RUN: migrations will *not* be pushed to the database.\nRemote database is up to date.';
+  const options={environment:installedCodeOnlyCaller(),migrationListText:full,dryRunText:noop,
+    migrationsDirectory:path.join(ROOT,'supabase/migrations')};
+  assert.deepEqual((await verifyCurrentInstalledCodeOnlyPlan(options)).pendingVersions,[]);
+  for(const changed of [
+    {...options,migrationListText:full.replace(`${next.version} | ${next.version}`,`${next.version} | `)},
+    {...options,migrationListText:full+'\n20990101000000 | 20990101000000 | unknown'},
+    {...options,migrationListText:full+'\n'+next.version+' | '+next.version+' | duplicate'},
+    {...options,dryRunText:'DRY RUN: migrations will *not* be pushed to the database.\nWould push these migrations:\n • '
+      +next.filename+'\nFinished supabase db push.'},
+    {...options,migrationListText:full.replace(`${required[0].version} | ${required[0].version}`,`${required[0].version} | `)},
+    {...options,environment:{...options.environment,RAVRADAR_NATIVE_ORIGINAL_CONTINUITY_UPGRADE_OPT_IN:'true'}},
+  ])await assert.rejects(verifyCurrentInstalledCodeOnlyPlan(changed));
+  await assert.rejects(verifyCurrentInstalledCodeOnlyPlan({...options,allowPending:true}));
+});
+
+test('current installed code-only normal workflow keeps read-only SQL, hard current restore and B before S',async()=>{
+  const {runInNewContext}=await import('node:vm');
+  const source=await fs.readFile(path.join(ROOT,'.github/workflows/deploy-code-only-repair.yml'),'utf8');
+  const step=name=>{const heading='      - name: '+name,at=source.indexOf(heading);
+    assert(at>=0);assert.equal(source.indexOf(heading,at+heading.length),-1);
+    const end=source.indexOf('\n      - name:',at+heading.length);
+    return source.slice(at,end<0?undefined:end);};
+  const env={RAVRADAR_CURRENT_INSTALLED_CODE_ONLY_SOURCE_ACTIVE:'true'},inputs={};
+  const steps={'operational-action':{outputs:{action:'integrated'}},'saved-last-mile-source':{outputs:{}},
+    'current-private-publish':{outcome:'success'},'checkpoint-disposition':{outputs:{disposition:'READY_PUBLISHED'}}};
+  const activeCondition=name=>{const text=step(name),match=/^        if: (.+)$/m.exec(text);assert(match);
+    // GitHub permits hyphens in a step ID; JavaScript needs bracket notation.
+    const expression=match[1].replace(/\bsteps\.([a-zA-Z0-9_-]+)/g,(_whole,id)=>'steps['+JSON.stringify(id)+']');
+    return Boolean(runInNewContext(expression,{env,inputs,steps}));};
+  assert.equal(activeCondition('Select only an already-installed established-origin successor before private work'),false);
+  assert.equal(activeCondition('Require the current exact installed source and empty SQL plan before private work'),true);
+  assert.equal(activeCondition('Apply exact dry-run-verified post-cutover binding'),false);
+  assert.equal(activeCondition('Publish measured continuation checkpoint without promoting rollback readiness'),false);
+  assert.equal(activeCondition('Publish measured continuation only after verified warmup private runtime'),true);
+  steps['current-private-publish'].outcome='failure';
+  assert.equal(activeCondition('Publish measured continuation only after verified warmup private runtime'),false);
+  assert.equal(activeCondition('Deploy exact rebound trip Edges without Worker or D1 replay'),false);
+  const installed=step('Require the current exact installed source and empty SQL plan before private work');
+  assert.match(installed,/--verify-current-installed-plan/);assert.match(installed,/integrated-cutover-readiness\.mjs verify-db/);
+  assert.match(installed,/verify-statistics-preference-revision-schema\.mjs/);
+  assert.doesNotMatch(installed,/supabase db push --linked --skip-vault/);
+  const readback=step('Read back migration and database binding');
+  assert.match(readback,/if test "\$\{RAVRADAR_CURRENT_INSTALLED_CODE_ONLY_SOURCE_ACTIVE:-false\}" = true; then/);
+  assert.match(readback,/--verify-current-installed-plan[\s\S]*else[\s\S]*verify-established-native-current-origin-plan\.mjs/);
+  const restore=source.indexOf('      - name: Require authenticated current runtime before any historical fallback');
+  assert(restore>source.indexOf('      - name: Try installing current-compatible private runtime'));
+  assert(restore<source.indexOf('      - name: Describe exact target private runtime source for bounded migration'));
+  assert.match(step('Require authenticated current runtime before any historical fallback'),/current-private-install\.outcome/);
+  assert(source.includes("env.RAVRADAR_CURRENT_INSTALLED_CODE_ONLY_SOURCE_ACTIVE == 'true') && steps.established-native-current-origin-checkpoint-publish.outcome"));
 });
 
 test(issued?'native continuity actual issued selector rejects invalid callers before files or network'
