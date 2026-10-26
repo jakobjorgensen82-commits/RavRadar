@@ -1,3 +1,11 @@
+## 25. oktober — klientkode er ikke privat vejrdata; central profil læses som et par
+
+Den seneste almindelige vejrhentning nåede leverandører, beregning og gemning af beskyttet B/S. Pages blev derefter afvist alene på navnene på to nye, normale JavaScript-klienter til administratorens statistikvisning. Den eksisterende navnekontrol må ikke forveksle offentlig programkode med privat rapportindhold. En særskilt administrator-synkronisering havde desuden afvist den aktive centrale profil mod den nyere lokale skabelon før den operationelle aktivering.
+
+Den afgrænsede lokale efterfølger tillader kun de to præcise klientstier, når hver er en regulær fil med de fulde, uændrede bytes fra den aktuelle kilde. Alle andre private navne, JSON-referencer, symlinks, afvigende klientbytes og private payload-fingeraftryk kontrolleres fortsat. Administrator-synkronisering skal genbruge den eksisterende strenge resolver på et frisk, samlet læst operation/profil-par; skabelonen valideres stadig lokalt, og generisk synkronisering skriver aldrig nogen af de to aktiveringsdokumenter.
+
+Dette er lokal fejlrettelse, ikke offentlig levering eller dokumenteret genoptagelse. De normale målprøver, præcis samlet kildekontrol og sikker genbrug af den faktisk nyeste gemte beregning skal fortsat bestå. Bevar allerede offentliggjorte data, originaler, modelbinding, SQL, scoreformel, kildeprioritet og geometri. SOURCE, statistikfrigivelse og automatisk sletning aktiveres ikke. Aktuel cron-/kørselsstatus og genoptagelsesidentiteter føres kun i privat checkpoint; ældre statusfronter er historik på de konkret erstattede punkter.
+
 ## 23. oktober — privat587-sammenføring; P0 og levering er fortsat særskilte
 
 Denne lokale587-arbejdsgren sammenfører den udstedte assistentkandidat med P0707s strømstart-, PART-bevarings- og zoneisolationskode. P0707 er fortsat en særskilt kildekandidat under præcis kontrol, ikke en ny offentlig vejrgeneration. 587 er stadig inaktiv og ikke installeret. Ingen test, ny model-/SQL-udstedelse eller produktionshandling er udført som del af denne sammenføring. Begge daterede evidensforløb nedenfor bevares; de bliver ikke et nyt samlet PASS.

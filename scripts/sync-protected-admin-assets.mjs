@@ -3,7 +3,8 @@ import crypto from 'node:crypto';
 import {createSupabaseAdminRequester} from './lib/supabase-admin-rest.mjs';
 import {buildRuntimeDiagnosticsEnvelope} from './lib/runtime-diagnostics-envelope.mjs';
 import {fetchPreviousHandbookSource,mergeProtectedHandbook,stableHandbookDigest,stableJsonDigest} from './lib/merge-protected-handbook.mjs';
-import {assertIntegratedRavScoreSelection,isCandidateGOnlySelection} from './lib/ravscore-profile-transition.mjs';
+import {assertIntegratedRavScoreSelection} from './lib/ravscore-profile-transition.mjs';
+import {readProtectedAdminRavScoreSelection} from './lib/protected-admin-ravscore-selection.mjs';
 import {buildProtectedRdksDocumentation} from './lib/protected-rdks-documentation.mjs';
 const url=process.env.SUPABASE_URL?.replace(/\/$/,'');
 const key=process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -60,11 +61,7 @@ for(const [document_key,file] of Object.entries(assets)){
  else try{payload=JSON.parse(await fs.readFile(file,'utf8'));}catch(e){if(e.code==='ENOENT'){console.warn(`Springer over ${file}`);continue;}throw e;}
  if(document_key==='ravscore-profile-selection'){
   assertIntegratedRavScoreSelection(payload,'Lokal ravscore-profile-selection-template');
-  const central=await existingDocument(document_key);
-  if(!central)throw new Error('Central ravscore-profile-selection mangler');
-  if(!isCandidateGOnlySelection(central)){
-   assertIntegratedRavScoreSelection(central,'Central ravscore-profile-selection');
-  }
+  const central=await readProtectedAdminRavScoreSelection(request);
   // Model/profile activation is owned exclusively by the two-document atomic
   // operational CAS. Generic protected sync records the observed active truth
   // in its audit manifest but must never write this document.
@@ -115,11 +112,7 @@ if(!activationCentral||stableJsonDigest(activationCentral)!==stableJsonDigest(ac
 }
 console.log(`Central kystdelsaktivering verificeret: ${activationCentral.publicActivation?'aktiv':'rollback'}`);
 const ravScoreSelectionLocal=JSON.parse(await fs.readFile(assets['ravscore-profile-selection'],'utf8'));
-const ravScoreSelectionCentral=await existingDocument('ravscore-profile-selection');
+const ravScoreSelectionCentral=await readProtectedAdminRavScoreSelection(request);
 assertIntegratedRavScoreSelection(ravScoreSelectionLocal,'Lokal ravscore-profile-selection-template');
-if(!ravScoreSelectionCentral)throw new Error('Central ravscore-profile-selection readback mangler');
-if(!isCandidateGOnlySelection(ravScoreSelectionCentral)){
- assertIntegratedRavScoreSelection(ravScoreSelectionCentral,'Central ravscore-profile-selection');
-}
 console.log(`Central RavScore-profil verificeret read-only: ${ravScoreSelectionCentral.requestedProfileId}`);
 

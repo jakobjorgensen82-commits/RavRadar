@@ -5,6 +5,12 @@
   "updatedAt": "2026-10-25",
   "sections": [
     {
+      "id": "public-client-code-and-sealed-central-profile-2026-10-25",
+      "chapter": "89.269",
+      "title": "Offentlig klientkode og beskyttede oplysninger har forskellige roller",
+      "body": "<div class=\"reader-guide\"><strong>Kort fortalt:</strong> At en side indeholder programkode til en privat administratorfunktion betyder ikke, at den private rapport er indlejret i hjemmesiden.</div><p>Offentlige klientfiler kan beskrive, hvordan en beskyttet funktion bruges. Selve oplysningerne skal stadig læses gennem den normale adgangskontrol. Leveringskontrollen må kun godkende de præcist gennemgåede klientfiler; ændret indhold og private datakopier skal fortsat afvises.</p><p>Den centrale modelaktivering og den tilhørende profil skal kontrolleres sammen. En ny lokal versionsskabelon er ikke i sig selv bevis for, at den centrale aktivering allerede er skiftet. Almindelig synkronisering må læse den verificerede aktive profil, men må ikke overtage den særskilte aktiveringsarbejdsgangs skriveansvar.</p><p>En gemt beregning og en offentlig levering er forskellige trin. Efter et sent stop skal den faktisk gemte generations identitet og hele genoptagelsesvejen kontrolleres, før data kan leveres. Kontrollen ændrer ikke vejrdata eller scoremodellen.</p>"
+    },
+    {
       "id": "forecast-share-public-read-only-2026-10-24",
       "chapter": "89.268",
       "title": "Del en offentlig prognose",
