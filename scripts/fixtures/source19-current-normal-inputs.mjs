@@ -219,9 +219,9 @@ async function createArchivedOnlyOldSeed({work, inputRoot, adminInputs, registry
   const originals = path.join(work, 'old-archive-public'); await fs.mkdir(originals);
   const publicBody = frozenFragment(recipe, '    const publicDocs=new Map(', '    const originalFiles=');
   const AsyncFunction = Object.getPrototypeOf(async function () {}).constructor;
-  await AsyncFunction('archiveModule', 'oldI', 'originals', 'write', 'sha', 'time', publicBody)(
+  await AsyncFunction('archiveModule', 'oldI', 'originals', 'write', 'sha', 'time', 'path', publicBody)(
     await load(ROOT, 'scripts/lib/weather-state-epoch-archive.mjs'), oldI, originals,
-    async (file, value) => writeNew(file, Buffer.isBuffer(value) ? value : Buffer.from(JSON.stringify(value) + '\n')), sha, time);
+    async (file, value) => writeNew(file, Buffer.isBuffer(value) ? value : Buffer.from(JSON.stringify(value) + '\n')), sha, time, path);
   assert(Date.parse(time(7)) < Date.parse(time(8)) && Date.parse(time(8)) < Date.parse(target));
   return {privateRoot, bundlePath, checkpointPath, publicRoot: originals};
 }
@@ -499,7 +499,7 @@ async function produceNativeInputs(options,initial) {
     // The genuine frozen DATA factory proves the unchanged585 source contracts.
     // Its limited assertion-only module closure is NOT passed off as a full
     // updater host. The latter is a separate complete clone of the SAME commit.
-    await (await load(ROOT, 'scripts/check-source-producer-predecessor-source.mjs'))
+    await (await load(ROOT, 'scripts/check-native-original-continuity-predecessor-source.mjs'))
       .withAuthenticated585PredecessorSource(async frozen => {
         const binding = (await load(frozen, 'scripts/lib/account-statistics-assistant-successor-source.mjs'))
           .requireAccountStatisticsAssistantBinding();

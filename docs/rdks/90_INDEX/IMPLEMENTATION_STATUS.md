@@ -1,3 +1,11 @@
+## 26. oktober — to konkrete fejl i den isolerede SOURCE-prøve
+
+Den nye lukkede fejlrapport har lokaliseret et forkert modulnavn i den normale legacy-producent. Kaldet skal bruge den allerede eksisterende, ægte 585 DATA-fabrik; der oprettes ingen aliasfabrik eller ny datakilde. Den første afvisning er dermed ikke længere en ukendt databasefejl. Det er fortsat ikke en fejl i den almindelige vejrhentning.
+
+Den fremadrettede gennemgang fandt desuden, at et byteidentisk udtrukket arkivfragment bruger path, som den normale AsyncFunction-indgang ikke gav videre. Kun den eksplicitte parameter og det tilsvarende argument tilføjes; de frosne recipebytes, originale labels og alle efterfølgende kontroller bevares. Begge fejl er særskilt reproduceret rødt og grønt gennem den eksisterende normale målprøve uden PostgreSQL eller produktionsdata.
+
+Kun fixturekald og additive måltilfælde ændres. Alle gamle assertions, udstedte C/I/T og SQL, originalbevarelse, scoreformel, kildeprioritet, central admin og geometri bevares. Ny præcis samlet kilde-/Linux-/nativekontrol og faktisk SOURCE-installation er fortsat åbne krav; lokal import- og argumentkontrol er ikke et samlet PASS. P0-vejrhentningen fortsætter uændret, og aktuelle kørsler står i det private checkpoint. Alle fem mål til 18. november består. Se håndbog 89.270; ældre UNKNOWN-status er kun erstattet på de nu konkret lokaliserede fixturefejl.
+
 ## 26. oktober — første SOURCE-fejl skal kunne placeres uden rå data
 
 Den præcise SOURCE589-kontrol er stoppet i den normale legacy-Node-kæde efter beståede bindings- og fire syntetiske providerindgange. Rapporten bevarede kun UNKNOWN og ingen kildeframe; den konkrete årsag er derfor fortsat ukendt. Det er ikke bevis for en ny fejl i almindelig vejrhentning eller for endnu en fejl i den afledte kortfil. Begge tidligere fejlforløb bevares særskilt i privat checkpoint.

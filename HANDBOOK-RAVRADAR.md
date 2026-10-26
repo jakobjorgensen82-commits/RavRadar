@@ -2,6 +2,8 @@
 
 **Kort fortalt:** Den fulde SOURCE589-kandidat er lokalt udstedt med egne normale bindinger og én ny migration. Den er ikke installeret eller bevis for nye offentlige vejrdata.
 
+Den isolerede SOURCE-prøve havde to konkrete forberedelsesfejl: et forkert filnavn til den allerede eksisterende, ægte 585-kildefabrik og en manglende eksplicit path-afhængighed i et udtrukket arkivfragment. Rettelserne bevarer den normale fabrik, hele det frosne fragment og alle oprindelige kontroludsagn. De er reproduceret gennem afgrænsede røde/grønne mål; fuld ny Linux-, native- og databasekontrol samt installation er stadig selvstændige åbne krav. Det er ikke en ændring af de almindelige vejrdata eller af deres beregning.
+
 Fejllæsningen skal kunne skelne selve producenten fra genlæsning, normal efterfølger og gemning. Den viser kun faste trin og fejlkategorier, ikke rå fejltekst eller private værdier. En bedre fejlrapport er ikke i sig selv en rettet årsag eller tilladelse til at omgå en afvisning.
 
 Gamle workflowprøver læser den allerede eksisterende, hele historiske kontrolvisning, når deres kontroludsagn beskriver den gamle rute. De faktiske nye SOURCE-guards skal stadig prøves særskilt. Et gammelt tekstkrav må ikke få produktworkflowet rullet tilbage eller svækket; en sådan testfejl er særskilt fra en ukendt fejl i selve legacy-producenten.
