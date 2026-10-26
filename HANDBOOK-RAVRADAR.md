@@ -20,6 +20,8 @@ GitHub Pages kan bruge op til ti minutter på at vise en ændring. I dette tidsr
 
 Når fortegnelsen stemmer, kontrolleres selve datafilerne og hjemmesidens tilhørende programkode i én gennemgang. Det kontrolleres stadig, at de rigtige filer hører sammen, at kontrolsummerne passer, og at pakken omfatter de forventede 210 zoner og 673 kystdele. Hvis en anden fil stadig er gammel eller ændret, bliver leveringen ikke godkendt.
 
+En server kan også kortvarigt afvise et enkelt filkald, selv om filen er offentliggjort. Ved HTTP 502, 503 eller 504 kan netop samme kald derfor gentages efter fem sekunder. Hele kontrollen har tilsammen højst tre ekstra forsøg, og samme fil må højst forsøges tre gange. Filer, som allerede er kontrolleret, hentes ikke igen. Forkert indhold eller kontrolsum, en manglende fil, manglende adgang og afbrudte kald giver ikke denne undtagelse. Den fulde kontrol af pakken er stadig nødvendig.
+
 Ventetiden ændrer hverken vejrhentningen, beregningen eller scoremodellen. En kvittering fra leveringssystemet og en færdigkontrolleret offentlig prognose er to forskellige ting. Først den sidste viser, at den samlede pakke faktisk kan læses korrekt.
 
 ## 89.269 Offentlig klientkode og beskyttede oplysninger har forskellige roller

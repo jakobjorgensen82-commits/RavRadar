@@ -1,3 +1,11 @@
+## 26. oktober — afvist HTTP-kald efter faktisk Pages-publicering
+
+Et providerfrit rettelsesdeploy har faktisk genbrugt den aktuelle prognose og bestået den installerede tomme databaseplan, autentificeret current-runtime samt B-før-S-gemning. Pages kvitterede for publicering, men den afsluttende offentlige kontrol fik HTTP 503 på én prognosefil. En senere afgrænset læsning af samme fil gav HTTP 200 og præcis fuld kontrolsum. Det er ikke bevis for en fejl i vejrhentningen, datatab eller den konkrete årsag hos leveringsplatformen; den oprindelige røde slutstatus bevares.
+
+Den lokale rettelse genprøver kun det samme afviste HTTP-kald ved 502, 503 eller 504. Én samlet kontrol deler højst tre ekstra forsøg, højst tre forsøg i alt pr. fil og fem sekunders standardpause. Afviste svar lukkes før gentagelse. Godkendte filer og hele pakkegennemgangen startes ikke forfra. Kun et gyldigt, men endnu ikke matchende manifest kan bruge den særskilte 121-observationsventen. Forkert kontrolsum, JSON, model, adgang, 404, afbrydelse eller ukendt fejl giver ingen ny adgang.
+
+Hele den eksisterende normale Pages-målprøve består én gang med de additive tilfælde for forbigående og vedvarende serverfejl, fælles forsøgsloft, uændrede gode filkald, defekt svar efter genforsøg og afbrudt svarlukning. Det er lokal kilde, ikke ny præcis CI eller verificeret offentlig afslutning. Version, C/I/T, SQL, vejr, scorer, kilder og geometri er uændrede; SOURCE og øvrige tilbageholdte aktiveringer forbliver særskilte. Se DEC-0194 og håndbog 89.270. Detaljerede kørsler og beviser står privat.
+
 ## 26. oktober — udstedte historiske controllere må ikke vælges som aktuelle
 
 Et providerfrit rettelsesdeploy blev afvist før offentlig skrivning, fordi den bevarede 586-controller stadig blev valgt på den installerede 588-kilde. Samme anvendelighedsfejl fandtes i 585-selector og to senere origin-planvalg. At gamle bindinger fortsat findes er nødvendigt for arkivbevis, ikke bevis for at deres installationsrute er aktuel.
