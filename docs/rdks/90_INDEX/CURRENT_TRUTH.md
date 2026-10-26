@@ -1,3 +1,11 @@
+## 26. oktober — SOURCE-prøven får den normale beregningshukommelse
+
+En ny afsluttet, isoleret SOURCE-kontrol har dokumenteret V8-hukommelsesudtømning og SIGABRT i prøveprocessen under den normale 585-updater. Det er ikke en fejl i den almindelige vejrhentning, data eller PostgreSQL. Prøvens rene miljø fjerner fortsat NODE_OPTIONS; den ene legacy-follower havde derfor ikke det eksplicitte old-space-loft, som den normale vejrberegning allerede bruger. Den præcise historiske standardgrænse og samlede RAM-belastning er ikke målt. Ældre UNKNOWN-beskrivelser erstattes kun på denne konkrete nye observation.
+
+Den afgrænsede rettelse giver alene denne testproces CLI-flaget --max-old-space-size=8192 før dens normale script. Det er samme eksisterende produktionsloft, ikke en ekstra miljø- eller credentialtilladelse, RAM-reservation eller garanti for resten af kæden. Den faktiske normale producent, alle tidligere kontroludsagn, hele originaler, frosne kilder, processtop og tidsgrænser bevares; produktkode, C/I/T, SQL, scoreformel, kildeprioritet og geometri ændres ikke.
+
+To målrettede normale Pythonprøver består lokalt, inklusive en faktisk lille V8-loftaflæsning uden stor hukommelsesallokering. Windows-proben behøver alene SystemRoot for OS-tilfældighedsgeneratoren; den rene Linux-nativekalders miljø er uændret. Dette er ikke fuld Linux-/native-/kapacitetskontrol, installation eller offentlig effekt. Den præcise samlede kildekontrol og de øvrige SOURCE-leveringskrav består. Se håndbog 89.271; detaljeret kørsels- og fejlevidens føres privat.
+
 ## 26. oktober — den historiske synkroniseringsprøve har sin ægte kildekontekst
 
 Den normale release-metadata-prøve blev afvist, fordi den implicitte SOURCE589-synkronisator blev kaldt med en gammel current-grid-fixture. Den manglende 589-migration i den fixture var en testkontekstfejl, ikke bevis for en produktionsfejl eller en ny forklaring på den særskilte legacy-efterfølgers processtop.

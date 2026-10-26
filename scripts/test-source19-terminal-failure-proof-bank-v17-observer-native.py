@@ -277,6 +277,32 @@ def source_native_action_observation(root, source_rows, action_exit_code, stream
 
 # Same pure projection used by the physical Linux observer; no I/O oracle here.
 class SourceObserverPureTests(unittest.TestCase):
+    def test_legacy_follower_has_normal_weather_heap_without_ambient_node_options(self):
+        # The real national updater already uses this bounded production cap.
+        # Setting a V8 ceiling does not allocate that memory or prove capacity.
+        self.assertEqual(SOURCE_LEGACY_FOLLOWER_NODE_FLAGS, ('--max-old-space-size=8192',))
+        environment = clean_environment()
+        self.assertNotIn('NODE_OPTIONS', environment)
+        workflow = (ROOT / '.github/workflows/reusable-weather-build.yml').read_text('utf8')
+        steps = re.findall(r'(?ms)^      - name: Update central weather cache\n(.*?)(?=^      - (?:name|uses):|\Z)', workflow)
+        self.assertEqual(len(steps), 1)
+        self.assertEqual(re.findall(r'^          NODE_OPTIONS: (.+)$', steps[0], re.M),
+            list(SOURCE_LEGACY_FOLLOWER_NODE_FLAGS))
+        node = shutil.which('node')
+        self.assertIsNotNone(node)
+        if sys.platform == 'win32':
+            # Only this portable V8-ceiling probe needs Windows' OS root for
+            # CSPRNG initialization. The Linux native child stays unchanged.
+            environment['SystemRoot'] = os.environ['SystemRoot']
+        program = ('import v8 from "node:v8";console.log(JSON.stringify({'
+            'flag:process.execArgv[0],heapBytes:v8.getHeapStatistics().heap_size_limit}))')
+        observed = json.loads(subprocess.check_output([node, *SOURCE_LEGACY_FOLLOWER_NODE_FLAGS,
+            '--input-type=module', '-e', program], env=environment, stdin=subprocess.DEVNULL,
+            text=True, timeout=10))
+        self.assertEqual(observed['flag'], SOURCE_LEGACY_FOLLOWER_NODE_FLAGS[0])
+        self.assertGreaterEqual(observed['heapBytes'], 8192 * 1024 * 1024)
+        self.assertLessEqual(observed['heapBytes'], (8192 + 256) * 1024 * 1024)
+
     def test_legacy_child_failure_projects_three_commands_without_raw_exception(self):
         try:
             raise AssertionError('PRIVATE_SENTINEL_ACTUAL_EXPECTED')
@@ -540,6 +566,9 @@ FIXED = Path('/tmp/ravradar-private-production-runtime')
 MAX_BODY = 4 * 1024 * 1024
 NODE = None
 NODE22 = None
+# Only the isolated genuine legacy follower runs the full normal updater here.
+# Keep clean_environment strict; never inherit ambient NODE_OPTIONS or secrets.
+SOURCE_LEGACY_FOLLOWER_NODE_FLAGS = ('--max-old-space-size=8192',)
 FIXTURE_IDENTITY = {"schemaVersion":1,"kind":"PRIVATE_SOURCE19_ACTUAL_S_ONLY_CP_ORIGINAL_H71_NATIVE_CALLER","sourceBase":"d0cdbec4b8ea0f36e4abdd3801401aa748989266","parentProductIdentity":"19f6a6a2d12f9f80740675a0ba3fc178456571b7dcc7f6737919f4bd628d38b1","progressOnlySuccessorSha256":"f7d294b7d484e9d0c7b9c0d827e093dc92b658ac1f827844e80f8e61d06f6066","productIdentity":"b3ce3af7716408a33a453337106f4090d5c64933ef3f791b7fb948f95b928968","pathCount":27,"evidence":"LINUX_UNRUN_NO_ADMISSION","scope":"ACTUAL_ACTION_NORMAL_PRELUDE_B_INSTALL_AUTHENTICATED_S_PACK_H71_NATIVE_MERGED_WORKING_INSTALL","finalizer":"UNRUN_NORMAL_SAVE_TRANSPORT_AND_VALID_FULL_RUNTIME_MISSING","cpOriginalPortSha256":"e32a3a6038502fe0a384ccdde71c385f476dde283c65c110e2f8d51afd1f9c17","newSOnlyCpOriginals":"REQUIRED_REAL_OBJECT_AND_RECEIPT","syntheticProviderInput":"EXPLICIT_OWN_EMPTY_STATIONS_DOCUMENT"}
 CASES = ('native-union-install', 'replace-union-root', 'lose-union-supervisor', 'terminal-asset-skip-limit')
 CASE = None
@@ -4195,7 +4224,8 @@ class SourceCurrentNative(SourceActualSUnionNative):
             ('providers-h1', [sys.executable, '-I', '-B', str(root / 'scripts/fixtures/source19-current-native-providers.py'), str(NODE), target585, '--initial-h1']),
             ('providers-587', [sys.executable, '-I', '-B', str(root / 'scripts/fixtures/source19-current-native-providers.py'), str(NODE), target587, '--predecessor587']),
             ('providers', [sys.executable, '-I', '-B', str(root / 'scripts/fixtures/source19-current-native-providers.py'), str(NODE), target]),
-            ('follower', [str(NODE), str(root / 'scripts/test-source-producer-legacy-compatibility.mjs')]))
+            ('follower', [str(NODE), *SOURCE_LEGACY_FOLLOWER_NODE_FLAGS,
+                str(root / 'scripts/test-source-producer-legacy-compatibility.mjs')]))
         for name, command in commands:
             result = None  # Never reuse the preceding bindings child's status.
             # Preserve whole private stdout/stderr BEFORE status/filtering. A
