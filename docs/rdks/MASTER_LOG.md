@@ -1,3 +1,9 @@
+## 26. oktober — delingskontrol sammenført med gennemgået Pages-rettelse
+
+Den afgrænsede prognosedelingsrettelse og den gennemgåede Pages-rettelse er samlet lokalt med den aktuelle installerede 588-rute. Begge forældres præcise kildekontroller har faktisk bestået; det kvalificerer ikke denne nye samlede head. Den eksisterende normale målprøve, dokumentkontroller og én præcis samlet kildekontrol skal fortsat bestå før sikker levering. Begge hele dokumenthistorikker og håndbogsændringer bevares; installationskopien følger den kanoniske håndbog uden anden SQL-ændring.
+
+Ingen Worker er installeret af sammenføringen, og hverken prognosedelingens offentlige forhåndsvisning eller Free-kapacitet er bevist. Aktuel vejrhentning, den tidligere røde offentlige kontrol og næste leveringsvindue føres privat. Score, vejrdata, C/I/T, version og geometri ændres ikke; SOURCE og statistik aktiveres ikke. Ingen produktionsændring må ske under aktiv writer.
+
 ## 26. oktober — midlertidigt afvist filkald skal ikke genstarte hele kontrollen
 
 Et providerfrit rettelsesdeploy har faktisk genbrugt den aktuelle prognose og bestået den installerede tomme databaseplan, autentificeret current-runtime samt B-før-S-gemning. Pages kvitterede for publicering, men den afsluttende offentlige kontrol fik HTTP 503 på én prognosefil. En senere afgrænset læsning af samme fil gav HTTP 200 og præcis fuld kontrolsum. Det er ikke bevis for en fejl i vejrhentningen, datatab eller den konkrete årsag hos leveringsplatformen; den oprindelige røde slutstatus bevares.
@@ -17,6 +23,14 @@ Den normale kalderfil består lokalt med 39 tilfælde uden fejl eller skip. Det 
 Den normale Pages-kontrol er lokalt opdelt i manifestventen og én fuld pakkekontrol. Standardgrænsen er 121 observationer med fem sekunders mellemrum; hele det kanoniske manifest skal matche, før nogen af pakkens øvrige filer hentes. De eksisterende acceptkontroller og tidligere prøveassertions er bevaret. Den konkrete normale reproduktion er rød før og grøn efter, og hele den normale Pages-målprøve består lokalt én gang.
 
 Ti minutters offentliggørelsesvindue og en faktisk max-age=600-header er forenelige med forsinket manifestation, men den første afviste HTTP-respons blev ikke bevaret. Den senere offentlige fuldkontrol er alene læsebevis for det eksisterende target; den gør ikke den røde GitHub-kørsel eller manglende centrale reseal grøn. Præcis kilde-CI og sikker levering udestår. Ingen version, C/I/T, SQL, numerisk model, kilder eller geometri ændres. Se DEC-0194-tillæg og håndbog 89.270; detaljeret evidens står privat.
+
+## 26. oktober — offentlig 588 og afgrænset kontrol af prognosedeling
+
+588 er faktisk offentliggjort med de bevarede vejrdata; det er ikke bevis for fuld ny leverandørdækning. Den almindelige vejrhentning og den separate SOURCE-kvalifikation følges i det private checkpoint. Ingen produktionsændring må ske under aktiv writer, og alle fem mål til 18. november består.
+
+Prognosedelingens første kontrollerede installation stoppede før skrivning i Cloudflares svarkontrol. HTTP200 alene er ikke API-succes, og den oprindelige konvoluts årsag er ukendt. Den lokale rettelse bruger den dokumenterede ufiltrerede kontoliste, kontrollerer alle domæneposter og afviser fortsat ethvert domæne på den præcise Worker, også i et andet miljø. Kun faste svarkategorier og højst otte numeriske fejlkoder bevares ved samme stop; rå svar, beskeder og kontodata offentliggøres ikke. Alle øvrige skrive-, kapacitets- og adgangsgrænser består.
+
+Den normale syntetiske prøve skal bruge de to præcise hjælpefunktioner uden deres moduleksport i sin eksisterende VM; produktkoden og afvisningskontrollen lempes ikke. Præcis samlet kildekontrol, sikker installation, offentlig forhåndsvisning og målt Free-forbrug er fortsat åbne. Ingen ny version, modelbinding, SQL, vejrdata, scoreformel, adminpunkter, geometri, tjeneste ud over den allerede godkendte Worker eller automatisk genforsøg følger af denne kildeændring. Håndbog 89.268 præciserer leveringsgrænsen; ældre dateret afventningsstatus er historik på de konkret afsluttede punkter.
 
 ## 25. oktober — manuel turgenindsendelse bevarer originalen
 

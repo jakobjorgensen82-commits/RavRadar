@@ -1,3 +1,9 @@
+## 26. oktober — delingskontrol sammenført med gennemgået Pages-rettelse
+
+Den afgrænsede prognosedelingsrettelse og den gennemgåede Pages-rettelse er samlet lokalt med den aktuelle installerede 588-rute. Begge forældres præcise kildekontroller har faktisk bestået; det kvalificerer ikke denne nye samlede head. Den eksisterende normale målprøve, dokumentkontroller og én præcis samlet kildekontrol skal fortsat bestå før sikker levering. Begge hele dokumenthistorikker og håndbogsændringer bevares; installationskopien følger den kanoniske håndbog uden anden SQL-ændring.
+
+Ingen Worker er installeret af sammenføringen, og hverken prognosedelingens offentlige forhåndsvisning eller Free-kapacitet er bevist. Aktuel vejrhentning, den tidligere røde offentlige kontrol og næste leveringsvindue føres privat. Score, vejrdata, C/I/T, version og geometri ændres ikke; SOURCE og statistik aktiveres ikke. Ingen produktionsændring må ske under aktiv writer.
+
 ## 26. oktober — afvist HTTP-kald efter faktisk Pages-publicering
 
 Et providerfrit rettelsesdeploy har faktisk genbrugt den aktuelle prognose og bestået den installerede tomme databaseplan, autentificeret current-runtime samt B-før-S-gemning. Pages kvitterede for publicering, men den afsluttende offentlige kontrol fik HTTP 503 på én prognosefil. En senere afgrænset læsning af samme fil gav HTTP 200 og præcis fuld kontrolsum. Det er ikke bevis for en fejl i vejrhentningen, datatab eller den konkrete årsag hos leveringsplatformen; den oprindelige røde slutstatus bevares.
@@ -17,6 +23,14 @@ Den lokale rettelse har en præcis aktuel installed-only-grænse med fuld C/I/T-
 Manifestventens for korte lokale grænse er reproduceret og rettet i den normale verifier. Kun manifestet genprøves i højst 121 forsøg med fem sekunders mellemrum; hele det forseglede indhold skal matche. Alle efterfølgende fil- og kontraktkontroller udføres én gang og afviser fortsat afvigelser. De normale lokale prøver består; præcis kilde-CI og offentlig levering af rettelsen er åbne.
 
 Den seneste Pages-accept efterfulgt af offentlig kontrolfejl må ikke kaldes et bevist cacheproblem: den oprindelige HTTP-respons mangler. En senere normal fuldkontrol af samme target består, men den oprindelige GitHub-kørsel er fortsat rød. Almindelig integrated-reseal sker først efter offentlig verifikation, så den manglende centrale registrering er et selvstændigt åbent driftsforhold, ikke løst af længere manifestventen. Ingen ny genoptagelsesvej eller lempet guard indføres her. Se DEC-0194-tillæg, DEC-0197 og håndbog 89.270.
+
+## 26. oktober — offentlig 588 og afgrænset kontrol af prognosedeling
+
+588 er faktisk offentliggjort med de bevarede vejrdata; det er ikke bevis for fuld ny leverandørdækning. Den almindelige vejrhentning og den separate SOURCE-kvalifikation følges i det private checkpoint. Ingen produktionsændring må ske under aktiv writer, og alle fem mål til 18. november består.
+
+Prognosedelingens første kontrollerede installation stoppede før skrivning i Cloudflares svarkontrol. HTTP200 alene er ikke API-succes, og den oprindelige konvoluts årsag er ukendt. Den lokale rettelse bruger den dokumenterede ufiltrerede kontoliste, kontrollerer alle domæneposter og afviser fortsat ethvert domæne på den præcise Worker, også i et andet miljø. Kun faste svarkategorier og højst otte numeriske fejlkoder bevares ved samme stop; rå svar, beskeder og kontodata offentliggøres ikke. Alle øvrige skrive-, kapacitets- og adgangsgrænser består.
+
+Den normale syntetiske prøve skal bruge de to præcise hjælpefunktioner uden deres moduleksport i sin eksisterende VM; produktkoden og afvisningskontrollen lempes ikke. Præcis samlet kildekontrol, sikker installation, offentlig forhåndsvisning og målt Free-forbrug er fortsat åbne. Ingen ny version, modelbinding, SQL, vejrdata, scoreformel, adminpunkter, geometri, tjeneste ud over den allerede godkendte Worker eller automatisk genforsøg følger af denne kildeændring. Håndbog 89.268 præciserer leveringsgrænsen; ældre dateret afventningsstatus er historik på de konkret afsluttede punkter.
 
 ## 25. oktober — søgemåden følger den delte score
 
