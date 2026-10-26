@@ -2,11 +2,25 @@
 
 Den seneste præcise SOURCE-kontrol stoppede i den normale legacy-efterfølger. Den bevarede rapport viser alene FOLLOWER/ASSERTION_ERROR ved kravet om returkode nul; indre Node-årsag, faktisk signal og et kvalificeret nyt artifact mangler. Den tidligere 211-/tombstoneafvisning er et særskilt ældre fejlforløb og må ikke bruges som årsag til denne nye afvisning.
 
+Den lokale sammenføring bevarer nu den aktuelle main-historik og den strengere SOURCE-rute samlet. Begge historiske selectors og SOURCE-workflowet er byteuændrede; 588-rutens nye regressioner bevares særskilt som ægte historisk input, ikke som 589-bevis. Den normale kalderprøve består 36/36 og workflowprøven 16/16 uden skip, inklusive faktiske 589-kaldere, tom installeret plan, hårdt current-restore, B før S og hel S-genlæsning før Edge. En tidligere skjult testfejl er rettet ved først at føre den præcist kontrollerede SOURCE-workflowfil gennem dens eksisterende historiske inverse. De gamle kontroludsagn er bevaret. Det er lokal integration, ikke ny samlet CI, installation eller offentlig SOURCE-effekt.
+
 Den lokale test-/fixtureændring observerer de eksisterende faste faseindgange samt underprocessens faktiske returkode og signal. Kun de to eksisterende hele, lukkede kontrollogger læses under den uændrede 16 MiB-grænse; rapporten angiver byteantal, kontrolsum og om hele filen kunne læses. Kun to præcise kendte V8-heapfatalheadere kan give hukommelsesfejlkategorien; ukendt eller ufuldstændigt input forbliver ukendt. Sidste observerede fase er en indgang, ikke et afsluttet trin. Rå tekst og private værdier vises ikke. Det oprindelige resultat, exception, alle gamle assertions, kommandoer og tidsgrænser bevares; observationen giver ingen PASS- eller installationsautoritet og beviser endnu ingen OOM- eller signalårsag.
 
 De to normale Node-mål består uden skip. Pythonobservationsmålet består på Windows; den fysiske Linux-SIGKILL-prøve er ikke kørt her. Producentobservationsmålet var først rødt på den nye fasemarkør og består efter additiv adskillelse af faseloggen fra de oprindelige fejlrapporter med alle gamle assertions bevaret. Hele den normale afledte registerprøve gav 6 PASS og 1 FAIL på Windows' Python-alias. Kun det fejlede adminfixturemål blev derefter genkørt med korrekt absolut PYTHON og bestod; hele prøven er ikke genkørt. De normale lokale C/I-kontroller består på uændrede udstedte C/I/T- og SQL-bytes. Disse lokale delbeviser er ikke en rettet procesårsag eller samlet ny kildekontrol.
 
 Ny præcis SOURCE-kilde-/Linux-/native-/PostgreSQL-kontrol, kvalificeret årsag, sikker installation, national kapacitet og faktisk almindelig efterfølger er fortsat åbne. SOURCE-revisionen er inaktiv. P0 og den almindelige vejrhentning har fortsat førsteprioritet; aktuelle kørsler, offentlig dækning og leveringsudfald føres i ROOTs private checkpoint. Alle fem mål til 18. november 2026 består. Gamle kilde-/original-/SQL-bytes, offentliggjorte scorer, scoreformel, kildeprioritet, central admin og geometri bevares. Se håndbog 89.271; alle tidligere hele dokumentafsnit nedenfor bevares som dateret historik.
+
+## 26. oktober — aktuelle kode-only-fasevalg, lokal fremdrift
+
+- [x] Faktisk almindelig ny vejrgeneration er offentligt verificeret og centralt slutregistreret; dette er særskilt fra rettelsesdeployet.
+- [x] Rettelsesdeployets gamle 586-krav er reproduceret på aktuel 588. 585-selectorens samme problem og de to gamle origin-planvalg er kortlagt samlet.
+- [x] Den lokale aktuelle rute kræver udstedt aktiv C/I/T, normal kalder og opgraderinger slået fra, tom installeret SQL-plan samt normal database-/schema2-genlæsning. Ingen SQL-apply eller historisk fallback efter afvist current-runtime; B gemmes før S.
+- [x] Hele normale native-kaldermål består lokalt: 39 tilfælde, ingen fejl eller skip. Historiske planer og frosne originaler bevares.
+- [x] Det additive whole-inverse-lag bevarer hele den tidligere workflowfil. Alle 15 normale historiske workflowmål består uden skip; lokale RDKS-, model- og syv bindingskontroller består. Det er ikke samlet kilde- eller produktionsbevis.
+- [ ] Præcis ny kilde-CI, sikkert providerfrit rettelsesdeploy og faktisk offentlig effekt.
+- [ ] SOURCE589-integration af den aktuelle kildefase før aktivering; den lokale 588-rute kvalificerer ikke en senere familie.
+
+Ingen versions-, C/I/T-, SQL- eller numerisk modelovergang følger af denne controllerrettelse. Alle øvrige mål og kontroller består. Se DEC-0148 og håndbog 89.272; aktuelle kørsler står i privat checkpoint.
 
 ## 26. oktober — normal tombstonehydrering før SOURCE-prøvens leverandørinput
 

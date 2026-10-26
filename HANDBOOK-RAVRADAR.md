@@ -1,6 +1,20 @@
+## 89.272 En kodeopdatering skal bruge den allerede installerede model
+
+Kort fortalt: En rettelse af hjemmesidens programkode behøver ikke hente vejret igen eller geninstallere en gammel model.
+
+RavRadar bevarer gamle bindings- og installationsfiler, så tidligere data stadig kan kontrolleres. At en gammel fil findes, betyder derfor ikke, at dens installation skal køres igen. Ved en kodeopdatering skal den aktuelle udstedte model og den faktisk installerede database passe præcist sammen.
+
+Den afgrænsede installed-only-rute kontrollerer først den aktuelle kilde og kræver, at alle særskilte opgraderinger er slået fra. Databasens installationshistorik genlæses, og planen må ikke indeholde nye installationer. Databasens kontrakter og dataskema kontrolleres fortsat. Denne rute udfører ingen SQL-installation.
+
+De gemte vejrdata skal kunne hentes og kontrolleres gennem deres normale beskyttede vej. En fejl her giver ikke adgang til at vælge en gammel datageneration som reserve. Originaler, historik, målinger og scorer skal bevares. Den beskyttede vejrpakke gemmes før den tilhørende beregningstilstand, så et afbrudt forløb ikke efterlader en ny tilstand uden dens data.
+
+Derefter består de normale kontroller af den genbrugte prognose, private oplysninger, hjemmesidens filer og den offentlige levering. En vellykket lokal prøve er ikke bevis for, at rettelsen allerede er online. En senere modelgeneration skal kvalificeres gennem sin egen præcise bindingsvej; den overtager ikke automatisk en ældre generations installationsadgang.
+
 ## 89.271 Sikker SOURCE-overgang — lokal 589 udstedt, ikke installeret
 
 **Kort fortalt:** Den fulde SOURCE589-kandidat er lokalt udstedt med egne normale bindinger og én ny migration. Den er ikke installeret eller bevis for nye offentlige vejrdata.
+
+Den lokale sammenføring bevarer nu både de nyeste almindelige koderettelser og revisionens særskilte installationsvej. De 52 berørte kalder- og workflowtilfælde består uden springede prøver. De kontrollerer blandt andet, at en allerede installeret model ikke geninstalleres, og at vejrpakken gemmes før beregningstilstanden. Historiske prøver holdes adskilt fra den nye model. Dette er fortsat lokal kontrol, ikke en installeret revision eller offentlig drift.
 
 Den seneste isolerede SOURCE-prøve stoppede ved sin normale efterfølger. Den bevarede log viser et fejlet procesresultat, men endnu ikke den indre Node-årsag eller et faktisk signal. Den tidligere fejl med den slettede ekstra zone er et særskilt ældre forløb; den nye afvisning beviser ikke, at zonefejlen er gentaget.
 

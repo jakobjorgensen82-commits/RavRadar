@@ -78,6 +78,114 @@ test('native continuity fixed before/installed caller pairs preserve their input
   assert.throws(()=>assertNativeOriginalContinuityCodeOnlyCaller(caller(),{}));
 });
 
+
+// New current589 checks use the existing issued SOURCE APIs. The immutable733
+// native block is preserved as historical588 DATA, never renamed or imported
+// through a changed I/C-owned selector.
+import {SOURCE_PRODUCER_BINDING as installedSourceBinding,requireSourceProducerBinding,
+  requireSourceProducerOutput,sourceProducerMigration} from './lib/source-producer-successor-source.mjs';
+import {selectSourceProducerCodeOnlySource,assertSourceProducerCodeOnlyCaller}
+  from './select-source-producer-code-only-source.mjs';
+import {verifySourceProducerPlan} from './verify-source-producer-plan.mjs';
+import {sourceProducerRequiredMigrations} from './integrated-cutover-readiness.mjs';
+import {ravScoreContinuationImplementationSha256} from './lib/ravscore-continuation-implementation-contract.mjs';
+const sourceInstalledCaller=()=>({...caller(true),
+  RAVRADAR_SOURCE_PRODUCER_UPGRADE_OPT_IN:'false',RAVRADAR_SOURCE_PRODUCER_PHASE:'installed',
+  RAVRADAR_SOURCE_PRODUCER_CONFIRMATION:'DEPLOY-CODE-ONLY-REPAIR',
+  RAVRADAR_SOURCE_PRODUCER_WRITER_ACTIVE:'false',RAVRADAR_SOURCE_PRODUCER_RECOVERY_GATE_RESULT:'success',
+  RAVRADAR_SOURCE_PRODUCER_RECOVERY_RUN_ID:'',RAVRADAR_SOURCE_PRODUCER_SAVED_WEATHER:'false',
+  RAVRADAR_SOURCE_NORMAL_PRODUCER:'false',RAVRADAR_ACCOUNT_STATISTICS_ASSISTANT_UPGRADE_OPT_IN:'false',
+});
+test('SOURCE589 current installed selector uses its actual issued I C T and complete own caller',async()=>{
+  requireSourceProducerOutput();const next=requireSourceProducerBinding();
+  assert.equal(ravScoreModelBinding().modelBundleSha256,next.I);
+  assert.equal(candidateBinding().modelBundleSha256,next.C);
+  assert.equal(await ravScoreContinuationImplementationSha256(),next.T);
+  const environment=Object.freeze(sourceInstalledCaller());
+  assert.equal(await selectSourceProducerCodeOnlySource(environment),true);
+  assert.deepEqual(environment,sourceInstalledCaller());
+  const required=['GITHUB_EVENT_NAME','GITHUB_REF','GITHUB_RUN_ATTEMPT','GITHUB_RUN_ID','GITHUB_SHA',
+    'GITHUB_WORKFLOW','RAVRADAR_SOURCE_PRODUCER_UPGRADE_OPT_IN','RAVRADAR_SOURCE_PRODUCER_PHASE',
+    'RAVRADAR_SOURCE_PRODUCER_CONFIRMATION','RAVRADAR_SOURCE_PRODUCER_WRITER_ACTIVE',
+    'RAVRADAR_SOURCE_PRODUCER_RECOVERY_GATE_RESULT','RAVRADAR_SOURCE_PRODUCER_RECOVERY_RUN_ID',
+    'RAVRADAR_SOURCE_PRODUCER_SAVED_WEATHER','RAVRADAR_SOURCE_NORMAL_PRODUCER',
+    'RAVRADAR_ACCOUNT_STATISTICS_ASSISTANT_UPGRADE_OPT_IN'];
+  for(const key of required){
+    const changed={...environment,[key]:environment[key]==='false'?'true':'INVALID'};
+    await assert.rejects(selectSourceProducerCodeOnlySource(changed),{code:'ERR_ASSERTION'},key);
+    const missing={...environment};delete missing[key];
+    await assert.rejects(selectSourceProducerCodeOnlySource(missing),{code:'ERR_ASSERTION'},'missing '+key);
+  }
+  for(const key of [...mixed,'RAVRADAR_NATIVE_ORIGINAL_CONTINUITY_UPGRADE_OPT_IN'])
+    await assert.rejects(selectSourceProducerCodeOnlySource({...environment,[key]:'true'}));
+});
+test('SOURCE589 actual selector body refuses changed missing or unissued model inputs without a fake positive tuple',async()=>{
+  const {runInNewContext}=await import('node:vm');
+  const raw=await fs.readFile(new URL('./select-source-producer-code-only-source.mjs',import.meta.url),'utf8');
+  assert.equal(successorHash('sha256').update(raw).digest('hex'),
+    'fd1c7e4d80abd114fab3d763db9770e1a56888c2c8f93148fb5ce5f9a91fca22');
+  const start='export async function selectSourceProducerCodeOnlySource(environment=process.env){',end='\nasync function main(){';
+  assert.equal(raw.split(start).length,2);assert.equal(raw.split(end).length,2);
+  const body=raw.slice(raw.indexOf(start),raw.indexOf(end)).replace(/^export /,'');
+  const physical={I:ravScoreModelBinding().modelBundleSha256,C:candidateBinding().modelBundleSha256,
+    T:await ravScoreContinuationImplementationSha256()};
+  assert.deepEqual(physical,{I:requireSourceProducerBinding().I,C:requireSourceProducerBinding().C,T:requireSourceProducerBinding().T});
+  for(const change of ['I','C','T','missing-I','missing-C','missing-T','unissued']){
+    const observed={...physical};let continuationCalls=0;
+    if(['I','C','T'].includes(change))observed[change]='f'.repeat(64);
+    if(change.startsWith('missing-'))delete observed[change.slice(8)];
+    const actual=runInNewContext(body+'\nselectSourceProducerCodeOnlySource;',{
+      assert,process:{env:{}},SOURCE_PRODUCER_BINDING:installedSourceBinding,
+      requireSourceProducerOutput(){if(change==='unissued')throw new Error('SYNTHETIC_UNISSUED_REJECTION_ONLY');return requireSourceProducerOutput();},
+      requireSourceProducerBinding,assertSourceProducerCodeOnlyCaller,
+      ravScoreModelBinding:()=>({modelBundleSha256:observed.I}),
+      candidateBinding:()=>({modelBundleSha256:observed.C}),
+      async ravScoreContinuationImplementationSha256(){continuationCalls++;return observed.T;},
+    },{filename:'actual-source589-current-installed-selection-rejection-body.js'});
+    await assert.rejects(actual(sourceInstalledCaller()));
+    assert.equal(continuationCalls,['I','C','missing-I','missing-C','unissued'].includes(change)?0:1);
+  }
+});
+test('SOURCE589 current installed plan accepts only the actual whole installed history and zero pending SQL',async()=>{
+  requireSourceProducerOutput();const required=sourceProducerRequiredMigrations(),next=required.at(-1);
+  assert.equal(next.version,sourceProducerMigration().version);
+  const full='Local | Remote | Time (UTC)\n'+required.map(row=>
+    row.version+' | '+row.version+' | synthetic-plan-response').join('\n');
+  const noop='DRY RUN: migrations will *not* be pushed to the database.\nRemote database is up to date.';
+  const options={phase:'installed',environment:sourceInstalledCaller(),migrationListText:full,dryRunText:noop,
+    migrationsDirectory:path.join(ROOT,'supabase/migrations')};
+  const result=await verifySourceProducerPlan(options);
+  assert.deepEqual(result.pendingVersions,[]);assert.equal(result.sqlWriteRequired,false);
+  for(const changed of [
+    {...options,migrationListText:full.replace(next.version+' | '+next.version,next.version+' | ')},
+    {...options,migrationListText:full+'\n20990101000000 | 20990101000000 | unknown'},
+    {...options,migrationListText:full+'\n'+next.version+' | '+next.version+' | duplicate'},
+    {...options,dryRunText:'DRY RUN: migrations will *not* be pushed to the database.\nWould push these migrations:\n • '
+      +next.filename+'\nFinished supabase db push.'},
+    {...options,migrationListText:full.replace(required[0].version+' | '+required[0].version,required[0].version+' | ')},
+    {...options,environment:{...options.environment,RAVRADAR_NATIVE_ORIGINAL_CONTINUITY_UPGRADE_OPT_IN:'true'}},
+    {...options,allowPending:true},
+  ])await assert.rejects(verifySourceProducerPlan(changed));
+});
+test('historical main733 native current-installed block retains its exact input identities and every old assertion',async()=>{
+  const bytes=await fs.readFile(new URL('./lib/source-main733-current-installed-test-review.json',import.meta.url));
+  assert.equal(successorHash('sha256').update(bytes).digest('hex'),'502ea6f8ea5131c425f0b71a9bd20638c3270b8f59d1ca7557cbdb526cd71e73');
+  const review=JSON.parse(bytes);
+  assert.equal(review.kind,'TEST_ONLY_EXACT_MAIN733_CURRENT_INSTALLED_REGRESSION_INPUTS');
+  assert.equal(review.productionAuthority,false);
+  assert.equal(review.head,'7ac31d25a0e803706c757ec015a05fb0138437cf');
+  assert.equal(review.tree,'1cc30d6c5b01389336ebfc5af911111521aca999');
+  assert.equal(review.nativeWholeTestBlob,'d86eff3700c6f1030db625e16205fd6c77051574');
+  assert.equal(review.nativeWholeAddedBlock.split('\n').length,136);
+  assert.equal([...review.nativeWholeAddedBlock.matchAll(/^test\('/gm)].length,5);
+  assert.equal(review.inputPins.find(row=>row.path==='scripts/test-native-original-continuity-callers.mjs').sha256,
+    '7f0154fa94917966b93d219e491df6032ba0209944207b8a10add635f680e9ae');
+  assert.equal(review.inputPins.find(row=>row.path==='.github/workflows/deploy-code-only-repair.yml').sha256,
+    '9d16a127c0e7b0e256e199982b56f14762f370f8e30720b2545a40b97bf09dc1');
+  // Retained historical code/CI inputs are not executed against source589 and
+  // never substitute for the direct current-source tests immediately above.
+});
+
 test(issued?'native continuity actual issued selector rejects invalid callers before files or network'
   :'native continuity UNISSUED cannot access operands or start PostgreSQL',async t=>{
   let operands=0,io=0;
