@@ -329,6 +329,28 @@ export function nativeProviderProcessFirstFailure(value){
     return value; // Diagnostic only: never process/SQL/native success proof.
   }catch{return null;}
 }
+export function nativeLegacyFollowerProcessFirstFailure(value){
+  try{
+    if(!value||Object.keys(value).sort().join(',')!=='fatalCategory,kind,lastPhase,phase,privatePayloadIncluded,returncode,signal,stderr,stdout'
+      ||value.kind!=='SOURCE_LEGACY_FOLLOWER_PROCESS_FIRST_FAILURE'||value.phase!=='FOLLOWER'
+      ||value.privatePayloadIncluded!==false)return null;
+    const code=value.returncode;
+    if(code===0||code!==null&&(!Number.isSafeInteger(code)||code<-(2**31)||code>=2**31))return null;
+    if(value.signal!==(code===null?'UNKNOWN':code>=0?'NONE':SOURCE_PROVIDER_SIGNALS.get(code)??'UNKNOWN'))return null;
+    for(const stream of [value.stdout,value.stderr]){
+      if(!stream||Object.keys(stream).sort().join(',')!=='bytes,complete,sha256'||typeof stream.complete!=='boolean'
+        ||stream.bytes!==null&&(!Number.isSafeInteger(stream.bytes)||stream.bytes<0))return null;
+      if(stream.complete){
+        if(stream.bytes===null||stream.bytes>16*1024*1024||typeof stream.sha256!=='string'||!/^[a-f0-9]{64}$/.test(stream.sha256))return null;
+      }else if(stream.sha256!==null)return null;
+    }
+    if(value.lastPhase!=='UNKNOWN'&&(!NATIVE_PSQL_PHASES.has(value.lastPhase)
+      ||!value.lastPhase.startsWith('SOURCE_LEGACY_')))return null;
+    if(!['NONE','HEAP_OUT_OF_MEMORY','UNKNOWN'].includes(value.fatalCategory))return null;
+    if(!value.stderr.complete&&(value.lastPhase!=='UNKNOWN'||value.fatalCategory!=='UNKNOWN'))return null;
+    return value; // Failure observation only; no process/native/SQL/PASS authority.
+  }catch{return null;}
+}
 export function nativePostgresChildFirstFailure(stdout,stderr){
   // Same fixed CURRENT child projection, plus the native caller's own bounded
   // exception projection. Unknown/malformed records are never printed raw.
@@ -337,6 +359,9 @@ export function nativePostgresChildFirstFailure(stdout,stderr){
       if(typeof stream!=='string'||Buffer.byteLength(stream)>2*1024*1024)continue;
       for(const line of stream.split(/\r?\n/)){
         if(line.length>2048)continue;let value;try{value=JSON.parse(line);}catch{continue;}
+        if(value?.kind==='SOURCE_LEGACY_FOLLOWER_PROCESS_FIRST_FAILURE'){
+          const fixed=nativeLegacyFollowerProcessFirstFailure(value);if(fixed)return fixed;continue;
+        }
         if(value?.kind==='SOURCE_PROVIDER_PROCESS_FIRST_FAILURE'){
           const fixed=nativeProviderProcessFirstFailure(value);if(fixed)return fixed;continue;
         }

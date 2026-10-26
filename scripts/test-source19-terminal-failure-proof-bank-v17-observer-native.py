@@ -294,6 +294,68 @@ class SourceObserverPureTests(unittest.TestCase):
                 self.assertNotIn('PRIVATE', json.dumps(observed))
             self.assertEqual(source_legacy_child_failure(error, 'PRIVATE')['phase'], 'UNKNOWN')
 
+        # Exercise actual child outcomes into the same exclusive whole capture.
+        # Windows may honestly fail the unchanged ctime-stable capture reader.
+        for behavior in ('exit', 'heap', 'unknown-fatal', 'kill'):
+            if behavior == 'kill' and sys.platform != 'linux':
+                continue
+            with tempfile.TemporaryDirectory(prefix='rr-legacy-follower-diagnostic-') as directory:
+                own = Path(directory).resolve()
+                marker = {'kind': 'SOURCE_LEGACY_PHASE_OBSERVATION',
+                    'phase': 'SOURCE_LEGACY_PRODUCER_UPDATER585', 'privatePayloadIncluded': False}
+                header = (next(iter(SOURCE_LEGACY_HEAP_FATAL_HEADERS)).decode()
+                    if behavior == 'heap' else 'FATAL ERROR: UNKNOWN_PRIVATE_SENTINEL' if behavior == 'unknown-fatal' else '')
+                program = ('import sys,os,signal;print("PRIVATE_SENTINEL_STDOUT",flush=True);'
+                    + 'print(' + repr(json.dumps(marker)) + ',file=sys.stderr,flush=True);'
+                    + 'print(' + repr(header) + ',file=sys.stderr,flush=True);'
+                    + ('os.kill(os.getpid(),signal.SIGKILL)' if behavior == 'kill' else 'sys.exit(7)'))
+                with (own / 'legacy-follower-whole.stdout').open('xb') as output, \
+                        (own / 'legacy-follower-whole.stderr').open('xb') as errors:
+                    result = subprocess.run([sys.executable, '-I', '-B', '-c', program],
+                        stdin=subprocess.DEVNULL, stdout=output, stderr=errors, check=False, timeout=10)
+                    output.flush(); os.fsync(output.fileno()); errors.flush(); os.fsync(errors.fileno())
+                before = {name: (own / ('legacy-follower-whole.' + name)).read_bytes()
+                    for name in ('stdout', 'stderr')}
+                value = source_legacy_follower_process_failure(result, own)
+                self.assertEqual(value['returncode'], result.returncode)
+                self.assertEqual(value['signal'], 'SIGKILL' if behavior == 'kill' else 'NONE')
+                self.assertEqual(value['kind'], 'SOURCE_LEGACY_FOLLOWER_PROCESS_FIRST_FAILURE')
+                for name in ('stdout', 'stderr'):
+                    self.assertEqual((own / ('legacy-follower-whole.' + name)).read_bytes(), before[name])
+                    if value[name]['complete']:
+                        self.assertEqual(value[name], {'bytes': len(before[name]),
+                            'sha256': sha(before[name]), 'complete': True})
+                    else:
+                        self.assertNotEqual(sys.platform, 'linux', 'Whole closed native capture must be stable')
+                if value['stderr']['complete']:
+                    self.assertEqual(value['lastPhase'], marker['phase'])
+                    self.assertEqual(value['fatalCategory'], 'HEAP_OUT_OF_MEMORY' if behavior == 'heap'
+                        else 'UNKNOWN' if behavior == 'unknown-fatal' else 'NONE')
+                else:
+                    self.assertEqual(value['lastPhase'], 'UNKNOWN')
+                    self.assertEqual(value['fatalCategory'], 'UNKNOWN')
+                self.assertNotIn('PRIVATE_SENTINEL', json.dumps(value))
+                self.assertIsNone(source_legacy_follower_process_failure(subprocess.CompletedProcess([], 0), own))
+                # A malformed known marker cannot make a phase claim. Raw text
+                # and a merely embedded heap fragment are not fatal headers.
+                changed = (json.dumps({**marker, 'raw': 'PRIVATE_SENTINEL'}) + '\n'
+                    + 'PRIVATE FATAL ERROR: Reached heap limit Allocation failed - JavaScript heap out of memory\n'
+                    + json.dumps(marker) + '\n').encode()
+                with (own / 'legacy-follower-whole.stderr').open('wb') as errors:
+                    errors.write(changed); errors.flush(); os.fsync(errors.fileno())
+                malformed = source_legacy_follower_process_failure(result, own)
+                self.assertEqual(malformed['lastPhase'], 'UNKNOWN')
+                if malformed['stderr']['complete']:
+                    self.assertEqual(malformed['fatalCategory'], 'NONE')
+                self.assertNotIn('PRIVATE_SENTINEL', json.dumps(malformed))
+        with tempfile.TemporaryDirectory(prefix='rr-legacy-follower-missing-') as directory:
+            missing = source_legacy_follower_process_failure(None, Path(directory).resolve())
+            self.assertEqual(missing['returncode'], None)
+            self.assertEqual(missing['signal'], 'UNKNOWN')
+            self.assertEqual(missing['lastPhase'], 'UNKNOWN')
+            self.assertEqual(missing['fatalCategory'], 'UNKNOWN')
+            self.assertEqual(missing['stderr'], {'bytes': None, 'sha256': None, 'complete': False})
+
     def project(self, stderr):
         return source_native_diagnostic_projection(stderr)
 
@@ -2142,6 +2204,74 @@ SOURCE_PROVIDER_HELPERS = {'scripts/fill-open-meteo-current-fallback.py': 'OPEN_
     'scripts/build-live-current-pilot.py': 'LIVE_PILOT',
     'scripts/fixtures/source19-current-provider-forecast.mjs': 'FORECAST',
     'scripts/build-public-coastal-parts-v2.mjs': 'REGISTRY'}
+
+
+SOURCE_LEGACY_PHASES = frozenset(('SOURCE_LEGACY_BINDINGS', 'SOURCE_LEGACY_SETUP',
+    'SOURCE_LEGACY_PRODUCER', 'SOURCE_LEGACY_ORIGINALS', 'SOURCE_LEGACY_RESTORE',
+    'SOURCE_LEGACY_UPDATER', 'SOURCE_LEGACY_SAVE', 'SOURCE_LEGACY_READBACK',
+    'SOURCE_LEGACY_PRODUCER_SETUP', 'SOURCE_LEGACY_PRODUCER_ARCHIVE',
+    'SOURCE_LEGACY_PRODUCER_UPDATER585', 'SOURCE_LEGACY_PRODUCER_PUBLIC585',
+    'SOURCE_LEGACY_PRODUCER_SAVE585', 'SOURCE_LEGACY_PRODUCER_RESTORE585',
+    'SOURCE_LEGACY_PRODUCER_FOLLOWER585', 'SOURCE_LEGACY_PRODUCER_NATIVE586',
+    'SOURCE_LEGACY_PRODUCER_FOLLOWER587', 'SOURCE_LEGACY_PRODUCER_FOLLOWER588',
+    'SOURCE_LEGACY_PRODUCER_SOURCE_METADATA', 'SOURCE_LEGACY_PRODUCER_FINISH'))
+SOURCE_LEGACY_HEAP_FATAL_HEADERS = frozenset((
+    b'FATAL ERROR: Reached heap limit Allocation failed - JavaScript heap out of memory',
+    b'FATAL ERROR: Ineffective mark-compacts near heap limit Allocation failed - JavaScript heap out of memory'))
+
+
+def source_legacy_follower_process_failure(result, own):
+    # Only the existing closed+fsynced follower capture. No argv/error text,
+    # generated runtime values, process-success proof or changed child result.
+    try:
+        code = result.returncode if type(result) is subprocess.CompletedProcess else None
+        if type(code) is not int or not -(2**31) <= code < 2**31:
+            code = None
+        if code == 0:
+            return None
+        signal_name = ('UNKNOWN' if code is None else 'NONE' if code >= 0
+            else SOURCE_PROVIDER_SIGNALS.get(code, 'UNKNOWN'))
+        streams, stderr = {}, None
+        for name in ('stdout', 'stderr'):
+            relative = 'legacy-follower-whole.' + name
+            meta = {'bytes': None, 'sha256': None, 'complete': False}
+            try:
+                measured = (own / relative).lstat()
+                if type(measured.st_size) is int and 0 <= measured.st_size <= 2**53 - 1:
+                    meta['bytes'] = measured.st_size
+                raw = source_current_cohort_read(own, relative, 16 * 1024 * 1024)
+                meta = {'bytes': len(raw), 'sha256': sha(raw), 'complete': True}
+                if name == 'stderr':
+                    stderr = raw
+            except (OSError, ValueError, AssertionError, RuntimeError):
+                pass
+            streams[name] = meta
+        last_phase, invalid_phase, fatal = 'UNKNOWN', False, 'UNKNOWN'
+        if stderr is not None:
+            fatal = 'NONE'
+            for line in stderr.splitlines():
+                if line.startswith(b'FATAL ERROR:'):
+                    next_fatal = 'HEAP_OUT_OF_MEMORY' if line in SOURCE_LEGACY_HEAP_FATAL_HEADERS else 'UNKNOWN'
+                    fatal = next_fatal if fatal == 'NONE' else fatal if fatal == next_fatal else 'UNKNOWN'
+                if len(line) > 2048:
+                    continue
+                try:
+                    value = json.loads(line)
+                except (ValueError, UnicodeDecodeError):
+                    continue
+                if type(value) is dict and value.get('kind') == 'SOURCE_LEGACY_PHASE_OBSERVATION':
+                    if (set(value) != {'kind', 'phase', 'privatePayloadIncluded'}
+                            or type(value['phase']) is not str or value['phase'] not in SOURCE_LEGACY_PHASES
+                            or value['privatePayloadIncluded'] is not False):
+                        invalid_phase = True
+                    elif not invalid_phase:
+                        last_phase = value['phase']
+        return {'kind': 'SOURCE_LEGACY_FOLLOWER_PROCESS_FIRST_FAILURE', 'phase': 'FOLLOWER',
+            'returncode': code, 'signal': signal_name, **streams,
+            'lastPhase': 'UNKNOWN' if invalid_phase else last_phase, 'fatalCategory': fatal,
+            'privatePayloadIncluded': False}
+    except BaseException:
+        return None  # Observation must not replace a fatal/signal/original assertion.
 
 
 def source_provider_boundary_failure(error):
@@ -4102,6 +4232,13 @@ class SourceCurrentNative(SourceActualSUnionNative):
                             break  # The Node parent independently validates every field.
                 except BaseException:
                     pass
+                if name == 'follower':
+                    try:
+                        projected = source_legacy_follower_process_failure(result, own)
+                        if projected is not None:
+                            print(json.dumps(projected, separators=(',', ':')), flush=True)
+                    except BaseException:
+                        pass  # Keep the actual CompletedProcess and original assertion unchanged.
                 try:
                     projected = source_legacy_child_failure(error, name.upper())
                     if projected is not None:

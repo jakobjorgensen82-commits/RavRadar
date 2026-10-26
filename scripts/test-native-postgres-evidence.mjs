@@ -787,3 +787,62 @@ test('legacy CLI marks real boundaries and catches before its inner transport tr
   assert(relay.includes("value.get('kind') == 'NATIVE_POSTGRES_FIRST_FAILURE'"));
   assert(relay.includes("print(json.dumps(value, separators=(',', ':')), flush=True)"));
 });
+
+
+test('legacy follower process preserves bounded actual exit/signal/fatal observation before outer assertion',async()=>{
+  const {nativeLegacyFollowerProcessFirstFailure:validate,nativePostgresChildFirstFailure:parse}
+    =await import('./lib/checkpoint-cas-native-postgres.mjs');
+  const empty={bytes:0,complete:true,sha256:'a'.repeat(64)};
+  const generic={kind:'SOURCE_LEGACY_CHILD_FIRST_FAILURE',phase:'FOLLOWER',
+    exceptionType:'ASSERTION_ERROR',osError:'NONE',callsite:null,privatePayloadIncluded:false};
+  for(const [returncode,signal] of [[7,'NONE'],[-9,'SIGKILL'],[-6,'SIGABRT'],[null,'UNKNOWN']]){
+    const value={kind:'SOURCE_LEGACY_FOLLOWER_PROCESS_FIRST_FAILURE',phase:'FOLLOWER',
+      returncode,signal,stdout:empty,stderr:{...empty,bytes:100},
+      lastPhase:'SOURCE_LEGACY_PRODUCER_UPDATER585',fatalCategory:'NONE',privatePayloadIncluded:false};
+    assert.deepEqual(validate(value),value);
+    assert.deepEqual(parse(JSON.stringify(value)+'\n'+JSON.stringify(generic),''),value);
+    for(const fatalCategory of ['NONE','HEAP_OUT_OF_MEMORY','UNKNOWN'])
+      assert.deepEqual(validate({...value,fatalCategory}),{...value,fatalCategory});
+    for(const lastPhase of ['SOURCE_LEGACY_PRODUCER','SOURCE_LEGACY_PRODUCER_FOLLOWER585',
+      'SOURCE_LEGACY_PRODUCER_FOLLOWER587','SOURCE_LEGACY_PRODUCER_FOLLOWER588','UNKNOWN'])
+      assert.deepEqual(validate({...value,lastPhase}),{...value,lastPhase});
+    for(const bad of [
+      {...value,raw:'PRIVATE_SENTINEL'},{...value,returncode:0},{...value,returncode:true},
+      {...value,returncode:2**31},{...value,signal:'PRIVATE_SENTINEL'},
+      {...value,phase:'PROVIDERS'},{...value,lastPhase:'SOURCE_LEGACY_PRIVATE'},
+      {...value,lastPhase:'SOURCE_LEGACY_SETUP\nPRIVATE_SENTINEL'},
+      {...value,fatalCategory:'FATAL ERROR: PRIVATE_SENTINEL'},
+      {...value,privatePayloadIncluded:true},
+      {...value,stderr:{...empty,raw:'PRIVATE_SENTINEL'}},
+      {...value,stderr:{...empty,bytes:16*1024*1024+1}},
+      {...value,stderr:{...empty,sha256:'PRIVATE_SENTINEL'}},
+      {...value,stderr:{bytes:1,complete:false,sha256:'a'.repeat(64)}},
+      {...value,stderr:{bytes:1,complete:false,sha256:null}},
+    ]){
+      assert.equal(validate(bad),null);assert.equal(parse(JSON.stringify(bad),''),null);
+    }
+    const incomplete={...value,stderr:{bytes:16*1024*1024+1,complete:false,sha256:null},
+      lastPhase:'UNKNOWN',fatalCategory:'UNKNOWN'};
+    assert.deepEqual(validate(incomplete),incomplete);
+    assert.deepEqual(parse(JSON.stringify(incomplete)+'\n'+JSON.stringify(generic),''),incomplete);
+  }
+  for(const raw of ['PRIVATE_SENTINEL','{malformed','FATAL ERROR: PRIVATE_SENTINEL'])
+    assert.equal(parse(raw,''),null);
+  const python=await fs.readFile('scripts/test-source19-terminal-failure-proof-bank-v17-observer-native.py','utf8');
+  const stable=python.indexOf("output.flush(); os.fsync(output.fileno()); errors.flush(); os.fsync(errors.fileno())",
+    python.indexOf('    def test_source_legacy_compatibility(self):'));
+  const normalAssert=python.indexOf("self.assertEqual(result.returncode, 0, 'SOURCE_LEGACY_COMPATIBILITY_CHILD_REFUSED')",stable);
+  const inner=python.indexOf("if type(value) is dict and value.get('kind') == 'NATIVE_POSTGRES_FIRST_FAILURE':",normalAssert);
+  const process=python.indexOf('projected = source_legacy_follower_process_failure(result, own)',inner);
+  const outer=python.indexOf('projected = source_legacy_child_failure(error, name.upper())',process);
+  assert(stable>=0&&normalAssert>stable&&inner>normalAssert&&process>inner&&outer>process);
+  // Existing normal phase assignments and next calls stay intact. Markers
+  // observe the actual selected boundary; they are not a phase completion.
+  for(const file of ['scripts/test-source-producer-legacy-compatibility.mjs',
+    'scripts/fixtures/source19-current-normal-inputs.mjs']){
+    const source=await fs.readFile(file,'utf8');
+    assert(source.includes("kind:'SOURCE_LEGACY_PHASE_OBSERVATION'"));
+    const matches=[...source.matchAll(/^([ ]+)(?:sourceLegacyPhase|observation\.phase)='(SOURCE_LEGACY_[A-Z0-9_]+)';\n\1observeSourceLegacyPhase\((?:sourceLegacyPhase|observation\.phase)\);$/gm)];
+    assert(matches.length>=9,'Normal fixed assignment markers are present, not reconstructed callbacks');
+  }
+});

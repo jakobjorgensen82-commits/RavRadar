@@ -141,6 +141,10 @@ async function copyInputs(inputRoot, outputRoot, rows, allowed) {
 }
 
 // SOURCE_PRODUCER_OBSERVATION_BEGIN
+function observeSourceLegacyPhase(phase){
+  try{console.error(JSON.stringify({kind:'SOURCE_LEGACY_PHASE_OBSERVATION',phase,privatePayloadIncluded:false}));}
+  catch{} // Observation never changes the normal phase/exception/result.
+}
 // Observation only: these fixed owned source roots cannot admit data or a host.
 // Keep a failed producer's original exception/result and five-field report.
 async function sourceProducerFailureFrame(error, observation) {
@@ -236,6 +240,7 @@ async function reportSourceProducerFailure(error,observation){
 }
 async function observeNativeInputs(options, initial) {
   const observation={phase:'SOURCE_LEGACY_PRODUCER_SETUP',work:null,sourceHead:null,sourceTree:null,initial,failureReported:false};
+  observeSourceLegacyPhase(observation.phase);
   try{return await produceNativeInputs(options,initial,observation);}
   catch(error){await reportSourceProducerFailure(error,observation);throw error;}
 }
@@ -430,6 +435,7 @@ async function saveNormal(root, privateRoot, backend, sourceHead, sameReferenceS
 async function advanceGenuine585Through587({work,host585,saved585,inputRoot,adminInputs,
   successorProviderInputs,targetReferenceAt,backend,registry,initial,publicReader,observation}) {
   observation.phase='SOURCE_LEGACY_PRODUCER_NATIVE586';
+  observeSourceLegacyPhase(observation.phase);
   const native=path.join(work,'normal586');cloneSource(HEAD586,TREE586,native);
   await copyInputs(inputRoot,native,adminInputs,ADMIN);
   same(await(await load(native,'scripts/build-public-coastal-parts-v2.mjs')).build(),registry,
@@ -452,6 +458,7 @@ async function advanceGenuine585Through587({work,host585,saved585,inputRoot,admi
   assert.equal(saved586.manifest.modelBinding.modelBundleSha256,'6d8f7cca203b5f7ee5155f3c0cdb39403a02fd0eb30fecaca5070ef9f814a805');
   assert.equal(saved586.manifest.contractHashes.continuationStateContractSha256,'d2d93920aacc4be877da22c7b9e31e21426e647227a2c5018ee14b3a267500c7');
   observation.phase='SOURCE_LEGACY_PRODUCER_FOLLOWER587';
+  observeSourceLegacyPhase(observation.phase);
   const host587=path.join(work,initial?'normal-initial-operative587':'normal-operative587');
   cloneSource(OPERATIVE587_HEAD,OPERATIVE587_TREE,host587);
   await copyInputs(inputRoot,host587,adminInputs,ADMIN);
@@ -497,6 +504,7 @@ async function advanceGenuine585Through587({work,host585,saved585,inputRoot,admi
 async function advanceGenuine587Through588({work,saved587,inputRoot,adminInputs,
   successorProviderInputs,targetReferenceAt,backend,registry,initial,publicReader,observation}) {
   observation.phase='SOURCE_LEGACY_PRODUCER_FOLLOWER588';
+  observeSourceLegacyPhase(observation.phase);
   assertFrozen588CodeSourceSelected();
   assert.equal(Date.parse(targetReferenceAt)-Date.parse(saved587.referenceAt),3600000,
     'Actual ACTIVE588 caller is STRICTLY later than genuine587');
@@ -631,6 +639,7 @@ async function produceNativeInputs(options,initial,observation) {
     assert.equal(registry585.zoneCount, 210); assert.equal(registry585.partCount, 673);
     same(JSON.parse(await read(path.join(ROOT, REGISTRY))), registry585, 'Same actual normal admin registry in CURRENT and585');
     observation.phase='SOURCE_LEGACY_PRODUCER_ARCHIVE';
+    observeSourceLegacyPhase(observation.phase);
     const archiveSeed = await createArchivedOnlyOldSeed({work, inputRoot, adminInputs: options.adminInputs,
       registry: registry585, target, backend});
     const publicReader={root:archiveSeed.publicRoot};
@@ -659,11 +668,14 @@ async function produceNativeInputs(options,initial,observation) {
     assert(process.env.RAVSCORE_FIRST_CUTOVER_BOOTSTRAP_MODE === undefined);
     process.chdir(host585);
     observation.phase='SOURCE_LEGACY_PRODUCER_UPDATER585';
+    observeSourceLegacyPhase(observation.phase);
     await load(host585, 'scripts/update-weather.mjs');
     observation.phase='SOURCE_LEGACY_PRODUCER_PUBLIC585';
+    observeSourceLegacyPhase(observation.phase);
     await load(host585, 'scripts/generate-public-conditions.mjs');
     same(await json(path.join(host585, REGISTRY)), registry585, 'Registry unchanged through normal updater/public');
     observation.phase='SOURCE_LEGACY_PRODUCER_SAVE585';
+    observeSourceLegacyPhase(observation.phase);
     const private585 = path.join(work, 'saved585'); await fs.mkdir(private585);
     let saved585 = await saveNormal(host585, private585, backend, producerHead);
     const first585=saved585;
@@ -671,6 +683,7 @@ async function produceNativeInputs(options,initial,observation) {
     assert.equal(saved585.manifest.contractHashes.continuationStateContractSha256, before585.T);
     {
       observation.phase='SOURCE_LEGACY_PRODUCER_RESTORE585';
+      observeSourceLegacyPhase(observation.phase);
       // Same normal restore/install/readback callers as the ordinary follower;
       // no state field, previous hour, score or READY bit is authored here.
       const workflow585=await load(host585,'scripts/private-production-runtime-workflow.mjs');
@@ -701,15 +714,18 @@ async function produceNativeInputs(options,initial,observation) {
       delete process.env.RAVRADAR_ARCHIVED_WEATHER_RESTART_CONTEXT_PATH;
       delete process.env.RAVRADAR_ARCHIVED_WEATHER_RESTART_CONTEXT_SHA256;
       observation.phase='SOURCE_LEGACY_PRODUCER_FOLLOWER585';
+      observeSourceLegacyPhase(observation.phase);
       await copyInputs(path.join(own,'fixture-initial-h1'),host585,options.forwardProviderInputs,PROVIDERS);
       process.env.RAVRADAR_PRODUCTION_TARGET_HOUR=finalTarget;
       // Native test-only fixed second invocation. Ordinary module source and
       // all model/state contracts stay identical; query avoids ESM run caching.
       await import(pathToFileURL(path.join(host585,'scripts/update-weather.mjs')).href+'?source-native-initial-forward');
       observation.phase='SOURCE_LEGACY_PRODUCER_PUBLIC585';
+      observeSourceLegacyPhase(observation.phase);
       await import(pathToFileURL(path.join(host585,'scripts/generate-public-conditions.mjs')).href+'?source-native-initial-forward');
       same(await json(path.join(host585,REGISTRY)),registry585,'Same normal registry through both585 generations');
       observation.phase='SOURCE_LEGACY_PRODUCER_SAVE585';
+      observeSourceLegacyPhase(observation.phase);
       const forwardPrivate=path.join(work,'saved585-forward');await fs.mkdir(forwardPrivate);
       saved585=await saveNormal(host585,forwardPrivate,backend,producerHead);
       assert.equal(saved585.referenceAt,finalTarget);
@@ -722,6 +738,7 @@ async function produceNativeInputs(options,initial,observation) {
       adminInputs:options.adminInputs,successorProviderInputs:options.successorProviderInputs,
       targetReferenceAt:successorTarget,backend,registry:registry585,initial,publicReader,observation});
     observation.phase='SOURCE_LEGACY_PRODUCER_FINISH';
+    observeSourceLegacyPhase(observation.phase);
     if(initial)return Object.freeze({profile:'current-source-native-initial',workRoot:work,sourceRoot:host588,
       first585,saved585,saved586,saved587,saved588,referenceAt:successorTarget,initialReferenceAt:target,
       frozen585ForwardReferenceAt:finalTarget,
@@ -730,6 +747,7 @@ async function produceNativeInputs(options,initial,observation) {
       events:[...backend.events],normalNationalRollbackQualified:false,initialCentralActivation:'UNRUN',
       actionInvoked:false,sdkInvoked:false,sourceOwnerIssued:false,wholeSourceIntegrationProved:false,productionProof:false});
     observation.phase='SOURCE_LEGACY_PRODUCER_SOURCE_METADATA';
+    observeSourceLegacyPhase(observation.phase);
     // Same normal admin INPUTS as every genuine585/586/587/588 host. This is
     // AFTER source-clean and the initial-only return, never a tracked-code waiver.
     await copyInputs(inputRoot, ROOT, options.adminInputs, ADMIN);
@@ -753,6 +771,7 @@ async function produceNativeInputs(options,initial,observation) {
       predecessorManifest: saved588.manifest, migrationReport: await json(prepared.normalBReportPath),
     });
     observation.phase='SOURCE_LEGACY_PRODUCER_FINISH';
+    observeSourceLegacyPhase(observation.phase);
     assert.equal(current.manifest.modelBinding.modelBundleSha256, next.I);
     assert.equal(current.manifest.contractHashes.continuationStateContractSha256, next.T);
     same(await json(path.join(ROOT, REGISTRY)), registry585, 'Same registry retained through actual CURRENT B/S');

@@ -239,17 +239,24 @@ async function producerObservationHarness(root, producer, logs=[]){
   const {isDeepStrictEqual}=await import('node:util');
   const {nativePostgresExceptionDiagnostic}=await import('./lib/checkpoint-cas-native-postgres.mjs');
   const AsyncFunction=Object.getPrototypeOf(async function(){}).constructor;
+  const phaseLogs=[];
   const functions=await AsyncFunction('assert','crypto','fs','path','execFileSync','fileURLToPath','pathToFileURL',
     'isDeepStrictEqual','ROOT',...names,'nativePostgresExceptionDiagnostic','produceNativeInputs','console',
     prefix+block+'\nreturn {sourceProducerFailureFrame,observeNativeInputs,reportSourceProducerFailure};')(
     assert,crypto,fs,path,execFileSync,fileURLToPath,pathToFileURL,isDeepStrictEqual,root,...pins,
-    nativePostgresExceptionDiagnostic,producer,{error:value=>logs.push(JSON.parse(value))});
-  return {...functions,pins:Object.fromEntries(names.map((name,index)=>[name,pins[index]])),source};
+    nativePostgresExceptionDiagnostic,producer,{error:value=>{
+      const report=JSON.parse(value);
+      if(report.kind==='SOURCE_LEGACY_PHASE_OBSERVATION')phaseLogs.push(report);
+      else logs.push(report);
+    }});
+  return {...functions,pins:Object.fromEntries(names.map((name,index)=>[name,pins[index]])),source,phaseLogs};
 }
 
 test('SOURCE producer reports real fixed operation boundaries and preserves the thrown identity/result',async()=>{
   const logs=[],sentinel={scope:'diagnostic-unit-only'},h=await producerObservationHarness(ROOT,async()=>sentinel,logs);
   assert.equal(await h.observeNativeInputs({},false),sentinel);assert.equal(logs.length,0);
+  assert.deepEqual(h.phaseLogs,[{kind:'SOURCE_LEGACY_PHASE_OBSERVATION',
+    phase:'SOURCE_LEGACY_PRODUCER_SETUP',privatePayloadIncluded:false}]);
   assert(h.source.includes('} catch (error) { first = error; await reportSourceProducerFailure(error,observation); throw error; }'),
     'The real producer reports its first exception before its existing cleanup');
   const firstObservation={phase:'SOURCE_LEGACY_PRODUCER_SETUP',work:null,failureReported:false};
@@ -281,6 +288,8 @@ test('SOURCE producer reports real fixed operation boundaries and preserves the 
     let caught=false;
     try{await actual.observeNativeInputs({},false);}catch(error){caught=true;assert.equal(error,thrown);}
     assert(caught);assert.equal(observed.length,1);
+    assert.deepEqual(actual.phaseLogs,[{kind:'SOURCE_LEGACY_PHASE_OBSERVATION',
+      phase:'SOURCE_LEGACY_PRODUCER_SETUP',privatePayloadIncluded:false}]);
     assert.deepEqual(Object.keys(observed[0]).sort(),['code','frame','kind','phase','privatePayloadIncluded']);
     assert.equal(observed[0].phase,'SOURCE_LEGACY_PRODUCER_SETUP');assert.equal(observed[0].privatePayloadIncluded,false);
     assert(!JSON.stringify(observed[0]).includes('PRIVATE_MESSAGE_AND_VALUE'));
