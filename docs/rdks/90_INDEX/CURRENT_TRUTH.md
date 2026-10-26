@@ -1,3 +1,11 @@
+## 26. oktober — faktisk filserverafvisning, ikke ny vejrhentningsfejl
+
+Et providerfrit rettelsesdeploy har faktisk genbrugt den aktuelle prognose og bestået den installerede tomme databaseplan, autentificeret current-runtime samt B-før-S-gemning. Pages kvitterede for publicering, men den afsluttende offentlige kontrol fik HTTP 503 på én prognosefil. En senere afgrænset læsning af samme fil gav HTTP 200 og præcis fuld kontrolsum. Det er ikke bevis for en fejl i vejrhentningen, datatab eller den konkrete årsag hos leveringsplatformen; den oprindelige røde slutstatus bevares.
+
+Den lokale rettelse genprøver kun det samme afviste HTTP-kald ved 502, 503 eller 504. Én samlet kontrol deler højst tre ekstra forsøg, højst tre forsøg i alt pr. fil og fem sekunders standardpause. Afviste svar lukkes før gentagelse. Godkendte filer og hele pakkegennemgangen startes ikke forfra. Kun et gyldigt, men endnu ikke matchende manifest kan bruge den særskilte 121-observationsventen. Forkert kontrolsum, JSON, model, adgang, 404, afbrydelse eller ukendt fejl giver ingen ny adgang.
+
+Hele den eksisterende normale Pages-målprøve består én gang med de additive tilfælde for forbigående og vedvarende serverfejl, fælles forsøgsloft, uændrede gode filkald, defekt svar efter genforsøg og afbrudt svarlukning. Det er lokal kilde, ikke ny præcis CI eller verificeret offentlig afslutning. Version, C/I/T, SQL, vejr, scorer, kilder og geometri er uændrede; SOURCE og øvrige tilbageholdte aktiveringer forbliver særskilte. Se DEC-0194 og håndbog 89.270. Detaljerede kørsler og beviser står privat.
+
 ## 26. oktober — installeret kode-only følger den aktuelle udstedte familie
 
 En almindelig vejrhentning har faktisk leveret nyt offentligt vejr med central slutregistrering. Et efterfølgende providerfrit rettelsesdeploy stoppede derimod før offentlig skrivning: den gamle 586-selector krævede stadig sin historiske binding, selv om 588 var installeret. Den gamle 585-selector og to senere origin-planvalg havde samme generationsproblem. Dette er ikke fejl i DMI-data eller i den afsluttede almindelige vejrhentning.

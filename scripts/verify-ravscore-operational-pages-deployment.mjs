@@ -171,14 +171,25 @@ function scanBindings(value, expected, label, pathPrefix = label) {
   }
 }
 
-async function fetchBytes(fetchImpl, url, label) {
-  const response = await fetchImpl(url, {
-    cache: 'no-store',
-    headers: { accept: label.endsWith('.json') || label.endsWith('.geojson')
-      ? 'application/json' : 'text/javascript' },
-  });
-  if (!response?.ok) throw new Error(`${label} returned HTTP ${response?.status ?? 'unknown'}`);
-  return Buffer.from(await response.arrayBuffer());
+async function fetchBytes(fetchImpl, url, label, httpRetryBudget) {
+  // Only a refused transient HTTP response may repeat this exact request.
+  // Tokens belong to the whole verification, including manifest observation.
+  for (let attempt = 1; ; attempt += 1) {
+    const response = await fetchImpl(url, {
+      cache: 'no-store',
+      headers: { accept: label.endsWith('.json') || label.endsWith('.geojson')
+        ? 'application/json' : 'text/javascript' },
+    });
+    if (response?.ok) return Buffer.from(await response.arrayBuffer());
+    const error = new Error(`${label} returned HTTP ${response?.status ?? 'unknown'}`);
+    // Do not abandon an unread response body before a retry or refusal.
+    // Failed cleanup, fetch/abort and body-read errors remain immediate failures.
+    if (typeof response?.body?.cancel === 'function') await response.body.cancel();
+    if (![502, 503, 504].includes(response?.status)
+      || attempt >= 3 || httpRetryBudget.remaining <= 0) throw error;
+    httpRetryBudget.remaining -= 1;
+    await new Promise(resolve => setTimeout(resolve, httpRetryBudget.delayMs));
+  }
 }
 
 function withCacheBuster(baseUrl, relative, sourceHead, observationNonce) {
@@ -349,6 +360,7 @@ async function verifyPublicImplementationClosure({
   expectedPublicClosure,
   observationNonce,
   fetchImpl,
+  httpRetryBudget,
   knownSourceRepair = null,
 }) {
   const expectedMissingPublicFile = knownSourceRepair?.knownMissingPublicFile ?? null;
@@ -362,10 +374,10 @@ async function verifyPublicImplementationClosure({
   const [contractBytes, bundleBytes] = await Promise.all([
     fetchBytes(fetchImpl, withCacheBuster(baseUrl,
       'js/core/ravscore-model-contract.js', sourceHead, observationNonce),
-    'ravscore-model-contract.js'),
+    'ravscore-model-contract.js', httpRetryBudget),
     fetchBytes(fetchImpl, withCacheBuster(baseUrl,
       'js/core/ravscore-model-bundle.generated.js', sourceHead, observationNonce),
-    'ravscore-model-bundle.generated.js'),
+    'ravscore-model-bundle.generated.js', httpRetryBudget),
   ]);
   if (contractBytes.toString('utf8') !== expectedContractText
     || bundleBytes.toString('utf8') !== expectedBundleText) {
@@ -373,7 +385,7 @@ async function verifyPublicImplementationClosure({
   }
   for (const expectedHtml of expectedPublicClosure.htmlEntrypoints) {
     const htmlBytes = await fetchBytes(fetchImpl,
-      withCacheBuster(baseUrl, expectedHtml.path, sourceHead, observationNonce), expectedHtml.path);
+      withCacheBuster(baseUrl, expectedHtml.path, sourceHead, observationNonce), expectedHtml.path, httpRetryBudget);
     const htmlSource = htmlBytes.toString('utf8');
     if (sha256(normalizedBundleSource(htmlSource)) !== expectedHtml.sourceSha256
       || !same(ravScorePublicEntrypointDescriptor(htmlSource, {
@@ -387,7 +399,7 @@ async function verifyPublicImplementationClosure({
     let bytes;
     try {
       bytes = await fetchBytes(fetchImpl,
-        withCacheBuster(baseUrl, item.path, sourceHead, observationNonce), item.path);
+        withCacheBuster(baseUrl, item.path, sourceHead, observationNonce), item.path, httpRetryBudget);
     } catch (error) {
       const allowed = expectedMissingPublicFile;
       if (!allowed || item.path !== allowed.path || item.sha256 !== allowed.sha256
@@ -517,12 +529,13 @@ async function verifyOnce({
   expectedPublicClosure,
   observationNonce,
   fetchImpl,
+  httpRetryBudget,
   knownSourceRepair = null,
 } = {}) {
   const fetched = {};
   for (const relative of PUBLIC_FILES) {
     fetched[relative] = await fetchBytes(fetchImpl,
-      withCacheBuster(baseUrl, relative, sourceHead, observationNonce), relative);
+      withCacheBuster(baseUrl, relative, sourceHead, observationNonce), relative, httpRetryBudget);
   }
   const digestChecks = [
     ['data/live/public-conditions.json', manifest.publicConditionsSha256,
@@ -562,7 +575,7 @@ async function verifyOnce({
       const entry = deliveryEntries[deliveryIndex++];
       const relative = `data/live/${entry.path.replace(/^\.\//, '')}`;
       const bytes = await fetchBytes(fetchImpl,
-        withCacheBuster(baseUrl, relative, sourceHead, observationNonce), relative);
+        withCacheBuster(baseUrl, relative, sourceHead, observationNonce), relative, httpRetryBudget);
       if (bytes.length !== entry.bytes || sha256(bytes) !== entry.sha256) {
         throw new Error(`Deployed public delivery digest mismatch for ${relative}`);
       }
@@ -583,6 +596,7 @@ async function verifyOnce({
     expectedPublicClosure,
     observationNonce,
     fetchImpl,
+    httpRetryBudget,
     knownSourceRepair,
   });
   const implementationClosureSha256 = closureVerification.implementationClosureSha256;
@@ -640,7 +654,8 @@ export async function verifyRavScoreOperationalPagesDeployment({
   observationNonce = null,
   fetchImpl = globalThis.fetch,
   // Pages may serve its previous manifest for up to ten minutes after deploy.
-  // Only that exact-manifest wait retries; the complete package is checked once.
+  // Only that exact-manifest wait polls; the complete package is checked once.
+  // Refused transient HTTP requests share at most three extra attempts total.
   attempts = 121,
   retryDelayMs = 5_000,
   knownSourceRepairId = null,
@@ -678,24 +693,23 @@ export async function verifyRavScoreOperationalPagesDeployment({
       !== knownSourceRepair.sourcePublicClosureSha256)) {
     throw new Error('Operational Pages source repair does not match its exact pinned source');
   }
+  const httpRetryBudget = { remaining: 3, delayMs: retryDelayMs };
   let manifest, matchedObservationNonce;
   for (let attempt = 1; attempt <= attempts; attempt += 1) {
     const manifestObservationNonce = `${observationNonce}-${attempt}`;
-    try {
-      const manifestBytes = await fetchBytes(fetchImpl,
-        withCacheBuster(baseUrl, 'data/live/manifest.json', sourceHead, manifestObservationNonce),
-        'manifest.json');
-      try { manifest = JSON.parse(manifestBytes.toString('utf8')); }
-      catch { throw new Error('Deployed operational manifest is not JSON'); }
-      if (!same(manifest, expectedManifest)) {
-        throw new Error('Deployed operational manifest differs from the sealed artifact');
-      }
+    const manifestBytes = await fetchBytes(fetchImpl,
+      withCacheBuster(baseUrl, 'data/live/manifest.json', sourceHead, manifestObservationNonce),
+      'manifest.json', httpRetryBudget);
+    try { manifest = JSON.parse(manifestBytes.toString('utf8')); }
+    catch { throw new Error('Deployed operational manifest is not JSON'); }
+    if (same(manifest, expectedManifest)) {
       matchedObservationNonce = manifestObservationNonce;
       break;
-    } catch (error) {
-      if (attempt === attempts) throw error;
-      await new Promise(resolve => setTimeout(resolve, retryDelayMs));
     }
+    if (attempt === attempts) {
+      throw new Error('Deployed operational manifest differs from the sealed artifact');
+    }
+    await new Promise(resolve => setTimeout(resolve, retryDelayMs));
   }
   return verifyOnce({
     baseUrl,
@@ -708,6 +722,7 @@ export async function verifyRavScoreOperationalPagesDeployment({
     expectedPublicClosure: sealedPublicClosure,
     observationNonce: matchedObservationNonce,
     fetchImpl,
+    httpRetryBudget,
     knownSourceRepair,
   });
 }

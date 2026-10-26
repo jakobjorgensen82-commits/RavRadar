@@ -1,3 +1,11 @@
+## 26. oktober — afgrænset gentagelse af et afvist offentligt filkald
+
+- Kun HTTP 502/503/504 må genprøves på samme fil; højst tre ekstra forsøg samlet og højst tre i alt pr. fil.
+- Hele pakkekontrollen og godkendte filer gentages ikke. Afbrudt svarlukning, fejl i indhold, adgang eller øvrige HTTP-svar afvises fortsat.
+- Den normale samlede Pages-målprøve består lokalt; præcis CI og offentlig afslutning er åbne. Det allerede observerede 503-forløb ommærkes ikke som grønt.
+
+Ingen ny version, C/I/T, SQL, vejr- eller scorerettelse. Se DEC-0194 og håndbog 89.270.
+
 ## 26. oktober — lokal aktuel installed-only-rute, uændret 4.0.588
 
 - Reproduceret det konkrete gamle 586-bindingskrav ved normal kode-only på installeret 588; samme fejlklasse i 585 og de efterfølgende origin-planer håndteres samlet.
