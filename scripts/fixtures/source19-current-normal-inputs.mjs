@@ -13,6 +13,7 @@ import {requireSourceProducerOutput, requireSourceProducerBinding,
 import {ASSISTANT_PUBLIC587_SUCCESSOR_BEFORE as ISSUED587}
   from '../lib/assistant-later-h0-successor-source.mjs';
 import {assertFrozen588CodeSourceSelected} from '../check-assistant-later-h0-predecessor-source.mjs';
+import {build as buildNormalRegistry} from '../build-public-coastal-parts-v2.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
 const OLD_HEAD = 'd8a52e3e4cbaed1557cc56fe01f5f0a2b0d657d7';
@@ -69,6 +70,29 @@ async function writeNew(file, raw) {
   try { await handle.writeFile(raw); await handle.sync(); } catch (error) { first = error; }
   try { await handle.close(); } catch (error) { first ??= error; }
   if (first) throw first; same(await read(file, Math.max(raw.length, 1024)), raw, 'Private output read-back');
+}
+
+// Test-input guard only, never source or production admission. The provider
+// fixture legitimately rebuilds this ONE tracked derived file before entry.
+// Every other tracked byte must still equal HEAD, and this file must equal
+// the whole actual normal builder output from the same committed inputs.
+export async function assertCurrentNativeSourceWithDerivedRegistry({repositoryRoot,proofPath}) {
+  assert.equal(arguments.length,1);assert(path.isAbsolute(repositoryRoot)&&path.isAbsolute(proofPath));
+  const source=await fs.realpath(repositoryRoot);assert.equal(source,repositoryRoot);
+  assert(!inside(source,proofPath)&&proofPath!==source);
+  await noLinks(source);await noLinks(path.dirname(proofPath));
+  await assert.rejects(fs.lstat(proofPath),{code:'ENOENT'},'Exclusive derived-registry comparison');
+  const changed=git(source,'diff','--name-only','HEAD').split(/\r?\n/).filter(Boolean);
+  assert(changed.every(name=>name===REGISTRY),'Committed CURRENT source/admin inputs only');
+  const actual=await read(path.join(source,REGISTRY));
+  await buildNormalRegistry({source:path.join(source,'data/geometry-v2/active-national-coastal-parts'),
+    output:proofPath,overrides:path.join(source,'data/admin/coastline-overrides.json'),
+    directionReviews:path.join(source,'data/admin/direction-reviews.json'),zonesFile:path.join(source,'data/zones.geojson')});
+  same(await read(proofPath),actual,'Exact complete normal derived registry, not a dirty-path exemption');
+  same(await read(path.join(source,REGISTRY)),actual,'Derived registry unchanged during comparison');
+  same(git(source,'diff','--name-only','HEAD').split(/\r?\n/).filter(Boolean),changed,
+    'Source/admin files unchanged during normal derivation');
+  return true;
 }
 function refuseFixtureOnly(value) {
   if (Array.isArray(value)) for (const item of value) refuseFixtureOnly(item);
@@ -463,7 +487,9 @@ async function produceNativeInputs(options,initial) {
     assert.equal(await fs.realpath(forwardRoot),forwardRoot);}
   await noLinks(path.dirname(work)); await noLinks(inputRoot); await fs.mkdir(work, {recursive: false, mode: 0o700});
   const workStat = await fs.lstat(work, {bigint: true}), currentHead = git(ROOT, 'rev-parse', 'HEAD');
-  assert.match(currentHead, /^[a-f0-9]{40}$/); assert.equal(git(ROOT, 'diff', '--name-only', 'HEAD'), '', 'Committed CURRENT source only');
+  assert.match(currentHead, /^[a-f0-9]{40}$/);
+  await assertCurrentNativeSourceWithDerivedRegistry({repositoryRoot:ROOT,
+    proofPath:path.join(work,'normal-registry-source-check.json')});
   const beforeEnv = {...process.env}, beforeCwd = process.cwd(), beforeFetch = globalThis.fetch; let restoreTransport, first;
   const closedFetch = async () => { throw new Error('CURRENT_NATIVE_INPUT_EXTERNAL_REQUEST_REFUSED'); };
   globalThis.fetch = closedFetch;
@@ -764,7 +790,8 @@ export async function prepareCurrentSourceNativeFromInitialProfile(){
   assert.equal(git(initial.sourceRoot,'rev-parse','HEAD'),OPERATIVE588_HEAD);
   assert.equal(git(initial.sourceRoot,'rev-parse','HEAD^{tree}'),OPERATIVE588_TREE);
   const currentHead=git(ROOT,'rev-parse','HEAD');assert.match(currentHead,/^[a-f0-9]{40}$/);
-  assert.equal(git(ROOT,'diff','--name-only','HEAD'),'');
+  await assertCurrentNativeSourceWithDerivedRegistry({repositoryRoot:ROOT,
+    proofPath:path.join(own,'normal-current-registry-source-check.json')});
   git(ROOT,'merge-base','--is-ancestor',OPERATIVE588_HEAD,currentHead);
   const work=path.join(own,'current-source-native-inputs');
   await fs.mkdir(work,{recursive:false,mode:0o700});const identity=await fs.lstat(work,{bigint:true});

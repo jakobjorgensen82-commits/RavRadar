@@ -6,6 +6,7 @@ import crypto from 'node:crypto';
 import test from 'node:test';
 import './test-source-producer-sync-binding.mjs';
 import './test-source-producer-workflow.mjs';
+import './test-source-native-derived-registry.mjs';
 import {SOURCE_PRODUCER_BINDING,SOURCE_PRODUCER_OUTPUT,SOURCE_PRODUCER_BEFORE,requireSourceProducerBinding,requireSourceProducerOutput} from './lib/source-producer-successor-source.mjs';
 import {stageSourceProducerOriginals} from './stage-source-producer-originals.mjs';
 import {runSourceProducerPrewrite,verifySourceProducerPrewritePreservation} from './source-producer-prewrite.mjs';

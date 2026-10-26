@@ -2,6 +2,8 @@
 
 **Kort fortalt:** Den fulde SOURCE589-kandidat er lokalt udstedt med egne normale bindinger og én ny migration. Den er ikke installeret eller bevis for nye offentlige vejrdata.
 
+Native-prøvens normale forberedelse genbygger kortets afledte kystdelsfil. Det er ikke en kodeændring. Prøven kræver stadig, at alle andre sporede filer er uændrede, og at hele den afledte fil er byteidentisk med det normale byggeresultat fra de samme kilde- og administratorinput. Et filnavn alene giver ingen undtagelse. Rettelsen er lokalt prøvet; en ny præcis Linux-, native- og databasekæde samt faktisk levering mangler stadig.
+
 B er den private vejrpakke, og S er den centralt gemte beregningstilstand. Første overgang må kun bruge den eksisterende kontrollerede rute ved den samme præcise referencetime, SAME_H0. Hele de autentiske originale 588 B/S kontrolleres først. Metadata forberedes uden nyt vejr; de normale artifactgates og en frisk slutkontrol skal derefter bestå.
 
 Kun en præcist krævet ny SQL-installation må udføres, højst én gang og med fuld genlæsning. Allerede installeret SQL gentages ikke. Efter genlæsningen gemmes og genlæses B på den beskyttede destination før S. Hele den faktisk centrale S genlæses, før Edge-funktioner og den offentlige side må leveres. Et ukendt skriveudfald er ikke en kvittering eller tilladelse til at gentage handlingen. Senere almindelige SOURCE-opdateringer kræver faktisk installeret 589 med de aktuelle modelledsagere; gamle testarkiver eller 588-planer giver ingen adgang.

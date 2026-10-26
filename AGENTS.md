@@ -1,3 +1,11 @@
+## 26. oktober — normal afledt kortfil er ikke ændret kildekode
+
+SOURCE589s præcise kildekontrol nåede den normale legacy-efterfølger, men stoppede før dens beregning: leverandørfiksturen havde normalt genbygget den sporede kystdelsfil, mens indgangen stadig krævede et helt tomt Git-diff. En separat normal byggerkørsel reproducerede forskellen uden ændring af de operative input.
+
+Den afgrænsede rettelse tillader kun denne ene afledte fil og kræver byteeksakt lighed med hele den normale genbygning fra de samme uændrede kilde- og administratorinput. Alle andre sporede ændringer, ændret afledt indhold og eksisterende bevisdestination afvises. Begge normale native-indgange bruger samme kontrol. Der ændres ikke score, geometri, adminpunkter, kilder, C/I/T eller udstedt SQL.
+
+Den lokale normale SOURCE-prøve består efter rettelsen, inklusive tidligere assertions og præcise negative tilfælde. Dette er ikke en bestået ny Linux/native-/PostgreSQL-kæde, installation eller offentlig levering. Den tidligere røde kontrol bevares, og den præcise rettede kilde skal kvalificeres. P0-vejropdateringen har fortsat førsteprioritet; ROOTs private checkpoint indeholder aktuelle kørsler og næste handling. Alle fem mål til 18. november og alle databevarelses-/writergrænser består.
+
 ## 25. oktober — lokal 4.0.589 udstedt; faktisk SOURCE-drift er stadig åben
 
 Den fulde SOURCE589-kilde er nu lokalt udstedt gennem den normale rækkefølge med én versionssynkronisering, fysisk afledte C/I/T, faktisk normal outputafledning, én ny append-only migration og synkronisering af alle syv forbrugere. De normale friske bygge-, SOURCE-, bindings- og releasekontroller er et fast punkt på de samme slutbytes. Det er ikke installeret SQL, PostgreSQL-eksekvering, præcis ny kilde-CI eller offentlig produktionseffekt.
