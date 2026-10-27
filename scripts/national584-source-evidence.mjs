@@ -95,9 +95,16 @@ export const SOURCE_NODE24_CAPTURE = [
   '          printf \'node24_path=%s\\n\' "$(command -v node)" >> "$GITHUB_OUTPUT"',
   '        id: source-native-node24', '',
 ].join('\n');
+// Same seven normal Linux process cases, before any expensive native SOURCE chain.
+export const SOURCE_NORMAL_CLI_UNIT = "          RAVRADAR_NATIVE_FIXTURE_TEST_NODE=\"$(command -v node)\" python -I -B scripts/test-source19-terminal-failure-proof-bank-v17-observer-native.py --legacy-normal-cli-unit\n";
 export const SOURCE_NODE24_ENV = '          RAVRADAR_SOURCE_NATIVE_NODE24_PATH: $'+'{{ steps.source-native-node24.outputs.node24_path }}\n';
 export function inverseSourceNode24Workflow(value) {
   let source=String(value).replace(/\r\n/g,'\n');
+  assert.equal(source.split(SOURCE_NORMAL_CLI_UNIT).length,2,'Exact once-only early normal Linux CLI unit');
+  const unitPrefix="      - name: Validate isolated acquisition ownership and raw-save cohort\n        shell: bash\n        run: |\n          set -euo pipefail\n";
+  assert(source.includes(unitPrefix+SOURCE_NORMAL_CLI_UNIT+"          node --test scripts/test-weather-acquisition-writer.mjs\n"),
+    'Same unit must be the first command in the existing Node24/Python3.12 cohort');
+  source=source.replace(SOURCE_NORMAL_CLI_UNIT,'');
   assert.equal(source.split(SOURCE_NODE24_CAPTURE).length,2,'Exact once-only observed Node24 capture');
   assert.equal(source.split(SOURCE_NODE24_ENV).length,2,'Exact once-only step-scoped Node24 operand');
   const cohort='          python -B scripts/test-owned-dmi-grib-save-native.py --node24-path "$(command -v node)"\n';

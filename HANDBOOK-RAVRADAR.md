@@ -14,6 +14,12 @@ Derefter består de normale kontroller af den genbrugte prognose, private oplysn
 
 **Kort fortalt:** Den fulde SOURCE589-kandidat er lokalt udstedt med egne normale bindinger og én ny migration. Den er ikke installeret eller bevis for nye offentlige vejrdata.
 
+En afsluttet isoleret SOURCE-prøve løb tør for V8-hukommelse og sluttede med SIGABRT, selv om Node24 allerede havde et loft på 8192 MiB. Fejlen skete før det gamle jobloft og er ikke timeoutbevis eller en påvist fejl i den almindelige vejrhentning.
+
+Prøven er lokalt ændret til de samme normale updater- og publiceringskald i friske processer, med samme data, hele B/S-kæde og kontroller. Den fysiske ejer følger den virkelige ydre proces gennem et friskt kernelhåndtag, pidfd, og samme fælles slutfrist. Ukendt stop eller observeret parenttab giver ikke adgang til senere SAVE, oprydning eller PASS; der loves ikke nul skrivevindue før tabet kan observeres.
+
+28 gamle lokale tilfælde består, og tre nye består fokuseret efter tre indledende fejl; Linux-procesprøven var sprunget over. Det er ikke samlet 32/32- eller native-PASS. De samme syv Linux-procesprøver er lokalt placeret tidligt under eksisterende Node24/Python3.12, mens den senere normale prøve bevares. Faktisk Linux-kørsel, den enkelte generations hukommelsesbehov og hele seks-timers kæden er fortsat åbne; OOM-årsagen er ikke bevist lukket. SOURCE og statistik er ikke aktiveret, og alle fem mål til 18. november består.
+
 En særskilt kildekandidat forbereder et samlet loft på 360 minutter, altså seks timer, for SOURCE-kildekontrollen. Det tidligere jobloft er 180 minutter, mens en nødvendig senere underproces allerede må bruge op til 240 minutter alene. Forberedelsen og de efterfølgende kontroller kræver også tid. Underprocessens eget loft og tidsgrænserne for almindeligt vejr og leverandører ændres ikke.
 
 Seks timer er en plan, ikke en målt værstefaldstid eller garanti for, at alle trin kan afsluttes. De normale målprøver og en præcis samlet kildekontrol skal stadig bestå for denne efterfølger. De gamle workflowkontroller og deres afslag bevares gennem en præcis historisk visning; ingen kontrol springes over, og rammen giver ikke genbrugs- eller aktiveringsadgang.
@@ -110,6 +116,10 @@ En gemt beregning og en offentlig levering er forskellige trin. Efter et sent st
 ## 89.268 Del en offentlig prognose
 
 Kort fortalt: Et delingslink peger på det valgte sted, tidspunkt og søgemåde. Du vælger selv, hvor det deles, og hvad du skriver til det.
+
+Hvis en teknisk kontrol af deling afvises, må den kun gemme faste kategorier om svarets form, ikke indhold eller private oplysninger. Flere fejltyper kan dermed skelnes uden at svække kontrollen. En lokal prøve eller et vellykket HTTP-svar viser ikke i sig selv, at den offentlige delingsforhåndsvisning virker. Den faktiske Worker og gratis kapacitet skal fortsat bevises særskilt.
+
+Leveringen skal kontrollere den fulde domæneoversigt, så delingsfunktionen ikke overtager en eksisterende tilknytning. På det præcise domæneendpoint kan et udtrykkeligt tomt fejlfelt, angivet som null, accepteres sammen med et bekræftet succes-svar og en fuldt kontrolleret liste uden domæner for denne Worker. Det er en afgrænset tilpasning til et faktisk målt svar; manglende felter, reelle fejl, ufuldstændige lister eller ukendte rækker afvises fortsat. Den offentlige forhåndsvisning og gratis kapacitet skal stadig afprøves særskilt.
 
 Delingsforhåndsvisningen har sin egen kontrollerede levering og skal være afprøvet på den offentlige adresse, før den regnes som klar. En lokal test eller et vellykket HTTP-svar er ikke nok. Den bruger ikke private kontooplysninger og kræver hverken en ny database eller et billedlager. Gratis kapacitet skal dokumenteres ved måling, ikke antages ud fra løsningens størrelse.
 

@@ -173,7 +173,8 @@ export async function runSourceProducerLegacyCompatibility(){
     // runtime AND hour pack. Do not run generate-public-conditions a second time.
     sourceLegacyPhase='SOURCE_LEGACY_UPDATER';
     observeSourceLegacyPhase(sourceLegacyPhase);
-    await load('scripts/update-weather.mjs');
+    const {runNormalNativeCli}=await load('scripts/fixtures/source19-current-normal-inputs.mjs');
+    await runNormalNativeCli(ROOT,'scripts/update-weather.mjs');
     const packed=await json(path.join(ROOT,CONDITIONS)),full=hydratePrivateConditionsHourly(packed);
     assert.equal(full.productionReferenceAt,target);
     same(await json(path.join(ROOT,REGISTRY)),produced.registry,'Unchanged actual normal admin registry');

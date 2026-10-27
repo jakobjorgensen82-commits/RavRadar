@@ -1,3 +1,31 @@
+## 27. oktober — normale SOURCE-kald får egne processer uden nyt heaploft
+
+En afsluttet isoleret SOURCE-kildeprøve løb tør for V8-hukommelse og sluttede med SIGABRT under den normale 585-efterfølger, selv om Node24 allerede havde loftet på 8192 MiB. Fejlen skete før det gamle 180-minutters jobloft; den må ikke ommærkes som timeout eller som en påvist fejl i almindelig vejrhentning.
+
+Prøvekalderen er lokalt ændret til de samme fem normale updater- og fem publiceringskald i friske Node24-processer med uændrede argumenter, heaploft og B/S-backend, også immutable POST/409. Hele B før S, genlæsning, faktisk 586-metadata, 587/588/SOURCE-pakker, den sidste særskilte SOURCE-læser og alle gamle assertions bevares. Den eksisterende fysiske ejer følger den virkelige ydre wrappers friske pidfd og identitet gennem samme fælles absolutte slutfrist og dræningsreserve. Observeret parenttab eller ukendt stop giver ikke adgang til senere arbejde, SAVE, oprydning eller PASS; der loves ikke nul skrivevindue før tabet kan observeres.
+
+Den normale lokale prøve gav 28 gamle PASS, tre nye RED og én Linux-SKIP. Efter snævre lokale oracle- og socketlukningsrettelser består de tre nye i en fokuseret genprøve; de 28 gamle blev ikke genkørt. Det er ikke samlet 32/32-, Linux-, native- eller PostgreSQL-PASS. De samme syv ufiltrerede Linux-procesprøver er lokalt placeret først i det eksisterende Node24/Python3.12-cohort; den senere normale prøve bevares. Faktisk Linux-kørsel, hver generations eget 8-GiB-behov og hele kæden inden for den planlagte seks-timers ramme er endnu ikke målt. Procesisolering er derfor ikke bevist OOM-lukning.
+
+Alle tidligere røde resultater og hele dokumenthistorikker bevares. SOURCE og statistik er ikke aktiveret; version, C/I/T, SQL, scoreformel, kildeprioritet, originaler og administratorgeometri ændres ikke. Kun den kanoniske håndbogspayload skal synkroniseres normalt; ingen SQL installeres. Alle fem mål til 18. november består som åbne mål.
+
+## 27. oktober — præcis kompatibilitet med tomt Cloudflare-domænefejlfelt
+
+Den tidligere formdiagnose er kildeleveret efter præcis kontrol. En faktisk kontrolleret aflæsning har nu påvist HTTP 200, success=true, errors=null og result som liste på det ufiltrerede domæneendpoint. Det hidtidige afslag skete før skrivning. Officiel dokumentation angiver et errors-array; den nye undtagelse beskrives derfor som målt endpointkompatibilitet, ikke som et dokumenteret null-skema.
+
+Kun den præcise CF_DOMAINS-læsning på /workers/domains kan bruge et udtrykkeligt null-felt sammen med success=true. Hele resultatlisten, fuldstændighed, hver række og fravær af domæner for denne Worker skal fortsat bestå. Manglende felt, reelle fejl, ukendt indhold, eget domæne eller andre CF-endpoints afvises stadig; svaret omskrives ikke til en tom fejlliste. Alle tidligere kontroller og særskilt negativ dækning af de øvrige endpoints bevares.
+
+Kildekvalifikation og faktisk Worker-/offentlig effekt skal fortsat dokumenteres særskilt. Ingen database, vejrdata, scoreformel, C/I/T, kildeprioritet, administratoropsætning eller geometri ændres. SOURCE og øvrige tilbageholdte aktiveringer er adskilte; alle fem mål til 18. november består. Tidligere diagnostikafsnit er historik på den nu målte svarform.
+
+## 27. oktober — prognosedelingens afslag får kun lukkede formkategorier
+
+Den allerede afviste delingskontrol havde HTTP 200 og success=true, men dens tidligere lukkede rapport kunne ikke skelne et manglende errors-felt fra null eller en anden ikke-array-form. Den faktiske oprindelige feltform er fortsat ukendt. Den lokale kildeændring tilføjer alene faste formkategorier for errors og result i den eksisterende diagnostik; rå svar, beskeder, feltværdier, konti, værtsnavne, URL'er og tokens medtages ikke. De tidligere diagnostikfelter og højst otte numeriske fejlkoder bevares.
+
+Hele API-accepten, den fulde domænekontrol og alle andre produktbytes uden for diagnostikfunktionen er byteuændrede. Manglende, null eller forkert errors-form normaliseres ikke til et gyldigt svar. Den normale cf→stop-kæde skal fortsat afvise før skrivning efter netop én læsning. Ingen endpointændring, genforsøg, Worker-installation eller adgangsudvidelse følger af diagnosen.
+
+Hele det eksisterende normale workflowmål er faktisk kørt én gang på de samme to uændrede kodeejere og består 14/14 uden fejl, skip eller afbrydelse på 119967,172ms. Alle tidligere kontroller og de additive form-/stop-/privatlivsassertions er med. Dette er lokal kildeprøve, ikke bevis for Cloudflares faktiske nye svar, installeret Worker, offentlig forhåndsvisning eller Free-kapacitet. Præcis CI og kontrolleret ekstern levering er endnu ikke udført; ROOT koordinerer særskilt.
+
+Ingen ny version, C/I/T, funktionel SQL, database, kontodata, vejrdata, scoreformel, kilder eller geometri. SOURCE/statistik og andre tilbageholdte aktiveringer forbliver særskilte. Gamle dokumentafsnit og røde kørsler bevares; faktisk Worker-/delingsaccept er fortsat uløst. Kun håndbogens kanoniske payload i den statiske installationskopi synkroniseres; ingen SQL installeres. Alle fem mål til 18. november består som åbne mål.
+
 ## 27. oktober — normale kildeinput og dræningsreserve, samlet kontrol åben
 
 De to seneste afsluttede præcise SOURCE-kontroller er røde med samme første 585-efterfølgerfase, fejlkode og hashbundne modelguard-frame. De er ikke grønne kildebeviser. En konkret gammel fysisk runtime-locator er rettet lokalt; den videre gennemgang af normale indgange er ikke en endeligt målt årsagslukning.

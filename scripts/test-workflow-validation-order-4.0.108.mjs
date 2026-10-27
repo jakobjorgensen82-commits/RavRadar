@@ -6,7 +6,7 @@ import {
   forecastShareDomainsForWorker, forecastShareCfEnvelopeDiagnostic,
 } from './deploy-forecast-share.mjs';
 import { verifyWorkflow as verifyCurrentNationalWorkflow, verifyPackage as verifyCurrentNationalPackage,
-  inverseSourceNode24Workflow, inverseSourceCiBudgetWorkflow, SOURCE_CI_JOB, SOURCE_NODE24_CAPTURE, SOURCE_NODE24_ENV,
+  inverseSourceNode24Workflow, inverseSourceCiBudgetWorkflow, SOURCE_CI_JOB, SOURCE_NODE24_CAPTURE, SOURCE_NODE24_ENV, SOURCE_NORMAL_CLI_UNIT,
   SOURCE_PRODUCER_SOURCE_COMMAND, SOURCE_PRODUCER_PREDECESSOR_SOURCE_COMMAND,
   CURRENT_JOB as CURRENT_SOURCE_JOB, AFTER_JOB as REVIEWED90_SOURCE_JOB } from './national584-source-evidence.mjs';
 import { inverseSourceProducerPhaseUpload, SOURCE_PRODUCER_PHASE_UPLOAD_BLOCK, CURRENT586_PHASE_UPLOAD_BLOCK }
@@ -314,6 +314,43 @@ async function syntheticShareRemote({ present, domains, expectedVersion = null, 
   });
   return { result, calls };
 }
+// V5: målt CF_DOMAINS-kompatibilitet, aldrig generel null→[]-normalisering.
+// Modellen følger den faktiske 200/success=true/errors=null/result-array-form;
+// den hævder ikke at kende de private rækker i leverandørens svar.
+const shareMeasuredNullDomains = { ...shareAllDomains([shareOtherDomain]), errors: null };
+assert.deepEqual(forecastShareDomainsForWorker(shareMeasuredNullDomains), []);
+assert.equal(shareMeasuredNullDomains.errors, null);
+for (const present of [false, true]) {
+  const accepted = await syntheticShareRemote({ present, domains: shareMeasuredNullDomains,
+    allowAbsent: true, expectedVersion: present ? shareVersion : null });
+  const observed = await accepted.result;
+  assert.equal(present ? observed.versionId : observed, present ? shareVersion : null);
+  assert.equal(accepted.calls.filter(value => value === '/workers/domains').length, 1);
+  assert.equal(shareMeasuredNullDomains.errors, null, 'Den oprindelige null-form må ikke omskrives');
+}
+for (const [changed, code] of [
+  [{ success: false, errors: null, result: [] }, 'SHARE_CF_READ'],
+  [{ success: true, result: [] }, 'SHARE_CF_READ'],
+  [{ success: true, errors: [ { code: 1000 } ], result: [] }, 'SHARE_CF_READ'],
+  [{ success: true, errors: null }, 'SHARE_LIST_UNKNOWN'],
+  [{ success: true, errors: null, result: null }, 'SHARE_LIST_UNKNOWN'],
+  [{ success: true, errors: null, result: {} }, 'SHARE_LIST_UNKNOWN'],
+  [{ ...shareMeasuredNullDomains, result_info: { total_pages: 2 } }, 'SHARE_LIST_INCOMPLETE'],
+  [{ ...shareMeasuredNullDomains, result_info: { total_count: 2 } }, 'SHARE_LIST_INCOMPLETE'],
+  [{ ...shareMeasuredNullDomains, result_info: null }, 'SHARE_LIST_INCOMPLETE'],
+  [{ ...shareMeasuredNullDomains, result_info: { cursors: { after: 'unknown' } } }, 'SHARE_LIST_INCOMPLETE'],
+  [{ ...shareMeasuredNullDomains, result: [null] }, 'SHARE_DOMAIN_UNKNOWN'],
+  [{ ...shareMeasuredNullDomains, result: [{ ...shareOtherDomain, service: '' }] }, 'SHARE_DOMAIN_UNKNOWN'],
+  [{ ...shareAllDomains([shareOtherDomain, shareOtherDomain]), errors: null }, 'SHARE_DOMAIN_UNKNOWN'],
+  ...['production', 'staging', ''].map(environment =>
+    [{ ...shareAllDomains([{ ...shareOwnDomain, environment }]), errors: null }, 'SHARE_REMOTE_DOMAINS']),
+]) {
+  const rejected = await syntheticShareRemote({ present: false, domains: changed, allowAbsent: true });
+  await assert.rejects(rejected.result, error => error.code === code
+    && error.readKind === 'CF_DOMAINS' && error.httpStatus === 200);
+  assert.equal(rejected.calls.filter(value => value === '/workers/domains').length, 1);
+}
+
 const shareAbsentRead = await syntheticShareRemote({ present: false,
   domains: shareAllDomains([shareOtherDomain]), allowAbsent: true });
 assert.equal(await shareAbsentRead.result, null);
@@ -425,19 +462,38 @@ for (const [readKind, httpStatus, expectedKind, expectedStatus] of [
 // V4: the normal CF failure and normal receipt keep only bounded, closed diagnostics.
 const shareUnknownCfDiagnostic = { kind: 'FORECAST_SHARE_CF_ENVELOPE_V1',
   envelope: 'UNKNOWN', success: 'UNKNOWN', errors: 'UNKNOWN',
+  errorsType: 'UNKNOWN', resultType: 'UNKNOWN',
   errorCodes: [], errorCodesStatus: 'UNKNOWN' };
 for (const unknown of [null, undefined, true, 10092, 'private raw value', []]) {
   assert.deepEqual(forecastShareCfEnvelopeDiagnostic(unknown), shareUnknownCfDiagnostic);
 }
 assert.deepEqual(forecastShareCfEnvelopeDiagnostic({ success: false, errors: [] }), {
   ...shareUnknownCfDiagnostic, envelope: 'OBJECT', success: 'FALSE',
-  errors: 'EMPTY', errorCodesStatus: 'COMPLETE' });
+  errors: 'EMPTY', errorsType: 'ARRAY', resultType: 'ABSENT', errorCodesStatus: 'COMPLETE' });
 assert.deepEqual(forecastShareCfEnvelopeDiagnostic({ success: true, errors: [] }), {
   ...shareUnknownCfDiagnostic, envelope: 'OBJECT', success: 'TRUE',
-  errors: 'EMPTY', errorCodesStatus: 'COMPLETE' });
-for (const errors of [undefined, null, {}, 'private errors']) {
+  errors: 'EMPTY', errorsType: 'ARRAY', resultType: 'ABSENT', errorCodesStatus: 'COMPLETE' });
+for (const [errors, errorsType] of [
+  [undefined, 'UNKNOWN'], [null, 'NULL'], [{}, 'OBJECT'], ['private errors', 'STRING'],
+]) {
   assert.deepEqual(forecastShareCfEnvelopeDiagnostic({ success: 'false', errors }), {
-    ...shareUnknownCfDiagnostic, envelope: 'OBJECT' });
+    ...shareUnknownCfDiagnostic, envelope: 'OBJECT', errorsType, resultType: 'ABSENT' });
+}
+// Nye formfelter er kun faste kategorier; de gamle diagnostikfelter er uændrede.
+assert.deepEqual(forecastShareCfEnvelopeDiagnostic({}), {
+  ...shareUnknownCfDiagnostic, envelope: 'OBJECT', errorsType: 'ABSENT', resultType: 'ABSENT' });
+for (const [field, type] of [
+  [null, 'NULL'], [[], 'ARRAY'], [{ private: 'synthetic-shape-content' }, 'OBJECT'],
+  ['synthetic-shape-content', 'STRING'], [123456, 'NUMBER'], [false, 'BOOLEAN'],
+  [undefined, 'UNKNOWN'],
+]) {
+  const diagnostic = forecastShareCfEnvelopeDiagnostic({ errors: field, result: field });
+  assert.equal(diagnostic.errorsType, type);
+  assert.equal(diagnostic.resultType, type);
+  assert.deepEqual(Object.keys(diagnostic).sort(), [
+    'envelope', 'errorCodes', 'errorCodesStatus', 'errors', 'errorsType', 'kind', 'resultType', 'success',
+  ].sort());
+  assert.doesNotMatch(JSON.stringify(diagnostic), /synthetic-shape-content|123456|private/);
 }
 const sharePrivateCfMarker = 'synthetic-private-value-must-never-escape';
 const shareSafeCfDiagnostic = forecastShareCfEnvelopeDiagnostic({
@@ -447,7 +503,7 @@ const shareSafeCfDiagnostic = forecastShareCfEnvelopeDiagnostic({
     { code: 10000, documentation_url: sharePrivateCfMarker }],
 });
 assert.deepEqual(shareSafeCfDiagnostic, { kind: 'FORECAST_SHARE_CF_ENVELOPE_V1',
-  envelope: 'OBJECT', success: 'FALSE', errors: 'NONEMPTY',
+  envelope: 'OBJECT', success: 'FALSE', errors: 'NONEMPTY', errorsType: 'ARRAY', resultType: 'OBJECT',
   errorCodes: [10092, 10000], errorCodesStatus: 'COMPLETE' });
 assert.doesNotMatch(JSON.stringify(shareSafeCfDiagnostic), /synthetic-private-value|hostname|token|pointer|message|account/);
 for (const code of ['10092', -1, 0, 999, 1000.5, 10_000_000, NaN, Infinity, null, {}]) {
@@ -463,7 +519,8 @@ assert.deepEqual(forecastShareCfEnvelopeDiagnostic({ errors: [{ code: 1000 }, { 
 assert.deepEqual(forecastShareCfEnvelopeDiagnostic({
   errors: Array.from({ length: 9 }, (_, index) => ({ code: 10000 + index })),
 }), { kind: 'FORECAST_SHARE_CF_ENVELOPE_V1', envelope: 'OBJECT', success: 'UNKNOWN',
-  errors: 'NONEMPTY', errorCodes: Array.from({ length: 8 }, (_, index) => 10000 + index),
+  errors: 'NONEMPTY', errorsType: 'ARRAY', resultType: 'ABSENT',
+  errorCodes: Array.from({ length: 8 }, (_, index) => 10000 + index),
   errorCodesStatus: 'LIMITED' });
 const shareCfNormalReadStart = shareControllerSource.indexOf('    const readStatuses = new Map();');
 const shareCfNormalReadEnd = shareControllerSource.indexOf('    const readDomains = async () => {',
@@ -476,39 +533,67 @@ const shareCfNormalRead = shareControllerSource.slice(shareCfNormalReadStart, sh
 for (const [raw, expectedDiagnostic] of [
   [{ success: false, errors: [{ code: 10092, message: sharePrivateCfMarker }] }, {
     kind: 'FORECAST_SHARE_CF_ENVELOPE_V1', envelope: 'OBJECT', success: 'FALSE',
-    errors: 'NONEMPTY', errorCodes: [10092], errorCodesStatus: 'COMPLETE',
+    errors: 'NONEMPTY', errorsType: 'ARRAY', resultType: 'ABSENT',
+    errorCodes: [10092], errorCodesStatus: 'COMPLETE',
   }],
   [{ success: true, errors: { message: sharePrivateCfMarker } }, {
     ...shareUnknownCfDiagnostic, envelope: 'OBJECT', success: 'TRUE',
+    errorsType: 'OBJECT', resultType: 'ABSENT',
   }],
   [{ success: 'false', errors: [] }, {
-    ...shareUnknownCfDiagnostic, envelope: 'OBJECT', errors: 'EMPTY', errorCodesStatus: 'COMPLETE',
+    ...shareUnknownCfDiagnostic, envelope: 'OBJECT', errors: 'EMPTY',
+    errorsType: 'ARRAY', resultType: 'ABSENT', errorCodesStatus: 'COMPLETE',
   }],
   [null, shareUnknownCfDiagnostic],
+  [{ success: true, result: [] }, {
+    ...shareUnknownCfDiagnostic, envelope: 'OBJECT', success: 'TRUE',
+    errorsType: 'ABSENT', resultType: 'ARRAY',
+  }],
+  ...[
+    [null, 'NULL'], ['synthetic-shape-content', 'STRING'], [123456, 'NUMBER'], [false, 'BOOLEAN'],
+  ].map(([errors, errorsType]) => [{ success: true, errors, result: [] }, {
+    ...shareUnknownCfDiagnostic, envelope: 'OBJECT', success: 'TRUE',
+    errorsType, resultType: 'ARRAY',
+  }]),
 ]) {
-  const receipts = []; let reads = 0;
-  await assert.rejects(vm.runInNewContext('(async () => {\n'
-    + shareCfDiagnosticDeclaration + '\n' + shareCfNormalRead
-    + '\ntry { await cf("/workers/domains", "CF_DOMAINS"); } catch (error) {\n'
-    + shareControllerSource.slice(shareStopStart, shareStopEnd) + '\n}\n})()', {
-    stage: 'PREWRITE_READS', writeIssued: false, terminationConfirmed: null,
-    FORECAST_SHARE_READ_KINDS, forecastShareCfEnvelopeDiagnostic, readForecastShareJson,
-    cfBase: 'https://synthetic.example.test', cfHeaders: { Authorization: 'synthetic-not-logged' },
-    fetchImpl: async (url, options) => {
-      reads++; assert.equal(url, 'https://synthetic.example.test/workers/domains');
-      assert.equal(options.method, 'GET');
-      return new Response(JSON.stringify(raw), { status: 200 });
-    },
-    fail: code => Object.assign(new Error(code), { code }),
-    report: value => receipts.push(JSON.parse(JSON.stringify(value))),
-  }), error => error.code === 'REFUSED_BEFORE_WRITE');
-  assert.equal(reads, 1);
-  assert.equal(receipts.length, 1);
-  assert.deepEqual(receipts[0], { kind: 'FORECAST_SHARE_RELEASE_STOP_V1',
-    stage: 'PREWRITE_READS', sourceSha: null, code: 'SHARE_CF_READ', readKind: 'CF_DOMAINS',
-    httpStatus: 200, cfEnvelope: expectedDiagnostic, writeIssued: false,
-    terminationConfirmed: null, outcome: 'REFUSED_BEFORE_WRITE' });
-  assert.doesNotMatch(JSON.stringify(receipts), /synthetic-private-value|synthetic-not-logged|synthetic\.example|hostname|pointer|account/);
+  // Den tidligere null-afvisning bevares for ALLE øvrige faktiske CF-læsekald.
+  const shareRejectedRoutes = raw?.success === true && raw.errors === null ? [
+    ['CF_SCRIPTS', '/workers/scripts'],
+    ['CF_DEPLOYMENTS', '/workers/scripts/ravradar-prognosedeling/deployments'],
+    ['CF_VERSION', '/workers/scripts/ravradar-prognosedeling/versions/' + shareVersion],
+    ['CF_ROUTES', '/workers/services/ravradar-prognosedeling/environments/production/routes?show_zonename=true'],
+    ['CF_CRON', '/workers/scripts/ravradar-prognosedeling/schedules'],
+    ['CF_SCRIPT_SUBDOMAIN', '/workers/scripts/ravradar-prognosedeling/subdomain'],
+    ['CF_ACCOUNT_SUBDOMAIN', '/workers/subdomain'],
+    // Selv den rigtige læsekategori må ikke genbruges på et andet endpoint.
+    ['CF_DOMAINS', '/workers/scripts'],
+  ] : [['CF_DOMAINS', '/workers/domains']];
+  for (const [rejectedReadKind, rejectedSuffix] of shareRejectedRoutes) {
+
+    const receipts = []; let reads = 0;
+    await assert.rejects(vm.runInNewContext('(async () => {\n'
+      + shareCfDiagnosticDeclaration + '\n' + shareCfNormalRead
+      + '\ntry { await cf(rejectedSuffix, rejectedReadKind); } catch (error) {\n'
+      + shareControllerSource.slice(shareStopStart, shareStopEnd) + '\n}\n})()', {
+      stage: 'PREWRITE_READS', writeIssued: false, terminationConfirmed: null, rejectedReadKind, rejectedSuffix,
+      FORECAST_SHARE_READ_KINDS, forecastShareCfEnvelopeDiagnostic, readForecastShareJson,
+      cfBase: 'https://synthetic.example.test', cfHeaders: { Authorization: 'synthetic-not-logged' },
+      fetchImpl: async (url, options) => {
+        reads++; assert.equal(url, 'https://synthetic.example.test' + rejectedSuffix);
+        assert.equal(options.method, 'GET');
+        return new Response(JSON.stringify(raw), { status: 200 });
+      },
+      fail: code => Object.assign(new Error(code), { code }),
+      report: value => receipts.push(JSON.parse(JSON.stringify(value))),
+    }), error => error.code === 'REFUSED_BEFORE_WRITE');
+    assert.equal(reads, 1);
+    assert.equal(receipts.length, 1);
+    assert.deepEqual(receipts[0], { kind: 'FORECAST_SHARE_RELEASE_STOP_V1',
+      stage: 'PREWRITE_READS', sourceSha: null, code: 'SHARE_CF_READ', readKind: rejectedReadKind,
+      httpStatus: 200, cfEnvelope: expectedDiagnostic, writeIssued: false,
+      terminationConfirmed: null, outcome: 'REFUSED_BEFORE_WRITE' });
+    assert.doesNotMatch(JSON.stringify(receipts), /synthetic-private-value|synthetic-not-logged|synthetic\.example|synthetic-shape-content|123456|hostname|pointer|account/);
+  }
 }
 const shareForgedDiagnostics = [];
 assert.throws(() => vm.runInNewContext(shareControllerSource.slice(shareStopStart, shareStopEnd), {
@@ -757,6 +842,19 @@ for (const changed of [
   actualPullRequestValidation + SOURCE_CI_JOB,
 ]) {
   assert.throws(() => inverseSourceCiBudgetWorkflow(changed));
+  assert.throws(() => verifyCurrentNationalWorkflow(changed));
+}
+
+// Early Linux CLI unit is the exact same unfiltered normal entry, not a success marker.
+assert.equal(actualPullRequestValidation.split(SOURCE_NORMAL_CLI_UNIT).length,2);
+for (const changed of [
+  actualPullRequestValidation.replace(SOURCE_NORMAL_CLI_UNIT,''),
+  actualPullRequestValidation+SOURCE_NORMAL_CLI_UNIT,
+  actualPullRequestValidation.replace(SOURCE_NORMAL_CLI_UNIT,SOURCE_NORMAL_CLI_UNIT.replace('--legacy-normal-cli-unit','--provider-diagnostic-unit')),
+  actualPullRequestValidation.replace(SOURCE_NORMAL_CLI_UNIT,SOURCE_NORMAL_CLI_UNIT.replace('command -v node','command -v unreviewed-node')),
+  actualPullRequestValidation.replace(SOURCE_NORMAL_CLI_UNIT,'').replace("          node --test scripts/test-weather-acquisition-writer.mjs\n","          node --test scripts/test-weather-acquisition-writer.mjs\n"+SOURCE_NORMAL_CLI_UNIT),
+]) {
+  assert.throws(() => inverseSourceNode24Workflow(changed));
   assert.throws(() => verifyCurrentNationalWorkflow(changed));
 }
 
