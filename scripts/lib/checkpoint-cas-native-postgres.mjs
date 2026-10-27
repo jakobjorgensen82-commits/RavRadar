@@ -1459,7 +1459,7 @@ select public.native_checkpoint_attempt(${baseline},${version},(select payload f
       const actual=reports[0];
       assert.deepEqual(Object.keys(actual).sort(),['kind','sameH0MetadataPreserved','ordinaryFollowerCount','zoneCount',
         'partCount','hourCount','normalBThenS','wholeReadback','originalBytesRetained','actionInvoked','sdkInvoked',
-        'sourceAdmission','mainProof','activeProfileIssued','sqlExecuted','productionProof','retentionCleanup','nativePayloadValidation'].sort());
+        'sourceAdmission','mainProof','activeProfileIssued','sqlExecuted','productionProof','retentionCleanup','nativePayloadValidation','nativePairData'].sort());
       for(const key of ['sameH0MetadataPreserved','normalBThenS','wholeReadback','originalBytesRetained'])assert.equal(actual[key],true);
       for(const key of ['actionInvoked','sdkInvoked','sourceAdmission','mainProof','activeProfileIssued','sqlExecuted','productionProof'])
         assert.equal(actual[key],false);
@@ -1481,6 +1481,42 @@ select public.native_checkpoint_attempt(${baseline},${version},(select payload f
         assert.equal(new Date(pin.targetReferenceAt).toISOString(),pin.targetReferenceAt);
       }
       assert.equal(Date.parse(native.follower.targetReferenceAt)-Date.parse(native.current.targetReferenceAt),3600000);
+      assert.deepEqual(await readOwner(),owner);
+      const receipt=actual.nativePairData;
+      assert.deepEqual(Object.keys(receipt).sort(),['bytes','sha256','targetReferenceAt','checkpointFileSha256','bundleContentSha256'].sort());
+      assert(Number.isSafeInteger(receipt.bytes)&&receipt.bytes>0&&receipt.bytes<=17*1024*1024);
+      for(const key of ['sha256','checkpointFileSha256','bundleContentSha256'])assert.match(receipt[key],/^[a-f0-9]{64}$/);
+      assert.equal(receipt.targetReferenceAt,native.follower.targetReferenceAt);
+      const pairFile=path.join(root,'rated-source589-normal-pair.json');
+      const pairStat=await fs.lstat(pairFile,{bigint:true});
+      assert(pairStat.isFile()&&!pairStat.isSymbolicLink()&&pairStat.nlink===1n);
+      assert.equal(pairStat.uid,BigInt(process.getuid()));assert.equal(Number(pairStat.size),receipt.bytes);
+      const raw=await fs.readFile(pairFile);assert.equal(raw.length,receipt.bytes);assert.equal(hash(raw),receipt.sha256);
+      const stableStat=await fs.lstat(pairFile,{bigint:true});
+      for(const key of ['dev','ino','mode','nlink','size','mtimeNs','ctimeNs'])assert.equal(stableStat[key],pairStat[key]);
+      const pair=JSON.parse(raw);
+      assert.deepEqual(Object.keys(pair).sort(),['schemaVersion','kind','sourceHead','B','S','bundleManifest','checkpointFile'].sort());
+      assert.equal(pair.schemaVersion,1);assert.equal(pair.kind,'SOURCE_NATIVE_NORMAL_B_S_DATA');assert.equal(pair.sourceHead,head);
+      for(const [name,key] of [['B','ravscore-private-production-runtime-pointer'],['S','ravscore-continuation-checkpoint']]){
+        assert.deepEqual(Object.keys(pair[name]).sort(),['document_key','payload','version']);
+        assert.equal(pair[name].document_key,key);assert(Number.isSafeInteger(pair[name].version)&&pair[name].version>0);
+      }
+      const {validateProtectedPrivateRuntimePointer}=await import(pathToFileURL(path.join(repositoryRoot,'scripts/protected-private-production-runtime.mjs')).href);
+      const pointer=validateProtectedPrivateRuntimePointer(pair.B.payload);
+      assert.equal(pointer.current.modelBinding.modelBundleSha256,expectedModel.I);
+      assert.equal(pointer.current.productionReferenceAt,receipt.targetReferenceAt);
+      assert.equal(pointer.current.datasetId,pair.S.payload.datasetId);
+      assert.equal(pointer.current.bundleContentSha256,receipt.bundleContentSha256);
+      assert.equal(pair.S.payload.productionReferenceAt,receipt.targetReferenceAt);
+      assert.equal(pair.S.payload.modelBinding.modelBundleSha256,expectedModel.I);
+      assert.equal(pair.S.payload.candidateGRollbackCompanion.modelBinding.modelBundleSha256,expectedModel.C);
+      assert.equal(pair.S.payload.continuationStateContractSha256,expectedModel.T);
+      assert.equal(pair.checkpointFile.sha256,receipt.checkpointFileSha256);
+      assert.equal(Object.keys(pair.S.payload.states).length,673);
+      const dataLiteral=value=>"convert_from(decode('"+Buffer.from(JSON.stringify(value)).toString('base64')+"','base64'),'UTF8')::jsonb";
+      assert.equal(await psql('select public.ravradar_ravscore_checkpoint_payload_valid('+dataLiteral(pair.S.payload)+','
+        +"("+dataLiteral(receipt.targetReferenceAt)+"#>>'{}')::timestamptz);"),'t');
+      assert.equal(hash(await fs.readFile(pairFile)),receipt.sha256);
       assert.deepEqual(await readOwner(),owner);
       sourceLegacyCompatibility=actual;
     }

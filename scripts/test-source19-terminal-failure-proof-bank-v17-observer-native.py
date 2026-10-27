@@ -889,6 +889,439 @@ def clean_environment():
             if key in {'PATH', 'LD_LIBRARY_PATH', 'LIBRARY_PATH', 'LANG', 'LC_ALL', 'LC_CTYPE'}}
 
 
+# Test-only normal CLI lifetime owner. No CURRENT/PG adapter or SOURCE phase
+# identity is created. The same absolute work/stop cutoffs cover ALL ten calls.
+_NATIVE_FIXTURE_PROCESS_MODULE = None
+def _native_fixture_process_module():
+    global _NATIVE_FIXTURE_PROCESS_MODULE
+    if _NATIVE_FIXTURE_PROCESS_MODULE is None:
+        spec = importlib.util.spec_from_file_location('native_fixture_existing_process_owner',
+            ROOT / 'scripts/lib/copernicus_component_process.py')
+        loaded = importlib.util.module_from_spec(spec); spec.loader.exec_module(loaded)
+        _NATIVE_FIXTURE_PROCESS_MODULE = loaded
+    return _NATIVE_FIXTURE_PROCESS_MODULE
+
+
+def _native_fixture_wrapper_open():
+    # Keep the actual outer wrapper pinned, not just its birth timestamp.
+    if sys.platform != 'linux' or not hasattr(time, 'CLOCK_BOOTTIME'):
+        raise RuntimeError('NATIVE_FIXTURE_WRAPPER_CLOCK_UNAVAILABLE')
+    parent = os.getppid()
+    descriptor = os.pidfd_open(parent, 0)
+    keep = False
+    try:
+        proc = Path('/proc') / str(parent)
+        fields = (proc / 'stat').read_bytes().rsplit(b') ', 1)[1].split()
+        raw_args = (proc / 'cmdline').read_bytes()
+        args = raw_args.rstrip(b'\0').split(b'\0')
+        executable = str(Path(os.readlink(proc / 'exe')).resolve(strict=True))
+        expected = [b'-I', b'-B', os.fsencode(ROOT / 'scripts/run-source19-terminal-native-bank.py'),
+            b'--source-legacy-compatibility' if CASE == 'source-legacy-compatibility' else b'--current-source-profile',
+            b'--node24-path']
+        if (len(args) != 7 or args[1:6] != expected
+                or Path(os.fsdecode(args[6])).resolve(strict=True) != NODE
+                or executable != str(Path(sys.executable).resolve(strict=True))):
+            raise RuntimeError('NATIVE_FIXTURE_WRAPPER_IDENTITY_REQUIRED')
+        monotonic = time.monotonic_ns()
+        age = time.clock_gettime_ns(time.CLOCK_BOOTTIME) - int(fields[19]) * 1_000_000_000 // os.sysconf('SC_CLK_TCK')
+        if age < 0:
+            raise RuntimeError('NATIVE_FIXTURE_WRAPPER_CHANGED')
+        stop = monotonic + 240 * 60 * 1_000_000_000 - age
+        if stop - 240 * 1_000_000_000 <= time.monotonic_ns():
+            raise RuntimeError('NATIVE_FIXTURE_WORK_EXPIRED')
+        owner = {'pidfd': descriptor, 'pid': parent, 'start': fields[19],
+            'args': raw_args, 'exe': executable, 'stop_ns': stop, 'closed': False}
+        _native_fixture_wrapper_live(owner)
+        keep = True
+        return owner
+    finally:
+        if not keep:
+            _native_fixture_close_fd(descriptor)
+
+
+def _native_fixture_wrapper_live(wrapper):
+    # Internal actual pidfd/identity only; never an environment/JSON admission.
+    try:
+        if (wrapper['closed'] or os.getppid() != wrapper['pid']
+                or select.select([wrapper['pidfd']], [], [], 0)[0]):
+            raise RuntimeError('NATIVE_FIXTURE_WRAPPER_LOST')
+        os.fstat(wrapper['pidfd'])
+        proc = Path('/proc') / str(wrapper['pid'])
+        fields = (proc / 'stat').read_bytes().rsplit(b') ', 1)[1].split()
+        if (fields[19] != wrapper['start'] or (proc / 'cmdline').read_bytes() != wrapper['args']
+                or str(Path(os.readlink(proc / 'exe')).resolve(strict=True)) != wrapper['exe']):
+            raise RuntimeError('NATIVE_FIXTURE_WRAPPER_CHANGED')
+        if os.getppid() != wrapper['pid'] or select.select([wrapper['pidfd']], [], [], 0)[0]:
+            raise RuntimeError('NATIVE_FIXTURE_WRAPPER_LOST')
+    except OSError as error:
+        # Parent exit can race the proc reads. The pinned pidfd/actual PPID,
+        # not a missing proc path alone, distinguishes known death from UNKNOWN.
+        try:
+            lost = os.getppid() != wrapper['pid'] or bool(select.select([wrapper['pidfd']], [], [], 0)[0])
+        except OSError:
+            lost = False
+        raise RuntimeError('NATIVE_FIXTURE_WRAPPER_LOST' if lost else 'NATIVE_FIXTURE_WRAPPER_UNKNOWN') from error
+
+
+def _native_fixture_wrapper_finish(wrapper):
+    # unittest cleanup runs before addSuccess. Unknown cessation keeps this
+    # actual control fd/evidence; no positive test/closure is printed.
+    _native_fixture_process_module().require_closed_subset()
+    try:
+        os.waitid(os.P_ALL, 0, os.WEXITED | os.WNOHANG | os.WNOWAIT)
+    except ChildProcessError:
+        pass
+    else:
+        raise RuntimeError('NATIVE_FIXTURE_WRAPPER_CHILDREN_UNCLOSED')
+    _native_fixture_wrapper_live(wrapper)
+    _native_fixture_close_fd(wrapper['pidfd'])
+    wrapper['closed'] = True
+
+
+def _native_fixture_owned_program(command, *, cwd, env, stop_ns, work_ns,
+        control_fd=None, wrapper=None, stdout=None, stderr=None):
+    helper = _native_fixture_process_module()
+    helper.require_closed_subset()
+    if (sys.platform != 'linux' or type(stop_ns) is not int or type(work_ns) is not int
+            or not time.monotonic_ns() < work_ns < stop_ns
+            or stop_ns - work_ns != 240 * 1_000_000_000):
+        raise RuntimeError('NATIVE_FIXTURE_CLOCK_EXPIRED_OR_INVALID')
+    import math
+    owner = helper._LinuxSubsetOwner(math.nextafter(stop_ns / 1_000_000_000, -math.inf))
+    child, first, completed, closed = None, None, None, False
+    try:
+        if wrapper is not None:
+            _native_fixture_wrapper_live(wrapper)
+        owner.enter(); owner.reserve_source_program_work()
+        try:
+            if wrapper is not None:
+                _native_fixture_wrapper_live(wrapper)
+            child = subprocess.Popen(command, cwd=cwd, env=env, stdin=subprocess.DEVNULL,
+                stdout=stdout, stderr=stderr, close_fds=True)
+            while child.poll() is None:
+                if time.monotonic_ns() >= work_ns or owner.source_work_remaining() <= 0:
+                    raise subprocess.TimeoutExpired(command, 0)
+                if wrapper is not None:
+                    _native_fixture_wrapper_live(wrapper)
+                watched = ([] if control_fd is None else [control_fd]) + ([] if wrapper is None else [wrapper['pidfd']])
+                if watched:
+                    ready, _, _ = select.select(watched, [], [], .02)
+                    if wrapper is not None and wrapper['pidfd'] in ready:
+                        raise RuntimeError('NATIVE_FIXTURE_WRAPPER_LOST')
+                    if control_fd is not None and control_fd in ready:
+                        if os.read(control_fd, 1) == b'':
+                            raise RuntimeError('NATIVE_FIXTURE_PARENT_PIPE_LOST')
+                        raise RuntimeError('NATIVE_FIXTURE_PARENT_PIPE_INVALID')
+                else:
+                    time.sleep(.02)
+            completed = subprocess.CompletedProcess(command, child.returncode)
+            if wrapper is not None:
+                _native_fixture_wrapper_live(wrapper)
+        except BaseException as error:
+            first = error
+        if first is not None or completed is not None and completed.returncode != 0:
+            owner.deadline = min(owner.deadline, time.monotonic() + 240)
+        try:
+            owner.drain()
+            if child is not None:
+                child.wait(timeout=max(.001, owner.deadline - time.monotonic()))
+            owner.leave(); closed = True
+        except BaseException as error:
+            if first is None:
+                first = (subprocess.CalledProcessError(completed.returncode, command)
+                    if completed is not None and completed.returncode else error)
+            helper._retain(first, owner)
+            helper._UNPROVED[id(first)][2].append(child)
+        if closed and wrapper is not None:
+            try:
+                _native_fixture_wrapper_live(wrapper)
+            except BaseException as error:
+                first = first or error
+        if first is None and owner.children_observed:
+            first = (subprocess.CalledProcessError(completed.returncode, command)
+                if completed is not None and completed.returncode
+                else RuntimeError('NATIVE_FIXTURE_WRITER_OUTLIVED_PARENT'))
+        if first is not None:
+            if closed:
+                # Local exception metadata only AFTER real kernel closure.
+                # A normal child has no result fd and cannot mint this fact.
+                first.native_fixture_closed = True
+                first.native_fixture_returncode = completed.returncode if completed is not None else None
+            raise first
+        return completed
+    except BaseException as error:
+        if not closed and owner.active and not helper.stop_unproved(error):
+            helper._retain(error, owner)
+            helper._UNPROVED[id(error)][2].append(child)
+        raise
+
+
+def _native_fixture_close_fd(descriptor):
+    os.close(descriptor)
+    try:
+        os.fstat(descriptor)
+    except OSError as error:
+        if type(error) is OSError and error.errno == errno.EBADF:
+            return
+        raise
+    raise RuntimeError('NATIVE_FIXTURE_FD_CLOSE_UNPROVED')
+
+
+def run_native_fixture_normal_cli():
+    # Only exact normal entries in this existing disposable native source
+    # family; never a general shell launcher or production route.
+    if len(sys.argv) != 5 or sys.platform != 'linux':
+        raise ValueError('NATIVE_FIXTURE_NORMAL_ENTRY_REQUIRED')
+    node, root, entry = Path(sys.argv[2]), Path(sys.argv[3]), sys.argv[4]
+    own = ROOT.parent
+    if (not own.name.startswith('rr-source19-union-native-')
+            or ROOT.name != 'current-source-native'
+            or own.resolve(strict=True) != own or ROOT.resolve(strict=True) != ROOT
+            or not root.is_absolute() or root.resolve(strict=True) != root
+            or not node.is_absolute() or node.resolve(strict=True) != node
+            or entry not in ('scripts/update-weather.mjs', 'scripts/generate-public-conditions.mjs')):
+        raise ValueError('NATIVE_FIXTURE_NORMAL_ENTRY_REQUIRED')
+    allowed = {
+        'normal-initial-operative585': 'e7c2e14a6403870e8a1df6c91862980640684733',
+        'normal586': '7df56f36f705db641b3f9476ee8ca1b4c4cfed0c',
+        'normal-initial-operative587': 'c03a4f8dc106e535db61d6248cb395a1a96b9b88',
+        'normal-operative587': 'c03a4f8dc106e535db61d6248cb395a1a96b9b88',
+        'normal-initial-operative588': '4845e6c6622333ad4e8454b0b43f5f94ae42233e',
+        'normal-operative588': '4845e6c6622333ad4e8454b0b43f5f94ae42233e',
+    }
+    if root != ROOT and (root.parent.parent != own
+            or root.parent.name not in ('current-source-native-inputs', 'current-source-native-initial-inputs')
+            or root.name not in allowed):
+        raise ValueError('NATIVE_FIXTURE_NORMAL_ROOT_REQUIRED')
+    for at in (root, *root.parents, node):
+        if at.is_symlink():
+            raise ValueError('NATIVE_FIXTURE_NORMAL_LINK_REFUSED')
+    if os.environ.get('NODE_OPTIONS') is not None:
+        raise ValueError('NATIVE_FIXTURE_ENV_NOT_CLEAN')
+    bridge = os.environ.get('RAVRADAR_NATIVE_FIXTURE_CLI_BRIDGE', '')
+    match = re.fullmatch(r'http://127\.0\.0\.1:[1-9][0-9]{0,4}/native-cli/([a-f0-9]{64})', bridge)
+    if match is None:
+        raise ValueError('NATIVE_FIXTURE_TRANSPORT_REQUIRED')
+    stop_ns = int(os.environ['RAVRADAR_NATIVE_FIXTURE_STOP_NS'])
+    work_ns = int(os.environ['RAVRADAR_NATIVE_FIXTURE_WORK_NS'])
+    remaining = (work_ns - time.monotonic_ns()) / 1_000_000_000
+    if remaining <= 0:
+        raise RuntimeError('NATIVE_FIXTURE_WORK_EXPIRED')
+    source_env = dict(os.environ, GIT_NO_LAZY_FETCH='1', GIT_NO_REPLACE_OBJECTS='1', GIT_TERMINAL_PROMPT='0')
+    actual = subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=root, env=source_env,
+        stdin=subprocess.DEVNULL, timeout=min(30, remaining), text=True).strip()
+    expected = subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=ROOT, env=source_env,
+        stdin=subprocess.DEVNULL, timeout=min(30, remaining), text=True).strip() if root == ROOT else allowed[root.name]
+    if actual != expected or not re.fullmatch('[a-f0-9]{40}', actual):
+        raise ValueError('NATIVE_FIXTURE_NORMAL_SOURCE_CHANGED')
+    for descriptor in (3, 4):
+        mode = os.fstat(descriptor).st_mode
+        if not (stat.S_ISFIFO(mode) or stat.S_ISSOCK(mode)):
+            raise ValueError('NATIVE_FIXTURE_OWN_PIPE_REQUIRED')
+    command = [str(node), *SOURCE_LEGACY_FOLLOWER_NODE_FLAGS,
+        '--import', str(ROOT / 'scripts/fixtures/source19-current-normal-inputs.mjs'), str(root / entry)]
+    failed = False
+    try:
+        result = _native_fixture_owned_program(command, cwd=root, env=os.environ,
+            stop_ns=stop_ns, work_ns=work_ns, control_fd=3)
+        returncode = result.returncode
+    except BaseException as error:
+        if getattr(error, 'native_fixture_closed', False) is not True:
+            raise  # Unknown stop: no result/cleanup is issued.
+        failed, returncode = True, error.native_fixture_returncode
+        print('{"kind":"NATIVE_FIXTURE_NORMAL_CLI_PHASE_FAILED","privatePayloadIncluded":false}', file=sys.stderr, flush=True)
+    # Child close_fds=True means the actual normal CLI cannot write this pipe
+    # or mint a closed result. Only the live supervisor writes after ECHILD.
+    _native_fixture_close_fd(3)
+    report = json.dumps({'kind': 'NATIVE_FIXTURE_NORMAL_CLI_CLOSED', 'nonce': match[1],
+        'returncode': returncode, 'childrenClosed': True}, separators=(',', ':')).encode()
+    if len(report) > 1024 or os.write(4, report) != len(report):
+        raise RuntimeError('NATIVE_FIXTURE_CLOSE_REPORT_FAILED')
+    _native_fixture_close_fd(4)
+    return 0 if not failed and returncode == 0 else 1
+
+
+class NativeFixtureNormalCliTests(unittest.TestCase):
+    def clock(self, seconds=5):
+        work = time.monotonic_ns() + int(seconds * 1_000_000_000)
+        return {'work_ns': work, 'stop_ns': work + 240 * 1_000_000_000}
+
+    def assert_no_children(self):
+        with self.assertRaises(ChildProcessError):
+            os.waitid(os.P_ALL, 0, os.WEXITED | os.WNOHANG | os.WNOWAIT)
+
+    def test_fresh_sequential_node_processes(self):
+        node = os.environ['RAVRADAR_NATIVE_FIXTURE_TEST_NODE']
+        code = "globalThis.fixtureCount=(globalThis.fixtureCount||0)+1;console.log(JSON.stringify({pid:process.pid,count:globalThis.fixtureCount}));"
+        rows = []
+        with tempfile.TemporaryDirectory(prefix='rr-native-cli-unit-') as directory:
+            directory = Path(directory)
+            for index in range(2):
+                file = directory / str(index)
+                with file.open('xb') as output:
+                    result = _native_fixture_owned_program([node, '--max-old-space-size=8192', '--input-type=module', '-e', code],
+                        cwd=ROOT, env=clean_environment(), stdout=output, stderr=subprocess.DEVNULL, **self.clock())
+                    output.flush(); os.fsync(output.fileno())
+                self.assertEqual(result.returncode, 0); self.assert_no_children()
+                rows.append(json.loads(file.read_bytes()))
+        self.assertEqual([row['count'] for row in rows], [1, 1])
+        self.assertNotEqual(rows[0]['pid'], rows[1]['pid'])
+
+    def test_nonzero_is_not_promoted_to_success(self):
+        result = _native_fixture_owned_program([sys.executable, '-I', '-B', '-c', 'raise SystemExit(17)'],
+            cwd=ROOT, env=clean_environment(), stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, **self.clock())
+        self.assertEqual(result.returncode, 17); self.assert_no_children()
+
+    def test_orphan_writer_is_stopped_and_refused(self):
+        code = 'import os,time\nif os.fork()==0:\n time.sleep(60)\n os._exit(0)\nos._exit(0)\n'
+        with self.assertRaisesRegex(RuntimeError, 'NATIVE_FIXTURE_WRITER_OUTLIVED_PARENT'):
+            _native_fixture_owned_program([sys.executable, '-I', '-B', '-c', code],
+                cwd=ROOT, env=clean_environment(), stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, **self.clock())
+        self.assert_no_children()
+
+    def test_outer_wrapper_death_stops_before_later_save(self):
+        # Real topology: test -> outer wrapper -> observer -> live writer.
+        # A kernel FIFO holds SAVE until AFTER real pidfd exit + ECHILD,
+        # not a scheduling race against a sleeping writer.
+        directory = Path(tempfile.mkdtemp(prefix='rr-native-outer-loss-'))
+        started, saved, report, gate = (directory / name for name in ('started', 'saved', 'result', 'save-gate'))
+        os.mkfifo(gate, 0o600)
+        gate_fd = os.open(gate, os.O_RDWR | os.O_NONBLOCK)
+        writer = textwrap.dedent('''
+            import os
+            from pathlib import Path
+            gate=os.open(GATE,os.O_RDONLY)
+            started=Path(STARTED);pending=started.with_suffix('.pending')
+            with pending.open('x') as output:
+                output.write(str(os.getpid()));output.flush();os.fsync(output.fileno())
+            os.rename(pending,started)
+            if os.read(gate,1)==b'G':
+                Path(SAVED).write_bytes(b'FORBIDDEN_SAVE')
+            os.close(gate)
+        ''').replace('GATE',repr(str(gate))).replace('STARTED',repr(str(started))).replace('SAVED',repr(str(saved)))
+        observer = textwrap.dedent('''
+            import importlib.util,json,os,sys,time
+            from pathlib import Path
+            spec=importlib.util.spec_from_file_location('actual_normal_owner', OWNER)
+            m=importlib.util.module_from_spec(spec);spec.loader.exec_module(m)
+            parent=os.getppid();proc=Path('/proc')/str(parent);fd=os.pidfd_open(parent,0)
+            fields=(proc/'stat').read_bytes().rsplit(b') ',1)[1].split()
+            work=time.monotonic_ns()+10_000_000_000
+            wrapper={'pidfd':fd,'pid':parent,'start':fields[19],
+                'args':(proc/'cmdline').read_bytes(),
+                'exe':str(Path(os.readlink(proc/'exe')).resolve(strict=True)),
+                'stop_ns':work+240_000_000_000,'closed':False}
+            try:
+                m._native_fixture_owned_program([sys.executable,'-I','-B','-c',WRITER],
+                    cwd=m.ROOT,env=m.clean_environment(),stdout=m.subprocess.DEVNULL,stderr=m.subprocess.DEVNULL,
+                    work_ns=work,stop_ns=wrapper['stop_ns'],wrapper=wrapper)
+                raise AssertionError('OUTER_PARENT_LOSS_BECAME_SUCCESS')
+            except RuntimeError as error:
+                if getattr(error,'native_fixture_closed',False) is not True:
+                    raise
+                report_file=Path(REPORT);staged=report_file.with_suffix('.pending')
+                with staged.open('x') as output:
+                    json.dump({'reason':str(error),'accepted':False},output)
+                    output.flush();os.fsync(output.fileno())
+                os.rename(staged,report_file)
+                m._native_fixture_close_fd(fd)
+        ''').replace('OWNER', repr(str(Path(__file__).resolve()))).replace('WRITER', repr(writer)).replace('REPORT', repr(str(report)))
+        outer = ('import subprocess,sys,time;'
+            'subprocess.Popen([sys.executable,"-I","-B","-c",' + repr(observer)
+            + '],stdin=subprocess.DEVNULL,stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL);time.sleep(60)')
+        helper = _native_fixture_process_module()
+        owner = helper._LinuxSubsetOwner(time.monotonic() + 15)
+        process, writer_fd, drained = None, None, False
+        try:
+            owner.enter()
+            process = subprocess.Popen([sys.executable, '-I', '-B', '-c', outer],
+                cwd=ROOT, env=clean_environment(), stdin=subprocess.DEVNULL,
+                stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            until = time.monotonic() + 5
+            while not started.exists() and time.monotonic() < until:
+                time.sleep(.005)
+            writer_fd = os.pidfd_open(int(started.read_text()), 0)
+            self.assertEqual(select.select([writer_fd], [], [], 0)[0], [], 'Actual writer is alive at the held SAVE boundary')
+            self.assertIsNone(process.poll())
+            process.terminate()  # Exact own Popen wrapper, not a discovered PID.
+            self.assertEqual(process.wait(timeout=3), -signal.SIGTERM)
+            until = time.monotonic() + 3
+            while not report.exists() and time.monotonic() < until:
+                time.sleep(.005)
+            self.assertEqual(json.loads(report.read_bytes()),
+                {'reason': 'NATIVE_FIXTURE_WRAPPER_LOST', 'accepted': False})
+            self.assertTrue(select.select([writer_fd], [], [], 0)[0], 'Pinned actual writer has exited')
+            owner.drain(); owner.leave(); drained = True
+            self.assert_no_children()
+            # Release only after whole kernel closure, then show no writer can
+            # consume the saved permission. No zero-write-window promise.
+            self.assertEqual(os.write(gate_fd, b'G'), 1)
+            self.assertFalse(saved.exists(), 'No accepted later SAVE after observed wrapper loss')
+        finally:
+            if not drained:
+                owner.drain(); owner.leave()
+            if process is not None:
+                process.wait(timeout=1)
+            if writer_fd is not None:
+                _native_fixture_close_fd(writer_fd)
+            _native_fixture_close_fd(gate_fd)
+
+    def test_parent_pipe_loss_stops_active_child(self):
+        read_fd, write_fd = os.pipe()
+        with tempfile.TemporaryDirectory(prefix='rr-native-cli-parent-') as directory:
+            marker = Path(directory) / 'started'
+            code = 'from pathlib import Path;import time;Path(' + repr(str(marker)) + ').write_bytes(b"started");time.sleep(60)'
+            def lose_parent():
+                until = time.monotonic() + 2
+                while not marker.exists() and time.monotonic() < until:
+                    time.sleep(.005)
+                os.close(write_fd)
+            thread = threading.Thread(target=lose_parent); thread.start()
+            try:
+                with self.assertRaisesRegex(RuntimeError, 'NATIVE_FIXTURE_PARENT_PIPE_LOST'):
+                    _native_fixture_owned_program([sys.executable, '-I', '-B', '-c', code],
+                        cwd=ROOT, env=clean_environment(), stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+                        control_fd=read_fd, **self.clock())
+                self.assertEqual(marker.read_bytes(), b'started')
+                self.assert_no_children()
+            finally:
+                thread.join(timeout=3); self.assertFalse(thread.is_alive())
+                _native_fixture_close_fd(read_fd)
+
+    def test_work_expiry_has_drain_reserve_and_no_success(self):
+        with self.assertRaises(subprocess.TimeoutExpired):
+            _native_fixture_owned_program([sys.executable, '-I', '-B', '-c', 'import time;time.sleep(60)'],
+                cwd=ROOT, env=clean_environment(), stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, **self.clock(.15))
+        self.assert_no_children()
+        expired = self.clock(-1)
+        with self.assertRaisesRegex(RuntimeError, 'NATIVE_FIXTURE_CLOCK_EXPIRED_OR_INVALID'):
+            _native_fixture_owned_program([sys.executable, '-c', 'raise SystemExit(0)'],
+                cwd=ROOT, env=clean_environment(), **expired)
+        self.assert_no_children()
+
+    def test_z_first_error_survives_unknown_drain_and_poisons_next_work(self):
+        # Last in this dedicated fresh unit process: never clear real poison.
+        helper = _native_fixture_process_module()
+        original = helper._LinuxSubsetOwner.drain
+        def failed_close(owner):
+            original(owner)
+            raise RuntimeError('NATIVE_FIXTURE_INJECTED_CLOSE_UNKNOWN')
+        helper._LinuxSubsetOwner.drain = failed_close
+        try:
+            with self.assertRaises(subprocess.CalledProcessError) as caught:
+                _native_fixture_owned_program([sys.executable, '-I', '-B', '-c', 'raise SystemExit(17)'],
+                    cwd=ROOT, env=clean_environment(), stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, **self.clock())
+            self.assertEqual(caught.exception.returncode, 17)
+            self.assertTrue(helper.stop_unproved(caught.exception))
+            with self.assertRaises(subprocess.CalledProcessError) as poisoned:
+                _native_fixture_owned_program([sys.executable, '-c', 'raise SystemExit(0)'],
+                    cwd=ROOT, env=clean_environment(), **self.clock())
+            self.assertIs(poisoned.exception, caught.exception)
+            self.assert_no_children()
+        finally:
+            helper._LinuxSubsetOwner.drain = original
+
+
 def descendants(parent):
     """Discovery only. Every signalled process is separately retained by pidfd."""
     result, todo = [], [parent]
@@ -4171,6 +4604,9 @@ class SourceCurrentNative(SourceActualSUnionNative):
                 producer.DOWNLOAD_SESSION.close()
 
     def owned_current_host(self, head, *, with_sdk):
+        wrapper = _native_fixture_wrapper_open()
+        self.native_fixture_wrapper = wrapper
+        self.addCleanup(_native_fixture_wrapper_finish, wrapper)
         # SAME existing native ownership/layout, shared by two explicit cases.
         # No main/source/ACTIVE proof is created here. FULLCURRENT authenticates
         # GitHub before calling this method and retains its own gates below.
@@ -4183,10 +4619,15 @@ class SourceCurrentNative(SourceActualSUnionNative):
             env=clean_environment(), stdin=subprocess.DEVNULL, check=True, timeout=30)
         subprocess.run(['git', '-c', 'advice.detachedHead=false', 'checkout', '--detach', head],
             cwd=root, env=clean_environment(), stdin=subprocess.DEVNULL, check=True, timeout=30)
+        _native_fixture_wrapper_live(wrapper)
         runner_temp = root / 'runner-temp'; runner_temp.mkdir()
         environment = clean_environment()
+        _native_fixture_wrapper_live(wrapper)
+        fixture_stop_ns = wrapper['stop_ns']
         environment.update(PATH=str(NODE.parent) + os.pathsep + environment.get('PATH', ''),
-            RUNNER_TEMP=str(runner_temp), PYTHON=sys.executable, PYTHONDONTWRITEBYTECODE='1')
+            RUNNER_TEMP=str(runner_temp), PYTHON=sys.executable, PYTHONDONTWRITEBYTECODE='1',
+            RAVRADAR_NATIVE_FIXTURE_STOP_NS=str(fixture_stop_ns),
+            RAVRADAR_NATIVE_FIXTURE_WORK_NS=str(fixture_stop_ns - 240 * 1_000_000_000))
         if with_sdk:
             # The legacy case never invokes/copies the SDK; CURRENT still uses
             # exactly its existing locked package and regular-file inventory.
@@ -4200,6 +4641,7 @@ class SourceCurrentNative(SourceActualSUnionNative):
             shutil.copytree(installed, root / ENTRY.parent / 'node_modules', symlinks=False)
         from datetime import datetime, timezone
         target = datetime.now(timezone.utc).replace(minute=0, second=0, microsecond=0).isoformat(timespec='milliseconds').replace('+00:00', 'Z')
+        _native_fixture_wrapper_live(wrapper)
         return own, root, environment, target
 
     def test_source_legacy_compatibility(self):
@@ -4233,8 +4675,10 @@ class SourceCurrentNative(SourceActualSUnionNative):
             try:
                 with (own / ('legacy-' + name + '-whole.stdout')).open('xb') as output, \
                         (own / ('legacy-' + name + '-whole.stderr')).open('xb') as errors:
-                    result = subprocess.run(command, cwd=root, env=environment, stdin=subprocess.DEVNULL,
-                        stdout=output, stderr=errors, check=False)
+                    result = _native_fixture_owned_program(command, cwd=root, env=environment,
+                        stop_ns=int(environment['RAVRADAR_NATIVE_FIXTURE_STOP_NS']),
+                        work_ns=int(environment['RAVRADAR_NATIVE_FIXTURE_WORK_NS']),
+                        wrapper=self.native_fixture_wrapper, stdout=output, stderr=errors)
                     output.flush(); os.fsync(output.fileno()); errors.flush(); os.fsync(errors.fileno())
                 self.assertEqual(result.returncode, 0, 'SOURCE_LEGACY_COMPATIBILITY_CHILD_REFUSED')
             except BaseException as error:
@@ -4276,6 +4720,7 @@ class SourceCurrentNative(SourceActualSUnionNative):
                 except BaseException:
                     pass
                 raise
+        _native_fixture_wrapper_live(self.native_fixture_wrapper)
         whole = own / 'legacy-follower-whole.stdout'
         self.assertLessEqual(whole.stat().st_size, 16 * 1024 * 1024)
         reports = []
@@ -4337,14 +4782,59 @@ class SourceCurrentNative(SourceActualSUnionNative):
         self.assertNotIn('nativePayloadValidation', actual)
         actual['nativePayloadValidation'] = {'actualReadOnlyCallCount': read_only_calls,
             'sourceModel': {key: bindings[key] for key in ('C', 'I', 'T')}, **pinned}
+        # Data fra den faktisk kørte normale producer, ikke et autoritetsflag.
+        pair_relative = 'current-source-native-inputs/saved-legacy-follower/native-normal-b-s.json'
+        pair_raw = source_current_cohort_read(own, pair_relative, 17 * 1024 * 1024)
+        pair = json.loads(pair_raw)
+        self.assertEqual(set(pair), {'schemaVersion', 'kind', 'sourceHead', 'B', 'S', 'bundleManifest', 'checkpointFile'})
+        self.assertEqual(pair['schemaVersion'], 1)
+        self.assertEqual(pair['kind'], 'SOURCE_NATIVE_NORMAL_B_S_DATA')
+        self.assertEqual(pair['sourceHead'], context['head'])
+        for role, key in (('B', 'ravscore-private-production-runtime-pointer'), ('S', 'ravscore-continuation-checkpoint')):
+            row = pair[role]
+            self.assertEqual(set(row), {'document_key', 'payload', 'version'})
+            self.assertEqual(row['document_key'], key)
+            self.assertIs(type(row['version']), int)
+            self.assertGreater(row['version'], 0)
+            self.assertLessEqual(row['version'], 9007199254740991)
+        manifest_raw = source_current_cohort_read(own, 'current-source-native-inputs/saved-legacy-follower/restored/manifest.json', 4 * 1024 * 1024)
+        checkpoint_raw = source_current_cohort_read(own, 'current-source-native-inputs/saved-legacy-follower/readback/.cache/ravscore-continuation-checkpoint/checkpoint.json', maximum)
+        manifest, checkpoint = json.loads(manifest_raw), json.loads(checkpoint_raw)
+        for name, raw_bytes in (('bundleManifest', manifest_raw), ('checkpointFile', checkpoint_raw)):
+            self.assertEqual(pair[name], {'bytes': len(raw_bytes), 'sha256': hashlib.sha256(raw_bytes).hexdigest()})
+        self.assertEqual(pair['S']['payload'], checkpoint)
+        self.assertEqual(checkpoint, json.loads(source_current_cohort_read(own, rows[1][1], maximum)))
+        self.assertEqual(checkpoint['productionReferenceAt'], follower_target)
+        self.assertEqual(checkpoint['modelBinding']['modelBundleSha256'], bindings['I'])
+        descriptor = pair['B']['payload']['current']
+        self.assertEqual(descriptor['datasetId'], manifest['datasetId'])
+        self.assertEqual(descriptor['datasetId'], checkpoint['datasetId'])
+        self.assertEqual(descriptor['productionReferenceAt'], follower_target)
+        self.assertEqual(descriptor['bundleContentSha256'], manifest['bundleContentSha256'])
+        self.assertEqual(descriptor['modelBinding']['modelBundleSha256'], bindings['I'])
+        self.assertEqual(manifest['contractHashes']['continuationStateContractSha256'], bindings['T'])
+        self.assertEqual(source_current_cohort_read(own, pair_relative, 17 * 1024 * 1024), pair_raw)
+        self.assertEqual(current_native_pg(context, 'select 1;'), '1')
+        _native_fixture_wrapper_live(self.native_fixture_wrapper)
+        target_file = Path(context['pgRoot']) / 'rated-source589-normal-pair.json'
+        pair_fd = os.open(target_file, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
+        with os.fdopen(pair_fd, 'wb') as stream:
+            stream.write(pair_raw); stream.flush(); os.fsync(stream.fileno())
+        self.assertEqual(current_native_pg(context, 'select 1;'), '1')
+        self.assertEqual(source_current_cohort_read(Path(context['pgRoot']), target_file.name, 17 * 1024 * 1024), pair_raw)
+        actual['nativePairData'] = {'bytes': len(pair_raw), 'sha256': hashlib.sha256(pair_raw).hexdigest(),
+            'targetReferenceAt': follower_target, 'checkpointFileSha256': pair['checkpointFile']['sha256'],
+            'bundleContentSha256': descriptor['bundleContentSha256']}
         private_report = own / 'legacy-actual-sql-readonly-result.json'
         with private_report.open('x', encoding='utf8') as stream:
             stream.write(json.dumps(actual, separators=(',', ':')) + '\n')
             stream.flush(); os.fsync(stream.fileno())
+        _native_fixture_wrapper_live(self.native_fixture_wrapper)
         print(json.dumps(actual, separators=(',', ':')))
         self.assertEqual(current_native_pg(context, 'select 1;'), '1')
 
     def test_current_normal_source_profile(self):
+        import math
         self.assertEqual(CASE, CURRENT_NATIVE_CASE)
         self.assertEqual(sys.platform, 'linux'); self.assertEqual(sys.version_info[:2], (3, 12))
         context = CURRENT_NATIVE_CONTEXT
@@ -4371,17 +4861,24 @@ class SourceCurrentNative(SourceActualSUnionNative):
         for initial_phase in ('h0', 'h1'):
             initial_out = own / ('fixture-initial-' + initial_phase)
             initial_out.mkdir(mode=0o700, parents=False, exist_ok=False)
-            subprocess.run([sys.executable, '-I', '-B', str(root / 'scripts/fixtures/source19-current-native-providers.py'),
+            _native_fixture_owned_program([sys.executable, '-I', '-B', str(root / 'scripts/fixtures/source19-current-native-providers.py'),
                 str(NODE), target585, '--initial-' + initial_phase], cwd=root, env=environment,
-                stdin=subprocess.DEVNULL, check=True)
+                stop_ns=int(environment['RAVRADAR_NATIVE_FIXTURE_STOP_NS']),
+                work_ns=int(environment['RAVRADAR_NATIVE_FIXTURE_WORK_NS']),
+                wrapper=self.native_fixture_wrapper).check_returncode()
         (own / 'fixture-587').mkdir(mode=0o700, parents=False, exist_ok=False)
-        subprocess.run([sys.executable, '-I', '-B', str(root / 'scripts/fixtures/source19-current-native-providers.py'),
-            str(NODE), target587, '--predecessor587'], cwd=root, env=environment, stdin=subprocess.DEVNULL, check=True)
+        _native_fixture_owned_program([sys.executable, '-I', '-B', str(root / 'scripts/fixtures/source19-current-native-providers.py'),
+            str(NODE), target587, '--predecessor587'], cwd=root, env=environment,
+            stop_ns=int(environment['RAVRADAR_NATIVE_FIXTURE_STOP_NS']),
+            work_ns=int(environment['RAVRADAR_NATIVE_FIXTURE_WORK_NS']),wrapper=self.native_fixture_wrapper).check_returncode()
         fixtures.mkdir(mode=0o700, parents=False, exist_ok=False)
-        subprocess.run([sys.executable, '-I', '-B', str(root / 'scripts/fixtures/source19-current-native-providers.py'),
-            str(NODE), target], cwd=root, env=environment, stdin=subprocess.DEVNULL, check=True)
-        subprocess.run([str(NODE), str(root / 'scripts/fixtures/source19-current-normal-inputs.mjs'), '--prepare-initial-profile'],
-            cwd=root, env=environment, stdin=subprocess.DEVNULL, check=True)
+        _native_fixture_owned_program([sys.executable, '-I', '-B', str(root / 'scripts/fixtures/source19-current-native-providers.py'),
+            str(NODE), target], cwd=root, env=environment,
+            stop_ns=int(environment['RAVRADAR_NATIVE_FIXTURE_STOP_NS']),
+            work_ns=int(environment['RAVRADAR_NATIVE_FIXTURE_WORK_NS']),wrapper=self.native_fixture_wrapper).check_returncode()
+        _native_fixture_owned_program([str(NODE), str(root / 'scripts/fixtures/source19-current-normal-inputs.mjs'), '--prepare-initial-profile'],
+            cwd=root, env=environment,stop_ns=int(environment['RAVRADAR_NATIVE_FIXTURE_STOP_NS']),
+            work_ns=int(environment['RAVRADAR_NATIVE_FIXTURE_WORK_NS']),wrapper=self.native_fixture_wrapper).check_returncode()
         transport_root = own / 'current-source-native-initial-inputs/transport'
         inputs = strict_json(transport_root / 'initial-normal-inputs.json', 32 * 1024 * 1024)
         self.assertEqual(inputs['sourceHead'], '4845e6c6622333ad4e8454b0b43f5f94ae42233e'); self.assertEqual(inputs['target'], target)
@@ -4472,21 +4969,26 @@ class SourceCurrentNative(SourceActualSUnionNative):
             self.assertFalse((root / name).exists(), 'CURRENT_PROFILE_REQUIRES_GENUINE_CACHE_MISS')
         spec = importlib.util.spec_from_file_location('source_current_actual_outer_owner', root / 'scripts/lib/copernicus_component_process.py')
         helper = importlib.util.module_from_spec(spec); spec.loader.exec_module(helper)
-        owner = helper._LinuxSubsetOwner(time.monotonic() + 230 * 60)
+        owner = helper._LinuxSubsetOwner(min(time.monotonic() + 230 * 60,
+            math.nextafter(int(environment['RAVRADAR_NATIVE_FIXTURE_STOP_NS']) / 1_000_000_000, -math.inf)))
         process, logs, first, physically_closed = None, [], None, False
         try:
             owner.enter(); transport.start()
             # Initial CAS is deliberately after real owned TLS+SQL. Its return
             # object is NOT the mandatory capture: query actual PG anew below.
-            subprocess.run([str(NODE), str(root / 'scripts/fixtures/source19-current-native-initial-activation.mjs'),
-                '--native-initial588-central'], cwd=root, env=environment, stdin=subprocess.DEVNULL, check=True)
+            _native_fixture_owned_program([str(NODE), str(root / 'scripts/fixtures/source19-current-native-initial-activation.mjs'),
+                '--native-initial588-central'], cwd=root, env=environment,
+                stop_ns=int(environment['RAVRADAR_NATIVE_FIXTURE_STOP_NS']),
+                work_ns=int(environment['RAVRADAR_NATIVE_FIXTURE_WORK_NS']),wrapper=self.native_fixture_wrapper).check_returncode()
             # This existing same-host fixture runs AFTER the normal SOURCE SQL
             # matrix; it is not production-YAML prewrite/SQL timing evidence.
             # The preparation below is SAME_H0 from actual588, with normal B then
             # S and full remote S equivalence before any CURRENT589 entry.
             captured_pg = current_native_pg_capture(context)
-            subprocess.run([str(NODE), str(root / 'scripts/fixtures/source19-current-normal-inputs.mjs'),
-                '--prepare-current-from-initial-profile'], cwd=root, env=environment, stdin=subprocess.DEVNULL, check=True)
+            _native_fixture_owned_program([str(NODE), str(root / 'scripts/fixtures/source19-current-normal-inputs.mjs'),
+                '--prepare-current-from-initial-profile'], cwd=root, env=environment,
+                stop_ns=int(environment['RAVRADAR_NATIVE_FIXTURE_STOP_NS']),
+                work_ns=int(environment['RAVRADAR_NATIVE_FIXTURE_WORK_NS']),wrapper=self.native_fixture_wrapper).check_returncode()
             current_inputs = strict_json(own / 'current-source-native-inputs/transport/current-normal-inputs.json', 32 * 1024 * 1024)
             self.assertEqual(current_inputs['sourceHead'], context['head']); self.assertEqual(current_inputs['target'], target)
             qualification = subprocess.run([str(NODE), str(root / 'scripts/fixtures/source19-current-native-metadata.mjs'), '--qualify'],
@@ -4505,9 +5007,15 @@ class SourceCurrentNative(SourceActualSUnionNative):
             self.assertEqual(actual_cleanup['failureCount'], len(transport.current_post64.protected_retention_refusals))
             self.assertEqual(actual_cleanup['complete'], actual_cleanup['failureCount'] == 0)
             logs = [(root / name).open('wb') for name in ('stdout', 'stderr')]
+            _native_fixture_wrapper_live(self.native_fixture_wrapper)
             process = subprocess.Popen([str(NODE), str(root / ENTRY)], cwd=root, env=environment,
                 stdin=subprocess.DEVNULL, stdout=logs[0], stderr=logs[1])
-            process.wait(timeout=230 * 60)
+            while process.poll() is None:
+                _native_fixture_wrapper_live(self.native_fixture_wrapper)
+                if time.monotonic_ns() >= int(environment['RAVRADAR_NATIVE_FIXTURE_WORK_NS']):
+                    raise subprocess.TimeoutExpired(process.args, 0)
+                select.select([self.native_fixture_wrapper['pidfd']], [], [], .02)
+            _native_fixture_wrapper_live(self.native_fixture_wrapper)
             # Normal real subreaper/guardian closure, not an exit-code receipt.
             with self.assertRaises(ChildProcessError):
                 os.waitid(os.P_ALL, 0, os.WEXITED | os.WNOHANG | os.WNOWAIT)
@@ -4601,6 +5109,18 @@ def run_current_native_profile_cli():
 
 
 if __name__ == '__main__':
+    if sys.argv[1:2] == ['--legacy-normal-cli']:
+        try:
+            raise SystemExit(run_native_fixture_normal_cli())
+        except SystemExit:
+            raise
+        except BaseException:
+            # No raw trace/argv/transport body. Missing close result remains
+            # UNKNOWN to the Node parent and prevents cleanup/SAVE/PASS.
+            print('{"kind":"NATIVE_FIXTURE_NORMAL_CLI_REFUSED","privatePayloadIncluded":false}', file=sys.stderr, flush=True)
+            raise SystemExit(77)
+    if sys.argv[1:] == ['--legacy-normal-cli-unit']:
+        unittest.main(argv=[sys.argv[0]], defaultTest='NativeFixtureNormalCliTests')
     if sys.argv[1:] == ['--provider-diagnostic-unit']:
         unittest.main(argv=[sys.argv[0]], defaultTest='SourceProviderEvidencePureTests')
     if sys.argv[1:] == ['--legacy-diagnostic-unit']:

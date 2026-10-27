@@ -125,7 +125,11 @@ function assertCompleteList(envelope) {
 // Classify every row before ignoring a different service. Any domain attached to
 // this exact Worker, including another environment, remains forbidden.
 export function forecastShareDomainsForWorker(envelope) {
-  if (envelope?.success !== true || !Array.isArray(envelope.errors) || envelope.errors.length) {
+  // Målt kompatibilitet på dette ene endpoint; ikke et dokumenteret null-schema.
+  // Resten af den fulde liste-/række-/servicekontrol nedenfor er uændret.
+  if (!envelope || typeof envelope !== 'object' || Array.isArray(envelope)
+    || envelope.success !== true || !Object.hasOwn(envelope, 'errors')
+    || !(envelope.errors === null || Array.isArray(envelope.errors) && envelope.errors.length === 0)) {
     throw fail('SHARE_CF_READ');
   }
   const domains = assertCompleteList(envelope);
@@ -159,6 +163,20 @@ export function forecastShareDomainsForWorker(envelope) {
 // field is copied, and no unknown value is coerced to a string or number.
 export function forecastShareCfEnvelopeDiagnostic(value) {
   const object = value !== null && typeof value === 'object' && !Array.isArray(value);
+  const fieldType = key => {
+    if (!object) return 'UNKNOWN';
+    if (!Object.hasOwn(value, key)) return 'ABSENT';
+    const field = value[key];
+    if (field === null) return 'NULL';
+    if (Array.isArray(field)) return 'ARRAY';
+    switch (typeof field) {
+      case 'object': return 'OBJECT';
+      case 'string': return 'STRING';
+      case 'number': return 'NUMBER';
+      case 'boolean': return 'BOOLEAN';
+      default: return 'UNKNOWN';
+    }
+  };
   const errors = object && Array.isArray(value.errors) ? value.errors : null;
   const errorCodes = [];
   let errorCodesStatus = errors === null ? 'UNKNOWN' : errors.length > 8 ? 'LIMITED' : 'COMPLETE';
@@ -174,6 +192,7 @@ export function forecastShareCfEnvelopeDiagnostic(value) {
     success: object && value.success === true ? 'TRUE'
       : object && value.success === false ? 'FALSE' : 'UNKNOWN',
     errors: errors === null ? 'UNKNOWN' : errors.length ? 'NONEMPTY' : 'EMPTY',
+    errorsType: fieldType('errors'), resultType: fieldType('result'),
     errorCodes, errorCodesStatus,
   };
 }
@@ -212,7 +231,18 @@ export async function deployForecastShare({ env = process.env, fetchImpl = globa
       const observed = await readForecastShareJson(cfBase + suffix, cfHeaders, fetchImpl, readKind);
       const data = observed.value;
       readStatuses.set(readKind, observed.httpStatus);
-      if (data?.success !== true || !Array.isArray(data.errors) || data.errors.length) {
+      const measuredNullDomains = suffix === '/workers/domains' && readKind === 'CF_DOMAINS'
+        && data !== null && typeof data === 'object' && !Array.isArray(data)
+        && data.success === true && Object.hasOwn(data, 'errors') && data.errors === null;
+      if (measuredNullDomains) {
+        // Ingen null→[]-normalisering: den oprindelige envelope bevares.
+        // Ukendt/ufuldstændig liste, ukendt domænerække eller eget Worker-domæne
+        // afvises her før den generelle CF-læser kan give svaret videre.
+        try { empty(forecastShareDomainsForWorker(data), 'SHARE_REMOTE_DOMAINS'); }
+        catch (error) {
+          throw Object.assign(error, { readKind, httpStatus: observed.httpStatus });
+        }
+      } else if (data?.success !== true || !Array.isArray(data.errors) || data.errors.length) {
         cfEnvelopeDiagnostic = forecastShareCfEnvelopeDiagnostic(data);
         throw Object.assign(fail('SHARE_CF_READ'), { readKind, httpStatus: observed.httpStatus });
       }

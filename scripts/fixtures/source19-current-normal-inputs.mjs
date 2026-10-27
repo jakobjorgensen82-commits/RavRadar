@@ -4,7 +4,10 @@ import assert from 'node:assert/strict';
 import crypto from 'node:crypto';
 import fs from 'node:fs/promises';
 import path from 'node:path';
-import {execFileSync} from 'node:child_process';
+import {execFileSync,spawn} from 'node:child_process';
+import {createServer,request as httpRequest} from 'node:http';
+import {Readable} from 'node:stream';
+import {pipeline} from 'node:stream/promises';
 import {fileURLToPath, pathToFileURL} from 'node:url';
 import {DMI_FORECAST_FILE_MAX_BYTES} from '../lib/dmi-forecast-file.mjs';
 import {isDeepStrictEqual} from 'node:util';
@@ -343,6 +346,142 @@ async function createArchivedOnlyOldSeed({work, inputRoot, adminInputs, registry
   return {privateRoot, bundlePath, checkpointPath, publicRoot: originals};
 }
 
+// Same normal fixture transport; only the heavy CLI's process lifetime changes.
+// No SOURCE phase/owner/ACK, model tuple, storage backend or response is issued.
+let nativeCliPoison;
+const NATIVE_CLI_ENTRIES = new Set(['scripts/update-weather.mjs','scripts/generate-public-conditions.mjs']);
+function nativeCliClock() {
+  const stop=process.env.RAVRADAR_NATIVE_FIXTURE_STOP_NS,work=process.env.RAVRADAR_NATIVE_FIXTURE_WORK_NS;
+  assert(/^[0-9]{12,20}$/.test(stop??'')&&/^[0-9]{12,20}$/.test(work??''),'NATIVE_FIXTURE_CLOCK_REQUIRED');
+  const result={stop:BigInt(stop),work:BigInt(work)};
+  assert(result.work<result.stop&&process.hrtime.bigint()<result.work,'NATIVE_FIXTURE_WORK_EXPIRED');
+  return result;
+}
+export async function createNativeFixtureCliBridge(handler,maximumBytes) {
+  assert.equal(typeof handler,'function');assert(Number.isSafeInteger(maximumBytes)&&maximumBytes>0);
+  const nonce=crypto.randomBytes(32).toString('hex'),route='/native-cli/'+nonce;
+  const sockets=new Map(),active=new Set();let first,closing=false;
+  const server=createServer((request,response)=>{
+    const task=(async()=>{
+      assert.equal(request.method,'POST');assert.equal(request.url,route);
+      const encoded=request.headers['x-native-cli-request'];
+      assert(typeof encoded==='string'&&encoded.length<=8192);
+      const meta=JSON.parse(Buffer.from(encoded,'base64url').toString('utf8'));
+      exact(meta,['url','method','headers','bufferBody']);
+      assert.equal(typeof meta.url,'string');assert.equal(typeof meta.method,'string');
+      assert(Array.isArray(meta.headers));assert.equal(typeof meta.bufferBody,'boolean');
+      const chunks=[];let bytes=0;
+      for await(const chunk of request){bytes+=chunk.length;assert(bytes<=maximumBytes,'NATIVE_FIXTURE_BODY_BOUND');chunks.push(chunk);}
+      assert(meta.bufferBody||bytes===0);
+      // The exact existing handler remains the ONLY route/admission owner,
+      // including immutable POST, its byte body, x-upsert and 200/409 result.
+      const actual=await handler(meta.url,{method:meta.method,headers:meta.headers,
+        ...(meta.bufferBody?{body:Buffer.concat(chunks,bytes)}:{})});
+      const reply=Buffer.from(JSON.stringify({status:actual.status,statusText:actual.statusText,
+        headers:[...actual.headers]})).toString('base64url');
+      assert(reply.length<=8192);response.setHeader('x-native-cli-response',reply);
+      response.writeHead(200);
+      if(actual.body)await pipeline(Readable.fromWeb(actual.body),response);else response.end();
+    })();
+    active.add(task);
+    task.catch(error=>{first??=error;if(!response.headersSent)response.writeHead(500,{'x-native-cli-failure':'1'});response.end();})
+      .finally(()=>active.delete(task));
+  });
+  server.requestTimeout=0;server.headersTimeout=0;
+  server.on('connection',socket=>{
+    const closed=new Promise(resolve=>socket.once('close',()=>{sockets.delete(socket);resolve();}));
+    sockets.set(socket,closed);if(closing)socket.destroy();
+  });
+  await new Promise((resolve,reject)=>{server.once('error',reject);server.listen(0,'127.0.0.1',resolve);});
+  server.on('error',error=>{first??=error;});
+  return {endpoint:'http://127.0.0.1:'+server.address().port+route,nonce,firstError:()=>first,
+    async close(stopNs){
+      const remaining=Number((stopNs-process.hrtime.bigint())/1_000_000n);
+      assert(remaining>0,'NATIVE_FIXTURE_BRIDGE_CLOSE_EXPIRED');let timer;
+      try{
+        closing=true;
+        const closed=new Promise((resolve,reject)=>server.close(error=>error?reject(error):resolve()));
+        for(const socket of sockets.keys())socket.destroy();
+        // The server callback can precede socket close-event delivery. Wait
+        // for actual per-socket closure too, including late accepted sockets.
+        await Promise.race([(async()=>{await closed;await Promise.all([...active,...sockets.values()]);})(),
+          new Promise((_,reject)=>{timer=setTimeout(()=>reject(new Error('NATIVE_FIXTURE_BRIDGE_CLOSE_UNPROVED')),remaining);})]);
+        assert.equal(sockets.size,0,'NATIVE_FIXTURE_BRIDGE_SOCKET_UNCLOSED');
+      }finally{clearTimeout(timer);}
+    }};
+}
+export function createNativeFixtureCliFetch(endpoint,maximumBytes) {
+  const selected=new URL(endpoint);
+  assert.equal(selected.protocol,'http:');assert.equal(selected.hostname,'127.0.0.1');
+  assert.match(selected.pathname,/^\/native-cli\/[a-f0-9]{64}$/);
+  assert.equal(selected.search,'');assert.equal(selected.hash,'');assert.equal(selected.username,'');assert.equal(selected.password,'');
+  assert(Number.isSafeInteger(maximumBytes)&&maximumBytes>0);
+  return async(input,options={})=>{
+    const url=typeof input==='string'||input instanceof URL?String(input):input.url;
+    const method=options.method??'GET',headers=[...new Headers(options.headers)];
+    // Existing offline immutable POST already requires a Buffer. Never
+    // silently turn a stream/object body into a different accepted body type.
+    const body=options.body;
+    assert(body===undefined||Buffer.isBuffer(body),'NATIVE_FIXTURE_BINARY_BODY_REQUIRED');
+    assert(body===undefined||body.length<=maximumBytes,'NATIVE_FIXTURE_BODY_BOUND');
+    const meta=Buffer.from(JSON.stringify({url,method,headers,bufferBody:body!==undefined})).toString('base64url');
+    assert(meta.length<=8192);
+    return new Promise((resolve,reject)=>{
+      const request=httpRequest(selected,{method:'POST',headers:{'x-native-cli-request':meta},
+        signal:options.signal},response=>{
+        try{
+          assert.equal(response.statusCode,200,'NATIVE_FIXTURE_BRIDGE_REFUSED');
+          const value=response.headers['x-native-cli-response'];assert(typeof value==='string'&&value.length<=8192);
+          const actual=JSON.parse(Buffer.from(value,'base64url').toString('utf8'));
+          exact(actual,['status','statusText','headers']);
+          const empty=[204,205,304].includes(actual.status)||method==='HEAD';
+          resolve(new Response(empty?null:Readable.toWeb(response),actual));if(empty)response.resume();
+        }catch(error){response.resume();reject(error);}
+      });
+      request.on('error',reject);request.end(body);
+    });
+  };
+}
+export async function runNormalNativeCli(root,relative) {
+  if(nativeCliPoison)throw nativeCliPoison;
+  assert.equal(arguments.length,2);assert.equal(process.platform,'linux');
+  assert.equal(Number(process.versions.node.split('.')[0]),24);
+  assert(NATIVE_CLI_ENTRIES.has(relative));assert(path.isAbsolute(root));await noLinks(root);
+  assert.equal(await fs.realpath(root),root);assert.equal(process.env.NODE_OPTIONS,undefined,'Native fixture env stays clean');
+  const clock=nativeCliClock(),policy=(await load(ROOT,'scripts/protected-private-production-runtime.mjs')).PROTECTED_PRIVATE_RUNTIME_POLICY;
+  const python=process.env.PYTHON;assert(path.isAbsolute(python??''));
+  const bridge=await createNativeFixtureCliBridge(globalThis.fetch,policy.maximumArchiveBytes);
+  let child,first,knownClosed=false,reportBytes=0;const reports=[];
+  try{
+    const environment={...process.env,RAVRADAR_NATIVE_FIXTURE_CLI_BRIDGE:bridge.endpoint};
+    child=spawn(python,['-I','-B',path.join(ROOT,'scripts/test-source19-terminal-failure-proof-bank-v17-observer-native.py'),
+      '--legacy-normal-cli',process.execPath,root,relative],{cwd:root,env:environment,
+      stdio:['ignore','inherit','inherit','pipe','pipe']});
+    child.stdio[3].on('error',error=>{first??=error;});child.stdio[4].on('error',error=>{first??=error;});
+    child.stdio[4].on('data',chunk=>{reportBytes+=chunk.length;
+      if(reportBytes<=1024)reports.push(chunk);else first??=new Error('NATIVE_FIXTURE_CLOSE_REPORT_BOUND');});
+    const ended=await new Promise((resolve,reject)=>{child.once('error',reject);
+      child.once('close',(code,signal)=>resolve({code,signal}));});
+    assert.equal(ended.signal,null,'NATIVE_FIXTURE_SUPERVISOR_SIGNAL');
+    assert(reportBytes>0&&reportBytes<=1024,'NATIVE_FIXTURE_CLOSE_REPORT_REQUIRED');
+    const result=JSON.parse(Buffer.concat(reports).toString('utf8'));
+    exact(result,['kind','nonce','returncode','childrenClosed']);
+    assert.equal(result.kind,'NATIVE_FIXTURE_NORMAL_CLI_CLOSED');assert.equal(result.nonce,bridge.nonce);
+    assert.equal(result.childrenClosed,true);assert(result.returncode===null||Number.isInteger(result.returncode));
+    assert.notEqual(ended.code,77,'NATIVE_FIXTURE_STOP_UNPROVED');
+    knownClosed=true;
+    if(bridge.firstError())throw bridge.firstError();
+    if(first)throw first;
+    assert.equal(result.returncode,0,'NATIVE_FIXTURE_NORMAL_CLI_FAILED');assert.equal(ended.code,0);
+  }catch(error){first=bridge.firstError()??first??error;if(!child?.pid)knownClosed=true;}
+  if(knownClosed){
+    try{child?.stdio[3]?.end();await bridge.close(clock.stop);}catch(error){first??=error;}
+  }
+  // Unknown stop retains this exact bridge/owner and poisons later work. The
+  // outer existing Python owner, not a guessed PID/JSON flag, must stop it.
+  if(first){nativeCliPoison=first;throw first;}
+}
+
 // Only normal HTTP transport is replaced here. The actual normal B/S/archive
 // validators/producers remain the callers. No request can fall through to net.
 function installOfflineTransport(backend, policy, publicManifestBytes) {
@@ -447,6 +586,45 @@ async function saveNormal(root, privateRoot, backend, sourceHead, sameReferenceS
 }
 
 
+// The ordinary workflow stages --describe-current at this SAME fixed runner
+// path. Reuse its real normal descriptor, never an authored tuple/attestation.
+export async function stageNormalCurrentSourceDescriptor(root,saved,backend) {
+  const runner=process.env.RUNNER_TEMP;
+  assert.equal(await fs.realpath(runner),path.join(ROOT,'runner-temp'));
+  await noLinks(runner);
+  const readRow=async key=>{
+    const rows=await backend.documentRequest('?document_key=eq.'+encodeURIComponent(key)
+      +'&select=document_key,payload,version&limit=2');
+    assert.equal(rows.length,1);exact(rows[0],['document_key','payload','version']);
+    assert.equal(rows[0].document_key,key);
+    assert(Number.isSafeInteger(rows[0].version)&&rows[0].version>0);return rows;
+  };
+  const BKey='ravscore-private-production-runtime-pointer',SKey='ravscore-continuation-checkpoint';
+  const beforeB=await readRow(BKey),beforeS=await readRow(SKey);
+  const manifest=JSON.parse(await read(path.join(saved.bundlePath,'manifest.json'),4*1024*1024));
+  same(manifest,saved.manifest,'WHOLE retained normal B manifest before descriptor staging');
+  same(beforeS[0].payload,JSON.parse(await read(saved.checkpointPath,16*1024*1024)),
+    'WHOLE normally saved S and central version before descriptor staging');
+  assert.equal(beforeS[0].payload.datasetId,manifest.datasetId);
+  assert.equal(beforeS[0].payload.productionReferenceAt,manifest.productionReferenceAt);
+  same(beforeS[0].payload.modelBinding,manifest.modelBinding,'One actual B/S model family');
+  const protectedB=await load(root,'scripts/protected-private-production-runtime.mjs');
+  const descriptor=await protectedB.describeCurrentProtectedPrivateProductionRuntime({request:backend.documentRequest});
+  assert.equal(descriptor.sourceHead,saved.sourceHead);
+  for(const key of ['datasetId','productionReferenceAt','generatedAt','bundleContentSha256','modelBinding','contractHashes'])
+    same(descriptor[key],manifest[key],'Actual normal describe-current matches whole saved B: '+key);
+  const file=path.join(runner,'private-runtime-current-source.json');
+  const previous=await fs.lstat(file).catch(error=>{if(error.code==='ENOENT')return null;throw error;});
+  if(previous)await read(file,2*1024*1024); // Existing owned regular/no-link metadata only.
+  const writer=await load(root,'scripts/lib/bounded-json-writer.mjs');
+  await writer.writeBoundedJsonAtomic(file,descriptor,{maximumBytes:2*1024*1024});
+  same(JSON.parse(await read(file,2*1024*1024)),descriptor,'WHOLE actual normal descriptor readback');
+  same(await protectedB.describeCurrentProtectedPrivateProductionRuntime({request:backend.documentRequest}),descriptor,
+    'Fresh normal B descriptor after staging');
+  same(await readRow(BKey),beforeB,'Whole central B payload/version unchanged by staging');
+  same(await readRow(SKey),beforeS,'Whole central S payload/version unchanged by staging');
+}
+
 // The existing 585 factory stays a real, immutable producer. Advance it through
 // the issued native586 SAME_H0 transition, then through the issued c03 ordinary
 // STRICTLY_LATER_H0 587 caller. No tuple, checkpoint, origin or ACTIVE row is
@@ -469,7 +647,7 @@ async function advanceGenuine585Through587({work,host585,saved585,inputRoot,admi
   await transition.assertNativeOriginalContinuityRuntimeTransitionPrepared(prepared);
   await(await load(native,'scripts/private-production-runtime-workflow.mjs')).installRestoredPrivateRuntime({
     restoredRoot:prepared.outputRoot,repositoryRoot:native});
-  await load(native,'scripts/generate-public-conditions.mjs');publicReader.root=native;
+  await runNormalNativeCli(native,'scripts/generate-public-conditions.mjs');publicReader.root=native;
   const private586=path.join(work,'saved586');await fs.mkdir(private586,{recursive:false,mode:0o700});
   const saved586=await saveNormal(native,private586,backend,HEAD586,{
     predecessorManifest:saved585.manifest,migrationReport:await json(prepared.normalBReportPath)});
@@ -502,12 +680,13 @@ async function advanceGenuine585Through587({work,host585,saved585,inputRoot,admi
   process.env.GITHUB_RUN_ATTEMPT='1';process.env.OPERATIONAL_ACTION='integrated';
   const assistant=await load(host587,'scripts/assistant-later-h0-runtime-transition.mjs');
   await assistant.prepareAssistantLaterH0Runtime();await assistant.installAssistantLaterH0Runtime();
+  await stageNormalCurrentSourceDescriptor(host587,saved586,backend);
   await writeNew(path.join(host587,'.cache/deployed-dmi-bulk-cache.json'),
     await read(path.join(host587,'data/live/dmi-bulk-cache.json')));
   // New provider INPUTS only, after the authenticated working view is installed.
   await copyInputs(path.join(path.dirname(ROOT),'fixture-587'),host587,successorProviderInputs,PROVIDERS);
-  await load(host587,'scripts/update-weather.mjs');
-  await load(host587,'scripts/generate-public-conditions.mjs');publicReader.root=host587;
+  await runNormalNativeCli(host587,'scripts/update-weather.mjs');
+  await runNormalNativeCli(host587,'scripts/generate-public-conditions.mjs');publicReader.root=host587;
   same(await json(path.join(host587,REGISTRY)),registry,'Actual587 normal registry unchanged');
   const private587=path.join(work,'saved587');await fs.mkdir(private587,{recursive:false,mode:0o700});
   const saved587=await saveNormal(host587,private587,backend,OPERATIVE587_HEAD);
@@ -550,11 +729,12 @@ async function advanceGenuine587Through588({work,saved587,inputRoot,adminInputs,
   process.env.GITHUB_RUN_ATTEMPT='1';process.env.OPERATIONAL_ACTION='integrated';
   const assistant=await load(host588,'scripts/assistant-later-h0-runtime-transition.mjs');
   await assistant.prepareAssistantLaterH0Runtime();await assistant.installAssistantLaterH0Runtime();
+  await stageNormalCurrentSourceDescriptor(host588,saved587,backend);
   await writeNew(path.join(host588,'.cache/deployed-dmi-bulk-cache.json'),
     await read(path.join(host588,'data/live/dmi-bulk-cache.json')));
   await copyInputs(path.join(path.dirname(ROOT),'fixture'),host588,successorProviderInputs,PROVIDERS);
-  await load(host588,'scripts/update-weather.mjs');
-  await load(host588,'scripts/generate-public-conditions.mjs');publicReader.root=host588;
+  await runNormalNativeCli(host588,'scripts/update-weather.mjs');
+  await runNormalNativeCli(host588,'scripts/generate-public-conditions.mjs');publicReader.root=host588;
   same(await json(path.join(host588,REGISTRY)),registry,'Actual588 normal registry unchanged');
   const private588=path.join(work,'saved588');await fs.mkdir(private588,{recursive:false,mode:0o700});
   const saved588=await saveNormal(host588,private588,backend,OPERATIVE588_HEAD);
@@ -688,10 +868,10 @@ async function produceNativeInputs(options,initial,observation) {
     process.chdir(host585);
     observation.phase='SOURCE_LEGACY_PRODUCER_UPDATER585';
     observeSourceLegacyPhase(observation.phase);
-    await load(host585, 'scripts/update-weather.mjs');
+    await runNormalNativeCli(host585,'scripts/update-weather.mjs');
     observation.phase='SOURCE_LEGACY_PRODUCER_PUBLIC585';
     observeSourceLegacyPhase(observation.phase);
-    await load(host585, 'scripts/generate-public-conditions.mjs');
+    await runNormalNativeCli(host585,'scripts/generate-public-conditions.mjs');
     same(await json(path.join(host585, REGISTRY)), registry585, 'Registry unchanged through normal updater/public');
     observation.phase='SOURCE_LEGACY_PRODUCER_SAVE585';
     observeSourceLegacyPhase(observation.phase);
@@ -732,16 +912,20 @@ async function produceNativeInputs(options,initial,observation) {
       assert.equal(process.env.RAVRADAR_ARCHIVED_WEATHER_RESTART_CONTEXT_SHA256,archive.contextSha256);
       delete process.env.RAVRADAR_ARCHIVED_WEATHER_RESTART_CONTEXT_PATH;
       delete process.env.RAVRADAR_ARCHIVED_WEATHER_RESTART_CONTEXT_SHA256;
+      // The normal origin reader must reopen the SAME whole verified585 B as
+      // the restored local runtime and central S, never the earlier OLD archive.
+      process.env.RAVRADAR_PRIVATE_RUNTIME_ROOT=saved585.privateRoot;
+      process.env.RAVRADAR_PRIVATE_RUNTIME_BUNDLE=saved585.bundlePath;
       observation.phase='SOURCE_LEGACY_PRODUCER_FOLLOWER585';
       observeSourceLegacyPhase(observation.phase);
       await copyInputs(path.join(own,'fixture-initial-h1'),host585,options.forwardProviderInputs,PROVIDERS);
       process.env.RAVRADAR_PRODUCTION_TARGET_HOUR=finalTarget;
-      // Native test-only fixed second invocation. Ordinary module source and
-      // all model/state contracts stay identical; query avoids ESM run caching.
-      await import(pathToFileURL(path.join(host585,'scripts/update-weather.mjs')).href+'?source-native-initial-forward');
+      // Same actual second normal CLI; its fresh process replaces only the
+      // former import query. All normal source/model/state bytes stay identical.
+      await runNormalNativeCli(host585,'scripts/update-weather.mjs');
       observation.phase='SOURCE_LEGACY_PRODUCER_PUBLIC585';
       observeSourceLegacyPhase(observation.phase);
-      await import(pathToFileURL(path.join(host585,'scripts/generate-public-conditions.mjs')).href+'?source-native-initial-forward');
+      await runNormalNativeCli(host585,'scripts/generate-public-conditions.mjs');
       same(await json(path.join(host585,REGISTRY)),registry585,'Same normal registry through both585 generations');
       observation.phase='SOURCE_LEGACY_PRODUCER_SAVE585';
       observeSourceLegacyPhase(observation.phase);
@@ -1032,6 +1216,17 @@ export async function prepareCurrentSourceNativeFromInitialProfile(){
     }catch(error){failure=error;}
     if(failure&&first)Object.defineProperty(first,'nativeInputCleanupFailure',{value:failure});else if(failure)throw failure;
   }
+}
+
+// Invoked only as the supervisor's --import preload before the unchanged
+// normal entry. The subprocess cannot inherit the supervisor's close-result fd.
+if(process.env.RAVRADAR_NATIVE_FIXTURE_CLI_BRIDGE!==undefined){
+  assert.equal(process.platform,'linux');assert.equal(Number(process.versions.node.split('.')[0]),24);
+  assert.equal(process.env.NODE_OPTIONS,undefined);nativeCliClock();
+  assert(NATIVE_CLI_ENTRIES.has(path.relative(process.cwd(),path.resolve(process.argv[1]??'')).split(path.sep).join('/')));
+  assert(process.execArgv.includes('--max-old-space-size=8192'));
+  const policy=(await load(ROOT,'scripts/protected-private-production-runtime.mjs')).PROTECTED_PRIVATE_RUNTIME_POLICY;
+  globalThis.fetch=createNativeFixtureCliFetch(process.env.RAVRADAR_NATIVE_FIXTURE_CLI_BRIDGE,policy.maximumArchiveBytes);
 }
 
 if (process.argv[1] && import.meta.url === pathToFileURL(path.resolve(process.argv[1])).href) {

@@ -14,6 +14,28 @@ Derefter består de normale kontroller af den genbrugte prognose, private oplysn
 
 **Kort fortalt:** Den fulde SOURCE589-kandidat er lokalt udstedt med egne normale bindinger og én ny migration. Den er ikke installeret eller bevis for nye offentlige vejrdata.
 
+En afsluttet isoleret SOURCE-prøve løb tør for V8-hukommelse og sluttede med SIGABRT, selv om Node24 allerede havde et loft på 8192 MiB. Fejlen skete før det gamle jobloft og er ikke timeoutbevis eller en påvist fejl i den almindelige vejrhentning.
+
+Prøven er lokalt ændret til de samme normale updater- og publiceringskald i friske processer, med samme data, hele B/S-kæde og kontroller. Den fysiske ejer følger den virkelige ydre proces gennem et friskt kernelhåndtag, pidfd, og samme fælles slutfrist. Ukendt stop eller observeret parenttab giver ikke adgang til senere SAVE, oprydning eller PASS; der loves ikke nul skrivevindue før tabet kan observeres.
+
+28 gamle lokale tilfælde består, og tre nye består fokuseret efter tre indledende fejl; Linux-procesprøven var sprunget over. Det er ikke samlet 32/32- eller native-PASS. De samme syv Linux-procesprøver er lokalt placeret tidligt under eksisterende Node24/Python3.12, mens den senere normale prøve bevares. Faktisk Linux-kørsel, den enkelte generations hukommelsesbehov og hele seks-timers kæden er fortsat åbne; OOM-årsagen er ikke bevist lukket. SOURCE og statistik er ikke aktiveret, og alle fem mål til 18. november består.
+
+En særskilt kildekandidat forbereder et samlet loft på 360 minutter, altså seks timer, for SOURCE-kildekontrollen. Det tidligere jobloft er 180 minutter, mens en nødvendig senere underproces allerede må bruge op til 240 minutter alene. Forberedelsen og de efterfølgende kontroller kræver også tid. Underprocessens eget loft og tidsgrænserne for almindeligt vejr og leverandører ændres ikke.
+
+Seks timer er en plan, ikke en målt værstefaldstid eller garanti for, at alle trin kan afsluttes. De normale målprøver og en præcis samlet kildekontrol skal stadig bestå for denne efterfølger. De gamle workflowkontroller og deres afslag bevares gennem en præcis historisk visning; ingen kontrol springes over, og rammen giver ikke genbrugs- eller aktiveringsadgang.
+
+Den 27. oktober er de to seneste præcise SOURCE-kontroller fortsat røde i samme 585-efterfølger. En prøve skal efter normal gemning og hel genlæsning bruge sin egen aktuelle pakke, ikke fortsat pege på et gammelt arkiv. Både 585- og SOURCE-efterfølgerens normale kontrol-, beskrivelses- og staging-inputs samt aktive locatorer skal følge den samme hele B/S-kæde. En lokal rettelse af den gamle locator og 26 beståede normale lokale tilfælde er ikke fuld årsagslukning eller ny native-/databasekontrol.
+
+SOURCE-processens eksisterende ejer reserverer højst fire minutter, dog højst halvdelen af den resterende korte fase, til faktisk stop og afslutning. Reserven ligger inde i samme slutfrist; en fuld 80-minutters fase efterlader derfor cirka 76 minutter til arbejde. Fristen udvides ikke. Et manglende stop- eller lukningsbevis skal bevare den første fejl og beskyttede originaler uden oprydning eller godkendelse.
+
+Fem gamle ejerskabsprøver er bevaret byte for byte, og fem nye Linux-tilfælde skal fysisk måle stop, dræning, lukning og det korrekte afslag. De nye tilfælde er endnu ikke kørt her. Den samlede præcise efterfølger og national kapacitet er fortsat åbne. Reserven er ikke et hårdt 90-sekunders loft om hele komponentbanken og dækker ikke uændret bank-JSON-læsning i SOURCE-forælderen. SOURCE og statistik er ikke aktiveret; gamle originaler, modelbindinger, scoreformel, kilder og administratorgeometri bevares.
+
+Den 27. oktober er en særskilt kildekandidat forberedt til at bevare det faktisk gemte B/S-par fra den normale SOURCE-efterfølger. B er vejrpakken, og S er beregningstilstanden. Data eksporteres først efter normal publicering af B før S og hel genlæsning. Filen indeholder de faktisk kvitterede versioner, hele S samt kontrolsummer for det normale manifest og checkpoint.
+
+De eksisterende læsere kontrollerer filens byteantal, kontrolsum, fysiske identitet og ejer. Datasæt, referencetime, modeller, beregningskontrakt og alle 673 dele skal passe, og den gamle faktiske SQL-validator skal stadig godkende hele S. Dette er en privat datakanal til senere normale prøver, ikke et runtime-origin-håndtag, D1-bevis eller tilladelse til installation.
+
+Afgrænsede lokale kontrolresultater erstatter ikke kandidatens egen præcise normale kilde-/Linux-/PostgreSQL-kontrol. SOURCE og statistik forbliver inaktive, og version, C/I/T, SQL, scoreformel, kildeprioritet og administratorgeometri ændres ikke. Kørselsdetaljer føres i det private checkpoint; alle ældre afsnit nedenfor bevares.
+
 Den 27. oktober er der fundet en konkret forskel mellem prøvekalderens filgrænser. Den friske kopiering tillod allerede den normale DMI-forecastfil op til 768 MiB, mens gemning og hel genlæsning brugte 256 MiB. Den snævre fixtureændring bruger nu den samme eksisterende forecastgrænse begge steder. Kun den private komponentpakkes hele genlæsning bruger desuden den allerede indlæste frosne normale ejers 768 MiB-grænse efter normal manifestkontrol. Andre JSON-inputs og public-hour-pack beholder 256 MiB; normale produktionsgrænser og alle identitets-, link- og bytekontroller bevares.
 
 Den afsluttede kildekontrol lokaliserede en fælles filassertion, men ikke hvilken fil eller om filtype, antal links, tomt indhold eller størrelse udløste afvisningen. Den konkrete grænsemismatch er derfor bevist i koden; den faktiske CI-fejlårsag er ikke endeligt bevist. Den lokale observation bruger kun faste kategorier og filstatistik uden sti eller privat indhold.
@@ -94,6 +116,10 @@ En gemt beregning og en offentlig levering er forskellige trin. Efter et sent st
 ## 89.268 Del en offentlig prognose
 
 Kort fortalt: Et delingslink peger på det valgte sted, tidspunkt og søgemåde. Du vælger selv, hvor det deles, og hvad du skriver til det.
+
+Hvis en teknisk kontrol af deling afvises, må den kun gemme faste kategorier om svarets form, ikke indhold eller private oplysninger. Flere fejltyper kan dermed skelnes uden at svække kontrollen. En lokal prøve eller et vellykket HTTP-svar viser ikke i sig selv, at den offentlige delingsforhåndsvisning virker. Den faktiske Worker og gratis kapacitet skal fortsat bevises særskilt.
+
+Leveringen skal kontrollere den fulde domæneoversigt, så delingsfunktionen ikke overtager en eksisterende tilknytning. På det præcise domæneendpoint kan et udtrykkeligt tomt fejlfelt, angivet som null, accepteres sammen med et bekræftet succes-svar og en fuldt kontrolleret liste uden domæner for denne Worker. Det er en afgrænset tilpasning til et faktisk målt svar; manglende felter, reelle fejl, ufuldstændige lister eller ukendte rækker afvises fortsat. Den offentlige forhåndsvisning og gratis kapacitet skal stadig afprøves særskilt.
 
 Delingsforhåndsvisningen har sin egen kontrollerede levering og skal være afprøvet på den offentlige adresse, før den regnes som klar. En lokal test eller et vellykket HTTP-svar er ikke nok. Den bruger ikke private kontooplysninger og kræver hverken en ny database eller et billedlager. Gratis kapacitet skal dokumenteres ved måling, ikke antages ud fra løsningens størrelse.
 

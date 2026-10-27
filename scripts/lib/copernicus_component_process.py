@@ -61,6 +61,26 @@ class _LinuxSubsetOwner:
         self.deadline, self.libc, self.previous = deadline, None, None
         self.children_observed = False
         self.active = False
+        self._source_program_drain_reserve = 0.0
+
+    def reserve_source_program_work(self) -> None:
+        # Only the actual normal-program cohort calls this after entering its
+        # existing kernel owner. Never renew the issued absolute stop cutoff.
+        import math
+        if not self.active or self._source_program_drain_reserve != 0.0:
+            raise RuntimeError("SOURCE_COHORT_CLOCK_EXPIRED_OR_INVALID")
+        remaining = self.deadline - time.monotonic()
+        if not math.isfinite(remaining) or remaining <= 0:
+            raise RuntimeError("SOURCE_COHORT_CLOCK_EXPIRED_OR_INVALID")
+        # Keep up to the existing240s failure lifetime INSIDE this phase/job.
+        # A short phase keeps half its remaining allowance for physical drain,
+        # rather than giving a four-minute seal phase no work allowance at all.
+        self._source_program_drain_reserve = min(240.0, remaining / 2.0)
+
+    def source_work_remaining(self) -> float:
+        # Parent failure-control can only tighten deadline. The SAME reserved
+        # lifetime therefore remains unavailable to work after any tightening.
+        return self.deadline - self._source_program_drain_reserve - time.monotonic()
 
     def enter(self) -> None:
         if (threading.current_thread() is not threading.main_thread()
@@ -134,6 +154,17 @@ class _LinuxSubsetOwner:
                                 pass
                     finally:
                         os.close(descriptor)
+                        if self._source_program_drain_reserve:
+                            # One close attempt. A missing/changed/unknown fd
+                            # never supplies SOURCE physical-close evidence.
+                            import errno
+                            try:
+                                os.fstat(descriptor)
+                            except OSError as error:
+                                if type(error) is not OSError or error.errno != errno.EBADF:
+                                    raise
+                            else:
+                                raise RuntimeError("CP_COMPONENT_SUBSET_STOP_UNPROVED")
             remaining = self.deadline - time.monotonic()
             if remaining <= 0:
                 raise RuntimeError("CP_COMPONENT_SUBSET_STOP_UNPROVED")
@@ -270,7 +301,7 @@ def _source_failure_control(descriptor, nonce, phase, issued_cutoff_ns, owner):
     observed = time.monotonic_ns()
     raw = bytearray()
     while True:
-        remaining = owner.deadline - time.monotonic()
+        remaining = owner.source_work_remaining()
         if remaining <= 0:
             raise RuntimeError('SOURCE_COHORT_CLOCK_EXPIRED_OR_INVALID')
         if not select.select([descriptor], [], [], remaining)[0]:
@@ -1493,6 +1524,7 @@ def _run_source_normal_program_cohort() -> int:
     try:
         owner.enter()
         try:
+            owner.reserve_source_program_work()
             if phase == 71:
                 for descriptor in (4, 5, 6, 7):
                     row = {'fd': descriptor, 'stream': None, 'stat': None,
@@ -1590,13 +1622,15 @@ def _run_source_normal_program_cohort() -> int:
             if phase in (4, 12, 16, 17, 27, 28, 29, 30, 32, 33, 43, 44, 45, 46, 47, 48, 49, 50, 67, 69) or phase in range(52, 67) or phase == 71 or phase in (72, 73, 74, 75, 76, 77, 78, 80, 81, 82, 83):
                 # Fixed runtime check, within the SAME issued cohort cutoff.
                 # No new timeout and no caller-selected executable/version.
+                if owner.source_work_remaining() <= 0:
+                    raise RuntimeError('SOURCE_COHORT_CLOCK_EXPIRED_OR_INVALID')
                 version_child = subprocess.Popen([executable, '--version'], cwd=root,
                     executable=f'/proc/self/fd/{handle}', pass_fds=(handle,),
                     stdin=subprocess.DEVNULL, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
                     close_fds=True)
                 import select
                 while True:
-                    remaining = owner.deadline - time.monotonic()
+                    remaining = owner.source_work_remaining()
                     if remaining <= 0:
                         raise RuntimeError('SOURCE_COHORT_CLOCK_EXPIRED_OR_INVALID')
                     if select.select([3], [], [], 0)[0]:
@@ -1611,6 +1645,8 @@ def _run_source_normal_program_cohort() -> int:
             # Execute the actual retained regular binary fd. Preserve argv[0]
             # as its real canonical path (Python's normal sys.executable), but
             # do not reopen that pathname or race a short-lived /proc/PID/exe.
+            if owner.source_work_remaining() <= 0:
+                raise RuntimeError('SOURCE_COHORT_CLOCK_EXPIRED_OR_INVALID')
             child = subprocess.Popen(command, cwd=root, env=environment,
                 executable=f'/proc/self/fd/{handle}',
                 pass_fds=(handle, 4, 5, 6, 7, union_result_row['fd'], union_birth_row['fd']) if phase == 71 else (handle, 4, 5, 6) if phase in (68, 70) else (handle,),
@@ -1620,11 +1656,13 @@ def _run_source_normal_program_cohort() -> int:
             selector = selectors.DefaultSelector()
             selector.register(3, selectors.EVENT_READ)
             while result is None:
-                remaining = owner.deadline - time.monotonic()
+                remaining = owner.source_work_remaining()
                 if remaining <= 0:
                     raise RuntimeError('SOURCE_COHORT_CLOCK_EXPIRED_OR_INVALID')
                 if selector.select(min(0.05, remaining)):
                     _source_failure_control(3, nonce, phase, stop_ns, owner)
+                if owner.source_work_remaining() <= 0:
+                    raise RuntimeError('SOURCE_COHORT_CLOCK_EXPIRED_OR_INVALID')
                 if os.fstat(descriptor).st_size > 131072:
                     raise RuntimeError('SOURCE_NORMAL_OUTPUT_TOO_LARGE')
                 result = child.poll()

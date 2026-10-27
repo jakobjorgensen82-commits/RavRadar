@@ -71,6 +71,20 @@ export const AFTER_JOB=BEFORE_JOB.replace('timeout-minutes: 75','timeout-minutes
 // Only the exact180-minute PR job is current; no weather/provider budget changes.
 export const REVIEWED120_JOB=AFTER_JOB.replace('timeout-minutes: 90','timeout-minutes: 120');
 export const CURRENT_JOB=REVIEWED120_JOB.replace('timeout-minutes: 120','timeout-minutes: 180');
+
+// Kun den aktive SOURCE-kilde-CI får plads til sit eksisterende 240-minutters
+// legacy-child plus den uændrede native-prefix, source- og nationalkæde.
+// Det historiske180-header ovenfor er uændret og forbliver gammelt orakel.
+export const SOURCE_CI_JOB=CURRENT_JOB.replace('timeout-minutes: 180','timeout-minutes: 360');
+export function inverseSourceCiBudgetWorkflow(source) {
+  source=lf(source);
+  assert.equal(source.split(SOURCE_CI_JOB).length,2,
+    'One exact SOURCE-only360-minute CI header before historical validation');
+  assert.equal(source.split(CURRENT_JOB).length,1,
+    'No duplicated or mixed historical180-minute CI header');
+  return source.replace(SOURCE_CI_JOB,CURRENT_JOB);
+}
+
 export const REVIEWED_SOURCE_RUN_LINE='        run: npm run validate:source && node scripts/test-fixed-public-rate-log-20261013.mjs && node scripts/test-fixed-storage-upload-log-20261013.mjs && node scripts/test-fixed-public-rate-console-log-20261015.mjs\n';
 export const CURRENT_SOURCE_RUN_LINE='        run: npm run validate:source && node scripts/test-fixed-public-rate-log-20261013.mjs && node scripts/test-fixed-storage-upload-log-20261013.mjs && node scripts/test-fixed-public-rate-console-log-20261015.mjs && node scripts/test-prepare-candidate-g-operational-rollback.mjs && node scripts/test-candidate-g-rollback-public-stage.mjs\n';
 // Scope the observed Node24 executable to the one later PG step only. No
@@ -81,9 +95,16 @@ export const SOURCE_NODE24_CAPTURE = [
   '          printf \'node24_path=%s\\n\' "$(command -v node)" >> "$GITHUB_OUTPUT"',
   '        id: source-native-node24', '',
 ].join('\n');
+// Same seven normal Linux process cases, before any expensive native SOURCE chain.
+export const SOURCE_NORMAL_CLI_UNIT = "          RAVRADAR_NATIVE_FIXTURE_TEST_NODE=\"$(command -v node)\" python -I -B scripts/test-source19-terminal-failure-proof-bank-v17-observer-native.py --legacy-normal-cli-unit\n";
 export const SOURCE_NODE24_ENV = '          RAVRADAR_SOURCE_NATIVE_NODE24_PATH: $'+'{{ steps.source-native-node24.outputs.node24_path }}\n';
 export function inverseSourceNode24Workflow(value) {
   let source=String(value).replace(/\r\n/g,'\n');
+  assert.equal(source.split(SOURCE_NORMAL_CLI_UNIT).length,2,'Exact once-only early normal Linux CLI unit');
+  const unitPrefix="      - name: Validate isolated acquisition ownership and raw-save cohort\n        shell: bash\n        run: |\n          set -euo pipefail\n";
+  assert(source.includes(unitPrefix+SOURCE_NORMAL_CLI_UNIT+"          node --test scripts/test-weather-acquisition-writer.mjs\n"),
+    'Same unit must be the first command in the existing Node24/Python3.12 cohort');
+  source=source.replace(SOURCE_NORMAL_CLI_UNIT,'');
   assert.equal(source.split(SOURCE_NODE24_CAPTURE).length,2,'Exact once-only observed Node24 capture');
   assert.equal(source.split(SOURCE_NODE24_ENV).length,2,'Exact once-only step-scoped Node24 operand');
   const cohort='          python -B scripts/test-owned-dmi-grib-save-native.py --node24-path "$(command -v node)"\n';
@@ -153,6 +174,8 @@ export function inverseCandidatePublicSourceRunLine(source) {
 }
 export function verifyWorkflow(source) {
   source=lf(source);
+  if(source.includes('      - name: '+SOURCE_PRODUCER_PHASE_UPLOAD+'\n'))
+    source=inverseSourceCiBudgetWorkflow(source);
   if(source.includes('source-native-node24')||source.includes('RAVRADAR_SOURCE_NATIVE_NODE24_PATH'))
     source=inverseSourceNode24Workflow(source);
   if(source.includes('      - name: '+SOURCE_PRODUCER_PHASE_UPLOAD+'\n'))source=inverseSourceProducerPhaseUpload(source);

@@ -17,11 +17,11 @@ const NATIVE_SCRIPT='set -euo pipefail\n'+CURRENT_COMMANDS.join('\n')+'\n';
 const copy = value => structuredClone(value);
 // TEST ONLY. First qualify the whole actual SOURCE caller, then restore only
 // its two exact known inverses before the unchanged genuine586 receipt oracle.
-import {verifyWorkflow as verifyActualSourceWorkflow,inverseSourceNode24Workflow}
+import {verifyWorkflow as verifyActualSourceWorkflow,inverseSourceNode24Workflow,inverseSourceCiBudgetWorkflow,SOURCE_NORMAL_CLI_UNIT}
   from './national584-source-evidence.mjs';
 function historical586WorkflowView(actual){
   verifyActualSourceWorkflow(actual);
-  const historical=inverseSourceNode24Workflow(inverseSourceProducerPhaseUpload(actual));
+  const historical=inverseSourceNode24Workflow(inverseSourceProducerPhaseUpload(inverseSourceCiBudgetWorkflow(actual)));
   verifyCurrent586Workflow(historical,historical);
   return historical;
 }
@@ -287,6 +287,18 @@ test('assistant later-H0 appends its actual phase without retagging whole586 com
 
 
 test('current586 phase artifact is independent, exact, honest, and does not relax conservative native inputs',async()=>{
+  const actual=await fs.readFile(WORKFLOW,'utf8');
+  assert.equal(actual.split(SOURCE_NORMAL_CLI_UNIT).length,2);
+  for(const changed of [
+    actual.replace(SOURCE_NORMAL_CLI_UNIT,''),
+    actual+SOURCE_NORMAL_CLI_UNIT,
+    actual.replace(SOURCE_NORMAL_CLI_UNIT,SOURCE_NORMAL_CLI_UNIT.replace('--legacy-normal-cli-unit','--provider-diagnostic-unit')),
+    actual.replace(SOURCE_NORMAL_CLI_UNIT,SOURCE_NORMAL_CLI_UNIT.replace('command -v node','command -v unreviewed-node')),
+    actual.replace(SOURCE_NORMAL_CLI_UNIT,'').replace("          node --test scripts/test-weather-acquisition-writer.mjs\n","          node --test scripts/test-weather-acquisition-writer.mjs\n"+SOURCE_NORMAL_CLI_UNIT),
+  ]){
+    assert.throws(()=>inverseSourceNode24Workflow(changed));
+    assert.throws(()=>verifyActualSourceWorkflow(changed));
+  }
   const workflow=historical586WorkflowView(await fs.readFile(WORKFLOW,'utf8'));
   assert.equal(workflow.split(CURRENT586_PHASE_UPLOAD_BLOCK).length,2);
   verifyCurrent586Workflow(workflow,workflow);
@@ -764,7 +776,7 @@ test('legacy CLI marks real boundaries and catches before its inner transport tr
     ['SOURCE_LEGACY_PRODUCER',"  const {produceCurrentSourceNativeInputs}=await load("],
     ['SOURCE_LEGACY_ORIGINALS',"  assert.equal(produced.profile,"],
     ['SOURCE_LEGACY_RESTORE',"    for(const name of ['RAVRADAR_ARCHIVED_WEATHER_RESTART_CONTEXT_PATH'"],
-    ['SOURCE_LEGACY_UPDATER',"    await load('scripts/update-weather.mjs');"],
+    ['SOURCE_LEGACY_UPDATER',"    await runNormalNativeCli(ROOT,'scripts/update-weather.mjs');"],
     ['SOURCE_LEGACY_SAVE',"    const followerRoot=path.join(produced.workRoot,'saved-legacy-follower');"],
     ['SOURCE_LEGACY_READBACK','    const loaded=await normalS.loadRavScoreContinuationCheckpointForTarget('],
     ['SOURCE_LEGACY_SAVE','    const spec=await workflow.buildPrivateRuntimeCreateSpec({repositoryRoot:ROOT});'],
@@ -847,6 +859,85 @@ test('legacy follower process preserves bounded actual exit/signal/fatal observa
   }
 });
 
+test('normal native585 follower reopens the exact saved verified B rather than the OLD archive',async()=>{
+  const source=await fs.readFile('scripts/fixtures/source19-current-normal-inputs.mjs','utf8');
+  const original=source.indexOf("process.env.RAVRADAR_PRIVATE_RUNTIME_ROOT = oldRoot;");
+  const firstSave=source.indexOf('let saved585 = await saveNormal(host585, private585, backend, producerHead);',original);
+  const verification=source.indexOf('const verifiedParent=await bundle585.verifyPrivateProductionRuntimeBundle({',firstSave);
+  const install=source.indexOf('await workflow585.installRestoredPrivateRuntime({restoredRoot:path.join(verifiedParent.bundlePath,\'payload\'),repositoryRoot:host585});',verification);
+  const restoreS=source.indexOf('const restoredS=await protectedS585.restoreProtectedRavScoreContinuationCheckpoint({',install);
+  const selected=source.indexOf('process.env.RAVRADAR_PRIVATE_RUNTIME_ROOT=saved585.privateRoot;\n'
+    +'      process.env.RAVRADAR_PRIVATE_RUNTIME_BUNDLE=saved585.bundlePath;',restoreS);
+  const follower=source.indexOf("observation.phase='SOURCE_LEGACY_PRODUCER_FOLLOWER585';",selected);
+  const providers=source.indexOf("await copyInputs(path.join(own,'fixture-initial-h1'),host585,options.forwardProviderInputs,PROVIDERS);",follower);
+  const updater=source.indexOf("await runNormalNativeCli(host585,'scripts/update-weather.mjs');",providers);
+  assert(original>=0&&firstSave>original&&verification>firstSave&&install>verification
+    &&restoreS>install&&selected>restoreS&&follower>selected&&providers>follower&&updater>providers,
+    'Normal whole585 B/S verification and install precede the exact locator selection, then real provider copy and updater');
+  const turn=source.slice(selected,updater);
+  assert.equal([...turn.matchAll(/process\.env\.RAVRADAR_PRIVATE_RUNTIME_ROOT=/g)].length,1);
+  assert.equal([...turn.matchAll(/process\.env\.RAVRADAR_PRIVATE_RUNTIME_BUNDLE=/g)].length,1);
+  assert(!turn.includes('oldRoot'),'No OLD archive locator is reintroduced before the real follower');
+});
+
+test('normal SOURCE follower selects its verified CURRENT B after producer environment restoration',async()=>{
+  const source=await fs.readFile('scripts/test-source-producer-legacy-compatibility.mjs','utf8');
+  const producer=await fs.readFile('scripts/fixtures/source19-current-normal-inputs.mjs','utf8');
+  const origin=await fs.readFile('scripts/lib/established-native-current-origin.mjs','utf8');
+  assert(producer.includes("for (const name of Object.keys(process.env)) if (!Object.hasOwn(beforeEnv, name)) delete process.env[name];"));
+  assert(producer.includes("for (const [name, value] of Object.entries(beforeEnv)) process.env[name] = value;"));
+  assert(origin.includes("const privateRoot = process.env[seedOnly ? 'RAVRADAR_PREDECESSOR_PRIVATE_ROOT' : 'RAVRADAR_PRIVATE_RUNTIME_ROOT'];"));
+  assert(origin.includes("const bundlePath = process.env[seedOnly ? 'RAVRADAR_PREDECESSOR_PRIVATE_BUNDLE' : 'RAVRADAR_PRIVATE_RUNTIME_BUNDLE'];"));
+  const produced=source.indexOf('const produced=await produceCurrentSourceNativeInputs(options);');
+  const verification=source.indexOf('const verifiedParent=await bundle.verifyPrivateProductionRuntimeBundle({',produced);
+  const whole=source.indexOf("same(verifiedParent.manifest,parentManifest,'Whole actual saved SOURCE B manifest');",verification);
+  const install=source.indexOf("await workflow.installRestoredPrivateRuntime({restoredRoot:path.join(verifiedParent.bundlePath,'payload'),repositoryRoot:ROOT});",whole);
+  const restoreS=source.indexOf("same(await json(path.join(ROOT,CHECKPOINT)),currentCheckpoint,'Actual SOURCE S installed for normal continuation');",install);
+  const selected=source.indexOf('process.env.RAVRADAR_PRIVATE_RUNTIME_ROOT=produced.current.privateRoot;\n'
+    +'    process.env.RAVRADAR_PRIVATE_RUNTIME_BUNDLE=produced.current.bundlePath;',restoreS);
+  const updater=source.indexOf("await runNormalNativeCli(ROOT,'scripts/update-weather.mjs');",selected);
+  assert(produced>=0&&verification>produced&&whole>verification&&install>whole
+    &&restoreS>install&&selected>restoreS&&updater>selected,
+    'Whole actual CURRENT B/S install and verification precede the exact active locator selection and real updater');
+  const turn=source.slice(selected,updater);
+  assert.equal([...turn.matchAll(/process\.env\.RAVRADAR_PRIVATE_RUNTIME_ROOT=/g)].length,1);
+  assert.equal([...turn.matchAll(/process\.env\.RAVRADAR_PRIVATE_RUNTIME_BUNDLE=/g)].length,1);
+});
+
+test('normal587 588 and SOURCE callers stage real fresh describe-current data before provider and updater work',async()=>{
+  const fixture=await fs.readFile('scripts/fixtures/source19-current-normal-inputs.mjs','utf8');
+  const legacy=await fs.readFile('scripts/test-source-producer-legacy-compatibility.mjs','utf8');
+  const start=fixture.indexOf('export async function stageNormalCurrentSourceDescriptor(root,saved,backend) {');
+  const end=fixture.indexOf('// The existing 585 factory stays a real, immutable producer.',start);
+  assert(start>=0&&end>start);const body=fixture.slice(start,end);
+  for(const required of [
+    "protectedB.describeCurrentProtectedPrivateProductionRuntime({request:backend.documentRequest})",
+    "path.join(runner,'private-runtime-current-source.json')",
+    "writer.writeBoundedJsonAtomic(file,descriptor,{maximumBytes:2*1024*1024})",
+    "same(manifest,saved.manifest,'WHOLE retained normal B manifest before descriptor staging')",
+    "same(beforeS[0].payload,JSON.parse(await read(saved.checkpointPath,16*1024*1024))",
+    "same(await readRow(BKey),beforeB,'Whole central B payload/version unchanged by staging')",
+    "same(await readRow(SKey),beforeS,'Whole central S payload/version unchanged by staging')",
+  ])assert(body.includes(required),'Normal descriptor staging keeps actual describe/B/S/readback contract');
+  assert(!body.includes('RAVRADAR_SOURCE_NORMAL_PRODUCER'),'No alternate producer flag is used to avoid the normal descriptor');
+  for(const [root,saved,method]of [['host587','saved586','advanceGenuine585Through587'],
+    ['host588','saved587','advanceGenuine587Through588']]){
+    const branch=fixture.indexOf('async function '+method+'(');
+    const install=fixture.indexOf('await assistant.prepareAssistantLaterH0Runtime();await assistant.installAssistantLaterH0Runtime();',branch);
+    const stage=fixture.indexOf('await stageNormalCurrentSourceDescriptor('+root+','+saved+',backend);',install);
+    const provider=fixture.indexOf('await copyInputs(path.join(path.dirname(ROOT),',stage);
+    const updater=fixture.indexOf("await runNormalNativeCli("+root+",'scripts/update-weather.mjs');",provider);
+    assert(branch>=0&&install>branch&&stage>install&&provider>stage&&updater>provider,
+      'Whole normal controller install precedes actual parent descriptor, then new provider inputs and updater');
+  }
+  const restored=legacy.indexOf("same(await json(path.join(ROOT,CHECKPOINT)),currentCheckpoint,'Actual SOURCE S installed for normal continuation');");
+  const selected=legacy.indexOf('process.env.RAVRADAR_PRIVATE_RUNTIME_ROOT=produced.current.privateRoot;',restored);
+  const stage=legacy.indexOf('.stageNormalCurrentSourceDescriptor(ROOT,produced.current,backend);',selected);
+  const updater=legacy.indexOf("await runNormalNativeCli(ROOT,'scripts/update-weather.mjs');",stage);
+  assert(restored>=0&&selected>restored&&stage>selected&&updater>stage,
+    'SOURCE stages its own actual CURRENT B/S after whole restore and active locator selection');
+});
+
 test('normal native forecast fixture uses one normal owner bound through copy save and restore',async()=>{
   const source=await fs.readFile('scripts/fixtures/source19-current-normal-inputs.mjs','utf8');
   const selected=[...source.matchAll(/(?:name|row\.relativePath) === 'data\/live\/dmi-forecast-cache\.json' \? DMI_FORECAST_FILE_MAX_BYTES/g)];
@@ -910,4 +1001,85 @@ test('normal native forecast fixture uses one normal owner bound through copy sa
     fs.readFile=originalRead;console.error=originalError;
     await fs.rm(root,{recursive:true,force:true});
   }
+});
+
+test('all ten heavy native calls use fresh ordinary CLIs without changing SAVE or public coverage',async()=>{
+  const fixture=await fs.readFile('scripts/fixtures/source19-current-normal-inputs.mjs','utf8');
+  const legacy=await fs.readFile('scripts/test-source-producer-legacy-compatibility.mjs','utf8');
+  assert.equal([...fixture.matchAll(/await runNormalNativeCli\((?:host585|native|host587|host588),\s*'scripts\/(?:update-weather|generate-public-conditions)\.mjs'\)/g)].length,9);
+  assert.equal([...legacy.matchAll(/await runNormalNativeCli\(ROOT,'scripts\/update-weather\.mjs'\)/g)].length,1);
+  assert(!/await import\([^\n]*\?source-native-initial-forward/.test(fixture),'Fresh process replaces executed ESM query caching');
+  assert(fixture.includes("url.search==='?source-native-initial-forward'"),'Retain the exact historical diagnostic URL admission');
+  assert(!/await (?:load|import)\([^\n]*scripts\/(?:update-weather|generate-public-conditions)\.mjs/.test(fixture));
+  assert(!legacy.includes("await load('scripts/update-weather.mjs')"));
+  assert(legacy.includes("restoreTransport=backend.installFixedReaderTransport();"));
+  assert(fixture.includes("if(nativeCliPoison)throw nativeCliPoison;"));
+  assert(fixture.includes("if(first){nativeCliPoison=first;throw first;}"));
+  const python=await fs.readFile('scripts/test-source19-terminal-failure-proof-bank-v17-observer-native.py','utf8');
+  assert.equal([...python.matchAll(/fixture_stop_ns = wrapper\['stop_ns'\]/g)].length,1);
+  assert(python.includes("descriptor = os.pidfd_open(parent, 0)"));
+  assert(python.includes("time.clock_gettime_ns(time.CLOCK_BOOTTIME)"));
+  assert(python.includes("self.addCleanup(_native_fixture_wrapper_finish, wrapper)"));
+  assert(python.includes("wrapper=self.native_fixture_wrapper, stdout=output, stderr=errors)"));
+  assert(python.includes("if wrapper is not None and wrapper['pidfd'] in ready:"));
+  assert(python.includes("def test_outer_wrapper_death_stops_before_later_save(self):"));
+  for(const required of ['owner.reserve_source_program_work()', 'owner.drain()', 'helper._retain(first, owner)',
+    'close_fds=True', "if os.read(control_fd, 1) == b'':", '_native_fixture_close_fd(3)', '_native_fixture_close_fd(4)',
+    "result = _native_fixture_owned_program(command, cwd=root, env=environment,"])
+    assert(python.includes(required),'Normal ownership/outer follower boundary retained: '+required);
+});
+
+test('fresh CLI bridge uses the unchanged offline GET and binary immutable POST/409 route owner',async()=>{
+  const {createNativeFixtureCliBridge,createNativeFixtureCliFetch}=await import('./fixtures/source19-current-normal-inputs.mjs');
+  const {normalBAndSTransports}=await import('./lib/established-native-current-origin-test-transports.mjs');
+  const fixture=await fs.readFile('scripts/fixtures/source19-current-normal-inputs.mjs','utf8');
+  const start=fixture.indexOf('function installOfflineTransport('),end=fixture.indexOf('\nasync function saveNormal(',start);
+  assert(start>=0&&end>start);
+  const AsyncFunction=Object.getPrototypeOf(async function(){}).constructor;
+  const install=await AsyncFunction('assert',fixture.slice(start,end)+'\nreturn installOfflineTransport;')(assert);
+  const backend=normalBAndSTransports(),policy={bucketId:'native-unit',maximumArchiveBytes:1024,mimeType:'application/gzip'};
+  const publicBytes=Buffer.from('{"schemaVersion":"actual-unit"}');
+  const restore=install(backend,policy,()=>publicBytes),handler=globalThis.fetch;
+  let bridge;
+  try{
+    bridge=await createNativeFixtureCliBridge(handler,policy.maximumArchiveBytes);
+    const fetch=createNativeFixtureCliFetch(bridge.endpoint,policy.maximumArchiveBytes);
+    const headers={apikey:'SYNTHETIC_TEST_ONLY_NO_SERVICE_PRIVILEGE',authorization:'Bearer SYNTHETIC_TEST_ONLY_NO_SERVICE_PRIVILEGE'};
+    const original=Buffer.from([0,255,128,1,10,13,0,254]);
+    const base='https://ravradar-origin-test.invalid/storage/v1/object/';
+    assert.deepEqual(Buffer.from(await(await fetch('https://ravradar.dk/data/live/manifest.json')).arrayBuffer()),publicBytes);
+    assert.equal((await fetch(base+'native-unit/whole.bin',{method:'POST',headers:{...headers,'x-upsert':'false'},body:original})).status,200);
+    assert.equal((await fetch(base+'native-unit/whole.bin',{method:'POST',headers:{...headers,'x-upsert':'false'},body:original})).status,409);
+    const actual=await fetch(base+'authenticated/native-unit/whole.bin',{headers});
+    assert.equal(actual.headers.get('content-type'),policy.mimeType);
+    assert.deepEqual(Buffer.from(await actual.arrayBuffer()),original);
+    assert.deepEqual(backend.objects.get('whole.bin'),original);
+    assert.deepEqual(backend.events,['OBJECT_SAVE','OBJECT_READBACK']);
+    assert.equal(globalThis.fetch,handler,'Same parent route/backend, not a replacement store');
+    assert.equal(bridge.firstError(),undefined);
+  }finally{
+    if(bridge)await bridge.close(process.hrtime.bigint()+10_000_000_000n);
+    restore();
+  }
+});
+
+test('fresh CLI bridge retains its actual first route error without payload projection',async()=>{
+  const {createNativeFixtureCliBridge,createNativeFixtureCliFetch}=await import('./fixtures/source19-current-normal-inputs.mjs');
+  const first=new Error('PRIVATE_ROUTE_SENTINEL'),bridge=await createNativeFixtureCliBridge(async()=>{throw first;},1024);
+  try{
+    const fetch=createNativeFixtureCliFetch(bridge.endpoint,1024);
+    await assert.rejects(fetch('https://unaccepted.invalid/'),/NATIVE_FIXTURE_BRIDGE_REFUSED/);
+    assert.equal(bridge.firstError(),first);
+    await assert.rejects(fetch('https://unaccepted.invalid/',{method:'POST',body:'not binary'}),/NATIVE_FIXTURE_BINARY_BODY_REQUIRED/);
+  }finally{await bridge.close(process.hrtime.bigint()+10_000_000_000n);}
+});
+
+test('Linux normal CLI owner proves fresh sequential processes nonzero orphan parent-loss and first-error poison',
+  {skip:process.platform!=='linux'},async()=>{
+  const {execFile}=await import('node:child_process'),{promisify}=await import('node:util');
+  const run=promisify(execFile);
+  const result=await run(process.env.PYTHON||'python3',['-I','-B',
+    'scripts/test-source19-terminal-failure-proof-bank-v17-observer-native.py','--legacy-normal-cli-unit'],
+    {env:{...process.env,RAVRADAR_NATIVE_FIXTURE_TEST_NODE:process.execPath},timeout:60_000,maxBuffer:1024*1024});
+  assert.match(result.stderr,/Ran 7 tests/);assert.match(result.stderr,/\bOK\b/);
 });

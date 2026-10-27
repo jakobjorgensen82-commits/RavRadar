@@ -15,7 +15,7 @@ jobs:
   validate:
     name: Source validation and release gate
     runs-on: ubuntu-24.04
-    timeout-minutes: 180
+    timeout-minutes: 360
     steps:
       - uses: actions/checkout@v7
         with:
@@ -88,6 +88,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          RAVRADAR_NATIVE_FIXTURE_TEST_NODE="$(command -v node)" python -I -B scripts/test-source19-terminal-failure-proof-bank-v17-observer-native.py --legacy-normal-cli-unit
           node --test scripts/test-weather-acquisition-writer.mjs
           python -B scripts/test-weather-acquisition-writer.py
           python -B scripts/test-owned-dmi-grib-save-native.py --node24-path "$(command -v node)"
