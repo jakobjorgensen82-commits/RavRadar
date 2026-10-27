@@ -14,6 +14,8 @@ Efter den lokale udstedelse er hele den normale testfil for databaseprøvens evi
 
 Samme 4.0.590-leverance omfatter nu en lille rettelse af prognosedelingen. Handleren bruger redirect:'manual' i stedet for redirect:'error'. Den oprindelige lokale prøve i workerd stoppede med TypeError før netkald. Med rettelsen viste den lokale prøve Lyngsås gemte score 89 fra tre input med kontrollerede SHA-værdier. En omdirigering med HTTP 302 blev afvist uden at følge den. Det beviser ikke offentlig levering eller gratis kapacitet. Genoptagelsen af gemte vejrpakker får samtidig præcis den nye590-binding. Originaler, hele pakker og friske genlæsninger skal fortsat bestå alle eksisterende kontroller.
 
+Den første præcise GitHub-kontrol af 4.0.590 udførte den rigtige PostgreSQL-prøve, som bestod. Den efterfølgende kildekontrol fejlede i prøvernes gamle bindingsforventninger: en syntetisk migrationsliste stoppede ved588, isolerede testkald manglede den nye faste forgænger, og den historiske kommando-inverse kendte ikke ACTIVE590. De påviste prøvefejl tilpasses afgrænset; gamle negative kontroller og hele historiske kildeidentiteter bevares. Det er ikke en fejl i den særskilt vellykkede almindelige vejrhentning og giver ikke tilladelse til at springe en ny eksakt kildekontrol over.
+
 4.0.590 er endnu ikke samlet kvalificeret, installeret eller offentliggjort. Præcis samlet kildekontrol, database- og installationskvalifikation samt offentlig effekt er åbne. Den isolerede SOURCE589-draft forbliver særskilt og inaktiv; en lokal kildeudstedelse er ikke leveringsbevis.
 
 SOURCE, samlet statistik og automatisk sletning forbliver inaktive. Alle fem hovedmål er fortsat åbne til 18. november 2026. Ældre dokumenthistorik og røde forløb bevares.

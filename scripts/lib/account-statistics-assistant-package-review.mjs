@@ -66,9 +66,36 @@ export function inverseAssistantPublic587SuccessorSourceScripts(scripts){
   return prior;
 }
 
+// Additive exact590-to-genuine588 view. This is TEST-only command-plan
+// qualification, never a source/profile/PASS relabel or a builder invocation.
+export function inverseAssistantPublic588SuccessorSourceScripts(scripts){
+  assert.equal(arguments.length,1);assert(scripts&&Object.getPrototypeOf(scripts)===Object.prototype);
+  assert(Object.values(scripts).every(value=>typeof value==='string'));
+  assert.equal(sha(canonical(scripts)),'ecd611d8379143b1a046eb7f77c422a6f8bab9aae72847ec90ec6416afb2c563',
+    'Only the entire reviewed active590 command map');
+  const current='node scripts/build-assistant-later-h0-successor.mjs --active --check',
+    previous='node scripts/build-assistant-later-h0-successor.mjs --public587-successor --check';
+  assert.equal(scripts['test:assistant-later-h0-source'],current);
+  const expanded=expandSourceCommands(scripts,'validate:source:checks'),plan=buildSourceValidationPlan(scripts),dispatched=[];
+  assert.equal(runSourceValidation(plan,{execute(command){dispatched.push(command);return 0;},log(){}}),0);
+  assert.deepEqual(dispatched,[...plan.preflight,...plan.remaining,plan.gate]);
+  for(const rows of [expanded,dispatched]){
+    assert.equal(rows.filter(command=>command===current).length,1,'The actual ACTIVE590 builder is dispatched exactly once');
+    assert.equal(rows.includes(previous),false,'The genuine588 builder never runs on active590');
+    assert.equal(rows.includes('node scripts/build-assistant-later-h0-successor.mjs --check'),false);
+    assert.equal(rows.filter(command=>command==='node --test scripts/test-native-original-continuity-callers.mjs').length,1);
+  }
+  const prior={...scripts,'test:assistant-later-h0-source':previous};
+  assert.equal(sha(canonical(prior)),'fe8e112b4e4e30d948aeecf764db02369bdfc90ba1d0d681af5733b27443b06b',
+    'Whole genuine b574588 scripts before unchanged588-to587 and older oracles');
+  return prior;
+}
+
 export function inverseAssistantLaterH0SourceScripts(scripts){
   assert.equal(arguments.length,1);assert(scripts&&Object.getPrototypeOf(scripts)===Object.prototype);
   assert(Object.values(scripts).every(value=>typeof value==='string'));
+  if(scripts['test:assistant-later-h0-source']==='node scripts/build-assistant-later-h0-successor.mjs --active --check')
+    scripts=inverseAssistantPublic588SuccessorSourceScripts(scripts);
   if(scripts['test:assistant-later-h0-source']==='node scripts/build-assistant-later-h0-successor.mjs --public587-successor --check')
     scripts=inverseAssistantPublic587SuccessorSourceScripts(scripts);
   assert.equal(sha(canonical(scripts)),'9df85408955c0449c92370f1af4451ff475f4cc10a4e92bcb440790793bda997','Only the entire reviewed later-H0 command map');

@@ -10,6 +10,8 @@ Efter den lokale udstedelse er hele den normale native-evidenstest faktisk afslu
 
 Samme 4.0.590-leverance medtager nu én handlerlinje i prognosedelingen: redirect:'error' ændres til redirect:'manual'. Den oprindelige lokale workerd-prøve gav TypeError før I/O; med rettelsen viste den lokale prøve Lyngsås gemte score 89 fra tre SHA-kontrollerede input. HTTP 302 blev afvist uden at følge omdirigeringen. Det er ikke offentlig levering eller målt Free-kapacitet, og de øvrige acceptkontroller bevares. Den normale afstemning af gemte B/S-pakker får også præcis den nye udstedte590-familie, så genoptagelse ikke afviser et ellers autentificeret nyt par. Alle tidligere familier og kontroller af originaler, hele bytes og friske genlæsninger bevares.
 
+Den første præcise GitHub-kontrol af 4.0.590 udførte den rigtige PostgreSQL-prøve, som bestod. Den efterfølgende kildekontrol fejlede i prøvernes gamle bindingsforventninger: en syntetisk migrationsliste stoppede ved588, isolerede testkald manglede den nye faste forgænger, og den historiske kommando-inverse kendte ikke ACTIVE590. De påviste prøvefejl tilpasses afgrænset; gamle negative kontroller og hele historiske kildeidentiteter bevares. Det er ikke en fejl i den særskilt vellykkede almindelige vejrhentning og giver ikke tilladelse til at springe en ny eksakt kildekontrol over.
+
 Præcis samlet kildekontrol, faktisk database-/installationskvalifikation og offentlig effekt er fortsat åbne; lokal kildeudstedelse er ikke leveringsbevis.
 
 SOURCE, samlet statistik og automatisk sletning forbliver inaktive. Alle fem mål er fortsat åbne til 18. november 2026. Hele ældre fronts, evidens og røde forløb bevares; se håndbog 89.273. Aktuelle kørselsidentiteter føres privat.
