@@ -846,3 +846,68 @@ test('legacy follower process preserves bounded actual exit/signal/fatal observa
     assert(matches.length>=9,'Normal fixed assignment markers are present, not reconstructed callbacks');
   }
 });
+
+test('normal native forecast fixture uses one normal owner bound through copy save and restore',async()=>{
+  const source=await fs.readFile('scripts/fixtures/source19-current-normal-inputs.mjs','utf8');
+  const selected=[...source.matchAll(/(?:name|row\.relativePath) === 'data\/live\/dmi-forecast-cache\.json' \? DMI_FORECAST_FILE_MAX_BYTES/g)];
+  assert.equal(selected.length,3,'Only the same forecast leaf: copyInputs, save JSON and whole created/restored payloads');
+  assert.equal([...source.matchAll(/(?:name|row\.relativePath) === 'data\/live\/dmi-forecast-cache\.json' \? DMI_FORECAST_FILE_MAX_BYTES : undefined/g)].length,2,'copyInputs and JSON input leaves remain forecast-only');
+  assert(source.includes("row.relativePath === '.cache/weather-component-inputs.pack'\n        ? protectedB.PROTECTED_PRIVATE_RUNTIME_POLICY.maximumFilePayloadBytes : undefined"),'Only the manifest-validated component pack uses its frozen normal owner bound on whole payload readback');
+  assert(source.includes('await read(source, maximum)')&&source.includes('await read(target, maximum)'));
+  assert(source.includes("await read(path.join(root, row.relativePath), maximum)"));
+  assert(source.includes("await read(path.join(bundlePath, 'payload', row.relativePath), maximum)"));
+  assert(source.includes("await read(path.join(restored, 'payload', row.relativePath), maximum)"));
+  assert(source.includes('maximum = 256 * 1024 * 1024'),'No blanket default-cap increase');
+  const {read:readNative}=await import('./fixtures/source19-current-normal-inputs.mjs');
+  const {DMI_FORECAST_FILE_MAX_BYTES:maximum}=await import('./lib/dmi-forecast-file.mjs');
+  const {PROTECTED_PRIVATE_RUNTIME_POLICY:policy}=await import('./protected-private-production-runtime.mjs');
+  assert.equal(maximum,policy.maximumFilePayloadBytes);
+  const {default:os}=await import('node:os'),{default:path}=await import('node:path');
+  const root=await fs.mkdtemp(path.join(os.tmpdir(),'rr-native-read-bound-'));
+  const forecast=path.join(root,'forecast.json'),empty=path.join(root,'empty.json'),
+    ordinary=path.join(root,'ordinary.json'),oversize=path.join(root,'oversize.json'),
+    linked=path.join(root,'linked.json'),link=path.join(root,'hardlink.json'),
+    stale=path.join(root,'stale.json'),retained=path.join(root,'retained.json');
+  const originalRead=fs.readFile,originalError=console.error,observations=[];
+  try{
+    // Actual regular JSON bytes, not a fake stat, provider, bundle or native result.
+    const size=256*1024*1024+1,chunk=Buffer.alloc(1024*1024,0x20);
+    const handle=await fs.open(forecast,'wx');
+    try{const prefix=Buffer.from('{"schemaVersion":2}');await handle.writeFile(prefix);let remaining=size-prefix.length;
+      while(remaining>0){const count=Math.min(chunk.length,remaining);await handle.write(chunk,0,count);remaining-=count;}}
+    finally{await handle.close();}
+    assert.equal((await fs.stat(forecast)).size,size);
+    for(const phase of ['fresh','save','restore']){
+      const raw=await readNative(forecast,maximum);assert.equal(raw.length,size,phase);
+      assert.deepEqual(JSON.parse(raw),{schemaVersion:2},phase);
+    }
+    console.error=value=>observations.push(JSON.parse(value));
+    await assert.rejects(readNative(forecast),/NATIVE_FIXTURE_FILE_SIZE_LIMIT/);
+    const large=await fs.open(ordinary,'wx');try{await large.truncate(size);}finally{await large.close();}
+    await assert.rejects(readNative(ordinary),/NATIVE_FIXTURE_FILE_SIZE_LIMIT/);
+    const tooLarge=await fs.open(oversize,'wx');try{await tooLarge.truncate(maximum+1);}finally{await tooLarge.close();}
+    await assert.rejects(readNative(oversize,maximum),/NATIVE_FIXTURE_FILE_SIZE_LIMIT/);
+    await fs.writeFile(empty,'');await assert.rejects(readNative(empty,maximum),/NATIVE_FIXTURE_FILE_EMPTY/);
+    await fs.writeFile(linked,'retained input');await fs.link(linked,link);
+    await assert.rejects(readNative(linked,maximum),/NATIVE_FIXTURE_FILE_MULTIPLE_LINKS/);
+    assert.equal(await originalRead(linked,'utf8'),'retained input');
+    await assert.rejects(readNative(root,maximum),/NATIVE_FIXTURE_FILE_NOT_REGULAR/);
+    for(const value of observations){
+      assert.deepEqual(Object.keys(value).sort(),['kind','reason','regular','links','bytes','maximum','privatePayloadIncluded'].sort());
+      assert.equal(value.kind,'NATIVE_FIXTURE_FILE_READ_REFUSED');assert.equal(value.privatePayloadIncluded,false);
+      assert(['NOT_REGULAR','MULTIPLE_LINKS','EMPTY','SIZE_LIMIT'].includes(value.reason));
+      assert(!JSON.stringify(value).includes(root),'No private input path or payload in refusal metadata');
+    }
+    await fs.writeFile(stale,'same bytes');
+    fs.readFile=async(file,...args)=>{
+      const raw=await originalRead(file,...args);
+      if(file===stale){await fs.rename(stale,retained);await fs.writeFile(stale,'same bytes');}
+      return raw;
+    };
+    await assert.rejects(readNative(stale,maximum),/Input changed while reading/);
+    assert.equal(await originalRead(retained,'utf8'),'same bytes','The original is retained, never silently replaced as accepted input');
+  }finally{
+    fs.readFile=originalRead;console.error=originalError;
+    await fs.rm(root,{recursive:true,force:true});
+  }
+});

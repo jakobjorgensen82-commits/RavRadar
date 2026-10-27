@@ -57,9 +57,19 @@ async function noLinks(file) {
     at = path.join(at, segment); assert(!(await fs.lstat(at)).isSymbolicLink(), 'Private native path contains a link');
   }
 }
-async function read(file, maximum = 256 * 1024 * 1024) {
+export async function read(file, maximum = 256 * 1024 * 1024) {
   await noLinks(file); const before = await fs.lstat(file, {bigint: true});
-  assert(before.isFile() && before.nlink === 1n && before.size > 0n && before.size <= BigInt(maximum));
+  const reason = !before.isFile() ? 'NOT_REGULAR' : before.nlink !== 1n ? 'MULTIPLE_LINKS'
+    : before.size <= 0n ? 'EMPTY' : before.size > BigInt(maximum) ? 'SIZE_LIMIT' : null;
+  if (reason) {
+    try { console.error(JSON.stringify({kind:'NATIVE_FIXTURE_FILE_READ_REFUSED',reason,
+      regular:before.isFile(),links:String(before.nlink),bytes:String(before.size),maximum,
+      privatePayloadIncluded:false})); } catch {} // Fixed enums/stat only; never a path or input body.
+  }
+  assert(before.isFile(), 'NATIVE_FIXTURE_FILE_NOT_REGULAR');
+  assert.equal(before.nlink, 1n, 'NATIVE_FIXTURE_FILE_MULTIPLE_LINKS');
+  assert(before.size > 0n, 'NATIVE_FIXTURE_FILE_EMPTY');
+  assert(before.size <= BigInt(maximum), 'NATIVE_FIXTURE_FILE_SIZE_LIMIT');
   const raw = await fs.readFile(file), after = await fs.lstat(file, {bigint: true});
   same([before.dev, before.ino, before.size, before.mtimeNs, before.ctimeNs],
     [after.dev, after.ino, after.size, after.mtimeNs, after.ctimeNs], 'Input changed while reading');
@@ -399,8 +409,12 @@ async function saveNormal(root, privateRoot, backend, sourceHead, sameReferenceS
     sourcePath: path.join(root, 'data/live/conditions.json'), checkpointPath});
   const spec = await workflow.buildPrivateRuntimeCreateSpec({repositoryRoot: root});
   assert(spec.files.some(row => row.relativePath === '.cache/public-hour-delivery.pack'), 'Actual normal public-hour pack is required');
-  for (const row of spec.files) if (row.relativePath.endsWith('.json'))
-    refuseFixtureOnly(JSON.parse(await read(path.join(root, row.relativePath))));
+  for (const row of spec.files) if (row.relativePath.endsWith('.json')) {
+    // Keep the SAME forecast-only normal bound as copyInputs, including every
+    // genuine585/586/587/588/SOURCE save. Other fixture input caps stay 256 MiB.
+    const maximum = row.relativePath === 'data/live/dmi-forecast-cache.json' ? DMI_FORECAST_FILE_MAX_BYTES : undefined;
+    refuseFixtureOnly(JSON.parse(await read(path.join(root, row.relativePath), maximum)));
+  }
   const bundlePath = path.join(privateRoot, 'created'), now = conditions.generatedAt;
   const expected = await workflow.buildPrivateRuntimeExpectation({repositoryRoot: root,
     targetReferenceAt: conditions.productionReferenceAt, now});
@@ -416,8 +430,13 @@ async function saveNormal(root, privateRoot, backend, sourceHead, sameReferenceS
   const result = await protectedB.restoreProtectedPrivateProductionRuntime({repositoryRoot: root, privateRoot,
     bundlePath: restored, expected, now, request: backend.documentRequest, storage: backend.storage});
   assert.equal(result.restored, true); assert.equal(result.rollbackSelected, false);
-  for (const row of spec.files) same(await read(path.join(bundlePath, 'payload', row.relativePath)),
-    await read(path.join(restored, 'payload', row.relativePath)), 'WHOLE actual B restore: ' + row.relativePath);
+  for (const row of spec.files) {
+    const maximum = row.relativePath === 'data/live/dmi-forecast-cache.json' ? DMI_FORECAST_FILE_MAX_BYTES
+      : row.relativePath === '.cache/weather-component-inputs.pack'
+        ? protectedB.PROTECTED_PRIVATE_RUNTIME_POLICY.maximumFilePayloadBytes : undefined;
+    same(await read(path.join(bundlePath, 'payload', row.relativePath), maximum),
+      await read(path.join(restored, 'payload', row.relativePath), maximum), 'WHOLE actual B restore: ' + row.relativePath);
+  }
   const protectedPath = path.join(privateRoot, 'protected-S', CHECKPOINT);
   const readback = await protectedS.restoreProtectedRavScoreContinuationCheckpoint({checkpointPath: protectedPath,
     targetReference: conditions.productionReferenceAt, request: backend.documentRequest});

@@ -1,3 +1,11 @@
+## 27. oktober — SOURCE-prøvens filgrænser følger de normale ejere
+
+Den afsluttede isolerede SOURCE-kontrol stoppede ved filgenlæsning under gemning af den ægte 585-pakke. Den bevarede fælles assertion skelner ikke mellem filtype, antal links, tom fil og overskredet størrelse; den faktiske fejlfil og dens stat-egenskaber er ukendte. Kilden viser derimod en konkret kontraktmismatch: den friske kopiering accepterer allerede den normale DMI-forecastfil op til 768 MiB, mens gemningens JSON- og hele restore-genlæsninger brugte standardgrænsen på 256 MiB.
+
+Den snævre fixtureændring bruger samme eksisterende forecastgrænse i alle disse genlæsninger. Kun den manifestvaliderede private weather-component-pack får ved hel payload-genlæsning sin allerede indlæste frosne normale ejers 768 MiB-grænse. Andre JSON-inputs og public-hour-pack beholder 256 MiB; øvrige produktionsgrænser, normal manifestkontrol, hel byteidentitet, linkafslag og ændringskontrol bevares. Faste fejlkategorier og filstatistik indeholder hverken sti eller privat indhold. Dette er ikke en generel forhøjelse af filgrænser eller endeligt bevis for CI-stoppets årsag.
+
+Hele det normale lokale evidensmål består 25/25 uden fejl eller skip, med alle 24 gamle tilfælde bevaret og én additiv faktisk filgrænseprøve. Det er ikke fuld ny Linux-/native-/databasekontrol, SQL-installation eller offentlig levering. SOURCE forbliver inaktiv; version, C/I/T, SQL, scorer, kildeprioritet og administratorgeometri er uændrede. Den præcise samlede kvalifikation og sikker levering består som selvstændige krav. Alle tidligere afsnit bevares som dateret historik.
+
 ## 26. oktober — SOURCE bevarer den gennemgåede rettelse til prognosedeling
 
 Den lokale SOURCE589-kilde er sammenført med den gennemgåede main-/Pages-/delingskilde gennem begge ægte Git-historikker. Den afgrænsede delingskontrol og dens additive normale regressioner er med; alle tidligere SOURCE-kontroludsagn, begge selectors, den strengere workflowrute og begge hele dokumenthistorikker bevares. Håndbogens installationskopi følger kun den kanoniske håndbog; der ændres ikke øvrig SQL, C/I/T, version, scorer, vejrdata, kildeprioritet, central admin eller geometri.
