@@ -1,3 +1,9 @@
+## 26. oktober — delingskontrol sammenført med gennemgået Pages-rettelse
+
+Den afgrænsede prognosedelingsrettelse og den gennemgåede Pages-rettelse er samlet lokalt med den aktuelle installerede 588-rute. Begge forældres præcise kildekontroller har faktisk bestået; det kvalificerer ikke denne nye samlede head. Den eksisterende normale målprøve, dokumentkontroller og én præcis samlet kildekontrol skal fortsat bestå før sikker levering. Begge hele dokumenthistorikker og håndbogsændringer bevares; installationskopien følger den kanoniske håndbog uden anden SQL-ændring.
+
+Ingen Worker er installeret af sammenføringen, og hverken prognosedelingens offentlige forhåndsvisning eller Free-kapacitet er bevist. Aktuel vejrhentning, den tidligere røde offentlige kontrol og næste leveringsvindue føres privat. Score, vejrdata, C/I/T, version og geometri ændres ikke; SOURCE og statistik aktiveres ikke. Ingen produktionsændring må ske under aktiv writer.
+
 ## 26. oktober — samme fil kan genlæses efter midlertidig HTTP-afvisning
 
 - [x] Afgrænset den offentlige slutfejl til faktisk HTTP 503; senere samme fil har HTTP 200 og fuld korrekt kontrolsum. Det er ikke en ny vejrhentningsfejl.
@@ -29,6 +35,14 @@ Ingen versions-, C/I/T-, SQL- eller numerisk modelovergang følger af denne cont
 - [ ] Den oprindelige røde GitHub-kørsel og den udeblevne centrale almindelige reseal er ikke efterfølgende gjort grønne af en senere offentlig læsekontrol.
 
 En senere fuld offentlig kontrol genfinder det forseglede target med alle filer og 210/673. Den manglende oprindelige HTTP-respons betyder, at den præcise historiske cacheårsag stadig er ukendt. SOURCE, versions-/C/I/T-/SQL-overgange, vejrdata, scoremodel, kilder og geometri ændres ikke. Se DEC-0194-tillæg og håndbog 89.270; aktuelle kørsler føres privat.
+
+## 26. oktober — offentlig 588 og afgrænset kontrol af prognosedeling
+
+588 er faktisk offentliggjort med de bevarede vejrdata; det er ikke bevis for fuld ny leverandørdækning. Den almindelige vejrhentning og den separate SOURCE-kvalifikation følges i det private checkpoint. Ingen produktionsændring må ske under aktiv writer, og alle fem mål til 18. november består.
+
+Prognosedelingens første kontrollerede installation stoppede før skrivning i Cloudflares svarkontrol. HTTP200 alene er ikke API-succes, og den oprindelige konvoluts årsag er ukendt. Den lokale rettelse bruger den dokumenterede ufiltrerede kontoliste, kontrollerer alle domæneposter og afviser fortsat ethvert domæne på den præcise Worker, også i et andet miljø. Kun faste svarkategorier og højst otte numeriske fejlkoder bevares ved samme stop; rå svar, beskeder og kontodata offentliggøres ikke. Alle øvrige skrive-, kapacitets- og adgangsgrænser består.
+
+Den normale syntetiske prøve skal bruge de to præcise hjælpefunktioner uden deres moduleksport i sin eksisterende VM; produktkoden og afvisningskontrollen lempes ikke. Præcis samlet kildekontrol, sikker installation, offentlig forhåndsvisning og målt Free-forbrug er fortsat åbne. Ingen ny version, modelbinding, SQL, vejrdata, scoreformel, adminpunkter, geometri, tjeneste ud over den allerede godkendte Worker eller automatisk genforsøg følger af denne kildeændring. Håndbog 89.268 præciserer leveringsgrænsen; ældre dateret afventningsstatus er historik på de konkret afsluttede punkter.
 
 ## 25. oktober — klientkode er ikke privat vejrdata; central profil læses som et par
 
