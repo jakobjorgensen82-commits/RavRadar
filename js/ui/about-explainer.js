@@ -1,4 +1,4 @@
-import { getLocale, registerI18nMessages, t } from '../i18n.js?v=4.0.588';
+import { getLocale, registerI18nMessages, t } from '../i18n.js?v=4.0.590';
 
 // Kun den godkendte principfigur: ingen prognosedata, score eller gemt brugerstate.
 registerI18nMessages({

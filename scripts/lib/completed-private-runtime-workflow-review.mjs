@@ -8,9 +8,24 @@ const coldReview = JSON.parse(fs.readFileSync(new URL('./current-family-cold-sta
 const sha = value => crypto.createHash('sha256').update(value).digest('hex');
 // Kun kontrolvisning af de fem normale versions-UA'er. Hele nye og gamle
 // workflowbytes er fastbundet; ukendte billeder går uændret til gamle afslag.
+// TEST ONLY: exact590→whole genuine588 UA layer. No gate, selector or runtime change.
+export function inverseRelease590WorkflowUserAgents(source,role){
+  assert.equal(arguments.length,2,'RELEASE590_WORKFLOW_ARGUMENTS');
+  assert.equal(typeof source,'string','RELEASE590_WORKFLOW_TYPE');
+  if(role!=='build'||sha(source)!=='bf9f27721718511cf345505416230b10c863a963bbb49ee774e4fdea8a7adfa6')return source;
+  assert.equal(Buffer.byteLength(source),292886,'RELEASE590_WORKFLOW_SIZE');
+  assert.equal(source.split('RavRadar/4.0.590').length,6,'Exactly five normal590 User-Agent fields');
+  assert.equal(source.includes('RavRadar/4.0.588'),false,'No mixed release User-Agent fields');
+  const previous=source.replaceAll('RavRadar/4.0.590','RavRadar/4.0.588');
+  assert.equal(Buffer.byteLength(previous),292886,'RELEASE590_PREDECESSOR_SIZE');
+  assert.equal(sha(previous),'998d3a8e11a1088363a84bfd4a0d64f7117eacc059a3cf5c0ca895f7a85e22b3',
+    'Whole genuine b574588 workflow survives only the five590 UA inverses');
+  return previous;
+}
 export function inverseRelease588WorkflowUserAgents(source,role){
   assert.equal(arguments.length,2,'RELEASE588_WORKFLOW_ARGUMENTS');
   assert.equal(typeof source,'string','RELEASE588_WORKFLOW_TYPE');
+  source=inverseRelease590WorkflowUserAgents(source,role);
   if(role!=='build'||sha(source)!=='998d3a8e11a1088363a84bfd4a0d64f7117eacc059a3cf5c0ca895f7a85e22b3')return source;
   assert.equal(Buffer.byteLength(source),292886,'RELEASE588_WORKFLOW_SIZE');
   assert.equal(source.split('RavRadar/4.0.588').length,6,'Præcis fem normale 588 User-Agent-felter');

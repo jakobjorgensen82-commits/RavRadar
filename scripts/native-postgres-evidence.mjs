@@ -6,7 +6,8 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import {execFileSync, spawnSync} from 'node:child_process';
 import {fileURLToPath} from 'node:url';
-import {requireAssistantLaterH0Release,requireAssistantPublic587SuccessorRelease} from './lib/assistant-later-h0-successor-source.mjs';
+import {requireAssistantLaterH0Release,requireAssistantPublic587SuccessorRelease,
+  requireAssistantPublic588SuccessorRelease,ACTIVE_ASSISTANT_SUCCESSOR as ACTIVE} from './lib/assistant-later-h0-successor-source.mjs';
 
 export const ORIGIN = Object.freeze({
   repository: 'jakobjorgensen82-commits/RavRadar', pullRequest: 671,
@@ -33,8 +34,14 @@ export const NATIVE_SCRIPT = 'set -euo pipefail\n' + CURRENT_COMMANDS.join('\n')
 export const ASSISTANT_PUBLIC587_SUCCESSOR_COMMANDS=Object.freeze([CURRENT_COMMANDS[0],
   CURRENT_COMMANDS[1]+' --assistant-public587-successor']);
 export const ASSISTANT_PUBLIC587_SUCCESSOR_SCRIPT='set -euo pipefail\n'+ASSISTANT_PUBLIC587_SUCCESSOR_COMMANDS.join('\n')+'\n';
-export const ACTIVE_COMMANDS=ASSISTANT_PUBLIC587_SUCCESSOR_COMMANDS;
-export const ACTIVE_NATIVE_SCRIPT=ASSISTANT_PUBLIC587_SUCCESSOR_SCRIPT;
+// Additiv kalender588→NEXT-fase. De gamle kommando-/receiptidentiteter ændres ikke.
+export const ASSISTANT_PUBLIC588_SUCCESSOR_COMMANDS=Object.freeze([ASSISTANT_PUBLIC587_SUCCESSOR_COMMANDS[0],
+  ASSISTANT_PUBLIC587_SUCCESSOR_COMMANDS[1]+' --assistant-public588-successor']);
+export const ASSISTANT_PUBLIC588_SUCCESSOR_SCRIPT='set -euo pipefail\n'+ASSISTANT_PUBLIC588_SUCCESSOR_COMMANDS.join('\n')+'\n';
+export const ACTIVE_COMMANDS=ACTIVE.sourcePhase==='assistant-public588-successor'
+  ?ASSISTANT_PUBLIC588_SUCCESSOR_COMMANDS:ASSISTANT_PUBLIC587_SUCCESSOR_COMMANDS;
+export const ACTIVE_NATIVE_SCRIPT=ACTIVE.sourcePhase==='assistant-public588-successor'
+  ?ASSISTANT_PUBLIC588_SUCCESSOR_SCRIPT:ASSISTANT_PUBLIC587_SUCCESSOR_SCRIPT;
 
 // Explicit CURRENT non-native test consumers only. Historical copies of these
 // files are NOT excluded: unchanged frozen loaders read exact old Git blobs.
@@ -619,6 +626,16 @@ export function verifyAssistantPublic587SuccessorPhaseReceipt(native,current){
   return {status:native.status,executedInThisRun:native.executedInThisRun,origin:native.origin};
 }
 
+export const ASSISTANT_PUBLIC588_SUCCESSOR_PHASE_KIND='RAVRADAR_ASSISTANT_PUBLIC588_SUCCESSOR_POSTGRES_PHASE_V1';
+export function verifyAssistantPublic588SuccessorPhaseReceipt(native,current){
+  assert.equal(native?.phase,'ASSISTANT_PUBLIC588_SUCCESSOR');
+  assert.deepEqual(native.commands,ASSISTANT_PUBLIC588_SUCCESSOR_COMMANDS);
+  assert.deepEqual(native.current,current);assert.equal(native.status,'EXECUTED');
+  assert.equal(native.executedInThisRun,true);assert.equal(native.origin,null);
+  assert.equal(native.eligibleForReuse,false);
+  return {status:native.status,executedInThisRun:native.executedInThisRun,origin:native.origin};
+}
+
 async function record(receipt) {
   const file='.cache/source-tree-content-proof.json', proof=JSON.parse(await fs.readFile(file,'utf8'));
   assert.equal(proof.headSha,git(['rev-parse','HEAD^{commit}']).trim()); assert.equal(proof.repository,ORIGIN.repository);
@@ -626,27 +643,34 @@ async function record(receipt) {
   const current={run:Number(process.env.GITHUB_RUN_ID),attempt:Number(process.env.GITHUB_RUN_ATTEMPT),
     head:proof.headSha,pullRequest:Number(process.env.PULL_REQUEST_NUMBER),branch:process.env.GITHUB_HEAD_REF};
   if(receipt.phase==='NATIVE_ORIGINAL_CONTINUITY')verifyCurrent586PhaseReceipt(receipt,current);
+  else if(receipt.phase==='ASSISTANT_PUBLIC588_SUCCESSOR')verifyAssistantPublic588SuccessorPhaseReceipt(receipt,current);
   else if(receipt.phase==='ASSISTANT_PUBLIC587_SUCCESSOR')verifyAssistantPublic587SuccessorPhaseReceipt(receipt,current);
   else verifyAssistantLaterH0PhaseReceipt(receipt,current);
   proof.nativePostgres=receipt; await fs.writeFile(file,JSON.stringify(proof)+'\n');
   await fs.writeFile(CURRENT586_PHASE_FILE,JSON.stringify({
     schemaVersion:1,kind:receipt.phase==='NATIVE_ORIGINAL_CONTINUITY'?CURRENT586_PHASE_KIND:
+      receipt.phase==='ASSISTANT_PUBLIC588_SUCCESSOR'?ASSISTANT_PUBLIC588_SUCCESSOR_PHASE_KIND:
       receipt.phase==='ASSISTANT_PUBLIC587_SUCCESSOR'?ASSISTANT_PUBLIC587_SUCCESSOR_PHASE_KIND:ASSISTANT_LATER_H0_PHASE_KIND,
     repository:proof.repository,headSha:proof.headSha,sourceTreeSha256:proof.sourceTreeSha256,
     privatePayloadIncluded:false,nativePostgres:receipt,
   })+'\n',{flag:'wx'});
 }
 async function main() {
+  assert(['assistant-public587-successor','assistant-public588-successor'].includes(ACTIVE.sourcePhase));
+  if(ACTIVE.sourcePhase==='assistant-public588-successor')requireAssistantPublic588SuccessorRelease();
   requireAssistantPublic587SuccessorRelease(); // UNISSUED before evidence I/O or native launch; no fallback to a whole587 receipt.
   requireAssistantLaterH0Release(); // The preceding genuine587 phase remains issued and required.
-  let receipt={status:'EXECUTE',reason:'new-assistant-public587-successor-phase-requires-actual-execution'};
+  let receipt={status:'EXECUTE',reason:ACTIVE.sourcePhase==='assistant-public588-successor'
+    ?'new-assistant-public588-successor-phase-requires-actual-execution':'new-assistant-public587-successor-phase-requires-actual-execution'};
   if(receipt.status!=='REUSED') {
     console.log('Native PostgreSQL: original commands required; reuse evidence absent or different.');
     const env={...process.env}; for(const key of ['GITHUB_TOKEN','SOURCE_GATE_HEAD_SHA','PULL_REQUEST_NUMBER'])delete env[key];
     const result=spawnSync('/usr/bin/bash',['--noprofile','--norc','-e','-o','pipefail','-c',ACTIVE_NATIVE_SCRIPT],{env,stdio:'inherit'});
     if(result.error||result.status!==0){process.exitCode=result.status||1;return;}
     receipt={...receipt,status:'EXECUTED',executedInThisRun:true,origin:null,
-      phase:'ASSISTANT_PUBLIC587_SUCCESSOR',eligibleForReuse:false,
+      ...(ACTIVE.sourcePhase==='assistant-public588-successor'
+        ?{phase:'ASSISTANT_PUBLIC588_SUCCESSOR',eligibleForReuse:false}
+        :{phase:'ASSISTANT_PUBLIC587_SUCCESSOR',eligibleForReuse:false}),
       current:{run:Number(process.env.GITHUB_RUN_ID),attempt:Number(process.env.GITHUB_RUN_ATTEMPT),
         head:git(['rev-parse','HEAD^{commit}']).trim(),pullRequest:Number(process.env.PULL_REQUEST_NUMBER),
         branch:process.env.GITHUB_HEAD_REF},commands:ACTIVE_COMMANDS};

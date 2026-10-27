@@ -109,7 +109,7 @@ export async function readAssistantLaterH0CanonicalSource(options){
   return readFixedCanonicalSource(ISSUED587_SOURCE,options,pins,migration);
 }
 async function readFixedCanonicalSource(profile,options,pins,migration){
-  assert(profile===ISSUED587_SOURCE||profile===PUBLIC587_SUCCESSOR_SOURCE,'ASSISTANT_SUCCESSOR_UNKNOWN_SOURCE_PROFILE');
+  assert(profile===ISSUED587_SOURCE||profile===PUBLIC587_SUCCESSOR_SOURCE||profile===PUBLIC588_SUCCESSOR_SOURCE,'ASSISTANT_SUCCESSOR_UNKNOWN_SOURCE_PROFILE');
   let migrationsDirectory=path.join(ROOT,'supabase/migrations');
   if(options!==undefined){assert(options&&Object.getPrototypeOf(options)===Object.prototype);
     assert.deepEqual(Object.keys(options),['migrationsDirectory']);assert(path.isAbsolute(options.migrationsDirectory));
@@ -229,6 +229,94 @@ export async function readAssistantPublic587SuccessorCanonicalSource(options){
   return readFixedCanonicalSource(PUBLIC587_SUCCESSOR_SOURCE,options,pins,migration);
 }
 
+
+// Kalender-only efter den ægte588-familie. Udstedt kildebinding, ikke installeret; ingen SOURCE-aktivering.
+// Disse nye kildeejede felter kan ikke sættes af miljø, tuple eller caller.
+export const ASSISTANT_PUBLIC588_SUCCESSOR_BEFORE=Object.freeze({
+  sourceHead:'b57480082fb16f31ed4e4aa2bc308fff9abfe2d0',sourceTree:'fe3b9bf6270c2a506aac003d57e1e4d2a7d491de',
+  version:'20261025110000',
+  C:'00905533cd243ffce8e507beedbc39c8dba26e635b59fa154e6f9ab20575780c',
+  I:'5348f3ae7401d3a09dd180d45690f56b3cfec4a30af5a4928bdd9581f9d8ebac',
+  T:'d98559d56d7bfe9b141cf1ddab73cddffb688a3b6766f5f9f3779b226f573701',
+  canonicalSha256:'cc97ffdf3533dc16e2325205ad75a3d5bfaadca44fa45b7bbadaaa6e8580b38a',
+});
+export const ASSISTANT_PUBLIC588_SUCCESSOR_BINDING=Object.freeze({
+  version:'20261027124633',
+  C:'bca59cb435cb3f35041c665d2954f0ef04b189b572219771fc5628e4f7ccb551',
+  I:'4c94c24e7d14d66c20cc3c2c3d0389cadb0c3e9e76fcfe692943c6087df56819',
+  T:'d444e6141038f56dd04b97a55eefe07bbd98f122fb3b76a43bdddacff2d88c8a',
+});
+export const ASSISTANT_PUBLIC588_SUCCESSOR_OUTPUT=Object.freeze({
+  migrationSha256:'eb0262716b66d29d52bf0ac4412c475ab5e9ea69e1cad15eabc9a31b48bcf821',
+  canonicalSha256:'4c853a74379abb6983d6d06c353f0b51cf9b004859aa571fc4d5b668274d36df',
+  checkpointContractSha256:'27f2c947268693a0d545ba8f1066c16cae789efe440f12b4295dca46c62ec8c9',
+  tripBindingPolicySha256:'822f0052836a5b6acf40aa905374a29cb512d10c04ee0d4b6fccdc06f752f14d',
+});
+export const ASSISTANT_PUBLIC588_SUCCESSOR_RELEASE='4.0.590';
+export const ASSISTANT_PUBLIC588_SUCCESSOR_ALIASES=Object.freeze([
+  Object.freeze({name:'ravradar_ravscore_checkpoint_ask588_state_valid',signature:'(jsonb,text)'}),
+  Object.freeze({name:'ravradar_ravscore_checkpoint_ask588_payload_valid',signature:'(jsonb,timestamptz)'})]);
+export function requireAssistantPublic588SuccessorBinding(){
+  assert.equal(arguments.length,0);
+  const b=ASSISTANT_PUBLIC588_SUCCESSOR_BINDING;
+  assert(b&&Object.isFrozen(b),'ASSISTANT_PUBLIC588_SUCCESSOR_UNISSUED');
+  assert.deepEqual(Object.keys(b).sort(),['C','I','T','version']);
+  assert.match(b.version,/^[0-9]{14}$/);assert(b.version>ASSISTANT_PUBLIC588_SUCCESSOR_BEFORE.version);
+  for(const key of ['C','I','T'])assert.match(b[key],/^[a-f0-9]{64}$/);
+  assert.equal(new Set(['C','I','T'].flatMap(k=>[b[k],ASSISTANT_PUBLIC588_SUCCESSOR_BEFORE[k]])).size,6);
+  for(const key of ['sourceHead','sourceTree'])assert.match(ASSISTANT_PUBLIC588_SUCCESSOR_BEFORE[key],/^[a-f0-9]{40}$/);
+  return b;
+}
+export function requireAssistantPublic588SuccessorOutput(){
+  assert.equal(arguments.length,0);requireAssistantPublic588SuccessorBinding();
+  const p=ASSISTANT_PUBLIC588_SUCCESSOR_OUTPUT;
+  assert(p&&Object.isFrozen(p),'ASSISTANT_PUBLIC588_SUCCESSOR_SQL_UNISSUED');
+  assert.deepEqual(Object.keys(p).sort(),['canonicalSha256','checkpointContractSha256','migrationSha256','tripBindingPolicySha256']);
+  for(const value of Object.values(p))assert.match(value,/^[a-f0-9]{64}$/);return p;
+}
+export function requireAssistantPublic588SuccessorRelease(){
+  assert.equal(arguments.length,0);requireAssistantPublic588SuccessorOutput();
+  const release=ASSISTANT_PUBLIC588_SUCCESSOR_RELEASE;
+  assert.equal(typeof release,'string','ASSISTANT_PUBLIC588_SUCCESSOR_RELEASE_UNISSUED');
+  assert.match(release,/^4\.0\.[1-9][0-9]*$/);
+  assert(Number(release.split('.').at(-1))>588,'Fixed calendar successor release must follow genuine588');
+  return release;
+}
+export function assistantPublic588SuccessorMigration(){
+  assert.equal(arguments.length,0);
+  const {version}=requireAssistantPublic588SuccessorBinding();
+  const id=version+'_assistant_public588_later_h0_original_bound_successor';
+  return Object.freeze({version,id,filename:id+'.sql'});
+}
+export async function readAssistantPublic588PredecessorCanonicalSource(){
+  assert.equal(arguments.length,0);
+  const binding=requireAssistantPublic587SuccessorBinding(),output=requireAssistantPublic587SuccessorOutput();
+  assert.equal(requireAssistantPublic587SuccessorRelease(),'4.0.588');
+  assert.deepEqual({...binding,canonicalSha256:output.canonicalSha256},
+    Object.fromEntries(['version','C','I','T','canonicalSha256'].map(k=>[k,ASSISTANT_PUBLIC588_SUCCESSOR_BEFORE[k]])));
+  const prior=await readAssistantPublic587SuccessorCanonicalSource();
+  assert.equal(sha(prior.canonicalSource),ASSISTANT_PUBLIC588_SUCCESSOR_BEFORE.canonicalSha256);
+  assert.equal(prior.admission,'NO_ADMISSION');return prior;
+}
+export function assistantPublic588SuccessorCheckpointContractFromBase(source,base){
+  assert.equal(arguments.length,2);
+  let text=assistantPublic587SuccessorCheckpointContractFromBase(source,base).definition;
+  for(let i=0;i<ASSISTANT_PUBLIC588_SUCCESSOR_ALIASES.length;i++){
+    const whole=nativeOriginalContinuityDefinition(source,ASSISTANT_PUBLIC588_SUCCESSOR_ALIASES[i].name);
+    text+='\n-- assistant-later-h0-original588-'+(i===0?'state':'payload')+'-validator --\n'
+      +whole.slice(whole.indexOf('as $$')+5,whole.lastIndexOf('$$;')).replace(/\r\n?/g,'\n').trim();
+  }
+  return Object.freeze({id:base.id,definition:text,sha256:sha(text)});
+}
+const PUBLIC588_SUCCESSOR_SOURCE=Object.freeze({
+  readPredecessor:readAssistantPublic588PredecessorCanonicalSource,
+  aliases:ASSISTANT_PUBLIC588_SUCCESSOR_ALIASES,previousRelease:588});
+export async function readAssistantPublic588SuccessorCanonicalSource(options){
+  const pins=requireAssistantPublic588SuccessorOutput(),migration=assistantPublic588SuccessorMigration();
+  assert(arguments.length<=1);
+  return readFixedCanonicalSource(PUBLIC588_SUCCESSOR_SOURCE,options,pins,migration);
+}
+
 // Aktiv operativ familie vælges KUN af denne gennemgåede kilde. De gamle
 // navngivne586→587-eksporter ovenfor forbliver historiske; NULL falder aldrig tilbage.
 export function assertAssistantPublic587SuccessorTarget(descriptor,targetReferenceAt){
@@ -256,7 +344,43 @@ export function assertAssistantPublic587SuccessorCaller(env){
     'RAVRADAR_WEATHER_STATE_EPOCH_CHECKPOINT_REENTRY','RESTART_ARCHIVED_WEATHER',
     'PUBLISH_NEWEST_SAVED_WEATHER'])assert.notEqual(env[key],'true','ASSISTANT_LATER_H0_ORDINARY_ONLY');
 }
-export const ACTIVE_ASSISTANT_SUCCESSOR=Object.freeze({
+export function assertAssistantPublic588SuccessorTarget(descriptor,targetReferenceAt){
+  assert.equal(arguments.length,2);
+  assert.equal(descriptor?.modelBinding?.modelBundleSha256,ASSISTANT_PUBLIC588_SUCCESSOR_BEFORE.I);
+  assert.equal(descriptor?.contractHashes?.continuationStateContractSha256,ASSISTANT_PUBLIC588_SUCCESSOR_BEFORE.T);
+  for(const value of [descriptor.productionReferenceAt,targetReferenceAt]){
+    assert.equal(typeof value,'string');assert.match(value,/^\d{4}-\d{2}-\d{2}T\d{2}:00:00\.000Z$/);
+    assert.equal(new Date(value).toISOString(),value);
+  }
+  assert(Date.parse(targetReferenceAt)>Date.parse(descriptor.productionReferenceAt),'ASSISTANT_PUBLIC588_SUCCESSOR_STRICTLY_LATER');
+  return true; // Ren data-/tidskontrol, ingen autentificering eller kapabilitet.
+}
+export function assertAssistantPublic588SuccessorCaller(env){
+  assert.equal(arguments.length,1);
+  // GitHub retains the top-level caller identity inside reusable workflows.
+  // These are the two existing ordinary entrances, not caller-selected aliases.
+  assert(['Update weather and deploy RavRadar','Run current RavRadar weather once'].includes(env.GITHUB_WORKFLOW));
+  assert.equal(env.GITHUB_REF,'refs/heads/main');
+  assert(['workflow_dispatch','schedule'].includes(env.GITHUB_EVENT_NAME));
+  assert.match(env.GITHUB_RUN_ATTEMPT??'',/^[1-9][0-9]{0,5}$/);assert.match(env.GITHUB_SHA??'',/^[a-f0-9]{40}$/);
+  assert(['integrated','integrated-historical-maintenance'].includes(env.OPERATIONAL_ACTION));
+  for(const key of ['CHECKPOINT_ONLY','QUICK_CONFIRMATION','COMPLETED_PRIVATE_RUNTIME',
+    'NATIVE_IDENTITY_RECOVERY','RAVRADAR_WEATHER_STATE_EPOCH_BOOTSTRAP',
+    'RAVRADAR_WEATHER_STATE_EPOCH_CHECKPOINT_REENTRY','RESTART_ARCHIVED_WEATHER',
+    'PUBLISH_NEWEST_SAVED_WEATHER'])assert.notEqual(env[key],'true','ASSISTANT_LATER_H0_ORDINARY_ONLY');
+}
+// Kun det eksplicitte kildevalg nedenfor aktiverer denne lukkede profil.
+// Den tidligere udstedte588-profil og dens navngivne indgange bevares.
+export const INACTIVE_ASSISTANT_PUBLIC588_SUCCESSOR=Object.freeze({
+  sourcePhase:'assistant-public588-successor',before:ASSISTANT_PUBLIC588_SUCCESSOR_BEFORE,
+  binding:ASSISTANT_PUBLIC588_SUCCESSOR_BINDING,output:ASSISTANT_PUBLIC588_SUCCESSOR_OUTPUT,
+  requireBinding:requireAssistantPublic588SuccessorBinding,requireOutput:requireAssistantPublic588SuccessorOutput,
+  requireRelease:requireAssistantPublic588SuccessorRelease,migration:assistantPublic588SuccessorMigration,
+  readCanonicalSource:readAssistantPublic588SuccessorCanonicalSource,
+  assertTarget:assertAssistantPublic588SuccessorTarget,assertCaller:assertAssistantPublic588SuccessorCaller,
+});
+
+export const ISSUED_ASSISTANT_PUBLIC588_PROFILE=Object.freeze({
   sourcePhase:'assistant-public587-successor',before:ASSISTANT_PUBLIC587_SUCCESSOR_BEFORE,
   binding:ASSISTANT_PUBLIC587_SUCCESSOR_BINDING,output:ASSISTANT_PUBLIC587_SUCCESSOR_OUTPUT,
   requireBinding:requireAssistantPublic587SuccessorBinding,requireOutput:requireAssistantPublic587SuccessorOutput,
@@ -264,3 +388,4 @@ export const ACTIVE_ASSISTANT_SUCCESSOR=Object.freeze({
   readCanonicalSource:readAssistantPublic587SuccessorCanonicalSource,
   assertTarget:assertAssistantPublic587SuccessorTarget,assertCaller:assertAssistantPublic587SuccessorCaller,
 });
+export const ACTIVE_ASSISTANT_SUCCESSOR=INACTIVE_ASSISTANT_PUBLIC588_SUCCESSOR;

@@ -32,7 +32,7 @@ export async function handleForecastShare(request, { shareBaseUrl, fetchPublic =
           if (path !== './data/live/manifest.json' && path !== './data/zones.geojson'
               && !/^\.\/data\/live\/forecast\/[a-f0-9]{64}\.json$/.test(path)) throw new Error('PUBLIC_PATH_REJECTED');
           return fetchPublic(new URL(path, PUBLIC_PAGE), {
-            ...options, redirect: 'error', credentials: 'omit', headers: { Accept: 'application/json' },
+            ...options, redirect: 'manual', credentials: 'omit', headers: { Accept: 'application/json' },
           });
         },
       });

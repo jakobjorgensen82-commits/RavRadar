@@ -8,9 +8,12 @@ import crypto from 'node:crypto';
 import {execFileSync,spawnSync} from 'node:child_process';
 import {fileURLToPath} from 'node:url';
 import {sourceTreeContentSha256} from './lib/source-tree-content.mjs';
-import {requireAssistantLaterH0Release,requireAssistantPublic587SuccessorRelease} from './lib/assistant-later-h0-successor-source.mjs';
+import {requireAssistantLaterH0Release,requireAssistantPublic587SuccessorRelease,
+  requireAssistantPublic588SuccessorRelease,ASSISTANT_PUBLIC588_SUCCESSOR_RELEASE,
+  ACTIVE_ASSISTANT_SUCCESSOR as ACTIVE} from './lib/assistant-later-h0-successor-source.mjs';
 import {CURRENT586_PHASE_UPLOAD,inverseCurrent586PhaseUpload,verifyCurrent586PhaseReceipt,
-  verifyAssistantLaterH0PhaseReceipt,verifyAssistantPublic587SuccessorPhaseReceipt} from './native-postgres-evidence.mjs';
+  verifyAssistantLaterH0PhaseReceipt,verifyAssistantPublic587SuccessorPhaseReceipt,
+  verifyAssistantPublic588SuccessorPhaseReceipt} from './native-postgres-evidence.mjs';
 
 export const ORIGIN=Object.freeze({
   repository:'jakobjorgensen82-commits/RavRadar',pullRequest:671,
@@ -47,6 +50,12 @@ export const ASSISTANT_LATER_H0_SOURCE_COMMAND='node scripts/build-assistant-lat
 export const ASSISTANT_LATER_H0_NATIVE_COMMANDS=Object.freeze([CURRENT586_NATIVE_COMMANDS[0],CURRENT586_NATIVE_COMMANDS[1]+' --assistant-later-h0']);
 export const ASSISTANT_PUBLIC587_SUCCESSOR_SOURCE_COMMAND='node scripts/build-assistant-later-h0-successor.mjs --public587-successor --check';
 export const ASSISTANT_PUBLIC587_SUCCESSOR_NATIVE_COMMANDS=Object.freeze([ASSISTANT_LATER_H0_NATIVE_COMMANDS[0],ASSISTANT_LATER_H0_NATIVE_COMMANDS[1]+' --assistant-public587-successor']);
+
+// Egen kalender588→590-kontrol. Gamle kommando-/receiptidentiteter ovenfor er uændrede.
+export const ASSISTANT_PUBLIC588_SUCCESSOR_SOURCE_COMMAND='node scripts/build-assistant-later-h0-successor.mjs --active --check';
+export const ASSISTANT_PUBLIC588_SUCCESSOR_NATIVE_COMMANDS=Object.freeze([
+  ASSISTANT_PUBLIC587_SUCCESSOR_NATIVE_COMMANDS[0],
+  ASSISTANT_PUBLIC587_SUCCESSOR_NATIVE_COMMANDS[1]+' --assistant-public588-successor']);
 
 export const BEFORE_BLOCK='      - name: '+STEP+'\n        run: '+COMMAND+'\n';
 export const AFTER_BLOCK=[
@@ -198,8 +207,20 @@ export function verifyAssistantPublic587SuccessorPackage(pkg){
   verifyAssistantLaterH0Package({...pkg,version:requireAssistantLaterH0Release(),
     scripts:{...pkg.scripts,'test:assistant-later-h0-source':ASSISTANT_LATER_H0_SOURCE_COMMAND}});
 }
+export function verifyAssistantPublic588SuccessorPackage(pkg){
+  assert.equal(ACTIVE.sourcePhase,'assistant-public588-successor');
+  assert.equal(pkg.version,requireAssistantPublic588SuccessorRelease(),'Only the actual issued calendar588 successor release');
+  assert.equal(sha(JSON.stringify(Object.keys(pkg.scripts).sort().map(key=>[key,pkg.scripts[key]]))),
+    'ecd611d8379143b1a046eb7f77c422a6f8bab9aae72847ec90ec6416afb2c563','Whole reviewed calendar588 successor source command plan');
+  assert.equal(pkg.scripts['test:assistant-later-h0-source'],ASSISTANT_PUBLIC588_SUCCESSOR_SOURCE_COMMAND);
+  // Kun en DATA-planinverse. Ingen gammel SQL-/nativeeksekvering ommærkes.
+  verifyAssistantPublic587SuccessorPackage({...pkg,version:requireAssistantPublic587SuccessorRelease(),
+    scripts:{...pkg.scripts,'test:assistant-later-h0-source':ASSISTANT_PUBLIC587_SUCCESSOR_SOURCE_COMMAND}});
+}
 export function verifyPackage(pkg){
   if(pkg.version==='4.0.588')return verifyAssistantPublic587SuccessorPackage(pkg);
+  if(pkg.scripts?.['test:assistant-later-h0-source']===ASSISTANT_PUBLIC588_SUCCESSOR_SOURCE_COMMAND)
+    return verifyAssistantPublic588SuccessorPackage(pkg);
   if(Object.hasOwn(pkg.scripts??{},'test:assistant-later-h0-source'))return verifyAssistantLaterH0Package(pkg);
   if(pkg.version==='4.0.585')return verifyReviewed585Package(pkg);
   assert.equal(pkg.version,'4.0.586');
@@ -215,7 +236,20 @@ export function verifyPackage(pkg){
     assert.equal(Object.values(pkg.scripts).join('\n').split(target).length,2,'Each genuine585/current586 source target remains once');
   assert.equal(pkg.scripts['test:last-mile-enclosure'].split('node scripts/national584-source-evidence.mjs source').length,2);
 }
+// Den samme normale CI-reader kalder denne eksakte nye fasekontrol.
+// Rent receipt-input er ikke selv PostgreSQL-, runtime- eller produktionsautoritet.
+export function verifyAssistantPublic588SuccessorNativeContext(native,current,version){
+  assert.equal(ACTIVE.sourcePhase,'assistant-public588-successor');
+  assert.equal(version,requireAssistantPublic588SuccessorRelease());
+  verifyCurrentNativeCommands(native.commands,version);
+  return verifyAssistantPublic588SuccessorPhaseReceipt(native,current);
+}
 export function verifyCurrentNativeCommands(commands,version){
+  if(version===ASSISTANT_PUBLIC588_SUCCESSOR_RELEASE){
+    assert.equal(ACTIVE.sourcePhase,'assistant-public588-successor');
+    assert.equal(version,requireAssistantPublic588SuccessorRelease());
+    assert.deepEqual(commands,ASSISTANT_PUBLIC588_SUCCESSOR_NATIVE_COMMANDS);return;
+  }
   if(version==='4.0.587'){
     assert.equal(version,requireAssistantLaterH0Release());assert.deepEqual(commands,ASSISTANT_LATER_H0_NATIVE_COMMANDS);return;
   }
@@ -241,7 +275,10 @@ async function currentContext() {
   assert.equal(proof.contractId,'weather-source-gate-content-v2');assert.equal(proof.privatePayloadIncluded,false);
   assert.equal(proof.sourceTreeSha256,content('HEAD'));
   const native=proof.nativePostgres;
-  if(pkg.version==='4.0.586')verifyCurrent586PhaseReceipt(native,{run:Number(env.GITHUB_RUN_ID),
+  if(pkg.version===ASSISTANT_PUBLIC588_SUCCESSOR_RELEASE)verifyAssistantPublic588SuccessorNativeContext(native,
+    {run:Number(env.GITHUB_RUN_ID),attempt:Number(env.GITHUB_RUN_ATTEMPT),head,
+      pullRequest:Number(env.PULL_REQUEST_NUMBER),branch:event.pull_request.head.ref},pkg.version);
+  else if(pkg.version==='4.0.586')verifyCurrent586PhaseReceipt(native,{run:Number(env.GITHUB_RUN_ID),
     attempt:Number(env.GITHUB_RUN_ATTEMPT),head,pullRequest:Number(env.PULL_REQUEST_NUMBER),branch:event.pull_request.head.ref});
   else if(pkg.version==='4.0.587')verifyAssistantLaterH0PhaseReceipt(native,{run:Number(env.GITHUB_RUN_ID),
     attempt:Number(env.GITHUB_RUN_ATTEMPT),head,pullRequest:Number(env.PULL_REQUEST_NUMBER),branch:event.pull_request.head.ref});
@@ -370,6 +407,7 @@ async function executeHistorical({national=true}={}) {
     sourceScope:national?'HISTORICAL_584_NATIONAL_ONLY':'HISTORICAL_584_DEFAULT_ONLY',frozenHead:ORIGIN.head,frozenTree:ORIGIN.tree};
 }
 async function main(){
+  if(ACTIVE.sourcePhase==='assistant-public588-successor')requireAssistantPublic588SuccessorRelease();
   requireAssistantPublic587SuccessorRelease(); // Active588 never falls back to a predecessor receipt or command.
   await requireSourceEnvironment();
   const historical=requireHistoricalSource();
@@ -423,6 +461,26 @@ async function main(){
         actualCommand:ASSISTANT_LATER_H0_SOURCE_COMMAND,separatelyRequired:true},
       current585NationalExecutionClaimed:false,current586NationalExecutionClaimed:false,
       currentAssistantLaterH0NationalExecutionClaimed:false,providerOrProductionProof:false};
+  }else if(ctx.releaseVersion===ASSISTANT_PUBLIC588_SUCCESSOR_RELEASE){
+    assert.equal(ACTIVE.sourcePhase,'assistant-public588-successor');
+    assert.equal(ctx.releaseVersion,requireAssistantPublic588SuccessorRelease());
+    current.historical584National={...result,historicalInput:historical,
+      current:{head:ctx.head,run:ctx.run,attempt:ctx.attempt,pullRequest:ctx.pullRequest},
+      current585PredecessorSource:{command:'npm run test:account-statistics-assistant-source',
+        actualCommand:CURRENT586_PREDECESSOR_SOURCE_COMMAND,scope:'GENUINE_FROZEN585_SOURCE_ONLY',separatelyRequired:true},
+      current586PredecessorNative:{status:'EXECUTED',phase:'native-original-continuity',scope:'GENUINE_FROZEN586',separatelyRequired:true},
+      current586PredecessorSource:{command:'npm run test:native-original-continuity-source',
+        actualCommand:ASSISTANT_LATER_H0_PREDECESSOR_SOURCE_COMMAND,scope:'GENUINE_FROZEN586_SOURCE_ONLY',separatelyRequired:true},
+      current587PredecessorNative:{status:'EXECUTED',phase:'assistant-later-h0',scope:'GENUINE_FROZEN587',separatelyRequired:true},
+      current588PredecessorNative:{status:'EXECUTED',phase:'assistant-public587-successor',scope:'GENUINE_FROZEN588',separatelyRequired:true},
+      currentAssistantPublic588SuccessorNative:{status:ctx.proof.nativePostgres.status,
+        executedInThisRun:ctx.proof.nativePostgres.executedInThisRun,origin:ctx.proof.nativePostgres.origin,
+        phase:'assistant-public588-successor',eligibleForReuse:false,separatelyRequired:true},
+      currentAssistantPublic588SuccessorSource:{command:'npm run test:assistant-later-h0-source',
+        actualCommand:ASSISTANT_PUBLIC588_SUCCESSOR_SOURCE_COMMAND,separatelyRequired:true},
+      current585NationalExecutionClaimed:false,current586NationalExecutionClaimed:false,
+      currentAssistantLaterH0NationalExecutionClaimed:false,currentAssistantPublic587SuccessorNationalExecutionClaimed:false,
+      currentAssistantPublic588SuccessorNationalExecutionClaimed:false,providerOrProductionProof:false};
   }else{
     assert.equal(ctx.releaseVersion,requireAssistantPublic587SuccessorRelease());
     current.historical584National={...result,historicalInput:historical,

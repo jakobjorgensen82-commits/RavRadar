@@ -1,3 +1,27 @@
+## 27. oktober — dansk datoformatering genbruges uden at flytte prognosen
+
+Den almindelige beregning stoppede ved sin uændrede 80-minuttersgrænse. Den målte publicfase tog 36 minutter og 23 sekunder; sidste fremdriftslinje beviser færdige offentlige filer, ikke færdig privat timepakke eller atomisk cacheinstallation. Der er ikke dokumenteret OOM. Gentagen national dagsrangering konstruerede den samme danske datoformatering igen for hver time, zone, søgemåde og dag.
+
+Den lokale kalenderrettelse genbruger lazy kun formatteren for den eksakte primitive streng Europe/Copenhagen, ikke datoresultater. Andre tidszoner får fortsat en frisk formatter, ugyldige datoer afvises før oprettelse, og sommer-/vintertid bevares. Den eksisterende normale kalenderprøve er faktisk RED med to konstruktioner i stedet for én før rettelsen og PASS efter med alle gamle assertions samt additive constructor-count-, DST-, custom-TZ- og invalid-input-kontroller. En særskilt lokal måling af 4.096 kald viser 10,44×; det er ikke samlet produktionshastighed eller bevis for løst hukommelsesforbrug.
+
+Kalenderrettelsen er nu lokalt kildeudstedt som 4.0.590 gennem den eksisterende normale 588-successor; den er ikke samlet kvalificeret, installeret eller offentliggjort. De normale C98/I97/T-bindinger er genafledt, syv forbrugere er synkroniseret, og én ny append-only migration er bygget. Gamle SQL-filer og numeriske SQL-regler er bevaret. Geodatafilernes versionssynk er særskilt bevist som kun topversion 588→590; geometri, administratorpunkter, scoreformel, originaler, kildeprioritet og 80-minuttersgrænse ændres ikke. Den isolerede SOURCE589-draft bevares særskilt og inaktiv.
+
+Efter den lokale udstedelse er hele den normale native-evidenstest faktisk afsluttet med 22 PASS, 0 FAIL, 0 SKIP og exit 0 på 6509ms. De tidligere 21 PASS, Python-miljøfejlen og den efterfølgende beståede miljøgenprøve bevares som historik; de seks additive tilfælde er med. Dette er testfilens lokale resultat, ikke udført PostgreSQL, CI, samlet sluthead-kvalifikation eller produktion.
+
+Samme 4.0.590-leverance medtager nu én handlerlinje i prognosedelingen: redirect:'error' ændres til redirect:'manual'. Den oprindelige lokale workerd-prøve gav TypeError før I/O; med rettelsen viste den lokale prøve Lyngsås gemte score 89 fra tre SHA-kontrollerede input. HTTP 302 blev afvist uden at følge omdirigeringen. Det er ikke offentlig levering eller målt Free-kapacitet, og de øvrige acceptkontroller bevares. Den normale afstemning af gemte B/S-pakker får også præcis den nye udstedte590-familie, så genoptagelse ikke afviser et ellers autentificeret nyt par. Alle tidligere familier og kontroller af originaler, hele bytes og friske genlæsninger bevares.
+
+Præcis samlet kildekontrol, faktisk database-/installationskvalifikation og offentlig effekt er fortsat åbne; lokal kildeudstedelse er ikke leveringsbevis.
+
+SOURCE, samlet statistik og automatisk sletning forbliver inaktive. Alle fem mål er fortsat åbne til 18. november 2026. Hele ældre fronts, evidens og røde forløb bevares; se håndbog 89.273. Aktuelle kørselsidentiteter føres privat.
+
+## 27. oktober — præcis kompatibilitet med tomt Cloudflare-domænefejlfelt
+
+Den tidligere formdiagnose er kildeleveret efter præcis kontrol. En faktisk kontrolleret aflæsning har nu påvist HTTP 200, success=true, errors=null og result som liste på det ufiltrerede domæneendpoint. Det hidtidige afslag skete før skrivning. Officiel dokumentation angiver et errors-array; den nye undtagelse beskrives derfor som målt endpointkompatibilitet, ikke som et dokumenteret null-skema.
+
+Kun den præcise CF_DOMAINS-læsning på /workers/domains kan bruge et udtrykkeligt null-felt sammen med success=true. Hele resultatlisten, fuldstændighed, hver række og fravær af domæner for denne Worker skal fortsat bestå. Manglende felt, reelle fejl, ukendt indhold, eget domæne eller andre CF-endpoints afvises stadig; svaret omskrives ikke til en tom fejlliste. Alle tidligere kontroller og særskilt negativ dækning af de øvrige endpoints bevares.
+
+Kildekvalifikation og faktisk Worker-/offentlig effekt skal fortsat dokumenteres særskilt. Ingen database, vejrdata, scoreformel, C/I/T, kildeprioritet, administratoropsætning eller geometri ændres. SOURCE og øvrige tilbageholdte aktiveringer er adskilte; alle fem mål til 18. november består. Tidligere diagnostikafsnit er historik på den nu målte svarform.
+
 ## 27. oktober — prognosedelingens afslag får kun lukkede formkategorier
 
 Den allerede afviste delingskontrol havde HTTP 200 og success=true, men dens tidligere lukkede rapport kunne ikke skelne et manglende errors-felt fra null eller en anden ikke-array-form. Den faktiske oprindelige feltform er fortsat ukendt. Den lokale kildeændring tilføjer alene faste formkategorier for errors og result i den eksisterende diagnostik; rå svar, beskeder, feltværdier, konti, værtsnavne, URL'er og tokens medtages ikke. De tidligere diagnostikfelter og højst otte numeriske fejlkoder bevares.

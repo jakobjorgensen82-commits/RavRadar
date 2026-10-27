@@ -2,7 +2,8 @@ import { assertSavedPrivateRuntimeCheckpointReconcileRequest } from './reconcile
 import { ESTABLISHED_NATIVE_CURRENT_ORIGIN_BINDING as OLD_FAMILY } from './lib/established-native-current-origin-successor-source.mjs';
 import { LAST_MILE_ENCLOSURE_BINDING as NEW_FAMILY } from './lib/last-mile-enclosure-successor-source.mjs';
 import {ASSISTANT_LATER_H0_BINDING as ISSUED587_FAMILY,
-  ASSISTANT_PUBLIC587_SUCCESSOR_BINDING as PUBLIC587_SUCCESSOR_FAMILY}
+  ASSISTANT_PUBLIC587_SUCCESSOR_BINDING as PUBLIC587_SUCCESSOR_FAMILY,
+  ASSISTANT_PUBLIC588_SUCCESSOR_BINDING as PUBLIC588_SUCCESSOR_FAMILY}
   from './lib/assistant-later-h0-successor-source.mjs';
 import { withFrozenEstablishedNativeCurrentOriginPostgresSource } from './run-frozen-established-native-current-origin-source-targets.mjs';
 import { withFrozen584ReconcileFixture, withFrozen585ReconcileFixture } from './run-frozen584-reconcile-source.mjs';
@@ -452,6 +453,29 @@ test('public587 successor keeps exact paired checkpoint family and publication d
     [PUBLIC587_SUCCESSOR_FAMILY.I,ISSUED587_FAMILY.T],
   ])assert.equal(requiresPrivateRuntimeCheckpointReconcile({modelBinding:{modelBundleSha256:I},
     contractHashes:{continuationStateContractSha256:T}}),false);
+});
+
+test('public588 successor keeps its own exact paired family and publication disposition', () => {
+  // Add only the issued590 route. The CURRENT normal B/S cases above still
+  // require exact original bytes, the canonical manifest and fresh whole S.
+  const family=PUBLIC588_SUCCESSOR_FAMILY;
+  assert.notEqual(family,null);
+  const descriptor={modelBinding:{modelBundleSha256:family.I},
+    contractHashes:{continuationStateContractSha256:family.T}};
+  assert.equal(requiresPrivateRuntimeCheckpointReconcile(descriptor),true);
+  for(const disposition of ['READY_PUBLISHED','MEASURED_WARMUP_PUBLISHED'])
+    assert.doesNotThrow(()=>assertPrivateRuntimeCheckpointPublicationDisposition(descriptor,disposition));
+  for(const disposition of ['', 'UNKNOWN', 'NOT_PUBLISHED', 'REJECTED', undefined])
+    assert.throws(()=>assertPrivateRuntimeCheckpointPublicationDisposition(descriptor,disposition),/S_DISPOSITION/);
+  for(const key of ['I','T']){
+    const wrong={...family,[key]:'0'.repeat(64)};
+    assert.equal(requiresPrivateRuntimeCheckpointReconcile({modelBinding:{modelBundleSha256:wrong.I},
+      contractHashes:{continuationStateContractSha256:wrong.T}}),false);
+  }
+  for(const previous of [ISSUED587_FAMILY,PUBLIC587_SUCCESSOR_FAMILY].filter(Boolean))
+    for(const [I,T]of [[family.I,previous.T],[previous.I,family.T]])
+      assert.equal(requiresPrivateRuntimeCheckpointReconcile({modelBinding:{modelBundleSha256:I},
+        contractHashes:{continuationStateContractSha256:T}}),false);
 });
 
 test('both fixed families and separate saved guard reject mixed tuples and colliding modes', () => {

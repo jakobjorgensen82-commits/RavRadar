@@ -113,18 +113,34 @@ const ASSISTANT_PUBLIC587_OPERATIVE_REVIEWED=Object.freeze({
     sha256:'5fa3fe20041a82a7e287e21f4562f6bb82ffab253c69e0754208bb6e5c907b69',
     imports:ASSISTANT_LATER_H0_REVIEWED['scripts/lib/established-native-current-origin.mjs'].imports}),
 });
+// Additive kalender588→NEXT-varianter. Alle ældre hele varianter ovenfor bevares.
+// Samme normale importkanter; kun den eksakte nye whole-source må bruge dem.
+const CALENDAR_PUBLIC588_SUCCESSOR_REVIEWED=Object.freeze({
+  'scripts/check-assistant-later-h0-predecessor-source.mjs':Object.freeze({
+    sha256:'853f2fbdaca3471f11b01449a7040e66bc300acbc080df22d99315c5ea9fc9e1',imports:Object.freeze([])}),
+  'scripts/lib/authenticated-frozen586-predecessor.mjs':Object.freeze({
+    sha256:'7dc5e67341e25d13cd0669fb0c5fcda5af9b8abe45edd609255eafef41aab79d',
+    imports:ASSISTANT_BINDING_PREWRITE_REVIEWED['scripts/lib/authenticated-frozen586-predecessor.mjs'].imports}),
+  'scripts/lib/established-native-current-origin.mjs':Object.freeze({
+    sha256:'bc3da0ace8094f36bc221e5d023620e42f8153e9082780141e48372ca7c1f2b0',
+    imports:ASSISTANT_PUBLIC587_OPERATIVE_REVIEWED['scripts/lib/established-native-current-origin.mjs'].imports}),
+  'scripts/assistant-later-h0-binding-prewrite.mjs':Object.freeze({
+    sha256:'8807414050da91659ceefc2d6957e78aecb791d09632ea806bc182668b02a55d',
+    imports:ASSISTANT_BINDING_PREWRITE_REVIEWED['scripts/assistant-later-h0-binding-prewrite.mjs'].imports}),
+});
 export function modelSourceRelativeModuleSpecifiers(source, file) {
   if (!Object.hasOwn(REVIEWED, file) && !Object.hasOwn(NATIVE_CONTINUITY_REVIEWED, file)
     && !Object.hasOwn(ASSISTANT_LATER_H0_REVIEWED,file) && !Object.hasOwn(ASSISTANT_BINDING_PREWRITE_REVIEWED,file)
     && !Object.hasOwn(ASSISTANT_BINDING_DIAGNOSTIC_REVIEWED,file)
     && !Object.hasOwn(ASSISTANT_BINDING_CHECKPOINT_TARGET_REVIEWED,file)
     && !Object.hasOwn(ASSISTANT_PUBLIC587_SOURCE_REVIEWED,file)
-    && !Object.hasOwn(ASSISTANT_PUBLIC587_OPERATIVE_REVIEWED,file))
+    && !Object.hasOwn(ASSISTANT_PUBLIC587_OPERATIVE_REVIEWED,file)
+    && !Object.hasOwn(CALENDAR_PUBLIC588_SUCCESSOR_REVIEWED,file))
     return exactRelativeModuleSpecifiers(source, file);
   if (typeof source !== 'string') throw new Error('Reviewed model source must be a string');
   const normalized = source.replace(/^\uFEFF/, '').replace(/\r\n?/g, '\n');
   const hash = crypto.createHash('sha256').update(normalized).digest('hex');
-  const reviewed = [REVIEWED[file], NATIVE_CONTINUITY_REVIEWED[file],ASSISTANT_LATER_H0_REVIEWED[file],ASSISTANT_BINDING_PREWRITE_REVIEWED[file],ASSISTANT_BINDING_DIAGNOSTIC_REVIEWED[file],ASSISTANT_BINDING_CHECKPOINT_TARGET_REVIEWED[file],ASSISTANT_PUBLIC587_SOURCE_REVIEWED[file],ASSISTANT_PUBLIC587_OPERATIVE_REVIEWED[file]].filter(Boolean)
+  const reviewed = [REVIEWED[file], NATIVE_CONTINUITY_REVIEWED[file],ASSISTANT_LATER_H0_REVIEWED[file],ASSISTANT_BINDING_PREWRITE_REVIEWED[file],ASSISTANT_BINDING_DIAGNOSTIC_REVIEWED[file],ASSISTANT_BINDING_CHECKPOINT_TARGET_REVIEWED[file],ASSISTANT_PUBLIC587_SOURCE_REVIEWED[file],ASSISTANT_PUBLIC587_OPERATIVE_REVIEWED[file],CALENDAR_PUBLIC588_SUCCESSOR_REVIEWED[file]].filter(Boolean)
     .find(variant => variant.sha256 === hash);
   if (!reviewed)
     throw new Error('Whole reviewed model import source changed: ' + file);

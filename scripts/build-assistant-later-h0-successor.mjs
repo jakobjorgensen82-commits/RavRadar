@@ -18,12 +18,16 @@ import {ASSISTANT_LATER_H0_BEFORE as OLD,ASSISTANT_LATER_H0_ALIASES as ALIASES,
   ASSISTANT_PUBLIC587_SUCCESSOR_BEFORE,ASSISTANT_PUBLIC587_SUCCESSOR_ALIASES,
   readAssistantPublic587PredecessorCanonicalSource,assistantPublic587SuccessorCheckpointContractFromBase,
   requireAssistantPublic587SuccessorBinding,requireAssistantPublic587SuccessorOutput,
-  requireAssistantPublic587SuccessorRelease,assistantPublic587SuccessorMigration}
+  requireAssistantPublic587SuccessorRelease,assistantPublic587SuccessorMigration,
+  ASSISTANT_PUBLIC588_SUCCESSOR_BEFORE,ASSISTANT_PUBLIC588_SUCCESSOR_ALIASES,
+  readAssistantPublic588PredecessorCanonicalSource,assistantPublic588SuccessorCheckpointContractFromBase,
+  requireAssistantPublic588SuccessorBinding,requireAssistantPublic588SuccessorOutput,
+  requireAssistantPublic588SuccessorRelease,assistantPublic588SuccessorMigration,ACTIVE_ASSISTANT_SUCCESSOR}
   from './lib/assistant-later-h0-successor-source.mjs';
 const ROOT=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..'),CP='ravradar_ravscore_checkpoint_';
 const sha=v=>crypto.createHash('sha256').update(v).digest('hex');
 const once=(s,a,b)=>{assert.equal(s.split(a).length,2,'One exact source insertion');return s.replace(a,()=>b);};
-// Kun disse to interne profilobjekter må vælge en forgænger.
+// Kun disse faste interne profilobjekter må vælge en forgænger.
 // Ingen eksport eller caller-/miljøvalgt profil, rod, binding eller SQL-kilde.
 const LEGACY586=Object.freeze({
   previous:OLD,aliases:ALIASES,previousRelease:586,validatorCount:31,
@@ -38,8 +42,16 @@ const PUBLIC587=Object.freeze({
   checkpointFromBase:assistantPublic587SuccessorCheckpointContractFromBase,
   contractTail:"    || E'\\n-- assistant-later-h0-original586-payload-validator --\\n' || v_ask586_payload_definition;",
   kind:'ASSISTANT_PUBLIC587_SUCCESSOR_STRUCTURE'});
+const PUBLIC588=Object.freeze({
+  previous:ASSISTANT_PUBLIC588_SUCCESSOR_BEFORE,aliases:ASSISTANT_PUBLIC588_SUCCESSOR_ALIASES,
+  previousRelease:588,validatorCount:35,
+  readPredecessor:readAssistantPublic588PredecessorCanonicalSource,
+  checkpointFromBase:assistantPublic588SuccessorCheckpointContractFromBase,
+  contractTail:"    || E'\\n-- assistant-later-h0-original587-payload-validator --\\n' || v_ask587_payload_definition;",
+  kind:'ASSISTANT_PUBLIC588_SUCCESSOR_STRUCTURE'});
+
 function fixedProfile(profile){
-  assert(profile===LEGACY586||profile===PUBLIC587,'ASSISTANT_SUCCESSOR_UNKNOWN_PROFILE');
+  assert(profile===LEGACY586||profile===PUBLIC587||profile===PUBLIC588,'ASSISTANT_SUCCESSOR_UNKNOWN_PROFILE');
   return profile;
 }
 function metadata(source,next,inventory,OLD){
@@ -59,6 +71,13 @@ export async function prepareAssistantPublic587SuccessorStructure(options){
   assert.deepEqual(Object.keys(options),['version'],'Kun normal tidsstempelinput; ingen caller-valgt profil eller tuple');
   return prepareStructure(PUBLIC587,options.version);
 }
+export async function prepareAssistantPublic588SuccessorStructure(options){
+  assert.equal(arguments.length,1);
+  assert(options&&Object.getPrototypeOf(options)===Object.prototype);
+  assert.deepEqual(Object.keys(options),['version'],'Kun normal tidsstempelinput; ingen caller-valgt profil eller tuple');
+  return prepareStructure(PUBLIC588,options.version);
+}
+
 async function prepareStructure(profile,version){
   fixedProfile(profile);
   const OLD=profile.previous,ALIASES=profile.aliases;
@@ -270,9 +289,42 @@ export async function buildAssistantPublic587BindingSuccessor(options){
   return Object.freeze({...result,sameH0Capability:false,admission:'NO_ADMISSION'});
 }
 
+export async function buildAssistantPublic588BindingSuccessor(options){
+  assert.equal(arguments.length,1);
+  const core=await prepareAssistantPublic588SuccessorStructure(options);
+  const prior=await readAssistantPublic588PredecessorCanonicalSource();
+  const result=wrap(core,prior,PUBLIC588);
+  assert.equal(result.migrationIssued,false);assert.equal(result.productionAuthority,false);
+  return Object.freeze({...result,sameH0Capability:false,admission:'NO_ADMISSION'});
+}
+
+
 async function main(){
-  const args=process.argv.slice(2),public587=args[0]==='--public587-successor';
-  if(public587)args.shift();
+  const args=process.argv.slice(2);
+  if(args[0]==='--active'){
+    // Det eksisterende normale source-mål følger kun det kildeejede aktive objekt.
+    // De navngivne gamle CLI-indgange bevares til autentiske frozen-banker.
+    assert(['assistant-public587-successor','assistant-public588-successor'].includes(ACTIVE_ASSISTANT_SUCCESSOR.sourcePhase));
+    args.shift();args.unshift(ACTIVE_ASSISTANT_SUCCESSOR.sourcePhase==='assistant-public588-successor'
+      ?'--public588-successor':'--public587-successor');
+  }
+  const public588=args[0]==='--public588-successor',public587=args[0]==='--public587-successor';
+  if(public588||public587)args.shift();
+  if(public588){
+    // Lukket ny indgang: NULL afvises før konstruktion, modelberegning eller fil-I/O.
+    const issued=requireAssistantPublic588SuccessorBinding(),pins=requireAssistantPublic588SuccessorOutput();
+    requireAssistantPublic588SuccessorRelease();
+    assert(args.length===0||(args.length===1&&['--check','--write'].includes(args[0])));
+    const result=await buildAssistantPublic588BindingSuccessor({version:issued.version});
+    assert.deepEqual(result.nextBinding,issued,'Only the actual physical issued C/I/T');
+    assert.deepEqual({migrationSha256:result.migrationSha256,canonicalSha256:result.afterCanonicalSha256,
+      checkpointContractSha256:result.checkpointContractSha256,tripBindingPolicySha256:result.tripBindingPolicySha256},pins);
+    const migration=assistantPublic588SuccessorMigration(),file=path.join(ROOT,'supabase/migrations',migration.filename);
+    if(args[0]==='--write')await fs.writeFile(file,result.migration,{flag:'wx'});
+    else assert.deepEqual(await fs.readFile(file),Buffer.from(result.migration));
+    console.log('Exact original-preserving calendar588 later-H0 metadata source checked; no installation or state admission.');
+    return;
+  }
   assert(args.length===0||(args.length===1&&['--check','--write'].includes(args[0])));
   // Den nye faste indgang afviser UNISSUED før konstruktør, fil-I/O eller SQL.
   // Den oprindelige indgang vælger fortsat præcis den allerede udstedte 587.

@@ -9,8 +9,9 @@ import {isDeepStrictEqual as equal} from 'node:util';
 import {ACTIVE_ASSISTANT_SUCCESSOR as ACTIVE} from './lib/assistant-later-h0-successor-source.mjs';
 const {before:OLD,requireBinding:requireActiveAssistantBinding,requireOutput:requireActiveAssistantOutput,
   assertTarget:assertActiveAssistantTarget,assertCaller:assertActiveAssistantCaller}=ACTIVE;
-import {withAuthenticated587PredecessorSource} from './check-assistant-later-h0-predecessor-source.mjs';
-import {readAuthenticatedFrozen587Predecessor,assertAuthenticatedFrozen587Snapshot} from './lib/authenticated-frozen586-predecessor.mjs';
+import {withAuthenticated587PredecessorSource,withAuthenticated588PredecessorSource} from './check-assistant-later-h0-predecessor-source.mjs';
+import {readAuthenticatedFrozen587Predecessor,assertAuthenticatedFrozen587Snapshot,
+  readAuthenticatedFrozen588Predecessor,assertAuthenticatedFrozen588Snapshot} from './lib/authenticated-frozen586-predecessor.mjs';
 import {describeCurrentProtectedPrivateProductionRuntime,describeTargetProtectedPrivateProductionRuntime,createProtectedPrivateRuntimeClients} from './protected-private-production-runtime.mjs';
 import {migratePostCutoverPrivateRuntime,assertMetadataOnlyMigrationResult,assertRestoredOriginalInventory,
   assertExactRuntimeInventory,validatePredecessorIdentity} from './migrate-post-cutover-private-runtime.mjs';
@@ -18,6 +19,15 @@ import {privateRuntimeContractHashes,installRestoredPrivateRuntime} from './priv
 import {saveRavScoreContinuationCheckpoint,loadRavScoreContinuationCheckpointForTarget} from './ravscore-continuation-checkpoint.mjs';
 import {ravScoreModelBinding} from '../js/core/ravscore-model-contract.js';
 import {ravScoreModelBinding as candidateBinding} from './rollback-assets/ravscore-model-contract.js';
+// Ingen caller-/miljøvalgt familie. Begge profiler beholder deres egne opaque handles.
+assert(['assistant-public587-successor','assistant-public588-successor'].includes(ACTIVE.sourcePhase));
+const ACTIVE_PREDECESSOR=ACTIVE.sourcePhase==='assistant-public588-successor'?Object.freeze({
+  withSource:withAuthenticated588PredecessorSource,read:readAuthenticatedFrozen588Predecessor,
+  snapshot:assertAuthenticatedFrozen588Snapshot
+}):Object.freeze({
+  withSource:withAuthenticated587PredecessorSource,read:readAuthenticatedFrozen587Predecessor,
+  snapshot:assertAuthenticatedFrozen587Snapshot
+});
 const ROOT=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..'),CP='.cache/ravscore-continuation-checkpoint/checkpoint.json';
 const sha=v=>crypto.createHash('sha256').update(v).digest('hex');
 const same=(a,b,label)=>assert(equal(a,b),label);
@@ -103,7 +113,7 @@ export async function prepareAssistantLaterH0Runtime(){
   assertActiveAssistantTarget(selected,target);
   await noLinks(p.privateRoot);assert(await absent(p.bundlePath)&&await absent(p.sourceRoot)&&await absent(p.workRoot)
     &&await absent(p.originalSPath)&&await absent(p.descriptorPath));
-  await withAuthenticated587PredecessorSource(async frozenRoot=>{
+  await ACTIVE_PREDECESSOR.withSource(async frozenRoot=>{
     const load=file=>import(pathToFileURL(path.join(frozenRoot,file)).href);
     const old=await load('scripts/protected-private-production-runtime.mjs'),bundle=await load('scripts/private-production-runtime-bundle.mjs');
     const oldWorkflow=await load('scripts/private-production-runtime-workflow.mjs'),oldModel=await load('js/core/ravscore-model-contract.js');
@@ -122,7 +132,7 @@ export async function prepareAssistantLaterH0Runtime(){
     const originalSRestore=await oldProtectedS.restoreProtectedRavScoreContinuationCheckpoint({checkpointPath:p.originalSPath,
       targetReference:selected.productionReferenceAt,request:oldProtectedS.createProtectedRavScoreCheckpointRequester()});
     assert.equal(originalSRestore.restored,true,'Actual old normal protected S restore, no reconstruction receipt');
-    const handle=await readAuthenticatedFrozen587Predecessor(),snapshot=assertAuthenticatedFrozen587Snapshot(handle);
+    const handle=await ACTIVE_PREDECESSOR.read(),snapshot=ACTIVE_PREDECESSOR.snapshot(handle);
     sameIdentity(snapshot.descriptor,selected);
     const targetDescriptor=await describeTargetProtectedPrivateProductionRuntime({request:clients.documentRequest,
       targetReferenceAt:selected.productionReferenceAt,datasetId:selected.datasetId,bundleContentSha256:selected.bundleContentSha256});
@@ -138,14 +148,14 @@ export async function prepareAssistantLaterH0Runtime(){
 }
 async function readWorking(targetReferenceAt,installing){
   requireActiveAssistantOutput();assertActiveAssistantCaller(process.env);
-  const p=paths(),handle=await readAuthenticatedFrozen587Predecessor(),snapshot=assertAuthenticatedFrozen587Snapshot(handle);
+  const p=paths(),handle=await ACTIVE_PREDECESSOR.read(),snapshot=ACTIVE_PREDECESSOR.snapshot(handle);
   assertActiveAssistantTarget(snapshot.descriptor,targetReferenceAt);
   const descriptorBytes=await fs.readFile(p.descriptorPath);const retainedDescriptor=validatePredecessorIdentity(JSON.parse(descriptorBytes),snapshot.descriptor.sourceHead);
   sameIdentity(retainedDescriptor,snapshot.descriptor);
   const parent=await fs.realpath(p.privateRoot),work=await fs.mkdtemp(path.join(parent,'assistant587-reproject-'));
   // Retain private scratch on an unknown failure. No recursive guessed cleanup.
   const firstInventory=await inventory(p.workRoot);
-  const result=await withAuthenticated587PredecessorSource(async frozenRoot=>{
+  const result=await ACTIVE_PREDECESSOR.withSource(async frozenRoot=>{
     const projected=path.join(work,'runtime'),checkpointPath=path.join(work,'checkpoint.json');
     const result=await projectOriginal(p,snapshot,frozenRoot,projected,path.join(work,'report.json'),checkpointPath);
     same(await inventory(projected),firstInventory,'Whole normal migration reproduction, ALL runtime bytes');
@@ -163,7 +173,7 @@ async function readWorking(targetReferenceAt,installing){
   const verify=async()=>{
     same(await inventory(p.workRoot),firstInventory,'Prepared full runtime unchanged');
     same(await fs.readFile(p.descriptorPath),descriptorBytes,'Original descriptor unchanged');
-    const fresh=assertAuthenticatedFrozen587Snapshot(await readAuthenticatedFrozen587Predecessor());
+    const fresh=ACTIVE_PREDECESSOR.snapshot(await ACTIVE_PREDECESSOR.read());
     same(fresh,snapshot,'Fresh authenticated original B/S/source unchanged');
     return snapshot.verified;
   };

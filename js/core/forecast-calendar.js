@@ -1,14 +1,19 @@
 const ISO_DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
+// The explicit forecast zone is immutable. Reuse its formatter, not date results.
+let copenhagenDateFormatter;
+function forecastDateFormatter(timeZone) {
+  const create = () => new Intl.DateTimeFormat('en-GB', {
+    timeZone, year:'numeric', month:'2-digit', day:'2-digit'
+  });
+  return timeZone === 'Europe/Copenhagen'
+    ? (copenhagenDateFormatter ??= create())
+    : create();
+}
 
 export function forecastDateKeyInTimeZone(now = Date.now(), timeZone = 'Europe/Copenhagen') {
   const date = now instanceof Date ? now : new Date(now);
   if (!Number.isFinite(date.getTime())) throw new TypeError('Ugyldigt tidspunkt til prognosekalenderen.');
-  const parts = new Intl.DateTimeFormat('en-GB', {
-    timeZone,
-    year:'numeric',
-    month:'2-digit',
-    day:'2-digit'
-  }).formatToParts(date);
+  const parts = forecastDateFormatter(timeZone).formatToParts(date);
   const values = Object.fromEntries(parts.map(part => [part.type, part.value]));
   return `${values.year}-${values.month}-${values.day}`;
 }

@@ -768,8 +768,19 @@ test('private-study006: privat eksport bevarer hele installationsarm og normale 
   const publisher=await read('scripts/publish-private-trip-weather-study.mjs');
   assert.equal(sha(publisher),'5b087741711e31ad64401be9a8bbfc4ffb0bfe53bd7e68a50a9fe08cd947d6dc');
   const dashboard=await read('js/ui/admin-dashboard.js');
-  // TEST ONLY: exact cache-version inverse for the historical719 source oracle.
-  // The normal render below still uses the untouched actual588 dashboard.
+  // Kun test: bevis hele den aktuelle590-fil og præcis versionsinverse til588.
+  // Det gamle588→587-orakel nedenfor bevares byteeksakt; normal render bruger590.
+  const reviewed590DashboardView=source=>{
+    assert.equal(Buffer.byteLength(source),129214);
+    assert.equal(sha(source),'dc282a24fe53f929ed50f7aae0df90e704b7126b134da044f6c49adedb787e87');
+    assert.equal(source.split('?v=4.0.590').length,21);
+    assert.equal(source.includes('?v=4.0.588'),false);
+    assert.equal(source.split("const VERSION='4.0.590';").length,2);
+    const prior=source.replaceAll('?v=4.0.590','?v=4.0.588')
+      .replace("const VERSION='4.0.590';","const VERSION='4.0.588';");
+    assert.equal(sha(prior),'08f17fc40aa5c986ed869d8f202d9bf7c83b8490920cb354d4768c7585970731');
+    return prior;
+  };
   const historicalDashboardView=source=>{
     assert.equal(Buffer.byteLength(source),129214);
     assert.equal(sha(source),'08f17fc40aa5c986ed869d8f202d9bf7c83b8490920cb354d4768c7585970731');
@@ -781,13 +792,13 @@ test('private-study006: privat eksport bevarer hele installationsarm og normale 
     assert.equal(sha(prior),'aa2466f85e4590e19c0af2dcb698e4f5c4406a0b9c1b6ac3e6f431007ebe2a4b');
     return prior;
   };
-  for(const [before,after] of [['?v=4.0.588','?v=4.0.589'],
-    ["const VERSION='4.0.588';","const VERSION='4.0.589';"],
+  for(const [before,after] of [['?v=4.0.590','?v=4.0.589'],
+    ["const VERSION='4.0.590';","const VERSION='4.0.589';"],
     ['mountPrivateTripStudyCard(content,state.access);','mountPrivateTripStudyCarX(content,state.access);']]){
     assert.equal(dashboard.includes(before),true);
-    assert.throws(()=>historicalDashboardView(dashboard.replace(before,after)));
+    assert.throws(()=>historicalDashboardView(reviewed590DashboardView(dashboard.replace(before,after))));
   }
-  let original=historicalDashboardView(dashboard);
+  let original=historicalDashboardView(reviewed590DashboardView(dashboard));
   for(const [current,prior] of [
     ["import { mountPrivateTripStudyCard } from './admin-private-trip-study.js?v=4.0.587';\nimport { analyzeObservations }",'import { analyzeObservations }'],
     ["content.insertAdjacentHTML('afterbegin',moduleGuide());bindModuleGuide();if(state.tab==='learning')mountPrivateTripStudyCard(content,state.access);}",
@@ -808,6 +819,7 @@ test('private-study006: privat eksport bevarer hele installationsarm og normale 
 
 // TEST ONLY: qualify the real fixed588 plan before the unchanged587/586 oracles.
 async function reviewed587PackageViewForUnchangedOracles(pkg){
+  pkg=await reviewed588PackageViewForUnchangedOracles(pkg);
   const {ASSISTANT_PUBLIC587_SUCCESSOR_SOURCE_COMMAND,verifyAssistantPublic587SuccessorPackage}
     =await import('./national584-source-evidence.mjs');
   if(pkg.scripts['test:assistant-later-h0-source']!==ASSISTANT_PUBLIC587_SUCCESSOR_SOURCE_COMMAND)return pkg;
@@ -824,7 +836,7 @@ async function reviewed587PackageViewForUnchangedOracles(pkg){
 }
 
 test('public587 successor source registration dispatches actual588 once before exact whole587 inverse',async()=>{
-  const actual=JSON.parse(await fs.readFile(new URL('../package.json',import.meta.url),'utf8')),original=structuredClone(actual);
+  const actual=await reviewed588PackageViewForUnchangedOracles(JSON.parse(await fs.readFile(new URL('../package.json',import.meta.url),'utf8'))),original=structuredClone(actual);
   const {ASSISTANT_LATER_H0_SOURCE_COMMAND,ASSISTANT_PUBLIC587_SUCCESSOR_SOURCE_COMMAND,
     verifyAssistantLaterH0Package,verifyAssistantPublic587SuccessorPackage}=await import('./national584-source-evidence.mjs');
   const {ASSISTANT_PUBLIC587_SUCCESSOR_BINDING,requireAssistantLaterH0Release}
@@ -910,4 +922,96 @@ test('public587 national entry refuses unissued before I/O and leaves historical
   assert(source.includes("try{result=await authenticatedReuse(ctx);}"));
   assert(source.includes("catch{result=await executeHistorical();"));
   assert(source.includes("providerOrProductionProof:false"));
+});
+
+// TEST ONLY: exact590 package DATA inverse before whole unchanged588/587 oracles.
+// This view is never passed to a runtime/native receipt verifier or installer.
+async function reviewed588PackageViewForUnchangedOracles(pkg){
+  const {ASSISTANT_PUBLIC588_SUCCESSOR_SOURCE_COMMAND,ASSISTANT_PUBLIC587_SUCCESSOR_SOURCE_COMMAND,
+    verifyAssistantPublic588SuccessorPackage,verifyAssistantPublic587SuccessorPackage}
+    =await import('./national584-source-evidence.mjs');
+  if(pkg.scripts['test:assistant-later-h0-source']!==ASSISTANT_PUBLIC588_SUCCESSOR_SOURCE_COMMAND)return pkg;
+  const original=structuredClone(pkg);
+  verifyAssistantPublic588SuccessorPackage(pkg);
+  const {requireAssistantPublic587SuccessorRelease}=await import('./lib/assistant-later-h0-successor-source.mjs');
+  const prior={...pkg,version:requireAssistantPublic587SuccessorRelease(),scripts:{...pkg.scripts,
+    'test:assistant-later-h0-source':ASSISTANT_PUBLIC587_SUCCESSOR_SOURCE_COMMAND}};
+  verifyAssistantPublic587SuccessorPackage(prior);
+  assert.deepEqual({...prior,version:original.version,scripts:{...prior.scripts,
+    'test:assistant-later-h0-source':ASSISTANT_PUBLIC588_SUCCESSOR_SOURCE_COMMAND}},original,
+    'Whole actual590 package DATA roundtrip; only release and one command differ');
+  assert.deepEqual(pkg,original,'Historical package view cannot edit actual590 source');
+  return prior;
+}
+
+test('calendar588 national reader validates actual590 once before exact whole588 package inverse',async()=>{
+  const actual=JSON.parse(await fs.readFile(new URL('../package.json',import.meta.url),'utf8')),original=structuredClone(actual);
+  const {verifyPackage,verifyAssistantPublic588SuccessorPackage,verifyAssistantPublic587SuccessorPackage,
+    ASSISTANT_PUBLIC588_SUCCESSOR_SOURCE_COMMAND,ASSISTANT_PUBLIC587_SUCCESSOR_SOURCE_COMMAND}
+    =await import('./national584-source-evidence.mjs');
+  const {requireAssistantPublic588SuccessorRelease}=await import('./lib/assistant-later-h0-successor-source.mjs');
+  assert.equal(actual.version,requireAssistantPublic588SuccessorRelease());
+  assert.equal(actual.scripts['test:assistant-later-h0-source'],ASSISTANT_PUBLIC588_SUCCESSOR_SOURCE_COMMAND);
+  assert.doesNotThrow(()=>verifyPackage(actual));
+  assert.doesNotThrow(()=>verifyAssistantPublic588SuccessorPackage(actual));
+  const prior=await reviewed588PackageViewForUnchangedOracles(actual);
+  assert.equal(prior.version,'4.0.588');
+  assert.equal(prior.scripts['test:assistant-later-h0-source'],ASSISTANT_PUBLIC587_SUCCESSOR_SOURCE_COMMAND);
+  assert.doesNotThrow(()=>verifyAssistantPublic587SuccessorPackage(prior));
+  for(const mutate of [v=>v.version='4.0.588',v=>v.version='0.0.0',
+    v=>v.scripts['test:assistant-later-h0-source']=ASSISTANT_PUBLIC587_SUCCESSOR_SOURCE_COMMAND,
+    v=>v.scripts['test:assistant-later-h0-source']+=' --unexpected',
+    v=>delete v.scripts['test:assistant-later-h0-source'],v=>v.scripts.unreviewed='true',
+    v=>v.scripts['test:ravscore-source-critical']+=' && npm run test:assistant-later-h0-source',
+    v=>v.scripts['test:ravscore-source-critical']=v.scripts['test:ravscore-source-critical'].replace(
+      'npm run test:native-original-continuity-source && npm run test:assistant-later-h0-source',
+      'npm run test:assistant-later-h0-source && npm run test:native-original-continuity-source')]){
+    const changed=structuredClone(actual);mutate(changed);
+    assert.throws(()=>verifyPackage(changed));
+    assert.throws(()=>verifyAssistantPublic588SuccessorPackage(changed));
+  }
+  assert.deepEqual(actual,original);
+});
+
+test('calendar588 normal national reader rejects old,retagged,reused,stale or mutated native evidence',async()=>{
+  const {ASSISTANT_PUBLIC588_SUCCESSOR_NATIVE_COMMANDS,ASSISTANT_PUBLIC587_SUCCESSOR_NATIVE_COMMANDS,
+    verifyCurrentNativeCommands,verifyAssistantPublic588SuccessorNativeContext}
+    =await import('./national584-source-evidence.mjs');
+  const {ASSISTANT_PUBLIC588_SUCCESSOR_COMMANDS,verifyAssistantPublic587SuccessorPhaseReceipt}
+    =await import('./native-postgres-evidence.mjs');
+  const {requireAssistantPublic588SuccessorRelease}=await import('./lib/assistant-later-h0-successor-source.mjs');
+  const release=requireAssistantPublic588SuccessorRelease();
+  assert.deepEqual(ASSISTANT_PUBLIC588_SUCCESSOR_NATIVE_COMMANDS,ASSISTANT_PUBLIC588_SUCCESSOR_COMMANDS);
+  const current={run:123,attempt:1,head:'a'.repeat(40),pullRequest:123,branch:'synthetic-calendar588-reader'};
+  const receipt={phase:'ASSISTANT_PUBLIC588_SUCCESSOR',status:'EXECUTED',executedInThisRun:true,origin:null,
+    current,commands:[...ASSISTANT_PUBLIC588_SUCCESSOR_COMMANDS],eligibleForReuse:false};
+  assert.doesNotThrow(()=>verifyAssistantPublic588SuccessorNativeContext(receipt,current,release));
+  assert.doesNotThrow(()=>verifyCurrentNativeCommands(receipt.commands,release));
+  assert.throws(()=>verifyCurrentNativeCommands(ASSISTANT_PUBLIC587_SUCCESSOR_NATIVE_COMMANDS,release));
+  assert.throws(()=>verifyCurrentNativeCommands(receipt.commands,'4.0.588'));
+  assert.throws(()=>verifyAssistantPublic587SuccessorPhaseReceipt(receipt,current));
+  for(const mutate of [v=>v.phase='ASSISTANT_PUBLIC587_SUCCESSOR',v=>v.status='REUSED',
+    v=>v.executedInThisRun=false,v=>v.origin={run:122},v=>v.eligibleForReuse=true,
+    v=>v.commands=[...ASSISTANT_PUBLIC587_SUCCESSOR_NATIVE_COMMANDS],
+    v=>v.current={...current,head:'b'.repeat(40)},v=>v.current={...current,attempt:2},
+    v=>v.commands=[...v.commands,v.commands[1]]]){
+    const changed=structuredClone(receipt);mutate(changed);
+    assert.throws(()=>verifyAssistantPublic588SuccessorNativeContext(changed,current,release));
+  }
+  assert.throws(()=>verifyAssistantPublic588SuccessorNativeContext(receipt,current,'0.0.0'));
+});
+
+test('calendar588 national entry binds its own phase while historical584 reuse remains historical only',async()=>{
+  const source=await fs.readFile(new URL('./national584-source-evidence.mjs',import.meta.url),'utf8');
+  const main=source.slice(source.indexOf('async function main(){'));
+  assert(main.indexOf('requireAssistantPublic588SuccessorRelease();')<main.indexOf('await requireSourceEnvironment();'));
+  assert(source.includes('if(pkg.version===ASSISTANT_PUBLIC588_SUCCESSOR_RELEASE)verifyAssistantPublic588SuccessorNativeContext'));
+  assert(source.includes("current588PredecessorNative:{status:'EXECUTED',phase:'assistant-public587-successor',scope:'GENUINE_FROZEN588'"));
+  assert(source.includes("phase:'assistant-public588-successor',eligibleForReuse:false,separatelyRequired:true"));
+  assert(source.includes('actualCommand:ASSISTANT_PUBLIC588_SUCCESSOR_SOURCE_COMMAND,separatelyRequired:true'));
+  assert(source.includes('currentAssistantPublic588SuccessorNationalExecutionClaimed:false'));
+  assert(source.includes("sourceScope:'HISTORICAL_584_ONLY'"));
+  assert(source.includes('try{result=await authenticatedReuse(ctx);}'));
+  assert(source.includes('catch{result=await executeHistorical();'));
+  assert(source.includes('providerOrProductionProof:false'));
 });
