@@ -14,9 +14,6 @@ import {ASSISTANT_LATER_H0_BINDING,ASSISTANT_LATER_H0_ALIASES,assistantLaterH0Mi
   readAssistantLaterH0CanonicalSource,requireAssistantLaterH0Output,
   ACTIVE_ASSISTANT_SUCCESSOR as ACTIVE,ASSISTANT_PUBLIC587_SUCCESSOR_ALIASES}
   from './lib/assistant-later-h0-successor-source.mjs';
-import {SOURCE_PRODUCER_ALIASES,sourceProducerMigration,
-  readSourceProducerCanonicalSource,requireSourceProducerOutput}
-  from './lib/source-producer-successor-source.mjs';
 import {
   assertRavScoreModelBinding,
   ravScoreModelBinding,
@@ -42,17 +39,6 @@ const SQL_BINDING_PATHS = Object.freeze([
 ]);
 const CHECKPOINT_METADATA_CAS_MIGRATION_PATH = ACTIVE.binding===null ? null
   : 'supabase/migrations/' + ACTIVE.migration().filename;
-// Full589 promotion only; UNISSUED SOURCE refuses before any normal sync I/O.
-const DEFAULT_SYNC_SOURCE_PHASE = 'source-producer';
-function requireSyncSourceOutput(sourcePhase){
-  assert([ACTIVE.sourcePhase,'source-producer'].includes(sourcePhase),'Unknown binding-sync source phase');
-  return sourcePhase==='source-producer'?requireSourceProducerOutput():ACTIVE.requireOutput();
-}
-function checkpointMetadataCasMigrationPath(sourcePhase){
-  requireSyncSourceOutput(sourcePhase);
-  return sourcePhase==='source-producer'
-    ? 'supabase/migrations/'+sourceProducerMigration().filename : CHECKPOINT_METADATA_CAS_MIGRATION_PATH;
-}
 const CHECKPOINT_METADATA_CAS_MARKER = 'RAVSCORE_CHECKPOINT_METADATA_CAS_GENERATED';
 const CHECKPOINT_METADATA_CAS_INNER_MARKERS = Object.freeze([
   'RAVSCORE_CHECKPOINT_INTEGRATED_STATE_BINDING_GENERATED',
@@ -178,34 +164,15 @@ export function assistantPublic587SuccessorCheckpointInspectionView(source){
   return view;
 }
 
-// Exact SOURCE589 inspection only. Authenticate the whole issued canonical
-// before hiding preserved marker-bearing aliases from this validation view.
-// The returned/synchronized SQL retains all originals and projections.
-export function sourceProducerCheckpointInspectionView(source){
-  const pins=requireSourceProducerOutput(); // FIRST; never inspect/fall back while unissued.
-  assert.equal(arguments.length,1);assert.equal(typeof source,'string');
-  assert.equal(crypto.createHash('sha256').update(source).digest('hex'),pins.canonicalSha256,
-    'SOURCE checkpoint inspection requires the entire issued canonical source');
-  let view=source;
-  for(const row of [...SOURCE_PRODUCER_ALIASES.slice(0,2),...ASSISTANT_PUBLIC587_SUCCESSOR_ALIASES,
-    ...ASSISTANT_LATER_H0_ALIASES,...NATIVE_ORIGINAL_CONTINUITY_ALIASES.slice(0,2)]){
-    const original=exactFunctionDefinition(view,'public.'+row.name,'Exact preserved SOURCE/588 original alias');
-    view=view.slice(0,original.start)+view.slice(original.end);
-  }
-  return view;
-}
-
-export function checkpointMetadataCasBlock(source, binding, candidateBinding, continuationHash,
-  {sourcePhase=DEFAULT_SYNC_SOURCE_PHASE}={}) {
-  requireSyncSourceOutput(sourcePhase); // Explicit SOURCE refuses, never guesses from input markers.
-  const label = `${checkpointMetadataCasMigrationPath(sourcePhase)} checkpoint metadata CAS`;
+export function checkpointMetadataCasBlock(source, binding, candidateBinding, continuationHash) {
+  ACTIVE.requireOutput();
+  const label = `${CHECKPOINT_METADATA_CAS_MIGRATION_PATH} checkpoint metadata CAS`;
   const outer = exactGeneratedBlock(source, CHECKPOINT_METADATA_CAS_MARKER, label);
   // Frozen0200 aliases deliberately preserve their ORIGINAL generated-marker
   // comments too. Validate both complete immutable definitions before removing
   // them from this current-binding-only inspection view. The returned SQL still
   // contains every original byte; no alias is rebound, hidden or rewritten.
-  let currentView=sourcePhase==='source-producer'
-    ? sourceProducerCheckpointInspectionView(source) : assistantPublic587SuccessorCheckpointInspectionView(source);
+  let currentView=assistantPublic587SuccessorCheckpointInspectionView(source);
   const originalAliases=[
     ['public.ravradar_ravscore_checkpoint_cmw0200_state_valid','7841b008be46efc651c3c416ded60145fa2265954a39020a50974b353ac3feb0'],
     ['public.ravradar_ravscore_checkpoint_cmw0200_payload_valid','225de0e8252fa5ab814432a0ce0424ecc663d2552062f2b341b7cbab8054dbaa'],
@@ -337,7 +304,7 @@ function assertMutableSqlBindingPath(relative) {
   }
 }
 
-function expectedMigration(source, canonicalMigration, sourcePhase) {
+function expectedMigration(source, canonicalMigration) {
   let synchronized = source;
   for (const functionName of [
     'public.ravradar_trip_v3_score_quality_allowed',
@@ -358,7 +325,7 @@ function expectedMigration(source, canonicalMigration, sourcePhase) {
     const canonical = exactGeneratedBlock(
       canonicalMigration,
       marker,
-      `${checkpointMetadataCasMigrationPath(sourcePhase)} ${marker}`,
+      `${CHECKPOINT_METADATA_CAS_MIGRATION_PATH} ${marker}`,
     );
     synchronized = replaceGeneratedBlock(
       synchronized,
@@ -391,10 +358,8 @@ function synchronizeAccountSchema(source, accountSource, relative) {
   return source.slice(0, end.index) + block + '\n\n' + source.slice(end.index);
 }
 
-export async function synchronizeRavScoreModelBinding({
-  write = false, root = ROOT, sourcePhase = DEFAULT_SYNC_SOURCE_PHASE,
-} = {}) {
-  requireSyncSourceOutput(sourcePhase); // Selected unissued SOURCE never falls back to actual588.
+export async function synchronizeRavScoreModelBinding({ write = false, root = ROOT } = {}) {
+  ACTIVE.requireOutput(); // Ingen gammel familie eller caller-valgt fallback.
   const binding = ravScoreModelBinding();
   assertRavScoreModelBinding(binding);
   const candidateBinding = candidateGRollbackModelBinding();
@@ -403,21 +368,19 @@ export async function synchronizeRavScoreModelBinding({
 
   // Sparse immutable successor is reconstructed only as a pinned READ view.
   const { canonicalSource: checkpointMigration, statisticsSchema2Source: accountSource } =
-    await (sourcePhase==='source-producer'?readSourceProducerCanonicalSource:ACTIVE.readCanonicalSource)(
-      { migrationsDirectory: path.join(root, 'supabase/migrations') });
+    await ACTIVE.readCanonicalSource({ migrationsDirectory: path.join(root, 'supabase/migrations') });
   const checkpointBlock = checkpointMetadataCasBlock(
     checkpointMigration,
     binding,
     candidateBinding,
     continuationHash,
-    {sourcePhase},
   );
   const sqlPlans = [];
   for (const relative of SQL_BINDING_PATHS) {
     assertMutableSqlBindingPath(relative);
     const sqlPath = path.join(root, relative);
     const sql = (await fs.readFile(sqlPath, 'utf8')).replace(/\r\n?/g, '\n');
-    const expectedTripBindings = expectedMigration(sql, checkpointMigration, sourcePhase);
+    const expectedTripBindings = expectedMigration(sql, checkpointMigration);
     const expectedSql = synchronizeAccountSchema(replaceGeneratedBlock(
       expectedTripBindings,
       CHECKPOINT_METADATA_CAS_MARKER,
@@ -530,14 +493,7 @@ export async function synchronizeRavScoreModelBinding({
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
   try {
     const write = process.argv.includes('--write');
-    const sourcePhase = process.argv.includes('--source-producer') ? 'source-producer' : DEFAULT_SYNC_SOURCE_PHASE;
-    if(process.argv.includes('--source-producer')){
-      const args=process.argv.slice(2);
-      assert(args.every(value=>['--source-producer','--write','--check'].includes(value))
-        &&new Set(args).size===args.length&&!(args.includes('--write')&&args.includes('--check')),
-        'Exact SOURCE binding-sync CLI flags');
-    }
-    const result = await synchronizeRavScoreModelBinding({ write, sourcePhase });
+    const result = await synchronizeRavScoreModelBinding({ write });
     console.log(`RavScore binding ${write ? 'synchronized' : 'verified'} for ${JSON_BINDING_FILES.length + SQL_BINDING_PATHS.length + 3} consumers: ${result.binding.modelBundleSha256}.`);
   } catch (error) {
     console.error(error instanceof Error ? error.message : 'RavScore binding synchronization failed');

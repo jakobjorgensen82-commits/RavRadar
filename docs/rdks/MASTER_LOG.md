@@ -1,44 +1,3 @@
-## 27. oktober — SOURCE-prøvens filgrænser følger de normale ejere
-
-Den afsluttede isolerede SOURCE-kontrol stoppede ved filgenlæsning under gemning af den ægte 585-pakke. Den bevarede fælles assertion skelner ikke mellem filtype, antal links, tom fil og overskredet størrelse; den faktiske fejlfil og dens stat-egenskaber er ukendte. Kilden viser derimod en konkret kontraktmismatch: den friske kopiering accepterer allerede den normale DMI-forecastfil op til 768 MiB, mens gemningens JSON- og hele restore-genlæsninger brugte standardgrænsen på 256 MiB.
-
-Den snævre fixtureændring bruger samme eksisterende forecastgrænse i alle disse genlæsninger. Kun den manifestvaliderede private weather-component-pack får ved hel payload-genlæsning sin allerede indlæste frosne normale ejers 768 MiB-grænse. Andre JSON-inputs og public-hour-pack beholder 256 MiB; øvrige produktionsgrænser, normal manifestkontrol, hel byteidentitet, linkafslag og ændringskontrol bevares. Faste fejlkategorier og filstatistik indeholder hverken sti eller privat indhold. Dette er ikke en generel forhøjelse af filgrænser eller endeligt bevis for CI-stoppets årsag.
-
-Hele det normale lokale evidensmål består 25/25 uden fejl eller skip, med alle 24 gamle tilfælde bevaret og én additiv faktisk filgrænseprøve. Det er ikke fuld ny Linux-/native-/databasekontrol, SQL-installation eller offentlig levering. SOURCE forbliver inaktiv; version, C/I/T, SQL, scorer, kildeprioritet og administratorgeometri er uændrede. Den præcise samlede kvalifikation og sikker levering består som selvstændige krav. Alle tidligere afsnit bevares som dateret historik.
-
-## 26. oktober — SOURCE bevarer den gennemgåede rettelse til prognosedeling
-
-Den lokale SOURCE589-kilde er sammenført med den gennemgåede main-/Pages-/delingskilde gennem begge ægte Git-historikker. Den afgrænsede delingskontrol og dens additive normale regressioner er med; alle tidligere SOURCE-kontroludsagn, begge selectors, den strengere workflowrute og begge hele dokumenthistorikker bevares. Håndbogens installationskopi følger kun den kanoniske håndbog; der ændres ikke øvrig SQL, C/I/T, version, scorer, vejrdata, kildeprioritet, central admin eller geometri.
-
-Sammenføringen er lokal kilde, ikke en ny samlet kildekontrol, installation, offentlig delingsforhåndsvisning eller kapacitetsgodkendelse. De normale integrations-, dokument- og bindingskontroller samt én ny præcis SOURCE-kontrol kræves fortsat. Den tidligere røde SOURCE-kontrol og dens dokumenterede hukommelsesfejl ommærkes ikke; SOURCE og statistik forbliver inaktive. Aktuel drift og leveringsvindue føres privat, og alle fem mål til 18. november består. Alle ældre afsnit bevares som dateret historik.
-
-## 26. oktober — SOURCE-prøven får den normale beregningshukommelse
-
-En ny afsluttet, isoleret SOURCE-kontrol har dokumenteret V8-hukommelsesudtømning og SIGABRT i prøveprocessen under den normale 585-updater. Det er ikke en fejl i den almindelige vejrhentning, data eller PostgreSQL. Prøvens rene miljø fjerner fortsat NODE_OPTIONS; den ene legacy-follower havde derfor ikke det eksplicitte old-space-loft, som den normale vejrberegning allerede bruger. Den præcise historiske standardgrænse og samlede RAM-belastning er ikke målt. Ældre UNKNOWN-beskrivelser erstattes kun på denne konkrete nye observation.
-
-Den afgrænsede rettelse giver alene denne testproces CLI-flaget --max-old-space-size=8192 før dens normale script. Det er samme eksisterende produktionsloft, ikke en ekstra miljø- eller credentialtilladelse, RAM-reservation eller garanti for resten af kæden. Den faktiske normale producent, alle tidligere kontroludsagn, hele originaler, frosne kilder, processtop og tidsgrænser bevares; produktkode, C/I/T, SQL, scoreformel, kildeprioritet og geometri ændres ikke.
-
-To målrettede normale Pythonprøver består lokalt, inklusive en faktisk lille V8-loftaflæsning uden stor hukommelsesallokering. Windows-proben behøver alene SystemRoot for OS-tilfældighedsgeneratoren; den rene Linux-nativekalders miljø er uændret. Dette er ikke fuld Linux-/native-/kapacitetskontrol, installation eller offentlig effekt. Den præcise samlede kildekontrol og de øvrige SOURCE-leveringskrav består. Se håndbog 89.271; detaljeret kørsels- og fejlevidens føres privat.
-
-## 26. oktober — den historiske synkroniseringsprøve har sin ægte kildekontekst
-
-Den normale release-metadata-prøve blev afvist, fordi den implicitte SOURCE589-synkronisator blev kaldt med en gammel current-grid-fixture. Den manglende 589-migration i den fixture var en testkontekstfejl, ikke bevis for en produktionsfejl eller en ny forklaring på den særskilte legacy-efterfølgers processtop.
-
-Alle gamle fixturefunktioner og kontroludsagn er byteuændrede i den normale prøveejer. Kun denne blok bruger nu den autentiske, hele hashbundne 877b9b8-kontekst med fast Git-head/tree: 81 kildeblade og 29 originale SQL-filer. Aktuel589 kontrolleres særskilt med den normale synkronisator og sine reelle udstedte input; ukendt kildefase afvises før I/O. Ingen gammel binding eller evidens ommærkes.
-
-Den tidligere røde release-metadata-prøve består nu. Hele det normale SOURCE-synkroniseringsmål består også 6/6 uden fejl eller skip. Det er to lokale normale mål, ikke ny samlet Linux-/native-/PostgreSQL-CI, installation eller offentlig levering. Version, C/I/T, gamle SQL, originaler, scoreformel, kildeprioritet og central admin/geometri er uændrede. Den særskilte procesårsag og SOURCE-levering er fortsat åbne; aktuel drift står i ROOTs private checkpoint. Se håndbog 89.271. Alle tidligere hele statusfronter bevares som dateret historik.
-
-## 26. oktober — SOURCE-followerens indre procesårsag er stadig ukendt
-
-Den seneste præcise SOURCE-kontrol stoppede i den normale legacy-efterfølger. Den bevarede rapport viser alene FOLLOWER/ASSERTION_ERROR ved kravet om returkode nul; indre Node-årsag, faktisk signal og et kvalificeret nyt artifact mangler. Den tidligere 211-/tombstoneafvisning er et særskilt ældre fejlforløb og må ikke bruges som årsag til denne nye afvisning.
-
-Den lokale sammenføring bevarer nu den aktuelle main-historik og den strengere SOURCE-rute samlet. Begge historiske selectors og SOURCE-workflowet er byteuændrede; 588-rutens nye regressioner bevares særskilt som ægte historisk input, ikke som 589-bevis. Den normale kalderprøve består 36/36 og workflowprøven 16/16 uden skip, inklusive faktiske 589-kaldere, tom installeret plan, hårdt current-restore, B før S og hel S-genlæsning før Edge. En tidligere skjult testfejl er rettet ved først at føre den præcist kontrollerede SOURCE-workflowfil gennem dens eksisterende historiske inverse. De gamle kontroludsagn er bevaret. Det er lokal integration, ikke ny samlet CI, installation eller offentlig SOURCE-effekt.
-
-Den lokale test-/fixtureændring observerer de eksisterende faste faseindgange samt underprocessens faktiske returkode og signal. Kun de to eksisterende hele, lukkede kontrollogger læses under den uændrede 16 MiB-grænse; rapporten angiver byteantal, kontrolsum og om hele filen kunne læses. Kun to præcise kendte V8-heapfatalheadere kan give hukommelsesfejlkategorien; ukendt eller ufuldstændigt input forbliver ukendt. Sidste observerede fase er en indgang, ikke et afsluttet trin. Rå tekst og private værdier vises ikke. Det oprindelige resultat, exception, alle gamle assertions, kommandoer og tidsgrænser bevares; observationen giver ingen PASS- eller installationsautoritet og beviser endnu ingen OOM- eller signalårsag.
-
-De to normale Node-mål består uden skip. Pythonobservationsmålet består på Windows; den fysiske Linux-SIGKILL-prøve er ikke kørt her. Producentobservationsmålet var først rødt på den nye fasemarkør og består efter additiv adskillelse af faseloggen fra de oprindelige fejlrapporter med alle gamle assertions bevaret. Hele den normale afledte registerprøve gav 6 PASS og 1 FAIL på Windows' Python-alias. Kun det fejlede adminfixturemål blev derefter genkørt med korrekt absolut PYTHON og bestod; hele prøven er ikke genkørt. De normale lokale C/I-kontroller består på uændrede udstedte C/I/T- og SQL-bytes. Disse lokale delbeviser er ikke en rettet procesårsag eller samlet ny kildekontrol.
-
-Ny præcis SOURCE-kilde-/Linux-/native-/PostgreSQL-kontrol, kvalificeret årsag, sikker installation, national kapacitet og faktisk almindelig efterfølger er fortsat åbne. SOURCE-revisionen er inaktiv. P0 og den almindelige vejrhentning har fortsat førsteprioritet; aktuelle kørsler, offentlig dækning og leveringsudfald føres i ROOTs private checkpoint. Alle fem mål til 18. november 2026 består. Gamle kilde-/original-/SQL-bytes, offentliggjorte scorer, scoreformel, kildeprioritet, central admin og geometri bevares. Se håndbog 89.271; alle tidligere hele dokumentafsnit nedenfor bevares som dateret historik.
 ## 26. oktober — delingskontrol sammenført med gennemgået Pages-rettelse
 
 Den afgrænsede prognosedelingsrettelse og den gennemgåede Pages-rettelse er samlet lokalt med den aktuelle installerede 588-rute. Begge forældres præcise kildekontroller har faktisk bestået; det kvalificerer ikke denne nye samlede head. Den eksisterende normale målprøve, dokumentkontroller og én præcis samlet kildekontrol skal fortsat bestå før sikker levering. Begge hele dokumenthistorikker og håndbogsændringer bevares; installationskopien følger den kanoniske håndbog uden anden SQL-ændring.
@@ -59,35 +18,12 @@ Den normale code-only-rute blev konkret afvist på et bevaret 586-I-krav efter f
 
 Den normale kalderfil består lokalt med 39 tilfælde uden fejl eller skip. Det additive historiske testinverse-lag bevarer hele den tidligere workflowfil; alle 15 normale workflowmål består uden skip. RDKS, model og syv bindingskontroller består lokalt. Samlet præcist kildebevis, sikkert rettelsesdeploy og offentlig virkning er fortsat åbne. Den almindelige vejrhentning har særskilt leveret nyt offentligt vejr og central slutregistrering. SOURCE589s forskellige aktive fase kræver særskilt integration før aktivering; gamle 588-resultater må ikke ommærkes. Version, C/I/T, SQL, model, kilder og geometri bevares. Se håndbog 89.272 og DEC-0148; private kørselsidentiteter føres i checkpoint.
 
-## 25. oktober — lokal 4.0.589 udstedt; faktisk SOURCE-drift er stadig åben
-
-Den fulde SOURCE589-kilde er nu lokalt udstedt gennem den normale rækkefølge med én versionssynkronisering, fysisk afledte C/I/T, faktisk normal outputafledning, én ny append-only migration og synkronisering af alle syv forbrugere. De normale friske bygge-, SOURCE-, bindings- og releasekontroller er et fast punkt på de samme slutbytes. Det er ikke installeret SQL, PostgreSQL-eksekvering, præcis ny kilde-CI eller offentlig produktionseffekt.
-
-De fem P0-ejere fra den gennemgåede leveringskandidat er med i den isolerede kilde; deres særskilte aktuelle GitHub-kontrol giver endnu ingen ny leveringspåstand. Hele 588-originaler, gamle migrationer, offentliggjorte scorer, scoreformel, kildeprioritet, administratorpunkter og geometri bevares. Den nye SQL er kun lokalt genereret; ingen produktion ændres af udstedelsen, og versionssynkroniseringen gentages ikke.
-
-Før sikker SOURCE-levering skal de relevante normale prøver på de udstedte bytes, præcis kilde-/native-/kapacitetskontrol og faktisk autentisk 588 B/S-førskrivningskontrol bestå. Den valgte fulde SAME_H0-overgang kræver frisk slutkontrol, højst én nødvendig SQL-installation/genlæsning, B før S og hel faktisk remote-S-genlæsning før Edges/Pages; senere almindelige kald skal beviseligt bruge installeret 589. T+3, syvzoneafgrænsning, Fur, processtop, skrivning, holdbarhed og national 210/673-virkning er stadig åbne krav. Se håndbog 89.271 og ROOTs private checkpoint for faktisk P0-/writerstatus. Alle fem mål følges til 18. november 2026; statistik og automatisk sletning aktiveres ikke. Ældre statusafsnit er historik på disse konkrete punkter.
-
 ## 26. oktober — præcis manifestventen uden gentagen fuldpakkelæsning
 
 Den normale Pages-kontrol er lokalt opdelt i manifestventen og én fuld pakkekontrol. Standardgrænsen er 121 observationer med fem sekunders mellemrum; hele det kanoniske manifest skal matche, før nogen af pakkens øvrige filer hentes. De eksisterende acceptkontroller og tidligere prøveassertions er bevaret. Den konkrete normale reproduktion er rød før og grøn efter, og hele den normale Pages-målprøve består lokalt én gang.
 
 Ti minutters offentliggørelsesvindue og en faktisk max-age=600-header er forenelige med forsinket manifestation, men den første afviste HTTP-respons blev ikke bevaret. Den senere offentlige fuldkontrol er alene læsebevis for det eksisterende target; den gør ikke den røde GitHub-kørsel eller manglende centrale reseal grøn. Præcis kilde-CI og sikker levering udestår. Ingen version, C/I/T, SQL, numerisk model, kilder eller geometri ændres. Se DEC-0194-tillæg og håndbog 89.270; detaljeret evidens står privat.
 
-## 25. oktober — lokal 4.0.589 under udstedelse, ikke installeret
-
-Den normale versionssynkronisering til 4.0.589 er udført én gang. SOURCE-kandidaten er stadig lokalt inaktiv: de endelige model-/outputbindinger og den ene nye append-only migration er endnu ikke udstedt. Den påviste private hjælpeimportfejl er rettet uden ændring af den gamle bygger; frisk ESM-indlæsning består. Ingen ny SQL, vejrhentning, databaseændring eller offentlig effekt følger heraf.
-
-De fem gennemgåede P0-ejere fra den nye kildekandidat er indarbejdet lokalt, så SOURCE ikke genindfører navnekollisionen i Pages-privacy eller den for strenge enkelte centrale profilkontrol. P0-kandidaten har sin egen fortsat åbne præcise GitHub-kontrol; lokal overførsel er ikke det kildebevis eller en offentlig levering. Håndbogens SOURCE-afsnit har nu 89.271, og det særskilte P0-afsnit beholder 89.269. Alle gamle afsnit og beslutninger bevares.
-
-Målet og fristen 18. november 2026 er uændrede. P0-levering/genoptagelse har førsteprioritet. Fuld lokal udstedelse, præcis SOURCE-kilde-/native-/kapacitetskontrol, sikker førstegangsinstallation, ny offentlig generation og almindelig efterfølger er fortsat nødvendige; statistik og automatisk sletning aktiveres ikke.
-
-## 25. oktober — fuld SOURCE589 forberedt, endnu UNISSUED
-
-Samtaledeltaet samler den valgte fulde SOURCE589-rute, ikke kun en skjult kompatibilitetsgren: autentiske originale 588 B/S og SAME_H0-metadata-prepare uden nyt vejr, artifactgates/frisk final-prewrite, højst én krævet SQL med normal genlæsning, derefter B→S→hel faktisk remoteS→Edges/Pages. Senere almindelige kald kræver faktisk installed 589; historiske testarkiver og gammel588-plan er ikke operativ autoritet, og ukendte writes gentages ikke.
-
-Fysiske proces-/WRITE-/journal-/original-B/S-før-T-kontrakter og uændret fireminutters fejlworker består. Syvzoner kun vandstand, sammenlignelig T+3, Fur og national 210/673-kapacitet skal fortsat bevises gennem normale ejere uden genåbning af afsluttede 588/P0-delbeviser. Før-SQL genbruger normal pakker/færdigt B og faktisk R2-usage under fast 2.000.000.000B uden cleanupkredit; hashbundet NO_ADMISSION-observation er ikke reservation eller samlet kapacitets-PASS, og S er ikke ekstra R2-upload.
-
-Dette er lokal dokumentforberedelse, ikke versions-/model-/SQL-udstedelse, installation eller offentlig levering. ROOT opdaterer på slutbytes; CP bærer faktisk offentlig 588, writer og skiftende evidens. Alle fem mål/18. november 2026 består. Gamle afsnit og alle udstedte migrationer bevares; statistik og automatisk retention aktiveres ikke. Se håndbog 89.269.
 ## 26. oktober — offentlig 588 og afgrænset kontrol af prognosedeling
 
 588 er faktisk offentliggjort med de bevarede vejrdata; det er ikke bevis for fuld ny leverandørdækning. Den almindelige vejrhentning og den separate SOURCE-kvalifikation følges i det private checkpoint. Ingen produktionsændring må ske under aktiv writer, og alle fem mål til 18. november består.

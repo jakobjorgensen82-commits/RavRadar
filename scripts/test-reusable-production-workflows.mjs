@@ -7,8 +7,6 @@ await import('./test-completed-private-runtime-workflow-inverse.mjs');
 await import('./test-completed-private-runtime-admission.mjs');
 import fs from 'node:fs';
 import { runInNewContext } from 'node:vm';
-import { SOURCE_PRODUCER_BINDING, requireSourceProducerOutput, sourceProducerMigration,
-  readSourceProducerCanonicalSource } from './lib/source-producer-successor-source.mjs';
 import { nativeIdentityMigration } from './lib/native-sampling-identity-successor-source.mjs';
 import { lastMileEnclosureMigration } from './lib/last-mile-enclosure-successor-source.mjs';
 import {ACCOUNT_STATISTICS_ASSISTANT_BINDING,accountStatisticsAssistantMigration,requireAccountStatisticsAssistantOutput}
@@ -748,24 +746,6 @@ let casTimeoutSettings = fs.readdirSync(migrationsUrl).filter(name => name.endsW
   )].map(match => ({ migration: name, timeout: match[1] })));
 assert.equal(casTimeoutSettings.at(-1)?.timeout, '55s',
   'the final migration order must retain the established checkpoint-only 55s timeout');
-// Additive SOURCE589 layer: qualify its entire issued canonical/output first,
-// then expose the whole genuine588 inventory to its unchanged guard below.
-if(SOURCE_PRODUCER_BINDING!==null){
-  requireSourceProducerOutput();
-  await readSourceProducerCanonicalSource();
-  const successor=sourceProducerMigration().filename;
-  assert(successor.slice(0,14)>'20261025110000',
-    'SOURCE migration is append-only after the actual588 owner');
-  const actualTimeoutInventory=casTimeoutSettings;
-  assert.equal(actualTimeoutInventory.filter(row=>row.migration===successor).length,1,
-    'Issued SOURCE589 has exactly one scoped55s timeout setting');
-  assert.deepEqual(actualTimeoutInventory.at(-1),{migration:successor,timeout:'55s'},
-    'The exact issued SOURCE589 migration is the last scoped55s successor');
-  casTimeoutSettings=actualTimeoutInventory.slice(0,-1);
-  assert.deepEqual(actualTimeoutInventory,
-    [...casTimeoutSettings,{migration:successor,timeout:'55s'}],
-    'Every genuine588 and older timeout row remains whole before SOURCE589');
-}
 // Kontrollér først hele den nye, kildeudstedte588-migration. Den uændrede
 // gamle587-/forgængerprøve nedenfor ser kun dens præcise ene55s-efterfølger fjernet.
 if(ASSISTANT_PUBLIC587_SUCCESSOR_BINDING!==null){

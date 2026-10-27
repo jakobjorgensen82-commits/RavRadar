@@ -16,8 +16,6 @@ import {readAuthenticatedFrozen587Predecessor,assertAuthenticatedFrozen587Snapsh
   from './lib/authenticated-frozen586-predecessor.mjs';
 import {ravScoreModelBinding} from '../js/core/ravscore-model-contract.js';
 import {readAssistantLaterH0RetentionInput} from './assistant-later-h0-runtime-transition.mjs';
-import {requireSourceProducerOutput,requireSourceProducerBinding}
-  from './lib/source-producer-successor-source.mjs';
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 
 function refuse(reason) {
@@ -25,19 +23,6 @@ function refuse(reason) {
   error.code = `RAVSCORE_CURRENT_HISTORY_DEMAND_${reason}`;
   throw error;
 }
-// SOURCE's chosen first path is SAME_H0 code-only B -> S -> whole remote-S
-// readback, THEN ordinary CURRENT589. Never turn original588 into a planner
-// conditions file, reuse a STAGED handle, or borrow the legacy587 working view.
-function sourceCurrentCompanionFamily(descriptor) {
-  if(process.env.RAVRADAR_SOURCE_NORMAL_PRODUCER!=='true')return false;
-  requireSourceProducerOutput();const next=requireSourceProducerBinding();
-  if(ravScoreModelBinding().modelBundleSha256!==next.I
-    ||descriptor?.modelBinding?.modelBundleSha256!==next.I
-    ||descriptor?.contractHashes?.continuationStateContractSha256!==next.T)
-    refuse('SOURCE_INSTALLED_CURRENT_REQUIRED');
-  return true;
-}
-
 // Only authenticated ORIGINAL B companions; never mutable working donors.
 async function readAuthenticatedCurrentCompanions(verified, conditions) {
   const expectedPackDescriptor = verified.files.find(row => row.id === PRIVATE_WEATHER_COMPONENT_PACK_FILE.id);
@@ -136,7 +121,6 @@ async function readAuthenticatedCurrentCompanions(verified, conditions) {
 // already obtained by the normal protected restore; it never fetches a pointer,
 // chooses a fallback generation, creates an attestation or rewrites B/S.
 export async function readCurrentPrivateRuntimeCompanionInput(targetReferenceAt) {
-  if(process.env.RAVRADAR_SOURCE_NORMAL_PRODUCER==='true')requireSourceProducerOutput();
   const targetMs = Date.parse(targetReferenceAt ?? '');
   if (!Number.isFinite(targetMs) || new Date(targetMs).toISOString() !== targetReferenceAt
     || targetMs % 3_600_000 !== 0) refuse('NONCANONICAL_TIME');
@@ -151,7 +135,6 @@ export async function readCurrentPrivateRuntimeCompanionInput(targetReferenceAt)
     || descriptorInfo.size > 2 * 1024 * 1024) refuse('RETENTION_B_CHANGED');
   const descriptorBytes = await fs.readFile(descriptorPath);
   const descriptor = JSON.parse(descriptorBytes.toString('utf8'));
-  sourceCurrentCompanionFamily(descriptor);
   if(descriptor?.modelBinding?.modelBundleSha256==='5584d8e59f8d21785fd08b32f9beb22cf879cdb4892a11ede24eb862d9a0dca2'
     &&ravScoreModelBinding().modelBundleSha256!==descriptor.modelBinding.modelBundleSha256){
     const view=await readAssistantLaterH0RetentionInput(targetReferenceAt);
@@ -189,12 +172,6 @@ export async function readCurrentPrivateRuntimeCompanionInput(targetReferenceAt)
 // and only outside all isolated first-active numeric-history views. Missing B
 // throws; an authenticated legacy B with no pack honestly returns no contexts.
 export async function readCurrentPrivateRuntimeCompanions(targetReferenceAt) {
-  if(process.env.RAVRADAR_SOURCE_NORMAL_PRODUCER==='true'){
-    requireSourceProducerOutput();
-    const input=await readCurrentPrivateRuntimeCompanionInput(targetReferenceAt);
-    const contexts=await readAuthenticatedCurrentCompanions(input.verified,input.conditions);
-    await input.verify();return contexts;
-  }
   // Called after the updater's genuine H0 origin check. Providers may already
   // have changed unrelated WORKING weather; unpack only immutable original B.
   if(ravScoreModelBinding().modelBundleSha256!=='5584d8e59f8d21785fd08b32f9beb22cf879cdb4892a11ede24eb862d9a0dca2'){

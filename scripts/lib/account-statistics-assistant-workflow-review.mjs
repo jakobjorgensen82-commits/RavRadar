@@ -2,11 +2,6 @@
 import assert from 'node:assert/strict';
 import crypto from 'node:crypto';
 import fs from 'node:fs';
-import {SOURCE_PRODUCER_CURRENT_WORKFLOW_SHA256,inverseCurrentSourceProducerWorkflow,
-  ACTUAL588_SOURCE_PRODUCER_WORKFLOW_SHA256,inverseActual588SourceProducerWorkflow}
-  from './source-producer-current-workflow-review.mjs';
-import {SOURCE_PRODUCER_WORKFLOW_SHA256,inverseSourceProducerWorkflow}
-  from './source-producer-workflow-review.mjs';
 import {NATIVE_ORIGINAL_CONTINUITY_WORKFLOW_SHA256,CURRENT_INSTALLED_CODE_ONLY_WORKFLOW_SHA256,inverseNativeOriginalContinuityWorkflow} from './native-original-continuity-workflow-review.mjs';
 const sha=value=>crypto.createHash('sha256').update(value).digest('hex');
 const bytes=fs.readFileSync(new URL('./account-statistics-assistant-workflow-review.json',import.meta.url));
@@ -52,9 +47,6 @@ export function inverseAccountStatisticsAssistantOffAttestation(source){
 }
 export function inverseAccountStatisticsAssistantWorkflow(source){
   assert.equal(arguments.length,1);assert.equal(typeof source,'string');
-  if(sha(source)===ACTUAL588_SOURCE_PRODUCER_WORKFLOW_SHA256)source=inverseActual588SourceProducerWorkflow(source);
-  if(sha(source)===SOURCE_PRODUCER_CURRENT_WORKFLOW_SHA256)source=inverseCurrentSourceProducerWorkflow(source);
-  if(sha(source)===SOURCE_PRODUCER_WORKFLOW_SHA256)source=inverseSourceProducerWorkflow(source);
   if([NATIVE_ORIGINAL_CONTINUITY_WORKFLOW_SHA256,CURRENT_INSTALLED_CODE_ONLY_WORKFLOW_SHA256].includes(sha(source)))source=inverseNativeOriginalContinuityWorkflow(source);
   if(sha(source)===ACCOUNT_STATISTICS_ASSISTANT_STORAGE_WORKFLOW_SHA256)source=inverseAccountStatisticsAssistantStorageTransport(source);
   if(sha(source)===ACCOUNT_STATISTICS_ASSISTANT_OFF_WORKFLOW_SHA256)source=inverseAccountStatisticsAssistantOffAttestation(source);

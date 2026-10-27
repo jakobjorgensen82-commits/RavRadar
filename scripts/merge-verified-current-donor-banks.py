@@ -37,12 +37,7 @@ def main() -> None:
     parser.add_argument("--target-reference", required=True)
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--report", type=Path, required=True)
-    parser.add_argument("--source-union-born-journal",action="store_true")
     args = parser.parse_args()
-    source_birth_journal=None
-    if args.source_union_born_journal:
-        from lib.source_union_birth_journal import SourceUnionBirthJournal
-        source_birth_journal=SourceUnionBirthJournal()
     reference = exact_hour(args.target_reference)
     targets = load_targets(args.targets)
     latest = read_bank(args.latest)
@@ -69,17 +64,12 @@ def main() -> None:
         kind = "OPEN_METEO_CURRENT_DONOR_GENERATION_UNION"
     # The caller owns a private, newly created staging directory. Never print
     # weather values, coordinates, source bytes, or validation exceptions.
-    if source_birth_journal is None:
-        with args.output.open("x", encoding="utf-8") as handle:
-            json.dump(merged, handle, separators=(",", ":"), ensure_ascii=False)
-            handle.write("\n")
-        with args.report.open("x", encoding="utf-8") as handle:
-            json.dump({"schemaVersion": 1, "kind": kind, "recordCount": count}, handle)
-            handle.write("\n")
-    else:
-        source_birth_journal.write_bytes(args.output,(json.dumps(merged,separators=(",",":"),ensure_ascii=False)+"\n").encode("utf-8"))
-        source_birth_journal.write_bytes(args.report,(json.dumps({"schemaVersion":1,"kind":kind,"recordCount":count})+"\n").encode("utf-8"))
-        source_birth_journal.finish()
+    with args.output.open("x", encoding="utf-8") as handle:
+        json.dump(merged, handle, separators=(",", ":"), ensure_ascii=False)
+        handle.write("\n")
+    with args.report.open("x", encoding="utf-8") as handle:
+        json.dump({"schemaVersion": 1, "kind": kind, "recordCount": count}, handle)
+        handle.write("\n")
 
 
 if __name__ == "__main__":

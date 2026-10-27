@@ -17,44 +17,16 @@ import {lastMileEnclosureRequiredMigrations} from './integrated-cutover-readines
 import {requireLastMileEnclosureBinding} from './lib/last-mile-enclosure-successor-source.mjs';
 import {ESTABLISHED_NATIVE_CURRENT_ORIGIN_BINDING} from './lib/established-native-current-origin-successor-source.mjs';
 
-import {ACTUAL588_SOURCE_PRODUCER_WORKFLOW_SHA256,inverseActual588SourceProducerWorkflow}
-  from './lib/source-producer-current-workflow-review.mjs';
-
 const ROOT=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
-const operativeCodeOnly=fs.readFileSync(path.join(ROOT,'.github/workflows/deploy-code-only-repair.yml'),'utf8').replace(/\r\n/g,'\n');
-const operativeCodeOnlySha=crypto.createHash('sha256').update(operativeCodeOnly).digest('hex');
-// Qualify the complete actual SOURCE589 before its unchanged native/old oracles.
-// A historical main733 view below is separate from this operative source.
-const nativeCurrent=operativeCodeOnlySha===ACTUAL588_SOURCE_PRODUCER_WORKFLOW_SHA256
-  ?inverseActual588SourceProducerWorkflow(operativeCodeOnly)
-  :operativeCodeOnlySha===CURRENT_INSTALLED_CODE_ONLY_WORKFLOW_SHA256
-    ?inverseCurrentInstalledCodeOnlyWorkflow(operativeCodeOnly):operativeCodeOnly;
+const actualCurrentCodeOnly=fs.readFileSync(path.join(ROOT,'.github/workflows/deploy-code-only-repair.yml'),'utf8').replace(/\r\n/g,'\n');
+const nativeCurrent=crypto.createHash('sha256').update(actualCurrentCodeOnly).digest('hex')===CURRENT_INSTALLED_CODE_ONLY_WORKFLOW_SHA256
+  ? inverseCurrentInstalledCodeOnlyWorkflow(actualCurrentCodeOnly):actualCurrentCodeOnly;
 const actualCurrent=inverseNativeOriginalContinuityWorkflow(nativeCurrent);
 const current=inverseAccountStatisticsAssistantWorkflow(actualCurrent);
 const actual=inverseArchivedProductionGate(current);
 const sha=value=>crypto.createHash('sha256').update(value).digest('hex');
 const historical=inverseArchivedWeatherRestartWorkflow(actual);
-
-test('historical main733 current-installed whole layer preserves every original assertion',()=>{
-  const bytes=fs.readFileSync(new URL('./lib/current-installed-code-only-workflow-review.json',import.meta.url));
-  assert.equal(sha(bytes),'173a6edde52dd1915827eaf257d9fcabe32224701169094e19aa618424191811');
-  const review=JSON.parse(bytes);
-  assert.equal(review.kind,'TEST_ONLY_EXACT_CURRENT_INSTALLED_CODE_ONLY_WORKFLOW_INVERSE');
-  assert.equal(review.edits.length,9);assert.equal(sha(nativeCurrent),review.predecessorSha256);
-  // Reverse only the genuine733 DATA descriptor; every whole intermediate
-  // hash and exact offset is checked. This is not a production workflow.
-  let actualCurrentCodeOnly=nativeCurrent,last=-1;
-  for(const edit of [...review.edits].reverse()){
-    assert(Number.isSafeInteger(edit.offset)&&edit.offset>last);last=edit.offset;
-    assert.equal(sha(actualCurrentCodeOnly),edit.afterSha256);
-    assert.equal(actualCurrentCodeOnly.slice(edit.offset,edit.offset+edit.original.length),edit.original);
-    actualCurrentCodeOnly=actualCurrentCodeOnly.slice(0,edit.offset)+edit.current
-      +actualCurrentCodeOnly.slice(edit.offset+edit.original.length);
-    assert.equal(sha(actualCurrentCodeOnly),edit.beforeSha256);
-  }
-  assert.equal(sha(actualCurrentCodeOnly),CURRENT_INSTALLED_CODE_ONLY_WORKFLOW_SHA256);
-  // The entire original733 assertion body follows verbatim in its genuine
-  // historical workflow context. It is not a current589 result.
+test('current installed code-only routing qualifies its whole additive layer before unchanged historical oracles',()=>{
   assert.equal(sha(actualCurrentCodeOnly),CURRENT_INSTALLED_CODE_ONLY_WORKFLOW_SHA256);
   assert.equal(sha(nativeCurrent),NATIVE_ORIGINAL_CONTINUITY_WORKFLOW_SHA256);
   assert.equal(inverseCurrentInstalledCodeOnlyWorkflow(actualCurrentCodeOnly),nativeCurrent);
@@ -73,7 +45,6 @@ test('historical main733 current-installed whole layer preserves every original 
     assert.throws(()=>inverseArchivedWeatherRestartWorkflow(changed));
   }
 });
-
 const bashPath=['C:/Program Files/Git/bin/bash.exe','C:/Program Files/Git/usr/bin/bash.exe',
   path.join(os.homedir(),'.cache/codex-runtimes/codex-primary-runtime/dependencies/native/git/usr/bin/sh.exe'),
   '/bin/bash','/usr/bin/bash'].find(value=>fs.existsSync(value));
@@ -966,59 +937,3 @@ test('native continuity workflow: actual SQL shell branch is one before call and
   // This is actual shell reachability with a bounded transport stand-in, NOT
   // an executed SQL/plan/native proof or successful installation.
 }));
-
-
-test('SOURCE589 current installed path keeps no legacy grants hard CURRENT restore and B before S',()=>{
-  assert.equal(sha(operativeCodeOnly),ACTUAL588_SOURCE_PRODUCER_WORKFLOW_SHA256);
-  const state={inputs:{restart_archived_weather:false,publish_newest_saved_weather:false},
-    env:{RAVRADAR_SOURCE_PRODUCER_SOURCE_ACTIVE:'true',RAVRADAR_SOURCE_PRODUCER_PHASE:'installed',
-      RAVRADAR_SOURCE_PRODUCER_CURRENT_FAMILY:'current',RAVRADAR_CODE_ONLY_METADATA_SOURCE_ACTIVE:'true',
-      RAVRADAR_NATIVE_ORIGINAL_CONTINUITY_SOURCE_ACTIVE:'false',
-      RAVRADAR_ACCOUNT_STATISTICS_ASSISTANT_SOURCE_ACTIVE:'false',
-      RAVRADAR_ESTABLISHED_NATIVE_CURRENT_ORIGIN_EDGE_REQUIRED:'false'},
-    steps:{'operational-action':{outputs:{action:'integrated'}},
-      'saved-last-mile-source':{outputs:{required:'false'}},
-      'checkpoint-disposition':{outputs:{disposition:'READY_PUBLISHED'}},
-      'current-private-publish':{outcome:'success'}}};
-  const evaluate=expression=>vm.runInNewContext(expression.replace(/^\$\{\{\s*|\s*\}\}$/g,'')
-    .replace(/\b(inputs|steps|env)\.[A-Za-z0-9_.-]+/g,token=>{
-      let value=state;for(const key of token.split('.'))value=value?.[key];
-      return JSON.stringify(value)??'undefined';}),{}, {timeout:1000});
-  const actual=name=>named(operativeCodeOnly,name),enabled=name=>Boolean(evaluate(actual(name).if));
-  const select='Select the issued SOURCE source phase without admission';
-  for(const old of ['Select the issued native-original-continuity phase without admission',
-    'Select the issued account-statistics-assistant source phase without admission']){
-    assert(actual(select).at<actual(old).at);assert.equal(enabled(old),false);
-  }
-  for(const old of ['Select only an already-installed established-origin successor before private work',
-    'Apply exact dry-run-verified post-cutover binding',
-    'Build a new full public forecast through the normal provider-free updater'])
-    assert.equal(enabled(old),false,'The actual SOURCE route cannot borrow '+old);
-  const installed=actual('Require actually installed SOURCE contracts before installed reentry');
-  assert.equal(enabled(installed.name),true);
-  assert.match(installed.text,/verify-source-producer-plan\.mjs --phase installed/);
-  assert.match(installed.text,/sourcePhase:'source-producer'/);
-  assert.match(installed.text,/verify-statistics-preference-revision-schema\.mjs/);
-  assert.match(installed.text,/supabase db push --linked --dry-run --skip-vault/);
-  assert.doesNotMatch(installed.text,/supabase db push --linked --skip-vault/);
-  for(const name of ['Try newest current-compatible private runtime','Try verifying current-compatible private runtime',
-    'Try installing current-compatible private runtime']){
-    const block=actual(name),condition=/^        continue-on-error: (.+)$/m.exec(block.text);
-    assert(condition);assert.equal(Boolean(evaluate(condition[1])),false,'Current SOURCE restore fails hard: '+name);
-  }
-  const B='Publish current bounded private runtime',S='Publish measured continuation only after verified warmup private runtime',
-    readback='Read back the whole actually published SOURCE S before any Edge or Pages write';
-  assert.equal(enabled('Publish measured continuation checkpoint without promoting rollback readiness'),false);
-  assert.equal(enabled(S),true);state.steps['current-private-publish'].outcome='failure';assert.equal(enabled(S),false);
-  assert(actual(B).at<actual(S).at&&actual(S).at<actual(readback).at);
-  assert.match(actual(readback).text,/restoreProtectedRavScoreContinuationCheckpoint/);
-  assert.match(actual(readback).text,/protected-checkpoint-equivalent/);
-  for(const name of ['Deploy exact rebound trip Edges without Worker or D1 replay',
-    'Deploy only the exact RavRadar assistant Edge function']){
-    const block=actual(name);assert(actual(readback).at<block.at);
-    for(const token of ['test "'+'$'+'{{ steps.current-private-publish.outcome }}" = success',
-      'test "'+'$'+'{{ steps.established-native-current-origin-checkpoint-publish.outcome }}" = success',
-      'test "'+'$'+'{{ steps.source-producer-checkpoint-readback.outputs.equivalent }}" = true'])
-      assert(block.text.includes(token),name+' retains the actual '+token);
-  }
-});

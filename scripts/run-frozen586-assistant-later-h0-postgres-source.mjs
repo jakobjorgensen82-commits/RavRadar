@@ -7,12 +7,11 @@ import crypto from 'node:crypto';
 import {execFile as callbackExec} from 'node:child_process';
 import {promisify} from 'node:util';
 import {fileURLToPath,pathToFileURL} from 'node:url';
-import {withAuthenticated586PredecessorSource,withAuthenticated587PredecessorSource,withAuthenticated588PredecessorSource} from './check-assistant-later-h0-predecessor-source.mjs';
+import {withAuthenticated586PredecessorSource,withAuthenticated587PredecessorSource} from './check-assistant-later-h0-predecessor-source.mjs';
 import {requireAssistantLaterH0Output,requireAssistantPublic587SuccessorOutput} from './lib/assistant-later-h0-successor-source.mjs';
-import {requireSourceProducerOutput} from './lib/source-producer-successor-source.mjs';
 const ROOT=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
 function fixedNativeSource(profile){
-  assert(profile===FROZEN586||profile===FROZEN587||profile===FROZEN588,'FROZEN_NATIVE_UNKNOWN_PROFILE');
+  assert(profile===FROZEN586||profile===FROZEN587,'FROZEN_NATIVE_UNKNOWN_PROFILE');
   const HEAD=profile.head,TREE=profile.tree;
 const ADAPTER=profile.adapter,FACTORY='scripts/test-protected-ravscore-continuation-checkpoint.mjs';
 // TEST-only extension of the fixed genuine DATA producer host plus its exact native adapter.
@@ -129,25 +128,10 @@ const FROZEN587=Object.freeze({
   continuation:'cd3a3648ad5093662871559aa39d77671eda27edf1f9edc82a104c5430a43a21',
   withSource:withAuthenticated587PredecessorSource,requireOutput:requireAssistantPublic587SuccessorOutput,
   failureKind:'FROZEN587_NATIVE_FIRST_FAILURE'});
-// Genuine actual588 CODE factory only. Runtime B/S is never fabricated here.
-// This must remain pinned to the separately selected fixed588 DATA code source.
-const FROZEN588=Object.freeze({
-  head:'4845e6c6622333ad4e8454b0b43f5f94ae42233e',tree:'30e8fd7994c3a625b55f6798fc0d268589bb4cfb',
-  adapter:'scripts/lib/assistant-later-h0-postgres.mjs',adapterBytes:25199,
-  adapterSha256:'c8bafe6b5fe7ebed8d46eb24a4ccf778d2382f05cb0737bf7eb2335acf0281b0',
-  factorySourceSha256:'3c702f489f632eada501d978502015e9b2f307867c9f3697c1707ddd2f3da4c0',
-  candidate:'00905533cd243ffce8e507beedbc39c8dba26e635b59fa154e6f9ab20575780c',
-  integrated:'5348f3ae7401d3a09dd180d45690f56b3cfec4a30af5a4928bdd9581f9d8ebac',
-  continuation:'d98559d56d7bfe9b141cf1ddab73cddffb688a3b6766f5f9f3779b226f573701',
-  withSource:withAuthenticated588PredecessorSource,requireOutput:requireSourceProducerOutput,
-  failureKind:'FROZEN588_NATIVE_FIRST_FAILURE'});
-const native586=fixedNativeSource(FROZEN586),native587=fixedNativeSource(FROZEN587),native588=fixedNativeSource(FROZEN588);
+const native586=fixedNativeSource(FROZEN586),native587=fixedNativeSource(FROZEN587);
 export async function withFrozen586CheckpointPostgresSource(callback){
   return native586(...arguments);
 }
 export async function withFrozen587CheckpointPostgresSource(callback){
   return native587(...arguments);
-}
-export async function withFrozen588CheckpointPostgresSource(callback){
-  return native588(...arguments);
 }

@@ -11,9 +11,6 @@ import {ASSISTANT_LATER_H0_BINDING,ASSISTANT_LATER_H0_BEFORE,assistantLaterH0Mig
   requireAssistantLaterH0Binding,requireAssistantLaterH0Output,
   ACTIVE_ASSISTANT_SUCCESSOR as ACTIVE} from './assistant-later-h0-successor-source.mjs';
 
-import {SOURCE_PRODUCER_BINDING,SOURCE_PRODUCER_BEFORE,sourceProducerMigration,
-  requireSourceProducerBinding,requireSourceProducerOutput} from './source-producer-successor-source.mjs';
-
 export const PRODUCTION_WORKFLOW_SOURCES = Object.freeze({
   orchestrator: '.github/workflows/update-and-deploy.yml',
   build: '.github/workflows/reusable-weather-build.yml',
@@ -173,8 +170,7 @@ export function concatenateProductionWorkflowSources(
 // Routing only: this neither admits original data nor authorizes installation.
 // Database prewrite and the normal artifact/activation gates remain mandatory.
 export function deferCurrentGridBindingEdges(migrationVersion) {
-  return SOURCE_PRODUCER_BINDING!==null&&migrationVersion===sourceProducerMigration().version
-    || ACTIVE.binding!==null&&migrationVersion===ACTIVE.migration().version
+  return ACTIVE.binding!==null&&migrationVersion===ACTIVE.migration().version
     || ASSISTANT_LATER_H0_BINDING!==null&&migrationVersion===assistantLaterH0Migration().version
     || migrationVersion === establishedNativeCurrentOriginMigration().version
     || migrationVersion === currentMemoryWarmupMigration().version
@@ -187,22 +183,6 @@ export async function currentGridEdgePublicationRequired(current, action) {
   ACTIVE.requireOutput(); // Aktiv udstedt profil, aldrig UNISSUED→gammel familie.
   const { LATEST_REQUIRED_CUTOVER_MIGRATION } = await import('../integrated-cutover-readiness.mjs');
   const native = await import('./native-sampling-identity-successor-source.mjs');
-  // Fixed actual588 -> SOURCE589 PUBLIC metadata routing only. This is not a
-  // B/S/origin handle, SAME_H0 publication grant or optional CURRENT fallback.
-  // The active588/P0 branch below remains whole and independently selected.
-  if(SOURCE_PRODUCER_BINDING!==null&&LATEST_REQUIRED_CUTOVER_MIGRATION.version===SOURCE_PRODUCER_BINDING.version){
-    requireSourceProducerOutput(); // Before inspecting any current/public operand.
-    const {isDeepStrictEqual}=await import('node:util');
-    const {ravScoreModelBinding}=await import('../../js/core/ravscore-model-contract.js');
-    const binding=ravScoreModelBinding(),next=requireSourceProducerBinding();
-    if(binding.modelBundleSha256!==next.I)throw new Error('SOURCE requires actual issued current binding');
-    if(isDeepStrictEqual(current?.modelBinding,binding))return false;
-    const original={...binding,modelBundleSha256:SOURCE_PRODUCER_BEFORE.I};
-    if(!isDeepStrictEqual(current?.modelBinding,original))throw new Error('SOURCE unknown original public588 binding');
-    if(current.model!=='integrated'||current.status!=='INTEGRATED_ACTIVE'||current.pending!==false
-      ||action!=='integrated-historical-maintenance')throw new Error('SOURCE normal active historical route required');
-    return true;
-  }
   if(LATEST_REQUIRED_CUTOVER_MIGRATION.version===ACTIVE.migration().version){
     const {isDeepStrictEqual}=await import('node:util');
     const {ravScoreModelBinding}=await import('../../js/core/ravscore-model-contract.js');

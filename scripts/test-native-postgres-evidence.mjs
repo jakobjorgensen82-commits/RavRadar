@@ -15,17 +15,6 @@ import {ORIGIN, WORKFLOW, JOB, STEP, COMMANDS, ACCOUNT_STATISTICS_ASSISTANT_COMM
 // The actual new production command is independently checked below.
 const NATIVE_SCRIPT='set -euo pipefail\n'+CURRENT_COMMANDS.join('\n')+'\n';
 const copy = value => structuredClone(value);
-// TEST ONLY. First qualify the whole actual SOURCE caller, then restore only
-// its two exact known inverses before the unchanged genuine586 receipt oracle.
-import {verifyWorkflow as verifyActualSourceWorkflow,inverseSourceNode24Workflow}
-  from './national584-source-evidence.mjs';
-function historical586WorkflowView(actual){
-  verifyActualSourceWorkflow(actual);
-  const historical=inverseSourceNode24Workflow(inverseSourceProducerPhaseUpload(actual));
-  verifyCurrent586Workflow(historical,historical);
-  return historical;
-}
-
 // Genuine reviewed P0 follow-up, not the potentially changed current PR tree.
 const REVIEWED_FOLLOWUP = 'c72d6730bd235954091416268e7af649b46452d9';
 const REVIEWED_FOLLOWUP_TREE = 'b2b49abd10c186115759f3792ecc8fd312049126';
@@ -287,7 +276,7 @@ test('assistant later-H0 appends its actual phase without retagging whole586 com
 
 
 test('current586 phase artifact is independent, exact, honest, and does not relax conservative native inputs',async()=>{
-  const workflow=historical586WorkflowView(await fs.readFile(WORKFLOW,'utf8'));
+  const workflow=await fs.readFile(WORKFLOW,'utf8');
   assert.equal(workflow.split(CURRENT586_PHASE_UPLOAD_BLOCK).length,2);
   verifyCurrent586Workflow(workflow,workflow);
   assert.equal(inverseCurrent586PhaseUpload(workflow).includes(CURRENT586_PHASE_UPLOAD),false);
@@ -339,7 +328,7 @@ test('current586 exact EXECUTED origin survives a later source failure; missing,
     end.writeUInt32LE(central.length+name.length,12);end.writeUInt32LE(local.length+name.length+raw.length,16);
     return Buffer.concat([local,name,raw,central,name,end]);
   };
-  const workflow=historical586WorkflowView(await fs.readFile(WORKFLOW,'utf8')),oldId=ORIGIN.run+10,currentId=oldId+2,number=700;
+  const workflow=await fs.readFile(WORKFLOW,'utf8'),oldId=ORIGIN.run+10,currentId=oldId+2,number=700;
   const branch='synthetic-native586',nativeInput=verifyInputTrees(tree,tree);
   const oldRun={id:oldId,run_attempt:1,head_sha:oid,head_branch:branch,path:WORKFLOW,event:'pull_request',
     repository:{full_name:ORIGIN.repository},head_repository:{full_name:ORIGIN.repository},
@@ -479,20 +468,19 @@ test('public587 successor native commands append588 without retagging whole587 i
   assert.deepEqual(ASSISTANT_PUBLIC587_SUCCESSOR_COMMANDS,[ASSISTANT_LATER_H0_COMMANDS[0],
     ASSISTANT_LATER_H0_COMMANDS[1]+' --assistant-public587-successor']);
   assert.equal(ASSISTANT_PUBLIC587_SUCCESSOR_SCRIPT,'set -euo pipefail\n'+ASSISTANT_PUBLIC587_SUCCESSOR_COMMANDS.join('\n')+'\n');
-  assert.equal(ACTIVE_COMMANDS,SOURCE_PRODUCER_COMMANDS);
-  assert.equal(ACTIVE_NATIVE_SCRIPT,SOURCE_PRODUCER_NATIVE_SCRIPT);
-  assert.notDeepEqual(ACTIVE_COMMANDS,ASSISTANT_PUBLIC587_SUCCESSOR_COMMANDS);
+  assert.equal(ACTIVE_COMMANDS,ASSISTANT_PUBLIC587_SUCCESSOR_COMMANDS);
+  assert.equal(ACTIVE_NATIVE_SCRIPT,ASSISTANT_PUBLIC587_SUCCESSOR_SCRIPT);
   assert.notDeepEqual(ACTIVE_COMMANDS,ASSISTANT_LATER_H0_COMMANDS);
   const source=await fs.readFile('scripts/native-postgres-evidence.mjs','utf8');
   const main=source.slice(source.indexOf('async function main() {'));
   assert(main.indexOf('requireAssistantPublic587SuccessorRelease()')<main.indexOf('spawnSync('));
   assert(main.includes("'-c',ACTIVE_NATIVE_SCRIPT]"));
-  assert(main.includes("phase:'SOURCE_PRODUCER',eligibleForReuse:false"));
+  assert(main.includes("phase:'ASSISTANT_PUBLIC587_SUCCESSOR',eligibleForReuse:false"));
   assert(main.includes('commands:ACTIVE_COMMANDS'));
   assert(!main.includes('await decideReuse('));assert(!main.includes('await decideCurrent586Reuse('));
   const target=await fs.readFile('scripts/test-protected-ravscore-continuation-checkpoint.mjs','utf8');
   assert(target.indexOf('requireAssistantPublic587SuccessorRelease();')<target.indexOf('const PART_COUNT ='));
-  assert(target.includes("const assistantPublic587SuccessorNative = process.argv.includes('--assistant-public587-successor') || sourceProducerNative;"));
+  assert(target.includes("const assistantPublic587SuccessorNative = process.argv.includes('--assistant-public587-successor');"));
   assert(target.includes("process.argv.includes('--assistant-later-h0') || assistantPublic587SuccessorNative"));
   assert(target.includes('includeAssistantPublic587Successor: assistantPublic587SuccessorNative'));
 });
@@ -592,322 +580,4 @@ test('public587 native wiring keeps same owned host and all old negative-case fa
   assert(adapter.includes('assertWholeMetadataInverse(original,payload,NEXT)'));
   assert(adapter.includes('assert.notEqual((await runSql(sql)).code,0'));
   assert(adapter.includes("normalProtectedJsonbRoundtrip:true,originalDigestsPreserved:true"));
-});
-
-// Additive SOURCE receipt guards. No test invokes PostgreSQL or manufactures issuance.
-import {SOURCE_PRODUCER_COMMANDS,SOURCE_PRODUCER_NATIVE_SCRIPT,SOURCE_PRODUCER_PHASE_KIND,
-  SOURCE_PRODUCER_PHASE_UPLOAD_BLOCK,inverseSourceProducerPhaseUpload,verifySourceProducerPhaseReceipt}
-  from './native-postgres-evidence.mjs';
-import {SOURCE_PRODUCER_BINDING,requireSourceProducerBinding,requireSourceProducerOutput}
-  from './lib/source-producer-successor-source.mjs';
-
-test('SOURCE active native commands append to the complete588 prefix and refuse before evidence I/O',async()=>{
-  assert.deepEqual(SOURCE_PRODUCER_COMMANDS,[ASSISTANT_PUBLIC587_SUCCESSOR_COMMANDS[0],
-    ASSISTANT_PUBLIC587_SUCCESSOR_COMMANDS[1]+' --source-producer']);
-  assert.equal(SOURCE_PRODUCER_NATIVE_SCRIPT,'set -euo pipefail\n'+SOURCE_PRODUCER_COMMANDS.join('\n')+'\n');
-  assert.equal(ACTIVE_COMMANDS,SOURCE_PRODUCER_COMMANDS);
-  assert.equal(ACTIVE_NATIVE_SCRIPT,SOURCE_PRODUCER_NATIVE_SCRIPT);
-  assert.notEqual(SOURCE_PRODUCER_PHASE_KIND,ASSISTANT_PUBLIC587_SUCCESSOR_PHASE_KIND);
-  assert.notEqual(SOURCE_PRODUCER_PHASE_KIND,ASSISTANT_LATER_H0_PHASE_KIND);
-  assert.notEqual(SOURCE_PRODUCER_PHASE_KIND,CURRENT586_PHASE_KIND);
-  const source=await fs.readFile('scripts/native-postgres-evidence.mjs','utf8');
-  const main=source.slice(source.indexOf('async function main() {'));
-  const guard=main.indexOf('requireSourceProducerOutput();');
-  assert(guard>=0&&guard<main.indexOf('requireAssistantPublic587SuccessorRelease();'));
-  assert(guard<main.indexOf('const env=')&&guard<main.indexOf('spawnSync(')&&guard<main.indexOf('await record('));
-  assert(main.includes("phase:'SOURCE_PRODUCER',eligibleForReuse:false"));
-  assert(main.includes('currentSourceNativeProfileClaimed:false,productionProof:false'));
-  assert(!main.includes('await decideReuse(')&&!main.includes('await decideCurrent586Reuse('));
-  const target=await fs.readFile('scripts/test-protected-ravscore-continuation-checkpoint.mjs','utf8');
-  assert(target.indexOf('requireSourceProducerOutput();')<target.indexOf('const PART_COUNT ='));
-  assert(target.includes("const sourceProducerNative = process.argv.includes('--source-producer') || currentSourceNativeProfile;"));
-  assert(target.includes('includeSourceProducer: sourceProducerNative'));
-});
-
-test('SOURCE receipt refuses UNISSUED before inspecting operands and cannot reuse or impersonate588',()=>{
-  const current={run:ORIGIN.run+40,attempt:1,head:newOid,pullRequest:702,branch:'synthetic-source'};
-  if(SOURCE_PRODUCER_BINDING===null){
-    let reads=0;const poison=new Proxy({},{get(){reads++;throw new Error('UNEXPECTED_OPERAND');}});
-    assert.throws(()=>verifySourceProducerPhaseReceipt(poison,poison),/SOURCE_PRODUCER_UNISSUED/);
-    assert.equal(reads,0);return;
-  }
-  const next={phase:'SOURCE_PRODUCER',status:'EXECUTED',executedInThisRun:true,origin:null,
-    current,commands:[...SOURCE_PRODUCER_COMMANDS],eligibleForReuse:false,
-    sourceProducerBinding:requireSourceProducerBinding(),sourceProducerOutput:requireSourceProducerOutput(),
-    currentSourceNativeProfileClaimed:false,productionProof:false};
-  assert.equal(verifySourceProducerPhaseReceipt(next,current).status,'EXECUTED');
-  assert.throws(()=>verifyAssistantPublic587SuccessorPhaseReceipt(next,current));
-  assert.throws(()=>verifyAssistantLaterH0PhaseReceipt(next,current));
-  assert.throws(()=>verifyCurrent586PhaseReceipt(next,current));
-  for(const mutate of [v=>v.status='REUSED',v=>v.executedInThisRun=false,v=>v.origin={run:current.run-1},
-    v=>v.eligibleForReuse=true,v=>v.commands=[...ASSISTANT_PUBLIC587_SUCCESSOR_COMMANDS],
-    v=>v.commands=[...ASSISTANT_LATER_H0_COMMANDS],v=>v.current={...current,head:oid},
-    v=>v.phase='ASSISTANT_PUBLIC587_SUCCESSOR',v=>v.sourceProducerBinding=null,v=>v.sourceProducerOutput=null,
-    v=>v.currentSourceNativeProfileClaimed=true,v=>v.productionProof=true]){
-    const changed=copy(next);mutate(changed);
-    assert.throws(()=>verifySourceProducerPhaseReceipt(changed,current));
-  }
-});
-
-test('SOURCE upload inverse is exact, single, and restores the whole older upload block',()=>{
-  const current='before\n'+SOURCE_PRODUCER_PHASE_UPLOAD_BLOCK+'after\n';
-  assert.equal(inverseSourceProducerPhaseUpload(current),'before\n'+CURRENT586_PHASE_UPLOAD_BLOCK+'after\n');
-  for(const bad of [current.replace(SOURCE_PRODUCER_PHASE_UPLOAD_BLOCK,''),
-    current+SOURCE_PRODUCER_PHASE_UPLOAD_BLOCK,current+CURRENT586_PHASE_UPLOAD_BLOCK,
-    current.replace('name: source-producer-phase-','name: native586-phase-'),
-    current.replace('retention-days: 30','retention-days: 31')])
-    assert.throws(()=>inverseSourceProducerPhaseUpload(bad));
-});
-
-// Pure additive legacy failure observations. No PostgreSQL/provider/process
-// execution or admission is performed by these unit cases.
-test('legacy Node categories use only actual closed code/name and never arbitrary messages',async()=>{
-  const {nativePostgresExceptionCode:classify}=await import('./lib/checkpoint-cas-native-postgres.mjs');
-  const codes={ENOENT:'ENOENT',ENOSPC:'ENOSPC',EACCES:'EACCES',EPERM:'EPERM',ENOMEM:'ENOMEM',
-    EMFILE:'EMFILE',EPIPE:'EPIPE',ERR_MODULE_NOT_FOUND:'MODULE_NOT_FOUND',MODULE_NOT_FOUND:'MODULE_NOT_FOUND'};
-  for(const [code,suffix]of Object.entries(codes))
-    assert.equal(classify({code,message:'PRIVATE_PATH_AND_VALUE'}),'NATIVE_POSTGRES_NODE_'+suffix);
-  for(const [make,suffix]of [[TypeError,'TYPE_ERROR'],[SyntaxError,'SYNTAX_ERROR'],
-    [RangeError,'RANGE_ERROR'],[ReferenceError,'REFERENCE_ERROR']])
-    assert.equal(classify(new make('PRIVATE_PATH_AND_VALUE')),'NATIVE_POSTGRES_NODE_'+suffix);
-  assert.equal(classify({code:'ERR_ASSERTION',message:'custom\nPRIVATE_ACTUAL_EXPECTED'}),
-    'NATIVE_POSTGRES_ASSERTION_FAILED');
-  assert.equal(classify({message:'NATIVE_POSTGRES_SQL_COMMAND_FAILED\nPRIVATE_SQL'}),
-    'NATIVE_POSTGRES_SQL_COMMAND_FAILED');
-  for(const error of [null,undefined,false,0,'ENOENT',{code:'PRIVATE',name:'Error',message:'ENOENT'},
-    {message:'NATIVE_POSTGRES_NODE_ENOENT'},{name:'TypeError_PRIVATE'},
-    Object.defineProperty({},'code',{get(){throw new Error('PRIVATE_GETTER');}})])
-    assert.equal(classify(error),'NATIVE_POSTGRES_UNKNOWN_FAILURE');
-});
-
-test('operative585 DMI file observations accept only the complete fixed authenticated message inventory',async()=>{
-  const {execFileSync}=await import('node:child_process'),{createHash}=await import('node:crypto');
-  const {nativePostgresExceptionCode:classify,nativePostgresExceptionDiagnostic:diagnose,
-    nativePostgresChildFirstFailure:parse}=await import('./lib/checkpoint-cas-native-postgres.mjs');
-  const blob=execFileSync('git',['cat-file','blob',
-    'e7c2e14a6403870e8a1df6c91862980640684733:scripts/lib/dmi-forecast-file.mjs'],
-    {stdio:['ignore','pipe','pipe'],timeout:30000,maxBuffer:2*1024*1024,
-      env:{...process.env,GIT_NO_LAZY_FETCH:'1',GIT_NO_REPLACE_OBJECTS:'1',GIT_TERMINAL_PROMPT:'0'}});
-  assert.equal(createHash('sha256').update(blob).digest('hex'),
-    'ac1cbf3909daad48e126a23c1c724e942344750c8856308c2e2a74d842a053a6');
-  const codes=["BOUNDS_INVALID","CHANGED","CLEANUP_UNPROVED","DUPLICATE_KEY","INVALID_FILE","INVALID_JSON","INVALID_KEY","INVALID_SIZE","MISSING","PUBLICATION_UNPROVED","READ_UNAVAILABLE","RECORD_DESCRIPTOR_INVALID","RECORD_SIZE_LIMIT","SHAPE_INVALID","STRUCTURE_LIMIT","WRITE_CONTENT_CHANGED","WRITE_INCOMPLETE"];
-  const operands=[...blob.toString('utf8').matchAll(/\binvalid\(([^)]*)\)/g)].map(match=>match[1]);
-  const literal=value=>/^'[A-Z_]+'$/.test(value),dynamic=operands.filter(value=>!literal(value));
-  assert.deepEqual(dynamic,["error?.code === 'ENOENT' ? 'MISSING' : 'READ_UNAVAILABLE'"]);
-  assert.deepEqual([...new Set([...operands.filter(literal).map(value=>value.slice(1,-1)),
-    'MISSING','READ_UNAVAILABLE'])].sort(),codes,'Enum is exactly the old reader source, not a guessed new family');
-  for(const code of codes){
-    const message='DMI_FORECAST_FILE_'+code,expected='NATIVE_POSTGRES_DMI_FORECAST_'+code;
-    assert.equal(classify(new Error(message)),expected);
-    const observed=await diagnose({message,stack:''},'SOURCE_LEGACY_PRODUCER_PUBLIC585');
-    assert.deepEqual(observed,{kind:'NATIVE_POSTGRES_FIRST_FAILURE',phase:'SOURCE_LEGACY_PRODUCER_PUBLIC585',
-      code:expected,frame:null,privatePayloadIncluded:false});
-    assert.deepEqual(parse(JSON.stringify(observed),''),observed);
-    for(const wrong of [' '+message,message+' ',message+'\nPRIVATE',message+'\r\n',message+':PRIVATE',
-      message+'_PRIVATE',message.toLowerCase(),expected]){
-      assert.equal(classify({message:wrong}), 'NATIVE_POSTGRES_UNKNOWN_FAILURE');
-    }
-  }
-  for(const message of ['DMI_FORECAST_FILE_ENOENT','DMI_FORECAST_FILE_UNKNOWN','DMI_FORECAST_FILE_',
-    'PRIVATE DMI_FORECAST_FILE_INVALID_JSON']){
-    assert.equal(classify({message}), 'NATIVE_POSTGRES_UNKNOWN_FAILURE');
-  }
-  assert.equal(classify(Object.defineProperty({},'message',{get(){throw Error('PRIVATE_GETTER');}})),
-    'NATIVE_POSTGRES_UNKNOWN_FAILURE');
-});
-
-test('legacy Node observations preserve five fields and the actual outer parser accepts only closed additive enums',async()=>{
-  const {nativePostgresExceptionDiagnostic:diagnose,nativePostgresChildFirstFailure:parse}=
-    await import('./lib/checkpoint-cas-native-postgres.mjs');
-  const phases=['SOURCE_LEGACY_SETUP','SOURCE_LEGACY_PRODUCER','SOURCE_LEGACY_ORIGINALS',
-    'SOURCE_LEGACY_RESTORE','SOURCE_LEGACY_UPDATER','SOURCE_LEGACY_SAVE','SOURCE_LEGACY_READBACK',
-    'SOURCE_LEGACY_PRODUCER_SETUP',
-    'SOURCE_LEGACY_PRODUCER_ARCHIVE',
-    'SOURCE_LEGACY_PRODUCER_UPDATER585',
-    'SOURCE_LEGACY_PRODUCER_PUBLIC585',
-    'SOURCE_LEGACY_PRODUCER_SAVE585',
-    'SOURCE_LEGACY_PRODUCER_RESTORE585',
-    'SOURCE_LEGACY_PRODUCER_FOLLOWER585',
-    'SOURCE_LEGACY_PRODUCER_NATIVE586',
-    'SOURCE_LEGACY_PRODUCER_FOLLOWER587',
-    'SOURCE_LEGACY_PRODUCER_FOLLOWER588',
-    'SOURCE_LEGACY_PRODUCER_SOURCE_METADATA',
-    'SOURCE_LEGACY_PRODUCER_FINISH',
-  ];
-  const codes=['ENOENT','ENOSPC','EACCES','EPERM','ENOMEM','EMFILE','EPIPE','ERR_MODULE_NOT_FOUND','MODULE_NOT_FOUND'];
-  const errors=[...codes.map(code=>({code})),...['TypeError','SyntaxError','RangeError','ReferenceError'].map(name=>({name}))];
-  for(const phase of phases)for(const fields of errors){
-    const observed=await diagnose({...fields,message:'PRIVATE_PATH_AND_VALUE',stack:''},phase);
-    assert.deepEqual(Object.keys(observed).sort(),['code','frame','kind','phase','privatePayloadIncluded']);
-    assert.equal(observed.kind,'NATIVE_POSTGRES_FIRST_FAILURE');assert.equal(observed.phase,phase);
-    assert.equal(observed.frame,null);assert.equal(observed.privatePayloadIncluded,false);
-    assert(!JSON.stringify(observed).includes('PRIVATE_PATH_AND_VALUE'));
-    const later={...observed,phase:'SOURCE_LEGACY_COMPATIBILITY',
-      code:'NATIVE_POSTGRES_SOURCE_LEGACY_COMPATIBILITY_REFUSED'};
-    assert.deepEqual(parse(JSON.stringify(observed)+'\n'+JSON.stringify(later),''),observed);
-    assert.deepEqual(parse('',JSON.stringify(observed)),observed);
-    for(const changed of [{...observed,raw:'PRIVATE'}, {...observed,phase:phase+'_PRIVATE'},
-      {...observed,code:'NATIVE_POSTGRES_NODE_PRIVATE'}, {...observed,privatePayloadIncluded:true}])
-      assert.equal(parse(JSON.stringify(changed),''),null);
-  }
-  assert.equal((await diagnose({code:'PRIVATE',stack:''},'PRIVATE')).phase,'UNKNOWN');
-});
-
-test('legacy CLI marks real boundaries and catches before its inner transport try without changing the normal routes',async()=>{
-  const source=await fs.readFile('scripts/test-source-producer-legacy-compatibility.mjs','utf8');
-  const start=source.indexOf('export async function runSourceProducerLegacyCompatibility(){'),
-    main=source.indexOf('if(process.argv[1]&&path.resolve(process.argv[1])===fileURLToPath(import.meta.url)){');
-  assert(start>=0&&main>start);
-  const body=source.slice(start,main),cli=source.slice(main);
-  const boundaries=[
-    ['SOURCE_LEGACY_SETUP','  requireSourceProducerOutput();'],
-    ['SOURCE_LEGACY_PRODUCER',"  const {produceCurrentSourceNativeInputs}=await load("],
-    ['SOURCE_LEGACY_ORIGINALS',"  assert.equal(produced.profile,"],
-    ['SOURCE_LEGACY_RESTORE',"    for(const name of ['RAVRADAR_ARCHIVED_WEATHER_RESTART_CONTEXT_PATH'"],
-    ['SOURCE_LEGACY_UPDATER',"    await load('scripts/update-weather.mjs');"],
-    ['SOURCE_LEGACY_SAVE',"    const followerRoot=path.join(produced.workRoot,'saved-legacy-follower');"],
-    ['SOURCE_LEGACY_READBACK','    const loaded=await normalS.loadRavScoreContinuationCheckpointForTarget('],
-    ['SOURCE_LEGACY_SAVE','    const spec=await workflow.buildPrivateRuntimeCreateSpec({repositoryRoot:ROOT});'],
-    ['SOURCE_LEGACY_READBACK',"    const restored=path.join(followerRoot,'restored');"],
-  ];
-  let cursor=0;
-  for(const [phase,normalCall]of boundaries){
-    const mark=body.indexOf("sourceLegacyPhase='"+phase+"';",cursor),call=body.indexOf(normalCall,cursor);
-    assert(mark>=cursor&&call>mark,'Phase precedes its actual unchanged normal call: '+phase);cursor=call+normalCall.length;
-  }
-  assert(body.indexOf("sourceLegacyPhase='SOURCE_LEGACY_PRODUCER';")<body.indexOf('let restoreTransport,hasFirst=false;'));
-  assert(cli.indexOf('  try{')<cli.indexOf('requireSourceProducerOutput();'));
-  assert(cli.includes('catch(error){await emitNativePostgresFirstFailure(error,sourceLegacyPhase);throw error;}'));
-  assert(body.includes('}catch(error){hasFirst=true;throw error;}'));
-  assert(body.includes("if(cleanup&&!hasFirst)throw cleanup;"));
-  assert(body.includes("if(cleanup&&hasFirst)console.error('SOURCE_LEGACY_COMPATIBILITY_CLEANUP_REFUSED');"));
-  const python=await fs.readFile('scripts/test-source19-terminal-failure-proof-bank-v17-observer-native.py','utf8');
-  const relay=python.slice(python.indexOf('# Whole child files above precede selection.'),
-    python.indexOf('break  # The Node parent independently validates every field.'));
-  assert(relay.includes("value.get('kind') == 'NATIVE_POSTGRES_FIRST_FAILURE'"));
-  assert(relay.includes("print(json.dumps(value, separators=(',', ':')), flush=True)"));
-});
-
-
-test('legacy follower process preserves bounded actual exit/signal/fatal observation before outer assertion',async()=>{
-  const {nativeLegacyFollowerProcessFirstFailure:validate,nativePostgresChildFirstFailure:parse}
-    =await import('./lib/checkpoint-cas-native-postgres.mjs');
-  const empty={bytes:0,complete:true,sha256:'a'.repeat(64)};
-  const generic={kind:'SOURCE_LEGACY_CHILD_FIRST_FAILURE',phase:'FOLLOWER',
-    exceptionType:'ASSERTION_ERROR',osError:'NONE',callsite:null,privatePayloadIncluded:false};
-  for(const [returncode,signal] of [[7,'NONE'],[-9,'SIGKILL'],[-6,'SIGABRT'],[null,'UNKNOWN']]){
-    const value={kind:'SOURCE_LEGACY_FOLLOWER_PROCESS_FIRST_FAILURE',phase:'FOLLOWER',
-      returncode,signal,stdout:empty,stderr:{...empty,bytes:100},
-      lastPhase:'SOURCE_LEGACY_PRODUCER_UPDATER585',fatalCategory:'NONE',privatePayloadIncluded:false};
-    assert.deepEqual(validate(value),value);
-    assert.deepEqual(parse(JSON.stringify(value)+'\n'+JSON.stringify(generic),''),value);
-    for(const fatalCategory of ['NONE','HEAP_OUT_OF_MEMORY','UNKNOWN'])
-      assert.deepEqual(validate({...value,fatalCategory}),{...value,fatalCategory});
-    for(const lastPhase of ['SOURCE_LEGACY_PRODUCER','SOURCE_LEGACY_PRODUCER_FOLLOWER585',
-      'SOURCE_LEGACY_PRODUCER_FOLLOWER587','SOURCE_LEGACY_PRODUCER_FOLLOWER588','UNKNOWN'])
-      assert.deepEqual(validate({...value,lastPhase}),{...value,lastPhase});
-    for(const bad of [
-      {...value,raw:'PRIVATE_SENTINEL'},{...value,returncode:0},{...value,returncode:true},
-      {...value,returncode:2**31},{...value,signal:'PRIVATE_SENTINEL'},
-      {...value,phase:'PROVIDERS'},{...value,lastPhase:'SOURCE_LEGACY_PRIVATE'},
-      {...value,lastPhase:'SOURCE_LEGACY_SETUP\nPRIVATE_SENTINEL'},
-      {...value,fatalCategory:'FATAL ERROR: PRIVATE_SENTINEL'},
-      {...value,privatePayloadIncluded:true},
-      {...value,stderr:{...empty,raw:'PRIVATE_SENTINEL'}},
-      {...value,stderr:{...empty,bytes:16*1024*1024+1}},
-      {...value,stderr:{...empty,sha256:'PRIVATE_SENTINEL'}},
-      {...value,stderr:{bytes:1,complete:false,sha256:'a'.repeat(64)}},
-      {...value,stderr:{bytes:1,complete:false,sha256:null}},
-    ]){
-      assert.equal(validate(bad),null);assert.equal(parse(JSON.stringify(bad),''),null);
-    }
-    const incomplete={...value,stderr:{bytes:16*1024*1024+1,complete:false,sha256:null},
-      lastPhase:'UNKNOWN',fatalCategory:'UNKNOWN'};
-    assert.deepEqual(validate(incomplete),incomplete);
-    assert.deepEqual(parse(JSON.stringify(incomplete)+'\n'+JSON.stringify(generic),''),incomplete);
-  }
-  for(const raw of ['PRIVATE_SENTINEL','{malformed','FATAL ERROR: PRIVATE_SENTINEL'])
-    assert.equal(parse(raw,''),null);
-  const python=await fs.readFile('scripts/test-source19-terminal-failure-proof-bank-v17-observer-native.py','utf8');
-  const stable=python.indexOf("output.flush(); os.fsync(output.fileno()); errors.flush(); os.fsync(errors.fileno())",
-    python.indexOf('    def test_source_legacy_compatibility(self):'));
-  const normalAssert=python.indexOf("self.assertEqual(result.returncode, 0, 'SOURCE_LEGACY_COMPATIBILITY_CHILD_REFUSED')",stable);
-  const inner=python.indexOf("if type(value) is dict and value.get('kind') == 'NATIVE_POSTGRES_FIRST_FAILURE':",normalAssert);
-  const process=python.indexOf('projected = source_legacy_follower_process_failure(result, own)',inner);
-  const outer=python.indexOf('projected = source_legacy_child_failure(error, name.upper())',process);
-  assert(stable>=0&&normalAssert>stable&&inner>normalAssert&&process>inner&&outer>process);
-  // Existing normal phase assignments and next calls stay intact. Markers
-  // observe the actual selected boundary; they are not a phase completion.
-  for(const file of ['scripts/test-source-producer-legacy-compatibility.mjs',
-    'scripts/fixtures/source19-current-normal-inputs.mjs']){
-    const source=await fs.readFile(file,'utf8');
-    assert(source.includes("kind:'SOURCE_LEGACY_PHASE_OBSERVATION'"));
-    const matches=[...source.matchAll(/^([ ]+)(?:sourceLegacyPhase|observation\.phase)='(SOURCE_LEGACY_[A-Z0-9_]+)';\n\1observeSourceLegacyPhase\((?:sourceLegacyPhase|observation\.phase)\);$/gm)];
-    assert(matches.length>=9,'Normal fixed assignment markers are present, not reconstructed callbacks');
-  }
-});
-
-test('normal native forecast fixture uses one normal owner bound through copy save and restore',async()=>{
-  const source=await fs.readFile('scripts/fixtures/source19-current-normal-inputs.mjs','utf8');
-  const selected=[...source.matchAll(/(?:name|row\.relativePath) === 'data\/live\/dmi-forecast-cache\.json' \? DMI_FORECAST_FILE_MAX_BYTES/g)];
-  assert.equal(selected.length,3,'Only the same forecast leaf: copyInputs, save JSON and whole created/restored payloads');
-  assert.equal([...source.matchAll(/(?:name|row\.relativePath) === 'data\/live\/dmi-forecast-cache\.json' \? DMI_FORECAST_FILE_MAX_BYTES : undefined/g)].length,2,'copyInputs and JSON input leaves remain forecast-only');
-  assert(source.includes("row.relativePath === '.cache/weather-component-inputs.pack'\n        ? protectedB.PROTECTED_PRIVATE_RUNTIME_POLICY.maximumFilePayloadBytes : undefined"),'Only the manifest-validated component pack uses its frozen normal owner bound on whole payload readback');
-  assert(source.includes('await read(source, maximum)')&&source.includes('await read(target, maximum)'));
-  assert(source.includes("await read(path.join(root, row.relativePath), maximum)"));
-  assert(source.includes("await read(path.join(bundlePath, 'payload', row.relativePath), maximum)"));
-  assert(source.includes("await read(path.join(restored, 'payload', row.relativePath), maximum)"));
-  assert(source.includes('maximum = 256 * 1024 * 1024'),'No blanket default-cap increase');
-  const {read:readNative}=await import('./fixtures/source19-current-normal-inputs.mjs');
-  const {DMI_FORECAST_FILE_MAX_BYTES:maximum}=await import('./lib/dmi-forecast-file.mjs');
-  const {PROTECTED_PRIVATE_RUNTIME_POLICY:policy}=await import('./protected-private-production-runtime.mjs');
-  assert.equal(maximum,policy.maximumFilePayloadBytes);
-  const {default:os}=await import('node:os'),{default:path}=await import('node:path');
-  const root=await fs.mkdtemp(path.join(os.tmpdir(),'rr-native-read-bound-'));
-  const forecast=path.join(root,'forecast.json'),empty=path.join(root,'empty.json'),
-    ordinary=path.join(root,'ordinary.json'),oversize=path.join(root,'oversize.json'),
-    linked=path.join(root,'linked.json'),link=path.join(root,'hardlink.json'),
-    stale=path.join(root,'stale.json'),retained=path.join(root,'retained.json');
-  const originalRead=fs.readFile,originalError=console.error,observations=[];
-  try{
-    // Actual regular JSON bytes, not a fake stat, provider, bundle or native result.
-    const size=256*1024*1024+1,chunk=Buffer.alloc(1024*1024,0x20);
-    const handle=await fs.open(forecast,'wx');
-    try{const prefix=Buffer.from('{"schemaVersion":2}');await handle.writeFile(prefix);let remaining=size-prefix.length;
-      while(remaining>0){const count=Math.min(chunk.length,remaining);await handle.write(chunk,0,count);remaining-=count;}}
-    finally{await handle.close();}
-    assert.equal((await fs.stat(forecast)).size,size);
-    for(const phase of ['fresh','save','restore']){
-      const raw=await readNative(forecast,maximum);assert.equal(raw.length,size,phase);
-      assert.deepEqual(JSON.parse(raw),{schemaVersion:2},phase);
-    }
-    console.error=value=>observations.push(JSON.parse(value));
-    await assert.rejects(readNative(forecast),/NATIVE_FIXTURE_FILE_SIZE_LIMIT/);
-    const large=await fs.open(ordinary,'wx');try{await large.truncate(size);}finally{await large.close();}
-    await assert.rejects(readNative(ordinary),/NATIVE_FIXTURE_FILE_SIZE_LIMIT/);
-    const tooLarge=await fs.open(oversize,'wx');try{await tooLarge.truncate(maximum+1);}finally{await tooLarge.close();}
-    await assert.rejects(readNative(oversize,maximum),/NATIVE_FIXTURE_FILE_SIZE_LIMIT/);
-    await fs.writeFile(empty,'');await assert.rejects(readNative(empty,maximum),/NATIVE_FIXTURE_FILE_EMPTY/);
-    await fs.writeFile(linked,'retained input');await fs.link(linked,link);
-    await assert.rejects(readNative(linked,maximum),/NATIVE_FIXTURE_FILE_MULTIPLE_LINKS/);
-    assert.equal(await originalRead(linked,'utf8'),'retained input');
-    await assert.rejects(readNative(root,maximum),/NATIVE_FIXTURE_FILE_NOT_REGULAR/);
-    for(const value of observations){
-      assert.deepEqual(Object.keys(value).sort(),['kind','reason','regular','links','bytes','maximum','privatePayloadIncluded'].sort());
-      assert.equal(value.kind,'NATIVE_FIXTURE_FILE_READ_REFUSED');assert.equal(value.privatePayloadIncluded,false);
-      assert(['NOT_REGULAR','MULTIPLE_LINKS','EMPTY','SIZE_LIMIT'].includes(value.reason));
-      assert(!JSON.stringify(value).includes(root),'No private input path or payload in refusal metadata');
-    }
-    await fs.writeFile(stale,'same bytes');
-    fs.readFile=async(file,...args)=>{
-      const raw=await originalRead(file,...args);
-      if(file===stale){await fs.rename(stale,retained);await fs.writeFile(stale,'same bytes');}
-      return raw;
-    };
-    await assert.rejects(readNative(stale,maximum),/Input changed while reading/);
-    assert.equal(await originalRead(retained,'utf8'),'same bytes','The original is retained, never silently replaced as accepted input');
-  }finally{
-    fs.readFile=originalRead;console.error=originalError;
-    await fs.rm(root,{recursive:true,force:true});
-  }
 });

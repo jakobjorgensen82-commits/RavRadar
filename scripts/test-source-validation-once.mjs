@@ -11,66 +11,6 @@ import {
   SOURCE_BINDING_PREFLIGHT,
 } from './validate-source-once.mjs';
 
-// Qualify every CURRENT command through the actual native dispatcher BEFORE
-// any exact historical package view. Injected spawn never executes a process.
-const currentSourceScripts = JSON.parse(fs.readFileSync('package.json', 'utf8')).scripts;
-const currentFixed588Command = "node --input-type=module -e \"import {withAuthenticated588PredecessorSource} from './scripts/check-assistant-later-h0-predecessor-source.mjs';await withAuthenticated588PredecessorSource(async()=>{});\"";
-const currentFixed588Program = "import {withAuthenticated588PredecessorSource} from './scripts/check-assistant-later-h0-predecessor-source.mjs';await withAuthenticated588PredecessorSource(async()=>{});";
-const currentSourceExpanded = expandSourceCommands(currentSourceScripts, 'validate:source:checks');
-assert.equal(currentSourceExpanded.length, 73, 'One removed operand does not remove a command');
-for (const command of [currentFixed588Command, 'node scripts/build-source-producer-successor.mjs --check',
-  'node --test scripts/test-source-producer-prewrite.mjs'])
-  assert.equal(currentSourceExpanded.filter(value => value === command).length, 1, 'Each actual SOURCE preparation command is once');
-assert.equal(currentSourceExpanded.flatMap(command => command.split(' ')).filter(value =>
-  value === 'scripts/test-source-normal-workflow.mjs').length, 0, 'Structural coverage is not a duplicate direct operand');
-assert.equal(currentSourceExpanded.filter(command => command.split(' ').includes('scripts/test-reusable-production-workflows.mjs')).length, 1);
-for (const [file, statement] of [
-  ['scripts/test-reusable-production-workflows.mjs', "await import('./test-completed-private-runtime-workflow-inverse.mjs');"],
-  ['scripts/test-completed-private-runtime-workflow-inverse.mjs', "await import('./test-source-normal-workflow.mjs');"],
-]) assert.equal(fs.readFileSync(file, 'utf8').split(statement).length, 2, 'The actual full structural target remains imported once');
-const currentSourcePlan = buildSourceValidationPlan(currentSourceScripts);
-const currentSourceCommands = [...currentSourcePlan.preflight, ...currentSourcePlan.remaining, currentSourcePlan.gate];
-assert.equal(currentSourceCommands.length, 73, 'Every CURRENT command reaches the normal dispatcher');
-const currentSourceDispatched = [];
-assert.equal(runSourceValidation(currentSourcePlan, { spawn(program, args, options) {
-  currentSourceDispatched.push({ program, args, options }); return { status: 0 };
-}, log() {} }), 0, 'Use the real default executor, not its execute override');
-assert.equal(currentSourceDispatched.length, currentSourceCommands.length);
-for (const [index, command] of currentSourceCommands.entries()) {
-  const [program, ...args] = command === currentFixed588Command
-    ? ['node', '--input-type=module', '-e', currentFixed588Program] : command.split(' ');
-  assert.equal(currentSourceDispatched[index].program, program === 'node' ? process.execPath : program);
-  assert.deepEqual(currentSourceDispatched[index].args, args, 'Every actual command keeps its exact native argv');
-  assert.deepEqual(currentSourceDispatched[index].options, { cwd: process.cwd(), stdio: 'inherit', shell: false });
-}
-assert.equal(currentSourceDispatched.filter(row => row.args[0] === '--input-type=module').length, 1);
-for (const command of [
-  currentFixed588Command.replace('withAuthenticated588PredecessorSource(async()=>{});', 'withAuthenticated588PredecessorSource(async()=>{ });'),
-  currentFixed588Command + ' ' + currentFixed588Command,
-  '"' + currentFixed588Command + '"',
-  currentFixed588Command.replace('predecessor-source.mjs', 'foreign-source.mjs'),
-  currentFixed588Command.replace(' -e "', " -e '").slice(0, -1) + "'",
-  currentFixed588Command + ' --unreviewed',
-  'echo unsafe',
-]) {
-  assert.throws(() => expandSourceCommands({ invalid: command }, 'invalid'));
-  let spawned = 0;
-  assert.throws(() => runSourceValidation({ preflight: [], remaining: [command],
-    gate: 'node scripts/source-critical-gate.mjs' }, { spawn() { spawned++; return { status: 0 }; }, log() {} }),
-  'The actual default dispatcher also rejects unqualified commands');
-  assert.equal(spawned, 0, 'Unknown commands cannot reach a process');
-}
-assert.throws(() => buildSourceValidationPlan({ ...currentSourceScripts,
-  'validate:source:checks': currentFixed588Command + ' && ' + currentFixed588Command + ' && node scripts/source-critical-gate.mjs' }),
-'The finite factory may not be doubled through ordinary command separators');
-const currentSourceFailureDispatch = [];
-assert.equal(runSourceValidation(currentSourcePlan, { spawn(program, args, options) {
-  currentSourceFailureDispatch.push({ program, args, options });
-  return { status: args[0] === '--input-type=module' ? 1 : 0 };
-}, log() {} }), 1);
-assert.equal(currentSourceFailureDispatch.length, currentSourceCommands.length, 'A real dispatcher failure still preserves full failure aggregation');
-assert.deepEqual(currentSourceFailureDispatch.at(-1).args, ['scripts/source-critical-gate.mjs']);
-
 // Validate the ACTUAL new source plan first. Then reverse only one exact
 // last-mile registration and the three reviewed historical route rewrites.
 // Every original oracle/assertion below remains whole and unchanged.

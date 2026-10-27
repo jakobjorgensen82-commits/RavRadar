@@ -91,10 +91,6 @@ jobs:
           node --test scripts/test-weather-acquisition-writer.mjs
           python -B scripts/test-weather-acquisition-writer.py
           python -B scripts/test-owned-dmi-grib-save-native.py --node24-path "$(command -v node)"
-          # Retain the observed Node24 executable before PATH returns to Node22.
-          # The later SOURCE compatibility child alone requires this runtime.
-          printf 'node24_path=%s\n' "$(command -v node)" >> "$GITHUB_OUTPUT"
-        id: source-native-node24
 
       - name: Restore Node22 for existing source validation
         uses: actions/setup-node@v7
@@ -114,7 +110,6 @@ jobs:
       - name: Validate native PostgreSQL checkpoint CAS on artificial data only
         shell: bash
         env:
-          RAVRADAR_SOURCE_NATIVE_NODE24_PATH: ${{ steps.source-native-node24.outputs.node24_path }}
           GITHUB_TOKEN: ${{ github.token }}
           SOURCE_GATE_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
           PULL_REQUEST_NUMBER: ${{ github.event.pull_request.number }}
@@ -123,10 +118,10 @@ jobs:
           node --test scripts/test-native-postgres-evidence.mjs
           node scripts/native-postgres-evidence.mjs
 
-      - name: Upload independently completed SOURCE PostgreSQL phase
+      - name: Upload independently completed native586 PostgreSQL phase
         uses: actions/upload-artifact@v7
         with:
-          name: source-producer-phase-${{ github.run_id }}-${{ github.run_attempt }}-${{ github.event.pull_request.head.sha }}
+          name: native586-phase-${{ github.run_id }}-${{ github.run_attempt }}-${{ github.event.pull_request.head.sha }}
           path: .cache/native-postgres-phase-proof.json
           if-no-files-found: error
           retention-days: 30

@@ -1,88 +1,16 @@
 name: Save owned DMI GRIB cache
-description: Fixed SOURCE generation, raw-cache SAVE or sealed-cipher upload with their existing owner and official APIs.
+description: Fixed raw-cache SAVE or sealed-cipher upload under its own acquisition owner and official cache API.
 inputs:
   operation:
-    description: Fixed source, save or upload-encrypted-progress operation; never a caller-selected path.
+    description: Fixed save or upload-encrypted-progress operation; never a caller-selected path.
     default: save
   path:
     description: Existing raw DMI cache path; no other input path is accepted.
     required: false
   key:
-    description: Required existing raw or encrypted-progress key for save/cipher; source takes no caller cache key.
-    required: false
+    description: Exact existing raw or encrypted-progress run/attempt cache key.
+    required: true
 outputs:
-  source_checkpoint_disposition_outcome:
-    description: Actual closed disposition write and canonical readback; absent for no-work.
-  source_private_runtime_bundle_spec_outcome:
-    description: Actual normal bundle-spec program after physical close; not aggregate success.
-  source_private_runtime_write_authority_outcome:
-    description: Actual final fresh-main/input recheck before B publication; observation only.
-  source_checkpoint_save_outcome:
-    description: Actual owned schema6 cacheSAVE finalized and physically closed before B; never protected S or a legacy step success.
-  source_weather_preflight_state_build_outcome:
-    description: Actual closed normal metadata generator outcome; diagnostic failure remains failure.
-  source_weather_preflight_state_save_outcome:
-    description: Actual closed fixed metadata cacheSAVE outcome, or skipped only after its failed generator; absent for no-work.
-  source_result_kind:
-    description: Actual closed SOURCE return, NO_WORK or PREPARED_WEATHER; not a Pages or retry capability.
-  source_preflight_should_run:
-    description: Genuine fixed SOURCE observation; absent when not executed, never a serialized owner or Pages decision.
-  source_preflight_dmi_changed:
-    description: Genuine fixed SOURCE observation; absent when not executed, never a serialized owner or Pages decision.
-  source_preflight_result:
-    description: Genuine fixed SOURCE observation; absent when not executed, never a serialized owner or Pages decision.
-  source_operational_action:
-    description: Genuine fixed SOURCE observation; absent when not executed, never a serialized owner or Pages decision.
-  source_operational_model:
-    description: Genuine fixed SOURCE observation; absent when not executed, never a serialized owner or Pages decision.
-  source_operational_binding_current:
-    description: Genuine fixed SOURCE observation; absent when not executed, never a serialized owner or Pages decision.
-  source_central_version:
-    description: Genuine fixed SOURCE observation; absent when not executed, never a serialized owner or Pages decision.
-  source_active_deployment_id:
-    description: Genuine fixed SOURCE observation; absent when not executed, never a serialized owner or Pages decision.
-  source_initial_cutover_required:
-    description: Genuine fixed SOURCE observation; absent when not executed, never a serialized owner or Pages decision.
-  source_legacy_source_required:
-    description: Genuine fixed SOURCE observation; absent when not executed, never a serialized owner or Pages decision.
-  source_weather_outcome:
-    description: Genuine fixed SOURCE observation; absent when not executed, never a serialized owner or Pages decision.
-  source_full_validation_outcome:
-    description: Genuine fixed SOURCE observation; absent when not executed, never a serialized owner or Pages decision.
-  source_release_gate_outcome:
-    description: Genuine fixed SOURCE observation; absent when not executed, never a serialized owner or Pages decision.
-  source_integrated_runtime_audit_outcome:
-    description: Genuine fixed SOURCE observation; absent when not executed, never a serialized owner or Pages decision.
-  source_checkpoint_build_outcome:
-    description: Genuine fixed SOURCE observation; absent when not executed, never a serialized owner or Pages decision.
-  source_private_runtime_bundle_create_outcome:
-    description: Genuine fixed SOURCE observation; absent when not executed, never a serialized owner or Pages decision.
-  source_private_build_stage_seal_outcome:
-    description: Genuine fixed SOURCE observation; absent when not executed, never a serialized owner or Pages decision.
-  source_private_build_stage_upload_outcome:
-    description: Genuine fixed SOURCE observation; absent when not executed, never a serialized owner or Pages decision.
-  source_private_runtime_publish_outcome:
-    description: Genuine fixed SOURCE observation; absent when not executed, never a serialized owner or Pages decision.
-  source_checkpoint_publish_outcome:
-    description: Genuine fixed SOURCE observation; absent when not executed, never a serialized owner or Pages decision.
-  source_private_runtime_anonymous_denied:
-    description: Genuine fixed SOURCE observation; absent when not executed, never a serialized owner or Pages decision.
-  source_integrated_implementation_closure_sha256:
-    description: Genuine fixed SOURCE observation; absent when not executed, never a serialized owner or Pages decision.
-  source_checkpoint_disposition:
-    description: Genuine fixed SOURCE observation; absent when not executed, never a serialized owner or Pages decision.
-  source_checkpoint_disposition_sha256:
-    description: Genuine fixed SOURCE observation; absent when not executed, never a serialized owner or Pages decision.
-  source_checkpoint_dataset_id:
-    description: Genuine fixed SOURCE observation; absent when not executed, never a serialized owner or Pages decision.
-  source_checkpoint_runtime_audit_sha256:
-    description: Genuine fixed SOURCE observation; absent when not executed, never a serialized owner or Pages decision.
-  source_operational_control_report:
-    description: Fixed diagnostic report observed; never owner, closure, SAVE, B/S or Pages authority.
-  source_operational_control_status:
-    description: Actual normal control summary PASSED or DEGRADED; missing remains unknown.
-  source_operational_control_disposition:
-    description: Actual normal control summary safety disposition; not a deploy decision.
   saved:
     description: True only after v2 finalization, physical cohort closure and own claim release.
   uploaded:

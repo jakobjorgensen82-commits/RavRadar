@@ -9,7 +9,8 @@ import {NATIVE_ORIGINAL_CONTINUITY_BINDING as BINDING,NATIVE_ORIGINAL_CONTINUITY
   NATIVE_ORIGINAL_CONTINUITY_BEFORE as OLD,requireNativeOriginalContinuityBinding,
   requireNativeOriginalContinuityOutput,nativeOriginalContinuityMigration,
   readNativeOriginalContinuityCanonicalSource} from './lib/native-original-continuity-successor-source.mjs';
-import {assertNativeOriginalContinuityCodeOnlyCaller,selectNativeOriginalContinuityCodeOnlySource}
+import {assertNativeOriginalContinuityCodeOnlyCaller,selectNativeOriginalContinuityCodeOnlySource,
+  selectCurrentInstalledCodeOnlySource,verifyCurrentInstalledCodeOnlyPlan}
   from './select-native-original-continuity-code-only-source.mjs';
 import {assertNativeOriginalContinuityPlanCaller,selectNativeOriginalContinuityRoute,
   verifyNativeOriginalContinuityPlan} from './verify-native-original-continuity-plan.mjs';
@@ -78,112 +79,140 @@ test('native continuity fixed before/installed caller pairs preserve their input
   assert.throws(()=>assertNativeOriginalContinuityCodeOnlyCaller(caller(),{}));
 });
 
+const installedCodeOnlyCaller=()=>({
+  ...caller(true),CONFIRMATION:'DEPLOY-CODE-ONLY-REPAIR',
+  RAVRADAR_ACCOUNT_STATISTICS_ASSISTANT_UPGRADE_OPT_IN:'false',
+  RAVRADAR_ACCOUNT_STATISTICS_ASSISTANT_PHASE:'installed',
+  RAVRADAR_ESTABLISHED_NATIVE_CURRENT_ORIGIN_UPGRADE_OPT_IN:'false',
+  RAVRADAR_LAST_MILE_ENCLOSURE_UPGRADE_OPT_IN:'false',
+  RAVRADAR_USERDATA_UPGRADE_OPT_IN:'false',RAVRADAR_ACCOUNT_ASSISTANT_UPGRADE_OPT_IN:'false',
+  RAVRADAR_STATISTICS_REVISION_UPGRADE_OPT_IN:'false',
+  ...Object.fromEntries(['UPGRADE_EXISTING_OWNER_EXPORT','UPGRADE_ACCOUNT_ASSISTANT',
+    'UPGRADE_STATISTICS_REVISION','UPGRADE_ESTABLISHED_NATIVE_CURRENT_ORIGIN',
+    'UPGRADE_LAST_MILE_ENCLOSURE','UPGRADE_ACCOUNT_STATISTICS_ASSISTANT',
+    'UPGRADE_NATIVE_ORIGINAL_CONTINUITY','RESTART_ARCHIVED_WEATHER','PUBLISH_NEWEST_SAVED_WEATHER',
+    'COMPLETED_PRIVATE_RUNTIME','CHECKPOINT_ONLY','QUICK_CONFIRMATION',
+    'RAVRADAR_WEATHER_STATE_EPOCH_BOOTSTRAP','RAVRADAR_WEATHER_STATE_EPOCH_CHECKPOINT_REENTRY',
+    'NATIVE_IDENTITY_RECOVERY'].map(key=>[key,'false'])),
+});
+test('current installed code-only routing leaves both historical source phases inactive',async t=>{
+  const environment=Object.freeze(installedCodeOnlyCaller());
+  await t.test('native586 is not the current588 source',async()=>{
+    assert.equal(await selectNativeOriginalContinuityCodeOnlySource(environment),false);
+  });
+  await t.test('metadata585 is not the current588 source',async()=>{
+    const {selectAccountStatisticsAssistantCodeOnlySource}=await import('./select-account-statistics-assistant-code-only-source.mjs');
+    assert.equal(await selectAccountStatisticsAssistantCodeOnlySource(environment),false);
+  });
+  assert.deepEqual(environment,installedCodeOnlyCaller(),'Selection never mutates caller authority');
+});
 
-// New current589 checks use the existing issued SOURCE APIs. The immutable733
-// native block is preserved as historical588 DATA, never renamed or imported
-// through a changed I/C-owned selector.
-import {SOURCE_PRODUCER_BINDING as installedSourceBinding,requireSourceProducerBinding,
-  requireSourceProducerOutput,sourceProducerMigration} from './lib/source-producer-successor-source.mjs';
-import {selectSourceProducerCodeOnlySource,assertSourceProducerCodeOnlyCaller}
-  from './select-source-producer-code-only-source.mjs';
-import {verifySourceProducerPlan} from './verify-source-producer-plan.mjs';
-import {sourceProducerRequiredMigrations} from './integrated-cutover-readiness.mjs';
-import {ravScoreContinuationImplementationSha256} from './lib/ravscore-continuation-implementation-contract.mjs';
-const sourceInstalledCaller=()=>({...caller(true),
-  RAVRADAR_SOURCE_PRODUCER_UPGRADE_OPT_IN:'false',RAVRADAR_SOURCE_PRODUCER_PHASE:'installed',
-  RAVRADAR_SOURCE_PRODUCER_CONFIRMATION:'DEPLOY-CODE-ONLY-REPAIR',
-  RAVRADAR_SOURCE_PRODUCER_WRITER_ACTIVE:'false',RAVRADAR_SOURCE_PRODUCER_RECOVERY_GATE_RESULT:'success',
-  RAVRADAR_SOURCE_PRODUCER_RECOVERY_RUN_ID:'',RAVRADAR_SOURCE_PRODUCER_SAVED_WEATHER:'false',
-  RAVRADAR_SOURCE_NORMAL_PRODUCER:'false',RAVRADAR_ACCOUNT_STATISTICS_ASSISTANT_UPGRADE_OPT_IN:'false',
-});
-test('SOURCE589 current installed selector uses its actual issued I C T and complete own caller',async()=>{
-  requireSourceProducerOutput();const next=requireSourceProducerBinding();
-  assert.equal(ravScoreModelBinding().modelBundleSha256,next.I);
-  assert.equal(candidateBinding().modelBundleSha256,next.C);
-  assert.equal(await ravScoreContinuationImplementationSha256(),next.T);
-  const environment=Object.freeze(sourceInstalledCaller());
-  assert.equal(await selectSourceProducerCodeOnlySource(environment),true);
-  assert.deepEqual(environment,sourceInstalledCaller());
-  const required=['GITHUB_EVENT_NAME','GITHUB_REF','GITHUB_RUN_ATTEMPT','GITHUB_RUN_ID','GITHUB_SHA',
-    'GITHUB_WORKFLOW','RAVRADAR_SOURCE_PRODUCER_UPGRADE_OPT_IN','RAVRADAR_SOURCE_PRODUCER_PHASE',
-    'RAVRADAR_SOURCE_PRODUCER_CONFIRMATION','RAVRADAR_SOURCE_PRODUCER_WRITER_ACTIVE',
-    'RAVRADAR_SOURCE_PRODUCER_RECOVERY_GATE_RESULT','RAVRADAR_SOURCE_PRODUCER_RECOVERY_RUN_ID',
-    'RAVRADAR_SOURCE_PRODUCER_SAVED_WEATHER','RAVRADAR_SOURCE_NORMAL_PRODUCER',
-    'RAVRADAR_ACCOUNT_STATISTICS_ASSISTANT_UPGRADE_OPT_IN'];
-  for(const key of required){
-    const changed={...environment,[key]:environment[key]==='false'?'true':'INVALID'};
-    await assert.rejects(selectSourceProducerCodeOnlySource(changed),{code:'ERR_ASSERTION'},key);
+test('current installed code-only source requires actual active issuance and the complete caller',async()=>{
+  const environment=Object.freeze(installedCodeOnlyCaller());
+  assert.deepEqual(await selectCurrentInstalledCodeOnlySource(environment),{
+    sourcePhase:ACTIVE_ASSISTANT_SUCCESSOR.sourcePhase,
+    migrationVersion:ACTIVE_ASSISTANT_SUCCESSOR.requireBinding().version});
+  for(const [key,value]of Object.entries(environment)){
+    if(key==='RAVRADAR_NATIVE_ORIGINAL_CONTINUITY_PHASE'
+      ||key==='RAVRADAR_ACCOUNT_STATISTICS_ASSISTANT_PHASE'
+      ||key==='RAVRADAR_NATIVE_ORIGINAL_CONTINUITY_CONFIRMATION'
+      ||key.endsWith('_ORIGINALS_VERIFIED')||key.endsWith('_NOLOSS_VERIFIED')||key.endsWith('_PREWRITE_VERIFIED'))continue;
+    const changed={...environment,[key]:value==='false'?'true':value==='true'?'false':'INVALID'};
+    await assert.rejects(selectCurrentInstalledCodeOnlySource(changed),{code:'ERR_ASSERTION'},key);
     const missing={...environment};delete missing[key];
-    await assert.rejects(selectSourceProducerCodeOnlySource(missing),{code:'ERR_ASSERTION'},'missing '+key);
+    await assert.rejects(selectCurrentInstalledCodeOnlySource(missing),{code:'ERR_ASSERTION'},'missing '+key);
   }
-  for(const key of [...mixed,'RAVRADAR_NATIVE_ORIGINAL_CONTINUITY_UPGRADE_OPT_IN'])
-    await assert.rejects(selectSourceProducerCodeOnlySource({...environment,[key]:'true'}));
+  for(const key of ['RAVRADAR_CURRENT_MEMORY_WARMUP_UPGRADE_OPT_IN','RAVRADAR_CURRENT_GRID_UPGRADE_OPT_IN',
+    'RAVRADAR_KNOWLEDGE_UPGRADE_OPT_IN','RAVRADAR_ASSISTANT_SAME_H0_UPGRADE_OPT_IN',
+    'RAVRADAR_CURRENT_FAMILY_EPOCH_UPGRADE_OPT_IN'])
+    await assert.rejects(selectCurrentInstalledCodeOnlySource({...environment,[key]:'true'}));
+  await assert.rejects(selectNativeOriginalContinuityCodeOnlySource({...environment,
+    RAVRADAR_NATIVE_ORIGINAL_CONTINUITY_UPGRADE_OPT_IN:'true',RAVRADAR_NATIVE_ORIGINAL_CONTINUITY_PHASE:'before'}));
+  const {selectAccountStatisticsAssistantCodeOnlySource}=await import('./select-account-statistics-assistant-code-only-source.mjs');
+  await assert.rejects(selectAccountStatisticsAssistantCodeOnlySource({...environment,
+    RAVRADAR_ACCOUNT_STATISTICS_ASSISTANT_UPGRADE_OPT_IN:'true'}));
 });
-test('SOURCE589 actual selector body refuses changed missing or unissued model inputs without a fake positive tuple',async()=>{
+
+test('current installed code-only actual selection body rejects unknown or partial I C T before admission',async()=>{
   const {runInNewContext}=await import('node:vm');
-  const raw=await fs.readFile(new URL('./select-source-producer-code-only-source.mjs',import.meta.url),'utf8');
-  assert.equal(successorHash('sha256').update(raw).digest('hex'),
-    'fd1c7e4d80abd114fab3d763db9770e1a56888c2c8f93148fb5ce5f9a91fca22');
-  const start='export async function selectSourceProducerCodeOnlySource(environment=process.env){',end='\nasync function main(){';
-  assert.equal(raw.split(start).length,2);assert.equal(raw.split(end).length,2);
-  const body=raw.slice(raw.indexOf(start),raw.indexOf(end)).replace(/^export /,'');
-  const physical={I:ravScoreModelBinding().modelBundleSha256,C:candidateBinding().modelBundleSha256,
-    T:await ravScoreContinuationImplementationSha256()};
-  assert.deepEqual(physical,{I:requireSourceProducerBinding().I,C:requireSourceProducerBinding().C,T:requireSourceProducerBinding().T});
-  for(const change of ['I','C','T','missing-I','missing-C','missing-T','unissued']){
-    const observed={...physical};let continuationCalls=0;
+  const source=await fs.readFile(path.join(ROOT,'scripts/select-native-original-continuity-code-only-source.mjs'),'utf8');
+  const start='export async function selectCurrentInstalledCodeOnlySource(environment=process.env){';
+  const end='\nexport async function verifyCurrentInstalledCodeOnlyPlan(options){';
+  assert.equal(source.split(start).length,2);assert.equal(source.split(end).length,2);
+  const body=source.slice(source.indexOf(start),source.indexOf(end)).replace(/^export /,'');
+  const next=ACTIVE_ASSISTANT_SUCCESSOR.requireBinding();
+  for(const change of [null,'I','C','T','missing-I','missing-C','missing-T','unissued']){
+    const observed={I:next.I,C:next.C,T:next.T};let continuationCalls=0;
     if(['I','C','T'].includes(change))observed[change]='f'.repeat(64);
-    if(change.startsWith('missing-'))delete observed[change.slice(8)];
-    const actual=runInNewContext(body+'\nselectSourceProducerCodeOnlySource;',{
-      assert,process:{env:{}},SOURCE_PRODUCER_BINDING:installedSourceBinding,
-      requireSourceProducerOutput(){if(change==='unissued')throw new Error('SYNTHETIC_UNISSUED_REJECTION_ONLY');return requireSourceProducerOutput();},
-      requireSourceProducerBinding,assertSourceProducerCodeOnlyCaller,
+    if(change?.startsWith('missing-'))delete observed[change.slice(8)];
+    const unavailable=Object.assign(new Error('SYNTHETIC_UNISSUED'),{code:'UNISSUED'});
+    const actual=runInNewContext(body+'\nselectCurrentInstalledCodeOnlySource;',{
+      assert,process:{env:{}},ACTIVE:{requireOutput(){if(change==='unissued')throw unavailable;},
+        requireBinding:()=>next,requireRelease:()=>ACTIVE_ASSISTANT_SUCCESSOR.requireRelease(),
+        sourcePhase:ACTIVE_ASSISTANT_SUCCESSOR.sourcePhase},
       ravScoreModelBinding:()=>({modelBundleSha256:observed.I}),
       candidateBinding:()=>({modelBundleSha256:observed.C}),
       async ravScoreContinuationImplementationSha256(){continuationCalls++;return observed.T;},
-    },{filename:'actual-source589-current-installed-selection-rejection-body.js'});
-    await assert.rejects(actual(sourceInstalledCaller()));
+    },{filename:'actual-current-installed-code-only-selection-body.js'});
+    if(change===null)assert.equal((await actual(installedCodeOnlyCaller())).sourcePhase,ACTIVE_ASSISTANT_SUCCESSOR.sourcePhase);
+    else await assert.rejects(actual(installedCodeOnlyCaller()));
     assert.equal(continuationCalls,['I','C','missing-I','missing-C','unissued'].includes(change)?0:1);
   }
 });
-test('SOURCE589 current installed plan accepts only the actual whole installed history and zero pending SQL',async()=>{
-  requireSourceProducerOutput();const required=sourceProducerRequiredMigrations(),next=required.at(-1);
-  assert.equal(next.version,sourceProducerMigration().version);
-  const full='Local | Remote | Time (UTC)\n'+required.map(row=>
-    row.version+' | '+row.version+' | synthetic-plan-response').join('\n');
+
+test('current installed code-only plan uses the normal active migration contract and refuses every pending write',async()=>{
+  const required=assistantPublic587SuccessorRequiredMigrations(),next=required.at(-1);
+  const full='Local | Remote | Time (UTC)\n'+required.map(row=>`${row.version} | ${row.version} | synthetic-plan-response`).join('\n');
   const noop='DRY RUN: migrations will *not* be pushed to the database.\nRemote database is up to date.';
-  const options={phase:'installed',environment:sourceInstalledCaller(),migrationListText:full,dryRunText:noop,
+  const options={environment:installedCodeOnlyCaller(),migrationListText:full,dryRunText:noop,
     migrationsDirectory:path.join(ROOT,'supabase/migrations')};
-  const result=await verifySourceProducerPlan(options);
-  assert.deepEqual(result.pendingVersions,[]);assert.equal(result.sqlWriteRequired,false);
+  assert.deepEqual((await verifyCurrentInstalledCodeOnlyPlan(options)).pendingVersions,[]);
   for(const changed of [
-    {...options,migrationListText:full.replace(next.version+' | '+next.version,next.version+' | ')},
+    {...options,migrationListText:full.replace(`${next.version} | ${next.version}`,`${next.version} | `)},
     {...options,migrationListText:full+'\n20990101000000 | 20990101000000 | unknown'},
     {...options,migrationListText:full+'\n'+next.version+' | '+next.version+' | duplicate'},
     {...options,dryRunText:'DRY RUN: migrations will *not* be pushed to the database.\nWould push these migrations:\n • '
       +next.filename+'\nFinished supabase db push.'},
-    {...options,migrationListText:full.replace(required[0].version+' | '+required[0].version,required[0].version+' | ')},
+    {...options,migrationListText:full.replace(`${required[0].version} | ${required[0].version}`,`${required[0].version} | `)},
     {...options,environment:{...options.environment,RAVRADAR_NATIVE_ORIGINAL_CONTINUITY_UPGRADE_OPT_IN:'true'}},
-    {...options,allowPending:true},
-  ])await assert.rejects(verifySourceProducerPlan(changed));
+  ])await assert.rejects(verifyCurrentInstalledCodeOnlyPlan(changed));
+  await assert.rejects(verifyCurrentInstalledCodeOnlyPlan({...options,allowPending:true}));
 });
-test('historical main733 native current-installed block retains its exact input identities and every old assertion',async()=>{
-  const bytes=await fs.readFile(new URL('./lib/source-main733-current-installed-test-review.json',import.meta.url));
-  assert.equal(successorHash('sha256').update(bytes).digest('hex'),'502ea6f8ea5131c425f0b71a9bd20638c3270b8f59d1ca7557cbdb526cd71e73');
-  const review=JSON.parse(bytes);
-  assert.equal(review.kind,'TEST_ONLY_EXACT_MAIN733_CURRENT_INSTALLED_REGRESSION_INPUTS');
-  assert.equal(review.productionAuthority,false);
-  assert.equal(review.head,'7ac31d25a0e803706c757ec015a05fb0138437cf');
-  assert.equal(review.tree,'1cc30d6c5b01389336ebfc5af911111521aca999');
-  assert.equal(review.nativeWholeTestBlob,'d86eff3700c6f1030db625e16205fd6c77051574');
-  assert.equal(review.nativeWholeAddedBlock.split('\n').length,136);
-  assert.equal([...review.nativeWholeAddedBlock.matchAll(/^test\('/gm)].length,5);
-  assert.equal(review.inputPins.find(row=>row.path==='scripts/test-native-original-continuity-callers.mjs').sha256,
-    '7f0154fa94917966b93d219e491df6032ba0209944207b8a10add635f680e9ae');
-  assert.equal(review.inputPins.find(row=>row.path==='.github/workflows/deploy-code-only-repair.yml').sha256,
-    '9d16a127c0e7b0e256e199982b56f14762f370f8e30720b2545a40b97bf09dc1');
-  // Retained historical code/CI inputs are not executed against source589 and
-  // never substitute for the direct current-source tests immediately above.
+
+test('current installed code-only normal workflow keeps read-only SQL, hard current restore and B before S',async()=>{
+  const {runInNewContext}=await import('node:vm');
+  const source=await fs.readFile(path.join(ROOT,'.github/workflows/deploy-code-only-repair.yml'),'utf8');
+  const step=name=>{const heading='      - name: '+name,at=source.indexOf(heading);
+    assert(at>=0);assert.equal(source.indexOf(heading,at+heading.length),-1);
+    const end=source.indexOf('\n      - name:',at+heading.length);
+    return source.slice(at,end<0?undefined:end);};
+  const env={RAVRADAR_CURRENT_INSTALLED_CODE_ONLY_SOURCE_ACTIVE:'true'},inputs={};
+  const steps={'operational-action':{outputs:{action:'integrated'}},'saved-last-mile-source':{outputs:{}},
+    'current-private-publish':{outcome:'success'},'checkpoint-disposition':{outputs:{disposition:'READY_PUBLISHED'}}};
+  const activeCondition=name=>{const text=step(name),match=/^        if: (.+)$/m.exec(text);assert(match);
+    // GitHub permits hyphens in a step ID; JavaScript needs bracket notation.
+    const expression=match[1].replace(/\bsteps\.([a-zA-Z0-9_-]+)/g,(_whole,id)=>'steps['+JSON.stringify(id)+']');
+    return Boolean(runInNewContext(expression,{env,inputs,steps}));};
+  assert.equal(activeCondition('Select only an already-installed established-origin successor before private work'),false);
+  assert.equal(activeCondition('Require the current exact installed source and empty SQL plan before private work'),true);
+  assert.equal(activeCondition('Apply exact dry-run-verified post-cutover binding'),false);
+  assert.equal(activeCondition('Publish measured continuation checkpoint without promoting rollback readiness'),false);
+  assert.equal(activeCondition('Publish measured continuation only after verified warmup private runtime'),true);
+  steps['current-private-publish'].outcome='failure';
+  assert.equal(activeCondition('Publish measured continuation only after verified warmup private runtime'),false);
+  assert.equal(activeCondition('Deploy exact rebound trip Edges without Worker or D1 replay'),false);
+  const installed=step('Require the current exact installed source and empty SQL plan before private work');
+  assert.match(installed,/--verify-current-installed-plan/);assert.match(installed,/integrated-cutover-readiness\.mjs verify-db/);
+  assert.match(installed,/verify-statistics-preference-revision-schema\.mjs/);
+  assert.doesNotMatch(installed,/supabase db push --linked --skip-vault/);
+  const readback=step('Read back migration and database binding');
+  assert.match(readback,/if test "\$\{RAVRADAR_CURRENT_INSTALLED_CODE_ONLY_SOURCE_ACTIVE:-false\}" = true; then/);
+  assert.match(readback,/--verify-current-installed-plan[\s\S]*else[\s\S]*verify-established-native-current-origin-plan\.mjs/);
+  const restore=source.indexOf('      - name: Require authenticated current runtime before any historical fallback');
+  assert(restore>source.indexOf('      - name: Try installing current-compatible private runtime'));
+  assert(restore<source.indexOf('      - name: Describe exact target private runtime source for bounded migration'));
+  assert.match(step('Require authenticated current runtime before any historical fallback'),/current-private-install\.outcome/);
+  assert(source.includes("env.RAVRADAR_CURRENT_INSTALLED_CODE_ONLY_SOURCE_ACTIVE == 'true') && steps.established-native-current-origin-checkpoint-publish.outcome"));
 });
 
 test(issued?'native continuity actual issued selector rejects invalid callers before files or network'
@@ -1019,8 +1048,7 @@ test('assistant public587 successor reads only whole genuine issued587 canonical
 });
 
 // Faste587-kilde-/snapshotmål. Ingen ny tuple, B/S-kvittering, SQL eller runtimeadgang.
-import {withAuthenticated587PredecessorSource,withAuthenticated588PredecessorSource}
-  from './check-assistant-later-h0-predecessor-source.mjs';
+import {withAuthenticated587PredecessorSource} from './check-assistant-later-h0-predecessor-source.mjs';
 import {readAuthenticatedFrozen587Predecessor,assertAuthenticatedFrozen587Snapshot,
   assertAuthenticatedFrozen587SnapshotFresh} from './lib/authenticated-frozen586-predecessor.mjs';
 test('assistant public587 fixed readers refuse caller profiles and JSON handles before I/O',async t=>{
@@ -1065,12 +1093,7 @@ test('assistant public587 genuine DATA host keeps fixed family and exact produce
   const {runInNewContext}=await import('node:vm'),{createHash}=await import('node:crypto');
   const hash=value=>createHash('sha256').update(value).digest('hex');
   const actualAuth=await fs.readFile(path.join(ROOT,'scripts/lib/authenticated-frozen586-predecessor.mjs'),'utf8');
-  const profileStart='const FROZEN587=Object.freeze({',profileEnd='const FROZEN588=Object.freeze({';
-  const start=actualAuth.indexOf(profileStart),end=actualAuth.indexOf(profileEnd);
-  assert(start>0&&end>start,'The complete587 declaration must precede the actual next588 declaration');
-  assert.equal(actualAuth.indexOf(profileStart,start+1),-1,'Exactly one fixed587 profile declaration');
-  assert.equal(actualAuth.indexOf(profileEnd,end+1),-1,'Exactly one actual next588 profile declaration');
-  const profileSource=actualAuth.slice(start,end);
+  const profileSource=actualAuth.slice(actualAuth.indexOf('const FROZEN587=Object.freeze({'),actualAuth.indexOf('const snapshot586='));
   const profile=runInNewContext(profileSource+'\nFROZEN587;',{Object,withAuthenticated587PredecessorSource});
   assert.equal(profile.sourceHead,'aab72babd27175a4276c2a2f1965c74bb021b4af');
   const actualProducer=actualAuth.slice(actualAuth.indexOf('async function qualifyProducer('),actualAuth.indexOf('async function fixedPaths('));
@@ -1166,42 +1189,6 @@ import {synchronizeRavScoreModelBinding,assistantPublic587SuccessorCheckpointIns
   from './sync-ravscore-model-binding.mjs';
 
 test('assistant public587 ordinary caller uses real top-level workflow identity before selecting original data',async t=>{
-// Historisk588-selectorfunktion; ikke bevis for kørsel af hele runtime-modulet.
-  await withAuthenticated588PredecessorSource(async frozenRoot=>{
-    const {execFileSync}=await import('node:child_process');
-    const environment=Object.fromEntries(['PATH','Path','SystemRoot','WINDIR','TEMP','TMP','LANG','LC_ALL']
-      .filter(key=>typeof process.env[key]==='string').map(key=>[key,process.env[key]]));
-    Object.assign(environment,{GIT_NO_LAZY_FETCH:'1',GIT_NO_REPLACE_OBJECTS:'1',GIT_TERMINAL_PROMPT:'0',
-      GIT_CONFIG_COUNT:'1',GIT_CONFIG_KEY_0:'protocol.allow',GIT_CONFIG_VALUE_0:'never'});
-    const raw=execFileSync('git',['-C',ROOT,'cat-file','blob',
-      '4845e6c6622333ad4e8454b0b43f5f94ae42233e:scripts/assistant-later-h0-runtime-transition.mjs'],
-      {env:environment,timeout:30000,maxBuffer:65536});
-    const digest=bytes=>successorHash('sha256').update(bytes).digest('hex');
-    assert.equal(raw.length,16050);assert.equal(digest(raw),'4900c63b8060b71c37503e22580f807723e9b3eb2ec5a5390edd0a657035dd1d');
-    const source=raw.toString('utf8');
-    const clip=(begin,end)=>{
-      assert.equal(source.split(begin).length,2);assert.equal(source.split(end).length,2);
-      assert(source.indexOf(begin)<source.indexOf(end));return source.slice(source.indexOf(begin),source.indexOf(end));
-    };
-    const bindings=clip('const {before:OLD,requireBinding:requireActiveAssistantBinding,requireOutput:requireActiveAssistantOutput,',
-      "\nimport {withAuthenticated587PredecessorSource}");
-    const jsonStart='const json=async p=>JSON.parse(await fs.readFile(p,';
-    assert.equal(source.split(jsonStart).length,2);
-    const json=source.slice(source.indexOf(jsonStart),source.indexOf('\n',source.indexOf(jsonStart))+1);
-    const target=clip('function targetHour(){','\nfunction checkpointInverse(');
-    const selection=clip('export async function selectAssistantLaterH0Source(){','\nexport async function prepareAssistantLaterH0Runtime(){');
-    for(const [part,expected]of [[bindings,'5bba9abf79cb0459d86b2dde97437d885aaaf5c5f3cc836b86b6a2b3077578dd'],[json,'1b38661cd7405b21fe2b55baab3a1d15ede096fa97385a2abfae8eb0e69406ac'],
-      [target,'e69e96245062d052d6bf91c5ff6abcd8c94640e6cabd8f25dde8161d3936de34'],[selection,'002ccd078b0eddf4c4e403dc4ab1e2a68ed7e802e1c3b4d0926932af7872793c']])assert.equal(digest(part),expected);
-    const {ACTIVE_ASSISTANT_SUCCESSOR,ASSISTANT_LATER_H0_BEFORE}=
-      await import(pathToFileURL(path.join(frozenRoot,'scripts/lib/assistant-later-h0-successor-source.mjs')).href);
-    const {ravScoreModelBinding}=await import(pathToFileURL(path.join(frozenRoot,'js/core/ravscore-model-contract.js')).href);
-    // Samme Node-realm, faktisk588-model og uændrede lokale hjælpe-/selectorbytes.
-    // Ingen helmodul-import, overlay, håndskrevet modeltuple eller ændret produktguard.
-    const selectAssistantLaterH0Source=new Function('assert','fs','path','process','ACTIVE','ravScoreModelBinding',
-      "'use strict';\n"+bindings+'\n'+json+'\n'+target+'\n'+selection.replace(/^export /,'')+
-      '\nreturn selectAssistantLaterH0Source;')(assert,fs,path,process,ACTIVE_ASSISTANT_SUCCESSOR,ravScoreModelBinding);
-    try{
-      await (async()=>{
   const entrypoints=await Promise.all(['update-and-deploy.yml','run-current-weather-once.yml'].map(async file=>{
     const source=await fs.readFile(path.join(ROOT,'.github/workflows',file),'utf8');
     const match=/^name: (.+)$/m.exec(source);assert(match,'Actual top-level caller has a fixed name');
@@ -1255,17 +1242,13 @@ test('assistant public587 ordinary caller uses real top-level workflow identity 
   }finally{
     t.mock.restoreAll();for(const key of keys){if(prior[key]===undefined)delete process.env[key];else process.env[key]=prior[key];}
   }
-      })();
-    }finally{t.mock.restoreAll();}
-  });
 });
 
 test('assistant public587 active facade is fixed and refuses UNISSUED before I/O',async t=>{
   assert(Object.isFrozen(ACTIVE_ASSISTANT_SUCCESSOR));
   assert.equal(ACTIVE_ASSISTANT_SUCCESSOR.before,ASSISTANT_PUBLIC587_SUCCESSOR_BEFORE);
   assert.equal(ACTIVE_ASSISTANT_SUCCESSOR.requireOutput,requireAssistantPublic587SuccessorOutput);
-  assert.equal(ACTIVE_ASSISTANT_SUCCESSOR.sourcePhase,'assistant-public587-successor');
-  assert.equal(DEFAULT_CUTOVER_SOURCE_PHASE,'source-producer');
+  assert.equal(DEFAULT_CUTOVER_SOURCE_PHASE,'assistant-public587-successor');
   if(ACTIVE_ASSISTANT_SUCCESSOR.binding!==null){
     requireAssistantPublic587SuccessorRelease();
     const required=assistantPublic587SuccessorRequiredMigrations();
@@ -1396,62 +1379,12 @@ test('assistant public587 operative import variants remain whole-source bound',a
     assert(prewrite.includes("FROZEN587_PREDECESSOR_"+row[1]+":'"+row[2]+"'"));
   const pkg=JSON.parse(await fs.readFile(path.join(ROOT,'package.json'),'utf8'));
   assert.equal(pkg.scripts['test:assistant-later-h0-source'],
-    "node --input-type=module -e \"import {withAuthenticated588PredecessorSource} from './scripts/check-assistant-later-h0-predecessor-source.mjs';await withAuthenticated588PredecessorSource(async()=>{});\"");
-  await withAuthenticated588PredecessorSource(async frozenRoot=>{
-    const historicalPkg=JSON.parse(await fs.readFile(path.join(frozenRoot,'package.json'),'utf8'));
-    assert.equal(historicalPkg.scripts['test:assistant-later-h0-source'],
-      'node scripts/build-assistant-later-h0-successor.mjs --public587-successor --check');
-  });
+    'node scripts/build-assistant-later-h0-successor.mjs --public587-successor --check');
 });
 
 test('assistant public587 late Edge route preserves exact prior profile and ordinary gates',async()=>{
-// Denne ene historiske case bruger ægte588; den aktuelle589-case bevares særskilt.
-  await withAuthenticated588PredecessorSource(async frozenRoot=>{
-    const {execFileSync}=await import('node:child_process');
-    const leaf='scripts/lib/production-workflow-sources.mjs';
-    const frozenHead='4845e6c6622333ad4e8454b0b43f5f94ae42233e';
-    const expectedSha='480267d37aa808491c70fb4c8fc2d711ca99b5fbf4318eaa5abda31e48711798';
-    const environment=Object.fromEntries(['PATH','Path','SystemRoot','WINDIR','TEMP','TMP','LANG','LC_ALL']
-      .filter(key=>typeof process.env[key]==='string').map(key=>[key,process.env[key]]));
-    Object.assign(environment,{GIT_NO_LAZY_FETCH:'1',GIT_NO_REPLACE_OBJECTS:'1',GIT_TERMINAL_PROMPT:'0',
-      GIT_CONFIG_COUNT:'1',GIT_CONFIG_KEY_0:'protocol.allow',GIT_CONFIG_VALUE_0:'never'});
-    // Én fast samme4845-leaf, aldrig caller-valgt root/head eller aktuel589-helper.
-    const original=execFileSync('git',['-C',ROOT,'cat-file','blob',frozenHead+':'+leaf],
-      {env:environment,timeout:30000,maxBuffer:65536});
-    const digest=bytes=>successorHash('sha256').update(bytes).digest('hex');
-    assert.equal(original.length,15752);assert.equal(digest(original),expectedSha);
-    const inventory=(await fs.readdir(frozenRoot,{recursive:true})).sort();
-    const target=path.join(frozenRoot,leaf),parent=path.dirname(target);
-    assert.equal(await fs.realpath(parent),parent);
-    await assert.rejects(fs.lstat(target),{code:'ENOENT'},'Kun én beviseligt fraværende kildeleaf');
-    const handle=await fs.open(target,'wx+',0o600);
-    let sealed,first,failed=false;
-    const identity=stat=>[stat.dev,stat.ino,stat.birthtimeNs,stat.size,stat.mtimeNs,stat.ctimeNs];
-    const verifyLeaf=async()=>{
-      const before=await handle.stat({bigint:true});
-      assert(before.isFile()&&before.nlink===1n&&before.ino>0n);
-      assert.deepEqual(identity(before),sealed);
-      const named=await fs.lstat(target,{bigint:true});
-      assert(named.isFile()&&!named.isSymbolicLink()&&named.nlink===1n);
-      assert.deepEqual(identity(named),sealed);assert.equal(await fs.realpath(parent),parent);
-      const captured=Buffer.alloc(original.length);let offset=0;
-      while(offset<captured.length){
-        const {bytesRead}=await handle.read(captured,offset,captured.length-offset,offset);
-        assert(bytesRead>0);offset+=bytesRead;
-      }
-      assert.equal((await handle.read(Buffer.alloc(1),0,1,captured.length)).bytesRead,0);
-      assert.deepEqual(captured,original);assert.equal(digest(captured),expectedSha);
-      assert.deepEqual(identity(await handle.stat({bigint:true})),sealed);
-      assert.deepEqual(identity(await fs.lstat(target,{bigint:true})),sealed);
-    };
-    try{
-      await handle.writeFile(original);await handle.sync();
-      sealed=identity(await handle.stat({bigint:true}));await verifyLeaf();
-      const {deferCurrentGridBindingEdges,currentGridEdgePublicationRequired}=await import(pathToFileURL(target).href);
-      const {ACTIVE_ASSISTANT_SUCCESSOR,ASSISTANT_PUBLIC587_SUCCESSOR_BEFORE,ASSISTANT_LATER_H0_BEFORE}=
-        await import(pathToFileURL(path.join(frozenRoot,'scripts/lib/assistant-later-h0-successor-source.mjs')).href);
-      const {ravScoreModelBinding}=await import(pathToFileURL(path.join(frozenRoot,'js/core/ravscore-model-contract.js')).href);
-      await (async()=>{
+  const {deferCurrentGridBindingEdges,currentGridEdgePublicationRequired}=
+    await import('./lib/production-workflow-sources.mjs');
   if(ACTIVE_ASSISTANT_SUCCESSOR.binding===null){
     await assert.rejects(currentGridEdgePublicationRequired({},'integrated-historical-maintenance'),
       /ASSISTANT_PUBLIC587_SUCCESSOR_UNISSUED/);
@@ -1471,17 +1404,4 @@ test('assistant public587 late Edge route preserves exact prior profile and ordi
   for(const action of ['integrated','code-only','unknown'])
     await assert.rejects(currentGridEdgePublicationRequired(old,action));
   assert.equal(deferCurrentGridBindingEdges('20990101000000'),false);
-      })();
-    }catch(error){first=error;failed=true;}
-    try{
-      try{await verifyLeaf();}finally{await handle.close();}
-      const final=await fs.lstat(target,{bigint:true});
-      assert(final.isFile()&&!final.isSymbolicLink()&&final.nlink===1n);
-      assert.deepEqual(identity(final),sealed);await fs.unlink(target);
-      await assert.rejects(fs.lstat(target),{code:'ENOENT'});
-      assert.deepEqual((await fs.readdir(frozenRoot,{recursive:true})).sort(),inventory,
-        'Hele oprindelige inventar er bevaret før fabrikkens egen fulde bytekontrol');
-    }catch(error){if(!failed){first=error;failed=true;}}
-    if(failed)throw first;
-  });
 });

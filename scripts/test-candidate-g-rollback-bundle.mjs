@@ -1,7 +1,5 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
-import { SOURCE_PRODUCER_DERIVED_METADATA_PATH, MODEL_RELEASE_ONLY_DEPENDENCIES }
-  from './lib/source-producer-derived-metadata.mjs';
 import {
   CANDIDATE_G_ROLLBACK_BUNDLE_ENTRYPOINTS,
   computeCandidateGRollbackBundle,
@@ -16,40 +14,6 @@ import {
 } from './rollback-assets/ravscore-model-contract.js';
 
 const baseline = await computeCandidateGRollbackBundle();
-
-// SOURCE derived output is checked, not a hidden executable/hash waiver.
-assert.deepEqual(MODEL_RELEASE_ONLY_DEPENDENCIES, ['scripts/ravscore-operational-activation.mjs'],
-  'Only the already established release/transition owner is outside this model closure');
-assert.equal(baseline.manifest.files.some(row => row.file === SOURCE_PRODUCER_DERIVED_METADATA_PATH), false);
-await assert.rejects(() => computeCandidateGRollbackBundle({
-  sourceOverrides: new Map([[SOURCE_PRODUCER_DERIVED_METADATA_PATH, '{}\n']]),
-}), /Generated SOURCE metadata override refused/);
-const requiredSourceImplementations = [
-  "scripts/lib/source-producer-derived-metadata.mjs",
-  "scripts/lib/source-producer-successor-source.mjs",
-  "scripts/source-normal-producer-entry.mjs",
-  "scripts/source-normal-producer-tail.mjs",
-  "scripts/lib/source-union-birth-journal.mjs",
-  "scripts/lib/verified-dmi-progress-inputs.mjs",
-  "scripts/lib/verified-protected-progress-components.mjs",
-  "scripts/weather-component-progress-cache.mjs",
-  "scripts/lib/dmi-forecast-file.mjs"
-];
-const sourceMutations = new Map();
-for (const file of requiredSourceImplementations) {
-  assert(baseline.manifest.files.some(row => row.file === file), file + ' must remain a real SOURCE implementation input');
-  sourceMutations.set(file, (await fs.readFile(file, 'utf8')) + '\n// source-implementation-mutation\n');
-}
-const changedSource = await computeCandidateGRollbackBundle({ sourceOverrides: sourceMutations });
-assert.notEqual(changedSource.modelBundleSha256, baseline.modelBundleSha256,
-  'Real SOURCE implementation mutations must change the model identity');
-for (const file of requiredSourceImplementations) {
-  const changed = changedSource.manifest.files.find(row => row.file === file);
-  assert(changed, file + ' must not disappear from the changed SOURCE closure');
-  assert.notEqual(changed.sha256,
-    baseline.manifest.files.find(row => row.file === file).sha256,
-    file + ' must contribute its actual changed source bytes');
-}
 const candidateEvaluatorSource = await fs.readFile('js/core/ravscore-candidate-g.js', 'utf8');
 await assert.rejects(() => computeCandidateGRollbackBundle({
   sourceOverrides: new Map([[
