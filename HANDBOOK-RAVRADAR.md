@@ -1,5 +1,11 @@
 ## 89.273 Genbrug af dansk datoformatering bevarer prognosens tider
 
+Opdatering 27. oktober 2026: Den almindelige vejropdatering stoppede før leverandørerne ved kontrollen af bevarede originaler. Klargøring og arbejdsinstallation af 590 var gennemført, men det beviser ikke en ny offentlig prognose.
+
+En gammel læserregel kendte kun 587-forgængeren og valgte derfor ikke den normale 588→590-overgang. Den eksisterende bindingskontrol afviste korrekt originalpakken. Den lokale rettelse bevarer de gamle originaler: før leverandørerne bruges den normale retentionslæser; efter leverandørerne bruges den autentificerede, uforanderlige 588-original med frisk kontrol, ikke arbejdsgrundlaget, som allerede kan være ændret.
+
+Den nye normale regression fejlede først på den forkerte bindingsvej og består efter rettelsen. Hele det eksisterende kaldermål afsluttede lokalt med 40 beståede tilfælde, ingen fejl eller oversprungne tilfælde; tidligere miljø-/fixture-fejl bevares privat, ikke som PASS. Det er ikke ny CI eller offentlig effekt. Score, prognosetider, DMI-budget, C/I/T og SQL ændres ikke; de eksisterende sikkerhedskontroller består.
+
 Kort fortalt: RavRadar kan genbruge den samme danske datoformatering uden at ændre prognosens tidspunkter, vejr eller scorer.
 
 Aktuelt 27. oktober 2026: Det offentlige 588-datasæt rr-20261027175553-210 blev leveret kl. 19.58 CET. 590-bindingen blev installeret kl. 20.05 CET; offentlig 590 er endnu ikke bekræftet. Disse er forskellige leveringsbeviser; ældre status nedenfor bevares som dateret historik.

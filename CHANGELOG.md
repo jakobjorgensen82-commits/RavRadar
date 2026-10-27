@@ -1,3 +1,13 @@
+## 27. oktober — bevarede DMI-originaler følger den aktive forgænger
+
+Den almindelige kørsel 40577026351/1 stoppede før leverandørfasen ved kontrollen af bevarede RAW-originaler. Klargøring af 590 og installation af dens arbejdsgrundlag var bestået; det er ikke bevis for en ny offentlig vejrprognose.
+
+Den normale DMI-læser genkendte kun den gamle 587-forgænger. Den valgte derfor ikke den eksisterende aktive 588→590-retentionsvej, og den normale bindingskontrol afviste korrekt en original 588-pakke mod lokal 590-binding. Den lokale kandidat retter kun valget af den autentificerede forgænger: før leverandørfasen bruges den normale retentionslæser; efter leverandørfasen læses den uforanderlige original gennem det korrekte opaque 588-snapshot med frisk genkontrol, ikke gennem læseren af arbejdsgrundlaget.
+
+Den nye regression i det eksisterende normale original-kaldermål fejlede først (0 PASS/1 FAIL) på den forkerte direkte bindingsvej. Efter rettelsen bestod den fokuserede case, og hele målet bestod med 40 PASS/0 FAIL/0 SKIP på det korrekte Python-miljø. Den første fulde miljø-/fixture-fejl er bevaret privat og kaldes ikke PASS. Begge aktive familier, adskillelsen før/efter leverandørfasen og afslag ved ændret eller ukendt grundlag er dækket. Det er lokale målresultater, ikke ny præcis CI eller offentlig effekt.
+
+C98/I97-kontrol og de syv bindingsforbrugere bestod; alle tre private runtimekontrakthashes er identiske. Hele UI- og DMI-dokumentationen fra PR741 bevares. Rettelsen ændrer ikke score, prognosetider, DMI-budget, C/I/T eller SQL; gamle originaler og gældende afvisningskontroller bevares. SOURCE, samlet statistik og automatisk sletning forbliver inaktive. Alle fem mål til 18. november 2026 består.
+
 ## 27. oktober — zonepanelets oversigter bevares under tidsskyderen
 
 Ejerens aktuelle ordre er, at “5 dages RavRadar” og “vandstand time for time” bliver i zonepanelet, også når tidsskyderen står på en prognosetime. Den lokale UI-kandidat bruger den normale lazy zoneindlæsning til oversigterne. Øverste score, forklaring og vejr følger fortsat den valgte time, søgemåde og samme lokale visningskontekst; oversigterne beholder deres egne tydelige dage og tider.
