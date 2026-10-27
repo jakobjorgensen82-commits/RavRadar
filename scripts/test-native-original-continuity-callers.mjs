@@ -1520,3 +1520,80 @@ test('assistant public587 late Edge route preserves exact prior profile and ordi
     await assert.rejects(currentGridEdgePublicationRequired(old,action));
   assert.equal(deferCurrentGridBindingEdges('20990101000000'),false);
 });
+
+test('ordinary companion readers use the exact active predecessor before and after providers',async()=>{
+  const {compileFunction}=await import('node:vm'),{isDeepStrictEqual}=await import('node:util');
+  const crypto=await import('node:crypto'),os=await import('node:os');
+  const profiles=await import('./lib/assistant-later-h0-successor-source.mjs');
+  const source=(await fs.readFile(path.join(ROOT,'scripts/read-authenticated-dmi-current-companions.mjs'),'utf8')).replace(/\r\n/g,'\n');
+  const start=source.indexOf('export async function readCurrentPrivateRuntimeCompanionInput(');
+  const end=source.indexOf('\nexport { readAuthenticatedCurrentCompanions };',start);
+  assert(start>=0&&end>start,'Actual normal reader boundaries');
+  const selectorStart=source.indexOf('const ACTIVE_PREDECESSOR=');
+  const selectorEnd=source.indexOf('\nconst ROOT',selectorStart);
+  if(selectorStart>=0)assert(selectorEnd>selectorStart,'Actual fixed family selector boundary');
+  const selector=selectorStart<0?'':source.slice(selectorStart,selectorEnd);
+  const factory=compileFunction(selector+'\n'+source.slice(start,end).replaceAll('export async function','async function')
+    +'\nreturn {readCurrentPrivateRuntimeCompanionInput,readCurrentPrivateRuntimeCompanions};',
+    ['ACTIVE','ravScoreModelBinding','process','path','fs','ROOT','crypto','isDeepStrictEqual','refuse',
+      'readAssistantLaterH0RetentionInput','verifyPrivateProductionRuntimeBundle',
+      'readAuthenticatedFrozen587Predecessor','assertAuthenticatedFrozen587Snapshot',
+      'readAuthenticatedFrozen588Predecessor','assertAuthenticatedFrozen588Snapshot',
+      'readAuthenticatedCurrentCompanions']);
+  const target='2026-10-27T20:00:00.000Z';
+  // Routing-only fixtures: no real B/S, opaque authority, model values or I/O.
+  for(const profile of [profiles.ACTIVE_ASSISTANT_SUCCESSOR,profiles.ISSUED_ASSISTANT_PUBLIC588_PROFILE]){
+    const expectedFamily=profile.sourcePhase==='assistant-public588-successor'?'588':'587';
+    assert(profile.before.I&&profile.binding.I&&profile.before.I!==profile.binding.I);
+    const env={RUNNER_TEMP:path.join(os.tmpdir(),'synthetic-companion-runner'),
+      RAVRADAR_PRIVATE_RUNTIME_ROOT:path.join(os.tmpdir(),'synthetic-companion-private')};
+    env.RAVRADAR_PRIVATE_RUNTIME_BUNDLE=path.join(env.RAVRADAR_PRIVATE_RUNTIME_ROOT,'bundle');
+    let descriptorI=profile.before.I,localI=profile.binding.I,changedDescriptor=false,changedSnapshot=false;
+    let descriptorReads=0,retentionReads=0,directReads=0,companionReads=0;
+    const families=[],originalPath=path.join(env.RAVRADAR_PRIVATE_RUNTIME_ROOT,'synthetic-original.json');
+    const original={synthetic:'unchanged original weather'},contexts=[{synthetic:'original companion'}];
+    const snapshot={descriptor:{bundleContentSha256:'b'.repeat(64)},conditionsPath:originalPath,
+      verified:{bundleContentSha256:'b'.repeat(64)}};
+    const view={verified:snapshot.verified,conditions:{synthetic:'metadata-only working view'}};
+    const descriptor=()=>Buffer.from(JSON.stringify({modelBinding:{modelBundleSha256:descriptorI},
+      bundleContentSha256:'b'.repeat(64)}));
+    const mockFs={lstat:async()=>({isFile:()=>true,isSymbolicLink:()=>false,size:descriptor().length}),
+      readFile:async file=>{
+        if(file===originalPath)return Buffer.from(JSON.stringify(original));
+        assert.equal(file,path.join(env.RUNNER_TEMP,'private-runtime-current-source.json'));
+        descriptorReads++;return changedDescriptor&&descriptorReads>1?Buffer.from('{}'):descriptor();
+      }};
+    const readFamily=family=>async()=>{families.push(family);return{family};};
+    const snapshotFamily=family=>handle=>{
+      assert.equal(handle.family,family);
+      return changedSnapshot&&families.length>1?{...snapshot,changed:true}:snapshot;
+    };
+    const normal=factory(profile,()=>({modelBundleSha256:localI}),{env},path,mockFs,ROOT,crypto,isDeepStrictEqual,
+      reason=>{throw Error(reason);},async()=>{retentionReads++;return view;},
+      async()=>{directReads++;throw Error('SYNTHETIC_STRICT_NORMAL_MODEL_CHECK');},
+      readFamily('587'),snapshotFamily('587'),readFamily('588'),snapshotFamily('588'),
+      async(verified,conditions)=>{companionReads++;assert.equal(verified,snapshot.verified);
+        assert.deepEqual(conditions,original);return contexts;});
+    assert.equal(await normal.readCurrentPrivateRuntimeCompanionInput(target),view);
+    assert.equal(retentionReads,1);assert.equal(directReads,0);
+    descriptorReads=0;
+    assert.equal(await normal.readCurrentPrivateRuntimeCompanions(target),contexts);
+    assert.equal(retentionReads,1,'After providers must not re-enter the pre-provider working-view reader');
+    assert.deepEqual(families,[expectedFamily,expectedFamily],'Exact original family is read and freshly rechecked');
+    assert.equal(companionReads,1);
+    families.length=0;changedSnapshot=true;descriptorReads=0;
+    await assert.rejects(normal.readCurrentPrivateRuntimeCompanions(target),/RETENTION_B_CHANGED/);
+    changedSnapshot=false;changedDescriptor=true;descriptorReads=0;
+    await assert.rejects(normal.readCurrentPrivateRuntimeCompanionInput(target),/RETENTION_B_CHANGED/);
+    changedDescriptor=false;descriptorReads=0;
+    for(const [nextDescriptor,nextLocal] of [[profile.binding.I,profile.binding.I],['f'.repeat(64),profile.binding.I],
+      [profile.before.I,'e'.repeat(64)]]){
+      descriptorI=nextDescriptor;localI=nextLocal;families.length=0;
+      const priorRetention=retentionReads;
+      await assert.rejects(normal.readCurrentPrivateRuntimeCompanionInput(target),/SYNTHETIC_STRICT_NORMAL_MODEL_CHECK/);
+      await assert.rejects(normal.readCurrentPrivateRuntimeCompanions(target),/SYNTHETIC_STRICT_NORMAL_MODEL_CHECK/);
+      assert.equal(retentionReads,priorRetention);assert.equal(families.length,0,
+        'Current/unknown/local-mismatch inputs cannot borrow the predecessor path');
+    }
+  }
+});

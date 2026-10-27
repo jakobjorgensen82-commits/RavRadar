@@ -1,4 +1,4 @@
-// Real normal panel renderer: a selected single hour is not a five-day summary.
+// The selected-hour header and the full zone forecast are independent views.
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import {showZoneInfo} from '../js/ui/info-panel.js';
@@ -12,7 +12,7 @@ const result={available:true,score:72,level:'fair',time,
 const zone={id:'synthetic-only',name:'Syntetisk område',region:'Lokal prøve'};
 const weather={time,windSpeedMps:6,windDirectionDeg:90};
 const forecast={hourly:[weather]};
-test('selected-hour panel does not invent an unavailable five-day summary; normal view is preserved',t=>{
+test('selected-hour panel retains the same full forecast and water-level panels as Now',t=>{
   // The synthetic forecast must belong to the test's date, not the CI host's
   // moving Danish day. Keep the normal renderer's real expiry rule unchanged.
   t.mock.timers.enable({apis:['Date'],now:Date.parse('2026-10-18T10:00:00.000Z')});
@@ -20,8 +20,13 @@ test('selected-hour panel does not invent an unavailable five-day summary; norma
     const current={innerHTML:''};showZoneInfo(current,zone,result,weather,mode,{forecast});
     assert.match(current.innerHTML,/data-forecast-section/);assert.match(current.innerHTML,/data-tide-section/);
     const selected={innerHTML:''};showZoneInfo(selected,zone,result,weather,mode,{forecast,mapForecastTime:time});
-    assert.match(selected.innerHTML,/>72</);assert.doesNotMatch(selected.innerHTML,/data-forecast-section|data-tide-section/);
-    assert.match(selected.innerHTML,/map-timeline-zone-scope/);
+    assert.match(selected.innerHTML,/>72</);assert.match(selected.innerHTML,/data-forecast-section/);
+    assert.match(selected.innerHTML,/data-tide-section/);
+    assert.doesNotMatch(selected.innerHTML,/map-timeline-zone-scope/);
+    for(const payload of ['forecast-payload','tide-payload']){
+      const read=html=>JSON.parse(html.match(new RegExp('class="'+payload+'">([^<]+)<'))[1]);
+      assert.deepEqual(read(selected.innerHTML),read(current.innerHTML));
+    }
     const invalid={innerHTML:''};showZoneInfo(invalid,zone,result,weather,mode,{forecast,mapForecastTime:'2026-10-18T13:00:00.000Z'});
     assert.match(invalid.innerHTML,/data-forecast-section/,'An unrelated time flag must not suppress normal functions');
   }
@@ -36,6 +41,10 @@ test('normal panel expires the same synthetic forecast after Danish midnight',t=
     assert.doesNotMatch(current.innerHTML,/data-forecast-section|data-tide-section/,
       'Expired prior-day data must not become a selectable normal forecast');
     assert.doesNotMatch(current.innerHTML,/map-timeline-zone-scope/);
+    const selected={innerHTML:''};showZoneInfo(selected,zone,result,weather,mode,{forecast,mapForecastTime:time});
+    assert.match(selected.innerHTML,/class="forecast-section"/);assert.match(selected.innerHTML,/class="tide-section"/);
+    assert.doesNotMatch(selected.innerHTML,/data-forecast-section|data-tide-section/,
+      'A selected hour must not revive expired forecast days');
   }
 });
 

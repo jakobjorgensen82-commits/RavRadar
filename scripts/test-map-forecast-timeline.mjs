@@ -440,7 +440,7 @@ try{
   assert.match(app,/conditions:state\.conditions,zones:state\.zones/);
   assert.doesNotMatch(app,/state\.conditions\s*=\s*(?:frame|mapForecast|mapConditions)/);cases++;
 
-  // Actual national ranking event -> existing Now controller -> actual app
+  // Actual map/national events -> existing controller -> actual app
   // open/render/detail route. The normal bound zone envelope is loaded only
   // on click; no score/model authority comes from this owned DOM fixture.
   const appSource=app.replace(/\r\n/g,'\n');
@@ -509,15 +509,29 @@ try{
     assert.equal(controller.snapshot().status,'ready');
     const mapOpen=vm.runInContext('('+mapCallbacks[0]+')',context),zone=features.features.find(row=>row.properties.id===rankedZoneIds[0]).properties;
     mapOpen(zone);assert.equal(controller.snapshot().committedTime,h1);
+    const futureDetails=context.conditionDetailsPromise;if(futureDetails)await futureDetails;
     assert.equal(panelCalls.at(-1)[5].mapForecastTime,h1);
+    assert.equal(panelCalls.at(-1)[2].time,h1,'Upper score keeps the selected map hour after full zone details load');
+    assert.equal(panelCalls.at(-1)[3].time,h1,'Upper weather keeps the selected map hour');
+    assert.match(panel.innerHTML,/data-forecast-section/);assert.match(panel.innerHTML,/data-tide-section/);
+    assert.doesNotMatch(panel.innerHTML,/map-timeline-zone-scope/);
+    const readPayload=(html,name)=>JSON.parse(html.match(new RegExp('class="'+name+'">([^<]+)<'))[1]);
+    const futureSummary=readPayload(panel.innerHTML,'forecast-payload'),futureTides=readPayload(panel.innerHTML,'tide-payload');
+    assert.equal(futureSummary.length,5);assert.equal(futureSummary.flatMap(day=>day.hours).length,118);
+    assert.equal(futureTides.length,5);assert.equal(futureTides.flatMap(day=>day.hours).length,118);
+    assert.deepEqual(loaded,[zone.id],'Opening a future map zone requests only that full zone envelope');
+    controller.select(h2,{immediate:true});await turn();await currentLoad;await turn();
+    assert.equal(panelCalls.at(-1)[2].time,h2);
+    assert.deepEqual(readPayload(panel.innerHTML,'forecast-payload'),futureSummary);
+    assert.deepEqual(readPayload(panel.innerHTML,'tide-payload'),futureTides);
+    assert.deepEqual(loaded,[zone.id],'Moving the slider reuses already loaded zone details');
+    controller.select(h1,{immediate:true});await turn();await currentLoad;await turn();
     assert.equal(shareCalls.at(-1).selection.time,h1);assert.equal(shareCalls.at(-1).selection.mode,mode);
     panel.shareButton.dispatch('click');const earlierShareDialog=globalThis.document.body.children.at(-1);
     assert.equal(earlierShareDialog.open,true,'Actual app mounts a share dialog for its committed hour');
     const generatedShareInput=earlierShareDialog.children[1].children.find(node=>node.type==='text');
     assert.equal(generatedShareInput.value,forecastShareUrl(FORECAST_SHARE_BASE_URL,shareCalls.at(-1).selection),
       'Den faktiske UI ignorerer Pages-adressen og bruger den faste godkendte Worker-rute');
-    assert.doesNotMatch(panel.innerHTML,/data-forecast-section|data-tide-section/);
-    assert.equal(loaded.length,0,'A future map click keeps the existing single-hour route');
     assert.equal(await context.renderNationalForecast(),true);
     // Select an available later national day first; resetting the map must not
     // rewrite national dates/ranks or auto-select a different national day.

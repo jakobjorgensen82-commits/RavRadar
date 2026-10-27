@@ -12,8 +12,8 @@ on:
         required: true
         type: string
       progress_source_run_id:
-        description: "Eksakt afsluttet normalrun med krypteret fremdrift"
-        required: true
+        description: "Eksakt afsluttet normalrun med krypteret fremdrift; tom kun ved B-only DMI-metadata"
+        required: false
         type: string
       progress_source_attempt:
         description: "Eksakt run-attempt; ingen prefix-fallback"
@@ -69,6 +69,12 @@ on:
         default: false
         type: boolean
 
+      include_dmi_processing_metadata:
+        description: "Kun faste behandlingsmetadata fra den aktuelle autentificerede B; ingen progress/RAW/provider"
+        required: false
+        default: false
+        type: boolean
+
 permissions:
   contents: read
   actions: read
@@ -112,14 +118,30 @@ jobs:
           INCLUDE_CURRENT_WINDOW_DIAGNOSTIC: ${{ inputs.include_current_window_diagnostic }}
           INCLUDE_CURRENT586_ENDPOINTS: ${{ inputs.include_current586_endpoints }}
           INCLUDE_CURRENT586_CACHED_ORIGINALS: ${{ inputs.include_current586_cached_originals }}
+          INCLUDE_DMI_PROCESSING_METADATA: ${{ inputs.include_dmi_processing_metadata }}
         run: |
           set -euo pipefail
           test "$GITHUB_EVENT_NAME" = workflow_dispatch
           test "$GITHUB_REF" = refs/heads/main
           test "$CONFIRMATION" = AUDIT-SAVED-WEATHER-INPUTS
           [[ "$EXPECTED_MAIN_HEAD" =~ ^[a-f0-9]{40}$ ]]
+          [[ "$INCLUDE_DMI_PROCESSING_METADATA" == true || "$INCLUDE_DMI_PROCESSING_METADATA" == false ]]
+          if test "$INCLUDE_DMI_PROCESSING_METADATA" = true; then
+            test -z "$SOURCE_RUN_ID"
+            test "$SOURCE_RUN_ATTEMPT" = 1
+            test "$INCLUDE_RAW_MANIFEST" = false
+            test "$INCLUDE_RAW_FILE_PRESENCE" = false
+            test "$INCLUDE_SELECTED_CURRENT_PREFLIGHT" = false
+            test "$INCLUDE_CURRENT_WINDOW_DIAGNOSTIC" = false
+            test "$INCLUDE_CURRENT586_ENDPOINTS" = false
+            test "$INCLUDE_CURRENT586_CACHED_ORIGINALS" = false
+            test -z "$RAW_MANIFEST_CACHE_KEY"
+            test -z "$RAW_MANIFEST_SOURCE"
+            test -z "$PROGRESS_BASELINE_TARGET_HOUR"
+          else
           [[ "$SOURCE_RUN_ID" =~ ^[1-9][0-9]{0,19}$ ]]
           [[ "$SOURCE_RUN_ATTEMPT" =~ ^[1-9][0-9]{0,3}$ ]]
+          fi
           [[ "$INCLUDE_RAW_MANIFEST" == true || "$INCLUDE_RAW_MANIFEST" == false ]]
           [[ "$INCLUDE_RAW_FILE_PRESENCE" == true || "$INCLUDE_RAW_FILE_PRESENCE" == false ]]
           [[ "$INCLUDE_SELECTED_CURRENT_PREFLIGHT" == true || "$INCLUDE_SELECTED_CURRENT_PREFLIGHT" == false ]]
@@ -188,6 +210,7 @@ jobs:
           test "$GITHUB_SHA" = "$EXPECTED_MAIN_HEAD"
           test "$(git rev-parse HEAD^{commit})" = "$GITHUB_SHA"
           test "$(gh api "repos/$GITHUB_REPOSITORY/git/ref/heads/main" --jq '.object.sha')" = "$GITHUB_SHA"
+          if test "$INCLUDE_DMI_PROCESSING_METADATA" != true; then
           gh api "repos/$GITHUB_REPOSITORY/actions/runs/$SOURCE_RUN_ID/attempts/$SOURCE_RUN_ATTEMPT" \
             > "$RUNNER_TEMP/saved-input-source-run.json"
           jq -e --arg repo "$GITHUB_REPOSITORY" --arg run "$SOURCE_RUN_ID" \
@@ -261,6 +284,7 @@ jobs:
             ' "$RUNNER_TEMP/current586-cached-originals-raw-cache-metadata.json" >/dev/null
             echo "current586_cached_raw_key=$current586_cached_raw_key" >> "$GITHUB_OUTPUT"
           fi
+          fi
 
       - uses: actions/setup-node@v7
         with:
@@ -290,7 +314,7 @@ jobs:
           -r requirements-dmi.txt -r requirements-geometry.txt -r requirements-copernicus.txt
 
       - name: Restore only the requested encrypted acquisition snapshot
-        if: inputs.include_current586_endpoints != true && inputs.include_current586_cached_originals != true
+        if: inputs.include_current586_endpoints != true && inputs.include_current586_cached_originals != true && inputs.include_dmi_processing_metadata != true
         id: progress
         uses: actions/cache/restore@v6
         with:
@@ -299,7 +323,7 @@ jobs:
           fail-on-cache-miss: true
 
       - name: Require exact cache hit before reading any protected data
-        if: inputs.include_current586_endpoints != true && inputs.include_current586_cached_originals != true
+        if: inputs.include_current586_endpoints != true && inputs.include_current586_cached_originals != true && inputs.include_dmi_processing_metadata != true
         shell: bash
         env:
           EXACT_KEY: ${{ steps.authority.outputs.cache_key }}
@@ -372,7 +396,7 @@ jobs:
           test ! -L .cache/dmi-grib/asset-manifest.json
 
       - name: Create only the CURRENT586 diagnostic private root
-        if: inputs.include_current586_endpoints == true || inputs.include_current586_cached_originals == true
+        if: inputs.include_current586_endpoints == true || inputs.include_current586_cached_originals == true || inputs.include_dmi_processing_metadata == true
         shell: bash
         run: mkdir "$RUNNER_TEMP/ravradar-saved-input-audit"
 
@@ -441,7 +465,7 @@ jobs:
           test -s data/live/coastal-parts-v2.json
 
       - name: Authenticate and measure saved inputs without production rebuild
-        if: inputs.include_current586_endpoints != true && inputs.include_current586_cached_originals != true
+        if: inputs.include_current586_endpoints != true && inputs.include_current586_cached_originals != true && inputs.include_dmi_processing_metadata != true
         id: input-audit
         run: >-
           node scripts/audit-saved-weather-inputs.mjs audit
@@ -475,6 +499,23 @@ jobs:
           RAW_MANIFEST_ARGS: ${{ inputs.include_raw_manifest && format('--raw-cache-key {0}', steps.authority.outputs.raw_cache_key) || '' }}
           RAW_SOURCE_ARGS: ${{ inputs.raw_manifest_source != '' && format('--raw-manifest-source {0}', inputs.raw_manifest_source) || '' }}
           PROGRESS_BASELINE_ARGS: ${{ inputs.progress_baseline_target_hour != '' && format('--progress-baseline-target-hour {0}', inputs.progress_baseline_target_hour) || '' }}
+
+      - name: Læs kun faste DMI-behandlingsmetadata fra aktuel autentificeret B
+        if: inputs.include_dmi_processing_metadata == true
+        id: dmi-processing-metadata-audit
+        run: >-
+          node scripts/audit-saved-weather-inputs.mjs audit
+          --private-root "$RUNNER_TEMP/ravradar-saved-input-audit"
+          --descriptor "$RUNNER_TEMP/ravradar-saved-input-audit/current-source.json"
+          --predecessor-root "$RUNNER_TEMP/ravradar-saved-input-predecessor"
+          --include-dmi-processing-metadata true
+          --output "$RUNNER_TEMP/ravradar-saved-input-audit/summary-safe.json"
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          RAVRADAR_R2_ACCOUNT_ID: ${{ secrets.RAVRADAR_R2_ACCOUNT_ID }}
+          RAVRADAR_R2_ACCESS_KEY_ID: ${{ secrets.RAVRADAR_R2_ACCESS_KEY_ID }}
+          RAVRADAR_R2_SECRET_ACCESS_KEY: ${{ secrets.RAVRADAR_R2_SECRET_ACCESS_KEY }}
 
       - name: Diagnose only exact CURRENT586 selected native endpoints
         if: inputs.include_current586_endpoints == true
@@ -513,7 +554,7 @@ jobs:
           RAVRADAR_R2_SECRET_ACCESS_KEY: ${{ secrets.RAVRADAR_R2_SECRET_ACCESS_KEY }}
 
       - name: Upload only the fixed-schema payload-free aggregate report
-        if: always() && (steps.input-audit.outcome == 'success' || steps.input-audit.outcome == 'failure' || steps.current586-audit.outcome == 'success' || steps.current586-audit.outcome == 'failure' || steps.current586-cached-originals-audit.outcome == 'success' || steps.current586-cached-originals-audit.outcome == 'failure')
+        if: always() && (steps.input-audit.outcome == 'success' || steps.input-audit.outcome == 'failure' || steps.current586-audit.outcome == 'success' || steps.current586-audit.outcome == 'failure' || steps.current586-cached-originals-audit.outcome == 'success' || steps.current586-cached-originals-audit.outcome == 'failure' || steps.dmi-processing-metadata-audit.outcome == 'success' || steps.dmi-processing-metadata-audit.outcome == 'failure')
         uses: actions/upload-artifact@v7
         with:
           name: saved-weather-input-audit-safe-${{ github.run_id }}-${{ github.run_attempt }}

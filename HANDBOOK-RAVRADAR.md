@@ -1,6 +1,14 @@
 ## 89.273 Genbrug af dansk datoformatering bevarer prognosens tider
 
+Opdatering 27. oktober 2026: Den almindelige vejropdatering stoppede før leverandørerne ved kontrollen af bevarede originaler. Klargøring og arbejdsinstallation af 590 var gennemført, men det beviser ikke en ny offentlig prognose.
+
+En gammel læserregel kendte kun 587-forgængeren og valgte derfor ikke den normale 588→590-overgang. Den eksisterende bindingskontrol afviste korrekt originalpakken. Den lokale rettelse bevarer de gamle originaler: før leverandørerne bruges den normale retentionslæser; efter leverandørerne bruges den autentificerede, uforanderlige 588-original med frisk kontrol, ikke arbejdsgrundlaget, som allerede kan være ændret.
+
+Den nye normale regression fejlede først på den forkerte bindingsvej og består efter rettelsen. Hele det eksisterende kaldermål afsluttede lokalt med 40 beståede tilfælde, ingen fejl eller oversprungne tilfælde; tidligere miljø-/fixture-fejl bevares privat, ikke som PASS. Det er ikke ny CI eller offentlig effekt. Score, prognosetider, DMI-budget, C/I/T og SQL ændres ikke; de eksisterende sikkerhedskontroller består.
+
 Kort fortalt: RavRadar kan genbruge den samme danske datoformatering uden at ændre prognosens tidspunkter, vejr eller scorer.
+
+Aktuelt 27. oktober 2026: Det offentlige 588-datasæt rr-20261027175553-210 blev leveret kl. 19.58 CET. 590-bindingen blev installeret kl. 20.05 CET; offentlig 590 er endnu ikke bekræftet. Disse er forskellige leveringsbeviser; ældre status nedenfor bevares som dateret historik.
 
 En almindelig vejropdatering nåede sin uændrede grænse på 80 minutter. Den offentlige projektion tog målt 36 minutter og 23 sekunder. Den sidste fremdriftslinje viste færdige offentlige filer, ikke færdig privat timepakke og atomisk cacheinstallation. Stoppet er ikke dokumenteret som hukommelsesudløb.
 
@@ -348,6 +356,12 @@ En lokal syntetisk 673-dels kæde med tre efterfølgere har bestået normal gemn
 
 ## 89.251 Kortet kan vises for en valgt prognosetime
 
+Lokal UI-kandidat 27. oktober 2026: “5 dages RavRadar” og “vandstand time for time” skal blive i zonepanelet, også når du bruger tidsskyderen. Øverste score og vejr følger stadig den valgte time og søgemåde med den samme lokale kystdel, forklaring og datakontekst.
+
+Oversigterne indlæses gennem den normale lazy zoneindlæsning og beholder deres egne tydeligt viste dage og tider. De viser kun de timer og dage, som faktisk er tilgængelige; manglende data udfyldes ikke med en anden time, og der tilføjes ikke en kunstig femte dag.
+
+Ejerens nye ordre erstatter kun den tidligere skjulning af disse to paneler. Scoreberegning, vejrdata, kilder, administratoropsætning og geometri ændres ikke. Den lokale panelprøve gik fra rød kontrakt til 4/4 PASS, tidslinjemålet bestod 134 cases og generation/livscyklus 9; dette er ikke DOM-kontrol, CI eller offentlig verifikation. Gamle testresultater nedenfor er ikke bevis for den nye ændring.
+
 **Lokal UI-rettelse 18. oktober — endnu ikke offentligt verificeret:** Klikker du på en zone i forsiden femdøgnsprognose, vælger den afgrænsede rettelse først Nu ved kortet og åbner derefter zonens normale prognose. Nu betyder den aktuelle verificerede time, ikke midnat. Klik på selve kortet beholder fortsat den time, du har valgt med skyderen. Valgt dag og rangering i femdøgnslisten ændres ikke.
 
 Kun den nationale listes zoneklik ændres. Den tidligere foreslåede større adskillelse af kortets og zonens tidskontekst er annulleret. Versionsnummer 4.0.581, vejrdata og scoremodel er uændrede. Lokal test er ikke bevis for offentlig levering; præcis kildekontrol, sikker levering og browseraccept udestår.
@@ -376,7 +390,7 @@ Den normale fejlgren får kun en afgrænset, privat rapport over forskelle i gem
 
 Kontrollen ligger i fuld bredde under kortet og over forklaringen. Den viser hele ugedagen, dato og klokkeslæt efter dansk tidszone på dansk, tysk eller engelsk. Brug Nu, en time tilbage eller frem, dagsmærker, tastatur eller berøring. Du kan kun vælge de eksakte timer, der faktisk er tilbage i det gyldige datasæts 118-timershorisont. Udløbne datoer forlænges ikke.
 
-Kortet og den åbne zones timevisning følger den valgte time og søgemåde. Strømpile bruger den samme times egne data. Aktuelt-listen, ranglisten, den rigtige klokke, ture og Spørg RavRadar beholder deres normale aktuelle grundlag. En fremtidig time får ikke et misvisende femdagespanel; Nu kan igen vise den normale fulde zoneprognose.
+Kortet og den åbne zones timevisning følger den valgte time og søgemåde. Strømpile bruger den samme times egne data. Aktuelt-listen, ranglisten, den rigtige klokke, ture og Spørg RavRadar beholder deres normale aktuelle grundlag. Historik, erstattet alene for de to panelers synlighed ved ejerens ordre 27. oktober 2026: En fremtidig time får ikke et misvisende femdagespanel; Nu kan igen vise den normale fulde zoneprognose.
 
 Appen henter kun den nødvendige eksisterende timefil, ikke hele horisonten på forhånd. Hurtige valg samles i 200 millisekunder, og kun det seneste ønske får lov til at skifte visningen. Indhold, model, generation og kontrolsum skal stadig passe. Ved manglende eller afvist time bevares sidste verificerede kort med sit korrekte tidspunkt, mens det ønskede tidspunkt og fejlen vises særskilt. En anden eller udløbet generation må ikke blande gamle kortlag ind. Det er ikke en garanti for offline adgang til en time, som endnu ikke er hentet.
 
@@ -3341,6 +3355,8 @@ rettelsen samlet; de faktiske sikkerhedsgrænser består.
 
 ## 89.117 4.0.520 – Undersøg det gemte vejr uden at hente igen
 
+Historik: Udsagnene nedenfor om en ikke-publiceret seneste kørsel, tilbageholdt vejrrettelse og pauset automatisk vejrstart beskriver den tidligere situation og er erstattet af 27. oktober-statussen i 89.273. Den eksisterende cron fortsætter. Kun den nye faste DMI-læsegren er som standard slået fra; den generiske audit er ikke gjort til en ny planlagt funktion.
+
 Den hentede fremdrift er gemt, men den seneste kørsel blev ikke
 publiceret. Derfor undersøger vi først de eksisterende pakker i
 stedet for at gentage vejrhentningen og den lange cachebygning.
@@ -3363,6 +3379,12 @@ målinger er afklaret. Hjemmesiden viser fortsat sidste godkendte
 prognose, og automatisk vejrstart er pauset. En grøn læsekontrol
 vil ikke alene betyde, at data er komplette eller systemet stabilt.
 Se DEC-0267 og forskningsnotatet SAVED-WEATHER-AUDIT-2026-09-30.
+
+Opdatering 27. oktober 2026: Den nye, faste DMI-læsegren er som standard slået fra og undersøger kun den aktuelle autentificerede private B-pakke, ikke en ældre generation eller krypteret fremdriftscache. Den bruger den gemte generations SHA-bundne, arkiverede normale producent og codec med kontrollerede kontrakter og input samt frisk CURRENT-genlæsning ved afslutning.
+
+Rapporten viser kun summerede behandlingsmetadata i fire faste kategorier: missingStep, incompleteStep, normalStepRejected og normalOutcomeRejected. Ukendt eller ugyldigt grundlag afvises; kategorierne beviser ikke numerisk gyldighed eller fuld vejrdækning. Der indføres ingen nye statiske produktimports, numerisk admission, provider- eller RAW-kald eller produktionsskrivning.
+
+Dette er en afgrænset control-plane-ændring på eksisterende 4.0.590, ikke en ny model eller release. C98/I97 og de private runtimeinventarer er dokumenteret uændrede; C/I/T, SQL, geodata, score, kildeprioritet og budgetter genudstedes eller ændres ikke. Windows-prøven havde 70 PASS og 1 FAIL ved eccodes og er derfor ikke samlet PASS. Faktisk positiv Linux-kontrol og præcis kildekvalifikation for ændringen er fortsat åbne.
 
 ## 89.115 4.0.518 – Hvorfor havstrømshistorikken stoppede
 

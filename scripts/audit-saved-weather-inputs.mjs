@@ -364,7 +364,8 @@ const safeCode = new Set(['MODE_INVALID', 'PRIVATE_ROOT_INVALID', 'PRIVATE_PATH_
   'RAW_MANIFEST_BOUND', 'RAW_CACHE_IDENTITY_INVALID', 'RAW_FILE_INVENTORY_REJECTED', 'PROGRESS_BASELINE_TARGET_INVALID',
   'PROGRESS_BASELINE_RECONSTRUCTION_REJECTED', 'CURRENT586_SOURCE_MISMATCH',
   'CURRENT586_SCRATCH_INVALID', 'CURRENT586_GENERATION_PREPARE_REJECTED', 'CURRENT586_DIAGNOSTIC_BOUND', 'CURRENT586_REGISTRY_MISMATCH',
-  'CURRENT586_CACHED_ORIGINAL_PROOF_REFUSED']);
+  'CURRENT586_CACHED_ORIGINAL_PROOF_REFUSED', 'DMI_PROCESSING_METADATA_INVALID',
+  'DMI_PROCESSING_METADATA_SOURCE_CHANGED', 'DMI_PROCESSING_METADATA_UNAVAILABLE']);
 const safeProgressAuthenticationCodes = new Set(['SIZE_BUDGET_INVALID', 'REPOSITORY_INVALID', 'ROOT_INVALID',
   'BASE_INVALID', 'ENCRYPTION_KEY_UNAVAILABLE', 'ENCRYPTION_KEY_INVALID', 'BASELINE_MISMATCH',
   'PATH_INVALID', 'SYMLINK_REJECTED', 'FILE_INVALID', 'SNAPSHOT_ABSENT', 'SNAPSHOT_INVALID',
@@ -1149,12 +1150,61 @@ export async function prepareSavedAuditProgressBaseline({ privateRoot, workRoot 
   return { repositoryRoot: outputRoot, normalProgressBaselineUsed: true };
 }
 
+// Kun metadata fra den aktuelle autentificerede B; ingen numerisk adgang.
+const SAVED_DMI_PROCESSING_METADATA_READER = "# Privat forberedelse: dette program indlejres i den eksisterende audit-ejer.\n# Kun autentificerede, allerede udpakkede B-filer; ingen værdier forlader processen.\nimport hashlib\nimport importlib.util\nimport json\nimport pathlib\nimport sys\nfrom datetime import datetime, timedelta\n\n\ndef refuse():\n    raise ValueError(\"DMI_PROCESSING_METADATA_INVALID\")\n\n\ndef deny_socket_events(event, args):\n    if event.startswith(\"socket.\"):\n        refuse()\n\n\ndef identity(file):\n    info = file.lstat()\n    if file.is_symlink() or not file.is_file() or info.st_nlink != 1 or info.st_size < 2:\n        refuse()\n    return (info.st_dev, info.st_ino, info.st_size, info.st_mtime_ns, info.st_ctime_ns)\n\n\ndef digest(file):\n    with file.open(\"rb\") as stream:\n        return hashlib.file_digest(stream, \"sha256\").hexdigest()\n\n\ndef main():\n    if len(sys.argv) != 7:\n        refuse()\n    root, candidate, candidate_sha, conditions_file, conditions_sha, reference = sys.argv[1:]\n    root, candidate, conditions_file = map(pathlib.Path, (root, candidate, conditions_file))\n    before = [(file, identity(file), sha) for file, sha in\n              ((candidate, candidate_sha), (conditions_file, conditions_sha))]\n    for file, _stat, sha in before:\n        if len(sha) != 64 or digest(file) != sha:\n            refuse()\n    # Ingen netvej eller providercredentials gives til den arkiverede producent.\n    sys.addaudithook(deny_socket_events)\n    sys.path.insert(0, str(root / \"scripts\"))\n    spec = importlib.util.spec_from_file_location(\"saved_dmi_metadata_producer\", root / \"scripts/update-dmi-bulk.py\")\n    module = importlib.util.module_from_spec(spec)\n    sys.modules[spec.name] = module\n    spec.loader.exec_module(module)  # main() kaldes ikke.\n    from lib.dmi_bulk_storage import read_dmi_bulk_document\n    from lib.copernicus_target_identity import target_fingerprint\n    from lib.dmi_native_provenance import validate_current_operational_availability_ledger\n    conditions = json.loads(conditions_file.read_text(\"utf-8\"))\n    if conditions.get(\"productionReferenceAt\") != reference:\n        refuse()\n    part_rows = ((conditions.get(\"coastalParts\") or {}).get(\"parts\") or {})\n    if len(part_rows) != 673 or len(conditions.get(\"zones\") or {}) != 210:\n        refuse()\n    targets = [{\"partId\": part_id, \"parentZoneId\": row[\"zoneId\"], \"waterPoint\": row[\"waterPoint\"]}\n               for part_id, row in part_rows.items()]\n    registry_sha = target_fingerprint(targets)\n    # Den normale lagringslæser: ingen RAW, ecCodes-dekodning eller source-expansion.\n    document = read_dmi_bulk_document(candidate, expand_sources=False)\n    ledger = (document.get(\"diagnostics\") or {}).get(\"currentOperationalLedger\")\n    if not isinstance(ledger, dict) or ledger.get(\"targetRegistrySha256\") != registry_sha:\n        refuse()\n    start = datetime.fromisoformat(reference.replace(\"Z\", \"+00:00\"))\n    end = start + timedelta(hours=117)\n    # Dokumentkontrol af den gemte metadata; ikke numerisk adgang eller genberegning.\n    validate_current_operational_availability_ledger(\n        ledger, ledger.get(\"attestation\"), targets, start, end, registry_sha)\n    part_ids = sorted(part_rows)\n    categories = (\"missingStep\", \"incompleteStep\", \"normalStepRejected\", \"normalOutcomeRejected\")\n    report = {\"kind\": \"SAVED_DMI_PROCESSING_METADATA\", \"status\": \"MEASURED\",\n              \"targetCount\": 673, \"hourCount\": 118, \"collections\": []}\n    rows = ledger.get(\"collections\")\n    if not isinstance(rows, list) or {row.get(\"collection\") for row in rows} != set(module.MARINE_COLLECTIONS):\n        refuse()\n    for collection in sorted(rows, key=lambda row: row[\"collection\"]):\n        name = collection[\"collection\"]\n        run = (document.get(\"runs\") or {}).get(name)\n        if not isinstance(run, dict) or not isinstance(run.get(\"processedSteps\"), dict):\n            refuse()\n        counts = dict.fromkeys(categories, 0)\n        local_rows = [row for row in collection[\"validTimes\"] if row[\"state\"] == \"LOCALLY_SKIPPED\"]\n        for row in local_rows:\n            if row.get(\"officialAsset\") is None:\n                refuse()\n            step = run[\"processedSteps\"].get(row[\"validTime\"])\n            if step is None:\n                counts[\"missingStep\"] += 1\n            elif not isinstance(step, dict):\n                refuse()\n            elif step.get(\"complete\") is not True:\n                counts[\"incompleteStep\"] += 1\n            else:\n                source = module.processed_step_source_for_official_asset(\n                    step, collection=name, model_run=collection[\"modelRun\"],\n                    valid_time=row[\"validTime\"], processing_signature=collection[\"processingSignature\"],\n                    official_asset=row[\"officialAsset\"], current_target_ids=part_ids,\n                    current_target_registry_sha256=registry_sha)\n                if source is None:\n                    counts[\"normalStepRejected\"] += 1\n                    continue\n                try:\n                    module.validate_current_part_outcome_proof(\n                        step.get(\"currentPartOutcomeProof\"), part_ids, registry_sha,\n                        collection[\"processingSignature\"], source)\n                except (TypeError, ValueError):\n                    counts[\"normalOutcomeRejected\"] += 1\n                else:\n                    # Et nu gyldigt step mod LOCALLY_SKIPPED kræver årsagsafklaring.\n                    # Ingen kopi af den ydre run-validator og ingen opfundet forklaring.\n                    refuse()\n        if len(local_rows) != collection[\"stateCounts\"][\"LOCALLY_SKIPPED\"] or sum(counts.values()) != len(local_rows):\n            refuse()\n        report[\"collections\"].append({\"collection\": name, \"locallySkipped\": len(local_rows), **counts})\n    for file, stat, sha in before:\n        if identity(file) != stat or digest(file) != sha:\n            refuse()\n    print(json.dumps(report, separators=(\",\", \":\"), allow_nan=False))\n\n\ntry:\n    main()\nexcept BaseException:\n    # Ingen traceback, rå payload, sti, koordinater eller exceptiontekst.\n    print('{\"kind\":\"SAVED_DMI_PROCESSING_METADATA\",\"status\":\"REFUSED\"}')\n    sys.exit(1)\n";
+function validateSavedDmiProcessingMetadataReport(value) {
+  const keys = ['collections', 'hourCount', 'kind', 'status', 'targetCount'];
+  const names = ['dkss_idw', 'dkss_lf', 'dkss_nsbs'];
+  const counters = ['incompleteStep', 'missingStep', 'normalOutcomeRejected', 'normalStepRejected'];
+  if (!value || Array.isArray(value) || !same(Object.keys(value).sort(), keys)
+    || value.kind !== 'SAVED_DMI_PROCESSING_METADATA' || value.status !== 'MEASURED'
+    || value.targetCount !== 673 || value.hourCount !== 118 || !Array.isArray(value.collections)
+    || value.collections.length !== 3) fail('DMI_PROCESSING_METADATA_INVALID');
+  value.collections.forEach((row, index) => {
+    if (!row || Array.isArray(row)
+      || !same(Object.keys(row).sort(), ['collection', 'incompleteStep', 'locallySkipped', 'missingStep', 'normalOutcomeRejected', 'normalStepRejected'])
+      || row.collection !== names[index] || !integer(row.locallySkipped) || row.locallySkipped > 118
+      || !counters.every(key => integer(row[key]) && row[key] <= 118)
+      || counters.reduce((total, key) => total + row[key], 0) !== row.locallySkipped)
+      fail('DMI_PROCESSING_METADATA_INVALID');
+  });
+  return value;
+}
+async function measureSavedDmiProcessingMetadata({ ctx, payloadRoot, predecessor, source,
+  manifest, baselineComponentFiles, pythonExecutable, oldWorkflow }) {
+  const candidate = baselineComponentFiles.find(file => file.relativePath === PRIVATE_WEATHER_COMPONENT_FILES.dmiCandidate);
+  const conditions = manifest.files.find(file => file.relativePath === 'data/live/conditions.json');
+  if (!candidate || !conditions) fail('DMI_PROCESSING_METADATA_UNAVAILABLE');
+  const checked = await noSymlinks(ctx.root, candidate.sourcePath);
+  const conditionsPath = await noSymlinks(ctx.root, path.join(payloadRoot, conditions.relativePath));
+  const candidateSha = candidate.sha256;
+  if (!/^[a-f0-9]{64}$/.test(candidateSha ?? '') || !/^[a-f0-9]{64}$/.test(conditions.sha256 ?? ''))
+    fail('DMI_PROCESSING_METADATA_INVALID');
+  // Samme normale kildekontrakt kontrolleres både før og efter Python.
+  if (!same(await oldWorkflow.privateRuntimeContractHashes({ repositoryRoot: predecessor }), source.contractHashes))
+    fail('DMI_PROCESSING_METADATA_SOURCE_CHANGED');
+  const env = Object.fromEntries(Object.entries(process.env).filter(([key]) =>
+    /^(?:PATH|SYSTEMROOT|WINDIR|TEMP|TMP|TMPDIR|LANG|LC_ALL)$/i.test(key)));
+  let stdout;
+  try {
+    ({ stdout } = await withoutSavedAuditSecrets(() => runLocalReader(pythonExecutable,
+      ['-I', '-c', SAVED_DMI_PROCESSING_METADATA_READER, predecessor, checked, candidateSha,
+        conditionsPath, conditions.sha256, source.productionReferenceAt],
+      { cwd: predecessor, env, timeout: 90_000, maxBuffer: 1024 * 1024, windowsHide: true })));
+  } catch { fail('DMI_PROCESSING_METADATA_INVALID'); }
+  if (!same(await oldWorkflow.privateRuntimeContractHashes({ repositoryRoot: predecessor }), source.contractHashes))
+    fail('DMI_PROCESSING_METADATA_SOURCE_CHANGED');
+  let parsed;
+  try { parsed = JSON.parse(stdout); } catch { fail('DMI_PROCESSING_METADATA_INVALID'); }
+  return validateSavedDmiProcessingMetadataReport(parsed);
+}
+
 export async function auditSavedWeatherInputs({ mode, privateRoot, descriptorPath, predecessorRoot,
   progressFile, progressSource, progressCacheKey, outputPath, repositoryRoot = REPOSITORY,
   includeRawManifest = false, rawCacheKey = null, rawManifestSource = null,
   includeRawFilePresence = false, progressBaselineTargetHour = null, includeSelectedCurrentPreflight = false,
   includeCurrentWindowDiagnostic = false, includeCurrent586Endpoints = false,
-  includeCurrent586CachedOriginals = false,
+  includeCurrent586CachedOriginals = false, includeDmiProcessingMetadata = false,
   prepareCurrentForwardOriginals = false, prepareCurrent586Originals = false,
   repository = process.env.GITHUB_REPOSITORY, pythonExecutable = process.env.PYTHON ?? 'python',
   encryptionKey = process.env.WEATHER_PROGRESS_ENCRYPTION_KEY,
@@ -1165,6 +1215,13 @@ export async function auditSavedWeatherInputs({ mode, privateRoot, descriptorPat
   let baselinePackInvocation = null;
   let normalProgressBaselineUsed = false;
   try {
+    if (typeof includeDmiProcessingMetadata !== 'boolean'
+      || includeDmiProcessingMetadata && (mode !== 'audit' || progressFile != null || progressSource != null
+        || progressCacheKey != null || progressBaselineTargetHour !== null || includeRawManifest
+        || includeRawFilePresence || rawCacheKey !== null || rawManifestSource !== null
+        || includeSelectedCurrentPreflight || includeCurrentWindowDiagnostic || includeCurrent586Endpoints
+        || includeCurrent586CachedOriginals || prepareCurrentForwardOriginals || prepareCurrent586Originals))
+      fail('MODE_INVALID');
     if(typeof prepareCurrent586Originals!=='boolean')fail('MODE_INVALID');
     if(prepareCurrent586Originals){
       requireCurrent586ExactOriginalExecution();
@@ -1245,7 +1302,9 @@ export async function auditSavedWeatherInputs({ mode, privateRoot, descriptorPat
     // Reject malformed, same-hour and older targets before any remote read.
     validateProgressBaselineTargetHour(progressBaselineTargetHour, source);
     let cipher = null;
-    if (!includeCurrent586Endpoints && !includeCurrent586CachedOriginals && !prepareCurrent586Originals) {
+    if (includeDmiProcessingMetadata) {
+      // Ingen progress- eller historisk 586-autoritet bruges på denne B-only-vej.
+    } else if (!includeCurrent586Endpoints && !includeCurrent586CachedOriginals && !prepareCurrent586Originals) {
     if (!/^\d+-[1-9]\d*$/.test(progressSource ?? '') || progressCacheKey !== `weather-private-progress-encrypted-v2-Linux-main-${progressSource}`
       || !/^[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+$/.test(repository ?? '')) fail('PROGRESS_IDENTITY_INVALID');
     cipher = await noSymlinks(ctx.root, progressFile);
@@ -1304,7 +1363,7 @@ export async function auditSavedWeatherInputs({ mode, privateRoot, descriptorPat
       await fs.writeFile(safeOutput, JSON.stringify(output) + '\n', { flag: 'wx', mode: 0o600 });
       return output;
     }
-    const baselineIndex = await forecastIndex(path.join(payloadRoot, 'data/live/dmi-forecast-cache.json'));
+    const baselineIndex = includeDmiProcessingMetadata ? null : await forecastIndex(path.join(payloadRoot, 'data/live/dmi-forecast-cache.json'));
     phase = 'BASELINE_COMPONENT_AUTHENTICATION';
     let baselineComponentFiles = [];
     try {
@@ -1317,6 +1376,20 @@ export async function auditSavedWeatherInputs({ mode, privateRoot, descriptorPat
         return baselinePackInvocation;
       });
     } catch { fail('BASELINE_COMPONENT_PACK_REJECTED'); }
+    if (includeDmiProcessingMetadata) {
+      phase = 'DMI_PROCESSING_METADATA';
+      const processing = await measureSavedDmiProcessingMetadata({ ctx, payloadRoot, predecessor, source,
+        manifest, baselineComponentFiles, pythonExecutable, oldWorkflow });
+      if (!same(await oldProtected.describeCurrentProtectedPrivateProductionRuntime(clients), source)) fail('CURRENT_GENERATION_CHANGED');
+      if (baselinePackInvocation !== null && !privateWeatherPackJsonReadsClosed(baselinePackInvocation)) fail('PRIVATE_TEMP_CLEANUP_FAILED');
+      const report = { ...baseReport('AUDIT_COMPLETED'), protectedGenerationReadbackVerified: true,
+        exactArchivedSourceContractsVerified: true, metadataOnly: true, encryptedProgressRead: false,
+        rawCacheRead: false, sourceAdmissionPerformed: false, numericalCurrentProofRecomputed: false,
+        dmiProcessingMetadata: processing };
+      await fs.rm(work, { recursive: true, force: true }); work = null;
+      await fs.writeFile(safeOutput, JSON.stringify(report) + '\n', { flag: 'wx', mode: 0o600 });
+      return report;
+    }
     if (progressBaselineTargetHour !== null) phase = 'PROGRESS_BASELINE_RECONSTRUCTION';
     // The exact B inventory is installed BEFORE any cipher is added. Never
     // pass the audit's cipher-bearing working payload to the strict B installer.
@@ -1677,12 +1750,13 @@ if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.me
       '--include-current-window-diagnostic': 'includeCurrentWindowDiagnostic',
       '--include-current586-endpoints': 'includeCurrent586Endpoints',
       '--include-current586-cached-originals': 'includeCurrent586CachedOriginals',
+      '--include-dmi-processing-metadata': 'includeDmiProcessingMetadata',
       '--prepare-current-forward-originals': 'prepareCurrentForwardOriginals',
       '--prepare-current586-originals': 'prepareCurrent586Originals',
       '--progress-baseline-target-hour': 'progressBaselineTargetHour' };
     while (args.length) { const key = args.shift(), value = args.shift();
       if (!names[key] || !value || value.startsWith('--') || Object.hasOwn(options, names[key])) fail('MODE_INVALID'); options[names[key]] = value; }
-    for (const key of ['includeRawManifest', 'includeRawFilePresence', 'includeSelectedCurrentPreflight', 'includeCurrentWindowDiagnostic', 'includeCurrent586Endpoints', 'includeCurrent586CachedOriginals', 'prepareCurrentForwardOriginals', 'prepareCurrent586Originals']) {
+    for (const key of ['includeRawManifest', 'includeRawFilePresence', 'includeSelectedCurrentPreflight', 'includeCurrentWindowDiagnostic', 'includeCurrent586Endpoints', 'includeCurrent586CachedOriginals', 'includeDmiProcessingMetadata', 'prepareCurrentForwardOriginals', 'prepareCurrent586Originals']) {
       if (!Object.hasOwn(options, key)) continue;
       if (!['true', 'false'].includes(options[key])) fail('MODE_INVALID');
       options[key] = options[key] === 'true';
