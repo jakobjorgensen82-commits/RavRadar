@@ -14,6 +14,10 @@ Derefter består de normale kontroller af den genbrugte prognose, private oplysn
 
 **Kort fortalt:** Den fulde SOURCE589-kandidat er lokalt udstedt med egne normale bindinger og én ny migration. Den er ikke installeret eller bevis for nye offentlige vejrdata.
 
+En særskilt kildekandidat forbereder et samlet loft på 360 minutter, altså seks timer, for SOURCE-kildekontrollen. Det tidligere jobloft er 180 minutter, mens en nødvendig senere underproces allerede må bruge op til 240 minutter alene. Forberedelsen og de efterfølgende kontroller kræver også tid. Underprocessens eget loft og tidsgrænserne for almindeligt vejr og leverandører ændres ikke.
+
+Seks timer er en plan, ikke en målt værstefaldstid eller garanti for, at alle trin kan afsluttes. De normale målprøver og en præcis samlet kildekontrol skal stadig bestå for denne efterfølger. De gamle workflowkontroller og deres afslag bevares gennem en præcis historisk visning; ingen kontrol springes over, og rammen giver ikke genbrugs- eller aktiveringsadgang.
+
 Den 27. oktober er de to seneste præcise SOURCE-kontroller fortsat røde i samme 585-efterfølger. En prøve skal efter normal gemning og hel genlæsning bruge sin egen aktuelle pakke, ikke fortsat pege på et gammelt arkiv. Både 585- og SOURCE-efterfølgerens normale kontrol-, beskrivelses- og staging-inputs samt aktive locatorer skal følge den samme hele B/S-kæde. En lokal rettelse af den gamle locator og 26 beståede normale lokale tilfælde er ikke fuld årsagslukning eller ny native-/databasekontrol.
 
 SOURCE-processens eksisterende ejer reserverer højst fire minutter, dog højst halvdelen af den resterende korte fase, til faktisk stop og afslutning. Reserven ligger inde i samme slutfrist; en fuld 80-minutters fase efterlader derfor cirka 76 minutter til arbejde. Fristen udvides ikke. Et manglende stop- eller lukningsbevis skal bevare den første fejl og beskyttede originaler uden oprydning eller godkendelse.

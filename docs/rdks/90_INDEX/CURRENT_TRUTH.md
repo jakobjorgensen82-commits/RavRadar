@@ -1,3 +1,11 @@
+## 27. oktober — samlet SOURCE-kildekontrol får en særskilt tidsplan
+
+En afgrænset efterfølger er forberedt til at ændre kun SOURCE-kildejobbets samlede CI-loft fra 180 til 360 minutter. En nødvendig senere legacy-underproces har allerede et uændret loft på 240 minutter alene; forberedelse og de efterfølgende kilde- og nationalkontroller skal også kunne rummes. Alle kommandoer, trin og afvisninger bevares.
+
+360 minutter er en planlægningsramme, ikke målt samlet køretid, matematisk værstefald eller timeoutbevis. Native-wrapperen har ikke ét samlet faseur, og ikke alle setup-, SQL- og filoperationer har en fælles wallclockgrænse. De eksisterende normale native-/workflowmål og præcis samlet CI er fortsat selvstændige åbne krav for denne budgetefterfølger.
+
+De gamle 180-minutters workfloworakler bevares gennem én præcis SOURCE-headerinverse; forkert, manglende eller duplikeret header skal fortsat afvises. Nativekæden udføres fortsat faktisk med eligibleForReuse=false. Ingen child-, vejr-, provider- eller produktionsfrist, aktivering, version, C/I/T, SQL, originaler, scoreformel eller geometri ændres. Kørselsstatus føres privat; alle fem mål til 18. november består.
+
 ## 27. oktober — normale kildeinput og dræningsreserve, samlet kontrol åben
 
 De to seneste afsluttede præcise SOURCE-kontroller er røde med samme første 585-efterfølgerfase, fejlkode og hashbundne modelguard-frame. De er ikke grønne kildebeviser. En konkret gammel fysisk runtime-locator er rettet lokalt; den videre gennemgang af normale indgange er ikke en endeligt målt årsagslukning.

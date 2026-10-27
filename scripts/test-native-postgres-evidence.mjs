@@ -17,11 +17,11 @@ const NATIVE_SCRIPT='set -euo pipefail\n'+CURRENT_COMMANDS.join('\n')+'\n';
 const copy = value => structuredClone(value);
 // TEST ONLY. First qualify the whole actual SOURCE caller, then restore only
 // its two exact known inverses before the unchanged genuine586 receipt oracle.
-import {verifyWorkflow as verifyActualSourceWorkflow,inverseSourceNode24Workflow}
+import {verifyWorkflow as verifyActualSourceWorkflow,inverseSourceNode24Workflow,inverseSourceCiBudgetWorkflow}
   from './national584-source-evidence.mjs';
 function historical586WorkflowView(actual){
   verifyActualSourceWorkflow(actual);
-  const historical=inverseSourceNode24Workflow(inverseSourceProducerPhaseUpload(actual));
+  const historical=inverseSourceNode24Workflow(inverseSourceProducerPhaseUpload(inverseSourceCiBudgetWorkflow(actual)));
   verifyCurrent586Workflow(historical,historical);
   return historical;
 }

@@ -1,3 +1,9 @@
+## 27. oktober — samlet SOURCE-kildekontrol får en særskilt tidsplan
+
+Forberedt en snæver ændring af SOURCE-kildejobbets samlede CI-loft fra 180 til 360 minutter, fordi den allerede eksisterende senere legacy-underproces alene må bruge 240 minutter. Alle trin og kommandoer bevares; historiske 180-minutters kontroller får kun en præcis headerinverse og beholder deres gamle afslag.
+
+360 er en plan, ikke målt værstefald, timeoutgaranti eller samlet kildebevis. Normale målprøver og præcis ny CI skal fortsat kvalificere budgetefterfølgeren. Ingen ændring af child-, vejr-, provider- eller produktionsbudgetter, aktivering, genbrugsadgang, version, C/I/T, SQL, originaler eller score. Aktuelle kørsler føres kun privat.
+
 ## 27. oktober — normale kildeinput og dræningsreserve, samlet kontrol åben
 
 De to seneste afsluttede præcise SOURCE-kontroller er røde med samme første 585-efterfølgerfase, fejlkode og hashbundne modelguard-frame. De er ikke grønne kildebeviser. En konkret gammel fysisk runtime-locator er rettet lokalt; den videre gennemgang af normale indgange er ikke en endeligt målt årsagslukning.

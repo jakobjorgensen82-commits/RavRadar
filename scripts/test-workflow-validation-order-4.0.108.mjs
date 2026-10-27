@@ -6,7 +6,7 @@ import {
   forecastShareDomainsForWorker, forecastShareCfEnvelopeDiagnostic,
 } from './deploy-forecast-share.mjs';
 import { verifyWorkflow as verifyCurrentNationalWorkflow, verifyPackage as verifyCurrentNationalPackage,
-  inverseSourceNode24Workflow, SOURCE_NODE24_CAPTURE, SOURCE_NODE24_ENV,
+  inverseSourceNode24Workflow, inverseSourceCiBudgetWorkflow, SOURCE_CI_JOB, SOURCE_NODE24_CAPTURE, SOURCE_NODE24_ENV,
   SOURCE_PRODUCER_SOURCE_COMMAND, SOURCE_PRODUCER_PREDECESSOR_SOURCE_COMMAND,
   CURRENT_JOB as CURRENT_SOURCE_JOB, AFTER_JOB as REVIEWED90_SOURCE_JOB } from './national584-source-evidence.mjs';
 import { inverseSourceProducerPhaseUpload, SOURCE_PRODUCER_PHASE_UPLOAD_BLOCK, CURRENT586_PHASE_UPLOAD_BLOCK }
@@ -745,8 +745,23 @@ assert.deepEqual(
 );
 const actualPullRequestValidation = fs.readFileSync(`${workflowDirectory}/validate-pull-request.yml`, 'utf8').replace(/\r\n/g, '\n');
 verifyCurrentNationalWorkflow(actualPullRequestValidation);
+
+// Det aktive360-budget er kun en præcis SOURCE-CI-header, aldrig et regexløft.
+assert.equal(actualPullRequestValidation.split(SOURCE_CI_JOB).length,2);
+assert.equal(inverseSourceCiBudgetWorkflow(actualPullRequestValidation).split(CURRENT_SOURCE_JOB).length,2);
+for (const changed of [
+  actualPullRequestValidation.replace(SOURCE_CI_JOB,CURRENT_SOURCE_JOB),
+  actualPullRequestValidation.replace(SOURCE_CI_JOB,SOURCE_CI_JOB.replace('timeout-minutes: 360','timeout-minutes: 359')),
+  actualPullRequestValidation.replace(SOURCE_CI_JOB,SOURCE_CI_JOB.replace('timeout-minutes: 360','timeout-minutes: 361')),
+  actualPullRequestValidation.replace(SOURCE_CI_JOB,''),
+  actualPullRequestValidation + SOURCE_CI_JOB,
+]) {
+  assert.throws(() => inverseSourceCiBudgetWorkflow(changed));
+  assert.throws(() => verifyCurrentNationalWorkflow(changed));
+}
+
 // Only an exact historical assertion view; qualify the actual whole PR workflow first.
-const historicalPullRequestValidation = inverseSourceNode24Workflow(inverseSourceProducerPhaseUpload(actualPullRequestValidation));
+const historicalPullRequestValidation = inverseSourceNode24Workflow(inverseSourceProducerPhaseUpload(inverseSourceCiBudgetWorkflow(actualPullRequestValidation)));
 for (const changed of [
   actualPullRequestValidation.replace(SOURCE_PRODUCER_PHASE_UPLOAD_BLOCK, ''),
   actualPullRequestValidation + SOURCE_PRODUCER_PHASE_UPLOAD_BLOCK,
