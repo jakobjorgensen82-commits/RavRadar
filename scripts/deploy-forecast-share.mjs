@@ -125,7 +125,11 @@ function assertCompleteList(envelope) {
 // Classify every row before ignoring a different service. Any domain attached to
 // this exact Worker, including another environment, remains forbidden.
 export function forecastShareDomainsForWorker(envelope) {
-  if (envelope?.success !== true || !Array.isArray(envelope.errors) || envelope.errors.length) {
+  // Målt kompatibilitet på dette ene endpoint; ikke et dokumenteret null-schema.
+  // Resten af den fulde liste-/række-/servicekontrol nedenfor er uændret.
+  if (!envelope || typeof envelope !== 'object' || Array.isArray(envelope)
+    || envelope.success !== true || !Object.hasOwn(envelope, 'errors')
+    || !(envelope.errors === null || Array.isArray(envelope.errors) && envelope.errors.length === 0)) {
     throw fail('SHARE_CF_READ');
   }
   const domains = assertCompleteList(envelope);
@@ -227,7 +231,18 @@ export async function deployForecastShare({ env = process.env, fetchImpl = globa
       const observed = await readForecastShareJson(cfBase + suffix, cfHeaders, fetchImpl, readKind);
       const data = observed.value;
       readStatuses.set(readKind, observed.httpStatus);
-      if (data?.success !== true || !Array.isArray(data.errors) || data.errors.length) {
+      const measuredNullDomains = suffix === '/workers/domains' && readKind === 'CF_DOMAINS'
+        && data !== null && typeof data === 'object' && !Array.isArray(data)
+        && data.success === true && Object.hasOwn(data, 'errors') && data.errors === null;
+      if (measuredNullDomains) {
+        // Ingen null→[]-normalisering: den oprindelige envelope bevares.
+        // Ukendt/ufuldstændig liste, ukendt domænerække eller eget Worker-domæne
+        // afvises her før den generelle CF-læser kan give svaret videre.
+        try { empty(forecastShareDomainsForWorker(data), 'SHARE_REMOTE_DOMAINS'); }
+        catch (error) {
+          throw Object.assign(error, { readKind, httpStatus: observed.httpStatus });
+        }
+      } else if (data?.success !== true || !Array.isArray(data.errors) || data.errors.length) {
         cfEnvelopeDiagnostic = forecastShareCfEnvelopeDiagnostic(data);
         throw Object.assign(fail('SHARE_CF_READ'), { readKind, httpStatus: observed.httpStatus });
       }

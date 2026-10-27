@@ -1,3 +1,11 @@
+## 27. oktober — præcis kompatibilitet med tomt Cloudflare-domænefejlfelt
+
+Den tidligere formdiagnose er kildeleveret efter præcis kontrol. En faktisk kontrolleret aflæsning har nu påvist HTTP 200, success=true, errors=null og result som liste på det ufiltrerede domæneendpoint. Det hidtidige afslag skete før skrivning. Officiel dokumentation angiver et errors-array; den nye undtagelse beskrives derfor som målt endpointkompatibilitet, ikke som et dokumenteret null-skema.
+
+Kun den præcise CF_DOMAINS-læsning på /workers/domains kan bruge et udtrykkeligt null-felt sammen med success=true. Hele resultatlisten, fuldstændighed, hver række og fravær af domæner for denne Worker skal fortsat bestå. Manglende felt, reelle fejl, ukendt indhold, eget domæne eller andre CF-endpoints afvises stadig; svaret omskrives ikke til en tom fejlliste. Alle tidligere kontroller og særskilt negativ dækning af de øvrige endpoints bevares.
+
+Kildekvalifikation og faktisk Worker-/offentlig effekt skal fortsat dokumenteres særskilt. Ingen database, vejrdata, scoreformel, C/I/T, kildeprioritet, administratoropsætning eller geometri ændres. SOURCE og øvrige tilbageholdte aktiveringer er adskilte; alle fem mål til 18. november består. Tidligere diagnostikafsnit er historik på den nu målte svarform.
+
 ## 27. oktober — prognosedelingens afslag får kun lukkede formkategorier
 
 Den allerede afviste delingskontrol havde HTTP 200 og success=true, men dens tidligere lukkede rapport kunne ikke skelne et manglende errors-felt fra null eller en anden ikke-array-form. Den faktiske oprindelige feltform er fortsat ukendt. Den lokale kildeændring tilføjer alene faste formkategorier for errors og result i den eksisterende diagnostik; rå svar, beskeder, feltværdier, konti, værtsnavne, URL'er og tokens medtages ikke. De tidligere diagnostikfelter og højst otte numeriske fejlkoder bevares.
