@@ -6,13 +6,11 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { RAVSCORE_MODEL_CONTRACT } from './rollback-assets/ravscore-model-contract.js';
 import { modelSourceRelativeModuleSpecifiers } from './lib/model-source-imports.mjs';
-import { SOURCE_PRODUCER_DERIVED_METADATA_PATH, MODEL_RELEASE_ONLY_DEPENDENCIES,
-  sourceProducerDerivedMetadataFromText } from './lib/source-producer-derived-metadata.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const GENERATED_PATH = 'scripts/rollback-assets/ravscore-model-bundle.generated.js';
 export const CANDIDATE_G_ROLLBACK_BUNDLE_NORMALIZATION_ID =
-  'candidate-g-rollback-lexer-esm-closure-utf8-lf-static-cachebuster-derived-data-v3';
+  'candidate-g-rollback-lexer-esm-closure-utf8-lf-static-cachebuster-v2';
 export const CANDIDATE_G_ROLLBACK_BUNDLE_ENTRYPOINTS = Object.freeze([
   'js/core/best-time-selector.js',
   'js/core/local-zone-score.js',
@@ -40,8 +38,6 @@ export const CANDIDATE_G_ROLLBACK_BUNDLE_EXCLUDED_MODULES = Object.freeze([
   'js/core/ravscore-model-bundle.generated.js',
   'js/core/ravscore-model-contract.js',
   GENERATED_PATH,
-  SOURCE_PRODUCER_DERIVED_METADATA_PATH,
-  ...MODEL_RELEASE_ONLY_DEPENDENCIES,
 ]);
 
 const sha256 = value => crypto.createHash('sha256').update(value).digest('hex');
@@ -93,15 +89,7 @@ export async function computeCandidateGRollbackBundle({
   const sources = new Map();
   while (pending.length) {
     const relative = pending.pop();
-    if (sources.has(relative)) continue;
-    if (relative === SOURCE_PRODUCER_DERIVED_METADATA_PATH) {
-      if (sourceOverrides.has(relative)) throw new Error('Generated SOURCE metadata override refused');
-      const file = path.join(root, relative), stat = await fs.lstat(file);
-      if (!stat.isFile() || stat.isSymbolicLink() || stat.size > 8192)
-        throw new Error('Generated SOURCE metadata must be a bounded regular file');
-      sourceProducerDerivedMetadataFromText(await fs.readFile(file, 'utf8'));
-    }
-    if (excluded.has(relative)) continue;
+    if (sources.has(relative) || excluded.has(relative)) continue;
     const absolute = path.join(root, relative);
     const source = normalizedSource(sourceOverrides.has(relative)
       ? sourceOverrides.get(relative)
@@ -109,7 +97,7 @@ export async function computeCandidateGRollbackBundle({
     sources.set(relative, source);
     for (const specifier of modelSourceRelativeModuleSpecifiers(source, relative)) {
       const imported = await resolveImport(root, relative, specifier);
-      if (!sources.has(imported)) pending.push(imported);
+      if (!sources.has(imported) && !excluded.has(imported)) pending.push(imported);
     }
   }
   const files = [...sources.entries()]

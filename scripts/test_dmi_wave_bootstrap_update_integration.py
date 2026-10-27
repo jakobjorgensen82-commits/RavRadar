@@ -4671,7 +4671,9 @@ class ResumeAndFailClosedTests(unittest.TestCase):
         self.assertEqual(ordered, tuple(sorted(ordered)))
 
     def test_candidate_maintenance_cannot_enable_integrated_wave_bootstrap(self) -> None:
-        workflow = ordinary_workflow_oracle()
+        workflow = (
+            ROOT / ".github" / "workflows" / "reusable-weather-build.yml"
+        ).read_text("utf-8")
         cutover_guard = (
             "steps.operational-action.outputs.action == 'integrated-cutover' "
             "&& steps.legacy-bootstrap.outputs.required == 'true'"

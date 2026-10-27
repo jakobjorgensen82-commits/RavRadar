@@ -95,7 +95,6 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 2
     outputs:
-      source_normal_producer: ${{ steps.validated-dispatch.outputs.source_normal_producer || steps.dispatch-defaults.outputs.source_normal_producer }}
       force: ${{ steps.validated-dispatch.outputs.force || steps.dispatch-defaults.outputs.force }}
       extended_provider_bootstrap: ${{ steps.validated-dispatch.outputs.extended_provider_bootstrap || steps.dispatch-defaults.outputs.extended_provider_bootstrap }}
       produce_weather_handoff: ${{ steps.validated-dispatch.outputs.produce_weather_handoff || steps.dispatch-defaults.outputs.produce_weather_handoff }}
@@ -114,7 +113,6 @@ jobs:
         id: dispatch-defaults
         shell: bash
         run: |
-          echo "source_normal_producer=false" >> "$GITHUB_OUTPUT"
           echo "force=false" >> "$GITHUB_OUTPUT"
           echo "extended_provider_bootstrap=false" >> "$GITHUB_OUTPUT"
           echo "produce_weather_handoff=false" >> "$GITHUB_OUTPUT"
@@ -258,19 +256,6 @@ jobs:
           printf '%s\n' "ravscore_integrated_weather_handoff_run_id=$WEATHER_HANDOFF_RUN_ID" >> "$GITHUB_OUTPUT"
           printf '%s\n' "ravscore_integrated_return=$RETURN_REQUESTED" >> "$GITHUB_OUTPUT"
           printf '%s\n' "ravscore_integrated_return_confirmation=$RETURN_CONFIRMATION" >> "$GITHUB_OUTPUT"
-          # Only the already validated plain/force request is SOURCE ordinary.
-          # Extended/bootstrap and every historical transition stay separate.
-          source_normal=false
-          if test "$EXTENDED_PROVIDER_BOOTSTRAP" = false \
-              && test "$PRODUCE_WEATHER_HANDOFF" = false && test -z "$PRODUCE_WEATHER_HANDOFF_CONFIRMATION" \
-              && test "$GEOMETRY_PILOT" = false && test "$GEOMETRY_NATIONAL" = false \
-              && test "$ROLLBACK_MODE" = none && test -z "$ROLLBACK_CONFIRMATION" \
-              && test "$FIRST_CUTOVER_REQUESTED" = false && test -z "$FIRST_CUTOVER_CONFIRMATION" \
-              && test -z "$WEATHER_HANDOFF_RUN_ID" \
-              && test "$RETURN_REQUESTED" = false && test -z "$RETURN_CONFIRMATION"; then
-            source_normal=true
-          fi
-          printf '%s\n' "source_normal_producer=$source_normal" >> "$GITHUB_OUTPUT"
 
   operational-recovery-gate:
     name: Require terminal operational recovery before production
@@ -413,7 +398,6 @@ jobs:
       pull-requests: read
     uses: ./.github/workflows/reusable-weather-build.yml
     with:
-      source_normal_producer: ${{ needs.validate-dispatch.outputs.source_normal_producer == 'true' }}
       production_target_hour: ${{ needs.current-hour-readiness.outputs.target_hour }}
       force: ${{ needs.validate-dispatch.outputs.force == 'true' }}
       extended_provider_bootstrap: ${{ needs.validate-dispatch.outputs.extended_provider_bootstrap == 'true' }}
@@ -426,8 +410,7 @@ jobs:
       native_sampling_identity_original_recovery: false
       produce_weather_handoff: ${{ needs.validate-dispatch.outputs.produce_weather_handoff == 'true' }}
       produce_weather_handoff_confirmation: ${{ needs.validate-dispatch.outputs.produce_weather_handoff_confirmation }}
-      # 'none' is the old UI value; SOURCE's existing absence contract is ''.
-      ravscore_candidate_g_rollback_mode: ${{ needs.validate-dispatch.outputs.source_normal_producer != 'true' && needs.validate-dispatch.outputs.ravscore_candidate_g_rollback_mode || '' }}
+      ravscore_candidate_g_rollback_mode: ${{ needs.validate-dispatch.outputs.ravscore_candidate_g_rollback_mode }}
       ravscore_candidate_g_rollback_confirmation: ${{ needs.validate-dispatch.outputs.ravscore_candidate_g_rollback_confirmation }}
       ravscore_integrated_first_cutover: ${{ needs.validate-dispatch.outputs.ravscore_integrated_first_cutover == 'true' }}
       ravscore_integrated_first_cutover_confirmation: ${{ needs.validate-dispatch.outputs.ravscore_integrated_first_cutover_confirmation }}

@@ -39,13 +39,6 @@ import {
   ravScoreModelBinding as candidateGRollbackModelBinding,
 } from './rollback-assets/ravscore-model-contract.js';
 
-// SOURCE extends the same normal host/prefix; it never selects a later-H0
-// runtime route or retags the genuine588 checkpoint factory as589.
-if(process.argv.includes('--source-producer')||process.argv.includes('--current-source-native-profile')){
-  const {requireSourceProducerOutput}=await import('./lib/source-producer-successor-source.mjs');
-  requireSourceProducerOutput(); // Before normal model/T hashing or fixture construction.
-}
-
 // The additive588 native entry refuses before fixture hashing/construction or a PG host.
 if(process.argv.includes('--assistant-public587-successor')){
   const {requireAssistantPublic587SuccessorRelease}=await import('./lib/assistant-later-h0-successor-source.mjs');
@@ -388,11 +381,9 @@ const rpcFailureIncludes = pattern => error => {
 if (!process.argv.includes('--native-postgres') && !process.argv.includes('--native-statistics-revision')
     && !process.argv.includes('--native-sampling-identity') && !process.argv.includes('--current-memory-warmup')
     && !process.argv.includes('--account-statistics-assistant') && !process.argv.includes('--assistant-later-h0')
-    && !process.argv.includes('--assistant-public587-successor')
-    && !process.argv.includes('--source-producer') && !process.argv.includes('--current-source-native-profile')) {
+    && !process.argv.includes('--assistant-public587-successor')) {
   const { nativePostgresFailureDiagnostic: diagnose,
-    nativePostgresFailureAnnotation: annotate, nativeProviderProcessFirstFailure,
-    nativePostgresChildFirstFailure } =
+    nativePostgresFailureAnnotation: annotate } =
       await import('./lib/checkpoint-cas-native-postgres.mjs');
   assert.deepEqual(diagnose('CURRENT220', 'psql:<stdin>: ERROR: 42P01\n'),
     {phase:'CURRENT220',sqlState:'42P01',category:'SQL_UNDEFINED_TABLE'});
@@ -416,205 +407,6 @@ if (!process.argv.includes('--native-postgres') && !process.argv.includes('--nat
     '::error title=Native PostgreSQL source command::phase=UNKNOWN sqlstate=42501 category=SQL_PERMISSION');
   assert.equal(annotate('NATIVE_SETUP', ''),
     '::error title=Native PostgreSQL source command::phase=NATIVE_SETUP sqlstate=UNKNOWN category=PSQL_COMMAND_FAILURE');
-  // Fixed child phases and qualified source frames only; never native/SQL proof.
-  const providerFrames=['scripts/fixtures/source19-current-native-providers.py','scripts/update-dmi-bulk.py',
-    'scripts/test-source19-terminal-failure-proof-bank-v17-observer-native.py',
-    'scripts/fixtures/source19-current-initial-weather.py','scripts/lib/copernicus_current_source_stage.py'];
-  for(const module of providerFrames){
-    const source=await fs.readFile(module),callsite={module,sha256:crypto.createHash('sha256').update(source).digest('hex'),line:1};
-    for(const phase of ['PROVIDERS','PROVIDERS-H0','PROVIDERS-H1','PROVIDERS-587']){
-      const empty={bytes:0,complete:true,sha256:crypto.createHash('sha256').update('').digest('hex')};
-      const boundary={kind:'SOURCE_PROVIDER_BOUNDARY_FIRST_FAILURE',exceptionType:'UNKNOWN',reason:'UNKNOWN',
-        callsite,helper:'NONE',timeoutSeconds:null,privatePayloadIncluded:false};
-      const value={kind:'SOURCE_PROVIDER_PROCESS_FIRST_FAILURE',phase,returncode:1,signal:'NONE',
-        stdout:empty,stderr:{bytes:1,complete:true,sha256:'a'.repeat(64)},boundary,privatePayloadIncluded:false};
-      assert.deepEqual(nativeProviderProcessFirstFailure(value),value);
-      const later={kind:'SOURCE_LEGACY_CHILD_FIRST_FAILURE',phase:'UNKNOWN',exceptionType:'ASSERTION_ERROR',
-        osError:'NONE',callsite:null,privatePayloadIncluded:false};
-      assert.deepEqual(nativePostgresChildFirstFailure(JSON.stringify(value)+'\n'+JSON.stringify(later),''),value);
-      if(module==='scripts/fixtures/source19-current-native-providers.py'){
-        const stages=['READ_INPUT','QUALIFY','PACK','WRITE','READBACK','COMPLETE'];
-        for(const [rank,stage] of stages.entries()){
-          const forecastStage={kind:'SOURCE_FORECAST_STAGE_OBSERVATION',phase:stage,
-            elapsedMs:rank*10,phaseElapsedMs:0,
-            completedMs:Object.fromEntries(stages.slice(0,-1).map((name,index)=>[name,index<rank?10:null])),
-            parentRecords:rank===0?0:210,partCount:rank>=2?673:0,qualifiedCurrentRows:rank>=2?673*121:0,
-            bulkZoneCount:rank===0?null:883,packRawBytes:rank>=3?1000:null,
-            packCompressedBytes:rank>=3?500:null,forecastBytes:rank>=4?2000:null,privatePayloadIncluded:false};
-          for(const exceptionType of ['SUBPROCESS_TIMEOUT','SUBPROCESS_EXIT']){
-            const observed={...value,boundary:{...boundary,exceptionType,helper:'FORECAST'},forecastStage};
-            assert.ok(Buffer.byteLength(JSON.stringify(observed))<=2048);
-            assert.deepEqual(nativeProviderProcessFirstFailure(observed),observed);
-            assert.deepEqual(nativePostgresChildFirstFailure(JSON.stringify(observed)+'\n'+JSON.stringify(later),''),observed);
-            if(rank>=4){
-              const substages=['INSPECT','PARENT_READ','PART_READ','UNPACK','EQUALITY','COMPLETE'];
-              for(const [subrank,subphase] of substages.entries()){
-                if((rank===5)!==(subrank===5))continue;
-                const detailed={...observed,forecastStage:{...forecastStage,
-                  elapsedMs:40+subrank*10,phaseElapsedMs:rank===5?0:subrank*10,
-                  completedMs:{...forecastStage.completedMs,READBACK:rank===5?50:null},
-                  readback:{phase:subphase,completedMs:Object.fromEntries(substages.slice(0,-1)
-                    .map((name,index)=>[name,index<subrank?10:null]))}}};
-                assert.ok(Buffer.byteLength(JSON.stringify(detailed))<=2048);
-                assert.deepEqual(nativeProviderProcessFirstFailure(detailed),detailed);
-                assert.deepEqual(nativePostgresChildFirstFailure(JSON.stringify(detailed)+'\n'+JSON.stringify(later),''),detailed);
-                const readback=detailed.forecastStage.readback;
-                for(const badReadback of [null,{...readback,raw:'PRIVATE'},
-                  {...readback,phase:subphase+'\nPRIVATE'}, {...readback,completedMs:{}},
-                  {...readback,completedMs:{...readback.completedMs,PRIVATE:0}},
-                  ...[-1,true,0.5,'PRIVATE'].map(INSPECT=>({...readback,completedMs:{...readback.completedMs,INSPECT}})),
-                  {...readback,completedMs:{...readback.completedMs,EQUALITY:rank===5?null:0}},
-                ]){
-                  const bad={...detailed,forecastStage:{...detailed.forecastStage,readback:badReadback}};
-                  assert.equal(nativeProviderProcessFirstFailure(bad),null);
-                  assert.equal(nativePostgresChildFirstFailure(JSON.stringify(bad),''),null);
-                }
-                const wrongPhase={...detailed,forecastStage:{...detailed.forecastStage,phase:rank===5?'READBACK':'COMPLETE'}};
-                assert.equal(nativeProviderProcessFirstFailure(wrongPhase),null);
-                const drift={...detailed,forecastStage:{...detailed.forecastStage,
-                  readback:{...readback,completedMs:{...readback.completedMs,INSPECT:subrank>0?4:0}}}};
-                assert.equal(nativeProviderProcessFirstFailure(drift),null);
-              }
-            }
-            for(const bad of [
-              {...observed,returncode:0}, {...observed,returncode:null,signal:'UNKNOWN'},
-              {...observed,stderr:{bytes:1,complete:false,sha256:null}},
-              {...observed,boundary:{...observed.boundary,helper:'CLOSURE'}},
-              {...observed,boundary:{...observed.boundary,exceptionType:'UNKNOWN',helper:'NONE'}},
-              {...observed,forecastStage:{...forecastStage,raw:'PRIVATE'}},
-              {...observed,forecastStage:{...forecastStage,phase:stage+'\nPRIVATE'}},
-              {...observed,forecastStage:{...forecastStage,privatePayloadIncluded:true}},
-              ...[-1,674,true,0.5,'PRIVATE'].map(partCount=>({...observed,forecastStage:{...forecastStage,partCount}})),
-              {...observed,forecastStage:{...forecastStage,qualifiedCurrentRows:forecastStage.qualifiedCurrentRows+1}},
-              {...observed,forecastStage:{...forecastStage,completedMs:{...forecastStage.completedMs,PRIVATE:0}}},
-              {...observed,forecastStage:{...forecastStage,elapsedMs:-1}},
-              {...observed,forecastStage:{...forecastStage,phaseElapsedMs:true}},
-              {...observed,forecastStage:{...forecastStage,elapsedMs:forecastStage.elapsedMs+6}},
-              {...observed,forecastStage:{...forecastStage,forecastBytes:rank>=4?null:1}},
-              {...observed,forecastStage:{...forecastStage,packRawBytes:rank>=3?null:1}},
-              {...observed,forecastStage:{...forecastStage,bulkZoneCount:rank===0?1:null}},
-              {...observed,wamCompletion:{}},
-            ]){
-              assert.equal(nativeProviderProcessFirstFailure(bad),null);
-              assert.equal(nativePostgresChildFirstFailure(JSON.stringify(bad),''),null);
-            }
-          }
-        }
-      }
-      if(module==='scripts/fixtures/source19-current-initial-weather.py'&&['PROVIDERS-H0','PROVIDERS-H1'].includes(phase)){
-        for(const reason of ["CURRENT_NATIVE_INITIAL_WEATHER_CURRENT_LEDGER_CHANGED","CURRENT_NATIVE_INITIAL_WEATHER_ECCODES_FIELD_CLASSIFICATION","CURRENT_NATIVE_INITIAL_WEATHER_GRID_BOUND","CURRENT_NATIVE_INITIAL_WEATHER_NORMAL_FULL_WEATHER_DECODE_INCOMPLETE","CURRENT_NATIVE_INITIAL_WEATHER_NORMAL_OFFICIAL_WAVE_IDENTITY","CURRENT_NATIVE_INITIAL_WEATHER_NORMAL_TARGETS_REQUIRED","CURRENT_NATIVE_INITIAL_WEATHER_NORMAL_WAVE_NATIVE_OWNER_NOT_COMPLETE","CURRENT_NATIVE_INITIAL_WEATHER_RAW_CHANGED_AFTER_DECODE","CURRENT_NATIVE_INITIAL_WEATHER_REFERENCE"]){
-          const fixed={...value,boundary:{...boundary,exceptionType:'RUNTIME_ERROR',reason}};
-          assert.deepEqual(nativeProviderProcessFirstFailure(fixed),fixed);
-          assert.deepEqual(nativePostgresChildFirstFailure(JSON.stringify(fixed)+'\n'+JSON.stringify(later),''),fixed);
-          for(const bad of [
-            {...fixed,boundary:{...fixed.boundary,reason:reason+' PRIVATE'}},
-            {...fixed,boundary:{...fixed.boundary,reason:'CURRENT_NATIVE_INITIAL_WEATHER_PRIVATE'}},
-            {...fixed,boundary:{...fixed.boundary,exceptionType:'VALUE_ERROR'}},
-            {...fixed,boundary:{...fixed.boundary,raw:'PRIVATE'}},
-          ]){
-            assert.equal(nativeProviderProcessFirstFailure(bad),null);
-            assert.equal(nativePostgresChildFirstFailure(JSON.stringify(bad),''),null);
-          }
-        }
-      }
-      if(['PROVIDERS-H0','PROVIDERS-H1'].includes(phase)){
-        for(const [collection,hourOffset] of [['wam_nsb',0],['wam_dw',120]]){
-          for(const [reason,admitted] of [['STAGE_ADMISSION_FALSE',false],['NATIVE_OWNER_INCOMPLETE',true]]){
-            const summary={requiredCount:7,acceptedCount:0,rejectedCount:7,acceptedLineageCount:0,
-              acceptedLineageEvidenceCount:0,rejectedByCode:{INVALID_WAVE_TUPLE:0,MISSING_WAVE_DIRECTION:0,
-                INVALID_WAVE_DIRECTION:0,ASSET_PROVENANCE_MISMATCH:0,INVALID_WAVE_PROVENANCE:7},
-              rejectedByCodeKnown:true,unknownRejectionCodeCount:0,coherent:false,complete:false};
-            const outcome={hasHeight:true,hasPeriod:true,hasDirection:true,parameterCount:3,touchedCount:0,
-              interrupted:false,messagesSeen:3,zoneLookups:21};
-            const wamAdmission={kind:'SOURCE_INITIAL_WAM_ADMISSION_DIAGNOSTIC',collection,hourOffset,reason,
-              admitted,summary,outcome,privatePayloadIncluded:false};
-            const observed={...value,wamAdmission};
-            assert.deepEqual(nativeProviderProcessFirstFailure(observed),observed);
-            assert.deepEqual(nativePostgresChildFirstFailure(JSON.stringify(observed)+'\n'+JSON.stringify(later),''),observed);
-            if(admitted){
-              const combined={...observed,boundary:{...boundary,exceptionType:'RUNTIME_ERROR',
-                reason:'CURRENT_NATIVE_INITIAL_WEATHER_NORMAL_WAVE_NATIVE_OWNER_NOT_COMPLETE'},
-                wamCompletion:{kind:'SOURCE_INITIAL_WAM_COMPLETION_DIAGNOSTIC',collection,hourOffset,
-                  callbackInvoked:true,admitted:true,outcome:{interrupted:false},deadlineReached:false,
-                  elapsedMs:{beforeCurrent:1000,afterCurrent:590000,beforeWam:591000,afterWam:599000},
-                  privatePayloadIncluded:false}};
-              assert.ok(Buffer.byteLength(JSON.stringify(combined))<=2048);
-              assert.deepEqual(nativeProviderProcessFirstFailure(combined),combined);
-              assert.deepEqual(nativePostgresChildFirstFailure(JSON.stringify(combined),''),combined);
-            }
-            for(const bad of [
-              {...observed,phase:'PROVIDERS'}, {...observed,returncode:0}, {...observed,raw:'PRIVATE'},
-              {...observed,wamAdmission:{...wamAdmission,raw:'PRIVATE'}},
-              {...observed,wamAdmission:{...wamAdmission,admitted:!admitted}},
-              {...observed,wamAdmission:{...wamAdmission,summary:{...summary,raw:'PRIVATE'}}},
-              {...observed,wamAdmission:{...wamAdmission,outcome:{...outcome,raw:'PRIVATE'}}},
-              {...observed,wamAdmission:{...wamAdmission,summary:{...summary,acceptedCount:-1}}},
-              {...observed,wamAdmission:{...wamAdmission,summary:{...summary,unknownRejectionCodeCount:0.5}}},
-              {...observed,wamAdmission:{...wamAdmission,summary:{...summary,
-                rejectedByCode:{...summary.rejectedByCode,INVALID_WAVE_PROVENANCE:1_000_001}}}},
-              {...observed,wamAdmission:{...wamAdmission,summary:{...summary,
-                rejectedByCode:{...summary.rejectedByCode,PRIVATE:0}}}},
-              {...observed,wamAdmission:{...wamAdmission,outcome:{...outcome,messagesSeen:true}}},
-              {...observed,wamAdmission:{...wamAdmission,outcome:{...outcome,touchedCount:'PRIVATE'}}},
-              ...(admitted?[{...observed,wamAdmission:{...wamAdmission,summary:{...summary,complete:true}}}]:[]),
-            ]){
-              assert.equal(nativeProviderProcessFirstFailure(bad),null);
-              assert.equal(nativePostgresChildFirstFailure(JSON.stringify(bad),''),null);
-            }
-          }
-        }
-      }
-      if(['PROVIDERS-H0','PROVIDERS-H1'].includes(phase)){
-        for(const [callbackInvoked,admitted,interrupted] of [[false,null,true],[true,true,false]]){
-          const wamCompletion={kind:'SOURCE_INITIAL_WAM_COMPLETION_DIAGNOSTIC',collection:'wam_nsb',hourOffset:0,
-            callbackInvoked,admitted,outcome:{interrupted},deadlineReached:true,
-            elapsedMs:{beforeCurrent:1000,afterCurrent:590000,beforeWam:591000,afterWam:600000},
-            privatePayloadIncluded:false};
-          const fixed={...value,boundary:{...boundary,exceptionType:'RUNTIME_ERROR',
-            reason:'CURRENT_NATIVE_INITIAL_WEATHER_NORMAL_WAVE_NATIVE_OWNER_NOT_COMPLETE'},wamCompletion};
-          assert.deepEqual(nativeProviderProcessFirstFailure(fixed),fixed);
-          assert.deepEqual(nativePostgresChildFirstFailure(JSON.stringify(fixed)+'\n'+JSON.stringify(later),''),fixed);
-          for(const bad of [
-            {...fixed,phase:'PROVIDERS'}, {...fixed,returncode:0}, {...fixed,returncode:null,signal:'UNKNOWN'},
-            {...fixed,boundary}, {...fixed,wamCompletion:{...wamCompletion,raw:'PRIVATE'}},
-            {...fixed,wamCompletion:{...wamCompletion,collection:'wam_nsb\nPRIVATE'}},
-            {...fixed,wamCompletion:{...wamCompletion,hourOffset:121}},
-            {...fixed,wamCompletion:{...wamCompletion,admitted:callbackInvoked?null:true}},
-            {...fixed,wamCompletion:{...wamCompletion,callbackInvoked:1}},
-            {...fixed,wamCompletion:{...wamCompletion,deadlineReached:1}},
-            {...fixed,wamCompletion:{...wamCompletion,outcome:{interrupted,raw:'PRIVATE'}}},
-            ...[-1,86_400_001,0.5,true,'PRIVATE'].map(afterWam=>({...fixed,wamCompletion:{...wamCompletion,
-              elapsedMs:{...wamCompletion.elapsedMs,afterWam}}})),
-            {...fixed,wamCompletion:{...wamCompletion,elapsedMs:{...wamCompletion.elapsedMs,beforeCurrent:600001}}},
-            {...fixed,wamCompletion:{...wamCompletion,elapsedMs:{...wamCompletion.elapsedMs,raw:0}}},
-          ]){
-            assert.equal(nativeProviderProcessFirstFailure(bad),null);
-            assert.equal(nativePostgresChildFirstFailure(JSON.stringify(bad),''),null);
-          }
-          const unknown={...fixed,wamCompletion:{...wamCompletion,elapsedMs:{
-            beforeCurrent:null,afterCurrent:null,beforeWam:null,afterWam:null}}};
-          assert.deepEqual(nativeProviderProcessFirstFailure(unknown),unknown);
-        }
-      }
-      for(const bad of [
-        {...value,phase:'PROVIDERS-H2'}, {...value,phase:'providers-h0'}, {...value,raw:'PRIVATE'},
-        {...value,stderr:{bytes:1,complete:false,sha256:null}},
-        {...value,boundary:{...boundary,callsite:{...callsite,module:'scripts/lib/private-other.py'}}},
-        {...value,boundary:{...boundary,callsite:{...callsite,line:0}}},
-        {...value,boundary:{...boundary,reason:'PRIVATE'}},
-      ]){
-        assert.equal(nativeProviderProcessFirstFailure(bad),null);
-        assert.equal(nativePostgresChildFirstFailure(JSON.stringify(bad),''),null);
-      }
-    }
-  }
-  for(const phase of ['BINDINGS','PROVIDERS','FOLLOWER','UNKNOWN','PROVIDERS-H0','PROVIDERS-H1','PROVIDERS-587']){
-    const value={kind:'SOURCE_LEGACY_CHILD_FIRST_FAILURE',phase,exceptionType:'ASSERTION_ERROR',
-      osError:'NONE',callsite:null,privatePayloadIncluded:false};
-    assert.deepEqual(nativePostgresChildFirstFailure(JSON.stringify(value),''),value);
-    assert.equal(nativePostgresChildFirstFailure(JSON.stringify({...value,phase:'PROVIDERS-H2'}),''),null);
-    assert.equal(nativePostgresChildFirstFailure(JSON.stringify({...value,raw:'PRIVATE'}),''),null);
-  }
 }
 
 // Run the actual native SQL-prefix assertion before any historical PG phase.
@@ -740,9 +532,7 @@ if (process.argv.includes('--native-identity-source-only')) {
   process.exit(0);
 }
 
-const currentSourceNativeProfile = process.argv.includes('--current-source-native-profile');
-const sourceProducerNative = process.argv.includes('--source-producer') || currentSourceNativeProfile;
-const assistantPublic587SuccessorNative = process.argv.includes('--assistant-public587-successor') || sourceProducerNative;
+const assistantPublic587SuccessorNative = process.argv.includes('--assistant-public587-successor');
 const assistantLaterH0Native = process.argv.includes('--assistant-later-h0') || assistantPublic587SuccessorNative;
 const nativeOriginalContinuityNative = process.argv.includes('--native-original-continuity') || assistantLaterH0Native;
 const accountStatisticsAssistantNative = process.argv.includes('--account-statistics-assistant') || nativeOriginalContinuityNative;
@@ -752,11 +542,9 @@ const accountStatisticsAssistantNative = process.argv.includes('--account-statis
 if (process.argv.includes('--native-postgres') || process.argv.includes('--native-statistics-revision')
     || process.argv.includes('--native-sampling-identity') || process.argv.includes('--current-memory-warmup')
     || process.argv.includes('--established-native-current-origin') || (process.argv.includes('--last-mile-enclosure') || accountStatisticsAssistantNative)) {
-  let classifySourceFailure = null;
   try {
-    const { runNativeCheckpointSqlComparison, nativePostgresExceptionCode } =
+    const { runNativeCheckpointSqlComparison } =
       await import('./lib/checkpoint-cas-native-postgres.mjs');
-    if (sourceProducerNative) classifySourceFailure = nativePostgresExceptionCode;
     const report = await runNativeCheckpointSqlComparison({
       repositoryRoot: path.resolve('.'), sourceDocumentAt, atHour,
       saveCheckpoint: saveRavScoreContinuationCheckpoint,
@@ -772,13 +560,10 @@ if (process.argv.includes('--native-postgres') || process.argv.includes('--nativ
       includeNativeOriginalContinuity: nativeOriginalContinuityNative,
       includeAssistantLaterH0: assistantLaterH0Native,
       includeAssistantPublic587Successor: assistantPublic587SuccessorNative,
-      includeSourceProducer: sourceProducerNative,
-      includeCurrentSourceNativeProfile: currentSourceNativeProfile,
     });
     console.log(JSON.stringify(report));
   } catch (error) {
-    const category = sourceProducerNative && classifySourceFailure !== null ? classifySourceFailure(error)
-      : /^NATIVE_POSTGRES_[A-Z0-9_]+$/.test(error?.message ?? '')
+    const category = /^NATIVE_POSTGRES_[A-Z0-9_]+$/.test(error?.message ?? '')
       ? error.message : error?.code === 'ERR_ASSERTION'
         ? 'NATIVE_POSTGRES_ASSERTION_FAILED' : 'NATIVE_POSTGRES_UNKNOWN_FAILURE';
     console.error(JSON.stringify({ kind: 'NATIVE_POSTGRES_CHECKPOINT_CAS_COMPARISON',

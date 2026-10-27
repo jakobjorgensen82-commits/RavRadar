@@ -44,15 +44,12 @@ import {ASSISTANT_LATER_H0_BINDING,ASSISTANT_LATER_H0_BEFORE,assistantLaterH0Mig
   ASSISTANT_PUBLIC587_SUCCESSOR_BINDING,assistantPublic587SuccessorMigration,requireAssistantPublic587SuccessorOutput,
   readAssistantPublic587SuccessorCanonicalSource,assistantPublic587SuccessorCheckpointContractFromBase}
   from './lib/assistant-later-h0-successor-source.mjs';
-import {SOURCE_PRODUCER_BINDING,SOURCE_PRODUCER_BEFORE,sourceProducerMigration,requireSourceProducerOutput,
-  readSourceProducerCanonicalSource,sourceProducerCheckpointContractFromBase}
-  from './lib/source-producer-successor-source.mjs';
 import {STATISTICS_REVISION_MIGRATION,STATISTICS_REVISION_PREDECESSOR,buildStatisticsPreferenceRevision}
   from './build-statistics-preference-revision.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const MIGRATIONS_DIRECTORY = path.join(ROOT, 'supabase', 'migrations');
-export const DEFAULT_CUTOVER_SOURCE_PHASE = 'source-producer';
+export const DEFAULT_CUTOVER_SOURCE_PHASE = ACTIVE.sourcePhase;
 const KNOWLEDGE_PATH = path.join(ROOT, 'knowledge', 'rav-assistant-public-v1.json');
 const CENTRAL_PROFILE_PATH = path.join(ROOT, 'data', 'admin', 'ravscore-profile-selection.json');
 const SHA256_PATTERN = /^[a-f0-9]{64}$/;
@@ -329,11 +326,9 @@ export const REQUIRED_CUTOVER_MIGRATIONS = Object.freeze([
   ...(NATIVE_ORIGINAL_CONTINUITY_BINDING === null ? [] : [nativeOriginalContinuityMigration()]),
   ...(ASSISTANT_LATER_H0_BINDING === null ? [] : [assistantLaterH0Migration()]),
   ...(ASSISTANT_PUBLIC587_SUCCESSOR_BINDING === null ? [] : [assistantPublic587SuccessorMigration()]),
-  ...(SOURCE_PRODUCER_BINDING === null ? [] : [sourceProducerMigration()]),
 ]);
 function migrationsForSourcePhase(sourcePhase) {
-  assert(['native0600','current-memory-warmup','established-native-current-origin','last-mile-enclosure','account-statistics-assistant','native-original-continuity','assistant-later-h0','assistant-public587-successor','source-producer'].includes(sourcePhase));
-  if (sourcePhase === 'source-producer') return sourceProducerRequiredMigrations();
+  assert(['native0600','current-memory-warmup','established-native-current-origin','last-mile-enclosure','account-statistics-assistant','native-original-continuity','assistant-later-h0','assistant-public587-successor'].includes(sourcePhase));
   if (sourcePhase === 'assistant-public587-successor') return assistantPublic587SuccessorRequiredMigrations();
   if (sourcePhase === 'assistant-later-h0') return assistantLaterH0RequiredMigrations();
   if (sourcePhase === 'native-original-continuity') return nativeOriginalContinuityRequiredMigrations();
@@ -348,7 +343,6 @@ function migrationsForSourcePhase(sourcePhase) {
 }
 function canonicalForSourcePhase(sourcePhase,migrationsDirectory) {
   migrationsForSourcePhase(sourcePhase); // Unknown phases fail before filesystem access.
-  if(sourcePhase==='source-producer')return readSourceProducerCanonicalSource({migrationsDirectory});
   if(sourcePhase==='assistant-public587-successor')return readAssistantPublic587SuccessorCanonicalSource({migrationsDirectory});
   if(sourcePhase==='assistant-later-h0')return readAssistantLaterH0CanonicalSource({migrationsDirectory});
   if(sourcePhase==='native-original-continuity')return readNativeOriginalContinuityCanonicalSource({migrationsDirectory});
@@ -746,69 +740,6 @@ export async function hydrateAssistantLaterH0RemoteMigrationHistory(options){
   return hydrateTemporaryRemoteMigrationHistory({...options,sourcePhase:'assistant-later-h0'});
 }
 
-// Explicit post588 SOURCE controller phase. This does not change ACTIVE/defaults
-// or grant a generic code-only caller its separate first-install authority.
-export function sourceProducerRequiredMigrations(){
-  requireSourceProducerOutput(); // FIRST; no old/current fallback while unissued.
-  const previous=assistantPublic587SuccessorRequiredMigrations();
-  assert.equal(previous.length,57);assert.equal(previous.at(-1).version,SOURCE_PRODUCER_BEFORE.version);
-  const required=Object.freeze([...previous,sourceProducerMigration()]);
-  assert.equal(required.length,58);return required;
-}
-function sourceProducerRows(migrationListText){
-  const required=sourceProducerRequiredMigrations();
-  const rows=parseSupabaseMigrationList(migrationListText);
-  const local=uniqueVersions(rows,'local'),remote=uniqueVersions(rows,'remote');
-  assertCurrentMemoryWarmupArchivesAbsent(local,remote);
-  const allowed=new Set(required.map(row=>row.version)),next=required.at(-1);
-  for(const {version}of required){assert(local.has(version),'Missing exact SOURCE source');
-    if(version!==next.version)assert(remote.has(version),'Missing genuine installed SOURCE predecessor');}
-  for(const versions of [local,remote])for(const version of versions)
-    assert(allowed.has(version)||migrationChronologicalKey(version)<migrationChronologicalKey(required[0].version),
-      'Unknown post-cutover SOURCE migration');
-  const latest=[...remote].sort((a,b)=>migrationChronologicalKey(a)<migrationChronologicalKey(b)?-1:1).at(-1);
-  assert.equal(latest,remote.has(next.version)?next.version:SOURCE_PRODUCER_BEFORE.version);
-  return {required,local,remote};
-}
-export function assertSourceProducerMigrationsApplied(migrationListText){
-  const {required,local,remote}=sourceProducerRows(migrationListText);
-  assert(remote.has(required.at(-1).version),'SOURCE requires its installed exact source');
-  assert.deepEqual([...local].filter(version=>!remote.has(version)),[]);
-  return Object.freeze({appliedVersions:Object.freeze(required.map(row=>row.version))});
-}
-export async function assertSourceProducerMigrationPlan(options={}){
-  requireSourceProducerOutput(); // Before option inspection, canonical I/O or planning.
-  assert(arguments.length<=1);
-  const {migrationListText,dryRunText,migrationsDirectory=MIGRATIONS_DIRECTORY}=options;
-  const {required,local,remote}=sourceProducerRows(migrationListText);
-  await readSourceProducerCanonicalSource({migrationsDirectory});
-  await inspectMigrationSources({migrationsDirectory,sourcePhase:'source-producer'});
-  const next=required.at(-1),pending=[...local].filter(version=>!remote.has(version));
-  assert.deepEqual(pending,remote.has(next.version)?[]:[next.version],'Only the exact new SOURCE phase may be pending');
-  assert.deepEqual(parseSupabaseDryRunMigrationFilenames(dryRunText),pending.length?[next.filename]:[]);
-  return Object.freeze({pendingVersions:Object.freeze(pending),
-    alreadyAppliedVersions:Object.freeze(required.filter(row=>remote.has(row.version)).map(row=>row.version))});
-}
-export async function prepareSourceProducerCutoverWorkdir(options={}){
-  requireSourceProducerOutput(); // Before inspecting a caller workdir or filesystem.
-  assert(arguments.length<=1);const {workdir}=options;
-  await readSourceProducerCanonicalSource();
-  const prepared=await prepareTemporarySupabaseCutoverWorkdir({workdir,includeStatisticsPreferenceRevisionSource:true,
-    sourcePhase:'source-producer'});
-  const staged=await fs.readdir(prepared.migrationsDirectory);
-  for(const version of ['20261014140000','20261015030000','20261016030000'])
-    assert(!staged.some(filename=>filename.startsWith(version+'_')));
-  await readSourceProducerCanonicalSource({migrationsDirectory:prepared.migrationsDirectory});return prepared;
-}
-export async function hydrateSourceProducerRemoteMigrationHistory(options){
-  requireSourceProducerOutput(); // Before inspecting paths/history; phase cannot be caller-selected.
-  assert.equal(arguments.length,1);
-  const directory=path.join(assertTemporaryCutoverWorkdir(options.workdir),'supabase','migrations');
-  sourceProducerRows(options.migrationListText);
-  await readSourceProducerCanonicalSource({migrationsDirectory:directory});
-  return hydrateTemporaryRemoteMigrationHistory({...options,sourcePhase:'source-producer'});
-}
-
 export const ASSISTANT_BINDING_HEADERS = Object.freeze({
   modelId: 'x-ravradar-model-id',
   stateSchemaVersion: 'x-ravradar-model-state-version',
@@ -874,11 +805,8 @@ export async function expectedCheckpointCasContract({
 }
 
 export function checkpointCasContractFromCanonicalSource(migration,{sourcePhase=DEFAULT_CUTOVER_SOURCE_PHASE}={}) {
-  if(sourcePhase==='source-producer')requireSourceProducerOutput(); // No unissued inspection/fallback.
   assert.equal(typeof migration,'string');
-  assert(['native0600','current-memory-warmup','established-native-current-origin','last-mile-enclosure','account-statistics-assistant','native-original-continuity','assistant-later-h0','assistant-public587-successor','source-producer'].includes(sourcePhase));
-  if(sourcePhase==='source-producer')return sourceProducerCheckpointContractFromBase(migration,
-    checkpointCasContractFromCanonicalSource(migration,{sourcePhase:'assistant-public587-successor'}));
+  assert(['native0600','current-memory-warmup','established-native-current-origin','last-mile-enclosure','account-statistics-assistant','native-original-continuity','assistant-later-h0','assistant-public587-successor'].includes(sourcePhase));
   if(sourcePhase==='assistant-public587-successor')return assistantPublic587SuccessorCheckpointContractFromBase(migration,
     checkpointCasContractFromCanonicalSource(migration,{sourcePhase:'native-original-continuity'}));
   if(sourcePhase==='assistant-later-h0')return assistantLaterH0CheckpointContractFromBase(migration,
@@ -1054,7 +982,7 @@ export async function expectedAssistantBinding() {
 export async function buildIntegratedCutoverReadiness(sourceHeadInput, {
   publicImplementationClosureSha256,
 } = {}) {
-  requireSourceProducerOutput(); // Full589 default; no CURRENT fallback before readiness/input.
+  ACTIVE.requireOutput(); // Fast aktiv familie før readiness/input.
   const sourceHead = normaliseSourceHead(sourceHeadInput);
   assert.match(String(publicImplementationClosureSha256 ?? ''), SHA256_PATTERN,
     'public implementation closure must be an exact SHA-256');
@@ -1332,7 +1260,7 @@ export async function assertSupabaseMigrationPlan({
   allowAccountAssistantPrewritePlan = false,
   allowStatisticsPreferenceRevisionPlan = false,
 } = {}) {
-  requireSourceProducerOutput(); // Full589 default; UNISSUED must not fall back.
+  ACTIVE.requireOutput(); // Fast aktiv familie; UNISSUED må ikke falde tilbage.
   assert.equal(typeof allowStatisticsPreferenceRevisionPlan,'boolean');
   await inspectMigrationSources({ migrationsDirectory });
   if (allowStatisticsPreferenceRevisionPlan) {
@@ -1351,8 +1279,7 @@ export async function assertSupabaseMigrationPlan({
   assert.ok(remote.has(establishedNativeCurrentOriginMigration().version),
     'ESTABLISHED_NATIVE_CURRENT_ORIGIN_PREWRITE_ROUTE_REQUIRED');
   assert.ok(remote.has(assistantPublic587SuccessorMigration().version),'ASSISTANT_PUBLIC587_SUCCESSOR_PREWRITE_ROUTE_REQUIRED');
-  assert.ok(remote.has(sourceProducerMigration().version),'SOURCE_PRODUCER_PREWRITE_ROUTE_REQUIRED');
-  assertSourceProducerMigrationsApplied(migrationListText);
+  assertAssistantPublic587SuccessorMigrationsApplied(migrationListText);
   const plannedMigrations = REQUIRED_CUTOVER_MIGRATIONS;
   const requiredVersions = new Set(plannedMigrations.map(item => item.version));
 
@@ -1397,7 +1324,7 @@ export async function assertSupabaseMigrationPlan({
 }
 
 export function assertSupabaseMigrationsApplied(migrationListText) {
-  assertSourceProducerMigrationsApplied(migrationListText);
+  assertAssistantPublic587SuccessorMigrationsApplied(migrationListText);
   const rows = parseSupabaseMigrationList(migrationListText);
   const local = uniqueVersions(rows, 'local');
   const remote = uniqueVersions(rows, 'remote');
@@ -1586,8 +1513,7 @@ export async function verifyIntegratedDatabaseReadback({
   tripBindingPolicy = null,
   tripActiveAdmissionPolicy = null, sourcePhase = DEFAULT_CUTOVER_SOURCE_PHASE,
 } = {}) {
-  assert(['native0600','current-memory-warmup','established-native-current-origin','last-mile-enclosure','account-statistics-assistant','native-original-continuity','assistant-later-h0','assistant-public587-successor','source-producer'].includes(sourcePhase));
-  if(sourcePhase === 'source-producer')requireSourceProducerOutput();
+  assert(['native0600','current-memory-warmup','established-native-current-origin','last-mile-enclosure','account-statistics-assistant','native-original-continuity','assistant-later-h0','assistant-public587-successor'].includes(sourcePhase));
   if(sourcePhase === 'current-memory-warmup')requireCurrentMemoryWarmupOutput();
   if(sourcePhase === 'established-native-current-origin')requireEstablishedNativeCurrentOriginOutput();
   if(sourcePhase === 'assistant-public587-successor')requireAssistantPublic587SuccessorOutput();
@@ -2015,7 +1941,7 @@ function optionalArgumentValue(name) {
 }
 
 async function runCli() {
-  requireSourceProducerOutput(); // Full589 default refuses before CLI/input.
+  ACTIVE.requireOutput(); // Fast aktiv familie før CLI/input.
   const command = process.argv[2];
   if (command === 'assert-source') {
     const sourceHead = sourceHeadFromEnvironment();

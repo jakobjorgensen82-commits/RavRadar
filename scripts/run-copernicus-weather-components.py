@@ -218,7 +218,7 @@ def storage_inventory(bank: dict, cache: ComponentSubsetCache) -> dict:
 def merge_original_component_generations(latest: dict, latest_cache: ComponentSubsetCache,
                                          complete: dict, complete_cache: ComponentSubsetCache,
                                          *, targets: list[dict], retention_start_at: str,
-                                         retention_end_at: str, output_root: Path, source_birth_journal=None) -> dict:
+                                         retention_end_at: str, output_root: Path) -> dict:
     """Stage a dual-bank union with every selected immutable original, or none.
 
     Both inputs must already come from independently verified protected packs.
@@ -232,8 +232,7 @@ def merge_original_component_generations(latest: dict, latest_cache: ComponentSu
     output_root = Path(output_root)
     if output_root.exists():
         raise ValueError("CP_COMPONENT_MERGE_DESTINATION_EXISTS")
-    if source_birth_journal is None:
-        output_root.parent.mkdir(parents=True, exist_ok=True)
+    output_root.parent.mkdir(parents=True, exist_ok=True)
     source_roots = [latest_cache.directory.resolve(), complete_cache.directory.resolve()]
     if any(output_root.resolve() == root or root in output_root.resolve().parents
            or output_root.resolve() in root.parents for root in source_roots):
@@ -250,34 +249,23 @@ def merge_original_component_generations(latest: dict, latest_cache: ComponentSu
         retention_start_at=retention_start_at, retention_end_at=retention_end_at,
         admit_latest=source_rows[0][2], admit_complete=source_rows[1][2])
     requests = {row["requestSha256"]: row for row in merged["requests"]}
-    stage_context = (tempfile.TemporaryDirectory(prefix=".cp-generation-", dir=output_root.parent,
-                                     ignore_cleanup_errors=True) if source_birth_journal is None
-                     else source_birth_journal.stage(output_root))
-    with stage_context as temporary:
+    with tempfile.TemporaryDirectory(prefix=".cp-generation-", dir=output_root.parent,
+                                     ignore_cleanup_errors=True) as temporary:
         staged = Path(temporary)
         destination_cache = ComponentSubsetCache(staged / "cache")
-        if source_birth_journal is None:
-            destination_cache.directory.mkdir()
-        else:
-            source_birth_journal.mkdirs(destination_cache.directory)
+        destination_cache.directory.mkdir()
         def copy_exact(source: Path, destination: Path, *, same_verified_static=False):
             if source.is_symlink():
                 raise ValueError("CP_COMPONENT_MERGE_SOURCE_SYMLINK")
             content = source.read_bytes()
-            if source_birth_journal is None:
-                destination.parent.mkdir(parents=True, exist_ok=True)
-            else:
-                source_birth_journal.mkdirs(destination.parent)
+            destination.parent.mkdir(parents=True, exist_ok=True)
             if destination.exists():
                 if destination.is_symlink() or (destination.read_bytes() != content
                     and not same_verified_static):
                     raise ValueError("CP_COMPONENT_MERGE_ORIGINAL_CONFLICT")
                 return
-            if source_birth_journal is None:
-                with destination.open("xb") as handle:
-                    handle.write(content)
-            else:
-                source_birth_journal.write_bytes(destination,content)
+            with destination.open("xb") as handle:
+                handle.write(content)
         for entry in sorted(merged["records"],
                             key=lambda row: row["native"]["validTime"], reverse=True):
             request = requests[entry["requestSha256"]]
@@ -322,17 +310,8 @@ def merge_original_component_generations(latest: dict, latest_cache: ComponentSu
                        same_verified_static=True)
             pointer = destination_cache.directory / "static" / (static["requestSha256"][7:] + ".json")
             if not pointer.exists():
-                if source_birth_journal is None:
-                    atomic_json(pointer, {"subsetSha256": static_hash})
-                else:
-                    from lib.copernicus_current import canonical_json
-                    source_birth_journal.write_bytes(pointer,canonical_json({"subsetSha256":static_hash}).encode("utf-8"))
-        if source_birth_journal is None:
-            save_component_bank(staged / "bank.json", merged, targets=targets)
-        else:
-            from lib.copernicus_current import canonical_json
-            validate_component_bank(merged,targets=targets)
-            source_birth_journal.write_bytes(staged / "bank.json",canonical_json(merged).encode("utf-8"))
+                atomic_json(pointer, {"subsetSha256": static_hash})
+        save_component_bank(staged / "bank.json", merged, targets=targets)
         merged_admit, _, _ = original_component_admitter(
             {"targets": merged["targets"], "targetRegistrySha256": merged["targetRegistrySha256"]},
             destination_cache)
@@ -341,8 +320,7 @@ def merge_original_component_generations(latest: dict, latest_cache: ComponentSu
                for entry in merged["records"]):
             raise ValueError("CP_COMPONENT_MERGE_FINAL_ORIGINAL_INVALID")
         storage_inventory(merged, destination_cache)
-        if source_birth_journal is None:
-            os.replace(staged, output_root)
+        os.replace(staged, output_root)
     return {"bankSha256": merged["bankSha256"], "recordCount": len(merged["records"]),
             "latestRecordCount": len(latest["records"]), "completeRecordCount": len(complete["records"])}
 
@@ -417,7 +395,6 @@ def main(argv=None) -> int:
     parser.add_argument("--output", type=Path)
     parser.add_argument("--storage-inventory", type=Path)
     parser.add_argument("--merge-generations", action="store_true")
-    parser.add_argument("--source-union-born-journal",action="store_true")
     parser.add_argument("--complete-bank", type=Path)
     parser.add_argument("--complete-cache-directory", type=Path)
     parser.add_argument("--merge-output-root", type=Path)
@@ -431,12 +408,6 @@ def main(argv=None) -> int:
     parser.add_argument("--maximum-download-bytes", type=int)
     args = parser.parse_args(args_list)
     cache = ComponentSubsetCache(args.cache_directory)
-    source_birth_journal=None
-    if args.source_union_born_journal:
-        if not args.merge_generations:
-            raise ValueError("SOURCE_UNION_BIRTH_ROUTE_INVALID")
-        from lib.source_union_birth_journal import SourceUnionBirthJournal
-        source_birth_journal=SourceUnionBirthJournal()
     if args.merge_generations:
         if (args.output is None or args.complete_bank is None or args.complete_cache_directory is None
             or args.merge_output_root is None or args.target_registry is None
@@ -455,14 +426,8 @@ def main(argv=None) -> int:
             targets=central_component_targets(json.loads(args.target_registry.read_text(encoding="utf-8"))),
             retention_start_at=iso(reference - timedelta(days=14)),
             retention_end_at=iso(reference + timedelta(days=7)),
-            output_root=args.merge_output_root,source_birth_journal=source_birth_journal)
-        result={"kind": "CP_COMPONENT_DUAL_GENERATION_STAGE", "schemaVersion": 1, **summary}
-        if source_birth_journal is None:
-            atomic_json(args.output,result)
-        else:
-            from lib.copernicus_current import canonical_json
-            source_birth_journal.write_bytes(args.output,canonical_json(result).encode("utf-8"))
-            source_birth_journal.finish()
+            output_root=args.merge_output_root)
+        atomic_json(args.output, {"kind": "CP_COMPONENT_DUAL_GENERATION_STAGE", "schemaVersion": 1, **summary})
         return 0
     if args.storage_inventory is not None:
         bank = json.loads(args.bank.read_text(encoding="utf-8"))
