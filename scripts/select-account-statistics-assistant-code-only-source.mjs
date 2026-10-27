@@ -8,16 +8,12 @@ import {ACCOUNT_STATISTICS_ASSISTANT_BINDING,requireAccountStatisticsAssistantBi
 import {ravScoreModelBinding} from '../js/core/ravscore-model-contract.js';
 import {ravScoreModelBinding as candidateBinding} from './rollback-assets/ravscore-model-contract.js';
 import {ravScoreContinuationImplementationSha256} from './lib/ravscore-continuation-implementation-contract.mjs';
-import {selectCurrentInstalledCodeOnlySource} from './select-native-original-continuity-code-only-source.mjs';
 export async function selectAccountStatisticsAssistantCodeOnlySource(environment=process.env){
   assert(arguments.length<=1);
   const opted=environment.RAVRADAR_ACCOUNT_STATISTICS_ASSISTANT_UPGRADE_OPT_IN;
   if(ACCOUNT_STATISTICS_ASSISTANT_BINDING===null && opted==='false')return false;
   requireAccountStatisticsAssistantOutput(); // FIRST before new branch I/O; no caller tuple can issue this.
   const next=requireAccountStatisticsAssistantBinding();
-  if(ravScoreModelBinding().modelBundleSha256!==next.I&&opted==='false'){
-    await selectCurrentInstalledCodeOnlySource(environment);return false;
-  }
   assert.equal(environment.RAVRADAR_ESTABLISHED_NATIVE_CURRENT_ORIGIN_UPGRADE_OPT_IN,'false');
   assert.equal(environment.RAVRADAR_LAST_MILE_ENCLOSURE_UPGRADE_OPT_IN,'false');
   assert.notEqual(environment.RESTART_ARCHIVED_WEATHER,'true');

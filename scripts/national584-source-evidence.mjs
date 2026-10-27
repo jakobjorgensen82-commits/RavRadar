@@ -10,7 +10,11 @@ import {fileURLToPath} from 'node:url';
 import {sourceTreeContentSha256} from './lib/source-tree-content.mjs';
 import {requireAssistantLaterH0Release,requireAssistantPublic587SuccessorRelease} from './lib/assistant-later-h0-successor-source.mjs';
 import {CURRENT586_PHASE_UPLOAD,inverseCurrent586PhaseUpload,verifyCurrent586PhaseReceipt,
-  verifyAssistantLaterH0PhaseReceipt,verifyAssistantPublic587SuccessorPhaseReceipt} from './native-postgres-evidence.mjs';
+  verifyAssistantLaterH0PhaseReceipt,verifyAssistantPublic587SuccessorPhaseReceipt,SOURCE_PRODUCER_COMMANDS,
+  SOURCE_PRODUCER_PHASE_UPLOAD,inverseSourceProducerPhaseUpload,verifySourceProducerPhaseReceipt}
+  from './native-postgres-evidence.mjs';
+import {SOURCE_PRODUCER_PROPOSED_RELEASE,requireSourceProducerBinding,requireSourceProducerOutput}
+  from './lib/source-producer-successor-source.mjs';
 
 export const ORIGIN=Object.freeze({
   repository:'jakobjorgensen82-commits/RavRadar',pullRequest:671,
@@ -48,6 +52,10 @@ export const ASSISTANT_LATER_H0_NATIVE_COMMANDS=Object.freeze([CURRENT586_NATIVE
 export const ASSISTANT_PUBLIC587_SUCCESSOR_SOURCE_COMMAND='node scripts/build-assistant-later-h0-successor.mjs --public587-successor --check';
 export const ASSISTANT_PUBLIC587_SUCCESSOR_NATIVE_COMMANDS=Object.freeze([ASSISTANT_LATER_H0_NATIVE_COMMANDS[0],ASSISTANT_LATER_H0_NATIVE_COMMANDS[1]+' --assistant-public587-successor']);
 
+// The actual588 code check runs in its fixed whole source, not under589 C/I.
+export const SOURCE_PRODUCER_PREDECESSOR_SOURCE_COMMAND="node --input-type=module -e \"import {withAuthenticated588PredecessorSource} from './scripts/check-assistant-later-h0-predecessor-source.mjs';await withAuthenticated588PredecessorSource(async()=>{});\"";
+export const SOURCE_PRODUCER_SOURCE_COMMAND="node scripts/build-source-producer-successor.mjs --check && node --test scripts/test-source-producer-prewrite.mjs";
+
 export const BEFORE_BLOCK='      - name: '+STEP+'\n        run: '+COMMAND+'\n';
 export const AFTER_BLOCK=[
   '      - name: '+STEP,'        shell: bash','        env:',
@@ -65,6 +73,27 @@ export const REVIEWED120_JOB=AFTER_JOB.replace('timeout-minutes: 90','timeout-mi
 export const CURRENT_JOB=REVIEWED120_JOB.replace('timeout-minutes: 120','timeout-minutes: 180');
 export const REVIEWED_SOURCE_RUN_LINE='        run: npm run validate:source && node scripts/test-fixed-public-rate-log-20261013.mjs && node scripts/test-fixed-storage-upload-log-20261013.mjs && node scripts/test-fixed-public-rate-console-log-20261015.mjs\n';
 export const CURRENT_SOURCE_RUN_LINE='        run: npm run validate:source && node scripts/test-fixed-public-rate-log-20261013.mjs && node scripts/test-fixed-storage-upload-log-20261013.mjs && node scripts/test-fixed-public-rate-console-log-20261015.mjs && node scripts/test-prepare-candidate-g-operational-rollback.mjs && node scripts/test-candidate-g-rollback-public-stage.mjs\n';
+// Scope the observed Node24 executable to the one later PG step only. No
+// RAVRADAR_* override may leak into frozen national/source execution.
+export const SOURCE_NODE24_CAPTURE = [
+  '          # Retain the observed Node24 executable before PATH returns to Node22.',
+  '          # The later SOURCE compatibility child alone requires this runtime.',
+  '          printf \'node24_path=%s\\n\' "$(command -v node)" >> "$GITHUB_OUTPUT"',
+  '        id: source-native-node24', '',
+].join('\n');
+export const SOURCE_NODE24_ENV = '          RAVRADAR_SOURCE_NATIVE_NODE24_PATH: $'+'{{ steps.source-native-node24.outputs.node24_path }}\n';
+export function inverseSourceNode24Workflow(value) {
+  let source=String(value).replace(/\r\n/g,'\n');
+  assert.equal(source.split(SOURCE_NODE24_CAPTURE).length,2,'Exact once-only observed Node24 capture');
+  assert.equal(source.split(SOURCE_NODE24_ENV).length,2,'Exact once-only step-scoped Node24 operand');
+  const cohort='          python -B scripts/test-owned-dmi-grib-save-native.py --node24-path "$(command -v node)"\n';
+  assert(source.includes(cohort+SOURCE_NODE24_CAPTURE),'Capture must follow the actual Node24 cohort');
+  const pg='      - name: Validate native PostgreSQL checkpoint CAS on artificial data only\n        shell: bash\n        env:\n';
+  assert(source.includes(pg+SOURCE_NODE24_ENV),'Runtime belongs only to the existing PG step');
+  assert(source.indexOf(SOURCE_NODE24_CAPTURE)<source.indexOf('      - name: Restore Node22 for existing source validation\n'));
+  source=source.replace(SOURCE_NODE24_CAPTURE,'').replace(SOURCE_NODE24_ENV,'');
+  return source;
+}
 const ROOT=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
 const sha=raw=>crypto.createHash('sha256').update(raw).digest('hex');
 const lf=value=>String(value).replace(/\r\n/g,'\n');
@@ -124,6 +153,9 @@ export function inverseCandidatePublicSourceRunLine(source) {
 }
 export function verifyWorkflow(source) {
   source=lf(source);
+  if(source.includes('source-native-node24')||source.includes('RAVRADAR_SOURCE_NATIVE_NODE24_PATH'))
+    source=inverseSourceNode24Workflow(source);
+  if(source.includes('      - name: '+SOURCE_PRODUCER_PHASE_UPLOAD+'\n'))source=inverseSourceProducerPhaseUpload(source);
   if(source.includes('      - name: '+CURRENT586_PHASE_UPLOAD+'\n'))source=inverseCurrent586PhaseUpload(source);
   assert.equal(source.split(CURRENT_JOB).length,2,'Only the exact reviewed current180-minute source PR job is admitted');
   verifyReviewed90Workflow(inverseCandidatePublicSourceRunLine(source).replace(CURRENT_JOB,AFTER_JOB));
@@ -198,7 +230,44 @@ export function verifyAssistantPublic587SuccessorPackage(pkg){
   verifyAssistantLaterH0Package({...pkg,version:requireAssistantLaterH0Release(),
     scripts:{...pkg.scripts,'test:assistant-later-h0-source':ASSISTANT_LATER_H0_SOURCE_COMMAND}});
 }
+function sourceProducerRelease(){
+  requireSourceProducerBinding();requireSourceProducerOutput();
+  const release=SOURCE_PRODUCER_PROPOSED_RELEASE;
+  assert.equal(typeof release,'string','SOURCE_PRODUCER_RELEASE_UNISSUED');
+  assert.match(release,/^4\.0\.[1-9][0-9]*$/);
+  assert(Number(release.split('.').at(-1))>Number(requireAssistantPublic587SuccessorRelease().split('.').at(-1)));
+  return release;
+}
+function verifyReviewedSourceProducerPackage(pkg){
+  const SOURCE_PRODUCER_SOURCE_COMMAND="node scripts/build-source-producer-successor.mjs --check && node --test scripts/test-source-producer-prewrite.mjs scripts/test-source-normal-workflow.mjs";
+  assert.equal(pkg.version,sourceProducerRelease(),'Only the actual issued SOURCE release');
+  assert.equal(sha(JSON.stringify(Object.keys(pkg.scripts).sort().map(key=>[key,pkg.scripts[key]]))),
+    '47e6338aa670cfaa39d30f529d4a9d77fc2494d60476757ca30b95f3da283f51',
+    'Whole reviewed SOURCE command plan, including all inherited normal checks');
+  assert.equal(pkg.scripts['test:assistant-later-h0-source'],SOURCE_PRODUCER_PREDECESSOR_SOURCE_COMMAND);
+  const critical=pkg.scripts['test:ravscore-source-critical'];
+  const current='npm run test:assistant-later-h0-source && '+SOURCE_PRODUCER_SOURCE_COMMAND+' && node scripts/sync-ravscore-model-binding.mjs --check';
+  const prior='npm run test:assistant-later-h0-source && node scripts/sync-ravscore-model-binding.mjs --check';
+  assert.equal(critical.split(current).length,2,'Exactly one SOURCE check sequence in the existing critical group');
+  // Exact two-script inverse, then every whole actual588 and older assertion.
+  verifyAssistantPublic587SuccessorPackage({...pkg,version:requireAssistantPublic587SuccessorRelease(),
+    scripts:{...pkg.scripts,'test:assistant-later-h0-source':ASSISTANT_PUBLIC587_SUCCESSOR_SOURCE_COMMAND,
+      'test:ravscore-source-critical':critical.replace(current,prior)}});
+}
+// Exact one-operand deduplication before the unchanged whole47e6338/two-key inverse.
+// The active evidence command remains the real builder--check + prewrite.
+export function verifySourceProducerPackage(pkg){
+  assert.equal(pkg.version,sourceProducerRelease(),'Only the actual issued SOURCE release');
+  assert.equal(sha(JSON.stringify(Object.keys(pkg.scripts).sort().map(key=>[key,pkg.scripts[key]]))),
+    '930ed5f01ad883e8310606fed1b12409dddd1a39ccccf3b61069677560d277ca','Only the whole deduplicated SOURCE command plan');
+  const critical=pkg.scripts['test:ravscore-source-critical'];
+  assert.equal(critical.split(SOURCE_PRODUCER_SOURCE_COMMAND).length,2,'One actual SOURCE builder/prewrite command');
+  const reviewed=critical.replace(SOURCE_PRODUCER_SOURCE_COMMAND,
+    SOURCE_PRODUCER_SOURCE_COMMAND+' scripts/test-source-normal-workflow.mjs');
+  verifyReviewedSourceProducerPackage({...pkg,scripts:{...pkg.scripts,'test:ravscore-source-critical':reviewed}});
+}
 export function verifyPackage(pkg){
+  if(pkg.version===SOURCE_PRODUCER_PROPOSED_RELEASE)return verifySourceProducerPackage(pkg);
   if(pkg.version==='4.0.588')return verifyAssistantPublic587SuccessorPackage(pkg);
   if(Object.hasOwn(pkg.scripts??{},'test:assistant-later-h0-source'))return verifyAssistantLaterH0Package(pkg);
   if(pkg.version==='4.0.585')return verifyReviewed585Package(pkg);
@@ -216,6 +285,9 @@ export function verifyPackage(pkg){
   assert.equal(pkg.scripts['test:last-mile-enclosure'].split('node scripts/national584-source-evidence.mjs source').length,2);
 }
 export function verifyCurrentNativeCommands(commands,version){
+  if(version===SOURCE_PRODUCER_PROPOSED_RELEASE){
+    assert.equal(version,sourceProducerRelease());assert.deepEqual(commands,SOURCE_PRODUCER_COMMANDS);return;
+  }
   if(version==='4.0.587'){
     assert.equal(version,requireAssistantLaterH0Release());assert.deepEqual(commands,ASSISTANT_LATER_H0_NATIVE_COMMANDS);return;
   }
@@ -241,7 +313,9 @@ async function currentContext() {
   assert.equal(proof.contractId,'weather-source-gate-content-v2');assert.equal(proof.privatePayloadIncluded,false);
   assert.equal(proof.sourceTreeSha256,content('HEAD'));
   const native=proof.nativePostgres;
-  if(pkg.version==='4.0.586')verifyCurrent586PhaseReceipt(native,{run:Number(env.GITHUB_RUN_ID),
+  if(pkg.version===SOURCE_PRODUCER_PROPOSED_RELEASE)verifySourceProducerPhaseReceipt(native,{run:Number(env.GITHUB_RUN_ID),
+    attempt:Number(env.GITHUB_RUN_ATTEMPT),head,pullRequest:Number(env.PULL_REQUEST_NUMBER),branch:event.pull_request.head.ref});
+  else if(pkg.version==='4.0.586')verifyCurrent586PhaseReceipt(native,{run:Number(env.GITHUB_RUN_ID),
     attempt:Number(env.GITHUB_RUN_ATTEMPT),head,pullRequest:Number(env.PULL_REQUEST_NUMBER),branch:event.pull_request.head.ref});
   else if(pkg.version==='4.0.587')verifyAssistantLaterH0PhaseReceipt(native,{run:Number(env.GITHUB_RUN_ID),
     attempt:Number(env.GITHUB_RUN_ATTEMPT),head,pullRequest:Number(env.PULL_REQUEST_NUMBER),branch:event.pull_request.head.ref});
@@ -370,7 +444,8 @@ async function executeHistorical({national=true}={}) {
     sourceScope:national?'HISTORICAL_584_NATIONAL_ONLY':'HISTORICAL_584_DEFAULT_ONLY',frozenHead:ORIGIN.head,frozenTree:ORIGIN.tree};
 }
 async function main(){
-  requireAssistantPublic587SuccessorRelease(); // Active588 never falls back to a predecessor receipt or command.
+  requireSourceProducerOutput(); // Active SOURCE refuses before environment, evidence I/O or historical execution.
+  requireAssistantPublic587SuccessorRelease(); // Actual588 remains separately issued; never a SOURCE receipt fallback.
   await requireSourceEnvironment();
   const historical=requireHistoricalSource();
   const mode=process.argv[2]??'national';assert(['source','national'].includes(mode));assert(process.argv.length<=3);
@@ -393,7 +468,27 @@ async function main(){
   assert.equal(git('rev-parse','HEAD'),ctx.head);assert.equal(git('status','--porcelain','--untracked-files=no'),'');
   const file=path.join(ROOT,'.cache/source-tree-content-proof.json');
   const current=JSON.parse(await fs.readFile(file,'utf8'));assert.deepEqual(current,ctx.proof);
-  if(ctx.releaseVersion==='4.0.585'){
+  if(ctx.releaseVersion===SOURCE_PRODUCER_PROPOSED_RELEASE){
+    assert.equal(ctx.releaseVersion,sourceProducerRelease());
+    current.historical584National={...result,historicalInput:historical,
+      current:{head:ctx.head,run:ctx.run,attempt:ctx.attempt,pullRequest:ctx.pullRequest},
+      current585PredecessorSource:{command:'npm run test:account-statistics-assistant-source',
+        actualCommand:CURRENT586_PREDECESSOR_SOURCE_COMMAND,scope:'GENUINE_FROZEN585_SOURCE_ONLY',separatelyRequired:true},
+      current586PredecessorNative:{status:'EXECUTED',phase:'native-original-continuity',scope:'GENUINE_FROZEN586',separatelyRequired:true},
+      current586PredecessorSource:{command:'npm run test:native-original-continuity-source',
+        actualCommand:ASSISTANT_LATER_H0_PREDECESSOR_SOURCE_COMMAND,scope:'GENUINE_FROZEN586_SOURCE_ONLY',separatelyRequired:true},
+      current587PredecessorNative:{status:'EXECUTED',phase:'assistant-later-h0',scope:'GENUINE_FROZEN587',separatelyRequired:true},
+      currentAssistantPublic587SuccessorPredecessorNative:{status:'EXECUTED',phase:'assistant-public587-successor',
+        scope:'GENUINE_FROZEN588',separatelyRequired:true},
+      currentAssistantPublic587SuccessorPredecessorSource:{command:'npm run test:assistant-later-h0-source',
+        actualCommand:SOURCE_PRODUCER_PREDECESSOR_SOURCE_COMMAND,scope:'GENUINE_FROZEN588_SOURCE_ONLY',separatelyRequired:true},
+      currentSourceProducerNative:{status:'EXECUTED',phase:'SOURCE_PRODUCER',
+        commands:SOURCE_PRODUCER_COMMANDS,separatelyRequired:true,currentSourceNativeProfileClaimed:false},
+      currentSourceProducerSource:{actualCommand:SOURCE_PRODUCER_SOURCE_COMMAND,separatelyRequired:true},
+      current585NationalExecutionClaimed:false,current586NationalExecutionClaimed:false,
+      currentAssistantLaterH0NationalExecutionClaimed:false,currentAssistantPublic587SuccessorNationalExecutionClaimed:false,
+      currentSourceNationalExecutionClaimed:false,providerOrProductionProof:false};
+  }else if(ctx.releaseVersion==='4.0.585'){
   current.historical584National={...result,historicalInput:historical,
     current:{head:ctx.head,run:ctx.run,attempt:ctx.attempt,pullRequest:ctx.pullRequest},
     current585Native:{status:'EXECUTED',phase:'account-statistics-assistant',separatelyRequired:true},

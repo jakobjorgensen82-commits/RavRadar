@@ -3,6 +3,8 @@ import assert from 'node:assert/strict';
 import crypto from 'node:crypto';
 import fs from 'node:fs/promises';
 import test from 'node:test';
+import { inverseSourceNormalWorkflow, inverseSourceNormalWorkflowForHistoricalOracle } from './lib/source-normal-workflow-review.mjs';
+await import('./test-source-normal-workflow.mjs');
 import { inverseRelease585WorkflowUserAgents, ordinaryStageWiringReview, inverseOrdinaryCompletedStageWorkflowWiring, assertEarlyCompletedRuntimeStageOrder, inverseEarlyCompletedRuntimeStage, inverseCompletedRuntimeWorkflow, inverseOrdinaryFullHistoryCheckout, inversePairedPrivateRuntimePublication, inverseOriginWeatherReadCredentials, assertCurrentHistoryRawRetentionOrder, inverseCurrentHistoryRawRetentionOrder, inverseCurrentFamilyColdStartWorkflow, inverseRelease584WorkflowUserAgents } from './lib/completed-private-runtime-workflow-review.mjs';
 import { runInNewContext } from 'node:vm';
 import { inverseNativeOriginalSchemaSelectorWorkflow, nativeOriginalSchemaSelectorWorkflowReview,
@@ -1237,7 +1239,7 @@ test('actual latest progress cache selects the requested exact ID and keeps orig
 });
 
 test('assistant587 plus PR712 latest progress: actual whole composition preserves both exact Git parents', async () => {
-  const actual = inverseRelease588WorkflowUserAgents((await fs.readFile(new URL('../.github/workflows/reusable-weather-build.yml', import.meta.url), 'utf8')).replaceAll('\r\n', '\n'), 'build');
+  const actual = inverseRelease588WorkflowUserAgents(inverseSourceNormalWorkflowForHistoricalOracle((await fs.readFile(new URL('../.github/workflows/reusable-weather-build.yml', import.meta.url), 'utf8')).replaceAll('\r\n', '\n'), 'build'), 'build');
   const row = assistant587LatestColdCombinedWorkflowReview;
   assert.equal(row.p0Parent.commit, '2b1d7a95d4201ef39e10cc9d7e52cd0f4d6243aa');
   assert.equal(row.assistantParent.commit, '664aeb46966cd0ec182599a90bcaacc6c4b609ab');
@@ -1275,7 +1277,7 @@ test('assistant587 plus PR712 latest progress: actual whole composition preserve
 });
 
 test('assistant587 plus PR712 latest progress: partial parent mutations never enter any historical inverse', async () => {
-  const actual = inverseRelease588WorkflowUserAgents((await fs.readFile(new URL('../.github/workflows/reusable-weather-build.yml', import.meta.url), 'utf8')).replaceAll('\r\n', '\n'), 'build');
+  const actual = inverseRelease588WorkflowUserAgents(inverseSourceNormalWorkflowForHistoricalOracle((await fs.readFile(new URL('../.github/workflows/reusable-weather-build.yml', import.meta.url), 'utf8')).replaceAll('\r\n', '\n'), 'build'), 'build');
   const row = assistant587LatestColdCombinedWorkflowReview;
   assert.equal(sha(actual), row.combined.sha256);
   const changed = [
@@ -1310,7 +1312,7 @@ test('assistant587 plus PR712 latest progress: partial parent mutations never en
 });
 
 test('release588 exact five UA fields preserve whole587 and every historical refusal',async()=>{
-  const actual=(await fs.readFile(new URL('../.github/workflows/reusable-weather-build.yml',import.meta.url),'utf8')).replaceAll('\r\n','\n');
+  const actual=inverseSourceNormalWorkflow((await fs.readFile(new URL('../.github/workflows/reusable-weather-build.yml',import.meta.url),'utf8')).replaceAll('\r\n','\n'),'build');
   assert.equal(Buffer.byteLength(actual),292886);
   assert.equal(sha(actual),'998d3a8e11a1088363a84bfd4a0d64f7117eacc059a3cf5c0ca895f7a85e22b3');
   assert.equal(actual.split('RavRadar/4.0.588').length,6);

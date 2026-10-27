@@ -22,7 +22,9 @@ _retained_children = []
 def main():
     distribution = sys.argv[1:] == ['--prepare-distribution']
     ciphertext = sys.argv[1:] == ['--upload-encrypted-progress']
-    if (sys.platform != 'linux' or (len(sys.argv) != 1 and not distribution and not ciphertext)
+    cache_selection = ('checkpoint' if sys.argv[1:] == ['--source-checkpoint-cache-save'] else
+                       'preflight' if sys.argv[1:] == ['--source-preflight-cache-save'] else None)
+    if (sys.platform != 'linux' or (len(sys.argv) != 1 and not distribution and not ciphertext and cache_selection is None)
             or signal.getsignal(signal.SIGCHLD) != signal.SIG_DFL
             or not all(hasattr(os, name) for name in ('waitid', 'WNOWAIT', 'WEXITED', 'WNOHANG', 'pidfd_open'))):
         raise RuntimeError('DMI_RAW_SAVE_PLATFORM_REFUSED')
@@ -46,8 +48,13 @@ def main():
             or Path(parent_executable).name != 'node'
             or os.fsencode(str(ENTRY)) not in parent_fields
             or (distribution and parent_fields[1:] != [os.fsencode(str(ENTRY)), b'--prepare-distribution'])
-            or (ciphertext and (parent_fields[1:] != [os.fsencode(str(ENTRY))]
-                                or os.environ.get('INPUT_OPERATION') != 'upload-encrypted-progress'))):
+            or (ciphertext and (parent_fields[1:] not in (
+                [os.fsencode(str(ENTRY))],
+                [os.fsencode(str(ENTRY)), b'--source-fixed-cipher-upload'])
+                                or os.environ.get('INPUT_OPERATION') != 'upload-encrypted-progress'))
+            or (cache_selection is not None and (
+                parent_fields[1:] != [os.fsencode(str(ENTRY)), f'--source-fixed-{cache_selection}-save'.encode()]
+                or os.environ.get('INPUT_OPERATION') != f'source-{cache_selection}-cache-save'))):
         raise RuntimeError('DMI_RAW_SAVE_PARENT_UNPROVED')
     os.fstat(3)  # Own inherited private IPC pipe, never a path supplied by callers.
     pending = None
@@ -118,7 +125,8 @@ def main():
         if pending:
             raise RuntimeError('DMI_RAW_SAVE_INTERRUPTED')
         fixed_worker = ('--fixed-distribution-worker' if distribution else
-                        '--fixed-cipher-worker' if ciphertext else '--fixed-api-worker')
+                        '--fixed-cipher-worker' if ciphertext else
+                        f'--fixed-{cache_selection}-worker' if cache_selection is not None else '--fixed-api-worker')
         child = subprocess.Popen([parent_executable, str(ENTRY), fixed_worker],
                                  cwd=ROOT, env=os.environ.copy(), start_new_session=True,
                                  stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL,

@@ -3,6 +3,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { inverseArchivedWeatherRestartWorkflow } from './lib/archived-weather-restart-workflow-review.mjs';
+import { inverseSourceNormalWorkflowForHistoricalOracle } from './lib/source-normal-workflow-review.mjs';
 
 const root = process.cwd();
 const read = relative => fs.readFileSync(path.join(root, relative), 'utf8');
@@ -56,7 +57,9 @@ for (const page of ['index.html', 'about.html', 'admin.html', 'jordrav.html']) {
   }
 }
 
-const buildWorkflow = read('.github/workflows/reusable-weather-build.yml');
+// Test-only exact whole SOURCE inverse; all historical production assertions below remain unchanged.
+const buildWorkflow = inverseSourceNormalWorkflowForHistoricalOracle(
+  read('.github/workflows/reusable-weather-build.yml').replaceAll('\r\n', '\n'), 'build');
 const productionValidationSteps = packageJson.scripts['validate:production-artifact']
   ?.split(/\s*&&\s*/)
   .map(command => command.match(/^npm run ([\w:.-]+)$/)?.[1]);

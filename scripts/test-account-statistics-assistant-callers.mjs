@@ -8,7 +8,8 @@ import fsSync from 'node:fs';
 import vm from 'node:vm';
 import {exactRelativeModuleSpecifiers} from './lib/static-module-closure.mjs';
 import test from 'node:test';
-import {inverseCurrent586PhaseUpload} from './native-postgres-evidence.mjs';
+import {inverseCurrent586PhaseUpload,inverseSourceProducerPhaseUpload,verifyCurrent586Workflow}
+  from './native-postgres-evidence.mjs';
 import {DatabaseSync} from 'node:sqlite';
 import {privateTripStudySchemaModel,classifyPrivateTripStudySchema,privateTripStudyMigrationSteps}
   from './deploy-private-trip-study.mjs';
@@ -454,7 +455,8 @@ await t.test('normal585 mutable consumer reads the actual issued source and pres
 test('historical584 national evidence inverts only the reviewed current90-minute job and exact national wrapper',async()=>{
   const {execFileSync}=await import('node:child_process');
   const {ORIGIN:old,WORKFLOW,BEFORE_BLOCK,AFTER_BLOCK,BEFORE_JOB,AFTER_JOB,CURRENT_JOB,verifyWorkflow:verifyCurrentWorkflow,
-    inverseCandidatePublicSourceRunLine,verifyReviewed90Workflow:verifyWorkflow}=await import('./national584-source-evidence.mjs');
+    inverseCandidatePublicSourceRunLine,inverseSourceNode24Workflow,
+    verifyReviewed90Workflow:verifyWorkflow}=await import('./national584-source-evidence.mjs');
   const git=(...args)=>execFileSync('git',args,{maxBuffer:8*1024*1024,timeout:30000,
     env:{...process.env,GIT_NO_LAZY_FETCH:'1',GIT_NO_REPLACE_OBJECTS:'1'}});
   const fixture='b02745d6d2987ed0fd2913623b3809fd0ea02dd6';
@@ -462,7 +464,10 @@ test('historical584 national evidence inverts only the reviewed current90-minute
   assert.equal(git('rev-parse',fixture+'^{tree}').toString().trim(),'b3fe05c0b6356ead06fb91a957113d10553d7631');
   const before=git('show',old.head+':'+WORKFLOW).toString();
   const recorded=git('show',fixture+':'+WORKFLOW).toString();
-  const currentWorkflow=(await fs.readFile(new URL('../.github/workflows/validate-pull-request.yml',import.meta.url),'utf8')).replace(/\r\n/g,'\n');
+  const rawCurrentWorkflow=(await fs.readFile(new URL('../.github/workflows/validate-pull-request.yml',import.meta.url),'utf8')).replace(/\r\n/g,'\n');
+  verifyCurrentWorkflow(rawCurrentWorkflow); // Qualify the actual SOURCE caller before its TEST-only projection.
+  const currentWorkflow=inverseSourceNode24Workflow(inverseSourceProducerPhaseUpload(rawCurrentWorkflow));
+  verifyCurrent586Workflow(currentWorkflow,currentWorkflow);
   verifyCurrentWorkflow(currentWorkflow);
   const actual=inverseCurrent586PhaseUpload(currentWorkflow);
   verifyCurrentWorkflow(actual);
@@ -493,11 +498,14 @@ test('historical584 national evidence inverts only the reviewed current90-minute
 test('source-PR-only180-minute job preserves genuine120 and90 workflows and rejects every other budget',async()=>{
   const {execFileSync}=await import('node:child_process');
   const {WORKFLOW,CURRENT_JOB,AFTER_JOB,CURRENT_SOURCE_RUN_LINE,inverseCandidatePublicSourceRunLine,
-    verifyWorkflow,verifyReviewed90Workflow}=await import('./national584-source-evidence.mjs');
+    inverseSourceNode24Workflow,verifyWorkflow,verifyReviewed90Workflow}=await import('./national584-source-evidence.mjs');
   const fixture='b02745d6d2987ed0fd2913623b3809fd0ea02dd6';
   const recorded=execFileSync('git',['show',fixture+':'+WORKFLOW],{maxBuffer:65536,timeout:30000,
     env:{...process.env,GIT_NO_LAZY_FETCH:'1',GIT_NO_REPLACE_OBJECTS:'1'}}).toString();
-  const currentWorkflow=(await fs.readFile(new URL('../.github/workflows/validate-pull-request.yml',import.meta.url),'utf8')).replace(/\r\n/g,'\n');
+  const rawCurrentWorkflow=(await fs.readFile(new URL('../.github/workflows/validate-pull-request.yml',import.meta.url),'utf8')).replace(/\r\n/g,'\n');
+  verifyWorkflow(rawCurrentWorkflow); // Qualify the actual SOURCE caller before its TEST-only projection.
+  const currentWorkflow=inverseSourceNode24Workflow(inverseSourceProducerPhaseUpload(rawCurrentWorkflow));
+  verifyCurrent586Workflow(currentWorkflow,currentWorkflow);
   verifyWorkflow(currentWorkflow);
   const actual=inverseCurrent586PhaseUpload(currentWorkflow);
   const predecessorHead='bb8d354e0d889080b5f7182b2962f05fbb8fd2e7';
@@ -768,9 +776,22 @@ test('private-study006: privat eksport bevarer hele installationsarm og normale 
   const publisher=await read('scripts/publish-private-trip-weather-study.mjs');
   assert.equal(sha(publisher),'5b087741711e31ad64401be9a8bbfc4ffb0bfe53bd7e68a50a9fe08cd947d6dc');
   const dashboard=await read('js/ui/admin-dashboard.js');
-  // TEST ONLY: exact cache-version inverse for the historical719 source oracle.
-  // The normal render below still uses the untouched actual588 dashboard.
+  // TEST ONLY: finite version:set589 outer view; every588/719 assertion below stays intact.
+  // Rendering still uses the untouched actual dashboard, never this historical view.
+  const reviewed588DashboardView=source=>{
+    if(sha(source)==='08f17fc40aa5c986ed869d8f202d9bf7c83b8490920cb354d4768c7585970731')return source;
+    assert.equal(Buffer.byteLength(source),129214);
+    assert.equal(sha(source),'97be45901f13ed5cd726bf3c236a39a1075d520aa10fe9a8c1be8af02495fc42');
+    assert.equal(source.split('?v=4.0.589').length,21);
+    assert.equal(source.includes('?v=4.0.588'),false);
+    assert.equal(source.split("const VERSION='4.0.589';").length,2);
+    const prior=source.replaceAll('?v=4.0.589','?v=4.0.588')
+      .replace("const VERSION='4.0.589';","const VERSION='4.0.588';");
+    assert.equal(sha(prior),'08f17fc40aa5c986ed869d8f202d9bf7c83b8490920cb354d4768c7585970731');
+    return prior;
+  };
   const historicalDashboardView=source=>{
+    source=reviewed588DashboardView(source);
     assert.equal(Buffer.byteLength(source),129214);
     assert.equal(sha(source),'08f17fc40aa5c986ed869d8f202d9bf7c83b8490920cb354d4768c7585970731');
     assert.equal(source.split('?v=4.0.588').length,21);
@@ -781,11 +802,22 @@ test('private-study006: privat eksport bevarer hele installationsarm og normale 
     assert.equal(sha(prior),'aa2466f85e4590e19c0af2dcb698e4f5c4406a0b9c1b6ac3e6f431007ebe2a4b');
     return prior;
   };
+  const dashboard588=reviewed588DashboardView(dashboard);
   for(const [before,after] of [['?v=4.0.588','?v=4.0.589'],
     ["const VERSION='4.0.588';","const VERSION='4.0.589';"],
     ['mountPrivateTripStudyCard(content,state.access);','mountPrivateTripStudyCarX(content,state.access);']]){
-    assert.equal(dashboard.includes(before),true);
-    assert.throws(()=>historicalDashboardView(dashboard.replace(before,after)));
+    assert.equal(dashboard588.includes(before),true);
+    assert.throws(()=>historicalDashboardView(dashboard588.replace(before,after)));
+  }
+  const dashboard589=dashboard588.replaceAll('?v=4.0.588','?v=4.0.589')
+    .replace("const VERSION='4.0.588';","const VERSION='4.0.589';");
+  assert.equal(reviewed588DashboardView(dashboard589),dashboard588,'Only the exact version:set589 image recovers whole588');
+  assert.equal(historicalDashboardView(dashboard589),historicalDashboardView(dashboard588));
+  for(const [before,after] of [['?v=4.0.589','?v=4.0.590'],
+    ["const VERSION='4.0.589';","const VERSION='4.0.590';"],
+    ['mountPrivateTripStudyCard(content,state.access);','mountPrivateTripStudyCarX(content,state.access);']]){
+    assert.equal(dashboard589.includes(before),true);
+    assert.throws(()=>historicalDashboardView(dashboard589.replace(before,after)));
   }
   let original=historicalDashboardView(dashboard);
   for(const [current,prior] of [
@@ -806,8 +838,29 @@ test('private-study006: privat eksport bevarer hele installationsarm og normale 
   context.state.tab='dashboard';vm.runInNewContext('render();',context);assert.equal(mounts,1);
 });
 
+// TEST ONLY: finite SOURCE command/version outer view, never production admission.
+async function reviewed588PackageViewForUnchangedOracles(pkg){
+  const {SOURCE_PRODUCER_PREDECESSOR_SOURCE_COMMAND,ASSISTANT_LATER_H0_SOURCE_COMMAND,
+    ASSISTANT_PUBLIC587_SUCCESSOR_SOURCE_COMMAND}=await import('./national584-source-evidence.mjs');
+  if(pkg.scripts['test:assistant-later-h0-source']!==SOURCE_PRODUCER_PREDECESSOR_SOURCE_COMMAND){
+    assert([ASSISTANT_LATER_H0_SOURCE_COMMAND,ASSISTANT_PUBLIC587_SUCCESSOR_SOURCE_COMMAND]
+      .includes(pkg.scripts['test:assistant-later-h0-source']),'Only the known historical or exact SOURCE script can enter this TEST view');
+    return pkg;
+  }
+  const original=structuredClone(pkg),sha=value=>crypto.createHash('sha256').update(JSON.stringify(value)).digest('hex');
+  assert(['4.0.588','4.0.589'].includes(pkg.version),'Only the prepared588 or exact version:set589 package');
+  assert.equal(sha({...pkg,version:'4.0.588'}),'aca22b01852a673335a09223715f7cd96a7b189ade1bb705276b2c4036d06669',
+    'All actual SOURCE package fields are fixed; version:set changes only the top-level version');
+  const {inverseSourceProducerSourceScripts}=await import('./lib/account-statistics-assistant-package-review.mjs');
+  const prior={...pkg,version:'4.0.588',scripts:inverseSourceProducerSourceScripts(pkg.scripts)};
+  assert.equal(sha(prior),'e798b0ade432174814c066056e7324d730e45bd657c2ae5e734e6e047dfa0ddd',
+    'The exact930ed5-to47e633-tofe8 plan inverse restores the whole588 package before old assertions');
+  assert.deepEqual(pkg,original,'The actual SOURCE package remains untouched');
+  return prior;
+}
 // TEST ONLY: qualify the real fixed588 plan before the unchanged587/586 oracles.
 async function reviewed587PackageViewForUnchangedOracles(pkg){
+  pkg=await reviewed588PackageViewForUnchangedOracles(pkg);
   const {ASSISTANT_PUBLIC587_SUCCESSOR_SOURCE_COMMAND,verifyAssistantPublic587SuccessorPackage}
     =await import('./national584-source-evidence.mjs');
   if(pkg.scripts['test:assistant-later-h0-source']!==ASSISTANT_PUBLIC587_SUCCESSOR_SOURCE_COMMAND)return pkg;
@@ -824,9 +877,22 @@ async function reviewed587PackageViewForUnchangedOracles(pkg){
 }
 
 test('public587 successor source registration dispatches actual588 once before exact whole587 inverse',async()=>{
-  const actual=JSON.parse(await fs.readFile(new URL('../package.json',import.meta.url),'utf8')),original=structuredClone(actual);
+  const raw=JSON.parse(await fs.readFile(new URL('../package.json',import.meta.url),'utf8')),rawOriginal=structuredClone(raw);
+  const actual=await reviewed588PackageViewForUnchangedOracles(raw),original=structuredClone(actual);
   const {ASSISTANT_LATER_H0_SOURCE_COMMAND,ASSISTANT_PUBLIC587_SUCCESSOR_SOURCE_COMMAND,
+    SOURCE_PRODUCER_PREDECESSOR_SOURCE_COMMAND,
     verifyAssistantLaterH0Package,verifyAssistantPublic587SuccessorPackage}=await import('./national584-source-evidence.mjs');
+  if(raw.scripts['test:assistant-later-h0-source']===SOURCE_PRODUCER_PREDECESSOR_SOURCE_COMMAND){
+    assert.equal(raw.scripts['test:assistant-later-h0-source'],SOURCE_PRODUCER_PREDECESSOR_SOURCE_COMMAND);
+    assert.equal(actual.version,'4.0.588');
+    const version589={...raw,version:'4.0.589'};
+    assert.deepEqual(await reviewed588PackageViewForUnchangedOracles(version589),actual);
+    for(const mutate of [v=>v.version='4.0.590',v=>v.name+='-unreviewed',
+      v=>v.scripts['test:assistant-later-h0-source']+=' --unexpected']){
+      const changed=structuredClone(raw);mutate(changed);
+      await assert.rejects(()=>reviewed588PackageViewForUnchangedOracles(changed));
+    }
+  }
   const {ASSISTANT_PUBLIC587_SUCCESSOR_BINDING,requireAssistantLaterH0Release}
     =await import('./lib/assistant-later-h0-successor-source.mjs');
   const {inverseAssistantPublic587SuccessorSourceScripts,inverseAssistantLaterH0SourceScripts}
@@ -860,6 +926,7 @@ test('public587 successor source registration dispatches actual588 once before e
     assert.throws(()=>verifyAssistantPublic587SuccessorPackage({...next,scripts:changed}));
   }
   assert.deepEqual(actual,original);
+  assert.deepEqual(raw,rawOriginal,'Historical assertions never edit the actual SOURCE package');
 });
 
 test('public587 successor national binding preserves587 commands and requires distinct588 native receipt',async()=>{
