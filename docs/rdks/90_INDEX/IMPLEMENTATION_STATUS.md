@@ -1,3 +1,13 @@
+## 27. oktober — prognosedelingens afslag får kun lukkede formkategorier
+
+Den allerede afviste delingskontrol havde HTTP 200 og success=true, men dens tidligere lukkede rapport kunne ikke skelne et manglende errors-felt fra null eller en anden ikke-array-form. Den faktiske oprindelige feltform er fortsat ukendt. Den lokale kildeændring tilføjer alene faste formkategorier for errors og result i den eksisterende diagnostik; rå svar, beskeder, feltværdier, konti, værtsnavne, URL'er og tokens medtages ikke. De tidligere diagnostikfelter og højst otte numeriske fejlkoder bevares.
+
+Hele API-accepten, den fulde domænekontrol og alle andre produktbytes uden for diagnostikfunktionen er byteuændrede. Manglende, null eller forkert errors-form normaliseres ikke til et gyldigt svar. Den normale cf→stop-kæde skal fortsat afvise før skrivning efter netop én læsning. Ingen endpointændring, genforsøg, Worker-installation eller adgangsudvidelse følger af diagnosen.
+
+Hele det eksisterende normale workflowmål er faktisk kørt én gang på de samme to uændrede kodeejere og består 14/14 uden fejl, skip eller afbrydelse på 119967,172ms. Alle tidligere kontroller og de additive form-/stop-/privatlivsassertions er med. Dette er lokal kildeprøve, ikke bevis for Cloudflares faktiske nye svar, installeret Worker, offentlig forhåndsvisning eller Free-kapacitet. Præcis CI og kontrolleret ekstern levering er endnu ikke udført; ROOT koordinerer særskilt.
+
+Ingen ny version, C/I/T, funktionel SQL, database, kontodata, vejrdata, scoreformel, kilder eller geometri. SOURCE/statistik og andre tilbageholdte aktiveringer forbliver særskilte. Gamle dokumentafsnit og røde kørsler bevares; faktisk Worker-/delingsaccept er fortsat uløst. Kun håndbogens kanoniske payload i den statiske installationskopi synkroniseres; ingen SQL installeres. Alle fem mål til 18. november består som åbne mål.
+
 ## 26. oktober — delingskontrol sammenført med gennemgået Pages-rettelse
 
 Den afgrænsede prognosedelingsrettelse og den gennemgåede Pages-rettelse er samlet lokalt med den aktuelle installerede 588-rute. Begge forældres præcise kildekontroller har faktisk bestået; det kvalificerer ikke denne nye samlede head. Den eksisterende normale målprøve, dokumentkontroller og én præcis samlet kildekontrol skal fortsat bestå før sikker levering. Begge hele dokumenthistorikker og håndbogsændringer bevares; installationskopien følger den kanoniske håndbog uden anden SQL-ændring.

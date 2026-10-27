@@ -38,6 +38,10 @@ En gemt beregning og en offentlig levering er forskellige trin. Efter et sent st
 
 Kort fortalt: Et delingslink peger på det valgte sted, tidspunkt og søgemåde. Du vælger selv, hvor det deles, og hvad du skriver til det.
 
+Hvis en teknisk kontrol af deling afvises, må den kun gemme faste kategorier om svarets form, ikke indhold eller private oplysninger. Flere fejltyper kan dermed skelnes uden at svække kontrollen. En lokal prøve eller et vellykket HTTP-svar viser ikke i sig selv, at den offentlige delingsforhåndsvisning virker. Den faktiske Worker og gratis kapacitet skal fortsat bevises særskilt.
+
+Den normale lokale kildeprøve består med de uændrede acceptkontroller. Det beviser ikke svarets faktiske nye form eller fungerende offentlig deling. Præcis kildekontrol og kontrolleret levering er endnu ikke udført; ROOT koordinerer særskilt. Alle fem hovedmål er fortsat åbne.
+
 Delingsforhåndsvisningen har sin egen kontrollerede levering og skal være afprøvet på den offentlige adresse, før den regnes som klar. En lokal test eller et vellykket HTTP-svar er ikke nok. Den bruger ikke private kontooplysninger og kræver hverken en ny database eller et billedlager. Gratis kapacitet skal dokumenteres ved måling, ikke antages ud fra løsningens størrelse.
 
 Du kan dele den viste prognose eller kopiere linket fra den valgte zone. Linket bruger dit valgte sted, den præcise time, søgemåden strand eller waders samt dansk, tysk eller engelsk. Visningen erstatter ikke en manglende time med et andet tidspunkt.
