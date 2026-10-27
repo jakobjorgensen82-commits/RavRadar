@@ -1,3 +1,11 @@
+## 27. oktober — normal SOURCE-genlæsning giver en kontrolleret privat datakanal
+
+En særskilt SOURCE-kildekandidat bevarer nu de faktisk gemte B/S-data fra den normale efterfølger, først efter normal publicering af B før S og hele den eksisterende genlæsning. Eksporten indeholder de faktisk kvitterede dokumentversioner, hele S og kontrolsummer for det normale pakkemanifest og checkpoint; ingen løs tuple eller kopieret kvittering kan erstatte disse data.
+
+Den eksisterende observer og native-parent genlæser den faste private fil gennem deres normale bytegrænser, kontrolsummer og kontroller af fysisk filidentitet og ejerskab. Samme datasæt, referencetime, modelbindinger, beregningskontrakt og alle 673 dele skal stemme, og hele S skal fortsat bestå den gamle faktiske SQL-validator. Originaler og de eksisterende kontroller bevares. Datakanalen udsteder intet runtime-origin-håndtag og giver intet D1-, installations- eller produktionsbevis.
+
+De afgrænsede lokale kontrolresultater er ikke en samlet ny Linux-/PostgreSQL-kvalifikation. Kandidaten kræver sin egen normale kildekontrol på præcis head; tidligere grønt bevis må ikke ommærkes. Kørselsdetaljer og aktuel status føres privat. SOURCE og statistik aktiveres ikke; version, C/I/T, SQL, scoreformel, kildeprioritet og administratorgeometri er uændrede. Alle tidligere hele afsnit bevares som dateret historik.
+
 ## 27. oktober — SOURCE-prøvens filgrænser følger de normale ejere
 
 Den afsluttede isolerede SOURCE-kontrol stoppede ved filgenlæsning under gemning af den ægte 585-pakke. Den bevarede fælles assertion skelner ikke mellem filtype, antal links, tom fil og overskredet størrelse; den faktiske fejlfil og dens stat-egenskaber er ukendte. Kilden viser derimod en konkret kontraktmismatch: den friske kopiering accepterer allerede den normale DMI-forecastfil op til 768 MiB, mens gemningens JSON- og hele restore-genlæsninger brugte standardgrænsen på 256 MiB.

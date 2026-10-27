@@ -4337,6 +4337,48 @@ class SourceCurrentNative(SourceActualSUnionNative):
         self.assertNotIn('nativePayloadValidation', actual)
         actual['nativePayloadValidation'] = {'actualReadOnlyCallCount': read_only_calls,
             'sourceModel': {key: bindings[key] for key in ('C', 'I', 'T')}, **pinned}
+        # Data fra den faktisk kørte normale producer, ikke et autoritetsflag.
+        pair_relative = 'current-source-native-inputs/saved-legacy-follower/native-normal-b-s.json'
+        pair_raw = source_current_cohort_read(own, pair_relative, 17 * 1024 * 1024)
+        pair = json.loads(pair_raw)
+        self.assertEqual(set(pair), {'schemaVersion', 'kind', 'sourceHead', 'B', 'S', 'bundleManifest', 'checkpointFile'})
+        self.assertEqual(pair['schemaVersion'], 1)
+        self.assertEqual(pair['kind'], 'SOURCE_NATIVE_NORMAL_B_S_DATA')
+        self.assertEqual(pair['sourceHead'], context['head'])
+        for role, key in (('B', 'ravscore-private-production-runtime-pointer'), ('S', 'ravscore-continuation-checkpoint')):
+            row = pair[role]
+            self.assertEqual(set(row), {'document_key', 'payload', 'version'})
+            self.assertEqual(row['document_key'], key)
+            self.assertIs(type(row['version']), int)
+            self.assertGreater(row['version'], 0)
+            self.assertLessEqual(row['version'], 9007199254740991)
+        manifest_raw = source_current_cohort_read(own, 'current-source-native-inputs/saved-legacy-follower/restored/manifest.json', 4 * 1024 * 1024)
+        checkpoint_raw = source_current_cohort_read(own, 'current-source-native-inputs/saved-legacy-follower/readback/.cache/ravscore-continuation-checkpoint/checkpoint.json', maximum)
+        manifest, checkpoint = json.loads(manifest_raw), json.loads(checkpoint_raw)
+        for name, raw_bytes in (('bundleManifest', manifest_raw), ('checkpointFile', checkpoint_raw)):
+            self.assertEqual(pair[name], {'bytes': len(raw_bytes), 'sha256': hashlib.sha256(raw_bytes).hexdigest()})
+        self.assertEqual(pair['S']['payload'], checkpoint)
+        self.assertEqual(checkpoint, json.loads(source_current_cohort_read(own, rows[1][1], maximum)))
+        self.assertEqual(checkpoint['productionReferenceAt'], follower_target)
+        self.assertEqual(checkpoint['modelBinding']['modelBundleSha256'], bindings['I'])
+        descriptor = pair['B']['payload']['current']
+        self.assertEqual(descriptor['datasetId'], manifest['datasetId'])
+        self.assertEqual(descriptor['datasetId'], checkpoint['datasetId'])
+        self.assertEqual(descriptor['productionReferenceAt'], follower_target)
+        self.assertEqual(descriptor['bundleContentSha256'], manifest['bundleContentSha256'])
+        self.assertEqual(descriptor['modelBinding']['modelBundleSha256'], bindings['I'])
+        self.assertEqual(manifest['contractHashes']['continuationStateContractSha256'], bindings['T'])
+        self.assertEqual(source_current_cohort_read(own, pair_relative, 17 * 1024 * 1024), pair_raw)
+        self.assertEqual(current_native_pg(context, 'select 1;'), '1')
+        target_file = Path(context['pgRoot']) / 'rated-source589-normal-pair.json'
+        pair_fd = os.open(target_file, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
+        with os.fdopen(pair_fd, 'wb') as stream:
+            stream.write(pair_raw); stream.flush(); os.fsync(stream.fileno())
+        self.assertEqual(current_native_pg(context, 'select 1;'), '1')
+        self.assertEqual(source_current_cohort_read(Path(context['pgRoot']), target_file.name, 17 * 1024 * 1024), pair_raw)
+        actual['nativePairData'] = {'bytes': len(pair_raw), 'sha256': hashlib.sha256(pair_raw).hexdigest(),
+            'targetReferenceAt': follower_target, 'checkpointFileSha256': pair['checkpointFile']['sha256'],
+            'bundleContentSha256': descriptor['bundleContentSha256']}
         private_report = own / 'legacy-actual-sql-readonly-result.json'
         with private_report.open('x', encoding='utf8') as stream:
             stream.write(json.dumps(actual, separators=(',', ':')) + '\n')

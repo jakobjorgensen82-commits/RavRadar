@@ -14,6 +14,12 @@ Derefter består de normale kontroller af den genbrugte prognose, private oplysn
 
 **Kort fortalt:** Den fulde SOURCE589-kandidat er lokalt udstedt med egne normale bindinger og én ny migration. Den er ikke installeret eller bevis for nye offentlige vejrdata.
 
+Den 27. oktober er en særskilt kildekandidat forberedt til at bevare det faktisk gemte B/S-par fra den normale SOURCE-efterfølger. B er vejrpakken, og S er beregningstilstanden. Data eksporteres først efter normal publicering af B før S og hel genlæsning. Filen indeholder de faktisk kvitterede versioner, hele S samt kontrolsummer for det normale manifest og checkpoint.
+
+De eksisterende læsere kontrollerer filens byteantal, kontrolsum, fysiske identitet og ejer. Datasæt, referencetime, modeller, beregningskontrakt og alle 673 dele skal passe, og den gamle faktiske SQL-validator skal stadig godkende hele S. Dette er en privat datakanal til senere normale prøver, ikke et runtime-origin-håndtag, D1-bevis eller tilladelse til installation.
+
+Afgrænsede lokale kontrolresultater erstatter ikke kandidatens egen præcise normale kilde-/Linux-/PostgreSQL-kontrol. SOURCE og statistik forbliver inaktive, og version, C/I/T, SQL, scoreformel, kildeprioritet og administratorgeometri ændres ikke. Kørselsdetaljer føres i det private checkpoint; alle ældre afsnit nedenfor bevares.
+
 Den 27. oktober er der fundet en konkret forskel mellem prøvekalderens filgrænser. Den friske kopiering tillod allerede den normale DMI-forecastfil op til 768 MiB, mens gemning og hel genlæsning brugte 256 MiB. Den snævre fixtureændring bruger nu den samme eksisterende forecastgrænse begge steder. Kun den private komponentpakkes hele genlæsning bruger desuden den allerede indlæste frosne normale ejers 768 MiB-grænse efter normal manifestkontrol. Andre JSON-inputs og public-hour-pack beholder 256 MiB; normale produktionsgrænser og alle identitets-, link- og bytekontroller bevares.
 
 Den afsluttede kildekontrol lokaliserede en fælles filassertion, men ikke hvilken fil eller om filtype, antal links, tomt indhold eller størrelse udløste afvisningen. Den konkrete grænsemismatch er derfor bevist i koden; den faktiske CI-fejlårsag er ikke endeligt bevist. Den lokale observation bruger kun faste kategorier og filstatistik uden sti eller privat indhold.

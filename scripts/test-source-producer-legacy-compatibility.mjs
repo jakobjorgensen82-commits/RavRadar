@@ -228,6 +228,28 @@ export async function runSourceProducerLegacyCompatibility(){
     const SReadback=await protectedS.restoreProtectedRavScoreContinuationCheckpoint({
       checkpointPath:sReadbackPath,targetReference:target,request:backend.documentRequest});
     assert.equal(SReadback.restored,true);same(await json(sReadbackPath),follower,'Whole normal follower S readback');
+    // Kun faktiske normale native-testdata. Dette skaber intet runtime-originautoritetshåndtag.
+    const bRow=structuredClone(backend.documents.get('ravscore-private-production-runtime-pointer')),
+      sRow=structuredClone(backend.documents.get('ravscore-continuation-checkpoint'));
+    same(Object.keys(bRow).sort(),['document_key','payload','version']);
+    same(Object.keys(sRow).sort(),['document_key','payload','version']);
+    assert.equal(bRow.version,B.centralVersion);assert.equal(sRow.version,S.centralVersion);
+    for(const row of [bRow,sRow])assert(Number.isSafeInteger(row.version)&&row.version>0);
+    protectedB.validateProtectedPrivateRuntimePointer(bRow.payload);
+    same(sRow.payload,follower,'Hele faktisk gemte S, ikke en udvalgt modeltuple');
+    const manifestPath=path.join(restored,'manifest.json'),manifest=await json(manifestPath);
+    assert.equal(bRow.payload.current.bundleContentSha256,manifest.bundleContentSha256);
+    assert.equal(bRow.payload.current.datasetId,manifest.datasetId);
+    assert.equal(bRow.payload.current.productionReferenceAt,target);
+    assert.equal(sRow.payload.datasetId,manifest.datasetId);
+    const nativePair={schemaVersion:1,kind:'SOURCE_NATIVE_NORMAL_B_S_DATA',sourceHead,
+      B:bRow,S:sRow,bundleManifest:await digest(manifestPath),checkpointFile:await digest(sReadbackPath)};
+    assert(nativePair.bundleManifest.bytes>0&&nativePair.bundleManifest.bytes<=4*1024*1024);
+    assert(nativePair.checkpointFile.bytes>0&&nativePair.checkpointFile.bytes<=16*1024*1024);
+    const nativePairBytes=Buffer.from(JSON.stringify(nativePair)+'\n');
+    assert(nativePairBytes.length<=17*1024*1024);
+    const nativePairFile=await fs.open(path.join(followerRoot,'native-normal-b-s.json'),'wx',0o600);
+    try{await nativePairFile.writeFile(nativePairBytes);await nativePairFile.sync();}finally{await nativePairFile.close();}
     for(let index=0;index<originalRoots.length;index++)same(await inventory(originalRoots[index]),originals[index],'Every original585/586/587/588/SOURCE B/S file retained');
     for(const [name,bytes]of objectBefore)same(backend.objects.get(name),bytes,'Original private storage bytes retained');
     return Object.freeze({kind:'SOURCE_LEGACY_COMPATIBILITY_SYNTHETIC',sameH0MetadataPreserved:true,
