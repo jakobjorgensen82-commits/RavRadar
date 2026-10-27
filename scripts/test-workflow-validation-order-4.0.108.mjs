@@ -416,19 +416,38 @@ for (const [readKind, httpStatus, expectedKind, expectedStatus] of [
 // V4: the normal CF failure and normal receipt keep only bounded, closed diagnostics.
 const shareUnknownCfDiagnostic = { kind: 'FORECAST_SHARE_CF_ENVELOPE_V1',
   envelope: 'UNKNOWN', success: 'UNKNOWN', errors: 'UNKNOWN',
+  errorsType: 'UNKNOWN', resultType: 'UNKNOWN',
   errorCodes: [], errorCodesStatus: 'UNKNOWN' };
 for (const unknown of [null, undefined, true, 10092, 'private raw value', []]) {
   assert.deepEqual(forecastShareCfEnvelopeDiagnostic(unknown), shareUnknownCfDiagnostic);
 }
 assert.deepEqual(forecastShareCfEnvelopeDiagnostic({ success: false, errors: [] }), {
   ...shareUnknownCfDiagnostic, envelope: 'OBJECT', success: 'FALSE',
-  errors: 'EMPTY', errorCodesStatus: 'COMPLETE' });
+  errors: 'EMPTY', errorsType: 'ARRAY', resultType: 'ABSENT', errorCodesStatus: 'COMPLETE' });
 assert.deepEqual(forecastShareCfEnvelopeDiagnostic({ success: true, errors: [] }), {
   ...shareUnknownCfDiagnostic, envelope: 'OBJECT', success: 'TRUE',
-  errors: 'EMPTY', errorCodesStatus: 'COMPLETE' });
-for (const errors of [undefined, null, {}, 'private errors']) {
+  errors: 'EMPTY', errorsType: 'ARRAY', resultType: 'ABSENT', errorCodesStatus: 'COMPLETE' });
+for (const [errors, errorsType] of [
+  [undefined, 'UNKNOWN'], [null, 'NULL'], [{}, 'OBJECT'], ['private errors', 'STRING'],
+]) {
   assert.deepEqual(forecastShareCfEnvelopeDiagnostic({ success: 'false', errors }), {
-    ...shareUnknownCfDiagnostic, envelope: 'OBJECT' });
+    ...shareUnknownCfDiagnostic, envelope: 'OBJECT', errorsType, resultType: 'ABSENT' });
+}
+// Nye formfelter er kun faste kategorier; de gamle diagnostikfelter er uændrede.
+assert.deepEqual(forecastShareCfEnvelopeDiagnostic({}), {
+  ...shareUnknownCfDiagnostic, envelope: 'OBJECT', errorsType: 'ABSENT', resultType: 'ABSENT' });
+for (const [field, type] of [
+  [null, 'NULL'], [[], 'ARRAY'], [{ private: 'synthetic-shape-content' }, 'OBJECT'],
+  ['synthetic-shape-content', 'STRING'], [123456, 'NUMBER'], [false, 'BOOLEAN'],
+  [undefined, 'UNKNOWN'],
+]) {
+  const diagnostic = forecastShareCfEnvelopeDiagnostic({ errors: field, result: field });
+  assert.equal(diagnostic.errorsType, type);
+  assert.equal(diagnostic.resultType, type);
+  assert.deepEqual(Object.keys(diagnostic).sort(), [
+    'envelope', 'errorCodes', 'errorCodesStatus', 'errors', 'errorsType', 'kind', 'resultType', 'success',
+  ].sort());
+  assert.doesNotMatch(JSON.stringify(diagnostic), /synthetic-shape-content|123456|private/);
 }
 const sharePrivateCfMarker = 'synthetic-private-value-must-never-escape';
 const shareSafeCfDiagnostic = forecastShareCfEnvelopeDiagnostic({
@@ -438,7 +457,7 @@ const shareSafeCfDiagnostic = forecastShareCfEnvelopeDiagnostic({
     { code: 10000, documentation_url: sharePrivateCfMarker }],
 });
 assert.deepEqual(shareSafeCfDiagnostic, { kind: 'FORECAST_SHARE_CF_ENVELOPE_V1',
-  envelope: 'OBJECT', success: 'FALSE', errors: 'NONEMPTY',
+  envelope: 'OBJECT', success: 'FALSE', errors: 'NONEMPTY', errorsType: 'ARRAY', resultType: 'OBJECT',
   errorCodes: [10092, 10000], errorCodesStatus: 'COMPLETE' });
 assert.doesNotMatch(JSON.stringify(shareSafeCfDiagnostic), /synthetic-private-value|hostname|token|pointer|message|account/);
 for (const code of ['10092', -1, 0, 999, 1000.5, 10_000_000, NaN, Infinity, null, {}]) {
@@ -454,7 +473,8 @@ assert.deepEqual(forecastShareCfEnvelopeDiagnostic({ errors: [{ code: 1000 }, { 
 assert.deepEqual(forecastShareCfEnvelopeDiagnostic({
   errors: Array.from({ length: 9 }, (_, index) => ({ code: 10000 + index })),
 }), { kind: 'FORECAST_SHARE_CF_ENVELOPE_V1', envelope: 'OBJECT', success: 'UNKNOWN',
-  errors: 'NONEMPTY', errorCodes: Array.from({ length: 8 }, (_, index) => 10000 + index),
+  errors: 'NONEMPTY', errorsType: 'ARRAY', resultType: 'ABSENT',
+  errorCodes: Array.from({ length: 8 }, (_, index) => 10000 + index),
   errorCodesStatus: 'LIMITED' });
 const shareCfNormalReadStart = shareControllerSource.indexOf('    const readStatuses = new Map();');
 const shareCfNormalReadEnd = shareControllerSource.indexOf('    const readDomains = async () => {',
@@ -467,15 +487,28 @@ const shareCfNormalRead = shareControllerSource.slice(shareCfNormalReadStart, sh
 for (const [raw, expectedDiagnostic] of [
   [{ success: false, errors: [{ code: 10092, message: sharePrivateCfMarker }] }, {
     kind: 'FORECAST_SHARE_CF_ENVELOPE_V1', envelope: 'OBJECT', success: 'FALSE',
-    errors: 'NONEMPTY', errorCodes: [10092], errorCodesStatus: 'COMPLETE',
+    errors: 'NONEMPTY', errorsType: 'ARRAY', resultType: 'ABSENT',
+    errorCodes: [10092], errorCodesStatus: 'COMPLETE',
   }],
   [{ success: true, errors: { message: sharePrivateCfMarker } }, {
     ...shareUnknownCfDiagnostic, envelope: 'OBJECT', success: 'TRUE',
+    errorsType: 'OBJECT', resultType: 'ABSENT',
   }],
   [{ success: 'false', errors: [] }, {
-    ...shareUnknownCfDiagnostic, envelope: 'OBJECT', errors: 'EMPTY', errorCodesStatus: 'COMPLETE',
+    ...shareUnknownCfDiagnostic, envelope: 'OBJECT', errors: 'EMPTY',
+    errorsType: 'ARRAY', resultType: 'ABSENT', errorCodesStatus: 'COMPLETE',
   }],
   [null, shareUnknownCfDiagnostic],
+  [{ success: true, result: [] }, {
+    ...shareUnknownCfDiagnostic, envelope: 'OBJECT', success: 'TRUE',
+    errorsType: 'ABSENT', resultType: 'ARRAY',
+  }],
+  ...[
+    [null, 'NULL'], ['synthetic-shape-content', 'STRING'], [123456, 'NUMBER'], [false, 'BOOLEAN'],
+  ].map(([errors, errorsType]) => [{ success: true, errors, result: [] }, {
+    ...shareUnknownCfDiagnostic, envelope: 'OBJECT', success: 'TRUE',
+    errorsType, resultType: 'ARRAY',
+  }]),
 ]) {
   const receipts = []; let reads = 0;
   await assert.rejects(vm.runInNewContext('(async () => {\n'
@@ -499,7 +532,7 @@ for (const [raw, expectedDiagnostic] of [
     stage: 'PREWRITE_READS', sourceSha: null, code: 'SHARE_CF_READ', readKind: 'CF_DOMAINS',
     httpStatus: 200, cfEnvelope: expectedDiagnostic, writeIssued: false,
     terminationConfirmed: null, outcome: 'REFUSED_BEFORE_WRITE' });
-  assert.doesNotMatch(JSON.stringify(receipts), /synthetic-private-value|synthetic-not-logged|synthetic\.example|hostname|pointer|account/);
+  assert.doesNotMatch(JSON.stringify(receipts), /synthetic-private-value|synthetic-not-logged|synthetic\.example|synthetic-shape-content|123456|hostname|pointer|account/);
 }
 const shareForgedDiagnostics = [];
 assert.throws(() => vm.runInNewContext(shareControllerSource.slice(shareStopStart, shareStopEnd), {

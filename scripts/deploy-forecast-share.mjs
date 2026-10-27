@@ -159,6 +159,20 @@ export function forecastShareDomainsForWorker(envelope) {
 // field is copied, and no unknown value is coerced to a string or number.
 export function forecastShareCfEnvelopeDiagnostic(value) {
   const object = value !== null && typeof value === 'object' && !Array.isArray(value);
+  const fieldType = key => {
+    if (!object) return 'UNKNOWN';
+    if (!Object.hasOwn(value, key)) return 'ABSENT';
+    const field = value[key];
+    if (field === null) return 'NULL';
+    if (Array.isArray(field)) return 'ARRAY';
+    switch (typeof field) {
+      case 'object': return 'OBJECT';
+      case 'string': return 'STRING';
+      case 'number': return 'NUMBER';
+      case 'boolean': return 'BOOLEAN';
+      default: return 'UNKNOWN';
+    }
+  };
   const errors = object && Array.isArray(value.errors) ? value.errors : null;
   const errorCodes = [];
   let errorCodesStatus = errors === null ? 'UNKNOWN' : errors.length > 8 ? 'LIMITED' : 'COMPLETE';
@@ -174,6 +188,7 @@ export function forecastShareCfEnvelopeDiagnostic(value) {
     success: object && value.success === true ? 'TRUE'
       : object && value.success === false ? 'FALSE' : 'UNKNOWN',
     errors: errors === null ? 'UNKNOWN' : errors.length ? 'NONEMPTY' : 'EMPTY',
+    errorsType: fieldType('errors'), resultType: fieldType('result'),
     errorCodes, errorCodesStatus,
   };
 }
