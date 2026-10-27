@@ -2,6 +2,8 @@
 
 Kort fortalt: RavRadar kan genbruge den samme danske datoformatering uden at ændre prognosens tidspunkter, vejr eller scorer.
 
+Aktuelt 27. oktober 2026: Det offentlige 588-datasæt rr-20261027175553-210 blev leveret kl. 19.58 CET. 590-bindingen blev installeret kl. 20.05 CET; offentlig 590 er endnu ikke bekræftet. Disse er forskellige leveringsbeviser; ældre status nedenfor bevares som dateret historik.
+
 En almindelig vejropdatering nåede sin uændrede grænse på 80 minutter. Den offentlige projektion tog målt 36 minutter og 23 sekunder. Den sidste fremdriftslinje viste færdige offentlige filer, ikke færdig privat timepakke og atomisk cacheinstallation. Stoppet er ikke dokumenteret som hukommelsesudløb.
 
 Den lokale rettelse opretter først datoformateringen, når den bruges, og genbruger den kun for den præcise tidszone Europe/Copenhagen. Den gemmer ikke beregnede datoer. Andre tidszoner får fortsat frisk formatering, ugyldige datoer afvises først, og dansk sommer- og vintertid bevares.
@@ -3341,6 +3343,8 @@ rettelsen samlet; de faktiske sikkerhedsgrænser består.
 
 ## 89.117 4.0.520 – Undersøg det gemte vejr uden at hente igen
 
+Historik: Udsagnene nedenfor om en ikke-publiceret seneste kørsel, tilbageholdt vejrrettelse og pauset automatisk vejrstart beskriver den tidligere situation og er erstattet af 27. oktober-statussen i 89.273. Den eksisterende cron fortsætter. Kun den nye faste DMI-læsegren er som standard slået fra; den generiske audit er ikke gjort til en ny planlagt funktion.
+
 Den hentede fremdrift er gemt, men den seneste kørsel blev ikke
 publiceret. Derfor undersøger vi først de eksisterende pakker i
 stedet for at gentage vejrhentningen og den lange cachebygning.
@@ -3363,6 +3367,12 @@ målinger er afklaret. Hjemmesiden viser fortsat sidste godkendte
 prognose, og automatisk vejrstart er pauset. En grøn læsekontrol
 vil ikke alene betyde, at data er komplette eller systemet stabilt.
 Se DEC-0267 og forskningsnotatet SAVED-WEATHER-AUDIT-2026-09-30.
+
+Opdatering 27. oktober 2026: Den nye, faste DMI-læsegren er som standard slået fra og undersøger kun den aktuelle autentificerede private B-pakke, ikke en ældre generation eller krypteret fremdriftscache. Den bruger den gemte generations SHA-bundne, arkiverede normale producent og codec med kontrollerede kontrakter og input samt frisk CURRENT-genlæsning ved afslutning.
+
+Rapporten viser kun summerede behandlingsmetadata i fire faste kategorier: missingStep, incompleteStep, normalStepRejected og normalOutcomeRejected. Ukendt eller ugyldigt grundlag afvises; kategorierne beviser ikke numerisk gyldighed eller fuld vejrdækning. Der indføres ingen nye statiske produktimports, numerisk admission, provider- eller RAW-kald eller produktionsskrivning.
+
+Dette er en afgrænset control-plane-ændring på eksisterende 4.0.590, ikke en ny model eller release. C98/I97 og de private runtimeinventarer er dokumenteret uændrede; C/I/T, SQL, geodata, score, kildeprioritet og budgetter genudstedes eller ændres ikke. Windows-prøven havde 70 PASS og 1 FAIL ved eccodes og er derfor ikke samlet PASS. Faktisk positiv Linux-kontrol og præcis kildekvalifikation for ændringen er fortsat åbne.
 
 ## 89.115 4.0.518 – Hvorfor havstrømshistorikken stoppede
 

@@ -1,3 +1,13 @@
+## 27. oktober — fast DMI-metadataaudit uden ny vejrhentning
+
+Den eksisterende audit får en særskilt, som standard slukket CURRENT-only B-metadata-læsegren. Den bruger den gemte generations SHA-bundne arkiverede normalproducent og codec, kontrollerer normale kontrakter og input før og efter og genlæser CURRENT ved afslutning. Kun missingStep, incompleteStep, normalStepRejected og normalOutcomeRejected rapporteres; ukendt metadata afvises. Ingen nye statiske produktimports, numerisk admission, provider-/RAW-kald, progresscache eller produktionsskrivning indføres.
+
+Windows-prøven havde 70 PASS/1 FAIL ved eccodes; det er ikke samlet PASS. Faktisk positiv Linux-kontrol og præcis kildekvalifikation for denne ændring er fortsat åbne. Dette er control-plane590 med dokumenteret uændrede C98/I97 og private runtimeinventarer, ikke ny release-, C/I/T-, SQL- eller geodataudstedelse. Score, kildeprioritet og budgetter bevares.
+
+Aktuelt 27. oktober 2026: Det offentlige 588-datasæt rr-20261027175553-210 blev leveret kl. 19.58 CET. 590-bindingen blev installeret kl. 20.05 CET; offentlig 590 er endnu ikke bekræftet. Disse er forskellige leveringsbeviser; ældre status nedenfor bevares som dateret historik.
+
+SOURCE, samlet statistik og automatisk sletning forbliver inaktive. Alle fem mål til 18. november 2026 består. Ældre dokumentafsnit og røde forløb bevares; kun de konkret opdaterede statusudsagn er historik. Se håndbog 89.117.
+
 ## 27. oktober — dansk datoformatering genbruges uden at flytte prognosen
 
 Den almindelige beregning stoppede ved sin uændrede 80-minuttersgrænse. Den målte publicfase tog 36 minutter og 23 sekunder; sidste fremdriftslinje beviser færdige offentlige filer, ikke færdig privat timepakke eller atomisk cacheinstallation. Der er ikke dokumenteret OOM. Gentagen national dagsrangering konstruerede den samme danske datoformatering igen for hver time, zone, søgemåde og dag.

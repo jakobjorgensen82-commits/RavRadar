@@ -1729,3 +1729,172 @@ test('CURRENT586 restoration S facade: actual normal checkpoint body and shared 
     maximumMilliseconds:1000,clock:()=>now,fetchImpl:async()=>{now+=600;return Response.json([]);}});
   await timed.request(query);await assert.rejects(timed.request(query),/REMOTE_READ_BOUND/);
 });
+
+// Disse additive tilfælde beviser afslag/rapportkontrakt, IKKE den positive Python-producentkæde.
+test('B-only DMI-metadata afviser alle blandede modes før I/O', async () => {
+  const base = { mode: 'audit', includeDmiProcessingMetadata: true };
+  for (const mutation of [{ mode: 'describe' }, { includeDmiProcessingMetadata: 'true' },
+    { progressSource }, { progressFile: 'secret-error-canary' }, { progressCacheKey },
+    { progressBaselineTargetHour: '2026-09-29T17:00:00.000Z' }, { includeRawManifest: true },
+    { includeRawFilePresence: true }, { rawCacheKey: 'secret-error-canary' },
+    { rawManifestSource: 'secret-error-canary' }, { includeSelectedCurrentPreflight: true },
+    { includeCurrentWindowDiagnostic: true }, { includeCurrent586Endpoints: true },
+    { includeCurrent586CachedOriginals: true }, { prepareCurrentForwardOriginals: true },
+    { prepareCurrent586Originals: true }]) {
+    const report = await auditSavedWeatherInputs({ ...base, ...mutation });
+    assert.equal(report.status, 'AUDIT_FAILED_CLOSED'); assert.equal(report.code, 'MODE_INVALID');
+    assert.equal(report.phase, 'SETUP'); assert.equal(report.providerRequestsPerformed, false);
+  }
+});
+
+for (const [name, mutation, code] of [
+  ['manglende kandidat', {}, 'DMI_PROCESSING_METADATA_UNAVAILABLE'],
+  ['ændret B før restore', { changedAt: 2 }, 'CURRENT_GENERATION_CHANGED'],
+  ['ændret B efter restore', { changedAt: 4 }, 'CURRENT_GENERATION_CHANGED'],
+  ['beskadiget B', { corrupt: true }, 'PROTECTED_RESTORE_REJECTED'],
+  ['forkert arkiveret kilde', { wrongContracts: true }, 'PREDECESSOR_CONTRACT_MISMATCH'],
+  ['beskadiget komponentpakke', { nativeProofs: true, baselinePackTamper: true }, 'BASELINE_COMPONENT_PACK_REJECTED'],
+]) test('B-only DMI-metadata: ' + name + ' giver intet falsk metadata-PASS', async t => {
+  const { options, privateRoot, calls } = await fixture(t, mutation);
+  const { progressSource: ignoredSource, progressFile: ignoredFile, progressCacheKey: ignoredKey, ...bOnly } = options;
+  const report = await auditSavedWeatherInputs({ ...bOnly, includeDmiProcessingMetadata: true });
+  assert.equal(report.status, 'AUDIT_FAILED_CLOSED'); assert.equal(report.code, code, JSON.stringify(report));
+  assert.equal(report.exactProgressAuthenticated, false);
+  assert.equal(report.providerRequestsPerformed, false); assert.equal(report.remoteWrites, false);
+  assert.equal(Object.hasOwn(report, 'dmiProcessingMetadata'), false);
+  assert.ok(calls.every(row => ['GET', 'HEAD'].includes(row.method)));
+  safeReport(report, privateRoot);
+});
+
+test('DMI-metadatas lukkede rapport accepterer kun summerede faste årsager; ingen Python-PASS påstås', async () => {
+  const source = await fs.readFile(new URL('./audit-saved-weather-inputs.mjs', import.meta.url), 'utf8');
+  const start = source.indexOf('function validateSavedDmiProcessingMetadataReport(');
+  const end = source.indexOf('async function measureSavedDmiProcessingMetadata(', start);
+  assert.ok(start >= 0 && end > start);
+  const validate = vm.runInNewContext('(' + source.slice(start, end).trim() + ')', {
+    same: (a, b) => JSON.stringify(a) === JSON.stringify(b), integer: Number.isSafeInteger,
+    fail: code => { throw new Error(code); },
+  });
+  const valid = { kind: 'SAVED_DMI_PROCESSING_METADATA', status: 'MEASURED', targetCount: 673, hourCount: 118,
+    collections: ['dkss_idw', 'dkss_lf', 'dkss_nsbs'].map(collection => ({ collection,
+      locallySkipped: 4, missingStep: 1, incompleteStep: 1, normalStepRejected: 1, normalOutcomeRejected: 1 })) };
+  assert.equal(validate(valid), valid);
+  for (const mutate of [v => { v.privatePayload = 'secret-error-canary'; },
+    v => { v.targetCount = 672; }, v => { v.hourCount = 117; }, v => { v.status = 'REFUSED'; },
+    v => { v.collections[0].locallySkipped = 5; }, v => { v.collections[0].normalStepRejected = -1; },
+    v => { v.collections[0].sourceAsset = 'secret-error-canary'; },
+    v => { v.collections[0].collection = 'private-collection'; }, v => { v.collections.pop(); },
+    v => { v.collections[0].missingStep = 119; }]) {
+    const changed = structuredClone(valid); mutate(changed);
+    assert.throws(() => validate(changed), /DMI_PROCESSING_METADATA_INVALID/);
+  }
+  safeReport(valid, 'private-canary');
+});
+
+test('den faktiske indlejrede DMI-læser bruger normal producent og codec på syntetiske metadata, ikke autentificeret B', async t => {
+  const folder = await temp(t);
+  const audit = await fs.readFile(new URL('./audit-saved-weather-inputs.mjs', import.meta.url), 'utf8');
+  const prefix = 'const SAVED_DMI_PROCESSING_METADATA_READER = ';
+  const start = audit.indexOf(prefix);
+  const end = audit.indexOf(';\n', start);
+  assert.ok(start >= 0 && end > start, 'læs præcis den indlejrede kildekonstant');
+  const reader = JSON.parse(audit.slice(start + prefix.length, end));
+  const setup = String.raw`
+import ast
+import copy
+import hashlib
+import importlib.util
+import json
+import pathlib
+import sys
+from datetime import datetime, timedelta, timezone
+
+def deny_socket_events(event, args):
+    if event.startswith("socket."):
+        raise AssertionError("SYNTHETIC_NETWORK_FORBIDDEN")
+
+sys.addaudithook(deny_socket_events)
+root, folder = map(pathlib.Path, sys.argv[1:])
+sys.path.insert(0, str(root / "scripts"))
+spec = importlib.util.spec_from_file_location("synthetic_saved_dmi_producer", root / "scripts/update-dmi-bulk.py")
+producer = importlib.util.module_from_spec(spec)
+sys.modules[spec.name] = producer
+spec.loader.exec_module(producer)
+from lib.dmi_bulk_storage import write_dmi_bulk_document
+
+# Genbrug kun de eksisterende rene fixturefunktioner, ikke deres top-level prøver.
+fixture = root / "scripts/test-copernicus-target-registry-4.0.244.py"
+functions = ("utc", "write", "official_asset", "source", "processed_run", "dmi_document")
+nodes = {node.name: node for node in ast.parse(fixture.read_text("utf-8")).body
+         if isinstance(node, ast.FunctionDef) and node.name in functions}
+assert set(nodes) == set(functions)
+reference = datetime(2026, 8, 21, 8, tzinfo=timezone.utc)
+at = reference.isoformat().replace("+00:00", "Z")
+namespace = {"producer": producer, "copy": copy, "datetime": datetime, "timedelta": timedelta,
+             "Path": pathlib.Path, "json": json, "REFERENCE": reference, "AT": at,
+             "MODEL_RUN": (reference - timedelta(hours=3)).isoformat().replace("+00:00", "Z"),
+             "STALE_MODEL_RUN": (reference - timedelta(hours=6)).isoformat().replace("+00:00", "Z")}
+exec(compile(ast.Module(body=[nodes[name] for name in functions], type_ignores=[]), str(fixture), "exec"), namespace)
+targets = [{"partId": f"synthetic-part-{i:03}", "parentZoneId": f"synthetic-zone-{i % 210:03}",
+            "waterPoint": [8.0, 55.0]} for i in range(673)]
+hours = producer.operational_current_valid_times(reference)
+assert len(hours) == 118
+# Ingen numeriske strømværdier: fixturekonstruktøren markerer resterende dele spatialt utilgængelige.
+document = namespace["dmi_document"](targets, verified_hours=set())
+catalogs = {}
+for collection in sorted(producer.MARINE_COLLECTIONS):
+    steps = document["runs"][collection]["processedSteps"]
+    del steps[hours[0]]
+    steps[hours[1]]["complete"] = False
+    steps[hours[2]]["parserVersion"] = "synthetic-obsolete-parser"
+    del steps[hours[3]]["currentPartOutcomeProof"]
+    assets = [namespace["official_asset"](collection, hour) for hour in hours]
+    catalogs[collection] = (namespace["MODEL_RUN"], assets,
+        {"catalogInventoryComplete": True, "requiredHorizonEndCovered": True,
+         "requiredRowsTruncatedByAssetLimit": 0, "officialRequiredValidTimeCount": 118,
+         "officialRequiredValidTimes": hours, "officialRequiredAssets": assets})
+document["diagnostics"]["currentOperationalLedger"] = producer.build_current_operational_ledger(
+    document, targets, reference, catalogs)
+conditions = {"productionReferenceAt": at,
+    "zones": {f"synthetic-zone-{i:03}": {} for i in range(210)},
+    "coastalParts": {"parts": {row["partId"]: {"zoneId": row["parentZoneId"],
+        "waterPoint": row["waterPoint"]} for row in targets}}}
+candidate = folder / "candidate.json"
+condition_file = folder / "conditions.json"
+write_dmi_bulk_document(candidate, document)
+namespace["write"](condition_file, conditions)
+print(json.dumps({"reference": at,
+    "candidateSha256": hashlib.sha256(candidate.read_bytes()).hexdigest(),
+    "conditionsSha256": hashlib.sha256(condition_file.read_bytes()).hexdigest()}))
+`;
+  const python = process.env.PYTHON ?? 'python';
+  const env = Object.fromEntries(Object.entries(process.env).filter(([key]) =>
+    /^(?:PATH|SYSTEMROOT|WINDIR|TEMP|TMP|TMPDIR|LANG|LC_ALL)$/i.test(key)));
+  const options = { cwd: repositoryRoot, env, encoding: 'utf8', timeout: 30_000,
+    maxBuffer: 1024 * 1024, windowsHide: true };
+  const prepared = spawnSync(python, ['-I', '-c', setup, repositoryRoot, folder], options);
+  assert.ifError(prepared.error);
+  assert.equal(prepared.status, 0, 'normal syntetisk producent/codec skal faktisk kunne bygge input; ingen B-autoritet\n' + prepared.stderr);
+  const binding = JSON.parse(prepared.stdout);
+  const candidate = path.join(folder, 'candidate.json');
+  const conditions = path.join(folder, 'conditions.json');
+  const run = (conditionFile, conditionsSha256) => spawnSync(python,
+    ['-I', '-c', reader, repositoryRoot, candidate, binding.candidateSha256,
+      conditionFile, conditionsSha256, binding.reference], options);
+  const result = run(conditions, binding.conditionsSha256);
+  assert.ifError(result.error);
+  assert.equal(result.status, 0, 'den præcise indlejrede læser skal faktisk acceptere normal syntetisk metadata\n' + result.stdout + result.stderr);
+  assert.deepEqual(JSON.parse(result.stdout), {
+    kind: 'SAVED_DMI_PROCESSING_METADATA', status: 'MEASURED', targetCount: 673, hourCount: 118,
+    collections: ['dkss_idw', 'dkss_lf', 'dkss_nsbs'].map(collection => ({ collection,
+      locallySkipped: 4, missingStep: 1, incompleteStep: 1, normalStepRejected: 1, normalOutcomeRejected: 1 })),
+  });
+  // Det ugyldige input får sin rigtige SHA: afslag skal komme fra metadata, ikke en opdigtet hash.
+  const invalid = JSON.stringify({ productionReferenceAt: binding.reference, zones: {}, coastalParts: { parts: {} } });
+  const invalidConditions = path.join(folder, 'invalid-conditions.json');
+  await write(folder, 'invalid-conditions.json', invalid);
+  const refused = run(invalidConditions, crypto.createHash('sha256').update(invalid).digest('hex'));
+  assert.equal(refused.status, 1);
+  assert.deepEqual(JSON.parse(refused.stdout), { kind: 'SAVED_DMI_PROCESSING_METADATA', status: 'REFUSED' });
+  assert.doesNotMatch(refused.stderr, /Traceback/);
+});

@@ -180,7 +180,7 @@ test('older RAW source is one explicit fixed read scope and cannot relabel authe
   assert.match(text, /RAW_SOURCE_ARGS: \$\{\{ inputs\.raw_manifest_source != '' && format\('--raw-manifest-source \{0\}', inputs\.raw_manifest_source\) \|\| '' \}\}/);
   assert.ok(text.includes('${RAW_SOURCE_ARGS}'));
   assert.doesNotMatch(text, /restore-keys:|actions\/cache\/save|update-dmi-bulk\.py|sha256sum/);
-  assert.equal((text.match(/^      [a-z_]+:\n        description:/gm) ?? []).length, 11, 'all ten previous inputs plus one bounded default-off current-window diagnosis');
+  assert.equal((text.match(/^      [a-z_]+:\n        description:/gm) ?? []).length, 12, 'the eleven previous non-numeric input names plus one explicit default-off current-B DMI metadata input');
 });
 
 test('RAW file presence is separate default-off metadata inventory, not numeric inspection', () => {
@@ -259,4 +259,39 @@ test('CURRENT586 cached originals have one independent default-off exact-cache p
   assert.match(run, /--progress-source 39666991481-1/);
   assert.doesNotMatch(run, /progress-file|WEATHER_PROGRESS_MASTER_SECRET|include-current586-endpoints|update-weather|deploy|publish/);
   assert.doesNotMatch(text, /(?:contents|actions|pull-requests|pages|id-token): write|actions\/cache\/save|gh workflow run|--publish/);
+});
+
+test('aktuel B-only DMI-metadata er slået fra som standard og deler ingen historisk progressautoritet', () => {
+  assert.match(text, /include_dmi_processing_metadata:\n[\s\S]*?required: false\n        default: false\n        type: boolean/);
+  assert.match(text, /progress_source_run_id:\n[\s\S]*?required: false/);
+  assert.match(text, /INCLUDE_DMI_PROCESSING_METADATA: \$\{\{ inputs\.include_dmi_processing_metadata \}\}/);
+  const scope = text.split('if test "$INCLUDE_DMI_PROCESSING_METADATA" = true; then')[1]?.split('\n          else')[0];
+  assert(scope, 'én lukket B-only-guard før credentials');
+  for (const check of ['test -z "$SOURCE_RUN_ID"', 'test "$SOURCE_RUN_ATTEMPT" = 1',
+    'test "$INCLUDE_RAW_MANIFEST" = false', 'test "$INCLUDE_RAW_FILE_PRESENCE" = false',
+    'test "$INCLUDE_SELECTED_CURRENT_PREFLIGHT" = false', 'test "$INCLUDE_CURRENT_WINDOW_DIAGNOSTIC" = false',
+    'test "$INCLUDE_CURRENT586_ENDPOINTS" = false', 'test "$INCLUDE_CURRENT586_CACHED_ORIGINALS" = false',
+    'test -z "$RAW_MANIFEST_CACHE_KEY"', 'test -z "$RAW_MANIFEST_SOURCE"',
+    'test -z "$PROGRESS_BASELINE_TARGET_HOUR"']) assert(scope.includes(check), check);
+  assert.ok(text.indexOf('if test "$INCLUDE_DMI_PROCESSING_METADATA" = true; then') < text.indexOf(gh('secrets.SUPABASE_URL')));
+  const oldAuthority = text.split('if test "$INCLUDE_DMI_PROCESSING_METADATA" != true; then')[1]
+    ?.split('      - uses: actions/setup-node@v7')[0];
+  assert(oldAuthority);
+  assert.match(oldAuthority, /actions\/runs\/\$SOURCE_RUN_ID\/attempts\/\$SOURCE_RUN_ATTEMPT/);
+  assert(oldAuthority.includes('(.run_attempt | tostring) == $attempt'));
+  assert(oldAuthority.includes('.path == ".github/workflows/run-current-weather-once.yml"'));
+  assert.match(text, /git archive "\$producer_head" \| tar -x -C "\$RUNNER_TEMP\/ravradar-saved-input-predecessor"/);
+  assert.equal((text.match(/&& inputs\.include_dmi_processing_metadata != true/g) ?? []).length, 3,
+    'progressrestore, eksakt cachehit og normal progressaudit er alle afkoblet');
+  const step = text.split('      - name: Læs kun faste DMI-behandlingsmetadata fra aktuel autentificeret B\n')[1]
+    ?.split('      - name: Diagnose only exact CURRENT586 selected native endpoints\n')[0];
+  assert(step);
+  assert.match(step, /if: inputs\.include_dmi_processing_metadata == true/);
+  assert.match(step, /--include-dmi-processing-metadata true/);
+  assert.match(step, /--descriptor "\$RUNNER_TEMP\/ravradar-saved-input-audit\/current-source\.json"/);
+  assert.match(step, /--predecessor-root "\$RUNNER_TEMP\/ravradar-saved-input-predecessor"/);
+  assert.doesNotMatch(step, /progress-file|progress-source|progress-cache-key|WEATHER_PROGRESS_MASTER_SECRET|RAW|current586|update-weather|publish|deploy/);
+  assert.equal((text.match(/uses: actions\/upload-artifact@/g) ?? []).length, 1);
+  assert.match(text, /steps\.dmi-processing-metadata-audit\.outcome == 'success'/);
+  assert.match(text, /group: ravradar-weather-production-v2\n  queue: max\n  cancel-in-progress: false/);
 });
