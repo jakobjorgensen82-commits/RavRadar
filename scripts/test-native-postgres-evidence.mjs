@@ -847,6 +847,85 @@ test('legacy follower process preserves bounded actual exit/signal/fatal observa
   }
 });
 
+test('normal native585 follower reopens the exact saved verified B rather than the OLD archive',async()=>{
+  const source=await fs.readFile('scripts/fixtures/source19-current-normal-inputs.mjs','utf8');
+  const original=source.indexOf("process.env.RAVRADAR_PRIVATE_RUNTIME_ROOT = oldRoot;");
+  const firstSave=source.indexOf('let saved585 = await saveNormal(host585, private585, backend, producerHead);',original);
+  const verification=source.indexOf('const verifiedParent=await bundle585.verifyPrivateProductionRuntimeBundle({',firstSave);
+  const install=source.indexOf('await workflow585.installRestoredPrivateRuntime({restoredRoot:path.join(verifiedParent.bundlePath,\'payload\'),repositoryRoot:host585});',verification);
+  const restoreS=source.indexOf('const restoredS=await protectedS585.restoreProtectedRavScoreContinuationCheckpoint({',install);
+  const selected=source.indexOf('process.env.RAVRADAR_PRIVATE_RUNTIME_ROOT=saved585.privateRoot;\n'
+    +'      process.env.RAVRADAR_PRIVATE_RUNTIME_BUNDLE=saved585.bundlePath;',restoreS);
+  const follower=source.indexOf("observation.phase='SOURCE_LEGACY_PRODUCER_FOLLOWER585';",selected);
+  const providers=source.indexOf("await copyInputs(path.join(own,'fixture-initial-h1'),host585,options.forwardProviderInputs,PROVIDERS);",follower);
+  const updater=source.indexOf("await import(pathToFileURL(path.join(host585,'scripts/update-weather.mjs')).href+'?source-native-initial-forward');",providers);
+  assert(original>=0&&firstSave>original&&verification>firstSave&&install>verification
+    &&restoreS>install&&selected>restoreS&&follower>selected&&providers>follower&&updater>providers,
+    'Normal whole585 B/S verification and install precede the exact locator selection, then real provider copy and updater');
+  const turn=source.slice(selected,updater);
+  assert.equal([...turn.matchAll(/process\.env\.RAVRADAR_PRIVATE_RUNTIME_ROOT=/g)].length,1);
+  assert.equal([...turn.matchAll(/process\.env\.RAVRADAR_PRIVATE_RUNTIME_BUNDLE=/g)].length,1);
+  assert(!turn.includes('oldRoot'),'No OLD archive locator is reintroduced before the real follower');
+});
+
+test('normal SOURCE follower selects its verified CURRENT B after producer environment restoration',async()=>{
+  const source=await fs.readFile('scripts/test-source-producer-legacy-compatibility.mjs','utf8');
+  const producer=await fs.readFile('scripts/fixtures/source19-current-normal-inputs.mjs','utf8');
+  const origin=await fs.readFile('scripts/lib/established-native-current-origin.mjs','utf8');
+  assert(producer.includes("for (const name of Object.keys(process.env)) if (!Object.hasOwn(beforeEnv, name)) delete process.env[name];"));
+  assert(producer.includes("for (const [name, value] of Object.entries(beforeEnv)) process.env[name] = value;"));
+  assert(origin.includes("const privateRoot = process.env[seedOnly ? 'RAVRADAR_PREDECESSOR_PRIVATE_ROOT' : 'RAVRADAR_PRIVATE_RUNTIME_ROOT'];"));
+  assert(origin.includes("const bundlePath = process.env[seedOnly ? 'RAVRADAR_PREDECESSOR_PRIVATE_BUNDLE' : 'RAVRADAR_PRIVATE_RUNTIME_BUNDLE'];"));
+  const produced=source.indexOf('const produced=await produceCurrentSourceNativeInputs(options);');
+  const verification=source.indexOf('const verifiedParent=await bundle.verifyPrivateProductionRuntimeBundle({',produced);
+  const whole=source.indexOf("same(verifiedParent.manifest,parentManifest,'Whole actual saved SOURCE B manifest');",verification);
+  const install=source.indexOf("await workflow.installRestoredPrivateRuntime({restoredRoot:path.join(verifiedParent.bundlePath,'payload'),repositoryRoot:ROOT});",whole);
+  const restoreS=source.indexOf("same(await json(path.join(ROOT,CHECKPOINT)),currentCheckpoint,'Actual SOURCE S installed for normal continuation');",install);
+  const selected=source.indexOf('process.env.RAVRADAR_PRIVATE_RUNTIME_ROOT=produced.current.privateRoot;\n'
+    +'    process.env.RAVRADAR_PRIVATE_RUNTIME_BUNDLE=produced.current.bundlePath;',restoreS);
+  const updater=source.indexOf("await load('scripts/update-weather.mjs');",selected);
+  assert(produced>=0&&verification>produced&&whole>verification&&install>whole
+    &&restoreS>install&&selected>restoreS&&updater>selected,
+    'Whole actual CURRENT B/S install and verification precede the exact active locator selection and real updater');
+  const turn=source.slice(selected,updater);
+  assert.equal([...turn.matchAll(/process\.env\.RAVRADAR_PRIVATE_RUNTIME_ROOT=/g)].length,1);
+  assert.equal([...turn.matchAll(/process\.env\.RAVRADAR_PRIVATE_RUNTIME_BUNDLE=/g)].length,1);
+});
+
+test('normal587 588 and SOURCE callers stage real fresh describe-current data before provider and updater work',async()=>{
+  const fixture=await fs.readFile('scripts/fixtures/source19-current-normal-inputs.mjs','utf8');
+  const legacy=await fs.readFile('scripts/test-source-producer-legacy-compatibility.mjs','utf8');
+  const start=fixture.indexOf('export async function stageNormalCurrentSourceDescriptor(root,saved,backend) {');
+  const end=fixture.indexOf('// The existing 585 factory stays a real, immutable producer.',start);
+  assert(start>=0&&end>start);const body=fixture.slice(start,end);
+  for(const required of [
+    "protectedB.describeCurrentProtectedPrivateProductionRuntime({request:backend.documentRequest})",
+    "path.join(runner,'private-runtime-current-source.json')",
+    "writer.writeBoundedJsonAtomic(file,descriptor,{maximumBytes:2*1024*1024})",
+    "same(manifest,saved.manifest,'WHOLE retained normal B manifest before descriptor staging')",
+    "same(beforeS[0].payload,JSON.parse(await read(saved.checkpointPath,16*1024*1024))",
+    "same(await readRow(BKey),beforeB,'Whole central B payload/version unchanged by staging')",
+    "same(await readRow(SKey),beforeS,'Whole central S payload/version unchanged by staging')",
+  ])assert(body.includes(required),'Normal descriptor staging keeps actual describe/B/S/readback contract');
+  assert(!body.includes('RAVRADAR_SOURCE_NORMAL_PRODUCER'),'No alternate producer flag is used to avoid the normal descriptor');
+  for(const [root,saved,method]of [['host587','saved586','advanceGenuine585Through587'],
+    ['host588','saved587','advanceGenuine587Through588']]){
+    const branch=fixture.indexOf('async function '+method+'(');
+    const install=fixture.indexOf('await assistant.prepareAssistantLaterH0Runtime();await assistant.installAssistantLaterH0Runtime();',branch);
+    const stage=fixture.indexOf('await stageNormalCurrentSourceDescriptor('+root+','+saved+',backend);',install);
+    const provider=fixture.indexOf('await copyInputs(path.join(path.dirname(ROOT),',stage);
+    const updater=fixture.indexOf("await load("+root+",'scripts/update-weather.mjs');",provider);
+    assert(branch>=0&&install>branch&&stage>install&&provider>stage&&updater>provider,
+      'Whole normal controller install precedes actual parent descriptor, then new provider inputs and updater');
+  }
+  const restored=legacy.indexOf("same(await json(path.join(ROOT,CHECKPOINT)),currentCheckpoint,'Actual SOURCE S installed for normal continuation');");
+  const selected=legacy.indexOf('process.env.RAVRADAR_PRIVATE_RUNTIME_ROOT=produced.current.privateRoot;',restored);
+  const stage=legacy.indexOf('.stageNormalCurrentSourceDescriptor(ROOT,produced.current,backend);',selected);
+  const updater=legacy.indexOf("await load('scripts/update-weather.mjs');",stage);
+  assert(restored>=0&&selected>restored&&stage>selected&&updater>stage,
+    'SOURCE stages its own actual CURRENT B/S after whole restore and active locator selection');
+});
+
 test('normal native forecast fixture uses one normal owner bound through copy save and restore',async()=>{
   const source=await fs.readFile('scripts/fixtures/source19-current-normal-inputs.mjs','utf8');
   const selected=[...source.matchAll(/(?:name|row\.relativePath) === 'data\/live\/dmi-forecast-cache\.json' \? DMI_FORECAST_FILE_MAX_BYTES/g)];

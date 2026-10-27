@@ -162,6 +162,11 @@ export async function runSourceProducerLegacyCompatibility(){
     process.chdir(ROOT);process.env.PRIVATE_RUNTIME_REPOSITORY_ROOT=ROOT;process.env.GITHUB_SHA=sourceHead;
     process.env.RAVRADAR_PREDECESSOR_PRIVATE_ROOT=produced.current.privateRoot;
     process.env.RAVRADAR_PREDECESSOR_PRIVATE_BUNDLE=produced.current.bundlePath;
+    // Ordinary non-seed origin/companion readers reopen the actual CURRENT B.
+    process.env.RAVRADAR_PRIVATE_RUNTIME_ROOT=produced.current.privateRoot;
+    process.env.RAVRADAR_PRIVATE_RUNTIME_BUNDLE=produced.current.bundlePath;
+    await (await load('scripts/fixtures/source19-current-normal-inputs.mjs'))
+      .stageNormalCurrentSourceDescriptor(ROOT,produced.current,backend);
     process.env.RAVRADAR_WEATHER_CACHE_ONLY='true';process.env.RAVRADAR_REQUIRE_PRIVATE_WEATHER_BASELINE='true';
     process.env.RAVRADAR_PRODUCTION_TARGET_HOUR=target;
     // ONE real normal legacy updater: it already generates the complete public

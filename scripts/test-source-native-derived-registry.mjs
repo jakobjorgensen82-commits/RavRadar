@@ -229,7 +229,11 @@ async function producerObservationHarness(root, producer, logs=[]){
   const start='// SOURCE_PRODUCER_OBSERVATION_BEGIN',end='// SOURCE_PRODUCER_OBSERVATION_END';
   assert.equal(source.split(start).length,2);assert.equal(source.split(end).length,2);
   const block=source.slice(source.indexOf(start),source.indexOf(end));
-  const prefix=source.slice(source.indexOf('const sha ='),source.indexOf('// Test-input guard only'));
+  const modulePrefix=source.slice(source.indexOf('const sha ='),source.indexOf('// Test-input guard only'));
+  const readExport='export async function read(file, maximum = 256 * 1024 * 1024) {';
+  assert.equal(modulePrefix.split(readExport).length,2,'One exact normal fixture read export');
+  // AsyncFunction needs local syntax, but the complete real read body stays.
+  const prefix=modulePrefix.replace(readExport,()=>readExport.slice('export '.length));
   const names=['OLD_HEAD','OLD_TREE','OPERATIVE_INITIAL_HEAD','OPERATIVE_INITIAL_TREE','HEAD586','TREE586',
     'OPERATIVE587_HEAD','OPERATIVE587_TREE','OPERATIVE588_HEAD','OPERATIVE588_TREE'];
   const pins=names.map(name=>{

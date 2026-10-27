@@ -1,3 +1,15 @@
+## 27. oktober — normale kildeinput og dræningsreserve, samlet kontrol åben
+
+De to seneste afsluttede præcise SOURCE-kontroller er røde med samme første 585-efterfølgerfase, fejlkode og hashbundne modelguard-frame. De er ikke grønne kildebeviser. En konkret gammel fysisk runtime-locator er rettet lokalt; den videre gennemgang af normale indgange er ikke en endeligt målt årsagslukning.
+
+Normale verify-, describe- og staging-inputs samt begge efterfølgeres aktive runtime-locatorer skal følge netop deres egen hele gemte og genlæste B/S-pakke. Den lokale forberedelse må ikke erstatte denne kæde med løse tuples, callerflag eller et runtime-origin-håndtag. De normale producenter, B før S, hel pakkeinstallation, S-genlæsning og alle gamle assertions og guards bevares.
+
+Den eksisterende normale SOURCE-procesejer reserverer nu højst 240 sekunder, dog højst halvdelen af den faktisk resterende fase, til fysisk stop og dræning inden for samme allerede udstedte fase-/jobfrist. En fuld 80-minutters fase giver dermed cirka 76 minutters arbejde, ikke 80 plus fire minutter. Versionskontrol, child-venten og ufuldstændig fejlkontrol kan ikke bruge reserven. Eksisterende pidfd-stop og kernel-ECHILD samt fysisk FD-lukning kræves; ukendt ophør bevarer første fejl og fastholdt ejer uden oprydnings- eller PASS-adgang.
+
+Den snævre 585-locatorrettelses hele normale lokale mål bestod 26/26 uden fejl eller skip, herunder én ny statisk rækkefølgeregression. Det kvalificerer ikke senere indgangsrettelser eller nativekæden. Procesejerens fem gamle tilfælde er bytebevaret, og fem additive Linux-ejerskabstilfælde er endnu ikke fysisk kørt her. AST-/diffkontrol og mekaniske hashes er ikke et fysisk stopbevis. Én præcis samlet efterfølgerkontrol, faktisk native/PostgreSQL, national kapacitet og sikker levering er fortsat åbne.
+
+Dræningsreserven gør ikke komponentfasens 90 sekunder til et hårdt ende-til-ende bankloft og omfatter ikke uændret bank-JSON-parsing i SOURCE-forælderen. SOURCE og statistik er fortsat inaktive. Version, C/I/T, SQL, originaler, scoreformel, kildeprioritet, central admin og geometri bevares. Alle fem mål til 18. november består; aktuelle kørselsdetaljer føres privat. Alle tidligere hele afsnit nedenfor bevares som dateret historik.
+
 ## 27. oktober — normal SOURCE-genlæsning giver en kontrolleret privat datakanal
 
 En særskilt SOURCE-kildekandidat bevarer nu de faktisk gemte B/S-data fra den normale efterfølger, først efter normal publicering af B før S og hele den eksisterende genlæsning. Eksporten indeholder de faktisk kvitterede dokumentversioner, hele S og kontrolsummer for det normale pakkemanifest og checkpoint; ingen løs tuple eller kopieret kvittering kan erstatte disse data.

@@ -765,5 +765,330 @@ raise RuntimeError("OWN_FIXTURE_MISSING_FATAL_RESULT")
                 signal.signal(signal.SIGALRM, old_handler)
 
 
+# SOURCE normal-program lifetime, using the SAME normal subset owner and
+# failure-control reader. This is a native ownership unit boundary, NOT a
+# forged SOURCE entry, issued C/I/T, argv/JSON admission or successful phase.
+SOURCE_PROGRAM_CPU_FIXTURE = r'''
+'use strict';
+const fs = require('node:fs'), cp = require('node:child_process'), zlib = require('node:zlib');
+const root = process.env.OWN_SOURCE_PROGRAM_ROOT;
+const file = name => root + '/' + name;
+const role = process.argv[2] || 'worker';
+const identity = () => {
+  const raw = fs.readFileSync('/proc/self/stat', 'utf8');
+  const fields = raw.slice(raw.lastIndexOf(')') + 1).trim().split(/\s+/);
+  return {pid: process.pid, ppid: process.ppid, pgid: Number(fields[2]),
+    sid: Number(fields[3]), start: Number(fields[19])};
+};
+const announce = name => {
+  fs.writeFileSync(file(name + '.new'), JSON.stringify(identity()), {flag:'wx',mode:0o600});
+  fs.renameSync(file(name + '.new'), file(name));
+};
+if (role === 'descendant') {
+  process.on('SIGTERM', () => {});
+  fs.appendFileSync(file('descendant-heartbeat'), '.');
+  announce('descendant-ready');
+  setInterval(() => fs.appendFileSync(file('descendant-heartbeat'), '.'), 10);
+  setTimeout(() => process.exit(0), 12000);
+} else {
+  if (process.env.OWN_SOURCE_PROGRAM_DESCENDANT === '1') {
+    cp.spawn(process.execPath, [__filename, 'descendant'], {stdio:'ignore'});
+  }
+  const original = Buffer.alloc(16 * 1024 * 1024, 120);
+  const compressed = zlib.gzipSync(original);
+  fs.appendFileSync(file('heartbeat'), '.');
+  announce('ready');
+  setTimeout(() => fs.writeFileSync(file('js-timer-fired'), 'timer'), 5);
+  const end = Date.now() + 12000;
+  // An actual synchronous gzip/CPU loop: a JavaScript timer cannot stop it.
+  // Only the product's external Python kernel owner may end this child.
+  while (Date.now() < end && !fs.existsSync(file('finish-own-worker'))) {
+    zlib.gunzipSync(compressed, {maxOutputLength:16 * 1024 * 1024});
+    fs.appendFileSync(file('heartbeat'), '.');
+  }
+}
+'''
+
+
+class SourceNormalProgramDeadline(unittest.TestCase):
+    def load_helper(self):
+        import importlib.util
+        self.assertEqual(sys.platform, "linux", "NATIVE_LINUX_REQUIRED; no Windows skip/proof")
+        self.assertEqual(signal.getsignal(signal.SIGCHLD), signal.SIG_DFL)
+        self.assertEqual(signal.getitimer(signal.ITIMER_REAL), (0.0, 0.0))
+        for name in ("pidfd_open", "waitid", "P_PIDFD", "WNOWAIT"):
+            self.assertTrue(hasattr(os, name), "NATIVE_LINUX_API_REQUIRED:" + name)
+        self.assertTrue(hasattr(signal, "pidfd_send_signal"))
+        require_no_children()
+        source = ROOT / "scripts/lib/copernicus_component_process.py"
+        spec = importlib.util.spec_from_file_location("source_program_deadline_" + str(id(self)), source)
+        helper = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(helper)
+        return helper
+
+    def test_normal_program_reserve_is_once_inside_same_long_or_short_cutoff(self):
+        import inspect
+        helper = self.load_helper()
+        for duration in (80 * 60.0, 4 * 60.0, 2.0):
+            owner = helper._LinuxSubsetOwner(time.monotonic() + duration)
+            owner.enter()
+            try:
+                issued = owner.deadline
+                owner.reserve_source_program_work()
+                reserve = owner._source_program_drain_reserve
+                self.assertGreater(reserve, 0)
+                self.assertLessEqual(reserve, 240.0)
+                self.assertLessEqual(reserve, duration / 2.0)
+                self.assertEqual(owner.deadline, issued, "no fresh/extended stop allowance")
+                self.assertGreater(owner.source_work_remaining(), 0)
+                with self.assertRaisesRegex(RuntimeError, "^SOURCE_COHORT_CLOCK_EXPIRED_OR_INVALID$"):
+                    owner.reserve_source_program_work()
+                # Failure-control may shrink the original cutoff, never renew
+                # work or spend the reserved lifetime on a delayed peer.
+                owner.deadline = min(owner.deadline, time.monotonic() + reserve / 2.0)
+                self.assertLess(owner.source_work_remaining(), 0)
+            finally:
+                require_no_children()
+                owner.leave()
+        program = inspect.getsource(helper._run_source_normal_program_cohort)
+        control = inspect.getsource(helper._source_failure_control)
+        self.assertEqual(program.count("owner.reserve_source_program_work()"), 1)
+        self.assertLess(program.index("owner.reserve_source_program_work()"), program.index("version_child = subprocess.Popen"))
+        self.assertEqual(program.count("remaining = owner.source_work_remaining()"), 2)
+        self.assertNotIn("remaining = owner.deadline - time.monotonic()", program)
+        self.assertIn("remaining = owner.source_work_remaining()", control)
+        self.assertIn("owner.drain()", program)
+        self.assertIn("if primary is not None:", program)
+
+    def test_real_expired_unreserved_control_is_not_a_stop_or_success(self):
+        self.run_source_program_case("expired")
+
+    def test_reserved_control_stops_busy_node_and_adopted_writer_inside_same_cutoff(self):
+        self.run_source_program_case("reserved")
+
+    def test_unknown_pidfd_close_preserves_first_failure_and_keeps_owner_poisoned(self):
+        self.run_source_program_case("fd-close-unknown")
+
+    def test_reserved_owner_keeps_normal_healthy_completion(self):
+        self.run_source_program_case("healthy")
+
+    def run_source_program_case(self, mode):
+        from unittest.mock import patch
+        helper = self.load_helper()
+        node = shutil.which("node")
+        self.assertIsNotNone(node, "NATIVE_NODE_REQUIRED")
+        node = Path(node).resolve()
+        parent_root = Path(tempfile.gettempdir()).resolve()
+        root = Path(tempfile.mkdtemp(prefix="rr-source-program-deadline-", dir=parent_root)).resolve()
+        root_pin = root.stat()
+        original = root / "original-BS"
+        original.write_bytes(b"own unchanged synthetic B/S\n")
+        script = root / "worker.cjs"
+        script.write_text(SOURCE_PROGRAM_CPU_FIXTURE, encoding="utf-8")
+        fixtures = []
+        child = owner = None
+        child_fd = descendant_fd = read_fd = write_fd = None
+        product_fds = []
+        suppressed = []
+        primary = drain_failure = None
+        drained = False
+        started = time.monotonic()
+        old_handler = signal.getsignal(signal.SIGALRM)
+        original_close, original_fstat = os.close, os.fstat
+        original_pidfd_open = os.pidfd_open
+
+        def hard_deadline(_number, _frame):
+            raise TimeoutError("OWN_SOURCE_PROGRAM_HARD_DEADLINE")
+
+        def own_fixture_fd(fd):
+            identity = original_fstat(fd)
+            fixtures.append((fd, identity.st_dev, identity.st_ino))
+            return fd
+
+        def observed_pidfd(pid, flags=0):
+            fd = original_pidfd_open(pid, flags)
+            identity = original_fstat(fd)
+            product_fds.append((fd, identity.st_dev, identity.st_ino))
+            return fd
+
+        def observed_close(fd):
+            if mode == "fd-close-unknown" and not suppressed and any(row[0] == fd for row in product_fds):
+                suppressed.append(fd)  # Actual still-open fd, no synthetic close proof.
+                return
+            return original_close(fd)
+
+        signal.signal(signal.SIGALRM, hard_deadline)
+        signal.setitimer(signal.ITIMER_REAL, BODY_SECONDS)
+        try:
+            stop_ns = time.monotonic_ns() + (1_800_000_000 if mode == "expired" else 5_000_000_000)
+            import math
+            owner = helper._LinuxSubsetOwner(math.nextafter(stop_ns / 1_000_000_000, -math.inf))
+            issued = owner.deadline
+            owner.enter()
+            if mode != "expired":
+                owner.reserve_source_program_work()
+            # The negative control intentionally uses the old unreserved
+            # normal wait: actual cutoff expires with an actual live child.
+            # Its expected refusal is NOT a product-stop/PASS claim.
+            environment = {name: value for name, value in os.environ.items() if name in {
+                "PATH", "LD_LIBRARY_PATH", "LIBRARY_PATH", "LANG", "LC_ALL", "LC_CTYPE"}}
+            environment.update({"OWN_SOURCE_PROGRAM_ROOT": str(root),
+                "OWN_SOURCE_PROGRAM_DESCENDANT": "0" if mode == "healthy" else "1"})
+            child = subprocess.Popen([str(node), str(script)], cwd=ROOT, env=environment,
+                stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            child_fd = own_fixture_fd(original_pidfd_open(child.pid, 0))
+            assert_pidfd_identity(child_fd, child.pid)
+            self.assertEqual(process_identity(child.pid)["ppid"], os.getpid())
+            startup = min(time.monotonic() + 1.5, issued)
+            while not (root / "ready").exists() or (mode != "healthy" and not (root / "descendant-ready").exists()):
+                self.assertIsNone(child.poll(), "own busy worker exited before readiness")
+                self.assertLess(time.monotonic(), startup, "OWN_SOURCE_PROGRAM_STARTUP_TIMEOUT")
+                time.sleep(0.005)
+            identity = process_identity(child.pid)
+            self.assertEqual(identity, json.loads(read_small(root / "ready")))
+            self.assertEqual(read_small(Path(f"/proc/{child.pid}/cmdline")).split(b"\0")[:-1],
+                             [os.fsencode(node), os.fsencode(script)])
+            self.assertFalse(exited(child_fd))
+            if mode != "healthy":
+                announced = json.loads(read_small(root / "descendant-ready"))
+                descendant_fd = own_fixture_fd(original_pidfd_open(announced["pid"], 0))
+                assert_pidfd_identity(descendant_fd, announced["pid"])
+                self.assertEqual(process_identity(announced["pid"]), announced)
+                self.assertEqual(announced["ppid"], child.pid)
+                self.assertEqual(read_small(Path(f"/proc/{announced['pid']}/cmdline")).split(b"\0")[:-1],
+                                 [os.fsencode(node), os.fsencode(script), b"descendant"])
+            read_fd, write_fd = os.pipe()
+            own_fixture_fd(read_fd); own_fixture_fd(write_fd)
+            if mode == "healthy":
+                (root / "finish-own-worker").write_bytes(b"own healthy completion\n")
+                self.assertEqual(child.wait(timeout=min(1.0, owner.source_work_remaining())), 0)
+                owner.drain()
+                drained = True
+                self.assertFalse(owner.children_observed)
+                owner.leave()
+                require_no_children()
+            else:
+                self.assertFalse((root / "js-timer-fired").exists(), "JS must actually be CPU-blocked")
+                os.write(write_fd, b"R")
+                # Real readable, incomplete control frame with the writer kept
+                # open. The ACTUAL normal failure reader must stop waiting at
+                # its work boundary, without depending on a JS timer or EOF.
+                try:
+                    helper._source_failure_control(read_fd, b"n" * 32, 12, stop_ns, owner)
+                except BaseException as error:
+                    primary = error
+                self.assertIsNotNone(primary)
+                self.assertEqual(str(primary), "SOURCE_COHORT_CLOCK_EXPIRED_OR_INVALID")
+                self.assertFalse(exited(child_fd), "the fixture must not expire/stop its own CPU child")
+                self.assertFalse((root / "js-timer-fired").exists())
+                self.assertEqual(owner.deadline, issued, "control cannot renew the issued stop cutoff")
+                if mode == "expired":
+                    self.assertGreaterEqual(time.monotonic(), issued)
+                else:
+                    self.assertLess(time.monotonic(), issued)
+                with patch.object(helper.os, "pidfd_open", observed_pidfd), patch.object(helper.os, "close", observed_close):
+                    try:
+                        owner.drain()
+                        drained = True
+                    except BaseException as error:
+                        drain_failure = error
+                # This is the same first-error retention order as the normal
+                # cohort. A known timeout is never converted into phase0/PASS.
+                helper._retain(primary, owner)
+                with self.assertRaises(RuntimeError) as repeated:
+                    helper.require_closed_subset()
+                self.assertIs(repeated.exception, primary)
+                self.assertIs(helper._UNPROVED[id(primary)][1], owner)
+                self.assertTrue(owner.active, "failed owner is not released by a unit result")
+                if mode == "reserved":
+                    self.assertTrue(drained)
+                    self.assertIsNone(drain_failure)
+                    self.assertTrue(exited(child_fd))
+                    self.assertTrue(exited(descendant_fd))
+                    require_no_children()  # Kernel ECHILD, not /proc emptiness.
+                    self.assertLess(time.monotonic(), issued, "stop/drain must fit the same absolute cutoff")
+                    self.assertGreater(len(product_fds), 0)
+                    for fd, _device, _inode in product_fds:
+                        with self.assertRaises(OSError) as closed:
+                            original_fstat(fd)
+                        self.assertEqual(closed.exception.errno, errno.EBADF)
+                elif mode == "expired":
+                    self.assertFalse(drained)
+                    self.assertIsInstance(drain_failure, RuntimeError)
+                    self.assertEqual(str(drain_failure), "CP_COMPONENT_SUBSET_STOP_UNPROVED")
+                    self.assertEqual(product_fds, [], "reproduce deadline-before-pidfd-kill, not an invented stop")
+                    self.assertFalse(exited(child_fd))
+                    self.assertFalse(exited(descendant_fd))
+                else:
+                    self.assertFalse(drained)
+                    self.assertIsInstance(drain_failure, RuntimeError)
+                    self.assertEqual(str(drain_failure), "CP_COMPONENT_SUBSET_STOP_UNPROVED")
+                    self.assertEqual(len(suppressed), 1)
+                    self.assertIsNotNone(original_fstat(suppressed[0]))
+                    self.assertTrue(owner.active)
+            self.assertEqual(original.read_bytes(), b"own unchanged synthetic B/S\n")
+            self.assertTrue(root.exists(), "no product cleanup of an unresolved owned root")
+            self.assertLess(time.monotonic() - started, 7.0, "fixture natural12s expiry cannot satisfy stop")
+            print(json.dumps({"kind": "SOURCE_NORMAL_PROGRAM_OWNER_UNIT", "mode": mode,
+                "controlFailed": primary is not None, "cohortDrained": drained,
+                "drainFailed": drain_failure is not None, "productPidfdCount": len(product_fds),
+                "suppressedCloseCount": len(suppressed), "issuedCutoffUnchanged": owner.deadline == issued,
+                "sourceAdmission": False, "productionActivation": False,
+                "measurementBeforeFixtureCleanup": True}), flush=True)
+        finally:
+            failure = sys.exc_info()[1]
+            signal.setitimer(signal.ITIMER_REAL, CLEANUP_SECONDS)
+            try:
+                # Exact fixture-only cleanup AFTER all measurements. None of
+                # these signals, reaps or closes may satisfy the product test.
+                for fd in (descendant_fd, child_fd):
+                    if fd is not None and not exited(fd):
+                        signal.pidfd_send_signal(fd, signal.SIGKILL)
+                if child is not None:
+                    child.wait(timeout=1.0)
+                for fd in (descendant_fd, child_fd):
+                    if fd is None:
+                        continue
+                    if not exited(fd, 0.5):
+                        raise RuntimeError("OWN_SOURCE_PROGRAM_CHILD_STOP_UNPROVED")
+                    try:
+                        os.waitid(os.P_PIDFD, fd, os.WEXITED | os.WNOHANG)
+                    except ChildProcessError:
+                        pass  # The real product may already have reaped it.
+                require_no_children()
+                for fd, device, inode in [*product_fds, *fixtures]:
+                    try:
+                        current = original_fstat(fd)
+                    except OSError as error:
+                        if error.errno == errno.EBADF:
+                            continue
+                        raise
+                    if (current.st_dev, current.st_ino) != (device, inode):
+                        raise RuntimeError("OWN_SOURCE_PROGRAM_FD_CHANGED")
+                    original_close(fd)
+                    try:
+                        original_fstat(fd)
+                    except OSError as error:
+                        if type(error) is not OSError or error.errno != errno.EBADF:
+                            raise
+                    else:
+                        raise RuntimeError("OWN_SOURCE_PROGRAM_FD_CLOSE_UNPROVED")
+                if owner is not None and owner.active:
+                    owner.leave()
+                self.assertEqual(root.parent, parent_root)
+                self.assertTrue(root.name.startswith("rr-source-program-deadline-"))
+                self.assertEqual((root.lstat().st_dev, root.lstat().st_ino), (root_pin.st_dev, root_pin.st_ino))
+                shutil.rmtree(root)
+                self.assertFalse(root.exists())
+            except BaseException as cleanup_error:
+                if failure is None:
+                    raise
+                failure.add_note("OWN_SOURCE_PROGRAM_CLEANUP_UNPROVED:" + type(cleanup_error).__name__ + "; root retained")
+            finally:
+                signal.setitimer(signal.ITIMER_REAL, 0)
+                signal.signal(signal.SIGALRM, old_handler)
+
+
+
 if __name__ == "__main__":
     unittest.main()

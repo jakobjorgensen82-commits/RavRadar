@@ -14,6 +14,12 @@ Derefter består de normale kontroller af den genbrugte prognose, private oplysn
 
 **Kort fortalt:** Den fulde SOURCE589-kandidat er lokalt udstedt med egne normale bindinger og én ny migration. Den er ikke installeret eller bevis for nye offentlige vejrdata.
 
+Den 27. oktober er de to seneste præcise SOURCE-kontroller fortsat røde i samme 585-efterfølger. En prøve skal efter normal gemning og hel genlæsning bruge sin egen aktuelle pakke, ikke fortsat pege på et gammelt arkiv. Både 585- og SOURCE-efterfølgerens normale kontrol-, beskrivelses- og staging-inputs samt aktive locatorer skal følge den samme hele B/S-kæde. En lokal rettelse af den gamle locator og 26 beståede normale lokale tilfælde er ikke fuld årsagslukning eller ny native-/databasekontrol.
+
+SOURCE-processens eksisterende ejer reserverer højst fire minutter, dog højst halvdelen af den resterende korte fase, til faktisk stop og afslutning. Reserven ligger inde i samme slutfrist; en fuld 80-minutters fase efterlader derfor cirka 76 minutter til arbejde. Fristen udvides ikke. Et manglende stop- eller lukningsbevis skal bevare den første fejl og beskyttede originaler uden oprydning eller godkendelse.
+
+Fem gamle ejerskabsprøver er bevaret byte for byte, og fem nye Linux-tilfælde skal fysisk måle stop, dræning, lukning og det korrekte afslag. De nye tilfælde er endnu ikke kørt her. Den samlede præcise efterfølger og national kapacitet er fortsat åbne. Reserven er ikke et hårdt 90-sekunders loft om hele komponentbanken og dækker ikke uændret bank-JSON-læsning i SOURCE-forælderen. SOURCE og statistik er ikke aktiveret; gamle originaler, modelbindinger, scoreformel, kilder og administratorgeometri bevares.
+
 Den 27. oktober er en særskilt kildekandidat forberedt til at bevare det faktisk gemte B/S-par fra den normale SOURCE-efterfølger. B er vejrpakken, og S er beregningstilstanden. Data eksporteres først efter normal publicering af B før S og hel genlæsning. Filen indeholder de faktisk kvitterede versioner, hele S samt kontrolsummer for det normale manifest og checkpoint.
 
 De eksisterende læsere kontrollerer filens byteantal, kontrolsum, fysiske identitet og ejer. Datasæt, referencetime, modeller, beregningskontrakt og alle 673 dele skal passe, og den gamle faktiske SQL-validator skal stadig godkende hele S. Dette er en privat datakanal til senere normale prøver, ikke et runtime-origin-håndtag, D1-bevis eller tilladelse til installation.

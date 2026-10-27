@@ -447,6 +447,45 @@ async function saveNormal(root, privateRoot, backend, sourceHead, sameReferenceS
 }
 
 
+// The ordinary workflow stages --describe-current at this SAME fixed runner
+// path. Reuse its real normal descriptor, never an authored tuple/attestation.
+export async function stageNormalCurrentSourceDescriptor(root,saved,backend) {
+  const runner=process.env.RUNNER_TEMP;
+  assert.equal(await fs.realpath(runner),path.join(ROOT,'runner-temp'));
+  await noLinks(runner);
+  const readRow=async key=>{
+    const rows=await backend.documentRequest('?document_key=eq.'+encodeURIComponent(key)
+      +'&select=document_key,payload,version&limit=2');
+    assert.equal(rows.length,1);exact(rows[0],['document_key','payload','version']);
+    assert.equal(rows[0].document_key,key);
+    assert(Number.isSafeInteger(rows[0].version)&&rows[0].version>0);return rows;
+  };
+  const BKey='ravscore-private-production-runtime-pointer',SKey='ravscore-continuation-checkpoint';
+  const beforeB=await readRow(BKey),beforeS=await readRow(SKey);
+  const manifest=JSON.parse(await read(path.join(saved.bundlePath,'manifest.json'),4*1024*1024));
+  same(manifest,saved.manifest,'WHOLE retained normal B manifest before descriptor staging');
+  same(beforeS[0].payload,JSON.parse(await read(saved.checkpointPath,16*1024*1024)),
+    'WHOLE normally saved S and central version before descriptor staging');
+  assert.equal(beforeS[0].payload.datasetId,manifest.datasetId);
+  assert.equal(beforeS[0].payload.productionReferenceAt,manifest.productionReferenceAt);
+  same(beforeS[0].payload.modelBinding,manifest.modelBinding,'One actual B/S model family');
+  const protectedB=await load(root,'scripts/protected-private-production-runtime.mjs');
+  const descriptor=await protectedB.describeCurrentProtectedPrivateProductionRuntime({request:backend.documentRequest});
+  assert.equal(descriptor.sourceHead,saved.sourceHead);
+  for(const key of ['datasetId','productionReferenceAt','generatedAt','bundleContentSha256','modelBinding','contractHashes'])
+    same(descriptor[key],manifest[key],'Actual normal describe-current matches whole saved B: '+key);
+  const file=path.join(runner,'private-runtime-current-source.json');
+  const previous=await fs.lstat(file).catch(error=>{if(error.code==='ENOENT')return null;throw error;});
+  if(previous)await read(file,2*1024*1024); // Existing owned regular/no-link metadata only.
+  const writer=await load(root,'scripts/lib/bounded-json-writer.mjs');
+  await writer.writeBoundedJsonAtomic(file,descriptor,{maximumBytes:2*1024*1024});
+  same(JSON.parse(await read(file,2*1024*1024)),descriptor,'WHOLE actual normal descriptor readback');
+  same(await protectedB.describeCurrentProtectedPrivateProductionRuntime({request:backend.documentRequest}),descriptor,
+    'Fresh normal B descriptor after staging');
+  same(await readRow(BKey),beforeB,'Whole central B payload/version unchanged by staging');
+  same(await readRow(SKey),beforeS,'Whole central S payload/version unchanged by staging');
+}
+
 // The existing 585 factory stays a real, immutable producer. Advance it through
 // the issued native586 SAME_H0 transition, then through the issued c03 ordinary
 // STRICTLY_LATER_H0 587 caller. No tuple, checkpoint, origin or ACTIVE row is
@@ -502,6 +541,7 @@ async function advanceGenuine585Through587({work,host585,saved585,inputRoot,admi
   process.env.GITHUB_RUN_ATTEMPT='1';process.env.OPERATIONAL_ACTION='integrated';
   const assistant=await load(host587,'scripts/assistant-later-h0-runtime-transition.mjs');
   await assistant.prepareAssistantLaterH0Runtime();await assistant.installAssistantLaterH0Runtime();
+  await stageNormalCurrentSourceDescriptor(host587,saved586,backend);
   await writeNew(path.join(host587,'.cache/deployed-dmi-bulk-cache.json'),
     await read(path.join(host587,'data/live/dmi-bulk-cache.json')));
   // New provider INPUTS only, after the authenticated working view is installed.
@@ -550,6 +590,7 @@ async function advanceGenuine587Through588({work,saved587,inputRoot,adminInputs,
   process.env.GITHUB_RUN_ATTEMPT='1';process.env.OPERATIONAL_ACTION='integrated';
   const assistant=await load(host588,'scripts/assistant-later-h0-runtime-transition.mjs');
   await assistant.prepareAssistantLaterH0Runtime();await assistant.installAssistantLaterH0Runtime();
+  await stageNormalCurrentSourceDescriptor(host588,saved587,backend);
   await writeNew(path.join(host588,'.cache/deployed-dmi-bulk-cache.json'),
     await read(path.join(host588,'data/live/dmi-bulk-cache.json')));
   await copyInputs(path.join(path.dirname(ROOT),'fixture'),host588,successorProviderInputs,PROVIDERS);
@@ -732,6 +773,10 @@ async function produceNativeInputs(options,initial,observation) {
       assert.equal(process.env.RAVRADAR_ARCHIVED_WEATHER_RESTART_CONTEXT_SHA256,archive.contextSha256);
       delete process.env.RAVRADAR_ARCHIVED_WEATHER_RESTART_CONTEXT_PATH;
       delete process.env.RAVRADAR_ARCHIVED_WEATHER_RESTART_CONTEXT_SHA256;
+      // The normal origin reader must reopen the SAME whole verified585 B as
+      // the restored local runtime and central S, never the earlier OLD archive.
+      process.env.RAVRADAR_PRIVATE_RUNTIME_ROOT=saved585.privateRoot;
+      process.env.RAVRADAR_PRIVATE_RUNTIME_BUNDLE=saved585.bundlePath;
       observation.phase='SOURCE_LEGACY_PRODUCER_FOLLOWER585';
       observeSourceLegacyPhase(observation.phase);
       await copyInputs(path.join(own,'fixture-initial-h1'),host585,options.forwardProviderInputs,PROVIDERS);
