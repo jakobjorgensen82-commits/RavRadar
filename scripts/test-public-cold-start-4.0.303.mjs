@@ -53,7 +53,8 @@ const bootstrap = await fs.readFile(new URL('../bootstrap.js', import.meta.url),
 const releaseVersion = JSON.parse(await fs.readFile(new URL('../package.json', import.meta.url), 'utf8')).version;
 const previousCopySuffix = `?v=${releaseVersion}&copy=footer-20261005`;
 const previousUiSuffix = `${previousCopySuffix}&ui=account-20261006`;
-const suffix = `${previousCopySuffix}&ui=forecast-share-20261024`;
+const previousShareSuffix = `${previousCopySuffix}&ui=forecast-share-20261024`;
+const suffix = `${previousCopySuffix}&ui=zone-panels-20261027`;
 assert.ok(index.includes(`src="bootstrap.js${suffix}"`));
 assert.ok(bootstrap.includes(`await import("./app.js${suffix}")`));
 
@@ -69,6 +70,8 @@ const cached = new Map([
   [`${origin}/app.js${previousCopySuffix}`, new Response('footer-app')],
   [`${origin}/bootstrap.js${previousUiSuffix}`, new Response('account-bootstrap')],
   [`${origin}/app.js${previousUiSuffix}`, new Response('account-app')],
+  [`${origin}/bootstrap.js${previousShareSuffix}`, new Response('share-bootstrap')],
+  [`${origin}/app.js${previousShareSuffix}`, new Response('share-app')],
 ]);
 const fetched = [];
 vm.runInNewContext(worker, {
@@ -92,6 +95,8 @@ for (const file of ['bootstrap.js', 'app.js']) {
     file === 'bootstrap.js' ? 'footer-bootstrap' : 'footer-app');
   assert.equal(await cached.get(`${origin}/${file}${previousUiSuffix}`).clone().text(),
     file === 'bootstrap.js' ? 'account-bootstrap' : 'account-app');
+  assert.equal(await cached.get(`${origin}/${file}${previousShareSuffix}`).clone().text(),
+    file === 'bootstrap.js' ? 'share-bootstrap' : 'share-app');
   handlers.get('fetch')({request,respondWith:value => {response=value;}});
   assert.equal(await (await response).text(), `new:${request.url}`,
     'The exact new UI asset must be reusable from its own cache key.');

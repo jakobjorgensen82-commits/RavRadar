@@ -350,6 +350,12 @@ En lokal syntetisk 673-dels kæde med tre efterfølgere har bestået normal gemn
 
 ## 89.251 Kortet kan vises for en valgt prognosetime
 
+Lokal UI-kandidat 27. oktober 2026: “5 dages RavRadar” og “vandstand time for time” skal blive i zonepanelet, også når du bruger tidsskyderen. Øverste score og vejr følger stadig den valgte time og søgemåde med den samme lokale kystdel, forklaring og datakontekst.
+
+Oversigterne indlæses gennem den normale lazy zoneindlæsning og beholder deres egne tydeligt viste dage og tider. De viser kun de timer og dage, som faktisk er tilgængelige; manglende data udfyldes ikke med en anden time, og der tilføjes ikke en kunstig femte dag.
+
+Ejerens nye ordre erstatter kun den tidligere skjulning af disse to paneler. Scoreberegning, vejrdata, kilder, administratoropsætning og geometri ændres ikke. Den lokale panelprøve gik fra rød kontrakt til 4/4 PASS, tidslinjemålet bestod 134 cases og generation/livscyklus 9; dette er ikke DOM-kontrol, CI eller offentlig verifikation. Gamle testresultater nedenfor er ikke bevis for den nye ændring.
+
 **Lokal UI-rettelse 18. oktober — endnu ikke offentligt verificeret:** Klikker du på en zone i forsiden femdøgnsprognose, vælger den afgrænsede rettelse først Nu ved kortet og åbner derefter zonens normale prognose. Nu betyder den aktuelle verificerede time, ikke midnat. Klik på selve kortet beholder fortsat den time, du har valgt med skyderen. Valgt dag og rangering i femdøgnslisten ændres ikke.
 
 Kun den nationale listes zoneklik ændres. Den tidligere foreslåede større adskillelse af kortets og zonens tidskontekst er annulleret. Versionsnummer 4.0.581, vejrdata og scoremodel er uændrede. Lokal test er ikke bevis for offentlig levering; præcis kildekontrol, sikker levering og browseraccept udestår.
@@ -378,7 +384,7 @@ Den normale fejlgren får kun en afgrænset, privat rapport over forskelle i gem
 
 Kontrollen ligger i fuld bredde under kortet og over forklaringen. Den viser hele ugedagen, dato og klokkeslæt efter dansk tidszone på dansk, tysk eller engelsk. Brug Nu, en time tilbage eller frem, dagsmærker, tastatur eller berøring. Du kan kun vælge de eksakte timer, der faktisk er tilbage i det gyldige datasæts 118-timershorisont. Udløbne datoer forlænges ikke.
 
-Kortet og den åbne zones timevisning følger den valgte time og søgemåde. Strømpile bruger den samme times egne data. Aktuelt-listen, ranglisten, den rigtige klokke, ture og Spørg RavRadar beholder deres normale aktuelle grundlag. En fremtidig time får ikke et misvisende femdagespanel; Nu kan igen vise den normale fulde zoneprognose.
+Kortet og den åbne zones timevisning følger den valgte time og søgemåde. Strømpile bruger den samme times egne data. Aktuelt-listen, ranglisten, den rigtige klokke, ture og Spørg RavRadar beholder deres normale aktuelle grundlag. Historik, erstattet alene for de to panelers synlighed ved ejerens ordre 27. oktober 2026: En fremtidig time får ikke et misvisende femdagespanel; Nu kan igen vise den normale fulde zoneprognose.
 
 Appen henter kun den nødvendige eksisterende timefil, ikke hele horisonten på forhånd. Hurtige valg samles i 200 millisekunder, og kun det seneste ønske får lov til at skifte visningen. Indhold, model, generation og kontrolsum skal stadig passe. Ved manglende eller afvist time bevares sidste verificerede kort med sit korrekte tidspunkt, mens det ønskede tidspunkt og fejlen vises særskilt. En anden eller udløbet generation må ikke blande gamle kortlag ind. Det er ikke en garanti for offline adgang til en time, som endnu ikke er hentet.
 

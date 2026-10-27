@@ -1,3 +1,13 @@
+## 27. oktober — zonepanelets oversigter bevares under tidsskyderen
+
+Ejerens aktuelle ordre er, at “5 dages RavRadar” og “vandstand time for time” bliver i zonepanelet, også når tidsskyderen står på en prognosetime. Den lokale UI-kandidat bruger den normale lazy zoneindlæsning til oversigterne. Øverste score, forklaring og vejr følger fortsat den valgte time, søgemåde og samme lokale visningskontekst; oversigterne beholder deres egne tydelige dage og tider.
+
+Kun den tidligere regel om at skjule de to oversigter under timevalg er erstattet. Faktisk tilgængelige timer og dage, manglende-data-adfærd samt model-, generations- og indholdskontroller bevares. Der opfindes ikke en femte dag eller en nærliggende time, og ingen score, vejrdata, kildeprioritet, administratoropsætning eller geometri ændres.
+
+Lokalt blev den ændrede panelkontrakt først reproduceret rød (1/4), derefter bestod panelmålet 4/4. Det normale tidslinjemål bestod 134 cases med 210/673, 250 scrubs, nul preload og nul netkald; det er ikke DOM- eller offentlig kontrol. Generation/livscyklus bestod 9 cases; auth-bootstrap, cold-start, forecast-calendar og modulversionslukning 4.0.87 bestod også. Det er afgrænsede lokale resultater, ikke CI eller offentlig levering.
+
+Kandidaten forberedes sammen med kilde-PR741; hele den eksisterende DMI-dokumentation og dens åbne Linux-kontrol bevares. ROOT ejer produktændringen samt de resterende normale kilde-, UI- og leveringskontroller. Ingen ny version, C/I/T eller SQL udstedes her; SOURCE, samlet statistik og automatisk sletning aktiveres ikke. Alle fem mål til 18. november 2026 består. Se håndbog 89.251; ældre historie bevares.
+
 ## 27. oktober — fast DMI-metadataaudit uden ny vejrhentning
 
 Den eksisterende audit får en særskilt, som standard slukket CURRENT-only B-metadata-læsegren. Den bruger den gemte generations SHA-bundne arkiverede normalproducent og codec, kontrollerer normale kontrakter og input før og efter og genlæser CURRENT ved afslutning. Kun missingStep, incompleteStep, normalStepRejected og normalOutcomeRejected rapporteres; ukendt metadata afvises. Ingen nye statiske produktimports, numerisk admission, provider-/RAW-kald, progresscache eller produktionsskrivning indføres.
