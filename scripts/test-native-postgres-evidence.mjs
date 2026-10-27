@@ -468,8 +468,14 @@ test('public587 successor native commands append588 without retagging whole587 i
   assert.deepEqual(ASSISTANT_PUBLIC587_SUCCESSOR_COMMANDS,[ASSISTANT_LATER_H0_COMMANDS[0],
     ASSISTANT_LATER_H0_COMMANDS[1]+' --assistant-public587-successor']);
   assert.equal(ASSISTANT_PUBLIC587_SUCCESSOR_SCRIPT,'set -euo pipefail\n'+ASSISTANT_PUBLIC587_SUCCESSOR_COMMANDS.join('\n')+'\n');
-  assert.equal(ACTIVE_COMMANDS,ASSISTANT_PUBLIC587_SUCCESSOR_COMMANDS);
-  assert.equal(ACTIVE_NATIVE_SCRIPT,ASSISTANT_PUBLIC587_SUCCESSOR_SCRIPT);
+  if(ACTIVE_ASSISTANT_SUCCESSOR.sourcePhase==='assistant-public588-successor'){
+    assert.equal(ACTIVE_COMMANDS,ASSISTANT_PUBLIC588_SUCCESSOR_COMMANDS);
+    assert.equal(ACTIVE_NATIVE_SCRIPT,ASSISTANT_PUBLIC588_SUCCESSOR_SCRIPT);
+  }else{
+    assert.equal(ACTIVE_ASSISTANT_SUCCESSOR.sourcePhase,'assistant-public587-successor');
+    assert.equal(ACTIVE_COMMANDS,ASSISTANT_PUBLIC587_SUCCESSOR_COMMANDS);
+    assert.equal(ACTIVE_NATIVE_SCRIPT,ASSISTANT_PUBLIC587_SUCCESSOR_SCRIPT);
+  }
   assert.notDeepEqual(ACTIVE_COMMANDS,ASSISTANT_LATER_H0_COMMANDS);
   const source=await fs.readFile('scripts/native-postgres-evidence.mjs','utf8');
   const main=source.slice(source.indexOf('async function main() {'));
@@ -580,4 +586,192 @@ test('public587 native wiring keeps same owned host and all old negative-case fa
   assert(adapter.includes('assertWholeMetadataInverse(original,payload,NEXT)'));
   assert(adapter.includes('assert.notEqual((await runSql(sql)).code,0'));
   assert(adapter.includes("normalProtectedJsonbRoundtrip:true,originalDigestsPreserved:true"));
+});
+
+// Additiv kalender588→NEXT-kontrakt. Gamle native-orakler ovenfor bevares hele.
+import {ASSISTANT_PUBLIC588_SUCCESSOR_COMMANDS,ASSISTANT_PUBLIC588_SUCCESSOR_SCRIPT,
+  ASSISTANT_PUBLIC588_SUCCESSOR_PHASE_KIND,verifyAssistantPublic588SuccessorPhaseReceipt}
+  from './native-postgres-evidence.mjs';
+import {ASSISTANT_PUBLIC588_SUCCESSOR_BINDING,requireAssistantPublic588SuccessorOutput,
+  INACTIVE_ASSISTANT_PUBLIC588_SUCCESSOR,ACTIVE_ASSISTANT_SUCCESSOR}
+  from './lib/assistant-later-h0-successor-source.mjs';
+import {withFrozen588CheckpointPostgresSource} from './run-frozen586-assistant-later-h0-postgres-source.mjs';
+import {compareAssistantPublic588Successor} from './lib/assistant-later-h0-postgres.mjs';
+import {FROZEN588_CODE_SOURCE_PROVENANCE,withAuthenticated588PredecessorSource}
+  from './check-assistant-later-h0-predecessor-source.mjs';
+import {readAuthenticatedFrozen588Predecessor} from './lib/authenticated-frozen586-predecessor.mjs';
+
+test('calendar588 successor commands and receipts never reuse or retag an older SQL execution',()=>{
+  assert.deepEqual(ASSISTANT_PUBLIC588_SUCCESSOR_COMMANDS,[ASSISTANT_PUBLIC587_SUCCESSOR_COMMANDS[0],
+    ASSISTANT_PUBLIC587_SUCCESSOR_COMMANDS[1]+' --assistant-public588-successor']);
+  assert.equal(ASSISTANT_PUBLIC588_SUCCESSOR_SCRIPT,'set -euo pipefail\n'+ASSISTANT_PUBLIC588_SUCCESSOR_COMMANDS.join('\n')+'\n');
+  const current={run:ORIGIN.run+41,attempt:1,head:newOid,pullRequest:701,branch:'synthetic-calendar588'};
+  const receipt={phase:'ASSISTANT_PUBLIC588_SUCCESSOR',status:'EXECUTED',executedInThisRun:true,origin:null,
+    current,commands:[...ASSISTANT_PUBLIC588_SUCCESSOR_COMMANDS],eligibleForReuse:false};
+  assert.equal(verifyAssistantPublic588SuccessorPhaseReceipt(receipt,current).status,'EXECUTED');
+  assert.notEqual(ASSISTANT_PUBLIC588_SUCCESSOR_PHASE_KIND,ASSISTANT_PUBLIC587_SUCCESSOR_PHASE_KIND);
+  for(const [phase,commands]of [['ASSISTANT_PUBLIC587_SUCCESSOR',ASSISTANT_PUBLIC587_SUCCESSOR_COMMANDS],
+    ['ASSISTANT_LATER_H0',ASSISTANT_LATER_H0_COMMANDS],['NATIVE_ORIGINAL_CONTINUITY',CURRENT_COMMANDS]])
+    assert.throws(()=>verifyAssistantPublic588SuccessorPhaseReceipt({...receipt,phase,commands:[...commands]},current));
+  for(const mutate of [v=>v.status='REUSED',v=>v.executedInThisRun=false,v=>v.origin={run:current.run-1},
+    v=>v.eligibleForReuse=true,v=>v.commands=[...ASSISTANT_PUBLIC587_SUCCESSOR_COMMANDS],
+    v=>v.current={...current,head:oid},v=>v.phase='SOURCE_PRODUCER']){
+    const changed=copy(receipt);mutate(changed);
+    assert.throws(()=>verifyAssistantPublic588SuccessorPhaseReceipt(changed,current));
+  }
+  assert.throws(()=>verifyAssistantPublic587SuccessorPhaseReceipt(receipt,current));
+  assert.throws(()=>verifyAssistantLaterH0PhaseReceipt(receipt,current));
+  assert.throws(()=>verifyCurrent586PhaseReceipt(receipt,current));
+});
+
+test('calendar588 unissued child and unselected genuine parent stop before operands or owned I/O',async t=>{
+  let io=0,operands=0,callbacks=0;
+  const poison=new Proxy({},{get(){operands++;throw new Error('UNEXPECTED_OPERAND');}});
+  for(const name of ['readFile','writeFile','appendFile','mkdir','mkdtemp','realpath','lstat'])
+    t.mock.method(fs,name,()=>{io++;throw new Error('UNEXPECTED_IO');});
+  t.mock.method(globalThis,'fetch',()=>{io++;throw new Error('UNEXPECTED_NETWORK');});
+  try{
+    if(ASSISTANT_PUBLIC588_SUCCESSOR_BINDING===null){
+      assert.throws(()=>requireAssistantPublic588SuccessorOutput(),/ASSISTANT_PUBLIC588_SUCCESSOR_UNISSUED/);
+      await assert.rejects(compareAssistantPublic588Successor(poison),/ASSISTANT_PUBLIC588_SUCCESSOR_UNISSUED/);
+      await assert.rejects(withFrozen588CheckpointPostgresSource(()=>{callbacks++;}),/ASSISTANT_PUBLIC588_SUCCESSOR_UNISSUED/);
+      assert.throws(()=>INACTIVE_ASSISTANT_PUBLIC588_SUCCESSOR.requireRelease(),/ASSISTANT_PUBLIC588_SUCCESSOR_UNISSUED/);
+    }else{
+      requireAssistantPublic588SuccessorOutput();
+      await assert.rejects(compareAssistantPublic588Successor(poison,poison),{code:'ERR_ASSERTION'});
+      await assert.rejects(withFrozen588CheckpointPostgresSource(()=>{callbacks++;},poison),{code:'ERR_ASSERTION'});
+    }
+    if(!FROZEN588_CODE_SOURCE_PROVENANCE.selected){
+      for(const [key,value]of Object.entries(FROZEN588_CODE_SOURCE_PROVENANCE))
+        if(key!=='selected')assert.equal(value,null,key);
+      await assert.rejects(withAuthenticated588PredecessorSource(()=>{callbacks++;}),/FROZEN588_CODE_SOURCE_UNSELECTED/);
+      await assert.rejects(readAuthenticatedFrozen588Predecessor(),/FROZEN588_CODE_SOURCE_UNSELECTED/);
+    }
+    assert.equal(io,0);assert.equal(operands,0);assert.equal(callbacks,0);
+  }finally{t.mock.restoreAll();}
+});
+
+test('calendar588 native phase requires complete genuine588 before any programs or PostgreSQL',async()=>{
+  await assert.rejects(runNativeCheckpointSqlComparison({includeAssistantPublic588Successor:true}),
+    /Public588 successor requires the genuine complete588 native phase/);
+  await assert.rejects(runNativeCheckpointSqlComparison({includeAssistantPublic588Successor:'true'}),{code:'ERR_ASSERTION'});
+  if(ASSISTANT_PUBLIC588_SUCCESSOR_BINDING===null)await assert.rejects(runNativeCheckpointSqlComparison({
+    includeStatisticsRevision:true,includeNativeIdentity:true,includeCurrentMemoryWarmup:true,
+    includeEstablishedNativeCurrentOrigin:true,includeLastMileEnclosure:true,includeAccountStatisticsAssistant:true,
+    includeNativeOriginalContinuity:true,includeAssistantLaterH0:true,includeAssistantPublic587Successor:true,
+    includeAssistantPublic588Successor:true,
+  }),/ASSISTANT_PUBLIC588_SUCCESSOR_UNISSUED/);
+  assert.deepEqual(nativePostgresFailureDiagnostic('ASSISTANT_PUBLIC588_SUCCESSOR','ERROR: 40001\n'),
+    {phase:'ASSISTANT_PUBLIC588_SUCCESSOR',sqlState:'40001',category:'SQL_CAS_CONFLICT'});
+});
+
+test('calendar588 normal native route uses genuine parent factory then current child with whole old oracles',async()=>{
+  const source=await fs.readFile('scripts/lib/checkpoint-cas-native-postgres.mjs','utf8');
+  const oldAt=source.indexOf("nativePhase='ASSISTANT_PUBLIC587_SUCCESSOR';");
+  const newAt=source.indexOf("nativePhase='ASSISTANT_PUBLIC588_SUCCESSOR';");
+  assert(oldAt>=0&&newAt>oldAt);
+  const oldPhase=source.slice(oldAt,newAt);
+  assert(oldPhase.includes('if(includeAssistantPublic588Successor)'));
+  assert(oldPhase.includes('withFrozen588CheckpointPostgresSource(async({adapter,factory})=>'));
+  assert(oldPhase.includes('adapter.compareAssistantPublic587Successor({psql,runSql,root,sourceDocumentAt:factory.sourceDocumentAt,'));
+  assert(oldPhase.includes('atHour:factory.atHour,saveCheckpoint:factory.saveRavScoreContinuationCheckpoint}'));
+  assert(source.slice(newAt).includes('compareAssistantPublic588Successor({psql,runSql,root,sourceDocumentAt,atHour,saveCheckpoint})'));
+  const adapter=await fs.readFile('scripts/lib/assistant-later-h0-postgres.mjs','utf8');
+  assert(adapter.includes("sourcePhase:'assistant-public588-successor',migrationCount:58,oidSlots:37,contractBodies:40"));
+  assert(adapter.includes("oldPrefix:'assistant-public587-successor-current-',previousRelease:588"));
+  assert(adapter.includes("olderFixtures:Object.freeze(['native-original-continuity-current-same','assistant-later-h0-current-same'])"));
+  assert(adapter.includes('assertWholeMetadataInverse(original,payload,NEXT)'));
+  for(const contract of ["['value',","['field',","['part',","['T',","'same-current-numeric-change'",
+    "'wrong-version'","'regression'","'same-H0-'","'earlier-'","'BEFORE_CATALOG'","'PRESERVED'"])
+    assert(adapter.includes(contract),contract);
+  const frozen=await fs.readFile('scripts/run-frozen586-assistant-later-h0-postgres-source.mjs','utf8');
+  for(const pin of ['c8bafe6b5fe7ebed8d46eb24a4ccf778d2382f05cb0737bf7eb2335acf0281b0',
+    '3c702f489f632eada501d978502015e9b2f307867c9f3697c1707ddd2f3da4c0',
+    '832098498476efe1b119472f16fe6e254496640b2e7ad5bf23d5518088926ed2'])assert(frozen.includes(pin),pin);
+  assert(frozen.includes('head:FROZEN588_CODE_SOURCE_PROVENANCE.head,tree:FROZEN588_CODE_SOURCE_PROVENANCE.tree'));
+  assert(frozen.includes('withSource:withAuthenticated588PredecessorSource,requireOutput:requireAssistantPublic588SuccessorOutput'));
+  assert(frozen.includes('assert.equal(raw.length,row.bytes);assert.equal(sha(raw),row.sha256)'));
+  assert(frozen.includes("fs.writeFile(target,row.raw,{flag:'wx',mode:0o600})"));
+  assert(frozen.includes('await fs.readFile(target),raw'));
+  const target=await fs.readFile('scripts/test-protected-ravscore-continuation-checkpoint.mjs','utf8');
+  assert(target.indexOf('requireAssistantPublic588SuccessorRelease();')<target.indexOf('const PART_COUNT ='));
+  assert(target.includes('includeAssistantPublic588Successor: assistantPublic588SuccessorNative'));
+  const evidence=await fs.readFile('scripts/native-postgres-evidence.mjs','utf8');
+  const main=evidence.slice(evidence.indexOf('async function main() {'));
+  assert(main.indexOf('requireAssistantPublic588SuccessorRelease()')<main.indexOf('spawnSync('));
+  assert(!main.includes('await decideReuse('));assert(!main.includes('await decideCurrent586Reuse('));
+  if(ACTIVE_ASSISTANT_SUCCESSOR.sourcePhase==='assistant-public588-successor')
+    assert.equal(ACTIVE_COMMANDS,ASSISTANT_PUBLIC588_SUCCESSOR_COMMANDS);
+  else assert.equal(ACTIVE_COMMANDS,ASSISTANT_PUBLIC587_SUCCESSOR_COMMANDS);
+});
+
+test('calendar588 normal source command follows only its source-owned active profile',async()=>{
+  const packageData=JSON.parse(await fs.readFile('package.json','utf8'));
+  assert.equal(packageData.scripts['test:assistant-later-h0-source'],
+    'node scripts/build-assistant-later-h0-successor.mjs --active --check');
+  const builder=await fs.readFile('scripts/build-assistant-later-h0-successor.mjs','utf8');
+  assert(builder.includes("if(args[0]==='--active')"));
+  assert(builder.includes("ACTIVE_ASSISTANT_SUCCESSOR.sourcePhase==='assistant-public588-successor'"));
+  for(const old of ["args[0]==='--public587-successor'","args[0]==='--public588-successor'"])
+    assert(builder.includes(old),old);
+});
+
+import {modelSourceRelativeModuleSpecifiers} from './lib/model-source-imports.mjs';
+test('calendar588 computed source inventories retain exact finite edges and refuse byte mutation',async()=>{
+  const inventories={
+  "scripts/check-assistant-later-h0-predecessor-source.mjs": [],
+  "scripts/lib/authenticated-frozen586-predecessor.mjs": [
+    "../check-assistant-later-h0-predecessor-source.mjs"
+  ],
+  "scripts/lib/established-native-current-origin.mjs": [
+    "../protected-private-production-runtime.mjs",
+    "../protected-ravscore-continuation-checkpoint.mjs",
+    "../private-production-runtime-bundle.mjs",
+    "../ravscore-continuation-checkpoint.mjs",
+    "../private-production-runtime-workflow.mjs",
+    "../../js/core/ravscore-model-contract.js",
+    "../rollback-assets/ravscore-model-contract.js",
+    "../../js/core/ravscore-model-bundle.generated.js",
+    "./ravscore-sampling-context.mjs",
+    "./coastal-point-staging-contract.mjs",
+    "./ravscore-candidate-g-rollback-runtime.mjs",
+    "./private-weather-component-pack.mjs",
+    "../check-native-current-reanalysis-predecessor-source.mjs",
+    "./ravscore-production-part-pipeline.mjs",
+    "./weather-state-epoch-archive.mjs",
+    "./authenticated-frozen584-predecessor.mjs",
+    "../check-account-statistics-assistant-predecessor-source.mjs",
+    "./authenticated-frozen585-predecessor.mjs",
+    "../check-native-original-continuity-predecessor-source.mjs",
+    "./authenticated-frozen586-predecessor.mjs"
+  ],
+  "scripts/assistant-later-h0-binding-prewrite.mjs": [
+    "./lib/assistant-later-h0-successor-source.mjs",
+    "./check-assistant-later-h0-predecessor-source.mjs",
+    "./lib/authenticated-frozen586-predecessor.mjs",
+    "./migrate-post-cutover-private-runtime.mjs",
+    "./integrated-cutover-readiness.mjs",
+    "./lib/dmi-forecast-file.mjs",
+    "./lib/dmi-part-continuity.mjs",
+    "./lib/protected-dmi-native-current-proofs.mjs",
+    "./lib/ravscore-recovery-source-priority.mjs",
+    "./lib/coherent-original-source-views.mjs",
+    "../js/core/ravscore-model-contract.js",
+    "./rollback-assets/ravscore-model-contract.js",
+    "./private-production-runtime-workflow.mjs",
+    "./lib/private-weather-component-pack.mjs"
+  ]
+};
+  for(const [file,expected]of Object.entries(inventories)){
+    const source=await fs.readFile(file,'utf8');
+    assert.deepEqual([...modelSourceRelativeModuleSpecifiers(source,file)],[...expected],file);
+    assert.throws(()=>modelSourceRelativeModuleSpecifiers(source+'\n// unknown changed input\n',file),
+      /Whole reviewed model import source changed/,file);
+  }
+  const scanner=await fs.readFile('scripts/lib/model-source-imports.mjs','utf8');
+  for(const historical of ['36719b093953b7381acd88e9a69b81bbf4532066a044af3ecfa5039a44625e0a',
+    'c9a22ee662475bc26ea820d46ba4cb17dbd8020195423b8212ea62c6ac16617e',
+    '5fa3fe20041a82a7e287e21f4562f6bb82ffab253c69e0754208bb6e5c907b69',
+    '869d93119cb9ba2968b39259ecd3d6500797f17ec514c7df39b04dbf8328e0e8'])
+    assert(scanner.includes(historical),historical);
 });

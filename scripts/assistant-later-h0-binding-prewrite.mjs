@@ -9,11 +9,12 @@ import {fileURLToPath,pathToFileURL} from 'node:url';
 import {execFile as callbackExec} from 'node:child_process';
 import {promisify,isDeepStrictEqual as equal} from 'node:util';
 import {ACTIVE_ASSISTANT_SUCCESSOR as ACTIVE} from './lib/assistant-later-h0-successor-source.mjs';
-import {withAuthenticated587PredecessorSource} from './check-assistant-later-h0-predecessor-source.mjs';
+import {withAuthenticated587PredecessorSource,withAuthenticated588PredecessorSource} from './check-assistant-later-h0-predecessor-source.mjs';
 import {readAuthenticatedFrozen587Predecessor,assertAuthenticatedFrozen587Snapshot,
-  assertAuthenticatedFrozen587SnapshotFresh} from './lib/authenticated-frozen586-predecessor.mjs';
+  assertAuthenticatedFrozen587SnapshotFresh,readAuthenticatedFrozen588Predecessor,
+  assertAuthenticatedFrozen588Snapshot,assertAuthenticatedFrozen588SnapshotFresh} from './lib/authenticated-frozen586-predecessor.mjs';
 import {assertRestoredOriginalInventory} from './migrate-post-cutover-private-runtime.mjs';
-import {assertAssistantPublic587SuccessorMigrationPlan} from './integrated-cutover-readiness.mjs';
+import {assertAssistantPublic587SuccessorMigrationPlan,assertAssistantPublic588SuccessorMigrationPlan} from './integrated-cutover-readiness.mjs';
 import {inspectDmiForecastFile,readDmiForecastRecord} from './lib/dmi-forecast-file.mjs';
 import {unpackDmiPartContinuity,assertDmiPartContinuityTotalSize} from './lib/dmi-part-continuity.mjs';
 import {createProtectedDmiNativeCurrentInspector} from './lib/protected-dmi-native-current-proofs.mjs';
@@ -23,6 +24,17 @@ import {ravScoreModelBinding} from '../js/core/ravscore-model-contract.js';
 import {ravScoreModelBinding as candidateBinding} from './rollback-assets/ravscore-model-contract.js';
 import {privateRuntimeContractHashes} from './private-production-runtime-workflow.mjs';
 import {ownFileDescriptorIdentity,ownedFileDescriptorClosed} from './lib/private-weather-component-pack.mjs';
+// Ingen caller-/miljøvalgt familie. Begge profiler beholder deres egne opaque handles.
+assert(['assistant-public587-successor','assistant-public588-successor'].includes(ACTIVE.sourcePhase));
+const ACTIVE_PREDECESSOR=ACTIVE.sourcePhase==='assistant-public588-successor'?Object.freeze({
+  withSource:withAuthenticated588PredecessorSource,read:readAuthenticatedFrozen588Predecessor,
+  snapshot:assertAuthenticatedFrozen588Snapshot,fresh:assertAuthenticatedFrozen588SnapshotFresh,
+  plan:assertAssistantPublic588SuccessorMigrationPlan
+}):Object.freeze({
+  withSource:withAuthenticated587PredecessorSource,read:readAuthenticatedFrozen587Predecessor,
+  snapshot:assertAuthenticatedFrozen587Snapshot,fresh:assertAuthenticatedFrozen587SnapshotFresh,
+  plan:assertAssistantPublic587SuccessorMigrationPlan
+});
 const ROOT=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..'),exec=promisify(callbackExec);
 const sha=raw=>crypto.createHash('sha256').update(raw).digest('hex');
 const same=(a,b)=>assert(equal(a,b),'ASSISTANT_BINDING_ORIGINAL_CHANGED');
@@ -215,7 +227,7 @@ async function originalFiles(p,snapshot){
   same(await boundedJson(p.originalS,16*1024*1024),snapshot.checkpoint);
 }
 async function prepare(p){
-  await prewriteAt('PREPARE','FROZEN_SOURCE',()=>withAuthenticated587PredecessorSource(async frozenRoot=>{
+  await prewriteAt('PREPARE','FROZEN_SOURCE',()=>ACTIVE_PREDECESSOR.withSource(async frozenRoot=>{
     const load=file=>import(pathToFileURL(path.join(frozenRoot,file)).href);
     const [b,bundle,workflow,model,s]=await prewriteAt('PREPARE','MODULES',()=>Promise.all([
       load('scripts/protected-private-production-runtime.mjs'),load('scripts/private-production-runtime-bundle.mjs'),
@@ -238,10 +250,10 @@ async function prepare(p){
       request:s.createProtectedRavScoreCheckpointRequester()}));
     await prewriteAt('PREPARE','S_DISPOSITION',()=>assert.equal(saved.restored,true));
   }));
-  const handle=await prewriteAt('PREPARE','SNAPSHOT',()=>readAuthenticatedFrozen587Predecessor());
-  const snapshot=await prewriteAt('PREPARE','SNAPSHOT',()=>assertAuthenticatedFrozen587Snapshot(handle));
+  const handle=await prewriteAt('PREPARE','SNAPSHOT',()=>ACTIVE_PREDECESSOR.read());
+  const snapshot=await prewriteAt('PREPARE','SNAPSHOT',()=>ACTIVE_PREDECESSOR.snapshot(handle));
   await prewriteAt('PREPARE','ORIGINAL_FILES',()=>originalFiles(p,snapshot));
-  await prewriteAt('PREPARE','FRESH_SNAPSHOT',()=>assertAuthenticatedFrozen587SnapshotFresh(handle));
+  await prewriteAt('PREPARE','FRESH_SNAPSHOT',()=>ACTIVE_PREDECESSOR.fresh(handle));
   await prewriteAt('PREPARE','BASELINE_WRITE',async()=>fs.writeFile(p.baseline,JSON.stringify(baseline(snapshot,await centralProof()))+'\n',{flag:'wx',mode:0o600}));
   // Identity comparison only. This file can NEVER replace fresh authentication.
 }
@@ -249,7 +261,7 @@ async function plan(){
   const migrationListText=await boundedJsonText(path.join(process.env.RUNNER_TEMP,'weather-binding-migrations-plan.txt'));
   const dryRunText=await boundedJsonText(path.join(process.env.RUNNER_TEMP,'weather-binding-migrations-dry-run.txt'));
   const directory=process.env.RAVRADAR_BINDING_MIGRATION_WORKDIR;assert(path.isAbsolute(directory??''));
-  const result=await assertAssistantPublic587SuccessorMigrationPlan({migrationListText,dryRunText,migrationsDirectory:path.join(directory,'supabase/migrations')});
+  const result=await ACTIVE_PREDECESSOR.plan({migrationListText,dryRunText,migrationsDirectory:path.join(directory,'supabase/migrations')});
   same(result.pendingVersions,[ACTIVE.migration().version]); // Installed/uncertain outcome is NOT a replay grant.
 }
 async function boundedJsonText(file){const {raw}=await ownedRead(file,128*1024,true);return raw.toString('utf8');}
@@ -285,12 +297,12 @@ async function bank(p,snapshot){
 }
 async function verify(p){
   await plan();const previous=await boundedJson(p.baseline,256*1024);
-  const handle=await readAuthenticatedFrozen587Predecessor(),snapshot=assertAuthenticatedFrozen587Snapshot(handle);
+  const handle=await ACTIVE_PREDECESSOR.read(),snapshot=ACTIVE_PREDECESSOR.snapshot(handle);
   same(previous,baseline(snapshot,await centralProof()));await originalFiles(p,snapshot);
   const checked=await bank(p,snapshot);await originalFiles(p,snapshot);
   // No full B/S re-authentication or bank replay here: the lexical normal
   // pointer/S-version guard rechecks the authentic handle AFTER the bank pass.
-  await source(true);await assertAuthenticatedFrozen587SnapshotFresh(handle);return checked;
+  await source(true);await ACTIVE_PREDECESSOR.fresh(handle);return checked;
 }
 async function main(){
   await prewriteAt('CLI','ARGUMENTS',()=>{assert.equal(process.argv.length,3);assert(['prepare','plan','verify'].includes(process.argv[2]));});

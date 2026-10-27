@@ -38,7 +38,8 @@ import { ownFileDescriptorIdentity, ownedFileDescriptorClosed } from './lib/priv
 import { classifyProductionTargetFreshness } from './check-production-target-freshness.mjs';
 
 import {ASSISTANT_LATER_H0_BINDING as ASSISTANT_LATER_FAMILY,
-  ASSISTANT_PUBLIC587_SUCCESSOR_BINDING as ASSISTANT_PUBLIC587_FAMILY}
+  ASSISTANT_PUBLIC587_SUCCESSOR_BINDING as ASSISTANT_PUBLIC587_FAMILY,
+  ASSISTANT_PUBLIC588_SUCCESSOR_BINDING as ASSISTANT_PUBLIC588_FAMILY}
   from './lib/assistant-later-h0-successor-source.mjs';
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const sha = raw => crypto.createHash('sha256').update(raw).digest('hex');
@@ -48,7 +49,8 @@ const identityKeys = ['sourceHead', 'datasetId', 'productionReferenceAt', 'gener
   'bundleContentSha256', 'modelBinding', 'contractHashes'];
 function reconcileFamily(descriptor) {
   return [FAMILY, NEXT_FAMILY, METADATA_FAMILY, NATIVE_METADATA_FAMILY,
-    ASSISTANT_LATER_FAMILY, ASSISTANT_PUBLIC587_FAMILY].filter(Boolean).find(family =>
+    ASSISTANT_LATER_FAMILY, ASSISTANT_PUBLIC587_FAMILY,
+    ASSISTANT_PUBLIC588_FAMILY].filter(Boolean).find(family =>
     descriptor?.modelBinding?.modelBundleSha256 === family.I
     && descriptor?.contractHashes?.continuationStateContractSha256 === family.T) ?? null;
 }

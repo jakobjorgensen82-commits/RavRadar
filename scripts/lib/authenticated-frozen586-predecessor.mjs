@@ -8,7 +8,8 @@ import path from 'node:path';
 import {fileURLToPath,pathToFileURL} from 'node:url';
 import {execFile as callbackExec} from 'node:child_process';
 import {promisify,isDeepStrictEqual} from 'node:util';
-import {withAuthenticated586PredecessorSource,withAuthenticated587PredecessorSource}
+import {withAuthenticated586PredecessorSource,withAuthenticated587PredecessorSource,
+  withAuthenticated588PredecessorSource,assertFrozen588CodeSourceSelected,FROZEN588_CODE_SOURCE_PROVENANCE}
   from '../check-assistant-later-h0-predecessor-source.mjs';
 
 const ROOT=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'../..');
@@ -16,7 +17,7 @@ const exec=promisify(callbackExec),failedCloses=new Map();
 // Ukendt fysisk FD-lukning blokerer samme sti på tværs af begge familier.
 // Opaque snapshots og friskhedsfunktioner tilhører derimod kun én fast profil.
 function fixedSnapshot(profile){
-  assert(profile===FROZEN586||profile===FROZEN587,'FROZEN_PREDECESSOR_UNKNOWN_PROFILE');
+  assert(profile===FROZEN586||profile===FROZEN587||profile===FROZEN588,'FROZEN_PREDECESSOR_UNKNOWN_PROFILE');
   const contexts=new WeakMap(),refreshers=new WeakMap();
   const SOURCE=profile.sourceHead;
 const SHA=/^[a-f0-9]{64}$/, HEAD=/^[a-f0-9]{40}$/, MB=1024*1024;
@@ -241,7 +242,15 @@ const FROZEN587=Object.freeze({
   assertionPath:'scripts/lib/established-native-current-origin-587-assertion.mjs',
   assertionExport:'assertFrozen587OriginSnapshotData',
   temporaryPrefix:'rr-frozen587-snapshot-',errorPrefix:'FROZEN587_PREDECESSOR_'});
-const snapshot586=fixedSnapshot(FROZEN586),snapshot587=fixedSnapshot(FROZEN587);
+const FROZEN588=Object.freeze({
+  sourceHead:FROZEN588_CODE_SOURCE_PROVENANCE.head,
+  requiredSha:Object.freeze([FROZEN588_CODE_SOURCE_PROVENANCE.originSha256,
+    FROZEN588_CODE_SOURCE_PROVENANCE.partPipelineSha256]),
+  withSource:withAuthenticated588PredecessorSource,
+  assertionPath:'scripts/lib/established-native-current-origin-588-assertion.mjs',
+  assertionExport:'assertFrozen588OriginSnapshotData',
+  temporaryPrefix:'rr-frozen588-snapshot-',errorPrefix:'FROZEN588_PREDECESSOR_'});
+const snapshot586=fixedSnapshot(FROZEN586),snapshot587=fixedSnapshot(FROZEN587),snapshot588=fixedSnapshot(FROZEN588);
 // Kun disse navngivne indgange; ingen caller-valgt profil, root, head eller tuple.
 export async function readAuthenticatedFrozen586Predecessor(){
   return snapshot586.read(...arguments);
@@ -260,4 +269,15 @@ export function assertAuthenticatedFrozen587Snapshot(handle){
 }
 export async function assertAuthenticatedFrozen587SnapshotFresh(handle){
   return snapshot587.fresh(...arguments);
+}
+
+export async function readAuthenticatedFrozen588Predecessor(){
+  assertFrozen588CodeSourceSelected(); // Before paths, transport or callback.
+  return snapshot588.read(...arguments);
+}
+export function assertAuthenticatedFrozen588Snapshot(handle){
+  return snapshot588.snapshot(...arguments);
+}
+export async function assertAuthenticatedFrozen588SnapshotFresh(handle){
+  return snapshot588.fresh(...arguments);
 }

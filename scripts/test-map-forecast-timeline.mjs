@@ -115,7 +115,7 @@ try{
   // producer is substituted; response bodies use the platform stream API.
   const shareZoneId=rankedZoneIds[0],shareRow=zoneDocuments.get(shareZoneId);
   const shareSelection={zoneId:shareZoneId,time:h1,mode:'waders',language:'da'};
-  function shareFixture({mutateDocument=null,mutateManifest=null,zoneText=null,registryText=zoneRegistryText,onRead=()=>{}}={}){
+  function shareFixture({mutateDocument=null,mutateManifest=null,zoneText=null,registryText=zoneRegistryText,onRead=()=>{},responseStatus=200,location=null}={}){
     const target=structuredClone(manifest),document=structuredClone(shareRow.document);
     if(mutateDocument){
       mutateDocument(document);
@@ -130,7 +130,7 @@ try{
     return{reads,fetchPublic:async(path,options)=>{
       reads.push(path);assert.equal(options.cache,'no-store');assert.ok(options.signal);
       onRead(path);assert.ok(documents.has(path),'Only the existing three fixed public inputs may be requested');
-      return new Response(documents.get(path),{status:200,headers:{'Content-Type':'application/json'}});
+      return new Response(documents.get(path),{status:responseStatus,headers:{'Content-Type':'application/json',...(location===null?{}:{Location:location})}});
     }};
   }
   for(const mode of ['waders','beach']){
@@ -209,7 +209,7 @@ try{
         assert.equal(target.username,'');assert.equal(target.password,'');
         assert.ok(['/data/live/manifest.json','/data/zones.geojson'].includes(target.pathname)
           || /^\/data\/live\/forecast\/[a-f0-9]{64}\.json$/.test(target.pathname));
-        assert.equal(call.redirect,'error');assert.equal(call.credentials,'omit');
+        assert.equal(call.redirect,'manual');assert.equal(call.credentials,'omit');
         assert.deepEqual(call.headers,{Accept:'application/json'});
       }
       return{response,html,reads:fixture.reads,upstream};
@@ -279,6 +279,13 @@ try{
     }}),
     shareFixture({registryText:zoneRegistryText.replace('Zone 1','Zone X')}),
   ]){await unavailableShare(fixture);cases++;}
+  // Workerens manuelle redirect svarer aldrig ved at hente Location. Den normale
+  // læser afviser alle 3xx før JSON/digest, og den offentlige fejl er stadig ærlig.
+  for(const status of [301,302,303,307,308]){
+    const result=await unavailableShare(shareFixture({responseStatus:status,location:'https://forged.invalid/redirect'}));
+    assert.deepEqual(result.reads,['./data/live/manifest.json']);
+    assert.equal(result.upstream.length,1);assert.equal(result.upstream[0].redirect,'manual');cases++;
+  }
   const forgedPath=await unavailableShare(shareFixture({mutateManifest:target=>{
     target.detailDelivery.zones[shareZoneId].path='https://forged.invalid/forecast.json';
   }}));

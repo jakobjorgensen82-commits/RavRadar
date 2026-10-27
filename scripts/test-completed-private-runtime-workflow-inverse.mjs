@@ -14,7 +14,7 @@ import { inverseCurrentFamilyColdCheckpointWorkflow, currentFamilyColdCheckpoint
   assistant587ColdCheckpointCombinedWorkflowReview,
   inverseAssistant587ColdCheckpointCombinedToF83Workflow, inverseAssistant587ColdCheckpointCombinedToD5Workflow }
   from './lib/completed-private-runtime-workflow-review.mjs';
-import { inverseRelease588WorkflowUserAgents, inverseLatestColdProgressWorkflow, latestColdProgressWorkflowReview,
+import { inverseRelease590WorkflowUserAgents, inverseRelease588WorkflowUserAgents, inverseLatestColdProgressWorkflow, latestColdProgressWorkflowReview,
   assistant587LatestColdCombinedWorkflowReview,
   inverseAssistant587LatestColdCombinedTo664aWorkflow, inverseAssistant587LatestColdCombinedTo2bWorkflow }
   from './lib/completed-private-runtime-workflow-review.mjs';
@@ -1310,7 +1310,7 @@ test('assistant587 plus PR712 latest progress: partial parent mutations never en
 });
 
 test('release588 exact five UA fields preserve whole587 and every historical refusal',async()=>{
-  const actual=(await fs.readFile(new URL('../.github/workflows/reusable-weather-build.yml',import.meta.url),'utf8')).replaceAll('\r\n','\n');
+  const actual=inverseRelease590WorkflowUserAgents((await fs.readFile(new URL('../.github/workflows/reusable-weather-build.yml',import.meta.url),'utf8')).replaceAll('\r\n','\n'),'build');
   assert.equal(Buffer.byteLength(actual),292886);
   assert.equal(sha(actual),'998d3a8e11a1088363a84bfd4a0d64f7117eacc059a3cf5c0ca895f7a85e22b3');
   assert.equal(actual.split('RavRadar/4.0.588').length,6);
@@ -1340,4 +1340,42 @@ test('release588 exact five UA fields preserve whole587 and every historical ref
   assert.throws(()=>inverseRelease588WorkflowUserAgents(actual),/RELEASE588_WORKFLOW_ARGUMENTS/);
   assert.throws(()=>inverseRelease588WorkflowUserAgents(actual,'build',true),/RELEASE588_WORKFLOW_ARGUMENTS/);
   assert.throws(()=>inverseRelease588WorkflowUserAgents(null,'build'),/RELEASE588_WORKFLOW_TYPE/);
+});
+
+test('release590 five UA inverse reaches genuine588 then the existing19-hunk cold-progress adapter',async()=>{
+  const actual=(await fs.readFile(new URL('../.github/workflows/reusable-weather-build.yml',import.meta.url),'utf8')).replaceAll('\r\n','\n');
+  assert.equal(Buffer.byteLength(actual),292886);
+  assert.equal(sha(actual),'bf9f27721718511cf345505416230b10c863a963bbb49ee774e4fdea8a7adfa6');
+  assert.equal(actual.split('RavRadar/4.0.590').length,6);
+  const previous=inverseRelease590WorkflowUserAgents(actual,'build');
+  assert.equal(Buffer.byteLength(previous),292886);
+  assert.equal(sha(previous),'998d3a8e11a1088363a84bfd4a0d64f7117eacc059a3cf5c0ca895f7a85e22b3');
+  assert.equal(previous,actual.replaceAll('RavRadar/4.0.590','RavRadar/4.0.588'));
+  assert.equal(inverseRelease590WorkflowUserAgents(previous,'build'),previous);
+  assert.equal(inverseRelease588WorkflowUserAgents(actual,'build'),inverseRelease588WorkflowUserAgents(previous,'build'));
+  for(const project of [inverseAssistant587LatestColdCombinedTo664aWorkflow,inverseAssistant587LatestColdCombinedTo2bWorkflow])
+    assert.equal(project(actual,'build'),project(previous,'build'));
+  const normalProgress=inverseAssistant587LatestColdCombinedTo2bWorkflow(actual,'build');
+  assert.equal(Buffer.byteLength(normalProgress),latestColdProgressWorkflowReview.roles.build.after.bytes);
+  assert.equal(sha(normalProgress),latestColdProgressWorkflowReview.roles.build.after.sha256);
+  assert.equal(inverseLatestColdProgressWorkflow(normalProgress,'build'),
+    inverseLatestColdProgressWorkflow(inverseAssistant587LatestColdCombinedTo2bWorkflow(previous,'build'),'build'));
+});
+
+test('release590 UA view rejects mixed,duplicated,unknown or non-UA drift through unchanged whole oracles',async()=>{
+  const actual=(await fs.readFile(new URL('../.github/workflows/reusable-weather-build.yml',import.meta.url),'utf8')).replaceAll('\r\n','\n');
+  for(const role of ['once','unknown','toString'])assert.equal(inverseRelease590WorkflowUserAgents(actual,role),actual);
+  const mutations=[actual+'\n# UNREVIEWED590\n',
+    actual.replace('RavRadar/4.0.590','RavRadar/4.0.588'),
+    actual.replaceAll('RavRadar/4.0.590','RavRadar/4.0.591'),
+    actual.replace('RavRadar/4.0.590','RavRadar/4.0.590 RavRadar/4.0.590'),
+    actual.replace('steps.preflight.outputs.should_run','steps.preflight.outputs.changed')];
+  for(const changed of mutations){
+    assert.notEqual(changed,actual);
+    assert.equal(inverseRelease590WorkflowUserAgents(changed,'build'),changed);
+    assert.throws(()=>inverseCompletedRuntimeWorkflow(changed,'build'));
+  }
+  assert.throws(()=>inverseRelease590WorkflowUserAgents(actual),/RELEASE590_WORKFLOW_ARGUMENTS/);
+  assert.throws(()=>inverseRelease590WorkflowUserAgents(actual,'build',true),/RELEASE590_WORKFLOW_ARGUMENTS/);
+  assert.throws(()=>inverseRelease590WorkflowUserAgents(null,'build'),/RELEASE590_WORKFLOW_TYPE/);
 });

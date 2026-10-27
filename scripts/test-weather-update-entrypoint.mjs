@@ -1285,10 +1285,10 @@ test('assistant588 companion route preserves genuine587 whole bytes and rejects 
   const genuine587 = ASSISTANT587_ORIGINAL_COMPANION_TEST_REVIEW.find(item => item.path === row.path);
   assert.deepEqual(row.before, genuine587.after, 'The outer view is the exact original587 caller, not a repin');
   assert.equal(Buffer.byteLength(inverseAssistant587OriginalCompanionTestInput(before, row.path)), genuine587.before.bytes);
-  const { ACTIVE_ASSISTANT_SUCCESSOR } = await import('./lib/assistant-later-h0-successor-source.mjs');
-  assert.equal(ACTIVE_ASSISTANT_SUCCESSOR.before.I,
+  const { ISSUED_ASSISTANT_PUBLIC588_PROFILE } = await import('./lib/assistant-later-h0-successor-source.mjs');
+  assert.equal(ISSUED_ASSISTANT_PUBLIC588_PROFILE.before.I,
     '5584d8e59f8d21785fd08b32f9beb22cf879cdb4892a11ede24eb862d9a0dca2');
-  assert.equal(actual.split(ACTIVE_ASSISTANT_SUCCESSOR.before.I).length, 4, 'All three guards select exactly the active genuine587 predecessor');
+  assert.equal(actual.split(ISSUED_ASSISTANT_PUBLIC588_PROFILE.before.I).length, 4, 'All three historical588 guards retain exactly their issued genuine587 predecessor');
   assert.match(actual, /import \{readAuthenticatedFrozen587Predecessor,assertAuthenticatedFrozen587Snapshot\}/);
   assert.equal(actual.split('assertAuthenticatedFrozen587Snapshot(await readAuthenticatedFrozen587Predecessor())').length, 3);
   assert.doesNotMatch(actual, /readAuthenticatedFrozen586Predecessor|assertAuthenticatedFrozen586Snapshot|6d8f7cca203b5f7ee5155f3c0cdb39403a02fd0eb30fecaca5070ef9f814a805/);

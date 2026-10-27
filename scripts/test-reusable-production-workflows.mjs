@@ -15,7 +15,9 @@ import {NATIVE_ORIGINAL_CONTINUITY_BINDING,nativeOriginalContinuityMigration,req
   from './lib/native-original-continuity-successor-source.mjs';
 import {ASSISTANT_LATER_H0_BINDING,assistantLaterH0Migration,requireAssistantLaterH0Output,
   ASSISTANT_PUBLIC587_SUCCESSOR_BINDING,assistantPublic587SuccessorMigration,
-  requireAssistantPublic587SuccessorOutput,readAssistantPublic587SuccessorCanonicalSource}
+  requireAssistantPublic587SuccessorOutput,readAssistantPublic587SuccessorCanonicalSource,
+  ASSISTANT_PUBLIC588_SUCCESSOR_BINDING,assistantPublic588SuccessorMigration,
+  requireAssistantPublic588SuccessorOutput,readAssistantPublic588SuccessorCanonicalSource}
   from './lib/assistant-later-h0-successor-source.mjs';
 
 // Keep the payload-free operational control report inside this existing cheap
@@ -746,6 +748,22 @@ let casTimeoutSettings = fs.readdirSync(migrationsUrl).filter(name => name.endsW
   )].map(match => ({ migration: name, timeout: match[1] })));
 assert.equal(casTimeoutSettings.at(-1)?.timeout, '55s',
   'the final migration order must retain the established checkpoint-only 55s timeout');
+// Additiv590-kontrol først; de hele gamle588/587-orakler nedenfor bevares.
+// Fjern kun denne præcise ene scoped55s-række fra TEST-inventarvisningen.
+if(ASSISTANT_PUBLIC588_SUCCESSOR_BINDING!==null){
+  requireAssistantPublic588SuccessorOutput();
+  await readAssistantPublic588SuccessorCanonicalSource();
+  const successor=assistantPublic588SuccessorMigration().filename;
+  const actualTimeoutInventory=casTimeoutSettings;
+  assert.equal(actualTimeoutInventory.filter(row=>row.migration===successor).length,1,
+    'Den udstedte590-migration skal have præcis én scoped55s-indstilling');
+  assert.deepEqual(actualTimeoutInventory.at(-1),{migration:successor,timeout:'55s'},
+    'Den eksakte udstedte590-migration skal være sidste scoped55s-efterfølger');
+  casTimeoutSettings=actualTimeoutInventory.slice(0,-1);
+  assert.deepEqual(actualTimeoutInventory,
+    [...casTimeoutSettings,{migration:successor,timeout:'55s'}],
+    'Hele det tidligere588/587-timeoutinventar bevares foran præcis én udstedt590-migration');
+}
 // Kontrollér først hele den nye, kildeudstedte588-migration. Den uændrede
 // gamle587-/forgængerprøve nedenfor ser kun dens præcise ene55s-efterfølger fjernet.
 if(ASSISTANT_PUBLIC587_SUCCESSOR_BINDING!==null){

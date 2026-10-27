@@ -1,3 +1,25 @@
+## 89.273 Genbrug af dansk datoformatering bevarer prognosens tider
+
+Kort fortalt: RavRadar kan genbruge den samme danske datoformatering uden at ændre prognosens tidspunkter, vejr eller scorer.
+
+En almindelig vejropdatering nåede sin uændrede grænse på 80 minutter. Den offentlige projektion tog målt 36 minutter og 23 sekunder. Den sidste fremdriftslinje viste færdige offentlige filer, ikke færdig privat timepakke og atomisk cacheinstallation. Stoppet er ikke dokumenteret som hukommelsesudløb.
+
+Den lokale rettelse opretter først datoformateringen, når den bruges, og genbruger den kun for den præcise tidszone Europe/Copenhagen. Den gemmer ikke beregnede datoer. Andre tidszoner får fortsat frisk formatering, ugyldige datoer afvises først, og dansk sommer- og vintertid bevares.
+
+Den eksisterende normale kalenderprøve fejlede først, fordi to danske kald oprettede to formateringer i stedet for én. Den består efter rettelsen med alle gamle kontroller samt nye kontroller af oprettelsesantal, sommertid, andre tidszoner og ugyldigt input. En særskilt lokal måling af 4.096 kald var 10,44 gange hurtigere. Det er ikke målt hastighedsgevinst for hele vejropdateringen eller bevis for løst hukommelsesforbrug.
+
+Kalenderrettelsen er nu lokalt kildeudstedt som 4.0.590 gennem den normale 588-efterfølger. Bindingsfilerne er genafledt og de syv forbrugere synkroniseret. Én ny databaseovergang er bygget som en tilføjelse; gamle SQL-filer og numeriske regler er bevaret. Geodatafilernes versionsændring er særskilt kontrolleret til kun topversionen 588→590. Rettelsen ændrer ingen scoreformel, kildeprioritet, geometri eller tidsgrænse.
+
+Efter den lokale udstedelse er hele den normale testfil for databaseprøvens evidens afsluttet med 22 beståede tilfælde, ingen fejl eller oversprungne tilfælde og afslutningskode 0. De tidligere 21 beståede tilfælde, Python-miljøfejlen og den beståede miljøgenprøve bevares som historik. Dette er en lokal testfil, ikke udført PostgreSQL eller samlet kildekontrol.
+
+Samme 4.0.590-leverance omfatter nu en lille rettelse af prognosedelingen. Handleren bruger redirect:'manual' i stedet for redirect:'error'. Den oprindelige lokale prøve i workerd stoppede med TypeError før netkald. Med rettelsen viste den lokale prøve Lyngsås gemte score 89 fra tre input med kontrollerede SHA-værdier. En omdirigering med HTTP 302 blev afvist uden at følge den. Det beviser ikke offentlig levering eller gratis kapacitet. Genoptagelsen af gemte vejrpakker får samtidig præcis den nye590-binding. Originaler, hele pakker og friske genlæsninger skal fortsat bestå alle eksisterende kontroller.
+
+Den første præcise GitHub-kontrol af 4.0.590 udførte den rigtige PostgreSQL-prøve, som bestod. Den efterfølgende kildekontrol fejlede i prøvernes gamle bindingsforventninger: en syntetisk migrationsliste stoppede ved588, isolerede testkald manglede den nye faste forgænger, og den historiske kommando-inverse kendte ikke ACTIVE590. De påviste prøvefejl tilpasses afgrænset; gamle negative kontroller og hele historiske kildeidentiteter bevares. Det er ikke en fejl i den særskilt vellykkede almindelige vejrhentning og giver ikke tilladelse til at springe en ny eksakt kildekontrol over.
+
+4.0.590 er endnu ikke samlet kvalificeret, installeret eller offentliggjort. Præcis samlet kildekontrol, database- og installationskvalifikation samt offentlig effekt er åbne. Den isolerede SOURCE589-draft forbliver særskilt og inaktiv; en lokal kildeudstedelse er ikke leveringsbevis.
+
+SOURCE, samlet statistik og automatisk sletning forbliver inaktive. Alle fem hovedmål er fortsat åbne til 18. november 2026. Ældre dokumenthistorik og røde forløb bevares.
+
 ## 89.272 En kodeopdatering skal bruge den allerede installerede model
 
 Kort fortalt: En rettelse af hjemmesidens programkode behøver ikke hente vejret igen eller geninstallere en gammel model.
@@ -704,9 +726,19 @@ En særskilt, dokumenteret Storage-formatkant rettes samtidig: immutable upload 
 
 # RavRadar Håndbog
 
-**Håndbogsversion:** 4.0.588
+**Håndbogsversion:** 4.0.590
 
 Hvis genbrug af gemte data stopper, skal den første fejlfase og et kontrolleret kildested bevares uden private fejltekster eller værdier. Tidligere beståede kontroller frikender ikke automatisk en senere mål-time eller andre input. En bedre fejlrapport ændrer ikke beregningen og er ikke bevis for, at årsagen er rettet. Gemte originaler og sidste gyldige offentlige data bevares, mens fejlen undersøges.
+
+**Lokal kildebinding — 27. oktober 2026, RavScore 4.0.590, ikke installeret:** Den integrerede model er offentlig som modeltype under den særskilt leverede 4.0.588. Denne 4.0.590 er kun lokalt kildeudstedt, ikke samlet kvalificeret, installeret eller offentliggjort.
+
+4.0.590 er låst med `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b` og `modelBundleSha256=4c94c24e7d14d66c20cc3c2c3d0389cadb0c3e9e76fcfe692943c6087df56819` over 97 kanonisk normaliserede transitive implementeringsfiler og de syv deklarerede forbrugere. Inaktiv Candidate G har `modelContractSha256=c73dac1b4376005e792580791d84eb79c9370e905a2a7fd0bdee857506a20cf8` og `modelBundleSha256=bca59cb435cb3f35041c665d2954f0ef04b189b572219771fc5628e4f7ccb551` over 98 transitive filer.
+
+Fortsættelseskontrakten T12 er `continuationStateContractSha256=d444e6141038f56dd04b97a55eefe07bbd98f122fb3b76a43bdddacff2d88c8a` (`d444e614…`) over 12 normaliserede kildefiler. Autoriteten er `version.json.releaseContract.modelBindings` og den normale 588-successor.
+
+Den nye append-only migration er `20261027124633_assistant_public588_later_h0_original_bound_successor.sql` med `migrationSha256=eb0262716b66d29d52bf0ac4412c475ab5e9ea69e1cad15eabc9a31b48bcf821`. Dens normale kontraktbindinger er `checkpointContractSha256=27f2c947268693a0d545ba8f1066c16cae789efe440f12b4295dca46c62ec8c9` og `tripBindingPolicySha256=822f0052836a5b6acf40aa905374a29cb512d10c04ee0d4b6fccdc06f752f14d`.
+
+Gamle migrationer, originale B/S, tal og historik bevares. Normale kontrakt-, policy-, rolle-, original- og 55/5-sekunderskontroller er uændrede krav; lokal kildeudstedelse og native-evidenstestfilens 22 PASS er ikke udført PostgreSQL eller præcis CI. Fysiske scorekontrakter og formler ændres ikke. SOURCE589, samlet statistik og automatisk sletning forbliver inaktive; alle fem mål til 18. november 2026 er åbne. De tidligere 588/587-bindingsblokke nedenfor er dateret historik.
 
 ## Aktuel frossen kandidatkilde — 4.0.588, ikke installeret
 
