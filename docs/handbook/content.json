@@ -2,8 +2,14 @@
   "schemaVersion": "2.0",
   "handbookVersion": "4.0.590",
   "title": "RavRadar Håndbog",
-  "updatedAt": "2026-10-27",
+  "updatedAt": "2026-10-28",
   "sections": [
+    {
+      "id": "admin-trip-count-account-categories-2026-10-28",
+      "chapter": "89.274",
+      "title": "Administratorens turtotal og kontokategorier",
+      "body": "<div class=\"reader-guide\"><strong>Kort fortalt:</strong> Administratorens Overblik skal vise, hvor mange ture og observationer der er gemt. Kontokategorien fortæller ikke i sig selv, hvilke rettigheder en bruger har.</div><p>Optællingen læser alle ti aktive lagerdele. Den omfatter også anonyme og ældre poster. Et særskilt tal viser kun ture, der udtrykkeligt er mærket som test. En tur uden testmærke er ikke dermed dokumenteret som en virkelig tur. Tallene er ikke den samtykkestyrede anonyme statistik eller et færdigt grundlag for at ændre scoremodellen.</p><p>Lagerdelene læses efter hinanden, og visningen angiver tidsintervallet. Tallene er derfor ikke et atomisk øjebliksbillede. Kan en lagerdel eller adgang ikke bekræftes, vises utilgængelig i stedet for nul. Browseren modtager kun optællinger og afgrænsning, ikke individuelle ture eller lagernøgler. En frisk aktiv ejer eller fuld administrator kontrolleres før og efter læsningen.</p><p>Ejer følger kontoens autoritative ejerrolle. Ekspert er alene den faglige profil, ejeren har udpeget; andre kendte profiler er almindelige brugere. Den gamle tekniske standardrolle expert gør ikke en almindelig konto til faglig ekspert. En ukendt eller skjult profil forbliver ukendt.</p><p>Filtrene Alle, Ejer, Ekspert og Almindelige brugere gælder de op til 64 aktuelt viste konti fra den allerede indlæste, adgangsbegrænsede liste. De lover ikke en fuldstændig kontooversigt. Flere ejerroller eller rettigheder på en almindelig profil får en advarsel; ingen rettigheder tildeles eller fjernes automatisk. Begrænset ekspertadministration beholder sine hidtidige grænser. Sene svar ved konto- eller visningsskift må ikke lægges ind i en ny visning.</p><p>Status 28. oktober: Funktionerne er lokalt måltestet, ikke installeret. Præcis kildekontrol, normal server- og frontendlevering samt administratoraccept udestår. Den almindelige 590-vejrhentning og den særskilte zonepanelrettelse er derimod offentligt leveret; deres øvrige åbne dæknings- og acceptkrav består. Alle fem hovedmål er fortsat åbne. Ingen scoreformel, kildeprioritet, modelbinding, administratoropsætning, geometri, SQL, profilrolle eller rettighed ændres.</p>"
+    },
     {
       "id": "forecast-calendar-formatter-reuse-2026-10-27",
       "chapter": "89.273",

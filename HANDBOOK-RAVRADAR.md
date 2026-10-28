@@ -1,3 +1,17 @@
+## 89.274 Administratorens turtotal og kontokategorier
+
+Kort fortalt: Administratorens Overblik skal vise, hvor mange ture og observationer der er gemt. Kontokategorien fortæller ikke i sig selv, hvilke rettigheder en bruger har.
+
+Optællingen læser alle ti aktive lagerdele. Den omfatter også anonyme og ældre poster. Et særskilt tal viser kun ture, der udtrykkeligt er mærket som test. En tur uden testmærke er ikke dermed dokumenteret som en virkelig tur. Tallene er ikke den samtykkestyrede anonyme statistik eller et færdigt grundlag for at ændre scoremodellen.
+
+Lagerdelene læses efter hinanden, og visningen angiver tidsintervallet. Tallene er derfor ikke et atomisk øjebliksbillede. Kan en lagerdel eller adgang ikke bekræftes, vises utilgængelig i stedet for nul. Browseren modtager kun optællinger og afgrænsning, ikke individuelle ture eller lagernøgler. En frisk aktiv ejer eller fuld administrator kontrolleres før og efter læsningen.
+
+Ejer følger kontoens autoritative ejerrolle. Ekspert er alene den faglige profil, ejeren har udpeget; andre kendte profiler er almindelige brugere. Den gamle tekniske standardrolle expert gør ikke en almindelig konto til faglig ekspert. En ukendt eller skjult profil forbliver ukendt.
+
+Filtrene Alle, Ejer, Ekspert og Almindelige brugere gælder de op til 64 aktuelt viste konti fra den allerede indlæste, adgangsbegrænsede liste. De lover ikke en fuldstændig kontooversigt. Flere ejerroller eller rettigheder på en almindelig profil får en advarsel; ingen rettigheder tildeles eller fjernes automatisk. Begrænset ekspertadministration beholder sine hidtidige grænser. Sene svar ved konto- eller visningsskift må ikke lægges ind i en ny visning.
+
+Status 28. oktober: Funktionerne er lokalt måltestet, ikke installeret. Præcis kildekontrol, normal server- og frontendlevering samt administratoraccept udestår. Den almindelige 590-vejrhentning og den særskilte zonepanelrettelse er derimod offentligt leveret; deres øvrige åbne dæknings- og acceptkrav består. Alle fem hovedmål er fortsat åbne. Ingen scoreformel, kildeprioritet, modelbinding, administratoropsætning, geometri, SQL, profilrolle eller rettighed ændres.
+
 ## 89.273 Genbrug af dansk datoformatering bevarer prognosens tider
 
 Opdatering 28. oktober 2026: En bevaret original kan godt tilhøre den tidligere datageneration, selv om programmet har fået en ny binding. Originalen skal kontrolleres med sin egen godkendte læser. Den må ikke omskrives eller fejlagtigt behandles som den nye generation.

@@ -1,3 +1,13 @@
+## 28. oktober — nyt vejr og zonepaneler leveret; adminrettelse er lokal
+
+Den almindelige 4.0.590-vejrhentning har faktisk gennemført leverandører, beregning, beskyttet B før S, Pages og offentlig kontrol af 210 zoner og 673 dele. Originalernes aktive forgængerlæser og kalenderrettelsen er derfor ikke længere kun lokale kandidater. Fuld vejrdækning, en almindelig efterfølger og selvstændig fejlgenopretning er fortsat særskilte åbne krav.
+
+Den særskilte zonepanelrettelse er kildekvalificeret og offentligt leveret gennem det normale kode-only-forløb. Femdøgnsprognose og vandstandspanel bevares ved valgt fremtidig korttime; den øverste score og vejrfelterne følger stadig den valgte time. Fysisk browseraccept udestår. Prognosedelingens redirectrettelse er også installeret, og den afgrænsede offentlige kontrol viser zone og score; Facebooks egen forhåndsvisning og faktisk Free-kapacitet er ikke bevist.
+
+Adminrettelsen er lokalt gennemgået og måltestet, ikke installeret. Den tilføjer ren lagertotal med særskilt eksplicit testtal samt kontokategorier adskilt fra tekniske roller og rettigheder. Præcis samlet kildekontrol, Worker-/Edgeinstallation, frontendlevering og faktisk administratoraccept er åbne. Ingen scoreformel, vejr, kildeprioritet, modelbinding, gemt administratoropsætning, SQL, roller eller rettigheder ændres.
+
+Alle fem hovedmål til 18. november 2026 er åbne. SOURCE, samlet statistikfrigivelse og automatisk sletning forbliver inaktive. Ejeren har udskudt domænebeslutningen til i morgen; kun muligheder og risici undersøges, ingen DNS- eller adresseændring. Dette erstatter ældre lokal-/afventningsstatus alene på de konkret afsluttede punkter. Røde historiske forløb bevares; skiftende private kørselsdetaljer står i checkpointet.
+
 ## 28. oktober — selvstændig visningsrettelse til zonens prognosepaneler
 
 Zonens femdøgnsprognose og vandstand time for time skal blive stående, også når tidsskyderen viser en fremtidig time. Den øverste score, forklaring og vejrfelter følger stadig den valgte time og den samme valgte lokale kystdel. Zoneklik i forsiden femdøgnsliste vælger fortsat Nu; dagsfanens egen handling ændres ikke.

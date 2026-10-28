@@ -1,3 +1,7 @@
+## Præcisering 28. oktober 2026 — kontokategori er ikke en rettighed
+
+Ejerens udpegede faglige ekspert og almindelige brugere skal vises som særskilte kategorier, uafhængigt af den gamle tekniske expertstandard. Kategorien bestemmes lukket på serveren for eksisterende RLS-synlige profiler og giver ingen autorisation. Aktive ejer-/fuld-adminrettigheder kontrolleres før og efter læsningen. Begrænset experts_manage beholder sit gamle listescope og de tre sikre adgange. Ukendte profiler og afvigende rettigheder vises ærligt; ingen automatisk profil- eller rettighedsændring. Lokal målprøve er ikke installation eller administratoraccept.
+
 # DEC-0080 – Sikkerhedsgrænser og offentlige Edge-gateways
 
 **Status:** Besluttet og live-infrastrukturverificeret i kandidat 4.0.284; exact-head-, produktions- og offentlig Pages-lukning afventer.

@@ -18,6 +18,8 @@ import {
 import { verifyTripGatewaySignature } from "../_shared/trip-storage.js";
 import { exportOwnTripPage, listOwnTripObservations } from "../_shared/trip-store.ts";
 import { tripStorageReadinessHeaders } from "../_shared/trip-storage-readiness.ts";
+import { readAdminTripCount } from "../_shared/admin-trip-count.ts";
+import { readAdminAccountCategories, validateAdminCategoryIds } from "../_shared/admin-account-categories.ts";
 
 Deno.serve(async (request) => {
   try {
@@ -53,16 +55,29 @@ Deno.serve(async (request) => {
       });
     }
     const payload = await readJsonObject(request, 4 * 1024);
+    const adminCountRequested = payload.operation === "admin-count";
+    const adminCategoriesRequested = payload.operation === "admin-account-categories";
     const exportRequested = payload.operation === "export-page";
-    const allowedFields = exportRequested ? ["operation", "cursor"] : ["limit"];
+    const allowedFields = adminCountRequested ? ["operation"] : adminCategoriesRequested ? ["operation", "ids"] : exportRequested ? ["operation", "cursor"] : ["limit"];
     const unknown = Object.keys(payload).filter(key => !allowedFields.includes(key));
     if (unknown.length) throw new GatewayError(400, "UNKNOWN_FIELDS");
+    if (adminCategoriesRequested) validateAdminCategoryIds(payload.ids);
     if (exportRequested && !(payload.cursor === null || (typeof payload.cursor === "string" && payload.cursor.length <= 512))) {
       throw new GatewayError(400, "INVALID_EXPORT_CURSOR");
     }
     const limit = Math.max(1, Math.min(200, Math.round(Number(payload.limit) || 100)));
     await enforceRateLimits(request, "trip-log", { minute: 12, hour: 120, globalDay: 5000 });
     const userId = await requireAuthenticatedUserId(request);
+    if (adminCountRequested) {
+      const response = jsonResponse(request, await readAdminTripCount(request, userId));
+      response.headers.set("Cache-Control", "no-store");
+      return response;
+    }
+    if (adminCategoriesRequested) {
+      const response = jsonResponse(request, await readAdminAccountCategories(request, userId, payload.ids));
+      response.headers.set("Cache-Control", "no-store");
+      return response;
+    }
     if (exportRequested) return jsonResponse(request, await exportOwnTripPage(userId, payload.cursor as string | null));
     const rows = await listOwnTripObservations(userId, limit);
     return jsonResponse(request, { rows });

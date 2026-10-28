@@ -1,3 +1,7 @@
+## Præcisering 28. oktober 2026 — særskilt ren administratoroptælling
+
+Den eksisterende signerede tomme count/probe bevares uændret. En lukket admin-summary-læsning må aggregere fysisk rækkeantal og eksplicit topniveau-testmarkering i de ti aktive D1-lagerdele uden turpayload eller identiteter. Begge summer kræver faktiske positive D1-kvitteringer; ukendt eller fejl er utilgængelig, aldrig nul. Optællingen er sekventiel med angivet interval, ikke et atomisk snapshot eller verificerede virkelige ture. Edge tillader kun frisk aktiv ejer/fuld administrator før og efter læsningen, normal HMAC, origin, login og rategrænse. Ingen SQL-, shard-, lager-, rettigheds-, statistik- eller modeovergang følger af læsefunktionen. Server-/frontendinstallation og faktisk accept er fortsat selvstændige krav.
+
 # DEC-0082: Supabase-identitet og eksternt EU-turlager – historisk cutoverkontrakt
 
 **Status:** Ejerbesluttet, implementeret og produktionsverificeret i 4.0.287. Auth-, HMAC-, EU-, shard-, dataminimerings- og kapacitetsdelene gælder fortsat. DEC-0109's 4.0.311-protokol og 4.0.313's bounded legacyreplay er merged; exact-main D1-run `33269631305` bestod begge syncs, slutreconciliation, Edge, Worker, registry og SQL. Lokal 4.0.314 ændrer kun incident-inspektørens afteranker og kræver nyt exact-head D1-bevis før rekonstruktion/Pages. Offentlig produktionssandhed er fortsat 4.0.310. Driftspræciseringen af 27. august 2026 gør Supabase-PAT'et behovsstyret i stedet for kalenderroteret.
