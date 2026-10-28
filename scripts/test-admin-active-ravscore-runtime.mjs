@@ -449,8 +449,11 @@ console.log('Admin active RavScore runtime/export contract tests passed.');
     f=>{f.local.allowed=false;},f=>{f.local.card={};},f=>{f.api.invalidateAdminTripCount();}]){
     f=make();f.api.mountAdminTripCount();change(f);f.local.loads[0].resolve(result);await flush();assert.notEqual(f.nodes.total.textContent,'14');
   }
-  f=make();f.api.mountAdminTripCount();for(const listener of f.local.listeners)listener();f.local.loads[0].resolve(result);await flush();
+  f=make();f.api.mountAdminTripCount();f.local.identity++;for(const listener of f.local.listeners)listener();f.local.loads[0].resolve(result);await flush();
   assert.equal(f.nodes.total.textContent,'IKKE TILGÆNGELIGT');
+  f=make();f.api.mountAdminTripCount();for(const listener of f.local.listeners)listener();f.local.loads[0].resolve(result);await flush();
+  assert.equal(f.nodes.total.textContent,'14','Same-login renewal must preserve the pending count');
+  for(const listener of f.local.listeners)listener();assert.equal(f.nodes.total.textContent,'14','Same-login renewal must preserve the displayed count');
   f=make();f.local.allowed=false;assert.equal(f.api.adminTripCountCard(),'');
   console.log('Admin count reader and actual dashboard lifetime: ACL/epoch/owner/admission, stale/error/auth-change/render refusal, counts distinct from real trips; no real HTTP.');
 }
@@ -480,7 +483,11 @@ console.log('Admin active RavScore runtime/export contract tests passed.');
  assert.match(f.scope.textContent,/ikke en fuld kontofortegnelse/);f.select.value='ordinary';f.select.onchange();
  assert.match(f.host.innerHTML,/account2@example/);assert.doesNotMatch(f.host.innerHTML,/account0@example|account1@example|account3@example/);
  f.select.value='all';f.select.onchange();assert.match(f.host.innerHTML,/account3@example/);
- for(const listener of f.local.listeners)listener();assert.doesNotMatch(f.host.innerHTML,/@example/);
+ for(const listener of f.local.listeners)listener();assert.match(f.host.innerHTML,/account3@example/,'Same-login renewal must preserve the current profile view');
+ f.local.identity++;for(const listener of f.local.listeners)listener();assert.doesNotMatch(f.host.innerHTML,/@example/);assert.deepEqual([...f.state.profiles],[]);
+ f=fixture();let renewRelease;f.local.category=()=>new Promise(resolve=>{renewRelease=resolve;});await f.api.renderUsers();await flush();
+ for(const listener of f.local.listeners)listener();renewRelease({rows:f.ids.map((id,i)=>({id,category:['owner','expert','ordinary','unknown'][i],issues:[]})),checkedAt:'2026-10-28T12:00:00.000Z'});await flush();
+ assert.match(f.host.innerHTML,/Almindelig bruger/,'Same-login renewal must preserve a pending category response');
  f=fixture();let release;f.local.category=()=>new Promise(resolve=>{release=resolve;});await f.api.renderUsers();await flush();const before=f.host.innerHTML;
  f.api.invalidateAdminUserCategories();release({rows:[],checkedAt:'2026-10-28T12:00:00.000Z'});await flush();assert.equal(f.host.innerHTML,before);
  f=fixture();f.state.access.profile.role='expert';await f.api.renderUsers();await flush();assert.equal(f.local.categoryCalls,0);

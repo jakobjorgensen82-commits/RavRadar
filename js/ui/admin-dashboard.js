@@ -62,7 +62,7 @@ function mountAdminTripCount(){
   &&document.querySelector('#adminTripCount')===card&&identity===authIdentityEpoch()&&owner===currentSession()?.user?.id
   &&Boolean(owner)&&state.access?.profile?.id===owner&&state.access.profile.is_active===true&&allowed('full_admin');
  const unavailable=()=>{total.textContent='IKKE TILGÆNGELIGT';test.textContent='—';time.textContent='Optællingen kunne ikke bekræftes. Prøv at opdatere.';};
- const unsubscribe=onAuthChange(()=>{serial++;if(card.isConnected)unavailable();});
+ const unsubscribe=onAuthChange(()=>{if(identity===authIdentityEpoch()&&owner===currentSession()?.user?.id)return;serial++;if(card.isConnected)unavailable();});
  disposeAdminTripCount=()=>{serial++;unsubscribe();};
  const refresh=async()=>{
   const request=++serial;if(!visible())return;button.disabled=true;total.textContent='HENTER…';test.textContent='—';time.textContent='Optællingen hentes sikkert.';
@@ -483,12 +483,13 @@ async function renderUsers(){
  const manageablePermissions=canManageAll?PERMISSIONS:EXPERT_PERMISSIONS;
  content.innerHTML=`<article class="admin-card"><h2>Konti og rettigheder</h2><p class="muted">${canManageAll?'Kategorier og filtre ændrer ikke kontoens rolle eller rettigheder.':'Du kan kun tildele de tre sikre ekspertadgange: administration, håndbog og faglig gennemgang. Kontokategorier er ikke tilgængelige i denne begrænsede rettighedsvisning.'}</p><div class="toolbar">${canManageAll?'<label>Kategori <select id="accountCategoryFilter"><option value="all">Alle</option><option value="owner">Ejer</option><option value="expert">Ekspert</option><option value="ordinary">Almindelige brugere</option></select></label><button class="admin-button secondary" id="refreshAccountCategories">Opdatér kategorier</button>':''}<button class="admin-button secondary" id="previousAccountPage">Forrige konti</button><button class="admin-button secondary" id="nextAccountPage">Næste konti</button></div><p class="hint" id="accountCategoryScope">Henter den tilladte profilliste…</p><div id="profilesList" class="admin-grid"><p class="muted">Henter brugere…</p></div></article>`;
  const host=document.querySelector('#profilesList');
- const current=()=>generation===adminUserRenderEpoch&&state.tab==='users'&&host.isConnected
-  &&document.querySelector('#profilesList')===host&&identity===authIdentityEpoch()&&owner===currentSession()?.user?.id&&Boolean(owner);
+ const sameView=()=>generation===adminUserRenderEpoch&&state.tab==='users'&&host.isConnected
+  &&document.querySelector('#profilesList')===host;
+ const current=()=>sameView()&&identity===authIdentityEpoch()&&owner===currentSession()?.user?.id&&Boolean(owner);
  try{const profiles=await listProfiles();if(!current())return;state.profiles=profiles;
   const visibleProfiles=canManageAll?state.profiles:state.profiles.filter(profile=>profile.role==='expert');
   let page=0,serial=0,categories=new Map(),categoryStatus=canManageAll?'Kategorier afventer kontrol.':'';
-  disposeAdminUserCategories=onAuthChange(()=>{serial++;categories.clear();if(host.isConnected)host.innerHTML='<div class="empty">Kontoen er ændret. Åbn administrationen igen.</div>';});
+  disposeAdminUserCategories=onAuthChange(()=>{if(identity===authIdentityEpoch()&&owner===currentSession()?.user?.id)return;serial++;categories.clear();state.profiles=[];if(sameView())host.innerHTML='<div class="empty">Kontoen blev ændret. Åbn administrationen igen.</div>';});
   const scope=document.querySelector('#accountCategoryScope'),select=document.querySelector('#accountCategoryFilter');
   const previous=document.querySelector('#previousAccountPage'),next=document.querySelector('#nextAccountPage'),refresh=document.querySelector('#refreshAccountCategories');
   const pageProfiles=()=>visibleProfiles.slice(page*64,page*64+64);
@@ -508,7 +509,7 @@ async function renderUsers(){
   };
   previous.onclick=()=>{if(page>0){page--;void loadCategories();}};next.onclick=()=>{if((page+1)*64<visibleProfiles.length){page++;void loadCategories();}};
   if(select)select.onchange=draw;if(refresh)refresh.onclick=loadCategories;draw();void loadCategories();
- }catch(error){if(current())host.innerHTML=`<div class="empty">${esc(error.message)}</div>`;}
+ }catch(error){if(sameView())host.innerHTML=`<div class="empty">${esc(identity!==authIdentityEpoch()||owner!==currentSession()?.user?.id?'Kontoen blev ændret. Åbn administrationen igen.':error.message)}</div>`;}
 }
 
 async function renderHandbook(){
