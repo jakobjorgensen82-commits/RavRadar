@@ -1,3 +1,11 @@
+## 28. oktober — lokal Datakvalitet-opfølgning på adminrettelsen
+
+- Skelner mellem fire aktuelle felter, DMI-cachens 96/24-timerskrav og femfamilie-runtime ved generering. Delmål præsenteres ikke som fuld landsdækkende time-for-time-dækning.
+- Bruger faktiske marine-/cacheauditfelter og egne rapporttidspunkter. Ukendt eller modstridende grundlag bliver ikke nul eller grøn status.
+- Bevarer den præcise adminforgængers loginfornyelse og hele historiske testinverser. Fire relevante normale mål består lokalt; ingen fuldsuite gentages alene for dokumentationen.
+- Flere almindelige 4.0.590-generationer er faktisk leveret. PR747 og denne Datakvalitet-opfølgning er stadig ikke installeret; samlet kildekontrol, sikker levering og administratoraccept er åbne.
+- Ingen ny version, scoremodel, dækningsdefinition, runtimeinput, kildeprioritet, SQL-regel, administratoropsætning, geometri eller rettighed. Kun den kanoniske håndbogspayload spejles i installationskopien. Alle fem hovedmål består.
+
 ## 28. oktober — lokal adminrettelse på uændret 4.0.590
 
 - Ajourfører faktisk almindelig vejrlevering med efterfølgende normale kørsler og særskilt offentligt leverede zonepaneler; fysisk panelaccept og selvstændig fejlgenopretning er fortsat åbne.

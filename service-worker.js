@@ -8,7 +8,7 @@ const STATIC = [
   `./js/ui/about-i18n.js?v=${APP_VERSION}&ui=about-explainer-20261025`,
   `./js/ui/about-explainer.js?v=${APP_VERSION}&ui=about-explainer-20261025`,
   `./js/ui/about-explainer-i18n.js?v=${APP_VERSION}&ui=about-explainer-20261025`,
-  `./js/ui/admin-dashboard.js?v=${APP_VERSION}&ui=admin-current-data-20261028`,
+  `./js/ui/admin-dashboard.js?v=${APP_VERSION}&ui=admin-data-quality-20261028`,
   `./js/services/admin-trip-count.js?v=${APP_VERSION}&ui=admin-current-data-20261028`,
   `./js/services/admin-account-categories.js?v=${APP_VERSION}&ui=admin-current-data-20261028`,
   `./js/core/about-home-return.js?v=${APP_VERSION}`,

@@ -1,3 +1,10 @@
+## 28. oktober — Datakvalitet blander ikke rapporternes betydning (lokalt)
+
+- **ISSUE-ADMIN-DATA-QUALITY-SCOPE — LOKALT RETTET / LEVERING ÅBEN:** Visningen adskiller fire aktuelle felter og firefamilie-cachekrav fra runtimens fem komponentfamilier. Den er ikke en ny måling af alle prognosetimer og zoner.
+- **ISSUE-ADMIN-DIAGNOSTIC-FIELD-AND-TIME — LOKALT RETTET / LEVERING ÅBEN:** Marine rapporttal og mangelliste samt cacheaudit læser producenternes faktiske felter. Hver rapport viser sit eget tidspunkt. Manglende, ugyldigt eller tids-/versionsafvigende grundlag bliver ukendt; nul bevares kun som et faktisk nul.
+- Fire relevante normale mål består lokalt, inklusive den eksisterende private eksportprøve én gang efter slutbytes. Hele historiske kildeorakler, adgangsudsagn og adminens loginfornyelse er bevaret. Dette er ikke præcis samlet CI, installation eller administratoraccept.
+- PR747 og denne opfølgning er ikke installeret. Flere almindelige 590-generationer er derimod faktisk offentligt leveret; den seneste normale audit fortsætter alle 673 dele. Fuld dækning, historik, selvstændig fejlgenopretning og alle fem hovedmål er stadig åbne. Ingen score-, vejr-, rettigheds- eller SQL-regelændring.
+
 ## 28. oktober — afgrænset adminrettelse og faktisk leveringsstatus
 
 - **ISSUE-ADMIN-TRIP-TOTAL-NOT-CONNECTED – LOKALT RETTET / LEVERING ÅBEN:** Den gamle analyse var browserlokalt kalibreringsgrundlag, ikke et centralt turantal. Ny frisk adgangskontrolleret lagertotal og særskilt testtal består normale lokale mål; præcis CI, installation og administratoraccept udestår.

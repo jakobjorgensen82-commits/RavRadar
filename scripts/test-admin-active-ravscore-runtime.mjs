@@ -495,3 +495,66 @@ console.log('Admin active RavScore runtime/export contract tests passed.');
  assert.doesNotMatch(browserSource,/DESIGNATED_EXPERT|@ravradar/);assert.doesNotMatch(dashboardSource,/@(?:gmail|ravradar)\./i);
  console.log('Admin account category UI: existing row scope/permissions preserved; exact server categories, all/owner/expert/ordinary filter, unknown separate, limited manager gets no category authority, stale/auth-change output rejected.');
 }
+
+// Actual Datakvalitet renderer; only synthetic state/DOM, no producer changes or HTTP.
+{
+ const start=dashboardSource.indexOf('function renderWeather(){'),end=dashboardSource.indexOf('function saveWaterRouting()',start);
+ assert(start>=0&&end>start);const actual=dashboardSource.slice(start,end);
+ const generatedAt='2026-10-28T12:00:00.000Z';
+ const release=dashboardSource.match(/^const VERSION='(\d+\.\d+\.\d+)';$/m)?.[1];assert(release);
+ const fixture=()=>{
+  const components=Object.fromEntries(['wind','wave','current','waterLevel','waterTemperature'].map(key=>[key,{totalZones:2,missing:0,providers:key==='waterTemperature'?{unknown:2}:{dmi:2}}]));
+  return {publicManifest:{generatedAt},conditions:{generatedAt,zones:{}},zones:[],
+   runtimeDetails:{generatedAt,version:release,componentCoverage:components,acquisition:{requestsUsed:0,stoppedByHttp429:false,persistentRateLimitedUntil:null},dataQuality:{generatedAt,status:'ok',issueCounts:{errors:0,warnings:0},issues:[],observations:{stationsWithFreshLevel:0},stationLifecycle:{total:0}}},
+   health:{generatedAt,userData:{completeZones:2,totalZones:2,healthy:true},dmi:{totalZones:2},dmiForecastCache:{completeZones:2,windZones:2,waveZones:2,currentZones:2,waterLevelZones:2,duplicateTimestampZones:0}},
+   oceanDiagnostics:{generatedAt:'2026-10-28T11:00:00.123456Z',summary:{freshMarineZones:0,preservedMarineZones:2,fallbackOrMissingMarineZones:1},missingZones:{z1:{reason:'MISSING_CURRENT',collectionsTried:['test-model'],nearestValidDistanceKm:null}}},
+   cacheAudit:{generatedAt:'2026-10-28T10:00:00.000Z',before:{bytes:123},after:{bytes:45,files:2},removedFiles:3},
+   implementationAudit:{generatedAt:'2026-10-28T13:00:00.000Z',version:release,summary:{hourlyProviderSwitches:{wind:0,wave:0,current:0,waterLevel:0,waterTemperature:0}},issueCounts:{errors:0,warnings:0}}};
+ };
+ const render=state=>{
+  const before=JSON.stringify(state),content={innerHTML:''},elements={weatherZoneSearch:{value:''},weatherZoneRows:{innerHTML:''},downloadRuntime:{}};
+  runInNewContext(actual+'\nrenderWeather();',{state,content,VERSION:release,document:{querySelector:selector=>elements[selector.slice(1)]},
+   esc:value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])),
+   publicSourceBadge:()=>'',Date,Number,Object,Array,Math,Boolean,String,allowed:()=>false});
+  assert.equal(JSON.stringify(state),before,'Datakvalitet må ikke ændre diagnoseinput');return content.innerHTML;
+ };
+ const row=(html,key)=>html.match(new RegExp('<tr data-component="'+key+'">[\\s\\S]*?</tr>'))?.[0]||'';
+ let state=fixture(),html=render(state);
+ assert.equal((html.match(/data-component=/g)||[]).length,5);
+ assert.match(row(html,'waterTemperature'),/Vandtemperatur[\s\S]*Ikke opgjort i denne cachekontrakt[\s\S]*0\/2[\s\S]*unknown: 2/);
+ assert.match(html,/Fire aktuelle felter ved generering/);assert.match(html,/mindst 96 timers vind og 24 timers/);
+ assert.doesNotMatch(html,/Brugerprognosen kan anvendes|Alle DMI-komponenter|status-good/);
+ assert.match(html,/0 forespørgsler registreret/);assert.match(html,/MISSING_CURRENT/);assert.match(html,/test-model/);
+ assert.doesNotMatch(html,/null km|0 km|Ingen manglende marine zoner registreret/);
+ assert.match(html,/<b>Før oprydning:<\/b> 123 bytes/);assert.match(html,/<b>Efter:<\/b> 45 bytes/);
+ assert.match(html,/<b>Filer efter:<\/b> 2/);assert.match(html,/<b>Slettet:<\/b> 3/);
+ assert.match(html,/Ingen registrerede problemer i denne generations diagnose/);
+ state=fixture();for(const key of ['runtimeDetails','health','oceanDiagnostics','cacheAudit','implementationAudit'])state[key]=null;html=render(state);
+ assert.match(html,/Ukendt/);assert.doesNotMatch(html,/0\/0|status-good|Ingen registrerede problemer|Ingen manglende marine zoner registreret/);
+ for(const bad of [null,undefined,'not-a-date','2026-02-30T12:00:00.000Z','2026-10-27T12:00:00.000Z']){
+  state=fixture();state.runtimeDetails.generatedAt=bad;html=render(state);assert.match(row(html,'wind'),/<td>Ukendt<\/td><td>Ukendt<\/td><\/tr>/);
+ }
+ for(const changed of [s=>{delete s.publicManifest.generatedAt;},s=>{s.publicManifest.generatedAt='2026-10-27T12:00:00.000Z';},
+  s=>{s.conditions.generatedAt=null;},s=>{s.runtimeDetails.version=undefined;},s=>{s.runtimeDetails.version='0.0.0';},
+  s=>{s.runtime=s.runtimeDetails;s.runtimeDetails=null;}]){
+  state=fixture();changed(state);html=render(state);assert.match(row(html,'wind'),/<td>Ukendt<\/td><td>Ukendt<\/td><\/tr>/);assert.doesNotMatch(html,/Ingen registrerede problemer/);
+ }
+ for(const bad of [null,undefined,'0',false,-1,NaN]){
+  state=fixture();state.health.dmiForecastCache.windZones=bad;state.runtimeDetails.componentCoverage.wind.missing=bad;
+  html=render(state);assert.match(row(html,'wind'),/<td>Ukendt<\/td><td>Ukendt<\/td>/);
+ }
+ state=fixture();state.health.generatedAt=null;html=render(state);assert.match(row(html,'wind'),/<td>Ukendt<\/td><td>0\/2<\/td>/);
+ state=fixture();state.health.userData.completeZones=3;html=render(state);assert.match(html,/Fire aktuelle felter ved generering<\/h2><div class="metric">Ukendt/);
+ state=fixture();state.oceanDiagnostics.missingZones={};html=render(state);assert.match(html,/Ingen manglende marine zoner registreret i denne daterede rapport/);
+ state.oceanDiagnostics.generatedAt=null;html=render(state);assert.doesNotMatch(html,/Ingen manglende marine zoner registreret/);
+ state=fixture();delete state.oceanDiagnostics.missingZones;html=render(state);assert.match(html,/Ikke oplyst med et kendt rapporttidspunkt/);
+ state=fixture();state.runtimeDetails.dataQuality.generatedAt=null;html=render(state);assert.doesNotMatch(html,/Ingen registrerede problemer/);
+ state=fixture();state.runtimeDetails.dataQuality.issues=null;html=render(state);assert.doesNotMatch(html,/Ingen registrerede problemer/);
+ state=fixture();state.runtimeDetails.dataQuality.issueCounts.errors=1;html=render(state);assert.doesNotMatch(html,/Ingen registrerede problemer/);
+ state=fixture();state.runtimeDetails.acquisition.requestsUsed=undefined;state.runtimeDetails.acquisition.stoppedByHttp429=undefined;html=render(state);assert.match(html,/DMI-kørslens registrering<\/h2><div class="metric">Ukendt/);
+ state=fixture();state.runtimeDetails.acquisition.stoppedByHttp429=true;assert.match(render(state),/HTTP 429/);
+ state=fixture();state.runtimeDetails.acquisition.persistentRateLimitedUntil='2099-01-01T00:00:00.000Z';assert.match(render(state),/Cooldown aktiv/);
+ state=fixture();state.runtimeDetails.componentCoverage.wind.providers={'<img src=x>':2};state.oceanDiagnostics.missingZones.z1.reason='<script>x</script>';
+ html=render(state);assert.match(html,/&lt;img src=x&gt;: 2/);assert.match(html,/&lt;script&gt;x&lt;\/script&gt;/);assert.doesNotMatch(html,/<img src=x>|<script>x/);
+ console.log('Admin Datakvalitet: actual renderer preserves five-family/current-vs-cache scope, unknown versus missing/zero, dates and versions, exact ocean/cache producer keys and escaped immutable input; no HTTP.');
+}

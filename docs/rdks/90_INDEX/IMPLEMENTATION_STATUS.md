@@ -1,3 +1,13 @@
+## 28. oktober — Datakvalitet med præcis afgrænsning; lokal opfølgning
+
+4.0.590 har faktisk leveret flere almindelige vejrgenerationer gennem leverandører, beregning, beskyttet B før S, Pages og offentlig kontrol af 210 zoner og 673 dele. Seneste afsluttede normale tilstandsaudit viser fortsættelse af alle 673 dele uden kold genberegning. Det beviser ikke fuld vejrdækning, fuld historik eller selvstændig fejlgenopretning. Den næste planlagte almindelige kørsel er startet; en aktiv kørsel er ikke et nyt deploybevis. Kørselsidentiteter og konkrete dækningsmålinger føres privat.
+
+PR747 med turtotal, kontokategorier og normal loginfornyelse er fortsat ikke installeret. Den særskilte Datakvalitet-opfølgning er kun sammensat og måltestet lokalt oven på den præcise adminforgænger. Aktiv kildekode og produktion er urørt; præcis samlet kildekontrol, kontrolleret levering og administratoraccept udestår.
+
+Visningen skelner mellem producentens fire aktuelle felter ved generering, DMI-cachens krav om mindst 96 timers vind og 24 timers bølger, strøm og vandstand samt runtimens fem komponentfamilier ved generering. Ingen af disse deltal er dækningsgraden for alle timer, zoner og søgemåder. Vandtemperatur indgår i runtime, men ikke i den gamle firefamilie-cachekontrakt. Manglende eller modstridende dato, version eller tal vises som ukendt, ikke nul eller fejlfrit. Marine-, implementerings- og cacheaudits har egne rapporttidspunkter; de ommærkes ikke til den offentlige generation.
+
+Kun adminvisning, dens normale målprøver og sammenhængende dokumentation ændres. Der tilføjes ingen ny dækningsmåler, providerforespørgsel, scoreformel, modelbinding, SQL-regel, administratoropsætning, geometri eller rettighed. Installationsfilen spejler alene den kanoniske webhåndbog. Alle fem mål til 18. november er åbne; SOURCE, samlet statistik og automatisk sletning er fortsat inaktive. Tidligere daterede afsnit bevares som historik på de konkret erstattede statuspunkter. Se håndbog 89.275.
+
 ## 28. oktober — nyt vejr og zonepaneler leveret; adminrettelse er lokal
 
 Den almindelige 4.0.590-vejrhentning og efterfølgende almindelige kørsler har faktisk gennemført leverandører, beregning, beskyttet B før S, Pages og offentlig kontrol af 210 zoner og 673 dele. Originalernes aktive forgængerlæser og kalenderrettelsen er derfor ikke længere kun lokale kandidater. Den senere normale kørselsrapport viser fortsatte tilstande for alle 673 dele uden kold genberegning. Fuld vejrdækning, fuld scorehistorik og selvstændig fejlgenopretning er fortsat særskilte åbne krav.
