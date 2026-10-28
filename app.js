@@ -8,7 +8,7 @@ import { submitTripEvidenceObservation, syncPendingObservations } from "./js/ser
 import { consumeAuthCallback } from "./js/services/auth-service.js?v=4.0.590";
 import { createMap, installFlowArrows, refreshZoneStyles, renderZones } from "./js/map/map-view.js?v=4.0.590";
 import { projectPublicCoastlines } from "./js/map/public-coast-projection.js?v=4.0.590";
-import { bindZoneInfoInteractions, showZoneInfo } from "./js/ui/info-panel.js?v=4.0.590";
+import { bindZoneInfoInteractions, showZoneInfo } from "./js/ui/info-panel.js?v=4.0.590&ui=zone-panels-20261027";
 import { openAccountDialog } from "./js/ui/account-panel.js?v=4.0.590&ui=account-20261006";
 import { openDeveloperDialog } from "./js/ui/developer-panel.js?v=4.0.590";
 import { askRavRadar, quickQuestions, ravQuestionNeedsConditionDetails, assistantTopicForQuestion, assistantLocalFollowupAnswer } from "./js/services/rav-assistant.js?v=4.0.590";
@@ -89,7 +89,7 @@ function handleMapForecastCommit(frame){
   mapScores.clear();
   if(!coreViewReady)return;
   refreshMapDisplay();
-  if(frame?.isNow&&state.selectedZone)void ensureConditionDetails().catch(error=>console.warn('Zonens prognose kunne ikke hentes',error));
+  if(frame&&state.selectedZone)void ensureConditionDetails().catch(error=>console.warn('Zonens prognose kunne ikke hentes',error));
 }
 function mapFrame(){const frame=mapForecast.committed;return frame?.isNow===false?frame:null;}
 function mapConditions(){return mapFrame()?.conditions||state.conditions;}
@@ -188,9 +188,11 @@ function renderSelectedZone() {
   forecastShareControlCleanup();forecastShareControlCleanup=()=>{};
   if(!state.selectedZone)return;
   infoPanel.hidden=false;
-  const frame=mapFrame(),condition=mapConditions().zones?.[state.selectedZone.id]||{},display=mapDisplayFor(state.selectedZone);
-  const bestByDate=frame?{}:Object.fromEntries(groupHoursForZone(state.selectedZone).map(day=>[day.date,bestForDay(state.selectedZone,day.date)]));
-  const history=frame?{}:condition.history||{};
+  // The header follows the map hour; the two full forecasts keep the normal
+  // zone detail envelope and calendar, not the single-hour map projection.
+  const frame=mapFrame(),condition=zoneCondition(state.selectedZone),display=mapDisplayFor(state.selectedZone);
+  const bestByDate=Object.fromEntries(groupHoursForZone(state.selectedZone).map(day=>[day.date,bestForDay(state.selectedZone,day.date)]));
+  const history=condition.history||{};
   showZoneInfo(infoPanel,state.selectedZone,display.result,display.weather,state.mode,{ forecast:condition.forecast,history,bestByDate,displayContext:display.context,mapForecastTime:frame?.time??null });
   if(frame){const label=document.createElement('p');label.className='map-timeline-zone-time';label.textContent=t('map.timeline.shown',{time:mapTimelineDate(frame.time)});infoPanel.prepend(label);}
   const shareGeneration=mapForecast.snapshot().generation;
@@ -217,7 +219,7 @@ function openZone(zone,{scroll=true}={}) {
   const point=zone.pinPoint||zone.dataPoint;
   if(point) map.setView([point[1],point[0]],Math.max(map.getZoom(),10));
   renderSelectedZone();
-  if(!mapFrame())void ensureConditionDetails().catch(error=>console.error('Zonedetaljer kunne ikke hentes',error));
+  void ensureConditionDetails().catch(error=>console.error('Zonedetaljer kunne ikke hentes',error));
   requestAnimationFrame(()=>map.invalidateSize());
   if(scroll) infoPanel.scrollIntoView({behavior:"smooth",block:"start"});
 }
