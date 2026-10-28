@@ -1,6 +1,6 @@
 {
   "schemaVersion": "rav-assistant-public-knowledge-v1",
-  "releaseVersion": "4.0.590",
+  "releaseVersion": "4.0.591",
   "ravScoreModelBinding": {
     "modelId": "RRS-COASTAL-PROCESS-INTEGRATED-1.1.0",
     "stateSchemaVersion": "6.0.0",
@@ -12,7 +12,7 @@
     "bestTimePolicyId": "score-history-water-tie-earliest-v3",
     "presentationPolicyId": "score-bands-35-55-75-exceptional90-v1",
     "modelContractSha256": "a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b",
-    "modelBundleSha256": "4c94c24e7d14d66c20cc3c2c3d0389cadb0c3e9e76fcfe692943c6087df56819"
+    "modelBundleSha256": "ebd5ac3dac09b7afb51e46d18920f6932b478b7ef15bdd31190c128273cb6a54"
   },
   "scoreModel": {
     "id": "RRS-COASTAL-PROCESS-INTEGRATED-1.1.0",
@@ -228,6 +228,18 @@
     {
       "id": "identification.spectroscopy-limits",
       "text": "FTIR and Raman provide useful evidence about amber chemistry and alteration. Comparing the surface and interior can reveal differences, but natural variation and heat treatment can overlap. A single spectrum does not by itself establish an exact age or an unambiguous weathering stage. Qualified assessment combines comparative spectra, other analytical methods and the specimen's geological context; spectroscopy is not categorically incapable of detecting treatment."
+    },
+    {
+      "id": "equipment.amber-net",
+      "text": "An amber net is a small net for light wash or visible pieces in very shallow water. Use it only with secure footing; it does not make deep, cold or fast water safe."
+    },
+    {
+      "id": "assistant.public-capabilities",
+      "text": "I can explain amber, equipment, field signs and how weather and the coast affect a search. I can also show the best places and times from RavRadar’s valid forecast for the selected search mode and explain a score. You can ask about a particular day. I cannot guarantee finds or assess whether entering the water is safe."
+    },
+    {
+      "id": "transport.current-supply-memory",
+      "text": "After sufficiently strong and sustained verified coastward current, AmberScore can remain high through a brief seaward reversal. Outflow subtracts from the accumulated current-supply index; it does not reset it automatically. Current evidence has full age weight until 24 hours, then declining weight until 48 hours. The score combines 20 % huntability, 50 % delivery potential and 30 % wave mobilisation; the other parts also count. The 48-hour rule concerns current, not completeness of all weather history. These are model assumptions, not observed amber or a guarantee for any zone or hour."
     }
   ],
   "fixedRefusals": {

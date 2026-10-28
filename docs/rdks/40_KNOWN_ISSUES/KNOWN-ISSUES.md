@@ -1,3 +1,21 @@
+## 29. oktober — 4.0.591 er lokalt udstedt; offentlig assistentlevering er åben
+
+Den selvstændige assistentkandidat har gennemført normal versionssynk, fysisk beregning af nye C/I/T-bindinger, én ny append-only migration og synk af de syv eksisterende forbrugere. Frisk genberegning, hele genererede filer, den kanoniske SQL-inverse og begge normale builderkontroller består. Alle 68 tidligere migrationer er byteuændrede; geodata ændres kun i det stående godkendte topversionsfelt. Der er ikke udført SQL-installation eller ændret produktionsdata af den lokale udstedelse.
+
+De tre normale lokale assistentmål består på den udstedte kandidat, herunder dansk, tysk og engelsk, hele spørgsmål, relevante opfølgninger, ukendt udstyr, sikkerhed og privatliv. Den ene historiske testindgang er rettet med en streng helfil-inverse af den nye valgte 590-kildedata før de uændrede gamle orakler; dens målprøve består. Det er ikke ny samlet GitHub-kvalifikation, rigtig PostgreSQL eller bevis for fungerende ekstern AI.
+
+Første installation skal fortsat bruge det eksisterende afgrænsede modelbindingsforløb med frisk originalkontrol og faktisk databasegenlæsning. Edge og offentlig frontend leveres først gennem den krævede senere almindelige generation. Generisk kode-only må ikke bruges til førsteinstallation. Den store SOURCE-revision forbliver adskilt og inaktiv.
+
+Administratorrettelserne er særskilt kildekvalificeret og merget. Turlager-Workerens faktiske opdatering, attestering og genåbning af normal D1-drift er gennemført uden SQL-installation; den efterfølgende normale Edge-/Pages-levering følges særskilt i checkpointet. Det er ikke den nye 591-assistent. Almindelig 590-vejrhentning har igen faktisk leveret nyt offentligt vejr. Fuld dækning, komplet historik, browseraccept og selvstændig fejlhåndtering er fortsat åbne.
+
+Scoreformel, kildeprioritet DMI → Copernicus → Open-Meteo, central administratoropsætning, punkter, geometri, rettigheder og historiske scorer bevares. Ingen SOURCE-, statistik-, slette- eller DNS-aktivering. Alle fem mål til 18. november 2026 er fortsat åbne; tidligere daterede beviser bevares. Se håndbog 89.276 og det private checkpoint for aktuelle kørsels- og leveringsresultater.
+
+## 28. oktober — ISSUE-ASSISTANT-POST590-DELIVERY er fortsat åben
+
+Assistentens gennemgåede forståelses- og vidensrettelser klargøres særskilt fra SOURCE-revisionen. Korrekt ny model-/vidensbinding, præcis samlet kildekontrol, bevarelse af ægte 590-originaler, kontrolleret installation og en faktisk senere offentlig generation mangler fortsat som selvstændige leveringsbeviser. Browserprøver og faktisk ekstern AI skal kontrolleres gennem de normale brugerfunktioner. Lokale faste svar er ikke bevis for ekstern AI; private driftstilstande og interne fejlnotater må ikke indgå i brugernes viden.
+
+Den fulde SOURCE-revisions manglende action-/opfølger-/fejlforløb lukkes ikke af en assistentlevering eller historisk584-kapacitet. Ingen SOURCE-aktivering følger af denne kandidat. Alle fem hovedmål er fortsat åbne.
+
 ## 28. oktober — Datakvalitet blander ikke rapporternes betydning (lokalt)
 
 - **ISSUE-ADMIN-DATA-QUALITY-SCOPE — LOKALT RETTET / LEVERING ÅBEN:** Visningen adskiller fire aktuelle felter og firefamilie-cachekrav fra runtimens fem komponentfamilier. Den er ikke en ny måling af alle prognosetimer og zoner.

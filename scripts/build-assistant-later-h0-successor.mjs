@@ -22,7 +22,11 @@ import {ASSISTANT_LATER_H0_BEFORE as OLD,ASSISTANT_LATER_H0_ALIASES as ALIASES,
   ASSISTANT_PUBLIC588_SUCCESSOR_BEFORE,ASSISTANT_PUBLIC588_SUCCESSOR_ALIASES,
   readAssistantPublic588PredecessorCanonicalSource,assistantPublic588SuccessorCheckpointContractFromBase,
   requireAssistantPublic588SuccessorBinding,requireAssistantPublic588SuccessorOutput,
-  requireAssistantPublic588SuccessorRelease,assistantPublic588SuccessorMigration,ACTIVE_ASSISTANT_SUCCESSOR}
+  requireAssistantPublic588SuccessorRelease,assistantPublic588SuccessorMigration,ACTIVE_ASSISTANT_SUCCESSOR,
+  ASSISTANT_PUBLIC590_SUCCESSOR_BEFORE,ASSISTANT_PUBLIC590_SUCCESSOR_ALIASES,
+  readAssistantPublic590PredecessorCanonicalSource,assistantPublic590SuccessorCheckpointContractFromBase,
+  requireAssistantPublic590SuccessorParent,requireAssistantPublic590SuccessorBinding,requireAssistantPublic590SuccessorOutput,
+  requireAssistantPublic590SuccessorRelease,assistantPublic590SuccessorMigration}
   from './lib/assistant-later-h0-successor-source.mjs';
 const ROOT=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..'),CP='ravradar_ravscore_checkpoint_';
 const sha=v=>crypto.createHash('sha256').update(v).digest('hex');
@@ -50,8 +54,16 @@ const PUBLIC588=Object.freeze({
   contractTail:"    || E'\\n-- assistant-later-h0-original587-payload-validator --\\n' || v_ask587_payload_definition;",
   kind:'ASSISTANT_PUBLIC588_SUCCESSOR_STRUCTURE'});
 
+const PUBLIC590=Object.freeze({
+  previous:ASSISTANT_PUBLIC590_SUCCESSOR_BEFORE,aliases:ASSISTANT_PUBLIC590_SUCCESSOR_ALIASES,
+  previousRelease:590,validatorCount:37,
+  readPredecessor:readAssistantPublic590PredecessorCanonicalSource,
+  checkpointFromBase:assistantPublic590SuccessorCheckpointContractFromBase,
+  contractTail:"    || E'\\n-- assistant-later-h0-original588-payload-validator --\\n' || v_ask588_payload_definition;",
+  kind:'ASSISTANT_PUBLIC590_SUCCESSOR_STRUCTURE'});
+
 function fixedProfile(profile){
-  assert(profile===LEGACY586||profile===PUBLIC587||profile===PUBLIC588,'ASSISTANT_SUCCESSOR_UNKNOWN_PROFILE');
+  assert(profile===LEGACY586||profile===PUBLIC587||profile===PUBLIC588||profile===PUBLIC590,'ASSISTANT_SUCCESSOR_UNKNOWN_PROFILE');
   return profile;
 }
 function metadata(source,next,inventory,OLD){
@@ -76,6 +88,14 @@ export async function prepareAssistantPublic588SuccessorStructure(options){
   assert(options&&Object.getPrototypeOf(options)===Object.prototype);
   assert.deepEqual(Object.keys(options),['version'],'Kun normal tidsstempelinput; ingen caller-valgt profil eller tuple');
   return prepareStructure(PUBLIC588,options.version);
+}
+
+export async function prepareAssistantPublic590SuccessorStructure(options){
+  assert.equal(arguments.length,1);
+  requireAssistantPublic590SuccessorParent(); // Before operands, model discovery or filesystem work.
+  assert(options&&Object.getPrototypeOf(options)===Object.prototype);
+  assert.deepEqual(Object.keys(options),['version'],'Kun normal tidsstempelinput; ingen caller-valgt profil eller tuple');
+  return prepareStructure(PUBLIC590,options.version);
 }
 
 async function prepareStructure(profile,version){
@@ -299,17 +319,45 @@ export async function buildAssistantPublic588BindingSuccessor(options){
 }
 
 
+export async function buildAssistantPublic590BindingSuccessor(options){
+  assert.equal(arguments.length,1);
+  const core=await prepareAssistantPublic590SuccessorStructure(options);
+  const prior=await readAssistantPublic590PredecessorCanonicalSource();
+  const result=wrap(core,prior,PUBLIC590);
+  assert.equal(result.migrationIssued,false);assert.equal(result.productionAuthority,false);
+  return Object.freeze({...result,sameH0Capability:false,admission:'NO_ADMISSION'});
+}
+
+
 async function main(){
   const args=process.argv.slice(2);
   if(args[0]==='--active'){
     // Det eksisterende normale source-mål følger kun det kildeejede aktive objekt.
     // De navngivne gamle CLI-indgange bevares til autentiske frozen-banker.
-    assert(['assistant-public587-successor','assistant-public588-successor'].includes(ACTIVE_ASSISTANT_SUCCESSOR.sourcePhase));
-    args.shift();args.unshift(ACTIVE_ASSISTANT_SUCCESSOR.sourcePhase==='assistant-public588-successor'
+    assert(['assistant-public587-successor','assistant-public588-successor','assistant-public590-successor'].includes(ACTIVE_ASSISTANT_SUCCESSOR.sourcePhase));
+    args.shift();args.unshift(ACTIVE_ASSISTANT_SUCCESSOR.sourcePhase==='assistant-public590-successor'
+      ?'--public590-successor':ACTIVE_ASSISTANT_SUCCESSOR.sourcePhase==='assistant-public588-successor'
       ?'--public588-successor':'--public587-successor');
   }
+  const public590=args[0]==='--public590-successor';
+  if(public590)args.shift();
   const public588=args[0]==='--public588-successor',public587=args[0]==='--public587-successor';
-  if(public588||public587)args.shift();
+  if(!public590&&(public588||public587))args.shift();
+  if(public590){
+    // Lukket ny indgang: NULL afvises før konstruktion, modelberegning eller fil-I/O.
+    const issued=requireAssistantPublic590SuccessorBinding(),pins=requireAssistantPublic590SuccessorOutput();
+    requireAssistantPublic590SuccessorRelease();
+    assert(args.length===0||(args.length===1&&['--check','--write'].includes(args[0])));
+    const result=await buildAssistantPublic590BindingSuccessor({version:issued.version});
+    assert.deepEqual(result.nextBinding,issued,'Only the actual physical issued C/I/T');
+    assert.deepEqual({migrationSha256:result.migrationSha256,canonicalSha256:result.afterCanonicalSha256,
+      checkpointContractSha256:result.checkpointContractSha256,tripBindingPolicySha256:result.tripBindingPolicySha256},pins);
+    const migration=assistantPublic590SuccessorMigration(),file=path.join(ROOT,'supabase/migrations',migration.filename);
+    if(args[0]==='--write')await fs.writeFile(file,result.migration,{flag:'wx'});
+    else assert.deepEqual(await fs.readFile(file),Buffer.from(result.migration));
+    console.log('Exact original-preserving assistant590 later-H0 metadata source checked; no installation or state admission.');
+    return;
+  }
   if(public588){
     // Lukket ny indgang: NULL afvises før konstruktion, modelberegning eller fil-I/O.
     const issued=requireAssistantPublic588SuccessorBinding(),pins=requireAssistantPublic588SuccessorOutput();

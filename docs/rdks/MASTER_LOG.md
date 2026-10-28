@@ -1,3 +1,9 @@
+## 29. oktober 2026 — lokal 4.0.591-assistent; almindeligt 590-vejr og admin leveret
+
+4.0.591 er faktisk lokalt udstedt gennem normal versionssynk, fysisk C/I/T-afledning, én ny append-only migration og syv forbrugeres synk. Den friske bindingskontrol og de tre normale lokale assistentmål består. Alle 68 tidligere migrationer og geodata uden for topversionen bevares. Præcis samlet kilde-CI, rigtig PostgreSQL, installation, senere offentlig generation samt normal browser- og ekstern AI-accept er åbne. SOURCE-revisionen er bevaret særskilt og inaktiv; den aktiveres ikke for assistentleveringen.
+
+Almindelig 590-vejrhentning har faktisk leveret nyt offentligt vejr. Administratorrettelsernes kildekontrol, merge, Worker-opdatering og efterfølgende kode-only med Pages og offentlig kontrol er gennemført; faktisk administratorlogin og turantalaccept er fortsat åbne. Ingen scoreformel, kildeprioritet, central opsætning, punkter, geometri eller rettighed ændres. Alle fem mål til 18. november 2026 er åbne. Skiftende drifts- og kørselsidentiteter står i privat checkpoint; ældre fronter bevares som dateret historik på de konkret erstattede punkter.
+
 ## 28. oktober — nyt vejr og zonepaneler leveret; adminrettelse er lokal
 
 Den almindelige 4.0.590-vejrhentning har faktisk gennemført leverandører, beregning, beskyttet B før S, Pages og offentlig kontrol af 210 zoner og 673 dele. Originalernes aktive forgængerlæser og kalenderrettelsen er derfor ikke længere kun lokale kandidater. Fuld vejrdækning, en almindelig efterfølger og selvstændig fejlgenopretning er fortsat særskilte åbne krav.

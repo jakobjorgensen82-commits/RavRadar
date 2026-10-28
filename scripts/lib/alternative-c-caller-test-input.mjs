@@ -1118,6 +1118,7 @@ export function inverseActiveFamilyRetentionCompanionTestInput(source, relative)
   assert.equal(typeof source, 'string', 'ALTERNATIVE_C_TEST_INPUT_CHANGED:ACTIVE_RETENTION_TYPE');
   const row = ACTIVE_FAMILY_RETENTION_COMPANION_TEST_REVIEW;
   assert.equal(relative, row.path, 'ALTERNATIVE_C_TEST_INPUT_CHANGED:ACTIVE_RETENTION_PATH');
+  source = inverseAssistant590RetentionCompanionTestInput(source, relative);
   source = source.replace(/\r\n/g, '\n');
   if (Buffer.byteLength(source) === row.before.bytes && digest(source) === row.before.sha256) return source;
   assert.equal(Buffer.byteLength(source), row.after.bytes, 'ALTERNATIVE_C_TEST_INPUT_CHANGED:ACTIVE_RETENTION_SIZE');
@@ -1128,5 +1129,49 @@ export function inverseActiveFamilyRetentionCompanionTestInput(source, relative)
   }
   assert.equal(Buffer.byteLength(source), row.before.bytes, 'ALTERNATIVE_C_TEST_INPUT_CHANGED:ACTIVE_RETENTION_BEFORE_SIZE');
   assert.equal(digest(source), row.before.sha256, 'ALTERNATIVE_C_TEST_INPUT_CHANGED:ACTIVE_RETENTION_WHOLE_INVERSE');
+  return source;
+}
+
+// TEST INPUT ONLY: remove only the exact assistant590 predecessor route before the
+// unchanged745 active-retention inverse. No runtime admission or fallback.
+export const ASSISTANT590_RETENTION_COMPANION_TEST_REVIEW = Object.freeze({
+  "path": "scripts/read-authenticated-dmi-current-companions.mjs",
+  "before": {
+    "bytes": 12536,
+    "sha256": "7d34f89912e6bab865dde2bc7d58ac77ede17fda0b3e28acba05bd7584936116"
+  },
+  "after": {
+    "bytes": 12840,
+    "sha256": "13654b7e1af641622b85ebfcf756d70858c37993d4a1c0a8fd1a98b0904495b7"
+  },
+  "hunks": [
+    [
+      "import {readAuthenticatedFrozen588Predecessor,assertAuthenticatedFrozen588Snapshot}\n  from './lib/authenticated-frozen586-predecessor.mjs';",
+      "import {readAuthenticatedFrozen588Predecessor,assertAuthenticatedFrozen588Snapshot}\n  from './lib/authenticated-frozen586-predecessor.mjs';\nimport {readAuthenticatedFrozen590Predecessor,assertAuthenticatedFrozen590Snapshot}\n  from './lib/authenticated-frozen586-predecessor.mjs';"
+    ],
+    [
+      "const ACTIVE_PREDECESSOR=ACTIVE.sourcePhase==='assistant-public588-successor'?Object.freeze({",
+      "const ACTIVE_PREDECESSOR=ACTIVE.sourcePhase==='assistant-public590-successor'?Object.freeze({\n  read:readAuthenticatedFrozen590Predecessor,snapshot:assertAuthenticatedFrozen590Snapshot,\n}):ACTIVE.sourcePhase==='assistant-public588-successor'?Object.freeze({"
+    ]
+  ]
+});
+
+export function inverseAssistant590RetentionCompanionTestInput(source, relative) {
+  assert.equal(arguments.length, 2, 'ALTERNATIVE_C_TEST_INPUT_CHANGED:ASSISTANT590_RETENTION_ARGUMENTS');
+  assert.equal(typeof source, 'string', 'ALTERNATIVE_C_TEST_INPUT_CHANGED:ASSISTANT590_RETENTION_TYPE');
+  const row = ASSISTANT590_RETENTION_COMPANION_TEST_REVIEW;
+  assert.equal(relative, row.path, 'ALTERNATIVE_C_TEST_INPUT_CHANGED:ASSISTANT590_RETENTION_PATH');
+  source = source.replace(/\r\n/g, '\n');
+  const old = ACTIVE_FAMILY_RETENTION_COMPANION_TEST_REVIEW;
+  for (const pin of [row.before, old.before])
+    if (Buffer.byteLength(source) === pin.bytes && digest(source) === pin.sha256) return source;
+  assert.equal(Buffer.byteLength(source), row.after.bytes, 'ALTERNATIVE_C_TEST_INPUT_CHANGED:ASSISTANT590_RETENTION_SIZE');
+  assert.equal(digest(source), row.after.sha256, 'ALTERNATIVE_C_TEST_INPUT_CHANGED:ASSISTANT590_RETENTION_WHOLE');
+  for (const [before, after] of [...row.hunks].reverse()) {
+    assert.equal(source.split(after).length, 2, 'ALTERNATIVE_C_TEST_INPUT_CHANGED:ASSISTANT590_RETENTION_HUNK');
+    source = source.replace(after, () => before);
+  }
+  assert.equal(Buffer.byteLength(source), row.before.bytes, 'ALTERNATIVE_C_TEST_INPUT_CHANGED:ASSISTANT590_RETENTION_BEFORE_SIZE');
+  assert.equal(digest(source), row.before.sha256, 'ALTERNATIVE_C_TEST_INPUT_CHANGED:ASSISTANT590_RETENTION_WHOLE_INVERSE');
   return source;
 }

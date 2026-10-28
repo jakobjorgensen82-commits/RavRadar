@@ -16,10 +16,14 @@ import {readAuthenticatedFrozen587Predecessor,assertAuthenticatedFrozen587Snapsh
   from './lib/authenticated-frozen586-predecessor.mjs';
 import {readAuthenticatedFrozen588Predecessor,assertAuthenticatedFrozen588Snapshot}
   from './lib/authenticated-frozen586-predecessor.mjs';
+import {readAuthenticatedFrozen590Predecessor,assertAuthenticatedFrozen590Snapshot}
+  from './lib/authenticated-frozen586-predecessor.mjs';
 import {ACTIVE_ASSISTANT_SUCCESSOR as ACTIVE} from './lib/assistant-later-h0-successor-source.mjs';
 import {ravScoreModelBinding} from '../js/core/ravscore-model-contract.js';
 import {readAssistantLaterH0RetentionInput} from './assistant-later-h0-runtime-transition.mjs';
-const ACTIVE_PREDECESSOR=ACTIVE.sourcePhase==='assistant-public588-successor'?Object.freeze({
+const ACTIVE_PREDECESSOR=ACTIVE.sourcePhase==='assistant-public590-successor'?Object.freeze({
+  read:readAuthenticatedFrozen590Predecessor,snapshot:assertAuthenticatedFrozen590Snapshot,
+}):ACTIVE.sourcePhase==='assistant-public588-successor'?Object.freeze({
   read:readAuthenticatedFrozen588Predecessor,snapshot:assertAuthenticatedFrozen588Snapshot,
 }):Object.freeze({
   read:readAuthenticatedFrozen587Predecessor,snapshot:assertAuthenticatedFrozen587Snapshot,

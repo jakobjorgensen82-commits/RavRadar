@@ -19,7 +19,7 @@ const CORE_LOCAL_RAV_KNOWLEDGE = Object.freeze([
     'Luftbobler, porøsitet og urenheder kan ændre et ravstykkes massefylde og bevægelse. Derfor kan enkelte stykker opføre sig lettere end hovedparten uden at gøre alt rav flydende.',
     'Luftblasen, Porosität und Einschlüsse können Dichte und Bewegung eines Stücks verändern. Einzelne Stücke können sich daher leichter verhalten, ohne dass Bernstein allgemein schwimmt.',
     'Air bubbles, porosity and impurities can change a piece’s density and movement. Individual pieces may behave more lightly without implying that amber generally floats.'),
-  entry('piece-shape', /rav.*(?:form|størrelse|fladt|klump)|bernstein.*(?:form|größe|flach|klumpen)|(?:form|größe).*(?:von )?bernstein|amber.*(?:shape|size|flat|lump)/iu,
+  entry('piece-shape', /(?<![\p{L}\p{N}_])(?:(?:rav(?:et|ets)?|ravstykke(?:t|r|rne)?)(?![\p{L}\p{N}_]).*(?<![\p{L}\p{N}_])(?:form|størrelse|klump)(?![\p{L}\p{N}_])|(?:form|størrelse)(?![\p{L}\p{N}_]).*(?<![\p{L}\p{N}_])rav(?:et|ets)?(?![\p{L}\p{N}_])|flad(?:t|e)? (?:rav|ravstykke(?:t|r|rne)?)(?![\p{L}\p{N}_])|bernstein(?:stück(?:e|en|s)?)?(?![\p{L}\p{N}_]).*(?<![\p{L}\p{N}_])(?:form|größe|klumpen)(?![\p{L}\p{N}_])|(?:form|größe)(?![\p{L}\p{N}_]).*(?<![\p{L}\p{N}_])bernstein(?:stück(?:e|en|s)?)?(?![\p{L}\p{N}_])|flach(?:e|en|er|es)? (?:klein(?:e|en|er|es)? )?bernstein(?:stück(?:e|en|s)?)?(?![\p{L}\p{N}_])|amber(?![\p{L}\p{N}_]).*(?<![\p{L}\p{N}_])(?:shape|size|lump)(?![\p{L}\p{N}_])|(?:shape|size)(?![\p{L}\p{N}_]).*(?<![\p{L}\p{N}_])amber(?![\p{L}\p{N}_])|flat (?:small )?(?:amber(?: piece)?|piece of amber)(?![\p{L}\p{N}_]))/iu,
     'Størrelse og form betyder noget: et fladt lille stykke kan løftes og holdes svævende anderledes end en kompakt klump. Rav kan rulle, glide, hoppe eller være kortvarigt frit i vandet.',
     'Größe und Form spielen eine Rolle: Ein flaches kleines Stück kann anders angehoben werden als ein kompakter Klumpen. Bernstein kann rollen, gleiten, springen oder kurzzeitig schweben.',
     'Size and shape matter: a small flat piece can be lifted differently from a compact lump. Amber may roll, slide, bounce or move briefly in suspension.'),
@@ -284,10 +284,23 @@ function materialColourScope(question) {
 // topic. Existing fully covered field compositions still get first refusal.
 export function localRavQuestionRequiresWholeAnswer(question) {
   const text = String(question || '').trim().normalize('NFKC');
+  // One scientific comparison can be one grammatical question. A broad
+  // current/wave/beach match does not cover how materials behave differently.
+  // Exact catalogue FAQs retain their existing complete local answer; live
+  // score/zone/forecast requests retain their separate deterministic boundaries.
+  const normalized = normalizeKnowledgeQuestion(text);
+  const exactFaq = Object.values(LOCAL_RAV_KNOWLEDGE_EXAMPLES).some(examples =>
+    examples.some(example => normalizeKnowledgeQuestion(example) === normalized));
+  const materialComparison = !exactFaq
+    && /^(?:hvorfor|hvordan|forklar|kan|warum|wie|erkläre?|kann|why|how|explain|can)(?!\p{L})/iu.test(text)
+    && /(?<![\p{L}\p{N}_])(?:rav(?:et|ets)?|bernstein(?:s)?|amber(?:['’]s)?)(?![\p{L}\p{N}_])/iu.test(text)
+    && /(?<!\p{L})(?:anderledes|forskellig\p{L}*|sammenlign\p{L}*|anders|unterschied\p{L}*|verschieden\p{L}*|vergleich\p{L}*|different\p{L}*|compar\p{L}*|versus)(?!\p{L})/iu.test(text)
+    && /(?<!\p{L})(?:bevæ\p{L}*|flyt\p{L}*|transport\p{L}*|rul\p{L}*|strøm\p{L}*|bølge\p{L}*|opdrift|massefylde|beweg\p{L}*|ström\p{L}*|welle\p{L}*|roll\p{L}*|auftrieb|dichte|move\p{L}*|motion|flow|current\p{L}*|wave\p{L}*|buoyan\p{L}*|density)(?!\p{L})/iu.test(text)
+    && !/(?<![\p{L}\p{N}_])(?:ravscore|bernsteinscore|amberscore|score|prognos\p{L}*|forecast\p{L}*|vorhersag\p{L}*|ranking|rangliste|zone\p{L}*|gebiet\p{L}*|kort\p{L}*|map|karte\p{L}*)(?![\p{L}\p{N}_])/iu.test(text);
   const starter = String.raw`(?:hvor|hvordan|hvorfor|hvad|hvilk(?:et|en|e)|kan|er|betyder|wo|wie|warum|was|welch(?:e|es|er)|kann(?:st)?|können|ist|bedeutet|garantiert|where|how|why|what|which|can|is|does)\b`;
   const clauses = text.split(new RegExp(
     String.raw`[?？]\s*(?=\p{L})|[,:.;]\s*(?:(?:og|und|and)\s+)?(?=${starter})|\s+(?:og|und|and)\s+(?=${starter})`, 'iu'));
-  return clauses.filter(clause => clause.trim()).length > 1;
+  return materialComparison || clauses.filter(clause => clause.trim()).length > 1;
 }
 
 export function matchLocalRavKnowledge(question) {

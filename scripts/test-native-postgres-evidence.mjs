@@ -482,7 +482,10 @@ test('public587 successor native commands append588 without retagging whole587 i
   assert.deepEqual(ASSISTANT_PUBLIC587_SUCCESSOR_COMMANDS,[ASSISTANT_LATER_H0_COMMANDS[0],
     ASSISTANT_LATER_H0_COMMANDS[1]+' --assistant-public587-successor']);
   assert.equal(ASSISTANT_PUBLIC587_SUCCESSOR_SCRIPT,'set -euo pipefail\n'+ASSISTANT_PUBLIC587_SUCCESSOR_COMMANDS.join('\n')+'\n');
-  if(ACTIVE_ASSISTANT_SUCCESSOR.sourcePhase==='assistant-public588-successor'){
+  if(ACTIVE_ASSISTANT_SUCCESSOR.sourcePhase==='assistant-public590-successor'){
+    assert.equal(ACTIVE_COMMANDS,ASSISTANT_PUBLIC590_SUCCESSOR_COMMANDS);
+    assert.equal(ACTIVE_NATIVE_SCRIPT,ASSISTANT_PUBLIC590_SUCCESSOR_SCRIPT);
+  }else if(ACTIVE_ASSISTANT_SUCCESSOR.sourcePhase==='assistant-public588-successor'){
     assert.equal(ACTIVE_COMMANDS,ASSISTANT_PUBLIC588_SUCCESSOR_COMMANDS);
     assert.equal(ACTIVE_NATIVE_SCRIPT,ASSISTANT_PUBLIC588_SUCCESSOR_SCRIPT);
   }else{
@@ -714,7 +717,9 @@ test('calendar588 normal native route uses genuine parent factory then current c
   const main=evidence.slice(evidence.indexOf('async function main() {'));
   assert(main.indexOf('requireAssistantPublic588SuccessorRelease()')<main.indexOf('spawnSync('));
   assert(!main.includes('await decideReuse('));assert(!main.includes('await decideCurrent586Reuse('));
-  if(ACTIVE_ASSISTANT_SUCCESSOR.sourcePhase==='assistant-public588-successor')
+  if(ACTIVE_ASSISTANT_SUCCESSOR.sourcePhase==='assistant-public590-successor')
+    assert.equal(ACTIVE_COMMANDS,ASSISTANT_PUBLIC590_SUCCESSOR_COMMANDS);
+  else if(ACTIVE_ASSISTANT_SUCCESSOR.sourcePhase==='assistant-public588-successor')
     assert.equal(ACTIVE_COMMANDS,ASSISTANT_PUBLIC588_SUCCESSOR_COMMANDS);
   else assert.equal(ACTIVE_COMMANDS,ASSISTANT_PUBLIC587_SUCCESSOR_COMMANDS);
 });
@@ -728,6 +733,31 @@ test('calendar588 normal source command follows only its source-owned active pro
   assert(builder.includes("ACTIVE_ASSISTANT_SUCCESSOR.sourcePhase==='assistant-public588-successor'"));
   for(const old of ["args[0]==='--public587-successor'","args[0]==='--public588-successor'"])
     assert(builder.includes(old),old);
+  // Execute only the actual normal selector/admission clauses. No profile,
+  // tuple, constructor, source import, SQL or provider is replaced or invoked.
+  const from=builder.indexOf("  const public590=args[0]==='--public590-successor';"),
+    to=builder.indexOf('  if(public590){',from);
+  assert(from>=0&&to>from);
+  const branch=builder.slice(to,builder.indexOf('  if(public588){',to));
+  const admissions=branch.split('\n').filter(line=>line.includes('assert(args.length===0||'));
+  assert.equal(admissions.length,1);
+  const select=new Function('assert','args',builder.slice(from,to)
+    +'\nif(public590){'+admissions[0]+'}\nreturn {public590,public588,public587,args};');
+  for(const suffix of [[],['--check'],['--write']]){
+    const selected=select(assert,['--public590-successor',...suffix]);
+    assert.equal(selected.public590,true);assert.deepEqual(selected.args,suffix);
+  }
+  for(const flags of [
+    ['--public590-successor','--public588-successor','--check'],
+    ['--public590-successor','--public587-successor','--check'],
+    ['--public590-successor','--public590-successor','--check'],
+    ['--public590-successor','--unknown']
+  ])assert.throws(()=>select(assert,flags),{code:'ERR_ASSERTION'});
+  for(const [flag,key]of [['--public588-successor','public588'],['--public587-successor','public587']]){
+    const selected=select(assert,[flag,'--check']);
+    assert.equal(selected.public590,false);assert.equal(selected[key],true);
+    assert.deepEqual(selected.args,['--check'],'Both old selector branches remain unchanged');
+  }
 });
 
 import {modelSourceRelativeModuleSpecifiers} from './lib/model-source-imports.mjs';
@@ -788,4 +818,92 @@ test('calendar588 computed source inventories retain exact finite edges and refu
     '5fa3fe20041a82a7e287e21f4562f6bb82ffab253c69e0754208bb6e5c907b69',
     '869d93119cb9ba2968b39259ecd3d6500797f17ec514c7df39b04dbf8328e0e8'])
     assert(scanner.includes(historical),historical);
+});
+
+
+// Additive preparation-only590 family; existing native/receipt oracles above stay whole.
+import {ASSISTANT_PUBLIC590_SUCCESSOR_PARENT,ASSISTANT_PUBLIC590_SUCCESSOR_BINDING,
+  ASSISTANT_PUBLIC590_SUCCESSOR_OUTPUT,ASSISTANT_PUBLIC590_SUCCESSOR_RELEASE,
+  INACTIVE_ASSISTANT_PUBLIC590_SUCCESSOR,requireAssistantPublic590SuccessorParent,
+  requireAssistantPublic590SuccessorOutput} from './lib/assistant-later-h0-successor-source.mjs';
+import {prepareAssistantPublic590SuccessorStructure} from './build-assistant-later-h0-successor.mjs';
+import {compareAssistantPublic590Successor} from './lib/assistant-later-h0-postgres.mjs';
+import {withFrozen590CheckpointPostgresSource} from './run-frozen586-assistant-later-h0-postgres-source.mjs';
+import {withAuthenticated590PredecessorSource,FROZEN590_CODE_SOURCE_PROVENANCE}
+  from './check-assistant-later-h0-predecessor-source.mjs';
+import {readAuthenticatedFrozen590Predecessor} from './lib/authenticated-frozen586-predecessor.mjs';
+import {ASSISTANT_PUBLIC590_SUCCESSOR_COMMANDS,ASSISTANT_PUBLIC590_SUCCESSOR_SCRIPT,
+  ASSISTANT_PUBLIC590_SUCCESSOR_PHASE_KIND,verifyAssistantPublic590SuccessorPhaseReceipt}
+  from './native-postgres-evidence.mjs';
+
+test('next590 receipt is a separate actual-execution-only phase, never a renamed590/588 proof',()=>{
+  assert.deepEqual(ASSISTANT_PUBLIC590_SUCCESSOR_COMMANDS,[ASSISTANT_PUBLIC588_SUCCESSOR_COMMANDS[0],
+    ASSISTANT_PUBLIC588_SUCCESSOR_COMMANDS[1]+' --assistant-public590-successor']);
+  assert.equal(ASSISTANT_PUBLIC590_SUCCESSOR_SCRIPT,'set -euo pipefail\n'+ASSISTANT_PUBLIC590_SUCCESSOR_COMMANDS.join('\n')+'\n');
+  assert.notEqual(ASSISTANT_PUBLIC590_SUCCESSOR_PHASE_KIND,ASSISTANT_PUBLIC588_SUCCESSOR_PHASE_KIND);
+  const current={run:ORIGIN.run+52,attempt:1,head:newOid,pullRequest:702,branch:'synthetic-unissued-assistant-next'};
+  const receipt={phase:'ASSISTANT_PUBLIC590_SUCCESSOR',status:'EXECUTED',executedInThisRun:true,origin:null,
+    current,commands:[...ASSISTANT_PUBLIC590_SUCCESSOR_COMMANDS],eligibleForReuse:false};
+  assert.equal(verifyAssistantPublic590SuccessorPhaseReceipt(receipt,current).status,'EXECUTED');
+  for(const mutate of [v=>v.status='REUSED',v=>v.executedInThisRun=false,v=>v.origin={run:current.run-1},
+    v=>v.eligibleForReuse=true,v=>v.commands=[...ASSISTANT_PUBLIC588_SUCCESSOR_COMMANDS],
+    v=>v.current={...current,head:oid},v=>v.phase='ASSISTANT_PUBLIC588_SUCCESSOR',v=>v.phase='SOURCE_PRODUCER']){
+    const changed=copy(receipt);mutate(changed);
+    assert.throws(()=>verifyAssistantPublic590SuccessorPhaseReceipt(changed,current));
+  }
+  assert.throws(()=>verifyAssistantPublic588SuccessorPhaseReceipt(receipt,current));
+  assert.throws(()=>verifyAssistantPublic587SuccessorPhaseReceipt(receipt,current));
+  assert.throws(()=>verifyAssistantLaterH0PhaseReceipt(receipt,current));
+  assert.throws(()=>verifyCurrent586PhaseReceipt(receipt,current));
+});
+
+test('next590 family cannot manufacture a parent, tuple or output',()=>{
+  assert.equal(INACTIVE_ASSISTANT_PUBLIC590_SUCCESSOR.sourcePhase,'assistant-public590-successor');
+  if(!ASSISTANT_PUBLIC590_SUCCESSOR_PARENT.selected){
+    assert.equal(ACTIVE_ASSISTANT_SUCCESSOR.sourcePhase,'assistant-public588-successor');
+    for(const value of [ASSISTANT_PUBLIC590_SUCCESSOR_BINDING,ASSISTANT_PUBLIC590_SUCCESSOR_OUTPUT,
+      ASSISTANT_PUBLIC590_SUCCESSOR_RELEASE])assert.equal(value,null);
+    assert.throws(()=>requireAssistantPublic590SuccessorParent(),/ASSISTANT_PUBLIC590_PARENT_UNSELECTED/);
+  }else requireAssistantPublic590SuccessorParent();
+  if(!FROZEN590_CODE_SOURCE_PROVENANCE.selected)for(const [key,value]of Object.entries(FROZEN590_CODE_SOURCE_PROVENANCE))
+    if(key!=='selected')assert.equal(value,null,key);
+});
+
+test('unselected590 stops before operands, source materialization, transport, factory or callbacks',async t=>{
+  let io=0,operands=0,callbacks=0;
+  const poison=new Proxy({},{get(){operands++;throw new Error('UNEXPECTED_OPERAND');}});
+  for(const name of ['readFile','writeFile','appendFile','mkdir','mkdtemp','realpath','lstat'])
+    t.mock.method(fs,name,()=>{io++;throw new Error('UNEXPECTED_IO');});
+  t.mock.method(globalThis,'fetch',()=>{io++;throw new Error('UNEXPECTED_NETWORK');});
+  try{
+    if(ASSISTANT_PUBLIC590_SUCCESSOR_BINDING===null){
+      const refusal=/ASSISTANT_PUBLIC590_(?:PARENT_UNSELECTED|SUCCESSOR_UNISSUED)/;
+      assert.throws(()=>requireAssistantPublic590SuccessorOutput(),refusal);
+      await assert.rejects(prepareAssistantPublic590SuccessorStructure(poison),{code:'ERR_ASSERTION'});
+      await assert.rejects(compareAssistantPublic590Successor(poison),refusal);
+      await assert.rejects(withFrozen590CheckpointPostgresSource(()=>{callbacks++;}),refusal);
+    }else{
+      requireAssistantPublic590SuccessorOutput();
+      await assert.rejects(prepareAssistantPublic590SuccessorStructure(poison,poison),{code:'ERR_ASSERTION'});
+      await assert.rejects(compareAssistantPublic590Successor(poison,poison),{code:'ERR_ASSERTION'});
+      await assert.rejects(withFrozen590CheckpointPostgresSource(()=>{callbacks++;},poison),{code:'ERR_ASSERTION'});
+    }
+    if(!FROZEN590_CODE_SOURCE_PROVENANCE.selected){
+      await assert.rejects(withAuthenticated590PredecessorSource(()=>{callbacks++;}),/FROZEN590_CODE_SOURCE_UNSELECTED/);
+      await assert.rejects(readAuthenticatedFrozen590Predecessor(),/FROZEN590_CODE_SOURCE_UNSELECTED/);
+    }
+    assert.equal(io,0);assert.equal(operands,0);assert.equal(callbacks,0);
+  }finally{t.mock.restoreAll();}
+});
+
+test('next assistant PG phase requires genuine590 and refuses before native program discovery',async()=>{
+  await assert.rejects(runNativeCheckpointSqlComparison({includeAssistantPublic590Successor:true}),
+    /Authentic590 phase is required/);
+  await assert.rejects(runNativeCheckpointSqlComparison({includeAssistantPublic590Successor:'true'}),{code:'ERR_ASSERTION'});
+  if(ASSISTANT_PUBLIC590_SUCCESSOR_BINDING===null)await assert.rejects(runNativeCheckpointSqlComparison({
+    includeStatisticsRevision:true,includeNativeIdentity:true,includeCurrentMemoryWarmup:true,
+    includeEstablishedNativeCurrentOrigin:true,includeLastMileEnclosure:true,includeAccountStatisticsAssistant:true,
+    includeNativeOriginalContinuity:true,includeAssistantLaterH0:true,includeAssistantPublic587Successor:true,
+    includeAssistantPublic588Successor:true,includeAssistantPublic590Successor:true,
+  }),/ASSISTANT_PUBLIC590_(?:PARENT_UNSELECTED|SUCCESSOR_UNISSUED)/);
 });

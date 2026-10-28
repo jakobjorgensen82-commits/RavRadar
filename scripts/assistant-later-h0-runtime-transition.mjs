@@ -9,9 +9,10 @@ import {isDeepStrictEqual as equal} from 'node:util';
 import {ACTIVE_ASSISTANT_SUCCESSOR as ACTIVE} from './lib/assistant-later-h0-successor-source.mjs';
 const {before:OLD,requireBinding:requireActiveAssistantBinding,requireOutput:requireActiveAssistantOutput,
   assertTarget:assertActiveAssistantTarget,assertCaller:assertActiveAssistantCaller}=ACTIVE;
-import {withAuthenticated587PredecessorSource,withAuthenticated588PredecessorSource} from './check-assistant-later-h0-predecessor-source.mjs';
+import {withAuthenticated587PredecessorSource,withAuthenticated588PredecessorSource,withAuthenticated590PredecessorSource} from './check-assistant-later-h0-predecessor-source.mjs';
 import {readAuthenticatedFrozen587Predecessor,assertAuthenticatedFrozen587Snapshot,
-  readAuthenticatedFrozen588Predecessor,assertAuthenticatedFrozen588Snapshot} from './lib/authenticated-frozen586-predecessor.mjs';
+  readAuthenticatedFrozen588Predecessor,assertAuthenticatedFrozen588Snapshot,
+  readAuthenticatedFrozen590Predecessor,assertAuthenticatedFrozen590Snapshot} from './lib/authenticated-frozen586-predecessor.mjs';
 import {describeCurrentProtectedPrivateProductionRuntime,describeTargetProtectedPrivateProductionRuntime,createProtectedPrivateRuntimeClients} from './protected-private-production-runtime.mjs';
 import {migratePostCutoverPrivateRuntime,assertMetadataOnlyMigrationResult,assertRestoredOriginalInventory,
   assertExactRuntimeInventory,validatePredecessorIdentity} from './migrate-post-cutover-private-runtime.mjs';
@@ -20,8 +21,11 @@ import {saveRavScoreContinuationCheckpoint,loadRavScoreContinuationCheckpointFor
 import {ravScoreModelBinding} from '../js/core/ravscore-model-contract.js';
 import {ravScoreModelBinding as candidateBinding} from './rollback-assets/ravscore-model-contract.js';
 // Ingen caller-/miljøvalgt familie. Begge profiler beholder deres egne opaque handles.
-assert(['assistant-public587-successor','assistant-public588-successor'].includes(ACTIVE.sourcePhase));
-const ACTIVE_PREDECESSOR=ACTIVE.sourcePhase==='assistant-public588-successor'?Object.freeze({
+assert(['assistant-public587-successor','assistant-public588-successor','assistant-public590-successor'].includes(ACTIVE.sourcePhase));
+const ACTIVE_PREDECESSOR=ACTIVE.sourcePhase==='assistant-public590-successor'?Object.freeze({
+  withSource:withAuthenticated590PredecessorSource,read:readAuthenticatedFrozen590Predecessor,
+  snapshot:assertAuthenticatedFrozen590Snapshot
+}):ACTIVE.sourcePhase==='assistant-public588-successor'?Object.freeze({
   withSource:withAuthenticated588PredecessorSource,read:readAuthenticatedFrozen588Predecessor,
   snapshot:assertAuthenticatedFrozen588Snapshot
 }):Object.freeze({

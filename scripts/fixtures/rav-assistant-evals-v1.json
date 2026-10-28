@@ -1,7 +1,7 @@
 {
   "schemaVersion": "rav-assistant-evals-v1",
   "knowledgeVersion": "rav-assistant-public-knowledge-v1",
-  "releaseVersion": "4.0.590",
+  "releaseVersion": "4.0.591",
   "ravScoreModelBinding": {
     "modelId": "RRS-COASTAL-PROCESS-INTEGRATED-1.1.0",
     "stateSchemaVersion": "6.0.0",
@@ -13,7 +13,7 @@
     "bestTimePolicyId": "score-history-water-tie-earliest-v3",
     "presentationPolicyId": "score-bands-35-55-75-exceptional90-v1",
     "modelContractSha256": "a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b",
-    "modelBundleSha256": "4c94c24e7d14d66c20cc3c2c3d0389cadb0c3e9e76fcfe692943c6087df56819"
+    "modelBundleSha256": "ebd5ac3dac09b7afb51e46d18920f6932b478b7ef15bdd31190c128273cb6a54"
   },
   "cases": [
     {
@@ -927,6 +927,69 @@
         "water-level.context",
         "score.no-find-guarantee"
       ]
+    },
+    {
+      "id": "da-net-and-public-capabilities",
+      "locale": "da",
+      "category": "whole-question-public-faq",
+      "question": "Hvad er en ravkese, og hvad kan du?",
+      "expectedDisposition": "answer",
+      "expectedRoute": "remote-candidate",
+      "requiredEvidenceIds": [
+        "equipment.amber-net",
+        "assistant.public-capabilities"
+      ]
+    },
+    {
+      "id": "da-unknown-exact-landing-instrument",
+      "locale": "da",
+      "category": "unknown-instrument-no-prefix-answer",
+      "question": "Kan en ravmåler forudsige det præcise landingssted for næste ravstykke?",
+      "expectedDisposition": "uncertain",
+      "expectedRoute": "remote-candidate",
+      "requiredEvidenceIds": []
+    },
+    {
+      "id": "de-net-and-public-capabilities",
+      "locale": "de",
+      "category": "whole-question-public-faq",
+      "question": "Was ist eine Bernsteinkescher und was kannst du?",
+      "expectedDisposition": "answer",
+      "expectedRoute": "remote-candidate",
+      "requiredEvidenceIds": [
+        "equipment.amber-net",
+        "assistant.public-capabilities"
+      ]
+    },
+    {
+      "id": "de-unknown-exact-landing-instrument",
+      "locale": "de",
+      "category": "unknown-instrument-no-prefix-answer",
+      "question": "Kann ein Bernsteinmessgerät den genauen Landeort des nächsten Bernsteinstücks vorhersagen?",
+      "expectedDisposition": "uncertain",
+      "expectedRoute": "remote-candidate",
+      "requiredEvidenceIds": []
+    },
+    {
+      "id": "en-net-and-public-capabilities",
+      "locale": "en",
+      "category": "whole-question-public-faq",
+      "question": "What is an amber net and what can you do?",
+      "expectedDisposition": "answer",
+      "expectedRoute": "remote-candidate",
+      "requiredEvidenceIds": [
+        "equipment.amber-net",
+        "assistant.public-capabilities"
+      ]
+    },
+    {
+      "id": "en-unknown-exact-landing-instrument",
+      "locale": "en",
+      "category": "unknown-instrument-no-prefix-answer",
+      "question": "Can an amber meter predict the exact landing place of the next piece of amber?",
+      "expectedDisposition": "uncertain",
+      "expectedRoute": "remote-candidate",
+      "requiredEvidenceIds": []
     }
   ]
 }

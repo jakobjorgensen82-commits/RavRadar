@@ -40,6 +40,10 @@ import {
 } from './rollback-assets/ravscore-model-contract.js';
 
 // The additive588 native entry refuses before fixture hashing/construction or a PG host.
+if(process.argv.includes('--assistant-public590-successor')){
+  const {requireAssistantPublic590SuccessorRelease}=await import('./lib/assistant-later-h0-successor-source.mjs');
+  requireAssistantPublic590SuccessorRelease(); // FIRST: no selected parent/binding, no fixture or PG host.
+}
 if(process.argv.includes('--assistant-public588-successor')){
   const {requireAssistantPublic588SuccessorRelease}=await import('./lib/assistant-later-h0-successor-source.mjs');
   requireAssistantPublic588SuccessorRelease(); // UNISSUED before fixture/T hashes, host or SQL.
@@ -385,7 +389,8 @@ const rpcFailureIncludes = pattern => error => {
 if (!process.argv.includes('--native-postgres') && !process.argv.includes('--native-statistics-revision')
     && !process.argv.includes('--native-sampling-identity') && !process.argv.includes('--current-memory-warmup')
     && !process.argv.includes('--account-statistics-assistant') && !process.argv.includes('--assistant-later-h0')
-    && !process.argv.includes('--assistant-public587-successor') && !process.argv.includes('--assistant-public588-successor')) {
+    && !process.argv.includes('--assistant-public587-successor') && !process.argv.includes('--assistant-public588-successor')
+    && !process.argv.includes('--assistant-public590-successor')) {
   const { nativePostgresFailureDiagnostic: diagnose,
     nativePostgresFailureAnnotation: annotate } =
       await import('./lib/checkpoint-cas-native-postgres.mjs');
@@ -536,7 +541,8 @@ if (process.argv.includes('--native-identity-source-only')) {
   process.exit(0);
 }
 
-const assistantPublic588SuccessorNative = process.argv.includes('--assistant-public588-successor');
+const assistantPublic590SuccessorNative = process.argv.includes('--assistant-public590-successor');
+const assistantPublic588SuccessorNative = process.argv.includes('--assistant-public588-successor') || assistantPublic590SuccessorNative;
 const assistantPublic587SuccessorNative = process.argv.includes('--assistant-public587-successor');
 const assistantLaterH0Native = process.argv.includes('--assistant-later-h0') || assistantPublic587SuccessorNative || assistantPublic588SuccessorNative;
 const nativeOriginalContinuityNative = process.argv.includes('--native-original-continuity') || assistantLaterH0Native;
@@ -566,6 +572,7 @@ if (process.argv.includes('--native-postgres') || process.argv.includes('--nativ
       includeAssistantLaterH0: assistantLaterH0Native,
       includeAssistantPublic587Successor: assistantPublic587SuccessorNative || assistantPublic588SuccessorNative,
       includeAssistantPublic588Successor: assistantPublic588SuccessorNative,
+      includeAssistantPublic590Successor: assistantPublic590SuccessorNative,
     });
     console.log(JSON.stringify(report));
   } catch (error) {
