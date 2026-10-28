@@ -1,3 +1,19 @@
+## 89.275 Sådan læses administratorens Datakvalitet
+
+Kort fortalt: Et tal kan være korrekt og alligevel beskrive noget andet, end man tror. Se både, hvad rapporten tæller, og hvornår den er lavet.
+
+**Fire felter er ikke fem dages komplet vejr.** Vejrstatus viser vind, bølger, strøm og vandstand ved genereringen. DMI-cachens særskilte krav er mindst 96 timers vind og 24 timers bølger, strøm og vandstand. Vandtemperatur er ikke med i denne gamle firefamilie-kontrakt. Et fuldt tal her lover derfor ikke alle fem komponentfamilier i alle timer.
+
+**Runtime har sin egen afgrænsning.** Tabellen viser vind, bølger, strøm, vandstand og vandtemperatur samt deres kilder og manglende felter ved genereringen. DMI-cachekolonnen tæller zoner med mindst én gyldig komponenttime. Ingen af kolonnerne er den samlede dækningsgrad for hele landets prognosehorisont eller for en senere valgt korttime. Den samlede dækning kræver en særskilt kontrol af alle timer, alle zoner og de relevante søgemåder.
+
+**Rapporterne har forskellige tidspunkter.** Runtime og vejrstatus skal kunne bindes til den offentlige generering, og runtimeversionen skal passe til visningen, før aktuelle tal bruges. Den marine rapport, implementeringsauditten og cacheauditten viser hver deres eget rapporttidspunkt og version, hvis den er kendt. De er ikke nye liveprøver og bliver ikke automatisk til en rapport fra samme generation. En versionsafvigelse er heller ikke i sig selv bevis for forkerte vejrdata.
+
+**Ukendt er hverken nul eller fejlfrit.** Hvis et tal mangler, har forkert type, ikke passer med sit totalantal eller ikke kan tidsbindes, vises ukendt. Et faktisk registreret nul bliver stående som nul. En ukendt problemliste eller en udateret mangelliste må ikke give indtryk af fuld dækning eller fejlfri drift.
+
+Den marine rapport viser sine egne tal for friske, bevarede og fallback- eller manglende DMI-zoner. Cacheauditten viser sin registrerede størrelse før og efter samt antal bevarede og fjernede filer. Tallene gættes ikke ud fra forskellen mellem andre rapporter. Visningen ændrer ikke data og starter ingen ny oprydning eller vejrhentning.
+
+Status 28. oktober: Flere almindelige 4.0.590-vejrgenerationer er offentligt leveret gennem hele den normale kæde; fuld dækning og selvstændig fejlgenopretning er fortsat åbne. PR747 med turtotal og kontokategorier er ikke installeret. Denne Datakvalitet-opfølgning er kun lokalt sammensat og måltestet; præcis kildekontrol, levering og administratoraccept mangler. Ingen scoreformel, kildeprioritet, modelbinding, administratoropsætning, geometri, SQL-regel eller rettighed ændres.
+
 ## 89.274 Administratorens turtotal og kontokategorier
 
 Kort fortalt: Administratorens Overblik skal vise, hvor mange ture og observationer der er gemt. Kontokategorien fortæller ikke i sig selv, hvilke rettigheder en bruger har.
