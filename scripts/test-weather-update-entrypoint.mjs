@@ -1,3 +1,4 @@
+import { inverseActiveFamilyRetentionCompanionTestInput, ACTIVE_FAMILY_RETENTION_COMPANION_TEST_REVIEW } from './lib/alternative-c-caller-test-input.mjs';
 import {inverseReviewedAccountStatisticsAssistantSourceScripts} from './lib/account-statistics-assistant-package-review.mjs';
 import { inverseAlternativeCCaller, inverseAssistant587OriginalCompanionTestInput,
   ASSISTANT587_ORIGINAL_COMPANION_TEST_REVIEW,
@@ -1224,7 +1225,8 @@ test('actual native-original companion caller stays unprojected and declared in 
   assert.match(planner, /await readAuthenticatedCurrentCompanions\(verified, conditions\)/);
   const actualHelper = (await fs.readFile(new URL('./read-authenticated-dmi-current-companions.mjs', import.meta.url), 'utf8')).replace(/\r\n/g, '\n');
   assert.match(actualHelper, /await readAuthenticatedCurrentCompanions\(input\.verified, input\.originalConditions \?\? input\.conditions\);\n  await input\.verify\(\);/);
-  const genuine587Helper = inverseAssistant588OriginalCompanionTestInput(actualHelper, 'scripts/read-authenticated-dmi-current-companions.mjs');
+  const genuine588Helper = inverseActiveFamilyRetentionCompanionTestInput(actualHelper, 'scripts/read-authenticated-dmi-current-companions.mjs');
+  const genuine587Helper = inverseAssistant588OriginalCompanionTestInput(genuine588Helper, 'scripts/read-authenticated-dmi-current-companions.mjs');
   const helper = inverseAssistant587OriginalCompanionTestInput(genuine587Helper, 'scripts/read-authenticated-dmi-current-companions.mjs');
   assert.match(helper, /await readAuthenticatedCurrentCompanions\(input\.verified, input\.conditions\);\n  await input\.verify\(\);/);
   assert.doesNotMatch(helper, /\.\/plan-ravscore-current-history|^await\s|^main\(/m);
@@ -1241,7 +1243,7 @@ test('assistant587 original companion inverse preserves both whole predecessors 
     const rawActual = (await fs.readFile(new URL('../' + row.path, import.meta.url), 'utf8')).replace(/\r\n/g, '\n');
     const actual = row.path === 'scripts/plan-ravscore-current-history.mjs'
       ? inverseAssistant587OriginalRawBoundaryTestInput(rawActual, row.path)
-      : inverseAssistant588OriginalCompanionTestInput(rawActual, row.path);
+      : inverseAssistant588OriginalCompanionTestInput(inverseActiveFamilyRetentionCompanionTestInput(rawActual, row.path), row.path);
     assert.equal(Buffer.byteLength(actual), row.after.bytes);
     assert.equal(digest(actual), row.after.sha256);
     const before = inverseAssistant587OriginalCompanionTestInput(actual, row.path);
@@ -1275,7 +1277,8 @@ test('assistant587 original companion inverse preserves both whole predecessors 
 
 test('assistant588 companion route preserves genuine587 whole bytes and rejects every altered delta', async () => {
   const row = ASSISTANT588_ORIGINAL_COMPANION_TEST_REVIEW;
-  const actual = (await fs.readFile(new URL('../' + row.path, import.meta.url), 'utf8')).replace(/\r\n/g, '\n');
+  const actual = inverseActiveFamilyRetentionCompanionTestInput(
+    await fs.readFile(new URL('../' + row.path, import.meta.url), 'utf8'), row.path);
   assert.equal(Buffer.byteLength(actual), row.after.bytes);
   assert.equal(digest(actual), row.after.sha256);
   const before = inverseAssistant588OriginalCompanionTestInput(actual, row.path);
@@ -1305,4 +1308,37 @@ test('assistant588 companion route preserves genuine587 whole bytes and rejects 
     assert.throws(() => inverseAssistant588OriginalCompanionTestInput(changed, row.path), /ASSISTANT588/);
   assert.throws(() => inverseAssistant588OriginalCompanionTestInput({}, row.path), /ASSISTANT588_TYPE/);
   assert.throws(() => inverseAssistant588OriginalCompanionTestInput(actual, 'scripts/unknown.mjs'), /ASSISTANT588_PATH/);
+});
+
+test('active-family retention companion has an exact outer inverse before unchanged historical oracles', async () => {
+  const row = ACTIVE_FAMILY_RETENTION_COMPANION_TEST_REVIEW;
+  const actual = (await fs.readFile(new URL('../' + row.path, import.meta.url), 'utf8')).replace(/\r\n/g, '\n');
+  assert.equal(Buffer.byteLength(actual), row.after.bytes);
+  assert.equal(digest(actual), row.after.sha256);
+  const before = inverseActiveFamilyRetentionCompanionTestInput(actual, row.path);
+  assert.equal(Buffer.byteLength(before), row.before.bytes);
+  assert.equal(digest(before), row.before.sha256);
+  assert.deepEqual(row.before, ASSISTANT588_ORIGINAL_COMPANION_TEST_REVIEW.after,
+    'The complete genuine588 source is restored without changing its historical oracle');
+  assert.equal(inverseActiveFamilyRetentionCompanionTestInput(before, row.path), before);
+  const genuine587 = inverseAssistant588OriginalCompanionTestInput(before, row.path);
+  const original587Review = ASSISTANT587_ORIGINAL_COMPANION_TEST_REVIEW.find(item => item.path === row.path);
+  assert.equal(digest(genuine587), original587Review.after.sha256);
+  const genuine586 = inverseAssistant587OriginalCompanionTestInput(genuine587, row.path);
+  assert.equal(Buffer.byteLength(genuine586), original587Review.before.bytes);
+  assert.equal(digest(genuine586), original587Review.before.sha256);
+  for (const [old, current] of row.hunks) {
+    assert.equal(actual.split(current).length, 2);
+    for (const changed of [actual.replace(current, () => old),
+      actual.replace(current, () => current + current),
+      actual.replace(current, () => current + '/*UNREVIEWED*/')]) {
+      assert.notEqual(changed, actual);
+      assert.throws(() => inverseActiveFamilyRetentionCompanionTestInput(changed, row.path),
+        /ALTERNATIVE_C_TEST_INPUT_CHANGED:ACTIVE_RETENTION/);
+    }
+  }
+  for (const changed of ['!' + actual.slice(1), actual + '\n', '!' + before.slice(1), before + '\n'])
+    assert.throws(() => inverseActiveFamilyRetentionCompanionTestInput(changed, row.path), /ACTIVE_RETENTION/);
+  assert.throws(() => inverseActiveFamilyRetentionCompanionTestInput({}, row.path), /ACTIVE_RETENTION_TYPE/);
+  assert.throws(() => inverseActiveFamilyRetentionCompanionTestInput(actual, 'scripts/unknown.mjs'), /ACTIVE_RETENTION_PATH/);
 });

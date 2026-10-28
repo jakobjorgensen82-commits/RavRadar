@@ -1,6 +1,8 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
 import test from 'node:test';
+import {inverseSourceBeforePostgresWorkflow, SOURCE_BEFORE_POSTGRES_BLOCK}
+  from './national584-source-evidence.mjs';
 import {ORIGIN, WORKFLOW, JOB, STEP, COMMANDS, ACCOUNT_STATISTICS_ASSISTANT_COMMANDS, CURRENT586_COMMANDS as CURRENT_COMMANDS,
   CURRENT_COMMANDS as ASSISTANT_LATER_H0_COMMANDS, NATIVE_SCRIPT as ASSISTANT_LATER_H0_SCRIPT, NEW_NATIVE_BLOCK,
   NON_NATIVE_TEST_INPUTS, NON_NATIVE_PROSE, nativeBlock, parseTree, verifyWorkflow,
@@ -276,7 +278,18 @@ test('assistant later-H0 appends its actual phase without retagging whole586 com
 
 
 test('current586 phase artifact is independent, exact, honest, and does not relax conservative native inputs',async()=>{
-  const workflow=await fs.readFile(WORKFLOW,'utf8');
+  const actualWorkflow=(await fs.readFile(WORKFLOW,'utf8')).replace(/\r\n/g,'\n');
+  const workflow=inverseSourceBeforePostgresWorkflow(actualWorkflow);
+  assert(actualWorkflow.indexOf('      - name: Validate source contracts')<actualWorkflow.indexOf('      - name: '+STEP));
+  assert(actualWorkflow.indexOf(CURRENT586_PHASE_UPLOAD_BLOCK)<actualWorkflow.indexOf('      - name: Validate isolated restart and two ordinary national followers'));
+  // The existing586 whole-workflow hash below proves the complete inverse, not a new current hash.
+  for(const changed of [
+    actualWorkflow.replace('npm run validate:source','true'),
+    actualWorkflow.replace('          node scripts/native-postgres-evidence.mjs','          true'),
+    actualWorkflow.replace('path: .cache/native-postgres-phase-proof.json','path: .cache/changed.json'),
+    actualWorkflow.replace(SOURCE_BEFORE_POSTGRES_BLOCK,''),
+    actualWorkflow+SOURCE_BEFORE_POSTGRES_BLOCK,
+  ])assert.throws(()=>inverseSourceBeforePostgresWorkflow(changed));
   assert.equal(workflow.split(CURRENT586_PHASE_UPLOAD_BLOCK).length,2);
   verifyCurrent586Workflow(workflow,workflow);
   assert.equal(inverseCurrent586PhaseUpload(workflow).includes(CURRENT586_PHASE_UPLOAD),false);
@@ -328,7 +341,8 @@ test('current586 exact EXECUTED origin survives a later source failure; missing,
     end.writeUInt32LE(central.length+name.length,12);end.writeUInt32LE(local.length+name.length+raw.length,16);
     return Buffer.concat([local,name,raw,central,name,end]);
   };
-  const workflow=await fs.readFile(WORKFLOW,'utf8'),oldId=ORIGIN.run+10,currentId=oldId+2,number=700;
+  const workflow=inverseSourceBeforePostgresWorkflow(await fs.readFile(WORKFLOW,'utf8')),
+    oldId=ORIGIN.run+10,currentId=oldId+2,number=700;
   const branch='synthetic-native586',nativeInput=verifyInputTrees(tree,tree);
   const oldRun={id:oldId,run_attempt:1,head_sha:oid,head_branch:branch,path:WORKFLOW,event:'pull_request',
     repository:{full_name:ORIGIN.repository},head_repository:{full_name:ORIGIN.repository},

@@ -5,7 +5,7 @@ import {
   assertForecastShareRemoteShape, readForecastShareJson, FORECAST_SHARE_READ_KINDS,
   forecastShareDomainsForWorker, forecastShareCfEnvelopeDiagnostic,
 } from './deploy-forecast-share.mjs';
-import { verifyWorkflow as verifyCurrentNationalWorkflow, CURRENT_JOB as CURRENT_SOURCE_JOB, AFTER_JOB as REVIEWED90_SOURCE_JOB } from './national584-source-evidence.mjs';
+import { verifyWorkflow as verifyCurrentNationalWorkflow, inverseSourceBeforePostgresWorkflow, CURRENT_JOB as CURRENT_SOURCE_JOB, AFTER_JOB as REVIEWED90_SOURCE_JOB } from './national584-source-evidence.mjs';
 import { assertEarlyCompletedRuntimeStageOrder, inverseCompletedRuntimeWorkflow } from './lib/completed-private-runtime-workflow-review.mjs';
 import fs from 'node:fs';
 import crypto from 'node:crypto';
@@ -811,8 +811,6 @@ for (const workflowName of sourceGateWorkflowNames) {
         'name: Validate isolated acquisition ownership and raw-save cohort',
         'name: Restore Node22 for existing source validation',
         'name: Validate bounded native current diagnosis on artificial data only',
-        'name: Validate native PostgreSQL checkpoint CAS on artificial data only',
-        'name: Upload independently completed native586 PostgreSQL phase',
       ], 'Only the exact ordered PR source-only steps may intervene; no unknown step');
       assert.doesNotMatch(intervening, /^\s+(?:if|continue-on-error):/m,
         'The PR ownership/native prefix must run unconditionally and fail closed');
@@ -900,7 +898,7 @@ if (/\.nc(?:\s|$)/m.test(historicalWavePilot)) {
 }
 const actualPullRequestValidation = fs.readFileSync(`${workflowDirectory}/validate-pull-request.yml`, 'utf8').replace(/\r\n/g, '\n');
 verifyCurrentNationalWorkflow(actualPullRequestValidation);
-const pullRequestValidation = actualPullRequestValidation.replace(CURRENT_SOURCE_JOB, REVIEWED90_SOURCE_JOB);
+const pullRequestValidation = inverseSourceBeforePostgresWorkflow(actualPullRequestValidation).replace(CURRENT_SOURCE_JOB, REVIEWED90_SOURCE_JOB);
 for (const marker of [
   'pull_request:',
   'permissions:\n  contents: read',
@@ -953,12 +951,13 @@ const prGateOrder = [
   'name: Validate isolated acquisition ownership and raw-save cohort',
   'name: Restore Node22 for existing source validation',
   'name: Validate bounded native current diagnosis on artificial data only',
+  'name: Validate source contracts and release governance',
   'name: Validate native PostgreSQL checkpoint CAS on artificial data only',
   'name: Upload independently completed native586 PostgreSQL phase',
-  'name: Validate source contracts and release governance',
+  'name: Validate isolated restart and two ordinary national followers',
   'name: Require validated source tree to remain unchanged',
   'name: Upload tree-content source validation proof',
-].map(marker => pullRequestValidation.indexOf(marker));
+].map(marker => actualPullRequestValidation.indexOf(marker));
 if (prGateOrder.some((position, index) => position < 0 || (index > 0 && position <= prGateOrder[index - 1]))) {
   throw new Error('PR-kildegatens exact-head, digest, validering, renhed og proofupload står i forkert rækkefølge.');
 }

@@ -14,8 +14,16 @@ import { PRIVATE_WEATHER_COMPONENT_FILES, PRIVATE_WEATHER_COMPONENT_PACK_FILE }
   from './lib/private-weather-component-inventory.mjs';
 import {readAuthenticatedFrozen587Predecessor,assertAuthenticatedFrozen587Snapshot}
   from './lib/authenticated-frozen586-predecessor.mjs';
+import {readAuthenticatedFrozen588Predecessor,assertAuthenticatedFrozen588Snapshot}
+  from './lib/authenticated-frozen586-predecessor.mjs';
+import {ACTIVE_ASSISTANT_SUCCESSOR as ACTIVE} from './lib/assistant-later-h0-successor-source.mjs';
 import {ravScoreModelBinding} from '../js/core/ravscore-model-contract.js';
 import {readAssistantLaterH0RetentionInput} from './assistant-later-h0-runtime-transition.mjs';
+const ACTIVE_PREDECESSOR=ACTIVE.sourcePhase==='assistant-public588-successor'?Object.freeze({
+  read:readAuthenticatedFrozen588Predecessor,snapshot:assertAuthenticatedFrozen588Snapshot,
+}):Object.freeze({
+  read:readAuthenticatedFrozen587Predecessor,snapshot:assertAuthenticatedFrozen587Snapshot,
+});
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 
 function refuse(reason) {
@@ -135,8 +143,8 @@ export async function readCurrentPrivateRuntimeCompanionInput(targetReferenceAt)
     || descriptorInfo.size > 2 * 1024 * 1024) refuse('RETENTION_B_CHANGED');
   const descriptorBytes = await fs.readFile(descriptorPath);
   const descriptor = JSON.parse(descriptorBytes.toString('utf8'));
-  if(descriptor?.modelBinding?.modelBundleSha256==='5584d8e59f8d21785fd08b32f9beb22cf879cdb4892a11ede24eb862d9a0dca2'
-    &&ravScoreModelBinding().modelBundleSha256!==descriptor.modelBinding.modelBundleSha256){
+  if(descriptor?.modelBinding?.modelBundleSha256===ACTIVE.before.I
+    &&ravScoreModelBinding().modelBundleSha256===ACTIVE.requireBinding().I){
     const view=await readAssistantLaterH0RetentionInput(targetReferenceAt);
     if(view.verified.bundleContentSha256!==descriptor.bundleContentSha256
       ||!descriptorBytes.equals(await fs.readFile(descriptorPath)))refuse('RETENTION_B_CHANGED');
@@ -174,14 +182,14 @@ export async function readCurrentPrivateRuntimeCompanionInput(targetReferenceAt)
 export async function readCurrentPrivateRuntimeCompanions(targetReferenceAt) {
   // Called after the updater's genuine H0 origin check. Providers may already
   // have changed unrelated WORKING weather; unpack only immutable original B.
-  if(ravScoreModelBinding().modelBundleSha256!=='5584d8e59f8d21785fd08b32f9beb22cf879cdb4892a11ede24eb862d9a0dca2'){
+  if(ravScoreModelBinding().modelBundleSha256===ACTIVE.requireBinding().I){
     const descriptor=JSON.parse(await fs.readFile(path.join(process.env.RUNNER_TEMP,'private-runtime-current-source.json'),'utf8'));
-    if(descriptor?.modelBinding?.modelBundleSha256==='5584d8e59f8d21785fd08b32f9beb22cf879cdb4892a11ede24eb862d9a0dca2'){
-      const snapshot=assertAuthenticatedFrozen587Snapshot(await readAuthenticatedFrozen587Predecessor());
+    if(descriptor?.modelBinding?.modelBundleSha256===ACTIVE.before.I){
+      const snapshot=ACTIVE_PREDECESSOR.snapshot(await ACTIVE_PREDECESSOR.read());
       if(snapshot.descriptor.bundleContentSha256!==descriptor.bundleContentSha256)refuse('RETENTION_B_CHANGED');
       const original=JSON.parse(await fs.readFile(snapshot.conditionsPath,'utf8'));
       const contexts=await readAuthenticatedCurrentCompanions(snapshot.verified,original);
-      const fresh=assertAuthenticatedFrozen587Snapshot(await readAuthenticatedFrozen587Predecessor());
+      const fresh=ACTIVE_PREDECESSOR.snapshot(await ACTIVE_PREDECESSOR.read());
       if(!isDeepStrictEqual(snapshot,fresh))refuse('RETENTION_B_CHANGED');return contexts;
     }
   }

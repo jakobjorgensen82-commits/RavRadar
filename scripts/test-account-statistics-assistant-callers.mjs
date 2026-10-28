@@ -454,7 +454,7 @@ await t.test('normal585 mutable consumer reads the actual issued source and pres
 test('historical584 national evidence inverts only the reviewed current90-minute job and exact national wrapper',async()=>{
   const {execFileSync}=await import('node:child_process');
   const {ORIGIN:old,WORKFLOW,BEFORE_BLOCK,AFTER_BLOCK,BEFORE_JOB,AFTER_JOB,CURRENT_JOB,verifyWorkflow:verifyCurrentWorkflow,
-    inverseCandidatePublicSourceRunLine,verifyReviewed90Workflow:verifyWorkflow}=await import('./national584-source-evidence.mjs');
+    inverseCandidatePublicSourceRunLine,inverseSourceBeforePostgresWorkflow,verifyReviewed90Workflow:verifyWorkflow}=await import('./national584-source-evidence.mjs');
   const git=(...args)=>execFileSync('git',args,{maxBuffer:8*1024*1024,timeout:30000,
     env:{...process.env,GIT_NO_LAZY_FETCH:'1',GIT_NO_REPLACE_OBJECTS:'1'}});
   const fixture='b02745d6d2987ed0fd2913623b3809fd0ea02dd6';
@@ -464,7 +464,7 @@ test('historical584 national evidence inverts only the reviewed current90-minute
   const recorded=git('show',fixture+':'+WORKFLOW).toString();
   const currentWorkflow=(await fs.readFile(new URL('../.github/workflows/validate-pull-request.yml',import.meta.url),'utf8')).replace(/\r\n/g,'\n');
   verifyCurrentWorkflow(currentWorkflow);
-  const actual=inverseCurrent586PhaseUpload(currentWorkflow);
+  const actual=inverseCurrent586PhaseUpload(inverseSourceBeforePostgresWorkflow(currentWorkflow));
   verifyCurrentWorkflow(actual);
   const current=inverseCandidatePublicSourceRunLine(actual).replace(CURRENT_JOB,AFTER_JOB);
   const hash=value=>crypto.createHash('sha256').update(value).digest('hex');
@@ -493,13 +493,13 @@ test('historical584 national evidence inverts only the reviewed current90-minute
 test('source-PR-only180-minute job preserves genuine120 and90 workflows and rejects every other budget',async()=>{
   const {execFileSync}=await import('node:child_process');
   const {WORKFLOW,CURRENT_JOB,AFTER_JOB,CURRENT_SOURCE_RUN_LINE,inverseCandidatePublicSourceRunLine,
-    verifyWorkflow,verifyReviewed90Workflow}=await import('./national584-source-evidence.mjs');
+    verifyWorkflow,verifyReviewed90Workflow,inverseSourceBeforePostgresWorkflow}=await import('./national584-source-evidence.mjs');
   const fixture='b02745d6d2987ed0fd2913623b3809fd0ea02dd6';
   const recorded=execFileSync('git',['show',fixture+':'+WORKFLOW],{maxBuffer:65536,timeout:30000,
     env:{...process.env,GIT_NO_LAZY_FETCH:'1',GIT_NO_REPLACE_OBJECTS:'1'}}).toString();
   const currentWorkflow=(await fs.readFile(new URL('../.github/workflows/validate-pull-request.yml',import.meta.url),'utf8')).replace(/\r\n/g,'\n');
   verifyWorkflow(currentWorkflow);
-  const actual=inverseCurrent586PhaseUpload(currentWorkflow);
+  const actual=inverseCurrent586PhaseUpload(inverseSourceBeforePostgresWorkflow(currentWorkflow));
   const predecessorHead='bb8d354e0d889080b5f7182b2962f05fbb8fd2e7';
   const predecessor=execFileSync('git',['show',predecessorHead+':'+WORKFLOW],{maxBuffer:65536,timeout:30000,
     env:{...process.env,GIT_NO_LAZY_FETCH:'1',GIT_NO_REPLACE_OBJECTS:'1'}}).toString();
