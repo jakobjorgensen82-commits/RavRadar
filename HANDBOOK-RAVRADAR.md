@@ -1,5 +1,11 @@
 ## 89.273 Genbrug af dansk datoformatering bevarer prognosens tider
 
+Opdatering 28. oktober 2026: En bevaret original kan godt tilhøre den tidligere datageneration, selv om programmet har fået en ny binding. Originalen skal kontrolleres med sin egen godkendte læser. Den må ikke omskrives eller fejlagtigt behandles som den nye generation.
+
+Den akutte lokale rettelse vælger den eksisterende aktive overgang før leverandørhentning og bruger derefter den uforanderlige original med en frisk kontrol. Nyere arbejdsdata holdes adskilt. Det ændrer ikke scoreformlen, kildernes prioritet, punkter eller gamle originaler.
+
+Rettelsen leveres særskilt fra ny DMI-diagnostik og ændringen af zonepanelets oversigter. Kildekontrollen skal fange almindelige kode- og prøvefejl før den lange databaseprøve; alle nødvendige slutkontroller består fortsat. Lokal kode er ikke bevis for fungerende offentlig vejrhentning.
+
 Kort fortalt: RavRadar kan genbruge den samme danske datoformatering uden at ændre prognosens tidspunkter, vejr eller scorer.
 
 En almindelig vejropdatering nåede sin uændrede grænse på 80 minutter. Den offentlige projektion tog målt 36 minutter og 23 sekunder. Den sidste fremdriftslinje viste færdige offentlige filer, ikke færdig privat timepakke og atomisk cacheinstallation. Stoppet er ikke dokumenteret som hukommelsesudløb.

@@ -1,3 +1,4 @@
+import { inverseActiveFamilyRetentionCompanionTestInput } from './lib/alternative-c-caller-test-input.mjs';
 import { inverseAssistant588OriginalCompanionTestInput, ASSISTANT588_ORIGINAL_COMPANION_TEST_REVIEW } from './lib/alternative-c-caller-test-input.mjs';
 import path from 'node:path';
 import { isDeepStrictEqual } from 'node:util';
@@ -2590,7 +2591,8 @@ test('cold target inverse: complete exact modules precede unchanged historical o
 // not authenticate B/GCM, mint a production opaque handle or unpack originals.
 function assistant588CompanionCallerUnits(dependencies) {
   const row = ASSISTANT588_ORIGINAL_COMPANION_TEST_REVIEW;
-  const source = readFileSync(new URL('../' + row.path, import.meta.url), 'utf8').replace(/\r\n/g, '\n');
+  const source = inverseActiveFamilyRetentionCompanionTestInput(
+    readFileSync(new URL('../' + row.path, import.meta.url), 'utf8'), row.path);
   assert.equal(Buffer.byteLength(source), row.after.bytes);
   assert.equal(sha(source), row.after.sha256);
   const genuine587 = inverseAssistant588OriginalCompanionTestInput(source, row.path);

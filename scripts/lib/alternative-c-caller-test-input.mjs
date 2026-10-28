@@ -1068,3 +1068,65 @@ export function inverseAssistant588OriginalCompanionTestInput(source, relative) 
   assert.equal(digest(source), row.before.sha256, 'ALTERNATIVE_C_TEST_INPUT_CHANGED:ASSISTANT588_WHOLE_INVERSE');
   return source;
 }
+
+// TEST INPUT ONLY: exact outer inverse of the active-family retention route.
+// The whole genuine588 caller is restored before unchanged 588/587/586 oracles.
+// This grants no authentication, runtime fallback or source admission.
+export const ACTIVE_FAMILY_RETENTION_COMPANION_TEST_REVIEW = Object.freeze({
+  "path": "scripts/read-authenticated-dmi-current-companions.mjs",
+  "before": {
+    "bytes": 12200,
+    "sha256": "5cbaa9abb7d96e49c2e8b83fa168733181621f0e7ad028d82e25dfaa395c8e14"
+  },
+  "after": {
+    "bytes": 12536,
+    "sha256": "7d34f89912e6bab865dde2bc7d58ac77ede17fda0b3e28acba05bd7584936116"
+  },
+  "hunks": [
+    [
+      "import {ravScoreModelBinding} from '../js/core/ravscore-model-contract.js';",
+      "import {readAuthenticatedFrozen588Predecessor,assertAuthenticatedFrozen588Snapshot}\n  from './lib/authenticated-frozen586-predecessor.mjs';\nimport {ACTIVE_ASSISTANT_SUCCESSOR as ACTIVE} from './lib/assistant-later-h0-successor-source.mjs';\nimport {ravScoreModelBinding} from '../js/core/ravscore-model-contract.js';"
+    ],
+    [
+      "import {readAssistantLaterH0RetentionInput} from './assistant-later-h0-runtime-transition.mjs';",
+      "import {readAssistantLaterH0RetentionInput} from './assistant-later-h0-runtime-transition.mjs';\nconst ACTIVE_PREDECESSOR=ACTIVE.sourcePhase==='assistant-public588-successor'?Object.freeze({\n  read:readAuthenticatedFrozen588Predecessor,snapshot:assertAuthenticatedFrozen588Snapshot,\n}):Object.freeze({\n  read:readAuthenticatedFrozen587Predecessor,snapshot:assertAuthenticatedFrozen587Snapshot,\n});"
+    ],
+    [
+      "  if(descriptor?.modelBinding?.modelBundleSha256==='5584d8e59f8d21785fd08b32f9beb22cf879cdb4892a11ede24eb862d9a0dca2'\n    &&ravScoreModelBinding().modelBundleSha256!==descriptor.modelBinding.modelBundleSha256){",
+      "  if(descriptor?.modelBinding?.modelBundleSha256===ACTIVE.before.I\n    &&ravScoreModelBinding().modelBundleSha256===ACTIVE.requireBinding().I){"
+    ],
+    [
+      "  if(ravScoreModelBinding().modelBundleSha256!=='5584d8e59f8d21785fd08b32f9beb22cf879cdb4892a11ede24eb862d9a0dca2'){",
+      "  if(ravScoreModelBinding().modelBundleSha256===ACTIVE.requireBinding().I){"
+    ],
+    [
+      "    if(descriptor?.modelBinding?.modelBundleSha256==='5584d8e59f8d21785fd08b32f9beb22cf879cdb4892a11ede24eb862d9a0dca2'){",
+      "    if(descriptor?.modelBinding?.modelBundleSha256===ACTIVE.before.I){"
+    ],
+    [
+      "      const snapshot=assertAuthenticatedFrozen587Snapshot(await readAuthenticatedFrozen587Predecessor());",
+      "      const snapshot=ACTIVE_PREDECESSOR.snapshot(await ACTIVE_PREDECESSOR.read());"
+    ],
+    [
+      "      const fresh=assertAuthenticatedFrozen587Snapshot(await readAuthenticatedFrozen587Predecessor());",
+      "      const fresh=ACTIVE_PREDECESSOR.snapshot(await ACTIVE_PREDECESSOR.read());"
+    ]
+  ]
+});
+
+export function inverseActiveFamilyRetentionCompanionTestInput(source, relative) {
+  assert.equal(typeof source, 'string', 'ALTERNATIVE_C_TEST_INPUT_CHANGED:ACTIVE_RETENTION_TYPE');
+  const row = ACTIVE_FAMILY_RETENTION_COMPANION_TEST_REVIEW;
+  assert.equal(relative, row.path, 'ALTERNATIVE_C_TEST_INPUT_CHANGED:ACTIVE_RETENTION_PATH');
+  source = source.replace(/\r\n/g, '\n');
+  if (Buffer.byteLength(source) === row.before.bytes && digest(source) === row.before.sha256) return source;
+  assert.equal(Buffer.byteLength(source), row.after.bytes, 'ALTERNATIVE_C_TEST_INPUT_CHANGED:ACTIVE_RETENTION_SIZE');
+  assert.equal(digest(source), row.after.sha256, 'ALTERNATIVE_C_TEST_INPUT_CHANGED:ACTIVE_RETENTION_WHOLE');
+  for (const [before, after] of [...row.hunks].reverse()) {
+    assert.equal(source.split(after).length, 2, 'ALTERNATIVE_C_TEST_INPUT_CHANGED:ACTIVE_RETENTION_HUNK');
+    source = source.replace(after, () => before);
+  }
+  assert.equal(Buffer.byteLength(source), row.before.bytes, 'ALTERNATIVE_C_TEST_INPUT_CHANGED:ACTIVE_RETENTION_BEFORE_SIZE');
+  assert.equal(digest(source), row.before.sha256, 'ALTERNATIVE_C_TEST_INPUT_CHANGED:ACTIVE_RETENTION_WHOLE_INVERSE');
+  return source;
+}

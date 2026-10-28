@@ -131,8 +131,26 @@ export function inverseCandidatePublicSourceRunLine(source) {
     'Only the exact once appended Candidate source-PR test runline is admitted');
   return source.replace(CURRENT_SOURCE_RUN_LINE,REVIEWED_SOURCE_RUN_LINE);
 }
+
+// Exact source-before-PG permutation only. Historical whole-workflow oracles
+// still receive their genuine bytes; no command, gate or old hash is repinned.
+export const SOURCE_BEFORE_POSTGRES_BLOCK="      - name: Validate source contracts and release governance\n        run: npm run validate:source && node scripts/test-fixed-public-rate-log-20261013.mjs && node scripts/test-fixed-storage-upload-log-20261013.mjs && node scripts/test-fixed-public-rate-console-log-20261015.mjs && node scripts/test-prepare-candidate-g-operational-rollback.mjs && node scripts/test-candidate-g-rollback-public-stage.mjs\n\n      # Reject source-contract regressions before the native PostgreSQL matrix.\n      # All the same gates must succeed; only their execution order changes.\n      - name: Validate native PostgreSQL checkpoint CAS on artificial data only\n        shell: bash\n        env:\n          GITHUB_TOKEN: ${{ github.token }}\n          SOURCE_GATE_HEAD_SHA: ${{ github.event.pull_request.head.sha }}\n          PULL_REQUEST_NUMBER: ${{ github.event.pull_request.number }}\n        run: |\n          set -euo pipefail\n          node --test scripts/test-native-postgres-evidence.mjs\n          node scripts/native-postgres-evidence.mjs\n\n      - name: Upload independently completed native586 PostgreSQL phase\n        uses: actions/upload-artifact@v7\n        with:\n          name: native586-phase-${{ github.run_id }}-${{ github.run_attempt }}-${{ github.event.pull_request.head.sha }}\n          path: .cache/native-postgres-phase-proof.json\n          if-no-files-found: error\n          retention-days: 30\n\n";
+const REVIEWED_POSTGRES_BEFORE_SOURCE_BLOCK="      # Diagnose the short native SQL boundary before the long source matrix.\n      # All the same gates must succeed; only their execution order changes.\n      - name: Validate native PostgreSQL checkpoint CAS on artificial data only\n        shell: bash\n        env:\n          GITHUB_TOKEN: ${{ github.token }}\n          SOURCE_GATE_HEAD_SHA: ${{ github.event.pull_request.head.sha }}\n          PULL_REQUEST_NUMBER: ${{ github.event.pull_request.number }}\n        run: |\n          set -euo pipefail\n          node --test scripts/test-native-postgres-evidence.mjs\n          node scripts/native-postgres-evidence.mjs\n\n      - name: Upload independently completed native586 PostgreSQL phase\n        uses: actions/upload-artifact@v7\n        with:\n          name: native586-phase-${{ github.run_id }}-${{ github.run_attempt }}-${{ github.event.pull_request.head.sha }}\n          path: .cache/native-postgres-phase-proof.json\n          if-no-files-found: error\n          retention-days: 30\n\n      - name: Validate source contracts and release governance\n        run: npm run validate:source && node scripts/test-fixed-public-rate-log-20261013.mjs && node scripts/test-fixed-storage-upload-log-20261013.mjs && node scripts/test-fixed-public-rate-console-log-20261015.mjs && node scripts/test-prepare-candidate-g-operational-rollback.mjs && node scripts/test-candidate-g-rollback-public-stage.mjs\n\n";
+export function inverseSourceBeforePostgresWorkflow(source) {
+  source=lf(source);
+  for(const name of ['Validate source contracts and release governance',
+    'Validate native PostgreSQL checkpoint CAS on artificial data only',CURRENT586_PHASE_UPLOAD])
+    assert.equal(source.split('      - name: '+name+'\n').length,2,
+      'Exactly one unchanged source/native/upload step is required before the order inverse');
+  assert.equal(source.split(SOURCE_BEFORE_POSTGRES_BLOCK).length,2,
+    'Only the exact source-before-PG permutation and reviewed comment may be inverted');
+  assert.equal(source.includes("      # Diagnose the short native SQL boundary before the long source matrix.\n"),false,
+    'The superseded order comment must not remain in the current workflow');
+  return source.replace(SOURCE_BEFORE_POSTGRES_BLOCK,REVIEWED_POSTGRES_BEFORE_SOURCE_BLOCK);
+}
 export function verifyWorkflow(source) {
   source=lf(source);
+  if(source.includes("      # Reject source-contract regressions before the native PostgreSQL matrix.\n"))source=inverseSourceBeforePostgresWorkflow(source);
   if(source.includes('      - name: '+CURRENT586_PHASE_UPLOAD+'\n'))source=inverseCurrent586PhaseUpload(source);
   assert.equal(source.split(CURRENT_JOB).length,2,'Only the exact reviewed current180-minute source PR job is admitted');
   verifyReviewed90Workflow(inverseCandidatePublicSourceRunLine(source).replace(CURRENT_JOB,AFTER_JOB));

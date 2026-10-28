@@ -1,3 +1,15 @@
+## 28. oktober — adskilt akut rettelse af originalernes aktive forgænger
+
+Den almindelige vejropdatering kan standse før leverandørerne, når en bevaret original fra 588 kontrolleres mod den lokale 590-binding gennem den generiske vej. Det er en integrationsfejl i valget af læser, ikke bevis for ugyldige DMI-data eller en ændret scoreformel.
+
+Den afgrænsede produktrettelse bruger den eksisterende aktive retentionslæser før leverandørfasen. Efter leverandørfasen læses kun den autentificerede, uforanderlige original gennem den korrekte 588-bank med frisk genkontrol; ændret arbejdsvejr må hverken erstatte originalen eller bruges som grund til at afvise den. Den nye normale regression viste den gamle fejl og bestod efter rettelsen. Det uændrede produktmål har tidligere afsluttet 40 tilfælde uden fejl eller skip; det er ikke nyt produktionsbevis.
+
+Den tidligere samlede kandidat bestod ikke sin kildekontrol. Fem historiske prøver så den nye 12.536-byte læser, før deres uændrede 12.200-byte og ældre whole-source-orakler var rekonstrueret. En test-only, præcis inverse skal bevare disse gamle orakler og afvise enhver ændret eller manglende ny hunk; gamle hashes må ikke blot ommærkes. Den nye DMI-metadatadiagnose har en særskilt kontraktfejl mellem sanitiseret og fuld attest og er ikke del af denne akutte leverance. Både diagnosearbejdet og ejerens godkendte vedvarende zonepaneler bevares særskilt til efterfølgende levering.
+
+Ejeren har godkendt mindre, adskilte leverancer og tidligere fejlfangst. De uafhængige kildeprøver flyttes foran den lange PostgreSQL-prøve uden ændring af deres kommandoer, miljø, rettigheder eller grænser. Den nationale kontrol skal fortsat stå efter faktisk PostgreSQL og faseupload, og det afsluttende kilde-/træbevis kræver stadig hele kontrollen. Historiske workflow-orakler bevares gennem en eksakt blokflytningsinverse; ingen ny skip- eller genbrugsregel indføres.
+
+Score, kildeprioritet, admin/geometri, C/I/T, gamle SQL-filer og bevarede originaler må ikke ændres af denne rettelse. Lokal rettelse og målprøver er ikke installation, ny vejrhentning eller offentlig effekt. Præcis ny samlet kildekontrol, sikker levering, almindelig ny generation og efterfølger er åbne. Efter kvalificeret levering skal den nødvendige almindelige vejrhentning startes manuelt uden at afvente cron og uden overlap. SOURCE, samlet statistik og automatisk sletning forbliver inaktive; alle fem mål til 18. november 2026 består.
+
 ## 27. oktober — dansk datoformatering genbruges uden at flytte prognosen
 
 Den almindelige beregning stoppede ved sin uændrede 80-minuttersgrænse. Den målte publicfase tog 36 minutter og 23 sekunder; sidste fremdriftslinje beviser færdige offentlige filer, ikke færdig privat timepakke eller atomisk cacheinstallation. Der er ikke dokumenteret OOM. Gentagen national dagsrangering konstruerede den samme danske datoformatering igen for hver time, zone, søgemåde og dag.
