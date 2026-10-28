@@ -354,6 +354,12 @@ En lokal syntetisk 673-dels kæde med tre efterfølgere har bestået normal gemn
 
 ## 89.251 Kortet kan vises for en valgt prognosetime
 
+Opdatering 28. oktober 2026: Zonens 5-dages RavRadar og vandstand time for time bliver stående, når du flytter kortets tidsskyder. Du kan derfor undersøge en bestemt time og stadig se hele zoneprognosen nedenunder. Den øverste score, forklaring og vejrvisning gælder fortsat præcis den valgte time og lokale kystdel.
+
+Klikker du på en zone i forsiden femdøgnsliste, vælges fortsat Nu, før zonen åbnes. Klik på selve kortet beholder den valgte korttime. Prognosepanelerne følger deres normale kalender og kun de eksisterende gyldige data; der opfindes ingen manglende femte dag. Der bruges kun den normale zonepakke, ikke en forhåndsindlæsning af hele landets timer.
+
+Rettelsen er klargjort som en særskilt UI-leverance. Tidligere målprøver og uændrede produktbytes er dokumenteret; ny samlet kildekontrol og faktisk offentlig visning er endnu ikke bevist. Ældre afsnit her om skjulte femdøgns- og vandstandspaneler ved en valgt prognosetime er historik og erstattet af denne beslutning. Vejrdata og scoremodel ændres ikke.
+
 **Lokal UI-rettelse 18. oktober — endnu ikke offentligt verificeret:** Klikker du på en zone i forsiden femdøgnsprognose, vælger den afgrænsede rettelse først Nu ved kortet og åbner derefter zonens normale prognose. Nu betyder den aktuelle verificerede time, ikke midnat. Klik på selve kortet beholder fortsat den time, du har valgt med skyderen. Valgt dag og rangering i femdøgnslisten ændres ikke.
 
 Kun den nationale listes zoneklik ændres. Den tidligere foreslåede større adskillelse af kortets og zonens tidskontekst er annulleret. Versionsnummer 4.0.581, vejrdata og scoremodel er uændrede. Lokal test er ikke bevis for offentlig levering; præcis kildekontrol, sikker levering og browseraccept udestår.

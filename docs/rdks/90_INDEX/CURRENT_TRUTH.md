@@ -1,3 +1,13 @@
+## 28. oktober — selvstændig visningsrettelse til zonens prognosepaneler
+
+Zonens femdøgnsprognose og vandstand time for time skal blive stående, også når tidsskyderen viser en fremtidig time. Den øverste score, forklaring og vejrfelter følger stadig den valgte time og den samme valgte lokale kystdel. Zoneklik i forsiden femdøgnsliste vælger fortsat Nu; dagsfanens egen handling ændres ikke.
+
+Rettelsen er udskilt fra den ufærdige DMI-metadatadiagnose og den akutte vejrhentningsrettelse. Kun den allerede gennemgåede UI-/testdelta genbruges på den nyere kildebase. Det tidligere målbevis omfatter den oprindelige røde panelprøve og efterfølgende beståede panel-, tidslinje-, generations- og indlæsningsprøver; uændrede bytes er genkontrolleret, ikke en ny fuldsuite påstået.
+
+Kun den normale zonepakke bruges. Der indføres ingen indlæsning af hele landets timehorisont, ny vejrhentning, scoreændring eller svækkelse af generations- og referencekontroller. Vejr, modelbinding, SQL-regler, kilder, administratorpunkter og geometri er uændrede. Den statiske installationskopi spejler kun den kanoniske håndbog.
+
+Dette er lokal, særskilt klargøring. Præcis samlet kildekontrol, sikker levering og offentlig brugeraccept udestår. Den akutte vejrhentningsrettelse har førsteprioritet og må ikke forsinkes eller blandes med denne pakke. Ældre afsnit, der beskriver skjulte prognosepaneler ved valgt korttime, er erstattet af ejerens nyere beslutning. Alle fem mål til 18. november 2026 består.
+
 ## 28. oktober — adskilt akut rettelse af originalernes aktive forgænger
 
 Den almindelige vejropdatering kan standse før leverandørerne, når en bevaret original fra 588 kontrolleres mod den lokale 590-binding gennem den generiske vej. Det er en integrationsfejl i valget af læser, ikke bevis for ugyldige DMI-data eller en ændret scoreformel.
