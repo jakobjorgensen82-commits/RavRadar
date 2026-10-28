@@ -377,6 +377,27 @@ async function countTrips(env) {
   return total;
 }
 
+async function countAdminTripSummary(env) {
+  let tripCount = 0, syntheticTestCount = 0;
+  for (const database of databases(env)) {
+    const query = await database.prepare(`select count(*) as trip_count,
+      coalesce(sum(case when json_valid(payload_json) then
+        case when json_type(payload_json, '$.observation_origin') = 'text'
+          and json_extract(payload_json, '$.observation_origin') = 'synthetic-test'
+        then 1 else 0 end else 0 end), 0) as synthetic_test_count
+      from trip_observations`).all();
+    const rows = query?.results, row = rows?.[0];
+    if (query?.success !== true || !Array.isArray(rows) || rows.length !== 1
+      || !Number.isSafeInteger(row?.trip_count) || row.trip_count < 0
+      || !Number.isSafeInteger(row?.synthetic_test_count) || row.synthetic_test_count < 0
+      || row.synthetic_test_count > row.trip_count) throw new Error('TRIP_COUNT_INVALID');
+    tripCount += row.trip_count; syntheticTestCount += row.synthetic_test_count;
+  }
+  if (!Number.isSafeInteger(tripCount) || !Number.isSafeInteger(syntheticTestCount)) throw new Error('TRIP_COUNT_INVALID');
+  return { trip_count: tripCount, synthetic_test_count: syntheticTestCount,
+    scope: 'active-d1-all-stored-rows-including-test-legacy-anonymous' };
+}
+
 async function assertOwnerTripRowsAbsent(databaseList, ownerSubject) {
   for (const database of databaseList) {
     const query = await database.prepare(
@@ -443,6 +464,10 @@ export async function handleRequest(request, env) {
     if (url.pathname === AGGREGATE_VERIFY_PATH) return json(200, { ok: true, report: await handleVerifyTripWeatherAggregate(databases(env), body) });
     if (url.pathname === '/v1/trips/count') {
       try {
+        if (body.operation === 'admin-summary') {
+          if (Object.keys(body).join(',') !== 'operation') throw new Error('TRIP_COUNT_INVALID');
+          return json(200, { ok: true, ...await countAdminTripSummary(env) });
+        }
         return json(200, { ok: true, trip_count: await countTrips(env) });
       } catch {
         return json(503, { ok: false, error: 'COUNT_UNAVAILABLE' });

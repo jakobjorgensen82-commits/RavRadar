@@ -1,3 +1,10 @@
+## 28. oktober — afgrænset adminrettelse og faktisk leveringsstatus
+
+- **ISSUE-ADMIN-TRIP-TOTAL-NOT-CONNECTED – LOKALT RETTET / LEVERING ÅBEN:** Den gamle analyse var browserlokalt kalibreringsgrundlag, ikke et centralt turantal. Ny frisk adgangskontrolleret lagertotal og særskilt testtal består normale lokale mål; præcis CI, installation og administratoraccept udestår.
+- **ISSUE-ADMIN-DEFAULT-EXPERT-LABEL – LOKALT RETTET / LEVERING ÅBEN:** Teknisk defaultrolle expert erstattes ikke i databasen. Visningskategori og filtre bygger på ejerens udpegning, med ukendt og afvigende rettigheder adskilt; ingen rettighedsmutation.
+- Originalernes aktive forgængerlæser og kalenderrettelsen har faktisk leveret en almindelig 590-generation med B før S og offentlig kontrol. Zonepanelrettelsen er særskilt offentligt leveret; fysisk browseraccept er åben.
+- Dækning, almindelig efterfølger, alle fem mål, øvrig adminrevision og SOURCE-aktivering er ikke afsluttet af disse delrettelser. Domænebeslutning er udskudt; DNS er urørt.
+
 ## 28. oktober — selvstændig visningsrettelse til zonens prognosepaneler
 
 Zonens femdøgnsprognose og vandstand time for time skal blive stående, også når tidsskyderen viser en fremtidig time. Den øverste score, forklaring og vejrfelter følger stadig den valgte time og den samme valgte lokale kystdel. Zoneklik i forsiden femdøgnsliste vælger fortsat Nu; dagsfanens egen handling ændres ikke.

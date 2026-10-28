@@ -1,3 +1,11 @@
+## 28. oktober — lokal adminrettelse på uændret 4.0.590
+
+- Ajourfører faktisk almindelig vejrlevering med efterfølgende normale kørsler og særskilt offentligt leverede zonepaneler; fysisk panelaccept og selvstændig fejlgenopretning er fortsat åbne.
+- Tilføjer lokalt beskyttet samlet lagertotal og særskilt eksplicit testtal; ingen individuelle turposter eller falsk nul ved fejl.
+- Adskiller kontokategorier fra defaultroller og permissions med afgrænsede filtre; eksisterende rettigheder og ukendte profiler bevares.
+- Bevarer adminfelter ved normal fornyelse af samme login og afviser stadig gamle svar efter kontoskift. De to påviste gamle prøveseams tilpasses med faktiske normale hjælpere og præcis test-only kildeinverse uden ommærkning af historiske orakler.
+- Normale målprøver består lokalt. Adminens præcise CI, installation og accept udestår. Ingen ny version, model, SQL, score, geometri eller DNSændring; alle fem hovedmål er åbne.
+
 ## 28. oktober — selvstændig visningsrettelse til zonens prognosepaneler
 
 Zonens femdøgnsprognose og vandstand time for time skal blive stående, også når tidsskyderen viser en fremtidig time. Den øverste score, forklaring og vejrfelter følger stadig den valgte time og den samme valgte lokale kystdel. Zoneklik i forsiden femdøgnsliste vælger fortsat Nu; dagsfanens egen handling ændres ikke.

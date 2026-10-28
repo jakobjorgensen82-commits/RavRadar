@@ -41,6 +41,13 @@ for (const tab of ['waterStations', 'coastlineEditor', 'observations', 'history'
 assert.equal(fs.existsSync('scripts/generate-public-admin-rules.mjs'), false, 'Et pensioneret udgivelsesværktøj må ikke kunne genaktivere administratorregler');
 
 const serviceWorker = fs.readFileSync('service-worker.js', 'utf8');
+const release=JSON.parse(fs.readFileSync('package.json','utf8')).version;
+const adminUi='admin-current-data-20261028';
+assert(admin.includes(`admin-dashboard.js?v=${release}&ui=${adminUi}`));
+for(const file of ['admin-trip-count.js','admin-account-categories.js'])
+  assert(dashboard.includes(`${file}?v=${release}&ui=${adminUi}`));
+for(const file of ['js/ui/admin-dashboard.js','js/services/admin-trip-count.js','js/services/admin-account-categories.js'])
+  assert(serviceWorker.includes('./'+file+'?v=${APP_VERSION}&ui='+adminUi),'Normal offline list must follow the exact current admin URL');
 assert.doesNotMatch(serviceWorker, /rule-engine|rule-service|(?:national|local|experimental)-rules\.json/, 'Regelværkstedets gamle motor og regelsæt må ikke ligge i den offentlige offlinepakke');
 
 console.log('Admin-kontrakt bestået: Regelværkstedet er pensioneret, Candidate G ændres kun gennem kode, tests og versionsstyring, og eksisterende regeldata slettes ikke.');

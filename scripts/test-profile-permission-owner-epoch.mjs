@@ -143,13 +143,27 @@ async function profilesListScenario(action,{hydrate=false,render=false}={}){
       assert.equal(url.pathname,'/rest/v1/profiles');assert.equal(url.searchParams.get('order'),'email');assert.equal(options.headers.Authorization,'Bearer synthetic-original');requests++;
       return{ok:true,status:200,async json(){reached.resolve();await release.promise;return structuredClone(rows);}};
     }};
-  vm.runInNewContext(`${authBody}\nthis.api={authIdentityEpoch,currentSession,requireFreshSession,authorizedFetch,getCurrentProfile,signOut,signInWithPassword,refreshSession};`,scope);
+  vm.runInNewContext(`${authBody}\nthis.api={authIdentityEpoch,currentSession,requireFreshSession,authorizedFetch,getCurrentProfile,signOut,signInWithPassword,refreshSession,onAuthChange};`,scope);
   const auth=scope.api,permissions={...auth,PUBLIC_CONFIG:config};
   vm.runInNewContext(`${permissionsBody}\nthis.listProfiles=listProfiles;this.PERMISSIONS=PERMISSIONS;this.EXPERT_PERMISSIONS=EXPERT_PERMISSIONS;`,permissions);
   const track=p=>{operations.push(p);return p;};
-  const host={innerHTML:'',querySelectorAll:()=>[]},state={access:{profile:{role:'owner'},permissions:new Set()},profiles:[]};
-  const view={state,content:{innerHTML:''},document:{querySelector:selector=>{assert.equal(selector,'#profilesList');return host;}},listProfiles:permissions.listProfiles,PERMISSIONS:permissions.PERMISSIONS,EXPERT_PERMISSIONS:permissions.EXPERT_PERMISSIONS,esc:String};
-  if(render){const dashboard=fs.readFileSync(new URL('../js/ui/admin-dashboard.js',import.meta.url),'utf8');const start=dashboard.indexOf('async function renderUsers(){'),end=dashboard.indexOf('async function renderHandbook(){',start);assert.ok(start>=0&&end>start);vm.runInNewContext(dashboard.slice(start,end)+'\nthis.renderUsers=renderUsers;',view);}
+  const host={innerHTML:'',isConnected:true,querySelectorAll:()=>[]},state={tab:'users',access:{profile:{id:ownerA,role:'owner',is_active:true},permissions:new Set()},profiles:[]};
+  const controls=new Map([['#profilesList',host],['#accountCategoryScope',{textContent:''}],['#accountCategoryFilter',{value:'all'}],['#previousAccountPage',{}],['#nextAccountPage',{}],['#refreshAccountCategories',{}]]);
+  const view={...auth,state,content:{innerHTML:''},document:{querySelector:selector=>{assert.equal(controls.has(selector),true,selector);return controls.get(selector);}},listProfiles:permissions.listProfiles,PERMISSIONS:permissions.PERMISSIONS,EXPERT_PERMISSIONS:permissions.EXPERT_PERMISSIONS,esc:String,
+    // This test isolates the existing profiles HTTP body. Classification is a
+    // separate closed operation; its unavailable result must not hide profiles.
+    async loadAdminAccountCategories(){throw new Error('SYNTHETIC_CATEGORY_UNAVAILABLE');}};
+  if(render){
+    const dashboard=fs.readFileSync(new URL('../js/ui/admin-dashboard.js',import.meta.url),'utf8');
+    const start=dashboard.indexOf('async function renderUsers(){'),end=dashboard.indexOf('async function renderHandbook(){',start);
+    const lifetime=dashboard.match(/^let adminUserRenderEpoch=0;\r?\nlet disposeAdminUserCategories=null;\r?\nfunction invalidateAdminUserCategories\(\)\{[^\n]+\}/m)?.[0];
+    assert.ok(start>=0&&end>start);assert.ok(lifetime,'Use the actual normal profile-view lifetime guard');
+    vm.runInNewContext(body('admin-account-categories')+'\nthis.filterAdminAccountProfiles=filterAdminAccountProfiles;',view);
+    // Keep the actual pure filter, but never start the separate classification
+    // transport from this auth/permissions result-consumption test.
+    view.loadAdminAccountCategories=async()=>{throw new Error('SYNTHETIC_CATEGORY_UNAVAILABLE');};
+    vm.runInNewContext(lifetime+'\n'+dashboard.slice(start,end)+'\nthis.renderUsers=renderUsers;this.disposeProfilesView=()=>invalidateAdminUserCategories();',view);
+  }
   let result;
   try{
     const pending=track((render?view.renderUsers():permissions.listProfiles()).then(value=>({value}),error=>({error})));
@@ -170,7 +184,7 @@ async function profilesListScenario(action,{hydrate=false,render=false}={}){
       assert.equal(result.error,undefined);if(render){assert.match(host.innerHTML,/synthetic-private-profile@example.invalid/);assert.deepEqual(state.profiles,rows);}else assert.deepEqual(result.value,rows);
     }else if(render){assert.doesNotMatch(host.innerHTML,/synthetic-private-profile@example.invalid/);assert.deepEqual(state.profiles,[]);assert.match(host.innerHTML,/Kontoen blev ændret/);}
     else{assert.equal(result.value,undefined,'Old private profiles must not reach the caller after an identity choice');assert.match(result.error?.message||'',/Kontoen blev ændret/);}
-  }finally{release.resolve();authRelease.resolve();await Promise.allSettled(operations);const leaked=timers.size;for(const timer of timers)clearTimeout(timer);assert.equal(leaked,0);}
+  }finally{release.resolve();authRelease.resolve();await Promise.allSettled(operations);if(render)view.disposeProfilesView();const leaked=timers.size;for(const timer of timers)clearTimeout(timer);assert.equal(leaked,0);}
   assert.equal(requests,1);assert.equal(hydrations,hydrate?1:0);assert.equal(refreshes,action==='renewal'?1:0);
 }
 for(const action of ['unchanged','renewal','logout','same-owner-login','different-owner-login','pending-login','pending-logout'])test('profiles-list: held body '+action,()=>profilesListScenario(action));

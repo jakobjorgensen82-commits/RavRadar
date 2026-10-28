@@ -1,3 +1,9 @@
+## 28. oktober — bevar den leverede vejrvej; luk afgrænsede adminleverancer
+
+Almindelig 590 med nyt vejr, B før S, Pages og offentlig 210/673-kontrol er faktisk leveret. Næste almindelige fortsættelse og reel fuldhorisontsdækning har førsteprioritet; ingen ny historikstart eller modelændring. Zonepanelrettelsen er særskilt leveret, fysisk browseraccept står åben.
+
+Adminoptælling og kontokategorier er kun lokalt måltestet. Færdiggør præcis kildekontrol, eksisterende kontrolleret Worker-/Edgerute, frontendlevering og normal administratoraccept uden at ændre roller, rettigheder, vejr eller score. Øvrige auditfund forbliver åbne. SOURCE, assistentens næste gennemgåede sammensætning, anonym statistik, varslet retention og selvstændig drift er særskilte restleverancer. Alle fem mål til 18. november består; domæne/DNS afventer ejerbeslutning i morgen.
+
 ## 23. oktober — P0: genoptag den beregnede opstarts leverandørinput, ikke endnu en ny start
 
 Første current-family-start stoppede faktisk i offentlig no-loss efter beregning. Prioritér samlet rettelse af det observerede DMI-forsøgsstop og samme-arkiv/samme-mål-time-genoptagelse fra det autentificerede leverandørcheckpoint. Hold gamle CP-/OM-strømdonorer ude af aktiv union uden at ændre originaler, øvrige vejrkomponenter eller normal efterfølger. Færdig beregning findes ikke i dette checkpoint; den må ikke loves genbrugt.
