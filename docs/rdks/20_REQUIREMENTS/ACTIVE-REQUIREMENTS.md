@@ -1,3 +1,13 @@
+## 29. oktober — aktiv ejerbeslutning: separat Pages-prognosedeling
+
+- Kun projektet `ravradar-del` på den eksisterende Cloudflare-konto er godkendt. Først pages.dev; senere `del.ravradar.dk` med én Simply-CNAME. NS/apex/www/mail bevares. Det erstatter tidligere venten på ejerens DNS-valg, ikke de nødvendige leveringskontroller.
+- Den eksisterende read-only-handler, model-/gyldighedskontrol, faste offentlige input og præcise selection bevares. Ingen database, billedlager, nye nøgler/planer, scoreberegning eller vejr-/SQL-ændring. Frontend og legacy-Worker forbliver uændrede i fase 1.
+- Den kontrollerede controller skal bruge eksakt kvalificeret main og fælles eksklusiv writerkanal i et sikkert vindue. Kun entydig 404 må udløse den ene oprettelse; ukendt/eksisterende projekt overtages ikke. Ukendt write genlæses før gentagelse; manglende Pages Write må ikke omgås med ny nøgle.
+- Før klientcutover kræves faktisk Pages-levering, kompatibilitet med en virkelig senere offentlig 591-generation, opdateret gammel Worker, GET/HEAD/OG/robots, domænebinding og TLS samt normal frontend/cachebusterlukning. Facebookpreview og ekstern cache verificeres særskilt.
+- Robots Allow bevarer handlerens noindex/no-store. Funktionerne deler kontoens 100.000 Workers Free-kald/døgn med blandt andet turlageret. Målt samlet forbrug og CPU kræves; ingen ny separat gratis pulje eller sikker Free-drift må loves uden bevis.
+
+Privat adapter/controller og lokale prøver er ikke oprettelse, installation, deploy, DNS eller kapacitetsbevis. Ingen ny version/CIT/migration; alle fem mål forbliver åbne. DEC-0294 og håndbog 89.278 er den aktuelle beslutning; ældre dateret tekst bevares som historik på det erstattede DNS-punkt.
+
 ## 29. oktober — skrivefri aflæsning af gemte komponenttællere, lokal forberedelse
 
 Den afgrænsede diagnose kan genlæse én præcist angivet, autentificeret originalpakke B gennem dens egen normale, arkiverede læser. Den kræver samme friske centrale pointer før og efter læsningen. Den bruger ikke det separat gemte beregningscheckpoint S, krypteret fremdrift eller råcachen. Dermed kan de allerede gemte komponenttællere undersøges, selv om fremdriftspakken tilhører en ældre generation.

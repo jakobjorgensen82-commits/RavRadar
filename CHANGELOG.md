@@ -1,3 +1,11 @@
+## 29. oktober — separat Pages-kandidat til prognosedeling på uændret 4.0.591
+
+- Ejerens godkendte projekt `ravradar-del` forberedes med Pages Functions, først pages.dev og senere én Simply-CNAME til `del.ravradar.dk`; ingen navneserverflytning.
+- Den gennemgåede adapter genbruger den uændrede handler; gammel Worker og frontend beholdes. Robots tillader previewscraperen, mens noindex/no-store består. Ingen database, billedlager, vejr-, score-, model-/SQL- eller versionsændring.
+- Adapter, controller og en afgrænset læseroptimering er lokalt sammenført. Delingsstien genbruger faste datoformater og sin egen modelidentitet; alle stærke modelkontroller og andre kalderes oprindelige gennemgang bevares. Præcis samlet kontrol, faktisk Pages-oprettelse/deploy, DNS/TLS, Facebookaccept og målt delt Free-kapacitet er åbne.
+- Den senere almindelige 591-generation og de tre serverfunktioner er faktisk leveret. Legacy-Workeren er særskilt opdateret og viser igen en kontrolleret score; dette er ikke bevis for den nye Pages-host, ekstern AI eller Free-kapacitet.
+- Håndbog 89.278 og DEC-0294 dokumenterer den nye beslutning og den risikovurderede leveringsvej. Installationsfilens håndbogspayload følger normal spejlsynk alene. Alle fem mål består som åbne.
+
 ## 29. oktober — skrivefri aflæsning af gemte komponenttællere, lokal forberedelse
 
 Den afgrænsede diagnose kan genlæse én præcist angivet, autentificeret originalpakke B gennem dens egen normale, arkiverede læser. Den kræver samme friske centrale pointer før og efter læsningen. Den bruger ikke det separat gemte beregningscheckpoint S, krypteret fremdrift eller råcachen. Dermed kan de allerede gemte komponenttællere undersøges, selv om fremdriftspakken tilhører en ældre generation.

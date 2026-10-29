@@ -1,5 +1,8 @@
 // Display-only selection. No score, provider, coordinate, account or trip authority.
-export const FORECAST_SHARE_BASE_URL = 'https://ravradar-prognosedeling.jakob-jorgensen82.workers.dev/';
+export const FORECAST_SHARE_WORKER_BASE_URL = 'https://ravradar-prognosedeling.jakob-jorgensen82.workers.dev/';
+export const FORECAST_SHARE_PAGES_BASE_URL = 'https://ravradar-del.pages.dev/';
+// Frontend stays on the verified legacy host until Pages and DNS/TLS are accepted.
+export const FORECAST_SHARE_BASE_URL = FORECAST_SHARE_WORKER_BASE_URL;
 export const FORECAST_SHARE_TIME_ZONE = 'Europe/Copenhagen';
 export const FORECAST_SHARE_BRAND_PATH = 'assets/icons/ravradar-512.png';
 const MODES = ['waders', 'beach'];
@@ -88,15 +91,28 @@ export function forecastShareUrl(pageUrl, input) {
   return url.href;
 }
 
+const shareDateFormatters = new Map();
+function forecastShareDateFormatters(locale) {
+  const fixed = locale === 'da-DK' || locale === 'de-DE' || locale === 'en-GB';
+  if (fixed && shareDateFormatters.has(locale)) return shareDateFormatters.get(locale);
+  const formatters = {
+    day: new Intl.DateTimeFormat(locale, {
+      timeZone: FORECAST_SHARE_TIME_ZONE, weekday: 'long', day: 'numeric', month: 'long',
+    }),
+    clock: new Intl.DateTimeFormat(locale, { timeZone: FORECAST_SHARE_TIME_ZONE,
+      hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }),
+  };
+  if (fixed) shareDateFormatters.set(locale, formatters);
+  return formatters;
+}
+
 export function forecastShareDate(time, language = 'da') {
   const locale = LOCALES[language] || LOCALES.da;
   const date = new Date(time);
   if (!Number.isFinite(date.getTime())) return '';
-  const day = new Intl.DateTimeFormat(locale, {
-    timeZone: FORECAST_SHARE_TIME_ZONE, weekday: 'long', day: 'numeric', month: 'long',
-  }).format(date);
-  const parts = new Intl.DateTimeFormat(locale, { timeZone: FORECAST_SHARE_TIME_ZONE,
-    hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }).formatToParts(date);
+  const formatters = forecastShareDateFormatters(locale);
+  const day = formatters.day.format(date);
+  const parts = formatters.clock.formatToParts(date);
   const hour = parts.find(part => part.type === 'hour').value;
   const minute = parts.find(part => part.type === 'minute').value;
   const clock = hour + (language === 'da' ? '.' : ':') + minute;

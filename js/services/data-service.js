@@ -162,7 +162,11 @@ function contentAddressedCache(url) {
   return /[?&]dataset=[^&]+/.test(url) && /[?&]sha=[a-f0-9]{64}(?:&|$)/i.test(url) ? 'force-cache' : 'no-store';
 }
 
+// Only this normal, privately owned frozen tuple is immutable by construction.
+// Caller objects, frozen Proxies and accessors never select this identity.
+const SHARE_LOCAL_MODEL_BINDING = ravScoreModelBinding();
 function assertNestedModelBindings(value, expected, path = 'payload') {
+  if (expected === SHARE_LOCAL_MODEL_BINDING) return assertShareNestedModelBindings(value, expected, path);
   if (Array.isArray(value)) {
     value.forEach((item, index) => assertNestedModelBindings(item, expected, `${path}[${index}]`));
     return true;
@@ -179,6 +183,39 @@ function assertNestedModelBindings(value, expected, path = 'payload') {
     assertNestedModelBindings(nested, expected, nestedPath);
   }
   return true;
+}
+
+function assertShareNestedModelBindings(value, expected, path = 'payload') {
+  const localExpected = expected === SHARE_LOCAL_MODEL_BINDING;
+  let localExpectedCompared = false;
+  function visitNestedModelBindings(value, path) {
+  if (Array.isArray(value)) {
+    value.forEach((item, index) => {
+      if (item && typeof item === 'object') visitNestedModelBindings(item, `${path}[${index}]`);
+    });
+    return true;
+  }
+  if (!value || typeof value !== 'object') return true;
+  for (const key of Object.keys(value)) {
+    const nested = value[key];
+    const binding = key === 'modelBinding' || key === 'ravScoreModelBinding';
+    const branch = nested && typeof nested === 'object';
+    if (!binding && !branch) continue; // The original primitive arm returned without validation.
+    const nestedPath = `${path}.${key}`;
+    if (binding) {
+      assertRavScoreModelBinding(nested, nestedPath);
+      if (!localExpected || !localExpectedCompared) {
+        if (!sameRavScoreModelBinding(nested, expected)) {
+          throw new Error(`${nestedPath} tilhører en anden RavScore-model eller bundle.`);
+        }
+        localExpectedCompared = true;
+      }
+    }
+    if (branch) visitNestedModelBindings(nested, nestedPath);
+  }
+  return true;
+  }
+  return visitNestedModelBindings(value, path);
 }
 
 function assertPublicVerifiedEvidenceTrust(document, label) {
@@ -1216,7 +1253,10 @@ export async function loadPublicForecastShareSelection(input, { fetchPublic } = 
   ]);
   assertPublicDeliveryDocument(document, manifest, entry);
   assertPublicVerifiedEvidenceTrust(document, 'Den delte offentlige zonepakke');
-  assertNestedModelBindings(document, manifest.ravScoreModelBinding);
+  // assertManifest already proved its complete tuple equals this same local
+  // model. Reuse only the source-owned immutable expected value, never payload
+  // validation results. Every nested tuple still gets its full original assert.
+  assertNestedModelBindings(document, SHARE_LOCAL_MODEL_BINDING);
   const registry = assertZoneRegistryDocument(zoneDocument, manifest);
   const zone = registry.active.find(feature => feature.properties.id === selection.zoneId)?.properties;
   if (!zone || typeof zone.name !== 'string' || !zone.name.trim()) return null;

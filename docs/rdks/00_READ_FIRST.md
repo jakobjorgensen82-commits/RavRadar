@@ -1,3 +1,7 @@
+## 29. oktober — prognosedeling på Pages er godkendt, endnu ikke leveret
+
+Ejerens valg er ét separat `ravradar-del` Pages/Functions-projekt, først `ravradar-del.pages.dev`, senere `del.ravradar.dk` med én CNAME hos Simply. Ingen navneserverflytning eller ændring af apex/www/mail. Ældre afventninger af denne ejerbeslutning er historik; oprettelse, deploy, DNS/TLS, offentlig 591-kompatibilitet, Facebookaccept og målt Free-kapacitet er fortsat åbne. Frontend og legacy-Worker bevares indtil kontrolleret overgang. Privat adapter/controllerforberedelse og lokal prøve er ikke offentlig levering. Ingen vejr-, score-, model-, SQL- eller versionsændring. Alle fem mål til 18. november består. Se DEC-0294, håndbog 89.278 og privat checkpoint.
+
 ## 29. oktober — skrivefri aflæsning af gemte komponenttællere, lokal forberedelse
 
 Den afgrænsede diagnose kan genlæse én præcist angivet, autentificeret originalpakke B gennem dens egen normale, arkiverede læser. Den kræver samme friske centrale pointer før og efter læsningen. Den bruger ikke det separat gemte beregningscheckpoint S, krypteret fremdrift eller råcachen. Dermed kan de allerede gemte komponenttællere undersøges, selv om fremdriftspakken tilhører en ældre generation.
