@@ -10,8 +10,9 @@ import '../js/ui/map-timeline-copy.js?v=4.0.579';
 import { buildSelectedHourFlowArrows } from '../js/map/map-view.js';
 import * as service from '../js/services/data-service.js';
 import { openForecastShareSelection, mountForecastShareControl } from '../js/ui/forecast-share.js';
-import { FORECAST_SHARE_BASE_URL, forecastShareUrl, forecastShareCopy } from '../js/services/forecast-share-contract.js';
+import { FORECAST_SHARE_BASE_URL, FORECAST_SHARE_WORKER_BASE_URL, FORECAST_SHARE_PAGES_BASE_URL, forecastShareUrl, forecastShareCopy } from '../js/services/forecast-share-contract.js';
 import forecastShareWorker from './forecast-share/worker.mjs';
+import { onRequest as forecastSharePages } from './forecast-share-pages/functions/index.js';
 import { publicDeliveryGeneration } from '../js/core/public-delivery-contract.js';
 import { showZoneInfo, bindZoneInfoInteractions } from '../js/ui/info-panel.js';
 import { buildLocalZoneScore, selectLocalBestForDay, isCurrentForecastHour } from '../js/core/local-zone-score.js';
@@ -186,7 +187,7 @@ try{
     compatibility_date:'2026-10-24',workers_dev:true,preview_urls:false},
     'Ingen assets, routes, databaser, KV, R2, cron, vars eller secrets i konfigurationen');cases++;
   const escapeShareAttribute=value=>String(value).replaceAll('&','&amp;').replaceAll('"','&quot;');
-  async function shareWorkerRequest(url,{fixture=shareFixture(),method='GET',headers={},body=null}={}){
+  async function shareWorkerRequest(url,{fixture=shareFixture(),method='GET',headers={},body=null,pages=false}={}){
     const originalFetch=globalThis.fetch,upstream=[];
     globalThis.fetch=async(input,options)=>{
       const target=new URL(input);
@@ -195,10 +196,13 @@ try{
     };
     try{
       const request=new Request(url,{method,headers,...(body===null?{}:{body})});
-      const response=await forecastShareWorker.fetch(request,{
+      const forgedEnvironment={
         shareBaseUrl:'https://forged.invalid/',PUBLIC_PAGE:'https://forged.invalid/',
         fetchPublic:()=>assert.fail('Miljøet må ikke udskifte den normale transport'),
-      });
+      };
+      const response=pages
+        ?await forecastSharePages({request,env:forgedEnvironment})
+        :await forecastShareWorker.fetch(request,forgedEnvironment);
       const html=await response.text();
       // Kontroller uden for handlerens fail-closed catch: et forkert upstreamkald
       // må ikke skjules som blot en utilgængelig prognose i denne prøve.
@@ -298,6 +302,50 @@ try{
     const expired=await unavailableShare(shareFixture());
     assert.deepEqual(expired.reads,['./data/live/manifest.json']);
   }finally{Date.now=()=>freshNow;}cases++;
+
+  // Same normal reader/HTTP contract on Pages; frontend cutover is later.
+  assert.equal(FORECAST_SHARE_WORKER_BASE_URL,shareBase);
+  assert.equal(FORECAST_SHARE_PAGES_BASE_URL,'https://ravradar-del.pages.dev/');
+  const pagesConfig=JSON.parse(await fs.readFile(new URL('./forecast-share-pages/wrangler.jsonc',import.meta.url),'utf8'));
+  assert.deepEqual(pagesConfig,{name:'ravradar-del',pages_build_output_dir:'./public',compatibility_date:'2026-10-24',send_metrics:false});
+  const pagesRoutes=JSON.parse(await fs.readFile(new URL('./forecast-share-pages/public/_routes.json',import.meta.url),'utf8'));
+  assert.deepEqual(pagesRoutes,{version:1,include:['/'],exclude:[]});
+  assert.deepEqual((await fs.readdir(new URL('./forecast-share-pages/public/',import.meta.url))).sort(),['404.html','_routes.json','robots.txt']);cases++;
+  for(const language of ['da','de','en'])for(const mode of ['waders','beach']){
+    const selection={...shareSelection,language,mode};
+    const legacy=await shareWorkerRequest(forecastShareUrl(shareBase,selection));
+    const pages=await shareWorkerRequest(forecastShareUrl(FORECAST_SHARE_PAGES_BASE_URL,selection),{pages:true});
+    assert.equal(pages.response.status,legacy.response.status);
+    assert.equal(pages.html,legacy.html.replaceAll(shareBase,FORECAST_SHARE_PAGES_BASE_URL));
+    assert.deepEqual(pages.upstream,legacy.upstream);assert.equal(pages.reads.length,3);cases++;
+  }
+  const pagesUrl=forecastShareUrl(FORECAST_SHARE_PAGES_BASE_URL,shareSelection);
+  const pagesHead=await shareWorkerRequest(pagesUrl,{pages:true,method:'HEAD'});
+  assert.equal(pagesHead.response.status,200);assert.equal(pagesHead.html,'');
+  assert.equal(pagesHead.response.headers.get('cache-control'),'no-store');cases++;
+  for(const method of ['POST','PUT','DELETE']){
+    const result=await shareWorkerRequest(pagesUrl,{pages:true,method});
+    assert.equal(result.response.status,405);assert.equal(result.upstream.length,0);cases++;
+  }
+  for(const url of [pagesUrl.replace('https:','http:'),pagesUrl.replace('ravradar-del.','forged.'),pagesUrl.replace('/?','/other?')]){
+    const result=await shareWorkerRequest(url,{pages:true});
+    assert.equal(result.response.status,503);assert.equal(result.upstream.length,0);cases++;
+  }
+  const pagesInvalid=await shareWorkerRequest(pagesUrl+'&score=100',{pages:true});
+  assert.equal(pagesInvalid.response.status,400);assert.equal(pagesInvalid.upstream.length,0);cases++;
+  const pagesFacebook=await shareWorkerRequest(pagesUrl+'&fbclid=synthetic',{pages:true});
+  assert.equal(pagesFacebook.response.status,200);assert.doesNotMatch(pagesFacebook.html,/fbclid|synthetic/);cases++;
+  for(const fixture of [shareFixture({zoneText:shareRow.text+' '}),shareFixture({responseStatus:302,location:'https://forged.invalid/'})]){
+    const result=await shareWorkerRequest(pagesUrl,{pages:true,fixture});
+    assert.equal(result.response.status,200);assert.ok(result.html.includes(forecastShareCopy('da').unavailable));
+    assert.doesNotMatch(result.html,/\d+\/100|FORECAST_SHARE_|forged\.invalid/);cases++;
+  }
+  try{Date.now=()=>freshNow+2*3600000;
+    const result=await shareWorkerRequest(pagesUrl,{pages:true});
+    assert.equal(result.response.status,200);assert.ok(result.html.includes(forecastShareCopy('da').unavailable));
+    assert.deepEqual(result.reads,['./data/live/manifest.json']);
+  }finally{Date.now=()=>freshNow;}cases++;
+
   try{
     const expiredDuringRead=await unavailableShare(shareFixture({onRead:path=>{
       if(path==='./data/zones.geojson')Date.now=()=>freshNow+2*3600000;

@@ -1,3 +1,7 @@
+## 29. oktober — prognosedeling på Pages er godkendt, endnu ikke leveret
+
+Ejerens valg er ét separat `ravradar-del` Pages/Functions-projekt, først `ravradar-del.pages.dev`, senere `del.ravradar.dk` med én CNAME hos Simply. Ingen navneserverflytning eller ændring af apex/www/mail. Ældre afventninger af denne ejerbeslutning er historik; oprettelse, deploy, DNS/TLS, offentlig 591-kompatibilitet, Facebookaccept og målt Free-kapacitet er fortsat åbne. Frontend og legacy-Worker bevares indtil kontrolleret overgang. Privat adapter/controllerforberedelse og lokal prøve er ikke offentlig levering. Ingen vejr-, score-, model-, SQL- eller versionsændring. Alle fem mål til 18. november består. Se DEC-0294, håndbog 89.278 og privat checkpoint.
+
 ## 25. oktober — klientkode er ikke privat vejrdata; central profil læses som et par
 
 Den seneste almindelige vejrhentning nåede leverandører, beregning og gemning af beskyttet B/S. Pages blev derefter afvist alene på navnene på to nye, normale JavaScript-klienter til administratorens statistikvisning. Den eksisterende navnekontrol må ikke forveksle offentlig programkode med privat rapportindhold. En særskilt administrator-synkronisering havde desuden afvist den aktive centrale profil mod den nyere lokale skabelon før den operationelle aktivering.

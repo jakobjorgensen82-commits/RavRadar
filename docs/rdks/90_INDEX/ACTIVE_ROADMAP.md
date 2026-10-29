@@ -1,3 +1,9 @@
+## 29. oktober — Pages-deling har konkret ejerbeslutning; vejr og dækning er stadig P0
+
+Bevar kontinuerlig vejrhentning og undersøg de faktiske prognosehuller med højeste prioritet. I uafhængigt lokalt arbejde færdiggøres den godkendte separate Pages-kandidat: adapter/robots → kontrolleret controller og eksakt kildekvalifikation → verificeret pages.dev → faktisk offentlig 591-kompatibilitet og bevaret legacy-Worker → målt hosted/Free/Facebookaccept → senere én Simply-CNAME, TLS og klientcutover.
+
+Ingen NS-flytning; ejerens DNS-vej er nu valgt og skal ikke efterspørges igen. Projektoprettelse, deploy og DNS ligger hos ROOT og må ikke ske under aktiv writer. Frontend og gammel tjeneste bevares indtil den kvalificerede overgang. SOURCE, øvrige brugerdata-/assistentrestpunkter og selvstændig drift beholder egne gates; alle fem mål til 18. november 2026 er åbne. Se DEC-0294 og håndbog 89.278.
+
 ## 28. oktober — bevar den leverede vejrvej; luk afgrænsede adminleverancer
 
 Almindelig 590 med nyt vejr, B før S, Pages og offentlig 210/673-kontrol er faktisk leveret. Næste almindelige fortsættelse og reel fuldhorisontsdækning har førsteprioritet; ingen ny historikstart eller modelændring. Zonepanelrettelsen er særskilt leveret, fysisk browseraccept står åben.
