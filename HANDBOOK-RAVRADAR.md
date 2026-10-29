@@ -1,3 +1,25 @@
+## 89.277 Undersøg de gemte data, før hentningen ændres
+
+**Kort fortalt: Huller i prognosen skal undersøges i de data, som vejrhentningen faktisk gemte. En afgrænset læsning kan vise, hvor meget de enkelte reservekilder udfyldte, uden at starte en ny vejrhentning.**
+
+RavRadar gemmer en privat originalpakke, som kan genlæses med den præcise kode, der skabte den. Den lokalt forberedte diagnose læser én bestemt, autentificeret pakke og kontrollerer, at den centrale reference er uændret under hele læsningen. Den kan arbejde uden det særskilte beregningscheckpoint eller den gamle fremdriftspakke.
+
+### Hvad tallene kan fortælle
+
+Den eksisterende sikre opsummering viser vind, bølger, vandstand og vandtemperatur før reservekilderne, efter Copernicus og efter den sidste reserve. Den kan også vise faste tællere for forsøg, fejl, udskudte behov og timeout, når disse oplysninger faktisk er gemt. Et manglende tal betyder ukendt, ikke nul.
+
+Strøm har sin egen producent og tælles særskilt. Disse fire komponentfamiliers deltal er derfor ikke hele landets dækningsgrad. Den opgøres fortsat for alle fem vejrtyper over alle forventede timer og zoner. Opsummeringen fortæller heller ikke alene, hvilken bestemt modelfil eller teknisk hændelse der har skabt et hul. Det kræver videre evidens.
+
+### Hvordan læsningen afgrænses
+
+Diagnosen skal tilvælges udtrykkeligt og deler den normale eksklusive vejrkanal. Den må kun hente allerede gemte, autentificerede input gennem den eksisterende læseadgang og de faste grænser for kald, størrelse og tid. Den starter ingen leverandørhentning og skriver ingen vejrdata, scorer eller historik. Kun nye, egne midlertidige arbejdsfiler må ryddes efter læsningen. Fejl eller ukendt udfald må ikke vises som et bestået resultat.
+
+Kun den eksisterende faste talopsummering og nødvendige læse-/kapacitetsoplysninger kommer med i rapporten. Rå vejrdata, strømværdier, koordinater, brugeroplysninger, nøgler og frie fejlbeskeder holdes ude.
+
+### Status og næste bevis
+
+29. oktober er koden gennemgået og forberedt lokalt. Relevante afgrænsede API- og workflowprøver er bestået på de gennemgåede kodefiler. Den præcise GitHub-kontrol, sikker levering og en virkelig læsning af den valgte originalpakke udestår. En årsag til manglende prognosetimer må ikke udledes af forberedelsen alene. Scoreformel, kildeprioritet DMI → Copernicus → Open-Meteo, administratorpunkter, geometri og almindelige hentetider ændres ikke.
+
 ## 89.276 Bedre hjælp til almindelige spørgsmål og korte opfølgninger
 
 **Kort fortalt: Spørg RavRadar skal forstå almindelige spørgsmål om ravjagt og kunne følge en kort opfølgning. Svarene skal være brugbare og ærlige om usikkerhed. Forbedringen ændrer ikke RavScore eller de vejrdata, prognosen bygger på.**

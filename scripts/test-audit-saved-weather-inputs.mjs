@@ -6,7 +6,7 @@ import path from 'node:path';
 import test from 'node:test';
 import vm from 'node:vm';
 import { fileURLToPath, pathToFileURL } from 'node:url';
-import { auditSavedWeatherInputs, createReadOnlySavedWeatherClients,
+import { auditSavedWeatherInputs, auditProtectedBaselineComponentFallback, createReadOnlySavedWeatherClients,
   measureSavedCurrentContexts, measureSavedNativeProofAvailability, withoutSavedAuditSecrets,
   indexSavedRawManifest, measureSavedRawCaptureMatches, inspectSavedRawFileInventory,
   savedAuditProgressAuthenticationCode, CURRENT586_ENDPOINT_AUDIT,
@@ -272,7 +272,8 @@ test('offline subprocess scope removes secrets and restores them even after fail
 
 async function fixture(t, { corrupt = false, changedAt = Infinity, wrongContracts = false,
   wrongBaseline = false, cipherTamper = false, forecastAbsent = false,
-  nativeProofs = false, baselinePackTamper = false, packReaderBank = null, rawCaptures = false } = {}) {
+  nativeProofs = false, baselinePackTamper = false, packReaderBank = null, rawCaptures = false,
+  componentSummaryAbsent = false } = {}) {
   const folder = await temp(t);
   const source = path.join(folder, 'source'), privateRoot = path.join(folder, 'private'),
     buildRoot = path.join(folder, 'build'), predecessorRoot = path.join(folder, 'old-reader'), progressRoot = path.join(folder, 'progress');
@@ -285,6 +286,7 @@ async function fixture(t, { corrupt = false, changedAt = Infinity, wrongContract
     zones: Object.fromEntries(Array.from({ length: 210 }, (_, i) => [`zone-${i}`, {}])),
     coastalParts: { modelBinding: ravScoreModelBinding(), parts: Object.fromEntries(Array.from({ length: 673 }, (_, i) =>
       [`part-${i}`, { zoneId: `zone-${i % 210}`, waterPoint: [8, 55], landPoint: [8, 55.01], onshoreDirectionDeg: 0 }])) } };
+  if (componentSummaryAbsent) delete conditions.weatherEngine.componentFallback;
   const contractHashes = Object.fromEntries(['continuationStateContractSha256', 'fullRuntimeContractSha256', 'publicProjectionContractSha256'].map(key => [key, 'b'.repeat(64)]));
   const files = [];
   for (const descriptor of PRIVATE_RUNTIME_BASE_FILES) {
@@ -1728,4 +1730,152 @@ test('CURRENT586 restoration S facade: actual normal checkpoint body and shared 
   const timed=createReadOnlySavedWeatherClients({...credentials,includeCurrent586Checkpoint:true,
     maximumMilliseconds:1000,clock:()=>now,fetchImpl:async()=>{now+=600;return Response.json([]);}});
   await timed.request(query);await assert.rejects(timed.request(query),/REMOTE_READ_BOUND/);
+});
+
+const bOnlyOptions = f => ({ ...credentials, fetchImpl: f.options.fetchImpl,
+  privateRoot: f.privateRoot, descriptorPath: f.options.descriptorPath,
+  predecessorRoot: f.options.predecessorRoot, outputPath: f.options.outputPath,
+  expectedDatasetId: f.conditions.datasetId,
+  expectedProductionReferenceAt: f.conditions.productionReferenceAt });
+
+test('B-only component summary: actual authenticated B works without progress or component unpacking', async t => {
+  // Outer B is authenticated normally; an intentionally invalid INNER pack
+  // proves that this scope never unpacks/adopts it or depends on RAW proofs.
+  const f = await fixture(t, { nativeProofs: true, baselinePackTamper: true });
+  await fs.rm(f.options.progressFile);
+  const beforeConditions = await fs.readFile(path.join(f.source, 'data/live/conditions.json'));
+  const report = await auditProtectedBaselineComponentFallback(bOnlyOptions(f));
+  assert.equal(report.status, 'AUDIT_COMPLETED', JSON.stringify(report));
+  assert.equal(report.readScope, 'PROTECTED_BASELINE_COMPONENT_FALLBACK_ONLY');
+  assert.equal(report.protectedGenerationReadbackVerified, true);
+  assert.equal(report.exactArchivedSourceContractsVerified, true);
+  for (const key of ['encryptedProgressRead', 'rawCacheRead', 'componentPackUnpacked',
+    'semanticUnionPerformed', 'cacheBuilt', 'futureContextPersistenceProved', 'publicDeploymentProved']) {
+    assert.equal(report[key], false, key);
+  }
+  assert.equal(report.summaryPresent, true);
+  const summary = report.protectedBaselineComponentFallback;
+  assert.equal(summary.openMeteo.requests, 7);
+  assert.equal(summary.openMeteo.deferred, 2);
+  assert.equal(summary.before.wind.valid, 3);
+  assert.equal(summary.after.wind.valid, null, 'unreported observations remain unknown');
+  assert.equal(summary.copernicus.status, null);
+  assert.equal(summary.copernicus.transportFailure, null);
+  assert.equal(Object.hasOwn(summary, 'arbitraryPrivatePayload'), false);
+  assert.equal(Object.hasOwn(report, 'nativeProofAvailability'), false);
+  assert.equal(Object.hasOwn(report.capacity, 'progress'), false);
+  for (const key of ['objectBytes', 'objectCount', 'largestObjectBytes', 'envelopeBytes', 'rawPayloadBytes']) {
+    assert.equal(report.capacity.protected[key], f.built.archiveMetrics[key], key);
+  }
+  assert.equal(report.capacity.limits.archiveBytes, policy.maximumArchiveAggregateBytes);
+  assert.equal(report.capacity.limits.rawPayloadBytes, policy.maximumRawPayloadBytes);
+  assert.deepEqual(await fs.readFile(path.join(f.source, 'data/live/conditions.json')), beforeConditions);
+  assert.deepEqual((await fs.readdir(f.privateRoot)).sort(), ['audit.json', 'describe.json', 'source.json']);
+  assert.ok(f.calls.every(call => ['GET', 'HEAD'].includes(call.method)));
+  assert.ok(f.calls.filter(call => call.path === '/rest/v1/admin_documents').length >= 5,
+    'fresh exact pointer is checked before restore and after all inspection');
+  assert.deepEqual(JSON.parse(await fs.readFile(f.options.outputPath, 'utf8')), report);
+  safeReport(report, f.privateRoot);
+});
+
+test('B-only component summary: missing saved summary is unknown rather than zero or a successful provider claim', async t => {
+  const f = await fixture(t, { componentSummaryAbsent: true });
+  await fs.rm(f.options.progressFile);
+  const report = await auditProtectedBaselineComponentFallback(bOnlyOptions(f));
+  assert.equal(report.status, 'AUDIT_COMPLETED', JSON.stringify(report));
+  assert.equal(report.summaryPresent, false);
+  const summary = report.protectedBaselineComponentFallback;
+  assert.equal(summary.openMeteo.requests, null);
+  assert.equal(summary.openMeteo.deferred, null);
+  assert.equal(summary.openMeteo.transport.httpAttempts, null);
+  assert.equal(summary.before.wind.required, null);
+  assert.equal(summary.failureCount, null);
+  safeReport(report, f.privateRoot);
+});
+
+test('B-only component summary: pointer changes, corrupt archives and archived-contract drift fail closed', async t => {
+  for (const options of [{ changedAt: 3 }, { changedAt: 5 }, { corrupt: true }, { wrongContracts: true }]) {
+    const f = await fixture(t, options), report = await auditProtectedBaselineComponentFallback(bOnlyOptions(f));
+    assert.equal(report.status, 'AUDIT_FAILED_CLOSED', JSON.stringify(options));
+    assert.equal(Object.hasOwn(report, 'protectedBaselineComponentFallback'), false);
+    assert.ok(f.calls.every(call => ['GET', 'HEAD'].includes(call.method)));
+    assert.equal((await fs.readdir(f.privateRoot)).some(name => name.startsWith('component-summary-')), false);
+    if (options.wrongContracts) assert.equal(report.code, 'PREDECESSOR_CONTRACT_MISMATCH');
+    if (options.corrupt) assert.equal(report.code, 'PROTECTED_RESTORE_REJECTED');
+    if (options.changedAt) assert.equal(report.code, 'CURRENT_GENERATION_CHANGED');
+    safeReport(report, f.privateRoot);
+  }
+});
+
+test('B-only component summary: exact expected generation and exclusive options are checked before archive I/O', async t => {
+  for (const change of [
+    { expectedDatasetId: 'rr-other' },
+    { expectedProductionReferenceAt: '2026-09-29T17:00:00.000Z' },
+  ]) {
+    const f = await fixture(t), before = f.calls.length;
+    const report = await auditProtectedBaselineComponentFallback({ ...bOnlyOptions(f), ...change });
+    assert.equal(report.status, 'AUDIT_FAILED_CLOSED');
+    assert.equal(report.code, 'SOURCE_IDENTITY_INVALID');
+    assert.equal(f.calls.length, before);
+    safeReport(report, f.privateRoot);
+  }
+  let reads = 0;
+  const base = { privateRoot: '/unreadable-private-root', expectedDatasetId: 'rr-synthetic-input',
+    expectedProductionReferenceAt: '2026-09-29T16:00:00.000Z', fetchImpl: () => { reads++; } };
+  for (const change of [
+    { progressFile: '/forbidden' }, { progressSource: '40762325224-1' },
+    { progressCacheKey: 'forbidden' }, { encryptionKey: 'forbidden' },
+    { rawCacheKey: 'forbidden' }, { includeRawManifest: false }, { includeCurrent586Endpoints: false },
+    { expectedDatasetId: '' }, { expectedProductionReferenceAt: '2026-09-29T16:01:00.000Z' },
+    { expectedProductionReferenceAt: '2026-02-30T16:00:00.000Z' },
+  ]) {
+    const report = await auditProtectedBaselineComponentFallback({ ...base, ...change });
+    assert.equal(report.code, 'MODE_INVALID', JSON.stringify(change));
+    assert.equal(report.phase, 'SETUP');
+  }
+  assert.equal(reads, 0);
+});
+
+test('B-only component summary: failed private cleanup never publishes success or retries deletion', async t => {
+  const f = await fixture(t), realRemove = fs.rm;
+  let attempted = 0;
+  try {
+    fs.rm = async (file, ...args) => {
+      if (path.basename(String(file)).startsWith('component-summary-')) {
+        attempted++;
+        throw new Error('secret-error-canary cleanup');
+      }
+      return realRemove(file, ...args);
+    };
+    const report = await auditProtectedBaselineComponentFallback(bOnlyOptions(f));
+    assert.equal(report.status, 'AUDIT_FAILED_CLOSED');
+    assert.equal(report.code, 'PRIVATE_TEMP_CLEANUP_FAILED');
+    assert.equal(attempted, 1);
+    assert.equal(Object.hasOwn(report, 'protectedBaselineComponentFallback'), false);
+    assert.equal(JSON.parse(await fs.readFile(f.options.outputPath)).status, 'AUDIT_FAILED_CLOSED');
+    safeReport(report, f.privateRoot);
+  } finally { fs.rm = realRemove; }
+});
+
+test('B-only component summary: normal CLI rejects mixed scopes and expected pins in legacy modes before transport', () => {
+  const allowedEnvironment = new Set(['PATH', 'SYSTEMROOT', 'WINDIR', 'TEMP', 'TMP', 'TMPDIR', 'COMSPEC', 'PATHEXT']);
+  const env = Object.fromEntries(Object.entries(process.env).filter(([key]) => allowedEnvironment.has(key.toUpperCase())));
+  const guard = 'data:text/javascript,' + encodeURIComponent('globalThis.fetch=()=>{process.exit(97);};');
+  const six = ['--private-root', '/unreadable-private-root', '--descriptor', '/source.json',
+    '--predecessor-root', '/predecessor', '--output', '/report.json', '--expected-dataset', 'rr-synthetic-input',
+    '--expected-reference', '2026-09-29T16:00:00.000Z'];
+  for (const args of [
+    ['component-summary', ...six, '--progress-file', '/forbidden'],
+    ['component-summary', ...six, '--include-raw-manifest', 'false'],
+    ['component-summary', ...six, '--expected-dataset', 'rr-duplicate'],
+    ['component-summary', ...six.slice(0, -2)],
+    ['describe', '--expected-dataset', 'rr-synthetic-input'],
+    ['audit', '--expected-reference', '2026-09-29T16:00:00.000Z'],
+  ]) {
+    const result = spawnSync(process.execPath, ['--import', guard, 'scripts/audit-saved-weather-inputs.mjs', ...args],
+      { cwd: repositoryRoot, env, encoding: 'utf8', timeout: 10_000, maxBuffer: 64 * 1024, windowsHide: true });
+    assert.equal(result.error, undefined); assert.equal(result.status, 1);
+    assert.equal(result.stdout, '');
+    assert.equal(result.stderr.trim(), 'SAVED_WEATHER_INPUT_AUDIT_FAILED_CLOSED');
+  }
 });
