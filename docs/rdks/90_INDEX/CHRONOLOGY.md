@@ -1,3 +1,7 @@
+## 2026-10-29 — afgrænset kø- og kapacitetskandidat til komponentreserven
+
+DEC-0295 fastholder den almindelige reserves nye 600-sekundersramme, uændret kort/cachevej, to transporter, samlet cap800 inklusive retry og 150 ms global startafstand. Vind-/bølge-GAP kommer før temperatur; fair rotation og cursor følger faktisk første HTTP-start. Deadline begynder før banklæsning og må ikke fornyes. Originaler, gyldige søskenderesultater, kildeprioritet, DMI-budgetter, bank og parser bevares. Kvalifikation, sikker levering og faktisk ny-generationseffekt er åbne; ingen Free- eller dækningsgaranti, ny version/C/I/T eller SQL-migration. Håndbog89.281 spejles fra kanonisk Markdown; private observationer forbliver i checkpointet.
+
 ## 29. oktober — prognosedeling på Pages er godkendt, endnu ikke leveret
 
 Ejerens valg er ét separat `ravradar-del` Pages/Functions-projekt, først `ravradar-del.pages.dev`, senere `del.ravradar.dk` med én CNAME hos Simply. Ingen navneserverflytning eller ændring af apex/www/mail. Ældre afventninger af denne ejerbeslutning er historik; oprettelse, deploy, DNS/TLS, offentlig 591-kompatibilitet, Facebookaccept og målt Free-kapacitet er fortsat åbne. Frontend og legacy-Worker bevares indtil kontrolleret overgang. Privat adapter/controllerforberedelse og lokal prøve er ikke offentlig levering. Ingen vejr-, score-, model-, SQL- eller versionsændring. Alle fem mål til 18. november består. Se DEC-0294, håndbog 89.278 og privat checkpoint.

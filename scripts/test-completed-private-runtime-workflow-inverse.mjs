@@ -14,7 +14,7 @@ import { inverseCurrentFamilyColdCheckpointWorkflow, currentFamilyColdCheckpoint
   assistant587ColdCheckpointCombinedWorkflowReview,
   inverseAssistant587ColdCheckpointCombinedToF83Workflow, inverseAssistant587ColdCheckpointCombinedToD5Workflow }
   from './lib/completed-private-runtime-workflow-review.mjs';
-import { inverseRelease591WorkflowUserAgents, inverseRelease590WorkflowUserAgents, inverseRelease588WorkflowUserAgents, inverseLatestColdProgressWorkflow, latestColdProgressWorkflowReview,
+import { inverseWindTailCapacityWorkflow, windTailCapacityWorkflowReview, inverseRelease591WorkflowUserAgents, inverseRelease590WorkflowUserAgents, inverseRelease588WorkflowUserAgents, inverseLatestColdProgressWorkflow, latestColdProgressWorkflowReview,
   assistant587LatestColdCombinedWorkflowReview,
   inverseAssistant587LatestColdCombinedTo664aWorkflow, inverseAssistant587LatestColdCombinedTo2bWorkflow }
   from './lib/completed-private-runtime-workflow-review.mjs';
@@ -1382,7 +1382,7 @@ test('release590 UA view rejects mixed,duplicated,unknown or non-UA drift throug
 });
 
 test('release591 actual normal workflow preserves genuine590 and historical refusals',async()=>{
-  const actual=(await fs.readFile(new URL('../.github/workflows/reusable-weather-build.yml',import.meta.url),'utf8')).replaceAll('\r\n','\n');
+  const actual=inverseWindTailCapacityWorkflow((await fs.readFile(new URL('../.github/workflows/reusable-weather-build.yml',import.meta.url),'utf8')).replaceAll('\r\n','\n'),'build');
   assert.equal(Buffer.byteLength(actual),292886);
   assert.equal(sha(actual),'bfb4d382c36d713328e8d68f7a04801a16f35b3bcecffb3c1e9813cc578338c7');
   assert.equal(actual.split('RavRadar/4.0.591').length,6);
@@ -1413,4 +1413,39 @@ test('release591 actual normal workflow preserves genuine590 and historical refu
   assert.throws(()=>inverseRelease591WorkflowUserAgents(actual),/RELEASE591_WORKFLOW_ARGUMENTS/);
   assert.throws(()=>inverseRelease591WorkflowUserAgents(actual,'build',true),/RELEASE591_WORKFLOW_ARGUMENTS/);
   assert.throws(()=>inverseRelease591WorkflowUserAgents(null,'build'),/RELEASE591_WORKFLOW_TYPE/);
+});
+
+
+test('wind-tail capacity whole inverse preserves every591 byte and refuses budget or surrounding drift', async () => {
+  const actual = (await fs.readFile(new URL('../.github/workflows/reusable-weather-build.yml', import.meta.url), 'utf8')).replaceAll('\r\n', '\n');
+  const row = windTailCapacityWorkflowReview;
+  assert.equal(Buffer.byteLength(actual), row.after.bytes);
+  assert.equal(sha(actual), row.after.sha256);
+  const previous = inverseWindTailCapacityWorkflow(actual, 'build');
+  assert.equal(Buffer.byteLength(previous), row.before.bytes);
+  assert.equal(sha(previous), row.before.sha256);
+  assert.equal(previous, actual.replace(row.afterBlock, row.beforeBlock));
+  assert.equal(inverseWindTailCapacityWorkflow(previous, 'build'), previous);
+  assert.equal(inverseRelease591WorkflowUserAgents(actual, 'build'), inverseRelease591WorkflowUserAgents(previous, 'build'));
+  assert.equal(inverseCompletedRuntimeWorkflow(actual, 'build'), inverseCompletedRuntimeWorkflow(previous, 'build'));
+  assert.equal(sha(inverseCompletedRuntimeWorkflow(actual, 'build')), legacySha);
+  const mutations = [
+    actual.replace("|| '600000'", "|| '600001'"),
+    actual.replace("&& '60000'", "&& '60001'"),
+    actual.replace(row.afterBlock, row.beforeBlock.replace("|| '90000'", "|| '600000'")),
+    actual.replace(row.afterBlock, row.afterBlock + row.afterBlock),
+    actual.replace(row.afterBlock, ''),
+    actual.replace('The ordinary scalar reserve must be able to reach all 673 PARTs.', 'Unreviewed reserve policy.'),
+    actual.replace("test \"${{ steps.full-validation.outcome }}\" = success", 'true'),
+    actual + '\n# UNREVIEWED_TAIL_CHANGE\n',
+  ];
+  for (const changed of mutations) {
+    assert.notEqual(changed, actual);
+    assert.equal(inverseWindTailCapacityWorkflow(changed, 'build'), changed);
+    assert.throws(() => inverseCompletedRuntimeWorkflow(changed, 'build'));
+  }
+  for (const role of ['once', 'unknown', 'toString']) assert.equal(inverseWindTailCapacityWorkflow(actual, role), actual);
+  assert.throws(() => inverseWindTailCapacityWorkflow(actual), /WORKFLOW_ARGUMENTS/);
+  assert.throws(() => inverseWindTailCapacityWorkflow(actual, 'build', true), /WORKFLOW_ARGUMENTS/);
+  assert.throws(() => inverseWindTailCapacityWorkflow(null, 'build'), /WORKFLOW_TYPE/);
 });

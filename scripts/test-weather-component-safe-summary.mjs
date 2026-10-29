@@ -61,7 +61,13 @@ test('component logging keeps known counts, both CP passes and numeric OM transp
   }
   assert.deepEqual(result.openMeteo, { requests: 12, deferred: 6, records: 120,
     componentsNotAdmitted: 0, failureCount: 1,
-    transport: { httpAttempts: 14, retries: 2, timeouts: 1, responseBytes: 900 } });
+    requestsByComponent: { wind: null, wave: null, waterTemperature: null },
+    deferredByComponent: { wind: null, wave: null, waterTemperature: null },
+    transport: { httpAttempts: 14, retries: 2, timeouts: 1, responseBytes: 900,
+      httpAttemptLimit: null, pacingMinimumIntervalMs: null, httpAttemptLimitReached: null,
+      budgetReached: null, pacingWaits: null, pacingWaitMs: null, checkpointCount: null,
+      checkpointElapsedMs: null, firstHttpStartAfterMs: null, totalElapsedMs: null,
+      httpAttemptsByComponent: { wind: null, wave: null, waterTemperature: null } } });
   assert.deepEqual(input, snapshot, 'Logging must never alter runtime acquisition state');
 });
 
@@ -326,4 +332,33 @@ test('the real workflow logs only the shared projection and redacts malformed-in
     assert.ok(path.basename(temporary).startsWith('rr-safe-component-summary-'));
     await fs.rm(temporary, { recursive: true, force: true });
   }
+});
+
+
+test('tail reporting keeps fixed component attempts, bounds and timings without private identifiers or accessors', () => {
+  let reads = 0;
+  const secret = 'PRIVATE_COORDINATE_AND_KEY';
+  const requestsByComponent = { wind: 12, wave: 1, waterTemperature: 3, [secret]: 99 };
+  const transport = { httpAttempts: 18, retries: 2, timeouts: 1, responseBytes: 900,
+    httpAttemptLimit: 800, pacingMinimumIntervalMs: 150, httpAttemptLimitReached: 0,
+    budgetReached: 1, pacingWaits: 5, pacingWaitMs: 600, checkpointCount: 2,
+    checkpointElapsedMs: 3000, firstHttpStartAfterMs: 4500, totalElapsedMs: 600100,
+    httpAttemptsByComponent: { wind: 14, wave: 1, waterTemperature: 3 }, [secret]: secret };
+  const input = { openMeteo: { requestsByComponent,
+    deferredByComponent: { wind: 200, wave: 0, waterTemperature: 400 }, transport,
+    lastAttemptedPartId: secret, cursor: secret } };
+  const result = safeWeatherComponentSummary(input).openMeteo;
+  assert.deepEqual(result.requestsByComponent, { wind: 12, wave: 1, waterTemperature: 3 });
+  assert.deepEqual(result.deferredByComponent, { wind: 200, wave: 0, waterTemperature: 400 });
+  assert.equal(result.transport.httpAttemptLimit, 800);
+  assert.equal(result.transport.pacingMinimumIntervalMs, 150);
+  assert.equal(result.transport.firstHttpStartAfterMs, 4500);
+  assert.deepEqual(result.transport.httpAttemptsByComponent, { wind: 14, wave: 1, waterTemperature: 3 });
+  assert.ok(!JSON.stringify(result).includes(secret));
+  Object.defineProperty(requestsByComponent, 'wind', { get() { reads++; throw Error(secret); } });
+  const invalid = safeWeatherComponentSummary(input).openMeteo;
+  assert.equal(invalid.requestsByComponent.wind, null);
+  assert.equal(reads, 0);
+  transport.totalElapsedMs = '600100';
+  assert.equal(safeWeatherComponentSummary(input).openMeteo.transport.totalElapsedMs, null);
 });

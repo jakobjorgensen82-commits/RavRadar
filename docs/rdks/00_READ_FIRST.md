@@ -1,3 +1,13 @@
+## 29. oktober — lokal kapacitetsrettelse i komponentreserven
+
+Den normale reservekø har et påvist kapacitets- og rækkefølgeproblem: nødvendige vindopgaver kan stå ufærdige, når rammen er brugt. Den afgrænsede kandidat prioriterer vind- og bølge-GAP før temperatur, roterer kystdele inden for hver gruppe og bevarer to samtidige transporter. Almindelig reserve får 600 sekunder, kort vej beholder 60 sekunder og cachevej nul nye kald. Alle HTTP-forsøg, også genforsøg, deler et loft på 800 og mindst 150 ms mellem starterne.
+
+Én monoton deadline starter før banklæsning, validering og første checkpoint; den fornyes ikke af pacing eller retry. Ingen nye starter efter deadline/loft. Allerede startede transporter skal stadig afsluttes eller annulleres sikkert, og gyldige søskenderesultater bevares. Cursor flyttes kun efter faktisk førstegangs-HTTP-start; udskudte opgaver før start tæller ikke. Banken, parseren, DMI-budgetter, DMI → Copernicus → Open-Meteo, originaler/historik, punkter, geometri og scoreformel bevares.
+
+Det er endnu en lokal leveringskandidat, ikke bevis for løst produktion, komplet femfamiliedækning eller sikker Free-drift. 800 gange seks almindelige kørsler afgrænser kun denne komponentreserve til 4.800 HTTP-forsøg pr. døgn; andre Open-Meteo-strømme og forbrugere er ikke med. Præcis kvalifikation, sikker levering og måling af en ny virkelig almindelig generation udestår. Alle forventede 118 timer, 210 zoner, begge søgemåder, hver familie og hver prognosedag skal fortsat måles. Private kørselsidentiteter og diagnostik føres alene i checkpointet.
+
+Ingen ny version/C/I/T, migration eller SQL-installation følger af denne dokumentation. Andre kandidater og alle fem hovedmål består. Se DEC-0295 og håndbog 89.281; ældre daterede beskrivelser bevares som historik.
+
 ## 29. oktober — prognosedeling på Pages er godkendt, endnu ikke leveret
 
 Ejerens valg er ét separat `ravradar-del` Pages/Functions-projekt, først `ravradar-del.pages.dev`, senere `del.ravradar.dk` med én CNAME hos Simply. Ingen navneserverflytning eller ændring af apex/www/mail. Ældre afventninger af denne ejerbeslutning er historik; oprettelse, deploy, DNS/TLS, offentlig 591-kompatibilitet, Facebookaccept og målt Free-kapacitet er fortsat åbne. Frontend og legacy-Worker bevares indtil kontrolleret overgang. Privat adapter/controllerforberedelse og lokal prøve er ikke offentlig levering. Ingen vejr-, score-, model-, SQL- eller versionsændring. Alle fem mål til 18. november består. Se DEC-0294, håndbog 89.278 og privat checkpoint.

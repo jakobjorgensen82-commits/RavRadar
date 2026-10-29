@@ -1,3 +1,11 @@
+## 29. oktober — komponentreservens kapacitet er afgrænset, produktionseffekt er åben
+
+Det normale køforløb kan lade nødvendige vindopgaver stå ufærdige. En lokal kandidat giver den almindelige komponentreserve ti minutters startbudget og prioriterer vind-/bølge-GAP før temperatur, med retfærdig rotation, to transporter, fælles forsøgsloft og global startafstand. Det er ikke bevis for alle hulers leverandørårsag, slettede originaler eller fuld dækning.
+
+Åbent: præcis sammensat kilde-/kaldestedsprøve, kvalifikation af cap/pacing/retry/deadline/cursor og bevarelse, sikker levering i skrivefrit vindue og en faktisk ny almindelig generation gennem gemning/genbrug, B før S, deploy og offentlig fuldhorisontsmåling. En længere ramme må ikke blive et løfte om eksakt retur efter ti minutter eller en undskyldning for uafsluttede transporter. Samlet Open-Meteo-forbrug skal stadig måles på tværs af vejene; det lokale loft er ikke Free-bevis.
+
+Private konkrete målinger og kørselsidentiteter holdes i checkpointet. De øvrige fem mål og særskilte kandidater består. Ingen model-, numerisk SQL-, historik-, punkt- eller geometriændring; se DEC-0295 og håndbog 89.281.
+
 ## 29. oktober — prognosedelingens nye host er endnu ikke offentlig
 
 Ejeren har valgt separat Pages/Functions med først `ravradar-del.pages.dev`, senere `del.ravradar.dk` via én Simply-CNAME uden NS-flytning. Ejerens valg af denne vej er derfor ikke længere et åbent spørgsmål.

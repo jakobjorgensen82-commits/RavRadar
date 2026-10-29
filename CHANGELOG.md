@@ -1,3 +1,7 @@
+## 29. oktober — lokal afgrænset kapacitet i komponentreserven
+
+Forbereder bedre plads til nødvendige vind- og bølgehuller i den normale reservekø: fair rækkefølge, uændret to-slots-transport, fælles pacing og forsøgsloft samt én deadline, der også omfatter indledende bankarbejde. Normal reserve får ti minutter; kort og cachevej bevares. De øvrige kilde-, data- og modelkrav ændres ikke. Det er en lokal leveringskandidat, ikke bevis for produktionseffekt, fuld dækning eller samlet Free-råderum. Se DEC-0295 og håndbog89.281.
+
 ## 29. oktober — separat Pages-kandidat til prognosedeling på uændret 4.0.591
 
 - Ejerens godkendte projekt `ravradar-del` forberedes med Pages Functions, først pages.dev og senere én Simply-CNAME til `del.ravradar.dk`; ingen navneserverflytning.

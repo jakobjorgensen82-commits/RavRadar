@@ -118,6 +118,7 @@ test('budget does not wait through Retry-After and zero budget never starts tran
   });
   assert.equal(calls, 1);
   assert.equal(result.summary.transport.retries, 0);
+  assert.equal(result.summary.transport.budgetReached, 1);
   assert.equal(result.summary.failures.length, 1);
   const noBudget = await runOpenMeteoPartRuntime({ ...input, budgetMs: 0,
     fetchImpl: () => { throw new Error('must not call transport'); },
@@ -306,4 +307,116 @@ test('PART settlement: rejected cancellation retains the actual resource and fal
     assert.equal(child.status, 0, child.stderr);
     assert.equal(child.stdout, '');
   });
+});
+
+
+test('tail capacity: critical GAP tier precedes temperature while preserving rotated PART fairness', async t => {
+  const input = await fixture(t);
+  const second = { ...part, partId: 'SECOND', waterPoint: [11, 56] };
+  const parts = [part, second];
+  const requiredPairs = parts.flatMap(row => [
+    { partId: row.partId, component: 'waterTemperature', validTime: reference },
+    { partId: row.partId, component: 'wind', validTime: at(100) },
+    { partId: row.partId, component: 'wave', validTime: at(101) },
+  ]);
+  await fs.mkdir(input.privateCacheRoot, { recursive: true });
+  await fs.writeFile(path.join(input.privateCacheRoot, 'weather-component-fallback-cursor.json'),
+    JSON.stringify({ kind: 'WEATHER_COMPONENT_FALLBACK_CURSOR', schemaVersion: 1, openMeteoLastAttemptedPartId: part.partId }));
+  const order = [];
+  const result = await runOpenMeteoPartRuntime({ ...input, parts, requiredPairs,
+    budgetMs: 10_000, maxHttpAttempts: 4,
+    fetchImpl: async raw => { const url = new URL(raw); order.push([url.searchParams.get('longitude'), url.searchParams.get('hourly')]); return new Response('synthetic permanent miss', { status: 400 }); },
+  });
+  assert.deepEqual(order.map(([longitude, fields]) => [longitude, fields.startsWith('wind_') ? 'wind' : fields.startsWith('wave_') ? 'wave' : 'temperature']),
+    [['11', 'wind'], ['11', 'wave'], ['10', 'wind'], ['10', 'wave']]);
+  assert.equal(result.summary.requests, 4);
+  assert.deepEqual(result.summary.requestsByComponent, { wind: 2, wave: 2, waterTemperature: 0 });
+  assert.deepEqual(result.summary.deferredByComponent, { wind: 0, wave: 0, waterTemperature: 2 });
+  assert.equal(result.summary.deferred, 2);
+  assert.equal(result.summary.lastAttemptedPartId, part.partId);
+  assert.equal(result.summary.transport.httpAttempts, 4);
+});
+
+test('tail capacity: HTTP cap includes retries and never advances cursor for a paced task with no HTTP', async t => {
+  const input = await fixture(t);
+  const second = { ...part, partId: 'SECOND', waterPoint: [11, 56] };
+  let calls = 0;
+  const result = await runOpenMeteoPartRuntime({ ...input, parts: [part, second], budgetMs: 5_000,
+    requiredPairs: [part, second].map(row => ({ partId: row.partId, component: 'wind', validTime: reference })),
+    maxHttpAttempts: 1, fetchImpl: async () => { calls++; return new Response('synthetic retryable', { status: 503 }); },
+  });
+  assert.equal(calls, 1);
+  assert.equal(result.summary.requests, 1);
+  assert.equal(result.summary.deferred, 1);
+  assert.equal(result.summary.lastAttemptedPartId, part.partId);
+  assert.deepEqual(result.summary.requestsByComponent, { wind: 1, wave: 0, waterTemperature: 0 });
+  assert.deepEqual(result.summary.deferredByComponent, { wind: 1, wave: 0, waterTemperature: 0 });
+  assert.equal(result.summary.transport.httpAttempts, 1);
+  assert.equal(result.summary.transport.retries, 0);
+  assert.equal(result.summary.transport.httpAttemptLimitReached, 1);
+  assert.equal(JSON.parse(await fs.readFile(path.join(input.privateCacheRoot, 'weather-component-fallback-cursor.json'), 'utf8')).openMeteoLastAttemptedPartId, part.partId);
+  let retryCalls = 0;
+  const retry = await runOpenMeteoPartRuntime({ ...input, budgetMs: 5_000, maxHttpAttempts: 2,
+    fetchImpl: async () => { retryCalls++; return new Response('synthetic retryable', { status: 503 }); },
+  });
+  assert.equal(retryCalls, 2);
+  assert.equal(retry.summary.transport.httpAttempts, 2);
+  assert.equal(retry.summary.transport.retries, 1);
+  assert.equal(retry.summary.requests, 1);
+});
+
+test('tail capacity: pacing is global, slots remain independent, and completed wind is durable', async t => {
+  const input = await fixture(t);
+  const parts = [part, { ...part, partId: 'SECOND', waterPoint: [11, 56] }, { ...part, partId: 'THIRD', waterPoint: [12, 56] }];
+  let releaseFirst, active = 0, maximumActive = 0;
+  const first = new Promise(resolve => { releaseFirst = resolve; });
+  const starts = [];
+  const result = await runOpenMeteoPartRuntime({ ...input, parts, budgetMs: 5_000, requestTimeoutMs: 2_000,
+    requiredPairs: parts.map(row => ({ partId: row.partId, component: 'wind', validTime: reference })),
+    fetchImpl: async raw => {
+      starts.push(performance.now()); active++; maximumActive = Math.max(maximumActive, active);
+      if (starts.length === 1) await first;
+      else if (starts.length === 3) releaseFirst();
+      active--;
+      const url = new URL(raw); const text = JSON.parse(responseText);
+      text.longitude = +url.searchParams.get('longitude');
+      return new Response(JSON.stringify(text));
+    },
+  });
+  assert.equal(starts.length, 3);
+  for (let i = 1; i < starts.length; i++) assert.ok(starts[i] - starts[i - 1] >= 150, JSON.stringify(starts));
+  assert.equal(maximumActive, 2, 'a slow first request must not idle the other transport slot');
+  assert.equal(active, 0);
+  assert.equal(result.summary.transport.pacingMinimumIntervalMs, 150);
+  assert.equal(result.summary.transport.httpAttemptLimit, 800);
+  assert.equal(result.summary.requestsByComponent.wind, 3);
+  assert.equal(result.bank.records.length, 3);
+  assert.equal(JSON.parse(await fs.readFile(input.bankPath, 'utf8')).bankSha256, result.bank.bankSha256);
+  const zero = await runOpenMeteoPartRuntime({ ...input, parts, budgetMs: 0,
+    requiredPairs: [{ partId: parts[0].partId, component: 'wind', validTime: at(1) }],
+    fetchImpl: () => { throw new Error('zero budget must never use HTTP'); },
+  });
+  assert.equal(zero.summary.requests, 0);
+  assert.equal(zero.summary.transport.httpAttempts, 0);
+  assert.equal(zero.summary.deferredByComponent.wind, 1);
+  assert.equal(zero.bank.records.length, 3);
+});
+
+test('tail capacity: pacing cannot extend deadline or claim an unstarted PART', async t => {
+  const input = await fixture(t);
+  const second = { ...part, partId: 'SECOND', waterPoint: [11, 56] };
+  let calls = 0;
+  const result = await runOpenMeteoPartRuntime({ ...input, parts: [part, second], budgetMs: 80,
+    requiredPairs: [part, second].map(row => ({ partId: row.partId, component: 'wind', validTime: reference })),
+    fetchImpl: async () => { calls++; return new Response(responseText); },
+  });
+  assert.equal(calls, 1);
+  assert.equal(result.summary.requests, 1);
+  assert.equal(result.summary.deferredByComponent.wind, 1);
+  assert.equal(result.summary.lastAttemptedPartId, part.partId);
+  assert.equal(result.bank.records.length, 1);
+  for (const options of [{ maxHttpAttempts: 801 }, { maxHttpAttempts: 0 }, { minimumHttpStartIntervalMs: 149 }]) {
+    await assert.rejects(runOpenMeteoPartRuntime({ ...input, ...options,
+      fetchImpl: () => { throw new Error('invalid bounds must stop before HTTP'); } }), /BUDGET_INVALID/);
+  }
 });

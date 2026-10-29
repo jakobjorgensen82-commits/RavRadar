@@ -103,6 +103,13 @@ export function safeWeatherComponentSummary(summary) {
       passes: { critical: copernicusPass(field(passes, 'critical')),
         upgrade: copernicusPass(field(passes, 'upgrade')) } },
     openMeteo: { ...counts(om, ['requests', 'deferred', 'records', 'componentsNotAdmitted']),
+      requestsByComponent: counts(field(om, 'requestsByComponent'), ['wind', 'wave', 'waterTemperature']),
+      deferredByComponent: counts(field(om, 'deferredByComponent'), ['wind', 'wave', 'waterTemperature']),
       failureCount: length(field(om, 'failures')),
-      transport: counts(field(om, 'transport'), ['httpAttempts', 'retries', 'timeouts', 'responseBytes']) } };
+      transport: { ...counts(field(om, 'transport'), ['httpAttempts', 'retries', 'timeouts', 'responseBytes',
+        'httpAttemptLimit', 'pacingMinimumIntervalMs', 'httpAttemptLimitReached', 'budgetReached',
+        'pacingWaits', 'pacingWaitMs', 'checkpointCount', 'checkpointElapsedMs',
+        'firstHttpStartAfterMs', 'totalElapsedMs']),
+      httpAttemptsByComponent: counts(field(field(om, 'transport'), 'httpAttemptsByComponent'),
+        ['wind', 'wave', 'waterTemperature']) } } };
 }

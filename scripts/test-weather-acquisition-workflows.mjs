@@ -9,7 +9,8 @@ import { runInNewContext } from 'node:vm';
 
 // Workflow contract and an isolated shell guard. Never reads private data or calls a provider.
 const read = file => fs.readFileSync(file, 'utf8').replaceAll('\r\n', '\n');
-const normal = inverseCompletedRuntimeWorkflow(read('.github/workflows/reusable-weather-build.yml'), 'build');
+const actualNormalWorkflow = read('.github/workflows/reusable-weather-build.yml');
+const normal = inverseCompletedRuntimeWorkflow(actualNormalWorkflow, 'build');
 const orchestrator = read('.github/workflows/update-and-deploy.yml');
 const manual = inverseCompletedRuntimeWorkflow(read('.github/workflows/run-current-weather-once.yml'), 'once');
 const watchdog = read('.github/workflows/preserve-copernicus-current-shadow.yml');
@@ -147,6 +148,24 @@ const weather = step(normal, 'Update central weather cache');
 assert.match(weather, /timeout-minutes: 80/);
 assert.match(weather, /RAVRADAR_COMPONENT_COPERNICUS_BUDGET_MS: \$\{\{ inputs\.quick_confirmation && '45000' \|\| '90000' \}\}/);
 assert.match(weather, /RAVRADAR_COMPONENT_OPEN_METEO_BUDGET_MS: \$\{\{ inputs\.quick_confirmation && '60000' \|\| '90000' \}\}/);
+// The old assertions above retain their exact historical view. Capacity is
+// proved separately on the actual current workflow, never on that inverse.
+test('scalar reserve capacity: actual caller keeps ordinary600s quick60s and cache-only0', () => {
+  const actualWeather = step(actualNormalWorkflow, 'Update central weather cache');
+  assert.match(actualWeather, /RAVRADAR_COMPONENT_OPEN_METEO_BUDGET_MS: \$\{\{ inputs\.quick_confirmation && '60000' \|\| '600000' \}\}/);
+  const expression = actualWeather.match(/RAVRADAR_COMPONENT_OPEN_METEO_BUDGET_MS: \$\{\{ (.+) \}\}/)?.[1];
+  assert.ok(expression);
+  for (const quick of [false, true]) assert.equal(runInNewContext(expression, { inputs: { quick_confirmation: quick } }), quick ? '60000' : '600000');
+  assert.match(actualWeather, /RAVRADAR_WEATHER_CACHE_ONLY: \$\{\{ inputs\.checkpoint_only \}\}/);
+  const runtime = read('scripts/update-weather.mjs');
+  const runtimeExpression = runtime.match(/const COMPONENT_OPEN_METEO_BUDGET_MS = ([\s\S]*?);/)?.[1];
+  assert.ok(runtimeExpression);
+  for (const cacheOnly of [false, true]) {
+    assert.equal(runInNewContext(runtimeExpression, { WEATHER_CACHE_ONLY: cacheOnly, process: { env: {} } }), cacheOnly ? 0 : 600000);
+    for (const explicit of ['60000', '600000']) assert.equal(runInNewContext(runtimeExpression,
+      { WEATHER_CACHE_ONLY: cacheOnly, process: { env: { RAVRADAR_COMPONENT_OPEN_METEO_BUDGET_MS: explicit } } }), cacheOnly ? 0 : Number(explicit));
+  }
+});
 assert.match(coverage, /if: steps\.weather\.outcome == 'success'/);
 assert.match(coverage, /continue-on-error: true/);
 assert.match(coverage, /\.weatherEngine\.componentFallback/);

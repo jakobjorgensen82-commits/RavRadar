@@ -1,3 +1,11 @@
+## 29. oktober — P0: kvalificér den afgrænsede vindreserve og bevar almindelig vejrhentning
+
+Før den konkrete kapacitets- og kørettelse gennem én samlet gennemgang: vind-/bølge-GAP før temperatur, retfærdig cursor, to slots, samlet cap og startafstand samt én deadline fra bankstart. Bevar kildeprioritet og gyldige resultater. Kør de relevante normale mål og præcis kildekvalifikation; lokale tests er ikke levering.
+
+ROOT ejer derefter sikker levering i et skrivefrit vindue og en virkelig almindelig efterfølger. Følg udførte leverandør-, beregnings-, gemme-/genbrug-, B/S-, upload- og deploytrin og mål alle forventede timer for alle zoner, familier, søgemåder og dage. Det lokale loft på denne ene reserve må ikke kaldes hele Open-Meteos døgnforbrug eller en Free-garanti. Se DEC-0295 og håndbog 89.281.
+
+Pages89.278, assistentens næste efterfølger, kompakt delingsprojektion, brugerdata og den inaktive SOURCE-revision fortsætter særskilt. Reserverede kapitelnumre kopieres ikke ind. Alle fem hovedmål til 18. november 2026 består; ingen ny modeludstedelse eller migration i denne leverance.
+
 ## 29. oktober — Pages-deling har konkret ejerbeslutning; vejr og dækning er stadig P0
 
 Bevar kontinuerlig vejrhentning og undersøg de faktiske prognosehuller med højeste prioritet. I uafhængigt lokalt arbejde færdiggøres den godkendte separate Pages-kandidat: adapter/robots → kontrolleret controller og eksakt kildekvalifikation → verificeret pages.dev → faktisk offentlig 591-kompatibilitet og bevaret legacy-Worker → målt hosted/Free/Facebookaccept → senere én Simply-CNAME, TLS og klientcutover.

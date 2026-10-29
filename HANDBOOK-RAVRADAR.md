@@ -1,3 +1,31 @@
+## 89.281 Vindhuller skal have plads i reservekøen
+
+**Kort fortalt: Når de første vejrkilder ikke har udfyldt et nødvendigt vindfelt, skal reservekøen nå frem til den opgave. En længere, men stadig afgrænset kø kan hjælpe; den lover ikke komplette prognoser.**
+
+RavRadar forsøger fortsat DMI først, derefter Copernicus og til sidst Open-Meteo, hvor den enkelte vejrtype understøttes. At reservekøen får mere tid, ændrer ikke denne prioritering. Et gyldigt nyere input kan fortsat opdatere et ældre efter de eksisterende regler. Punkter, kildekontrol, scoreformel og allerede gemte originaler ændres ikke.
+
+### Nødvendige huller før mindre kritiske opgaver
+
+Den lokale kandidat lader opgaver, der skal udfylde manglende vind eller bølger, komme før opgaver om manglende vandtemperatur. Inden for hver gruppe roteres rækkefølgen af kystdele, så den samme begyndelse af listen ikke altid bruger hele køens kapacitet. Fremdriftsmærket flyttes først, når opgavens første faktiske HTTP-forsøg er startet. Et udskudt forsøg under ventetiden flytter ikke mærket; et startet forsøg tæller også, hvis det fejler.
+
+Der er fortsat højst to samtidige transporter. Alle nye HTTP-forsøg, også genforsøg, deler mindst 150 millisekunder mellem deres starter og et loft på 800 forsøg i denne komponentreserve pr. almindelig vejrhentning. Det er ikke 800 forsøg til hver kystdel eller hver vejrtype. Vind- og bølgeopgaverne deler den samme afgrænsede kapacitet.
+
+### Ti minutter er et startbudget
+
+Den almindelige komponentreserve får en ramme på 600 sekunder; den korte vej beholder 60 sekunder, og cachevejen starter ingen nye hentninger. Ét fælles, monotont stopur begynder før læsning og kontrol af banken samt det første checkpoint. Ventetid og genforsøg må ikke nulstille det. Når tiden eller forsøgsloftet er nået, må nye HTTP-forsøg ikke begynde.
+
+En transport, som allerede er startet, skal stadig afsluttes eller annulleres kontrolleret. Gyldige søskenderesultater skal gemmes, også når en anden opgave fejler. Derfor er 600 sekunder ikke et løfte om, at hele funktionen har returneret præcis efter ti minutter. De eksisterende transport-, stop-, gemme- og genbrugskontroller gælder fortsat. Bankformat og parser ændres ikke af denne kandidat.
+
+### Afgrænset forbrug er ikke en gratisgaranti
+
+Ved seks almindelige vejrhentninger kan netop denne vej højst starte 4.800 HTTP-forsøg pr. døgn. Andre Open-Meteo-kald og andre forbrugere er ikke med i det regnestykke. Startafstanden svarer højst til 400 starter pr. minut for denne kø alene. Open-Meteos aktuelle Free-vilkår angiver under 10.000 kald pr. døgn, 5.000 pr. time og 600 pr. minut ved ikke-kommerciel brug. Kontoens og de øvrige vejes samlede forbrug skal stadig kontrolleres; et lokalt loft er ikke bevis for ledig gratis kapacitet eller leverandørens tilgængelighed.
+
+### Status og næste kontrol
+
+Det er en lokal, afgrænset leveringskandidat. Den må ikke kaldes en løst produktionsfejl, fuld femfamiliedækning eller selvstændigt verificeret drift, før kildekontrol, sikker levering og en virkelig ny almindelig generation er gennemført. Dækningen måles fortsat over alle 118 forventede timer og alle 210 zoner, særskilt for begge søgemåder og hver prognosedag. Ukendte felter og manglende score må ikke tælles som dækket. Gyldige timer og hele originaler skal bevares.
+
+Der udstedes ingen ny version, modelbinding eller databaseovergang i denne afgrænsede leverance. DMI-tidsbudgetter, prioriteten DMI → Copernicus → Open-Meteo, historik, administratorpunkter og geometri bevares. De øvrige åbne RavRadar-opgaver består. Se DEC-0295 og den private driftskvittering for den aktuelle leveringsstatus.
+
 ## 89.278 En kortere delingsadresse med den samme prognose
 
 **Kort fortalt: En ny, kortere delingsadresse skal gøre det lettere at dele en prognose uden et personnavn i domænet. Den skal vise den samme valgte prognose og ændrer hverken RavScore eller vejrhentningen. Adressen er endnu en forberedt kandidat, ikke en offentlig leverance.**
