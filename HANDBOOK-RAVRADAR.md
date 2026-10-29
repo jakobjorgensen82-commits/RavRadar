@@ -2,6 +2,8 @@
 
 **Kort fortalt: Huller i prognosen skal undersøges i de data, som vejrhentningen faktisk gemte. En afgrænset læsning kan vise, hvor meget de enkelte reservekilder udfyldte, uden at starte en ny vejrhentning.**
 
+Den lokale efterfølger til læsekontrollen bevarer kun faste, allerede eksisterende fejl-, afvisnings- og udpakningskategorier samt klientens senest observerede faste transportfejl. Den sidste observation er ikke i sig selv bevis for rodårsagen. Rå fejltekst, stier, spørgsmål og private data er fortsat udelukket. En fejlet læsekontrol er ikke i sig selv en fejlet vejrhentning; restorekrav, netgrænser og fraværet af automatisk gentagelse bevares. Præcis kildekvalifikation og den faktiske nye læsning er fortsat åbne.
+
 RavRadar gemmer en privat originalpakke, som kan genlæses med den præcise kode, der skabte den. Den lokalt forberedte diagnose læser én bestemt, autentificeret pakke og kontrollerer, at den centrale reference er uændret under hele læsningen. Den kan arbejde uden det særskilte beregningscheckpoint eller den gamle fremdriftspakke.
 
 ### Hvad tallene kan fortælle
