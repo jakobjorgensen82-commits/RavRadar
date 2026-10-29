@@ -6,7 +6,8 @@ import { inverseAlternativeCCaller, inverseAssistant587OriginalCompanionTestInpu
   ASSISTANT587_ORIGINAL_COMPANION_TEST_REVIEW,
   inverseAssistant588OriginalCompanionTestInput, ASSISTANT588_ORIGINAL_COMPANION_TEST_REVIEW,
   inverseAssistant587OriginalRawBoundaryTestInput } from './lib/alternative-c-caller-test-input.mjs';
-import { inverseCurrentNativeOriginalProducerTestInput, CURRENT_NATIVE_ORIGINAL_PRODUCER_TEST_REVIEW,
+import { inverseWindTailCapacityUpdaterTestInput, WIND_TAIL_CAPACITY_UPDATER_TEST_REVIEW,
+  inverseCurrentNativeOriginalProducerTestInput, CURRENT_NATIVE_ORIGINAL_PRODUCER_TEST_REVIEW,
   inverseCurrentFamilyColdTargetTestInput }
   from './lib/archived-weather-restart-updater-test-input.mjs';
 import assert from 'node:assert/strict';
@@ -1375,4 +1376,47 @@ test('active-family retention companion has an exact outer inverse before unchan
     assert.throws(() => inverseActiveFamilyRetentionCompanionTestInput(changed, row.path), /ALTERNATIVE_C_TEST_INPUT_CHANGED:(?:ACTIVE_RETENTION|ASSISTANT590_RETENTION)/);
   assert.throws(() => inverseActiveFamilyRetentionCompanionTestInput({}, row.path), /ACTIVE_RETENTION_TYPE/);
   assert.throws(() => inverseActiveFamilyRetentionCompanionTestInput(actual, 'scripts/unknown.mjs'), /ACTIVE_RETENTION_PATH/);
+});
+
+
+test('wind-tail default inverse preserves every old updater oracle and refuses other budget or source bytes', async () => {
+  const actual = (await fs.readFile(producerPath, 'utf8')).replaceAll('\r\n', '\n');
+  const row = WIND_TAIL_CAPACITY_UPDATER_TEST_REVIEW;
+  assert.equal(Buffer.byteLength(actual), row.after.bytes);
+  assert.equal(digest(actual), row.after.sha256);
+  const before = inverseWindTailCapacityUpdaterTestInput(actual, row.path);
+  assert.equal(Buffer.byteLength(before), row.before.bytes);
+  assert.equal(digest(before), row.before.sha256);
+  assert.equal(before, actual.replace(row.afterLine, row.beforeLine));
+  assert.equal(inverseWindTailCapacityUpdaterTestInput(before, row.path), before);
+  assert.equal(inverseAlternativeCCaller(actual, row.path), inverseAlternativeCCaller(before, row.path));
+  assert.equal(inverseCurrentNativeOriginalProducerTestInput(actual, row.path), inverseCurrentNativeOriginalProducerTestInput(before, row.path));
+  const expression = actual.match(/const COMPONENT_OPEN_METEO_BUDGET_MS = ([\s\S]*?);/)?.[1];
+  assert.ok(expression);
+  const evaluate = new Function('WEATHER_CACHE_ONLY', 'process', 'return ' + expression);
+  assert.equal(evaluate(false, { env: {} }), 600000);
+  assert.equal(evaluate(true, { env: {} }), 0);
+  for (const explicit of ['0', '60000', '600000']) {
+    assert.equal(evaluate(false, { env: { RAVRADAR_COMPONENT_OPEN_METEO_BUDGET_MS: explicit } }), Number(explicit));
+    assert.equal(evaluate(true, { env: { RAVRADAR_COMPONENT_OPEN_METEO_BUDGET_MS: explicit } }), 0);
+  }
+  const mutations = [
+    actual.replace(row.afterLine, row.afterLine.replace('600_000', '600_001')),
+    actual.replace(row.afterLine, row.afterLine.replace('600_000', '60_000')),
+    actual.replace(row.afterLine, row.afterLine.replace('600_000', '900_000')),
+    actual.replace(row.afterLine, row.afterLine + '\n' + row.afterLine),
+    actual.replace(row.afterLine, ''),
+    actual.replace('const WEATHER_CACHE_ONLY =', 'const UNREVIEWED_WEATHER_CACHE_ONLY ='),
+    actual + '\n// UNREVIEWED_TAIL_DEFAULT\n',
+  ];
+  for (const changed of mutations) {
+    assert.notEqual(changed, actual);
+    assert.equal(inverseWindTailCapacityUpdaterTestInput(changed, row.path), changed);
+    assert.throws(() => inverseAlternativeCCaller(changed, row.path));
+    assert.throws(() => inverseCurrentNativeOriginalProducerTestInput(changed, row.path));
+  }
+  for (const wrongPath of ['', 'scripts/unknown.mjs', 'toString']) assert.equal(inverseWindTailCapacityUpdaterTestInput(actual, wrongPath), actual);
+  assert.throws(() => inverseWindTailCapacityUpdaterTestInput(actual), /UPDATER_ARGUMENTS/);
+  assert.throws(() => inverseWindTailCapacityUpdaterTestInput(actual, row.path, true), /UPDATER_ARGUMENTS/);
+  assert.throws(() => inverseWindTailCapacityUpdaterTestInput(null, row.path), /UPDATER_TYPE/);
 });
