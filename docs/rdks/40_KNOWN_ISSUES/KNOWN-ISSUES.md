@@ -1,3 +1,11 @@
+## 29. oktober — prognosedelingens nye host er endnu ikke offentlig
+
+Ejeren har valgt separat Pages/Functions med først `ravradar-del.pages.dev`, senere `del.ravradar.dk` via én Simply-CNAME uden NS-flytning. Ejerens valg af denne vej er derfor ikke længere et åbent spørgsmål.
+
+Adapter og robots-tilføjelse er gennemgået privat; controlleren er privat forberedt og endnu ikke samlet kvalificeret. Der er intet bevis for Pages-oprettelse/deploy, faktisk offentlig 591-kompatibilitet, legacy-Worker-opdatering, custom-domain/TLS, Facebookpreview eller tilstrækkelig delt Free-kapacitet. Et tidligere gyldigt 590-svar fra den gamle Worker erstatter ikke disse krav. De gamle links og frontendadressen bevares, mens den nye host kvalificeres.
+
+Kendt afgrænsning: den nye host fjerner personnavnet fra domænet, men den eksisterende query med zone, tid, søgemåde og sprog forkortes ikke i denne leverance. Ingen score-, vejr-, kilde-, database- eller modelændring. Alle fem mål er åbne; se DEC-0294, håndbog 89.278 og privat checkpoint.
+
 ## 29. oktober — skrivefri aflæsning af gemte komponenttællere, lokal forberedelse
 
 Den afgrænsede diagnose kan genlæse én præcist angivet, autentificeret originalpakke B gennem dens egen normale, arkiverede læser. Den kræver samme friske centrale pointer før og efter læsningen. Den bruger ikke det separat gemte beregningscheckpoint S, krypteret fremdrift eller råcachen. Dermed kan de allerede gemte komponenttællere undersøges, selv om fremdriftspakken tilhører en ældre generation.

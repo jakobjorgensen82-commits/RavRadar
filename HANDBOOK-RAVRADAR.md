@@ -1,3 +1,41 @@
+## 89.278 En kortere delingsadresse med den samme prognose
+
+**Kort fortalt: En ny, kortere delingsadresse skal gøre det lettere at dele en prognose uden et personnavn i domænet. Den skal vise den samme valgte prognose og ændrer hverken RavScore eller vejrhentningen. Adressen er endnu en forberedt kandidat, ikke en offentlig leverance.**
+
+### Den samme zone, time og score
+
+Når en prognose deles, følger den valgte zone, det præcise tidspunkt, søgemåden og sproget med i linket. Delingsfunktionen læser RavRadars allerede offentliggjorte prognose. Den beregner ikke en ny score og må ikke vælge en anden time, hvis den ønskede time mangler.
+
+Et link fastfryser ikke en score for altid. Nyere gyldige vejrdata kan ændre prognosen. Er den delte time udløbet, mangler den, eller kan oplysningerne ikke kontrolleres, vises ingen score for den. En beregnet god vurdering er fortsat ikke en garanti for at finde rav.
+
+### Først en separat prøveadresse, derefter det korte domæne
+
+Ejerens godkendte løsning er et separat Cloudflare Pages/Functions-projekt med navnet ravradar-del. Først skal det fungere på ravradar-del.pages.dev. Derefter kan det tilknyttes del.ravradar.dk med én CNAME-post hos den nuværende DNS-udbyder Simply. Navneserverne, hovedhjemmesiden og mailposterne flyttes ikke.
+
+Frontendens nuværende delingsadresse og den gamle delingstjeneste bevares, mens den nye løsning bliver kontrolleret. Klienten skifter først efter faktisk levering, korrekt domæne og aktivt certifikat. Allerede delte links skal fortsat kunne bruges; den gamle tjeneste skal derfor også passe til de nye offentlige data.
+
+Det er domænet, der bliver kortere og uden personnavn. De nødvendige linkparametre for zone, tidspunkt, søgemåde og sprog forkortes ikke i denne afgrænsede ændring.
+
+### Hvad der bliver vist på Facebook
+
+Forhåndsvisningen kan indeholde den valgte zone, tidspunktet og den kontrollerede score. Den genbruger RavRadars eksisterende logo. Der oprettes ikke et billede for hver zone og time, og der tilføjes ikke et billedlager.
+
+Previewrobotter skal kunne hente delingslinket. Samtidig bevares sidens besked om ikke at blive søgeindekseret og ikke at blive gemt i almindelig cache. Facebook kan have sin egen cache og bestemmer den endelige forhåndsvisning; derfor skal den afprøves særskilt efter offentlig levering.
+
+### Adskilt fra vejr, scorer og brugerdata
+
+Den nye host bruger den eksisterende læser og handler med de samme gyldigheds- og sikkerhedskontroller. Den henter kun faste offentlige prognosefiler fra RavRadar og har ingen adgang til ture eller andre private brugerdata. Der tilføjes ingen database, Supabaseforespørgsel eller leverandørhentning, og den lægges ikke ind som et ekstra led i en almindelig vejrhentning.
+
+Pages Functions bruger Cloudflare-kapacitet. Den deles med andre funktioner på kontoen, blandt andet turlageret. Gratis kapacitet og svartid skal derfor måles i praksis; en lokal prøve eller et vellykket svar er ikke i sig selv bevis for gratis drift med tilstrækkeligt råderum.
+
+Delingsvisningen genbruger faste datoformater og undgår gentagne sammenligninger med sin egen allerede kontrollerede modelidentitet. Hver modtaget modelbinding bliver stadig fuldt kontrolleret. Andre læsere beholder deres oprindelige kontrolforløb. Optimeringen ændrer hverken den valgte prognose eller scoren; en lokal hastighedsforbedring er ikke et bevis for Free-kapacitet.
+
+### Status 29. oktober 2026
+
+Adapteren, previewrobotternes adgang, controlleren og en afgrænset læseroptimering er lokalt sammenført. Samlet kildekvalifikation og offentlig Pages-levering er åbne. En senere almindelig 591-generation er faktisk leveret med de tre serverfunktioner, og den gamle delingstjeneste er særskilt opdateret og viser igen en kontrolleret score. Det beviser ikke den nye Pages-hosts scorekompatibilitet, domæne/TLS, Facebooks forhåndsvisning, ekstern AI eller tilstrækkelig Free-kapacitet.
+
+Der foretages ingen ny versions-, model- eller databaseudstedelse af denne forberedelse. De øvrige RavRadar-opgaver og alle fem hovedmål til 18. november 2026 er fortsat åbne.
+
 ## 89.277 Undersøg de gemte data, før hentningen ændres
 
 **Kort fortalt: Huller i prognosen skal undersøges i de data, som vejrhentningen faktisk gemte. En afgrænset læsning kan vise, hvor meget de enkelte reservekilder udfyldte, uden at starte en ny vejrhentning.**

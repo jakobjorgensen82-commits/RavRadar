@@ -6,7 +6,7 @@ import { fileURLToPath } from 'node:url';
 import { deployTripWorker } from './lib/trip-worker-deploy-process.mjs';
 import { ravScoreModelBinding, assertRavScoreModelBinding } from '../js/core/ravscore-model-contract.js';
 import { selectPublicRuntimeAvailability } from '../js/core/ravscore-public-runtime-contract.js';
-import { FORECAST_SHARE_BASE_URL } from '../js/services/forecast-share-contract.js';
+import { FORECAST_SHARE_WORKER_BASE_URL } from '../js/services/forecast-share-contract.js';
 
 export const FORECAST_SHARE_WORKER = 'ravradar-prognosedeling';
 export const FORECAST_SHARE_CONFIG = 'scripts/forecast-share/wrangler.jsonc';
@@ -29,7 +29,7 @@ export function assertForecastShareConfiguration(config) {
     workers_dev: true,
     preview_urls: false,
   }, 'Only the fixed binding-free, asset-free share Worker configuration');
-  assert.equal(FORECAST_SHARE_BASE_URL,
+  assert.equal(FORECAST_SHARE_WORKER_BASE_URL,
     'https://ravradar-prognosedeling.jakob-jorgensen82.workers.dev/');
   return config;
 }

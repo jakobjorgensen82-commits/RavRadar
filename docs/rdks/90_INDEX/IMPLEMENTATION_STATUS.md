@@ -1,3 +1,11 @@
+## 29. oktober — separat Pages-deling: kildeforberedelse, ikke drift
+
+Ejerbeslutningen er lukket: kun `ravradar-del`, først pages.dev og senere `del.ravradar.dk` via én Simply-CNAME; ingen NS-flytning. Den gennemgåede ni-ejeradapter og robots-tilføjelse bevarer den eksisterende handler, gamle Worker og frontend. Den normale lokale delings-/tidsskyderprøve består med 153 cases; dens oprindelige værts-timeout er ikke ommærket til PASS. Controlleren er privat materialiseret, men review og samlet kvalifikation udestår.
+
+Åbent: eksakt samlet kildekontrol; eksisterende nøgles faktiske Pages Write-adgang; entydig fraværskontrol/oprettelse; normal bygning og verificeret deployment; faktisk senere offentlig 591 og legacy-Workerens kompatibilitetsdeploy; hosted GET/HEAD/OG/robots; Facebooks egen preview/cache; målt delt Workers Free-forespørgsels-/CPU-kapacitet; senere custom-domain/CNAME/TLS og normal klient/cachebusterlukning. Ukendt skriveudfald må ikke gentages blindt. Før cutover bliver klienten på den gamle adresse.
+
+Ingen ekstern write, projektoprettelse, deploy, DNS, ny version, C/I/T, migration eller SQL-eksekvering er bevist af forberedelsen. Kandidatens faktiske modelinput-intersection er tom mod C98/I97/T12 union 104. Den statiske håndbogs-installationspayload spejles normalt og ændrer ingen DDL. Alle fem mål er åbne. Se DEC-0294 og håndbog 89.278.
+
 ## 29. oktober — skrivefri aflæsning af gemte komponenttællere, lokal forberedelse
 
 Den afgrænsede diagnose kan genlæse én præcist angivet, autentificeret originalpakke B gennem dens egen normale, arkiverede læser. Den kræver samme friske centrale pointer før og efter læsningen. Den bruger ikke det separat gemte beregningscheckpoint S, krypteret fremdrift eller råcachen. Dermed kan de allerede gemte komponenttællere undersøges, selv om fremdriftspakken tilhører en ældre generation.
