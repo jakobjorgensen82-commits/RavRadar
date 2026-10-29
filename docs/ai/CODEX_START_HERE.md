@@ -1,6 +1,18 @@
+## 29. oktober — godkendt separat Pages-prognosedeling; privat kandidat
+
+Ejeren har godkendt det ene separate Cloudflare Pages/Functions-projekt `ravradar-del`: først `ravradar-del.pages.dev`, senere `del.ravradar.dk` med kun én ny CNAME hos Simply. Ingen navneserverflytning, ændring af apex/www eller mailposter. Denne beslutning erstatter de ældre daterede afventninger af ejerens DNS-valg alene på dette punkt; de øvrige tilladelses- og bevisgrænser bevares.
+
+Den gennemgåede adapter videresender til den eksisterende uændrede read-only-handler. Frontendens adresse og den gamle Worker bevares i første fase. Handleren læser kun de faste offentlige prognoser, bevarer zone/time/søgemåde/sprog, SHA-/størrelseskontrol og gyldighed og beregner ingen ny score. Der tilføjes ingen database, billedlager, R2/KV/D1/Supabase-binding, leverandørhentning eller hemmelighed. Previewrobotter må hente den nye host; handlerens noindex/no-store og øvrige privacygrænser består.
+
+Fase1-adapterens normale lokale 153 cases er gennemført; controlleren er særskilt privat forberedt, og dens review/kvalifikation er åben. Dette er ingen projektoprettelse, Pages-build/deploy, DNS/TLS, faktisk591-scorekompatibilitet, Facebookpreview eller Free-bevis. Den gamle Workers 590-prøve frikender ikke en 591-host. Den faktiske senere almindelige 591-generation og legacyWorkerens kompatibilitetsdeploy skal verificeres særskilt. Pages Functions deler Workers Free-kontoens 100.000 forespørgsler/døgn med blandt andet turlageret; faktisk samlet forbrug, CPU og råderum skal måles før en kapacitetspåstand.
+
+Kandidaten ligger uden for de faktiske C98/I97/T12-input (union 104); ingen scoreformel, kildeprioritet, vejrflow, version, modelbinding eller udstedt SQL ændres. Normal præcis kildekontrol og et skrivefrit vindue kræves før kontrolleret oprettelse/deploy. Håndbogskopien i installationsfilen er alene dokumentationsspejl, ikke SQL-installation. SOURCE, samlet statistik og automatisk sletning aktiveres ikke. Alle fem mål til 18. november 2026 er fortsat åbne. Se DEC-0294, håndbog 89.278 og privat checkpoint.
+
 ## 29. oktober — skrivefri aflæsning af gemte komponenttællere, lokal forberedelse
 
 Den afgrænsede diagnose kan genlæse én præcist angivet, autentificeret originalpakke B gennem dens egen normale, arkiverede læser. Den kræver samme friske centrale pointer før og efter læsningen. Den bruger ikke det separat gemte beregningscheckpoint S, krypteret fremdrift eller råcachen. Dermed kan de allerede gemte komponenttællere undersøges, selv om fremdriftspakken tilhører en ældre generation.
+
+Den lokale efterfølger til læsekontrollen bevarer kun faste, allerede eksisterende fejl-, afvisnings- og udpakningskategorier samt klientens senest observerede faste transportfejl. Den sidste observation er ikke i sig selv bevis for rodårsagen. Rå fejltekst, stier, spørgsmål og private data er fortsat udelukket. En fejlet læsekontrol er ikke i sig selv en fejlet vejrhentning; restorekrav, netgrænser og fraværet af automatisk gentagelse bevares. Præcis kildekvalifikation og den faktiske nye læsning er fortsat åbne.
 
 Resultatet er den eksisterende faste, privatlivssikre optælling for vind, bølger, vandstand og vandtemperatur før reservekilder, efter Copernicus og efter den sidste reserve. Strøm kommer fra en særskilt producent og indgår ikke i denne firefamilieopsummering. Manglende tællere forbliver ukendte. Dækningsgrad for alle fem vejrtyper måles fortsat over alle forventede timer og zoner; diagnosens deltal må ikke erstatte den måling.
 

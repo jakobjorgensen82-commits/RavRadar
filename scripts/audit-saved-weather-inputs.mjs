@@ -5,7 +5,7 @@
 import fs from 'node:fs/promises';
 import crypto from 'node:crypto';
 import { execFile } from 'node:child_process';
-import { promisify } from 'node:util';
+import { promisify, types as utilTypes } from 'node:util';
 import os from 'node:os';
 import path from 'node:path';
 import { Readable, Writable } from 'node:stream';
@@ -380,6 +380,71 @@ const safeProgressPackCodes = new Set(['WEATHER_PACK_PATH_NOT_ALLOWLISTED', 'WEA
   'WEATHER_PACK_SIZE_INVALID', 'WEATHER_PACK_OUTPUT_CLOSE_UNPROVED', 'WEATHER_PACK_ENTRY_HASH_INVALID',
   'WEATHER_PACK_REFERENCE_INVENTORY_MISMATCH', 'WEATHER_PACK_ARCHIVE_CLOSE_UNPROVED']);
 
+
+// Only fixed categories already emitted by the normal protected restore may
+// leave this B-only failure boundary. Never read or return free error text.
+const safeProtectedRestoreErrorCodes = new Set([
+  'PROTECTED_PRIVATE_RUNTIME_REMOTE_ERROR', 'PROTECTED_PRIVATE_RUNTIME_EXPIRED',
+  'PROTECTED_PRIVATE_RUNTIME_INELIGIBLE', 'PROTECTED_PRIVATE_RUNTIME_NO_COMPATIBLE_GENERATION',
+  'ENOSPC', 'EACCES', 'EPERM', 'EROFS', 'EMFILE', 'ENFILE',
+]);
+const safeProtectedRestoreStages = new Set([
+  'ARCHIVE_ENVELOPE_DECODE', 'ARCHIVE_STAGE_CREATE', 'ARCHIVE_FILE_PATH',
+  'ARCHIVE_FILE_PARENT', 'ARCHIVE_FILE_BASE64_DECODE', 'ARCHIVE_FILE_DECOMPRESSION',
+  'ARCHIVE_FILE_INTEGRITY', 'ARCHIVE_FILE_WRITE', 'ARCHIVE_STAGE_COMMIT',
+]);
+const safeProtectedRestoreRejectionCodes = new Set([
+  ...safeProtectedRestoreStages,
+  'MODEL_OR_CONTRACT_INELIGIBLE', 'EXPIRED', 'FILESYSTEM_CAPACITY',
+  'FILESYSTEM_PERMISSION', 'FILESYSTEM_READ_ONLY', 'FILESYSTEM_RESOURCE_LIMIT',
+  'STORAGE_OR_OBJECT_INTEGRITY', 'ARCHIVE_OR_PAYLOAD_INTEGRITY', 'MODEL_BINDING',
+  'CONTRACT_HASHES', 'DATASET_IDENTITY', 'TIME_BOUNDS', 'DESCRIPTOR_BUNDLE_MISMATCH',
+  'BUNDLE_STRUCTURE_OR_CONTENT', 'UNKNOWN_STORED_OBJECT', 'UNKNOWN_ARCHIVE_EXTRACTION',
+  'UNKNOWN_BUNDLE_VERIFICATION', 'UNKNOWN_DESCRIPTOR_READBACK', 'UNKNOWN_TIME_BOUNDS',
+]);
+const safeProtectedRestoreClientCodes = new Set([
+  'REMOTE_WRITE_FORBIDDEN', 'REMOTE_TARGET_FORBIDDEN', 'REMOTE_READ_CONCURRENT',
+  'REMOTE_READ_BOUND', 'REMOTE_REDIRECT_FORBIDDEN', 'REMOTE_BODY_BOUND', 'REMOTE_READ_FAILED',
+]);
+export function savedAuditProtectedRestoreFailure(error) {
+  const result = { code: null, rejectionCodes: null, protectedPrivateRuntimeStage: null, clientAuditCode: null };
+  try {
+    if (utilTypes.isProxy(error) || !utilTypes.isNativeError(error)) return Object.freeze(result);
+    const own = (value, key) => {
+      const descriptor = Object.getOwnPropertyDescriptor(value, key);
+      return descriptor && Object.hasOwn(descriptor, 'value') ? descriptor.value : undefined;
+    };
+    const category = (value, allowed) => typeof value === 'string' && value.length <= 64
+      && allowed.has(value) ? value : null;
+    result.code = category(own(error, 'code'), safeProtectedRestoreErrorCodes);
+    result.protectedPrivateRuntimeStage = category(own(error, 'protectedPrivateRuntimeStage'), safeProtectedRestoreStages);
+    // R2/pointer wrappers retain the actual client failure as a NativeError cause.
+    // Follow only own data cause links, never raw text or arbitrary objects.
+    let clientError = error;const seen = new Set();
+    for (let depth = 0; depth < 4 && !utilTypes.isProxy(clientError)
+      && utilTypes.isNativeError(clientError) && !seen.has(clientError); depth++) {
+      seen.add(clientError);
+      const auditCode = category(own(clientError, 'auditCode'), safeProtectedRestoreClientCodes);
+      if (auditCode !== null) { result.clientAuditCode = auditCode; break; }
+      clientError = own(clientError, 'cause');
+    }
+    const codes = own(error, 'rejectionCodes');
+    if (!utilTypes.isProxy(codes) && Array.isArray(codes)) {
+      const length = own(codes, 'length');
+      if (Number.isSafeInteger(length) && length >= 1 && length <= 2) {
+        const selected = [];
+        for (let i = 0; i < length; i++) {
+          const value = category(own(codes, String(i)), safeProtectedRestoreRejectionCodes);
+          if (value === null) return Object.freeze(result);
+          selected.push(value);
+        }
+        result.rejectionCodes = Object.freeze(selected);
+      }
+    }
+  } catch { /* Unknown structures have no authority to report raw values. */ }
+  return Object.freeze(result);
+}
+
 export function savedAuditProgressAuthenticationCode(error) {
   if (safeProgressAuthenticationCodes.has(error?.progressCode)) return error.progressCode;
   // The normal unpacker emits fixed codes as Error.message. Only an entire,
@@ -445,9 +510,18 @@ export function createReadOnlySavedWeatherClients({
   const bucketPath = `/${policy.bucketId}`;
   let requests = 0, transferredBytes = 0, currentDescriptor = null;
   let networkMilliseconds = 0, reading = false, timedOut = false;
+  let lastObservedClientAuditCode = null;
   const objects = new Map();
   const allowedObjects = new Set();
   async function guardedFetch(target, options = {}) {
+    try { return await guardedFetchWithinBounds(target, options); }
+    catch (error) {
+      const category = savedAuditProtectedRestoreFailure(error).clientAuditCode;
+      if (category !== null) lastObservedClientAuditCode = category;
+      throw error; // The exact original failure and all existing retry semantics survive.
+    }
+  }
+  async function guardedFetchWithinBounds(target, options = {}) {
     const method = String(options.method ?? 'GET').toUpperCase();
     if (!['GET', 'HEAD'].includes(method) || options.body != null) fail('REMOTE_WRITE_FORBIDDEN');
     let url;
@@ -577,6 +651,10 @@ export function createReadOnlySavedWeatherClients({
       anonymousStatus: async () => fail('REMOTE_TARGET_FORBIDDEN') };
   }
   return { request, storage, guardedFetch,
+    lastObservedClientFailure() {
+      // Observation only: a later restore attempt may fail for a different reason.
+      return Object.freeze({ auditCode: lastObservedClientAuditCode });
+    },
     async archiveMetrics() {
       const entries = currentDescriptor?.objects ?? (currentDescriptor ? [currentDescriptor] : []);
       if (!entries.length || entries.length !== objects.size) fail('ARCHIVE_MEASUREMENT_INVALID');
@@ -1152,7 +1230,7 @@ export async function prepareSavedAuditProgressBaseline({ privateRoot, workRoot 
 // Independent, default-OFF observation of the exact currently protected B.
 // No acquisition snapshot, component unpacker, score caller or remote writer.
 export async function auditProtectedBaselineComponentFallback(options = {}) {
-  let work = null, safeOutput = null, phase = 'SETUP', cleanupAttempted = false;
+  let work = null, safeOutput = null, phase = 'SETUP', cleanupAttempted = false, protectedRestoreFailure = null, lastObservedClientFailure = null;
   const readScope = 'PROTECTED_BASELINE_COMPONENT_FALLBACK_ONLY';
   try {
     const allowed = new Set(['privateRoot', 'descriptorPath', 'predecessorRoot', 'outputPath',
@@ -1204,7 +1282,11 @@ export async function auditProtectedBaselineComponentFallback(options = {}) {
       expected: { modelBinding: source.modelBinding, contractHashes: source.contractHashes,
         datasetId: source.datasetId, productionReferenceAt: source.productionReferenceAt, generatedAt: source.generatedAt,
         targetReferenceAt: source.productionReferenceAt, minimumReferenceAt: source.productionReferenceAt, minimumGeneratedAt: source.generatedAt },
-    })).catch(() => fail('PROTECTED_RESTORE_REJECTED'));
+    })).catch(error => {
+      protectedRestoreFailure = savedAuditProtectedRestoreFailure(error);
+      lastObservedClientFailure = clients.lastObservedClientFailure();
+      fail('PROTECTED_RESTORE_REJECTED');
+    });
     if (restored.restored !== true || restored.rollbackSelected !== false || restored.bundleContentSha256 !== source.bundleContentSha256) fail('EXACT_CURRENT_NOT_RESTORED');
     if (!same(await oldProtected.describeCurrentProtectedPrivateProductionRuntime(clients), source)) fail('CURRENT_GENERATION_CHANGED');
     const manifest = await readJson(path.join(bundlePath, 'manifest.json'));
@@ -1239,7 +1321,8 @@ export async function auditProtectedBaselineComponentFallback(options = {}) {
       try { await fs.rm(work, { recursive: true, force: true }); work = null; }
       catch { /* Failed cleanup never becomes a successful observation. */ }
     }
-    const report = { ...baseReport('AUDIT_FAILED_CLOSED'), readScope, phase, code };
+    const report = { ...baseReport('AUDIT_FAILED_CLOSED'), readScope, phase, code,
+      ...(protectedRestoreFailure === null ? {} : { protectedRestoreFailure, lastObservedClientFailure }) };
     if (safeOutput !== null) await fs.writeFile(safeOutput, `${JSON.stringify(report)}\n`, { flag: 'wx', mode: 0o600 });
     return report;
   }

@@ -9,7 +9,7 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 import { auditSavedWeatherInputs, auditProtectedBaselineComponentFallback, createReadOnlySavedWeatherClients,
   measureSavedCurrentContexts, measureSavedNativeProofAvailability, withoutSavedAuditSecrets,
   indexSavedRawManifest, measureSavedRawCaptureMatches, inspectSavedRawFileInventory,
-  savedAuditProgressAuthenticationCode, CURRENT586_ENDPOINT_AUDIT,
+  savedAuditProgressAuthenticationCode, savedAuditProtectedRestoreFailure, CURRENT586_ENDPOINT_AUDIT,
   CURRENT586_CACHED_ORIGINAL_AUDIT } from './audit-saved-weather-inputs.mjs';
 import { cachedCoherentOriginalFailureCode } from './lib/prove-cached-coherent-current-originals.mjs';
 import { createPrivateProductionRuntimeBundle } from './private-production-runtime-bundle.mjs';
@@ -1801,10 +1801,94 @@ test('B-only component summary: pointer changes, corrupt archives and archived-c
     assert.ok(f.calls.every(call => ['GET', 'HEAD'].includes(call.method)));
     assert.equal((await fs.readdir(f.privateRoot)).some(name => name.startsWith('component-summary-')), false);
     if (options.wrongContracts) assert.equal(report.code, 'PREDECESSOR_CONTRACT_MISMATCH');
-    if (options.corrupt) assert.equal(report.code, 'PROTECTED_RESTORE_REJECTED');
+    if (options.corrupt) {
+      assert.equal(report.code, 'PROTECTED_RESTORE_REJECTED');
+      assert.deepEqual(report.protectedRestoreFailure, {
+        code: 'PROTECTED_PRIVATE_RUNTIME_NO_COMPATIBLE_GENERATION',
+        rejectionCodes: ['STORAGE_OR_OBJECT_INTEGRITY'], protectedPrivateRuntimeStage: null, clientAuditCode: null,
+      });
+      assert.deepEqual(report.lastObservedClientFailure,{auditCode:null});
+    } else assert.equal(Object.hasOwn(report, 'protectedRestoreFailure'), false);
     if (options.changedAt) assert.equal(report.code, 'CURRENT_GENERATION_CHANGED');
     safeReport(report, f.privateRoot);
   }
+
+  const unknown = { code: null, rejectionCodes: null, protectedPrivateRuntimeStage: null, clientAuditCode: null };
+  const known = Object.assign(new Error('secret-error-canary must remain private'), {
+    code: 'PROTECTED_PRIVATE_RUNTIME_NO_COMPATIBLE_GENERATION',
+    rejectionCodes: ['STORAGE_OR_OBJECT_INTEGRITY', 'MODEL_OR_CONTRACT_INELIGIBLE'],
+    protectedPrivateRuntimeStage: 'ARCHIVE_FILE_DECOMPRESSION',
+    privatePath: '/private/weather/current.json', currentUMps: 123,
+  });
+  const categories = savedAuditProtectedRestoreFailure(known);
+  assert.deepEqual(categories, {
+    code: 'PROTECTED_PRIVATE_RUNTIME_NO_COMPATIBLE_GENERATION',
+    rejectionCodes: ['STORAGE_OR_OBJECT_INTEGRITY', 'MODEL_OR_CONTRACT_INELIGIBLE'],
+    protectedPrivateRuntimeStage: 'ARCHIVE_FILE_DECOMPRESSION', clientAuditCode: null,
+  });
+  assert(Object.isFrozen(categories));assert(Object.isFrozen(categories.rejectionCodes));
+  assert(Buffer.byteLength(JSON.stringify(categories)) <= 384);
+  assert.doesNotMatch(JSON.stringify(categories), /secret-error-canary|private\/weather|currentUMps/);
+  const raw = Object.assign(new Error('secret-error-canary raw stderr'), {
+    code: '/private/token-secret-error-canary',
+    rejectionCodes: ['raw vector secret-error-canary'], protectedPrivateRuntimeStage: 'private-path-secret-error-canary',
+    cause: known,
+  });
+  assert.deepEqual(savedAuditProtectedRestoreFailure(raw), unknown);
+  assert.deepEqual(savedAuditProtectedRestoreFailure({code:known.code}), unknown);
+  assert.deepEqual(savedAuditProtectedRestoreFailure(null), unknown);
+  for (const rejectionCodes of [[], Array(3).fill('STORAGE_OR_OBJECT_INTEGRITY'),
+    ['STORAGE_OR_OBJECT_INTEGRITY','secret-error-canary'], ['X'.repeat(1000)]]) {
+    const value = savedAuditProtectedRestoreFailure(Object.assign(new Error('secret-error-canary'), {rejectionCodes}));
+    assert.equal(value.rejectionCodes, null);assert(Buffer.byteLength(JSON.stringify(value)) <= 384);
+    assert.doesNotMatch(JSON.stringify(value), /secret-error-canary/);
+  }
+  assert.equal(savedAuditProtectedRestoreFailure(Object.assign(new Error(), {code:'X'.repeat(1000)})).code,null);
+  let getters=0;
+  const accessorError=new Error();
+  for(const key of ['code','rejectionCodes','protectedPrivateRuntimeStage','auditCode','cause','message','stack'])
+    Object.defineProperty(accessorError,key,{configurable:true,get(){getters++;throw Error('secret-error-canary');}});
+  assert.deepEqual(savedAuditProtectedRestoreFailure(accessorError),unknown);assert.equal(getters,0);
+  const arrayAccessor=[];
+  Object.defineProperty(arrayAccessor,'0',{get(){getters++;throw Error('secret-error-canary');}});
+  const arrayValue=savedAuditProtectedRestoreFailure(Object.assign(new Error(),{rejectionCodes:arrayAccessor}));
+  assert.equal(arrayValue.rejectionCodes,null);assert.equal(getters,0);
+  const proxy=new Proxy(new Error(),{get(){getters++;throw Error('secret-error-canary');},
+    getOwnPropertyDescriptor(){getters++;throw Error('secret-error-canary');}});
+  assert.deepEqual(savedAuditProtectedRestoreFailure(proxy),unknown);assert.equal(getters,0);
+  // The same real normal B-only restore must keep unknown transport errors private.
+  const f=await fixture(t),originalFetch=f.options.fetchImpl;
+  const unknownReport=await auditProtectedBaselineComponentFallback({...bOnlyOptions(f),fetchImpl:async(url,options)=>{
+    if(options.method==='HEAD')throw raw;
+    return originalFetch(url,options);
+  }});
+  assert.equal(unknownReport.phase,'PROTECTED_RESTORE');
+  assert.equal(unknownReport.code,'PROTECTED_RESTORE_REJECTED');
+  assert.deepEqual(unknownReport.protectedRestoreFailure,{...unknown,clientAuditCode:'REMOTE_READ_FAILED'});
+  assert.deepEqual(unknownReport.lastObservedClientFailure,{auditCode:'REMOTE_READ_FAILED'});
+  assert(Object.isFrozen(unknownReport.lastObservedClientFailure));
+  assert.equal(Object.hasOwn(unknownReport,'protectedBaselineComponentFallback'),false);
+  safeReport(unknownReport,f.privateRoot);
+  // A download failure loses its cause inside normal protected restore; the
+  // client's own bounded observation survives without claiming it is the root cause.
+  const download=await fixture(t),downloadFetch=download.options.fetchImpl;
+  const downloadReport=await auditProtectedBaselineComponentFallback({...bOnlyOptions(download),fetchImpl:async(url,options)=>{
+    if(options.method==='GET'&&new URL(url).pathname.startsWith('/'+policy.bucketId+'/'))throw raw;
+    return downloadFetch(url,options);
+  }});
+  assert.equal(downloadReport.code,'PROTECTED_RESTORE_REJECTED');
+  assert.deepEqual(downloadReport.protectedRestoreFailure,{...unknown,
+    code:'PROTECTED_PRIVATE_RUNTIME_NO_COMPATIBLE_GENERATION',rejectionCodes:['UNKNOWN_STORED_OBJECT']});
+  assert.deepEqual(downloadReport.lastObservedClientFailure,{auditCode:'REMOTE_READ_FAILED'});
+  assert(Object.isFrozen(downloadReport.lastObservedClientFailure));
+  safeReport(downloadReport,download.privateRoot);
+  const timeout=Object.assign(new Error('secret-error-canary timeout'),{auditCode:'REMOTE_READ_BOUND'});
+  assert.deepEqual(savedAuditProtectedRestoreFailure(timeout),{...unknown,clientAuditCode:'REMOTE_READ_BOUND'});
+  const wrapped=new Error('secret-error-canary wrapper',{cause:timeout});
+  assert.deepEqual(savedAuditProtectedRestoreFailure(wrapped),{...unknown,clientAuditCode:'REMOTE_READ_BOUND'});
+  const unclassified=Object.assign(new Error('secret-error-canary'),{auditCode:'REMOTE_READ_BOUND: secret-error-canary'});
+  assert.deepEqual(savedAuditProtectedRestoreFailure(unclassified),unknown);
+  const cycle=new Error();cycle.cause=cycle;assert.deepEqual(savedAuditProtectedRestoreFailure(cycle),unknown);
 });
 
 test('B-only component summary: exact expected generation and exclusive options are checked before archive I/O', async t => {
