@@ -1,9 +1,109 @@
 import assert from 'node:assert/strict';
+import crypto from 'node:crypto';
 import fs from 'node:fs';
 import test from 'node:test';
 
-const text = fs.readFileSync('.github/workflows/audit-saved-weather-inputs.yml', 'utf8').replace(/\r\n/g, '\n');
+const actualWorkflow = fs.readFileSync('.github/workflows/audit-saved-weather-inputs.yml', 'utf8').replace(/\r\n/g, '\n');
+const workflowSha = value => crypto.createHash('sha256').update(value).digest('hex');
+const oldWorkflowSha = '2772625366db6c0425b6e7a42ad2d09f16cd0d60ddd9eeb90a6efba524b8e53f';
+const summaryWorkflowSha = 'c0b58c930ff808e196790dacc30eb6caa3cd0905e87da89c25ac2f3d517f2832';
+// A finite, whole-file inverse preserves every older assertion below. No
+// unknown workflow, broad regex stripping or new job can pass as the old job.
+function legacyAuditWorkflow(value) {
+  if (workflowSha(value) === oldWorkflowSha) return value;
+  assert.equal(workflowSha(value), summaryWorkflowSha, 'B_ONLY_WORKFLOW_INPUT_CHANGED');
+  const once = needle => {
+    assert.equal(value.split(needle).length, 2, 'B_ONLY_WORKFLOW_INVERSE_NON_UNIQUE');
+    value = value.replace(needle, '');
+  };
+  const marker = '\n  component-summary:';
+  assert.equal(value.split(marker).length, 2, 'B_ONLY_WORKFLOW_SIBLING_NON_UNIQUE');
+  const sibling = value.slice(value.indexOf(marker));
+  assert.equal(sibling.length, 7426);
+  once(sibling);
+  const inputStart = '\n      component_summary_only:';
+  assert.equal(value.split(inputStart).length, 2, 'B_ONLY_WORKFLOW_INPUT_NON_UNIQUE');
+  const inputAt = value.indexOf(inputStart), inputEnd = value.indexOf('\npermissions:', inputAt);
+  assert.ok(inputEnd > inputAt);
+  const inputs = value.slice(inputAt, inputEnd);
+  assert.equal(inputs.length, 593);
+  once(inputs);
+  once('    if: inputs.component_summary_only != true\n');
+  once('          COMPONENT_SUMMARY_DATASET: ${{ inputs.component_summary_dataset_id }}\n'
+    + '          COMPONENT_SUMMARY_REFERENCE: ${{ inputs.component_summary_reference_at }}\n');
+  once('          test -z "$COMPONENT_SUMMARY_DATASET"\n          test -z "$COMPONENT_SUMMARY_REFERENCE"\n');
+  assert.equal(workflowSha(value), oldWorkflowSha, 'B_ONLY_WORKFLOW_WHOLE_INVERSE_CHANGED');
+  return value;
+}
+const text = legacyAuditWorkflow(actualWorkflow);
 const gh = value => '${{ ' + value + ' }}';
+
+test('B-only summary workflow: exact finite inverse preserves the entire old audit and rejects any drift', () => {
+  assert.equal(workflowSha(text), oldWorkflowSha);
+  assert.equal(legacyAuditWorkflow(text), text);
+  for (const changed of [actualWorkflow + '\n# unknown drift\n',
+    actualWorkflow.replace('component_summary_only != true', 'component_summary_only == true'),
+    actualWorkflow.replace('default: false\n        type: boolean\n      component_summary_dataset_id:',
+      'default: true\n        type: boolean\n      component_summary_dataset_id:'),
+    actualWorkflow.replace('  component-summary:\n', ''),
+    actualWorkflow + actualWorkflow.slice(actualWorkflow.indexOf('\n  component-summary:'))]) {
+    assert.notEqual(changed, actualWorkflow);
+    assert.throws(() => legacyAuditWorkflow(changed), /B_ONLY_WORKFLOW_INPUT_CHANGED/);
+  }
+});
+
+test('B-only summary workflow: default OFF has exclusive read-only jobs and exact expected-generation pins', () => {
+  const job = actualWorkflow.split('\n  component-summary:')[1];
+  assert.ok(job);
+  assert.match(actualWorkflow, /component_summary_only:\n[^\n]*\n        required: false\n        default: false\n        type: boolean/);
+  assert.match(actualWorkflow, /audit:\n    if: inputs\.component_summary_only != true/);
+  assert.match(job, /if: inputs\.component_summary_only == true/);
+  assert.match(actualWorkflow, /permissions:\n  contents: read\n  actions: read\n  pull-requests: read/);
+  assert.match(actualWorkflow, /group: ravradar-weather-production-v2\n  queue: max\n  cancel-in-progress: false/);
+  assert.match(job, /timeout-minutes: 30/);
+  for (const check of ['test "$GITHUB_EVENT_NAME" = workflow_dispatch', 'test "$GITHUB_REF" = refs/heads/main',
+    'test "$CONFIRMATION" = AUDIT-SAVED-WEATHER-INPUTS', 'test "$GITHUB_SHA" = "$EXPECTED_MAIN_HEAD"',
+    '.status=="completed"', '.head_branch=="main"', '.event=="workflow_dispatch"',
+    '.path==".github/workflows/run-current-weather-once.yml"',
+    'git merge-base --is-ancestor "$source_head" "$GITHUB_SHA"',
+    'git merge-base --is-ancestor "$producer_head" "$GITHUB_SHA"']) assert.ok(job.includes(check), check);
+  assert.equal((job.match(/git\/ref\/heads\/main/g) ?? []).length, 2);
+  assert.match(job, /node scripts\/weather-source-gate\.mjs check/);
+  assert.match(job, /test "\$SOURCE_REQUIRED" = false/);
+  assert.ok(job.indexOf('test "$SOURCE_REQUIRED" = false') < job.indexOf(gh('secrets.SUPABASE_URL')));
+  const beforeSecrets = job.slice(0, job.indexOf(gh('secrets.SUPABASE_URL')));
+  for (const flag of ['INCLUDE_RAW_MANIFEST', 'INCLUDE_RAW_FILE_PRESENCE', 'INCLUDE_SELECTED_CURRENT_PREFLIGHT',
+    'INCLUDE_CURRENT_WINDOW_DIAGNOSTIC', 'INCLUDE_CURRENT586_ENDPOINTS', 'INCLUDE_CURRENT586_CACHED_ORIGINALS']) {
+    assert.ok(beforeSecrets.includes('"$' + flag + '"'), flag);
+  }
+  assert.match(beforeSecrets, /test "\$flag" = false/);
+  for (const flag of ['RAW_MANIFEST_CACHE_KEY', 'RAW_MANIFEST_SOURCE', 'PROGRESS_BASELINE_TARGET_HOUR']) {
+    assert.ok(beforeSecrets.includes('test -z "$' + flag + '"'), flag);
+  }
+  assert.match(beforeSecrets, /new Date\(reference\)\.toISOString\(\)!==reference/);
+  assert.match(job, /--expected-dataset "\$EXPECTED_DATASET_ID"/);
+  assert.match(job, /--expected-reference "\$EXPECTED_REFERENCE_AT"/);
+  assert.match(job, /EXPECTED_DATASET_ID: \$\{\{ inputs\.component_summary_dataset_id \}\}/);
+  assert.match(job, /EXPECTED_REFERENCE_AT: \$\{\{ inputs\.component_summary_reference_at \}\}/);
+});
+
+test('B-only summary workflow: archived normal B reader has no progress, RAW, provider or production branch', () => {
+  const job = actualWorkflow.split('\n  component-summary:')[1];
+  assert.match(job, /git archive "\$producer_head" \| tar -x -C "\$RUNNER_TEMP\/ravradar-saved-input-predecessor"/);
+  assert.match(job, /audit-saved-weather-inputs\.mjs describe/);
+  assert.match(job, /audit-saved-weather-inputs\.mjs component-summary/);
+  assert.doesNotMatch(job, /audit-saved-weather-inputs\.mjs audit(?:\s|$)/);
+  assert.doesNotMatch(job, /actions\/cache|setup-python|pip install|WEATHER_PROGRESS_MASTER_SECRET|progress\.encrypted|dmi-grib-v4|restore-keys:/);
+  assert.doesNotMatch(job, /secrets\.(?:DMI|COPERNICUS|OPEN_METEO)|secrets: inherit|set -x|npm run|gh workflow run|--publish|--migrate/);
+  assert.doesNotMatch(job, /node scripts\/(?:update-weather|build-|release-|protected-private-production-runtime|private-production-runtime-workflow)/);
+  assert.doesNotMatch(actualWorkflow, /(?:contents|actions|pull-requests|pages|id-token): write/);
+  const uploads = [...job.matchAll(/uses: actions\/upload-artifact@[^\n]+([\s\S]*?)(?=\n      - |$)/g)];
+  assert.equal(uploads.length, 1);
+  assert.match(uploads[0][1], /name: saved-weather-component-summary-safe-/);
+  assert.match(uploads[0][1], /path: \$\{\{ runner\.temp \}\}\/ravradar-saved-input-audit\/summary-safe\.json/);
+  assert.match(uploads[0][1], /if-no-files-found: error/);
+  assert.doesNotMatch(uploads[0][1], /\*|descriptor|source\.json|progress\.encrypted|bundle|payload/);
+});
 
 test('sealed-source diagnosis is fixed-artifact, source-gated, read-only and secret-separated', () => {
   const full = fs.readFileSync('.github/workflows/audit-sealed-current-source.yml', 'utf8').replace(/\r\n/g, '\n');

@@ -1149,6 +1149,102 @@ export async function prepareSavedAuditProgressBaseline({ privateRoot, workRoot 
   return { repositoryRoot: outputRoot, normalProgressBaselineUsed: true };
 }
 
+// Independent, default-OFF observation of the exact currently protected B.
+// No acquisition snapshot, component unpacker, score caller or remote writer.
+export async function auditProtectedBaselineComponentFallback(options = {}) {
+  let work = null, safeOutput = null, phase = 'SETUP', cleanupAttempted = false;
+  const readScope = 'PROTECTED_BASELINE_COMPONENT_FALLBACK_ONLY';
+  try {
+    const allowed = new Set(['privateRoot', 'descriptorPath', 'predecessorRoot', 'outputPath',
+      'repositoryRoot', 'expectedDatasetId', 'expectedProductionReferenceAt',
+      'supabaseUrl', 'serviceRoleKey', 'accountId', 'accessKeyId', 'secretAccessKey', 'fetchImpl']);
+    if (!object(options) || Object.keys(options).some(key => !allowed.has(key))) fail('MODE_INVALID');
+    let { privateRoot, descriptorPath, predecessorRoot, outputPath,
+      repositoryRoot = REPOSITORY, expectedDatasetId, expectedProductionReferenceAt } = options;
+    if (typeof expectedDatasetId !== 'string' || !/^rr-[A-Za-z0-9][A-Za-z0-9._-]{0,127}$/.test(expectedDatasetId)
+      || typeof expectedProductionReferenceAt !== 'string'
+      || !/^\d{4}-\d{2}-\d{2}T\d{2}:00:00\.000Z$/.test(expectedProductionReferenceAt)
+      || !Number.isFinite(Date.parse(expectedProductionReferenceAt))
+      || new Date(expectedProductionReferenceAt).toISOString() !== expectedProductionReferenceAt) fail('MODE_INVALID');
+    const ctx = await context(privateRoot, repositoryRoot);
+    const resolvePrivate = value => typeof value === 'string' && inside(path.resolve(privateRoot), path.resolve(value))
+      ? path.join(ctx.root, path.relative(path.resolve(privateRoot), path.resolve(value))) : value;
+    descriptorPath = resolvePrivate(descriptorPath);
+    outputPath = resolvePrivate(outputPath);
+    safeOutput = await newOutput(ctx.root, outputPath);
+    phase = 'SOURCE_VALIDATION';
+    const source = identity(await readJson(await noSymlinks(ctx.root, descriptorPath)));
+    if (source.datasetId !== expectedDatasetId || source.productionReferenceAt !== expectedProductionReferenceAt) fail('SOURCE_IDENTITY_INVALID');
+    const requestedPredecessor = path.resolve(predecessorRoot);
+    const predecessorStat = await fs.lstat(requestedPredecessor);
+    const predecessor = await fs.realpath(requestedPredecessor);
+    if (!predecessorStat.isDirectory() || predecessorStat.isSymbolicLink()
+      || inside(ctx.root, predecessor) || inside(predecessor, ctx.root)
+      || inside(ctx.repository, predecessor) || inside(predecessor, ctx.repository)) fail('PREDECESSOR_ROOT_INVALID');
+    const predecessorTemp = [path.resolve(os.tmpdir()), ...(process.env.RUNNER_TEMP ? [path.resolve(process.env.RUNNER_TEMP)] : [])]
+      .find(temp => inside(temp, requestedPredecessor));
+    if (!predecessorTemp) fail('PREDECESSOR_ROOT_INVALID');
+    await noSymlinks(predecessorTemp, requestedPredecessor);
+    const importOld = async relative => import(`${pathToFileURL(await noSymlinks(predecessor, path.join(predecessor, relative))).href}?componentSummary=${source.sourceHead}`);
+    const [oldProtected, oldWorkflow, oldBinding] = await Promise.all([
+      importOld('scripts/protected-private-production-runtime.mjs'),
+      importOld('scripts/private-production-runtime-workflow.mjs'),
+      importOld('js/core/ravscore-model-contract.js')]);
+    if (!same(oldBinding.ravScoreModelBinding(), source.modelBinding)
+      || !same(await oldWorkflow.privateRuntimeContractHashes({ repositoryRoot: predecessor }), source.contractHashes)) fail('PREDECESSOR_CONTRACT_MISMATCH');
+    const credentialNames = ['supabaseUrl', 'serviceRoleKey', 'accountId', 'accessKeyId', 'secretAccessKey', 'fetchImpl'];
+    const credentials = Object.fromEntries(credentialNames.filter(key => Object.hasOwn(options, key)).map(key => [key, options[key]]));
+    const clients = createReadOnlySavedWeatherClients(credentials);
+    if (!same(await oldProtected.describeCurrentProtectedPrivateProductionRuntime(clients), source)) fail('CURRENT_GENERATION_CHANGED');
+    work = await fs.mkdtemp(path.join(ctx.root, 'component-summary-'));
+    const bundlePath = path.join(work, 'bundle');
+    phase = 'PROTECTED_RESTORE';
+    const restored = await withoutSavedAuditSecrets(() => oldProtected.restoreProtectedPrivateProductionRuntime({ ...clients,
+      privateRoot: work, bundlePath, repositoryRoot: predecessor,
+      expected: { modelBinding: source.modelBinding, contractHashes: source.contractHashes,
+        datasetId: source.datasetId, productionReferenceAt: source.productionReferenceAt, generatedAt: source.generatedAt,
+        targetReferenceAt: source.productionReferenceAt, minimumReferenceAt: source.productionReferenceAt, minimumGeneratedAt: source.generatedAt },
+    })).catch(() => fail('PROTECTED_RESTORE_REJECTED'));
+    if (restored.restored !== true || restored.rollbackSelected !== false || restored.bundleContentSha256 !== source.bundleContentSha256) fail('EXACT_CURRENT_NOT_RESTORED');
+    if (!same(await oldProtected.describeCurrentProtectedPrivateProductionRuntime(clients), source)) fail('CURRENT_GENERATION_CHANGED');
+    const manifest = await readJson(path.join(bundlePath, 'manifest.json'));
+    if (manifest.bundleContentSha256 !== source.bundleContentSha256) fail('BUNDLE_IDENTITY_MISMATCH');
+    phase = 'COMPONENT_SUMMARY';
+    const archive = await clients.archiveMetrics();
+    const conditions = await readJson(path.join(bundlePath, 'payload', 'data/live/conditions.json'), 535_822_312);
+    originalParts(conditions);
+    const summary = conditions.weatherEngine?.componentFallback;
+    const rawPayloadBytes = manifest.files.reduce((total, file) => total + file.bytes, 0)
+      + (await fs.stat(path.join(bundlePath, 'manifest.json'))).size;
+    if (!integer(rawPayloadBytes)) fail('AUDIT_COUNTER_INVALID');
+    const report = { ...baseReport('AUDIT_COMPLETED'), readScope,
+      protectedGenerationReadbackVerified: true, exactArchivedSourceContractsVerified: true,
+      encryptedProgressRead: false, rawCacheRead: false, componentPackUnpacked: false,
+      summaryPresent: object(summary), protectedBaselineComponentFallback: safeWeatherComponentSummary(summary),
+      capacity: { protected: { ...archive, rawPayloadBytes }, limits: {
+        archiveBytes: policy.maximumArchiveAggregateBytes, rawPayloadBytes: policy.maximumRawPayloadBytes,
+        fileBytes: policy.maximumFilePayloadBytes, conditionsBytes: 535_822_312 } } };
+    phase = 'FINAL_READBACK';
+    if (!same(await oldProtected.describeCurrentProtectedPrivateProductionRuntime(clients), source)) fail('CURRENT_GENERATION_CHANGED');
+    phase = 'PRIVATE_CLEANUP';
+    cleanupAttempted = true;
+    try { await fs.rm(work, { recursive: true, force: true }); work = null; }
+    catch { fail('PRIVATE_TEMP_CLEANUP_FAILED'); }
+    await fs.writeFile(safeOutput, `${JSON.stringify(report)}\n`, { flag: 'wx', mode: 0o600 });
+    return report;
+  } catch (error) {
+    const code = safeCode.has(error?.auditCode) ? error.auditCode : 'AUDIT_FAILED_CLOSED';
+    if (work !== null && !cleanupAttempted) {
+      cleanupAttempted = true;
+      try { await fs.rm(work, { recursive: true, force: true }); work = null; }
+      catch { /* Failed cleanup never becomes a successful observation. */ }
+    }
+    const report = { ...baseReport('AUDIT_FAILED_CLOSED'), readScope, phase, code };
+    if (safeOutput !== null) await fs.writeFile(safeOutput, `${JSON.stringify(report)}\n`, { flag: 'wx', mode: 0o600 });
+    return report;
+  }
+}
+
 export async function auditSavedWeatherInputs({ mode, privateRoot, descriptorPath, predecessorRoot,
   progressFile, progressSource, progressCacheKey, outputPath, repositoryRoot = REPOSITORY,
   includeRawManifest = false, rawCacheKey = null, rawManifestSource = null,
@@ -1679,7 +1775,8 @@ if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.me
       '--include-current586-cached-originals': 'includeCurrent586CachedOriginals',
       '--prepare-current-forward-originals': 'prepareCurrentForwardOriginals',
       '--prepare-current586-originals': 'prepareCurrent586Originals',
-      '--progress-baseline-target-hour': 'progressBaselineTargetHour' };
+      '--progress-baseline-target-hour': 'progressBaselineTargetHour',
+      '--expected-dataset': 'expectedDatasetId', '--expected-reference': 'expectedProductionReferenceAt' };
     while (args.length) { const key = args.shift(), value = args.shift();
       if (!names[key] || !value || value.startsWith('--') || Object.hasOwn(options, names[key])) fail('MODE_INVALID'); options[names[key]] = value; }
     for (const key of ['includeRawManifest', 'includeRawFilePresence', 'includeSelectedCurrentPreflight', 'includeCurrentWindowDiagnostic', 'includeCurrent586Endpoints', 'includeCurrent586CachedOriginals', 'prepareCurrentForwardOriginals', 'prepareCurrent586Originals']) {
@@ -1688,9 +1785,15 @@ if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.me
       options[key] = options[key] === 'true';
     }
     const {mode,...readbackOptions}=options;
+    const componentSummaryOnly = mode === 'component-summary';
+    if (componentSummaryOnly && !same(Object.keys(readbackOptions).sort(),
+      ['privateRoot','descriptorPath','predecessorRoot','outputPath','expectedDatasetId','expectedProductionReferenceAt'].sort())) fail('MODE_INVALID');
+    if (!componentSummaryOnly && (Object.hasOwn(readbackOptions, 'expectedDatasetId')
+      || Object.hasOwn(readbackOptions, 'expectedProductionReferenceAt'))) fail('MODE_INVALID');
     if(['verify-current586-plan','verify-current586-closed'].includes(mode)
       &&!same(Object.keys(readbackOptions).sort(),['descriptorPath','outputPath','privateRoot']))fail('MODE_INVALID');
-    const report = ['verify-current586-plan','verify-current586-closed'].includes(mode)
+    const report = componentSummaryOnly ? await auditProtectedBaselineComponentFallback(readbackOptions)
+      : ['verify-current586-plan','verify-current586-closed'].includes(mode)
       ? await verifyCurrent586OriginalPlanRemoteSources({...readbackOptions,completedTransport:mode==='verify-current586-closed'}) : await auditSavedWeatherInputs(options);
     if ((options.prepareCurrentForwardOriginals || options.prepareCurrent586Originals) && report.status === 'AUDIT_COMPLETED' && report.originalRestorePreparation && process.env.GITHUB_OUTPUT) {
       const plan = report.originalRestorePreparation;

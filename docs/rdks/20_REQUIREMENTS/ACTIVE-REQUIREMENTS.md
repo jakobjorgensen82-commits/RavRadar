@@ -1,3 +1,13 @@
+## 29. oktober — skrivefri aflæsning af gemte komponenttællere, lokal forberedelse
+
+Den afgrænsede diagnose kan genlæse én præcist angivet, autentificeret originalpakke B gennem dens egen normale, arkiverede læser. Den kræver samme friske centrale pointer før og efter læsningen. Den bruger ikke det separat gemte beregningscheckpoint S, krypteret fremdrift eller råcachen. Dermed kan de allerede gemte komponenttællere undersøges, selv om fremdriftspakken tilhører en ældre generation.
+
+Resultatet er den eksisterende faste, privatlivssikre optælling for vind, bølger, vandstand og vandtemperatur før reservekilder, efter Copernicus og efter den sidste reserve. Strøm kommer fra en særskilt producent og indgår ikke i denne firefamilieopsummering. Manglende tællere forbliver ukendte. Dækningsgrad for alle fem vejrtyper måles fortsat over alle forventede timer og zoner; diagnosens deltal må ikke erstatte den måling.
+
+Den nye tilstand er udtrykkeligt tilvalgt og slået fra som udgangspunkt. Den deler den eksisterende eksklusive vejrkanal og skal planlægges i et skrivefrit vindue. De eksisterende grænser for kald, bytes og køretid bevares; der hentes ingen nye leverandørdata og udføres ingen cachegemning, beregning, SQL, Pages-deploy eller ændring af vejr/scorer. Der må kun returneres faste tællere og afgrænsede læse-/kapacitetsoplysninger, aldrig rå fejltekst, strømværdier, koordinater, proveniens eller nøgler.
+
+Fire gennemgåede kilde-/testfiler er lokalt sammensat med deres uændrede afhængigheder. Der findes målrettede lokale API-/workflowbeviser; uafhængig YAML-aflæsning var ikke tilgængelig lokalt. Præcis ny GitHub-kontrol, sikker levering og den faktiske autentificerede læsning er fortsat åbne. Der er endnu ingen årsagskonklusion om hullerne sidst i prognosen. Assistentlevering, inaktiv SOURCE-revision og normal vejrhentning beholder deres særskilte krav. Alle fem hovedmål til 18. november 2026 er åbne. Se håndbog 89.277 og privat checkpoint.
+
 ## 28. oktober — administratorens optælling og kontokategorier
 
 - **REQ-ADMIN-STORED-TRIP-COUNT-001 – LOKALT IMPLEMENTERET / LEVERING ÅBEN:** Overblik skal vise samlet fysisk rækkeantal i de ti aktive D1-lagerdele og særskilt antal med eksplicit topniveau-testmarkering. Totalen omfatter også anonyme og ældre poster; umærkede poster er ikke verificerede virkelige ture eller modelevidens. Vis interval for sekventiel optælling. Ukendt, vedligeholdelse eller fejl er utilgængelig, aldrig nul. Kun frisk aktiv ejer/fuld administrator før og efter læsning; ingen individuelle turposter eller credentials i svaret.

@@ -1,3 +1,13 @@
+## 29. oktober — skrivefri aflæsning af gemte komponenttællere, lokal forberedelse
+
+Den afgrænsede diagnose kan genlæse én præcist angivet, autentificeret originalpakke B gennem dens egen normale, arkiverede læser. Den kræver samme friske centrale pointer før og efter læsningen. Den bruger ikke det separat gemte beregningscheckpoint S, krypteret fremdrift eller råcachen. Dermed kan de allerede gemte komponenttællere undersøges, selv om fremdriftspakken tilhører en ældre generation.
+
+Resultatet er den eksisterende faste, privatlivssikre optælling for vind, bølger, vandstand og vandtemperatur før reservekilder, efter Copernicus og efter den sidste reserve. Strøm kommer fra en særskilt producent og indgår ikke i denne firefamilieopsummering. Manglende tællere forbliver ukendte. Dækningsgrad for alle fem vejrtyper måles fortsat over alle forventede timer og zoner; diagnosens deltal må ikke erstatte den måling.
+
+Den nye tilstand er udtrykkeligt tilvalgt og slået fra som udgangspunkt. Den deler den eksisterende eksklusive vejrkanal og skal planlægges i et skrivefrit vindue. De eksisterende grænser for kald, bytes og køretid bevares; der hentes ingen nye leverandørdata og udføres ingen cachegemning, beregning, SQL, Pages-deploy eller ændring af vejr/scorer. Der må kun returneres faste tællere og afgrænsede læse-/kapacitetsoplysninger, aldrig rå fejltekst, strømværdier, koordinater, proveniens eller nøgler.
+
+Fire gennemgåede kilde-/testfiler er lokalt sammensat med deres uændrede afhængigheder. Der findes målrettede lokale API-/workflowbeviser; uafhængig YAML-aflæsning var ikke tilgængelig lokalt. Præcis ny GitHub-kontrol, sikker levering og den faktiske autentificerede læsning er fortsat åbne. Der er endnu ingen årsagskonklusion om hullerne sidst i prognosen. Assistentlevering, inaktiv SOURCE-revision og normal vejrhentning beholder deres særskilte krav. Alle fem hovedmål til 18. november 2026 er åbne. Se håndbog 89.277 og privat checkpoint.
+
 ## 29. oktober 2026 — lokal 4.0.591-assistent; almindeligt 590-vejr og admin leveret
 
 4.0.591 er faktisk lokalt udstedt gennem normal versionssynk, fysisk C/I/T-afledning, én ny append-only migration og syv forbrugeres synk. Den friske bindingskontrol og de tre normale lokale assistentmål består. Alle 68 tidligere migrationer og geodata uden for topversionen bevares. Præcis samlet kilde-CI, rigtig PostgreSQL, installation, senere offentlig generation samt normal browser- og ekstern AI-accept er åbne. SOURCE-revisionen er bevaret særskilt og inaktiv; den aktiveres ikke for assistentleveringen.

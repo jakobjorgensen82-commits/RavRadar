@@ -69,6 +69,22 @@ on:
         default: false
         type: boolean
 
+      component_summary_only:
+        description: "Read only the authenticated current B component summary; no progress or RAW"
+        required: false
+        default: false
+        type: boolean
+      component_summary_dataset_id:
+        description: "Exact protected dataset, required only for component_summary_only"
+        required: false
+        default: ""
+        type: string
+      component_summary_reference_at:
+        description: "Exact canonical UTC production hour, required only for component_summary_only"
+        required: false
+        default: ""
+        type: string
+
 permissions:
   contents: read
   actions: read
@@ -84,6 +100,7 @@ concurrency:
 
 jobs:
   audit:
+    if: inputs.component_summary_only != true
     name: Authenticate existing packages and report only bounded aggregates
     runs-on: ubuntu-24.04
     timeout-minutes: ${{ inputs.include_current_window_diagnostic && 75 || 30 }}
@@ -100,6 +117,8 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           CONFIRMATION: ${{ inputs.confirmation }}
+          COMPONENT_SUMMARY_DATASET: ${{ inputs.component_summary_dataset_id }}
+          COMPONENT_SUMMARY_REFERENCE: ${{ inputs.component_summary_reference_at }}
           EXPECTED_MAIN_HEAD: ${{ inputs.expected_main_head }}
           SOURCE_RUN_ID: ${{ inputs.progress_source_run_id }}
           SOURCE_RUN_ATTEMPT: ${{ inputs.progress_source_attempt }}
@@ -117,6 +136,8 @@ jobs:
           test "$GITHUB_EVENT_NAME" = workflow_dispatch
           test "$GITHUB_REF" = refs/heads/main
           test "$CONFIRMATION" = AUDIT-SAVED-WEATHER-INPUTS
+          test -z "$COMPONENT_SUMMARY_DATASET"
+          test -z "$COMPONENT_SUMMARY_REFERENCE"
           [[ "$EXPECTED_MAIN_HEAD" =~ ^[a-f0-9]{40}$ ]]
           [[ "$SOURCE_RUN_ID" =~ ^[1-9][0-9]{0,19}$ ]]
           [[ "$SOURCE_RUN_ATTEMPT" =~ ^[1-9][0-9]{0,3}$ ]]
@@ -517,6 +538,135 @@ jobs:
         uses: actions/upload-artifact@v7
         with:
           name: saved-weather-input-audit-safe-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/ravradar-saved-input-audit/summary-safe.json
+          if-no-files-found: error
+          retention-days: 14
+
+  component-summary:
+    if: inputs.component_summary_only == true
+    name: Read only the authenticated protected component summary
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    env:
+      NODE_OPTIONS: --max-old-space-size=6144
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+
+      - name: Require exact main and a separate B-only summary request
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          CONFIRMATION: ${{ inputs.confirmation }}
+          EXPECTED_MAIN_HEAD: ${{ inputs.expected_main_head }}
+          SOURCE_RUN_ID: ${{ inputs.progress_source_run_id }}
+          SOURCE_RUN_ATTEMPT: ${{ inputs.progress_source_attempt }}
+          EXPECTED_DATASET_ID: ${{ inputs.component_summary_dataset_id }}
+          EXPECTED_REFERENCE_AT: ${{ inputs.component_summary_reference_at }}
+          INCLUDE_RAW_MANIFEST: ${{ inputs.include_raw_manifest }}
+          INCLUDE_RAW_FILE_PRESENCE: ${{ inputs.include_raw_file_presence }}
+          INCLUDE_SELECTED_CURRENT_PREFLIGHT: ${{ inputs.include_selected_current_preflight }}
+          INCLUDE_CURRENT_WINDOW_DIAGNOSTIC: ${{ inputs.include_current_window_diagnostic }}
+          INCLUDE_CURRENT586_ENDPOINTS: ${{ inputs.include_current586_endpoints }}
+          INCLUDE_CURRENT586_CACHED_ORIGINALS: ${{ inputs.include_current586_cached_originals }}
+          RAW_MANIFEST_CACHE_KEY: ${{ inputs.raw_manifest_cache_key }}
+          RAW_MANIFEST_SOURCE: ${{ inputs.raw_manifest_source }}
+          PROGRESS_BASELINE_TARGET_HOUR: ${{ inputs.progress_baseline_target_hour }}
+        run: |
+          set -euo pipefail
+          test "$GITHUB_EVENT_NAME" = workflow_dispatch
+          test "$GITHUB_REF" = refs/heads/main
+          test "$CONFIRMATION" = AUDIT-SAVED-WEATHER-INPUTS
+          [[ "$EXPECTED_MAIN_HEAD" =~ ^[a-f0-9]{40}$ ]]
+          [[ "$SOURCE_RUN_ID" =~ ^[1-9][0-9]{0,19}$ ]]
+          [[ "$SOURCE_RUN_ATTEMPT" =~ ^[1-9][0-9]{0,3}$ ]]
+          for flag in "$INCLUDE_RAW_MANIFEST" "$INCLUDE_RAW_FILE_PRESENCE" "$INCLUDE_SELECTED_CURRENT_PREFLIGHT" "$INCLUDE_CURRENT_WINDOW_DIAGNOSTIC" "$INCLUDE_CURRENT586_ENDPOINTS" "$INCLUDE_CURRENT586_CACHED_ORIGINALS"; do
+            test "$flag" = false
+          done
+          test -z "$RAW_MANIFEST_CACHE_KEY"
+          test -z "$RAW_MANIFEST_SOURCE"
+          test -z "$PROGRESS_BASELINE_TARGET_HOUR"
+          node --input-type=module <<'NODE'
+          const id=process.env.EXPECTED_DATASET_ID,reference=process.env.EXPECTED_REFERENCE_AT;
+          if(typeof id!=='string'||!/^rr-[A-Za-z0-9][A-Za-z0-9._-]{0,127}$/.test(id)
+            ||typeof reference!=='string'||!/^\d{4}-\d{2}-\d{2}T\d{2}:00:00\.000Z$/.test(reference)
+            ||!Number.isFinite(Date.parse(reference))||new Date(reference).toISOString()!==reference)process.exit(1);
+          NODE
+          test "$GITHUB_SHA" = "$EXPECTED_MAIN_HEAD"
+          test "$(git rev-parse HEAD^{commit})" = "$GITHUB_SHA"
+          test "$(gh api "repos/$GITHUB_REPOSITORY/git/ref/heads/main" --jq '.object.sha')" = "$GITHUB_SHA"
+          gh api "repos/$GITHUB_REPOSITORY/actions/runs/$SOURCE_RUN_ID/attempts/$SOURCE_RUN_ATTEMPT" > "$RUNNER_TEMP/component-summary-source-run.json"
+          jq -e --arg repo "$GITHUB_REPOSITORY" --arg run "$SOURCE_RUN_ID" --arg attempt "$SOURCE_RUN_ATTEMPT" '
+            (.id|tostring)==$run and (.run_attempt|tostring)==$attempt
+            and .repository.full_name==$repo and .head_repository.full_name==$repo
+            and .head_branch=="main" and .event=="workflow_dispatch"
+            and .path==".github/workflows/run-current-weather-once.yml"
+            and .status=="completed" and (.head_sha|test("^[a-f0-9]{40}$"))
+          ' "$RUNNER_TEMP/component-summary-source-run.json" >/dev/null
+          source_head="$(jq -er '.head_sha' "$RUNNER_TEMP/component-summary-source-run.json")"
+          git merge-base --is-ancestor "$source_head" "$GITHUB_SHA"
+
+      - name: Verify live exact-content source validation for B-only summary
+        id: source-proof
+        run: node scripts/weather-source-gate.mjs check
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+      - name: Stop unless the B-only source already has live green proof
+        shell: bash
+        env:
+          SOURCE_REQUIRED: ${{ steps.source-proof.outputs.required }}
+        run: test "$SOURCE_REQUIRED" = false
+
+      - name: Create only the separate B-only diagnostic private root
+        run: mkdir "$RUNNER_TEMP/ravradar-saved-input-audit"
+      - name: Describe only the current protected generation for B-only summary
+        run: >-
+          node scripts/audit-saved-weather-inputs.mjs describe
+          --private-root "$RUNNER_TEMP/ravradar-saved-input-audit"
+          --descriptor "$RUNNER_TEMP/ravradar-saved-input-audit/current-source.json"
+          --output "$RUNNER_TEMP/ravradar-saved-input-audit/describe-safe.json"
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+      - name: Materialize only the exact archived B reader without executing producers
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          test "$(gh api "repos/$GITHUB_REPOSITORY/git/ref/heads/main" --jq '.object.sha')" = "$GITHUB_SHA"
+          producer_head="$(jq -er '.sourceHead' "$RUNNER_TEMP/ravradar-saved-input-audit/current-source.json")"
+          [[ "$producer_head" =~ ^[a-f0-9]{40}$ ]]
+          git merge-base --is-ancestor "$producer_head" "$GITHUB_SHA"
+          mkdir "$RUNNER_TEMP/ravradar-saved-input-predecessor"
+          git archive "$producer_head" | tar -x -C "$RUNNER_TEMP/ravradar-saved-input-predecessor"
+      - name: Read only the authenticated B component summary
+        id: component-summary
+        run: >-
+          node scripts/audit-saved-weather-inputs.mjs component-summary
+          --private-root "$RUNNER_TEMP/ravradar-saved-input-audit"
+          --descriptor "$RUNNER_TEMP/ravradar-saved-input-audit/current-source.json"
+          --predecessor-root "$RUNNER_TEMP/ravradar-saved-input-predecessor"
+          --expected-dataset "$EXPECTED_DATASET_ID"
+          --expected-reference "$EXPECTED_REFERENCE_AT"
+          --output "$RUNNER_TEMP/ravradar-saved-input-audit/summary-safe.json"
+        env:
+          EXPECTED_DATASET_ID: ${{ inputs.component_summary_dataset_id }}
+          EXPECTED_REFERENCE_AT: ${{ inputs.component_summary_reference_at }}
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          RAVRADAR_R2_ACCOUNT_ID: ${{ secrets.RAVRADAR_R2_ACCOUNT_ID }}
+          RAVRADAR_R2_ACCESS_KEY_ID: ${{ secrets.RAVRADAR_R2_ACCESS_KEY_ID }}
+          RAVRADAR_R2_SECRET_ACCESS_KEY: ${{ secrets.RAVRADAR_R2_SECRET_ACCESS_KEY }}
+      - name: Upload only the fixed B-only summary report
+        if: always() && (steps.component-summary.outcome == 'success' || steps.component-summary.outcome == 'failure')
+        uses: actions/upload-artifact@v7
+        with:
+          name: saved-weather-component-summary-safe-${{ github.run_id }}-${{ github.run_attempt }}
           path: ${{ runner.temp }}/ravradar-saved-input-audit/summary-safe.json
           if-no-files-found: error
           retention-days: 14
