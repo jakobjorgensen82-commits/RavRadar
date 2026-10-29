@@ -1,4 +1,6 @@
-import { inverseActiveFamilyRetentionCompanionTestInput, ACTIVE_FAMILY_RETENTION_COMPANION_TEST_REVIEW } from './lib/alternative-c-caller-test-input.mjs';
+import { inverseActiveFamilyRetentionCompanionTestInput, ACTIVE_FAMILY_RETENTION_COMPANION_TEST_REVIEW,
+  inverseAssistant590RetentionCompanionTestInput, ASSISTANT590_RETENTION_COMPANION_TEST_REVIEW,
+} from './lib/alternative-c-caller-test-input.mjs';
 import {inverseReviewedAccountStatisticsAssistantSourceScripts} from './lib/account-statistics-assistant-package-review.mjs';
 import { inverseAlternativeCCaller, inverseAssistant587OriginalCompanionTestInput,
   ASSISTANT587_ORIGINAL_COMPANION_TEST_REVIEW,
@@ -1310,9 +1312,41 @@ test('assistant588 companion route preserves genuine587 whole bytes and rejects 
   assert.throws(() => inverseAssistant588OriginalCompanionTestInput(actual, 'scripts/unknown.mjs'), /ASSISTANT588_PATH/);
 });
 
+test('assistant590 retention companion uses its actual whole source before the historical745 inverse', async () => {
+  const row = ASSISTANT590_RETENTION_COMPANION_TEST_REVIEW;
+  const actual = (await fs.readFile(new URL('../' + row.path, import.meta.url), 'utf8')).replace(/\r\n/g, '\n');
+  assert.equal(Buffer.byteLength(actual), row.after.bytes);
+  assert.equal(digest(actual), row.after.sha256);
+  const before = inverseAssistant590RetentionCompanionTestInput(actual, row.path);
+  assert.equal(Buffer.byteLength(before), row.before.bytes);
+  assert.equal(digest(before), row.before.sha256);
+  assert.deepEqual(row.before, ACTIVE_FAMILY_RETENTION_COMPANION_TEST_REVIEW.after,
+    'The new outer inverse restores the complete unchanged745 reader');
+  assert.equal(inverseAssistant590RetentionCompanionTestInput(before, row.path), before);
+  const historical = inverseActiveFamilyRetentionCompanionTestInput(before, row.path);
+  assert.equal(Buffer.byteLength(historical), ACTIVE_FAMILY_RETENTION_COMPANION_TEST_REVIEW.before.bytes);
+  assert.equal(digest(historical), ACTIVE_FAMILY_RETENTION_COMPANION_TEST_REVIEW.before.sha256);
+  for (const [old, current] of row.hunks) {
+    assert.equal(actual.split(current).length, 2);
+    for (const changed of [actual.replace(current, () => old),
+      actual.replace(current, () => current + current),
+      actual.replace(current, () => current + '/*UNREVIEWED*/')]) {
+      assert.notEqual(changed, actual);
+      assert.throws(() => inverseAssistant590RetentionCompanionTestInput(changed, row.path),
+        /ALTERNATIVE_C_TEST_INPUT_CHANGED:ASSISTANT590_RETENTION/);
+    }
+  }
+  for (const changed of ['!' + actual.slice(1), actual + '\n'])
+    assert.throws(() => inverseAssistant590RetentionCompanionTestInput(changed, row.path), /ASSISTANT590_RETENTION/);
+  assert.throws(() => inverseAssistant590RetentionCompanionTestInput({}, row.path), /ASSISTANT590_RETENTION_TYPE/);
+  assert.throws(() => inverseAssistant590RetentionCompanionTestInput(actual, 'scripts/unknown.mjs'), /ASSISTANT590_RETENTION_PATH/);
+  assert.throws(() => inverseAssistant590RetentionCompanionTestInput(actual, row.path, true), /ASSISTANT590_RETENTION_ARGUMENTS/);
+});
+
 test('active-family retention companion has an exact outer inverse before unchanged historical oracles', async () => {
   const row = ACTIVE_FAMILY_RETENTION_COMPANION_TEST_REVIEW;
-  const actual = (await fs.readFile(new URL('../' + row.path, import.meta.url), 'utf8')).replace(/\r\n/g, '\n');
+  const actual = inverseAssistant590RetentionCompanionTestInput(
+    (await fs.readFile(new URL('../' + row.path, import.meta.url), 'utf8')).replace(/\r\n/g, '\n'), row.path);
   assert.equal(Buffer.byteLength(actual), row.after.bytes);
   assert.equal(digest(actual), row.after.sha256);
   const before = inverseActiveFamilyRetentionCompanionTestInput(actual, row.path);
@@ -1334,11 +1368,11 @@ test('active-family retention companion has an exact outer inverse before unchan
       actual.replace(current, () => current + '/*UNREVIEWED*/')]) {
       assert.notEqual(changed, actual);
       assert.throws(() => inverseActiveFamilyRetentionCompanionTestInput(changed, row.path),
-        /ALTERNATIVE_C_TEST_INPUT_CHANGED:ACTIVE_RETENTION/);
+        /ALTERNATIVE_C_TEST_INPUT_CHANGED:(?:ACTIVE_RETENTION|ASSISTANT590_RETENTION)/);
     }
   }
   for (const changed of ['!' + actual.slice(1), actual + '\n', '!' + before.slice(1), before + '\n'])
-    assert.throws(() => inverseActiveFamilyRetentionCompanionTestInput(changed, row.path), /ACTIVE_RETENTION/);
+    assert.throws(() => inverseActiveFamilyRetentionCompanionTestInput(changed, row.path), /ALTERNATIVE_C_TEST_INPUT_CHANGED:(?:ACTIVE_RETENTION|ASSISTANT590_RETENTION)/);
   assert.throws(() => inverseActiveFamilyRetentionCompanionTestInput({}, row.path), /ACTIVE_RETENTION_TYPE/);
   assert.throws(() => inverseActiveFamilyRetentionCompanionTestInput(actual, 'scripts/unknown.mjs'), /ACTIVE_RETENTION_PATH/);
 });

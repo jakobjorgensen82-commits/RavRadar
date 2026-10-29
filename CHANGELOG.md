@@ -1,5 +1,6 @@
 ## 4.0.591 — lokalt udstedt assistentefterfølger, endnu ikke offentligt leveret
 
+- Kaldemålene følger den faktiske ACTIVE590-/591-kontrakt. Legitimt erstattede gamle dispatcheraccepts er ændret til præcise afslag, samtidig med at aktuelle positive/mutationsnegative mål og gamle script-/SHA-orakler bevares. Companion- og 55s-inventarmål bruger de allerede udstedte normale inverser og migrationer. Ingen ny historisk testloader, skip eller produkt-/bindingsændring.
 - Det historiske workflow-testinput genkender den præcise normale 591-versionssynk gennem en helfilbundet 591→590-inverse. Gamle hash-orakler og assert-udtryk bevares; den fortsat ukendte fremtidige UA testes nu med 592. Den normale B/S-målprøve og fire versionsmål består lokalt. Ingen produkt-, workflow-, SQL- eller bindingsændring følger af testrettelsen.
 - Normal fysisk C/I/T-afledning, originalbevarende append-only migration og syv forbrugeres synk er gennemført og genkontrolleret i frisk proces.
 - De tre normale lokale assistentmål består på den udstedte kandidat. En streng historisk DATA-inverse bevarer de gamle kildeorakler; den berørte målprøve består.
