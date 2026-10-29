@@ -1,3 +1,27 @@
+## 29. oktober — 4.0.591 er lokalt udstedt; offentlig assistentlevering er åben
+
+Den selvstændige assistentkandidat har gennemført normal versionssynk, fysisk beregning af nye C/I/T-bindinger, én ny append-only migration og synk af de syv eksisterende forbrugere. Frisk genberegning, hele genererede filer, den kanoniske SQL-inverse og begge normale builderkontroller består. Alle 68 tidligere migrationer er byteuændrede; geodata ændres kun i det stående godkendte topversionsfelt. Der er ikke udført SQL-installation eller ændret produktionsdata af den lokale udstedelse.
+
+De tre normale lokale assistentmål består på den udstedte kandidat, herunder dansk, tysk og engelsk, hele spørgsmål, relevante opfølgninger, ukendt udstyr, sikkerhed og privatliv. Den ene historiske testindgang er rettet med en streng helfil-inverse af den nye valgte 590-kildedata før de uændrede gamle orakler; dens målprøve består. Det er ikke ny samlet GitHub-kvalifikation, rigtig PostgreSQL eller bevis for fungerende ekstern AI.
+
+Første installation skal fortsat bruge det eksisterende afgrænsede modelbindingsforløb med frisk originalkontrol og faktisk databasegenlæsning. Edge og offentlig frontend leveres først gennem den krævede senere almindelige generation. Generisk kode-only må ikke bruges til førsteinstallation. Den store SOURCE-revision forbliver adskilt og inaktiv.
+
+Administratorrettelserne er særskilt kildekvalificeret og merget. Turlager-Workerens faktiske opdatering, attestering og genåbning af normal D1-drift er gennemført uden SQL-installation; den efterfølgende normale Edge-/Pages-levering følges særskilt i checkpointet. Det er ikke den nye 591-assistent. Almindelig 590-vejrhentning har igen faktisk leveret nyt offentligt vejr. Fuld dækning, komplet historik, browseraccept og selvstændig fejlhåndtering er fortsat åbne.
+
+Scoreformel, kildeprioritet DMI → Copernicus → Open-Meteo, central administratoropsætning, punkter, geometri, rettigheder og historiske scorer bevares. Ingen SOURCE-, statistik-, slette- eller DNS-aktivering. Alle fem mål til 18. november 2026 er fortsat åbne; tidligere daterede beviser bevares. Se håndbog 89.276 og det private checkpoint for aktuelle kørsels- og leveringsresultater.
+
+## 28. oktober — selvstændig assistentkandidat; den normale vejrdrift bevares
+
+Den forbedrede Spørg RavRadar forberedes som en selvstændig efterfølger til den faktisk offentlige 4.0.590. Den skal ikke aktivere den samlede SOURCE-revision. Revisionens gennemgåede kode og beviser bevares isoleret og inaktivt; dens fulde nye action-, efterfølger- og fejlforløb kræver stadig særskilt kvalifikation.
+
+De gennemgåede forbedringer omfatter hjælp til egne funktioner, ravkese, ålegræs, relevante korte opfølgninger og ukendt udstyr på dansk, tysk og engelsk samt en tydeligere forklaring af strømhukommelsen. Generelle faglige spørgsmål skal ikke kræve zonevalg. Konkrete vejr- og rangspørgsmål skal fortsat bruge de faktisk gyldige offentlige data og den efterspurgte dag; ukendt må ikke erstattes med opdigtede tal eller fundløfter.
+
+Model- og vidensbindingerne skal afledes af hele den faktiske kandidat gennem de normale generatorer. Den eksisterende førsteinstallationsvej skal bevare ægte 590-originaler, gamle SQL-filer og historiske scorer, kontrollere frisk førskrivningsidentitet og databaseudfald og udskyde Edge-/Pages-leveringen til den krævede senere almindelige generation. Lokale målprøver eller en grøn administratorkontrol er ikke assistentens samlede kildekvalifikation, installation eller bevis for ekstern AI.
+
+Den almindelige 590-drift har faktisk leveret nyt vejr gennem leverandører, beregning, originalpakke før checkpoint, Pages og offentlig kontrol af 210 zoner og 673 dele. Fuld vejrdækning, fuld historik og selvstændig fejlhåndtering er fortsat åbne. Administratorrettelsen har sin egen beståede kildekontrol; installation og normal administratoraccept kan ikke udledes af den. Aktuelle kørsler og dækningsmålinger står i det private checkpoint.
+
+Ingen scoreformel, kildeprioritet DMI → Copernicus → Open-Meteo, administratorpunkter, geometri, rettigheder eller gamle originalværdier ændres. SOURCE, samlet statistik og automatisk sletning aktiveres ikke. Domænebeslutningen er fortsat udskudt til ejerens næste samtale; ingen DNS-ændring følger med. Alle fem mål til 18. november 2026 er åbne. Se håndbog 89.276; tidligere dateret evidens bevares.
+
 ## 28. oktober — Datakvalitet med præcis afgrænsning; lokal opfølgning
 
 4.0.590 har faktisk leveret flere almindelige vejrgenerationer gennem leverandører, beregning, beskyttet B før S, Pages og offentlig kontrol af 210 zoner og 673 dele. Seneste afsluttede normale tilstandsaudit viser fortsættelse af alle 673 dele uden kold genberegning. Det beviser ikke fuld vejrdækning, fuld historik eller selvstændig fejlgenopretning. Den næste planlagte almindelige kørsel er startet; en aktiv kørsel er ikke et nyt deploybevis. Kørselsidentiteter og konkrete dækningsmålinger føres privat.

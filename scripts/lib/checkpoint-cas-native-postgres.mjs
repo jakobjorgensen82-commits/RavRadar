@@ -33,7 +33,7 @@ const sqlText = text => String(text).replace(/\r\n?/g, '\n');
 const NATIVE_PSQL_PHASES = new Set(['NATIVE_SETUP', 'CAS200_MIGRATION',
   'BASELINE_FIXTURES', 'BASELINE_ADMISSION', 'BASELINE_CAS_CASES',
   'ACCOUNT213', 'CURRENT220', 'STATISTICS230', 'NATIVE_IDENTITY0600', 'CURRENT_MEMORY_WARMUP',
-  'ESTABLISHED_NATIVE_CURRENT_ORIGIN', 'LAST_MILE_ENCLOSURE', 'ACCOUNT_STATISTICS_ASSISTANT', 'NATIVE_ORIGINAL_CONTINUITY', 'ASSISTANT_LATER_H0', 'ASSISTANT_PUBLIC587_SUCCESSOR', 'ASSISTANT_PUBLIC588_SUCCESSOR', 'UNKNOWN']);
+  'ESTABLISHED_NATIVE_CURRENT_ORIGIN', 'LAST_MILE_ENCLOSURE', 'ACCOUNT_STATISTICS_ASSISTANT', 'NATIVE_ORIGINAL_CONTINUITY', 'ASSISTANT_LATER_H0', 'ASSISTANT_PUBLIC587_SUCCESSOR', 'ASSISTANT_PUBLIC588_SUCCESSOR', 'ASSISTANT_PUBLIC590_SUCCESSOR', 'UNKNOWN']);
 const NATIVE_PSQL_STATES = Object.freeze({
   '22003':'SQL_RANGE', '22023':'SQL_PARAMETER', '22P02':'SQL_TEXT_FORMAT',
   '23502':'SQL_NOT_NULL', '23503':'SQL_FOREIGN_KEY', '23505':'SQL_UNIQUE',
@@ -632,7 +632,15 @@ export async function runNativeCheckpointSqlComparison({ repositoryRoot,
   includeNativeIdentity = false, includeCurrentMemoryWarmup = false, includeEstablishedNativeCurrentOrigin = false,
   includeLastMileEnclosure = false, includeAccountStatisticsAssistant = false,
   includeNativeOriginalContinuity = false, includeAssistantLaterH0 = false,
-  includeAssistantPublic587Successor = false, includeAssistantPublic588Successor = false } = {}) {
+  includeAssistantPublic587Successor = false, includeAssistantPublic588Successor = false,
+  includeAssistantPublic590Successor = false } = {}) {
+  assert.equal(typeof includeAssistantPublic590Successor,'boolean');
+  assert(!includeAssistantPublic590Successor || includeAssistantPublic588Successor,
+    'Authentic590 phase is required before the new assistant phase');
+  if(includeAssistantPublic590Successor){
+    const {requireAssistantPublic590SuccessorRelease}=await import('./assistant-later-h0-successor-source.mjs');
+    requireAssistantPublic590SuccessorRelease(); // FIRST: before operands/programs/host/SQL.
+  }
   assert.equal(typeof includeAssistantPublic588Successor,'boolean');
   assert(!includeAssistantPublic588Successor || includeAssistantPublic587Successor,
     'Public588 successor requires the genuine complete588 native phase');
@@ -1019,8 +1027,21 @@ select public.native_checkpoint_attempt(${baseline},${version},(select payload f
     let assistantPublic588Successor;
     if(includeAssistantPublic588Successor){
       nativePhase='ASSISTANT_PUBLIC588_SUCCESSOR';
-      const {compareAssistantPublic588Successor}=await import('./assistant-later-h0-postgres.mjs');
-      assistantPublic588Successor=await compareAssistantPublic588Successor({psql,runSql,root,sourceDocumentAt,atHour,saveCheckpoint});
+      if(includeAssistantPublic590Successor){
+        const {withFrozen590CheckpointPostgresSource}=await import('../run-frozen586-assistant-later-h0-postgres-source.mjs');
+        assistantPublic588Successor=await withFrozen590CheckpointPostgresSource(async({adapter,factory})=>
+          adapter.compareAssistantPublic588Successor({psql,runSql,root,sourceDocumentAt:factory.sourceDocumentAt,
+            atHour:factory.atHour,saveCheckpoint:factory.saveRavScoreContinuationCheckpoint}));
+      }else{
+        const {compareAssistantPublic588Successor}=await import('./assistant-later-h0-postgres.mjs');
+        assistantPublic588Successor=await compareAssistantPublic588Successor({psql,runSql,root,sourceDocumentAt,atHour,saveCheckpoint});
+      }
+    }
+    let assistantPublic590Successor;
+    if(includeAssistantPublic590Successor){
+      nativePhase='ASSISTANT_PUBLIC590_SUCCESSOR';
+      const {compareAssistantPublic590Successor}=await import('./assistant-later-h0-postgres.mjs');
+      assistantPublic590Successor=await compareAssistantPublic590Successor({psql,runSql,root,sourceDocumentAt,atHour,saveCheckpoint});
     }
     return {kind:'NATIVE_POSTGRES_CHECKPOINT_CAS_COMPARISON',accountAssistant,currentGrid,
       ...(includeStatisticsRevision?{statisticsRevision}:{}),
@@ -1033,6 +1054,7 @@ select public.native_checkpoint_attempt(${baseline},${version},(select payload f
       ...(includeAssistantLaterH0?{assistantLaterH0}:{}),
       ...(includeAssistantPublic587Successor?{assistantPublic587Successor}:{}),
       ...(includeAssistantPublic588Successor?{assistantPublic588Successor}:{}),
+      ...(includeAssistantPublic590Successor?{assistantPublic590Successor}:{}),
       issuedSource:issued.sourceReceipt,postgresMajorVersion:programs.majorVersion,
       tcpEnabled:false,normalModelPartCount:673,sqlExecuted:true,migrationExecuted:true,
       migrationSQLSha256:hash(newSource),caseCount:reports.length,

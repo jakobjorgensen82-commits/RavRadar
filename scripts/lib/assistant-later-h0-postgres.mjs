@@ -14,11 +14,14 @@ import {ASSISTANT_LATER_H0_BEFORE as OLD,ASSISTANT_LATER_H0_ALIASES as ALIASES,
   readAssistantPublic587PredecessorCanonicalSource,readAssistantPublic587SuccessorCanonicalSource,
   ASSISTANT_PUBLIC588_SUCCESSOR_BEFORE,ASSISTANT_PUBLIC588_SUCCESSOR_ALIASES,
   requireAssistantPublic588SuccessorBinding,requireAssistantPublic588SuccessorOutput,assistantPublic588SuccessorMigration,
-  readAssistantPublic588PredecessorCanonicalSource,readAssistantPublic588SuccessorCanonicalSource}
+  readAssistantPublic588PredecessorCanonicalSource,readAssistantPublic588SuccessorCanonicalSource,
+  ASSISTANT_PUBLIC590_SUCCESSOR_BEFORE,ASSISTANT_PUBLIC590_SUCCESSOR_ALIASES,
+  requireAssistantPublic590SuccessorBinding,requireAssistantPublic590SuccessorOutput,assistantPublic590SuccessorMigration,
+  readAssistantPublic590PredecessorCanonicalSource,readAssistantPublic590SuccessorCanonicalSource}
   from './assistant-later-h0-successor-source.mjs';
 import {currentMemoryWarmupPreservationInventorySql} from './current-memory-warmup-postgres.mjs';
 import {expectedCheckpointCasContract,expectedTripBindingPolicy,assistantLaterH0RequiredMigrations,
-  assistantPublic587SuccessorRequiredMigrations,assistantPublic588SuccessorRequiredMigrations}
+  assistantPublic587SuccessorRequiredMigrations,assistantPublic588SuccessorRequiredMigrations,assistantPublic590SuccessorRequiredMigrations}
   from '../integrated-cutover-readiness.mjs';
 import {statisticsPreferenceRevisionCatalogQuery,verifyStatisticsPreferenceRevisionCatalogMetadata}
   from '../verify-account-assistant-schema.mjs';
@@ -120,8 +123,17 @@ export async function compareAssistantPublic587Successor(options){
 export async function compareAssistantPublic588Successor(options){
   return compareFixedSuccessor(PUBLIC588,...arguments);
 }
+const PUBLIC590=Object.freeze({
+  before:ASSISTANT_PUBLIC590_SUCCESSOR_BEFORE,aliases:ASSISTANT_PUBLIC590_SUCCESSOR_ALIASES,
+  prefix:'assistant-public590-successor-current-',oldPrefix:'assistant-public588-successor-current-',previousRelease:590,
+  requireBinding:requireAssistantPublic590SuccessorBinding,requireOutput:requireAssistantPublic590SuccessorOutput,
+  requiredMigrations:assistantPublic590SuccessorRequiredMigrations,migration:assistantPublic590SuccessorMigration,
+  readBefore:readAssistantPublic590PredecessorCanonicalSource,readAfter:readAssistantPublic590SuccessorCanonicalSource,
+  sourcePhase:'assistant-public590-successor',migrationCount:59,oidSlots:39,contractBodies:42,
+  fixtureStem:'assistant-public590-successor',olderFixtures:Object.freeze(['native-original-continuity-current-same','assistant-later-h0-current-same','assistant-public587-successor-current-same']),
+  resultKind:'ASSISTANT_PUBLIC590_SUCCESSOR',failureKind:'ASSISTANT_PUBLIC590_SUCCESSOR_NATIVE_FIRST_FAILURE'});
 async function compareFixedSuccessor(profile,options){
-  assert(profile===LEGACY586||profile===PUBLIC587||profile===PUBLIC588,'ASSISTANT_NATIVE_UNKNOWN_PROFILE');
+  assert(profile===LEGACY586||profile===PUBLIC587||profile===PUBLIC588||profile===PUBLIC590,'ASSISTANT_NATIVE_UNKNOWN_PROFILE');
   const OLD=profile.before,ALIASES=profile.aliases,PREFIX=profile.prefix,OLD_PREFIX=profile.oldPrefix;
   let phase='SOURCE';
   try{
@@ -294,4 +306,8 @@ async function compareFixedSuccessor(profile,options){
       category:error?.code==='ERR_ASSERTION'?'ASSERTION_FAILED':'NATIVE_CALL_FAILED',privatePayloadIncluded:false}));}catch{}
     throw error; // Preserve the actual first failure; no retry or alternate SQL path.
   }
+}
+
+export async function compareAssistantPublic590Successor(options){
+  return compareFixedSuccessor(PUBLIC590,...arguments);
 }

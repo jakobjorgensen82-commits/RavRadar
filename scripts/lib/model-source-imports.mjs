@@ -128,6 +128,27 @@ const CALENDAR_PUBLIC588_SUCCESSOR_REVIEWED=Object.freeze({
     sha256:'8807414050da91659ceefc2d6957e78aecb791d09632ea806bc182668b02a55d',
     imports:ASSISTANT_BINDING_PREWRITE_REVIEWED['scripts/assistant-later-h0-binding-prewrite.mjs'].imports}),
 });
+// Additive unissued590 successor. Exact whole bytes; no exclusion or scanner fallback.
+const ASSISTANT_PUBLIC590_SUCCESSOR_REVIEWED=Object.freeze({
+  'scripts/check-assistant-later-h0-predecessor-source.mjs':Object.freeze({
+    sha256:'00facf607532512e2c9e904a6147f8dc58af672cfcd8b6c08dfda8a46d83aa39',
+    imports:CALENDAR_PUBLIC588_SUCCESSOR_REVIEWED['scripts/check-assistant-later-h0-predecessor-source.mjs'].imports}),
+  'scripts/lib/authenticated-frozen586-predecessor.mjs':Object.freeze({
+    sha256:'67dc78cb89e552696e8642b13d23f0df0257a89f8e06036537f2dcab353ad655',
+    imports:CALENDAR_PUBLIC588_SUCCESSOR_REVIEWED['scripts/lib/authenticated-frozen586-predecessor.mjs'].imports}),
+  'scripts/lib/established-native-current-origin.mjs':Object.freeze({
+    sha256:'516d9f641bbf8de4fd8933e60a8a76621de4ec72c2d9492c1e43a94c74c9b67c',
+    imports:CALENDAR_PUBLIC588_SUCCESSOR_REVIEWED['scripts/lib/established-native-current-origin.mjs'].imports}),
+  'scripts/assistant-later-h0-binding-prewrite.mjs':Object.freeze({
+    sha256:'4f1b884c09647fb315cc7703ccefd5737ec7de3c2f38cac7e3d1b6019ab6066c',
+    imports:CALENDAR_PUBLIC588_SUCCESSOR_REVIEWED['scripts/assistant-later-h0-binding-prewrite.mjs'].imports}),
+});
+// Additive exact genuine590 DATA-parent selection; all prior whole variants remain.
+const ASSISTANT_GENUINE590_PARENT_REVIEWED=Object.freeze({
+  'scripts/check-assistant-later-h0-predecessor-source.mjs':Object.freeze({
+    sha256:'0c0b447d20b222daf5d119c60e814605f69572bc5b7f748d8174dc728fd9e87b',
+    imports:ASSISTANT_PUBLIC590_SUCCESSOR_REVIEWED['scripts/check-assistant-later-h0-predecessor-source.mjs'].imports}),
+});
 export function modelSourceRelativeModuleSpecifiers(source, file) {
   if (!Object.hasOwn(REVIEWED, file) && !Object.hasOwn(NATIVE_CONTINUITY_REVIEWED, file)
     && !Object.hasOwn(ASSISTANT_LATER_H0_REVIEWED,file) && !Object.hasOwn(ASSISTANT_BINDING_PREWRITE_REVIEWED,file)
@@ -135,12 +156,14 @@ export function modelSourceRelativeModuleSpecifiers(source, file) {
     && !Object.hasOwn(ASSISTANT_BINDING_CHECKPOINT_TARGET_REVIEWED,file)
     && !Object.hasOwn(ASSISTANT_PUBLIC587_SOURCE_REVIEWED,file)
     && !Object.hasOwn(ASSISTANT_PUBLIC587_OPERATIVE_REVIEWED,file)
-    && !Object.hasOwn(CALENDAR_PUBLIC588_SUCCESSOR_REVIEWED,file))
+    && !Object.hasOwn(CALENDAR_PUBLIC588_SUCCESSOR_REVIEWED,file)
+    && !Object.hasOwn(ASSISTANT_PUBLIC590_SUCCESSOR_REVIEWED,file)
+    && !Object.hasOwn(ASSISTANT_GENUINE590_PARENT_REVIEWED,file))
     return exactRelativeModuleSpecifiers(source, file);
   if (typeof source !== 'string') throw new Error('Reviewed model source must be a string');
   const normalized = source.replace(/^\uFEFF/, '').replace(/\r\n?/g, '\n');
   const hash = crypto.createHash('sha256').update(normalized).digest('hex');
-  const reviewed = [REVIEWED[file], NATIVE_CONTINUITY_REVIEWED[file],ASSISTANT_LATER_H0_REVIEWED[file],ASSISTANT_BINDING_PREWRITE_REVIEWED[file],ASSISTANT_BINDING_DIAGNOSTIC_REVIEWED[file],ASSISTANT_BINDING_CHECKPOINT_TARGET_REVIEWED[file],ASSISTANT_PUBLIC587_SOURCE_REVIEWED[file],ASSISTANT_PUBLIC587_OPERATIVE_REVIEWED[file],CALENDAR_PUBLIC588_SUCCESSOR_REVIEWED[file]].filter(Boolean)
+  const reviewed = [REVIEWED[file], NATIVE_CONTINUITY_REVIEWED[file],ASSISTANT_LATER_H0_REVIEWED[file],ASSISTANT_BINDING_PREWRITE_REVIEWED[file],ASSISTANT_BINDING_DIAGNOSTIC_REVIEWED[file],ASSISTANT_BINDING_CHECKPOINT_TARGET_REVIEWED[file],ASSISTANT_PUBLIC587_SOURCE_REVIEWED[file],ASSISTANT_PUBLIC587_OPERATIVE_REVIEWED[file],CALENDAR_PUBLIC588_SUCCESSOR_REVIEWED[file],ASSISTANT_PUBLIC590_SUCCESSOR_REVIEWED[file],ASSISTANT_GENUINE590_PARENT_REVIEWED[file]].filter(Boolean)
     .find(variant => variant.sha256 === hash);
   if (!reviewed)
     throw new Error('Whole reviewed model import source changed: ' + file);

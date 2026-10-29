@@ -1,8 +1,8 @@
-import {PUBLIC_CONFIG} from '../../config.js?v=4.0.590';
-import {readAdminDocumentNow} from './admin-document-store.js?v=4.0.590';
-import {myAccess,hasPermission} from './permissions-service.js?v=4.0.590';
-import {requireFreshSession,authIdentityEpoch,currentSession,authorizedFetch} from './auth-service.js?v=4.0.590';
-import {isExactCalibrationModelBinding} from './calibration-eligibility.js?v=4.0.590';
+import {PUBLIC_CONFIG} from '../../config.js?v=4.0.591';
+import {readAdminDocumentNow} from './admin-document-store.js?v=4.0.591';
+import {myAccess,hasPermission} from './permissions-service.js?v=4.0.591';
+import {requireFreshSession,authIdentityEpoch,currentSession,authorizedFetch} from './auth-service.js?v=4.0.591';
+import {isExactCalibrationModelBinding} from './calibration-eligibility.js?v=4.0.591';
 const CELLS=['windSpeedMs','waveHeightM','currentSpeedMs','waterLevelTrendM3h']
   .flatMap(metric=>Array.from({length:5},(_,i)=>['find','no-find'].map(outcome=>metric+':'+i+':'+outcome))).flat().sort();
 const exact=(value,keys)=>value&&typeof value==='object'&&!Array.isArray(value)

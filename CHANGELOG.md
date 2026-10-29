@@ -1,3 +1,22 @@
+## 4.0.591 — lokalt udstedt assistentefterfølger, endnu ikke offentligt leveret
+
+- Kaldemålene følger den faktiske ACTIVE590-/591-kontrakt. Legitimt erstattede gamle dispatcheraccepts er ændret til præcise afslag, samtidig med at aktuelle positive/mutationsnegative mål og gamle script-/SHA-orakler bevares. Companion- og 55s-inventarmål bruger de allerede udstedte normale inverser og migrationer. Ingen ny historisk testloader, skip eller produkt-/bindingsændring.
+- Det historiske workflow-testinput genkender den præcise normale 591-versionssynk gennem en helfilbundet 591→590-inverse. Gamle hash-orakler og assert-udtryk bevares; den fortsat ukendte fremtidige UA testes nu med 592. Den normale B/S-målprøve og fire versionsmål består lokalt. Ingen produkt-, workflow-, SQL- eller bindingsændring følger af testrettelsen.
+- Normal fysisk C/I/T-afledning, originalbevarende append-only migration og syv forbrugeres synk er gennemført og genkontrolleret i frisk proces.
+- De tre normale lokale assistentmål består på den udstedte kandidat. En streng historisk DATA-inverse bevarer de gamle kildeorakler; den berørte målprøve består.
+- Alle 68 gamle migrationsfiler er uændrede. Geodatadiffene indeholder alene topversionen. Ingen scoreformel, kilder, administratorpunkter, geometri eller rettigheder ændres.
+- Præcis samlet kilde-CI, rigtig PostgreSQL, kontrolleret installation, senere offentlig generation og faktisk browser-/AI-accept er fortsat åbne. SOURCE-revisionen forbliver inaktiv.
+
+## Selvstændig assistentkandidat — lokal, endnu ikke offentligt leveret
+
+- Forbedret genkendelse af almindelige spørgsmål om egne funktioner, ravkese, ålegræs, vind og ukendt udstyr samt korte relevante opfølgninger på dansk, tysk og engelsk.
+- Tydeligere forklaring af den eksisterende strømhukommelse uden ændring af scoreformel eller vejrdata.
+- Normal originalbevarende efterfølger til offentlig590; nye bindinger afledes fra den faktiske kilde, og den offentlige levering kræver den normale senere generation.
+- Kilde- og leveringsarbejdet er adskilt fra den endnu inaktive SOURCE-revision. Eksisterende admin- og tidsskyderrettelser bevares.
+- Tilføjet håndbog89.276 om assistentens forbedringer og dens grænser.
+
+Samlet kildekvalifikation, installation, offentlig virkning og kontrol af den eksisterende eksterne AI er fortsat åbne. Ingen nye tjenester, nøgler, planer, statistikaktivering, automatisk sletning eller DNS-ændring.
+
 ## 28. oktober — lokal Datakvalitet-opfølgning på adminrettelsen
 
 - Skelner mellem fire aktuelle felter, DMI-cachens 96/24-timerskrav og femfamilie-runtime ved generering. Delmål præsenteres ikke som fuld landsdækkende time-for-time-dækning.

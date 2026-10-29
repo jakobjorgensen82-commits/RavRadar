@@ -1,3 +1,33 @@
+## 89.276 Bedre hjælp til almindelige spørgsmål og korte opfølgninger
+
+**Kort fortalt: Spørg RavRadar skal forstå almindelige spørgsmål om ravjagt og kunne følge en kort opfølgning. Svarene skal være brugbare og ærlige om usikkerhed. Forbedringen ændrer ikke RavScore eller de vejrdata, prognosen bygger på.**
+
+Status 29. oktober: 4.0.591 er udstedt lokalt gennem de normale generatorer, og den fysiske genberegning af bindinger og nye SQL-kilder består. De tre normale lokale assistentmål består. Det er endnu ikke samlet GitHub-kvalifikation, installation, offentlig levering eller bevis for fungerende ekstern AI.
+
+### Almindelige spørgsmål skal genkendes
+
+Du skal kunne spørge om en ravkese, om ålegræs eller om, hvad RavRadar kan hjælpe med, uden først at vælge en bestemt zone. Den lokale kandidat forbedrer genkendelsen af disse emner på dansk, tysk og engelsk. Ukendt udstyr skal behandles som ukendt; assistenten må ikke gætte en bestemt ravtype ud fra et ord, den ikke forstår.
+
+### Korte opfølgninger skal hænge sammen
+
+Når du har spurgt om et relevant emne, skal en kort opfølgning kunne bruge det emne, samtalen allerede handler om. Assistenten bevarer en afgrænset emne- og sprogtilstand. Den skal fortsat kontrollere sikkerhed og privatliv, før den vælger et lokalt svar.
+
+### Generel hjælp og aktuelle prognoser har forskellige databehov
+
+En generel forklaring af vind, strøm eller udstyr kræver ikke en valgt zone. Et konkret svar om et sted eller den bedste zone på en bestemt dag kræver derimod gyldige oplysninger for netop det sted og tidspunkt. Assistenten må hverken vælge en anden dag i stilhed eller opfinde en rangliste, hvis grundlaget mangler.
+
+### Forklaringen af strømmen bliver tydeligere
+
+Strøm mod kysten kan opbygge et bidrag over tid. En kort periode med strøm væk fra kysten nulstiller ikke automatisk bidraget, men trækker fra. I denne del af den eksisterende model har strømoplysninger fuld aldersvægt til 24 timer og derefter aftagende vægt til 48 timer. Det er en forklaring af modellen, ikke en fundgaranti eller et løfte om komplet vejrhistorik.
+
+### Sådan holdes svarene til den rigtige RavRadar
+
+Assistentens kode, offentlige viden og modelhenvisninger skal passe sammen. Den nye viden skal derfor udstedes og leveres gennem den eksisterende kontrollerede vej med bevarede originaler og historiske scorer. Den større SOURCE-revision aktiveres særskilt, når dens egne krav er dokumenteret.
+
+### Lokal forbedring er ikke færdig offentlig levering
+
+Dette afsnit beskriver den gennemgåede lokale assistentkandidat. Før den kan kaldes færdig, skal den samlede kilde kvalificeres, installeres og kontrolleres på hjemmesiden med typiske spørgsmål, variationer, opfølgninger og ukendte spørgsmål. Den eksisterende eksterne AI skal afprøves i praksis. Lokale svar og en teknisk successtatus beviser ikke i sig selv, at den fungerer. Private brugeroplysninger og intern fejlviden må ikke bruges i svarene.
+
 ## 89.275 Sådan læses administratorens Datakvalitet
 
 Kort fortalt: Et tal kan være korrekt og alligevel beskrive noget andet, end man tror. Se både, hvad rapporten tæller, og hvornår den er lavet.
@@ -768,7 +798,15 @@ En særskilt, dokumenteret Storage-formatkant rettes samtidig: immutable upload 
 
 # RavRadar Håndbog
 
-**Håndbogsversion:** 4.0.590
+**Håndbogsversion:** 4.0.591
+
+**Lokal kildebinding — 29. oktober 2026, RavScore 4.0.591, ikke installeret:** Den integrerede model er offentlig som modeltype under den særskilt leverede 4.0.590. Den nye assistentefterfølger er lokalt udstedt og er endnu ikke samlet kvalificeret, installeret eller offentliggjort.
+
+4.0.591 er låst med `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b` og `modelBundleSha256=ebd5ac3dac09b7afb51e46d18920f6932b478b7ef15bdd31190c128273cb6a54` over 97 kanonisk normaliserede transitive implementeringsfiler og de syv deklarerede forbrugere. Inaktiv Candidate G har `modelContractSha256=c73dac1b4376005e792580791d84eb79c9370e905a2a7fd0bdee857506a20cf8` og `modelBundleSha256=38738b7d7d3bfd74958ab2453422f2416338e99dac53d12f7098ad8c3539ec64` over 98 transitive filer.
+
+Fortsættelseskontrakten T12 er `continuationStateContractSha256=b490f11d14cfe607839d7848bbcdb8e9df7abdfe62c82983e5247fb4ca3dcc0d` (`b490f11d…`) over 12 normaliserede kildefiler. Autoriteten er `version.json.releaseContract.modelBindings` og den normale 590-successor. Den nye append-only migration er `20261028223717_assistant_public590_later_h0_original_bound_successor.sql`. Gamle migrationer, originale B/S, numeriske værdier og offentliggjort historik bevares; scoreformel, kilder og geometri ændres ikke. Præcis kilde-CI, PostgreSQL, kontrolleret førsteinstallation og faktisk senere offentlig generation er åbne. SOURCE, samlet statistik og automatisk sletning forbliver inaktive. Tidligere bindingsblokke nedenfor er dateret historik.
+
+
 
 Hvis genbrug af gemte data stopper, skal den første fejlfase og et kontrolleret kildested bevares uden private fejltekster eller værdier. Tidligere beståede kontroller frikender ikke automatisk en senere mål-time eller andre input. En bedre fejlrapport ændrer ikke beregningen og er ikke bevis for, at årsagen er rettet. Gemte originaler og sidste gyldige offentlige data bevares, mens fejlen undersøges.
 

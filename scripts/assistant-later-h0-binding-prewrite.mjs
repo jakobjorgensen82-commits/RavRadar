@@ -9,12 +9,13 @@ import {fileURLToPath,pathToFileURL} from 'node:url';
 import {execFile as callbackExec} from 'node:child_process';
 import {promisify,isDeepStrictEqual as equal} from 'node:util';
 import {ACTIVE_ASSISTANT_SUCCESSOR as ACTIVE} from './lib/assistant-later-h0-successor-source.mjs';
-import {withAuthenticated587PredecessorSource,withAuthenticated588PredecessorSource} from './check-assistant-later-h0-predecessor-source.mjs';
+import {withAuthenticated587PredecessorSource,withAuthenticated588PredecessorSource,withAuthenticated590PredecessorSource} from './check-assistant-later-h0-predecessor-source.mjs';
 import {readAuthenticatedFrozen587Predecessor,assertAuthenticatedFrozen587Snapshot,
   assertAuthenticatedFrozen587SnapshotFresh,readAuthenticatedFrozen588Predecessor,
-  assertAuthenticatedFrozen588Snapshot,assertAuthenticatedFrozen588SnapshotFresh} from './lib/authenticated-frozen586-predecessor.mjs';
+  assertAuthenticatedFrozen588Snapshot,assertAuthenticatedFrozen588SnapshotFresh,readAuthenticatedFrozen590Predecessor,
+  assertAuthenticatedFrozen590Snapshot,assertAuthenticatedFrozen590SnapshotFresh} from './lib/authenticated-frozen586-predecessor.mjs';
 import {assertRestoredOriginalInventory} from './migrate-post-cutover-private-runtime.mjs';
-import {assertAssistantPublic587SuccessorMigrationPlan,assertAssistantPublic588SuccessorMigrationPlan} from './integrated-cutover-readiness.mjs';
+import {assertAssistantPublic587SuccessorMigrationPlan,assertAssistantPublic588SuccessorMigrationPlan,assertAssistantPublic590SuccessorMigrationPlan} from './integrated-cutover-readiness.mjs';
 import {inspectDmiForecastFile,readDmiForecastRecord} from './lib/dmi-forecast-file.mjs';
 import {unpackDmiPartContinuity,assertDmiPartContinuityTotalSize} from './lib/dmi-part-continuity.mjs';
 import {createProtectedDmiNativeCurrentInspector} from './lib/protected-dmi-native-current-proofs.mjs';
@@ -25,8 +26,12 @@ import {ravScoreModelBinding as candidateBinding} from './rollback-assets/ravsco
 import {privateRuntimeContractHashes} from './private-production-runtime-workflow.mjs';
 import {ownFileDescriptorIdentity,ownedFileDescriptorClosed} from './lib/private-weather-component-pack.mjs';
 // Ingen caller-/miljøvalgt familie. Begge profiler beholder deres egne opaque handles.
-assert(['assistant-public587-successor','assistant-public588-successor'].includes(ACTIVE.sourcePhase));
-const ACTIVE_PREDECESSOR=ACTIVE.sourcePhase==='assistant-public588-successor'?Object.freeze({
+assert(['assistant-public587-successor','assistant-public588-successor','assistant-public590-successor'].includes(ACTIVE.sourcePhase));
+const ACTIVE_PREDECESSOR=ACTIVE.sourcePhase==='assistant-public590-successor'?Object.freeze({
+  withSource:withAuthenticated590PredecessorSource,read:readAuthenticatedFrozen590Predecessor,
+  snapshot:assertAuthenticatedFrozen590Snapshot,fresh:assertAuthenticatedFrozen590SnapshotFresh,
+  plan:assertAssistantPublic590SuccessorMigrationPlan
+}):ACTIVE.sourcePhase==='assistant-public588-successor'?Object.freeze({
   withSource:withAuthenticated588PredecessorSource,read:readAuthenticatedFrozen588Predecessor,
   snapshot:assertAuthenticatedFrozen588Snapshot,fresh:assertAuthenticatedFrozen588SnapshotFresh,
   plan:assertAssistantPublic588SuccessorMigrationPlan

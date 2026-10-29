@@ -11,7 +11,7 @@ import {promisify} from 'node:util';
 const execute=promisify(callbackExec);
 const ROOT=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
 function fixedSource(profile){
-  assert(profile===FROZEN586||profile===FROZEN587||profile===FROZEN588,'FROZEN_SOURCE_UNKNOWN_PROFILE');
+  assert(profile===FROZEN586||profile===FROZEN587||profile===FROZEN588||profile===FROZEN590,'FROZEN_SOURCE_UNKNOWN_PROFILE');
   const HEAD=profile.head,TREE=profile.tree;
 const C='scripts/rollback-assets/ravscore-model-bundle.generated.js';
 const I='js/core/ravscore-model-bundle.generated.js';
@@ -252,7 +252,11 @@ export async function assertFrozen588MetadataOriginData(options) {
   await frozen588OriginData(options.descriptor,options.conditions,options.centralContract);
 }
 `;
-const ASSERTION_SUFFIX=profile===FROZEN588?ORIGINAL_588_ASSERTION_SUFFIX:profile===FROZEN586?ORIGINAL_586_ASSERTION_SUFFIX:
+const ORIGINAL_590_ASSERTION_SUFFIX=ORIGINAL_588_ASSERTION_SUFFIX
+  .replace('// Removing this suffix restores whole Git SHA-256 5fa3fe20041a82a7e287e21f4562f6bb82ffab253c69e0754208bb6e5c907b69.',
+    '// The source-owned selected590 origin SHA and whole inverse are checked by this host.')
+  .replaceAll('588','590');
+const ASSERTION_SUFFIX=profile===FROZEN590?ORIGINAL_590_ASSERTION_SUFFIX:profile===FROZEN588?ORIGINAL_588_ASSERTION_SUFFIX:profile===FROZEN586?ORIGINAL_586_ASSERTION_SUFFIX:
   assertionNames.reduce((source,[before,after])=>{assert(source.includes(before));return source.replaceAll(before,after);},ORIGINAL_586_ASSERTION_SUFFIX);
 if(profile===FROZEN587)assert.equal([...assertionNames].reverse().reduce(
   (source,[before,after])=>source.replaceAll(after,before),ASSERTION_SUFFIX),ORIGINAL_586_ASSERTION_SUFFIX,'Whole assertion-suffix inverse');
@@ -278,6 +282,7 @@ async function exactTree(root,files,index,gitReference){
   await visit(root);assert.deepEqual([...seen].sort(),files);
 }
 async function withSource(useVerifiedSource){
+  if(profile===FROZEN590)assertFrozen590CodeSourceSelected(); // FIRST: no selected parent, no Git/I/O.
   if(profile===FROZEN588)assertFrozen588CodeSourceSelected(); // FIRST: unselected code cannot reach Git/I/O.
   assert.equal(arguments.length,1,'No caller head/root/source override');assert.equal(typeof useVerifiedSource,'function');
   const index=await inventory(),sourceFiles=await selected(index),files=[...sourceFiles,ASSERTION,GIT_REFERENCE].sort();
@@ -297,7 +302,8 @@ async function withSource(useVerifiedSource){
     for(const file of files){const output=path.resolve(root,file);assert(inside(root,output));await fs.mkdir(path.dirname(output),{recursive:true});
       await fs.writeFile(output,await materializedBytes(file,index,gitReference),{flag:'wx',mode:0o600});}
     await exactTree(root,files,index,gitReference);
-    const builderArgs=profile===FROZEN588?['--public587-successor','--check']:['--check'];
+    const builderArgs=profile===FROZEN590?['--public588-successor','--check']:
+      profile===FROZEN588?['--public587-successor','--check']:['--check'];
     const checked=await execute(process.execPath,[path.join(root,BUILDER),...builderArgs],{cwd:root,env:fixedEnv(),timeout:60000,maxBuffer:1024*1024});
     assert.equal(checked.stdout.trim(),profile.builderChecked);
     const continuation=await import(pathToFileURL(path.join(root,T)).href);
@@ -379,6 +385,27 @@ const FROZEN588=Object.freeze({
     publicProjectionContractSha256:FROZEN588_CODE_SOURCE_PROVENANCE.publicProjectionContractSha256}),
 });
 
+export const FROZEN590_CODE_SOURCE_PROVENANCE=Object.freeze({
+  selected:true,head:'2712b6556acd33d3d06ff1a9b5f55b5b620f1ee9',tree:'e3fa7dd3eb7ec873deefb73148ad6bae0f0df725',candidateFiles:98,integratedFiles:97,
+  originSha256:'bc3da0ace8094f36bc221e5d023620e42f8153e9082780141e48372ca7c1f2b0',partPipelineSha256:'8e979128a682a7324d7defcc3d2d2dfa5edc85ebc22d4ae714810aa085490758',
+  fullRuntimeContractSha256:'ede0b53b8ed0f3fa5d0e505ea7c07d98969dc7a38fe94ae034a85f9c5d5af7ff',publicProjectionContractSha256:'c495b80c7ca8906d81ae0a58f340fe693f79acce51ca6efc7933681d9505da09',
+});
+const FROZEN590=Object.freeze({
+  ...FROZEN590_CODE_SOURCE_PROVENANCE,
+  builder:'scripts/build-assistant-later-h0-successor.mjs',
+  builderChecked:'Exact original-preserving calendar588 later-H0 metadata source checked; no installation or state admission.',
+  assertion:'scripts/lib/established-native-current-origin-590-assertion.mjs',temporaryPrefix:'rr-a590-source-',
+  candidate:'bca59cb435cb3f35041c665d2954f0ef04b189b572219771fc5628e4f7ccb551',
+  integrated:'4c94c24e7d14d66c20cc3c2c3d0389cadb0c3e9e76fcfe692943c6087df56819',
+  additionalMigrations:Object.freeze([...FROZEN588.additionalMigrations,Object.freeze({
+    path:'supabase/migrations/20261027124633_assistant_public588_later_h0_original_bound_successor.sql',
+    sha256:'eb0262716b66d29d52bf0ac4412c475ab5e9ea69e1cad15eabc9a31b48bcf821'})]),
+  runtimeContracts:Object.freeze({
+    continuationStateContractSha256:'d444e6141038f56dd04b97a55eefe07bbd98f122fb3b76a43bdddacff2d88c8a',
+    fullRuntimeContractSha256:FROZEN590_CODE_SOURCE_PROVENANCE.fullRuntimeContractSha256,
+    publicProjectionContractSha256:FROZEN590_CODE_SOURCE_PROVENANCE.publicProjectionContractSha256}),
+});
+
 // Hver fast profil ejer sin cache; samme relative sti kan aldrig genbruge den anden familie.
 const source586=fixedSource(FROZEN586),source587=fixedSource(FROZEN587),source588=fixedSource(FROZEN588);
 export async function withAuthenticated586PredecessorSource(useVerifiedSource){
@@ -402,4 +429,18 @@ export function assertFrozen588CodeSourceSelected(){
 }
 export async function withAuthenticated588PredecessorSource(useVerifiedSource){
   return source588(...arguments);
+}
+
+const source590=fixedSource(FROZEN590);
+export function assertFrozen590CodeSourceSelected(){
+  assert.equal(arguments.length,0);const source=FROZEN590_CODE_SOURCE_PROVENANCE;
+  assert.deepEqual(Object.keys(source).sort(),['candidateFiles','fullRuntimeContractSha256','head','integratedFiles','originSha256','partPipelineSha256','publicProjectionContractSha256','selected','tree']);
+  assert.equal(source.selected,true,'FROZEN590_CODE_SOURCE_UNSELECTED');
+  for(const key of ['head','tree'])assert.match(source[key],/^[a-f0-9]{40}$/);
+  for(const key of ['candidateFiles','integratedFiles'])assert(Number.isSafeInteger(source[key])&&source[key]>0);
+  for(const key of ['originSha256','partPipelineSha256','fullRuntimeContractSha256','publicProjectionContractSha256'])assert.match(source[key],/^[a-f0-9]{64}$/);
+  return source; // Fixed source data only, never a CI/PASS or runtime capability.
+}
+export async function withAuthenticated590PredecessorSource(callback){
+  assertFrozen590CodeSourceSelected();return source590(...arguments);
 }

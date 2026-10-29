@@ -5,6 +5,8 @@ import crypto from 'node:crypto';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import {fileURLToPath} from 'node:url';
+import {FROZEN590_CODE_SOURCE_PROVENANCE,assertFrozen590CodeSourceSelected}
+  from '../check-assistant-later-h0-predecessor-source.mjs';
 import {NATIVE_ORIGINAL_CONTINUITY_BINDING,NATIVE_ORIGINAL_CONTINUITY_OUTPUT,
   readNativeOriginalContinuityCanonicalSource,nativeOriginalContinuityDefinition}
   from './native-original-continuity-successor-source.mjs';
@@ -109,7 +111,7 @@ export async function readAssistantLaterH0CanonicalSource(options){
   return readFixedCanonicalSource(ISSUED587_SOURCE,options,pins,migration);
 }
 async function readFixedCanonicalSource(profile,options,pins,migration){
-  assert(profile===ISSUED587_SOURCE||profile===PUBLIC587_SUCCESSOR_SOURCE||profile===PUBLIC588_SUCCESSOR_SOURCE,'ASSISTANT_SUCCESSOR_UNKNOWN_SOURCE_PROFILE');
+  assert(profile===ISSUED587_SOURCE||profile===PUBLIC587_SUCCESSOR_SOURCE||profile===PUBLIC588_SUCCESSOR_SOURCE||profile===PUBLIC590_SUCCESSOR_SOURCE,'ASSISTANT_SUCCESSOR_UNKNOWN_SOURCE_PROFILE');
   let migrationsDirectory=path.join(ROOT,'supabase/migrations');
   if(options!==undefined){assert(options&&Object.getPrototypeOf(options)===Object.prototype);
     assert.deepEqual(Object.keys(options),['migrationsDirectory']);assert(path.isAbsolute(options.migrationsDirectory));
@@ -317,6 +319,131 @@ export async function readAssistantPublic588SuccessorCanonicalSource(options){
   return readFixedCanonicalSource(PUBLIC588_SUCCESSOR_SOURCE,options,pins,migration);
 }
 
+// UNISSUED next family: immutable590 data, no selected qualified CODE parent.
+export const ASSISTANT_PUBLIC590_SUCCESSOR_PARENT=Object.freeze({
+  selected:FROZEN590_CODE_SOURCE_PROVENANCE.selected,
+  sourceHead:FROZEN590_CODE_SOURCE_PROVENANCE.head,sourceTree:FROZEN590_CODE_SOURCE_PROVENANCE.tree,
+});
+export const ASSISTANT_PUBLIC590_SUCCESSOR_BEFORE=Object.freeze({
+  sourceHead:ASSISTANT_PUBLIC590_SUCCESSOR_PARENT.sourceHead,
+  sourceTree:ASSISTANT_PUBLIC590_SUCCESSOR_PARENT.sourceTree,
+  ...ASSISTANT_PUBLIC588_SUCCESSOR_BINDING,
+  canonicalSha256:ASSISTANT_PUBLIC588_SUCCESSOR_OUTPUT.canonicalSha256,
+});
+export function requireAssistantPublic590SuccessorParent(){
+  assert.equal(arguments.length,0);
+  const parent=ASSISTANT_PUBLIC590_SUCCESSOR_PARENT;
+  assert(parent&&Object.isFrozen(parent),'ASSISTANT_PUBLIC590_PARENT_UNSELECTED');
+  assert.deepEqual(Object.keys(parent).sort(),['selected','sourceHead','sourceTree']);
+  assert.equal(parent.selected,true,'ASSISTANT_PUBLIC590_PARENT_UNSELECTED');
+  assertFrozen590CodeSourceSelected(); // Same single source-owned parent; no caller override.
+  for(const key of ['sourceHead','sourceTree'])assert.match(parent[key],/^[a-f0-9]{40}$/);
+  assert.equal(requireAssistantPublic588SuccessorRelease(),'4.0.590');
+  assert.deepEqual({...requireAssistantPublic588SuccessorBinding(),canonicalSha256:requireAssistantPublic588SuccessorOutput().canonicalSha256},
+    Object.fromEntries(['version','C','I','T','canonicalSha256'].map(key=>[key,ASSISTANT_PUBLIC590_SUCCESSOR_BEFORE[key]])));
+  return ASSISTANT_PUBLIC590_SUCCESSOR_BEFORE; // DATA only; not a qualification receipt or runtime authority.
+}
+export const ASSISTANT_PUBLIC590_SUCCESSOR_BINDING=Object.freeze({"version":"20261028223717","C":"38738b7d7d3bfd74958ab2453422f2416338e99dac53d12f7098ad8c3539ec64","I":"ebd5ac3dac09b7afb51e46d18920f6932b478b7ef15bdd31190c128273cb6a54","T":"b490f11d14cfe607839d7848bbcdb8e9df7abdfe62c82983e5247fb4ca3dcc0d"});
+export const ASSISTANT_PUBLIC590_SUCCESSOR_OUTPUT=Object.freeze({"migrationSha256":"72b53fb08ea0e5cebcda7e1cbf3bc49a8a3f2417975daeb6daf530c9029c6835","canonicalSha256":"3c289bcd54c9286c1dbbcce82f401305df021a48a1408b146f7bc96f09f754b9","checkpointContractSha256":"e674f6b149042c24f1ffa7cb82cd0623f004d827f89b5a0c3a3b700b7386b7fb","tripBindingPolicySha256":"9319d189f1b09f32ffd357589d0a2c44f46438b7550c6bca96b20430f8db83e1"});
+export const ASSISTANT_PUBLIC590_SUCCESSOR_RELEASE="4.0.591";
+export const ASSISTANT_PUBLIC590_SUCCESSOR_ALIASES=Object.freeze([
+  Object.freeze({name:'ravradar_ravscore_checkpoint_ask590_state_valid',signature:'(jsonb,text)'}),
+  Object.freeze({name:'ravradar_ravscore_checkpoint_ask590_payload_valid',signature:'(jsonb,timestamptz)'})]);
+export function requireAssistantPublic590SuccessorBinding(){
+  assert.equal(arguments.length,0);
+  requireAssistantPublic590SuccessorParent(); // FIRST: no parent, no successor.
+  const b=ASSISTANT_PUBLIC590_SUCCESSOR_BINDING;
+  assert(b&&Object.isFrozen(b),'ASSISTANT_PUBLIC590_SUCCESSOR_UNISSUED');
+  assert.deepEqual(Object.keys(b).sort(),['C','I','T','version']);
+  assert.match(b.version,/^[0-9]{14}$/);assert(b.version>ASSISTANT_PUBLIC590_SUCCESSOR_BEFORE.version);
+  for(const key of ['C','I','T'])assert.match(b[key],/^[a-f0-9]{64}$/);
+  assert.equal(new Set(['C','I','T'].flatMap(k=>[b[k],ASSISTANT_PUBLIC590_SUCCESSOR_BEFORE[k]])).size,6);
+  for(const key of ['sourceHead','sourceTree'])assert.match(ASSISTANT_PUBLIC590_SUCCESSOR_BEFORE[key],/^[a-f0-9]{40}$/);
+  return b;
+}
+export function requireAssistantPublic590SuccessorOutput(){
+  assert.equal(arguments.length,0);requireAssistantPublic590SuccessorBinding();
+  const p=ASSISTANT_PUBLIC590_SUCCESSOR_OUTPUT;
+  assert(p&&Object.isFrozen(p),'ASSISTANT_PUBLIC590_SUCCESSOR_SQL_UNISSUED');
+  assert.deepEqual(Object.keys(p).sort(),['canonicalSha256','checkpointContractSha256','migrationSha256','tripBindingPolicySha256']);
+  for(const value of Object.values(p))assert.match(value,/^[a-f0-9]{64}$/);return p;
+}
+export function requireAssistantPublic590SuccessorRelease(){
+  assert.equal(arguments.length,0);requireAssistantPublic590SuccessorOutput();
+  const release=ASSISTANT_PUBLIC590_SUCCESSOR_RELEASE;
+  assert.equal(typeof release,'string','ASSISTANT_PUBLIC590_SUCCESSOR_RELEASE_UNISSUED');
+  assert.match(release,/^4\.0\.[1-9][0-9]*$/);
+  assert(Number(release.split('.').at(-1))>590,'Fixed assistant successor release must follow genuine590');
+  return release;
+}
+export function assistantPublic590SuccessorMigration(){
+  assert.equal(arguments.length,0);
+  const {version}=requireAssistantPublic590SuccessorBinding();
+  const id=version+'_assistant_public590_later_h0_original_bound_successor';
+  return Object.freeze({version,id,filename:id+'.sql'});
+}
+export async function readAssistantPublic590PredecessorCanonicalSource(){
+  assert.equal(arguments.length,0);requireAssistantPublic590SuccessorParent();
+  const prior=await readAssistantPublic588SuccessorCanonicalSource();
+  assert.equal(sha(prior.canonicalSource),ASSISTANT_PUBLIC590_SUCCESSOR_BEFORE.canonicalSha256);
+  assert.equal(prior.admission,'NO_ADMISSION');return prior;
+}
+export function assistantPublic590SuccessorCheckpointContractFromBase(source,base){
+  assert.equal(arguments.length,2);
+  let text=assistantPublic588SuccessorCheckpointContractFromBase(source,base).definition;
+  for(let i=0;i<ASSISTANT_PUBLIC590_SUCCESSOR_ALIASES.length;i++){
+    const whole=nativeOriginalContinuityDefinition(source,ASSISTANT_PUBLIC590_SUCCESSOR_ALIASES[i].name);
+    text+='\n-- assistant-later-h0-original590-'+(i===0?'state':'payload')+'-validator --\n'
+      +whole.slice(whole.indexOf('as $$')+5,whole.lastIndexOf('$$;')).replace(/\r\n?/g,'\n').trim();
+  }
+  return Object.freeze({id:base.id,definition:text,sha256:sha(text)});
+}
+const PUBLIC590_SUCCESSOR_SOURCE=Object.freeze({
+  readPredecessor:readAssistantPublic590PredecessorCanonicalSource,
+  aliases:ASSISTANT_PUBLIC590_SUCCESSOR_ALIASES,previousRelease:590});
+export async function readAssistantPublic590SuccessorCanonicalSource(options){
+  const pins=requireAssistantPublic590SuccessorOutput(),migration=assistantPublic590SuccessorMigration();
+  assert(arguments.length<=1);
+  return readFixedCanonicalSource(PUBLIC590_SUCCESSOR_SOURCE,options,pins,migration);
+}
+
+
+export function assertAssistantPublic590SuccessorTarget(descriptor,targetReferenceAt){
+  assert.equal(arguments.length,2);
+  assert.equal(descriptor?.modelBinding?.modelBundleSha256,ASSISTANT_PUBLIC590_SUCCESSOR_BEFORE.I);
+  assert.equal(descriptor?.contractHashes?.continuationStateContractSha256,ASSISTANT_PUBLIC590_SUCCESSOR_BEFORE.T);
+  for(const value of [descriptor.productionReferenceAt,targetReferenceAt]){
+    assert.equal(typeof value,'string');assert.match(value,/^\d{4}-\d{2}-\d{2}T\d{2}:00:00\.000Z$/);
+    assert.equal(new Date(value).toISOString(),value);
+  }
+  assert(Date.parse(targetReferenceAt)>Date.parse(descriptor.productionReferenceAt),'ASSISTANT_PUBLIC590_SUCCESSOR_STRICTLY_LATER');
+  return true; // Ren data-/tidskontrol, ingen autentificering eller kapabilitet.
+}
+export function assertAssistantPublic590SuccessorCaller(env){
+  assert.equal(arguments.length,1);
+  // GitHub retains the top-level caller identity inside reusable workflows.
+  // These are the two existing ordinary entrances, not caller-selected aliases.
+  assert(['Update weather and deploy RavRadar','Run current RavRadar weather once'].includes(env.GITHUB_WORKFLOW));
+  assert.equal(env.GITHUB_REF,'refs/heads/main');
+  assert(['workflow_dispatch','schedule'].includes(env.GITHUB_EVENT_NAME));
+  assert.match(env.GITHUB_RUN_ATTEMPT??'',/^[1-9][0-9]{0,5}$/);assert.match(env.GITHUB_SHA??'',/^[a-f0-9]{40}$/);
+  assert(['integrated','integrated-historical-maintenance'].includes(env.OPERATIONAL_ACTION));
+  for(const key of ['CHECKPOINT_ONLY','QUICK_CONFIRMATION','COMPLETED_PRIVATE_RUNTIME',
+    'NATIVE_IDENTITY_RECOVERY','RAVRADAR_WEATHER_STATE_EPOCH_BOOTSTRAP',
+    'RAVRADAR_WEATHER_STATE_EPOCH_CHECKPOINT_REENTRY','RESTART_ARCHIVED_WEATHER',
+    'PUBLISH_NEWEST_SAVED_WEATHER'])assert.notEqual(env[key],'true','ASSISTANT_LATER_H0_ORDINARY_ONLY');
+}
+
+export const INACTIVE_ASSISTANT_PUBLIC590_SUCCESSOR=Object.freeze({
+  sourcePhase:'assistant-public590-successor',before:ASSISTANT_PUBLIC590_SUCCESSOR_BEFORE,
+  binding:ASSISTANT_PUBLIC590_SUCCESSOR_BINDING,output:ASSISTANT_PUBLIC590_SUCCESSOR_OUTPUT,
+  requireBinding:requireAssistantPublic590SuccessorBinding,requireOutput:requireAssistantPublic590SuccessorOutput,
+  requireRelease:requireAssistantPublic590SuccessorRelease,migration:assistantPublic590SuccessorMigration,
+  readCanonicalSource:readAssistantPublic590SuccessorCanonicalSource,
+  assertTarget:assertAssistantPublic590SuccessorTarget,assertCaller:assertAssistantPublic590SuccessorCaller,
+});
+
+
 // Aktiv operativ familie vælges KUN af denne gennemgåede kilde. De gamle
 // navngivne586→587-eksporter ovenfor forbliver historiske; NULL falder aldrig tilbage.
 export function assertAssistantPublic587SuccessorTarget(descriptor,targetReferenceAt){
@@ -388,4 +515,4 @@ export const ISSUED_ASSISTANT_PUBLIC588_PROFILE=Object.freeze({
   readCanonicalSource:readAssistantPublic587SuccessorCanonicalSource,
   assertTarget:assertAssistantPublic587SuccessorTarget,assertCaller:assertAssistantPublic587SuccessorCaller,
 });
-export const ACTIVE_ASSISTANT_SUCCESSOR=INACTIVE_ASSISTANT_PUBLIC588_SUCCESSOR;
+export const ACTIVE_ASSISTANT_SUCCESSOR=INACTIVE_ASSISTANT_PUBLIC590_SUCCESSOR;

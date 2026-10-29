@@ -8,11 +8,12 @@ import {execFile as callbackExec} from 'node:child_process';
 import {promisify} from 'node:util';
 import {fileURLToPath,pathToFileURL} from 'node:url';
 import {withAuthenticated586PredecessorSource,withAuthenticated587PredecessorSource,
-  withAuthenticated588PredecessorSource,assertFrozen588CodeSourceSelected,FROZEN588_CODE_SOURCE_PROVENANCE} from './check-assistant-later-h0-predecessor-source.mjs';
-import {requireAssistantLaterH0Output,requireAssistantPublic587SuccessorOutput,requireAssistantPublic588SuccessorOutput} from './lib/assistant-later-h0-successor-source.mjs';
+  withAuthenticated588PredecessorSource,assertFrozen588CodeSourceSelected,FROZEN588_CODE_SOURCE_PROVENANCE,
+  withAuthenticated590PredecessorSource,assertFrozen590CodeSourceSelected,FROZEN590_CODE_SOURCE_PROVENANCE} from './check-assistant-later-h0-predecessor-source.mjs';
+import {requireAssistantLaterH0Output,requireAssistantPublic587SuccessorOutput,requireAssistantPublic588SuccessorOutput,requireAssistantPublic590SuccessorOutput} from './lib/assistant-later-h0-successor-source.mjs';
 const ROOT=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
 function fixedNativeSource(profile){
-  assert(profile===FROZEN586||profile===FROZEN587||profile===FROZEN588,'FROZEN_NATIVE_UNKNOWN_PROFILE');
+  assert(profile===FROZEN586||profile===FROZEN587||profile===FROZEN588||profile===FROZEN590,'FROZEN_NATIVE_UNKNOWN_PROFILE');
   const HEAD=profile.head,TREE=profile.tree;
 const ADAPTER=profile.adapter,FACTORY='scripts/test-protected-ravscore-continuation-checkpoint.mjs';
 // TEST-only extension of the fixed genuine DATA producer host plus its exact native adapter.
@@ -70,6 +71,7 @@ async function frozenFactory(sourceRoot,source){
 }
 async function withSource(callback){
   profile.requireOutput(); // UNISSUED NEXT stops before Git, filesystem, factory or callback.
+  if(profile===FROZEN590)assertFrozen590CodeSourceSelected();
   if(profile===FROZEN588)assertFrozen588CodeSourceSelected();
   assert.equal(arguments.length,1);assert.equal(typeof callback,'function');
   assert.equal(String(await git(['rev-parse',HEAD+'^{tree}'],'utf8')).trim(),TREE);
@@ -141,6 +143,15 @@ const FROZEN588=Object.freeze({
   continuation:'d98559d56d7bfe9b141cf1ddab73cddffb688a3b6766f5f9f3779b226f573701',
   withSource:withAuthenticated588PredecessorSource,requireOutput:requireAssistantPublic588SuccessorOutput,
   failureKind:'FROZEN588_NATIVE_FIRST_FAILURE'});
+// Whole actual590 adapter/factory pins must come from the chosen genuine parent.
+const FROZEN590=Object.freeze({
+  head:FROZEN590_CODE_SOURCE_PROVENANCE.head,tree:FROZEN590_CODE_SOURCE_PROVENANCE.tree,
+  adapter:'scripts/lib/assistant-later-h0-postgres.mjs',adapterBytes:26650,adapterSha256:'2f0b4fccd95b0109904e62490fffaeebf8bef78d47817c3fb22bb860a30fd41d',factorySourceSha256:'16d3eaaa236b352a345a9b599c2e297fedc022a24aec91f2eb1ef9e3e47b8124',
+  candidate:'bca59cb435cb3f35041c665d2954f0ef04b189b572219771fc5628e4f7ccb551',
+  integrated:'4c94c24e7d14d66c20cc3c2c3d0389cadb0c3e9e76fcfe692943c6087df56819',
+  continuation:'d444e6141038f56dd04b97a55eefe07bbd98f122fb3b76a43bdddacff2d88c8a',
+  withSource:withAuthenticated590PredecessorSource,requireOutput:requireAssistantPublic590SuccessorOutput,
+  failureKind:'FROZEN590_NATIVE_FIRST_FAILURE'});
 const native586=fixedNativeSource(FROZEN586),native587=fixedNativeSource(FROZEN587),native588=fixedNativeSource(FROZEN588);
 export async function withFrozen586CheckpointPostgresSource(callback){
   return native586(...arguments);
@@ -151,4 +162,9 @@ export async function withFrozen587CheckpointPostgresSource(callback){
 
 export async function withFrozen588CheckpointPostgresSource(callback){
   return native588(...arguments);
+}
+
+const native590=fixedNativeSource(FROZEN590);
+export async function withFrozen590CheckpointPostgresSource(callback){
+  return native590(...arguments);
 }
