@@ -6,7 +6,9 @@ De to lokale efterfølgere er nu sammenført: en faktisk FULL-baselinekvalifikat
 
 Den normale producentkoordinator er nu lokal kode med komplet kumulativ klassifikation, faktisk afvikling af planens faste Node-kommandoer og ren kilde/PR-identitet før og efter. Den sammenførte normale kalderprøve består på små ægte Git-repositories og syntetiske transport-/målprocesser. Det er ikke produktprøver, live API, SQL eller ny leveringsautoritet.
 
-Proof-/workflow- og forbrugerintegration, faktisk live-kvalifikation, målt tidsvirkning og den brede oprydning mangler fortsat. Planens sideeffektfelt hedder ordinaryWeatherMutatedByPlanner; det påstår alene, at planlæggeren ikke skriver vejr, og siger intet ubekræftet om kandidatens påvirkning. Den aktive vejrrettelse og alle fem mål bevares. Se DEC-0302 og privat checkpoint.
+Den lokale forbrugerhelper er nu også sammenført og målprøvet med en ægte lille Git-merge og syntetiske transport-/rapportdata. Den kræver præcis merge-/kildeidentitet, faktisk deklareret TARGETED-omfang, en frisk fuld baseline og komplet ny plan. Den eksisterende inspektør for senere fejl får kun en export; dens adfærd er bevaret. Dette er fortsat ikke en faktisk GitHub-genbrugskontrol.
+
+Workflow-/CLI-integration, locator-opdagelse, faktisk live-kvalifikation, målt tidsvirkning og den brede oprydning mangler fortsat. Planens sideeffektfelt hedder ordinaryWeatherMutatedByPlanner; det påstår alene, at planlæggeren ikke skriver vejr, og siger intet ubekræftet om kandidatens påvirkning. Den aktive vejrrettelse og alle fem mål bevares. Se DEC-0302 og privat checkpoint.
 
 ## 30. oktober — første afgrænsede ændringsplan er lokal kode
 

@@ -39,7 +39,9 @@ Den lokale FULL-baselinekvalifikator kræver faktisk grøn fuld kildekontrol, na
 
 Producentkoordinatoren er også implementeret lokalt. Den afleder selv PR, HEAD, job og den komplette kumulative diff, opdager og kvalificerer en fuld forfader og afvikler kun planens faste kommandoer uden shell eller caller-valgte spring. Ren kilde og identitet kræves før og efter. Utilstrækkelige forudsætninger vælger den eksisterende fulde vej; et fejlet valgt mål eller drift under prøven stopper rødt. Den lokale normale kalderprøve bruger ægte små Git-repositories og syntetiske transport-/målprocesser; den er ikke et live GitHub- eller produktbevis.
 
-Workflow-/forbrugerintegration, faktisk live-kvalifikation og afvikling, bredere relevant udtynding og målt hurtigere levering med bevaret fejlfangst er fortsat åbne. Lokale delprøver er ikke denne tekniske levering. Detaljeret, skiftende run- og testbevis føres privat.
+Den lokale forbrugerhelper kræver den faktiske main-merge med producenten som direkte forælder, identisk helt Git-træ og kildeindhold samt præcis grøn TARGETED-kvalifikation. Ikke-berørte trin skal faktisk være sprunget over, og den særskilte rapport må ikke kaldes fuld kilde-/SQL-eksekvering. Den fulde baseline kvalificeres på ny, den komplette kumulative plan genberegnes, og den eksisterende kontrol af senere røde eller uafklarede kildeforløb genbruges uændret. Lokale normale Git-/transportprøver er ikke live genbrug.
+
+Workflow-/CLI-integration og locator-opdagelse, faktisk live-kvalifikation og afvikling, bredere relevant udtynding og målt hurtigere levering med bevaret fejlfangst er fortsat åbne. Lokale delprøver er ikke denne tekniske levering. Detaljeret, skiftende run- og testbevis føres privat.
 
 ## Placering af hukommelse
 

@@ -152,7 +152,7 @@ export function sourceGateRecord(env, conclusion, sourceTreeSha256) {
   };
 }
 
-async function inspectLaterMainEvidence({ env, proofTime, record, getJson }) {
+export async function inspectLaterMainEvidence({ env, proofTime, record, getJson }) {
   const runs = [];
   for (const [producerPath, historyProducer] of Object.entries(SOURCE_GATE_PRODUCERS)) {
     let completeHistory = false;
