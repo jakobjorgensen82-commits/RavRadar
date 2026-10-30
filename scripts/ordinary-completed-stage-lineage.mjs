@@ -2,6 +2,7 @@
 // authenticates its inputs nor grants origin, ForPart, restore or publication
 // authority. The normal caller must still prove GCM, source and fresh prewrite.
 import crypto from 'node:crypto';
+import { PRIVATE_CONDITIONS_MAX_BYTES } from './lib/bounded-json-writer.mjs';
 import { isDeepStrictEqual } from 'node:util';
 import { privateRuntimeBundleContentSha256, PRIVATE_PRODUCTION_RUNTIME_BUNDLE_POLICY as B_POLICY }
   from './private-production-runtime-bundle.mjs';
@@ -15,7 +16,7 @@ const SHA = /^[a-f0-9]{64}$/, HEAD = /^[a-f0-9]{40}$/;
 const ATTEST = 'privateEstablishedNativeCurrentOrigin';
 const KIND = 'PRIVATE_ESTABLISHED_NATIVE_CURRENT_ORIGIN';
 const SEMANTIC = 'established-native-current-continuation-v1';
-const MAX_CONDITIONS = 256 * 1024 * 1024, MAX_ATTEST = 16 * 1024;
+const MAX_CONDITIONS = PRIVATE_CONDITIONS_MAX_BYTES, MAX_ATTEST = 16 * 1024;
 const plain = value => value !== null && typeof value === 'object' && !Array.isArray(value)
   && Object.getPrototypeOf(value) === Object.prototype;
 const same = isDeepStrictEqual;

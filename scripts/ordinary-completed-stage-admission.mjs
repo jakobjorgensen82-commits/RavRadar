@@ -23,6 +23,7 @@ import { restoreProtectedRavScoreContinuationCheckpoint, createProtectedRavScore
 import { createProtectedPrivateRuntimeClients, publishProtectedPrivateProductionRuntime,
   validateProtectedPrivateRuntimePointer, PROTECTED_PRIVATE_RUNTIME_POLICY }
   from './protected-private-production-runtime.mjs';
+import { PRIVATE_CONDITIONS_MAX_BYTES } from './lib/bounded-json-writer.mjs';
 import { ravScoreModelBinding } from '../js/core/ravscore-model-contract.js';
 import { ravScoreModelBinding as candidateBinding } from './rollback-assets/ravscore-model-contract.js';
 
@@ -69,7 +70,7 @@ async function bytes(file, maximum) {
   return value;
 }
 const json = async (file, maximum = 16 * 1024 * 1024) => JSON.parse(await bytes(file, maximum));
-const conditions = file => json(file, 256 * 1024 * 1024);
+const conditions = file => json(file, PRIVATE_CONDITIONS_MAX_BYTES);
 function paths(env) {
   require(path.isAbsolute(env.GITHUB_WORKSPACE ?? '') && path.isAbsolute(env.RUNNER_TEMP ?? ''),
     'ORDINARY_STAGE_WORKFLOW_PATHS');
@@ -118,6 +119,18 @@ export async function materializeOrdinaryStageCandidate(root) {
     require(selected.equals(canonical), 'ORDINARY_STAGE_CANDIDATE_CHANGED');
   } else await fs.copyFile(bulk, candidate, fs.constants.COPYFILE_EXCL);
 }
+function installedFileMaximum(file) {
+  // Only these exact normal producer roles exceed the old raw-file bound.
+  // The compressed archive limit is a different contract.
+  if (file.id === 'full-conditions' && file.relativePath === 'data/live/conditions.json')
+    return PRIVATE_CONDITIONS_MAX_BYTES;
+  if ((file.id === 'dmi-forecast-cache' && file.relativePath === 'data/live/dmi-forecast-cache.json')
+    || (file.id === 'weather-component-inputs' && file.relativePath === '.cache/weather-component-inputs.pack'))
+    return PROTECTED_PRIVATE_RUNTIME_POLICY.maximumFilePayloadBytes;
+  return 350_000_000;
+}
+const sameInstalledIdentity = (left, right) => right.isFile() && !right.isSymbolicLink()
+  && ['dev', 'ino', 'size', 'mtimeNs', 'ctimeNs'].every(key => left[key] === right[key]);
 async function installed(root, files) {
   for (const file of files) {
     const destination = path.resolve(root, file.relativePath), relative = path.relative(root, destination);
@@ -127,8 +140,36 @@ async function installed(root, files) {
       prefix = path.join(prefix, segment);
       require(!(await fs.lstat(prefix)).isSymbolicLink(), 'ORDINARY_STAGE_INSTALL_PATH');
     }
-    const content = await bytes(destination, 350_000_000);
-    require(content.length === file.bytes && sha(content) === file.sha256, 'ORDINARY_STAGE_INSTALLED_BYTES_CHANGED');
+    const before = await fs.lstat(destination, { bigint: true });
+    require(before.isFile() && !before.isSymbolicLink() && before.size > 0n
+      && before.size <= BigInt(installedFileMaximum(file)), 'ORDINARY_STAGE_FILE_BOUNDARY');
+    require(Number.isSafeInteger(file.bytes) && file.bytes > 0 && before.size === BigInt(file.bytes),
+      'ORDINARY_STAGE_INSTALLED_BYTES_CHANGED');
+    const handle = await fs.open(destination, 'r');
+    let checked = false;
+    try {
+      require(sameInstalledIdentity(before, await handle.stat({ bigint: true })),
+        'ORDINARY_STAGE_INSTALLED_IDENTITY_CHANGED');
+      const hash = crypto.createHash('sha256'), block = Buffer.alloc(64 * 1024);
+      let count = 0;
+      for (;;) {
+        const { bytesRead } = await handle.read(block, 0, block.length, null);
+        if (!bytesRead) break;
+        count += bytesRead;
+        require(count <= file.bytes, 'ORDINARY_STAGE_INSTALLED_BYTES_CHANGED');
+        hash.update(block.subarray(0, bytesRead));
+      }
+      require(count === file.bytes && hash.digest('hex') === file.sha256,
+        'ORDINARY_STAGE_INSTALLED_BYTES_CHANGED');
+      require(sameInstalledIdentity(before, await handle.stat({ bigint: true }))
+        && sameInstalledIdentity(before, await fs.lstat(destination, { bigint: true })),
+      'ORDINARY_STAGE_INSTALLED_IDENTITY_CHANGED');
+      checked = true;
+    } finally {
+      // A close failure must not replace an earlier failure, including a falsy throw.
+      try { await handle.close(); }
+      catch (error) { if (checked) throw error; }
+    }
   }
 }
 async function ownedWork() {
@@ -174,7 +215,7 @@ export async function admitOrdinaryCompletedStage(env = process.env) {
       ...downloaded.identity, masterSecret: env.STAGED_PRIVATE_BUILD_MASTER_SECRET });
     const verified = await verifyPrivateProductionRuntimeBundle({ privateRoot: own.work, bundlePath: bundle,
       repositoryRoot: p.root, expected });
-    const raw = await bytes(path.join(bundle, 'payload/data/live/conditions.json'), 256 * 1024 * 1024);
+    const raw = await bytes(path.join(bundle, 'payload/data/live/conditions.json'), PRIVATE_CONDITIONS_MAX_BYTES);
     const nextConditions = JSON.parse(raw);
     const ownerPolicyGitBlob = execFileSync('git', ['-C', p.root, 'rev-parse', `HEAD:${POLICY}`],
       { encoding: 'utf8', timeout: 30_000, stdio: ['ignore', 'pipe', 'pipe'], windowsHide: true }).trim();

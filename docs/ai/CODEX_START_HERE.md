@@ -1,3 +1,19 @@
+## 30. oktober — installeret 593-binding og præcis rettelse af den første runtimeovergang
+
+593 har bestået den samlede kildekontrol og den ægte databaseprøve. Den originale591-førskrivningskontrol, SQL-installation og begge normale databasegenlæsninger er faktisk gennemført. Det er endnu ikke offentlig593-levering. Den første efterfølgende almindelige vejrhentning stoppede før leverandørerne: runtimekontrollen tillod kun ændret fortsættelseskontrakt, selv om den gennemgåede kompakte prognosedeling også ændrer den offentlige projektions kontrakt.
+
+Den afgrænsede efterfølger kontrollerer netop den autentificerede591-kontrakt mod den udstedte593-kontrakt. Hele feltmængden, uændret lager-ABI, gammel og ny fortsættelseskontrakt samt det præcise gennemgåede projektionshash kræves; andre profiler bevarer deres gamle kontrol. Normal metadata-only-overgang, nul genberegning, hele originaler og S-inverse, frisk pointer, CAS og hård no-loss består. Controlleren er uden for model-/nativeinput; ingen ny version, modelbinding eller SQL følger af rettelsen. Præcis samlet kvalifikation, faktisk normal prepare/install og senere offentlig levering er fortsat åbne. Se DEC-0301 og håndbog89.290; skiftende kørselsevidens føres alene privat. Alle fem mål består. Ældre modstridende statusfronter nedenfor er historik på disse konkrete punkter.
+
+## 30. oktober — privat genoptagelseskapacitet og selvstændigt nativefasegenbrug
+
+Den særskilte private kandidat samler to gennemgåede genoptagelsesfiler og seks native-ejere oven på 4.0.593. Den er ikke den allerede igangværende kildekontrol, og dens lokale beviser må ikke ommærkes som ny Linux-/PostgreSQL-kvalifikation eller offentlig levering. Den udstedte 593-version, C/I/T og alle 71 SQL-filer bevares.
+
+Completed-stage-genoptagelsen følger producentens eksisterende conditions-grænse. Kun tre præcise installerede id-/stipar får deres eksisterende producentgrænser; andre roller, Candidate-bulk og komprimeret transport beholder deres grænser. Installerede filer gennemlæses med løbende SHA-256, fuldt byteantal og før-/efterkontrol af samme filidentitet. Oprindelse, GCM, attest, normal B/S-kæde, frisk pointer, CAS, oprindelig fejl og hård no-loss består.
+
+Nativegenbrug får en særskilt V2-type for assistant-public591-successor/4.0.593. Den binder 65 hele moduler, fire JSON-filer, alle 71 SQL-filer, tolv frosne ankre, endelige package-scopes samt de konkrete bevis-/setupinput og faktisk valgte PostgreSQL-programmer. Genbrug kræver den friskt verificerede oprindelige EXECUTED-V2-fase og upload med korrekte identiteter; REUSED er ikke ny SQL-eksekvering. V1 bevares og kan ikke opgraderes bagefter. Ukendt, drift eller senere negativ evidens vælger normal udførelse. Den præcise samlede kildekontrol og normale nationale efterfølgere består.
+
+Målrettede lokale kaldere og ni593-forløb foreligger; det er ikke samlet Linux-kontrol, stor autentificeret helgenoptagelse, faktisk V2-oprindelse, målt genbrug eller tidsgevinst. Normal samlet integration, kvalifikation og sikker levering er åbne. Ingen ny version/model/SQL, scoreformel, kildeprioritet, adminpunkter, geometri, SOURCE-, statistik- eller sletteaktivering. Alle fem mål består. Se de nye præciseringer i DEC-0045/DEC-0301 og håndbog89.288–89.289; skiftende kørselsevidens føres privat.
+
 ## 30. oktober — 4.0.593-kandidat: samme kapacitet i de nødvendige normale læsere
 
 Den faktisk anvendte forgænger er 4.0.591. Den nye 4.0.593-kandidat samler de allerede forberedte forbedringer og den konkrete kapacitetsrettelse; 4.0.592 samt dens udstedte kilder og SQL bevares, men 592 er ikke installeret eller offentligt leveret. Ældre daterede 591-/592-fronter er historik på disse statuspunkter.

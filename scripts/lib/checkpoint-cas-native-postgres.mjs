@@ -239,13 +239,13 @@ export async function verifyIssuedNativeCheckpointFixture() {
   }
 }
 
-async function nativePrograms() {
-  if (process.platform !== 'linux') throw new Error('NATIVE_POSTGRES_UNAVAILABLE_ON_THIS_HOST');
-  const configured = await command('pg_config', ['--bindir']);
+export async function nativePrograms({platform=process.platform,run=command,filesystem=fs}={}) {
+  if (platform !== 'linux') throw new Error('NATIVE_POSTGRES_UNAVAILABLE_ON_THIS_HOST');
+  const configured = await run('pg_config', ['--bindir']);
   if (configured.code !== 0) throw new Error('NATIVE_POSTGRES_PG_CONFIG_UNAVAILABLE');
   const candidates = [configured.stdout.trim()];
   try {
-    candidates.push(...(await fs.readdir('/usr/lib/postgresql')).filter(value => /^\d+$/.test(value))
+    candidates.push(...(await filesystem.readdir('/usr/lib/postgresql')).filter(value => /^\d+$/.test(value))
       .sort((a, b) => Number(b) - Number(a)).slice(0, 4)
       .map(value => `/usr/lib/postgresql/${value}/bin`));
   } catch { /* No installation, package download or alternative service. */ }
@@ -253,15 +253,30 @@ async function nativePrograms() {
     if (!path.isAbsolute(directory)) continue;
     const programs = Object.fromEntries(['initdb', 'pg_ctl', 'psql', 'postgres']
       .map(name => [name, path.join(directory, name)]));
-    try { await Promise.all(Object.values(programs).map(file => fs.access(file, fs.constants.X_OK))); }
+    try { await Promise.all(Object.values(programs).map(file => filesystem.access(file, fs.constants.X_OK))); }
     catch { continue; }
-    const versions = await Promise.all(Object.values(programs).map(file => command(file, ['--version'])));
+    const versions = await Promise.all(Object.values(programs).map(file => run(file, ['--version'])));
     const majors = versions.map(result => result.code === 0 ? result.stdout.match(/\b(\d+)\.\d+\b/)?.[1] : null);
     if (majors.every(value => value !== null && value === majors[0]) && Number(majors[0]) >= 16) {
       return { ...programs, majorVersion: Number(majors[0]) };
     }
   }
   throw new Error('NATIVE_POSTGRES_COMPLETE_EXISTING_BINARIES_UNAVAILABLE');
+}
+
+// The same chooser is used by the real host and the read-only reuse probe.
+// This records the selected quartet, not an assumed pg_config installation.
+export async function nativePostgresProgramIdentity(programs) {
+  assert(Number.isSafeInteger(programs?.majorVersion)&&programs.majorVersion>=16);
+  const files=[];
+  for(const name of ['initdb','pg_ctl','psql','postgres']){
+    const file=programs[name];assert.equal(typeof file,'string');assert(path.isAbsolute(file));
+    const realpath=await fs.realpath(file),stat=await fs.stat(realpath);
+    assert(stat.isFile());const raw=await fs.readFile(realpath),version=await command(file,['--version']);
+    assert.equal(version.code,0);assert.equal(Number(version.stdout.match(/\b(\d+)\.\d+\b/)?.[1]),programs.majorVersion);
+    files.push({name,path:file,realpath,mode:stat.mode&0o777,bytes:raw.length,sha256:hash(raw),version:version.stdout.trim()});
+  }
+  return {schemaVersion:1,majorVersion:programs.majorVersion,files};
 }
 
 
@@ -686,6 +701,7 @@ export async function runNativeCheckpointSqlComparison({ repositoryRoot,
   assert(!includeCurrentMemoryWarmup || (includeNativeIdentity && includeStatisticsRevision), 'CurrentMemoryWarmup requires every unchanged historical native phase');
   assert(!includeNativeIdentity || includeStatisticsRevision, 'NEW requires the unchanged statistics230 phase');
   const programs = await nativePrograms();
+  const nativeProgramsBefore=includeAssistantPublic591Successor?await nativePostgresProgramIdentity(programs):null;
   assert.ok(typeof sourceDocumentAt === 'function' && typeof atHour === 'function'
     && typeof saveCheckpoint === 'function', 'normal fixture constructors are required');
   const root = await fs.mkdtemp(path.join(os.tmpdir(), 'rr-checkpoint-pg-'));
@@ -713,6 +729,7 @@ export async function runNativeCheckpointSqlComparison({ repositoryRoot,
     return result.stdout.trim();
   };
   let owner = null, started = false, stopped = false, cleanupAllowed = false;
+  let completedReport=null;
   let statisticsRevisionFailure = null;
   const readOwner = async () => {
     const pid = Number((await fs.readFile(path.join(data, 'postmaster.pid'), 'utf8')).split('\n')[0]);
@@ -1062,7 +1079,7 @@ select public.native_checkpoint_attempt(${baseline},${version},(select payload f
       const {compareAssistantPublic591Successor}=await import('./assistant-later-h0-postgres.mjs');
       assistantPublic591Successor=await compareAssistantPublic591Successor({psql,runSql,root,sourceDocumentAt,atHour,saveCheckpoint});
     }
-    return {kind:'NATIVE_POSTGRES_CHECKPOINT_CAS_COMPARISON',accountAssistant,currentGrid,
+    completedReport={kind:'NATIVE_POSTGRES_CHECKPOINT_CAS_COMPARISON',accountAssistant,currentGrid,
       ...(includeStatisticsRevision?{statisticsRevision}:{}),
       ...(includeNativeIdentity?{nativeIdentity}:{}),
       ...(includeCurrentMemoryWarmup?{currentMemoryWarmup}:{}),
@@ -1079,6 +1096,7 @@ select public.native_checkpoint_attempt(${baseline},${version},(select payload f
       tcpEnabled:false,normalModelPartCount:673,sqlExecuted:true,migrationExecuted:true,
       migrationSQLSha256:hash(newSource),caseCount:reports.length,
       oldCasDefinitionSha256:hash(oldCas),newCasDefinitionSha256:hash(newCas),reports};
+    return completedReport;
   } finally {
     try {
     if (started) {
@@ -1093,6 +1111,11 @@ select public.native_checkpoint_attempt(${baseline},${version},(select payload f
     const resolved=path.resolve(root), temp=path.resolve(os.tmpdir());
     assert.ok(path.dirname(resolved)===temp && path.basename(resolved).startsWith('rr-checkpoint-pg-'));
     if (cleanupAllowed && (!started || stopped)) await fs.rm(resolved,{recursive:true,force:false});
+    if(completedReport&&includeAssistantPublic591Successor){
+      const after=await nativePostgresProgramIdentity(programs);
+      assert.deepEqual(after,nativeProgramsBefore,'Selected native PostgreSQL programs changed during execution');
+      completedReport.nativeProgramIdentity=after;
+    }
     } catch (cleanupError) {
       // Keep the first revision failure; unknown/failed stop retains the same
       // owned directory. Never turn physical cleanup failure into success.

@@ -16,7 +16,8 @@ import {requireAssistantLaterH0Release,requireAssistantPublic587SuccessorRelease
   ACTIVE_ASSISTANT_SUCCESSOR as ACTIVE} from './lib/assistant-later-h0-successor-source.mjs';
 import {CURRENT586_PHASE_UPLOAD,inverseCurrent586PhaseUpload,verifyCurrent586PhaseReceipt,
   verifyAssistantLaterH0PhaseReceipt,verifyAssistantPublic587SuccessorPhaseReceipt,
-  verifyAssistantPublic588SuccessorPhaseReceipt,verifyAssistantPublic590SuccessorPhaseReceipt,verifyAssistantPublic591SuccessorPhaseReceipt} from './native-postgres-evidence.mjs';
+  verifyAssistantPublic588SuccessorPhaseReceipt,verifyAssistantPublic590SuccessorPhaseReceipt,verifyAssistantPublic591SuccessorPhaseReceipt,
+  verifyAssistantPublic591V2PhaseReceipt} from './native-postgres-evidence.mjs';
 
 export const ORIGIN=Object.freeze({
   repository:'jakobjorgensen82-commits/RavRadar',pullRequest:671,
@@ -309,7 +310,20 @@ export function verifyAssistantPublic591SuccessorNativeContext(native,current,ve
   assert.equal(ACTIVE.sourcePhase,'assistant-public591-successor');
   assert.equal(version,requireAssistantPublic591SuccessorRelease());
   verifyCurrentNativeCommands(native.commands,version);
-  return verifyAssistantPublic591SuccessorPhaseReceipt(native,current);
+  return native?.schemaVersion===2?verifyAssistantPublic591V2PhaseReceipt(native,current):verifyAssistantPublic591SuccessorPhaseReceipt(native,current);
+}
+export function assistantPublic591NativeClaims(native,current){
+  verifyAssistantPublic591V2PhaseReceipt(native,current);
+  const claim=(phase,scope)=>({status:native.status,executedInThisRun:native.executedInThisRun,
+    origin:native.origin,phase,...(scope?{scope}:{}),eligibleForReuse:native.eligibleForReuse,separatelyRequired:true});
+  return {
+    current586PredecessorNative:claim('native-original-continuity','GENUINE_FROZEN586'),
+    current587PredecessorNative:claim('assistant-later-h0','GENUINE_FROZEN587'),
+    current588PredecessorNative:claim('assistant-public587-successor','GENUINE_FROZEN588'),
+    current590PredecessorNative:claim('assistant-public588-successor','GENUINE_FROZEN590'),
+    current591PredecessorNative:claim('assistant-public590-successor','GENUINE_FROZEN591'),
+    currentAssistantPublic591SuccessorNative:claim('assistant-public591-successor'),
+  };
 }
 export function verifyCurrentNativeCommands(commands,version){
   if(ACTIVE.sourcePhase==='assistant-public591-successor'){
@@ -566,6 +580,8 @@ async function main(){
       current585NationalExecutionClaimed:false,current586NationalExecutionClaimed:false,
       currentAssistantLaterH0NationalExecutionClaimed:false,currentAssistantPublic587SuccessorNationalExecutionClaimed:false,
       currentAssistantPublic588SuccessorNationalExecutionClaimed:false,currentAssistantPublic591SuccessorNationalExecutionClaimed:false,providerOrProductionProof:false};
+    if(ctx.proof.nativePostgres.schemaVersion===2)Object.assign(current.historical584National,
+      assistantPublic591NativeClaims(ctx.proof.nativePostgres,ctx.proof.nativePostgres.current));
   }else if(ACTIVE.sourcePhase==='assistant-public590-successor'){
     assert.equal(ACTIVE.sourcePhase,'assistant-public590-successor');
     assert.equal(ctx.releaseVersion,requireAssistantPublic590SuccessorRelease());

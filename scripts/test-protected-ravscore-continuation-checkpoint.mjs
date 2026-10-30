@@ -581,6 +581,10 @@ if (process.argv.includes('--native-postgres') || process.argv.includes('--nativ
       includeAssistantPublic590Successor: assistantPublic590SuccessorNative,
       includeAssistantPublic591Successor: assistantPublic591SuccessorNative,
     });
+    if(assistantPublic591SuccessorNative)console.log(JSON.stringify({
+      kind:'RAVRADAR_NATIVE_PROGRAM_IDENTITY_V2',phase:'ASSISTANT_PUBLIC591_SUCCESSOR',
+      programs:report.nativeProgramIdentity,
+    }));
     console.log(JSON.stringify(report));
   } catch (error) {
     const category = /^NATIVE_POSTGRES_[A-Z0-9_]+$/.test(error?.message ?? '')

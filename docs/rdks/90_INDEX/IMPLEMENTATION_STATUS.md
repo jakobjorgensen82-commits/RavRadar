@@ -1,3 +1,17 @@
+## 30. oktober — installeret 593-binding og præcis rettelse af den første runtimeovergang
+
+593 har bestået den samlede kildekontrol og den ægte databaseprøve. Den originale591-førskrivningskontrol, SQL-installation og begge normale databasegenlæsninger er faktisk gennemført. Det er endnu ikke offentlig593-levering. Den første efterfølgende almindelige vejrhentning stoppede før leverandørerne: runtimekontrollen tillod kun ændret fortsættelseskontrakt, selv om den gennemgåede kompakte prognosedeling også ændrer den offentlige projektions kontrakt.
+
+Den afgrænsede efterfølger kontrollerer netop den autentificerede591-kontrakt mod den udstedte593-kontrakt. Hele feltmængden, uændret lager-ABI, gammel og ny fortsættelseskontrakt samt det præcise gennemgåede projektionshash kræves; andre profiler bevarer deres gamle kontrol. Normal metadata-only-overgang, nul genberegning, hele originaler og S-inverse, frisk pointer, CAS og hård no-loss består. Controlleren er uden for model-/nativeinput; ingen ny version, modelbinding eller SQL følger af rettelsen. Præcis samlet kvalifikation, faktisk normal prepare/install og senere offentlig levering er fortsat åbne. Se DEC-0301 og håndbog89.290; skiftende kørselsevidens føres alene privat. Alle fem mål består. Ældre modstridende statusfronter nedenfor er historik på disse konkrete punkter.
+
+## 30. oktober — privat samlet resume2/native6, levering åben
+
+Forberedt og gennemgået: completed-stage producentgrænser i to ejere, løbende fuld SHA-/filidentitetskontrol og bevaret første fejl; særskilt V2-nativegenbrug i seks ejere med positive hele input, package-scopes, faktisk PG-kvartet, sikker origintransport, V1-bevarelse og korrekt national faseoprindelse. De normale lokale genoptagelsesmål og ni593-regressioner foreligger. Det er ikke en samlet Linux-kvalifikation på denne kombination.
+
+Åbent: normal dokumentationssammenføring og præcis samlet kildekontrol; første faktiske Linux-/PostgreSQL-V2-eksekvering med oprydning og selvstændig upload; senere korrekt REUSED/national udførelse og målt tidsgevinst; relevant faktisk stor autentificeret genoptagelse med sikker gemning/offentlig effekt. Den allerede igangværende593-V1-kørsel ændres eller efterudfyldes ikke. Ingen installeret eller offentligt leveret gevinst påstås.
+
+Alle105 modelinput,71 SQL-filer, udstedt593-version/C/I/T, originaler, historik, scoreformel, kildeprioritet, adminpunkter og geometri bevares. Alle539 gamle håndbogsafsnit bevares; de to nye89.288–89.289 giver541. INSTALL ændrer kun sin statiske kanoniske håndbogspayload, ikke DDL eller udført SQL. Alle fem hovedmål er åbne; se DEC-0045/DEC-0301 og privat checkpoint.
+
 ## 30. oktober — 4.0.593-kandidat: samme kapacitet i de nødvendige normale læsere
 
 Den faktisk anvendte forgænger er 4.0.591. Den nye 4.0.593-kandidat samler de allerede forberedte forbedringer og den konkrete kapacitetsrettelse; 4.0.592 samt dens udstedte kilder og SQL bevares, men 592 er ikke installeret eller offentligt leveret. Ældre daterede 591-/592-fronter er historik på disse statuspunkter.

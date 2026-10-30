@@ -6,13 +6,39 @@ import {
   assertProjectionEquivalent,
 } from './prepare-code-only-public-runtime.mjs';
 import { validateSameReferencePrivateRuntimeSuccessor } from './protected-private-production-runtime.mjs';
-import { PRIVATE_RUNTIME_FILES } from './private-production-runtime-workflow.mjs';
+import { PRIVATE_RUNTIME_FILES,privateRuntimeContractHashes } from './private-production-runtime-workflow.mjs';
+import { assertAssistantOriginalRuntimeContracts } from './assistant-later-h0-runtime-transition.mjs';
+import { ACTIVE_ASSISTANT_SUCCESSOR as ACTIVE } from './lib/assistant-later-h0-successor-source.mjs';
+import { FROZEN591_CODE_SOURCE_PROVENANCE as ORIGINAL591 } from './check-assistant-later-h0-predecessor-source.mjs';
 import {
   PRIVATE_PUBLIC_HOUR_DELIVERY_PACK_FILE,
   PRIVATE_WEATHER_COMPONENT_PACK_FILE,
 } from './lib/private-weather-component-inventory.mjs';
 import { PRIVATE_PRODUCTION_RUNTIME_BUNDLE_POLICY, privateRuntimeBundleContentSha256 } from './private-production-runtime-bundle.mjs';
 import { ravScoreModelBinding } from '../js/core/ravscore-model-contract.js';
+
+// Actual normal contract computation, not an independently copied guard. This
+// exact genuine591 -> issued593 pair failed before suppliers in production.
+assert.equal(ACTIVE.sourcePhase,'assistant-public591-successor');
+assert.equal(ACTIVE.requireRelease(),'4.0.593');
+const currentContracts=await privateRuntimeContractHashes();
+const originalContracts={
+  continuationStateContractSha256:ACTIVE.before.T,
+  fullRuntimeContractSha256:ORIGINAL591.fullRuntimeContractSha256,
+  publicProjectionContractSha256:ORIGINAL591.publicProjectionContractSha256,
+};
+assert.notEqual(originalContracts.publicProjectionContractSha256,currentContracts.publicProjectionContractSha256);
+assert.equal(assertAssistantOriginalRuntimeContracts(originalContracts,currentContracts),true);
+for(const key of Object.keys(originalContracts)){
+  assert.throws(()=>assertAssistantOriginalRuntimeContracts({...originalContracts,[key]:'0'.repeat(64)},currentContracts));
+  assert.throws(()=>assertAssistantOriginalRuntimeContracts(originalContracts,{...currentContracts,[key]:'0'.repeat(64)}));
+  const missing={...currentContracts};delete missing[key];
+  assert.throws(()=>assertAssistantOriginalRuntimeContracts(originalContracts,missing));
+}
+assert.throws(()=>assertAssistantOriginalRuntimeContracts({...originalContracts,unknown:'x'},currentContracts));
+assert.throws(()=>assertAssistantOriginalRuntimeContracts(originalContracts,{...currentContracts,unknown:'x'}));
+assert.throws(()=>assertAssistantOriginalRuntimeContracts(originalContracts,currentContracts,'override'));
+assert.deepEqual(await privateRuntimeContractHashes(),currentContracts);
 
 const source = { coastalParts: { parts: { p1: {
   current: { weather: { wavePeriodS: 5 }, waders: { score: 20 } },

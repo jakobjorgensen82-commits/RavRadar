@@ -10,6 +10,48 @@ import {exactRelativeModuleSpecifiers} from './lib/static-module-closure.mjs';
 import test from 'node:test';
 import {ACTIVE_ASSISTANT_SUCCESSOR as activeNationalSource} from './lib/assistant-later-h0-successor-source.mjs';
 const activeNationalReaderRelease=activeNationalSource.requireRelease();
+
+test('593 V2 national reader derives every native prefix from the actual whole-phase execution or reuse',async()=>{
+  const {ASSISTANT_PUBLIC591_V2_KIND,ASSISTANT_PUBLIC591_V2_PROFILE,ASSISTANT_PUBLIC591_FROZEN,
+    ASSISTANT_PUBLIC591_REVIEWED_MODULE_SHA256,ASSISTANT_PUBLIC591_SUCCESSOR_COMMANDS,ORIGIN,assistantPublic591RootPackageScopes}
+    =await import('./native-postgres-evidence.mjs');
+  const {assistantPublic591NativeClaims,verifyAssistantPublic591SuccessorNativeContext}
+    =await import('./national584-source-evidence.mjs');
+  const current={run:ORIGIN.run+593,attempt:1,head:'b'.repeat(40),pullRequest:756,branch:'synthetic593-national-v2'};
+  const receipt={schemaVersion:2,kind:ASSISTANT_PUBLIC591_V2_KIND,profile:ASSISTANT_PUBLIC591_V2_PROFILE,
+    phase:'ASSISTANT_PUBLIC591_SUCCESSOR',commands:[...ASSISTANT_PUBLIC591_SUCCESSOR_COMMANDS],
+    current,status:'EXECUTED',executedInThisRun:true,origin:null,eligibleForReuse:true,
+    nativeInput:{schemaVersion:1,files:140,modules:65,sqlFiles:71,moduleSha256:ASSISTANT_PUBLIC591_REVIEWED_MODULE_SHA256,
+      inputSha256:'a'.repeat(64),controlsSha256:'b'.repeat(64),packageMode:{type:'module',version:'4.0.593'},
+      packageScopes:assistantPublic591RootPackageScopes(),frozenGitTrees:structuredClone(ASSISTANT_PUBLIC591_FROZEN)},
+    runtime:{platform:'linux',arch:'x64',imageOS:'ubuntu24',imageVersion:'20261030.1',node:'v22.23.3',
+      python:'Python 3.12.15',pythonLocation:'/opt/python',ldLibraryPath:'/opt/python/lib',
+      git:'git version 2.55.0',pgBindir:'/usr/lib/postgresql/16/bin',overrides:[],
+      selectedPrograms:{schemaVersion:1,majorVersion:16,files:['initdb','pg_ctl','psql','postgres'].map(name=>({
+        name,path:'/usr/lib/postgresql/16/bin/'+name,realpath:'/usr/lib/postgresql/16/bin/'+name,mode:0o755,
+        bytes:100,sha256:'c'.repeat(64),version:name+' (PostgreSQL) 16.10'}))}}};
+  const keys=['current586PredecessorNative','current587PredecessorNative','current588PredecessorNative',
+    'current590PredecessorNative','current591PredecessorNative','currentAssistantPublic591SuccessorNative'];
+  for(const reused of [false,true]){
+    const value=structuredClone(receipt);
+    if(reused){value.status='REUSED';value.executedInThisRun=false;value.origin={run:ORIGIN.run+500,attempt:1,job:123,
+      head:'a'.repeat(40),artifactId:456,artifactDigest:'sha256:'+'d'.repeat(64),sourceTreeSha256:'sha256:'+'e'.repeat(64)};}
+    assert.equal(verifyAssistantPublic591SuccessorNativeContext(value,current,'4.0.593').status,value.status);
+    const claims=assistantPublic591NativeClaims(value,current);assert.deepEqual(Object.keys(claims),keys);
+    for(const key of keys){assert.equal(claims[key].status,value.status);assert.equal(claims[key].executedInThisRun,!reused);
+      assert.deepEqual(claims[key].origin,value.origin);assert.equal(claims[key].separatelyRequired,true);}
+    const bad=structuredClone(value);bad.executedInThisRun=reused;
+    assert.throws(()=>assistantPublic591NativeClaims(bad,current));
+  }
+  const old={phase:receipt.phase,commands:receipt.commands,current,status:'EXECUTED',executedInThisRun:true,origin:null,eligibleForReuse:false};
+  assert.equal(verifyAssistantPublic591SuccessorNativeContext(old,current,'4.0.593').status,'EXECUTED');
+  assert.throws(()=>assistantPublic591NativeClaims(old,current));
+  const source=await fs.readFile(new URL('./national584-source-evidence.mjs',import.meta.url),'utf8');
+  assert(source.includes('if(ctx.proof.nativePostgres.schemaVersion===2)Object.assign(current.historical584National,'));
+  assert(source.includes('try{result=await authenticatedReuse(ctx);}'));
+  assert(source.includes('catch{result=await executeHistorical();'));
+});
+
 import {inverseCurrent586PhaseUpload} from './native-postgres-evidence.mjs';
 import {DatabaseSync} from 'node:sqlite';
 import {privateTripStudySchemaModel,classifyPrivateTripStudySchema,privateTripStudyMigrationSteps}
