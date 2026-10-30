@@ -1214,6 +1214,10 @@ export async function auditProtectedBaselineComponentFallback(options = {}) {
     const conditions = await readJson(path.join(bundlePath, 'payload', 'data/live/conditions.json'), 535_822_312);
     originalParts(conditions);
     const summary = conditions.weatherEngine?.componentFallback;
+    const conditionsFiles = manifest.files.filter(file => file.relativePath === 'data/live/conditions.json');
+    if (conditionsFiles.length !== 1 || !integer(conditionsFiles[0].bytes) || conditionsFiles[0].bytes < 1
+      || conditionsFiles[0].bytes > policy.maximumFilePayloadBytes || conditionsFiles[0].bytes > 535_822_312) fail('AUDIT_COUNTER_INVALID');
+    const conditionsBytes = conditionsFiles[0].bytes;
     const rawPayloadBytes = manifest.files.reduce((total, file) => total + file.bytes, 0)
       + (await fs.stat(path.join(bundlePath, 'manifest.json'))).size;
     if (!integer(rawPayloadBytes)) fail('AUDIT_COUNTER_INVALID');
@@ -1221,7 +1225,7 @@ export async function auditProtectedBaselineComponentFallback(options = {}) {
       protectedGenerationReadbackVerified: true, exactArchivedSourceContractsVerified: true,
       encryptedProgressRead: false, rawCacheRead: false, componentPackUnpacked: false,
       summaryPresent: object(summary), protectedBaselineComponentFallback: safeWeatherComponentSummary(summary),
-      capacity: { protected: { ...archive, rawPayloadBytes }, limits: {
+      capacity: { protected: { ...archive, rawPayloadBytes, conditionsBytes }, limits: {
         archiveBytes: policy.maximumArchiveAggregateBytes, rawPayloadBytes: policy.maximumRawPayloadBytes,
         fileBytes: policy.maximumFilePayloadBytes, conditionsBytes: 535_822_312 } } };
     phase = 'FINAL_READBACK';
