@@ -1,12 +1,12 @@
-import { authEnabled, authIdentityEpoch, currentSession, onAuthChange, sendMagicLink, signInWithPassword, signOut, signUpWithPassword } from "../services/auth-service.js?v=4.0.591";
-import { getLocalObservations, getOwnTripExport, getOwnTripObservations, submitAccountTripReportObservation } from "../services/observation-service.js?v=4.0.591";
-import { buildAccountTripReport, toAccountObservationColumns } from "../services/account-trip-report-contract.js?v=4.0.591";
-import { openAccountTripReportDialog } from "./trip-evidence-dialog.js?v=4.0.591";
-import { formatDateTime, formatNumber, t } from "../i18n.js?v=4.0.591";
-import { RAVSCORE_CALIBRATION_ELIGIBLE, ravScoreModelBinding } from "../core/ravscore-model-contract.js?v=4.0.591";
-import { accountTripBindingStatus } from "../services/calibration-eligibility.js?v=4.0.591";
+import { authEnabled, authIdentityEpoch, currentSession, onAuthChange, sendMagicLink, signInWithPassword, signOut, signUpWithPassword } from "../services/auth-service.js?v=4.0.593";
+import { getLocalObservations, getOwnTripExport, getOwnTripObservations, submitAccountTripReportObservation } from "../services/observation-service.js?v=4.0.593";
+import { buildAccountTripReport, toAccountObservationColumns } from "../services/account-trip-report-contract.js?v=4.0.593";
+import { openAccountTripReportDialog } from "./trip-evidence-dialog.js?v=4.0.593";
+import { formatDateTime, formatNumber, t } from "../i18n.js?v=4.0.593";
+import { RAVSCORE_CALIBRATION_ELIGIBLE, ravScoreModelBinding } from "../core/ravscore-model-contract.js?v=4.0.593";
+import { accountTripBindingStatus } from "../services/calibration-eligibility.js?v=4.0.593";
 
-import { getOwnStatisticsPreference, setOwnStatisticsPreference } from "../services/permissions-service.js?v=4.0.591";
+import { getOwnStatisticsPreference, setOwnStatisticsPreference } from "../services/permissions-service.js?v=4.0.593";
 
 const pendingHistoryViews = new WeakMap();
 function stopHistoryView(dialog) { pendingHistoryViews.get(dialog)?.dispose(); }

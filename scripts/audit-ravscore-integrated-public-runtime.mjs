@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 import fs from 'node:fs/promises';
+import { auditForecastShareProjectionFiles } from './build-forecast-share-projection.mjs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { getHeapStatistics } from 'node:v8';
@@ -2273,6 +2274,10 @@ async function main() {
   cliFailureState.phase = 'PARSE_MANIFEST';
   const manifest = JSON.parse(manifestText);
   cliFailureState.phase = 'AUDIT_RUNTIME';
+  // Check the detached sharing against the same already parsed public details.
+  // No second large details JSON.parse and no new acceptance/failure schema.
+  await auditForecastShareProjectionFiles({ liveDirectory: path.dirname(manifestPath), manifestText,
+    details, registry: JSON.parse(zoneRegistryText) });
   const report = auditIntegratedRavScorePublicRuntime(full, {
     startup, startupText, details, detailsText, coastalPartsText, zoneRegistryText, manifest,
   });

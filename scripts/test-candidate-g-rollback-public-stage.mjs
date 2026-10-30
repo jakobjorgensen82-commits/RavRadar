@@ -254,9 +254,9 @@ function buildNationalFixture() {
     },
     zoneRegistry: {
       type: 'FeatureCollection',
-      features: Object.keys(zones).map(zoneId => ({
+      features: Object.keys(zones).map((zoneId, zoneIndex) => ({
         type: 'Feature',
-        properties: { id: zoneId, zoneStatus: 'active' },
+        properties: { id: zoneId, name: `Rollback zone ${zoneIndex + 1}`, zoneStatus: 'active' },
         geometry: null,
       })),
     },

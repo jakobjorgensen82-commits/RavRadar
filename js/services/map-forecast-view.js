@@ -1,5 +1,5 @@
 // Display-only: no current-clock replacement, trip admission or score calculation.
-import { buildLocalZoneScore } from '../core/local-zone-score.js?v=4.0.591';
+import { buildLocalZoneScore } from '../core/local-zone-score.js?v=4.0.593';
 
 export function mapCoastalPartsForDisplay(frame, liveParts) {
   return frame?.isNow === false ? frame.conditions?.coastalParts || null : liveParts;

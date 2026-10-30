@@ -1,24 +1,22 @@
-## 30. oktober — fælles conditions-grænse og målt filstørrelse, lokal 591-kandidat
+## 30. oktober — 4.0.593-kandidat: samme kapacitet i de nødvendige normale læsere
 
-En konkret normal kapacitetskonflikt er reproduceret: producenten og den beskyttede B-kæde godkender en conditions-fil på 299.262.881 bytes, men B/S-sammenføringens særskilte 256-MiB-læser afviser den med FILE. Kandidaten genbruger den normale producents PRIVATE_CONDITIONS_MAX_BYTES på 535.822.312 bytes. Streaming-SHA og blokvis byte-lighed bevarer størrelse, filidentitet, originaler og hele B/arbejdsfilen uden flere samtidig bevarede store råkopier. Registreringsfilens 16-MiB-grænse ændres ikke.
+Den faktisk anvendte forgænger er 4.0.591. Den nye 4.0.593-kandidat samler de allerede forberedte forbedringer og den konkrete kapacitetsrettelse; 4.0.592 samt dens udstedte kilder og SQL bevares, men 592 er ikke installeret eller offentligt leveret. Ældre daterede 591-/592-fronter er historik på disse statuspunkter.
 
-Den samme normale syntetiske B går fra det gamle afslag til ADVANCED_READBACK_PROVED og én checkpoint-CAS. De to eksisterende negative forløb med samme-H0-konflikt og filændring afvises fortsat uden nye writes. Det beviser kontraktrettelsen på normalt produceret input; den faktiske produktionsfils størrelse og udløser er endnu ukendte.
+Producenten tillader allerede en parsebar conditions-fil på op til 535.822.312 bytes. Kildegennemgangen fandt stadig særskilte 256-MiB-lofter i normal origin-kontrol, læsning af bevarede originaler og den navngivne 591-snapshotgren før første overgang. En større gyldig fil kan derfor blive gemt og senere afvist. Den tidligere normale syntetiske B/S-prøve beviser fejlklassen; den beviser ikke den aktuelle produktionsfils størrelse eller dens konkrete afvisningsårsag.
 
-Den eksisterende skrivefri B-only-rapport tilføjer kun capacity.protected.conditionsBytes fra den allerede autentificerede manifestpost. Der hentes ingen ny fil eller S, og grænser, pointerkontroller og rådataforbud bevares. Det hidtidige samlede råpayloadtal kan ikke bruges som størrelsen på én conditions-fil.
+De tre afgrænsede læsere genbruger producentens eksisterende PRIVATE_CONDITIONS_MAX_BYTES. Origin udvider kun den aktuelle familie og den præcise 591-forgænger; gammel arkivkontrol og seed bevarer 256 MiB. Snapshot udvider kun FROZEN591; 586/587/588/590-profiler og særlige genoptagelser ændres ikke. Hele byte-/SHA-identiteten, originale B/S, attest, filidentitet, frisk genlæsning, CAS og no-loss skal fortsat bestå. Transportloftet er ikke en ny JSON-grænse.
 
-Historikken skal bruges i sit rette domæne: DEC-0135/0136 afgrænser transporten, DEC-0155/PR316 rettede en anden gammel 256-MiB-læser, og DEC-0215/PR381 samt DEC-0217/PR383 fastlagde den parsebare writer og den særskilte timepakke. PR384 var en eksakt gammel metadataovergang, ikke en fri kapacitetsundtagelse. Det særskilte aktuelle reconcile-loft kom senere med 07534c1480 den 17. oktober, inkluderet i PR652/merge bc1155e45. Det er samme klasse af kontraktgab, ikke bevis for samme produktionsudløser. Transportens 768 MiB er ikke JSON-grænsen; den nyere normale grænse på 535.822.312 bytes er styrende her.
+To af kildefilerne indgår i modelbindingens input. Derfor kræver 593 normal ny afledning og kvalifikation; en importvariant må ikke skjule den faktiske kapacitetsændring. Den faktiske afledning giver C99/I98 ved at medtage den eksisterende bounded-writer som afhængighed. Intet input fjernes; det integrerede modelkontraktdigest og de øvrige normaliserede faglige input er bevaret. 4.0.593 er nu lokalt udstedt gennem normal versionssynk, C/I/T-afledning og den nye append-only migration 20261030105202_assistant_public591_later_h0_original_bound_successor.sql. De syv eksisterende forbrugere er synkroniseret, og de normale friske C/I-, aktive/named-builder- og synkkontroller består til fastpunkt. Alle 70 tidligere SQL-filer er bevaret byteuændrede; der er nu 71 i kilden. Den normale installation vælger 591 som ægte forgænger og kræver ikke installation af 592. Ingen SQL er installeret, og 593 er ikke offentligt leveret.
 
-Den tidligere kontrolrettelse er merget, men den nye S-fejl er åben. Kapacitets-/målekandidaten er ikke leveret og kaldes ikke bevist produktionsrodårsag. Alle 591-bindinger, I/T/SQL, originaler, no-loss, kildeprioritet, administratorpunkter, geometri og scoreformel bevares. Ingen ny version eller SOURCE-/statistik-/retentionaktivering. Præcis kildekvalifikation, sikker levering og faktisk målt efterfølger udestår. Se DEC-0300 og håndbog 89.286; DEC-0299/89.285 og alle tidligere afsnit bevares hele.
+Scoreformel, numeriske vejrværdier og historiske scorer, DMI → Copernicus → Open-Meteo, administratorpunkter, geometri og kildeprioritet bevares. Lokal forberedelse er ikke normal kapacitetsprøve, grøn kildekontrol, autentificeret førskrivning eller faktisk ny offentlig generation. De relevante normale mål, samlet kvalifikation, sikker installation og senere almindelig levering er åbne; alle fem hovedmål består. Ingen SOURCE-, statistik-, slette-, DNS- eller Pages-projektaktivering følger af dette dokumentationsdelta. Se DEC-0301 og håndbog 89.287; skiftende driftsevidens føres privat.
 
-## 30. oktober — fast forklaring ved afvist privat B/S-sammenføring, lokal 591-kandidat
+## Aktive krav til privat B/S-observation og fælles conditions-grænse
 
-Det normale kommandolinjeled kasserede den underliggende fejlårsag og viste kun PRIVATE_B_S_RECONCILE_REFUSED. Den afgrænsede kandidat bevarer stoplinjen og tilføjer kun faste værdier for fase, kategori og fejlklasse. Der må ikke logges rå fejltekst, stier, vejrdata, strømværdier, brugeroplysninger eller nøgler. Den oprindelige fejl genkastes; alle adgangs-/identitetskontroller, CAS, genlæsning, oprydning og regler ved ukendt skriveudfald bevares.
+Den kommende 592-kilde skal bevare den kritiske 591-rettelses lukkede fase-/fejlkategorier, gamle stopbesked og oprindelige fejl. Ingen rå fejltekst, sti, nøgle, brugeroplysning eller vejrindhold må blive en del af den nye rapport. Ukendt skriveudfald skal fortsat afklares ved normal genlæsning; der må ikke ske blind gentagelse.
 
-Den normale syntetiske B/S-prøve består både før og efter ændringen med et 261 minutter gammelt target: STALE_TARGET_VALID, bekræftet fremføring af checkpoint og uændret B. En særskilt samme-H0-konflikt afvises med nul nye CAS-kald og uændret B/S. De afgrænsede kategori-/privacy- og CLI-afslag er prøvet; en API-fejl er ikke i sig selv bevis for den aktuelle produktionsfases CLI-kategori.
+Reconcile skal genbruge producentens eksisterende parsebare conditions-grænse. Fuld filstørrelse, SHA-256, blokvis byteidentitet, fil-/mappeidentiteter og beviselig lukning skal bestå. Registry beholder 16 MiB. Et nyt fast bytefelt må kun beskrive den ene conditions-entry i det allerede autentificerede manifest uden ekstra filhentning. Porten er ikke ny model-, versions- eller SQL-udstedelse, og faktisk produktionseffekt er stadig en åben gate.
 
-Dette er observation, ikke en rodårsagsrettelse af den seneste afviste vejrhentning. Hypotesen om en hård 150-minuttersgrænse er afvist, og den faktisk undersøgte restore valgte ikke fallback. De private fejlinputs og især S-reference er fortsat ukendte. Ingen af disse forhold må bruges som anledning til at hæve grænser eller lempe kontroller.
-
-Kilden forbliver 4.0.591 med uændrede C/I/T, SQL, originaler/historik, kildeprioritet, administratorpunkter, geometri og scoreformel. Præcis kildekvalifikation, sikker levering og en faktisk fast fejlårsag eller vellykket normal efterfølger udestår. SOURCE, statistik og automatisk sletning aktiveres ikke. Alle fem mål består. Se DEC-0299 og håndbog 89.285; private kørselsidentiteter og skiftende status føres i checkpointet.
+Se [DEC-0299](../10_DECISIONS/DEC-0299-PRIVATE-BS-RECONCILE-FIXED-FAILURE-CATEGORIES.md) og [DEC-0300](../10_DECISIONS/DEC-0300-RECONCILE-CONDITIONS-CAPACITY-AND-SAFE-BYTE-MEASUREMENT.md).
 
 ## 30. oktober — strømvindue, readiness og historikusikkerhed skal have forskellige kontroller
 
@@ -26,7 +24,7 @@ Et fuldt aktuelt strømvindue kan sameksistere med HISTORY_INCOMPLETE fra bølge
 
 Alle profilfelter, modelhash, dækningsrelationer og den præcise advisory-liste skal stadig passe. Scorer, intervaller og årsagskoder må ikke omskrives som følge af kontrolrettelsen. Aktuelle zone/mode-tællere ved H0 er hverken alle 118 timer eller fuld femfamiliedækning.
 
-Bevar 4.0.591, C/I/T/SQL, originaler, historik, kildeprioritet, administratorpunkter, geometri, scoreformel og reservekapacitet. Udført Pages-deploy, afsluttende verifikation og terminal kvittering skal opgøres særskilt. Ingen genoptagelse eller vejrhentning udledes af denne rettelse. Se DEC-0298 og håndbog 89.284.
+Bevar den faktisk udstedte 592-families C/I/T, allerede udstedte SQL og alle historiske migrationer, originaler, historik, kildeprioritet, administratorpunkter, geometri, scoreformel og reservekapacitet. Denne auditkontrolport udsteder ikke en yderligere model eller migration. Udført Pages-deploy, afsluttende verifikation og terminal kvittering skal opgøres særskilt. Ingen genoptagelse eller vejrhentning udledes af denne rettelse. Se DEC-0298 og håndbog 89.284.
 
 ## 30. oktober — uændret auditkontrakt og afgrænset fejlsynlighed
 
@@ -34,7 +32,15 @@ Auditressourcer må reduceres uden at ændre rapportbytes, modelresultater, afsl
 
 Faste .failure- og .execution-sidefiler må alene indeholde afgrænsede faser, fejlkategorier, processtatus, filstørrelser og heapoplysninger; rå fejltekst, stakspor og inputindhold må ikke kopieres. Manglende påkrævet auditrapport stopper fortsat normal videreføring. Observationer må aldrig blive audit-/READY-erstatning eller skjule et programstop som en modelafvigelse. Ingen heapgrænse eller kontrol lempes.
 
-Bevar 4.0.591, alle C/I/T- og SQL-bytes, originaler, kildeprioritet, administratorpunkter, geometri og scoreformel. Den allerede gennemgåede reservekapacitet bevares. Samlet kvalifikation og faktisk almindelig efterfølger kræves. Se DEC-0297 og håndbog 89.283.
+Bevar den faktisk udstedte 592-families C/I/T, allerede udstedte SQL og historiske migrationer samt originaler, kildeprioritet, administratorpunkter, geometri og scoreformel. Auditvidereførelsen udsteder ikke en ny model eller migration. Den allerede gennemgåede reservekapacitet bevares. Samlet kvalifikation og faktisk almindelig efterfølger kræves. Se DEC-0297 og håndbog 89.283.
+
+## 2026-10-29 — aktivt krav: kompakt, modelbundet delingsprojektion
+
+- Genbrug allerede beregnede offentlige resultater i ét indeks og én zonefil pr. zone, med alle 118 timer og begge søgemåder. Ingen nye scorer, billeder pr. time, privat datalager, databasebinding, leverandørhentning, geometri- eller formelændring.
+- Bevar delingskontraktens fulde 118 × 210 × 2-paritet for tidspunkt, tilgængelighed, score, kvalitet og lokal dækningsstatus. Indeks og alle 210 zonefiler skal indgå i obligatorisk normal artifact-/privacykontrol. Paritet må ikke forveksles med komplet vejr.
+- Genbrug normalproducentens eksisterende objekt/tekst/manifest uden ny stor detail-JSON-læsning. Referencen er ikke autenticitet; hash-/størrelses-/generations-/modelbinding til de gemte offentlige data og normal paritet er stadig obligatorisk. Filbaserede kommandoveje bevares.
+- Ét samlet 15-sekunders stopur fra manifeststart og samme AbortSignal. Manifest/indeks/zone har egne 512/128/32 KiB-lofter. Forkert eller manglende generation, model, zone, time, mode eller sprog skal give neutralt afslag, aldrig et gættet tal eller en nabotime.
+- Samlet 592-kvalifikation må ikke efterlade den gamle Worker på 591. Den eksisterende kontrollerede Worker-vej skal levere en faktisk 592-kompatibel kompaktlæser, og en virkelig ny offentlig generation med de nye filer skal være bevist. Hosted Free-CPU/kvoter, Facebook, Pages/DNS/TLS og klientcutover er særskilte åbne gates. Ingen ekstra version/C/I/T/K eller migration fra formatet; se DEC-0296 og håndbog 89.282.
 
 ## 29. oktober — aktivt krav: afgrænset og retfærdig komponentreserve
 

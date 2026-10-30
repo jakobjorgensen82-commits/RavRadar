@@ -1,14 +1,16 @@
-import { normalizeZoneRegistry } from './zone-registry.js?v=4.0.591';
-import { exactForecastShareSelection } from './forecast-share-contract.js?v=4.0.591&ui=forecast-share-20261024';
-import { exactMapZoneScore } from './map-forecast-view.js?v=4.0.591';
+import { assertForecastShareDescriptor, assertForecastShareZoneProjection, forecastShareZoneProjectionSelection,
+  FORECAST_SHARE_DESCRIPTOR_PATH, FORECAST_SHARE_INDEX_MAX_BYTES, FORECAST_SHARE_ZONE_MAX_BYTES } from './forecast-share-projection.js?v=4.0.593';
+import { normalizeZoneRegistry } from './zone-registry.js?v=4.0.593';
+import { exactForecastShareSelection } from './forecast-share-contract.js?v=4.0.593&ui=forecast-share-20261024';
+import { exactMapZoneScore } from './map-forecast-view.js?v=4.0.593';
 import { publicDeliveryEntries, assertPublicDeliveryDocument, publicDeliveryGeneration,
-  reuseVerifiedPublicHour, refreshVerifiedPublicGeneration, createBoundedPublicMemory } from '../core/public-delivery-contract.js?v=4.0.591';
+  reuseVerifiedPublicHour, refreshVerifiedPublicGeneration, createBoundedPublicMemory } from '../core/public-delivery-contract.js?v=4.0.593';
 import {
   RAVSCORE_CALIBRATION_ELIGIBLE,
   RAVSCORE_CURRENT_SUPPLY_POLICY,
   assertRavScoreModelBinding,
   ravScoreModelBinding,
-} from '../core/ravscore-model-contract.js?v=4.0.591';
+} from '../core/ravscore-model-contract.js?v=4.0.593';
 import {
   RAVSCORE_PUBLIC_COASTAL_PART_COUNT,
   RAVSCORE_PUBLIC_DETAILS_KIND,
@@ -28,18 +30,18 @@ import {
   ravScorePublicHorizonValidUntil,
   selectPublicRuntimeAvailability,
   sameRavScoreModelBinding,
-} from '../core/ravscore-public-runtime-contract.js?v=4.0.591';
+} from '../core/ravscore-public-runtime-contract.js?v=4.0.593';
 import {
   assertExactPublicRavScoreProfile,
-} from '../core/ravscore-public-profile-contract.js?v=4.0.591';
+} from '../core/ravscore-public-profile-contract.js?v=4.0.593';
 import {
   assertRavScoreVerifiedEvidenceTrust,
-} from '../core/ravscore-evidence-trust-contract.js?v=4.0.591';
+} from '../core/ravscore-evidence-trust-contract.js?v=4.0.593';
 import {
   assertPublicWeatherSourceAge,
-} from '../core/ravscore-public-weather-source-age.js?v=4.0.591';
+} from '../core/ravscore-public-weather-source-age.js?v=4.0.593';
 
-export { createForecastSnapshotReference } from './trip-evidence-contract.js?v=4.0.591';
+export { createForecastSnapshotReference } from './trip-evidence-contract.js?v=4.0.593';
 
 const DEFAULT_PUBLIC_CONDITIONS_URL = './data/live/public-conditions.json';
 const DEFAULT_PUBLIC_DETAILS_URL = './data/live/public-condition-details.json';
@@ -1275,4 +1277,69 @@ export async function loadPublicForecastShareSelection(input, { fetchPublic } = 
       localCoverage: Object.freeze({ status: result.localCoverage?.status ?? null }),
     }),
   });
+}
+
+// Compact demand-only sharing; normal map/timeline loading remains unchanged.
+export async function loadCompactPublicForecastShareSelection(input, { fetchPublic } = {}) {
+  const selection = exactForecastShareSelection(input);
+  if (!selection || typeof fetchPublic !== 'function') throw new Error('FORECAST_SHARE_READER_INVALID');
+  // One deadline from manifest start, not a fresh15 seconds per fetch. This also
+  // covers stream reads, decoding, hashing and every validation between reads.
+  const deadline = performance.now() + 15000;
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 15000);
+  const budget = () => {
+    if (controller.signal.aborted || performance.now() >= deadline) {
+      controller.abort(); throw new Error('FORECAST_SHARE_DEADLINE_EXCEEDED');
+    }
+  };
+  async function read(path, { bytes = null, sha256 = null, limit = bytes ?? 512 * 1024, withText = false } = {}) {
+    budget();
+    const response = await fetchPublic(path, { signal: controller.signal, cache: 'no-store' });
+    budget();
+    if (!response.ok || !response.body?.getReader) throw new Error('FORECAST_SHARE_READ_FAILED');
+    const reader = response.body.getReader(), chunks = [];
+    let size = 0;
+    try {
+      for (;;) {
+        budget();
+        const chunk = await reader.read();
+        budget();
+        if (chunk.done) break;
+        size += chunk.value.byteLength;
+        if (size > limit) { await reader.cancel(); throw new Error('FORECAST_SHARE_BYTES_INVALID'); }
+        chunks.push(chunk.value);
+      }
+    } catch (error) { await reader.cancel().catch(() => {}); throw error; }
+    finally { reader.releaseLock(); }
+    const body = new Uint8Array(size);
+    let offset = 0;
+    for (const chunk of chunks) { body.set(chunk, offset); offset += chunk.byteLength; }
+    const text = new TextDecoder('utf-8', { fatal: true }).decode(body);
+    if (bytes !== null && (size !== bytes || await sha256Text(text) !== sha256)) {
+      throw new Error('FORECAST_SHARE_BINDING_INVALID');
+    }
+    budget();
+    const document = JSON.parse(text);
+    return withText ? { document, text } : document;
+  }
+  try {
+    const loaded = await read('./data/live/manifest.json', { withText: true });
+    const manifest = assertManifest(loaded.document);
+    const availability = selectPublicRuntimeAvailability(manifest, { modelBinding: ravScoreModelBinding() });
+    if (!Object.hasOwn(manifest.detailDelivery?.zones ?? {}, selection.zoneId)
+      || selection.time < availability.selectedReferenceAt
+      || !Object.hasOwn(manifest.detailDelivery?.hours ?? {}, selection.time)) return null;
+    const descriptor = assertForecastShareDescriptor(await read(FORECAST_SHARE_DESCRIPTOR_PATH, { limit: FORECAST_SHARE_INDEX_MAX_BYTES }),
+      manifest, await sha256Text(loaded.text));
+    const entry = descriptor.zones.find(item => item.id === selection.zoneId);
+    const projection = await read('./data/live/' + entry.path.slice(2), {
+      bytes: entry.bytes, sha256: entry.sha256, limit: FORECAST_SHARE_ZONE_MAX_BYTES,
+    });
+    assertForecastShareZoneProjection(projection, descriptor, manifest, entry);
+    budget();
+    const fresh = selectPublicRuntimeAvailability(manifest, { modelBinding: ravScoreModelBinding() });
+    if (selection.time < fresh.selectedReferenceAt) return null;
+    return forecastShareZoneProjectionSelection(projection, selection);
+  } finally { clearTimeout(timer); }
 }

@@ -11,7 +11,7 @@ import {promisify} from 'node:util';
 const execute=promisify(callbackExec);
 const ROOT=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
 function fixedSource(profile){
-  assert(profile===FROZEN586||profile===FROZEN587||profile===FROZEN588||profile===FROZEN590,'FROZEN_SOURCE_UNKNOWN_PROFILE');
+  assert(profile===FROZEN586||profile===FROZEN587||profile===FROZEN588||profile===FROZEN590||profile===FROZEN591,'FROZEN_SOURCE_UNKNOWN_PROFILE');
   const HEAD=profile.head,TREE=profile.tree;
 const C='scripts/rollback-assets/ravscore-model-bundle.generated.js';
 const I='js/core/ravscore-model-bundle.generated.js';
@@ -252,11 +252,53 @@ export async function assertFrozen588MetadataOriginData(options) {
   await frozen588OriginData(options.descriptor,options.conditions,options.centralContract);
 }
 `;
+const ORIGINAL_591_ASSERTION_SUFFIX=String.raw`
+// ASSERTIONS ONLY over the WHOLE immutable a157 issued591 origin implementation.
+// Removing this suffix restores whole Git SHA-256 516d9f641bbf8de4fd8933e60a8a76621de4ec72c2d9492c1e43a94c74c9b67c.
+// This is DATA validation, never a WeakMap origin/ForPart/finalizer capability.
+async function frozen591OriginData(descriptor,conditions,centralContract) {
+  const {validateProtectedPrivateRuntimeDescriptor} = await import('../protected-private-production-runtime.mjs');
+  need(same(validateProtectedPrivateRuntimeDescriptor(descriptor),descriptor),'FROZEN_591_DESCRIPTOR');
+  const binding=ravScoreModelBinding(),candidate=candidateBinding(),contracts=await privateRuntimeContractHashes();
+  need(same(descriptor.modelBinding,binding)&&same(descriptor.contractHashes,contracts),'FROZEN_591_FAMILY');
+  const parts=registryParts(centralContract),pairs=pairsFromConditions(conditions,parts);
+  const currentSource=Object.freeze({sourceHead:descriptor.sourceHead,
+    semanticContract:ESTABLISHED_NATIVE_CURRENT_SEMANTIC_CONTRACT,
+    integrated:binding.modelBundleSha256,candidate:candidate.modelBundleSha256,
+    continuation:contracts.continuationStateContractSha256,ownerPolicyGitBlob:SEED.ownerPolicyGitBlob});
+  // Exactly actual591's normal DATA dispatch, including its complete585/584 parents.
+  if(conditions[ATTEST]?.kind===METADATA585_KIND
+    &&conditions[ATTEST]?.predecessor?.sourceFamilyHead===METADATA585_SOURCE)
+    await validateMetadata585Attestation(conditions[ATTEST],{descriptor,conditions,central:centralContract,pairs,currentSource});
+  else if(conditions[ATTEST]?.kind===METADATA584_KIND)
+    await validateMetadata584Attestation(conditions[ATTEST],{descriptor,conditions,central:centralContract,pairs,currentSource});
+  else validateAttestation(conditions[ATTEST],{descriptor,conditions,central:centralContract,pairs,currentSource});
+  need(conditions[ATTEST].registrySha256===digest(centralContract),'METADATA_REGISTRY_CHANGED');
+  return {pairs,binding,candidate,contracts};
+}
+export async function assertFrozen591OriginSnapshotData(options) {
+  need(arguments.length===1&&exact(options,['descriptor','conditions','centralContract','checkpoint']),'ARGUMENTS');
+  const {descriptor,conditions,centralContract,checkpoint}=options;
+  const {pairs,binding,candidate,contracts}=await frozen591OriginData(descriptor,conditions,centralContract);
+  need(same(checkpoint.modelBinding,binding)&&same(checkpoint.candidateGRollbackCompanion?.modelBinding,candidate)
+    &&checkpoint.continuationStateContractSha256===contracts.continuationStateContractSha256
+    &&checkpoint.datasetId===conditions.datasetId&&checkpoint.productionReferenceAt===conditions.productionReferenceAt
+    &&SHA.test(checkpoint.generationSha256),'FROZEN_591_CHECKPOINT');
+  need(same(Object.keys(checkpoint.states??{}).sort(),[...pairs.keys()].sort())
+    &&same(Object.keys(checkpoint.candidateGRollbackCompanion?.states??{}).sort(),[...pairs.keys()].sort()),'PARTS');
+  for(const[id,pair]of pairs)need(same(pair.integrated,checkpoint.states[id])
+    &&same(pair.candidate,checkpoint.candidateGRollbackCompanion.states[id]),'B_S_DIFFER');
+}
+export async function assertFrozen591MetadataOriginData(options) {
+  need(arguments.length===1&&exact(options,['descriptor','conditions','centralContract']),'ARGUMENTS');
+  await frozen591OriginData(options.descriptor,options.conditions,options.centralContract);
+}
+`;
 const ORIGINAL_590_ASSERTION_SUFFIX=ORIGINAL_588_ASSERTION_SUFFIX
   .replace('// Removing this suffix restores whole Git SHA-256 5fa3fe20041a82a7e287e21f4562f6bb82ffab253c69e0754208bb6e5c907b69.',
     '// The source-owned selected590 origin SHA and whole inverse are checked by this host.')
   .replaceAll('588','590');
-const ASSERTION_SUFFIX=profile===FROZEN590?ORIGINAL_590_ASSERTION_SUFFIX:profile===FROZEN588?ORIGINAL_588_ASSERTION_SUFFIX:profile===FROZEN586?ORIGINAL_586_ASSERTION_SUFFIX:
+const ASSERTION_SUFFIX=profile===FROZEN591?ORIGINAL_591_ASSERTION_SUFFIX:profile===FROZEN590?ORIGINAL_590_ASSERTION_SUFFIX:profile===FROZEN588?ORIGINAL_588_ASSERTION_SUFFIX:profile===FROZEN586?ORIGINAL_586_ASSERTION_SUFFIX:
   assertionNames.reduce((source,[before,after])=>{assert(source.includes(before));return source.replaceAll(before,after);},ORIGINAL_586_ASSERTION_SUFFIX);
 if(profile===FROZEN587)assert.equal([...assertionNames].reverse().reduce(
   (source,[before,after])=>source.replaceAll(after,before),ASSERTION_SUFFIX),ORIGINAL_586_ASSERTION_SUFFIX,'Whole assertion-suffix inverse');
@@ -282,6 +324,7 @@ async function exactTree(root,files,index,gitReference){
   await visit(root);assert.deepEqual([...seen].sort(),files);
 }
 async function withSource(useVerifiedSource){
+  if(profile===FROZEN591)assertFrozen591CodeSourceSelected(); // Fixed genuine591 before Git/temp/I/O.
   if(profile===FROZEN590)assertFrozen590CodeSourceSelected(); // FIRST: no selected parent, no Git/I/O.
   if(profile===FROZEN588)assertFrozen588CodeSourceSelected(); // FIRST: unselected code cannot reach Git/I/O.
   assert.equal(arguments.length,1,'No caller head/root/source override');assert.equal(typeof useVerifiedSource,'function');
@@ -302,7 +345,8 @@ async function withSource(useVerifiedSource){
     for(const file of files){const output=path.resolve(root,file);assert(inside(root,output));await fs.mkdir(path.dirname(output),{recursive:true});
       await fs.writeFile(output,await materializedBytes(file,index,gitReference),{flag:'wx',mode:0o600});}
     await exactTree(root,files,index,gitReference);
-    const builderArgs=profile===FROZEN590?['--public588-successor','--check']:
+    const builderArgs=profile===FROZEN591?['--public590-successor','--check']:
+      profile===FROZEN590?['--public588-successor','--check']:
       profile===FROZEN588?['--public587-successor','--check']:['--check'];
     const checked=await execute(process.execPath,[path.join(root,BUILDER),...builderArgs],{cwd:root,env:fixedEnv(),timeout:60000,maxBuffer:1024*1024});
     assert.equal(checked.stdout.trim(),profile.builderChecked);
@@ -406,6 +450,35 @@ const FROZEN590=Object.freeze({
     publicProjectionContractSha256:FROZEN590_CODE_SOURCE_PROVENANCE.publicProjectionContractSha256}),
 });
 
+// Genuine issued591 CODE and DATA bank for the ordinary later-H0 assistant successor.
+// This fixed selection creates no original handle, SOURCE permission or runtime admission.
+export const FROZEN591_CODE_SOURCE_PROVENANCE=Object.freeze({
+  "selected":true,
+  "head":"a157c265949da661827d375db61f9e1e8c4fd6a0",
+  "tree":"54b020c90661caa31b4e5e1eceedbe827336e4b9",
+  "candidateFiles":98,
+  "integratedFiles":97,
+  "originSha256":"516d9f641bbf8de4fd8933e60a8a76621de4ec72c2d9492c1e43a94c74c9b67c",
+  "partPipelineSha256":"8e979128a682a7324d7defcc3d2d2dfa5edc85ebc22d4ae714810aa085490758",
+  "fullRuntimeContractSha256":"ede0b53b8ed0f3fa5d0e505ea7c07d98969dc7a38fe94ae034a85f9c5d5af7ff",
+  "publicProjectionContractSha256":"c495b80c7ca8906d81ae0a58f340fe693f79acce51ca6efc7933681d9505da09"
+});
+const FROZEN591=Object.freeze({
+  ...FROZEN591_CODE_SOURCE_PROVENANCE,
+  builder:'scripts/build-assistant-later-h0-successor.mjs',
+  builderChecked:'Exact original-preserving assistant590 later-H0 metadata source checked; no installation or state admission.',
+  assertion:'scripts/lib/established-native-current-origin-591-assertion.mjs',temporaryPrefix:'rr-a591-source-',
+  candidate:'38738b7d7d3bfd74958ab2453422f2416338e99dac53d12f7098ad8c3539ec64',
+  integrated:'ebd5ac3dac09b7afb51e46d18920f6932b478b7ef15bdd31190c128273cb6a54',
+  additionalMigrations:Object.freeze([...FROZEN590.additionalMigrations,Object.freeze({
+    path:'supabase/migrations/20261028223717_assistant_public590_later_h0_original_bound_successor.sql',
+    sha256:'72b53fb08ea0e5cebcda7e1cbf3bc49a8a3f2417975daeb6daf530c9029c6835'})]),
+  runtimeContracts:Object.freeze({
+    continuationStateContractSha256:'b490f11d14cfe607839d7848bbcdb8e9df7abdfe62c82983e5247fb4ca3dcc0d',
+    fullRuntimeContractSha256:FROZEN591_CODE_SOURCE_PROVENANCE.fullRuntimeContractSha256,
+    publicProjectionContractSha256:FROZEN591_CODE_SOURCE_PROVENANCE.publicProjectionContractSha256}),
+});
+
 // Hver fast profil ejer sin cache; samme relative sti kan aldrig genbruge den anden familie.
 const source586=fixedSource(FROZEN586),source587=fixedSource(FROZEN587),source588=fixedSource(FROZEN588);
 export async function withAuthenticated586PredecessorSource(useVerifiedSource){
@@ -443,4 +516,18 @@ export function assertFrozen590CodeSourceSelected(){
 }
 export async function withAuthenticated590PredecessorSource(callback){
   assertFrozen590CodeSourceSelected();return source590(...arguments);
+}
+
+const source591=fixedSource(FROZEN591);
+export function assertFrozen591CodeSourceSelected(){
+  assert.equal(arguments.length,0);const source=FROZEN591_CODE_SOURCE_PROVENANCE;
+  assert.deepEqual(Object.keys(source).sort(),['candidateFiles','fullRuntimeContractSha256','head','integratedFiles','originSha256','partPipelineSha256','publicProjectionContractSha256','selected','tree']);
+  assert.equal(source.selected,true,'FROZEN591_CODE_SOURCE_UNSELECTED');
+  for(const key of ['head','tree'])assert.match(source[key],/^[a-f0-9]{40}$/);
+  for(const key of ['candidateFiles','integratedFiles'])assert(Number.isSafeInteger(source[key])&&source[key]>0);
+  for(const key of ['originSha256','partPipelineSha256','fullRuntimeContractSha256','publicProjectionContractSha256'])assert.match(source[key],/^[a-f0-9]{64}$/);
+  return source; // Fixed CODE data only; never a CI/PASS or original/runtime capability.
+}
+export async function withAuthenticated591PredecessorSource(callback){
+  assertFrozen591CodeSourceSelected();return source591(...arguments);
 }

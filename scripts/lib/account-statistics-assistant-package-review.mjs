@@ -9,6 +9,31 @@ assert.equal(sha(bytes),'8d068a938290911427dbef05fc75a0700829b48c7f8dee069440ce0
 const review=JSON.parse(bytes);assert.equal(review.schemaVersion,1);
 assert.equal(review.kind,'TEST_ONLY_EXACT_ACCOUNT_STATISTICS_ASSISTANT_PACKAGE_INVERSE');assert.equal(review.edits.length,3);
 const canonical=scripts=>JSON.stringify(Object.keys(scripts).sort().map(key=>[key,scripts[key]]));
+
+// Exact read-only source-plan qualification for compact forecast sharing.
+// This grants no model/native/public authority and removes only this one
+// reviewed registration before the unchanged historical command-map oracles.
+export function inverseReviewedForecastShareProjectionSourceScripts(scripts){
+  assert.equal(arguments.length,1);assert(scripts&&Object.getPrototypeOf(scripts)===Object.prototype);
+  assert(Object.values(scripts).every(value=>typeof value==='string'));
+  assert.equal(sha(canonical(scripts)),'9975859065142d025c5a9a75b5a2045c304aec8a2e109bccb2f27da6d0e7da3b',
+    'Only the entire reviewed592 command map plus one compact-sharing target');
+  const command='node scripts/test-forecast-share-projection.mjs';
+  const previousDefinition='node scripts/test-post-cutover-private-runtime-migration.mjs && node scripts/test-tracked-runtime-privacy.mjs && node scripts/test-pages-artifact-privacy.mjs';
+  assert.equal(scripts['test:privacy-source-critical'],previousDefinition+' && '+command);
+  const expanded=expandSourceCommands(scripts,'validate:source:checks'),plan=buildSourceValidationPlan(scripts),dispatched=[];
+  assert.equal(expanded.length,72);
+  assert.equal(runSourceValidation(plan,{execute(value){dispatched.push(value);return 0;},log(){}}),0);
+  assert.deepEqual(dispatched,[...plan.preflight,...plan.remaining,plan.gate]);
+  for(const values of [expanded,dispatched])assert.equal(values.filter(value=>value===command).length,1,
+    'The actual normal compact producer/privacy/copy target is registered and planned exactly once');
+  const previous={...scripts,'test:privacy-source-critical':previousDefinition};
+  assert.equal(sha(canonical(previous)),'ecd611d8379143b1a046eb7f77c422a6f8bab9aae72847ec90ec6416afb2c563',
+    'Every original command byte survives before the old unchanged source-plan oracles');
+  assert.deepEqual(expanded.filter(value=>value!==command),expandSourceCommands(previous,'validate:source:checks'));
+  return previous;
+}
+
 function inverseReviewed585AccountStatisticsAssistantSourceScripts(scripts){
   assert.equal(arguments.length,1);assert(scripts&&Object.getPrototypeOf(scripts)===Object.prototype);
   assert(Object.values(scripts).every(value=>typeof value==='string'));
@@ -71,6 +96,8 @@ export function inverseAssistantPublic587SuccessorSourceScripts(scripts){
 export function inverseAssistantPublic588SuccessorSourceScripts(scripts){
   assert.equal(arguments.length,1);assert(scripts&&Object.getPrototypeOf(scripts)===Object.prototype);
   assert(Object.values(scripts).every(value=>typeof value==='string'));
+  if(sha(canonical(scripts))==='9975859065142d025c5a9a75b5a2045c304aec8a2e109bccb2f27da6d0e7da3b')
+    scripts=inverseReviewedForecastShareProjectionSourceScripts(scripts);
   assert.equal(sha(canonical(scripts)),'ecd611d8379143b1a046eb7f77c422a6f8bab9aae72847ec90ec6416afb2c563',
     'Only the entire reviewed active590 command map');
   const current='node scripts/build-assistant-later-h0-successor.mjs --active --check',

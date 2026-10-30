@@ -633,7 +633,13 @@ export async function runNativeCheckpointSqlComparison({ repositoryRoot,
   includeLastMileEnclosure = false, includeAccountStatisticsAssistant = false,
   includeNativeOriginalContinuity = false, includeAssistantLaterH0 = false,
   includeAssistantPublic587Successor = false, includeAssistantPublic588Successor = false,
-  includeAssistantPublic590Successor = false } = {}) {
+  includeAssistantPublic590Successor = false, includeAssistantPublic591Successor = false } = {}) {
+  assert.equal(typeof includeAssistantPublic591Successor,'boolean');
+  assert(!includeAssistantPublic591Successor || includeAssistantPublic590Successor,'Genuine591 phase is required before assistant592');
+  if(includeAssistantPublic591Successor){
+    const {requireAssistantPublic591SuccessorRelease}=await import('./assistant-later-h0-successor-source.mjs');
+    requireAssistantPublic591SuccessorRelease(); // FIRST: no fixture, operand, host or SQL before issuance.
+  }
   assert.equal(typeof includeAssistantPublic590Successor,'boolean');
   assert(!includeAssistantPublic590Successor || includeAssistantPublic588Successor,
     'Authentic590 phase is required before the new assistant phase');
@@ -1040,8 +1046,21 @@ select public.native_checkpoint_attempt(${baseline},${version},(select payload f
     let assistantPublic590Successor;
     if(includeAssistantPublic590Successor){
       nativePhase='ASSISTANT_PUBLIC590_SUCCESSOR';
+      if(includeAssistantPublic591Successor){
+        const {withFrozen591CheckpointPostgresSource}=await import('../run-frozen586-assistant-later-h0-postgres-source.mjs');
+        assistantPublic590Successor=await withFrozen591CheckpointPostgresSource(async({adapter,factory})=>
+          adapter.compareAssistantPublic590Successor({psql,runSql,root,sourceDocumentAt:factory.sourceDocumentAt,
+            atHour:factory.atHour,saveCheckpoint:factory.saveRavScoreContinuationCheckpoint}));
+      }else{
       const {compareAssistantPublic590Successor}=await import('./assistant-later-h0-postgres.mjs');
       assistantPublic590Successor=await compareAssistantPublic590Successor({psql,runSql,root,sourceDocumentAt,atHour,saveCheckpoint});
+      }
+    }
+    let assistantPublic591Successor;
+    if(includeAssistantPublic591Successor){
+      nativePhase='ASSISTANT_PUBLIC591_SUCCESSOR';
+      const {compareAssistantPublic591Successor}=await import('./assistant-later-h0-postgres.mjs');
+      assistantPublic591Successor=await compareAssistantPublic591Successor({psql,runSql,root,sourceDocumentAt,atHour,saveCheckpoint});
     }
     return {kind:'NATIVE_POSTGRES_CHECKPOINT_CAS_COMPARISON',accountAssistant,currentGrid,
       ...(includeStatisticsRevision?{statisticsRevision}:{}),
@@ -1055,6 +1074,7 @@ select public.native_checkpoint_attempt(${baseline},${version},(select payload f
       ...(includeAssistantPublic587Successor?{assistantPublic587Successor}:{}),
       ...(includeAssistantPublic588Successor?{assistantPublic588Successor}:{}),
       ...(includeAssistantPublic590Successor?{assistantPublic590Successor}:{}),
+      ...(includeAssistantPublic591Successor?{assistantPublic591Successor}:{}),
       issuedSource:issued.sourceReceipt,postgresMajorVersion:programs.majorVersion,
       tcpEnabled:false,normalModelPartCount:673,sqlExecuted:true,migrationExecuted:true,
       migrationSQLSha256:hash(newSource),caseCount:reports.length,

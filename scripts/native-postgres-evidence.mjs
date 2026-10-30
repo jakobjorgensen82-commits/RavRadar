@@ -7,7 +7,7 @@ import path from 'node:path';
 import {execFileSync, spawnSync} from 'node:child_process';
 import {fileURLToPath} from 'node:url';
 import {requireAssistantLaterH0Release,requireAssistantPublic587SuccessorRelease,
-  requireAssistantPublic588SuccessorRelease,requireAssistantPublic590SuccessorRelease,ACTIVE_ASSISTANT_SUCCESSOR as ACTIVE} from './lib/assistant-later-h0-successor-source.mjs';
+  requireAssistantPublic588SuccessorRelease,requireAssistantPublic590SuccessorRelease,requireAssistantPublic591SuccessorRelease,ACTIVE_ASSISTANT_SUCCESSOR as ACTIVE} from './lib/assistant-later-h0-successor-source.mjs';
 
 export const ORIGIN = Object.freeze({
   repository: 'jakobjorgensen82-commits/RavRadar', pullRequest: 671,
@@ -41,10 +41,15 @@ export const ASSISTANT_PUBLIC588_SUCCESSOR_SCRIPT='set -euo pipefail\n'+ASSISTAN
 export const ASSISTANT_PUBLIC590_SUCCESSOR_COMMANDS=Object.freeze([ASSISTANT_PUBLIC588_SUCCESSOR_COMMANDS[0],
   ASSISTANT_PUBLIC588_SUCCESSOR_COMMANDS[1]+' --assistant-public590-successor']);
 export const ASSISTANT_PUBLIC590_SUCCESSOR_SCRIPT='set -euo pipefail\n'+ASSISTANT_PUBLIC590_SUCCESSOR_COMMANDS.join('\n')+'\n';
-export const ACTIVE_COMMANDS=ACTIVE.sourcePhase==='assistant-public590-successor'
+export const ASSISTANT_PUBLIC591_SUCCESSOR_COMMANDS=Object.freeze([ASSISTANT_PUBLIC590_SUCCESSOR_COMMANDS[0],
+  ASSISTANT_PUBLIC590_SUCCESSOR_COMMANDS[1]+' --assistant-public591-successor']);
+export const ASSISTANT_PUBLIC591_SUCCESSOR_SCRIPT='set -euo pipefail\n'+ASSISTANT_PUBLIC591_SUCCESSOR_COMMANDS.join('\n')+'\n';
+export const ACTIVE_COMMANDS=ACTIVE.sourcePhase==='assistant-public591-successor'
+  ?ASSISTANT_PUBLIC591_SUCCESSOR_COMMANDS:ACTIVE.sourcePhase==='assistant-public590-successor'
   ?ASSISTANT_PUBLIC590_SUCCESSOR_COMMANDS:ACTIVE.sourcePhase==='assistant-public588-successor'
   ?ASSISTANT_PUBLIC588_SUCCESSOR_COMMANDS:ASSISTANT_PUBLIC587_SUCCESSOR_COMMANDS;
-export const ACTIVE_NATIVE_SCRIPT=ACTIVE.sourcePhase==='assistant-public590-successor'
+export const ACTIVE_NATIVE_SCRIPT=ACTIVE.sourcePhase==='assistant-public591-successor'
+  ?ASSISTANT_PUBLIC591_SUCCESSOR_SCRIPT:ACTIVE.sourcePhase==='assistant-public590-successor'
   ?ASSISTANT_PUBLIC590_SUCCESSOR_SCRIPT:ACTIVE.sourcePhase==='assistant-public588-successor'
   ?ASSISTANT_PUBLIC588_SUCCESSOR_SCRIPT:ASSISTANT_PUBLIC587_SUCCESSOR_SCRIPT;
 
@@ -651,6 +656,16 @@ export function verifyAssistantPublic590SuccessorPhaseReceipt(native,current){
   return {status:native.status,executedInThisRun:native.executedInThisRun,origin:native.origin};
 }
 
+export const ASSISTANT_PUBLIC591_SUCCESSOR_PHASE_KIND='RAVRADAR_ASSISTANT_PUBLIC591_SUCCESSOR_POSTGRES_PHASE_V1';
+export function verifyAssistantPublic591SuccessorPhaseReceipt(native,current){
+  assert.equal(native?.phase,'ASSISTANT_PUBLIC591_SUCCESSOR');
+  assert.deepEqual(native.commands,ASSISTANT_PUBLIC591_SUCCESSOR_COMMANDS);
+  assert.deepEqual(native.current,current);assert.equal(native.status,'EXECUTED');
+  assert.equal(native.executedInThisRun,true);assert.equal(native.origin,null);
+  assert.equal(native.eligibleForReuse,false);
+  return {status:native.status,executedInThisRun:native.executedInThisRun,origin:native.origin};
+}
+
 async function record(receipt) {
   const file='.cache/source-tree-content-proof.json', proof=JSON.parse(await fs.readFile(file,'utf8'));
   assert.equal(proof.headSha,git(['rev-parse','HEAD^{commit}']).trim()); assert.equal(proof.repository,ORIGIN.repository);
@@ -658,6 +673,7 @@ async function record(receipt) {
   const current={run:Number(process.env.GITHUB_RUN_ID),attempt:Number(process.env.GITHUB_RUN_ATTEMPT),
     head:proof.headSha,pullRequest:Number(process.env.PULL_REQUEST_NUMBER),branch:process.env.GITHUB_HEAD_REF};
   if(receipt.phase==='NATIVE_ORIGINAL_CONTINUITY')verifyCurrent586PhaseReceipt(receipt,current);
+  else if(receipt.phase==='ASSISTANT_PUBLIC591_SUCCESSOR')verifyAssistantPublic591SuccessorPhaseReceipt(receipt,current);
   else if(receipt.phase==='ASSISTANT_PUBLIC590_SUCCESSOR')verifyAssistantPublic590SuccessorPhaseReceipt(receipt,current);
   else if(receipt.phase==='ASSISTANT_PUBLIC588_SUCCESSOR')verifyAssistantPublic588SuccessorPhaseReceipt(receipt,current);
   else if(receipt.phase==='ASSISTANT_PUBLIC587_SUCCESSOR')verifyAssistantPublic587SuccessorPhaseReceipt(receipt,current);
@@ -665,6 +681,7 @@ async function record(receipt) {
   proof.nativePostgres=receipt; await fs.writeFile(file,JSON.stringify(proof)+'\n');
   await fs.writeFile(CURRENT586_PHASE_FILE,JSON.stringify({
     schemaVersion:1,kind:receipt.phase==='NATIVE_ORIGINAL_CONTINUITY'?CURRENT586_PHASE_KIND:
+      receipt.phase==='ASSISTANT_PUBLIC591_SUCCESSOR'?ASSISTANT_PUBLIC591_SUCCESSOR_PHASE_KIND:
       receipt.phase==='ASSISTANT_PUBLIC590_SUCCESSOR'?ASSISTANT_PUBLIC590_SUCCESSOR_PHASE_KIND:
       receipt.phase==='ASSISTANT_PUBLIC588_SUCCESSOR'?ASSISTANT_PUBLIC588_SUCCESSOR_PHASE_KIND:
       receipt.phase==='ASSISTANT_PUBLIC587_SUCCESSOR'?ASSISTANT_PUBLIC587_SUCCESSOR_PHASE_KIND:ASSISTANT_LATER_H0_PHASE_KIND,
@@ -673,12 +690,14 @@ async function record(receipt) {
   })+'\n',{flag:'wx'});
 }
 async function main() {
-  assert(['assistant-public587-successor','assistant-public588-successor','assistant-public590-successor'].includes(ACTIVE.sourcePhase));
+  assert(['assistant-public587-successor','assistant-public588-successor','assistant-public590-successor','assistant-public591-successor'].includes(ACTIVE.sourcePhase));
+  if(ACTIVE.sourcePhase==='assistant-public591-successor')requireAssistantPublic591SuccessorRelease();
   if(ACTIVE.sourcePhase==='assistant-public590-successor')requireAssistantPublic590SuccessorRelease();
   if(ACTIVE.sourcePhase==='assistant-public588-successor')requireAssistantPublic588SuccessorRelease();
   requireAssistantPublic587SuccessorRelease(); // UNISSUED before evidence I/O or native launch; no fallback to a whole587 receipt.
   requireAssistantLaterH0Release(); // The preceding genuine587 phase remains issued and required.
-  let receipt={status:'EXECUTE',reason:ACTIVE.sourcePhase==='assistant-public590-successor'
+  let receipt={status:'EXECUTE',reason:ACTIVE.sourcePhase==='assistant-public591-successor'
+    ?'new-assistant-public591-successor-phase-requires-actual-execution':ACTIVE.sourcePhase==='assistant-public590-successor'
     ?'new-assistant-public590-successor-phase-requires-actual-execution':ACTIVE.sourcePhase==='assistant-public588-successor'
     ?'new-assistant-public588-successor-phase-requires-actual-execution':'new-assistant-public587-successor-phase-requires-actual-execution'};
   if(receipt.status!=='REUSED') {
@@ -687,7 +706,8 @@ async function main() {
     const result=spawnSync('/usr/bin/bash',['--noprofile','--norc','-e','-o','pipefail','-c',ACTIVE_NATIVE_SCRIPT],{env,stdio:'inherit'});
     if(result.error||result.status!==0){process.exitCode=result.status||1;return;}
     receipt={...receipt,status:'EXECUTED',executedInThisRun:true,origin:null,
-      ...(ACTIVE.sourcePhase==='assistant-public590-successor'
+      ...(ACTIVE.sourcePhase==='assistant-public591-successor'
+        ?{phase:'ASSISTANT_PUBLIC591_SUCCESSOR',eligibleForReuse:false}:ACTIVE.sourcePhase==='assistant-public590-successor'
         ?{phase:'ASSISTANT_PUBLIC590_SUCCESSOR',eligibleForReuse:false}:ACTIVE.sourcePhase==='assistant-public588-successor'
         ?{phase:'ASSISTANT_PUBLIC588_SUCCESSOR',eligibleForReuse:false}
         :{phase:'ASSISTANT_PUBLIC587_SUCCESSOR',eligibleForReuse:false}),

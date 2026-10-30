@@ -12,6 +12,8 @@ import * as service from '../js/services/data-service.js';
 import { openForecastShareSelection, mountForecastShareControl } from '../js/ui/forecast-share.js';
 import { FORECAST_SHARE_BASE_URL, FORECAST_SHARE_WORKER_BASE_URL, FORECAST_SHARE_PAGES_BASE_URL, forecastShareUrl, forecastShareCopy } from '../js/services/forecast-share-contract.js';
 import forecastShareWorker from './forecast-share/worker.mjs';
+import {buildForecastShareProjection} from '../js/services/forecast-share-projection.js';
+import {serializeForecastShareProjection} from './build-forecast-share-projection.mjs';
 import { onRequest as forecastSharePages } from './forecast-share-pages/functions/index.js';
 import { publicDeliveryGeneration } from '../js/core/public-delivery-contract.js';
 import { showZoneInfo, bindZoneInfoInteractions } from '../js/ui/info-panel.js';
@@ -177,9 +179,36 @@ try{
     'A selected hour that expires during I/O must not borrow the new current hour');}
   finally{Date.now=()=>freshNow;}cases++;
 
-  // Faktisk Worker-indgang -> uændret handler -> den eksisterende normale læser.
-  // Kun transporten er syntetisk; shareFixture leverer de samme autentificerbare
-  // manifest-/zone-/registerbytes som ovenfor. Ingen ny model eller prognose bygges.
+  // Build the compact transport from this same normal210/673 fixture once.
+  // Legacy heavy-reader cases above retain their original manifest/zone/registry.
+  const compactShareProjection=buildForecastShareProjection({manifest,details,registry:JSON.parse(zoneRegistryText)});
+  const compactShareFiles=serializeForecastShareProjection({projection:compactShareProjection,manifest,manifestSha256:sha256Text(compactJson(manifest))});
+  const compactShareZone=compactShareFiles.zoneFiles.find(file=>file.entry.id===shareZoneId);
+  const compactShareZoneText=compactShareZone.bytes.toString('utf8');
+  function compactShareFixture({mutateDocument=null,mutateManifest=null,mutateDescriptor=null,zoneText=null,onRead=()=>{},responseStatus=200,location=null}={}){
+    const target=structuredClone(manifest),document=structuredClone(compactShareZone.payload);
+    const descriptor=structuredClone(compactShareFiles.descriptor);
+    if(mutateDocument){
+      mutateDocument(document);
+      const text=JSON.stringify(document),sha256=sha256Text(text);
+      descriptor.zones[descriptor.zones.findIndex(row=>row.id===shareZoneId)]={id:shareZoneId,path:'./share/'+sha256+'.json',sha256,bytes:Buffer.byteLength(text)};
+    }
+    if(mutateManifest)mutateManifest(target);
+    descriptor.manifestSha256=sha256Text(compactJson(target));
+    if(mutateDescriptor)mutateDescriptor(descriptor);
+    const entry=descriptor.zones.find(row=>row.id===shareZoneId),path='./data/live/'+entry.path.slice(2);
+    const documents=new Map([['./data/live/manifest.json',compactJson(target)],
+      ['./data/live/forecast-share.json',JSON.stringify(descriptor)+'\n'],[path,zoneText??JSON.stringify(document)]]);
+    const reads=[];
+    return{reads,fetchPublic:async(path,options)=>{
+      reads.push(path);assert.equal(options.cache,'no-store');assert.ok(options.signal);
+      onRead(path);assert.ok(documents.has(path),'Only the normal manifest, compact index and selected content-addressed compact zone may be requested');
+      return new Response(documents.get(path),{status:responseStatus,headers:{'Content-Type':'application/json',...(location===null?{}:{Location:location})}});
+    }};
+  }
+
+  // Actual Worker/Pages -> compact normal reader; only transport is synthetic.
+  // No old heavy-reader fallback, new weather or score calculation is allowed.
   const shareBase='https://ravradar-prognosedeling.jakob-jorgensen82.workers.dev/';
   assert.equal(FORECAST_SHARE_BASE_URL,shareBase);
   const workerConfig=JSON.parse(await fs.readFile(new URL('./forecast-share/wrangler.jsonc',import.meta.url),'utf8'));
@@ -187,7 +216,7 @@ try{
     compatibility_date:'2026-10-24',workers_dev:true,preview_urls:false},
     'Ingen assets, routes, databaser, KV, R2, cron, vars eller secrets i konfigurationen');cases++;
   const escapeShareAttribute=value=>String(value).replaceAll('&','&amp;').replaceAll('"','&quot;');
-  async function shareWorkerRequest(url,{fixture=shareFixture(),method='GET',headers={},body=null,pages=false}={}){
+  async function shareWorkerRequest(url,{fixture=compactShareFixture(),method='GET',headers={},body=null,pages=false}={}){
     const originalFetch=globalThis.fetch,upstream=[];
     globalThis.fetch=async(input,options)=>{
       const target=new URL(input);
@@ -211,8 +240,8 @@ try{
         assert.equal(target.origin,'https://ravradar.dk');
         assert.equal(target.search,'');assert.equal(target.hash,'');
         assert.equal(target.username,'');assert.equal(target.password,'');
-        assert.ok(['/data/live/manifest.json','/data/zones.geojson'].includes(target.pathname)
-          || /^\/data\/live\/forecast\/[a-f0-9]{64}\.json$/.test(target.pathname));
+        assert.ok(['/data/live/manifest.json','/data/live/forecast-share.json'].includes(target.pathname)
+          || /^\/data\/live\/share\/[a-f0-9]{64}\.json$/.test(target.pathname));
         assert.equal(call.redirect,'manual');assert.equal(call.credentials,'omit');
         assert.deepEqual(call.headers,{Accept:'application/json'});
       }
@@ -274,32 +303,31 @@ try{
     return result;
   };
   for(const fixture of [
-    shareFixture({zoneText:shareRow.text+' '}),
-    shareFixture({zoneText:shareRow.text.replace('map-timeline-synthetic','Map-timeline-synthetic')}),
-    shareFixture({mutateManifest:target=>{target.ravScoreModelBinding.modelBundleSha256='0'.repeat(64);}}),
-    shareFixture({mutateDocument:document=>{
-      const row=document.coastalParts.zones[shareZoneId].hourly[1].waders;
-      row.modelBinding={...row.modelBinding,modelBundleSha256:'0'.repeat(64)};
+    compactShareFixture({zoneText:compactShareZoneText+' '}),
+    compactShareFixture({zoneText:compactShareZoneText.replace('map-timeline-synthetic','Map-timeline-synthetic')}),
+    compactShareFixture({mutateManifest:target=>{target.ravScoreModelBinding.modelBundleSha256='0'.repeat(64);}}),
+    compactShareFixture({mutateDocument:document=>{
+      document.modelBinding={...document.modelBinding,modelBundleSha256:'0'.repeat(64)};
     }}),
-    shareFixture({registryText:zoneRegistryText.replace('Zone 1','Zone X')}),
+    compactShareFixture({mutateDocument:document=>{document.zoneRegistrySha256='0'.repeat(64);}}),
   ]){await unavailableShare(fixture);cases++;}
   // Workerens manuelle redirect svarer aldrig ved at hente Location. Den normale
   // læser afviser alle 3xx før JSON/digest, og den offentlige fejl er stadig ærlig.
   for(const status of [301,302,303,307,308]){
-    const result=await unavailableShare(shareFixture({responseStatus:status,location:'https://forged.invalid/redirect'}));
+    const result=await unavailableShare(compactShareFixture({responseStatus:status,location:'https://forged.invalid/redirect'}));
     assert.deepEqual(result.reads,['./data/live/manifest.json']);
     assert.equal(result.upstream.length,1);assert.equal(result.upstream[0].redirect,'manual');cases++;
   }
-  const forgedPath=await unavailableShare(shareFixture({mutateManifest:target=>{
-    target.detailDelivery.zones[shareZoneId].path='https://forged.invalid/forecast.json';
+  const forgedPath=await unavailableShare(compactShareFixture({mutateDescriptor:target=>{
+    target.zones.find(row=>row.id===shareZoneId).path='https://forged.invalid/forecast.json';
   }}));
-  assert.deepEqual(forgedPath.reads,['./data/live/manifest.json']);cases++;
-  const outside=await unavailableShare(shareFixture(),forecastShareUrl(shareBase,{...shareSelection,
+  assert.deepEqual(forgedPath.reads,['./data/live/manifest.json','./data/live/forecast-share.json']);cases++;
+  const outside=await unavailableShare(compactShareFixture(),forecastShareUrl(shareBase,{...shareSelection,
     time:new Date(Date.parse(last)+3600000).toISOString()}));
   assert.deepEqual(outside.reads,['./data/live/manifest.json']);cases++;
   try{
     Date.now=()=>freshNow+2*3600000;
-    const expired=await unavailableShare(shareFixture());
+    const expired=await unavailableShare(compactShareFixture());
     assert.deepEqual(expired.reads,['./data/live/manifest.json']);
   }finally{Date.now=()=>freshNow;}cases++;
 
@@ -335,7 +363,7 @@ try{
   assert.equal(pagesInvalid.response.status,400);assert.equal(pagesInvalid.upstream.length,0);cases++;
   const pagesFacebook=await shareWorkerRequest(pagesUrl+'&fbclid=synthetic',{pages:true});
   assert.equal(pagesFacebook.response.status,200);assert.doesNotMatch(pagesFacebook.html,/fbclid|synthetic/);cases++;
-  for(const fixture of [shareFixture({zoneText:shareRow.text+' '}),shareFixture({responseStatus:302,location:'https://forged.invalid/'})]){
+  for(const fixture of [compactShareFixture({zoneText:compactShareZoneText+' '}),compactShareFixture({responseStatus:302,location:'https://forged.invalid/'})]){
     const result=await shareWorkerRequest(pagesUrl,{pages:true,fixture});
     assert.equal(result.response.status,200);assert.ok(result.html.includes(forecastShareCopy('da').unavailable));
     assert.doesNotMatch(result.html,/\d+\/100|FORECAST_SHARE_|forged\.invalid/);cases++;
@@ -347,8 +375,8 @@ try{
   }finally{Date.now=()=>freshNow;}cases++;
 
   try{
-    const expiredDuringRead=await unavailableShare(shareFixture({onRead:path=>{
-      if(path==='./data/zones.geojson')Date.now=()=>freshNow+2*3600000;
+    const expiredDuringRead=await unavailableShare(compactShareFixture({onRead:path=>{
+      if(/^\.\/data\/live\/share\/[a-f0-9]{64}\.json$/.test(path))Date.now=()=>freshNow+2*3600000;
     }}));
     assert.equal(expiredDuringRead.reads.length,3);
   }finally{Date.now=()=>freshNow;}cases++;

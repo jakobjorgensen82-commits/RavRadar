@@ -1,5 +1,8 @@
 # DEC-0299 – Faste fejlkategorier ved privat B/S-sammenføring
 
+**Portstatus 2026-10-30:** Beslutningsgrundlaget nedenfor beskriver den særskilte kritiske 591-kandidat under kildekvalifikation. Samme afgrænsede kontrol er forberedt i den kommende 4.0.592-kilde, som endnu ikke er offentligt leveret. Porten bevarer den allerede udstedte 592-modelbinding, den strenge ægte 591-forgængergren og alle 70 SQL-filer. Den giver ingen ny model-/versionsudstedelse eller produktionsaktivering. Faktisk conditions-entrys størrelse og det konkrete produktionsstops udløsning er fortsat ukendte.
+
+
 **Dato:** 2026-10-30
 **Status:** Afgrænset lokal observationskandidat; præcis kvalifikation, levering og faktisk produktionsårsag er åbne.
 

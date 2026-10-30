@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 import crypto from 'node:crypto';
+import { writeForecastShareProjection } from './build-forecast-share-projection.mjs';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -475,6 +476,7 @@ export async function prepareCodeOnlyPublicRuntime({
       ? path.join(repository, PRIVATE_PUBLIC_HOUR_DELIVERY_PACK_FILE.relativePath)
       : null,
   });
+  await writeForecastShareProjection({ repository });
   assertPublicRuntimePrivacy(generated.publicDocument, 'startup');
   assertPublicRuntimePrivacy(generated.detailsDocument, 'details');
   assertPublicRuntimePrivacy(generated.manifest, 'manifest');

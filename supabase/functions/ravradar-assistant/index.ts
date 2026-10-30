@@ -11,6 +11,7 @@ import {
   RAV_ASSISTANT_KNOWLEDGE_SHA256,
   RAV_ASSISTANT_MODEL,
   RAV_ASSISTANT_REFUSALS,
+  RAV_ASSISTANT_REJECTION_CODES,
   RAV_ASSISTANT_RAVSCORE_MODEL_BINDING,
   routeAssistantQuestion,
   sameAssistantRavScoreModelBinding,
@@ -52,7 +53,25 @@ function cloudflareCredential() {
   return { accountId, token };
 }
 
+// Failure observation contains only fixed categories and numeric HTTP status.
+// A missing/failing logger must preserve the original public error unchanged.
+function reportAssistantFailure(stage: string, upstreamStatus: number | null, rejectionCode: string | null, responseStatus: number) {
+  try {
+    const stages = ["UPSTREAM_REQUEST", "UPSTREAM_HTTP_REJECTED", "UPSTREAM_JSON_PARSE", "UPSTREAM_ENVELOPE_REJECTED", "RESULT_EXTRACTION", "RESULT_VALIDATION"];
+    console.warn("RAVRADAR_ASSISTANT_FAILURE", {
+      schemaVersion: 1,
+      stage: stages.includes(stage) ? stage : "UNKNOWN",
+      responseStatus: Number.isInteger(responseStatus) && responseStatus >= 400 && responseStatus <= 599 ? responseStatus : null,
+      upstreamStatus: upstreamStatus !== null && Number.isInteger(upstreamStatus) && upstreamStatus >= 100 && upstreamStatus <= 599 ? upstreamStatus : null,
+      rejectionCode: typeof rejectionCode === "string" && RAV_ASSISTANT_REJECTION_CODES.includes(rejectionCode) ? rejectionCode : null,
+    });
+  } catch { /* Diagnostics cannot replace the original failure. */ }
+}
+
 Deno.serve(async (request) => {
+  let observedStage: string | null = null;
+  let observedUpstreamStatus: number | null = null;
+  let observedRejectionCode: string | null = null;
   try {
     assertAllowedOrigin(request);
     if (request.method === "OPTIONS") return new Response(null, { status: 204, headers: assistantHeaders(request) });
@@ -74,6 +93,7 @@ Deno.serve(async (request) => {
 
     await enforceRateLimits(request, "ravradar-assistant", { minute: 6, hour: 40, globalDay: 300 });
     const { accountId, token } = cloudflareCredential();
+    observedStage = "UPSTREAM_REQUEST";
     const response = await fetchWithTimeout(`https://api.cloudflare.com/client/v4/accounts/${encodeURIComponent(accountId)}/ai/run/${RAV_ASSISTANT_MODEL}`, {
       method: "POST",
       headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
@@ -89,14 +109,27 @@ Deno.serve(async (request) => {
         response_format: { type: "json_object" },
       }),
     }, 7_000);
-    if (!response.ok) throw new GatewayError(502, "ASSISTANT_UPSTREAM_FAILED");
+    observedUpstreamStatus = response.status;
+    if (!response.ok) {
+      observedStage = "UPSTREAM_HTTP_REJECTED";
+      throw new GatewayError(502, "ASSISTANT_UPSTREAM_FAILED");
+    }
+    observedStage = "UPSTREAM_JSON_PARSE";
     const payload = await response.json();
-    if (payload?.success === false) throw new GatewayError(502, "ASSISTANT_UPSTREAM_FAILED");
+    if (payload?.success === false) {
+      observedStage = "UPSTREAM_ENVELOPE_REJECTED";
+      throw new GatewayError(502, "ASSISTANT_UPSTREAM_FAILED");
+    }
+    observedStage = "RESULT_EXTRACTION";
     const parsed = extractCloudflareAssistantResult(payload);
-    const validated = validateAssistantResult(parsed, locale, body.context, rawQuestion);
+    observedStage = parsed === null ? "RESULT_EXTRACTION" : "RESULT_VALIDATION";
+    const validated = validateAssistantResult(parsed, locale, body.context, rawQuestion,
+      (code: string) => { observedRejectionCode = code; });
     if (!validated) throw new GatewayError(502, "ASSISTANT_RESPONSE_REJECTED");
     return assistantJsonResponse(request, { answer: validated.answer });
   } catch (error) {
-    return assistantErrorResponse(request, error);
+    const response = assistantErrorResponse(request, error);
+    if (observedStage !== null) reportAssistantFailure(observedStage, observedUpstreamStatus, observedRejectionCode, response.status);
+    return response;
   }
 });

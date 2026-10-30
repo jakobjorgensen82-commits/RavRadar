@@ -808,6 +808,10 @@ const POST_H0_FIXED_CLI_SOURCES=[
   'scripts/native-sampling-identity-successor-readiness.mjs',
   'scripts/migrate-post-cutover-private-runtime.mjs',
   'scripts/audit-ravscore-integrated-public-runtime.mjs',
+  // Actual compact-sharing static neighbours of the normal audit CLI.
+  'scripts/build-forecast-share-projection.mjs',
+  'js/services/forecast-share-projection.js',
+  'js/services/map-forecast-view.js',
   'scripts/runtime-binding-registry.mjs',
   'scripts/lib/native-identity-staging-working-copy.mjs',
   'scripts/lib/native-sampling-identity-successor-source.mjs',

@@ -558,3 +558,35 @@ console.log('Admin active RavScore runtime/export contract tests passed.');
  html=render(state);assert.match(html,/&lt;img src=x&gt;: 2/);assert.match(html,/&lt;script&gt;x&lt;\/script&gt;/);assert.doesNotMatch(html,/<img src=x>|<script>x/);
  console.log('Admin Datakvalitet: actual renderer preserves five-family/current-vs-cache scope, unknown versus missing/zero, dates and versions, exact ocean/cache producer keys and escaped immutable input; no HTTP.');
 }
+
+// ADMIN_LOCAL_LEARNING_SCOPE_NORMAL_TARGET_START
+{
+ const start=dashboardSource.indexOf('function renderLearning(){'),end=dashboardSource.indexOf('\nconst saveBadge',start);
+ assert(start>=0&&end>start);const actual=dashboardSource.slice(start,end);
+ const oldLabel="<h2>Registrerede ture</h2><div class=\"metric\">${analysis.sampleSize||0}</div><p class=\"muted\">Kun dækningskontrol</p>",newLabel="<h2>Ture i lokalt datagrundlag</h2><div class=\"metric\">${analysis.sampleSize||0}</div><p class=\"muted\">Kun lokale ture, der opfylder visningens model- og evidenskrav. Samlet turtal findes i Overblik.</p>";
+ assert.equal(actual.split(newLabel).length,2);const previous=actual.replace(newLabel,oldLabel);
+ const render=(source,sampleSize,eligible,ok=true)=>{
+  const analysis=Object.freeze({sampleSize,sourceCount:19,excludedCount:19-sampleSize,zoneCount:2,
+   noFindCount:1,effortCount:sampleSize,snapshotLinkCount:sampleSize,modes:Object.freeze({beach:sampleSize,waders:0})});
+  const output={innerHTML:''};let reads=0;
+  runInNewContext(source+'\nrenderLearning();',{content:output,
+   analyzeObservations(){reads++;return analysis;},
+   activePublicRavScoreState:()=>({ok,value:{observationCalibrationEligible:eligible,labelDa:'Aktuel model'}}),
+   activeModelUnavailableCard:()=>'<p>Ukendt model</p>',esc:value=>String(value),
+   loadAdminTripCount(){throw Error('LOCAL_LEARNING_MUST_NOT_READ_CENTRAL_TRIPS');},
+   fetch(){throw Error('LOCAL_LEARNING_MUST_NOT_ADD_HTTP');}});
+  assert.equal(reads,1);assert.equal(analysis.sampleSize,sampleSize);return output.innerHTML;
+ };
+ for(const size of [0,7])for(const eligible of [false,true]){
+  const html=render(actual,size,eligible),old=render(previous,size,eligible);
+  assert.match(html,/<h2>Ture i lokalt datagrundlag<\/h2>/);
+  assert(html.includes('<div class="metric">'+size+'</div>'));
+  assert(html.includes('Kun lokale ture, der opfylder visningens model- og evidenskrav. Samlet turtal findes i Overblik.'));
+  assert.equal(html.replace('Ture i lokalt datagrundlag','Registrerede ture').replace(
+   'Kun lokale ture, der opfylder visningens model- og evidenskrav. Samlet turtal findes i Overblik.','Kun dækningskontrol'),old,
+   'All counts, model/calibration guards and other rendered bytes survive this label-only correction');
+ }
+ assert.equal(render(actual,7,true,false),render(previous,7,true,false),'Unavailable public model keeps its original refusal');
+ console.log('Admin local-learning scope: actual renderer labels its local evidence-filtered count; all numbers and guards unchanged, no central trip read/HTTP.');
+}
+// ADMIN_LOCAL_LEARNING_SCOPE_NORMAL_TARGET_END

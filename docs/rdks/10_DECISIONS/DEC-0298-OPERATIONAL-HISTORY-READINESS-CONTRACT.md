@@ -1,11 +1,11 @@
 # DEC-0298 – Operationel kontrol af historikvindue og scoreusikkerhed
 
 **Dato:** 2026-10-30
-**Status:** AKTIV afgrænset 591-kandidat; normal målprøve er bestået, men samlet kildekvalifikation, sikker levering og faktisk afsluttende kontrol er åbne.
+**Status:** AKTIV afgrænset beslutning; kritisk 591-kvalifikation i PR758 er særskilt, og videreførelsen i den fremtidige 592-kilde har egne åbne kvalifikations- og leveringskrav.
 
 ## Påvist kontraktmodstrid
 
-Den undersøgte almindelige kørsel gennemførte beregning, privat gemning og Pages-deploy. En frisk lille offentlig manifest var helt byteidentisk med den forventede manifest i det forseglede handoff. Den normale private audit var bestået og forventede samme profil som producenten: modelCoverageReady=true, modelMemoryReady=true, modelMigrationReady=true og advisories=[]. Efterfølgende deployverifikation afviste alligevel profilen som uforenelig med historikkontrollerne.
+Den undersøgte almindelige 591-kørsel gennemførte beregning, privat gemning og Pages-deploy. En frisk lille offentlig manifest var helt byteidentisk med den forventede manifest i det forseglede handoff. Den normale private audit var bestået og forventede samme profil som producenten: modelCoverageReady=true, modelMemoryReady=true, modelMigrationReady=true og advisories=[]. Efterfølgende deployverifikation afviste alligevel profilen som uforenelig med historikkontrollerne.
 
 Den aktuelle availability ved fælles H0 angav 210 aktive zoner, ingen utilgængelige zoner, 420 zone-/søgemådevalg markeret med ufuldstændig historik og ingen FULL_HISTORY. Alle 210 samlede historikposter angav 48 timers dækning og alene WAVE_MOBILISATION_HISTORY_INCOMPLETE. Den normale availability-builder vælger præcis current-rækken ved evaluatedAt; dette er ikke en optælling af alle 118 fremtidige timer.
 
@@ -29,8 +29,8 @@ Den manglende auditrapport i et tidligere forløb er en særskilt sag: DEC-0297s
 
 ## Bevarelse og leveringskrav
 
-Kilden forbliver 4.0.591. Ingen C/I/T, modelversion, SQL-migration, originaler, offentliggjort scorehistorik, administratorpunkter, geometri, kildeprioritet eller scoreformel ændres. Den gennemgåede reservekøs 600 sekunder, 800 faktiske HTTP-forsøg inklusive genforsøg, 150 ms mellem starter og to transporter bevares, ligesom den særskilte auditressourceforbedring.
+Den kritiske rettelse kvalificeres særskilt på 4.0.591 i PR758. Denne fremtidige 4.0.592-kilde bevarer sin egen faktisk udstedte C/I/T, allerede udstedte migration og alle historiske SQL-filer, originaler, offentliggjort scorehistorik, administratorpunkter, geometri, kildeprioritet og scoreformel. Kontrolvidereførelsen udsteder ingen yderligere version, model eller SQL-overgang. Den gennemgåede reservekøs 600 sekunder, 800 faktiske HTTP-forsøg inklusive genforsøg, 150 ms mellem starter og to transporter bevares, ligesom den særskilte auditressourceforbedring.
 
 Præcis kildekvalifikation og sikre leveringsvilkår uden en aktiv skrivende proces kræves fortsat. Faktisk efterfølgende normal offentlig verifikation og terminal kvittering skal dokumenteres, før den nye kontrolvej kaldes produktionsverificeret. Fuld femfamiliedækning, komplet historik og selvstændig drift er stadig særskilte åbne krav. Alle fem RavRadar-mål består.
 
-Håndbog 89.284 tilføjes fra kanonisk Markdown og spejles til web og normal INSTALL-håndbogspayload. Alle 533 tidligere afsnit bevares uændret. Ingen separat fremtidig assistent-, delings- eller SOURCE-kandidat kopieres ind. Konkrete driftsidentiteter, målinger og aktuelle skriveudfald ligger i privat checkpoint.
+Håndbog 89.284 tilføjes fra kanonisk Markdown og spejles til web og normal INSTALL-håndbogspayload. Alle 535 tidligere 592-afsnit bevares uændret, herunder 89.279, 89.282 og 89.283. De afgrænsede assistent-, observations-, kompakte delings- og auditressourceændringer bevares uden omskrivning. Den isolerede SOURCE-revision aktiveres ikke. 592 er fortsat ikke offentligt leveret. Konkrete driftsidentiteter, målinger og aktuelle skriveudfald ligger i privat checkpoint.

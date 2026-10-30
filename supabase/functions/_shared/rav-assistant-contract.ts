@@ -12,7 +12,7 @@ export const RAV_ASSISTANT_RAVSCORE_MODEL_BINDING = Object.freeze({
   bestTimePolicyId: "score-history-water-tie-earliest-v3",
   presentationPolicyId: "score-bands-35-55-75-exceptional90-v1",
   modelContractSha256: "a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b",
-  modelBundleSha256: "ebd5ac3dac09b7afb51e46d18920f6932b478b7ef15bdd31190c128273cb6a54",
+  modelBundleSha256: "69bf81c3cc5e256deee2c116a52462597f4cfc47cb6c855c6dba969c1dcf4643",
 });
 
 export const RAV_ASSISTANT_KNOWLEDGE_SCHEMA = "rav-assistant-public-knowledge-v1";
@@ -262,6 +262,18 @@ function unknownAmberEquipmentQuestion(question, locale) {
       `^how (?:does|can) (?:a|an|the) (${label}) help (?:me|us) (?:find|look for|search for) amber(?: on (?:a|the) beach)?$`,
     ],
   };
+  // A whole definition of an unfamiliar instrument name is not evidence for
+  // a known net. Restrict this new arm to explicit instrument noun endings;
+  // material, origin and colour definitions retain their ordinary routes.
+  const definitions = {
+    da:`^hvad er (?:(?:en|et|den|det) )?(${label})$`,
+    de:`^was ist (?:(?:ein|eine|einen|der|die|das) )?(${label})$`,
+    en:`^what is (?:(?:a|an|the) )?(${label})$`,
+  };
+  const definition = text.match(new RegExp(definitions[locale], "iu"));
+  if (definition && /(?:måler|meter|apparat|instrument|scanner|sensor|messgerät|messer|gauge|detector|device)$/iu.test(definition[1])) {
+    patterns[locale].push(definitions[locale]);
+  }
   const known = new Set([
     "ravkese", "ravkesse", "ravnet", "ravlygte", "ravlampe", "ravbriller",
     "bernsteinkescher", "bernsteinkese", "bernsteinkesse", "bernsteinnetz", "bernsteinlampe", "bernsteinbrille",
@@ -954,7 +966,35 @@ export function assistantQuestionEvidenceCoverage(question, locale, evidenceIds)
   return { complete:missingFacets.length === 0, missingFacets };
 }
 
-function composeCanonicalAssistantResult(evidenceIds, locale, disposition, context) {
+// Fixed diagnostics only; no request, answer, fact ID or model output is passed.
+export const RAV_ASSISTANT_REJECTION_CODES = Object.freeze([
+  "RESULT_LOCALE_UNSUPPORTED",
+  "RESULT_NOT_OBJECT",
+  "RESULT_KEYS_INVALID",
+  "RESULT_SCHEMA_INVALID",
+  "RESULT_LOCALE_MISMATCH",
+  "RESULT_DISPOSITION_INVALID",
+  "RESULT_ANSWER_EMPTY",
+  "RESULT_ANSWER_TOO_LONG",
+  "RESULT_ANSWER_SECURITY",
+  "RESULT_EVIDENCE_ARRAY_INVALID",
+  "RESULT_EVIDENCE_COUNT_EXCEEDED",
+  "RESULT_EVIDENCE_DUPLICATE",
+  "RESULT_EVIDENCE_UNKNOWN",
+  "RESULT_OUT_OF_SCOPE_EVIDENCE",
+  "RESULT_ANSWER_EVIDENCE_MISSING",
+  "CANONICAL_UNIT_MISSING",
+  "CANONICAL_ANSWER_EMPTY",
+  "CANONICAL_ANSWER_SECURITY"
+]);
+function rejectedAssistantResult(code, observeRejection) {
+  if (typeof observeRejection === "function") {
+    try { observeRejection(code); } catch { /* Observation must never alter admission. */ }
+  }
+  return null;
+}
+
+function composeCanonicalAssistantResult(evidenceIds, locale, disposition, context, observeRejection = null) {
   const pending = new Set(evidenceIds);
   const units = [];
   for (const id of evidenceIds) {
@@ -969,46 +1009,52 @@ function composeCanonicalAssistantResult(evidenceIds, locale, disposition, conte
         ? canonicalSelectedZone(context, locale) : canonicalFactText(id, locale));
     }
   }
-  if (units.some(text => typeof text !== "string" || !text)) return null;
+  if (units.some(text => typeof text !== "string" || !text)) return rejectedAssistantResult("CANONICAL_UNIT_MISSING", observeRejection);
   if (disposition === "uncertain") units.push(RAV_ASSISTANT_UNCERTAIN_REPLIES[locale]);
   const answer = units.join("\n\n");
   // All units or an honest request to focus: no clipping or silent first-N selection.
   if (answer.length > 900) {
     return { answer:CANONICAL_FOCUS_REPLIES[locale], disposition:"uncertain", evidenceIds:[] };
   }
-  if (!answer || SECURITY_PATTERN.test(answer)) return null;
+  if (!answer || SECURITY_PATTERN.test(answer)) return rejectedAssistantResult(
+    !answer ? "CANONICAL_ANSWER_EMPTY" : "CANONICAL_ANSWER_SECURITY", observeRejection);
   return { answer, disposition, evidenceIds };
 }
 
-export function validateAssistantResult(value, locale, context = {}, question = null) {
-  if (!RAV_ASSISTANT_LOCALES.includes(locale)) return null;
-  if (!value || typeof value !== "object" || Array.isArray(value)) return null;
+export function validateAssistantResult(value, locale, context = {}, question = null, observeRejection = null) {
+  const reject = code => rejectedAssistantResult(code, observeRejection);
+  if (!RAV_ASSISTANT_LOCALES.includes(locale)) return reject("RESULT_LOCALE_UNSUPPORTED");
+  if (!value || typeof value !== "object" || Array.isArray(value)) return reject("RESULT_NOT_OBJECT");
   const expectedKeys = ["answer", "disposition", "evidenceIds", "locale", "schemaVersion"];
-  if (Object.keys(value).sort().join("|") !== expectedKeys.join("|")) return null;
-  if (value.schemaVersion !== RAV_ASSISTANT_RESPONSE_SCHEMA || value.locale !== locale) return null;
-  if (!["answer", "out_of_scope", "uncertain"].includes(value.disposition)) return null;
+  if (Object.keys(value).sort().join("|") !== expectedKeys.join("|")) return reject("RESULT_KEYS_INVALID");
+  if (value.schemaVersion !== RAV_ASSISTANT_RESPONSE_SCHEMA || value.locale !== locale) return reject(
+    value.schemaVersion !== RAV_ASSISTANT_RESPONSE_SCHEMA ? "RESULT_SCHEMA_INVALID" : "RESULT_LOCALE_MISMATCH");
+  if (!["answer", "out_of_scope", "uncertain"].includes(value.disposition)) return reject("RESULT_DISPOSITION_INVALID");
   const answer = typeof value.answer === "string" ? normaliseAssistantTerminology(value.answer, locale) : "";
-  if (!answer || answer.length > 900 || SECURITY_PATTERN.test(answer)) return null;
-  if (!Array.isArray(value.evidenceIds) || value.evidenceIds.length > RAV_ASSISTANT_FACTS.length) return null;
+  if (!answer || answer.length > 900 || SECURITY_PATTERN.test(answer)) return reject(
+    !answer ? "RESULT_ANSWER_EMPTY" : answer.length > 900 ? "RESULT_ANSWER_TOO_LONG" : "RESULT_ANSWER_SECURITY");
+  if (!Array.isArray(value.evidenceIds) || value.evidenceIds.length > RAV_ASSISTANT_FACTS.length) return reject(
+    !Array.isArray(value.evidenceIds) ? "RESULT_EVIDENCE_ARRAY_INVALID" : "RESULT_EVIDENCE_COUNT_EXCEEDED");
   const evidenceIds = [...new Set(value.evidenceIds)];
-  if (evidenceIds.length !== value.evidenceIds.length || evidenceIds.some((id) => typeof id !== "string" || !RAV_ASSISTANT_FACTS.some((fact) => fact.id === id))) return null;
+  if (evidenceIds.length !== value.evidenceIds.length || evidenceIds.some((id) => typeof id !== "string" || !RAV_ASSISTANT_FACTS.some((fact) => fact.id === id))) return reject(
+    evidenceIds.length !== value.evidenceIds.length ? "RESULT_EVIDENCE_DUPLICATE" : "RESULT_EVIDENCE_UNKNOWN");
   // Only the normal server caller supplies the original request question.
   // A provider/context-supplied coverage claim is never used or accepted.
   const questionCoverage = assistantQuestionEvidenceCoverage(question, locale, evidenceIds);
   const unknownEquipment = routeAssistantQuestion(question) === "provider" && unknownAmberEquipmentQuestion(question, locale);
   const precisionBoundary = exactAmberLandingPredictionBoundary(question, locale);
   if (value.disposition === "out_of_scope") {
-    if (evidenceIds.length) return null;
+    if (evidenceIds.length) return reject("RESULT_OUT_OF_SCOPE_EVIDENCE");
     if (precisionBoundary) return { answer:RAV_ASSISTANT_UNCERTAIN_REPLIES[locale], disposition:"uncertain", evidenceIds:[] };
     if (unknownEquipment) return { answer:RAV_ASSISTANT_UNCERTAIN_REPLIES[locale], disposition:"uncertain", evidenceIds:[] };
     if (questionCoverage) return { answer:CANONICAL_FOCUS_REPLIES[locale], disposition:"uncertain", evidenceIds:[] };
     return { answer: RAV_ASSISTANT_REFUSALS[locale], disposition: value.disposition, evidenceIds };
   }
-  if (value.disposition === "answer" && !evidenceIds.length) return null;
+  if (value.disposition === "answer" && !evidenceIds.length) return reject("RESULT_ANSWER_EVIDENCE_MISSING");
   if (precisionBoundary) {
     if (!evidenceIds.length) return { answer:RAV_ASSISTANT_UNCERTAIN_REPLIES[locale], disposition:"uncertain", evidenceIds:[] };
     if (precisionBoundary === "net-compound" && evidenceIds.length === 1 && evidenceIds[0] === "equipment.amber-net") {
-      return composeCanonicalAssistantResult(evidenceIds, locale, "uncertain", context);
+      return composeCanonicalAssistantResult(evidenceIds, locale, "uncertain", context, observeRejection);
     }
     return { answer:precisionBoundary.endsWith("compound") ? CANONICAL_FOCUS_REPLIES[locale] : RAV_ASSISTANT_UNCERTAIN_REPLIES[locale],
       disposition:"uncertain", evidenceIds:[] };
@@ -1026,5 +1072,5 @@ export function validateAssistantResult(value, locale, context = {}, question = 
   if (value.disposition === "answer" && evidenceIds.length === 2 && evidenceIds.includes("score.integrated-only") && evidenceIds.includes("score.weights-20-50-30")) {
     return { answer: RAV_ASSISTANT_WEIGHT_ANSWERS[locale], disposition: value.disposition, evidenceIds };
   }
-  return composeCanonicalAssistantResult(evidenceIds, locale, value.disposition, context);
+  return composeCanonicalAssistantResult(evidenceIds, locale, value.disposition, context, observeRejection);
 }

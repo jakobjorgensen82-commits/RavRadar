@@ -1,5 +1,7 @@
 import { inverseActiveFamilyRetentionCompanionTestInput, ACTIVE_FAMILY_RETENTION_COMPANION_TEST_REVIEW,
   inverseAssistant590RetentionCompanionTestInput, ASSISTANT590_RETENTION_COMPANION_TEST_REVIEW,
+  inverseAssistant591RetentionCompanionTestInput, ASSISTANT591_RETENTION_COMPANION_TEST_REVIEW,
+  inverseConditions593RetentionCompanionTestInput, CONDITIONS593_RETENTION_COMPANION_TEST_REVIEW,
 } from './lib/alternative-c-caller-test-input.mjs';
 import {inverseReviewedAccountStatisticsAssistantSourceScripts} from './lib/account-statistics-assistant-package-review.mjs';
 import { inverseAlternativeCCaller, inverseAssistant587OriginalCompanionTestInput,
@@ -1315,7 +1317,8 @@ test('assistant588 companion route preserves genuine587 whole bytes and rejects 
 
 test('assistant590 retention companion uses its actual whole source before the historical745 inverse', async () => {
   const row = ASSISTANT590_RETENTION_COMPANION_TEST_REVIEW;
-  const actual = (await fs.readFile(new URL('../' + row.path, import.meta.url), 'utf8')).replace(/\r\n/g, '\n');
+  const actual = inverseAssistant591RetentionCompanionTestInput(
+    (await fs.readFile(new URL('../' + row.path, import.meta.url), 'utf8')).replace(/\r\n/g, '\n'), row.path);
   assert.equal(Buffer.byteLength(actual), row.after.bytes);
   assert.equal(digest(actual), row.after.sha256);
   const before = inverseAssistant590RetentionCompanionTestInput(actual, row.path);
@@ -1379,6 +1382,37 @@ test('active-family retention companion has an exact outer inverse before unchan
 });
 
 
+test('assistant591 retention companion uses actual592 whole source before unchanged591 and older inverses', async () => {
+  const row = ASSISTANT591_RETENTION_COMPANION_TEST_REVIEW;
+  const actual = inverseConditions593RetentionCompanionTestInput(
+    (await fs.readFile(new URL('../' + row.path, import.meta.url), 'utf8')).replace(/\r\n/g, '\n'), row.path);
+  assert.equal(Buffer.byteLength(actual), row.after.bytes);
+  assert.equal(digest(actual), row.after.sha256);
+  assert.match(actual, /sourcePhase==='assistant-public591-successor'\?Object.freeze/);
+  assert.match(actual, /read:readAuthenticatedFrozen591Predecessor,snapshot:assertAuthenticatedFrozen591Snapshot/);
+  const before = inverseAssistant591RetentionCompanionTestInput(actual, row.path);
+  assert.equal(Buffer.byteLength(before), row.before.bytes);
+  assert.equal(digest(before), row.before.sha256);
+  assert.deepEqual(row.before, ASSISTANT590_RETENTION_COMPANION_TEST_REVIEW.after);
+  assert.equal(inverseAssistant591RetentionCompanionTestInput(before, row.path), before);
+  assert.equal(inverseAssistant590RetentionCompanionTestInput(actual, row.path),
+    inverseAssistant590RetentionCompanionTestInput(before, row.path));
+  assert.equal(inverseActiveFamilyRetentionCompanionTestInput(actual, row.path),
+    inverseActiveFamilyRetentionCompanionTestInput(before, row.path));
+  for (const [old, current] of row.hunks) {
+    assert.equal(actual.split(current).length, 2);
+    for (const changed of [actual.replace(current, () => old),
+      actual.replace(current, () => current + current),
+      actual.replace(current, () => current + '/*UNREVIEWED*/')])
+      assert.throws(() => inverseAssistant591RetentionCompanionTestInput(changed, row.path), /ASSISTANT591_RETENTION/);
+  }
+  for (const changed of ['!' + actual.slice(1), actual + '\n'])
+    assert.throws(() => inverseAssistant591RetentionCompanionTestInput(changed, row.path), /ASSISTANT591_RETENTION/);
+  assert.throws(() => inverseAssistant591RetentionCompanionTestInput({}, row.path), /ASSISTANT591_RETENTION_TYPE/);
+  assert.throws(() => inverseAssistant591RetentionCompanionTestInput(actual, 'scripts/unknown.mjs'), /ASSISTANT591_RETENTION_PATH/);
+  assert.throws(() => inverseAssistant591RetentionCompanionTestInput(actual, row.path, true), /ASSISTANT591_RETENTION_ARGUMENTS/);
+});
+
 test('wind-tail default inverse preserves every old updater oracle and refuses other budget or source bytes', async () => {
   const actual = (await fs.readFile(producerPath, 'utf8')).replaceAll('\r\n', '\n');
   const row = WIND_TAIL_CAPACITY_UPDATER_TEST_REVIEW;
@@ -1419,4 +1453,16 @@ test('wind-tail default inverse preserves every old updater oracle and refuses o
   assert.throws(() => inverseWindTailCapacityUpdaterTestInput(actual), /UPDATER_ARGUMENTS/);
   assert.throws(() => inverseWindTailCapacityUpdaterTestInput(actual, row.path, true), /UPDATER_ARGUMENTS/);
   assert.throws(() => inverseWindTailCapacityUpdaterTestInput(null, row.path), /UPDATER_TYPE/);
+});
+
+test('conditions593 retention reader preserves whole592 and refuses changed IO capacity hunks',async()=>{
+  const row=CONDITIONS593_RETENTION_COMPANION_TEST_REVIEW;
+  const actual=await fs.readFile(new URL('../'+row.path,import.meta.url),'utf8');
+  const prior=inverseConditions593RetentionCompanionTestInput(actual,row.path);
+  assert.equal(Buffer.byteLength(prior),row.before.bytes);assert.equal(digest(prior),row.before.sha256);
+  assert.equal(inverseConditions593RetentionCompanionTestInput(prior,row.path),prior);
+  assert.equal(inverseAssistant591RetentionCompanionTestInput(actual,row.path),inverseAssistant591RetentionCompanionTestInput(prior,row.path));
+  for(const [old,current]of row.hunks)for(const changed of [actual.replace(current,()=>old),actual.replace(current,()=>current+current)])
+    assert.throws(()=>inverseConditions593RetentionCompanionTestInput(changed,row.path));
+  for(const changed of [actual+'\n','!'+actual.slice(1)])assert.throws(()=>inverseConditions593RetentionCompanionTestInput(changed,row.path));
 });

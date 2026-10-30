@@ -7,6 +7,7 @@ import os from 'node:os';
 import { fileURLToPath } from 'node:url';
 import { isDeepStrictEqual } from 'node:util';
 import { readDmiBulkDocument } from './lib/dmi-bulk-storage.mjs';
+import { PRIVATE_CONDITIONS_MAX_BYTES } from './lib/bounded-json-writer.mjs';
 import { verifyPrivateProductionRuntimeBundle } from './private-production-runtime-bundle.mjs';
 import { unpackPrivateWeatherComponentCompanions, privateWeatherPackJsonReadsClosed }
   from './lib/private-weather-component-pack.mjs';
@@ -18,10 +19,14 @@ import {readAuthenticatedFrozen588Predecessor,assertAuthenticatedFrozen588Snapsh
   from './lib/authenticated-frozen586-predecessor.mjs';
 import {readAuthenticatedFrozen590Predecessor,assertAuthenticatedFrozen590Snapshot}
   from './lib/authenticated-frozen586-predecessor.mjs';
+import {readAuthenticatedFrozen591Predecessor,assertAuthenticatedFrozen591Snapshot}
+  from './lib/authenticated-frozen586-predecessor.mjs';
 import {ACTIVE_ASSISTANT_SUCCESSOR as ACTIVE} from './lib/assistant-later-h0-successor-source.mjs';
 import {ravScoreModelBinding} from '../js/core/ravscore-model-contract.js';
 import {readAssistantLaterH0RetentionInput} from './assistant-later-h0-runtime-transition.mjs';
-const ACTIVE_PREDECESSOR=ACTIVE.sourcePhase==='assistant-public590-successor'?Object.freeze({
+const ACTIVE_PREDECESSOR=ACTIVE.sourcePhase==='assistant-public591-successor'?Object.freeze({
+  read:readAuthenticatedFrozen591Predecessor,snapshot:assertAuthenticatedFrozen591Snapshot,
+}):ACTIVE.sourcePhase==='assistant-public590-successor'?Object.freeze({
   read:readAuthenticatedFrozen590Predecessor,snapshot:assertAuthenticatedFrozen590Snapshot,
 }):ACTIVE.sourcePhase==='assistant-public588-successor'?Object.freeze({
   read:readAuthenticatedFrozen588Predecessor,snapshot:assertAuthenticatedFrozen588Snapshot,
@@ -169,7 +174,7 @@ export async function readCurrentPrivateRuntimeCompanionInput(targetReferenceAt)
   const conditionsPath = path.join(verified.bundlePath, 'payload/data/live/conditions.json');
   const fileInfo = await fs.lstat(conditionsPath);
   if (!fileInfo.isFile() || fileInfo.isSymbolicLink()
-    || fileInfo.size > 256 * 1024 * 1024) refuse('RETENTION_B_CHANGED');
+    || fileInfo.size > PRIVATE_CONDITIONS_MAX_BYTES) refuse('RETENTION_B_CHANGED');
   const bytes = await fs.readFile(conditionsPath);
   const conditionsSha256 = crypto.createHash('sha256').update(bytes).digest('hex');
   const listed = verified.files.find(row => row.relativePath === 'data/live/conditions.json');

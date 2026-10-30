@@ -1,16 +1,16 @@
-import { PUBLIC_CONFIG } from "../../config.js?v=4.0.591";
-import { LOCAL_RAV_KNOWLEDGE_EXAMPLES, localRavKnowledgeAnswer, matchLocalRavKnowledge, localRavQuestionRequiresWholeAnswer } from "../../knowledge/rav-assistant-local-v2.js?v=4.0.591";
-import { buildLocalZoneScore, selectLocalBestForDay } from "../core/local-zone-score.js?v=4.0.591";
-import { addNationalRanking, compareNationalRankingRows } from "../core/zone-ranking.js?v=4.0.591";
-import { forecastDateKeyForDayOffset, forecastDateKeyInTimeZone, visibleForecastDays } from "../core/forecast-calendar.js?v=4.0.591";
+import { PUBLIC_CONFIG } from "../../config.js?v=4.0.593";
+import { LOCAL_RAV_KNOWLEDGE_EXAMPLES, localRavKnowledgeAnswer, matchLocalRavKnowledge, localRavQuestionRequiresWholeAnswer } from "../../knowledge/rav-assistant-local-v2.js?v=4.0.593";
+import { buildLocalZoneScore, selectLocalBestForDay } from "../core/local-zone-score.js?v=4.0.593";
+import { addNationalRanking, compareNationalRankingRows } from "../core/zone-ranking.js?v=4.0.593";
+import { forecastDateKeyForDayOffset, forecastDateKeyInTimeZone, visibleForecastDays } from "../core/forecast-calendar.js?v=4.0.593";
 import {
   RAVSCORE_CALIBRATION_ELIGIBLE,
   ravScoreModelBinding,
-} from "../core/ravscore-model-contract.js?v=4.0.591";
-import { sameRavScoreModelBinding, ravScorePublicHorizonValidUntil } from "../core/ravscore-public-runtime-contract.js?v=4.0.591";
-import { presentActiveRavScoreExplanation } from "../core/ravscore-integrated-explanation-presenter.js?v=4.0.591";
-import { bestTimeSelectionReasonI18nKey } from "../core/best-time-policy.js?v=4.0.591";
-import { formatDateTime, formatNumber, getLanguage, normaliseLanguage, t } from "../i18n.js?v=4.0.591";
+} from "../core/ravscore-model-contract.js?v=4.0.593";
+import { sameRavScoreModelBinding, ravScorePublicHorizonValidUntil } from "../core/ravscore-public-runtime-contract.js?v=4.0.593";
+import { presentActiveRavScoreExplanation } from "../core/ravscore-integrated-explanation-presenter.js?v=4.0.593";
+import { bestTimeSelectionReasonI18nKey } from "../core/best-time-policy.js?v=4.0.593";
+import { formatDateTime, formatNumber, getLanguage, normaliseLanguage, t } from "../i18n.js?v=4.0.593";
 
 // Compatibility name for existing source-contract tests. The implementation
 // now selects the only adapter matching the artifact's exact active binding.
@@ -170,11 +170,12 @@ function scoreRangeNotice(result, language) {
   if(result?.scoreQuality!=='HISTORY_INCOMPLETE'
     ||finite(bounds?.lower)===null||finite(bounds?.upper)===null
     ||finite(bounds?.modelUncertaintyPoints)===null)return '';
-  return `${t('score.historyIncomplete.short',{},language)}: ${t('score.historyIncomplete.range',{
+  const range=t('score.historyIncomplete.range',{
     lower:formatNumber(bounds.lower,{maximumFractionDigits:1},language),
     upper:formatNumber(bounds.upper,{maximumFractionDigits:1},language),
     span:formatNumber(bounds.modelUncertaintyPoints,{maximumFractionDigits:1},language),
-  },language)}.`;
+  },language);
+  return `${t('score.historyIncomplete.short',{},language)}: ${range}${/[.!?]$/u.test(range)?'':'.'}`;
 }
 
 function tomorrowQuestion(question) {
@@ -190,8 +191,8 @@ function normalizeLocalQuestion(question) {
 
 function generalLocalIntent(question) {
   const text = normalizeLocalQuestion(question);
-  if (/^(?:hvad kan (?:du|ravradar)(?: hjælpe (?:(?:mig|os) )?med)?|hvad kan jeg spørge (?:dig|ravradar) om|hvilke spørgsmål kan du svare på|was kannst du(?: für mich tun)?|wobei kannst du (?:(?:mir|uns) )?helfen|what can you (?:do|help (?:(?:me|us) )?with)|what can i ask you)[?!.]*$/iu.test(text)) return 'capabilities';
-  if (/^(?:hvad er (?:er )?(?:(?:en|et) )?kesse(?: til ravjagt)?|(?:hvad bruger (?:man|jeg|vi)|hvordan bruger (?:jeg|vi|man)) (?:en )?kesse(?: til ravjagt)?|was ist (?:(?:ein|eine|einen|der|die|das) )?(?:(?:bernstein(?:-|\s*)?)?kescher|bernstein(?:-|\s*)?kes{1,2}e)(?: für die bernsteinsuche)?|what is (?:(?:a|an|the) )?amber(?: hunting)? net)[?!.]*$/iu.test(text)) return 'amber-net';
+  if (/^(?:hvad kan (?:du|ravradar)(?: hjælpe (?:(?:mig|os) )?med)?|hvad kan jeg spørge (?:dig|ravradar) om|hvilke spørgsmål kan du svare på|was (?:kannst du|kann ravradar)(?: für mich tun)?|wobei (?:kannst du|kann ravradar) (?:(?:mir|uns) )?helfen|what can (?:you|ravradar) (?:do|help (?:(?:me|us) )?with)|what can i ask you)[?!.]*$/iu.test(text)) return 'capabilities';
+  if (/^(?:hvad er (?:er )?(?:(?:en|et) )?kesse(?: til ravjagt)?|(?:hvad bruger (?:man|jeg|vi)|hvordan bruger (?:jeg|vi|man)) (?:en )?kesse(?: til ravjagt)?|was ist (?:(?:ein|eine|einen|der|die|das) )?(?:(?:bernstein(?:-|\s*)?)?kescher|(?:bernstein(?:-|\s*)?)?kes{1,2}e)(?: für die bernsteinsuche)?|what is (?:(?:a|an|the) )?amber(?: hunting)? net)[?!.]*$/iu.test(text)) return 'amber-net';
   if (/^(?:(?:hvad er (?:en )?god vind|hvilken (?:vind|vindretning) er (?:god|bedst))(?: til (?:rav|ravjagt))?|hvad betyder vinden for ravjagt|(?:was ist (?:ein )?guter wind|welcher wind ist (?:gut|am besten))(?: (?:für die bernsteinsuche|für bernstein))?|(?:what is (?:a )?good wind|which wind is best)(?: for (?:amber|amber hunting))?)[?!.]*$/iu.test(text)) return 'wind';
   return null;
 }
@@ -376,6 +377,18 @@ function unknownAmberEquipmentQuestion(question, locale) {
       `^how (?:does|can) (?:a|an|the) (${label}) help (?:me|us) (?:find|look for|search for) amber(?: on (?:a|the) beach)?$`,
     ],
   };
+  // A whole definition of an unfamiliar instrument name is not evidence for
+  // a known net. Restrict this new arm to explicit instrument noun endings;
+  // material, origin and colour definitions retain their ordinary routes.
+  const definitions = {
+    da:`^hvad er (?:(?:en|et|den|det) )?(${label})$`,
+    de:`^was ist (?:(?:ein|eine|einen|der|die|das) )?(${label})$`,
+    en:`^what is (?:(?:a|an|the) )?(${label})$`,
+  };
+  const definition = text.match(new RegExp(definitions[locale], "iu"));
+  if (definition && /(?:måler|meter|apparat|instrument|scanner|sensor|messgerät|messer|gauge|detector|device)$/iu.test(definition[1])) {
+    patterns[locale].push(definitions[locale]);
+  }
   const known = new Set([
     "ravkese", "ravkesse", "ravnet", "ravlygte", "ravlampe", "ravbriller",
     "bernsteinkescher", "bernsteinkese", "bernsteinkesse", "bernsteinnetz", "bernsteinlampe", "bernsteinbrille",
@@ -491,7 +504,8 @@ function bestPlace(context, question, language, now) {
   const remainingNotice = prepared?.pastRemoved ? `\n\n${t('assistant.local.remainingRanking', {}, language)}` : '';
   return `${t('assistant.local.bestPlaces', { day }, language)}\n\n${rows.map((item, index) => t('assistant.local.rankLine', {
     rank:index + 1, zone:item.zone.name, score:item.rankingDisplayScore ?? item.result.score, time:clock(item.hour.time, language)
-  }, language)+(scoreRangeNotice(item.result,language)?` · ${scoreRangeNotice(item.result,language)}`:'')).join('\n')}\n\n${t('assistant.local.rankingBasis', {}, language)}${qualityNotice}${remainingNotice}`;
+  }, language)+` · ${t('assistant.local.rankLocalScore',{score:formatNumber(item.result.score,{maximumFractionDigits:1},language)},language)}`
+    +(scoreRangeNotice(item.result,language)?` · ${scoreRangeNotice(item.result,language)}`:'')).join('\n')}\n\n${t('assistant.local.rankingBasis', {}, language)}${qualityNotice}${remainingNotice}`;
 }
 
 // Consume only the canonical projection nested in these conditions. The
