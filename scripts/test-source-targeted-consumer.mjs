@@ -32,7 +32,7 @@ const copy=value=>structuredClone(value),repo='/repos/'+ORIGIN.repository,action
 const fullRun=50000000001,fullJob=50000000003,fullPr=998,fullFinal=50000000005,fullNative=50000000006;
 const selectedRun=50000000002,selectedJob=50000000004,selectedPr=999,selectedArtifact=50000000007;
 let cases=0,base,producer,main,baseContent,content,fullReference,fullBody,nativeBody,fullZip,nativeZip;
-let receipt,rawReceipt,targetZip,targetMetadata,currentJob,fullSourceJob,json,zips,locator,decide,discover;
+let receipt,rawReceipt,targetZip,targetMetadata,currentJob,fullSourceJob,json,zips,locator,decide,discover,accessFactory;
 const env={GITHUB_REPOSITORY:ORIGIN.repository,GITHUB_REF:'refs/heads/main',GITHUB_RUN_ID:'50000000009'};
 function jobs(selected){
   return {id:selected?selectedJob:fullJob,run_id:selected?selectedRun:fullRun,run_attempt:1,
@@ -84,6 +84,44 @@ function dependencies(){
       assert(zips.has(id));return Buffer.from(zips.get(id));},readGit:git};
 }
 function d(deps){return {getJson:deps.getJson,getArtifactZip:deps.getArtifactZip,readGit:deps.readGit};}
+function addLaterWeatherFailureWithSuccessfulSource(){
+  const p=Object.values(SOURCE_GATE_PRODUCERS)[0],id=50000000008;
+  json.set(actions+'/workflows/'+p.workflowId+'/runs?head_sha='+main+'&branch=main&per_page=100&page=1',
+    {total_count:1,workflow_runs:[{id,run_attempt:1,head_sha:main,head_branch:'main',repository:{full_name:ORIGIN.repository},
+      path:'.github/workflows/update-and-deploy.yml',conclusion:'failure',updated_at:stamp(30)}]});
+  json.set(actions+'/runs/'+id+'/attempts/1/jobs?per_page=100',{total_count:1,jobs:[{name:p.gates[0].job,
+    run_id:id,run_attempt:1,head_sha:main,status:'completed',conclusion:'failure',
+    steps:[{name:p.gates[0].step,status:'completed',conclusion:'success',completed_at:stamp(26)}]}]});
+}
+function streamedOverflow(size,count,state){
+  let emitted=0;return new Response(new ReadableStream({pull(controller){
+    if(emitted===count){controller.close();return;}emitted++;state.emitted=emitted;
+    controller.enqueue(new Uint8Array(size).fill(120));
+  },cancel(){state.cancelled++;}}));
+}
+function physicalTransport(options={}){
+  const seen={physical:0,signed:0,timeouts:[],overflow:{emitted:0,cancelled:0}};
+  const access=accessFactory({env:{GITHUB_TOKEN:'synthetic-source-token'},now:options.now??(()=>performance.now()),
+    fetchImpl:async(url,request)=>{
+      seen.physical++;assert(request.signal instanceof AbortSignal);
+      const parsed=new URL(url);
+      if(parsed.origin==='https://synthetic-source-artifact.invalid'){
+        seen.signed++;assert.equal(request.headers,undefined);assert.equal(request.redirect,'error');
+        if(options.signedRedirect)return new Response(null,{status:302,headers:{location:'https://must-not-follow.invalid/'}});
+        if(options.zipOverflow)return streamedOverflow(4096,32,seen.overflow);
+        return new Response(zips.get(parsed.pathname.slice(1)));
+      }
+      assert.equal(parsed.origin,'https://api.github.com');assert.equal(request.redirect,'manual');
+      assert.equal(request.headers.Authorization,'Bearer synthetic-source-token');
+      const route=parsed.pathname+parsed.search;options.onRequest?.(route,seen);
+      const match=/\/artifacts\/([0-9]+)\/zip$/.exec(route);
+      if(match)return new Response(null,{status:302,headers:{location:options.badLocation
+        ??'https://synthetic-source-artifact.invalid/'+match[1]+'?signature=synthetic-private'}});
+      if(options.jsonOverflow)return streamedOverflow(32768,100,seen.overflow);
+      assert(json.has(route),'Unexpected synthetic HTTP route');return Response.json(json.get(route));
+    }});
+  return {access,dependencies:{...access,readGit:git},seen};
+}
 function copyModule(name,seen=new Set()){
   if(seen.has(name))return;seen.add(name);const bytes=fs.readFileSync(path.join(SOURCE,name));write(name,bytes);
   for(const match of bytes.toString('utf8').matchAll(/^import\b[^;]*?\bfrom\s*['"](\.[^'"]+)['"]/gm))
@@ -92,6 +130,7 @@ function copyModule(name,seen=new Set()){
 try{
   copyModule('scripts/source-targeted-consumer.mjs');
   for(const name of ['package.json','scripts/lib/account-statistics-assistant-package-review.json',
+    'scripts/sync-admin-config.py','data/water-level-station-routing.json',
     'js/ui/about-i18n.js','js/ui/about-explainer-i18n.js','js/ui/learn-i18n.js','js/ui/learn-i18n-de.js','js/ui/learn-i18n-en.js'])
     write(name,fs.readFileSync(path.join(SOURCE,name)));
   write('.gitignore','.cache/\n');git(['init','-q']);git(['config','user.name','Synthetic targeted consumer']);
@@ -137,6 +176,8 @@ try{
   main=text(['rev-parse','HEAD']);env.GITHUB_SHA=main;assert.equal(sourceTreeContentSha256(main,{git}),content);
   ({decideTargetedSourceGate:decide,discoverTargetedSourceGate:discover}=
     await import(pathToFileURL(path.join(root,'scripts/source-targeted-consumer.mjs')).href));
+  ({sourceImpactEvidenceAccess:accessFactory}=
+    await import(pathToFileURL(path.join(root,'scripts/native-postgres-evidence.mjs')).href));
   const canonicalReceipt=copy(receipt);rebuildTarget();maps();
   const check=async mutate=>{receipt=copy(canonicalReceipt);rebuildTarget();maps();const deps=dependencies();mutate?.(deps);
     const result=await decide(locator,env,d(deps));cases++;return {result,deps};};
@@ -177,6 +218,74 @@ try{
     const value=await read(route,...args);if(route===actions+'/runs/'+selectedRun&&++times===2)value.run_attempt=2;return value;};});
   assert.equal(drift.result.required,true);
   const fresh=await check();assert.equal(fresh.result.required,false);
+  // Use the actual normal central writer on one tracked runtime document.
+  // Its valid unchanged route map receives only a new update timestamp. This
+  // does not claim that the later production runtime gates have been run.
+  execFileSync('python',['-c',[
+    'import importlib.util,json,pathlib,sys,urllib.request',
+    'urllib.request.urlopen=lambda *a,**k: (_ for _ in ()).throw(AssertionError("NO_HTTP"))',
+    'r=pathlib.Path(sys.argv[1])',
+    's=importlib.util.spec_from_file_location("central_fixture",r/"scripts/sync-admin-config.py")',
+    'm=importlib.util.module_from_spec(s)', 's.loader.exec_module(m)', 'm.ROOT=r',
+    'p=json.loads((r/"data/water-level-station-routing.json").read_text())',
+    'p["updatedAt"]="2026-10-30T12:25:00Z"',
+    'assert m.write_document("water-level-station-routing",p)=="central"',
+  ].join(';'),root],{timeout:10000,stdio:['ignore','pipe','pipe']});
+  const hydrated=fs.readFileSync(path.join(root,'data/water-level-station-routing.json'));
+  assert.match(text(['status','--porcelain','--untracked-files=no']),/data\/water-level-station-routing\.json/);
+  assert.equal(sourceTreeContentSha256(main,{git}),content);
+  const hydration=await check();assert.equal(hydration.result.required,false);
+  assert(fs.readFileSync(path.join(root,'data/water-level-station-routing.json')).equals(hydrated));
+
+  // Actual normal scoped adapter + fetch protocol across all three ZIPs,
+  // both three-producer histories and a later non-source weather failure.
+  receipt=copy(canonicalReceipt);rebuildTarget();maps();addLaterWeatherFailureWithSuccessfulSource();
+  const physical=physicalTransport();assert.equal((await decide(locator,env,physical.dependencies)).required,false);
+  assert.equal(physical.seen.physical,27);assert.equal(physical.seen.signed,3);cases++;
+  receipt=copy(canonicalReceipt);rebuildTarget();maps();addLaterWeatherFailureWithSuccessfulSource();
+  const whole=physicalTransport(),located=await discover(env,content,whole.access);
+  assert(located.locator);assert.equal((await decide(located.locator,env,whole.dependencies)).required,false);
+  assert.equal(whole.seen.physical,33);assert.equal(whole.seen.signed,4);cases++;
+
+  // Physical overflow counts redirect fetches. No helper can reset the phase
+  // when nested FULL qualification or discovery enters the same adapter.
+  receipt=copy(canonicalReceipt);rebuildTarget();maps();addLaterWeatherFailureWithSuccessfulSource();
+  const exhausted=physicalTransport();
+  for(let i=0;i<38;i++)await exhausted.access.getJson(actions+'/runs/'+selectedRun);
+  assert.equal((await decide(locator,env,exhausted.dependencies)).required,true);
+  assert.equal(exhausted.seen.physical,64);cases++;
+  const crossing=physicalTransport();for(let i=0;i<63;i++)await crossing.access.getJson(actions+'/runs/'+selectedRun);
+  await assert.rejects(crossing.access.getArtifactZip(actions+'/artifacts/'+selectedArtifact+'/zip'));
+  assert.equal(crossing.seen.physical,64);assert.equal(crossing.seen.signed,0);cases++;
+  assert.throws(()=>accessFactory({maximumRequests:1000}));cases++;
+
+  for(const mode of [{jsonOverflow:true},{zipOverflow:true},{badLocation:'http://must-not-follow.invalid/'},
+    {badLocation:'https://user:secret@must-not-follow.invalid/'},{signedRedirect:true}]){
+    receipt=copy(canonicalReceipt);rebuildTarget();maps();const transport=physicalTransport(mode);
+    assert.equal((await decide(locator,env,transport.dependencies)).required,true);
+    if(mode.jsonOverflow||mode.zipOverflow){assert(transport.seen.overflow.cancelled>0);
+      assert(transport.seen.overflow.emitted<(mode.jsonOverflow?100:32));}
+    if(mode.badLocation)assert.equal(transport.seen.signed,0);cases++;
+  }
+  // The shared acceptance deadline includes local Git and ZIP decoding. It is
+  // not restarted at nested FULL. Advance a synthetic clock, never sleep.
+  receipt=copy(canonicalReceipt);rebuildTarget();maps();
+  let clock=0;const timely=physicalTransport({now:()=>clock});
+  await timely.access.getJson(actions+'/runs/'+selectedRun);clock=59000;
+  const originalTimeout=AbortSignal.timeout,timeouts=[];
+  AbortSignal.timeout=ms=>{timeouts.push(ms);return originalTimeout(ms);};
+  try{assert.equal((await decide(locator,env,timely.dependencies)).required,false);
+    assert(timeouts.length>=26&&timeouts.every(ms=>ms===1000));cases++;
+  }finally{AbortSignal.timeout=originalTimeout;}
+  receipt=copy(canonicalReceipt);rebuildTarget();maps();clock=0;
+  const late=physicalTransport({now:()=>clock,onRequest:(_route,seen)=>{if(seen.physical===26)clock=60000;}});
+  assert.equal((await decide(locator,env,late.dependencies)).required,true);
+  assert.equal(late.seen.physical,26);cases++;
+
+  git(['update-ref','refs/replace/'+base,base]);
+  try{const replaced=await check();assert.equal(replaced.result.required,true);}
+  finally{git(['update-ref','-d','refs/replace/'+base]);}
+  assert(fs.readFileSync(path.join(root,'data/water-level-station-routing.json')).equals(hydrated));
   let discoveryCases=0;
   const lookup=async mutate=>{receipt=copy(canonicalReceipt);rebuildTarget();maps();const deps=dependencies();mutate?.(deps);
     const result=await discover(env,content,{getJson:deps.getJson,getArtifactZip:deps.getArtifactZip});
@@ -184,8 +293,8 @@ try{
   const found=await lookup();assert.deepEqual(found.result.locator,locator);
   assert.equal(found.result.requiresVerification,true);assert.equal(found.result.deliveryAuthority,false);
   assert.notEqual(found.result.required,false);assert.equal(found.deps.reads.zip.length,1);
-  // A separate fresh reader verifies the discovered/cached locator. Discovery
-  // did not itself issue green authority from metadata or a plausible body.
+  // Discovery itself issues no green authority. The normal scoped adapter
+  // shares its one physical/time budget through the following verification.
   const consumed=await decide(copy(found.result.locator),env,d(dependencies()));assert.equal(consumed.required,false);
   const targetList=()=>actions+'/artifacts?name='+encodeURIComponent(targetMetadata.name)+'&per_page=100';
   for(const mutate of [()=>json.set(repo+'/commits/'+main+'/pulls?per_page=100',[]),

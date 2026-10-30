@@ -10,7 +10,7 @@ import {qualifySourceImpactFullBaseline,SOURCE_IMPACT_FULL_BASELINE_KIND}
 import {planSourceImpactFromGit} from './source-impact-git-diff.mjs';
 import {TARGETED_SOURCE_CONTRACT,TARGETED_SOURCE_KIND,targetedSourceArtifactName,validateTargetedSourceReceipt}
   from './source-targeted-receipt.mjs';
-import {ORIGIN} from './native-postgres-evidence.mjs';
+import {ORIGIN,sourceImpactEvidenceBudget} from './native-postgres-evidence.mjs';
 
 const LOCATOR_KEYS=['contractId','repository','headSha','producerHeadSha','sourceTreeSha256',
   'pullRequestNumber','runId','runAttempt','jobId','artifactId','artifactDigest','proofSha256'];
@@ -84,8 +84,8 @@ function verifyArtifact(metadata,record,phase){
   assert(time(metadata.created_at)>=phase.earliestArtifact&&time(metadata.created_at)<=phase.latestArtifact);
 }
 
-function decodeReceipt(zip,deadline){
-  const remaining=deadline-performance.now();assert(remaining>0);
+function decodeReceipt(zip,remainingBudget){
+  const remaining=remainingBudget();
   const raw=execFileSync('python',['-c',[
     'import io,sys,zipfile','z=zipfile.ZipFile(io.BytesIO(sys.stdin.buffer.read()))',
     'assert z.namelist()==["source-targeted-impact-proof.json"]','i=z.infolist()[0]',
@@ -93,7 +93,7 @@ function decodeReceipt(zip,deadline){
     'sys.stdout.buffer.write(z.read(i))',
   ].join(';')],{input:zip,maxBuffer:32768,timeout:Math.min(10000,Math.max(1,Math.floor(remaining))),
     stdio:['pipe','pipe','pipe']});
-  assert(performance.now()<deadline);assert(raw.length>0&&raw.length<=32768);return raw;
+  remainingBudget();assert(raw.length>0&&raw.length<=32768);return raw;
 }
 
 // A dedicated fallback after the old FULL consumer. Callers provide bounded,
@@ -102,20 +102,23 @@ function decodeReceipt(zip,deadline){
 export async function decideTargetedSourceGate(record,env,dependencies){
   const required=()=>({required:true,reason:'targeted-source-proof-unavailable'});
   const deadline=performance.now()+60000;
-  const remaining=()=>{const n=deadline-performance.now();assert(n>0);return n;};
+  let sharedBudget=null;
+  const remaining=()=>{const n=sharedBudget?sharedBudget.remaining():deadline-performance.now();assert(n>0);return n;};
   try{
     assert.equal(arguments.length,3);locatorIdentity(record,env);
     assert.deepEqual(Object.keys(dependencies).sort(),['getArtifactZip','getJson','readGit']);
     const {getJson,getArtifactZip,readGit}=dependencies;
     for(const fn of [getJson,getArtifactZip,readGit])assert.equal(typeof fn,'function');
+    sharedBudget=sourceImpactEvidenceBudget(getJson,getArtifactZip);
     const git=(args,options)=>{const limit=Math.min(10000,Math.max(1,Math.floor(remaining())));
       const result=readGit(args,{...options,timeout:limit});remaining();
       assert(Buffer.isBuffer(result)&&result.length<=512*1024*1024);return result;};
     const text=args=>git(args).toString('utf8').trim();
-    const clean=()=>{assert.equal(text(['rev-parse','HEAD']),record.headSha);
-      assert.equal(text(['status','--porcelain','--untracked-files=no']),'');
+    const assertCommittedHead=()=>{assert.equal(text(['rev-parse','HEAD']),record.headSha);
       assert.equal(text(['for-each-ref','refs/replace']),'');};
-    clean();assert.equal(text(['rev-parse','--is-shallow-repository']),'false');
+    // The ordinary caller has already hydrated central runtime data. Source
+    // identity is the committed tree; its runtime still needs all normal gates.
+    assertCommittedHead();assert.equal(text(['rev-parse','--is-shallow-repository']),'false');
     const parents=text(['rev-list','--parents','-n','1',record.headSha]).split(' ');
     assert.equal(parents.length,3);assert.equal(parents[0],record.headSha);assert(parents.every(oid));
     assert.equal(parents.slice(1).filter(value=>value===record.producerHeadSha).length,1);
@@ -123,13 +126,16 @@ export async function decideTargetedSourceGate(record,env,dependencies){
     assert.equal(text(['rev-parse',record.producerHeadSha+'^{tree}']),tree);
     assert.equal(sourceTreeContentSha256(record.headSha,{git}),record.sourceTreeSha256);
     let calls=0;
+    const checked=(value,zip)=>{remaining();
+      if(zip){assert(Buffer.isBuffer(value)&&value.length>0&&value.length<=65536);return value;}
+      const raw=JSON.stringify(value);assert(Buffer.byteLength(raw)<=2*1024*1024);return JSON.parse(raw);};
     async function bounded(reader,route,zip=false){
+      if(sharedBudget)return checked(await reader(route),zip);
       assert(++calls<=64);const timeout=Math.min(15000,remaining()),controller=new AbortController();let timer;
       try{
         const value=await Promise.race([reader(route,{signal:controller.signal,maxBytes:zip?65536:2*1024*1024}),
           new Promise((_,reject)=>{timer=setTimeout(()=>{controller.abort();reject(new Error('BOUND'));},timeout);})]);
-        remaining();if(zip){assert(Buffer.isBuffer(value)&&value.length>0&&value.length<=65536);return value;}
-        const raw=JSON.stringify(value);assert(Buffer.byteLength(raw)<=2*1024*1024);return JSON.parse(raw);
+        return checked(value,zip);
       }finally{clearTimeout(timer);controller.abort();}
     }
     const json=route=>bounded(getJson,route),zip=route=>bounded(getArtifactZip,route,true);
@@ -139,13 +145,13 @@ export async function decideTargetedSourceGate(record,env,dependencies){
     const artifactRoute=repo+'/actions/artifacts/'+record.artifactId,metadata=await json(artifactRoute);
     verifyArtifact(metadata,record,phase);
     const bytes=await zip(artifactRoute+'/zip');assert.equal(bytes.length,metadata.size_in_bytes);
-    assert.equal('sha256:'+sha(bytes),metadata.digest);const raw=decodeReceipt(bytes,deadline);
+    assert.equal('sha256:'+sha(bytes),metadata.digest);const raw=decodeReceipt(bytes,remaining);
     assert.equal(sha(raw),record.proofSha256);const receipt=JSON.parse(raw);
     const current={repository:record.repository,head:record.producerHeadSha,sourceTreeSha256:record.sourceTreeSha256,
       pullRequest:record.pullRequestNumber,runId:Number(record.runId),runAttempt:1,jobId:record.jobId};
     assert.deepEqual(receipt.current,current);
     const full=await qualifySourceImpactFullBaseline({reference:receipt.baselineReference,candidateCommit:record.headSha},
-      {getJson:json,getArtifactZip:zip,readGit:git});remaining();
+      {getJson,getArtifactZip,readGit});remaining();
     assert.equal(full.kind,SOURCE_IMPACT_FULL_BASELINE_KIND);
     const gitPlan=planSourceImpactFromGit({baselineCommit:full.mergeCommit,candidateCommit:record.headSha,expectedHead:record.headSha});
     assert.equal(gitPlan.status,'PLANNED');assert.equal(gitPlan.plan.selection,'TARGETED');
@@ -156,34 +162,39 @@ export async function decideTargetedSourceGate(record,env,dependencies){
     const later=await inspectLaterMainEvidence({env,proofTime:phase.proofTime,record,getJson:json});
     if(later)return later;
     assert.deepEqual(await json(runRoute),run);assert.deepEqual(await json(artifactRoute),metadata);
-    clean();assert.equal(sourceTreeContentSha256(record.headSha,{git}),record.sourceTreeSha256);remaining();
+    assertCommittedHead();assert.equal(sourceTreeContentSha256(record.headSha,{git}),record.sourceTreeSha256);remaining();
     return {required:false,reason:'verified-targeted-pull-request-source-content',runId:record.runId,
       scope:'TARGETED_COMMAND_RESULTS_ONLY',database:'NOT_APPLICABLE',national:'NOT_APPLICABLE'};
   }catch{return required();}
 }
 
 // Discovery returns only an untrusted locator. The normal caller must use a
-// FRESH transport phase with decideTargetedSourceGate afterwards, including its
+// same bounded transport phase with decideTargetedSourceGate afterwards, including its
 // independent FULL baseline, actual main Git tree/diff and later-failure checks.
 // No caller chooses PR/run/job/artifact/hash fields or supplies verified:true.
 export async function discoverTargetedSourceGate(env,sourceTreeSha256,dependencies){
   const required=()=>({required:true,reason:'targeted-source-locator-unavailable'});
   const deadline=performance.now()+60000;
-  const remaining=()=>{const n=deadline-performance.now();assert(n>0);return n;};
+  let sharedBudget=null;
+  const remaining=()=>{const n=sharedBudget?sharedBudget.remaining():deadline-performance.now();assert(n>0);return n;};
   try{
     assert.equal(arguments.length,3);assert.equal(env.GITHUB_REPOSITORY,ORIGIN.repository);
     assert.equal(env.GITHUB_REF,'refs/heads/main');assert(oid(env.GITHUB_SHA)&&digest(sourceTreeSha256));
     assert.deepEqual(Object.keys(dependencies).sort(),['getArtifactZip','getJson']);
     const {getJson,getArtifactZip}=dependencies;
     for(const reader of [getJson,getArtifactZip])assert.equal(typeof reader,'function');
+    sharedBudget=sourceImpactEvidenceBudget(getJson,getArtifactZip);
     let calls=0;
+    const checked=(value,zip)=>{remaining();
+      if(zip){assert(Buffer.isBuffer(value)&&value.length>0&&value.length<=65536);return value;}
+      const raw=JSON.stringify(value);assert(Buffer.byteLength(raw)<=2*1024*1024);return JSON.parse(raw);};
     async function bounded(reader,route,zip=false){
+      if(sharedBudget){assert(++calls<=16);return checked(await reader(route),zip);}
       assert(++calls<=16);const timeout=Math.min(15000,remaining()),controller=new AbortController();let timer;
       try{
         const value=await Promise.race([reader(route,{signal:controller.signal,maxBytes:zip?65536:2*1024*1024}),
           new Promise((_,reject)=>{timer=setTimeout(()=>{controller.abort();reject(new Error('BOUND'));},timeout);})]);
-        remaining();if(zip){assert(Buffer.isBuffer(value)&&value.length>0&&value.length<=65536);return value;}
-        const raw=JSON.stringify(value);assert(Buffer.byteLength(raw)<=2*1024*1024);return JSON.parse(raw);
+        return checked(value,zip);
       }finally{clearTimeout(timer);controller.abort();}
     }
     const json=route=>bounded(getJson,route),repo='/repos/'+env.GITHUB_REPOSITORY;
@@ -220,7 +231,7 @@ export async function discoverTargetedSourceGate(env,sourceTreeSha256,dependenci
       const phase=runIdentity(run,pull,jobs,locator);verifyArtifact(artifact,locator,phase);
       const bytes=await bounded(getArtifactZip,repo+'/actions/artifacts/'+artifact.id+'/zip',true);
       assert.equal(bytes.length,artifact.size_in_bytes);assert.equal('sha256:'+sha(bytes),artifact.digest);
-      const raw=decodeReceipt(bytes,deadline),receipt=JSON.parse(raw);locator.proofSha256=sha(raw);
+      const raw=decodeReceipt(bytes,remaining),receipt=JSON.parse(raw);locator.proofSha256=sha(raw);
       locatorIdentity(locator,env);
       assert.equal(receipt.schemaVersion,1);assert.equal(receipt.contractId,TARGETED_SOURCE_CONTRACT);
       assert.equal(receipt.kind,TARGETED_SOURCE_KIND);assert.equal(receipt.scope,'TARGETED_COMMAND_RESULTS_ONLY');

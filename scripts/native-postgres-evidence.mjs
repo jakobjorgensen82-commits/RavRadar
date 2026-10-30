@@ -987,7 +987,7 @@ export function verifyAssistantPublic591ArtifactMetadata(metadata,run,phase){
   assert(Date.parse(metadata.created_at)>=Date.parse(phase.pgStartedAt)&&Date.parse(metadata.created_at)<=Date.parse(phase.uploadedAt));
   return metadata;
 }
-export function verifyAssistantPublic591Artifact(metadata,zip,raw,run,phase){
+function assistantPublic591ArtifactProof(metadata,zip,raw,run,phase){
   verifyAssistantPublic591ArtifactMetadata(metadata,run,phase);
   assert.equal(zip.length,metadata.size_in_bytes);assert.equal('sha256:'+sha(zip),metadata.digest);
   assert(raw.length>0&&raw.length<=32768);const proof=JSON.parse(raw);
@@ -995,7 +995,23 @@ export function verifyAssistantPublic591Artifact(metadata,zip,raw,run,phase){
   assert.equal(proof.repository,ORIGIN.repository);assert.equal(proof.headSha,run.head_sha);
   assert.equal(proof.privatePayloadIncluded,false);assert.match(proof.sourceTreeSha256,/^sha256:[a-f0-9]{64}$/);
   verifyAssistantPublic591V2PhaseReceipt(proof.nativePostgres,{run:run.id,attempt:1,head:run.head_sha,
-    pullRequest:one(run.pull_requests).number,branch:run.head_branch});return proof;
+    pullRequest:proof.nativePostgres?.current?.pullRequest,branch:run.head_branch});return proof;
+}
+function verifyAssistantPublic591OriginPullRequest(pr,run,number){
+  assert(Number.isSafeInteger(number)&&number>0);assert.equal(pr.number,number);
+  assert(['open','closed'].includes(pr.state));assert.equal(pr.base?.repo?.full_name,ORIGIN.repository);
+  assert.equal(pr.base?.ref,'main');assert.equal(pr.head?.repo?.full_name,ORIGIN.repository);
+  assert.equal(pr.head?.sha,run.head_sha);assert.equal(pr.head?.ref,run.head_branch);
+  assert(typeof run.head_branch==='string'&&run.head_branch.length>0&&run.head_branch.length<=255);
+  // GitHub may omit the run's PR projection after merge. Its bound artifact
+  // supplies the number, while the independent PR API still proves identity.
+  assert(Array.isArray(run.pull_requests));
+  if(run.pull_requests.length)assert.equal(one(run.pull_requests).number,number);
+}
+export function verifyAssistantPublic591Artifact(metadata,zip,raw,run,phase,originPullRequest){
+  const proof=assistantPublic591ArtifactProof(metadata,zip,raw,run,phase);
+  verifyAssistantPublic591OriginPullRequest(originPullRequest,run,proof.nativePostgres.current.pullRequest);
+  return proof;
 }
 
 // V2-only bounded transport. No response headers, bodies or signed URLs are
@@ -1022,10 +1038,11 @@ async function readAssistantPublic591Body(response,limit,signal){
     try{reader.releaseLock();}catch{ /* Cancellation owns an outstanding read. */ }
   }
 }
-export function assistantPublic591Reader({env=process.env,fetchImpl=globalThis.fetch,now=()=>performance.now()}={}){
+function assistantPublic591Transport({env=process.env,fetchImpl=globalThis.fetch,now=()=>performance.now()}={},physicalLimit){
   let calls=0;const deadline=now()+60000;
+  const remainingBudget=()=>{const value=deadline-now();assert(value>0,'NATIVE591_V2_TOTAL_TIME_LIMIT');return value;};
   const request=async(url,options)=>{
-    assert(++calls<=24,'NATIVE591_V2_CALL_LIMIT');
+    assert(++calls<=physicalLimit,'NATIVE591_V2_CALL_LIMIT');
     const remaining=Math.floor(deadline-now());assert(remaining>0,'NATIVE591_V2_TOTAL_TIME_LIMIT');
     const signal=AbortSignal.timeout(Math.min(15000,remaining));
     return {response:await fetchImpl(url,{...options,signal}),signal};
@@ -1033,7 +1050,7 @@ export function assistantPublic591Reader({env=process.env,fetchImpl=globalThis.f
   const cancelUnused=response=>{
     if(response?.body&&!response.bodyUsed)response.body.cancel().catch(()=>{});
   };
-  return async(route,{zip=false}={})=>{
+  const read=async(route,{zip=false}={})=>{
     let api=null,signed=null;
     try{
       assert(typeof route==='string'&&route.startsWith('/repos/'+ORIGIN.repository+'/'));
@@ -1059,6 +1076,27 @@ export function assistantPublic591Reader({env=process.env,fetchImpl=globalThis.f
       throw new Error('NATIVE591_V2_EVIDENCE_UNAVAILABLE');
     }finally{cancelUnused(api?.response);cancelUnused(signed?.response);}
   };
+  return {read,remainingBudget};
+}
+export function assistantPublic591Reader(options={}){
+  return assistantPublic591Transport(options,24).read;
+}
+
+// One closed source-consumer phase, shared through discovery, TARGETED and
+// historical FULL qualification. No public request/time/byte-limit override.
+const sourceImpactEvidencePhases=new WeakMap();
+export function sourceImpactEvidenceAccess(options={}){
+  assert(arguments.length<=1);assert(options&&Object.getPrototypeOf(options)===Object.prototype);
+  assert(Object.keys(options).every(key=>['env','fetchImpl','now'].includes(key)));
+  const transport=assistantPublic591Transport(options,64);
+  const getJson=route=>transport.read(route),getArtifactZip=route=>transport.read(route,{zip:true});
+  const budget=Object.freeze({remaining:transport.remainingBudget});
+  sourceImpactEvidencePhases.set(getJson,{getArtifactZip,budget});
+  return Object.freeze({getJson,getArtifactZip});
+}
+export function sourceImpactEvidenceBudget(getJson,getArtifactZip){
+  const phase=sourceImpactEvidencePhases.get(getJson);
+  return phase?.getArtifactZip===getArtifactZip?phase.budget:null;
 }
 
 export async function decideAssistantPublic591Reuse({env=process.env,local,get,readGit=git,
@@ -1096,7 +1134,9 @@ export async function decideAssistantPublic591Reuse({env=process.env,local,get,r
       const artifact=one(artifacts.artifacts.filter(value=>value.name==='native586-phase-'+run.id+'-1-'+run.head_sha));
       verifyAssistantPublic591ArtifactMetadata(artifact,run,phase);
       const zip=await get(base+'/artifacts/'+artifact.id+'/zip',{zip:true});
-      const proof=verifyAssistantPublic591Artifact(artifact,zip,decode(zip),run,phase);
+      const raw=decode(zip),bound=assistantPublic591ArtifactProof(artifact,zip,raw,run,phase);
+      const originPullRequest=await get(repo+'/pulls/'+bound.nativePostgres.current.pullRequest);
+      const proof=verifyAssistantPublic591Artifact(artifact,zip,raw,run,phase,originPullRequest);
       return {run,phase,artifact,proof};
     };
     let origin=await load(row);
@@ -1126,8 +1166,12 @@ export async function decideAssistantPublic591Reuse({env=process.env,local,get,r
     }
     verifyAssistantPublic591Input(local.nativeInput,await getInput({readGit}));
     verifyAssistantPublic591Runtime(local.runtime,await getRuntime());
-    verifyAssistantPublic591Metadata(await get(base+'/runs/'+origin.run.id),
-      await get(base+'/runs/'+origin.run.id+'/attempts/1/jobs?per_page=100'));
+    const originFinal=await get(base+'/runs/'+origin.run.id);
+    for(const key of ['id','head_sha','head_branch','run_attempt'])assert.equal(originFinal[key],origin.run[key]);
+    assert.deepEqual(verifyAssistantPublic591Metadata(originFinal,
+      await get(base+'/runs/'+origin.run.id+'/attempts/1/jobs?per_page=100')),origin.phase);
+    verifyAssistantPublic591OriginPullRequest(await get(repo+'/pulls/'+origin.proof.nativePostgres.current.pullRequest),
+      originFinal,origin.proof.nativePostgres.current.pullRequest);
     const refreshed=await get(base+'/artifacts/'+origin.artifact.id);
     for(const key of ['id','name','digest','size_in_bytes','expired','created_at'])assert.deepEqual(refreshed[key],origin.artifact[key]);
     assert.equal(refreshed.expired,false);

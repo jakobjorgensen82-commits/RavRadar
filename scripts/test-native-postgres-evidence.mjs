@@ -3,6 +3,7 @@ import fs from 'node:fs/promises';
 import test from 'node:test';
 import {inverseSourceBeforePostgresWorkflow, SOURCE_BEFORE_POSTGRES_BLOCK}
   from './national584-source-evidence.mjs';
+import {projectSourceImpactWorkflowFull} from './lib/source-impact-workflow-review.mjs';
 import {ORIGIN, WORKFLOW, JOB, STEP, COMMANDS, ACCOUNT_STATISTICS_ASSISTANT_COMMANDS, CURRENT586_COMMANDS as CURRENT_COMMANDS,
   CURRENT_COMMANDS as ASSISTANT_LATER_H0_COMMANDS, NATIVE_SCRIPT as ASSISTANT_LATER_H0_SCRIPT, NEW_NATIVE_BLOCK,
   NON_NATIVE_TEST_INPUTS, NON_NATIVE_PROSE, nativeBlock, parseTree, verifyWorkflow,
@@ -360,16 +361,19 @@ test('assistant later-H0 appends its actual phase without retagging whole586 com
 
 test('current586 phase artifact is independent, exact, honest, and does not relax conservative native inputs',async()=>{
   const actualWorkflow=(await fs.readFile(WORKFLOW,'utf8')).replace(/\r\n/g,'\n');
-  const workflow=inverseSourceBeforePostgresWorkflow(actualWorkflow);
+  // Only the historical V1 oracle and its mutation inputs receive the exact
+  // qualified FULL workflow. V2 captures the actual workflow bytes unchanged.
+  const historicalWorkflow=projectSourceImpactWorkflowFull(actualWorkflow);
+  const workflow=inverseSourceBeforePostgresWorkflow(historicalWorkflow);
   assert(actualWorkflow.indexOf('      - name: Validate source contracts')<actualWorkflow.indexOf('      - name: '+STEP));
   assert(actualWorkflow.indexOf(CURRENT586_PHASE_UPLOAD_BLOCK)<actualWorkflow.indexOf('      - name: Validate isolated restart and two ordinary national followers'));
   // The existing586 whole-workflow hash below proves the complete inverse, not a new current hash.
   for(const changed of [
-    actualWorkflow.replace('npm run validate:source','true'),
-    actualWorkflow.replace('          node scripts/native-postgres-evidence.mjs','          true'),
-    actualWorkflow.replace('path: .cache/native-postgres-phase-proof.json','path: .cache/changed.json'),
-    actualWorkflow.replace(SOURCE_BEFORE_POSTGRES_BLOCK,''),
-    actualWorkflow+SOURCE_BEFORE_POSTGRES_BLOCK,
+    historicalWorkflow.replace('npm run validate:source','true'),
+    historicalWorkflow.replace('          node scripts/native-postgres-evidence.mjs','          true'),
+    historicalWorkflow.replace('path: .cache/native-postgres-phase-proof.json','path: .cache/changed.json'),
+    historicalWorkflow.replace(SOURCE_BEFORE_POSTGRES_BLOCK,''),
+    historicalWorkflow+SOURCE_BEFORE_POSTGRES_BLOCK,
   ])assert.throws(()=>inverseSourceBeforePostgresWorkflow(changed));
   assert.equal(workflow.split(CURRENT586_PHASE_UPLOAD_BLOCK).length,2);
   verifyCurrent586Workflow(workflow,workflow);
@@ -1225,11 +1229,11 @@ test('593 V2 receipts and bounded marker preserve V1 refusal and reject identity
   }
 });
 
-function v2LiveFixture({laterFailure=false,locator=false}={}){
+function v2LiveFixture({laterFailure=false,locator=false,emptyOriginProjection=false}={}){
   const current=v2Current(),originId=ORIGIN.run+500,locatorId=ORIGIN.run+550;
   const originalCurrent={run:originId,attempt:1,head:oid,pullRequest:750,branch:'synthetic-other-branch'};
   const origin={...copy(run),id:originId,head_sha:oid,head_branch:originalCurrent.branch,
-    head_repository:{full_name:ORIGIN.repository},pull_requests:[{number:750}],created_at:'2026-10-30T10:00:00Z'};
+    head_repository:{full_name:ORIGIN.repository},pull_requests:emptyOriginProjection?[]:[{number:750}],created_at:'2026-10-30T10:00:00Z'};
   const active={...copy(origin),id:current.run,head_sha:current.head,head_branch:current.branch,
     pull_requests:[{number:current.pullRequest}],created_at:'2026-10-30T12:00:00Z',status:'in_progress',conclusion:null};
   const mid={...copy(origin),id:locatorId,head_sha:'d'.repeat(40),head_branch:'synthetic-locator',
@@ -1242,7 +1246,7 @@ function v2LiveFixture({laterFailure=false,locator=false}={}){
   const originalJobs=makeJobs(origin),midJobs=makeJobs(mid),zip=Buffer.from('bounded synthetic artifact bytes');
   if(laterFailure)midJobs.jobs[0].steps[15].conclusion='failure';
   const proofFor=r=>{
-    const native=v2Receipt({run:r.id,attempt:1,head:r.head_sha,pullRequest:r.pull_requests[0].number,branch:r.head_branch});
+    const native=v2Receipt({run:r.id,attempt:1,head:r.head_sha,pullRequest:r.id===originId?750:751,branch:r.head_branch});
     if(r.id===locatorId){native.status='REUSED';native.executedInThisRun=false;native.origin={
       run:originId,attempt:1,job:originalJobs.jobs[0].id,head:oid,artifactId:originId+2000,
       artifactDigest:'sha256:'+v2Hash(zip),sourceTreeSha256:'sha256:'+'e'.repeat(64)};}
@@ -1251,16 +1255,28 @@ function v2LiveFixture({laterFailure=false,locator=false}={}){
   };
   const artifactFor=r=>({id:r.id+2000,name:'native586-phase-'+r.id+'-1-'+r.head_sha,expired:false,size_in_bytes:zip.length,
     digest:'sha256:'+v2Hash(zip),created_at:'2026-10-30T10:01:00Z',workflow_run:{id:r.id,head_sha:r.head_sha}});
-  const calls=[],fault={};let decoding=origin;
+  const originPullFor=r=>({number:r.id===originId?750:751,state:'closed',base:{repo:{full_name:ORIGIN.repository},ref:'main'},
+    head:{repo:{full_name:ORIGIN.repository},sha:r.head_sha,ref:r.head_branch}});
+  const calls=[],fault={};let decoding=origin,originPullReads=0,originRunReads=0;
   const rows=[active,...((locator||laterFailure)?[mid]:[]),origin];
   const get=async(route,options={})=>{
     calls.push(route);
-    if(route.includes('/pulls/'))return {number:current.pullRequest,state:'open',base:{repo:{full_name:ORIGIN.repository},ref:'main'},
+    if(route.endsWith('/pulls/'+current.pullRequest))return {number:current.pullRequest,state:'open',base:{repo:{full_name:ORIGIN.repository},ref:'main'},
       head:{repo:{full_name:ORIGIN.repository},sha:fault.currentHead?'f'.repeat(40):current.head,ref:current.branch}};
+    for(const r of [origin,mid])if(route.endsWith('/pulls/'+(r.id===originId?750:751))){
+      if(fault.originPullUnavailable)throw new Error('SYNTHETIC_ORIGIN_PR_UNAVAILABLE');
+      const pr=originPullFor(r);if(r.id===originId)originPullReads++;
+      if(fault.originPullMutation)fault.originPullMutation(pr,originPullReads,r);
+      return pr;
+    }
     if(route.includes('/workflows/'))return {total_count:rows.length,workflow_runs:copy(rows)};
     if(route.endsWith('/runs/'+active.id))return copy(active);
     for(const r of [origin,mid]){
-      if(route.endsWith('/runs/'+r.id))return {...copy(r),...(fault.attempt?{run_attempt:2}:{})};
+      if(route.endsWith('/runs/'+r.id)){
+        const value={...copy(r),...(fault.attempt?{run_attempt:2}:{})};
+        if(r.id===originId&&++originRunReads===2&&fault.originFinalMutation)fault.originFinalMutation(value);
+        return value;
+      }
       if(route.includes('/runs/'+r.id+'/attempts/1/jobs')){
         const value=copy(r.id===originId?originalJobs:midJobs);
         if(fault.preflight)value.jobs[0].steps[14].conclusion='skipped';
@@ -1279,7 +1295,7 @@ function v2LiveFixture({laterFailure=false,locator=false}={}){
   const options={local:v2Receipt(current),get,getRuntime:async()=>v2Runtime(),getInput:async()=>v2Input(),
     readGit:args=>args[0]==='rev-parse'?current.head:'identical reviewed proof/setup control',
     decode:()=>Buffer.from(JSON.stringify(proofFor(decoding)))};
-  return {options,calls,fault,origin,originalJobs,zip,proofFor,artifactFor};
+  return {options,calls,fault,origin,originalJobs,zip,proofFor,artifactFor,originPullFor};
 }
 
 test('593 V2 live reader verifies cross-branch actual origin/upload, preserves direct origin and rejects unknown or later negative evidence',async()=>{
@@ -1303,15 +1319,67 @@ test('593 V2 artifact is independent phase evidence, never a V1 upgrade or whole
   const fixture=v2LiveFixture(),phase=verifyAssistantPublic591Metadata(fixture.origin,fixture.originalJobs);
   const metadata=fixture.artifactFor(fixture.origin),proof=fixture.proofFor(fixture.origin),raw=Buffer.from(JSON.stringify(proof));
   assert.equal(fixture.origin.conclusion,'failure');
-  assert.equal(verifyAssistantPublic591Artifact(metadata,fixture.zip,raw,fixture.origin,phase).nativePostgres.status,'EXECUTED');
+  const originPull=fixture.originPullFor(fixture.origin);
+  assert.equal(verifyAssistantPublic591Artifact(metadata,fixture.zip,raw,fixture.origin,phase,originPull).nativePostgres.status,'EXECUTED');
   for(const mutate of [v=>v.schemaVersion=1,v=>v.kind=ASSISTANT_PUBLIC591_SUCCESSOR_PHASE_KIND,
     v=>v.nativePostgres.eligibleForReuse=false,v=>v.nativePostgres.status='REUSED',v=>v.headSha=newOid,
     v=>v.privatePayloadIncluded=true]){
-    const changed=copy(proof);mutate(changed);assert.throws(()=>verifyAssistantPublic591Artifact(metadata,fixture.zip,Buffer.from(JSON.stringify(changed)),fixture.origin,phase));
+    const changed=copy(proof);mutate(changed);assert.throws(()=>verifyAssistantPublic591Artifact(metadata,fixture.zip,Buffer.from(JSON.stringify(changed)),fixture.origin,phase,originPull));
   }
   for(const changed of [{...metadata,expired:true},{...metadata,digest:'sha256:'+'f'.repeat(64)},
     {...metadata,name:'native588-phase'},{...metadata,size_in_bytes:65537}])
-    assert.throws(()=>verifyAssistantPublic591Artifact(changed,fixture.zip,raw,fixture.origin,phase));
+    assert.throws(()=>verifyAssistantPublic591Artifact(changed,fixture.zip,raw,fixture.origin,phase,originPull));
+});
+
+test('593 V2 merged origin requires independent artifact-bound PR identity before reuse and at final freshness',async()=>{
+  const merged=v2LiveFixture({emptyOriginProjection:true}),before=copy(merged.origin);
+  assert.equal((await decideAssistantPublic591Reuse(merged.options)).status,'REUSED');
+  assert.equal(merged.calls.filter(route=>route.endsWith('/pulls/750')).length,2);
+  assert.deepEqual(merged.origin,before,'No fabricated run PR projection');
+  const located=v2LiveFixture({emptyOriginProjection:true,locator:true});
+  assert.equal((await decideAssistantPublic591Reuse(located.options)).status,'REUSED');
+  assert.equal(located.calls.filter(route=>route.endsWith('/pulls/750')).length,2);
+  assert.equal(located.calls.filter(route=>route.endsWith('/pulls/751')).length,1);
+  const physical=v2LiveFixture({emptyOriginProjection:true,locator:true}),synthetic=physical.options.get;
+  let physicalCalls=0,signedCalls=0;
+  physical.options.get=assistantPublic591Reader({env:{GITHUB_TOKEN:'synthetic-token'},fetchImpl:async(url,options)=>{
+    physicalCalls++;
+    if(url==='https://synthetic-artifact.invalid/body'){
+      signedCalls++;assert.equal(options.headers,undefined);assert.equal(options.redirect,'error');return new Response(physical.zip);
+    }
+    const route=new URL(url).pathname+new URL(url).search;
+    if(route.endsWith('/zip')){
+      await synthetic(route,{zip:true});
+      return new Response(null,{status:302,headers:{Location:'https://synthetic-artifact.invalid/body'}});
+    }
+    return new Response(JSON.stringify(await synthetic(route)));
+  }});
+  assert.equal((await decideAssistantPublic591Reuse(physical.options)).status,'REUSED');
+  assert.equal(physicalCalls,24);assert.equal(signedCalls,2);
+  for(const projection of [[{number:749}],[{number:750},{number:750}],null,{}]){
+    const invalid=v2LiveFixture({emptyOriginProjection:true});invalid.origin.pull_requests=projection;
+    assert.equal((await decideAssistantPublic591Reuse(invalid.options)).status,'EXECUTE');
+  }
+  const mutations=[pr=>pr.number=749,pr=>pr.state='unknown',pr=>pr.base.ref='other',
+    pr=>pr.base.repo.full_name='other/repository',pr=>pr.head.repo.full_name='other/repository',
+    pr=>pr.head.sha=newOid,pr=>pr.head.ref='other-branch'];
+  for(const mutate of mutations){
+    for(const finalOnly of [false,true]){
+      const invalid=v2LiveFixture({emptyOriginProjection:true});
+      invalid.fault.originPullMutation=(pr,count)=>{if(!finalOnly||count===2)mutate(pr);};
+      assert.equal((await decideAssistantPublic591Reuse(invalid.options)).status,'EXECUTE');
+    }
+  }
+  const unavailable=v2LiveFixture({emptyOriginProjection:true});unavailable.fault.originPullUnavailable=true;
+  assert.equal((await decideAssistantPublic591Reuse(unavailable.options)).status,'EXECUTE');
+  for(const mutate of [r=>r.pull_requests=[{number:749}],r=>r.head_sha=newOid,
+    r=>r.head_branch='other-branch',r=>r.run_attempt=2]){
+    const invalid=v2LiveFixture({emptyOriginProjection:true});invalid.fault.originFinalMutation=mutate;
+    assert.equal((await decideAssistantPublic591Reuse(invalid.options)).status,'EXECUTE');
+  }
+  const fixture=v2LiveFixture({emptyOriginProjection:true}),phase=verifyAssistantPublic591Metadata(fixture.origin,fixture.originalJobs);
+  const raw=Buffer.from(JSON.stringify(fixture.proofFor(fixture.origin)));
+  assert.throws(()=>verifyAssistantPublic591Artifact(fixture.artifactFor(fixture.origin),fixture.zip,raw,fixture.origin,phase));
 });
 
 test('593 quartet observation remains conditional and follows proved cleanup without changing older profile reports',async()=>{

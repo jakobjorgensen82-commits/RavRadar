@@ -40,8 +40,8 @@ async function writeJson(path, value) {
 async function verifiedTargetedSourceProof(record, context, sourceTreeSha256) {
   try {
     const { decideTargetedSourceGate, discoverTargetedSourceGate } = await import('./source-targeted-consumer.mjs');
-    const { assistantPublic591Reader } = await import('./native-postgres-evidence.mjs');
-    const reader = () => assistantPublic591Reader({ env: context });
+    const { sourceImpactEvidenceAccess } = await import('./native-postgres-evidence.mjs');
+    const access = sourceImpactEvidenceAccess({ env: context });
     const readGit = (args, options = {}) => execFileSync('git', args, {
       maxBuffer: 512 * 1024 * 1024, timeout: 10000,
       stdio: ['ignore', 'pipe', 'pipe'], ...options,
@@ -51,18 +51,14 @@ async function verifiedTargetedSourceProof(record, context, sourceTreeSha256) {
     });
     let locator = record?.contractId === 'weather-source-targeted-impact-v1' ? record : null;
     if (!locator) {
-      const get = reader();
-      const found = await discoverTargetedSourceGate(context, sourceTreeSha256, {
-        getJson: route => get(route), getArtifactZip: route => get(route, { zip: true }),
-      });
+      const found = await discoverTargetedSourceGate(context, sourceTreeSha256, access);
       if (!found.locator || found.requiresVerification !== true) return null;
       locator = found.locator;
     }
-    // Discovery is only a locator. Give the full consumer a fresh bounded
-    // transport phase; never spend its deadline while discovering the proof.
-    const get = reader();
+    // Discovery is only a locator. One closed physical request/deadline budget
+    // also covers verification and its historical FULL qualification.
     const decision = await decideTargetedSourceGate(locator, context, {
-      getJson: route => get(route), getArtifactZip: route => get(route, { zip: true }), readGit,
+      ...access, readGit,
     });
     return { decision, record: locator };
   } catch {

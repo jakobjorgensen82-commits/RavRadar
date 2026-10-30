@@ -6,7 +6,7 @@ import {decideSourceGate,SOURCE_GATE_CONTRACT,PULL_REQUEST_SOURCE_JOB,
 import {sourceTreeContentSha256,sourceTreeProofArtifactName} from './lib/source-tree-content.mjs';
 import {verifyAssistantPublic591SuccessorPhaseReceipt,verifyAssistantPublic591V2PhaseReceipt,
   verifyAssistantPublic591Metadata,ASSISTANT_PUBLIC591_SUCCESSOR_PHASE_KIND,
-  ASSISTANT_PUBLIC591_V2_KIND} from './native-postgres-evidence.mjs';
+  ASSISTANT_PUBLIC591_V2_KIND,sourceImpactEvidenceBudget} from './native-postgres-evidence.mjs';
 import {ORIGIN as NATIONAL_ORIGIN,COMMAND as NATIONAL_COMMAND,STEP as NATIONAL_STEP,
   ASSISTANT_PUBLIC591_SUCCESSOR_SOURCE_COMMAND}
   from './national584-source-evidence.mjs';
@@ -40,9 +40,9 @@ function validateReference(value){
 // The ZIP is decoded here, rather than accepting caller-supplied unbound JSON.
 // Python's normal ZIP reader checks CRC and central directory. Nothing extracts
 // to disk; one exact, bounded entry is permitted and no raw data is logged.
-function decodeArtifact(zip,name,deadline){
+function decodeArtifact(zip,name,remainingBudget){
   assert(Buffer.isBuffer(zip)&&zip.length>0&&zip.length<=ZIP_LIMIT);
-  const remaining=deadline-performance.now();assert(remaining>0);
+  const remaining=remainingBudget();
   const raw=execFileSync('python',['-c',[
     'import io,sys,zipfile',
     'z=zipfile.ZipFile(io.BytesIO(sys.stdin.buffer.read()))',
@@ -52,7 +52,7 @@ function decodeArtifact(zip,name,deadline){
     'sys.stdout.buffer.write(z.read(i))',
   ].join(';'),name],{input:zip,maxBuffer:JSON_LIMIT,timeout:Math.min(10000,Math.max(1,Math.floor(remaining))),
     stdio:['pipe','pipe','pipe']});
-  assert(performance.now()<deadline);assert(raw.length>0&&raw.length<=JSON_LIMIT);return raw;
+  remainingBudget();assert(raw.length>0&&raw.length<=JSON_LIMIT);return raw;
 }
 
 function artifactMetadata(metadata,reference,kind,phase){
@@ -123,7 +123,9 @@ export async function qualifySourceImpactFullBaseline(input,dependencies){
   // but late work can never produce a qualified result. This is not an OS-level
   // guarantee that an uncooperative injected callback is physically stopped.
   const deadline=performance.now()+60000;
-  const remainingBudget=()=>{const remaining=deadline-performance.now();assert(remaining>0);return remaining;};
+  let sharedBudget=null;
+  const remainingBudget=()=>{const remaining=sharedBudget?sharedBudget.remaining():deadline-performance.now();
+    assert(remaining>0);return remaining;};
   const refused=()=>({schemaVersion:1,status:'REFUSED',failureCode:'SOURCE_IMPACT_FULL_BASELINE_UNAVAILABLE',
     cheapPlanAvailable:false,deliveryAuthority:false});
   try{
@@ -134,28 +136,32 @@ export async function qualifySourceImpactFullBaseline(input,dependencies){
     assert.deepEqual(Object.keys(dependencies).sort(),['getArtifactZip','getJson','readGit']);
     const {getJson,getArtifactZip,readGit}=dependencies;
     for(const fn of [getJson,getArtifactZip,readGit])assert.equal(typeof fn,'function');
+    sharedBudget=sourceImpactEvidenceBudget(getJson,getArtifactZip);
     const git=(args,options)=>{const remaining=remainingBudget();
       const value=readGit(args,{...options,timeout:Math.min(10000,Math.max(1,Math.floor(remaining)))});
       remainingBudget();assert(Buffer.isBuffer(value));assert(value.length<=512*1024*1024);return value;};
     const text=args=>git(args).toString('utf8').trim();
     const assertHead=()=>{assert.equal(text(['rev-parse','HEAD']),input.candidateCommit);
-      assert.equal(text(['status','--porcelain','--untracked-files=no']),'');
       assert.equal(text(['for-each-ref','refs/replace']),'');};
+    // Historical source proof authenticates Git objects. Central runtime
+    // hydration is governed by the normal runtime gates, not this old source.
     assertHead();assert.equal(text(['rev-parse','--is-shallow-repository']),'false');
     git(['merge-base','--is-ancestor',reference.mergeCommit,input.candidateCommit]);
     const gitTree=text(['rev-parse',reference.mergeCommit+'^{tree}']);assert.match(gitTree,/^[a-f0-9]{40}$/);
     assert.equal(text(['rev-parse',reference.producerHead+'^{tree}']),gitTree);
     assert.equal(sourceTreeContentSha256(reference.mergeCommit,{git}),reference.sourceTreeSha256);
     const base='/repos/'+reference.repository+'/actions',seen=new Map();let calls=0;
+    const checked=(value,zip)=>{remainingBudget();
+      if(zip){assert(Buffer.isBuffer(value)&&value.length<=ZIP_LIMIT);return value;}
+      const raw=JSON.stringify(value);assert(Buffer.byteLength(raw)<=API_LIMIT);return JSON.parse(raw);};
     async function bounded(reader,route,zip=false){
+      if(sharedBudget)return checked(await reader(route),zip);
       assert(++calls<=64);const timeout=Math.min(15000,remainingBudget());
       const controller=new AbortController();let timer;
       try{
         const value=await Promise.race([reader(route,{maxBytes:zip?ZIP_LIMIT:API_LIMIT,signal:controller.signal}),
           new Promise((_,reject)=>{timer=setTimeout(()=>{controller.abort();reject(new Error('BOUND'));},timeout);})]);
-        remainingBudget();
-        if(zip){assert(Buffer.isBuffer(value)&&value.length<=ZIP_LIMIT);return value;}
-        const raw=JSON.stringify(value);assert(Buffer.byteLength(raw)<=API_LIMIT);return JSON.parse(raw);
+        return checked(value,zip);
       }finally{clearTimeout(timer);controller.abort();}
     }
     const json=async route=>{const value=await bounded(getJson,route);seen.set(route,value);return value;};
@@ -189,7 +195,7 @@ export async function qualifySourceImpactFullBaseline(input,dependencies){
       metadata[kind]=artifactMetadata(await json(route),reference,kind,phase);
       const zip=await bounded(getArtifactZip,route+'/zip',true);
       assert.equal(zip.length,metadata[kind].size_in_bytes);assert.equal('sha256:'+sha(zip),metadata[kind].digest);
-      raw[kind]=decodeArtifact(zip,kind==='native'?'native-postgres-phase-proof.json':'source-tree-content-proof.json',deadline);
+      raw[kind]=decodeArtifact(zip,kind==='native'?'native-postgres-phase-proof.json':'source-tree-content-proof.json',remainingBudget);
     }
     assert.equal(sha(raw.final),reference.finalProofSha256);
     const full=JSON.parse(raw.final),phaseProof=JSON.parse(raw.native);

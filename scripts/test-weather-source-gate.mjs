@@ -201,6 +201,41 @@ assert.deepEqual(
   { required: true, reason: 'later-source-not-green' },
 );
 
+// The ordinary manual entry shares the real reusable weather producer. A later
+// source failure there must invalidate older proof just like a scheduled run.
+const ordinaryWorkflow = (await readFile(new URL(
+  '../.github/workflows/run-current-weather-once.yml', import.meta.url), 'utf8')).replaceAll('\r\n', '\n');
+const ordinaryName = ordinaryWorkflow.match(/^  build-and-prepare:\n    name: ([^\n]+)\n/m);
+assert.ok(ordinaryName, 'ordinary manual workflow retains its actual reusable job');
+assert.ok(ordinaryWorkflow.includes('    uses: ./.github/workflows/reusable-weather-build.yml\n'));
+const ordinaryContract = {
+  path: '.github/workflows/run-current-weather-once.yml',
+  workflowId: 'run-current-weather-once.yml',
+  job: ordinaryName[1] + ' / build-and-prepare',
+  step: SOURCE_GATE_STEP,
+};
+for (const [stepStatus, stepConclusion, expectedReason, wrongJob] of [
+  ['completed', 'failure', 'later-source-not-green', false],
+  ['in_progress', null, 'later-source-unresolved', false],
+  ['completed', 'skipped', null, false],
+  ['completed', 'success', null, false],
+  ['completed', 'failure', 'later-source-job-step-mismatch', true],
+]) {
+  const runId = 351;
+  const currentRun = makeMainRun(ordinaryContract, { id: runId,
+    conclusion: 'failure', updated_at: '2026-09-12T02:00:00Z' });
+  const currentJob = makeMainJob(ordinaryContract, { run_id: runId,
+    name: wrongJob ? 'wrong-ordinary-producer' : ordinaryContract.job,
+    steps: [{ name: ordinaryContract.step, status: stepStatus,
+      conclusion: stepConclusion, completed_at: '2026-09-12T02:00:00Z' }] });
+  const oldProofApi = pullApi({ histories: new Map([[ordinaryContract.workflowId, [currentRun]]]) });
+  const api = async route => route.includes('/actions/runs/351/attempts/1/jobs')
+    ? { total_count: 1, jobs: [currentJob] } : oldProofApi(route);
+  const decision = await decideSourceGate(discovered.record, env, api, { sourceTreeSha256: digest });
+  if (expectedReason) assert.deepEqual(decision, { required: true, reason: expectedReason });
+  else assert.equal(decision.required, false, 'weather failure alone does not invalidate successful or skipped source');
+}
+
 console.log('Source gate reuses only live-verified, SHA-256-identical PR or exact-main content.');
 
 // The mandatory native SQL leaf is part of the live immutable PR proof.

@@ -168,11 +168,21 @@ test('changed ZIP, dishonest JSON, N/A, and current-national or production claim
   f.zips.get(route)[0]^=1;assert.equal((await f.qualify()).status,'REFUSED');
 });
 
-test('missing Git ancestor, dirty candidate and later conflicting exact-main evidence cannot yield targeted authority',async()=>{
-  for(const bad of ['merge-base','status','rev-parse HEAD']){
+test('historical FULL source uses committed objects despite current tracked runtime hydration',async()=>{
+  const f=fixture(),normal=f.dependencies.readGit;let statusReads=0;
+  f.dependencies.readGit=(args,options)=>{
+    if(args[0]==='status'){statusReads++;return Buffer.from(' M data/water-level-station-routing.json\n');}
+    return normal(args,options);
+  };
+  assert.equal((await f.qualify()).kind,SOURCE_IMPACT_FULL_BASELINE_KIND);
+  assert.equal(statusReads,0);assert.equal(f.zipCalls.length,2);
+});
+
+test('missing Git ancestor, replaced refs, wrong HEAD and later conflicting exact-main evidence cannot yield targeted authority',async()=>{
+  for(const bad of ['merge-base','for-each-ref','rev-parse HEAD']){
     const f=fixture(),original=f.dependencies.readGit;
     f.dependencies.readGit=(args,options)=>{if(args[0]===bad||args.join(' ')===bad){
-      if(bad==='status')return Buffer.from(' M scripts/core.mjs\n');
+      if(bad==='for-each-ref')return Buffer.from('refs/replace/synthetic\n');
       if(bad==='rev-parse HEAD')return Buffer.from(h('f'));throw Error('NO_ANCESTOR');}
       return original(args,options);};
     assert.equal((await f.qualify()).status,'REFUSED');assert.equal(f.zipCalls.length,0);
