@@ -6,6 +6,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import {
   ravScoreModelBinding as integratedBinding,
+  RAVSCORE_CURRENT_SUPPLY_POLICY,
 } from '../js/core/ravscore-model-contract.js';
 import {
   ravScoreModelBinding as candidateBinding,
@@ -126,7 +127,12 @@ function assertOperationalProfileControls(profile, mode, availability, label) {
     return;
   }
   assertIntegratedOperationalAvailability(availability, `${label} availability`);
-  const historyIncomplete = availability.historyIncompleteModeCount > 0;
+  // A ready state window does not erase uncertainty retained in the causal
+  // wave/last-mile bounds. The producer and private audit distinguish these
+  // facts; only a genuinely short current-history window contradicts readiness.
+  const currentHistoryWindowIncomplete = availability.historyIncompleteZones
+    .some(zone => zone.historyCoverageHours
+      < RAVSCORE_CURRENT_SUPPLY_POLICY.windowHours - 1e-12);
   const localUnavailable = availability.unavailableZoneCount > 0;
   const migrationUnavailable = profile.modelMigrationReady === false;
   const expectedAdvisories = [
@@ -140,7 +146,7 @@ function assertOperationalProfileControls(profile, mode, availability, label) {
     // Coverage is an ALL-PARTS statement, availability an ANY-USABLE-PART
     // statement per zone. Partial zones can be usable without complete coverage.
     || (profile.modelCoverageReady === true && localUnavailable)
-    || (historyIncomplete && profile.modelMemoryReady !== false)
+    || (currentHistoryWindowIncomplete && profile.modelMemoryReady !== false)
     || JSON.stringify(profile.advisories) !== JSON.stringify(expectedAdvisories)) {
     throw new Error(`${label} has incompatible integrated history controls`);
   }

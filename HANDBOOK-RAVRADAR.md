@@ -1,3 +1,35 @@
+## 89.284 Klar hukommelse og usikker score er forskellige oplysninger
+
+**Kort fortalt: Modellen kan have et dækket strømvindue og en tilstand, der er klar til brug, selv om tidligere bølgepåvirkning stadig giver et usikkerhedsinterval omkring scoren. Efterkontrollen skal forstå den samme forskel som producenten.**
+
+I det undersøgte forløb var den nye offentlige manifest allerede leveret og helt identisk med det forseglede målmanifest. Den normale private audit var bestået. Alligevel afviste den efterfølgende deploykontrol kombinationen af en klar hukommelsesprofil og aktuelle scorer med historikrelateret usikkerhed. Det var en modstrid mellem to kontrolkontrakter, ikke bevis for at nye vejrdata aldrig var blevet leveret.
+
+### De 48 timer beskriver ikke al usikkerhed i modellen
+
+De undersøgte 210 zoner havde begge søgemåder markeret med 48 timers historikdækning i strømvinduets scorefelt. Den eneste angivne årsagskode i deres samlede historikliste var WAVE_MOBILISATION_HISTORY_INCOMPLETE. Producenten og den private audit accepterede samtidig modelMemoryReady=true og en tom liste af readiness-advarsler.
+
+De to oplysninger kan være korrekte samtidig. Strømvinduets dækning, hukommelsestilstandens parathed og den beregnede scores resterende usikkerhed er forskellige forhold. Bølge- og last-mile-historik kan fortsat påvirke et usikkerhedsinterval, selv om det aktuelle strømvindue er dækket. Derfor må 48 timer ikke bruges som begrundelse for at skjule et relevant forbehold eller kalde alle scorer fuldt afklarede.
+
+De aktuelle historiktællere gælder den fælles reference ved prognosestarten: 210 zoner gange to søgemåder. De er ikke en optælling af alle 118 prognosetimer eller et mål for alle fem vejrtypers datadækning. Et forbehold kan desuden blive ført fra en tilgængelig kystdel videre til zonens samlede vurdering.
+
+### Den snævre kontrolrettelse
+
+Efterkontrollen skal aflede et reelt ufuldstændigt strømvindue af de eksisterende historikposter og deres historyCoverageHours i forhold til det gældende politikvindue. Den må ikke udlede samme tilstand alene af enhver HISTORY_INCOMPLETE-markering. Et faktisk kort strømvindue, for eksempel 24 timer, kan fortsat ikke kombineres med en profil, der påstår klar hukommelse.
+
+Normale tilfælde med fuldt strømvindue og resterende bølge- eller last-mile-usikkerhed kan dermed kontrolleres uden en falsk afvisning. Scoretal, årsagskoder, kvalitetsmarkeringer og usikkerhedsintervaller bevares. Kontrollen kræver stadig de rigtige modelhash, profilfelter, dækningsforhold og præcis sammenhæng mellem readinessflag og advarsler. Det er ikke en lempelse til vilkårlige profiler.
+
+### Udført deploy er ikke en afsluttet kørsel
+
+Pages-deployet blev faktisk udført i det undersøgte forløb, og den friske offentlige manifest matchede målet. Den afsluttende deployverifikation og terminale kvittering var derimod ikke godkendt. De to forhold skal beskrives hver for sig. Manifestlighed alene beviser heller ikke alle offentlige JavaScript-modulers tilstand.
+
+Den foreløbige idé om at genoptage fra checkpoint er trukket tilbage, fordi de nye data allerede er offentlige. Denne rettelse bestiller ikke en genoptagelse, en ny vejrhentning, en ny beregning eller en nulstilling af scorer eller historik. Ukendte skriveudfald skal fortsat afklares før en eventuel senere handling.
+
+### Hvad rettelsen ikke påstår
+
+Dette er en afgrænset 591-kontrolrettelse. Den separate kopireduktion og faste fejlkvitteringer i 89.283 bevares, men den tidligere manglende auditrapports præcise årsag er stadig ubevist. Et tidligere nativefase-artifact er heller ikke i sig selv et gyldigt genbrugsbevis for den aktive fase.
+
+Ingen version, C/I/T, SQL, originaler, kildeprioritet, administratorpunkter, geometri eller scoreformel ændres. Reservekøens 600 sekunder, 800-forsøgsloft, 150 ms startafstand og to transporter bevares. Præcis samlet kildekvalifikation, sikker levering uden aktiv skrivende proces og faktisk afsluttende offentlig kontrol udestår. Alle fem RavRadar-mål forbliver åbne. Se DEC-0298 og den aktuelle private kvittering.
+
 ## 89.283 Den samme audit med færre store tekstkopier
 
 **Kort fortalt: Kontrollen af den færdige prognose skal stadig være lige streng. Den lokale kandidat bruger mindre hukommelse til den samme kontrol og gør det tydeligere, hvis selve kontrollen ikke når at skrive sin rapport.**

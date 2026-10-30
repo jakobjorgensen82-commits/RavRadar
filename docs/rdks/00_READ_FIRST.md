@@ -1,3 +1,13 @@
+## 30. oktober — snæver kontraktrettelse mellem historikkvalitet og readiness
+
+Den undersøgte generation nåede faktisk Pages-deploy, og dens friske offentlige manifest var byteidentisk med det forseglede mål. Privat audit bestod med modelMemoryReady=true og ingen readiness-advarsler, samtidig med at alle aktuelle zone/modevalg havde 48 timers strømvinduedækning og bølgemobiliseringsrelateret historikusikkerhed. Den efterfølgende deploykontrol afviste kombinationen på en for bred antagelse om HISTORY_INCOMPLETE.
+
+Kandidaten afleder i stedet et kort strømvindue fra historyIncompleteZones[].historyCoverageHours og den gældende vinduespolitik. Den bevarer den gamle negative kontrol af et reelt kort strømvindue samt alle modelhash-, advisory-, profil- og dækningskrav. Scoretal, usikkerhedsintervaller og årsagskoder ændres ikke; fulde 48 timer er ikke en generel fuldhistorikgaranti.
+
+Pages-handlingen og den manglende afsluttende verifikation/terminale kvittering er forskellige udfald. Checkpointgenoptagelsen var kun en foreløbig plan og er trukket tilbage, fordi nye data allerede er offentlige; ingen genoptagelse eller ny vejrhentning følger af denne rettelse. 755-kandidatens ressourcearbejde er særskilt, og den tidligere manglende auditrapports rodårsag er fortsat ubevist. Eksisterende nativefasebevis må ikke fejlagtigt kaldes genbrugeligt i den aktive fase.
+
+Kilden er fortsat 4.0.591 med uændrede C/I/T/SQL, originaler, historik, DMI → Copernicus → Open-Meteo, administratorpunkter, geometri og scoreformel. Den gennemgåede reservekapacitet bevares. Præcis kvalifikation, sikker levering og faktisk afsluttende offentlig kontrol er åbne; alle fem mål består. Se DEC-0298 og håndbog 89.284.
+
 ## 30. oktober — auditressourcer og faste fejlkvitteringer, lokal kandidat
 
 Den kritiske 591-kandidat reducerer en dokumenteret ekstra stor tekstkopi i runtime-auditten. En faktisk lokal kørsel af hele auditprogrammet på den eksisterende store syntetiske fixture gav byteidentisk rapport og samme afslutningskode med cirka 111 MiB mindre maksimal proceshukommelse. Det er ikke produktionsdata, en kapacitetsgaranti eller bevis for nattens præcise fejlårsag. Den observerede manglende rapport er fortsat uafklaret.

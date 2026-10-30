@@ -1,3 +1,9 @@
+## 30. oktober — samme scoreusikkerhed, korrekt operationel readiness-kontrol på 4.0.591
+
+Retter en påvist modstrid: producent og privat audit accepterede et fuldt aktuelt strømvindue med resterende bølgemobiliseringsusikkerhed, mens deployefterkontrollen afviste enhver HISTORY_INCOMPLETE sammen med klar hukommelse. Kontrollen bruger nu faktisk historyCoverageHours mod politikvinduet og bevarer 24-timersafvisningen samt modelhash-, profil-, advisory- og dækningskrav. Bølge-/last-mile-forbehold og scorer bevares.
+
+Nye data var faktisk offentliggjort, men afsluttende verifikation og terminal kvittering var ikke godkendt. Den foreløbige checkpointgenoptagelse er trukket tilbage. Ingen ny vejrhentning, beregning, scorenulstilling, version, C/I/T eller SQL. Den separate auditressourceændring og dens ubeviste tidligere rodårsag må ikke blandes sammen med denne fejl. Normal målprøve er bestået; samlet kvalifikation, sikker levering og faktisk effekt er fortsat åbne. Se DEC-0298 og håndbog 89.284.
+
 ## 30. oktober — samme runtime-audit med færre store kopier på uændret 4.0.591
 
 Den lokale kritiske kandidat erstatter auditprogrammets monolitiske join/lowercase-kopi med en overlappende bidvis kontrol. Hele rapporten og afslutningskoden er bevaret i den faktiske store syntetiske normalprøve; maksimal proceshukommelse faldt cirka 111 MiB i én lokal sammenligning. Det beviser ikke nattens rodårsag eller runnerkapacitet.

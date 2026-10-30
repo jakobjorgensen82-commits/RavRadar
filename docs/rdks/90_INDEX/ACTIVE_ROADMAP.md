@@ -1,3 +1,9 @@
+## 30. oktober — kvalificér den snævre operationelle historikkontrol
+
+Før kontrolrettelsen gennem præcis samlet kvalifikation og sikker levering uden aktiv skrivende proces. Bevar den allerede gennemgåede auditressource-/fejlkvitteringskode og reservekapacitet, alle bindinger, SQL og normale hårde gates. Kontrolrettelsen skal bevare scorer og kvalitetsforbehold.
+
+Nye data er allerede offentlige i det undersøgte forløb; den foreløbige checkpointgenoptagelse er trukket tilbage og må ikke startes på dette grundlag. Afklar afsluttende deployverifikation og terminal kvittering særskilt. Påstå ikke genbrug af en inaktiv eller forkert type nativefasebevis. Den manglende auditrapports tidligere årsag og de øvrige fem mål er fortsat åbne. Se DEC-0298 og håndbog 89.284.
+
 ## 30. oktober — kritisk auditforbedring før de øvrige kandidater
 
 Næste afgrænsede leverance er 591-auditkandidatens målte kopireduktion samt faste indholdsfrie proces-/fejlkvitteringer. Bevar den gennemgåede reservekapacitet, alle bindinger og de normale hårde gates. Ingen ny model-/SQL-udstedelse eller hævet heap.
