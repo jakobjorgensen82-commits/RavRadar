@@ -35,7 +35,7 @@ let cases=0,executions=0,calls=0,signedCalls=0,cliTransportCalls=0,coordinate,ba
 const currentRun=50000000002,baselineRun=50000000001,baselineJob=50000000003;
 const currentJob=50000000004,finalId=50000000005,nativeId=50000000006,pr=999,baselinePr=998;
 const repo='/repos/'+ORIGIN.repository,actions=repo+'/actions';
-const state={missing:false,badNational:false,badJob:false,movedPull:false};
+const state={missing:false,badNational:false,badJob:false,movedPull:false,laterInspections:false,transportRoutes:false};
 function copyModule(name,seen=new Set()){
   if(seen.has(name))return;seen.add(name);const bytes=fs.readFileSync(path.join(SOURCE,name));write(name,bytes);
   for(const m of bytes.toString('utf8').matchAll(/^import\b[^;]*?\bfrom\s*['"](\.[^'"]+)['"]/gm))
@@ -61,12 +61,29 @@ function rebuild(){
   json.set(repo+'/commits/'+base+'/pulls?per_page=100',[json.get(repo+'/pulls/'+baselinePr)]);
   for(const producer of Object.values(SOURCE_GATE_PRODUCERS))json.set(actions+'/workflows/'+producer.workflowId
     +'/runs?head_sha='+base+'&branch=main&per_page=100&page=1',{total_count:0,workflow_runs:[]});
+  if(state.laterInspections){
+    const workflow='.github/workflows/run-current-weather-once.yml',producer=SOURCE_GATE_PRODUCERS[workflow];
+    assert(producer);const history=[];
+    for(let i=0;i<state.laterInspections;i++){
+      const id=baselineRun+100+i;
+      history.push({id,run_attempt:1,head_sha:base,head_branch:'main',path:workflow,
+        repository:{full_name:ORIGIN.repository},status:'completed',conclusion:'failure',updated_at:stamp(30)});
+      json.set(actions+'/runs/'+id+'/attempts/1/jobs?per_page=100',{total_count:1,jobs:[{
+        id:id+1000,run_id:id,run_attempt:1,head_sha:base,name:producer.gates[0].job,status:'completed',conclusion:'failure',
+        steps:[{name:producer.gates[0].step,status:'completed',conclusion:'success',completed_at:stamp(25)}],
+      }]});
+    }
+    json.set(actions+'/workflows/'+producer.workflowId+'/runs?head_sha='+base+'&branch=main&per_page=100&page=1',
+      {total_count:history.length,workflow_runs:history});
+  }
   zips=new Map([[String(finalId),finalZip],[String(nativeId),nativeZip]]);
 }
 function currentPull(){return {number:pr,state:'open',head:{sha:head,repo:{full_name:ORIGIN.repository}},
   base:{sha:base,ref:'main',repo:{full_name:ORIGIN.repository}}};}
 async function fakeFetch(url,options){
   calls++;const target=new URL(url);
+  if(Array.isArray(state.transportRoutes))state.transportRoutes.push(target.origin==='https://fixture.invalid'
+    ?'SIGNED_ARTIFACT':target.pathname+target.search);
   if(target.origin==='https://fixture.invalid'){
     assert.equal(options.headers,undefined);assert.equal(options.redirect,'error');signedCalls++;
     return new Response(zips.get(target.pathname.slice(1)));
@@ -192,6 +209,19 @@ try{
   assert.equal(positive.receipt.reportedCommandResults.length,5);assert.equal(positive.receipt.database.executed,false);
   assert.equal(positive.receipt.national.status,'NOT_APPLICABLE');assert.equal(positive.deliveryAuthority,false);
   assert(signedCalls>=2);executions+=count();cases++;
+  reset();state.laterInspections=12;state.transportRoutes=[];rebuild();
+  const beforeHistoryCalls=calls,beforeHistorySigned=signedCalls,withHistory=await coordinate();
+  assert.equal(withHistory.selection,'TARGETED');assert.equal(count(),5);executions+=count();
+  const trace=state.transportRoutes,originRoute=actions+'/runs/'+baselineRun;
+  const qualificationStart=trace.findIndex((route,index)=>route===originRoute&&trace.slice(0,index).includes(route));
+  const qualificationEnd=trace.lastIndexOf(actions+'/artifacts/'+finalId);
+  assert(qualificationStart>=0&&qualificationEnd>qualificationStart);
+  assert.equal(qualificationEnd-qualificationStart+1,27,'Real FULL qualification exceeds native24 without resetting its source phase');
+  assert.equal(calls-beforeHistoryCalls,40);assert.equal(signedCalls-beforeHistorySigned,3);
+  for(let i=0;i<12;i++)assert.equal(trace.filter(route=>route===actions+'/runs/'+(baselineRun+100+i)
+    +'/attempts/1/jobs?per_page=100').length,1,'Every legitimate later source result is independently inspected');
+  assert.equal(withHistory.receipt.database.executed,false);assert.equal(withHistory.receipt.national.executed,false);cases++;
+  reset();rebuild();
   reset();state.missing=true;assert.equal((await coordinate()).selection,'FULL');assert.equal(count(),0);cases++;
   reset();job.steps[17].conclusion='failure';rebuild();assert.equal((await coordinate()).selection,'FULL');
   assert.equal(count(),0);job.steps[17].conclusion='success';rebuild();cases++;

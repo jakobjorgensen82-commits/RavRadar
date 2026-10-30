@@ -8,7 +8,7 @@ import {isDeepStrictEqual} from 'node:util';
 import {planSourceImpactFromGit} from './source-impact-git-diff.mjs';
 import {qualifySourceImpactFullBaseline,SOURCE_IMPACT_FULL_BASELINE_KIND} from './source-impact-full-baseline.mjs';
 import {buildTargetedSourceReceipt} from './source-targeted-receipt.mjs';
-import {assistantPublic591Reader,ORIGIN} from './native-postgres-evidence.mjs';
+import {assistantPublic591Reader,sourceImpactEvidenceAccess,ORIGIN} from './native-postgres-evidence.mjs';
 import {discoverPullRequestSourceGate,PULL_REQUEST_SOURCE_JOB,PULL_REQUEST_SOURCE_WORKFLOW}
   from './lib/weather-source-gate.mjs';
 import {sourceTreeContentSha256,sourceTreeProofArtifactName} from './lib/source-tree-content.mjs';
@@ -116,12 +116,11 @@ export async function coordinateTargetedSourceProducer(){
         jobId:one(jobs.jobs.filter(row=>row.name===PULL_REQUEST_SOURCE_JOB)).id,
         finalArtifactId:final.id,finalArtifactDigest:final.digest,finalProofSha256:finalProofHash(zip),
         nativeArtifactId:native.id,nativeArtifactDigest:native.digest};
-      // A separate, fixed evidence phase owns its 24-call/60-second transport
-      // budget. The locator's clock must not expire while selected tests run.
-      const qualifyGet=assistantPublic591Reader();
+      // One closed source phase covers the complete FULL qualification and
+      // signed ZIP redirects. The native/discovery default remains 24/60.
+      const qualification=sourceImpactEvidenceAccess();
       const qualified=await qualifySourceImpactFullBaseline({reference,candidateCommit:head},
-        {getJson:route=>qualifyGet(route),getArtifactZip:route=>route===zipRoute?Promise.resolve(Buffer.from(zip))
-          :qualifyGet(route,{zip:true}),readGit:git});
+        {...qualification,readGit:git});
       if(qualified.kind!==SOURCE_IMPACT_FULL_BASELINE_KIND)return full('FULL_BASELINE_NOT_QUALIFIED');
       baseline=qualified;gitPlan=plan;break;
     }
