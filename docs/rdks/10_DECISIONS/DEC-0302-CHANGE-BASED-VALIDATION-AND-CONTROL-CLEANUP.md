@@ -33,7 +33,11 @@ Denne beslutning erstatter ældre blanketformuleringer om samme brede source-/da
 
 ## Aktuel implementeringsstatus
 
-De første lokale efterbilleder retter hård bindingpreflight, tilføjer normale tidsrækker og placerer den normale overgangsprøve tidligt uden at ændre stepnumre. De er ikke installeret. Den egentlige ændringsplan, verificeret fuld diff/baseline, gate-/proofintegration, målrettet oprydning og faktisk hurtigere levering med bevaret fejlfangst er åbne. Detaljeret, skiftende run- og testbevis føres privat.
+Lokalt implementeret er stop efter ugyldig bindingpreflight, normale tidsrækker, den tidlige normale overgangsprøve samt en ændringsplan på hele den faktiske Git-diff. De første korte profiler omfatter navngivne dokumenter og præcist afgrænsede tekstfelter i Om RavRadar og læringsmodulet; fælles, ukendte og blandede ændringer vælger fuld kontrol. Dette er endnu ikke installeret testudvælgelse.
+
+Den lokale FULL-baselinekvalifikator kræver faktisk grøn fuld kildekontrol, native- og nationaltrin, hashbundne rapporter, samme repositories/PR/merge og en rigtig Git-forfader. Den særskilte TARGETED-rapport bevarer præcist det valgte testomfang og mærker database/national som ikke relevante og ikke udført. En historisk nationalprøve bliver ikke til bevis for aktuel national drift. Producenten genberegner hele sin Git-plan; forbrugeren kræver selvstændig kvalifikation af den faktiske merge og tilsvarende kildeindhold.
+
+Den normale afvikling af de valgte kommandoer, live-opdagelse af baseline, workflow-/forbrugerintegration, bredere relevant udtynding og faktisk hurtigere levering med bevaret fejlfangst er fortsat åbne. Lokale delprøver er ikke denne tekniske levering. Detaljeret, skiftende run- og testbevis føres privat.
 
 ## Placering af hukommelse
 

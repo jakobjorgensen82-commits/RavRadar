@@ -2,7 +2,9 @@
 
 Den skrivefri læser i scripts/source-impact-git-diff.mjs læser hele den faktiske commit-diff offline med eksakte commit-IDer, faktisk HEAD og verificeret forfader. Ingen caller-valgt udeladelsesliste findes. Kun de kendte tekststier får afgrænsede UTF-8-bloblæsninger; ukendte, store, binære og ikke understøttede navne bevares i inventaret og giver fuldt omfang. Manglende objekter og forkert identitet afviser billig plan. 19 lokale cases med små ægte Git-repositories består; en faktisk BOM-navnefejl blev først reproduceret og derefter rettet.
 
-Det er ikke en kvalificeret GitHub-baseline eller leveringsautoritet. Normal integration med proof/workflow og den brede oprydning mangler fortsat. Planens sideeffektfelt hedder nu ordinaryWeatherMutatedByPlanner; det påstår alene, at planlæggeren ikke skriver vejr, og siger intet ubekræftet om kandidatens påvirkning. Den aktive vejrrettelse og alle fem mål bevares. Se DEC-0302 og privat checkpoint.
+De to lokale efterfølgere er nu sammenført: en faktisk FULL-baselinekvalifikator med hashbundet rapportlæsning og en særskilt TARGETED-builder/validator. Fuld GitHub-status, relevante native-/nationaltrin, bevisindhold, Git-forfader og friske slutaflæsninger kræves; N/A må aldrig ommærkes til udført SQL. Producentens faktiske PR-head og forbrugerens kildeidentiske merge behandles særskilt. De sammenførte målprøver består lokalt; ingen live baseline, produktkommandoer, SQL eller offentlig levering er udført af disse prøver.
+
+Normal kommandoafvikling, baseline-opdagelse, proof-/workflowintegration og den brede oprydning mangler fortsat. Planens sideeffektfelt hedder ordinaryWeatherMutatedByPlanner; det påstår alene, at planlæggeren ikke skriver vejr, og siger intet ubekræftet om kandidatens påvirkning. Den aktive vejrrettelse og alle fem mål bevares. Se DEC-0302 og privat checkpoint.
 
 ## 30. oktober — første afgrænsede ændringsplan er lokal kode
 
