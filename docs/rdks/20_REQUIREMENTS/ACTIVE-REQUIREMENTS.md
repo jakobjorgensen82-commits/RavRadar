@@ -1,3 +1,11 @@
+## 30. oktober — krav til den private resume/native-kombination
+
+Completed-stage skal anvende den eksisterende producentgrænse for conditions ved forælder/barn/lineage. Installeret filkontrol må kun udvide de tre eksakte id-/stipar; ingen wildcard eller sammenblanding med komprimeret transport. Hele SHA-256, byteantal, samme descriptor/sti før og efter, lukning, oprindelig fejl, GCM, attest, parent-CAS og no-loss skal bestå.
+
+Native V2 må kun genbruge faktisk EXECUTED-oprindelse med hele den lukkede positive inputrelation, endelige package-scopes, korrekt runtime og de faktisk valgte fire PG-programmer. Metadataafslag skal komme før ZIP; komplet digest-/ZIP-/fasekontrol består bagefter med strømmende transportgrænser og uden token til signed redirect. V1 må ikke opgraderes, og REUSED må ikke kaldes SQL udført nu. Ukendt eller modstridende evidens kræver normal udførelse. Normal national efterfølger og fuld kildekontrol på præcis ny kilde er fortsat nødvendige.
+
+Kvalifikation og faktisk effekt er åbne. Ingen nye gates, ny model/version/SQL eller svækket produktionskontrol følger af dokumentationen. Se DEC-0045, DEC-0301 og håndbog89.288–89.289.
+
 ## 30. oktober — 4.0.593-kandidat: samme kapacitet i de nødvendige normale læsere
 
 Den faktisk anvendte forgænger er 4.0.591. Den nye 4.0.593-kandidat samler de allerede forberedte forbedringer og den konkrete kapacitetsrettelse; 4.0.592 samt dens udstedte kilder og SQL bevares, men 592 er ikke installeret eller offentligt leveret. Ældre daterede 591-/592-fronter er historik på disse statuspunkter.

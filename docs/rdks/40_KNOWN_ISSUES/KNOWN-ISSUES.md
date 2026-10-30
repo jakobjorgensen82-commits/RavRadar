@@ -1,3 +1,11 @@
+## 30. oktober — privat rettet kapacitet; nativegenbrug og faktisk effekt mangler
+
+Den særskilte completed-stage-læsekonflikt er rettet i privat kode med målrettede normale kaldere. Det er ikke bevis for en faktisk stor autentificeret helgenoptagelse eller leveret rettelse. Nattens manglende runtime-auditrapport og andre driftsfejl har deres egne evidenskrav; denne kandidat lukker dem ikke med en størrelseshypotese.
+
+De fire reviewfund i nativegenbruget er rettet privat: attest kun i den nye profil, artifactmetadata før ZIP, tracked/untracked package-scopes og afgrænset V2-streamtransport. Ni målrettede593-forløb består; første reelle V2-Linux-/PostgreSQL-oprindelse, korrekt senere genbrug, national integration og målt tidsgevinst er fortsat åbne. V1 efterudfyldes ikke. Præcis samlet kilde- og leveringskontrol er fortsat nødvendig.
+
+Alle fem hovedmål består. Ingen ny nulstilling, gammelt kildebevis ommærket til nyt eller ændret model/SQL/formel/kildeprioritet. Se DEC-0045/DEC-0301, håndbog89.288–89.289 og privat checkpoint.
+
 ## 30. oktober — 4.0.593-kandidat: samme kapacitet i de nødvendige normale læsere
 
 Den faktisk anvendte forgænger er 4.0.591. Den nye 4.0.593-kandidat samler de allerede forberedte forbedringer og den konkrete kapacitetsrettelse; 4.0.592 samt dens udstedte kilder og SQL bevares, men 592 er ikke installeret eller offentligt leveret. Ældre daterede 591-/592-fronter er historik på disse statuspunkter.

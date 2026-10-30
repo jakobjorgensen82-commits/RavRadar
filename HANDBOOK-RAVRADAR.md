@@ -1,3 +1,63 @@
+## 89.289 Genbrug af en faktisk udført databaseprøve
+
+**Kort fortalt: Den samme databaseprøve skal ikke udføres igen alene på grund af en uafhængig tekst- eller visningsændring. Før genbrug skal systemet bevise, hvad den oprindelige prøve faktisk brugte, at den blev udført og afsluttet korrekt, og at disse forudsætninger stadig er identiske. Den private kode er forberedt; faktisk genbrug og tidsbesparelse er endnu ikke dokumenteret.**
+
+### Konkret input frem for hele repositoryet
+
+Den nye V2-type gælder den navngivne assistant-public591-successor-fase for 4.0.593. Dens positive inputliste består af 65 gennemgåede hele moduler, fire navngivne JSON-filer og alle 71 SQL-filer samt tolv præcise frosne Git-ankre. Navne, modes og hele filernes bytes indgår. Workflow, controller, dens normale prøvemål og de tre eksisterende requirements-filer bindes særskilt som bevis- og setupinput.
+
+Repositoryets package-type og releaseversion bindes. Seks endeligt afledte package.json-stier beviser tilstedeværelse eller fravær og det nærmeste modulescope både i Git og fysisk. Et nyt lokalt eller versionsført package.json må derfor ikke skjult ændre fortolkningen af de kontrollerede moduler. Den gennemgåede modullukning har sit eget faste kvalifikationsdigest; ændret native kode kan ikke automatisk gøre sig selv genbrugelig med den gamle liste.
+
+Uafhængig dokumentation, brugerflade eller andre navngivne prøver må ændres uden i sig selv at ændre databaseinput. Dette er ikke en generel undtagelse for stier eller filtyper: ændrede relevante input, ukendt afhængighed eller modstridende evidens kræver almindelig fuld udførelse. Den samlede kildekontrol er stadig bundet til den præcise nye kilde.
+
+### Den udførte prøve og dens værktøjer skal kunne bevises
+
+Den normale vælger finder de faktisk anvendte initdb-, pg_ctl-, psql- og postgres-programmer. Deres stier, faktiske filplaceringer, modes, størrelser, SHA-256 og versioner observeres før og efter den normale prøves dokumenterede oprydning. Denne ekstra attest gælder kun den nye navngivne profil. Gamle profiler får ikke nye attestlæsekrav eller et nyt rapportfelt.
+
+De allerede observerbare runner-, Node-, Python-, Git- og miljø-/setupforudsætninger skal passe. Et pg_config-resultat alene beviser ikke, hvilke fire programmer prøven brugte. Der indføres ikke et nyt generelt lager af OS-, biblioteks- eller ldd-oplysninger.
+
+Første gyldige V2-oprindelse kræver en faktisk ny Linux-/PostgreSQL-eksekvering, normal afslutning og oprydning samt identiske før-/efterinput og runtime. Den selvstændige fase og dens upload skal være reelt grønne og frisk verificeret i GitHub med korrekt kørsel, forsøg, job, head, artifact og digest. En lokal prøve eller grøn workflowtitel er ikke dette bevis.
+
+### Ærlig oprindelse gennem senere kildeprøver
+
+Et genbrugsresultat angiver REUSED og executedInThisRun=false og peger direkte på den oprindelige EXECUTED-V2-fase. Et tidligere genbrugsresultat er kun en locator og må ikke omdøbes til en ny udførelse. Gamle V1-beviser og deres afslag bevares; en allerede kørt V1-fase må hverken efterudfyldes eller opgraderes til V2.
+
+Artifactmetadata kontrolleres før ZIP-hentning. Derefter kontrolleres komplette bytes, digest, ZIP-indhold og bevis. V2 har sin egen strømmende transport med højst 2 MiB JSON og 64 KiB ZIP, 24 kald, 60 sekunder samlet og 15 sekunder pr. enkeltkald. Signed URL og rå headere gemmes ikke, og GitHub-token sendes ikke med til den signerede filadresse. Gamle V1-transportfunktioner er bevaret byteuændrede.
+
+Den normale nationale prøve skal hente alle sine nativefelter fra den fuldt verificerede fases faktiske udførelse eller genbrug og bevare den direkte oprindelse. De fem forgængeres nativefelter og det aktuelle felt må ikke blive seks opdigtede nye SQL-kørsler. Nationalprøven, de almindelige efterfølgere, uændret-træ-kontrollen og kildebeviset har fortsat deres egne krav.
+
+### Status og nødvendig kvalifikation
+
+De ni målrettede lokale 593-forløb på den private slutkandidat består. De beviser blandt andet metadataafslag før ZIP, nested package-scopekontrol, transportgrænser, oprindelsesadskillelse og gamle profilers bevarelse. Der er ikke udført ægte PostgreSQL på Windows, ny samlet Linux-kvalifikation eller reelt produktionsgenbrug i denne forberedelse.
+
+Før levering mangler ROOTs samlede integration og normale dokument-/kildekontroller samt en faktisk første V2-eksekvering. Senere ægte REUSED-forløb, national integration og en sammenlignelig tidsmåling skal stadig dokumenteres. Ingen bestemt tidsbesparelse loves. Denne kildeoptimering ændrer ikke vejrhentning, model-/SQL-binding, scoreformel, DMI → Copernicus → Open-Meteo, originaler, historik, administratoropsætning eller produktionsgates. Alle fem hovedmål er åbne.
+
+## 89.288 Genoptagelse skal kunne læse hele den gyldige, gemte beregning
+
+**Kort fortalt: Når en færdig, endnu ikke offentliggjort beregning skal genoptages, skal dens gyldige gemte filer kunne læses igen. Den private kandidat retter tre præcise filrollers læsegrænser og kontrollerer stadig hver byte. Den starter ikke en vejrhentning og giver ikke en pakke adgang til at fortsætte alene, fordi den kan læses.**
+
+### En særskilt vej efter færdig beregning
+
+Den særlige completed-stage-vej er adskilt fra almindelig vejrhentning. Den kræver den præcise oprindelige kørsel, det rigtige forsøg og kildegrundlag, autentificeret pakke, gyldig historik og uændret aktiv forælder. Pakken dekrypteres og kontrolleres gennem de normale funktioner. Genoptagelsen må kun føre den allerede gemte, endnu ikke offentliggjorte beregning videre.
+
+### Filens rolle bestemmer læsegrænsen
+
+Den samlede private conditions-fil følger producentens eksisterende grænse på 535.822.312 bytes, også i forældre-/barnelæsning og lineage-kontrol. Ved kontrol af de installerede filer gælder denne grænse kun for det eksakte par full-conditions og data/live/conditions.json. De eksakte par dmi-forecast-cache og data/live/dmi-forecast-cache.json samt weather-component-inputs og .cache/weather-component-inputs.pack følger den eksisterende grænse på 768 MiB for disse filpayloads. Andre roller beholder 350.000.000 bytes.
+
+Den komprimerede transport har fortsat sin egen grænse på 350.000.000 bytes. Den særskilte Candidate-bulkfil beholder også sin grænse. En tilladt filstørrelse giver ikke adgang til en anden filrolle, ændrede bytes eller en forkert generation.
+
+### Hele filen kontrolleres i små bidder
+
+Installerede filers SHA-256 beregnes løbende i blokke på 64 KiB. Hele byteantallet og kontrolsummen skal matche det autentificerede manifest. Den samme åbne fil samt stien kontrolleres før og efter læsningen med filidentitet, størrelse og ændringstider; symlinks og ændringer undervejs afvises. Filhåndtaget skal lukkes, og en efterfølgende lukningsfejl må ikke skjule den oprindelige fejl.
+
+Strømmende kontrol betyder, at den rå installerede fil ikke skal ligge som én ekstra stor kopi alene for at beregne kontrolsummen. Det er ikke en erklæring om hele genoptagelsesforløbets maksimale hukommelsesforbrug; de normale JSON- og øvrige pakkekontroller består.
+
+### Hvad er bevist, og hvad mangler?
+
+De målrettede lokale normale kaldere og negative integritetsforløb foreligger. Et afgrænset stort syntetisk filforløb foreligger særskilt; det er ikke en komplet stor autentificeret produktionsgenoptagelse. Den samlede kilde på den senere faktiske kombination skal stadig kvalificeres, og relevant faktisk genoptagelse skal bevise fuld bevarelse, sikker gemning og offentlig effekt.
+
+Dette er en privat kildekandidat. Den ændrer ikke scoreformel, kildeprioritet, administratorpunkter, geometri, historiske scorer, autentiske originaler, modelbinding eller SQL. Oprindelse, GCM, attest, B/S-rækkefølge, frisk pointerkontrol, CAS og hård databevarelse er fortsat nødvendige. Ingen nulstilling, ekstra vejrhentning eller produktionsaktivering følger af denne dokumentation.
+
 ## 89.287 Gyldige gemte vejrdata skal kunne læses igen
 
 **Kort fortalt: RavRadar skal kunne læse de gyldige vejrdata, som systemet selv har gemt. Den nye kandidat fjerner tre forældede læselofter i den aktuelle kæde uden at ændre vejret, scoreformlen eller kontrollen af originalerne.**

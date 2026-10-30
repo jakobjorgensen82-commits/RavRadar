@@ -1,3 +1,11 @@
+## 30. oktober — privat samlet resume2/native6, levering åben
+
+Forberedt og gennemgået: completed-stage producentgrænser i to ejere, løbende fuld SHA-/filidentitetskontrol og bevaret første fejl; særskilt V2-nativegenbrug i seks ejere med positive hele input, package-scopes, faktisk PG-kvartet, sikker origintransport, V1-bevarelse og korrekt national faseoprindelse. De normale lokale genoptagelsesmål og ni593-regressioner foreligger. Det er ikke en samlet Linux-kvalifikation på denne kombination.
+
+Åbent: normal dokumentationssammenføring og præcis samlet kildekontrol; første faktiske Linux-/PostgreSQL-V2-eksekvering med oprydning og selvstændig upload; senere korrekt REUSED/national udførelse og målt tidsgevinst; relevant faktisk stor autentificeret genoptagelse med sikker gemning/offentlig effekt. Den allerede igangværende593-V1-kørsel ændres eller efterudfyldes ikke. Ingen installeret eller offentligt leveret gevinst påstås.
+
+Alle105 modelinput,71 SQL-filer, udstedt593-version/C/I/T, originaler, historik, scoreformel, kildeprioritet, adminpunkter og geometri bevares. Alle539 gamle håndbogsafsnit bevares; de to nye89.288–89.289 giver541. INSTALL ændrer kun sin statiske kanoniske håndbogspayload, ikke DDL eller udført SQL. Alle fem hovedmål er åbne; se DEC-0045/DEC-0301 og privat checkpoint.
+
 ## 30. oktober — 4.0.593-kandidat: samme kapacitet i de nødvendige normale læsere
 
 Den faktisk anvendte forgænger er 4.0.591. Den nye 4.0.593-kandidat samler de allerede forberedte forbedringer og den konkrete kapacitetsrettelse; 4.0.592 samt dens udstedte kilder og SQL bevares, men 592 er ikke installeret eller offentligt leveret. Ældre daterede 591-/592-fronter er historik på disse statuspunkter.
