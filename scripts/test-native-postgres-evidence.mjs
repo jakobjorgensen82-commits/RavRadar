@@ -1059,14 +1059,15 @@ const v2Receipt=(current=v2Current())=>({schemaVersion:2,kind:ASSISTANT_PUBLIC59
 
 test('593 V2 shares the real ordered PG selector, including configured-directory failure and mismatched quartets',async()=>{
   const attempts=[];
-  const filesystem={readdir:async()=>['15','16','17'],access:async file=>{attempts.push(file);if(file.includes('/16/'))throw new Error('synthetic-unusable');}};
+  const posix=file=>file.replaceAll('\\','/');
+  const filesystem={readdir:async()=>['15','16','17'],access:async file=>{attempts.push(posix(file));if(posix(file).includes('/16/'))throw new Error('synthetic-unusable');}};
   const run=async(file,args)=>file==='pg_config'?{code:0,stdout:'/usr/lib/postgresql/16/bin\n'}:
-    {code:0,stdout:file.split('/').at(-1)+' (PostgreSQL) '+(file.includes('/17/')?'17.6':'15.9')};
+    {code:0,stdout:posix(file).split('/').at(-1)+' (PostgreSQL) '+(posix(file).includes('/17/')?'17.6':'15.9')};
   const selected=await chooseActualNativePrograms({platform:'linux',filesystem,run});
-  assert.equal(selected.majorVersion,17);assert.equal(selected.psql,'/usr/lib/postgresql/17/bin/psql');
+  assert.equal(selected.majorVersion,17);assert.equal(posix(selected.psql),'/usr/lib/postgresql/17/bin/psql');
   assert(attempts[0].includes('/16/'));assert(attempts.some(file=>file.includes('/17/')));
   await assert.rejects(chooseActualNativePrograms({platform:'linux',filesystem,run:async(file,args)=>{
-    const result=await run(file,args);if(file.endsWith('/17/bin/psql'))result.stdout='psql (PostgreSQL) 18.1';return result;
+    const result=await run(file,args);if(posix(file).endsWith('/17/bin/psql'))result.stdout='psql (PostgreSQL) 18.1';return result;
   }}),/COMPLETE_EXISTING_BINARIES_UNAVAILABLE/);
   const actual=v2Runtime();actual.selectedPrograms.majorVersion=17;
   for(const file of actual.selectedPrograms.files){file.path=file.path.replace('/16/','/17/');file.realpath=file.path;file.version=file.version.replace('16.10','17.6');}
