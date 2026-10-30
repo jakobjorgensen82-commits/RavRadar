@@ -1,3 +1,9 @@
+## 31. oktober — admin-overblik og kysteditor: lokal rettelse, offentlig effekt åben
+
+Forberedt adminrettelse: Overblik viser afventende/ukendte statusfelter uden falske fejl eller tomme zonetal. Forbindelse og lager kan opdateres uafhængigt af den offentlige vejrpakke. Et afslag kan genprøves gennem samme normale manifest-/modelkontrol, uden at genmontere turtælleren eller en redigeringsvisning.
+
+Kysteditorens første åbning afventer også den centrale konfiguration. Fejl og manglende central payload giver en tydelig Prøv igen; sen preload kan ikke længere erstatte en lokalt sikret draft. Gemme- og rettighedsvejen bevares. Lokale normale mål består; samlet kildekvalifikation, levering og offentlig effekt er endnu ikke gennemført. Ingen ny version/model, SQL eller ændring af vejr, RavScore, administratoropsætning eller geometri.
+
 ## 30. oktober — P0: DMI-originalers conditions skal følge producentens grænse
 
 Den præcise 591→593-controller er kvalificeret og leveret til main; den efterfølgende normale prepare/install og genbrug af kildekontrollen bestod. Vejrhentningen stoppede senere, fordi Pythons normale RAW-retention stadig anvendte 256 MiB på den beskyttede B-conditions-fil. Producenten tillader allerede 535.822.312 bytes. Den primære DMI-afvisning skete før ny ledger; selectorens afvisning af den gamle referencetime er en følgefejl og bevares. Det er ikke ugyldige leverandørdata.
@@ -82,6 +88,8 @@ Forbereder bedre plads til nødvendige vind- og bølgehuller i den normale reser
 - Adapter, controller og en afgrænset læseroptimering er lokalt sammenført. Delingsstien genbruger faste datoformater og sin egen modelidentitet; alle stærke modelkontroller og andre kalderes oprindelige gennemgang bevares. Præcis samlet kontrol, faktisk Pages-oprettelse/deploy, DNS/TLS, Facebookaccept og målt delt Free-kapacitet er åbne.
 - Den senere almindelige 591-generation og de tre serverfunktioner er faktisk leveret. Legacy-Workeren er særskilt opdateret og viser igen en kontrolleret score; dette er ikke bevis for den nye Pages-host, ekstern AI eller Free-kapacitet.
 - Håndbog 89.278 og DEC-0294 dokumenterer den nye beslutning og den risikovurderede leveringsvej. Installationsfilens håndbogspayload følger normal spejlsynk alene. Alle fem mål består som åbne.
+
+- Tillæg 31. oktober: privat tohostadapter for præcis ravradar-del.pages.dev og del.ravradar.dk; OG/canonical beholder den validerede egen host. De oprindelige 153 normale cases bevares, og 171 består lokalt. Ingen frontend-/DNS-aktivering, ny version/model/SQL eller Pages-levering. Hosted Free, Facebook, DNS/TLS og klientskifte er fortsat åbne.
 
 ## 29. oktober — skrivefri aflæsning af gemte komponenttællere, lokal forberedelse
 

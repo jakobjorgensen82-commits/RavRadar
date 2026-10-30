@@ -325,6 +325,8 @@ Et link fastfryser ikke en score for altid. Nyere gyldige vejrdata kan ændre pr
 
 Ejerens godkendte løsning er et separat Cloudflare Pages/Functions-projekt med navnet ravradar-del. Først skal det fungere på ravradar-del.pages.dev. Derefter kan det tilknyttes del.ravradar.dk med én CNAME-post hos den nuværende DNS-udbyder Simply. Navneserverne, hovedhjemmesiden og mailposterne flyttes ikke.
 
+Den forberedte adapter genkender præcis ravradar-del.pages.dev og del.ravradar.dk. På begge adresser følger forhåndsvisningens eget link den kontrollerede adresse, mens linket ind til kortet stadig går til ravradar.dk. Det gør ikke domænet aktivt i sig selv: offentlig levering, gratis kapacitet i praksis, Facebooks forhåndsvisning, DNS, certifikat og skiftet af hjemmesidens delingsadresse skal stadig være kontrolleret hver for sig.
+
 Frontendens nuværende delingsadresse og den gamle delingstjeneste bevares, mens den nye løsning bliver kontrolleret. Klienten skifter først efter faktisk levering, korrekt domæne og aktivt certifikat. Allerede delte links skal fortsat kunne bruges; den gamle tjeneste skal derfor også passe til de nye offentlige data.
 
 Det er domænet, der bliver kortere og uden personnavn. De nødvendige linkparametre for zone, tidspunkt, søgemåde og sprog forkortes ikke i denne afgrænsede ændring.
@@ -9245,6 +9247,16 @@ Håndbogen er et beskyttet admin-dokument. Eksperten skal have admin_access og d
 
 Læsning, redigering, publicering, rå diagnostik, systemadministration og ekspertadministration er adskilte rettigheder. Ejerrollen har fuld adgang. Service role / sb_secret må kun findes som GitHub Secret og aldrig i browserkode eller ZIP.
 
+
+### Admin-overblik og kysteditor — forberedt 31. oktober 2026
+
+Når administrationen åbner, kommer nogle oplysninger før andre. Afventende forbindelse, lager og zonetal skal derfor vises som afventende eller ukendte, indtil de er aflæst. En fejl i den offentlige vejrpakke må ikke skjule en vellykket forbindelses- eller lagerkontrol. Prøv igen foretager en almindelig ny læsning med de samme manifest- og modelkontroller.
+
+Kysteditoren må først åbne sit redigeringsgrundlag, når zoneregisteret, den verificerede offentlige pakke og den centrale kystkonfiguration er indlæst. En afvist eller manglende central konfiguration vises som en fejl med mulighed for at prøve igen. Den må ikke behandles som verificeret, blot fordi en lokal kopi findes.
+
+Når editoren er åbnet, må sen baggrundsindlæsning ikke erstatte den draft, ejeren arbejder med eller har sikret lokalt efter en fejlet central gemning. De almindelige rettigheds-, gemme- og readbackkontroller gælder fortsat. At administrationen er færdiginitialiseret betyder alene, at dens indlæsning er afsluttet; det beviser ikke, at en model eller vejrpakke er gyldig.
+
+Den afgrænsede kandidat har bestået normale lokale målprøver. Samlet kildekvalifikation, sikker levering og den faktiske offentlige browservirkning afventer stadig. Denne præcisering ændrer ingen scoreformel, vejrdata, rettigheder, administratoropsætning eller geometri.
 
 ## 27. Diagnostik, sundhed og faglig audit
 

@@ -1,3 +1,9 @@
+## 31. oktober — admin-overblik og kysteditor: lokal rettelse, offentlig effekt åben
+
+Åben levering: første adminrender kunne vise falske fejl/0 af 0 og blive stående efter en afvist offentlig pakke; den afviste Promise blokerede også senere læsning. En særskilt konkret race lod sen kystpreload erstatte en draft, som den normale gemmevej havde sikret lokalt. Begge er reproduceret og rettet lokalt gennem den eksisterende normale målprøve.
+
+Kandidaten skelner pending/ukendt fra faktisk afslag, isolerer forbindelses-/lagerresultater, giver almindeligt genforsøg og klargør kun kysteditoren efter streng central læsning samt verificerede øvrige indgange. UI-ready er ikke dataverifikation. En åben editor og dens draft overskrives ikke af baggrundsinitialisering. Normal central gemning, rettigheder, modelgates og geodata bevares. Luk først dette punkt efter samlet kvalifikation, levering og målrettet offentlig brugerafprøvning; øvrig adminrevision består.
+
 ## 30. oktober — privat rettet kapacitet; nativegenbrug og faktisk effekt mangler
 
 Den særskilte completed-stage-læsekonflikt er rettet i privat kode med målrettede normale kaldere. Det er ikke bevis for en faktisk stor autentificeret helgenoptagelse eller leveret rettelse. Nattens manglende runtime-auditrapport og andre driftsfejl har deres egne evidenskrav; denne kandidat lukker dem ikke med en størrelseshypotese.
@@ -77,6 +83,8 @@ Ejeren har valgt separat Pages/Functions med først `ravradar-del.pages.dev`, se
 Adapter og robots-tilføjelse er gennemgået privat; controlleren er privat forberedt og endnu ikke samlet kvalificeret. Der er intet bevis for Pages-oprettelse/deploy, faktisk offentlig 591-kompatibilitet, legacy-Worker-opdatering, custom-domain/TLS, Facebookpreview eller tilstrækkelig delt Free-kapacitet. Et tidligere gyldigt 590-svar fra den gamle Worker erstatter ikke disse krav. De gamle links og frontendadressen bevares, mens den nye host kvalificeres.
 
 Kendt afgrænsning: den nye host fjerner personnavnet fra domænet, men den eksisterende query med zone, tid, søgemåde og sprog forkortes ikke i denne leverance. Ingen score-, vejr-, kilde-, database- eller modelændring. Alle fem mål er åbne; se DEC-0294, håndbog 89.278 og privat checkpoint.
+
+**Tillæg 31. oktober.** Den tidligere kildebegrænsning til pages.dev er lukket i en privat tohostkandidat, så den godkendte del.ravradar.dk ikke i sig selv afvises efter en senere korrekt CNAME/TLS-tilknytning. Andre hosts, forkerte stier, private input, afvigende generation/model og forkert time er fortsat afvist. Dette lukker ikke leveringsissuet: eksakt kvalifikation, offentlig 593-/legacy-kompatibilitet, faktisk Pages, hosted Free, Facebook, DNS/TLS og frontendcutover er ubevist. Ingen eksisterende projektidentitet må opfindes eller overtages.
 
 ## 29. oktober — skrivefri aflæsning af gemte komponenttællere, lokal forberedelse
 

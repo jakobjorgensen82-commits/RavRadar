@@ -1,3 +1,9 @@
+## 31. oktober — admin-overblik og kysteditor: lokal rettelse, offentlig effekt åben
+
+Lokalt forberedt og målprøvet: neutrale pending-/unknown-statusfelter; uafhængig forbindelse/lager; afgrænset opdatering af overblikket; håndteret offentlig læsefejl med normal retry; ingen gentagen montering af turtælleren eller overskrivning af en anden redigeringsfane. Den første kysteditoråbning venter på strengt læst central konfiguration, verificeret offentlig pakke og zoneregister; fejl/ukendt giver retry. Sen initialisering kan ikke erstatte en menneskelig draft.
+
+Hele den normale kystsave-funktion, adgangs-/identitetskontrol og manifest-/modelgates bevares. De to kodeejere og de fire nødvendige prøveafhængigheder matcher den gennemgåede base, så de afsluttede målbeviser genbruges. Præcis samlet kildekvalifikation, senere sikker levering og målrettet offentlig browseraccept er åbne. Ingen ny version, modelbinding, SQL eller ændret geodata. Adminrevisionen og alle fem hovedmål er fortsat åbne.
+
 ## 30. oktober — P0: DMI-originalers conditions skal følge producentens grænse
 
 Den præcise 591→593-controller er kvalificeret og leveret til main; den efterfølgende normale prepare/install og genbrug af kildekontrollen bestod. Vejrhentningen stoppede senere, fordi Pythons normale RAW-retention stadig anvendte 256 MiB på den beskyttede B-conditions-fil. Producenten tillader allerede 535.822.312 bytes. Den primære DMI-afvisning skete før ny ledger; selectorens afvisning af den gamle referencetime er en følgefejl og bevares. Det er ikke ugyldige leverandørdata.
@@ -127,6 +133,8 @@ Ejerbeslutningen er lukket: kun `ravradar-del`, først pages.dev og senere `del.
 Åbent: eksakt samlet kildekontrol; eksisterende nøgles faktiske Pages Write-adgang; entydig fraværskontrol/oprettelse; normal bygning og verificeret deployment; faktisk senere offentlig 591 og legacy-Workerens kompatibilitetsdeploy; hosted GET/HEAD/OG/robots; Facebooks egen preview/cache; målt delt Workers Free-forespørgsels-/CPU-kapacitet; senere custom-domain/CNAME/TLS og normal klient/cachebusterlukning. Ukendt skriveudfald må ikke gentages blindt. Før cutover bliver klienten på den gamle adresse.
 
 Ingen ekstern write, projektoprettelse, deploy, DNS, ny version, C/I/T, migration eller SQL-eksekvering er bevist af forberedelsen. Kandidatens faktiske modelinput-intersection er tom mod C98/I97/T12 union 104. Den statiske håndbogs-installationspayload spejles normalt og ændrer ingen DDL. Alle fem mål er åbne. Se DEC-0294 og håndbog 89.278.
+
+**Tillæg 31. oktober.** Den snævre tohostadapter og dens normale målprøve er privat forberedt: præcis pages.dev og del.ravradar.dk, uændrede øvrige afslag og korrekt egen-host-OG. Alle oprindelige 153 cases er bevaret; 171 består lokalt. Den normale create-only-controller behøver intet nyt hashkatalog, fordi den sammenligner de præcise adapterbytes med den kvalificerede commits Git-blob. Samlet kildekvalifikation, faktisk offentlig 593, legacy-kompatibilitet, Pages-oprettelse/deploy, hosted Free/Facebook samt senere CNAME/TLS/frontend er fortsat åbne. Ingen projektadoptions- eller opdateringsgenvej tilføjes.
 
 ## 29. oktober — skrivefri aflæsning af gemte komponenttællere, lokal forberedelse
 
