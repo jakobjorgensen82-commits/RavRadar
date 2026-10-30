@@ -305,6 +305,112 @@ if sys.argv[1:] == ["--cached-current-history-plan-only"]:
     raise SystemExit(0)
 
 
+def check_raw_current_b_conditions_capacity(p, read, write, history):
+    """Real normal fixed B reader, real sized JSON; no provider/native values."""
+    import hashlib
+    import subprocess
+    conditions = p.ROOT / "private/bundle/payload/data/live/conditions.json"
+    manifest = p.ROOT / "private/bundle/manifest.json"
+    checkpoint = p.ROOT / ".cache/ravscore-continuation-checkpoint/checkpoint.json"
+    originals = {path: path.read_bytes() for path in (conditions, manifest, checkpoint)}
+    maximum = int(subprocess.check_output(["node", "--input-type=module", "-e",
+        "import {PRIVATE_CONDITIONS_MAX_BYTES as maximum} from "
+        + json.dumps((ROOT / "scripts/lib/bounded-json-writer.mjs").as_uri())
+        + ";console.log(maximum)"], timeout=10, text=True).strip())
+    assert maximum == 535_822_312
+    candidate = copy.deepcopy(history)
+    counts = {"positive": 0, "negative": 0}
+
+    def sized_json(path, size, document):
+        prefix = json.dumps(document, separators=(",", ":")).encode()[:-1] + b',"padding":"'
+        suffix = b'"}\n'
+        remaining = size - len(prefix) - len(suffix)
+        assert remaining > 0
+        chunk = b"x" * (1024 * 1024)
+        with path.open("wb") as handle:
+            handle.write(prefix)
+            while remaining:
+                selected = min(remaining, len(chunk))
+                handle.write(chunk[:selected]); remaining -= selected
+            handle.write(suffix)
+        # JSON is valid by construction: ASCII JSON fields and a string of x.
+        assert path.lstat().st_size == size and path.lstat().st_nlink == 1
+        with path.open("rb") as handle:
+            assert handle.read(len(prefix)) == prefix
+            handle.seek(-len(suffix), 2); assert handle.read() == suffix
+
+    def demand():
+        write(".cache/ravscore-current-history-demand.json", candidate)
+
+    def rejected(label, exception, code=None):
+        try:
+            read()
+        except exception as error:
+            if code is not None:
+                assert str(error) == code, (label, str(error))
+        else:
+            raise AssertionError(label + " bypassed the normal B boundary")
+        counts["negative"] += 1
+
+    try:
+        for size in (281_527_502, maximum):
+            sized_json(conditions, size, {"synthetic": True})
+            candidate["rawRetention"]["boundary"]["conditionsSha256"] = p.file_content_sha256(conditions)
+            demand()
+            try:
+                assert len(read()) == 1
+            except p.AssetDownloadCleanupUnproven as error:
+                print(json.dumps({"case": "normal-physical-B-conditions-capacity", "fileBytes": size,
+                    "producerMaximumBytes": maximum, "rejectedGuard": str(error)}), flush=True)
+                raise
+            counts["positive"] += 1
+        with conditions.open("ab") as handle:
+            handle.write(b" ")  # Still valid JSON, exactly producer maximum + 1.
+        rejected("conditions maximum + 1", p.AssetDownloadCleanupUnproven, "DMI_RAW_CURRENT_B_BOUNDARY_INVALID")
+        with conditions.open("r+b") as handle:
+            handle.truncate(maximum)
+
+        sized_json(manifest, 256 * 1024 * 1024 + 1, json.loads(originals[manifest]))
+        rejected("manifest unchanged 256-MiB maximum", p.AssetDownloadCleanupUnproven, "DMI_RAW_CURRENT_B_BOUNDARY_INVALID")
+        manifest.write_bytes(originals[manifest])
+        manifest.write_bytes(b"{")
+        rejected("malformed manifest", json.JSONDecodeError)
+        manifest.write_bytes(originals[manifest])
+
+        for selected in (conditions, manifest):
+            link = selected.with_name(selected.name + ".fixture-hardlink")
+            os.link(selected, link)
+            try:
+                assert selected.lstat().st_nlink == 2
+                rejected("multiply linked B file", p.AssetDownloadCleanupUnproven, "DMI_RAW_CURRENT_B_BOUNDARY_INVALID")
+            finally:
+                link.unlink()
+        moved = conditions.with_name(conditions.name + ".fixture-regular")
+        conditions.rename(moved); conditions.mkdir()
+        try:
+            rejected("nonregular conditions", p.AssetDownloadCleanupUnproven, "DMI_RAW_CURRENT_B_BOUNDARY_INVALID")
+        finally:
+            conditions.rmdir(); moved.rename(conditions)
+
+        valid = copy.deepcopy(candidate)
+        candidate["rawRetention"]["boundary"]["conditionsSha256"] = "0" * 64
+        demand(); rejected("conditions SHA mismatch", p.AssetDownloadCleanupUnproven, "DMI_RAW_CURRENT_B_BOUNDARY_CHANGED")
+        candidate = copy.deepcopy(valid)
+        candidate["sourceHashes"]["checkpoint"] = write(
+            ".cache/ravscore-continuation-checkpoint/checkpoint.json", {"generationSha256": "9" * 64})
+        demand(); rejected("S generation mismatch", p.AssetDownloadCleanupUnproven, "DMI_RAW_CURRENT_B_BOUNDARY_CHANGED")
+        checkpoint.write_bytes(originals[checkpoint]); candidate = copy.deepcopy(valid)
+        candidate["registrySha256"] = "sha256:" + "0" * 64
+        demand(); rejected("registry mismatch", ValueError, "DMI_CURRENT_HISTORY_DEMAND_INVALID")
+    finally:
+        for path, body in originals.items():
+            path.write_bytes(body)
+        write(".cache/ravscore-current-history-demand.json", history)
+    print(json.dumps({"case": "normal-physical-B-conditions-capacity", **counts,
+        "physicalRepresentativeBytes": 281_527_502, "producerMaximumBytes": maximum,
+        "manifestMaximumBytes": 256 * 1024 * 1024, "providerCalls": 0, "nativeValues": False}), flush=True)
+
+
 def check_raw_current_retention():
     """Normal download/prune across a failed score; synthetic transport only."""
     import hashlib
@@ -408,6 +514,7 @@ def check_raw_current_retention():
             else: raise AssertionError("changed immutable input was silently ignored")
             write(".cache/ravscore-current-history-demand.json", history)
             assert len(read()) == 1
+            check_raw_current_b_conditions_capacity(p, read, write, history)
             missing_href = "https://owned-fixture.invalid/unselected-missing.grib"
             missing_capture = {**required_capture, "assetIdentitySha256": p.asset_identity_sha256(missing_href),
                 "itemId": "unselected-missing"}

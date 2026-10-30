@@ -1,3 +1,9 @@
+## 30. oktober — P0: DMI-originalers conditions skal følge producentens grænse
+
+Den præcise 591→593-controller er kvalificeret og leveret til main; den efterfølgende normale prepare/install og genbrug af kildekontrollen bestod. Vejrhentningen stoppede senere, fordi Pythons normale RAW-retention stadig anvendte 256 MiB på den beskyttede B-conditions-fil. Producenten tillader allerede 535.822.312 bytes. Den primære DMI-afvisning skete før ny ledger; selectorens afvisning af den gamle referencetime er en følgefejl og bevares. Det er ikke ugyldige leverandørdata.
+
+Den afgrænsede P0-kandidat ændrer kun conditions-rollens maksimum til producentens eksisterende grænse. Manifest beholder 256 MiB; filtype, nlink, hele SHA, registry, originale B/S og no-loss består. Den normale fysiske målprøve består med repræsentativ og maksimal gyldig fil samt negative grænse-/integritetscases. C/I og de syv forbrugere er uændrede; ingen ny version, SQL eller geninstallation følger af denne Pythonrettelse. Præcis kildekvalifikation og faktisk nyt offentligt vejr er fortsat åbne. Alle fem mål består; detaljeret kørsels- og cacheevidens føres privat. Se DEC-0301.
+
 ## 30. oktober — ret den præcise591 → 593-runtimeovergang før leverandørerne
 
 Den første almindelige overgang efter faktisk593-SQL-installation blev afvist af en forældet antagelse om, at kun fortsættelseskontrakten ændredes. Den gennemgåede kompakte delingskopi ændrer også den offentlige projektion. Den normale controller kræver nu de to præcise kontraktmapper, uændret lager-ABI, korrekt gammel/ny T og hele feltmængden. Alle metadata-only-, original-, inverse-, pointer- og no-loss-kontroller består; gamle profiler bevares. Ingen ny version, modelbinding, SQL eller geninstallation. Præcis samlet kvalifikation og faktisk offentlig593-levering er endnu åbne. Se DEC-0301 og håndbog89.290.

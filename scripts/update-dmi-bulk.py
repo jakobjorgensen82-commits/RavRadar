@@ -11493,9 +11493,12 @@ def read_current_history_demands(part_doc, part_bytes, coastal_part_targets, zon
             _raw_cache_protection_refuse("B_BOUNDARY_INVALID")
         b_manifest_path = bundle / "manifest.json"
         b_conditions_path = bundle / "payload/data/live/conditions.json"
-        for fixed in (b_manifest_path, b_conditions_path):
+        # The normal conditions producer permits this parseable byte boundary;
+        # the small manifest keeps its original, separate 256-MiB ceiling.
+        for fixed, maximum in ((b_manifest_path, 256 * 1024 * 1024),
+                               (b_conditions_path, 535_822_312)):
             info = fixed.lstat()
-            if not stat.S_ISREG(info.st_mode) or info.st_nlink != 1 or info.st_size > 256 * 1024 * 1024:
+            if not stat.S_ISREG(info.st_mode) or info.st_nlink != 1 or info.st_size > maximum:
                 _raw_cache_protection_refuse("B_BOUNDARY_INVALID")
         b_manifest = json.loads(b_manifest_path.read_bytes())
         s_checkpoint = json.loads(source_paths["checkpoint"].read_bytes())
