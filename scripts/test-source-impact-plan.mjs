@@ -16,10 +16,13 @@ function targeted(rows,expected){
   assert.equal(p.database.status,'NOT_APPLICABLE');assert.equal(p.database.executed,false);
   assert.equal(p.authority,'PLANNING_ONLY');assert.equal(p.completeGitDiffVerified,false);
   assert.equal(p.qualifiedBaselineVerified,false);assert(p.commands.length<full.length);
+  assert.equal(p.ordinaryWeatherMutatedByPlanner,false);
+  assert(!Object.hasOwn(p,'ordinaryWeatherChanged'),'Planning must not claim the candidate leaves weather unchanged');
   assert(p.commands.includes(expandSourceCommands(scripts,'validate:release-version')[0]));
   assert.equal(new Set(p.commands).size,p.commands.length);count++;return p;
 }
 function fallback(rows){const p=plan(rows);assert.equal(p.selection,'FULL');assert.deepEqual(p.commands,full);
+  assert.equal(p.ordinaryWeatherMutatedByPlanner,false);assert(!Object.hasOwn(p,'ordinaryWeatherChanged'));
   assert.equal(p.database.status,'REQUIRED');assert.equal(p.database.executed,false);count++;}
 targeted([row('js/ui/about-i18n.js',about,about.replace("'about.header':'Om projektet'","'about.header':'Om RavRadar'"))],['about-text']);
 const secondText=about.replace("'about.header':'Om projektet'","'about.header':'Om RavRadar'");

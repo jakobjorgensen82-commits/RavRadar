@@ -107,7 +107,7 @@ function result(kind,profiles,reasons){
         :'Protected, shared, unsupported or unproven impact requires the normal deep database decision.'},
     national:{status:kind==='TARGETED'?'NOT_APPLICABLE':'REQUIRED',executed:false},
     authority:'PLANNING_ONLY',completeGitDiffVerified:false,qualifiedBaselineVerified:false,
-    ordinaryWeatherChanged:false,normalFullSourceCommandCount:full.length};
+    ordinaryWeatherMutatedByPlanner:false,normalFullSourceCommandCount:full.length};
 }
 export function planSourceImpact(changes){
   assert.equal(arguments.length,1,'No mode, command or dependency-omission override');

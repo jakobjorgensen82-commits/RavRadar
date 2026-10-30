@@ -1,3 +1,9 @@
+## 30. oktober — komplet Git-diff er koblet til den lokale planlægning
+
+Den skrivefri læser i scripts/source-impact-git-diff.mjs læser hele den faktiske commit-diff offline med eksakte commit-IDer, faktisk HEAD og verificeret forfader. Ingen caller-valgt udeladelsesliste findes. Kun de kendte tekststier får afgrænsede UTF-8-bloblæsninger; ukendte, store, binære og ikke understøttede navne bevares i inventaret og giver fuldt omfang. Manglende objekter og forkert identitet afviser billig plan. 19 lokale cases med små ægte Git-repositories består; en faktisk BOM-navnefejl blev først reproduceret og derefter rettet.
+
+Det er ikke en kvalificeret GitHub-baseline eller leveringsautoritet. Normal integration med proof/workflow og den brede oprydning mangler fortsat. Planens sideeffektfelt hedder nu ordinaryWeatherMutatedByPlanner; det påstår alene, at planlæggeren ikke skriver vejr, og siger intet ubekræftet om kandidatens påvirkning. Den aktive vejrrettelse og alle fem mål bevares. Se DEC-0302 og privat checkpoint.
+
 ## 30. oktober — første afgrænsede ændringsplan er lokal kode
 
 Den rene planlægger i scripts/source-impact-plan.mjs har tre første profiler: de navngivne tekniske dokumenter samt præcise Om- og Læring-tekstfelter. Den vælger henholdsvis 6, 5 og 5 faktiske kommandoer mod fuldplans 72; det er kommandotal, ikke målte CI-tider. 48 lokale planlæggercases består uden at starte source-, SQL- eller leverandørprøver. Beskyttede, ukendte og blandede ændringer går til fuld plan; ugyldige/duplikerede rækker og skipflag afvises.
