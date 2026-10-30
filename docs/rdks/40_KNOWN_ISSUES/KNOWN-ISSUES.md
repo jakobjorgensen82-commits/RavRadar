@@ -1,3 +1,11 @@
+## Åben produktionsårsag; lokalt bevist kapacitetskonflikt og forberedt 592-port
+
+Det konkrete private B/S-afslag er fortsat uafklaret. Den gamle fælles stopbesked skjulte årsagen; den kritiske 591-kandidat tilføjer kun faste kategorier og er særskilt fra den private 592-port. Den hårde 150-minutters-hypotese er afvist af normal før-/efterprøve.
+
+En normal syntetisk conditions-fil over 256 MiB accepteres af producent og beskyttet B, men rammer det senere gamle reconcile-loft. Porten genbruger producentens eksisterende grænse og begrænser rå hukommelseskopier uden at svække integritet. Det er ikke bevis for størrelsen på den faktiske produktions-entry. Den nye manifestbundne bytemåling er forberedt; udløsning og vellykket normal drift skal fortsat måles. Hele 592-porten er endnu ikke offentliggjort.
+
+Se [DEC-0299](../10_DECISIONS/DEC-0299-PRIVATE-BS-RECONCILE-FIXED-FAILURE-CATEGORIES.md) og [DEC-0300](../10_DECISIONS/DEC-0300-RECONCILE-CONDITIONS-CAPACITY-AND-SAFE-BYTE-MEASUREMENT.md).
+
 ## 30. oktober — påvist modstrid i deploykontrollens historikantagelse
 
 Den kritiske 591-kvalifikation i PR758 er særskilt. Denne lokale dokumentport forbereder videreførelsen i den fremtidige 592-kilde, som fortsat ikke er offentligt leveret.

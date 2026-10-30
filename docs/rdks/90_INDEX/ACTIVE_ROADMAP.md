@@ -1,3 +1,11 @@
+## Næste leverance: kvalificér kritisk 591 og bevar den i fremtidig 592
+
+Før den kritiske 591-kandidat sikkert gennem kildekontrol, levering og faktisk normal B/S-videreførelse. Mål den præcise conditions-entry eller læs et konkret fast afslag, før et produktionsstop tilskrives kapacitet. Forskellen mellem lokale kapacitetsbeviser og faktisk drift skal bevares.
+
+Saml de gennemgåede B/S-observations-, kapacitets- og bytefeltsporte med de øvrige nødvendige 592-ændringer i én kontrolleret kildeleverance. Bevar alle 536 tidligere håndbogsafsnit, den udstedte 592-binding, 70 SQL-filer og den strenge 591-forgængergren. Ingen aktivering af SOURCE, samlet statistik eller automatisk sletning følger af dette. Alle fem hovedmål er fortsat åbne.
+
+Se [DEC-0299](../10_DECISIONS/DEC-0299-PRIVATE-BS-RECONCILE-FIXED-FAILURE-CATEGORIES.md) og [DEC-0300](../10_DECISIONS/DEC-0300-RECONCILE-CONDITIONS-CAPACITY-AND-SAFE-BYTE-MEASUREMENT.md).
+
 ## 30. oktober — kvalificér den snævre operationelle historikkontrol
 
 Den kritiske 591-kvalifikation i PR758 er særskilt. Denne lokale dokumentport forbereder videreførelsen i den fremtidige 592-kilde, som fortsat ikke er offentligt leveret.

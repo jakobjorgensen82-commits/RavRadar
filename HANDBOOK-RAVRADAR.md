@@ -1,3 +1,62 @@
+## 89.286 Samme gyldige vejrfil skal kunne genbruges hele vejen
+
+**Kort fortalt: En gyldig, gemt vejrfil skal ikke afvises senere i forløbet af en anden, forældet størrelsesgrænse. Den lokale rettelse samler grænsen og kontrollerer stadig hele filen. Den ændrer ikke RavScore eller vejroplysningerne.**
+
+Dette afsnit beskriver den særskilte kritiske 591-rettelse og dens forberedte kildeport til 4.0.592. Den kritiske 591-leverance er under kildekvalifikation; 592-porten er fortsat privat og ikke offentligt leveret. Porten bevarer den allerede udstedte 592-modelbinding og de 70 eksisterende SQL-filer. Den udsteder ikke en ny version eller en ny modelbinding.
+
+### En normal fil ramte en gammel grænse
+
+Den almindelige producent kan skrive en conditions-fil med op til 535.822.312 bytes. Den indeholder de samlede private vejroplysninger. I en normal lokal prøve blev en fil på 299.262.881 bytes accepteret af producenten og den beskyttede gemning. Et senere led, der parrer vejrpakken B med checkpointet S, brugte stadig en særskilt grænse på 256 MiB og afviste samme gyldige fil.
+
+Kandidaten lader dette led genbruge producentens eksisterende grænse. Den ændrer ikke transportens samlede kapacitet eller registreringsfilens grænse på 16 MiB. En transportgrænse på 768 MiB er ikke det samme som en grænse for, hvor stor en enkelt JSON-fil sikkert kan fortolkes.
+
+### Kontrol i mindre bidder
+
+Filens samlede byteantal og SHA-256-kontrolsum skal stadig passe. Kontrollen beregner kontrolsummen løbende og sammenligner originalen med arbejdsfilen i små blokke. På den normale aktuelle vej behøver den derfor ikke bevare flere store råkopier samtidig. Den læser fortsat hver nødvendig byte og må ikke overse en ændring.
+
+Den samme lokale prøve går efter rettelsen videre med én normal checkpoint-gemning. Hele B-pakken, arbejdsfilen og originalerne bevares. De eksisterende negative prøver med konflikt ved samme tidspunkt og ændrede filbytes afvises fortsat uden en ny gemning. Det er lokale syntetiske input gennem de normale funktioner, ikke den faktiske produktionsfil.
+
+### Mål den enkelte fil frem for at gætte
+
+Den forberedte skrivefri diagnose af den beskyttede B-pakke kan måle ét ekstra tal: conditions-filens byteantal fra dens allerede autentificerede manifest. Det kræver ingen ekstra filhentning og giver ingen adgang til S eller rå vejrindhold. De normale grænser og kontroller af samme aktive pakke før og efter læsningen bevares.
+
+Et samlet råpayloadtal fortæller, hvor meget alle pakkens filer fylder tilsammen. Det kan ikke bruges som bevis for størrelsen på netop conditions-filen. Den faktiske filstørrelse og årsagen til det aktuelle produktionsstop er fortsat ukendte, indtil de måles eller et konkret afslag registreres.
+
+### Rettelse og faktisk drift er to forskellige beviser
+
+Den tidligere kontrol af historikkvalitet er leveret i kilden, mens den nyere checkpointfejl fortsat er åben. Den kritiske 591-kandidat og den fremtidige 592-port skal kvalificeres og leveres som særskilte kildegrundlag. Ingen af disse lokale beviser dokumenterer i sig selv en offentlig 592-levering eller en vellykket almindelig efterfølgende vejrhentning. Sikker levering og faktisk normal drift skal fortsat verificeres.
+
+Tidligere erfaringer med forskellige transport- og læsegrænser bevares som historik. Den nyere producents JSON-grænse er den relevante grænse i denne rettelse. Denne port bevarer den allerede udstedte 592-binding, alle 70 SQL-filer, scoreformlen, kildeprioriteten, administratorpunkterne, geometrien og beskyttelsen mod datatab. Den eksisterende ægte 591-forgængergren beholder sine strenge tids- og originalkrav; der gives ingen ny adgang ved samme tidspunkt. Den isolerede revision, samlet statistik og automatisk sletning aktiveres ikke.
+
+
+## 89.285 Når et afslag på genbrug af vejrdata skal kunne forklares
+
+**Kort fortalt: Når RavRadar afviser at genbruge gemte vejrdata, skal driften kunne se, hvilket trin der stoppede. Den lokale rettelse gør fejlmeldingen mere præcis; den ændrer ikke data, scorer eller betingelserne for at fortsætte.**
+
+Observationsrettelsen er en særskilt kritisk 591-leverance under kildekvalifikation. Den samme afgrænsede rettelse er forberedt i den kommende 4.0.592-kilde, som endnu ikke er offentliggjort. Overførslen ændrer ikke 592-kandidatens allerede udstedte modelbinding eller dens 70 SQL-filer.
+
+### To gemte dele skal passe sammen
+
+RavRadar bevarer både den oprindelige private vejrpakke og et checkpoint med den gemte beregning. I den tekniske dokumentation kaldes de B og S. Før genbrug skal deres identitet, model, tidspunkt og indhold passe sammen. Et afslag skal fortsat standse den pågældende handling sikkert.
+
+### En fast fejltype uden privat indhold
+
+Tidligere skjulte kommandolinjens fælles stopbesked den mere præcise årsag. Kandidaten bevarer den gamle stopbesked og tilføjer kun en fast fase, kategori og fejlklasse. Der skrives ingen rå fejlbeskeder, filstier, vejr- eller brugeroplysninger, strømværdier eller nøgler i den nye kvittering.
+
+Den oprindelige fejl og alle kontroller bevares. Det gælder også kontrollen før gemning, genlæsning efter et muligt skriveforsøg, oprydning og reglen om ikke at gentage en handling med ukendt udfald.
+
+### Ældre data er ikke automatisk ugyldige
+
+En normal lokal prøve med et 261 minutter gammelt referencetidspunkt består både før og efter observationsrettelsen. De 150 minutter er en foretrukken friskhedsgrænse, ikke i sig selv et forbud mod genbrug. Prøven bevarer den oprindelige vejrpakke og bekræfter checkpointets normale fremføring.
+
+Et særskilt forsøg med modstridende checkpoint ved samme tidspunkt afvises uden et nyt gemmekald og uden ændring af B eller S. Det er syntetiske prøver gennem de normale funktioner, ikke de private input fra den fejlede vejrhentning.
+
+### Hvad der fortsat mangler
+
+Observationens 592-port er endnu privat. Den særskilte kritiske 591-rettelse og dens port løser ikke i sig selv den ukendte årsag til den seneste produktionsafvisning. Hypotesen om en hård 150-minuttersgrænse og antagelsen om valgt reservepakke er afvist; den private checkpointreference i fejlforløbet er fortsat ukendt.
+
+Den samlede kilde skal kvalificeres og leveres sikkert. Først faktisk normal drift eller en afgrænset fast fejlkvittering kan dokumentere næste resultat. Porten ændrer hverken scoreformel, kildeprioritet, administratoropsætning, geometri eller den allerede udstedte 592-modelbinding og SQL. Den isolerede revision, samlet statistik og automatisk sletning aktiveres ikke.
+
 ## 89.284 Klar hukommelse og usikker score er forskellige oplysninger
 
 **Kort fortalt: Modellen kan have et dækket strømvindue og en tilstand, der er klar til brug, selv om tidligere bølgepåvirkning stadig giver et usikkerhedsinterval omkring scoren. Efterkontrollen skal forstå den samme forskel som producenten.**

@@ -1,4 +1,5 @@
-import { assertSavedPrivateRuntimeCheckpointReconcileRequest } from './reconcile-private-runtime-checkpoint.mjs';
+import { classifyProductionTargetFreshness } from './check-production-target-freshness.mjs';
+import { assertSavedPrivateRuntimeCheckpointReconcileRequest, privateRuntimeCheckpointReconcileFailureDiagnostic } from './reconcile-private-runtime-checkpoint.mjs';
 import { ESTABLISHED_NATIVE_CURRENT_ORIGIN_BINDING as OLD_FAMILY } from './lib/established-native-current-origin-successor-source.mjs';
 import { LAST_MILE_ENCLOSURE_BINDING as NEW_FAMILY } from './lib/last-mile-enclosure-successor-source.mjs';
 import {ASSISTANT_LATER_H0_BINDING as ISSUED587_FAMILY,
@@ -14,6 +15,8 @@ import { execFileSync, spawnSync } from 'node:child_process';
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import fs from 'node:fs/promises';
+import fsSync from 'node:fs';
+import { writeBoundedJsonAtomic, PRIVATE_CONDITIONS_MAX_BYTES } from './lib/bounded-json-writer.mjs';
 import os from 'node:os';
 import path from 'node:path';
 import crypto from 'node:crypto';
@@ -25,7 +28,7 @@ import { reconcilePrivateRuntimeCheckpoint, requiresPrivateRuntimeCheckpointReco
 import { PRIVATE_RUNTIME_FILES, PRIVATE_RUNTIME_CONTRACT_FILES, buildPrivateRuntimeCreateSpec,
   buildPrivateRuntimeExpectation, installRestoredPrivateRuntime } from './private-production-runtime-workflow.mjs';
 import { createPrivateProductionRuntimeBundle, restorePrivateProductionRuntimeBundle } from './private-production-runtime-bundle.mjs';
-import { publishProtectedPrivateProductionRuntime, restoreProtectedPrivateProductionRuntime }
+import { publishProtectedPrivateProductionRuntime, restoreProtectedPrivateProductionRuntime, PROTECTED_PRIVATE_RUNTIME_POLICY }
   from './protected-private-production-runtime.mjs';
 import { saveRavScoreContinuationCheckpoint } from './ravscore-continuation-checkpoint.mjs';
 import { publishProtectedRavScoreContinuationCheckpoint, createProtectedRavScoreCheckpointRequester,
@@ -153,6 +156,64 @@ test('normal CURRENT B/S interruption reconciliation preserves whole pairs and r
     assert.deepEqual(local, JSON.parse(await fs.readFile(saved[index].checkpointPath)));
     assert.equal(result.storageDownloads, 0); assert.equal(result.nativeAdmissionIssued, false); return result;
   }
+  await t.test('normal producer conditions above legacy256MiB use the shared parseable limit and pair unchanged', async () => {
+    const sourcePath = path.join(source, 'data/live/conditions.json');
+    const sourceBefore = await fs.readFile(sourcePath), savedBefore = saved[1];
+    try {
+      const document = conditions(refs[1]);
+      document.fixturePrivatePadding = Array(280).fill('x'.repeat(1024 * 1024));
+      const written = await writeBoundedJsonAtomic(sourcePath, document);
+      assert(written.bytes > 256 * 1024 * 1024 && written.bytes <= PRIVATE_CONDITIONS_MAX_BYTES);
+      assert(written.bytes <= PROTECTED_PRIVATE_RUNTIME_POLICY.maximumFilePayloadBytes);
+      const checkpointPath = path.join(own, 'large-s/.cache/ravscore-continuation-checkpoint/checkpoint.json');
+      await saveRavScoreContinuationCheckpoint({ repositoryRoot: source, sourcePath, checkpointPath });
+      const privateRoot = path.join(own, 'large-created'); await fs.mkdir(privateRoot);
+      const bundlePath = path.join(privateRoot, 'bundle');
+      const spec = await buildPrivateRuntimeCreateSpec({ repositoryRoot: source });
+      await createPrivateProductionRuntimeBundle({ repositoryRoot: source, privateRoot, bundlePath, ...spec });
+      const expected = await buildPrivateRuntimeExpectation({ repositoryRoot: source, targetReferenceAt: refs[1], now });
+      saved[1] = { runtime: document, checkpointPath, privateRoot, bundlePath, expected };
+      const backend = normalBAndSTransports(); await publishB(backend, 1);
+      const options = await installed(backend, 1);
+      const originalPath = path.join(options.bundlePath, 'payload/data/live/conditions.json');
+      const installedPath = path.join(options.repositoryRoot, 'data/live/conditions.json');
+      const wholeHash = async file => { const digest = crypto.createHash('sha256'); let bytes = 0;
+        for await (const block of fsSync.createReadStream(file)) { digest.update(block); bytes += block.length; }
+        return { bytes, sha256: digest.digest('hex') }; };
+      const originalBefore = await wholeHash(originalPath), workingBefore = await wholeHash(installedPath);
+      assert.equal(originalBefore.bytes, written.bytes); assert.deepEqual(workingBefore, originalBefore);
+      const beforeB = clone(backend.documents.get(B)); assert.equal(backend.documents.has(S), false);
+      const result = await reconcilePrivateRuntimeCheckpoint({ ...options, expected: undefined,
+        now: '2026-10-17T09:21:00.000Z', request: backend.documentRequest, ...strictRequests(backend) });
+      assert.equal(result.outcome, 'ADVANCED_READBACK_PROVED'); assert.equal(result.checkpointPublishCalls, 1);
+      assert.equal(result.storageDownloads, 0); assert.equal(result.nativeAdmissionIssued, false);
+      assert.deepEqual(backend.documents.get(B), beforeB);
+      const local = JSON.parse(await fs.readFile(path.join(options.repositoryRoot,
+        '.cache/ravscore-continuation-checkpoint/checkpoint.json'), 'utf8'));
+      assert.deepEqual(local, JSON.parse(await fs.readFile(checkpointPath, 'utf8')));
+      assert.deepEqual(await wholeHash(originalPath), originalBefore);
+      assert.deepEqual(await wholeHash(installedPath), workingBefore);
+      t.diagnostic(JSON.stringify({ conditionsBytes: written.bytes, maximumConditionsBytes: PRIVATE_CONDITIONS_MAX_BYTES,
+        outcome: result.outcome, checkpointPublishCalls: result.checkpointPublishCalls, wholeOriginalsUnchanged: true }));
+    } finally {
+      saved[1] = savedBefore; await fs.writeFile(sourcePath, sourceBefore);
+    }
+  });
+  await t.test('four-hour ordinary cadence preserves the exact authenticated old B and advances only its missing S', async () => {
+    const backend = await paired(); await publishB(backend, 1);
+    const oldPointer = clone(backend.documents.get(B)), oldVersion = backend.documents.get(S).version;
+    const checkedAt = '2026-10-17T09:21:00.000Z';
+    const freshness = classifyProductionTargetFreshness({ target: refs[1], now: checkedAt, maximumAgeMinutes: 150 });
+    assert.equal(freshness.status, 'STALE_TARGET_VALID'); assert.equal(freshness.ageMinutes, 261);
+    const result = await run(backend, 1, { now: checkedAt, expected: undefined });
+    assert.equal(result.outcome, 'ADVANCED_READBACK_PROVED'); assert.equal(result.checkpointPublishCalls, 1);
+    assert.equal(backend.documents.get(S).version, oldVersion + 1);
+    assert.deepEqual(backend.documents.get(B), oldPointer);
+    assert.equal(result.storageDownloads, 0); assert.equal(result.nativeAdmissionIssued, false);
+    t.diagnostic(JSON.stringify({ targetAgeMinutes: freshness.ageMinutes, freshnessStatus: freshness.status,
+      paired: result.paired, outcome: result.outcome, storageDownloads: result.storageDownloads,
+      checkpointPublishCalls: result.checkpointPublishCalls, originalBUnchanged: true }));
+  });
   await t.test('pre-B failure leaves exact old pair; matched S has no write or version bump', async () => {
     const backend = await paired(), version = backend.documents.get(S).version;
     const beforePointer = clone(backend.documents.get(B)), beforeS = clone(backend.documents.get(S));
@@ -556,4 +617,43 @@ test('actual readonly ordinary and saved CLI select use one genuine committed so
       assert.equal(await fs.readFile(rejectedOutput, 'utf8'), '');
     }
   }
+});
+
+test('fixed reconcile failure diagnostics preserve refusal and reveal no arbitrary data', () => {
+  const sensitive = 'SYNTHETIC_PRIVATE_MARKER_DO_NOT_LOG';
+  const classify = privateRuntimeCheckpointReconcileFailureDiagnostic;
+  for (const code of ["B_IDENTITY","B_PATH","B_S_DIFFER","CLOSE_UNPROVED","COMMAND","CURRENT_IDENTITY","DERIVED_REFERENCE","FILE","FILE_CHANGED","GENUINE591_STRICTLY_OLDER","INSTALLED_B_CHANGED","INSTALLED_SOURCE_CHANGED","LINK","MAIN","METADATA_CURRENT_FAMILY","METADATA_INSTALLED_CURRENT_REQUEST","METADATA_OPERATIONAL_ACTION","NATIVE_METADATA_CURRENT_FAMILY","NATIVE_METADATA_INSTALLED_CURRENT_REQUEST","NATIVE_METADATA_OPERATIONAL_ACTION","NON_ORDINARY_REQUEST","OPERATIONAL_ACTION","PARENT","PARENT_CHANGED","POINTER","POINTER_CHANGED","SAME_H0_METADATA_ORIGINALS","SAME_H0_NATIVE_METADATA_ORIGINALS","SAVED_MODE_COLLISION","SAVED_OPERATIONAL_ACTION","SAVED_REQUEST","SAVED_WORK_PATH","S_CHANGED_BEFORE_PUBLISH","S_CHANGED_BEFORE_READ","S_DISPOSITION","S_NOT_BEHIND","S_READBACK_DIFFER","S_READBACK_MISSING","S_ROW","S_VERSION_CHANGED_BEFORE_PUBLISH","UNSUPPORTED_FAMILY","WORKFLOW","WORK_CHANGED"]) {
+    assert.equal(classify(new Error('PAIRED_PUBLICATION_' + code), 'RESTORE_S').code, code);
+  }
+  assert.deepEqual(classify(new Error('PAIRED_PUBLICATION_S_NOT_BEHIND'), 'S_RELATION_GUARD'),
+    { phase: 'S_RELATION_GUARD', code: 'S_NOT_BEHIND', errorClass: 'ERROR' });
+  assert.equal(classify(Object.assign(new Error(sensitive), { code: 'ENOENT', path: sensitive, cause: sensitive }),
+    'INSTALLED_SOURCE').code, 'FILE_NOT_FOUND');
+  assert.equal(classify(new SyntaxError(sensitive), 'DERIVE_S').code, 'INPUT_JSON_INVALID');
+  assert.equal(classify(new Error('PAIRED_PUBLICATION_' + sensitive), sensitive).code, 'OTHER_REFUSED');
+  assert.equal(classify(new Error(sensitive), sensitive).phase, 'UNCLASSIFIED');
+  let getterCalls = 0;
+  const getters = Object.create(Error.prototype);
+  for (const key of ['message', 'code', 'path', 'stack', 'cause']) Object.defineProperty(getters, key,
+    { configurable: true, get() { getterCalls++; throw Error(sensitive); } });
+  const results = [classify(getters, 'DERIVE_S'), classify(null), classify(sensitive),
+    classify(new Proxy({}, { ownKeys() { throw Error(sensitive); } }))];
+  assert.equal(getterCalls, 0);
+  assert(!JSON.stringify(results).includes(sensitive));
+  assert(results.every(row => Object.keys(row).sort().join('|') === 'code|errorClass|phase'));
+  assert(results.every(row => row.code === 'OTHER_REFUSED'));
+  assert(!JSON.stringify(classify(Object.assign(new Error(sensitive), { path: sensitive, stack: sensitive,
+    credentials: sensitive, payload: sensitive, code: sensitive }), 'B_VERIFY')).includes(sensitive));
+});
+
+test('actual reconcile CLI retains fixed refusal with one content-free request diagnostic', () => {
+  const result = spawnSync(process.execPath, [path.join(ROOT, 'scripts/reconcile-private-runtime-checkpoint.mjs'), 'reconcile'],
+    { cwd: ROOT, encoding: 'utf8', env: { ...process.env, GITHUB_REF: 'refs/heads/not-main',
+      GITHUB_EVENT_NAME: 'workflow_dispatch' } });
+  assert.equal(result.status, 1); assert.equal(result.stdout, '');
+  const lines = result.stderr.trim().split(/\r?\n/);
+  assert.equal(lines[0], 'PRIVATE_B_S_RECONCILE_REFUSED');
+  assert.equal(lines.length, 2);
+  assert.deepEqual(JSON.parse(lines[1]), { kind: 'PRIVATE_B_S_RECONCILE_DIAGNOSTIC',
+    phase: 'CLI_REQUEST', code: 'WORKFLOW', errorClass: 'ASSERTION_ERROR' });
 });

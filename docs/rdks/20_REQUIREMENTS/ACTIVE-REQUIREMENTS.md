@@ -1,3 +1,11 @@
+## Aktive krav til privat B/S-observation og fælles conditions-grænse
+
+Den kommende 592-kilde skal bevare den kritiske 591-rettelses lukkede fase-/fejlkategorier, gamle stopbesked og oprindelige fejl. Ingen rå fejltekst, sti, nøgle, brugeroplysning eller vejrindhold må blive en del af den nye rapport. Ukendt skriveudfald skal fortsat afklares ved normal genlæsning; der må ikke ske blind gentagelse.
+
+Reconcile skal genbruge producentens eksisterende parsebare conditions-grænse. Fuld filstørrelse, SHA-256, blokvis byteidentitet, fil-/mappeidentiteter og beviselig lukning skal bestå. Registry beholder 16 MiB. Et nyt fast bytefelt må kun beskrive den ene conditions-entry i det allerede autentificerede manifest uden ekstra filhentning. Porten er ikke ny model-, versions- eller SQL-udstedelse, og faktisk produktionseffekt er stadig en åben gate.
+
+Se [DEC-0299](../10_DECISIONS/DEC-0299-PRIVATE-BS-RECONCILE-FIXED-FAILURE-CATEGORIES.md) og [DEC-0300](../10_DECISIONS/DEC-0300-RECONCILE-CONDITIONS-CAPACITY-AND-SAFE-BYTE-MEASUREMENT.md).
+
 ## 30. oktober — strømvindue, readiness og historikusikkerhed skal have forskellige kontroller
 
 Et fuldt aktuelt strømvindue kan sameksistere med HISTORY_INCOMPLETE fra bølge- eller last-mile-usikkerhed. Efterkontrollen må ikke kræve modelMemoryReady=false alene på grund af denne kvalitetsmarkering. Den skal bruge den faktiske historyCoverageHours mod RAVSCORE_CURRENT_SUPPLY_POLICY.windowHours med den eksisterende numeriske tolerance. Et reelt kort vindue kombineret med påstået klar hukommelse skal fortsat afvises.

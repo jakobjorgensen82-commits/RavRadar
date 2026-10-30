@@ -1,3 +1,15 @@
+## Implementeringsstatus – 591-observation og kapacitet porteret til privat 592-kandidat
+
+Forberedt: faste fejlkategorier uden rå indhold; fælles eksisterende conditions-grænse; løbende fuld SHA og præcis bytekontrol; et manifestbundet bytefelt uden ekstra datahentning. Lokale normale før-/efterprøver og afslag foreligger for den kritiske 591-kandidat. Den særskilte 592-kildeport er endnu ikke installeret eller offentligt bevist.
+
+Håndbogen udvides fra 536 til 538 afsnit med 89.285 og 89.286. Alle tidligere afsnit samt 592-kapitlerne om assistent, diagnostik og kompakt deling bevares. Uændret: udstedt 592-binding, 70 SQL-filer, scoreformel, kildeprioritet, geometri, originaler og no-loss. Åbent: faktisk conditions-entrys størrelse, konkret produktionsårsag, præcis samlet kildekvalifikation og normal produktionseffekt.
+
+Se [DEC-0299](../10_DECISIONS/DEC-0299-PRIVATE-BS-RECONCILE-FIXED-FAILURE-CATEGORIES.md) og [DEC-0300](../10_DECISIONS/DEC-0300-RECONCILE-CONDITIONS-CAPACITY-AND-SAFE-BYTE-MEASUREMENT.md).
+
+### Forberedt adminpræcisering i samme 592-kildeport
+
+I Læring får det eksisterende kort betegnelsen **Ture i lokalt datagrundlag**. Tallet er fortsat kun de lokale ture, der opfylder visningens model- og evidenskrav. Det centrale samlede turtal hører fortsat til **Overblik**. Kun label og forklaring ændres; optælling, analyse, rettigheder, kalibrering og samlet statistik ændres eller aktiveres ikke. Præciseringen er endnu en privat 592-kildeændring, og offentlig effekt er ikke påstået.
+
 ## 30. oktober — snæver kontraktrettelse mellem historikkvalitet og readiness
 
 Den særskilt undersøgte 591-generation nåede faktisk Pages-deploy, og dens friske offentlige manifest var byteidentisk med det forseglede mål. Privat audit bestod med modelMemoryReady=true og ingen readiness-advarsler, samtidig med at alle aktuelle zone/modevalg havde 48 timers strømvinduedækning og bølgemobiliseringsrelateret historikusikkerhed. Den efterfølgende deploykontrol afviste kombinationen på en for bred antagelse om HISTORY_INCOMPLETE.

@@ -1,3 +1,15 @@
+## Aktuel sandhed: offentlig 591 og endnu privat 592-port
+
+Den kritiske 591-leverance af B/S-observation og fælles conditions-kapacitet er under kildekvalifikation. Den kommende 592-kilde bevarer disse gennemgåede ændringer, men er endnu ikke offentligt leveret. Det er ikke en ny C/I/T-, versions- eller SQL-udstedelse; 592-kandidatens eksisterende binding og 70 SQL-filer bevares.
+
+Den normale store syntetiske pakke beviser, at en senere 256-MiB-læsegrænse kan afvise en fil, som den normale producent og beskyttede gemning accepterer. Den fortæller ikke størrelsen på den aktuelle produktionsfil. Producentens eksisterende parsebare grænse, fuld hash/byteidentitet og alle B/S-afslag bevares. Produktionsårsag og faktisk efterfølgende drift er fortsat åbne.
+
+Se [DEC-0299](../10_DECISIONS/DEC-0299-PRIVATE-BS-RECONCILE-FIXED-FAILURE-CATEGORIES.md) og [DEC-0300](../10_DECISIONS/DEC-0300-RECONCILE-CONDITIONS-CAPACITY-AND-SAFE-BYTE-MEASUREMENT.md).
+
+### Forberedt adminpræcisering i samme 592-kildeport
+
+I Læring får det eksisterende kort betegnelsen **Ture i lokalt datagrundlag**. Tallet er fortsat kun de lokale ture, der opfylder visningens model- og evidenskrav. Det centrale samlede turtal hører fortsat til **Overblik**. Kun label og forklaring ændres; optælling, analyse, rettigheder, kalibrering og samlet statistik ændres eller aktiveres ikke. Præciseringen er endnu en privat 592-kildeændring, og offentlig effekt er ikke påstået.
+
 ## 30. oktober — snæver kontraktrettelse mellem historikkvalitet og readiness
 
 Den særskilt undersøgte 591-generation nåede faktisk Pages-deploy, og dens friske offentlige manifest var byteidentisk med det forseglede mål. Privat audit bestod med modelMemoryReady=true og ingen readiness-advarsler, samtidig med at alle aktuelle zone/modevalg havde 48 timers strømvinduedækning og bølgemobiliseringsrelateret historikusikkerhed. Den efterfølgende deploykontrol afviste kombinationen på en for bred antagelse om HISTORY_INCOMPLETE.

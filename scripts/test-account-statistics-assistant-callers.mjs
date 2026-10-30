@@ -796,7 +796,22 @@ test('private-study006: privat eksport bevarer hele installationsarm og normale 
     assert.equal(sha(prior),'5fee2cc4769e518fe02a5575e2256da9b958457921387fc9b14cff8b413b237c');
     return prior;
   };
-  const issued592Dashboard=await read('js/ui/admin-dashboard.js');
+  // Exact TEST DATA inverse for this local-learning label only; all old592 and earlier whole oracles remain unchanged.
+  const reviewedLocalLearningDashboardView=source=>{
+    assert.equal(Buffer.byteLength(source),141249);
+    assert.equal(sha(source),'d514939c3d9bd87a4dd53b9cfb824120bc817667840c4f0f21a1ae7b3acd0902');
+    const current="<h2>Ture i lokalt datagrundlag</h2><div class=\"metric\">${analysis.sampleSize||0}</div><p class=\"muted\">Kun lokale ture, der opfylder visningens model- og evidenskrav. Samlet turtal findes i Overblik.</p>",previous="<h2>Registrerede ture</h2><div class=\"metric\">${analysis.sampleSize||0}</div><p class=\"muted\">Kun dækningskontrol</p>";
+    assert.equal(source.split(current).length,2);
+    const prior=source.replace(current,previous);
+    assert.equal(Buffer.byteLength(prior),141164);
+    assert.equal(sha(prior),'34c84a3a5679fbac8c2a3881b8952f23df79bfca60064e7b6c8ef14701db014a');
+    return prior;
+  };
+  const currentDashboard=await read('js/ui/admin-dashboard.js');
+  for(const changed of [currentDashboard+'\n',currentDashboard.replace('Ture i lokalt datagrundlag','Registrerede ture'),
+    currentDashboard.replace('renderLearning','renderLearning_UNREVIEWED')])
+    assert.throws(()=>reviewedLocalLearningDashboardView(changed));
+  const issued592Dashboard=reviewedLocalLearningDashboardView(currentDashboard);
   for(const changed of [issued592Dashboard+'\n',issued592Dashboard.replace('4.0.592','4.0.591'),
     issued592Dashboard.replace('renderDashboard','renderDashboard_UNREVIEWED')])
     assert.throws(()=>reviewed592DashboardView(changed));

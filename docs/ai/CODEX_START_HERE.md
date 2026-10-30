@@ -1,3 +1,11 @@
+## Aktuel afgrænsning: kritisk 591 og privat 592-port
+
+Den kritiske 591-rettelse af B/S-observation og conditions-læsekapacitet kvalificeres særskilt. Den fremtidige 592-kildeport må ikke beskrives som installeret eller offentligt leveret. Den bevarer 592-kandidatens allerede udstedte bindinger, den ægte 591-forgængergren og alle 70 SQL-filer; denne dokumentport udsteder intet på ny.
+
+Bevar alle sikkerhedsafslag, originaler, CAS/genlæsning og hård no-loss. En faktisk normal stor syntetisk fil beviser en uafhængig 256-MiB-læsekonflikt; den beviser ikke produktionsfilens størrelse eller årsagen til det konkrete stop. Den faktiske conditions-størrelse skal komme fra det autentificerede manifest. Alle fem hovedmål er fortsat åbne.
+
+Se [DEC-0299](../rdks/10_DECISIONS/DEC-0299-PRIVATE-BS-RECONCILE-FIXED-FAILURE-CATEGORIES.md) og [DEC-0300](../rdks/10_DECISIONS/DEC-0300-RECONCILE-CONDITIONS-CAPACITY-AND-SAFE-BYTE-MEASUREMENT.md).
+
 ## 30. oktober — snæver kontraktrettelse mellem historikkvalitet og readiness
 
 Den særskilt undersøgte 591-generation nåede faktisk Pages-deploy, og dens friske offentlige manifest var byteidentisk med det forseglede mål. Privat audit bestod med modelMemoryReady=true og ingen readiness-advarsler, samtidig med at alle aktuelle zone/modevalg havde 48 timers strømvinduedækning og bølgemobiliseringsrelateret historikusikkerhed. Den efterfølgende deploykontrol afviste kombinationen på en for bred antagelse om HISTORY_INCOMPLETE.

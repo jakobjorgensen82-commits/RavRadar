@@ -1,3 +1,11 @@
+## Nyeste læseafgrænsning: B/S-rettelser føres videre til 592
+
+Læs de to nye beslutninger som den særskilte kritiske 591-kandidats kontrakt og den forberedte overførsel til en endnu ikke offentliggjort 592-kilde. De eksisterende 592-kapitler om assistent, diagnostik og kompakt deling bevares. Porten ændrer ikke den allerede udstedte 592-modelbinding eller de 70 SQL-filer.
+
+150 minutter er en foretrukken friskhed, ikke en automatisk afvisning af en ellers gyldig gammel baseline. Faste fase-/fejlkategorier skal afklare faktiske afslag. Den gamle 256-MiB-læsegrænse er reproduceret på en normal gyldig større syntetisk pakke; faktisk produktionsstørrelse og udløsning er stadig ukendte.
+
+Se [DEC-0299](10_DECISIONS/DEC-0299-PRIVATE-BS-RECONCILE-FIXED-FAILURE-CATEGORIES.md) og [DEC-0300](10_DECISIONS/DEC-0300-RECONCILE-CONDITIONS-CAPACITY-AND-SAFE-BYTE-MEASUREMENT.md).
+
 ## 30. oktober — snæver kontraktrettelse mellem historikkvalitet og readiness
 
 Den særskilt undersøgte 591-generation nåede faktisk Pages-deploy, og dens friske offentlige manifest var byteidentisk med det forseglede mål. Privat audit bestod med modelMemoryReady=true og ingen readiness-advarsler, samtidig med at alle aktuelle zone/modevalg havde 48 timers strømvinduedækning og bølgemobiliseringsrelateret historikusikkerhed. Den efterfølgende deploykontrol afviste kombinationen på en for bred antagelse om HISTORY_INCOMPLETE.

@@ -1767,6 +1767,14 @@ test('B-only component summary: actual authenticated B works without progress or
   for (const key of ['objectBytes', 'objectCount', 'largestObjectBytes', 'envelopeBytes', 'rawPayloadBytes']) {
     assert.equal(report.capacity.protected[key], f.built.archiveMetrics[key], key);
   }
+  const authenticatedManifest = JSON.parse(await fs.readFile(path.join(f.folder, 'build/bundle/manifest.json'), 'utf8'));
+  const conditionsFiles = authenticatedManifest.files.filter(file => file.relativePath === 'data/live/conditions.json');
+  assert.equal(conditionsFiles.length, 1);
+  assert.equal(report.capacity.protected.conditionsBytes, conditionsFiles[0].bytes);
+  assert.equal(report.capacity.protected.conditionsBytes, beforeConditions.length);
+  assert(Number.isSafeInteger(report.capacity.protected.conditionsBytes) && report.capacity.protected.conditionsBytes > 0);
+  assert(report.capacity.protected.conditionsBytes <= report.capacity.limits.conditionsBytes);
+  assert(report.capacity.protected.conditionsBytes <= policy.maximumFilePayloadBytes);
   assert.equal(report.capacity.limits.archiveBytes, policy.maximumArchiveAggregateBytes);
   assert.equal(report.capacity.limits.rawPayloadBytes, policy.maximumRawPayloadBytes);
   assert.deepEqual(await fs.readFile(path.join(f.source, 'data/live/conditions.json')), beforeConditions);

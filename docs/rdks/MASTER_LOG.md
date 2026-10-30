@@ -1,3 +1,11 @@
+## 4.0.592 – Privat videreførelse af kritiske 591-B/S-kontroller
+
+Dokumentationen samler den særskilte kritiske 591-kandidats faste fejlkategorier og fælles conditions-kapacitet med den kommende, endnu ikke offentliggjorte 592-kilde. 592-porten bevarer dens allerede udstedte modelbinding, ægte 591-forgængerkrav og alle 70 SQL-filer. Ingen ny udstedelse eller produktionsændring følger af denne dokumentport.
+
+De normale store syntetiske input beviser kapacitetskonflikten, mens det aktuelle produktionsstops årsag og conditions-entrys faktiske størrelse fortsat er ukendte. Faste kategorier og manifestbundet byteoptælling skal give dette bevis uden rå data. Alle 536 gamle håndbogsafsnit og tidligere beslutninger bevares; de fem hovedmål forbliver åbne.
+
+Se [DEC-0299](10_DECISIONS/DEC-0299-PRIVATE-BS-RECONCILE-FIXED-FAILURE-CATEGORIES.md) og [DEC-0300](10_DECISIONS/DEC-0300-RECONCILE-CONDITIONS-CAPACITY-AND-SAFE-BYTE-MEASUREMENT.md).
+
 ## 30. oktober — snæver kontraktrettelse mellem historikkvalitet og readiness
 
 Den særskilt undersøgte 591-generation nåede faktisk Pages-deploy, og dens friske offentlige manifest var byteidentisk med det forseglede mål. Privat audit bestod med modelMemoryReady=true og ingen readiness-advarsler, samtidig med at alle aktuelle zone/modevalg havde 48 timers strømvinduedækning og bølgemobiliseringsrelateret historikusikkerhed. Den efterfølgende deploykontrol afviste kombinationen på en for bred antagelse om HISTORY_INCOMPLETE.

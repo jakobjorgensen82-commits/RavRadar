@@ -1,3 +1,15 @@
+## Forberedt 592-port af de særskilte kritiske 591-B/S-rettelser
+
+Den kommende 4.0.592-kilde får den gennemgåede observation af faste B/S-fejlkategorier og den fælles conditions-kapacitet. Den kritiske 591-leverance er fortsat et særskilt kvalifikations- og driftsforløb; 592-porten er privat og endnu ikke offentliggjort. Den genbruger den allerede udstedte 592-modelbinding og alle 70 SQL-filer.
+
+Den normale syntetiske fil over den gamle 256-MiB-grænse bevarer alle bytes gennem producent, beskyttet pakning og rettet parring. Producentens eksisterende parsebare grænse genbruges; transportloftet er ikke en ny JSON-grænse. De faste fejlkvitteringer viser ingen rå fejltekst, stier, nøgler, brugerdata eller vejrindhold. Den faktiske produktionsfils størrelse og den konkrete udløsende fejl er stadig ukendte.
+
+Se [DEC-0299](docs/rdks/10_DECISIONS/DEC-0299-PRIVATE-BS-RECONCILE-FIXED-FAILURE-CATEGORIES.md) og [DEC-0300](docs/rdks/10_DECISIONS/DEC-0300-RECONCILE-CONDITIONS-CAPACITY-AND-SAFE-BYTE-MEASUREMENT.md).
+
+### Forberedt adminpræcisering i samme 592-kildeport
+
+I Læring får det eksisterende kort betegnelsen **Ture i lokalt datagrundlag**. Tallet er fortsat kun de lokale ture, der opfylder visningens model- og evidenskrav. Det centrale samlede turtal hører fortsat til **Overblik**. Kun label og forklaring ændres; optælling, analyse, rettigheder, kalibrering og samlet statistik ændres eller aktiveres ikke. Præciseringen er endnu en privat 592-kildeændring, og offentlig effekt er ikke påstået.
+
 ## 30. oktober — samme scoreusikkerhed, korrekt operationel readiness-kontrol fra kritisk 591 til den endnu ikke leverede 592-kandidat
 
 Retter en påvist modstrid: producent og privat audit accepterede et fuldt aktuelt strømvindue med resterende bølgemobiliseringsusikkerhed, mens deployefterkontrollen afviste enhver HISTORY_INCOMPLETE sammen med klar hukommelse. Kontrollen bruger nu faktisk historyCoverageHours mod politikvinduet og bevarer 24-timersafvisningen samt modelhash-, profil-, advisory- og dækningskrav. Bølge-/last-mile-forbehold og scorer bevares.

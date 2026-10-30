@@ -1,3 +1,11 @@
+## 2026-10-30 – Kritiske 591-B/S-rettelser forberedt i 592
+
+De særskilte 591-kandidater til faste afvisningskategorier, fælles conditions-grænse og manifestbundet entry-størrelse er ført dokumentmæssigt videre til den kommende 592-kilde. Det er en privat kildeport, ikke bevis for installation eller offentlig effekt.
+
+Den eksisterende producentgrænse er forskellig fra transportens større per-fil-loft. En normal syntetisk pakke reproducerer det gamle 256-MiB-afslag og består den rettede parring; samme-H0-konflikt og ændrede filbytes afvises fortsat. Den faktiske produktions-entrys størrelse og udløsningen er endnu ukendte. Eksisterende 592-binding og 70 SQL-filer ændres ikke.
+
+Se [DEC-0299](../10_DECISIONS/DEC-0299-PRIVATE-BS-RECONCILE-FIXED-FAILURE-CATEGORIES.md) og [DEC-0300](../10_DECISIONS/DEC-0300-RECONCILE-CONDITIONS-CAPACITY-AND-SAFE-BYTE-MEASUREMENT.md).
+
 ## 30. oktober — faktisk ny offentlig generation, efterkontrol med forkert historikantagelse
 
 Pages-deploy var udført og manifestet matchede målet, men afsluttende kontrol afviste en legitim kombination af klart strømvindue og bølgemobiliseringsusikkerhed. Den særskilte kritiske 591-kandidat i PR758 måler den faktiske vinduesdækning og bevarer alle øvrige gates og scorer; ændringen forberedes videreført i den endnu ikke leverede 592-kilde. Normal målprøve bestod; samlet kildekvalifikation og faktisk afsluttende virkning er åbne. Den foreløbige checkpointgenoptagelse er trukket tilbage. DEC-0298 og håndbog 89.284 tilføjes uden at blande denne årsag sammen med den fortsat ubeviste tidligere auditfejl.
