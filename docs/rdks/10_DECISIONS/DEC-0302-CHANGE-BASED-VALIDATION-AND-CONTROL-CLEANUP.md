@@ -37,7 +37,9 @@ Lokalt implementeret er stop efter ugyldig bindingpreflight, normale tidsrækker
 
 Den lokale FULL-baselinekvalifikator kræver faktisk grøn fuld kildekontrol, native- og nationaltrin, hashbundne rapporter, samme repositories/PR/merge og en rigtig Git-forfader. Den særskilte TARGETED-rapport bevarer præcist det valgte testomfang og mærker database/national som ikke relevante og ikke udført. En historisk nationalprøve bliver ikke til bevis for aktuel national drift. Producenten genberegner hele sin Git-plan; forbrugeren kræver selvstændig kvalifikation af den faktiske merge og tilsvarende kildeindhold.
 
-Den normale afvikling af de valgte kommandoer, live-opdagelse af baseline, workflow-/forbrugerintegration, bredere relevant udtynding og faktisk hurtigere levering med bevaret fejlfangst er fortsat åbne. Lokale delprøver er ikke denne tekniske levering. Detaljeret, skiftende run- og testbevis føres privat.
+Producentkoordinatoren er også implementeret lokalt. Den afleder selv PR, HEAD, job og den komplette kumulative diff, opdager og kvalificerer en fuld forfader og afvikler kun planens faste kommandoer uden shell eller caller-valgte spring. Ren kilde og identitet kræves før og efter. Utilstrækkelige forudsætninger vælger den eksisterende fulde vej; et fejlet valgt mål eller drift under prøven stopper rødt. Den lokale normale kalderprøve bruger ægte små Git-repositories og syntetiske transport-/målprocesser; den er ikke et live GitHub- eller produktbevis.
+
+Workflow-/forbrugerintegration, faktisk live-kvalifikation og afvikling, bredere relevant udtynding og målt hurtigere levering med bevaret fejlfangst er fortsat åbne. Lokale delprøver er ikke denne tekniske levering. Detaljeret, skiftende run- og testbevis føres privat.
 
 ## Placering af hukommelse
 

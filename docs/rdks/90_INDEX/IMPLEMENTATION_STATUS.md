@@ -4,7 +4,9 @@ Den skrivefri læser i scripts/source-impact-git-diff.mjs læser hele den faktis
 
 De to lokale efterfølgere er nu sammenført: en faktisk FULL-baselinekvalifikator med hashbundet rapportlæsning og en særskilt TARGETED-builder/validator. Fuld GitHub-status, relevante native-/nationaltrin, bevisindhold, Git-forfader og friske slutaflæsninger kræves; N/A må aldrig ommærkes til udført SQL. Producentens faktiske PR-head og forbrugerens kildeidentiske merge behandles særskilt. De sammenførte målprøver består lokalt; ingen live baseline, produktkommandoer, SQL eller offentlig levering er udført af disse prøver.
 
-Normal kommandoafvikling, baseline-opdagelse, proof-/workflowintegration og den brede oprydning mangler fortsat. Planens sideeffektfelt hedder ordinaryWeatherMutatedByPlanner; det påstår alene, at planlæggeren ikke skriver vejr, og siger intet ubekræftet om kandidatens påvirkning. Den aktive vejrrettelse og alle fem mål bevares. Se DEC-0302 og privat checkpoint.
+Den normale producentkoordinator er nu lokal kode med komplet kumulativ klassifikation, faktisk afvikling af planens faste Node-kommandoer og ren kilde/PR-identitet før og efter. Den sammenførte normale kalderprøve består på små ægte Git-repositories og syntetiske transport-/målprocesser. Det er ikke produktprøver, live API, SQL eller ny leveringsautoritet.
+
+Proof-/workflow- og forbrugerintegration, faktisk live-kvalifikation, målt tidsvirkning og den brede oprydning mangler fortsat. Planens sideeffektfelt hedder ordinaryWeatherMutatedByPlanner; det påstår alene, at planlæggeren ikke skriver vejr, og siger intet ubekræftet om kandidatens påvirkning. Den aktive vejrrettelse og alle fem mål bevares. Se DEC-0302 og privat checkpoint.
 
 ## 30. oktober — første afgrænsede ændringsplan er lokal kode
 
