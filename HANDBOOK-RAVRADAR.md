@@ -1,3 +1,31 @@
+## 89.290 En ny visningskontrakt skal kunne følge den normale vejrpakke
+
+**Kort fortalt: En forbedring af prognosedelingen ændrer en teknisk visningskontrakt. Vejrhentningen skal kontrollere netop det godkendte skift og stadig bevare alle gamle vejrdata og scorer. Den nye databasebinding er installeret; rettelsen af den normale overgang og dens offentlige virkning skal fortsat kvalificeres.**
+
+### Hvorfor stoppede den første overgang?
+
+Den første almindelige vejrhentning efter den kontrollerede593-installation stoppede før leverandørarbejdet. En kontrol forudsatte, at kun kontrakten for beregningens fortsættelse ændrede sig. Den kompakte prognosedeling ændrer også kontrakten for kopiering til den offentlige visning. Det er denne konkrete uoverensstemmelse, controllerrettelsen retter.
+
+### Et præcist skift frem for en generel undtagelse
+
+Den normale controller kræver den ægte591-forgængers hele kontrakt og den udstedte593-kildes præcise efterfølger. Lagerformatet skal være uændret, begge fortsættelseskontrakter skal være korrekte, og det nye projektionshash skal passe. Manglende eller ekstra felter og andre kontrakter afvises. Historiske profiler beholder deres egne tidligere kontroller.
+
+En gennemgang af alle ni filer i den offentlige projektionskontrakt viser, at kun den gennemgåede kopiering af den kompakte prognosedeling ændrer de normaliserede kildebytes. Den nye guard testes gennem den normale kalder med de faktisk beregnede kontrakthashes.
+
+### Gamle tal og originaler skal bevares
+
+Overgangen ændrer kun den nødvendige modelmetadata. Den må ikke reparere eller genberegne gamle scorer. Det fulde originale filinventar, attester, hele beregningstilstanden inklusive historik og ukendte felter, eksisterende timepakker og friske kontrol af den centrale pointer skal stadig passe. De gamle originalpakker får ikke opdigtede nye delingsfiler.
+
+### Installeret binding er ikke offentlig levering
+
+593 har faktisk bestået den samlede kilde-/databaseprøve og den autentificerede installation med genlæsning. Controllerrettelsen ligger uden for model- og nativeinput og udsteder ingen ny version, modelbinding eller SQL. Den præcise ændrede kilde og den faktiske almindelige vej gennem forberedelse, installation af arbejdsdata, leverandører, gemning, deploy og offentlig kontrol skal stadig bestå. En kildegennemgang alene er ikke bevis for fungerende drift. Alle fem hovedmål er åbne.
+
+### Aktuelle installerede593-bindinger
+
+**Aktuel udstedt og installeret binding — 30. oktober 2026, RavScore 4.0.593:** Den samlede kildekontrol, ægte databaseprøve og autentificerede SQL-installation med genlæsning er gennemført; den nye almindelige offentlige593-generation mangler fortsat. Den integrerede model er offentlig som modeltype under den hidtil leverede591-version.4.0.593 er låst med `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b` og `modelBundleSha256=69bf81c3cc5e256deee2c116a52462597f4cfc47cb6c855c6dba969c1dcf4643` over 98 kanonisk normaliserede transitive implementeringsfiler. De normale deklarerede forbrugere er synkroniseret. Inaktiv Candidate G-kompatibilitet har `modelContractSha256=c73dac1b4376005e792580791d84eb79c9370e905a2a7fd0bdee857506a20cf8` og `modelBundleSha256=12f78005304316a680716a1d437e06a582815c1645a2eb567028bcc18ff99ffa` over 99 transitive filer. Autoriteten er `version.json.releaseContract.modelBindings`. Ingen scoreformel, kildeprioritet, administratorpunkter eller geometri ændres. Ældre statusafsnit nedenfor er dateret historik.
+
+**Aktuel installeret593-fortsættelseskontrakt — 30. oktober 2026:** Den nye T12 er `continuationStateContractSha256=e894dd096d03f71cc334d97f85931c2b3969e9b140cb5403a4787cf4b81fbc2e` (`e894dd09…`). Installation og normal databasegenlæsning er gennemført; den første offentlige593-vejrlevering mangler. Den præcise runtimecontrollerrettelse genudsteder ikke denne kontrakt eller SQL. Ældre ikke-installeret-status nedenfor er historik.
+
 ## 89.289 Genbrug af en faktisk udført databaseprøve
 
 **Kort fortalt: Den samme databaseprøve skal ikke udføres igen alene på grund af en uafhængig tekst- eller visningsændring. Før genbrug skal systemet bevise, hvad den oprindelige prøve faktisk brugte, at den blev udført og afsluttet korrekt, og at disse forudsætninger stadig er identiske. Den private kode er forberedt; faktisk genbrug og tidsbesparelse er endnu ikke dokumenteret.**

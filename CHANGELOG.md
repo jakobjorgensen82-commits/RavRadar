@@ -1,3 +1,7 @@
+## 30. oktober — ret den præcise591 → 593-runtimeovergang før leverandørerne
+
+Den første almindelige overgang efter faktisk593-SQL-installation blev afvist af en forældet antagelse om, at kun fortsættelseskontrakten ændredes. Den gennemgåede kompakte delingskopi ændrer også den offentlige projektion. Den normale controller kræver nu de to præcise kontraktmapper, uændret lager-ABI, korrekt gammel/ny T og hele feltmængden. Alle metadata-only-, original-, inverse-, pointer- og no-loss-kontroller består; gamle profiler bevares. Ingen ny version, modelbinding, SQL eller geninstallation. Præcis samlet kvalifikation og faktisk offentlig593-levering er endnu åbne. Se DEC-0301 og håndbog89.290.
+
 ## 30. oktober — privat genoptagelseskapacitet og selvstændigt nativefasegenbrug
 
 Den særskilte private kandidat samler to gennemgåede genoptagelsesfiler og seks native-ejere oven på 4.0.593. Den er ikke den allerede igangværende kildekontrol, og dens lokale beviser må ikke ommærkes som ny Linux-/PostgreSQL-kvalifikation eller offentlig levering. Den udstedte 593-version, C/I/T og alle 71 SQL-filer bevares.

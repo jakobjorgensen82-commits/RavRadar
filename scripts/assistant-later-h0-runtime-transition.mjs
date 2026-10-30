@@ -9,7 +9,7 @@ import {isDeepStrictEqual as equal} from 'node:util';
 import {ACTIVE_ASSISTANT_SUCCESSOR as ACTIVE} from './lib/assistant-later-h0-successor-source.mjs';
 const {before:OLD,requireBinding:requireActiveAssistantBinding,requireOutput:requireActiveAssistantOutput,
   assertTarget:assertActiveAssistantTarget,assertCaller:assertActiveAssistantCaller}=ACTIVE;
-import {withAuthenticated587PredecessorSource,withAuthenticated588PredecessorSource,withAuthenticated590PredecessorSource,withAuthenticated591PredecessorSource} from './check-assistant-later-h0-predecessor-source.mjs';
+import {withAuthenticated587PredecessorSource,withAuthenticated588PredecessorSource,withAuthenticated590PredecessorSource,withAuthenticated591PredecessorSource,FROZEN591_CODE_SOURCE_PROVENANCE} from './check-assistant-later-h0-predecessor-source.mjs';
 import {readAuthenticatedFrozen587Predecessor,assertAuthenticatedFrozen587Snapshot,
   readAuthenticatedFrozen588Predecessor,assertAuthenticatedFrozen588Snapshot,
   readAuthenticatedFrozen590Predecessor,assertAuthenticatedFrozen590Snapshot,
@@ -38,6 +38,28 @@ const ACTIVE_PREDECESSOR=ACTIVE.sourcePhase==='assistant-public591-successor'?Ob
 const ROOT=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..'),CP='.cache/ravscore-continuation-checkpoint/checkpoint.json';
 const sha=v=>crypto.createHash('sha256').update(v).digest('hex');
 const same=(a,b,label)=>assert(equal(a,b),label);
+// Pure comparison only: the normal frozen reader authenticates the original
+// descriptor before this assertion; this export creates no admission/handle.
+export function assertAssistantOriginalRuntimeContracts(previous,current){
+  assert.equal(arguments.length,2);
+  const next=requireActiveAssistantBinding();
+  if(ACTIVE.sourcePhase==='assistant-public591-successor'&&ACTIVE.requireRelease()==='4.0.593'){
+    // Whole-file reviewed delta: only copy-public-delivery-shards gains the
+    // compact share copy. Persisted ABI, original values and all downstream
+    // metadata-only/inverse checks remain mandatory. No blanket projection skip.
+    const original={continuationStateContractSha256:OLD.T,
+      fullRuntimeContractSha256:FROZEN591_CODE_SOURCE_PROVENANCE.fullRuntimeContractSha256,
+      publicProjectionContractSha256:FROZEN591_CODE_SOURCE_PROVENANCE.publicProjectionContractSha256};
+    same(previous,original,'Exact authenticated591 original runtime contracts');
+    same(current,{...original,continuationStateContractSha256:next.T,
+      publicProjectionContractSha256:'24e95d442450769ff233e42aa4b100842c353c8d28735defbbfef5d5457c99ec'},
+    'Exact issued593 compact-share projection and unchanged storage ABI');
+    return true;
+  }
+  same({...previous,continuationStateContractSha256:next.T},current,
+    'Only T changes in existing runtime-storage/public projection contracts');
+  return true;
+}
 const json=async p=>JSON.parse(await fs.readFile(p,'utf8'));
 async function noLinks(file){let at=path.parse(file).root;
   for(const p of path.relative(at,file).split(path.sep).filter(Boolean)){at=path.join(at,p);assert(!(await fs.lstat(at)).isSymbolicLink());}}
@@ -83,8 +105,7 @@ async function projectOriginal(p,snapshot,frozenRoot,outputRoot,reportPath,check
   assert.equal(ravScoreModelBinding().modelBundleSha256,next.I);
   assert.equal(candidateBinding().modelBundleSha256,next.C);
   assert.equal(contracts.continuationStateContractSha256,next.T);
-  same({...snapshot.descriptor.contractHashes,continuationStateContractSha256:next.T},contracts,
-    'Only T changes in existing runtime-storage/public projection contracts');
+  assertAssistantOriginalRuntimeContracts(snapshot.descriptor.contractHashes,contracts);
   await assertRestoredOriginalInventory(p.sourceRoot,snapshot.verified.manifest);
   const originalSRaw=await fs.readFile(p.originalSPath);
   same({bytes:originalSRaw.length,sha256:sha(originalSRaw)},snapshot.checkpointIdentity,'Actual normal restored original S bytes');

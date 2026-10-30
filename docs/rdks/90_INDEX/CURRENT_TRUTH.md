@@ -1,3 +1,9 @@
+## 30. oktober — installeret 593-binding og præcis rettelse af den første runtimeovergang
+
+593 har bestået den samlede kildekontrol og den ægte databaseprøve. Den originale591-førskrivningskontrol, SQL-installation og begge normale databasegenlæsninger er faktisk gennemført. Det er endnu ikke offentlig593-levering. Den første efterfølgende almindelige vejrhentning stoppede før leverandørerne: runtimekontrollen tillod kun ændret fortsættelseskontrakt, selv om den gennemgåede kompakte prognosedeling også ændrer den offentlige projektions kontrakt.
+
+Den afgrænsede efterfølger kontrollerer netop den autentificerede591-kontrakt mod den udstedte593-kontrakt. Hele feltmængden, uændret lager-ABI, gammel og ny fortsættelseskontrakt samt det præcise gennemgåede projektionshash kræves; andre profiler bevarer deres gamle kontrol. Normal metadata-only-overgang, nul genberegning, hele originaler og S-inverse, frisk pointer, CAS og hård no-loss består. Controlleren er uden for model-/nativeinput; ingen ny version, modelbinding eller SQL følger af rettelsen. Præcis samlet kvalifikation, faktisk normal prepare/install og senere offentlig levering er fortsat åbne. Se DEC-0301 og håndbog89.290; skiftende kørselsevidens føres alene privat. Alle fem mål består. Ældre modstridende statusfronter nedenfor er historik på disse konkrete punkter.
+
 ## 30. oktober — privat genoptagelseskapacitet og selvstændigt nativefasegenbrug
 
 Den særskilte private kandidat samler to gennemgåede genoptagelsesfiler og seks native-ejere oven på 4.0.593. Den er ikke den allerede igangværende kildekontrol, og dens lokale beviser må ikke ommærkes som ny Linux-/PostgreSQL-kvalifikation eller offentlig levering. Den udstedte 593-version, C/I/T og alle 71 SQL-filer bevares.

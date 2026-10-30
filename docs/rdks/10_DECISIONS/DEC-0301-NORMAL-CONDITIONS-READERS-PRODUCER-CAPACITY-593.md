@@ -1,7 +1,7 @@
 # DEC-0301 – Producentens conditions-grænse i normal genbrug og direkte 591 → 593
 
 **Dato:** 2026-10-30
-**Status:** 4.0.593 er lokalt udstedt og synkroniseret til normalt fastpunkt. Præcis samlet kilde-/PostgreSQL-kvalifikation, autentificeret førskrivning, installation og senere almindelig offentlig levering er åbne.
+**Status:** 4.0.593 har bestået samlet kilde-/PostgreSQL-kvalifikation, autentificeret originalbevarelse og faktisk SQL-installation med genlæsning. Den første almindelige runtimeovergang stoppede før leverandørerne; dens præcise controllerrettelse og senere offentlig levering er endnu åbne. De tidligere lokale statusafsnit nedenfor bevares som dateret udviklingshistorik.
 
 ## Faktisk forgænger og versionsforløb
 
@@ -51,3 +51,15 @@ Den oprindelige593-leverances afgrænsning ovenfor er historisk uændret. En eft
 Installerede filer hashes i64-KiB-blokke med hele manifestets byteantal/SHA og samme fil-/stiidentitet før/efter. Håndtaget lukkes, og lukningsfejl må ikke maskere nogen oprindelig fejl. Source-, parent-, origin-, GCM-, attest-, CAS- og no-loss-krav består. Normal lokal kalderkvalifikation og særskilt stort syntetisk I/O-bevis foreligger; stor autentificeret heladmission, præcis samlet kilde, sikker levering og faktisk effekt er åbne.
 
 De to ejere ligger uden for alle105 modelinput. Kandidaten ændrer ikke udstedt593, C/I/T,71 SQL-filer eller faglige regler. Ingen faktisk genoptagelse eller produktionshandling er udført af dokumentforberedelsen. Se håndbog89.288 og privat checkpoint.
+
+## 30. oktober — præcis offentlig projektionskontrakt i den normale 591 → 593-overgang
+
+Den første almindelige vejrhentning efter den faktisk verificerede593-installation stoppede i projectOriginal før leverandørerne. Kontrollen krævede, at alene continuationStateContractSha256 ændredes. Den eksisterende kompakte prognosedeling ændrer imidlertid også den normale publicProjectionContractSha256: copy-public-delivery-shards.mjs kopierer nu den allerede beregnede kompakte delingsprojektion. Dette er en konkret controllerinkompatibilitet, ikke ugyldige leverandørdata eller bevis for tab af originaler.
+
+En hel kilde-/hashgennemgang af alle ni projektionsfiler mod den ægte frosne591 viser otte normaliserede identiske filer og præcis denne kopieringsændring. Gammel projektion er c495b80c7ca8906d81ae0a58f340fe693f79acce51ca6efc7933681d9505da09; den gennemgåede593-projektion er24e95d442450769ff233e42aa4b100842c353c8d28735defbbfef5d5457c99ec. Lager-ABI er uændret ede0b53b8ed0f3fa5d0e505ea7c07d98969dc7a38fe94ae034a85f9c5d5af7ff.
+
+Den normale assertion kræver nu i den faste assistant-public591-successor-profil og udstedte4.0.593 præcis hele den gamle kontraktmap og hele den nye kontraktmap. Forgængerens eksisterende provenance ejer gammel ABI og projektion; den udstedte binding ejer gammel og ny T. Det nye projektionstal er den særskilt gennemgåede hele kildekontrakt. Manglende eller ekstra felter, en anden ABI, projektion eller T afvises. Der er ingen caller-valgt profil, tuple eller adgangsgenvej. Andre historiske profiler beholder den oprindelige OnlyT-kontrol.
+
+Den samme assertion bruges af den faktiske projectOriginal-kalder. Normal regression bruger den faktiske privateRuntimeContractHashes sammen med den navngivne frosne591-provenance; den fejlede på den gamle antagelse og består efter den præcise rettelse. Negative felt-/hashcases bevares. Den efterfølgende normale migration kræver fortsat metadataOnly, ingen reparation eller genberegning, præcis fuld ændringsmængde, genbinding af de samme eksisterende public-hour-data og byteuændrede øvrige filer. Hele B-originalinventaret, gamle attester, hele S-inversen inklusive ukendte felter, frisk reproduktion/pointer, CAS og no-loss består. Den gamle currentGridOriginalOnly-kontrol er en anden, ikke kaldt gren og ændres ikke.
+
+Controlleren ligger uden for de105 modelinput og65 native-modulinput. Dette giver ingen ny version, C/I/T, SQL eller geninstallation; den faktiske593-installation bevares. Den ændrede kilde kræver stadig normal præcis kildekvalifikation samt faktisk gennemført normal prepare/install, leverandørarbejde, gemning, deploy og offentlig kontrol. Den statiske helikoptergennemgang fandt ingen anden konkret inkompatibilitet i den efterfølgende kæde, men er ikke et produktionsbevis. De manglende gamle kompakte delingsfiler skal ikke fabrikeres i originale591-pakker. Alle fem mål er fortsat åbne. Se håndbog89.290 og privat checkpoint.

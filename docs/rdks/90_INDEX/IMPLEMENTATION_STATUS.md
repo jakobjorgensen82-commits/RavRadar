@@ -1,3 +1,9 @@
+## 30. oktober — installeret 593-binding og præcis rettelse af den første runtimeovergang
+
+593 har bestået den samlede kildekontrol og den ægte databaseprøve. Den originale591-førskrivningskontrol, SQL-installation og begge normale databasegenlæsninger er faktisk gennemført. Det er endnu ikke offentlig593-levering. Den første efterfølgende almindelige vejrhentning stoppede før leverandørerne: runtimekontrollen tillod kun ændret fortsættelseskontrakt, selv om den gennemgåede kompakte prognosedeling også ændrer den offentlige projektions kontrakt.
+
+Den afgrænsede efterfølger kontrollerer netop den autentificerede591-kontrakt mod den udstedte593-kontrakt. Hele feltmængden, uændret lager-ABI, gammel og ny fortsættelseskontrakt samt det præcise gennemgåede projektionshash kræves; andre profiler bevarer deres gamle kontrol. Normal metadata-only-overgang, nul genberegning, hele originaler og S-inverse, frisk pointer, CAS og hård no-loss består. Controlleren er uden for model-/nativeinput; ingen ny version, modelbinding eller SQL følger af rettelsen. Præcis samlet kvalifikation, faktisk normal prepare/install og senere offentlig levering er fortsat åbne. Se DEC-0301 og håndbog89.290; skiftende kørselsevidens føres alene privat. Alle fem mål består. Ældre modstridende statusfronter nedenfor er historik på disse konkrete punkter.
+
 ## 30. oktober — privat samlet resume2/native6, levering åben
 
 Forberedt og gennemgået: completed-stage producentgrænser i to ejere, løbende fuld SHA-/filidentitetskontrol og bevaret første fejl; særskilt V2-nativegenbrug i seks ejere med positive hele input, package-scopes, faktisk PG-kvartet, sikker origintransport, V1-bevarelse og korrekt national faseoprindelse. De normale lokale genoptagelsesmål og ni593-regressioner foreligger. Det er ikke en samlet Linux-kvalifikation på denne kombination.
