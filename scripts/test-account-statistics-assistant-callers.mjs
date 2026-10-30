@@ -13,7 +13,7 @@ const activeNationalReaderRelease=activeNationalSource.requireRelease();
 
 test('593 V2 national reader derives every native prefix from the actual whole-phase execution or reuse',async()=>{
   const {ASSISTANT_PUBLIC591_V2_KIND,ASSISTANT_PUBLIC591_V2_PROFILE,ASSISTANT_PUBLIC591_FROZEN,
-    ASSISTANT_PUBLIC591_REVIEWED_MODULE_SHA256,ASSISTANT_PUBLIC591_SUCCESSOR_COMMANDS,ORIGIN}
+    ASSISTANT_PUBLIC591_REVIEWED_MODULE_SHA256,ASSISTANT_PUBLIC591_SUCCESSOR_COMMANDS,ORIGIN,assistantPublic591RootPackageScopes}
     =await import('./native-postgres-evidence.mjs');
   const {assistantPublic591NativeClaims,verifyAssistantPublic591SuccessorNativeContext}
     =await import('./national584-source-evidence.mjs');
@@ -23,7 +23,7 @@ test('593 V2 national reader derives every native prefix from the actual whole-p
     current,status:'EXECUTED',executedInThisRun:true,origin:null,eligibleForReuse:true,
     nativeInput:{schemaVersion:1,files:140,modules:65,sqlFiles:71,moduleSha256:ASSISTANT_PUBLIC591_REVIEWED_MODULE_SHA256,
       inputSha256:'a'.repeat(64),controlsSha256:'b'.repeat(64),packageMode:{type:'module',version:'4.0.593'},
-      frozenGitTrees:structuredClone(ASSISTANT_PUBLIC591_FROZEN)},
+      packageScopes:assistantPublic591RootPackageScopes(),frozenGitTrees:structuredClone(ASSISTANT_PUBLIC591_FROZEN)},
     runtime:{platform:'linux',arch:'x64',imageOS:'ubuntu24',imageVersion:'20261030.1',node:'v22.23.3',
       python:'Python 3.12.15',pythonLocation:'/opt/python',ldLibraryPath:'/opt/python/lib',
       git:'git version 2.55.0',pgBindir:'/usr/lib/postgresql/16/bin',overrides:[],

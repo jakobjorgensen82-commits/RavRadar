@@ -701,7 +701,7 @@ export async function runNativeCheckpointSqlComparison({ repositoryRoot,
   assert(!includeCurrentMemoryWarmup || (includeNativeIdentity && includeStatisticsRevision), 'CurrentMemoryWarmup requires every unchanged historical native phase');
   assert(!includeNativeIdentity || includeStatisticsRevision, 'NEW requires the unchanged statistics230 phase');
   const programs = await nativePrograms();
-  const nativeProgramsBefore=await nativePostgresProgramIdentity(programs);
+  const nativeProgramsBefore=includeAssistantPublic591Successor?await nativePostgresProgramIdentity(programs):null;
   assert.ok(typeof sourceDocumentAt === 'function' && typeof atHour === 'function'
     && typeof saveCheckpoint === 'function', 'normal fixture constructors are required');
   const root = await fs.mkdtemp(path.join(os.tmpdir(), 'rr-checkpoint-pg-'));
@@ -1111,7 +1111,7 @@ select public.native_checkpoint_attempt(${baseline},${version},(select payload f
     const resolved=path.resolve(root), temp=path.resolve(os.tmpdir());
     assert.ok(path.dirname(resolved)===temp && path.basename(resolved).startsWith('rr-checkpoint-pg-'));
     if (cleanupAllowed && (!started || stopped)) await fs.rm(resolved,{recursive:true,force:false});
-    if(completedReport){
+    if(completedReport&&includeAssistantPublic591Successor){
       const after=await nativePostgresProgramIdentity(programs);
       assert.deepEqual(after,nativeProgramsBefore,'Selected native PostgreSQL programs changed during execution');
       completedReport.nativeProgramIdentity=after;

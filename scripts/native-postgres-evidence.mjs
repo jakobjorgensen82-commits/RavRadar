@@ -789,7 +789,7 @@ export const ASSISTANT_PUBLIC591_FROZEN=Object.freeze([
 ].map(([head,tree])=>Object.freeze({head,tree})));
 // This digest qualifies the CLOSED65-module implementation, not the whole tree.
 // A changed native implementation must review/requalify its closure before a grant.
-export const ASSISTANT_PUBLIC591_REVIEWED_MODULE_SHA256='940cfd384b71b121a065b573f4e90438c5ca0fa3abfbb5d7068b1a69dc982c40';
+export const ASSISTANT_PUBLIC591_REVIEWED_MODULE_SHA256='ad6cb55499dbbc261cb143ff76fe0a6f4344dd7fbd6797b4167fa3d9c4a205da';
 const ASSISTANT_PUBLIC591_DATA=Object.freeze([
   'scripts/fixtures/statistics-preference-revision-input.json','scripts/lib/dmi-marine-zone-exclusions.json',
   'scripts/lib/established-native-current-origin-source-target-inventory.json',
@@ -832,6 +832,29 @@ export async function assistantPublic591Runtime(){
     selectedPrograms:await nativePostgresProgramIdentity(await nativePrograms())};
   return verifyAssistantPublic591Runtime(value);
 }
+export function assistantPublic591PackageScopePaths(){
+  const files=new Set(['package.json']);
+  for(const module of ASSISTANT_PUBLIC591_INPUT_MODULES)
+    for(let directory=path.posix.dirname(module);directory!=='.';directory=path.posix.dirname(directory))
+      files.add(directory+'/package.json');
+  return [...files].sort();
+}
+function nearestAssistantPublic591Scopes(scopes){
+  const present=new Set(scopes.filter(row=>row.present).map(row=>row.file));
+  return sha(JSON.stringify(ASSISTANT_PUBLIC591_INPUT_MODULES.map(module=>{
+    let directory=path.posix.dirname(module);
+    while(directory!=='.'){
+      const file=directory+'/package.json';if(present.has(file))return [module,file];
+      directory=path.posix.dirname(directory);
+    }
+    assert(present.has('package.json'));return [module,'package.json'];
+  })));
+}
+export function assistantPublic591RootPackageScopes(){
+  const scopes=assistantPublic591PackageScopePaths().map(file=>file==='package.json'
+    ?{file,present:true,mode:'100644',type:'module',version:'4.0.593'}:{file,present:false});
+  return {scopes,nearestSha256:nearestAssistantPublic591Scopes(scopes)};
+}
 export async function captureAssistantPublic591Input({ref='HEAD',readGit=git,root=process.cwd(),physical=true}={}){
   const tree=parseTree(readGit(['ls-tree','-rz','--full-tree',ref])),index=new Map(tree.map(row=>[row[0],row]));
   const sql=tree.filter(row=>row[0].startsWith('supabase/migrations/')&&row[0].endsWith('.sql')).map(row=>row[0]).sort();
@@ -859,13 +882,28 @@ export async function captureAssistantPublic591Input({ref='HEAD',readGit=git,roo
   const packageGit=JSON.parse(String(readGit(['cat-file','blob',ref+':package.json'])));
   const packageMode={type:packageGit.type,version:packageGit.version};
   assert.deepEqual(packageMode,{type:'module',version:'4.0.593'});
-  if(physical){const actual=JSON.parse(await fs.readFile(path.join(root,'package.json'),'utf8'));
-    assert.deepEqual({type:actual.type,version:actual.version},packageMode);}
+  const scopes=[];
+  for(const file of assistantPublic591PackageScopePaths()){
+    if(!index.has(file)){
+      if(physical){
+        let actual=null;try{actual=await fs.lstat(path.resolve(root,file));}catch(error){if(error.code!=='ENOENT')throw error;}
+        assert.equal(actual,null,'Untracked package scope changes native module resolution');
+      }
+      scopes.push({file,present:false});continue;
+    }
+    const row=await read(file);
+    if(file==='package.json')scopes.push({file,present:true,mode:row.mode,...packageMode});
+    else{
+      const parsed=JSON.parse(String(readGit(['cat-file','blob',ref+':'+file])));
+      scopes.push({...row,present:true,type:parsed?.type??null});
+    }
+  }
+  const packageScopes={scopes,nearestSha256:nearestAssistantPublic591Scopes(scopes)};
   for(const {head,tree}of ASSISTANT_PUBLIC591_FROZEN)
     assert.equal(readGit(['rev-parse',head+'^{tree}']).trim(),tree);
   return {schemaVersion:1,files:140,modules:65,sqlFiles:71,moduleSha256,
     inputSha256:sha(JSON.stringify(inputRows)),controlsSha256:sha(JSON.stringify(controls)),
-    packageMode,frozenGitTrees:ASSISTANT_PUBLIC591_FROZEN};
+    packageMode,packageScopes,frozenGitTrees:ASSISTANT_PUBLIC591_FROZEN};
 }
 export function verifyAssistantPublic591Input(value,prior=value){
   assert.deepEqual(value,prior,'Every selected native input must match');
@@ -873,6 +911,17 @@ export function verifyAssistantPublic591Input(value,prior=value){
   assert.equal(value.moduleSha256,ASSISTANT_PUBLIC591_REVIEWED_MODULE_SHA256);
   for(const field of ['inputSha256','controlsSha256'])assert.match(value[field],hashPattern);
   assert.deepEqual(value.packageMode,{type:'module',version:'4.0.593'});
+  assert.deepEqual(value.packageScopes?.scopes.map(row=>row.file),assistantPublic591PackageScopePaths());
+  for(const row of value.packageScopes.scopes){
+    assert.equal(typeof row.present,'boolean');
+    if(!row.present)assert.deepEqual(row,{file:row.file,present:false});
+    else{
+      assert(['100644','100755'].includes(row.mode));
+      if(row.file==='package.json')assert.deepEqual(row,{file:'package.json',present:true,mode:row.mode,...value.packageMode});
+      else{assert.match(row.blob,/^[a-f0-9]{40}$/);assert.match(row.sha256,hashPattern);assert(Number.isSafeInteger(row.bytes)&&row.bytes>0);}
+    }
+  }
+  assert.equal(value.packageScopes.nearestSha256,nearestAssistantPublic591Scopes(value.packageScopes.scopes));
   assert.deepEqual(value.frozenGitTrees,ASSISTANT_PUBLIC591_FROZEN);return value;
 }
 export function verifyAssistantPublic591V2PhaseReceipt(native,current){
@@ -929,13 +978,18 @@ export function verifyAssistantPublic591Metadata(run,jobs){
     &&Date.parse(pg.completed_at)<=Date.parse(upload.completed_at));
   return {job:job.id,pgStartedAt:pg.started_at,uploadedAt:upload.completed_at};
 }
-export function verifyAssistantPublic591Artifact(metadata,zip,raw,run,phase){
+export function verifyAssistantPublic591ArtifactMetadata(metadata,run,phase){
   assert.equal(metadata.expired,false);assert.equal(metadata.workflow_run?.id,run.id);
   assert.equal(metadata.workflow_run?.head_sha,run.head_sha);assert.equal(metadata.name,'native586-phase-'+run.id+'-1-'+run.head_sha);
   assert(Number.isSafeInteger(metadata.id)&&metadata.id>0);
   assert(Number.isSafeInteger(metadata.size_in_bytes)&&metadata.size_in_bytes>0&&metadata.size_in_bytes<=65536);
-  assert.equal(zip.length,metadata.size_in_bytes);assert.equal('sha256:'+sha(zip),metadata.digest);
+  assert.match(metadata.digest,/^sha256:[a-f0-9]{64}$/);
   assert(Date.parse(metadata.created_at)>=Date.parse(phase.pgStartedAt)&&Date.parse(metadata.created_at)<=Date.parse(phase.uploadedAt));
+  return metadata;
+}
+export function verifyAssistantPublic591Artifact(metadata,zip,raw,run,phase){
+  verifyAssistantPublic591ArtifactMetadata(metadata,run,phase);
+  assert.equal(zip.length,metadata.size_in_bytes);assert.equal('sha256:'+sha(zip),metadata.digest);
   assert(raw.length>0&&raw.length<=32768);const proof=JSON.parse(raw);
   assert.equal(proof.schemaVersion,2);assert.equal(proof.kind,ASSISTANT_PUBLIC591_V2_KIND);
   assert.equal(proof.repository,ORIGIN.repository);assert.equal(proof.headSha,run.head_sha);
@@ -943,12 +997,76 @@ export function verifyAssistantPublic591Artifact(metadata,zip,raw,run,phase){
   verifyAssistantPublic591V2PhaseReceipt(proof.nativePostgres,{run:run.id,attempt:1,head:run.head_sha,
     pullRequest:one(run.pull_requests).number,branch:run.head_branch});return proof;
 }
+
+// V2-only bounded transport. No response headers, bodies or signed URLs are
+// persisted. Historical V1 transport/defaults above remain byte-identical.
+async function readAssistantPublic591Body(response,limit,signal){
+  const reader=response.body?.getReader();assert(reader,'Streaming response body required');
+  const chunks=[];let bytes=0,done=false,onAbort;
+  const aborted=new Promise((resolve,reject)=>{
+    onAbort=()=>reject(new Error('NATIVE591_V2_BODY_TIMEOUT'));
+    signal.addEventListener('abort',onAbort,{once:true});if(signal.aborted)onAbort();
+  });
+  try{
+    while(true){
+      const item=await Promise.race([reader.read(),aborted]);
+      if(item.done){done=true;break;}
+      assert(item.value instanceof Uint8Array);bytes+=item.value.byteLength;
+      assert(bytes<=limit,'NATIVE591_V2_BODY_BYTE_LIMIT');
+      chunks.push(Buffer.from(item.value));
+    }
+    return Buffer.concat(chunks,bytes);
+  }finally{
+    signal.removeEventListener('abort',onAbort);
+    if(!done)reader.cancel().catch(()=>{});
+    try{reader.releaseLock();}catch{ /* Cancellation owns an outstanding read. */ }
+  }
+}
+export function assistantPublic591Reader({env=process.env,fetchImpl=globalThis.fetch,now=()=>performance.now()}={}){
+  let calls=0;const deadline=now()+60000;
+  const request=async(url,options)=>{
+    assert(++calls<=24,'NATIVE591_V2_CALL_LIMIT');
+    const remaining=Math.floor(deadline-now());assert(remaining>0,'NATIVE591_V2_TOTAL_TIME_LIMIT');
+    const signal=AbortSignal.timeout(Math.min(15000,remaining));
+    return {response:await fetchImpl(url,{...options,signal}),signal};
+  };
+  const cancelUnused=response=>{
+    if(response?.body&&!response.bodyUsed)response.body.cancel().catch(()=>{});
+  };
+  return async(route,{zip=false}={})=>{
+    let api=null,signed=null;
+    try{
+      assert(typeof route==='string'&&route.startsWith('/repos/'+ORIGIN.repository+'/'));
+      assert(typeof env.GITHUB_TOKEN==='string'&&env.GITHUB_TOKEN.length>0);
+      api=await request('https://api.github.com'+route,{headers:{Authorization:'Bearer '+env.GITHUB_TOKEN,
+        Accept:'application/vnd.github+json','X-GitHub-Api-Version':'2022-11-28'},redirect:'manual'});
+      if(!zip){
+        assert(api.response.ok);const raw=await readAssistantPublic591Body(api.response,2*1024*1024,api.signal);
+        assert(now()<deadline,'NATIVE591_V2_TOTAL_TIME_LIMIT');
+        return JSON.parse(raw.toString('utf8'));
+      }
+      assert.equal(api.response.status,302);
+      const target=new URL(api.response.headers.get('location'));
+      assert.equal(target.protocol,'https:');assert(!target.username&&!target.password);
+      cancelUnused(api.response);
+      // Never spread the repository request headers onto the signed request.
+      signed=await request(target.href,{redirect:'error'});assert(signed.response.ok);
+      const raw=await readAssistantPublic591Body(signed.response,65536,signed.signal);
+      assert(now()<deadline,'NATIVE591_V2_TOTAL_TIME_LIMIT');return raw;
+    }catch{
+      // Errors from fetch/URL/JSON may contain a signed URL or body. Do not
+      // retain their text, cause, headers or values in diagnostics.
+      throw new Error('NATIVE591_V2_EVIDENCE_UNAVAILABLE');
+    }finally{cancelUnused(api?.response);cancelUnused(signed?.response);}
+  };
+}
+
 export async function decideAssistantPublic591Reuse({env=process.env,local,get,readGit=git,
   getRuntime=assistantPublic591Runtime,getInput=captureAssistantPublic591Input,decode=decodeCurrent586Artifact}={}){
   try{
     local??=await assistantPublic591LocalProof({env,readGit,getRuntime});
     verifyAssistantPublic591Input(local.nativeInput);verifyAssistantPublic591Runtime(local.runtime);
-    const repo='/repos/'+ORIGIN.repository,base=repo+'/actions';get??=await current586Reader();
+    const repo='/repos/'+ORIGIN.repository,base=repo+'/actions';get??=assistantPublic591Reader({env});
     const current=await get(base+'/runs/'+local.current.run);
     assert.equal(current.id,local.current.run);assert.equal(current.run_attempt,1);assert.equal(current.head_sha,local.current.head);
     assert.equal(current.head_branch,local.current.branch);assert.equal(current.path,WORKFLOW);assert.equal(current.event,'pull_request');
@@ -976,6 +1094,7 @@ export async function decideAssistantPublic591Reuse({env=process.env,local,get,r
       const jobs=await get(base+'/runs/'+run.id+'/attempts/1/jobs?per_page=100'),phase=verifyAssistantPublic591Metadata(run,jobs);
       const artifacts=await get(base+'/runs/'+run.id+'/artifacts?per_page=100');assert(complete(artifacts,'artifacts'));
       const artifact=one(artifacts.artifacts.filter(value=>value.name==='native586-phase-'+run.id+'-1-'+run.head_sha));
+      verifyAssistantPublic591ArtifactMetadata(artifact,run,phase);
       const zip=await get(base+'/artifacts/'+artifact.id+'/zip',{zip:true});
       const proof=verifyAssistantPublic591Artifact(artifact,zip,decode(zip),run,phase);
       return {run,phase,artifact,proof};
