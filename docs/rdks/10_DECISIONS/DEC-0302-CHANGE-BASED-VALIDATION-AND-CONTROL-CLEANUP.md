@@ -41,7 +41,11 @@ Producentkoordinatoren er også implementeret lokalt. Den afleder selv PR, HEAD,
 
 Den lokale forbrugerhelper kræver den faktiske main-merge med producenten som direkte forælder, identisk helt Git-træ og kildeindhold samt præcis grøn TARGETED-kvalifikation. Ikke-berørte trin skal faktisk være sprunget over, og den særskilte rapport må ikke kaldes fuld kilde-/SQL-eksekvering. Den fulde baseline kvalificeres på ny, den komplette kumulative plan genberegnes, og den eksisterende kontrol af senere røde eller uafklarede kildeforløb genbruges uændret. Lokale normale Git-/transportprøver er ikke live genbrug.
 
-Workflow-/CLI-integration og locator-opdagelse, faktisk live-kvalifikation og afvikling, bredere relevant udtynding og målt hurtigere levering med bevaret fejlfangst er fortsat åbne. Lokale delprøver er ikke denne tekniske levering. Detaljeret, skiftende run- og testbevis føres privat.
+Workflow, normal CLI og afgrænset locator-opdagelse er nu sammenført lokalt. Den oprindelige digest forbliver skrivefri og uden netkald. Den nye udtrykkelige CI-indgang vælger kun TARGETED efter komplet plan og kvalificeret FULL-forfader; ellers bevares normal FULL. Opdagelse er alene en adresse til beviset og giver ingen selvstændig grøn status. Forbrugeren kvalificerer det fundne bevis på ny gennem en frisk, afgrænset læsefase. En senere relevant rød eller uafklaret kørsel må ikke skjules af en ældre grøn.
+
+De eksisterende 22 runtime-trin bevares. I TARGETED skal trin 6–20 faktisk være sprunget over; kildeidentitet, ren kilde og upload af den særskilte målrapport skal stadig være gennemført. I FULL bevares de eksisterende dybe programmer og deres krav. Gamle whole-workflow-prøver får kun deres originale helfil efter en streng inverse af netop den gennemgåede integration; andre forskelle afvises. Nye kontrollere er registreret i den normale FULL-vej.
+
+Samlet gennemgang, den første fulde kildekvalifikation af selve kontrolændringen, sikker levering, en faktisk senere TARGETED-levering og målt tidsvirkning er fortsat åbne. Ukendte eller fælles ændringer får ikke korte profiler. Bredere relevant udtynding af UI-/databaseprøver er heller ikke afsluttet. Den akutte vejrrettelse leveres særskilt og må ikke forsinkes af denne lokale kandidat. Detaljeret, skiftende run- og testbevis føres privat.
 
 ## Placering af hukommelse
 

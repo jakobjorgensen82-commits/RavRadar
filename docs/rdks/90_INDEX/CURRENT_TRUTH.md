@@ -2,7 +2,7 @@
 
 Testomfanget skal følge ændringens faktiske påvirkning og relevante afhængigheder. Uændrede, uvedkommende områder skal ikke automatisk udløse dybe prøver. Korte prøver af den normale kæde kommer tidligt; overflødige, gentagne og erstattede kontroller fjernes fra den normale leveringsvej.
 
-Ejerbeslutningen er gældende arbejdsinstruks. Den konkrete nye testudvælgelse og udtynding er under forberedelse og er ikke teknisk leveret. Det igangværende kvalifikationsforløb bevares; ingen rød eller ukendt relevant gate omgås. Konkrete fund og tidlige rettelser ligger privat; de er ikke ny offentlig levering eller færdig optimering. Aktuelle run-/commit-/måletal og fremdrift føres kun i checkpointet. Se DEC-0302.
+Ejerbeslutningen er gældende arbejdsinstruks. Den første afgrænsede udvælgelse er nu sammenført lokalt gennem komplet Git-plan, kvalificeret fuld forfader, særskilt målrapport, normal producent/forbruger og workflow/CLI. Den er ikke teknisk leveret. Første kvalifikation af selve kontrolændringen skal være FULL; en senere faktisk TARGETED-levering og målt tidsvirkning skal stadig bevises. Ukendt/fælles påvirkning vælger fuldt omfang; rød eller ukendt relevant evidens omgås ikke. Akut vejrhentning leveres særskilt med forrang. Aktuelle run-/commit-/måletal og fremdrift føres kun i checkpointet. Se DEC-0302.
 
 ## 30. oktober — installeret 593-binding og præcis rettelse af den første runtimeovergang
 

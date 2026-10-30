@@ -8,7 +8,9 @@ Den normale producentkoordinator er nu lokal kode med komplet kumulativ klassifi
 
 Den lokale forbrugerhelper er nu også sammenført og målprøvet med en ægte lille Git-merge og syntetiske transport-/rapportdata. Den kræver præcis merge-/kildeidentitet, faktisk deklareret TARGETED-omfang, en frisk fuld baseline og komplet ny plan. Den eksisterende inspektør for senere fejl får kun en export; dens adfærd er bevaret. Dette er fortsat ikke en faktisk GitHub-genbrugskontrol.
 
-Workflow-/CLI-integration, locator-opdagelse, faktisk live-kvalifikation, målt tidsvirkning og den brede oprydning mangler fortsat. Planens sideeffektfelt hedder ordinaryWeatherMutatedByPlanner; det påstår alene, at planlæggeren ikke skriver vejr, og siger intet ubekræftet om kandidatens påvirkning. Den aktive vejrrettelse og alle fem mål bevares. Se DEC-0302 og privat checkpoint.
+Workflow, normal CLI og afgrænset locator-opdagelse er nu sammenført lokalt med den særskilte producent og forbruger. Den gamle digest forbliver uden netkald; den nye CI-indgang bevarer normal FULL ved utilstrækkeligt bevis. Alle 22 runtime-trin beholder deres identitet, og kun en kvalificeret TARGETED-plan må lade trin 6–20 stå som faktisk sprunget over. Ren kilde og præcis særskilt rapport kræves fortsat. De normale lokale integrationsmål er gennemført; de er ikke live GitHub-, SQL- eller produktionsbevis.
+
+Samlet gennemgang, første FULL-kvalifikation af selve kontrolændringen, sikker levering, faktisk senere TARGETED-levering, målt tidsvirkning og bredere oprydning er åbne. Planens sideeffektfelt hedder ordinaryWeatherMutatedByPlanner; det påstår alene, at planlæggeren ikke skriver vejr, og siger intet ubekræftet om kandidatens påvirkning. Den akutte vejrrettelse holdes særskilt og har forrang. Alle fem mål bevares. Se DEC-0302 og privat checkpoint; ældre status nedenfor er historik på disse konkrete punkter.
 
 ## 30. oktober — første afgrænsede ændringsplan er lokal kode
 

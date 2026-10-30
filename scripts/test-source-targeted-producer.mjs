@@ -31,7 +31,7 @@ const stamp=n=>'2026-10-30T12:'+String(n).padStart(2,'0')+':00Z';
 const zip=(raw,name)=>execFileSync('python',['-c',
   'import io,sys,zipfile; b=io.BytesIO(); z=zipfile.ZipFile(b,"w",compression=zipfile.ZIP_DEFLATED); z.writestr(sys.argv[1],sys.stdin.buffer.read()); z.close(); sys.stdout.buffer.write(b.getvalue())',name],
   {input:raw,maxBuffer:65536,timeout:10000,stdio:['pipe','pipe','pipe']});
-let cases=0,executions=0,calls=0,signedCalls=0,coordinate,base,head,content,full,phase,job,json,zips;
+let cases=0,executions=0,calls=0,signedCalls=0,cliTransportCalls=0,coordinate,base,head,content,full,phase,job,json,zips;
 const currentRun=50000000002,baselineRun=50000000001,baselineJob=50000000003;
 const currentJob=50000000004,finalId=50000000005,nativeId=50000000006,pr=999,baselinePr=998;
 const repo='/repos/'+ORIGIN.repository,actions=repo+'/actions';
@@ -95,6 +95,43 @@ async function fakeFetch(url,options){
   if(match)return new Response(null,{status:302,headers:{location:'https://fixture.invalid/'+match[1]}});
   assert(json.has(route),'UNEXPECTED_SYNTHETIC_ROUTE');return Response.json(json.get(route));
 }
+function clearCliOutputs(){
+  for(const name of ['source-tree-content-proof.json','source-targeted-impact-proof.json','cli-output.txt',
+    'cli-fetch.txt','cli-fetch-preload.mjs']){
+    const file=path.join(root,'.cache',name);if(fs.existsSync(file))fs.unlinkSync(file);
+  }
+}
+function runNormalDigestCli(mode,offline){
+  clearCliOutputs();const preload=path.join(root,'.cache/cli-fetch-preload.mjs');
+  const output=path.join(root,'.cache/cli-output.txt'),journal=path.join(root,'.cache/cli-fetch.txt');
+  // Only the fetch implementation is injected into a real child CLI. The
+  // production bridge and coordinator are copied byte-for-byte, and execute
+  // their real Git guards, decoder, selected processes and artifact writes.
+  write('.cache/cli-fetch-preload.mjs',[
+    "import assert from 'node:assert/strict';import fs from 'node:fs';import path from 'node:path';",
+    'const root=process.cwd(),ORIGIN='+JSON.stringify({repository:ORIGIN.repository})+';',
+    'const repo='+JSON.stringify(repo)+',actions='+JSON.stringify(actions)+';',
+    'const PULL_REQUEST_SOURCE_WORKFLOW='+JSON.stringify(PULL_REQUEST_SOURCE_WORKFLOW)
+      +',PULL_REQUEST_SOURCE_JOB='+JSON.stringify(PULL_REQUEST_SOURCE_JOB)+';',
+    'const pr='+pr+',currentRun='+currentRun+',currentJob='+currentJob+',head='+JSON.stringify(head)+',base='+JSON.stringify(base)+';',
+    'const state='+JSON.stringify(state)+';let calls=0,signedCalls=0;',
+    'const json=new Map('+JSON.stringify([...json])+');',
+    'const zips=new Map('+JSON.stringify([...zips].map(([key,value])=>[key,value.toString('base64')]))
+      +'.map(([key,value])=>[key,Buffer.from(value,"base64")]));',
+    'const count='+count.toString()+';',currentPull.toString(),fakeFetch.toString(),
+    'globalThis.fetch=async(...args)=>{fs.appendFileSync('+JSON.stringify(journal)+',"SYNTHETIC_FETCH\\n");'
+      +(offline?'throw new Error("OFFLINE_DIGEST_MUST_NOT_FETCH");':'return fakeFetch(...args);')+'};',
+  ].join('\n'));
+  const stdout=execFileSync(process.execPath,['--import',pathToFileURL(preload).href,
+    path.join(root,'scripts/weather-source-gate.mjs'),mode],{cwd:root,env:{...process.env,GITHUB_OUTPUT:output},
+    encoding:'utf8',maxBuffer:1024*1024,timeout:30000,stdio:['ignore','pipe','pipe']});
+  const observed=fs.existsSync(journal)?fs.readFileSync(journal,'utf8').trim().split('\n').length:0;
+  cliTransportCalls+=observed;
+  const lines=fs.readFileSync(output,'utf8').trim().split('\n'),fields=Object.fromEntries(lines.map(line=>{
+    const separator=line.indexOf('=');assert(separator>0);return [line.slice(0,separator),line.slice(separator+1)];}));
+  assert.equal(lines.length,Object.keys(fields).length,'No duplicate GitHub output fields');
+  return {stdout,fields,fetchCalls:observed};
+}
 function reset(){
   git(['reset','--hard',head]);for(const key of Object.keys(state))state[key]=false;
   delete process.env.SYNTHETIC_SELECTED_ACTION;process.env.SOURCE_GATE_HEAD_SHA=head;
@@ -104,6 +141,7 @@ try{
   git(['init','-q']);git(['config','user.name','Synthetic source producer']);git(['config','user.email','fixture@example.invalid']);
   git(['config','core.autocrlf','false']);
   copyModule('scripts/source-targeted-producer.mjs');
+  copyModule('scripts/weather-source-gate.mjs');
   for(const name of ['package.json','scripts/lib/account-statistics-assistant-package-review.json','js/ui/about-i18n.js',
     'js/ui/about-explainer-i18n.js','js/ui/learn-i18n.js','js/ui/learn-i18n-de.js','js/ui/learn-i18n-en.js'])
     write(name,fs.readFileSync(path.join(SOURCE,name)));
@@ -170,6 +208,33 @@ try{
     reset();state.movedPull=variant;await assert.rejects(coordinate());assert.equal(count(),5);executions+=count();cases++;
   }
   reset();await assert.rejects(coordinate({selection:'TARGETED'}),/NO_OVERRIDES/);cases++;
+  reset();const offline=runNormalDigestCli('digest',true);
+  assert.equal(offline.fetchCalls,0);assert.equal(count(),0);
+  assert.deepEqual(Object.keys(offline.fields).sort(),['artifact_name','source_tree_sha256']);
+  assert(offline.fields.artifact_name.startsWith('ravradar-source-validation-v2-pr-'+pr+'-'+head+'-'));
+  const oldProof=JSON.parse(fs.readFileSync(path.join(root,'.cache/source-tree-content-proof.json')));
+  assert.equal(oldProof.contractId,SOURCE_GATE_CONTRACT);assert.equal(oldProof.headSha,head);
+  assert.equal(oldProof.sourceTreeSha256,offline.fields.source_tree_sha256);
+  assert.equal(oldProof.privatePayloadIncluded,false);assert.equal(oldProof.qualification,undefined);
+  assert.equal(oldProof.nativePostgres,undefined);assert.equal(oldProof.historical584National,undefined);
+  assert(!fs.existsSync(path.join(root,'.cache/source-targeted-impact-proof.json')));cases++;
+  reset();const targeted=runNormalDigestCli('impact-digest',false);
+  assert(targeted.fetchCalls>0);assert.equal(count(),5,targeted.stdout);executions+=count();
+  assert.deepEqual(Object.keys(targeted.fields).sort(),['artifact_name','receipt_path','selection','source_tree_sha256']);
+  assert.equal(targeted.fields.selection,'TARGETED');
+  assert.equal(targeted.fields.receipt_path,'.cache/source-targeted-impact-proof.json');
+  assert(!fs.existsSync(path.join(root,'.cache/source-tree-content-proof.json')));
+  const cliProof=JSON.parse(fs.readFileSync(path.join(root,targeted.fields.receipt_path)));
+  assert.equal(cliProof.kind,'RAVRADAR_SOURCE_TARGETED_RECEIPT_V1');
+  assert.equal(cliProof.artifactName,targeted.fields.artifact_name);
+  assert(cliProof.artifactName.startsWith('ravradar-source-targeted-v1-pr-'+pr+'-'+head+'-'));
+  assert.equal(cliProof.current.head,head);assert.equal(cliProof.current.runId,currentRun);
+  assert.equal(cliProof.current.jobId,currentJob);assert.equal(cliProof.current.sourceTreeSha256,targeted.fields.source_tree_sha256);
+  assert.equal(cliProof.reportedCommandResults.length,5);assert(cliProof.reportedCommandResults.every(row=>row.outcome==='PASS'));
+  assert.equal(cliProof.database.executed,false);assert.equal(cliProof.national.executed,false);
+  assert.equal(cliProof.fullSourceValidationClaimed,false);assert.equal(cliProof.deliveryAuthority,false);
+  assert.equal(targeted.stdout.split('SOURCE_TIME ').length-1,5);cases++;
+  clearCliOutputs();reset();
   write('js/core/unreviewed.js','export const protectedChange=true;\n');const saved=head;
   head=commit('protected change must choose full');process.env.SOURCE_GATE_HEAD_SHA=head;
   assert.equal((await coordinate()).selection,'FULL');assert.equal(count(),0);head=saved;cases++;
@@ -182,4 +247,5 @@ try{
 }
 console.log(JSON.stringify({kind:'PRIVATE_NORMAL_TARGETED_PRODUCER_TARGET',cases,passed:cases,failed:0,
   realLocalGitFixtures:true,actualSyntheticTargetProcesses:executions,syntheticTransportCalls:calls,
+  cliSyntheticTransportCalls:cliTransportCalls,actualDigestCliCases:2,
   productSourceCommandsExecuted:0,liveApiRequests:0,nativeSqlExecuted:false,production:false,deliveryAuthority:false}));

@@ -32,7 +32,7 @@ const copy=value=>structuredClone(value),repo='/repos/'+ORIGIN.repository,action
 const fullRun=50000000001,fullJob=50000000003,fullPr=998,fullFinal=50000000005,fullNative=50000000006;
 const selectedRun=50000000002,selectedJob=50000000004,selectedPr=999,selectedArtifact=50000000007;
 let cases=0,base,producer,main,baseContent,content,fullReference,fullBody,nativeBody,fullZip,nativeZip;
-let receipt,rawReceipt,targetZip,targetMetadata,currentJob,fullSourceJob,json,zips,locator,decide;
+let receipt,rawReceipt,targetZip,targetMetadata,currentJob,fullSourceJob,json,zips,locator,decide,discover;
 const env={GITHUB_REPOSITORY:ORIGIN.repository,GITHUB_REF:'refs/heads/main',GITHUB_RUN_ID:'50000000009'};
 function jobs(selected){
   return {id:selected?selectedJob:fullJob,run_id:selected?selectedRun:fullRun,run_attempt:1,
@@ -67,6 +67,9 @@ function maps(){
     [actions+'/runs/'+fullRun+'/attempts/1/jobs?per_page=100',{total_count:1,jobs:[fullSourceJob]}],
     [actions+'/artifacts/'+selectedArtifact,targetMetadata],[actions+'/artifacts/'+fullNative,nativeMetadata],
     [actions+'/artifacts/'+fullFinal,finalMetadata]]);
+  json.set(repo+'/commits/'+main+'/pulls?per_page=100',[pull(true)]);
+  json.set(actions+'/artifacts?name='+encodeURIComponent(targetMetadata.name)+'&per_page=100',
+    {total_count:1,artifacts:[targetMetadata]});
   for(const head of [base,main])for(const p of Object.values(SOURCE_GATE_PRODUCERS))
     json.set(actions+'/workflows/'+p.workflowId+'/runs?head_sha='+head+'&branch=main&per_page=100&page=1',
       {total_count:0,workflow_runs:[]});
@@ -132,7 +135,8 @@ try{
     commandResults:gitPlan.plan.commands.map(command=>({phase:'targeted',command,elapsedMs:1,outcome:'PASS'}))}));
   git(['checkout','-qb','main',base]);git(['merge','--no-ff','-qm','synthetic same-tree reviewed merge','codex/synthetic-targeted']);
   main=text(['rev-parse','HEAD']);env.GITHUB_SHA=main;assert.equal(sourceTreeContentSha256(main,{git}),content);
-  ({decideTargetedSourceGate:decide}=await import(pathToFileURL(path.join(root,'scripts/source-targeted-consumer.mjs')).href));
+  ({decideTargetedSourceGate:decide,discoverTargetedSourceGate:discover}=
+    await import(pathToFileURL(path.join(root,'scripts/source-targeted-consumer.mjs')).href));
   const canonicalReceipt=copy(receipt);rebuildTarget();maps();
   const check=async mutate=>{receipt=copy(canonicalReceipt);rebuildTarget();maps();const deps=dependencies();mutate?.(deps);
     const result=await decide(locator,env,d(deps));cases++;return {result,deps};};
@@ -173,8 +177,33 @@ try{
     const value=await read(route,...args);if(route===actions+'/runs/'+selectedRun&&++times===2)value.run_attempt=2;return value;};});
   assert.equal(drift.result.required,true);
   const fresh=await check();assert.equal(fresh.result.required,false);
+  let discoveryCases=0;
+  const lookup=async mutate=>{receipt=copy(canonicalReceipt);rebuildTarget();maps();const deps=dependencies();mutate?.(deps);
+    const result=await discover(env,content,{getJson:deps.getJson,getArtifactZip:deps.getArtifactZip});
+    cases++;discoveryCases++;return {result,deps};};
+  const found=await lookup();assert.deepEqual(found.result.locator,locator);
+  assert.equal(found.result.requiresVerification,true);assert.equal(found.result.deliveryAuthority,false);
+  assert.notEqual(found.result.required,false);assert.equal(found.deps.reads.zip.length,1);
+  // A separate fresh reader verifies the discovered/cached locator. Discovery
+  // did not itself issue green authority from metadata or a plausible body.
+  const consumed=await decide(copy(found.result.locator),env,d(dependencies()));assert.equal(consumed.required,false);
+  const targetList=()=>actions+'/artifacts?name='+encodeURIComponent(targetMetadata.name)+'&per_page=100';
+  for(const mutate of [()=>json.set(repo+'/commits/'+main+'/pulls?per_page=100',[]),
+    ()=>json.set(targetList(),{total_count:0,artifacts:[]}),()=>json.get(repo+'/commits/'+main+'/pulls?per_page=100')[0].head.repo.full_name='other/repo',
+    ()=>json.get(actions+'/runs/'+selectedRun).run_attempt=2,()=>currentJob.steps[4].conclusion='failure',
+    ()=>targetMetadata.size_in_bytes=65537,()=>targetMetadata.name='ravradar-source-validation-v2-old-full',
+    ()=>json.get(targetList()).artifacts.push(copy(targetMetadata))]){
+    const result=await lookup(mutate);assert.equal(result.result.required,true);assert.equal(result.deps.reads.zip.length,0);
+  }
+  const damaged=await lookup(()=>{const bytes=Buffer.from(targetZip);bytes[0]^=1;zips.set(String(selectedArtifact),bytes);});
+  assert.equal(damaged.result.required,true);assert.equal(damaged.deps.reads.zip.length,1);
+  const wrongBody=await lookup(()=>{receipt.current.head=main;rebuildTarget();maps();});
+  assert.equal(wrongBody.result.required,true);
+  const notQualified=await lookup(()=>{fullSourceJob.steps[17].conclusion='skipped';});
+  assert(notQualified.result.locator);assert.equal(notQualified.result.deliveryAuthority,false);
+  assert.equal((await decide(notQualified.result.locator,env,d(dependencies()))).required,true);
   console.log(JSON.stringify({cases,passed:cases,failed:0,realGitFixture:true,syntheticReceipts:true,
-    sourceCommandsExecuted:0,liveApiCalls:0,sqlExecuted:false,production:false}));
+    discoveryCases,sourceCommandsExecuted:0,liveApiCalls:0,sqlExecuted:false,production:false}));
 }finally{
   const current=fs.lstatSync(root,{bigint:true});assert(current.isDirectory()&&!current.isSymbolicLink());
   assert.equal(current.dev,identity.dev);assert.equal(current.ino,identity.ino);assert.equal(current.birthtimeNs,identity.birthtimeNs);

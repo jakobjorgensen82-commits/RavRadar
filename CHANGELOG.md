@@ -1,3 +1,9 @@
+## 30. oktober — lokal sammenføring af ændringsbaseret kildekontrol
+
+Komplet Git-plan, kvalificeret fuld forfader og særskilt TARGETED-rapport er koblet til normal CLI og det eksisterende workflow. Opdagelse giver kun en locator; forbrugeren skal selv verificere beviset, hele merge-/kildeidentiteten og senere modstridende evidens. Den gamle digest bevarer sin offlineadfærd. Ukendt eller fælles påvirkning bevarer normal FULL, og denne kontrolændring kræver selv sin første fulde kvalifikation.
+
+De 22 normale runtime-trin og de dybe FULL-programmer bevares. Relevante korte mål afvikles kun ved en kvalificeret tekst-/dokumentprofil; ikke-berørt database/national mærkes ikke udført. Nye kontrollere er registreret tidligt i normal FULL. Gennemgået præcis helinverse bevarer gamle workflow-orakler uden at tillade andre forskelle. Samlet review, præcis CI, levering og faktisk målt senere gevinst er åbne. Kandidaten er lokal og særskilt fra den akutte vejrrettelse. Se DEC-0302; ingen ny version, modelbinding, SQL, scoreformel eller produktionsaktivering følger af dette dokumentationsdelta.
+
 ## 30. oktober — ret den præcise591 → 593-runtimeovergang før leverandørerne
 
 Den første almindelige overgang efter faktisk593-SQL-installation blev afvist af en forældet antagelse om, at kun fortsættelseskontrakten ændredes. Den gennemgåede kompakte delingskopi ændrer også den offentlige projektion. Den normale controller kræver nu de to præcise kontraktmapper, uændret lager-ABI, korrekt gammel/ny T og hele feltmængden. Alle metadata-only-, original-, inverse-, pointer- og no-loss-kontroller består; gamle profiler bevares. Ingen ny version, modelbinding, SQL eller geninstallation. Præcis samlet kvalifikation og faktisk offentlig593-levering er endnu åbne. Se DEC-0301 og håndbog89.290.

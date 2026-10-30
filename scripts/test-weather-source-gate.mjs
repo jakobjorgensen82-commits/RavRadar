@@ -209,8 +209,9 @@ const nativeSqlStep = 'Validate native PostgreSQL checkpoint CAS on artificial d
 assert.ok(PULL_REQUEST_SOURCE_STEPS.includes(nativeSqlStep));
 // Reject source-contract regressions before the native database matrix.
 // This is ordering only: every original gate stays mandatory before proof.
-const prValidation = (await readFile(new URL('../.github/workflows/validate-pull-request.yml', import.meta.url), 'utf8'))
-  .replaceAll('\r\n', '\n');
+const {projectSourceImpactWorkflowFull}=await import('./lib/source-impact-workflow-review.mjs');
+const prValidation = projectSourceImpactWorkflowFull(await readFile(
+  new URL('../.github/workflows/validate-pull-request.yml', import.meta.url), 'utf8'));
 function assertSourceBeforeNativeSql(source) {
   const names = [
     'Require exact pull-request source head',
@@ -266,6 +267,7 @@ const normalCheckBody = normalCheckSource.slice(normalCheckSource.indexOf(normal
 const AsyncFunction = Object.getPrototypeOf(async function () {}).constructor;
 const runNormalCheck = new AsyncFunction('record', 'env', 'sourceTreeSha256', 'githubJson',
   'decideSourceGate', 'discoverPullRequestSourceGate', 'fs', 'writeJson', 'console',
+  'verifiedTargetedSourceProof', 'locatorPath',
   normalCheckBody + '\nreturn decision;');
 const fixedReadWorkflow = (await readFile(new URL('../.github/workflows/deploy-trip-storage.yml', import.meta.url), 'utf8')).replaceAll('\r\n', '\n');
 assert.ok(fixedReadWorkflow.includes('      - name: Reject missing source proof before either fixed read\n        shell: bash\n        run: test "\${{ steps.fixed_read_source.outputs.required }}" = false'));
@@ -281,9 +283,43 @@ for (const [api, reason] of [
     decideSourceGate, discoverPullRequestSourceGate,
     { appendFile: async (file, value) => { assert.equal(file, current.GITHUB_OUTPUT); assert.equal(output, null); output = value; } },
     async () => { locatorWrites += 1; },
-    { log: value => { printed.push(value); } });
+    { log: value => { printed.push(value); } }, async () => null,
+    '.cache/weather-source-validation.json');
   assert.deepEqual(decision, { required: true, reason });
   assert.equal(locatorWrites, 0, 'failed discovery never writes a locator');
   assert.equal(output, 'required=true\nreason=' + reason + '\nsource_tree_sha256=' + digest + '\n');
   assert.deepEqual(printed, ['Source gate: required=true; reason=' + reason]);
+}
+
+// The actual CLI must persist only a successful independently verified typed
+// locator. The dedicated normal consumer fixture covers its cryptographic and
+// live-identity contract; this checks the final decision/output connection.
+for (const required of [false, true]) {
+  const context = { ...env, GITHUB_OUTPUT: 'synthetic-targeted-source-output' };
+  const reason = required ? 'targeted-source-proof-unavailable'
+    : 'verified-targeted-pull-request-source-content';
+  const locator = { contractId: 'weather-source-targeted-impact-v1', synthetic: true };
+  const writes = [];
+  let output = null;
+  let targetedCalls = 0;
+  const result = await runNormalCheck(null, context, digest, pullApi({ artifacts: [] }),
+    decideSourceGate, discoverPullRequestSourceGate,
+    { appendFile: async (file, value) => {
+      assert.equal(file, context.GITHUB_OUTPUT);
+      assert.equal(output, null);
+      output = value;
+    } },
+    async (file, value) => { writes.push({ file, value }); }, { log() {} },
+    async (prior, actualContext, actualDigest) => {
+      targetedCalls += 1;
+      assert.equal(prior, null);
+      assert.equal(actualContext, context);
+      assert.equal(actualDigest, digest);
+      return { decision: { required, reason }, record: locator };
+    }, '.cache/weather-source-validation.json');
+  assert.equal(targetedCalls, 1);
+  assert.deepEqual(result, { required, reason });
+  assert.equal(output, `required=${required}\nreason=${reason}\nsource_tree_sha256=${digest}\n`);
+  assert.deepEqual(writes, required ? []
+    : [{ file: '.cache/weather-source-validation.json', value: locator }]);
 }

@@ -8,7 +8,7 @@ import {sourceTreeContentSha256} from './lib/source-tree-content.mjs';
 import {qualifySourceImpactFullBaseline,SOURCE_IMPACT_FULL_BASELINE_KIND}
   from './source-impact-full-baseline.mjs';
 import {planSourceImpactFromGit} from './source-impact-git-diff.mjs';
-import {TARGETED_SOURCE_CONTRACT,targetedSourceArtifactName,validateTargetedSourceReceipt}
+import {TARGETED_SOURCE_CONTRACT,TARGETED_SOURCE_KIND,targetedSourceArtifactName,validateTargetedSourceReceipt}
   from './source-targeted-receipt.mjs';
 import {ORIGIN} from './native-postgres-evidence.mjs';
 
@@ -159,5 +159,77 @@ export async function decideTargetedSourceGate(record,env,dependencies){
     clean();assert.equal(sourceTreeContentSha256(record.headSha,{git}),record.sourceTreeSha256);remaining();
     return {required:false,reason:'verified-targeted-pull-request-source-content',runId:record.runId,
       scope:'TARGETED_COMMAND_RESULTS_ONLY',database:'NOT_APPLICABLE',national:'NOT_APPLICABLE'};
+  }catch{return required();}
+}
+
+// Discovery returns only an untrusted locator. The normal caller must use a
+// FRESH transport phase with decideTargetedSourceGate afterwards, including its
+// independent FULL baseline, actual main Git tree/diff and later-failure checks.
+// No caller chooses PR/run/job/artifact/hash fields or supplies verified:true.
+export async function discoverTargetedSourceGate(env,sourceTreeSha256,dependencies){
+  const required=()=>({required:true,reason:'targeted-source-locator-unavailable'});
+  const deadline=performance.now()+60000;
+  const remaining=()=>{const n=deadline-performance.now();assert(n>0);return n;};
+  try{
+    assert.equal(arguments.length,3);assert.equal(env.GITHUB_REPOSITORY,ORIGIN.repository);
+    assert.equal(env.GITHUB_REF,'refs/heads/main');assert(oid(env.GITHUB_SHA)&&digest(sourceTreeSha256));
+    assert.deepEqual(Object.keys(dependencies).sort(),['getArtifactZip','getJson']);
+    const {getJson,getArtifactZip}=dependencies;
+    for(const reader of [getJson,getArtifactZip])assert.equal(typeof reader,'function');
+    let calls=0;
+    async function bounded(reader,route,zip=false){
+      assert(++calls<=16);const timeout=Math.min(15000,remaining()),controller=new AbortController();let timer;
+      try{
+        const value=await Promise.race([reader(route,{signal:controller.signal,maxBytes:zip?65536:2*1024*1024}),
+          new Promise((_,reject)=>{timer=setTimeout(()=>{controller.abort();reject(new Error('BOUND'));},timeout);})]);
+        remaining();if(zip){assert(Buffer.isBuffer(value)&&value.length>0&&value.length<=65536);return value;}
+        const raw=JSON.stringify(value);assert(Buffer.byteLength(raw)<=2*1024*1024);return JSON.parse(raw);
+      }finally{clearTimeout(timer);controller.abort();}
+    }
+    const json=route=>bounded(getJson,route),repo='/repos/'+env.GITHUB_REPOSITORY;
+    const pulls=await json(repo+'/commits/'+env.GITHUB_SHA+'/pulls?per_page=100');
+    assert(Array.isArray(pulls)&&pulls.length<=100);
+    const candidates=pulls.filter(pull=>positive(pull.number)&&pull.state==='closed'
+      &&typeof pull.merged_at==='string'&&Number.isFinite(Date.parse(pull.merged_at))
+      &&pull.merge_commit_sha===env.GITHUB_SHA&&oid(pull.head?.sha)
+      &&pull.head?.repo?.full_name===env.GITHUB_REPOSITORY&&pull.base?.ref==='main'
+      &&pull.base?.repo?.full_name===env.GITHUB_REPOSITORY).sort((a,b)=>b.number-a.number);
+    assert(candidates.length<=4&&new Set(candidates.map(pull=>pull.number)).size===candidates.length);
+    for(const pull of candidates){
+      const artifactName=targetedSourceArtifactName({pullRequest:pull.number,head:pull.head.sha,sourceTreeSha256});
+      const listing=await json(repo+'/actions/artifacts?name='+encodeURIComponent(artifactName)+'&per_page=100');
+      assert(Array.isArray(listing.artifacts)&&Number.isSafeInteger(listing.total_count)
+        &&listing.total_count>=0&&listing.total_count<=100&&listing.total_count===listing.artifacts.length);
+      const matches=listing.artifacts.filter(artifact=>artifact.name===artifactName&&artifact.expired===false)
+        .sort((a,b)=>b.id-a.id);
+      assert(matches.length<=8&&new Set(matches.map(artifact=>artifact.id)).size===matches.length);
+      if(matches.length===0)continue;
+      // Once the newest matching artifact exists, unknown/red identity chooses
+      // FULL; do not hunt an older green artifact past conflicting evidence.
+      const artifact=matches[0];assert(positive(artifact.id)&&positive(artifact.workflow_run?.id));
+      assert.equal(artifact.workflow_run.head_sha,pull.head.sha);
+      const runRoute=repo+'/actions/runs/'+artifact.workflow_run.id,run=await json(runRoute);
+      assert.equal(run.run_attempt,1);assert.equal(run.id,artifact.workflow_run.id);
+      const jobs=await json(runRoute+'/attempts/1/jobs?per_page=100');
+      assert(Array.isArray(jobs.jobs));const job=one(jobs.jobs.filter(value=>value.name===PULL_REQUEST_SOURCE_JOB));
+      assert(positive(job.id)&&digest(artifact.digest));assert.notEqual(env.GITHUB_SHA,pull.head.sha);
+      const locator={contractId:TARGETED_SOURCE_CONTRACT,repository:env.GITHUB_REPOSITORY,
+        headSha:env.GITHUB_SHA,producerHeadSha:pull.head.sha,sourceTreeSha256,pullRequestNumber:pull.number,
+        runId:String(run.id),runAttempt:run.run_attempt,jobId:job.id,artifactId:artifact.id,
+        artifactDigest:artifact.digest};
+      const phase=runIdentity(run,pull,jobs,locator);verifyArtifact(artifact,locator,phase);
+      const bytes=await bounded(getArtifactZip,repo+'/actions/artifacts/'+artifact.id+'/zip',true);
+      assert.equal(bytes.length,artifact.size_in_bytes);assert.equal('sha256:'+sha(bytes),artifact.digest);
+      const raw=decodeReceipt(bytes,deadline),receipt=JSON.parse(raw);locator.proofSha256=sha(raw);
+      locatorIdentity(locator,env);
+      assert.equal(receipt.schemaVersion,1);assert.equal(receipt.contractId,TARGETED_SOURCE_CONTRACT);
+      assert.equal(receipt.kind,TARGETED_SOURCE_KIND);assert.equal(receipt.scope,'TARGETED_COMMAND_RESULTS_ONLY');
+      assert.equal(receipt.artifactName,artifactName);assert.equal(receipt.privatePayloadIncluded,false);
+      assert.deepEqual(receipt.current,{repository:locator.repository,head:locator.producerHeadSha,
+        sourceTreeSha256,pullRequest:locator.pullRequestNumber,runId:run.id,runAttempt:1,jobId:job.id});
+      remaining();
+      return {locator,requiresVerification:true,deliveryAuthority:false};
+    }
+    return required();
   }catch{return required();}
 }
