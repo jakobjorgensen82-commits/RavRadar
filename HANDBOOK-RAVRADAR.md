@@ -1,3 +1,31 @@
+## 89.286 Samme gyldige vejrfil skal kunne genbruges hele vejen
+
+**Kort fortalt: En gyldig, gemt vejrfil skal ikke afvises senere i forløbet af en anden, forældet størrelsesgrænse. Den lokale rettelse samler grænsen og kontrollerer stadig hele filen. Den ændrer ikke RavScore eller vejroplysningerne.**
+
+### En normal fil ramte en gammel grænse
+
+Den almindelige producent kan skrive en conditions-fil med op til 535.822.312 bytes. Den indeholder de samlede private vejroplysninger. I en normal lokal prøve blev en fil på 299.262.881 bytes accepteret af producenten og den beskyttede gemning. Et senere led, der parrer vejrpakken B med checkpointet S, brugte stadig en særskilt grænse på 256 MiB og afviste samme gyldige fil.
+
+Kandidaten lader dette led genbruge producentens eksisterende grænse. Den ændrer ikke transportens samlede kapacitet eller registreringsfilens grænse på 16 MiB. En transportgrænse på 768 MiB er ikke det samme som en grænse for, hvor stor en enkelt JSON-fil sikkert kan fortolkes.
+
+### Kontrol i mindre bidder
+
+Filens samlede byteantal og SHA-256-kontrolsum skal stadig passe. Kontrollen beregner kontrolsummen løbende og sammenligner originalen med arbejdsfilen i små blokke. På den normale aktuelle vej behøver den derfor ikke bevare flere store råkopier samtidig. Den læser fortsat hver nødvendig byte og må ikke overse en ændring.
+
+Den samme lokale prøve går efter rettelsen videre med én normal checkpoint-gemning. Hele B-pakken, arbejdsfilen og originalerne bevares. De eksisterende negative prøver med konflikt ved samme tidspunkt og ændrede filbytes afvises fortsat uden en ny gemning. Det er lokale syntetiske input gennem de normale funktioner, ikke den faktiske produktionsfil.
+
+### Mål den enkelte fil frem for at gætte
+
+Den skrivefri diagnose af den beskyttede B-pakke får ét ekstra tal: conditions-filens byteantal fra dens allerede autentificerede manifest. Det kræver ingen ekstra filhentning og giver ingen adgang til S eller rå vejrindhold. De normale grænser og kontroller af samme aktive pakke før og efter læsningen bevares.
+
+Et samlet råpayloadtal fortæller, hvor meget alle pakkens filer fylder tilsammen. Det kan ikke bruges som bevis for størrelsen på netop conditions-filen. Den faktiske filstørrelse og årsagen til det aktuelle produktionsstop er fortsat ukendte, indtil de måles eller et konkret afslag registreres.
+
+### Rettelse og faktisk drift er to forskellige beviser
+
+Den tidligere kontrol af historikkvalitet er leveret i kilden, mens den nyere checkpointfejl fortsat er åben. Denne kapacitets- og målekandidat er endnu ikke offentligt leveret. Den skal gennem præcis kildekvalifikation og sikker levering og derefter kontrolleres i faktisk normal drift.
+
+Tidligere erfaringer med forskellige transport- og læsegrænser bevares som historik. Den nyere producents JSON-grænse er den relevante grænse i denne rettelse. Modelbindinger, SQL, scoreformel, kildeprioritet, administratorpunkter, geometri og beskyttelse mod datatab bevares. Den isolerede revision, samlet statistik og automatisk sletning aktiveres ikke.
+
 ## 89.285 Når et afslag på genbrug af vejrdata skal kunne forklares
 
 **Kort fortalt: Når RavRadar afviser at genbruge gemte vejrdata, skal driften kunne se, hvilket trin der stoppede. Den lokale rettelse gør fejlmeldingen mere præcis; den ændrer ikke data, scorer eller betingelserne for at fortsætte.**

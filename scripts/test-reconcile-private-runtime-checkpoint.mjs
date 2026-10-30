@@ -15,6 +15,8 @@ import { execFileSync, spawnSync } from 'node:child_process';
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import fs from 'node:fs/promises';
+import fsSync from 'node:fs';
+import { writeBoundedJsonAtomic, PRIVATE_CONDITIONS_MAX_BYTES } from './lib/bounded-json-writer.mjs';
 import os from 'node:os';
 import path from 'node:path';
 import crypto from 'node:crypto';
@@ -26,7 +28,7 @@ import { reconcilePrivateRuntimeCheckpoint, requiresPrivateRuntimeCheckpointReco
 import { PRIVATE_RUNTIME_FILES, PRIVATE_RUNTIME_CONTRACT_FILES, buildPrivateRuntimeCreateSpec,
   buildPrivateRuntimeExpectation, installRestoredPrivateRuntime } from './private-production-runtime-workflow.mjs';
 import { createPrivateProductionRuntimeBundle, restorePrivateProductionRuntimeBundle } from './private-production-runtime-bundle.mjs';
-import { publishProtectedPrivateProductionRuntime, restoreProtectedPrivateProductionRuntime }
+import { publishProtectedPrivateProductionRuntime, restoreProtectedPrivateProductionRuntime, PROTECTED_PRIVATE_RUNTIME_POLICY }
   from './protected-private-production-runtime.mjs';
 import { saveRavScoreContinuationCheckpoint } from './ravscore-continuation-checkpoint.mjs';
 import { publishProtectedRavScoreContinuationCheckpoint, createProtectedRavScoreCheckpointRequester,
@@ -154,6 +156,49 @@ test('normal CURRENT B/S interruption reconciliation preserves whole pairs and r
     assert.deepEqual(local, JSON.parse(await fs.readFile(saved[index].checkpointPath)));
     assert.equal(result.storageDownloads, 0); assert.equal(result.nativeAdmissionIssued, false); return result;
   }
+  await t.test('normal producer conditions above legacy256MiB use the shared parseable limit and pair unchanged', async () => {
+    const sourcePath = path.join(source, 'data/live/conditions.json');
+    const sourceBefore = await fs.readFile(sourcePath), savedBefore = saved[1];
+    try {
+      const document = conditions(refs[1]);
+      document.fixturePrivatePadding = Array(280).fill('x'.repeat(1024 * 1024));
+      const written = await writeBoundedJsonAtomic(sourcePath, document);
+      assert(written.bytes > 256 * 1024 * 1024 && written.bytes <= PRIVATE_CONDITIONS_MAX_BYTES);
+      assert(written.bytes <= PROTECTED_PRIVATE_RUNTIME_POLICY.maximumFilePayloadBytes);
+      const checkpointPath = path.join(own, 'large-s/.cache/ravscore-continuation-checkpoint/checkpoint.json');
+      await saveRavScoreContinuationCheckpoint({ repositoryRoot: source, sourcePath, checkpointPath });
+      const privateRoot = path.join(own, 'large-created'); await fs.mkdir(privateRoot);
+      const bundlePath = path.join(privateRoot, 'bundle');
+      const spec = await buildPrivateRuntimeCreateSpec({ repositoryRoot: source });
+      await createPrivateProductionRuntimeBundle({ repositoryRoot: source, privateRoot, bundlePath, ...spec });
+      const expected = await buildPrivateRuntimeExpectation({ repositoryRoot: source, targetReferenceAt: refs[1], now });
+      saved[1] = { runtime: document, checkpointPath, privateRoot, bundlePath, expected };
+      const backend = normalBAndSTransports(); await publishB(backend, 1);
+      const options = await installed(backend, 1);
+      const originalPath = path.join(options.bundlePath, 'payload/data/live/conditions.json');
+      const installedPath = path.join(options.repositoryRoot, 'data/live/conditions.json');
+      const wholeHash = async file => { const digest = crypto.createHash('sha256'); let bytes = 0;
+        for await (const block of fsSync.createReadStream(file)) { digest.update(block); bytes += block.length; }
+        return { bytes, sha256: digest.digest('hex') }; };
+      const originalBefore = await wholeHash(originalPath), workingBefore = await wholeHash(installedPath);
+      assert.equal(originalBefore.bytes, written.bytes); assert.deepEqual(workingBefore, originalBefore);
+      const beforeB = clone(backend.documents.get(B)); assert.equal(backend.documents.has(S), false);
+      const result = await reconcilePrivateRuntimeCheckpoint({ ...options, expected: undefined,
+        now: '2026-10-17T09:21:00.000Z', request: backend.documentRequest, ...strictRequests(backend) });
+      assert.equal(result.outcome, 'ADVANCED_READBACK_PROVED'); assert.equal(result.checkpointPublishCalls, 1);
+      assert.equal(result.storageDownloads, 0); assert.equal(result.nativeAdmissionIssued, false);
+      assert.deepEqual(backend.documents.get(B), beforeB);
+      const local = JSON.parse(await fs.readFile(path.join(options.repositoryRoot,
+        '.cache/ravscore-continuation-checkpoint/checkpoint.json'), 'utf8'));
+      assert.deepEqual(local, JSON.parse(await fs.readFile(checkpointPath, 'utf8')));
+      assert.deepEqual(await wholeHash(originalPath), originalBefore);
+      assert.deepEqual(await wholeHash(installedPath), workingBefore);
+      t.diagnostic(JSON.stringify({ conditionsBytes: written.bytes, maximumConditionsBytes: PRIVATE_CONDITIONS_MAX_BYTES,
+        outcome: result.outcome, checkpointPublishCalls: result.checkpointPublishCalls, wholeOriginalsUnchanged: true }));
+    } finally {
+      saved[1] = savedBefore; await fs.writeFile(sourcePath, sourceBefore);
+    }
+  });
   await t.test('four-hour ordinary cadence preserves the exact authenticated old B and advances only its missing S', async () => {
     const backend = await paired(); await publishB(backend, 1);
     const oldPointer = clone(backend.documents.get(B)), oldVersion = backend.documents.get(S).version;

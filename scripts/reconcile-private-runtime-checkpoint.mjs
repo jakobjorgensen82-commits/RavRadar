@@ -36,6 +36,7 @@ import {assertEstablishedNativeCurrent585MetadataCheckpoint} from './lib/establi
 import {assertNativeOriginalContinuityCodeOnlyCaller} from './select-native-original-continuity-code-only-source.mjs';
 import { ownFileDescriptorIdentity, ownedFileDescriptorClosed } from './lib/private-weather-component-pack.mjs';
 import { classifyProductionTargetFreshness } from './check-production-target-freshness.mjs';
+import { PRIVATE_CONDITIONS_MAX_BYTES } from './lib/bounded-json-writer.mjs';
 
 import {ASSISTANT_LATER_H0_BINDING as ASSISTANT_LATER_FAMILY,
   ASSISTANT_PUBLIC587_SUCCESSOR_BINDING as ASSISTANT_PUBLIC587_FAMILY,
@@ -192,7 +193,7 @@ async function readPointer(request) {
   return { version: Number(rows[0].version), pointer: validateProtectedPrivateRuntimePointer(rows[0].payload,
     { allowHistoricalCurrentModelBinding: true }) };
 }
-async function stableFile(file, maximum) {
+async function stableFile(file, maximum, { retainRaw = true } = {}) {
   let at = path.parse(path.resolve(file)).root;
   const parents = [];
   for (const piece of path.relative(at, path.resolve(file)).split(path.sep)) {
@@ -202,12 +203,25 @@ async function stableFile(file, maximum) {
   }
   const before = await fs.lstat(file, { bigint: true });
   need(before.isFile() && before.nlink === 1n && before.size >= 2n && before.size <= BigInt(maximum), 'FILE');
-  let handle, fd, identity, raw, first;
+  let handle, fd, identity, raw, payloadSha256, first;
   try {
     handle = await fs.open(file, 'r'); fd = handle.fd; identity = ownFileDescriptorIdentity(fd);
     const opened = await handle.stat({ bigint: true });
     need(['dev', 'ino', 'mode', 'size', 'mtimeNs', 'ctimeNs'].every(key => opened[key] === before[key]), 'FILE_CHANGED');
-    raw = await handle.readFile(); need(BigInt(raw.length) === before.size, 'FILE_CHANGED');
+    if (retainRaw) {
+      raw = await handle.readFile(); need(BigInt(raw.length) === before.size, 'FILE_CHANGED');
+      payloadSha256 = sha(raw);
+    } else {
+      const digest = crypto.createHash('sha256'), block = Buffer.allocUnsafe(64 * 1024);
+      let bytes = 0;
+      while (true) {
+        const { bytesRead } = await handle.read(block, 0, block.length, null);
+        if (bytesRead === 0) break;
+        bytes += bytesRead; need(BigInt(bytes) <= before.size, 'FILE_CHANGED');
+        digest.update(block.subarray(0, bytesRead));
+      }
+      need(BigInt(bytes) === before.size, 'FILE_CHANGED'); payloadSha256 = digest.digest('hex');
+    }
     for (const after of [await handle.stat({ bigint: true }), await fs.lstat(file, { bigint: true })])
       need(['dev', 'ino', 'mode', 'size', 'mtimeNs', 'ctimeNs'].every(key => after[key] === before[key]), 'FILE_CHANGED');
     for (const [parent, dev, ino, mode] of parents) {
@@ -221,7 +235,51 @@ async function stableFile(file, maximum) {
   }
   if (first) throw first;
   return { raw, pin: { dev: before.dev, ino: before.ino, mode: before.mode, size: before.size,
-    mtimeNs: before.mtimeNs, ctimeNs: before.ctimeNs, sha256: sha(raw), parents } };
+    mtimeNs: before.mtimeNs, ctimeNs: before.ctimeNs, sha256: payloadSha256, parents } };
+}
+
+// Preserve the exact original/working byte-equality gate without retaining two
+// complete conditions buffers. Every opened descriptor and parent is rechecked.
+async function assertSameStableFileBytes(leftPath, left, rightPath, right) {
+  const opened = [];
+  let first;
+  const fields = ['dev', 'ino', 'mode', 'size', 'mtimeNs', 'ctimeNs'];
+  try {
+    need(left.pin.size === right.pin.size && left.pin.sha256 === right.pin.sha256, 'INSTALLED_B_CHANGED');
+    for (const [file, previous] of [[leftPath, left], [rightPath, right]]) {
+      const handle = await fs.open(file, 'r'), fd = handle.fd;
+      const entry = { file, previous, handle, fd, identity: ownFileDescriptorIdentity(fd) };
+      opened.push(entry);
+      const stat = await handle.stat({ bigint: true });
+      need(fields.every(key => stat[key] === previous.pin[key]), 'FILE_CHANGED');
+    }
+    const blocks = [Buffer.allocUnsafe(64 * 1024), Buffer.allocUnsafe(64 * 1024)];
+    const size = Number(left.pin.size);
+    for (let position = 0; position < size; position += blocks[0].length) {
+      const length = Math.min(blocks[0].length, size - position);
+      for (let index = 0; index < opened.length; index++) {
+        let filled = 0;
+        while (filled < length) {
+          const { bytesRead } = await opened[index].handle.read(blocks[index], filled, length - filled, position + filled);
+          need(bytesRead > 0, 'FILE_CHANGED'); filled += bytesRead;
+        }
+      }
+      need(blocks[0].subarray(0, length).equals(blocks[1].subarray(0, length)), 'INSTALLED_B_CHANGED');
+    }
+    for (const { file, previous, handle } of opened) {
+      for (const stat of [await handle.stat({ bigint: true }), await fs.lstat(file, { bigint: true })])
+        need(fields.every(key => stat[key] === previous.pin[key]), 'FILE_CHANGED');
+      for (const [parent, dev, ino, mode] of previous.pin.parents) {
+        const after = await fs.lstat(parent, { bigint: true });
+        need(!after.isSymbolicLink() && after.dev === dev && after.ino === ino && after.mode === mode, 'PARENT_CHANGED');
+      }
+    }
+  } catch (error) { first = error; }
+  for (const { handle, fd, identity } of opened) {
+    try { await handle.close(); } catch (error) { first ??= error; }
+    if (!await ownedFileDescriptorClosed(fd, identity)) first ??= new Error('PAIRED_PUBLICATION_CLOSE_UNPROVED');
+  }
+  if (first) throw first;
 }
 
 // Like the normal protected publishers, injected requesters are transport seams,
@@ -310,17 +368,22 @@ async function reconcileAuthenticatedPrivateRuntimeCheckpointObserved({ reposito
   const originalPath = path.join(bundlePath, 'payload/data/live/conditions.json');
   const workingPath = path.join(repositoryRoot, 'data/live/conditions.json');
   const registryPath = path.join(repositoryRoot, 'data/live/coastal-parts-v2.json');
-  const original = await stableFile(originalPath, 256 * 1024 * 1024);
-  const working = await stableFile(workingPath, 256 * 1024 * 1024);
+  const original = await stableFile(originalPath, PRIVATE_CONDITIONS_MAX_BYTES, { retainRaw: false });
+  const working = await stableFile(workingPath, PRIVATE_CONDITIONS_MAX_BYTES, { retainRaw: false });
   const registry = await stableFile(registryPath, 16 * 1024 * 1024);
   const entry = verified.files.find(row => row.relativePath === 'data/live/conditions.json');
-  need(entry && entry.bytes === original.raw.length && entry.sha256 === original.pin.sha256
-    && working.raw.equals(original.raw), 'INSTALLED_B_CHANGED');
+  need(entry && entry.bytes === Number(original.pin.size) && entry.sha256 === original.pin.sha256, 'INSTALLED_B_CHANGED');
+  await assertSameStableFileBytes(originalPath, original, workingPath, working);
+  const originalMetadataConditions = async () => {
+    const fresh = await stableFile(originalPath, PRIVATE_CONDITIONS_MAX_BYTES);
+    need(same(fresh.pin, original.pin), 'INSTALLED_SOURCE_CHANGED');
+    return JSON.parse(fresh.raw.toString('utf8'));
+  };
   const stable = async () => {
     need(same(await readPointer(pointerRequest), before), 'POINTER_CHANGED');
-    for (const [file, previous, maximum] of [[originalPath, original, 256 * 1024 * 1024],
-      [workingPath, working, 256 * 1024 * 1024], [registryPath, registry, 16 * 1024 * 1024]])
-      need(same((await stableFile(file, maximum)).pin, previous.pin), 'INSTALLED_SOURCE_CHANGED');
+    for (const [file, previous, maximum] of [[originalPath, original, PRIVATE_CONDITIONS_MAX_BYTES],
+      [workingPath, working, PRIVATE_CONDITIONS_MAX_BYTES], [registryPath, registry, 16 * 1024 * 1024]])
+      need(same((await stableFile(file, maximum, { retainRaw: false })).pin, previous.pin), 'INSTALLED_SOURCE_CHANGED');
   };
   // Exclusive local destination: an old Actions cache must not overtake the
   // authenticated readback. All remote JSONB ordering restoration stays normal.
@@ -349,7 +412,7 @@ async function reconcileAuthenticatedPrivateRuntimeCheckpointObserved({ reposito
       if(family === METADATA_FAMILY && saved !== null
         && predecessor.predecessorFamily === NEXT_FAMILY && saved.productionReferenceAt === current.productionReferenceAt){
         exact584MetadataOnly = await assertEstablishedNativeCurrent584MetadataCheckpoint({
-          descriptor:current,conditions:JSON.parse(original.raw.toString('utf8')),
+          descriptor:current,conditions:await originalMetadataConditions(),
           centralContract:JSON.parse(registry.raw.toString('utf8')),previousCheckpoint:saved,incomingCheckpoint:derived});
         need(exact584MetadataOnly === true,'SAME_H0_METADATA_ORIGINALS');
       }
@@ -357,7 +420,7 @@ async function reconcileAuthenticatedPrivateRuntimeCheckpointObserved({ reposito
       if(family === NATIVE_METADATA_FAMILY && saved !== null
         && predecessor.predecessorFamily === METADATA_FAMILY && saved.productionReferenceAt === current.productionReferenceAt){
         exact585MetadataOnly = await assertEstablishedNativeCurrent585MetadataCheckpoint({
-          descriptor:current,conditions:JSON.parse(original.raw.toString('utf8')),
+          descriptor:current,conditions:await originalMetadataConditions(),
           centralContract:JSON.parse(registry.raw.toString('utf8')),previousCheckpoint:saved,incomingCheckpoint:derived});
         need(exact585MetadataOnly === true,'SAME_H0_NATIVE_METADATA_ORIGINALS');
       }
