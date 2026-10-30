@@ -425,7 +425,8 @@ for (const failureIndex of calls.keys()) {
     execute() { return executed++ === failureIndex ? 1 : 0; },
     log() {},
   }), 1);
-  assert.equal(executed, calls.length, 'Alle uafhængige kritiske kontroller skal køres og rapporteres samlet.');
+  assert.equal(executed, failureIndex < plan.preflight.length ? plan.preflight.length : calls.length,
+    'A failed binding precondition stops dependent work; independent later failures are still collected.');
 }
 
 const sourceDeclaration = scripts['validate:source:checks'];

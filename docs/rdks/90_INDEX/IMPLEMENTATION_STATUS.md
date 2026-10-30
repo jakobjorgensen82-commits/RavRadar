@@ -1,3 +1,9 @@
+## 30. oktober — testmatrix skal følge påvirkning, ikke blanketomfang
+
+Testomfanget skal følge ændringens faktiske påvirkning og relevante afhængigheder. Uændrede, uvedkommende områder skal ikke automatisk udløse dybe prøver. Korte prøver af den normale kæde kommer tidligt; overflødige, gentagne og erstattede kontroller fjernes fra den normale leveringsvej.
+
+Forberedt: stop efter ugyldig bindingpreflight, faste normale tidsrækker pr. testkommando og en faktisk normal overgangsprøve først i eksisterende tidlige workflowtrin. Lokal afgrænset runnerkontrol består; det er ikke en kørt fuld source-/SQL-prøve eller installeret ny matrix. Den samlede ændringsplan, klassifikation, baselineforbindelse, normal proof-/workflowintegration og faktisk tids-/dækningsvirkning mangler. Ejerbeslutningen er gældende arbejdsinstruks. Den konkrete nye testudvælgelse og udtynding er under forberedelse og er ikke teknisk leveret. Det igangværende kvalifikationsforløb bevares; ingen rød eller ukendt relevant gate omgås. Se DEC-0302.
+
 ## 30. oktober — installeret 593-binding og præcis rettelse af den første runtimeovergang
 
 593 har bestået den samlede kildekontrol og den ægte databaseprøve. Den originale591-førskrivningskontrol, SQL-installation og begge normale databasegenlæsninger er faktisk gennemført. Det er endnu ikke offentlig593-levering. Den første efterfølgende almindelige vejrhentning stoppede før leverandørerne: runtimekontrollen tillod kun ændret fortsættelseskontrakt, selv om den gennemgåede kompakte prognosedeling også ændrer den offentlige projektions kontrakt.
