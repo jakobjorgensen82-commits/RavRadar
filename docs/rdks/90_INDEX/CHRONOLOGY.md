@@ -1,3 +1,13 @@
+## 30. oktober — fast forklaring ved afvist privat B/S-sammenføring, lokal 591-kandidat
+
+Det normale kommandolinjeled kasserede den underliggende fejlårsag og viste kun PRIVATE_B_S_RECONCILE_REFUSED. Den afgrænsede kandidat bevarer stoplinjen og tilføjer kun faste værdier for fase, kategori og fejlklasse. Der må ikke logges rå fejltekst, stier, vejrdata, strømværdier, brugeroplysninger eller nøgler. Den oprindelige fejl genkastes; alle adgangs-/identitetskontroller, CAS, genlæsning, oprydning og regler ved ukendt skriveudfald bevares.
+
+Den normale syntetiske B/S-prøve består både før og efter ændringen med et 261 minutter gammelt target: STALE_TARGET_VALID, bekræftet fremføring af checkpoint og uændret B. En særskilt samme-H0-konflikt afvises med nul nye CAS-kald og uændret B/S. De afgrænsede kategori-/privacy- og CLI-afslag er prøvet; en API-fejl er ikke i sig selv bevis for den aktuelle produktionsfases CLI-kategori.
+
+Dette er observation, ikke en rodårsagsrettelse af den seneste afviste vejrhentning. Hypotesen om en hård 150-minuttersgrænse er afvist, og den faktisk undersøgte restore valgte ikke fallback. De private fejlinputs og især S-reference er fortsat ukendte. Ingen af disse forhold må bruges som anledning til at hæve grænser eller lempe kontroller.
+
+Kilden forbliver 4.0.591 med uændrede C/I/T, SQL, originaler/historik, kildeprioritet, administratorpunkter, geometri og scoreformel. Præcis kildekvalifikation, sikker levering og en faktisk fast fejlårsag eller vellykket normal efterfølger udestår. SOURCE, statistik og automatisk sletning aktiveres ikke. Alle fem mål består. Se DEC-0299 og håndbog 89.285; private kørselsidentiteter og skiftende status føres i checkpointet.
+
 ## 30. oktober — faktisk ny offentlig generation, efterkontrol med forkert historikantagelse
 
 Pages-deploy var udført og manifestet matchede målet, men afsluttende kontrol afviste en legitim kombination af klart strømvindue og bølgemobiliseringsusikkerhed. Den snævre 591-kandidat måler nu den faktiske vinduesdækning og bevarer alle øvrige gates og scorer. Normal målprøve bestod; samlet kildekvalifikation og faktisk afsluttende virkning er åbne. Den foreløbige checkpointgenoptagelse er trukket tilbage. DEC-0298 og håndbog 89.284 tilføjes uden at blande denne årsag sammen med den fortsat ubeviste tidligere auditfejl.

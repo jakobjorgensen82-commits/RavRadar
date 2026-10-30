@@ -1,3 +1,29 @@
+## 89.285 Når et afslag på genbrug af vejrdata skal kunne forklares
+
+**Kort fortalt: Når RavRadar afviser at genbruge gemte vejrdata, skal driften kunne se, hvilket trin der stoppede. Den lokale rettelse gør fejlmeldingen mere præcis; den ændrer ikke data, scorer eller betingelserne for at fortsætte.**
+
+### To gemte dele skal passe sammen
+
+RavRadar bevarer både den oprindelige private vejrpakke og et checkpoint med den gemte beregning. I den tekniske dokumentation kaldes de B og S. Før genbrug skal deres identitet, model, tidspunkt og indhold passe sammen. Et afslag skal fortsat standse den pågældende handling sikkert.
+
+### En fast fejltype uden privat indhold
+
+Tidligere skjulte kommandolinjens fælles stopbesked den mere præcise årsag. Kandidaten bevarer den gamle stopbesked og tilføjer kun en fast fase, kategori og fejlklasse. Der skrives ingen rå fejlbeskeder, filstier, vejr- eller brugeroplysninger, strømværdier eller nøgler i den nye kvittering.
+
+Den oprindelige fejl og alle kontroller bevares. Det gælder også kontrollen før gemning, genlæsning efter et muligt skriveforsøg, oprydning og reglen om ikke at gentage en handling med ukendt udfald.
+
+### Ældre data er ikke automatisk ugyldige
+
+En normal lokal prøve med et target på 261 minutter består både før og efter observationsrettelsen. De 150 minutter er en foretrukken friskhedsgrænse, ikke i sig selv et forbud mod genbrug. Prøven bevarer den oprindelige vejrpakke og bekræfter checkpointets normale fremføring.
+
+Et særskilt forsøg med modstridende checkpoint ved samme tidspunkt afvises uden et nyt gemmekald og uden ændring af B eller S. Det er syntetiske prøver gennem de normale funktioner, ikke de private input fra den fejlede vejrhentning.
+
+### Hvad der fortsat mangler
+
+Observationen er endnu en lokal kandidat. Den løser ikke i sig selv den ukendte årsag til den seneste afvisning. Hypotesen om en hård 150-minuttersgrænse og antagelsen om valgt reservepakke er afvist; den private checkpointreference i fejlforløbet er fortsat ukendt.
+
+Den samlede kilde skal kvalificeres og leveres sikkert. Først faktisk normal drift eller en afgrænset fast fejlkvittering kan dokumentere næste resultat. Ingen scoreformel, kildeprioritet, administratoropsætning, geometri, modelbinding eller SQL ændres. Den isolerede revision, samlet statistik og automatisk sletning aktiveres ikke.
+
 ## 89.284 Klar hukommelse og usikker score er forskellige oplysninger
 
 **Kort fortalt: Modellen kan have et dækket strømvindue og en tilstand, der er klar til brug, selv om tidligere bølgepåvirkning stadig giver et usikkerhedsinterval omkring scoren. Efterkontrollen skal forstå den samme forskel som producenten.**
