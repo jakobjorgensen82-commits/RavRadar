@@ -1,3 +1,9 @@
+## 30. oktober — første afgrænsede ændringsplan er lokal kode
+
+Den rene planlægger i scripts/source-impact-plan.mjs har tre første profiler: de navngivne tekniske dokumenter samt præcise Om- og Læring-tekstfelter. Den vælger henholdsvis 6, 5 og 5 faktiske kommandoer mod fuldplans 72; det er kommandotal, ikke målte CI-tider. 48 lokale planlæggercases består uden at starte source-, SQL- eller leverandørprøver. Beskyttede, ukendte og blandede ændringer går til fuld plan; ugyldige/duplikerede rækker og skipflag afvises.
+
+Alle planer er fortsat PLANNING_ONLY. Komplet faktisk Gitdiff, kvalificeret baseline, normal gate-/proof-/workflowintegration og den samlede udtynding er ikke færdige. Dette er ikke offentlig levering eller bevis for den forventede tidsgevinst. Den aktive vejrrettelses kvalifikation ændres ikke. Se DEC-0302 og privat checkpoint.
+
 ## 30. oktober — testmatrix skal følge påvirkning, ikke blanketomfang
 
 Testomfanget skal følge ændringens faktiske påvirkning og relevante afhængigheder. Uændrede, uvedkommende områder skal ikke automatisk udløse dybe prøver. Korte prøver af den normale kæde kommer tidligt; overflødige, gentagne og erstattede kontroller fjernes fra den normale leveringsvej.
