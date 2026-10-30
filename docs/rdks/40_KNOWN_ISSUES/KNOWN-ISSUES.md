@@ -1,3 +1,11 @@
+## 30. oktober — påvist modstrid i deploykontrollens historikantagelse
+
+Den kritiske 591-kvalifikation i PR758 er særskilt. Denne lokale dokumentport forbereder videreførelsen i den fremtidige 592-kilde, som fortsat ikke er offentligt leveret.
+
+Den operationelle efterkontrol afviste en generation, som allerede var Pages-deployet, og hvis friske offentlige manifest matchede målmanifestet. Producent og privat audit accepterede klar hukommelse sammen med 48 timers aktuelt strømvindue og WAVE_MOBILISATION_HISTORY_INCOMPLETE. Efterkontrollen brugte enhver HISTORY_INCOMPLETE som tegn på ikke-klar hukommelse og afviste dermed en legitim tilstand.
+
+Den afgrænsede kandidat bruger i stedet faktisk vinduesdækning. De normale bølge-/last-mile-tilfælde og den bevarede kort-vindue-negative kontrol er målprøvet; samlet kvalifikation og faktisk afsluttende offentlig kontrol er åbne. Ingen score eller historik nulstilles, og den foreløbige checkpointgenoptagelse er trukket tilbage. Den tidligere manglende auditrapports årsag er en anden, fortsat ubevist sag i DEC-0297. Se DEC-0298 og håndbog 89.284.
+
 ## 30. oktober — åben årsag til manglende runtime-auditrapport
 
 En normal kørsel kan have gennemført beregning, offentlig generering og no-loss og alligevel stoppe, fordi auditrapporten mangler. Auditprogrammets hidtidige generiske catch og det omgivende trin gav ikke den nødvendige fase-/fejlklasse til at udlede årsagen. Den præcise udløser er ubevist; DMI-fallback, heap, strenggrænse, I/O eller importfejl må ikke vælges som forklaring uden evidens.

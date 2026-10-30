@@ -1,3 +1,11 @@
+## 30. oktober — strømvindue, readiness og historikusikkerhed skal have forskellige kontroller
+
+Et fuldt aktuelt strømvindue kan sameksistere med HISTORY_INCOMPLETE fra bølge- eller last-mile-usikkerhed. Efterkontrollen må ikke kræve modelMemoryReady=false alene på grund af denne kvalitetsmarkering. Den skal bruge den faktiske historyCoverageHours mod RAVSCORE_CURRENT_SUPPLY_POLICY.windowHours med den eksisterende numeriske tolerance. Et reelt kort vindue kombineret med påstået klar hukommelse skal fortsat afvises.
+
+Alle profilfelter, modelhash, dækningsrelationer og den præcise advisory-liste skal stadig passe. Scorer, intervaller og årsagskoder må ikke omskrives som følge af kontrolrettelsen. Aktuelle zone/mode-tællere ved H0 er hverken alle 118 timer eller fuld femfamiliedækning.
+
+Bevar den faktisk udstedte 592-families C/I/T, allerede udstedte SQL og alle historiske migrationer, originaler, historik, kildeprioritet, administratorpunkter, geometri, scoreformel og reservekapacitet. Denne auditkontrolport udsteder ikke en yderligere model eller migration. Udført Pages-deploy, afsluttende verifikation og terminal kvittering skal opgøres særskilt. Ingen genoptagelse eller vejrhentning udledes af denne rettelse. Se DEC-0298 og håndbog 89.284.
+
 ## 30. oktober — uændret auditkontrakt og afgrænset fejlsynlighed
 
 Auditressourcer må reduceres uden at ændre rapportbytes, modelresultater, afslutningskode eller sikkerhedsaccept. Kontrollen af private feltnavne skal fortsat opdage samme markører hen over tekstbidder og filer. Lokal syntetisk hukommelsesbesparelse er ikke bevis for produktionskapacitet eller en tidligere fejls årsag.

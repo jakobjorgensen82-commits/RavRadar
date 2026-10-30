@@ -8,6 +8,7 @@ import crypto from 'node:crypto';
 import {execFileSync,spawnSync} from 'node:child_process';
 import {fileURLToPath} from 'node:url';
 import {sourceTreeContentSha256} from './lib/source-tree-content.mjs';
+import {inverseReviewedForecastShareProjectionSourceScripts} from './lib/account-statistics-assistant-package-review.mjs';
 import {requireAssistantLaterH0Release,requireAssistantPublic587SuccessorRelease,
   requireAssistantPublic588SuccessorRelease,ASSISTANT_PUBLIC588_SUCCESSOR_RELEASE,
   requireAssistantPublic590SuccessorRelease,ASSISTANT_PUBLIC590_SUCCESSOR_RELEASE,
@@ -260,12 +261,13 @@ export function verifyAssistantPublic590SuccessorPackage(pkg){
 export function verifyAssistantPublic591SuccessorPackage(pkg){
   assert.equal(ACTIVE.sourcePhase,'assistant-public591-successor');
   assert.equal(pkg.version,requireAssistantPublic591SuccessorRelease(),'Only the actual issued assistant591 successor release');
-  assert.equal(sha(JSON.stringify(Object.keys(pkg.scripts).sort().map(key=>[key,pkg.scripts[key]]))),
+  const scripts=inverseReviewedForecastShareProjectionSourceScripts(pkg.scripts);
+  assert.equal(sha(JSON.stringify(Object.keys(scripts).sort().map(key=>[key,scripts[key]]))),
     'ecd611d8379143b1a046eb7f77c422a6f8bab9aae72847ec90ec6416afb2c563','Whole reviewed assistant591 successor source command plan');
   assert.equal(pkg.scripts['test:assistant-later-h0-source'],ASSISTANT_PUBLIC591_SUCCESSOR_SOURCE_COMMAND);
   // Kun en DATA-planinverse. Ingen gammel SQL-/nativeeksekvering ommærkes.
   verifyAssistantPublic587SuccessorPackage({...pkg,version:requireAssistantPublic587SuccessorRelease(),
-    scripts:{...pkg.scripts,'test:assistant-later-h0-source':ASSISTANT_PUBLIC587_SUCCESSOR_SOURCE_COMMAND}});
+    scripts:{...scripts,'test:assistant-later-h0-source':ASSISTANT_PUBLIC587_SUCCESSOR_SOURCE_COMMAND}});
 }
 export function verifyPackage(pkg){
   if(ACTIVE.sourcePhase==='assistant-public591-successor')return verifyAssistantPublic591SuccessorPackage(pkg);

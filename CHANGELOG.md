@@ -1,3 +1,9 @@
+## 30. oktober — samme scoreusikkerhed, korrekt operationel readiness-kontrol fra kritisk 591 til den endnu ikke leverede 592-kandidat
+
+Retter en påvist modstrid: producent og privat audit accepterede et fuldt aktuelt strømvindue med resterende bølgemobiliseringsusikkerhed, mens deployefterkontrollen afviste enhver HISTORY_INCOMPLETE sammen med klar hukommelse. Kontrollen bruger nu faktisk historyCoverageHours mod politikvinduet og bevarer 24-timersafvisningen samt modelhash-, profil-, advisory- og dækningskrav. Bølge-/last-mile-forbehold og scorer bevares.
+
+Nye data var faktisk offentliggjort, men afsluttende verifikation og terminal kvittering var ikke godkendt. Den foreløbige checkpointgenoptagelse er trukket tilbage. Ingen ny vejrhentning, beregning, scorenulstilling, version, C/I/T eller SQL. Den separate auditressourceændring og dens ubeviste tidligere rodårsag må ikke blandes sammen med denne fejl. Den kritiske 591-målprøve er bestået; den fremtidige 592-kilde har fortsat sine egne åbne krav til samlet kvalifikation, sikker levering og faktisk effekt. Se DEC-0298 og håndbog 89.284.
+
 ## 30. oktober — samme runtime-audit med færre store kopier fra kritisk 591 til den endnu ikke leverede 592-kandidat
 
 Den lokale kritiske kandidat erstatter auditprogrammets monolitiske join/lowercase-kopi med en overlappende bidvis kontrol. Hele rapporten og afslutningskoden er bevaret i den faktiske store syntetiske normalprøve; maksimal proceshukommelse faldt cirka 111 MiB i én lokal sammenligning. Det beviser ikke nattens rodårsag eller runnerkapacitet.

@@ -19,7 +19,9 @@ import {ASSISTANT_LATER_H0_BINDING,assistantLaterH0Migration,requireAssistantLat
   ASSISTANT_PUBLIC588_SUCCESSOR_BINDING,assistantPublic588SuccessorMigration,
   requireAssistantPublic588SuccessorOutput,readAssistantPublic588SuccessorCanonicalSource,
   ASSISTANT_PUBLIC590_SUCCESSOR_BINDING,assistantPublic590SuccessorMigration,
-  requireAssistantPublic590SuccessorOutput,readAssistantPublic590SuccessorCanonicalSource}
+  requireAssistantPublic590SuccessorOutput,readAssistantPublic590SuccessorCanonicalSource,
+  ASSISTANT_PUBLIC591_SUCCESSOR_BINDING,assistantPublic591SuccessorMigration,
+  requireAssistantPublic591SuccessorOutput,readAssistantPublic591SuccessorCanonicalSource}
   from './lib/assistant-later-h0-successor-source.mjs';
 
 // Keep the payload-free operational control report inside this existing cheap
@@ -752,6 +754,25 @@ assert.equal(casTimeoutSettings.at(-1)?.timeout, '55s',
   'the final migration order must retain the established checkpoint-only 55s timeout');
 // Kontrollér den faktisk udstedte public590/591-migration før de uændrede
 // public588/590- og public587/588-inventarer. Kun dens ene præcise række fjernes.
+// Actual issued592 is checked before projecting only its one55s row away.
+// Existing whole591/590/588/587 timeout oracles stay unchanged below.
+if(ASSISTANT_PUBLIC591_SUCCESSOR_BINDING!==null){
+  requireAssistantPublic591SuccessorOutput();
+  const canonical=await readAssistantPublic591SuccessorCanonicalSource();
+  assert.equal(canonical.admission,'NO_ADMISSION');
+  const migration=assistantPublic591SuccessorMigration();
+  assert.equal(migration.version,ASSISTANT_PUBLIC591_SUCCESSOR_BINDING.version);
+  const successor=migration.filename;
+  const actualTimeoutInventory=casTimeoutSettings;
+  assert.equal(actualTimeoutInventory.filter(row=>row.migration===successor).length,1,
+    'Den udstedte592-migration skal have præcis én scoped55s-indstilling');
+  assert.deepEqual(actualTimeoutInventory.at(-1),{migration:successor,timeout:'55s'},
+    'Den eksakte udstedte592-migration skal være sidste scoped55s-efterfølger');
+  casTimeoutSettings=actualTimeoutInventory.slice(0,-1);
+  assert.deepEqual(actualTimeoutInventory,
+    [...casTimeoutSettings,{migration:successor,timeout:'55s'}],
+    'Hele det tidligere591/590/588/587-timeoutinventar bevares foran præcis én udstedt592-migration');
+}
 if(ASSISTANT_PUBLIC590_SUCCESSOR_BINDING!==null){
   requireAssistantPublic590SuccessorOutput();
   const canonical=await readAssistantPublic590SuccessorCanonicalSource();

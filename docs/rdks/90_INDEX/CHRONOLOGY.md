@@ -1,3 +1,7 @@
+## 30. oktober — faktisk ny offentlig generation, efterkontrol med forkert historikantagelse
+
+Pages-deploy var udført og manifestet matchede målet, men afsluttende kontrol afviste en legitim kombination af klart strømvindue og bølgemobiliseringsusikkerhed. Den særskilte kritiske 591-kandidat i PR758 måler den faktiske vinduesdækning og bevarer alle øvrige gates og scorer; ændringen forberedes videreført i den endnu ikke leverede 592-kilde. Normal målprøve bestod; samlet kildekvalifikation og faktisk afsluttende virkning er åbne. Den foreløbige checkpointgenoptagelse er trukket tilbage. DEC-0298 og håndbog 89.284 tilføjes uden at blande denne årsag sammen med den fortsat ubeviste tidligere auditfejl.
+
 ## 30. oktober — målt lokal auditkopireduktion og afgrænset observation
 
 Den samme normale audit på den eksisterende store syntetiske fixture bevarede hele rapporten og afslutningskoden med lavere maksimal proceshukommelse. Den særskilte kritiske 591-kandidat forbereder også faste .failure- og .execution-sidefiler til stop før den krævede rapport; de forberedes videreført i den fremtidige 592-kilde. De er aldrig READY-erstatning. Ingen ny binding, SQL, heapgrænse, score eller aktivering følger af dokumentationen; nattens præcise årsag og faktisk produktionseffekt er åbne. DEC-0297 og håndbog 89.283 tilføjes, mens alle ældre afsnit bevares.
