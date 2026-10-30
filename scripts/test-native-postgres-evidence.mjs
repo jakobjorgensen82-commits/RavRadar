@@ -13,6 +13,10 @@ import {ORIGIN, WORKFLOW, JOB, STEP, COMMANDS, ACCOUNT_STATISTICS_ASSISTANT_COMM
   inverseCurrent586PhaseUpload,verifyCurrent586Workflow,verifyCurrent586Runtime,
   verifyCurrent586PhaseReceipt,verifyCurrent586Metadata,verifyCurrent586Artifact,decideCurrent586Reuse} from './native-postgres-evidence.mjs';
 
+import {ASSISTANT_PUBLIC591_SUCCESSOR_COMMANDS,ASSISTANT_PUBLIC591_SUCCESSOR_SCRIPT,
+  ASSISTANT_PUBLIC591_SUCCESSOR_PHASE_KIND,verifyAssistantPublic591SuccessorPhaseReceipt}
+  from './native-postgres-evidence.mjs';
+
 // Keep every whole586 command assertion on its immutable predecessor view.
 // The actual new production command is independently checked below.
 const NATIVE_SCRIPT='set -euo pipefail\n'+CURRENT_COMMANDS.join('\n')+'\n';
@@ -482,7 +486,10 @@ test('public587 successor native commands append588 without retagging whole587 i
   assert.deepEqual(ASSISTANT_PUBLIC587_SUCCESSOR_COMMANDS,[ASSISTANT_LATER_H0_COMMANDS[0],
     ASSISTANT_LATER_H0_COMMANDS[1]+' --assistant-public587-successor']);
   assert.equal(ASSISTANT_PUBLIC587_SUCCESSOR_SCRIPT,'set -euo pipefail\n'+ASSISTANT_PUBLIC587_SUCCESSOR_COMMANDS.join('\n')+'\n');
-  if(ACTIVE_ASSISTANT_SUCCESSOR.sourcePhase==='assistant-public590-successor'){
+  if(ACTIVE_ASSISTANT_SUCCESSOR.sourcePhase==='assistant-public591-successor'){
+    assert.equal(ACTIVE_COMMANDS,ASSISTANT_PUBLIC591_SUCCESSOR_COMMANDS);
+    assert.equal(ACTIVE_NATIVE_SCRIPT,ASSISTANT_PUBLIC591_SUCCESSOR_SCRIPT);
+  }else if(ACTIVE_ASSISTANT_SUCCESSOR.sourcePhase==='assistant-public590-successor'){
     assert.equal(ACTIVE_COMMANDS,ASSISTANT_PUBLIC590_SUCCESSOR_COMMANDS);
     assert.equal(ACTIVE_NATIVE_SCRIPT,ASSISTANT_PUBLIC590_SUCCESSOR_SCRIPT);
   }else if(ACTIVE_ASSISTANT_SUCCESSOR.sourcePhase==='assistant-public588-successor'){
@@ -717,7 +724,9 @@ test('calendar588 normal native route uses genuine parent factory then current c
   const main=evidence.slice(evidence.indexOf('async function main() {'));
   assert(main.indexOf('requireAssistantPublic588SuccessorRelease()')<main.indexOf('spawnSync('));
   assert(!main.includes('await decideReuse('));assert(!main.includes('await decideCurrent586Reuse('));
-  if(ACTIVE_ASSISTANT_SUCCESSOR.sourcePhase==='assistant-public590-successor')
+  if(ACTIVE_ASSISTANT_SUCCESSOR.sourcePhase==='assistant-public591-successor')
+    assert.equal(ACTIVE_COMMANDS,ASSISTANT_PUBLIC591_SUCCESSOR_COMMANDS);
+  else if(ACTIVE_ASSISTANT_SUCCESSOR.sourcePhase==='assistant-public590-successor')
     assert.equal(ACTIVE_COMMANDS,ASSISTANT_PUBLIC590_SUCCESSOR_COMMANDS);
   else if(ACTIVE_ASSISTANT_SUCCESSOR.sourcePhase==='assistant-public588-successor')
     assert.equal(ACTIVE_COMMANDS,ASSISTANT_PUBLIC588_SUCCESSOR_COMMANDS);
@@ -761,6 +770,81 @@ test('calendar588 normal source command follows only its source-owned active pro
 });
 
 import {modelSourceRelativeModuleSpecifiers} from './lib/model-source-imports.mjs';
+import {createHash as cryptoHash} from 'node:crypto';
+// TEST DATA ONLY: exact593 capacity source -> unchanged whole592 import oracle.
+const reviewedConditions593ImportViews=Object.freeze({
+  "scripts/lib/established-native-current-origin.mjs": {
+    "path": "scripts/lib/established-native-current-origin.mjs",
+    "before": {
+      "bytes": 85971,
+      "sha256": "2aa92e6a2fb14f93e6072160499be1f39a502f4078bf61c98f649adfe538cf01"
+    },
+    "after": {
+      "bytes": 86377,
+      "sha256": "e802e02df74a53bb543d7d0e9107efd3850890a9f2c15e5d7c0c01b5229671cb"
+    },
+    "hunks": [
+      [
+        "import { assertIntegratedCoastalPointContinuation } from './coastal-point-staging-contract.mjs';\nimport { assertCandidateGRollbackContinuation } from './ravscore-candidate-g-rollback-runtime.mjs';\nimport { ownFileDescriptorIdentity, ownedFileDescriptorClosed } from './private-weather-component-pack.mjs';\nimport { withNativeCurrentReanalysisPredecessorSource } from '../check-native-current-reanalysis-predecessor-source.mjs';\nimport { assertAuthenticatedFrozen584Snapshot } from './authenticated-frozen584-predecessor.mjs';\nimport { withAuthenticated584PredecessorSource } from '../check-account-statistics-assistant-predecessor-source.mjs';\n",
+        "import { assertIntegratedCoastalPointContinuation } from './coastal-point-staging-contract.mjs';\nimport { assertCandidateGRollbackContinuation } from './ravscore-candidate-g-rollback-runtime.mjs';\nimport { ownFileDescriptorIdentity, ownedFileDescriptorClosed } from './private-weather-component-pack.mjs';\nimport { PRIVATE_CONDITIONS_MAX_BYTES } from './bounded-json-writer.mjs';\nimport { withNativeCurrentReanalysisPredecessorSource } from '../check-native-current-reanalysis-predecessor-source.mjs';\nimport { assertAuthenticatedFrozen584Snapshot } from './authenticated-frozen584-predecessor.mjs';\nimport { withAuthenticated584PredecessorSource } from '../check-account-statistics-assistant-predecessor-source.mjs';\n"
+      ],
+      [
+        "  const before = await readPointer(request), descriptor = before.pointer.current;\n  const seed = descriptor.bundleContentSha256 === SEED.B;\n  if (seedOnly) need(seed, 'SEED_CONTENT_CHANGED');\n  let conditions = seedOnly ? null : await json(path.join(ROOT, 'data/live/conditions.json'), MAX_CONDITIONS);\n  // Unknown/legacy input retains its OLD normal transitions; a claimed clean\n  // origin cannot silently downgrade to that route after a failed check.\n  if (!seed && descriptor.modelBinding.modelBundleSha256 !== currentSource.integrated) {\n",
+        "  const before = await readPointer(request), descriptor = before.pointer.current;\n  const seed = descriptor.bundleContentSha256 === SEED.B;\n  if (seedOnly) need(seed, 'SEED_CONTENT_CHANGED');\n  const conditionsMaximum = !seed && (descriptor.modelBinding.modelBundleSha256 === currentSource.integrated\n    || descriptor.modelBinding.modelBundleSha256 === 'ebd5ac3dac09b7afb51e46d18920f6932b478b7ef15bdd31190c128273cb6a54')\n    ? PRIVATE_CONDITIONS_MAX_BYTES : MAX_CONDITIONS;\n  let conditions = seedOnly ? null : await json(path.join(ROOT, 'data/live/conditions.json'), conditionsMaximum);\n  // Unknown/legacy input retains its OLD normal transitions; a claimed clean\n  // origin cannot silently downgrade to that route after a failed check.\n  if (!seed && descriptor.modelBinding.modelBundleSha256 !== currentSource.integrated) {\n"
+      ],
+      [
+        "        expected: { modelBinding: descriptor.modelBinding, contractHashes: descriptor.contractHashes,\n          datasetId: descriptor.datasetId, productionReferenceAt: descriptor.productionReferenceAt,\n          generatedAt: descriptor.generatedAt, bundleContentSha256: descriptor.bundleContentSha256 } });\n      const originalBytes = await ownedBytes(path.join(bundlePath, 'payload/data/live/conditions.json'), MAX_CONDITIONS);\n      const file = verified.files.find(row => row.relativePath === 'data/live/conditions.json');\n      need(file && file.bytes === originalBytes.length && file.sha256 === sha(originalBytes), 'B_CONDITIONS_CHANGED');\n      originalConditions = JSON.parse(originalBytes);\n",
+        "        expected: { modelBinding: descriptor.modelBinding, contractHashes: descriptor.contractHashes,\n          datasetId: descriptor.datasetId, productionReferenceAt: descriptor.productionReferenceAt,\n          generatedAt: descriptor.generatedAt, bundleContentSha256: descriptor.bundleContentSha256 } });\n      const originalBytes = await ownedBytes(path.join(bundlePath, 'payload/data/live/conditions.json'),\n        seed ? MAX_CONDITIONS : PRIVATE_CONDITIONS_MAX_BYTES);\n      const file = verified.files.find(row => row.relativePath === 'data/live/conditions.json');\n      need(file && file.bytes === originalBytes.length && file.sha256 === sha(originalBytes), 'B_CONDITIONS_CHANGED');\n      originalConditions = JSON.parse(originalBytes);\n"
+      ]
+    ]
+  },
+  "scripts/lib/authenticated-frozen586-predecessor.mjs": {
+    "path": "scripts/lib/authenticated-frozen586-predecessor.mjs",
+    "before": {
+      "bytes": 20438,
+      "sha256": "ba09589cd0f3c48b734d60214ddf2017a7dc3ebba0e14c468da825721b575776"
+    },
+    "after": {
+      "bytes": 20626,
+      "sha256": "3f47d6808f563b456d173e63be919e79ec57bff959e8e216aeeeb9096d7b368b"
+    },
+    "hunks": [
+      [
+        "import {fileURLToPath,pathToFileURL} from 'node:url';\nimport {execFile as callbackExec} from 'node:child_process';\nimport {promisify,isDeepStrictEqual} from 'node:util';\nimport {withAuthenticated586PredecessorSource,withAuthenticated587PredecessorSource,\n  withAuthenticated588PredecessorSource,assertFrozen588CodeSourceSelected,FROZEN588_CODE_SOURCE_PROVENANCE,\n  withAuthenticated590PredecessorSource,assertFrozen590CodeSourceSelected,FROZEN590_CODE_SOURCE_PROVENANCE,\n",
+        "import {fileURLToPath,pathToFileURL} from 'node:url';\nimport {execFile as callbackExec} from 'node:child_process';\nimport {promisify,isDeepStrictEqual} from 'node:util';\nimport {PRIVATE_CONDITIONS_MAX_BYTES} from './bounded-json-writer.mjs';\nimport {withAuthenticated586PredecessorSource,withAuthenticated587PredecessorSource,\n  withAuthenticated588PredecessorSource,assertFrozen588CodeSourceSelected,FROZEN588_CODE_SOURCE_PROVENANCE,\n  withAuthenticated590PredecessorSource,assertFrozen590CodeSourceSelected,FROZEN590_CODE_SOURCE_PROVENANCE,\n"
+      ],
+      [
+        "}\nasync function readAuthenticatedPredecessor(){\n  need(arguments.length===0,'ARGUMENTS');\n  // These normal workflow paths select already restored immutable B; they are\n  // not authority. No consumed 0200/140000 upgrade flag is reused as permission.\n  const paths=await fixedPaths();\n",
+        "}\nasync function readAuthenticatedPredecessor(){\n  need(arguments.length===0,'ARGUMENTS');\n  const conditionsMaximum=profile===FROZEN591?PRIVATE_CONDITIONS_MAX_BYTES:256*MB;\n  // These normal workflow paths select already restored immutable B; they are\n  // not authority. No consumed 0200/140000 upgrade flag is reused as permission.\n  const paths=await fixedPaths();\n"
+      ],
+      [
+        "      expected:{modelBinding:descriptor.modelBinding,contractHashes:descriptor.contractHashes,datasetId:descriptor.datasetId,\n        productionReferenceAt:descriptor.productionReferenceAt,generatedAt:descriptor.generatedAt,bundleContentSha256:descriptor.bundleContentSha256}});\n    const conditionsPath=path.join(paths.bundlePath,'payload/data/live/conditions.json');\n    const originalBytes=await read(conditionsPath,256*MB);\n    const inventory=verified.files.find(row=>row.relativePath==='data/live/conditions.json');\n    need(inventory&&inventory.bytes===originalBytes.length&&inventory.sha256===sha(originalBytes),'B_CONDITIONS_CHANGED');\n    const conditions=JSON.parse(originalBytes.toString('utf8'));\n",
+        "      expected:{modelBinding:descriptor.modelBinding,contractHashes:descriptor.contractHashes,datasetId:descriptor.datasetId,\n        productionReferenceAt:descriptor.productionReferenceAt,generatedAt:descriptor.generatedAt,bundleContentSha256:descriptor.bundleContentSha256}});\n    const conditionsPath=path.join(paths.bundlePath,'payload/data/live/conditions.json');\n    const originalBytes=await read(conditionsPath,conditionsMaximum);\n    const inventory=verified.files.find(row=>row.relativePath==='data/live/conditions.json');\n    need(inventory&&inventory.bytes===originalBytes.length&&inventory.sha256===sha(originalBytes),'B_CONDITIONS_CHANGED');\n    const conditions=JSON.parse(originalBytes.toString('utf8'));\n"
+      ],
+      [
+        "      need(same(await checkpointRequest('?document_key=eq.'+encodeURIComponent(SKey)\n        +'&select=document_key,payload,version&limit=2',{},'read'),SRows),'S_CHANGED');\n      need(same(JSON.parse((await read(centralPath,16*MB)).toString('utf8')),central),'REGISTRY_CHANGED');\n      need(sha(await read(conditionsPath,256*MB))===inventory.sha256,'B_CONDITIONS_CHANGED');\n      need(same(await qualifyProducer(descriptor.sourceHead,frozenRoot),producer),'SOURCE_CHANGED');\n    }catch(error){first=error;hasFirst=true;}\n    try{\n",
+        "      need(same(await checkpointRequest('?document_key=eq.'+encodeURIComponent(SKey)\n        +'&select=document_key,payload,version&limit=2',{},'read'),SRows),'S_CHANGED');\n      need(same(JSON.parse((await read(centralPath,16*MB)).toString('utf8')),central),'REGISTRY_CHANGED');\n      need(sha(await read(conditionsPath,conditionsMaximum))===inventory.sha256,'B_CONDITIONS_CHANGED');\n      need(same(await qualifyProducer(descriptor.sourceHead,frozenRoot),producer),'SOURCE_CHANGED');\n    }catch(error){first=error;hasFirst=true;}\n    try{\n"
+      ],
+      [
+        "    // reach the normal pointer/version readers. No JSON/PASS/grant is read.\n    refreshers.set(handle,async()=>{\n      need(same(JSON.parse((await read(centralPath,16*MB)).toString('utf8')),central),'REGISTRY_CHANGED');\n      need(sha(await read(conditionsPath,256*MB))===inventory.sha256,'B_CONDITIONS_CHANGED');\n      need(same(await pointer(),before),'SOURCE_CHANGED');\n      const SKey=protectedS.PROTECTED_RAVSCORE_CHECKPOINT_DOCUMENT_KEY;\n      const versionRequest=protectedS.createProtectedRavScoreCheckpointVersionRequester();\n",
+        "    // reach the normal pointer/version readers. No JSON/PASS/grant is read.\n    refreshers.set(handle,async()=>{\n      need(same(JSON.parse((await read(centralPath,16*MB)).toString('utf8')),central),'REGISTRY_CHANGED');\n      need(sha(await read(conditionsPath,conditionsMaximum))===inventory.sha256,'B_CONDITIONS_CHANGED');\n      need(same(await pointer(),before),'SOURCE_CHANGED');\n      const SKey=protectedS.PROTECTED_RAVSCORE_CHECKPOINT_DOCUMENT_KEY;\n      const versionRequest=protectedS.createProtectedRavScoreCheckpointVersionRequester();\n"
+      ]
+    ]
+  }
+});
+function historical592ImportSource(source,file){
+  const row=reviewedConditions593ImportViews[file];if(!row)return source;
+  const hash=text=>cryptoHash('sha256').update(text).digest('hex');
+  source=source.replace(/\r\n?/g,'\n');
+  if(hash(source)===row.before.sha256){assert.equal(Buffer.byteLength(source),row.before.bytes);return source;}
+  const original=source;assert.equal(Buffer.byteLength(source),row.after.bytes);assert.equal(hash(source),row.after.sha256);
+  for(const [old,current]of [...row.hunks].reverse()){assert.equal(source.split(current).length,2);source=source.replace(current,()=>old);}
+  assert.equal(Buffer.byteLength(source),row.before.bytes);assert.equal(hash(source),row.before.sha256);
+  let roundtrip=source;for(const [old,current]of row.hunks){assert.equal(roundtrip.split(old).length,2);roundtrip=roundtrip.replace(old,()=>current);}
+  assert.equal(roundtrip,original,'Whole593-592-593 import DATA roundtrip');return source;
+}
+
+
 test('calendar588 computed source inventories retain exact finite edges and refuse byte mutation',async()=>{
   const inventories={
   "scripts/check-assistant-later-h0-predecessor-source.mjs": [],
@@ -807,8 +891,12 @@ test('calendar588 computed source inventories retain exact finite edges and refu
   ]
 };
   for(const [file,expected]of Object.entries(inventories)){
-    const source=await fs.readFile(file,'utf8');
+    const actual=await fs.readFile(file,'utf8'),source=historical592ImportSource(actual,file);
     assert.deepEqual([...modelSourceRelativeModuleSpecifiers(source,file)],[...expected],file);
+    const actualExpected=Object.hasOwn(reviewedConditions593ImportViews,file)?[...expected,'./bounded-json-writer.mjs']:[...expected];
+    assert.deepEqual([...modelSourceRelativeModuleSpecifiers(actual,file)],actualExpected,file);
+    for(const changed of [actual+'\n',actual+"\nimport './unreviewed-source.mjs';\n"])
+      assert.throws(()=>modelSourceRelativeModuleSpecifiers(changed,file),/Whole reviewed model import source changed/,file);
     assert.throws(()=>modelSourceRelativeModuleSpecifiers(source+'\n// unknown changed input\n',file),
       /Whole reviewed model import source changed/,file);
   }
@@ -906,4 +994,40 @@ test('next assistant PG phase requires genuine590 and refuses before native prog
     includeNativeOriginalContinuity:true,includeAssistantLaterH0:true,includeAssistantPublic587Successor:true,
     includeAssistantPublic588Successor:true,includeAssistantPublic590Successor:true,
   }),/ASSISTANT_PUBLIC590_(?:PARENT_UNSELECTED|SUCCESSOR_UNISSUED)/);
+});
+
+// Current593 qualification is additive; all historical command/receipt oracles above stay exact.
+test('actual593 native evidence selects exact591 successor commands and rejects older or reused receipts',async()=>{
+  assert.equal(ACTIVE_ASSISTANT_SUCCESSOR.sourcePhase,'assistant-public591-successor');
+  assert.equal(ACTIVE_ASSISTANT_SUCCESSOR.requireRelease(),'4.0.593');
+  assert.equal(ACTIVE_COMMANDS,ASSISTANT_PUBLIC591_SUCCESSOR_COMMANDS);
+  assert.equal(ACTIVE_NATIVE_SCRIPT,ASSISTANT_PUBLIC591_SUCCESSOR_SCRIPT);
+  assert.deepEqual(ASSISTANT_PUBLIC591_SUCCESSOR_COMMANDS,[ASSISTANT_PUBLIC590_SUCCESSOR_COMMANDS[0],ASSISTANT_PUBLIC590_SUCCESSOR_COMMANDS[1]+' --assistant-public591-successor']);
+  assert.equal(ASSISTANT_PUBLIC591_SUCCESSOR_SCRIPT,'set -euo pipefail\n'+ASSISTANT_PUBLIC591_SUCCESSOR_COMMANDS.join('\n')+'\n');
+  assert.notEqual(ASSISTANT_PUBLIC591_SUCCESSOR_PHASE_KIND,ASSISTANT_PUBLIC590_SUCCESSOR_PHASE_KIND);
+  const current={run:ORIGIN.run+593,attempt:1,head:newOid,pullRequest:756,branch:'synthetic-actual593-source'};
+  const receipt={phase:'ASSISTANT_PUBLIC591_SUCCESSOR',status:'EXECUTED',executedInThisRun:true,origin:null,current,commands:[...ASSISTANT_PUBLIC591_SUCCESSOR_COMMANDS],eligibleForReuse:false};
+  assert.equal(verifyAssistantPublic591SuccessorPhaseReceipt(receipt,current).status,'EXECUTED');
+  for(const mutate of [v=>v.status='REUSED',v=>v.executedInThisRun=false,v=>v.origin={run:current.run-1},v=>v.eligibleForReuse=true,
+    v=>v.current={...current,head:oid},v=>v.phase='SOURCE_PRODUCER']){const changed=copy(receipt);mutate(changed);assert.throws(()=>verifyAssistantPublic591SuccessorPhaseReceipt(changed,current));}
+  for(const [phase,commands]of [['ASSISTANT_PUBLIC590_SUCCESSOR',ASSISTANT_PUBLIC590_SUCCESSOR_COMMANDS],
+    ['ASSISTANT_PUBLIC588_SUCCESSOR',ASSISTANT_PUBLIC588_SUCCESSOR_COMMANDS],['ASSISTANT_PUBLIC587_SUCCESSOR',ASSISTANT_PUBLIC587_SUCCESSOR_COMMANDS],
+    ['ASSISTANT_LATER_H0',ASSISTANT_LATER_H0_COMMANDS],['NATIVE_ORIGINAL_CONTINUITY',CURRENT_COMMANDS]]){
+    assert.throws(()=>verifyAssistantPublic591SuccessorPhaseReceipt({...receipt,phase,commands:[...commands]},current));
+    assert.throws(()=>verifyAssistantPublic591SuccessorPhaseReceipt({...receipt,commands:[...commands]},current));
+  }
+  for(const verify of [verifyAssistantPublic590SuccessorPhaseReceipt,verifyAssistantPublic588SuccessorPhaseReceipt,
+    verifyAssistantPublic587SuccessorPhaseReceipt,verifyAssistantLaterH0PhaseReceipt,verifyCurrent586PhaseReceipt])assert.throws(()=>verify(receipt,current));
+  const controller=await fs.readFile('scripts/native-postgres-evidence.mjs','utf8');
+  const main=controller.slice(controller.indexOf('async function main() {'));
+  assert(main.indexOf('requireAssistantPublic591SuccessorRelease()')<main.indexOf('spawnSync('));
+  assert(main.includes("phase:'ASSISTANT_PUBLIC591_SUCCESSOR',eligibleForReuse:false"));
+  assert(!main.includes('await decideReuse('));assert(!main.includes('await decideCurrent586Reuse('));
+  for(const [file,row]of Object.entries(reviewedConditions593ImportViews)){
+    const raw=await fs.readFile(file,'utf8'),old=historical592ImportSource(raw,file);
+    assert.equal(historical592ImportSource(old,file),old);
+    for(const [previous,current]of row.hunks)for(const changed of [raw.replace(current,()=>previous),raw.replace(current,()=>current+current)])
+      assert.throws(()=>historical592ImportSource(changed,file));
+    for(const changed of [raw+'\n','!'+raw.slice(1)])assert.throws(()=>historical592ImportSource(changed,file));
+  }
 });
