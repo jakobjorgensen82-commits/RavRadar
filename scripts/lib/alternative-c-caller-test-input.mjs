@@ -1162,6 +1162,8 @@ export function inverseAssistant590RetentionCompanionTestInput(source, relative)
   const row = ASSISTANT590_RETENTION_COMPANION_TEST_REVIEW;
   assert.equal(relative, row.path, 'ALTERNATIVE_C_TEST_INPUT_CHANGED:ASSISTANT590_RETENTION_PATH');
   source = source.replace(/\r\n/g, '\n');
+  if (Buffer.byteLength(source) === CONDITIONS593_RETENTION_COMPANION_TEST_REVIEW.after.bytes)
+    source = inverseConditions593RetentionCompanionTestInput(source, relative);
   // Exact new592 outer view; all old591/588/587 whole oracles remain below.
   if (Buffer.byteLength(source) === ASSISTANT591_RETENTION_COMPANION_TEST_REVIEW.after.bytes)
     source = inverseAssistant591RetentionCompanionTestInput(source, relative);
@@ -1209,6 +1211,8 @@ export function inverseAssistant591RetentionCompanionTestInput(source, relative)
   const row = ASSISTANT591_RETENTION_COMPANION_TEST_REVIEW;
   assert.equal(relative, row.path, 'ALTERNATIVE_C_TEST_INPUT_CHANGED:ASSISTANT591_RETENTION_PATH');
   source = source.replace(/\r\n/g, '\n');
+  if (Buffer.byteLength(source) === CONDITIONS593_RETENTION_COMPANION_TEST_REVIEW.after.bytes)
+    source = inverseConditions593RetentionCompanionTestInput(source, relative);
   if (Buffer.byteLength(source) === row.before.bytes && digest(source) === row.before.sha256) return source;
   assert.equal(Buffer.byteLength(source), row.after.bytes, 'ALTERNATIVE_C_TEST_INPUT_CHANGED:ASSISTANT591_RETENTION_SIZE');
   assert.equal(digest(source), row.after.sha256, 'ALTERNATIVE_C_TEST_INPUT_CHANGED:ASSISTANT591_RETENTION_WHOLE');
@@ -1219,4 +1223,44 @@ export function inverseAssistant591RetentionCompanionTestInput(source, relative)
   assert.equal(Buffer.byteLength(source), row.before.bytes, 'ALTERNATIVE_C_TEST_INPUT_CHANGED:ASSISTANT591_RETENTION_BEFORE_SIZE');
   assert.equal(digest(source), row.before.sha256, 'ALTERNATIVE_C_TEST_INPUT_CHANGED:ASSISTANT591_RETENTION_WHOLE_INVERSE');
   return source;
+}
+
+// TEST DATA ONLY: whole593 capacity reader to unchanged issued592 reader.
+export const CONDITIONS593_RETENTION_COMPANION_TEST_REVIEW=Object.freeze({
+  "path": "scripts/read-authenticated-dmi-current-companions.mjs",
+  "before": {
+    "bytes": 13144,
+    "sha256": "dc9417c1039b2b1e6dce8dbf2d461fd8fa23ef00d6dc42ffb9d98e19f4997ef5"
+  },
+  "after": {
+    "bytes": 13233,
+    "sha256": "bce369d88205b8a692382b463d18a3dfae10fd652f5e8f172b19717a2b942ef8"
+  },
+  "hunks": [
+    [
+      "import { fileURLToPath } from 'node:url';\nimport { isDeepStrictEqual } from 'node:util';\nimport { readDmiBulkDocument } from './lib/dmi-bulk-storage.mjs';\nimport { verifyPrivateProductionRuntimeBundle } from './private-production-runtime-bundle.mjs';\nimport { unpackPrivateWeatherComponentCompanions, privateWeatherPackJsonReadsClosed }\n  from './lib/private-weather-component-pack.mjs';\n",
+      "import { fileURLToPath } from 'node:url';\nimport { isDeepStrictEqual } from 'node:util';\nimport { readDmiBulkDocument } from './lib/dmi-bulk-storage.mjs';\nimport { PRIVATE_CONDITIONS_MAX_BYTES } from './lib/bounded-json-writer.mjs';\nimport { verifyPrivateProductionRuntimeBundle } from './private-production-runtime-bundle.mjs';\nimport { unpackPrivateWeatherComponentCompanions, privateWeatherPackJsonReadsClosed }\n  from './lib/private-weather-component-pack.mjs';\n"
+    ],
+    [
+      "  const conditionsPath = path.join(verified.bundlePath, 'payload/data/live/conditions.json');\n  const fileInfo = await fs.lstat(conditionsPath);\n  if (!fileInfo.isFile() || fileInfo.isSymbolicLink()\n    || fileInfo.size > 256 * 1024 * 1024) refuse('RETENTION_B_CHANGED');\n  const bytes = await fs.readFile(conditionsPath);\n  const conditionsSha256 = crypto.createHash('sha256').update(bytes).digest('hex');\n  const listed = verified.files.find(row => row.relativePath === 'data/live/conditions.json');\n",
+      "  const conditionsPath = path.join(verified.bundlePath, 'payload/data/live/conditions.json');\n  const fileInfo = await fs.lstat(conditionsPath);\n  if (!fileInfo.isFile() || fileInfo.isSymbolicLink()\n    || fileInfo.size > PRIVATE_CONDITIONS_MAX_BYTES) refuse('RETENTION_B_CHANGED');\n  const bytes = await fs.readFile(conditionsPath);\n  const conditionsSha256 = crypto.createHash('sha256').update(bytes).digest('hex');\n  const listed = verified.files.find(row => row.relativePath === 'data/live/conditions.json');\n"
+    ]
+  ]
+});
+export function inverseConditions593RetentionCompanionTestInput(source,relative){
+  assert.equal(arguments.length,2,'ALTERNATIVE_C_TEST_INPUT_CHANGED:CONDITIONS593_RETENTION_ARGUMENTS');
+  assert.equal(typeof source,'string','ALTERNATIVE_C_TEST_INPUT_CHANGED:CONDITIONS593_RETENTION_TYPE');
+  const row=CONDITIONS593_RETENTION_COMPANION_TEST_REVIEW;
+  assert.equal(relative,row.path,'ALTERNATIVE_C_TEST_INPUT_CHANGED:CONDITIONS593_RETENTION_PATH');
+  source=source.replace(/\r\n/g,'\n');
+  if(Buffer.byteLength(source)===row.before.bytes&&digest(source)===row.before.sha256)return source;
+  const original=source;
+  assert.equal(Buffer.byteLength(source),row.after.bytes,'ALTERNATIVE_C_TEST_INPUT_CHANGED:CONDITIONS593_RETENTION_SIZE');
+  assert.equal(digest(source),row.after.sha256,'ALTERNATIVE_C_TEST_INPUT_CHANGED:CONDITIONS593_RETENTION_WHOLE');
+  for(const [old,current]of [...row.hunks].reverse()){
+    assert.equal(source.split(current).length,2,'ALTERNATIVE_C_TEST_INPUT_CHANGED:CONDITIONS593_RETENTION_HUNK');source=source.replace(current,()=>old);
+  }
+  assert.equal(Buffer.byteLength(source),row.before.bytes);assert.equal(digest(source),row.before.sha256);
+  let roundtrip=source;for(const [old,current]of row.hunks){assert.equal(roundtrip.split(old).length,2);roundtrip=roundtrip.replace(old,()=>current);}
+  assert.equal(roundtrip,original,'Whole593-592-593 retention DATA roundtrip');return source;
 }

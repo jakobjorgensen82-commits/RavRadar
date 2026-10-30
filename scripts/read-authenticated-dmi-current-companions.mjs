@@ -7,6 +7,7 @@ import os from 'node:os';
 import { fileURLToPath } from 'node:url';
 import { isDeepStrictEqual } from 'node:util';
 import { readDmiBulkDocument } from './lib/dmi-bulk-storage.mjs';
+import { PRIVATE_CONDITIONS_MAX_BYTES } from './lib/bounded-json-writer.mjs';
 import { verifyPrivateProductionRuntimeBundle } from './private-production-runtime-bundle.mjs';
 import { unpackPrivateWeatherComponentCompanions, privateWeatherPackJsonReadsClosed }
   from './lib/private-weather-component-pack.mjs';
@@ -173,7 +174,7 @@ export async function readCurrentPrivateRuntimeCompanionInput(targetReferenceAt)
   const conditionsPath = path.join(verified.bundlePath, 'payload/data/live/conditions.json');
   const fileInfo = await fs.lstat(conditionsPath);
   if (!fileInfo.isFile() || fileInfo.isSymbolicLink()
-    || fileInfo.size > 256 * 1024 * 1024) refuse('RETENTION_B_CHANGED');
+    || fileInfo.size > PRIVATE_CONDITIONS_MAX_BYTES) refuse('RETENTION_B_CHANGED');
   const bytes = await fs.readFile(conditionsPath);
   const conditionsSha256 = crypto.createHash('sha256').update(bytes).digest('hex');
   const listed = verified.files.find(row => row.relativePath === 'data/live/conditions.json');

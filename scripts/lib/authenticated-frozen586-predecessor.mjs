@@ -8,6 +8,7 @@ import path from 'node:path';
 import {fileURLToPath,pathToFileURL} from 'node:url';
 import {execFile as callbackExec} from 'node:child_process';
 import {promisify,isDeepStrictEqual} from 'node:util';
+import {PRIVATE_CONDITIONS_MAX_BYTES} from './bounded-json-writer.mjs';
 import {withAuthenticated586PredecessorSource,withAuthenticated587PredecessorSource,
   withAuthenticated588PredecessorSource,assertFrozen588CodeSourceSelected,FROZEN588_CODE_SOURCE_PROVENANCE,
   withAuthenticated590PredecessorSource,assertFrozen590CodeSourceSelected,FROZEN590_CODE_SOURCE_PROVENANCE,
@@ -112,6 +113,7 @@ async function fixedPaths(){
 }
 async function readAuthenticatedPredecessor(){
   need(arguments.length===0,'ARGUMENTS');
+  const conditionsMaximum=profile===FROZEN591?PRIVATE_CONDITIONS_MAX_BYTES:256*MB;
   // These normal workflow paths select already restored immutable B; they are
   // not authority. No consumed 0200/140000 upgrade flag is reused as permission.
   const paths=await fixedPaths();
@@ -143,7 +145,7 @@ async function readAuthenticatedPredecessor(){
       expected:{modelBinding:descriptor.modelBinding,contractHashes:descriptor.contractHashes,datasetId:descriptor.datasetId,
         productionReferenceAt:descriptor.productionReferenceAt,generatedAt:descriptor.generatedAt,bundleContentSha256:descriptor.bundleContentSha256}});
     const conditionsPath=path.join(paths.bundlePath,'payload/data/live/conditions.json');
-    const originalBytes=await read(conditionsPath,256*MB);
+    const originalBytes=await read(conditionsPath,conditionsMaximum);
     const inventory=verified.files.find(row=>row.relativePath==='data/live/conditions.json');
     need(inventory&&inventory.bytes===originalBytes.length&&inventory.sha256===sha(originalBytes),'B_CONDITIONS_CHANGED');
     const conditions=JSON.parse(originalBytes.toString('utf8'));
@@ -176,7 +178,7 @@ async function readAuthenticatedPredecessor(){
       need(same(await checkpointRequest('?document_key=eq.'+encodeURIComponent(SKey)
         +'&select=document_key,payload,version&limit=2',{},'read'),SRows),'S_CHANGED');
       need(same(JSON.parse((await read(centralPath,16*MB)).toString('utf8')),central),'REGISTRY_CHANGED');
-      need(sha(await read(conditionsPath,256*MB))===inventory.sha256,'B_CONDITIONS_CHANGED');
+      need(sha(await read(conditionsPath,conditionsMaximum))===inventory.sha256,'B_CONDITIONS_CHANGED');
       need(same(await qualifyProducer(descriptor.sourceHead,frozenRoot),producer),'SOURCE_CHANGED');
     }catch(error){first=error;hasFirst=true;}
     try{
@@ -195,7 +197,7 @@ async function readAuthenticatedPredecessor(){
     // reach the normal pointer/version readers. No JSON/PASS/grant is read.
     refreshers.set(handle,async()=>{
       need(same(JSON.parse((await read(centralPath,16*MB)).toString('utf8')),central),'REGISTRY_CHANGED');
-      need(sha(await read(conditionsPath,256*MB))===inventory.sha256,'B_CONDITIONS_CHANGED');
+      need(sha(await read(conditionsPath,conditionsMaximum))===inventory.sha256,'B_CONDITIONS_CHANGED');
       need(same(await pointer(),before),'SOURCE_CHANGED');
       const SKey=protectedS.PROTECTED_RAVSCORE_CHECKPOINT_DOCUMENT_KEY;
       const versionRequest=protectedS.createProtectedRavScoreCheckpointVersionRequester();

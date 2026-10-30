@@ -1,3 +1,31 @@
+## 89.287 Gyldige gemte vejrdata skal kunne læses igen
+
+**Kort fortalt: RavRadar skal kunne læse de gyldige vejrdata, som systemet selv har gemt. Den nye kandidat fjerner tre forældede læselofter i den aktuelle kæde uden at ændre vejret, scoreformlen eller kontrollen af originalerne.**
+
+### Hvorfor kunne en gyldig fil blive afvist?
+
+Den normale producent må allerede skrive en samlet privat vejrfil på op til 535.822.312 bytes. Nogle senere læsere havde stadig et loft på 256 MiB. Når en fil voksede forbi det lavere loft, kunne gemningen derfor være gyldig, mens genbrugen stoppede. Filen bliver ikke forkert, blot fordi den er større end den gamle læsegrænse.
+
+En tidligere normal lokal prøve med en gyldig fil på 299.262.881 bytes påviste denne konflikt i B/S-parringen. Gennemgangen af resten af forløbet fandt samme lavere loft i tre nødvendige læsere. Det er ikke i sig selv bevis for størrelsen på den faktiske produktionsfil eller for årsagen til et bestemt driftsstop.
+
+### Hvilke tre led ændres?
+
+Det første led kontrollerer, at gemte strømtilstande virkelig stammer fra de korrekte originaler, før de bruges i beregningen. Det andet læser bevarede originaler ved planlægning og senere beregning. Det tredje kontrollerer den præcise 591-originalpakke før den første overgang til den nye familie. De genbruger alle producentens eksisterende grænse frem for at opfinde et større transportloft.
+
+Ændringen gælder den aktuelle normale kæde og den navngivne 591-forgænger. Gamle arkivkontroller, den oprindelige seed, tidligere familieprofiler og særskilte genoptagelser beholder deres egne grænser. Ingen gammel pakke mærkes om til en ny generation.
+
+### Hvad skal stadig passe?
+
+Hele filens byteantal og SHA-256-kontrolsum skal passe med den autentificerede pakke. Filidentitet, originaler, B/S-sammenhæng, attest, frisk genlæsning og sikker gemning skal fortsat bestå. En højere tilladt læsegrænse gør hverken en ændret fil eller en forkert modelbinding gyldig. Den ændrer heller ikke kravene til tilstrækkelig historik.
+
+Scoreformel, strøm- og vejrdata, historiske scorer, kildernes prioritet og administratorens godkendte punkter og geometri ændres ikke. Den nye binding er nødvendig, fordi to af de ændrede kildefiler selv er en del af modellens kontrollerede kildegrundlag.
+
+### Status for 4.0.593-kandidaten
+
+593 forberedes direkte fra den faktisk anvendte 591-familie. Den tidligere 592-kandidat og dens udstedte SQL bevares, men 592 er ikke installeret. Denne dokumentation installerer ingen migration og genudsteder ingen gamle beviser.
+
+593 er nu lokalt udstedt gennem de normale generatorer med nye C/I/T-bindinger og én ny append-only migration. De syv normale forbrugere er synkroniseret, og frisk genberegning, de normale builderkontroller og synkkontrol består til fastpunkt. Alle 70 tidligere SQL-filer er bevaret. Det er ikke en databaseinstallation, samlet GitHub-kvalifikation eller offentlig levering. De nødvendige normale kapacitetsmål, sikker førskrivning og installation samt en senere almindelig offentlig generation skal fortsat bestå. Alle fem hovedmål er åbne.
+
 ## 89.286 Samme gyldige vejrfil skal kunne genbruges hele vejen
 
 **Kort fortalt: En gyldig, gemt vejrfil skal ikke afvises senere i forløbet af en anden, forældet størrelsesgrænse. Den lokale rettelse samler grænsen og kontrollerer stadig hele filen. Den ændrer ikke RavScore eller vejroplysningerne.**
@@ -1055,7 +1083,7 @@ En særskilt, dokumenteret Storage-formatkant rettes samtidig: immutable upload 
 
 # RavRadar Håndbog
 
-**Håndbogsversion:** 4.0.592
+**Håndbogsversion:** 4.0.593
 
 **Lokal kildebinding — 29. oktober 2026, RavScore 4.0.591, ikke installeret:** Den integrerede model er offentlig som modeltype under den særskilt leverede 4.0.590. Den nye assistentefterfølger er lokalt udstedt og er endnu ikke samlet kvalificeret, installeret eller offentliggjort.
 

@@ -540,9 +540,9 @@ export function requireAssistantPublic591SuccessorParent(){
     Object.fromEntries(['version','C','I','T','canonicalSha256'].map(key=>[key,ASSISTANT_PUBLIC591_SUCCESSOR_BEFORE[key]])));
   return ASSISTANT_PUBLIC591_SUCCESSOR_BEFORE; // DATA only; not a qualification receipt or runtime authority.
 }
-export const ASSISTANT_PUBLIC591_SUCCESSOR_BINDING=Object.freeze({"version":"20261029183010","C":"40a7c6ce6b97d15a2fdc56cd1e587388554580c99244767fde2c4bf145828433","I":"7e8ac21ad18682ebc490b067f8b0b8cefb935be7b90822be7e7983150053fc3f","T":"24aa50184651b20f1846304db029ded943cb56b34fdf0b4820abc92415156308"});
-export const ASSISTANT_PUBLIC591_SUCCESSOR_OUTPUT=Object.freeze({"migrationSha256":"e5c7fb182d9491bd9222cb59dbefd3da4592867522dde805ea17e67c0d023e97","canonicalSha256":"363514adee304c3c6f49731e01ee8e5596ac77a66557c1ffbbf44bee33fcd4da","checkpointContractSha256":"b04f548fcf629ef4202a5bb0a7401a8e5eb1d310e275731fc95a3a025ef06ffa","tripBindingPolicySha256":"f0a2df2ecada096c09917743033669b18e80fec7768a9dec51d2442376d9feab"});
-export const ASSISTANT_PUBLIC591_SUCCESSOR_RELEASE="4.0.592";
+export const ASSISTANT_PUBLIC591_SUCCESSOR_BINDING=Object.freeze({"version":"20261030105202","C":"12f78005304316a680716a1d437e06a582815c1645a2eb567028bcc18ff99ffa","I":"69bf81c3cc5e256deee2c116a52462597f4cfc47cb6c855c6dba969c1dcf4643","T":"e894dd096d03f71cc334d97f85931c2b3969e9b140cb5403a4787cf4b81fbc2e"});
+export const ASSISTANT_PUBLIC591_SUCCESSOR_OUTPUT=Object.freeze({"migrationSha256":"47c51886a58aa1cfbbc244a5469ace67521774499135666c26fccd8c7f291bfd","canonicalSha256":"5f0a0cbf5b867c60e580c95f5de332b51ac6fa9e6a4d7e78101fc99aaf15b164","checkpointContractSha256":"fa0310dd89a87c5a094304d86c1cc32ff02ec334e0377d43a0a32f160d417da0","tripBindingPolicySha256":"9fcf2a0f204688df77d23624de97e7c44955f03b5441ab002abc723d5a5180f9"});
+export const ASSISTANT_PUBLIC591_SUCCESSOR_RELEASE="4.0.593";
 export const ASSISTANT_PUBLIC591_SUCCESSOR_ALIASES=Object.freeze([
   Object.freeze({name:'ravradar_ravscore_checkpoint_ask591_state_valid',signature:'(jsonb,text)'}),
   Object.freeze({name:'ravradar_ravscore_checkpoint_ask591_payload_valid',signature:'(jsonb,timestamptz)'})]);

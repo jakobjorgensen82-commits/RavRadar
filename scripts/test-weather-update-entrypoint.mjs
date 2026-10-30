@@ -1,6 +1,7 @@
 import { inverseActiveFamilyRetentionCompanionTestInput, ACTIVE_FAMILY_RETENTION_COMPANION_TEST_REVIEW,
   inverseAssistant590RetentionCompanionTestInput, ASSISTANT590_RETENTION_COMPANION_TEST_REVIEW,
   inverseAssistant591RetentionCompanionTestInput, ASSISTANT591_RETENTION_COMPANION_TEST_REVIEW,
+  inverseConditions593RetentionCompanionTestInput, CONDITIONS593_RETENTION_COMPANION_TEST_REVIEW,
 } from './lib/alternative-c-caller-test-input.mjs';
 import {inverseReviewedAccountStatisticsAssistantSourceScripts} from './lib/account-statistics-assistant-package-review.mjs';
 import { inverseAlternativeCCaller, inverseAssistant587OriginalCompanionTestInput,
@@ -1383,7 +1384,8 @@ test('active-family retention companion has an exact outer inverse before unchan
 
 test('assistant591 retention companion uses actual592 whole source before unchanged591 and older inverses', async () => {
   const row = ASSISTANT591_RETENTION_COMPANION_TEST_REVIEW;
-  const actual = (await fs.readFile(new URL('../' + row.path, import.meta.url), 'utf8')).replace(/\r\n/g, '\n');
+  const actual = inverseConditions593RetentionCompanionTestInput(
+    (await fs.readFile(new URL('../' + row.path, import.meta.url), 'utf8')).replace(/\r\n/g, '\n'), row.path);
   assert.equal(Buffer.byteLength(actual), row.after.bytes);
   assert.equal(digest(actual), row.after.sha256);
   assert.match(actual, /sourcePhase==='assistant-public591-successor'\?Object.freeze/);
@@ -1451,4 +1453,16 @@ test('wind-tail default inverse preserves every old updater oracle and refuses o
   assert.throws(() => inverseWindTailCapacityUpdaterTestInput(actual), /UPDATER_ARGUMENTS/);
   assert.throws(() => inverseWindTailCapacityUpdaterTestInput(actual, row.path, true), /UPDATER_ARGUMENTS/);
   assert.throws(() => inverseWindTailCapacityUpdaterTestInput(null, row.path), /UPDATER_TYPE/);
+});
+
+test('conditions593 retention reader preserves whole592 and refuses changed IO capacity hunks',async()=>{
+  const row=CONDITIONS593_RETENTION_COMPANION_TEST_REVIEW;
+  const actual=await fs.readFile(new URL('../'+row.path,import.meta.url),'utf8');
+  const prior=inverseConditions593RetentionCompanionTestInput(actual,row.path);
+  assert.equal(Buffer.byteLength(prior),row.before.bytes);assert.equal(digest(prior),row.before.sha256);
+  assert.equal(inverseConditions593RetentionCompanionTestInput(prior,row.path),prior);
+  assert.equal(inverseAssistant591RetentionCompanionTestInput(actual,row.path),inverseAssistant591RetentionCompanionTestInput(prior,row.path));
+  for(const [old,current]of row.hunks)for(const changed of [actual.replace(current,()=>old),actual.replace(current,()=>current+current)])
+    assert.throws(()=>inverseConditions593RetentionCompanionTestInput(changed,row.path));
+  for(const changed of [actual+'\n','!'+actual.slice(1)])assert.throws(()=>inverseConditions593RetentionCompanionTestInput(changed,row.path));
 });

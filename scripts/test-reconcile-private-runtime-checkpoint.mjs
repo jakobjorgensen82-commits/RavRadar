@@ -28,9 +28,12 @@ import { reconcilePrivateRuntimeCheckpoint, requiresPrivateRuntimeCheckpointReco
 import { PRIVATE_RUNTIME_FILES, PRIVATE_RUNTIME_CONTRACT_FILES, buildPrivateRuntimeCreateSpec,
   buildPrivateRuntimeExpectation, installRestoredPrivateRuntime } from './private-production-runtime-workflow.mjs';
 import { createPrivateProductionRuntimeBundle, restorePrivateProductionRuntimeBundle } from './private-production-runtime-bundle.mjs';
-import { publishProtectedPrivateProductionRuntime, restoreProtectedPrivateProductionRuntime, PROTECTED_PRIVATE_RUNTIME_POLICY }
+import { publishProtectedPrivateProductionRuntime, restoreProtectedPrivateProductionRuntime, PROTECTED_PRIVATE_RUNTIME_POLICY,
+  describeCurrentProtectedPrivateProductionRuntime }
   from './protected-private-production-runtime.mjs';
 import { saveRavScoreContinuationCheckpoint } from './ravscore-continuation-checkpoint.mjs';
+import { readCurrentPrivateRuntimeCompanionInput, readCurrentPrivateRuntimeCompanions }
+  from './read-authenticated-dmi-current-companions.mjs';
 import { publishProtectedRavScoreContinuationCheckpoint, createProtectedRavScoreCheckpointRequester,
   createProtectedRavScoreCheckpointVersionRequester, createProtectedRavScoreCheckpointRpcRequester }
   from './protected-ravscore-continuation-checkpoint.mjs';
@@ -193,6 +196,54 @@ test('normal CURRENT B/S interruption reconciliation preserves whole pairs and r
       assert.deepEqual(local, JSON.parse(await fs.readFile(checkpointPath, 'utf8')));
       assert.deepEqual(await wholeHash(originalPath), originalBefore);
       assert.deepEqual(await wholeHash(installedPath), workingBefore);
+      // Same already-produced B: exercise the real current-family file reader
+      // before providers and its after-origin API, without minting an origin.
+      const retainedBeforeB = clone(backend.documents.get(B)), retainedBeforeS = clone(backend.documents.get(S));
+      const retainedBeforeCas = backend.events.filter(event => event === 'S_CAS').length;
+      const runnerTemp = path.join(own, 'shared-retention-runner'); await fs.mkdir(runnerTemp);
+      const descriptor = await describeCurrentProtectedPrivateProductionRuntime({ request: backend.documentRequest });
+      await fs.writeFile(path.join(runnerTemp, 'private-runtime-current-source.json'), JSON.stringify(descriptor) + '\n',
+        { flag: 'wx', mode: 0o600 });
+      const envKeys = ['RUNNER_TEMP', 'RAVRADAR_PRIVATE_RUNTIME_ROOT', 'RAVRADAR_PRIVATE_RUNTIME_BUNDLE'];
+      const priorEnv = Object.fromEntries(envKeys.map(key => [key, process.env[key]]));
+      Object.assign(process.env, { RUNNER_TEMP: runnerTemp, RAVRADAR_PRIVATE_RUNTIME_ROOT: options.privateRoot,
+        RAVRADAR_PRIVATE_RUNTIME_BUNDLE: options.bundlePath });
+      const retentionTarget = new Date(Date.parse(refs[1]) + 4 * 3_600_000).toISOString();
+      try {
+        let view = await readCurrentPrivateRuntimeCompanionInput(retentionTarget);
+        assert.equal(view.conditionsSha256, originalBefore.sha256);
+        assert.equal(await fs.realpath(view.conditionsPath), await fs.realpath(originalPath));
+        assert.equal(view.conditions.datasetId, document.datasetId);
+        assert.equal(view.conditions.productionReferenceAt, refs[1]);
+        assert.deepEqual(view.verified.modelBinding, ravScoreModelBinding());
+        assert.equal(view.verified.bundleContentSha256, descriptor.bundleContentSha256);
+        await view.verify(); view = null;
+        // Providers may change working bytes. The second API must keep reading
+        // immutable B; whitespace changes no numeric state and is restored below.
+        let firstRetentionFailure;
+        try {
+          await fs.appendFile(installedPath, ' ');
+          const contexts = await readCurrentPrivateRuntimeCompanions(retentionTarget);
+          assert.deepEqual(contexts, [], 'This normal nine-file B has no component pack; no contexts may be invented.');
+          assert.deepEqual(await wholeHash(originalPath), originalBefore);
+        } catch (error) { firstRetentionFailure = error; throw error; }
+        finally {
+          try { await fs.truncate(installedPath, workingBefore.bytes); }
+          catch (cleanupError) { if (!firstRetentionFailure) throw cleanupError; }
+        }
+      } finally {
+        for (const key of envKeys) {
+          if (priorEnv[key] === undefined) delete process.env[key]; else process.env[key] = priorEnv[key];
+        }
+      }
+      assert.deepEqual(await wholeHash(originalPath), originalBefore);
+      assert.deepEqual(await wholeHash(installedPath), workingBefore);
+      assert.deepEqual(backend.documents.get(B), retainedBeforeB);
+      assert.deepEqual(backend.documents.get(S), retainedBeforeS);
+      assert.equal(backend.events.filter(event => event === 'S_CAS').length, retainedBeforeCas);
+      t.diagnostic(JSON.stringify({ retentionFileReaderBeforeAndAfter: true, addedCasCalls: 0,
+        sameLargeBReused: true, wholeOriginalAndWorkingPreserved: true,
+        opaqueOriginOrFrozen591CapacityProvedByThisCase: false }));
       t.diagnostic(JSON.stringify({ conditionsBytes: written.bytes, maximumConditionsBytes: PRIVATE_CONDITIONS_MAX_BYTES,
         outcome: result.outcome, checkpointPublishCalls: result.checkpointPublishCalls, wholeOriginalsUnchanged: true }));
     } finally {

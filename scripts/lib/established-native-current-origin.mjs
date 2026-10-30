@@ -23,6 +23,7 @@ import { ravScoreSamplingContextKey } from './ravscore-sampling-context.mjs';
 import { assertIntegratedCoastalPointContinuation } from './coastal-point-staging-contract.mjs';
 import { assertCandidateGRollbackContinuation } from './ravscore-candidate-g-rollback-runtime.mjs';
 import { ownFileDescriptorIdentity, ownedFileDescriptorClosed } from './private-weather-component-pack.mjs';
+import { PRIVATE_CONDITIONS_MAX_BYTES } from './bounded-json-writer.mjs';
 import { withNativeCurrentReanalysisPredecessorSource } from '../check-native-current-reanalysis-predecessor-source.mjs';
 import { assertAuthenticatedFrozen584Snapshot } from './authenticated-frozen584-predecessor.mjs';
 import { withAuthenticated584PredecessorSource } from '../check-account-statistics-assistant-predecessor-source.mjs';
@@ -628,7 +629,10 @@ async function readOrigin(centralContract, seedOnly) {
   const before = await readPointer(request), descriptor = before.pointer.current;
   const seed = descriptor.bundleContentSha256 === SEED.B;
   if (seedOnly) need(seed, 'SEED_CONTENT_CHANGED');
-  let conditions = seedOnly ? null : await json(path.join(ROOT, 'data/live/conditions.json'), MAX_CONDITIONS);
+  const conditionsMaximum = !seed && (descriptor.modelBinding.modelBundleSha256 === currentSource.integrated
+    || descriptor.modelBinding.modelBundleSha256 === 'ebd5ac3dac09b7afb51e46d18920f6932b478b7ef15bdd31190c128273cb6a54')
+    ? PRIVATE_CONDITIONS_MAX_BYTES : MAX_CONDITIONS;
+  let conditions = seedOnly ? null : await json(path.join(ROOT, 'data/live/conditions.json'), conditionsMaximum);
   // Unknown/legacy input retains its OLD normal transitions; a claimed clean
   // origin cannot silently downgrade to that route after a failed check.
   if (!seed && descriptor.modelBinding.modelBundleSha256 !== currentSource.integrated) {
@@ -663,7 +667,8 @@ async function readOrigin(centralContract, seedOnly) {
         expected: { modelBinding: descriptor.modelBinding, contractHashes: descriptor.contractHashes,
           datasetId: descriptor.datasetId, productionReferenceAt: descriptor.productionReferenceAt,
           generatedAt: descriptor.generatedAt, bundleContentSha256: descriptor.bundleContentSha256 } });
-      const originalBytes = await ownedBytes(path.join(bundlePath, 'payload/data/live/conditions.json'), MAX_CONDITIONS);
+      const originalBytes = await ownedBytes(path.join(bundlePath, 'payload/data/live/conditions.json'),
+        seed ? MAX_CONDITIONS : PRIVATE_CONDITIONS_MAX_BYTES);
       const file = verified.files.find(row => row.relativePath === 'data/live/conditions.json');
       need(file && file.bytes === originalBytes.length && file.sha256 === sha(originalBytes), 'B_CONDITIONS_CHANGED');
       originalConditions = JSON.parse(originalBytes);

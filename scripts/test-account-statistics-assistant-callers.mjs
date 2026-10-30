@@ -776,6 +776,16 @@ test('private-study006: privat eksport bevarer hele installationsarm og normale 
   }
   const publisher=await read('scripts/publish-private-trip-weather-study.mjs');
   assert.equal(sha(publisher),'5b087741711e31ad64401be9a8bbfc4ffb0bfe53bd7e68a50a9fe08cd947d6dc');
+  // TEST DATA only: exact593 version literals precede every unchanged592/591/590 oracle.
+  const reviewed593DashboardView=source=>{
+    assert.equal(Buffer.byteLength(source),141249);
+    assert.equal(sha(source),'30231deff0cad5b19b0ec0a6f80d266086d776be554040f1cd5255a0757ad02f');
+    assert.equal(source.split('4.0.593').length,24);
+    const prior=source.replaceAll('4.0.593','4.0.592');
+    assert.equal(Buffer.byteLength(prior),141249);
+    assert.equal(sha(prior),'d514939c3d9bd87a4dd53b9cfb824120bc817667840c4f0f21a1ae7b3acd0902');
+    return prior;
+  };
   // TEST DATA only: the normal591 versions restore the exact whole f42/590 dashboard.
   const reviewed591DashboardView=source=>{
     assert.equal(Buffer.byteLength(source),141164);
@@ -807,7 +817,11 @@ test('private-study006: privat eksport bevarer hele installationsarm og normale 
     assert.equal(sha(prior),'34c84a3a5679fbac8c2a3881b8952f23df79bfca60064e7b6c8ef14701db014a');
     return prior;
   };
-  const currentDashboard=await read('js/ui/admin-dashboard.js');
+  const raw593Dashboard=await read('js/ui/admin-dashboard.js');
+  for(const changed of [raw593Dashboard+'\n',raw593Dashboard.replace('4.0.593','4.0.592'),
+    raw593Dashboard.replace('renderLearning','renderLearning_UNREVIEWED')])
+    assert.throws(()=>reviewed593DashboardView(changed));
+  const currentDashboard=reviewed593DashboardView(raw593Dashboard);
   for(const changed of [currentDashboard+'\n',currentDashboard.replace('Ture i lokalt datagrundlag','Registrerede ture'),
     currentDashboard.replace('renderLearning','renderLearning_UNREVIEWED')])
     assert.throws(()=>reviewedLocalLearningDashboardView(changed));

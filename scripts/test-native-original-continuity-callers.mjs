@@ -731,9 +731,86 @@ const reviewedIssued592Sources=Object.freeze({
     ]
   }
 });
+// TEST DATA ONLY: exact593 capacity delta projects to complete issued592 before
+// the unchanged592-to591 whole-source oracles. No runtime or original admission.
+const reviewedCapacity593Sources=Object.freeze({
+  "scripts/lib/established-native-current-origin.mjs": {
+    "path": "scripts/lib/established-native-current-origin.mjs",
+    "before": {
+      "bytes": 85971,
+      "sha256": "2aa92e6a2fb14f93e6072160499be1f39a502f4078bf61c98f649adfe538cf01"
+    },
+    "after": {
+      "bytes": 86377,
+      "sha256": "e802e02df74a53bb543d7d0e9107efd3850890a9f2c15e5d7c0c01b5229671cb"
+    },
+    "hunks": [
+      [
+        "import { assertIntegratedCoastalPointContinuation } from './coastal-point-staging-contract.mjs';\nimport { assertCandidateGRollbackContinuation } from './ravscore-candidate-g-rollback-runtime.mjs';\nimport { ownFileDescriptorIdentity, ownedFileDescriptorClosed } from './private-weather-component-pack.mjs';\nimport { withNativeCurrentReanalysisPredecessorSource } from '../check-native-current-reanalysis-predecessor-source.mjs';\nimport { assertAuthenticatedFrozen584Snapshot } from './authenticated-frozen584-predecessor.mjs';\nimport { withAuthenticated584PredecessorSource } from '../check-account-statistics-assistant-predecessor-source.mjs';\n",
+        "import { assertIntegratedCoastalPointContinuation } from './coastal-point-staging-contract.mjs';\nimport { assertCandidateGRollbackContinuation } from './ravscore-candidate-g-rollback-runtime.mjs';\nimport { ownFileDescriptorIdentity, ownedFileDescriptorClosed } from './private-weather-component-pack.mjs';\nimport { PRIVATE_CONDITIONS_MAX_BYTES } from './bounded-json-writer.mjs';\nimport { withNativeCurrentReanalysisPredecessorSource } from '../check-native-current-reanalysis-predecessor-source.mjs';\nimport { assertAuthenticatedFrozen584Snapshot } from './authenticated-frozen584-predecessor.mjs';\nimport { withAuthenticated584PredecessorSource } from '../check-account-statistics-assistant-predecessor-source.mjs';\n"
+      ],
+      [
+        "  const before = await readPointer(request), descriptor = before.pointer.current;\n  const seed = descriptor.bundleContentSha256 === SEED.B;\n  if (seedOnly) need(seed, 'SEED_CONTENT_CHANGED');\n  let conditions = seedOnly ? null : await json(path.join(ROOT, 'data/live/conditions.json'), MAX_CONDITIONS);\n  // Unknown/legacy input retains its OLD normal transitions; a claimed clean\n  // origin cannot silently downgrade to that route after a failed check.\n  if (!seed && descriptor.modelBinding.modelBundleSha256 !== currentSource.integrated) {\n",
+        "  const before = await readPointer(request), descriptor = before.pointer.current;\n  const seed = descriptor.bundleContentSha256 === SEED.B;\n  if (seedOnly) need(seed, 'SEED_CONTENT_CHANGED');\n  const conditionsMaximum = !seed && (descriptor.modelBinding.modelBundleSha256 === currentSource.integrated\n    || descriptor.modelBinding.modelBundleSha256 === 'ebd5ac3dac09b7afb51e46d18920f6932b478b7ef15bdd31190c128273cb6a54')\n    ? PRIVATE_CONDITIONS_MAX_BYTES : MAX_CONDITIONS;\n  let conditions = seedOnly ? null : await json(path.join(ROOT, 'data/live/conditions.json'), conditionsMaximum);\n  // Unknown/legacy input retains its OLD normal transitions; a claimed clean\n  // origin cannot silently downgrade to that route after a failed check.\n  if (!seed && descriptor.modelBinding.modelBundleSha256 !== currentSource.integrated) {\n"
+      ],
+      [
+        "        expected: { modelBinding: descriptor.modelBinding, contractHashes: descriptor.contractHashes,\n          datasetId: descriptor.datasetId, productionReferenceAt: descriptor.productionReferenceAt,\n          generatedAt: descriptor.generatedAt, bundleContentSha256: descriptor.bundleContentSha256 } });\n      const originalBytes = await ownedBytes(path.join(bundlePath, 'payload/data/live/conditions.json'), MAX_CONDITIONS);\n      const file = verified.files.find(row => row.relativePath === 'data/live/conditions.json');\n      need(file && file.bytes === originalBytes.length && file.sha256 === sha(originalBytes), 'B_CONDITIONS_CHANGED');\n      originalConditions = JSON.parse(originalBytes);\n",
+        "        expected: { modelBinding: descriptor.modelBinding, contractHashes: descriptor.contractHashes,\n          datasetId: descriptor.datasetId, productionReferenceAt: descriptor.productionReferenceAt,\n          generatedAt: descriptor.generatedAt, bundleContentSha256: descriptor.bundleContentSha256 } });\n      const originalBytes = await ownedBytes(path.join(bundlePath, 'payload/data/live/conditions.json'),\n        seed ? MAX_CONDITIONS : PRIVATE_CONDITIONS_MAX_BYTES);\n      const file = verified.files.find(row => row.relativePath === 'data/live/conditions.json');\n      need(file && file.bytes === originalBytes.length && file.sha256 === sha(originalBytes), 'B_CONDITIONS_CHANGED');\n      originalConditions = JSON.parse(originalBytes);\n"
+      ]
+    ]
+  },
+  "scripts/lib/authenticated-frozen586-predecessor.mjs": {
+    "path": "scripts/lib/authenticated-frozen586-predecessor.mjs",
+    "before": {
+      "bytes": 20438,
+      "sha256": "ba09589cd0f3c48b734d60214ddf2017a7dc3ebba0e14c468da825721b575776"
+    },
+    "after": {
+      "bytes": 20626,
+      "sha256": "3f47d6808f563b456d173e63be919e79ec57bff959e8e216aeeeb9096d7b368b"
+    },
+    "hunks": [
+      [
+        "import {fileURLToPath,pathToFileURL} from 'node:url';\nimport {execFile as callbackExec} from 'node:child_process';\nimport {promisify,isDeepStrictEqual} from 'node:util';\nimport {withAuthenticated586PredecessorSource,withAuthenticated587PredecessorSource,\n  withAuthenticated588PredecessorSource,assertFrozen588CodeSourceSelected,FROZEN588_CODE_SOURCE_PROVENANCE,\n  withAuthenticated590PredecessorSource,assertFrozen590CodeSourceSelected,FROZEN590_CODE_SOURCE_PROVENANCE,\n",
+        "import {fileURLToPath,pathToFileURL} from 'node:url';\nimport {execFile as callbackExec} from 'node:child_process';\nimport {promisify,isDeepStrictEqual} from 'node:util';\nimport {PRIVATE_CONDITIONS_MAX_BYTES} from './bounded-json-writer.mjs';\nimport {withAuthenticated586PredecessorSource,withAuthenticated587PredecessorSource,\n  withAuthenticated588PredecessorSource,assertFrozen588CodeSourceSelected,FROZEN588_CODE_SOURCE_PROVENANCE,\n  withAuthenticated590PredecessorSource,assertFrozen590CodeSourceSelected,FROZEN590_CODE_SOURCE_PROVENANCE,\n"
+      ],
+      [
+        "}\nasync function readAuthenticatedPredecessor(){\n  need(arguments.length===0,'ARGUMENTS');\n  // These normal workflow paths select already restored immutable B; they are\n  // not authority. No consumed 0200/140000 upgrade flag is reused as permission.\n  const paths=await fixedPaths();\n",
+        "}\nasync function readAuthenticatedPredecessor(){\n  need(arguments.length===0,'ARGUMENTS');\n  const conditionsMaximum=profile===FROZEN591?PRIVATE_CONDITIONS_MAX_BYTES:256*MB;\n  // These normal workflow paths select already restored immutable B; they are\n  // not authority. No consumed 0200/140000 upgrade flag is reused as permission.\n  const paths=await fixedPaths();\n"
+      ],
+      [
+        "      expected:{modelBinding:descriptor.modelBinding,contractHashes:descriptor.contractHashes,datasetId:descriptor.datasetId,\n        productionReferenceAt:descriptor.productionReferenceAt,generatedAt:descriptor.generatedAt,bundleContentSha256:descriptor.bundleContentSha256}});\n    const conditionsPath=path.join(paths.bundlePath,'payload/data/live/conditions.json');\n    const originalBytes=await read(conditionsPath,256*MB);\n    const inventory=verified.files.find(row=>row.relativePath==='data/live/conditions.json');\n    need(inventory&&inventory.bytes===originalBytes.length&&inventory.sha256===sha(originalBytes),'B_CONDITIONS_CHANGED');\n    const conditions=JSON.parse(originalBytes.toString('utf8'));\n",
+        "      expected:{modelBinding:descriptor.modelBinding,contractHashes:descriptor.contractHashes,datasetId:descriptor.datasetId,\n        productionReferenceAt:descriptor.productionReferenceAt,generatedAt:descriptor.generatedAt,bundleContentSha256:descriptor.bundleContentSha256}});\n    const conditionsPath=path.join(paths.bundlePath,'payload/data/live/conditions.json');\n    const originalBytes=await read(conditionsPath,conditionsMaximum);\n    const inventory=verified.files.find(row=>row.relativePath==='data/live/conditions.json');\n    need(inventory&&inventory.bytes===originalBytes.length&&inventory.sha256===sha(originalBytes),'B_CONDITIONS_CHANGED');\n    const conditions=JSON.parse(originalBytes.toString('utf8'));\n"
+      ],
+      [
+        "      need(same(await checkpointRequest('?document_key=eq.'+encodeURIComponent(SKey)\n        +'&select=document_key,payload,version&limit=2',{},'read'),SRows),'S_CHANGED');\n      need(same(JSON.parse((await read(centralPath,16*MB)).toString('utf8')),central),'REGISTRY_CHANGED');\n      need(sha(await read(conditionsPath,256*MB))===inventory.sha256,'B_CONDITIONS_CHANGED');\n      need(same(await qualifyProducer(descriptor.sourceHead,frozenRoot),producer),'SOURCE_CHANGED');\n    }catch(error){first=error;hasFirst=true;}\n    try{\n",
+        "      need(same(await checkpointRequest('?document_key=eq.'+encodeURIComponent(SKey)\n        +'&select=document_key,payload,version&limit=2',{},'read'),SRows),'S_CHANGED');\n      need(same(JSON.parse((await read(centralPath,16*MB)).toString('utf8')),central),'REGISTRY_CHANGED');\n      need(sha(await read(conditionsPath,conditionsMaximum))===inventory.sha256,'B_CONDITIONS_CHANGED');\n      need(same(await qualifyProducer(descriptor.sourceHead,frozenRoot),producer),'SOURCE_CHANGED');\n    }catch(error){first=error;hasFirst=true;}\n    try{\n"
+      ],
+      [
+        "    // reach the normal pointer/version readers. No JSON/PASS/grant is read.\n    refreshers.set(handle,async()=>{\n      need(same(JSON.parse((await read(centralPath,16*MB)).toString('utf8')),central),'REGISTRY_CHANGED');\n      need(sha(await read(conditionsPath,256*MB))===inventory.sha256,'B_CONDITIONS_CHANGED');\n      need(same(await pointer(),before),'SOURCE_CHANGED');\n      const SKey=protectedS.PROTECTED_RAVSCORE_CHECKPOINT_DOCUMENT_KEY;\n      const versionRequest=protectedS.createProtectedRavScoreCheckpointVersionRequester();\n",
+        "    // reach the normal pointer/version readers. No JSON/PASS/grant is read.\n    refreshers.set(handle,async()=>{\n      need(same(JSON.parse((await read(centralPath,16*MB)).toString('utf8')),central),'REGISTRY_CHANGED');\n      need(sha(await read(conditionsPath,conditionsMaximum))===inventory.sha256,'B_CONDITIONS_CHANGED');\n      need(same(await pointer(),before),'SOURCE_CHANGED');\n      const SKey=protectedS.PROTECTED_RAVSCORE_CHECKPOINT_DOCUMENT_KEY;\n      const versionRequest=protectedS.createProtectedRavScoreCheckpointVersionRequester();\n"
+      ]
+    ]
+  }
+});
+function canonical592CapacitySource(source,file){
+  const row=reviewedCapacity593Sources[file];if(!row)return source;
+  const hash=value=>successorHash('sha256').update(value).digest('hex');
+  const canonical=reviewedIssued592Sources[file];
+  for(const p of [row.before,{bytes:canonical.canonicalBytes,sha256:canonical.canonicalSha256}])
+    if(hash(source)===p.sha256){assert.equal(Buffer.byteLength(source),p.bytes);return source;}
+  const original=source;assert.equal(Buffer.byteLength(source),row.after.bytes,'Exact593 capacity source size');
+  assert.equal(hash(source),row.after.sha256,'Exact593 capacity whole source');
+  for(const [old,current]of [...row.hunks].reverse()){assert.equal(source.split(current).length,2);source=source.replace(current,()=>old);}
+  assert.equal(hash(source),row.before.sha256);assert.equal(Buffer.byteLength(source),row.before.bytes);
+  let roundtrip=source;for(const [old,current]of row.hunks){assert.equal(roundtrip.split(old).length,2);roundtrip=roundtrip.replace(old,()=>current);}
+  assert.equal(roundtrip,original,'Whole593-592-593 DATA roundtrip');return source;
+}
+
 function canonical591AssistantSource(source,file){
   assert.equal(typeof source,'string');source=source.replace(/\r\n?/g,'\n');
   const variant=reviewedIssued592Sources[file];assert(variant,'Only the five reviewed source owners');
+  source=canonical592CapacitySource(source,file);
   const input=source,hash=value=>successorHash('sha256').update(value).digest('hex');
   if(hash(source)===variant.canonicalSha256){assert.equal(Buffer.byteLength(source),variant.canonicalBytes);return source;}
   assert.equal(hash(source),variant.currentSha256,'Exact reviewed592 whole source before test-only inverse');
@@ -1960,13 +2037,13 @@ test('assistant592 strict source DATA inverse preserves canonical591 and refuses
   }
 });
 
-// Actual issued assistant592 caller/binding contracts. No B/S or SQL execution.
-test('assistant592 issued metadata preserves genuine591 canonical source and strict later target',async()=>{
+// Actual issued assistant593 caller/binding contracts. No B/S or SQL execution.
+test('assistant593 issued metadata preserves genuine591 canonical source and strict later target',async()=>{
   const m=await import('./lib/assistant-later-h0-successor-source.mjs');
   const r=await import('./integrated-cutover-readiness.mjs');
   const s=await import('./sync-ravscore-model-binding.mjs');
   const active=m.ACTIVE_ASSISTANT_SUCCESSOR;
-  assert.equal(active,m.INACTIVE_ASSISTANT_PUBLIC591_SUCCESSOR);assert.equal(active.requireRelease(),'4.0.592');
+  assert.equal(active,m.INACTIVE_ASSISTANT_PUBLIC591_SUCCESSOR);assert.equal(active.requireRelease(),'4.0.593');
   assert.equal(active.before,m.ASSISTANT_PUBLIC591_SUCCESSOR_BEFORE);
   assert.deepEqual({version:active.before.version,C:active.before.C,I:active.before.I,T:active.before.T},m.ASSISTANT_PUBLIC590_SUCCESSOR_BINDING);
   const required=r.assistantPublic591SuccessorRequiredMigrations(),prior=r.assistantPublic590SuccessorRequiredMigrations();
@@ -2018,4 +2095,30 @@ test('assistant592 native evidence requires its own new commands and rejects old
   assert.throws(()=>n.verifyAssistantPublic591SuccessorPhaseReceipt({...receipt,phase:'ASSISTANT_PUBLIC590_SUCCESSOR'},current));
   assert.throws(()=>n.verifyAssistantPublic591SuccessorPhaseReceipt({...receipt,commands:n.ASSISTANT_PUBLIC590_SUCCESSOR_COMMANDS},current));
   assert.throws(()=>n.verifyAssistantPublic591SuccessorPhaseReceipt({...receipt,executedInThisRun:false},current));
+});
+
+// The uninstalled592 source stays in Git; only the closed actual593 plan is eligible.
+test('assistant593 exact outer source DATA and closed direct591 migration plan',async()=>{
+  for(const [file,row]of Object.entries(reviewedCapacity593Sources)){
+    const raw=await fs.readFile(path.join(ROOT,file),'utf8'),old=canonical592CapacitySource(raw,file);
+    assert.equal(Buffer.byteLength(old),row.before.bytes);assert.equal(successorHash('sha256').update(old).digest('hex'),row.before.sha256);
+    for(const [previous,current]of row.hunks)for(const changed of [raw.replace(current,()=>previous),raw.replace(current,()=>current+current)])
+      assert.throws(()=>canonical592CapacitySource(changed,file));
+    for(const changed of [raw+'\n','!'+raw.slice(1)])assert.throws(()=>canonical592CapacitySource(changed,file));
+  }
+  const r=await import('./integrated-cutover-readiness.mjs');
+  const required=r.assistantPublic591SuccessorRequiredMigrations(),target=required.at(-1),prior=required.slice(0,-1);
+  assert.equal(prior.length,59);assert.equal(target.version,'20261030105202');
+  assert(!required.some(row=>row.filename==="20261029183010_assistant_public591_later_h0_original_bound_successor.sql"));
+  const historical=await fs.readFile(path.join(ROOT,'supabase/migrations',"20261029183010_assistant_public591_later_h0_original_bound_successor.sql"));
+  assert.equal(historical.length,352862);assert.equal(successorHash('sha256').update(historical).digest('hex'),"e5c7fb182d9491bd9222cb59dbefd3da4592867522dde805ea17e67c0d023e97");
+  const list=installed=>'Local | Remote | Time (UTC)\n'+required.map(row=>row.version+' | '+(installed||row!==target?row.version:'')+' | synthetic-plan-response').join('\n');
+  const noop='DRY RUN: migrations will *not* be pushed to the database.\nRemote database is up to date.';
+  const dry='DRY RUN: migrations will *not* be pushed to the database.\nWould push these migrations:\n - '+target.filename+'\nFinished supabase db push.';
+  const before=await r.assertAssistantPublic591SuccessorMigrationPlan({migrationListText:list(false),dryRunText:dry,migrationsDirectory:path.join(ROOT,'supabase/migrations')});
+  assert.deepEqual(before.pendingVersions,[target.version]);assert.equal(before.alreadyAppliedVersions.length,59);
+  const installed=await r.assertAssistantPublic591SuccessorMigrationPlan({migrationListText:list(true),dryRunText:noop,migrationsDirectory:path.join(ROOT,'supabase/migrations')});
+  assert.deepEqual(installed.pendingVersions,[]);assert.equal(installed.alreadyAppliedVersions.length,60);
+  for(const extra of ["20261029183010",'20990101000000'])
+    await assert.rejects(r.assertAssistantPublic591SuccessorMigrationPlan({migrationListText:list(false)+'\n'+extra+' | '+extra+' | unknown.sql',dryRunText:dry,migrationsDirectory:path.join(ROOT,'supabase/migrations')}));
 });

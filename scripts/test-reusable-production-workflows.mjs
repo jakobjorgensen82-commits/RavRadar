@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import {createHash as conditions593TestHash} from 'node:crypto';
 import path from 'node:path';
 import {pathToFileURL} from 'node:url';
 import {withFrozenNative0600TestSource} from './run-frozen-native0600-source-targets.mjs';
@@ -772,6 +773,20 @@ if(ASSISTANT_PUBLIC591_SUCCESSOR_BINDING!==null){
   assert.deepEqual(actualTimeoutInventory,
     [...casTimeoutSettings,{migration:successor,timeout:'55s'}],
     'Hele det tidligere591/590/588/587-timeoutinventar bevares foran præcis én udstedt592-migration');
+}
+// TEST INVENTORY ONLY: preserve the whole uninstalled592 SQL source while
+// removing only its exact55s row before the unchanged591/590 timeout oracles.
+// The normal closed installation plan is checked separately; this grants no SQL admission.
+if(ASSISTANT_PUBLIC591_SUCCESSOR_BINDING?.version==='20261030105202'){
+  const name="20261029183010_assistant_public591_later_h0_original_bound_successor.sql";
+  const bytes=fs.readFileSync(new URL(name,migrationsUrl));
+  assert.equal(bytes.length,352862);
+  assert.equal(conditions593TestHash('sha256').update(bytes).digest('hex'),"e5c7fb182d9491bd9222cb59dbefd3da4592867522dde805ea17e67c0d023e97");
+  const inventory=casTimeoutSettings;
+  assert.equal(inventory.filter(row=>row.migration===name).length,1);
+  assert.deepEqual(inventory.at(-1),{migration:name,timeout:'55s'});
+  casTimeoutSettings=inventory.slice(0,-1);
+  assert.deepEqual(inventory,[...casTimeoutSettings,{migration:name,timeout:'55s'}]);
 }
 if(ASSISTANT_PUBLIC590_SUCCESSOR_BINDING!==null){
   requireAssistantPublic590SuccessorOutput();
