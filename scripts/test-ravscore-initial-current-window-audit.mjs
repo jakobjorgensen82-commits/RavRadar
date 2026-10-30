@@ -2,7 +2,7 @@ import { inverseAlternativeCCaller } from './lib/alternative-c-caller-test-input
 import { inverseArchivedWeatherRestartUpdater, inverseWeatherExportMemoryUpdater,
  WEATHER_EXPORT_MEMORY_UPDATER_REVIEW, inverseCurrentNativeOriginalProducerTestInput,
  CURRENT_NATIVE_ORIGINAL_PRODUCER_TEST_REVIEW,
- inverseCurrentFamilyColdTargetTestInput, inverseFinalizedWeatherOwnersTestInput,
+ inverseCurrentFamilyColdTargetTestInput, inverseFinalizedWeatherOwnersTestInput, inverseWindTailCapacityUpdaterTestInput,
  FINALIZED_WEATHER_OWNERS_TEST_REVIEW } from './lib/archived-weather-restart-updater-test-input.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
@@ -224,7 +224,7 @@ test('missing exact native hold support produces unavailable with no fabricated 
 });
 
 test('finished-owner inverse restores exact d957 and retains every historical updater oracle',async()=>{
- const current=(await fs.readFile(path.join(ROOT,'scripts/update-weather.mjs'),'utf8')).replaceAll('\r\n','\n');
+ const current=inverseWindTailCapacityUpdaterTestInput((await fs.readFile(path.join(ROOT,'scripts/update-weather.mjs'),'utf8')).replaceAll('\r\n','\n'),'scripts/update-weather.mjs');
  const row=FINALIZED_WEATHER_OWNERS_TEST_REVIEW,relative=row.path;
  assert.equal(Buffer.byteLength(current),row.after.bytes);assert.equal(hash(current),row.after.sha256);
  const genuine=inverseFinalizedWeatherOwnersTestInput(current,relative);

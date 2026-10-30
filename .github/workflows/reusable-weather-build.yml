@@ -2837,7 +2837,10 @@ jobs:
           RAVSCORE_CURRENT_TRACE_PATH: data/diagnostics/ravscore-current-input-stage-trace.json
           RAVSCORE_CURRENT_TRACE_PART_IDS: dk-b04-07-national-part-02,dk-b04-07-national-part-05,dk-b05-12-national-part-01,dk-b05-17-national-part-03,dk-b05-17-national-part-02,dk-b05-17-national-part-04,dk-b05-18-national-part-02,dk-b05-18-national-part-03,dk-b05-18-national-part-05,dk-b05-20-owner-approved-01,dk-b09-06-national-part-06,dk-b10-23-national-part-01,dk-b12-03-national-part-05,dk-b12-06-national-part-02
           RAVRADAR_COMPONENT_COPERNICUS_BUDGET_MS: ${{ inputs.quick_confirmation && '45000' || '90000' }}
-          RAVRADAR_COMPONENT_OPEN_METEO_BUDGET_MS: ${{ inputs.quick_confirmation && '60000' || '90000' }}
+          # The ordinary scalar reserve must be able to reach all 673 PARTs.
+          # The runtime separately caps actual HTTP starts, including retries,
+          # and paces them; a longer deadline does not grant unlimited calls.
+          RAVRADAR_COMPONENT_OPEN_METEO_BUDGET_MS: ${{ inputs.quick_confirmation && '60000' || '600000' }}
           COPERNICUSMARINE_SERVICE_USERNAME: ${{ secrets.COPERNICUSMARINE_SERVICE_USERNAME }}
           COPERNICUSMARINE_SERVICE_PASSWORD: ${{ secrets.COPERNICUSMARINE_SERVICE_PASSWORD }}
           WEATHER_USER_AGENT: "RavRadar/4.0.591 (${{ github.server_url }}/${{ github.repository }})"
@@ -3030,14 +3033,28 @@ jobs:
             echo "release_gate_outcome=$release_gate_outcome" >> "$GITHUB_OUTPUT"
             node scripts/cutover-validation-report.mjs check --input "$report_path"
           else
-            runtime_audit_outcome="success"
+            # Both small observers use the same node executable/configuration as
+            # the audit; observer failure cannot replace its actual exit status.
+            node scripts/observe-runtime-audit-execution.mjs --phase before || true
+            runtime_audit_exit_status=0
             node scripts/audit-ravscore-integrated-public-runtime.mjs \
               --input data/live/conditions.json \
               --output "$audit_path" \
-              || runtime_audit_outcome="failure"
+              || runtime_audit_exit_status=$?
+            node scripts/observe-runtime-audit-execution.mjs --phase after \
+              --exit-code "$runtime_audit_exit_status" || true
+            runtime_audit_outcome="success"
+            if test "$runtime_audit_exit_status" != 0; then
+              runtime_audit_outcome="failure"
+            fi
+            echo "runtime_audit_exit_status=$runtime_audit_exit_status" >> "$GITHUB_OUTPUT"
             echo "runtime_audit_outcome=$runtime_audit_outcome" >> "$GITHUB_OUTPUT"
             if test "$runtime_audit_outcome" = "failure"; then
-              echo "::warning title=RavScore runtime audit::The audit found one or more model/state issues. The issues are retained in the payload-free audit report; valid weather publication continues."
+              if test -f "$audit_path"; then
+                echo "::warning title=RavScore runtime audit::The audit found one or more model/state issues. The issues are retained in the payload-free audit report; valid weather publication continues."
+              else
+                echo "::warning title=RavScore runtime audit process::The audit process stopped before its required report was written (exit $runtime_audit_exit_status). Fixed failure/execution observations are uploaded separately; the required-report publication gates remain unchanged."
+              fi
             fi
           fi
           rollback_status="$(jq -er '.rollback.status | select(. == "READY" or . == "BUILDING_MEASURED_ONLY")' "$audit_path")"
@@ -3054,11 +3071,14 @@ jobs:
 
       - name: Upload the payload-free runtime audit for every weather build
         continue-on-error: true
-        if: always() && steps.preflight.outputs.should_run == 'true' && hashFiles('.geometry-v2-work/ravscore-integrated-public-runtime-audit.json') != ''
+        if: always() && steps.preflight.outputs.should_run == 'true' && hashFiles('.geometry-v2-work/ravscore-integrated-public-runtime-audit.json', '.geometry-v2-work/ravscore-integrated-public-runtime-audit.json.failure.json', '.geometry-v2-work/ravscore-integrated-public-runtime-audit.json.execution.json') != ''
         uses: actions/upload-artifact@v7
         with:
           name: ravscore-runtime-audit-${{ github.run_id }}-${{ github.run_attempt }}
-          path: .geometry-v2-work/ravscore-integrated-public-runtime-audit.json
+          path: |
+            .geometry-v2-work/ravscore-integrated-public-runtime-audit.json
+            .geometry-v2-work/ravscore-integrated-public-runtime-audit.json.failure.json
+            .geometry-v2-work/ravscore-integrated-public-runtime-audit.json.execution.json
           retention-days: 30
           if-no-files-found: error
 

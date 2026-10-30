@@ -1,3 +1,23 @@
+## 30. oktober — kvalificér den snævre operationelle historikkontrol
+
+Før kontrolrettelsen gennem præcis samlet kvalifikation og sikker levering uden aktiv skrivende proces. Bevar den allerede gennemgåede auditressource-/fejlkvitteringskode og reservekapacitet, alle bindinger, SQL og normale hårde gates. Kontrolrettelsen skal bevare scorer og kvalitetsforbehold.
+
+Nye data er allerede offentlige i det undersøgte forløb; den foreløbige checkpointgenoptagelse er trukket tilbage og må ikke startes på dette grundlag. Afklar afsluttende deployverifikation og terminal kvittering særskilt. Påstå ikke genbrug af en inaktiv eller forkert type nativefasebevis. Den manglende auditrapports tidligere årsag og de øvrige fem mål er fortsat åbne. Se DEC-0298 og håndbog 89.284.
+
+## 30. oktober — kritisk auditforbedring før de øvrige kandidater
+
+Næste afgrænsede leverance er 591-auditkandidatens målte kopireduktion samt faste indholdsfrie proces-/fejlkvitteringer. Bevar den gennemgåede reservekapacitet, alle bindinger og de normale hårde gates. Ingen ny model-/SQL-udstedelse eller hævet heap.
+
+Kvalificér den præcise samlede kilde, vent på et skrivefrit produktionsvindue og verificér en virkelig almindelig efterfølger gennem audit, databevarelse og offentligt deploy. Sammenhold eventuelle nye faste fejloplysninger, før den oprindelige fejl kaldes forklaret eller løst. De separate fremtidige leverancer og alle fem mål bevares uden at blive kopieret ind i denne kilde. Se DEC-0297 og håndbog 89.283.
+
+## 29. oktober — P0: kvalificér den afgrænsede vindreserve og bevar almindelig vejrhentning
+
+Før den konkrete kapacitets- og kørettelse gennem én samlet gennemgang: vind-/bølge-GAP før temperatur, retfærdig cursor, to slots, samlet cap og startafstand samt én deadline fra bankstart. Bevar kildeprioritet og gyldige resultater. Kør de relevante normale mål og præcis kildekvalifikation; lokale tests er ikke levering.
+
+ROOT ejer derefter sikker levering i et skrivefrit vindue og en virkelig almindelig efterfølger. Følg udførte leverandør-, beregnings-, gemme-/genbrug-, B/S-, upload- og deploytrin og mål alle forventede timer for alle zoner, familier, søgemåder og dage. Det lokale loft på denne ene reserve må ikke kaldes hele Open-Meteos døgnforbrug eller en Free-garanti. Se DEC-0295 og håndbog 89.281.
+
+Pages89.278, assistentens næste efterfølger, kompakt delingsprojektion, brugerdata og den inaktive SOURCE-revision fortsætter særskilt. Reserverede kapitelnumre kopieres ikke ind. Alle fem hovedmål til 18. november 2026 består; ingen ny modeludstedelse eller migration i denne leverance.
+
 ## 29. oktober — Pages-deling har konkret ejerbeslutning; vejr og dækning er stadig P0
 
 Bevar kontinuerlig vejrhentning og undersøg de faktiske prognosehuller med højeste prioritet. I uafhængigt lokalt arbejde færdiggøres den godkendte separate Pages-kandidat: adapter/robots → kontrolleret controller og eksakt kildekvalifikation → verificeret pages.dev → faktisk offentlig 591-kompatibilitet og bevaret legacy-Worker → målt hosted/Free/Facebookaccept → senere én Simply-CNAME, TLS og klientcutover.

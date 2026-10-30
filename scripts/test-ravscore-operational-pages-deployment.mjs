@@ -1056,6 +1056,42 @@ installHistoryIncompleteIntegratedState(historyIncomplete);
 assert.equal((await verifyIntegratedFixture(historyIncomplete)).status, 'passed',
   'an exact all-active HISTORY_INCOMPLETE deployment remains operational');
 
+// The normal producer can have mature state memory while causal wave or
+// last-mile uncertainty remains. Keep the lower-bound quality and its reasons;
+// a complete 48-hour current window is not a FULL_HISTORY claim.
+for (const reason of ['WAVE_MOBILISATION_HISTORY_INCOMPLETE',
+  'LAST_MILE_HISTORY_INCOMPLETE']) {
+  const readyWithCausalUncertainty = attachIntegratedImplementation(
+    buildFixture(historyImplementation.binding, 'integrated'),
+  );
+  installHistoryIncompleteIntegratedState(readyWithCausalUncertainty);
+  for (const profile of [readyWithCausalUncertainty.startup.coastalParts.scoreProfile,
+    readyWithCausalUncertainty.details.coastalParts.scoreProfile,
+    readyWithCausalUncertainty.manifest.ravScoreProfile]) {
+    profile.modelMemoryReady = true;
+    profile.advisories = [];
+  }
+  for (const availability of [readyWithCausalUncertainty.manifest.ravScoreAvailability,
+    readyWithCausalUncertainty.startup.coastalParts.scoreAvailability,
+    readyWithCausalUncertainty.details.coastalParts.scoreAvailability]) {
+    availability.historyIncompleteZones[0].historyCoverageHours = 48;
+    availability.historyIncompleteZones[0].historyReasonCodes = [reason];
+  }
+  for (const document of [readyWithCausalUncertainty.startup,
+    readyWithCausalUncertainty.details]) {
+    const mode = document.coastalParts.zones['zone-1'].hourly[0].waders;
+    mode.historyCoverageHours = 48;
+    mode.historyReasonCodes = [reason];
+  }
+  resealPublicDocuments(readyWithCausalUncertainty);
+  assert.equal((await verifyIntegratedFixture(readyWithCausalUncertainty)).status,
+    'passed', 'mature memory must preserve and accept causal uncertainty: ' + reason);
+  assert.equal(readyWithCausalUncertainty.manifest.ravScoreAvailability
+    .allCurrentScoresFullHistory, false);
+  assert.equal(readyWithCausalUncertainty.details.coastalParts.zones['zone-1']
+    .hourly[0].waders.calibrationEligible, false);
+}
+
 const partialParts = attachIntegratedImplementation(
   buildFixture(historyImplementation.binding, 'integrated'),
 );

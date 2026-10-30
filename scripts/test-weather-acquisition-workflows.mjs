@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import { inverseCompletedRuntimeWorkflow } from './lib/completed-private-runtime-workflow-review.mjs';
+import {writeRuntimeAuditExecutionObservation} from './observe-runtime-audit-execution.mjs';
 import { spawnSync } from 'node:child_process';
 import fs from 'node:fs';
 import { tmpdir } from 'node:os';
@@ -9,7 +10,8 @@ import { runInNewContext } from 'node:vm';
 
 // Workflow contract and an isolated shell guard. Never reads private data or calls a provider.
 const read = file => fs.readFileSync(file, 'utf8').replaceAll('\r\n', '\n');
-const normal = inverseCompletedRuntimeWorkflow(read('.github/workflows/reusable-weather-build.yml'), 'build');
+const actualNormalWorkflow = read('.github/workflows/reusable-weather-build.yml');
+const normal = inverseCompletedRuntimeWorkflow(actualNormalWorkflow, 'build');
 const orchestrator = read('.github/workflows/update-and-deploy.yml');
 const manual = inverseCompletedRuntimeWorkflow(read('.github/workflows/run-current-weather-once.yml'), 'once');
 const watchdog = read('.github/workflows/preserve-copernicus-current-shadow.yml');
@@ -147,6 +149,24 @@ const weather = step(normal, 'Update central weather cache');
 assert.match(weather, /timeout-minutes: 80/);
 assert.match(weather, /RAVRADAR_COMPONENT_COPERNICUS_BUDGET_MS: \$\{\{ inputs\.quick_confirmation && '45000' \|\| '90000' \}\}/);
 assert.match(weather, /RAVRADAR_COMPONENT_OPEN_METEO_BUDGET_MS: \$\{\{ inputs\.quick_confirmation && '60000' \|\| '90000' \}\}/);
+// The old assertions above retain their exact historical view. Capacity is
+// proved separately on the actual current workflow, never on that inverse.
+test('scalar reserve capacity: actual caller keeps ordinary600s quick60s and cache-only0', () => {
+  const actualWeather = step(actualNormalWorkflow, 'Update central weather cache');
+  assert.match(actualWeather, /RAVRADAR_COMPONENT_OPEN_METEO_BUDGET_MS: \$\{\{ inputs\.quick_confirmation && '60000' \|\| '600000' \}\}/);
+  const expression = actualWeather.match(/RAVRADAR_COMPONENT_OPEN_METEO_BUDGET_MS: \$\{\{ (.+) \}\}/)?.[1];
+  assert.ok(expression);
+  for (const quick of [false, true]) assert.equal(runInNewContext(expression, { inputs: { quick_confirmation: quick } }), quick ? '60000' : '600000');
+  assert.match(actualWeather, /RAVRADAR_WEATHER_CACHE_ONLY: \$\{\{ inputs\.checkpoint_only \}\}/);
+  const runtime = read('scripts/update-weather.mjs');
+  const runtimeExpression = runtime.match(/const COMPONENT_OPEN_METEO_BUDGET_MS = ([\s\S]*?);/)?.[1];
+  assert.ok(runtimeExpression);
+  for (const cacheOnly of [false, true]) {
+    assert.equal(runInNewContext(runtimeExpression, { WEATHER_CACHE_ONLY: cacheOnly, process: { env: {} } }), cacheOnly ? 0 : 600000);
+    for (const explicit of ['60000', '600000']) assert.equal(runInNewContext(runtimeExpression,
+      { WEATHER_CACHE_ONLY: cacheOnly, process: { env: { RAVRADAR_COMPONENT_OPEN_METEO_BUDGET_MS: explicit } } }), cacheOnly ? 0 : Number(explicit));
+  }
+});
 assert.match(coverage, /if: steps\.weather\.outcome == 'success'/);
 assert.match(coverage, /continue-on-error: true/);
 assert.match(coverage, /\.weatherEngine\.componentFallback/);
@@ -394,3 +414,77 @@ assert.doesNotMatch(offlineRequest + offlineHour, /DMI_HANDOFF_VERIFIED|strict_a
   'A checkpoint request must not invent a successful producer or handoff');
 
 console.log('OK: DMI-first acquisition, one encrypted private progress path, safe diagnostics and retired plaintext entrances.');
+
+test('runtime audit execution observation keeps actual exit and private-free metadata without changing gates',async()=>{
+  const block=step(actualNormalWorkflow,'Audit runtime and collect independent cutover validation failures');
+  const ordinary=block.slice(block.indexOf('            # Both small observers'));
+  const starts=['node scripts/observe-runtime-audit-execution.mjs --phase before || true',
+    'node scripts/audit-ravscore-integrated-public-runtime.mjs','|| runtime_audit_exit_status=$?',
+    'node scripts/observe-runtime-audit-execution.mjs --phase after'].map(marker=>ordinary.indexOf(marker));
+  assert.ok(starts.every((value,index)=>value>=0&&(index===0||value>starts[index-1])));
+  for(const marker of ['--exit-code "$runtime_audit_exit_status" || true',
+    'echo "runtime_audit_exit_status=$runtime_audit_exit_status" >> "$GITHUB_OUTPUT"',
+    'echo "runtime_audit_outcome=$runtime_audit_outcome" >> "$GITHUB_OUTPUT"'])assert.ok(ordinary.includes(marker));
+  assert.doesNotMatch(ordinary,/NODE_OPTIONS|--max-old-space|2>|stderr|--input [^d]/);
+  const warnings=ordinary.slice(ordinary.indexOf('            if test "$runtime_audit_outcome" = "failure"; then'),ordinary.indexOf('          rollback_status='));
+  assert.match(warnings,/if test -f "\$audit_path"; then[\s\S]*The audit found one or more model\/state issues[\s\S]*else[\s\S]*The audit process stopped before its required report was written \(exit \$runtime_audit_exit_status\)/);
+  assert.equal(warnings.split('The audit found one or more model/state issues.').length,2);
+  assert.equal(warnings.split('The audit process stopped before its required report was written').length,2);
+  assert.ok(warnings.includes('Fixed failure/execution observations are uploaded separately; the required-report publication gates remain unchanged.'));
+  const upload=step(actualNormalWorkflow,'Upload the payload-free runtime audit for every weather build');
+  assert.ok(upload.includes('if: always()'));
+  for(const suffix of ['', '.failure.json', '.execution.json'])
+    assert.equal(upload.split('            .geometry-v2-work/ravscore-integrated-public-runtime-audit.json'+suffix+'\n').length,2);
+  assert.ok(upload.includes("hashFiles('.geometry-v2-work/ravscore-integrated-public-runtime-audit.json', '.geometry-v2-work/ravscore-integrated-public-runtime-audit.json.failure.json', '.geometry-v2-work/ravscore-integrated-public-runtime-audit.json.execution.json')"));
+  const disposition=step(actualNormalWorkflow,'Create and validate exactly one checkpoint disposition before release gate');
+  assert.doesNotMatch(disposition,/execution\.json|failure\.json|observe-runtime-audit/);
+  assert.ok(disposition.includes('select(. == "READY" or . == "BUILDING_MEASURED_ONLY")'));
+  const root=fs.mkdtempSync(path.join(tmpdir(),'rr-audit-execution-'));
+  const helper=path.resolve('scripts/observe-runtime-audit-execution.mjs');
+  const report=path.join(root,'.geometry-v2-work/ravscore-integrated-public-runtime-audit.json');
+  const output=report+'.execution.json',marker='PRIVATE_AUDIT_OBSERVATION_MARKER';
+  const inputPaths={conditions:'data/live/conditions.json',startup:'data/live/public-conditions.json',details:'data/live/public-condition-details.json',manifest:'data/live/manifest.json',coastalParts:'data/live/coastal-parts-v2.json',zoneRegistry:'data/zones.geojson'};
+  const keys=['auditExitCode','failureReportPresent','heapLimitBytes','inputSizes','phase','privatePayloadIncluded','reportPresent','schemaVersion','status'].sort();
+  try{
+    const missing=await writeRuntimeAuditExecutionObservation({phase:'before',repositoryRoot:root});
+    assert.deepEqual(Object.keys(missing).sort(),keys);assert.equal(missing.status,'NOT_FINISHED');
+    assert.equal(missing.auditExitCode,null);assert.equal(missing.reportPresent,false);assert.equal(missing.failureReportPresent,false);
+    assert.deepEqual(Object.keys(missing.inputSizes).sort(),Object.keys(inputPaths).sort());
+    for(const value of Object.values(missing.inputSizes))assert.deepEqual(value,{status:'MISSING',bytes:null});
+    for(const relative of Object.values(inputPaths)){
+      const file=path.join(root,relative);fs.mkdirSync(path.dirname(file),{recursive:true});fs.writeFileSync(file,marker+' æ');
+    }
+    const env={...process.env,NODE_OPTIONS:'--max-old-space-size=192',RAVRADAR_PRIVATE_TEST_MARKER:marker};
+    const expected=spawnSync(process.execPath,['--max-old-space-size=128','-e',"process.stdout.write(String(require('node:v8').getHeapStatistics().heap_size_limit))"],{cwd:root,env,encoding:'utf8'});
+    assert.equal(expected.status,0);
+    const run=args=>spawnSync(process.execPath,['--max-old-space-size=128',helper,...args],{cwd:root,env,encoding:'utf8'});
+    let child=run(['--phase','before']);assert.equal(child.status,0);assert.equal(child.stdout,'');assert.equal(child.stderr,'');
+    const start=JSON.parse(fs.readFileSync(output,'utf8'));
+    assert.equal(start.heapLimitBytes,Number(expected.stdout));assert.equal(start.phase,'BEFORE_AUDIT');
+    for(const size of Object.values(start.inputSizes))assert.deepEqual(size,{status:'REGULAR',bytes:Buffer.byteLength(marker+' æ')});
+    const stopped=spawnSync(process.execPath,['-e','process.exit(134)'],{cwd:root,encoding:'utf8'});
+    assert.equal(stopped.status,134);
+    child=run(['--phase','after','--exit-code',String(stopped.status)]);assert.equal(child.status,0);
+    let value=JSON.parse(fs.readFileSync(output,'utf8'));
+    assert.equal(value.phase,'AFTER_AUDIT');assert.equal(value.status,'EXIT_NONZERO');assert.equal(value.auditExitCode,134);
+    assert.equal(value.heapLimitBytes,start.heapLimitBytes);assert.equal(value.reportPresent,false);
+    fs.writeFileSync(report,marker);fs.writeFileSync(report+'.failure.json',marker);
+    child=run(['--phase','after','--exit-code','0']);assert.equal(child.status,0);
+    value=JSON.parse(fs.readFileSync(output,'utf8'));assert.deepEqual(Object.keys(value).sort(),keys);
+    assert.equal(value.status,'EXIT_ZERO');assert.equal(value.auditExitCode,0);
+    assert.equal(value.reportPresent,true);assert.equal(value.failureReportPresent,true);assert.equal(value.privatePayloadIncluded,false);
+    const good=fs.readFileSync(output,'utf8');
+    assert.doesNotMatch(good,new RegExp(marker+'|NODE_OPTIONS|RAVRADAR_PRIVATE_TEST_MARKER|stderr|stack|READY|conditions.json|zones.geojson'));
+    for(const args of [['--phase','after','--exit-code','256'],['--phase','after','--exit-code','-1'],
+      ['--phase','after','--exit-code',marker],['--phase','before','--exit-code','0'],['--phase','unknown']]){
+      child=run(args);assert.equal(child.status,1);assert.equal(child.stdout,'');
+      assert.equal(child.stderr.trim(),'AUDIT_EXECUTION_OBSERVATION_FAILED');assert.equal(fs.readFileSync(output,'utf8'),good);
+    }
+    await assert.rejects(()=>writeRuntimeAuditExecutionObservation({phase:'after',exitCode:1.5,repositoryRoot:root}),/AUDIT_EXECUTION_ARGUMENTS/);
+    assert.equal(fs.readFileSync(output,'utf8'),good);
+  }finally{
+    const absolute=path.resolve(root),allowed=path.resolve(tmpdir())+path.sep;
+    assert.ok(absolute.startsWith(allowed)&&path.basename(absolute).startsWith('rr-audit-execution-'));
+    fs.rmSync(absolute,{recursive:true,force:true});
+  }
+});

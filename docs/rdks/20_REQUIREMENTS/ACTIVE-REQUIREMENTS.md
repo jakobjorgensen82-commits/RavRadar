@@ -1,3 +1,27 @@
+## 30. oktober — strømvindue, readiness og historikusikkerhed skal have forskellige kontroller
+
+Et fuldt aktuelt strømvindue kan sameksistere med HISTORY_INCOMPLETE fra bølge- eller last-mile-usikkerhed. Efterkontrollen må ikke kræve modelMemoryReady=false alene på grund af denne kvalitetsmarkering. Den skal bruge den faktiske historyCoverageHours mod RAVSCORE_CURRENT_SUPPLY_POLICY.windowHours med den eksisterende numeriske tolerance. Et reelt kort vindue kombineret med påstået klar hukommelse skal fortsat afvises.
+
+Alle profilfelter, modelhash, dækningsrelationer og den præcise advisory-liste skal stadig passe. Scorer, intervaller og årsagskoder må ikke omskrives som følge af kontrolrettelsen. Aktuelle zone/mode-tællere ved H0 er hverken alle 118 timer eller fuld femfamiliedækning.
+
+Bevar 4.0.591, C/I/T/SQL, originaler, historik, kildeprioritet, administratorpunkter, geometri, scoreformel og reservekapacitet. Udført Pages-deploy, afsluttende verifikation og terminal kvittering skal opgøres særskilt. Ingen genoptagelse eller vejrhentning udledes af denne rettelse. Se DEC-0298 og håndbog 89.284.
+
+## 30. oktober — uændret auditkontrakt og afgrænset fejlsynlighed
+
+Auditressourcer må reduceres uden at ændre rapportbytes, modelresultater, afslutningskode eller sikkerhedsaccept. Kontrollen af private feltnavne skal fortsat opdage samme markører hen over tekstbidder og filer. Lokal syntetisk hukommelsesbesparelse er ikke bevis for produktionskapacitet eller en tidligere fejls årsag.
+
+Faste .failure- og .execution-sidefiler må alene indeholde afgrænsede faser, fejlkategorier, processtatus, filstørrelser og heapoplysninger; rå fejltekst, stakspor og inputindhold må ikke kopieres. Manglende påkrævet auditrapport stopper fortsat normal videreføring. Observationer må aldrig blive audit-/READY-erstatning eller skjule et programstop som en modelafvigelse. Ingen heapgrænse eller kontrol lempes.
+
+Bevar 4.0.591, alle C/I/T- og SQL-bytes, originaler, kildeprioritet, administratorpunkter, geometri og scoreformel. Den allerede gennemgåede reservekapacitet bevares. Samlet kvalifikation og faktisk almindelig efterfølger kræves. Se DEC-0297 og håndbog 89.283.
+
+## 29. oktober — aktivt krav: afgrænset og retfærdig komponentreserve
+
+- Bevar DMI → Copernicus → Open-Meteo og de eksisterende gyldigheds-, original-, historie- og kildekrav. Vind- og bølge-GAP skal behandles før temperatur-GAP; kystdele roteres inden for hver gruppe. Ingen ændring af scoreformel, administratorpunkter, geometri eller DMI-budgetter.
+- Normal reserve: 600.000 ms; kort vej: uændret 60.000 ms; cachevej: ingen nye HTTP-kald. To samtidige transporter, samlet loft på 800 faktiske HTTP-forsøg inklusive retry og mindst 150 ms mellem samtlige starter. Én monoton deadline begynder før banklæsning/validering/første checkpoint og må ikke genstartes af ventetid eller retry.
+- Intet nyt HTTP-forsøg efter loft eller deadline. Allerede startede transporter skal afsluttes eller annulleres sikkert; gyldige søskenderesultater skal gemmes. Cursor følger faktisk første HTTP-start pr. opgave, også fejlede kald; udskudt før start flytter ikke cursor. Bank og parser bevares.
+- 4.800 forsøg ved seks almindelige kørsler er kun loftet for denne vej. Andre Open-Meteo-strømme og forbrugere skal tælles særskilt; ingen Free-garanti. Kildekvalifikation og faktisk almindelig levering skal bevises, før rettelsen kaldes i drift.
+- Dækningens kontrakt er fortsat alle 118 forventede timer × 210 zoner for hver søgemåde, alle fem familier og hver prognosedag. Ukendt er ikke dækket eller nul; sammenlign fælles timer og bevar gyldige originaler. Ingen ny version/C/I/T eller migration. Se DEC-0295 og håndbog 89.281.
+
 ## 29. oktober — aktiv ejerbeslutning: separat Pages-prognosedeling
 
 - Kun projektet `ravradar-del` på den eksisterende Cloudflare-konto er godkendt. Først pages.dev; senere `del.ravradar.dk` med én Simply-CNAME. NS/apex/www/mail bevares. Det erstatter tidligere venten på ejerens DNS-valg, ikke de nødvendige leveringskontroller.

@@ -1,3 +1,31 @@
+## 30. oktober — snæver kontraktrettelse mellem historikkvalitet og readiness
+
+Den undersøgte generation nåede faktisk Pages-deploy, og dens friske offentlige manifest var byteidentisk med det forseglede mål. Privat audit bestod med modelMemoryReady=true og ingen readiness-advarsler, samtidig med at alle aktuelle zone/modevalg havde 48 timers strømvinduedækning og bølgemobiliseringsrelateret historikusikkerhed. Den efterfølgende deploykontrol afviste kombinationen på en for bred antagelse om HISTORY_INCOMPLETE.
+
+Kandidaten afleder i stedet et kort strømvindue fra historyIncompleteZones[].historyCoverageHours og den gældende vinduespolitik. Den bevarer den gamle negative kontrol af et reelt kort strømvindue samt alle modelhash-, advisory-, profil- og dækningskrav. Scoretal, usikkerhedsintervaller og årsagskoder ændres ikke; fulde 48 timer er ikke en generel fuldhistorikgaranti.
+
+Pages-handlingen og den manglende afsluttende verifikation/terminale kvittering er forskellige udfald. Checkpointgenoptagelsen var kun en foreløbig plan og er trukket tilbage, fordi nye data allerede er offentlige; ingen genoptagelse eller ny vejrhentning følger af denne rettelse. 755-kandidatens ressourcearbejde er særskilt, og den tidligere manglende auditrapports rodårsag er fortsat ubevist. Eksisterende nativefasebevis må ikke fejlagtigt kaldes genbrugeligt i den aktive fase.
+
+Kilden er fortsat 4.0.591 med uændrede C/I/T/SQL, originaler, historik, DMI → Copernicus → Open-Meteo, administratorpunkter, geometri og scoreformel. Den gennemgåede reservekapacitet bevares. Præcis kvalifikation, sikker levering og faktisk afsluttende offentlig kontrol er åbne; alle fem mål består. Se DEC-0298 og håndbog 89.284.
+
+## 30. oktober — auditressourcer og faste fejlkvitteringer, lokal kandidat
+
+Den kritiske 591-kandidat reducerer en dokumenteret ekstra stor tekstkopi i runtime-auditten. En faktisk lokal kørsel af hele auditprogrammet på den eksisterende store syntetiske fixture gav byteidentisk rapport og samme afslutningskode med cirka 111 MiB mindre maksimal proceshukommelse. Det er ikke produktionsdata, en kapacitetsgaranti eller bevis for nattens præcise fejlårsag. Den observerede manglende rapport er fortsat uafklaret.
+
+Små faste .failure- og .execution-kvitteringer skal skelne en rapport med modelafvigelser fra et programstop før rapporten. Kun fast fase, fejlklasse, afslutningsstatus, filstørrelser og heapoplysninger må fremgå; ingen rå fejl, input, strømværdier, koordinater, proveniens eller nøgler. Sidefiler uploades særskilt og kan aldrig erstatte auditten eller blive et READY-bevis. Fatal procesafbrydelse og importfejl kan ligge før programmets egen fejlhåndtering. Ingen heap hæves, og ingen gate lempes.
+
+Den allerede gennemgåede kandidats reserveforbedring med 600 sekunder, 800 faktiske HTTP-forsøg, 150 ms startafstand og to transporter bevares. C/I/T/SQL, originaler/historik, DMI → Copernicus → Open-Meteo, administratorpunkter, geometri og scoreformel er uændrede. Denne kilde forbliver 4.0.591 og indeholder ikke de separate fremtidige assistent-/delingsleverancer. Samlet kvalifikation, sikker levering uden en aktiv skrivende proces og faktisk ny offentlig generation udestår. Se DEC-0297 og håndbog 89.283; skiftende kørselsstatus føres privat.
+
+## 29. oktober — lokal kapacitetsrettelse i komponentreserven
+
+Den normale reservekø har et påvist kapacitets- og rækkefølgeproblem: nødvendige vindopgaver kan stå ufærdige, når rammen er brugt. Den afgrænsede kandidat prioriterer vind- og bølge-GAP før temperatur, roterer kystdele inden for hver gruppe og bevarer to samtidige transporter. Almindelig reserve får 600 sekunder, kort vej beholder 60 sekunder og cachevej nul nye kald. Alle HTTP-forsøg, også genforsøg, deler et loft på 800 og mindst 150 ms mellem starterne.
+
+Én monoton deadline starter før banklæsning, validering og første checkpoint; den fornyes ikke af pacing eller retry. Ingen nye starter efter deadline/loft. Allerede startede transporter skal stadig afsluttes eller annulleres sikkert, og gyldige søskenderesultater bevares. Cursor flyttes kun efter faktisk førstegangs-HTTP-start; udskudte opgaver før start tæller ikke. Banken, parseren, DMI-budgetter, DMI → Copernicus → Open-Meteo, originaler/historik, punkter, geometri og scoreformel bevares.
+
+Det er endnu en lokal leveringskandidat, ikke bevis for løst produktion, komplet femfamiliedækning eller sikker Free-drift. 800 gange seks almindelige kørsler afgrænser kun denne komponentreserve til 4.800 HTTP-forsøg pr. døgn; andre Open-Meteo-strømme og forbrugere er ikke med. Præcis kvalifikation, sikker levering og måling af en ny virkelig almindelig generation udestår. Alle forventede 118 timer, 210 zoner, begge søgemåder, hver familie og hver prognosedag skal fortsat måles. Private kørselsidentiteter og diagnostik føres alene i checkpointet.
+
+Ingen ny version/C/I/T, migration eller SQL-installation følger af denne dokumentation. Andre kandidater og alle fem hovedmål består. Se DEC-0295 og håndbog 89.281; ældre daterede beskrivelser bevares som historik.
+
 ## 29. oktober — godkendt separat Pages-prognosedeling; privat kandidat
 
 Ejeren har godkendt det ene separate Cloudflare Pages/Functions-projekt `ravradar-del`: først `ravradar-del.pages.dev`, senere `del.ravradar.dk` med kun én ny CNAME hos Simply. Ingen navneserverflytning, ændring af apex/www eller mailposter. Denne beslutning erstatter de ældre daterede afventninger af ejerens DNS-valg alene på dette punkt; de øvrige tilladelses- og bevisgrænser bevares.

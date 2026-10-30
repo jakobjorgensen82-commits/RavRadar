@@ -1,3 +1,91 @@
+## 89.284 Klar hukommelse og usikker score er forskellige oplysninger
+
+**Kort fortalt: Modellen kan have et dækket strømvindue og en tilstand, der er klar til brug, selv om tidligere bølgepåvirkning stadig giver et usikkerhedsinterval omkring scoren. Efterkontrollen skal forstå den samme forskel som producenten.**
+
+I det undersøgte forløb var den nye offentlige manifest allerede leveret og helt identisk med det forseglede målmanifest. Den normale private audit var bestået. Alligevel afviste den efterfølgende deploykontrol kombinationen af en klar hukommelsesprofil og aktuelle scorer med historikrelateret usikkerhed. Det var en modstrid mellem to kontrolkontrakter, ikke bevis for at nye vejrdata aldrig var blevet leveret.
+
+### De 48 timer beskriver ikke al usikkerhed i modellen
+
+De undersøgte 210 zoner havde begge søgemåder markeret med 48 timers historikdækning i strømvinduets scorefelt. Den eneste angivne årsagskode i deres samlede historikliste var WAVE_MOBILISATION_HISTORY_INCOMPLETE. Producenten og den private audit accepterede samtidig modelMemoryReady=true og en tom liste af readiness-advarsler.
+
+De to oplysninger kan være korrekte samtidig. Strømvinduets dækning, hukommelsestilstandens parathed og den beregnede scores resterende usikkerhed er forskellige forhold. Bølge- og last-mile-historik kan fortsat påvirke et usikkerhedsinterval, selv om det aktuelle strømvindue er dækket. Derfor må 48 timer ikke bruges som begrundelse for at skjule et relevant forbehold eller kalde alle scorer fuldt afklarede.
+
+De aktuelle historiktællere gælder den fælles reference ved prognosestarten: 210 zoner gange to søgemåder. De er ikke en optælling af alle 118 prognosetimer eller et mål for alle fem vejrtypers datadækning. Et forbehold kan desuden blive ført fra en tilgængelig kystdel videre til zonens samlede vurdering.
+
+### Den snævre kontrolrettelse
+
+Efterkontrollen skal aflede et reelt ufuldstændigt strømvindue af de eksisterende historikposter og deres historyCoverageHours i forhold til det gældende politikvindue. Den må ikke udlede samme tilstand alene af enhver HISTORY_INCOMPLETE-markering. Et faktisk kort strømvindue, for eksempel 24 timer, kan fortsat ikke kombineres med en profil, der påstår klar hukommelse.
+
+Normale tilfælde med fuldt strømvindue og resterende bølge- eller last-mile-usikkerhed kan dermed kontrolleres uden en falsk afvisning. Scoretal, årsagskoder, kvalitetsmarkeringer og usikkerhedsintervaller bevares. Kontrollen kræver stadig de rigtige modelhash, profilfelter, dækningsforhold og præcis sammenhæng mellem readinessflag og advarsler. Det er ikke en lempelse til vilkårlige profiler.
+
+### Udført deploy er ikke en afsluttet kørsel
+
+Pages-deployet blev faktisk udført i det undersøgte forløb, og den friske offentlige manifest matchede målet. Den afsluttende deployverifikation og terminale kvittering var derimod ikke godkendt. De to forhold skal beskrives hver for sig. Manifestlighed alene beviser heller ikke alle offentlige JavaScript-modulers tilstand.
+
+Den foreløbige idé om at genoptage fra checkpoint er trukket tilbage, fordi de nye data allerede er offentlige. Denne rettelse bestiller ikke en genoptagelse, en ny vejrhentning, en ny beregning eller en nulstilling af scorer eller historik. Ukendte skriveudfald skal fortsat afklares før en eventuel senere handling.
+
+### Hvad rettelsen ikke påstår
+
+Dette er en afgrænset 591-kontrolrettelse. Den separate kopireduktion og faste fejlkvitteringer i 89.283 bevares, men den tidligere manglende auditrapports præcise årsag er stadig ubevist. Et tidligere nativefase-artifact er heller ikke i sig selv et gyldigt genbrugsbevis for den aktive fase.
+
+Ingen version, C/I/T, SQL, originaler, kildeprioritet, administratorpunkter, geometri eller scoreformel ændres. Reservekøens 600 sekunder, 800-forsøgsloft, 150 ms startafstand og to transporter bevares. Præcis samlet kildekvalifikation, sikker levering uden aktiv skrivende proces og faktisk afsluttende offentlig kontrol udestår. Alle fem RavRadar-mål forbliver åbne. Se DEC-0298 og den aktuelle private kvittering.
+
+## 89.283 Den samme audit med færre store tekstkopier
+
+**Kort fortalt: Kontrollen af den færdige prognose skal stadig være lige streng. Den lokale kandidat bruger mindre hukommelse til den samme kontrol og gør det tydeligere, hvis selve kontrollen ikke når at skrive sin rapport.**
+
+Efter beregning og offentlig filgenerering kontrollerer RavRadar, at model, tilstand, prognose og offentlig visning hænger sammen. En afsluttet audit med fund er noget andet end et programstop, hvor rapporten aldrig bliver skrevet. En grøn status fra det omgivende trin er derfor ikke i sig selv bevis for en eksisterende eller bestået auditrapport.
+
+### Kontrollen samler ikke længere en ekstra stor tekst
+
+En af kontrollerne leder efter bestemte private bevisfelter, som ikke må ligge i de offentlige filer. Den tidligere gennemgang samlede flere allerede store tekster og lavede derefter endnu en samlet kopi med små bogstaver. Kandidaten gennemgår i stedet faste tekstbidder med overlap, så et forbudt feltnavn stadig opdages hen over både en bidgrænse og en filgrænse. De øvrige kontroller og deres fejlmarkeringer bevares.
+
+På den eksisterende store syntetiske fixture blev hele det normale auditprogram kørt før og efter ændringen. Rapportens bytes og afslutningskode var identiske. Den maksimale proceshukommelse faldt i denne ene lokale sammenligning med cirka 111 MiB, svarende til 7,7 procent. En kendt gyldig lille audit og præcise ugyldige grænsetilfælde beholdt også deres fulde rapporter.
+
+Det er en målt reduktion af en konkret ressourcerisiko. Den store fixture er ikke produktionsdata og er ikke en bestået national produktionsaudit. En lokal Windows-måling beviser heller ikke kapaciteten på den faktiske Linux-runner. Den præcise udløser af den observerede manglende rapport er stadig ubevist; målingen må ikke omtales som bevis for en hukommelsesfejl den nat.
+
+### Små fejlkvitteringer erstatter aldrig auditten
+
+Den samlede kandidat forbereder små faste .failure- og .execution-kvitteringer. De kan beskrive, hvilken fast fase der blev nået, en afgrænset fejlklasse, processens afslutningsstatus, filstørrelser og den faktisk anvendte heapgrænse eller konfiguration. Der gemmes ikke rå fejltekst, stakspor, inputindhold, strømværdier, koordinater, proveniens eller nøgler i disse nye observationer.
+
+En håndteret exception før rapportskrivning kan give en særskilt .failure-kvittering. Den normale omgivende proces skal bevare sin faste .execution-kvittering og uploade eventuelle sidefiler separat, også når den krævede auditrapport mangler. Et fatalt processtop, en importfejl eller en mistet runner kan betyde, at programmets egen fejlkvittering aldrig nås. Fravær af en kvittering er derfor ukendt, ikke succes.
+
+Ingen sidefil er en auditrapport, et READY-bevis eller tilladelse til at fortsætte uden de krævede kontroller. Den almindelige afslutningsstatus må ikke skjules som et modelresultat, og den krævede rapport må ikke erstattes af en kunstig tom rapport. Ingen heapgrænse hæves af denne afgrænsede kandidat.
+
+### Samlet levering og virkning skal stadig bevises
+
+Kandidaten bevarer den gennemgåede reservekøs 600-sekunders normalramme, loft på 800 HTTP-forsøg inklusive genforsøg, 150 ms mellem starter og to transporter. Prioriteten DMI → Copernicus → Open-Meteo, gyldige nyere data, originaler, historik, administratorpunkter, geometri og scoreformel bevares. Der udstedes ingen ny version, modelbinding eller SQL-overgang.
+
+Præcis samlet kildekontrol og sikker levering i et skrivefrit vindue udestår. En aktiv vejrhentning må ikke afbrydes eller få produktionskode ændret som del af dokumentationen. Først en faktisk efterfølgende almindelig kørsel gennem audit, privat gemning og offentligt deploy kan bevise den nye vejs produktionseffekt. Fuld dækning og selvstændig drift forbliver særskilte krav. Se DEC-0297 og det private checkpoint for den aktuelle status.
+
+## 89.281 Vindhuller skal have plads i reservekøen
+
+**Kort fortalt: Når de første vejrkilder ikke har udfyldt et nødvendigt vindfelt, skal reservekøen nå frem til den opgave. En længere, men stadig afgrænset kø kan hjælpe; den lover ikke komplette prognoser.**
+
+RavRadar forsøger fortsat DMI først, derefter Copernicus og til sidst Open-Meteo, hvor den enkelte vejrtype understøttes. At reservekøen får mere tid, ændrer ikke denne prioritering. Et gyldigt nyere input kan fortsat opdatere et ældre efter de eksisterende regler. Punkter, kildekontrol, scoreformel og allerede gemte originaler ændres ikke.
+
+### Nødvendige huller før mindre kritiske opgaver
+
+Den lokale kandidat lader opgaver, der skal udfylde manglende vind eller bølger, komme før opgaver om manglende vandtemperatur. Inden for hver gruppe roteres rækkefølgen af kystdele, så den samme begyndelse af listen ikke altid bruger hele køens kapacitet. Fremdriftsmærket flyttes først, når opgavens første faktiske HTTP-forsøg er startet. Et udskudt forsøg under ventetiden flytter ikke mærket; et startet forsøg tæller også, hvis det fejler.
+
+Der er fortsat højst to samtidige transporter. Alle nye HTTP-forsøg, også genforsøg, deler mindst 150 millisekunder mellem deres starter og et loft på 800 forsøg i denne komponentreserve pr. almindelig vejrhentning. Det er ikke 800 forsøg til hver kystdel eller hver vejrtype. Vind- og bølgeopgaverne deler den samme afgrænsede kapacitet.
+
+### Ti minutter er et startbudget
+
+Den almindelige komponentreserve får en ramme på 600 sekunder; den korte vej beholder 60 sekunder, og cachevejen starter ingen nye hentninger. Ét fælles, monotont stopur begynder før læsning og kontrol af banken samt det første checkpoint. Ventetid og genforsøg må ikke nulstille det. Når tiden eller forsøgsloftet er nået, må nye HTTP-forsøg ikke begynde.
+
+En transport, som allerede er startet, skal stadig afsluttes eller annulleres kontrolleret. Gyldige søskenderesultater skal gemmes, også når en anden opgave fejler. Derfor er 600 sekunder ikke et løfte om, at hele funktionen har returneret præcis efter ti minutter. De eksisterende transport-, stop-, gemme- og genbrugskontroller gælder fortsat. Bankformat og parser ændres ikke af denne kandidat.
+
+### Afgrænset forbrug er ikke en gratisgaranti
+
+Ved seks almindelige vejrhentninger kan netop denne vej højst starte 4.800 HTTP-forsøg pr. døgn. Andre Open-Meteo-kald og andre forbrugere er ikke med i det regnestykke. Startafstanden svarer højst til 400 starter pr. minut for denne kø alene. Open-Meteos aktuelle Free-vilkår angiver under 10.000 kald pr. døgn, 5.000 pr. time og 600 pr. minut ved ikke-kommerciel brug. Kontoens og de øvrige vejes samlede forbrug skal stadig kontrolleres; et lokalt loft er ikke bevis for ledig gratis kapacitet eller leverandørens tilgængelighed.
+
+### Status og næste kontrol
+
+Det er en lokal, afgrænset leveringskandidat. Den må ikke kaldes en løst produktionsfejl, fuld femfamiliedækning eller selvstændigt verificeret drift, før kildekontrol, sikker levering og en virkelig ny almindelig generation er gennemført. Dækningen måles fortsat over alle 118 forventede timer og alle 210 zoner, særskilt for begge søgemåder og hver prognosedag. Ukendte felter og manglende score må ikke tælles som dækket. Gyldige timer og hele originaler skal bevares.
+
+Der udstedes ingen ny version, modelbinding eller databaseovergang i denne afgrænsede leverance. DMI-tidsbudgetter, prioriteten DMI → Copernicus → Open-Meteo, historik, administratorpunkter og geometri bevares. De øvrige åbne RavRadar-opgaver består. Se DEC-0295 og den private driftskvittering for den aktuelle leveringsstatus.
+
 ## 89.278 En kortere delingsadresse med den samme prognose
 
 **Kort fortalt: En ny, kortere delingsadresse skal gøre det lettere at dele en prognose uden et personnavn i domænet. Den skal vise den samme valgte prognose og ændrer hverken RavScore eller vejrhentningen. Adressen er endnu en forberedt kandidat, ikke en offentlig leverance.**

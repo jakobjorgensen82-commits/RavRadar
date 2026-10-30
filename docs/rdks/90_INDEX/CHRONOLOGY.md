@@ -1,3 +1,15 @@
+## 30. oktober — faktisk ny offentlig generation, efterkontrol med forkert historikantagelse
+
+Pages-deploy var udført og manifestet matchede målet, men afsluttende kontrol afviste en legitim kombination af klart strømvindue og bølgemobiliseringsusikkerhed. Den snævre 591-kandidat måler nu den faktiske vinduesdækning og bevarer alle øvrige gates og scorer. Normal målprøve bestod; samlet kildekvalifikation og faktisk afsluttende virkning er åbne. Den foreløbige checkpointgenoptagelse er trukket tilbage. DEC-0298 og håndbog 89.284 tilføjes uden at blande denne årsag sammen med den fortsat ubeviste tidligere auditfejl.
+
+## 30. oktober — målt lokal auditkopireduktion og afgrænset observation
+
+Den samme normale audit på den eksisterende store syntetiske fixture bevarede hele rapporten og afslutningskoden med lavere maksimal proceshukommelse. Den kritiske 591-kandidat forbereder også faste .failure- og .execution-sidefiler til stop før den krævede rapport. De er aldrig READY-erstatning. Ingen ny binding, SQL, heapgrænse, score eller aktivering følger af dokumentationen; nattens præcise årsag og faktisk produktionseffekt er åbne. DEC-0297 og håndbog 89.283 tilføjes, mens alle ældre afsnit bevares.
+
+## 2026-10-29 — afgrænset kø- og kapacitetskandidat til komponentreserven
+
+DEC-0295 fastholder den almindelige reserves nye 600-sekundersramme, uændret kort/cachevej, to transporter, samlet cap800 inklusive retry og 150 ms global startafstand. Vind-/bølge-GAP kommer før temperatur; fair rotation og cursor følger faktisk første HTTP-start. Deadline begynder før banklæsning og må ikke fornyes. Originaler, gyldige søskenderesultater, kildeprioritet, DMI-budgetter, bank og parser bevares. Kvalifikation, sikker levering og faktisk ny-generationseffekt er åbne; ingen Free- eller dækningsgaranti, ny version/C/I/T eller SQL-migration. Håndbog89.281 spejles fra kanonisk Markdown; private observationer forbliver i checkpointet.
+
 ## 29. oktober — prognosedeling på Pages er godkendt, endnu ikke leveret
 
 Ejerens valg er ét separat `ravradar-del` Pages/Functions-projekt, først `ravradar-del.pages.dev`, senere `del.ravradar.dk` med én CNAME hos Simply. Ingen navneserverflytning eller ændring af apex/www/mail. Ældre afventninger af denne ejerbeslutning er historik; oprettelse, deploy, DNS/TLS, offentlig 591-kompatibilitet, Facebookaccept og målt Free-kapacitet er fortsat åbne. Frontend og legacy-Worker bevares indtil kontrolleret overgang. Privat adapter/controllerforberedelse og lokal prøve er ikke offentlig levering. Ingen vejr-, score-, model-, SQL- eller versionsændring. Alle fem mål til 18. november består. Se DEC-0294, håndbog 89.278 og privat checkpoint.

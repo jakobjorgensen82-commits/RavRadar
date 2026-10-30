@@ -3,6 +3,27 @@ import assert from 'node:assert/strict';
 import crypto from 'node:crypto';
 import fs from 'node:fs';
 const sha=value=>crypto.createHash('sha256').update(value).digest('hex');
+// TEST INPUT ONLY: one reviewed scalar reserve default; all earlier whole
+// updater identities and historical owner/cold/native oracles stay unchanged.
+export const WIND_TAIL_CAPACITY_UPDATER_TEST_REVIEW = Object.freeze({
+  path: 'scripts/update-weather.mjs',
+  before: Object.freeze({ bytes: 250741, sha256: '47b0bed78304a7ba072ed422aa3c67aeb7a77bb9b0a17ab96642e40bdebfba20' }),
+  after: Object.freeze({ bytes: 250742, sha256: '0f50808baa340accdc07e03b2fc4a3c714a322d7a274af50720a5694b78cffda' }),
+  beforeLine: "  : Number(process.env.RAVRADAR_COMPONENT_OPEN_METEO_BUDGET_MS ?? 90_000);",
+  afterLine: "  : Number(process.env.RAVRADAR_COMPONENT_OPEN_METEO_BUDGET_MS ?? 600_000);",
+});
+export function inverseWindTailCapacityUpdaterTestInput(source, relative) {
+  assert.equal(arguments.length, 2, 'WIND_TAIL_CAPACITY_UPDATER_ARGUMENTS');
+  assert.equal(typeof source, 'string', 'WIND_TAIL_CAPACITY_UPDATER_TYPE');
+  const row = WIND_TAIL_CAPACITY_UPDATER_TEST_REVIEW;
+  if (relative !== row.path || sha(source) !== row.after.sha256) return source;
+  assert.equal(Buffer.byteLength(source), row.after.bytes, 'WIND_TAIL_CAPACITY_UPDATER_AFTER_SIZE');
+  assert.equal(source.split(row.afterLine).length, 2, 'WIND_TAIL_CAPACITY_UPDATER_EXACT_LINE');
+  const previous = source.replace(row.afterLine, () => row.beforeLine);
+  assert.equal(Buffer.byteLength(previous), row.before.bytes, 'WIND_TAIL_CAPACITY_UPDATER_BEFORE_SIZE');
+  assert.equal(sha(previous), row.before.sha256, 'Every preceding updater byte survives the default-only inverse');
+  return previous;
+}
 // TEST INPUT ONLY: retire completed caller owners, then restore the WHOLE
 // genuine d957 updater before every unchanged historical source oracle.
 export const FINALIZED_WEATHER_OWNERS_TEST_REVIEW = Object.freeze({
@@ -23,6 +44,7 @@ export const FINALIZED_WEATHER_OWNERS_TEST_REVIEW = Object.freeze({
 export function inverseFinalizedWeatherOwnersTestInput(source, relative) {
   assert.equal(arguments.length, 2, 'FINALIZED_WEATHER_OWNERS_ARGUMENTS');
   assert.equal(typeof source, 'string', 'FINALIZED_WEATHER_OWNERS_TYPE');
+  source = inverseWindTailCapacityUpdaterTestInput(source, relative);
   const row = FINALIZED_WEATHER_OWNERS_TEST_REVIEW;
   assert.equal(relative, row.path, 'FINALIZED_WEATHER_OWNERS_PATH');
   if (Buffer.byteLength(source) === row.before.bytes && sha(source) === row.before.sha256) return source;
