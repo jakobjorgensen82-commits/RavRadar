@@ -1499,8 +1499,16 @@ test('assistant public587 import variants bind whole sources and reject every un
     ['scripts/check-assistant-later-h0-predecessor-source.mjs',[]],
     ['scripts/lib/authenticated-frozen586-predecessor.mjs',['../check-assistant-later-h0-predecessor-source.mjs']],
   ]){
-    const source=await fs.readFile(path.join(ROOT,file),'utf8');
+    const actual=await fs.readFile(path.join(ROOT,file),'utf8');
+    // Exact DATA views keep the old587/592 import oracles;593 has a real additional edge.
+    const source=canonical591AssistantSource(actual,file),issued592=canonical592CapacitySource(actual,file);
     assert.deepEqual([...modelSourceRelativeModuleSpecifiers(source,file)],expected);
+    assert.deepEqual([...modelSourceRelativeModuleSpecifiers(issued592,file)],expected);
+    const currentExpected=file==='scripts/lib/authenticated-frozen586-predecessor.mjs'
+      ?[...expected,'./bounded-json-writer.mjs']:expected;
+    assert.deepEqual([...modelSourceRelativeModuleSpecifiers(actual,file)],currentExpected);
+    for(const changed of [actual+'\n',actual+"\nimport './unreviewed-source.mjs';\n"])
+      assert.throws(()=>modelSourceRelativeModuleSpecifiers(changed,file),/Whole reviewed model import source changed/);
     assert.throws(()=>modelSourceRelativeModuleSpecifiers(source+'\n// unknown mutation\n',file),/Whole reviewed model import source changed/);
     assert.throws(()=>modelSourceRelativeModuleSpecifiers({},file),/Reviewed model source must be a string/);
     const withUnknownImport=source+"\nimport './unreviewed-source.mjs';\n";
