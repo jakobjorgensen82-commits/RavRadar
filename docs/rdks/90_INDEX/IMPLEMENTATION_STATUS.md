@@ -1,3 +1,11 @@
+## 30. oktober — auditressourcer og faste fejlkvitteringer, lokal kandidat
+
+Den kritiske 591-kandidat reducerer en dokumenteret ekstra stor tekstkopi i runtime-auditten. En faktisk lokal kørsel af hele auditprogrammet på den eksisterende store syntetiske fixture gav byteidentisk rapport og samme afslutningskode med cirka 111 MiB mindre maksimal proceshukommelse. Det er ikke produktionsdata, en kapacitetsgaranti eller bevis for nattens præcise fejlårsag. Den observerede manglende rapport er fortsat uafklaret.
+
+Små faste .failure- og .execution-kvitteringer skal skelne en rapport med modelafvigelser fra et programstop før rapporten. Kun fast fase, fejlklasse, afslutningsstatus, filstørrelser og heapoplysninger må fremgå; ingen rå fejl, input, strømværdier, koordinater, proveniens eller nøgler. Sidefiler uploades særskilt og kan aldrig erstatte auditten eller blive et READY-bevis. Fatal procesafbrydelse og importfejl kan ligge før programmets egen fejlhåndtering. Ingen heap hæves, og ingen gate lempes.
+
+Den allerede gennemgåede kandidats reserveforbedring med 600 sekunder, 800 faktiske HTTP-forsøg, 150 ms startafstand og to transporter bevares. C/I/T/SQL, originaler/historik, DMI → Copernicus → Open-Meteo, administratorpunkter, geometri og scoreformel er uændrede. Denne kilde forbliver 4.0.591 og indeholder ikke de separate fremtidige assistent-/delingsleverancer. Samlet kvalifikation, sikker levering uden en aktiv skrivende proces og faktisk ny offentlig generation udestår. Se DEC-0297 og håndbog 89.283; skiftende kørselsstatus føres privat.
+
 ## 29. oktober — lokal kapacitetsrettelse i komponentreserven
 
 Den normale reservekø har et påvist kapacitets- og rækkefølgeproblem: nødvendige vindopgaver kan stå ufærdige, når rammen er brugt. Den afgrænsede kandidat prioriterer vind- og bølge-GAP før temperatur, roterer kystdele inden for hver gruppe og bevarer to samtidige transporter. Almindelig reserve får 600 sekunder, kort vej beholder 60 sekunder og cachevej nul nye kald. Alle HTTP-forsøg, også genforsøg, deler et loft på 800 og mindst 150 ms mellem starterne.

@@ -1,3 +1,11 @@
+## 30. oktober — uændret auditkontrakt og afgrænset fejlsynlighed
+
+Auditressourcer må reduceres uden at ændre rapportbytes, modelresultater, afslutningskode eller sikkerhedsaccept. Kontrollen af private feltnavne skal fortsat opdage samme markører hen over tekstbidder og filer. Lokal syntetisk hukommelsesbesparelse er ikke bevis for produktionskapacitet eller en tidligere fejls årsag.
+
+Faste .failure- og .execution-sidefiler må alene indeholde afgrænsede faser, fejlkategorier, processtatus, filstørrelser og heapoplysninger; rå fejltekst, stakspor og inputindhold må ikke kopieres. Manglende påkrævet auditrapport stopper fortsat normal videreføring. Observationer må aldrig blive audit-/READY-erstatning eller skjule et programstop som en modelafvigelse. Ingen heapgrænse eller kontrol lempes.
+
+Bevar 4.0.591, alle C/I/T- og SQL-bytes, originaler, kildeprioritet, administratorpunkter, geometri og scoreformel. Den allerede gennemgåede reservekapacitet bevares. Samlet kvalifikation og faktisk almindelig efterfølger kræves. Se DEC-0297 og håndbog 89.283.
+
 ## 29. oktober — aktivt krav: afgrænset og retfærdig komponentreserve
 
 - Bevar DMI → Copernicus → Open-Meteo og de eksisterende gyldigheds-, original-, historie- og kildekrav. Vind- og bølge-GAP skal behandles før temperatur-GAP; kystdele roteres inden for hver gruppe. Ingen ændring af scoreformel, administratorpunkter, geometri eller DMI-budgetter.

@@ -1,3 +1,8 @@
+import observationFs from 'node:fs/promises';
+import observationPath from 'node:path';
+import {tmpdir as observationTmpdir} from 'node:os';
+import {spawnSync as observationSpawn} from 'node:child_process';
+import {fileURLToPath as observationFileURLToPath} from 'node:url';
 import assert from 'node:assert/strict';
 import {
   buildCandidateGDerivedStateSeries,
@@ -1959,3 +1964,51 @@ assert.ok(audit(small, nonCompactStartup, 1, 1).errors
 }
 
 console.log('Integreret RavScore public runtimeaudit: 210/673 og datasikre negative fixtures bestået.');
+
+async function assertBoundedAuditTextAndFailureReceipt() {
+  for(const [label,change]of [
+    ['chunk-crossing',value=>{value.startupText='x'.repeat(65530)+'WAVEINPUTPROOFS';}],
+    ['file-crossing',value=>{value.startupText='prefixWAVEINPUT';value.detailsText='PROOFSsuffix';}],
+  ]){
+    const full=syntheticFull({zoneCount:1,partCounts:[1]}),package_=publicPackage(full);
+    change(package_);
+    const report=audit(full,package_,1,1);
+    assert.equal(report.status,'failed',label);
+    assert.ok(report.errors.includes('PUBLIC_FEGGESUND_PRIVATE_PROOF_PRESENT'),label);
+  }
+  const temporary=await observationFs.mkdtemp(observationPath.join(observationTmpdir(),'rr-audit-failure-'));
+  const report=observationPath.join(temporary,'audit.json'),marker='PRIVATE_AUDIT_CATCH_MARKER';
+  const inputs=['data/live/conditions.json','data/live/public-conditions.json','data/live/public-condition-details.json',
+    'data/live/manifest.json','data/live/coastal-parts-v2.json','data/zones.geojson'];
+  try{
+    for(const relative of inputs){
+      const file=observationPath.join(temporary,relative);
+      await observationFs.mkdir(observationPath.dirname(file),{recursive:true});
+      await observationFs.writeFile(file,'{"private":"'+marker+'"');
+    }
+    const child=observationSpawn(process.execPath,[observationFileURLToPath(new URL('./audit-ravscore-integrated-public-runtime.mjs',import.meta.url)),
+      '--input','data/live/conditions.json','--output',report],{cwd:temporary,encoding:'utf8'});
+    assert.equal(child.status,1);
+    await assert.rejects(()=>observationFs.stat(report),{code:'ENOENT'});
+    const text=await observationFs.readFile(report+'.failure.json','utf8'),value=JSON.parse(text);
+    assert.deepEqual(Object.keys(value).sort(),['failureClass','heapLimitBytes','inputBytes','memoryBytes','phase','privatePayloadIncluded','readyEvidence','reportWritten','schemaVersion','status'].sort());
+    assert.equal(value.status,'FAILED_BEFORE_REPORT');assert.equal(value.phase,'PARSE_CONDITIONS');
+    assert.equal(value.failureClass,'JSON_SYNTAX_ERROR');assert.equal(value.reportWritten,false);
+    assert.equal(value.readyEvidence,false);assert.equal(value.privatePayloadIncluded,false);
+    assert.deepEqual(Object.keys(value.inputBytes).sort(),['conditions','startup','details','manifest','coastalParts','zones'].sort());
+    for(const bytes of Object.values(value.inputBytes))assert.equal(bytes,Buffer.byteLength('{"private":"'+marker+'"'));
+    assert.ok(Number.isSafeInteger(value.heapLimitBytes)&&value.heapLimitBytes>0);
+    assert.ok(Buffer.byteLength(text)<2048);
+    for(const output of [text,child.stdout,child.stderr]){
+      assert.equal(output.includes(marker),false);
+      assert.equal(output.includes(temporary),false);
+      assert.doesNotMatch(output,/"stack"|"message"|NODE_OPTIONS|currentU|currentV/);
+    }
+  }finally{
+    const absolute=observationPath.resolve(temporary),allowed=observationPath.resolve(observationTmpdir())+observationPath.sep;
+    assert.ok(absolute.startsWith(allowed)&&observationPath.basename(absolute).startsWith('rr-audit-failure-'));
+    await observationFs.rm(absolute,{recursive:true,force:true});
+  }
+}
+
+await assertBoundedAuditTextAndFailureReceipt();

@@ -1,3 +1,31 @@
+## 89.283 Den samme audit med færre store tekstkopier
+
+**Kort fortalt: Kontrollen af den færdige prognose skal stadig være lige streng. Den lokale kandidat bruger mindre hukommelse til den samme kontrol og gør det tydeligere, hvis selve kontrollen ikke når at skrive sin rapport.**
+
+Efter beregning og offentlig filgenerering kontrollerer RavRadar, at model, tilstand, prognose og offentlig visning hænger sammen. En afsluttet audit med fund er noget andet end et programstop, hvor rapporten aldrig bliver skrevet. En grøn status fra det omgivende trin er derfor ikke i sig selv bevis for en eksisterende eller bestået auditrapport.
+
+### Kontrollen samler ikke længere en ekstra stor tekst
+
+En af kontrollerne leder efter bestemte private bevisfelter, som ikke må ligge i de offentlige filer. Den tidligere gennemgang samlede flere allerede store tekster og lavede derefter endnu en samlet kopi med små bogstaver. Kandidaten gennemgår i stedet faste tekstbidder med overlap, så et forbudt feltnavn stadig opdages hen over både en bidgrænse og en filgrænse. De øvrige kontroller og deres fejlmarkeringer bevares.
+
+På den eksisterende store syntetiske fixture blev hele det normale auditprogram kørt før og efter ændringen. Rapportens bytes og afslutningskode var identiske. Den maksimale proceshukommelse faldt i denne ene lokale sammenligning med cirka 111 MiB, svarende til 7,7 procent. En kendt gyldig lille audit og præcise ugyldige grænsetilfælde beholdt også deres fulde rapporter.
+
+Det er en målt reduktion af en konkret ressourcerisiko. Den store fixture er ikke produktionsdata og er ikke en bestået national produktionsaudit. En lokal Windows-måling beviser heller ikke kapaciteten på den faktiske Linux-runner. Den præcise udløser af den observerede manglende rapport er stadig ubevist; målingen må ikke omtales som bevis for en hukommelsesfejl den nat.
+
+### Små fejlkvitteringer erstatter aldrig auditten
+
+Den samlede kandidat forbereder små faste .failure- og .execution-kvitteringer. De kan beskrive, hvilken fast fase der blev nået, en afgrænset fejlklasse, processens afslutningsstatus, filstørrelser og den faktisk anvendte heapgrænse eller konfiguration. Der gemmes ikke rå fejltekst, stakspor, inputindhold, strømværdier, koordinater, proveniens eller nøgler i disse nye observationer.
+
+En håndteret exception før rapportskrivning kan give en særskilt .failure-kvittering. Den normale omgivende proces skal bevare sin faste .execution-kvittering og uploade eventuelle sidefiler separat, også når den krævede auditrapport mangler. Et fatalt processtop, en importfejl eller en mistet runner kan betyde, at programmets egen fejlkvittering aldrig nås. Fravær af en kvittering er derfor ukendt, ikke succes.
+
+Ingen sidefil er en auditrapport, et READY-bevis eller tilladelse til at fortsætte uden de krævede kontroller. Den almindelige afslutningsstatus må ikke skjules som et modelresultat, og den krævede rapport må ikke erstattes af en kunstig tom rapport. Ingen heapgrænse hæves af denne afgrænsede kandidat.
+
+### Samlet levering og virkning skal stadig bevises
+
+Kandidaten bevarer den gennemgåede reservekøs 600-sekunders normalramme, loft på 800 HTTP-forsøg inklusive genforsøg, 150 ms mellem starter og to transporter. Prioriteten DMI → Copernicus → Open-Meteo, gyldige nyere data, originaler, historik, administratorpunkter, geometri og scoreformel bevares. Der udstedes ingen ny version, modelbinding eller SQL-overgang.
+
+Præcis samlet kildekontrol og sikker levering i et skrivefrit vindue udestår. En aktiv vejrhentning må ikke afbrydes eller få produktionskode ændret som del af dokumentationen. Først en faktisk efterfølgende almindelig kørsel gennem audit, privat gemning og offentligt deploy kan bevise den nye vejs produktionseffekt. Fuld dækning og selvstændig drift forbliver særskilte krav. Se DEC-0297 og det private checkpoint for den aktuelle status.
+
 ## 89.281 Vindhuller skal have plads i reservekøen
 
 **Kort fortalt: Når de første vejrkilder ikke har udfyldt et nødvendigt vindfelt, skal reservekøen nå frem til den opgave. En længere, men stadig afgrænset kø kan hjælpe; den lover ikke komplette prognoser.**

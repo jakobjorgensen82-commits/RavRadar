@@ -2,6 +2,7 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { getHeapStatistics } from 'node:v8';
 import {
   CANDIDATE_G_STATE_MODEL_ID,
   CANDIDATE_G_STATE_SCHEMA_VERSION,
@@ -835,6 +836,28 @@ function containsForbiddenPublicDestinationMaterial(value) {
       || containsForbiddenPublicDestinationMaterial(nested)));
 }
 
+// Match the same ASCII contract labels as the former joined/lowercased text,
+// without allocating another copy of the entire public details document.
+function containsPrivatePublicProofLabel(texts) {
+  const labels = ['waveinputproofs', 'feggesundneighborwavesource', 'sourceevidencesha256'];
+  // Preserve Array#join coercion/side effects for non-JSON helper callers.
+  if (!texts.every(value => typeof value === 'string')) {
+    const text = texts.join('').toLowerCase();
+    return labels.some(label => text.includes(label));
+  }
+  const overlap = Math.max(...labels.map(label => label.length)) - 1;
+  const chunkSize = 64 * 1024;
+  let tail = '';
+  for (const text of texts) {
+    for (let offset = 0; offset < text.length; offset += chunkSize) {
+      const chunk = tail + text.slice(offset, offset + chunkSize).toLowerCase();
+      if (labels.some(label => chunk.includes(label))) return true;
+      tail = chunk.slice(-overlap);
+    }
+  }
+  return false;
+}
+
 function addPublicPackageChecks({
   full,
   startup,
@@ -885,16 +908,12 @@ function addPublicPackageChecks({
 
   collector.add(startupText === compactJson(startup), 'PUBLIC_STARTUP_NOT_COMPACT');
   collector.add(detailsText === compactJson(details), 'PUBLIC_DETAILS_NOT_COMPACT');
-  const publicDestinationText = [
+  collector.add(!containsPrivatePublicProofLabel([
     startupText,
     detailsText,
     coastalPartsText ?? '',
     JSON.stringify(manifest ?? {}),
-  ].join('').toLowerCase();
-  collector.add(!publicDestinationText.includes('waveinputproofs')
-    && !publicDestinationText.includes('feggesundneighborwavesource')
-    && !publicDestinationText.includes('sourceevidencesha256'),
-  'PUBLIC_FEGGESUND_PRIVATE_PROOF_PRESENT');
+  ]), 'PUBLIC_FEGGESUND_PRIVATE_PROOF_PRESENT');
   collector.add(Object.keys(startup?.zones ?? {}).length === expectedZoneCount,
     'PUBLIC_STARTUP_ZONE_COUNT_MISMATCH');
   collector.add(Object.keys(details?.zones ?? {}).length === expectedZoneCount,
@@ -2180,6 +2199,42 @@ function argumentValue(arguments_, name, fallback) {
   return value;
 }
 
+const cliFailureState = {
+  phase: 'ARGUMENTS', outputPath: DEFAULT_OUTPUT, reportWritten: false,
+  inputBytes: { conditions: null, startup: null, details: null, manifest: null, coastalParts: null, zones: null },
+};
+
+function safeCliFailureClass(error) {
+  try {
+    if (error?.code === 'ENOENT') return 'FILE_NOT_FOUND';
+    if (['EACCES', 'EPERM', 'EIO', 'ENOSPC', 'EMFILE', 'ENOMEM', 'EFBIG'].includes(error?.code)) return 'FILE_IO_ERROR';
+    if (error instanceof SyntaxError) return 'JSON_SYNTAX_ERROR';
+    if (error instanceof RangeError) return 'JS_RANGE_ERROR';
+    if (error instanceof TypeError) return 'JS_TYPE_ERROR';
+    return error instanceof Error ? 'JS_ERROR' : 'NON_ERROR_THROW';
+  } catch { return 'UNKNOWN_ERROR'; }
+}
+
+async function recordCliFailureBeforeReport(error) {
+  if (cliFailureState.reportWritten) return;
+  const memory = process.memoryUsage();
+  const receipt = {
+    schemaVersion: 'ravscore-runtime-audit-failure-v1',
+    status: 'FAILED_BEFORE_REPORT', phase: cliFailureState.phase,
+    failureClass: safeCliFailureClass(error), inputBytes: cliFailureState.inputBytes,
+    heapLimitBytes: getHeapStatistics().heap_size_limit,
+    memoryBytes: { rss: memory.rss, heapUsed: memory.heapUsed, external: memory.external },
+    reportWritten: false, readyEvidence: false, privatePayloadIncluded: false,
+  };
+  // Never turn this observation into an audit report or acceptance evidence.
+  try {
+    const target = cliFailureState.outputPath + '.failure.json';
+    await fs.mkdir(path.dirname(target), { recursive: true });
+    await fs.writeFile(target, JSON.stringify(receipt) + '\n');
+  } catch { /* Keep the original audit failure and fixed stderr observation. */ }
+  console.error('RavScore runtime audit failure observation: ' + JSON.stringify(receipt));
+}
+
 async function main() {
   const arguments_ = process.argv.slice(2);
   const inputPath = argumentValue(arguments_, '--input', DEFAULT_INPUT);
@@ -2189,6 +2244,16 @@ async function main() {
   const coastalPartsPath = argumentValue(arguments_, '--coastal-parts', DEFAULT_COASTAL_PARTS);
   const zoneRegistryPath = argumentValue(arguments_, '--zones', DEFAULT_ZONE_REGISTRY);
   const outputPath = argumentValue(arguments_, '--output', DEFAULT_OUTPUT);
+  cliFailureState.outputPath = outputPath;
+  cliFailureState.phase = 'READ_INPUTS';
+  await Promise.all(Object.entries({ conditions: inputPath, startup: startupPath,
+    details: detailsPath, manifest: manifestPath, coastalParts: coastalPartsPath, zones: zoneRegistryPath,
+  }).map(async ([key, file]) => {
+    try {
+      const bytes = (await fs.stat(file)).size;
+      if (Number.isSafeInteger(bytes) && bytes >= 0) cliFailureState.inputBytes[key] = bytes;
+    } catch { /* Observation must not change the normal read failure. */ }
+  }));
   const [fullText, startupText, detailsText, manifestText, coastalPartsText, zoneRegistryText] = await Promise.all([
     fs.readFile(inputPath, 'utf8'),
     fs.readFile(startupPath, 'utf8'),
@@ -2197,17 +2262,25 @@ async function main() {
     fs.readFile(coastalPartsPath, 'utf8'),
     fs.readFile(zoneRegistryPath, 'utf8'),
   ]);
-  const report = auditIntegratedRavScorePublicRuntime(hydratePrivateConditionsHourly(JSON.parse(fullText)), {
-    startup: JSON.parse(startupText),
-    startupText,
-    details: JSON.parse(detailsText),
-    detailsText,
-    coastalPartsText,
-    zoneRegistryText,
-    manifest: JSON.parse(manifestText),
+  cliFailureState.phase = 'PARSE_CONDITIONS';
+  let full = JSON.parse(fullText);
+  cliFailureState.phase = 'HYDRATE_CONDITIONS';
+  full = hydratePrivateConditionsHourly(full);
+  cliFailureState.phase = 'PARSE_STARTUP';
+  const startup = JSON.parse(startupText);
+  cliFailureState.phase = 'PARSE_DETAILS';
+  const details = JSON.parse(detailsText);
+  cliFailureState.phase = 'PARSE_MANIFEST';
+  const manifest = JSON.parse(manifestText);
+  cliFailureState.phase = 'AUDIT_RUNTIME';
+  const report = auditIntegratedRavScorePublicRuntime(full, {
+    startup, startupText, details, detailsText, coastalPartsText, zoneRegistryText, manifest,
   });
+  cliFailureState.phase = 'CREATE_OUTPUT_DIRECTORY';
   await fs.mkdir(path.dirname(outputPath), { recursive: true });
+  cliFailureState.phase = 'WRITE_REPORT';
   await fs.writeFile(outputPath, `${JSON.stringify(report, null, 2)}\n`);
+  cliFailureState.reportWritten = true;
   console.log([
     `Integreret RavScore public runtime: ${report.status}`,
     `${report.coverage.zoneCount}/${report.coverage.expectedZoneCount} zoner`,
@@ -2226,7 +2299,8 @@ async function main() {
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
   try {
     await main();
-  } catch {
+  } catch (error) {
+    try { await recordCliFailureBeforeReport(error); } catch { /* Original failure wins. */ }
     console.error('Integreret RavScore public runtime kunne ikke auditeres uden at bryde fail-closed-kontrakten.');
     process.exitCode = 1;
   }

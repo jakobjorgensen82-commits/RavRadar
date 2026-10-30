@@ -8,6 +8,45 @@ const coldReview = JSON.parse(fs.readFileSync(new URL('./current-family-cold-sta
 const sha = value => crypto.createHash('sha256').update(value).digest('hex');
 // Kun kontrolvisning af de fem normale versions-UA'er. Hele nye og gamle
 // workflowbytes er fastbundet; ukendte billeder går uændret til gamle afslag.
+// TEST ONLY: content-free audit execution/upload observation. Exact whole
+// afterimage -> unchanged753; no production report or gate authority.
+export const runtimeAuditExecutionWorkflowReview = Object.freeze({
+  before:Object.freeze({bytes:293121,sha256:'10bfb353d439877791c0a98043e2ca6e2ad0cd8a2b71bba44cc7e304e2e4897a'}),
+  after:Object.freeze({bytes:294485,sha256:'6a773164b36a721829a73b5cf66449d89434d91237e32ed9f8a6a185b55fe688'}),
+  edits:Object.freeze([
+  [
+    "            # Both small observers use the same node executable/configuration as\n            # the audit; observer failure cannot replace its actual exit status.\n            node scripts/observe-runtime-audit-execution.mjs --phase before || true\n            runtime_audit_exit_status=0\n            node scripts/audit-ravscore-integrated-public-runtime.mjs \\\n              --input data/live/conditions.json \\\n              --output \"$audit_path\" \\\n              || runtime_audit_exit_status=$?\n            node scripts/observe-runtime-audit-execution.mjs --phase after \\\n              --exit-code \"$runtime_audit_exit_status\" || true\n            runtime_audit_outcome=\"success\"\n            if test \"$runtime_audit_exit_status\" != 0; then\n              runtime_audit_outcome=\"failure\"\n            fi\n            echo \"runtime_audit_exit_status=$runtime_audit_exit_status\" >> \"$GITHUB_OUTPUT\"\n            echo \"runtime_audit_outcome=$runtime_audit_outcome\" >> \"$GITHUB_OUTPUT\"\n",
+    "            runtime_audit_outcome=\"success\"\n            node scripts/audit-ravscore-integrated-public-runtime.mjs \\\n              --input data/live/conditions.json \\\n              --output \"$audit_path\" \\\n              || runtime_audit_outcome=\"failure\"\n            echo \"runtime_audit_outcome=$runtime_audit_outcome\" >> \"$GITHUB_OUTPUT\"\n"
+  ],
+  [
+    "        if: always() && steps.preflight.outputs.should_run == 'true' && hashFiles('.geometry-v2-work/ravscore-integrated-public-runtime-audit.json', '.geometry-v2-work/ravscore-integrated-public-runtime-audit.json.failure.json', '.geometry-v2-work/ravscore-integrated-public-runtime-audit.json.execution.json') != ''",
+    "        if: always() && steps.preflight.outputs.should_run == 'true' && hashFiles('.geometry-v2-work/ravscore-integrated-public-runtime-audit.json') != ''"
+  ],
+  [
+    "          path: |\n            .geometry-v2-work/ravscore-integrated-public-runtime-audit.json\n            .geometry-v2-work/ravscore-integrated-public-runtime-audit.json.failure.json\n            .geometry-v2-work/ravscore-integrated-public-runtime-audit.json.execution.json\n",
+    "          path: .geometry-v2-work/ravscore-integrated-public-runtime-audit.json\n"
+  ],
+  [
+    "              if test -f \"$audit_path\"; then\n                echo \"::warning title=RavScore runtime audit::The audit found one or more model/state issues. The issues are retained in the payload-free audit report; valid weather publication continues.\"\n              else\n                echo \"::warning title=RavScore runtime audit process::The audit process stopped before its required report was written (exit $runtime_audit_exit_status). Fixed failure/execution observations are uploaded separately; the required-report publication gates remain unchanged.\"\n              fi\n",
+    "              echo \"::warning title=RavScore runtime audit::The audit found one or more model/state issues. The issues are retained in the payload-free audit report; valid weather publication continues.\"\n"
+  ]
+])
+});
+export function inverseRuntimeAuditExecutionWorkflow(source,role) {
+  assert.equal(arguments.length,2,'RUNTIME_AUDIT_EXECUTION_WORKFLOW_ARGUMENTS');
+  assert.equal(typeof source,'string','RUNTIME_AUDIT_EXECUTION_WORKFLOW_TYPE');
+  const row=runtimeAuditExecutionWorkflowReview;
+  if(role!=='build'||sha(source)!==row.after.sha256)return source;
+  assert.equal(Buffer.byteLength(source),row.after.bytes,'RUNTIME_AUDIT_EXECUTION_WORKFLOW_SIZE');
+  let previous=source;
+  for(const[after,before]of row.edits){
+    assert.equal(previous.split(after).length,2,'RUNTIME_AUDIT_EXECUTION_EXACT_BLOCK');
+    previous=previous.replace(after,()=>before);
+  }
+  assert.equal(Buffer.byteLength(previous),row.before.bytes,'RUNTIME_AUDIT_EXECUTION_PREDECESSOR_SIZE');
+  assert.equal(sha(previous),row.before.sha256,'Every previous753 workflow byte survives');
+  return previous;
+}
 // TEST ONLY: the reviewed scalar reserve capacity block, before unchanged
 // release591 and all older whole-workflow oracles. Not production authority.
 export const windTailCapacityWorkflowReview = Object.freeze({
@@ -19,6 +58,7 @@ export const windTailCapacityWorkflowReview = Object.freeze({
 export function inverseWindTailCapacityWorkflow(source, role) {
   assert.equal(arguments.length, 2, 'WIND_TAIL_CAPACITY_WORKFLOW_ARGUMENTS');
   assert.equal(typeof source, 'string', 'WIND_TAIL_CAPACITY_WORKFLOW_TYPE');
+  source = inverseRuntimeAuditExecutionWorkflow(source, role);
   const row = windTailCapacityWorkflowReview;
   if (role !== 'build' || sha(source) !== row.after.sha256) return source;
   assert.equal(Buffer.byteLength(source), row.after.bytes, 'WIND_TAIL_CAPACITY_WORKFLOW_SIZE');

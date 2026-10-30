@@ -1,3 +1,9 @@
+## 30. oktober — åben årsag til manglende runtime-auditrapport
+
+En normal kørsel kan have gennemført beregning, offentlig generering og no-loss og alligevel stoppe, fordi auditrapporten mangler. Auditprogrammets hidtidige generiske catch og det omgivende trin gav ikke den nødvendige fase-/fejlklasse til at udlede årsagen. Den præcise udløser er ubevist; DMI-fallback, heap, strenggrænse, I/O eller importfejl må ikke vælges som forklaring uden evidens.
+
+En lokal kandidat reducerer en konkret målt tekstkopirisiko med uændret fuld rapport/exit og forbereder faste indholdsfrie .failure- og .execution-sidefiler. Den er ikke en bevist løsning på nattens fejl. Den krævede audit og alle næste private/offentlige gates bevares, og der hæves ingen heap. Samlet kvalifikation, separat sidefilbevarelse, sikker levering og faktisk almindelig produktion udestår. Se DEC-0297 og håndbog 89.283.
+
 ## 29. oktober — komponentreservens kapacitet er afgrænset, produktionseffekt er åben
 
 Det normale køforløb kan lade nødvendige vindopgaver stå ufærdige. En lokal kandidat giver den almindelige komponentreserve ti minutters startbudget og prioriterer vind-/bølge-GAP før temperatur, med retfærdig rotation, to transporter, fælles forsøgsloft og global startafstand. Det er ikke bevis for alle hulers leverandørårsag, slettede originaler eller fuld dækning.

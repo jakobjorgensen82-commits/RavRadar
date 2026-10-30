@@ -1,3 +1,9 @@
+## 30. oktober — kritisk auditforbedring før de øvrige kandidater
+
+Næste afgrænsede leverance er 591-auditkandidatens målte kopireduktion samt faste indholdsfrie proces-/fejlkvitteringer. Bevar den gennemgåede reservekapacitet, alle bindinger og de normale hårde gates. Ingen ny model-/SQL-udstedelse eller hævet heap.
+
+Kvalificér den præcise samlede kilde, vent på et skrivefrit produktionsvindue og verificér en virkelig almindelig efterfølger gennem audit, databevarelse og offentligt deploy. Sammenhold eventuelle nye faste fejloplysninger, før den oprindelige fejl kaldes forklaret eller løst. De separate fremtidige leverancer og alle fem mål bevares uden at blive kopieret ind i denne kilde. Se DEC-0297 og håndbog 89.283.
+
 ## 29. oktober — P0: kvalificér den afgrænsede vindreserve og bevar almindelig vejrhentning
 
 Før den konkrete kapacitets- og kørettelse gennem én samlet gennemgang: vind-/bølge-GAP før temperatur, retfærdig cursor, to slots, samlet cap og startafstand samt én deadline fra bankstart. Bevar kildeprioritet og gyldige resultater. Kør de relevante normale mål og præcis kildekvalifikation; lokale tests er ikke levering.

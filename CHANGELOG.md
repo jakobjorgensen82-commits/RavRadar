@@ -1,3 +1,9 @@
+## 30. oktober — samme runtime-audit med færre store kopier på uændret 4.0.591
+
+Den lokale kritiske kandidat erstatter auditprogrammets monolitiske join/lowercase-kopi med en overlappende bidvis kontrol. Hele rapporten og afslutningskoden er bevaret i den faktiske store syntetiske normalprøve; maksimal proceshukommelse faldt cirka 111 MiB i én lokal sammenligning. Det beviser ikke nattens rodårsag eller runnerkapacitet.
+
+Faste, indholdsfrie .failure- og .execution-sidefiler skal gøre et programstop før rapporten synligt uden at erstatte den krævede audit eller et READY-bevis. Ingen hævet heap, score-/model-/SQL-ændring eller lempet gate. Den gennemgåede reserveforbedring fra DEC-0295 bevares. Præcis kildekvalifikation, sikker levering og faktisk produktionseffekt er åbne. Se DEC-0297 og håndbog 89.283.
+
 ## 29. oktober — lokal afgrænset kapacitet i komponentreserven
 
 Forbereder bedre plads til nødvendige vind- og bølgehuller i den normale reservekø: fair rækkefølge, uændret to-slots-transport, fælles pacing og forsøgsloft samt én deadline, der også omfatter indledende bankarbejde. Normal reserve får ti minutter; kort og cachevej bevares. De øvrige kilde-, data- og modelkrav ændres ikke. Det er en lokal leveringskandidat, ikke bevis for produktionseffekt, fuld dækning eller samlet Free-råderum. Se DEC-0295 og håndbog89.281.

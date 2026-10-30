@@ -1,3 +1,7 @@
+## 30. oktober — målt lokal auditkopireduktion og afgrænset observation
+
+Den samme normale audit på den eksisterende store syntetiske fixture bevarede hele rapporten og afslutningskoden med lavere maksimal proceshukommelse. Den kritiske 591-kandidat forbereder også faste .failure- og .execution-sidefiler til stop før den krævede rapport. De er aldrig READY-erstatning. Ingen ny binding, SQL, heapgrænse, score eller aktivering følger af dokumentationen; nattens præcise årsag og faktisk produktionseffekt er åbne. DEC-0297 og håndbog 89.283 tilføjes, mens alle ældre afsnit bevares.
+
 ## 2026-10-29 — afgrænset kø- og kapacitetskandidat til komponentreserven
 
 DEC-0295 fastholder den almindelige reserves nye 600-sekundersramme, uændret kort/cachevej, to transporter, samlet cap800 inklusive retry og 150 ms global startafstand. Vind-/bølge-GAP kommer før temperatur; fair rotation og cursor følger faktisk første HTTP-start. Deadline begynder før banklæsning og må ikke fornyes. Originaler, gyldige søskenderesultater, kildeprioritet, DMI-budgetter, bank og parser bevares. Kvalifikation, sikker levering og faktisk ny-generationseffekt er åbne; ingen Free- eller dækningsgaranti, ny version/C/I/T eller SQL-migration. Håndbog89.281 spejles fra kanonisk Markdown; private observationer forbliver i checkpointet.

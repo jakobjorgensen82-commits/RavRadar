@@ -14,7 +14,7 @@ import { inverseCurrentFamilyColdCheckpointWorkflow, currentFamilyColdCheckpoint
   assistant587ColdCheckpointCombinedWorkflowReview,
   inverseAssistant587ColdCheckpointCombinedToF83Workflow, inverseAssistant587ColdCheckpointCombinedToD5Workflow }
   from './lib/completed-private-runtime-workflow-review.mjs';
-import { inverseWindTailCapacityWorkflow, windTailCapacityWorkflowReview, inverseRelease591WorkflowUserAgents, inverseRelease590WorkflowUserAgents, inverseRelease588WorkflowUserAgents, inverseLatestColdProgressWorkflow, latestColdProgressWorkflowReview,
+import { inverseRuntimeAuditExecutionWorkflow, runtimeAuditExecutionWorkflowReview, inverseWindTailCapacityWorkflow, windTailCapacityWorkflowReview, inverseRelease591WorkflowUserAgents, inverseRelease590WorkflowUserAgents, inverseRelease588WorkflowUserAgents, inverseLatestColdProgressWorkflow, latestColdProgressWorkflowReview,
   assistant587LatestColdCombinedWorkflowReview,
   inverseAssistant587LatestColdCombinedTo664aWorkflow, inverseAssistant587LatestColdCombinedTo2bWorkflow }
   from './lib/completed-private-runtime-workflow-review.mjs';
@@ -1417,7 +1417,7 @@ test('release591 actual normal workflow preserves genuine590 and historical refu
 
 
 test('wind-tail capacity whole inverse preserves every591 byte and refuses budget or surrounding drift', async () => {
-  const actual = (await fs.readFile(new URL('../.github/workflows/reusable-weather-build.yml', import.meta.url), 'utf8')).replaceAll('\r\n', '\n');
+  const actual = inverseRuntimeAuditExecutionWorkflow((await fs.readFile(new URL('../.github/workflows/reusable-weather-build.yml', import.meta.url), 'utf8')).replaceAll('\r\n', '\n'), 'build');
   const row = windTailCapacityWorkflowReview;
   assert.equal(Buffer.byteLength(actual), row.after.bytes);
   assert.equal(sha(actual), row.after.sha256);
@@ -1448,4 +1448,31 @@ test('wind-tail capacity whole inverse preserves every591 byte and refuses budge
   assert.throws(() => inverseWindTailCapacityWorkflow(actual), /WORKFLOW_ARGUMENTS/);
   assert.throws(() => inverseWindTailCapacityWorkflow(actual, 'build', true), /WORKFLOW_ARGUMENTS/);
   assert.throws(() => inverseWindTailCapacityWorkflow(null, 'build'), /WORKFLOW_TYPE/);
+});
+
+test('runtime audit observation whole inverse preserves753 and refuses exit upload or gate drift',async()=>{
+  const actual=(await fs.readFile(new URL('../.github/workflows/reusable-weather-build.yml',import.meta.url),'utf8')).replaceAll('\r\n','\n');
+  const row=runtimeAuditExecutionWorkflowReview;
+  assert.equal(Buffer.byteLength(actual),row.after.bytes);assert.equal(sha(actual),row.after.sha256);
+  const previous=inverseRuntimeAuditExecutionWorkflow(actual,'build');
+  assert.equal(Buffer.byteLength(previous),row.before.bytes);assert.equal(sha(previous),row.before.sha256);
+  assert.equal(inverseRuntimeAuditExecutionWorkflow(previous,'build'),previous);
+  assert.equal(inverseCompletedRuntimeWorkflow(actual,'build'),inverseCompletedRuntimeWorkflow(previous,'build'));
+  assert.equal(sha(inverseCompletedRuntimeWorkflow(actual,'build')),legacySha);
+  for(const changed of [actual+'\n# UNKNOWN_AUDIT_CHANGE\n',
+    actual.replace('|| runtime_audit_exit_status=$?','|| runtime_audit_exit_status=0'),
+    actual.replace('--exit-code "$runtime_audit_exit_status"','--exit-code 0'),
+    actual.replace('node scripts/observe-runtime-audit-execution.mjs --phase before || true','true'),
+    actual.replace('.json.execution.json\n','.json.execution-UNKNOWN.json\n'),
+    actual.replace('runtime-audit.json.failure.json','runtime-audit-UNKNOWN.json.failure.json'),
+    actual.replace('Create and validate exactly one checkpoint disposition before release gate','Unreviewed disposition'),
+    actual.replace('test "$'+'{{ steps.full-validation.outcome }}" = success','true')]){
+    assert.notEqual(changed,actual);
+    assert.equal(inverseRuntimeAuditExecutionWorkflow(changed,'build'),changed);
+    assert.throws(()=>inverseCompletedRuntimeWorkflow(changed,'build'));
+  }
+  for(const role of ['once','unknown','toString'])assert.equal(inverseRuntimeAuditExecutionWorkflow(actual,role),actual);
+  assert.throws(()=>inverseRuntimeAuditExecutionWorkflow(actual),/WORKFLOW_ARGUMENTS/);
+  assert.throws(()=>inverseRuntimeAuditExecutionWorkflow(actual,'build',true),/WORKFLOW_ARGUMENTS/);
+  assert.throws(()=>inverseRuntimeAuditExecutionWorkflow(null,'build'),/WORKFLOW_TYPE/);
 });
