@@ -37,10 +37,12 @@ import {assertNativeOriginalContinuityCodeOnlyCaller} from './select-native-orig
 import { ownFileDescriptorIdentity, ownedFileDescriptorClosed } from './lib/private-weather-component-pack.mjs';
 import { classifyProductionTargetFreshness } from './check-production-target-freshness.mjs';
 
+import {withAuthenticated591PredecessorSource} from './check-assistant-later-h0-predecessor-source.mjs';
 import {ASSISTANT_LATER_H0_BINDING as ASSISTANT_LATER_FAMILY,
   ASSISTANT_PUBLIC587_SUCCESSOR_BINDING as ASSISTANT_PUBLIC587_FAMILY,
   ASSISTANT_PUBLIC588_SUCCESSOR_BINDING as ASSISTANT_PUBLIC588_FAMILY,
-  ASSISTANT_PUBLIC590_SUCCESSOR_BINDING as ASSISTANT_PUBLIC590_FAMILY}
+  ASSISTANT_PUBLIC590_SUCCESSOR_BINDING as ASSISTANT_PUBLIC590_FAMILY,
+  ASSISTANT_PUBLIC591_SUCCESSOR_BINDING as ASSISTANT_PUBLIC591_FAMILY}
   from './lib/assistant-later-h0-successor-source.mjs';
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const sha = raw => crypto.createHash('sha256').update(raw).digest('hex');
@@ -51,7 +53,7 @@ const identityKeys = ['sourceHead', 'datasetId', 'productionReferenceAt', 'gener
 function reconcileFamily(descriptor) {
   return [FAMILY, NEXT_FAMILY, METADATA_FAMILY, NATIVE_METADATA_FAMILY,
     ASSISTANT_LATER_FAMILY, ASSISTANT_PUBLIC587_FAMILY,
-    ASSISTANT_PUBLIC588_FAMILY,ASSISTANT_PUBLIC590_FAMILY].filter(Boolean).find(family =>
+    ASSISTANT_PUBLIC588_FAMILY,ASSISTANT_PUBLIC590_FAMILY,ASSISTANT_PUBLIC591_FAMILY].filter(Boolean).find(family =>
     descriptor?.modelBinding?.modelBundleSha256 === family.I
     && descriptor?.contractHashes?.continuationStateContractSha256 === family.T) ?? null;
 }
@@ -98,6 +100,11 @@ async function restoreReconcilePredecessor({ family, checkpointPath, targetRefer
   const rows = await readCheckpointRows(request);
   // Reader selection is NOT numerical admission. Normal current validation
   // remains unchanged; only an exact older140000 S gets its genuine old reader.
+  const old591 = family === ASSISTANT_PUBLIC591_FAMILY && rows.length === 1
+    && rows[0].payload.modelBinding?.modelBundleSha256 === ASSISTANT_PUBLIC590_FAMILY.I
+    && rows[0].payload.continuationStateContractSha256 === ASSISTANT_PUBLIC590_FAMILY.T;
+  if(old591) need(Number.isFinite(Date.parse(rows[0].payload.productionReferenceAt))
+    && Date.parse(rows[0].payload.productionReferenceAt) < Date.parse(targetReference), 'GENUINE591_STRICTLY_OLDER');
   const old585 = family === NATIVE_METADATA_FAMILY && rows.length === 1
     && rows[0].payload.modelBinding?.modelBundleSha256 === METADATA_FAMILY.I
     && rows[0].payload.continuationStateContractSha256 === METADATA_FAMILY.T;
@@ -112,7 +119,11 @@ async function restoreReconcilePredecessor({ family, checkpointPath, targetRefer
   };
   const options = { checkpointPath, targetReference, request: checkedRequest };
   let restored;
-  if(old585) restored = await withAuthenticated585PredecessorSource(async sourceRoot=>{
+  if(old591) restored = await withAuthenticated591PredecessorSource(async sourceRoot=>{
+    const reader=await import(pathToFileURL(path.join(sourceRoot,'scripts/protected-ravscore-continuation-checkpoint.mjs')).href);
+    return reader.restoreProtectedRavScoreContinuationCheckpoint(options);
+  });
+  else if(old585) restored = await withAuthenticated585PredecessorSource(async sourceRoot=>{
     const reader=await import(pathToFileURL(path.join(sourceRoot,'scripts/protected-ravscore-continuation-checkpoint.mjs')).href);
     return reader.restoreProtectedRavScoreContinuationCheckpoint(options);
   });
@@ -126,7 +137,7 @@ async function restoreReconcilePredecessor({ family, checkpointPath, targetRefer
     return reader.restoreProtectedRavScoreContinuationCheckpoint(options);
   });
   else restored = await restoreProtectedRavScoreContinuationCheckpoint(options);
-  return { restored, rows, predecessorFamily: old585 ? METADATA_FAMILY : old584 ? NEXT_FAMILY : old ? FAMILY : family };
+  return { restored, rows, predecessorFamily: old591 ? ASSISTANT_PUBLIC590_FAMILY : old585 ? METADATA_FAMILY : old584 ? NEXT_FAMILY : old ? FAMILY : family };
 }
 async function readPointer(request) {
   const key = PROTECTED_PRIVATE_RUNTIME_POLICY.documentKey;

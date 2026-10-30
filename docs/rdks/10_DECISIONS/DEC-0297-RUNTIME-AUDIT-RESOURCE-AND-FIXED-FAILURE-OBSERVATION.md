@@ -1,7 +1,7 @@
 # DEC-0297 – Samme runtime-audit med mindre kopiering og faste fejlkvitteringer
 
 **Dato:** 2026-10-30
-**Status:** AKTIV afgrænset lokal kandidat; samlet kvalifikation, sikker levering og produktionseffekt er åbne.
+**Status:** AKTIV afgrænset beslutning; kritisk 591-kvalifikation er særskilt, og videreførelsen i den endnu ikke leverede 592-kilde har egne åbne leveringskrav.
 
 ## Begrundelse og årsagsgrænse
 
@@ -23,14 +23,14 @@ Programmets .failure-sidefil kan kun beskrive en håndteret exception før den k
 
 Den oprindelige almindelige processtatus skal bevares og gøres tydelig. En fejl før rapportskrivning må ikke beskrives alene som en færdig audit med modelfund. Sidefiler er aldrig erstatning for den krævede auditrapport, et READY-bevis eller en anden acceptgate. Der må ikke fremstilles en kunstig tom auditrapport eller anvendes en fejlkvittering som normal rollbackstatus.
 
-Der hæves ingen heapgrænse i denne kandidat. Den normale gatestruktur, no-loss, original-B før beregningscheckpoint-S, friskhed, CAS og faktisk offentlig efterkontrol bevares. Fuld kildekvalifikation skal ske på den præcise samlede head; en lokal måling eller en omgivende grøn status er ikke tilstrækkelig.
+Der hæves ingen heapgrænse af denne auditvidereførelse. Den normale gatestruktur, no-loss, original-B før beregningscheckpoint-S, friskhed, CAS og faktisk offentlig efterkontrol bevares. Fuld kildekvalifikation skal ske på den præcise samlede head; en lokal måling eller en omgivende grøn status er ikke tilstrækkelig.
 
 ## Bevarelse og levering
 
-- Kilden forbliver 4.0.591 med uændrede C/I/T, SQL-migrationer, gemte originaler og offentliggjort historik. Ingen ny bindings- eller versionsudstedelse.
+- Den kritiske auditforbedring kvalificeres særskilt på 4.0.591. Denne fremtidige 4.0.592-kilde bevarer sin egen faktisk udstedte C/I/T, allerede udstedte migration og alle historiske SQL-filer, gemte originaler og offentliggjort historik. Auditvidereførelsen udsteder ingen yderligere version, binding eller SQL-overgang.
 - DEC-0295s gennemgåede reservekapacitet bevares: 600 sekunders normalramme, højst 800 faktiske HTTP-forsøg inklusive genforsøg, mindst 150 ms mellem starter, to samtidige transporter og samme sikre deadline-/gemmeregler. Kort- og cachevej bevares.
 - DMI → Copernicus → Open-Meteo, gyldige nyere input, administratorpunkter, geometri, kildekrav og scoreformel ændres ikke. Ingen nye leverandørkald eller nye tjenester følger af observationen.
 - Ingen produktionsændring under en aktiv skrivende vejrhentning. ROOT koordinerer det sikre leveringsvindue og genbrug af et faktisk gyldigt checkpoint, når det findes; leverandørfremdrift er ikke et færdigt beregningscheckpoint.
 - Faktisk efterfølgende normal drift gennem audit, privat gemning, offentligt deploy og fuld forventet dækningsmåling skal stadig dokumenteres. Fejlårsagen og selvstændig drift må først kaldes bevist, når den relevante nye evidens foreligger.
 
-Håndbog 89.283 tilføjes fra kanonisk Markdown og spejles til web og normal INSTALL-håndbogspayload. Alle 532 eksisterende afsnit bevares. Andre fremtidige assistent-, delings- og revisionskandidater kopieres ikke ind i denne kritiske kilde. Detaljerede kørselsidentiteter og målinger ligger i det private checkpoint.
+Håndbog 89.283 tilføjes fra kanonisk Markdown og spejles til web og normal INSTALL-håndbogspayload. Alle 534 eksisterende 592-afsnit bevares, herunder 89.279 og 89.282. De afgrænsede assistent-, observations- og kompakte delingsændringer bevares uden at blive omskrevet af auditdokumentationen. Den isolerede revision aktiveres ikke. 592 er fortsat ikke offentligt leveret, og alle fem mål forbliver åbne. Detaljerede kørselsidentiteter og målinger ligger i det private checkpoint.

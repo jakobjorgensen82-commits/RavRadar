@@ -1,6 +1,16 @@
 ## 30. oktober — målt lokal auditkopireduktion og afgrænset observation
 
-Den samme normale audit på den eksisterende store syntetiske fixture bevarede hele rapporten og afslutningskoden med lavere maksimal proceshukommelse. Den kritiske 591-kandidat forbereder også faste .failure- og .execution-sidefiler til stop før den krævede rapport. De er aldrig READY-erstatning. Ingen ny binding, SQL, heapgrænse, score eller aktivering følger af dokumentationen; nattens præcise årsag og faktisk produktionseffekt er åbne. DEC-0297 og håndbog 89.283 tilføjes, mens alle ældre afsnit bevares.
+Den samme normale audit på den eksisterende store syntetiske fixture bevarede hele rapporten og afslutningskoden med lavere maksimal proceshukommelse. Den særskilte kritiske 591-kandidat forbereder også faste .failure- og .execution-sidefiler til stop før den krævede rapport; de forberedes videreført i den fremtidige 592-kilde. De er aldrig READY-erstatning. Ingen ny binding, SQL, heapgrænse, score eller aktivering følger af dokumentationen; nattens præcise årsag og faktisk produktionseffekt er åbne. DEC-0297 og håndbog 89.283 tilføjes, mens alle ældre afsnit bevares.
+
+## 2026-10-29 — kompakt offentlig deling samles med den lokale 592-kandidat
+
+DEC-0296 fastholder ét indeks og én zonefil med alle 118 timer/begge modes som en read-only projektion af allerede beregnede scores. Den normale producent genbruger eksisterende resultater; intern hukommelse erstatter ikke hash-/model-/generationsbinding, fuld 118 × 210 × 2-paritet eller obligatorisk artifact/privacykontrol. Den gamle Worker skal også leveres faktisk 592-kompatibelt. Hosted Free-CPU/kvoter, Facebook, nyt public artifact og godkendt Pages/DNS/TLS/klientovergang er åbne; ingen ekstra model-/SQL-udstedelse eller delingsklar-påstand. Håndbog 89.282 tilføjes uden at ændre de 533 eksisterende afsnit.
+
+## 2026-10-29 – lokal4.0.592-assistentefterfølger
+
+Fire faktisk påviste browserfejl har fået en afgrænset korrektion. Den lokale normaludstedelse har ny591-forgængerprofil, faktisk C/I/T, én ny migration og syv normale forbrugere; alle69 gamle SQL og originaler bevares. Målrettede592-forløb består; fuld kildekvalifikation, ny nativePG og offentlig levering udestår. Den særskilte AI502 er fortsat åben.
+
+Den lokale 592-sammenføring omfatter desuden faste private fejlobservationer uden spørgsmål, svar, nøgler, fakta-id eller rå output. Normale lokale prøver bevarer svar- og valideringsadfærd; den ukendte offentlige 502 er ikke løst eller ekstern AI bevist. Ingen ny udstedelse eller installation fra observationsdelen.
 
 ## 2026-10-29 — afgrænset kø- og kapacitetskandidat til komponentreserven
 

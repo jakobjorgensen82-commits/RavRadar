@@ -24,6 +24,7 @@ let preflightVerified = false;
 let browserLanguage = 'da';
 let responseMutation = null;
 let controlledProviderResponse = null;
+let controlledProviderHttpStatus = 200;
 let controlledProviderUrl;
 let controlledProviderCalls = 0;
 let controlledQuotaCalls = 0;
@@ -71,7 +72,7 @@ globalThis.fetch = async (input, init) => {
       assert.doesNotMatch(JSON.stringify(providerBody), /TEST_PRIVATE_CONTEXT_MARKER/);
       controlledProviderPrompts.push(JSON.parse(providerBody.messages[1].content));
       controlledProviderCalls += 1;
-      return Response.json(controlledProviderResponse);
+      return Response.json(controlledProviderResponse, { status: controlledProviderHttpStatus });
     }
   }
   if (insideHandler || request.url !== `${publicConfig?.supabaseUrl}/functions/v1/ravradar-assistant`) {
@@ -2652,7 +2653,150 @@ try {
     }
   };
 
-  if (process.argv.includes('--current-supply-memory-only')) {
+
+  // Reproduce the four observed public591 failures through the normal caller.
+  const assertObservedPublic591 = async () => {
+    const savedLanguage=browserLanguage,savedResponse=controlledProviderResponse,savedMutation=responseMutation;
+    const failures=[];let cases=0;
+    const check=async(label,call)=>{cases++;try{await call();}catch(error){failures.push({label,error:error.name,message:error.message});}};
+    try {
+      const knowledge=await import('../knowledge/rav-assistant-local-v2.js');
+      await import('../js/ui/score-prognosis-copy.js?v=4.0.591');
+      for(const [locale,questions]of Object.entries({da:['Hvad er en ravkese?','Hvad er en kese?'],de:['Was ist eine Ravkese?','Was ist ein Ravkesse?','Was ist ein Bernsteinkescher?'],en:['What is an amber net?']})){
+        for(const question of questions)await check(locale+':known-net:'+question,async()=>{
+          reset();browserLanguage=locale;controlledProviderResponse=null;responseMutation=null;
+          const providerBefore=controlledProviderCalls,quotaBefore=controlledQuotaCalls;
+          assert.equal(classifyRavQuestion(question),'amber-net');
+          assert.equal(await askRavRadar(question,{}, {language:locale}),knowledge.localRavKnowledgeAnswer('Hvad er en kesse til ravjagt?',locale));
+          assert.equal(exchanges.length,0);assert.equal(controlledProviderCalls,providerBefore);assert.equal(controlledQuotaCalls,quotaBefore);
+        });
+      }
+      for(const [locale,questions]of Object.entries({da:['Hvad kan du?','Hvad kan RavRadar hjælpe mig med?'],de:['Was kannst du?','Was kann RavRadar für mich tun?','Wobei kann RavRadar mir helfen?'],en:['What can RavRadar help me with?','What can RavRadar do?','What can you help me with?']})){
+        for(const question of questions)await check(locale+':capabilities:'+question,async()=>{
+          reset();browserLanguage=locale;controlledProviderResponse=null;
+          const providerBefore=controlledProviderCalls,quotaBefore=controlledQuotaCalls;
+          assert.equal(classifyRavQuestion(question),'capabilities');
+          const answer=await askRavRadar(question,context,{language:locale});
+          assert.equal(answer,t('assistant.local.capabilities',{},locale));
+          assert.doesNotMatch(answer,/Candidate\s*G|rollback|20\s*[%/]|50\s*[%/]|30\s*[%/]/iu);
+          assert.equal(exchanges.length,0);assert.equal(controlledProviderCalls,providerBefore);assert.equal(controlledQuotaCalls,quotaBefore);
+        });
+      }
+      for(const [locale,questions]of Object.entries({da:['Hvad er en ravfløjlsmåler?','Hvad er et ravfløjlsapparat?'],de:['Was ist ein Bernsteinflormessgerät?'],en:['What is an amber velvet meter?']})){
+        for(const question of questions)await check(locale+':unknown-instrument:'+question,async()=>{
+          reset();browserLanguage=locale;responseMutation=null;
+          controlledProviderResponse={result:{response:JSON.stringify({schemaVersion:'rav-assistant-response-v1',locale,disposition:'answer',answer:'SYNTHETIC_INVENTED_DEVICE_DESCRIPTION',evidenceIds:['equipment.amber-net']})}};
+          const providerBefore=controlledProviderCalls,quotaBefore=controlledQuotaCalls;
+          assert.equal(routeRavQuestion(question),'remote-candidate');
+          assert.equal(await askRavRadar(question,context,{language:locale}),contract.RAV_ASSISTANT_UNCERTAIN_REPLIES[locale]);
+          assertRemote(question,locale,200);
+          assert.equal(controlledProviderCalls-providerBefore,1);assert.equal(controlledQuotaCalls-quotaBefore,3);
+          for(const [disposition,evidenceIds]of [['answer',['equipment.amber-net']],['answer',['score.integrated-only','score.weights-20-50-30']],['uncertain',['equipment.amber-net']],['out_of_scope',[]]]){
+            const output=contract.validateAssistantResult({schemaVersion:'rav-assistant-response-v1',locale,disposition,answer:'SYNTHETIC_UNSUPPORTED_DEVICE',evidenceIds},locale,{},question);
+            assert.equal(output.answer,contract.RAV_ASSISTANT_UNCERTAIN_REPLIES[locale]);assert.deepEqual(output.evidenceIds,[]);
+          }
+        });
+      }
+      const runtime=await import('../js/core/ravscore-public-runtime-contract.js?v=4.0.591');
+      const productionReferenceAt='2026-10-29T08:00:00.000Z',generatedAt='2026-10-29T09:00:00.000Z',now=Date.parse('2026-10-29T13:00:00.000Z'),time='2026-11-02T21:00:00.000Z',date='2026-11-02',datasetId='SYNTHETIC_PUBLIC591_RANK_LABELS';
+      const makeRow=(zoneId,score,area)=>({zoneId,time,score,rankingScore:area,rankingDisplayScore:area,scoreQuality:'HISTORY_INCOMPLETE',calibrationEligible:false,scoreSemantics:'CONSERVATIVE_ENCLOSING_LOWER_BOUND',conservativeTailResetApplied:false,historyCoverageHours:24,historyReasonCodes:['MISSING_CURRENT_HISTORY'],scoreBounds:{lower:score,upper:score,modelUncertaintyPoints:0,rawLower:score,rawUpper:score}});
+      const rows=[makeRow('SYNTHETIC_A',82,80),makeRow('SYNTHETIC_B',81,78)];
+      const conditions={available:true,datasetId,productionReferenceAt,generatedAt,ravScoreRuntime:{modelBinding:binding},publicRuntimeAvailability:{datasetId,productionReferenceAt,generatedAt,validUntil:runtime.ravScorePublicHorizonValidUntil(productionReferenceAt),modelBinding:binding},nationalForecast:{schemaVersion:2,modelBinding:binding,modes:{beach:[{date,rows}],waders:[{date,rows}]}}};
+      const zones={features:[{properties:{id:'SYNTHETIC_A',name:'SYNTHETIC_COAST_A'}},{properties:{id:'SYNTHETIC_B',name:'SYNTHETIC_COAST_B'}}]};
+      const rankWords={da:/områdescore 80/iu,de:/Gebietsscore 80/u,en:/area score 80/iu};
+      const localWords={da:/Bedste kystdel: RavScore 82/u,de:/Bester Küstenabschnitt: BernsteinScore 82/u,en:/Best coastal section: AmberScore 82/u};
+      for(const locale of ['da','de','en'])for(const mode of ['beach','waders'])await check(locale+':rank-labels:'+mode,async()=>{
+        reset();controlledProviderResponse=null;browserLanguage=locale;
+        const rankContext={conditions,zones,mode,modelBinding:binding},before=JSON.stringify(rankContext);
+        const question={da:'Hvor er det bedst på mandag?',de:'Wo ist es am besten am Montag?',en:'Where is it best on Monday?'}[locale];
+        const answer=await askRavRadar(question,rankContext,{language:locale,now});
+        assert.match(answer,rankWords[locale]);assert.match(answer,localWords[locale]);
+        assert(answer.indexOf('80')<answer.indexOf('82'));assert.doesNotMatch(answer,/\.\./u);
+        assert.equal(JSON.stringify(rankContext),before);assert.equal(exchanges.length,0);
+      });
+      for(const [locale,question]of [['da','Hvad er ravets oprindelse?'],['de','Was ist Bernstein?'],['en','What is amber?']])await check(locale+':known-material-preserved',async()=>{
+        reset();browserLanguage=locale;controlledProviderResponse=null;
+        const answer=await askRavRadar(question,{}, {language:locale,localOnly:true});
+        assert.notEqual(answer,t('assistant.unknown',{},locale));assert.equal(exchanges.length,0);
+      });
+      assert.equal(blockedNetworkCalls,0);
+      console.log(JSON.stringify({contract:'observed-public591-known-net-capabilities-unknown-device-area-local-score',cases,failures,realNetwork:0,syntheticProviderOnly:true,externalAIProved:false,scoreCalculationChanged:false}));
+      assert.deepEqual(failures,[]);
+    } finally {browserLanguage=savedLanguage;controlledProviderResponse=savedResponse;responseMutation=savedMutation;reset();}
+  };
+
+  // Normal client -> actual Edge -> actual strict validator, synthetic HTTP only.
+  const assertProviderFailureDiagnostic = async () => {
+    const oldWarn = console.warn, savedStatus = controlledProviderHttpStatus;
+    const savedResponse = controlledProviderResponse, savedMutation = responseMutation;
+    const savedLanguage = browserLanguage;
+    const logs = [], secret = 'SYNTHETIC_PRIVATE_QUESTION_OUTPUT_KEY_MARKER';
+    const question = 'Hvordan bruger jeg et ravombrometer til at finde rav?';
+    const valid = { schemaVersion: 'rav-assistant-response-v1', locale: 'da', disposition: 'uncertain',
+      answer: 'Synthetic response.', evidenceIds: [] };
+    const cases = [
+      { http: 429, payload: { errors: [{ message: secret }] }, stage: 'UPSTREAM_HTTP_REJECTED', code: null, publicCode: 'ASSISTANT_UPSTREAM_FAILED' },
+      { payload: { success: false, errors: [{ message: secret }] }, stage: 'UPSTREAM_ENVELOPE_REJECTED', code: null, publicCode: 'ASSISTANT_UPSTREAM_FAILED' },
+      { payload: { result: { text: secret } }, stage: 'RESULT_EXTRACTION', code: 'RESULT_NOT_OBJECT' },
+      { value: { ...valid, [secret]: secret }, code: 'RESULT_KEYS_INVALID' },
+      { value: { ...valid, schemaVersion: secret }, code: 'RESULT_SCHEMA_INVALID' },
+      { value: { ...valid, locale: 'fr' }, code: 'RESULT_LOCALE_MISMATCH' },
+      { value: { ...valid, disposition: secret }, code: 'RESULT_DISPOSITION_INVALID' },
+      { value: { ...valid, answer: '' }, code: 'RESULT_ANSWER_EMPTY' },
+      { value: { ...valid, answer: secret + 'x'.repeat(901) }, code: 'RESULT_ANSWER_TOO_LONG' },
+      { value: { ...valid, answer: 'API key ' + secret }, code: 'RESULT_ANSWER_SECURITY' },
+      { value: { ...valid, evidenceIds: [secret] }, code: 'RESULT_EVIDENCE_UNKNOWN' },
+      { value: { ...valid, evidenceIds: ['equipment.amber-net', 'equipment.amber-net'] }, code: 'RESULT_EVIDENCE_DUPLICATE' },
+      { value: { ...valid, disposition: 'answer' }, code: 'RESULT_ANSWER_EVIDENCE_MISSING' },
+      { value: { ...valid, disposition: 'out_of_scope', evidenceIds: ['equipment.amber-net'] }, code: 'RESULT_OUT_OF_SCOPE_EVIDENCE' },
+    ];
+    try {
+      browserLanguage = 'da'; responseMutation = null;
+      console.warn = (...args) => logs.push(args);
+      for (const row of cases) {
+        reset(); logs.length = 0; controlledProviderHttpStatus = row.http ?? 200;
+        controlledProviderResponse = row.payload ?? { result: { response: JSON.stringify(row.value) } };
+        const providersBefore = controlledProviderCalls, quotaBefore = controlledQuotaCalls;
+        assert.equal(await askRavRadar(question, context, { language: 'da' }), t('assistant.remoteUnavailable', {}, 'da'));
+        assertRemote(question, 'da', 502);
+        assert.deepEqual(exchanges[0].result, { error: row.publicCode ?? 'ASSISTANT_RESPONSE_REJECTED' });
+        assert.equal(controlledProviderCalls - providersBefore, 1); assert.equal(controlledQuotaCalls - quotaBefore, 3);
+        assert.equal(logs.length, 1);
+        assert.deepEqual(logs[0], ['RAVRADAR_ASSISTANT_FAILURE', { schemaVersion: 1,
+          stage: row.stage ?? 'RESULT_VALIDATION', responseStatus: 502, upstreamStatus: row.http ?? 200, rejectionCode: row.code }]);
+        const serialized = JSON.stringify(logs);
+        for (const forbidden of [secret, question, 'equipment.amber-net', 'SYNTHETIC_ONLY_NOT_A_CREDENTIAL']) assert.ok(!serialized.includes(forbidden));
+      }
+      reset(); logs.length = 0; controlledProviderHttpStatus = 200;
+      controlledProviderResponse = { result: { response: JSON.stringify(valid) } };
+      assert.equal(await askRavRadar(question, context, { language: 'da' }), contract.RAV_ASSISTANT_UNCERTAIN_REPLIES.da);
+      assertRemote(question, 'da', 200); assert.equal(logs.length, 0);
+      // A falsy observer/logger failure cannot change acceptance or error bodies.
+      const bad = { ...valid, answer: 'x'.repeat(901) };
+      assert.equal(contract.validateAssistantResult(bad, 'da', {}, question), null);
+      assert.equal(contract.validateAssistantResult(bad, 'da', {}, question, () => { throw 0; }), null);
+      assert.deepEqual(contract.validateAssistantResult(valid, 'da', {}, question, () => { throw null; }),
+        contract.validateAssistantResult(valid, 'da', {}, question));
+      console.warn = () => { throw 0; };
+      reset(); controlledProviderResponse = { result: { response: JSON.stringify(bad) } };
+      assert.equal(await askRavRadar(question, context, { language: 'da' }), t('assistant.remoteUnavailable', {}, 'da'));
+      assertRemote(question, 'da', 502);
+      assert.deepEqual(exchanges[0].result, { error: 'ASSISTANT_RESPONSE_REJECTED' });
+      console.log(JSON.stringify({ status: 'PASS', contract: 'normal provider failure observation',
+        controlledFailureCases: cases.length, controlledSuccessCases: 1, throwingObserverAndLoggerPreserved: true,
+        bindingHeaders: 6, questionsOutputsFactIdsAndKeysLogged: false, realNetwork: 0, hosted: false }));
+    } finally {
+      console.warn = oldWarn; controlledProviderHttpStatus = savedStatus;
+      controlledProviderResponse = savedResponse; responseMutation = savedMutation;
+      browserLanguage = savedLanguage; reset();
+    }
+  };
+
+  if (process.argv.includes('--provider-diagnostic-only')) {
+    await assertProviderFailureDiagnostic();
+  } else if (process.argv.includes('--observed-public591-only')) {
+    await assertObservedPublic591();
+  } else if (process.argv.includes('--current-supply-memory-only')) {
     await assertCurrentSupplyMemoryRoundtrip();
   } else if (process.argv.includes('--material-process-only')) {
     await assertMaterialProcessWholeQuestion();
@@ -2988,10 +3132,12 @@ try {
   await assertAlongshoreTopic('public-method-followup');
   await assertAlongshoreTopic('green-guarantee-followup-equipment');
   await assertQuotaFailureDiagnostic();
+  await assertProviderFailureDiagnostic();
   await assertReviewedKnowledgeComposition();
   await assertMaterialProcessWholeQuestion();
   await assertKnownUvEquipment();
   await assertUnknownEquipmentUncertainty();
+  await assertObservedPublic591();
   }
 } finally {
   declarationHook.deregister();

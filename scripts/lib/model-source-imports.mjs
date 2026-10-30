@@ -149,6 +149,21 @@ const ASSISTANT_GENUINE590_PARENT_REVIEWED=Object.freeze({
     sha256:'0c0b447d20b222daf5d119c60e814605f69572bc5b7f748d8174dc728fd9e87b',
     imports:ASSISTANT_PUBLIC590_SUCCESSOR_REVIEWED['scripts/check-assistant-later-h0-predecessor-source.mjs'].imports}),
 });
+// Additive genuine591 standalone-assistant bank. Existing variants stay whole.
+const ASSISTANT_GENUINE591_PARENT_REVIEWED=Object.freeze({
+  'scripts/check-assistant-later-h0-predecessor-source.mjs':Object.freeze({
+    sha256:'00dc5244da4e9fe82b761f7ec2c8c4b394e4b2f97db7c225d99de9c1a9bf83e8',
+    imports:ASSISTANT_PUBLIC590_SUCCESSOR_REVIEWED['scripts/check-assistant-later-h0-predecessor-source.mjs'].imports}),
+  'scripts/lib/authenticated-frozen586-predecessor.mjs':Object.freeze({
+    sha256:'ba09589cd0f3c48b734d60214ddf2017a7dc3ebba0e14c468da825721b575776',
+    imports:ASSISTANT_PUBLIC590_SUCCESSOR_REVIEWED['scripts/lib/authenticated-frozen586-predecessor.mjs'].imports}),
+  'scripts/lib/established-native-current-origin.mjs':Object.freeze({
+    sha256:'2aa92e6a2fb14f93e6072160499be1f39a502f4078bf61c98f649adfe538cf01',
+    imports:ASSISTANT_PUBLIC590_SUCCESSOR_REVIEWED['scripts/lib/established-native-current-origin.mjs'].imports}),
+  'scripts/assistant-later-h0-binding-prewrite.mjs':Object.freeze({
+    sha256:'c8f473abb689ff12fdbe0086fff2d9d29bb5a2d8a14e5f77a18c28c279e2b2e0',
+    imports:ASSISTANT_PUBLIC590_SUCCESSOR_REVIEWED['scripts/assistant-later-h0-binding-prewrite.mjs'].imports}),
+});
 export function modelSourceRelativeModuleSpecifiers(source, file) {
   if (!Object.hasOwn(REVIEWED, file) && !Object.hasOwn(NATIVE_CONTINUITY_REVIEWED, file)
     && !Object.hasOwn(ASSISTANT_LATER_H0_REVIEWED,file) && !Object.hasOwn(ASSISTANT_BINDING_PREWRITE_REVIEWED,file)
@@ -158,12 +173,13 @@ export function modelSourceRelativeModuleSpecifiers(source, file) {
     && !Object.hasOwn(ASSISTANT_PUBLIC587_OPERATIVE_REVIEWED,file)
     && !Object.hasOwn(CALENDAR_PUBLIC588_SUCCESSOR_REVIEWED,file)
     && !Object.hasOwn(ASSISTANT_PUBLIC590_SUCCESSOR_REVIEWED,file)
-    && !Object.hasOwn(ASSISTANT_GENUINE590_PARENT_REVIEWED,file))
+    && !Object.hasOwn(ASSISTANT_GENUINE590_PARENT_REVIEWED,file)
+    && !Object.hasOwn(ASSISTANT_GENUINE591_PARENT_REVIEWED,file))
     return exactRelativeModuleSpecifiers(source, file);
   if (typeof source !== 'string') throw new Error('Reviewed model source must be a string');
   const normalized = source.replace(/^\uFEFF/, '').replace(/\r\n?/g, '\n');
   const hash = crypto.createHash('sha256').update(normalized).digest('hex');
-  const reviewed = [REVIEWED[file], NATIVE_CONTINUITY_REVIEWED[file],ASSISTANT_LATER_H0_REVIEWED[file],ASSISTANT_BINDING_PREWRITE_REVIEWED[file],ASSISTANT_BINDING_DIAGNOSTIC_REVIEWED[file],ASSISTANT_BINDING_CHECKPOINT_TARGET_REVIEWED[file],ASSISTANT_PUBLIC587_SOURCE_REVIEWED[file],ASSISTANT_PUBLIC587_OPERATIVE_REVIEWED[file],CALENDAR_PUBLIC588_SUCCESSOR_REVIEWED[file],ASSISTANT_PUBLIC590_SUCCESSOR_REVIEWED[file],ASSISTANT_GENUINE590_PARENT_REVIEWED[file]].filter(Boolean)
+  const reviewed = [REVIEWED[file], NATIVE_CONTINUITY_REVIEWED[file],ASSISTANT_LATER_H0_REVIEWED[file],ASSISTANT_BINDING_PREWRITE_REVIEWED[file],ASSISTANT_BINDING_DIAGNOSTIC_REVIEWED[file],ASSISTANT_BINDING_CHECKPOINT_TARGET_REVIEWED[file],ASSISTANT_PUBLIC587_SOURCE_REVIEWED[file],ASSISTANT_PUBLIC587_OPERATIVE_REVIEWED[file],CALENDAR_PUBLIC588_SUCCESSOR_REVIEWED[file],ASSISTANT_PUBLIC590_SUCCESSOR_REVIEWED[file],ASSISTANT_GENUINE590_PARENT_REVIEWED[file],ASSISTANT_GENUINE591_PARENT_REVIEWED[file]].filter(Boolean)
     .find(variant => variant.sha256 === hash);
   if (!reviewed)
     throw new Error('Whole reviewed model import source changed: ' + file);

@@ -1,6 +1,8 @@
 #!/usr/bin/env node
 
 import crypto from 'node:crypto';
+import { assertForecastShareDescriptor, assembleForecastShareProjection, assertForecastShareProjectionParity, FORECAST_SHARE_INDEX_MAX_BYTES }
+  from '../js/services/forecast-share-projection.js';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -519,6 +521,7 @@ function assertPublicDocuments({ manifest, startup, details, coastalParts, zoneR
 }
 
 async function verifyOnce({
+  manifestFileSha256,
   baseUrl,
   sourceHead,
   manifest,
@@ -586,6 +589,24 @@ async function verifyOnce({
     }
   }));
 
+  if (expectedPublicClosure.files.some(item => item.path === 'js/services/forecast-share-projection.js')) {
+    const descriptorBytes = await fetchBytes(fetchImpl, withCacheBuster(baseUrl,
+      'data/live/forecast-share.json', sourceHead, observationNonce), 'forecast-share.json', httpRetryBudget);
+    if (descriptorBytes.length > FORECAST_SHARE_INDEX_MAX_BYTES) throw new Error('Deployed forecast sharing descriptor is too large');
+    const descriptor = assertForecastShareDescriptor(JSON.parse(descriptorBytes.toString('utf8')), manifest, manifestFileSha256);
+    const payloads = [];
+    for (const entry of descriptor.zones) {
+      const relative = 'data/live/' + entry.path.slice(2);
+      const bytes = await fetchBytes(fetchImpl, withCacheBuster(baseUrl, relative, sourceHead, observationNonce), relative, httpRetryBudget);
+      if (bytes.length !== entry.bytes || sha256(bytes) !== entry.sha256) {
+        throw new Error('Deployed forecast sharing projection digest mismatch');
+      }
+      payloads.push(JSON.parse(bytes.toString('utf8')));
+    }
+    const projection = assembleForecastShareProjection(payloads, descriptor, manifest);
+    assertForecastShareProjectionParity({projection,descriptor,manifest,
+      details: parsed['data/live/public-condition-details.json'], registry: parsed['data/zones.geojson']});
+  }
   const closureVerification = await verifyPublicImplementationClosure({
     baseUrl,
     sourceHead,
@@ -694,7 +715,7 @@ export async function verifyRavScoreOperationalPagesDeployment({
     throw new Error('Operational Pages source repair does not match its exact pinned source');
   }
   const httpRetryBudget = { remaining: 3, delayMs: retryDelayMs };
-  let manifest, matchedObservationNonce;
+  let manifest, matchedManifestBytes, matchedObservationNonce;
   for (let attempt = 1; attempt <= attempts; attempt += 1) {
     const manifestObservationNonce = `${observationNonce}-${attempt}`;
     const manifestBytes = await fetchBytes(fetchImpl,
@@ -703,6 +724,7 @@ export async function verifyRavScoreOperationalPagesDeployment({
     try { manifest = JSON.parse(manifestBytes.toString('utf8')); }
     catch { throw new Error('Deployed operational manifest is not JSON'); }
     if (same(manifest, expectedManifest)) {
+      matchedManifestBytes = manifestBytes;
       matchedObservationNonce = manifestObservationNonce;
       break;
     }
@@ -712,6 +734,7 @@ export async function verifyRavScoreOperationalPagesDeployment({
     await new Promise(resolve => setTimeout(resolve, retryDelayMs));
   }
   return verifyOnce({
+    manifestFileSha256: sha256(matchedManifestBytes),
     baseUrl,
     sourceHead,
     manifest,

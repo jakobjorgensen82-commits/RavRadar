@@ -10,7 +10,8 @@ import {execFile as callbackExec} from 'node:child_process';
 import {promisify,isDeepStrictEqual} from 'node:util';
 import {withAuthenticated586PredecessorSource,withAuthenticated587PredecessorSource,
   withAuthenticated588PredecessorSource,assertFrozen588CodeSourceSelected,FROZEN588_CODE_SOURCE_PROVENANCE,
-  withAuthenticated590PredecessorSource,assertFrozen590CodeSourceSelected,FROZEN590_CODE_SOURCE_PROVENANCE}
+  withAuthenticated590PredecessorSource,assertFrozen590CodeSourceSelected,FROZEN590_CODE_SOURCE_PROVENANCE,
+  withAuthenticated591PredecessorSource,assertFrozen591CodeSourceSelected,FROZEN591_CODE_SOURCE_PROVENANCE}
   from '../check-assistant-later-h0-predecessor-source.mjs';
 
 const ROOT=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'../..');
@@ -18,7 +19,7 @@ const exec=promisify(callbackExec),failedCloses=new Map();
 // Ukendt fysisk FD-lukning blokerer samme sti på tværs af begge familier.
 // Opaque snapshots og friskhedsfunktioner tilhører derimod kun én fast profil.
 function fixedSnapshot(profile){
-  assert(profile===FROZEN586||profile===FROZEN587||profile===FROZEN588||profile===FROZEN590,'FROZEN_PREDECESSOR_UNKNOWN_PROFILE');
+  assert(profile===FROZEN586||profile===FROZEN587||profile===FROZEN588||profile===FROZEN590||profile===FROZEN591,'FROZEN_PREDECESSOR_UNKNOWN_PROFILE');
   const contexts=new WeakMap(),refreshers=new WeakMap();
   const SOURCE=profile.sourceHead;
 const SHA=/^[a-f0-9]{64}$/, HEAD=/^[a-f0-9]{40}$/, MB=1024*1024;
@@ -259,6 +260,14 @@ const FROZEN590=Object.freeze({
   assertionPath:'scripts/lib/established-native-current-origin-590-assertion.mjs',
   assertionExport:'assertFrozen590OriginSnapshotData',
   temporaryPrefix:'rr-frozen590-snapshot-',errorPrefix:'FROZEN590_PREDECESSOR_'});
+const FROZEN591=Object.freeze({
+  sourceHead:FROZEN591_CODE_SOURCE_PROVENANCE.head,
+  requiredSha:Object.freeze([FROZEN591_CODE_SOURCE_PROVENANCE.originSha256,
+    FROZEN591_CODE_SOURCE_PROVENANCE.partPipelineSha256]),
+  withSource:withAuthenticated591PredecessorSource,
+  assertionPath:'scripts/lib/established-native-current-origin-591-assertion.mjs',
+  assertionExport:'assertFrozen591OriginSnapshotData',
+  temporaryPrefix:'rr-frozen591-snapshot-',errorPrefix:'FROZEN591_PREDECESSOR_'});
 const snapshot586=fixedSnapshot(FROZEN586),snapshot587=fixedSnapshot(FROZEN587),snapshot588=fixedSnapshot(FROZEN588);
 // Kun disse navngivne indgange; ingen caller-valgt profil, root, head eller tuple.
 export async function readAuthenticatedFrozen586Predecessor(){
@@ -301,4 +310,16 @@ export function assertAuthenticatedFrozen590Snapshot(handle){
 }
 export async function assertAuthenticatedFrozen590SnapshotFresh(handle){
   return snapshot590.fresh(...arguments);
+}
+
+const snapshot591=fixedSnapshot(FROZEN591);
+export async function readAuthenticatedFrozen591Predecessor(){
+  assertFrozen591CodeSourceSelected(); // Before paths, transport or callback.
+  return snapshot591.read(...arguments);
+}
+export function assertAuthenticatedFrozen591Snapshot(handle){
+  return snapshot591.snapshot(...arguments);
+}
+export async function assertAuthenticatedFrozen591SnapshotFresh(handle){
+  return snapshot591.fresh(...arguments);
 }

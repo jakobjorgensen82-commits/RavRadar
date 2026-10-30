@@ -1,8 +1,17 @@
-## 30. oktober — samme runtime-audit med færre store kopier på uændret 4.0.591
+## 30. oktober — samme runtime-audit med færre store kopier fra kritisk 591 til den endnu ikke leverede 592-kandidat
 
 Den lokale kritiske kandidat erstatter auditprogrammets monolitiske join/lowercase-kopi med en overlappende bidvis kontrol. Hele rapporten og afslutningskoden er bevaret i den faktiske store syntetiske normalprøve; maksimal proceshukommelse faldt cirka 111 MiB i én lokal sammenligning. Det beviser ikke nattens rodårsag eller runnerkapacitet.
 
 Faste, indholdsfrie .failure- og .execution-sidefiler skal gøre et programstop før rapporten synligt uden at erstatte den krævede audit eller et READY-bevis. Ingen hævet heap, score-/model-/SQL-ændring eller lempet gate. Den gennemgåede reserveforbedring fra DEC-0295 bevares. Præcis kildekvalifikation, sikker levering og faktisk produktionseffekt er åbne. Se DEC-0297 og håndbog 89.283.
+
+## 4.0.592 – assistentrettelser og kompakt prognosedeling
+
+Retter de fire påviste browserfejl: tysk Ravkese, EN/DE-formuleringer om hvad RavRadar kan, ærlig afklaring af ukendte instrumentdefinitioner og tydelig adskillelse af områdescore fra bedste lokale RavScore. Ingen scoretal eller scoreformel ændres. Den normale591-forgængerbank, senere-H0-overgang, originale B/S og alle69 gamle SQL-filer bevares gennem en ny append-only metadataovergang.27 målrettede normale forløb består lokalt; offentlig levering og faktisk ekstern AI er ikke dermed bevist. Den særskilte AI502 er fortsat åben.
+
+Tilføjer faste private fejltrin, HTTP-status og afvisningskoder på assistentens eksterne fejlvej. Der logges intet brugerindhold, nøgler, fakta-id eller rå output. Offentlige svar, validatorens accept, prompt, viden, kvoter og modelbinding bevares, også hvis loggeren fejler. Den ukendte offentlige 502 er fortsat åben; observationen er ikke bevis for fungerende ekstern AI.
+
+Kompakt prognosedeling samles i samme lokale 592-kandidat: ét indeks og én fil pr. zone med hele 118-timersperioden og begge søgemåder, genbrugt fra allerede beregnede offentlige scores. Normalproducenten undgår en ny stor detail-JSON-læsning; fuld normal paritet og artifact/privacykontrol bevares. Ingen nye billeder, databasebindinger, vejrdata eller ekstra model-/SQL-udstedelse. Faktisk nyt public artifact, 592-kompatibel legacy-Worker og hosted CPU/kvote-/Facebook-/Pages-/domæneaccept er fortsat åbne. Se DEC-0296 og håndbog 89.282.
+
 
 ## 29. oktober — lokal afgrænset kapacitet i komponentreserven
 

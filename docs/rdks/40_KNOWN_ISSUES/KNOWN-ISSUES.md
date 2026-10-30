@@ -4,6 +4,28 @@ En normal kørsel kan have gennemført beregning, offentlig generering og no-los
 
 En lokal kandidat reducerer en konkret målt tekstkopirisiko med uændret fuld rapport/exit og forbereder faste indholdsfrie .failure- og .execution-sidefiler. Den er ikke en bevist løsning på nattens fejl. Den krævede audit og alle næste private/offentlige gates bevares, og der hæves ingen heap. Samlet kvalifikation, separat sidefilbevarelse, sikker levering og faktisk almindelig produktion udestår. Se DEC-0297 og håndbog 89.283.
 
+## 2026-10-29 — kompakt deling er lokalt forberedt, offentlig kompatibilitet er åben
+
+De mindre offentlige delingsfiler og den hukommelsessikre normalproducent skal samles med 592 og kvalificeres på den præcise samlede kilde. Lokal paritet og en hurtig proxy er ikke hosted CPU-/Free-bevis, ny offentlig generation eller fungerende Facebookpreview. Obligatoriske artifact-, privacy- og modelkontroller må ikke erstattes af det interne producentobjekt eller en repræsentativ selection.
+
+Særligt åbent: den gamle delings-Worker skal faktisk opdateres til 592-kompatibel kompaktlæsning gennem sin eksisterende kontrollerede vej. Et 591-bundle mod et 592-manifest kan ikke frikendes af tidligere fungerende gamle links. Den godkendte Pages/DNS/TLS- og klientovergang beholder sine egne gates. Intet delingsklar-løfte før faktisk public artifact, legacy-kompatibilitet og relevante hosted-/Facebook-/kvotebeviser. Der tilføjes ingen ny model- eller SQL-udstedelse fra formatet. DEC-0296 og håndbog 89.282 supplerer den tidligere Pages-beslutning; den separate ukendte assistent-502 og de øvrige mål forbliver åbne.
+
+# Lokal 4.0.592 – fire påviste assistentfejl, selvstændig efterfølger til591
+
+Den normale offentlige591-browseraccept viste fire konkrete svarfejl: det tyske Ravkese-navn blev ikke genkendt, en engelsk capabilities-formulering fik uvedkommende tekniske modeloplysninger, et opdigtet instrument blev forklaret som en ravkese, og ranglisten skelnede ikke klart mellem områdescore og bedste lokale RavScore. De fem mandagsnavne, tidspunkter og områdescorer matchede den normale brugerflade; der er ikke påvist en talfejl i denne visning.
+
+De fire gennemgåede kildeejere er rettet i en selvstændig lokal592-kandidat. Det samme nye selektive normale klient–Edge-mål har27 forløb:16 røde før, alle27 grønne efter. Det bruger dansk, tysk og engelsk, begge søgemåder, den uændrede offentlige historiktekst og en kontrolleret syntetisk provider. Ingen rigtig AI eller leverandør blev kaldt. Ukendte hele instrumentdefinitioner får den eksisterende ærlige afklaring; material-, oprindelses- og farvespørgsmål beholder deres normale vej.
+
+592 er lokalt udstedt gennem den normale generator med ægte591 og69 historiske migrationer som forgænger. En særskilt additiv public591-successor-profil bevarer alle gamle profiler og originale validatorer. Overgangen er kun for en strengt senere vejrgeneration; ingen samme-H0-adgang eller590-handle ommærkes til591. Scoreformel, numeriske historikværdier, kilder, administratorpunkter og geometri ændres ikke. Geodataenes topversion følger kun den reelle release med særskilt helinverse.
+
+Status: 4.0.592 er lokalt udstedt gennem de normale generatorer med ny migration20261029183010 og præcis syv synkroniserede forbrugere. Friske C/I-checks, den navngivne og den aktive normale591-builderkontrol, bindingskontrol, releaseversionskontrol,27 klient–Edge-regressioner og tre nye normale routing-/bindingskontrakter består. Det er ikke offentlig levering, rigtig PostgreSQL eller autentificeret produktions-B/S. Den nu påviste502 fra den eksisterende eksterne AI er en anden åben fejl og er ikke løst af disse fire svarrettelser. En relevant lokal tekst, HTTP200 alene eller en kvoteadvarsel beviser ikke ekstern AI. Den præcise kildekontrol, nødvendig ny PostgreSQL-prøve, sikker installation, senere almindelig generation og browseraccept udestår. Den isolerede SOURCE-revision, Pages-ændringer, statistik og automatisk sletning aktiveres ikke.
+
+Den samme lokale 592-kandidat omfatter nu en afgrænset observation på den eksterne svarvejs eksisterende fejlgrene. Den registrerer kun et fast trin, tal for HTTP-status og en tilladt fast afvisningskode. Spørgsmål, svar, nøgler, fakta-id'er, rå modeloutput og frie fejlbeskeder logges ikke og tilføjes ikke til de offentlige svar. Observationen må ikke ændre et accepteret eller afvist resultat; også en fejl i loggeren skal bevare det oprindelige offentlige svar og dets status.
+
+Lokale normale forløb og sammenligning af validatorens resultater har bevaret svarprotokol, viden, prompt, modelbinding, kvoter og eksisterende timeout. Præcis samlet kvalifikation og offentlig virkning er fortsat åbne. Den offentligt observerede HTTP 502 er endnu ikke årsagsbestemt eller løst af denne observation; faste svar og HTTP 200 alene beviser ikke fungerende ekstern AI. Ingen ny version, C/I/T/K, fakta, migration eller installation følger af observationsdelen.
+
+Åbent issue: Fejlårsagen skal afgøres ud fra en faktisk registreret fast kategori efter kvalificeret levering. Observation er ikke fejlrettelse af den endnu ukendte 502, og rå logs eller brugerindhold må ikke bruges som genvej.
+
 ## 29. oktober — komponentreservens kapacitet er afgrænset, produktionseffekt er åben
 
 Det normale køforløb kan lade nødvendige vindopgaver stå ufærdige. En lokal kandidat giver den almindelige komponentreserve ti minutters startbudget og prioriterer vind-/bølge-GAP før temperatur, med retfærdig rotation, to transporter, fælles forsøgsloft og global startafstand. Det er ikke bevis for alle hulers leverandørårsag, slettede originaler eller fuld dækning.

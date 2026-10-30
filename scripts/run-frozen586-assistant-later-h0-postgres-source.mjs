@@ -9,11 +9,12 @@ import {promisify} from 'node:util';
 import {fileURLToPath,pathToFileURL} from 'node:url';
 import {withAuthenticated586PredecessorSource,withAuthenticated587PredecessorSource,
   withAuthenticated588PredecessorSource,assertFrozen588CodeSourceSelected,FROZEN588_CODE_SOURCE_PROVENANCE,
-  withAuthenticated590PredecessorSource,assertFrozen590CodeSourceSelected,FROZEN590_CODE_SOURCE_PROVENANCE} from './check-assistant-later-h0-predecessor-source.mjs';
-import {requireAssistantLaterH0Output,requireAssistantPublic587SuccessorOutput,requireAssistantPublic588SuccessorOutput,requireAssistantPublic590SuccessorOutput} from './lib/assistant-later-h0-successor-source.mjs';
+  withAuthenticated590PredecessorSource,assertFrozen590CodeSourceSelected,FROZEN590_CODE_SOURCE_PROVENANCE,
+  withAuthenticated591PredecessorSource,assertFrozen591CodeSourceSelected,FROZEN591_CODE_SOURCE_PROVENANCE} from './check-assistant-later-h0-predecessor-source.mjs';
+import {requireAssistantLaterH0Output,requireAssistantPublic587SuccessorOutput,requireAssistantPublic588SuccessorOutput,requireAssistantPublic590SuccessorOutput,requireAssistantPublic591SuccessorOutput} from './lib/assistant-later-h0-successor-source.mjs';
 const ROOT=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
 function fixedNativeSource(profile){
-  assert(profile===FROZEN586||profile===FROZEN587||profile===FROZEN588||profile===FROZEN590,'FROZEN_NATIVE_UNKNOWN_PROFILE');
+  assert(profile===FROZEN586||profile===FROZEN587||profile===FROZEN588||profile===FROZEN590||profile===FROZEN591,'FROZEN_NATIVE_UNKNOWN_PROFILE');
   const HEAD=profile.head,TREE=profile.tree;
 const ADAPTER=profile.adapter,FACTORY='scripts/test-protected-ravscore-continuation-checkpoint.mjs';
 // TEST-only extension of the fixed genuine DATA producer host plus its exact native adapter.
@@ -71,6 +72,7 @@ async function frozenFactory(sourceRoot,source){
 }
 async function withSource(callback){
   profile.requireOutput(); // UNISSUED NEXT stops before Git, filesystem, factory or callback.
+  if(profile===FROZEN591)assertFrozen591CodeSourceSelected();
   if(profile===FROZEN590)assertFrozen590CodeSourceSelected();
   if(profile===FROZEN588)assertFrozen588CodeSourceSelected();
   assert.equal(arguments.length,1);assert.equal(typeof callback,'function');
@@ -152,6 +154,17 @@ const FROZEN590=Object.freeze({
   continuation:'d444e6141038f56dd04b97a55eefe07bbd98f122fb3b76a43bdddacff2d88c8a',
   withSource:withAuthenticated590PredecessorSource,requireOutput:requireAssistantPublic590SuccessorOutput,
   failureKind:'FROZEN590_NATIVE_FIRST_FAILURE'});
+// Genuine issued591 PG adapter/factory; the new592 phase remains a separate normal caller.
+const FROZEN591=Object.freeze({
+  head:FROZEN591_CODE_SOURCE_PROVENANCE.head,tree:FROZEN591_CODE_SOURCE_PROVENANCE.tree,
+  adapter:'scripts/lib/assistant-later-h0-postgres.mjs',adapterBytes:28147,
+  adapterSha256:'4c1ab023207c1a2c2f3962df262330fed265c5d8353b5e514a9e673ca2fe3ce6',
+  factorySourceSha256:'38154b4dc8ee862c905d0627dc0687bc981ac701a82b23a9e3f8de39dec131a4',
+  candidate:'38738b7d7d3bfd74958ab2453422f2416338e99dac53d12f7098ad8c3539ec64',
+  integrated:'ebd5ac3dac09b7afb51e46d18920f6932b478b7ef15bdd31190c128273cb6a54',
+  continuation:'b490f11d14cfe607839d7848bbcdb8e9df7abdfe62c82983e5247fb4ca3dcc0d',
+  withSource:withAuthenticated591PredecessorSource,requireOutput:requireAssistantPublic591SuccessorOutput,
+  failureKind:'FROZEN591_NATIVE_FIRST_FAILURE'});
 const native586=fixedNativeSource(FROZEN586),native587=fixedNativeSource(FROZEN587),native588=fixedNativeSource(FROZEN588);
 export async function withFrozen586CheckpointPostgresSource(callback){
   return native586(...arguments);
@@ -167,4 +180,9 @@ export async function withFrozen588CheckpointPostgresSource(callback){
 const native590=fixedNativeSource(FROZEN590);
 export async function withFrozen590CheckpointPostgresSource(callback){
   return native590(...arguments);
+}
+
+const native591=fixedNativeSource(FROZEN591);
+export async function withFrozen591CheckpointPostgresSource(callback){
+  return native591(...arguments);
 }

@@ -4,7 +4,15 @@ Auditressourcer må reduceres uden at ændre rapportbytes, modelresultater, afsl
 
 Faste .failure- og .execution-sidefiler må alene indeholde afgrænsede faser, fejlkategorier, processtatus, filstørrelser og heapoplysninger; rå fejltekst, stakspor og inputindhold må ikke kopieres. Manglende påkrævet auditrapport stopper fortsat normal videreføring. Observationer må aldrig blive audit-/READY-erstatning eller skjule et programstop som en modelafvigelse. Ingen heapgrænse eller kontrol lempes.
 
-Bevar 4.0.591, alle C/I/T- og SQL-bytes, originaler, kildeprioritet, administratorpunkter, geometri og scoreformel. Den allerede gennemgåede reservekapacitet bevares. Samlet kvalifikation og faktisk almindelig efterfølger kræves. Se DEC-0297 og håndbog 89.283.
+Bevar den faktisk udstedte 592-families C/I/T, allerede udstedte SQL og historiske migrationer samt originaler, kildeprioritet, administratorpunkter, geometri og scoreformel. Auditvidereførelsen udsteder ikke en ny model eller migration. Den allerede gennemgåede reservekapacitet bevares. Samlet kvalifikation og faktisk almindelig efterfølger kræves. Se DEC-0297 og håndbog 89.283.
+
+## 2026-10-29 — aktivt krav: kompakt, modelbundet delingsprojektion
+
+- Genbrug allerede beregnede offentlige resultater i ét indeks og én zonefil pr. zone, med alle 118 timer og begge søgemåder. Ingen nye scorer, billeder pr. time, privat datalager, databasebinding, leverandørhentning, geometri- eller formelændring.
+- Bevar delingskontraktens fulde 118 × 210 × 2-paritet for tidspunkt, tilgængelighed, score, kvalitet og lokal dækningsstatus. Indeks og alle 210 zonefiler skal indgå i obligatorisk normal artifact-/privacykontrol. Paritet må ikke forveksles med komplet vejr.
+- Genbrug normalproducentens eksisterende objekt/tekst/manifest uden ny stor detail-JSON-læsning. Referencen er ikke autenticitet; hash-/størrelses-/generations-/modelbinding til de gemte offentlige data og normal paritet er stadig obligatorisk. Filbaserede kommandoveje bevares.
+- Ét samlet 15-sekunders stopur fra manifeststart og samme AbortSignal. Manifest/indeks/zone har egne 512/128/32 KiB-lofter. Forkert eller manglende generation, model, zone, time, mode eller sprog skal give neutralt afslag, aldrig et gættet tal eller en nabotime.
+- Samlet 592-kvalifikation må ikke efterlade den gamle Worker på 591. Den eksisterende kontrollerede Worker-vej skal levere en faktisk 592-kompatibel kompaktlæser, og en virkelig ny offentlig generation med de nye filer skal være bevist. Hosted Free-CPU/kvoter, Facebook, Pages/DNS/TLS og klientcutover er særskilte åbne gates. Ingen ekstra version/C/I/T/K eller migration fra formatet; se DEC-0296 og håndbog 89.282.
 
 ## 29. oktober — aktivt krav: afgrænset og retfærdig komponentreserve
 

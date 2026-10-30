@@ -1,8 +1,30 @@
 ## 30. oktober — kritisk auditforbedring før de øvrige kandidater
 
-Næste afgrænsede leverance er 591-auditkandidatens målte kopireduktion samt faste indholdsfrie proces-/fejlkvitteringer. Bevar den gennemgåede reservekapacitet, alle bindinger og de normale hårde gates. Ingen ny model-/SQL-udstedelse eller hævet heap.
+Den kritiske 591-auditkandidat kvalificeres særskilt. Dens målte kopireduktion og faste indholdsfrie proces-/fejlkvitteringer forberedes videreført i den endnu ikke leverede 592-kilde. Bevar den gennemgåede reservekapacitet, alle bindinger og de normale hårde gates. Ingen ny model-/SQL-udstedelse eller hævet heap.
 
-Kvalificér den præcise samlede kilde, vent på et skrivefrit produktionsvindue og verificér en virkelig almindelig efterfølger gennem audit, databevarelse og offentligt deploy. Sammenhold eventuelle nye faste fejloplysninger, før den oprindelige fejl kaldes forklaret eller løst. De separate fremtidige leverancer og alle fem mål bevares uden at blive kopieret ind i denne kilde. Se DEC-0297 og håndbog 89.283.
+Kvalificér den præcise samlede kilde, vent på et skrivefrit produktionsvindue og verificér en virkelig almindelig efterfølger gennem audit, databevarelse og offentligt deploy. Sammenhold eventuelle nye faste fejloplysninger, før den oprindelige fejl kaldes forklaret eller løst. De eksisterende 592-assistent-, observations- og kompakte delingsændringer bevares særskilt og bliver ikke offentligt leveret af denne dokumentport. Alle fem mål forbliver åbne. Se DEC-0297 og håndbog 89.283.
+
+## 2026-10-29 — saml kompakt deling med 592 uden ekstra modeludstedelse
+
+Hold den prioriterede tailleverance særskilt. Saml derefter den allerede udstedte 592-kandidat med den kompakte offentlige projektion og hukommelsessikre normalproducent før én præcis samlet kildekvalifikation. Genbrug beståede relevante inputbeviser; ret kun faktiske nye kompositionsproblemer. Ingen ny score, geometri, version/C/I/T/K eller migration fra det kompakte format.
+
+Før deling kan kaldes klar: faktisk nyt offentligt 592-artifact med indeks, 210 zonefiler og obligatorisk fuld delingsparitet/privacy → den gamle Workers eksisterende kontrollerede 592-kompatible levering → godkendt Pages-host og hosted CPU/kvote-/Facebookaccept → senere DNS/TLS og kvalificeret klientcutover. Ingen modellempelse eller lokal Free-garanti. 89.279-diagnostik og 89.281 bevares; øvrige åbne opgaver fortsætter. Se DEC-0296 og håndbog 89.282.
+
+# Lokal 4.0.592 – fire påviste assistentfejl, selvstændig efterfølger til591
+
+Den normale offentlige591-browseraccept viste fire konkrete svarfejl: det tyske Ravkese-navn blev ikke genkendt, en engelsk capabilities-formulering fik uvedkommende tekniske modeloplysninger, et opdigtet instrument blev forklaret som en ravkese, og ranglisten skelnede ikke klart mellem områdescore og bedste lokale RavScore. De fem mandagsnavne, tidspunkter og områdescorer matchede den normale brugerflade; der er ikke påvist en talfejl i denne visning.
+
+De fire gennemgåede kildeejere er rettet i en selvstændig lokal592-kandidat. Det samme nye selektive normale klient–Edge-mål har27 forløb:16 røde før, alle27 grønne efter. Det bruger dansk, tysk og engelsk, begge søgemåder, den uændrede offentlige historiktekst og en kontrolleret syntetisk provider. Ingen rigtig AI eller leverandør blev kaldt. Ukendte hele instrumentdefinitioner får den eksisterende ærlige afklaring; material-, oprindelses- og farvespørgsmål beholder deres normale vej.
+
+592 er lokalt udstedt gennem den normale generator med ægte591 og69 historiske migrationer som forgænger. En særskilt additiv public591-successor-profil bevarer alle gamle profiler og originale validatorer. Overgangen er kun for en strengt senere vejrgeneration; ingen samme-H0-adgang eller590-handle ommærkes til591. Scoreformel, numeriske historikværdier, kilder, administratorpunkter og geometri ændres ikke. Geodataenes topversion følger kun den reelle release med særskilt helinverse.
+
+Status: 4.0.592 er lokalt udstedt gennem de normale generatorer med ny migration20261029183010 og præcis syv synkroniserede forbrugere. Friske C/I-checks, den navngivne og den aktive normale591-builderkontrol, bindingskontrol, releaseversionskontrol,27 klient–Edge-regressioner og tre nye normale routing-/bindingskontrakter består. Det er ikke offentlig levering, rigtig PostgreSQL eller autentificeret produktions-B/S. Den nu påviste502 fra den eksisterende eksterne AI er en anden åben fejl og er ikke løst af disse fire svarrettelser. En relevant lokal tekst, HTTP200 alene eller en kvoteadvarsel beviser ikke ekstern AI. Den præcise kildekontrol, nødvendig ny PostgreSQL-prøve, sikker installation, senere almindelig generation og browseraccept udestår. Den isolerede SOURCE-revision, Pages-ændringer, statistik og automatisk sletning aktiveres ikke.
+
+Den samme lokale 592-kandidat omfatter nu en afgrænset observation på den eksterne svarvejs eksisterende fejlgrene. Den registrerer kun et fast trin, tal for HTTP-status og en tilladt fast afvisningskode. Spørgsmål, svar, nøgler, fakta-id'er, rå modeloutput og frie fejlbeskeder logges ikke og tilføjes ikke til de offentlige svar. Observationen må ikke ændre et accepteret eller afvist resultat; også en fejl i loggeren skal bevare det oprindelige offentlige svar og dets status.
+
+Lokale normale forløb og sammenligning af validatorens resultater har bevaret svarprotokol, viden, prompt, modelbinding, kvoter og eksisterende timeout. Præcis samlet kvalifikation og offentlig virkning er fortsat åbne. Den offentligt observerede HTTP 502 er endnu ikke årsagsbestemt eller løst af denne observation; faste svar og HTTP 200 alene beviser ikke fungerende ekstern AI. Ingen ny version, C/I/T/K, fakta, migration eller installation følger af observationsdelen.
+
+Næste afgrænsede trin er fælles bindings- og integrationskontrol af den samlede 592-kandidat, derefter de normale leveringsgates. Observationen må først bruges som produktionsbevis, når den faktisk er leveret og har givet et relevant fast resultat.
 
 ## 29. oktober — P0: kvalificér den afgrænsede vindreserve og bevar almindelig vejrhentning
 

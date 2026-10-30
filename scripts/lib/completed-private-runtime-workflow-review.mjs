@@ -8,6 +8,25 @@ const coldReview = JSON.parse(fs.readFileSync(new URL('./current-family-cold-sta
 const sha = value => crypto.createHash('sha256').update(value).digest('hex');
 // Kun kontrolvisning af de fem normale versions-UA'er. Hele nye og gamle
 // workflowbytes er fastbundet; ukendte billeder går uændret til gamle afslag.
+// TEST ONLY: exact592 User-Agent successor of the complete591 capacity workflow.
+// The five literal UA fields are the only inverse; no production admission.
+export const release592WorkflowUserAgentReview = Object.freeze({
+  before: Object.freeze({ bytes: 293121, sha256: '10bfb353d439877791c0a98043e2ca6e2ad0cd8a2b71bba44cc7e304e2e4897a' }),
+  after: Object.freeze({ bytes: 293121, sha256: '393406fa0f1e4c6477cd4898aa6e43f49a1024693aa7b8e10b255ee153fe540f' }),
+});
+export function inverseRelease592WorkflowUserAgents(source, role) {
+  assert.equal(arguments.length, 2, 'RELEASE592_WORKFLOW_ARGUMENTS');
+  assert.equal(typeof source, 'string', 'RELEASE592_WORKFLOW_TYPE');
+  source = inverseRuntimeAuditExecutionWorkflow(source, role);
+  const row = release592WorkflowUserAgentReview;
+  if (role !== 'build' || sha(source) !== row.after.sha256) return source;
+  assert.equal(Buffer.byteLength(source), row.after.bytes, 'RELEASE592_WORKFLOW_SIZE');
+  assert.equal(source.split('RavRadar/4.0.592').length, 6, 'Exactly five normal592 User-Agent fields');
+  const previous = source.replaceAll('RavRadar/4.0.592', 'RavRadar/4.0.591');
+  assert.equal(Buffer.byteLength(previous), row.before.bytes, 'RELEASE592_PREDECESSOR_SIZE');
+  assert.equal(sha(previous), row.before.sha256, 'Every591 capacity workflow byte survives');
+  return previous;
+}
 // TEST ONLY: content-free audit execution/upload observation. Exact whole
 // afterimage -> unchanged753; no production report or gate authority.
 export const runtimeAuditExecutionWorkflowReview = Object.freeze({
@@ -32,10 +51,16 @@ export const runtimeAuditExecutionWorkflowReview = Object.freeze({
   ]
 ])
 });
+export const runtimeAuditExecution592WorkflowReview = Object.freeze({
+  before:Object.freeze({bytes:293121,sha256:'393406fa0f1e4c6477cd4898aa6e43f49a1024693aa7b8e10b255ee153fe540f'}),
+  after:Object.freeze({bytes:294485,sha256:'e7efa59703de0914786cd4bb0230313d21fbb24218c9a4a4935875b43f836267'}),
+  edits:runtimeAuditExecutionWorkflowReview.edits,
+});
 export function inverseRuntimeAuditExecutionWorkflow(source,role) {
   assert.equal(arguments.length,2,'RUNTIME_AUDIT_EXECUTION_WORKFLOW_ARGUMENTS');
   assert.equal(typeof source,'string','RUNTIME_AUDIT_EXECUTION_WORKFLOW_TYPE');
-  const row=runtimeAuditExecutionWorkflowReview;
+  const row=sha(source)===runtimeAuditExecution592WorkflowReview.after.sha256
+    ?runtimeAuditExecution592WorkflowReview:runtimeAuditExecutionWorkflowReview;
   if(role!=='build'||sha(source)!==row.after.sha256)return source;
   assert.equal(Buffer.byteLength(source),row.after.bytes,'RUNTIME_AUDIT_EXECUTION_WORKFLOW_SIZE');
   let previous=source;
@@ -72,6 +97,7 @@ export function inverseWindTailCapacityWorkflow(source, role) {
 export function inverseRelease591WorkflowUserAgents(source,role){
   assert.equal(arguments.length,2,'RELEASE591_WORKFLOW_ARGUMENTS');
   assert.equal(typeof source,'string','RELEASE591_WORKFLOW_TYPE');
+  source=inverseRelease592WorkflowUserAgents(source,role);
   source=inverseWindTailCapacityWorkflow(source,role);
   if(role!=='build'||sha(source)!=='bfb4d382c36d713328e8d68f7a04801a16f35b3bcecffb3c1e9813cc578338c7')return source;
   assert.equal(Buffer.byteLength(source),292886,'RELEASE591_WORKFLOW_SIZE');

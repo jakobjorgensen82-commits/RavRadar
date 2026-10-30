@@ -1,5 +1,6 @@
 import {inverseReviewedAccountStatisticsAssistantSourceScripts} from './lib/account-statistics-assistant-package-review.mjs';
 import assert from 'node:assert/strict';
+import {createHash} from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
 import { spawnSync } from 'node:child_process';
@@ -11,10 +12,46 @@ import {
   SOURCE_BINDING_PREFLIGHT,
 } from './validate-source-once.mjs';
 
+// Qualify the actual compact-sharing registration before any historical view.
+const forecastShareProjectionCommand = 'node scripts/test-forecast-share-projection.mjs';
+const precedingPrivacySourceDefinition = 'node scripts/test-post-cutover-private-runtime-migration.mjs && node scripts/test-tracked-runtime-privacy.mjs && node scripts/test-pages-artifact-privacy.mjs';
+function inverseReviewedForecastShareProjectionRegistration(actualScripts) {
+  const digest = scripts => createHash('sha256').update(JSON.stringify(scripts)).digest('hex');
+  assert.equal(digest(actualScripts), '0c471e7f1dd23549309ef500c2f1b4749e02fb3b7529fbe0260eb06694abdee0',
+    'Only the entire reviewed592 script map plus the one compact-sharing registration.');
+  assert.equal(actualScripts['test:privacy-source-critical'],
+    precedingPrivacySourceDefinition + ' && ' + forecastShareProjectionCommand);
+  const declared = expandSourceCommands(actualScripts, 'validate:source:checks');
+  assert.equal(declared.length, 72);
+  assert.equal(declared.filter(command => command === forecastShareProjectionCommand).length, 1,
+    'The real compact producer/privacy/copy target is registered exactly once.');
+  const plan = buildSourceValidationPlan(actualScripts), calls = [];
+  assert.deepEqual(plan.preflight, [...SOURCE_BINDING_PREFLIGHT]);
+  assert.equal(plan.gate, 'node scripts/source-critical-gate.mjs');
+  assert.equal(runSourceValidation(plan, {execute(command) { calls.push(command); return 0; }, log() {}}), 0);
+  assert.deepEqual(calls, [...plan.preflight, ...plan.remaining, plan.gate]);
+  const previous = {...actualScripts, 'test:privacy-source-critical': precedingPrivacySourceDefinition};
+  assert.equal(digest(previous), '63d0c2106fedef75e01ff230f52b07c81bd00411f80dd8cf985d8a8053852fc5',
+    'Reconstruct the exact entire preceding592 script map before the old unchanged inverses.');
+  assert.deepEqual(declared.filter(command => command !== forecastShareProjectionCommand),
+    expandSourceCommands(previous, 'validate:source:checks'), 'Preserve all preceding commands, order and duplicate counts.');
+  return previous;
+}
+const actualForecastShareSourceScripts = JSON.parse(fs.readFileSync('package.json', 'utf8')).scripts;
+const precedingForecastShareSourceScripts = inverseReviewedForecastShareProjectionRegistration(actualForecastShareSourceScripts);
+for (const definition of [precedingPrivacySourceDefinition,
+  actualForecastShareSourceScripts['test:privacy-source-critical'] + ' && ' + forecastShareProjectionCommand,
+  forecastShareProjectionCommand + ' && ' + precedingPrivacySourceDefinition,
+  actualForecastShareSourceScripts['test:privacy-source-critical'] + ' --unexpected'])
+  assert.throws(() => inverseReviewedForecastShareProjectionRegistration({...actualForecastShareSourceScripts,
+    'test:privacy-source-critical': definition}));
+assert.throws(() => inverseReviewedForecastShareProjectionRegistration({...actualForecastShareSourceScripts,
+  'test:tracked-runtime': 'node scripts/UNREVIEWED.mjs'}));
+
 // Validate the ACTUAL new source plan first. Then reverse only one exact
 // last-mile registration and the three reviewed historical route rewrites.
 // Every original oracle/assertion below remains whole and unchanged.
-const actualOriginSourceScripts = inverseReviewedAccountStatisticsAssistantSourceScripts(JSON.parse(fs.readFileSync('package.json', 'utf8')).scripts);
+const actualOriginSourceScripts = inverseReviewedAccountStatisticsAssistantSourceScripts(precedingForecastShareSourceScripts);
 const originalOriginSourceCritical = "node scripts/build-ravscore-model-bundle.mjs --check && node scripts/check-account-assistant-issued-source.mjs && node scripts/check-native-identity-frozen-i71-source.mjs && node scripts/run-frozen-current-memory-warmup-source-targets.mjs builder && node scripts/build-established-native-current-origin-successor.mjs --check && node --test scripts/test-model-source-imports.mjs scripts/test-established-native-current-origin-successor.mjs scripts/test-established-native-current-origin-postgres-source.mjs scripts/test-code-only-public-coastal-registry-stage.mjs && node scripts/test-established-native-current-origin-followers.mjs && node scripts/sync-ravscore-model-binding.mjs --check && npm run test:native-identity-successor && npm run test:current-memory-warmup && npm run test:weather-state-epoch && node scripts/test-ravscore-integrated-model.mjs && node scripts/test-ravscore-integrated-state-pipeline.mjs && node --test scripts/test-ravscore-integrated-generator.mjs scripts/test-ravscore-recovery-replay.mjs scripts/test-score-prognosis-plain-copy.mjs scripts/test-ravscore-initial-current-window-audit.mjs scripts/test-saved-current-window-scratch.mjs scripts/test-post-h0-dmi-original-dependencies.mjs scripts/test-saved-current-forward-original-plan.mjs && node scripts/test-ravscore-public-runtime-contract.mjs && node scripts/test-ravscore-public-data-service-binding.mjs && node scripts/test-missing-weather-null-safety-4.0.116.mjs";
 const originSourceRoutingHunks = [
   [

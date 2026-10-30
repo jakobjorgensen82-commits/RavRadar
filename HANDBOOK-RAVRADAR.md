@@ -22,9 +22,37 @@ Ingen sidefil er en auditrapport, et READY-bevis eller tilladelse til at fortsæ
 
 ### Samlet levering og virkning skal stadig bevises
 
-Kandidaten bevarer den gennemgåede reservekøs 600-sekunders normalramme, loft på 800 HTTP-forsøg inklusive genforsøg, 150 ms mellem starter og to transporter. Prioriteten DMI → Copernicus → Open-Meteo, gyldige nyere data, originaler, historik, administratorpunkter, geometri og scoreformel bevares. Der udstedes ingen ny version, modelbinding eller SQL-overgang.
+Kandidaten bevarer den gennemgåede reservekøs 600-sekunders normalramme, loft på 800 HTTP-forsøg inklusive genforsøg, 150 ms mellem starter og to transporter. Prioriteten DMI → Copernicus → Open-Meteo, gyldige nyere data, originaler, historik, administratorpunkter, geometri og scoreformel bevares. Den kritiske 591-auditkvalifikation og levering er en særskilt vej. Videreførelsen i den fremtidige 592-kandidat bevarer dens egne faktisk udstedte model- og SQL-bindinger og kræver ingen yderligere udstedelse. Den gør ikke 592 offentligt leveret.
 
-Præcis samlet kildekontrol og sikker levering i et skrivefrit vindue udestår. En aktiv vejrhentning må ikke afbrydes eller få produktionskode ændret som del af dokumentationen. Først en faktisk efterfølgende almindelig kørsel gennem audit, privat gemning og offentligt deploy kan bevise den nye vejs produktionseffekt. Fuld dækning og selvstændig drift forbliver særskilte krav. Se DEC-0297 og det private checkpoint for den aktuelle status.
+Den særskilte 591-kvalifikation ændrer ikke den fremtidige 592-kandidats egne åbne krav til præcis samlet kildekontrol og sikker levering i et skrivefrit vindue. En aktiv vejrhentning må ikke afbrydes eller få produktionskode ændret som del af dokumentationen. Først en faktisk efterfølgende almindelig kørsel gennem audit, privat gemning og offentligt deploy kan bevise den nye vejs produktionseffekt. Fuld dækning og selvstændig drift forbliver særskilte krav. Se DEC-0297 og det private checkpoint for den aktuelle status.
+
+## 89.282 Deling læser en kompakt kopi af den samme prognose
+
+**Kort fortalt: Et delt link skal vise den samme beregnede prognose som RavRadar. Den lokale kandidat gør oplysningerne lettere at hente ved at samle dem i små filer; den beregner ikke nye scorer.**
+
+Når RavRadar allerede har beregnet og kontrolleret prognosen, kan de oplysninger, som delingen behøver, samles i ét kompakt indeks og én fil for hver af de 210 zoner. Hver zonefil indeholder alle 118 prognosetimer og begge søgemåder. Der laves ikke en fil eller et billede for hver time, og der tilføjes ingen ny scoreberegning.
+
+### Kun den valgte zones oplysninger
+
+Delingslæseren henter det normale manifest, det kontrollerede indeks og netop den valgte zones fil. Den skal stadig finde den præcise time, søgemåde og sprog og kontrollere generation, modelbinding, filstørrelse og hele filens kontrolsum. Et forkert eller udløbet input giver en neutral visning uden score; læseren må ikke vælge en anden time eller gætte et tal.
+
+De små filer skal bevare tilgængelighed, scoretal, kvalitetsmarkering og lokal dækningsstatus fra den normale offentlige delingsvisning i alle 118 timer for alle 210 zoner og begge søgemåder. Det er 49.560 sammenligninger af den samme allerede beregnede prognose. En korrekt kopieret manglende score forbliver manglende; paritet er ikke et løfte om fuld vejrdækning. Historikforbehold og betegnelser skal følge det scoretal, de beskriver.
+
+### Mindre hukommelsesarbejde i den normale producent
+
+Den normale offentlige producent giver sit allerede tilstedeværende resultat videre til den kompakte projektion. Dermed behøver den ikke åbne og fortolke det store detail-JSON igen. Det interne objekt er ikke i sig selv et bevis for gyldige data: den obligatoriske kontrol af det færdige offentlige artifact, privatliv og hele pariteten mod de bundne data skal stadig bestå. De eksisterende filbaserede kommandoveje beholder deres kontroller.
+
+Alle tre offentlige læsninger deler én samlet frist på 15 sekunder fra manifeststart og det samme afbrydelsessignal. Hvert trin får ikke en ny frist. Filerne har egne størrelseslofter, og en afvigende kontrolsum, generation eller model må ikke omgås for at vise en score. Afgrænsningen er ikke et løfte om en bestemt oplevet svartid eller Cloudflare-CPU.
+
+### Ingen ny database eller billedsamling
+
+Delingen læser kun faste offentlige RavRadar-filer. Der tilføjes ingen database, R2-, KV-, D1- eller Supabase-binding, brugerdataadgang, ekstra vejrhentning eller billedlager. Det eksisterende logo genbruges. Kildernes prioritet, punkter, geometri, scoreformel og gemte originaler ændres ikke. Det kompakte format kræver ingen ny model- eller SQL-udstedelse ud over den allerede udstedte 592-overgang, som det skal passe til.
+
+### Før funktionen kan kaldes klar
+
+Den samlede 592-kandidat er endnu ikke offentlig delingsaccept. Et virkelig nyt offentligt artifact med alle de kompakte filer og beståede kontroller skal være leveret. Den eksisterende gamle delings-Worker skal også opdateres gennem sin kontrollerede vej med den faktisk 592-kompatible kompaktlæser. Ellers kan den blive stående på 591, mens RavRadar leverer et 592-manifest. Gamle links skal fortsat følge deres normale gyldighedsregler; der må ikke indføres en svagere modelkontrol for at få dem til at vise et tal.
+
+Den godkendte Pages-prøveadresse, målt hosted CPU og samlet forbrug, Facebooks forhåndsvisning samt senere domæne, DNS, TLS og klientskifte har fortsat deres egne åbne kontroller. En lokal hastighedsprøve er ikke bevis for, at Cloudflares aktuelle Free-krav på 10 ms CPU kan overholdes. Den korte adresse og Facebookvisningen må først kaldes klar, når de faktisk er afprøvet. Se DEC-0296 samt den tidligere Pages-beslutning i DEC-0294.
 
 ## 89.281 Vindhuller skal have plads i reservekøen
 
@@ -53,6 +81,28 @@ Ved seks almindelige vejrhentninger kan netop denne vej højst starte 4.800 HTTP
 Det er en lokal, afgrænset leveringskandidat. Den må ikke kaldes en løst produktionsfejl, fuld femfamiliedækning eller selvstændigt verificeret drift, før kildekontrol, sikker levering og en virkelig ny almindelig generation er gennemført. Dækningen måles fortsat over alle 118 forventede timer og alle 210 zoner, særskilt for begge søgemåder og hver prognosedag. Ukendte felter og manglende score må ikke tælles som dækket. Gyldige timer og hele originaler skal bevares.
 
 Der udstedes ingen ny version, modelbinding eller databaseovergang i denne afgrænsede leverance. DMI-tidsbudgetter, prioriteten DMI → Copernicus → Open-Meteo, historik, administratorpunkter og geometri bevares. De øvrige åbne RavRadar-opgaver består. Se DEC-0295 og den private driftskvittering for den aktuelle leveringsstatus.
+
+## 89.279 Præcise spørgsmål og tydelige scoretal i Spørg RavRadar
+
+**Kort fortalt: Spørg RavRadar skal genkende almindelige ord og formuleringer, være ærlig om ukendt udstyr og vise tydeligt, hvilket scoretal der menes.**
+
+Du kan spørge om en ravkese på dansk, tysk eller engelsk og få forklaringen fra RavRadars eksisterende viden. Spørgsmål som »Hvad kan RavRadar hjælpe mig med?« skal give en oversigt over hjælpen til ravjagt og prognosen. Et ukendt instrumentnavn er ikke bevis for, at udstyret findes eller virker; assistenten skal bede om en præcisering frem for at gætte.
+
+### To forskellige tal i en rangliste
+
+Områdescoren sammenligner områder og tager også højde for støtte fra flere kystdele. Den bedste lokale RavScore gælder den bedste kystdel. De kan derfor være forskellige. En assistentliste skal vise begge betegnelser tydeligt, og en forklaring om ufuldstændig historik skal være knyttet til den lokale RavScore, den beskriver. Ingen tal bliver ændret for at få forklaringen til at passe.
+
+### Hvad en afprøvning beviser
+
+Den lokale 592-kandidat har bestået 27 afgrænsede normale forløb på de gennemgåede svarrettelser. Det er ikke bevis for offentlig levering eller fungerende ekstern AI. Faste lokale svar kan fungere, selv om det eksterne AI-svar ikke kan hentes. Den særskilt observerede AI-fejl skal undersøges og verificeres for sig.
+
+### Private fejlårsager uden brugerindhold
+
+Når den eksterne svarvej fejler, kan den lokale kandidat registrere, hvilket fast trin der blev nået, en afgrænset afvisningskode og tal for HTTP-status. Oplysningerne bruges kun til privat driftsfejlfinding. Der logges aldrig spørgsmål, svar, nøgler, fakta-id'er, rå modeloutput eller frie fejlbeskeder. Der tilføjes ingen interne fejlårsager til brugerens svar.
+
+Observationen sker på de eksisterende fejlgrene og må ikke ændre, hvilke svar der accepteres. Den udløser ingen ekstra AI-forespørgsel, ændrer ikke kvoter eller svartidsgrænser og gør ikke et afvist svar gyldigt. Hvis selve logningen fejler, skal det oprindelige offentlige svar og dets status stadig returneres uændret. Den eksisterende viden, prompt og modelbinding bevares.
+
+En fast kode kan hjælpe med at skelne en leverandørfejl fra et format- eller valideringsproblem, når den faktisk er registreret. Koden er ikke i sig selv et bevis for rodårsagen. Den offentligt observerede fejl med HTTP-status 502 er fortsat uafklaret; denne udvidelse løser den ikke alene. Et lokalt fast svar eller HTTP 200 beviser heller ikke i sig selv, at den eksterne AI er blevet kaldt og fungerer.
 
 ## 89.278 En kortere delingsadresse med den samme prognose
 
@@ -914,7 +964,7 @@ En særskilt, dokumenteret Storage-formatkant rettes samtidig: immutable upload 
 
 # RavRadar Håndbog
 
-**Håndbogsversion:** 4.0.591
+**Håndbogsversion:** 4.0.592
 
 **Lokal kildebinding — 29. oktober 2026, RavScore 4.0.591, ikke installeret:** Den integrerede model er offentlig som modeltype under den særskilt leverede 4.0.590. Den nye assistentefterfølger er lokalt udstedt og er endnu ikke samlet kvalificeret, installeret eller offentliggjort.
 

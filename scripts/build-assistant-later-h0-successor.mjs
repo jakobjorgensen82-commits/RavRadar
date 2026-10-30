@@ -26,7 +26,11 @@ import {ASSISTANT_LATER_H0_BEFORE as OLD,ASSISTANT_LATER_H0_ALIASES as ALIASES,
   ASSISTANT_PUBLIC590_SUCCESSOR_BEFORE,ASSISTANT_PUBLIC590_SUCCESSOR_ALIASES,
   readAssistantPublic590PredecessorCanonicalSource,assistantPublic590SuccessorCheckpointContractFromBase,
   requireAssistantPublic590SuccessorParent,requireAssistantPublic590SuccessorBinding,requireAssistantPublic590SuccessorOutput,
-  requireAssistantPublic590SuccessorRelease,assistantPublic590SuccessorMigration}
+  requireAssistantPublic590SuccessorRelease,assistantPublic590SuccessorMigration,
+  ASSISTANT_PUBLIC591_SUCCESSOR_BEFORE,ASSISTANT_PUBLIC591_SUCCESSOR_ALIASES,
+  readAssistantPublic591PredecessorCanonicalSource,assistantPublic591SuccessorCheckpointContractFromBase,
+  requireAssistantPublic591SuccessorParent,requireAssistantPublic591SuccessorBinding,requireAssistantPublic591SuccessorOutput,
+  requireAssistantPublic591SuccessorRelease,assistantPublic591SuccessorMigration}
   from './lib/assistant-later-h0-successor-source.mjs';
 const ROOT=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..'),CP='ravradar_ravscore_checkpoint_';
 const sha=v=>crypto.createHash('sha256').update(v).digest('hex');
@@ -62,8 +66,16 @@ const PUBLIC590=Object.freeze({
   contractTail:"    || E'\\n-- assistant-later-h0-original588-payload-validator --\\n' || v_ask588_payload_definition;",
   kind:'ASSISTANT_PUBLIC590_SUCCESSOR_STRUCTURE'});
 
+const PUBLIC591=Object.freeze({
+  previous:ASSISTANT_PUBLIC591_SUCCESSOR_BEFORE,aliases:ASSISTANT_PUBLIC591_SUCCESSOR_ALIASES,
+  previousRelease:591,validatorCount:39,
+  readPredecessor:readAssistantPublic591PredecessorCanonicalSource,
+  checkpointFromBase:assistantPublic591SuccessorCheckpointContractFromBase,
+  contractTail:"    || E'\\n-- assistant-later-h0-original590-payload-validator --\\n' || v_ask590_payload_definition;",
+  kind:'ASSISTANT_PUBLIC591_SUCCESSOR_STRUCTURE'});
+
 function fixedProfile(profile){
-  assert(profile===LEGACY586||profile===PUBLIC587||profile===PUBLIC588||profile===PUBLIC590,'ASSISTANT_SUCCESSOR_UNKNOWN_PROFILE');
+  assert(profile===LEGACY586||profile===PUBLIC587||profile===PUBLIC588||profile===PUBLIC590||profile===PUBLIC591,'ASSISTANT_SUCCESSOR_UNKNOWN_PROFILE');
   return profile;
 }
 function metadata(source,next,inventory,OLD){
@@ -96,6 +108,14 @@ export async function prepareAssistantPublic590SuccessorStructure(options){
   assert(options&&Object.getPrototypeOf(options)===Object.prototype);
   assert.deepEqual(Object.keys(options),['version'],'Kun normal tidsstempelinput; ingen caller-valgt profil eller tuple');
   return prepareStructure(PUBLIC590,options.version);
+}
+
+export async function prepareAssistantPublic591SuccessorStructure(options){
+  assert.equal(arguments.length,1);
+  requireAssistantPublic591SuccessorParent(); // Before operands, model discovery or filesystem work.
+  assert(options&&Object.getPrototypeOf(options)===Object.prototype);
+  assert.deepEqual(Object.keys(options),['version'],'Kun normal tidsstempelinput; ingen caller-valgt profil eller tuple');
+  return prepareStructure(PUBLIC591,options.version);
 }
 
 async function prepareStructure(profile,version){
@@ -329,15 +349,43 @@ export async function buildAssistantPublic590BindingSuccessor(options){
 }
 
 
+export async function buildAssistantPublic591BindingSuccessor(options){
+  assert.equal(arguments.length,1);
+  const core=await prepareAssistantPublic591SuccessorStructure(options);
+  const prior=await readAssistantPublic591PredecessorCanonicalSource();
+  const result=wrap(core,prior,PUBLIC591);
+  assert.equal(result.migrationIssued,false);assert.equal(result.productionAuthority,false);
+  return Object.freeze({...result,sameH0Capability:false,admission:'NO_ADMISSION'});
+}
+
+
 async function main(){
   const args=process.argv.slice(2);
   if(args[0]==='--active'){
     // Det eksisterende normale source-mål følger kun det kildeejede aktive objekt.
     // De navngivne gamle CLI-indgange bevares til autentiske frozen-banker.
-    assert(['assistant-public587-successor','assistant-public588-successor','assistant-public590-successor'].includes(ACTIVE_ASSISTANT_SUCCESSOR.sourcePhase));
-    args.shift();args.unshift(ACTIVE_ASSISTANT_SUCCESSOR.sourcePhase==='assistant-public590-successor'
+    assert(['assistant-public587-successor','assistant-public588-successor','assistant-public590-successor','assistant-public591-successor'].includes(ACTIVE_ASSISTANT_SUCCESSOR.sourcePhase));
+    args.shift();args.unshift(ACTIVE_ASSISTANT_SUCCESSOR.sourcePhase==='assistant-public591-successor'
+      ?'--public591-successor':ACTIVE_ASSISTANT_SUCCESSOR.sourcePhase==='assistant-public590-successor'
       ?'--public590-successor':ACTIVE_ASSISTANT_SUCCESSOR.sourcePhase==='assistant-public588-successor'
       ?'--public588-successor':'--public587-successor');
+  }
+  const public591=args[0]==='--public591-successor';
+  if(public591)args.shift();
+  if(public591){
+    // Lukket ny indgang: NULL afvises før konstruktion, modelberegning eller fil-I/O.
+    const issued=requireAssistantPublic591SuccessorBinding(),pins=requireAssistantPublic591SuccessorOutput();
+    requireAssistantPublic591SuccessorRelease();
+    assert(args.length===0||(args.length===1&&['--check','--write'].includes(args[0])));
+    const result=await buildAssistantPublic591BindingSuccessor({version:issued.version});
+    assert.deepEqual(result.nextBinding,issued,'Only the actual physical issued C/I/T');
+    assert.deepEqual({migrationSha256:result.migrationSha256,canonicalSha256:result.afterCanonicalSha256,
+      checkpointContractSha256:result.checkpointContractSha256,tripBindingPolicySha256:result.tripBindingPolicySha256},pins);
+    const migration=assistantPublic591SuccessorMigration(),file=path.join(ROOT,'supabase/migrations',migration.filename);
+    if(args[0]==='--write')await fs.writeFile(file,result.migration,{flag:'wx'});
+    else assert.deepEqual(await fs.readFile(file),Buffer.from(result.migration));
+    console.log('Exact original-preserving assistant591 later-H0 metadata source checked; no installation or state admission.');
+    return;
   }
   const public590=args[0]==='--public590-successor';
   if(public590)args.shift();
