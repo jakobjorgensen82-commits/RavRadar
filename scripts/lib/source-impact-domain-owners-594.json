@@ -19,7 +19,7 @@
       "commands": [
         [
           "controls",
-          "node scripts/test-workflow-validation-order-4.0.108.mjs"
+          "node scripts/test-source-pin-controls.mjs"
         ],
         [
           "controls",
@@ -394,7 +394,7 @@
       "commands": [
         [
           "controls",
-          "node scripts/test-workflow-validation-order-4.0.108.mjs"
+          "node --test scripts/test-ordinary-completed-stage-source.mjs"
         ]
       ]
     },
@@ -438,6 +438,23 @@
         "controls"
       ],
       "controlQualification": true
+    },
+    {
+      "path": "scripts/test-source-pin-controls.mjs",
+      "domains": [
+        "controls"
+      ],
+      "controlQualification": true,
+      "commands": [
+        [
+          "controls",
+          "node scripts/test-source-pin-controls.mjs"
+        ],
+        [
+          "controls",
+          "node --test scripts/test-completed-private-runtime-workflow-inverse.mjs"
+        ]
+      ]
     },
     {
       "path": "scripts/test-source-targeted-consumer.mjs",
@@ -508,10 +525,15 @@
       "commands": [
         [
           "controls",
-          "node scripts/test-workflow-validation-order-4.0.108.mjs"
+          "node scripts/test-source-pin-controls.mjs"
+        ],
+        [
+          "controls",
+          "node --test scripts/test-completed-private-runtime-workflow-inverse.mjs"
         ]
       ],
-      "controlQualification": true
+      "controlQualification": true,
+      "exactSourceTransition": true
     },
     {
       "path": "scripts/update-weather.mjs",
@@ -10727,6 +10749,25 @@
       ],
       "computedBoundaries": []
     },
+    "scripts/test-source-pin-controls.mjs": {
+      "nodeImports": [
+        "node:assert/strict",
+        "node:fs"
+      ],
+      "imports": [],
+      "resources": [
+        ".github/workflows/reusable-weather-build.yml"
+      ],
+      "dependencySurfaces": [
+        "fa87723ebb7552268cc889bc690019575398290e8359e97d1def36eb290f2069"
+      ],
+      "bindingSurfaces": [
+        "5193ca852a68475d140a771402a4fa03aae098c6694625269ec7835683d9e75a",
+        "88d15dc8922aa12b757380b6d144c80be447c3160958f7c506554a24f1defd4c",
+        "d3c7c0b6948622d54638729de889bded01734fa308421ec6df79cb2295a1d7ba"
+      ],
+      "computedBoundaries": []
+    },
     "scripts/test-source-targeted-consumer.mjs": {
       "nodeImports": [
         "node:assert/strict",
@@ -11615,6 +11656,7 @@
         "scripts/test-ordinary-completed-stage-artifact.mjs",
         "scripts/test-ordinary-completed-stage-lineage.mjs",
         "scripts/test-ordinary-completed-stage-source.mjs",
+        "scripts/test-source-pin-controls.mjs",
         "scripts/test-weather-source-gate.mjs",
         "scripts/test-weather-state-epoch-workflow.mjs"
       ],
@@ -12563,6 +12605,10 @@
       "node --test scripts/test-private-trip-study-categorical-controller.mjs",
       "node --test scripts/test-trip-aggregate-month-rollover.mjs",
       "node scripts/test-admin-initial-dashboard-4.0.77.mjs"
+    ],
+    "node scripts/test-workflow-validation-order-4.0.108.mjs": [
+      "node scripts/test-source-pin-controls.mjs",
+      "node --test scripts/test-ordinary-completed-stage-source.mjs"
     ]
   },
   "auditMetadataTransitions": {
@@ -12591,6 +12637,9 @@
     ],
     ".github/workflows/reusable-weather-build.yml": [
       "6b205b7a8c99c61cf4b6f65030acb22676d66d115a5469101a3062aa20f113d2/58168cce22cbf34595748fc4cf1d4929457a77754719dbb54f9da40a1c803bdb"
+    ],
+    "scripts/test-workflow-validation-order-4.0.108.mjs": [
+      "54353218dc40310240acf755c3ad8a65258e005cbd84df5918e51b1500cdc42d/dabe63d338dbe06e47df5f18eea6b6c7216f8a6329f2b69670f75943478e526e"
     ]
   }
 }

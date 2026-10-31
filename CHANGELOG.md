@@ -1,5 +1,7 @@
 ## 31. oktober — testvalg opdeles efter den faktiske ændring
 
+Den korte kontrol af den præcise kildepinrettelse kalder nu sin egen normale lille prøve i stedet for det brede workflowmål med implicitte delings-, GCM- og genoptagelsesprøver. Begge pintrin og alle ti negative mutationer bevares i én leaf, importeret én gang af det uændrede brede mål. Hele den tidligere FULL-testbody er bytebevaret. Modefixturen bruger sit direkte normale mål. Kun de gennemgåede hele workflow-/testovergange kan vælge denne rute; ukendt ændring kræver fortsat FULL. De eksisterende konservative kilde-/ressourceafhængigheder bevares, ligesom PostgreSQL- og modelinput. Dette er en ny kontrolkandidat og kræver egen præcis kvalifikation før levering.
+
 En negativprøve for Git-filers executable-mode skal have samme mode på arbejdsfilen og i indeks/commit samt bevise rent checkout, før den forventer afvisning af en leveringsfils mode. Kun at ændre indekset efterlader på Linux en anden, tidligere afvisningsgrund. Testfixturen følger nu denne rækkefølge; produktets clean-head-kontrol og forventede modeafvisning bevares.
 
 Den normale forberedelse af historiske kildepins henter kun en manglende commit og bruger ikke depth-begrænsning. En lokal Git-reproduktion påviser, at det tidligere ubetingede depth=1-kald gjorde et fuldt checkout shallow og brød forfaderkontrollen trods tilstedeværende objekter. De konkrete commit-/trækontroller består. Kun den gennemgåede hele workflowovergang er registreret; dette er ingen generel kort godkendelse af senere workflowændringer.
