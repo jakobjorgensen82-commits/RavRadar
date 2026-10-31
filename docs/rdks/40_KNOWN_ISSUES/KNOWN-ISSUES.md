@@ -1,3 +1,11 @@
+## 31. oktober — origin-kontrollens OnlyT-antagelse og594-levering
+
+Påvist årsag: en senere normal origin-guard kræver stadig kun ændret T, efter at den tidlige controller korrekt har accepteret T plus den gennemgåede kompakte offentlige projektion. Normal ægte 591-metadataprøve er rød før og grøn efter den fælles præcise kontrol; øvrige bindinger, hele feltmængden og uændret lager-ABI kræves fortsat. Det er ikke ugyldige leverandørdata eller bevis for datatab.
+
+4.0.594 er lokalt udstedt gennem den normale afledning; samlet kvalifikation, installation og offentlig levering er fortsat åbne. Installationsrollen skal være database 593/originalState 591. Ingen 593-original må opfindes, og den gamle 593-profil/SQL må ikke omskrives til 594. Luk først fejlen efter den præcise nye kilde-/nativeprøve, normal autentificeret prewrite/install/genlæsning og faktisk strengt senere offentlig generation med bevarede originaler, numerisk helinverse og no-loss.
+
+Den tidligere krypterede indhentningsprogress er ikke færdig beregning og får ingen automatisk baselinekompatibilitet efter ændret C/I og conditionsmetadata. Valgt håndtering er normal ikke-muterende CACHE_MISS med bevaret cipher/beskyttet baseline og almindelig RAW/cache-/leverandørfortsættelse. Ny modeloverdragelse er ikke et releasekrav; faktisk normal fortsættelse, ny offentlig generation og dækningsvirkning skal stadig bevises. Ingen ommærkning eller ny historiknulstilling. De fem hovedmål og øvrige kendte issues består. Se DEC-0303; run-/cacheidentiteter og aktuelle stop føres privat.
+
 ## 30. oktober — privat rettet kapacitet; nativegenbrug og faktisk effekt mangler
 
 Den særskilte completed-stage-læsekonflikt er rettet i privat kode med målrettede normale kaldere. Det er ikke bevis for en faktisk stor autentificeret helgenoptagelse eller leveret rettelse. Nattens manglende runtime-auditrapport og andre driftsfejl har deres egne evidenskrav; denne kandidat lukker dem ikke med en størrelseshypotese.

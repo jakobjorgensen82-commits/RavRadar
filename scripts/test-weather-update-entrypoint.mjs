@@ -2,6 +2,7 @@ import { inverseActiveFamilyRetentionCompanionTestInput, ACTIVE_FAMILY_RETENTION
   inverseAssistant590RetentionCompanionTestInput, ASSISTANT590_RETENTION_COMPANION_TEST_REVIEW,
   inverseAssistant591RetentionCompanionTestInput, ASSISTANT591_RETENTION_COMPANION_TEST_REVIEW,
   inverseConditions593RetentionCompanionTestInput, CONDITIONS593_RETENTION_COMPANION_TEST_REVIEW,
+  inverseIssued594RetentionCompanionSource, ISSUED594_RETENTION_COMPANION_TEST_REVIEW as retention594Review,
 } from './lib/alternative-c-caller-test-input.mjs';
 import {inverseReviewedAccountStatisticsAssistantSourceScripts} from './lib/account-statistics-assistant-package-review.mjs';
 import { inverseAlternativeCCaller, inverseAssistant587OriginalCompanionTestInput,
@@ -27,6 +28,8 @@ const sourceText = async file => {
   let source = (await fs.readFile(file, 'utf8')).replace(/\r\n/g, '\n');
   if (file instanceof URL && file.href === new URL('./lib/private-dmi-recovery-record.mjs', import.meta.url).href)
     source = inverseCurrentNativeOriginalProducerTestInput(source, 'scripts/lib/private-dmi-recovery-record.mjs');
+  if (file instanceof URL && file.href === new URL('./read-authenticated-dmi-current-companions.mjs', import.meta.url).href)
+    source = inverseIssued594RetentionCompanionSource(source, 'scripts/read-authenticated-dmi-current-companions.mjs');
   return file === producerPath ? inverseSavedCurrentForwardOriginalPlan(inverseAlternativeCCaller(source, 'scripts/update-weather.mjs')) : source;
 };
 const digest = value => crypto.createHash('sha256').update(value).digest('hex');
@@ -1245,7 +1248,7 @@ test('actual native-original companion caller stays unprojected and declared in 
 
 test('assistant587 original companion inverse preserves both whole predecessors and rejects changed caller deltas', async () => {
   for (const row of ASSISTANT587_ORIGINAL_COMPANION_TEST_REVIEW) {
-    const rawActual = (await fs.readFile(new URL('../' + row.path, import.meta.url), 'utf8')).replace(/\r\n/g, '\n');
+    const rawActual = await sourceText(new URL('../' + row.path, import.meta.url));
     const actual = row.path === 'scripts/plan-ravscore-current-history.mjs'
       ? inverseAssistant587OriginalRawBoundaryTestInput(rawActual, row.path)
       : inverseAssistant588OriginalCompanionTestInput(inverseActiveFamilyRetentionCompanionTestInput(rawActual, row.path), row.path);
@@ -1283,7 +1286,7 @@ test('assistant587 original companion inverse preserves both whole predecessors 
 test('assistant588 companion route preserves genuine587 whole bytes and rejects every altered delta', async () => {
   const row = ASSISTANT588_ORIGINAL_COMPANION_TEST_REVIEW;
   const actual = inverseActiveFamilyRetentionCompanionTestInput(
-    await fs.readFile(new URL('../' + row.path, import.meta.url), 'utf8'), row.path);
+    await sourceText(new URL('../' + row.path, import.meta.url)), row.path);
   assert.equal(Buffer.byteLength(actual), row.after.bytes);
   assert.equal(digest(actual), row.after.sha256);
   const before = inverseAssistant588OriginalCompanionTestInput(actual, row.path);
@@ -1318,7 +1321,7 @@ test('assistant588 companion route preserves genuine587 whole bytes and rejects 
 test('assistant590 retention companion uses its actual whole source before the historical745 inverse', async () => {
   const row = ASSISTANT590_RETENTION_COMPANION_TEST_REVIEW;
   const actual = inverseAssistant591RetentionCompanionTestInput(
-    (await fs.readFile(new URL('../' + row.path, import.meta.url), 'utf8')).replace(/\r\n/g, '\n'), row.path);
+    await sourceText(new URL('../' + row.path, import.meta.url)), row.path);
   assert.equal(Buffer.byteLength(actual), row.after.bytes);
   assert.equal(digest(actual), row.after.sha256);
   const before = inverseAssistant590RetentionCompanionTestInput(actual, row.path);
@@ -1350,7 +1353,7 @@ test('assistant590 retention companion uses its actual whole source before the h
 test('active-family retention companion has an exact outer inverse before unchanged historical oracles', async () => {
   const row = ACTIVE_FAMILY_RETENTION_COMPANION_TEST_REVIEW;
   const actual = inverseAssistant590RetentionCompanionTestInput(
-    (await fs.readFile(new URL('../' + row.path, import.meta.url), 'utf8')).replace(/\r\n/g, '\n'), row.path);
+    await sourceText(new URL('../' + row.path, import.meta.url)), row.path);
   assert.equal(Buffer.byteLength(actual), row.after.bytes);
   assert.equal(digest(actual), row.after.sha256);
   const before = inverseActiveFamilyRetentionCompanionTestInput(actual, row.path);
@@ -1382,10 +1385,73 @@ test('active-family retention companion has an exact outer inverse before unchan
 });
 
 
+test('issued594 retention companion has an exact whole inverse and rejects every changed selector input',async()=>{
+  const row=retention594Review;
+  const actual=(await fs.readFile(new URL('../'+row.path,import.meta.url),'utf8')).replace(/\r\n/g,'\n');
+  const before=inverseIssued594RetentionCompanionSource(actual,row.path);
+  assert.equal(Buffer.byteLength(before),row.before.bytes);assert.equal(digest(before),row.before.sha256);
+  assert.equal(inverseIssued594RetentionCompanionSource(before,row.path),before);
+  // The same shared outer inverse must serve direct raw594 callers too;
+  // genuine old pins and complete historical inverses remain the oracle.
+  const genuine590=inverseAssistant590RetentionCompanionTestInput(actual,row.path);
+  assert.equal(Buffer.byteLength(genuine590),ASSISTANT590_RETENTION_COMPANION_TEST_REVIEW.before.bytes);
+  assert.equal(digest(genuine590),ASSISTANT590_RETENTION_COMPANION_TEST_REVIEW.before.sha256);
+  assert.equal(genuine590,inverseAssistant590RetentionCompanionTestInput(before,row.path));
+  const genuine588=inverseActiveFamilyRetentionCompanionTestInput(actual,row.path);
+  assert.equal(Buffer.byteLength(genuine588),ACTIVE_FAMILY_RETENTION_COMPANION_TEST_REVIEW.before.bytes);
+  assert.equal(digest(genuine588),ACTIVE_FAMILY_RETENTION_COMPANION_TEST_REVIEW.before.sha256);
+  assert.equal(genuine588,inverseActiveFamilyRetentionCompanionTestInput(before,row.path));
+  for(const changed of [actual+'\n','!'+actual.slice(1),
+    actual.replace(row.current,()=>row.current+row.current),
+    actual.replace('assistant-installed593-origin591-successor','UNREVIEWED')])
+    for(const inverse of [inverseIssued594RetentionCompanionSource,
+      inverseAssistant590RetentionCompanionTestInput,inverseActiveFamilyRetentionCompanionTestInput])
+      assert.throws(()=>inverse(changed,row.path),/RETENTION594|ASSISTANT590_RETENTION/);
+  assert.throws(()=>inverseIssued594RetentionCompanionSource({},row.path),/RETENTION594_TYPE/);
+  assert.throws(()=>inverseIssued594RetentionCompanionSource(actual,'scripts/unknown.mjs'),/RETENTION594_PATH/);
+  assert.throws(()=>inverseIssued594RetentionCompanionSource(actual,row.path,true),/RETENTION594_ARGUMENTS/);
+});
+
+test('current594 retention companion selects actual original591 while preserving all named historical roles',async()=>{
+  const profiles=await import('./lib/assistant-later-h0-successor-source.mjs');
+  const current=profiles.ACTIVE_ASSISTANT_SUCCESSOR;
+  assert.equal(current.sourcePhase,'assistant-installed593-origin591-successor');
+  assert.equal(current.requireRelease(),'4.0.594');assert.equal(current.originalStateFamily,'591');
+  assert.equal(current.before,profiles.ASSISTANT_PUBLIC591_SUCCESSOR_BEFORE);
+  assert.deepEqual(current.databaseBefore,{...profiles.ASSISTANT_PUBLIC591_SUCCESSOR_BINDING,
+    canonicalSha256:profiles.ASSISTANT_PUBLIC591_SUCCESSOR_OUTPUT.canonicalSha256});
+  const actual=(await fs.readFile(new URL('../'+retention594Review.path,import.meta.url),'utf8')).replace(/\r\n/g,'\n');
+  const markers=Object.fromEntries(['587','588','590','591'].map(family=>[family,
+    {read:()=>family,snapshot:()=>family}]));
+  const parameters=['ACTIVE',...['587','588','590','591'].flatMap(family=>[
+    'readAuthenticatedFrozen'+family+'Predecessor','assertAuthenticatedFrozen'+family+'Snapshot'])];
+  const values=['587','588','590','591'].flatMap(family=>[markers[family].read,markers[family].snapshot]);
+  const roles=[[current,'591'],[profiles.INACTIVE_ASSISTANT_PUBLIC591_SUCCESSOR,'591'],
+    [profiles.INACTIVE_ASSISTANT_PUBLIC590_SUCCESSOR,'590'],[profiles.INACTIVE_ASSISTANT_PUBLIC588_SUCCESSOR,'588'],
+    [profiles.ISSUED_ASSISTANT_PUBLIC588_PROFILE,'587']];
+  const assertRoles=source=>{
+    const begin=source.indexOf('const ACTIVE_PREDECESSOR='),end=source.indexOf('\nconst ROOT',begin);
+    assert(begin>=0&&end>begin);
+    // Den faktiske normale selector udføres; markører læser ingen B/S og
+    // fabrikerer hverken autentificering, descriptor eller opaque adgang.
+    const factory=new Function(...parameters,source.slice(begin,end)+'\nreturn ACTIVE_PREDECESSOR;');
+    for(const [profile,family]of roles){const selected=factory(profile,...values);
+      assert(Object.isFrozen(selected));assert.deepEqual(Object.keys(selected).sort(),['read','snapshot']);
+      assert.equal(selected.read,markers[family].read);assert.equal(selected.snapshot,markers[family].snapshot);
+    }
+  };
+  assertRoles(actual);
+  for(const changed of [
+    actual.replace('assistant-installed593-origin591-successor','UNREVIEWED'),
+    actual.replace('read:readAuthenticatedFrozen591Predecessor','read:readAuthenticatedFrozen590Predecessor'),
+    actual.replace('snapshot:assertAuthenticatedFrozen591Snapshot','snapshot:assertAuthenticatedFrozen590Snapshot')])
+    assert.throws(()=>assertRoles(changed));
+});
+
 test('assistant591 retention companion uses actual592 whole source before unchanged591 and older inverses', async () => {
   const row = ASSISTANT591_RETENTION_COMPANION_TEST_REVIEW;
   const actual = inverseConditions593RetentionCompanionTestInput(
-    (await fs.readFile(new URL('../' + row.path, import.meta.url), 'utf8')).replace(/\r\n/g, '\n'), row.path);
+    await sourceText(new URL('../' + row.path, import.meta.url)), row.path);
   assert.equal(Buffer.byteLength(actual), row.after.bytes);
   assert.equal(digest(actual), row.after.sha256);
   assert.match(actual, /sourcePhase==='assistant-public591-successor'\?Object.freeze/);
@@ -1457,7 +1523,7 @@ test('wind-tail default inverse preserves every old updater oracle and refuses o
 
 test('conditions593 retention reader preserves whole592 and refuses changed IO capacity hunks',async()=>{
   const row=CONDITIONS593_RETENTION_COMPANION_TEST_REVIEW;
-  const actual=await fs.readFile(new URL('../'+row.path,import.meta.url),'utf8');
+  const actual=await sourceText(new URL('../'+row.path,import.meta.url));
   const prior=inverseConditions593RetentionCompanionTestInput(actual,row.path);
   assert.equal(Buffer.byteLength(prior),row.before.bytes);assert.equal(digest(prior),row.before.sha256);
   assert.equal(inverseConditions593RetentionCompanionTestInput(prior,row.path),prior);

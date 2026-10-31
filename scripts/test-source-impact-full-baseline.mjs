@@ -45,7 +45,7 @@ function zip(raw,name){
     'import io,sys,zipfile; b=io.BytesIO(); z=zipfile.ZipFile(b,"w",compression=zipfile.ZIP_DEFLATED); z.writestr(sys.argv[1],sys.stdin.buffer.read()); z.close(); sys.stdout.buffer.write(b.getvalue())',name],
   {input:raw,maxBuffer:65536,timeout:10000,stdio:['pipe','pipe','pipe']});
 }
-function fixture({v2=false,reused=false}={}){
+function fixture({v2=false,reused=false,installed594=false}={}){
   const native={phase:'ASSISTANT_PUBLIC591_SUCCESSOR',commands:[...ASSISTANT_PUBLIC591_SUCCESSOR_COMMANDS],
     status:'EXECUTED',executedInThisRun:true,origin:null,eligibleForReuse:false,current:copy(current)};
   if(v2)Object.assign(native,{schemaVersion:2,kind:ASSISTANT_PUBLIC591_V2_KIND,profile:ASSISTANT_PUBLIC591_V2_PROFILE,
@@ -60,6 +60,11 @@ function fixture({v2=false,reused=false}={}){
         files:['initdb','pg_ctl','psql','postgres'].map(name=>({name,path:'/usr/lib/postgresql/16/bin/'+name,
           realpath:'/usr/lib/postgresql/16/bin/'+name,mode:0o755,bytes:100,sha256:'c'.repeat(64),
           version:name+' (PostgreSQL) 16.10'}))}}});
+  if(installed594){assert(!v2&&!reused);Object.assign(native,{schemaVersion:1,kind:INSTALLED593_ORIGINAL591_PHASE_KIND,
+    phase:'INSTALLED593_ORIGINAL591_SUCCESSOR',sourcePhase:'assistant-installed593-origin591-successor',
+    releaseVersion:requireInstalled593Original591Release(),binding:copy(requireInstalled593Original591Binding()),
+    output:copy(requireInstalled593Original591Output()),databaseBefore:copy(INSTALLED593_ORIGINAL591_DATABASE_BEFORE),
+    commands:[...INSTALLED593_ORIGINAL591_COMMANDS]});}
   const national={status:'EXECUTED',executedInThisRun:true,origin:null,command:NATIONAL_COMMAND,
     sourceScope:'HISTORICAL_584_NATIONAL_ONLY',frozenHead:NATIONAL.head,frozenTree:NATIONAL.tree,
     historicalInput:{head:NATIONAL.head,tree:NATIONAL.tree,content:NATIONAL.content},
@@ -80,9 +85,16 @@ function fixture({v2=false,reused=false}={}){
     Object.assign(national.currentAssistantPublic591SuccessorNative,{status:native.status,
       executedInThisRun:native.executedInThisRun,origin:copy(native.origin)});
   }
+  if(installed594){
+    delete national.currentAssistantPublic591SuccessorNative;delete national.currentAssistantPublic591SuccessorSource;
+    Object.assign(national,installed593Original591NativeClaims(native,current),{
+      currentInstalled593Original591SuccessorNationalExecutionClaimed:false,
+      currentInstalled593Original591SuccessorSource:{command:'npm run test:assistant-later-h0-source',
+        actualCommand:INSTALLED593_ORIGINAL591_SOURCE_COMMAND,separatelyRequired:true}});
+  }
   const full={schemaVersion:1,contractId:SOURCE_GATE_CONTRACT,repository:repo,pullRequestNumber:pr,
     headSha:head,sourceTreeSha256,privatePayloadIncluded:false,nativePostgres:native,historical584National:national};
-  const phase={schemaVersion:v2?2:1,kind:v2?ASSISTANT_PUBLIC591_V2_KIND:ASSISTANT_PUBLIC591_SUCCESSOR_PHASE_KIND,
+  const phase={schemaVersion:v2?2:1,kind:installed594?INSTALLED593_ORIGINAL591_PHASE_KIND:v2?ASSISTANT_PUBLIC591_V2_KIND:ASSISTANT_PUBLIC591_SUCCESSOR_PHASE_KIND,
     repository:repo,headSha:head,sourceTreeSha256,privatePayloadIncluded:false,nativePostgres:copy(native)};
   const job={id:jobId,run_id:runId,run_attempt:1,head_sha:head,name:PULL_REQUEST_SOURCE_JOB,status:'completed',conclusion:'success',
     steps:Array.from({length:22},(_,i)=>step('Synthetic setup '+(i+1),i+1))};
@@ -265,4 +277,23 @@ test('whole-call60s acceptance deadline limits the final I/O timer and refuses l
     syncBuiltinESMExports();
     assert.equal((await decoded.qualify()).status,'REFUSED');assert.equal(decodeTimeout,1000);
   }finally{t.mock.restoreAll();syncBuiltinESMExports();}
+});
+
+
+import {INSTALLED593_ORIGINAL591_PHASE_KIND,INSTALLED593_ORIGINAL591_COMMANDS} from './native-postgres-evidence.mjs';
+import {INSTALLED593_ORIGINAL591_DATABASE_BEFORE,requireInstalled593Original591Release,
+  requireInstalled593Original591Binding,requireInstalled593Original591Output} from './lib/assistant-later-h0-successor-source.mjs';
+import {INSTALLED593_ORIGINAL591_SOURCE_COMMAND,installed593Original591NativeClaims} from './national584-source-evidence.mjs';
+test('installed593 new594 normal FULL baseline qualifies its own executed proof and refuses retagged593 or reused claims',async()=>{
+  const accepted=fixture({installed594:true});assert.equal((await accepted.qualify()).kind,SOURCE_IMPACT_FULL_BASELINE_KIND);
+  for(const mutate of [f=>f.phase.kind=ASSISTANT_PUBLIC591_SUCCESSOR_PHASE_KIND,
+    f=>f.phase.schemaVersion=2,f=>f.phase.nativePostgres.schemaVersion=2,
+    f=>f.phase.nativePostgres.status='REUSED',f=>f.phase.nativePostgres.eligibleForReuse=true,
+    f=>f.phase.nativePostgres.commands=[...ASSISTANT_PUBLIC591_SUCCESSOR_COMMANDS],
+    f=>f.full.nativePostgres.binding.I='f'.repeat(64),
+    f=>f.full.historical584National.currentInstalled593Original591SuccessorNationalExecutionClaimed=true,
+    f=>f.full.historical584National.current593PredecessorNative.executedInThisRun=false,
+    f=>f.full.historical584National.currentInstalled593Original591SuccessorNative.phase='assistant-public591-successor']){
+    const f=fixture({installed594:true});mutate(f);f.rebuild();assert.equal((await f.qualify()).status,'REFUSED');
+  }
 });

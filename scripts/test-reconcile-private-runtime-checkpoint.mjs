@@ -4,7 +4,9 @@ import { ESTABLISHED_NATIVE_CURRENT_ORIGIN_BINDING as OLD_FAMILY } from './lib/e
 import { LAST_MILE_ENCLOSURE_BINDING as NEW_FAMILY } from './lib/last-mile-enclosure-successor-source.mjs';
 import {ASSISTANT_LATER_H0_BINDING as ISSUED587_FAMILY,
   ASSISTANT_PUBLIC587_SUCCESSOR_BINDING as PUBLIC587_SUCCESSOR_FAMILY,
-  ASSISTANT_PUBLIC588_SUCCESSOR_BINDING as PUBLIC588_SUCCESSOR_FAMILY}
+  ASSISTANT_PUBLIC588_SUCCESSOR_BINDING as PUBLIC588_SUCCESSOR_FAMILY,
+  INSTALLED593_ORIGINAL591_BINDING as CURRENT594_FAMILY,ASSISTANT_PUBLIC591_SUCCESSOR_BINDING as DATABASE593_FAMILY,
+  ASSISTANT_PUBLIC590_SUCCESSOR_BINDING as ORIGINAL591_FAMILY}
   from './lib/assistant-later-h0-successor-source.mjs';
 import { withFrozenEstablishedNativeCurrentOriginPostgresSource } from './run-frozen-established-native-current-origin-source-targets.mjs';
 import { withFrozen584ReconcileFixture, withFrozen585ReconcileFixture } from './run-frozen584-reconcile-source.mjs';
@@ -590,6 +592,19 @@ test('public588 successor keeps its own exact paired family and publication disp
         contractHashes:{continuationStateContractSha256:T}}),false);
 });
 
+test('new594 publication requires exact paired S and rejects mixed installed593 or original591 tuples',()=>{
+  const descriptor={modelBinding:{modelBundleSha256:CURRENT594_FAMILY.I},
+    contractHashes:{continuationStateContractSha256:CURRENT594_FAMILY.T}};
+  assert.equal(requiresPrivateRuntimeCheckpointReconcile(descriptor),true);
+  for(const disposition of ['READY_PUBLISHED','MEASURED_WARMUP_PUBLISHED'])
+    assert.doesNotThrow(()=>assertPrivateRuntimeCheckpointPublicationDisposition(descriptor,disposition));
+  for(const disposition of ['UNKNOWN','SKIPPED','FAILED'])
+    assert.throws(()=>assertPrivateRuntimeCheckpointPublicationDisposition(descriptor,disposition),/S_DISPOSITION/);
+  for(const prior of [DATABASE593_FAMILY,ORIGINAL591_FAMILY])
+    for(const [I,T]of [[CURRENT594_FAMILY.I,prior.T],[prior.I,CURRENT594_FAMILY.T]])
+      assert.equal(requiresPrivateRuntimeCheckpointReconcile({modelBinding:{modelBundleSha256:I},
+        contractHashes:{continuationStateContractSha256:T}}),false);
+});
 test('both fixed families and separate saved guard reject mixed tuples and colliding modes', () => {
   for (const family of [OLD_FAMILY, NEW_FAMILY]) {
     const descriptor = { modelBinding: { modelBundleSha256: family.I },

@@ -1,3 +1,35 @@
+## 89.291 Databasebinding og originale vejrdata har hver sin rolle
+
+**Kort fortalt: Databasebinding og originale vejrdata kan have hver sin version. Begge roller skal verificeres særskilt, og en ny modelbinding giver ingen ret til at ændre gamle tal eller springe datakontrol over.**
+
+### To roller i den samme normale kæde
+
+Databasens installerede modelbinding fortæller, hvilke kontrakter databasen kan kontrollere. Den originale vejrpakke og dens beregningstilstand fortæller, hvorfra de bevarede data kommer. Roller og versioner kan være forskellige under en kontrolleret overgang. Hver rolle skal bindes til sin ægte kilde; der må ikke opfindes en mellemliggende originalpakke.
+
+En efterfølger til installeret 593 kan derfor kontrollere databasen mod den udstedte 593-kilde og samtidig læse originale 591-data gennem deres egne autentificerede læsere. Historiske profiler og udstedte databasefiler bevares. Kun den nye databaseovergang tilføjes gennem den normale generator.
+
+### En præcis visningsændring skal kontrolleres hele vejen
+
+Den samme godkendte ændring af fortsættelses- og visningskontrakten skal kontrolleres i både den tidlige forberedelse og den senere læsning af de bevarede originaler. Det er ikke nok, at den første kontrol accepterer ændringen. Hele feltmængden, den korrekte gamle og nye kontrakt og uændret lagerformat skal passe; andre ændringer afvises.
+
+### Gamle tal bevares, nyt vejr skal være senere
+
+Modelmetadata i en arbejdsvisning kan genbindes, når hele den oprindelige beregningstilstand kan genskabes præcist med en helinverse. Gamle numeriske værdier, historik, originalattester og ukendte felter må ikke repareres eller genberegnes som led i den overgang. Den centrale identitet skal stadig være frisk, og de hårde kontroller mod datatab gælder fortsat.
+
+Nyt offentligt vejr kræver en faktisk strengt senere generation gennem den normale beregning, gemning af originalpakke før beregningstilstand, genlæsning og den offentlige slutkontrol. En installeret databasebinding eller en lokal prøve er ikke offentlig levering.
+
+### Gemt indhentning og færdig beregning er forskellige
+
+Et krypteret fremskridt kan bevare allerede hentede leverandørdata, selv om beregningen endnu ikke er færdig. Det må ikke kaldes et færdigt beregningscheckpoint. Ved genbrug skal indholdet autentificeres og passe til de præcise bevarede originaler og den krævede baseline.
+
+En ny modelbinding kan ændre arbejdsfilens metadata. Derfor er uændrede originale vejrdata alene ikke bevis for, at gammelt fremskridt kan bruges direkte efter overgangen. De normale kontroller skal afgøre genbrug; gamle data og fremskridt bevares, mens en afvigelse afklares.
+
+### Aktuelle lokalt udstedte 594-bindinger
+
+**Aktuel kildebinding — 31. oktober 2026, RavScore 4.0.594, lokalt udstedt:** Den integrerede model er offentlig som modeltype under den senest leverede 591-version. Den nye 594-kilde er ikke installeret eller offentligt leveret. 4.0.594 er låst med `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b` og `modelBundleSha256=08750e3667e5a221374762fccadccf08abf5e9f1ae8814ccc97bfc11880bf36c` over 99 kanonisk normaliserede transitive implementeringsfiler. De syv normale deklarerede forbrugere er synkroniseret. Inaktiv Candidate G-kompatibilitet har `modelContractSha256=c73dac1b4376005e792580791d84eb79c9370e905a2a7fd0bdee857506a20cf8` og `modelBundleSha256=2d5cde5418270a02396e24a249f0b6bb09527366c1c110d8742a44cfe2ab459b` over 100 transitive filer. Autoriteten er `version.json.releaseContract.modelBindings`. Ingen scoreformel, kildeprioritet, administratorpunkter eller geometri ændres. 593 er fortsat databaseforgængeren, og autentiske B/S samt offentlig generation er fortsat 591. Ældre modstridende status nedenfor er dateret historik på disse konkrete punkter.
+
+**Aktuel lokalt udstedt fortsættelseskontrakt — 31. oktober 2026:** 594-T12 er `continuationStateContractSha256=a6c0408f76b5de70a90959e254df78317f8282cb93c0edc85a71d36b9ef8dafa` (`a6c0408f…`). Den nye append-only migration er normalt genereret fra den ægte installerede 593-canonical; originalkontrollen bruger stadig autentiske 591-B/S. Ny PostgreSQL-kvalifikation, installation med genlæsning og strengt senere offentlig 594-generation er åbne. Ældre status bevares som dateret historik.
+
 ## 89.290 En ny visningskontrakt skal kunne følge den normale vejrpakke
 
 **Kort fortalt: En forbedring af prognosedelingen ændrer en teknisk visningskontrakt. Vejrhentningen skal kontrollere netop det godkendte skift og stadig bevare alle gamle vejrdata og scorer. Den nye databasebinding er installeret; rettelsen af den normale overgang og dens offentlige virkning skal fortsat kvalificeres.**
@@ -1171,7 +1203,7 @@ En særskilt, dokumenteret Storage-formatkant rettes samtidig: immutable upload 
 
 # RavRadar Håndbog
 
-**Håndbogsversion:** 4.0.593
+**Håndbogsversion:** 4.0.594
 
 **Lokal kildebinding — 29. oktober 2026, RavScore 4.0.591, ikke installeret:** Den integrerede model er offentlig som modeltype under den særskilt leverede 4.0.590. Den nye assistentefterfølger er lokalt udstedt og er endnu ikke samlet kvalificeret, installeret eller offentliggjort.
 

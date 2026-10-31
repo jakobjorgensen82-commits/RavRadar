@@ -1,3 +1,9 @@
+## 31. oktober — hold databaseforgænger og originalforgænger adskilt
+
+For assistant-installed593-origin591-successor kommer før-databasebindingen fra den faktisk udstedte 593-canonical, mens originalState 591 udelukkende kommer gennem de eksisterende autentificerede591-læsere. En installeret modelversion er ikke bevis for nye B/S-originaler. Ændr ikke historiske profiler, originale attester eller udstedte SQL, og opfind ikke en593-originalvalidator.
+
+Ny C/I-kilde skal afledes normalt, alle normale forbrugere synkroniseres, og kun én ny append-only migration genereres fra den ægte 593-canonical. En gammel593-prøve må ikke ommærkes til 594. Før levering kræves den præcise nye relevante native-/kildeprøve og den almindelige strengt senere original-B/S→arbejdsvisning→beregning→B før S→genlæsning→offentlig kontrol med numerisk helinverse og hård no-loss. Krypteret indhentning er hverken completed-checkpoint eller automatisk baseline-kompatibel over modelskift. Bevar eksisterende afslag og undersøg konkret normal genbrug. Se DEC-0303; skiftende driftsstatus føres privat.
+
 ## 29. oktober — skrivefri aflæsning af gemte komponenttællere, lokal forberedelse
 
 Den afgrænsede diagnose kan genlæse én præcist angivet, autentificeret originalpakke B gennem dens egen normale, arkiverede læser. Den kræver samme friske centrale pointer før og efter læsningen. Den bruger ikke det separat gemte beregningscheckpoint S, krypteret fremdrift eller råcachen. Dermed kan de allerede gemte komponenttællere undersøges, selv om fremdriftspakken tilhører en ældre generation.

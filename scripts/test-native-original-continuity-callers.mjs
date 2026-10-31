@@ -1,6 +1,7 @@
 // Narrow normal caller/source/refusal targets. Not a positive B/S origin,
 // installed SQL, national capacity or production claim. No fabricated tuple.
 import assert from 'node:assert/strict';
+import {inverseIssued594HistoricalSource} from './lib/assistant594-historical-source-test-input.mjs';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import {fileURLToPath,pathToFileURL} from 'node:url';
@@ -161,8 +162,9 @@ test('current installed code-only actual selection body rejects unknown or parti
 });
 
 test('current installed code-only plan uses the normal active migration contract and refuses every pending write',async()=>{
-  assert(['assistant-public587-successor','assistant-public588-successor','assistant-public590-successor','assistant-public591-successor'].includes(ACTIVE_ASSISTANT_SUCCESSOR.sourcePhase));
-  const required=(ACTIVE_ASSISTANT_SUCCESSOR.sourcePhase==='assistant-public591-successor'
+  assert(['assistant-public587-successor','assistant-public588-successor','assistant-public590-successor','assistant-public591-successor','assistant-installed593-origin591-successor'].includes(ACTIVE_ASSISTANT_SUCCESSOR.sourcePhase));
+  const required=(ACTIVE_ASSISTANT_SUCCESSOR.sourcePhase==='assistant-installed593-origin591-successor'
+    ?(await import('./integrated-cutover-readiness.mjs')).installed593Original591RequiredMigrations:ACTIVE_ASSISTANT_SUCCESSOR.sourcePhase==='assistant-public591-successor'
     ?(await import('./integrated-cutover-readiness.mjs')).assistantPublic591SuccessorRequiredMigrations:ACTIVE_ASSISTANT_SUCCESSOR.sourcePhase==='assistant-public590-successor'
     ?assistantPublic590SuccessorRequiredMigrations:ACTIVE_ASSISTANT_SUCCESSOR.sourcePhase==='assistant-public588-successor'
       ?assistantPublic588SuccessorRequiredMigrations:assistantPublic587SuccessorRequiredMigrations)(),next=required.at(-1);
@@ -794,6 +796,7 @@ const reviewedCapacity593Sources=Object.freeze({
   }
 });
 function canonical592CapacitySource(source,file){
+  source=inverseIssued594HistoricalSource(source,file);
   const row=reviewedCapacity593Sources[file];if(!row)return source;
   const hash=value=>successorHash('sha256').update(value).digest('hex');
   const canonical=reviewedIssued592Sources[file];
@@ -808,6 +811,7 @@ function canonical592CapacitySource(source,file){
 }
 
 function canonical591AssistantSource(source,file){
+  source=inverseIssued594HistoricalSource(source,file);
   assert.equal(typeof source,'string');source=source.replace(/\r\n?/g,'\n');
   const variant=reviewedIssued592Sources[file];assert(variant,'Only the five reviewed source owners');
   source=canonical592CapacitySource(source,file);
@@ -1026,7 +1030,7 @@ test('assistant binding original prewrite keeps one bank pass and normal owned r
   }
 });
 test('assistant binding original prewrite workflow keeps locks, exact normal central seams and the sole SQL',async()=>{
-  const workflow=await fs.readFile(path.join(ROOT,'.github/workflows/apply-weather-model-binding-only.yml'),'utf8');
+  const workflow=(await fs.readFile(path.join(ROOT,'.github/workflows/apply-weather-model-binding-only.yml'),'utf8')).replace(/\r\n?/g,'\n');
   assert(workflow.includes('group: ravradar-weather-production-v2'));assert(workflow.includes('group: ravradar-trip-storage-production'));
   assert(workflow.includes('timeout-minutes: 30'));assert(workflow.includes('upgrade_assistant_later_h0_original:'));
   assert(workflow.includes('test "$RAVRADAR_CURRENT_GRID_UPGRADE_OPT_IN" != true'));
@@ -1760,7 +1764,8 @@ test('assistant public587 active facade is fixed and refuses UNISSUED before I/O
   await checkIssued590Facade(INACTIVE_ASSISTANT_PUBLIC588_SUCCESSOR,INACTIVE_ASSISTANT_PUBLIC588_SUCCESSOR.sourcePhase);
   assert(Object.isFrozen(ACTIVE_ASSISTANT_SUCCESSOR));
   assert([ISSUED_ASSISTANT_PUBLIC588_PROFILE,INACTIVE_ASSISTANT_PUBLIC588_SUCCESSOR,
-    PUBLIC590.INACTIVE_ASSISTANT_PUBLIC590_SUCCESSOR,PUBLIC590.INACTIVE_ASSISTANT_PUBLIC591_SUCCESSOR].includes(ACTIVE_ASSISTANT_SUCCESSOR));
+    PUBLIC590.INACTIVE_ASSISTANT_PUBLIC590_SUCCESSOR,PUBLIC590.INACTIVE_ASSISTANT_PUBLIC591_SUCCESSOR,
+    PUBLIC590.INACTIVE_INSTALLED593_ORIGINAL591_SUCCESSOR].includes(ACTIVE_ASSISTANT_SUCCESSOR));
   assert.equal(DEFAULT_CUTOVER_SOURCE_PHASE,ACTIVE_ASSISTANT_SUCCESSOR.sourcePhase);
   const next=PUBLIC590.INACTIVE_ASSISTANT_PUBLIC590_SUCCESSOR;
   assert.equal(next.sourcePhase,'assistant-public590-successor');
@@ -1842,7 +1847,7 @@ test('assistant public587 origin retains whole parent and pair refusals in the a
   const source=await fs.readFile(path.join(ROOT,'scripts/lib/established-native-current-origin.mjs'),'utf8');
   const begin='async function readFrozen587LaterOrigin(',end='\nasync function readOrigin(';
   assert.equal(source.split(begin).length,2);assert.equal(source.split(end).length,2);
-  const body=source.slice(source.indexOf(begin),source.indexOf(end));
+  const body=source.slice(source.indexOf(begin),source.indexOf(end)).replaceAll('export async function','async function');
   assert(!source.includes("from './assistant-later-h0-successor-source.mjs'"),'Ingen I-selvhashcyklus');
   const identity=source.slice(source.indexOf('async function sourceIdentity('),source.indexOf('function registryParts('));
   for(const exact of ["I_MANIFEST.files.find","sha(physical) === row.sha256","['diff', '--exit-code', 'HEAD', '--', ...leaves]",
@@ -1977,7 +1982,7 @@ test('ordinary companion readers use the exact active predecessor before and aft
   const target='2026-10-27T20:00:00.000Z';
   // Routing-only fixtures: no real B/S, opaque authority, model values or I/O.
   for(const profile of [profiles.ACTIVE_ASSISTANT_SUCCESSOR,profiles.INACTIVE_ASSISTANT_PUBLIC590_SUCCESSOR,profiles.ISSUED_ASSISTANT_PUBLIC588_PROFILE]){
-    const expectedFamily=profile.sourcePhase==='assistant-public591-successor'?'591'
+    const expectedFamily=['assistant-public591-successor','assistant-installed593-origin591-successor'].includes(profile.sourcePhase)?'591'
       :profile.sourcePhase==='assistant-public590-successor'?'590'
       :profile.sourcePhase==='assistant-public588-successor'?'588':'587';
     assert(profile.before.I&&profile.binding.I&&profile.before.I!==profile.binding.I);
@@ -2050,7 +2055,7 @@ test('assistant593 issued metadata preserves genuine591 canonical source and str
   const m=await import('./lib/assistant-later-h0-successor-source.mjs');
   const r=await import('./integrated-cutover-readiness.mjs');
   const s=await import('./sync-ravscore-model-binding.mjs');
-  const active=m.ACTIVE_ASSISTANT_SUCCESSOR;
+  const active=m.INACTIVE_ASSISTANT_PUBLIC591_SUCCESSOR;
   assert.equal(active,m.INACTIVE_ASSISTANT_PUBLIC591_SUCCESSOR);assert.equal(active.requireRelease(),'4.0.593');
   assert.equal(active.before,m.ASSISTANT_PUBLIC591_SUCCESSOR_BEFORE);
   assert.deepEqual({version:active.before.version,C:active.before.C,I:active.before.I,T:active.before.T},m.ASSISTANT_PUBLIC590_SUCCESSOR_BINDING);
@@ -2089,29 +2094,39 @@ test('assistant592 ordinary caller selects only genuine591 after normal guards',
     assert(reads>=8);
   }finally{t.mock.restoreAll();for(const key of Object.keys(base)){if(prior[key]===undefined)delete process.env[key];else process.env[key]=prior[key];}}
 });
-test('assistant592 native evidence requires its own new commands and rejects old receipt without PG',async()=>{
+test('assistant594 native evidence requires its own new commands and rejects old receipt without PG',async()=>{
   const n=await import('./native-postgres-evidence.mjs');
   const e=await import('./national584-source-evidence.mjs');
+  const m=await import('./lib/assistant-later-h0-successor-source.mjs');
   const pkg=JSON.parse(await fs.readFile(path.join(ROOT,'package.json'),'utf8'));
-  e.verifyAssistantPublic591SuccessorPackage(pkg);
+  e.verifyInstalled593Original591Package(pkg);
   assert.deepEqual(n.ASSISTANT_PUBLIC591_SUCCESSOR_COMMANDS,[n.ASSISTANT_PUBLIC590_SUCCESSOR_COMMANDS[0],n.ASSISTANT_PUBLIC590_SUCCESSOR_COMMANDS[1]+' --assistant-public591-successor']);
-  assert.deepEqual(n.ACTIVE_COMMANDS,n.ASSISTANT_PUBLIC591_SUCCESSOR_COMMANDS);
-  assert.deepEqual(e.ASSISTANT_PUBLIC591_SUCCESSOR_NATIVE_COMMANDS,n.ACTIVE_COMMANDS);
-  const current={run:1,attempt:1,head:'a'.repeat(40),pullRequest:1,branch:'codex/synthetic592'};
-  const receipt={phase:'ASSISTANT_PUBLIC591_SUCCESSOR',commands:n.ACTIVE_COMMANDS,current,status:'EXECUTED',executedInThisRun:true,origin:null,eligibleForReuse:false};
-  assert.equal(n.verifyAssistantPublic591SuccessorPhaseReceipt(receipt,current).status,'EXECUTED');
-  assert.throws(()=>n.verifyAssistantPublic591SuccessorPhaseReceipt({...receipt,phase:'ASSISTANT_PUBLIC590_SUCCESSOR'},current));
-  assert.throws(()=>n.verifyAssistantPublic591SuccessorPhaseReceipt({...receipt,commands:n.ASSISTANT_PUBLIC590_SUCCESSOR_COMMANDS},current));
-  assert.throws(()=>n.verifyAssistantPublic591SuccessorPhaseReceipt({...receipt,executedInThisRun:false},current));
+  assert.deepEqual(n.INSTALLED593_ORIGINAL591_COMMANDS,[n.ASSISTANT_PUBLIC591_SUCCESSOR_COMMANDS[0],n.ASSISTANT_PUBLIC591_SUCCESSOR_COMMANDS[1]+' --assistant-installed593-origin591-successor']);
+  assert.deepEqual(n.ACTIVE_COMMANDS,n.INSTALLED593_ORIGINAL591_COMMANDS);
+  assert.deepEqual(e.INSTALLED593_ORIGINAL591_NATIVE_COMMANDS,n.ACTIVE_COMMANDS);
+  const current={run:1,attempt:1,head:'a'.repeat(40),pullRequest:1,branch:'codex/synthetic594'};
+  const receipt={schemaVersion:1,kind:n.INSTALLED593_ORIGINAL591_PHASE_KIND,
+    phase:'INSTALLED593_ORIGINAL591_SUCCESSOR',sourcePhase:m.ACTIVE_ASSISTANT_SUCCESSOR.sourcePhase,
+    releaseVersion:m.ACTIVE_ASSISTANT_SUCCESSOR.requireRelease(),binding:m.ACTIVE_ASSISTANT_SUCCESSOR.requireBinding(),
+    output:m.ACTIVE_ASSISTANT_SUCCESSOR.requireOutput(),databaseBefore:m.INSTALLED593_ORIGINAL591_DATABASE_BEFORE,
+    commands:n.ACTIVE_COMMANDS,current,status:'EXECUTED',executedInThisRun:true,origin:null,eligibleForReuse:false};
+  assert.equal(n.verifyInstalled593Original591PhaseReceipt(receipt,current).status,'EXECUTED');
+  assert.throws(()=>n.verifyInstalled593Original591PhaseReceipt({...receipt,phase:'ASSISTANT_PUBLIC591_SUCCESSOR'},current));
+  assert.throws(()=>n.verifyInstalled593Original591PhaseReceipt({...receipt,commands:n.ASSISTANT_PUBLIC591_SUCCESSOR_COMMANDS},current));
+  assert.throws(()=>n.verifyInstalled593Original591PhaseReceipt({...receipt,executedInThisRun:false},current));
 });
 
 // The uninstalled592 source stays in Git; only the closed actual593 plan is eligible.
 test('assistant593 exact outer source DATA and closed direct591 migration plan',async()=>{
   for(const [file,row]of Object.entries(reviewedCapacity593Sources)){
-    const raw=await fs.readFile(path.join(ROOT,file),'utf8'),old=canonical592CapacitySource(raw,file);
+    const currentRaw=await fs.readFile(path.join(ROOT,file),'utf8');
+    const raw=inverseIssued594HistoricalSource(currentRaw,file),old=canonical592CapacitySource(raw,file);
     assert.equal(Buffer.byteLength(old),row.before.bytes);assert.equal(successorHash('sha256').update(old).digest('hex'),row.before.sha256);
-    for(const [previous,current]of row.hunks)for(const changed of [raw.replace(current,()=>previous),raw.replace(current,()=>current+current)])
-      assert.throws(()=>canonical592CapacitySource(changed,file));
+    for(const [previous,current]of row.hunks){
+      assert.equal(raw.split(current).length,2,'Historisk negativ mutation skal faktisk ændre sin593-kilde');
+      for(const changed of [raw.replace(current,()=>previous),raw.replace(current,()=>current+current)])
+        assert.throws(()=>canonical592CapacitySource(changed,file));
+    }
     for(const changed of [raw+'\n','!'+raw.slice(1)])assert.throws(()=>canonical592CapacitySource(changed,file));
   }
   const r=await import('./integrated-cutover-readiness.mjs');

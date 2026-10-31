@@ -1162,6 +1162,9 @@ export function inverseAssistant590RetentionCompanionTestInput(source, relative)
   const row = ASSISTANT590_RETENTION_COMPANION_TEST_REVIEW;
   assert.equal(relative, row.path, 'ALTERNATIVE_C_TEST_INPUT_CHANGED:ASSISTANT590_RETENTION_PATH');
   source = source.replace(/\r\n/g, '\n');
+  // Exact issued594 TESTDATA view precedes every unchanged593/591/590 oracle.
+  if (Buffer.byteLength(source) === ISSUED594_RETENTION_COMPANION_TEST_REVIEW.after.bytes)
+    source = inverseIssued594RetentionCompanionSource(source, relative);
   if (Buffer.byteLength(source) === CONDITIONS593_RETENTION_COMPANION_TEST_REVIEW.after.bytes)
     source = inverseConditions593RetentionCompanionTestInput(source, relative);
   // Exact new592 outer view; all old591/588/587 whole oracles remain below.
@@ -1263,4 +1266,28 @@ export function inverseConditions593RetentionCompanionTestInput(source,relative)
   assert.equal(Buffer.byteLength(source),row.before.bytes);assert.equal(digest(source),row.before.sha256);
   let roundtrip=source;for(const [old,current]of row.hunks){assert.equal(roundtrip.split(old).length,2);roundtrip=roundtrip.replace(old,()=>current);}
   assert.equal(roundtrip,original,'Whole593-592-593 retention DATA roundtrip');return source;
+}
+
+// TESTDATA alene: hele aktuelle594-reader tilbage til den ægte593-kilde,
+// før de uændrede593/591/590-orakler. Ingen produktkode eller modelnormalisering.
+export const ISSUED594_RETENTION_COMPANION_TEST_REVIEW=Object.freeze({
+  path:'scripts/read-authenticated-dmi-current-companions.mjs',
+  before:CONDITIONS593_RETENTION_COMPANION_TEST_REVIEW.after,
+  after:Object.freeze({bytes:13288,sha256:'1c24790839f197188adb99b42bcb0aaef3a1bc9e593c5bb20c9dd996159b12d0'}),
+  prior:"const ACTIVE_PREDECESSOR=ACTIVE.sourcePhase==='assistant-public591-successor'?Object.freeze({",
+  current:"const ACTIVE_PREDECESSOR=['assistant-public591-successor','assistant-installed593-origin591-successor'].includes(ACTIVE.sourcePhase)?Object.freeze({",
+});
+export function inverseIssued594RetentionCompanionSource(source,relative){
+  assert.equal(arguments.length,2,'RETENTION594_ARGUMENTS');
+  assert.equal(typeof source,'string','RETENTION594_TYPE');
+  const row=ISSUED594_RETENTION_COMPANION_TEST_REVIEW;assert.equal(relative,row.path,'RETENTION594_PATH');
+  if(digest(source)===row.before.sha256){assert.equal(Buffer.byteLength(source),row.before.bytes);return source;}
+  assert.equal(Buffer.byteLength(source),row.after.bytes,'RETENTION594_SIZE');
+  assert.equal(digest(source),row.after.sha256,'RETENTION594_WHOLE_SOURCE');
+  assert.equal(source.split(row.current).length,2);
+  const before=source.replace(row.current,()=>row.prior);
+  assert.equal(Buffer.byteLength(before),row.before.bytes);assert.equal(digest(before),row.before.sha256);
+  assert.equal(before.split(row.prior).length,2);
+  assert.equal(before.replace(row.prior,()=>row.current),source,'Hele594→593→594-testdatainverse');
+  return before;
 }

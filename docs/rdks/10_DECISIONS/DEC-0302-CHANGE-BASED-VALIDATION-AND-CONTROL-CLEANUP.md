@@ -1,7 +1,7 @@
 # DEC-0302 – Ændringsbaseret validering og oprydning i kontroller
 
 **Dato:** 2026-10-30
-**Status:** Ejerbeslutning; teknisk indførelse under forberedelse
+**Status:** Ejerbeslutning; første afgrænsede kontrolvej er kildeleveret; faktisk målrettet levering og målt tidsgevinst er åbne
 **Besluttet af:** Ejeren gennem direkte instruktioner i den aktuelle samtale
 
 ## Beslutning
@@ -9,6 +9,8 @@
 Testomfanget skal følge ændringens faktiske påvirkning og relevante afhængigheder. Uændrede, uvedkommende områder skal ikke automatisk udløse dybe prøver. Korte prøver af den normale kæde kommer tidligt; overflødige, gentagne og erstattede kontroller fjernes fra den normale leveringsvej.
 
 Princippet gælder hele forløbet: kildekontrol, databasekontrol, nationale prøver, build, upload og deploy. En kontrol skal beskytte et konkret krav og være relevant for den aktuelle ændring. Mængden af grønne kontroller er ikke et selvstændigt kvalitetsmål.
+
+594-efterfølgeren registrerer additivt de fem faktisk gennemgåede tekstrammer efter normal versionssynk. Hele de gamle 593-rammer bevares. Før og efter skal matche samme præcise ramme; versionsblanding eller ukendt import, selector, kode, markup og escaping giver fuldt omfang. Aktuel releaseversion er ikke i sig selv en godkendelse, og der anvendes ingen generel versionsnormalisering. Lokal rammeprøve og normale producent-/forbrugermål er ikke en faktisk målrettet GitHub-levering eller SQL-eksekvering.
 
 ## Konkret testplan for hver levering
 

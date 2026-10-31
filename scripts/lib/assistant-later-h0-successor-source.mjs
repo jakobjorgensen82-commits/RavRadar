@@ -112,7 +112,7 @@ export async function readAssistantLaterH0CanonicalSource(options){
   return readFixedCanonicalSource(ISSUED587_SOURCE,options,pins,migration);
 }
 async function readFixedCanonicalSource(profile,options,pins,migration){
-  assert(profile===ISSUED587_SOURCE||profile===PUBLIC587_SUCCESSOR_SOURCE||profile===PUBLIC588_SUCCESSOR_SOURCE||profile===PUBLIC590_SUCCESSOR_SOURCE||profile===PUBLIC591_SUCCESSOR_SOURCE,'ASSISTANT_SUCCESSOR_UNKNOWN_SOURCE_PROFILE');
+  assert(profile===ISSUED587_SOURCE||profile===PUBLIC587_SUCCESSOR_SOURCE||profile===PUBLIC588_SUCCESSOR_SOURCE||profile===PUBLIC590_SUCCESSOR_SOURCE||profile===PUBLIC591_SUCCESSOR_SOURCE||profile===INSTALLED593_ORIGINAL591_SOURCE,'ASSISTANT_SUCCESSOR_UNKNOWN_SOURCE_PROFILE');
   let migrationsDirectory=path.join(ROOT,'supabase/migrations');
   if(options!==undefined){assert(options&&Object.getPrototypeOf(options)===Object.prototype);
     assert.deepEqual(Object.keys(options),['migrationsDirectory']);assert(path.isAbsolute(options.migrationsDirectory));
@@ -644,4 +644,59 @@ export const INACTIVE_ASSISTANT_PUBLIC591_SUCCESSOR=Object.freeze({
 // Aktiv operativ familie vælges KUN af denne gennemgåede kilde. De gamle
 // navngivne586→587-eksporter ovenfor forbliver historiske; NULL falder aldrig tilbage.
 
-export const ACTIVE_ASSISTANT_SUCCESSOR=INACTIVE_ASSISTANT_PUBLIC591_SUCCESSOR;
+// Database593 er installeret, men den autentiske originale vejr-/statefamilie
+// er fortsat591. Ingen593-original eller ny originalvalidator konstrueres.
+export const INSTALLED593_ORIGINAL591_DATABASE_BEFORE=Object.freeze({
+  ...ASSISTANT_PUBLIC591_SUCCESSOR_BINDING,
+  canonicalSha256:ASSISTANT_PUBLIC591_SUCCESSOR_OUTPUT.canonicalSha256,
+});
+export const INSTALLED593_ORIGINAL591_BINDING=Object.freeze({"version":"20261031070755","C":"2d5cde5418270a02396e24a249f0b6bb09527366c1c110d8742a44cfe2ab459b","I":"08750e3667e5a221374762fccadccf08abf5e9f1ae8814ccc97bfc11880bf36c","T":"a6c0408f76b5de70a90959e254df78317f8282cb93c0edc85a71d36b9ef8dafa"});
+export const INSTALLED593_ORIGINAL591_OUTPUT=Object.freeze({"migrationSha256":"0d50a857aebf838c072ee7ccfc846fecd9744f9bb093eb6943b0484eee99c777","canonicalSha256":"e4964280ee54c95633454dfaa62d1507294ea2a85fb2a26cbedf9faa6c392184","checkpointContractSha256":"0061cb6d5ef09e4b7d8136909bcbaaabe21af383323c75cd59761115372abd16","tripBindingPolicySha256":"1e437449a6ee32e8778799e0be3284c39ec5aec89154fc9e7e1ea5ad4eda77a7"});
+export const INSTALLED593_ORIGINAL591_RELEASE="4.0.594";
+export function requireInstalled593Original591Binding(){
+  assert.equal(arguments.length,0);requireAssistantPublic591SuccessorOutput();
+  const binding=INSTALLED593_ORIGINAL591_BINDING;
+  assert(binding&&Object.isFrozen(binding),'INSTALLED593_ORIGINAL591_BINDING_UNISSUED');
+  assert.deepEqual(Object.keys(binding).sort(),['C','I','T','version']);
+  assert.match(binding.version,/^[0-9]{14}$/);assert(binding.version>INSTALLED593_ORIGINAL591_DATABASE_BEFORE.version);
+  for(const key of ['C','I','T'])assert.match(binding[key],/^[a-f0-9]{64}$/);
+  assert.equal(new Set(['C','I','T'].flatMap(key=>[binding[key],INSTALLED593_ORIGINAL591_DATABASE_BEFORE[key]])).size,6);
+  return binding;
+}
+export function requireInstalled593Original591Output(){
+  assert.equal(arguments.length,0);requireInstalled593Original591Binding();
+  const output=INSTALLED593_ORIGINAL591_OUTPUT;
+  assert(output&&Object.isFrozen(output),'INSTALLED593_ORIGINAL591_OUTPUT_UNISSUED');
+  assert.deepEqual(Object.keys(output).sort(),['canonicalSha256','checkpointContractSha256','migrationSha256','tripBindingPolicySha256']);
+  for(const value of Object.values(output))assert.match(value,/^[a-f0-9]{64}$/);
+  return output;
+}
+export function requireInstalled593Original591Release(){
+  assert.equal(arguments.length,0);requireInstalled593Original591Output();
+  assert.match(INSTALLED593_ORIGINAL591_RELEASE??'',/^4\.0\.[1-9][0-9]*$/);
+  assert(Number(INSTALLED593_ORIGINAL591_RELEASE.split('.').at(-1))>593);
+  return INSTALLED593_ORIGINAL591_RELEASE;
+}
+export function installed593Original591Migration(){
+  assert.equal(arguments.length,0);const {version}=requireInstalled593Original591Binding();
+  const id=version+'_installed593_original591_later_h0_bound_successor';
+  return Object.freeze({version,id,filename:id+'.sql'});
+}
+const INSTALLED593_ORIGINAL591_SOURCE=Object.freeze({
+  readPredecessor:readAssistantPublic591SuccessorCanonicalSource,aliases:Object.freeze([]),previousRelease:593,
+});
+export async function readInstalled593Original591CanonicalSource(options){
+  assert(arguments.length<=1);
+  return readFixedCanonicalSource(INSTALLED593_ORIGINAL591_SOURCE,options,
+    requireInstalled593Original591Output(),installed593Original591Migration());
+}
+export const INACTIVE_INSTALLED593_ORIGINAL591_SUCCESSOR=Object.freeze({
+  sourcePhase:'assistant-installed593-origin591-successor',
+  before:ASSISTANT_PUBLIC591_SUCCESSOR_BEFORE,databaseBefore:INSTALLED593_ORIGINAL591_DATABASE_BEFORE,
+  originalStateFamily:'591',binding:INSTALLED593_ORIGINAL591_BINDING,output:INSTALLED593_ORIGINAL591_OUTPUT,
+  requireBinding:requireInstalled593Original591Binding,requireOutput:requireInstalled593Original591Output,
+  requireRelease:requireInstalled593Original591Release,migration:installed593Original591Migration,
+  readCanonicalSource:readInstalled593Original591CanonicalSource,
+  assertTarget:assertAssistantPublic591SuccessorTarget,assertCaller:assertAssistantPublic591SuccessorCaller,
+});
+export const ACTIVE_ASSISTANT_SUCCESSOR=INACTIVE_INSTALLED593_ORIGINAL591_SUCCESSOR;

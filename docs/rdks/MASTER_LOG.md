@@ -1,3 +1,7 @@
+## 2026-10-31 —4.0.594, installeret 593/originale 591 som særskilte roller
+
+DEC-0303 registrerer den præcise fælles origin-/controllerkontrakt og den additive assistant-installed593-origin591-successor. Databasebefore følger ægte 593-canonical; originalState 591 bevarer autentiske B/S og offentlig forgænger. Origin er C/I-input og kræver normal ny udstedelse, syv synkroniserede forbrugere og én ny append-only migration med alle 71 tidligere SQL bevaret. 4.0.594 er lokalt udstedt gennem den normale afledning; samlet kvalifikation, installation og offentlig levering er fortsat åbne. Gammelt593-nativebevis eller krypteret indhentning må ikke ommærkes til ny 594-kvalifikation eller færdig beregning. Strengt senere H0, numerisk helinverse, CAS/no-loss og normal offentlig levering består. Alle fem mål er åbne; detaljeret kørselsevidens føres privat.
+
 ## 30. oktober — ejerbeslutning om kontroloprydning og ændringsbaseret testvalg
 
 Ejeren kræver gennemgang af alle kilde-, database-, nationale og deploykontroller: test påvirket funktion og dens afhængigheder; undlad automatisk uvedkommende områder; fjern ligegyldige, gentagne og erstattede kontroller fra normal levering. DEC-0302 fastholder beslutningen og skellet mellem besluttet arbejdsform og endnu ikke leveret automatik. Ingen data-/sikkerhedsstop svækkes, ingen aktuelt kørende kvalifikation nulstilles, og alle fem mål bevares.

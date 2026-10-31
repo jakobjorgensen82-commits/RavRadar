@@ -14,12 +14,19 @@ const aboutKeys=['about.header','about.meta.title','about.meta.description','abo
 const learnKeys=['learn.header','learn.meta.title','learn.meta.description','learn.illustration.aria',
   'learn.hero','learn.nav','learn.quick','learn.amber','learn.sea','learn.coast','learn.signs',
   'learn.hunt','learn.sequence','learn.score','learn.knowledge','learn.glossary','learn.finish'];
+// Only these exact593/594 frames are reviewed; both sides must match one frame.
+// Versions are never stripped or approved from the current package version.
 const textFiles=new Map([
-  ['js/ui/about-i18n.js',['about-text', 'b48543519a8d1e853eea7044399c77d56ffa18c5e7285e3559cd671a02a1dc95',aboutKeys]],
-  ['js/ui/about-explainer-i18n.js',['about-text','52e22388e3dec455b415480ee20aae6e279a1b14a7c903cefb126b794f12e99d',aboutKeys]],
-  ['js/ui/learn-i18n.js',['learning-text','d7a117151f0342d71101668f073ebe3706f1077cc7dd6fc01617492b9f7cb485',learnKeys]],
-  ['js/ui/learn-i18n-de.js',['learning-text','1d20d3c3e18ebf7291657e6250c81b9f758198bcfbbad429518558cc93db26ef',learnKeys]],
-  ['js/ui/learn-i18n-en.js',['learning-text','a5f3f2c4bfcbce04cd7d0b8ef6ed12cd6ebc408102c781892a5b97292957e0d2',learnKeys]],
+  ['js/ui/about-i18n.js',['about-text', Object.freeze(['b48543519a8d1e853eea7044399c77d56ffa18c5e7285e3559cd671a02a1dc95',
+    'a85682821462fca3ea8466cb18969e9b9d5d515d502412c562f033ce4bf274d5']),aboutKeys]],
+  ['js/ui/about-explainer-i18n.js',['about-text',Object.freeze(['52e22388e3dec455b415480ee20aae6e279a1b14a7c903cefb126b794f12e99d',
+    '51695516c2f07f94d4818a996809a023de0939c3ff005544505f85f15e8f4d2b']),aboutKeys]],
+  ['js/ui/learn-i18n.js',['learning-text',Object.freeze(['d7a117151f0342d71101668f073ebe3706f1077cc7dd6fc01617492b9f7cb485',
+    '2939602cf08fb4fb868380492196314097b1f64148a6ab73701a28673df8a269']),learnKeys]],
+  ['js/ui/learn-i18n-de.js',['learning-text',Object.freeze(['1d20d3c3e18ebf7291657e6250c81b9f758198bcfbbad429518558cc93db26ef',
+    'f0fcc40889a9e65c04f938d408ca7b0e0db043a4876af8f0eed46611038aedc3']),learnKeys]],
+  ['js/ui/learn-i18n-en.js',['learning-text',Object.freeze(['a5f3f2c4bfcbce04cd7d0b8ef6ed12cd6ebc408102c781892a5b97292957e0d2',
+    '3543920f748ea95738c4dc44ea7dbefd8d703348ab9efce3a0ca6eb6b3eddeb2']),learnKeys]],
 ]);
 const targets={
   documentation:['validate:rdks','test:handbook-plain-language','test:handbook-review-archive'],
@@ -84,7 +91,8 @@ function isReviewedTextChange(change,profile){
   const before=normalize(change.before),after=normalize(change.after);
   const a=regions(before,profile[2]),b=regions(after,profile[2]);
   if(!a||!b||a.shape!==b.shape||a.values.length!==b.values.length)return false;
-  if(reviewedFrame(a)!==profile[1]||reviewedFrame(b)!==profile[1])return false;
+  const frame=reviewedFrame(a);
+  if(!profile[1].includes(frame)||reviewedFrame(b)!==frame)return false;
   return a.values.every((old,index)=>{
     const next=b.values[index];if(old===next)return true;
     // No new JS escapes, interpolation or markup/attribute edits masquerading

@@ -16,7 +16,7 @@ import {readAuthenticatedFrozen587Predecessor,assertAuthenticatedFrozen587Snapsh
   assertAuthenticatedFrozen590Snapshot,assertAuthenticatedFrozen590SnapshotFresh,readAuthenticatedFrozen591Predecessor,
   assertAuthenticatedFrozen591Snapshot,assertAuthenticatedFrozen591SnapshotFresh} from './lib/authenticated-frozen586-predecessor.mjs';
 import {assertRestoredOriginalInventory} from './migrate-post-cutover-private-runtime.mjs';
-import {assertAssistantPublic587SuccessorMigrationPlan,assertAssistantPublic588SuccessorMigrationPlan,assertAssistantPublic590SuccessorMigrationPlan,assertAssistantPublic591SuccessorMigrationPlan} from './integrated-cutover-readiness.mjs';
+import {assertAssistantPublic587SuccessorMigrationPlan,assertAssistantPublic588SuccessorMigrationPlan,assertAssistantPublic590SuccessorMigrationPlan,assertAssistantPublic591SuccessorMigrationPlan,assertInstalled593Original591MigrationPlan} from './integrated-cutover-readiness.mjs';
 import {inspectDmiForecastFile,readDmiForecastRecord} from './lib/dmi-forecast-file.mjs';
 import {unpackDmiPartContinuity,assertDmiPartContinuityTotalSize} from './lib/dmi-part-continuity.mjs';
 import {createProtectedDmiNativeCurrentInspector} from './lib/protected-dmi-native-current-proofs.mjs';
@@ -27,8 +27,12 @@ import {ravScoreModelBinding as candidateBinding} from './rollback-assets/ravsco
 import {privateRuntimeContractHashes} from './private-production-runtime-workflow.mjs';
 import {ownFileDescriptorIdentity,ownedFileDescriptorClosed} from './lib/private-weather-component-pack.mjs';
 // Ingen caller-/miljøvalgt familie. Begge profiler beholder deres egne opaque handles.
-assert(['assistant-public587-successor','assistant-public588-successor','assistant-public590-successor','assistant-public591-successor'].includes(ACTIVE.sourcePhase));
-const ACTIVE_PREDECESSOR=ACTIVE.sourcePhase==='assistant-public591-successor'?Object.freeze({
+assert(['assistant-public587-successor','assistant-public588-successor','assistant-public590-successor','assistant-public591-successor','assistant-installed593-origin591-successor'].includes(ACTIVE.sourcePhase));
+const ACTIVE_PREDECESSOR=ACTIVE.sourcePhase==='assistant-installed593-origin591-successor'?Object.freeze({
+  withSource:withAuthenticated591PredecessorSource,read:readAuthenticatedFrozen591Predecessor,
+  snapshot:assertAuthenticatedFrozen591Snapshot,fresh:assertAuthenticatedFrozen591SnapshotFresh,
+  plan:assertInstalled593Original591MigrationPlan
+}):ACTIVE.sourcePhase==='assistant-public591-successor'?Object.freeze({
   withSource:withAuthenticated591PredecessorSource,read:readAuthenticatedFrozen591Predecessor,
   snapshot:assertAuthenticatedFrozen591Snapshot,fresh:assertAuthenticatedFrozen591SnapshotFresh,
   plan:assertAssistantPublic591SuccessorMigrationPlan

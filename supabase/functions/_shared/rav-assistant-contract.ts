@@ -12,7 +12,7 @@ export const RAV_ASSISTANT_RAVSCORE_MODEL_BINDING = Object.freeze({
   bestTimePolicyId: "score-history-water-tie-earliest-v3",
   presentationPolicyId: "score-bands-35-55-75-exceptional90-v1",
   modelContractSha256: "a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b",
-  modelBundleSha256: "69bf81c3cc5e256deee2c116a52462597f4cfc47cb6c855c6dba969c1dcf4643",
+  modelBundleSha256: "08750e3667e5a221374762fccadccf08abf5e9f1ae8814ccc97bfc11880bf36c",
 });
 
 export const RAV_ASSISTANT_KNOWLEDGE_SCHEMA = "rav-assistant-public-knowledge-v1";

@@ -6,6 +6,23 @@ import fs from 'node:fs';
 const review = JSON.parse(fs.readFileSync(new URL('./completed-private-runtime-workflow-review.json', import.meta.url), 'utf8'));
 const coldReview = JSON.parse(fs.readFileSync(new URL('./current-family-cold-start-workflow-review.json', import.meta.url), 'utf8'));
 const sha = value => crypto.createHash('sha256').update(value).digest('hex');
+// TEST ONLY: præcis normal versionssynk; hele593-workflowet bevares.
+export const release594WorkflowUserAgentReview=Object.freeze({
+  before:Object.freeze({bytes:294485,sha256:'49b7609139f2ad62228eed7d89bcb0fa4106476cd5b7bd311a8f86f895060f6b'}),
+  after:Object.freeze({bytes:294485,sha256:'6b205b7a8c99c61cf4b6f65030acb22676d66d115a5469101a3062aa20f113d2'}),
+});
+export function inverseRelease594WorkflowUserAgents(source,role){
+  assert.equal(arguments.length,2,'RELEASE594_WORKFLOW_ARGUMENTS');
+  assert.equal(typeof source,'string','RELEASE594_WORKFLOW_TYPE');
+  const row=release594WorkflowUserAgentReview;
+  if(role!=='build'||sha(source)!==row.after.sha256)return source;
+  assert.equal(Buffer.byteLength(source),row.after.bytes,'RELEASE594_WORKFLOW_SIZE');
+  assert.equal(source.split('RavRadar/4.0.594').length,6,'Exactly five normal594 User-Agent fields');
+  const previous=source.replaceAll('RavRadar/4.0.594','RavRadar/4.0.593');
+  assert.equal(Buffer.byteLength(previous),row.before.bytes,'RELEASE594_PREDECESSOR_SIZE');
+  assert.equal(sha(previous),row.before.sha256,'Every immutable593 workflow byte survives');
+  return previous;
+}
 // TEST ONLY: the actual593 workflow changes only the five normal UA literals.
 // The immutable592 audit/capacity body and every older oracle remain intact.
 export const release593WorkflowUserAgentReview=Object.freeze({
@@ -77,6 +94,7 @@ export const runtimeAuditExecution592WorkflowReview = Object.freeze({
 export function inverseRuntimeAuditExecutionWorkflow(source,role) {
   assert.equal(arguments.length,2,'RUNTIME_AUDIT_EXECUTION_WORKFLOW_ARGUMENTS');
   assert.equal(typeof source,'string','RUNTIME_AUDIT_EXECUTION_WORKFLOW_TYPE');
+  source=inverseRelease594WorkflowUserAgents(source,role);
   source=inverseRelease593WorkflowUserAgents(source,role);
   const row=sha(source)===runtimeAuditExecution592WorkflowReview.after.sha256
     ?runtimeAuditExecution592WorkflowReview:runtimeAuditExecutionWorkflowReview;

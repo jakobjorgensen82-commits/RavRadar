@@ -39,6 +39,11 @@ import {
   ravScoreModelBinding as candidateGRollbackModelBinding,
 } from './rollback-assets/ravscore-model-contract.js';
 
+// Each new native phase refuses before fixture construction or a PG host.
+if(process.argv.includes('--assistant-installed593-origin591-successor')){
+  const {requireInstalled593Original591Release}=await import('./lib/assistant-later-h0-successor-source.mjs');
+  requireInstalled593Original591Release();
+}
 // The additive588 native entry refuses before fixture hashing/construction or a PG host.
 if(process.argv.includes('--assistant-public591-successor')){
   const {requireAssistantPublic591SuccessorRelease}=await import('./lib/assistant-later-h0-successor-source.mjs');
@@ -395,7 +400,8 @@ if (!process.argv.includes('--native-postgres') && !process.argv.includes('--nat
     && !process.argv.includes('--account-statistics-assistant') && !process.argv.includes('--assistant-later-h0')
     && !process.argv.includes('--assistant-public587-successor') && !process.argv.includes('--assistant-public588-successor')
     && !process.argv.includes('--assistant-public590-successor')
-    && !process.argv.includes('--assistant-public591-successor')) {
+    && !process.argv.includes('--assistant-public591-successor')
+    && !process.argv.includes('--assistant-installed593-origin591-successor')) {
   const { nativePostgresFailureDiagnostic: diagnose,
     nativePostgresFailureAnnotation: annotate } =
       await import('./lib/checkpoint-cas-native-postgres.mjs');
@@ -546,7 +552,8 @@ if (process.argv.includes('--native-identity-source-only')) {
   process.exit(0);
 }
 
-const assistantPublic591SuccessorNative = process.argv.includes('--assistant-public591-successor');
+const installed593Original591SuccessorNative = process.argv.includes('--assistant-installed593-origin591-successor');
+const assistantPublic591SuccessorNative = process.argv.includes('--assistant-public591-successor') || installed593Original591SuccessorNative;
 const assistantPublic590SuccessorNative = process.argv.includes('--assistant-public590-successor') || assistantPublic591SuccessorNative;
 const assistantPublic588SuccessorNative = process.argv.includes('--assistant-public588-successor') || assistantPublic590SuccessorNative;
 const assistantPublic587SuccessorNative = process.argv.includes('--assistant-public587-successor');
@@ -580,9 +587,11 @@ if (process.argv.includes('--native-postgres') || process.argv.includes('--nativ
       includeAssistantPublic588Successor: assistantPublic588SuccessorNative,
       includeAssistantPublic590Successor: assistantPublic590SuccessorNative,
       includeAssistantPublic591Successor: assistantPublic591SuccessorNative,
+      includeInstalled593Original591Successor: installed593Original591SuccessorNative,
     });
     if(assistantPublic591SuccessorNative)console.log(JSON.stringify({
-      kind:'RAVRADAR_NATIVE_PROGRAM_IDENTITY_V2',phase:'ASSISTANT_PUBLIC591_SUCCESSOR',
+      kind:'RAVRADAR_NATIVE_PROGRAM_IDENTITY_V2',phase:installed593Original591SuccessorNative
+        ?'INSTALLED593_ORIGINAL591_SUCCESSOR':'ASSISTANT_PUBLIC591_SUCCESSOR',
       programs:report.nativeProgramIdentity,
     }));
     console.log(JSON.stringify(report));

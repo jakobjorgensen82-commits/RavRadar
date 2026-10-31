@@ -1,3 +1,11 @@
+## Aktivt krav — installeret 593 og originale 591 kræver hver sin binding, 31. oktober
+
+Den nye assistant-installed593-origin591-successor skal binde databasebefore til ægte udstedt 593 og originalState til de autentiske 591-B/S. Normal staging kræver hele den installerede forgængerhistorik og kun den nye normalt afledte594-migration pending; efter installation kræves faktisk ny canonical-/versions-/kontraktgenlæsning. De71 gamle kilde-SQL og gamle profiler bevares byteuændret.
+
+Begge normale metadatakaldere skal kontrollere hele den autentificerede591-kontrakt mod den faktisk afledte aktuelle kontrakt: korrekt gammel/ny T, præcis gennemgået offentlig projektion, uændret lager-ABI og ingen ekstra/manglende felter. Originalernes numeriske værdier, historik, hele S og attest skal have helinverse. Ingen samme-H0-adgang, fabrikeret593-original eller genbrug af gammel nativeevidens som ny 594-prøve. Frisk pointer, CAS/no-loss, B før S og normale privacy-/release-/offentlige gates består.
+
+Gemt indhentningsprogress må ikke kaldes færdig beregning eller automatisk modelovergang. Normal GCM/AAD og uændret beskyttet B- og conditions-baseline kræves ved genbrug. Afvigelse skal give normal ikke-muterende CACHE_MISS, bevare cipher og beskyttet baseline og fortsætte gennem RAW/cache samt konkrete leverandørhuller. Ingen ommærkning, original-target-/completed-genvej eller ny overdragelse som releaseforudsætning. Se DEC-0303 og håndbog 89.291.
+
 ## Aktivt krav — ændringsbaseret testvalg, 30. oktober
 
 Testomfanget skal følge ændringens faktiske påvirkning og relevante afhængigheder. Uændrede, uvedkommende områder skal ikke automatisk udløse dybe prøver. Korte prøver af den normale kæde kommer tidligt; overflødige, gentagne og erstattede kontroller fjernes fra den normale leveringsvej.

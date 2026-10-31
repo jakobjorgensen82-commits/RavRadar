@@ -1,3 +1,13 @@
+## 31. oktober —594: præcis origin-kontrol og to autentiske forgængerroller
+
+Bevist gennem ægte 591-kode: I/C-leddene passer, mens kontraktkortet afviger på både T og den allerede godkendte kompakte offentlige projektion; lager-ABI er identisk. Den samme normale metadatagrænse er reproduceret rød før og grøn efter den fælles præcise kontrol med 30 negative cases. Den normale routingprøve består. Det er afgrænset kodebevis uden lokalt produktions-B/S.
+
+Den nye additivprofil hedder assistant-installed593-origin591-successor. Databasebefore er den faktisk installerede udstedte 593; originalState 591 bruger fortsat ægte 591-læsere og originale attester. Origin ændrer C/I-input, så ny normal afledning, synkronisering af de syv normale forbrugere og én ny append-only migration kræves. Alle 71 gamle SQL og historiske profiler bevares. 4.0.594 er lokalt udstedt gennem den normale afledning; samlet kvalifikation, installation og offentlig levering er fortsat åbne.
+
+Åbent er den præcise samlede nye kilde-/nativekvalifikation, autentificeret original-prewrite, normal installation med faktisk databasegenlæsning samt en strengt senere almindelig generation gennem numerisk inverse, leverandører/beregning, B før S, CAS/no-loss, deploy og offentlig kontrol. Krypteret indhentning fra den afviste kørsel er ikke et completed-build-checkpoint; ændret C/I/conditions-baseline giver ingen automatisk genbrugsret. Den valgte normale vej afviser afvigelsen med ikke-muterende CACHE_MISS og bruger bevaret RAW/cache samt konkrete leverandørhuller. Ny modeloverdragelse er ikke en leveringsforudsætning; faktisk almindelig fortsættelse er stadig åben.
+
+Alle fem mål til 18. november består. Ingen ændring af scoreformel, kildeprioritet, admin/geometri eller godkendte brugertekster; ingen SOURCE-, statistik- eller sletteaktivering. Ældre modstridende status er historik på disse konkrete punkter. Se DEC-0303 og håndbog 89.291.
+
 ## 30. oktober — P0: DMI-originalers conditions skal følge producentens grænse
 
 Den præcise 591→593-controller er kvalificeret og leveret til main; den efterfølgende normale prepare/install og genbrug af kildekontrollen bestod. Vejrhentningen stoppede senere, fordi Pythons normale RAW-retention stadig anvendte 256 MiB på den beskyttede B-conditions-fil. Producenten tillader allerede 535.822.312 bytes. Den primære DMI-afvisning skete før ny ledger; selectorens afvisning af den gamle referencetime er en følgefejl og bevares. Det er ikke ugyldige leverandørdata.

@@ -5,7 +5,7 @@ export const TRIP_SEARCH_MODES = Object.freeze(['waders', 'beach']);
 import {
   RAVSCORE_CALIBRATION_ELIGIBLE,
   ravScoreModelBinding,
-} from '../core/ravscore-model-contract.js?v=4.0.593';
+} from '../core/ravscore-model-contract.js?v=4.0.594';
 import {
   CALIBRATION_NUMERIC_RANGES,
   CALIBRATION_INELIGIBLE_REASON_HISTORY_INCOMPLETE,
@@ -25,7 +25,7 @@ import {
   isExactCalibrationModelBinding,
   sameCalibrationModelBinding,
   tripEvidenceIntegrityIssues,
-} from './calibration-eligibility.js?v=4.0.593';
+} from './calibration-eligibility.js?v=4.0.594';
 
 export const LEGACY_TRIP_EVIDENCE_SCHEMA_VERSION = 2;
 export const RECONSTRUCTED_RAVSCORE_QUALITY_FLAG =
