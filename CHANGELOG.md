@@ -1,3 +1,19 @@
+## 31. oktober — observeret offentlig forgænger skal følge almindeligt deploy
+
+Ved overgang til en nyere model skal deployet medtage identiteten på den faktisk observerede offentlige forgænger. Den samme observerede kilde skal følge både den almindelige og den genoptagne kalder. En nyere offentlig generation må ikke forveksles med den ældre generation, som stadig står centralt.
+
+Den lokale rettelse fører den allerede producerede kildeidentitet videre gennem den almindelige kalder. Den eksisterende korte prøve reproducerer manglen og består efter rettelsen; installation, checkpoint-genoptagelse og offentlig levering er fortsat åbne. Modelbinding, scoreformel, CAS, originale data og hård databevarelse ændres ikke. Se DEC-0303 og det private checkpoint for den aktuelle kørselsstatus.
+
+### Sikker genoptagelse efter stop før offentlig aktivering
+
+Den gemte beregning og dens originale producent bevares, selv om en senere kodeversion udfører leveringen. En ny executor må ikke ommærke den gamle producent eller genstarte leverandører og beregning. Den særskilte normale checkpoint-indgang bruger den eksisterende genoptagelseskalder og samme eksklusive produktionslås; den er kun vellykket, når der faktisk er gennemført en godkendt genoptagelseshandling.
+
+En levering, der aldrig nåede Pages, afbrydes fortsat som udgangspunkt. Den snævre undtagelse kræver frisk, autentificeret føraktiveringsevidens, den oprindelige plan og originalpakke, en faktisk afsluttet gammel ejer, et faktisk sprunget Pages-trin samt en uændret og fuldt verificeret offentlig kilde. Kun de præcist gennemgåede reparationsfiler må skille producent og executor. Den centrale overgang bruger den eksisterende CAS og genlæses; et ukendt skriveudfald giver ingen automatisk gentagelse.
+
+Beviset genafledes fra de normale, varigt gemte originaler og frisk central tilstand, også efter tab af runner. En kopieret lokal kvittering giver ingen adgang. Workflowkædens læserettighed til kilde-PR-beviset skal følge alle normale kaldere; den ændrer ikke deres standardvalg eller leverandørforløb.
+
+Dette er en lokal, afgrænset leveringsrettelse. Præcis samlet kildekvalifikation, faktisk checkpoint-genoptagelse og ny offentlig vejrlevering er fortsat åbne. Der hentes eller beregnes ikke nyt vejr i checkpoint-indgangen. Modelbinding, scoreformel, kildeprioritet, administratorpunkter, geometri, udstedte SQL-filer, originale B/S og hård databevarelse ændres ikke. SOURCE, statistik og automatisk sletning forbliver inaktive; alle fem hovedmål består.
+
 ## 31. oktober — testvalg opdeles efter den faktiske ændring
 
 En negativprøve for Git-filers executable-mode skal have samme mode på arbejdsfilen og i indeks/commit samt bevise rent checkout, før den forventer afvisning af en leveringsfils mode. Kun at ændre indekset efterlader på Linux en anden, tidligere afvisningsgrund. Testfixturen følger nu denne rækkefølge; produktets clean-head-kontrol og forventede modeafvisning bevares.

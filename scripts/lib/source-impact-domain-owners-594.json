@@ -3,12 +3,91 @@
   "scope": "CLOSED_REVIEWED_594_DOMAIN_OWNERS",
   "owners": [
     {
+      "path": ".github/workflows/deploy-code-only-repair.yml",
+      "domains": [
+        "controls"
+      ],
+      "controlQualification": true,
+      "commands": [
+        [
+          "controls",
+          "node scripts/test-pages-generation-and-reentry.mjs"
+        ],
+        [
+          "controls",
+          "node --test scripts/test-protected-operational-reentry-evidence.mjs"
+        ],
+        [
+          "controls",
+          "node scripts/test-ravscore-operational-pages-recovery.mjs"
+        ]
+      ],
+      "exactSourceTransition": true
+    },
+    {
       "path": ".github/workflows/private-trip-weather-study.yml",
       "domains": [
         "d1",
         "controls"
       ],
       "controlQualification": true
+    },
+    {
+      "path": ".github/workflows/resume-operational-checkpoint.yml",
+      "domains": [
+        "controls"
+      ],
+      "controlQualification": true,
+      "commands": [
+        [
+          "controls",
+          "node scripts/test-pages-generation-and-reentry.mjs"
+        ],
+        [
+          "controls",
+          "node --test scripts/test-protected-operational-reentry-evidence.mjs"
+        ],
+        [
+          "controls",
+          "node scripts/test-ravscore-operational-pages-recovery.mjs"
+        ]
+      ]
+    },
+    {
+      "path": ".github/workflows/reusable-operational-reentry.yml",
+      "domains": [
+        "controls"
+      ],
+      "controlQualification": true,
+      "commands": [
+        [
+          "controls",
+          "node scripts/test-pages-generation-and-reentry.mjs"
+        ],
+        [
+          "controls",
+          "node --test scripts/test-protected-operational-reentry-evidence.mjs"
+        ],
+        [
+          "controls",
+          "node scripts/test-ravscore-operational-pages-recovery.mjs"
+        ]
+      ],
+      "exactSourceTransition": true
+    },
+    {
+      "path": ".github/workflows/reusable-pages-deploy.yml",
+      "domains": [
+        "controls"
+      ],
+      "controlQualification": true,
+      "commands": [
+        [
+          "controls",
+          "node scripts/test-pages-generation-and-reentry.mjs"
+        ]
+      ],
+      "exactSourceTransition": true
     },
     {
       "path": ".github/workflows/reusable-weather-build.yml",
@@ -24,6 +103,50 @@
         [
           "controls",
           "node --test scripts/test-completed-private-runtime-workflow-inverse.mjs"
+        ]
+      ],
+      "exactSourceTransition": true
+    },
+    {
+      "path": ".github/workflows/run-current-weather-once.yml",
+      "domains": [
+        "controls"
+      ],
+      "controlQualification": true,
+      "commands": [
+        [
+          "controls",
+          "node scripts/test-pages-generation-and-reentry.mjs"
+        ],
+        [
+          "controls",
+          "node --test scripts/test-protected-operational-reentry-evidence.mjs"
+        ],
+        [
+          "controls",
+          "node scripts/test-ravscore-operational-pages-recovery.mjs"
+        ]
+      ],
+      "exactSourceTransition": true
+    },
+    {
+      "path": ".github/workflows/update-and-deploy.yml",
+      "domains": [
+        "controls"
+      ],
+      "controlQualification": true,
+      "commands": [
+        [
+          "controls",
+          "node scripts/test-pages-generation-and-reentry.mjs"
+        ],
+        [
+          "controls",
+          "node --test scripts/test-protected-operational-reentry-evidence.mjs"
+        ],
+        [
+          "controls",
+          "node scripts/test-ravscore-operational-pages-recovery.mjs"
         ]
       ],
       "exactSourceTransition": true
@@ -103,6 +226,12 @@
     },
     {
       "path": "docs/rdks/10_DECISIONS/DEC-0302-CHANGE-BASED-VALIDATION-AND-CONTROL-CLEANUP.md",
+      "domains": [
+        "documentation"
+      ]
+    },
+    {
+      "path": "docs/rdks/10_DECISIONS/DEC-0303-INSTALLED593-ORIGINAL591-STRICT-LATER-SUCCESSOR.md",
       "domains": [
         "documentation"
       ]
@@ -262,6 +391,32 @@
       "controlQualification": true
     },
     {
+      "path": "scripts/protected-operational-reentry-evidence.mjs",
+      "domains": [
+        "controls"
+      ],
+      "controlQualification": true,
+      "commands": [
+        [
+          "controls",
+          "node --test scripts/test-protected-operational-reentry-evidence.mjs"
+        ]
+      ]
+    },
+    {
+      "path": "scripts/ravscore-operational-pages-recovery.mjs",
+      "domains": [
+        "controls"
+      ],
+      "controlQualification": true,
+      "commands": [
+        [
+          "controls",
+          "node scripts/test-ravscore-operational-pages-recovery.mjs"
+        ]
+      ]
+    },
+    {
       "path": "scripts/source-impact-domain-inputs.mjs",
       "domains": [
         "controls"
@@ -399,11 +554,50 @@
       ]
     },
     {
+      "path": "scripts/test-pages-generation-and-reentry.mjs",
+      "domains": [
+        "controls"
+      ],
+      "controlQualification": true,
+      "commands": [
+        [
+          "controls",
+          "node scripts/test-pages-generation-and-reentry.mjs"
+        ]
+      ]
+    },
+    {
       "path": "scripts/test-private-trip-study-categorical-controller.mjs",
       "domains": [
         "d1"
       ],
       "controlQualification": true
+    },
+    {
+      "path": "scripts/test-protected-operational-reentry-evidence.mjs",
+      "domains": [
+        "controls"
+      ],
+      "controlQualification": true,
+      "commands": [
+        [
+          "controls",
+          "node --test scripts/test-protected-operational-reentry-evidence.mjs"
+        ]
+      ]
+    },
+    {
+      "path": "scripts/test-ravscore-operational-pages-recovery.mjs",
+      "domains": [
+        "controls"
+      ],
+      "controlQualification": true,
+      "commands": [
+        [
+          "controls",
+          "node scripts/test-ravscore-operational-pages-recovery.mjs"
+        ]
+      ]
     },
     {
       "path": "scripts/test-source-child-environment.mjs",
@@ -2937,6 +3131,21 @@
         "eb7bf4f84d0f175351893ea95a274b353a7cac5e87d07d762739e3a2972013d9"
       ]
     },
+    "scripts/check-production-target-freshness.mjs": {
+      "nodeImports": [
+        "node:fs",
+        "node:url"
+      ],
+      "imports": [],
+      "resources": [],
+      "dependencySurfaces": [],
+      "bindingSurfaces": [
+        "5193ca852a68475d140a771402a4fa03aae098c6694625269ec7835683d9e75a",
+        "da2ed7286594cf650b0e5e442469275e6a74f4fb4fd3804d3135cc2fa1704f70",
+        "dceabc6f10829af1279da25956ce49881db063a8be1cc238912b5b8b82475e5f"
+      ],
+      "computedBoundaries": []
+    },
     "scripts/completed-private-runtime-admission.mjs": {
       "nodeImports": [
         "node:assert/strict",
@@ -5433,6 +5642,18 @@
       "bindingSurfaces": [],
       "computedBoundaries": []
     },
+    "scripts/lib/pages-generation-order.mjs": {
+      "nodeImports": [
+        "node:crypto"
+      ],
+      "imports": [
+        "scripts/ravscore-operational-pages-recovery.mjs"
+      ],
+      "resources": [],
+      "dependencySurfaces": [],
+      "bindingSurfaces": [],
+      "computedBoundaries": []
+    },
     "scripts/lib/private-conditions-hourly.mjs": {
       "nodeImports": [
         "node:crypto",
@@ -5838,6 +6059,14 @@
       "bindingSurfaces": [],
       "computedBoundaries": []
     },
+    "scripts/lib/ravscore-known-public-source-repair.mjs": {
+      "nodeImports": [],
+      "imports": [],
+      "resources": [],
+      "dependencySurfaces": [],
+      "bindingSurfaces": [],
+      "computedBoundaries": []
+    },
     "scripts/lib/ravscore-legacy-candidate-g-source.mjs": {
       "nodeImports": [
         "node:crypto"
@@ -5939,6 +6168,51 @@
         "dc60ab6a8c4f4ddb605c2f72f60f41f5eb6aa41357b117c2634439190b67c7fb"
       ],
       "bindingSurfaces": [],
+      "computedBoundaries": []
+    },
+    "scripts/lib/ravscore-public-browser-closure.mjs": {
+      "nodeImports": [
+        "node:crypto",
+        "node:fs/promises",
+        "node:path",
+        "node:url"
+      ],
+      "imports": [
+        "scripts/lib/static-module-closure.mjs"
+      ],
+      "resources": [
+        "app.js",
+        "bootstrap.js",
+        "js/core/best-time-selector.js",
+        "js/core/local-zone-score.js",
+        "js/core/ravscore-candidate-g-state-pipeline.js",
+        "js/core/ravscore-candidate-g.js",
+        "js/core/ravscore-current-supply-memory.js",
+        "js/core/ravscore-integrated-state-pipeline.js",
+        "js/core/ravscore-integrated.js",
+        "js/core/ravscore-profile-switch.js",
+        "js/core/ravscore-public-model.js",
+        "js/core/ravscore-regime-memory.js",
+        "js/core/ravscore-wave-mobilisation-state.js",
+        "js/services/rav-assistant.js",
+        "js/services/trip-evidence-public-adapter.js",
+        "js/ui/admin-active-ravscore.js",
+        "js/ui/admin-dashboard.js",
+        "service-worker.js"
+      ],
+      "dependencySurfaces": [
+        "02e75fabc93377e20f5775bfbcf0deaffc860cbb77ecb2c9dfd59d974cfa3466",
+        "5d3078075d40f53390b3c0634aab34b4bc53f8717beba3cf08388de950a9379e",
+        "88447d58ad4f4824605114bc47787b47e8a47ac738ff7b0f96ab56927fe0b5de",
+        "b87537c13081849390747ea6ae5e864f5201fc7e0cb4ccebfad49dad56e90303",
+        "c6b28182a768bbaba8afeba811b7d047e8437f4be58ddf68a414294f34dfb8ac"
+      ],
+      "bindingSurfaces": [
+        "827e2045a93e5620eb4a1951e4f9510e71be8171d4f535c93f84003a2edea4dc",
+        "8a4f01bd8f396647acb9985368880685203101306a91fa4d40a125e735a49771",
+        "9b3e8695c4e139fabf566cad7ebb96ab518c5bd71f261534c36ac62b86f02c51",
+        "ee99345966e00d9a49cd75dd048585409da8fc8210cc658eeacc7cdc88f182b3"
+      ],
       "computedBoundaries": []
     },
     "scripts/lib/ravscore-recovery-replay.mjs": {
@@ -7600,6 +7874,103 @@
       ],
       "computedBoundaries": []
     },
+    "scripts/protected-operational-reentry-evidence.mjs": {
+      "nodeImports": [
+        "node:child_process",
+        "node:crypto",
+        "node:fs/promises",
+        "node:path",
+        "node:url",
+        "node:util",
+        "node:zlib"
+      ],
+      "imports": [
+        "config.js",
+        "js/core/ravscore-public-profile-contract.js",
+        "scripts/check-production-target-freshness.mjs",
+        "scripts/github-pages-attempt-evidence.mjs",
+        "scripts/integrated-cutover-readiness.mjs",
+        "scripts/lib/ravscore-public-browser-closure.mjs",
+        "scripts/lib/supabase-admin-rest.mjs",
+        "scripts/protected-private-production-runtime.mjs",
+        "scripts/ravscore-operational-activation.mjs",
+        "scripts/ravscore-operational-pages-recovery.mjs",
+        "scripts/verify-ravscore-operational-pages-deployment.mjs"
+      ],
+      "resources": [
+        "scripts/weather-source-gate.mjs",
+        "supabase/INSTALL-RAVRADAR-4.0.56-SECURITY.sql"
+      ],
+      "dependencySurfaces": [
+        "0696e926309dc082b971adb6447e78fd5ca62d7bbaadf030daba98808ce85ad5",
+        "0fe7592069fceaa2a9aab4918fb50d17be7957bb08ab1aa437ff65017059eaf4",
+        "17aeac8244a65c424fa7f49c223be27c622259e944ac80a207c50f3dbe7eaf3c",
+        "1bed87f6fd1859fd7319e519a96b746f14d9e805dbc77012cf1714f952fd3484",
+        "2062713b63e7ebe6dc06d9da9f6ea5088e6c4353c41d7a2fef66fb7da09b69ec",
+        "24afc2082e056ce81a08ec344d17550e945d470f27a6aa46cac02832f7d4095b",
+        "2b4e36e87ac7ac4663a418e1f0614cce39bdd7769c9db2fc1f420ddf8aaae6dc",
+        "2f023ec242829c65050634dbab705a9eddab5fc4e95766c3bb3106de1e2bb05a",
+        "4e3dff43ad7b001880df50166894e533ecd25dfed43c0be8b5cc055faf6d74ad",
+        "50e18890cfeb4043062db22aa0db90826291539b3758e8d7a8d5b41f0f29acb4",
+        "645d3b14ba9513fcad205c90cf5f3c7d518b138a7bcfdbeb0bf5161f3c48ec34",
+        "64f785bf4ff83e41725b446b0e311429e7a9c4cbe16bd70b9d5cf1a8d707998a",
+        "776909537c1f991c8ff0b6084c30375b0ea8b783b594788e1c5e237341519f88",
+        "78c6afb32d907959d8c308cda1cbf876d5f19e3a854008d77952af9c0110f66d",
+        "7eac2b35e432211d6aae42756810d88420542f2e42d7d3fde555926c7ae28c5e",
+        "802baa4e803994f8706043d8e31ac4364dd52615b80e73f5b82f87ddbdacea1c",
+        "83b6f4de68cdc6a2a255cfe1cb5bbcb911dc38f0f2e91a2d4096bc133b1a55be",
+        "9c28f11a46cec5c9967cdb88911dbbe561e2d97138b0af3ed1325e335b013271",
+        "9cc751d7939a69e5e8e95e816bbef7be6f0f4f0f887db46c717ff969ab97c5a0",
+        "9d15aef7c3ab4e4f3e54ad8c60d34e7d1dc90f3d8441c3a7adbeb9fe16aa95e4",
+        "a20a642fd58196c933c21e64995845e8b95b078bfcb56ec07255fd731976b895",
+        "ab87d28c63e57f34114c38cb50697b200d50e1c28e8a153d4a096784388dad00",
+        "b096bd1315093dc9a567b0ce9aba2840780b35b8444b648387e56e4eee11e9f2",
+        "b27a57978b2b829b517d1f0c8fbcf1748b54488415b5cd6ffa2ec32b3f611a58",
+        "b5faa04ef37c46387cf78123fb11ccf40f97d5ef26293a732c2efbb1fd35a5e2",
+        "bc1dc4b4326140a14c26cf14cd3bc425d5aa467eed3cc97707a198aa495cabca",
+        "bd24d3a9e1e42f877c0a609979de526c87e234eac82c83574613664ca564a036",
+        "c0607cd709004b0b7a68532c465d6c2fb10ea9af56dff8172f5bb3e79b4c057e",
+        "c484c15242c156599f9b00a86863cc17e6f5deceff76095928c5beec3b0cbfd8",
+        "ce4704e98e522827bb0c9dce02ddcf8a953ccae68728c7b34cb4b6657c8b1394",
+        "d6c9a3824b615eacc6d30f9e120c898587f8ea02d21db3090290812d99a81d09",
+        "dfaf1636bb972f12f1e6e41b776ea6b386fefa61ed1b15998327eeafb9190d1a",
+        "e1246340b1244bea956632e44903dc08712b49030c7de7d5780286c78d285dd8",
+        "f3dafdb40459d68e05e60a2f852a71cd8a3a3571cecd9ce5e676f3dccac0bee4",
+        "f89aece2652b4533cb2fb002b80ea9768f553bc69f01e81bcf7684ad6869fb0f",
+        "f8f2d9493ace552b92dba4b58881adc2bdc0d65af7b05a92cb2d92fe35357046",
+        "fab85d1602922d16d99a1bb595eeff133076c0ffe2a11e9b7bf09c40381c3139",
+        "fde2edd7d23a4fbaad4d6e3c17e7a75c34bbf745346f52912dfa965ab2ad42b5"
+      ],
+      "bindingSurfaces": [
+        "0a2de6d689857c3961d43c0b04066f478c72a3fb1f4f0fb1b7fde0bda9d255c8",
+        "0e2bfe4a52b860d64d14538a1e8df0d1aad7914ffc8d280555e1e5128cd40769",
+        "1fc1557af14b684fc4fcf347399152ffc0cfefe1bf39103fa982015ea48c93dd",
+        "223e4260d3a12e1b042ef30111e429fcc2f3ff80f8fc2140de8342a2eaff9d26",
+        "3e8302f0e5a2b513694e9dbf65a83040ebe15d42785948d5bdef0263e5d83b94",
+        "489f80adc36c85093957691001cfe0f9c12501ff0f347f34561395ff8380af34",
+        "5c9843fe191765daf033c13099e33b8e90ec851f5c5e39b18d6b5f75a3c1d7c6",
+        "6b4d788d82d73ef238f0bd33b142915bfc6ebbee57b868f8f6ce6fc83d0fc60c",
+        "75a37d046e619caf00d821eb18be920e6c24008dc2ee936ce0c7339761ad4479",
+        "85e9a7dc8025c8b790b664293fbcfc75d269e97135c64ff438cba8dd8c8696e6",
+        "896a8b0d5c54a382a0f2715093e2b7e5117285f0942f8f7d7eb8f3c9a22b6dc8",
+        "899522378f174d5e43d39cc6ebcfac23b41708bf08df23646d8b781a1e50192f",
+        "8a37e8eb290e7c187b278bc88aa94a7fca98f850980b252f2b170ee5159a28e0",
+        "8a4f01bd8f396647acb9985368880685203101306a91fa4d40a125e735a49771",
+        "8dac072230f925b661b62d2d7aa9601bf0b5ceeca253dab64173434666eb9c80",
+        "950bcaf93834dca8a255731bf09afcf803d98635876b8e445dfd3dd9f9978826",
+        "97d8c45f5060114dde350f943151a42907dc2d0592da787eeee42767813f0132",
+        "9b3e8695c4e139fabf566cad7ebb96ab518c5bd71f261534c36ac62b86f02c51",
+        "a26f5dfd934c906ad77c0df5c66e3fd29fc206341fdec1c2440a361caafcbb1d",
+        "aabfb8fd9cccacad272450d4031c3f47f4a7d0d40132d36d7e07b95f756ddef8",
+        "c12f0e021ec7feb01bdd7f75e2647bfbbbca7eef36f90b561606850aeee1c0e4",
+        "c4935c9a0e1acc9c36bf44f857961276c25d742be6ed5a6bc7680a243cbaa1ac",
+        "d0655e39a87d34cca51547650a6fc62f37a1dadd3fae02ca0eaa3232888e1e2a",
+        "df7633a757106f8dcb8bcab6c5186b7e21bc4560de33967785aa820b55e2aeb6",
+        "f853a0bc4b36ebaeae1e551071e5aa453a7871bca1dff7c670e22fb0b3e06270",
+        "fb545972011696e569b8a8b1cac922094805ff8f5e1487fe7a8ac5518a1e7ddf"
+      ],
+      "computedBoundaries": []
+    },
     "scripts/protected-private-production-runtime.mjs": {
       "nodeImports": [
         "node:buffer",
@@ -7843,6 +8214,115 @@
       ],
       "computedBoundaries": []
     },
+    "scripts/ravscore-operational-activation.mjs": {
+      "nodeImports": [
+        "node:crypto",
+        "node:fs/promises",
+        "node:path",
+        "node:url"
+      ],
+      "imports": [
+        "config.js",
+        "js/core/ravscore-model-contract.js",
+        "js/core/ravscore-public-model.js",
+        "scripts/integrated-cutover-readiness.mjs",
+        "scripts/lib/ravscore-candidate-g-rollback-runtime.mjs",
+        "scripts/lib/ravscore-known-public-source-repair.mjs",
+        "scripts/lib/ravscore-legacy-candidate-g-source.mjs",
+        "scripts/lib/ravscore-profile-transition.mjs",
+        "scripts/lib/supabase-admin-rest.mjs",
+        "scripts/prepare-candidate-g-operational-rollback.mjs",
+        "scripts/rollback-assets/ravscore-model-contract.js",
+        "scripts/verify-legacy-candidate-g-source.mjs"
+      ],
+      "resources": [
+        "data/admin/ravscore-profile-selection.json"
+      ],
+      "dependencySurfaces": [
+        "02c3b8b85703e8c929c86d6069968b3f480e19b3bffe7550592cf7839d3f0c05",
+        "0364fd9ae1ce0a3c8c539282c95cb71f69e5e07ec93a3c57c63119d110fbc2da",
+        "048ba3124a333b6bea6c7c6a1a707f0cdf8c43d4d4e383093ecf438eb003ba10",
+        "117c7ed7247a00d7e31cf70c6297f4dada6a25da2057b9ead197ae4f4ac5d06f",
+        "12b369c957291cfca3db5f8ad527076dfb7ea90f87bdb427862ebbcabe3b4c78",
+        "17a7f834b8064ccf3d5563bbab46b3c66e692f8191b0973586f42ef739a5bbf0",
+        "2191bfc143375e7e509e5d1b4d73b97027c3aa7c98cbdbdefb687f9ba70f3f87",
+        "27d45a3e6b706db01d2bd8a01cb0f088810a8b1d9f93cda986c2cc3949702aca",
+        "2810debf709ca84c6743240aac6e947e3f31a239d07e7c5e4c55ed936f5b9acd",
+        "2db68df804ab06c7f24c666aab89af85d60fe27eeaba172179063e2980067468",
+        "2e31005d947d633dc83ad39081db7f9de31d8a7e089e28ae498ed26ab904d053",
+        "307871b84b11894ffc8939067c4138a28cbc56ebc4297feaad7c7be10ebbb461",
+        "319f26d65976275625f14fc39d2a074d7a955e98c40d165c678ff61687c97c91",
+        "360a5d4c48d680ff9d1e20e88839f766a2afd103708d752eeeb4ce3d84558806",
+        "372bb65afe9a3be8a3ef046bd2b27d252cc1d134b8f3c6c01b081c3f8cff4f8b",
+        "3a8ea1707d8093dd2d113ad909489ca89b11acafdd7087eb7550e22b06171d20",
+        "3ad12d61a7f06d8d2e26ecededa861eac8916e492ecb484f430357eeba497b18",
+        "3add0dcd22f1a82c8db33fefd5b1f7ce74c7c13c573f7805d00bf82ec20120f3",
+        "3c9a118c3a9c0e7ff7e011d9fef7d0402db48a690ad461b68e5fcc0408b3535a",
+        "41111d99c8c7a1fcab1cc708ae9344443b2ccb1e85281410cb1ef577b259b9e5",
+        "417f06e746cf208feafd1b8eaabffed472f7f16600c67f51b2c0a04e6abc8ebd",
+        "43eeb9786684b5e753e3ac0ee2f4378724adbcf7921797c8ed91bda3c852e701",
+        "44630447725c4ddbf081ae7026d30b9d5f9f38f638e5935286bdefe01a095cd4",
+        "4907233e93188723dbee2b46f9a7dc30675de02a79732f02e4c05e64c40414d1",
+        "49b0bc664185fabbd6c578ed2f61fdf61de7e185b8950f2dee1adc8245cd6cda",
+        "4a60990d78685408a0c0b1841973472cd26e2309ac3f9ef90652d614db9b28d3",
+        "4c2dd61cde6c9c31d091bfae7f593793777f28c3ed673ecf1e3a74a85b7bb0bd",
+        "5932988b17792990363a3f21c37b74513a4d3bfed668654eba7c603f36491d40",
+        "5b2ee93988dc484a75fc14b9acc12d2a7854d0a57f20ee281324595c2599c115",
+        "5c608f2cae3e0f4dcde703d8564200751ab0696ea14c863b73bd389595b6e274",
+        "5e6317838db74a3348332b4d41095ae6c5a7562f733b0107685828c846b78c53",
+        "609260e264f260b94371dc936a405c1a3d726dffae9e7b3c8edc596303ca095e",
+        "63b7d8d7cf36d4d50d259555e20be9b98c7ee4af52bb1f3a47e1c2164c002657",
+        "6420ef63bc556de58b14462ea3df8052d97f3d332365e79010511f2bb88b149e",
+        "7049c894403063bd8c571151ab1f4f00e511016129673bceb4ba4e690b38bfe7",
+        "747a35d1447b435e6e14d961c0bf934b3faa77753bf8ae31184b7d9fa9c9faa8",
+        "752e3fcc5fd6ae59a2bb9fdd0c488a95d76e15d33c918115fa49a47c1544ef6f",
+        "79833961845c5b725e64f11e673f345fd8746f1691bc3d5f67999dbc5d8c776b",
+        "7cac5eea8b955dc1625cc74a18b6d70ddfdf0dae9741e65f74ae9a142d17a1be",
+        "7d98c491e7d7a473e35055675f09f7d2de06c18ccf00aea48dd718438e63b8c9",
+        "7fe71448f8a92f89d7e22724706844ab9b0848c83afae5a3de792fde4cc2e872",
+        "802baa4e803994f8706043d8e31ac4364dd52615b80e73f5b82f87ddbdacea1c",
+        "84a0ba6331b4a35f5f07131f42e51cd35a6c3c7163051e07ff471586897cfb98",
+        "84c1924a56fc41e573587fba3263e91cf529f956801a5f690198302655a9be44",
+        "8d3c17787f18b48565017fa063496984f1e2f3ba75a83566affa12686bd1eeed",
+        "8d8209afb57719119d228d0305f51bc44867d8ed9dfe292619af2b5a4f36eaee",
+        "a5168db1ec7d883a56c47c441454807cf2fa6c7b2d373943e42ea54254199579",
+        "a54f90f1738b834431ad90fa7c630791945942db30fda522ce98f597dd50dd57",
+        "a8dbf1f91f21636abd4a2cd5d254d79e5f62c5ff2544d66c70fa91951a3a9270",
+        "add1bb26bc34be97090ed124111f44829db574e6a6319cb7927c08835a4e21b1",
+        "b01a95872de653dbafa961343e7167ad42f284e1c733d7daab7bda7b0f44422c",
+        "b1694941327533e4d885d6351faa69cc829feeb16c8d0ca8bbff94c277de465a",
+        "b4865e3cde61c5be0b729d5272ad13e58f66756a6d92bd9c59f4ced51dd401c2",
+        "b634274edcfb0ed86b9b1e728640c5a51b5e47479a994a593f26ef595d132a0f",
+        "b6ae17143762ce4d808d64ec247b31b72cd84f73e6d25781291c418635572065",
+        "b6df16e1de6f2ff25307ebbf2dfaf4709a4101bdc7cc0d3e4a8f5bd60ad020e9",
+        "b7a0ed8c80159c71bc1eeeb0fbdc0e8c1164cea53b4b4c270d71f5718f59e1df",
+        "bab4769bd11518e184ea018d677808acabe6e2e86092f3489bb3fba2b419f89c",
+        "bb72d58ea9cde763679388bf7091af785f3f7a869ce75a620653f25893c0566a",
+        "bf21f8b14c2c34fd77a8ab03dcdb0d83434db13aa646ec1cc09c0c2e1024c244",
+        "d396b1d77d7aae36a2432641cad167c40e3fde96a1da0e12eda725ae87264fcd",
+        "d4d9a58bd43dbc071a29c4f27ec311d1ef4dd7b2b04ba37054c45daed01f1f5c",
+        "dac19d50b9cd952e1e40c93c173c8a4af118275551ea41be73030c169d6200d4",
+        "dcd5e74d30c5750950cdf2e8f6fad23b1664f7f581c465a1c4d3547c35e56e36",
+        "e67146e4c0df6ec6acd896342c4bac300d23fd70ade93cddf34b6196f0322a20",
+        "e7a8e3ce86ddc540bf62217cfa52027ed9adb1a235b89731a4218b4889cbefad",
+        "ea1c34486f96eb3601ca1c990de02388dc7aaee7d28fd672e094ff197b6a895c",
+        "ef65837c6961cbc7a0d1e34222660d98cfea7579e1f54f735fd9d75883c07cc5",
+        "f5f65ca13e5b394c1e5777e406bd951f914f6691011291fd6a3dda638a43c637",
+        "f903201f32f37f4934b4d241bee2198e0c65d138b86d5bcf6fe596807953aa10",
+        "fc8f6d5ba6a4c45d654b960d444e56acf7a40e6aa8064a50f0794a1862ca5be1"
+      ],
+      "bindingSurfaces": [
+        "420ae53fd7399ef38379541ab0dd0bf65bb1f9ce803faebd17fb23f043bb6830",
+        "5cf4913cca83bf8882d647f7c8eedac2b92106e07ae2426689194aed72753b17",
+        "8a4f01bd8f396647acb9985368880685203101306a91fa4d40a125e735a49771",
+        "9b3e8695c4e139fabf566cad7ebb96ab518c5bd71f261534c36ac62b86f02c51",
+        "d6b48e2fb6087aec26254f8bd3a6c8dc86405fb8489df0d4e9f99f94b7b3cc69",
+        "edc1d8d498ce60d89bb35ad89f13b547323e1a88079cd4de68abb5a153147d00",
+        "f8df898514fd00d0d608642920ec40459e473915f3019be392d888f6dd27bb42",
+        "fa9e1ae2094e44d724c08272a48ef40fb970b55e4e50f66f9a10d4e1ed2aa05b"
+      ],
+      "computedBoundaries": []
+    },
     "scripts/ravscore-operational-pages-recovery.mjs": {
       "nodeImports": [
         "node:crypto",
@@ -7851,7 +8331,9 @@
         "node:url"
       ],
       "imports": [
-        "js/core/ravscore-public-profile-contract.js"
+        "js/core/ravscore-public-profile-contract.js",
+        "scripts/protected-operational-reentry-evidence.mjs",
+        "scripts/protected-private-production-runtime.mjs"
       ],
       "resources": [
         "js/core/ravscore-public-profile-contract.js"
@@ -10085,6 +10567,40 @@
       ],
       "computedBoundaries": []
     },
+    "scripts/test-pages-generation-and-reentry.mjs": {
+      "nodeImports": [
+        "node:assert/strict",
+        "node:crypto",
+        "node:fs/promises"
+      ],
+      "imports": [
+        "scripts/github-pages-attempt-evidence.mjs",
+        "scripts/lib/pages-generation-order.mjs",
+        "scripts/ravscore-operational-pages-recovery.mjs"
+      ],
+      "resources": [
+        ".github/workflows/deploy-code-only-repair.yml",
+        ".github/workflows/resume-operational-checkpoint.yml",
+        ".github/workflows/reusable-operational-reentry.yml",
+        ".github/workflows/reusable-pages-deploy.yml",
+        ".github/workflows/reusable-weather-build.yml",
+        ".github/workflows/run-current-weather-once.yml",
+        ".github/workflows/update-and-deploy.yml"
+      ],
+      "dependencySurfaces": [
+        "045b658d9d46919103958a37c37da4f6851e1a970defe618b3b6809e27938e81",
+        "3acaf9f95805445637ab7b086f7219936236bf8cc8fcfae699fd7d0f9b69335f",
+        "52c1b0f240c9a63f0d2d3efa20f7eede09af7d495457343e6fa849090c2460f0",
+        "c1ae481f0d3de45c165f110c9900205faf6ac5ec5360d404d3e0ec3bc3d66db9",
+        "de2aa837111c4985f57833b73fd987d4c44e9530c6ef327eb372f2cc57e98dfe"
+      ],
+      "bindingSurfaces": [
+        "71ba3fe4ef5f012f001ecf5c68be5b46e3965fb72b74a0381965df7e44d31694",
+        "8a4f01bd8f396647acb9985368880685203101306a91fa4d40a125e735a49771",
+        "9b3e8695c4e139fabf566cad7ebb96ab518c5bd71f261534c36ac62b86f02c51"
+      ],
+      "computedBoundaries": []
+    },
     "scripts/test-private-trip-study-categorical-controller.mjs": {
       "nodeImports": [
         "node:assert/strict",
@@ -10196,6 +10712,92 @@
       ],
       "computedBoundaries": []
     },
+    "scripts/test-protected-operational-reentry-evidence.mjs": {
+      "nodeImports": [
+        "node:assert/strict",
+        "node:crypto",
+        "node:fs/promises",
+        "node:os",
+        "node:path",
+        "node:test",
+        "node:url"
+      ],
+      "imports": [
+        "js/core/ravscore-model-contract.js",
+        "scripts/check-production-target-freshness.mjs",
+        "scripts/integrated-cutover-readiness.mjs",
+        "scripts/lib/ravscore-candidate-g-rollback-runtime.mjs",
+        "scripts/lib/ravscore-public-browser-closure.mjs",
+        "scripts/protected-operational-reentry-evidence.mjs",
+        "scripts/ravscore-operational-activation.mjs",
+        "scripts/ravscore-operational-pages-recovery.mjs"
+      ],
+      "resources": [
+        "data/admin/ravscore-profile-selection.json",
+        "js/core/ravscore-model-bundle.generated.js",
+        "js/core/ravscore-model-contract.js"
+      ],
+      "dependencySurfaces": [
+        "0c17646c0fe7ba6affd3305cec5946cf1f1e48ea73460e5a073efb0738fd8c58",
+        "2a1da90153b9bcfb684d5920e3340a0fda05574eed35efb595fd272bff3c1734",
+        "2c6126de39bb34576e0ac73c2981747089d103315482148e6d33b2aa0cc92614",
+        "2fd09501a6c9c878ce2bfab56956544475f3ca0f1548162d59d69eb012c52d3e",
+        "3165fd145fbba579e96b2c32a22b2ce8f5f72fa87d13586c5362e3ecaf819375",
+        "35565fca798df7eb859fdbb6962939eda797b403d4e1df0b77355c5e9636fcc3",
+        "3eed25a15ec62af6947cb4c9c999ef854a8b74e8d68ec55c966c91a3cb60e022",
+        "40cbf339af75b7b05cb2f1f994e79f880c8f78f2e2a4cd696514c7998d6a76fb",
+        "4268b1b06b2d64892229a0fb43bea1663a6f0d235d9aa19a05302c5ad2811473",
+        "42ef6608f7ba7a636e0ddbc708ae1a40f27b983a74af47d56ea55318f1eca68e",
+        "4857818b1be312f0663808aa34030d7e9ce875b9204d5a50588f9e445b540c75",
+        "59632a8b673b5049378e3c7d7ab02875994b67bdb4829f9837fa8474fa8a8e3d",
+        "6cfc65b8fa6e322325565f2e19c99686d3a53d5651b60a7a73a87241f8d77b8b",
+        "79da328af6cc57805ea7cf6a4baace3bb73678fe745d7b3abf0b369477da2ec2",
+        "82ed5e343614cf529ef3d1debbf9cb175d9bb523122f29b0e20c5e2c60d50de5",
+        "83514d851c8ed9e86bc715b12201a7bfa1f3de342b1b6551f9326941f0852289",
+        "8a6af496b6131a87245bc484845269609e543455f558e9872a20881851d5eabc",
+        "8dc3c1504c1053ed450c3c01b29c5b826d0b3634893b4b02224fc7784412cb07",
+        "91d84e0f1782e3553779238e005c522ef566d02ea192a66cc30c5f8fd5bdbb5f",
+        "a88fae1355860f7dabac5dbcd9886ae4ac13cd9a80a392f382dd6c65c0139560",
+        "b11266fde0fedf1655909daaec9501783e6540222f86669b3c47e0829b4c9247",
+        "d69ed5991fd8dd2b024012c29e8fb9e7d51bc1e6859fe36c2e9f3332e78363c4"
+      ],
+      "bindingSurfaces": [
+        "001b66092df80e6a79242c7c762353e674f8db82cfbb2a43b7939cca541e0462",
+        "07d4aaec0785112a456ea12db02fd9f1fb75811d7a6143862be09140fa0982ad",
+        "0b5e60c943fd9c0eaddda05797e8e88b0759b052fbb16f20ac014a547eb23f51",
+        "0ea2fa55f42515782698c0b80c5d98882536d2b60af56d549b889404a034f419",
+        "0f1e60fe305ac6eee41c7cd17df23dac46942e103d777102e9003cc95f73fa4a",
+        "1578cf8126cad7a007f705e028d6831bcc9685cbf0029faf51d832d982146497",
+        "1cf4a0611e36957db0a52734ba5bcf2716cc780000b8698ff8e28e67de94b6db",
+        "22005aa5a6d43171ef1fe020a79d8b1312f3fe8c91795d62403b1893c6189de1",
+        "24f3a00b3ea2363b0dda61575909a3898f4b90ce64e28570314247963846947f",
+        "33a114b0ebfb64bad950c4414c4c4dfadf469d95a29ebff3a599f858043a6c03",
+        "3569cedea34e9b96425ab51dccf4fccf519ecd16e9d5d5cc8210bd7f6a55408e",
+        "37711b3caa932834815b3e9bb4182dd2da159e7fcef8f8f132a2d6d1039750cf",
+        "37bbb0a5a52be39bec517372f924c809a3b010b467ddac5519f8404476040a3c",
+        "471370a872c9e907eb8ec8b283d2448d783391931ea3f456155b97ef84d29907",
+        "49cacc56ecd7ba1538d9296c354c4d237a649ee182364216617012a3674462e4",
+        "5656fb9ea7839f910cfefd4aaa85cde2d949b37c2f3fdc9586030edcecea086c",
+        "582850d3256dce19d6da7a26f3232ef2c1c30ed024fdb79b03de74c652267e6c",
+        "5c7a404bce07a369fc19d08dd43780cc9ee5ed338c212f52ed2f48240e47515b",
+        "6636db378ba6c2a80c443f2542583d75d06efd25b8bf4b8743a629564c0203c8",
+        "85396322e7470bad73d36d4576f9bfee9d459222084b0607be1281dd98c673d5",
+        "8859129c4f4cc917f07968f9416e7e6209c064da7c216bd96e172295c82fbc1b",
+        "8a4f01bd8f396647acb9985368880685203101306a91fa4d40a125e735a49771",
+        "931610c97be653603c4715afe6696a91fbac575b5b1d2ab53cae931ec63b2186",
+        "95b1af32be5f81dfd9fe05bef7d9b81a5195ab62af6fe9a67d1bb102074ee8b4",
+        "9b3e8695c4e139fabf566cad7ebb96ab518c5bd71f261534c36ac62b86f02c51",
+        "a217d9664860f7e095099a6e249f3b060fa8732125734c89ffa31c866c1eff8b",
+        "a54c2752261673a0c3e703f3de66c3e70037d5faf157110262273f12182e5fce",
+        "d2f54c43d5648d71ab0b3cd06e88340ae1b7f62cfc25a149158f0dd438789501",
+        "da0ba7edae228889164304f75870ade534f38f36fed5be2b55e7113e9542de0c",
+        "df48455343bfa52f261f3720f64f13884950aa08e9d5c4f564f72508c2f36446",
+        "e72370894e31538ae995eb71eb4bf2da0d0da3e08200db603f6631f007b07e46",
+        "f5b489942d59a42de8029b6d1ae7e116c67ab14dec3f592385b7e52aca3e1826",
+        "ff88c7ed261b3ef070d277636b0f6c18d80bd7e3fe6566f74239552703dd3683"
+      ],
+      "computedBoundaries": []
+    },
     "scripts/test-ravscore-candidate-g-operational-rollback.mjs": {
       "nodeImports": [
         "node:assert/strict",
@@ -10212,6 +10814,41 @@
       "resources": [],
       "dependencySurfaces": [],
       "bindingSurfaces": [],
+      "computedBoundaries": []
+    },
+    "scripts/test-ravscore-operational-pages-recovery.mjs": {
+      "nodeImports": [
+        "node:assert/strict",
+        "node:child_process",
+        "node:fs",
+        "node:os",
+        "node:path"
+      ],
+      "imports": [
+        "js/core/ravscore-model-contract.js",
+        "scripts/ravscore-operational-pages-recovery.mjs"
+      ],
+      "resources": [],
+      "dependencySurfaces": [
+        "06e6624b6c97a4ad8c0aad80ad8d171d40a2b02b7677c29cd58db4b0f73e4110",
+        "2648e23569ed8f4319cbc7ff4d00bb15a66243bcbf4bc3cc8beff81b6ed6df47",
+        "388b24b34ea73d7f1347195a67a441e2440a541387bbba4841a2afc9797b321c",
+        "bbb4501aaf47a76db58f342d2f43445d89d88607a7ebde0a44b2c4a6c1ebbfeb"
+      ],
+      "bindingSurfaces": [
+        "213d54171eba3806d9708f574e4c1598d470dded9bda3909fdc50bc7de4ee7a9",
+        "7779a6a9625e98f2905c5e45541f5711f8a112cce4aa01da5f78a1d6c7d3de9c",
+        "8b4346351e0201552e185be7c33d22ed2722b5839477cc0d1efe9bcc22fb9c07",
+        "8fe97eb253210d08bd50165e641e0c1bfa232ee0998c2162c98a2b30521fdd3e",
+        "9dd69488a5f83d39b3aa1afc4845a37430a53bc5546ccf3679b2f0f2b3d4f61e",
+        "a41e961a9eb223fb18904aba7f35e6b144bc585c7283e9bbcc18c3f96c8e48a5",
+        "ab0d8fbe8e1a2edfc6f2cb86b2890853ceb508e48f6e33415f2f98d2928df948",
+        "b6d9784e2861e5de634d1cd9a81572144eba43e2b9342cc30cbad14bebac55da",
+        "ca6d33cc6e28f5f57c6e4ed5b16aa66364f809c0f52ae33d7e5d72f83e0a146b",
+        "cbb4f817b4fafe588af9e5bf80b4af46712722df9f12a2e5e3c456f8269dd127",
+        "dfce194693ea4f1498cf8d0e631793ac92a44c5b97f44718ff8f739c7722d168",
+        "f96d7e91eaa27ca676a67bbaf38f94c0afa3ee4a3472786c1af121643fdaa52c"
+      ],
       "computedBoundaries": []
     },
     "scripts/test-security-hardening-4.0.284.mjs": {
@@ -10421,6 +11058,7 @@
         "scripts/lib/source-impact-control-imports.mjs"
       ],
       "resources": [
+        "cloudflare/trip-gateway/trip-aggregate-job.js",
         "js/ui/admin-private-trip-study.js",
         "scripts/lib/source-impact-control-imports.mjs",
         "scripts/lib/source-impact-domain-inputs-594.json",
@@ -10438,43 +11076,70 @@
       ],
       "dependencySurfaces": [
         "026eb8c82485db70ce6e81b4bd65b71ff46f0470ad36d9b1a29048d67dba026f",
+        "0360bda258ae3fa79ae45fa37605c50c8533d6fe627755761bd1979a60ccffb1",
         "07493a50fbcb91ae6046b46a21769d5970105583b8cd5b923e686cd2ff1f0f0f",
+        "077c65744e95a6447cceb4c52635024299d8cb520cd324bcc8154e6462ebeaf3",
         "07d174993162e2bd5eeb0118dfb33ef900481a4cb0043b6dc63ee7cd60a6b73f",
         "0caad1f7e67938e913167992956658262853714b6f1e98bcfd30d3f3d8244012",
         "0d0ac4d1a5ea0b7304ad32678984b36f89fb572f4910579cdd0acf7385649575",
         "11b027534122a588ec5d88dc7b55a2d759ccc90423d312c8a5611e5d05cbef2a",
+        "12274caf8b0bbcc145029b6bc6c9b2a7a0e4e6c850a5ffd5def6b68c4e08f6fd",
         "13a362acc96a8c439eff59072406e7c5af7c74c02fcfc7f1c4b4fe132c110da1",
+        "14c1206b091e698b7c8d1505539a3622404a7700e543c1e0e3c9414ff229dc75",
+        "19a773df2745179bd4413496383d3bdd0d78577145118b661093f91051e0ac6c",
         "1b21321d34962953a204953aca9c0a72cc7e6b3ee47c455f0cd25392140d647d",
+        "1bebe2a03c2aa2e9750b3efe926ea8945762e725512c86f0cc0432ee43f5c8d0",
         "1c9589c91c5ddfdb2f326772e3265419daa1fae83b098fb0308f9b117b9f672b",
         "1ef012a64b802838feed2407ccffb4d74e6d1e9b49536c3e85152ccb1bef88a7",
+        "23d5a8e1bfe60d575e8a936ed1df51cd3034c167fbc566dfacae4c467b71e719",
+        "24a3a7ad030dafe1fea84a915f30f843c14d781290965774fa7381d22a45329d",
+        "27de600c09a30d014302a34232507016ec7647e9f8036a9c7f66999ff3b2dc8e",
+        "27e7128285f24fd45620c93eb55b5a292ae5f5b0847a0b39b1771301b54f8fc2",
         "2e40d2562fb139bfa3bbcae56495a95d942210aaced5a1cf76d7481a6974d951",
+        "302339b1462531e4a29db670fdc218f35e9cead95273babdde29d78d50116234",
         "35d71dd6b969a9ae92ea8ed45a311cb4814b9797791de679201c13e94e50fd6f",
+        "3cc271e95a90431b1477f6e475bbe470411db170370ff4189e84d00bbdb0e2e0",
         "4060531a39749005483a4135f01f9e4a0add0df3c0b85f992dd9bfc649ba52b1",
         "45b3f4e0393f78930705f29b0f84031bca104f879fe1bbc7c0a2fba142453419",
         "49196ec2c98041b3535e6a0b926c163ff4bea7bb38293dbabbfd91de464b00d7",
         "4d9e5bda7d581d506d3308629855b72ed24791bd8e055d0e1aef6581ffe376cc",
+        "4e29c0aae433344022ab5b32fad9a1c0396fc4e8986365bda0aa1fee11720821",
         "4f57a2c94733abd7fdadeb46a0cecbf34fc1357b61a6e7d342f688f77b40e66e",
         "531ff68ce7599c283acec5be333a5621ac9b65a475314104dfdb129c84ea5cc1",
+        "532fbc929a47705729048c4ed631132a4a8fd069ff61dd40b6e79309fc217540",
         "5ff0d30896c63f66b949286c703d227567c2ffd8fb8bbd6cc1d063315e63d587",
         "624176c45167ae87eea67674c99e037cfdc9736971b98acbd683de83a05efb95",
         "62c54d17218deac91e26c00495c8a24e039de4813f9f56c57c2fb6724c072dcb",
         "652706b28b3e31ed9f552a26669b3d0009aec9f9f9ba9301d07790e537c16b70",
         "6b6071039136761e7fff5319f445b39108705104bf1146d5b3d2d7d3c712ee8c",
+        "7445518450d137258229bde0ec27da9d225b12cd56bf1b99573d50fb3666d68d",
         "7b1691496001218c7138b72684cedd29fd9b3c745c0155da1134eeeb98f22a4f",
         "7d47a99628fbd1d576e195bf07fc909addc70aadc7cf413bd05bdb0dffc12f3b",
         "7f64b39a584257d98d753969b146e047668ff809f97f22ec941ccc2e46d21f84",
         "82d913391933abd7072733607cf3612d7ddf6f655d13621a25fd64ab2d1e66fc",
+        "86c56a6243716551215913bffd7d31069f060a14f85e5392862c2ea4cdef1b9b",
         "8ab7fdb515c705a64d62deccaa8b024855849a226ee81453688e78bb1f4785e0",
+        "8ba538fc5f6fbc817db0bd8184afbff8999435c327bb2d51e4927ae4bb400f27",
+        "901430e8c99df1306fbfd5a3cc0c9c4ff3c91757e6fec293cdfbfb67f0d8a957",
+        "902a50f0f2e04fe5edbfe61ea0923961bf94d6e7a1b57742e63d1b6eceda1e07",
+        "968ac8f693f20d228a35173932dd2bdaba30136c23616829ceb9236c550254ba",
+        "9f679da498b90ec9670e75a5a6f25896a2d5777308036075e86ab46411777b2c",
         "adb0d08ce0957a24c5662f153453072b714e2d2e096a4e042ada73d6a40ac6fb",
         "b4c74790d7c608a85184df4f7b1a4f5f70dd010a7e8de7c468beb6eff87aa2e1",
         "b59e92e32ad1390998468a84d04e02b159deb4c3a2bc473f60dc0f46469180af",
+        "b7b8a2bf1f6831d3b4f33cd3ff81d8069cc68a57ab892e46089087651e29947e",
+        "c32114fd838f92037bb553f7bd8d7a0d1a1ce02dcb86d126b6d262d43af266cd",
+        "c4699efea7e16d25b9ad08384a77e146c31ec1d7658e202b9ebc110a614660a9",
         "c4b671cda62a5edf6684534fadd896d6a6b85cb6368ae2d616840ebe4ec8d2c8",
         "d0a13af0453419a92b53dda5f050a21c2df56759c6b990eb3c150f1f4f71cf5f",
         "d3cd32641c7acb0c0032f0574d5c7152c1e83df3fb9c8013ee07894422775134",
+        "d5c726a8e499a8e8f22693b20c15e1eac12cd4bd0e7e25305be819c2691383e4",
         "d6115fefdbbf4a037df354052573c0371b8d9483011eff147d87ca8fea252764",
         "d6a6403b4ebb9f87a66c21b22348934c363f3b06f52e4ce41ebe0e0c24b447a5",
         "e09c2f79f2565f3362f2e2d9c35d1775e9e352d5b84f85b442d5c54dd537768d",
         "e284572b9773e865b744c6debb70b94ba2f6109ad88f76ad9078ac1a816c9527",
+        "e4e1ec07b4d7e6a1011a45003ca900e2043bc5b4244c85290d00de06d1233fda",
+        "eb3be44e7c4c0cd548d3d14f17af69f1569e250f656b6f11047a0ff0efe8663b",
         "eddd8d170ba3cf15f8a5da50fd0b207f711f74cb36ae95a5a612da46896076aa",
         "f7b05eca8f5a0a0b2c9cf6a00838d697f8c7db705f55dfe0dae607a1a55b0fd5"
       ],
@@ -11879,6 +12544,112 @@
       ],
       "computedBoundaries": []
     },
+    "scripts/verify-legacy-candidate-g-source.mjs": {
+      "nodeImports": [
+        "node:child_process",
+        "node:crypto",
+        "node:fs/promises",
+        "node:path",
+        "node:url",
+        "node:util"
+      ],
+      "imports": [
+        "scripts/lib/ravscore-legacy-candidate-g-source.mjs"
+      ],
+      "resources": [
+        "app.js",
+        "index.html",
+        "js/core/ravscore-candidate-g-state-pipeline.js",
+        "js/core/ravscore-candidate-g.js",
+        "learn.html",
+        "service-worker.js"
+      ],
+      "dependencySurfaces": [
+        "091eddf66a332fabb2a70bfbdf297981de02d1e70fd52839a9ad72396a96b3bd",
+        "0a3995edd1d98043222075551ff517319b6905c7d73e0b330ae658303a3ffde6",
+        "0b188ab34ed3e93b8d18e1e8c864b6076e9c19247c7b529ea542984f0a54800d",
+        "16971a4f67acb8e652faa04d290215e6da024ac3bfa96113a34fdaa992918f06",
+        "19b1450754e70b9ed3d5f1a246973f9fa4d30b8a92779bd66f8a6a54a2968032",
+        "2e30bffe5a27d285c60474e9e601c5ef6f1dc1e161ef29fad049b685fcf89b49",
+        "4e608a8f4a9bcee816665470cf9408df06ad79294996231e76abf3250a837828",
+        "5229b8624ce9143fd59a81495ba6ac0ae7207bec9431fda274689d20e6c94272",
+        "5b54f2775ef13263f6b3300e7b38e6316f5b4df68c6777dc69638c6fd7441132",
+        "66d2ce65960590cbb17eafa288e9e4c50ed073b565135e80d7994f80751a9b39",
+        "695360a44d4420addd5087222191ffefb30b72cdcb9ed3f0ddb60482f0fda5ee",
+        "718499655fd268a2a12cff7ede9d4a6dd22de3c86fd13256d24100d4795ca1ad",
+        "802baa4e803994f8706043d8e31ac4364dd52615b80e73f5b82f87ddbdacea1c",
+        "945d0bfa8e99f54b0544b11f36c41fae79519a6d32d02bfc013fb8203f95e974",
+        "9830cd5aa7c90a65187f325341e3d87f34cb9cbfa725f87d38176bed687b31b4",
+        "a8aad20b7a3d0c159be26ff0a212c8ba598a8b1cfeb2b5820585ca28b1a16e4c",
+        "ad6db7ca7128a411b5d9a0172cc49da4ddf014bc1816962a516e9dc2da2d6856",
+        "c07e49e040f6ae23dcf66ec922795f89dbbbbfc455b5e78817f11a7251349d2d",
+        "c5cf21b6304f5888443a51dae36c80c07ba333bd4d30191f5686a0cbadfa4c67",
+        "d59d8536070d58d281ede59706458c58ee72463b5fb09d3e55a1426db4bffa5f"
+      ],
+      "bindingSurfaces": [
+        "05a66efc420e568a0b724f60267a4af181e6290256fc8d27a8531b174946b74a",
+        "0a6316e012d6516f13cecabc124d06ab251e3181fe8f5f7244f7887eb96ee602",
+        "163a03133091e8916b8f35fbe16a5a4be03dcb9b3e77f583005d38bd4c158302",
+        "21f2fa4e01a158e2aa778b39e7b54ffeac93339edbc497bb40b7f737b2bf34e8",
+        "420ae53fd7399ef38379541ab0dd0bf65bb1f9ce803faebd17fb23f043bb6830",
+        "4f9023c76e63141eb47b1c437206e70f61a93da3a081a2f4a01333f6f9da0567",
+        "5cf4913cca83bf8882d647f7c8eedac2b92106e07ae2426689194aed72753b17",
+        "680f741edb4504ef9f98d147294fbcb3372a62a1b260a016be3f3e3da56c113e",
+        "8a4f01bd8f396647acb9985368880685203101306a91fa4d40a125e735a49771",
+        "9b3e8695c4e139fabf566cad7ebb96ab518c5bd71f261534c36ac62b86f02c51",
+        "9c2a7894b98d708bc80d26ab5ed0757d2cb4a28060b3436294a5ee770026ccaa",
+        "d6b48e2fb6087aec26254f8bd3a6c8dc86405fb8489df0d4e9f99f94b7b3cc69",
+        "fa9e1ae2094e44d724c08272a48ef40fb970b55e4e50f66f9a10d4e1ed2aa05b"
+      ],
+      "computedBoundaries": []
+    },
+    "scripts/verify-ravscore-operational-pages-deployment.mjs": {
+      "nodeImports": [
+        "node:crypto",
+        "node:fs/promises",
+        "node:path",
+        "node:url"
+      ],
+      "imports": [
+        "js/core/public-delivery-contract.js",
+        "js/core/ravscore-model-contract.js",
+        "js/core/ravscore-public-profile-contract.js",
+        "js/core/ravscore-public-runtime-contract.js",
+        "js/services/forecast-share-projection.js",
+        "scripts/lib/ravscore-known-public-source-repair.mjs",
+        "scripts/lib/ravscore-public-browser-closure.mjs",
+        "scripts/rollback-assets/ravscore-model-contract.js"
+      ],
+      "resources": [
+        "js/core/ravscore-model-bundle.generated.js",
+        "js/core/ravscore-model-contract.js",
+        "scripts/rollback-assets/ravscore-model-bundle.generated.js",
+        "scripts/rollback-assets/ravscore-model-contract.js"
+      ],
+      "dependencySurfaces": [
+        "6416d7c47d23be3a376622b041004db6354a5aea0f737d27f70187de50f0ea0d",
+        "802baa4e803994f8706043d8e31ac4364dd52615b80e73f5b82f87ddbdacea1c",
+        "8da173e54e2f863be6c810de850097681c9d1e2a32a5f8b74cf7f35773c00590",
+        "a677bb4bf0ef4fc600233c8ef7bfde413f24197f3d7b05164617cf7669033a40",
+        "b29ab32ae7db9b48688c92e53b172a21f9893ea135526a1bc7add57164147a77",
+        "e8c785b6d358363b9847ae5a6f79e4cb10f20b333d6e35e19f7f88ad26670d29"
+      ],
+      "bindingSurfaces": [
+        "110dbfa7c2df62a788661d7b86a8b7fd0a500e0f3cbe6c40c12400dfe603f28e",
+        "1c1f2ec5b04ce1ab4f5e6d333724878bd756ff254ceca90004cb2b1f16a314d8",
+        "420ae53fd7399ef38379541ab0dd0bf65bb1f9ce803faebd17fb23f043bb6830",
+        "423f771ed196e65c6d91c26ee49c530a9d2ba3114e8fd2e87a670c2d81086849",
+        "4ecbb8dc0bb6a14094c683a11db862cbe9b7589cae6eccdc06af2d4a7e16b15b",
+        "5cf4913cca83bf8882d647f7c8eedac2b92106e07ae2426689194aed72753b17",
+        "8a4f01bd8f396647acb9985368880685203101306a91fa4d40a125e735a49771",
+        "98c1cbf88b0e88c1d96a2a8c8beaee268617665440c2363d8700714e18e625de",
+        "9b3e8695c4e139fabf566cad7ebb96ab518c5bd71f261534c36ac62b86f02c51",
+        "cfefa97c974a545f21141cd81ed69723b219911b905c9bff184ca4116777808f",
+        "d6b48e2fb6087aec26254f8bd3a6c8dc86405fb8489df0d4e9f99f94b7b3cc69",
+        "e604e5b9cd3d3640f0f673491bb42343a7003d6043ef09a1117a4e67c0d66eff"
+      ],
+      "computedBoundaries": []
+    },
     "scripts/weather-source-gate.mjs": {
       "nodeImports": [
         "node:child_process",
@@ -11973,6 +12744,7 @@
     ".github/workflows/deploy-code-only-repair.yml",
     ".github/workflows/deploy-trip-storage.yml",
     ".github/workflows/private-trip-weather-study.yml",
+    ".github/workflows/resume-operational-checkpoint.yml",
     ".github/workflows/reusable-operational-reentry.yml",
     ".github/workflows/reusable-pages-deploy.yml",
     ".github/workflows/reusable-weather-build.yml",
@@ -12591,6 +13363,21 @@
     ],
     ".github/workflows/reusable-weather-build.yml": [
       "6b205b7a8c99c61cf4b6f65030acb22676d66d115a5469101a3062aa20f113d2/58168cce22cbf34595748fc4cf1d4929457a77754719dbb54f9da40a1c803bdb"
+    ],
+    ".github/workflows/reusable-pages-deploy.yml": [
+      "a7ee43cf148c0431ec4fa6235a5dcd2e69adb391f3defda0fb63efde3de43f52/260c06d3fbc08e7bf80563b803eed758251805f55cf4a0c147526d70c3e4b8f1"
+    ],
+    ".github/workflows/reusable-operational-reentry.yml": [
+      "e561395bf9bda19e7f9c3d0454f77a64721517059640bb1c2be89680b912b4c8/6228ec52b4901aa26f6fa29cda81826a5f8c3536441aba8d28e5c78473f19370"
+    ],
+    ".github/workflows/update-and-deploy.yml": [
+      "784041f35105e63ca60d3199923a20bb6d1c457b70e76a6d2cace2dcc494fe4f/2d178154177472a2b469b1c4bb063364dd443ff7122f5de062fc8c0f76940b0c"
+    ],
+    ".github/workflows/run-current-weather-once.yml": [
+      "3f0bbc19336918f20586c92432dc2fb46985d3657d842209a26e788426dcf814/b9301a3e3a2e8a25363df5c7e4eaf2128df017220ab5baefde06364410e8bc3e"
+    ],
+    ".github/workflows/deploy-code-only-repair.yml": [
+      "9d16a127c0e7b0e256e199982b56f14762f370f8e30720b2545a40b97bf09dc1/1619b09526d8ea1288bc4c94a690b997f5a5b0f05e12b8ecc26da08e984c4c75"
     ]
   }
 }

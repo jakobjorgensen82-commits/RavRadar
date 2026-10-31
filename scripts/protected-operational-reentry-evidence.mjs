@@ -4,6 +4,9 @@ import crypto from 'node:crypto';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { promisify } from 'node:util';
+import { execFile } from 'node:child_process';
+import { PUBLIC_CONFIG } from '../config.js';
+import { createSupabaseAdminRequester } from './lib/supabase-admin-rest.mjs';
 import { fileURLToPath } from 'node:url';
 import { gzip, gunzip } from 'node:zlib';
 
@@ -14,6 +17,7 @@ import {
   createProtectedPrivateRuntimeClients,
 } from './protected-private-production-runtime.mjs';
 
+const execFileAsync = promisify(execFile);
 const gzipAsync = promisify(gzip);
 const gunzipAsync = promisify(gunzip);
 
@@ -711,6 +715,7 @@ export async function restoreProtectedOperationalEvidence({
 
 function phasePolicy() { return PRE_ACTIVATION_POLICY; }
 const phaseDocumentRows=new WeakMap();
+const phasePendingSourceAdmissions=new WeakMap();
 function phaseSourceMatches(current,phase,target) {
   if(same(current,phase.sourceCurrent))return true;
   // Only a real normal central read may establish this second branch. A JSON
@@ -839,27 +844,33 @@ export function classifyProtectedPreActivationReentry({evidence,current,attempt,
   if(evidence?.action==='NONE') return 'NONE';
   if(evidence?.action!=='PRE_ACTIVATION_PRESENT') throw new Error('Unknown pre-activation evidence');
   const slot=validatePhaseSlot(evidence.slot),d=slot.target,phase=evidence.phase;
-  if(d.repository!==repository||d.sourceHead!==sourceHead
+  if(d.repository!==repository||!HEAD_PATTERN.test(String(sourceHead??''))
     ||phase.sourceCurrentSha256!==sha256CanonicalJson(phase.sourceCurrent)) throw new Error('Pre-activation source identity changed');
   // Pending recovery keeps its original full handoff and normal terminal checks.
   if(current.pending===true) {
     if(current.sourceHead!==d.sourceHead || current.requestedPublicManifestSha256!==d.publicManifestSha256
       || current.requestedImplementationClosureSha256!==d.implementationClosureSha256
       || sha256CanonicalJson(current.requestedModelBinding)!==d.modelBindingSha256
-      || current.sourcePublicManifestSha256!==phase.sourceCurrent.publicManifestSha256
+      || (current.sourcePublicManifestSha256!==phase.sourceCurrent.publicManifestSha256
+        && phasePendingSourceAdmissions.get(current)!==phase.sourceCurrentSha256+':'+d.publicManifestSha256)
       || !same(current.sourceModelBinding,phase.sourceCurrent.modelBinding))
       throw new Error('Pre-activation pending transition differs');
     return 'PENDING_PRE_ACTIVATION';
   }
   requireTerminalOwner(attempt,slot.owner);
   if(phaseTargetCompleted(current,d)) return 'COMPLETED_PRE_ACTIVATION';
-  if(!phaseSourceMatches(current,phase,d)||current.pending!==false) throw new Error('Pre-activation source state changed');
+  if(d.sourceHead!==sourceHead||!phaseSourceMatches(current,phase,d)||current.pending!==false) throw new Error('Pre-activation source state changed');
   return 'PRE_ACTIVATION_RESUME';
 }
 export async function classifyProtectedPreActivationCurrent({request,storage,repository,sourceHead,attempt}={}) {
   const evidence=await inspectProtectedPreActivationTarget({request,storage,repository});
   if(evidence.action==='NONE')return {action:'NONE'};
-  return {action:classifyProtectedPreActivationReentry({evidence,current:await phaseCurrent(request),attempt,repository,sourceHead})};
+  const current=await phaseCurrent(request);
+  if(current.pending&&current.sourcePublicManifestSha256!==evidence.phase.sourceCurrent.publicManifestSha256) {
+    const ordinary=await protectedFilesBy({request,storage,repository,deploymentId:evidence.slot.target.deploymentId});
+    await admitAuthenticPreparedPendingSource({current,evidence,ordinary});
+  }
+  return {action:classifyProtectedPreActivationReentry({evidence,current,attempt,repository,sourceHead})};
 }
 export async function publishProtectedPreActivationTarget({directory,deploymentId,repository,request,storage}={}) {
   const policy=PROTECTED_OPERATIONAL_REENTRY_EVIDENCE_POLICY;
@@ -971,12 +982,12 @@ export async function clearProtectedPreActivationTarget({request,storage,reposit
   const row=await readPointer(request,{allowMissing:true,policy});
   if(!row?.payload.preActivation)return {cleared:false,reason:'no-pre-activation'};
   const slot=validatePhaseSlot(row.payload.preActivation),d=slot.target;
-  if(d.repository!==repository||d.sourceHead!==sourceHead)throw new Error('Pre-activation completion source differs');
+  if(d.repository!==repository||!HEAD_PATTERN.test(String(sourceHead??'')))throw new Error('Pre-activation completion source differs');
   const current=await phaseCurrent(request);
   if(!phaseTargetCompleted(current,d))throw new Error('Pre-activation target is not actually active');
   const files=await phaseFiles(storage,d);
   const {verifyRavScoreOperationalPagesDeployment}=await import('./verify-ravscore-operational-pages-deployment.mjs');
-  const verification=await verifyRavScoreOperationalPagesDeployment({baseUrl,sourceHead,expectedModel:'integrated',fetchImpl,
+  const verification=await verifyRavScoreOperationalPagesDeployment({baseUrl,sourceHead:d.sourceHead,expectedModel:'integrated',fetchImpl,
       expectedManifest:phaseJson(files,'manifest.json'),expectedBinding:phaseJson(files,'target-binding.json'),
       expectedContractText:Buffer.from(files.find(f=>f.path==='target-contract.js').contentBase64,'base64').toString('utf8'),
       expectedBundleText:Buffer.from(files.find(f=>f.path==='target-bundle.generated.js').contentBase64,'base64').toString('utf8'),
@@ -1003,11 +1014,274 @@ export async function clearProtectedPreActivationTarget({request,storage,reposit
 }
 
 
+// A repaired delivery caller may finish an already prepared historical target.
+// The producer, immutable phase owner, plan and artifact identities never change.
+const TERMINAL_REPAIR_OWNERS = new Set([
+  '.github/workflows/reusable-pages-deploy.yml',
+  '.github/workflows/reusable-operational-reentry.yml',
+  '.github/workflows/resume-operational-checkpoint.yml',
+  '.github/workflows/update-and-deploy.yml',
+  '.github/workflows/run-current-weather-once.yml',
+  '.github/workflows/deploy-code-only-repair.yml',
+  'scripts/protected-operational-reentry-evidence.mjs',
+  'scripts/ravscore-operational-pages-recovery.mjs',
+  'scripts/test-protected-operational-reentry-evidence.mjs',
+  'scripts/test-ravscore-operational-pages-recovery.mjs',
+  'scripts/test-pages-generation-and-reentry.mjs',
+  'scripts/test-source-impact-domain-plan.mjs',
+  'scripts/lib/source-impact-domain-owners-594.json',
+  'scripts/source-impact-domain-plan.mjs',
+  'docs/ai/CODEX_START_HERE.md',
+  'docs/rdks/90_INDEX/CURRENT_TRUTH.md',
+  'docs/rdks/90_INDEX/IMPLEMENTATION_STATUS.md',
+  'docs/rdks/40_KNOWN_ISSUES/KNOWN-ISSUES.md',
+  'docs/rdks/10_DECISIONS/DEC-0303-INSTALLED593-ORIGINAL591-STRICT-LATER-SUCCESSOR.md',
+  'HANDBOOK-RAVRADAR.md', 'docs/handbook/content.json', 'CHANGELOG.md',
+  'supabase/INSTALL-RAVRADAR-4.0.56-SECURITY.sql',
+]);
+const repairRoot=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
+async function repairGit(args,{root=repairRoot,encoding='utf8'}={}) {
+  return (await execFileAsync('git',args,{cwd:root,encoding,maxBuffer:16*1024*1024,timeout:10000,
+    env:{...process.env,GIT_NO_LAZY_FETCH:'1',GIT_NO_REPLACE_OBJECTS:'1',GIT_TERMINAL_PROMPT:'0',
+      GIT_CONFIG_COUNT:'1',GIT_CONFIG_KEY_0:'protocol.allow',GIT_CONFIG_VALUE_0:'never'}})).stdout;
+}
+export async function assertTerminalRepairExecutor({producerHead,executor,directory,root=repairRoot}={}) {
+  phaseOwner(executor);
+  if(executor.repository!==process.env.GITHUB_REPOSITORY||executor.headSha!==process.env.GITHUB_SHA
+    ||process.env.GITHUB_REF!=='refs/heads/main'||executor.runId!==Number(process.env.GITHUB_RUN_ID)
+    ||executor.runAttempt!==Number(process.env.GITHUB_RUN_ATTEMPT))throw new Error('Repair executor is not actual main runner');
+  for(const rev of ['HEAD','refs/remotes/origin/main'])
+    if((await repairGit(['rev-parse',rev],{root})).trim()!==executor.headSha)throw new Error('Repair executor main changed');
+  if((await repairGit(['status','--porcelain','--untracked-files=no'],{root})).trim())throw new Error('Repair executor source checkout is not clean');
+  await repairGit(['merge-base','--is-ancestor',producerHead,executor.headSha],{root});
+  const changed=(await repairGit(['diff','--name-only','-z',producerHead,executor.headSha],{root})).split('\0').filter(Boolean);
+  if(!changed.length||changed.some(name=>!TERMINAL_REPAIR_OWNERS.has(name)))throw new Error('Repair executor contains an unrelated owner');
+  // These three caller owners are admitted solely for the delegated read
+  // grant. Their provider/build inputs and all other bytes must remain exact.
+  for(const caller of ['.github/workflows/update-and-deploy.yml',
+    '.github/workflows/run-current-weather-once.yml','.github/workflows/deploy-code-only-repair.yml']) {
+    if(!changed.includes(caller))continue;
+    const before=await repairGit(['show',producerHead+':'+caller],{root});
+    const after=await repairGit(['show','HEAD:'+caller],{root});
+    const start=after.indexOf('  operational-recovery-gate:\n');
+    const end=after.indexOf('    uses: ./.github/workflows/reusable-operational-reentry.yml',start);
+    const job=after.slice(start,end),grant='      pull-requests: read\n';
+    if(start<0||end<start||job.split(grant).length!==2
+      ||after.slice(0,start)+job.replace(grant,'')+after.slice(end)!==before)
+      throw new Error('Repair caller changed beyond its precise source-proof read grant');
+  }
+  // This installer is generated documentation, not permission for a SQL change.
+  const installer='supabase/INSTALL-RAVRADAR-4.0.56-SECURITY.sql';
+  if(changed.includes(installer)) {
+    const strip=text=>text.replace(/^insert into public\.admin_documents\(document_key,payload,updated_by\) values\('handbook','(.*)'::jsonb,null\)$/m,
+      (_,payload)=>{JSON.parse(payload.replaceAll("''","'"));return 'HANDBOOK_PAYLOAD_ONLY';});
+    const before=await repairGit(['show',producerHead+':'+installer],{root});
+    const after=await repairGit(['show','HEAD:'+installer],{root});
+    if(strip(before)===before||strip(after)===after||strip(before)!==strip(after))throw new Error('Repair changed executable installer SQL');
+  }
+  const {computeRavScorePublicBrowserClosure}=await import('./lib/ravscore-public-browser-closure.mjs');
+  const closure=await computeRavScorePublicBrowserClosure({root});
+  const output=path.join(directory,'..','repair-source-qualification-'+executor.runId+'-'+executor.runAttempt+'-'+crypto.randomBytes(6).toString('hex')+'.txt');
+  await fs.writeFile(output,'',{flag:'wx',mode:0o600});
+  await execFileAsync(process.execPath,['scripts/weather-source-gate.mjs','check'],{cwd:root,maxBuffer:1024*1024,timeout:180000,
+    env:{...process.env,GITHUB_TOKEN:process.env.GH_TOKEN||process.env.GITHUB_TOKEN,GITHUB_OUTPUT:output,GIT_NO_LAZY_FETCH:'1'}});
+  if(!(await fs.readFile(output,'utf8')).split(/\r?\n/).includes('required=false'))throw new Error('Repair executor lacks live exact source qualification');
+  return {publicClosure:closure.manifest,changedOwners:changed};
+}
+async function protectedFilesBy({request,storage,repository,deploymentId=null,manifestSha256=null}={}) {
+  const row=await readPointer(request,{allowMissing:false,policy:PROTECTED_OPERATIONAL_REENTRY_EVIDENCE_POLICY});
+  const descriptor=descriptors(row.payload).find(d=>deploymentId!==null?d.deploymentId===deploymentId:d.publicManifestSha256===manifestSha256);
+  if(!descriptor||descriptor.repository!==repository)throw new Error('Exact protected prepared evidence is unavailable');
+  const files=await decodeArchive(await storage.download(descriptor.objectPath),descriptor,PROTECTED_OPERATIONAL_REENTRY_EVIDENCE_POLICY);
+  return {descriptor,files};
+}
+async function repairGithubJson(route,fetchImpl=fetch) {
+  const response=await fetchImpl('https://api.github.com/repos/'+route,{headers:{
+    Authorization:'Bearer '+(process.env.GH_TOKEN||process.env.GITHUB_TOKEN),Accept:'application/vnd.github+json',
+    'X-GitHub-Api-Version':'2022-11-28'},signal:AbortSignal.timeout(15000)});
+  if(!response.ok)throw new Error('Prepared recovery GitHub evidence unavailable (HTTP '+
+    (Number.isInteger(response.status)?response.status:'unknown')+').');
+  return response.json();
+}
+async function repairLiveReadiness({sourceHead,publicImplementationClosureSha256,fetchImpl=fetch}={}) {
+  const {checkIntegratedCutoverReadiness}=await import('./integrated-cutover-readiness.mjs');
+  return checkIntegratedCutoverReadiness({sourceHead,publicImplementationClosureSha256,
+    url:process.env.SUPABASE_URL,serviceRoleKey:process.env.SUPABASE_SERVICE_ROLE_KEY,
+    publishableKey:process.env.SUPABASE_PUBLISHABLE_KEY||PUBLIC_CONFIG.supabasePublishableKey,fetchImpl});
+}
+async function preparedPhaseTarget({request,storage,repository,executor,attempt,directory,
+  verifyExecutor=assertTerminalRepairExecutor,checkReadiness=repairLiveReadiness,fetchImpl=fetch}={}) {
+  const evidence=await inspectProtectedPreActivationTarget({request,storage,repository});
+  if(evidence.action!=='PRE_ACTIVATION_PRESENT')throw new Error('Prepared recovery requires its authentic phase');
+  const slot=validatePhaseSlot(evidence.slot),d=slot.target;
+  requireTerminalOwner(attempt,slot.owner);
+  if(attempt.conclusion==='success')throw new Error('Prepared repair requires the actual unsuccessful original attempt');
+  const jobs=await repairGithubJson(repository+'/actions/runs/'+d.runId+'/attempts/'+d.runAttempt+'/jobs?per_page=100',fetchImpl);
+  const {exactPagesAttemptStep}=await import('./github-pages-attempt-evidence.mjs');
+  if(!Array.isArray(jobs.jobs)||!Number.isSafeInteger(jobs.total_count)||jobs.total_count!==jobs.jobs.length
+    ||exactPagesAttemptStep(jobs.jobs,{runId:d.runId,runAttempt:d.runAttempt,headSha:d.sourceHead,attemptId:d.deploymentId})!=='skipped')
+    throw new Error('Prepared repair original Pages step was not actually NOT_STARTED');
+  if(!same(slot.originalTarget,d)||!same(slot.owner,ownerFromDescriptor(d))||executor.headSha===d.sourceHead
+    ||executor.repository!==repository)throw new Error('Prepared recovery producer/owner differs');
+  const phase=await phaseFiles(storage,d),ordinary=await protectedFilesBy({request,storage,repository,deploymentId:d.deploymentId});
+  for(const file of phase.filter(f=>f.path!=='pre-activation.json')) {
+    const other=ordinary.files.find(f=>f.path===file.path);
+    if(!other||!same(file,other))throw new Error('Prepared ordinary and phase target bytes differ');
+  }
+  const plan=phaseJson(ordinary.files,'plan.json'),readiness=phaseJson(ordinary.files,'integrated-readiness.json');
+  const manifest=phaseJson(ordinary.files,'manifest.json'),audit=phaseJson(ordinary.files,'public-audit.json');
+  const handoff=phaseJson(ordinary.files,'handoff.json'),seal=phaseJson(ordinary.files,'pages-artifact-seal.json');
+  if(ordinary.descriptor.sourceHead!==d.sourceHead||ordinary.descriptor.publicManifestSha256!==d.publicManifestSha256
+    ||handoff.action!=='integrated-historical-maintenance'||handoff.sourceHead!==d.sourceHead
+    ||handoff.centralVersion!==plan.centralExpectedVersion||plan.sourceHead!==d.sourceHead
+    ||seal.attemptId!==d.deploymentId)throw new Error('Prepared ordinary identity differs');
+  assertPhaseCheckpoint(phase,evidence.phase);
+  const {classifyProductionTargetFreshness}=await import('./check-production-target-freshness.mjs');
+  classifyProductionTargetFreshness({target:d.productionReferenceAt,maximumAgeMinutes:150});
+  const driver=await verifyExecutor({producerHead:d.sourceHead,executor,directory});
+  if(!same(driver.publicClosure,phaseJson(phase,'target-public-closure.json')))
+    throw new Error('Prepared repair public implementation changed');
+  const freshReadiness=await checkReadiness({sourceHead:d.sourceHead,
+    publicImplementationClosureSha256:d.implementationClosureSha256,fetchImpl});
+  if(!same(freshReadiness,readiness))throw new Error('Prepared repair readiness or installed Edge binding changed');
+  const activation=await import('./ravscore-operational-activation.mjs');
+  activation.assertIntegratedHistoricalMaintenancePlan(plan,{expectedSourceHead:d.sourceHead,
+    expectedCentralVersion:handoff.centralVersion,readiness: freshReadiness,publicManifest:manifest,publicAudit:audit});
+  const artifact=await repairGithubJson(repository+'/actions/artifacts/'+seal.artifactId,fetchImpl);
+  const {normalizeArtifactDigestSha256}=await import('./ravscore-operational-pages-recovery.mjs');
+  if(artifact.id!==seal.artifactId||artifact.name!==seal.artifactName||artifact.expired!==false
+    ||artifact.workflow_run?.id!==d.runId||artifact.workflow_run?.head_sha!==d.sourceHead
+    ||artifact.size_in_bytes!==seal.artifactSizeBytes||normalizeArtifactDigestSha256(artifact.digest)!==seal.artifactDigestSha256)
+    throw new Error('Prepared repair original artifact metadata differs');
+  return {evidence,slot,d,phase,ordinary,plan,readiness,manifest,audit,seal,driver};
+}
+
+async function admitAuthenticPreparedPendingSource({current,evidence,ordinary}={}) {
+  // A real historical BEGIN can legitimately observe a newer public source
+  // generation under the same old binding. Keep the captured CENTRAL source
+  // immutable; only the actual central rows plus the authenticated issued plan
+  // can authorize that distinct observed source in the pending phase.
+  const rows=phaseDocumentRows.get(current),d=validatePhaseSlot(evidence.slot).target;
+  const plan=phaseJson(ordinary.files,'plan.json'),readiness=phaseJson(ordinary.files,'integrated-readiness.json');
+  const activation=await import('./ravscore-operational-activation.mjs');
+  activation.assertIntegratedHistoricalMaintenancePlan(plan,{expectedSourceHead:d.sourceHead,
+    expectedCentralVersion:current.centralVersion-1,readiness,
+    publicManifest:phaseJson(ordinary.files,'manifest.json'),publicAudit:phaseJson(ordinary.files,'public-audit.json')});
+  const row=rows?.operational?.payload;
+  if(!rows||!current.pending||ordinary.descriptor.sourceHead!==d.sourceHead
+    ||ordinary.descriptor.publicManifestSha256!==d.publicManifestSha256
+    ||current.sourceHead!==d.sourceHead||current.centralVersion!==plan.centralExpectedVersion+1
+    ||row.returnPlanSha256!==plan.planSha256||row.integratedReadinessSha256!==plan.integratedReadinessSha256
+    ||row.integratedPublicAuditSha256!==plan.integratedPublicAuditSha256||row.integratedManifestSha256!==plan.integratedManifestSha256
+    ||sha256CanonicalJson(rows.profile.payload)!==plan.sourceProfileSha256
+    ||!same(plan.sourceModelBinding,evidence.phase.sourceCurrent.modelBinding)
+    ||!same(current.sourceModelBinding,plan.sourceModelBinding)||!same(current.modelBinding,plan.sourceModelBinding)
+    ||!same(current.requestedModelBinding,plan.activeModelBinding)
+    ||current.sourceImplementationClosureSha256!==plan.sourceImplementationClosureSha256
+    ||plan.sourceImplementationClosureSha256!==evidence.phase.sourceCurrent.activeImplementationClosureSha256
+    ||current.requestedImplementationClosureSha256!==plan.requestedImplementationClosureSha256
+    ||current.requestedPublicManifestSha256!==plan.integratedManifestSha256
+    ||current.datasetId!==plan.datasetId||current.productionReferenceAt!==plan.productionReferenceAt
+    ||current.deploymentId!==d.deploymentId)
+    throw new Error('Observed prepared source lacks the authentic issued-plan PENDING');
+  phasePendingSourceAdmissions.set(current,evidence.phase.sourceCurrentSha256+':'+d.publicManifestSha256);
+}
+
+export async function verifyPreparedSource({request,storage,repository,sourceManifest,producerHead,baseUrl,
+  fetchImpl=fetch,verifyPublic=null}={}) {
+  // The ordinary target publisher required retention of this exact observed
+  // public source. Its authenticated archive may differ from the older CENTRAL
+  // phase baseline, which must remain unchanged.
+  const source=await protectedFilesBy({request,storage,repository,manifestSha256:sha256CanonicalJson(sourceManifest)});
+  if(!same(sourceManifest,phaseJson(source.files,'manifest.json')))throw new Error('Prepared public source archive differs');
+  const text=name=>Buffer.from(source.files.find(f=>f.path===name).contentBase64,'base64').toString('utf8');
+  const {verifyRavScoreOperationalPagesDeployment}=await import('./verify-ravscore-operational-pages-deployment.mjs');
+  return (verifyPublic??verifyRavScoreOperationalPagesDeployment)({baseUrl,sourceHead:producerHead,expectedModel:'integrated',
+    expectedManifest:sourceManifest,expectedBinding:phaseJson(source.files,'target-binding.json'),
+    expectedContractText:text('target-contract.js'),expectedBundleText:text('target-bundle.generated.js'),
+    expectedPublicClosure:phaseJson(source.files,'target-public-closure.json'),
+    observationNonce:'prepared-source-'+crypto.randomBytes(12).toString('hex'),attempts:1,fetchImpl});
+}
+export async function beginTerminalPreparedPreActivation({request,atomicRequest,storage,repository,executor,attempt,
+  directory,baseUrl,fetchImpl=fetch,verifyExecutor,checkReadiness,verifySource=verifyPreparedSource}={}) {
+  const p=await preparedPhaseTarget({request,storage,repository,executor,attempt,directory,fetchImpl,verifyExecutor,checkReadiness});
+  const {evidence,d,ordinary,plan,readiness,manifest,audit}=p;
+  // The GitHub handoff contributes the originally observed public source only;
+  // every durable target byte must independently match authenticated storage.
+  for(const file of ordinary.files)
+    if(!(await fs.readFile(path.join(directory,file.path))).equals(Buffer.from(file.contentBase64,'base64')))
+      throw new Error('Prepared GitHub handoff differs from durable ordinary target');
+  const sourceManifest=JSON.parse(await fs.readFile(path.join(directory,'source-manifest.json'),'utf8'));
+  const sourceId=(await fs.readFile(path.join(directory,'source-deployment-id.txt'),'utf8')).trim();
+  if(sourceId!=='public-source-'+sha256(await fs.readFile(path.join(directory,'source-manifest.json'))).slice(0,24))throw new Error('Prepared observed source deployment is absent');
+  const sourceVerification=await verifySource({request,storage,repository,sourceManifest,producerHead:d.sourceHead,baseUrl,fetchImpl});
+  const current=await phaseCurrent(request);
+  if(current.pending||!phaseSourceMatches(current,evidence.phase,d))throw new Error('Prepared source changed before real BEGIN');
+  const rows=phaseDocumentRows.get(current),activation=await import('./ravscore-operational-activation.mjs');
+  const transition=activation.operationalIntegratedHistoricalMaintenanceTransition({action:'integrated-historical-maintenance-begin',
+    currentRow:rows.operational,currentProfileRow:rows.profile,expectedVersion:current.centralVersion,plan,readiness,
+    publicManifest:manifest,publicAudit:audit,sourceManifest,sourceVerification,observedSourceDeploymentId:sourceId,
+    deploymentId:d.deploymentId});
+  const fresh=await inspectProtectedPreActivationTarget({request,storage,repository});
+  if(fresh.centralVersion!==evidence.centralVersion||!same(fresh.slot,evidence.slot))throw new Error('Prepared slot raced before BEGIN');
+  const written=await activation.writeCentralCas(atomicRequest,request,
+    {operationalRow:rows.operational,profileRow:rows.profile},transition,readiness.centralProfile);
+  return {action:'PENDING_PRE_ACTIVATION',producerHead:d.sourceHead,originalAttemptId:d.deploymentId,
+    actualExecutor:phaseOwner(executor),centralVersion:written.operational.version,
+    publicManifestSha256:d.publicManifestSha256,privatePayloadIncluded:false};
+}
+export async function readProtectedPreparedTargetAdmission({request,storage,repository,pending,artifactSeal,
+  terminalEvidence,executor,directory,baseUrl,fetchImpl=fetch,verifyExecutor,checkReadiness,verifySource=verifyPreparedSource}={}) {
+  const state=await inspectProtectedPreActivationTarget({request,storage,repository});
+  if(state.action==='NONE'||state.slot.target.sourceHead===executor.headSha)return null;
+  const attempt=await repairGithubJson(repository+'/actions/runs/'+state.slot.owner.runId+'/attempts/'+state.slot.owner.runAttempt,fetchImpl);
+  const p=await preparedPhaseTarget({request,storage,repository,executor,attempt,directory,fetchImpl,verifyExecutor,checkReadiness});
+  const current=await phaseCurrent(request),rows=phaseDocumentRows.get(current),{d,plan}=p;
+  await admitAuthenticPreparedPendingSource({current,evidence:p.evidence,ordinary:p.ordinary});
+  if(classifyProtectedPreActivationReentry({evidence:p.evidence,current,attempt,repository,sourceHead:d.sourceHead})!=='PENDING_PRE_ACTIVATION'
+    ||current.centralVersion!==plan.centralExpectedVersion+1||rows.operational.payload.returnPlanSha256!==plan.planSha256
+    ||sha256CanonicalJson(rows.profile.payload)!==plan.sourceProfileSha256
+    ||rows.operational.payload.integratedReadinessSha256!==plan.integratedReadinessSha256
+    ||rows.operational.payload.integratedPublicAuditSha256!==plan.integratedPublicAuditSha256
+    ||current.deploymentId!==d.deploymentId||pending.attemptId!==d.deploymentId
+    ||pending.headSha!==d.sourceHead||pending.requestedAt!==current.requestedAt
+    ||pending.sourcePublicManifestSha256!==current.sourcePublicManifestSha256
+    ||pending.requestedPublicManifestSha256!==current.requestedPublicManifestSha256
+    ||pending.requestedImplementationClosureSha256!==current.requestedImplementationClosureSha256
+    ||pending.datasetId!==current.datasetId||pending.productionReferenceAt!==current.productionReferenceAt
+    ||!same(pending.requestedModelBinding,current.requestedModelBinding)
+    ||!same(artifactSeal,p.seal)||terminalEvidence.status!=='NOT_STARTED'
+    ||terminalEvidence.pagesRequestAccepted!==false||terminalEvidence.deployStepConclusion!=='skipped')
+    throw new Error('Prepared recovery lacks the exact genuine PENDING/NOT_STARTED source');
+  const sourceManifestResponse=await fetchImpl(new URL('data/live/manifest.json?prepared-source='+crypto.randomBytes(12).toString('hex'),baseUrl.endsWith('/')?baseUrl:baseUrl+'/'),
+    {cache:'no-store',signal:AbortSignal.timeout(15000)});
+  if(!sourceManifestResponse.ok)throw new Error('Prepared recovery public source unavailable');
+  const sourceManifest=await sourceManifestResponse.json();
+  if(sha256CanonicalJson(sourceManifest)!==current.sourcePublicManifestSha256)throw new Error('Prepared recovery source advanced');
+  const verifiedSource=await verifySource({request,storage,repository,sourceManifest,producerHead:d.sourceHead,baseUrl,fetchImpl});
+  if(verifiedSource?.schemaVersion!=='ravscore-operational-pages-verification-v1'||verifiedSource.status!=='passed'
+    ||verifiedSource.sourceHead!==d.sourceHead||verifiedSource.model!=='integrated'
+    ||!same(verifiedSource.modelBinding,plan.sourceModelBinding)
+    ||verifiedSource.implementationClosureSha256!==plan.sourceImplementationClosureSha256
+    ||verifiedSource.publicManifestSha256!==current.sourcePublicManifestSha256
+    ||verifiedSource.datasetId!==sourceManifest.datasetId||verifiedSource.productionReferenceAt!==sourceManifest.productionReferenceAt
+    ||verifiedSource.zoneCount!==210||verifiedSource.coastalPartCount!==673||verifiedSource.privatePayloadRead!==false)
+    throw new Error('Prepared recovery fresh public source verification differs');
+  const again=await phaseCurrent(request),fresh=await inspectProtectedPreActivationTarget({request,storage,repository});
+  if(!same(current,again)||fresh.centralVersion!==p.evidence.centralVersion||!same(fresh.slot,p.evidence.slot))
+    throw new Error('Prepared recovery source or slot raced');
+  return Object.freeze({schemaVersion:'ravscore-protected-prepared-target-admission-v1',
+    pendingSha256:sha256CanonicalJson(pending),artifactSealSha256:sha256CanonicalJson(artifactSeal),
+    originalAttemptId:d.deploymentId,producerHead:d.sourceHead,targetManifestSha256:d.publicManifestSha256,
+    planSha256:plan.planSha256,phaseObjectSha256:d.objectSha256,centralVersion:current.centralVersion,
+    actualExecutor:phaseOwner(executor),privatePayloadIncluded:false});
+}
+
 function parseArgs(argv) {
   const result = { mode: null, requireRetained: false };
   for (let index = 0; index < argv.length; index += 1) {
     const argument = argv[index];
-    if (['--publish', '--restore', '--publish-pre-activation', '--inspect-pre-activation', '--classify-pre-activation', '--claim-pre-activation', '--restore-pre-activation', '--prepare-pre-activation-handoff', '--clear-pre-activation', '--assert-pre-activation-owner'].includes(argument)) {
+    if (['--publish', '--restore', '--publish-pre-activation', '--inspect-pre-activation', '--classify-pre-activation', '--claim-pre-activation', '--restore-pre-activation', '--prepare-pre-activation-handoff', '--clear-pre-activation', '--assert-pre-activation-owner', '--begin-terminal-pre-activation'].includes(argument)) {
       if (result.mode) throw new Error('Use exactly one operational evidence mode');
       result.mode = argument.slice(2);
       continue;
@@ -1073,7 +1347,10 @@ async function main() {
   }else if(options.mode==='inspect-pre-activation')result=await inspectProtectedPreActivationTarget(common);
   else if(options.mode==='classify-pre-activation')result=await classifyProtectedPreActivationCurrent({...common,
     sourceHead:process.env.GITHUB_SHA,attempt:await read('attempt')});
-  else if(options.mode==='claim-pre-activation')result=await claimProtectedPreActivationTarget({...common,
+  else if(options.mode==='begin-terminal-pre-activation'){
+    const atomicRequest=createSupabaseAdminRequester({endpoint:process.env.SUPABASE_URL.replace(/\/$/,'')+'/rest/v1/rpc/ravradar_ravscore_operational_cas',key:process.env.SUPABASE_SERVICE_ROLE_KEY});
+    result=await beginTerminalPreparedPreActivation({...common,atomicRequest,executor:own(),attempt:await read('attempt'),directory:options.directory,baseUrl:options['base-url']});
+  }else if(options.mode==='claim-pre-activation')result=await claimProtectedPreActivationTarget({...common,
     sourceHead:process.env.GITHUB_SHA,owner:own(),attempt:await read('attempt')});
   else if(options.mode==='restore-pre-activation')result=await restoreProtectedPreActivationTarget({...common,directory:options.directory,owner:own()});
   else if(options.mode==='prepare-pre-activation-handoff')result=await prepareProtectedPreActivationHandoff({...common,
@@ -1106,7 +1383,8 @@ async function main() {
       storage: clients.storage,
     });
   await writeJsonAtomic(options.output, result);
-  console.log(`${options.mode === 'publish' ? 'Published' : 'Restored'} protected operational evidence.`);
+  if(options.mode==='begin-terminal-pre-activation')console.log('Resumed the prepared historical BEGIN with its original target and actual repair executor.');
+  else console.log(`${options.mode === 'publish' ? 'Published' : 'Restored'} protected operational evidence.`);
 }
 
 const isDirect = process.argv[1]

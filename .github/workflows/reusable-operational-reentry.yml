@@ -51,6 +51,7 @@ on:
 permissions:
   contents: read
   actions: read
+  pull-requests: read
   pages: write
   id-token: write
 
@@ -65,6 +66,7 @@ jobs:
     permissions:
       contents: read
       actions: read
+      pull-requests: read
     outputs:
       recovery_action: ${{ steps.reconcile.outputs.recovery_action }}
       recovery_bundle_name: ${{ steps.reconcile.outputs.recovery_bundle_name }}
@@ -81,6 +83,8 @@ jobs:
       RAVRADAR_PUBLIC_BASE_URL: https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}
     steps:
       - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
 
       - uses: actions/setup-node@v7
         with:
@@ -119,6 +123,23 @@ jobs:
             phase_attempt="$(jq -er '.slot.owner.runAttempt' "$RAVRADAR_OPERATIONAL_WORK/pre-activation.json")"
             gh api "repos/$GITHUB_REPOSITORY/actions/runs/$phase_run/attempts/$phase_attempt" \
               > "$RAVRADAR_OPERATIONAL_WORK/pre-activation-attempt.json"
+            # Only a repaired caller with an already issued exact ordinary plan
+            # may cross the old-producer/new-executor boundary. The helper reads
+            # and authenticates the protected phase/target again before real CAS.
+            if test "$(jq -er '.slot.target.sourceHead' "$RAVRADAR_OPERATIONAL_WORK/pre-activation.json")" != "$GITHUB_SHA" \
+              && test "$(jq -er '.pending' "$RAVRADAR_OPERATIONAL_WORK/current.json")" = false \
+              && test "$(jq -er '.publicManifestSha256' "$RAVRADAR_OPERATIONAL_WORK/current.json")" != "$(jq -er '.slot.target.publicManifestSha256' "$RAVRADAR_OPERATIONAL_WORK/pre-activation.json")"; then
+              gh run download "$phase_run" \
+                --name "ravscore-operational-recovery-$phase_run-$phase_attempt" \
+                --dir "$RAVRADAR_OPERATIONAL_WORK/prepared-original"
+              node scripts/protected-operational-reentry-evidence.mjs --begin-terminal-pre-activation \
+                --repository "$GITHUB_REPOSITORY" --attempt "$RAVRADAR_OPERATIONAL_WORK/pre-activation-attempt.json" \
+                --directory "$RAVRADAR_OPERATIONAL_WORK/prepared-original" --base-url "$RAVRADAR_PUBLIC_BASE_URL" \
+                --output "$RAVRADAR_OPERATIONAL_WORK/prepared-begin.json"
+              # Never keep the pre-BEGIN source/version in the ordinary pending path.
+              node scripts/ravscore-operational-activation.mjs read \
+                --output "$RAVRADAR_OPERATIONAL_WORK/current.json"
+            fi
             node scripts/protected-operational-reentry-evidence.mjs --classify-pre-activation \
               --repository "$GITHUB_REPOSITORY" --attempt "$RAVRADAR_OPERATIONAL_WORK/pre-activation-attempt.json" \
               --output "$RAVRADAR_OPERATIONAL_WORK/pre-activation-classification.json"
@@ -389,7 +410,7 @@ jobs:
           else
             artifact_args=(--durable-evidence)
           fi
-          node scripts/ravscore-operational-pages-recovery.mjs \
+          node scripts/ravscore-operational-pages-recovery.mjs --read-protected-prepared-target \
             --pending "$RAVRADAR_OPERATIONAL_WORK/pending-identity.json" \
             --artifact-seal "$artifact_seal" \
             "${artifact_args[@]}" \
@@ -622,6 +643,7 @@ jobs:
     permissions:
       contents: read
       actions: read
+      pull-requests: read
       pages: write
       id-token: write
     environment:
@@ -632,6 +654,8 @@ jobs:
       RAVRADAR_PUBLIC_BASE_URL: https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}
     steps:
       - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
 
       - uses: actions/setup-node@v7
         with:
@@ -648,6 +672,8 @@ jobs:
         shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
         run: |
           set -euo pipefail
           bundle="$RAVRADAR_OPERATIONAL_WORK/bundle"
@@ -762,7 +788,7 @@ jobs:
             "$RAVRADAR_OPERATIONAL_WORK/predeploy-helper-observation-1.json" \
             "$RAVRADAR_OPERATIONAL_WORK/predeploy-helper-observation-2.json" \
             > "$RAVRADAR_OPERATIONAL_WORK/predeploy-helper-observations.json"
-          node scripts/ravscore-operational-pages-recovery.mjs \
+          node scripts/ravscore-operational-pages-recovery.mjs --read-protected-prepared-target \
             --pending "$bundle/pending-identity.json" \
             --artifact-seal "$bundle/pages-artifact-seal.json" \
             --artifact-evidence "$bundle/artifact-evidence.json" \

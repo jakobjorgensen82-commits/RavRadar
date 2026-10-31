@@ -7,7 +7,8 @@ import {execFileSync} from 'node:child_process';
 import {fileURLToPath,pathToFileURL} from 'node:url';
 import {scanAllSourceDependencies} from './lib/source-impact-control-imports.mjs';
 const SOURCE=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
-const BASE='a4dc9319dbf42cdd7fc8116733ad4eeef46e0525',REFERENCE='e8786fabba66bd9184ab08a0c8c83bf97711f807';
+const BASE='169bebcd7bf2c4389be63c31dcd76fb303d71621';
+const LEGACY_BASE='a4dc9319dbf42cdd7fc8116733ad4eeef46e0525',LEGACY_REFERENCE='e8786fabba66bd9184ab08a0c8c83bf97711f807';
 const files=['scripts/source-impact-domain-inputs.mjs','scripts/lib/source-impact-domain-inputs-594.json',
   'scripts/test-source-impact-domain-inputs.mjs','scripts/source-impact-domain-plan.mjs',
   'scripts/lib/source-impact-control-imports.mjs','scripts/lib/source-impact-domain-owners-594.json',
@@ -37,7 +38,10 @@ test('normal closed domain planner handles real composition, one same-tree merge
     const objectDirectory=fs.realpathSync(path.join(text(SOURCE,['rev-parse','--path-format=absolute','--git-common-dir']),'objects'));
     fs.mkdirSync(path.join(root,'.git/objects/info'),{recursive:true});
     fs.writeFileSync(path.join(root,'.git/objects/info/alternates'),objectDirectory.replaceAll('\\','/')+'\n');
-    const referenceTree=text(root,['rev-parse',REFERENCE+'^{tree}']);
+    // Use the actual whole committed candidate, including every extracted leaf.
+    const reference=text(SOURCE,['rev-parse','HEAD^{commit}']);
+    git(root,['merge-base','--is-ancestor',BASE,reference]);
+    const referenceTree=text(root,['rev-parse',reference+'^{tree}']);
     const readTree=id=>git(root,['ls-tree','-z',id]).toString('utf8').split('\0').filter(Boolean).map(line=>{
       const m=/^(\d{6}) (blob|tree) ([a-f0-9]{40})\t(.+)$/.exec(line);assert(m);return{mode:m[1],type:m[2],oid:m[3],name:m[4]};});
     function rewrite(tree,changes){
@@ -52,8 +56,12 @@ test('normal closed domain planner handles real composition, one same-tree merge
     }
     // hash-object needs binary stdin; no checkout or shared object is mutated.
     const commit=(tree,parents,label)=>git(root,['commit-tree',tree,...parents.flatMap(ref=>['-p',ref]),'-m',label]).toString('utf8').trim();
-    const additions=files.map(file=>[file,fs.readFileSync(path.join(SOURCE,file))]);
-    const tree=rewrite(referenceTree,additions),candidate=commit(tree,[REFERENCE],'synthetic reviewed composition');
+    const additions=files.map(file=>[file,git(root,['cat-file','blob',reference+':'+file])]);
+    // Explicit harmless changes keep the original D1/admin selection assertions real.
+    const syntheticOwners=['js/ui/admin-private-trip-study.js','cloudflare/trip-gateway/trip-aggregate-job.js'];
+    const tree=rewrite(referenceTree,syntheticOwners.map(file=>[file,Buffer.concat([
+      git(root,['cat-file','blob',reference+':'+file]),Buffer.from('\n// Synthetic domain-plan owner selection.\n'),
+    ])])),candidate=commit(tree,[reference],'synthetic reviewed composition');
     git(root,['update-ref','HEAD',candidate]);
     for(const [file,body]of additions){fs.mkdirSync(path.dirname(path.join(root,file)),{recursive:true});fs.writeFileSync(path.join(root,file),body);}
     const {planSourceDomainImpactFromGit:plan}=await import(pathToFileURL(path.join(root,'scripts/source-impact-domain-plan.mjs')).href);
@@ -69,7 +77,7 @@ test('normal closed domain planner handles real composition, one same-tree merge
     for(const domain of Object.values(actual.domains))if(domain.status==='SELECTED'){
       assert(domain.commands.length>0);assert(domain.commands.every(command=>actual.commands.includes(command)));
     }
-    const merged=commit(tree,[REFERENCE,candidate],'synthetic same-tree main merge'),onMerge=run(merged);
+    const merged=commit(tree,[reference,candidate],'synthetic same-tree main merge'),onMerge=run(merged);
     assert.equal(text(root,['rev-parse',merged+'^{tree}']),text(root,['rev-parse',candidate+'^{tree}']));
     assert.equal(text(root,['rev-list','--parents','-n','1',merged]).split(' ').length,3);
     assert.deepEqual(onMerge,actual,'Tree-identical producer and merge must have identical plan/digests');
@@ -90,6 +98,13 @@ test('normal closed domain planner handles real composition, one same-tree merge
     const pg='scripts/test-protected-ravscore-continuation-checkpoint.mjs';
     const changed=commit(rewrite(tree,[[pg,Buffer.concat([git(root,['cat-file','blob',candidate+':'+pg]),Buffer.from('\n// PG input delta\n')])]]),[candidate],'changed PostgreSQL input');
     assert.deepEqual(run(changed).reasonCodes,['POSTGRES_OR_MODEL_INPUT_CHANGED']);
+    // Preserve the old incomplete composition as a real negative, without a whitelist.
+    const obsoleteTree=rewrite(text(root,['rev-parse',LEGACY_REFERENCE+'^{tree}']),additions);
+    const obsolete=commit(obsoleteTree,[LEGACY_REFERENCE],'synthetic obsolete partial composition');
+    git(root,['update-ref','HEAD',obsolete]);
+    const refused=plan({baselineCommit:LEGACY_BASE,candidateCommit:obsolete,expectedHead:obsolete});
+    assert.equal(refused.selection,'FULL');
+    assert.deepEqual(refused.reasonCodes,['UNKNOWN_EXACT_SOURCE_TRANSITION:scripts/test-workflow-validation-order-4.0.108.mjs']);
   }finally{
     assert.equal(path.dirname(fs.realpathSync(root)),temporary);const current=fs.lstatSync(root,{bigint:true});
     assert.equal(current.dev,owned.dev);assert.equal(current.ino,owned.ino);assert.equal(current.birthtimeNs,owned.birthtimeNs);
