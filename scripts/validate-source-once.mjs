@@ -38,10 +38,39 @@ export function buildSourceValidationPlan(scripts) {
   };
 }
 
+// Source checks run synthetic fixtures, not the hydrated production runtime.
+// Keep the host/CI contract explicitly; never pass ambient provider credentials,
+// runtime roots, loader options or alternate Git configuration to a child.
+const SOURCE_HOST_ENVIRONMENT = new Set([
+  'PATH', 'Path', 'PATHEXT', 'SystemRoot', 'SYSTEMROOT', 'WINDIR', 'windir',
+  'COMSPEC', 'ComSpec', 'SystemDrive', 'SYSTEMDRIVE', 'ProgramFiles',
+  'ProgramFiles(x86)', 'ProgramW6432', 'HOME', 'USERPROFILE', 'HOMEDRIVE',
+  'HOMEPATH', 'LOCALAPPDATA', 'APPDATA', 'PROGRAMDATA', 'ProgramData',
+  'TEMP', 'TMP', 'TMPDIR', 'USER', 'USERNAME', 'LOGNAME', 'LANG', 'LANGUAGE',
+  'LC_ALL', 'LC_CTYPE', 'TZ', 'TERM', 'CI', 'FORCE_COLOR', 'NO_COLOR',
+  'PYTHON', 'PYTHON_EXECUTABLE', 'PULL_REQUEST_NUMBER',
+  'GIT_NO_LAZY_FETCH', 'GIT_NO_REPLACE_OBJECTS', 'GIT_TERMINAL_PROMPT',
+]);
+// These are opt-in fixture sizes/measurements or local tool selectors. The
+// historical source wrappers intentionally receive no RAVRADAR_* overrides.
+const SOURCE_TEST_ENVIRONMENT = new Set([
+  'RAVRADAR_PYTHON', 'RAVRADAR_TEST_BASH', 'RAVRADAR_POSIX_TEST_SHELL',
+  'RAVRADAR_CHROME', 'RAVRADAR_TEST_LARGE_FORECAST',
+  'RAVRADAR_TEST_DENSE_COHERENT_WORK_INPUT',
+  'RAVRADAR_RECOVERY_PRIORITY_BENCHMARK', 'RAVRADAR_NATIVE_PROOF_BENCHMARK',
+]);
+function sourceChildEnvironment(command) {
+  const testCommand = /(?:^| )scripts\/test-[^ ]+\.mjs(?: |$)/.test(command);
+  return Object.fromEntries(Object.entries(process.env).filter(([key]) =>
+    SOURCE_HOST_ENVIRONMENT.has(key) || /^(?:GITHUB_|RUNNER_|SOURCE_GATE_)/.test(key)
+      || (testCommand && SOURCE_TEST_ENVIRONMENT.has(key))));
+}
+
 function executeCommand(command) {
   const [program, ...args] = command.split(' ');
   const result = spawnSync(program === 'node' ? process.execPath : program, args, {
     cwd: process.cwd(), stdio: 'inherit', shell: false,
+    env: sourceChildEnvironment(command),
   });
   return result.status === 0 && !result.error && !result.signal ? 0 : 1;
 }

@@ -10,6 +10,7 @@ import { inverseAlternativeCCaller, inverseAssistant587OriginalCompanionTestInpu
   inverseAssistant588OriginalCompanionTestInput, ASSISTANT588_ORIGINAL_COMPANION_TEST_REVIEW,
   inverseAssistant587OriginalRawBoundaryTestInput } from './lib/alternative-c-caller-test-input.mjs';
 import { inverseWindTailCapacityUpdaterTestInput, WIND_TAIL_CAPACITY_UPDATER_TEST_REVIEW,
+  inverseCandidateGReadyGapUpdaterTestInput, CANDIDATE_G_READY_GAP_UPDATER_TEST_REVIEW,
   inverseCurrentNativeOriginalProducerTestInput, CURRENT_NATIVE_ORIGINAL_PRODUCER_TEST_REVIEW,
   inverseCurrentFamilyColdTargetTestInput }
   from './lib/archived-weather-restart-updater-test-input.mjs';
@@ -1479,8 +1480,40 @@ test('assistant591 retention companion uses actual592 whole source before unchan
   assert.throws(() => inverseAssistant591RetentionCompanionTestInput(actual, row.path, true), /ASSISTANT591_RETENTION_ARGUMENTS/);
 });
 
-test('wind-tail default inverse preserves every old updater oracle and refuses other budget or source bytes', async () => {
+test('READY-gap caller has an exact outer inverse before every unchanged wind-tail and historical updater oracle', async () => {
   const actual = (await fs.readFile(producerPath, 'utf8')).replaceAll('\r\n', '\n');
+  const row = CANDIDATE_G_READY_GAP_UPDATER_TEST_REVIEW;
+  assert.equal(Buffer.byteLength(actual), row.after.bytes);
+  assert.equal(digest(actual), row.after.sha256);
+  const before = inverseCandidateGReadyGapUpdaterTestInput(actual, row.path);
+  assert.equal(Buffer.byteLength(before), row.before.bytes);
+  assert.equal(digest(before), row.before.sha256);
+  assert.deepEqual(row.before, WIND_TAIL_CAPACITY_UPDATER_TEST_REVIEW.after);
+  assert.equal(inverseCandidateGReadyGapUpdaterTestInput(before, row.path), before);
+  assert.equal(inverseWindTailCapacityUpdaterTestInput(actual, row.path), inverseWindTailCapacityUpdaterTestInput(before, row.path));
+  assert.equal(inverseAlternativeCCaller(actual, row.path), inverseAlternativeCCaller(before, row.path));
+  assert.equal(inverseCurrentNativeOriginalProducerTestInput(actual, row.path), inverseCurrentNativeOriginalProducerTestInput(before, row.path));
+  const mutations = [actual + '\n', '!' + actual.slice(1),
+    actual.replace('600_000', '600_001')];
+  for (const [old, current] of row.hunks)
+    for (const replacement of [old, current + current, ''])
+      mutations.push(actual.replace(current, () => replacement));
+  for (const changed of mutations) {
+    assert.notEqual(changed, actual);
+    assert.equal(inverseCandidateGReadyGapUpdaterTestInput(changed, row.path), changed);
+    assert.throws(() => inverseAlternativeCCaller(changed, row.path));
+    assert.throws(() => inverseCurrentNativeOriginalProducerTestInput(changed, row.path));
+  }
+  for (const wrongPath of ['', 'scripts/unknown.mjs', 'toString'])
+    assert.equal(inverseCandidateGReadyGapUpdaterTestInput(actual, wrongPath), actual);
+  assert.throws(() => inverseCandidateGReadyGapUpdaterTestInput(actual), /UPDATER_ARGUMENTS/);
+  assert.throws(() => inverseCandidateGReadyGapUpdaterTestInput(actual, row.path, true), /UPDATER_ARGUMENTS/);
+  assert.throws(() => inverseCandidateGReadyGapUpdaterTestInput(null, row.path), /UPDATER_TYPE/);
+});
+
+test('wind-tail default inverse preserves every old updater oracle and refuses other budget or source bytes', async () => {
+  const actual = inverseCandidateGReadyGapUpdaterTestInput(
+    (await fs.readFile(producerPath, 'utf8')).replaceAll('\r\n', '\n'), 'scripts/update-weather.mjs');
   const row = WIND_TAIL_CAPACITY_UPDATER_TEST_REVIEW;
   assert.equal(Buffer.byteLength(actual), row.after.bytes);
   assert.equal(digest(actual), row.after.sha256);

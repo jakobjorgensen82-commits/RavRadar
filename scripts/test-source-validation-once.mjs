@@ -1,3 +1,4 @@
+import './test-source-child-environment.mjs';
 import {inverseReviewedAccountStatisticsAssistantSourceScripts} from './lib/account-statistics-assistant-package-review.mjs';
 import assert from 'node:assert/strict';
 import {createHash} from 'node:crypto';
