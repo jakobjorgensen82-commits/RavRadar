@@ -1596,3 +1596,34 @@ test('release594 actual workflow preserves whole593 and refuses unrelated change
   assert.throws(()=>inverseRelease594WorkflowUserAgents(actual,'build',true),/RELEASE594_WORKFLOW_ARGUMENTS/);
   assert.throws(()=>inverseRelease594WorkflowUserAgents(null,'build'),/RELEASE594_WORKFLOW_TYPE/);
 });
+
+// The actual repair is read before the unchanged historical workflow oracles.
+test('terminal delivery repair maps only five exact whole sources and its exact wrapper inventory', async () => {
+  const { terminalRepair4145WorkflowReview: review, inverseTerminalRepair4145Workflow: inverse,
+    inverseTerminalRepair4145WorkflowInventory: inventory } = await import('./lib/completed-private-runtime-workflow-review.mjs');
+  assert.deepEqual(Object.keys(review.roles), ['orchestrator', 'once', 'repair', 'recovery', 'deploy']);
+  for (const [role, row] of Object.entries(review.roles)) {
+    const actual = (await fs.readFile(new URL('../' + row.path, import.meta.url), 'utf8')).replaceAll('\r\n', '\n');
+    assert.equal(Buffer.byteLength(actual), row.after.bytes); assert.equal(sha(actual), row.after.sha256);
+    const prior = inverse(actual, role);
+    assert.equal(Buffer.byteLength(prior), row.before.bytes); assert.equal(sha(prior), row.before.sha256);
+    assert.equal(inverse(prior, role), prior);
+    assert.equal(inverseCompletedRuntimeWorkflow(actual, role), inverseCompletedRuntimeWorkflow(prior, role));
+    const unknown = actual + '\n# UNREVIEWED terminal repair mutation\n';
+    assert.equal(inverse(unknown, role), unknown, 'Unknown whole bytes never receive the inverse');
+    for (const unknownRole of ['unknown', 'toString', '__proto__', null, 1])
+      assert.equal(inverse(actual, unknownRole), actual, 'Unknown or inherited role cannot select a reviewed inverse');
+    for (const [offset, fragment] of row.edits) {
+      const mixed = actual.slice(0, offset) + 'MIXED_UNREVIEWED' + actual.slice(offset + fragment.length);
+      assert.equal(inverse(mixed, role), mixed, 'Every incomplete/mixed hunk stays outside the whole inverse');
+    }
+  }
+  const wrapper = (await fs.readFile(new URL('../' + review.wrapper.path, import.meta.url), 'utf8')).replaceAll('\r\n', '\n');
+  const names = ['other-unreviewed.yml', review.wrapper.name, 'update-and-deploy.yml'];
+  assert.deepEqual(inventory(names, wrapper), ['other-unreviewed.yml', 'update-and-deploy.yml']);
+  assert.deepEqual(names, ['other-unreviewed.yml', review.wrapper.name, 'update-and-deploy.yml']);
+  assert.throws(() => inventory(names, wrapper + '\n'), /TERMINAL4145_WRAPPER_/);
+  assert.throws(() => inventory(names, wrapper.replace('pull-requests: read', 'pull-requests: write')), /TERMINAL4145_WRAPPER_/);
+  assert.throws(() => inventory([...names, review.wrapper.name], wrapper), /TERMINAL4145_INVENTORY_DUPLICATE/);
+  assert.throws(() => inventory(names.filter(name => name !== review.wrapper.name), wrapper), /TERMINAL4145_WRAPPER_ONE/);
+});

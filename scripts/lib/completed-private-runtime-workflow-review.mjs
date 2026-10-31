@@ -6,6 +6,174 @@ import fs from 'node:fs';
 const review = JSON.parse(fs.readFileSync(new URL('./completed-private-runtime-workflow-review.json', import.meta.url), 'utf8'));
 const coldReview = JSON.parse(fs.readFileSync(new URL('./current-family-cold-start-workflow-review.json', import.meta.url), 'utf8'));
 const sha = value => crypto.createHash('sha256').update(value).digest('hex');
+// TEST ONLY: exact terminal-delivery repair. No ordinary calculation/source
+// admission changes: unknown/mixed bytes are returned to the old strict oracle.
+export const terminalRepair4145WorkflowReview = Object.freeze({
+  "roles": {
+    "orchestrator": {
+      "path": ".github/workflows/update-and-deploy.yml",
+      "before": {
+        "bytes": 67764,
+        "sha256": "784041f35105e63ca60d3199923a20bb6d1c457b70e76a6d2cace2dcc494fe4f"
+      },
+      "after": {
+        "bytes": 67790,
+        "sha256": "2d178154177472a2b469b1c4bb063364dd443ff7122f5de062fc8c0f76940b0c"
+      },
+      "edits": [
+        [
+          15648,
+          "      pull-requests: read\n",
+          ""
+        ]
+      ]
+    },
+    "once": {
+      "path": ".github/workflows/run-current-weather-once.yml",
+      "before": {
+        "bytes": 54634,
+        "sha256": "3f0bbc19336918f20586c92432dc2fb46985d3657d842209a26e788426dcf814"
+      },
+      "after": {
+        "bytes": 54660,
+        "sha256": "b9301a3e3a2e8a25363df5c7e4eaf2128df017220ab5baefde06364410e8bc3e"
+      },
+      "edits": [
+        [
+          3266,
+          "      pull-requests: read\n",
+          ""
+        ]
+      ]
+    },
+    "repair": {
+      "path": ".github/workflows/deploy-code-only-repair.yml",
+      "before": {
+        "bytes": 225095,
+        "sha256": "9d16a127c0e7b0e256e199982b56f14762f370f8e30720b2545a40b97bf09dc1"
+      },
+      "after": {
+        "bytes": 225121,
+        "sha256": "1619b09526d8ea1288bc4c94a690b997f5a5b0f05e12b8ecc26da08e984c4c75"
+      },
+      "edits": [
+        [
+          8547,
+          "      pull-requests: read\n",
+          ""
+        ]
+      ]
+    },
+    "recovery": {
+      "path": ".github/workflows/reusable-operational-reentry.yml",
+      "before": {
+        "bytes": 100817,
+        "sha256": "e561395bf9bda19e7f9c3d0454f77a64721517059640bb1c2be89680b912b4c8"
+      },
+      "after": {
+        "bytes": 102685,
+        "sha256": "6228ec52b4901aa26f6fa29cda81826a5f8c3536441aba8d28e5c78473f19370"
+      },
+      "edits": [
+        [
+          54714,
+          "          node scripts/ravscore-operational-pages-recovery.mjs --read-protected-prepared-target \\\n",
+          "          node scripts/ravscore-operational-pages-recovery.mjs \\\n"
+        ],
+        [
+          44462,
+          "          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}\n          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}\n",
+          ""
+        ],
+        [
+          43871,
+          "        with:\n          fetch-depth: 0\n",
+          ""
+        ],
+        [
+          43456,
+          "      pull-requests: read\n",
+          ""
+        ],
+        [
+          25991,
+          "          node scripts/ravscore-operational-pages-recovery.mjs --read-protected-prepared-target \\\n",
+          "          node scripts/ravscore-operational-pages-recovery.mjs \\\n"
+        ],
+        [
+          6716,
+          "            # Only a repaired caller with an already issued exact ordinary plan\n            # may cross the old-producer/new-executor boundary. The helper reads\n            # and authenticates the protected phase/target again before real CAS.\n            if test \"$(jq -er '.slot.target.sourceHead' \"$RAVRADAR_OPERATIONAL_WORK/pre-activation.json\")\" != \"$GITHUB_SHA\" \\\n              && test \"$(jq -er '.pending' \"$RAVRADAR_OPERATIONAL_WORK/current.json\")\" = false \\\n              && test \"$(jq -er '.publicManifestSha256' \"$RAVRADAR_OPERATIONAL_WORK/current.json\")\" != \"$(jq -er '.slot.target.publicManifestSha256' \"$RAVRADAR_OPERATIONAL_WORK/pre-activation.json\")\"; then\n              gh run download \"$phase_run\" \\\n                --name \"ravscore-operational-recovery-$phase_run-$phase_attempt\" \\\n                --dir \"$RAVRADAR_OPERATIONAL_WORK/prepared-original\"\n              node scripts/protected-operational-reentry-evidence.mjs --begin-terminal-pre-activation \\\n                --repository \"$GITHUB_REPOSITORY\" --attempt \"$RAVRADAR_OPERATIONAL_WORK/pre-activation-attempt.json\" \\\n                --directory \"$RAVRADAR_OPERATIONAL_WORK/prepared-original\" --base-url \"$RAVRADAR_PUBLIC_BASE_URL\" \\\n                --output \"$RAVRADAR_OPERATIONAL_WORK/prepared-begin.json\"\n              # Never keep the pre-BEGIN source/version in the ordinary pending path.\n              node scripts/ravscore-operational-activation.mjs read \\\n                --output \"$RAVRADAR_OPERATIONAL_WORK/current.json\"\n            fi\n",
+          ""
+        ],
+        [
+          4690,
+          "        with:\n          fetch-depth: 0\n",
+          ""
+        ],
+        [
+          3561,
+          "      pull-requests: read\n",
+          ""
+        ],
+        [
+          3075,
+          "  pull-requests: read\n",
+          ""
+        ]
+      ]
+    },
+    "deploy": {
+      "path": ".github/workflows/reusable-pages-deploy.yml",
+      "before": {
+        "bytes": 66387,
+        "sha256": "a7ee43cf148c0431ec4fa6235a5dcd2e69adb391f3defda0fb63efde3de43f52"
+      },
+      "after": {
+        "bytes": 66486,
+        "sha256": "260c06d3fbc08e7bf80563b803eed758251805f55cf4a0c147526d70c3e4b8f1"
+      },
+      "edits": [
+        [
+          32113,
+          "          --source-deployment-id \"$(cat \"$RAVRADAR_OPERATIONAL_HANDOFF/source-deployment-id.txt\")\"\n",
+          ""
+        ]
+      ]
+    }
+  },
+  "wrapper": {
+    "path": ".github/workflows/resume-operational-checkpoint.yml",
+    "name": "resume-operational-checkpoint.yml",
+    "bytes": 1116,
+    "sha256": "498c02e1549e7b4e9c8ffb0674e89968f5ad09c7191f462bbe3660634cae41ad"
+  }
+});
+export function inverseTerminalRepair4145Workflow(source, role) {
+  assert.equal(arguments.length, 2, 'TERMINAL4145_INVERSE_ARGUMENTS');
+  assert.equal(typeof source, 'string', 'TERMINAL4145_INVERSE_TYPE');
+  const roles = terminalRepair4145WorkflowReview.roles;
+  const row = typeof role === 'string' && Object.hasOwn(roles, role) ? roles[role] : null;
+  if (!row || sha(source) !== row.after.sha256) return source;
+  assert.equal(Buffer.byteLength(source), row.after.bytes, 'TERMINAL4145_AFTER_BYTES');
+  for (const [offset, actual, original] of row.edits) {
+    assert.equal(source.slice(offset, offset + actual.length), actual, 'TERMINAL4145_EXACT_SEGMENT');
+    source = source.slice(0, offset) + original + source.slice(offset + actual.length);
+  }
+  assert.equal(Buffer.byteLength(source), row.before.bytes, 'TERMINAL4145_BEFORE_BYTES');
+  assert.equal(sha(source), row.before.sha256, 'TERMINAL4145_WHOLE_PREDECESSOR');
+  return source;
+}
+export function inverseTerminalRepair4145WorkflowInventory(names, wrapperSource) {
+  assert.equal(arguments.length, 2, 'TERMINAL4145_INVENTORY_ARGUMENTS');
+  assert(Array.isArray(names) && names.every(name => typeof name === 'string'), 'TERMINAL4145_INVENTORY_TYPE');
+  assert.equal(new Set(names).size, names.length, 'TERMINAL4145_INVENTORY_DUPLICATE');
+  const row = terminalRepair4145WorkflowReview.wrapper;
+  assert.equal(typeof wrapperSource, 'string', 'TERMINAL4145_WRAPPER_TYPE');
+  assert.equal(Buffer.byteLength(wrapperSource), row.bytes, 'TERMINAL4145_WRAPPER_BYTES');
+  assert.equal(sha(wrapperSource), row.sha256, 'TERMINAL4145_WRAPPER_WHOLE');
+  assert.equal(names.filter(name => name === row.name).length, 1, 'TERMINAL4145_WRAPPER_ONE');
+  return names.filter(name => name !== row.name);
+}
 // TEST ONLY: exact normal pinned-source preparation inverse. The complete
 // preceding594 workflow and every historical oracle remain unchanged.
 export const fullGitPinnedSourcePreparationWorkflowReview = Object.freeze({
@@ -35,6 +203,7 @@ export const fullGitPinnedSourcePreparationWorkflowReview = Object.freeze({
 export function inverseFullGitPinnedSourcePreparationWorkflow(source, role) {
   assert.equal(arguments.length, 2, 'FULL_GIT_PINNED_WORKFLOW_ARGUMENTS');
   assert.equal(typeof source, 'string', 'FULL_GIT_PINNED_WORKFLOW_TYPE');
+  source = inverseTerminalRepair4145Workflow(source, role);
   const row = fullGitPinnedSourcePreparationWorkflowReview;
   if (role !== 'build' || sha(source) !== row.after.sha256) return source;
   assert.equal(Buffer.byteLength(source), row.after.bytes, 'FULL_GIT_PINNED_WORKFLOW_AFTER_SIZE');
@@ -557,6 +726,7 @@ export function inversePairedPrivateRuntimePublication(source, role) {
   return source;
 }
 export function inverseCompletedRuntimeWorkflow(source, role) {
+  source = inverseTerminalRepair4145Workflow(source, role);
   source = inverseOrdinaryCompletedStageWorkflowWiring(source, role);
   source = inverseEarlyCompletedRuntimeStage(source, role);
   source = inversePairedPrivateRuntimePublication(source, role);

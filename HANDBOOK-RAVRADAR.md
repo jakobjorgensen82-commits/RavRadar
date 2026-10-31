@@ -80,6 +80,23 @@ En ny modelbinding kan ændre arbejdsfilens metadata. Derfor er uændrede origin
 
 **Aktuel lokalt udstedt fortsættelseskontrakt — 31. oktober 2026:** 594-T12 er `continuationStateContractSha256=a6c0408f76b5de70a90959e254df78317f8282cb93c0edc85a71d36b9ef8dafa` (`a6c0408f…`). Den nye append-only migration er normalt genereret fra den ægte installerede 593-canonical; originalkontrollen bruger stadig autentiske 591-B/S. Ny PostgreSQL-kvalifikation, installation med genlæsning og strengt senere offentlig 594-generation er åbne. Ældre status bevares som dateret historik.
 
+### Den observerede offentlige forgænger følger begge kaldere
+
+Ved overgang til en nyere model skal deployet medtage identiteten på den faktisk observerede offentlige forgænger. Den samme observerede kilde skal følge både den almindelige og den genoptagne kalder. En nyere offentlig generation må ikke forveksles med den ældre generation, som stadig står centralt.
+
+Den lokale rettelse fører den allerede producerede kildeidentitet videre gennem den almindelige kalder. Den eksisterende korte prøve reproducerer manglen og består efter rettelsen; installation, checkpoint-genoptagelse og offentlig levering er fortsat åbne. Modelbinding, scoreformel, CAS, originale data og hård databevarelse ændres ikke.
+
+### Sikker genoptagelse efter stop før offentlig aktivering
+
+Den gemte beregning og dens originale producent bevares, selv om en senere kodeversion udfører leveringen. En ny executor må ikke ommærke den gamle producent eller genstarte leverandører og beregning. Den særskilte normale checkpoint-indgang bruger den eksisterende genoptagelseskalder og samme eksklusive produktionslås; den er kun vellykket, når der faktisk er gennemført en godkendt genoptagelseshandling.
+
+En levering, der aldrig nåede Pages, afbrydes fortsat som udgangspunkt. Den snævre undtagelse kræver frisk, autentificeret føraktiveringsevidens, den oprindelige plan og originalpakke, en faktisk afsluttet gammel ejer, et faktisk sprunget Pages-trin samt en uændret og fuldt verificeret offentlig kilde. Kun de præcist gennemgåede reparationsfiler må skille producent og executor. Den centrale overgang bruger den eksisterende CAS og genlæses; et ukendt skriveudfald giver ingen automatisk gentagelse.
+
+Beviset genafledes fra de normale, varigt gemte originaler og frisk central tilstand, også efter tab af runner. En kopieret lokal kvittering giver ingen adgang. Workflowkædens læserettighed til kilde-PR-beviset skal følge alle normale kaldere; den ændrer ikke deres standardvalg eller leverandørforløb.
+
+Dette er en lokal, afgrænset leveringsrettelse. Præcis samlet kildekvalifikation, faktisk checkpoint-genoptagelse og ny offentlig vejrlevering er fortsat åbne. Der hentes eller beregnes ikke nyt vejr i checkpoint-indgangen. Modelbinding, scoreformel, kildeprioritet, administratorpunkter, geometri, udstedte SQL-filer, originale B/S og hård databevarelse ændres ikke. SOURCE, statistik og automatisk sletning forbliver inaktive; alle fem hovedmål består.
+
+
 ## 89.290 En ny visningskontrakt skal kunne følge den normale vejrpakke
 
 **Kort fortalt: En forbedring af prognosedelingen ændrer en teknisk visningskontrakt. Vejrhentningen skal kontrollere netop det godkendte skift og stadig bevare alle gamle vejrdata og scorer. Den nye databasebinding er installeret; rettelsen af den normale overgang og dens offentlige virkning skal fortsat kvalificeres.**

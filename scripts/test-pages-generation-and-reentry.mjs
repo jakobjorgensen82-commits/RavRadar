@@ -59,12 +59,47 @@ assert.throws(() => exactPagesAttemptStep([{ ...job('Deploy prepared Pages artif
 assert.throws(() => exactPagesAttemptStep([{ ...job('Deploy prepared Pages artifact'), head_sha: 'b'.repeat(40) }], identity));
 
 const read = file => fs.readFile(`.github/workflows/${file}.yml`, 'utf8');
+function assertSourceReviewRead(source, job) {
+  let scope = source, indent = 0;
+  if (job) {
+    const start = source.indexOf('\n  ' + job + ':\n');
+    assert.ok(start >= 0, 'Expected recovery job: ' + job);
+    // The next two-space job key, rather than one of the job's own fields.
+    const next = source.slice(start + 4).search(/^  [a-z][a-z-]+:\s*$/m);
+    scope = source.slice(start, next < 0 ? source.length : start + 4 + next);
+    indent = 4;
+  }
+  const block = scope.match(new RegExp('^' + ' '.repeat(indent) + 'permissions:\\n((?:' + ' '.repeat(indent + 2) + '[^\\n]*\\n)+)', 'm'));
+  assert.ok(block && new RegExp('^' + ' '.repeat(indent + 2) + 'pull-requests: read$', 'm').test(block[1]),
+    'Source review read permission missing: ' + (job || 'workflow'));
+}
 for (const name of ['update-and-deploy', 'run-current-weather-once', 'deploy-code-only-repair']) {
   const source = await read(name);
   assert.match(source, /ravradar-weather-production-v2/);
   assert.match(source, /uses: \.\/\.github\/workflows\/reusable-operational-reentry.yml/);
+  assertSourceReviewRead(source);
+  assertSourceReviewRead(source, 'operational-recovery-gate');
+  assert.throws(() => assertSourceReviewRead(source.replaceAll('      pull-requests: read\n', ''),
+    'operational-recovery-gate'), /Source review read permission missing/);
 }
 const recovery = await read('reusable-operational-reentry');
+assertSourceReviewRead(recovery);
+for (const job of ['reconcile-operational-pending', 'recover-operational-pages-target']) {
+  assertSourceReviewRead(recovery, job);
+  assert.throws(() => assertSourceReviewRead(recovery.replaceAll('      pull-requests: read\n', ''), job),
+    /Source review read permission missing/);
+}
+const checkpoint = await read('resume-operational-checkpoint');
+assertSourceReviewRead(checkpoint);
+assert.match(checkpoint, /group: ravradar-weather-production-v2/);
+assert.match(checkpoint, /uses: \.\/\.github\/workflows\/reusable-operational-reentry.yml/);
+assert.match(checkpoint, /test "\$RESULT" = success/);
+assert.match(checkpoint, /EXACT_TARGET_REDEPLOY\|TARGET_RECONCILE\|COMPLETED_PRE_ACTIVATION\|PRE_ACTIVATION_RESUME/);
+assert.match(checkpoint, /\*\) echo "No exact prepared target was publicly recovered\." >&2; exit 1/);
+for (const source of [checkpoint, recovery]) {
+  assert.throws(() => assertSourceReviewRead(source.replace(/^  pull-requests: read\n/m, '')),
+    /Source review read permission missing/);
+}
 assert.doesNotMatch(recovery, /^concurrency:/m);
 assert.match(recovery, /github-pages-attempt-evidence.mjs/);
 assert.match(recovery, /assertMonotonicPagesGeneration/);
@@ -85,6 +120,34 @@ for (const name of ['reusable-weather-build', 'deploy-code-only-repair']) {
 }
 const deploy = await read('reusable-pages-deploy');
 assert.doesNotMatch(deploy, /^concurrency:/m);
+
+// Both normal historical begin callers must carry the independently observed
+// public identity, including a valid public generation ahead of central ACTIVE.
+const observedSourceArgument = '--source-deployment-id "$(cat "$RAVRADAR_OPERATIONAL_HANDOFF/source-deployment-id.txt")"';
+function historicalBeginStep(source, id) {
+  const marker = '\n        id: ' + id + '\n';
+  assert.equal(source.split(marker).length, 2, 'One exact historical begin step: ' + id);
+  const at = source.indexOf(marker), end = source.indexOf('\n      - name:', at + marker.length);
+  return source.slice(source.lastIndexOf('\n      - name:', at), end < 0 ? source.length : end);
+}
+function assertObservedHistoricalBeginCallers(source) {
+  for (const id of ['integrated-historical-maintenance-begin', 'code-only-integrated-historical-maintenance-begin']) {
+    const step = historicalBeginStep(source, id);
+    assert.equal(step.split(observedSourceArgument).length, 2,
+      id + ' must pass the observed public source deployment');
+    assert.match(step, /ravscore-operational-activation\.mjs integrated-historical-maintenance-begin/);
+    assert.match(step, /--source-verification "\$RAVRADAR_OPERATIONAL_HANDOFF\/source-verification\.json"/);
+  }
+}
+assertObservedHistoricalBeginCallers(deploy);
+for (const id of ['integrated-historical-maintenance-begin', 'code-only-integrated-historical-maintenance-begin']) {
+  const step = historicalBeginStep(deploy, id);
+  for (const replacement of ['', '--source-deployment-id "${{ inputs.active_deployment_id }}"']) {
+    assert.throws(() => assertObservedHistoricalBeginCallers(deploy.replace(step,
+      step.replace(observedSourceArgument, replacement))), /must pass the observed public source deployment/);
+  }
+}
+
 assert.equal(deploy.match(/check-pages-generation-order.mjs/g).length, 2);
 assert.match(deploy, /exact_public_recovery/);
 assert.match(deploy, /--recovery-source-sha256/);
