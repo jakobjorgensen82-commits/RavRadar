@@ -10,6 +10,9 @@ const row=(path,before,after)=>({path,before,after,beforeMode:'100644',afterMode
 const about=read('js/ui/about-i18n.js'),article=read('js/ui/about-explainer-i18n.js');
 const learn=read('js/ui/learn-i18n-en.js');
 const learnDa=read('js/ui/learn-i18n.js'),learnDe=read('js/ui/learn-i18n-de.js');
+const currentI18nImport=/from '(\.\.\/i18n\.js\?v=4\.0\.\d+)';/.exec(about)?.[1];
+assert.equal(typeof currentI18nImport,'string','The negative import fixture must bind the actual current import');
+assert.equal(about.split(currentI18nImport).length,2,'Exactly one current main i18n import');
 let count=0;
 function targeted(rows,expected){
   const p=plan(rows);assert.equal(p.selection,'TARGETED');assert.deepEqual(p.profiles,expected);
@@ -31,6 +34,30 @@ targeted([row('js/ui/about-explainer-i18n.js',article,article.replace('Wo sind d
 targeted([row('js/ui/learn-i18n-en.js',learn,learn.replace('Learn amber hunting – RavRadar','Learn amber hunting with RavRadar'))],['learning-text']);
 targeted([row('js/ui/learn-i18n.js',learnDa,learnDa.replace("'learn.header':'Grundbog i ravjagt'","'learn.header':'Ravjagtens grundbog'"))],['learning-text']);
 targeted([row('js/ui/learn-i18n-de.js',learnDe,learnDe.replace("'learn.header':'Handbuch der Bernsteinsuche'","'learn.header':'Grundwissen zur Bernsteinsuche'"))],['learning-text']);
+// The two exact reviewed release frames remain independent. These fixtures
+// exercise genuine593 shapes verified against34cf during pin derivation;
+// the planner never strips versions or approves a current release generically.
+for(const [path,current,oldText,newText,profile]of [
+  ['js/ui/about-i18n.js',about,"'about.header':'Om projektet'","'about.header':'Om RavRadar'",'about-text'],
+  ['js/ui/about-explainer-i18n.js',article,'Wo sind die Bedingungen','Wo sind heute die Bedingungen','about-text'],
+  ['js/ui/learn-i18n.js',learnDa,"'learn.header':'Grundbog i ravjagt'","'learn.header':'Ravjagtens grundbog'",'learning-text'],
+  ['js/ui/learn-i18n-de.js',learnDe,"'learn.header':'Handbuch der Bernsteinsuche'","'learn.header':'Grundwissen zur Bernsteinsuche'",'learning-text'],
+  ['js/ui/learn-i18n-en.js',learn,'Learn amber hunting – RavRadar','Learn amber hunting with RavRadar','learning-text'],
+]){
+  const previous=current.replaceAll('?v=4.0.594','?v=4.0.593');
+  assert.notEqual(previous,current,'The known594-to593 fixture must change actual imports');
+  const previousCopy=previous.replace(oldText,newText),currentCopy=current.replace(oldText,newText);
+  assert.notEqual(previousCopy,previous);assert.notEqual(currentCopy,current);
+  targeted([row(path,previous,previousCopy)],[profile]);
+  fallback([row(path,previous,currentCopy)]);
+  const unknown=current.replaceAll('?v=4.0.594','?v=4.0.999');
+  assert.notEqual(unknown,current);fallback([row(path,unknown,unknown.replace(oldText,newText))]);
+  if(current.split('?v=4.0.594').length>2){
+    const mixed=current.replace('?v=4.0.594','?v=4.0.593');
+    assert.notEqual(mixed,current);assert.notEqual(mixed,previous);
+    fallback([row(path,mixed,mixed.replace(oldText,newText))]);
+  }
+}
 const docs=row('docs/rdks/90_INDEX/CURRENT_TRUTH.md','# Old\n','# New\n');
 targeted([docs],['documentation']);
 targeted([docs,row('js/ui/learn-i18n-en.js',learn,learn.replace('Learn amber hunting – RavRadar','Amber hunting – RavRadar'))],['documentation','learning-text']);
@@ -42,7 +69,7 @@ for(const path of ['supabase/migrations/20261030105202_x.sql','supabase/INSTALL-
   fallback([docs,row(path,'old','new')]);
 }
 for(const after of [
-  about.replace('../i18n.js?v=4.0.593','../other.js?v=4.0.593'),
+  about.replace(currentI18nImport,currentI18nImport.replace('../i18n.js','../other.js')),
   about.replace('initialiseI18n();','initialiseI18n();fetch("/other");'),
   about.replace('initialiseI18n();','initialiseI18n("#other-selector");'),
   about.replace("'about.header'","'about.other'"),

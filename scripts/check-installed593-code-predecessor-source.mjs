@@ -12,8 +12,8 @@ const ROOT=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
 const execute=promisify(callbackExec),sha=raw=>crypto.createHash('sha256').update(raw).digest('hex');
 export const FROZEN593_NATIVE_CODE=Object.freeze({
   head:'34cf42ff81cb8be7b3d8bb79029ae648e419a143',tree:'575dfca61399dd29309c4620aab96053f1d930b6',
-  manifestSha256:'12e7b0dfc2446f24d68e43204427f9c3889eb103263860fb433497b06ffe510a',
-  closureSha256:'4d78764b1c76130a068c0af4f829cf527982715dc2d468d1c97aa956eeaa6ca0',
+  manifestSha256:'cc93a06a980a6d0589dd294edebd1f1fcd7fb304c45a59e699873a06e353609a',
+  closureSha256:'979f20a99556ac76a918fe298d3373f3ad32e5a79dacdcc7fa97bcc888768b5a',
 });
 const environment=()=>({...Object.fromEntries(['PATH','Path','SystemRoot','WINDIR','TEMP','TMP','LANG','LC_ALL']
   .filter(key=>typeof process.env[key]==='string').map(key=>[key,process.env[key]])),
@@ -38,7 +38,7 @@ export function verifyFrozen593NativeCodeManifest(bytes){
   const value=JSON.parse(bytes);assert.equal(value.schemaVersion,1);
   assert.equal(value.scope,'GENUINE_593_CODE_FOR_NATIVE_TEST_ONLY');
   assert.equal(value.head,FROZEN593_NATIVE_CODE.head);assert.equal(value.tree,FROZEN593_NATIVE_CODE.tree);
-  assert.equal(value.files.length,185);assert.equal(value.closureSha256,FROZEN593_NATIVE_CODE.closureSha256);
+  assert.equal(value.files.length,186);assert.equal(value.closureSha256,FROZEN593_NATIVE_CODE.closureSha256);
   assert.equal(sha(JSON.stringify(value.files)),value.closureSha256);
   assert.deepEqual(value.files.map(row=>row.file),[...new Set(value.files.map(row=>relative(row.file)))].sort());
   for(const row of value.files){assert.deepEqual(Object.keys(row).sort(),['bytes','file','sha256']);

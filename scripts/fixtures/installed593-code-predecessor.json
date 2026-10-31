@@ -3,7 +3,7 @@
   "scope": "GENUINE_593_CODE_FOR_NATIVE_TEST_ONLY",
   "head": "34cf42ff81cb8be7b3d8bb79029ae648e419a143",
   "tree": "575dfca61399dd29309c4620aab96053f1d930b6",
-  "closureSha256": "4d78764b1c76130a068c0af4f829cf527982715dc2d468d1c97aa956eeaa6ca0",
+  "closureSha256": "979f20a99556ac76a918fe298d3373f3ad32e5a79dacdcc7fa97bcc888768b5a",
   "files": [
     {"file":".github/workflows/validate-pull-request.yml","bytes":9265,"sha256":"3838f9009f7df679581cea1a54eeba535bf4b0c90ae6e786691ba46dedd5afc5"},
     {"file":"config.js","bytes":379,"sha256":"7cb635a4fbfad6693774ecc776dd5df6bef024d59aba51c50eeab380fdc4ed0d"},
@@ -43,6 +43,7 @@
     {"file":"scripts/fixtures/statistics-preference-revision-input.json","bytes":4889,"sha256":"4990770bb2b0ca4bbad5da97156b88a186ef6df95319415ca91819cef8ff49af"},
     {"file":"scripts/integrated-cutover-readiness.mjs","bytes":120541,"sha256":"01cc43ade9be6e9ee1471be18c48f3730762afb935f1ef175055bfb39f80bef5"},
     {"file":"scripts/lib/account-assistant-successor-source.mjs","bytes":4462,"sha256":"eb35dc46cc6792da5ddff026de0bd61258f240a6b037565c29869873afb08bc5"},
+    {"file":"scripts/lib/account-statistics-assistant-package-review.json","bytes":5739,"sha256":"8d068a938290911427dbef05fc75a0700829b48c7f8dee069440ce013bc2c490"},
     {"file":"scripts/lib/account-statistics-assistant-package-review.mjs","bytes":15408,"sha256":"de6492035a8d3ac66f33da13a8337cac65eefc236755c2163cfd55d3c274f214"},
     {"file":"scripts/lib/account-statistics-assistant-successor-source.mjs","bytes":8780,"sha256":"f063a7481b4ea604dc8fc6ebf32fc1d990ad8ebc01eb96bb9cdd474ee90a36b1"},
     {"file":"scripts/lib/assistant-later-h0-postgres.mjs","bytes":29689,"sha256":"f0db482f36685c2c05c34fd53ff6b55e683d5c9fa71a86bd4e81e8395f4b22eb"},

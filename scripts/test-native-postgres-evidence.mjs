@@ -1496,7 +1496,8 @@ test('installed593 new594 normal PG caller validates real canonical inputs befor
 
 test('installed593 fixed genuine593 native code manifest rejects changed bytes and host imports its own factory',async()=>{
   const raw=await fs.readFile('scripts/fixtures/installed593-code-predecessor.json');
-  const manifest=verifyFrozen593NativeCodeManifest(raw);assert.equal(manifest.files.length,185);
+  const manifest=verifyFrozen593NativeCodeManifest(raw);assert.equal(manifest.files.length,186);
+  assert.deepEqual(manifest.files.find(row=>row.file==='scripts/lib/account-statistics-assistant-package-review.json'),{"file":"scripts/lib/account-statistics-assistant-package-review.json","bytes":5739,"sha256":"8d068a938290911427dbef05fc75a0700829b48c7f8dee069440ce013bc2c490"});
   for(const changed of [Buffer.concat([raw,Buffer.from('\n')]),Buffer.from(raw).fill(0,0,1)])
     assert.throws(()=>verifyFrozen593NativeCodeManifest(changed));
   const result=await withFrozen593CheckpointPostgresSource(async({adapter,factory})=>{
