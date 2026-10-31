@@ -1,7 +1,7 @@
 import { canonicalJson, externalOwnerSubject, normalizeCloudflareGatewayUrl, tripGatewaySignature }
   from '../../supabase/functions/_shared/trip-storage.js';
 import { ravScoreModelBinding } from '../../js/core/ravscore-model-contract.js';
-import { assertPrivateNoisyProposal } from '../../cloudflare/trip-gateway/trip-aggregate-dp.js';
+import { assertPrivateTripStudyReport as assertPrivateNoisyProposal } from '../../cloudflare/trip-gateway/trip-aggregate-categorical.js';
 import { buildSupabaseAdminHeaders } from './supabase-admin-rest.mjs';
 import { AGGREGATE_PATH, AGGREGATE_VERIFY_PATH, AGGREGATE_LIMITS, aggregateExact, aggregateFail,
   previousClosedAggregateMonth, assertAggregateRequest, assertAggregateRequestEnvelope, assertClosedAggregatePeriod, assertAggregatePreparationReport }

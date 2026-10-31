@@ -13,17 +13,22 @@ const groups=[
  ['waterLevelTrendM3h','Vandstandsændring (m/3 timer)',['Under −0,1','−0,1–under −0,02','−0,02–under 0,02','0,02–under 0,1','0,1 eller mere']],
 ];
 function reportTable(report){
+ const categorical=report.schemaVersion===3;
  const table=document.createElement('table'),caption=document.createElement('caption');
- caption.textContent='Støjede gruppetal · fund og ikke-fund';table.append(caption);
+ caption.textContent=categorical?'Støjede gruppetal · jagtform og rapporteret fund':'Støjede gruppetal · fund og ikke-fund';table.append(caption);
  const head=document.createElement('thead'),headRow=document.createElement('tr');
- for(const label of ['Vejrforhold','Interval','Fund (støjet)','Ikke-fund (støjet)']){
+ for(const label of categorical?['Vejrforhold','Jagtform','Interval','Intet fund (støjet)','Lidt (støjet)','Middel (støjet)','Meget (støjet)']
+  :['Vejrforhold','Interval','Fund (støjet)','Ikke-fund (støjet)']){
   const th=document.createElement('th');th.scope='col';th.textContent=label;headRow.append(th);
  }
  head.append(headRow);table.append(head);const body=document.createElement('tbody');
  const cells=new Map(report.cells.map(row=>[row.cell,row.noisyCount]));
- for(const [metric,label,bins] of groups)for(let i=0;i<bins.length;i++){
+ for(const [metric,label,bins] of groups)for(const mode of categorical?['beach','waders']:[''])for(let i=0;i<bins.length;i++){
   const row=document.createElement('tr');
-  for(const value of [label,bins[i],cells.get(metric+':'+i+':find'),cells.get(metric+':'+i+':no-find')]){
+  const values=categorical?[label,mode==='beach'?'På stranden':'I waders',bins[i],
+    ...['none','small','medium','good'].map(result=>cells.get(metric+':'+i+':'+mode+':'+result))]
+    :[label,bins[i],cells.get(metric+':'+i+':find'),cells.get(metric+':'+i+':no-find')];
+  for(const value of values){
    const cell=document.createElement('td');cell.textContent=String(value);row.append(cell);
   }
   body.append(row);
@@ -63,6 +68,7 @@ export function mountPrivateTripStudyCard(host,access){
    const report=await readPrivateTripStudyForOwner();current();await permitted();
    assertPrivateTripStudyDisplayReport(report,report.period);current();
    // Ingen await mellem sidste adgangskontrol og visning/eksport.
+   if(report.schemaVersion===3)explanation.textContent='Støjede gruppetal for de fire selvrapporterede fundkategorier, adskilt mellem strand og waders. Alle kvalificerede ture indgår i den samme udvælgelse: højst én tur pr. konto og måned. Søgetid og grundighed er bevaret i grundlaget; der filtreres eller korrigeres ikke efter indsats. Tallene er beskrivende, ikke præcise turantal eller bevis for årsag, og kan ikke lægges sammen på tværs af grupper. Intet fund er ikke det samme som en dårlig tur. Ingen enkeltpersoner eller enkelte ture vises. Rapporten ændrer ikke RavScore og er ikke offentliggjort statistik.';
    const table=reportTable(report);output.replaceChildren(table);
    month.textContent='Rapportmåned: '+new Intl.DateTimeFormat('da-DK',{month:'long',year:'numeric',timeZone:'UTC'}).format(new Date(report.period.start))+' (UTC).';
    if(exportJson){

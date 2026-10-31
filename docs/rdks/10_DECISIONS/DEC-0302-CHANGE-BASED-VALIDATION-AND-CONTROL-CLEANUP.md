@@ -4,6 +4,18 @@
 **Status:** Ejerbeslutning; første afgrænsede kontrolvej er kildeleveret; faktisk målrettet levering og målt tidsgevinst er åbne
 **Besluttet af:** Ejeren gennem direkte instruktioner i den aktuelle samtale
 
+## Præcisering31. oktober — tidsforbrug og fremadrettet594-V2
+
+Ejeren afviser flere timers kontrol som acceptabel normal leveringsvej, uanset ændringstype. Det er et krav om konkret forbedring af gennemløbet, ikke tilladelse til falsk test- eller databevis. Mål faktisk tid i de nødvendige normale forløb, fjern gentaget arbejde, og dokumentér hvad en ændring reelt kan påvirke. En forklaring på, hvorfor kontrollen er langsom, afslutter ikke opgaven.
+
+Den nye lokale594-V2 ligger i de eksisterende tre kontrollere og to normale prøver. Den kræver66 hele moduler, fem datafiler,72 SQL-filer,13 autentiske frosne ankre, egne kontrolbytes, eksplicitte package-scopes samt uændret faktisk runtime og PostgreSQL-programkvartet før og efter. Den oprindelige fase skal være faktisk EXECUTED med efterfølgende upload; en genbrugslocator skal ende dér. Senere negativ/ukendt evidens, ændret kilde, runtime, attempt eller artifact giver ingen genbrugstilladelse. V1 og593-V2 bevares særskilt og bliver ikke bagudrettet594-V2.
+
+Den normale594-producent, nationalrollen og FULL-forbrugeren genlæser den nye type. Nationalkvitteringens syv nativekrav følger den faktiske status/oprindelse; historisk584-national må fortsat aldrig kaldes aktuel594-national. De to eksisterende lokale mål har54 PASS; en ny særskilt transportprøve har1 PASS uden rigtig SQL. Første faktiske Linux-V2-eksekvering, senere faktisk REUSED og målt tidsgevinst er åbne. Selve første dybe kvalifikations lange kæde og den brede kildematrix er ikke løst af genbrugsændringen alene.
+
+Den nye594-læser bruger alene den eksisterende lukkede source-ramme på64 faktiske HTTP-kald og60 sekunder. Gamle593-native24/60, JSON-/ZIP-lofter, streaming og headeradskillelse bevares. En normal fysisk transportprøve viser, at en gyldig genbrugslocator med to senere kørsler kræver25 hop: den gamle24-vej gav unødigt fuld udførelse, den nye594-vej genbruger samme faktisk udførte oprindelse. Reel64-/60s-overskridelse stopper fortsat sikkert. Dette er en særskilt ny lokal prøve, ikke gentaget54-casekørsel eller målt hosted tidsgevinst.
+
+D1-kode og007-forslag, PostgreSQL/modelkode, historisk584-national og en aktuel Candidate-G-auditfixture er forskellige domæner. Tom intersection med modelinput er ikke i sig selv bevis for, at enhver database- eller nationalprøve er irrelevant. Den aktuelle tekstprofil må ikke give blandet kode/DDL en falsk N/A-kvittering. Udvidelse skal følge faktisk normal kalder og relevante afhængigheder uden at bygge et ekstra kontrolbootstrap alene for at flytte samme ventetid.
+
 ## Beslutning
 
 Testomfanget skal følge ændringens faktiske påvirkning og relevante afhængigheder. Uændrede, uvedkommende områder skal ikke automatisk udløse dybe prøver. Korte prøver af den normale kæde kommer tidligt; overflødige, gentagne og erstattede kontroller fjernes fra den normale leveringsvej.
@@ -26,6 +38,24 @@ Princippet gælder hele forløbet: kildekontrol, databasekontrol, nationale prø
 Gennemgå og fjern eller flyt aktuelle prøver, der er gentagelser, forældede eller erstattet af bedre beskyttelse. Historiske uforanderlige kildebanker, SQL-originaler og deres autenticitet bevares. De er forskellige fra en aktuel test, der alene kræver gammel package-tekst eller en gammel workflowstreng ved en legitim ombygning. En gammel nyttig beskyttelse må først udgå, når det er konkret dokumenteret, hvordan kontrakten fortsat dækkes.
 
 Gyldig tidligere evidens kan bruges for uændrede relevante input og forudsætninger. Udførelse, genbrug og ikke-berørt scope er tre forskellige udsagn og skal beskrives ærligt. Gamle V1-receipts ommærkes ikke til V2; et nyt testvalg er ikke et nyt SQL-bevis.
+
+### Konkret afgrænsning af privat eksportprøve — 31. oktober 2026
+
+En privat eksporttest skal beskytte den normale installations-/export-/adgangs- og renderkontrakt. Den må ikke kræve historiske hele dashboardfiler gennem flere versions-, label-, kontotæller- og vejrauditinverser, når disse bytes ikke er eksportens kontrakt. Workflowets præcise installationsarm, publisherens destination/adgang og deres konkrete negative mutationer bevares. Den aktuelle normale learning/render/mount-kobling testes i stedet med samme host og aktuelle adgangsobjekt, alle aktuelle faneskift og negative mutationer for fjernet, duplikeret eller ubetinget mount, forkert adgang/host/import og forkert routing. En ægte relevant fejl forbliver rød.
+
+Historiske dashboardorakler bevares som særskilte CODE/DATA-prøver fra ét kildefast ægte Git-head/træ/stipar med hele byte-/SHA-kontroller. Ukendt sti, head, træ, ændrede bytes og caller-overrides afvises. Den aktuelle rå UI prøves selvstændigt gennem normal import/render/adgang og den eksisterende initial-dashboard-kalder; historisk kode er ingen native- eller runtimeadgang. Der tilføjes ikke en stor heltekstinverse for irrelevante aktuelle UI-tekster.
+
+En eksisterende målprøve er først en del af leveringsbeviset, når den faktisk er kaldt i den normale CI-vej. Den allerede forberedte initial-dashboard-prøve kobles derfor én gang til den eksisterende callers-deltest; der oprettes ikke et nyt bredt workflow eller en ekstra dyb suite. Dens normale loading/failure/retry/draft-adfærd skal faktisk udføres i den næste præcise sourcekvalifikation. Historiske model-/SQL-orakler i andre tests, metadata- og produktgates, gamle originaler og uforanderlige kildebanker ændres ikke. Lokal Node-afprøvning er fortsat ikke GitHub-/Linux-/offentlig leveringsbevis.
+
+En særskilt normal rollback-kontrol skal afvise gennem sine allerede eksisterende små metadata, før den åbner store payloads. Den konkrete lokale CLI-ændring flytter den uændrede afvisningsblok til en helper og læser tre små metadata før de seks kendte negative afvisninger og fem store payloads. Den fulde positive auditkrop, no-loss-/SQL-/modelgates og deres konkrete krav bevares byteuændret; en afvisning bliver ikke en accept. Den eksisterende normale målprøve er faktisk gennemført. Før-/efter-tidsgevinst er ikke målt og må ikke påstås. Det er en konkret failfast-forbedring, ikke tilladelse til at springe positiv kvalifikation eller datakontrol over.
+
+### Deterministisk normal reserveprøve — 31. oktober 2026
+
+Den afgrænsede ændringsbaserede kontrolvej har bestået sin fulde kildekvalifikation og er lagt i main. Det er ikke bevis for en faktisk senere TARGETED-levering, automatisk nativegenbrug eller målt tidsbesparelse. De første korte profiler er fortsat afgrænsede; ukendt eller fælles påvirkning vælger fuldt omfang. Vejrhentningens separate originalovergang er ikke løst af denne kontrollevering.
+
+En efterfølgende kildekontrol fandt en tidsfølsom antagelse i Open-Meteo-PART-prøven: den krævede mindst én HTTP-start inden for 80 ms, selv om normal banklæsning og første checkpoint indgår i samme frist. Den lokale testrettelse styrer alene testens monotone ur under rigtig bank-I/O. Setup på 0/79/80/81 ms kræver præcist 1/1/0/0 starter; uændret pacing afviser næste start. Requests, udskudte opgaver, bank og cursor skal følge faktisk start. Produktkode, 800-loft, 150-ms-pacing, samlet deadline og parameterafslag ændres ikke.
+
+Førfejlen er reproduceret gennem normal forsinket banklæsning; den rettede normale prøve og konkrete negative mutationer består lokalt. Den præcise nye GitHub-kvalifikation og offentlig effekt er åbne. Ingen SQL- eller national produktionsprøve påstås udført eller genbrugt af dette lokale testbevis. Se DEC-0302; detaljeret drifts- og testbevis føres privat.
 
 ## Produktion og leveringsgrænser
 

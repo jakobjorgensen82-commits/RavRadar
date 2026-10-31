@@ -5,6 +5,9 @@ import {requireFreshSession,authIdentityEpoch,currentSession,authorizedFetch} fr
 import {isExactCalibrationModelBinding} from './calibration-eligibility.js?v=4.0.594';
 const CELLS=['windSpeedMs','waveHeightM','currentSpeedMs','waterLevelTrendM3h']
   .flatMap(metric=>Array.from({length:5},(_,i)=>['find','no-find'].map(outcome=>metric+':'+i+':'+outcome))).flat().sort();
+const CATEGORICAL_CELLS=['windSpeedMs','waveHeightM','currentSpeedMs','waterLevelTrendM3h']
+  .flatMap(metric=>Array.from({length:5},(_,i)=>['beach','waders'].flatMap(mode=>['none','small','medium','good']
+    .map(result=>metric+':'+i+':'+mode+':'+result)))).flat().sort();
 const exact=(value,keys)=>value&&typeof value==='object'&&!Array.isArray(value)
   &&Object.keys(value).sort().join(',')===[...keys].sort().join(',');
 const fail=()=>{throw Error('PRIVATE_TRIP_STUDY_UNAVAILABLE');};
@@ -24,16 +27,18 @@ function periodForKey(key){
 }
 export function assertPrivateTripStudyDisplayReport(report,period){
   closedPeriod(period);
+  const categorical=report?.schemaVersion===3,cells=categorical?CATEGORICAL_CELLS:CELLS;
   if(!exact(report,['schemaVersion','kind','cohort','period','modelBinding','policyId','policySha256','originStatus',
-    'weatherStatus','verifiedCalibrationContributors','publicReleaseIssued','cells'])||report.schemaVersion!==2
+    'weatherStatus','verifiedCalibrationContributors','publicReleaseIssued','cells',...(categorical?['effortStatus']:[])])||![2,3].includes(report.schemaVersion)
     ||report.kind!=='PRIVATE_UNISSUED_DP_REVIEW_REPORT'||report.cohort!=='DESCRIPTIVE_SELF_REPORTED_NO_CALIBRATION'
     ||!exact(report.period,['start','end'])||report.period.start!==period.start||report.period.end!==period.end
-    ||!isExactCalibrationModelBinding(report.modelBinding)||report.policyId!=='rr-self-reported-geometric-v2-UNISSUED'
-    ||report.policySha256!=='3587b34f5e3c96f328a56a954db84560977a1e1c614732bbb9887962792a13c9'
+    ||!isExactCalibrationModelBinding(report.modelBinding)||report.policyId!==(categorical?'rr-self-reported-mode-result-geometric-v3-UNISSUED':'rr-self-reported-geometric-v2-UNISSUED')
+    ||report.policySha256!==(categorical?'58ea1d3d218ca754aa511bc55d25bc7d5dbc9dcbbe580ffb7ecd656df56ee1c6':'3587b34f5e3c96f328a56a954db84560977a1e1c614732bbb9887962792a13c9')
     ||report.originStatus!=='UNKNOWN_NOT_TEST_FREE'||report.weatherStatus!=='SELF_REPORTED_NOT_SERVER_ATTESTED'
     ||report.verifiedCalibrationContributors!==0||report.publicReleaseIssued!==false
-    ||!Array.isArray(report.cells)||report.cells.length!==40)fail();
-  for(let i=0;i<40;i++)if(!exact(report.cells[i],['cell','noisyCount'])||report.cells[i].cell!==CELLS[i]
+    ||(categorical&&report.effortStatus!=='ALL_VALIDATED_REPORTED_EFFORT_UNADJUSTED')
+    ||!Array.isArray(report.cells)||report.cells.length!==cells.length)fail();
+  for(let i=0;i<cells.length;i++)if(!exact(report.cells[i],['cell','noisyCount'])||report.cells[i].cell!==cells[i]
     ||!Number.isSafeInteger(report.cells[i].noisyCount)||report.cells[i].noisyCount<0||report.cells[i].noisyCount>1000)fail();
   return report;
 }

@@ -45,10 +45,10 @@ function zip(raw,name){
     'import io,sys,zipfile; b=io.BytesIO(); z=zipfile.ZipFile(b,"w",compression=zipfile.ZIP_DEFLATED); z.writestr(sys.argv[1],sys.stdin.buffer.read()); z.close(); sys.stdout.buffer.write(b.getvalue())',name],
   {input:raw,maxBuffer:65536,timeout:10000,stdio:['pipe','pipe','pipe']});
 }
-function fixture({v2=false,reused=false,installed594=false}={}){
+function fixture({v2=false,reused=false,installed594=false,installed594V2=false}={}){
   const native={phase:'ASSISTANT_PUBLIC591_SUCCESSOR',commands:[...ASSISTANT_PUBLIC591_SUCCESSOR_COMMANDS],
     status:'EXECUTED',executedInThisRun:true,origin:null,eligibleForReuse:false,current:copy(current)};
-  if(v2)Object.assign(native,{schemaVersion:2,kind:ASSISTANT_PUBLIC591_V2_KIND,profile:ASSISTANT_PUBLIC591_V2_PROFILE,
+  if(v2||installed594V2)Object.assign(native,{schemaVersion:2,kind:ASSISTANT_PUBLIC591_V2_KIND,profile:ASSISTANT_PUBLIC591_V2_PROFILE,
     eligibleForReuse:true,nativeInput:{schemaVersion:1,files:140,modules:65,sqlFiles:71,
       moduleSha256:ASSISTANT_PUBLIC591_REVIEWED_MODULE_SHA256,inputSha256:'a'.repeat(64),controlsSha256:'b'.repeat(64),
       packageMode:{type:'module',version:'4.0.593'},packageScopes:assistantPublic591RootPackageScopes(),
@@ -60,11 +60,16 @@ function fixture({v2=false,reused=false,installed594=false}={}){
         files:['initdb','pg_ctl','psql','postgres'].map(name=>({name,path:'/usr/lib/postgresql/16/bin/'+name,
           realpath:'/usr/lib/postgresql/16/bin/'+name,mode:0o755,bytes:100,sha256:'c'.repeat(64),
           version:name+' (PostgreSQL) 16.10'}))}}});
-  if(installed594){assert(!v2&&!reused);Object.assign(native,{schemaVersion:1,kind:INSTALLED593_ORIGINAL591_PHASE_KIND,
+  if(installed594||installed594V2){assert(!v2&&(!reused||installed594V2));Object.assign(native,{schemaVersion:1,kind:INSTALLED593_ORIGINAL591_PHASE_KIND,
     phase:'INSTALLED593_ORIGINAL591_SUCCESSOR',sourcePhase:'assistant-installed593-origin591-successor',
     releaseVersion:requireInstalled593Original591Release(),binding:copy(requireInstalled593Original591Binding()),
     output:copy(requireInstalled593Original591Output()),databaseBefore:copy(INSTALLED593_ORIGINAL591_DATABASE_BEFORE),
-    commands:[...INSTALLED593_ORIGINAL591_COMMANDS]});}
+    commands:[...INSTALLED593_ORIGINAL591_COMMANDS]});
+    if(installed594V2)Object.assign(native,{schemaVersion:2,kind:INSTALLED593_ORIGINAL591_V2_KIND,
+      profile:INSTALLED593_ORIGINAL591_V2_PROFILE,eligibleForReuse:true,
+      nativeInput:{schemaVersion:1,files:143,modules:66,sqlFiles:72,moduleSha256:INSTALLED593_ORIGINAL591_REVIEWED_MODULE_SHA256,
+        inputSha256:'a'.repeat(64),controlsSha256:'b'.repeat(64),packageMode:{type:'module',version:'4.0.594'},
+        packageScopes:installed593Original591RootPackageScopes(),frozenGitTrees:copy(INSTALLED593_ORIGINAL591_FROZEN)}});}
   const national={status:'EXECUTED',executedInThisRun:true,origin:null,command:NATIONAL_COMMAND,
     sourceScope:'HISTORICAL_584_NATIONAL_ONLY',frozenHead:NATIONAL.head,frozenTree:NATIONAL.tree,
     historicalInput:{head:NATIONAL.head,tree:NATIONAL.tree,content:NATIONAL.content},
@@ -77,7 +82,7 @@ function fixture({v2=false,reused=false,installed594=false}={}){
     currentAssistantPublic591SuccessorSource:{command:'npm run test:assistant-later-h0-source',
       actualCommand:ASSISTANT_PUBLIC591_SUCCESSOR_SOURCE_COMMAND,separatelyRequired:true}};
   if(reused){
-    assert(v2);Object.assign(native,{status:'REUSED',executedInThisRun:false,origin:{run:runId-1,attempt:1,
+    assert(v2||installed594V2);Object.assign(native,{status:'REUSED',executedInThisRun:false,origin:{run:runId-1,attempt:1,
       job:jobId-1,head:h('f'),artifactId:50000000000,artifactDigest:'sha256:'+'d'.repeat(64),sourceTreeSha256}});
     Object.assign(national,{status:'REUSED',executedInThisRun:false,origin:copy(NATIONAL),
       sourceScope:'HISTORICAL_584_ONLY',artifactSha256:NATIONAL.zipSha256,
@@ -85,7 +90,7 @@ function fixture({v2=false,reused=false,installed594=false}={}){
     Object.assign(national.currentAssistantPublic591SuccessorNative,{status:native.status,
       executedInThisRun:native.executedInThisRun,origin:copy(native.origin)});
   }
-  if(installed594){
+  if(installed594||installed594V2){
     delete national.currentAssistantPublic591SuccessorNative;delete national.currentAssistantPublic591SuccessorSource;
     Object.assign(national,installed593Original591NativeClaims(native,current),{
       currentInstalled593Original591SuccessorNationalExecutionClaimed:false,
@@ -94,7 +99,7 @@ function fixture({v2=false,reused=false,installed594=false}={}){
   }
   const full={schemaVersion:1,contractId:SOURCE_GATE_CONTRACT,repository:repo,pullRequestNumber:pr,
     headSha:head,sourceTreeSha256,privatePayloadIncluded:false,nativePostgres:native,historical584National:national};
-  const phase={schemaVersion:v2?2:1,kind:installed594?INSTALLED593_ORIGINAL591_PHASE_KIND:v2?ASSISTANT_PUBLIC591_V2_KIND:ASSISTANT_PUBLIC591_SUCCESSOR_PHASE_KIND,
+  const phase={schemaVersion:v2||installed594V2?2:1,kind:installed594V2?INSTALLED593_ORIGINAL591_V2_KIND:installed594?INSTALLED593_ORIGINAL591_PHASE_KIND:v2?ASSISTANT_PUBLIC591_V2_KIND:ASSISTANT_PUBLIC591_SUCCESSOR_PHASE_KIND,
     repository:repo,headSha:head,sourceTreeSha256,privatePayloadIncluded:false,nativePostgres:copy(native)};
   const job={id:jobId,run_id:runId,run_attempt:1,head_sha:head,name:PULL_REQUEST_SOURCE_JOB,status:'completed',conclusion:'success',
     steps:Array.from({length:22},(_,i)=>step('Synthetic setup '+(i+1),i+1))};
@@ -297,3 +302,36 @@ test('installed593 new594 normal FULL baseline qualifies its own executed proof 
     const f=fixture({installed594:true});mutate(f);f.rebuild();assert.equal((await f.qualify()).status,'REFUSED');
   }
 });
+
+
+import {INSTALLED593_ORIGINAL591_V2_KIND,INSTALLED593_ORIGINAL591_V2_PROFILE,
+  INSTALLED593_ORIGINAL591_REVIEWED_MODULE_SHA256,INSTALLED593_ORIGINAL591_FROZEN,
+  installed593Original591RootPackageScopes} from './native-postgres-evidence.mjs';
+test('594 V2 FULL normal caller binds both new proofs and all seven executed/reused native claims',async()=>{
+  for(const reused of [false,true]){
+    const accepted=fixture({installed594V2:true,reused}),result=await accepted.qualify();
+    assert.equal(result.kind,SOURCE_IMPACT_FULL_BASELINE_KIND);assert.equal(result.scope,'FULL_SOURCE');
+    assert.equal(accepted.full.nativePostgres.executedInThisRun,!reused);assert.equal(accepted.zipCalls.length,2);
+    for(const mutate of [f=>f.phase.kind=ASSISTANT_PUBLIC591_V2_KIND,f=>f.phase.schemaVersion=1,
+      f=>f.phase.nativePostgres.schemaVersion=1,f=>f.full.nativePostgres.nativeInput=v2Synthetic593Input(),
+      f=>f.phase.nativePostgres.nativeInput.controlsSha256='f'.repeat(64),
+      f=>f.full.nativePostgres.databaseBefore.I='f'.repeat(64),
+      f=>f.full.historical584National.current593PredecessorNative.executedInThisRun=reused,
+      f=>f.full.historical584National.current586PredecessorNative.origin={run:1},
+      f=>f.full.historical584National.currentInstalled593Original591SuccessorNative.eligibleForReuse=false,
+      f=>f.full.historical584National.currentInstalled593Original591SuccessorNationalExecutionClaimed=true]){
+      const bad=fixture({installed594V2:true,reused});mutate(bad);bad.rebuild();
+      assert.equal((await bad.qualify()).status,'REFUSED');
+    }
+    if(reused)for(const key of Object.keys(installed593Original591NativeClaims(accepted.full.nativePostgres,current))){
+      const bad=fixture({installed594V2:true,reused:true});Object.assign(bad.full.historical584National[key],
+        {status:'EXECUTED',executedInThisRun:true,origin:null});bad.rebuild();assert.equal((await bad.qualify()).status,'REFUSED',key);
+    }
+  }
+  const old=fixture({installed594:true});old.phase.kind=INSTALLED593_ORIGINAL591_V2_KIND;
+  old.phase.schemaVersion=2;old.rebuild();assert.equal((await old.qualify()).status,'REFUSED','No V1 retroactive upgrade');
+});
+function v2Synthetic593Input(){return {schemaVersion:1,files:140,modules:65,sqlFiles:71,
+  moduleSha256:ASSISTANT_PUBLIC591_REVIEWED_MODULE_SHA256,inputSha256:'a'.repeat(64),controlsSha256:'b'.repeat(64),
+  packageMode:{type:'module',version:'4.0.593'},packageScopes:assistantPublic591RootPackageScopes(),
+  frozenGitTrees:copy(ASSISTANT_PUBLIC591_FROZEN)};}

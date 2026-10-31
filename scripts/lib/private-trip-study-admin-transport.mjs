@@ -1,7 +1,7 @@
 // Reuse existing protected admin_documents; fixed key, INSERT only, no raw output.
 import {buildSupabaseAdminHeaders} from './supabase-admin-rest.mjs';
 import {schemaTokens} from '../prepare-cloudflare-trip-storage.mjs';
-import {assertPrivateNoisyProposal} from '../../cloudflare/trip-gateway/trip-aggregate-dp.js';
+import { assertPrivateTripStudyReport as assertPrivateNoisyProposal } from '../../cloudflare/trip-gateway/trip-aggregate-categorical.js';
 import {assertClosedAggregatePeriod} from '../../supabase/functions/_shared/trip-aggregate-contract.js';
 import {canonicalJson,sha256Hex} from '../../supabase/functions/_shared/trip-storage.js';
 const PROJECT='afqhhdrkjfjtpadntdzo',BASE='https://'+PROJECT+'.supabase.co';

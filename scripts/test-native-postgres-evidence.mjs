@@ -1241,7 +1241,8 @@ test('593 V2 receipts and bounded marker preserve V1 refusal and reject identity
   }
 });
 
-function v2LiveFixture({laterFailure=false,locator=false,emptyOriginProjection=false}={}){
+function v2LiveFixture({laterFailure=false,locator=false,emptyOriginProjection=false,installed594V2=false}={}){
+  const receiptFor=installed594V2?installed594V2Receipt:v2Receipt,inputFor=installed594V2?installed594V2Input:v2Input;
   const current=v2Current(),originId=ORIGIN.run+500,locatorId=ORIGIN.run+550;
   const originalCurrent={run:originId,attempt:1,head:oid,pullRequest:750,branch:'synthetic-other-branch'};
   const origin={...copy(run),id:originId,head_sha:oid,head_branch:originalCurrent.branch,
@@ -1258,11 +1259,11 @@ function v2LiveFixture({laterFailure=false,locator=false,emptyOriginProjection=f
   const originalJobs=makeJobs(origin),midJobs=makeJobs(mid),zip=Buffer.from('bounded synthetic artifact bytes');
   if(laterFailure)midJobs.jobs[0].steps[15].conclusion='failure';
   const proofFor=r=>{
-    const native=v2Receipt({run:r.id,attempt:1,head:r.head_sha,pullRequest:r.id===originId?750:751,branch:r.head_branch});
+    const native=receiptFor({run:r.id,attempt:1,head:r.head_sha,pullRequest:r.id===originId?750:751,branch:r.head_branch});
     if(r.id===locatorId){native.status='REUSED';native.executedInThisRun=false;native.origin={
       run:originId,attempt:1,job:originalJobs.jobs[0].id,head:oid,artifactId:originId+2000,
       artifactDigest:'sha256:'+v2Hash(zip),sourceTreeSha256:'sha256:'+'e'.repeat(64)};}
-    return {schemaVersion:2,kind:ASSISTANT_PUBLIC591_V2_KIND,repository:ORIGIN.repository,headSha:r.head_sha,
+    return {schemaVersion:2,kind:native.kind,repository:ORIGIN.repository,headSha:r.head_sha,
       sourceTreeSha256:'sha256:'+'e'.repeat(64),privatePayloadIncluded:false,nativePostgres:native};
   };
   const artifactFor=r=>({id:r.id+2000,name:'native586-phase-'+r.id+'-1-'+r.head_sha,expired:false,size_in_bytes:zip.length,
@@ -1304,7 +1305,7 @@ function v2LiveFixture({laterFailure=false,locator=false,emptyOriginProjection=f
     }
     throw new Error('UNEXPECTED_SYNTHETIC_ROUTE');
   };
-  const options={local:v2Receipt(current),get,getRuntime:async()=>v2Runtime(),getInput:async()=>v2Input(),
+  const options={local:receiptFor(current),get,getRuntime:async()=>v2Runtime(),getInput:async()=>inputFor(),
     readGit:args=>args[0]==='rev-parse'?current.head:'identical reviewed proof/setup control',
     decode:()=>Buffer.from(JSON.stringify(proofFor(decoding)))};
   return {options,calls,fault,origin,originalJobs,zip,proofFor,artifactFor,originPullFor};
@@ -1515,4 +1516,202 @@ test('installed593 fixed genuine593 native code manifest rejects changed bytes a
     return 'synthetic-code-only-callback';
   });
   assert.equal(result,'synthetic-code-only-callback');
+});
+
+
+import {INSTALLED593_ORIGINAL591_V2_KIND,INSTALLED593_ORIGINAL591_V2_PROFILE,
+  INSTALLED593_ORIGINAL591_INPUT_MODULES,INSTALLED593_ORIGINAL591_REVIEWED_MODULE_SHA256,
+  INSTALLED593_ORIGINAL591_FROZEN,installed593Original591RootPackageScopes,
+  captureInstalled593Original591Input,verifyInstalled593Original591Input,
+  verifyInstalled593Original591V2PhaseReceipt,verifyInstalled593Original591Artifact,
+  decideInstalled593Original591Reuse,completeInstalled593Original591Execution,
+  installed593Original591Reader} from './native-postgres-evidence.mjs';
+const installed594V2Input=()=>({schemaVersion:1,files:143,modules:66,sqlFiles:72,
+  moduleSha256:INSTALLED593_ORIGINAL591_REVIEWED_MODULE_SHA256,inputSha256:'a'.repeat(64),controlsSha256:'b'.repeat(64),
+  packageMode:{type:'module',version:'4.0.594'},packageScopes:installed593Original591RootPackageScopes(),
+  frozenGitTrees:copy(INSTALLED593_ORIGINAL591_FROZEN)});
+function installed594V2Receipt(current=installed594Receipt().current){
+  return {...installed594Receipt(),schemaVersion:2,kind:INSTALLED593_ORIGINAL591_V2_KIND,
+    profile:INSTALLED593_ORIGINAL591_V2_PROFILE,eligibleForReuse:true,current,
+    nativeInput:installed594V2Input(),runtime:v2Runtime()};
+}
+
+test('594 V2 normal capture binds66 actual modules/five data/all72 SQL, controls, scopes and genuine593 anchor',async()=>{
+  const {execFileSync}=await import('node:child_process'),cache=new Map(),selected=new Set();
+  const readGit=args=>{const key=JSON.stringify(args);if(args[0]==='cat-file')selected.add(args[2].split(':').slice(1).join(':'));
+    if(!cache.has(key))cache.set(key,execFileSync('git',args,{encoding:'utf8',maxBuffer:64*1024*1024,timeout:30000,
+      env:{...process.env,GIT_NO_LAZY_FETCH:'1',GIT_NO_REPLACE_OBJECTS:'1',GIT_TERMINAL_PROMPT:'0'}}));return cache.get(key);};
+  const original=await captureInstalled593Original591Input({physical:false,readGit});
+  verifyInstalled593Original591Input(original);assert.equal(INSTALLED593_ORIGINAL591_INPUT_MODULES.length,66);
+  assert.equal(original.frozenGitTrees.length,13);assert.deepEqual(original.frozenGitTrees.at(-1),
+    {head:FROZEN593_NATIVE_CODE.head,tree:FROZEN593_NATIVE_CODE.tree});
+  for(const file of ['scripts/check-installed593-code-predecessor-source.mjs','scripts/fixtures/installed593-code-predecessor.json',
+    'scripts/native-postgres-evidence.mjs','scripts/national584-source-evidence.mjs','scripts/source-impact-full-baseline.mjs',
+    'scripts/test-native-postgres-evidence.mjs','scripts/test-source-impact-full-baseline.mjs',WORKFLOW,
+    'requirements-dmi.txt','requirements-geometry.txt','requirements-copernicus.txt',
+    'scripts/lib/source-tree-content.mjs','scripts/lib/weather-source-gate.mjs',
+    'scripts/lib/source-impact-workflow-review.mjs','scripts/lib/account-statistics-assistant-package-review.mjs',
+    'scripts/lib/account-statistics-assistant-package-review.json','scripts/validate-source-once.mjs',
+    'scripts/run-frozen584-source-targets.mjs','scripts/lib/frozen584-normal-source-target-inventory.json'])assert(selected.has(file),file);
+  for(const file of ['scripts/check-installed593-code-predecessor-source.mjs','scripts/fixtures/installed593-code-predecessor.json',
+    'scripts/national584-source-evidence.mjs','scripts/source-impact-full-baseline.mjs','scripts/lib/source-tree-content.mjs',
+    [...selected].find(file=>file.startsWith('supabase/migrations/'))]){
+    const changed=()=>captureInstalled593Original591Input({physical:false,readGit:args=>readGit(args)
+      +(args[0]==='cat-file'&&args[2]==='HEAD:'+file?'\n':'')});
+    if(file.endsWith('predecessor-source.mjs'))await assert.rejects(changed(),/Native closure changed/);
+    const awaited=file.endsWith('predecessor-source.mjs')?null:await changed();
+    if(awaited)assert.throws(()=>verifyInstalled593Original591Input(awaited,original));
+  }
+  for(const file of ['js/package.json','scripts/package.json']){
+    const nested=await captureInstalled593Original591Input({physical:false,readGit:args=>args[0]==='ls-tree'
+      ?readGit(args)+'100644 blob '+newOid+'\t'+file+'\0':args[0]==='cat-file'&&args[2]==='HEAD:'+file
+        ?JSON.stringify({type:'commonjs'}):readGit(args)});
+    assert.throws(()=>verifyInstalled593Original591Input(nested,original));
+  }
+  await assert.rejects(captureAssistantPublic591Input({physical:false,readGit}),'593 is not594');
+});
+
+test('594 V2 receipt/marker and national caller preserve V1 refusals and composite execution origin',async()=>{
+  const receipt=installed594V2Receipt(),current=receipt.current;
+  verifyInstalled593Original591V2PhaseReceipt(receipt,current);
+  assert.throws(()=>verifyInstalled593Original591PhaseReceipt(receipt,current));
+  assert.throws(()=>verifyAssistantPublic591V2PhaseReceipt(receipt,current));
+  assert.throws(()=>verifyInstalled593Original591V2PhaseReceipt(installed594Receipt(),current));
+  for(const mutate of [v=>v.kind=ASSISTANT_PUBLIC591_V2_KIND,v=>v.profile=ASSISTANT_PUBLIC591_V2_PROFILE,
+    v=>v.nativeInput=v2Input(),v=>v.nativeInput.modules=65,v=>v.nativeInput.sqlFiles=71,
+    v=>v.binding.I='f'.repeat(64),v=>v.databaseBefore.I='f'.repeat(64),v=>v.output.migrationSha256='f'.repeat(64),
+    v=>v.runtime.selectedPrograms.files.pop(),v=>v.origin={run:1},v=>v.executedInThisRun=false]){
+    const changed=copy(receipt);mutate(changed);assert.throws(()=>verifyInstalled593Original591V2PhaseReceipt(changed,current));
+  }
+  const raw=JSON.stringify({kind:'RAVRADAR_NATIVE_PROGRAM_IDENTITY_V2',phase:receipt.phase,programs:receipt.runtime.selectedPrograms})+'\n';
+  const collector=nativeProgramMarkerCollector(receipt.phase);for(let i=0;i<raw.length;i+=7)collector.write(raw.slice(i,i+7));
+  assert.deepEqual(collector.finish(),receipt.runtime.selectedPrograms);
+  for(const body of ['',raw+raw,raw.slice(0,-1),raw.replace(receipt.phase,'ASSISTANT_PUBLIC591_SUCCESSOR')]){
+    const bad=nativeProgramMarkerCollector(receipt.phase);bad.write(body);assert.throws(()=>bad.finish());
+  }
+  assert.throws(()=>nativeProgramMarkerCollector('ARBITRARY_PHASE'));
+  const reused=await decideInstalled593Original591Reuse(v2LiveFixture({installed594V2:true}).options);
+  for(const native of [receipt,reused]){
+    verifyInstalled593Original591NativeContext(native,native.current,'4.0.594');
+    const claims=installed593Original591NativeClaims(native,native.current);assert.equal(Object.keys(claims).length,7);
+    assert.equal(claims.current593PredecessorNative.scope,'GENUINE_FROZEN593');
+    for(const claim of Object.values(claims))assert.deepEqual([claim.status,claim.executedInThisRun,claim.origin,claim.eligibleForReuse],
+      [native.status,native.executedInThisRun,native.origin,true]);
+  }
+});
+
+test('594 V2 normal live caller requires its own new executed origin/upload, merged PR and final freshness; unknown reruns',async()=>{
+  for(const options of [{},{locator:true},{emptyOriginProjection:true},{locator:true,emptyOriginProjection:true}]){
+    const f=v2LiveFixture({...options,installed594V2:true}),result=await decideInstalled593Original591Reuse(f.options);
+    assert.equal(result.status,'REUSED');assert.equal(result.executedInThisRun,false);assert.equal(result.origin.run,f.origin.id);
+  }
+  for(const fault of ['currentHead','attempt','preflight','number','expired','originPullUnavailable']){
+    const f=v2LiveFixture({installed594V2:true});f.fault[fault]=true;
+    assert.equal((await decideInstalled593Original591Reuse(f.options)).status,'EXECUTE',fault);
+  }
+  for(const mutate of [v=>v.expired=true,v=>v.workflow_run.head_sha=newOid,v=>v.name='other',v=>v.id=0,
+    v=>v.size_in_bytes=65537,v=>v.digest='unknown',v=>v.created_at='unknown']){
+    const f=v2LiveFixture({installed594V2:true});f.fault.artifactMutation=mutate;
+    assert.equal((await decideInstalled593Original591Reuse(f.options)).status,'EXECUTE');
+    assert.equal(f.calls.filter(route=>route.endsWith('/zip')).length,0);
+  }
+  for(const finalOnly of [false,true]){
+    const f=v2LiveFixture({installed594V2:true,emptyOriginProjection:true});
+    f.fault.originPullMutation=(pr,count)=>{if(!finalOnly||count===2)pr.head.sha=newOid;};
+    assert.equal((await decideInstalled593Original591Reuse(f.options)).status,'EXECUTE');
+  }
+  assert.equal((await decideInstalled593Original591Reuse(v2LiveFixture({installed594V2:true,laterFailure:true}).options)).status,'EXECUTE');
+  const drift=v2LiveFixture({installed594V2:true});drift.options.getRuntime=async()=>({...v2Runtime(),imageVersion:'20261031.1'});
+  assert.equal((await decideInstalled593Original591Reuse(drift.options)).status,'EXECUTE');
+  const inputDrift=v2LiveFixture({installed594V2:true});inputDrift.options.getInput=async()=>({...installed594V2Input(),controlsSha256:'f'.repeat(64)});
+  assert.equal((await decideInstalled593Original591Reuse(inputDrift.options)).status,'EXECUTE');
+  const old=v2LiveFixture();assert.equal((await decideInstalled593Original591Reuse(old.options)).status,'EXECUTE');
+  const upgraded=v2LiveFixture({installed594V2:true});Object.assign(upgraded.options.local,
+    {schemaVersion:1,kind:INSTALLED593_ORIGINAL591_PHASE_KIND,eligibleForReuse:false});
+  assert.equal((await decideInstalled593Original591Reuse(upgraded.options)).status,'EXECUTE');
+  assert.equal(upgraded.calls.length,0,'An augmented V1 cannot even start origin transport');
+  const f=v2LiveFixture({installed594V2:true}),phase=verifyAssistantPublic591Metadata(f.origin,f.originalJobs),proof=f.proofFor(f.origin);
+  assert.equal(verifyInstalled593Original591Artifact(f.artifactFor(f.origin),f.zip,Buffer.from(JSON.stringify(proof)),f.origin,phase,
+    f.originPullFor(f.origin)).nativePostgres.status,'EXECUTED');
+  for(const native of [installed594Receipt(),v2Receipt(),{...installed594V2Receipt(),status:'REUSED'}]){
+    const changed={...proof,nativePostgres:native};assert.throws(()=>verifyInstalled593Original591Artifact(f.artifactFor(f.origin),f.zip,
+      Buffer.from(JSON.stringify(changed)),f.origin,phase,f.originPullFor(f.origin)));
+  }
+});
+
+test('594 V2 normal execution boundary requires finished marker and fresh input/runtime after proved cleanup',async()=>{
+  const local=installed594V2Receipt(),programs=local.runtime.selectedPrograms;
+  const options={getInput:async()=>installed594V2Input(),getRuntime:async()=>v2Runtime()};
+  const executed=await completeInstalled593Original591Execution(local,programs,options);
+  assert.deepEqual([executed.status,executed.executedInThisRun,executed.origin],['EXECUTED',true,null]);
+  for(const selected of [null,{...programs,majorVersion:17},v2Runtime().selectedPrograms.files])
+    await assert.rejects(completeInstalled593Original591Execution(local,selected,options));
+  await assert.rejects(completeInstalled593Original591Execution(local,programs,
+    {...options,getInput:async()=>({...installed594V2Input(),controlsSha256:'f'.repeat(64)})}));
+  await assert.rejects(completeInstalled593Original591Execution(local,programs,
+    {...options,getRuntime:async()=>({...v2Runtime(),imageVersion:'20261031.1'})}));
+  const source=await fs.readFile('scripts/lib/checkpoint-cas-native-postgres.mjs','utf8');
+  const cleanup=source.indexOf('if (cleanupAllowed && (!started || stopped)) await fs.rm('),
+    complete=source.indexOf('completedReport.nativeProgramIdentity=after;');assert(cleanup>=0&&complete>cleanup);
+  const caller=await fs.readFile('scripts/test-protected-ravscore-continuation-checkpoint.mjs','utf8');
+  assert(caller.indexOf("kind:'RAVRADAR_NATIVE_PROGRAM_IDENTITY_V2'")>caller.indexOf('const report = await runNativeCheckpointSqlComparison('));
+  assert(caller.includes("?'INSTALLED593_ORIGINAL591_SUCCESSOR':'ASSISTANT_PUBLIC591_SUCCESSOR'"));
+});
+
+test('594 V2 normal locator transport reuses beyond24 physical hops and safely refuses64 or60s overflow',async t=>{
+  const run=async(reader,{laterRuns=2,expireDuringFetch=false}={})=>{
+    const fixture=v2LiveFixture({installed594V2:true,locator:true,emptyOriginProjection:true}),synthetic=fixture.options.get;
+    const extra=Array.from({length:laterRuns-1},(_,i)=>({...copy(fixture.origin),id:fixture.origin.id+i+1,
+      head_sha:'c'.repeat(40),head_branch:'synthetic-later-'+i}));
+    const env={GITHUB_TOKEN:'synthetic594-budget-token'},signed='https://synthetic-artifact.invalid/budget-body';
+    let physicalCalls=0,signedCalls=0,clock=0;
+    const fetchImpl=async(url,options)=>{
+      physicalCalls++;assert(options.signal instanceof AbortSignal);
+      if(expireDuringFetch)clock=60000;
+      if(url===signed){
+        signedCalls++;assert.equal(options.headers,undefined);assert.equal(options.redirect,'error');
+        return new Response(fixture.zip);
+      }
+      assert(url.startsWith('https://api.github.com/repos/'+ORIGIN.repository+'/'));
+      assert.equal(options.headers.Authorization,'Bearer '+env.GITHUB_TOKEN);assert.equal(options.redirect,'manual');
+      const parsed=new URL(url),route=parsed.pathname+parsed.search;
+      if(route.endsWith('/zip')){
+        await synthetic(route,{zip:true});return new Response(null,{status:302,headers:{Location:signed}});
+      }
+      if(route.includes('/workflows/')){
+        const listing=await synthetic(route);listing.workflow_runs.push(...copy(extra));listing.total_count+=extra.length;
+        return new Response(JSON.stringify(listing));
+      }
+      const later=extra.find(value=>route.includes('/runs/'+value.id+'/attempts/1/jobs'));
+      if(later){
+        const jobs=copy(fixture.originalJobs),job=jobs.jobs[0];
+        Object.assign(job,{id:later.id+1000,run_id:later.id,head_sha:later.head_sha});
+        return new Response(JSON.stringify(jobs));
+      }
+      return new Response(JSON.stringify(await synthetic(route)));
+    };
+    if(reader)fixture.options.get=reader({env,now:()=>clock,fetchImpl});
+    else{
+      delete fixture.options.get;fixture.options.env=env;
+      t.mock.method(globalThis,'fetch',fetchImpl); // Exercise the normal594 default reader selection.
+    }
+    try{
+      const result=await decideInstalled593Original591Reuse(fixture.options);
+      return {result,fixture,physicalCalls,signedCalls};
+    }finally{if(!reader)t.mock.restoreAll();}
+  };
+  const old=await run(assistantPublic591Reader);
+  assert.equal(old.result.status,'EXECUTE');assert.equal(old.physicalCalls,24);
+  const current=await run(null);
+  assert.equal(current.result.status,'REUSED');assert.equal(current.result.executedInThisRun,false);
+  assert.equal(current.physicalCalls,25);assert.equal(current.signedCalls,2);
+  assert.equal(current.fixture.proofFor(current.fixture.origin).nativePostgres.status,'EXECUTED');
+  assert.deepEqual(current.result.origin,{run:current.fixture.origin.id,attempt:1,
+    job:current.fixture.originalJobs.jobs[0].id,head:current.fixture.origin.head_sha,
+    artifactId:current.fixture.origin.id+2000,artifactDigest:'sha256:'+v2Hash(current.fixture.zip),
+    sourceTreeSha256:'sha256:'+'e'.repeat(64)});
+  const overflow=await run(installed593Original591Reader,{laterRuns:42});
+  assert.equal(overflow.result.status,'EXECUTE');assert.equal(overflow.physicalCalls,64);
+  const expired=await run(installed593Original591Reader,{expireDuringFetch:true});
+  assert.equal(expired.result.status,'EXECUTE');assert.equal(expired.physicalCalls,1);
 });

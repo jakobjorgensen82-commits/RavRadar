@@ -436,13 +436,13 @@ export async function collectReadyTripWeatherAggregateJob(databases, request, { 
       const qualified = await qualifyTripWeatherAggregateRow(row, { request: scanRequest,
         binding: request.modelBinding, state, seen, tripIds, erased, allowed, exclusions: recheckExclusions });
       if (qualified === null) fail('AGGREGATE_JOB_WINNER_ORIGIN_INVALID');
-      const { payload, id } = qualified, features = payload.calibration_features;
+      const { payload, id, reportedTrip } = qualified, features = payload.calibration_features;
       const calibrationEligible = isCalibrationEligibleForBinding(payload, request.modelBinding);
       if (state.payloadBytes - beforeBytes !== winner.payload_bytes || payload.observed_at + '|' + id !== winner.rank
         || (payload.found === true ? 1 : 0) !== winner.found || (calibrationEligible ? 1 : 0) !== winner.calibration_eligible
         || features.windSpeedMs !== winner.wind_speed || features.waveHeightM !== winner.wave_height
         || features.currentSpeedMs !== winner.current_speed || features.waterLevelTrendM3h !== winner.water_trend) fail('AGGREGATE_JOB_SOURCE_CHANGED');
-      selected.set(row.owner_subject, { rank: winner.rank, found: payload.found,
+      selected.set(row.owner_subject, { rank: winner.rank, found: payload.found, reportedTrip,
         features: { windSpeedMs: features.windSpeedMs, waveHeightM: features.waveHeightM,
           currentSpeedMs: features.currentSpeedMs, waterLevelTrendM3h: features.waterLevelTrendM3h }, calibrationEligible });
     }

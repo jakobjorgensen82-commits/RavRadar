@@ -20,6 +20,10 @@ on:
         description: Tillad ét præcist006-forsøg på control0 efter004/005 og faktisk Worker-OFF; statistik forbliver deaktiveret
         type: boolean
         default: false
+      allow_007:
+        description: Tillad kun007 efter faktisk006 og Worker-OFF; statistik og budgetfrigivelse forbliver slået fra
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -70,6 +74,7 @@ jobs:
       TRIP_PRIVATE_STUDY_APPLY_ALLOWED: ${{ inputs.allow_004 && 'true' || 'false' }}
       TRIP_PRIVATE_STUDY_JOBS_APPLY_ALLOWED: ${{ inputs.allow_005 && 'true' || 'false' }}
       TRIP_PRIVATE_STUDY_JOB_BINDING_APPLY_ALLOWED: ${{ inputs.allow_006 && 'true' || 'false' }}
+      TRIP_PRIVATE_STUDY_CATEGORICAL_APPLY_ALLOWED: ${{ inputs.allow_007 && 'true' || 'false' }}
     steps:
       - uses: actions/checkout@v7
         with:

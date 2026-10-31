@@ -1,3 +1,46 @@
+## 31. oktober — privat594-kandidat til genbrug af uændret databaseprøve
+
+Den kontrollerede594-installation er faktisk gennemført og databasebindingen genlæst med bevarede autentiske591-originaler. Aktuel offentlig vejrlevering, writer og cron aflæses fortsat i det private checkpoint. Denne nye kildekandidat er en særskilt kontrolforbedring sammen med de gennemgåede admin-/brugerdatarettelser; den ændrer ikke modelbindingen igen.
+
+Den normale nativekalder får en egen fremadrettet594-V2. Den binder66 hele moduler, fem datafiler,72 uændrede PostgreSQL-filer,13 ægte frosne kildeankre, kontrolbytes, package-scopes, runtime og de faktisk valgte PostgreSQL-programmer før/efter oprydning. Genbrug kræver en frisk verificeret oprindelig EXECUTED-V2-fase og dens faktiske upload. V1 og gamle593-beviser ommærkes ikke. Native- og nationalkvitteringer bevarer forskellen mellem faktisk eksekvering, genbrug og historisk nationalt omfang.
+
+De to normale lokale læser-/baselineprøver har54 PASS; en ny særskilt transportprøve har1 PASS uden ny SQL-eksekvering. Den første faktiske Linux-V2-oprindelse, senere genbrug og målt kortere gennemløbstid er åbne. Dette løser ikke alene den langsomme første kvalifikation eller den bredere udtynding. Ejerens afvisning af flere timers kontrol skal omsættes til faktisk tidsgevinst; urørte områder må ikke automatisk genprøves. D1, PostgreSQL, historisk584-national og den aktuelle offentlige audit er særskilte påvirkningsdomæner.
+
+Ingen ny version/C/I/T, vejr-/scoreværdi, PostgreSQL-migration, kildeprioritet, adminpunkt eller geometri ændres. SOURCE, statistikindsamling og automatisk sletning aktiveres ikke. Den særskilte007-D1-kilde i brugerdatarettelsen er fortsat OFF/UNISSUED og installeres ikke af sourcekontrollen. Alle fem mål er åbne. Se DEC-0302 og håndbog89.292; detaljerede tider og kørselsidentiteter føres privat.
+
+## Privat kildeforberedelse 31. oktober — admin og deling efter den udstedte 594-kilde
+
+Den private sammenføring bevarer de nyere 594-kildetestrettelser. Uafklaret sundhed giver en neutral alarmtekst, og en sen sundhedsafgørelse opdaterer det eksisterende kort. Zoner venter på bekræftet register og viser først en verificeret offentlig vejrkilde; søge-/kysttypefiltre og menneskelige kystkladder bevares ved sene svar. Historiske dashboardorakler læser særskilte, faste Git-CODE/DATA; rå aktuel import/render/adgang og de normale loading/failure/retry/draft-/identitetsforløb prøves uden stor ny tekstinverse. Ingen offentlig virkning eller ny kvalifikation følger af denne private sammensætning.
+
+Det allerede gennemgåede PR768-delta er lokalt sammenført oven på den præcise udstedte 4.0.594-kilde. Denne forberedelse leverer intet offentligt: 594 skal først gennem sin egen vejrlevering. Adminens læse-/retry-/draftadfærd, den aktuelle eksportprøve, rollbackens tidlige metadataafslag og den afgrænsede tohostadapter bevares. Deadline-testrettelsen findes allerede i 594 og dubleres ikke.
+
+594-version, importernes cacheparametre, modelbindinger og alle migrationsfiler bevares. De to dokumenthistorikker nedenfor bevares; ældre henvisninger til en kommende offentlig 593-generation er historisk leveringsrækkefølge og er ikke den nye forudsætning. Offentlig Pages-deling, hosted Free/Facebook, DNS/TLS, klientskifte og den faktiske adminbrowservirkning er fortsat åbne. Denne private kombination er ikke ny præcis CI, SQL, installation eller offentlig levering. Ingen ny version, model-/SQL-udstedelse eller aktivering følger.
+
+## 31. oktober — kontrolvejen er kildeleveret; reservens deadline testes deterministisk
+
+Den afgrænsede ændringsbaserede kontrolvej har bestået sin fulde kildekvalifikation og er lagt i main. Det er ikke bevis for en faktisk senere TARGETED-levering, automatisk nativegenbrug eller målt tidsbesparelse. De første korte profiler er fortsat afgrænsede; ukendt eller fælles påvirkning vælger fuldt omfang. Vejrhentningens separate originalovergang er ikke løst af denne kontrollevering.
+
+En efterfølgende kildekontrol fandt en tidsfølsom antagelse i Open-Meteo-PART-prøven: den krævede mindst én HTTP-start inden for 80 ms, selv om normal banklæsning og første checkpoint indgår i samme frist. Den lokale testrettelse styrer alene testens monotone ur under rigtig bank-I/O. Setup på 0/79/80/81 ms kræver præcist 1/1/0/0 starter; uændret pacing afviser næste start. Requests, udskudte opgaver, bank og cursor skal følge faktisk start. Produktkode, 800-loft, 150-ms-pacing, samlet deadline og parameterafslag ændres ikke.
+
+Førfejlen er reproduceret gennem normal forsinket banklæsning; den rettede normale prøve og konkrete negative mutationer består lokalt. Den præcise nye GitHub-kvalifikation og offentlig effekt er åbne. Ingen SQL- eller national produktionsprøve påstås udført eller genbrugt af dette lokale testbevis. Se DEC-0302; detaljeret drifts- og testbevis føres privat.
+
+## 31. oktober — den private eksportprøve følger den aktuelle adminkalder
+
+Den private eksportprøve afviste en gennemgået adminindlæsningsrettelse, fordi den krævede historiske hele dashboardbytes gennem flere versionsinverser. Den lokale testrettelse bevarer workflowets installations-/eksportafgrænsning, publisher-oraklet og deres negative mutationer. Kun uvedkommende dashboard-wholepins erstattes med aktuel normal renderLearning/render, korrekt host og samme aktuelle adgangsobjekt samt faneskift og konkrete negative mutationer.
+
+Den eksisterende initial-dashboard-målprøve kobles én gang til den normale callers-deltest. Den relevante lokale e96-deltest er reproduceret rød før og grøn efter; normal kilde-CI på den præcise ændring afventer. Produktkode, metadata-/model-/SQL-gates og historiske orakler i andre tests er uændrede. Der påstås ingen offentlig levering eller færdig adminrevision. Se DEC-0302; detaljeret test-/kørselsbevis føres privat.
+
+Den særskilt gennemgåede rollback-CLI retter desuden rækkefølgen: tre små metadata læses og de seks eksisterende negative cases afvises, før fem store payloads åbnes. Den samme afvisningsblok er flyttet til en helper; hele den efterfølgende positive auditkrop, no-loss og SQL-/modelgates er uændrede. Den eksisterende normale målprøve er gennemført; der påstås ingen målt før-/efter-tidsgevinst. Dette er også lokal forberedelse, ikke sikker levering eller produktionseffekt.
+
+
+## 31. oktober — admin-overblik og kysteditor: lokal rettelse, offentlig effekt åben
+
+En afgrænset kandidat retter adminsidens første indlæsning. Ukendt forbindelse, lager og zonetal vises neutralt; beskyttede kontrolresultater kan blive synlige, selv om den offentlige vejrpakke afvises. Den offentlige pakke beholder sine manifest-/modelgates og en almindelig læsebaseret Prøv igen. UI-færdigmarkøren beviser alene afsluttet initialisering, aldrig verificeret model eller data.
+
+En konkret normal-kalderprøve viste desuden, at sen kystpreload kunne erstatte en lokalt sikret redigering. Kandidaten venter ved kysteditorens første åbning på zoneregister, verificeret offentlig pakke og streng central kystlæsning. Fejl eller ukendt central payload giver en ærlig afvisning med genforsøg; en allerede åben editor eller menneskelig draft genmonteres eller rehydreres ikke. Den normale gemme- og rettighedsvej er uændret.
+
+Den eksisterende målprøve er rød på den oprindelige race og grøn på kandidaten. Den samme kode og dens prøveinput er bytekontrolleret mod aktuel 593-main. Samlet kildekvalifikation, sikker levering og offentlig browservirkning afventer fortsat; dette lukker ikke adminrevisionen eller de fem hovedmål. Ingen version/model, SQL, vejrdata, scoreformel, kildeprioritet, administratoropsætning eller geometri ændres. Se håndbogens afsnit 26; skiftende kørselsevidens føres privat.
+
 ## 31. oktober — ny efterfølger med installeret 593 og autentiske 591-originaler
 
 Databasen har faktisk installeret 593, mens seneste autentiske originale vejrpakke B, beregningstilstand S og offentlige generation fortsat er 591. De er to forskellige forgængerroller. Der findes ingen593-original, som må opfindes eller bruges som førskrivningsbevis.
@@ -121,6 +164,8 @@ Den gennemgåede adapter videresender til den eksisterende uændrede read-only-h
 Fase1-adapterens normale lokale 153 cases er gennemført; controlleren er særskilt privat forberedt, og dens review/kvalifikation er åben. Dette er ingen projektoprettelse, Pages-build/deploy, DNS/TLS, faktisk591-scorekompatibilitet, Facebookpreview eller Free-bevis. Den gamle Workers 590-prøve frikender ikke en 591-host. Den faktiske senere almindelige 591-generation og legacyWorkerens kompatibilitetsdeploy skal verificeres særskilt. Pages Functions deler Workers Free-kontoens 100.000 forespørgsler/døgn med blandt andet turlageret; faktisk samlet forbrug, CPU og råderum skal måles før en kapacitetspåstand.
 
 Kandidaten ligger uden for de faktiske C98/I97/T12-input (union 104); ingen scoreformel, kildeprioritet, vejrflow, version, modelbinding eller udstedt SQL ændres. Normal præcis kildekontrol og et skrivefrit vindue kræves før kontrolleret oprettelse/deploy. Håndbogskopien i installationsfilen er alene dokumentationsspejl, ikke SQL-installation. SOURCE, samlet statistik og automatisk sletning aktiveres ikke. Alle fem mål til 18. november 2026 er fortsat åbne. Se DEC-0294, håndbog 89.278 og privat checkpoint.
+
+**Tillæg 31. oktober — to faste hosts, fortsat lokal kandidat.** Adapteren er afgrænset til ravradar-del.pages.dev og den allerede godkendte del.ravradar.dk. OG/canonical følger den validerede egen host; upstream/app-link er uændret ravradar.dk. De oprindelige 153 normale cases bevares, og 171 består lokalt. Ingen DNS-, frontend-, model-, versions- eller SQL-ændring følger af denne kandidat. Første faktiske offentlige 593-generation og legacy-Workerens kompatibilitetsdeploy skal efterfølges af kontrolleret Pages-levering. Hosted CPU/delt Free-forbrug, Facebook, DNS/TLS og klientskifte er fortsat åbne. De ældre 590/591-statusser ovenfor er historik, ikke ny 593- eller Pages-kvalifikation.
 
 ## 29. oktober — skrivefri aflæsning af gemte komponenttællere, lokal forberedelse
 

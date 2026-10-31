@@ -2,6 +2,7 @@ import { canonicalJson } from '../../supabase/functions/_shared/trip-storage.js'
 import { isCalibrationEligibleForBinding } from '../../js/services/calibration-eligibility.js';
 import { qualifyTripWeatherAggregateRow } from './trip-aggregate-row.js';
 import { collectReadyTripWeatherAggregateJob } from './trip-aggregate-job.js';
+import { CATEGORICAL_POLICY } from './trip-aggregate-categorical.js';
 import { ravScoreModelBinding } from '../../js/core/ravscore-model-contract.js';
 import { AGGREGATE_LIMITS, aggregateFail, assertAggregateRequest, aggregateWithheldReport }
   from '../../supabase/functions/_shared/trip-aggregate-contract.js';
@@ -25,6 +26,12 @@ const ROW_FIELDS = ['storage_schema_version','owner_subject','owner_kind','trip_
 // Server-internal preparation. Exact counts are NOT anonymous release data.
 // The only HTTP-facing caller below discards them and emits the closed DTO.
 export async function prepareTripWeatherAggregate(databaseList, request) {
+  return prepareTripWeatherAggregateUsing(databaseList, request, false);
+}
+export async function prepareCategoricalTripWeatherAggregate(databaseList, request) {
+  return prepareTripWeatherAggregateUsing(databaseList, request, true);
+}
+async function prepareTripWeatherAggregateUsing(databaseList, request, categorical) {
   const now = Date.now(), binding = ravScoreModelBinding();
   assertAggregateRequest(request, binding, now);
   if (!Array.isArray(databaseList) || databaseList.length !== 10
@@ -76,13 +83,13 @@ export async function prepareTripWeatherAggregate(databaseList, request) {
           request, binding, state: rowState, seen, tripIds, erased, allowed, exclusions,
         });
         if (qualified === null) continue;
-        const { payload, id } = qualified;
+        const { payload, id, reportedTrip } = qualified;
         // One account contributes at most one deterministic reported trip per
         // fixed closed month. This is a sensitivity bound, NOT anonymity proof.
         const current = selected.get(row.owner_subject);
         const rank = payload.observed_at + '|' + id;
         if (!current || rank < current.rank) selected.set(row.owner_subject, {
-          rank, found: payload.found,
+          rank, found: payload.found, reportedTrip,
           features: Object.fromEntries(Object.keys(METRICS).map(metric => [metric, payload.calibration_features[metric]])),
           calibrationEligible: isCalibrationEligibleForBinding(payload, binding),
         });
@@ -92,7 +99,7 @@ export async function prepareTripWeatherAggregate(databaseList, request) {
     }
   }
   if (canonicalJson(beforeTombstones) !== canonicalJson(await tombstones())) aggregateFail('AGGREGATE_OWNER_SET_CHANGED');
-  return finishTripWeatherAggregate(databaseList, query, selected, rowState, exclusions);
+  return finishTripWeatherAggregate(databaseList, query, selected, rowState, exclusions, categorical);
 }
 
 // The only alternate input is read and requalified through the fixed durable
@@ -103,7 +110,13 @@ export async function prepareReadyTripWeatherAggregate(databaseList, request) {
     { rowsRead: input.rowsRead }, input.exclusions);
 }
 
-async function finishTripWeatherAggregate(databaseList, query, selected, rowState, exclusions) {
+export async function prepareCategoricalReadyTripWeatherAggregate(databaseList, request) {
+  const input = await collectReadyTripWeatherAggregateJob(databaseList, request);
+  return finishTripWeatherAggregate(databaseList, input.query, input.selected,
+    { rowsRead: input.rowsRead }, input.exclusions, true);
+}
+
+async function finishTripWeatherAggregate(databaseList, query, selected, rowState, exclusions, categorical = false) {
   const eligibleSubjects = [...selected.keys()].sort();
   const charges = await query(databaseList[0], `select owner_subject,sum(budget_units) total_units
     from trip_weather_aggregate_account_charges
@@ -120,18 +133,20 @@ async function finishTripWeatherAggregate(databaseList, query, selected, rowStat
   // Whole row/hash/schema/eligibility/tie checks above still run, even for spent accounts.
   // One account's lifetime clipping never removes or displaces another account.
   const cells = new Map();
-  for (const { found, features } of selected.values()) {
-    const outcome = found === true ? 'find' : 'no-find';
+  for (const { found, features, reportedTrip } of selected.values()) {
+    if (categorical && (!['beach','waders'].includes(reportedTrip?.huntMode)
+      || !['none','small','medium','good'].includes(reportedTrip?.result))) aggregateFail('AGGREGATE_STORED_INTEGRITY_INVALID');
+    const outcome = categorical ? reportedTrip.result : found === true ? 'find' : 'no-find';
     for (const [metric, bounds] of Object.entries(METRICS)) {
       const value = features[metric];
       if (typeof value !== 'number' || !Number.isFinite(value)) aggregateFail('AGGREGATE_STORED_INTEGRITY_INVALID');
       const bin = bounds.findIndex((bound, index) => index < bounds.length - 1 && value >= bound && value < bounds[index + 1]);
       if (bin < 0) aggregateFail('AGGREGATE_STORED_INTEGRITY_INVALID');
-      const key = metric + ':' + bin + ':' + outcome;
+      const key = metric + ':' + bin + ':' + (categorical ? reportedTrip.huntMode + ':' : '') + outcome;
       cells.set(key, (cells.get(key) ?? 0) + 1);
     }
   }
-  const candidate=Object.freeze({ kind: 'PRIVATE_UNRELEASED_SELF_REPORTED_AGGREGATE_PREPARATION',
+  const candidate=Object.freeze({ kind: categorical ? 'PRIVATE_UNRELEASED_CATEGORICAL_AGGREGATE_PREPARATION' : 'PRIVATE_UNRELEASED_SELF_REPORTED_AGGREGATE_PREPARATION',
     cohort: 'DESCRIPTIVE_SELF_REPORTED_NO_CALIBRATION',
     allShardsRead: 10, compatibleReportedContributors: selected.size, rowsRead: rowState.rowsRead,
     modelCalibrationEligible: false, verifiedForecastData: false,
@@ -140,7 +155,7 @@ async function finishTripWeatherAggregate(databaseList, query, selected, rowStat
     releaseBlockers: ['RELEASE_POLICY_UNISSUED', 'TRIP_ORIGIN_NOT_ATTESTED', 'FORECAST_NOT_SERVER_ATTESTED'],
     normalCalibrationEligibleContributors: [...selected.values()].filter(({ calibrationEligible }) => calibrationEligible).length,
     exclusions, cells: [...cells].sort(([a], [b]) => a.localeCompare(b)).map(([cell, count]) => ({ cell, count })),
-    releasePolicyIssued: false });
+    releasePolicyIssued: false, ...(categorical ? { effortStatus: CATEGORICAL_POLICY.effort } : {}) });
   contributionSubjects.set(candidate,Object.freeze([...selected.keys()].sort()));
   return candidate;
 }
