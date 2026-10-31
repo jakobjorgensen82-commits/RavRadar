@@ -1,5 +1,7 @@
 ## 31. oktober — testvalg opdeles efter den faktiske ændring
 
+Den første faktiske målrettede Linux-kørsel gennemførte de valgte prøver uden ny native SQL, men stoppede i den efterfølgende GitHub-genlæsning før udstedelse af kvitteringen. Den afgrænsede slutdiagnose skelner nu faste transport-/HTTP-kategorier uden rå fejltekst, nøgler eller svarindhold. Samme to læsninger, grænser og røde udfald bevares; ingen automatisk gentagelse eller påstand om offentlig levering.
+
 ### Afgrænset rettelse af genoptaget beregning
 
 Den normale beregning kan få et nyt hul i strømhistorikken, selv om den forrige gyldige tilstand var fuldt klar. Updaterens kalder skal derfor give de tre allerede validerede kompagnonkilder mulighed for den eksisterende lokale vurdering af ufuldstændig historik. Den må ikke kræve, at alle senere timer stadig er READY. Legacy-, kold- og manglende initialisering bevarer deres særskilte grænser. Den strenge rollbackkontrol, numeriske state, scoreformel og 48 reelle timers modning ændres ikke.

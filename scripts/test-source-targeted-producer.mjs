@@ -35,7 +35,7 @@ let cases=0,executions=0,calls=0,signedCalls=0,cliTransportCalls=0,coordinate,ba
 const currentRun=50000000002,baselineRun=50000000001,baselineJob=50000000003;
 const currentJob=50000000004,finalId=50000000005,nativeId=50000000006,pr=999,baselinePr=998;
 const repo='/repos/'+ORIGIN.repository,actions=repo+'/actions';
-const state={missing:false,badNational:false,badJob:false,movedPull:false,laterInspections:false,transportRoutes:false};
+const state={missing:false,badNational:false,badJob:false,movedPull:false,laterInspections:false,transportRoutes:false,postFailure:false};
 function copyModule(name,seen=new Set()){
   if(seen.has(name))return;seen.add(name);const bytes=fs.readFileSync(path.join(SOURCE,name));write(name,bytes);
   for(const m of bytes.toString('utf8').matchAll(/^import\b[^;]*?\bfrom\s*['"](\.[^'"]+)['"]/gm))
@@ -91,6 +91,16 @@ async function fakeFetch(url,options){
   assert.equal(target.origin,'https://api.github.com');assert.equal(options.redirect,'manual');
   assert.equal(options.headers.Authorization,'Bearer synthetic-never-live');
   const route=target.pathname+target.search;
+  const postPhase=route===repo+'/pulls/'+pr?'PULL'
+    :route===actions+'/runs/'+currentRun+'/attempts/1/jobs?per_page=100'?'JOB':null;
+  if(state.postFailure&&state.postFailure.phase===postPhase&&count()>0){
+    const failure=state.postFailure;
+    if(failure.category==='HTTP_STATUS_FAILED'||failure.category==='HTTP_OK_BODY_OR_JSON_FAILED')
+      return new Response('PRIVATE_POSTCHECK_BODY_TOKEN_URL',{status:failure.httpStatus});
+    throw Object.assign(new Error('PRIVATE_POSTCHECK_ERROR_TOKEN_URL'),{
+      name:failure.category==='FETCH_TIMEOUT'?'TimeoutError':failure.category==='FETCH_ABORT'?'AbortError':'Error',
+      cause:{code:failure.category==='FETCH_NETWORK'?'UND_ERR_SOCKET':'PRIVATE_POSTCHECK_CAUSE_TOKEN_URL'}});
+  }
   if(route===repo+'/pulls/'+pr){
     const pull=currentPull();if(state.movedPull&&count()>0){
       if(state.movedPull==='head')pull.head.sha='f'.repeat(40);
@@ -236,6 +246,27 @@ try{
   assert.equal(count(),1);executions+=count();cases++;
   for(const variant of ['head','number','closed','head-repository','base-repository','base-ref']){
     reset();state.movedPull=variant;await assert.rejects(coordinate());assert.equal(count(),5);executions+=count();cases++;
+  }
+  for(const failure of [
+    {phase:'PULL',category:'HTTP_STATUS_FAILED',httpStatus:403},
+    {phase:'PULL',category:'HTTP_STATUS_FAILED',httpStatus:429},
+    {phase:'JOB',category:'HTTP_STATUS_FAILED',httpStatus:503},
+    {phase:'PULL',category:'FETCH_TIMEOUT',httpStatus:0},
+    {phase:'PULL',category:'FETCH_ABORT',httpStatus:0},
+    {phase:'PULL',category:'FETCH_NETWORK',httpStatus:0},
+    {phase:'PULL',category:'FETCH_OTHER',httpStatus:0},
+    {phase:'PULL',category:'HTTP_OK_BODY_OR_JSON_FAILED',httpStatus:200},
+  ]){
+    reset();state.postFailure=failure;const diagnostics=[],oldError=console.error;
+    try{
+      console.error=line=>diagnostics.push(line);
+      await assert.rejects(coordinate(),error=>error.message==='NATIVE591_V2_EVIDENCE_UNAVAILABLE'&&error.cause===undefined);
+    }finally{console.error=oldError;}
+    assert.deepEqual(diagnostics,['SOURCE_TARGETED_POSTCHECK '+JSON.stringify(failure)]);
+    assert(!diagnostics.join('').includes('PRIVATE_POSTCHECK'));
+    assert(!diagnostics.join('').includes(process.env.GITHUB_TOKEN));
+    assert.equal(count(),5);executions+=count();cases++;
+    assert(!fs.existsSync(path.join(root,'.cache/source-targeted-impact-proof.json')));
   }
   reset();await assert.rejects(coordinate({selection:'TARGETED'}),/NO_OVERRIDES/);cases++;
   reset();const offline=runNormalDigestCli('digest',true);

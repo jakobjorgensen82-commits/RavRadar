@@ -62,6 +62,32 @@ function currentJob(result,current){
   assert(positive(job.id));assert.equal(job.run_id,current.runId);assert.equal(job.run_attempt,current.runAttempt);
   assert.equal(job.head_sha,current.head);assert.equal(job.status,'in_progress');return job.id;
 }
+function freshPostTargetReader(){
+  let category='REQUEST_NOT_STARTED',httpStatus=0;
+  const fetchImpl=globalThis.fetch;
+  const get=assistantPublic591Reader({fetchImpl:async(url,options)=>{
+    try{
+      const response=await fetchImpl(url,options);
+      httpStatus=Number.isInteger(response.status)&&response.status>=100&&response.status<=599?response.status:0;
+      category=response.ok?'HTTP_OK_BODY_OR_JSON_FAILED':'HTTP_STATUS_FAILED';return response;
+    }catch(error){
+      category=error?.name==='TimeoutError'?'FETCH_TIMEOUT':error?.name==='AbortError'?'FETCH_ABORT'
+        :['UND_ERR_SOCKET','UND_ERR_CONNECT_TIMEOUT','UND_ERR_HEADERS_TIMEOUT','UND_ERR_BODY_TIMEOUT',
+          'ECONNRESET','ECONNREFUSED','ENOTFOUND','EAI_AGAIN','ETIMEDOUT'].includes(error?.cause?.code)
+          ?'FETCH_NETWORK':'FETCH_OTHER';
+      throw error;
+    }
+  }});
+  return async(phase,route)=>{
+    category='REQUEST_NOT_STARTED';httpStatus=0;
+    try{return await get(route);}catch(error){
+      // Only closed categories and a bounded status; never raw transport data.
+      try{console.error('SOURCE_TARGETED_POSTCHECK '+JSON.stringify({phase,category,httpStatus}));}
+      catch{ /* A failed diagnostic must preserve the original rejection. */ }
+      throw error;
+    }
+  };
+}
 
 // No caller-selected baseline, root, paths, commands, modes or dependency skips.
 // FULL is a handoff to the existing digest/deep workflow, not a green receipt.
@@ -160,12 +186,12 @@ export async function coordinateTargetedSourceProducer(){
   const finalPlan=await selectImpactPlan(baseline.mergeCommit,head);
   assert(isDeepStrictEqual(finalPlan,impactPlan),'SOURCE_TARGETED_PRODUCER_DIFF_MOVED');
   // Fresh post-test transport, exactly two reads, irrespective of test duration.
-  const finalGet=assistantPublic591Reader(),freshPull=await finalGet(pullRoute);
+  const finalGet=freshPostTargetReader(),freshPull=await finalGet('PULL',pullRoute);
   assert.equal(freshPull.number,current.pullRequest);assert.equal(freshPull.state,'open');
   assert.equal(freshPull.head?.sha,head);assert.equal(freshPull.base?.sha,pull.base.sha);
   assert.equal(freshPull.head?.repo?.full_name,current.repository);
   assert.equal(freshPull.base?.repo?.full_name,current.repository);assert.equal(freshPull.base?.ref,'main');
-  assert.equal(currentJob(await finalGet(jobRoute),current),current.jobId);
+  assert.equal(currentJob(await finalGet('JOB',jobRoute),current),current.jobId);
   if(impactPlan.mode==='DOMAINS_V2')assert(isDeepStrictEqual(controlReview,
     readDomainControlReview(freshPull,{current,fullBaseline:baseline,domainPlan:impactPlan.plan})),
     'SOURCE_TARGETED_CONTROL_REVIEW_MOVED');
