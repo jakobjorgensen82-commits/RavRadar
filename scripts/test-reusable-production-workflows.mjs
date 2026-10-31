@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import test from 'node:test';
 import {createHash as conditions593TestHash} from 'node:crypto';
 import path from 'node:path';
 import {pathToFileURL} from 'node:url';
@@ -22,7 +23,9 @@ import {ASSISTANT_LATER_H0_BINDING,assistantLaterH0Migration,requireAssistantLat
   ASSISTANT_PUBLIC590_SUCCESSOR_BINDING,assistantPublic590SuccessorMigration,
   requireAssistantPublic590SuccessorOutput,readAssistantPublic590SuccessorCanonicalSource,
   ASSISTANT_PUBLIC591_SUCCESSOR_BINDING,assistantPublic591SuccessorMigration,
-  requireAssistantPublic591SuccessorOutput,readAssistantPublic591SuccessorCanonicalSource}
+  requireAssistantPublic591SuccessorOutput,readAssistantPublic591SuccessorCanonicalSource,
+  ACTIVE_ASSISTANT_SUCCESSOR as ACTIVE_TIMEOUT_SUCCESSOR,
+  INACTIVE_INSTALLED593_ORIGINAL591_SUCCESSOR as ISSUED594_TIMEOUT_SUCCESSOR}
   from './lib/assistant-later-h0-successor-source.mjs';
 
 // Keep the payload-free operational control report inside this existing cheap
@@ -736,6 +739,7 @@ assert.equal(
     < sealedRecovery.indexOf('Publish authenticated original private bundle'),
   true,
 );
+await test('actual594 scoped55s inventory preserves unchanged593 predecessors',async()=>{
 const checkpointTimeoutMigration = fs.readFileSync(
   new URL('../supabase/migrations/20260928112500_checkpoint_cas_bounded_timeout_55s.sql', import.meta.url),
   'utf8',
@@ -753,6 +757,60 @@ let casTimeoutSettings = fs.readdirSync(migrationsUrl).filter(name => name.endsW
   )].map(match => ({ migration: name, timeout: match[1] })));
 assert.equal(casTimeoutSettings.at(-1)?.timeout, '55s',
   'the final migration order must retain the established checkpoint-only 55s timeout');
+
+// Actual594 is a separate issued source profile. Validate its whole normal SQL
+// and canonical reader before a TEST INVENTORY ONLY inverse; never remove a
+// guessed latest row or grant SQL/data admission to historical593 oracles.
+const activeTimeoutMigration=ACTIVE_TIMEOUT_SUCCESSOR.migration();
+function inverseIssued594TimeoutInventory(inventory,profile,migration,sql){
+  assert.equal(profile,ISSUED594_TIMEOUT_SUCCESSOR,'EXACT_ISSUED594_TIMEOUT_PROFILE_REQUIRED');
+  assert.equal(profile.sourcePhase,'assistant-installed593-origin591-successor');
+  assert.equal(profile.requireRelease(),'4.0.594');
+  assert.equal(profile.originalStateFamily,'591');
+  assert.equal(profile.databaseBefore.version,ASSISTANT_PUBLIC591_SUCCESSOR_BINDING.version);
+  assert.deepEqual(migration,{version:'20261031070755',
+    id:'20261031070755_installed593_original591_later_h0_bound_successor',
+    filename:'20261031070755_installed593_original591_later_h0_bound_successor.sql'});
+  assert.equal(conditions593TestHash('sha256').update(sql).digest('hex'),profile.requireOutput().migrationSha256,
+    'The complete actual594 SQL must match its normally issued output pin');
+  assert.equal(inventory.filter(row=>row.migration===migration.filename).length,1,
+    'Actual594 has exactly one scoped55s inventory row');
+  assert.deepEqual(inventory.at(-1),{migration:migration.filename,timeout:'55s'},
+    'The exact actual594 migration is the latest scoped55s successor');
+  const historical=inventory.slice(0,-1);
+  assert.deepEqual(historical.at(-1),{migration:assistantPublic591SuccessorMigration().filename,timeout:'55s'},
+    'The unchanged installed593 migration immediately precedes actual594');
+  assert.deepEqual(inventory,[...historical,{migration:migration.filename,timeout:'55s'}]);
+  return historical;
+}
+const activeTimeoutSql=fs.readFileSync(new URL(activeTimeoutMigration.filename,migrationsUrl));
+const actual594Canonical=await ACTIVE_TIMEOUT_SUCCESSOR.readCanonicalSource();
+assert.equal(actual594Canonical.admission,'NO_ADMISSION');
+assert.deepEqual(actual594Canonical.migration,activeTimeoutMigration);
+const actual594TimeoutInventory=casTimeoutSettings;
+const inverse594=(inventory=actual594TimeoutInventory,profile=ACTIVE_TIMEOUT_SUCCESSOR,
+  migration=activeTimeoutMigration,sql=activeTimeoutSql)=>inverseIssued594TimeoutInventory(inventory,profile,migration,sql);
+for(const profile of [null,{...ACTIVE_TIMEOUT_SUCCESSOR},
+  {...ACTIVE_TIMEOUT_SUCCESSOR,sourcePhase:'assistant-public591-successor'},
+  {...ACTIVE_TIMEOUT_SUCCESSOR,sourcePhase:'assistant-installed594-origin593-successor'}])
+  assert.throws(()=>inverse594(actual594TimeoutInventory,profile),/EXACT_ISSUED594_TIMEOUT_PROFILE_REQUIRED/);
+for(const migration of [{...activeTimeoutMigration,version:'20261030105202'},
+  {...activeTimeoutMigration,id:'unknown_successor'},
+  {...activeTimeoutMigration,filename:assistantPublic591SuccessorMigration().filename}])
+  assert.throws(()=>inverse594(actual594TimeoutInventory,ACTIVE_TIMEOUT_SUCCESSOR,migration));
+for(const sql of [Buffer.concat([activeTimeoutSql,Buffer.from('\n')]),
+  Buffer.from(activeTimeoutSql.toString('utf8').replace("set statement_timeout = '55s'","set statement_timeout = '54s'"))])
+  assert.throws(()=>inverse594(actual594TimeoutInventory,ACTIVE_TIMEOUT_SUCCESSOR,activeTimeoutMigration,sql));
+const latest594={migration:activeTimeoutMigration.filename,timeout:'55s'};
+for(const inventory of [actual594TimeoutInventory.slice(0,-1),
+  [...actual594TimeoutInventory,latest594],
+  [...actual594TimeoutInventory.slice(0,-1),{...latest594,timeout:'54s'}],
+  [...actual594TimeoutInventory,{migration:'20261031080000_unknown_successor.sql',timeout:'55s'}],
+  [...actual594TimeoutInventory.slice(0,-2),latest594],
+  [...actual594TimeoutInventory.slice(0,-2),latest594,actual594TimeoutInventory.at(-2)]])
+  assert.throws(()=>inverse594(inventory));
+casTimeoutSettings=inverse594();
+
 // Kontrollér den faktisk udstedte public590/591-migration før de uændrede
 // public588/590- og public587/588-inventarer. Kun dens ene præcise række fjernes.
 // Actual issued592 is checked before projecting only its one55s row away.
@@ -898,6 +956,8 @@ metadataFunction(top20BindingMigration),
 assert.equal([...restoredTimeoutMigration.matchAll(/create or replace function/g)].length, 1);
 assert.doesNotMatch(restoredTimeoutMigration,
   /alter (?:role|database)|(?:insert into|update|delete from) public\.admin_documents|create.*(?:table|trigger)|drop\s/i);
+
+});
 
 console.log('Reusable production workflow interface and failure contracts passed.');
 

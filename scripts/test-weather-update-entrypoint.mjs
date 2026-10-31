@@ -2,6 +2,7 @@ import { inverseActiveFamilyRetentionCompanionTestInput, ACTIVE_FAMILY_RETENTION
   inverseAssistant590RetentionCompanionTestInput, ASSISTANT590_RETENTION_COMPANION_TEST_REVIEW,
   inverseAssistant591RetentionCompanionTestInput, ASSISTANT591_RETENTION_COMPANION_TEST_REVIEW,
   inverseConditions593RetentionCompanionTestInput, CONDITIONS593_RETENTION_COMPANION_TEST_REVIEW,
+  inverseIssued594RetentionCompanionSource, ISSUED594_RETENTION_COMPANION_TEST_REVIEW as retention594Review,
 } from './lib/alternative-c-caller-test-input.mjs';
 import {inverseReviewedAccountStatisticsAssistantSourceScripts} from './lib/account-statistics-assistant-package-review.mjs';
 import { inverseAlternativeCCaller, inverseAssistant587OriginalCompanionTestInput,
@@ -32,30 +33,6 @@ const sourceText = async file => {
   return file === producerPath ? inverseSavedCurrentForwardOriginalPlan(inverseAlternativeCCaller(source, 'scripts/update-weather.mjs')) : source;
 };
 const digest = value => crypto.createHash('sha256').update(value).digest('hex');
-
-// TESTDATA alene: hele aktuelle594-reader tilbage til den ægte593-kilde,
-// før de uændrede593/591/590-orakler. Ingen produktkode eller modelnormalisering.
-const retention594Review=Object.freeze({
-  path:'scripts/read-authenticated-dmi-current-companions.mjs',
-  before:CONDITIONS593_RETENTION_COMPANION_TEST_REVIEW.after,
-  after:Object.freeze({bytes:13288,sha256:'1c24790839f197188adb99b42bcb0aaef3a1bc9e593c5bb20c9dd996159b12d0'}),
-  prior:"const ACTIVE_PREDECESSOR=ACTIVE.sourcePhase==='assistant-public591-successor'?Object.freeze({",
-  current:"const ACTIVE_PREDECESSOR=['assistant-public591-successor','assistant-installed593-origin591-successor'].includes(ACTIVE.sourcePhase)?Object.freeze({",
-});
-function inverseIssued594RetentionCompanionSource(source,relative){
-  assert.equal(arguments.length,2,'RETENTION594_ARGUMENTS');
-  assert.equal(typeof source,'string','RETENTION594_TYPE');
-  const row=retention594Review;assert.equal(relative,row.path,'RETENTION594_PATH');
-  if(digest(source)===row.before.sha256){assert.equal(Buffer.byteLength(source),row.before.bytes);return source;}
-  assert.equal(Buffer.byteLength(source),row.after.bytes,'RETENTION594_SIZE');
-  assert.equal(digest(source),row.after.sha256,'RETENTION594_WHOLE_SOURCE');
-  assert.equal(source.split(row.current).length,2);
-  const before=source.replace(row.current,()=>row.prior);
-  assert.equal(Buffer.byteLength(before),row.before.bytes);assert.equal(digest(before),row.before.sha256);
-  assert.equal(before.split(row.prior).length,2);
-  assert.equal(before.replace(row.prior,()=>row.current),source,'Hele594→593→594-testdatainverse');
-  return before;
-}
 
 // Invert only the separately reviewed tuple import and archived-epoch orchestration before the
 // older exact-source oracles. The complete genuine 903307 updater remains the
@@ -1414,10 +1391,22 @@ test('issued594 retention companion has an exact whole inverse and rejects every
   const before=inverseIssued594RetentionCompanionSource(actual,row.path);
   assert.equal(Buffer.byteLength(before),row.before.bytes);assert.equal(digest(before),row.before.sha256);
   assert.equal(inverseIssued594RetentionCompanionSource(before,row.path),before);
+  // The same shared outer inverse must serve direct raw594 callers too;
+  // genuine old pins and complete historical inverses remain the oracle.
+  const genuine590=inverseAssistant590RetentionCompanionTestInput(actual,row.path);
+  assert.equal(Buffer.byteLength(genuine590),ASSISTANT590_RETENTION_COMPANION_TEST_REVIEW.before.bytes);
+  assert.equal(digest(genuine590),ASSISTANT590_RETENTION_COMPANION_TEST_REVIEW.before.sha256);
+  assert.equal(genuine590,inverseAssistant590RetentionCompanionTestInput(before,row.path));
+  const genuine588=inverseActiveFamilyRetentionCompanionTestInput(actual,row.path);
+  assert.equal(Buffer.byteLength(genuine588),ACTIVE_FAMILY_RETENTION_COMPANION_TEST_REVIEW.before.bytes);
+  assert.equal(digest(genuine588),ACTIVE_FAMILY_RETENTION_COMPANION_TEST_REVIEW.before.sha256);
+  assert.equal(genuine588,inverseActiveFamilyRetentionCompanionTestInput(before,row.path));
   for(const changed of [actual+'\n','!'+actual.slice(1),
     actual.replace(row.current,()=>row.current+row.current),
     actual.replace('assistant-installed593-origin591-successor','UNREVIEWED')])
-    assert.throws(()=>inverseIssued594RetentionCompanionSource(changed,row.path),/RETENTION594/);
+    for(const inverse of [inverseIssued594RetentionCompanionSource,
+      inverseAssistant590RetentionCompanionTestInput,inverseActiveFamilyRetentionCompanionTestInput])
+      assert.throws(()=>inverse(changed,row.path),/RETENTION594|ASSISTANT590_RETENTION/);
   assert.throws(()=>inverseIssued594RetentionCompanionSource({},row.path),/RETENTION594_TYPE/);
   assert.throws(()=>inverseIssued594RetentionCompanionSource(actual,'scripts/unknown.mjs'),/RETENTION594_PATH/);
   assert.throws(()=>inverseIssued594RetentionCompanionSource(actual,row.path,true),/RETENTION594_ARGUMENTS/);

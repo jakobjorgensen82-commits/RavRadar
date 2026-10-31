@@ -6,6 +6,8 @@ Den historiske workflowprøve genkender desuden præcis de fem normale 594-User-
 
 Kontrolplanen registrerer de fem faktisk gennemgåede 594-tekstrammer ved siden af de uændrede 593-rammer. Begge ændringssider skal matche samme præcise ramme; blandede og ukendte importer, ændret kode, markup og escaping kræver fortsat fuldt omfang. Historiske native- og dashboardprøver bruger deres autentiske forgænger særskilt fra de aktuelle 594-prøver.
 
+Historiske planner-/updaterprøver genbruger den fælles præcise 594-læserinverse, mens den rå aktuelle rolle fortsat prøves særskilt. Timeoutprøven validerer den nye 594-migrations hele SQL og scoped55s-række før de bevarede historiske inventarer. Begge rettelser er afgrænset til tests; produktionskode, SQL og modelbindinger bevares.
+
 4.0.594 er lokalt udstedt gennem den normale afledning; samlet kvalifikation, installation og offentlig levering er fortsat åbne. Lokal normal metadatagrænse og routing består med konkrete negative cases; de beviser ikke autentisk produktions-B/S, ny nativeeksekvering eller offentlig levering. Strengt senere generation, numerisk helinverse, frisk pointer, CAS og hård no-loss består. Krypteret indhentning er ikke completed-checkpoint og giver ikke automatisk genbrug over modelskift. Scoreformel, kildeprioritet, admin/geometri og godkendte brugertekster bevares. Se DEC-0303 og håndbog 89.291; skiftende driftsstatus føres privat.
 
 ## 30. oktober — P0: DMI-originalers conditions skal følge producentens grænse
