@@ -201,9 +201,9 @@ export const fullGitPinnedSourcePreparationWorkflowReview = Object.freeze({
   ]
 });
 export function inverseFullGitPinnedSourcePreparationWorkflow(source, role) {
-  source = inverseTerminalRepair4145Workflow(source, role);
   assert.equal(arguments.length, 2, 'FULL_GIT_PINNED_WORKFLOW_ARGUMENTS');
   assert.equal(typeof source, 'string', 'FULL_GIT_PINNED_WORKFLOW_TYPE');
+  source = inverseTerminalRepair4145Workflow(source, role);
   const row = fullGitPinnedSourcePreparationWorkflowReview;
   if (role !== 'build' || sha(source) !== row.after.sha256) return source;
   assert.equal(Buffer.byteLength(source), row.after.bytes, 'FULL_GIT_PINNED_WORKFLOW_AFTER_SIZE');
