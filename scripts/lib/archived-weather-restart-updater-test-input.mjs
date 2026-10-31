@@ -3,6 +3,41 @@ import assert from 'node:assert/strict';
 import crypto from 'node:crypto';
 import fs from 'node:fs';
 const sha=value=>crypto.createHash('sha256').update(value).digest('hex');
+// TEST INPUT ONLY: invert the reviewed READY-gap caller before the unchanged
+// wind-tail and every older whole-source oracle. No runtime admission.
+export const CANDIDATE_G_READY_GAP_UPDATER_TEST_REVIEW = Object.freeze({
+  path: 'scripts/update-weather.mjs',
+  before: Object.freeze({ bytes: 250742, sha256: '0f50808baa340accdc07e03b2fc4a3c714a322d7a274af50720a5694b78cffda' }),
+  after: Object.freeze({ bytes: 250790, sha256: '0dc6dc1a957528a8886bd4b1fa7d4c6a4387e67457f1578434979337f0a237d9' }),
+  hunks: Object.freeze([
+    Object.freeze(['',
+      '        // A validated previous companion may lose READY on a newer measured\n'
+      + '        // gap. Permit its existing local unavailable projection prospectively;\n'
+      + '        // this does not make the previous or newly derived state READY.\n']),
+    Object.freeze([
+      "          (candidateGContinuationSelection.source === 'PRIVATE_RUNTIME'\n"
+      + '            && previousCandidateGRollbackRuntime?.status === CANDIDATE_G_MEASURED_WARMUP_STATUS)\n'
+      + "          || (candidateGContinuationSelection.source === 'CHECKPOINT_COMPANION'\n"
+      + '            && previousCandidateGContinuation?.transportMemoryReady === false);',
+      "          ['PRIVATE_RUNTIME', 'CHECKPOINT_COMPANION', 'POINT_ACTIVATION_COMPANION']\n"
+      + '            .includes(candidateGContinuationSelection.source);',
+    ]),
+  ]),
+});
+export function inverseCandidateGReadyGapUpdaterTestInput(source, relative) {
+  assert.equal(arguments.length, 2, 'CANDIDATE_G_READY_GAP_UPDATER_ARGUMENTS');
+  assert.equal(typeof source, 'string', 'CANDIDATE_G_READY_GAP_UPDATER_TYPE');
+  const row = CANDIDATE_G_READY_GAP_UPDATER_TEST_REVIEW;
+  if (relative !== row.path || sha(source) !== row.after.sha256) return source;
+  assert.equal(Buffer.byteLength(source), row.after.bytes, 'CANDIDATE_G_READY_GAP_UPDATER_AFTER_SIZE');
+  for (const [before, after] of [...row.hunks].reverse()) {
+    assert.equal(source.split(after).length, 2, 'CANDIDATE_G_READY_GAP_UPDATER_EXACT_HUNK');
+    source = source.replace(after, () => before);
+  }
+  assert.equal(Buffer.byteLength(source), row.before.bytes, 'CANDIDATE_G_READY_GAP_UPDATER_BEFORE_SIZE');
+  assert.equal(sha(source), row.before.sha256, 'CANDIDATE_G_READY_GAP_UPDATER_WHOLE_INVERSE');
+  return source;
+}
 // TEST INPUT ONLY: one reviewed scalar reserve default; all earlier whole
 // updater identities and historical owner/cold/native oracles stay unchanged.
 export const WIND_TAIL_CAPACITY_UPDATER_TEST_REVIEW = Object.freeze({
@@ -15,6 +50,7 @@ export const WIND_TAIL_CAPACITY_UPDATER_TEST_REVIEW = Object.freeze({
 export function inverseWindTailCapacityUpdaterTestInput(source, relative) {
   assert.equal(arguments.length, 2, 'WIND_TAIL_CAPACITY_UPDATER_ARGUMENTS');
   assert.equal(typeof source, 'string', 'WIND_TAIL_CAPACITY_UPDATER_TYPE');
+  source = inverseCandidateGReadyGapUpdaterTestInput(source, relative);
   const row = WIND_TAIL_CAPACITY_UPDATER_TEST_REVIEW;
   if (relative !== row.path || sha(source) !== row.after.sha256) return source;
   assert.equal(Buffer.byteLength(source), row.after.bytes, 'WIND_TAIL_CAPACITY_UPDATER_AFTER_SIZE');

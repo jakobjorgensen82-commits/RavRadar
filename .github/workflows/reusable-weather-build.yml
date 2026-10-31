@@ -2105,12 +2105,15 @@ jobs:
           read -r legacy_source_head legacy_source_tree < <(node --input-type=module -e "import { LEGACY_CANDIDATE_G_SOURCE_HEAD, LEGACY_CANDIDATE_G_SOURCE_TREE } from './scripts/lib/ravscore-legacy-candidate-g-source.mjs'; process.stdout.write(LEGACY_CANDIDATE_G_SOURCE_HEAD + ' ' + LEGACY_CANDIDATE_G_SOURCE_TREE + '\n');")
           [[ "$legacy_source_head" =~ ^[a-f0-9]{40}$ ]]
           [[ "$legacy_source_tree" =~ ^[a-f0-9]{40}$ ]]
-          git fetch --no-tags --depth=1 origin "$legacy_source_head"
-          test "$(git rev-parse FETCH_HEAD^{commit})" = "$legacy_source_head"
+          if ! git cat-file -e "${legacy_source_head}^{commit}" 2>/dev/null; then
+            git fetch --no-tags origin "$legacy_source_head"
+            test "$(git rev-parse FETCH_HEAD^{commit})" = "$legacy_source_head"
+          fi
+          test "$(git rev-parse "${legacy_source_head}^{commit}")" = "$legacy_source_head"
           test "$(git rev-parse "${legacy_source_head}^{tree}")" = "$legacy_source_tree"
           for original_head in 37e657867ff0f8c31f8e8489e5c9a1cf235192f9 044d3045fecc2e70d6f35f60010921c6bd597ecc; do
             if ! git cat-file -e "${original_head}^{commit}"; then
-              git fetch --no-tags --depth=1 origin "$original_head"
+              git fetch --no-tags origin "$original_head"
             fi
             test "$(git rev-parse "${original_head}^{commit}")" = "$original_head"
           done
@@ -3230,7 +3233,7 @@ jobs:
           [[ "$legacy_source_head" =~ ^[a-f0-9]{40}$ ]]
           [[ "$legacy_source_tree" =~ ^[a-f0-9]{40}$ ]]
           if ! git cat-file -e "${legacy_source_head}^{commit}" 2>/dev/null; then
-            git fetch --no-tags --depth=1 origin "$legacy_source_head"
+            git fetch --no-tags origin "$legacy_source_head"
           fi
           test "$(git rev-parse "${legacy_source_head}^{commit}")" = "$legacy_source_head"
           test "$(git rev-parse "${legacy_source_head}^{tree}")" = "$legacy_source_tree"

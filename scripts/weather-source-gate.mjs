@@ -44,7 +44,7 @@ async function verifiedTargetedSourceProof(record, context, sourceTreeSha256) {
     const access = sourceImpactEvidenceAccess({ env: context });
     const readGit = (args, options = {}) => execFileSync('git', args, {
       maxBuffer: 512 * 1024 * 1024, timeout: 10000,
-      stdio: ['ignore', 'pipe', 'pipe'], ...options,
+      stdio: ['pipe', 'pipe', 'pipe'], ...options,
       env: { ...process.env, GIT_NO_LAZY_FETCH: '1', GIT_NO_REPLACE_OBJECTS: '1',
         GIT_TERMINAL_PROMPT: '0', GIT_CONFIG_COUNT: '1',
         GIT_CONFIG_KEY_0: 'protocol.allow', GIT_CONFIG_VALUE_0: 'never' },

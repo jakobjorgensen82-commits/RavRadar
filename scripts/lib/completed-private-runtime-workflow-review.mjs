@@ -6,6 +6,46 @@ import fs from 'node:fs';
 const review = JSON.parse(fs.readFileSync(new URL('./completed-private-runtime-workflow-review.json', import.meta.url), 'utf8'));
 const coldReview = JSON.parse(fs.readFileSync(new URL('./current-family-cold-start-workflow-review.json', import.meta.url), 'utf8'));
 const sha = value => crypto.createHash('sha256').update(value).digest('hex');
+// TEST ONLY: exact normal pinned-source preparation inverse. The complete
+// preceding594 workflow and every historical oracle remain unchanged.
+export const fullGitPinnedSourcePreparationWorkflowReview = Object.freeze({
+  "before": {
+    "bytes": 294485,
+    "sha256": "6b205b7a8c99c61cf4b6f65030acb22676d66d115a5469101a3062aa20f113d2"
+  },
+  "after": {
+    "bytes": 294645,
+    "sha256": "58168cce22cbf34595748fc4cf1d4929457a77754719dbb54f9da40a1c803bdb"
+  },
+  "hunks": [
+    [
+      "          git fetch --no-tags --depth=1 origin \"$legacy_source_head\"\n          test \"$(git rev-parse FETCH_HEAD^{commit})\" = \"$legacy_source_head\"\n",
+      "          if ! git cat-file -e \"${legacy_source_head}^{commit}\" 2>/dev/null; then\n            git fetch --no-tags origin \"$legacy_source_head\"\n            test \"$(git rev-parse FETCH_HEAD^{commit})\" = \"$legacy_source_head\"\n          fi\n          test \"$(git rev-parse \"${legacy_source_head}^{commit}\")\" = \"$legacy_source_head\"\n"
+    ],
+    [
+      "              git fetch --no-tags --depth=1 origin \"$original_head\"\n",
+      "              git fetch --no-tags origin \"$original_head\"\n"
+    ],
+    [
+      "          if ! git cat-file -e \"${legacy_source_head}^{commit}\" 2>/dev/null; then\n            git fetch --no-tags --depth=1 origin \"$legacy_source_head\"\n          fi\n",
+      "          if ! git cat-file -e \"${legacy_source_head}^{commit}\" 2>/dev/null; then\n            git fetch --no-tags origin \"$legacy_source_head\"\n          fi\n"
+    ]
+  ]
+});
+export function inverseFullGitPinnedSourcePreparationWorkflow(source, role) {
+  assert.equal(arguments.length, 2, 'FULL_GIT_PINNED_WORKFLOW_ARGUMENTS');
+  assert.equal(typeof source, 'string', 'FULL_GIT_PINNED_WORKFLOW_TYPE');
+  const row = fullGitPinnedSourcePreparationWorkflowReview;
+  if (role !== 'build' || sha(source) !== row.after.sha256) return source;
+  assert.equal(Buffer.byteLength(source), row.after.bytes, 'FULL_GIT_PINNED_WORKFLOW_AFTER_SIZE');
+  for (const [before, after] of [...row.hunks].reverse()) {
+    assert.equal(source.split(after).length, 2, 'FULL_GIT_PINNED_WORKFLOW_EXACT_HUNK');
+    source = source.replace(after, () => before);
+  }
+  assert.equal(Buffer.byteLength(source), row.before.bytes, 'FULL_GIT_PINNED_WORKFLOW_BEFORE_SIZE');
+  assert.equal(sha(source), row.before.sha256, 'FULL_GIT_PINNED_WORKFLOW_WHOLE_INVERSE');
+  return source;
+}
 // TEST ONLY: præcis normal versionssynk; hele593-workflowet bevares.
 export const release594WorkflowUserAgentReview=Object.freeze({
   before:Object.freeze({bytes:294485,sha256:'49b7609139f2ad62228eed7d89bcb0fa4106476cd5b7bd311a8f86f895060f6b'}),
@@ -14,6 +54,7 @@ export const release594WorkflowUserAgentReview=Object.freeze({
 export function inverseRelease594WorkflowUserAgents(source,role){
   assert.equal(arguments.length,2,'RELEASE594_WORKFLOW_ARGUMENTS');
   assert.equal(typeof source,'string','RELEASE594_WORKFLOW_TYPE');
+  source=inverseFullGitPinnedSourcePreparationWorkflow(source,role);
   const row=release594WorkflowUserAgentReview;
   if(role!=='build'||sha(source)!==row.after.sha256)return source;
   assert.equal(Buffer.byteLength(source),row.after.bytes,'RELEASE594_WORKFLOW_SIZE');

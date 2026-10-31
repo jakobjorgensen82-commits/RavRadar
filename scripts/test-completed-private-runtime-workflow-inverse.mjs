@@ -1,5 +1,7 @@
 // Test-only source inverse. No native B/S fixture, providers or production calls.
 import assert from 'node:assert/strict';
+import { inverseFullGitPinnedSourcePreparationWorkflow, fullGitPinnedSourcePreparationWorkflowReview }
+  from './lib/completed-private-runtime-workflow-review.mjs';
 import crypto from 'node:crypto';
 import fs from 'node:fs/promises';
 import test from 'node:test';
@@ -1545,8 +1547,34 @@ test('release593 actual workflow preserves the immutable592 body and all older w
   assert.throws(()=>inverseRelease593WorkflowUserAgents(null,'build'),/RELEASE593_WORKFLOW_TYPE/);
 });
 
-test('release594 actual workflow preserves whole593 and refuses unrelated changes',async()=>{
+test('full Git pin preparation has an exact outer inverse before every unchanged workflow oracle',async()=>{
   const actual=(await fs.readFile(new URL('../.github/workflows/reusable-weather-build.yml',import.meta.url),'utf8')).replaceAll('\r\n','\n');
+  const row=fullGitPinnedSourcePreparationWorkflowReview;
+  assert.equal(Buffer.byteLength(actual),row.after.bytes);assert.equal(sha(actual),row.after.sha256);
+  const previous=inverseFullGitPinnedSourcePreparationWorkflow(actual,'build');
+  assert.equal(Buffer.byteLength(previous),row.before.bytes);assert.equal(sha(previous),row.before.sha256);
+  assert.deepEqual(row.before,release594WorkflowUserAgentReview.after);
+  assert.equal(inverseFullGitPinnedSourcePreparationWorkflow(previous,'build'),previous);
+  assert.equal(inverseCompletedRuntimeWorkflow(actual,'build'),inverseCompletedRuntimeWorkflow(previous,'build'));
+  assert.equal(sha(inverseCompletedRuntimeWorkflow(actual,'build')),legacySha);
+  const mutations=[actual+'\n# UNKNOWN_FULL_GIT_CHANGE\n','!'+actual.slice(1)];
+  for(const[before,after]of row.hunks)for(const replacement of [before,after+after,''])
+    mutations.push(actual.replace(after,()=>replacement));
+  for(const changed of mutations){
+    assert.notEqual(changed,actual);
+    assert.equal(inverseFullGitPinnedSourcePreparationWorkflow(changed,'build'),changed);
+    assert.throws(()=>inverseCompletedRuntimeWorkflow(changed,'build'));
+  }
+  for(const role of ['once','unknown','toString'])
+    assert.equal(inverseFullGitPinnedSourcePreparationWorkflow(actual,role),actual);
+  assert.throws(()=>inverseFullGitPinnedSourcePreparationWorkflow(actual),/WORKFLOW_ARGUMENTS/);
+  assert.throws(()=>inverseFullGitPinnedSourcePreparationWorkflow(actual,'build',true),/WORKFLOW_ARGUMENTS/);
+  assert.throws(()=>inverseFullGitPinnedSourcePreparationWorkflow(null,'build'),/WORKFLOW_TYPE/);
+});
+
+test('release594 actual workflow preserves whole593 and refuses unrelated changes',async()=>{
+  const actual=inverseFullGitPinnedSourcePreparationWorkflow(
+    (await fs.readFile(new URL('../.github/workflows/reusable-weather-build.yml',import.meta.url),'utf8')).replaceAll('\r\n','\n'),'build');
   const row=release594WorkflowUserAgentReview;
   assert.equal(Buffer.byteLength(actual),row.after.bytes);assert.equal(sha(actual),row.after.sha256);
   assert.equal(actual.split('RavRadar/4.0.594').length,6);
