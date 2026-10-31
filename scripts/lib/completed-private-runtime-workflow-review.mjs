@@ -151,7 +151,8 @@ export const terminalRepair4145WorkflowReview = Object.freeze({
 export function inverseTerminalRepair4145Workflow(source, role) {
   assert.equal(arguments.length, 2, 'TERMINAL4145_INVERSE_ARGUMENTS');
   assert.equal(typeof source, 'string', 'TERMINAL4145_INVERSE_TYPE');
-  const row = terminalRepair4145WorkflowReview.roles[role];
+  const roles = terminalRepair4145WorkflowReview.roles;
+  const row = typeof role === 'string' && Object.hasOwn(roles, role) ? roles[role] : null;
   if (!row || sha(source) !== row.after.sha256) return source;
   assert.equal(Buffer.byteLength(source), row.after.bytes, 'TERMINAL4145_AFTER_BYTES');
   for (const [offset, actual, original] of row.edits) {

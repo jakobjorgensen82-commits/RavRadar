@@ -1611,7 +1611,8 @@ test('terminal delivery repair maps only five exact whole sources and its exact 
     assert.equal(inverseCompletedRuntimeWorkflow(actual, role), inverseCompletedRuntimeWorkflow(prior, role));
     const unknown = actual + '\n# UNREVIEWED terminal repair mutation\n';
     assert.equal(inverse(unknown, role), unknown, 'Unknown whole bytes never receive the inverse');
-    assert.equal(inverse(actual, 'unknown'), actual, 'Unknown role cannot select a reviewed inverse');
+    for (const unknownRole of ['unknown', 'toString', '__proto__', null, 1])
+      assert.equal(inverse(actual, unknownRole), actual, 'Unknown or inherited role cannot select a reviewed inverse');
     for (const [offset, fragment] of row.edits) {
       const mixed = actual.slice(0, offset) + 'MIXED_UNREVIEWED' + actual.slice(offset + fragment.length);
       assert.equal(inverse(mixed, role), mixed, 'Every incomplete/mixed hunk stays outside the whole inverse');
