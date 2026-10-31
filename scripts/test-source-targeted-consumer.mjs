@@ -319,3 +319,6 @@ try{
   assert.equal(fs.realpathSync(root),root);assert.equal(path.dirname(root),temporary);assert(root.startsWith(path.join(temporary,'rr-targeted-consumer-')));
   fs.rmSync(root,{recursive:true});
 }
+
+// Additive V2 protocol integration; every earlier V1 assertion stays exact.
+await import('./test-source-targeted-domain-integration.mjs');

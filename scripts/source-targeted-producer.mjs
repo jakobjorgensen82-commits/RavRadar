@@ -3,11 +3,11 @@ import crypto from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
 import {fileURLToPath} from 'node:url';
-import {execFileSync,spawnSync} from 'node:child_process';
+import {execFileSync,spawn} from 'node:child_process';
 import {isDeepStrictEqual} from 'node:util';
 import {planSourceImpactFromGit} from './source-impact-git-diff.mjs';
 import {qualifySourceImpactFullBaseline,SOURCE_IMPACT_FULL_BASELINE_KIND} from './source-impact-full-baseline.mjs';
-import {buildTargetedSourceReceipt} from './source-targeted-receipt.mjs';
+import {buildTargetedSourceReceipt,buildDomainTargetedSourceReceipt,readDomainControlReview} from './source-targeted-receipt.mjs';
 import {assistantPublic591Reader,sourceImpactEvidenceAccess,ORIGIN} from './native-postgres-evidence.mjs';
 import {discoverPullRequestSourceGate,PULL_REQUEST_SOURCE_JOB,PULL_REQUEST_SOURCE_WORKFLOW}
   from './lib/weather-source-gate.mjs';
@@ -45,11 +45,48 @@ function finalProofHash(zip){
   ].join(';')],{input:zip,maxBuffer:32768,timeout:10000,stdio:['pipe','pipe','pipe']});
   assert(raw.length>0&&raw.length<=32768);return sha(raw);
 }
+async function selectImpactPlan(baselineCommit,head){
+  const gitPlan=planSourceImpactFromGit({baselineCommit,candidateCommit:head,expectedHead:head});
+  if(gitPlan.status==='PLANNED'&&gitPlan.plan.selection==='TARGETED')
+    return {mode:'TEXT_V1',plan:gitPlan,commands:gitPlan.plan.commands};
+  const {planSourceDomainImpactFromGit}=await import('./source-impact-domain-plan.mjs');
+  const domainPlan=planSourceDomainImpactFromGit({baselineCommit,candidateCommit:head,expectedHead:head});
+  if(domainPlan.status==='PLANNED'
+    &&['TARGETED_DOMAINS','CONTROL_QUALIFICATION_REQUIRED'].includes(domainPlan.selection))
+    return {mode:'DOMAINS_V2',plan:domainPlan,commands:domainPlan.commands};
+  return null;
+}
 function currentJob(result,current){
   assert(result&&Array.isArray(result.jobs)&&result.total_count===result.jobs.length&&result.jobs.length<=100);
   const job=one(result.jobs.filter(row=>row.name===PULL_REQUEST_SOURCE_JOB));
   assert(positive(job.id));assert.equal(job.run_id,current.runId);assert.equal(job.run_attempt,current.runAttempt);
   assert.equal(job.head_sha,current.head);assert.equal(job.status,'in_progress');return job.id;
+}
+function freshPostTargetReader(){
+  let category='REQUEST_NOT_STARTED',httpStatus=0;
+  const fetchImpl=globalThis.fetch;
+  const get=assistantPublic591Reader({fetchImpl:async(url,options)=>{
+    try{
+      const response=await fetchImpl(url,options);
+      httpStatus=Number.isInteger(response.status)&&response.status>=100&&response.status<=599?response.status:0;
+      category=response.ok?'HTTP_OK_BODY_OR_JSON_FAILED':'HTTP_STATUS_FAILED';return response;
+    }catch(error){
+      category=error?.name==='TimeoutError'?'FETCH_TIMEOUT':error?.name==='AbortError'?'FETCH_ABORT'
+        :['UND_ERR_SOCKET','UND_ERR_CONNECT_TIMEOUT','UND_ERR_HEADERS_TIMEOUT','UND_ERR_BODY_TIMEOUT',
+          'ECONNRESET','ECONNREFUSED','ENOTFOUND','EAI_AGAIN','ETIMEDOUT'].includes(error?.cause?.code)
+          ?'FETCH_NETWORK':'FETCH_OTHER';
+      throw error;
+    }
+  }});
+  return async(phase,route)=>{
+    category='REQUEST_NOT_STARTED';httpStatus=0;
+    try{return await get(route);}catch(error){
+      // Only closed categories and a bounded status; never raw transport data.
+      try{console.error('SOURCE_TARGETED_POSTCHECK '+JSON.stringify({phase,category,httpStatus}));}
+      catch{ /* A failed diagnostic must preserve the original rejection. */ }
+      throw error;
+    }
+  };
 }
 
 // No caller-selected baseline, root, paths, commands, modes or dependency skips.
@@ -57,7 +94,7 @@ function currentJob(result,current){
 export async function coordinateTargetedSourceProducer(){
   assert.equal(arguments.length,0,'SOURCE_TARGETED_PRODUCER_NO_OVERRIDES');
   const env=process.env,head=env.SOURCE_GATE_HEAD_SHA;
-  let current,content,gitPlan,baseline,get,jobRoute,pullRoute,pull;
+  let current,content,impactPlan,baseline,get,jobRoute,pullRoute,pull;
   try{
     assert.equal(env.GITHUB_EVENT_NAME,'pull_request');assert.equal(env.GITHUB_REPOSITORY,ORIGIN.repository);
     assert(oid(head));clean(head);
@@ -71,8 +108,8 @@ export async function coordinateTargetedSourceProducer(){
     assert.equal(pull.base?.ref,'main');assert.equal(pull.base?.repo?.full_name,env.GITHUB_REPOSITORY);
     assert(oid(pull.base.sha));
     const mergeBase=text(['merge-base','--all',pull.base.sha,head]);assert(oid(mergeBase));
-    gitPlan=planSourceImpactFromGit({baselineCommit:mergeBase,candidateCommit:head,expectedHead:head});
-    if(gitPlan.status!=='PLANNED'||gitPlan.plan.selection!=='TARGETED')return full('COMPLETE_DIFF_REQUIRES_FULL');
+    impactPlan=await selectImpactPlan(mergeBase,head);
+    if(!impactPlan)return full('COMPLETE_DIFF_REQUIRES_FULL');
     content=sourceTreeContentSha256(head,{git});current={repository:env.GITHUB_REPOSITORY,head,
       sourceTreeSha256:content,pullRequest,runId,runAttempt,jobId:0};
     const runRoute=repo+'/actions/runs/'+runId,run=await get(runRoute);
@@ -86,10 +123,10 @@ export async function coordinateTargetedSourceProducer(){
     const candidates=text(['rev-list','--first-parent','--max-count=6',mergeBase]).split('\n');
     assert(candidates.length>0&&candidates.every(oid));
     for(const candidate of candidates){
-      const plan=planSourceImpactFromGit({baselineCommit:candidate,candidateCommit:head,expectedHead:head});
+      const plan=await selectImpactPlan(candidate,head);
       // Older ancestry can only add paths. Unknown/shared cumulative impact
       // needs the existing full workflow, without downloading private blobs.
-      if(plan.status!=='PLANNED'||plan.plan.selection!=='TARGETED')return full('CUMULATIVE_DIFF_REQUIRES_FULL');
+      if(!plan)return full('CUMULATIVE_DIFF_REQUIRES_FULL');
       const sourceTreeSha256=sourceTreeContentSha256(candidate,{git});
       const located=await discoverPullRequestSourceGate({GITHUB_REPOSITORY:current.repository,GITHUB_REF:'refs/heads/main',
         GITHUB_SHA:candidate},sourceTreeSha256,route=>get(route));
@@ -122,7 +159,7 @@ export async function coordinateTargetedSourceProducer(){
       const qualified=await qualifySourceImpactFullBaseline({reference,candidateCommit:head},
         {...qualification,readGit:git});
       if(qualified.kind!==SOURCE_IMPACT_FULL_BASELINE_KIND)return full('FULL_BASELINE_NOT_QUALIFIED');
-      baseline=qualified;gitPlan=plan;break;
+      baseline=qualified;impactPlan=plan;break;
     }
     if(!baseline)return full('NO_QUALIFIED_FULL_ANCESTOR');
     clean(head);assert.equal(sourceTreeContentSha256(head,{git}),content);
@@ -130,28 +167,42 @@ export async function coordinateTargetedSourceProducer(){
 
   // From the first selected command onward, a failure or source drift is RED.
   // It must never become a successful FULL handoff or partial TARGETED proof.
+  // A missing ROOT review is a precise CONTROL refusal, never an expensive
+  // automatic FULL rerun or an unreviewed short qualification.
+  const controlReview=impactPlan.mode==='DOMAINS_V2'
+    ?readDomainControlReview(pull,{current,fullBaseline:baseline,domainPlan:impactPlan.plan}):null;
   const commandResults=[];
-  for(const command of gitPlan.plan.commands){
+  for(const command of impactPlan.commands){
     assert.match(command,/^node(?: [A-Za-z0-9_./:-]+)+$/);
     clean(head);
-    const start=performance.now(),result=spawnSync(process.execPath,command.split(' ').slice(1),
-      {cwd:ROOT,stdio:'inherit',shell:false,timeout:300000});
+    const start=performance.now(),result=await new Promise(resolve=>{
+      let error=null;
+      const child=spawn(process.execPath,command.split(' ').slice(1),
+        {cwd:ROOT,stdio:'inherit',shell:false,timeout:300000});
+      child.once('error',value=>{error=value;});
+      child.once('close',(status,signal)=>resolve({status,signal,error}));
+    });
     const row={phase:'targeted',command,elapsedMs:Math.max(0,Math.round(performance.now()-start)),
       outcome:result.status===0&&!result.error&&!result.signal?'PASS':'FAIL'};
     console.log('SOURCE_TIME '+JSON.stringify(row));commandResults.push(row);
     assert.equal(row.outcome,'PASS','SOURCE_TARGETED_PRODUCER_COMMAND_FAILED');
   }
   clean(head);assert.equal(sourceTreeContentSha256(head,{git}),content);
-  const finalPlan=planSourceImpactFromGit({baselineCommit:baseline.mergeCommit,candidateCommit:head,expectedHead:head});
-  assert(isDeepStrictEqual(finalPlan,gitPlan),'SOURCE_TARGETED_PRODUCER_DIFF_MOVED');
+  const finalPlan=await selectImpactPlan(baseline.mergeCommit,head);
+  assert(isDeepStrictEqual(finalPlan,impactPlan),'SOURCE_TARGETED_PRODUCER_DIFF_MOVED');
   // Fresh post-test transport, exactly two reads, irrespective of test duration.
-  const finalGet=assistantPublic591Reader(),freshPull=await finalGet(pullRoute);
+  const finalGet=freshPostTargetReader(),freshPull=await finalGet('PULL',pullRoute);
   assert.equal(freshPull.number,current.pullRequest);assert.equal(freshPull.state,'open');
   assert.equal(freshPull.head?.sha,head);assert.equal(freshPull.base?.sha,pull.base.sha);
   assert.equal(freshPull.head?.repo?.full_name,current.repository);
   assert.equal(freshPull.base?.repo?.full_name,current.repository);assert.equal(freshPull.base?.ref,'main');
-  assert.equal(currentJob(await finalGet(jobRoute),current),current.jobId);
-  const receipt=buildTargetedSourceReceipt({current,fullBaseline:baseline,gitPlan,commandResults});
+  assert.equal(currentJob(await finalGet('JOB',jobRoute),current),current.jobId);
+  if(impactPlan.mode==='DOMAINS_V2')assert(isDeepStrictEqual(controlReview,
+    readDomainControlReview(freshPull,{current,fullBaseline:baseline,domainPlan:impactPlan.plan})),
+    'SOURCE_TARGETED_CONTROL_REVIEW_MOVED');
+  const receipt=impactPlan.mode==='TEXT_V1'
+    ?buildTargetedSourceReceipt({current,fullBaseline:baseline,gitPlan:impactPlan.plan,commandResults})
+    :await buildDomainTargetedSourceReceipt({current,fullBaseline:baseline,domainPlan:impactPlan.plan,commandResults});
   clean(head);assert.equal(sourceTreeContentSha256(head,{git}),content);
   return {schemaVersion:1,selection:'TARGETED',reasonCode:'QUALIFIED_FULL_ANCESTOR_AND_SELECTED_COMMANDS_PASS',
     sourceTreeSha256:content,artifactName:receipt.artifactName,receiptPath:RECEIPT,receipt,

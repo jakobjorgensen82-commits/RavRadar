@@ -8,7 +8,8 @@ import {sourceTreeContentSha256} from './lib/source-tree-content.mjs';
 import {qualifySourceImpactFullBaseline,SOURCE_IMPACT_FULL_BASELINE_KIND}
   from './source-impact-full-baseline.mjs';
 import {planSourceImpactFromGit} from './source-impact-git-diff.mjs';
-import {TARGETED_SOURCE_CONTRACT,TARGETED_SOURCE_KIND,targetedSourceArtifactName,validateTargetedSourceReceipt}
+import {TARGETED_SOURCE_CONTRACT,TARGETED_SOURCE_KIND,targetedSourceArtifactName,validateTargetedSourceReceipt,
+  DOMAIN_TARGETED_SOURCE_CONTRACT,DOMAIN_TARGETED_SOURCE_KIND,domainTargetedSourceArtifactName,validateDomainTargetedSourceReceipt,readDomainControlReview}
   from './source-targeted-receipt.mjs';
 import {ORIGIN,sourceImpactEvidenceBudget} from './native-postgres-evidence.mjs';
 
@@ -37,7 +38,8 @@ const success=value=>value?.status==='completed'&&value.conclusion==='success';
 function locatorIdentity(record,env){
   assert(record&&Object.getPrototypeOf(record)===Object.prototype);
   assert.deepEqual(Object.keys(record).sort(),[...LOCATOR_KEYS].sort());
-  assert.equal(record.contractId,TARGETED_SOURCE_CONTRACT);assert.equal(record.repository,ORIGIN.repository);
+  assert([TARGETED_SOURCE_CONTRACT,DOMAIN_TARGETED_SOURCE_CONTRACT].includes(record.contractId));
+  assert.equal(record.repository,ORIGIN.repository);
   assert.equal(env.GITHUB_REPOSITORY,record.repository);assert.equal(env.GITHUB_REF,'refs/heads/main');
   assert(oid(record.headSha)&&record.headSha===env.GITHUB_SHA&&oid(record.producerHeadSha));
   assert.notEqual(record.headSha,record.producerHeadSha);assert(digest(record.sourceTreeSha256));
@@ -75,9 +77,14 @@ function runIdentity(run,pull,jobs,record){
   return {proofTime:time(selected.completed_at),earliestArtifact:time(selected.started_at),latestArtifact:time(uploaded.completed_at)};
 }
 
+function artifactNameFor(record,current){
+  assert([TARGETED_SOURCE_CONTRACT,DOMAIN_TARGETED_SOURCE_CONTRACT].includes(record.contractId));
+  return (record.contractId===DOMAIN_TARGETED_SOURCE_CONTRACT
+    ?domainTargetedSourceArtifactName:targetedSourceArtifactName)(current);
+}
 function verifyArtifact(metadata,record,phase){
   assert.equal(metadata.id,record.artifactId);assert.equal(metadata.digest,record.artifactDigest);
-  assert.equal(metadata.name,targetedSourceArtifactName({pullRequest:record.pullRequestNumber,
+  assert.equal(metadata.name,artifactNameFor(record,{pullRequest:record.pullRequestNumber,
     head:record.producerHeadSha,sourceTreeSha256:record.sourceTreeSha256}));
   assert.equal(metadata.expired,false);assert(positive(metadata.size_in_bytes)&&metadata.size_in_bytes<=65536);
   assert.equal(metadata.workflow_run?.id,Number(record.runId));assert.equal(metadata.workflow_run?.head_sha,record.producerHeadSha);
@@ -153,18 +160,41 @@ export async function decideTargetedSourceGate(record,env,dependencies){
     const full=await qualifySourceImpactFullBaseline({reference:receipt.baselineReference,candidateCommit:record.headSha},
       {getJson,getArtifactZip,readGit});remaining();
     assert.equal(full.kind,SOURCE_IMPACT_FULL_BASELINE_KIND);
-    const gitPlan=planSourceImpactFromGit({baselineCommit:full.mergeCommit,candidateCommit:record.headSha,expectedHead:record.headSha});
-    assert.equal(gitPlan.status,'PLANNED');assert.equal(gitPlan.plan.selection,'TARGETED');
-    const structural=validateTargetedSourceReceipt(receipt,{current,fullBaseline:full,gitPlan,
-      commandResults:receipt.reportedCommandResults});assert.equal(structural.validStructure,true);
+    const isDomain=record.contractId===DOMAIN_TARGETED_SOURCE_CONTRACT;
+    let structural,domainPlan,controlReview;
+    if(isDomain){
+      const {planSourceDomainImpactFromGit}=await import('./source-impact-domain-plan.mjs');
+      domainPlan=planSourceDomainImpactFromGit({baselineCommit:full.mergeCommit,
+        candidateCommit:record.headSha,expectedHead:record.headSha});remaining();
+      assert.equal(domainPlan.status,'PLANNED');
+      assert(['TARGETED_DOMAINS','CONTROL_QUALIFICATION_REQUIRED'].includes(domainPlan.selection));
+      controlReview=readDomainControlReview(pull,{current,fullBaseline:full,domainPlan});
+      structural=validateDomainTargetedSourceReceipt(receipt,{current,fullBaseline:full,domainPlan,
+        commandResults:receipt.reportedCommandResults});
+    }else{
+      const gitPlan=planSourceImpactFromGit({baselineCommit:full.mergeCommit,candidateCommit:record.headSha,expectedHead:record.headSha});
+      assert.equal(gitPlan.status,'PLANNED');assert.equal(gitPlan.plan.selection,'TARGETED');
+      structural=validateTargetedSourceReceipt(receipt,{current,fullBaseline:full,gitPlan,
+        commandResults:receipt.reportedCommandResults});
+    }
+    assert.equal(structural.validStructure,true);
     // Keep the original source gate's later-main evidence semantics. A later
     // red/unresolved source phase is never hidden by this narrower scope.
     const later=await inspectLaterMainEvidence({env,proofTime:phase.proofTime,record,getJson:json});
     if(later)return later;
     assert.deepEqual(await json(runRoute),run);assert.deepEqual(await json(artifactRoute),metadata);
+    if(isDomain&&domainPlan.selection==='CONTROL_QUALIFICATION_REQUIRED'){
+      const freshPull=await json(repo+'/pulls/'+record.pullRequestNumber);
+      runIdentity(run,freshPull,jobs,record);
+      assert.deepEqual(readDomainControlReview(freshPull,{current,fullBaseline:full,domainPlan}),controlReview);
+    }
     assertCommittedHead();assert.equal(sourceTreeContentSha256(record.headSha,{git}),record.sourceTreeSha256);remaining();
-    return {required:false,reason:'verified-targeted-pull-request-source-content',runId:record.runId,
-      scope:'TARGETED_COMMAND_RESULTS_ONLY',database:'NOT_APPLICABLE',national:'NOT_APPLICABLE'};
+    return isDomain
+      ?{required:false,reason:'verified-domain-targeted-pull-request-source-content',runId:record.runId,
+        scope:'TARGETED_DOMAIN_COMMAND_RESULTS_ONLY',domains:structuredClone(receipt.domains),
+        independentControlReview:controlReview?'VERIFIED_EXACT_ROOT_PR_REVIEW':'NOT_REQUIRED'}
+      :{required:false,reason:'verified-targeted-pull-request-source-content',runId:record.runId,
+        scope:'TARGETED_COMMAND_RESULTS_ONLY',database:'NOT_APPLICABLE',national:'NOT_APPLICABLE'};
   }catch{return required();}
 }
 
@@ -207,7 +237,8 @@ export async function discoverTargetedSourceGate(env,sourceTreeSha256,dependenci
       &&pull.base?.repo?.full_name===env.GITHUB_REPOSITORY).sort((a,b)=>b.number-a.number);
     assert(candidates.length<=4&&new Set(candidates.map(pull=>pull.number)).size===candidates.length);
     for(const pull of candidates){
-      const artifactName=targetedSourceArtifactName({pullRequest:pull.number,head:pull.head.sha,sourceTreeSha256});
+     for(const contractId of [TARGETED_SOURCE_CONTRACT,DOMAIN_TARGETED_SOURCE_CONTRACT]){
+      const artifactName=artifactNameFor({contractId},{pullRequest:pull.number,head:pull.head.sha,sourceTreeSha256});
       const listing=await json(repo+'/actions/artifacts?name='+encodeURIComponent(artifactName)+'&per_page=100');
       assert(Array.isArray(listing.artifacts)&&Number.isSafeInteger(listing.total_count)
         &&listing.total_count>=0&&listing.total_count<=100&&listing.total_count===listing.artifacts.length);
@@ -224,7 +255,7 @@ export async function discoverTargetedSourceGate(env,sourceTreeSha256,dependenci
       const jobs=await json(runRoute+'/attempts/1/jobs?per_page=100');
       assert(Array.isArray(jobs.jobs));const job=one(jobs.jobs.filter(value=>value.name===PULL_REQUEST_SOURCE_JOB));
       assert(positive(job.id)&&digest(artifact.digest));assert.notEqual(env.GITHUB_SHA,pull.head.sha);
-      const locator={contractId:TARGETED_SOURCE_CONTRACT,repository:env.GITHUB_REPOSITORY,
+      const locator={contractId,repository:env.GITHUB_REPOSITORY,
         headSha:env.GITHUB_SHA,producerHeadSha:pull.head.sha,sourceTreeSha256,pullRequestNumber:pull.number,
         runId:String(run.id),runAttempt:run.run_attempt,jobId:job.id,artifactId:artifact.id,
         artifactDigest:artifact.digest};
@@ -233,13 +264,16 @@ export async function discoverTargetedSourceGate(env,sourceTreeSha256,dependenci
       assert.equal(bytes.length,artifact.size_in_bytes);assert.equal('sha256:'+sha(bytes),artifact.digest);
       const raw=decodeReceipt(bytes,remaining),receipt=JSON.parse(raw);locator.proofSha256=sha(raw);
       locatorIdentity(locator,env);
-      assert.equal(receipt.schemaVersion,1);assert.equal(receipt.contractId,TARGETED_SOURCE_CONTRACT);
-      assert.equal(receipt.kind,TARGETED_SOURCE_KIND);assert.equal(receipt.scope,'TARGETED_COMMAND_RESULTS_ONLY');
+      const isDomain=contractId===DOMAIN_TARGETED_SOURCE_CONTRACT;
+      assert.equal(receipt.schemaVersion,isDomain?2:1);assert.equal(receipt.contractId,contractId);
+      assert.equal(receipt.kind,isDomain?DOMAIN_TARGETED_SOURCE_KIND:TARGETED_SOURCE_KIND);
+      assert.equal(receipt.scope,isDomain?'TARGETED_DOMAIN_COMMAND_RESULTS_ONLY':'TARGETED_COMMAND_RESULTS_ONLY');
       assert.equal(receipt.artifactName,artifactName);assert.equal(receipt.privatePayloadIncluded,false);
       assert.deepEqual(receipt.current,{repository:locator.repository,head:locator.producerHeadSha,
         sourceTreeSha256,pullRequest:locator.pullRequestNumber,runId:run.id,runAttempt:1,jobId:job.id});
       remaining();
       return {locator,requiresVerification:true,deliveryAuthority:false};
+     }
     }
     return required();
   }catch{return required();}

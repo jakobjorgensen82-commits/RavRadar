@@ -2268,11 +2268,12 @@ function scoreCoastalPartsRuntime(
           targetReferenceAt: generatedAt,
           });
         previousCandidateGContinuation = candidateGContinuationSelection.state;
+        // A validated previous companion may lose READY on a newer measured
+        // gap. Permit its existing local unavailable projection prospectively;
+        // this does not make the previous or newly derived state READY.
         candidateGRollbackMeasuredWarmupContinuation =
-          (candidateGContinuationSelection.source === 'PRIVATE_RUNTIME'
-            && previousCandidateGRollbackRuntime?.status === CANDIDATE_G_MEASURED_WARMUP_STATUS)
-          || (candidateGContinuationSelection.source === 'CHECKPOINT_COMPANION'
-            && previousCandidateGContinuation?.transportMemoryReady === false);
+          ['PRIVATE_RUNTIME', 'CHECKPOINT_COMPANION', 'POINT_ACTIVATION_COMPANION']
+            .includes(candidateGContinuationSelection.source);
       }
       const feature = {
         type: 'Feature', geometry: { type: 'Point', coordinates: part.waterPoint },
