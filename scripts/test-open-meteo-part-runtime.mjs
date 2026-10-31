@@ -403,18 +403,54 @@ test('tail capacity: pacing is global, slots remain independent, and completed w
 });
 
 test('tail capacity: pacing cannot extend deadline or claim an unstarted PART', async t => {
-  const input = await fixture(t);
-  const second = { ...part, partId: 'SECOND', waterPoint: [11, 56] };
-  let calls = 0;
-  const result = await runOpenMeteoPartRuntime({ ...input, parts: [part, second], budgetMs: 80,
-    requiredPairs: [part, second].map(row => ({ partId: row.partId, component: 'wind', validTime: reference })),
-    fetchImpl: async () => { calls++; return new Response(responseText); },
+  for (const setupMs of [0, 79, 80, 81]) await t.test(`bank setup consumes ${setupMs} of 80 ms`, async t => {
+    const input = await fixture(t);
+    const second = { ...part, partId: 'SECOND', waterPoint: [11, 56] };
+    const cursorPath = path.join(input.privateCacheRoot, 'weather-component-fallback-cursor.json');
+    const priorCursor = JSON.stringify({ kind: 'WEATHER_COMPONENT_FALLBACK_CURSOR', schemaVersion: 1,
+      openMeteoLastAttemptedPartId: second.partId });
+    await fs.mkdir(input.privateCacheRoot, { recursive: true });
+    await fs.writeFile(cursorPath, priorCursor);
+    // Control only the test clock: ordinary bank I/O still runs, and the
+    // production deadline must include it rather than restart after setup.
+    let elapsed = 0, setupObserved = false;
+    const originalLstat = fs.lstat;
+    t.mock.method(performance, 'now', () => elapsed);
+    t.mock.method(fs, 'lstat', async (...args) => {
+      const result = await originalLstat(...args);
+      if (!setupObserved && args[0] === input.privateCacheRoot) {
+        setupObserved = true;
+        elapsed = setupMs;
+      }
+      return result;
+    });
+    const starts = [];
+    const result = await runOpenMeteoPartRuntime({ ...input, parts: [part, second], budgetMs: 80,
+      requiredPairs: [part, second].map(row => ({ partId: row.partId, component: 'wind', validTime: reference })),
+      fetchImpl: async () => { starts.push(performance.now()); return new Response(responseText); },
+    });
+    const expectedStarts = setupMs < 80 ? 1 : 0;
+    assert.equal(setupObserved, true);
+    assert.deepEqual(starts, expectedStarts ? [setupMs] : []);
+    assert.ok(starts.every(instant => instant < 80), 'no HTTP start at or after the original deadline');
+    assert.equal(result.summary.requests, expectedStarts);
+    assert.equal(result.summary.transport.httpAttempts, expectedStarts);
+    assert.equal(result.summary.transport.budgetReached, 1);
+    assert.equal(result.summary.transport.httpAttemptLimit, 800);
+    assert.equal(result.summary.transport.pacingMinimumIntervalMs, 150);
+    assert.equal(result.summary.deferred, 2 - expectedStarts);
+    assert.equal(result.summary.deferredByComponent.wind, 2 - expectedStarts);
+    assert.equal(result.summary.lastAttemptedPartId, expectedStarts ? part.partId : null);
+    assert.equal(result.summary.failures.length, 0);
+    assert.equal(result.bank.records.length, expectedStarts);
+    const cursorText = await fs.readFile(cursorPath, 'utf8');
+    if (expectedStarts) {
+      assert.equal(JSON.parse(cursorText).openMeteoLastAttemptedPartId, part.partId);
+      assert.equal(selected(result.index).values.windSpeedMps, 4);
+    } else assert.equal(cursorText, priorCursor, 'pre-start deferral leaves the saved cursor unchanged');
+    assert.equal(JSON.parse(await fs.readFile(input.bankPath, 'utf8')).bankSha256, result.bank.bankSha256);
   });
-  assert.equal(calls, 1);
-  assert.equal(result.summary.requests, 1);
-  assert.equal(result.summary.deferredByComponent.wind, 1);
-  assert.equal(result.summary.lastAttemptedPartId, part.partId);
-  assert.equal(result.bank.records.length, 1);
+  const input = await fixture(t);
   for (const options of [{ maxHttpAttempts: 801 }, { maxHttpAttempts: 0 }, { minimumHttpStartIntervalMs: 149 }]) {
     await assert.rejects(runOpenMeteoPartRuntime({ ...input, ...options,
       fetchImpl: () => { throw new Error('invalid bounds must stop before HTTP'); } }), /BUDGET_INVALID/);

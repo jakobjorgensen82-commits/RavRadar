@@ -3,7 +3,7 @@ import { analyzeObservations } from '../services/learning-analysis.js?v=4.0.593'
 import { historicalSummary } from '../services/historical-analysis.js?v=4.0.593';
 import { loadZoneRegistry } from '../services/zone-registry.js?v=4.0.593';
 import { recommendWaterStationBracket } from '../core/water-station-routing.js?v=4.0.593';
-import { loadAdminDocument, queueAdminDocumentSave, saveAdminDocumentNow, onAdminSaveStatus, centralAdminStorageEnabled, adminStorageHealth } from '../services/admin-document-store.js?v=4.0.593';
+import { loadAdminDocument, readAdminDocumentNow, queueAdminDocumentSave, saveAdminDocumentNow, onAdminSaveStatus, centralAdminStorageEnabled, adminStorageHealth } from '../services/admin-document-store.js?v=4.0.593';
 import { listProfiles, savePermissions, PERMISSIONS, EXPERT_PERMISSIONS, myAccess, hasPermission } from '../services/permissions-service.js?v=4.0.593';
 import { authEnabled, currentSession, requireFreshSession, testConnection, signOut, authIdentityEpoch, onAuthChange } from '../services/auth-service.js?v=4.0.593';
 import { loadAdminTripCount } from '../services/admin-trip-count.js?v=4.0.593&ui=admin-current-data-20261028';
@@ -39,7 +39,7 @@ const download=(name,data)=>{const blob=new Blob([typeof data==='string'?data:JS
 const sha256Text=async value=>Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256',new TextEncoder().encode(value)))).map(byte=>byte.toString(16).padStart(2,'0')).join('');
 
 
-const state={access:null,connection:null,storageHealth:null,waterStations:[],waterStationsLoading:true,waterStationsReady:false,waterStationsError:null,stationRoutingAudit:null,waterRouting:{schemaVersion:1,zones:{}},stationMap:null,selectedRoutingZoneId:null,tab:'dashboard',zones:[],zoneCollection:{type:'FeatureCollection',features:[]},coastalParts:{zones:{}},zoneRegistry:{counts:{registered:0,active:0,legacy:0}},coastlineDrafts:{schemaVersion:4,overrides:{},partOwnership:{},disabledParts:{}},selectedCoastlineZoneId:null,publicManifest:null,conditions:{zones:{}},health:null,runtime:null,runtimeDetails:null,oceanDiagnostics:null,cacheAudit:null,implementationAudit:null,pointStagingStatus:{schemaVersion:null,entries:[],available:false},profiles:[]};
+const state={access:null,connection:null,storageHealth:null,publicLoadStatus:'pending',publicLoadError:null,zoneRegistryStatus:'pending',coastlineDraftsStatus:'pending',coastlineDraftsError:null,waterStations:[],waterStationsLoading:true,waterStationsReady:false,waterStationsError:null,stationRoutingAudit:null,waterRouting:{schemaVersion:1,zones:{}},stationMap:null,selectedRoutingZoneId:null,tab:'dashboard',zones:[],zoneCollection:{type:'FeatureCollection',features:[]},coastalParts:{zones:{}},zoneRegistry:{counts:{registered:0,active:0,legacy:0}},coastlineDrafts:{schemaVersion:4,overrides:{},partOwnership:{},disabledParts:{}},selectedCoastlineZoneId:null,publicManifest:null,conditions:{zones:{}},health:null,runtime:null,runtimeDetails:null,oceanDiagnostics:null,cacheAudit:null,implementationAudit:null,pointStagingStatus:{schemaVersion:null,entries:[],available:false},profiles:[]};
 const content=document.querySelector('#adminContent');
 let verifiedPublicRuntimePromise=null;
 let adminTripCountRenderEpoch=0;
@@ -77,7 +77,7 @@ function mountAdminTripCount(){
 
 function loadVerifiedPublicRuntime(){
  if(!verifiedPublicRuntimePromise){
-  verifiedPublicRuntimePromise=(async()=>{
+   const pending=(async()=>{
    const manifest=await loadDataManifest();
    if(!manifest)throw new Error('Det offentlige manifest kunne ikke verificeres.');
    const [conditions,zones]=await Promise.all([
@@ -86,12 +86,15 @@ function loadVerifiedPublicRuntime(){
    ]);
    if(conditions?.available!==true)throw new Error('Den offentlige startpakke kunne ikke verificeres.');
    return{manifest,conditions,zones};
-  })();
+   })();
+   verifiedPublicRuntimePromise=pending;
+   pending.catch(()=>{if(verifiedPublicRuntimePromise===pending)verifiedPublicRuntimePromise=null;});
  }
  return verifiedPublicRuntimePromise;
 }
 
 function activePublicRavScoreState(){
+ if(state.publicLoadStatus==='pending'||state.publicLoadStatus==='failed')return{ok:false,error:state.publicLoadError||new Error('Den offentlige vejrpakke afventer kontrol.')};
  try{
   return{ok:true,value:resolveAdminActivePublicRavScore({
    manifest:state.publicManifest,
@@ -103,7 +106,7 @@ function activePublicRavScoreState(){
 }
 
 function activeModelUnavailableCard(active,{title='Offentlig RavScore-model'}={}){
- const waiting=!state.publicManifest||!state.conditions?.ravScoreRuntime;
+ const waiting=state.publicLoadStatus==='pending'||(state.publicLoadStatus!=='failed'&&(!state.publicManifest||!state.conditions?.ravScoreRuntime));
  return `<article class="admin-card status-warning"><h2>${esc(title)}</h2><div class="metric status-warning">${waiting?'AFVENTER VERIFIKATION':'BLOKERET'}</div><p class="muted">${waiting?'Den manifestbundne offentlige model hentes og verificeres.':'Modelbindingen kunne ikke verificeres på tværs af manifest, startpakke og scoreprofil.'}</p>${waiting?'':`<p class="hint">${esc(active?.error?.message||'Ukendt modelbindingsfejl')}</p>`}</article>`;
 }
 
@@ -116,17 +119,122 @@ function activeAdminObservationDto(row,activeModel){
 
 function setLocalJsonSafely(key,payload){try{localStorage.setItem(key,JSON.stringify(payload));return true}catch(error){console.warn(`[RavRadar] Lokal browsercache kunne ikke gemmes for ${key}; Supabase-gemning fortsætter.`,error);return false}}
 
+let adminConnectionRead=0,adminPublicRead=0,adminWaterRead=0,adminCoastlineRead=0;
+function currentAdminRead(){
+ const identity=authIdentityEpoch(),owner=currentSession()?.user?.id;
+ return()=>Boolean(owner)&&identity===authIdentityEpoch()&&owner===currentSession()?.user?.id
+  &&state.access?.profile?.id===owner&&state.access.profile.is_active===true&&hasPermission(state.access,'admin_access');
+}
+function adminOverviewReadiness(){
+ const connection=state.connection,storage=state.storageHealth;
+ const knownRegistry=state.zoneRegistryStatus==='ready';
+ const publicReady=state.publicLoadStatus==='ready';
+ const documentRows=['water-level-station-routing','direction-reviews','coastline-overrides'].map(key=>{
+  const row=storage?.documents?.[key];
+  const status=!storage?'Afventer kontrol':!row?'Ikke bekræftet':row.ok?(row.exists?'✓ Centralt':'○ Ikke oprettet endnu'):'✕ Fejl';
+  return `<tr><td>${esc(key)}</td><td>${status}</td><td>${row?.updatedAt?esc(new Date(row.updatedAt).toLocaleString('da-DK')):'—'}</td><td>${row?.version??'—'}</td></tr>`;
+ }).join('');
+ return{
+  connectionLabel:!connection?'AFVENTER':connection.ok?'TILSLUTTET':'IKKE BEKRÆFTET',
+  connectionDetail:!connection?'Forbindelsen kontrolleres…':connection.ok?'Login og central database er bekræftet':'Central forbindelse kunne ikke bekræftes',
+  connectionClass:connection?.ok?'metric status-good':'metric status-warning',
+  storageLabel:!storage?'AFVENTER':storage.ok?'KLAR':'IKKE BEKRÆFTET',
+  storageClass:storage?.ok?'metric status-good':'metric status-warning',
+  zoneLabel:`${publicReady?Object.keys(state.conditions.zones||{}).length:'—'}/${knownRegistry?state.zoneRegistry.counts.registered:'—'}`,
+  zoneDetail:knownRegistry?`${state.zoneRegistry.counts.active} aktive, ${state.zoneRegistry.counts.legacy} historiske. ${publicReady?'Offentlige vejrdata er verificeret.':'Vejrdata er endnu ikke bekræftet.'}`
+   :state.zoneRegistryStatus==='failed'?'Zoneregisteret kunne ikke bekræftes.':'Zoneregisteret hentes…',
+  documentRows,
+ };
+}
+function updateAdminOverviewReadiness(){
+ updatePendingAdminCoastlineEditor();
+ if(state.tab!=='dashboard'||!currentAdminRead()())return;
+ const view=adminOverviewReadiness();
+ const text=(id,value,css)=>{const node=document.querySelector('#'+id);if(node){node.textContent=value;if(css)node.className=css;}};
+ text('adminConnectionState',view.connectionLabel,view.connectionClass);text('adminConnectionDetail',view.connectionDetail);
+ text('adminStorageState',view.storageLabel,view.storageClass);text('adminZoneCount',view.zoneLabel);text('adminZoneDetail',view.zoneDetail);
+ text('adminHealthState',(state.health?.status||'ukendt').toUpperCase(),state.health?.status==='good'?'metric status-good':'metric status-warning');
+ const rows=document.querySelector('#adminDocumentStatusRows');if(rows)rows.innerHTML=view.documentRows;
+ const active=activePublicRavScoreState(),model=document.querySelector('#adminModelStatus');
+ if(model)model.innerHTML=active.ok?`<article class="admin-card"><h2>Scoremotor</h2><div class="metric">20/50/30</div><p class="muted">${esc(active.value.statusDa)} Faglige ændringer gennemgår kode, tests og versionsstyring.</p></article>`:activeModelUnavailableCard(active,{title:'Scoremotor'});
+ const availability=document.querySelector('#adminScoreAvailability');if(availability)availability.innerHTML=scoreAvailabilityCard();
+ const retry=document.querySelector('#retryAdminPublicRuntime');if(retry)retry.disabled=state.publicLoadStatus==='pending';
+}
+async function refreshAdminOverviewConnections(){
+ const serial=++adminConnectionRead,current=currentAdminRead(),keep=()=>current()&&serial===adminConnectionRead;
+ if(!keep())return;
+ state.storageHealth=null;state.connection=null;updateAdminOverviewReadiness();
+ const tasks=[Promise.resolve().then(()=>adminStorageHealth(['water-level-station-routing','direction-reviews','coastline-overrides']))
+  .catch(()=>({ok:false,documents:{},error:'Central lagring kunne ikke bekræftes.'}))
+  .then(result=>{if(keep()){state.storageHealth=result;updateAdminOverviewReadiness();}})];
+ tasks.push(Promise.resolve().then(()=>testConnection()).catch(()=>({ok:false}))
+  .then(result=>{if(keep()){state.connection=result;const header=document.querySelector('#adminSupabaseHeader');
+   if(header){header.textContent=result.ok?'Supabase tilsluttet':'Supabase ikke bekræftet';header.classList.toggle('ok',result.ok);header.classList.toggle('bad',!result.ok);}
+   updateAdminOverviewReadiness();}}));
+ await Promise.all(tasks);
+}
+async function refreshAdminPublicRuntime(){
+ const serial=++adminPublicRead,current=currentAdminRead(),keep=()=>current()&&serial===adminPublicRead;
+ if(!keep())return;
+ state.publicLoadStatus='pending';state.publicLoadError=null;updateAdminOverviewReadiness();
+ try{
+  const runtime=await loadVerifiedPublicRuntime();if(!keep())return;
+  state.publicManifest=runtime.manifest;state.conditions=runtime.conditions;state.coastalParts=runtime.zones.coastalParts;
+  state.publicLoadStatus='ready';
+ }catch{
+  if(!keep())return;state.publicLoadStatus='failed';
+  state.publicLoadError=new Error('Den offentlige vejrpakke kunne ikke verificeres. Prøv at hente den igen.');
+ }
+ updateAdminOverviewReadiness();
+}
+function retryAdminPublicRuntime(){
+ if(!currentAdminRead()())return;
+ verifiedPublicRuntimePromise=null;
+ void refreshAdminPublicRuntime();
+ void loadPriorityWaterStationAdminData().catch(()=>{});
+}
+
+function updatePendingAdminCoastlineEditor(){
+ if(currentAdminRead()()&&state.tab==='coastlineEditor'&&document.querySelector('#adminCoastlineWaiting'))renderAdminCoastlineEditor();
+}
+async function refreshAdminCoastlineDrafts(){
+ // Once an editor has a centrally read document, later bootstrap completion
+ // must never replace its document or its locally secured pending changes.
+ if(state.coastlineDraftsStatus==='ready')return;
+ const serial=++adminCoastlineRead,current=currentAdminRead(),keep=()=>current()&&serial===adminCoastlineRead;
+ if(!keep())return;
+ state.coastlineDraftsStatus='pending';state.coastlineDraftsError=null;updatePendingAdminCoastlineEditor();
+ try{
+  const row=await readAdminDocumentNow('coastline-overrides');if(!keep())return;
+  if(!row?.payload?.overrides)throw new Error('Central kystkonfiguration blev ikke bekræftet.');
+  state.coastlineDrafts=row.payload;state.coastlineDrafts.partOwnership||={};state.coastlineDrafts.disabledParts||={};
+  setLocalJsonSafely(COASTLINE_DRAFT_KEY,state.coastlineDrafts);state.coastlineDraftsStatus='ready';
+ }catch{
+  if(!keep())return;
+  state.coastlineDraftsStatus='failed';state.coastlineDraftsError='Den centrale kystkonfiguration kunne ikke læses. Ingen lokale ændringer er erstattet.';
+ }
+ updatePendingAdminCoastlineEditor();
+}
+
 async function loadPriorityWaterStationAdminData(){
+ const serial=++adminWaterRead,current=currentAdminRead(),keep=()=>current()&&serial===adminWaterRead;
+ if(!keep())return;
  state.waterStationsLoading=true;state.waterStationsReady=false;state.waterStationsError=null;
+ state.zoneRegistryStatus='pending';updateAdminOverviewReadiness();
  if(state.tab==='waterStations')render();
  try{
-  const [zoneRegistry,stationInventory,stationRouting,coastalParts]=await Promise.all([
-   loadZoneRegistry({forceRefresh:true}).catch(()=>({all:[],active:[],legacy:[],counts:{registered:0,active:0,legacy:0},collection:{type:'FeatureCollection',features:[]}})),
+   const registry=loadZoneRegistry({forceRefresh:true}).then(value=>{if(keep()){
+    state.zoneRegistry=value;state.zones=value.active||[];state.zoneCollection=value.collection;
+    state.zoneRegistryStatus='ready';updateAdminOverviewReadiness();}return value;},error=>{
+     if(keep()){state.zoneRegistryStatus='failed';updateAdminOverviewReadiness();}throw error;});
+   const [zoneRegistry,stationInventory,stationRouting,coastalParts]=await Promise.all([
+    registry,
    loadAdminDocument('dmi-water-stations',{stations:[]}).catch(()=>({stations:[]})),
    getJson('./data/water-level-station-routing.json').catch(()=>({schemaVersion:1,zones:{}})),
    loadVerifiedPublicRuntime().then(runtime=>runtime.zones.coastalParts)
   ]);
   const centralRouting=await loadAdminDocument('water-level-station-routing',stationRouting);
+   if(!keep())return;
   state.zoneRegistry=zoneRegistry;state.zones=zoneRegistry.active||[];state.zoneCollection=zoneRegistry.collection||{type:'FeatureCollection',features:zoneRegistry.all||[]};
   state.waterStations=stationInventory.stations||[];state.waterRouting=centralRouting?.zones?centralRouting:{schemaVersion:1,zones:{}};state.coastalParts=coastalParts?.zones?coastalParts:{schemaVersion:2,zones:{}};
   setLocalJsonSafely(WATER_ROUTING_KEY,state.waterRouting);
@@ -134,6 +242,7 @@ async function loadPriorityWaterStationAdminData(){
   if(state.tab==='waterStations')render();
   window.dispatchEvent(new CustomEvent('ravradar:water-stations-ready',{detail:{stations:state.waterStations.length,zones:state.zones.length}}));
  }catch(error){
+   if(!keep())return;
   state.waterStationsLoading=false;state.waterStationsReady=false;state.waterStationsError=error;
   if(state.tab==='waterStations')render();
   throw error;
@@ -150,22 +259,22 @@ async function boot(){
 
  // Vandstandskilder og den centrale routing indlæses i deres egen prioriterede kæde.
  // Ingen diagnose-, regel- eller historikkald må forsinke eller senere overskrive denne tilstand.
- const waterPriority=loadPriorityWaterStationAdminData().catch(error=>{console.error('Prioriteret vandstandsindlæsning fejlede',error);return null;});
- const connectionPromise=testConnection().catch(error=>({ok:false,error:error.message}));
- const storageHealthPromise=adminStorageHealth(['water-level-station-routing','direction-reviews','coastline-overrides']).catch(error=>({ok:false,error:error.message,documents:{}}));
-
- state.connection=await connectionPromise;
- const headerConnection=document.querySelector('#adminSupabaseHeader');if(headerConnection){headerConnection.textContent=state.connection.ok?'Supabase tilsluttet':'Supabase fejl';headerConnection.classList.toggle('ok',state.connection.ok);headerConnection.classList.toggle('bad',!state.connection.ok);}
- state.storageHealth=await storageHealthPromise;
- await waterPriority;
-
- const [publicRuntime,health,runtime,stationRoutingAudit,oceanDiagnostics,cacheAudit,implementationAudit,pointStagingStatus]=await Promise.all([
-  loadVerifiedPublicRuntime(),loadAdminDocument('weather-health',null).catch(()=>null),loadAdminDocument('runtime-diagnostics',null).catch(()=>null),loadAdminDocument('water-station-routing-audit',null).catch(()=>null),loadAdminDocument('ocean-diagnostics',null).catch(()=>null),loadAdminDocument('cache-audit',null).catch(()=>null),loadAdminDocument('implementation-audit',null).catch(()=>null),loadAdminDocument('coastal-point-staging-status',{schemaVersion:null,entries:[],available:false}).catch(()=>({schemaVersion:null,entries:[],available:false}))]);
- const runtimeDetails=runtime?await decodeRuntimeDiagnosticsEnvelope(runtime).catch(()=>null):null;
- state.publicManifest=publicRuntime.manifest;state.conditions=publicRuntime.conditions;state.health=health;state.runtime=runtime;state.runtimeDetails=runtimeDetails;state.stationRoutingAudit=stationRoutingAudit;state.oceanDiagnostics=oceanDiagnostics;state.cacheAudit=cacheAudit;state.implementationAudit=implementationAudit;state.pointStagingStatus=Array.isArray(pointStagingStatus?.entries)?pointStagingStatus:{schemaVersion:null,entries:[],available:false};
- const remoteReviews=await loadAdminDocument('direction-reviews',{zones:directionReviews()});if(remoteReviews?.zones)localStorage.setItem(DIRECTION_REVIEW_KEY,JSON.stringify(remoteReviews.zones));
- const localCoastlineDrafts=(()=>{try{return JSON.parse(localStorage.getItem(COASTLINE_DRAFT_KEY)||'{"schemaVersion":4,"overrides":{},"partOwnership":{},"disabledParts":{}}')}catch{return{schemaVersion:4,overrides:{},partOwnership:{},disabledParts:{}}}})();state.coastlineDrafts=await loadAdminDocument('coastline-overrides',localCoastlineDrafts);if(!state.coastlineDrafts?.overrides)state.coastlineDrafts={schemaVersion:4,overrides:{},partOwnership:{},disabledParts:{}};state.coastlineDrafts.partOwnership||={};state.coastlineDrafts.disabledParts||={};localStorage.setItem(COASTLINE_DRAFT_KEY,JSON.stringify(state.coastlineDrafts));
- render();document.body.dataset.adminReady='true';window.dispatchEvent(new CustomEvent('ravradar:admin-ready',{detail:{version:VERSION,tab:state.tab}}));
+ const current=currentAdminRead();
+ const connections=refreshAdminOverviewConnections();
+ const publicRuntime=refreshAdminPublicRuntime();
+ const waterPriority=loadPriorityWaterStationAdminData().catch(()=>null);
+ const coastlineDrafts=refreshAdminCoastlineDrafts();
+ const diagnostics=(async()=>{
+  const [health,runtime,stationRoutingAudit,oceanDiagnostics,cacheAudit,implementationAudit,pointStagingStatus]=await Promise.all([
+   loadAdminDocument('weather-health',null).catch(()=>null),loadAdminDocument('runtime-diagnostics',null).catch(()=>null),loadAdminDocument('water-station-routing-audit',null).catch(()=>null),loadAdminDocument('ocean-diagnostics',null).catch(()=>null),loadAdminDocument('cache-audit',null).catch(()=>null),loadAdminDocument('implementation-audit',null).catch(()=>null),loadAdminDocument('coastal-point-staging-status',{schemaVersion:null,entries:[],available:false}).catch(()=>({schemaVersion:null,entries:[],available:false}))]);
+  const runtimeDetails=runtime?await decodeRuntimeDiagnosticsEnvelope(runtime).catch(()=>null):null;if(!current())return;
+  state.health=health;state.runtime=runtime;state.runtimeDetails=runtimeDetails;state.stationRoutingAudit=stationRoutingAudit;state.oceanDiagnostics=oceanDiagnostics;state.cacheAudit=cacheAudit;state.implementationAudit=implementationAudit;state.pointStagingStatus=Array.isArray(pointStagingStatus?.entries)?pointStagingStatus:{schemaVersion:null,entries:[],available:false};updateAdminOverviewReadiness();
+  const remoteReviews=await loadAdminDocument('direction-reviews',{zones:directionReviews()});if(!current())return;
+  if(remoteReviews?.zones)localStorage.setItem(DIRECTION_REVIEW_KEY,JSON.stringify(remoteReviews.zones));
+  updateAdminOverviewReadiness();
+ })();
+ await Promise.allSettled([connections,publicRuntime,waterPriority,coastlineDrafts,diagnostics]);if(!current())return;
+ document.body.dataset.adminReady='true';window.dispatchEvent(new CustomEvent('ravradar:admin-ready',{detail:{version:VERSION,tab:state.tab}}));
 }
 
 
@@ -224,17 +333,18 @@ function scoreAvailabilityCard(){
  return `<article class="admin-card ${healthy?'status-good':'status-warning'}"><h2>Zonernes RavScore-status</h2><div class="metric ${healthy?'status-good':'status-warning'}">${metric}</div><p class="muted">Aktiv model: ${esc(active.value.labelDa)} · ${esc(active.value.binding.modelId)}. Direkte inputmangel gør kun den berørte time utilgængelig; ufuldstændig historik bevarer numeriske scorer med samme modelbundle.</p>${historyList}${unavailableList}${normalText}</article>`;
 }
 
-function renderDashboard(){invalidateAdminTripCount();const h=state.health;const zc=Object.keys(state.conditions.zones||{}).length;const obs=JSON.parse(localStorage.getItem('ravradar-observations-v2')||'[]');const conn=state.connection||{};const storage=state.storageHealth||{};const docs=storage.documents||{};const active=activePublicRavScoreState();const scoreMotorCard=active.ok?`<article class="admin-card"><h2>Scoremotor</h2><div class="metric">20/50/30</div><p class="muted">${esc(active.value.statusDa)} Faglige ændringer gennemgår kode, tests og versionsstyring.</p></article>`:activeModelUnavailableCard(active,{title:'Scoremotor'});const activeDocuments=['water-level-station-routing','direction-reviews','coastline-overrides'];const docRows=activeDocuments.map(key=>{const x=docs[key]||{};return `<tr><td>${esc(key)}</td><td>${x.ok?(x.exists?'✓ Centralt':'○ Ikke oprettet endnu'):'✕ Fejl'}</td><td>${x.updatedAt?esc(new Date(x.updatedAt).toLocaleString('da-DK')):'—'}</td><td>${x.version??'—'}</td></tr>`}).join('');content.innerHTML=`<div class="admin-grid">
-<article class="admin-card"><h2>Supabase</h2><div class="metric ${conn.ok?'status-good':'status-warning'}">${conn.ok?'TILSLUTTET':'FEJL'}</div><p class="muted">${conn.ok?'Login og central database er bekræftet':'Central forbindelse kunne ikke bekræftes'}</p><button class="admin-button secondary" id="retestSupabase">Test igen</button></article>
-<article class="admin-card"><h2>Central lagring</h2><div class="metric ${storage.ok?'status-good':'status-warning'}">${storage.ok?'KLAR':'KRÆVER HANDLING'}</div><p class="muted">Stationrouting, retningsreviews og kystlinjer</p></article><article class="admin-card"><h2>Persistenstest</h2><div class="metric">E2E</div><p class="muted">Test skrivning, genlæsning, opdatering og sikker gendannelse mod Supabase.</p><button class="admin-button secondary" id="runPersistenceTest">Test Supabase-lagring <span class="sr-only">Kør fuld test</span></button><button class="admin-button" id="runSiteFunctionTest">Kør samlet sitetest</button></article>
-<article class="admin-card"><h2>Drift</h2><div class="metric ${h?.status==='good'?'status-good':'status-warning'}">${esc((h?.status||'ukendt').toUpperCase())}</div><p class="muted">Seneste centrale vejrstatus</p></article>
-<article class="admin-card"><h2>Vejrzoner</h2><div class="metric">${zc}/${state.health?.dmi?.totalZones??state.zoneRegistry.counts.registered}</div><p class="muted">Zoner med centrale data · ${state.zoneRegistry.counts.active} aktive, ${state.zoneRegistry.counts.legacy} historiske</p></article>
-${scoreMotorCard}${adminTripCountCard()}
+function renderDashboard(){invalidateAdminTripCount();const h=state.health;const obs=JSON.parse(localStorage.getItem('ravradar-observations-v2')||'[]');const storage=state.storageHealth||{};const active=activePublicRavScoreState();const scoreMotorCard=active.ok?`<article class="admin-card"><h2>Scoremotor</h2><div class="metric">20/50/30</div><p class="muted">${esc(active.value.statusDa)} Faglige ændringer gennemgår kode, tests og versionsstyring.</p></article>`:activeModelUnavailableCard(active,{title:'Scoremotor'});const view=adminOverviewReadiness();content.innerHTML=`<div class="admin-grid">
+<article class="admin-card"><h2>Supabase</h2><div id="adminConnectionState" class="${view.connectionClass}">${view.connectionLabel}</div><p id="adminConnectionDetail" class="muted">${view.connectionDetail}</p><button class="admin-button secondary" id="retestSupabase">Test igen</button></article>
+<article class="admin-card"><h2>Central lagring</h2><div id="adminStorageState" class="${view.storageClass}">${view.storageLabel}</div><p class="muted">Stationrouting, retningsreviews og kystlinjer</p></article><article class="admin-card"><h2>Persistenstest</h2><div class="metric">E2E</div><p class="muted">Test skrivning, genlæsning, opdatering og sikker gendannelse mod Supabase.</p><button class="admin-button secondary" id="runPersistenceTest">Test Supabase-lagring <span class="sr-only">Kør fuld test</span></button><button class="admin-button" id="runSiteFunctionTest">Kør samlet sitetest</button></article>
+<article class="admin-card"><h2>Drift</h2><div id="adminHealthState" class="metric ${h?.status==='good'?'status-good':'status-warning'}">${esc((h?.status||'ukendt').toUpperCase())}</div><p class="muted">Seneste centrale vejrstatus</p></article>
+<article class="admin-card"><h2>Vejrzoner</h2><div id="adminZoneCount" class="metric">${view.zoneLabel}</div><p id="adminZoneDetail" class="muted">${view.zoneDetail}</p></article>
+<div id="adminModelStatus">${scoreMotorCard}</div>${adminTripCountCard()}
+<article class="admin-card"><h2>Offentlig vejrpakke</h2><p>Model og vejrdata skal verificeres samlet. Den centrale forbindelse kontrolleres særskilt.</p><button class="admin-button secondary" id="retryAdminPublicRuntime" ${state.publicLoadStatus==='pending'?'disabled':''}>Hent og kontrollér igen</button></article>
 <article class="admin-card"><h2>Observationer</h2><div class="metric">${obs.length}</div><p class="muted">På denne enhed</p></article></div>
-${scoreAvailabilityCard()}
-<article class="admin-card"><div class="section-head"><div><h2>Kontrol af Supabase-lagring</h2><p class="muted">Et grønt resultat betyder, at RavRadar både kan læse den centrale post og se dens version.</p></div><button class="admin-button" id="verifyCentralStorage">Kontrollér nu</button></div><div class="table-wrap"><table><thead><tr><th>Område</th><th>Status</th><th>Senest gemt</th><th>Version</th></tr></thead><tbody>${docRows}</tbody></table></div>${storage.error?`<p class="status-banner warning">${esc(storage.error)}</p>`:''}</article>
+<div id="adminScoreAvailability">${scoreAvailabilityCard()}</div>
+<article class="admin-card"><div class="section-head"><div><h2>Kontrol af Supabase-lagring</h2><p class="muted">Et grønt resultat betyder, at RavRadar både kan læse den centrale post og se dens version.</p></div><button class="admin-button" id="verifyCentralStorage">Kontrollér nu</button></div><div class="table-wrap"><table><thead><tr><th>Område</th><th>Status</th><th>Senest gemt</th><th>Version</th></tr></thead><tbody id="adminDocumentStatusRows">${view.documentRows}</tbody></table></div>${storage.error?`<p class="status-banner warning">${esc(storage.error)}</p>`:''}</article>
 <div class="two-col"><article class="admin-card"><h2>Faglig gennemgang</h2><p>Eksperter retter håndbogen og indsender dokumenterede ændringsforslag. Forslag ændrer aldrig RavScore direkte.</p><button class="admin-button" id="openHandbookReview">Åbn håndbogen</button></article><article class="admin-card"><h2>Det kræver opmærksomhed</h2><p>${h?.alerts?.shouldNotifyAdministrator?'⚠️ DMI har været ustabilt længe nok til en administratoralarm.':'✓ Ingen ny administratoralarm nødvendig.'}</p><p>Scoreændringer skal gennem den versionsstyrede samlede modelkæde.</p></article></div>`;
- mountAdminTripCount();document.querySelector('#openHandbookReview').onclick=()=>{state.tab='handbook';document.querySelectorAll('.admin-tabs button').forEach(tab=>tab.classList.toggle('active',tab.dataset.tab==='handbook'));render();};document.querySelector('#retestSupabase').onclick=async()=>{state.connection=await testConnection();state.storageHealth=await adminStorageHealth(activeDocuments);renderDashboard();};const persistenceButton=document.querySelector('#runPersistenceTest');if(persistenceButton)persistenceButton.onclick=async()=>{if(!confirm('Testen foretager midlertidige, mærkede ændringer i eksisterende centraldokumenter og gendanner dem straks. Fortsæt?'))return;persistenceButton.disabled=true;persistenceButton.textContent='Tester…';let box=document.querySelector('#persistenceTestResult');if(!box){box=document.createElement('article');box.id='persistenceTestResult';box.className='admin-card';content.append(box);}box.innerHTML='<h2>Supabase-persistenstest</h2><p>Testen kører…</p>';try{const report=await runFullPersistenceTest();box.innerHTML=`<h2>Supabase-persistenstest</h2><p class="${report.ok?'status-good':'status-bad'}"><b>${report.ok?'BESTÅET':'FEJLEDE'}</b> · ${esc(report.runId)}</p><div class="admin-table-wrap"><table class="admin-table"><thead><tr><th>Del</th><th>Status</th><th>Resultat</th></tr></thead><tbody>${report.results.map(x=>`<tr><td>${esc(x.name)}</td><td>${x.status==='passed'?'✓ Bestået':x.status==='skipped'?'○ Ikke oprettet':'✕ Fejl'}</td><td>${esc(x.detail)}</td></tr>`).join('')}</tbody></table></div><p class="hint">Start ${new Date(report.startedAt).toLocaleString('da-DK')} · slut ${new Date(report.finishedAt).toLocaleString('da-DK')}</p>`;}catch(error){box.innerHTML=`<h2>Supabase-persistenstest</h2><p class="status-bad">Testen kunne ikke gennemføres: ${esc(error.message)}</p>`;}finally{persistenceButton.disabled=false;persistenceButton.textContent='Kør fuld test';}};const verifyButton=document.querySelector('#verifyCentralStorage');if(verifyButton)verifyButton.onclick=async()=>{verifyButton.disabled=true;verifyButton.textContent='Kontrollerer…';try{state.storageHealth=await adminStorageHealth(activeDocuments);}catch(error){state.storageHealth={ok:false,checkedAt:new Date().toISOString(),error:error.message,documents:{}};}renderDashboard();};const siteButton=document.querySelector('#runSiteFunctionTest');if(siteButton){
+ mountAdminTripCount();document.querySelector('#openHandbookReview').onclick=()=>{state.tab='handbook';document.querySelectorAll('.admin-tabs button').forEach(tab=>tab.classList.toggle('active',tab.dataset.tab==='handbook'));render();};document.querySelector('#retestSupabase').onclick=()=>refreshAdminOverviewConnections();document.querySelector('#retryAdminPublicRuntime').onclick=retryAdminPublicRuntime;const persistenceButton=document.querySelector('#runPersistenceTest');if(persistenceButton)persistenceButton.onclick=async()=>{if(!confirm('Testen foretager midlertidige, mærkede ændringer i eksisterende centraldokumenter og gendanner dem straks. Fortsæt?'))return;persistenceButton.disabled=true;persistenceButton.textContent='Tester…';let box=document.querySelector('#persistenceTestResult');if(!box){box=document.createElement('article');box.id='persistenceTestResult';box.className='admin-card';content.append(box);}box.innerHTML='<h2>Supabase-persistenstest</h2><p>Testen kører…</p>';try{const report=await runFullPersistenceTest();box.innerHTML=`<h2>Supabase-persistenstest</h2><p class="${report.ok?'status-good':'status-bad'}"><b>${report.ok?'BESTÅET':'FEJLEDE'}</b> · ${esc(report.runId)}</p><div class="admin-table-wrap"><table class="admin-table"><thead><tr><th>Del</th><th>Status</th><th>Resultat</th></tr></thead><tbody>${report.results.map(x=>`<tr><td>${esc(x.name)}</td><td>${x.status==='passed'?'✓ Bestået':x.status==='skipped'?'○ Ikke oprettet':'✕ Fejl'}</td><td>${esc(x.detail)}</td></tr>`).join('')}</tbody></table></div><p class="hint">Start ${new Date(report.startedAt).toLocaleString('da-DK')} · slut ${new Date(report.finishedAt).toLocaleString('da-DK')}</p>`;}catch(error){box.innerHTML=`<h2>Supabase-persistenstest</h2><p class="status-bad">Testen kunne ikke gennemføres: ${esc(error.message)}</p>`;}finally{persistenceButton.disabled=false;persistenceButton.textContent='Kør fuld test';}};const verifyButton=document.querySelector('#verifyCentralStorage');if(verifyButton)verifyButton.onclick=async()=>{verifyButton.disabled=true;verifyButton.textContent='Kontrollerer…';try{await refreshAdminOverviewConnections();}finally{verifyButton.disabled=false;verifyButton.textContent='Kontrollér nu';}};const siteButton=document.querySelector('#runSiteFunctionTest');if(siteButton){
  const STORAGE_KEY='ravradar-last-site-test-report-v1';
  const ensureSiteTestBox=()=>{let box=document.querySelector('#siteFunctionTestResult');if(!box){box=document.createElement('article');box.id='siteFunctionTestResult';box.className='admin-card';siteButton.closest('.admin-card')?.insertAdjacentElement('afterend',box);}return box;};
  const renderSiteReport=(box,report,{saved=false}={})=>{const statusText=x=>x==='passed'?'✓ Bestået':x==='warning'?'⚠ Advarsel':'✕ Fejl';const categoryRows=Object.entries(report.categories||{}).map(([name,value])=>`<tr><td>${esc(name)}</td><td>${value.failed>0?'✕ Fejl':value.warning>0?'⚠ Advarsel':'✓ Bestået'}</td><td>${value.passed}/${value.total}${value.warning?` · ${value.warning} advarsel${value.warning===1?'':'er'}`:''}</td></tr>`).join('');const resultRows=(report.results||[]).map(x=>`<tr><td>${esc(x.category||'Andet')}</td><td>${esc(x.name)}</td><td>${statusText(x.status)}</td><td>${esc(x.ms)} ms</td><td>${esc(x.detail)}</td></tr>`).join('');const warnings=report.summary?.warnings||0;box.innerHTML=`<h2>${saved?'Senest gemte testrapport':'Samlet funktionstest af hele RavRadar'}</h2><p class="${report.ok?(warnings?'status-warning':'status-good'):'status-bad'}"><b>${report.ok?(warnings?'BESTÅET MED ADVARSLER':'BESTÅET'):'FEJLEDE'}</b> · ${report.summary?.passed||0} bestået · ${warnings} advarsler · ${report.summary?.failed||0} fejl · ${esc(report.runId)}</p><h3>Overblik</h3><div class="admin-table-wrap"><table class="admin-table"><thead><tr><th>Område</th><th>Status</th><th>Resultat</th></tr></thead><tbody>${categoryRows}</tbody></table></div><details ${(report.ok&&!warnings)?'':'open'}><summary>Se alle deltests</summary><div class="admin-table-wrap"><table class="admin-table"><thead><tr><th>Område</th><th>Funktion</th><th>Status</th><th>Tid</th><th>Resultat</th></tr></thead><tbody>${resultRows}</tbody></table></div></details><div class="toolbar"><button class="admin-button secondary" id="downloadSiteTestReport">${saved?'Download senest gemte rapport':'Download denne testrapport'}</button></div><p class="hint">Afsluttet ${new Date(report.finishedAt||Date.now()).toLocaleString('da-DK')}. Performance-advarsler betyder ikke nødvendigvis funktionsfejl, men skal undersøges. Rapporten gemmes lokalt efter genindlæsning.</p>`;box.querySelector('#downloadSiteTestReport')?.addEventListener('click',()=>download(`ravradar-sitetest-${report.runId}.json`,report));};
@@ -401,7 +511,17 @@ function renderWaterStations(){
 }
 
 async function saveCoastlineChanges(document,override){if(!guard('zones_weather_edit'))return{ok:false,error:'Du mangler rettighed til at redigere zoner.'};state.coastlineDrafts=document;localStorage.setItem(COASTLINE_DRAFT_KEY,JSON.stringify(document));const result=await saveAdminDocumentNow('coastline-overrides',document);if(!result.ok)return result;const verified=result.row?.payload;if(override&&!verified?.overrides?.[override.zoneId]?.published)return{ok:false,error:'Central readback indeholdt ikke den gemte zoneændring.'};if(!override&&(JSON.stringify(verified?.partOwnership||{})!==JSON.stringify(document.partOwnership||{})||JSON.stringify(verified?.disabledParts||{})!==JSON.stringify(document.disabledParts||{})))return{ok:false,error:'Central readback indeholdt ikke de gemte kyst- og zonegrænser.'};state.coastlineDrafts=verified;localStorage.setItem(COASTLINE_DRAFT_KEY,JSON.stringify(verified));if(override){const zone=state.zoneCollection.features?.find(feature=>feature.properties?.id===override.zoneId);if(zone){zone.properties.name=override.zoneName;zone.properties.coastLine=structuredClone(override.coastLine);}const active=state.zones.find(feature=>feature.properties?.id===override.zoneId);if(active){active.properties.name=override.zoneName;active.properties.coastLine=structuredClone(override.coastLine);}}return{ok:true,document:verified};}
-function renderAdminCoastlineEditor(){renderCoastlineEditor(content,{zones:state.zones,collection:state.zoneCollection,coastalParts:state.coastalParts,document:state.coastlineDrafts,selectedZoneId:state.selectedCoastlineZoneId,onZoneSelected:id=>{state.selectedCoastlineZoneId=id;},onSave:saveCoastlineChanges});}
+function renderAdminCoastlineEditor(){
+ if(state.coastlineDraftsStatus!=='ready'||state.zoneRegistryStatus!=='ready'||state.publicLoadStatus!=='ready'){
+  const failed=state.coastlineDraftsStatus==='failed'||state.zoneRegistryStatus==='failed'||state.publicLoadStatus==='failed';
+  content.innerHTML=`<article class="admin-card" id="adminCoastlineWaiting"><h2>Rediger kystlinjer</h2><p>${failed?'Kysteditoren kunne ikke klargøres.':'Indlæser kysteditorens grundlag…'}</p><p>${esc(state.coastlineDraftsError||'Zoneregister, offentlig vejrpakke og den centrale kystkonfiguration skal være indlæst, før redigering kan begynde. Ingen konfiguration er ændret.')}</p>${failed?'<button id="retryAdminCoastlineDrafts" class="admin-button" type="button">Prøv igen</button>':''}</article>`;
+  const retry=document.querySelector('#retryAdminCoastlineDrafts');if(retry)retry.onclick=()=>{
+   if(state.coastlineDraftsStatus==='failed')void refreshAdminCoastlineDrafts();
+   if(state.zoneRegistryStatus==='failed'||state.publicLoadStatus==='failed')retryAdminPublicRuntime();
+  };
+  return;
+ }
+ renderCoastlineEditor(content,{zones:state.zones,collection:state.zoneCollection,coastalParts:state.coastalParts,document:state.coastlineDrafts,selectedZoneId:state.selectedCoastlineZoneId,onZoneSelected:id=>{state.selectedCoastlineZoneId=id;},onSave:saveCoastlineChanges});}
 
 function renderZones(){content.innerHTML=`<article class="admin-card"><h2>Zoner</h2><div class="toolbar"><input id="zoneSearch" placeholder="Søg zone"><select id="zoneType"><option value="">Alle kysttyper</option>${[...new Set(state.zones.map(z=>z.properties?.coastType).filter(Boolean))].sort().map(x=>`<option>${esc(x)}</option>`).join('')}</select></div></article><div id="zoneList" class="admin-table-wrap"></div>`;const draw=()=>{const q=document.querySelector('#zoneSearch').value.toLowerCase(),t=document.querySelector('#zoneType').value;const rows=state.zones.filter(z=>(!t||z.properties?.coastType===t)&&JSON.stringify(z.properties).toLowerCase().includes(q));document.querySelector('#zoneList').innerHTML=`<table class="admin-table"><thead><tr><th>Zone</th><th>Kysttype</th><th>Område</th><th>Vejrkilde</th></tr></thead><tbody>${rows.slice(0,250).map(z=>{const p=z.properties||{},w=state.conditions.zones?.[p.id]||{};return `<tr><td>${esc(p.name||p.id)}</td><td>${esc(p.coastType||'–')}</td><td>${esc(p.region||p.area||'–')}</td><td>${esc(w.provider||'ingen data')}</td></tr>`}).join('')}</tbody></table>`};document.querySelector('#zoneSearch').oninput=draw;document.querySelector('#zoneType').onchange=draw;draw();}
 

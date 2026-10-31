@@ -1,3 +1,24 @@
+## 31. oktober — kontrolvejen er kildeleveret; reservens deadline testes deterministisk
+
+Den afgrænsede ændringsbaserede kontrolvej har bestået sin fulde kildekvalifikation og er lagt i main. Det er ikke bevis for en faktisk senere TARGETED-levering, automatisk nativegenbrug eller målt tidsbesparelse. De første korte profiler er fortsat afgrænsede; ukendt eller fælles påvirkning vælger fuldt omfang. Vejrhentningens separate originalovergang er ikke løst af denne kontrollevering.
+
+En efterfølgende kildekontrol fandt en tidsfølsom antagelse i Open-Meteo-PART-prøven: den krævede mindst én HTTP-start inden for 80 ms, selv om normal banklæsning og første checkpoint indgår i samme frist. Den lokale testrettelse styrer alene testens monotone ur under rigtig bank-I/O. Setup på 0/79/80/81 ms kræver præcist 1/1/0/0 starter; uændret pacing afviser næste start. Requests, udskudte opgaver, bank og cursor skal følge faktisk start. Produktkode, 800-loft, 150-ms-pacing, samlet deadline og parameterafslag ændres ikke.
+
+Førfejlen er reproduceret gennem normal forsinket banklæsning; den rettede normale prøve og konkrete negative mutationer består lokalt. Den præcise nye GitHub-kvalifikation og offentlig effekt er åbne. Ingen SQL- eller national produktionsprøve påstås udført eller genbrugt af dette lokale testbevis. Se DEC-0302; detaljeret drifts- og testbevis føres privat.
+
+## 31. oktober — den private eksportprøve følger den aktuelle adminkalder
+
+En konkret sourcefejl var en for bred testkontrakt: privat eksport krævede gamle hele dashboardbytes og afviste en separat gennemgået indlæsningsrettelse. Lokal erstatning dækker de reelle aktuelle export-/render-/adgangsgrænser med negative mutationer og beholder installations-/publisheroraklerne uændret. Den nødvendige eksisterende initial-dashboard-målprøve er koblet ind i den normale CI-kalder. Luk først sourcefejlen efter grøn præcis normal CI; dette er ikke bevis for offentlig adminlevering eller færdig bredere kontroloprydning. Se DEC-0302.
+
+Den særskilt gennemgåede rollback-CLI retter desuden rækkefølgen: tre små metadata læses og de seks eksisterende negative cases afvises, før fem store payloads åbnes. Den samme afvisningsblok er flyttet til en helper; hele den efterfølgende positive auditkrop, no-loss og SQL-/modelgates er uændrede. Den eksisterende normale målprøve er gennemført; der påstås ingen målt før-/efter-tidsgevinst. Dette er også lokal forberedelse, ikke sikker levering eller produktionseffekt.
+
+
+## 31. oktober — admin-overblik og kysteditor: lokal rettelse, offentlig effekt åben
+
+Åben levering: første adminrender kunne vise falske fejl/0 af 0 og blive stående efter en afvist offentlig pakke; den afviste Promise blokerede også senere læsning. En særskilt konkret race lod sen kystpreload erstatte en draft, som den normale gemmevej havde sikret lokalt. Begge er reproduceret og rettet lokalt gennem den eksisterende normale målprøve.
+
+Kandidaten skelner pending/ukendt fra faktisk afslag, isolerer forbindelses-/lagerresultater, giver almindeligt genforsøg og klargør kun kysteditoren efter streng central læsning samt verificerede øvrige indgange. UI-ready er ikke dataverifikation. En åben editor og dens draft overskrives ikke af baggrundsinitialisering. Normal central gemning, rettigheder, modelgates og geodata bevares. Luk først dette punkt efter samlet kvalifikation, levering og målrettet offentlig brugerafprøvning; øvrig adminrevision består.
+
 ## 30. oktober — privat rettet kapacitet; nativegenbrug og faktisk effekt mangler
 
 Den særskilte completed-stage-læsekonflikt er rettet i privat kode med målrettede normale kaldere. Det er ikke bevis for en faktisk stor autentificeret helgenoptagelse eller leveret rettelse. Nattens manglende runtime-auditrapport og andre driftsfejl har deres egne evidenskrav; denne kandidat lukker dem ikke med en størrelseshypotese.
@@ -77,6 +98,8 @@ Ejeren har valgt separat Pages/Functions med først `ravradar-del.pages.dev`, se
 Adapter og robots-tilføjelse er gennemgået privat; controlleren er privat forberedt og endnu ikke samlet kvalificeret. Der er intet bevis for Pages-oprettelse/deploy, faktisk offentlig 591-kompatibilitet, legacy-Worker-opdatering, custom-domain/TLS, Facebookpreview eller tilstrækkelig delt Free-kapacitet. Et tidligere gyldigt 590-svar fra den gamle Worker erstatter ikke disse krav. De gamle links og frontendadressen bevares, mens den nye host kvalificeres.
 
 Kendt afgrænsning: den nye host fjerner personnavnet fra domænet, men den eksisterende query med zone, tid, søgemåde og sprog forkortes ikke i denne leverance. Ingen score-, vejr-, kilde-, database- eller modelændring. Alle fem mål er åbne; se DEC-0294, håndbog 89.278 og privat checkpoint.
+
+**Tillæg 31. oktober.** Den tidligere kildebegrænsning til pages.dev er lukket i en privat tohostkandidat, så den godkendte del.ravradar.dk ikke i sig selv afvises efter en senere korrekt CNAME/TLS-tilknytning. Andre hosts, forkerte stier, private input, afvigende generation/model og forkert time er fortsat afvist. Dette lukker ikke leveringsissuet: eksakt kvalifikation, offentlig 593-/legacy-kompatibilitet, faktisk Pages, hosted Free, Facebook, DNS/TLS og frontendcutover er ubevist. Ingen eksisterende projektidentitet må opfindes eller overtages.
 
 ## 29. oktober — skrivefri aflæsning af gemte komponenttællere, lokal forberedelse
 

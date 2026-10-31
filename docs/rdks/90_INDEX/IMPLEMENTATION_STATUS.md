@@ -1,3 +1,26 @@
+## 31. oktober — kontrolvejen er kildeleveret; reservens deadline testes deterministisk
+
+Den afgrænsede ændringsbaserede kontrolvej har bestået sin fulde kildekvalifikation og er lagt i main. Det er ikke bevis for en faktisk senere TARGETED-levering, automatisk nativegenbrug eller målt tidsbesparelse. De første korte profiler er fortsat afgrænsede; ukendt eller fælles påvirkning vælger fuldt omfang. Vejrhentningens separate originalovergang er ikke løst af denne kontrollevering.
+
+En efterfølgende kildekontrol fandt en tidsfølsom antagelse i Open-Meteo-PART-prøven: den krævede mindst én HTTP-start inden for 80 ms, selv om normal banklæsning og første checkpoint indgår i samme frist. Den lokale testrettelse styrer alene testens monotone ur under rigtig bank-I/O. Setup på 0/79/80/81 ms kræver præcist 1/1/0/0 starter; uændret pacing afviser næste start. Requests, udskudte opgaver, bank og cursor skal følge faktisk start. Produktkode, 800-loft, 150-ms-pacing, samlet deadline og parameterafslag ændres ikke.
+
+Førfejlen er reproduceret gennem normal forsinket banklæsning; den rettede normale prøve og konkrete negative mutationer består lokalt. Den præcise nye GitHub-kvalifikation og offentlig effekt er åbne. Ingen SQL- eller national produktionsprøve påstås udført eller genbrugt af dette lokale testbevis. Se DEC-0302; detaljeret drifts- og testbevis føres privat.
+
+## 31. oktober — den private eksportprøve følger den aktuelle adminkalder
+
+Lokalt rettet: privat eksport tester nu sin faktiske aktuelle adminimport, learning-render/mount, host, adgangsobjekt og faneskift frem for historiske hele dashboardfiler. Fjernet, duplikeret eller ubetinget mount, forkert adgang/host/import og forkert learning-routing afvises. Workflowets/publisherens præcise installations-/exportorakler og eksisterende negative mutationer bevares bytepræcist; andre tests' model-/SQL-historik ændres ikke.
+
+Den allerede eksisterende loading/failure/retry/draft-målprøve indgår nu én gang i den normale callers-vej. Den lokale normale deltest består efter en konkret førfejl; præcis normal CI og senere sikker levering/effekt er fortsat åbne. Ingen produkt-, versions-, model-, SQL- eller rettighedsændring. Se DEC-0302.
+
+Den særskilt gennemgåede rollback-CLI retter desuden rækkefølgen: tre små metadata læses og de seks eksisterende negative cases afvises, før fem store payloads åbnes. Den samme afvisningsblok er flyttet til en helper; hele den efterfølgende positive auditkrop, no-loss og SQL-/modelgates er uændrede. Den eksisterende normale målprøve er gennemført; der påstås ingen målt før-/efter-tidsgevinst. Dette er også lokal forberedelse, ikke sikker levering eller produktionseffekt.
+
+
+## 31. oktober — admin-overblik og kysteditor: lokal rettelse, offentlig effekt åben
+
+Lokalt forberedt og målprøvet: neutrale pending-/unknown-statusfelter; uafhængig forbindelse/lager; afgrænset opdatering af overblikket; håndteret offentlig læsefejl med normal retry; ingen gentagen montering af turtælleren eller overskrivning af en anden redigeringsfane. Den første kysteditoråbning venter på strengt læst central konfiguration, verificeret offentlig pakke og zoneregister; fejl/ukendt giver retry. Sen initialisering kan ikke erstatte en menneskelig draft.
+
+Hele den normale kystsave-funktion, adgangs-/identitetskontrol og manifest-/modelgates bevares. De to kodeejere og de fire nødvendige prøveafhængigheder matcher den gennemgåede base, så de afsluttede målbeviser genbruges. Præcis samlet kildekvalifikation, senere sikker levering og målrettet offentlig browseraccept er åbne. Ingen ny version, modelbinding, SQL eller ændret geodata. Adminrevisionen og alle fem hovedmål er fortsat åbne.
+
 ## 30. oktober — P0: DMI-originalers conditions skal følge producentens grænse
 
 Den præcise 591→593-controller er kvalificeret og leveret til main; den efterfølgende normale prepare/install og genbrug af kildekontrollen bestod. Vejrhentningen stoppede senere, fordi Pythons normale RAW-retention stadig anvendte 256 MiB på den beskyttede B-conditions-fil. Producenten tillader allerede 535.822.312 bytes. Den primære DMI-afvisning skete før ny ledger; selectorens afvisning af den gamle referencetime er en følgefejl og bevares. Det er ikke ugyldige leverandørdata.
@@ -127,6 +150,8 @@ Ejerbeslutningen er lukket: kun `ravradar-del`, først pages.dev og senere `del.
 Åbent: eksakt samlet kildekontrol; eksisterende nøgles faktiske Pages Write-adgang; entydig fraværskontrol/oprettelse; normal bygning og verificeret deployment; faktisk senere offentlig 591 og legacy-Workerens kompatibilitetsdeploy; hosted GET/HEAD/OG/robots; Facebooks egen preview/cache; målt delt Workers Free-forespørgsels-/CPU-kapacitet; senere custom-domain/CNAME/TLS og normal klient/cachebusterlukning. Ukendt skriveudfald må ikke gentages blindt. Før cutover bliver klienten på den gamle adresse.
 
 Ingen ekstern write, projektoprettelse, deploy, DNS, ny version, C/I/T, migration eller SQL-eksekvering er bevist af forberedelsen. Kandidatens faktiske modelinput-intersection er tom mod C98/I97/T12 union 104. Den statiske håndbogs-installationspayload spejles normalt og ændrer ingen DDL. Alle fem mål er åbne. Se DEC-0294 og håndbog 89.278.
+
+**Tillæg 31. oktober.** Den snævre tohostadapter og dens normale målprøve er privat forberedt: præcis pages.dev og del.ravradar.dk, uændrede øvrige afslag og korrekt egen-host-OG. Alle oprindelige 153 cases er bevaret; 171 består lokalt. Den normale create-only-controller behøver intet nyt hashkatalog, fordi den sammenligner de præcise adapterbytes med den kvalificerede commits Git-blob. Samlet kildekvalifikation, faktisk offentlig 593, legacy-kompatibilitet, Pages-oprettelse/deploy, hosted Free/Facebook samt senere CNAME/TLS/frontend er fortsat åbne. Ingen projektadoptions- eller opdateringsgenvej tilføjes.
 
 ## 29. oktober — skrivefri aflæsning af gemte komponenttællere, lokal forberedelse
 

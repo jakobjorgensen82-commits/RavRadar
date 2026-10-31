@@ -339,6 +339,7 @@ try{
   const pagesRoutes=JSON.parse(await fs.readFile(new URL('./forecast-share-pages/public/_routes.json',import.meta.url),'utf8'));
   assert.deepEqual(pagesRoutes,{version:1,include:['/'],exclude:[]});
   assert.deepEqual((await fs.readdir(new URL('./forecast-share-pages/public/',import.meta.url))).sort(),['404.html','_routes.json','robots.txt']);cases++;
+  const customBase='https://del.ravradar.dk/';
   for(const language of ['da','de','en'])for(const mode of ['waders','beach']){
     const selection={...shareSelection,language,mode};
     const legacy=await shareWorkerRequest(forecastShareUrl(shareBase,selection));
@@ -346,6 +347,11 @@ try{
     assert.equal(pages.response.status,legacy.response.status);
     assert.equal(pages.html,legacy.html.replaceAll(shareBase,FORECAST_SHARE_PAGES_BASE_URL));
     assert.deepEqual(pages.upstream,legacy.upstream);assert.equal(pages.reads.length,3);cases++;
+    const custom=await shareWorkerRequest(forecastShareUrl(customBase,selection),{pages:true});
+    assert.equal(custom.response.status,pages.response.status);
+    assert.equal(custom.html,pages.html.replaceAll(FORECAST_SHARE_PAGES_BASE_URL,customBase),
+      'OG and canonical share links keep the exact validated host; app links retain ravradar.dk');
+    assert.deepEqual(custom.upstream,pages.upstream);assert.equal(custom.reads.length,3);cases++;
   }
   const pagesUrl=forecastShareUrl(FORECAST_SHARE_PAGES_BASE_URL,shareSelection);
   const pagesHead=await shareWorkerRequest(pagesUrl,{pages:true,method:'HEAD'});
@@ -359,6 +365,31 @@ try{
     const result=await shareWorkerRequest(url,{pages:true});
     assert.equal(result.response.status,503);assert.equal(result.upstream.length,0);cases++;
   }
+  const customUrl=forecastShareUrl(customBase,shareSelection);
+  const customHead=await shareWorkerRequest(customUrl,{pages:true,method:'HEAD'});
+  assert.equal(customHead.response.status,200);assert.equal(customHead.html,'');assert.equal(customHead.reads.length,3);cases++;
+  for(const method of ['POST','PUT','DELETE']){
+    const result=await shareWorkerRequest(customUrl,{pages:true,method});
+    assert.equal(result.response.status,405);assert.equal(result.upstream.length,0);cases++;
+  }
+  for(const url of [customUrl.replace('https:','http:'),customUrl.replace('del.ravradar.dk','del.ravradar.dk.forged.invalid'),
+    customUrl.replace('/?','/other?'),customUrl.replace('del.ravradar.dk','del.ravradar.dk:444')]){
+    const result=await shareWorkerRequest(url,{pages:true,headers:{Host:'del.ravradar.dk','X-Forwarded-Host':'del.ravradar.dk'}});
+    assert.equal(result.response.status,503);assert.equal(result.upstream.length,0);cases++;
+  }
+  const privateCustom=await shareWorkerRequest(customUrl+'&email=synthetic-private&score=100',{pages:true});
+  assert.equal(privateCustom.response.status,400);assert.equal(privateCustom.upstream.length,0);
+  assert.doesNotMatch(privateCustom.html,/synthetic-private|score=100/);cases++;
+  for(const fixture of [compactShareFixture({mutateManifest:target=>{target.datasetId='other-generation';}}),
+    compactShareFixture({mutateManifest:target=>{target.ravScoreModelBinding.modelBundleSha256='0'.repeat(64);}})]){
+    const result=await shareWorkerRequest(customUrl,{pages:true,fixture});
+    assert.equal(result.response.status,200);assert.ok(result.html.includes(forecastShareCopy('da').unavailable));
+    assert.doesNotMatch(result.html,/\d+\/100|other-generation|modelBundleSha256/);cases++;
+  }
+  const outsideCustom=await shareWorkerRequest(forecastShareUrl(customBase,{...shareSelection,
+    time:new Date(Date.parse(last)+3600000).toISOString()}),{pages:true});
+  assert.equal(outsideCustom.response.status,200);assert.ok(outsideCustom.html.includes(forecastShareCopy('da').unavailable));
+  assert.doesNotMatch(outsideCustom.html,/\d+\/100/);assert.deepEqual(outsideCustom.reads,['./data/live/manifest.json']);cases++;
   const pagesInvalid=await shareWorkerRequest(pagesUrl+'&score=100',{pages:true});
   assert.equal(pagesInvalid.response.status,400);assert.equal(pagesInvalid.upstream.length,0);cases++;
   const pagesFacebook=await shareWorkerRequest(pagesUrl+'&fbclid=synthetic',{pages:true});
