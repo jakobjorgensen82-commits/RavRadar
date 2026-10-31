@@ -123,7 +123,11 @@ async function transport(url,options){
   if(target.origin==='https://synthetic-v2.invalid'){
     assert.equal(options.headers,undefined);assert.equal(options.redirect,'error');assert(zips.has(target.pathname.slice(1)));
     return new Response(zips.get(target.pathname.slice(1)));}
-  assert.equal(target.origin,'https://api.github.com');assert.equal(options.redirect,'manual');
+  assert.equal(target.origin,'https://api.github.com');
+  if(options.redirect===undefined){
+    assert.equal(options.headers.Accept,'application/vnd.github+json');
+    assert.equal(options.headers['X-GitHub-Api-Version'],'2022-11-28');
+  }else assert.equal(options.redirect,'manual');
   assert.equal(options.headers.Authorization,'Bearer synthetic-never-live');const route=target.pathname+target.search;
   if(route===repo+'/pulls/'+selectedPr)return Response.json(currentPull());
   if(route===actions+'/runs/'+selectedRun)return Response.json(run(true));
@@ -236,6 +240,24 @@ try{
   const accepted=await decide(found.locator,context,{...access,readGit});assert.equal(accepted.required,false,JSON.stringify(accepted));
   assert.equal(accepted.scope,'TARGETED_DOMAIN_COMMAND_RESULTS_ONLY');assert.equal(accepted.independentControlReview,'VERIFIED_EXACT_ROOT_PR_REVIEW');
   cases++;scenarios.push('V2 discovery, live synthetic FULL and same-tree merge consumer');
+  // Exercise the actual top-level check caller and its real Git stdin adapter.
+  // The transport and all evidence stay synthetic; no verifier is injected here.
+  const cliCwd=process.cwd(),cliArgv=process.argv,cliEnvironment={...process.env};
+  const cliOutput=path.join(root,'.cache/normal-cli-output.txt');
+  const cliLocator=path.join(root,'.cache/weather-source-validation.json');
+  assert.equal(fs.existsSync(cliLocator),false);
+  try{
+    Object.assign(process.env,context,{GITHUB_EVENT_NAME:'workflow_dispatch',GITHUB_OUTPUT:cliOutput});
+    process.chdir(root);process.argv=[process.execPath,path.join(root,'scripts/weather-source-gate.mjs'),'check'];
+    await moduleAt('scripts/weather-source-gate.mjs');
+    const output=fs.readFileSync(cliOutput,'utf8');
+    assert.equal(output,'required=false\nreason=verified-domain-targeted-pull-request-source-content\nsource_tree_sha256='+content+'\n');
+    assert.deepEqual(JSON.parse(fs.readFileSync(cliLocator,'utf8')),found.locator);
+    cases++;scenarios.push('normal weather-source-gate check CLI discovers V2 and persists verified locator');
+  }finally{
+    process.chdir(cliCwd);process.argv=cliArgv;
+    for(const key of Object.keys(process.env))if(!Object.hasOwn(cliEnvironment,key))delete process.env[key];Object.assign(process.env,cliEnvironment);
+  }
   for(const flag of ['missingReview','wrongPlan','movedReview']){
     configure(positiveHead);baselinePlan=plan({baselineCommit:base,candidateCommit:head,expectedHead:head});state[flag]=true;rebuildMaps();
     await assert.rejects(coordinate(),/CONTROL_REVIEW/);assert.equal(rows.length,flag==='movedReview'?baselinePlan.commands.length:0);
