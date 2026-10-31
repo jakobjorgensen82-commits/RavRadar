@@ -1,3 +1,23 @@
+## 89.292 En databaseprøve skal ikke gentages for uændrede input
+
+**Kort fortalt: En faktisk bestået prøve kan genbruges, når hele dens relevante kilde, miljø og oprindelse er uændrede. Genbrug må ikke fremstilles som en ny udførelse.**
+
+### Hvad forbedringen gør
+
+Den nye kontrol for594 sammenligner hele de relevante program- og datafiler, de uændrede databasefiler og de autentiske ældre kodeankre. Den kontrollerer også, hvilke programmer og versioner der faktisk kørte. En senere rettelse kan dermed genbruge den dokumenterede databaseprøve, når dens input og forudsætninger er de samme.
+
+### Hvad der kræves før genbrug
+
+Den oprindelige prøve skal være udført og dens bevis faktisk gemt. Hele beviset og den rigtige GitHub-kørsel genlæses. Ændrede eller ukendte input, et ændret kørselsforsøg, et udløbet bevis eller senere negative resultater giver ikke tilladelse til genbrug. Gamle beviser får ikke en ny betydning blot ved at få et nyt versionsnavn.
+
+### Udførelse, genbrug og forskellige testområder
+
+En genbrugt databaseprøve er ikke ny SQL-eksekvering. En historisk national prøve er heller ikke bevis for den aktuelle offentlige prognose. D1, PostgreSQL og den offentlige kort-/auditfunktion skal vurderes efter deres egne reelle afhængigheder. Det er sådan, unødvendigt arbejde kan fjernes uden at skjule relevante fejl.
+
+### Den resterende forbedring
+
+De normale lokale læserprøver er gennemført, men den første faktiske nye oprindelse, senere genbrug og tidsbesparelsen skal stadig dokumenteres. Denne ændring alene gør ikke den første lange kvalifikation hurtig. Hele kontrolvejen skal fortsat forkortes, og nyt offentligt vejr skal stadig bestå sine nødvendige data-, integritets- og leveringskontroller.
+
 ## 89.291 Databasebinding og originale vejrdata har hver sin rolle
 
 **Kort fortalt: Databasebinding og originale vejrdata kan have hver sin version. Begge roller skal verificeres særskilt, og en ny modelbinding giver ingen ret til at ændre gamle tal eller springe datakontrol over.**
@@ -357,6 +377,8 @@ Et link fastfryser ikke en score for altid. Nyere gyldige vejrdata kan ændre pr
 
 Ejerens godkendte løsning er et separat Cloudflare Pages/Functions-projekt med navnet ravradar-del. Først skal det fungere på ravradar-del.pages.dev. Derefter kan det tilknyttes del.ravradar.dk med én CNAME-post hos den nuværende DNS-udbyder Simply. Navneserverne, hovedhjemmesiden og mailposterne flyttes ikke.
 
+Den forberedte adapter genkender præcis ravradar-del.pages.dev og del.ravradar.dk. På begge adresser følger forhåndsvisningens eget link den kontrollerede adresse, mens linket ind til kortet stadig går til ravradar.dk. Det gør ikke domænet aktivt i sig selv: offentlig levering, gratis kapacitet i praksis, Facebooks forhåndsvisning, DNS, certifikat og skiftet af hjemmesidens delingsadresse skal stadig være kontrolleret hver for sig.
+
 Frontendens nuværende delingsadresse og den gamle delingstjeneste bevares, mens den nye løsning bliver kontrolleret. Klienten skifter først efter faktisk levering, korrekt domæne og aktivt certifikat. Allerede delte links skal fortsat kunne bruges; den gamle tjeneste skal derfor også passe til de nye offentlige data.
 
 Det er domænet, der bliver kortere og uden personnavn. De nødvendige linkparametre for zone, tidspunkt, søgemåde og sprog forkortes ikke i denne afgrænsede ændring.
@@ -378,6 +400,8 @@ Delingsvisningen genbruger faste datoformater og undgår gentagne sammenligninge
 ### Status 29. oktober 2026
 
 Adapteren, previewrobotternes adgang, controlleren og en afgrænset læseroptimering er lokalt sammenført. Samlet kildekvalifikation og offentlig Pages-levering er åbne. En senere almindelig 591-generation er faktisk leveret med de tre serverfunktioner, og den gamle delingstjeneste er særskilt opdateret og viser igen en kontrolleret score. Det beviser ikke den nye Pages-hosts scorekompatibilitet, domæne/TLS, Facebooks forhåndsvisning, ekstern AI eller tilstrækkelig Free-kapacitet.
+
+Den næste levering skal kontrolleres mod den faktisk gældende offentlige generation og model; denne forberedelse følger 594-kilden. Et ældre 591-sample er historisk evidens og kvalificerer ikke en ny delingshost.
 
 Der foretages ingen ny versions-, model- eller databaseudstedelse af denne forberedelse. De øvrige RavRadar-opgaver og alle fem hovedmål til 18. november 2026 er fortsat åbne.
 
@@ -9277,6 +9301,18 @@ Håndbogen er et beskyttet admin-dokument. Eksperten skal have admin_access og d
 
 Læsning, redigering, publicering, rå diagnostik, systemadministration og ekspertadministration er adskilte rettigheder. Ejerrollen har fuld adgang. Service role / sb_secret må kun findes som GitHub Secret og aldrig i browserkode eller ZIP.
 
+
+### Admin-overblik og kysteditor — forberedt 31. oktober 2026
+
+Når administrationen åbner, kommer nogle oplysninger før andre. Afventende forbindelse, lager og zonetal skal derfor vises som afventende eller ukendte, indtil de er aflæst. En fejl i den offentlige vejrpakke må ikke skjule en vellykket forbindelses- eller lagerkontrol. Prøv igen foretager en almindelig ny læsning med de samme manifest- og modelkontroller.
+
+Kysteditoren må først åbne sit redigeringsgrundlag, når zoneregisteret, den verificerede offentlige pakke og den centrale kystkonfiguration er indlæst. En afvist eller manglende central konfiguration vises som en fejl med mulighed for at prøve igen. Den må ikke behandles som verificeret, blot fordi en lokal kopi findes.
+
+Når editoren er åbnet, må sen baggrundsindlæsning ikke erstatte den draft, ejeren arbejder med eller har sikret lokalt efter en fejlet central gemning. De almindelige rettigheds-, gemme- og readbackkontroller gælder fortsat. At administrationen er færdiginitialiseret betyder alene, at dens indlæsning er afsluttet; det beviser ikke, at en model eller vejrpakke er gyldig.
+
+Indtil sundhedsafgørelsen er bekræftet, viser alarmkortet en neutral besked. Et sent svar opdaterer det eksisterende kort. Zoner venter på et bekræftet register og viser vejrkilden neutralt, indtil den offentlige pakke er verificeret. Sene svar må ikke nulstille søgning, kysttypefilter eller en menneskelig kystkladde.
+
+Den afgrænsede kandidat har bestået normale lokale målprøver. Samlet kildekvalifikation, sikker levering og den faktiske offentlige browservirkning afventer stadig. Denne præcisering ændrer ingen scoreformel, vejrdata, rettigheder, administratoropsætning eller geometri.
 
 ## 27. Diagnostik, sundhed og faglig audit
 

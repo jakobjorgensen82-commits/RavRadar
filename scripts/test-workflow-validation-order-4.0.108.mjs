@@ -607,7 +607,19 @@ assert.match(shareControllerSource, /fs\.writeSync\(descriptor, JSON\.stringify\
 // One already-existing private workflow is an exact new inventory layer,
 // not permission to ignore extra files or broaden historical consumers.
 const privateStudyName = 'private-trip-weather-study.yml';
-const privateStudyActualSource = fs.readFileSync(`${workflowDirectory}/${privateStudyName}`, 'utf8').replace(/\r\n/g, '\n');
+function privateStudyPre007Workflow(source) {
+  const review = JSON.parse(fs.readFileSync(new URL('./lib/private-trip-study-categorical-review.json', import.meta.url), 'utf8')).workflow;
+  const sha = value => crypto.createHash('sha256').update(value).digest('hex');
+  assert.equal(review.file, '.github/workflows/private-trip-weather-study.yml');
+  assert.equal(sha(source), review.afterSha256);
+  for (const edit of [...review.edits].reverse()) {
+    assert.equal(source.split(edit.after).length, 2); source = source.replace(edit.after, () => edit.before);
+  }
+  assert.equal(sha(source), review.beforeSha256);
+  assert.equal(sha(source), 'bdde67e93ae059a520e21305af42c1566080faa0da786fc670d7f28dc0285949');
+  return source;
+}
+const privateStudyActualSource = privateStudyPre007Workflow(fs.readFileSync(`${workflowDirectory}/${privateStudyName}`, 'utf8').replace(/\r\n/g, '\n'));
 function inversePrivateStudy006ExportWorkflow(source) {
   const sha = value => crypto.createHash('sha256').update(value).digest('hex');
   assert.equal(sha(source), 'bdde67e93ae059a520e21305af42c1566080faa0da786fc670d7f28dc0285949',

@@ -4,6 +4,7 @@ import crypto from 'node:crypto';
 import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
+import { pathToFileURL } from 'node:url';
 import { promisify } from 'node:util';
 import { execFile } from 'node:child_process';
 import {
@@ -551,6 +552,20 @@ try {
     '--expected-source-head', sourceHead,
     '--expected-dataset-id', datasetId,
   ];
+  const metadataReadTrace = path.join(inputRoot, 'metadata-large-read.jsonl');
+  const metadataReadTrap = path.join(inputRoot, 'metadata-read-trap.mjs');
+  const nationalInputs = ['data/live/conditions.json', 'data/live/public-conditions.json',
+    'data/live/public-condition-details.json', 'data/live/coastal-parts-v2.json', 'data/zones.geojson']
+    .map(file => path.resolve(stageRoot, file));
+  await fs.writeFile(metadataReadTrap, [
+    "import fs from 'node:fs/promises';import sync from 'node:fs';import path from 'node:path';",
+    'const forbidden=new Set(' + JSON.stringify(nationalInputs) + '),read=fs.readFile;',
+    'fs.readFile=async function(file,...args){if(typeof file==="string"&&forbidden.has(path.resolve(file))){',
+    'sync.appendFileSync(' + JSON.stringify(metadataReadTrace) + ',"LARGE_READ_ATTEMPT\\n");',
+    'throw new Error("UNEXPECTED_NATIONAL_READ_BEFORE_METADATA_REFUSAL");}return read.call(this,file,...args);};',
+  ].join('\n'));
+  const metadataAuditArguments = ['--import', pathToFileURL(metadataReadTrap).href, ...auditArguments];
+  let metadataRefusalCases = 0;
   const passed = await execFileAsync(process.execPath, auditArguments, {
     cwd: stageRoot,
     windowsHide: true,
@@ -708,12 +723,17 @@ try {
     mutate(invalid);
     // Preserve producer formatting so each rejection tests the mutation, not JSON layout.
     await fs.writeFile(file, `${JSON.stringify(invalid, null, file === manifestPath ? 2 : undefined)}\n`);
-    await assert.rejects(() => execFileAsync(process.execPath, auditArguments, {
+    const metadataOnly = label.endsWith('Candidate profile');
+    await assert.rejects(() => execFileAsync(process.execPath, metadataOnly ? metadataAuditArguments : auditArguments, {
       cwd: stageRoot,
       windowsHide: true,
       maxBuffer: 10 * 1024 * 1024,
     }), error => expectedFailure.test(
       `${error?.stderr ?? ''}${error?.message ?? ''}`), label);
+    if (metadataOnly) {
+      await assert.rejects(() => fs.stat(metadataReadTrace), { code: 'ENOENT' });
+      metadataRefusalCases += 1;
+    }
     await fs.writeFile(file, pristine);
   }
 
@@ -741,13 +761,16 @@ try {
     const wrongMarker = JSON.parse(pristineMarker);
     mutateMarker(wrongMarker);
     await fs.writeFile(markerPath, `${JSON.stringify(wrongMarker)}\n`);
-    await assert.rejects(() => execFileAsync(process.execPath, auditArguments, {
+    await assert.rejects(() => execFileAsync(process.execPath, metadataAuditArguments, {
       cwd: stageRoot,
       windowsHide: true,
       maxBuffer: 10 * 1024 * 1024,
     }), error => /stage marker is incompatible/.test(
       `${error?.stderr ?? ''}${error?.message ?? ''}`));
+    await assert.rejects(() => fs.stat(metadataReadTrace), { code: 'ENOENT' });
+    metadataRefusalCases += 1;
   }
+  assert.equal(metadataRefusalCases, 6);
 } finally {
   await fs.rm(temporaryRoot, { recursive: true, force: true });
 }

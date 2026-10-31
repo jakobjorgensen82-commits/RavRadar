@@ -19,6 +19,7 @@ import {CURRENT586_PHASE_UPLOAD,inverseCurrent586PhaseUpload,verifyCurrent586Pha
   verifyAssistantLaterH0PhaseReceipt,verifyAssistantPublic587SuccessorPhaseReceipt,
   verifyAssistantPublic588SuccessorPhaseReceipt,verifyAssistantPublic590SuccessorPhaseReceipt,verifyAssistantPublic591SuccessorPhaseReceipt,
   verifyAssistantPublic591V2PhaseReceipt,verifyInstalled593Original591PhaseReceipt,
+  INSTALLED593_ORIGINAL591_V2_KIND,verifyInstalled593Original591V2PhaseReceipt,
   INSTALLED593_ORIGINAL591_COMMANDS} from './native-postgres-evidence.mjs';
 
 export const ORIGIN=Object.freeze({
@@ -347,12 +348,15 @@ export function verifyInstalled593Original591NativeContext(native,current,versio
   assert.equal(ACTIVE.sourcePhase,'assistant-installed593-origin591-successor');
   assert.equal(version,requireInstalled593Original591Release());
   verifyCurrentNativeCommands(native.commands,version);
-  return verifyInstalled593Original591PhaseReceipt(native,current);
+  return native?.kind===INSTALLED593_ORIGINAL591_V2_KIND
+    ?verifyInstalled593Original591V2PhaseReceipt(native,current):verifyInstalled593Original591PhaseReceipt(native,current);
 }
 export function installed593Original591NativeClaims(native,current){
-  verifyInstalled593Original591PhaseReceipt(native,current);
-  const claim=(phase,scope)=>({status:'EXECUTED',executedInThisRun:true,origin:null,phase,
-    ...(scope?{scope}:{}),eligibleForReuse:false,separatelyRequired:true});
+  const v2=native?.kind===INSTALLED593_ORIGINAL591_V2_KIND;
+  if(v2)verifyInstalled593Original591V2PhaseReceipt(native,current);
+  else verifyInstalled593Original591PhaseReceipt(native,current);
+  const claim=(phase,scope)=>({status:native.status,executedInThisRun:native.executedInThisRun,origin:native.origin,phase,
+    ...(scope?{scope}:{}),eligibleForReuse:v2,separatelyRequired:true});
   return {
     current586PredecessorNative:claim('native-original-continuity','GENUINE_FROZEN586'),
     current587PredecessorNative:claim('assistant-later-h0','GENUINE_FROZEN587'),

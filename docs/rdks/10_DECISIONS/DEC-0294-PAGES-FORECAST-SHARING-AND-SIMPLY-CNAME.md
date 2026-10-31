@@ -11,7 +11,7 @@ ROOT ejer projektoprettelse, deploy og DNS. Den eksisterende kvalificerede-main-
 
 ## Mindste funktionelle ændring
 
-Pages-adapteren videresender kun request til den eksisterende uændrede `handleForecastShare` med en lukket kildevalgt host. Kun rodstien er dynamisk; statiske assets er begrænset til de gennemgåede delingsfiler. Frontendens eksisterende Worker-adresse og den gamle Worker-kontrol bevares i første fase. En senere hostændring skal holde Worker-adressen særskilt og lukke frontendens normale modul/cachebusterkæde.
+Pages-adapteren videresender kun request til den eksisterende uændrede `handleForecastShare` med præcis de to kildevalgte værter `ravradar-del.pages.dev` og `del.ravradar.dk`. Kun rodstien er dynamisk; statiske assets er begrænset til de gennemgåede delingsfiler. Frontendens eksisterende Worker-adresse og den gamle Worker-kontrol bevares i første fase. En senere hostændring skal holde Worker-adressen særskilt og lukke frontendens normale modul/cachebusterkæde.
 
 Handleren læser kun fast offentligt manifest, hash-/størrelseskontrolleret zonepakke og zoneregister. GET/HEAD, metode-/origin-/stipræcision, zone/time/søgemåde/sprog, gyldighed og manglende-score-regler er uændrede. Ingen vilkårlig upstream/score fra query, logincredentials, ny beregning, database, KV/R2/D1/Supabase-binding, billedlager eller vejrleverandørhentning. Eksisterende logo genbruges.
 
@@ -19,11 +19,15 @@ Delingslæseren genbruger de tre faste sprogs datoformattering og sparer gentagn
 
 Den præcise robots-tilføjelse tillader previewrobotter at hente linket. Handlerens noindex/no-store og øvrige CSP-/privacygrænser bevares. Et link fastfryser ikke fremtidige scorer; uverificerbart eller udløbet input får ingen konstrueret score. Den lange selection-query forkortes ikke af domæneskiftet.
 
+### Præcis tohostkandidat 31. oktober
+
+Den lokale adapter vælger kun mellem de to faste HTTPS-origins og bevarer handlerens rodsti-, metode-, private input-, generations-, model- og timekontrol. OG/canonical bruger den faktisk validerede egen host; app-link og offentlige prognoselæsninger bliver på ravradar.dk. Header, miljø og query kan ikke indsætte en tredje host. Dette er kildeforberedelse, ikke projekt-/domæneoprettelse eller frontendaktivering. Den normale lokale delings-/tidsskyderprøve bevarer de oprindelige 153 cases og består nu med 171; hosted Pages/Free, Facebook, DNS/TLS og klientovergang er fortsat åbne.
+
 ## Leveringsrækkefølge og åbne beviser
 
 1. Adapter/robots, controller og den afgrænsede læseroptimering er lokalt sammenført med denne dokumentation. Præcis samlet kildekontrol kræves; lokal sammensætning er ikke offentlig kvalifikation.
 2. I et skrivefrit vindue: faktisk projektfravær/rettighed → kontrolleret oprettelse ved 404 → normal Pages-bygning/deploy fra fast projektmappe → genlæsning af projekt, deployment, branch, commit, alias og fravær af ressourcebindinger/secrets. Ukendt udfald er ikke en gentagelsestilladelse.
-3. Verificér faktisk senere offentlig 591-generation og hostens strenge model-/scorekompatibilitet. Den gamle Workers engangsprøve på 590 er alene et 590-sample; den kræver særskilt kompatibilitetsdeploy for at bevare gamle links. Ingen dobbeltmodellæser eller svækket scorekontrol.
+3. Verificér faktisk senere offentlig 594-generation og hostens strenge model-/scorekompatibilitet. Den gamle Workers engangsprøve på 590 er alene et 590-sample; den kræver særskilt kompatibilitetsdeploy for at bevare gamle links. Ingen dobbeltmodellæser eller svækket scorekontrol.
 4. Hosted GET/HEAD, OG-billede/tags, robots, ugyldig/udløbet selection, kold/varm svartid og Facebooks egen preview/cache skal prøves særskilt.
 5. Mål kontoens samlede Workers Free-forbrug og CPU. Pages Functions deler 100.000 forespørgsler/døgn med blandt andet turlageret; den giver ingen ny separat gratis pulje. Faktisk abonnement, forbrug og konservativt råderum skal dokumenteres før kapacitetsløfte.
 6. Først efter fungerende pages.dev: præcis custom-domain-binding, én Simply-CNAME og faktisk aktiv TLS. Derefter normal kildekvalificeret frontendcutover til `del.ravradar.dk`. Bevar gammel tjeneste og kontrolleret mulighed for at føre klientadressen tilbage; ingen automatisk DNS-rollback ved ukendt udfald.

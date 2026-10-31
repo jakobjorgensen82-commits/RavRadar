@@ -504,12 +504,24 @@ async function verifyPrivateOwnerReportDelivery(report){
   };
   const displayed=ui();await displayed.card.querySelector('button').click();
   const table=displayed.card.querySelector('table');assert(table);const rows=table.querySelector('tbody').children;
-  assert.equal(rows.length,20);assert.equal(rows.reduce((n,row)=>n+row.children.length-2,0),40);
-  assert.equal(rows[0].children[0].textContent,'Vind (m/s)');assert.equal(rows[0].children[1].textContent,'0–under 4');
-  assert.equal(rows[15].children[1].textContent,'Under −0,1');
-  for(const [metric,offset] of [['windSpeedMs',0],['waveHeightM',5],['currentSpeedMs',10],['waterLevelTrendM3h',15]])
-    for(let i=0;i<5;i++)for(const [outcome,column] of [['find',2],['no-find',3]])
-      assert.equal(rows[offset+i].children[column].textContent,String(report.cells.find(c=>c.cell===metric+':'+i+':'+outcome).noisyCount));
+  const categorical=report.schemaVersion===3;
+  assert.equal(rows.length,categorical?40:20);
+  assert.equal(rows.reduce((n,row)=>n+row.children.length-(categorical?3:2),0),categorical?160:40);
+  assert.equal(rows[0].children[0].textContent,'Vind (m/s)');
+  if(categorical){
+    assert.equal(rows[0].children[1].textContent,'På stranden');assert.equal(rows[0].children[2].textContent,'0–under 4');
+    assert.equal(rows[5].children[1].textContent,'I waders');assert.equal(rows[30].children[2].textContent,'Under −0,1');
+    for(const [metric,offset]of[['windSpeedMs',0],['waveHeightM',10],['currentSpeedMs',20],['waterLevelTrendM3h',30]])
+      for(const [mode,shift]of[['beach',0],['waders',5]])for(let i=0;i<5;i++)
+        for(const [outcome,column]of[['none',3],['small',4],['medium',5],['good',6]])
+          assert.equal(rows[offset+shift+i].children[column].textContent,String(report.cells.find(c=>c.cell===metric+':'+i+':'+mode+':'+outcome).noisyCount));
+    assert.match(displayed.card.children[1].textContent,/Søgetid og grundighed er bevaret/);
+  }else{
+    assert.equal(rows[0].children[1].textContent,'0–under 4');assert.equal(rows[15].children[1].textContent,'Under −0,1');
+    for(const [metric,offset] of [['windSpeedMs',0],['waveHeightM',5],['currentSpeedMs',10],['waterLevelTrendM3h',15]])
+      for(let i=0;i<5;i++)for(const [outcome,column] of [['find',2],['no-find',3]])
+        assert.equal(rows[offset+i].children[column].textContent,String(report.cells.find(c=>c.cell===metric+':'+i+':'+outcome).noisyCount));
+  }
   assert.match(displayed.card.children[2].textContent,new RegExp(String(new Date(report.period.start).getUTCFullYear())));
   assert.equal(displayed.state.downloads.length,0);
   await displayed.card.children.filter(x=>x.tagName==='button')[1].click();
@@ -523,3 +535,253 @@ async function verifyPrivateOwnerReportDelivery(report){
   }
   const remounted=ui();remounted.mount(remounted.host,remounted.access());assert.equal(remounted.state.listeners.size,1);
 }
+
+test('validated reported outcomes and effort survive direct and READY_INPUT originals',async()=>{
+  const {createSyntheticTripPayload}=await import('./aggregate-private-fixture.mjs');
+  const {qualifyTripWeatherAggregateRow}=await import('../cloudflare/trip-gateway/trip-aggregate-row.js');
+  const {prepareTripWeatherAggregate,prepareReadyTripWeatherAggregate}=await import('../cloudflare/trip-gateway/trip-aggregate.js');
+  const {startTripWeatherAggregateJob:start,selectPendingTripWeatherAggregateRequest:selectPending,
+    collectReadyTripWeatherAggregateJob:collectReady}=await import('../cloudflare/trip-gateway/trip-aggregate-job.js');
+  const {readAggregateJobOriginalBinding}=await import('../cloudflare/trip-gateway/trip-aggregate-job-binding.js');
+  const {POLICY_ANCHOR}=await import('../cloudflare/trip-gateway/trip-aggregate-policy-gate.js');
+  const {sha256Hex}=await import('../supabase/functions/_shared/trip-storage.js');
+  // Resolve one whole original tuple through the existing pinned legacy source.
+  const predecessor=await readAggregateJobOriginalBinding(null,'e6d83dcb3832dddd1134aadcc9be8fbac780cc2f082734e4780f07a7bab21baa');
+  assert.notDeepEqual(predecessor,binding);
+  const specifications=[
+    {result:'none',huntMode:'beach',searchMinutes:30,searchCoverage:'partial'},
+    {result:'small',huntMode:'waders',searchMinutes:60,searchCoverage:'normal'},
+    {result:'medium',huntMode:'beach',searchMinutes:90,searchCoverage:'thorough'},
+    {result:'good',huntMode:'waders',searchMinutes:120,searchCoverage:'normal'},
+  ];
+  const fixtures=[],oldFetch=globalThis.fetch;let binaryCells=null;
+  globalThis.fetch=async()=>{throw new Error('NETWORK_FORBIDDEN');};
+  try{
+    for(const tuple of [binding,predecessor]){
+      const placements=[],expected=new Map();
+      for(let index=0;index<specifications.length;index++){
+        const input=specifications[index],n=500+index;
+        const identity=await externalOwnerSubject({userId:uuid(20000+index),secret:'synthetic-input-scan-pseudonym-secret-only-00000000'});
+        const startAt=dayForPeriod(period,15)+'T11:00:00.000Z';
+        const endAt=new Date(Date.parse(startAt)+input.searchMinutes*60000).toISOString();
+        const observedAt=new Date(Date.parse(startAt)+input.searchMinutes*30000).toISOString();
+        const payload=createSyntheticTripPayload(n,{observation_origin:'self-reported',featureInput:{modelBinding:tuple},
+          result:input.result,found:input.result!=='none',grams:null,hunt_mode:input.huntMode,
+          search_minutes:input.searchMinutes,search_coverage:input.searchCoverage,
+          trip_started_at:startAt,trip_ended_at:endAt,observed_at:observedAt});
+        placements.push([[0,2,5,9][index],{...await externalTripRecord({owner:identity,payload,source:'supabase-migration'}),
+          created_at:new Date(now-60000).toISOString()}]);
+        expected.set(identity.subject,input);
+      }
+      const f=fixture(placements);fixtures.push(f);const originals=f.originals();
+      const schemaBefore=plain(f.dbs[0].prepare('select type,name,tbl_name,sql from sqlite_master order by type,name').all());
+      const accounts=[...expected.keys()].sort().map(ownerSubject=>({ownerSubject,enabled:true,revision:'0',source:'default'}));
+      const request={schemaVersion:1,period,modelBinding:binding,
+        preferenceSnapshot:{schemaVersion:2,snapshotAt:new Date(now).toISOString(),accounts}};
+      const direct=await prepareTripWeatherAggregate(f.d1,request);
+      if(tuple===binding){
+        assert.equal(direct.compatibleReportedContributors,4);assert.equal(direct.cells.length,8);
+        assert(direct.cells.every(cell=>cell.count===(cell.cell.endsWith(':no-find')?1:3)));
+        binaryCells=direct.cells;
+      }else assert.equal(direct.compatibleReportedContributors,0,'direct current binding must not retag an older original');
+      for(const key of ['reportedTrip','result','huntMode','searchMinutes','searchCoverage'])
+        assert(!JSON.stringify(direct).includes('"'+key+'"'),'the existing binary candidate does not serialize '+key);
+      if(tuple!==binding){
+        // An actual old job fixture, never UPDATE/retag of a newer immutable job.
+        const names=['job_key','period_start','period_end','source_cutoff','execution_id','binding_sha256','model_binding_json',
+          'policy_sha256','accounting_sha256','preference_sha256','initial_erasure_sha256','erasure_revision','input_accounts'];
+        const key=await sha256Hex(canonicalJson({ledgerId:POLICY_ANCHOR.ledger_id,period}));
+        const values=[key,period.start,period.end,request.preferenceSnapshot.snapshotAt,'rr-private-input-scan-v1-UNISSUED',
+          await sha256Hex(canonicalJson(tuple)),canonicalJson(tuple),POLICY_ANCHOR.policy_sha256,
+          POLICY_ANCHOR.accounting_sha256,await sha256Hex(canonicalJson(accounts)),await sha256Hex(canonicalJson([])),0,4];
+        f.dbs[0].prepare('insert into trip_weather_aggregate_jobs ('+names.join(',')+') values ('+names.map(()=>'?').join(',')+')').run(...values);
+      }
+      const selectedRequest=await selectPending(f.d1,request);
+      assert.deepEqual(selectedRequest.modelBinding,tuple);
+      let progress=await start(f.d1,selectedRequest);
+      for(let steps=0;progress.phase!=='READY_INPUT'&&steps<20;steps++){
+        const offset=f.trace.length;progress=await advance(f.d1,selectedRequest);
+        assert(queryCount(f.trace.slice(offset))<=45);
+        for(const key of ['reportedTrip','result','huntMode','searchMinutes','searchCoverage'])
+          assert(!JSON.stringify(progress).includes('"'+key+'"'),'job progress remains closed: '+key);
+      }
+      assert.equal(progress.phase,'READY_INPUT');
+      const ready=await collectReady(f.d1,selectedRequest);
+      assert.equal(ready.selected.size,4);
+      for(const [subject,value]of ready.selected){
+        assert.deepEqual(value.reportedTrip,expected.get(subject),'normal READY_INPUT must preserve the original reported category and effort');
+        assert(Object.isFrozen(value.reportedTrip));
+        assert.equal(value.found,value.reportedTrip.result!=='none');
+      }
+      const readyCandidate=await prepareReadyTripWeatherAggregate(f.d1,selectedRequest);
+      assert.deepEqual(readyCandidate.cells,binaryCells,'the existing binary report preparation remains unchanged');
+      assert.equal(readyCandidate.compatibleReportedContributors,4);
+      for(const key of ['reportedTrip','result','huntMode','searchMinutes','searchCoverage'])
+        assert(!JSON.stringify(readyCandidate).includes('"'+key+'"'),'READY candidate does not serialize '+key);
+      assert.deepEqual(plain(f.dbs[0].prepare('select type,name,tbl_name,sql from sqlite_master order by type,name').all()),schemaBefore);
+      const winnerColumns=plain(f.dbs[0].prepare('pragma table_info(trip_weather_aggregate_job_winners)').all()).map(row=>row.name);
+      assert.deepEqual(winnerColumns,['job_key','owner_subject','client_observation_id','rank','found','wind_speed','wave_height',
+        'current_speed','water_trend','calibration_eligible']);
+      assert.deepEqual(f.accounting(),[0,0],'no report or privacy charge is issued');
+      assert.deepEqual(f.originals(),originals,'hash-bound originals are unchanged');
+      if(tuple===binding){
+        const qualify=async row=>{
+          const exclusions={preference:0,erased:0,synthetic:0,ineligible:0,repeatContributor:0};
+          const value=await qualifyTripWeatherAggregateRow(row,{request,binding,state:{rowsRead:0,payloadBytes:0,after:''},
+            seen:new Set(),tripIds:new Set(),erased:new Set(),allowed:new Set(expected.keys()),exclusions});
+          return{value,exclusions};
+        };
+        for(const [,row]of placements){
+          const qualified=await qualify(row);
+          assert.deepEqual(qualified.value.reportedTrip,expected.get(row.owner_subject));
+        }
+        for(const edit of [p=>{p.result='unknown';},p=>{delete p.result;},p=>{p.search_minutes=0;},
+          p=>{p.search_minutes='60';},p=>{p.search_coverage='unknown';},p=>{p.hunt_mode='boat';}]){
+          const row={...placements[0][1]},payload=JSON.parse(row.payload_json);edit(payload);
+          const digest={...payload};delete digest.submitted_at;row.payload_json=canonicalJson(payload);row.payload_sha256=await sha256Hex(canonicalJson(digest));
+          const answer=await qualify(row);assert.equal(answer.value,null);assert.equal(answer.exclusions.ineligible,1);
+        }
+        await assert.rejects(qualify({...placements[0][1],payload_sha256:'0'.repeat(64)}),{message:'AGGREGATE_STORED_INTEGRITY_INVALID'});
+        const shared='synthetic-outcome-off-shared-secret-only-000000000000';
+        const pathname='/v1/trips/aggregate-weather',body=JSON.stringify(request),timestamp=String(now),offset=f.trace.length;
+        const signature=await tripGatewaySignature({secret:shared,timestamp,method:'POST',pathname,bodyText:body});
+        const response=await handleRequest(new Request('https://synthetic-outcome-off.workers.dev'+pathname,{method:'POST',
+          headers:{'Content-Type':'application/json','X-RavRadar-Timestamp':timestamp,'X-RavRadar-Signature':signature},body}),
+          {TRIP_GATEWAY_SHARED_SECRET:shared,TRIP_AGGREGATE_ENABLED:'false',...Object.fromEntries(f.d1.map((db,index)=>['TRIP_DB_'+index,db]))});
+        assert.equal(response.status,404);assert.equal(f.trace.length,offset,'OFF must stop before storage');
+        assert.deepEqual(await response.json(),{ok:false,error:'NOT_FOUND'});
+        assert.deepEqual(f.accounting(),[0,0]);
+      }
+    }
+  }finally{fixtures.forEach(f=>f.close());globalThis.fetch=oldFetch;}
+});
+function dayForPeriod(period,day){return period.start.slice(0,8)+String(day).padStart(2,'0');}
+
+test('categorical report preserves global ledger and owner delivery without legacy retagging',async()=>{
+  const {createSyntheticTripPayload}=await import('./aggregate-private-fixture.mjs');
+  const {readTripWeatherAggregate}=await import('./lib/trip-weather-aggregate-client.mjs');
+  const {canonicalJson,sha256Hex}=await import('../supabase/functions/_shared/trip-storage.js');
+  const categoricalModule=await import('../cloudflare/trip-gateway/trip-aggregate-categorical.js');
+  const {CATEGORICAL_POLICY,CATEGORICAL_CELL_KEYS,denseCountsFromCategoricalCandidate,
+    assertPrivateTripStudyReport}=categoricalModule;
+  const oldClock=Date.now,oldFetch=globalThis.fetch;let clock=now;const fixtures=[];
+  Date.now=()=>clock;globalThis.fetch=async()=>{throw Error('NETWORK_FORBIDDEN');};
+  const shared='synthetic-categorical-shared-secret-only-000000000000000';
+  const pseudonym='synthetic-input-scan-pseudonym-secret-only-00000000';
+  const previous=previousClosedAggregateMonth(clock),boundary=Date.UTC(new Date(clock).getUTCFullYear(),new Date(clock).getUTCMonth()+1,1);
+  const following=previousClosedAggregateMonth(boundary),identities=[],placements=[];
+  const specifications=['beach','waders'].flatMap(huntMode=>['none','small','medium','good'].map(result=>({huntMode,result})));
+  specifications.push({huntMode:'beach',result:'small'},{huntMode:'waders',result:'good'});
+  try{
+    for(let index=0;index<10;index++)identities.push(await externalOwnerSubject({userId:uuid(30000+index),secret:pseudonym}));
+    for(const [monthIndex,month]of[previous,following].entries())for(let index=0;index<10;index++){
+      const input=specifications[index],minutes=[30,60,90,120][index%4],start=dayForPeriod(month,15)+'T11:00:00.000Z';
+      const end=new Date(Date.parse(start)+minutes*60000).toISOString(),valid=dayForPeriod(month,15)+'T12:00:00.000Z';
+      const issued=dayForPeriod(month,15)+'T10:00:00.000Z';
+      const payload=createSyntheticTripPayload(6000+monthIndex*100+index,{observation_origin:'self-reported',
+        result:input.result,found:input.result!=='none',grams:null,hunt_mode:input.huntMode,
+        search_minutes:minutes,search_coverage:['partial','normal','thorough'][index%3],
+        trip_started_at:start,trip_ended_at:end,observed_at:new Date(Date.parse(start)+minutes*30000).toISOString(),
+        submitted_at:end,forecast_issued_at:issued,forecast_valid_at:valid,forecast_captured_at:start});
+      payload.weather_snapshot={...payload.weather_snapshot,capturedAt:start,forecastIssuedAt:issued,forecastValidAt:valid};
+      placements.push([index,{...await externalTripRecord({owner:identities[index],payload,source:'supabase-migration'}),
+        created_at:new Date(now-60000).toISOString()}]);
+    }
+    const f=fixture(placements);fixtures.push(f);const originals=f.originals(),calls=[];
+    const env={TRIP_GATEWAY_SHARED_SECRET:shared,TRIP_AGGREGATE_ENABLED:'true',...Object.fromEntries(f.d1.map((db,i)=>['TRIP_DB_'+i,db]))};
+    const fetchImpl=async(input,init={})=>{
+      const url=new URL(input);
+      if(url.hostname==='synthetic.supabase.co'){
+        if(url.pathname==='/rest/v1/profiles')return new Response(JSON.stringify(identities.map((_,i)=>({id:uuid(30000+i)}))),{headers:{'content-range':'0-9/10'}});
+        assert.equal(url.pathname,'/rest/v1/account_statistics_preferences');return new Response('[]',{headers:{'content-range':'*/0'}});
+      }
+      assert.equal(url.hostname,'synthetic-categorical.workers.dev');
+      const at=f.trace.length,response=await handleRequest(new Request(url,init),env),count=queryCount(f.trace.slice(at));
+      assert(count<=45);assert.equal(response.status,200,JSON.stringify({path:url.pathname,count,phase:f.header().phase}));
+      calls.push({count,path:url.pathname});return response;
+    };
+    const invoke=()=>readTripWeatherAggregate({supabaseUrl:'https://synthetic.supabase.co',serviceRoleKey:'synthetic-service-secret-only-0000000000000000',
+      gatewayUrl:'https://synthetic-categorical.workers.dev',sharedSecret:shared,pseudonymSecret:pseudonym,fetchImpl});
+    const legacy=await invoke();assert.equal(legacy.schemaVersion,2);assert.equal(legacy.cells.length,40);
+    const oldRows=plain(f.dbs[0].prepare('select * from trip_weather_aggregate_releases').all());
+    const oldCharges=plain(f.dbs[0].prepare('select * from trip_weather_aggregate_account_charges order by owner_subject').all());
+    const anchor=plain(f.dbs[0].prepare('select * from trip_weather_aggregate_policy_anchor').all());
+    const draft=fs.readFileSync(new URL('./fixtures/trip-categorical-policy-007-proposal.sql.txt',import.meta.url),'utf8');
+    f.dbs[0].exec(draft);
+    assert.deepEqual(plain(f.dbs[0].prepare('select * from trip_weather_aggregate_policy_anchor').all()),anchor);
+    assert.deepEqual(plain(f.dbs[0].prepare('select * from trip_weather_aggregate_releases').all()),oldRows);
+    assert.deepEqual(plain(f.dbs[0].prepare('select * from trip_weather_aggregate_account_charges order by owner_subject').all()),oldCharges);
+    assert.deepEqual(await invoke(),legacy,'a frozen binary month is not resampled into a160-cell report');
+    assert.deepEqual(f.accounting(),[1,10]);
+    clock=boundary+1000;
+    const report=await invoke();
+    assert.equal(report.schemaVersion,3,'normal anchored producer must issue the distinct categorical format');
+    assert.equal(report.cells.length,160);assert.equal(new Set(report.cells.map(c=>c.cell)).size,160);
+    assert.equal(report.policyId,CATEGORICAL_POLICY.id);assert.notEqual(report.policySha256,legacy.policySha256);
+    assert.equal(report.effortStatus,'ALL_VALIDATED_REPORTED_EFFORT_UNADJUSTED');await assertPrivateTripStudyReport(report);
+    assert(Buffer.byteLength(canonicalJson(report))<32768,'normal private transport keeps its existing byte bound');
+    assert.deepEqual(await invoke(),report,'replay of a categorical month must not resample/recharge');
+    assert.deepEqual(f.accounting(),[2,20]);
+    const totals=plain(f.dbs[0].prepare('select owner_subject,sum(budget_units) units from trip_weather_aggregate_account_charges group by owner_subject').all());
+    assert.equal(totals.length,10);assert(totals.every(row=>row.units===8));
+    assert.deepEqual(plain(f.dbs[0].prepare('select * from trip_weather_aggregate_releases where period_start=?').all(previous.start)),oldRows);
+    assert.deepEqual(f.originals(),originals);
+    const stored={...f.dbs[0].prepare('select * from trip_weather_aggregate_releases where period_start=?').get(following.start)};
+    const attempt=row=>f.dbs[0].prepare('insert into trip_weather_aggregate_releases ('+Object.keys(row).join(',')+') values ('+Object.keys(row).map(()=>'?').join(',')+')').run(...Object.values(row));
+    assert.throws(()=>attempt({...stored,release_key:'f'.repeat(64)}),/DP_PERIOD_IMMUTABLE/);
+    const nextPeriod=previousClosedAggregateMonth(Date.UTC(new Date(boundary).getUTCFullYear(),new Date(boundary).getUTCMonth()+1,1));
+    for(const prior of[stored,oldRows[0]]){
+      const payload={...JSON.parse(prior.report_json),period:nextPeriod},body=canonicalJson(payload);
+      const row={...prior,release_key:await sha256Hex(canonicalJson({ledgerId:CATEGORICAL_POLICY.namespace,period:nextPeriod})),
+        period_start:nextPeriod.start,period_end:nextPeriod.end,report_json:body,report_sha256:await sha256Hex(body)};
+      assert.throws(()=>attempt(row),/DP_ACCOUNT_LIFETIME_BUDGET_EXHAUSTED/);
+    }
+    assert.deepEqual(f.accounting(),[2,20]);
+    assert.throws(()=>f.dbs[0].exec('delete from trip_weather_aggregate_categorical_policy_anchor'),/DP_CATEGORICAL_POLICY_IMMUTABLE/);
+    assert.throws(()=>f.dbs[0].exec('delete from trip_weather_aggregate_policy_anchor'),/DP_POLICY_IMMUTABLE/);
+    const schema=plain(f.dbs[0].prepare("select type,name from sqlite_master where name like 'trip_weather_aggregate_%' order by type,name").all());
+    assert(schema.some(row=>row.name==='trip_weather_aggregate_categorical_policy_anchor'));
+    // The raw projection still admits every qualified effort; no effort cohort.
+    const {prepareCategoricalTripWeatherAggregate}=await import('../cloudflare/trip-gateway/trip-aggregate.js');
+    const fresh=fixture(placements.filter((_,i)=>i>=10));fixtures.push(fresh);
+    const accounts=identities.map(identity=>({ownerSubject:identity.subject,enabled:true,revision:'0',source:'default'})).sort((a,b)=>a.ownerSubject<b.ownerSubject?-1:a.ownerSubject>b.ownerSubject?1:0);
+    const request={schemaVersion:1,period:following,modelBinding:binding,preferenceSnapshot:{schemaVersion:2,snapshotAt:new Date(clock).toISOString(),accounts}};
+    const projected=await prepareCategoricalTripWeatherAggregate(fresh.d1,request);
+    const counts=denseCountsFromCategoricalCandidate(projected);assert.equal(counts.length,160);assert.equal(counts.reduce((a,b)=>a+b,0),40);
+    assert.equal(projected.compatibleReportedContributors,10);
+    const removed=await prepareCategoricalTripWeatherAggregate(fresh.d1,{...request,preferenceSnapshot:{...request.preferenceSnapshot,accounts:accounts.map((a,i)=>i? a:{...a,enabled:false,revision:'1',source:'stored'})}});
+    const less=denseCountsFromCategoricalCandidate(removed);
+    assert.equal(counts.reduce((sum,value,i)=>sum+Math.abs(value-less[i]),0),4,'one account changes four coordinates, not160');
+    const originalInput=JSON.parse(placements[10][1].payload_json);
+    const replacementPayload=createSyntheticTripPayload(6100,{observation_origin:'self-reported',result:'good',found:true,
+      grams:null,hunt_mode:'waders',search_minutes:originalInput.search_minutes,search_coverage:originalInput.search_coverage,
+      trip_started_at:originalInput.trip_started_at,trip_ended_at:originalInput.trip_ended_at,observed_at:originalInput.observed_at,
+      submitted_at:originalInput.submitted_at,forecast_issued_at:originalInput.forecast_issued_at,
+      forecast_valid_at:originalInput.forecast_valid_at,forecast_captured_at:originalInput.forecast_captured_at});
+    replacementPayload.weather_snapshot={...replacementPayload.weather_snapshot,capturedAt:originalInput.forecast_captured_at,
+      forecastIssuedAt:originalInput.forecast_issued_at,forecastValidAt:originalInput.forecast_valid_at};
+    const replacementRow={...await externalTripRecord({owner:identities[0],payload:replacementPayload,source:'supabase-migration'}),created_at:placements[10][1].created_at};
+    const replacement=fixture(placements.slice(10).map(([shard,row],index)=>[shard,index?row:replacementRow]));fixtures.push(replacement);
+    const replacementCounts=denseCountsFromCategoricalCandidate(await prepareCategoricalTripWeatherAggregate(replacement.d1,request));
+    assert.equal(counts.reduce((sum,value,i)=>sum+Math.abs(value-replacementCounts[i]),0),8,'replacement changes at most eight coordinates');
+    const {preparePolicyBoundReview}=await import('../cloudflare/trip-gateway/trip-aggregate-policy-gate.js');
+    for(const mode of['unknown','partial']){
+      const stopped=fixture(placements.slice(10));fixtures.push(stopped);
+      if(mode==='unknown')stopped.dbs[0].exec('create table trip_weather_aggregate_categorical_policy_anchor (schema_version integer)');
+      else stopped.dbs[0].exec(draft.split('DROP TRIGGER trip_weather_aggregate_insert_guard;')[0]);
+      await assert.rejects(preparePolicyBoundReview(stopped.d1,request,{randomFill:buffer=>buffer.fill(0)}));
+      assert.deepEqual(stopped.accounting(),[0,0],'unknown or partial007 is not permission for a binary fallback or a charge');
+    }
+    const bad=structuredClone(report);bad.cells[0].cell=CATEGORICAL_CELL_KEYS[1];await assert.rejects(assertPrivateTripStudyReport(bad));
+    const relabel=structuredClone(legacy);relabel.schemaVersion=3;await assert.rejects(assertPrivateTripStudyReport(relabel));
+    assert.equal(await sha256Hex(fs.readFileSync(new URL('../cloudflare/trip-gateway/trip-aggregate-dp.js',import.meta.url),'utf8')),'ffd3389017064fce904ec2f8f850b4e60248db0e29185f9a0ed83021be73117b');
+    clock=Date.UTC(new Date(boundary).getUTCFullYear(),new Date(boundary).getUTCMonth()+1,1)+1000;
+    await verifyPrivateOwnerReportDelivery(legacy);await verifyPrivateOwnerReportDelivery(report);
+    assert.deepEqual(f.accounting(),[2,20]);assert.deepEqual(f.originals(),originals);
+    assert(calls.every(call=>call.count<=45));
+    console.log(JSON.stringify({kind:'PRIVATE_CATEGORICAL_REPORT_NORMAL_CALLER',syntheticNativeSQLite:true,
+      populatedShards:10,legacyCells:40,currentCells:160,maximumInvocationStatements:Math.max(...calls.map(call=>call.count)),
+      categoricalReportBytes:Buffer.byteLength(canonicalJson(report)),sharedGlobalMonthAndLifetimeBudget:true,
+      originalLegacyReportUnchanged:true,ownerTransportAndTable:true,installed:false,activated:false,hostedFreeQualified:false}));
+  }finally{fixtures.forEach(f=>f.close());Date.now=oldClock;globalThis.fetch=oldFetch;}
+});

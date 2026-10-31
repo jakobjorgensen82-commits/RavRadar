@@ -76,6 +76,7 @@ import {DatabaseSync} from 'node:sqlite';
 import {privateTripStudySchemaModel,classifyPrivateTripStudySchema,privateTripStudyMigrationSteps}
   from './deploy-private-trip-study.mjs';
 import './test-trip-aggregate-month-rollover.mjs';
+import './test-private-trip-study-categorical-controller.mjs';
 import {modelSourceRelativeModuleSpecifiers} from './lib/model-source-imports.mjs';
 import path from 'node:path';
 import {fileURLToPath,pathToFileURL} from 'node:url';
@@ -138,8 +139,8 @@ test('private-study005: old004 approval never authorizes005 and exact reentry ne
   assert.throws(()=>privateTripStudyMigrationSteps('EXACT',{allow005:'true'}),error=>error.stage==='AUTHORITY');
 });
 test('private-study005: the normal workflow stays OFF and DDL remains outside Worker repair',async()=>{
-  const source=await fs.readFile(new URL('./deploy-private-trip-study.mjs',import.meta.url),'utf8'),
-    workflow=await fs.readFile(new URL('../.github/workflows/private-trip-weather-study.yml',import.meta.url),'utf8');
+  const source=await privateStudyPre007Controller(),
+    workflow=await privateStudyPre007Workflow();
   assert.match(workflow,/allow_005:\s*\n\s+description:[^\n]+\n\s+type: boolean\s*\n\s+default: false/);
   assert.match(workflow,/TRIP_PRIVATE_STUDY_JOBS_APPLY_ALLOWED: \$\{\{ inputs\.allow_005 && 'true' \|\| 'false' \}\}/);
   assert.match(workflow,/TRIP_PRIVATE_STUDY_APPLY_ALLOWED: \$\{\{ inputs\.allow_004 && 'true' \|\| 'false' \}\}/);
@@ -154,6 +155,35 @@ test('private-study005: the normal workflow stays OFF and DDL remains outside Wo
   assert.doesNotMatch(ddl,/catch\s*\{|recoveryAttempted|replace\(/);
   assert.doesNotMatch(source.slice(to),/await cf\(|model\.jobsMigration/);
 });
+
+async function privateStudyPre007Workflow(){
+  let source=(await fs.readFile(new URL('../.github/workflows/private-trip-weather-study.yml',import.meta.url),'utf8')).replace(/\r\n/g,'\n');
+  const review=JSON.parse(await fs.readFile(new URL('./lib/private-trip-study-categorical-review.json',import.meta.url),'utf8')).workflow;
+  const hash=value=>crypto.createHash('sha256').update(value).digest('hex');
+  assert.equal(review.file,'.github/workflows/private-trip-weather-study.yml');
+  assert.equal(hash(source),review.afterSha256);
+  for(const edit of [...review.edits].reverse()){
+    assert.equal(source.split(edit.after).length,2);source=source.replace(edit.after,()=>edit.before);
+  }
+  assert.equal(hash(source),review.beforeSha256);
+  assert.equal(hash(source),'bdde67e93ae059a520e21305af42c1566080faa0da786fc670d7f28dc0285949');
+  return source;
+}
+
+async function privateStudyPre007Controller(){
+  let source=(await fs.readFile(new URL('./deploy-private-trip-study.mjs',import.meta.url),'utf8')).replace(/\r\n/g,'\n');
+  const review=JSON.parse(await fs.readFile(new URL('./lib/private-trip-study-categorical-review.json',import.meta.url),'utf8'));
+  const hash=value=>crypto.createHash('sha256').update(value).digest('hex');
+  assert.equal(review.kind,'PRIVATE_TRIP_STUDY_007_TEST_ONLY_INVERSE');
+  assert.equal(review.file,'scripts/deploy-private-trip-study.mjs');
+  assert.equal(hash(source),review.afterSha256);
+  for(const edit of [...review.edits].reverse()){
+    assert.equal(source.split(edit.after).length,2);source=source.replace(edit.after,()=>edit.before);
+  }
+  assert.equal(hash(source),review.beforeSha256);
+  assert.equal(hash(source),'1dc1101146afbda2ff242cc759b0dfb1e7b172a93ab430a041778ef1e36a01f8');
+  return source;
+}
 
 async function privateStudy005ControllerView(source){
   const descriptor=JSON.parse(await fs.readFile(new URL('./lib/private-trip-study-binding-review.json',import.meta.url),'utf8'));
@@ -181,7 +211,7 @@ async function privateStudy005ControllerView(source){
 }
 
 test("private-study005: read-only plan substages preserve the whole original controller",async()=>{
-  const source=await privateStudy005ControllerView((await fs.readFile(new URL('./deploy-private-trip-study.mjs',import.meta.url),'utf8'))
+  const source=await privateStudy005ControllerView((await privateStudyPre007Controller())
     .replace(/\r\n/g,'\n'));
   const edits=[
     ["    stage='READ_ONLY_PLAN';run('node',['scripts/prepare-cloudflare-trip-storage.mjs','--existing-worker-repair']);",
@@ -282,8 +312,8 @@ test('private-study006: særskilt tilladelse og præcis genindgang giver ingen D
     assert.throws(()=>privateTripStudyMigrationSteps(state,{allow006:true}),error=>error.stage==='AUTHORITY');
 });
 test('private-study006: faktisk controllerkrop fastholder OFF, genlæsning, engangsskrivning og fuld historisk inverse',async()=>{
-  const source=(await fs.readFile(new URL('./deploy-private-trip-study.mjs',import.meta.url),'utf8')).replace(/\r\n/g,'\n'),
-    workflow=await fs.readFile(new URL('../.github/workflows/private-trip-weather-study.yml',import.meta.url),'utf8');
+  const source=(await privateStudyPre007Controller()).replace(/\r\n/g,'\n'),
+    workflow=await privateStudyPre007Workflow();
   const original=await privateStudy005ControllerView(source);
   await assert.rejects(()=>privateStudy005ControllerView(original));
   for(const changed of [source+'\n// ukendt ændring\n',
@@ -311,7 +341,7 @@ test('private-study006: faktisk controllerkrop fastholder OFF, genlæsning, enga
   assert.match(source,/stage='RESTORE';await verifySchema\(\);await attest\(version,true\);exactMain\(\);lease\(1\)/);
 });
 test('private-study006: den normale Worker-importindsamler medtager hele det nye bindingsblad',async()=>{
-  const source=(await fs.readFile(new URL('./deploy-private-trip-study.mjs',import.meta.url),'utf8')).replace(/\r\n/g,'\n');
+  const source=(await privateStudyPre007Controller()).replace(/\r\n/g,'\n');
   await privateStudy005ControllerView(source);
   const start=source.indexOf('function workerSources(){'),end=source.indexOf('\nfunction normalized(',start);
   assert(start>0&&end>start);
@@ -807,7 +837,7 @@ test('private-study006: deklarationer bevarer nested-importkontrol og re-exporta
 test('private-study006: privat eksport bevarer hele installationsarm og normale adgangsgrænser',async()=>{
   const read=async file=>(await fs.readFile(new URL('../'+file,import.meta.url),'utf8')).replace(/\r\n/g,'\n');
   const sha=text=>crypto.createHash('sha256').update(text).digest('hex');
-  const workflow=await read('.github/workflows/private-trip-weather-study.yml');
+  const workflow=await privateStudyPre007Workflow();
   const validate=source=>{
     assert.equal(sha(source),'bdde67e93ae059a520e21305af42c1566080faa0da786fc670d7f28dc0285949');
     const marker='\n  private-study-export:\n';assert.equal(source.split(marker).length,2);
@@ -889,7 +919,37 @@ test('private-study006: privat eksport bevarer hele installationsarm og normale 
     assert.equal(sha(prior),'34c84a3a5679fbac8c2a3881b8952f23df79bfca60064e7b6c8ef14701db014a');
     return prior;
   };
-  const raw594Dashboard=await read('js/ui/admin-dashboard.js');
+  // Historical dashboard DATA comes from one fixed genuine Git object, never
+  // from the changed current UI or a caller-selected source/native capability.
+  const historicalDashboardData=Object.freeze({
+    head:'04021af99bbdfe6cb856dce462404394fc985485',tree:'e3688bfd5be6d2c10313fa5ed4c285046b1c6870',
+    file:'js/ui/admin-dashboard.js',bytes:141249,sha256:'5fda05bab307c9c4025e1088497114ebe7de37250c3541645c6502ea30bd27bc'});
+  const verifyHistoricalDashboardData=(descriptor,bytes)=>{
+    assert.deepEqual(descriptor,historicalDashboardData,'HISTORICAL_DASHBOARD_FIXED_IDENTITY');
+    assert(Buffer.isBuffer(bytes),'HISTORICAL_DASHBOARD_BYTES');
+    assert.equal(bytes.length,historicalDashboardData.bytes,'HISTORICAL_DASHBOARD_SIZE');
+    assert.equal(sha(bytes),historicalDashboardData.sha256,'HISTORICAL_DASHBOARD_WHOLE');return bytes;
+  };
+  async function readFixedHistoricalDashboardData(){
+    assert.equal(arguments.length,0,'HISTORICAL_DASHBOARD_NO_OVERRIDE');
+    const {execFileSync}=await import('node:child_process');
+    const environment=Object.fromEntries(['PATH','Path','SystemRoot','WINDIR','TEMP','TMP','LANG','LC_ALL']
+      .filter(key=>typeof process.env[key]==='string').map(key=>[key,process.env[key]]));
+    const git=(...args)=>execFileSync('git',['-C',fileURLToPath(new URL('..',import.meta.url)),...args],{
+      maxBuffer:1024*1024,timeout:30000,env:{...environment,GIT_NO_LAZY_FETCH:'1',GIT_NO_REPLACE_OBJECTS:'1',
+        GIT_TERMINAL_PROMPT:'0',GIT_CONFIG_COUNT:'1',GIT_CONFIG_KEY_0:'protocol.allow',GIT_CONFIG_VALUE_0:'never'}});
+    const tree=git('rev-parse',historicalDashboardData.head+'^{tree}').toString('utf8').trim();
+    const bytes=git('cat-file','blob',historicalDashboardData.head+':'+historicalDashboardData.file);
+    return verifyHistoricalDashboardData({...historicalDashboardData,tree},bytes);
+  }
+  const historicalDashboardBytes=await readFixedHistoricalDashboardData();
+  for(const key of ['head','tree','file'])assert.throws(()=>verifyHistoricalDashboardData(
+    {...historicalDashboardData,[key]:'UNREVIEWED'},historicalDashboardBytes),/HISTORICAL_DASHBOARD_FIXED_IDENTITY/);
+  for(const bytes of [Buffer.concat([historicalDashboardBytes,Buffer.from('\n')]),
+    Buffer.concat([Buffer.from('!'),historicalDashboardBytes.subarray(1)])])
+    assert.throws(()=>verifyHistoricalDashboardData(historicalDashboardData,bytes),/HISTORICAL_DASHBOARD/);
+  await assert.rejects(readFixedHistoricalDashboardData({head:'UNREVIEWED'}),/HISTORICAL_DASHBOARD_NO_OVERRIDE/);
+  const raw594Dashboard=historicalDashboardBytes.toString('utf8');
   for(const changed of [raw594Dashboard+'\n',raw594Dashboard.replace('4.0.594','4.0.593'),
     raw594Dashboard.replaceAll('4.0.594','4.0.593'),raw594Dashboard.replace('renderLearning','renderLearning_UNREVIEWED')])
     assert.throws(()=>reviewed594DashboardView(changed));
@@ -996,7 +1056,7 @@ test('private-study006: privat eksport bevarer hele installationsarm og normale 
       "content.insertAdjacentHTML('afterbegin',moduleGuide());bindModuleGuide();}"],
   ]){assert.equal(original.split(current).length,2);original=original.replace(current,prior);}
   assert.equal(sha(original),'cabbc3c638bf0330fe4b505e69dd72c4892f54753885a2fe0031154cf31daca2');
-  // Faktisk normal render, ikke en alternativ dashboardkalder.
+  // The genuine historical renderer remains DATA; raw current UI is tested separately below.
   const render=dashboard.match(/^function render\(\)\{[^\n]+\}/m)?.[0];assert(render);
   const start=dashboard.indexOf('function renderLearning(){'),end=dashboard.indexOf('\n\nconst saveBadge=',start);assert(start>=0&&end>start);
   let mounts=0;
@@ -1010,6 +1070,64 @@ test('private-study006: privat eksport bevarer hele installationsarm og normale 
     .map(name=>{const actual=dashboard.match(new RegExp('^function '+name+'\\(\\)\\{[^\\n]+\\}','m'))?.[0];assert(actual,name);return actual;}).join('\n');
   vm.runInNewContext(lifetimeDeclarations+'\n'+lifetimeGuards+'\n'+dashboard.slice(start,end)+';'+render+';render();',context);assert.equal(mounts,1);
   context.state.tab='dashboard';vm.runInNewContext('render();',context);assert.equal(mounts,1);
+  {
+  // This test owns the current private-study import/render/access seam, not
+  // historical complete dashboard bytes, labels or public weather readiness.
+  const dashboard=await read('js/ui/admin-dashboard.js');
+  const currentVersion=JSON.parse(await read('package.json')).version;
+  const checkDashboardCoupling=source=>{
+    const imports=[...source.matchAll(/^\s*import\s*\{\s*mountPrivateTripStudyCard\s*\}\s*from\s*['"]([^'"]+)['"]\s*;/gm)];
+    assert.equal(imports.length,1,'one normal private-study import');
+    assert.equal(imports[0][1],'./admin-private-trip-study.js?v='+currentVersion);
+    const render=source.match(/^function render\(\)\{[^\n]+\}/m)?.[0];assert(render,'actual normal render');
+    const learningStart=source.indexOf('function renderLearning(){'),learningEnd=source.indexOf('\n\nconst saveBadge=',learningStart);
+    assert(learningStart>=0&&learningEnd>learningStart,'actual learning renderer');
+    const calls=[],host={insertAdjacentHTML(){}},firstAccess={profile:{id:'synthetic-first',is_active:true,role:'owner'},permissions:new Set(['full_admin'])};
+    let learningCalls=0;
+    const context={state:{tab:'learning',stationMap:null,access:firstAccess},content:host,
+      analyzeObservations:()=>{learningCalls++;return{};},activePublicRavScoreState:()=>({ok:false}),
+      activeModelUnavailableCard:()=>'SYNTHETIC_UNAVAILABLE_MODEL',moduleGuide:()=>'',bindModuleGuide(){},
+      destroyCoastlineEditor(){},destroyDirectionMap(){},mountPrivateTripStudyCard(actualHost,access){
+        assert.equal(actualHost,host,'normal host');assert.equal(access,context.state.access,'same current access object');
+        calls.push({host:actualHost,access});
+      }};
+    for(const name of new Set([...render.matchAll(/(?:\:|\|\|)(render\w+)/g)].map(x=>x[1])))context[name]=()=>{};
+    const declarations=['adminTripCountRenderEpoch','disposeAdminTripCount','adminUserRenderEpoch','disposeAdminUserCategories']
+      .map(name=>{const actual=source.match(new RegExp('^let '+name+'=[^;]+;','m'))?.[0];assert(actual,name);return actual;}).join('\n');
+    const guards=['invalidateAdminTripCount','invalidateAdminUserCategories']
+      .map(name=>{const actual=source.match(new RegExp('^function '+name+'\\(\\)\\{[^\\n]+\\}','m'))?.[0];assert(actual,name);return actual;}).join('\n');
+    const sandbox=vm.createContext(context);
+    vm.runInContext(declarations+'\n'+guards+'\n'+source.slice(learningStart,learningEnd)+';'+render+';render();',sandbox);
+    assert.equal(calls.length,1,'one private-study mount on learning');assert.equal(calls[0].access,firstAccess);assert.equal(learningCalls,1);
+    const tabs=[...render.matchAll(/(?:\{|,)(\w+):render\w+/g)].map(x=>x[1]);assert(tabs.includes('learning')&&tabs.includes('dashboard'));
+    for(const tab of tabs.filter(name=>name!=='learning')){context.state.tab=tab;vm.runInContext('render();',sandbox);assert.equal(calls.length,1,'no private-study mount on '+tab);}
+    assert.equal(learningCalls,1,'other tabs do not run learning');
+    const nextAccess={profile:{id:'synthetic-next',is_active:true,role:'owner'},permissions:new Set(['full_admin'])};
+    context.state.access=nextAccess;context.state.tab='learning';vm.runInContext('render();',sandbox);
+    assert.equal(calls.length,2,'returning to learning mounts once');assert.equal(calls[1].access,nextAccess);assert.equal(learningCalls,2);
+  };
+  checkDashboardCoupling(dashboard);
+  const mount="if(state.tab==='learning')mountPrivateTripStudyCard(content,state.access);";
+  assert.equal(dashboard.split(mount).length,2);
+  for(const [label,changed]of[
+    ['removed',dashboard.replace(mount,'')],['duplicated',dashboard.replace(mount,mount+mount)],
+    ['unconditional',dashboard.replace(mount,'mountPrivateTripStudyCard(content,state.access);')],
+    ['wrong-access',dashboard.replace(mount,"if(state.tab==='learning')mountPrivateTripStudyCard(content,{});")],
+    ['wrong-host',dashboard.replace(mount,"if(state.tab==='learning')mountPrivateTripStudyCard({},state.access);")],
+    ['misrouted-learning',dashboard.replace('learning:renderLearning','learning:renderDashboard')],
+    ['removed-import',dashboard.replace(importsForMutation(dashboard),'')],
+  ])assert.throws(()=>checkDashboardCoupling(changed),undefined,label);
+  function importsForMutation(source){const line=source.match(/^import \{ mountPrivateTripStudyCard \} from [^\n]+\n/m)?.[0];assert(line);return line;}
+  // Demonstrate scope independence: unrelated text/format additions are not
+  // authorization or export regressions and need no five-version inverse.
+  checkDashboardCoupling(dashboard+'\n// SYNTHETIC_UNRELATED_APPEND\n');
+  assert(dashboard.includes('Ture i lokalt datagrundlag'));
+  checkDashboardCoupling(dashboard.replace('Ture i lokalt datagrundlag','Ture i lokalt datagrundlag · syntetisk visningstekst'));
+  // This existing normal target previously had only a package-script entry.
+  // The normal source callers now executes its loading/failure/retry/draft
+  // regression exactly once, without another workflow or broad test chain.
+  await import('./test-admin-initial-dashboard-4.0.77.mjs');
+  }
 });
 
 // TEST ONLY: qualify the real fixed588 plan before the unchanged587/586 oracles.

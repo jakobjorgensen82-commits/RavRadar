@@ -1,0 +1,115 @@
+{
+  "kind": "PRIVATE_TRIP_STUDY_007_TEST_ONLY_INVERSE",
+  "file": "scripts/deploy-private-trip-study.mjs",
+  "beforeSha256": "1dc1101146afbda2ff242cc759b0dfb1e7b172a93ab430a041778ef1e36a01f8",
+  "afterSha256": "18f6526742667dc0c40a41e2ff2985c1c1ce431d5ceb5c0c349b88de988a7a0f",
+  "edits": [
+    {
+      "before": "const BINDING_INTENT='/tmp/ravradar-private-trip-study-job-binding-apply-intent.json';",
+      "after": "const BINDING_INTENT='/tmp/ravradar-private-trip-study-job-binding-apply-intent.json';\nconst CATEGORICAL_INTENT='/tmp/ravradar-private-trip-study-categorical-apply-intent.json';"
+    },
+    {
+      "before": "const UUID=/^[a-f0-9]",
+      "after": "const CATEGORICAL_MIGRATION='cloudflare/trip-gateway/migrations/007_trip_weather_aggregate_categorical_policy.sql';\nconst CATEGORICAL_MIGRATION_SHA='02af90118f981854da39edfde264480b89966fa9f336c0e6163de361569eb67e';\nconst UUID=/^[a-f0-9]"
+    },
+    {
+      "before": "const STATS_TABLES=['trip_weather_aggregate_policy_anchor'",
+      "after": "const STATS_TABLES=['trip_weather_aggregate_categorical_policy_anchor','trip_weather_aggregate_policy_anchor'"
+    },
+    {
+      "before": "  if(!Array.isArray(rows)||rows.length>41)throw fail('SCHEMA_METADATA');",
+      "after": "  if(!Array.isArray(rows)||rows.length>46\n    ||new Set(rows.map(row=>row?.name)).size!==rows.length)throw fail('SCHEMA_METADATA');"
+    },
+    {
+      "before": "  const initial=fs.readFileSync(INITIAL_MIGRATION),jobs=fs.readFileSync(JOBS_MIGRATION),binding=fs.readFileSync(BINDING_MIGRATION);",
+      "after": "  const initial=fs.readFileSync(INITIAL_MIGRATION),jobs=fs.readFileSync(JOBS_MIGRATION),binding=fs.readFileSync(BINDING_MIGRATION),\n    categorical=fs.readFileSync(CATEGORICAL_MIGRATION);"
+    },
+    {
+      "before": "    ||hash(binding)!==BINDING_MIGRATION_SHA)throw fail('MIGRATION_SOURCE');",
+      "after": "    ||hash(binding)!==BINDING_MIGRATION_SHA||hash(categorical)!==CATEGORICAL_MIGRATION_SHA)throw fail('MIGRATION_SOURCE');"
+    },
+    {
+      "before": "    return{migration:bytes.toString('utf8'),metadata,anchor,jobsMigration:jobs.toString('utf8'),jobsMetadata,\n      bindingMigration:binding.toString('utf8'),bindingMetadata:normalized(database.prepare(META_SQL).all().map(row=>({...row})))};",
+      "after": "    const bindingMetadata=normalized(database.prepare(META_SQL).all().map(row=>({...row})));\n    database.exec(categorical.toString('utf8'));\n    return{migration:bytes.toString('utf8'),metadata,anchor,jobsMigration:jobs.toString('utf8'),jobsMetadata,\n      bindingMigration:binding.toString('utf8'),bindingMetadata,categoricalMigration:categorical.toString('utf8'),\n      categoricalMetadata:normalized(database.prepare(META_SQL).all().map(row=>({...row}))),\n      categoricalAnchor:database.prepare('select * from trip_weather_aggregate_categorical_policy_anchor').all().map(row=>({...row}))};"
+    },
+    {
+      "before": "    :isDeepStrictEqual(current,model.bindingMetadata)?'EXACT_004_005_006':'UNKNOWN';",
+      "after": "    :isDeepStrictEqual(current,model.bindingMetadata)?'EXACT_004_005_006'\n    :isDeepStrictEqual(current,model.categoricalMetadata)?'EXACT_004_005_006_007':'UNKNOWN';"
+    },
+    {
+      "before": "    expectedBindingControlSchemaSha256:hash(canonical(model.bindingMetadata))};",
+      "after": "    expectedBindingControlSchemaSha256:hash(canonical(model.bindingMetadata)),\n    expectedCategoricalControlSchemaSha256:hash(canonical(model.categoricalMetadata))};"
+    },
+    {
+      "before": "export function privateTripStudyMigrationSteps(state,{allow004=false,allow005=false,allow006=false}={}){\n  if(!['ABSENT','EXACT','EXACT_004_005','EXACT_004_005_006'].includes(state)\n    ||typeof allow004!=='boolean'||typeof allow005!=='boolean'||typeof allow006!=='boolean')throw fail('AUTHORITY');",
+      "after": "export function privateTripStudyMigrationSteps(state,{allow004=false,allow005=false,allow006=false,allow007=false}={}){\n  if(!['ABSENT','EXACT','EXACT_004_005','EXACT_004_005_006','EXACT_004_005_006_007'].includes(state)\n    ||typeof allow004!=='boolean'||typeof allow005!=='boolean'||typeof allow006!=='boolean'||typeof allow007!=='boolean')throw fail('AUTHORITY');\n  //007 er kun en efterf\u00f8lger til faktisk genl\u00e6st006, aldrig samlet bootstrap.\n  if(allow007&&!['EXACT_004_005_006','EXACT_004_005_006_007'].includes(state))throw fail('006_REQUIRED_BEFORE_007');"
+    },
+    {
+      "before": "  const jobsInstalled=['EXACT_004_005','EXACT_004_005_006'].includes(state);",
+      "after": "  const jobsInstalled=['EXACT_004_005','EXACT_004_005_006','EXACT_004_005_006_007'].includes(state),\n    bindingInstalled=['EXACT_004_005_006','EXACT_004_005_006_007'].includes(state);"
+    },
+    {
+      "before": "    ...(state!=='EXACT_004_005_006'&&allow006?['006']:[])]);",
+      "after": "    ...(!bindingInstalled&&allow006?['006']:[]),...(state!=='EXACT_004_005_006_007'&&allow007?['007']:[])]);"
+    },
+    {
+      "before": "  env.TRIP_PRIVATE_STUDY_JOB_BINDING_APPLY_ALLOWED??='false';",
+      "after": "  env.TRIP_PRIVATE_STUDY_JOB_BINDING_APPLY_ALLOWED??='false';\n  env.TRIP_PRIVATE_STUDY_CATEGORICAL_APPLY_ALLOWED??='false';"
+    },
+    {
+      "before": "    desiredSchemaState='EXACT',jobsDdlApplied=false,bindingDdlApplied=false;",
+      "after": "    desiredSchemaState='EXACT',jobsDdlApplied=false,bindingDdlApplied=false,categoricalDdlApplied=false;"
+    },
+    {
+      "before": "      ||!['true','false'].includes(env.TRIP_PRIVATE_STUDY_JOB_BINDING_APPLY_ALLOWED))throw fail('AUTHORITY');",
+      "after": "      ||!['true','false'].includes(env.TRIP_PRIVATE_STUDY_JOB_BINDING_APPLY_ALLOWED)\n      ||!['true','false'].includes(env.TRIP_PRIVATE_STUDY_CATEGORICAL_APPLY_ALLOWED))throw fail('AUTHORITY');"
+    },
+    {
+      "before": "    if(['EXACT','EXACT_004_005','EXACT_004_005_006'].includes(classification.state)){",
+      "after": "    if(['EXACT','EXACT_004_005','EXACT_004_005_006','EXACT_004_005_006_007'].includes(classification.state)){"
+    },
+    {
+      "before": "      if(!isDeepStrictEqual(anchor,model.anchor))throw fail('POLICY_ANCHOR_CHANGED');\n    }\n    return classification;",
+      "after": "      if(!isDeepStrictEqual(anchor,model.anchor))throw fail('POLICY_ANCHOR_CHANGED');\n    }\n    if(classification.state==='EXACT_004_005_006_007'){\n      const anchor=await query(0,'select * from trip_weather_aggregate_categorical_policy_anchor');\n      if(!isDeepStrictEqual(anchor,model.categoricalAnchor))throw fail('CATEGORICAL_POLICY_ANCHOR_CHANGED');\n    }\n    return classification;"
+    },
+    {
+      "before": "      originalJobBindingReady:before.state==='EXACT_004_005_006',",
+      "after": "      originalJobBindingReady:['EXACT_004_005_006','EXACT_004_005_006_007'].includes(before.state),\n      categoricalMigrationSha256:CATEGORICAL_MIGRATION_SHA,categoricalPolicyReady:before.state==='EXACT_004_005_006_007',"
+    },
+    {
+      "before": "      allow006:env.TRIP_PRIVATE_STUDY_JOB_BINDING_APPLY_ALLOWED==='true'});\n    desiredSchemaState=before.state==='EXACT_004_005_006'||migrationSteps.includes('006')?'EXACT_004_005_006'",
+      "after": "      allow006:env.TRIP_PRIVATE_STUDY_JOB_BINDING_APPLY_ALLOWED==='true',\n      allow007:env.TRIP_PRIVATE_STUDY_CATEGORICAL_APPLY_ALLOWED==='true'});\n    desiredSchemaState=before.state==='EXACT_004_005_006_007'||migrationSteps.includes('007')?'EXACT_004_005_006_007'\n      :before.state==='EXACT_004_005_006'||migrationSteps.includes('006')?'EXACT_004_005_006'"
+    },
+    {
+      "before": "    if(migrationSteps.includes('006')){stage='PRE_BINDING_WORKER_OFF';await attest(currentVersion,true);}",
+      "after": "    if(migrationSteps.includes('006')){stage='PRE_BINDING_WORKER_OFF';await attest(currentVersion,true);}\n    if(migrationSteps.includes('007')){stage='PRE_CATEGORICAL_WORKER_OFF';await attest(currentVersion,true);}"
+    },
+    {
+      "before": "      const jobs=migration==='005',binding=migration==='006';\n      stage=migration+'_APPLY_INTENT';fs.writeFileSync(binding?BINDING_INTENT:jobs?JOBS_INTENT:INTENT,JSON.stringify(plan)+'\\n',{flag:'wx',mode:0o600});",
+      "after": "      if(migration==='007'){\n        await verifySchema('EXACT_004_005_006');await attest(currentVersion,true);exactMain();lease(600);\n      }\n      const jobs=migration==='005',binding=migration==='006',categorical=migration==='007';\n      stage=migration+'_APPLY_INTENT';fs.writeFileSync(categorical?CATEGORICAL_INTENT:binding?BINDING_INTENT:jobs?JOBS_INTENT:INTENT,JSON.stringify(plan)+'\\n',{flag:'wx',mode:0o600});"
+    },
+    {
+      "before": "      const result=await cf('/d1/database/'+config.d1_databases[0].database_id+'/query',{sql:binding?model.bindingMigration:jobs?model.jobsMigration:model.migration});\n      if(!result.length||result.length>64||result.some(row=>row?.success!==true))throw fail(stage);\n      await verifySchema(binding?'EXACT_004_005_006':jobs?'EXACT_004_005':'EXACT');\n      if(jobs)jobsDdlApplied=true;if(binding)bindingDdlApplied=true;",
+      "after": "      const result=await cf('/d1/database/'+config.d1_databases[0].database_id+'/query',{sql:categorical?model.categoricalMigration:binding?model.bindingMigration:jobs?model.jobsMigration:model.migration});\n      if(!result.length||result.length>64||result.some(row=>row?.success!==true))throw fail(stage);\n      await verifySchema(categorical?'EXACT_004_005_006_007':binding?'EXACT_004_005_006':jobs?'EXACT_004_005':'EXACT');\n      if(jobs)jobsDdlApplied=true;if(binding)bindingDdlApplied=true;if(categorical)categoricalDdlApplied=true;"
+    },
+    {
+      "before": "      originalJobBindingReady:desiredSchemaState==='EXACT_004_005_006',",
+      "after": "      originalJobBindingReady:['EXACT_004_005_006','EXACT_004_005_006_007'].includes(desiredSchemaState),\n      categoricalMigrationSha256:CATEGORICAL_MIGRATION_SHA,categoricalDdlApplied,\n      categoricalPolicyReady:desiredSchemaState==='EXACT_004_005_006_007',"
+    }
+  ],
+  "workflow": {
+    "file": ".github/workflows/private-trip-weather-study.yml",
+    "beforeSha256": "bdde67e93ae059a520e21305af42c1566080faa0da786fc670d7f28dc0285949",
+    "afterSha256": "ad0a549d5b61055a2549de9fc9c8263db7958aced5bea72992d0d9a9207a8859",
+    "edits": [
+      {
+        "before": "",
+        "after": "      allow_007:\n        description: Tillad kun007 efter faktisk006 og Worker-OFF; statistik og budgetfrigivelse forbliver sl\u00e5et fra\n        type: boolean\n        default: false\n"
+      },
+      {
+        "before": "",
+        "after": "      TRIP_PRIVATE_STUDY_CATEGORICAL_APPLY_ALLOWED: ${{ inputs.allow_007 && 'true' || 'false' }}\n"
+      }
+    ]
+  }
+}

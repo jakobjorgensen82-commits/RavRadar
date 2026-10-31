@@ -1,3 +1,13 @@
+## 31. oktober — privat594-kandidat til genbrug af uændret databaseprøve
+
+Den kontrollerede594-installation er faktisk gennemført og databasebindingen genlæst med bevarede autentiske591-originaler. Aktuel offentlig vejrlevering, writer og cron aflæses fortsat i det private checkpoint. Denne nye kildekandidat er en særskilt kontrolforbedring sammen med de gennemgåede admin-/brugerdatarettelser; den ændrer ikke modelbindingen igen.
+
+Den normale nativekalder får en egen fremadrettet594-V2. Den binder66 hele moduler, fem datafiler,72 uændrede PostgreSQL-filer,13 ægte frosne kildeankre, kontrolbytes, package-scopes, runtime og de faktisk valgte PostgreSQL-programmer før/efter oprydning. Genbrug kræver en frisk verificeret oprindelig EXECUTED-V2-fase og dens faktiske upload. V1 og gamle593-beviser ommærkes ikke. Native- og nationalkvitteringer bevarer forskellen mellem faktisk eksekvering, genbrug og historisk nationalt omfang.
+
+De to normale lokale læser-/baselineprøver har54 PASS; en ny særskilt transportprøve har1 PASS uden ny SQL-eksekvering. Den første faktiske Linux-V2-oprindelse, senere genbrug og målt kortere gennemløbstid er åbne. Dette løser ikke alene den langsomme første kvalifikation eller den bredere udtynding. Ejerens afvisning af flere timers kontrol skal omsættes til faktisk tidsgevinst; urørte områder må ikke automatisk genprøves. D1, PostgreSQL, historisk584-national og den aktuelle offentlige audit er særskilte påvirkningsdomæner.
+
+Ingen ny version/C/I/T, vejr-/scoreværdi, PostgreSQL-migration, kildeprioritet, adminpunkt eller geometri ændres. SOURCE, statistikindsamling og automatisk sletning aktiveres ikke. Den særskilte007-D1-kilde i brugerdatarettelsen er fortsat OFF/UNISSUED og installeres ikke af sourcekontrollen. Alle fem mål er åbne. Se DEC-0302 og håndbog89.292; detaljerede tider og kørselsidentiteter føres privat.
+
 ## 31. oktober — ny efterfølger med installeret 593 og autentiske 591-originaler
 
 Databasen har faktisk installeret 593, mens seneste autentiske originale vejrpakke B, beregningstilstand S og offentlige generation fortsat er 591. De er to forskellige forgængerroller. Der findes ingen593-original, som må opfindes eller bruges som førskrivningsbevis.
