@@ -1,3 +1,11 @@
+## 31. oktober — kontrolvejen er kildeleveret; reservens deadline testes deterministisk
+
+Den afgrænsede ændringsbaserede kontrolvej har bestået sin fulde kildekvalifikation og er lagt i main. Det er ikke bevis for en faktisk senere TARGETED-levering, automatisk nativegenbrug eller målt tidsbesparelse. De første korte profiler er fortsat afgrænsede; ukendt eller fælles påvirkning vælger fuldt omfang. Vejrhentningens separate originalovergang er ikke løst af denne kontrollevering.
+
+En efterfølgende kildekontrol fandt en tidsfølsom antagelse i Open-Meteo-PART-prøven: den krævede mindst én HTTP-start inden for 80 ms, selv om normal banklæsning og første checkpoint indgår i samme frist. Den lokale testrettelse styrer alene testens monotone ur under rigtig bank-I/O. Setup på 0/79/80/81 ms kræver præcist 1/1/0/0 starter; uændret pacing afviser næste start. Requests, udskudte opgaver, bank og cursor skal følge faktisk start. Produktkode, 800-loft, 150-ms-pacing, samlet deadline og parameterafslag ændres ikke.
+
+Førfejlen er reproduceret gennem normal forsinket banklæsning; den rettede normale prøve og konkrete negative mutationer består lokalt. Den præcise nye GitHub-kvalifikation og offentlig effekt er åbne. Ingen SQL- eller national produktionsprøve påstås udført eller genbrugt af dette lokale testbevis. Se DEC-0302; detaljeret drifts- og testbevis føres privat.
+
 ## 31. oktober — den private eksportprøve følger den aktuelle adminkalder
 
 En konkret sourcefejl var en for bred testkontrakt: privat eksport krævede gamle hele dashboardbytes og afviste en separat gennemgået indlæsningsrettelse. Lokal erstatning dækker de reelle aktuelle export-/render-/adgangsgrænser med negative mutationer og beholder installations-/publisheroraklerne uændret. Den nødvendige eksisterende initial-dashboard-målprøve er koblet ind i den normale CI-kalder. Luk først sourcefejlen efter grøn præcis normal CI; dette er ikke bevis for offentlig adminlevering eller færdig bredere kontroloprydning. Se DEC-0302.

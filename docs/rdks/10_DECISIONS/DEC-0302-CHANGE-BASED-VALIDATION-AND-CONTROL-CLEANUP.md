@@ -1,7 +1,7 @@
 # DEC-0302 – Ændringsbaseret validering og oprydning i kontroller
 
 **Dato:** 2026-10-30
-**Status:** Ejerbeslutning; teknisk indførelse under forberedelse
+**Status:** Afgrænset kontrolvej kildeleveret; faktisk målrettet levering og tidsvirkning åbne
 **Besluttet af:** Ejeren gennem direkte instruktioner i den aktuelle samtale
 
 ## Beslutning
@@ -32,6 +32,14 @@ En privat eksporttest skal beskytte den normale installations-/export-/adgangs- 
 En eksisterende målprøve er først en del af leveringsbeviset, når den faktisk er kaldt i den normale CI-vej. Den allerede forberedte initial-dashboard-prøve kobles derfor én gang til den eksisterende callers-deltest; der oprettes ikke et nyt bredt workflow eller en ekstra dyb suite. Dens normale loading/failure/retry/draft-adfærd skal faktisk udføres i den næste præcise sourcekvalifikation. Historiske model-/SQL-orakler i andre tests, metadata- og produktgates, gamle originaler og uforanderlige kildebanker ændres ikke. Lokal Node-afprøvning er fortsat ikke GitHub-/Linux-/offentlig leveringsbevis.
 
 En særskilt normal rollback-kontrol skal afvise gennem sine allerede eksisterende små metadata, før den åbner store payloads. Den konkrete lokale CLI-ændring flytter den uændrede afvisningsblok til en helper og læser tre små metadata før de seks kendte negative afvisninger og fem store payloads. Den fulde positive auditkrop, no-loss-/SQL-/modelgates og deres konkrete krav bevares byteuændret; en afvisning bliver ikke en accept. Den eksisterende normale målprøve er faktisk gennemført. Før-/efter-tidsgevinst er ikke målt og må ikke påstås. Det er en konkret failfast-forbedring, ikke tilladelse til at springe positiv kvalifikation eller datakontrol over.
+
+### Deterministisk normal reserveprøve — 31. oktober 2026
+
+Den afgrænsede ændringsbaserede kontrolvej har bestået sin fulde kildekvalifikation og er lagt i main. Det er ikke bevis for en faktisk senere TARGETED-levering, automatisk nativegenbrug eller målt tidsbesparelse. De første korte profiler er fortsat afgrænsede; ukendt eller fælles påvirkning vælger fuldt omfang. Vejrhentningens separate originalovergang er ikke løst af denne kontrollevering.
+
+En efterfølgende kildekontrol fandt en tidsfølsom antagelse i Open-Meteo-PART-prøven: den krævede mindst én HTTP-start inden for 80 ms, selv om normal banklæsning og første checkpoint indgår i samme frist. Den lokale testrettelse styrer alene testens monotone ur under rigtig bank-I/O. Setup på 0/79/80/81 ms kræver præcist 1/1/0/0 starter; uændret pacing afviser næste start. Requests, udskudte opgaver, bank og cursor skal følge faktisk start. Produktkode, 800-loft, 150-ms-pacing, samlet deadline og parameterafslag ændres ikke.
+
+Førfejlen er reproduceret gennem normal forsinket banklæsning; den rettede normale prøve og konkrete negative mutationer består lokalt. Den præcise nye GitHub-kvalifikation og offentlig effekt er åbne. Ingen SQL- eller national produktionsprøve påstås udført eller genbrugt af dette lokale testbevis. Se DEC-0302; detaljeret drifts- og testbevis føres privat.
 
 ## Produktion og leveringsgrænser
 
