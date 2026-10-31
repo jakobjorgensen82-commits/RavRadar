@@ -1,5 +1,7 @@
 # DEC-0302 – Ændringsbaseret validering og oprydning i kontroller
 
+De valgte mål køres fortsat én ad gangen, men producenten venter nu asynkront på hver proces’ faktiske close. Dermed kan forælderens timere og netforbindelser arbejde under prøverne. Program, argumenter, timeout og den strenge PASS-betingelse bevares. Den normale timerregression påviser den tidligere blokering; netfejlens konkrete årsag er endnu ikke bevist.
+
 Den første faktiske målrettede Linux-kørsel gennemførte de valgte prøver uden ny native SQL, men stoppede i den efterfølgende GitHub-genlæsning før udstedelse af kvitteringen. Den afgrænsede slutdiagnose skelner nu faste transport-/HTTP-kategorier uden rå fejltekst, nøgler eller svarindhold. Samme to læsninger, grænser og røde udfald bevares; ingen automatisk gentagelse eller påstand om offentlig levering. Den oprindelige transportårsag er fortsat ukendt; en ikke-reproduceret forbindelseshypotese giver ingen rettelsesautoritet.
 
 ### Afgrænset rettelse af genoptaget beregning

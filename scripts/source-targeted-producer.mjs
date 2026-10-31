@@ -3,7 +3,7 @@ import crypto from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
 import {fileURLToPath} from 'node:url';
-import {execFileSync,spawnSync} from 'node:child_process';
+import {execFileSync,spawn} from 'node:child_process';
 import {isDeepStrictEqual} from 'node:util';
 import {planSourceImpactFromGit} from './source-impact-git-diff.mjs';
 import {qualifySourceImpactFullBaseline,SOURCE_IMPACT_FULL_BASELINE_KIND} from './source-impact-full-baseline.mjs';
@@ -175,8 +175,13 @@ export async function coordinateTargetedSourceProducer(){
   for(const command of impactPlan.commands){
     assert.match(command,/^node(?: [A-Za-z0-9_./:-]+)+$/);
     clean(head);
-    const start=performance.now(),result=spawnSync(process.execPath,command.split(' ').slice(1),
-      {cwd:ROOT,stdio:'inherit',shell:false,timeout:300000});
+    const start=performance.now(),result=await new Promise(resolve=>{
+      let error=null;
+      const child=spawn(process.execPath,command.split(' ').slice(1),
+        {cwd:ROOT,stdio:'inherit',shell:false,timeout:300000});
+      child.once('error',value=>{error=value;});
+      child.once('close',(status,signal)=>resolve({status,signal,error}));
+    });
     const row={phase:'targeted',command,elapsedMs:Math.max(0,Math.round(performance.now()-start)),
       outcome:result.status===0&&!result.error&&!result.signal?'PASS':'FAIL'};
     console.log('SOURCE_TIME '+JSON.stringify(row));commandResults.push(row);

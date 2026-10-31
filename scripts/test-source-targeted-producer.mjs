@@ -215,7 +215,10 @@ try{
     SOURCE_GATE_HEAD_SHA:head,PULL_REQUEST_NUMBER:String(pr),GITHUB_RUN_ID:String(currentRun),GITHUB_RUN_ATTEMPT:'1',
     GITHUB_JOB:'validate',GITHUB_TOKEN:'synthetic-never-live'});globalThis.fetch=fakeFetch;
   ({coordinateTargetedSourceProducer:coordinate}=await import(pathToFileURL(path.join(root,'scripts/source-targeted-producer.mjs')).href));
-  const positive=await coordinate();assert.equal(positive.selection,'TARGETED');assert.equal(count(),5);
+  let parentTicks=0,positive;const parentHeartbeat=setInterval(()=>parentTicks++,5);
+  try{positive=await coordinate();}finally{clearInterval(parentHeartbeat);}
+  assert(parentTicks>0,'SOURCE_TARGETED_PARENT_EVENT_LOOP_BLOCKED');
+  assert.equal(positive.selection,'TARGETED');assert.equal(count(),5);
   assert.equal(positive.receipt.reportedCommandResults.length,5);assert.equal(positive.receipt.database.executed,false);
   assert.equal(positive.receipt.national.status,'NOT_APPLICABLE');assert.equal(positive.deliveryAuthority,false);
   assert(signedCalls>=2);executions+=count();cases++;
