@@ -100,15 +100,15 @@ test('normal closed domain planner handles real composition, one same-tree merge
     assert.deepEqual(run(changed).reasonCodes,['POSTGRES_OR_MODEL_INPUT_CHANGED']);
     // Age is not a rejection reason once a whole transition has been reviewed.
     // Keep the historical partial composition, but give it a genuinely unreviewed exact owner.
-    const unreviewed='scripts/test-workflow-validation-order-4.0.108.mjs';
+    const unreviewed='.github/workflows/reusable-pages-deploy.yml';
     const unreviewedBody=Buffer.concat([git(root,['cat-file','blob',LEGACY_REFERENCE+':'+unreviewed]),
-      Buffer.from('\n// Synthetic unreviewed whole workflow-test transition.\n')]);
+      Buffer.from('\n# Synthetic unreviewed whole Pages-workflow transition.\n')]);
     const obsoleteTree=rewrite(text(root,['rev-parse',LEGACY_REFERENCE+'^{tree}']),[...additions,[unreviewed,unreviewedBody]]);
     const obsolete=commit(obsoleteTree,[LEGACY_REFERENCE],'synthetic obsolete partial composition');
     git(root,['update-ref','HEAD',obsolete]);
     const refused=plan({baselineCommit:LEGACY_BASE,candidateCommit:obsolete,expectedHead:obsolete});
     assert.equal(refused.selection,'FULL');
-    assert.deepEqual(refused.reasonCodes,['UNKNOWN_EXACT_SOURCE_TRANSITION:scripts/test-workflow-validation-order-4.0.108.mjs']);
+    assert.deepEqual(refused.reasonCodes,['UNKNOWN_EXACT_SOURCE_TRANSITION:.github/workflows/reusable-pages-deploy.yml']);
   }finally{
     assert.equal(path.dirname(fs.realpathSync(root)),temporary);const current=fs.lstatSync(root,{bigint:true});
     assert.equal(current.dev,owned.dev);assert.equal(current.ino,owned.ino);assert.equal(current.birthtimeNs,owned.birthtimeNs);

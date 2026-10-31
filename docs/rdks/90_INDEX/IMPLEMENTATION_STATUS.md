@@ -6,7 +6,7 @@ Den lokale rettelse fører den allerede producerede kildeidentitet videre gennem
 
 ### Sikker genoptagelse efter stop før offentlig aktivering
 
-Den historiske negative kildeprøve må ikke kræve afvisning alene, fordi dens sammensætning er gammel: en senere gennemgået helfilovergang kan lovligt være registreret. Den bevarer derfor den gamle sammensætning med en konkret, ikke-gennemgået mutation af en præcis workflow-testejer og kræver fortsat FULL med den rigtige afvisningsårsag. Produktets kildegrænse og gamle negative database-/model-/importprøver ændres ikke; dette er en afgrænset testdatarettelse, ikke offentlig vejrlevering.
+Den historiske negative kildeprøve må ikke kræve afvisning alene, fordi dens sammensætning er gammel: en senere gennemgået helfilovergang kan lovligt være registreret. Den bevarer derfor den gamle sammensætning med en konkret, ikke-gennemgået mutation af en præcis workflowejer og kræver fortsat FULL med den rigtige afvisningsårsag. Produktets kildegrænse og gamle negative database-/model-/importprøver ændres ikke; dette er en afgrænset testdatarettelse, ikke offentlig vejrlevering.
 
 Den gemte beregning og dens originale producent bevares, selv om en senere kodeversion udfører leveringen. En ny executor må ikke ommærke den gamle producent eller genstarte leverandører og beregning. Den særskilte normale checkpoint-indgang bruger den eksisterende genoptagelseskalder og samme eksklusive produktionslås; den er kun vellykket, når der faktisk er gennemført en godkendt genoptagelseshandling.
 
