@@ -13,7 +13,7 @@ import {buildForecastSharePagesWranglerOnce,FORECAST_SHARE_PAGES_WRANGLER_PINS}
   from './lib/forecast-share-pages-wrangler-once.mjs';
 const ROOT=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
 const WORKFLOW='deploy-forecast-share-pages.yml';
-const WORKFLOW_SHA='6e7cd728269f4e6692f109382d7a7a867d7a38c2ebc3e00c8472cb794c84a135';
+const WORKFLOW_SHA='c42aef1818804e97a61c4ccf5f25b3c1d8e5d5d7f537340acea987cc48f9925e';
 const hash=v=>crypto.createHash('sha256').update(v).digest('hex');
 export function inverseForecastSharePagesWorkflowInventory(names,source){
   assert.equal(names.filter(x=>x===WORKFLOW).length,1);
@@ -225,6 +225,93 @@ const lostDeploy=await scenario('deploy-lost');assert.equal(lostDeploy.error,und
 assert.equal(lostDeploy.result.outcome,'COMMITTED_REPLY_LOST_READBACK_PROVED');assert.equal(lostDeploy.deploys,1);cases++;
 for(const kind of ['bad-alias','stop-unknown','functions-unproved']){const result=await scenario(kind);assert(result.error);
   assert.equal(result.creates,1);assert.equal(result.deploys,1);assert.equal(result.error.receipt.outcome,'UNKNOWN_NO_RETRY');cases++;}
+
+// Same normal controller, fixed project and owned one-shot process. The explicit
+// update identity comes from previously verified first-create/deployment receipts;
+// project discovery or a lost first-create reply alone never selects this mode.
+const predecessorId='33333333-3333-4333-8333-333333333333',predecessorCommit='d'.repeat(40);
+const updateEnv={...env,SHARE_OPERATION:'update',SHARE_CONFIRMATION:'UPDATE-FORECAST-SHARE-PAGES',
+  EXPECTED_PROJECT_ID:projectId,EXPECTED_DEPLOYMENT_ID:predecessorId,EXPECTED_DEPLOYMENT_COMMIT:predecessorCommit};
+assert.equal(assertForecastSharePagesAuthority(updateEnv),'update');
+for(const delta of [{SHARE_OPERATION:'other'},{SHARE_OPERATION:''},{SHARE_CONFIRMATION:env.SHARE_CONFIRMATION},
+  {EXPECTED_PROJECT_ID:''},{EXPECTED_PROJECT_ID:' foreign'},{EXPECTED_DEPLOYMENT_ID:undefined},
+  {EXPECTED_DEPLOYMENT_ID:'../deployments'},{EXPECTED_DEPLOYMENT_COMMIT:'d'.repeat(39)},{GITHUB_RUN_ATTEMPT:'2'}])
+  assert.throws(()=>assertForecastSharePagesAuthority({...updateEnv,...delta}));
+for(const key of ['EXPECTED_PROJECT_ID','EXPECTED_DEPLOYMENT_ID','EXPECTED_DEPLOYMENT_COMMIT'])
+  assert.throws(()=>assertForecastSharePagesAuthority({...env,[key]:updateEnv[key]}));cases++;
+
+async function updateScenario(kind){
+  let deployed=false,deploys=0,creates=0,projectReads=0,ghReads=0;const requests=[],receipts=[];
+  const predecessor=structuredClone(deployment);predecessor.id=predecessorId;
+  predecessor.deployment_trigger.metadata.commit_hash=predecessorCommit;
+  const current=()=>{const value=project(true),selected=kind==='already-deployed'||deployed?deployment:predecessor;
+    value.canonical_deployment=structuredClone(selected);value.latest_deployment=structuredClone(selected);return value;};
+  const fetchImpl=async(url,options)=>{
+    requests.push({url,method:options.method});assert.equal(options.redirect,'error');assert.equal(options.cache,'no-store');
+    if(url.startsWith('https://api.github.com/'))return json({ref:'refs/heads/main',object:{type:'commit',
+      sha:kind==='main-moved'&&++ghReads>1?'e'.repeat(40):commit}});
+    if(url==='https://ravradar.dk/data/live/manifest.json'){
+      const value=structuredClone(manifest);if(kind==='wrong-model')value.ravScoreModelBinding.modelBundleSha256='0'.repeat(64);return json(value);}
+    if(url.includes('/pages/projects?page=')){
+      if(kind==='permission')return json({success:false,errors:[{message:'RAW_PRIVATE'}]},403);
+      const page=Number(new URL(url).searchParams.get('page'));
+      return json(arrayPage(page===1?[{id:kind==='foreign-list'?'foreign-project':projectId,name:'ravradar-del'}]:[],
+        {page,per_page:100,count:page===1?1:0,total_count:1,total_pages:1}).value);}
+    if(url.endsWith('/pages/projects')&&options.method==='POST'){creates++;throw Error('Create forbidden for update');}
+    if(url.endsWith('/deployments/'+predecessorId)){
+      const value=structuredClone(predecessor);
+      if(kind==='wrong-predecessor-commit')value.deployment_trigger.metadata.commit_hash='e'.repeat(40);
+      if(kind==='wrong-predecessor-id')value.id=deploymentId;
+      return json({success:true,errors:[],result:value},kind==='missing-predecessor'?404:200);}
+    if(url.endsWith('/deployments/'+deploymentId))return json({success:true,errors:[],result:structuredClone(deployment)});
+    if(url.endsWith('/pages/projects/ravradar-del')){
+      const value=current();projectReads++;
+      if(kind==='foreign-project')value.id='foreign-project';
+      if(kind==='custom-domain')value.domains.push('del.ravradar.dk');
+      if(kind==='missing-domain')value.domains=[];
+      if(kind==='secret')value.deployment_configs.production.env_vars={PRIVATE:{type:'secret_text',value:'RAW_PRIVATE'}};
+      if(kind==='functions-unproved')value.uses_functions=null;
+      if(kind==='stale-latest')value.latest_deployment.id=deploymentId;
+      if(kind==='changed-current'||kind==='drift-before-write'&&projectReads===2)value.canonical_deployment.id='44444444-4444-4444-8444-444444444444';
+      if(kind==='bad-output'&&deployed)value.canonical_deployment.url='https://other.pages.dev';
+      if(kind==='drift-final'&&projectReads===4)value.id='foreign-project';
+      return json({success:true,errors:[],result:value});}
+    throw Error('Unexpected synthetic update request');
+  };
+  const deployImpl=async options=>{
+    deploys++;assert.equal(deploys,1);assert.equal(options.commitSha,commit);
+    assert.equal(options.env.GITHUB_TOKEN,undefined);assert.equal(options.env.CLOUDFLARE_API_BASE_URL,undefined);
+    if(kind!=='uncommitted-reply-lost')deployed=true;
+    if(kind==='reply-lost'||kind==='uncommitted-reply-lost')throw Object.assign(Error('RAW_PRIVATE'),{terminationConfirmed:true});
+    if(kind==='stop-unknown')throw Object.assign(Error('RAW_PRIVATE'),{terminationConfirmed:false});
+    return{terminationConfirmed:true};
+  };
+  let result,error;
+  try{result=await deployForecastSharePages({env:updateEnv,fetchImpl,deployImpl,git,now:()=>fixture.freshNow,report:x=>receipts.push(x)});}
+  catch(caught){error=caught;}
+  assert.equal(creates,0);assert(!JSON.stringify(receipts).includes('RAW_PRIVATE'));
+  assert(requests.every(x=>x.method==='GET'),'Update controller never creates or patches a project');
+  return{result,error,creates,deploys,requests,receipts};
+}
+const updated=await updateScenario('success');assert.equal(updated.error,undefined);assert.equal(updated.deploys,1);
+assert.equal(updated.result.operation,'update');assert.equal(updated.result.createIssued,false);
+assert.equal(updated.result.outcome,'DEPLOYED_READBACK_PROVED');assert.equal(updated.result.predecessorDeploymentId,predecessorId);
+assert.equal(updated.result.predecessorCommit,predecessorCommit);assert.equal(updated.result.hostedScoreProved,false);
+assert.equal(updated.result.freeCapacityProved,false);assert.equal(updated.result.dnsChanged,false);cases++;
+const alreadyUpdated=await updateScenario('already-deployed');assert.equal(alreadyUpdated.error,undefined);
+assert.equal(alreadyUpdated.deploys,0);assert.equal(alreadyUpdated.result.deployIssued,false);
+assert.equal(alreadyUpdated.result.terminationConfirmed,null);assert.equal(alreadyUpdated.result.outcome,'ALREADY_DEPLOYED_READBACK_PROVED');cases++;
+for(const kind of ['permission','foreign-list','foreign-project','custom-domain','missing-domain','secret','functions-unproved',
+  'wrong-predecessor-commit','wrong-predecessor-id','missing-predecessor','stale-latest','changed-current','drift-before-write','main-moved','wrong-model']){
+  const result=await updateScenario(kind);assert(result.error,kind);assert.equal(result.deploys,0,kind);
+  assert.equal(result.error.receipt.outcome,'REFUSED_BEFORE_WRITE',kind);cases++;
+}
+const updatedLost=await updateScenario('reply-lost');assert.equal(updatedLost.error,undefined);
+assert.equal(updatedLost.deploys,1);assert.equal(updatedLost.result.outcome,'COMMITTED_REPLY_LOST_READBACK_PROVED');cases++;
+for(const kind of ['stop-unknown','uncommitted-reply-lost','bad-output','drift-final']){
+  const result=await updateScenario(kind);assert(result.error,kind);assert.equal(result.deploys,1,kind);
+  assert.equal(result.error.receipt.outcome,'UNKNOWN_NO_RETRY',kind);cases++;
+}
 
 async function processScenario(scenario){
   const host=Object.assign(new EventEmitter(),{platform:'linux'}),child=Object.assign(new EventEmitter(),{pid:24444,unref(){}});

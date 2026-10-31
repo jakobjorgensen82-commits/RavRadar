@@ -1,4 +1,17 @@
+## 31. oktober — privat Pages-opdatering af det eksakt ejede projekt
+
+Den lokale kandidat tilføjer en særskilt update-handling til det eksisterende Pages-workflow. Standard create kræver stadig entydigt fravær og afviser et eksisterende projekt. Update kræver egen bekræftelse samt projekt-ID fra ROOTs faktisk vellykkede første create-kvittering og et tidligere verificeret deployment-ID/commit. Projekt, forgænger, canonical/latest, main og lokale input genlæses; præcis allerede leveret kode giver kun en fuldt genlæst no-op. Update opretter eller patcher aldrig et projekt, og ukendt write-/procesudfald bevarer UNKNOWN_NO_RETRY.
+
+Dette er lokal kildeforberedelse i pages.dev-fasen, ikke hosting eller offentlig levering. Customdomæne afvises fortsat; senere domænebinding, én Simply-CNAME, TLS og klient-/cachebusterlukning er åbne sammen med aktuel offentlig 594-kompatibilitet, legacy-Worker, hosted GET/HEAD/OG/robots, Facebook og målt delt Free-/CPU-kapacitet. Ingen ny version, C/I/T, migration, SQL-eksekvering, vejr-/scoreændring, geometri eller aktivering. Ældre create-only-beskrivelser er erstattet alene for denne kontrollerede kodeopdatering; alle eksisterende identitets- og sikkerhedsafslag består.
+
 ## 31. oktober — testvalg opdeles efter den faktiske ændring
+
+Plannerens normale syntetiske kompositionsprøve bruger nu den kvalificerede FULL-forfader og kandidatens hele committed kilde. To eksplicitte, uskadelige ejerændringer fastholder de oprindelige positive D1-/adminvalg, og samme-træ-merge samt alle negative mutationsprøver bevares. Den tidligere ufuldstændige blanding af gammel reference og få aktuelle filer er en udtrykkelig negativprøve; den giver ingen ny helfilgodkendelse. Produktplannerens beslutninger er uændrede, og kun de nye konkrete test-I/O registreres additivt. Den eksisterende lokale målprøve består; ny præcis Linux-kvalifikation og sikker levering er åbne.
+
+
+En kort kontrolkandidat skal før CI prøves gennem begge normale planer: den direkte ændring fra PR-basen og den kumulative ændring fra den kvalificerede FULL-forfader. En præcis helfilovergang kan have forskellige autentiske førbilleder ved disse grænser; hvert godkendt par bindes særskilt og giver ingen generel normalisering. Kun at kvalificere den kumulative plan kan ellers sende den normale producent til FULL før forfadersøgningen. En sådan fallback viser nu sin faste årsagskode uden rå fejltekst eller private oplysninger.
+
+Den korte kontrol af den præcise kildepinrettelse kalder nu sin egen normale lille prøve i stedet for det brede workflowmål med implicitte delings-, GCM- og genoptagelsesprøver. Begge pintrin og alle ti negative mutationer bevares i én leaf, importeret én gang af det uændrede brede mål. Hele den tidligere FULL-testbody er bytebevaret. Modefixturen bruger sit direkte normale mål. Kun de gennemgåede hele workflow-/testovergange kan vælge denne rute; ukendt ændring kræver fortsat FULL. De eksisterende konservative kilde-/ressourceafhængigheder bevares, ligesom PostgreSQL- og modelinput. Dette er en ny kontrolkandidat og kræver egen præcis kvalifikation før levering.
 
 En negativprøve for Git-filers executable-mode skal have samme mode på arbejdsfilen og i indeks/commit samt bevise rent checkout, før den forventer afvisning af en leveringsfils mode. Kun at ændre indekset efterlader på Linux en anden, tidligere afvisningsgrund. Testfixturen følger nu denne rækkefølge; produktets clean-head-kontrol og forventede modeafvisning bevares.
 

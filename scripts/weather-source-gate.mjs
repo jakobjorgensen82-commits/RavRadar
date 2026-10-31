@@ -98,6 +98,7 @@ if (mode === 'digest' || mode === 'impact-digest') {
       ? 'Created separate domain receipt; exact command results are reported per domain; PostgreSQL and historical national execution are not claimed.'
       : 'Created separate targeted source receipt; database and national execution are not claimed.');
   } else {
+    if (impact?.selection === 'FULL') console.log('Source impact FULL fallback: ' + impact.reasonCode);
     const sourceTreeSha256 = sourceTreeContentSha256('HEAD');
     const artifactName = sourceTreeProofArtifactName({
       pullRequestNumber,

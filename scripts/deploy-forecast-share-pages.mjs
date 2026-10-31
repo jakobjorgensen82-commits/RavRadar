@@ -26,14 +26,22 @@ const unconfigured=v=>v===undefined||v===null||empty(v);
 const sha=v=>crypto.createHash('sha256').update(v).digest('hex');
 const need=(v,code)=>{if(!v)throw fail('SHARE_PAGES_'+code);};
 export function assertForecastSharePagesAuthority(env){
+  const operation=env.SHARE_OPERATION??'create';
+  need(operation==='create'||operation==='update','OPERATION');
+  if(operation==='update')need(projectId(env.EXPECTED_PROJECT_ID)
+    &&UUID.test(env.EXPECTED_DEPLOYMENT_ID??'')&&SHA.test(env.EXPECTED_DEPLOYMENT_COMMIT??''),'UPDATE_IDENTITY');
+  else need(['EXPECTED_PROJECT_ID','EXPECTED_DEPLOYMENT_ID','EXPECTED_DEPLOYMENT_COMMIT']
+    .every(key=>env[key]===undefined||env[key]===''),'CREATE_IDENTITY');
   need(env.GITHUB_REPOSITORY===REPO&&env.GITHUB_EVENT_NAME==='workflow_dispatch'
     &&env.GITHUB_WORKFLOW==='Deploy RavRadar forecast sharing Pages'&&env.GITHUB_JOB==='deploy-share-pages'
     &&env.GITHUB_REF==='refs/heads/main'&&env.GITHUB_RUN_ATTEMPT==='1'
     &&/^[1-9][0-9]*$/.test(env.GITHUB_RUN_ID??'')&&SHA.test(env.EXPECTED_MAIN??'')
-    &&env.GITHUB_SHA===env.EXPECTED_MAIN&&env.SHARE_CONFIRMATION==='DEPLOY-FORECAST-SHARE-PAGES'
+    &&env.GITHUB_SHA===env.EXPECTED_MAIN&&env.SHARE_CONFIRMATION===(operation==='create'
+      ?'DEPLOY-FORECAST-SHARE-PAGES':'UPDATE-FORECAST-SHARE-PAGES')
     &&env.SOURCE_REQUIRED==='false'&&/^[a-f0-9]{32}$/.test(env.CLOUDFLARE_ACCOUNT_ID??'')
     &&typeof env.CLOUDFLARE_API_TOKEN==='string'&&env.CLOUDFLARE_API_TOKEN.length>0
     &&typeof env.GITHUB_TOKEN==='string'&&env.GITHUB_TOKEN.length>0,'AUTHORITY');
+  return operation;
 }
 export function assertForecastSharePagesConfig(value){
   assert.deepEqual(value,{name:FORECAST_SHARE_PAGES_PROJECT,pages_build_output_dir:'./public',
@@ -168,11 +176,11 @@ export async function completeForecastSharePagesList(read){
 export async function deployForecastSharePages({env=process.env,fetchImpl=globalThis.fetch,
   deployImpl=deployForecastSharePagesProcess,git=args=>{const text=execFileSync('git',args,{cwd:ROOT,encoding:'utf8'});return args[0]==='show'?text:text.trimEnd();},
   now=()=>Date.now(),report=()=>{}}={}){
-  let stage='AUTHORITY',createIssued=false,deployIssued=false,terminationConfirmed=null,ownedId=null;
+  let stage='AUTHORITY',operation=null,createIssued=false,deployIssued=false,terminationConfirmed=null,ownedId=null;
   let readback='NOT_ATTEMPTED',lastKind=null,httpStatus=null;
   const emit=value=>report(value);
   try{
-    assertForecastSharePagesAuthority(env);const commit=env.EXPECTED_MAIN;
+    operation=assertForecastSharePagesAuthority(env);const commit=env.EXPECTED_MAIN;
     const inventory=forecastSharePagesInventory(git,commit);
     const ghHeaders={Authorization:'Bearer '+env.GITHUB_TOKEN,Accept:'application/vnd.github+json','X-GitHub-Api-Version':'2022-11-28'};
     const freshMain=async()=>{
@@ -195,6 +203,18 @@ export async function deployForecastSharePages({env=process.env,fetchImpl=global
     const manifest=manifestRead.value;assertRavScoreModelBinding(manifest.ravScoreModelBinding);
     selectPublicRuntimeAvailability(manifest,{modelBinding:ravScoreModelBinding(),now:now()});
     const projects=await completeForecastSharePagesList(read);
+    let alreadyDeployed=false,selected;
+    // An update requires the exact owned identity recorded after a successful
+    // first create. Discovery alone never adopts an existing project. This
+    // first update phase intentionally retains the pages.dev-only host guard.
+    const pinnedCurrent=(value,deploymentId,deploymentCommit)=>{
+      assertForecastSharePagesRemoteProject(value,ownedId);
+      need(value.domains.length===1,'UPDATE_DOMAINS');
+      need(value.uses_functions===true,'FUNCTIONS_UNPROVED');
+      need(assertForecastSharePagesDeployment(value.canonical_deployment,ownedId,deploymentCommit)===deploymentId
+        &&value.latest_deployment?.id===deploymentId,'PREDECESSOR_CHANGED');
+    };
+    if(operation==='create'){
     need(!projects.some(row=>row.name===FORECAST_SHARE_PAGES_PROJECT),'PROJECT_ALREADY_EXISTS');
     const absence=await read(projectPath,'PROJECT_ABSENCE');
     need(absence.status===404&&absence.value?.success===false&&Array.isArray(absence.value.errors)
@@ -216,17 +236,34 @@ export async function deployForecastSharePages({env=process.env,fetchImpl=global
       try{const observed=await read(projectPath,'CREATE_READBACK');readback=observed.status===200?'PRESENT_UNOWNED':observed.status===404?'ABSENT':'UNKNOWN';}catch{readback='UNKNOWN';}
       throw error;
     }
-    const selected=await readResult(projectPath,'OWNED_PROJECT_READBACK');
+    selected=await readResult(projectPath,'OWNED_PROJECT_READBACK');
     assertForecastSharePagesRemoteProject(selected,ownedId);
     need(!selected.canonical_deployment&&!selected.latest_deployment,'PREEXISTING_DEPLOYMENT');
+    }else{
+      const row=projects.find(row=>row.name===FORECAST_SHARE_PAGES_PROJECT);
+      need(row?.id===env.EXPECTED_PROJECT_ID,'UPDATE_PROJECT_IDENTITY');
+      selected=await readResult(projectPath,'UPDATE_PROJECT_READBACK');
+      assertForecastSharePagesRemoteProject(selected,env.EXPECTED_PROJECT_ID);ownedId=env.EXPECTED_PROJECT_ID;
+      const predecessor=await readResult(projectPath+'/deployments/'+env.EXPECTED_DEPLOYMENT_ID,'UPDATE_PREDECESSOR_DETAIL');
+      need(assertForecastSharePagesDeployment(predecessor,ownedId,env.EXPECTED_DEPLOYMENT_COMMIT)
+        ===env.EXPECTED_DEPLOYMENT_ID,'UPDATE_PREDECESSOR');
+      alreadyDeployed=selected.canonical_deployment?.deployment_trigger?.metadata?.commit_hash===commit;
+      pinnedCurrent(selected,alreadyDeployed?selected.canonical_deployment.id:env.EXPECTED_DEPLOYMENT_ID,
+        alreadyDeployed?commit:env.EXPECTED_DEPLOYMENT_COMMIT);
+    }
     await freshMain();assert.deepEqual(forecastSharePagesInventory(git,commit),inventory);
+    if(operation==='update'){
+      const current=await readResult(projectPath,'UPDATE_PROJECT_PREWRITE');
+      pinnedCurrent(current,selected.canonical_deployment.id,alreadyDeployed?commit:env.EXPECTED_DEPLOYMENT_COMMIT);
+    }
     const deployEnv=Object.fromEntries(['PATH','HOME','USERPROFILE','SystemRoot','WINDIR','TEMP','TMP','TMPDIR','LANG','LC_ALL',
       'RUNNER_TEMP','GITHUB_RUN_ID','GITHUB_RUN_ATTEMPT','CLOUDFLARE_ACCOUNT_ID','CLOUDFLARE_API_TOKEN']
       .filter(key=>typeof env[key]==='string').map(key=>[key,env[key]]));
     Object.assign(deployEnv,{CI:'true',WRANGLER_SEND_METRICS:'false',NO_COLOR:'1'});
+    let deployFailed=false;
+    if(!alreadyDeployed){
     stage='DEPLOY';deployIssued=true;terminationConfirmed=false;
     emit({kind:'FORECAST_SHARE_PAGES_WRITE_INTENT_V1',stage,sourceSha:commit,projectId:ownedId,createIssued,deployIssued,terminationConfirmed});
-    let deployFailed=false;
     try{const result=await deployImpl({commitSha:commit,env:deployEnv});terminationConfirmed=result?.terminationConfirmed===true;}
     catch(error){terminationConfirmed=error?.terminationConfirmed===true;deployFailed=true;}
     if(!terminationConfirmed){
@@ -234,34 +271,41 @@ export async function deployForecastSharePages({env=process.env,fetchImpl=global
         readback=observed.status===200?'PRESENT_PROCESS_UNCONFIRMED':'UNKNOWN';}catch{readback='UNKNOWN';}
     }
     need(terminationConfirmed,'DEPLOY_STOP_UNKNOWN');
+    }
     stage='DEPLOY_READBACK';
     const remote=await readResult(projectPath,'DEPLOY_PROJECT');
     assertForecastSharePagesRemoteProject(remote,ownedId);
+    if(operation==='update')pinnedCurrent(remote,remote.canonical_deployment?.id,commit);
     need(remote.uses_functions===true,'FUNCTIONS_UNPROVED');
     const deploymentId=assertForecastSharePagesDeployment(remote.canonical_deployment,ownedId,commit);
     const deployment=await readResult(projectPath+'/deployments/'+deploymentId,'DEPLOYMENT_DETAIL');
     need(assertForecastSharePagesDeployment(deployment,ownedId,commit)===deploymentId,'DEPLOYMENT_CHANGED');
     need(remote.latest_deployment?.id===deploymentId,'LATEST_DEPLOYMENT_CHANGED');
-    await freshMain();assert.deepEqual(forecastSharePagesInventory(git,commit,{afterDeployment:true}),inventory);
+    await freshMain();assert.deepEqual(forecastSharePagesInventory(git,commit,{afterDeployment:deployIssued}),inventory);
     const final=await readResult(projectPath,'FINAL_PROJECT');
     assertForecastSharePagesRemoteProject(final,ownedId);
+    if(operation==='update')pinnedCurrent(final,deploymentId,commit);
     need(final.uses_functions===true,'FUNCTIONS_UNPROVED');
     need(assertForecastSharePagesDeployment(final.canonical_deployment,ownedId,commit)===deploymentId
       &&final.latest_deployment?.id===deploymentId,'FINAL_DEPLOYMENT_CHANGED');
     stage='COMPLETE';readback='DEPLOYMENT_PROVED';
     const receipt={kind:'FORECAST_SHARE_PAGES_RELEASE_READBACK_V1',stage,sourceSha:commit,projectName:FORECAST_SHARE_PAGES_PROJECT,
-      projectId:ownedId,deploymentId,publicOrigin:FORECAST_SHARE_PAGES_ORIGIN,publicDatasetId:manifest.datasetId,
+      operation,projectId:ownedId,deploymentId,publicOrigin:FORECAST_SHARE_PAGES_ORIGIN,publicDatasetId:manifest.datasetId,
+      predecessorDeploymentId:operation==='update'?env.EXPECTED_DEPLOYMENT_ID:null,
+      predecessorCommit:operation==='update'?env.EXPECTED_DEPLOYMENT_COMMIT:null,
       publicModelBinding:ravScoreModelBinding(),createIssued,deployIssued,terminationConfirmed,readback,
-      outcome:deployFailed?'COMMITTED_REPLY_LOST_READBACK_PROVED':'DEPLOYED_READBACK_PROVED',
+      outcome:alreadyDeployed?'ALREADY_DEPLOYED_READBACK_PROVED'
+        :deployFailed?'COMMITTED_REPLY_LOST_READBACK_PROVED':'DEPLOYED_READBACK_PROVED',
       staticInputFiles:3,functionsInputFiles:1,bindings:0,customDomains:0,dnsChanged:false,legacyWorkerChanged:false,
       frontendChanged:false,hostedScoreProved:false,freeCapacityProved:false};emit(receipt);return receipt;
   }catch(error){
     lastKind=['GH_MAIN','PUBLIC_MANIFEST','PROJECT_LIST','PROJECT_ABSENCE','PROJECT_CREATE','CREATE_READBACK',
-      'OWNED_PROJECT_READBACK','DEPLOY_PROJECT','DEPLOYMENT_DETAIL','FINAL_PROJECT'].includes(error?.kind)?error.kind:null;
+      'OWNED_PROJECT_READBACK','UPDATE_PROJECT_READBACK','UPDATE_PREDECESSOR_DETAIL','UPDATE_PROJECT_PREWRITE',
+      'DEPLOY_PROJECT','DEPLOYMENT_DETAIL','FINAL_PROJECT'].includes(error?.kind)?error.kind:null;
     httpStatus=Number.isInteger(error?.httpStatus)&&error.httpStatus>=100&&error.httpStatus<=599?error.httpStatus:null;
     const receipt={kind:'FORECAST_SHARE_PAGES_RELEASE_STOP_V1',stage,sourceSha:SHA.test(env.EXPECTED_MAIN??'')?env.EXPECTED_MAIN:null,
       code:/^SHARE_PAGES_[A-Z_]+$/.test(error?.code??'')?error.code:'SHARE_PAGES_VALIDATION_OR_TRANSPORT',
-      readKind:lastKind,httpStatus,projectId:ownedId,createIssued,deployIssued,terminationConfirmed,readback,
+      operation,readKind:lastKind,httpStatus,projectId:ownedId,createIssued,deployIssued,terminationConfirmed,readback,
       outcome:createIssued||deployIssued?'UNKNOWN_NO_RETRY':'REFUSED_BEFORE_WRITE'};emit(receipt);
     throw Object.assign(fail(receipt.outcome),{receipt});
   }

@@ -7,7 +7,8 @@ import {execFileSync} from 'node:child_process';
 import {fileURLToPath,pathToFileURL} from 'node:url';
 import {scanAllSourceDependencies} from './lib/source-impact-control-imports.mjs';
 const SOURCE=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
-const BASE='a4dc9319dbf42cdd7fc8116733ad4eeef46e0525',REFERENCE='e8786fabba66bd9184ab08a0c8c83bf97711f807';
+const BASE='169bebcd7bf2c4389be63c31dcd76fb303d71621';
+const LEGACY_BASE='a4dc9319dbf42cdd7fc8116733ad4eeef46e0525',LEGACY_REFERENCE='e8786fabba66bd9184ab08a0c8c83bf97711f807';
 const files=['scripts/source-impact-domain-inputs.mjs','scripts/lib/source-impact-domain-inputs-594.json',
   'scripts/test-source-impact-domain-inputs.mjs','scripts/source-impact-domain-plan.mjs',
   'scripts/lib/source-impact-control-imports.mjs','scripts/lib/source-impact-domain-owners-594.json',
@@ -37,7 +38,10 @@ test('normal closed domain planner handles real composition, one same-tree merge
     const objectDirectory=fs.realpathSync(path.join(text(SOURCE,['rev-parse','--path-format=absolute','--git-common-dir']),'objects'));
     fs.mkdirSync(path.join(root,'.git/objects/info'),{recursive:true});
     fs.writeFileSync(path.join(root,'.git/objects/info/alternates'),objectDirectory.replaceAll('\\','/')+'\n');
-    const referenceTree=text(root,['rev-parse',REFERENCE+'^{tree}']);
+    // Use the actual whole committed candidate, including every extracted leaf.
+    const reference=text(SOURCE,['rev-parse','HEAD^{commit}']);
+    git(root,['merge-base','--is-ancestor',BASE,reference]);
+    const referenceTree=text(root,['rev-parse',reference+'^{tree}']);
     const readTree=id=>git(root,['ls-tree','-z',id]).toString('utf8').split('\0').filter(Boolean).map(line=>{
       const m=/^(\d{6}) (blob|tree) ([a-f0-9]{40})\t(.+)$/.exec(line);assert(m);return{mode:m[1],type:m[2],oid:m[3],name:m[4]};});
     function rewrite(tree,changes){
@@ -52,8 +56,12 @@ test('normal closed domain planner handles real composition, one same-tree merge
     }
     // hash-object needs binary stdin; no checkout or shared object is mutated.
     const commit=(tree,parents,label)=>git(root,['commit-tree',tree,...parents.flatMap(ref=>['-p',ref]),'-m',label]).toString('utf8').trim();
-    const additions=files.map(file=>[file,fs.readFileSync(path.join(SOURCE,file))]);
-    const tree=rewrite(referenceTree,additions),candidate=commit(tree,[REFERENCE],'synthetic reviewed composition');
+    const additions=files.map(file=>[file,git(root,['cat-file','blob',reference+':'+file])]);
+    // Explicit harmless changes keep the original D1/admin selection assertions real.
+    const syntheticOwners=['js/ui/admin-private-trip-study.js','cloudflare/trip-gateway/trip-aggregate-job.js'];
+    const tree=rewrite(referenceTree,syntheticOwners.map(file=>[file,Buffer.concat([
+      git(root,['cat-file','blob',reference+':'+file]),Buffer.from('\n// Synthetic domain-plan owner selection.\n'),
+    ])])),candidate=commit(tree,[reference],'synthetic reviewed composition');
     git(root,['update-ref','HEAD',candidate]);
     for(const [file,body]of additions){fs.mkdirSync(path.dirname(path.join(root,file)),{recursive:true});fs.writeFileSync(path.join(root,file),body);}
     const {planSourceDomainImpactFromGit:plan}=await import(pathToFileURL(path.join(root,'scripts/source-impact-domain-plan.mjs')).href);
@@ -69,10 +77,46 @@ test('normal closed domain planner handles real composition, one same-tree merge
     for(const domain of Object.values(actual.domains))if(domain.status==='SELECTED'){
       assert(domain.commands.length>0);assert(domain.commands.every(command=>actual.commands.includes(command)));
     }
-    const merged=commit(tree,[REFERENCE,candidate],'synthetic same-tree main merge'),onMerge=run(merged);
+    const pagesTarget='node scripts/test-forecast-share-pages-deploy.mjs';
+    assert.equal(actual.domains.sharing.status,'SELECTED');
+    assert.equal(actual.commands.filter(command=>command===pagesTarget).length,1,
+      'Pages product/workflow/test owners select their normal controller target once');
+    const direct=plan({baselineCommit:'7a08f6a8dfb2131898e7270a2429c3f4f810a842',
+      candidateCommit:candidate,expectedHead:candidate});
+    assert.equal(direct.status,'PLANNED',JSON.stringify(direct.reasonCodes));
+    assert.equal(direct.selection,'CONTROL_QUALIFICATION_REQUIRED',JSON.stringify(direct.reasonCodes));
+    assert.equal(direct.domains.postgres.status,'NOT_APPLICABLE');
+    assert.equal(direct.domains.sharing.status,'SELECTED');
+    assert.equal(direct.commands.filter(command=>command===pagesTarget).length,1);
+    for(const document of ['docs/rdks/20_REQUIREMENTS/ACTIVE-REQUIREMENTS.md','docs/rdks/MASTER_LOG.md']){
+      const body=git(root,['cat-file','blob',reference+':'+document]);
+      const documentCandidate=commit(rewrite(referenceTree,[[document,Buffer.concat([
+        body,Buffer.from('\n<!-- Synthetic canonical documentation owner check. -->\n'),
+      ])]]),[reference],'synthetic canonical documentation owner');
+      git(root,['update-ref','HEAD',documentCandidate]);
+      const documentPlan=plan({baselineCommit:reference,candidateCommit:documentCandidate,expectedHead:documentCandidate});
+      assert.equal(documentPlan.selection,'TARGETED_DOMAINS',JSON.stringify(documentPlan.reasonCodes));
+      assert.equal(documentPlan.domains.postgres.status,'NOT_APPLICABLE');
+      assert.equal(documentPlan.domains.documentation.status,'SELECTED');
+      assert(documentPlan.domains.documentation.commands.includes('node scripts/validate-rdks.mjs'));
+    }
+    const unknownDocument='docs/rdks/90_INDEX/UNREGISTERED-PAGES-NOTE.md';
+    const unknownDocumentCandidate=commit(rewrite(referenceTree,[[unknownDocument,
+      Buffer.from('# Synthetic unknown documentation path must remain unclassified.\n')]]),[reference],'synthetic unknown documentation owner');
+    git(root,['update-ref','HEAD',unknownDocumentCandidate]);
+    assert.deepEqual(plan({baselineCommit:reference,candidateCommit:unknownDocumentCandidate,
+      expectedHead:unknownDocumentCandidate}).reasonCodes,['UNCLASSIFIED_OWNER:'+unknownDocument]);
+    const merged=commit(tree,[reference,candidate],'synthetic same-tree main merge'),onMerge=run(merged);
     assert.equal(text(root,['rev-parse',merged+'^{tree}']),text(root,['rev-parse',candidate+'^{tree}']));
     assert.equal(text(root,['rev-list','--parents','-n','1',merged]).split(' ').length,3);
     assert.deepEqual(onMerge,actual,'Tree-identical producer and merge must have identical plan/digests');
+    const pagesWorkflow='.github/workflows/deploy-forecast-share-pages.yml';
+    const pagesWorkflowBody=git(root,['cat-file','blob',candidate+':'+pagesWorkflow]);
+    const unknownPagesWorkflow=commit(rewrite(tree,[[pagesWorkflow,Buffer.concat([
+      pagesWorkflowBody,Buffer.from('\n# Unknown Pages workflow bytes must require full selection.\n'),
+    ])]]),[candidate],'synthetic Pages exact-source drift');
+    assert.deepEqual(run(unknownPagesWorkflow).reasonCodes,
+      ['UNKNOWN_EXACT_SOURCE_TRANSITION:'+pagesWorkflow]);
     const owner='js/ui/admin-private-trip-study.js',old=git(root,['cat-file','blob',candidate+':'+owner]);
     const mutate=(body,label)=>run(commit(rewrite(tree,[[owner,body]]),[candidate],label));
     assert.equal(mutate(Buffer.concat([old,Buffer.from('\nconst unusedInternalDomainCheck=true;\n')]),'pure internal edit').selection,'CONTROL_QUALIFICATION_REQUIRED');
@@ -90,6 +134,13 @@ test('normal closed domain planner handles real composition, one same-tree merge
     const pg='scripts/test-protected-ravscore-continuation-checkpoint.mjs';
     const changed=commit(rewrite(tree,[[pg,Buffer.concat([git(root,['cat-file','blob',candidate+':'+pg]),Buffer.from('\n// PG input delta\n')])]]),[candidate],'changed PostgreSQL input');
     assert.deepEqual(run(changed).reasonCodes,['POSTGRES_OR_MODEL_INPUT_CHANGED']);
+    // Preserve the old incomplete composition as a real negative, without a whitelist.
+    const obsoleteTree=rewrite(text(root,['rev-parse',LEGACY_REFERENCE+'^{tree}']),additions);
+    const obsolete=commit(obsoleteTree,[LEGACY_REFERENCE],'synthetic obsolete partial composition');
+    git(root,['update-ref','HEAD',obsolete]);
+    const refused=plan({baselineCommit:LEGACY_BASE,candidateCommit:obsolete,expectedHead:obsolete});
+    assert.equal(refused.selection,'FULL');
+    assert.deepEqual(refused.reasonCodes,['UNKNOWN_EXACT_SOURCE_TRANSITION:scripts/test-workflow-validation-order-4.0.108.mjs']);
   }finally{
     assert.equal(path.dirname(fs.realpathSync(root)),temporary);const current=fs.lstatSync(root,{bigint:true});
     assert.equal(current.dev,owned.dev);assert.equal(current.ino,owned.ino);assert.equal(current.birthtimeNs,owned.birthtimeNs);
