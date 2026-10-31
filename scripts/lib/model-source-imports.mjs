@@ -171,6 +171,14 @@ const CONDITIONS_READER_CAPACITY593_REVIEWED=Object.freeze({
   'scripts/lib/authenticated-frozen586-predecessor.mjs':Object.freeze({sha256:'3f47d6808f563b456d173e63be919e79ec57bff959e8e216aeeeb9096d7b368b',
     imports:Object.freeze([...ASSISTANT_GENUINE591_PARENT_REVIEWED['scripts/lib/authenticated-frozen586-predecessor.mjs'].imports,'./bounded-json-writer.mjs'])})
 });
+// Ny faktisk origin-kilde og dens nye fælles policy indgår hele i C/I.
+const ORIGIN591_METADATA594_REVIEWED=Object.freeze({
+  'scripts/lib/established-native-current-origin.mjs':Object.freeze({sha256:'b791c803b5d41fd036e01d25bd85f7298e3652abd6d44e49b68b04a0f7cfd4fa',
+    imports:Object.freeze([...CONDITIONS_READER_CAPACITY593_REVIEWED['scripts/lib/established-native-current-origin.mjs'].imports,
+      './assistant-public591-runtime-contracts.mjs'])}),
+  'scripts/assistant-later-h0-binding-prewrite.mjs':Object.freeze({sha256:'d46dc4c2741dc62608e640ca60bd6b18027df6086a71f63c26e879c4495c94e2',
+    imports:ASSISTANT_GENUINE591_PARENT_REVIEWED['scripts/assistant-later-h0-binding-prewrite.mjs'].imports})
+});
 export function modelSourceRelativeModuleSpecifiers(source, file) {
   if (!Object.hasOwn(REVIEWED, file) && !Object.hasOwn(NATIVE_CONTINUITY_REVIEWED, file)
     && !Object.hasOwn(ASSISTANT_LATER_H0_REVIEWED,file) && !Object.hasOwn(ASSISTANT_BINDING_PREWRITE_REVIEWED,file)
@@ -182,12 +190,13 @@ export function modelSourceRelativeModuleSpecifiers(source, file) {
     && !Object.hasOwn(ASSISTANT_PUBLIC590_SUCCESSOR_REVIEWED,file)
     && !Object.hasOwn(ASSISTANT_GENUINE590_PARENT_REVIEWED,file)
     && !Object.hasOwn(ASSISTANT_GENUINE591_PARENT_REVIEWED,file)
-    && !Object.hasOwn(CONDITIONS_READER_CAPACITY593_REVIEWED,file))
+    && !Object.hasOwn(CONDITIONS_READER_CAPACITY593_REVIEWED,file)
+    && !Object.hasOwn(ORIGIN591_METADATA594_REVIEWED,file))
     return exactRelativeModuleSpecifiers(source, file);
   if (typeof source !== 'string') throw new Error('Reviewed model source must be a string');
   const normalized = source.replace(/^\uFEFF/, '').replace(/\r\n?/g, '\n');
   const hash = crypto.createHash('sha256').update(normalized).digest('hex');
-  const reviewed = [REVIEWED[file], NATIVE_CONTINUITY_REVIEWED[file],ASSISTANT_LATER_H0_REVIEWED[file],ASSISTANT_BINDING_PREWRITE_REVIEWED[file],ASSISTANT_BINDING_DIAGNOSTIC_REVIEWED[file],ASSISTANT_BINDING_CHECKPOINT_TARGET_REVIEWED[file],ASSISTANT_PUBLIC587_SOURCE_REVIEWED[file],ASSISTANT_PUBLIC587_OPERATIVE_REVIEWED[file],CALENDAR_PUBLIC588_SUCCESSOR_REVIEWED[file],ASSISTANT_PUBLIC590_SUCCESSOR_REVIEWED[file],ASSISTANT_GENUINE590_PARENT_REVIEWED[file],ASSISTANT_GENUINE591_PARENT_REVIEWED[file],CONDITIONS_READER_CAPACITY593_REVIEWED[file]].filter(Boolean)
+  const reviewed = [REVIEWED[file], NATIVE_CONTINUITY_REVIEWED[file],ASSISTANT_LATER_H0_REVIEWED[file],ASSISTANT_BINDING_PREWRITE_REVIEWED[file],ASSISTANT_BINDING_DIAGNOSTIC_REVIEWED[file],ASSISTANT_BINDING_CHECKPOINT_TARGET_REVIEWED[file],ASSISTANT_PUBLIC587_SOURCE_REVIEWED[file],ASSISTANT_PUBLIC587_OPERATIVE_REVIEWED[file],CALENDAR_PUBLIC588_SUCCESSOR_REVIEWED[file],ASSISTANT_PUBLIC590_SUCCESSOR_REVIEWED[file],ASSISTANT_GENUINE590_PARENT_REVIEWED[file],ASSISTANT_GENUINE591_PARENT_REVIEWED[file],CONDITIONS_READER_CAPACITY593_REVIEWED[file],ORIGIN591_METADATA594_REVIEWED[file]].filter(Boolean)
     .find(variant => variant.sha256 === hash);
   if (!reviewed)
     throw new Error('Whole reviewed model import source changed: ' + file);

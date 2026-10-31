@@ -8,7 +8,9 @@ import {execFileSync, spawnSync, spawn} from 'node:child_process';
 import {nativePrograms,nativePostgresProgramIdentity} from './lib/checkpoint-cas-native-postgres.mjs';
 import {fileURLToPath} from 'node:url';
 import {requireAssistantLaterH0Release,requireAssistantPublic587SuccessorRelease,
-  requireAssistantPublic588SuccessorRelease,requireAssistantPublic590SuccessorRelease,requireAssistantPublic591SuccessorRelease,ACTIVE_ASSISTANT_SUCCESSOR as ACTIVE} from './lib/assistant-later-h0-successor-source.mjs';
+  requireAssistantPublic588SuccessorRelease,requireAssistantPublic590SuccessorRelease,requireAssistantPublic591SuccessorRelease,
+  requireInstalled593Original591Release,requireInstalled593Original591Binding,requireInstalled593Original591Output,
+  INSTALLED593_ORIGINAL591_DATABASE_BEFORE,ACTIVE_ASSISTANT_SUCCESSOR as ACTIVE} from './lib/assistant-later-h0-successor-source.mjs';
 
 export const ORIGIN = Object.freeze({
   repository: 'jakobjorgensen82-commits/RavRadar', pullRequest: 671,
@@ -45,11 +47,17 @@ export const ASSISTANT_PUBLIC590_SUCCESSOR_SCRIPT='set -euo pipefail\n'+ASSISTAN
 export const ASSISTANT_PUBLIC591_SUCCESSOR_COMMANDS=Object.freeze([ASSISTANT_PUBLIC590_SUCCESSOR_COMMANDS[0],
   ASSISTANT_PUBLIC590_SUCCESSOR_COMMANDS[1]+' --assistant-public591-successor']);
 export const ASSISTANT_PUBLIC591_SUCCESSOR_SCRIPT='set -euo pipefail\n'+ASSISTANT_PUBLIC591_SUCCESSOR_COMMANDS.join('\n')+'\n';
-export const ACTIVE_COMMANDS=ACTIVE.sourcePhase==='assistant-public591-successor'
+// New installed593/original591 phase always executes on its own issued inputs.
+export const INSTALLED593_ORIGINAL591_COMMANDS=Object.freeze([ASSISTANT_PUBLIC591_SUCCESSOR_COMMANDS[0],
+  ASSISTANT_PUBLIC591_SUCCESSOR_COMMANDS[1]+' --assistant-installed593-origin591-successor']);
+export const INSTALLED593_ORIGINAL591_SCRIPT='set -euo pipefail\n'+INSTALLED593_ORIGINAL591_COMMANDS.join('\n')+'\n';
+export const ACTIVE_COMMANDS=ACTIVE.sourcePhase==='assistant-installed593-origin591-successor'
+  ?INSTALLED593_ORIGINAL591_COMMANDS:ACTIVE.sourcePhase==='assistant-public591-successor'
   ?ASSISTANT_PUBLIC591_SUCCESSOR_COMMANDS:ACTIVE.sourcePhase==='assistant-public590-successor'
   ?ASSISTANT_PUBLIC590_SUCCESSOR_COMMANDS:ACTIVE.sourcePhase==='assistant-public588-successor'
   ?ASSISTANT_PUBLIC588_SUCCESSOR_COMMANDS:ASSISTANT_PUBLIC587_SUCCESSOR_COMMANDS;
-export const ACTIVE_NATIVE_SCRIPT=ACTIVE.sourcePhase==='assistant-public591-successor'
+export const ACTIVE_NATIVE_SCRIPT=ACTIVE.sourcePhase==='assistant-installed593-origin591-successor'
+  ?INSTALLED593_ORIGINAL591_SCRIPT:ACTIVE.sourcePhase==='assistant-public591-successor'
   ?ASSISTANT_PUBLIC591_SUCCESSOR_SCRIPT:ACTIVE.sourcePhase==='assistant-public590-successor'
   ?ASSISTANT_PUBLIC590_SUCCESSOR_SCRIPT:ACTIVE.sourcePhase==='assistant-public588-successor'
   ?ASSISTANT_PUBLIC588_SUCCESSOR_SCRIPT:ASSISTANT_PUBLIC587_SUCCESSOR_SCRIPT;
@@ -667,6 +675,21 @@ export function verifyAssistantPublic591SuccessorPhaseReceipt(native,current){
   return {status:native.status,executedInThisRun:native.executedInThisRun,origin:native.origin};
 }
 
+export const INSTALLED593_ORIGINAL591_PHASE_KIND='RAVRADAR_INSTALLED593_ORIGINAL591_SUCCESSOR_POSTGRES_PHASE_V1';
+export function verifyInstalled593Original591PhaseReceipt(native,current){
+  assert.equal(native?.schemaVersion,1);assert.equal(native.phase,'INSTALLED593_ORIGINAL591_SUCCESSOR');
+  assert.equal(native.kind,INSTALLED593_ORIGINAL591_PHASE_KIND);
+  assert.equal(native.sourcePhase,'assistant-installed593-origin591-successor');
+  assert.equal(native.releaseVersion,requireInstalled593Original591Release());
+  assert.deepEqual(native.binding,requireInstalled593Original591Binding());
+  assert.deepEqual(native.output,requireInstalled593Original591Output());
+  assert.deepEqual(native.databaseBefore,INSTALLED593_ORIGINAL591_DATABASE_BEFORE);
+  assert.deepEqual(native.commands,INSTALLED593_ORIGINAL591_COMMANDS);assert.deepEqual(native.current,current);
+  assert.equal(native.status,'EXECUTED');assert.equal(native.executedInThisRun,true);
+  assert.equal(native.origin,null);assert.equal(native.eligibleForReuse,false);
+  return {status:native.status,executedInThisRun:native.executedInThisRun,origin:native.origin};
+}
+
 // Separate593 V2. Historical V1 receipts and their refusals remain unchanged.
 export const ASSISTANT_PUBLIC591_V2_KIND='RAVRADAR_ASSISTANT_PUBLIC591_SUCCESSOR_POSTGRES_PHASE_V2';
 export const ASSISTANT_PUBLIC591_V2_PROFILE='assistant-public591-successor/4.0.593/native-v2';
@@ -1225,7 +1248,8 @@ async function record(receipt) {
   assert.equal(proof.contractId,'weather-source-gate-content-v2'); assert.equal(proof.privatePayloadIncluded,false);
   const current={run:Number(process.env.GITHUB_RUN_ID),attempt:Number(process.env.GITHUB_RUN_ATTEMPT),
     head:proof.headSha,pullRequest:Number(process.env.PULL_REQUEST_NUMBER),branch:process.env.GITHUB_HEAD_REF};
-  if(receipt.schemaVersion===2)verifyAssistantPublic591V2PhaseReceipt(receipt,current);
+  if(receipt.phase==='INSTALLED593_ORIGINAL591_SUCCESSOR')verifyInstalled593Original591PhaseReceipt(receipt,current);
+  else if(receipt.schemaVersion===2)verifyAssistantPublic591V2PhaseReceipt(receipt,current);
   else if(receipt.phase==='NATIVE_ORIGINAL_CONTINUITY')verifyCurrent586PhaseReceipt(receipt,current);
   else if(receipt.phase==='ASSISTANT_PUBLIC591_SUCCESSOR')verifyAssistantPublic591SuccessorPhaseReceipt(receipt,current);
   else if(receipt.phase==='ASSISTANT_PUBLIC590_SUCCESSOR')verifyAssistantPublic590SuccessorPhaseReceipt(receipt,current);
@@ -1234,7 +1258,8 @@ async function record(receipt) {
   else verifyAssistantLaterH0PhaseReceipt(receipt,current);
   proof.nativePostgres=receipt; await fs.writeFile(file,JSON.stringify(proof)+'\n');
   const phaseProof={
-    schemaVersion:receipt.schemaVersion===2?2:1,kind:receipt.schemaVersion===2?ASSISTANT_PUBLIC591_V2_KIND:receipt.phase==='NATIVE_ORIGINAL_CONTINUITY'?CURRENT586_PHASE_KIND:
+    schemaVersion:receipt.schemaVersion===2?2:1,kind:receipt.schemaVersion===2?ASSISTANT_PUBLIC591_V2_KIND:receipt.phase==='INSTALLED593_ORIGINAL591_SUCCESSOR'?INSTALLED593_ORIGINAL591_PHASE_KIND:
+      receipt.phase==='NATIVE_ORIGINAL_CONTINUITY'?CURRENT586_PHASE_KIND:
       receipt.phase==='ASSISTANT_PUBLIC591_SUCCESSOR'?ASSISTANT_PUBLIC591_SUCCESSOR_PHASE_KIND:
       receipt.phase==='ASSISTANT_PUBLIC590_SUCCESSOR'?ASSISTANT_PUBLIC590_SUCCESSOR_PHASE_KIND:
       receipt.phase==='ASSISTANT_PUBLIC588_SUCCESSOR'?ASSISTANT_PUBLIC588_SUCCESSOR_PHASE_KIND:
@@ -1246,13 +1271,15 @@ async function record(receipt) {
   await fs.writeFile(CURRENT586_PHASE_FILE,raw,{flag:'wx'});
 }
 async function main() {
-  assert(['assistant-public587-successor','assistant-public588-successor','assistant-public590-successor','assistant-public591-successor'].includes(ACTIVE.sourcePhase));
+  assert(['assistant-public587-successor','assistant-public588-successor','assistant-public590-successor','assistant-public591-successor','assistant-installed593-origin591-successor'].includes(ACTIVE.sourcePhase));
+  if(ACTIVE.sourcePhase==='assistant-installed593-origin591-successor')requireInstalled593Original591Release();
   if(ACTIVE.sourcePhase==='assistant-public591-successor')requireAssistantPublic591SuccessorRelease();
   if(ACTIVE.sourcePhase==='assistant-public590-successor')requireAssistantPublic590SuccessorRelease();
   if(ACTIVE.sourcePhase==='assistant-public588-successor')requireAssistantPublic588SuccessorRelease();
   requireAssistantPublic587SuccessorRelease(); // UNISSUED before evidence I/O or native launch; no fallback to a whole587 receipt.
   requireAssistantLaterH0Release(); // The preceding genuine587 phase remains issued and required.
-  let receipt={status:'EXECUTE',reason:ACTIVE.sourcePhase==='assistant-public591-successor'
+  let receipt={status:'EXECUTE',reason:ACTIVE.sourcePhase==='assistant-installed593-origin591-successor'
+    ?'new-installed593-original591-phase-requires-actual-execution':ACTIVE.sourcePhase==='assistant-public591-successor'
     ?'new-assistant-public591-successor-phase-requires-actual-execution':ACTIVE.sourcePhase==='assistant-public590-successor'
     ?'new-assistant-public590-successor-phase-requires-actual-execution':ACTIVE.sourcePhase==='assistant-public588-successor'
     ?'new-assistant-public588-successor-phase-requires-actual-execution':'new-assistant-public587-successor-phase-requires-actual-execution'};
@@ -1271,7 +1298,11 @@ async function main() {
       if(result.error||result.status!==0){process.exitCode=result.status||1;return;}
     }
     receipt={...receipt,status:'EXECUTED',executedInThisRun:true,origin:null,
-      ...(ACTIVE.sourcePhase==='assistant-public591-successor'
+      ...(ACTIVE.sourcePhase==='assistant-installed593-origin591-successor'
+        ?{schemaVersion:1,kind:INSTALLED593_ORIGINAL591_PHASE_KIND,phase:'INSTALLED593_ORIGINAL591_SUCCESSOR',sourcePhase:ACTIVE.sourcePhase,
+          releaseVersion:requireInstalled593Original591Release(),binding:requireInstalled593Original591Binding(),
+          output:requireInstalled593Original591Output(),databaseBefore:INSTALLED593_ORIGINAL591_DATABASE_BEFORE,
+          eligibleForReuse:false}:ACTIVE.sourcePhase==='assistant-public591-successor'
         ?{phase:'ASSISTANT_PUBLIC591_SUCCESSOR',eligibleForReuse:false}:ACTIVE.sourcePhase==='assistant-public590-successor'
         ?{phase:'ASSISTANT_PUBLIC590_SUCCESSOR',eligibleForReuse:false}:ACTIVE.sourcePhase==='assistant-public588-successor'
         ?{phase:'ASSISTANT_PUBLIC588_SUCCESSOR',eligibleForReuse:false}

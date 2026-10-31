@@ -1,4 +1,6 @@
 import assert from 'node:assert/strict';
+import './test-established-native-current-origin591-metadata.mjs';
+import './test-installed593-original591-successor.mjs';
 import fs from 'node:fs/promises';
 import { classifyVerifiedRuntimeMigration } from './migrate-post-cutover-private-runtime.mjs';
 import {
@@ -19,8 +21,8 @@ import { ravScoreModelBinding } from '../js/core/ravscore-model-contract.js';
 
 // Actual normal contract computation, not an independently copied guard. This
 // exact genuine591 -> issued593 pair failed before suppliers in production.
-assert.equal(ACTIVE.sourcePhase,'assistant-public591-successor');
-assert.equal(ACTIVE.requireRelease(),'4.0.593');
+assert.equal(ACTIVE.sourcePhase,'assistant-installed593-origin591-successor');
+assert.equal(ACTIVE.requireRelease(),'4.0.594');
 const currentContracts=await privateRuntimeContractHashes();
 const originalContracts={
   continuationStateContractSha256:ACTIVE.before.T,

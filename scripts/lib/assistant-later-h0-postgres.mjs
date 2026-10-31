@@ -20,11 +20,13 @@ import {ASSISTANT_LATER_H0_BEFORE as OLD,ASSISTANT_LATER_H0_ALIASES as ALIASES,
   readAssistantPublic590PredecessorCanonicalSource,readAssistantPublic590SuccessorCanonicalSource,
   ASSISTANT_PUBLIC591_SUCCESSOR_BEFORE,ASSISTANT_PUBLIC591_SUCCESSOR_ALIASES,
   requireAssistantPublic591SuccessorBinding,requireAssistantPublic591SuccessorOutput,assistantPublic591SuccessorMigration,
-  readAssistantPublic591PredecessorCanonicalSource,readAssistantPublic591SuccessorCanonicalSource}
+  readAssistantPublic591PredecessorCanonicalSource,readAssistantPublic591SuccessorCanonicalSource,
+  INSTALLED593_ORIGINAL591_DATABASE_BEFORE,requireInstalled593Original591Binding,
+  requireInstalled593Original591Output,installed593Original591Migration,readInstalled593Original591CanonicalSource}
   from './assistant-later-h0-successor-source.mjs';
 import {currentMemoryWarmupPreservationInventorySql} from './current-memory-warmup-postgres.mjs';
 import {expectedCheckpointCasContract,expectedTripBindingPolicy,assistantLaterH0RequiredMigrations,
-  assistantPublic587SuccessorRequiredMigrations,assistantPublic588SuccessorRequiredMigrations,assistantPublic590SuccessorRequiredMigrations,assistantPublic591SuccessorRequiredMigrations}
+  assistantPublic587SuccessorRequiredMigrations,assistantPublic588SuccessorRequiredMigrations,assistantPublic590SuccessorRequiredMigrations,assistantPublic591SuccessorRequiredMigrations,installed593Original591RequiredMigrations}
   from '../integrated-cutover-readiness.mjs';
 import {statisticsPreferenceRevisionCatalogQuery,verifyStatisticsPreferenceRevisionCatalogMetadata}
   from '../verify-account-assistant-schema.mjs';
@@ -144,9 +146,27 @@ const PUBLIC591=Object.freeze({
   sourcePhase:'assistant-public591-successor',migrationCount:60,oidSlots:41,contractBodies:44,
   fixtureStem:'assistant-public591-successor',olderFixtures:Object.freeze(['native-original-continuity-current-same','assistant-later-h0-current-same','assistant-public587-successor-current-same','assistant-public588-successor-current-same']),
   resultKind:'ASSISTANT_PUBLIC591_SUCCESSOR',failureKind:'ASSISTANT_PUBLIC591_SUCCESSOR_NATIVE_FIRST_FAILURE'});
+const INSTALLED593_ORIGINAL591=Object.freeze({
+  before:ASSISTANT_PUBLIC591_SUCCESSOR_BEFORE,databaseBefore:INSTALLED593_ORIGINAL591_DATABASE_BEFORE,
+  aliases:Object.freeze([]),originalAliases:ASSISTANT_PUBLIC591_SUCCESSOR_ALIASES,
+  originalPayloadValidator:ASSISTANT_PUBLIC591_SUCCESSOR_ALIASES[1].name,
+  prefix:'installed593-original591-successor-current-',oldPrefix:'assistant-public590-successor-current-',previousRelease:591,
+  requireBinding:requireInstalled593Original591Binding,requireOutput:requireInstalled593Original591Output,
+  requiredMigrations:installed593Original591RequiredMigrations,migration:installed593Original591Migration,
+  readBefore:readAssistantPublic591SuccessorCanonicalSource,readAfter:readInstalled593Original591CanonicalSource,
+  sourcePhase:'assistant-installed593-origin591-successor',migrationCount:61,oidSlots:41,contractBodies:44,
+  fixtureStem:'installed593-original591-successor',olderFixtures:Object.freeze([
+    'native-original-continuity-current-same','assistant-later-h0-current-same',
+    'assistant-public587-successor-current-same','assistant-public588-successor-current-same',
+    'assistant-public591-successor-current-same']),
+  resultKind:'INSTALLED593_ORIGINAL591_SUCCESSOR',failureKind:'INSTALLED593_ORIGINAL591_NATIVE_FIRST_FAILURE'});
+export async function compareInstalled593Original591Successor(options){
+  return compareFixedSuccessor(INSTALLED593_ORIGINAL591,...arguments);
+}
 async function compareFixedSuccessor(profile,options){
-  assert(profile===LEGACY586||profile===PUBLIC587||profile===PUBLIC588||profile===PUBLIC590||profile===PUBLIC591,'ASSISTANT_NATIVE_UNKNOWN_PROFILE');
-  const OLD=profile.before,ALIASES=profile.aliases,PREFIX=profile.prefix,OLD_PREFIX=profile.oldPrefix;
+  assert(profile===LEGACY586||profile===PUBLIC587||profile===PUBLIC588||profile===PUBLIC590||profile===PUBLIC591||profile===INSTALLED593_ORIGINAL591,'ASSISTANT_NATIVE_UNKNOWN_PROFILE');
+  const OLD=profile.before,DATABASE_BEFORE=profile.databaseBefore??OLD,ALIASES=profile.aliases,
+    ORIGINAL_ALIASES=profile.originalAliases??ALIASES,PREFIX=profile.prefix,OLD_PREFIX=profile.oldPrefix;
   let phase='SOURCE';
   try{
     const NEXT=profile.requireBinding(),PINS=profile.requireOutput(); // Before options, programs, files or SQL.
@@ -154,17 +174,17 @@ async function compareFixedSuccessor(profile,options){
     const {psql,runSql,root,sourceDocumentAt,atHour,saveCheckpoint}=options;
     for(const fn of [psql,runSql,sourceDocumentAt,atHour,saveCheckpoint])assert.equal(typeof fn,'function');
     const inventory=profile.requiredMigrations();assert.equal(inventory.length,profile.migrationCount);
-    assert.equal(inventory.at(-2).version,OLD.version);assert.equal(inventory.at(-1).version,NEXT.version);
+    assert.equal(inventory.at(-2).version,DATABASE_BEFORE.version);assert.equal(inventory.at(-1).version,NEXT.version);
     const before=await profile.readBefore(),after=await profile.readAfter();
     const migration=profile.migration(),file=path.join(ROOT,'supabase/migrations',migration.filename),stat=await fs.lstat(file);
     assert(stat.isFile()&&!stat.isSymbolicLink());
     const sql=await fs.readFile(file,'utf8');
-    assert.equal(sha(sql),PINS.migrationSha256);assert.equal(sha(before.canonicalSource),OLD.canonicalSha256);
+    assert.equal(sha(sql),PINS.migrationSha256);assert.equal(sha(before.canonicalSource),DATABASE_BEFORE.canonicalSha256);
     assert.equal(sha(after.canonicalSource),PINS.canonicalSha256);assertAssistantLaterH0TransactionBounds(sql);
     const expected={checkpoint:await expectedCheckpointCasContract({sourcePhase:profile.sourcePhase}),
       trip:await expectedTripBindingPolicy({sourcePhase:profile.sourcePhase})};
     assert.equal(expected.checkpoint.sha256,PINS.checkpointContractSha256);assert.equal(expected.trip.sha256,PINS.tripBindingPolicySha256);
-    phase='BEFORE_VERSION';assert.equal(await psql('select max(version) from supabase_migrations.schema_migrations;'),OLD.version);
+    phase='BEFORE_VERSION';assert.equal(await psql('select max(version) from supabase_migrations.schema_migrations;'),DATABASE_BEFORE.version);
     phase='GENUINE'+profile.previousRelease+'_BANK';const originals={};
     for(const[name,hour]of [['same',49],['newer',50]]){
       const {payload}=await readFixture(psql,OLD_PREFIX+name);
@@ -173,11 +193,11 @@ async function compareFixedSuccessor(profile,options){
       assert.equal(payload.modelBinding.modelBundleSha256,OLD.I);
       assert.equal(payload.candidateGRollbackCompanion.modelBinding.modelBundleSha256,OLD.C);
       assert.equal(payload.continuationStateContractSha256,OLD.T);assert.equal(payload.productionReferenceAt,atHour(hour));
-      assert.equal(await psql('select public.'+CP+"payload_valid((select payload from native_checkpoint_payloads where name='"+OLD_PREFIX+name+"'),'"+atHour(hour)+"');"),'t');
+      assert.equal(await psql('select public.'+(profile.originalPayloadValidator??CP+'payload_valid')+"((select payload from native_checkpoint_payloads where name='"+OLD_PREFIX+name+"'),'"+atHour(hour)+"');"),'t');
       originals[name]=payload;
     }
     const names=[...before.canonicalSource.matchAll(/^create or replace function public\.([a-z0-9_]+)\(/gm)].map(m=>m[1]);
-    const allNames=[...names,...ALIASES.map(row=>row.name)];assert.equal(new Set(allNames).size,names.length+2);
+    const allNames=[...names,...ALIASES.map(row=>row.name)];assert.equal(new Set(allNames).size,names.length+ALIASES.length);
     const contractSource=definition(after.canonicalSource,CP+'contract');
     const validatorArray=/v_validator_oids oid\[\] := array\[([\s\S]+?)\n  \];/.exec(contractSource);assert(validatorArray);
     assert.equal((validatorArray[1].match(/pg_catalog\.to_regprocedure\(/g)??[]).length,profile.oidSlots);
@@ -191,7 +211,7 @@ async function compareFixedSuccessor(profile,options){
     const archivePins=new Map(await Promise.all((await fs.readdir(path.join(ROOT,'supabase/migrations')))
       .filter(name=>name.endsWith('.sql')).map(async name=>[name,sha(await fs.readFile(path.join(ROOT,'supabase/migrations',name)))])));
     const guards=[
-      ["delete from supabase_migrations.schema_migrations where version='"+OLD.version+"';","insert into supabase_migrations.schema_migrations values('"+OLD.version+"');"],
+      ["delete from supabase_migrations.schema_migrations where version='"+DATABASE_BEFORE.version+"';","insert into supabase_migrations.schema_migrations values('"+DATABASE_BEFORE.version+"');"],
       ["delete from supabase_migrations.schema_migrations where version='20261013230000';","insert into supabase_migrations.schema_migrations values('20261013230000');"],
       ["insert into supabase_migrations.schema_migrations values('20990101000000');","delete from supabase_migrations.schema_migrations where version='20990101000000';"],
       ...['20261014140000','20261015030000','20261016030000'].map(version=>["insert into supabase_migrations.schema_migrations values('"+version+"');","delete from supabase_migrations.schema_migrations where version='"+version+"';"]),
@@ -225,7 +245,7 @@ async function compareFixedSuccessor(profile,options){
         +"','EXECUTE') and not has_function_privilege('authenticated','public."+alias.name+alias.signature+"','EXECUTE');"),'t');
     }
     for(const original of before.originalDefinitions)assert.equal(definition(after.canonicalSource,original.name),original.definition);
-    for(const[name,hour]of [['same',49],['newer',50]])assert.equal(await psql('select public.'+ALIASES[1].name
+    for(const[name,hour]of [['same',49],['newer',50]])assert.equal(await psql('select public.'+ORIGINAL_ALIASES[1].name
       +"((select payload from native_checkpoint_payloads where name='"+OLD_PREFIX+name+"'),'"+atHour(hour)+"');"),'t');
     phase='READBACK';const contract=JSON.parse(await psql("set request.jwt.claim.role='service_role';set role service_role;select public."+CP+'contract();'));
     assert.deepEqual(contract.checkpointContract,{id:expected.checkpoint.id,definition:expected.checkpoint.definition});
@@ -285,7 +305,7 @@ async function compareFixedSuccessor(profile,options){
       ['T',"jsonb_set(payload,'{continuationStateContractSha256}',to_jsonb(repeat('e',64)))"]]){
       const name=profile.fixtureStem+'-invalid-'+kind.toLowerCase();
       await psql("insert into native_checkpoint_payloads select '"+name+"',"+expression+" from native_checkpoint_payloads where name='"+OLD_PREFIX+"same';");
-      assert.equal(await psql('select public.'+ALIASES[1].name+"((select payload from native_checkpoint_payloads where name='"+name+"'),'"+atHour(49)+"');"),'f');
+      assert.equal(await psql('select public.'+ORIGINAL_ALIASES[1].name+"((select payload from native_checkpoint_payloads where name='"+name+"'),'"+atHour(49)+"');"),'f');
       cases.push([name,name,PREFIX+'newer',1,'22023',null,1]);
       const incomingName=profile.fixtureStem+'-incoming-invalid-'+kind.toLowerCase();
       await psql("insert into native_checkpoint_payloads select '"+incomingName+"',"+expression+" from native_checkpoint_payloads where name='"+PREFIX+"same';");
@@ -307,8 +327,10 @@ async function compareFixedSuccessor(profile,options){
     assert.deepEqual(JSON.parse(await psql(catalogSql(allNames))),catalogAfter);
     for(const[file,pin]of archivePins)assert.equal(sha(await fs.readFile(path.join(ROOT,'supabase/migrations',file))),pin);
     return {kind:profile.resultKind,sourceMigrationInventory:profile.migrationCount,sqlExecuted:true,wholeMigrationExecuted:true,
+      ...(profile.databaseBefore?{databaseBeforeVersion:DATABASE_BEFORE.version,originalStateRelease:profile.previousRelease,
+        existingOriginalAliasesPreserved:ORIGINAL_ALIASES.length}:{}),
       migrationVersion:migration.version,partCount:673,checkpointOidSlots:profile.oidSlots,contractBodies:profile.contractBodies,
-      oldFunctionsAndOidsPreserved:true,allOriginalDefinitionsPreserved:true,privateAliases:2,
+      oldFunctionsAndOidsPreserved:true,allOriginalDefinitionsPreserved:true,privateAliases:ALIASES.length,
       beforeGuardCases:guards.length,exactCheckpointContract:true,exactTripContract:true,schema2Catalog:true,
       normalProtectedJsonbRoundtrip:true,originalDigestsPreserved:true,['trueOld'+profile.previousRelease+'Fixtures']:true,currentNormalFixtures:true,
       ['old'+profile.previousRelease+'ModelNotRetagged']:true,wholeMetadataInverse:true,['strictlyLater'+profile.previousRelease+'ToNextOnly']:true,

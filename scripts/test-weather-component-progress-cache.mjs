@@ -976,10 +976,17 @@ test('baseline binding rejects replay on a different protected generation or cha
   await write(f.target, 'data/live/conditions.json', `${baseline} `);
   const differentBasePath = path.join(f.folder, 'new-base.json');
   assert.equal((await f.call('capture-base', f.target, { basePath: differentBasePath })).captured, true);
+  const unchangedConditions=await fs.readFile(path.join(f.target,'data/live/conditions.json'));
+  const unchangedCipher=await fs.readFile(path.join(f.target,WEATHER_PROGRESS_CIPHER_PATH));
   const replay = await f.call('restore', f.target, { basePath: differentBasePath });
   assert.equal(replay.code, 'BASELINE_MISMATCH');
+  assert.equal(replay.status,'CACHE_MISS');assert.equal(replay.restored,false);
+  assert.equal(replay.requiresProtectedRestore,false);
+  assert.deepEqual(await fs.readFile(path.join(f.target,'data/live/conditions.json')),unchangedConditions);
+  assert.deepEqual(await fs.readFile(path.join(f.target,WEATHER_PROGRESS_CIPHER_PATH)),unchangedCipher);
   const changed = await f.call('restore', f.target);
   assert.equal(changed.code, 'BASELINE_MISMATCH');
+  assert.equal(changed.status,'CACHE_MISS');assert.equal(changed.restored,false);
   await write(f.target, 'data/live/conditions.json', baseline);
   await f.assertTargetOriginal();
 });

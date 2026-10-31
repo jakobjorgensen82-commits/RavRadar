@@ -15,7 +15,7 @@ import {ASSISTANT_LATER_H0_BINDING,ASSISTANT_LATER_H0_ALIASES,assistantLaterH0Mi
   ACTIVE_ASSISTANT_SUCCESSOR as ACTIVE,ASSISTANT_PUBLIC587_SUCCESSOR_ALIASES,
   ASSISTANT_PUBLIC588_SUCCESSOR_ALIASES,requireAssistantPublic588SuccessorOutput,requireAssistantPublic587SuccessorOutput,
   ASSISTANT_PUBLIC590_SUCCESSOR_ALIASES,requireAssistantPublic590SuccessorOutput,
-  ASSISTANT_PUBLIC591_SUCCESSOR_ALIASES,requireAssistantPublic591SuccessorOutput}
+  ASSISTANT_PUBLIC591_SUCCESSOR_ALIASES,requireAssistantPublic591SuccessorOutput,requireInstalled593Original591Output}
   from './lib/assistant-later-h0-successor-source.mjs';
 import {
   assertRavScoreModelBinding,
@@ -209,6 +209,20 @@ export function assistantPublic591SuccessorCheckpointInspectionView(source){
   return view;
 }
 
+export function installed593Original591CheckpointInspectionView(source){
+  const pins=requireInstalled593Original591Output();
+  assert.equal(arguments.length,1);assert.equal(typeof source,'string');
+  assert.equal(crypto.createHash('sha256').update(source).digest('hex'),pins.canonicalSha256,
+    'Public591 successor inspection requires the entire issued canonical source');
+  let view=source;
+  for(const row of [...ASSISTANT_PUBLIC591_SUCCESSOR_ALIASES,...ASSISTANT_PUBLIC590_SUCCESSOR_ALIASES,...ASSISTANT_PUBLIC588_SUCCESSOR_ALIASES,...ASSISTANT_PUBLIC587_SUCCESSOR_ALIASES,...ASSISTANT_LATER_H0_ALIASES,
+    ...NATIVE_ORIGINAL_CONTINUITY_ALIASES.slice(0,2)]){
+    const original=exactFunctionDefinition(view,'public.'+row.name,'Exact preserved public591 successor alias');
+    view=view.slice(0,original.start)+view.slice(original.end);
+  }
+  return view;
+}
+
 export function checkpointMetadataCasBlock(source, binding, candidateBinding, continuationHash) {
   ACTIVE.requireOutput();
   const label = `${CHECKPOINT_METADATA_CAS_MIGRATION_PATH} checkpoint metadata CAS`;
@@ -217,7 +231,8 @@ export function checkpointMetadataCasBlock(source, binding, candidateBinding, co
   // comments too. Validate both complete immutable definitions before removing
   // them from this current-binding-only inspection view. The returned SQL still
   // contains every original byte; no alias is rebound, hidden or rewritten.
-  let currentView=ACTIVE.sourcePhase==='assistant-public591-successor'
+  let currentView=ACTIVE.sourcePhase==='assistant-installed593-origin591-successor'
+    ?installed593Original591CheckpointInspectionView(source):ACTIVE.sourcePhase==='assistant-public591-successor'
     ?assistantPublic591SuccessorCheckpointInspectionView(source):ACTIVE.sourcePhase==='assistant-public590-successor'
     ?assistantPublic590SuccessorCheckpointInspectionView(source):ACTIVE.sourcePhase==='assistant-public588-successor'
     ?assistantPublic588SuccessorCheckpointInspectionView(source):assistantPublic587SuccessorCheckpointInspectionView(source);

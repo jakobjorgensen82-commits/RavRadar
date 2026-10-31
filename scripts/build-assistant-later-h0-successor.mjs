@@ -30,7 +30,10 @@ import {ASSISTANT_LATER_H0_BEFORE as OLD,ASSISTANT_LATER_H0_ALIASES as ALIASES,
   ASSISTANT_PUBLIC591_SUCCESSOR_BEFORE,ASSISTANT_PUBLIC591_SUCCESSOR_ALIASES,
   readAssistantPublic591PredecessorCanonicalSource,assistantPublic591SuccessorCheckpointContractFromBase,
   requireAssistantPublic591SuccessorParent,requireAssistantPublic591SuccessorBinding,requireAssistantPublic591SuccessorOutput,
-  requireAssistantPublic591SuccessorRelease,assistantPublic591SuccessorMigration}
+  requireAssistantPublic591SuccessorRelease,assistantPublic591SuccessorMigration,
+  INSTALLED593_ORIGINAL591_DATABASE_BEFORE,readAssistantPublic591SuccessorCanonicalSource,
+  requireInstalled593Original591Binding,requireInstalled593Original591Output,requireInstalled593Original591Release,
+  installed593Original591Migration}
   from './lib/assistant-later-h0-successor-source.mjs';
 const ROOT=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..'),CP='ravradar_ravscore_checkpoint_';
 const sha=v=>crypto.createHash('sha256').update(v).digest('hex');
@@ -73,9 +76,15 @@ const PUBLIC591=Object.freeze({
   checkpointFromBase:assistantPublic591SuccessorCheckpointContractFromBase,
   contractTail:"    || E'\\n-- assistant-later-h0-original590-payload-validator --\\n' || v_ask590_payload_definition;",
   kind:'ASSISTANT_PUBLIC591_SUCCESSOR_STRUCTURE'});
+const INSTALLED593_ORIGINAL591=Object.freeze({
+  previous:INSTALLED593_ORIGINAL591_DATABASE_BEFORE,previousRelease:593,aliases:Object.freeze([]),
+  readPredecessor:readAssistantPublic591SuccessorCanonicalSource,
+  checkpointFromBase:assistantPublic591SuccessorCheckpointContractFromBase,
+  kind:'INSTALLED593_ORIGINAL591_SUCCESSOR_STRUCTURE',
+});
 
 function fixedProfile(profile){
-  assert(profile===LEGACY586||profile===PUBLIC587||profile===PUBLIC588||profile===PUBLIC590||profile===PUBLIC591,'ASSISTANT_SUCCESSOR_UNKNOWN_PROFILE');
+  assert(profile===LEGACY586||profile===PUBLIC587||profile===PUBLIC588||profile===PUBLIC590||profile===PUBLIC591||profile===INSTALLED593_ORIGINAL591,'ASSISTANT_SUCCESSOR_UNKNOWN_PROFILE');
   return profile;
 }
 function metadata(source,next,inventory,OLD){
@@ -189,6 +198,54 @@ async function prepareStructure(profile,version){
     checkpointContractSha256:checkpoint.sha256,tripBindingPolicySha256:tripBindingPolicyFromCanonicalSource(canonicalSource).sha256,
     originalCanonicalSha256:sha(before),wholeCanonicalInverse:true,sameH0Capability:false,
     numericalSqlRulesChanged:false,migrationIssued:false,sqlExecuted:false,installationPerformed:false});
+}
+
+// Normal constructor fra den faktisk udstedte593-database. Originalfamilie591
+// har allerede sine ægte validatorer i593; der tilføjes ingen nye originaler.
+export async function prepareInstalled593Original591SuccessorStructure(options){
+  assert.equal(arguments.length,1);assert(options&&Object.getPrototypeOf(options)===Object.prototype);
+  assert.deepEqual(Object.keys(options),['version']);const {version}=options;
+  const profile=INSTALLED593_ORIGINAL591,OLD=profile.previous;
+  assert.match(version,/^[0-9]{14}$/);assert(version>OLD.version);
+  const C=await computeCandidateGRollbackBundle();
+  assert.equal((await fs.readFile(path.join(ROOT,'scripts/rollback-assets/ravscore-model-bundle.generated.js'),'utf8')).replace(/\r\n?/g,'\n'),renderCandidateGRollbackGeneratedModule(C));
+  const I=await computeRavScoreModelBundle();
+  assert.equal((await fs.readFile(path.join(ROOT,'js/core/ravscore-model-bundle.generated.js'),'utf8')).replace(/\r\n?/g,'\n'),renderGeneratedBundleModule(I));
+  const next={version,C:C.modelBundleSha256,I:I.modelBundleSha256,T:await ravScoreContinuationImplementationSha256()};
+  assert.equal(new Set(['C','I','T'].flatMap(key=>[OLD[key],next[key]])).size,6);
+  const prior=await profile.readPredecessor(),before=prior.canonicalSource;
+  assert.equal(sha(before),OLD.canonicalSha256);
+  const changes=[],add=(name,after)=>changes.push({name,before:definition(before,name),after});
+  for(const [suffix,inventory] of [['integrated_state_valid',{I:1}],['payload_valid',{I:1,C:1,T:1}],
+    ['integrated_state_reason',{I:1}],['payload_reason',{I:1,C:1,T:1}]])
+    add(CP+suffix,metadata(definition(before,CP+suffix),next,inventory,OLD));
+  let trip=definition(before,'ravradar_trip_v3_binding_allowed');
+  for(const key of ['I','C'])trip=once(trip,"        '"+OLD[key]+"'\n      )","        '"+OLD[key]+"',\n        '"+next[key]+"'\n      )");
+  add('ravradar_trip_v3_binding_allowed',trip);
+  const casBefore=definition(before,CP+'cas');
+  const originalBranch="    elsif p_target_reference > v_central_reference\n"
+    +"      and p_payload ->> 'continuationStateContractSha256' = '"+OLD.T+"'\n"
+    +'      and public.'+ASSISTANT_PUBLIC591_SUCCESSOR_ALIASES[1].name+'(v_payload,v_central_reference)\n'
+    +'    then\n      -- Authenticated immutable591 predecessor; only a strictly LATER ordinary generation.\n'
+    +'      v_central_is_compatible_predecessor := false;\n';
+  assert.equal(casBefore.split(originalBranch).length,2,'Eksisterende ægte591-gren fra installeret593');
+  const branch=once(originalBranch,OLD.T,next.T);
+  add(CP+'cas',once(casBefore,originalBranch,branch+originalBranch));
+  const contractBefore=definition(before,CP+'contract');
+  add(CP+'contract',once(contractBefore,"where m.version::text = '"+OLD.version+"'","where m.version::text = '"+version+"'"));
+  let canonicalSource=before;for(const row of changes)canonicalSource=once(canonicalSource,row.before,row.after);
+  let inverse=canonicalSource;for(const row of [...changes].reverse())inverse=once(inverse,row.after,row.before);
+  assert.equal(inverse,before,'Hele faktiske593-canonical bevares ved inverse');
+  for(const name of [...before.matchAll(/^create or replace function public\.([a-z0-9_]+)\(/gm)].map(match=>match[1]))
+    if(!changes.some(row=>row.name===name))assert.equal(definition(canonicalSource,name),definition(before,name));
+  assert.equal(definition(canonicalSource,ASSISTANT_PUBLIC591_SUCCESSOR_ALIASES[0].name),definition(before,ASSISTANT_PUBLIC591_SUCCESSOR_ALIASES[0].name));
+  assert.equal(definition(canonicalSource,ASSISTANT_PUBLIC591_SUCCESSOR_ALIASES[1].name),definition(before,ASSISTANT_PUBLIC591_SUCCESSOR_ALIASES[1].name));
+  const checkpoint=profile.checkpointFromBase(canonicalSource,checkpointCasContractFromCanonicalSource(canonicalSource,{sourcePhase:'native-original-continuity'}));
+  return Object.freeze({schemaVersion:1,kind:profile.kind,admission:'NO_ADMISSION',nextBinding:next,
+    aliases:[],changes,canonicalSource,canonicalSha256:sha(canonicalSource),checkpointContractSha256:checkpoint.sha256,
+    tripBindingPolicySha256:tripBindingPolicyFromCanonicalSource(canonicalSource).sha256,
+    originalCanonicalSha256:sha(before),wholeCanonicalInverse:true,sameH0Capability:false,numericalSqlRulesChanged:false,
+    migrationIssued:false,sqlExecuted:false,installationPerformed:false,originalStateFamily:'591',databaseBeforeRelease:593});
 }
 
 const CORE_REPLACEMENTS=['integrated_state_valid','payload_valid','integrated_state_reason','payload_reason']
@@ -357,6 +414,13 @@ export async function buildAssistantPublic591BindingSuccessor(options){
   assert.equal(result.migrationIssued,false);assert.equal(result.productionAuthority,false);
   return Object.freeze({...result,sameH0Capability:false,admission:'NO_ADMISSION'});
 }
+export async function buildInstalled593Original591BindingSuccessor(options){
+  assert.equal(arguments.length,1);
+  const core=await prepareInstalled593Original591SuccessorStructure(options);
+  const result=wrap(core,await readAssistantPublic591SuccessorCanonicalSource(),INSTALLED593_ORIGINAL591);
+  assert.equal(result.aliases.length,0);assert.equal(result.originalStateFamily,'591');
+  return Object.freeze({...result,sameH0Capability:false,admission:'NO_ADMISSION'});
+}
 
 
 async function main(){
@@ -364,11 +428,25 @@ async function main(){
   if(args[0]==='--active'){
     // Det eksisterende normale source-mål følger kun det kildeejede aktive objekt.
     // De navngivne gamle CLI-indgange bevares til autentiske frozen-banker.
-    assert(['assistant-public587-successor','assistant-public588-successor','assistant-public590-successor','assistant-public591-successor'].includes(ACTIVE_ASSISTANT_SUCCESSOR.sourcePhase));
-    args.shift();args.unshift(ACTIVE_ASSISTANT_SUCCESSOR.sourcePhase==='assistant-public591-successor'
+    assert(['assistant-public587-successor','assistant-public588-successor','assistant-public590-successor','assistant-public591-successor','assistant-installed593-origin591-successor'].includes(ACTIVE_ASSISTANT_SUCCESSOR.sourcePhase));
+    args.shift();args.unshift(ACTIVE_ASSISTANT_SUCCESSOR.sourcePhase==='assistant-installed593-origin591-successor'
+      ?'--installed593-origin591-successor':ACTIVE_ASSISTANT_SUCCESSOR.sourcePhase==='assistant-public591-successor'
       ?'--public591-successor':ACTIVE_ASSISTANT_SUCCESSOR.sourcePhase==='assistant-public590-successor'
       ?'--public590-successor':ACTIVE_ASSISTANT_SUCCESSOR.sourcePhase==='assistant-public588-successor'
       ?'--public588-successor':'--public587-successor');
+  }
+  if(args[0]==='--installed593-origin591-successor'){
+    args.shift();const issued=requireInstalled593Original591Binding(),pins=requireInstalled593Original591Output();
+    requireInstalled593Original591Release();
+    assert(args.length===0||(args.length===1&&['--check','--write'].includes(args[0])));
+    const result=await buildInstalled593Original591BindingSuccessor({version:issued.version});
+    assert.deepEqual(result.nextBinding,issued);
+    assert.deepEqual({migrationSha256:result.migrationSha256,canonicalSha256:result.afterCanonicalSha256,
+      checkpointContractSha256:result.checkpointContractSha256,tripBindingPolicySha256:result.tripBindingPolicySha256},pins);
+    const file=path.join(ROOT,'supabase/migrations',installed593Original591Migration().filename);
+    if(args[0]==='--write')await fs.writeFile(file,result.migration,{flag:'wx'});
+    else assert.deepEqual(await fs.readFile(file),Buffer.from(result.migration));
+    console.log('Exact installed593/original591 later-H0 successor checked; no installation or state admission.');return;
   }
   const public591=args[0]==='--public591-successor';
   if(public591)args.shift();

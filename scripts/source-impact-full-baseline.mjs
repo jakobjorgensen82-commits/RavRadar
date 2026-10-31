@@ -6,9 +6,10 @@ import {decideSourceGate,SOURCE_GATE_CONTRACT,PULL_REQUEST_SOURCE_JOB,
 import {sourceTreeContentSha256,sourceTreeProofArtifactName} from './lib/source-tree-content.mjs';
 import {verifyAssistantPublic591SuccessorPhaseReceipt,verifyAssistantPublic591V2PhaseReceipt,
   verifyAssistantPublic591Metadata,ASSISTANT_PUBLIC591_SUCCESSOR_PHASE_KIND,
-  ASSISTANT_PUBLIC591_V2_KIND,sourceImpactEvidenceBudget} from './native-postgres-evidence.mjs';
+  ASSISTANT_PUBLIC591_V2_KIND,INSTALLED593_ORIGINAL591_PHASE_KIND,
+  verifyInstalled593Original591PhaseReceipt,sourceImpactEvidenceBudget} from './native-postgres-evidence.mjs';
 import {ORIGIN as NATIONAL_ORIGIN,COMMAND as NATIONAL_COMMAND,STEP as NATIONAL_STEP,
-  ASSISTANT_PUBLIC591_SUCCESSOR_SOURCE_COMMAND}
+  ASSISTANT_PUBLIC591_SUCCESSOR_SOURCE_COMMAND,INSTALLED593_ORIGINAL591_SOURCE_COMMAND}
   from './national584-source-evidence.mjs';
 
 export const SOURCE_IMPACT_FULL_BASELINE_KIND='RAVRADAR_SOURCE_IMPACT_FULL_BASELINE_V1';
@@ -72,11 +73,14 @@ function artifactMetadata(metadata,reference,kind,phase){
 
 function nativeProof(proof,reference,current){
   assert([1,2].includes(proof.schemaVersion));
-  assert.equal(proof.kind,proof.schemaVersion===2?ASSISTANT_PUBLIC591_V2_KIND:ASSISTANT_PUBLIC591_SUCCESSOR_PHASE_KIND);
+  const installed594=proof.kind===INSTALLED593_ORIGINAL591_PHASE_KIND;
+  assert.equal(proof.kind,proof.schemaVersion===2?ASSISTANT_PUBLIC591_V2_KIND:
+    installed594?INSTALLED593_ORIGINAL591_PHASE_KIND:ASSISTANT_PUBLIC591_SUCCESSOR_PHASE_KIND);
   assert.equal(proof.repository,reference.repository);assert.equal(proof.headSha,reference.producerHead);
   assert.equal(proof.sourceTreeSha256,reference.sourceTreeSha256);assert.equal(proof.privatePayloadIncluded,false);
   const native=proof.nativePostgres;
-  if(proof.schemaVersion===2)verifyAssistantPublic591V2PhaseReceipt(native,current);
+  if(installed594)verifyInstalled593Original591PhaseReceipt(native,current);
+  else if(proof.schemaVersion===2)verifyAssistantPublic591V2PhaseReceipt(native,current);
   else verifyAssistantPublic591SuccessorPhaseReceipt(native,current);
   return native;
 }
@@ -96,12 +100,20 @@ function historicalNational(proof,current,native){
     'currentAssistantPublic588SuccessorNationalExecutionClaimed','currentAssistantPublic591SuccessorNationalExecutionClaimed'])
     assert.equal(national[key],false);
   for(const [key,value]of Object.entries(national))if(key.endsWith('NationalExecutionClaimed'))assert.equal(value,false);
-  const claim=national.currentAssistantPublic591SuccessorNative;
+  const installed594=native.phase==='INSTALLED593_ORIGINAL591_SUCCESSOR';
+  const claim=installed594?national.currentInstalled593Original591SuccessorNative:national.currentAssistantPublic591SuccessorNative;
   assert.equal(claim?.status,native.status);assert.equal(claim.executedInThisRun,native.executedInThisRun);
   assert.deepEqual(claim.origin,native.origin);assert.equal(claim.separatelyRequired,true);
-  assert.equal(claim.phase,'assistant-public591-successor');assert.equal(claim.eligibleForReuse,native.eligibleForReuse);
-  assert.deepEqual(national.currentAssistantPublic591SuccessorSource,{command:'npm run test:assistant-later-h0-source',
-    actualCommand:ASSISTANT_PUBLIC591_SUCCESSOR_SOURCE_COMMAND,separatelyRequired:true});
+  assert.equal(claim.phase,installed594?'assistant-installed593-origin591-successor':'assistant-public591-successor');
+  assert.equal(claim.eligibleForReuse,native.eligibleForReuse);
+  assert.deepEqual(installed594?national.currentInstalled593Original591SuccessorSource:national.currentAssistantPublic591SuccessorSource,
+    {command:'npm run test:assistant-later-h0-source',actualCommand:installed594?INSTALLED593_ORIGINAL591_SOURCE_COMMAND:
+      ASSISTANT_PUBLIC591_SUCCESSOR_SOURCE_COMMAND,separatelyRequired:true});
+  if(installed594){
+    assert.equal(national.currentInstalled593Original591SuccessorNationalExecutionClaimed,false);
+    assert.deepEqual(national.current593PredecessorNative,{status:'EXECUTED',executedInThisRun:true,origin:null,
+      phase:'assistant-public591-successor',scope:'GENUINE_FROZEN593',eligibleForReuse:false,separatelyRequired:true});
+  }
   if(national.status==='EXECUTED'){
     assert.equal(national.sourceScope,'HISTORICAL_584_NATIONAL_ONLY');assert.equal(national.origin,null);
     assert.equal(national.frozenHead,NATIONAL_ORIGIN.head);assert.equal(national.frozenTree,NATIONAL_ORIGIN.tree);

@@ -1,3 +1,11 @@
+## 31. oktober — læs den nye 594-afgrænsning før de historiske statusfronter
+
+Den installerede databaseforgænger er 593; autentiske originale B/S og offentlig generation er stadig591. Den nye assistant-installed593-origin591-successor skal bevare denne adskillelse, gamle profiler og alle 71 udstedte SQL-filer. Ingen 593-original eller håndskrevet594-migration må konstrueres. 4.0.594 er lokalt udstedt gennem den normale afledning; samlet kvalifikation, installation og offentlig levering er fortsat åbne.
+
+Origin-koden er C/I-input og kræver ægte ny afledning. Det præcise T-/projektionsskift skal kontrolleres i både tidlig controller og senere origin-kalder med uændret lager-ABI. Strengt senere H0, hele originale attester, numerisk helinverse, frisk pointer, CAS/no-loss og normal ny native-/kildekvalifikation består. Gammel593-nativeevidens er ikke594-evidens.
+
+Gemt krypteret indhentning er ikke færdig beregning eller automatisk lovligt genbrug efter ændret model-/conditions-baseline. Afvigelse giver normal ikke-muterende CACHE_MISS med bevaret cipher/beskyttet baseline og fortsættelse gennem RAW/cache samt konkrete leverandørhuller. Ny modeloverdragelse er ikke et releasekrav. Aktuelle run-/cacheidentiteter og skriveudfald læses alene i ROOTs private checkpoint. Se DEC-0303 og håndbog 89.291. Alle fem mål til 18. november og allerede godkendte brugertekster bevares; ældre modstridende status gælder kun som dateret historik.
+
 ## 30. oktober — privat genoptagelseskapacitet og selvstændigt nativefasegenbrug
 
 Den særskilte private kandidat samler to gennemgåede genoptagelsesfiler og seks native-ejere oven på 4.0.593. Den er ikke den allerede igangværende kildekontrol, og dens lokale beviser må ikke ommærkes som ny Linux-/PostgreSQL-kvalifikation eller offentlig levering. Den udstedte 593-version, C/I/T og alle 71 SQL-filer bevares.

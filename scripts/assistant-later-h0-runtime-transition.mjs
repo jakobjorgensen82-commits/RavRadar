@@ -21,9 +21,10 @@ import {privateRuntimeContractHashes,installRestoredPrivateRuntime} from './priv
 import {saveRavScoreContinuationCheckpoint,loadRavScoreContinuationCheckpointForTarget} from './ravscore-continuation-checkpoint.mjs';
 import {ravScoreModelBinding} from '../js/core/ravscore-model-contract.js';
 import {ravScoreModelBinding as candidateBinding} from './rollback-assets/ravscore-model-contract.js';
+import {assertFrozen591CompactRuntimeContracts} from './lib/assistant-public591-runtime-contracts.mjs';
 // Ingen caller-/miljøvalgt familie. Begge profiler beholder deres egne opaque handles.
-assert(['assistant-public587-successor','assistant-public588-successor','assistant-public590-successor','assistant-public591-successor'].includes(ACTIVE.sourcePhase));
-const ACTIVE_PREDECESSOR=ACTIVE.sourcePhase==='assistant-public591-successor'?Object.freeze({
+assert(['assistant-public587-successor','assistant-public588-successor','assistant-public590-successor','assistant-public591-successor','assistant-installed593-origin591-successor'].includes(ACTIVE.sourcePhase));
+const ACTIVE_PREDECESSOR=['assistant-public591-successor','assistant-installed593-origin591-successor'].includes(ACTIVE.sourcePhase)?Object.freeze({
   withSource:withAuthenticated591PredecessorSource,read:readAuthenticatedFrozen591Predecessor,
   snapshot:assertAuthenticatedFrozen591Snapshot
 }):ACTIVE.sourcePhase==='assistant-public590-successor'?Object.freeze({  withSource:withAuthenticated590PredecessorSource,read:readAuthenticatedFrozen590Predecessor,
@@ -43,18 +44,14 @@ const same=(a,b,label)=>assert(equal(a,b),label);
 export function assertAssistantOriginalRuntimeContracts(previous,current){
   assert.equal(arguments.length,2);
   const next=requireActiveAssistantBinding();
-  if(ACTIVE.sourcePhase==='assistant-public591-successor'&&ACTIVE.requireRelease()==='4.0.593'){
+  if((ACTIVE.sourcePhase==='assistant-public591-successor'&&ACTIVE.requireRelease()==='4.0.593')
+    ||ACTIVE.sourcePhase==='assistant-installed593-origin591-successor'){
     // Whole-file reviewed delta: only copy-public-delivery-shards gains the
     // compact share copy. Persisted ABI, original values and all downstream
     // metadata-only/inverse checks remain mandatory. No blanket projection skip.
-    const original={continuationStateContractSha256:OLD.T,
-      fullRuntimeContractSha256:FROZEN591_CODE_SOURCE_PROVENANCE.fullRuntimeContractSha256,
-      publicProjectionContractSha256:FROZEN591_CODE_SOURCE_PROVENANCE.publicProjectionContractSha256};
-    same(previous,original,'Exact authenticated591 original runtime contracts');
-    same(current,{...original,continuationStateContractSha256:next.T,
-      publicProjectionContractSha256:'24e95d442450769ff233e42aa4b100842c353c8d28735defbbfef5d5457c99ec'},
-    'Exact issued593 compact-share projection and unchanged storage ABI');
-    return true;
+    assert.equal(previous?.continuationStateContractSha256,OLD.T);
+    assert.equal(current?.continuationStateContractSha256,next.T);
+    return assertFrozen591CompactRuntimeContracts(previous,current);
   }
   same({...previous,continuationStateContractSha256:next.T},current,
     'Only T changes in existing runtime-storage/public projection contracts');

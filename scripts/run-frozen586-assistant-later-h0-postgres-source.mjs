@@ -11,10 +11,11 @@ import {withAuthenticated586PredecessorSource,withAuthenticated587PredecessorSou
   withAuthenticated588PredecessorSource,assertFrozen588CodeSourceSelected,FROZEN588_CODE_SOURCE_PROVENANCE,
   withAuthenticated590PredecessorSource,assertFrozen590CodeSourceSelected,FROZEN590_CODE_SOURCE_PROVENANCE,
   withAuthenticated591PredecessorSource,assertFrozen591CodeSourceSelected,FROZEN591_CODE_SOURCE_PROVENANCE} from './check-assistant-later-h0-predecessor-source.mjs';
-import {requireAssistantLaterH0Output,requireAssistantPublic587SuccessorOutput,requireAssistantPublic588SuccessorOutput,requireAssistantPublic590SuccessorOutput,requireAssistantPublic591SuccessorOutput} from './lib/assistant-later-h0-successor-source.mjs';
+import {FROZEN593_NATIVE_CODE,withInstalled593CodePredecessorSource} from './check-installed593-code-predecessor-source.mjs';
+import {requireInstalled593Original591Output,requireAssistantLaterH0Output,requireAssistantPublic587SuccessorOutput,requireAssistantPublic588SuccessorOutput,requireAssistantPublic590SuccessorOutput,requireAssistantPublic591SuccessorOutput} from './lib/assistant-later-h0-successor-source.mjs';
 const ROOT=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
 function fixedNativeSource(profile){
-  assert(profile===FROZEN586||profile===FROZEN587||profile===FROZEN588||profile===FROZEN590||profile===FROZEN591,'FROZEN_NATIVE_UNKNOWN_PROFILE');
+  assert(profile===FROZEN586||profile===FROZEN587||profile===FROZEN588||profile===FROZEN590||profile===FROZEN591||profile===FROZEN593,'FROZEN_NATIVE_UNKNOWN_PROFILE');
   const HEAD=profile.head,TREE=profile.tree;
 const ADAPTER=profile.adapter,FACTORY='scripts/test-protected-ravscore-continuation-checkpoint.mjs';
 // TEST-only extension of the fixed genuine DATA producer host plus its exact native adapter.
@@ -185,4 +186,21 @@ export async function withFrozen590CheckpointPostgresSource(callback){
 const native591=fixedNativeSource(FROZEN591);
 export async function withFrozen591CheckpointPostgresSource(callback){
   return native591(...arguments);
+}
+
+// Genuine installed593 code executes its own complete native phase before594.
+// Its synthetic native fixtures are never production B/S or origin authority.
+const FROZEN593=Object.freeze({
+  head:FROZEN593_NATIVE_CODE.head,tree:FROZEN593_NATIVE_CODE.tree,
+  adapter:'scripts/lib/assistant-later-h0-postgres.mjs',adapterBytes:29689,
+  adapterSha256:'f0db482f36685c2c05c34fd53ff6b55e683d5c9fa71a86bd4e81e8395f4b22eb',
+  factorySourceSha256:'59aa19878b924401001120ca5ddccf9433399445a7ccdac37816c88c44d5fa33',
+  candidate:'12f78005304316a680716a1d437e06a582815c1645a2eb567028bcc18ff99ffa',
+  integrated:'69bf81c3cc5e256deee2c116a52462597f4cfc47cb6c855c6dba969c1dcf4643',
+  continuation:'e894dd096d03f71cc334d97f85931c2b3969e9b140cb5403a4787cf4b81fbc2e',
+  withSource:withInstalled593CodePredecessorSource,requireOutput:requireInstalled593Original591Output,
+  failureKind:'FROZEN593_NATIVE_FIRST_FAILURE'});
+const native593=fixedNativeSource(FROZEN593);
+export async function withFrozen593CheckpointPostgresSource(callback){
+  return native593(...arguments);
 }

@@ -567,7 +567,10 @@ test('public587 successor native commands append588 without retagging whole587 i
   assert.deepEqual(ASSISTANT_PUBLIC587_SUCCESSOR_COMMANDS,[ASSISTANT_LATER_H0_COMMANDS[0],
     ASSISTANT_LATER_H0_COMMANDS[1]+' --assistant-public587-successor']);
   assert.equal(ASSISTANT_PUBLIC587_SUCCESSOR_SCRIPT,'set -euo pipefail\n'+ASSISTANT_PUBLIC587_SUCCESSOR_COMMANDS.join('\n')+'\n');
-  if(ACTIVE_ASSISTANT_SUCCESSOR.sourcePhase==='assistant-public591-successor'){
+  if(ACTIVE_ASSISTANT_SUCCESSOR.sourcePhase==='assistant-installed593-origin591-successor'){
+    assert.equal(ACTIVE_COMMANDS,INSTALLED593_ORIGINAL591_COMMANDS);
+    assert.equal(ACTIVE_NATIVE_SCRIPT,INSTALLED593_ORIGINAL591_SCRIPT);
+  }else if(ACTIVE_ASSISTANT_SUCCESSOR.sourcePhase==='assistant-public591-successor'){
     assert.equal(ACTIVE_COMMANDS,ASSISTANT_PUBLIC591_SUCCESSOR_COMMANDS);
     assert.equal(ACTIVE_NATIVE_SCRIPT,ASSISTANT_PUBLIC591_SUCCESSOR_SCRIPT);
   }else if(ACTIVE_ASSISTANT_SUCCESSOR.sourcePhase==='assistant-public590-successor'){
@@ -805,7 +808,9 @@ test('calendar588 normal native route uses genuine parent factory then current c
   const main=evidence.slice(evidence.indexOf('async function main() {'));
   assert(main.indexOf('requireAssistantPublic588SuccessorRelease()')<main.indexOf('spawnSync('));
   assert(!main.includes('await decideReuse('));assert(!main.includes('await decideCurrent586Reuse('));
-  if(ACTIVE_ASSISTANT_SUCCESSOR.sourcePhase==='assistant-public591-successor')
+  if(ACTIVE_ASSISTANT_SUCCESSOR.sourcePhase==='assistant-installed593-origin591-successor')
+    assert.equal(ACTIVE_COMMANDS,INSTALLED593_ORIGINAL591_COMMANDS);
+  else if(ACTIVE_ASSISTANT_SUCCESSOR.sourcePhase==='assistant-public591-successor')
     assert.equal(ACTIVE_COMMANDS,ASSISTANT_PUBLIC591_SUCCESSOR_COMMANDS);
   else if(ACTIVE_ASSISTANT_SUCCESSOR.sourcePhase==='assistant-public590-successor')
     assert.equal(ACTIVE_COMMANDS,ASSISTANT_PUBLIC590_SUCCESSOR_COMMANDS);
@@ -972,7 +977,7 @@ test('calendar588 computed source inventories retain exact finite edges and refu
   ]
 };
   for(const [file,expected]of Object.entries(inventories)){
-    const actual=await fs.readFile(file,'utf8'),source=historical592ImportSource(actual,file);
+    const actual=await historical593ImportReviewSource(file),source=historical592ImportSource(actual,file);
     assert.deepEqual([...modelSourceRelativeModuleSpecifiers(source,file)],[...expected],file);
     const actualExpected=Object.hasOwn(reviewedConditions593ImportViews,file)?[...expected,'./bounded-json-writer.mjs']:[...expected];
     assert.deepEqual([...modelSourceRelativeModuleSpecifiers(actual,file)],actualExpected,file);
@@ -1078,11 +1083,10 @@ test('next assistant PG phase requires genuine590 and refuses before native prog
 });
 
 // Current593 qualification is additive; all historical command/receipt oracles above stay exact.
-test('actual593 native evidence selects exact591 successor commands and rejects older or reused receipts',async()=>{
-  assert.equal(ACTIVE_ASSISTANT_SUCCESSOR.sourcePhase,'assistant-public591-successor');
-  assert.equal(ACTIVE_ASSISTANT_SUCCESSOR.requireRelease(),'4.0.593');
-  assert.equal(ACTIVE_COMMANDS,ASSISTANT_PUBLIC591_SUCCESSOR_COMMANDS);
-  assert.equal(ACTIVE_NATIVE_SCRIPT,ASSISTANT_PUBLIC591_SUCCESSOR_SCRIPT);
+test('genuine593 native evidence selects exact591 successor commands and rejects older or reused receipts',async()=>{
+  assert.equal(INACTIVE_ASSISTANT_PUBLIC591_SUCCESSOR.sourcePhase,'assistant-public591-successor');
+  assert.equal(INACTIVE_ASSISTANT_PUBLIC591_SUCCESSOR.requireRelease(),'4.0.593');
+  assert.equal(ASSISTANT_PUBLIC591_SUCCESSOR_SCRIPT,'set -euo pipefail\n'+ASSISTANT_PUBLIC591_SUCCESSOR_COMMANDS.join('\n')+'\n');
   assert.deepEqual(ASSISTANT_PUBLIC591_SUCCESSOR_COMMANDS,[ASSISTANT_PUBLIC590_SUCCESSOR_COMMANDS[0],ASSISTANT_PUBLIC590_SUCCESSOR_COMMANDS[1]+' --assistant-public591-successor']);
   assert.equal(ASSISTANT_PUBLIC591_SUCCESSOR_SCRIPT,'set -euo pipefail\n'+ASSISTANT_PUBLIC591_SUCCESSOR_COMMANDS.join('\n')+'\n');
   assert.notEqual(ASSISTANT_PUBLIC591_SUCCESSOR_PHASE_KIND,ASSISTANT_PUBLIC590_SUCCESSOR_PHASE_KIND);
@@ -1105,7 +1109,7 @@ test('actual593 native evidence selects exact591 successor commands and rejects 
   assert(main.includes("phase:'ASSISTANT_PUBLIC591_SUCCESSOR',eligibleForReuse:false"));
   assert(!main.includes('await decideReuse('));assert(!main.includes('await decideCurrent586Reuse('));
   for(const [file,row]of Object.entries(reviewedConditions593ImportViews)){
-    const raw=await fs.readFile(file,'utf8'),old=historical592ImportSource(raw,file);
+    const raw=await historical593ImportReviewSource(file),old=historical592ImportSource(raw,file);
     assert.equal(historical592ImportSource(old,file),old);
     for(const [previous,current]of row.hunks)for(const changed of [raw.replace(current,()=>previous),raw.replace(current,()=>current+current)])
       assert.throws(()=>historical592ImportSource(changed,file));
@@ -1162,10 +1166,14 @@ test('593 V2 shares the real ordered PG selector, including configured-directory
 });
 
 test('593 V2 input capture closes65 modules/four JSON/all71 SQL and package scopes while preserving named UI/docs/test deltas',async t=>{
+  const check=async sourceRoot=>{
   const {execFileSync}=await import('node:child_process'),cache=new Map(),requests=[];
   const readGit=args=>{const key=JSON.stringify(args);requests.push(args);
-    if(!cache.has(key))cache.set(key,execFileSync('git',args,{encoding:'utf8',maxBuffer:64*1024*1024}));return cache.get(key);};
-  const original=await captureAssistantPublic591Input({readGit});
+    if(!cache.has(key))cache.set(key,execFileSync('git',
+      ACTIVE_ASSISTANT_SUCCESSOR.sourcePhase==='assistant-installed593-origin591-successor'
+        ?args.map(arg=>arg==='HEAD'?FROZEN593_NATIVE_CODE.head:arg.startsWith('HEAD:')?FROZEN593_NATIVE_CODE.head+arg.slice(4):arg):args,
+      {encoding:'utf8',maxBuffer:64*1024*1024,env:{...process.env,GIT_NO_LAZY_FETCH:'1',GIT_NO_REPLACE_OBJECTS:'1',GIT_TERMINAL_PROMPT:'0'}}));return cache.get(key);};
+  const original=await captureAssistantPublic591Input({root:sourceRoot,readGit});
   assert.equal(original.files,140);assert.equal(original.frozenGitTrees.length,12);
   assert.equal(ASSISTANT_PUBLIC591_INPUT_MODULES.length,65);
   const selected=new Set(requests.filter(args=>args[0]==='cat-file').map(args=>args[2].split(':').slice(1).join(':')));
@@ -1195,9 +1203,9 @@ test('593 V2 input capture closes65 modules/four JSON/all71 SQL and package scop
   assert.throws(()=>verifyAssistantPublic591Input(nestedInput,original));
   const {default:path}=await import('node:path'),normalLstat=fs.lstat.bind(fs);
   try{
-    t.mock.method(fs,'lstat',async file=>path.resolve(String(file))===path.resolve(nested)
+    t.mock.method(fs,'lstat',async file=>path.resolve(String(file))===path.resolve(sourceRoot,nested)
       ?{isFile:()=>true,isSymbolicLink:()=>false}:normalLstat(file));
-    await assert.rejects(captureAssistantPublic591Input({readGit}),/Untracked package scope/);
+    await assert.rejects(captureAssistantPublic591Input({root:sourceRoot,readGit}),/Untracked package scope/);
   }finally{t.mock.restoreAll();}
   const nativeFile='scripts/lib/checkpoint-cas-native-postgres.mjs';
   await assert.rejects(captureAssistantPublic591Input({physical:false,readGit:args=>
@@ -1208,6 +1216,10 @@ test('593 V2 input capture closes65 modules/four JSON/all71 SQL and package scop
   assert.throws(()=>verifyAssistantPublic591Input(sqlChanged,original));
   await assert.rejects(captureAssistantPublic591Input({physical:false,readGit:args=>
     args[0]==='rev-parse'&&args[1]===ASSISTANT_PUBLIC591_FROZEN.at(-1).head+'^{tree}'?'d'.repeat(40):readGit(args)}));
+  };
+  if(ACTIVE_ASSISTANT_SUCCESSOR.sourcePhase==='assistant-installed593-origin591-successor')
+    await withInstalled593CodePredecessorSource(check);
+  else await check(process.cwd());
 });
 
 test('593 V2 receipts and bounded marker preserve V1 refusal and reject identity/status/input/runtime drift',()=>{
@@ -1404,4 +1416,102 @@ test('593 V2 rejects invalid artifact metadata before every ZIP call while prese
     assert.equal((await decideAssistantPublic591Reuse(fixture.options)).status,'EXECUTE');
     assert.equal(fixture.calls.filter(route=>route.endsWith('/zip')).length,0,'Invalid metadata cannot start ZIP transport');
   }
+});
+
+
+import {INSTALLED593_ORIGINAL591_COMMANDS,INSTALLED593_ORIGINAL591_SCRIPT,
+  INSTALLED593_ORIGINAL591_PHASE_KIND,verifyInstalled593Original591PhaseReceipt}
+  from './native-postgres-evidence.mjs';
+import {INACTIVE_ASSISTANT_PUBLIC591_SUCCESSOR,INSTALLED593_ORIGINAL591_DATABASE_BEFORE,
+  requireInstalled593Original591Release,requireInstalled593Original591Binding,requireInstalled593Original591Output}
+  from './lib/assistant-later-h0-successor-source.mjs';
+import {verifyInstalled593Original591Package,verifyInstalled593Original591NativeContext,
+  installed593Original591NativeClaims} from './national584-source-evidence.mjs';
+import {compareInstalled593Original591Successor} from './lib/assistant-later-h0-postgres.mjs';
+import {withFrozen593CheckpointPostgresSource} from './run-frozen586-assistant-later-h0-postgres-source.mjs';
+import {FROZEN593_NATIVE_CODE,verifyFrozen593NativeCodeManifest,withInstalled593CodePredecessorSource} from './check-installed593-code-predecessor-source.mjs';
+async function historical593ImportReviewSource(file){
+  if(ACTIVE_ASSISTANT_SUCCESSOR.sourcePhase==='assistant-installed593-origin591-successor'
+    &&Object.hasOwn(reviewedConditions593ImportViews,file)){
+    const {execFileSync}=await import('node:child_process');
+    return execFileSync('git',['cat-file','blob',FROZEN593_NATIVE_CODE.head+':'+file],{
+      encoding:'utf8',maxBuffer:1024*1024,timeout:30000,
+      env:{...process.env,GIT_NO_LAZY_FETCH:'1',GIT_NO_REPLACE_OBJECTS:'1',GIT_TERMINAL_PROMPT:'0'},
+    });
+  }
+  return fs.readFile(file,'utf8');
+}
+function installed594Receipt(){return {schemaVersion:1,kind:INSTALLED593_ORIGINAL591_PHASE_KIND,phase:'INSTALLED593_ORIGINAL591_SUCCESSOR',
+  sourcePhase:'assistant-installed593-origin591-successor',releaseVersion:requireInstalled593Original591Release(),
+  binding:requireInstalled593Original591Binding(),output:requireInstalled593Original591Output(),
+  databaseBefore:INSTALLED593_ORIGINAL591_DATABASE_BEFORE,current:{run:50000000594,attempt:1,
+    head:'a'.repeat(40),pullRequest:999,branch:'codex/synthetic-installed594'},
+  commands:[...INSTALLED593_ORIGINAL591_COMMANDS],status:'EXECUTED',executedInThisRun:true,origin:null,eligibleForReuse:false};}
+
+test('installed593 new594 active native commands and receipt refuse predecessor, reused and changed inputs',()=>{
+  assert.equal(ACTIVE_ASSISTANT_SUCCESSOR.sourcePhase,'assistant-installed593-origin591-successor');
+  assert.equal(ACTIVE_COMMANDS,INSTALLED593_ORIGINAL591_COMMANDS);assert.equal(ACTIVE_NATIVE_SCRIPT,INSTALLED593_ORIGINAL591_SCRIPT);
+  assert.deepEqual(INSTALLED593_ORIGINAL591_COMMANDS,[ASSISTANT_PUBLIC591_SUCCESSOR_COMMANDS[0],
+    ASSISTANT_PUBLIC591_SUCCESSOR_COMMANDS[1]+' --assistant-installed593-origin591-successor']);
+  assert.equal(INSTALLED593_ORIGINAL591_SCRIPT,'set -euo pipefail\n'+INSTALLED593_ORIGINAL591_COMMANDS.join('\n')+'\n');
+  assert.notEqual(INSTALLED593_ORIGINAL591_PHASE_KIND,ASSISTANT_PUBLIC591_SUCCESSOR_PHASE_KIND);
+  const receipt=installed594Receipt(),current=receipt.current;
+  assert.equal(verifyInstalled593Original591PhaseReceipt(receipt,current).status,'EXECUTED');
+  for(const mutate of [v=>v.status='REUSED',v=>v.executedInThisRun=false,v=>v.origin={run:1},v=>v.eligibleForReuse=true,
+    v=>v.phase='ASSISTANT_PUBLIC591_SUCCESSOR',v=>v.schemaVersion=2,v=>v.kind=ASSISTANT_PUBLIC591_V2_KIND,v=>v.sourcePhase='assistant-public591-successor',
+    v=>v.releaseVersion='4.0.593',v=>v.commands=[...ASSISTANT_PUBLIC591_SUCCESSOR_COMMANDS],v=>v.current={...current,head:'b'.repeat(40)},
+    v=>v.binding={...v.databaseBefore},v=>v.binding.I='f'.repeat(64),v=>v.output.migrationSha256='f'.repeat(64),
+    v=>v.databaseBefore.version='20261029183010']){
+    const changed=copy(receipt);mutate(changed);assert.throws(()=>verifyInstalled593Original591PhaseReceipt(changed,current));
+  }
+  assert.throws(()=>verifyAssistantPublic591SuccessorPhaseReceipt(receipt,current));
+  assert.throws(()=>verifyAssistantPublic591V2PhaseReceipt(receipt,current));
+});
+
+test('installed593 new594 normal national caller preserves package and executed-only native claims',async()=>{
+  const pkg=JSON.parse(await fs.readFile('package.json','utf8')),receipt=installed594Receipt();
+  verifyInstalled593Original591Package(pkg);
+  verifyInstalled593Original591NativeContext(receipt,receipt.current,pkg.version);
+  const claims=installed593Original591NativeClaims(receipt,receipt.current);
+  assert.equal(claims.current593PredecessorNative.scope,'GENUINE_FROZEN593');
+  for(const claim of Object.values(claims))assert.deepEqual([claim.status,claim.executedInThisRun,claim.origin,claim.eligibleForReuse],['EXECUTED',true,null,false]);
+  for(const mutate of [v=>v.version='4.0.593',v=>v.scripts['test:assistant-later-h0-source']+=' --write',
+    v=>v.scripts['test:ravscore-source-critical']+=' && node unrelated.mjs']){
+    const changed=copy(pkg);mutate(changed);assert.throws(()=>verifyInstalled593Original591Package(changed));
+  }
+});
+
+test('installed593 new594 normal PG caller validates real canonical inputs before its first synthetic SQL boundary',async t=>{
+  const failure=Object.freeze({synthetic:'first-native-sql-boundary'});let calls=0;
+  t.mock.method(console,'error',()=>{});
+  await assert.rejects(compareInstalled593Original591Successor({
+    psql:async query=>{calls++;assert.equal(query,'select max(version) from supabase_migrations.schema_migrations;');throw failure;},
+    runSql:async()=>{throw Error('No SQL execution');},root:'synthetic',sourceDocumentAt(){},atHour(){},saveCheckpoint(){},
+  }),error=>error===failure);
+  assert.equal(calls,1);
+  await assert.rejects(runNativeCheckpointSqlComparison({includeInstalled593Original591Successor:true}),
+    /requires the genuine complete593 native phase/);
+  await assert.rejects(runNativeCheckpointSqlComparison({includeInstalled593Original591Successor:'true'}),{code:'ERR_ASSERTION'});
+});
+
+test('installed593 fixed genuine593 native code manifest rejects changed bytes and host imports its own factory',async()=>{
+  const raw=await fs.readFile('scripts/fixtures/installed593-code-predecessor.json');
+  const manifest=verifyFrozen593NativeCodeManifest(raw);assert.equal(manifest.files.length,185);
+  for(const changed of [Buffer.concat([raw,Buffer.from('\n')]),Buffer.from(raw).fill(0,0,1)])
+    assert.throws(()=>verifyFrozen593NativeCodeManifest(changed));
+  const result=await withFrozen593CheckpointPostgresSource(async({adapter,factory})=>{
+    assert.equal(typeof adapter.compareAssistantPublic591Successor,'function');
+    assert.equal(factory.sourceHead,manifest.head);assert.equal(factory.sourceTree,manifest.tree);
+    assert.equal(factory.ravScoreModelBinding().modelBundleSha256,INSTALLED593_ORIGINAL591_DATABASE_BEFORE.I);
+    const stop=Object.freeze({synthetic:'genuine593-first-native-sql'});let sqlCalls=0;
+    const originalError=console.error;console.error=()=>{};
+    try{await assert.rejects(adapter.compareAssistantPublic591Successor({
+      psql:async query=>{sqlCalls++;assert.equal(query,'select max(version) from supabase_migrations.schema_migrations;');throw stop;},
+      runSql:async()=>{throw Error('No SQL execution');},root:'synthetic',sourceDocumentAt:factory.sourceDocumentAt,
+      atHour:factory.atHour,saveCheckpoint:factory.saveRavScoreContinuationCheckpoint,
+    }),error=>error===stop);}finally{console.error=originalError;}
+    assert.equal(sqlCalls,1);
+    return 'synthetic-code-only-callback';
+  });
+  assert.equal(result,'synthetic-code-only-callback');
 });

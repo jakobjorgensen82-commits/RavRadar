@@ -24,6 +24,7 @@ import { assertIntegratedCoastalPointContinuation } from './coastal-point-stagin
 import { assertCandidateGRollbackContinuation } from './ravscore-candidate-g-rollback-runtime.mjs';
 import { ownFileDescriptorIdentity, ownedFileDescriptorClosed } from './private-weather-component-pack.mjs';
 import { PRIVATE_CONDITIONS_MAX_BYTES } from './bounded-json-writer.mjs';
+import {assertFrozen591CompactRuntimeContracts} from './assistant-public591-runtime-contracts.mjs';
 import { withNativeCurrentReanalysisPredecessorSource } from '../check-native-current-reanalysis-predecessor-source.mjs';
 import { assertAuthenticatedFrozen584Snapshot } from './authenticated-frozen584-predecessor.mjs';
 import { withAuthenticated584PredecessorSource } from '../check-account-statistics-assistant-predecessor-source.mjs';
@@ -570,6 +571,18 @@ async function readFrozen590LaterOrigin({descriptor,before,request,conditions,ce
   return handle;
 }
 
+// Ren metadatakontrol; den skaber ingen attest, autentificering eller adgang.
+// Normal læsning autentificerer hele den frosne original før dette kald.
+export async function assertFrozen591LaterOriginMetadata(descriptor,checkpoint){
+  need(arguments.length===2,'591_METADATA_ONLY');
+  const contracts=await privateRuntimeContractHashes(),I=ravScoreModelBinding(),C=candidateBinding();
+  need(same({...checkpoint.modelBinding,modelBundleSha256:I.modelBundleSha256},I)
+    &&same({...checkpoint.candidateGRollbackCompanion.modelBinding,modelBundleSha256:C.modelBundleSha256},C),
+    '591_METADATA_ONLY');
+  try{assertFrozen591CompactRuntimeContracts(descriptor.contractHashes,contracts);}
+  catch{fail('591_METADATA_ONLY');}
+  return true;
+}
 // Separate genuine591 later-H0 origin. The old590 implementation remains byte-whole above.
 async function readFrozen591LaterOrigin({descriptor,before,request,conditions,central,parts,currentSource}){
   const oldI='ebd5ac3dac09b7afb51e46d18920f6932b478b7ef15bdd31190c128273cb6a54';
@@ -587,10 +600,7 @@ async function readFrozen591LaterOrigin({descriptor,before,request,conditions,ce
     &&C.modelBundleSha256!==snapshot.checkpoint.candidateGRollbackCompanion.modelBinding.modelBundleSha256
     &&contracts.continuationStateContractSha256!==descriptor.contractHashes.continuationStateContractSha256,
     '591_ISSUED_CURRENT_SOURCE');
-  need(same({...snapshot.checkpoint.modelBinding,modelBundleSha256:I.modelBundleSha256},I)
-    &&same({...snapshot.checkpoint.candidateGRollbackCompanion.modelBinding,modelBundleSha256:C.modelBundleSha256},C)
-    &&same({...descriptor.contractHashes,continuationStateContractSha256:contracts.continuationStateContractSha256},contracts),
-    '591_METADATA_ONLY');
+  await assertFrozen591LaterOriginMetadata(descriptor,snapshot.checkpoint);
   need(conditions.datasetId===descriptor.datasetId&&conditions.productionReferenceAt===descriptor.productionReferenceAt
     &&same(conditions[ATTEST],snapshot.attestation),'591_WHOLE_PARENT_CHANGED');
   const pairs=pairsFromConditions(conditions,parts);

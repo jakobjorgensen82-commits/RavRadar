@@ -1,3 +1,15 @@
+## 31. oktober — ny efterfølger med installeret 593 og autentiske 591-originaler
+
+Databasen har faktisk installeret 593, mens seneste autentiske originale vejrpakke B, beregningstilstand S og offentlige generation fortsat er 591. De er to forskellige forgængerroller. Der findes ingen593-original, som må opfindes eller bruges som førskrivningsbevis.
+
+Den tidlige normale controller accepterer allerede den gennemgåede kompakte offentlige projektion. Den senere origin-kontrol krævede stadig, at kun fortsættelseskontrakten ændredes. Den normale prøve mod ægte 591-kode beviser netop denne forskel: de hele I/C-bindinger passer efter deres tilladte bundle-skift, lager-ABI er uændret, og kontraktkortet ændrer både T og den allerede godkendte offentlige projektion. En fælles præcis kontrol erstatter kun denne modstrid; øvrige felter og gamle profiler bevares.
+
+Origin-ejeren indgår i C/I-input. Derfor kræves normal ny afledning og en additiv assistant-installed593-origin591-successor-profil: databaseforgænger 593, originalState 591 og én ny normalt genereret append-only migration. Den udstedte 593-familie, alle 71 gamle SQL-filer og de autentiske 591-læsere bevares. 4.0.594 er lokalt udstedt gennem den normale afledning; samlet kvalifikation, installation og offentlig levering er fortsat åbne.
+
+Kun en strengt senere almindelig generation kan give nyt offentligt vejr. Hele originaler, metadata-only-overgang, numerisk helinverse, frisk pointer, databasegenlæsning, CAS og hård no-loss består. Krypteret indhentningsfremskridt er ikke et completed-build-checkpoint og kan ikke automatisk genbruges over ændret C/I og conditions-baseline. En afvigende gammel baseline giver normal ikke-muterende CACHE_MISS; cipher og beskyttet baseline bevares, og den almindelige vej bruger RAW/cache og konkrete leverandørhuller. Ny overdragelse over modelskift er ikke en leveringsforudsætning.
+
+Ingen scoreformel, kildeprioritet, administratorpunkter, geometri eller godkendt brugertekst ændres. SOURCE, statistik og automatisk sletning aktiveres ikke. Alle fem mål til 18. november er åbne. Ældre modsatrettede statusfronter er dateret historik på disse konkrete punkter. Se DEC-0303 og håndbog 89.291; skiftende kørsels-/cacheevidens føres alene i privat checkpoint.
+
 ## 30. oktober — P0: DMI-originalers conditions skal følge producentens grænse
 
 Den præcise 591→593-controller er kvalificeret og leveret til main; den efterfølgende normale prepare/install og genbrug af kildekontrollen bestod. Vejrhentningen stoppede senere, fordi Pythons normale RAW-retention stadig anvendte 256 MiB på den beskyttede B-conditions-fil. Producenten tillader allerede 535.822.312 bytes. Den primære DMI-afvisning skete før ny ledger; selectorens afvisning af den gamle referencetime er en følgefejl og bevares. Det er ikke ugyldige leverandørdata.
