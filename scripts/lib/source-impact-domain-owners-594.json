@@ -11072,6 +11072,7 @@
         "scripts/test-protected-ravscore-continuation-checkpoint.mjs",
         "scripts/test-source-impact-domain-inputs.mjs",
         "scripts/test-source-impact-domain-plan.mjs",
+        "scripts/test-workflow-validation-order-4.0.108.mjs",
         "scripts/weather-source-gate.mjs"
       ],
       "dependencySurfaces": [
@@ -11107,6 +11108,7 @@
         "4f57a2c94733abd7fdadeb46a0cecbf34fc1357b61a6e7d342f688f77b40e66e",
         "531ff68ce7599c283acec5be333a5621ac9b65a475314104dfdb129c84ea5cc1",
         "532fbc929a47705729048c4ed631132a4a8fd069ff61dd40b6e79309fc217540",
+        "56b304e84ed1fa94a1f728d6078740332817923564b0f3cb15db6705b3fb4816",
         "5ff0d30896c63f66b949286c703d227567c2ffd8fb8bbd6cc1d063315e63d587",
         "624176c45167ae87eea67674c99e037cfdc9736971b98acbd683de83a05efb95",
         "62c54d17218deac91e26c00495c8a24e039de4813f9f56c57c2fb6724c072dcb",
@@ -11123,7 +11125,9 @@
         "901430e8c99df1306fbfd5a3cc0c9c4ff3c91757e6fec293cdfbfb67f0d8a957",
         "902a50f0f2e04fe5edbfe61ea0923961bf94d6e7a1b57742e63d1b6eceda1e07",
         "968ac8f693f20d228a35173932dd2bdaba30136c23616829ceb9236c550254ba",
+        "98ba3519f50f12bc8d2b6b5a412abe405f5b07834e7d98e1e01f16a6425cd5b0",
         "9f679da498b90ec9670e75a5a6f25896a2d5777308036075e86ab46411777b2c",
+        "a42144742228397e3713755b3ea933c3cbecbc6738248a0d74bf50d29fc27eab",
         "adb0d08ce0957a24c5662f153453072b714e2d2e096a4e042ada73d6a40ac6fb",
         "b4c74790d7c608a85184df4f7b1a4f5f70dd010a7e8de7c468beb6eff87aa2e1",
         "b59e92e32ad1390998468a84d04e02b159deb4c3a2bc473f60dc0f46469180af",
@@ -11139,6 +11143,7 @@
         "e09c2f79f2565f3362f2e2d9c35d1775e9e352d5b84f85b442d5c54dd537768d",
         "e284572b9773e865b744c6debb70b94ba2f6109ad88f76ad9078ac1a816c9527",
         "e4e1ec07b4d7e6a1011a45003ca900e2043bc5b4244c85290d00de06d1233fda",
+        "e7c55da2fc135e3a38489e3eead430800f3270a7cc661dea3cf01a82d1a9c55d",
         "eb3be44e7c4c0cd548d3d14f17af69f1569e250f656b6f11047a0ff0efe8663b",
         "eddd8d170ba3cf15f8a5da50fd0b207f711f74cb36ae95a5a612da46896076aa",
         "f7b05eca8f5a0a0b2c9cf6a00838d697f8c7db705f55dfe0dae607a1a55b0fd5"

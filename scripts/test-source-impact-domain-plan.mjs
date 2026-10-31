@@ -98,8 +98,12 @@ test('normal closed domain planner handles real composition, one same-tree merge
     const pg='scripts/test-protected-ravscore-continuation-checkpoint.mjs';
     const changed=commit(rewrite(tree,[[pg,Buffer.concat([git(root,['cat-file','blob',candidate+':'+pg]),Buffer.from('\n// PG input delta\n')])]]),[candidate],'changed PostgreSQL input');
     assert.deepEqual(run(changed).reasonCodes,['POSTGRES_OR_MODEL_INPUT_CHANGED']);
-    // Preserve the old incomplete composition as a real negative, without a whitelist.
-    const obsoleteTree=rewrite(text(root,['rev-parse',LEGACY_REFERENCE+'^{tree}']),additions);
+    // Age is not a rejection reason once a whole transition has been reviewed.
+    // Keep the historical partial composition, but give it a genuinely unreviewed exact owner.
+    const unreviewed='scripts/test-workflow-validation-order-4.0.108.mjs';
+    const unreviewedBody=Buffer.concat([git(root,['cat-file','blob',LEGACY_REFERENCE+':'+unreviewed]),
+      Buffer.from('\n// Synthetic unreviewed whole workflow-test transition.\n')]);
+    const obsoleteTree=rewrite(text(root,['rev-parse',LEGACY_REFERENCE+'^{tree}']),[...additions,[unreviewed,unreviewedBody]]);
     const obsolete=commit(obsoleteTree,[LEGACY_REFERENCE],'synthetic obsolete partial composition');
     git(root,['update-ref','HEAD',obsolete]);
     const refused=plan({baselineCommit:LEGACY_BASE,candidateCommit:obsolete,expectedHead:obsolete});

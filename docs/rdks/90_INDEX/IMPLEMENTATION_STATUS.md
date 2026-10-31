@@ -6,6 +6,8 @@ Den lokale rettelse fører den allerede producerede kildeidentitet videre gennem
 
 ### Sikker genoptagelse efter stop før offentlig aktivering
 
+Den historiske negative kildeprøve må ikke kræve afvisning alene, fordi dens sammensætning er gammel: en senere gennemgået helfilovergang kan lovligt være registreret. Den bevarer derfor den gamle sammensætning med en konkret, ikke-gennemgået mutation af en præcis workflow-testejer og kræver fortsat FULL med den rigtige afvisningsårsag. Produktets kildegrænse og gamle negative database-/model-/importprøver ændres ikke; dette er en afgrænset testdatarettelse, ikke offentlig vejrlevering.
+
 Den gemte beregning og dens originale producent bevares, selv om en senere kodeversion udfører leveringen. En ny executor må ikke ommærke den gamle producent eller genstarte leverandører og beregning. Den særskilte normale checkpoint-indgang bruger den eksisterende genoptagelseskalder og samme eksklusive produktionslås; den er kun vellykket, når der faktisk er gennemført en godkendt genoptagelseshandling.
 
 En levering, der aldrig nåede Pages, afbrydes fortsat som udgangspunkt. Den snævre undtagelse kræver frisk, autentificeret føraktiveringsevidens, den oprindelige plan og originalpakke, en faktisk afsluttet gammel ejer, et faktisk sprunget Pages-trin samt en uændret og fuldt verificeret offentlig kilde. Kun de præcist gennemgåede reparationsfiler må skille producent og executor. Den centrale overgang bruger den eksisterende CAS og genlæses; et ukendt skriveudfald giver ingen automatisk gentagelse.

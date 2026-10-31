@@ -8,7 +8,7 @@ import {fileURLToPath} from 'node:url';
 import {analyzeSourceDomainInputs} from './source-impact-domain-inputs.mjs';
 import {scanAllSourceDependencies,dependencySourceLiterals} from './lib/source-impact-control-imports.mjs';
 const ROOT=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
-const REGISTRY_SHA256='625ae598c602c1e814f6e585916818009d2daded8382c42b28283e6695c6aa0c';
+const REGISTRY_SHA256='edca0d67f412191a57215dca0ee540678032a60f99a1cb21fd7660916410c629';
 const sha=value=>crypto.createHash('sha256').update(value).digest('hex');
 const oid=value=>typeof value==='string'&&/^[a-f0-9]{40}$/.test(value);
 const relative=value=>typeof value==='string'&&/^[A-Za-z0-9_./-]+$/.test(value)&&!value.startsWith('/')
