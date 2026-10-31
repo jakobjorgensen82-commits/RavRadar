@@ -1,3 +1,7 @@
+## 30. oktober — ejerbeslutning om kontroloprydning og ændringsbaseret testvalg
+
+Ejeren kræver gennemgang af alle kilde-, database-, nationale og deploykontroller: test påvirket funktion og dens afhængigheder; undlad automatisk uvedkommende områder; fjern ligegyldige, gentagne og erstattede kontroller fra normal levering. DEC-0302 fastholder beslutningen og skellet mellem besluttet arbejdsform og endnu ikke leveret automatik. Ingen data-/sikkerhedsstop svækkes, ingen aktuelt kørende kvalifikation nulstilles, og alle fem mål bevares.
+
 ## 30. oktober — privat genoptagelseskapacitet og selvstændigt nativefasegenbrug
 
 Den særskilte private kandidat samler to gennemgåede genoptagelsesfiler og seks native-ejere oven på 4.0.593. Den er ikke den allerede igangværende kildekontrol, og dens lokale beviser må ikke ommærkes som ny Linux-/PostgreSQL-kvalifikation eller offentlig levering. Den udstedte 593-version, C/I/T og alle 71 SQL-filer bevares.

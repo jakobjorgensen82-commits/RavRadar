@@ -4,6 +4,34 @@ Den præcise 591→593-controller er kvalificeret og leveret til main; den efter
 
 Den afgrænsede P0-kandidat ændrer kun conditions-rollens maksimum til producentens eksisterende grænse. Manifest beholder 256 MiB; filtype, nlink, hele SHA, registry, originale B/S og no-loss består. Den normale fysiske målprøve består med repræsentativ og maksimal gyldig fil samt negative grænse-/integritetscases. C/I og de syv forbrugere er uændrede; ingen ny version, SQL eller geninstallation følger af denne Pythonrettelse. Præcis kildekvalifikation og faktisk nyt offentligt vejr er fortsat åbne. Alle fem mål består; detaljeret kørsels- og cacheevidens føres privat. Se DEC-0301.
 
+## 30. oktober — komplet Git-diff er koblet til den lokale planlægning
+
+Den skrivefri læser i scripts/source-impact-git-diff.mjs læser hele den faktiske commit-diff offline med eksakte commit-IDer, faktisk HEAD og verificeret forfader. Ingen caller-valgt udeladelsesliste findes. Kun de kendte tekststier får afgrænsede UTF-8-bloblæsninger; ukendte, store, binære og ikke understøttede navne bevares i inventaret og giver fuldt omfang. Manglende objekter og forkert identitet afviser billig plan. 19 lokale cases med små ægte Git-repositories består; en faktisk BOM-navnefejl blev først reproduceret og derefter rettet.
+
+De to lokale efterfølgere er nu sammenført: en faktisk FULL-baselinekvalifikator med hashbundet rapportlæsning og en særskilt TARGETED-builder/validator. Fuld GitHub-status, relevante native-/nationaltrin, bevisindhold, Git-forfader og friske slutaflæsninger kræves; N/A må aldrig ommærkes til udført SQL. Producentens faktiske PR-head og forbrugerens kildeidentiske merge behandles særskilt. De sammenførte målprøver består lokalt; ingen live baseline, produktkommandoer, SQL eller offentlig levering er udført af disse prøver.
+
+Den normale producentkoordinator er nu lokal kode med komplet kumulativ klassifikation, faktisk afvikling af planens faste Node-kommandoer og ren kilde/PR-identitet før og efter. Den sammenførte normale kalderprøve består på små ægte Git-repositories og syntetiske transport-/målprocesser. Det er ikke produktprøver, live API, SQL eller ny leveringsautoritet.
+
+Den lokale forbrugerhelper er nu også sammenført og målprøvet med en ægte lille Git-merge og syntetiske transport-/rapportdata. Den kræver præcis merge-/kildeidentitet, faktisk deklareret TARGETED-omfang, en frisk fuld baseline og komplet ny plan. Den eksisterende inspektør for senere fejl får kun en export; dens adfærd er bevaret. Dette er fortsat ikke en faktisk GitHub-genbrugskontrol.
+
+Workflow, normal CLI og afgrænset locator-opdagelse er nu sammenført lokalt med den særskilte producent og forbruger. Den gamle digest forbliver uden netkald; den nye CI-indgang bevarer normal FULL ved utilstrækkeligt bevis. Alle 22 runtime-trin beholder deres identitet, og kun en kvalificeret TARGETED-plan må lade trin 6–20 stå som faktisk sprunget over. Producentens rene kilde og præcis særskilt rapport kræves fortsat. Historisk kildekvalifikation og forbrug følger den eksisterende adskillelse fra centralt hydreret runtime. Normal manuel vejrindgang er med i registret over senere kildeevidens. Source-adapteren deler 64 faktiske HTTP-kald/60 sekunder; native-standardens 24/60 består. De normale lokale integrationsmål er gennemført; de er ikke live GitHub-, SQL- eller produktionsbevis.
+
+Den lokale V2-opfølgning accepterer kun GitHubs tomme run-PR-projektion sammen med et hashbundet artifact og selvstændigt verificeret rigtig PR før og efter. Den påviste gamle V1-workflow-fixtures no-op er rettet gennem den gennemgåede strenge helinverse; alle gamle assertions og mutationer består. Den samme autentiske gemte V2-pakke er root-afprøvet før/efter uden array- eller bevisændring. Det er ikke automatisk genbrug i produktion; kontrolændringen kræver fortsat sin egen kvalifikation.
+
+Samlet gennemgang, første FULL-kvalifikation af selve kontrolændringen, sikker levering, faktisk senere TARGETED-levering, målt tidsvirkning og bredere oprydning er åbne. Planens sideeffektfelt hedder ordinaryWeatherMutatedByPlanner; det påstår alene, at planlæggeren ikke skriver vejr, og siger intet ubekræftet om kandidatens påvirkning. Den akutte vejrrettelse holdes særskilt og har forrang. Alle fem mål bevares. Se DEC-0302 og privat checkpoint; ældre status nedenfor er historik på disse konkrete punkter.
+
+## 30. oktober — første afgrænsede ændringsplan er lokal kode
+
+Den rene planlægger i scripts/source-impact-plan.mjs har tre første profiler: de navngivne tekniske dokumenter samt præcise Om- og Læring-tekstfelter. Den vælger henholdsvis 6, 5 og 5 faktiske kommandoer mod fuldplans 72; det er kommandotal, ikke målte CI-tider. 48 lokale planlæggercases består uden at starte source-, SQL- eller leverandørprøver. Beskyttede, ukendte og blandede ændringer går til fuld plan; ugyldige/duplikerede rækker og skipflag afvises.
+
+Alle planer er fortsat PLANNING_ONLY. Komplet faktisk Gitdiff, kvalificeret baseline, normal gate-/proof-/workflowintegration og den samlede udtynding er ikke færdige. Dette er ikke offentlig levering eller bevis for den forventede tidsgevinst. Den aktive vejrrettelses kvalifikation ændres ikke. Se DEC-0302 og privat checkpoint.
+
+## 30. oktober — testmatrix skal følge påvirkning, ikke blanketomfang
+
+Testomfanget skal følge ændringens faktiske påvirkning og relevante afhængigheder. Uændrede, uvedkommende områder skal ikke automatisk udløse dybe prøver. Korte prøver af den normale kæde kommer tidligt; overflødige, gentagne og erstattede kontroller fjernes fra den normale leveringsvej.
+
+Forberedt: stop efter ugyldig bindingpreflight, faste normale tidsrækker pr. testkommando og en faktisk normal overgangsprøve først i eksisterende tidlige workflowtrin. Lokal afgrænset runnerkontrol består; det er ikke en kørt fuld source-/SQL-prøve eller installeret ny matrix. Den samlede ændringsplan, klassifikation, baselineforbindelse, normal proof-/workflowintegration og faktisk tids-/dækningsvirkning mangler. Ejerbeslutningen er gældende arbejdsinstruks. Den konkrete nye testudvælgelse og udtynding er under forberedelse og er ikke teknisk leveret. Det igangværende kvalifikationsforløb bevares; ingen rød eller ukendt relevant gate omgås. Se DEC-0302.
+
 ## 30. oktober — installeret 593-binding og præcis rettelse af den første runtimeovergang
 
 593 har bestået den samlede kildekontrol og den ægte databaseprøve. Den originale591-førskrivningskontrol, SQL-installation og begge normale databasegenlæsninger er faktisk gennemført. Det er endnu ikke offentlig593-levering. Den første efterfølgende almindelige vejrhentning stoppede før leverandørerne: runtimekontrollen tillod kun ændret fortsættelseskontrakt, selv om den gennemgåede kompakte prognosedeling også ændrer den offentlige projektions kontrakt.

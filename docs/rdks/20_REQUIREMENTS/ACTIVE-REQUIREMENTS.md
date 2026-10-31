@@ -1,3 +1,9 @@
+## Aktivt krav — ændringsbaseret testvalg, 30. oktober
+
+Testomfanget skal følge ændringens faktiske påvirkning og relevante afhængigheder. Uændrede, uvedkommende områder skal ikke automatisk udløse dybe prøver. Korte prøver af den normale kæde kommer tidligt; overflødige, gentagne og erstattede kontroller fjernes fra den normale leveringsvej.
+
+Hver valgt prøve skal have et konkret beskyttet krav og en forbindelse til ændrede kildeejere eller relevante afhængigheder. Hele den faktiske diff skal vurderes; ukendt påvirkning giver bredere kontrol. Et grønt workflow er ikke bevis for en regressionstest, der ikke faktisk indgår. Historiske kilde-/SQL-originaler bevares, selv når en gammel prøve flyttes ud af daglig levering. Ejerbeslutningen er gældende arbejdsinstruks. Den konkrete nye testudvælgelse og udtynding er under forberedelse og er ikke teknisk leveret. Det igangværende kvalifikationsforløb bevares; ingen rød eller ukendt relevant gate omgås. Se DEC-0302.
+
 ## 30. oktober — krav til den private resume/native-kombination
 
 Completed-stage skal anvende den eksisterende producentgrænse for conditions ved forælder/barn/lineage. Installeret filkontrol må kun udvide de tre eksakte id-/stipar; ingen wildcard eller sammenblanding med komprimeret transport. Hele SHA-256, byteantal, samme descriptor/sti før og efter, lukning, oprindelig fejl, GCM, attest, parent-CAS og no-loss skal bestå.

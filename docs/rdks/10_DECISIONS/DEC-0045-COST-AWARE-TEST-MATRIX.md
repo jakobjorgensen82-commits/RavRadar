@@ -1,3 +1,7 @@
+## Tillæg 30. oktober 2026 — ændringsbaseret omfang
+
+DEC-0302 erstatter blanketomfang ved enhver rettelse: valgt testomfang følger faktisk påvirkning og afhængigheder; uvedkommende områder skal ikke automatisk genprøves. Ejerbeslutningen er aktiv arbejdsinstruks, men den nye tekniske matrix er endnu ikke leveret. Bevar alle relevante data-/integritetsgates og ærlig udførelse/genbrug/ikke-berørt-status. Historiske regler nedenfor bevares på deres oprindelige scope.
+
 # DEC-0045 - Omkostningsbevidst testmatrix
 
 - **Status:** IMPLEMENTERET

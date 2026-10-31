@@ -1,3 +1,9 @@
+## 30. oktober — ændringsbaseret kontrol og oprydning
+
+Testomfanget skal følge ændringens faktiske påvirkning og relevante afhængigheder. Uændrede, uvedkommende områder skal ikke automatisk udløse dybe prøver. Korte prøver af den normale kæde kommer tidligt; overflødige, gentagne og erstattede kontroller fjernes fra den normale leveringsvej.
+
+Ejerbeslutningen er gældende arbejdsinstruks. Den konkrete nye testudvælgelse og udtynding er under forberedelse og er ikke teknisk leveret. Det igangværende kvalifikationsforløb bevares; ingen rød eller ukendt relevant gate omgås. Et ikke-berørt databasedomæne skal beskrives som ikke relevant for ændringen, aldrig som ny SQL-eksekvering. Ukendt eller fælles påvirkning udvider prøverne. Friske produktionsartifact bevarer deres relevante fulde data-, integritets-, privacy- og deploykontroller. Se docs/rdks/10_DECISIONS/DEC-0302-CHANGE-BASED-VALIDATION-AND-CONTROL-CLEANUP.md og privat checkpoint. Ældre blanketkrav om samme brede kilde-/databasepakke ved enhver rettelse er erstattet som arbejdsprincip, ikke stiltiende deaktiveret i eksisterende automatisering.
+
 ## 29. oktober — prognosedeling på Pages er godkendt, endnu ikke leveret
 
 Ejerens valg er ét separat `ravradar-del` Pages/Functions-projekt, først `ravradar-del.pages.dev`, senere `del.ravradar.dk` med én CNAME hos Simply. Ingen navneserverflytning eller ændring af apex/www/mail. Ældre afventninger af denne ejerbeslutning er historik; oprettelse, deploy, DNS/TLS, offentlig 591-kompatibilitet, Facebookaccept og målt Free-kapacitet er fortsat åbne. Frontend og legacy-Worker bevares indtil kontrolleret overgang. Privat adapter/controllerforberedelse og lokal prøve er ikke offentlig levering. Ingen vejr-, score-, model-, SQL- eller versionsændring. Alle fem mål til 18. november består. Se DEC-0294, håndbog 89.278 og privat checkpoint.

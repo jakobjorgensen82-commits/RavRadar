@@ -48,16 +48,27 @@ function executeCommand(command) {
 
 export function runSourceValidation(plan, { execute = executeCommand, log = console.log } = {}) {
   const failures = [];
+  const executeTimed = (command, phase) => {
+    const start = performance.now(), result = execute(command);
+    log('SOURCE_TIME ' + JSON.stringify({ phase, command,
+      elapsedMs: Math.max(0, Math.round(performance.now() - start)),
+      outcome: result === 0 ? 'PASS' : 'FAIL' }));
+    return result;
+  };
   for (const command of plan.preflight) {
     log(`SOURCE binding preflight: ${command}`);
-    if (execute(command) !== 0) failures.push(command);
+    if (executeTimed(command, 'binding') !== 0) failures.push(command);
+  }
+  if (failures.length) {
+    log('Source binding preflight failed; dependent checks were not started.');
+    return 1; // A red precondition is never a successful/reusable source proof.
   }
   for (const command of plan.remaining) {
     log(`SOURCE: ${command}`);
-    if (execute(command) !== 0) failures.push(command);
+    if (executeTimed(command, 'check') !== 0) failures.push(command);
   }
   log(`SOURCE critical gate: ${plan.gate}`);
-  if (execute(plan.gate) !== 0) failures.push(plan.gate);
+  if (executeTimed(plan.gate, 'critical') !== 0) failures.push(plan.gate);
   if (failures.length) {
     log(`Critical source validation found ${failures.length} failing check(s): ${failures.join(', ')}`);
     return 1;

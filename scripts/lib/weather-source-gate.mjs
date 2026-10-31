@@ -24,6 +24,10 @@ export const SOURCE_GATE_PRODUCERS = Object.freeze({
     job: 'Build and prepare weather production through reusable workflow / build-and-prepare',
     step: SOURCE_GATE_STEP,
   }]),
+  '.github/workflows/run-current-weather-once.yml': producer('run-current-weather-once.yml', [{
+    job: 'Build and prepare weather production through reusable workflow / build-and-prepare',
+    step: SOURCE_GATE_STEP,
+  }]),
   '.github/workflows/validate-copernicus-current-pilot.yml': producer(
     'validate-copernicus-current-pilot.yml',
     [
@@ -152,7 +156,7 @@ export function sourceGateRecord(env, conclusion, sourceTreeSha256) {
   };
 }
 
-async function inspectLaterMainEvidence({ env, proofTime, record, getJson }) {
+export async function inspectLaterMainEvidence({ env, proofTime, record, getJson }) {
   const runs = [];
   for (const [producerPath, historyProducer] of Object.entries(SOURCE_GATE_PRODUCERS)) {
     let completeHistory = false;

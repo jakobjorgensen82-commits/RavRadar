@@ -8,6 +8,7 @@ import {
   forecastShareDomainsForWorker, forecastShareCfEnvelopeDiagnostic,
 } from './deploy-forecast-share.mjs';
 import { verifyWorkflow as verifyCurrentNationalWorkflow, inverseSourceBeforePostgresWorkflow, CURRENT_JOB as CURRENT_SOURCE_JOB, AFTER_JOB as REVIEWED90_SOURCE_JOB } from './national584-source-evidence.mjs';
+import {projectSourceImpactWorkflowFull} from './lib/source-impact-workflow-review.mjs';
 import { assertEarlyCompletedRuntimeStageOrder, inverseCompletedRuntimeWorkflow } from './lib/completed-private-runtime-workflow-review.mjs';
 import fs from 'node:fs';
 import crypto from 'node:crypto';
@@ -791,7 +792,8 @@ assert.deepEqual(
 );
 let sourceGatePathCount = 0;
 for (const workflowName of sourceGateWorkflowNames) {
-  const workflow = fs.readFileSync(`${workflowDirectory}/${workflowName}`, 'utf8').replace(/\r\n/g, '\n');
+  const actualWorkflow = fs.readFileSync(`${workflowDirectory}/${workflowName}`, 'utf8').replace(/\r\n/g, '\n');
+  const workflow = workflowName==='validate-pull-request.yml'?projectSourceImpactWorkflowFull(actualWorkflow):actualWorkflow;
   let searchFrom = 0;
   while (true) {
     const sourceGateRun = workflow.indexOf('npm run validate:source', searchFrom);
