@@ -1,3 +1,17 @@
+## 31. oktober — testvalg opdeles efter den faktiske ændring
+
+### Afgrænset rettelse af genoptaget beregning
+
+Den normale beregning kan få et nyt hul i strømhistorikken, selv om den forrige gyldige tilstand var fuldt klar. Updaterens kalder skal derfor give de tre allerede validerede kompagnonkilder mulighed for den eksisterende lokale vurdering af ufuldstændig historik. Den må ikke kræve, at alle senere timer stadig er READY. Legacy-, kold- og manglende initialisering bevarer deres særskilte grænser. Den strenge rollbackkontrol, numeriske state, scoreformel og 48 reelle timers modning ændres ikke.
+
+Fejlmekanismen er reproduceret i den normale produktionskalder. Den lokale kalderrettelse og den eksisterende strenge rollbackprøve består; deres PostgreSQL-, C/I/T- og modelbindingsinput er uændrede. En præcis helfilovergang og de to relevante normale mål registreres i den korte kontrolvej. Faktisk GitHub-kvalifikation, sikker genoptagelse, offentlig vejrlevering og tidsgevinst er fortsat åbne. De nye lokale domæne-/producent-/forbrugerkaldere er prøvet med ægte Git og syntetisk transport; det er ikke en ny SQL-eksekvering eller offentlig levering.
+
+Den nye domænekandidat udvider den eksisterende korte kildevej. Hele Git-diffen og de konkrete læse-, import- og kommandoforbindelser skal være klassificeret; de komplette PostgreSQL- og C/I/T-input skal være uændrede, før deres dybe prøver kan være ikke relevante for ændringen. D1, adminvisning, deling og den aktuelle offentlige audit får hver sine normale mål. En historisk584-nationalprøve er fortsat et andet område. Ukendt påvirkning vælger større omfang; et fejlet valgt mål bliver rødt.
+
+Den nye V2-kvittering skelner ikke-relevans fra faktisk syntetisk udførelse og bevarer gamle V1-beviser. En ændring af kontrollernes egen tillidskæde kræver den faste korte CONTROL-prøve og et uafhængigt ROOT-review af hele ændringen. Reviewreferencen står i den eksisterende kilde-PR og bindes til præcist head, kvalificeret FULL-forfader samt hele inventar-, afhængigheds- og plandigests. Den genlæses før/efter; den er intet caller-valgt godkendelsesflag. Ved senere forbrug kræves et frisk review af samme præcise kilde og plan, ikke en påstand om historisk reviewkontinuitet.
+
+Dette er kontrakten for den lokale, endnu ikke leverede integration. Første komplette normale V2-forløb, faktisk GitHub-kvalifikation, sikker levering og målt tidsgevinst er fortsat åbne. Ingen ændring af version, modelbinding, PostgreSQL-migrationer, vejr-/scoreværdier, kildeprioritet, administratorpunkter eller geometri. SOURCE, statistik og automatisk sletning aktiveres ikke. Alle fem mål består. Se DEC-0302 og håndbog89.293; aktuel kørsels- og testevidens føres privat.
+
 ## 31. oktober — fremadrettet594-nativegenbrug uden ny modelbinding
 
 Den eksisterende nativekalder, nationale kvittering og FULL-baselinelæser får en særskilt594-V2 med hele faktiske input/runtime og ægte oprindelig udførelse. Gamle V1/593-beviser bevares uden ommærkning; genbrug er ikke ny SQL-eksekvering. De normale lokale læser-/baselineprøver har54 PASS; en ny særskilt transportprøve har1 PASS. Første reelle V2-oprindelse, senere genbrug og målt tidsgevinst er endnu ikke leveret. Den gennemgåede34-ejers admin-/brugerdataforbedring indgår i samme kildekandidat med uændret OFF/UNISSUED-statistik.

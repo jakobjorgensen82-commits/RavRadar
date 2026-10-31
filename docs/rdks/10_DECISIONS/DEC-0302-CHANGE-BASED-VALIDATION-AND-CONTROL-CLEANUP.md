@@ -1,8 +1,26 @@
 # DEC-0302 – Ændringsbaseret validering og oprydning i kontroller
 
+### Afgrænset rettelse af genoptaget beregning
+
+Den normale beregning kan få et nyt hul i strømhistorikken, selv om den forrige gyldige tilstand var fuldt klar. Updaterens kalder skal derfor give de tre allerede validerede kompagnonkilder mulighed for den eksisterende lokale vurdering af ufuldstændig historik. Den må ikke kræve, at alle senere timer stadig er READY. Legacy-, kold- og manglende initialisering bevarer deres særskilte grænser. Den strenge rollbackkontrol, numeriske state, scoreformel og 48 reelle timers modning ændres ikke.
+
+Fejlmekanismen er reproduceret i den normale produktionskalder. Den lokale kalderrettelse og den eksisterende strenge rollbackprøve består; deres PostgreSQL-, C/I/T- og modelbindingsinput er uændrede. En præcis helfilovergang og de to relevante normale mål registreres i den korte kontrolvej. Faktisk GitHub-kvalifikation, sikker genoptagelse, offentlig vejrlevering og tidsgevinst er fortsat åbne. De nye lokale domæne-/producent-/forbrugerkaldere er prøvet med ægte Git og syntetisk transport; det er ikke en ny SQL-eksekvering eller offentlig levering.
+
 **Dato:** 2026-10-30
 **Status:** Ejerbeslutning; første afgrænsede kontrolvej er kildeleveret; faktisk målrettet levering og målt tidsgevinst er åbne
 **Besluttet af:** Ejeren gennem direkte instruktioner i den aktuelle samtale
+
+## Den konkrete domænekontrakt — lokal integration31. oktober
+
+Den nye særskilte type `weather-source-targeted-domains-v2` bevarer tekst-V1 og dens bevisnavne. Producent og forbruger genberegner selv hele ændringsplanen og de normale direkte/indirekte læse-, import- og kommandoforbindelser på committed Gitobjekter. En sammenligning af de143 gennemgåede PostgreSQL-input er nødvendig, men ikke alene tilstrækkelig: nye eller ukendte modul-/data-/procesforbindelser må ikke falde uden for inventaret. Hele C/I/T og de autentiske frosne ankre består. Nye migrationer og package-scopes skal medregnes. Domæne- og plandigests skal være ens på et PR-head og en faktisk merge med samme hele træ; commitidentiteten bindes særskilt.
+
+PostgreSQL og historisk584-national kan være ikke relevante for en sådan afgrænset ændring. D1 kan samtidig have en faktisk syntetisk SQLite-prøve, og den aktuelle Candidate-G-audit kan have sit eget konkrete syntetiske mål. Disse udsagn holdes særskilt; ikke-relevans, udførelse og genbrug ommærkes ikke. Kun faste normale kommandoer med faktiske beståede resultater giver en kvittering. Parent-/childmål må ikke udføres dobbelt. De korte mål skal kunne køre i deres faktiske tidlige runnerfase uden en skjult afhængighed af senere, oversprungne installationer.
+
+Tillidsændringer giver `CONTROL_QUALIFICATION_REQUIRED`. ROOT gennemgår hele ændringen uafhængigt og skriver en fast reviewreference i den eksisterende kilde-PR. Producent og forbruger genlæser den gennem den allerede benyttede friske GitHub-læser. Referencen binder PR/head, den kvalificerede FULL-forfader, hele inventaret, dependency-closure, planen og det private reviewdigest. Manglende eller modstridende review stopper præcist; det må hverken autorisere et skip eller automatisk starte den samme dybe prøve igen. Reviewreferencen skal være stabil inden for hvert forløb. Ved et senere forbrug kan et nyt frisk ROOT-review af samme præcise kilde og plan bruges; V2-artifactet påstår ikke at bevare et historisk reviewdigest.
+
+Den eksisterende faktiske FULL-forfader, senere negative/ukendte kørsler, præcis PR/merge og hele kildeindholdet genkvalificeres fortsat. De normale22 workflowtrin og den lukkede64-kald/60-sekunders læseramme genbruges; oversprungne trin kaldes ikke udført. Ny kontrolkode kræver sin reelle korte kvalifikation, og en kendt relevant fejl er fortsat rød. Nye offentlige data bevarer de normale data-, privatlivs-, original-, no-loss- og deploykontroller.
+
+Koden er under lokal integration. Første komplette V2-kalderforløb, faktisk GitHub-kvalifikation, levering og tidsgevinst er åbne. En lokal ren inputhelper, et grønt strukturmål eller en beskrevet kort profil afslutter ikke opgaven. Ingen ny service, nøgle, plan, model-/versions-/SQL-udstedelse eller produktionsaktivering følger af denne kontrakt.
 
 ## Præcisering31. oktober — tidsforbrug og fremadrettet594-V2
 

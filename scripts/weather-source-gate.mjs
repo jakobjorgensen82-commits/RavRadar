@@ -49,7 +49,7 @@ async function verifiedTargetedSourceProof(record, context, sourceTreeSha256) {
         GIT_TERMINAL_PROMPT: '0', GIT_CONFIG_COUNT: '1',
         GIT_CONFIG_KEY_0: 'protocol.allow', GIT_CONFIG_VALUE_0: 'never' },
     });
-    let locator = record?.contractId === 'weather-source-targeted-impact-v1' ? record : null;
+    let locator = ['weather-source-targeted-impact-v1', 'weather-source-targeted-domains-v2'].includes(record?.contractId) ? record : null;
     if (!locator) {
       const found = await discoverTargetedSourceGate(context, sourceTreeSha256, access);
       if (!found.locator || found.requiresVerification !== true) return null;
@@ -94,7 +94,9 @@ if (mode === 'digest' || mode === 'impact-digest') {
     await fs.appendFile(env.GITHUB_OUTPUT,
       `selection=TARGETED\nsource_tree_sha256=${impact.sourceTreeSha256}\n`
       + `artifact_name=${impact.artifactName}\nreceipt_path=${impact.receiptPath}\n`);
-    console.log('Created separate targeted source receipt; database and national execution are not claimed.');
+    console.log(impact.receipt.schemaVersion === 2
+      ? 'Created separate domain receipt; exact command results are reported per domain; PostgreSQL and historical national execution are not claimed.'
+      : 'Created separate targeted source receipt; database and national execution are not claimed.');
   } else {
     const sourceTreeSha256 = sourceTreeContentSha256('HEAD');
     const artifactName = sourceTreeProofArtifactName({

@@ -1,3 +1,33 @@
+## 89.293 Prøver skal følge det, rettelsen kan påvirke
+
+**Kort fortalt: Kontroller skal følge den faktiske ændring. Uændrede områder skal ikke genprøves automatisk, og det skal fremgå tydeligt, hvad der er prøvet, genbrugt eller ikke relevant.**
+
+### Hvad der skal sammenlignes
+
+Den korte vej kræver en sammenligning af hele ændringen og de program-, data- og kommandoforbindelser, den kan berøre. Det er ikke nok at tælle ændrede linjer. En lille rettelse kan kræve en dyb prøve, mens en større tekstrettelse kan være uafhængig af databasen.
+
+### Forskellige områder får forskellige prøver
+
+En adminrettelse kan eksempelvis kræve en prøve af indlæsning, fejl og genforsøg. En ændring i turlagerets database kan kræve en syntetisk SQLite-prøve. Det betyder ikke automatisk, at også PostgreSQL eller en ældre national vejrsimulering skal køres igen. Det aktuelle kort og den aktuelle offentlige datakontrol vurderes særskilt.
+
+### Selve testvalget skal også kunne kontrolleres
+
+Hvis koden, der vælger prøver, ændres, skal den have sine egne korte prøver og en uafhængig gennemgang af hele ændringen. Den normale producent og forbruger kontrollerer den konkrete kilde, plan og reviewreference. Ukendte forbindelser, modstridende bevis eller et fejlet relevant mål giver ikke en grøn levering.
+
+### Hvad et resultat fortæller
+
+En udført syntetisk prøve, et genbrugt gyldigt bevis og et område, der ikke er berørt, er tre forskellige resultater. Ingen af dem er alene bevis for nyt offentligt vejr. Databevarelse, privatliv, originale data og den faktiske offentlige levering skal stadig kontrolleres.
+
+### Status og tidsforbrug
+
+Den domæneopdelte vej er under lokal integration. Først når de normale kaldere, den faktiske GitHub-kontrol og den sikre levering har virket, kan den kaldes leveret. Tidsgevinsten skal måles i det nødvendige normale forløb; flere timers kontrol er ikke et accepteret mål for almindelige afgrænsede rettelser.
+
+### Afgrænset rettelse af genoptaget beregning
+
+Den normale beregning kan få et nyt hul i strømhistorikken, selv om den forrige gyldige tilstand var fuldt klar. Updaterens kalder skal derfor give de tre allerede validerede kompagnonkilder mulighed for den eksisterende lokale vurdering af ufuldstændig historik. Den må ikke kræve, at alle senere timer stadig er READY. Legacy-, kold- og manglende initialisering bevarer deres særskilte grænser. Den strenge rollbackkontrol, numeriske state, scoreformel og 48 reelle timers modning ændres ikke.
+
+Fejlmekanismen er reproduceret i den normale produktionskalder. Den lokale kalderrettelse og den eksisterende strenge rollbackprøve består; deres PostgreSQL-, C/I/T- og modelbindingsinput er uændrede. En præcis helfilovergang og de to relevante normale mål registreres i den korte kontrolvej. Faktisk GitHub-kvalifikation, sikker genoptagelse, offentlig vejrlevering og tidsgevinst er fortsat åbne. De nye lokale domæne-/producent-/forbrugerkaldere er prøvet med ægte Git og syntetisk transport; det er ikke en ny SQL-eksekvering eller offentlig levering.
+
 ## 89.292 En databaseprøve skal ikke gentages for uændrede input
 
 **Kort fortalt: En faktisk bestået prøve kan genbruges, når hele dens relevante kilde, miljø og oprindelse er uændrede. Genbrug må ikke fremstilles som en ny udførelse.**
