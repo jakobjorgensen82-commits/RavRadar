@@ -1,3 +1,9 @@
+## Kildebevis: normal merge og kontrol af den faktiske main
+
+En PR med målrettet kildebevis (`weather-source-targeted-impact-v1` eller `weather-source-targeted-domains-v2`) skal flettes med GitHubs almindelige **merge**, ikke squash eller rebase. Den eksisterende normale forbruger kræver to faktiske Git-forældre, hvoraf præcis én er den kvalificerede PR-head, samt identisk helt kildeindhold. En grøn PR eller samme filtræ alene erstatter ikke denne kontrakt.
+
+Efter merge og før den første produktionshandling skal ROOT verificere faktisk main, begge forældre og identisk kvalificeret træ og derefter afprøve den eksisterende normale `weather-source-gate.mjs check` mod denne faktiske main. Det er en skrivefri genlæsning af kildebevis, ikke nye leverandørdata, beregning eller gentaget databaseprøve. Et ukendt eller afvist bevis må ikke overstyres. Bevar den oprindelige vejrproducent særskilt fra en senere genoptagelsesproces.
+
 ## 31. oktober — observeret offentlig forgænger skal følge almindeligt deploy
 
 Ved overgang til en nyere model skal deployet medtage identiteten på den faktisk observerede offentlige forgænger. Den samme observerede kilde skal følge både den almindelige og den genoptagne kalder. En nyere offentlig generation må ikke forveksles med den ældre generation, som stadig står centralt.
