@@ -435,6 +435,16 @@ Den næste levering skal kontrolleres mod den faktisk gældende offentlige gener
 
 Der foretages ingen ny versions-, model- eller databaseudstedelse af denne forberedelse. De øvrige RavRadar-opgaver og alle fem hovedmål til 18. november 2026 er fortsat åbne.
 
+### Når delingsprojektets kode opdateres
+
+Den forberedte opdateringsvej gælder det ene delingsprojekt, som allerede er oprettet og kontrolleret. En kodeopdatering skal genfinde præcis dette projekt og den tidligere kontrollerede udgave. Den opretter ikke projektet igen og overtager ikke et andet projekt med samme navn.
+
+Hvis den ønskede kode allerede er leveret, skal den genlæses og kontrolleres uden en ny levering. Et mistet svar er ikke i sig selv en bekræftelse; ukendt udfald må ikke udløse en blind gentagelse.
+
+Denne kandidat gælder alene prøveadressen ravradar-del.pages.dev. Et senere skift til del.ravradar.dk kræver fortsat særskilt domænebinding, én CNAME hos Simply, aktivt certifikat og det kontrollerede skift i hjemmesidens delingsadresse. Hovedhjemmeside, mail og navneservere bevares.
+
+Opdateringsvejen er lokalt forberedt, ikke offentligt leveret. Facebooks egen forhåndsvisning, gratis kapacitet og svartid i praksis samt den nye hosts korrekte visning af den aktuelle offentlige prognose skal stadig kontrolleres hver for sig. Den gamle delingstjeneste og allerede delte links bevares.
+
 ## 89.277 Undersøg de gemte data, før hentningen ændres
 
 **Kort fortalt: Huller i prognosen skal undersøges i de data, som vejrhentningen faktisk gemte. En afgrænset læsning kan vise, hvor meget de enkelte reservekilder udfyldte, uden at starte en ny vejrhentning.**

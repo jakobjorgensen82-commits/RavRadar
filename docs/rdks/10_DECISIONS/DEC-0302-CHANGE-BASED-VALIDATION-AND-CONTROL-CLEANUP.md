@@ -1,5 +1,7 @@
 # DEC-0302 – Ændringsbaseret validering og oprydning i kontroller
 
+Pages-controller og workflow registreres som delingsproduktkode med deres normale controllerprøve; produktkode er ikke test-only eller databaseudførelse. De gamle konservative import-/læse-/bindingflader og hele PG143/C100/I99/T12 bevares. Den faktiske direkte PR-plan og kumulative plan fra den kvalificerede FULL-forfader skal begge kontrolleres; kontrolændringen kræver den eksisterende CONTROL-suite og eksakt uafhængigt ROOT-review. Ukendt eller fælles påvirkning udvider prøverne. Nye præcise kildeplaner, kvalifikation og sikker levering er stadig åbne; detaljeret evidens føres privat.
+
 Plannerens normale syntetiske kompositionsprøve bruger nu den kvalificerede FULL-forfader og kandidatens hele committed kilde. To eksplicitte, uskadelige ejerændringer fastholder de oprindelige positive D1-/adminvalg, og samme-træ-merge samt alle negative mutationsprøver bevares. Den tidligere ufuldstændige blanding af gammel reference og få aktuelle filer er en udtrykkelig negativprøve; den giver ingen ny helfilgodkendelse. Produktplannerens beslutninger er uændrede, og kun de nye konkrete test-I/O registreres additivt. Den eksisterende lokale målprøve består; ny præcis Linux-kvalifikation og sikker levering er åbne.
 
 

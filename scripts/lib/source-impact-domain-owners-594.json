@@ -3,6 +3,21 @@
   "scope": "CLOSED_REVIEWED_594_DOMAIN_OWNERS",
   "owners": [
     {
+      "path": ".github/workflows/deploy-forecast-share-pages.yml",
+      "domains": [
+        "sharing",
+        "controls"
+      ],
+      "controlQualification": true,
+      "commands": [
+        [
+          "sharing",
+          "node scripts/test-forecast-share-pages-deploy.mjs"
+        ]
+      ],
+      "exactSourceTransition": true
+    },
+    {
       "path": ".github/workflows/private-trip-weather-study.yml",
       "domains": [
         "d1",
@@ -108,6 +123,12 @@
       ]
     },
     {
+      "path": "docs/rdks/20_REQUIREMENTS/ACTIVE-REQUIREMENTS.md",
+      "domains": [
+        "documentation"
+      ]
+    },
+    {
       "path": "docs/rdks/40_KNOWN_ISSUES/KNOWN-ISSUES.md",
       "domains": [
         "documentation"
@@ -121,6 +142,12 @@
     },
     {
       "path": "docs/rdks/90_INDEX/IMPLEMENTATION_STATUS.md",
+      "domains": [
+        "documentation"
+      ]
+    },
+    {
+      "path": "docs/rdks/MASTER_LOG.md",
       "domains": [
         "documentation"
       ]
@@ -158,6 +185,18 @@
         "currentCandidateGAudit"
       ],
       "auditMetadataOnly": true
+    },
+    {
+      "path": "scripts/deploy-forecast-share-pages.mjs",
+      "domains": [
+        "sharing"
+      ],
+      "commands": [
+        [
+          "sharing",
+          "node scripts/test-forecast-share-pages-deploy.mjs"
+        ]
+      ]
     },
     {
       "path": "scripts/deploy-private-trip-study.mjs",
@@ -362,6 +401,20 @@
         [
           "controls",
           "node --test scripts/test-completed-private-runtime-workflow-inverse.mjs"
+        ]
+      ]
+    },
+    {
+      "path": "scripts/test-forecast-share-pages-deploy.mjs",
+      "domains": [
+        "sharing",
+        "controls"
+      ],
+      "controlQualification": true,
+      "commands": [
+        [
+          "sharing",
+          "node scripts/test-forecast-share-pages-deploy.mjs"
         ]
       ]
     },
@@ -3084,6 +3137,7 @@
         "a40516a180df6a095f8b82ddb8af0bbdbeb2baf1d714d38e506340feadaecf85",
         "bed5a4747d6dfd9548d7a490f16904d1a26ef720e363a2c4776f1db31792ec13",
         "c0945ad1c4c6766776232456986c2154640f68a9c4d7ae1da2664db5f0bfbea8",
+        "c21342521cb283c982b548602458f58a4f736c6cd2e44b6ea1a0a31cfb780f98",
         "d19eac43e5374afb010778ae4d818f730c26218f1c62a2ade558971753dcd67c",
         "e5129d6663dff67df2012d08eb5e10a27e347e933c4472457278893d93e99a57",
         "ef1f604306614fa2c382e962e836e260f2a13f4b1ef389ca28848815a9e7b152"
@@ -10443,6 +10497,7 @@
         "scripts/lib/source-impact-control-imports.mjs"
       ],
       "resources": [
+        ".github/workflows/deploy-forecast-share-pages.yml",
         "cloudflare/trip-gateway/trip-aggregate-job.js",
         "js/ui/admin-private-trip-study.js",
         "scripts/lib/source-impact-control-imports.mjs",
@@ -10478,6 +10533,8 @@
         "1ef012a64b802838feed2407ccffb4d74e6d1e9b49536c3e85152ccb1bef88a7",
         "23d5a8e1bfe60d575e8a936ed1df51cd3034c167fbc566dfacae4c467b71e719",
         "24a3a7ad030dafe1fea84a915f30f843c14d781290965774fa7381d22a45329d",
+        "269769abe9831e47422c7265118ec0a5982a55d239aad1ced7a0f263f8333c61",
+        "27517b12bd37ca4d2a5057c4a7e3d4bdd6c4a0ebbc3fb34c18208ea3a1212a4a",
         "27de600c09a30d014302a34232507016ec7647e9f8036a9c7f66999ff3b2dc8e",
         "27e7128285f24fd45620c93eb55b5a292ae5f5b0847a0b39b1771301b54f8fc2",
         "2e40d2562fb139bfa3bbcae56495a95d942210aaced5a1cf76d7481a6974d951",
@@ -10485,6 +10542,7 @@
         "35d71dd6b969a9ae92ea8ed45a311cb4814b9797791de679201c13e94e50fd6f",
         "3cc271e95a90431b1477f6e475bbe470411db170370ff4189e84d00bbdb0e2e0",
         "4060531a39749005483a4135f01f9e4a0add0df3c0b85f992dd9bfc649ba52b1",
+        "44414bdcd09fe0fbda90712becaeccd97f4146436dcf712e6592c842e6ef6517",
         "45b3f4e0393f78930705f29b0f84031bca104f879fe1bbc7c0a2fba142453419",
         "49196ec2c98041b3535e6a0b926c163ff4bea7bb38293dbabbfd91de464b00d7",
         "4d9e5bda7d581d506d3308629855b72ed24791bd8e055d0e1aef6581ffe376cc",
@@ -10492,14 +10550,17 @@
         "4f57a2c94733abd7fdadeb46a0cecbf34fc1357b61a6e7d342f688f77b40e66e",
         "531ff68ce7599c283acec5be333a5621ac9b65a475314104dfdb129c84ea5cc1",
         "532fbc929a47705729048c4ed631132a4a8fd069ff61dd40b6e79309fc217540",
+        "5ba4d6ade496d5dec79a748f83ffbd6e70f9cdd9def3273be2fbb95b3051f4d8",
         "5ff0d30896c63f66b949286c703d227567c2ffd8fb8bbd6cc1d063315e63d587",
         "624176c45167ae87eea67674c99e037cfdc9736971b98acbd683de83a05efb95",
         "62c54d17218deac91e26c00495c8a24e039de4813f9f56c57c2fb6724c072dcb",
         "652706b28b3e31ed9f552a26669b3d0009aec9f9f9ba9301d07790e537c16b70",
+        "68f496cd6f935f227c6e6917e92205ff57b9d1c2a86849352a65281ed7563628",
         "6b6071039136761e7fff5319f445b39108705104bf1146d5b3d2d7d3c712ee8c",
         "7445518450d137258229bde0ec27da9d225b12cd56bf1b99573d50fb3666d68d",
         "7b1691496001218c7138b72684cedd29fd9b3c745c0155da1134eeeb98f22a4f",
         "7d47a99628fbd1d576e195bf07fc909addc70aadc7cf413bd05bdb0dffc12f3b",
+        "7f01fc01a339bc36ee167d55d4f32afb982719add3069f5fab869e9004ad9605",
         "7f64b39a584257d98d753969b146e047668ff809f97f22ec941ccc2e46d21f84",
         "82d913391933abd7072733607cf3612d7ddf6f655d13621a25fd64ab2d1e66fc",
         "86c56a6243716551215913bffd7d31069f060a14f85e5392862c2ea4cdef1b9b",
@@ -10508,16 +10569,23 @@
         "901430e8c99df1306fbfd5a3cc0c9c4ff3c91757e6fec293cdfbfb67f0d8a957",
         "902a50f0f2e04fe5edbfe61ea0923961bf94d6e7a1b57742e63d1b6eceda1e07",
         "968ac8f693f20d228a35173932dd2bdaba30136c23616829ceb9236c550254ba",
+        "96de62ca2784938f9b958e4943ce39204aa9077b22a97f0804425f143f2a8e66",
+        "9892818bf4e29138ccfa435e0bb4e41014f6de3a9a3a57ab4e0fb04b86675f90",
         "9f679da498b90ec9670e75a5a6f25896a2d5777308036075e86ab46411777b2c",
+        "a9a243433e643bebc8e3245ea8f030f4c26b801b8797704c020c66b5c941b1fc",
         "adb0d08ce0957a24c5662f153453072b714e2d2e096a4e042ada73d6a40ac6fb",
+        "b294a450a96581fc6fe6598a4fb92dabd6da94b6b54bf36abd66dfbfdf32c877",
         "b4c74790d7c608a85184df4f7b1a4f5f70dd010a7e8de7c468beb6eff87aa2e1",
         "b59e92e32ad1390998468a84d04e02b159deb4c3a2bc473f60dc0f46469180af",
         "b7b8a2bf1f6831d3b4f33cd3ff81d8069cc68a57ab892e46089087651e29947e",
+        "c2e2b56d2b3fcdac80b6976c8e3113506062da5941ce01e40751a59e2938214a",
         "c32114fd838f92037bb553f7bd8d7a0d1a1ce02dcb86d126b6d262d43af266cd",
         "c4699efea7e16d25b9ad08384a77e146c31ec1d7658e202b9ebc110a614660a9",
         "c4b671cda62a5edf6684534fadd896d6a6b85cb6368ae2d616840ebe4ec8d2c8",
+        "cb1bd14d98ceba87c5df3e135b3b1068ebb9dbc4a99af2a9d38351f6fc0ade7c",
         "d0a13af0453419a92b53dda5f050a21c2df56759c6b990eb3c150f1f4f71cf5f",
         "d3cd32641c7acb0c0032f0574d5c7152c1e83df3fb9c8013ee07894422775134",
+        "d4c36c2b061d9c37d12fc43f64b3dad023ae7595c47662f7322301e485fb00a6",
         "d5c726a8e499a8e8f22693b20c15e1eac12cd4bd0e7e25305be819c2691383e4",
         "d6115fefdbbf4a037df354052573c0371b8d9483011eff147d87ca8fea252764",
         "d6a6403b4ebb9f87a66c21b22348934c363f3b06f52e4ce41ebe0e0c24b447a5",
@@ -10526,6 +10594,7 @@
         "e4e1ec07b4d7e6a1011a45003ca900e2043bc5b4244c85290d00de06d1233fda",
         "eb3be44e7c4c0cd548d3d14f17af69f1569e250f656b6f11047a0ff0efe8663b",
         "eddd8d170ba3cf15f8a5da50fd0b207f711f74cb36ae95a5a612da46896076aa",
+        "f78cf4a076761a6108216d700dd47532a74329ca2fb04620f9e4494ab0c600af",
         "f7b05eca8f5a0a0b2c9cf6a00838d697f8c7db705f55dfe0dae607a1a55b0fd5"
       ],
       "bindingSurfaces": [
@@ -10536,6 +10605,7 @@
         "5ba6d0ae982f4877dd1fb0d621af8ef9d1bad1d1319ae6088b33648ca1b7954b",
         "5de2d418ad025655b3170ba2692454ee5c1c95bd0b564c874f1ee9672d443977",
         "5f69ce098069e6e5a54cba9fb1c840f4627f94050a7cc1f609a9b3804ac6bfbb",
+        "8a524f7811f4602e6b174f9e903b6178a23c7bcee287cb65428f92a5610fe723",
         "8ad0f9ec1d84bc64deddcdcca24e8aa10f695f52b19b4a4fcdf245d7df5eb78e",
         "b18294dd3269445ebfe639897dfc2f216dc77aba3df3b8a0286e1baeceb011a8",
         "c27bf4c4f7f7bc29d2bbedd3a0745b03c0c582cd7e08f1efb335a97ecf26ac82",
@@ -12669,6 +12739,9 @@
     "scripts/test-workflow-validation-order-4.0.108.mjs": [
       "54353218dc40310240acf755c3ad8a65258e005cbd84df5918e51b1500cdc42d/dabe63d338dbe06e47df5f18eea6b6c7216f8a6329f2b69670f75943478e526e",
       "29fbbbd8abbf8d6d95f37979b284c878b64f1477a65b9d9af669cbcd5bfe5ffc/dabe63d338dbe06e47df5f18eea6b6c7216f8a6329f2b69670f75943478e526e"
+    ],
+    ".github/workflows/deploy-forecast-share-pages.yml": [
+      "6e7cd728269f4e6692f109382d7a7a867d7a38c2ebc3e00c8472cb794c84a135/c42aef1818804e97a61c4ccf5f25b3c1d8e5d5d7f537340acea987cc48f9925e"
     ]
   }
 }
