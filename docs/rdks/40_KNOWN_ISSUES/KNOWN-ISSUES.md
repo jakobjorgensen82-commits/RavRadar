@@ -1,3 +1,10 @@
+## 31. oktober — den private eksportprøve følger den aktuelle adminkalder
+
+En konkret sourcefejl var en for bred testkontrakt: privat eksport krævede gamle hele dashboardbytes og afviste en separat gennemgået indlæsningsrettelse. Lokal erstatning dækker de reelle aktuelle export-/render-/adgangsgrænser med negative mutationer og beholder installations-/publisheroraklerne uændret. Den nødvendige eksisterende initial-dashboard-målprøve er koblet ind i den normale CI-kalder. Luk først sourcefejlen efter grøn præcis normal CI; dette er ikke bevis for offentlig adminlevering eller færdig bredere kontroloprydning. Se DEC-0302.
+
+Den særskilt gennemgåede rollback-CLI retter desuden rækkefølgen: tre små metadata læses og de seks eksisterende negative cases afvises, før fem store payloads åbnes. Den samme afvisningsblok er flyttet til en helper; hele den efterfølgende positive auditkrop, no-loss og SQL-/modelgates er uændrede. Den eksisterende normale målprøve er gennemført; der påstås ingen målt før-/efter-tidsgevinst. Dette er også lokal forberedelse, ikke sikker levering eller produktionseffekt.
+
+
 ## 31. oktober — admin-overblik og kysteditor: lokal rettelse, offentlig effekt åben
 
 Åben levering: første adminrender kunne vise falske fejl/0 af 0 og blive stående efter en afvist offentlig pakke; den afviste Promise blokerede også senere læsning. En særskilt konkret race lod sen kystpreload erstatte en draft, som den normale gemmevej havde sikret lokalt. Begge er reproduceret og rettet lokalt gennem den eksisterende normale målprøve.

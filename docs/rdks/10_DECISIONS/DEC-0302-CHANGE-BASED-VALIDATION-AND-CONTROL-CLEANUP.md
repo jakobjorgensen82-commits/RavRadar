@@ -25,6 +25,14 @@ Gennemgå og fjern eller flyt aktuelle prøver, der er gentagelser, forældede e
 
 Gyldig tidligere evidens kan bruges for uændrede relevante input og forudsætninger. Udførelse, genbrug og ikke-berørt scope er tre forskellige udsagn og skal beskrives ærligt. Gamle V1-receipts ommærkes ikke til V2; et nyt testvalg er ikke et nyt SQL-bevis.
 
+### Konkret afgrænsning af privat eksportprøve — 31. oktober 2026
+
+En privat eksporttest skal beskytte den normale installations-/export-/adgangs- og renderkontrakt. Den må ikke kræve historiske hele dashboardfiler gennem flere versions-, label-, kontotæller- og vejrauditinverser, når disse bytes ikke er eksportens kontrakt. Workflowets præcise installationsarm, publisherens destination/adgang og deres konkrete negative mutationer bevares. Den aktuelle normale learning/render/mount-kobling testes i stedet med samme host og aktuelle adgangsobjekt, alle aktuelle faneskift og negative mutationer for fjernet, duplikeret eller ubetinget mount, forkert adgang/host/import og forkert routing. En ægte relevant fejl forbliver rød.
+
+En eksisterende målprøve er først en del af leveringsbeviset, når den faktisk er kaldt i den normale CI-vej. Den allerede forberedte initial-dashboard-prøve kobles derfor én gang til den eksisterende callers-deltest; der oprettes ikke et nyt bredt workflow eller en ekstra dyb suite. Dens normale loading/failure/retry/draft-adfærd skal faktisk udføres i den næste præcise sourcekvalifikation. Historiske model-/SQL-orakler i andre tests, metadata- og produktgates, gamle originaler og uforanderlige kildebanker ændres ikke. Lokal Node-afprøvning er fortsat ikke GitHub-/Linux-/offentlig leveringsbevis.
+
+En særskilt normal rollback-kontrol skal afvise gennem sine allerede eksisterende små metadata, før den åbner store payloads. Den konkrete lokale CLI-ændring flytter den uændrede afvisningsblok til en helper og læser tre små metadata før de seks kendte negative afvisninger og fem store payloads. Den fulde positive auditkrop, no-loss-/SQL-/modelgates og deres konkrete krav bevares byteuændret; en afvisning bliver ikke en accept. Den eksisterende normale målprøve er faktisk gennemført. Før-/efter-tidsgevinst er ikke målt og må ikke påstås. Det er en konkret failfast-forbedring, ikke tilladelse til at springe positiv kvalifikation eller datakontrol over.
+
 ## Produktion og leveringsgrænser
 
 Nye friske produktionsartifact bevarer relevante fulde data-, original-, modelbindings-, privacy-, no-loss-, release- og deploykontroller. Source-/SQL-testvalg må ikke give adgang til datatab, falsk provenance, ændret kildeprioritet, admin/geometri, scoreformel eller omgåelse af konkrete afvisninger. Ingen produktionsændring under aktiv writer.

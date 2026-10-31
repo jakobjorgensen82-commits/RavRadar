@@ -1,3 +1,12 @@
+## 31. oktober — den private eksportprøve følger den aktuelle adminkalder
+
+Den private eksportprøve afviste en gennemgået adminindlæsningsrettelse, fordi den krævede historiske hele dashboardbytes gennem flere versionsinverser. Den lokale testrettelse bevarer workflowets installations-/eksportafgrænsning, publisher-oraklet og deres negative mutationer. Kun uvedkommende dashboard-wholepins erstattes med aktuel normal renderLearning/render, korrekt host og samme aktuelle adgangsobjekt samt faneskift og konkrete negative mutationer.
+
+Den eksisterende initial-dashboard-målprøve kobles én gang til den normale callers-deltest. Den relevante lokale e96-deltest er reproduceret rød før og grøn efter; normal kilde-CI på den præcise ændring afventer. Produktkode, metadata-/model-/SQL-gates og historiske orakler i andre tests er uændrede. Der påstås ingen offentlig levering eller færdig adminrevision. Se DEC-0302; detaljeret test-/kørselsbevis føres privat.
+
+Den særskilt gennemgåede rollback-CLI retter desuden rækkefølgen: tre små metadata læses og de seks eksisterende negative cases afvises, før fem store payloads åbnes. Den samme afvisningsblok er flyttet til en helper; hele den efterfølgende positive auditkrop, no-loss og SQL-/modelgates er uændrede. Den eksisterende normale målprøve er gennemført; der påstås ingen målt før-/efter-tidsgevinst. Dette er også lokal forberedelse, ikke sikker levering eller produktionseffekt.
+
+
 ## 31. oktober — admin-overblik og kysteditor: lokal rettelse, offentlig effekt åben
 
 En afgrænset kandidat retter adminsidens første indlæsning. Ukendt forbindelse, lager og zonetal vises neutralt; beskyttede kontrolresultater kan blive synlige, selv om den offentlige vejrpakke afvises. Den offentlige pakke beholder sine manifest-/modelgates og en almindelig læsebaseret Prøv igen. UI-færdigmarkøren beviser alene afsluttet initialisering, aldrig verificeret model eller data.

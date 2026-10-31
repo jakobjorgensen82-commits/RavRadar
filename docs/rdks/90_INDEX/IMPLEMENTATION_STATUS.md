@@ -1,3 +1,12 @@
+## 31. oktober — den private eksportprøve følger den aktuelle adminkalder
+
+Lokalt rettet: privat eksport tester nu sin faktiske aktuelle adminimport, learning-render/mount, host, adgangsobjekt og faneskift frem for historiske hele dashboardfiler. Fjernet, duplikeret eller ubetinget mount, forkert adgang/host/import og forkert learning-routing afvises. Workflowets/publisherens præcise installations-/exportorakler og eksisterende negative mutationer bevares bytepræcist; andre tests' model-/SQL-historik ændres ikke.
+
+Den allerede eksisterende loading/failure/retry/draft-målprøve indgår nu én gang i den normale callers-vej. Den lokale normale deltest består efter en konkret førfejl; præcis normal CI og senere sikker levering/effekt er fortsat åbne. Ingen produkt-, versions-, model-, SQL- eller rettighedsændring. Se DEC-0302.
+
+Den særskilt gennemgåede rollback-CLI retter desuden rækkefølgen: tre små metadata læses og de seks eksisterende negative cases afvises, før fem store payloads åbnes. Den samme afvisningsblok er flyttet til en helper; hele den efterfølgende positive auditkrop, no-loss og SQL-/modelgates er uændrede. Den eksisterende normale målprøve er gennemført; der påstås ingen målt før-/efter-tidsgevinst. Dette er også lokal forberedelse, ikke sikker levering eller produktionseffekt.
+
+
 ## 31. oktober — admin-overblik og kysteditor: lokal rettelse, offentlig effekt åben
 
 Lokalt forberedt og målprøvet: neutrale pending-/unknown-statusfelter; uafhængig forbindelse/lager; afgrænset opdatering af overblikket; håndteret offentlig læsefejl med normal retry; ingen gentagen montering af turtælleren eller overskrivning af en anden redigeringsfane. Den første kysteditoråbning venter på strengt læst central konfiguration, verificeret offentlig pakke og zoneregister; fejl/ukendt giver retry. Sen initialisering kan ikke erstatte en menneskelig draft.

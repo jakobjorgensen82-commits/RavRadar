@@ -1,3 +1,10 @@
+## 31. oktober — den private eksportprøve følger den aktuelle adminkalder
+
+Den private eksportprøve kontrollerer den aktuelle learning/render/mount-kobling, korrekt host og adgangsobjekt samt faneskift. Historiske dashboard-helfilinverser, der afviste uvedkommende UI-ændringer, erstattes af relevante adfærds- og mutationsbeviser. Workflow-/publisher-/installationsgrænser og øvrige model-/SQL-orakler bevares. Den eksisterende adminindlæsningsprøve køres nu gennem den normale callers-deltest. Rettelsen er lokal og afventer præcis CI/levering; produktkode ændres ikke.
+
+Den særskilt gennemgåede rollback-CLI retter desuden rækkefølgen: tre små metadata læses og de seks eksisterende negative cases afvises, før fem store payloads åbnes. Den samme afvisningsblok er flyttet til en helper; hele den efterfølgende positive auditkrop, no-loss og SQL-/modelgates er uændrede. Den eksisterende normale målprøve er gennemført; der påstås ingen målt før-/efter-tidsgevinst. Dette er også lokal forberedelse, ikke sikker levering eller produktionseffekt.
+
+
 ## 31. oktober — admin-overblik og kysteditor: lokal rettelse, offentlig effekt åben
 
 Forberedt adminrettelse: Overblik viser afventende/ukendte statusfelter uden falske fejl eller tomme zonetal. Forbindelse og lager kan opdateres uafhængigt af den offentlige vejrpakke. Et afslag kan genprøves gennem samme normale manifest-/modelkontrol, uden at genmontere turtælleren eller en redigeringsvisning.
