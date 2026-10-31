@@ -2,6 +2,8 @@
 
 Den normale origin-kontrol samles med controllerens allerede gennemgåede kontrol af T og kompakt offentlig projektion med uændret lager-ABI. En additiv assistant-installed593-origin591-successor adskiller databaseforgænger 593 fra originale 591-B/S; gamle profiler, originaler og alle 71 tidligere SQL-filer bevares. Ny C/I-kilde kræver normal afledning, de syv normale forbrugere og én ny append-only migration fra ægte 593.
 
+Den historiske workflowprøve genkender desuden præcis de fem normale 594-User-Agent-felter og bevarer hele 593-forgængeren og alle tidligere afslag. Denne testrettelse ændrer ikke produktionsworkflow eller den udstedte model-/SQL-binding.
+
 4.0.594 er lokalt udstedt gennem den normale afledning; samlet kvalifikation, installation og offentlig levering er fortsat åbne. Lokal normal metadatagrænse og routing består med konkrete negative cases; de beviser ikke autentisk produktions-B/S, ny nativeeksekvering eller offentlig levering. Strengt senere generation, numerisk helinverse, frisk pointer, CAS og hård no-loss består. Krypteret indhentning er ikke completed-checkpoint og giver ikke automatisk genbrug over modelskift. Scoreformel, kildeprioritet, admin/geometri og godkendte brugertekster bevares. Se DEC-0303 og håndbog 89.291; skiftende driftsstatus føres privat.
 
 ## 30. oktober — P0: DMI-originalers conditions skal følge producentens grænse
