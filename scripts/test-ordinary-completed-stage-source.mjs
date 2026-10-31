@@ -127,9 +127,12 @@ test('committed source reuse compares all calculation objects and only exact sto
   refused++;
   commit('synthetic owned hydration fixture cleanup');
   git('switch', '--detach', consumerHead);
+  await fs.chmod(path.join(root, 'scripts/ordinary-completed-stage-artifact.mjs'), 0o755);
   git('update-index', '--chmod=+x', 'scripts/ordinary-completed-stage-artifact.mjs');
   git('commit', '-m', 'synthetic executable delivery mode is refused');
   changedHead = git('rev-parse', 'HEAD');
+  assert.equal(git('status', '--porcelain', '--untracked-files=no'), '',
+    'The executable delivery-mode negative must reach its guard from a clean committed checkout.');
   assert.throws(() => assertOrdinaryCompletedStageSource({ root, producerHead, consumerHead: changedHead }),
     { code: 'ORDINARY_STAGE_SOURCE_DELIVERY_MODE' });
   refused++;

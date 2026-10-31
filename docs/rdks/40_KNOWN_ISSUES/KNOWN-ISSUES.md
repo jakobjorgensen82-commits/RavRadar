@@ -1,5 +1,7 @@
 ## 31. oktober — testvalg opdeles efter den faktiske ændring
 
+En negativprøve for Git-filers executable-mode skal have samme mode på arbejdsfilen og i indeks/commit samt bevise rent checkout, før den forventer afvisning af en leveringsfils mode. Kun at ændre indekset efterlader på Linux en anden, tidligere afvisningsgrund. Testfixturen følger nu denne rækkefølge; produktets clean-head-kontrol og forventede modeafvisning bevares.
+
 Den normale forberedelse af historiske kildepins henter kun en manglende commit og bruger ikke depth-begrænsning. En lokal Git-reproduktion påviser, at det tidligere ubetingede depth=1-kald gjorde et fuldt checkout shallow og brød forfaderkontrollen trods tilstedeværende objekter. De konkrete commit-/trækontroller består. Kun den gennemgåede hele workflowovergang er registreret; dette er ingen generel kort godkendelse af senere workflowændringer.
 
 De syntetiske kildeprøver får nu et afgrænset host-/CI-miljø frem for vejrhentningens produktionsindstillinger og leverandørnøgler. Den normale CLI-prøve påviser arvet miljø som rødt og det samme forløb med isoleret miljø som grønt; en faktisk fejl i et valgt mål forbliver rød. Historiske updaterprøver får kun den præcise ydre helfilinverse for READY-kalderrettelsen, før deres uændrede gamle orakler. De konkrete PostgreSQL- og modelinput ændres ikke; kontrolkodens egen kvalifikation og uafhængige review består. Den uændrede Python-provenanceprøves observerede timeout er et særskilt åbent FULL-testbudgetproblem, ikke en bestået prøve eller et bevis for en produktregression.

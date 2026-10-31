@@ -386,6 +386,19 @@
       "controlQualification": true
     },
     {
+      "path": "scripts/test-ordinary-completed-stage-source.mjs",
+      "domains": [
+        "controls"
+      ],
+      "controlQualification": true,
+      "commands": [
+        [
+          "controls",
+          "node scripts/test-workflow-validation-order-4.0.108.mjs"
+        ]
+      ]
+    },
+    {
       "path": "scripts/test-private-trip-study-categorical-controller.mjs",
       "domains": [
         "d1"
@@ -10031,6 +10044,7 @@
       "dependencySurfaces": [
         "05ea4319814233a335f00d96c06c956015cbbea62ba5ae7e3562328767a95546",
         "19b387c8674a4cc9ca2e574c65cfeb4db0da4866fe49d35818d26691426a63b1",
+        "1b5ce2b0950e52b9fb80f7c3d0a12d7c6c6f3245c3868009639aef756a5e3efe",
         "1c6eb49803f24dc3c181da25c965902ca20081718decc287f671beffd22bcee0",
         "1de250a41366413625705084b2ed40c2edb97056fc80ced347fbecfbde1dc6c8",
         "371644677a0ab67d0898df41b41a2c3e593ecbd481383652b8bc43c239c96deb",
@@ -10061,6 +10075,7 @@
         "67843a18c3d05074e0be23dffe6fc44bf67b00552854621cba669a10662a0fe9",
         "6de9571516a37d63efb51c493ad1f5f199b979f68a1b4d8dee6a56abf3d0ecce",
         "8a4f01bd8f396647acb9985368880685203101306a91fa4d40a125e735a49771",
+        "9b2f76acde608643a8e7b2ad7db20d1254ff20d07d83202d54edd9bc1742fa11",
         "9b3e8695c4e139fabf566cad7ebb96ab518c5bd71f261534c36ac62b86f02c51",
         "9b724c427ed97c28a7a2b055214621978ee0d7dcf03b9b6cf3a7735bb2e1956e",
         "a9d2d3b82f4b8cf1a6c6888b4e7ff942d06114ea78b496810f08acb8fdcd1b60",
