@@ -1951,7 +1951,8 @@ async function fixedWaterCase(t,{changedAt=Infinity,corrupt=false,badInner=false
     const bytes=Buffer.from(item.bytes);if(corrupt)bytes[0]^=1;return new Response(bytes);
   };
   const outputPath=path.join(old.privateRoot,'water-safe.json');
-  const options={...credentials,...waterContext,githubToken:'',privateRoot:old.privateRoot,predecessorRoot:readers,outputPath,fetchImpl:transport};
+  const options={...credentials,...waterContext,privateRoot:old.privateRoot,predecessorRoot:readers,outputPath,fetchImpl:transport};
+  options.githubToken='';
   return {fixtures,old,current,state,options,transport};
 }
 test('Voersaa fixed water trace: actual normal B current/previous and strict private envelope',async t=>{
