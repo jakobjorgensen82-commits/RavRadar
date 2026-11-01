@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
 import { runInNewContext } from 'node:vm';
 import { createHash } from 'node:crypto';
-import { reviewedFixedAssistantFailureLegacyWorkflow, reviewedFixedAssistantFailureLegacyRegistry, reviewedFixedAssistantFailureBeforeBaselineHintRegistry, reviewedFixedAssistantFailureBeforePrSourceReadGrantRegistry } from './lib/fixed-assistant-failure-workflow-review.mjs';
+import { reviewedFixedAssistantFailureLegacyWorkflow, reviewedFixedAssistantFailureLegacyRegistry, reviewedFixedAssistantFailureBeforeBaselineHintRegistry, reviewedFixedAssistantFailureBeforePrSourceReadGrantRegistry, reviewedFixedAssistantFailureBeforePrivateStudyRegistry } from './lib/fixed-assistant-failure-workflow-review.mjs';
 
 // One normal offline caller target. No hosted logs, SQL engine or real token.
 const text = async file => (await fs.readFile(new URL('../' + file, import.meta.url), 'utf8')).replaceAll('\r\n', '\n');
@@ -215,7 +215,42 @@ function assertBeforePrSourceReadGrantRegistry(source) {
     [...registrySuccessor.preservedHistoricalPairs, ...registrySuccessor.transitionPairs]);
   return registryDocument;
 }
+// Raw new registry proof first; all old assertions below still see exact c9d137.
+function assertPrivateStudyRawRegistry(privateStudyRaw) {
+  const privateStudyDescriptor = review.registryPrivateStudyEnableNativeSuccessor;
+  assert.equal(privateStudyDescriptor.kind, 'EXACT_PRIVATE_STUDY_ENABLE_NATIVE785_REGISTRY_SUCCESSOR');
+  assert.equal(digest(privateStudyRaw), privateStudyDescriptor.afterSha256, 'PRIVATE_STUDY_ACTUAL_REGISTRY_BYTES');
+  assert.equal(privateStudyDescriptor.beforeSha256, registryPrSourceReadGrantSuccessor.afterSha256);
+  assert.deepEqual(privateStudyDescriptor.additiveEdits.filter(entry=>entry.kind==='owner').map(entry=>entry.entry), [{"path": "scripts/verify-cloudflare-trip-gateway.mjs", "domains": ["d1"], "controlQualification": true, "commands": [["d1", "node scripts/test-trip-storage-edge-transient-retry.mjs"]]}, {"path": "scripts/test-trip-storage-edge-transient-retry.mjs", "domains": ["d1"], "controlQualification": true, "commands": [["d1", "node scripts/test-trip-storage-edge-transient-retry.mjs"]]}]);
+  assert.deepEqual(privateStudyDescriptor.additiveEdits.filter(entry=>entry.kind==='resource').map(entry=>entry.path), ["cloudflare/trip-gateway/migrations/003_owner_erasure_insert_guard.sql", "cloudflare/trip-gateway/worker-legacy-erasure.test-fixture.js"]);
+  assert.deepEqual(privateStudyDescriptor.additiveEdits.filter(entry=>entry.path==='scripts/native-postgres-evidence.mjs'), [{"kind": "sourceArrayAppend", "path": "scripts/native-postgres-evidence.mjs", "key": "dependencySurfaces", "added": ["484f1bde8a24f00960f64c901c811fe773c9af48c53556779b3c6582a60d831e", "7dbfa1428a9b248c6686edd8ce91af7cc01b6cd9baf0145d1018233e3863d111", "c3ee660bec76a9520e353bd78dc3e6096e5f342b9bb06b469f181639bf49934c", "cc9d8cf54dccd81099966cfc25823315dae4f34a30e853f20c75e72fe422fb1d"]}, {"kind": "sourceArrayAppend", "path": "scripts/native-postgres-evidence.mjs", "key": "bindingSurfaces", "added": ["6ed1f2063a70505ac7ead67b9cedc3f596f9c8b18a6b05df96d7aca3694738db", "4e0c7363e700637f03a67acb02a50afd29c6d1207b973c89084ea9b344e2a390", "597b9a0a4c44d118ececdafb32997a83667381e91975d4617346a66be6f731b8"]}]);
+  assert.equal(privateStudyDescriptor.fixtureSourceSha256, '2ab5e3a34d8ca07e09d448ad36d979251484b1a9cdfe34138a8761d16570a191');
+  assert.deepEqual(privateStudyDescriptor.additiveEdits.filter(entry=>entry.path==='scripts/test-source-impact-domain-plan.mjs'), [{"kind": "sourceArrayAppend", "path": "scripts/test-source-impact-domain-plan.mjs", "key": "dependencySurfaces", "added": ["eec69502819334977a96b04dca5d96f32a15d36b7c31bb7db6dbeb57849324b4", "e681c680e1757a581c4fa1b56e16a6b3fb09d62f7f70e86ab08ce7b746c8ee06", "3cd4ca49a7af6ab92d8a9c1eb154275c17bbfcb4c8cb286e1d56566a044fdca6", "0c58b85758283d5f3c31c8bd1c539888d0a4480a8a793aa70c2b7bdb4e2b3303", "5b33f36f4829cf28b8974bc78922d2451f11db6558b3802177622cf254df23d5", "6deef227377f53f34543f214c5c5ce22ebdc7210142ee1031374b1b114f981b1", "65b2158eb77142cf4b81dabdab9650418efa449f8708da94ab5775b5d39f130c", "e0618cee256f7ae405776d48fbd09218508dbfa464accce8b9053fea15f87f25", "217aba223c66c0cc1224cadf118e5c3814273e30d76e985e1e514f59fd2c3b55", "acfdb897402786c772c01c484063cba179ce4a29221cac3c27bd39051632f78b", "542ef9d319de1f7d3f28ddecf9e8a0c0ec2234e6e8e2d534a2a0489e31530fd5", "2ba3ed2d56c5dcad880559cffd1f7e60d92207ba27511d419eca996203ae43cd", "230f3319081fb5d93ea64b200dae46232ee32efd1d5f78f0b7d516f1b12ac6e4", "11f58727764bea7aa95ff3cbf24deeaebbe33ee080a46ae953779ba6c5d05095", "c399be3fbe71662a02c7c951472b9767a0b86c6790adb99a6c63bfe56b00bbec", "985503397fde7c96c51d410003ac434dafabac0293c58a05fee61ac985602f40", "24a1ac8df76079b04bec63a41cdb4b0ab4aab40b43bc18432937dc5aeccda4f7", "aa3dc34177ed0636d7d3e2f93a9a4aabcfcdf37bcb694291e067b13a3fb5b495", "5bafd37b5b715742b57ccfe41d405ca181f1d97d8a978ce60c7f10acc8e6f89a", "bb591d8c097393f7a0b186d72734a236eca5885702fc450fe1173758f511520e", "0fb6575f37c7da68ddc8b6e16bf6da273c4f4ecbbb6c617b0548566d75d582f2", "137568f318aa025199c8df26eb4da899b34c0b4c3236309c7fe7c09c140e0972", "78550d15ea15803bc4c23a294de21290569a1c68e0cb68d89d9432f8c4d59387", "a50e19f15503af5995e10f27bb575356808eb8b8742fba2ab67a5abf787f97b5", "36ac9960a0f4011c797aad0c01a542c9e2384a542f231ec977cce2dc954b887d"]}, {"kind": "sourceArrayAppend", "path": "scripts/test-source-impact-domain-plan.mjs", "key": "bindingSurfaces", "added": ["3378c8f5e91e874ebff76fe43a93a0c841b6362ac90182e2b4c01b8ca3360388"]}]);
+  assert.equal(privateStudyDescriptor.additiveEdits.filter(entry=>entry.kind==='source').length, 1);
+  assert.equal(privateStudyDescriptor.additiveEdits.find(entry=>entry.kind==='source').path, 'scripts/test-trip-storage-edge-transient-retry.mjs');
+  const privateStudyBeforeRaw = reviewedFixedAssistantFailureBeforePrivateStudyRegistry(privateStudyRaw);
+  assert.equal(digest(privateStudyBeforeRaw), privateStudyDescriptor.beforeSha256);
+  const privateStudyExpected = JSON.parse(privateStudyBeforeRaw);
+  for (const privateStudyEdit of privateStudyDescriptor.additiveEdits) {
+    if (privateStudyEdit.kind==='owner') privateStudyExpected.owners.push(privateStudyEdit.entry);
+    else if (privateStudyEdit.kind==='source') {
+      assert.equal(Object.hasOwn(privateStudyExpected.sources, privateStudyEdit.path), false);
+      privateStudyExpected.sources[privateStudyEdit.path]=privateStudyEdit.entry;
+    } else if (privateStudyEdit.kind==='resource') privateStudyExpected.resourceFiles.push(privateStudyEdit.path);
+    else {
+      assert.equal(privateStudyEdit.kind, 'sourceArrayAppend');
+      for (const privateStudyHash of privateStudyEdit.added) assert(!privateStudyExpected.sources[privateStudyEdit.path][privateStudyEdit.key].includes(privateStudyHash));
+      privateStudyExpected.sources[privateStudyEdit.path][privateStudyEdit.key].push(...privateStudyEdit.added);
+    }
+  }
+  assert.deepEqual(JSON.parse(privateStudyRaw), privateStudyExpected, 'PRIVATE_STUDY_ONLY_EXACT_ADDITIONS');
+  assert.equal(digest(JSON.stringify(privateStudyExpected,null,2)+'\n'), privateStudyDescriptor.afterSha256);
+  return privateStudyBeforeRaw;
+}
+
 function assertActualRegistry(source) {
+  if (digest(source) === review.registryPrivateStudyEnableNativeSuccessor.afterSha256)
+    source = assertPrivateStudyRawRegistry(source);
   assert.equal(digest(source), registryPrSourceReadGrantSuccessor.afterSha256, 'ACTUAL_SOURCE_PROOF_REGISTRY_BYTES');
   const document = JSON.parse(source);
   assert.deepEqual(registryPrSourceReadGrantSuccessor.ownerAdditions, [
@@ -293,6 +328,14 @@ for (const altered of [actualRegistryRaw + '\n',
   JSON.stringify({...actualRegistry, resourceFiles:[...actualRegistry.resourceFiles,'unknown-resource.txt']},null,2)+'\n']) {
   assert.notEqual(altered, actualRegistryRaw);assert.throws(() => assertActualRegistry(altered));
   assert.throws(() => reviewedFixedAssistantFailureLegacyRegistry(altered), /FIXED_ASSISTANT_REGISTRY_UNREVIEWED_BYTES/);
+}
+for (const privateStudyMutation of [
+  actualRegistryRaw.replace('node scripts/test-trip-storage-edge-transient-retry.mjs', 'node scripts/unknown-private-study.mjs'),
+  actualRegistryRaw.replace('484f1bde8a24f00960f64c901c811fe773c9af48c53556779b3c6582a60d831e', '0'.repeat(64)),
+  actualRegistryRaw.replace('cloudflare/trip-gateway/worker-legacy-erasure.test-fixture.js', 'unknown-private-resource.js')
+]) {
+  assert.notEqual(privateStudyMutation, actualRegistryRaw);
+  assert.throws(()=>assertActualRegistry(privateStudyMutation));
 }
 const registryRaw = reviewedFixedAssistantFailureLegacyRegistry(actualRegistryRaw);
 assert.throws(() => assertActualRegistry(registryRaw), /ACTUAL_SOURCE_PROOF_REGISTRY_BYTES/);

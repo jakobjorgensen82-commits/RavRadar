@@ -121,10 +121,12 @@ test('normal closed domain planner handles real composition, one same-tree merge
     const objectDirectory=fs.realpathSync(path.join(text(SOURCE,['rev-parse','--path-format=absolute','--git-common-dir']),'objects'));
     fs.mkdirSync(path.join(root,'.git/objects/info'),{recursive:true});
     fs.writeFileSync(path.join(root,'.git/objects/info/alternates'),objectDirectory.replaceAll('\\','/')+'\n');
-    // Use the actual whole committed candidate, including every extracted leaf.
-    const reference=text(SOURCE,['rev-parse','HEAD^{commit}']);
+    // Historical FULL169 oracles use their genuine reviewed CODE, never a later HEAD.
+    // The current userdata composition has its own separate actual-HEAD plan.
+    const reference='0b114baecf84a197715bfe6eb14598c9e7e8cc25';
     git(root,['merge-base','--is-ancestor',BASE,reference]);
     const referenceTree=text(root,['rev-parse',reference+'^{tree}']);
+    assert.equal(referenceTree,'f5a8d7bf18db60871730565cc18f32fafb270666','HISTORICAL_REVIEWED_COMPOSITION_TREE');
     const readTree=id=>git(root,['ls-tree','-z',id]).toString('utf8').split('\0').filter(Boolean).map(line=>{
       const m=/^(\d{6}) (blob|tree) ([a-f0-9]{40})\t(.+)$/.exec(line);assert(m);return{mode:m[1],type:m[2],oid:m[3],name:m[4]};});
     function rewrite(tree,changes){
