@@ -1,7 +1,9 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
-import { assertAllowedOrigin, corsHeaders, enforceRateLimits, fetchWithTimeout, GatewayError, readJsonObject, safeGatewayError } from "../_shared/public-gateway.ts";
+import { assertAllowedOrigin, corsHeaders, enforceRateLimits, GatewayError, readJsonObject, safeGatewayError } from "../_shared/public-gateway.ts";
 import {
   assistantPrompt,
+  assistantIdentificationPolicy,
+  assistantIdentificationFocusAnswer,
   assistantScoreFindAnswer,
   assistantSystemInstruction,
   extractCloudflareAssistantResult,
@@ -10,6 +12,7 @@ import {
   RAV_ASSISTANT_KNOWLEDGE_SCHEMA,
   RAV_ASSISTANT_KNOWLEDGE_SHA256,
   RAV_ASSISTANT_MODEL,
+  RAV_ASSISTANT_SUCCESS_PROVENANCE,
   RAV_ASSISTANT_REFUSALS,
   RAV_ASSISTANT_REJECTION_CODES,
   RAV_ASSISTANT_RAVSCORE_MODEL_BINDING,
@@ -21,7 +24,7 @@ import {
 function assistantHeaders(request: Request) {
   const headers: Record<string, string> = {
     ...corsHeaders(request),
-    "Access-Control-Expose-Headers": Object.values(RAV_ASSISTANT_BINDING_HEADERS).join(", "),
+    "Access-Control-Expose-Headers": [...Object.values(RAV_ASSISTANT_BINDING_HEADERS), RAV_ASSISTANT_SUCCESS_PROVENANCE.header].join(", "),
     [RAV_ASSISTANT_BINDING_HEADERS.modelId]: RAV_ASSISTANT_RAVSCORE_MODEL_BINDING.modelId,
     [RAV_ASSISTANT_BINDING_HEADERS.modelStateVersion]: RAV_ASSISTANT_RAVSCORE_MODEL_BINDING.stateSchemaVersion,
     [RAV_ASSISTANT_BINDING_HEADERS.modelContractSha256]: RAV_ASSISTANT_RAVSCORE_MODEL_BINDING.modelContractSha256,
@@ -44,6 +47,83 @@ function assistantErrorResponse(request: Request, error: unknown) {
   const headers = new Headers(response.headers);
   for (const [key, value] of Object.entries(assistantHeaders(request))) headers.set(key, value);
   return new Response(response.body, { status: response.status, statusText: response.statusText, headers });
+}
+
+// Assistant-only deadline. Shared gateway/auth/quota implementations stay exact.
+// The quota leaf may finish later; it contains no continuation to the provider.
+function assistantDeadline(requestSignal: AbortSignal) {
+  const end = performance.now() + 7_000;
+  const controller = new AbortController(); let closed = false; let expired = false;
+  let rejectDeadline: (reason: unknown) => void = () => {};
+  const failure = () => new GatewayError(504, "UPSTREAM_TIMEOUT");
+  const expiredPromise = new Promise<never>((_resolve, reject) => { rejectDeadline = reject; });
+  void expiredPromise.catch(() => {});
+  const expire = () => { if (!expired) { expired = true; controller.abort(); rejectDeadline(failure()); } };
+  const timer = setTimeout(expire, 7_000);
+  requestSignal.addEventListener("abort", expire, { once:true });
+  if (requestSignal.aborted) expire();
+  const check = () => { if (closed || expired || performance.now() >= end) { expire(); throw failure(); } };
+  return {
+    signal: controller.signal, check,
+    async wait<T>(pending: Promise<T>): Promise<T> {
+      check(); const value = await Promise.race([pending, expiredPromise]); check(); return value;
+    },
+    close() { closed = true; clearTimeout(timer); requestSignal.removeEventListener("abort", expire); controller.abort(); },
+  };
+}
+type AssistantDeadline = ReturnType<typeof assistantDeadline>;
+function assistantRequestBody(request: Request, deadline: AssistantDeadline) {
+  let reader: ReadableStreamDefaultReader<Uint8Array> | null = null;
+  let cancelled = false; let bytes = 0;
+  const cancel = () => {
+    if (cancelled) return; cancelled = true;
+    if (reader) { const owned = reader; reader = null; void owned.cancel().catch(() => {});
+      try { owned.releaseLock(); } catch { /* A pending owned read settles on cancellation. */ } }
+  };
+  // Preserve the normal pre-read method/origin/declared-size gates. The stream
+  // has zero prefetch and acquires its reader only when readJsonObject consumes.
+  if (request.method !== "POST" || Number(request.headers.get("content-length") || 0) > 16 * 1024 || !request.body)
+    return { request, cancel };
+  const stream = new ReadableStream<Uint8Array>({
+    async pull(output) {
+      try {
+        deadline.check(); if (!reader) reader = request.body!.getReader();
+        const owned = reader; const row = await deadline.wait(owned.read()); deadline.check();
+        if (row.done) { reader = null; owned.releaseLock(); output.close(); return; }
+        bytes += row.value.byteLength;
+        if (bytes > 16 * 1024) throw new GatewayError(413, "PAYLOAD_TOO_LARGE");
+        output.enqueue(row.value);
+      } catch (error) { cancel(); output.error(error); }
+    },
+    cancel,
+  }, { highWaterMark: 0 });
+  return { request:new Request(request, { body:stream, duplex:"half" } as RequestInit & { duplex:"half" }), cancel };
+}
+async function assistantProviderJson(response: Response, deadline: AssistantDeadline) {
+  deadline.check();
+  if (!response.body) throw new GatewayError(502, "ASSISTANT_RESPONSE_REJECTED");
+  const reader = response.body.getReader(); const chunks: Uint8Array[] = []; let bytes = 0; let done = false;
+  try {
+    while (true) {
+      deadline.check(); const row = await deadline.wait(reader.read()); deadline.check();
+      if (row.done) { done = true; break; }
+      bytes += row.value.byteLength;
+      if (bytes > 64 * 1024) throw new GatewayError(502, "ASSISTANT_RESPONSE_REJECTED");
+      chunks.push(row.value);
+    }
+    const body = new Uint8Array(bytes); let offset = 0;
+    for (const chunk of chunks) { body.set(chunk, offset); offset += chunk.byteLength; }
+    const value = JSON.parse(new TextDecoder().decode(body)); deadline.check(); return value;
+  } finally {
+    if (!done) void reader.cancel().catch(() => {});
+    try { reader.releaseLock(); } catch { /* Only this owned reader is closed. */ }
+  }
+}
+function assistantProviderResponse(request: Request, answer: string) {
+  const response = assistantJsonResponse(request, { answer });
+  const headers = new Headers(response.headers);
+  headers.set(RAV_ASSISTANT_SUCCESS_PROVENANCE.header, RAV_ASSISTANT_SUCCESS_PROVENANCE.value);
+  return new Response(response.body, { status:response.status, headers });
 }
 
 function cloudflareCredential() {
@@ -69,13 +149,18 @@ function reportAssistantFailure(stage: string, upstreamStatus: number | null, re
 }
 
 Deno.serve(async (request) => {
+  let deadline: AssistantDeadline | null = null;
+  let requestBody: ReturnType<typeof assistantRequestBody> | null = null;
+  let upstream: Response | null = null;
   let observedStage: string | null = null;
   let observedUpstreamStatus: number | null = null;
   let observedRejectionCode: string | null = null;
   try {
     assertAllowedOrigin(request);
     if (request.method === "OPTIONS") return new Response(null, { status: 204, headers: assistantHeaders(request) });
-    const body = await readJsonObject(request, 16 * 1024);
+    deadline = assistantDeadline(request.signal); deadline.check();
+    requestBody = assistantRequestBody(request, deadline);
+    const body = await deadline.wait(readJsonObject(requestBody.request, 16 * 1024)); deadline.check();
     if (!sameAssistantRavScoreModelBinding(body.context?.modelBinding)) {
       return assistantJsonResponse(request, { error: "MODEL_BINDING_MISMATCH" }, 409);
     }
@@ -91,16 +176,23 @@ Deno.serve(async (request) => {
     const scoreFindAnswer = assistantScoreFindAnswer(rawQuestion, locale);
     if (scoreFindAnswer) return assistantJsonResponse(request, { answer: scoreFindAnswer });
 
-    await enforceRateLimits(request, "ravradar-assistant", { minute: 6, hour: 40, globalDay: 300 });
+    const identification = assistantIdentificationPolicy(rawQuestion, locale);
+    // A raw overlong family never sends a clipped, falsely complete question.
+    if (identification && rawQuestion.length > 600)
+      return assistantJsonResponse(request, { answer:assistantIdentificationFocusAnswer(locale) });
+    deadline.check();
+    await deadline.wait(enforceRateLimits(request, "ravradar-assistant", { minute: 6, hour: 40, globalDay: 300 })); deadline.check();
     const { accountId, token } = cloudflareCredential();
     observedStage = "UPSTREAM_REQUEST";
-    const response = await fetchWithTimeout(`https://api.cloudflare.com/client/v4/accounts/${encodeURIComponent(accountId)}/ai/run/${RAV_ASSISTANT_MODEL}`, {
+    deadline.check();
+    const response = await deadline.wait(fetch(`https://api.cloudflare.com/client/v4/accounts/${encodeURIComponent(accountId)}/ai/run/${RAV_ASSISTANT_MODEL}`, {
       method: "POST",
+      signal: deadline.signal,
       headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
       body: JSON.stringify({
         messages: [
           { role: "system", content: assistantSystemInstruction() },
-          { role: "user", content: assistantPrompt(question, body.context, locale) },
+          { role: "user", content: assistantPrompt(question, body.context, locale, rawQuestion) },
         ],
         max_completion_tokens: 800,
         reasoning_effort: "low",
@@ -108,14 +200,17 @@ Deno.serve(async (request) => {
         store: false,
         response_format: { type: "json_object" },
       }),
-    }, 7_000);
+    }).then(value => {
+      try { deadline!.check(); return value; }
+      catch (error) { if (value.body) void value.body.cancel().catch(() => {}); throw error; }
+    })); deadline.check(); upstream = response;
     observedUpstreamStatus = response.status;
     if (!response.ok) {
       observedStage = "UPSTREAM_HTTP_REJECTED";
       throw new GatewayError(502, "ASSISTANT_UPSTREAM_FAILED");
     }
     observedStage = "UPSTREAM_JSON_PARSE";
-    const payload = await response.json();
+    const payload = await assistantProviderJson(response, deadline); deadline.check();
     if (payload?.success === false) {
       observedStage = "UPSTREAM_ENVELOPE_REJECTED";
       throw new GatewayError(502, "ASSISTANT_UPSTREAM_FAILED");
@@ -126,10 +221,16 @@ Deno.serve(async (request) => {
     const validated = validateAssistantResult(parsed, locale, body.context, rawQuestion,
       (code: string) => { observedRejectionCode = code; });
     if (!validated) throw new GatewayError(502, "ASSISTANT_RESPONSE_REJECTED");
-    return assistantJsonResponse(request, { answer: validated.answer });
+    deadline.check();
+    const answerResponse = assistantProviderResponse(request, validated.answer);
+    deadline.check();
+    return answerResponse;
   } catch (error) {
     const response = assistantErrorResponse(request, error);
     if (observedStage !== null) reportAssistantFailure(observedStage, observedUpstreamStatus, observedRejectionCode, response.status);
     return response;
+  } finally {
+    deadline?.close(); requestBody?.cancel();
+    if (upstream?.body && !upstream.body.locked) void upstream.body.cancel().catch(() => {});
   }
 });

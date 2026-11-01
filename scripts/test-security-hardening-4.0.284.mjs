@@ -145,10 +145,11 @@ assert.match(gateway,/consume_public_request_limit/);
 assert.match(gateway,/fetchWithTimeout/);
 assert.doesNotMatch(gateway,/Access-Control-Allow-Origin['"]?\s*[:,]\s*['"]\*['"]/);
 
-const assistant=await read('supabase/functions/ravradar-assistant/index.ts');
-assert.match(assistant,/readJsonObject\(request, 16 \* 1024\)/);
+const assistant=(await read('supabase/functions/ravradar-assistant/index.ts')).replace(/\r\n/g,'\n');
+assert.match(assistant,/^    deadline = assistantDeadline\(request\.signal\); deadline\.check\(\);\n    requestBody = assistantRequestBody\(request, deadline\);\n    const body = await deadline\.wait\(readJsonObject\(requestBody\.request, 16 \* 1024\)\); deadline\.check\(\);$/m);
 assert.match(assistant,/minute: 6, hour: 40, globalDay: 300/);
-assert.match(assistant,/fetchWithTimeout[\s\S]*7_000/);
+assert.match(assistant,/^function assistantDeadline\(requestSignal: AbortSignal\) \{\n  const end = performance\.now\(\) \+ 7_000;$/m);
+assert.match(assistant,/^  const timer = setTimeout\(expire, 7_000\);$/m);
 assert.doesNotMatch(assistant,/knowledge_rules/);
 assert.match(assistant,/CLOUDFLARE_ACCOUNT_ID/);
 assert.match(assistant,/CLOUDFLARE_WORKERS_AI_TOKEN/);

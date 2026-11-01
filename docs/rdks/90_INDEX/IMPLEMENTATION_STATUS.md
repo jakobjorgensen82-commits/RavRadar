@@ -1,3 +1,13 @@
+## 1. november — lokal assistentfrist og identifikationsrelevans
+
+- [x] Én syvsekunders serverfrist gennem indgående indhold, kvote, leverandørindhold og sidste svarbeslutning; senere kvotesvar starter ikke et leverandørkald.
+- [x] Hele genkendte identifikationsspørgsmål i DA/DE/EN vælger kun eksisterende relevante fakta; uvedkommende zone-/scorefakta afvises, og luppens dokumenterede vidensgrænse bevares.
+- [x] To normale lokale Edge-/main-klientmål består, inklusive timeout, afbrydelse, størrelsesgrænser, alle gamle assertions bortset fra den erstattede header-only-timeoutassertion samt uændret sikkerhed og binding.
+- [ ] Præcis GitHub-kvalifikation, kontrolleret serverlevering og offentlig kvalitetsaccept. Syntetisk leverandørtransport beviser ikke ekstern AI.
+- [ ] Generel kvalitet ved blandede eller ikke-genkendte emner samt stabilitet ved faktisk netværk/kold opstart er fortsat åbne.
+
+Klient, fælles gateway, 45 fakta, C/I/T, gamle SQL, vejrdata og score er uændrede. Ingen aktivering af SOURCE, statistik eller automatisk sletning.
+
 ## 1. november — Facebook-gruppen på forsiden
 
 Ejeren har godkendt et klikbart f-ikon med teksten »Besøg vores gruppe på Facebook« ved RavRadar-brandet. På mobilen ligger linket øverst ved siden af brandet og over sprogvælgeren; på større skærme ligger det efter brandet og før sprogvælgeren. Gruppen er https://www.facebook.com/groups/1849354103138911/.

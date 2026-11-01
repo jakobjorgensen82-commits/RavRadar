@@ -4,6 +4,9 @@ import { registerHooks } from 'node:module';
 import { readFile } from 'node:fs/promises';
 import {
   assistantPrompt,
+  assistantIdentificationPolicy,
+  assistantIdentificationFocusAnswer,
+  RAV_ASSISTANT_SUCCESS_PROVENANCE,
   assistantQuestionEvidenceCoverage,
   assistantSystemInstruction,
   extractCloudflareAssistantResult,
@@ -635,7 +638,10 @@ assert.match(edge, /response_format:\s*\{ type: "json_object" \}/);
 assert.match(edge, /max_completion_tokens:\s*800/);
 assert.match(edge, /reasoning_effort:\s*"low"/);
 assert.match(edge, /minute: 6, hour: 40, globalDay: 300/);
-assert.match(edge, /fetchWithTimeout[\s\S]*7_000/);
+// The old literal only checked a headers-only timeout. The real handler/body
+// cases below now verify the same7s as one absolute POST deadline.
+assert.match(edge, /function assistantDeadline[\s\S]*performance\.now\(\) \+ 7_000/);
+assert.match(edge, /const answerResponse = assistantProviderResponse[\s\S]*deadline\.check\(\);\n\s*return answerResponse/);
 assert.match(edge, /validateAssistantResult/);
 assert.match(edge, /routeAssistantQuestion/);
 assert.match(edge, /!sameAssistantRavScoreModelBinding\(body\.context\?\.modelBinding\)/);
@@ -652,6 +658,42 @@ assert.match(client, /\|\| localAnswer\(/, 'Manglende eller mismatched headers s
 assert.doesNotMatch(edge, /OPENAI_API_KEY|OPENAI_MODEL|api\.openai\.com/);
 assert.doesNotMatch(client, /CLOUDFLARE_ACCOUNT_ID|CLOUDFLARE_WORKERS_AI_TOKEN|Bearer\s/);
 assert.match(config, /ravAssistantRemoteEnabled:\s*true/);
+
+// New whole identification family: exact existing rows, no new knowledge.
+const identificationQuestions = [
+  ['da','Kan en lup hjælpe med at skelne rav fra kopal, og hvilke kendetegn kan jeg undersøge uden at beskadige fundet?'],
+  ['da','Hvordan skelner jeg rav fra glas, og hvilke spor kan jeg se efter uden at skade fundet?'],
+  ['de','Kann eine Lupe helfen, Bernstein von Kopal zu unterscheiden, und welche Merkmale kann ich untersuchen, ohne den Fund zu beschädigen?'],
+  ['de','Wie kann ich Bernstein von Kunststoff unterscheiden, und welche Hinweise kann ich prüfen, ohne den Fund zu beschädigen?'],
+  ['en','Can a magnifying glass help distinguish amber from copal, and which clues can I examine without damaging the find?'],
+  ['en','How can I distinguish amber from glass, and what features can I inspect without damaging the find?'],
+];
+const identificationIds=['identification.uv-clue-not-proof','identification.avoid-destructive-tests','identification.treatments-and-imitations'];
+for(const [locale,question] of identificationQuestions){
+  const policy=assistantIdentificationPolicy(question,locale);assert.equal(policy?.complete,true);
+  assert.deepEqual(policy.requiredIds,identificationIds);
+  const prompt=JSON.parse(assistantPrompt(question,safeContext,locale));
+  assert.equal(prompt.question,question);assert.equal(prompt.publicSelectedZoneContext,null);
+  assert.deepEqual(prompt.publicFacts,RAV_ASSISTANT_FACTS.filter(fact=>identificationIds.includes(fact.id)));
+  assert.equal(prompt.questionEvidence.fullKnowledgeSha256,RAV_ASSISTANT_KNOWLEDGE_SHA256);
+  for(const disposition of ['answer','uncertain']){
+    const value={schemaVersion:'rav-assistant-response-v1',locale,disposition,answer:'Supported public identification.',evidenceIds:identificationIds};
+    const accepted=validateAssistantResult(value,locale,safeContext,question);assert(accepted?.answer.length<=900);
+    assert.doesNotMatch(accepted.answer,/Vælg først en zone|RavScore|BernsteinScore|AmberScore|selected zone|Zone auswählen/iu);
+    assert.notEqual(accepted.answer,RAV_ASSISTANT_UNCERTAIN_REPLIES[locale]);
+    assert.equal(accepted.disposition,policy.magnifierLimit?'uncertain':'answer');
+    assert.equal(validateAssistantResult({...value,evidenceIds:[...identificationIds,'public-context.selected-zone-only']},locale,safeContext,question),null);
+    assert.equal(validateAssistantResult({...value,evidenceIds:identificationIds.slice(1)},locale,safeContext,question).answer,assistantIdentificationFocusAnswer(locale));
+  }
+  for(const suffix of ['; explain an unknown amber device',' and calculate an exact landing time']){
+    const whole=question+suffix,unknown=assistantIdentificationPolicy(whole,locale);
+    assert.equal(unknown?.complete,false);const broad=JSON.parse(assistantPrompt(whole,safeContext,locale));
+    assert.equal(broad.question,whole);assert.deepEqual(broad.publicFacts,RAV_ASSISTANT_FACTS);
+    assert.equal(validateAssistantResult({schemaVersion:'rav-assistant-response-v1',locale,disposition:'answer',answer:'Supported.',evidenceIds:identificationIds},locale,safeContext,whole).answer,assistantIdentificationFocusAnswer(locale));
+  }
+}
+assert.equal(crypto.createHash('sha256').update(JSON.stringify(RAV_ASSISTANT_FACTS)).digest('hex'),RAV_ASSISTANT_KNOWLEDGE_SHA256);
+assert.equal(RAV_ASSISTANT_FACTS.length,45);
 
 // Run the real Edge handler and gateway under Node's TypeScript loader.
 // Only Deno.serve/env and the type-only JSR declaration are adapted; CORS,
@@ -749,6 +791,94 @@ try {
   assert.ok(envReads.includes('PUBLIC_RATE_LIMIT_SECRET'));
   assert.equal(edgeFetches,0);
   console.log('OK: actual Edge entry refuses 9 complete/long-prefix private requests before quota/credentials; origin, binding, size and ordinary quota path preserved with zero network.');
+  // The same imported Edge handler, normal gateway, Request and quota calls.
+  // Only transport and clock are controlled; no replacement handler is used.
+  const clockDescriptor=Object.getOwnPropertyDescriptor(globalThis,'performance');
+  const realTimeout=globalThis.setTimeout,realClear=globalThis.clearTimeout,oldGet=globalThis.Deno.env.get,oldFetch=globalThis.fetch;
+  let clock=0;const timers=new Map();let quotaCalls=0,providerCalls=0,cancelledBody=0;
+  const unexpectedRoutes=[];let quotaFactory=null,providerFactory=null;let lastProviderSignal=null;
+  const syntheticEnv={PUBLIC_RATE_LIMIT_SECRET:'SYNTHETIC_RATE_ONLY',SUPABASE_URL:'https://quota.invalid',SUPABASE_SERVICE_ROLE_KEY:'SYNTHETIC_NOT_A_KEY',CLOUDFLARE_ACCOUNT_ID:'a'.repeat(32),CLOUDFLARE_WORKERS_AI_TOKEN:'SYNTHETIC_NOT_A_CREDENTIAL'};
+  const pause=()=>new Promise(resolve=>realTimeout(resolve,0));
+  const until=async test=>{for(let i=0;i<100&&!test();i++)await pause();assert(test(),'Normal fixture phase must actually be reached');};
+  const tick=async value=>{clock=value;for(const [id,t]of [...timers])if(t.at<=clock){timers.delete(id);t.fn();}await pause();};
+  const resetDeadlineCase=()=>{assert.equal(timers.size,0);clock=0;quotaCalls=0;providerCalls=0;cancelledBody=0;quotaFactory=null;providerFactory=null;lastProviderSignal=null;};
+  const validProvider={result:{response:JSON.stringify({schemaVersion:'rav-assistant-response-v1',locale:'da',disposition:'answer',answer:'Public identification.',evidenceIds:identificationIds})}};
+  const normalRequest=()=>new Request('https://edge.invalid/ravradar-assistant',{method:'POST',headers:{origin:'https://ravradar.dk','content-type':'application/json'},body:JSON.stringify({question:identificationQuestions[0][1],locale:'da',context:{modelBinding:RAV_ASSISTANT_RAVSCORE_MODEL_BINDING}})});
+  try{
+    Object.defineProperty(globalThis,'performance',{configurable:true,value:{now:()=>clock}});
+    globalThis.setTimeout=(fn,ms)=>{const id={};timers.set(id,{fn,ms,at:clock+ms});return id;};
+    globalThis.clearTimeout=id=>{timers.delete(id);};
+    globalThis.Deno.env.get=name=>syntheticEnv[name];
+    globalThis.fetch=async(input,init)=>{
+      const request=new Request(input,init);
+      if(request.url==='https://quota.invalid/rest/v1/rpc/consume_public_request_limit'){
+        quotaCalls++;return quotaFactory?quotaFactory(request):Response.json(true);
+      }
+      if(request.url==='https://api.cloudflare.com/client/v4/accounts/'+('a'.repeat(32))+'/ai/run/'+RAV_ASSISTANT_MODEL){
+        providerCalls++;lastProviderSignal=request.signal;return providerFactory?providerFactory(request):Response.json(validProvider);
+      }
+      unexpectedRoutes.push('UNEXPECTED_SYNTHETIC_ROUTE');throw new Error('TEST_NETWORK_FORBIDDEN');
+    };
+    for(const [method,origin,length,status]of [['PUT','https://ravradar.dk',null,405],['POST','https://not-allowed.invalid',null,403],['POST','https://ravradar.dk','16385',413]]){
+      let pulls=0;const stream=new ReadableStream({pull(){pulls++;}}, {highWaterMark:0});
+      const request=new Request('https://edge.invalid/ravradar-assistant',{method,headers:{origin,...(length?{'content-length':length}:{})},body:stream,duplex:'half'});
+      const response=await edgeHandler(request);assert.equal(response.status,status);assert.equal(pulls,0,'No body read before old gates');
+      assert.equal(response.headers.get(RAV_ASSISTANT_SUCCESS_PROVENANCE.header),null);assert.equal(providerCalls,0);
+    }
+    resetDeadlineCase();let response=await edgeHandler(normalRequest());assert.equal(response.status,200);assert.equal(providerCalls,1);assert.equal(quotaCalls,3);
+    assert.equal(response.headers.get(RAV_ASSISTANT_SUCCESS_PROVENANCE.header),RAV_ASSISTANT_SUCCESS_PROVENANCE.value);
+    assert(response.headers.get('access-control-expose-headers').includes(RAV_ASSISTANT_SUCCESS_PROVENANCE.header));
+    assert.deepEqual(Object.keys(await response.json()),['answer']);
+    // Preserve the old JSON parser behaviour: content type was not an added gate.
+    resetDeadlineCase();const plain=normalRequest();const plainHeaders=new Headers(plain.headers);plainHeaders.set('content-type','text/plain');
+    response=await edgeHandler(new Request(plain,{headers:plainHeaders}));assert.equal(response.status,200);
+    resetDeadlineCase();const longBody=await normalRequest().json();longBody.question+=' '+('x'.repeat(650));
+    response=await edgeHandler(new Request('https://edge.invalid/ravradar-assistant',{method:'POST',headers:{origin:'https://ravradar.dk','content-type':'application/json'},body:JSON.stringify(longBody)}));
+    assert.equal(response.status,200);assert.equal((await response.json()).answer,assistantIdentificationFocusAnswer('da'));
+    assert.equal(quotaCalls,0);assert.equal(providerCalls,0);assert.equal(response.headers.get(RAV_ASSISTANT_SUCCESS_PROVENANCE.header),null);
+    // Fast quota headers, late normal quota JSON bodies. Shared transport is not
+    // claimed cancelled; releasing it later must never launch the provider.
+    resetDeadlineCase();const releases=[];
+    quotaFactory=()=>new Response(new ReadableStream({start(output){releases.push(()=>{output.enqueue(new TextEncoder().encode('true'));output.close();});}}, {highWaterMark:0}));
+    const lateQuota=edgeHandler(normalRequest());await until(()=>quotaCalls===3&&timers.size===1);
+    await tick(7001);response=await lateQuota;assert.equal(response.status,504);assert.equal(providerCalls,0);
+    for(const release of releases)release();await pause();await pause();assert.equal(providerCalls,0);assert.equal(response.headers.get(RAV_ASSISTANT_SUCCESS_PROVENANCE.header),null);
+    // A stalled inbound body has an owned reader and is cancelled at the total deadline.
+    resetDeadlineCase();let inboundCancelled=0;
+    const stalled=new Request('https://edge.invalid/ravradar-assistant',{method:'POST',headers:{origin:'https://ravradar.dk','content-type':'application/json'},body:new ReadableStream({pull(){},cancel(){inboundCancelled++;}}, {highWaterMark:0}),duplex:'half'});
+    const inputDeadline=edgeHandler(stalled);await pause();await tick(7001);response=await inputDeadline;assert.equal(response.status,504);assert.equal(inboundCancelled,1);assert.equal(providerCalls,0);
+    // Fast provider headers do not end the timer: body waiting is inside it.
+    resetDeadlineCase();providerFactory=()=>new Response(new ReadableStream({pull(){},cancel(){cancelledBody++;}}, {highWaterMark:0}));
+    const lateBody=edgeHandler(normalRequest());await until(()=>providerCalls===1);await pause();await tick(7001);response=await lateBody;
+    assert.equal(response.status,504);assert.equal(cancelledBody,1);assert.equal(lastProviderSignal.aborted,true);assert.equal(response.headers.get(RAV_ASSISTANT_SUCCESS_PROVENANCE.header),null);
+    // Quota spent6500ms: provider receives only the absolute remainder, not a new7s.
+    resetDeadlineCase();quotaFactory=()=>{if(quotaCalls===3)clock=6500;return Response.json(true);};
+    providerFactory=request=>new Promise((_resolve,reject)=>request.signal.addEventListener('abort',()=>reject(new Error('SYNTHETIC_ABORT')),{once:true}));
+    const remainder=edgeHandler(normalRequest());await until(()=>providerCalls===1);assert.equal(clock,6500);await tick(7001);response=await remainder;assert.equal(response.status,504);
+    resetDeadlineCase();let transportCancelled=0;
+    const caller=new AbortController();
+    const callerBody=new Request('https://edge.invalid/ravradar-assistant',{method:'POST',signal:caller.signal,headers:{origin:'https://ravradar.dk'},body:new ReadableStream({pull(){},cancel(){transportCancelled++;}}, {highWaterMark:0}),duplex:'half'});
+    const callerStop=edgeHandler(callerBody);await pause();caller.abort();response=await callerStop;
+    assert.equal(response.status,504);assert.equal(transportCancelled,1);assert.equal(providerCalls,0);assert.equal(response.headers.get(RAV_ASSISTANT_SUCCESS_PROVENANCE.header),null);
+    // Exact application body cap, invalid JSON and oversized body are real handler paths.
+    for(const [extra,status]of [[0,200],[1,502]]){
+      resetDeadlineCase();const raw=JSON.stringify(validProvider);providerFactory=()=>new Response(raw+' '.repeat(65536-Buffer.byteLength(raw)+extra));
+      response=await edgeHandler(normalRequest());assert.equal(response.status,status);
+      assert.equal(response.headers.get(RAV_ASSISTANT_SUCCESS_PROVENANCE.header),status===200?RAV_ASSISTANT_SUCCESS_PROVENANCE.value:null);
+    }
+    resetDeadlineCase();providerFactory=()=>new Response('{');response=await edgeHandler(normalRequest());assert.equal(response.status,500);assert.equal(response.headers.get(RAV_ASSISTANT_SUCCESS_PROVENANCE.header),null);
+    resetDeadlineCase();providerFactory=()=>Response.json({result:{response:JSON.stringify({schemaVersion:'rav-assistant-response-v1',locale:'da',disposition:'answer',answer:'Public.',evidenceIds:[...identificationIds,'public-context.selected-zone-only']})}});
+    response=await edgeHandler(normalRequest());assert.equal(response.status,502);assert.equal(response.headers.get(RAV_ASSISTANT_SUCCESS_PROVENANCE.header),null);
+    resetDeadlineCase();providerFactory=null;
+    for(const request of [new Request('https://edge.invalid/ravradar-assistant',{method:'OPTIONS',headers:{origin:'https://ravradar.dk'}}),new Request('https://edge.invalid/ravradar-assistant',{method:'POST',headers:{origin:'https://ravradar.dk'},body:JSON.stringify({question:'Kan der stadig ligge rav, selv om scoren er lav?',locale:'da',context:{modelBinding:RAV_ASSISTANT_RAVSCORE_MODEL_BINDING}})})]){
+      response=await edgeHandler(request);assert.equal(response.headers.get(RAV_ASSISTANT_SUCCESS_PROVENANCE.header),null);
+    }
+    assert.equal(providerCalls,0);assert.equal(timers.size,0);assert.deepEqual(unexpectedRoutes,[],'Product catches must not turn unknown fixture routes into passing failures');
+    console.log('OK: actual Edge absolute deadline, late quota no provider, owned input/output body, caps, JSON, unchanged pre-read gates and success provenance; artificial transports only.');
+  }finally{
+    globalThis.fetch=oldFetch;globalThis.Deno.env.get=oldGet;globalThis.setTimeout=realTimeout;globalThis.clearTimeout=realClear;
+    if(clockDescriptor)Object.defineProperty(globalThis,'performance',clockDescriptor);else delete globalThis.performance;
+  }
 } finally {
   declarationHook.deregister();
   globalThis.fetch=beforeEdgeFetch;

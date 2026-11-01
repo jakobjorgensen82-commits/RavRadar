@@ -1,3 +1,7 @@
+## 1. november — lokal assistentrettelse af emnerelevans og samlet svartid
+
+Spørg RavRadar får én samlet syvsekunders serverfrist og præcist emnevalg for genkendte generelle identifikationsspørgsmål. Uvedkommende zonevejledning afvises; ukendte led og identifikationsmetodernes begrænsninger behandles ærligt. De to normale lokale klient-/Edge-mål består med syntetisk transport. Offentlig levering og ekstern AI-accept er fortsat åbne. Ingen ændring af vejr, scoremodel, klientfrist, fakta, bindinger eller SQL.
+
 ## 1. november — Facebook-gruppen tættere på
 
 Forsiden har fået et lokalt f-ikon og et kort link til RavRadars Facebook-gruppe ved logoet. Teksten følger dansk, tysk og engelsk, og placeringen tilpasser sig mobil og computer. De øvrige funktioner og beregninger bevares. Layout, sprogskift, klik og tastaturfokus er afprøvet lokalt; kildekvalifikation og offentlig levering er endnu ikke dokumenteret.

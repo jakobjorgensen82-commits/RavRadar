@@ -1,3 +1,7 @@
+## 1. november — assistentens emnerelevans og svartid er fortsat åbne leveringspunkter
+
+En faktisk offentlig identifikationsprøve gav først en generisk fejl og derefter et svar med uvedkommende zonevejledning. Den lokale efterfølger retter den genkendte emnefamilies faktavalg og samler serverarbejdet under den eksisterende syvsekundersfrist. De to normale lokale mål består, men de er ikke hosted AI- eller leveringsbevis. Netværk/kold opstart og fulde svar på blandede emner er fortsat afgrænsninger. Ingen påstand om én bevist årsag til alle tidligere assistentfejl. Følg DEC-0091 og privat checkpoint; de øvrige assistentkrav er ikke lukket.
+
 ## 1. november — find det autentiske fulde kildebevis
 
 Den korte kildevej søgte kun seks forfædre tilbage. Et fortsat gyldigt fuldt kildebevis kunne derfor falde uden for søgningen efter flere almindelige merges, selv om alle beskyttede model- og PostgreSQL-input var uændrede.
