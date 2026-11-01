@@ -6,6 +6,15 @@ import test from 'node:test';
 const completeWorkflow = fs.readFileSync('.github/workflows/audit-saved-weather-inputs.yml', 'utf8').replace(/\r\n/g, '\n');
 function beforeVoersaaWaterTrace(value){
   const sha=value=>crypto.createHash('sha256').update(value).digest('hex');
+  if(sha(value)==='d1a80ed4acaea23779fb55e6af54a6a64b526b33b8014c0005e8ec3f829a1c75'){
+    const marker='\n  voersaa-water-trace:';
+    assert.equal(value.split(marker).length,2,'VOERSAA_MASTER_SECRET_JOB_NON_UNIQUE');
+    const at=value.indexOf(marker),job=value.slice(at);
+    const binding='          WEATHER_PROGRESS_MASTER_SECRET: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}\n';
+    assert.equal(job.split(binding).length,2,'VOERSAA_MASTER_SECRET_BINDING_NON_UNIQUE');
+    value=value.slice(0,at)+job.replace(binding,'          WEATHER_PROGRESS_MASTER_SECRET: ${{ secrets.WEATHER_PROGRESS_MASTER_SECRET }}\n');
+    assert.equal(sha(value),'4914d1497204b37dbf0407b2d3d2c98a638054b8f11ee070dc2afd7e33aa7b28','VOERSAA_MASTER_SECRET_MAPPING_INVERSE_CHANGED');
+  }
   if(sha(value)==='4914d1497204b37dbf0407b2d3d2c98a638054b8f11ee070dc2afd7e33aa7b28'){
     assert.equal(value.split("and .path==$workflow and .status==\"completed\"").length,2);value=value.replace("and .path==$workflow and .status==\"completed\"","and .path==\".github/workflows/run-current-weather-once.yml\" and .status==\"completed\"");
     assert.equal(value.split("jq -e --arg repo \"$GITHUB_REPOSITORY\" --arg run \"$run\" --arg head \"$head\" --arg workflow \"$workflow\" '").length,2);value=value.replace("jq -e --arg repo \"$GITHUB_REPOSITORY\" --arg run \"$run\" --arg head \"$head\" --arg workflow \"$workflow\" '","jq -e --arg repo \"$GITHUB_REPOSITORY\" --arg run \"$run\" --arg head \"$head\" '");
@@ -399,6 +408,8 @@ test('Voersaa fixed water trace workflow: one fixed job is gated before secrets 
   assert.match(completeWorkflow,/group: ravradar-weather-production-v2\n  queue: max\n  cancel-in-progress: false/);
   assert.match(job,/test "\$SOURCE_REQUIRED" = false/);
   assert(job.indexOf('test "$SOURCE_REQUIRED" = false')<job.indexOf(gh('secrets.SUPABASE_URL')));
+  assert.deepEqual([...job.matchAll(/^          WEATHER_PROGRESS_MASTER_SECRET: (.*)$/gm)].map(match=>match[1]),[gh('secrets.SUPABASE_SERVICE_ROLE_KEY')],
+    'Water trace must reuse the installed normal master-secret mapping; an undeclared new secret becomes empty at runtime');
   for(const exact of ['test "$GITHUB_SHA" = "$EXPECTED_MAIN_HEAD"','git/ref/heads/main','weather-source-gate.mjs check',
     '41231144384 7a08f6a8dfb2131898e7270a2429c3f4f810a842','41256251412 37a34703d9ae8bfb2c28056f21a7ea73944033ae',
     '.run_attempt==1 and .head_sha==$head','git -c protocol.allow=never merge-base --is-ancestor "$head" "$GITHUB_SHA"',

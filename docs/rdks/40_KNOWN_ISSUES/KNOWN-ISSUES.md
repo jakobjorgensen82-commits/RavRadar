@@ -1,3 +1,7 @@
+## 1. november — åben Voerså-afvigelse; diagnose stoppet i opsætningen
+
+Den manglende nøglemapping er fundet og har en lokal kandidat med tre beståede normale workflowcases. Det forklarer diagnosens stop, ikke vandstandsafvigelsen ved Voerså. Diagnosen er fortsat fejlet. Et nyt forsøg kræver egen kvalifikation, faktisk mainbinding og ingen aktiv writer; udløbne originaler må ikke bruges. Ingen ny nøgle eller ændring af kryptografi, vejr eller scorer.
+
 ## 1. november — P0 åben: startup kan afvige efter et matchende Pages-manifest
 
 Forløb 236 fik Pages-write SUCCESS, men fuld efterkontrol og terminalstatus FAIL på startupdigest. De senere to små offentlige filer matcher nu target. Den første afvigende body/SHA er ikke bevaret; en blanding under propagation er mulig, ikke en bevist endelig rodårsag. Fuld offentlig pakke og korrekt terminalkvittering er fortsat åbne.

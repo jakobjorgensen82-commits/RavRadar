@@ -1,3 +1,7 @@
+## 1. november — lokal rettelse af vanddiagnosens nøglemapping
+
+Vanddiagnosen stoppede i opsætningen før læsning af original B: nøglevariablen pegede på et ikke-oprettet navn. Kandidaten genbruger den eksisterende nøglemapping. De tre relevante normale workflowcases består lokalt. Ingen nøgle installeres, og kryptografi, vejrdata eller scorer ændres ikke. Diagnosen er stadig fejlet, og årsagen til vandstandsafvigelsen ved Voerså er ukendt.
+
 ## 1. november — lokal P0 for forseglet manifest og startup
 
 Vejrforløb 236 byggede færdigt, og Pages-skrivningen meldte SUCCESS. Den efterfølgende fulde offentlige verifikation afviste startupfilens digest; Pages-jobbet og den samlede terminalkontrol er derfor fortsat FAIL. To senere små offentlige aflæsninger af manifest og startup matchede præcis det forseglede target. Det beviser ikke hele den offentlige pakke. Den første afvigende body blev ikke gemt, så den præcise årsag er fortsat uafklaret.

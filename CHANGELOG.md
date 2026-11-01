@@ -1,3 +1,7 @@
+## 1. november — lokal kandidat: genbrug vanddiagnosens eksisterende nøglemapping
+
+Ret den ene fejlagtige nøglereference til den allerede eksisterende normale mapping. Tre relevante normale workflowcases består lokalt; gamle orakler og helinverse bevares. Ingen nøgleinstallation, kryptografi-, vejr- eller scoreændring. Den gamle diagnose er stadig fejlet, og Voerså-årsagen er ukendt. Nyt forsøg afventer egne kontroller, faktisk mainbinding og ingen aktiv writer; udløb må ikke omgås.
+
 ## 1. november — lokal P0: afvent både manifest og startup før Pages-kvittering
 
 Forbered bounded observation af præcist forseglet manifest og startup før én fuld kontrol af den store pakke. Genbrug de verificerede startupbytes; bevar 121-observationsgrænsen, det delte HTTP-budget og alle hårde hash-, størrelse-, model- og privatlivskrav. Den normale afgrænsede kalderprøve er RED før og GREEN efter; samlet lokal kontrol, CI og levering er åbne.
