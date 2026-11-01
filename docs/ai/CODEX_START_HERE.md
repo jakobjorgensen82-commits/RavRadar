@@ -1,3 +1,13 @@
+## 1. november — fast, skrivefri aflæsning af assistentens fejlkategorier
+
+Adminrettelsen nedenfor er nu leveret gennem normal merge, kontrolleret kodelevering og offentlig verifikation. Systemvisningen genkender igen den oprindelige offentlige modelpakke; overblik og kysteditor bruger fortsat den aktuelle visning. Dette afslutter den afgrænsede modelkontrolfejl, ikke hele admingennemgangen.
+
+Den nye lokale kildekandidat tilføjer én fast læsning i det eksisterende Supabase-læsejob. Den udvælger kun assistentens faste fejlkategorier i ét fast tidsinterval. Projekt, markør, interval, felter, bytegrænse og samlet frist kan ikke vælges af kalderen. Ingen spørgsmål, brugerdata eller rå fejltekst returneres. Ét forsøg forbruges også ved fejl; et tomt resultat beviser ikke, at der ingen fejl var. Ingen installation eller AI-genprøve følger af læsningen.
+
+Læsejobbet bevarer præcis main, første forsøg, kildebevis og frisk kontrol af ledig produktion. Dets to main-genlæsninger bevarer fuld Git-historik. To historiske workfloworakler får kun en hashbundet, helfilverificeret inverse af denne præcise ændring; deres gamle assertions bevares, og den nye måltest kontrollerer den faktiske nye workflowtekst. Kontrolregistreringen udvides additivt uden at omklassificere gammel produktkode eller fjerne gamle afhængigheder. Ukendt påvirkning vælger fortsat større kontrolomfang.
+
+Den normale måltest består lokalt med syntetiske svar, samlede tidsgrænser, afvisninger og før-/efterbevis for de to historiske orakler. Præcis GitHub-kvalifikation, sikker merge og den faktiske afgrænsede logaflæsning er stadig åbne. Ekstern AI er ikke dermed bevist fungerende. Version, modelbindinger, PostgreSQL-input, vejrtal, scoreformel, administratorpunkter og geometri ændres ikke; alle fem hovedmål er fortsat åbne. Aktuelle kørselskvitteringer og øvrige delopgaver står i det private checkpoint. Denne tekniske diagnose tilføjes ikke brugerassistentens viden.
+
 ## Kildebevis: normal merge og kontrol af den faktiske main
 
 En PR med målrettet kildebevis (`weather-source-targeted-impact-v1` eller `weather-source-targeted-domains-v2`) skal flettes med GitHubs almindelige **merge**, ikke squash eller rebase. Den eksisterende normale forbruger kræver to faktiske Git-forældre, hvoraf præcis én er den kvalificerede PR-head, samt identisk helt kildeindhold. En grøn PR eller samme filtræ alene erstatter ikke denne kontrakt.

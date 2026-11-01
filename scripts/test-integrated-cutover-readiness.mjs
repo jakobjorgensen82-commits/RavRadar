@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 
+import { reviewedFixedAssistantFailureLegacyWorkflow } from './lib/fixed-assistant-failure-workflow-review.mjs';
 import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
 import { spawnSync } from 'node:child_process';
@@ -1986,7 +1987,7 @@ try {
   globalThis.fetch=fixedRatePriorFetch;delete process.env.SUPABASE_ACCESS_TOKEN;
 }
 console.log('Fixed rate-log normal caller fixtures: exact historical GET, strict bounded results and one-shot/deadline refusals; no account log read.');
-const typedWorkflowSource=(await fs.readFile('.github/workflows/deploy-trip-storage.yml','utf8')).replace(/\r\n/g,'\n');
+const typedWorkflowSource=reviewedFixedAssistantFailureLegacyWorkflow((await fs.readFile('.github/workflows/deploy-trip-storage.yml','utf8')).replace(/\r\n/g,'\n'));
 const typedActualReadJob=typedWorkflowSource.slice(typedWorkflowSource.indexOf('  read-fixed-supabase-metadata:'),
   typedWorkflowSource.indexOf('  reject-unknown-operation:'));
 const typedConsoleReadStep="      - name: Read the one fixed 15 October public rate console-log interval\n        if: inputs.operation == 'fixed-public-rate-console-read-20261015'\n        timeout-minutes: 1\n        run: node scripts/read-fixed-public-rate-console-log-20261015.mjs\n        env:\n          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}\n\n";

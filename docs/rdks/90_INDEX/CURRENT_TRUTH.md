@@ -1,3 +1,11 @@
+## 1. november — leveret adminmodelkontrol og ny afgrænset assistentdiagnose
+
+Den særskilte adminmodelkontrol er nu offentligt leveret og afprøvet gennem den normale administratorside. Den verificerede oprindelige startpakke genkendes; aktuelle prognosevisninger bevares. Den tidligere leveringsstatus nedenfor er historisk for netop denne rettelse. Det er ikke afslutning af hele adminrevisionen.
+
+En ny lokal kildekandidat tilføjer ét fast, skrivefrit Supabase-læsetrin til assistentfejlen. Kun faste kategorier og HTTP-status må vises, aldrig spørgsmål, brugerdata eller rå fejltekst. Projekt, markør, interval og felter er låst; ét GET deler en samlet kort frist med svarlæsningen og en fast bytegrænse. Fejl eller ukendt svarform genprøves ikke automatisk, og tomme kategorier beviser ikke fravær af en fejl. De normale main-, kildebevis-, første-forsøg- og idlekrav består.
+
+Den nye normale syntetiske måltest er bestået, inklusive afvisninger, timeout og de to uændrede historiske workfloworakler bag en præcis helfilinverse. GitHub-kvalifikation, sikker levering og faktisk logaflæsning mangler. Dette er ingen AI-rettelse eller bevis for fungerende ekstern AI. Ingen nye SQL-/model-/vejrinput eller brugerfunktioner følger; ingen intern fejlviden tilføjes assistenten. Den øvrige aktuelle drifts-, dæknings- og leveringsevidens føres privat. Alle fem hovedmål er åbne.
+
 ## 1. november — admin skal kontrollere den oprindelige modelpakke
 
 Den lokale adminrettelse holder to læsninger af samme offentlige generation adskilt. Modelkontrollen får den oprindelige, hash- og modelbundne startpakke med dens faktiske referencetime og navne. Overblik og kysteditor beholder den normale aktuelle prognosevisning. Et senere tidspunkt eller navne, som den aktuelle projektion har omdannet til zone-IDer, må ikke udlægges som den oprindelige startpakke. Den strenge sammenligning af model, profil og scoretilgængelighed bevares; metadata omskrives ikke for at få kontrollen til at bestå.

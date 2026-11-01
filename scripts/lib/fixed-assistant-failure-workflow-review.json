@@ -1,0 +1,404 @@
+{
+  "schemaVersion": 1,
+  "sourceHead": "14ade133b7f3b9557f312630a5b557086245b938",
+  "workflowBeforeSha256": "002c584e1463bfb112258ced22c40f0f0be4b69108f7db327a3e95e405fd02d8",
+  "workflowAfterSha256": "256a467d4b45f559263e96e188c87a7d2aee25e0b96acc4a7a9292a852539894",
+  "historicalOracleSha256": {
+    "integrated": "bce07d17b77166fb08ff09c712204b2864fe771a794e57556efee39e70720ca5",
+    "sourceValidation": "12764c3979f66a608a1af07ed348cf42d950fea67fde397068c5da69de97a8ed"
+  },
+  "registryBeforeSha256": "5121de4c4b2b00a99288b2192c0501b92ccb0509e1c3a58d1197e080b1f0839e",
+  "registryAfterSha256": "1e6937025d1a94afb928e25e77843a08b85d86d1ff71c8060c79af77bc6f32af",
+  "registryDelta": {
+    "owners": [
+      {
+        "path": ".github/workflows/deploy-trip-storage.yml",
+        "domains": [
+          "controls"
+        ],
+        "controlQualification": true,
+        "commands": [
+          [
+            "controls",
+            "node scripts/test-fixed-assistant-failure-log-20261101.mjs"
+          ]
+        ],
+        "exactSourceTransition": true
+      },
+      {
+        "path": "scripts/read-fixed-assistant-failure-log-20261101.mjs",
+        "domains": [
+          "controls"
+        ],
+        "controlQualification": true,
+        "commands": [
+          [
+            "controls",
+            "node scripts/test-fixed-assistant-failure-log-20261101.mjs"
+          ]
+        ]
+      },
+      {
+        "path": "scripts/test-fixed-assistant-failure-log-20261101.mjs",
+        "domains": [
+          "controls"
+        ],
+        "controlQualification": true,
+        "commands": [
+          [
+            "controls",
+            "node scripts/test-fixed-assistant-failure-log-20261101.mjs"
+          ]
+        ]
+      },
+      {
+        "path": "scripts/lib/fixed-assistant-failure-workflow-review.mjs",
+        "domains": [
+          "controls"
+        ],
+        "controlQualification": true,
+        "commands": [
+          [
+            "controls",
+            "node scripts/test-fixed-assistant-failure-log-20261101.mjs"
+          ]
+        ]
+      },
+      {
+        "path": "scripts/lib/fixed-assistant-failure-workflow-review.json",
+        "domains": [
+          "controls"
+        ],
+        "controlQualification": true,
+        "commands": [
+          [
+            "controls",
+            "node scripts/test-fixed-assistant-failure-log-20261101.mjs"
+          ]
+        ]
+      },
+      {
+        "path": "scripts/test-integrated-cutover-readiness.mjs",
+        "domains": [
+          "controls"
+        ],
+        "controlQualification": true,
+        "commands": [
+          [
+            "controls",
+            "node scripts/test-fixed-assistant-failure-log-20261101.mjs"
+          ]
+        ]
+      }
+    ],
+    "newSources": {
+      "scripts/read-fixed-assistant-failure-log-20261101.mjs": {
+        "nodeImports": [
+          "node:path",
+          "node:url"
+        ],
+        "imports": [],
+        "resources": [],
+        "dependencySurfaces": [],
+        "bindingSurfaces": [
+          "22027bcc4be968d349b013837041b5302c8c29d7253b8f159c88a2848cb543fd",
+          "35c5197f211dc07d58fb9c663e787df1b87a92eb11dda617a4bd77f2c29a1ee5",
+          "6cd280cc33e7013d9835a2322e23093d5e9995890ec56972a4c9323819bca354"
+        ],
+        "computedBoundaries": []
+      },
+      "scripts/test-fixed-assistant-failure-log-20261101.mjs": {
+        "nodeImports": [
+          "node:assert/strict",
+          "node:crypto",
+          "node:fs/promises",
+          "node:vm"
+        ],
+        "imports": [
+          "scripts/lib/fixed-assistant-failure-workflow-review.mjs",
+          "scripts/read-fixed-assistant-failure-log-20261101.mjs"
+        ],
+        "resources": [
+          ".github/workflows/deploy-trip-storage.yml",
+          ".github/workflows/validate-pull-request.yml",
+          "scripts/lib/fixed-assistant-failure-workflow-review.json",
+          "scripts/lib/source-impact-domain-owners-594.json",
+          "scripts/test-integrated-cutover-readiness.mjs",
+          "scripts/test-source-impact-domain-plan.mjs",
+          "scripts/test-source-validation-once.mjs",
+          "supabase/functions/_shared/rav-assistant-contract.ts",
+          "supabase/functions/ravradar-assistant/index.ts"
+        ],
+        "dependencySurfaces": [
+          "000d5fffa30e2cc72d3cf0bb53ded158dd4f92f8e33e8873d8e398195646a01c",
+          "1b2bc495ac9c7d9e459173886153daace1609b9128fbf8edac005983ed6966d7",
+          "392acd440bb1701be7bdbab17445b6706f8cf298caf3ff29f03fd0e9e2b1285b",
+          "3b63f9f69454f9132763ef9a2066a0387f3dde25e2a8f0d06bcbf954b255e0cc",
+          "58ab03b229fee48a368b55f3357b2191d793312f1a3363f97ab6879ce465be18",
+          "618cc01a713c805b66871d8e8d9d1e237f009c08b102f059aa931421077bcdac",
+          "62522fb246a300756446e3451123597c52d44163197c45744712d41d6d8b0660",
+          "6408ef1a1f3db3b6583c9083da93b8dd93c3b6f9b231008f2f612acc0d56577a",
+          "7219b977bdf803dfc50fe1e9cb394c42f593eb9186ae71777a5b066f74ef2bc8",
+          "836d2377fb90e20407082cf4b588ffee73e2c47a1b0a641ad50a1b45c0fe7ade",
+          "8b997ea01e52a99a322b1e4b813c9fa657d2e67151dfe02250cfbae9a6c860e5",
+          "9a60881faa6e3118e11eb54ba8027a3cde665c76de913a126e0e2037c976a4df",
+          "a039dff82e715b5cefc872693c37d1beb02a9093d5aebdb4e4a769abd3181269",
+          "ba399820d1fac9928e5f8cb5f0236582b63b964ee70e38e4828a91fffa29becc",
+          "c0ec43c661ae59ec49644ab274a948160d8de5e09847ca5fb8b46d0a9ac4e127",
+          "ccdad31ec64ad92e45160af4d74ab274ee2bdba770d3141a96337c5194fd1407",
+          "d18fb8df50b859421ed42ce869846f7c9194a938c7efc332961509a0ee80033f",
+          "d9c67a3912070606254ada3f6ddcdb7ba3dabaa96addf9f4ca8259afb0b17396"
+        ],
+        "bindingSurfaces": [
+          "17af3e3ab6a17621485c622c2ab56eba3ed2db9ea4567d43d8f8898cdec347c1",
+          "1893cb0bbee3b7038b82a9dacb7ac04387c6b4f816a284731328b0a75e7835d2",
+          "1a5ed8fad50fb10312f21515bf3030a2b5f4f6d606284c59ece7aacce9244f03",
+          "2e56df592b2b34211d6cd18d8f37d60ea2aa5778578e258d5a658948c5895282",
+          "368292bc0bcacd5c4f2273858b0702e2dac8414ab699ba78af9d5aad981c6e69",
+          "44eb036059bacd96ee0b33350823d657a01fc099a3e3fee9563d4976931973e0",
+          "4918b28bc43678bd83c6975aa75b172ee8109879203c66942bcca534cd0869cf",
+          "58f827d5d92b7844a889608b0ab10045cfa83a097ad7ae4d9c49f1b049a5bcc2",
+          "720500116d50676ae3f8c75bf07fe6b205d4ba89d0ce31a5fc9dcd772e4d6da5",
+          "78cd2bfb8253ce2703d404e1dc1b9b82bdd86bd6f4482e1e50aa057f637eefea",
+          "8a4f01bd8f396647acb9985368880685203101306a91fa4d40a125e735a49771",
+          "9b3e8695c4e139fabf566cad7ebb96ab518c5bd71f261534c36ac62b86f02c51",
+          "ce0b1b24069f4282cb013128baa110d0e5db23909559e3dd0884d0d8be90ad0a",
+          "f8cf2d6a3c9ebdba0cda7262736ff48ba60f903158db5f7f569f574343cce4a8"
+        ],
+        "computedBoundaries": [
+          "ba219000e102ca40a01ef1f736bd539a28743b6689922ceb2f09543fd3e2da0c"
+        ]
+      },
+      "scripts/lib/fixed-assistant-failure-workflow-review.mjs": {
+        "nodeImports": [
+          "node:assert/strict",
+          "node:crypto",
+          "node:fs"
+        ],
+        "imports": [],
+        "resources": [
+          "scripts/lib/fixed-assistant-failure-workflow-review.json"
+        ],
+        "dependencySurfaces": [
+          "53206b1e52504b59532b8f88fac04e382541c7f48059058f6b9fd3108d71ca8e"
+        ],
+        "bindingSurfaces": [
+          "5193ca852a68475d140a771402a4fa03aae098c6694625269ec7835683d9e75a",
+          "82751b24e58a69e64881ac3a23449f7b1434c14569575d2d90333485df50c1f5",
+          "d3c7c0b6948622d54638729de889bded01734fa308421ec6df79cb2295a1d7ba"
+        ],
+        "computedBoundaries": []
+      },
+      "scripts/test-integrated-cutover-readiness.mjs": {
+        "nodeImports": [
+          "node:assert/strict",
+          "node:child_process",
+          "node:crypto",
+          "node:fs/promises",
+          "node:os",
+          "node:path",
+          "node:url"
+        ],
+        "imports": [
+          "js/core/ravscore-current-supply-memory.js",
+          "js/core/ravscore-regime-memory.js",
+          "scripts/check-fixed-supabase-account-read-idle.mjs",
+          "scripts/check-native-identity-frozen-i71-source.mjs",
+          "scripts/integrated-cutover-readiness.mjs",
+          "scripts/lib/account-assistant-successor-source.mjs",
+          "scripts/lib/current-grid-successor-source.mjs",
+          "scripts/lib/fixed-assistant-failure-workflow-review.mjs",
+          "scripts/lib/native-original-continuity-workflow-review.mjs",
+          "scripts/lib/native-sampling-identity-successor-source.mjs",
+          "scripts/lib/ravscore-continuation-implementation-contract.mjs",
+          "scripts/read-fixed-public-rate-log-20261012.mjs",
+          "scripts/read-typed-trip-catalog.mjs",
+          "scripts/verify-account-assistant-schema.mjs"
+        ],
+        "resources": [
+          ".github/workflows/deploy-code-only-repair.yml",
+          ".github/workflows/deploy-trip-storage.yml",
+          "data/admin/ravscore-profile-selection.json",
+          "scripts/build-statistics-preference-revision.mjs",
+          "scripts/check-fixed-supabase-account-read-idle.mjs",
+          "scripts/check-weather-cadence-watchdog.mjs",
+          "scripts/integrated-cutover-readiness.mjs",
+          "scripts/lib/current-grid-successor-source.mjs",
+          "scripts/verify-code-only-migration-plan.mjs",
+          "scripts/verify-statistics-preference-revision-plan.mjs",
+          "supabase/migrations/20260829020000_integrated_trip_calibration_binding.sql",
+          "supabase/migrations/20260901010000_integrated_trip_measured_warmup_admission.sql",
+          "supabase/migrations/20260915020000_private_runtime_storage_deny.sql",
+          "supabase/migrations/20260926170000_exact_checkpoint_predecessor.sql",
+          "supabase/migrations/20261010130000_owner_export_origin_bound_successor.sql",
+          "supabase/migrations/20261012200000_checkpoint_cas_single_projection_successor.sql",
+          "supabase/migrations/20261013210000_account_assistant_original_bound_successor.sql"
+        ],
+        "dependencySurfaces": [
+          "01e12bb931f628147a531da26661d75b8e49d92198804f35e4c5c4b3b9f6a0c3",
+          "04a17063a49e2ecf3021dc858e8eae63850fae69ec8d0e286c860cc1900d0aff",
+          "06fea8966a8e87132a4b1163ab6502b58690992c299aab78fb544186c2aacf42",
+          "15c6f3ce9b39692fe0189950e3ad669f49ba8ae1c85d94ed12dbcc2c520f44de",
+          "21522adc14f702f2f2c1a406996fc50f34b934628556e5a2f05db270e79403e5",
+          "2b7f79cc80f6fe3c9b140562c16a18e320b057cef27cb465a35f7a0bddd2056b",
+          "305bd2bfe7faab226d63cf2ddc2d58705de61b352312a8cae16a8ce7e820a230",
+          "3867f6831995c125ba69435a0de12458edddf7e19a8ad3d6bb403456066ba9a8",
+          "3cdd579a555a9d8dd3ed7c0b396e52df86a99d02b7d72e4aae7a3323af522132",
+          "4025d345c627077284bca94e1f38ba9c158537746b783968ac980ff7dc633aae",
+          "5d94a52272d7ea01ef88c5ce600202bcef611b646e00a5d3079c5b754406fad9",
+          "6ff1d275046303234dcdc5c6aca12252daf3d42632bedfd4b6d6c71c6627ff4e",
+          "75685a31b014970a5b00e9691572dc055b9db80f630d886af35caa25513fffb3",
+          "82734ebfe7dd254a2d6590f3c210602f0a8a73259e30f43d3fe1378aab9304a7",
+          "82ba078ae871b8f44a95f77206f2a0fb1be4eeb01ab2857c67700d7f4e8fca59",
+          "8a7fea79bdb86c704172b07ed2bd3965dc74ed200f7f03a54799003dd988bd16",
+          "8c27119f4b2ee695d7d9fa6b02206e6915b47402045fc825f6ae111ef48af361",
+          "9695546b2f7596c8e37f13e94b899cb5ea910813912b627edcca21ff5ed95849",
+          "974bdbe1be9e26f4a8da698c4714ebd985d27b35ab43e5f32063425c3d568102",
+          "9db1ec4e8a668d2657ddfb2cf35038449cb1bf515b60d70f3a3bc379f4042ffc",
+          "9df6ffde36b0d4449447c7e9705adc2b0b77bf99fb41236baa32fa852f1cc7ee",
+          "9f1ae4c0b788b630ff42fc2667ea20db70d49db650d88ddce013c0d2e42a7552",
+          "ab6f3c65fc648e790c173ed12bec82663e3dc64933082352db46574f8d211166",
+          "b1771a26f40f0298fd7aeb91026ed178d99c711f68f21f6a1337a90860d1a533",
+          "bbc255a75ce4bdbfe4111a84057733125f6e634357cc6c15b0d4188d3a43e180",
+          "bcbcc1668a7d3514d2cebf3569e277eafbee96e220003daed7923dab2e1cd0e4",
+          "bf9c94037b85be8e3d7616b431dfc0c0f4e58f93f8640d934e418358d0707ca9",
+          "c14324c9f80cb518b331e7d5acb2913831979ada4aacebf8ddb9dc66aa1653e3",
+          "c7a8b4f656442073cf4ff95749dcd33ac6e84123d6cccb64f000e50ba8c16082",
+          "cbed7e92811e77c64804518e21b011f96ca496e7cb15c93cfed26de07a845365",
+          "cf95ad3b40083b8eab6a9f367871a460f4bb00024627b3b8e285c95f562daf5d",
+          "d7ea97cd015636484ec653ff3e7f5c1ee1ad7caff1795a6d7e83aea81e82ed3c",
+          "dad4be5affc49f84b30ce3a17ec34547d64135263b7527c6d88015c0c68970df",
+          "dd8a52874067410f889ed93c5912a8cbbfa6312b8509f216425eac24c876e1a8",
+          "dff68e7d125ac17bd26949582ca1ce1a78ffaad208646b5ee04f0260952d179e",
+          "e215b2cec111d0ba07bb2459ef9f0a4b68452316f4c51e6a9fb6d5b903dba943",
+          "eab9d8ecfdbe5c9198928d3d0443dc4a281be43933621ecca2603181fb4e4e88",
+          "f5a9a33f17cbc7c78475af5d607c024f7a8a4177c620d49976c3786423595721"
+        ],
+        "bindingSurfaces": [
+          "0180eec61e2a4b1aa880fa3faf000c0c3d9413bd17f4b353647b8457b6d5eda3",
+          "093d8eed4d05c85bfa28818ddd23eb3d2ee1510f1af422d8bd33bbfeb73b669c",
+          "093f2ce5644465f394c8fb065073464048cc5a9babab819a4ee9f916c475e45e",
+          "0a017dfdce25f4564df7d80001b62f7207f6f7a5c24ba878146afbc612549714",
+          "120c0f1626977a617c393650330613e049ec74b68d3ac4e911c8c636eebb3b71",
+          "13dedf202f49747e316ae7990c37740dd7125c9e7aaf7e2f7c56591acacf0230",
+          "15a0051f94f241b3e5cdf3f6e93efefa53e8d50c497bca3c6c92c02f3ee15f09",
+          "1e136adcf056e57225d72bedacced1360f499ceb1a2b0373007f1a95d10fc70e",
+          "1f4df6ea7b2b350bc67275d0840564bb002ecd5e42f11d18182a3de21eae6132",
+          "2067289b7f8e7d885e77500e999ac4be61dfbca3d00426f2d8a4bf7b19c02d6e",
+          "231e7cd19b33d3ee5ed16941c8cf14631bed4f673b6df394df864de33cdb7950",
+          "244d48331125603d3ed6c61c1e46ee70e9e51836fe177b6cb6cd8c6350ac1fd4",
+          "25276446cbd4198cc1023111131ae8b7255e21b1197bf9e05e48a4e9c8c6595d",
+          "26f151c80e0bc9d0a8fb81c8c81a9ae0d133df9e59b65bbde65764dd58888056",
+          "28a500af09c22337ec40f192948b5e14145172ed12d983b32bca5ab0dc7bec8b",
+          "292b95ae940c4ac1ecedf454c1dd21ed09282397e80f05a4edb5b7299807742e",
+          "296bd1bfab959aa4a045e2d006acffd0e650c257fd61bb67c19fd8d9c8ad2007",
+          "2b9cf38289751bb432012349086e9f9dae022515c1023b7ad67aaf78384a1c21",
+          "2d86ff95bdacc8572316210b5fd0fecc3d92bb820193c99e36d4df6107db279b",
+          "2f0cf8dd841960d990b4f8043c74bd7e105d7cffa863d4ab52f084d80a2dac4f",
+          "2f85a1ad2692ca2e6a1b1784db30cb0e4577f448bd44a8fd1d9ae1c4c63712fc",
+          "38c16debd7d07d963bdc0ddb17d8e0c18c5ea1c6e9ba038540d7f7300ab2f2c2",
+          "3ca81ae4a57a946f132f708b1e5c27fe5062d304d84f7574b5b69bb3ed44e20d",
+          "41fb87836e640810dd8d97cd513d679a529cfe28edb39f932945c5fcf7c380fa",
+          "431ebaf074f64684024f23e0cd0e362cf699bde5f04c832ca01c4cdc89aca8f2",
+          "4808eab4a0d14f7b8e438892137ebf0c38177afb1c222a4b619634e57f4df8ce",
+          "4866eefd18b69f22be7716d5ec7e41a60d922f3a43e56498031d3bcca2a6483e",
+          "4b3400ebadd013f1955eb2be1634caee4229b41ae25c41de62908779ba86d8eb",
+          "4d29f7af495b083fe23279b85fb49c78e94d6e1b8702244755aa2571a2cf2574",
+          "515e6c1a78d1d9af21b1bf02b351a60b35aaafc774d79ad43b3971b8e07aa243",
+          "5237e58436279631aad0751b1e3b80738258096b68fa7921bf71e60a7abd9e13",
+          "54124c2f1bfefd5a5cb9fc1f060cfee5e5a3e3305511c73d5c16fc20975a894b",
+          "5557f9d461f59cb5d56ab633595eada02070cb5d05f52b16b5e4f12418d33c11",
+          "5baa5df63d7aab4f54e1959bfb69a04471fc40c59a26e2ba98aaa5233c682c47",
+          "5e5efcef2fdf61c6a6d4a985eb77ebb7c1a3423e6d204ed9838fd7c055247898",
+          "5ffb98057e8d77756bf4d3151d33dde80642b4b2fce2c0bbb59b3a0849122327",
+          "6024741e72585a9319d093d1d4c77d04d836db2a97a886324f70036127353c50",
+          "642a9d18b9b7987d936901498b3046fc62bab850ffbe5a4bd86ea63f1fbf75c6",
+          "6476a361fdf05d4c370bb4aa9212f1555a93df33b83bd57454a997777d58fef4",
+          "659f0c5d71ec19a9fe3c98465c93db88b48be2f4f546d49f8eccdbb71d4b6204",
+          "6627f77128c61b107554a089daa35473e133b00783ba2f07ac0786c0fbe3cd5d",
+          "66d8949d3ed9981771925cc441a9bda9350418e65286dff435b817941cb38c06",
+          "67308c809985d030e7612413fb1fcac0c748437579f0c9221fbad4b5ef73051a",
+          "79db3339a19f46aabba06ae93d63a7ae19c5f2e61412800495d58f70a40f1a8b",
+          "7d181fb9e97597f4c436df997989db2255238d7ca086dd9a9e1d72e4c1d2e66b",
+          "7e206434e0c988fb3e40ca3e6ecdfa2c1d74eba23adb698fed69eed28ea6d721",
+          "831b5f8a6f1de48262023db51daa095a63e0ed234c89202f555bc47a9c53182d",
+          "88b0e9b20855de492a087772bae5ebb365199f07425428c19b60c20a7d1d7ab3",
+          "8a3b9d71f8f239d528f6a0969a67acb7afe404fcb52873352ca8ebc4cfc184df",
+          "8eb303130505e4bdad0da6908d01b05093c49a41c2d3427909ef3ddfbf7fa62b",
+          "91f4b97a2b606459d80d1249bfe13ceff628dcbbb7869328c6170614dec8f26b",
+          "95de64e1ee6ca8dc9d0243546d50042263c567402dc1db3276fc5093b193dcc0",
+          "97fead5be85ae7dd9ed42b3e33abfb41afe11c5654b6370270935108a88120a6",
+          "9a6669aa1d1a986c6e066d33d6bc823b7eec0fe216505968ce2a6753950aca7a",
+          "9b3e8695c4e139fabf566cad7ebb96ab518c5bd71f261534c36ac62b86f02c51",
+          "9c984b564f6774e6aea1a825851ff024866816225b265d3a7cee2d8486b9457c",
+          "9dd69488a5f83d39b3aa1afc4845a37430a53bc5546ccf3679b2f0f2b3d4f61e",
+          "a19408cedcb0dd8a9b47bddf5f577ae3c1507ceb9fcac1f36929a5a264a387b2",
+          "a429fcfeb0039b95576fee3fb8582f86271e9e67f6b44bfadbad5eb517f9c48c",
+          "a6dd37d3971a8dbefb2cd04b2f5f9dd5c39ff05323db11fe09bb63c16df67ac0",
+          "abef09753c0f05e4bc81e4ebcd1f3a10036aa223e7867c28a603ea5788a5c6ca",
+          "ad74d063633624050ccfe4cc473e0b0b5dcd5ae1c7c8c3a61c888b90392e898c",
+          "b0d6780d4b1b8d7385c0291ad3c6640a3d520e945f6a069331f0ff1480d5cf53",
+          "b0e101d74caa908ae3f0c768854ec38bf4d755f5e2822332e5ba0c917215779d",
+          "b444365ae671d72c23782701d8caf34ce31bfefa0f382dac0578770311f5fec9",
+          "b61270f519a6acdc7143c1df0efc132c45c1100170e3e7bf703738479cffafc2",
+          "b8363fbee3ac02af8f07d9e6cb85f158ec1127baad23195f434d725c2dbcb0dd",
+          "b86b4ab3ba77c77e51ac0643a4da899c445c83c00e5d9c4d21a2bd0d15d413e7",
+          "b94e5f62d5f66ed70f99c50a6c93e8c8e29ec39cd403da425c300640b4bcf8bf",
+          "bb87cae9d3252f2a8ca1bf2c61f2c4f20679e933d19015d330cbcee3ea810b28",
+          "bd0ad05cc1de56f6a7bb02e194f67212d2ed87d03b654fb4e011e6b9efc87251",
+          "bf69fa903e41f44f5f06df5759c1888d0760e5e6b2ec9754a16f819f7c104443",
+          "c0e3b01f3e8964e5d1f1714a2dc1faef988b0357e1c06c2bd08a59b43965cc61",
+          "c48c67011dda8f4afb2aa4d776ececcce453c38e781452b7a6558e5e6edc20fa",
+          "c559c0fe940c18a722c4134286281628f2906e0974a724054f642d0ace86d44d",
+          "c6069dc05752ec30d2340344300f2db3b71d1f9ffb7472f55d9f5361d2705894",
+          "c60dc26581bb57fddc51267db2383d4f85462edb4d7ba7dc0275adea932c3c84",
+          "ca6d33cc6e28f5f57c6e4ed5b16aa66364f809c0f52ae33d7e5d72f83e0a146b",
+          "cd7dfc5eb763babaa4d62d165678221996bcafd3f4607d8323d45b47b0a51b11",
+          "d1504510195530130d975f304c500c5e76d9b3c7f89c314c588afe88519112e9",
+          "d3b9b9dd22049bb44f1f26dc26e7a2fb8508e8b17b755ae244ed723b91bc4cf7",
+          "d3c576d5670f021e20f3dfe922524856072400a8a5941b4f0301cda85a0521d6",
+          "dfb143511123c87a3f5c978eb775b32fa8da47b304086c37d56459ebd1615f17",
+          "e3478773121acb0aba8c820b01ed40f28081eff89b28736d3580949441af1b35",
+          "e4b03c466b19a7f4e3d4a12d73c704bfd18e18ccacf2bbaa65adaec6206e51ec",
+          "f00d54ca64629b3008b47c35aa1fe8617485f8e741941bd29132cd02adb3fa95",
+          "f4e7e78c4ba959cce19f6e25974c358cbf2a187d68e5065d5ede319bb3e9c506",
+          "f9a3535cbbd668f91d33dbd973c6e30164dfef350a8dfd357de6c43dbc2e16d4",
+          "fd3b5d98980d59ece4e65c1d9992a12588e72efc5e7abe9276fc81ccf22a9d99",
+          "ff468fc1287daac03eaa75de679853e1b9ab04ecd3beeebba767a50c8e8a745d"
+        ],
+        "computedBoundaries": [
+          "001d0614e52d8da12ef04e3c1d7ee89294dc2f82ab21c9835a1b517d9a4f4364",
+          "37499b3db4ed9e93e1e178a4fbef59dc691b7d7b8a2694aa20c4958f03bc6c72",
+          "85f68ff789a59ebf85985c8b266ecbfa3f5e51d51860381da8a1ebf5ef8e5dbf",
+          "cf8c81f48cffde201dadfad7979df58268b4275096a8a7377a51b12d598e8f0c",
+          "da877da5c157d0067c393495249ef1e5fb82751108e8f8a46c3f7beda8f764fa"
+        ]
+      }
+    },
+    "sourceArrayAdditions": {
+      "scripts/test-source-validation-once.mjs": {
+        "imports": [
+          "scripts/lib/fixed-assistant-failure-workflow-review.mjs"
+        ]
+      },
+      "scripts/test-source-impact-domain-plan.mjs": {
+        "dependencySurfaces": [
+          "132036db1e73cced7e3f42074f1818d2f7dd23a663e41f150833397336e4af77",
+          "7ee35d9b5b2b27ced95317d9a093ab3114060dc46cf5a534b5910e77811fa010",
+          "9907622ad57b23c221a08d201415f0cbddc5812df16ce088c4b8f969e5d4b5e5"
+        ],
+        "bindingSurfaces": [
+          "7d1371091bc348aff48e749c33d04e52cc8b241ce6084ecd03daa47d318cfb92"
+        ]
+      }
+    },
+    "resourceFiles": [
+      "scripts/lib/fixed-assistant-failure-workflow-review.json"
+    ],
+    "exactSourceTransitions": {
+      ".github/workflows/deploy-trip-storage.yml": [
+        "002c584e1463bfb112258ced22c40f0f0be4b69108f7db327a3e95e405fd02d8/256a467d4b45f559263e96e188c87a7d2aee25e0b96acc4a7a9292a852539894"
+      ]
+    }
+  }
+}

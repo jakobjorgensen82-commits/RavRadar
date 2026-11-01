@@ -1,3 +1,4 @@
+import { reviewedFixedAssistantFailureLegacyWorkflow } from './lib/fixed-assistant-failure-workflow-review.mjs';
 import './test-source-child-environment.mjs';
 import {inverseReviewedAccountStatisticsAssistantSourceScripts} from './lib/account-statistics-assistant-package-review.mjs';
 import assert from 'node:assert/strict';
@@ -458,7 +459,7 @@ for (const removed of [
 // Parse only the actual existing equality/and/or operation grammar here;
 // this is a source routing assertion, not live GitHub or log-read proof.
 const fixedOperation = 'fixed-public-rate-log-read-20261013';
-const fixedWorkflow = fs.readFileSync('.github/workflows/deploy-trip-storage.yml', 'utf8').replace(/\r\n/g, '\n');
+const fixedWorkflow = reviewedFixedAssistantFailureLegacyWorkflow(fs.readFileSync('.github/workflows/deploy-trip-storage.yml', 'utf8').replace(/\r\n/g, '\n'));
 const fixedJobsSource = fixedWorkflow.slice(fixedWorkflow.indexOf('\njobs:\n'));
 const fixedHeaders = [...fixedJobsSource.matchAll(/^  ([a-z0-9-]+):$/gm)];
 const fixedJobs = new Map(fixedHeaders.map((row,index) => [row[1], fixedJobsSource.slice(row.index,

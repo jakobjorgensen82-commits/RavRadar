@@ -1,3 +1,13 @@
+## 1. november — adminmodelkontrol leveret; fast assistentaflæsning forberedt
+
+- [x] Adminmodellens særskilte oprindelige startpakke: normal merge, faktisk kildebevis, kontrolleret kodelevering, offentlig kontrol og normal System-visning med verificeret integreret model. Aktuel prognosevisning er bevaret. Den tidligere lokale leveringsstatus nedenfor er historisk for denne fejl.
+- [x] Lokal fast assistentloglæser: ét låst interval, kun faste fejlkategorier og status, samlet frist og bytegrænse, ingen rå log eller spørgsmål, intet automatisk genforsøg.
+- [x] Normal syntetisk måltest og præcis inverse af to historiske workflowlæsninger; deres assertions er bevaret. Main-genlæsningerne bevarer Git-historikken. Gamle kontrolflader bevares ved additiv registrering.
+- [ ] Ny præcis kildekvalifikation og sikker merge af assistentlæseren.
+- [ ] Faktisk skrivefri aflæsning og forklaring af den observerede assistentfejl. Ingen ekstern AI-succes er bevist af syntetiske svar eller HTTP-status alene.
+
+Version, PostgreSQL-/modelinput, scoreformel, vejrdata, administratorpunkter og geometri er uændrede. Ingen ny brugerassistentviden eller installation følger. Alle fem hovedmål og de øvrige admin-/SOURCE-/brugerdata-/delingspunkter består; detaljeret evidens og næste trin føres i det private checkpoint.
+
 ## 1. november — admin skal kontrollere den oprindelige modelpakke
 
 Den lokale adminrettelse holder to læsninger af samme offentlige generation adskilt. Modelkontrollen får den oprindelige, hash- og modelbundne startpakke med dens faktiske referencetime og navne. Overblik og kysteditor beholder den normale aktuelle prognosevisning. Et senere tidspunkt eller navne, som den aktuelle projektion har omdannet til zone-IDer, må ikke udlægges som den oprindelige startpakke. Den strenge sammenligning af model, profil og scoretilgængelighed bevares; metadata omskrives ikke for at få kontrollen til at bestå.
