@@ -1,3 +1,9 @@
+## 1. november 2026 — isoleret SOURCE 4.0.595, stadig inaktiv
+
+Læs den aktuelle 595-front i CODEX_START_HERE, CURRENT_TRUTH og håndbog 89.263 før de daterede noter nedenfor. Aktuel isoleret SOURCE-version er 4.0.595 efter normal versionssynk og lokal 24-filers current594-integration. Nye 595-C/I/T og SQL er endnu ikke afledt; bindingsfilens version, binding og output er NULL. Den normale 594-central → B før S → samme SDK/action 63/64 → faktisk ejerafslutning er fortsat åben, og profilen er PREPARATION_ONLY. Gamle 586/040000-resultater bevares som dateret historik, ikke den aktuelle binding eller installationsvej.
+
+ROOTs P0/c920, almindelig 235 og offentlig header/784 er separate driftsbeviser, ikke SOURCE-bevis. Ingen ny PostgreSQL-, kapacitets-, komplet cache-/historik- eller leveringssucces påstås. Alle fem mål er åbne til 18. november 2026; delegering har adskilte filejere, ROOT koordinerer produktion, og ingen produktion ændres under writer.
+
 ## 20. oktober — aktuel drift og lokal reserveforberedelse
 
 21. oktober: Den efterfølgende præcise kildekontrol nåede den normale reserveaudit, men fandt endnu et forældet krav: fem rankingrækker pr. dag mod normalproducentens Top20. Rettelsen sammenligner hele hver dags resultat med den normale kanoniske projektion, ikke en ny særskilt rækkegrænse. Målprøven afviser afkortning og ændret indhold; samlet ny CI og levering er stadig åbne. Det er ikke en fejlet almindelig vejrhentning eller en ændring af Top20, score, kilder eller model.

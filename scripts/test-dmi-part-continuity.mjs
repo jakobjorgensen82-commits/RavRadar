@@ -23,8 +23,8 @@ assert.throws(() => assertDmiPartContinuityTotalSize(1, MAX_TOTAL_COMPRESSED_BYT
   /TOTAL_COMPRESSED_SIZE_LIMIT/);
 
 const start = '2026-09-27T10:00:00.000Z';
-const parts = [{ partId: 'A', waterPoint: [10, 56] },
-  { partId: 'B', waterPoint: [11, 57] }];
+const parts = [{ partId: 'A', zoneId: 'SYNTHETIC-ZONE', waterPoint: [10, 56] },
+  { partId: 'B', zoneId: 'SYNTHETIC-ZONE', waterPoint: [11, 57] }];
 const hours = Array.from({ length: DMI_FORECAST_HOURS }, (_, index) => ({
   time: new Date(Date.parse(start) + index * 3_600_000).toISOString(),
   waterTemperatureC: index === 36 ? 12.3 : null,
@@ -70,6 +70,7 @@ const runActualPackBlock = new AsyncFunction(
    catch (error) { failurePresent = true; firstFailure = error; }
    return { failurePresent, firstFailure,
      selectedReference: coastalPartScoreBuild?.selectedDmiPartRecords,
+     nativeProofReference: coastalPartScoreBuild?.selectedDmiPartNativeProofs,
      persistedReference: persistedDmiPartRows,
      partContinuity: nextDmiForecastStore.partContinuity };`,
 );
@@ -80,6 +81,17 @@ const originalPersistedRows = structuredClone(persistedRows);
 const originalRecordA = records.get('A');
 const originalHoursA = records.get('A').hourly;
 const originalPackBytes = Buffer.from(JSON.stringify(pack));
+// Keep the old three-argument/schema1 byte oracle distinct from the current
+// updater's real fourth argument. This fixture has no numeric current, so its
+// normal proof map truthfully contains null, never fabricated original proof.
+assert.equal(pack.schemaVersion, 1);
+assert.deepEqual(Buffer.from(JSON.stringify(await packDmiPartContinuity(records, parts, start))), originalPackBytes,
+  'The old three-argument schema1 whole-byte contract remains separate');
+const nullNativeProofs = new Map(parts.map(part => [part.partId, null]));
+const expectedNewPack = await packDmiPartContinuity(records, parts, start,
+  { nativeCurrentProofsByPart: nullNativeProofs });
+assert.equal(expectedNewPack.schemaVersion, 2);
+const expectedNewPackBytes = Buffer.from(JSON.stringify(expectedNewPack));
 
 // Real normal-codec refusal must occur before either reference is retired and
 // must preserve the previous bound pack. No replacement codec or error stub.
@@ -89,22 +101,23 @@ invalidRecords.set('A', { ...records.get('A'),
     ? { ...row, time: 'not-an-exact-hour' } : row) });
 const invalidSnapshot = structuredClone(invalidRecords);
 const refused = await runActualPackBlock(
-  { selectedDmiPartRecords: invalidRecords }, persistedRows, { partContinuity: pack },
+  { selectedDmiPartRecords: invalidRecords, selectedDmiPartNativeProofs: nullNativeProofs }, persistedRows, { partContinuity: pack },
   parts, start, packDmiPartContinuity,
 );
 assert.equal(refused.failurePresent, true);
 assert.match(refused.firstFailure?.message ?? '', /^DMI_PART_CONTINUITY_RECORD_INVALID$/);
 assert.equal(refused.selectedReference, invalidRecords);
+assert.equal(refused.nativeProofReference, nullNativeProofs);
 assert.equal(refused.persistedReference, persistedRows);
 assert.equal(refused.partContinuity, pack);
 assert.deepEqual(invalidRecords, invalidSnapshot);
 
 const completed = await runActualPackBlock(
-  { selectedDmiPartRecords: records }, persistedRows, { partContinuity: null },
+  { selectedDmiPartRecords: records, selectedDmiPartNativeProofs: nullNativeProofs }, persistedRows, { partContinuity: null },
   parts, start, packDmiPartContinuity,
 );
 assert.equal(completed.failurePresent, false);
-assert.deepEqual(Buffer.from(JSON.stringify(completed.partContinuity)), originalPackBytes,
+assert.deepEqual(Buffer.from(JSON.stringify(completed.partContinuity)), expectedNewPackBytes,
   'Retirement must preserve the entire hash-bound pack byte-for-byte');
 const completedRows = await unpackDmiPartContinuity(completed.partContinuity, parts,
   '2026-09-27T11:00:00.000Z');
@@ -117,6 +130,8 @@ assert.equal(completed.selectedReference === null, true,
   'DMI_CONTINUITY_SELECTED_REFERENCE_NOT_RETIRED');
 assert.equal(completed.persistedReference === null, true,
   'DMI_CONTINUITY_PERSISTED_REFERENCE_NOT_RETIRED');
+assert.equal(completed.nativeProofReference === null, true,
+  'DMI_CONTINUITY_NATIVE_PROOF_REFERENCE_NOT_RETIRED');
 assert.match(updater, /^let persistedDmiPartRows =/m,
   'The actual updater binding must permit reference retirement');
 console.log('DMI PART continuity codec: roundtrip, tamper, time and size limits passed');

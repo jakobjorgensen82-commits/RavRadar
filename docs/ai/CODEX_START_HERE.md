@@ -1,3 +1,13 @@
+## 1. november 2026 — aktuel isoleret SOURCE 4.0.595
+
+Den isolerede SOURCE-kandidat står lokalt på **4.0.595** efter én normal versionssynk. Den gennemgåede semantiske current594-sammenføring på 24 filer er faktisk anvendt lokalt; ROOT har genlæst den normale NULL-cases PASS. Det er ikke en leveret revision. SOURCE-bindingsfilens version, binding og output er fortsat NULL. Nye 595-C/I/T, SQL og fixedpoint er endnu ikke afledt.
+
+Den ægte forgænger er 4.0.594 fra fast genuine37 CODE. Aktuelle syntetiske 594-input skal fremstilles af de normale kaldere; CODE, DATA og SOURCE-eksekutor må ikke ommærkes til hinanden. Gamle 585/586-prøver beholder egne arkiverede normalfaser. Bevarede 586/C145/I141- og 040000-resultater er historiske originaler, ikke den aktuelle 595-binding eller installationsvej.
+
+Næste åbne led er den normale 594-central-/metadataovergang gennem B før S, samme SDK og almindelige action, fase 63/64 og faktisk afslutning af samme ejer. Profilen er PREPARATION_ONLY; et forberedt prefix eller en fanget RPC-forespørgsel er ikke databasegenlæsning eller fullRuntime/actionbevis. ROOT afventer konkret kalderplan og frosne kildeinput før normal C → I → T, binding-only, nyt procesoutput og eventuel ny SQL-kilde.
+
+ROOTs særskilte oplysninger om fungerende P0/c920, almindelig 235 og offentlig header/784 er ikke SOURCE-kvalifikation og er ikke genverificeret af denne SOURCE-fase. PostgreSQL, kapacitet, komplet cache/historik og selvstændig produktion er ikke bevist. Alle fem hovedmål er åbne til **18. november 2026**. Afgrænset delegering bevarer adskilte filejere og ROOT som eneste produktionskoordinator; ingen produktionsændring under aktiv writer.
+
 ## 21. oktober – isoleret SOURCE: ret selvbinding før udstedelse
 
 Nyeste lokale mål er nu append-only 040000 efter afgrænset genbrug af kalenderens formatterkonfiguration, ikke af datoer, vejr eller scorer. Faktiske C145/I141/T12, SQL og syv forbrugere er afledt fra egen LF-kilde; alle fem normale fixedpointmål består dér, og alle 66 gamle migrationsfiler bevares. 030000 og 020000 nedenfor er aldrig installeret kildehistorik, ikke mellemtrin fra genuine 585. Windows-kildens C/I-/kalendermål består, men SQL-/sync-check stopper fortsat på den gamle 20261017140000-SQL's rå CRLF-hash; dens LF-projektion er byteidentisk med Git og LF-værten. Gamle originaler eller guards ændres ikke. Dette er ikke samlet CI, native PostgreSQL, B/S, national kapacitet, installation eller aktivering. SOURCE er inaktiv; P0 og den almindelige vejrhentning ejes fortsat af ROOTs aktuelle status. Se DEC-0294.

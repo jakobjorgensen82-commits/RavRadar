@@ -1,5 +1,10 @@
 // Synthetic PRE-MERGE legacy compatibility only. The existing native caller
 // owns this host; this file creates no host, main proof, ACTIVE profile or SDK.
+// Historical positive scope: genuine585 -> its then-SOURCE source/SQL phase.
+// SOURCE19's later586 -> then-SOURCE metadata proposal was also UNISSUED.
+// Their old bodies/bindings are retained as historical source; neither is an
+// alternative594 predecessor, a current594 PASS, or a weaker native proof.
+// Genuine585/NOC586 tests belong to their actual archived normal phases.
 import assert from 'node:assert/strict';
 import crypto from 'node:crypto';
 import fs from 'node:fs/promises';
@@ -9,8 +14,10 @@ import {execFileSync} from 'node:child_process';
 import {fileURLToPath,pathToFileURL} from 'node:url';
 import {isDeepStrictEqual} from 'node:util';
 import {emitNativePostgresFirstFailure} from './lib/checkpoint-cas-native-postgres.mjs';
-import {requireSourceProducerOutput,requireSourceProducerBinding,SOURCE_PRODUCER_BEFORE}
+import {requireSourceProducerOutput,requireSourceProducerBinding,SOURCE_PRODUCER_PREDECESSOR_RELEASE}
   from './lib/source-producer-successor-source.mjs';
+
+import {ACCOUNT_STATISTICS_ASSISTANT_BINDING as LEGACY585_BINDING} from './lib/account-statistics-assistant-successor-source.mjs';
 
 const ROOT=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
 const CHECKPOINT='.cache/ravscore-continuation-checkpoint/checkpoint.json';
@@ -39,11 +46,11 @@ async function inventory(root){
 }
 function sameCheckpointExceptExactMetadata(old,next,binding){
   const inverse=structuredClone(next);
-  assert.equal(old.modelBinding.modelBundleSha256,SOURCE_PRODUCER_BEFORE.I);
+  assert.equal(old.modelBinding.modelBundleSha256,LEGACY585_BINDING.I);
   assert.equal(inverse.modelBinding.modelBundleSha256,binding.I);
-  assert.equal(old.candidateGRollbackCompanion.modelBinding.modelBundleSha256,SOURCE_PRODUCER_BEFORE.C);
+  assert.equal(old.candidateGRollbackCompanion.modelBinding.modelBundleSha256,LEGACY585_BINDING.C);
   assert.equal(inverse.candidateGRollbackCompanion.modelBinding.modelBundleSha256,binding.C);
-  assert.equal(old.continuationStateContractSha256,SOURCE_PRODUCER_BEFORE.T);
+  assert.equal(old.continuationStateContractSha256,LEGACY585_BINDING.T);
   assert.equal(inverse.continuationStateContractSha256,binding.T);
   inverse.modelBinding.modelBundleSha256=old.modelBinding.modelBundleSha256;
   inverse.candidateGRollbackCompanion.modelBinding.modelBundleSha256=old.candidateGRollbackCompanion.modelBinding.modelBundleSha256;
@@ -62,7 +69,12 @@ function sameCheckpointExceptExactMetadata(old,next,binding){
 // hour, rather than treating unchanged same-H0 metadata as a follower result.
 export async function runSourceProducerLegacyCompatibility(){
   requireSourceProducerOutput();const binding=requireSourceProducerBinding(); // BEFORE host/input I/O.
-  assert.equal(arguments.length,0);assert.equal(process.platform,'linux');
+  assert.equal(arguments.length,0);
+  // The whole old positive body remains historical evidence for its own
+  // archived585->then-SOURCE source/SQL phase. It is not a594 replacement PASS.
+  assert.notEqual(SOURCE_PRODUCER_PREDECESSOR_RELEASE,'4.0.594',
+    'LEGACY585_TO_SOURCE_REQUIRES_ITS_ARCHIVED_NORMAL_PHASE');
+  assert.equal(process.platform,'linux');
   assert.equal(Number(process.versions.node.split('.')[0]),24);
   const own=path.dirname(ROOT);
   assert.equal(path.basename(ROOT),'current-source-native');assert.match(path.basename(own),/^rr-source19-union-native-/);

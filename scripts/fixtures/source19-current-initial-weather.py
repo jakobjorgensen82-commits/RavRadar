@@ -65,7 +65,8 @@ def grid(eccodes, producer, targets, reference, offset, destination, collection,
         os.fsync(output.fileno())
 
 
-def add_initial_weather(eccodes, producer, targets, zones, document, reference, out, originals):
+def add_initial_weather(eccodes, producer, targets, zones, document, reference, out, originals,
+                        *, private_history_start=None, raw_original_root=None):
     """Only provider INPUT leaves; normal updater must still prove 210/673 READY.
 
     WAM uses its real same-asset admission/owner validators, including unchanged
@@ -73,6 +74,10 @@ def add_initial_weather(eccodes, producer, targets, zones, document, reference, 
     Neither a synthetic tuple nor this function is a READY declaration.
     """
     need(reference.tzinfo is not None and reference.minute == reference.second == 0, "REFERENCE")
+    if raw_original_root is not None:
+        need(raw_original_root.resolve(strict=True) == producer.ROOT.resolve(strict=True)
+             and producer.RAW_DIR.resolve(strict=True) == raw_original_root / ".cache/dmi-grib",
+             "NORMAL_CODE_CANONICAL_RAW_ROOT")
     diagnostics = document["diagnostics"]
     recipes = {
         "dkss_nsbs": ((82, .2, "sea-mean-deviation"), (80, 285.15, "water-temperature")),
@@ -83,33 +88,41 @@ def add_initial_weather(eccodes, producer, targets, zones, document, reference, 
                    ("mwd", 90., "mean-wave-dir")),
     }
     observations = []
+    first_offset = 0
+    if private_history_start is not None:
+        need(private_history_start.tzinfo is not None, "PRIVATE_HISTORY_REFERENCE")
+        delta = (private_history_start - reference).total_seconds() / 3600
+        need(delta.is_integer() and -123 <= delta <= 0, "PRIVATE_HISTORY_BOUND")
+        first_offset = int(delta)
     for collection, fields in recipes.items():
         relevant = (producer.native_operational_wave_zones(collection, zones)
                     if collection in producer.WAVE_BOOTSTRAP_COLLECTIONS else zones)
         need(relevant, "NORMAL_TARGETS_REQUIRED")
         decode_zones = (producer.relevant_zones(collection, zones)
                         if collection in producer.WAVE_BOOTSTRAP_COLLECTIONS else zones)
-        for offset in range(121):
+        for offset in range(first_offset, 121):
             valid = text(reference + timedelta(hours=offset))
+            model_reference = reference if offset >= 0 else reference + timedelta(hours=offset)
+            model_step = offset if offset >= 0 else 0
             href = ("https://current-source-native.invalid/initial-assets/" + collection + "/"
-                    + reference.strftime("%Y%m%d%H") + "/" + str(offset) + ".grib")
+                    + model_reference.strftime("%Y%m%d%H") + "/" + str(model_step) + ".grib")
             file = producer.cached_asset_path(href)
-            grid(eccodes, producer, targets, reference, offset, file, collection, fields)
+            grid(eccodes, producer, targets, model_reference, model_step, file, collection, fields)
             raw = file.read_bytes()
             content_sha, size = hashlib.sha256(raw).hexdigest(), len(raw)
             item_id = "SYNTHETIC-INITIAL-" + collection.upper() + "-" + str(offset)
-            producer.register_raw_cache_asset(file, href, collection, text(reference), valid,
-                item_id=item_id, item_created_at=text(reference), item_updated_at=text(reference),
+            producer.register_raw_cache_asset(file, href, collection, text(model_reference), valid,
+                item_id=item_id, item_created_at=text(model_reference), item_updated_at=text(model_reference),
                 acquired_at=text(datetime.now(timezone.utc)), expected_size=size, content_sha256=content_sha)
             asset = {"valid": valid, "id": item_id, "href": href, "size": size,
-                     "itemCreatedAt": text(reference), "itemUpdatedAt": text(reference)}
+                     "itemCreatedAt": text(model_reference), "itemUpdatedAt": text(model_reference)}
             summary = {}
             if collection in producer.WAVE_BOOTSTRAP_COLLECTIONS:
                 # Build the same official identity from the actual synthetic
                 # catalog asset + actual file size, not sha(b'fake bytes').
-                identity = producer.official_wave_asset_identity(collection, text(reference), asset)
+                identity = producer.official_wave_asset_identity(collection, text(model_reference), asset)
                 need(identity is not None, "NORMAL_OFFICIAL_WAVE_IDENTITY")
-                selected = producer.MappingWaveAsset(asset, text(reference), official_identity=identity)
+                selected = producer.MappingWaveAsset(asset, text(model_reference), official_identity=identity)
                 before = copy.deepcopy(document)
 
                 def admit(staged, _private, outcome):
@@ -119,13 +132,13 @@ def add_initial_weather(eccodes, producer, targets, zones, document, reference, 
                     return producer.operational_wave_asset_stage_admissible(
                         before, staged, relevant, collection, selected, measured, outcome)
 
-                outcome = producer.process_grib_transactionally(file, collection, text(reference), valid,
+                outcome = producer.process_grib_transactionally(file, collection, text(model_reference), valid,
                     decode_zones, document, diagnostics, allowed_parameters={row[2] for row in fields},
                     stage_validator=admit, locked_operational_reference=text(reference))
                 need(producer.wave_asset_cache_proof_coherent(summary, require_complete=True),
                      "NORMAL_WAVE_NATIVE_OWNER_NOT_COMPLETE")
                 run = document.setdefault("runs", {}).setdefault(collection, {})
-                run.update(referenceTime=text(reference), parserVersion=producer.PARSER_VERSION,
+                run.update(referenceTime=text(model_reference), parserVersion=producer.PARSER_VERSION,
                            parameterMapVersion=producer.PARAMETER_MAP_VERSION, gridLookupVersion=producer.GRID_LOOKUP_VERSION)
                 # These counts/lineage hashes were actually returned by the normal
                 # admission function; they are not an authored success fixture.
@@ -135,14 +148,15 @@ def add_initial_weather(eccodes, producer, targets, zones, document, reference, 
                     "rawContentSha256": content_sha, "waveAdmissionPolicy": producer.WAVE_ASSET_ADMISSION_POLICY,
                     "acceptedNativeZoneCount": summary["acceptedCount"], "parserVersion": producer.PARSER_VERSION}
             else:
-                outcome = producer.process_grib(file, collection, text(reference), valid,
+                outcome = producer.process_grib(file, collection, text(model_reference), valid,
                     relevant, document, diagnostics, allowed_parameters={row[2] for row in fields},
                     locked_operational_reference=text(reference))
             need(outcome[2] is False and {row[2] for row in fields} <= outcome[0] and outcome[1],
                  "NORMAL_FULL_WEATHER_DECODE_INCOMPLETE")
             need(file.stat().st_size == size and hashlib.sha256(file.read_bytes()).hexdigest() == content_sha,
                  "RAW_CHANGED_AFTER_DECODE")
-            originals.append({"relativePath": str(file.relative_to(out)), "bytes": size, "sha256": content_sha})
+            originals.append({"relativePath": str(file.relative_to(out if raw_original_root is None else raw_original_root)),
+                              "bytes": size, "sha256": content_sha})
             observations.append({"collection": collection, "validTime": valid,
                                  "acceptedNativeTargetCount": summary.get("acceptedCount")})
     for point in document["zones"].values():

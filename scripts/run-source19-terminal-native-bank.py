@@ -429,12 +429,21 @@ def run_current_source_profile_wrapper():
     profile.add_argument('--current-source-profile', action='store_true')
     profile.add_argument('--source-legacy-compatibility', action='store_true')
     parser.add_argument('--node24-path', required=True)
+    parser.add_argument('--input-profile', choices=('operative585', 'current594-preparation'), default='operative585')
     args = parser.parse_args()
+    if args.source_legacy_compatibility and args.input_profile != 'operative585':
+        raise ValueError('SOURCE_CURRENT_PROFILE_LEGACY_INPUTS_UNCHANGED')
     node = Path(args.node24_path)
     # Own issued output FIRST; not a fake585 tuple or a replacement owner issuer.
-    subprocess.run([str(node), '--input-type=module', '-e',
-        "import {requireSourceProducerOutput} from './scripts/lib/source-producer-successor-source.mjs';requireSourceProducerOutput();"],
-        cwd=ROOT, env=clean_environment(), stdin=subprocess.DEVNULL, check=True, timeout=30)
+    actual_family = subprocess.check_output([str(node), '--input-type=module', '-e',
+        "import * as source from './scripts/lib/source-producer-successor-source.mjs';source.requireSourceProducerOutput();console.log(source.SOURCE_PRODUCER_PREDECESSOR_RELEASE);"],
+        cwd=ROOT, env=clean_environment(), stdin=subprocess.DEVNULL, timeout=30).decode('utf8').strip()
+    if actual_family != '4.0.594':
+        raise ValueError('SOURCE_CURRENT_PROFILE_UNKNOWN_PRODUCT_FAMILY')
+    if args.source_legacy_compatibility:
+        raise ValueError('LEGACY585_TO_SOURCE_REQUIRES_ITS_ARCHIVED_NORMAL_PHASE')
+    if args.input_profile != 'current594-preparation':
+        raise ValueError('SOURCE_CURRENT_PROFILE_MUST_MATCH_ACTUAL594_PRODUCT')
     if sys.platform != 'linux' or sys.version_info[:2] != (3, 12) or not node.is_absolute():
         raise ValueError('SOURCE_CURRENT_PROFILE_LINUX_PYTHON312_NODE24')
     raw = sys.stdin.buffer.read(16385)
@@ -456,6 +465,8 @@ def run_current_source_profile_wrapper():
             'scripts/fixtures/source19-current-provider-forecast.mjs')
     if args.source_legacy_compatibility:
         required += ('scripts/test-source-producer-legacy-compatibility.mjs',)
+    if args.input_profile == 'current594-preparation':
+        required += ('scripts/fixtures/source19-current594-input-profile.json',)
     for name in required:
         committed = subprocess.check_output(['git', 'show', actual + ':' + name], cwd=ROOT, env=clean_environment())
         if (ROOT / name).read_bytes().replace(b'\r\n', b'\n') != committed:
@@ -467,8 +478,10 @@ def run_current_source_profile_wrapper():
         for name in ('GITHUB_TOKEN', 'GITHUB_REPOSITORY'):
             if name in os.environ: capture_env[name] = os.environ[name]
     selected = '--source-legacy-compatibility' if args.source_legacy_compatibility else '--current-source-profile'
-    child = subprocess.run([sys.executable, '-I', '-B', str(ROOT / relative),
-        selected, '--node24-path', str(node)], cwd=ROOT, env=capture_env,
+    child_args = [sys.executable, '-I', '-B', str(ROOT / relative), selected, '--node24-path', str(node)]
+    if args.input_profile != 'operative585':
+        child_args += ['--input-profile', args.input_profile]
+    child = subprocess.run(child_args, cwd=ROOT, env=capture_env,
         input=raw, check=False)
     if child.returncode:
         raise ValueError('SOURCE_CURRENT_PROFILE_ACTUAL_NATIVE_FAILED')

@@ -1,5 +1,5 @@
-// Fixed authenticated585 -> SOURCE SAME_H0 preparation and final preservation
-// proof. Never SQL/publication authority. Keep the normal585 caller unchanged.
+// Fixed authenticated593 -> SOURCE SAME_H0 preparation and final preservation
+// proof. Never SQL/publication authority. Existing ordinary callers remain unchanged.
 import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
 import path from 'node:path';
@@ -16,6 +16,28 @@ import {createProtectedPrivateRuntimeClients} from './protected-private-producti
 import {createProtectedRavScoreCheckpointRequester} from './protected-ravscore-continuation-checkpoint.mjs';
 
 const ROOT=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
+async function assertExactPrepared593(token){
+  // The normal opaque preparation remains the authority; fields alone never issue it.
+  await assertSourceProducerRuntimeTransitionPrepared(token);
+  assert.equal(token.kind,'SOURCE_PRODUCER_593_PREPARED_RUNTIME');
+  assert.equal(token.admission,'NO_ADMISSION');
+  assert.equal(token.installationPerformed,false);
+  assert.equal(token.privatePayloadIncluded,false);
+  assert.equal(token.partCount,673);
+  for(const field of ['numericalChanges','repairedContinuationCount','recomputedModeCount','recomputedZoneCount'])
+    assert.equal(token[field],0);
+}
+async function assertExactPrepared594(token){
+  // The normal opaque preparation remains the authority; fields alone never issue it.
+  await assertSourceProducerRuntimeTransitionPrepared(token);
+  assert.equal(token.kind,'SOURCE_PRODUCER_594_PREPARED_RUNTIME');
+  assert.equal(token.admission,'NO_ADMISSION');
+  assert.equal(token.installationPerformed,false);
+  assert.equal(token.privatePayloadIncluded,false);
+  assert.equal(token.partCount,673);
+  for(const field of ['numericalChanges','repairedContinuationCount','recomputedModeCount','recomputedZoneCount'])
+    assert.equal(token[field],0);
+}
 async function digest(file){const hash=crypto.createHash('sha256');let bytes=0;
   for await(const chunk of createReadStream(file)){hash.update(chunk);bytes+=chunk.length;}return {bytes,sha256:hash.digest('hex')};}
 async function noLinks(file){let at=path.parse(file).root;for(const part of path.relative(at,file).split(path.sep).filter(Boolean)){
@@ -33,7 +55,7 @@ export async function verifySourceProducerPrewritePreservation(options){
   // Fresh normal authenticated B/S preparation supplies the only authority.
   // Saved JSON, flags and a previously emitted report cannot mint this token.
   const token=await prepareSourceProducerRuntimeTransition(source);
-  await assertSourceProducerRuntimeTransitionPrepared(token);
+  await assertExactPrepared594(token);
   const resolved=path.resolve(preparedRuntimeRoot),prepared=await fs.realpath(resolved);
   assert.equal(prepared,resolved);
   const expected=await assertExactRuntimeInventory(token.outputRoot);
@@ -51,7 +73,7 @@ export async function verifySourceProducerPrewritePreservation(options){
       'Whole combined normal metadata/origin report, not selected hashes');
   }
   await compareActualPrepared();
-  await assertSourceProducerRuntimeTransitionPrepared(token);
+  await assertExactPrepared594(token);
   // The final awaited B/S check is not an exclusive lock on the other copy.
   // Re-read its actual inventory, paths, every byte AND report afterwards;
   // hashing only the earlier list would miss an added file or aliased report.
@@ -73,7 +95,8 @@ export async function runSourceProducerPrewrite(){
   const slot=process.argv[3];assert(['prepare','final'].includes(slot));
   const gitEnvironment=Object.fromEntries(['PATH','Path','SystemRoot','WINDIR','TEMP','TMP','LANG','LC_ALL']
     .filter(key=>typeof process.env[key]==='string').map(key=>[key,process.env[key]]));
-  const read=args=>execFileSync('git',['-C',ROOT,...args],{encoding:'utf8',timeout:30000,maxBuffer:65536,env:gitEnvironment}).trim();
+  Object.assign(gitEnvironment,{GIT_NO_LAZY_FETCH:'1',GIT_NO_REPLACE_OBJECTS:'1',GIT_TERMINAL_PROMPT:'0'});
+  const read=args=>execFileSync('git',['-c','protocol.allow=never','-c','gc.auto=0','-C',ROOT,...args],{encoding:'utf8',timeout:30000,maxBuffer:65536,env:gitEnvironment}).trim();
   assert.equal(read(['rev-parse','HEAD^{commit}']),process.env.GITHUB_SHA);
   assert.equal(read(['rev-parse','origin/main^{commit}']),process.env.GITHUB_SHA);
   const temporary=await fs.realpath(absoluteEnvironmentPath('RUNNER_TEMP'));
@@ -89,7 +112,7 @@ export async function runSourceProducerPrewrite(){
   const envPath=absoluteEnvironmentPath('GITHUB_ENV');
   if(slot==='prepare'){
     const token=await prepareSourceProducerRuntimeTransition(options);
-    await assertSourceProducerRuntimeTransitionPrepared(token);
+    await assertExactPrepared594(token);
     assert.equal(token.originalReferenceAt,token.targetReferenceAt,'Exact authenticated SAME_H0');
     await fs.mkdir(path.dirname(reportPath),{recursive:true});
     await fs.writeFile(reportPath,await fs.readFile(token.normalBReportPath),{flag:'wx',mode:0o600});
@@ -99,7 +122,7 @@ export async function runSourceProducerPrewrite(){
       +'RAVRADAR_SOURCE_PRODUCER_ORIGINALS_VERIFIED=true\n'
       +'RAVRADAR_SOURCE_PRODUCER_NOLOSS_VERIFIED=true\n'
       +'RAVRADAR_SOURCE_PRODUCER_PREWRITE_VERIFIED=true\n');
-    console.log('Exact original585 B/S SOURCE metadata handoff prepared; no remote writes.');return;
+    console.log('Præcis original594 B/S-metadataovergang forberedt; ingen eksterne skrivninger.');return;
   }
   // Exactly one fresh final comparison after artifact gates. Do not add a
   // duplicate middle proof of the same unchanged preparation.
@@ -109,7 +132,7 @@ export async function runSourceProducerPrewrite(){
   await fs.appendFile(envPath,'RAVRADAR_SOURCE_PRODUCER_ORIGINALS_VERIFIED=true\n'
     +'RAVRADAR_SOURCE_PRODUCER_NOLOSS_VERIFIED=true\n'
     +'RAVRADAR_SOURCE_PRODUCER_PREWRITE_VERIFIED=true\n');
-  console.log('Exact original585 B/S and complete prepared SOURCE metadata reverified; no SQL or remote writes.');
+  console.log('Præcise original594 B/S og alle forberedte SOURCE-metadata genkontrolleret; ingen SQL eller eksterne skrivninger.');
 }
 
 if(process.argv[1]&&path.resolve(process.argv[1])===fileURLToPath(import.meta.url))await runSourceProducerPrewrite().catch(()=>{

@@ -4,6 +4,7 @@ import {
   selectQualifiedWeatherComponent,
 } from './weather-component-selection.mjs';
 import { classifyWavePhysicalTuple } from '../../js/core/ravscore-mobilisation-memory.js';
+import { types } from 'node:util';
 import {
   dmiExpectedIdentityForPart,
   verifiedControlledLiveCurrentSource,
@@ -503,6 +504,53 @@ function withoutComponent(row, component) {
   return component === 'current' ? withoutCurrent(row) : withoutWave(row);
 }
 
+// Source-carried originals are the unchanged codec wrapper for ONE PART.
+// This is an input/domain check, not native proof, authentication or admission.
+export function nativeCurrentOriginalBankForPart(source, part) {
+  const reject = () => { throw new Error('DMI_NATIVE_PROOF_SELECTION_INVALID'); };
+  const read = (value, key) => {
+    if (!value || typeof value !== 'object' || types.isProxy(value)
+      || Object.getOwnPropertySymbols(value).length
+      || Object.getPrototypeOf(value) !== (Array.isArray(value) ? Array.prototype : Object.prototype)) reject();
+    const descriptor = Object.getOwnPropertyDescriptor(value, key);
+    if (!descriptor) return undefined;
+    if (!Object.hasOwn(descriptor, 'value')) reject();
+    return descriptor.value;
+  };
+  const originals = read(source, 'nativeCurrentOriginals');
+  if (originals === undefined || originals === null) return null;
+  if (read(originals, 'schemaVersion') !== 1 || read(originals, 'kind') !== 'PRIVATE_DMI_PART_NATIVE_ORIGINALS'
+    || read(originals, 'scope') !== 'EXACT_SAVED_PART_121_CURRENT_ROWS'
+    || Object.keys(originals).sort().join(',') !== 'bank,coverage,identity,kind,schemaVersion,scope') reject();
+  const expected = dmiExpectedIdentityForPart(part), identity = read(originals, 'identity');
+  read(identity, 'entityId'); // Reject proxy/accessor containers before Object.keys.
+  if (!expected || Object.keys(identity ?? {}).sort().join(',') !== Object.keys(expected).sort().join(',')) reject();
+  for (const [key, value] of Object.entries(expected)) {
+    const actual = read(identity, key);
+    if (Array.isArray(value)) {
+      if (!Array.isArray(actual) || read(actual, 'length') !== value.length
+        || value.some((entry, index) => read(actual, String(index)) !== entry)) reject();
+    } else if (actual !== value) reject();
+  }
+  const coverage = read(originals, 'coverage');
+  if (!Array.isArray(coverage) || read(coverage, 'length') !== 121) reject();
+  const bank = read(originals, 'bank');
+  if (bank === null) return null; // Explicitly no stored original proof; contexts still apply.
+  const contexts = read(bank, 'contexts'), nativeRows = read(bank, 'nativeRows'), selections = read(bank, 'selections');
+  if (![contexts, nativeRows, selections].every(Array.isArray)
+    || read(selections, 'length') > 121 || read(nativeRows, 'length') > 2 * read(selections, 'length')
+    || read(contexts, 'length') > read(nativeRows, 'length')) reject();
+  for (let index = 0; index < selections.length; index++) {
+    if (read(read(selections, String(index)), 'partId') !== part.partId) reject();
+  }
+  for (let index = 0; index < contexts.length; index++) {
+    if (read(read(read(contexts, String(index)), 'value'), 'partId') !== part.partId) reject();
+  }
+  // The normal inspector/indexBank still validates the COMPLETE bank and
+  // reprojects each requested selection. No proof algorithm or PASS is copied.
+  return bank;
+}
+
 /**
  * Production weather precedence before generic recovery validation.
  *
@@ -557,9 +605,11 @@ export function buildNewestValidRavScoreRecoverySources({
     protectedPreviousSource,
   );
   const oldInspector = allowPreferredEqualModelRun && Array.isArray(fallbackSource.nativeCurrentContexts)
-    ? createProtectedDmiNativeCurrentInspector({ contexts: fallbackSource.nativeCurrentContexts }) : null;
+    ? createProtectedDmiNativeCurrentInspector({ contexts: fallbackSource.nativeCurrentContexts,
+      previousBank: nativeCurrentOriginalBankForPart(fallbackSource, part) }) : null;
   const freshInspector = allowPreferredEqualModelRun && Array.isArray(preferredSource.nativeCurrentContexts)
-    ? createProtectedDmiNativeCurrentInspector({ contexts: preferredSource.nativeCurrentContexts }) : null;
+    ? createProtectedDmiNativeCurrentInspector({ contexts: preferredSource.nativeCurrentContexts,
+      previousBank: nativeCurrentOriginalBankForPart(preferredSource, part) }) : null;
   const decoderPairs = new Map();
   for (const [time, fallbackRow] of fallbackByTime) {
     const preferredRow = preferredByTime.get(time);

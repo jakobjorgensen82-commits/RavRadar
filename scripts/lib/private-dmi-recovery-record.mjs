@@ -11,6 +11,7 @@ import { buildDmiMarineComponentwiseHourly, recoverDmiMarineRunSeamHours }
 import { repairWaterLevelContinuity } from './water-level-continuity.mjs';
 import { dmiWaveDirectionMatchesSource } from './dmi-wave-tuple-proof.mjs';
 import { createProtectedDmiNativeCurrentInspector } from './protected-dmi-native-current-proofs.mjs';
+import { nativeCurrentOriginalBankForPart } from './ravscore-recovery-source-priority.mjs';
 import {
   RAVSCORE_CURRENT_VECTOR_SEMANTICS_VERSION, dmiExpectedIdentityForPart,
   eligibleDmiForecastComponentSource as verifiedDmiForecastComponentSource,
@@ -339,11 +340,15 @@ function bulkZoneToForecastRecord(
 // prefer a qualified newer DMI source. Never import its scheduler cursor.
 // PUBLIC-only same-original decoder preference. It changes no original and
 // obtains every endpoint from the caller's actual admitted native documents.
-function publicCurrentDecoderTransition(part, contexts) {
+function publicCurrentDecoderTransition(part, contexts, nativeCurrentOriginals = null) {
   if (!part) return null;
   const identity = dmiExpectedIdentityForPart(part);
   if (!identity) return null;
-  const inspector = createProtectedDmiNativeCurrentInspector({ contexts: contexts.filter(Boolean) });
+  // The unchanged saved wrapper is only per-PART native evidence, never a
+  // selection candidate, inferred original or new admission. Full indexBank
+  // validation and exact reprojection still happen inside the normal inspector.
+  const previousBank = nativeCurrentOriginalBankForPart({ nativeCurrentOriginals }, part);
+  const inspector = createProtectedDmiNativeCurrentInspector({ contexts: contexts.filter(Boolean), previousBank });
   const instant = value => typeof value === 'string' && /(?:Z|[+-]\d{2}:\d{2})$/.test(value)
     && Number.isFinite(Date.parse(value)) ? new Date(value).toISOString() : null;
   const capture = source => {
@@ -390,11 +395,16 @@ function publicCurrentDecoderTransition(part, contexts) {
 function buildPartDmiForecastWithProtectedRetention(
   feature, activeBulkCache, protectedBulkCache, generatedAt,
   { startAt, expectedIdentity, persistedHourly = [], historicalBulkCache = null,
-    protectPreviousDmi = false, currentDecoderTransitionPart = null },
+    protectPreviousDmi = false, currentDecoderTransitionPart = null,
+    nativeCurrentOriginals = null, protectedCompanionContexts = [] },
 ) {
+  if (!Array.isArray(protectedCompanionContexts) || protectedCompanionContexts.length > 2) {
+    throw new Error('DMI_PART_NATIVE_ORIGINAL_COMPANION_BOUND');
+  }
   const currentDecoderTransition = !protectPreviousDmi && currentDecoderTransitionPart
     ? publicCurrentDecoderTransition(currentDecoderTransitionPart,
-      [activeBulkCache, protectedBulkCache, historicalBulkCache]) : null;
+      [activeBulkCache, protectedBulkCache, historicalBulkCache, ...protectedCompanionContexts],
+      nativeCurrentOriginals) : null;
   const retained = protectedBulkCache
     ? bulkZoneToForecastRecord(feature, protectedBulkCache, generatedAt, null, {
       startAt, expectedIdentity, materializeMissingHorizon: true,
@@ -444,7 +454,7 @@ function buildPartDmiForecastWithProtectedRetention(
 function buildPrivateDmiRecoveryRecord(
   feature, bulkCache, generatedAt,
   { startAt, expectedIdentity, persistedHourly = [], historicalBulkCache = null,
-    protectPreviousDmi = false },
+    protectPreviousDmi = false, nativeCurrentOriginals = null, protectedCompanionContexts = [] },
 ) {
   const startMs = Date.parse(startAt), endMs = Date.parse(generatedAt);
   const span = (endMs - startMs) / 3_600_000;
@@ -463,7 +473,7 @@ function buildPrivateDmiRecoveryRecord(
     const record = protectPreviousDmi
       ? buildPartDmiForecastWithProtectedRetention(feature, bulkCache, null, generatedAt, {
         startAt: windowStart, expectedIdentity, persistedHourly, historicalBulkCache,
-        protectPreviousDmi: true,
+        protectPreviousDmi: true, nativeCurrentOriginals, protectedCompanionContexts,
       })
       : bulkZoneToForecastRecord(feature, bulkCache, generatedAt, null, {
         startAt: windowStart, expectedIdentity,

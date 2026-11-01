@@ -87,7 +87,7 @@ def _duplicate_free(pairs):
 
 
 class CurrentSourcePost64Adapter:
-    def __init__(self, *, node, repository_root, owner_root, original_root, original_rows, policy, pg_call, initial_prefix=False):
+    def __init__(self, *, node, repository_root, owner_root, original_root, original_rows, policy, pg_call, initial_prefix=False, current594_prefix=False):
         # Normal own-source guard runs before any local destination or bytes.
         checked = subprocess.run([str(node), '--input-type=module', '-e',
             "import {requireSourceProducerOutput} from './scripts/lib/source-producer-successor-source.mjs';requireSourceProducerOutput();"],
@@ -109,6 +109,10 @@ class CurrentSourcePost64Adapter:
         self.initial_prefix = initial_prefix
         expected_root = self.parent / ('current-source-native-initial-inputs/transport' if initial_prefix
             else 'current-source-native-inputs/transport')
+        if type(current594_prefix) is not bool or (current594_prefix and not initial_prefix):
+            raise ValueError('CURRENT_POST64_EXACT_ORIGINAL_ROOT')
+        if current594_prefix:
+            expected_root = self.parent / 'current594-native-inputs/transport'
         if (self.original_root != expected_root
                 or self.original_root.resolve(strict=True) != self.original_root):
             raise ValueError('CURRENT_POST64_EXACT_ORIGINAL_ROOT')

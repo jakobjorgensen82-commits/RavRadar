@@ -4,7 +4,7 @@ import assert from 'node:assert/strict';
 import crypto from 'node:crypto';
 import fs from 'node:fs/promises';
 import path from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { fileURLToPath,pathToFileURL } from 'node:url';
 import { SOURCE_PRODUCER_BEFORE as OLD, SOURCE_PRODUCER_ALIASES as ALIASES,
   SOURCE_PRODUCER_REPLACEMENTS as REPLACEMENTS, SOURCE_PRODUCER_PROJECTION as PROJECTION,
   requireSourceProducerBinding, requireSourceProducerOutput, sourceProducerMigration,
@@ -62,6 +62,9 @@ export async function compareSourceProducerSuccessor(options) {
   let phase = 'SOURCE';
   try {
     const NEXT = requireSourceProducerBinding(), PINS = requireSourceProducerOutput(); // Before caller access or I/O.
+    const profile = await import('./source-producer-successor-source.mjs');
+    if (profile.SOURCE_PRODUCER_PREDECESSOR_RELEASE === '4.0.594')
+      return compareSourceProducerCurrent594Successor(options);
     assert.equal(arguments.length, 1);
     const { psql, runSql, root, sourceDocumentAt, atHour, saveCheckpoint } = options;
     for (const fn of [psql,runSql,sourceDocumentAt,atHour,saveCheckpoint]) assert.equal(typeof fn,'function');
@@ -254,4 +257,136 @@ export async function compareSourceProducerSuccessor(options) {
       category: error?.code === 'ERR_ASSERTION' ? 'ASSERTION_FAILED' : 'NATIVE_CALL_FAILED', privatePayloadIncluded: false })); } catch {} // Diagnostic failure never replaces the raw first failure.
     throw error;
   }
+}
+
+
+// Additive actual594 schema arm in this SAME owned native PG wrapper. It is not
+// the old585 comparison above, a new PG host, a fixture re-tag or a SQL issuer.
+async function compareSourceProducerCurrent594Successor(options) {
+  const NEXT=requireSourceProducerBinding(),PINS=requireSourceProducerOutput(); // BEFORE caller access/I/O.
+  assert.equal(arguments.length,1);assert.equal(process.platform,'linux');
+  const source=await import('./source-producer-successor-source.mjs');
+  assert.equal(source.SOURCE_PRODUCER_PREDECESSOR_RELEASE,'4.0.594');
+  assert.equal(typeof source.requireSourceProducerCodeParent,'function');
+  const selected=source.requireSourceProducerCodeParent();
+  assert.equal(selected,source.SOURCE_PRODUCER_BEFORE);
+  const {psql,runSql}=options;assert.equal(typeof psql,'function');assert.equal(typeof runSql,'function');
+  const {withSource594CodeParent}=await import('../check-assistant-later-h0-predecessor-source.mjs');
+  assert.equal(typeof withSource594CodeParent,'function');
+  return withSource594CodeParent(async genuine37=>{
+    const load=relative=>import(pathToFileURL(path.join(genuine37,relative)).href);
+    // The fixed normal code callback authenticates actual37, not a caller root.
+    const family=await load('scripts/lib/assistant-later-h0-successor-source.mjs');
+    assert.equal(family.requireInstalled593Original591Release(),'4.0.594');
+    const I=(await load('js/core/ravscore-model-contract.js')).ravScoreModelBinding();
+    const C=(await load('scripts/rollback-assets/ravscore-model-contract.js')).ravScoreModelBinding();
+    const workflow=await load('scripts/private-production-runtime-workflow.mjs');
+    const contracts=await workflow.privateRuntimeContractHashes({repositoryRoot:genuine37});
+    const original=family.requireInstalled593Original591Binding(),pins=family.requireInstalled593Original591Output();
+    assert.deepEqual({version:original.version,C:original.C,I:original.I,T:original.T,
+      canonicalSha256:pins.canonicalSha256,migrationSha256:pins.migrationSha256,
+      checkpointContractSha256:pins.checkpointContractSha256,tripBindingPolicySha256:pins.tripBindingPolicySha256},selected);
+    assert.equal(I.modelBundleSha256,selected.I);assert.equal(C.modelBundleSha256,selected.C);
+    assert.equal(contracts.continuationStateContractSha256,selected.T);
+    const readiness=await load('scripts/integrated-cutover-readiness.mjs');
+    const baseline=readiness.accountStatisticsAssistantRequiredMigrations();
+    const genuine=readiness.installed593Original591RequiredMigrations();
+    const required=sourceProducerRequiredMigrations();
+    assert.equal(baseline.length,54);assert.equal(genuine.length,61);assert.equal(required.length,62);
+    assert.deepEqual(genuine.slice(0,baseline.length),baseline);
+    assert.deepEqual(required.slice(0,-1),genuine);assert.equal(genuine.at(-1).version,selected.version);
+    assert.equal(required.at(-1).version,NEXT.version);
+    const before=await family.readInstalled593Original591CanonicalSource();
+    assert.equal(sha(before.canonicalSource),selected.canonicalSha256);
+    assert.equal(typeof source.sourceProducerPredecessorContractInventory,'function');
+    source.sourceProducerPredecessorContractInventory(before.canonicalSource);
+    const migration=sourceProducerMigration(),file=path.join(ROOT,'supabase/migrations',migration.filename);
+    const sql=await fs.readFile(file,'utf8');assert.equal(sha(sql),PINS.migrationSha256);
+    assertSourceProducerTransactionBounds(sql);const after=await readSourceProducerCanonicalSource();
+    assert.equal(sha(after.canonicalSource),PINS.canonicalSha256);
+    const versions=async()=>JSON.parse(await psql("select coalesce(json_agg(version order by version),'[]'::json) from supabase_migrations.schema_migrations;"));
+    const chronological=version=>{assert.match(version,/^[0-9]{8}([0-9]{6})?$/);return version.padEnd(14,'0');};
+    const assertVersions=(actual,inventory)=>{
+      assert(Array.isArray(actual));const expected=new Set(inventory.map(row=>row.version));
+      assert.equal(new Set(actual).size,actual.length);
+      for(const version of expected)assert(actual.includes(version),'Missing actual native migration '+version);
+      for(const version of actual)assert(expected.has(version)||chronological(version)<chronological(inventory[0].version),
+        'Unknown post-cutover migration in same native PG');
+      assert.equal([...actual].sort((a,b)=>chronological(a).localeCompare(chronological(b))).at(-1),inventory.at(-1).version);
+    };
+    assertVersions(await versions(),baseline);
+    const preservedSql=currentMemoryWarmupPreservationInventorySql('preserved');
+    const preserved=await psql(preservedSql),account=await psql(accountRowsSql());
+    const accountCatalog=await psql(statisticsPreferenceRevisionCatalogQuery);
+    assert.equal((await verifyStatisticsPreferenceRevisionCatalogMetadata(JSON.parse(accountCatalog))).schemaVersion,2);
+    const sqlInputs=[];
+    for(const migration of genuine.slice(baseline.length)){
+      assert.match(migration.filename,/^[0-9]{14}_[a-z0-9_]+\.sql$/);
+      const file=path.join(genuine37,'supabase/migrations',migration.filename),stat=await fs.lstat(file);
+      assert(stat.isFile()&&!stat.isSymbolicLink()&&stat.nlink===1&&stat.size>0);
+      const raw=await fs.readFile(file);assert.equal(raw.length,stat.size);
+      sqlInputs.push({migration,file,raw,sha256:sha(raw)});
+    }
+    // Entire existing issued SQL and actual registration, in chronological order.
+    // No old585 row, body or model label is rewritten into a594 fixture.
+    for(const row of sqlInputs){
+      await psql(row.raw.toString('utf8'));
+      await psql("insert into supabase_migrations.schema_migrations(version) values('"+row.migration.version+"');");
+      assert.deepEqual(await fs.readFile(row.file),row.raw);
+    }
+    assertVersions(await versions(),genuine);
+    const names=[...before.canonicalSource.matchAll(/^create or replace function public\.([a-z0-9_]+)\(/gm)].map(row=>row[1]);
+    const catalog594=JSON.parse(await psql(catalogSql(names)));
+    assert.deepEqual(Object.keys(catalog594).sort(),[...names].sort());
+    for(const name of names)assert.equal(catalog594[name].body,sha(body(definition(before.canonicalSource,name))));
+    const rpcReadback=async(verifier,settings)=>{
+      const address='https://source-current-same-pg.invalid',key='NATIVE_TEST_ONLY_NO_REMOTE_SERVICE';let calls=0;
+      const signature='public.ravradar_integrated_cutover_contract('+Array(22).fill('text').join(',')+')';
+      const fetchImpl=async(input,request)=>{
+        assert.equal(typeof input,'string');assert.equal(request.method,'POST');
+        const payload=JSON.parse(request.body);assert.equal(Object.getPrototypeOf(payload),Object.prototype);
+        let name,args;
+        if(calls===0){
+          assert.equal(input,address+'/rest/v1/rpc/ravradar_integrated_cutover_contract');
+          assert.equal(Object.keys(payload).length,22);
+          const actual=JSON.parse(await psql("select to_json(proargnames) from pg_proc where oid='"+signature+"'::regprocedure;"));
+          assert.deepEqual([...actual].sort(),Object.keys(payload).sort());
+          for(const[field,value]of Object.entries(payload)){assert.match(field,/^p_[a-z0-9_]+$/);assert.equal(typeof value,'string');}
+          name='ravradar_integrated_cutover_contract';
+          args=Object.entries(payload).map(([field,value])=>field+"=>'"+value.replaceAll("'","''")+"'").join(',');
+        }else{
+          assert.equal(calls,1);assert.equal(input,address+'/rest/v1/rpc/ravradar_ravscore_checkpoint_contract');
+          assert.deepEqual(payload,{});name='ravradar_ravscore_checkpoint_contract';args='';
+        }
+        const text=await psql("set request.jwt.claim.role='service_role';set role service_role;select public."+name+'('+args+')::text;');
+        JSON.parse(text);calls++;return new Response(text,{status:200,headers:{'content-type':'application/json'}});
+      };
+      await verifier({...settings,url:address,serviceRoleKey:key,fetchImpl});assert.equal(calls,2);return calls;
+    };
+    // The normal GENUINE37 verifier derives all22 fields and actually executes
+    // both real contracts on THIS PG. No authored metadata or READY response.
+    await rpcReadback(readiness.verifyIntegratedDatabaseReadback,{
+      sourcePhase:'assistant-installed593-origin591-successor',modelBinding:I,candidateModelBinding:C});
+    await psql(sql);await psql("insert into supabase_migrations.schema_migrations(version) values('"+migration.version+"');");
+    assert.notEqual((await runSql(sql)).code,0,'No replay after installed version');
+    assertVersions(await versions(),required);
+    const allNames=[...after.canonicalSource.matchAll(/^create or replace function public\.([a-z0-9_]+)\(/gm)].map(row=>row[1]);
+    const catalogAfter=JSON.parse(await psql(catalogSql(allNames)));
+    assert.deepEqual(Object.keys(catalogAfter).sort(),[...allNames].sort());
+    for(const name of allNames){
+      assert.equal(catalogAfter[name].body,sha(body(definition(after.canonicalSource,name))));
+      if(catalog594[name])assert.deepEqual(catalogAfter[name].properties,catalog594[name].properties);
+    }
+    const currentReadiness=await import('../integrated-cutover-readiness.mjs');
+    await rpcReadback(currentReadiness.verifyIntegratedDatabaseReadback,{sourcePhase:'source-producer'});
+    assert.equal(await psql(preservedSql),preserved);assert.equal(await psql(accountRowsSql()),account);
+    assert.equal(await psql(statisticsPreferenceRevisionCatalogQuery),accountCatalog);
+    for(const row of sqlInputs)assert.deepEqual(await fs.readFile(row.file),row.raw);
+    assert.equal(sha(await fs.readFile(file)),PINS.migrationSha256);
+    return Object.freeze({kind:'SOURCE_CURRENT594_SAME_PG_SCHEMA_PREPARED',sourceMigrationInventory:62,
+      genuine594MigrationInventory:61,genuine594IntegratedRpcParameters:22,genuine594ActualRpcCalls:2,
+      sourceActualRpcCalls:2,sameNativePg:true,normalVerifiers:true,old585RowsPreserved:true,
+      originalSqlBytesPreserved:true,metadataAuthored:false,sourceNativeActionQualified:false,
+      originalBAndSAuthenticated:false,productionProof:false});
+  });
 }

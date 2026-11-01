@@ -156,7 +156,36 @@ def bind_catalog_run_headers(producer, document, official):
             "processingSignature": signature, "processedSteps": {}})
 
 
-def prepare(node, target, initial_phase=None):
+CODE37_HEAD = "37a34703d9ae8bfb2c28056f21a7ea73944033ae"
+CODE37_TREE = "09aef7f6f5d965f565fadabea203b50687acc255"
+CODE37_ADMIN_INPUTS = frozenset(("data/zones.geojson", "data/admin/coastline-overrides.json",
+    "data/admin/direction-reviews.json", "data/geometry-v2/active-national-coastal-parts/manifest.json",
+    *["data/geometry-v2/active-national-coastal-parts/" + name for name in
+      ("coastal-parts.geojson", "part-names.json", "point-pairs.json", "dmi-grid-proof.json")],
+    "data/live/coastal-parts-v2.json"))
+
+
+def genuine37_code_root(value):
+    # This is a separate actual Git code host, never an override of producer.ROOT.
+    root = Path(value)
+    need(root.is_absolute() and root == ROOT.parent / "current594-native-inputs/normal-genuine594", "CODE37_OWNED_PATH")
+    no_links(root)
+    need(root.resolve(strict=True) == root and root.is_dir(), "CODE37_PHYSICAL_ROOT")
+    environment = dict(os.environ, GIT_NO_LAZY_FETCH="1", GIT_NO_REPLACE_OBJECTS="1",
+        GIT_OPTIONAL_LOCKS="0", GIT_TERMINAL_PROMPT="0", GIT_CONFIG_COUNT="1",
+        GIT_CONFIG_KEY_0="protocol.allow", GIT_CONFIG_VALUE_0="never")
+    def git(*arguments):
+        return subprocess.check_output(["git", "-c", "core.autocrlf=false", "-C", str(root), *arguments],
+            env=environment, stdin=subprocess.DEVNULL, timeout=30, text=True).strip()
+    need(git("rev-parse", "HEAD") == CODE37_HEAD and git("rev-parse", "HEAD^{tree}") == CODE37_TREE,
+         "GENUINE37_CODE_IDENTITY")
+    # Only already transported admin input/its normal registry may differ.
+    need(set(git("diff", "--name-only", "HEAD").splitlines()) <= CODE37_ADMIN_INPUTS, "CODE37_PRODUCT_CHANGED")
+    need(not git("ls-files", "--others", "--exclude-standard", "--", "scripts", "js"), "CODE37_UNTRACKED_PRODUCT")
+    return root
+
+
+def prepare(node, target, initial_phase=None, *, current594=False, code37_root=None):
     # Linux lease and actual ecCodes are mandatory. Never stub either on Windows.
     need(sys.platform == "linux" and sys.version_info[:2] == (3, 12), "LINUX_PYTHON312_REQUIRED")
     need(ROOT.name == "current-source-native" and ROOT.parent.name.startswith("rr-source19-union-native-"), "EXISTING_OWNED_HOST")
@@ -171,23 +200,30 @@ def prepare(node, target, initial_phase=None):
         import eccodes
     except ImportError as error:
         raise RuntimeError("CURRENT_NATIVE_PROVIDER_ECCODES_REQUIRED") from error
+    need(type(current594) is bool and not (current594 and initial_phase is not None), "EXACT_CURRENT594_MODE")
+    need(code37_root is None or current594, "CODE37_CURRENT594_ONLY")
+    normal_root = ROOT if code37_root is None else genuine37_code_root(code37_root)
     reference = datetime.fromisoformat(target.replace("Z", "+00:00"))
     if initial_phase == 'h0':
         reference -= timedelta(hours=48)
     need(reference.tzinfo is not None and reference == reference.replace(minute=0, second=0, microsecond=0), "TARGET_HOUR")
     need(initial_phase in (None, 'h0', 'h1'), "EXACT_INITIAL_PHASE")
-    out = ROOT.parent / ('fixture-initial-' + initial_phase if initial_phase else 'fixture')
+    out = ROOT.parent / ('fixture-current594-code37' if code37_root is not None else
+        'fixture-current594' if current594 else 'fixture-initial-' + initial_phase if initial_phase else 'fixture')
+    if code37_root is not None:
+        out.mkdir(mode=0o700, parents=False, exist_ok=False)
     no_links(out)
     need(out.is_dir(), "EXISTING_FIXTURE_DIRECTORY")
     for relative in BASIS:
         need(not (out / relative).exists(), "BASIS_DESTINATION_EXISTS")
     # The later normal input producer runs this same normal registry builder.
     # Do not decode against a stale, hand-built or one-part native registry.
-    subprocess.run([str(node), str(ROOT / "scripts/build-public-coastal-parts-v2.mjs")],
-        cwd=ROOT, stdin=subprocess.DEVNULL, check=True, timeout=30)
-    raw_dir = out / ".cache/dmi-grib"
+    subprocess.run([str(node), str(normal_root / "scripts/build-public-coastal-parts-v2.mjs")],
+        cwd=normal_root, stdin=subprocess.DEVNULL, check=True, timeout=30)
+    raw_dir = (normal_root if code37_root is not None else out) / ".cache/dmi-grib"
     raw_dir.parent.mkdir(parents=True, exist_ok=True)
-    raw_dir.mkdir(exist_ok=False)
+    no_links(raw_dir.parent)
+    raw_dir.mkdir(mode=0o700, exist_ok=False)
     previous_env = dict(os.environ)
     original_connect, original_lookup = socket.create_connection, socket.getaddrinfo
     old_cwd, old_path = Path.cwd(), list(sys.path)
@@ -200,9 +236,12 @@ def prepare(node, target, initial_phase=None):
             DMI_BULK_DEPLOYED_FALLBACK_PATH=str(out / ".cache/never-created-deployed-bulk.json"),
             DMI_BULK_PUBLISHED_BASELINE_PATH=str(out / ".cache/never-created-published-bulk.json"),
             DMI_STAC_ROOT="https://current-source-native.invalid/v1/forecastdata", PYTHONDONTWRITEBYTECODE="1")
-        os.chdir(ROOT)
-        sys.path.insert(0, str(ROOT / "scripts"))
-        producer = module("current_native_real_dmi_decoder", ROOT / "scripts/update-dmi-bulk.py")
+        os.chdir(normal_root)
+        sys.path.insert(0, str(normal_root / "scripts"))
+        producer = module("current_native_real_dmi_decoder", normal_root / "scripts/update-dmi-bulk.py")
+        if code37_root is not None:
+            need(producer.ROOT.resolve() == normal_root and producer.RAW_DIR.resolve() == normal_root / ".cache/dmi-grib",
+                 "CODE37_NORMAL_CANONICAL_RAW_ROOT")
         need(not producer.CACHE_ONLY and not producer.API_KEY, "CLEAN_NATIVE_ACQUISITION_MODE")
         producer.STAC_SESSION.get = forbidden
         producer.DOWNLOAD_SESSION.get = forbidden
@@ -210,10 +249,10 @@ def prepare(node, target, initial_phase=None):
         from lib.dmi_bulk_storage import write_dmi_bulk_document, read_dmi_bulk_document
         from lib.dmi_native_provenance import verified_part_current_pair
         from lib.copernicus_target_identity import target_fingerprint
-        targets = load_targets(ROOT / "data/live/coastal-parts-v2.json")
-        registry = json.loads((ROOT / "data/live/coastal-parts-v2.json").read_text())
+        targets = load_targets(normal_root / "data/live/coastal-parts-v2.json")
+        registry = json.loads((normal_root / "data/live/coastal-parts-v2.json").read_text())
         need(len(targets) == registry["partCount"] == 673 and registry["zoneCount"] == 210, "NORMAL_REGISTRY_210_673")
-        zones = producer.build_operational_zone_config(json.loads((ROOT / "data/zones.geojson").read_text()), targets)
+        zones = producer.build_operational_zone_config(json.loads((normal_root / "data/zones.geojson").read_text()), targets)
         need(len({row["id"] for row in zones if row.get("coastalPart")}) == 673, "NORMAL_PART_TARGETS")
         signature = producer.sampling_registry_signature()
         # A missing normal station input has the documented empty fallback.
@@ -236,22 +275,43 @@ def prepare(node, target, initial_phase=None):
         part_ids = sorted(row["partId"] for row in targets)
         registry_sha = target_fingerprint(targets)
         observed_steps = {}
-        for offset in OFFSETS:
+        history_start = reference
+        history_plan = None
+        if current594:
+            # The actual normal selector determines this cold INPUT axis.
+            # It creates no state, origin, readiness or positive whole-runtime proof.
+            demand_mode = ["--current594-demand"] if code37_root is None else ["--current594-code37-demand", str(normal_root)]
+            subprocess.run([str(node), str(NATIVE_FORECAST), target, *demand_mode],
+                cwd=normal_root, stdin=subprocess.DEVNULL, check=True, timeout=120)
+            history_plan = json.loads((out / ".cache/current594-history-demand.json").read_text())
+            need(history_plan["productionReferenceAt"] == target, "CURRENT594_HISTORY_TARGET")
+            demands = producer.current_history_demands(history_plan["demands"], zones, time_text(reference))
+            need(set(demands) == {"PART::" + part_id for part_id in part_ids}, "CURRENT594_HISTORY_DOMAIN")
+            history_start = min(datetime.fromisoformat(row["startAt"].replace("Z", "+00:00"))
+                for row in demands.values())
+            need(history_start <= reference, "CURRENT594_HISTORY_AXIS")
+        history_offsets = tuple(range(int((history_start - reference).total_seconds() // 3600), 0))
+        for offset in (*history_offsets, *OFFSETS):
             valid = time_text(reference + timedelta(hours=offset))
-            href = "https://current-source-native.invalid/assets/dkss_nsbs/" + reference.strftime("%Y%m%d%H") + "/" + str(offset) + ".grib"
+            # Historical INPUT originals are created at their own valid model
+            # hour with lead zero; never negative GRIB leads or retagged bytes.
+            model_reference = reference if offset >= 0 else reference + timedelta(hours=offset)
+            model_step = offset if offset >= 0 else 0
+            href = "https://current-source-native.invalid/assets/dkss_nsbs/" + model_reference.strftime("%Y%m%d%H") + "/" + str(model_step) + ".grib"
             file = producer.cached_asset_path(href)
-            fixture_grid(eccodes, targets, reference, offset, file)
+            fixture_grid(eccodes, targets, model_reference, model_step, file)
             size, content_sha = file.stat().st_size, digest(file)
-            item_id = "SYNTHETIC-CURRENT-NATIVE-NSBS-" + str(offset)
+            item_id = ("SYNTHETIC-CURRENT-NATIVE-NSBS-" + str(offset) if not current594
+                else "SYNTHETIC-CURRENT594-NSBS-" + model_reference.strftime("%Y%m%d%H") + "-" + str(model_step))
             acquired = time_text(datetime.now(timezone.utc))
-            producer.register_raw_cache_asset(file, href, "dkss_nsbs", time_text(reference), valid,
-                item_id=item_id, item_created_at=time_text(reference), item_updated_at=time_text(reference),
+            producer.register_raw_cache_asset(file, href, "dkss_nsbs", time_text(model_reference), valid,
+                item_id=item_id, item_created_at=time_text(model_reference), item_updated_at=time_text(model_reference),
                 acquired_at=acquired, expected_size=size, content_sha256=content_sha)
             # This normal operation owns the actual F_RDLCK/SIGIO read lease,
             # scans the complete file and constructs its genuine component proof.
             observed_outcomes = {}
             found, touched, interrupted, _messages, _lookups = producer.process_grib(
-                file, "dkss_nsbs", time_text(reference), valid, zones, document, diagnostics,
+                file, "dkss_nsbs", time_text(model_reference), valid, zones, document, diagnostics,
                 current_part_outcomes=observed_outcomes,
                 allowed_parameters={"current-u", "current-v"}, locked_operational_reference=time_text(reference))
             need(not interrupted and {"current-u", "current-v"} <= found and touched,
@@ -259,25 +319,30 @@ def prepare(node, target, initial_phase=None):
             need(observed_outcomes.get("complete") is True and observed_outcomes.get("targetPartIds") == part_ids,
                  "NORMAL_DECODE_OUTCOMES_INCOMPLETE")
             source = producer.canonical_current_source_asset({"collection": "dkss_nsbs",
-                "modelRun": time_text(reference), "validTime": valid,
-                **(producer.raw_cache_source_capture(file, "dkss_nsbs", time_text(reference), valid) or {})})
+                "modelRun": time_text(model_reference), "validTime": valid,
+                **(producer.raw_cache_source_capture(file, "dkss_nsbs", time_text(model_reference), valid) or {})})
             need(source is not None, "NORMAL_CAPTURE_MISSING")
             proof = producer.build_current_part_outcome_proof(
                 observed_outcomes.get("spatialUnavailablePartIds"), part_ids,
                 registry_sha, processing_signature, source)
             # Only normal decoder observations and normal proof constructors
             # enter the normal run metadata read by its ledger sealer.
-            observed_steps[valid] = {"complete": True, "parserVersion": producer.PARSER_VERSION,
+            step_observation = {"complete": True, "parserVersion": producer.PARSER_VERSION,
                 "processingSignature": processing_signature, "recognizedParameters": sorted(found),
                 "zonesTouched": len(touched), "sourceAsset": source, "currentPartOutcomeProof": proof}
+            if offset >= 0:
+                observed_steps[valid] = step_observation
+            # Historical rows retain their genuine per-hour decoder capture.
+            # No operational processedSteps/COMPLETE claim is issued for them.
             need(file.stat().st_size == size and digest(file) == content_sha, "RAW_CHANGED_AFTER_DECODE")
             wire_items.append({"type": "Feature", "id": item_id, "collection": "dkss_nsbs",
-                "properties": {"forecast:reference_datetime": time_text(reference), "datetime": valid,
-                    "created": time_text(reference), "updated": time_text(reference)},
+                "properties": {"forecast:reference_datetime": time_text(model_reference), "datetime": valid,
+                    "created": time_text(model_reference), "updated": time_text(model_reference)},
                 "assets": {"data": {"href": href, "type": "application/x-grib", "roles": ["data"], "file:size": size}}})
-            originals.append({"relativePath": str(file.relative_to(out)), "bytes": size, "sha256": content_sha})
+            originals.append({"relativePath": str(file.relative_to(normal_root if code37_root is not None else out)),
+                "bytes": size, "sha256": content_sha})
         for part in targets:
-            for offset in OFFSETS:
+            for offset in (*history_offsets, *OFFSETS):
                 need(verified_part_current_pair(document, part, reference + timedelta(hours=offset)), "NORMAL_NATIVE_PAIR_REJECTED")
         document["runs"]["dkss_nsbs"] = {"referenceTime": time_text(reference),
             "parserVersion": producer.PARSER_VERSION, "parameterMapVersion": producer.PARAMETER_MAP_VERSION,
@@ -302,7 +367,8 @@ def prepare(node, target, initial_phase=None):
                 "properties": {"forecast:reference_datetime": time_text(reference), "datetime": valid,
                     "created": time_text(reference), "updated": time_text(reference)},
                 "assets": {"data": {"href": href, "type": "application/x-grib", "roles": ["data"], "file:size": size}}}]
-            originals.append({"relativePath": str(file.relative_to(out)), "bytes": size, "sha256": content_sha})
+            originals.append({"relativePath": str(file.relative_to(normal_root if code37_root is not None else out)),
+                "bytes": size, "sha256": content_sha})
         wire = StacWire(producer, catalogs)
         producer.STAC_SESSION.get = wire.get
         producer.DOWNLOAD_SESSION.get = forbidden
@@ -317,23 +383,35 @@ def prepare(node, target, initial_phase=None):
         producer.seal_current_operational_checkpoint(document, targets, reference, official)
         need(producer.current_operational_cache_ready(document, targets, reference), "NORMAL_LEDGER_NOT_READY")
         initial_observations = None
-        if initial_phase:
+        if initial_phase or current594:
             initial_weather = module('source_current_initial_weather',
                 ROOT / 'scripts/fixtures/source19-current-initial-weather.py')
             initial_observations = initial_weather.add_initial_weather(
-                eccodes, producer, targets, zones, document, reference, out, originals)
+                eccodes, producer, targets, zones, document, reference, out, originals,
+                **({"private_history_start": history_start,
+                    **({"raw_original_root": normal_root} if code37_root is not None else {})} if current594 else {}))
         write_dmi_bulk_document(out / BASIS[0], document)
         need(read_dmi_bulk_document(out / BASIS[0])["zoneRegistrySignature"] == signature, "NORMAL_BULK_READBACK")
         atomic_write_shadow_checkpoint(out / BASIS[2], acquisitions=[], records=[],
             updated_at=reference, target_identities={row["partId"]: row for row in targets})
-        finish_normal_basis(node, out, reference, producer, targets, document, initial_phase=initial_phase)
+        finish_normal_basis(node, out, reference, producer, targets, document,
+            initial_phase=initial_phase, current594=current594, code37_root=code37_root)
         write_new(out / "native-provider-stac-wire.json", {"syntheticTestInput": True,
             "stacRoot": producer.STAC_ROOT, "collections": catalogs})
         write_new(out / "native-provider-raw-inputs.json", {"syntheticTestInput": True,
             "rawOriginals": originals, "nativeHours": len(OFFSETS), "partCount": len(targets),
             "copernicusRecords": 0, "allWeatherComplete": False, "stacTransportCalls": wire.calls,
             **({"initialPhase": initial_phase, "actualInitialDecodeObservations": initial_observations}
-               if initial_phase else {})})
+               if initial_phase else {}),
+            **({"profile": "current594-preparation", "actualDecodedWeatherObservations": initial_observations,
+                "privateHistoryInputHours": len(history_offsets), "privateHistoryStartAt": time_text(history_start),
+                "normalHistoryDemandSha256": digest(out / ".cache/current594-history-demand.json"),
+                "publicForecastInputHours": len(OFFSETS) - 3, "privateTPlus3SupportHours": 3,
+                "fullRuntimeProduced": False, "scoreProduced": False, "actionInvoked": False,
+                "sourceOwnerIssued": False, "productionProof": False} if current594 else {}),
+            **({"rawOriginalRoot": str(normal_root), "normalCode": {"head": CODE37_HEAD, "tree": CODE37_TREE},
+                "rawFactory": "DIRECT_GENUINE37_CANONICAL_ROOT", "rawAdmissionProved": False,
+                "sdkExecuted": False} if code37_root is not None else {})})
         return out
     finally:
         socket.create_connection, socket.getaddrinfo = original_connect, original_lookup
@@ -343,12 +421,13 @@ def prepare(node, target, initial_phase=None):
         os.environ.update(previous_env)
 
 
-def finish_normal_basis(node, out, reference, producer, targets, document, *, initial_phase=None):
+def finish_normal_basis(node, out, reference, producer, targets, document, *, initial_phase=None, current594=False, code37_root=None):
     """Actual existing normal producers, never authored READY/closure/pilot data."""
+    normal_root = ROOT if code37_root is None else genuine37_code_root(code37_root)
     from lib.copernicus_current import file_sha256
     from lib.copernicus_current_source_stage import build_source_stage, atomic_write_source_stage
     from lib.current_field_shadow import empty_document, save_document
-    targets_path = ROOT / "data/live/coastal-parts-v2.json"
+    targets_path = normal_root / "data/live/coastal-parts-v2.json"
     bulk = out / BASIS[0]
     cp = out / BASIS[2]
     registry_path = out / ".cache/copernicus-current-targets.json"
@@ -356,8 +435,8 @@ def finish_normal_basis(node, out, reference, producer, targets, document, *, in
     regional = out / ".cache/current-field-shadow.json"
     fallback = out / BASIS[3]
     closure = out / ".cache/current-operational-closure.json"
-    policy = ROOT / "data/current-regional-proxy-policy.json"
-    cp_registry = module("current_native_normal_cp_registry", ROOT / "scripts/build-copernicus-target-registry.py")
+    policy = normal_root / "data/current-regional-proxy-policy.json"
+    cp_registry = module("current_native_normal_cp_registry", normal_root / "scripts/build-copernicus-target-registry.py")
     registry = cp_registry.build_registry(targets, document, reference, file_sha256(bulk),
         full_coast=False, require_strict_dmi_ledger=True)
     # We supply no remote CP/OM vectors. Only an ACTUAL zero-gap DMI matrix
@@ -374,22 +453,24 @@ def finish_normal_basis(node, out, reference, producer, targets, document, *, in
     report_root = out / "data/diagnostics"
     def normal(command):
         # Input fixture only, not a production time-budget or scheduler change.
-        subprocess.run(command, cwd=ROOT, stdin=subprocess.DEVNULL, check=True, timeout=120)
+        subprocess.run(command, cwd=normal_root, stdin=subprocess.DEVNULL, check=True, timeout=120)
     common = ["--targets", str(targets_path), "--dmi", str(bulk), "--registry", str(registry_path),
         "--copernicus", str(cp), "--source-stage", str(stage_path), "--regional", str(regional),
         "--policy", str(policy), "--at", time_text(reference)]
-    normal([sys.executable, "-B", str(ROOT / "scripts/fill-open-meteo-current-fallback.py"), *common,
+    normal([sys.executable, "-B", str(normal_root / "scripts/fill-open-meteo-current-fallback.py"), *common,
         "--reuse-only", "--critical-only", "--output", str(fallback),
         "--donor-bank", str(out / ".cache/open-meteo-current-donor-bank.json"),
         "--report", str(report_root / "native-open-meteo.json"),
         "--fetch-report", str(report_root / "native-open-meteo-fetch.json")])
-    normal([sys.executable, "-B", str(ROOT / "scripts/build-current-operational-closure.py"), *common,
+    normal([sys.executable, "-B", str(normal_root / "scripts/build-current-operational-closure.py"), *common,
         "--open-meteo", str(fallback), "--output", str(closure), "--report", str(report_root / "native-closure.json")])
-    normal([sys.executable, "-B", str(ROOT / "scripts/build-live-current-pilot.py"), *common,
+    normal([sys.executable, "-B", str(normal_root / "scripts/build-live-current-pilot.py"), *common,
         "--open-meteo", str(fallback), "--closure", str(closure),
-        "--control", str(ROOT / "data/current-live-pilot-control.json"),
+        "--control", str(normal_root / "data/current-live-pilot-control.json"),
         "--output", str(out / BASIS[4]), "--report", str(report_root / "native-pilot.json")])
-    normal([str(node), str(NATIVE_FORECAST), time_text(reference), *(["--initial-" + initial_phase] if initial_phase else [])])
+    normal([str(node), str(NATIVE_FORECAST), time_text(reference),
+        *(["--current594-code37", str(normal_root)] if code37_root is not None else
+          ["--current594"] if current594 else ["--initial-" + initial_phase] if initial_phase else [])])
     # Exact normal readCachedWaterStations fallback: no stations/observations,
     # no invented inventory, forecast value, source routing or status. The real
     # updater creates its full lifecycle document later from these empty inputs.
@@ -400,7 +481,7 @@ def finish_normal_basis(node, out, reference, producer, targets, document, *, in
           ("coastal-parts.geojson", "part-names.json", "point-pairs.json", "dmi-grid-proof.json")])
     admin_rows = []
     for relative in admin:
-        source = ROOT / relative
+        source = normal_root / relative
         if not source.exists():
             need(relative in {"data/admin/coastline-overrides.json", "data/admin/direction-reviews.json"}, "ADMIN_INPUT_MISSING")
             continue
@@ -419,18 +500,21 @@ def finish_normal_basis(node, out, reference, producer, targets, document, *, in
         file = out / relative
         need(file.is_file() and not file.is_symlink() and file.stat().st_size > 0, "NORMAL_BASIS_OUTPUT_MISSING")
         provider_rows.append({"relativePath": relative, "bytes": file.stat().st_size, "sha256": digest(file)})
-    write_new(out / "current-source-native-options.json", {"profile": "current-source-native-initial" if initial_phase else "current-source-native",
-        "workRoot": str(ROOT.parent / ("current-source-native-initial-inputs" if initial_phase else "current-source-native-inputs")), "inputRoot": str(out),
+    write_new(out / "current-source-native-options.json", {"profile": "current594-preparation" if current594 else "current-source-native-initial" if initial_phase else "current-source-native",
+        "workRoot": str(ROOT.parent / ("current594-native-inputs" if current594 else "current-source-native-initial-inputs" if initial_phase else "current-source-native-inputs")), "inputRoot": str(out),
         "adminInputs": admin_rows, "providerInputs": provider_rows,
         "targetReferenceAt": (reference + timedelta(hours=48) if initial_phase == 'h0' else reference).strftime("%Y-%m-%dT%H:00:00.000Z")})
 
 
 if __name__ == "__main__":
     try:
-        need(len(sys.argv) in (3, 4), "EXACT_NODE_TARGET_ARGUMENTS")
-        phase = None if len(sys.argv) == 3 else {'--initial-h0': 'h0', '--initial-h1': 'h1'}.get(sys.argv[3])
-        need(len(sys.argv) == 3 or phase is not None, "EXACT_INITIAL_PHASE_ARGUMENT")
-        prepare(Path(sys.argv[1]), sys.argv[2], initial_phase=phase)
+        need(len(sys.argv) in (3, 4, 5), "EXACT_NODE_TARGET_ARGUMENTS")
+        code37_root = sys.argv[4] if len(sys.argv) == 5 and sys.argv[3] == "--current594-code37-raw" else None
+        need(len(sys.argv) != 5 or code37_root is not None, "EXACT_CODE37_ARGUMENTS")
+        current594 = code37_root is not None or len(sys.argv) == 4 and sys.argv[3] == "--current594"
+        phase = None if len(sys.argv) == 3 or current594 else {'--initial-h0': 'h0', '--initial-h1': 'h1'}.get(sys.argv[3])
+        need(len(sys.argv) == 3 or phase is not None or current594, "EXACT_INITIAL_PHASE_ARGUMENT")
+        prepare(Path(sys.argv[1]), sys.argv[2], initial_phase=phase, current594=current594, code37_root=code37_root)
     except BaseException as error:
         try:
             # Reuse the existing terminal exception/frame reader only AFTER

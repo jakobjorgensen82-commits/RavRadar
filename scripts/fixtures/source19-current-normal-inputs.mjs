@@ -8,7 +8,9 @@ import {execFileSync} from 'node:child_process';
 import {fileURLToPath, pathToFileURL} from 'node:url';
 import {isDeepStrictEqual} from 'node:util';
 import {requireSourceProducerOutput, requireSourceProducerBinding,
-  SOURCE_PRODUCER_BEFORE} from '../lib/source-producer-successor-source.mjs';
+  SOURCE_PRODUCER_BEFORE,SOURCE_PRODUCER_PREDECESSOR_RELEASE} from '../lib/source-producer-successor-source.mjs';
+
+import {ACCOUNT_STATISTICS_ASSISTANT_BINDING as LEGACY585_BINDING} from '../lib/account-statistics-assistant-successor-source.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
 const OLD_HEAD = 'd8a52e3e4cbaed1557cc56fe01f5f0a2b0d657d7';
@@ -306,6 +308,8 @@ export async function produceFrozen585NativeInitialInputs(options) {
 async function produceNativeInputs(options,initial) {
   requireSourceProducerOutput(); const next = requireSourceProducerBinding(); // BEFORE getters, filesystem, Git, transport or updater.
   assert.equal(arguments.length, 2); assert.equal(typeof initial,'boolean');
+  if(!initial)assert.notEqual(SOURCE_PRODUCER_PREDECESSOR_RELEASE,'4.0.594',
+    'LEGACY585_TO_SOURCE_REQUIRES_ITS_ARCHIVED_NORMAL_PHASE');
   exact(options, ['profile','workRoot','inputRoot','adminInputs','providerInputs','targetReferenceAt',
     ...(initial?['forwardProviderInputs']:[])]);
   assert.equal(options.profile,initial?'current-source-native-initial':'current-source-native'); assert.equal(process.platform, 'linux');
@@ -361,11 +365,11 @@ async function produceNativeInputs(options,initial) {
       git(ROOT,'merge-base','--is-ancestor',producerHead,currentHead);
       const I=(await load(host585,'js/core/ravscore-model-contract.js')).ravScoreModelBinding();
       const C=(await load(host585,'scripts/rollback-assets/ravscore-model-contract.js')).ravScoreModelBinding();
-      assert.equal(I.modelBundleSha256,SOURCE_PRODUCER_BEFORE.I);
-      assert.equal(C.modelBundleSha256,SOURCE_PRODUCER_BEFORE.C);
+      assert.equal(I.modelBundleSha256,LEGACY585_BINDING.I);
+      assert.equal(C.modelBundleSha256,LEGACY585_BINDING.C);
       const contracts=await(await load(host585,'scripts/private-production-runtime-workflow.mjs'))
         .privateRuntimeContractHashes({repositoryRoot:host585});
-      assert.equal(contracts.continuationStateContractSha256,SOURCE_PRODUCER_BEFORE.T);
+      assert.equal(contracts.continuationStateContractSha256,LEGACY585_BINDING.T);
     }
     await copyInputs(inputRoot, host585, options.adminInputs, ADMIN);
     const registry585 = await (await load(host585, 'scripts/build-public-coastal-parts-v2.mjs')).build();
@@ -405,8 +409,8 @@ async function produceNativeInputs(options,initial) {
     same(await json(path.join(host585, REGISTRY)), registry585, 'Registry unchanged through normal updater/public');
     const private585 = path.join(work, 'saved585'); await fs.mkdir(private585);
     let saved585 = await saveNormal(host585, private585, backend, producerHead);
-    assert.equal(saved585.manifest.modelBinding.modelBundleSha256, SOURCE_PRODUCER_BEFORE.I);
-    assert.equal(saved585.manifest.contractHashes.continuationStateContractSha256, SOURCE_PRODUCER_BEFORE.T);
+    assert.equal(saved585.manifest.modelBinding.modelBundleSha256, LEGACY585_BINDING.I);
+    assert.equal(saved585.manifest.contractHashes.continuationStateContractSha256, LEGACY585_BINDING.T);
     if(initial){
       // Same normal restore/install/readback callers as the ordinary follower;
       // no state field, previous hour, score or READY bit is authored here.
@@ -447,7 +451,7 @@ async function produceNativeInputs(options,initial) {
       const forwardPrivate=path.join(work,'saved585-forward');await fs.mkdir(forwardPrivate);
       const first585=saved585;saved585=await saveNormal(host585,forwardPrivate,backend,producerHead);
       assert.equal(saved585.referenceAt,finalTarget);
-      assert.equal(saved585.manifest.modelBinding.modelBundleSha256,SOURCE_PRODUCER_BEFORE.I);
+      assert.equal(saved585.manifest.modelBinding.modelBundleSha256,LEGACY585_BINDING.I);
       // Validation and central activation belong to the separate initial leaf,
       // which computes the REAL sealed I/C implementation identities, verifies
       // this actual B digest and S, and runs the normal national rollback gate.
@@ -587,6 +591,8 @@ export async function prepareCurrentSourceNativeInitialProfile(){
 export async function prepareCurrentSourceNativeFromInitialProfile(){
   requireSourceProducerOutput();const next=requireSourceProducerBinding();
   assert.equal(arguments.length,0);assert.equal(process.platform,'linux');
+  assert.notEqual(SOURCE_PRODUCER_PREDECESSOR_RELEASE,'4.0.594',
+    'LEGACY585_TO_SOURCE_REQUIRES_ITS_ARCHIVED_NORMAL_PHASE');
   assert.equal(Number(process.versions.node.split('.')[0]),24);
   const own=path.dirname(ROOT);assert.equal(path.basename(ROOT),'current-source-native');
   assert(path.basename(own).startsWith('rr-source19-union-native-'));await noLinks(own);await noLinks(ROOT);
@@ -628,7 +634,7 @@ export async function prepareCurrentSourceNativeFromInitialProfile(){
     }
     same(await json(path.join(ROOT,REGISTRY)),initial.registry,'Same normal CURRENT registry before metadata transition');
     const sourceManifest=await json(path.join(initial.saved585.bundlePath,'manifest.json'));
-    assert.equal(sourceManifest.modelBinding.modelBundleSha256,SOURCE_PRODUCER_BEFORE.I);
+    assert.equal(sourceManifest.modelBinding.modelBundleSha256,LEGACY585_BINDING.I);
     process.chdir(ROOT);process.env.PRIVATE_RUNTIME_REPOSITORY_ROOT=ROOT;process.env.GITHUB_SHA=currentHead;
     process.env.RAVRADAR_PREDECESSOR_PRIVATE_ROOT=savedRoot;
     process.env.RAVRADAR_PREDECESSOR_PRIVATE_BUNDLE=initial.saved585.bundlePath;
@@ -677,10 +683,289 @@ export async function prepareCurrentSourceNativeFromInitialProfile(){
   }
 }
 
+
+// Additive current594 DATA prefix in this same normal native producer. The
+// existing operative585/legacy functions and their original tuples stay above.
+const CURRENT594_DATA_CODE=Object.freeze({head:'37a34703d9ae8bfb2c28056f21a7ea73944033ae',
+  tree:'09aef7f6f5d965f565fadabea203b50687acc255',
+  I:'08750e3667e5a221374762fccadccf08abf5e9f1ae8814ccc97bfc11880bf36c',
+  C:'2d5cde5418270a02396e24a249f0b6bb09527366c1c110d8742a44cfe2ab459b',
+  T:'a6c0408f76b5de70a90959e254df78317f8282cb93c0edc85a71d36b9ef8dafa'});
+
+// Genuine594 parent, never the older585 initial bridge or an origin flag.
+export async function prepareCurrentSourceNativeFrom594Prefix(){
+  requireSourceProducerOutput();const next=requireSourceProducerBinding();
+  assert.equal(arguments.length,0);assert.equal(process.platform,'linux');
+  assert.equal(SOURCE_PRODUCER_PREDECESSOR_RELEASE,'4.0.594','SOURCE_CURRENT594_EXACT_PARENT_REQUIRED');
+  assert.equal(Number(process.versions.node.split('.')[0]),24);
+  const own=path.dirname(ROOT);assert.equal(path.basename(ROOT),'current-source-native');
+  assert(path.basename(own).startsWith('rr-source19-union-native-'));await noLinks(own);await noLinks(ROOT);
+  assert.equal(await fs.realpath(ROOT),ROOT);
+  assert.equal(await fs.realpath(process.env.RUNNER_TEMP??''),path.join(ROOT,'runner-temp'));
+  assert.match(process.env.HTTPS_PROXY??'',/^http:\/\/127\.0\.0\.1:[1-9][0-9]{0,4}$/);
+  assert.equal(process.env.NODE_USE_ENV_PROXY,'1');
+  assert.equal(process.env.SUPABASE_URL,'https://fixture.invalid');
+  assert.equal(process.env.SUPABASE_SERVICE_ROLE_KEY,'sb_secret_source19_synthetic');
+  const initialRoot=path.join(own,'current594-native-inputs');await noLinks(initialRoot);
+  const initialFile=path.join(initialRoot,'transport/current594-prefix-inputs.json');
+  const initialBytes=await read(initialFile,32*1024*1024),initial=JSON.parse(initialBytes);
+  assert.equal(initial.profile,'current594-native-prefix');assert.equal(initial.sourceHead,CURRENT594_DATA_CODE.head);
+  const target=hour(initial.target);assert.equal(initial.executionHead,git(ROOT,'rev-parse','HEAD'));
+  for(const key of ['actionInvoked','sdkInvoked','sourceOwnerIssued'])assert.equal(initial[key],false);
+  assert.equal(initial.sourceRoot,path.join(initialRoot,'normal-genuine594'));
+  const savedRoot=path.join(initialRoot,'saved594');
+  assert.equal(initial.saved594.privateRoot,savedRoot);assert.equal(initial.saved594.bundlePath,path.join(savedRoot,'restored'));
+  assert.equal(initial.saved594.checkpointPath,path.join(savedRoot,CHECKPOINT));
+  assert.equal(initial.saved594.sourceHead,CURRENT594_DATA_CODE.head);assert.equal(initial.saved594.referenceAt,target);
+  assert.equal(initial.saved594.modelBinding.modelBundleSha256,CURRENT594_DATA_CODE.I);
+  assert.equal(initial.saved594.contractHashes.continuationStateContractSha256,CURRENT594_DATA_CODE.T);
+  for(const file of [initial.sourceRoot,savedRoot,initial.saved594.bundlePath,initial.saved594.checkpointPath])await noLinks(file);
+  assert.equal(git(initial.sourceRoot,'rev-parse','HEAD'),CURRENT594_DATA_CODE.head);
+  assert.equal(git(initial.sourceRoot,'rev-parse','HEAD^{tree}'),CURRENT594_DATA_CODE.tree);
+  const currentHead=git(ROOT,'rev-parse','HEAD');assert.match(currentHead,/^[a-f0-9]{40}$/);
+  assert.equal(git(ROOT,'diff','--name-only','HEAD'),'');
+  git(ROOT,'merge-base','--is-ancestor',CURRENT594_DATA_CODE.head,currentHead);
+  const work=path.join(own,'current-source-native-inputs');
+  await fs.mkdir(work,{recursive:false,mode:0o700});const identity=await fs.lstat(work,{bigint:true});
+  const beforeEnv={...process.env},beforeCwd=process.cwd();let first;
+  try{
+    const B=await load(ROOT,'scripts/protected-private-production-runtime.mjs');
+    const S=await load(ROOT,'scripts/protected-ravscore-continuation-checkpoint.mjs');
+    const clients=B.createProtectedPrivateRuntimeClients({storageBackend:'supabase'});
+    const checkpointRequest=S.createProtectedRavScoreCheckpointRequester();
+    const backend={...clients,checkpointRpc:S.createProtectedRavScoreCheckpointRpcRequester()};
+    for(const [name,row] of Object.entries(initial.documents)){
+      assert(['ravscore-private-production-runtime-pointer','ravscore-continuation-checkpoint'].includes(name));
+      const rows=await clients.documentRequest('?document_key=eq.'+encodeURIComponent(name)+'&select=document_key,payload,version&limit=2');
+      same(rows,[row],'Genuine prefix B/S still selected after normal initial activation');
+    }
+    same(await json(path.join(ROOT,REGISTRY)),initial.registry,'Same normal CURRENT registry before metadata transition');
+    const sourceManifest=await json(path.join(initial.saved594.bundlePath,'manifest.json'));
+    assert.equal(sourceManifest.modelBinding.modelBundleSha256,CURRENT594_DATA_CODE.I);
+    process.chdir(ROOT);process.env.PRIVATE_RUNTIME_REPOSITORY_ROOT=ROOT;process.env.GITHUB_SHA=currentHead;
+    process.env.RAVRADAR_PREDECESSOR_PRIVATE_ROOT=savedRoot;
+    process.env.RAVRADAR_PREDECESSOR_PRIVATE_BUNDLE=initial.saved594.bundlePath;
+    const transition=await load(ROOT,'scripts/source-producer-runtime-transition.mjs');
+    const prepared=await transition.restoreAndPrepareSourceProducerRuntimeTransition({
+      request:clients.documentRequest,checkpointRequest,storage:clients.storage,
+      targetReferenceAt:target,workdir:path.join(work,'source-metadata')});
+    await transition.assertSourceProducerRuntimeTransitionPrepared(prepared);
+    const workflow=await load(ROOT,'scripts/private-production-runtime-workflow.mjs');
+    await workflow.installRestoredPrivateRuntime({restoredRoot:prepared.outputRoot,repositoryRoot:ROOT});
+    const privateCurrent=path.join(work,'saved-current');await fs.mkdir(privateCurrent,{recursive:false,mode:0o700});
+    const current=await saveNormal(ROOT,privateCurrent,backend,currentHead,{
+      predecessorManifest:sourceManifest,migrationReport:await json(prepared.normalBReportPath)});
+    assert.equal(current.referenceAt,target);assert.equal(current.manifest.modelBinding.modelBundleSha256,next.I);
+    assert.equal(current.manifest.contractHashes.continuationStateContractSha256,next.T);
+    const documents=new Map();
+    for(const name of ['ravscore-private-production-runtime-pointer','ravscore-continuation-checkpoint']){
+      const rows=await clients.documentRequest('?document_key=eq.'+encodeURIComponent(name)+'&select=document_key,payload,version&limit=2');
+      assert.equal(rows.length,1);assert.equal(rows[0].document_key,name);documents.set(name,rows[0]);
+    }
+    const pointer=B.validateProtectedPrivateRuntimePointer(documents.get('ravscore-private-production-runtime-pointer').payload);
+    assert.equal(pointer.current.sourceHead,currentHead);assert.equal(pointer.current.productionReferenceAt,target);
+    assert.equal(pointer.current.bundleContentSha256,current.manifest.bundleContentSha256);
+    const objects=new Map();
+    for(const descriptor of [pointer.current,pointer.previous].filter(Boolean)){
+      const rows=descriptor.objects??[{objectPath:descriptor.objectPath,objectBytes:descriptor.objectBytes,
+        objectSha256:descriptor.objectSha256}];
+      for(const row of rows){
+        const raw=await clients.storage.download(row.objectPath);
+        same({bytes:raw.length,sha256:sha(raw)},{bytes:row.objectBytes,sha256:row.objectSha256},'Normal TLS stored object readback');
+        if(objects.has(row.objectPath))same(objects.get(row.objectPath),raw);else objects.set(row.objectPath,raw);
+      }
+    }
+    same(await json(path.join(ROOT,REGISTRY)),initial.registry,'Same normal registry after CURRENT B/S');
+    same(await read(initialFile,32*1024*1024),initialBytes,'Retained original initial transport metadata');
+    same([identity.dev,identity.ino],await fs.lstat(work,{bigint:true}).then(s=>[s.dev,s.ino]),'Same exclusive CURRENT output');
+    return serializeNativeInputs({profile:'current-source-native',workRoot:work,current,registry:initial.registry,
+      documents,objects},false);
+  }catch(error){first=error;throw error;}
+  finally{
+    let failure;try{process.chdir(beforeCwd);
+      for(const name of Object.keys(process.env))if(!Object.hasOwn(beforeEnv,name))delete process.env[name];
+      for(const [name,value]of Object.entries(beforeEnv))process.env[name]=value;
+    }catch(error){failure=error;}
+    if(failure&&first)Object.defineProperty(first,'nativeInputCleanupFailure',{value:failure});else if(failure)throw failure;
+  }
+}
+
+export async function produceCurrent594NativePrefix(options){
+  requireSourceProducerOutput();requireSourceProducerBinding(); // Before getters/I/O, never waive NULL/committed-source gates.
+  assert.equal(arguments.length,1);assert.equal(process.platform,'linux');
+  assert.equal(Number(process.versions.node.split('.')[0]),24);
+  exact(options,['profile','workRoot','inputRoot','adminInputs','providerInputs','targetReferenceAt']);
+  assert.equal(options.profile,'current594-preparation');
+  const target=hour(options.targetReferenceAt),own=path.dirname(ROOT),work=path.resolve(options.workRoot),inputRoot=path.resolve(options.inputRoot);
+  assert.equal(path.basename(ROOT),'current-source-native');assert.match(path.basename(own),/^rr-source19-union-native-/);
+  assert.equal(work,path.join(own,'current594-native-inputs'));assert.equal(inputRoot,path.join(own,'fixture-current594'));
+  assert.equal(await fs.realpath(process.env.RUNNER_TEMP??''),path.join(ROOT,'runner-temp'));
+  await noLinks(own);await noLinks(ROOT);await noLinks(inputRoot);assert.equal(await fs.realpath(ROOT),ROOT);
+  const executionHead=git(ROOT,'rev-parse','HEAD');assert.match(executionHead,/^[a-f0-9]{40}$/);
+  assert.equal(git(ROOT,'diff','--name-only','HEAD'),'','Actual committed SOURCE executor; no synthetic preparation-host HEAD');
+  for(const name of ['RAVRADAR_ARCHIVED_WEATHER_RESTART_CONTEXT_PATH','RAVRADAR_ARCHIVED_WEATHER_RESTART_CONTEXT_SHA256',
+    'RAVRADAR_CURRENT_FAMILY_COLD_START_CONTEXT_PATH','RAVRADAR_CURRENT_FAMILY_COLD_START_CONTEXT_SHA256',
+    'RAVRADAR_WEATHER_STATE_EPOCH_CONTEXT_PATH','RAVRADAR_WEATHER_STATE_EPOCH_CONTEXT_SHA256',
+    'RAVRADAR_DMI_LEGACY_CURRENT_EXPECTATION','DMI_PART_CONTINUITY_DONOR_PATH',
+    'RAVRADAR_SAVED_CURRENT_REPLAY_DIAGNOSTIC','RAVRADAR_SAVED_CURRENT_FORWARD_ORIGINAL_PLAN',
+    'RAVSCORE_HISTORICAL_WAVE_TRANSITION_PATH','RAVSCORE_FIRST_CUTOVER_BOOTSTRAP_MODE'])
+    assert.equal(process.env[name],undefined,'No ambient exceptional mode: '+name);
+  for(const name of ['CHECKPOINT_ONLY','RAVRADAR_WEATHER_STATE_EPOCH_BOOTSTRAP',
+    'RAVSCORE_STATELESS_INTEGRATED_COLD_START_ALLOWED','RAVSCORE_FIRST_CUTOVER_SOURCE_VALIDATED'])
+    assert([undefined,'false'].includes(process.env[name]),'No ambient exceptional mode: '+name);
+  await fs.mkdir(work,{recursive:false,mode:0o700});const workStat=await fs.lstat(work,{bigint:true});
+  const beforeEnv={...process.env},beforeCwd=process.cwd(),beforeFetch=globalThis.fetch;
+  const closedFetch=async()=>{throw Error('CURRENT594_NATIVE_PREFIX_EXTERNAL_REQUEST_REFUSED');};
+  let restoreTransport,first;globalThis.fetch=closedFetch;
+  try{
+    Object.assign(process.env,{GIT_NO_LAZY_FETCH:'1',GIT_NO_REPLACE_OBJECTS:'1',GIT_OPTIONAL_LOCKS:'0',GIT_TERMINAL_PROMPT:'0',
+      GIT_CONFIG_COUNT:'1',GIT_CONFIG_KEY_0:'protocol.allow',GIT_CONFIG_VALUE_0:'never'});
+    const backend=(await load(ROOT,'scripts/lib/established-native-current-origin-test-transports.mjs')).normalBAndSTransports();
+    const host594=path.join(work,'normal-genuine594');cloneSource(CURRENT594_DATA_CODE.head,CURRENT594_DATA_CODE.tree,host594);
+    const integrated=(await load(host594,'js/core/ravscore-model-contract.js')).ravScoreModelBinding();
+    const candidate=(await load(host594,'scripts/rollback-assets/ravscore-model-contract.js')).ravScoreModelBinding();
+    const workflow=await load(host594,'scripts/private-production-runtime-workflow.mjs');
+    const contracts=await workflow.privateRuntimeContractHashes({repositoryRoot:host594});
+    assert.equal(integrated.modelBundleSha256,CURRENT594_DATA_CODE.I);assert.equal(candidate.modelBundleSha256,CURRENT594_DATA_CODE.C);
+    assert.equal(contracts.continuationStateContractSha256,CURRENT594_DATA_CODE.T);
+    await copyInputs(inputRoot,host594,options.adminInputs,ADMIN);
+    const registry=await(await load(host594,'scripts/build-public-coastal-parts-v2.mjs')).build();
+    assert.equal(registry.zoneCount,210);assert.equal(registry.partCount,673);
+    same(await json(path.join(ROOT,REGISTRY)),registry,'Same normal SOURCE/admin registry, never a typed fixture registry');
+    // Manufacture NEW provider leaves and raw originals using this exact37
+    // host, after its normal admin registry and BEFORE archive/updater. The
+    // preliminary SOURCE fixture remains separate; no raw copy/capture retag.
+    const code37InputRoot=path.join(own,'fixture-current594-code37');
+    execFileSync(process.env.PYTHON||'python3',['-I','-B',path.join(ROOT,'scripts/fixtures/source19-current-native-providers.py'),
+      process.execPath,target,'--current594-code37-raw',host594],{cwd:ROOT,stdio:['ignore','inherit','inherit'],env:{...process.env}});
+    const code37OptionsFile=path.join(code37InputRoot,'current-source-native-options.json');
+    const code37OptionsBytes=await read(code37OptionsFile,1024*1024),code37Options=JSON.parse(code37OptionsBytes);
+    exact(code37Options,['profile','workRoot','inputRoot','adminInputs','providerInputs','targetReferenceAt']);
+    assert.equal(code37Options.profile,'current594-preparation');assert.equal(code37Options.workRoot,work);
+    assert.equal(code37Options.inputRoot,code37InputRoot);assert.equal(code37Options.targetReferenceAt,target);
+    same(code37Options.adminInputs,options.adminInputs,'Same transported admin inputs; no registry/data retag');
+    // Preserve and hash actual synthetic GRIB leaves separately from JSON inputs.
+    // This is NOT a raw-cache manifest/capture admission or an install/SDK proof.
+    const rawInventoryFile=path.join(code37InputRoot,'native-provider-raw-inputs.json'),rawInventoryBytes=await read(rawInventoryFile,4*1024*1024);
+    const rawInventory=JSON.parse(rawInventoryBytes);assert.equal(rawInventory.syntheticTestInput,true);
+    assert.equal(rawInventory.profile,'current594-preparation');assert.equal(rawInventory.partCount,673);
+    assert.equal(rawInventory.rawOriginalRoot,host594);same(rawInventory.normalCode,{head:CURRENT594_DATA_CODE.head,tree:CURRENT594_DATA_CODE.tree});
+    assert.equal(rawInventory.rawFactory,'DIRECT_GENUINE37_CANONICAL_ROOT');
+    for(const field of ['rawAdmissionProved','sdkExecuted','fullRuntimeProduced','scoreProduced','actionInvoked','sourceOwnerIssued','productionProof'])
+      assert.equal(rawInventory[field],false,'A factory input is not runtime or original-admission proof: '+field);
+    assert.equal(rawInventory.publicForecastInputHours,118);assert.equal(rawInventory.privateTPlus3SupportHours,3);
+    assert.equal(rawInventory.privateHistoryInputHours,48);
+    assert(Array.isArray(rawInventory.rawOriginals)&&rawInventory.rawOriginals.length>0&&rawInventory.rawOriginals.length<=4096);
+    const originalRows=[],seen=new Set();
+    for(const row of rawInventory.rawOriginals){
+      exact(row,['relativePath','bytes','sha256']);const name=row.relativePath;
+      assert(typeof name==='string'&&/^\.cache\/dmi-grib\/[A-Za-z0-9._/-]+$/.test(name)
+        &&path.posix.normalize(name)===name&&!name.split('/').includes('..')&&!seen.has(name));seen.add(name);
+      assert(Number.isSafeInteger(row.bytes)&&row.bytes>0&&/^[a-f0-9]{64}$/.test(row.sha256));
+      const file=path.join(host594,name);assert(inside(host594,file));const bytes=await read(file);
+      same({bytes:bytes.length,sha256:sha(bytes)},{bytes:row.bytes,sha256:row.sha256},'Actual retained synthetic original');
+      const stat=await fs.lstat(file,{bigint:true});originalRows.push({file,row:{...row},stat});
+    }
+    // Same actual normal cache root as the native DMI producer. Carry GRIB and
+    // asset-manifest separately from the unchanged121-hour forecast/JSON pack.
+    const rawRoot=path.join(host594,'.cache/dmi-grib');await noLinks(rawRoot);
+    assert.equal(await fs.realpath(rawRoot),rawRoot);
+    const rawManifestFile=path.join(rawRoot,'asset-manifest.json'),rawManifestBytes=await read(rawManifestFile,4*1024*1024);
+    const rawManifest=JSON.parse(rawManifestBytes);
+    assert.equal(rawManifest.schemaVersion,2);assert(rawManifest.assets&&typeof rawManifest.assets==='object'&&!Array.isArray(rawManifest.assets));
+    const rawNames=(await fs.readdir(rawRoot)).sort(),assetNames=Object.keys(rawManifest.assets).sort();
+    assert(assetNames.length>0&&assetNames.length<=4096&&assetNames.every(name=>/^[a-f0-9]{24}\.grib$/.test(name)));
+    same(rawNames,[...assetNames,'asset-manifest.json'].sort(),'Fresh normal raw cache contains only its original files and manifest');
+    const rawTransportFiles=[];
+    for(const name of rawNames){const file=path.join(rawRoot,name),bytes=await read(file),stat=await fs.lstat(file,{bigint:true});
+      rawTransportFiles.push({file,relativePath:'.cache/dmi-grib/'+name,bytes:bytes.length,sha256:sha(bytes),stat});}
+    // The OLD d8 family remains OLD. Only the normal37 archive/updater may
+    // derive new594 I/G and its lexical origin from this unchanged archive.
+    const archiveSeed=await createArchivedOnlyOldSeed({work,inputRoot,adminInputs:options.adminInputs,registry,target,backend});
+    const policy=(await load(host594,'scripts/protected-private-production-runtime.mjs')).PROTECTED_PRIVATE_RUNTIME_POLICY;
+    restoreTransport=installOfflineTransport(backend,policy,await read(path.join(archiveSeed.publicRoot,'manifest.json'),1024*1024));
+    const oldPrivate=path.join(work,'archive-original-private');await fs.mkdir(oldPrivate,{recursive:false,mode:0o700});
+    process.env.RAVRADAR_PRIVATE_RUNTIME_ROOT=oldPrivate;process.env.RAVRADAR_PRIVATE_RUNTIME_BUNDLE=path.join(oldPrivate,'bundle');
+    process.env.GITHUB_SHA=CURRENT594_DATA_CODE.head;process.env.PRIVATE_RUNTIME_REPOSITORY_ROOT=host594;
+    const archive=await(await load(host594,'scripts/archived-weather-restart.mjs')).prepareArchivedWeatherRestart({
+      workRoot:path.join(work,'restart'),publicRoot:archiveSeed.publicRoot,targetReferenceAt:target});
+    const providers=await copyInputs(code37InputRoot,host594,code37Options.providerInputs,PROVIDERS);
+    for(const file of ['data/live/dmi-bulk-cache.json','data/live/dmi-forecast-cache.json',
+      '.cache/copernicus-current-shadow.json','.cache/open-meteo-current-fallback.json',
+      'data/live/current-pilot-history.json','data/live/dmi-water-stations.json'])assert(providers.has(file),'Actual provider leaf: '+file);
+    process.env.DMI_BULK_RAW_DIR=rawRoot; // The SAME canonical code37 ROOT/.cache/dmi-grib; no raw copy/capture retag.
+    process.env.RAVRADAR_WEATHER_CACHE_ONLY='true';process.env.RAVRADAR_REQUIRE_PRIVATE_WEATHER_BASELINE='true';
+    process.env.RAVRADAR_PRODUCTION_TARGET_HOUR=target;
+    process.env.RAVRADAR_ARCHIVED_WEATHER_RESTART_CONTEXT_PATH=archive.contextPath;
+    process.env.RAVRADAR_ARCHIVED_WEATHER_RESTART_CONTEXT_SHA256=archive.contextSha256;
+    process.chdir(host594);await load(host594,'scripts/update-weather.mjs');await load(host594,'scripts/generate-public-conditions.mjs');
+    same(await json(path.join(host594,REGISTRY)),registry,'Unchanged registry through actual594 weather/public');
+    const private594=path.join(work,'saved594');await fs.mkdir(private594,{recursive:false,mode:0o700});
+    const saved594=await saveNormal(host594,private594,backend,CURRENT594_DATA_CODE.head);
+    assert.equal(saved594.referenceAt,target);same(saved594.manifest.modelBinding,integrated);
+    same(saved594.manifest.contractHashes,contracts); // Normal full B/S creation and whole restore above, never a tuple projection.
+    same(await read(code37OptionsFile,1024*1024),code37OptionsBytes,'Retained new genuine37 provider options');
+    same(await read(rawInventoryFile,4*1024*1024),rawInventoryBytes,'Retained original input inventory');
+    same(await read(rawManifestFile,4*1024*1024),rawManifestBytes,'Whole normal raw manifest preserved');
+    same((await fs.readdir(rawRoot)).sort(),rawNames,'Normal raw inventory preserved');
+    for(const row of rawTransportFiles){const bytes=await read(row.file),stat=await fs.lstat(row.file,{bigint:true});
+      same({bytes:bytes.length,sha256:sha(bytes)},{bytes:row.bytes,sha256:row.sha256},'Whole raw transport original preserved');
+      same([stat.dev,stat.ino,stat.size,stat.mtimeNs,stat.ctimeNs],[row.stat.dev,row.stat.ino,row.stat.size,row.stat.mtimeNs,row.stat.ctimeNs]);}
+
+    for(const {file,stat}of originalRows){const after=await fs.lstat(file,{bigint:true});
+      same([after.dev,after.ino,after.size,after.mtimeNs,after.ctimeNs],[stat.dev,stat.ino,stat.size,stat.mtimeNs,stat.ctimeNs],
+        'Input originals stay owned in the genuine37 canonical raw root');}
+    same([workStat.dev,workStat.ino],await fs.lstat(work,{bigint:true}).then(stat=>[stat.dev,stat.ino]));
+    return Object.freeze({profile:'current594-native-prefix',workRoot:work,sourceRoot:host594,executionHead,
+      saved594,registry:structuredClone(registry),documents:backend.documents,objects:backend.objects,
+      archiveContextPath:archive.contextPath,archiveContextSha256:archive.contextSha256,
+      providerOriginals:{inputRoot:code37InputRoot,preliminaryAdminInputRoot:inputRoot,
+        optionsFile:code37OptionsFile,optionsBytes:code37OptionsBytes.length,optionsSha256:sha(code37OptionsBytes),
+        rawOriginalRoot:host594,normalCode:rawInventory.normalCode,rawFactory:rawInventory.rawFactory,
+        rawAdmissionProved:false,sdkExecuted:false,
+        inventoryFile:rawInventoryFile,bytes:rawInventoryBytes.length,sha256:sha(rawInventoryBytes),
+        originalCount:originalRows.length,rawRoot,rawManifestFile,rawManifestBytes:rawManifestBytes.length,
+        rawManifestSha256:sha(rawManifestBytes),rawTransportFiles:rawTransportFiles.map(({relativePath,bytes,sha256})=>({relativePath,bytes,sha256})),
+        normalRawRootEnvironment:'DMI_BULK_RAW_DIR',rawCacheManifestAdmission:'PENDING_NORMAL_READER_AND_SDK_TRANSPORT'},
+      actionInvoked:false,sdkInvoked:false,sourceOwnerIssued:false,wholeSourceIntegrationProved:false,productionProof:false});
+  }catch(error){first=error;throw error;}
+  finally{
+    let cleanupFailure;const clean=operation=>{try{operation();}catch(error){cleanupFailure??=error;}};
+    clean(()=>process.chdir(beforeCwd));clean(()=>restoreTransport?.());
+    clean(()=>{assert.equal(globalThis.fetch,closedFetch);globalThis.fetch=beforeFetch;});
+    clean(()=>{for(const name of Object.keys(process.env))if(!Object.hasOwn(beforeEnv,name))delete process.env[name];
+      for(const[name,value]of Object.entries(beforeEnv))process.env[name]=value;});
+    if(cleanupFailure&&first)Object.defineProperty(first,'nativeInputCleanupFailure',{value:cleanupFailure});else if(cleanupFailure)throw cleanupFailure;
+  }
+}
+
+export async function prepareCurrent594NativePrefixProfile(){
+  requireSourceProducerOutput();requireSourceProducerBinding();
+  assert.equal(arguments.length,0);assert.equal(process.platform,'linux');assert.equal(Number(process.versions.node.split('.')[0]),24);
+  const own=path.dirname(ROOT);assert.equal(path.basename(ROOT),'current-source-native');assert.match(path.basename(own),/^rr-source19-union-native-/);
+  const options=JSON.parse(await read(path.join(own,'fixture-current594/current-source-native-options.json'),1024*1024));
+  const produced=await produceCurrent594NativePrefix(options),transport=path.join(produced.workRoot,'transport');
+  await fs.mkdir(transport,{recursive:false,mode:0o700});const objectRows=[];
+  for(const[objectPath,raw]of produced.objects){assert(Buffer.isBuffer(raw));const relativePath='objects/'+sha(Buffer.from(objectPath))+'.bin';
+    await writeNew(path.join(transport,relativePath),raw);objectRows.push({objectPath,relativePath,bytes:raw.length,sha256:sha(raw)});}
+  const saved=produced.saved594;
+  const inputs={schemaVersion:1,profile:produced.profile,sourceHead:saved.sourceHead,executionHead:produced.executionHead,
+    target:saved.referenceAt,sourceRoot:produced.sourceRoot,registry:produced.registry,documents:Object.fromEntries(produced.documents),objectRows,
+    saved594:{privateRoot:saved.privateRoot,bundlePath:saved.bundlePath,checkpointPath:saved.checkpointPath,
+      sourceHead:saved.sourceHead,referenceAt:saved.referenceAt,bundleContentSha256:saved.manifest.bundleContentSha256,
+      modelBinding:saved.manifest.modelBinding,contractHashes:saved.manifest.contractHashes},
+    archiveContextPath:produced.archiveContextPath,archiveContextSha256:produced.archiveContextSha256,
+    providerOriginals:produced.providerOriginals,actionInvoked:false,sdkInvoked:false,sourceOwnerIssued:false,
+    wholeSourceIntegrationProved:false,productionProof:false};
+  const raw=Buffer.from(JSON.stringify(inputs)+'\n'),file=path.join(transport,'current594-prefix-inputs.json');await writeNew(file,raw);
+  return Object.freeze({file,bytes:raw.length,sha256:sha(raw),profile:produced.profile,
+    actionInvoked:false,sdkInvoked:false,sourceOwnerIssued:false,productionProof:false});
+}
+
 if (process.argv[1] && import.meta.url === pathToFileURL(path.resolve(process.argv[1])).href) {
   requireSourceProducerOutput(); requireSourceProducerBinding();
   assert.equal(process.argv.length,3);
-  const mode=process.argv[2];assert(['--prepare-current-profile','--prepare-initial-profile','--prepare-current-from-initial-profile'].includes(mode));
-  console.log(JSON.stringify(await(mode==='--prepare-initial-profile'?prepareCurrentSourceNativeInitialProfile():
+  const mode=process.argv[2];assert(['--prepare-current-profile','--prepare-initial-profile','--prepare-current-from-initial-profile','--prepare-current594-prefix','--prepare-current-from594-prefix'].includes(mode));
+  console.log(JSON.stringify(await(mode==='--prepare-current-from594-prefix'?prepareCurrentSourceNativeFrom594Prefix():mode==='--prepare-current594-prefix'?prepareCurrent594NativePrefixProfile():mode==='--prepare-initial-profile'?prepareCurrentSourceNativeInitialProfile():
     mode==='--prepare-current-from-initial-profile'?prepareCurrentSourceNativeFromInitialProfile():prepareCurrentSourceNativeProfile())));
 }

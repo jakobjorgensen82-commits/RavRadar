@@ -1,3 +1,11 @@
+## 1. november 2026 — læs SOURCE 595 og P0 hver for sig
+
+Læs CODEX_START_HERE, CURRENT_TRUTH, IMPLEMENTATION_STATUS, DEC-0294's nye tillæg og håndbog 89.263 før de ældre statusnoter.
+
+Aktuel isoleret SOURCE-version er 4.0.595 efter normal versionssynk og lokal 24-filers current594-integration. Nye 595-C/I/T og SQL er endnu ikke afledt; bindingsfilens version, binding og output er NULL. Den normale 594-central → B før S → samme SDK/action 63/64 → faktisk ejerafslutning er fortsat åben, og profilen er PREPARATION_ONLY. Gamle 586/040000-resultater bevares som dateret historik, ikke den aktuelle binding eller installationsvej.
+
+ROOTs P0/c920, almindelig 235 og offentlig header/784 er separate driftsbeviser, ikke SOURCE-bevis. Ingen ny PostgreSQL-, kapacitets-, komplet cache-/historik- eller leveringssucces påstås. Alle fem mål er åbne til 18. november 2026; delegering har adskilte filejere, ROOT koordinerer produktion, og ingen produktion ændres under writer.
+
 ## 20. oktober — læs lokal 585 og faktisk 584-drift hver for sig
 
 Aktuel kildekandidat er 4.0.585; dens nye C/I/T, 100000-SQL og normale forbrugere er genereret/kontrolleret lokalt, ikke installeret eller offentligt bevist. Læs CODEX_START_HERE, CURRENT_TRUTH, IMPLEMENTATION_STATUS og håndbog 89.259 før de daterede noter nedenfor. PR675 er faktisk kildeleveret på main `954ca00a`; den næste almindelige vejrhentning er ikke endnu verificeret færdig. Sidste fuldt verificerede almindelige offentlige generation er 4.0.584 den 19. oktober omkring kl. 23.02 dansk tid. Cron er OFF, alle fem mål er åbne, og fristen 18. oktober er overskredet uden forlængelse. Dette ophæver ingen original-, privacy-, writer- eller leveringsgrænse.

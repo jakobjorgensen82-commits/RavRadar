@@ -322,6 +322,11 @@ function endpointChoices(selection, readCandidates, allowMissing = false) {
   return source.nativeSteps.map(step => {
     const matching = (candidates.get(Date.parse(step.nativeValidTime)) ?? []).filter(({ native, context }) =>
       dmiOriginalWireIdentityMatchesCentralIdentity(context.zone, expected) && sameNativeIdentity(native.source, source, 'current')
+      // Match the normal forecast endpoint reconstruction: absence denotes
+      // the legacy interpretation, not a wildcard for a corrected sampling
+      // record. Both originals remain available; same-interpretation numeric
+      // conflicts are still rejected below.
+      && Object.hasOwn(step, 'nativeGridSampling') === Object.hasOwn(native.source, 'nativeGridSampling')
       && Object.entries(step).every(([name, value]) => name === 'nativeValidTime'
         ? Date.parse(native.source[name]) === Date.parse(value) : equal(native.source[name], value)));
     if (!matching.length && !allowMissing) fail('NATIVE_ENDPOINT_MISSING');
@@ -415,12 +420,18 @@ export function bindProtectedDmiNativeCurrentOriginalScopes(document, scopes) {
   return document;
 }
 
-/** Read-only probe: pass ONE authenticated donor to measure single-donor proof.
- * Does not persist data, alter selection, or infer cross-donor availability.
- * Callers must not mutate a donor while its inspector is in use.
+/** Read-only probe over explicitly authenticated donors and an optional bank.
+ * Bank contexts/native records are detached after full indexBank validation.
+ * Each selection still reprojects; no PASS result or caller-mutable bank is
+ * cached as evidence. A fresh inspector revalidates the caller's current bank.
+ * Callers must not mutate a donor document while its inspector is in use.
  */
-export function createProtectedDmiNativeCurrentInspector({ contexts = [] } = {}) {
-  const readCandidates = candidateReader(contexts, null);
+export function createProtectedDmiNativeCurrentInspector({ contexts = [], previousBank = null } = {}) {
+  const previous = previousBank ? indexBank(previousBank) : null;
+  const readCandidates = candidateReader(contexts, previous && {
+    contextById: new Map([...previous.contextById].map(([key, value]) => [key, clone(value)])),
+    nativeById: new Map([...previous.nativeById].map(([key, value]) => [key, clone(value)])),
+  });
   return Object.freeze({ inspect(selection) {
     try {
       const proof = proveSelection(selection, readCandidates);

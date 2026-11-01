@@ -1,3 +1,11 @@
+## 1. november 2026 — frys den reelle 594-kalder før SOURCE-udstedelse
+
+Aktuel isoleret SOURCE-version er 4.0.595 efter normal versionssynk og lokal 24-filers current594-integration. Nye 595-C/I/T og SQL er endnu ikke afledt; bindingsfilens version, binding og output er NULL. Den normale 594-central → B før S → samme SDK/action 63/64 → faktisk ejerafslutning er fortsat åben, og profilen er PREPARATION_ONLY. Gamle 586/040000-resultater bevares som dateret historik, ikke den aktuelle binding eller installationsvej.
+
+ROOTs P0/c920, almindelig 235 og offentlig header/784 er separate driftsbeviser, ikke SOURCE-bevis. Ingen ny PostgreSQL-, kapacitets-, komplet cache-/historik- eller leveringssucces påstås. Alle fem mål er åbne til 18. november 2026; delegering har adskilte filejere, ROOT koordinerer produktion, og ingen produktion ændres under writer.
+
+Færdiggør og gennemgå den normale current594-central-/metadata-/SDK/action-kalder før kildeinput fryses og ny afledning besluttes. Gamle 585/586-normalfaser, originale SQL-/JSON-kilder, scoreformel, geometri, kildeprioritet og strenge afslag bevares. ROOT accepterer versionsfasens binære indeksforbehold: staging var byteuændret, mens 67 mtime-statcacheposter ændredes. Det er ikke en ny kilde-/databinding og giver ingen tilladelse til indexrestore eller guardlempelse.
+
 ## 20. oktober — kvalificér den nye 585-kilde uden at genudstede gammel autoritet
 
 585 skal have faktisk ny C/I/T- og PostgreSQL-kvalifikation; historiske 584-orakler og gammel native-evidens må ikke ommærkes som nye. Den lokale første-rå-fejl-rettelse bevarer også `undefined`, `null`, `false` og `0` gennem cleanup; dens modelimportregel accepterer kun den hele gennemgåede nye helper. Windows-LF-arbejdsvisning må ikke svække hashguards eller ændre udstedte SQL/JSON-originaler; eksakte fysiske backupbytes gendannes og genkontrolleres efter den normale lokale kommando.

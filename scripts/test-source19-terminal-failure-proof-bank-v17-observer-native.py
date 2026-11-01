@@ -2806,6 +2806,9 @@ class SourceTerminalMarkerInputTests(unittest.TestCase):
 # Additive CURRENT case only. Historical CASES/compositions/oracles stay frozen.
 CURRENT_NATIVE_CASE = 'current-source-native'
 CURRENT_NATIVE_CONTEXT = None
+CURRENT_NATIVE_INPUT_PROFILE = 'operative585'
+CURRENT594_INPUT_PROFILE_PATH = 'scripts/fixtures/source19-current594-input-profile.json'
+CURRENT594_INPUT_PROFILE_SHA256 = 'ac3cc4389efc1811cb28f6b1689775a8328d578e33666a73840034857a2efdfa'
 
 CURRENT_NATIVE_POST64_MODULE = None
 def current_native_post64_module():
@@ -2915,11 +2918,37 @@ class CurrentSourceNormalProtocolFixture(CurrentSourceSdkProtocolFixture):
 
     def __init__(self, root, protocol, certificate, private_key, context, github):
         self.pg_context, self.github_capture = context, github
+        initial_profile = protocol.get('initialDataProfile')
+        if initial_profile not in (None, 'current594-native-prefix'):
+            raise ValueError('CURRENT_POST64_EXACT_ORIGINAL_ROOT')
+        self.current594_prefix = initial_profile == 'current594-native-prefix'
+        if self.current594_prefix:
+            initial = strict_json(root.parent / 'current594-native-inputs/transport/current594-prefix-inputs.json', 32 * 1024 * 1024)
+            if (initial['profile'] != initial_profile or initial['sourceHead'] != '37a34703d9ae8bfb2c28056f21a7ea73944033ae'
+                    or initial['executionHead'] != protocol['head'] or initial['objectRows'] != protocol['objectRows']
+                    or initial['saved594']['modelBinding']['modelBundleSha256'] != '08750e3667e5a221374762fccadccf08abf5e9f1ae8814ccc97bfc11880bf36c'
+                    or initial['saved594']['contractHashes']['continuationStateContractSha256'] != 'a6c0408f76b5de70a90959e254df78317f8282cb93c0edc85a71d36b9ef8dafa'):
+                raise ValueError('CURRENT_POST64_EXACT_ORIGINAL_ROOT')
         self.current_post64 = None
         self.profile_started_at = time.time()  # fixed for ALL repeated metadata reads
         self.current_objects = {row['objectPath']: row for row in protocol['objectRows']}
         self.current_wire = strict_json(root / 'native-provider-stac-wire.json')
         self.current_raw = strict_json(root / 'native-provider-raw-inputs.json')
+        if self.current594_prefix:
+            raw_inputs = initial['providerOriginals']
+            self.current594_raw_root = Path(raw_inputs['rawOriginalRoot'])
+            if (self.current594_raw_root != Path(initial['sourceRoot'])
+                    or self.current594_raw_root != root.parent / 'current594-native-inputs/normal-genuine594'
+                    or self.current594_raw_root.resolve(strict=True) != self.current594_raw_root
+                    or raw_inputs['inputRoot'] != str(root)
+                    or self.current_raw['rawOriginalRoot'] != str(self.current594_raw_root)
+                    or self.current_raw['normalCode'] != raw_inputs['normalCode']
+                    or self.current_raw['rawFactory'] != 'DIRECT_GENUINE37_CANONICAL_ROOT'):
+                raise ValueError('CURRENT594_CANONICAL_RAW_ROOT')
+            for row in self.current_raw['rawOriginals']:
+                relative = Path(row['relativePath'])
+                if relative.is_absolute() or '..' in relative.parts or not row['relativePath'].startswith('.cache/dmi-grib/'):
+                    raise ValueError('CURRENT594_CANONICAL_RAW_INPUT')
         super().__init__(root, protocol, certificate, private_key)
 
     def route(self, request, host, parsed):
@@ -2981,7 +3010,9 @@ class CurrentSourceNormalProtocolFixture(CurrentSourceSdkProtocolFixture):
                     for items in self.current_wire['collections'].values() for item in items)]
             if query or len(rows) != 1:
                 raise AssertionError('CURRENT_PROFILE_EXACT_GRIB_ROUTE')
-            row = rows[0]; file = self.root / row['relativePath']; pin = self._pin_file(file)
+            row = rows[0]
+            file = (self.current594_raw_root if self.current594_prefix else self.root) / row['relativePath']
+            pin = self._pin_file(file)
             if (pin['bytes'], pin['sha256']) != (row['bytes'], row['sha256']):
                 raise AssertionError('CURRENT_PROFILE_RAW_INPUT_CHANGED')
             request.reply(200, raw=file.read_bytes())
@@ -2997,8 +3028,8 @@ class CurrentSourceNormalProtocolFixture(CurrentSourceSdkProtocolFixture):
             if self.current_post64 is None:
                 self.current_post64 = current_native_post64_module().CurrentSourcePost64Adapter(
                     node=NODE, repository_root=self.working_root, owner_root=self.root.parent,
-                    original_root=self.root.parent / 'current-source-native-initial-inputs/transport',
-                    initial_prefix=True,
+                    original_root=self.root.parent / ('current594-native-inputs/transport' if self.current594_prefix else 'current-source-native-initial-inputs/transport'),
+                    initial_prefix=True, current594_prefix=self.current594_prefix,
                     original_rows=self.protocol['objectRows'],
                     policy={'bucket': self.protocol['bucket'],
                         'checkpointMaximumSerializedBytes': self.protocol['checkpointMaximumSerializedBytes']},
@@ -3039,7 +3070,7 @@ class CurrentSourceNormalProtocolFixture(CurrentSourceSdkProtocolFixture):
             if method == 'GET' and not query and route.startswith(prefix):
                 name = urllib.parse.unquote(route[len(prefix):]); row = self.current_objects.get(name)
                 if row is None: raise AssertionError('CURRENT_PROFILE_OBJECT_NOT_PRODUCED')
-                file = self.root.parent / 'current-source-native-inputs/transport' / row['relativePath']
+                file = self.root.parent / ('current594-native-inputs/transport' if self.current594_prefix else 'current-source-native-inputs/transport') / row['relativePath']
                 pin = self._pin_file(file)
                 if (pin['bytes'], pin['sha256']) != (row['bytes'], row['sha256']):
                     raise AssertionError('CURRENT_PROFILE_ORIGINAL_OBJECT_CHANGED')
@@ -3051,13 +3082,268 @@ class CurrentSourceNormalProtocolFixture(CurrentSourceSdkProtocolFixture):
 
 
 class SourceCurrentNative(SourceActualSUnionNative):
-    def owned_current_host(self, head, *, with_sdk):
+    def current594_profile(self):
+        # Fixed private input description, never a SOURCE/B/S authority object.
+        raw = source_current_cohort_read(ROOT, CURRENT594_INPUT_PROFILE_PATH, 256 * 1024)
+        self.assertEqual(sha(raw), CURRENT594_INPUT_PROFILE_SHA256, 'CURRENT594_INPUT_PROFILE_CHANGED')
+        profile = json.loads(raw)
+        self.assertEqual(profile['status'], 'PREPARATION_ONLY')
+        self.assertIs(profile['sourceAdmission'], False)
+        self.assertIs(profile['productionActivation'], False)
+        head = subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=ROOT, env=clean_environment(), text=True).strip()
+        for row in profile['nativeInputFiles']:
+            committed = subprocess.check_output(['git', 'show', head + ':' + row['path']], cwd=ROOT, env=clean_environment())
+            self.assertEqual((len(committed), sha(committed)), (row['bytes'], row['sha256']), 'CURRENT594_COMMITTED_INPUT_SOURCE_CHANGED')
+            self.assertEqual(source_current_cohort_read(ROOT, row['path']).replace(b'\r\n', b'\n'), committed)
+        return profile
+
+    def prepare_current594_normal_inputs(self, context):
+        profile = self.current594_profile()
+        # Use the existing exact committed-host seam, never a mixed no-Git
+        # materialization or an e932 overlay on a different authenticated HEAD.
+        capture_env = clean_environment()
+        for name in ('GITHUB_TOKEN', 'GITHUB_REPOSITORY'):
+            if name in os.environ: capture_env[name] = os.environ[name]
+        subprocess.run([str(NODE), str(ROOT / 'scripts/fixtures/source19-current-native-metadata.mjs'), '--capture-github'],
+            cwd=ROOT, env=capture_env, stdin=subprocess.DEVNULL, check=True, timeout=180)
+        own, root, environment, target = self.owned_current_host(context['head'], with_sdk=True)
+        (own / 'fixture-current594').mkdir(mode=0o700, parents=False, exist_ok=False)
+        commands = (
+            ('providers', [sys.executable, '-I', '-B', str(root / 'scripts/fixtures/source19-current-native-providers.py'), str(NODE), target, '--current594']),
+            ('prefix', [str(NODE), str(root / 'scripts/fixtures/source19-current-normal-inputs.mjs'), '--prepare-current594-prefix']),
+            ('initial-request', [str(NODE), str(root / 'scripts/fixtures/source19-current-native-metadata.mjs'), '--current594-initial-rpc-request']))
+        for name, command in commands:
+            # Retain the first actual producer failure and all physical raw
+            # inputs; no later generic missing-input error replaces that cause.
+            with (own / ('current594-' + name + '-whole.stdout')).open('xb') as stdout, \
+                    (own / ('current594-' + name + '-whole.stderr')).open('xb') as stderr:
+                result = subprocess.run(command, cwd=root, env=environment, stdin=subprocess.DEVNULL,
+                    stdout=stdout, stderr=stderr, check=False)
+                stdout.flush(); os.fsync(stdout.fileno()); stderr.flush(); os.fsync(stderr.fileno())
+            self.assertEqual(result.returncode, 0, 'CURRENT594_NORMAL_' + name.upper() + '_PRODUCER_REFUSED')
+        inputs = strict_json(own / 'current594-native-inputs/transport/current594-prefix-inputs.json', 32 * 1024 * 1024)
+        self.assertEqual(inputs['profile'], 'current594-native-prefix')
+        self.assertEqual(inputs['sourceHead'], profile['prefixProducer']['codeProducerHead'])
+        self.assertEqual(inputs['executionHead'], context['head']); self.assertEqual(inputs['target'], target)
+        self.assertEqual(inputs['registry']['zoneCount'], 210); self.assertEqual(inputs['registry']['partCount'], 673)
+        self.assertTrue(inputs['objectRows']); self.assertEqual(inputs['saved594']['referenceAt'], target)
+        self.assertIs(inputs['actionInvoked'], False); self.assertIs(inputs['sdkInvoked'], False)
+        self.assertEqual(inputs['providerOriginals']['normalRawRootEnvironment'], 'DMI_BULK_RAW_DIR')
+        self.assertEqual(inputs['providerOriginals']['inputRoot'], str(own / 'fixture-current594-code37'))
+        self.assertEqual(inputs['providerOriginals']['rawOriginalRoot'], inputs['sourceRoot'])
+        self.assertEqual(inputs['providerOriginals']['rawRoot'], str(Path(inputs['sourceRoot']) / '.cache/dmi-grib'))
+        self.assertEqual(inputs['providerOriginals']['rawFactory'], 'DIRECT_GENUINE37_CANONICAL_ROOT')
+        self.assertEqual(inputs['providerOriginals']['normalCode']['head'], inputs['sourceHead'])
+        self.assertEqual(inputs['providerOriginals']['normalCode']['tree'], profile['prefixProducer']['codeProducerTree'])
+        self.assertIs(inputs['providerOriginals']['rawAdmissionProved'], False)
+        self.assertIs(inputs['providerOriginals']['sdkExecuted'], False)
+        self.assertTrue(inputs['providerOriginals']['rawTransportFiles'])
+        initial_request = strict_json(own / 'current594-initial-request-whole.stdout', 1024 * 1024)
+        self.assertEqual(initial_request['profile'], 'current594-native-prefix')
+        self.assertEqual(initial_request['dataProducerHead'], inputs['sourceHead'])
+        self.assertEqual(initial_request['executionHead'], context['head'])
+        self.assertEqual(len(initial_request['integratedRequestBody']), 22)
+        self.assertIs(initial_request['sqlExecuted'], False)
+        self.assertIs(initial_request['sameHostPgReadbackQualified'], False)
+        missing = [name for name, value in profile['remainingNormalInputs'].items() if value is None]
+        report = {'kind': 'CURRENT594_NORMAL_INPUT_PREPARATION', 'status': 'PREPARATION_ONLY',
+            'profileSha256': CURRENT594_INPUT_PROFILE_SHA256, 'productPreparationTree': profile['productPreparationReference']['tree'],
+            'dataProducerHead': inputs['sourceHead'], 'executionHead': inputs['executionHead'], 'target': target,
+            'normalPrefixDirectory': str(own / 'current594-native-inputs'), 'missingNormalInputs': missing,
+            'normalPrefixReturned': True, 'normalInitialRequestCaptured': True, 'initialSqlExecuted': False,
+            'normalActionStarted': False, 'sdkExecuted': False,
+            'sourceAdmission': False, 'nativePass': False, 'hostedDurability': 'NOT_TESTED'}
+        with (own / 'current594-input-preparation.json').open('x', encoding='utf8') as stream:
+            stream.write(json.dumps(report, separators=(',', ':')) + '\n')
+            stream.flush(); os.fsync(stream.fileno())
+        # NULL description fields grant nothing. Continue only through the real
+        # SAME-PG/current594 callers, SDK and final owner evidence below.
+        return self.complete_current594_normal_chain(context, own, root, environment, target, inputs, initial_request)
+
+
+    def complete_current594_normal_chain(self, context, own, root, environment, target, inputs, initial_request):
+        # Same exact SOURCE executor, SAME wrapper-owned PG and locked SDK. No
+        # root/head/profile flag can turn this normal test into an authority.
+        self.assertEqual(CURRENT_NATIVE_INPUT_PROFILE, 'current594-preparation')
+        self.assertEqual(inputs['sourceHead'], '37a34703d9ae8bfb2c28056f21a7ea73944033ae')
+        self.assertEqual(inputs['executionHead'], context['head'])
+        subprocess.run(['git', 'update-ref', 'refs/remotes/origin/main', context['head']],
+            cwd=root, env=clean_environment(), stdin=subprocess.DEVNULL, check=True, timeout=30)
+        fixtures = own / 'fixture-current594-code37'
+        transport_root = own / 'current594-native-inputs/transport'
+        request = subprocess.run([str(NODE), str(root / 'scripts/fixtures/source19-current-native-metadata.mjs'), '--rpc-request'],
+            cwd=root, env=environment, stdin=subprocess.DEVNULL, capture_output=True, check=True, timeout=30)
+        derived = {'initial': initial_request, 'current': json.loads(request.stdout)}
+        for value in derived.values():
+            self.assertEqual(len(value['integratedRequestBody']), 22)
+            self.assertTrue(all(re.fullmatch(r'p_[a-z0-9_]+', key) and type(item) is str
+                for key, item in value['integratedRequestBody'].items()))
+            self.assertIs(value['sqlExecuted'], False)
+        self.assertNotEqual(derived['initial']['integratedRequestBody'], derived['current']['integratedRequestBody'])
+        self.assertEqual(derived['initial']['bucket'], derived['current']['bucket'])
+        documents = inputs['documents']
+        self.assertEqual(set(documents), {'ravscore-private-production-runtime-pointer', 'ravscore-continuation-checkpoint'})
+        # Only genuine B/S are initial test data. No operational/profile row is
+        # authored; initial CAS must compute these from the real public chain.
+        s = documents['ravscore-continuation-checkpoint']
+        alias = subprocess.run([str(NODE), '--input-type=module', '-e',
+            "import {requireSourceProducerOutput,SOURCE_PRODUCER_ALIASES} from './scripts/lib/source-producer-successor-source.mjs';requireSourceProducerOutput();console.log(JSON.stringify(SOURCE_PRODUCER_ALIASES[1]));"],
+            cwd=root, env=environment, stdin=subprocess.DEVNULL, capture_output=True, check=True, timeout=30)
+        frozen = json.loads(alias.stdout)
+        self.assertEqual(set(frozen), {'name', 'signature'}); self.assertEqual(frozen['signature'], '(jsonb,timestamptz)')
+        self.assertRegex(frozen['name'], r'^ravradar_ravscore_checkpoint_source590_payload_valid$')
+        valid = current_native_pg(context, 'select public.' + frozen['name'] + '(' + current_native_json_literal(s['payload']) + ", '" + target + "'::timestamptz);")
+        self.assertEqual(valid, 't', 'SOURCE_CURRENT_PROFILE_ACTUAL_S_PG_REFUSED')
+        for name, row in documents.items():
+            self.assertEqual(row['document_key'], name); self.assertIs(type(row['version']), int)
+            self.assertGreater(row['version'], 0)
+        empty = json.loads(current_native_pg(context, "select count(*) from public.admin_documents where document_key in ('ravscore-private-production-runtime-pointer','ravscore-continuation-checkpoint','ravscore-operational-model-activation','ravscore-profile-selection');"))
+        self.assertEqual(empty, 0, 'CURRENT_PROFILE_INITIAL_PG_MUST_BE_EMPTY')
+        rows_sql = ','.join("('" + name + "'," + current_native_json_literal(row['payload']) + ',' + str(row['version']) + ')' for name, row in documents.items())
+        current_native_pg(context, 'begin;insert into public.admin_documents(document_key,payload,version) values ' + rows_sql + ';commit;')
+        github = strict_json(ROOT / '.cache/source-current-native-github-capture.json', 16 * 1024 * 1024)
+        self.assertEqual(github['head'], context['head']); self.assertIs(github['normalDecisionRequired'], False)
+        (root / '.cache/weather-source-validation.json').write_text(json.dumps(github['record']) + '\n')
+        protocol = {'head': context['head'], 'target': target, 'objectRows': inputs['objectRows'],
+            'bucket': derived['current']['bucket'], 'checkpointMaximumSerializedBytes': derived['current']['checkpointMaximumSerializedBytes'],
+            'pgRpcBody': derived['current']['integratedRequestBody'],
+            'initialPgRpcBody': derived['initial']['integratedRequestBody'], 'initialDataProfile': 'current594-native-prefix'}
+        cert, key = own / 'test-ca.pem', own / 'test-server-key.pem'
+        subprocess.run(['openssl', 'req', '-x509', '-newkey', 'rsa:2048', '-nodes', '-days', '1',
+            '-subj', '/CN=SOURCE19-test-only', '-addext', 'basicConstraints=critical,CA:TRUE',
+            '-addext', 'subjectAltName=DNS:api.github.com,DNS:fixture.invalid,DNS:fixture.github.io,DNS:cache.fixture.invalid,DNS:opendataapi.dmi.dk,DNS:current-source-native.invalid',
+            '-keyout', str(key), '-out', str(cert)], env=clean_environment(), stdin=subprocess.DEVNULL,
+            stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, check=True, timeout=20)
+        transport = CurrentSourceNormalProtocolFixture(fixtures, protocol, cert, key, context, github)
+        transport.working_root = root
+        original_files = [transport_root / row['relativePath'] for row in inputs['objectRows']]
+        for name in ('saved594',):
+            saved = inputs[name]
+            original_files.extend((Path(saved['bundlePath']) / 'manifest.json', Path(saved['checkpointPath'])))
+        raw_root = Path(inputs['providerOriginals']['rawOriginalRoot'])
+        self.assertEqual(raw_root, Path(inputs['sourceRoot']))
+        original_files.extend(raw_root / row['relativePath'] for row in inputs['providerOriginals']['rawTransportFiles'])
+        original_files.extend((fixtures / name for name in ('native-provider-raw-inputs.json',
+            'native-provider-stac-wire.json', 'current-source-native-options.json')))
+        self.assertEqual(len(original_files), len(set(original_files)))
+        original_pins = [(str(file), transport._pin_file(file)) for file in original_files]
+        for row in inputs['objectRows']:
+            pin = dict(original_pins)[str(transport_root / row['relativePath'])]
+            self.assertEqual((pin['bytes'], pin['sha256']), (row['bytes'], row['sha256']))
+        action_output = root / 'action-output'; action_output.write_bytes(b'')
+        proxy = f'http://127.0.0.1:{transport.server.server_port}'
+        environment.update(GITHUB_ACTIONS='true', GITHUB_REPOSITORY=github['repository'], GITHUB_RUN_ID='200',
+            GITHUB_RUN_ATTEMPT='2', GITHUB_SHA=context['head'], GITHUB_REF='refs/heads/main', GITHUB_EVENT_NAME='workflow_dispatch',
+            GITHUB_SERVER_URL='https://github.com', RUNNER_OS='Linux', RUNNER_NAME='source19-native-fixture',
+            RUNNER_TRACKING_ID='source19-synthetic-kernel-fixture', GITHUB_WORKSPACE=str(root), GITHUB_OUTPUT=str(action_output),
+            GITHUB_TOKEN='source19-synthetic-github', SUPABASE_URL='https://fixture.invalid',
+            SUPABASE_SERVICE_ROLE_KEY='sb_secret_source19_synthetic', SUPABASE_PUBLISHABLE_KEY='sb_publishable_source19_synthetic',
+            RAVRADAR_PRIVATE_RUNTIME_STORAGE_BACKEND='supabase', RAVRADAR_PRIVATE_RUNTIME_ROOT=str(FIXED),
+            RAVRADAR_PRIVATE_RUNTIME_BUNDLE=str(FIXED / 'bundle'), RAVRADAR_PRIVATE_RUNTIME_RESTORE=str(FIXED / 'restored'),
+            RAVRADAR_PRODUCTION_TARGET_HOUR=target, INPUT_FORCE='true', INPUT_OPERATION='source',
+            EXTENDED_PROVIDER_BOOTSTRAP='false',
+            QUICK_PROGRESS_SOURCE='', CHECKPOINT_TARGET_HOUR='', ACTIONS_CACHE_SERVICE_V2='1',
+            ACTIONS_RESULTS_URL='https://cache.fixture.invalid', ACTIONS_RUNTIME_TOKEN=CurrentSourceSdkProtocolFixture.RUNTIME_TOKEN,
+            WEATHER_PROGRESS_ENCRYPTION_KEY='bW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW0=',
+            DMI_STAC_ROOT='https://current-source-native.invalid/v1/forecastdata', npm_config_offline='true',
+            NODE_USE_ENV_PROXY='1', HTTPS_PROXY=proxy, HTTP_PROXY=proxy, NO_PROXY='',
+            NODE_EXTRA_CA_CERTS=str(cert), SSL_CERT_FILE=str(cert), REQUESTS_CA_BUNDLE=str(cert), CURL_CA_BUNDLE=str(cert))
+        for name in ('COMPLETED_PRIVATE_RUNTIME', 'CHECKPOINT_ONLY', 'QUICK_CONFIRMATION',
+                'RAVRADAR_WEATHER_STATE_EPOCH_BOOTSTRAP', 'RAVRADAR_WEATHER_STATE_EPOCH_CHECKPOINT_REENTRY',
+                'NATIVE_IDENTITY_RECOVERY', 'CURRENT_FAMILY_COLD_START', 'PRODUCE_HANDOFF'):
+            environment[name] = 'false'
+        self.assertEqual(transport.working_root / 'runner-temp', Path(environment['RUNNER_TEMP']))
+        for name in ('.cache/weather-private-progress.encrypted', '.cache/ravscore-continuation-checkpoint/checkpoint.json', '.cache/weather-preflight-state/state.json', '.cache/dmi-grib'):
+            self.assertFalse((root / name).exists(), 'CURRENT_PROFILE_REQUIRES_GENUINE_CACHE_MISS')
+        spec = importlib.util.spec_from_file_location('source_current_actual_outer_owner', root / 'scripts/lib/copernicus_component_process.py')
+        helper = importlib.util.module_from_spec(spec); spec.loader.exec_module(helper)
+        owner = helper._LinuxSubsetOwner(time.monotonic() + 230 * 60)
+        process, logs, first, physically_closed = None, [], None, False
+        try:
+            owner.enter(); transport.start()
+            # Initial CAS is deliberately after real owned TLS+SQL. Its return
+            # object is NOT the mandatory capture: query actual PG anew below.
+            subprocess.run([str(NODE), str(root / 'scripts/fixtures/source19-current-native-initial-activation.mjs'),
+                '--native-current594-initial-central'], cwd=root, env=environment, stdin=subprocess.DEVNULL, check=True)
+            captured_pg = current_native_pg_capture(context)
+            subprocess.run([str(NODE), str(root / 'scripts/fixtures/source19-current-normal-inputs.mjs'),
+                '--prepare-current-from594-prefix'], cwd=root, env=environment, stdin=subprocess.DEVNULL, check=True)
+            current_inputs = strict_json(own / 'current-source-native-inputs/transport/current-normal-inputs.json', 32 * 1024 * 1024)
+            self.assertEqual(current_inputs['sourceHead'], context['head']); self.assertEqual(current_inputs['target'], target)
+            qualification = subprocess.run([str(NODE), str(root / 'scripts/fixtures/source19-current-native-metadata.mjs'), '--qualify'],
+                input=json.dumps({'pg': captured_pg, 'inputs': current_inputs}).encode(), cwd=root, env=environment,
+                capture_output=True, check=True, timeout=70)
+            qualified = json.loads(qualification.stdout)
+            self.assertIn(qualified['operationalAction'], ('integrated', 'integrated-historical-maintenance'))
+            self.assertEqual(qualified['bucket'], protocol['bucket'])
+            environment['OPERATIONAL_ACTION'] = qualified['operationalAction']
+            self.assertIsNotNone(transport.current_post64)
+            # Same single adapter still owns original prefix bytes and every
+            # newly uploaded CURRENT object. No alias, move or second store.
+            self.assertEqual(transport.current_post64.original_root, transport_root)
+            actual_cleanup = current_inputs['current']['retentionCleanup']
+            self.assertIs(type(actual_cleanup['failureCount']), int)
+            self.assertEqual(actual_cleanup['failureCount'], len(transport.current_post64.protected_retention_refusals))
+            self.assertEqual(actual_cleanup['complete'], actual_cleanup['failureCount'] == 0)
+            logs = [(root / name).open('wb') for name in ('stdout', 'stderr')]
+            process = subprocess.Popen([str(NODE), str(root / ENTRY)], cwd=root, env=environment,
+                stdin=subprocess.DEVNULL, stdout=logs[0], stderr=logs[1])
+            process.wait(timeout=230 * 60)
+            # Normal real subreaper/guardian closure, not an exit-code receipt.
+            with self.assertRaises(ChildProcessError):
+                os.waitid(os.P_ALL, 0, os.WEXITED | os.WNOHANG | os.WNOWAIT)
+            physically_closed = True
+            self.assertEqual(process.returncode, 0)
+            self.assertEqual(transport.failures, [])
+            self.assertIsNotNone(transport.current_artifact)
+            self.assertEqual(transport.current_artifact['phase'], 'finalized')
+            self.assertIn('listedNs', transport.current_artifact)
+            output = action_output.read_text()
+            self.assertIn('source_result_kind=PREPARED_WEATHER\n', output)
+            for file, pin in original_pins:
+                self.assertEqual(transport._pin_file(Path(file)), pin, 'CURRENT_INITIAL_ORIGINAL_CHANGED')
+            retained = {'kind': 'CURRENT594_INITIAL_ORIGINALS_PRESERVED', 'files': original_pins,
+                'protectedOriginalRetentionRefusalCount': len(transport.current_post64.protected_retention_refusals),
+                'normalCurrentMetadataRetention': actual_cleanup, 'cleanupProductionProof': False,
+                'nativeProductionProof': False}
+            receipt = own / 'current594-native-inputs/prefix-original-inventory-after.json'
+            with receipt.open('x', encoding='utf8') as stream:
+                stream.write(json.dumps(retained, separators=(',', ':')) + '\n')
+                stream.flush(); os.fsync(stream.fileno())
+            # Normal action/finalizer owns all typed ACKs. This test emits no
+            # replacement SOURCE-ready token or production admission.
+        except BaseException as error:
+            first = error
+            raise
+        finally:
+            cleanup = None
+            try:
+                owner.deadline = min(owner.deadline, time.monotonic() + 8)
+                owner.drain(); owner.leave()
+                if process is not None: process.wait(timeout=1)
+            except BaseException as error: cleanup = error
+            for stream in logs:
+                try: stream.close()
+                except BaseException as error: cleanup = cleanup or error
+            try: transport.close()
+            except BaseException as error: cleanup = cleanup or error
+            print(json.dumps({'kind': 'CURRENT_SOURCE_NORMAL_NATIVE_OBSERVATION',
+                'physicalClosureBeforeCleanup': physically_closed, 'sourceAdmission': False,
+                'wholeFixtureRetained': True, 'productionProof': False}))
+            if first is None and cleanup is not None: raise cleanup
+
+    def owned_current_host(self, head, *, with_sdk, input_profile=None):
         # SAME existing native ownership/layout, shared by two explicit cases.
         # No main/source/ACTIVE proof is created here. FULLCURRENT authenticates
         # GitHub before calling this method and retains its own gates below.
         self.assertEqual(subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=ROOT,
             env=clean_environment(), text=True).strip(), head)
         self.assertFalse(FIXED.exists() or FIXED.is_symlink())
+        if input_profile is not None:
+            self.assertEqual(input_profile['status'], 'PREPARATION_ONLY')
+            self.assertFalse(with_sdk, 'CURRENT594_PREPARATION_DOES_NOT_START_SDK')
+        # Existing clone below retains the real authenticated committed HEAD;
+        # no source overlay, artificial main ref or new issuer is introduced.
         own = Path(tempfile.mkdtemp(prefix='rr-source19-union-native-')).resolve(strict=True)
         root = own / CURRENT_NATIVE_CASE
         subprocess.run(['git', '-c', 'core.autocrlf=false', 'clone', '--shared', '--no-hardlinks', '--no-checkout', str(ROOT), str(root)],
@@ -3219,6 +3505,8 @@ class SourceCurrentNative(SourceActualSUnionNative):
         signature = 'public.ravradar_integrated_cutover_contract(' + ','.join(['text'] * 22) + ')'
         available = json.loads(current_native_pg(context, "select jsonb_build_object('integrated',to_regprocedure('" + signature + "') is not null,'checkpoint',to_regprocedure('public.ravradar_ravscore_checkpoint_contract()') is not null);"))
         self.assertEqual(available, {'integrated': True, 'checkpoint': True})
+        if CURRENT_NATIVE_INPUT_PROFILE == 'current594-preparation':
+            return self.prepare_current594_normal_inputs(context)
         capture_env = clean_environment()
         for name in ('GITHUB_TOKEN', 'GITHUB_REPOSITORY'):
             if name in os.environ: capture_env[name] = os.environ[name]
@@ -3401,18 +3689,28 @@ class SourceCurrentNative(SourceActualSUnionNative):
 
 
 def run_current_native_profile_cli():
-    global CASE, NODE, NODE22, CURRENT_NATIVE_CONTEXT
+    global CASE, NODE, NODE22, CURRENT_NATIVE_CONTEXT, CURRENT_NATIVE_INPUT_PROFILE
     parser = argparse.ArgumentParser()
     profile = parser.add_mutually_exclusive_group(required=True)
     profile.add_argument('--current-source-profile', action='store_true')
     profile.add_argument('--source-legacy-compatibility', action='store_true')
     parser.add_argument('--node24-path', required=True)
+    parser.add_argument('--input-profile', choices=('operative585', 'current594-preparation'), default='operative585')
     args = parser.parse_args()
+    if args.source_legacy_compatibility and args.input_profile != 'operative585':
+        raise ValueError('SOURCE_CURRENT_PROFILE_LEGACY_INPUTS_UNCHANGED')
+    CURRENT_NATIVE_INPUT_PROFILE = args.input_profile
     NODE = Path(args.node24_path)
     if not NODE.is_absolute(): raise ValueError('SOURCE_CURRENT_PROFILE_NODE_PATH')
-    subprocess.run([str(NODE), '--input-type=module', '-e',
-        "import {requireSourceProducerOutput} from './scripts/lib/source-producer-successor-source.mjs';requireSourceProducerOutput();"],
-        cwd=ROOT, env=clean_environment(), stdin=subprocess.DEVNULL, check=True, timeout=30)
+    actual_family = subprocess.check_output([str(NODE), '--input-type=module', '-e',
+        "import * as source from './scripts/lib/source-producer-successor-source.mjs';source.requireSourceProducerOutput();console.log(source.SOURCE_PRODUCER_PREDECESSOR_RELEASE);"],
+        cwd=ROOT, env=clean_environment(), stdin=subprocess.DEVNULL, timeout=30).decode('utf8').strip()
+    if actual_family != '4.0.594':
+        raise ValueError('SOURCE_CURRENT_PROFILE_UNKNOWN_PRODUCT_FAMILY')
+    if args.source_legacy_compatibility:
+        raise ValueError('LEGACY585_TO_SOURCE_REQUIRES_ITS_ARCHIVED_NORMAL_PHASE')
+    if args.input_profile != 'current594-preparation':
+        raise ValueError('SOURCE_CURRENT_PROFILE_MUST_MATCH_ACTUAL594_PRODUCT')
     NODE = NODE.resolve(strict=True); NODE22 = NODE  # old cases are not selected
     CASE = 'source-legacy-compatibility' if args.source_legacy_compatibility else CURRENT_NATIVE_CASE
     raw = sys.stdin.buffer.read(16385)

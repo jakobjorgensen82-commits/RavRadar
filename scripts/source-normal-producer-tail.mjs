@@ -3368,9 +3368,12 @@ async function sourceNormalTemporary(holder) {
   assertPrivateSourceJobDeadline(holder);
   return issued.normalTemporary;
 }
-async function captureSourceNormalProgressBase(holder) {
+async function captureSourceNormalFixedOriginalInput(holder, name) {
   const owner = sourceOriginalOwner(holder), issued = assertPrivateSourceJobDeadline(holder);
-  if (!issued.normalPrelude || owner.activeOperation || owner.normalBase
+  const descriptor = name === 'currentSourceDescription';
+  if (!descriptor && name !== 'progressBase') sourceOriginalFailure('NORMAL_ORIGINAL_INPUT_NOT_FIXED');
+  const slot = descriptor ? 'normalCurrentSourceDescription' : 'normalBase';
+  if (!issued.normalPrelude || owner.activeOperation || owner[slot]
     || !owner.preparedInstall?.completed) sourceOriginalFailure('NORMAL_BASE_NOT_AVAILABLE');
   const binding = await assertSourceOriginalProgress(holder);
   const conditions = owner.workingReaders.find(row => row.path
@@ -3378,16 +3381,34 @@ async function captureSourceNormalProgressBase(holder) {
   if (!conditions || conditions.sha256 !== binding.baselineSha256) sourceOriginalFailure('NORMAL_BASE_CHANGED');
   await hashSourceOriginalHandle(owner, conditions);
   const temporary = await sourceNormalTemporary(holder);
-  const named = path.join(temporary.path, 'weather-progress-base.json');
+  const named = path.join(temporary.path, descriptor
+    ? 'private-runtime-current-source.json' : 'weather-progress-base.json');
   // This is precisely the existing normal base schema, not a completion,
   // attestation or a relabelled original. No caller can supply any field.
-  const bytes = Buffer.from(JSON.stringify({ kind: 'RAVRADAR_WEATHER_PRIVATE_PROGRESS_ONLY',
+  let bytes;
+  if (descriptor) {
+    const actual = sourceOwnerRecord(holder), context = actual.tailContext;
+    if (!actual.admitted || context !== sourceNormalProducerTailContext(holder)
+      || owner.bundles.length !== 1 || owner.bundles[0].descriptor !== context.originalPointer.pointer.current
+      || typeof context.currentSourceDescription !== 'string'
+      || Buffer.byteLength(context.currentSourceDescription, 'utf8') > 2 * 1024 * 1024) {
+      sourceOriginalFailure('NORMAL_CURRENT_DESCRIPTOR_NOT_OWNED');
+    }
+    bytes = Buffer.from(context.currentSourceDescription, 'utf8');
+    const described = JSON.parse(context.currentSourceDescription), original = owner.bundles[0].descriptor;
+    if (described.kind !== PROTECTED_PRIVATE_RUNTIME_POLICY.currentSourceKind
+      || ['sourceHead', 'datasetId', 'productionReferenceAt', 'generatedAt',
+        'bundleContentSha256', 'modelBinding', 'contractHashes'].some(key => !same(described[key], original[key]))
+      || described.bundleContentSha256 !== binding.protectedBundleContentSha256) {
+      sourceOriginalFailure('NORMAL_CURRENT_DESCRIPTOR_CHANGED');
+    }
+  } else bytes = Buffer.from(JSON.stringify({ kind: 'RAVRADAR_WEATHER_PRIVATE_PROGRESS_ONLY',
     schemaVersion: 1, repository: binding.repository, baselineSha256: binding.baselineSha256,
     protectedBundleContentSha256: binding.protectedBundleContentSha256 }) + '\n', 'utf8');
   const state = { path: named, handle: null, stat: null, bytes: bytes.length,
     sha256: sha256(bytes), directories: [{ path: temporary.path, stat: temporary.stat }],
     complete: false };
-  owner.normalBase = state; // retain before open/stat/write may fail
+  owner[slot] = state; // retain before open/stat/write may fail
   try {
     state.handle = await fs.open(named, sourceOriginalFsConstants.O_RDWR | sourceOriginalFsConstants.O_CREAT
       | sourceOriginalFsConstants.O_EXCL | (sourceOriginalFsConstants.O_NOFOLLOW ?? 0), 0o600);
@@ -3411,9 +3432,16 @@ async function captureSourceNormalProgressBase(holder) {
     sourceOriginalOwner(holder);
     // Publish only after actual write/sync/EOF and original checks finish.
     state.complete = true;
-    issued.normalProgressBase = state;
+    if (descriptor) {
+      const auxiliary = owner.normalAuxiliary ??= new Map();
+      if (auxiliary.has('currentSourceDescription')) sourceOriginalFailure('NORMAL_CURRENT_DESCRIPTOR_REUSED');
+      auxiliary.set('currentSourceDescription', state);
+    } else issued.normalProgressBase = state;
     return state;
   } catch (error) { throw keepSourceOriginalFailure(owner, error); }
+}
+async function captureSourceNormalProgressBase(holder) {
+  return captureSourceNormalFixedOriginalInput(holder, 'progressBase');
 }
 async function assertSourceNormalProgressBase(holder) {
   const owner = sourceOriginalOwner(holder), issued = assertPrivateSourceJobDeadline(holder);
@@ -4263,7 +4291,7 @@ function sourceFinalOwnedPReaderRows(owner, state, prelude) {
   for (const mapping of [owner.workingPreservation, owner.dmiWorkingPreservation, owner.normalWorkingPreservation, owner.normalAuxiliary]) {
     if (mapping) rows.push(...mapping.values());
   }
-  for (const row of [owner.normalBase, owner.normalRestoredDescription,
+  for (const row of [owner.normalBase, owner.normalCurrentSourceDescription, owner.normalRestoredDescription,
     owner.normalDeployedCopy?.row, state.artifact?.staging?.expectedRow,
     state.artifact?.staging?.checkpointRow, state.artifact?.staging?.outputRow]) if (row?.handle) rows.push(row);
   return sourceFinalDistinctReaderRows(rows.map(row => sourceRetainedWorkingRow(owner, row)));
@@ -5510,6 +5538,7 @@ export async function runSourceNormalProducerTail() {
     await prepareSourceCurrentNormalPostInstall(holder);
     sourceDriverDiagnosticStages.set(driver,'PROGRESS_BASE');
     await captureSourceNormalProgressBase(holder);
+    await captureSourceNormalFixedOriginalInput(holder, 'currentSourceDescription');
     sourceDriverDiagnosticStages.set(driver,'PROGRESS_CACHE');
     await acquireSourceNormalProgressCipher(holder);
     sourceDriverDiagnosticStages.set(driver,'PROGRESS_UNION');

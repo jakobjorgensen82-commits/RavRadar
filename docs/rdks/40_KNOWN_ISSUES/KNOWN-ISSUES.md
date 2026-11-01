@@ -1,3 +1,11 @@
+## 1. november 2026 — ÅBEN SOURCE 595: normal current594-kalder før ny afledning
+
+Aktuel isoleret SOURCE-version er 4.0.595 efter normal versionssynk og lokal 24-filers current594-integration. Nye 595-C/I/T og SQL er endnu ikke afledt; bindingsfilens version, binding og output er NULL. Den normale 594-central → B før S → samme SDK/action 63/64 → faktisk ejerafslutning er fortsat åben, og profilen er PREPARATION_ONLY. Gamle 586/040000-resultater bevares som dateret historik, ikke den aktuelle binding eller installationsvej.
+
+ROOTs P0/c920, almindelig 235 og offentlig header/784 er separate driftsbeviser, ikke SOURCE-bevis. Ingen ny PostgreSQL-, kapacitets-, komplet cache-/historik- eller leveringssucces påstås. Alle fem mål er åbne til 18. november 2026; delegering har adskilte filejere, ROOT koordinerer produktion, og ingen produktion ændres under writer.
+
+Et normalt syntetisk prefix og en initial RPC-forespørgsel er forberedt, men den faktiske central-/metadataovergang og SDK/action/ejerafslutning mangler. Kalderplan og reelle kildeinput skal fryses før udstedelse. Nul af de 13 computed-filer ligger i den aktuelle C/I/T-closure; det lukker ikke de 31 udtryks egne native-, test- og historiske kvalifikationskrav. Bindingsafhængig håndbogskontrol, nyt fixedpoint, Linux/PostgreSQL, SDK/action og præcis samlet kildekontrol står åbne.
+
 ## 21. oktober — ÅBEN kvalifikation: SOURCE-tail og ny afledning
 
 Aktuelt lokalt bindingsmål er nu 040000 efter kalenderens afgrænsede formatter-genbrug. Fem normale fixedpointmål består på egen LF-kilde, og alle 66 gamle migrationer er bytebevaret; 030000 og 020000 er aldrig installeret historik. Windows-kildens C/I-/kalendermål består, men SQL-/sync-check afviser fortsat den gamle udstedte 20261017140000-SQL's rå CRLF-hash. Dens LF-projektion er byteidentisk med Git og LF-værten; det er ikke ekstra SQL-indhold eller en påvist 040000-fejl. Gamle bytes og hashguard bevares. Præcis samlet CI, native PostgreSQL, ægte B/S-overgang, national kapacitet og sikker levering er stadig åbne; lokal formattergevinst er ikke målt national gevinst. SOURCE og almindelig vejrhentning aktiveres eller ændres ikke her. Se DEC-0294 for eksakt evidens og afgrænsning.

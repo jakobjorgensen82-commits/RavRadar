@@ -1141,16 +1141,18 @@ select public.native_checkpoint_attempt(${baseline},${version},(select payload f
       }
     }
     let sourceProducer;
+    let sourceProducerParentRelease;
     if(includeSourceProducer){
       nativePhase='SOURCE_PRODUCER';
       try{
+        sourceProducerParentRelease=(await import('./source-producer-successor-source.mjs')).SOURCE_PRODUCER_PREDECESSOR_RELEASE;
         const {compareSourceProducerSuccessor}=await import('./source-producer-postgres.mjs');
         sourceProducer=await compareSourceProducerSuccessor({psql,runSql,root,sourceDocumentAt,atHour,saveCheckpoint});
       }catch(error){statisticsRevisionFailure={error};throw error;}
     }
     let currentSourceNativeProfile;
     let sourceLegacyCompatibility;
-    if(includeSourceProducer&&!includeCurrentSourceNativeProfile){
+    if(includeSourceProducer&&!includeCurrentSourceNativeProfile&&sourceProducerParentRelease!=='4.0.594'){
       nativePhase='SOURCE_LEGACY_COMPATIBILITY';
       // The normal pre-merge --source-producer phase, AFTER its genuine585 +
       // SOURCE SQL comparison. No GitHub/main proof or SOURCE19 activation.
@@ -1217,6 +1219,13 @@ select public.native_checkpoint_attempt(${baseline},${version},(select payload f
       assert.deepEqual(await readOwner(),owner);
       sourceLegacyCompatibility=actual;
     }
+    if(includeSourceProducer&&!includeCurrentSourceNativeProfile&&sourceProducerParentRelease==='4.0.594'){
+      // Genuine585 rows were exercised in their normal earlier same-PG phase.
+      // The old585->then-SOURCE positive is historical, not a new594 success.
+      sourceLegacyCompatibility=Object.freeze({kind:'SOURCE_LEGACY_COMPATIBILITY_HISTORICAL_SCOPE',
+        status:'NOT_APPLICABLE_TO_CURRENT594',executed:false,current594Qualified:false,
+        originalPositiveScope:'ARCHIVED_585_TO_THEN_SOURCE_NORMAL_PHASE',productionProof:false});
+    }
     if(includeCurrentSourceNativeProfile){
       try{
       nativePhase='SOURCE_CURRENT_FULL_READBACK';
@@ -1233,7 +1242,8 @@ select public.native_checkpoint_attempt(${baseline},${version},(select payload f
         ...(process.env.GITHUB_REPOSITORY?{GITHUB_REPOSITORY:process.env.GITHUB_REPOSITORY}:{})};
       const invocation=await command(process.env.PYTHON||'python3',
         ['-I','-B',path.join(repositoryRoot,'scripts/run-source19-terminal-native-bank.py'),
-          '--current-source-profile','--node24-path',process.execPath],
+          '--current-source-profile','--node24-path',process.execPath,
+          ...(sourceProducerParentRelease==='4.0.594'?['--input-profile','current594-preparation']:[])],
         {input:JSON.stringify({kind:'SOURCE_CURRENT_SAME_NATIVE_PG',pgRoot:root,psql:programs.psql,head,server:owner}),
           env:profileEnvironment,timeout:240*60*1000});
       const firstProfileFailure=currentSourceNativeFirstFailure(invocation.stdout);

@@ -521,6 +521,11 @@ test('both fixed families and separate saved guard reject mixed tuples and colli
     UPGRADE_EXISTING_OWNER_EXPORT: 'false', UPGRADE_ACCOUNT_ASSISTANT: 'false', UPGRADE_STATISTICS_REVISION: 'false',
     UPGRADE_ACCOUNT_STATISTICS_ASSISTANT: 'false' };
   assert.doesNotThrow(() => assertSavedPrivateRuntimeCheckpointReconcileRequest(env));
+  assert.doesNotThrow(() => assertSavedPrivateRuntimeCheckpointReconcileRequest({
+    ...env, UPGRADE_NATIVE_ORIGINAL_CONTINUITY: 'false' }));
+  for (const value of ['true', '', 'FALSE', '0', true, false, null, 0, {}])
+    assert.throws(() => assertSavedPrivateRuntimeCheckpointReconcileRequest({
+      ...env, UPGRADE_NATIVE_ORIGINAL_CONTINUITY: value }), /SAVED_MODE_COLLISION/);
   assert.throws(() => assertOrdinaryPrivateRuntimeCheckpointReconcileRequest(env), /OPERATIONAL_ACTION/);
   for (const key of Object.keys(env)) for (const value of ['', undefined])
     assert.throws(() => assertSavedPrivateRuntimeCheckpointReconcileRequest({ ...env, [key]: value }));

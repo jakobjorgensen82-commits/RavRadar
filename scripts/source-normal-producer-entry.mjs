@@ -339,6 +339,9 @@ export async function prepareSourceNormalProducerSession() {
     const described = await describeCurrentProtectedPrivateProductionRuntime({ request: state.clients.documentRequest });
     for (const key of ['sourceHead', 'datasetId', 'productionReferenceAt', 'generatedAt',
       'bundleContentSha256', 'modelBinding', 'contractHashes']) need(same(described[key], current[key]), 'CURRENT_CHANGED');
+    // Preserve the exact normal describe result, never reconstruct it from a
+    // report/pointer or fetch another generation later. The string is immutable.
+    state.currentSourceDescription = JSON.stringify(described) + '\n';
     const restored = await restoreProtectedPrivateProductionRuntime({ privateRoot: PRIVATE, bundlePath: BUNDLE,
       repositoryRoot: ROOT, expected: state.expected, request: state.clients.documentRequest, storage: state.clients.storage });
     need(restored.restored === true && restored.rollbackSelected === false
@@ -443,6 +446,7 @@ export async function consumeSourceNormalProducerSession(session) {
   const context = Object.freeze({ session, identity: state.identity, target: state.target,
     repositoryRoot: ROOT, privateRoot: PRIVATE, bundlePath: BUNDLE, restoredPath: RESTORED,
     originalPointer: state.parent, activeRows: state.active, origin: state.origin,
+    currentSourceDescription: state.currentSourceDescription,
     bundleVerification: state.bundleVerification, restored: state.restoreResult, installed: state.install,
     sourceInstallation: state.sourceInstall,
     installedFiles: state.installedFiles, immutableRows: state.immutableRows,

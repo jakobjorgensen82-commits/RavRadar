@@ -1,3 +1,14 @@
+## 1. november 2026 — isoleret SOURCE 4.0.595
+
+- [x] Den gennemgåede 24-filers current594-sammenføring er lokalt anvendt; ROOT har genlæst den normale NULL-cases PASS. Gamle 585/586-scopes bevares som egne historiske normalfaser.
+- [x] Normal versionssynk 4.0.586 → 4.0.595 er udført én gang. Geodata fik kun topversion. 68 gamle migrationer, genererede C/I, T12 og SOURCE-version/binding/output NULL er uændrede. Staging er uændret; ROOT accepterer det dokumenterede mtime-statcacheforbehold.
+- [x] Normal statisk importanalyse viser C152/I148/T12 og nul af de 13 computed-filer i C/I/T. Det er ikke ny modelafledning; de 31 udtryk står åbne i egne native/test/historiske scopes.
+- [ ] Færdig normal 594-central-/metadataovergang gennem B før S, samme SDK/action, 63/64 og faktisk ejerafslutning. Profilen er PREPARATION_ONLY, ikke fullRuntime-PASS.
+- [ ] Efter kalderreview og kildefrysning: normal 595-C/I/T, binding-only, nyt procesoutput, ny append-only SQL-kilde og fixedpoint. Gamle 586/040000-værdier er historik.
+- [ ] Bindingsafhængig håndbogskontrol, normal Linux/PostgreSQL-/native-kvalifikation, præcis samlet kildekontrol, national kapacitet og eventuel senere sikker levering. Ingen komplet cache/historik eller selvstændig produktion er bevist.
+
+ROOTs P0/c920, almindelig 235 og offentlig header/784 er separate driftsbeviser. SOURCE er inaktiv. Alle fem mål er åbne til 18. november 2026; delegering har adskilte filejere, og ingen produktion ændres under writer.
+
 ## 21. oktober – inaktiv SOURCE: afledte kontrolmetadata
 
 - [x] Kalenderen genbruger højst 16 formatterkonfigurationer for præcise almindelige tidszonestrenge, ikke datoer, vejr, scorer eller rankingresultater. Normal kalenderprøve bevarer dato-/DST-/sprog-/fejl- og coercionadfærd. Lokal 2.048-kaldsprøve har identiske resultater og 2.048 → 1 konstruktion; national tidsgevinst er ikke målt.

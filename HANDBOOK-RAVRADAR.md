@@ -1,3 +1,7 @@
+## 1. november 2026 — isoleret 595-status i kapitel 89.263
+
+4.0.595 er lokal SOURCE-forberedelse, ikke en leveret revision. Nye beregningsbindinger og SQL er endnu ikke afledt; den normale 594-overgang og kvalifikation er åbne. Ældre 586/040000-afsnit er dateret historik, og ROOTs særskilte P0-drift er ikke SOURCE-bevis.
+
 ## 89.261 Bevar originalerne i det lager, de faktisk ligger i
 
 Kort fortalt: En programopdatering skal hente de bevarede originaler fra det rigtige private lager. Den må ikke flytte eller ændre dem for at komme videre.
@@ -546,7 +550,7 @@ En særskilt, dokumenteret Storage-formatkant rettes samtidig: immutable upload 
 
 # RavRadar Håndbog
 
-**Håndbogsversion:** 4.0.586
+**Håndbogsversion:** 4.0.595
 
 ## Aktuel lokal SOURCE-kildebinding efter kalenderrettelse — 21. oktober 2026, 4.0.586 ikke installeret
 
@@ -9994,3 +9998,17 @@ Når kode flyttes mellem moduler, skal hele det flyttede modul fortsat kunne ind
 Programversion, faktiske kildefiler og alle afledte kontroloplysninger skal passe sammen. En lokal markering eller fil, som ikke findes i den kontrollerede programkilde, er ikke bevis. Gamle originaler og tidligere offentliggjorte tal bevares.
 
 Den isolerede revisions lokale kontrol af denne adskillelse er ikke en offentlig levering. Fuld afledning, normale database- og lagringsforløb, kapacitet og faktisk drift skal fortsat verificeres, før revisionen kan aktiveres. Den almindelige vejrhentning og prioriteringen af vejrkilder ændres ikke af dette forberedelsestrin.
+
+## 89.263 Isoleret SOURCE 4.0.595: status før ny afledning
+
+Kort fortalt: Programversionen er opdateret lokalt. Det betyder ikke, at revisionen er klar til drift.
+
+Den gennemgåede current594-integration på 24 filer er anvendt i den isolerede kilde. Normal versionssynk til 4.0.595 er udført én gang, og den normale NULL-case er bestået ifølge ROOTs genlæsning. Nye 595-C/I/T og en ny SQL-fil er endnu ikke afledt; bindingsfilens version, binding og output er fortsat NULL. Gamle 586/040000-resultater bevares som historik og er ikke den nye kandidats binding eller installationsvej.
+
+Den ægte 594-kode fra genuine37, aktuelle syntetiske 594-input og SOURCEs egen senere eksekutorkilde har hver sin rolle. Gamle 585/586-prøver bruger egne arkiverede normalfaser. Et forberedt input eller en fanget databaseforespørgsel er ikke bevis for faktisk databasegenlæsning, gemning eller afsluttet ejer.
+
+Det næste normale led skal føre den aktuelle 594-central-/metadataovergang gennem B før S, samme SDK og almindelige action, fase 63/64 og faktisk ejerafslutning. Profilen er PREPARATION_ONLY. Først efter kalderreview og frysning af de reelle kildeinput kan nye kontroloplysninger afledes. Database-, lagrings-, kapacitets- og kildekontroller er åbne. Komplet cache/historik og selvstændig produktion er ikke bevist.
+
+Versionsfasen bevarede gamle migrationer og eksisterende modelbindinger; geodata fik kun topversionen ændret. Staging er uændret. ROOT har accepteret et særskilt lokalt indeksstatcacheforbehold; det er ikke en ændret kilde- eller databinding. Ingen scoreformel, kildeprioritet, geometri eller produktionsopsætning ændres her.
+
+ROOTs særskilte oplysninger om fungerende P0/c920, almindelig 235 og offentlig header/784 kvalificerer ikke SOURCE. Alle fem hovedmål er åbne til 18. november 2026. Delegerede delopgaver har adskilte filejere, ROOT koordinerer produktionen, og ingen produktion ændres under writer.

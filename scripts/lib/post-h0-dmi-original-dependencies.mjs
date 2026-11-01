@@ -14,11 +14,39 @@ import { canonicalSavedDmiOriginalCapture } from './saved-dmi-original-capture.m
 import { RAVSCORE_RECOVERY_REPLAY_MAXIMUM_AGE_HOURS } from './ravscore-recovery-replay.mjs';
 
 const finite = value => typeof value === 'number' && Number.isFinite(value);
-const fail = code => {
+const fail = (code, diagnosticCode = code) => {
   const error = new Error(`POST_H0_DMI_ORIGINAL_${code}`);
-  error.originalDependencyCode = error.message;
+  error.originalDependencyCode = `POST_H0_DMI_ORIGINAL_${diagnosticCode}`;
   throw error;
 };
+// Diagnostic-only refinements. Error.message and every refusal stay unchanged.
+export const POST_H0_DMI_ENDPOINT_DIAGNOSTICS = Object.freeze([
+  "SELECTED_ENDPOINT_SOURCE_MISSING",
+  "SELECTED_ENDPOINT_VIEW_MISMATCH",
+  "SELECTED_ENDPOINT_PROOF_CONTEXT_CONFLICT",
+  "SELECTED_ENDPOINT_PROOF_CONTEXT_INVALID",
+  "SELECTED_ENDPOINT_PROOF_CONTEXT_REFERENCE_MISSING",
+  "SELECTED_ENDPOINT_PROOF_DONOR_BOUND",
+  "SELECTED_ENDPOINT_PROOF_ENDPOINT_MISMATCH",
+  "SELECTED_ENDPOINT_PROOF_GEOMETRY_MISMATCH",
+  "SELECTED_ENDPOINT_PROOF_NATIVE_CONFLICT",
+  "SELECTED_ENDPOINT_PROOF_NATIVE_ENDPOINT_MISSING",
+  "SELECTED_ENDPOINT_PROOF_NATIVE_INVALID",
+  "SELECTED_ENDPOINT_PROOF_NATIVE_REFERENCE_MISSING",
+  "SELECTED_ENDPOINT_PROOF_PROJECTION_MISMATCH",
+  "SELECTED_ENDPOINT_PROOF_RECORD_BOUND",
+  "SELECTED_ENDPOINT_PROOF_RECORD_SHAPE",
+  "SELECTED_ENDPOINT_PROOF_SCOPED_ORIGINAL_CONTEXT_UNAVAILABLE",
+  "SELECTED_ENDPOINT_PROOF_SELECTION_INVALID",
+  "SELECTED_ENDPOINT_PROOF_INVALID"
+]);
+function endpointProofDiagnostic(code) {
+  const reason=typeof code==='string'&&code.startsWith('DMI_NATIVE_PROOF_')
+    ? 'SELECTED_ENDPOINT_PROOF_'+code.slice('DMI_NATIVE_PROOF_'.length) : null;
+  return POST_H0_DMI_ENDPOINT_DIAGNOSTICS.includes(reason) ? reason : 'SELECTED_ENDPOINT_PROOF_INVALID';
+}
+import { nativeCurrentOriginalBankForPart } from './ravscore-recovery-source-priority.mjs';
+
 function data(value, array = false) {
   if (!value || typeof value !== 'object' || types.isProxy(value)
     || Array.isArray(value) !== array
@@ -137,7 +165,12 @@ export function collectPostH0DmiOriginalDependencies({
     if (rows.length > LIMIT.donorRowsPerPart) fail('INPUT_BOUND');
     const contexts = own(source, 'nativeCurrentContexts') ?? [];
     checkContexts(contexts, expected);
-    const inspector = createProtectedDmiNativeCurrentInspector({ contexts });
+    let previousBank;
+    try { previousBank = nativeCurrentOriginalBankForPart(source, part); }
+    catch { fail('INPUT_INVALID'); }
+    if (previousBank !== null) plainTree(previousBank, 0, { nodes: 0, bytes: 0,
+      maximumNodes: LIMIT.donorRowsPerPart * 256, maximumBytes: LIMIT.candidateBytesPerPart });
+    const inspector = createProtectedDmiNativeCurrentInspector({ contexts, previousBank });
     for (let rowIndex = 0; rowIndex < rows.length; rowIndex++) {
       const row = data(own(rows, String(rowIndex))), time = own(row, 'time'), ms = hour(time);
       const at = rowsByTime.get(time) ?? []; at.push(row); rowsByTime.set(time, at);
@@ -175,17 +208,18 @@ export function collectPostH0DmiOriginalDependencies({
       // sources.current must remain present and whole: stripping the wrapper
       // or reconstructing an original from it would defeat exact reprojection.
       const originalSources = own(row, 'sources');
-      if (!originalSources) fail('SELECTED_ENDPOINT_UNAVAILABLE');
+      if (!originalSources) fail('SELECTED_ENDPOINT_UNAVAILABLE', 'SELECTED_ENDPOINT_SOURCE_MISSING');
       data(originalSources);
       const original = own(originalSources, 'current');
       plainTree(original);
+      if (!original) fail('SELECTED_ENDPOINT_UNAVAILABLE', 'SELECTED_ENDPOINT_SOURCE_MISSING');
       const normalView = original && { ...original, status: 'verified', sourceClass: original.sourceClass
         ?? (original.vectorSemanticsVersion === 3 ? 'local-model-grid' : undefined) };
-      if (!original || !isDeepStrictEqual(provenance, original)
-        && !isDeepStrictEqual(provenance, normalView)) fail('SELECTED_ENDPOINT_UNAVAILABLE');
+      if (!isDeepStrictEqual(provenance, original)
+        && !isDeepStrictEqual(provenance, normalView)) fail('SELECTED_ENDPOINT_UNAVAILABLE', 'SELECTED_ENDPOINT_VIEW_MISMATCH');
       const selected = { time, currentUMps: payload[0], currentVMps: payload[1], sources: { current: original } };
       const proof = inspector.inspectOriginals({ part, row: selected });
-      if (!proof.ok) fail('SELECTED_ENDPOINT_UNAVAILABLE');
+      if (!proof.ok) fail('SELECTED_ENDPOINT_UNAVAILABLE', endpointProofDiagnostic(proof.code));
       const sampling = inspectDmiForecastGridSampling(provenance, 'current', time, expected).status;
       if (!['unknown', 'coherent'].includes(sampling)) fail('SELECTED_CURRENT_INVALID');
       counts[sampling === 'unknown' ? 'unknownRows' : 'coherentRows']++;

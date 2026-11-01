@@ -1,4 +1,4 @@
-// Fixed585 -> SOURCE original staging, not SQL/state/origin admission. The
+// Fixed593 -> SOURCE original staging, not SQL/state/origin admission. The
 // legacy585 staging caller remains unchanged. Use normal selected storage,
 // including the already delivered R2 forwarding; metadata still uses request.
 import assert from 'node:assert/strict';
@@ -10,7 +10,7 @@ import {fileURLToPath,pathToFileURL} from 'node:url';
 import {SOURCE_PRODUCER_BEFORE as OLD,requireSourceProducerBinding,requireSourceProducerOutput}
   from './lib/source-producer-successor-source.mjs';
 import {assertSourceProducerCodeOnlyCaller} from './select-source-producer-code-only-source.mjs';
-import {withAuthenticated585PredecessorSource} from './check-source-producer-predecessor-source.mjs';
+import {withSource594OriginalDataSource,assertSource594OriginalDataSourceSelected} from './check-assistant-later-h0-predecessor-source.mjs';
 import {createProtectedPrivateRuntimeClients,describeCurrentProtectedPrivateProductionRuntime,
   describeTargetProtectedPrivateProductionRuntime} from './protected-private-production-runtime.mjs';
 import {ravScoreModelBinding} from '../js/core/ravscore-model-contract.js';
@@ -27,8 +27,26 @@ function absoluteEnvironmentPath(name){
   assert(!/[\r\n\0]/.test(value));return path.resolve(value);
 }
 
+// Ren klassifikation til den normale kalder; dette giver ingen DATA-/SOURCE-admission.
+// Den faktiske staging kræver stadig udstedt SOURCE først og derefter den fulde faste kildevært.
+export function sourceProducerOriginalStageFamily(selected,next){
+  assert.equal(arguments.length,2);
+  assert.match(next?.I??'',/^[a-f0-9]{64}$/);assert.match(next?.T??'',/^[a-f0-9]{64}$/);
+  assert.notEqual(next.I,OLD.I);assert.notEqual(next.T,OLD.T);
+  const oldI=selected?.modelBinding?.modelBundleSha256===OLD.I;
+  const oldT=selected?.contractHashes?.continuationStateContractSha256===OLD.T;
+  const newI=selected?.modelBinding?.modelBundleSha256===next.I;
+  const newT=selected?.contractHashes?.continuationStateContractSha256===next.T;
+  assert.equal(oldI,oldT);assert.equal(newI,newT);
+  assert(oldI!==newI,'Exactly genuine594 or already-current SOURCE family');
+  return oldI?'predecessor':'current';
+}
+
 export async function stageSourceProducerOriginals(){
   requireSourceProducerOutput(); // FIRST, before arguments, environment, files or clients.
+  // Den særskilte594-kildevært skal være valgt; gammel593/591-DATA bruges aldrig som594.
+  failureStage='PARENT_SOURCE';assertSource594OriginalDataSourceSelected();
+  assert.equal(OLD.version,'20261031070755','SOURCE_ORIGINAL_DATA_PARENT_UNAVAILABLE');
   assert.equal(arguments.length,0);
   failureStage='CALLER';assertSourceProducerCodeOnlyCaller(process.env);
   assert.equal(process.env.RAVRADAR_SOURCE_PRODUCER_SOURCE_ACTIVE,'true');
@@ -36,7 +54,7 @@ export async function stageSourceProducerOriginals(){
   failureStage='SOURCE_HEAD';
   const gitEnvironment=Object.fromEntries(['PATH','Path','SystemRoot','WINDIR','TEMP','TMP','LANG','LC_ALL']
     .filter(key=>typeof process.env[key]==='string').map(key=>[key,process.env[key]]));
-  const read=args=>execFileSync('git',['-C',ROOT,...args],{encoding:'utf8',timeout:30000,maxBuffer:65536,env:gitEnvironment}).trim();
+  const read=args=>execFileSync('git',['-C',ROOT,...args],{encoding:'utf8',timeout:30000,maxBuffer:65536,env:{...gitEnvironment,GIT_NO_LAZY_FETCH:'1',GIT_NO_REPLACE_OBJECTS:'1',GIT_OPTIONAL_LOCKS:'0',GIT_TERMINAL_PROMPT:'0',GIT_CONFIG_COUNT:'1',GIT_CONFIG_KEY_0:'protocol.allow',GIT_CONFIG_VALUE_0:'never'}}).trim();
   const head=read(['rev-parse','HEAD^{commit}']),remote=read(['rev-parse','origin/main^{commit}']);
   assert.equal(head,process.env.GITHUB_SHA);assert.equal(remote,head);
   const envPath=absoluteEnvironmentPath('GITHUB_ENV');
@@ -47,12 +65,8 @@ export async function stageSourceProducerOriginals(){
   assert.equal(selected.productionReferenceAt,process.env.RAVRADAR_PRODUCTION_TARGET_HOUR,
     'Metadata code-only delivery retains the exact CURRENT original H0');
   failureStage='CURRENT_FAMILY';
-  const oldI=selected.modelBinding.modelBundleSha256===OLD.I;
-  const oldT=selected.contractHashes.continuationStateContractSha256===OLD.T;
-  const newI=selected.modelBinding.modelBundleSha256===next.I;
-  const newT=selected.contractHashes.continuationStateContractSha256===next.T;
-  assert.equal(oldI,oldT);assert.equal(newI,newT);assert(oldI!==newI,'Exactly OLD585 or already-current SOURCE family');
-  if(newI){
+  const selectedFamily=sourceProducerOriginalStageFamily(selected,next);
+  if(selectedFamily==='current'){
     failureStage='CURRENT_REENTRY';
     assert.equal(process.env.RAVRADAR_SOURCE_PRODUCER_PHASE,'installed');
     assert.equal(process.env.RAVRADAR_SOURCE_PRODUCER_UPGRADE_OPT_IN,'false');
@@ -75,7 +89,7 @@ export async function stageSourceProducerOriginals(){
   const descriptorPath=path.join(operationRoot,'target-private-runtime-source.json');await absent(descriptorPath);
   await absent(privateRoot);await noLinks(path.dirname(privateRoot));await fs.mkdir(privateRoot);
   failureStage='FROZEN_SOURCE';
-  await withAuthenticated585PredecessorSource(async frozenRoot=>{
+  await withSource594OriginalDataSource(async frozenRoot=>{
     failureStage='FROZEN_CONTRACT';
     const load=file=>import(pathToFileURL(path.join(frozenRoot,file)).href);
     const [protectedB,bundle,workflow,model]=await Promise.all([load('scripts/protected-private-production-runtime.mjs'),
@@ -103,7 +117,7 @@ export async function stageSourceProducerOriginals(){
   });
   failureStage='SELECTED_FAMILY_SAVE';
   await fs.appendFile(envPath,'RAVRADAR_SOURCE_PRODUCER_CURRENT_FAMILY=predecessor\n');
-  console.log('Exact immutable CURRENT585 restored through genuine normal585 source; no origin or remote write.');
+  console.log('Den præcise CURRENT593-original er gendannet gennem den faste593-kilde; ingen origin eller ekstern skrivning.');
 }
 
 if(process.argv[1]&&path.resolve(process.argv[1])===fileURLToPath(import.meta.url)){

@@ -69,12 +69,13 @@ import {
 import { buildDataQuality } from './lib/data-quality.mjs';
 import { repairWaterLevelContinuity } from './lib/water-level-continuity.mjs';
 import { readDmiBulkDocument } from './lib/dmi-bulk-storage.mjs';
+import { readCurrentPrivateRuntimeCompanions } from './read-authenticated-dmi-current-companions.mjs';
 import { readDmiForecastFile, writeDmiForecastFileAtomic, isDmiForecastCheckpointStopUnproved } from './lib/dmi-forecast-file.mjs';
 import { dmiWaveDirectionMatchesSource } from './lib/dmi-wave-tuple-proof.mjs';
 import { originalContextForProtectedDmiCurrent, verifiedProtectedDmiPartHourly } from './lib/protected-dmi-current-context.mjs';
 import { mergeProtectedLiveCurrentPilotIntoRecord,
   mergeActiveNativeLiveCurrentPilotIntoRecord } from './lib/protected-live-current-assembly.mjs';
-import { createProtectedDmiNativeCurrentInspector } from './lib/protected-dmi-native-current-proofs.mjs';
+import { createProtectedDmiNativeCurrentInspector, buildProtectedDmiNativeCurrentProofs } from './lib/protected-dmi-native-current-proofs.mjs';
 import { readDmiLegacyCurrentOriginals } from './lib/dmi-legacy-current-originals.mjs';
 import { packDmiPartContinuity, unpackDmiPartContinuity } from './lib/dmi-part-continuity.mjs';
 import { countDmiBackedZones, createPersistentDmiStore, prioritizeDmiFeatures, summarizeAvailableCoverage } from './lib/dmi-acquisition-state.mjs';
@@ -1916,6 +1917,69 @@ function selectPreviousPrivateCandidateGRuntime(previous) {
   return runtime;
 }
 
+// BEGIN normal PART native-original continuity
+function assertDmiPartNativeProofBankDomain(bank, part) {
+  if (bank === null) return;
+  if (!Array.isArray(bank?.contexts) || !Array.isArray(bank?.nativeRows)
+    || !Array.isArray(bank?.selections) || bank.selections.length > DMI_FORECAST_HOURS
+    || bank.nativeRows.length > 2 * bank.selections.length
+    || bank.contexts.length > bank.nativeRows.length
+    || bank.contexts.some(row => row?.value?.partId !== part.partId)
+    || bank.selections.some(row => row?.partId !== part.partId)) {
+    throw new Error('DMI_PART_NATIVE_ORIGINAL_BANK_DOMAIN_INVALID');
+  }
+}
+function selectedDirectDmiNativeRows(hourly) {
+  return hourly.filter(row => row?.currentStateOnlyHold == null
+    && row?.sources?.current?.provider === 'dmi'
+    && row.sources.current.vectorSemanticsVersion === 3
+    && ['currentUMps', 'currentVMps', 'currentSpeedMps', 'currentDirectionDeg']
+      .some(key => ravScoreNumber(row[key]) !== null));
+}
+function buildSelectedDmiPartNativeProofBank(part, record, contexts, previousBank = null) {
+  assertDmiPartNativeProofBankDomain(previousBank, part);
+  if (!Array.isArray(record?.hourly) || record.hourly.length !== DMI_FORECAST_HOURS) {
+    throw new Error('DMI_PART_NATIVE_ORIGINAL_RECORD_INVALID');
+  }
+  // One normal batch over the RAW selected record, before proxy/regional V4.
+  // previousBank is actual saved native/context evidence, never a PASS marker.
+  const selections = selectedDirectDmiNativeRows(record.hourly).map(row => ({ part, row }));
+  const bank = buildProtectedDmiNativeCurrentProofs({ selections,
+    contexts: contexts.filter(Boolean), previousBank });
+  return selections.length ? bank : null;
+}
+function assertSelectedDmiNativeOriginalsBeforeScore({ part, publicHourly, publicBank,
+  publicContexts, recoverySources, forwardStartAt, targetReferenceAt }) {
+  const targetMs = Date.parse(targetReferenceAt), fromMs = Date.parse(forwardStartAt);
+  if (!Number.isFinite(fromMs) || !Number.isFinite(targetMs) || fromMs > targetMs) {
+    throw new Error('DMI_PART_NATIVE_ORIGINAL_FORWARD_WINDOW_INVALID');
+  }
+  const inspectRows = (rows, contexts, bank) => {
+    assertDmiPartNativeProofBankDomain(bank, part);
+    const inspector = createProtectedDmiNativeCurrentInspector({ contexts: contexts.filter(Boolean), previousBank: bank });
+    for (const row of selectedDirectDmiNativeRows(rows)) {
+      const proof = inspector.inspect({ part, row });
+      if (!proof.ok) {
+        const error = new Error('DMI_PART_NATIVE_ORIGINAL_BEFORE_SCORE_UNPROVED');
+        error.nativeOriginalProofCode = /^DMI_NATIVE_PROOF_[A-Z_]{1,80}$/.test(proof.code)
+          ? proof.code : 'DMI_NATIVE_PROOF_INVALID';
+        throw error;
+      }
+    }
+  };
+  // Public rows are the exact <=118 input passed to production below, not raw
+  // losers. Historical rows are the actual priority-projected forward window.
+  inspectRows(publicHourly, publicContexts, publicBank);
+  for (const source of recoverySources) {
+    inspectRows(source.record.hourly.filter(row => Date.parse(row.time) > fromMs
+      && Date.parse(row.time) < targetMs), source.nativeCurrentContexts ?? [],
+    source.nativeCurrentOriginals?.bank ?? null);
+  }
+  // HOLD/V4/reserve admission stays with the unchanged normal pipeline. No
+  // bank is made from these rows or used to upgrade unknown grid sampling.
+}
+// END normal PART native-original continuity
+
 function scoreCoastalPartsRuntime(
   contract,
   parentFeatures,
@@ -1939,7 +2003,11 @@ function scoreCoastalPartsRuntime(
   establishedNativeCurrentOrigin = null,
   currentFamilyColdStart = null,
   archivedWeatherRestartView = null,
+  protectedCompanionContexts = [],
 ) {
+  if (!Array.isArray(protectedCompanionContexts) || protectedCompanionContexts.length > 2) {
+    throw new Error('DMI_PART_NATIVE_ORIGINAL_COMPANION_BOUND');
+  }
   // A separately authenticated, archived epoch omits OLD numerical state only
   // for this first calculation. The full original weather baseline remains
   // untouched in the caller and in the normal no-loss/persistence chain.
@@ -1985,6 +2053,8 @@ function scoreCoastalPartsRuntime(
     previousCurrentSourceDomainTransitions = coldInputs.previousCurrentSourceDomainTransitions;
     establishedNativeCurrentOrigin = coldInputs.establishedNativeCurrentOrigin;
   }
+  // Original companions of OLD B never cross an isolated first-active view.
+  if (stateEpochView !== null || coldInputs !== null) protectedCompanionContexts = [];
   const calculationBootstrapMode = coldInputs?.candidateGBootstrapMode ?? (stateEpochView !== null
     ? stateEpochView.candidateGBootstrapMode : RAVSCORE_EFFECTIVE_FIRST_CUTOVER_BOOTSTRAP_MODE);
   const calculationSourceValidated = coldInputs?.candidateGSourceValidated ?? (stateEpochView !== null
@@ -2026,6 +2096,7 @@ function scoreCoastalPartsRuntime(
   // identity. The finalizer checks their exact H0 pairs against output.
   const establishedNativeCurrentPartResults = new Map();
   const selectedDmiPartRecords = new Map();
+  const selectedDmiPartNativeProofs = new Map();
   const currentSourceDomainTransitions = {};
   let furWaterRoutingTrace = null;
   const sourceAgeRows = [];
@@ -2207,12 +2278,20 @@ function scoreCoastalPartsRuntime(
         type: 'Feature', geometry: { type: 'Point', coordinates: part.waterPoint },
         properties: localPartRuntimeProperties(parent.properties, part, bulkId)
       };
+      const persistedNativeOriginals = initialSelection.source === 'POINT_ACTIVATION'
+        ? null : persistedDmiPartRows.get(part.partId)?.nativeCurrentOriginals ?? null;
+      const nativeOriginalContexts = (initialSelection.source === 'POINT_ACTIVATION'
+        ? [bulkCache] : [bulkCache, deployedBulkCache, historicalDmiBulkCache,
+          ...protectedCompanionContexts]).filter(Boolean);
       const dmiRecord = buildPartDmiForecastWithProtectedRetention(feature, bulkCache,
         initialSelection.source === 'POINT_ACTIVATION' ? null : deployedBulkCache,
         generatedAt, {
         startAt: partForecastStartAt,
         expectedIdentity: partDmiIdentity,
         currentDecoderTransitionPart: { ...part, zoneId },
+        nativeCurrentOriginals: persistedNativeOriginals,
+        protectedCompanionContexts: initialSelection.source === 'POINT_ACTIVATION'
+          ? [] : protectedCompanionContexts,
         persistedHourly: initialSelection.source === 'POINT_ACTIVATION'
           ? [] : persistedDmiPartRows.get(part.partId)?.hourly ?? [],
         historicalBulkCache: initialSelection.source === 'POINT_ACTIVATION'
@@ -2227,6 +2306,10 @@ function scoreCoastalPartsRuntime(
             expectedIdentity: partDmiIdentity });
       }
       selectedDmiPartRecords.set(part.partId, dmiRecord);
+      const selectedDmiPartNativeBank = buildSelectedDmiPartNativeProofBank(
+        { ...part, zoneId }, dmiRecord, nativeOriginalContexts, persistedNativeOriginals?.bank ?? null,
+      );
+      selectedDmiPartNativeProofs.set(part.partId, selectedDmiPartNativeBank);
       const operationalDmiRecord = applyFeggesundOperationalWaveProxy(
         dmiRecord,
         { ...part, zoneId },
@@ -2342,7 +2425,7 @@ function scoreCoastalPartsRuntime(
           { requireNativeGridSampling: true },
         );
       let deployedRecoverySource = null;
-      const protectedCurrentContexts = [deployedBulkCache, historicalDmiBulkCache];
+      const protectedCurrentContexts = [deployedBulkCache, historicalDmiBulkCache, ...protectedCompanionContexts];
       // A promoted point has a deliberately new sampling context; old deployed
       // rows for the prior point must not enter its replay. Its private staged
       // DMI history has already been promoted into the progressive cache.
@@ -2358,6 +2441,7 @@ function scoreCoastalPartsRuntime(
             persistedHourly: persistedDmiPartRows.get(part.partId)?.hourly ?? [],
             historicalBulkCache: historicalDmiBulkCache,
             protectPreviousDmi: true,
+            nativeCurrentOriginals: persistedNativeOriginals, protectedCompanionContexts,
           },
         );
         if (deployedDmiRecord) {
@@ -2379,6 +2463,7 @@ function scoreCoastalPartsRuntime(
           deployedRecoverySource = {
             source: 'deployed-private-runtime',
             nativeCurrentContexts: protectedCurrentContexts,
+            nativeCurrentOriginals: persistedNativeOriginals,
             record: {
               ...deployedRecord,
               hourly: verifiedProtectedDmiPartHourly(
@@ -2454,6 +2539,14 @@ function scoreCoastalPartsRuntime(
         targetReferenceAt: generatedAt, recoverySources, liveCurrentPilot });
       try {
         if (savedCurrentReplayDiagnostic) savedCurrentReplayDiagnostic.observedParts++;
+        assertSelectedDmiNativeOriginalsBeforeScore({
+          part: { ...part, zoneId }, publicBank: selectedDmiPartNativeBank,
+          publicContexts: nativeOriginalContexts, recoverySources,
+          forwardStartAt: initialSelection.state?.time ?? generatedAt,
+          targetReferenceAt: generatedAt,
+          publicHourly: hourly.filter(hour => Date.parse(hour.time) >= targetMs
+            && Date.parse(hour.time) < targetMs + RAVSCORE_PUBLIC_FORECAST_HOURS * 3_600_000),
+        });
         productionSeries = buildRavScoreProductionPartSeries({
           establishedNativeCurrentOrigin,
           requireNativeGridSampling: true,
@@ -2938,6 +3031,7 @@ function scoreCoastalPartsRuntime(
   return {
     integratedRuntime,
     selectedDmiPartRecords,
+    selectedDmiPartNativeProofs,
     establishedNativeCurrentPartResults,
     currentSourceDomainTransitions,
     furWaterRoutingTrace,
@@ -4531,6 +4625,12 @@ const establishedNativeCurrentOrigin = coldInputs !== null
     ? await readEstablishedNativeCurrentOrigin(coastalPartsContract) : null;
 if (process.env.RAVRADAR_SAVED_CURRENT_REPLAY_DIAGNOSTIC === '39066350748-1'
   && establishedNativeCurrentOrigin === null) throw new Error('SAVED_CURRENT_REPLAY_ORIGIN_REQUIRED');
+// OLD B native documents never cross an isolated first-active numeric view.
+// POINT_ACTIVATION also rejects them per PART inside scoreCoastalPartsRuntime.
+// Ordinary missing/changed B is an error, not a mutable working-file fallback.
+const protectedNativeCurrentCompanionContexts = coastalPartsContract.enabled
+  && coldInputs === null && stateEpochView === null
+  ? await readCurrentPrivateRuntimeCompanions(generatedAt) : [];
 let coastalPartScoreBuild;
 try {
 coastalPartScoreBuild = coastalPartsContract.enabled
@@ -4559,6 +4659,7 @@ coastalPartScoreBuild = coastalPartsContract.enabled
     establishedNativeCurrentOrigin,
     currentFamilyColdStart,
     archivedWeatherRestartView,
+    protectedNativeCurrentCompanionContexts,
   )
   : null;
 } catch (error) {
@@ -4573,11 +4674,13 @@ if (coastalPartScoreBuild) {
     coastalPartScoreBuild.selectedDmiPartRecords,
     activeParts,
     generatedAt,
+    { nativeCurrentProofsByPart: coastalPartScoreBuild.selectedDmiPartNativeProofs },
   );
   // The complete, hash-bound continuity pack now owns the persisted bytes.
   // Retire only this caller's finished working references before finalization
   // and public projection; never clear shared maps or mutate original rows.
   coastalPartScoreBuild.selectedDmiPartRecords = null;
+  coastalPartScoreBuild.selectedDmiPartNativeProofs = null;
   persistedDmiPartRows = null;
 }
 reportWeatherBuildStage('coastal-score-runtime-ready', {

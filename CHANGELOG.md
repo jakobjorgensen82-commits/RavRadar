@@ -1,3 +1,11 @@
+## 4.0.595 — lokal, inaktiv SOURCE-kandidat; endnu ingen ny afledning
+
+- Den gennemgåede 24-filers current594-integration er anvendt lokalt. Genuine37 CODE, aktuelle syntetiske 594-data og SOURCE-eksekutor holdes adskilt; gamle 585/586-prøver beholder egne arkiverede normalfaser.
+- Normal versionssynk er kørt én gang. Geodata fik kun topversion; gamle migrationer, genererede C/I, T12 og SOURCE-version/binding/output NULL er bevaret. Det accepterede indeksforbehold gælder kun mtime-statcache med uændret staging.
+- Normal 594-central-/metadataovergang, B før S, samme SDK/action til 63/64 og faktisk ejerafslutning mangler. Profilen er PREPARATION_ONLY. ROOT afventer kalderreview og kildefrysning før normal C/I/T, binding-only, nyt procesoutput og eventuel SQL-afledning.
+- Ingen native/PostgreSQL-, kapacitets-, komplet cache-/historik-, installations- eller leveringssucces påstås. P0/c920, almindelig 235 og offentlig header/784 er ROOTs separate driftsbeviser. Alle fem mål er åbne til 18. november 2026; ingen produktion ændres under writer.
+- Gamle 586/040000-afsnit nedenfor bevares som dateret historik. Se DEC-0294 og håndbog 89.263.
+
 ## 4.0.586 – isoleret SOURCE-kandidat, ikke offentlig levering
 
 - Kalenderen genbruger nu højst 16 formatterkonfigurationer for præcise almindelige tidszonestrenge, aldrig dato-, vejr-, score- eller rankingresultater. Den afgrænsede lokale 2.048-kaldsprøve gav identiske resultater og 2.048 → 1 formatterkonstruktion; national tidsgevinst er ikke målt. Da modulet indgår i C/I, er faktisk ny 040000 afledt fra egen LF-kilde: C145/I141/T12, append-only SQL og normal syvforbrugersynk. Alle fem normale LF-fixedpointmål består; alle 66 gamle migrationer bevares. 020000 og 030000 er aldrig installeret historik, ikke mellemtrin. Windows-kildens SQL-/sync-check afviser fortsat en gammel udstedt SQL-fils rå CRLF-bytes; den identiske LF-projektion matcher både Git og LF-værten. Ingen original normaliseres eller kontrol lempes. Samlet CI, native PostgreSQL, B/S, national kapacitet og offentlig levering er åbne; SOURCE er inaktiv. Se DEC-0294.

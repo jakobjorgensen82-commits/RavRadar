@@ -2,6 +2,9 @@
 // A real release still recomputes C/I/T and every SQL/output pin from source.
 import assert from 'node:assert/strict';
 
+// Tilsigtet udstedt594 CODE/DATA-forgænger; ingen caller-valgt SOURCE-version.
+export const SOURCE_PRODUCER_LEGACY593_PREDECESSOR_VERSION = '20261030105202';
+export const SOURCE_PRODUCER_PREDECESSOR_VERSION = '20261031070755';
 export const SOURCE_PRODUCER_DERIVED_METADATA_PATH =
   'scripts/lib/source-producer-binding.generated.json';
 export const MODEL_RELEASE_ONLY_DEPENDENCIES = Object.freeze([
@@ -21,6 +24,8 @@ export function assertSourceProducerDerivedMetadata(value) {
     assert.equal(value.output, null);
   } else {
     assert.match(value.version, /^[0-9]{14}$/);
+    assert(value.version > SOURCE_PRODUCER_PREDECESSOR_VERSION,
+      'SOURCE derived version must follow the intended issued594 CODE/DATA predecessor');
     exact(value.binding, ['version', 'C', 'I', 'T', 'candidateManifestSha256', 'integratedManifestSha256']);
     assert.equal(value.binding.version, value.version);
     for (const key of ['C', 'I', 'T', 'candidateManifestSha256', 'integratedManifestSha256'])

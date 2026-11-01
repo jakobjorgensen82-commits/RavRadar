@@ -1,3 +1,11 @@
+## 1. november 2026 — næste SOURCE-led efter normal 595-versionssynk
+
+Aktuel isoleret SOURCE-version er 4.0.595 efter normal versionssynk og lokal 24-filers current594-integration. Nye 595-C/I/T og SQL er endnu ikke afledt; bindingsfilens version, binding og output er NULL. Den normale 594-central → B før S → samme SDK/action 63/64 → faktisk ejerafslutning er fortsat åben, og profilen er PREPARATION_ONLY. Gamle 586/040000-resultater bevares som dateret historik, ikke den aktuelle binding eller installationsvej.
+
+ROOTs P0/c920, almindelig 235 og offentlig header/784 er separate driftsbeviser, ikke SOURCE-bevis. Ingen ny PostgreSQL-, kapacitets-, komplet cache-/historik- eller leveringssucces påstås. Alle fem mål er åbne til 18. november 2026; delegering har adskilte filejere, ROOT koordinerer produktion, og ingen produktion ændres under writer.
+
+Færdiggør først den eksisterende normale 594-central-/metadata-kalder og ejerafslutning. ROOT afventer konkret kalderplan og frosne kildeinput, før nye C/I/T, binding/output eller SQL besluttes. Ingen ny bank, falsk HEAD/READY, billigere 585-gren eller direkte privat fase må erstatte det normale forløb.
+
 ## 20. oktober — aktuel rækkefølge og frist
 
 Ejerens gældende frist er 18. november 2026. CURRENT_TRUTH og det private

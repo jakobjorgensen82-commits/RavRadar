@@ -1,5 +1,20 @@
 # DEC-0294 – SOURCE-kode og dens genererede kontrolmetadata
 
+## Tillæg 1. november 2026 — 595 versionssynkroniseret, binding stadig NULL
+
+Den isolerede SOURCE-kandidat står lokalt på **4.0.595** efter én normal versionssynk. Den gennemgåede semantiske current594-sammenføring på 24 filer er faktisk anvendt lokalt; ROOT har genlæst den normale NULL-cases PASS. Det er ikke en leveret revision. SOURCE-bindingsfilens version, binding og output er fortsat NULL. Nye 595-C/I/T, SQL og fixedpoint er endnu ikke afledt.
+
+Den ægte forgænger er 4.0.594 fra fast genuine37 CODE. Aktuelle syntetiske 594-input skal fremstilles af de normale kaldere; CODE, DATA og SOURCE-eksekutor må ikke ommærkes til hinanden. Gamle 585/586-prøver beholder egne arkiverede normalfaser. Bevarede 586/C145/I141- og 040000-resultater er historiske originaler, ikke den aktuelle 595-binding eller installationsvej.
+
+Næste åbne led er den normale 594-central-/metadataovergang gennem B før S, samme SDK og almindelige action, fase 63/64 og faktisk afslutning af samme ejer. Profilen er PREPARATION_ONLY; et forberedt prefix eller en fanget RPC-forespørgsel er ikke databasegenlæsning eller fullRuntime/actionbevis. ROOT afventer konkret kalderplan og frosne kildeinput før normal C → I → T, binding-only, nyt procesoutput og eventuel ny SQL-kilde.
+
+ROOTs særskilte oplysninger om fungerende P0/c920, almindelig 235 og offentlig header/784 er ikke SOURCE-kvalifikation og er ikke genverificeret af denne SOURCE-fase. PostgreSQL, kapacitet, komplet cache/historik og selvstændig produktion er ikke bevist. Alle fem hovedmål er åbne til **18. november 2026**. Afgrænset delegering bevarer adskilte filejere og ROOT som eneste produktionskoordinator; ingen produktionsændring under aktiv writer.
+
+Normal versionssynk er mere end versionsfelter, men udfører ikke model- eller migrationsudstedelse. Begge geodata fik fysisk kun topversion; 68 gamle migrationsfiler, genererede C/I og de 12 T-input blev bevaret. ROOT accepterer 67 mtime-statcacheændringer med uændret staging som særskilt indeksforbehold, ikke ændret kilde-/databinding. Ingen indexrestore er udført.
+
+Den normale statiske importanalyse giver C152/I148/T12 som kildeinventarer og nul af de 13 computed-filer i C/I/T. Det er ikke afledte 595-hashes. De 31 udtryk står fortsat åbne i egne native-, test- og historiske scopes uden generel whitelist. Fuld bindingsafhængig håndbogskontrol, nyt fixedpoint, PostgreSQL/native og kapacitet er pending.
+
+
 - **Status:** DELVIST IMPLEMENTERET; lokal, inaktiv forberedelse.
 - **Dato:** 2026-10-21.
 - **Omfang:** Den isolerede SOURCE-revision; ingen aktivering eller installation.

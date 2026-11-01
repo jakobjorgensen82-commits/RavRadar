@@ -23,11 +23,48 @@ import { ravScoreSamplingContextKey } from './ravscore-sampling-context.mjs';
 import { assertIntegratedCoastalPointContinuation } from './coastal-point-staging-contract.mjs';
 import { assertCandidateGRollbackContinuation } from './ravscore-candidate-g-rollback-runtime.mjs';
 import { ownFileDescriptorIdentity, ownedFileDescriptorClosed } from './private-weather-component-pack.mjs';
+import { PRIVATE_CONDITIONS_MAX_BYTES } from './bounded-json-writer.mjs';
+import {assertFrozen591CompactRuntimeContracts} from './assistant-public591-runtime-contracts.mjs';
 import { withNativeCurrentReanalysisPredecessorSource } from '../check-native-current-reanalysis-predecessor-source.mjs';
 import { assertAuthenticatedFrozen584Snapshot } from './authenticated-frozen584-predecessor.mjs';
 import { withAuthenticated584PredecessorSource } from '../check-account-statistics-assistant-predecessor-source.mjs';
 import { assertAuthenticatedFrozen585Snapshot } from './authenticated-frozen585-predecessor.mjs';
-import { withAuthenticated585PredecessorSource } from '../check-source-producer-predecessor-source.mjs';
+import { withAuthenticated585PredecessorSource } from '../check-native-original-continuity-predecessor-source.mjs';
+
+import {readAuthenticatedFrozen586Predecessor,assertAuthenticatedFrozen586Snapshot,
+  readAuthenticatedFrozen587Predecessor,assertAuthenticatedFrozen587Snapshot,
+  readAuthenticatedFrozen588Predecessor,assertAuthenticatedFrozen588Snapshot,
+  readAuthenticatedFrozen590Predecessor,assertAuthenticatedFrozen590Snapshot,
+  readAuthenticatedFrozen591Predecessor,assertAuthenticatedFrozen591Snapshot}
+  from './authenticated-frozen586-predecessor.mjs';
+
+import {readAuthenticatedSource588Predecessor,assertAuthenticatedSource588Snapshot,assertAuthenticatedSource588SnapshotFresh,
+  assertAuthenticatedStaged588Snapshot,assertAuthenticatedStaged588SnapshotFresh}
+  from './authenticated-frozen586-predecessor.mjs';
+import {withAuthenticatedSource588PredecessorSource,withAuthenticated590PredecessorSource,
+  FROZEN590_CODE_SOURCE_PROVENANCE} from '../check-assistant-later-h0-predecessor-source.mjs';
+import {readAuthenticatedSource590Predecessor,assertAuthenticatedSource590Snapshot,
+  assertAuthenticatedSource590SnapshotFresh,assertAuthenticatedSourceStaged590Snapshot,
+  assertAuthenticatedSourceStaged590SnapshotFresh} from './authenticated-frozen586-predecessor.mjs';
+import {withSource591OriginalDataSource,SOURCE591_CODE_SOURCE_PROVENANCE}
+  from '../check-assistant-later-h0-predecessor-source.mjs';
+import {readAuthenticatedSource591Predecessor,assertAuthenticatedSource591Snapshot,
+  assertAuthenticatedSource591SnapshotFresh,assertAuthenticatedSourceStaged591Snapshot,
+  assertAuthenticatedSourceStaged591SnapshotFresh} from './authenticated-frozen586-predecessor.mjs';
+import {SOURCE_PRODUCER_BINDING as SOURCE_ORIGIN_BINDING,requireSourceProducerOutput,
+  requireSourceProducerBinding} from './source-producer-successor-source.mjs';
+
+import {readAuthenticatedSource593Predecessor,assertAuthenticatedSource593Snapshot,
+  assertAuthenticatedSource593SnapshotFresh,assertAuthenticatedSourceStaged593Snapshot,
+  assertAuthenticatedSourceStaged593SnapshotFresh} from './authenticated-frozen586-predecessor.mjs';
+import {withSource593OriginalDataSource,SOURCE593_CODE_SOURCE_PROVENANCE}
+  from '../check-assistant-later-h0-predecessor-source.mjs';
+
+import {readAuthenticatedSource594Predecessor,assertAuthenticatedSource594Snapshot,
+  assertAuthenticatedSource594SnapshotFresh,assertAuthenticatedSourceStaged594Snapshot,
+  assertAuthenticatedSourceStaged594SnapshotFresh} from './authenticated-frozen586-predecessor.mjs';
+import {withSource594OriginalDataSource,SOURCE594_CODE_SOURCE_PROVENANCE}
+  from '../check-assistant-later-h0-predecessor-source.mjs';
 
 export const ESTABLISHED_NATIVE_CURRENT_SEMANTIC_CONTRACT = 'established-native-current-continuation-v1';
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
@@ -287,7 +324,7 @@ async function json(file, maximum) { return JSON.parse((await ownedBytes(file, m
 const sourceEnv = () => Object.fromEntries(['PATH', 'Path', 'SystemRoot', 'WINDIR', 'TEMP', 'TMP', 'LANG', 'LC_ALL']
   .filter(key => typeof process.env[key] === 'string').map(key => [key, process.env[key]]));
 async function git(args) { return (await exec('git', ['-C', ROOT, ...args],
-  { env: sourceEnv(), encoding: 'utf8', maxBuffer: 16 * MB, timeout: 30000 })).stdout.trim(); }
+  { env: {...sourceEnv(),GIT_NO_LAZY_FETCH:'1',GIT_NO_REPLACE_OBJECTS:'1',GIT_OPTIONAL_LOCKS:'0',GIT_TERMINAL_PROMPT:'0',GIT_CONFIG_COUNT:'1',GIT_CONFIG_KEY_0:'protocol.allow',GIT_CONFIG_VALUE_0:'never'}, encoding: 'utf8', maxBuffer: 16 * MB, timeout: 30000 })).stdout.trim(); }
 async function sourceIdentity(producer = null) {
   const I = ravScoreModelBinding().modelBundleSha256, C = candidateBinding().modelBundleSha256;
   const contracts = await privateRuntimeContractHashes();
@@ -380,6 +417,394 @@ async function readPointer(request) {
 
 // Neither public reader accepts paths, requesters, receipts, source/validator
 // choices or flags. This selector is lexical, never caller-provided authority.
+// Fixed genuine586 -> actual normal successor, never a SAME_H0 event.
+// The old data assertions and normal protected loader authenticate WHOLE old
+// attestation/B/S. Only current metadata-normalized H0 pairs enter the existing
+// ForPart kernel; its normal finalizer still requires real later partResults.
+async function readFrozen586LaterOrigin({descriptor,before,request,conditions,central,parts,currentSource}){
+  const oldI='6d8f7cca203b5f7ee5155f3c0cdb39403a02fd0eb30fecaca5070ef9f814a805';
+  need(descriptor.modelBinding.modelBundleSha256===oldI&&currentSource.integrated!==oldI,'586_FAMILY');
+  const target=Date.parse(process.env.RAVRADAR_PRODUCTION_TARGET_HOUR??'');
+  need(Number.isFinite(target)&&target%3600000===0&&target>Date.parse(descriptor.productionReferenceAt),'586_LATER_TARGET');
+  const snapshot=assertAuthenticatedFrozen586Snapshot(await readAuthenticatedFrozen586Predecessor());
+  need(same(snapshot.descriptor,descriptor)&&same(snapshot.centralContract,central),'586_ORIGINAL_CHANGED');
+  const contracts=await privateRuntimeContractHashes(),I=ravScoreModelBinding(),C=candidateBinding();
+  need(same({...snapshot.checkpoint.modelBinding,modelBundleSha256:I.modelBundleSha256},I)
+    &&same({...snapshot.checkpoint.candidateGRollbackCompanion.modelBinding,modelBundleSha256:C.modelBundleSha256},C)
+    &&same({...descriptor.contractHashes,continuationStateContractSha256:contracts.continuationStateContractSha256},contracts),
+    '586_METADATA_ONLY');
+  need(conditions.datasetId===descriptor.datasetId&&conditions.productionReferenceAt===descriptor.productionReferenceAt
+    &&same(conditions[ATTEST],snapshot.attestation),'586_WHOLE_PARENT_CHANGED');
+  const pairs=pairsFromConditions(conditions,parts);
+  need(same([...pairs.keys()].sort(),Object.keys(snapshot.checkpoint.states).sort())
+    &&same([...pairs.keys()].sort(),Object.keys(snapshot.checkpoint.candidateGRollbackCompanion.states).sort()),'586_PARTS');
+  for(const[id,pair]of pairs){
+    const originalI=snapshot.checkpoint.states[id],originalG=snapshot.checkpoint.candidateGRollbackCompanion.states[id];
+    const inverseI=structuredClone(pair.integrated),inverseG=structuredClone(pair.candidate);
+    need(inverseI.modelBundleSha256===I.modelBundleSha256,'586_CURRENT_PAIR_BINDING');
+    inverseI.modelBundleSha256=originalI.modelBundleSha256;
+    if(Object.hasOwn(inverseG,'modelBundleSha256')){
+      need(inverseG.modelBundleSha256===C.modelBundleSha256,'586_CURRENT_CANDIDATE_BINDING');
+      inverseG.modelBundleSha256=originalG.modelBundleSha256;
+    }
+    need(same(inverseI,originalI)&&same(inverseG,originalG),'586_WHOLE_PAIR_INVERSE');
+  }
+  need(same(await readPointer(request),before),'SOURCE_CHANGED');
+  need(same(await json(path.join(ROOT,'data/live/coastal-parts-v2.json'),16*MB),central),'REGISTRY_CHANGED');
+  const handle=Object.freeze({});
+  contexts.set(handle,{seed:false,descriptor:structuredClone(descriptor),generationSha256:snapshot.checkpoint.generationSha256,
+    parentAttestationSha256:snapshot.attestation.attestationSha256,central,parts,pairs,currentSource,
+    consumedParts:new Set(),finalized:false});
+  return handle;
+}
+
+// Én fast ægte587-forgænger. Aktuel kilde bindes af sourceIdentity/hele I-manifestet;
+// controllerens outputpins importeres ikke i modelkernen (ingen selvhashcyklus).
+async function readFrozen587LaterOrigin({descriptor,before,request,conditions,central,parts,currentSource}){
+  const oldI='5584d8e59f8d21785fd08b32f9beb22cf879cdb4892a11ede24eb862d9a0dca2';
+  need(descriptor.modelBinding.modelBundleSha256===oldI&&currentSource.integrated!==oldI,'587_FAMILY');
+  const target=Date.parse(process.env.RAVRADAR_PRODUCTION_TARGET_HOUR??'');
+  need(Number.isFinite(target)&&target%3600000===0&&target>Date.parse(descriptor.productionReferenceAt),'587_LATER_TARGET');
+  const snapshot=assertAuthenticatedFrozen587Snapshot(await readAuthenticatedFrozen587Predecessor());
+  need(same(snapshot.descriptor,descriptor)&&same(snapshot.centralContract,central),'587_ORIGINAL_CHANGED');
+  const contracts=await privateRuntimeContractHashes(),I=ravScoreModelBinding(),C=candidateBinding();
+  need(descriptor.contractHashes.continuationStateContractSha256==='cd3a3648ad5093662871559aa39d77671eda27edf1f9edc82a104c5430a43a21'
+    &&snapshot.checkpoint.candidateGRollbackCompanion.modelBinding.modelBundleSha256==='5c0b6a2c6ceb4ba9c5f224cb5d3fda693f300a8902da3f7561167f72cbab78b4',
+    '587_FIXED_ORIGINAL_BINDING');
+  need(I.modelBundleSha256===currentSource.integrated&&C.modelBundleSha256===currentSource.candidate
+    &&contracts.continuationStateContractSha256===currentSource.continuation
+    &&C.modelBundleSha256!==snapshot.checkpoint.candidateGRollbackCompanion.modelBinding.modelBundleSha256
+    &&contracts.continuationStateContractSha256!==descriptor.contractHashes.continuationStateContractSha256,
+    '587_ISSUED_CURRENT_SOURCE');
+  need(same({...snapshot.checkpoint.modelBinding,modelBundleSha256:I.modelBundleSha256},I)
+    &&same({...snapshot.checkpoint.candidateGRollbackCompanion.modelBinding,modelBundleSha256:C.modelBundleSha256},C)
+    &&same({...descriptor.contractHashes,continuationStateContractSha256:contracts.continuationStateContractSha256},contracts),
+    '587_METADATA_ONLY');
+  need(conditions.datasetId===descriptor.datasetId&&conditions.productionReferenceAt===descriptor.productionReferenceAt
+    &&same(conditions[ATTEST],snapshot.attestation),'587_WHOLE_PARENT_CHANGED');
+  const pairs=pairsFromConditions(conditions,parts);
+  need(same([...pairs.keys()].sort(),Object.keys(snapshot.checkpoint.states).sort())
+    &&same([...pairs.keys()].sort(),Object.keys(snapshot.checkpoint.candidateGRollbackCompanion.states).sort()),'587_PARTS');
+  for(const[id,pair]of pairs){
+    const originalI=snapshot.checkpoint.states[id],originalG=snapshot.checkpoint.candidateGRollbackCompanion.states[id];
+    const inverseI=structuredClone(pair.integrated),inverseG=structuredClone(pair.candidate);
+    need(inverseI.modelBundleSha256===I.modelBundleSha256,'587_CURRENT_PAIR_BINDING');
+    inverseI.modelBundleSha256=originalI.modelBundleSha256;
+    if(Object.hasOwn(inverseG,'modelBundleSha256')){
+      need(inverseG.modelBundleSha256===C.modelBundleSha256,'587_CURRENT_CANDIDATE_BINDING');
+      inverseG.modelBundleSha256=originalG.modelBundleSha256;
+    }
+    need(same(inverseI,originalI)&&same(inverseG,originalG),'587_WHOLE_PAIR_INVERSE');
+  }
+  need(same(await readPointer(request),before),'SOURCE_CHANGED');
+  need(same(await json(path.join(ROOT,'data/live/coastal-parts-v2.json'),16*MB),central),'REGISTRY_CHANGED');
+  const handle=Object.freeze({});
+  contexts.set(handle,{seed:false,descriptor:structuredClone(descriptor),generationSha256:snapshot.checkpoint.generationSha256,
+    parentAttestationSha256:snapshot.attestation.attestationSha256,central,parts,pairs,currentSource,
+    consumedParts:new Set(),finalized:false});
+  return handle;
+}
+
+// Én fast ægte588-forgænger. Aktuel kilde bindes af sourceIdentity/hele I-manifestet;
+// controllerens outputpins importeres ikke i modelkernen (ingen selvhashcyklus).
+async function readFrozen588LaterOrigin({descriptor,before,request,conditions,central,parts,currentSource}){
+  const oldI='5348f3ae7401d3a09dd180d45690f56b3cfec4a30af5a4928bdd9581f9d8ebac';
+  need(descriptor.modelBinding.modelBundleSha256===oldI&&currentSource.integrated!==oldI,'588_FAMILY');
+  const target=Date.parse(process.env.RAVRADAR_PRODUCTION_TARGET_HOUR??'');
+  need(Number.isFinite(target)&&target%3600000===0&&target>Date.parse(descriptor.productionReferenceAt),'588_LATER_TARGET');
+  const snapshot=assertAuthenticatedFrozen588Snapshot(await readAuthenticatedFrozen588Predecessor());
+  need(same(snapshot.descriptor,descriptor)&&same(snapshot.centralContract,central),'588_ORIGINAL_CHANGED');
+  const contracts=await privateRuntimeContractHashes(),I=ravScoreModelBinding(),C=candidateBinding();
+  need(descriptor.contractHashes.continuationStateContractSha256==='d98559d56d7bfe9b141cf1ddab73cddffb688a3b6766f5f9f3779b226f573701'
+    &&snapshot.checkpoint.candidateGRollbackCompanion.modelBinding.modelBundleSha256==='00905533cd243ffce8e507beedbc39c8dba26e635b59fa154e6f9ab20575780c',
+    '588_FIXED_ORIGINAL_BINDING');
+  need(I.modelBundleSha256===currentSource.integrated&&C.modelBundleSha256===currentSource.candidate
+    &&contracts.continuationStateContractSha256===currentSource.continuation
+    &&C.modelBundleSha256!==snapshot.checkpoint.candidateGRollbackCompanion.modelBinding.modelBundleSha256
+    &&contracts.continuationStateContractSha256!==descriptor.contractHashes.continuationStateContractSha256,
+    '588_ISSUED_CURRENT_SOURCE');
+  need(same({...snapshot.checkpoint.modelBinding,modelBundleSha256:I.modelBundleSha256},I)
+    &&same({...snapshot.checkpoint.candidateGRollbackCompanion.modelBinding,modelBundleSha256:C.modelBundleSha256},C)
+    &&same({...descriptor.contractHashes,continuationStateContractSha256:contracts.continuationStateContractSha256},contracts),
+    '588_METADATA_ONLY');
+  need(conditions.datasetId===descriptor.datasetId&&conditions.productionReferenceAt===descriptor.productionReferenceAt
+    &&same(conditions[ATTEST],snapshot.attestation),'588_WHOLE_PARENT_CHANGED');
+  const pairs=pairsFromConditions(conditions,parts);
+  need(same([...pairs.keys()].sort(),Object.keys(snapshot.checkpoint.states).sort())
+    &&same([...pairs.keys()].sort(),Object.keys(snapshot.checkpoint.candidateGRollbackCompanion.states).sort()),'588_PARTS');
+  for(const[id,pair]of pairs){
+    const originalI=snapshot.checkpoint.states[id],originalG=snapshot.checkpoint.candidateGRollbackCompanion.states[id];
+    const inverseI=structuredClone(pair.integrated),inverseG=structuredClone(pair.candidate);
+    need(inverseI.modelBundleSha256===I.modelBundleSha256,'588_CURRENT_PAIR_BINDING');
+    inverseI.modelBundleSha256=originalI.modelBundleSha256;
+    if(Object.hasOwn(inverseG,'modelBundleSha256')){
+      need(inverseG.modelBundleSha256===C.modelBundleSha256,'588_CURRENT_CANDIDATE_BINDING');
+      inverseG.modelBundleSha256=originalG.modelBundleSha256;
+    }
+    need(same(inverseI,originalI)&&same(inverseG,originalG),'588_WHOLE_PAIR_INVERSE');
+  }
+  need(same(await readPointer(request),before),'SOURCE_CHANGED');
+  need(same(await json(path.join(ROOT,'data/live/coastal-parts-v2.json'),16*MB),central),'REGISTRY_CHANGED');
+  const handle=Object.freeze({});
+  contexts.set(handle,{seed:false,descriptor:structuredClone(descriptor),generationSha256:snapshot.checkpoint.generationSha256,
+    parentAttestationSha256:snapshot.attestation.attestationSha256,central,parts,pairs,currentSource,
+    consumedParts:new Set(),finalized:false});
+  return handle;
+}
+
+// Én fast ægte590-forgænger. Aktuel kilde bindes af sourceIdentity/hele I-manifestet;
+// controllerens outputpins importeres ikke i modelkernen (ingen selvhashcyklus).
+async function readFrozen590LaterOrigin({descriptor,before,request,conditions,central,parts,currentSource}){
+  const oldI='4c94c24e7d14d66c20cc3c2c3d0389cadb0c3e9e76fcfe692943c6087df56819';
+  need(descriptor.modelBinding.modelBundleSha256===oldI&&currentSource.integrated!==oldI,'590_FAMILY');
+  const target=Date.parse(process.env.RAVRADAR_PRODUCTION_TARGET_HOUR??'');
+  need(Number.isFinite(target)&&target%3600000===0&&target>Date.parse(descriptor.productionReferenceAt),'590_LATER_TARGET');
+  const snapshot=assertAuthenticatedFrozen590Snapshot(await readAuthenticatedFrozen590Predecessor());
+  need(same(snapshot.descriptor,descriptor)&&same(snapshot.centralContract,central),'590_ORIGINAL_CHANGED');
+  const contracts=await privateRuntimeContractHashes(),I=ravScoreModelBinding(),C=candidateBinding();
+  need(descriptor.contractHashes.continuationStateContractSha256==='d444e6141038f56dd04b97a55eefe07bbd98f122fb3b76a43bdddacff2d88c8a'
+    &&snapshot.checkpoint.candidateGRollbackCompanion.modelBinding.modelBundleSha256==='bca59cb435cb3f35041c665d2954f0ef04b189b572219771fc5628e4f7ccb551',
+    '590_FIXED_ORIGINAL_BINDING');
+  need(I.modelBundleSha256===currentSource.integrated&&C.modelBundleSha256===currentSource.candidate
+    &&contracts.continuationStateContractSha256===currentSource.continuation
+    &&C.modelBundleSha256!==snapshot.checkpoint.candidateGRollbackCompanion.modelBinding.modelBundleSha256
+    &&contracts.continuationStateContractSha256!==descriptor.contractHashes.continuationStateContractSha256,
+    '590_ISSUED_CURRENT_SOURCE');
+  need(same({...snapshot.checkpoint.modelBinding,modelBundleSha256:I.modelBundleSha256},I)
+    &&same({...snapshot.checkpoint.candidateGRollbackCompanion.modelBinding,modelBundleSha256:C.modelBundleSha256},C)
+    &&same({...descriptor.contractHashes,continuationStateContractSha256:contracts.continuationStateContractSha256},contracts),
+    '590_METADATA_ONLY');
+  need(conditions.datasetId===descriptor.datasetId&&conditions.productionReferenceAt===descriptor.productionReferenceAt
+    &&same(conditions[ATTEST],snapshot.attestation),'590_WHOLE_PARENT_CHANGED');
+  const pairs=pairsFromConditions(conditions,parts);
+  need(same([...pairs.keys()].sort(),Object.keys(snapshot.checkpoint.states).sort())
+    &&same([...pairs.keys()].sort(),Object.keys(snapshot.checkpoint.candidateGRollbackCompanion.states).sort()),'590_PARTS');
+  for(const[id,pair]of pairs){
+    const originalI=snapshot.checkpoint.states[id],originalG=snapshot.checkpoint.candidateGRollbackCompanion.states[id];
+    const inverseI=structuredClone(pair.integrated),inverseG=structuredClone(pair.candidate);
+    need(inverseI.modelBundleSha256===I.modelBundleSha256,'590_CURRENT_PAIR_BINDING');
+    inverseI.modelBundleSha256=originalI.modelBundleSha256;
+    if(Object.hasOwn(inverseG,'modelBundleSha256')){
+      need(inverseG.modelBundleSha256===C.modelBundleSha256,'590_CURRENT_CANDIDATE_BINDING');
+      inverseG.modelBundleSha256=originalG.modelBundleSha256;
+    }
+    need(same(inverseI,originalI)&&same(inverseG,originalG),'590_WHOLE_PAIR_INVERSE');
+  }
+  need(same(await readPointer(request),before),'SOURCE_CHANGED');
+  need(same(await json(path.join(ROOT,'data/live/coastal-parts-v2.json'),16*MB),central),'REGISTRY_CHANGED');
+  const handle=Object.freeze({});
+  contexts.set(handle,{seed:false,descriptor:structuredClone(descriptor),generationSha256:snapshot.checkpoint.generationSha256,
+    parentAttestationSha256:snapshot.attestation.attestationSha256,central,parts,pairs,currentSource,
+    consumedParts:new Set(),finalized:false});
+  return handle;
+}
+
+// Ren metadatakontrol; den skaber ingen attest, autentificering eller adgang.
+// Normal læsning autentificerer hele den frosne original før dette kald.
+export async function assertFrozen591LaterOriginMetadata(descriptor,checkpoint){
+  need(arguments.length===2,'591_METADATA_ONLY');
+  const contracts=await privateRuntimeContractHashes(),I=ravScoreModelBinding(),C=candidateBinding();
+  need(same({...checkpoint.modelBinding,modelBundleSha256:I.modelBundleSha256},I)
+    &&same({...checkpoint.candidateGRollbackCompanion.modelBinding,modelBundleSha256:C.modelBundleSha256},C),
+    '591_METADATA_ONLY');
+  try{assertFrozen591CompactRuntimeContracts(descriptor.contractHashes,contracts);}
+  catch{fail('591_METADATA_ONLY');}
+  return true;
+}
+// PREPARED ONLY: SOURCE4845 strict-later body is intentionally UNCONNECTED.
+// The normal control b574 dispatch below remains exact; later SOURCE caller integration is OPEN.
+// Genuine588 -> strictly later SOURCE generation, never SAME_H0 authority.
+async function readSourceFrozen588LaterOrigin({descriptor,before,request,conditions,central,parts,currentSource}){
+  const oldI='5348f3ae7401d3a09dd180d45690f56b3cfec4a30af5a4928bdd9581f9d8ebac';
+  need(descriptor.modelBinding.modelBundleSha256===oldI&&currentSource.integrated!==oldI,'588_FAMILY');
+  const target=Date.parse(process.env.RAVRADAR_PRODUCTION_TARGET_HOUR??'');
+  need(Number.isFinite(target)&&target%3600000===0&&target>Date.parse(descriptor.productionReferenceAt),'588_LATER_TARGET');
+  const original588=await readAuthenticatedSource588Predecessor();
+  const snapshot=assertAuthenticatedSource588Snapshot(original588);
+  need(same(snapshot.descriptor,descriptor)&&same(snapshot.centralContract,central),'588_ORIGINAL_CHANGED');
+  const contracts=await privateRuntimeContractHashes(),I=ravScoreModelBinding(),C=candidateBinding();
+  need(descriptor.contractHashes.continuationStateContractSha256==='d98559d56d7bfe9b141cf1ddab73cddffb688a3b6766f5f9f3779b226f573701'
+    &&snapshot.checkpoint.candidateGRollbackCompanion.modelBinding.modelBundleSha256==='00905533cd243ffce8e507beedbc39c8dba26e635b59fa154e6f9ab20575780c',
+    '588_FIXED_ORIGINAL_BINDING');
+  need(I.modelBundleSha256===currentSource.integrated&&C.modelBundleSha256===currentSource.candidate
+    &&contracts.continuationStateContractSha256===currentSource.continuation
+    &&C.modelBundleSha256!==snapshot.checkpoint.candidateGRollbackCompanion.modelBinding.modelBundleSha256
+    &&contracts.continuationStateContractSha256!==descriptor.contractHashes.continuationStateContractSha256,
+    '588_ISSUED_CURRENT_SOURCE');
+  need(same({...snapshot.checkpoint.modelBinding,modelBundleSha256:I.modelBundleSha256},I)
+    &&same({...snapshot.checkpoint.candidateGRollbackCompanion.modelBinding,modelBundleSha256:C.modelBundleSha256},C)
+    &&same({...descriptor.contractHashes,continuationStateContractSha256:contracts.continuationStateContractSha256},contracts),
+    '588_METADATA_ONLY');
+  need(conditions.datasetId===descriptor.datasetId&&conditions.productionReferenceAt===descriptor.productionReferenceAt
+    &&same(conditions[ATTEST],snapshot.attestation),'588_WHOLE_PARENT_CHANGED');
+  const pairs=pairsFromConditions(conditions,parts);
+  need(same([...pairs.keys()].sort(),Object.keys(snapshot.checkpoint.states).sort())
+    &&same([...pairs.keys()].sort(),Object.keys(snapshot.checkpoint.candidateGRollbackCompanion.states).sort()),'588_PARTS');
+  for(const[id,pair]of pairs){
+    const originalI=snapshot.checkpoint.states[id],originalG=snapshot.checkpoint.candidateGRollbackCompanion.states[id];
+    const inverseI=structuredClone(pair.integrated),inverseG=structuredClone(pair.candidate);
+    need(inverseI.modelBundleSha256===I.modelBundleSha256,'588_CURRENT_PAIR_BINDING');
+    inverseI.modelBundleSha256=originalI.modelBundleSha256;
+    if(Object.hasOwn(inverseG,'modelBundleSha256')){
+      need(inverseG.modelBundleSha256===C.modelBundleSha256,'588_CURRENT_CANDIDATE_BINDING');
+      inverseG.modelBundleSha256=originalG.modelBundleSha256;
+    }
+    need(same(inverseI,originalI)&&same(inverseG,originalG),'588_WHOLE_PAIR_INVERSE');
+  }
+  need(same(await readPointer(request),before),'SOURCE_CHANGED');
+  need(same(await json(path.join(ROOT,'data/live/coastal-parts-v2.json'),16*MB),central),'REGISTRY_CHANGED');
+  await assertAuthenticatedSource588SnapshotFresh(original588);
+  const handle=Object.freeze({});
+  contexts.set(handle,{seed:false,descriptor:structuredClone(descriptor),generationSha256:snapshot.checkpoint.generationSha256,
+    parentAttestationSha256:snapshot.attestation.attestationSha256,central,parts,pairs,currentSource,
+    consumedParts:new Set(),finalized:false});
+  return handle;
+}
+
+// SOURCEs eget strengt senere590-led; de historiske læsere ovenfor er hele.
+async function readSourceFrozen590LaterOrigin({descriptor,before,request,conditions,central,parts,currentSource}){
+  requireSourceProducerOutput();const issued=requireSourceProducerBinding();
+  need(currentSource.integrated===issued.I&&currentSource.candidate===issued.C
+    &&currentSource.continuation===issued.T,'SOURCE590_ISSUED_FAMILY');
+  const oldI='4c94c24e7d14d66c20cc3c2c3d0389cadb0c3e9e76fcfe692943c6087df56819';
+  need(descriptor.modelBinding.modelBundleSha256===oldI&&currentSource.integrated!==oldI,'590_FAMILY');
+  const target=Date.parse(process.env.RAVRADAR_PRODUCTION_TARGET_HOUR??'');
+  need(Number.isFinite(target)&&target%3600000===0&&target>Date.parse(descriptor.productionReferenceAt),'590_LATER_TARGET');
+  const original590=await readAuthenticatedSource590Predecessor();
+  const snapshot=assertAuthenticatedSource590Snapshot(original590);
+  need(same(snapshot.descriptor,descriptor)&&same(snapshot.centralContract,central),'590_ORIGINAL_CHANGED');
+  const contracts=await privateRuntimeContractHashes(),I=ravScoreModelBinding(),C=candidateBinding();
+  need(descriptor.contractHashes.continuationStateContractSha256==='d444e6141038f56dd04b97a55eefe07bbd98f122fb3b76a43bdddacff2d88c8a'
+    &&snapshot.checkpoint.candidateGRollbackCompanion.modelBinding.modelBundleSha256==='bca59cb435cb3f35041c665d2954f0ef04b189b572219771fc5628e4f7ccb551',
+    '590_FIXED_ORIGINAL_BINDING');
+  need(I.modelBundleSha256===currentSource.integrated&&C.modelBundleSha256===currentSource.candidate
+    &&contracts.continuationStateContractSha256===currentSource.continuation
+    &&C.modelBundleSha256!==snapshot.checkpoint.candidateGRollbackCompanion.modelBinding.modelBundleSha256
+    &&contracts.continuationStateContractSha256!==descriptor.contractHashes.continuationStateContractSha256,
+    '590_ISSUED_CURRENT_SOURCE');
+  need(same({...snapshot.checkpoint.modelBinding,modelBundleSha256:I.modelBundleSha256},I)
+    &&same({...snapshot.checkpoint.candidateGRollbackCompanion.modelBinding,modelBundleSha256:C.modelBundleSha256},C)
+    &&same({...descriptor.contractHashes,continuationStateContractSha256:contracts.continuationStateContractSha256},contracts),
+    '590_METADATA_ONLY');
+  need(conditions.datasetId===descriptor.datasetId&&conditions.productionReferenceAt===descriptor.productionReferenceAt
+    &&same(conditions[ATTEST],snapshot.attestation),'590_WHOLE_PARENT_CHANGED');
+  const pairs=pairsFromConditions(conditions,parts);
+  need(same([...pairs.keys()].sort(),Object.keys(snapshot.checkpoint.states).sort())
+    &&same([...pairs.keys()].sort(),Object.keys(snapshot.checkpoint.candidateGRollbackCompanion.states).sort()),'590_PARTS');
+  for(const[id,pair]of pairs){
+    const originalI=snapshot.checkpoint.states[id],originalG=snapshot.checkpoint.candidateGRollbackCompanion.states[id];
+    const inverseI=structuredClone(pair.integrated),inverseG=structuredClone(pair.candidate);
+    need(inverseI.modelBundleSha256===I.modelBundleSha256,'590_CURRENT_PAIR_BINDING');
+    inverseI.modelBundleSha256=originalI.modelBundleSha256;
+    if(Object.hasOwn(inverseG,'modelBundleSha256')){
+      need(inverseG.modelBundleSha256===C.modelBundleSha256,'590_CURRENT_CANDIDATE_BINDING');
+      inverseG.modelBundleSha256=originalG.modelBundleSha256;
+    }
+    need(same(inverseI,originalI)&&same(inverseG,originalG),'590_WHOLE_PAIR_INVERSE');
+  }
+  need(same(await readPointer(request),before),'SOURCE_CHANGED');
+  need(same(await json(path.join(ROOT,'data/live/coastal-parts-v2.json'),16*MB),central),'REGISTRY_CHANGED');
+  await assertAuthenticatedSource590SnapshotFresh(original590);
+  const handle=Object.freeze({});
+  contexts.set(handle,{seed:false,descriptor:structuredClone(descriptor),generationSha256:snapshot.checkpoint.generationSha256,
+    parentAttestationSha256:snapshot.attestation.attestationSha256,central,parts,pairs,currentSource,
+    consumedParts:new Set(),finalized:false});
+  return handle;
+}
+
+// SOURCEs eget strengt senere591-led; de gamle590- og historiske læsere bevares hele.
+async function readSourceFrozen591LaterOrigin({descriptor,before,request,conditions,central,parts,currentSource}){
+  requireSourceProducerOutput();const issued=requireSourceProducerBinding();
+  need(currentSource.integrated===issued.I&&currentSource.candidate===issued.C
+    &&currentSource.continuation===issued.T,'SOURCE591_ISSUED_FAMILY');
+  const oldI='ebd5ac3dac09b7afb51e46d18920f6932b478b7ef15bdd31190c128273cb6a54';
+  need(descriptor.modelBinding.modelBundleSha256===oldI&&currentSource.integrated!==oldI,'591_FAMILY');
+  const target=Date.parse(process.env.RAVRADAR_PRODUCTION_TARGET_HOUR??'');
+  need(Number.isFinite(target)&&target%3600000===0&&target>Date.parse(descriptor.productionReferenceAt),'591_LATER_TARGET');
+  const original591=await readAuthenticatedSource591Predecessor();
+  const snapshot=assertAuthenticatedSource591Snapshot(original591);
+  need(same(snapshot.descriptor,descriptor)&&same(snapshot.centralContract,central),'591_ORIGINAL_CHANGED');
+  const contracts=await privateRuntimeContractHashes(),I=ravScoreModelBinding(),C=candidateBinding();
+  need(descriptor.contractHashes.continuationStateContractSha256==='b490f11d14cfe607839d7848bbcdb8e9df7abdfe62c82983e5247fb4ca3dcc0d'
+    &&snapshot.checkpoint.candidateGRollbackCompanion.modelBinding.modelBundleSha256==='38738b7d7d3bfd74958ab2453422f2416338e99dac53d12f7098ad8c3539ec64',
+    '591_FIXED_ORIGINAL_BINDING');
+  need(I.modelBundleSha256===currentSource.integrated&&C.modelBundleSha256===currentSource.candidate
+    &&contracts.continuationStateContractSha256===currentSource.continuation
+    &&C.modelBundleSha256!==snapshot.checkpoint.candidateGRollbackCompanion.modelBinding.modelBundleSha256
+    &&contracts.continuationStateContractSha256!==descriptor.contractHashes.continuationStateContractSha256,
+    '591_ISSUED_CURRENT_SOURCE');
+  need(same({...snapshot.checkpoint.modelBinding,modelBundleSha256:I.modelBundleSha256},I)
+    &&same({...snapshot.checkpoint.candidateGRollbackCompanion.modelBinding,modelBundleSha256:C.modelBundleSha256},C)
+    &&same({...descriptor.contractHashes,continuationStateContractSha256:contracts.continuationStateContractSha256},contracts),
+    '591_METADATA_ONLY');
+  need(conditions.datasetId===descriptor.datasetId&&conditions.productionReferenceAt===descriptor.productionReferenceAt
+    &&same(conditions[ATTEST],snapshot.attestation),'591_WHOLE_PARENT_CHANGED');
+  const pairs=pairsFromConditions(conditions,parts);
+  need(same([...pairs.keys()].sort(),Object.keys(snapshot.checkpoint.states).sort())
+    &&same([...pairs.keys()].sort(),Object.keys(snapshot.checkpoint.candidateGRollbackCompanion.states).sort()),'591_PARTS');
+  for(const[id,pair]of pairs){
+    const originalI=snapshot.checkpoint.states[id],originalG=snapshot.checkpoint.candidateGRollbackCompanion.states[id];
+    const inverseI=structuredClone(pair.integrated),inverseG=structuredClone(pair.candidate);
+    need(inverseI.modelBundleSha256===I.modelBundleSha256,'591_CURRENT_PAIR_BINDING');
+    inverseI.modelBundleSha256=originalI.modelBundleSha256;
+    if(Object.hasOwn(inverseG,'modelBundleSha256')){
+      need(inverseG.modelBundleSha256===C.modelBundleSha256,'591_CURRENT_CANDIDATE_BINDING');
+      inverseG.modelBundleSha256=originalG.modelBundleSha256;
+    }
+    need(same(inverseI,originalI)&&same(inverseG,originalG),'591_WHOLE_PAIR_INVERSE');
+  }
+  need(same(await readPointer(request),before),'SOURCE_CHANGED');
+  need(same(await json(path.join(ROOT,'data/live/coastal-parts-v2.json'),16*MB),central),'REGISTRY_CHANGED');
+  await assertAuthenticatedSource591SnapshotFresh(original591);
+  const handle=Object.freeze({});
+  contexts.set(handle,{seed:false,descriptor:structuredClone(descriptor),generationSha256:snapshot.checkpoint.generationSha256,
+    parentAttestationSha256:snapshot.attestation.attestationSha256,central,parts,pairs,currentSource,
+    consumedParts:new Set(),finalized:false});
+  return handle;
+}
+
+// Separate genuine591 later-H0 origin. The old590 implementation remains byte-whole above.
+async function readFrozen591LaterOrigin({descriptor,before,request,conditions,central,parts,currentSource}){
+  const oldI='ebd5ac3dac09b7afb51e46d18920f6932b478b7ef15bdd31190c128273cb6a54';
+  need(descriptor.modelBinding.modelBundleSha256===oldI&&currentSource.integrated!==oldI,'591_FAMILY');
+  const target=Date.parse(process.env.RAVRADAR_PRODUCTION_TARGET_HOUR??'');
+  need(Number.isFinite(target)&&target%3600000===0&&target>Date.parse(descriptor.productionReferenceAt),'591_LATER_TARGET');
+  const snapshot=assertAuthenticatedFrozen591Snapshot(await readAuthenticatedFrozen591Predecessor());
+  need(same(snapshot.descriptor,descriptor)&&same(snapshot.centralContract,central),'591_ORIGINAL_CHANGED');
+  const contracts=await privateRuntimeContractHashes(),I=ravScoreModelBinding(),C=candidateBinding();
+  need(descriptor.contractHashes.continuationStateContractSha256==='b490f11d14cfe607839d7848bbcdb8e9df7abdfe62c82983e5247fb4ca3dcc0d'
+    &&snapshot.checkpoint.candidateGRollbackCompanion.modelBinding.modelBundleSha256==='38738b7d7d3bfd74958ab2453422f2416338e99dac53d12f7098ad8c3539ec64',
+    '591_FIXED_ORIGINAL_BINDING');
+  need(I.modelBundleSha256===currentSource.integrated&&C.modelBundleSha256===currentSource.candidate
+    &&contracts.continuationStateContractSha256===currentSource.continuation
+    &&C.modelBundleSha256!==snapshot.checkpoint.candidateGRollbackCompanion.modelBinding.modelBundleSha256
+    &&contracts.continuationStateContractSha256!==descriptor.contractHashes.continuationStateContractSha256,
+    '591_ISSUED_CURRENT_SOURCE');
+  await assertFrozen591LaterOriginMetadata(descriptor,snapshot.checkpoint);
+  need(conditions.datasetId===descriptor.datasetId&&conditions.productionReferenceAt===descriptor.productionReferenceAt
+    &&same(conditions[ATTEST],snapshot.attestation),'591_WHOLE_PARENT_CHANGED');
+  const pairs=pairsFromConditions(conditions,parts);
+  need(same([...pairs.keys()].sort(),Object.keys(snapshot.checkpoint.states).sort())
+    &&same([...pairs.keys()].sort(),Object.keys(snapshot.checkpoint.candidateGRollbackCompanion.states).sort()),'591_PARTS');
+  for(const[id,pair]of pairs){
+    const originalI=snapshot.checkpoint.states[id],originalG=snapshot.checkpoint.candidateGRollbackCompanion.states[id];
+    const inverseI=structuredClone(pair.integrated),inverseG=structuredClone(pair.candidate);
+    need(inverseI.modelBundleSha256===I.modelBundleSha256,'591_CURRENT_PAIR_BINDING');
+    inverseI.modelBundleSha256=originalI.modelBundleSha256;
+    if(Object.hasOwn(inverseG,'modelBundleSha256')){
+      need(inverseG.modelBundleSha256===C.modelBundleSha256,'591_CURRENT_CANDIDATE_BINDING');
+      inverseG.modelBundleSha256=originalG.modelBundleSha256;
+    }
+    need(same(inverseI,originalI)&&same(inverseG,originalG),'591_WHOLE_PAIR_INVERSE');
+  }
+  need(same(await readPointer(request),before),'SOURCE_CHANGED');
+  need(same(await json(path.join(ROOT,'data/live/coastal-parts-v2.json'),16*MB),central),'REGISTRY_CHANGED');
+  const handle=Object.freeze({});
+  contexts.set(handle,{seed:false,descriptor:structuredClone(descriptor),generationSha256:snapshot.checkpoint.generationSha256,
+    parentAttestationSha256:snapshot.attestation.attestationSha256,central,parts,pairs,currentSource,
+    consumedParts:new Set(),finalized:false});
+  return handle;
+}
 async function readOrigin(centralContract, seedOnly) {
   const currentSource = await sourceIdentity();
   const registry = await json(path.join(ROOT, 'data/live/coastal-parts-v2.json'), 16 * MB);
@@ -394,10 +819,33 @@ async function readOrigin(centralContract, seedOnly) {
   const before = await readPointer(request), descriptor = before.pointer.current;
   const seed = descriptor.bundleContentSha256 === SEED.B;
   if (seedOnly) need(seed, 'SEED_CONTENT_CHANGED');
-  let conditions = seedOnly ? null : await json(path.join(ROOT, 'data/live/conditions.json'), MAX_CONDITIONS);
+  const conditionsMaximum = !seed && (descriptor.modelBinding.modelBundleSha256 === currentSource.integrated
+    || descriptor.modelBinding.modelBundleSha256 === 'ebd5ac3dac09b7afb51e46d18920f6932b478b7ef15bdd31190c128273cb6a54'
+    || (descriptor.modelBinding.modelBundleSha256 === '08750e3667e5a221374762fccadccf08abf5e9f1ae8814ccc97bfc11880bf36c'
+      && SOURCE_ORIGIN_BINDING!==null && currentSource.integrated===SOURCE_ORIGIN_BINDING.I)
+    || (descriptor.modelBinding.modelBundleSha256 === '69bf81c3cc5e256deee2c116a52462597f4cfc47cb6c855c6dba969c1dcf4643'
+      && SOURCE_ORIGIN_BINDING!==null && currentSource.integrated===SOURCE_ORIGIN_BINDING.I))
+    ? PRIVATE_CONDITIONS_MAX_BYTES : MAX_CONDITIONS;
+  let conditions = seedOnly ? null : await json(path.join(ROOT, 'data/live/conditions.json'), conditionsMaximum);
   // Unknown/legacy input retains its OLD normal transitions; a claimed clean
   // origin cannot silently downgrade to that route after a failed check.
   if (!seed && descriptor.modelBinding.modelBundleSha256 !== currentSource.integrated) {
+    if(descriptor.modelBinding.modelBundleSha256==='6d8f7cca203b5f7ee5155f3c0cdb39403a02fd0eb30fecaca5070ef9f814a805')
+      return readFrozen586LaterOrigin({descriptor,before,request,conditions,central,parts,currentSource});
+    if(descriptor.modelBinding.modelBundleSha256==='5584d8e59f8d21785fd08b32f9beb22cf879cdb4892a11ede24eb862d9a0dca2')
+      return readFrozen587LaterOrigin({descriptor,before,request,conditions,central,parts,currentSource});
+    if(descriptor.modelBinding.modelBundleSha256==='5348f3ae7401d3a09dd180d45690f56b3cfec4a30af5a4928bdd9581f9d8ebac')
+      return readFrozen588LaterOrigin({descriptor,before,request,conditions,central,parts,currentSource});
+    if(descriptor.modelBinding.modelBundleSha256==='08750e3667e5a221374762fccadccf08abf5e9f1ae8814ccc97bfc11880bf36c'
+      &&SOURCE_ORIGIN_BINDING!==null&&currentSource.integrated===SOURCE_ORIGIN_BINDING.I)
+      return readSourceFrozen594LaterOrigin({descriptor,before,request,conditions,central,parts,currentSource});
+    if(descriptor.modelBinding.modelBundleSha256==='69bf81c3cc5e256deee2c116a52462597f4cfc47cb6c855c6dba969c1dcf4643'
+      &&SOURCE_ORIGIN_BINDING!==null&&currentSource.integrated===SOURCE_ORIGIN_BINDING.I)
+      return readSourceFrozen593LaterOrigin({descriptor,before,request,conditions,central,parts,currentSource});
+    if(descriptor.modelBinding.modelBundleSha256==='4c94c24e7d14d66c20cc3c2c3d0389cadb0c3e9e76fcfe692943c6087df56819')
+      return readFrozen590LaterOrigin({descriptor,before,request,conditions,central,parts,currentSource});
+    if(descriptor.modelBinding.modelBundleSha256==='ebd5ac3dac09b7afb51e46d18920f6932b478b7ef15bdd31190c128273cb6a54')
+      return readFrozen591LaterOrigin({descriptor,before,request,conditions,central,parts,currentSource});
     need(conditions[ATTEST] === undefined, 'UNSUPPORTED_ATTESTED_FAMILY');
     need(!(descriptor.datasetId === SEED.datasetId && descriptor.productionReferenceAt === SEED.referenceAt
       && descriptor.modelBinding.modelBundleSha256 === SEED.I), 'SEED_CONTENT_CHANGED');
@@ -419,7 +867,8 @@ async function readOrigin(centralContract, seedOnly) {
         expected: { modelBinding: descriptor.modelBinding, contractHashes: descriptor.contractHashes,
           datasetId: descriptor.datasetId, productionReferenceAt: descriptor.productionReferenceAt,
           generatedAt: descriptor.generatedAt, bundleContentSha256: descriptor.bundleContentSha256 } });
-      const originalBytes = await ownedBytes(path.join(bundlePath, 'payload/data/live/conditions.json'), MAX_CONDITIONS);
+      const originalBytes = await ownedBytes(path.join(bundlePath, 'payload/data/live/conditions.json'),
+        seed ? MAX_CONDITIONS : PRIVATE_CONDITIONS_MAX_BYTES);
       const file = verified.files.find(row => row.relativePath === 'data/live/conditions.json');
       need(file && file.bytes === originalBytes.length && file.sha256 === sha(originalBytes), 'B_CONDITIONS_CHANGED');
       originalConditions = JSON.parse(originalBytes);
@@ -468,7 +917,11 @@ async function readOrigin(centralContract, seedOnly) {
   if (seed) need(originalConditions[ATTEST] === undefined, 'UNEXPECTED_SEED_ATTESTATION');
   else if (originalConditions[ATTEST] !== undefined) {
     await sourceIdentity(originalConditions[ATTEST]?.producer?.sourceHead);
-    if (originalConditions[ATTEST]?.kind === METADATA585_KIND
+    if (originalConditions[ATTEST]?.kind === METADATA594_KIND)
+      await validateMetadata594Attestation(originalConditions[ATTEST], { descriptor, conditions: originalConditions, central, pairs, currentSource });
+    else if (originalConditions[ATTEST]?.kind === METADATA593_KIND)
+      await validateMetadata593Attestation(originalConditions[ATTEST], { descriptor, conditions: originalConditions, central, pairs, currentSource });
+    else if (originalConditions[ATTEST]?.kind === METADATA585_KIND
       && originalConditions[ATTEST]?.predecessor?.sourceFamilyHead === METADATA585_SOURCE)
       await validateMetadata585Attestation(originalConditions[ATTEST], { descriptor, conditions: originalConditions, central, pairs, currentSource });
     else if (originalConditions[ATTEST]?.kind === METADATA584_KIND)
@@ -712,6 +1165,7 @@ export async function assertEstablishedNativeCurrent584MetadataCheckpoint(option
   return true;
 }
 
+
 // One explicit metadata event after a genuine585 snapshot. The predecessor's
 // WHOLE attestation remains an immutable nested value, including its actual
 // kind, complete archive/normal parent, restart scope and original hash.
@@ -860,6 +1314,947 @@ export async function assertEstablishedNativeCurrent585MetadataCheckpoint(option
   inverse.stateSha256 = old.stateSha256;
   inverse.candidateGRollbackCompanion.generationSha256 = old.candidateGRollbackCompanion.generationSha256;
   need(same(inverse,old), 'METADATA_CHECKPOINT_NUMERICAL_CHANGE');
+  need(same(await sourceIdentity(descriptor.sourceHead),currentSource), 'SOURCE_CHANGED');
+  return true;
+}
+
+// Additive SOURCE589 metadata owner; old584/585 and later586/587 bodies above remain whole.
+// One explicit metadata event after a genuine588 snapshot. The predecessor's
+// WHOLE attestation remains an immutable nested value, including its actual
+// kind, complete archive/normal parent, restart scope and original hash.
+// This is neither a seed event nor new numerical/ForPart authority.
+const METADATA588_KIND = 'PRIVATE_ORIGINAL_BOUND_SAME_H0_METADATA';
+const metadata588Consumed = new WeakSet();
+const METADATA588_SOURCE = '4845e6c6622333ad4e8454b0b43f5f94ae42233e';
+function metadata588InversePair(pair) {
+  const integrated = structuredClone(pair.integrated), candidate = structuredClone(pair.candidate);
+  need(integrated.modelBundleSha256 === ravScoreModelBinding().modelBundleSha256, 'METADATA_BINDING');
+  integrated.modelBundleSha256 = '5348f3ae7401d3a09dd180d45690f56b3cfec4a30af5a4928bdd9581f9d8ebac';
+  if (Object.hasOwn(candidate, 'modelBundleSha256')) {
+    need(candidate.modelBundleSha256 === candidateBinding().modelBundleSha256, 'METADATA_BINDING');
+    candidate.modelBundleSha256 = '00905533cd243ffce8e507beedbc39c8dba26e635b59fa154e6f9ab20575780c';
+  }
+  return { integrated, candidate };
+}
+async function validateMetadata588Attestation(attest, { descriptor, conditions, central, pairs, currentSource }) {
+  need(exact(attest, ['schemaVersion','kind','semanticContract','predecessor','parent','producer','datasetId',
+    'referenceAt','registrySha256','contextRegistrySha256','pairsSha256','transition','attestationSha256'])
+    && attest.schemaVersion === 1 && attest.kind === METADATA588_KIND
+    && attest.semanticContract === ESTABLISHED_NATIVE_CURRENT_SEMANTIC_CONTRACT
+    && attest.transition === 'SAME_H0_MODEL_METADATA' && SHA.test(attest.attestationSha256), 'METADATA_ATTESTATION');
+  const { attestationSha256, ...content } = attest;
+  need(digest(content) === attestationSha256 && Buffer.byteLength(canonical(attest)) <= MAX_ATTEST, 'METADATA_ATTESTATION_HASH');
+  need(exact(attest.predecessor, ['sourceFamilyHead','descriptor','attestation'])
+    && attest.predecessor.sourceFamilyHead === METADATA588_SOURCE
+    && exact(attest.parent, ['bundleContentSha256','generationSha256','attestationSha256'])
+    && Object.values(attest.parent).every(value => SHA.test(value)), 'METADATA_PARENT');
+  const old = attest.predecessor;
+  need(old.descriptor?.bundleContentSha256 === attest.parent.bundleContentSha256
+    && old.attestation?.attestationSha256 === attest.parent.attestationSha256
+    && old.descriptor?.datasetId === conditions.datasetId
+    && old.descriptor?.productionReferenceAt === conditions.productionReferenceAt
+    && attest.datasetId === descriptor.datasetId && attest.datasetId === conditions.datasetId
+    && attest.referenceAt === descriptor.productionReferenceAt && attest.referenceAt === conditions.productionReferenceAt
+    && attest.registrySha256 === digest(central) && attest.contextRegistrySha256 === contextDigest(pairs)
+    && attest.pairsSha256 === pairsDigest(pairs)
+    && exact(attest.producer, Object.keys(currentSource))
+    && same({ ...attest.producer, sourceHead: currentSource.sourceHead }, currentSource)
+    && attest.producer.sourceHead === descriptor.sourceHead, 'METADATA_ATTESTED_SOURCE');
+  // The producer is compared with the genuine OLD Git family, never with
+  // future changed origin bytes. This is an assert-only source check.
+  need(HEAD.test(old.descriptor.sourceHead), 'METADATA_OLD_PRODUCER');
+  await git(['merge-base','--is-ancestor',old.descriptor.sourceHead,currentSource.sourceHead]);
+  for (const file of ['scripts/lib/established-native-current-origin.mjs','scripts/lib/ravscore-production-part-pipeline.mjs'])
+    need(await git(['rev-parse',old.descriptor.sourceHead + ':' + file])
+      === await git(['rev-parse',METADATA588_SOURCE + ':' + file]), 'METADATA_OLD_PRODUCER');
+  need(await git(['rev-parse',old.descriptor.sourceHead + ':scripts/lib/dmi-marine-zone-exclusions.json'])
+    === SEED.ownerPolicyGitBlob, 'METADATA_OLD_POLICY');
+  // A small derived ASSERTION VIEW, not an original B or a snapshot handle.
+  // Restore only the two model metadata fields; every unknown state field and
+  // all 673 actual numeric/history/context values remain exact copies.
+  const inverse = new Map([...pairs].map(([id,pair]) => [id,metadata588InversePair(pair)]));
+  const oldPairView = { datasetId: conditions.datasetId, productionReferenceAt: conditions.productionReferenceAt,
+    coastalParts: { parts: Object.fromEntries([...inverse].map(([id,pair]) => [id,{ravScoreModel:{currentState:pair.integrated}}])) },
+    ravScoreCandidateGWarmup: { runtime: { parts: Object.fromEntries([...inverse]
+      .map(([id,pair]) => [id,{ravScoreModel:{currentState:pair.candidate}}])) } },
+    [ATTEST]: structuredClone(old.attestation) };
+  await withAuthenticatedSource588PredecessorSource(async frozenRoot => {
+    const module = await import(pathToFileURL(path.join(frozenRoot,
+      'scripts/lib/established-native-current-origin-588-assertion.mjs')).href);
+    await module.assertFrozen588MetadataOriginData({ descriptor: old.descriptor, conditions: oldPairView,
+      centralContract: central });
+  });
+}
+export async function buildEstablishedNativeCurrent588MetadataAttestation(handle, options) {
+  need(arguments.length === 2 && exact(options, ['centralContract','conditions']), 'ARGUMENTS');
+  const old = assertAuthenticatedStaged588Snapshot(handle);
+  need(!metadata588Consumed.has(handle), 'METADATA_ALREADY_CONSUMED');
+  // Admission requires BOTH complete normal generated-model checks, not a
+  // caller tuple/flag or hash inequality. No static builder/NEXT import may
+  // make this bound source depend on its own generated checksum.
+  const builders = ['scripts/build-candidate-g-rollback-bundle.mjs', 'scripts/build-ravscore-model-bundle.mjs'];
+  await git(['diff', '--exit-code', 'HEAD', '--', ...builders,
+    'scripts/lib/model-source-imports.mjs', 'scripts/lib/static-module-closure.mjs']);
+  for (const builder of builders) await exec(process.execPath, [path.join(ROOT, builder), '--check'],
+    { cwd: ROOT, env: sourceEnv(), encoding: 'utf8', maxBuffer: 2 * MB, timeout: 60000 });
+  const currentSource = await sourceIdentity(), contracts = await privateRuntimeContractHashes();
+  const oldI = old.checkpoint.modelBinding, oldC = old.checkpoint.candidateGRollbackCompanion.modelBinding;
+  need(currentSource.integrated !== oldI.modelBundleSha256
+    && currentSource.candidate !== oldC.modelBundleSha256
+    && currentSource.continuation !== old.checkpoint.continuationStateContractSha256, 'METADATA_UNISSUED');
+  need(same({ ...oldI, modelBundleSha256: currentSource.integrated }, ravScoreModelBinding())
+    && same({ ...oldC, modelBundleSha256: currentSource.candidate }, candidateBinding())
+    && same({ ...old.descriptor.contractHashes, continuationStateContractSha256: currentSource.continuation }, contracts),
+  'METADATA_CONTRACT_CHANGED');
+  const {centralContract,conditions} = options;
+  need(same(centralContract,old.centralContract), 'METADATA_REGISTRY_CHANGED');
+  const parts = registryParts(centralContract), pairs = pairsFromConditions(conditions,parts);
+  need(conditions.datasetId === old.descriptor.datasetId
+    && conditions.productionReferenceAt === old.descriptor.productionReferenceAt
+    && same(conditions[ATTEST],old.attestation), 'METADATA_TARGET_CHANGED');
+  for (const [id,pair] of pairs) {
+    const inverse = metadata588InversePair(pair);
+    need(same(inverse.integrated,old.checkpoint.states[id])
+      && same(inverse.candidate,old.checkpoint.candidateGRollbackCompanion.states[id]), 'METADATA_NUMERICAL_CHANGE');
+  }
+  need(same(await sourceIdentity(),currentSource), 'SOURCE_CHANGED');
+  const content = { schemaVersion:1,kind:METADATA588_KIND,semanticContract:ESTABLISHED_NATIVE_CURRENT_SEMANTIC_CONTRACT,
+    predecessor:{sourceFamilyHead:METADATA588_SOURCE,descriptor:structuredClone(old.descriptor),attestation:structuredClone(old.attestation)},
+    parent:{bundleContentSha256:old.descriptor.bundleContentSha256,generationSha256:old.checkpoint.generationSha256,
+      attestationSha256:old.attestation.attestationSha256},
+    producer:{...currentSource},datasetId:conditions.datasetId,referenceAt:conditions.productionReferenceAt,
+    registrySha256:digest(centralContract),contextRegistrySha256:contextDigest(pairs),pairsSha256:pairsDigest(pairs),
+    transition:'SAME_H0_MODEL_METADATA' };
+  const attestation = {...content,attestationSha256:digest(content)};
+  await validateMetadata588Attestation(attestation,{descriptor:{...old.descriptor,sourceHead:currentSource.sourceHead},
+    conditions,central:centralContract,pairs,currentSource});
+  need(same(await sourceIdentity(),currentSource), 'SOURCE_CHANGED');
+  await assertAuthenticatedStaged588SnapshotFresh(handle); // Actual pointer/S version, not payload equality alone.
+  metadata588Consumed.add(handle);
+  return freeze(attestation);
+}
+
+// Assert-only B-before-S reentry seam. Callers must first authenticate the
+// immutable CURRENT B and restore old588 S with its genuine normal reader.
+// This creates no handle and permits no arbitrary same-time numerical write.
+export async function assertEstablishedNativeCurrent588MetadataCheckpoint(options) {
+  need(arguments.length === 1 && exact(options,['descriptor','conditions','centralContract','previousCheckpoint','incomingCheckpoint']), 'ARGUMENTS');
+  const {descriptor,conditions,centralContract,previousCheckpoint:old,incomingCheckpoint:incoming} = options;
+  const currentSource = await sourceIdentity(descriptor?.sourceHead);
+  const parts = registryParts(centralContract), pairs = pairsFromConditions(conditions,parts);
+  await validateMetadata588Attestation(conditions[ATTEST],{descriptor,conditions,central:centralContract,pairs,currentSource});
+  need(old?.modelBinding?.modelBundleSha256 === '5348f3ae7401d3a09dd180d45690f56b3cfec4a30af5a4928bdd9581f9d8ebac'
+    && old?.candidateGRollbackCompanion?.modelBinding?.modelBundleSha256 === '00905533cd243ffce8e507beedbc39c8dba26e635b59fa154e6f9ab20575780c'
+    && old.continuationStateContractSha256 === 'd98559d56d7bfe9b141cf1ddab73cddffb688a3b6766f5f9f3779b226f573701'
+    && old.datasetId === descriptor.datasetId && incoming?.datasetId === descriptor.datasetId
+    && old.productionReferenceAt === descriptor.productionReferenceAt && incoming.productionReferenceAt === descriptor.productionReferenceAt
+    && conditions[ATTEST].parent.generationSha256 === old.generationSha256
+    && incoming.modelBinding.modelBundleSha256 === currentSource.integrated
+    && incoming.candidateGRollbackCompanion?.modelBinding?.modelBundleSha256 === currentSource.candidate
+    && incoming.continuationStateContractSha256 === currentSource.continuation, 'METADATA_CHECKPOINT_SCOPE');
+  need(same(Object.keys(incoming.states ?? {}).sort(),[...parts.keys()].sort())
+    && same(Object.keys(incoming.candidateGRollbackCompanion.states ?? {}).sort(),[...parts.keys()].sort()), 'PARTS');
+  for(const[id,pair]of pairs) need(same(pair.integrated,incoming.states[id])
+    && same(pair.candidate,incoming.candidateGRollbackCompanion.states[id]), 'METADATA_INCOMING_B_S_DIFFER');
+  const inverse = structuredClone(incoming);
+  inverse.modelBinding.modelBundleSha256 = old.modelBinding.modelBundleSha256;
+  inverse.candidateGRollbackCompanion.modelBinding.modelBundleSha256 = old.candidateGRollbackCompanion.modelBinding.modelBundleSha256;
+  inverse.continuationStateContractSha256 = old.continuationStateContractSha256;
+  for(const[id,state]of Object.entries(inverse.states)){
+    need(state.modelBundleSha256 === currentSource.integrated && old.states?.[id], 'METADATA_BINDING');
+    state.modelBundleSha256 = old.states[id].modelBundleSha256;
+  }
+  inverse.generationSha256 = old.generationSha256;
+  inverse.stateSha256 = old.stateSha256;
+  inverse.candidateGRollbackCompanion.generationSha256 = old.candidateGRollbackCompanion.generationSha256;
+  need(same(inverse,old), 'METADATA_CHECKPOINT_NUMERICAL_CHANGE');
+  need(same(await sourceIdentity(descriptor.sourceHead),currentSource), 'SOURCE_CHANGED');
+  return true;
+}
+
+// SOURCEs egen metadatahændelse efter autentisk590; alle ældre funktioner bevares hele.
+const METADATA590_KIND = 'PRIVATE_ORIGINAL_BOUND_SAME_H0_SOURCE590_METADATA';
+const metadata590Consumed = new WeakSet();
+const METADATA590_SOURCE = FROZEN590_CODE_SOURCE_PROVENANCE.head;
+function metadata590InversePair(pair) {
+  const integrated = structuredClone(pair.integrated), candidate = structuredClone(pair.candidate);
+  need(integrated.modelBundleSha256 === ravScoreModelBinding().modelBundleSha256, 'METADATA_BINDING');
+  integrated.modelBundleSha256 = '4c94c24e7d14d66c20cc3c2c3d0389cadb0c3e9e76fcfe692943c6087df56819';
+  if (Object.hasOwn(candidate, 'modelBundleSha256')) {
+    need(candidate.modelBundleSha256 === candidateBinding().modelBundleSha256, 'METADATA_BINDING');
+    candidate.modelBundleSha256 = 'bca59cb435cb3f35041c665d2954f0ef04b189b572219771fc5628e4f7ccb551';
+  }
+  return { integrated, candidate };
+}
+async function validateMetadata590Attestation(attest, { descriptor, conditions, central, pairs, currentSource }) {
+  need(exact(attest, ['schemaVersion','kind','semanticContract','predecessor','parent','producer','datasetId',
+    'referenceAt','registrySha256','contextRegistrySha256','pairsSha256','transition','attestationSha256'])
+    && attest.schemaVersion === 1 && attest.kind === METADATA590_KIND
+    && attest.semanticContract === ESTABLISHED_NATIVE_CURRENT_SEMANTIC_CONTRACT
+    && attest.transition === 'SAME_H0_MODEL_METADATA' && SHA.test(attest.attestationSha256), 'METADATA_ATTESTATION');
+  const { attestationSha256, ...content } = attest;
+  need(digest(content) === attestationSha256 && Buffer.byteLength(canonical(attest)) <= MAX_ATTEST, 'METADATA_ATTESTATION_HASH');
+  need(exact(attest.predecessor, ['sourceFamilyHead','descriptor','attestation'])
+    && attest.predecessor.sourceFamilyHead === METADATA590_SOURCE
+    && exact(attest.parent, ['bundleContentSha256','generationSha256','attestationSha256'])
+    && Object.values(attest.parent).every(value => SHA.test(value)), 'METADATA_PARENT');
+  const old = attest.predecessor;
+  need(old.descriptor?.bundleContentSha256 === attest.parent.bundleContentSha256
+    && old.attestation?.attestationSha256 === attest.parent.attestationSha256
+    && old.descriptor?.datasetId === conditions.datasetId
+    && old.descriptor?.productionReferenceAt === conditions.productionReferenceAt
+    && attest.datasetId === descriptor.datasetId && attest.datasetId === conditions.datasetId
+    && attest.referenceAt === descriptor.productionReferenceAt && attest.referenceAt === conditions.productionReferenceAt
+    && attest.registrySha256 === digest(central) && attest.contextRegistrySha256 === contextDigest(pairs)
+    && attest.pairsSha256 === pairsDigest(pairs)
+    && exact(attest.producer, Object.keys(currentSource))
+    && same({ ...attest.producer, sourceHead: currentSource.sourceHead }, currentSource)
+    && attest.producer.sourceHead === descriptor.sourceHead, 'METADATA_ATTESTED_SOURCE');
+  // The producer is compared with the genuine OLD Git family, never with
+  // future changed origin bytes. This is an assert-only source check.
+  need(HEAD.test(old.descriptor.sourceHead), 'METADATA_OLD_PRODUCER');
+  await git(['merge-base','--is-ancestor',old.descriptor.sourceHead,currentSource.sourceHead]);
+  for (const file of ['scripts/lib/established-native-current-origin.mjs','scripts/lib/ravscore-production-part-pipeline.mjs'])
+    need(await git(['rev-parse',old.descriptor.sourceHead + ':' + file])
+      === await git(['rev-parse',METADATA590_SOURCE + ':' + file]), 'METADATA_OLD_PRODUCER');
+  need(await git(['rev-parse',old.descriptor.sourceHead + ':scripts/lib/dmi-marine-zone-exclusions.json'])
+    === SEED.ownerPolicyGitBlob, 'METADATA_OLD_POLICY');
+  // A small derived ASSERTION VIEW, not an original B or a snapshot handle.
+  // Restore only the two model metadata fields; every unknown state field and
+  // all 673 actual numeric/history/context values remain exact copies.
+  const inverse = new Map([...pairs].map(([id,pair]) => [id,metadata590InversePair(pair)]));
+  const oldPairView = { datasetId: conditions.datasetId, productionReferenceAt: conditions.productionReferenceAt,
+    coastalParts: { parts: Object.fromEntries([...inverse].map(([id,pair]) => [id,{ravScoreModel:{currentState:pair.integrated}}])) },
+    ravScoreCandidateGWarmup: { runtime: { parts: Object.fromEntries([...inverse]
+      .map(([id,pair]) => [id,{ravScoreModel:{currentState:pair.candidate}}])) } },
+    [ATTEST]: structuredClone(old.attestation) };
+  await withAuthenticated590PredecessorSource(async frozenRoot => {
+    const module = await import(pathToFileURL(path.join(frozenRoot,
+      'scripts/lib/established-native-current-origin-590-assertion.mjs')).href);
+    await module.assertFrozen590MetadataOriginData({ descriptor: old.descriptor, conditions: oldPairView,
+      centralContract: central });
+  });
+}
+export async function buildEstablishedNativeCurrent590MetadataAttestation(handle, options) {
+  requireSourceProducerOutput();const issued=requireSourceProducerBinding();
+  need(arguments.length === 2 && exact(options, ['centralContract','conditions']), 'ARGUMENTS');
+  const old = assertAuthenticatedSourceStaged590Snapshot(handle);
+  need(!metadata590Consumed.has(handle), 'METADATA_ALREADY_CONSUMED');
+  // Admission requires BOTH complete normal generated-model checks, not a
+  // caller tuple/flag or hash inequality. No static builder/NEXT import may
+  // make this bound source depend on its own generated checksum.
+  const builders = ['scripts/build-candidate-g-rollback-bundle.mjs', 'scripts/build-ravscore-model-bundle.mjs'];
+  await git(['diff', '--exit-code', 'HEAD', '--', ...builders,
+    'scripts/lib/model-source-imports.mjs', 'scripts/lib/static-module-closure.mjs']);
+  for (const builder of builders) await exec(process.execPath, [path.join(ROOT, builder), '--check'],
+    { cwd: ROOT, env: sourceEnv(), encoding: 'utf8', maxBuffer: 2 * MB, timeout: 60000 });
+  const currentSource = await sourceIdentity(), contracts = await privateRuntimeContractHashes();
+  need(currentSource.integrated===issued.I&&currentSource.candidate===issued.C
+    &&currentSource.continuation===issued.T,'SOURCE590_ISSUED_FAMILY');
+  const oldI = old.checkpoint.modelBinding, oldC = old.checkpoint.candidateGRollbackCompanion.modelBinding;
+  need(currentSource.integrated !== oldI.modelBundleSha256
+    && currentSource.candidate !== oldC.modelBundleSha256
+    && currentSource.continuation !== old.checkpoint.continuationStateContractSha256, 'METADATA_UNISSUED');
+  need(same({ ...oldI, modelBundleSha256: currentSource.integrated }, ravScoreModelBinding())
+    && same({ ...oldC, modelBundleSha256: currentSource.candidate }, candidateBinding())
+    && same({ ...old.descriptor.contractHashes, continuationStateContractSha256: currentSource.continuation }, contracts),
+  'METADATA_CONTRACT_CHANGED');
+  const {centralContract,conditions} = options;
+  need(same(centralContract,old.centralContract), 'METADATA_REGISTRY_CHANGED');
+  const parts = registryParts(centralContract), pairs = pairsFromConditions(conditions,parts);
+  need(conditions.datasetId === old.descriptor.datasetId
+    && conditions.productionReferenceAt === old.descriptor.productionReferenceAt
+    && same(conditions[ATTEST],old.attestation), 'METADATA_TARGET_CHANGED');
+  for (const [id,pair] of pairs) {
+    const inverse = metadata590InversePair(pair);
+    need(same(inverse.integrated,old.checkpoint.states[id])
+      && same(inverse.candidate,old.checkpoint.candidateGRollbackCompanion.states[id]), 'METADATA_NUMERICAL_CHANGE');
+  }
+  need(same(await sourceIdentity(),currentSource), 'SOURCE_CHANGED');
+  const content = { schemaVersion:1,kind:METADATA590_KIND,semanticContract:ESTABLISHED_NATIVE_CURRENT_SEMANTIC_CONTRACT,
+    predecessor:{sourceFamilyHead:METADATA590_SOURCE,descriptor:structuredClone(old.descriptor),attestation:structuredClone(old.attestation)},
+    parent:{bundleContentSha256:old.descriptor.bundleContentSha256,generationSha256:old.checkpoint.generationSha256,
+      attestationSha256:old.attestation.attestationSha256},
+    producer:{...currentSource},datasetId:conditions.datasetId,referenceAt:conditions.productionReferenceAt,
+    registrySha256:digest(centralContract),contextRegistrySha256:contextDigest(pairs),pairsSha256:pairsDigest(pairs),
+    transition:'SAME_H0_MODEL_METADATA' };
+  const attestation = {...content,attestationSha256:digest(content)};
+  await validateMetadata590Attestation(attestation,{descriptor:{...old.descriptor,sourceHead:currentSource.sourceHead},
+    conditions,central:centralContract,pairs,currentSource});
+  need(same(await sourceIdentity(),currentSource), 'SOURCE_CHANGED');
+  await assertAuthenticatedSourceStaged590SnapshotFresh(handle); // Actual pointer/S version, not payload equality alone.
+  metadata590Consumed.add(handle);
+  return freeze(attestation);
+}
+
+// Assert-only B-before-S reentry seam. Callers must first authenticate the
+// immutable CURRENT B and restore old590 S with its genuine normal reader.
+// This creates no handle and permits no arbitrary same-time numerical write.
+export async function assertEstablishedNativeCurrent590MetadataCheckpoint(options) {
+  requireSourceProducerOutput();const issued=requireSourceProducerBinding();
+  need(arguments.length === 1 && exact(options,['descriptor','conditions','centralContract','previousCheckpoint','incomingCheckpoint']), 'ARGUMENTS');
+  const {descriptor,conditions,centralContract,previousCheckpoint:old,incomingCheckpoint:incoming} = options;
+  const currentSource = await sourceIdentity(descriptor?.sourceHead);
+  need(currentSource.integrated===issued.I&&currentSource.candidate===issued.C
+    &&currentSource.continuation===issued.T,'SOURCE590_ISSUED_FAMILY');
+  const parts = registryParts(centralContract), pairs = pairsFromConditions(conditions,parts);
+  await validateMetadata590Attestation(conditions[ATTEST],{descriptor,conditions,central:centralContract,pairs,currentSource});
+  need(old?.modelBinding?.modelBundleSha256 === '4c94c24e7d14d66c20cc3c2c3d0389cadb0c3e9e76fcfe692943c6087df56819'
+    && old?.candidateGRollbackCompanion?.modelBinding?.modelBundleSha256 === 'bca59cb435cb3f35041c665d2954f0ef04b189b572219771fc5628e4f7ccb551'
+    && old.continuationStateContractSha256 === 'd444e6141038f56dd04b97a55eefe07bbd98f122fb3b76a43bdddacff2d88c8a'
+    && old.datasetId === descriptor.datasetId && incoming?.datasetId === descriptor.datasetId
+    && old.productionReferenceAt === descriptor.productionReferenceAt && incoming.productionReferenceAt === descriptor.productionReferenceAt
+    && conditions[ATTEST].parent.generationSha256 === old.generationSha256
+    && incoming.modelBinding.modelBundleSha256 === currentSource.integrated
+    && incoming.candidateGRollbackCompanion?.modelBinding?.modelBundleSha256 === currentSource.candidate
+    && incoming.continuationStateContractSha256 === currentSource.continuation, 'METADATA_CHECKPOINT_SCOPE');
+  need(same(Object.keys(incoming.states ?? {}).sort(),[...parts.keys()].sort())
+    && same(Object.keys(incoming.candidateGRollbackCompanion.states ?? {}).sort(),[...parts.keys()].sort()), 'PARTS');
+  for(const[id,pair]of pairs) need(same(pair.integrated,incoming.states[id])
+    && same(pair.candidate,incoming.candidateGRollbackCompanion.states[id]), 'METADATA_INCOMING_B_S_DIFFER');
+  const inverse = structuredClone(incoming);
+  inverse.modelBinding.modelBundleSha256 = old.modelBinding.modelBundleSha256;
+  inverse.candidateGRollbackCompanion.modelBinding.modelBundleSha256 = old.candidateGRollbackCompanion.modelBinding.modelBundleSha256;
+  inverse.continuationStateContractSha256 = old.continuationStateContractSha256;
+  for(const[id,state]of Object.entries(inverse.states)){
+    need(state.modelBundleSha256 === currentSource.integrated && old.states?.[id], 'METADATA_BINDING');
+    state.modelBundleSha256 = old.states[id].modelBundleSha256;
+  }
+  inverse.generationSha256 = old.generationSha256;
+  inverse.stateSha256 = old.stateSha256;
+  inverse.candidateGRollbackCompanion.generationSha256 = old.candidateGRollbackCompanion.generationSha256;
+  need(same(inverse,old), 'METADATA_CHECKPOINT_NUMERICAL_CHANGE');
+  need(same(await sourceIdentity(descriptor.sourceHead),currentSource), 'SOURCE_CHANGED');
+  return true;
+}
+
+// SOURCEs egen metadatahændelse efter autentisk591; alle gamle590- og ældre funktioner bevares hele.
+const METADATA591_KIND = 'PRIVATE_ORIGINAL_BOUND_SAME_H0_SOURCE591_METADATA';
+const metadata591Consumed = new WeakSet();
+const METADATA591_SOURCE = SOURCE591_CODE_SOURCE_PROVENANCE.head;
+function metadata591InversePair(pair) {
+  const integrated = structuredClone(pair.integrated), candidate = structuredClone(pair.candidate);
+  need(integrated.modelBundleSha256 === ravScoreModelBinding().modelBundleSha256, 'METADATA_BINDING');
+  integrated.modelBundleSha256 = 'ebd5ac3dac09b7afb51e46d18920f6932b478b7ef15bdd31190c128273cb6a54';
+  if (Object.hasOwn(candidate, 'modelBundleSha256')) {
+    need(candidate.modelBundleSha256 === candidateBinding().modelBundleSha256, 'METADATA_BINDING');
+    candidate.modelBundleSha256 = '38738b7d7d3bfd74958ab2453422f2416338e99dac53d12f7098ad8c3539ec64';
+  }
+  return { integrated, candidate };
+}
+async function validateMetadata591Attestation(attest, { descriptor, conditions, central, pairs, currentSource }) {
+  need(exact(attest, ['schemaVersion','kind','semanticContract','predecessor','parent','producer','datasetId',
+    'referenceAt','registrySha256','contextRegistrySha256','pairsSha256','transition','attestationSha256'])
+    && attest.schemaVersion === 1 && attest.kind === METADATA591_KIND
+    && attest.semanticContract === ESTABLISHED_NATIVE_CURRENT_SEMANTIC_CONTRACT
+    && attest.transition === 'SAME_H0_MODEL_METADATA' && SHA.test(attest.attestationSha256), 'METADATA_ATTESTATION');
+  const { attestationSha256, ...content } = attest;
+  need(digest(content) === attestationSha256 && Buffer.byteLength(canonical(attest)) <= MAX_ATTEST, 'METADATA_ATTESTATION_HASH');
+  need(exact(attest.predecessor, ['sourceFamilyHead','descriptor','attestation'])
+    && attest.predecessor.sourceFamilyHead === METADATA591_SOURCE
+    && exact(attest.parent, ['bundleContentSha256','generationSha256','attestationSha256'])
+    && Object.values(attest.parent).every(value => SHA.test(value)), 'METADATA_PARENT');
+  const old = attest.predecessor;
+  need(old.descriptor?.bundleContentSha256 === attest.parent.bundleContentSha256
+    && old.attestation?.attestationSha256 === attest.parent.attestationSha256
+    && old.descriptor?.datasetId === conditions.datasetId
+    && old.descriptor?.productionReferenceAt === conditions.productionReferenceAt
+    && attest.datasetId === descriptor.datasetId && attest.datasetId === conditions.datasetId
+    && attest.referenceAt === descriptor.productionReferenceAt && attest.referenceAt === conditions.productionReferenceAt
+    && attest.registrySha256 === digest(central) && attest.contextRegistrySha256 === contextDigest(pairs)
+    && attest.pairsSha256 === pairsDigest(pairs)
+    && exact(attest.producer, Object.keys(currentSource))
+    && same({ ...attest.producer, sourceHead: currentSource.sourceHead }, currentSource)
+    && attest.producer.sourceHead === descriptor.sourceHead, 'METADATA_ATTESTED_SOURCE');
+  // The producer is compared with the genuine OLD Git family, never with
+  // future changed origin bytes. This is an assert-only source check.
+  need(HEAD.test(old.descriptor.sourceHead), 'METADATA_OLD_PRODUCER');
+  await git(['merge-base','--is-ancestor',old.descriptor.sourceHead,currentSource.sourceHead]);
+  for (const file of ['scripts/lib/established-native-current-origin.mjs','scripts/lib/ravscore-production-part-pipeline.mjs'])
+    need(await git(['rev-parse',old.descriptor.sourceHead + ':' + file])
+      === await git(['rev-parse',METADATA591_SOURCE + ':' + file]), 'METADATA_OLD_PRODUCER');
+  need(await git(['rev-parse',old.descriptor.sourceHead + ':scripts/lib/dmi-marine-zone-exclusions.json'])
+    === SEED.ownerPolicyGitBlob, 'METADATA_OLD_POLICY');
+  // A small derived ASSERTION VIEW, not an original B or a snapshot handle.
+  // Restore only the two model metadata fields; every unknown state field and
+  // all 673 actual numeric/history/context values remain exact copies.
+  const inverse = new Map([...pairs].map(([id,pair]) => [id,metadata591InversePair(pair)]));
+  const oldPairView = { datasetId: conditions.datasetId, productionReferenceAt: conditions.productionReferenceAt,
+    coastalParts: { parts: Object.fromEntries([...inverse].map(([id,pair]) => [id,{ravScoreModel:{currentState:pair.integrated}}])) },
+    ravScoreCandidateGWarmup: { runtime: { parts: Object.fromEntries([...inverse]
+      .map(([id,pair]) => [id,{ravScoreModel:{currentState:pair.candidate}}])) } },
+    [ATTEST]: structuredClone(old.attestation) };
+  await withSource591OriginalDataSource(async frozenRoot => {
+    const module = await import(pathToFileURL(path.join(frozenRoot,
+      'scripts/lib/established-native-current-origin-591-assertion.mjs')).href);
+    await module.assertFrozen591MetadataOriginData({ descriptor: old.descriptor, conditions: oldPairView,
+      centralContract: central });
+  });
+}
+export async function buildEstablishedNativeCurrent591MetadataAttestation(handle, options) {
+  requireSourceProducerOutput();const issued=requireSourceProducerBinding();
+  need(arguments.length === 2 && exact(options, ['centralContract','conditions']), 'ARGUMENTS');
+  const old = assertAuthenticatedSourceStaged591Snapshot(handle);
+  need(!metadata591Consumed.has(handle), 'METADATA_ALREADY_CONSUMED');
+  // Admission requires BOTH complete normal generated-model checks, not a
+  // caller tuple/flag or hash inequality. No static builder/NEXT import may
+  // make this bound source depend on its own generated checksum.
+  const builders = ['scripts/build-candidate-g-rollback-bundle.mjs', 'scripts/build-ravscore-model-bundle.mjs'];
+  await git(['diff', '--exit-code', 'HEAD', '--', ...builders,
+    'scripts/lib/model-source-imports.mjs', 'scripts/lib/static-module-closure.mjs']);
+  for (const builder of builders) await exec(process.execPath, [path.join(ROOT, builder), '--check'],
+    { cwd: ROOT, env: sourceEnv(), encoding: 'utf8', maxBuffer: 2 * MB, timeout: 60000 });
+  const currentSource = await sourceIdentity(), contracts = await privateRuntimeContractHashes();
+  need(currentSource.integrated===issued.I&&currentSource.candidate===issued.C
+    &&currentSource.continuation===issued.T,'SOURCE591_ISSUED_FAMILY');
+  const oldI = old.checkpoint.modelBinding, oldC = old.checkpoint.candidateGRollbackCompanion.modelBinding;
+  need(currentSource.integrated !== oldI.modelBundleSha256
+    && currentSource.candidate !== oldC.modelBundleSha256
+    && currentSource.continuation !== old.checkpoint.continuationStateContractSha256, 'METADATA_UNISSUED');
+  need(same({ ...oldI, modelBundleSha256: currentSource.integrated }, ravScoreModelBinding())
+    && same({ ...oldC, modelBundleSha256: currentSource.candidate }, candidateBinding())
+    && same({ ...old.descriptor.contractHashes, continuationStateContractSha256: currentSource.continuation }, contracts),
+  'METADATA_CONTRACT_CHANGED');
+  const {centralContract,conditions} = options;
+  need(same(centralContract,old.centralContract), 'METADATA_REGISTRY_CHANGED');
+  const parts = registryParts(centralContract), pairs = pairsFromConditions(conditions,parts);
+  need(conditions.datasetId === old.descriptor.datasetId
+    && conditions.productionReferenceAt === old.descriptor.productionReferenceAt
+    && same(conditions[ATTEST],old.attestation), 'METADATA_TARGET_CHANGED');
+  for (const [id,pair] of pairs) {
+    const inverse = metadata591InversePair(pair);
+    need(same(inverse.integrated,old.checkpoint.states[id])
+      && same(inverse.candidate,old.checkpoint.candidateGRollbackCompanion.states[id]), 'METADATA_NUMERICAL_CHANGE');
+  }
+  need(same(await sourceIdentity(),currentSource), 'SOURCE_CHANGED');
+  const content = { schemaVersion:1,kind:METADATA591_KIND,semanticContract:ESTABLISHED_NATIVE_CURRENT_SEMANTIC_CONTRACT,
+    predecessor:{sourceFamilyHead:METADATA591_SOURCE,descriptor:structuredClone(old.descriptor),attestation:structuredClone(old.attestation)},
+    parent:{bundleContentSha256:old.descriptor.bundleContentSha256,generationSha256:old.checkpoint.generationSha256,
+      attestationSha256:old.attestation.attestationSha256},
+    producer:{...currentSource},datasetId:conditions.datasetId,referenceAt:conditions.productionReferenceAt,
+    registrySha256:digest(centralContract),contextRegistrySha256:contextDigest(pairs),pairsSha256:pairsDigest(pairs),
+    transition:'SAME_H0_MODEL_METADATA' };
+  const attestation = {...content,attestationSha256:digest(content)};
+  await validateMetadata591Attestation(attestation,{descriptor:{...old.descriptor,sourceHead:currentSource.sourceHead},
+    conditions,central:centralContract,pairs,currentSource});
+  need(same(await sourceIdentity(),currentSource), 'SOURCE_CHANGED');
+  await assertAuthenticatedSourceStaged591SnapshotFresh(handle); // Actual pointer/S version, not payload equality alone.
+  metadata591Consumed.add(handle);
+  return freeze(attestation);
+}
+
+// Assert-only B-before-S reentry seam. Callers must first authenticate the
+// immutable CURRENT B and restore old591 S with its genuine normal reader.
+// This creates no handle and permits no arbitrary same-time numerical write.
+export async function assertEstablishedNativeCurrent591MetadataCheckpoint(options) {
+  requireSourceProducerOutput();const issued=requireSourceProducerBinding();
+  need(arguments.length === 1 && exact(options,['descriptor','conditions','centralContract','previousCheckpoint','incomingCheckpoint']), 'ARGUMENTS');
+  const {descriptor,conditions,centralContract,previousCheckpoint:old,incomingCheckpoint:incoming} = options;
+  const currentSource = await sourceIdentity(descriptor?.sourceHead);
+  need(currentSource.integrated===issued.I&&currentSource.candidate===issued.C
+    &&currentSource.continuation===issued.T,'SOURCE591_ISSUED_FAMILY');
+  const parts = registryParts(centralContract), pairs = pairsFromConditions(conditions,parts);
+  await validateMetadata591Attestation(conditions[ATTEST],{descriptor,conditions,central:centralContract,pairs,currentSource});
+  need(old?.modelBinding?.modelBundleSha256 === 'ebd5ac3dac09b7afb51e46d18920f6932b478b7ef15bdd31190c128273cb6a54'
+    && old?.candidateGRollbackCompanion?.modelBinding?.modelBundleSha256 === '38738b7d7d3bfd74958ab2453422f2416338e99dac53d12f7098ad8c3539ec64'
+    && old.continuationStateContractSha256 === 'b490f11d14cfe607839d7848bbcdb8e9df7abdfe62c82983e5247fb4ca3dcc0d'
+    && old.datasetId === descriptor.datasetId && incoming?.datasetId === descriptor.datasetId
+    && old.productionReferenceAt === descriptor.productionReferenceAt && incoming.productionReferenceAt === descriptor.productionReferenceAt
+    && conditions[ATTEST].parent.generationSha256 === old.generationSha256
+    && incoming.modelBinding.modelBundleSha256 === currentSource.integrated
+    && incoming.candidateGRollbackCompanion?.modelBinding?.modelBundleSha256 === currentSource.candidate
+    && incoming.continuationStateContractSha256 === currentSource.continuation, 'METADATA_CHECKPOINT_SCOPE');
+  need(same(Object.keys(incoming.states ?? {}).sort(),[...parts.keys()].sort())
+    && same(Object.keys(incoming.candidateGRollbackCompanion.states ?? {}).sort(),[...parts.keys()].sort()), 'PARTS');
+  for(const[id,pair]of pairs) need(same(pair.integrated,incoming.states[id])
+    && same(pair.candidate,incoming.candidateGRollbackCompanion.states[id]), 'METADATA_INCOMING_B_S_DIFFER');
+  const inverse = structuredClone(incoming);
+  inverse.modelBinding.modelBundleSha256 = old.modelBinding.modelBundleSha256;
+  inverse.candidateGRollbackCompanion.modelBinding.modelBundleSha256 = old.candidateGRollbackCompanion.modelBinding.modelBundleSha256;
+  inverse.continuationStateContractSha256 = old.continuationStateContractSha256;
+  for(const[id,state]of Object.entries(inverse.states)){
+    need(state.modelBundleSha256 === currentSource.integrated && old.states?.[id], 'METADATA_BINDING');
+    state.modelBundleSha256 = old.states[id].modelBundleSha256;
+  }
+  inverse.generationSha256 = old.generationSha256;
+  inverse.stateSha256 = old.stateSha256;
+  inverse.candidateGRollbackCompanion.generationSha256 = old.candidateGRollbackCompanion.generationSha256;
+  need(same(inverse,old), 'METADATA_CHECKPOINT_NUMERICAL_CHANGE');
+  need(same(await sourceIdentity(descriptor.sourceHead),currentSource), 'SOURCE_CHANGED');
+  return true;
+}
+
+// SOURCEs eget strengt senere593-led; de gamle590- og historiske læsere bevares hele.
+async function readSourceFrozen593LaterOrigin({descriptor,before,request,conditions,central,parts,currentSource}){
+  requireSourceProducerOutput();const issued=requireSourceProducerBinding();
+  need(currentSource.integrated===issued.I&&currentSource.candidate===issued.C
+    &&currentSource.continuation===issued.T,'SOURCE593_ISSUED_FAMILY');
+  const oldI='69bf81c3cc5e256deee2c116a52462597f4cfc47cb6c855c6dba969c1dcf4643';
+  need(descriptor.modelBinding.modelBundleSha256===oldI&&currentSource.integrated!==oldI,'593_FAMILY');
+  const target=Date.parse(process.env.RAVRADAR_PRODUCTION_TARGET_HOUR??'');
+  need(Number.isFinite(target)&&target%3600000===0&&target>Date.parse(descriptor.productionReferenceAt),'593_LATER_TARGET');
+  const original593=await readAuthenticatedSource593Predecessor();
+  const snapshot=assertAuthenticatedSource593Snapshot(original593);
+  need(same(snapshot.descriptor,descriptor)&&same(snapshot.centralContract,central),'593_ORIGINAL_CHANGED');
+  const contracts=await privateRuntimeContractHashes(),I=ravScoreModelBinding(),C=candidateBinding();
+  need(descriptor.contractHashes.continuationStateContractSha256==='e894dd096d03f71cc334d97f85931c2b3969e9b140cb5403a4787cf4b81fbc2e'
+    &&snapshot.checkpoint.candidateGRollbackCompanion.modelBinding.modelBundleSha256==='12f78005304316a680716a1d437e06a582815c1645a2eb567028bcc18ff99ffa',
+    '593_FIXED_ORIGINAL_BINDING');
+  need(I.modelBundleSha256===currentSource.integrated&&C.modelBundleSha256===currentSource.candidate
+    &&contracts.continuationStateContractSha256===currentSource.continuation
+    &&C.modelBundleSha256!==snapshot.checkpoint.candidateGRollbackCompanion.modelBinding.modelBundleSha256
+    &&contracts.continuationStateContractSha256!==descriptor.contractHashes.continuationStateContractSha256,
+    '593_ISSUED_CURRENT_SOURCE');
+  need(same({...snapshot.checkpoint.modelBinding,modelBundleSha256:I.modelBundleSha256},I)
+    &&same({...snapshot.checkpoint.candidateGRollbackCompanion.modelBinding,modelBundleSha256:C.modelBundleSha256},C)
+    &&same({...descriptor.contractHashes,continuationStateContractSha256:contracts.continuationStateContractSha256},contracts),
+    '593_METADATA_ONLY');
+  need(conditions.datasetId===descriptor.datasetId&&conditions.productionReferenceAt===descriptor.productionReferenceAt
+    &&same(conditions[ATTEST],snapshot.attestation),'593_WHOLE_PARENT_CHANGED');
+  const pairs=pairsFromConditions(conditions,parts);
+  need(same([...pairs.keys()].sort(),Object.keys(snapshot.checkpoint.states).sort())
+    &&same([...pairs.keys()].sort(),Object.keys(snapshot.checkpoint.candidateGRollbackCompanion.states).sort()),'593_PARTS');
+  for(const[id,pair]of pairs){
+    const originalI=snapshot.checkpoint.states[id],originalG=snapshot.checkpoint.candidateGRollbackCompanion.states[id];
+    const inverseI=structuredClone(pair.integrated),inverseG=structuredClone(pair.candidate);
+    need(inverseI.modelBundleSha256===I.modelBundleSha256,'593_CURRENT_PAIR_BINDING');
+    inverseI.modelBundleSha256=originalI.modelBundleSha256;
+    if(Object.hasOwn(inverseG,'modelBundleSha256')){
+      need(inverseG.modelBundleSha256===C.modelBundleSha256,'593_CURRENT_CANDIDATE_BINDING');
+      inverseG.modelBundleSha256=originalG.modelBundleSha256;
+    }
+    need(same(inverseI,originalI)&&same(inverseG,originalG),'593_WHOLE_PAIR_INVERSE');
+  }
+  need(same(await readPointer(request),before),'SOURCE_CHANGED');
+  need(same(await json(path.join(ROOT,'data/live/coastal-parts-v2.json'),16*MB),central),'REGISTRY_CHANGED');
+  await assertAuthenticatedSource593SnapshotFresh(original593);
+  const handle=Object.freeze({});
+  contexts.set(handle,{seed:false,descriptor:structuredClone(descriptor),generationSha256:snapshot.checkpoint.generationSha256,
+    parentAttestationSha256:snapshot.attestation.attestationSha256,central,parts,pairs,currentSource,
+    consumedParts:new Set(),finalized:false});
+  return handle;
+}
+
+
+// Ren hel inverse. Dette er ingen kilde-, DATA-, snapshot- eller SOURCE-admission.
+// Den normale privilegerede kalder kræver først udstedt SOURCE og ægte originale B/S.
+export function assertSource593MetadataCheckpointInverse(options){
+  need(arguments.length===1&&exact(options,['previousCheckpoint','incomingCheckpoint','currentSource']),'ARGUMENTS');
+  const {previousCheckpoint:old,incomingCheckpoint:incoming,currentSource}=options;
+  need(old?.modelBinding?.modelBundleSha256==='69bf81c3cc5e256deee2c116a52462597f4cfc47cb6c855c6dba969c1dcf4643'
+    &&old?.candidateGRollbackCompanion?.modelBinding?.modelBundleSha256==='12f78005304316a680716a1d437e06a582815c1645a2eb567028bcc18ff99ffa'
+    &&old.continuationStateContractSha256==='e894dd096d03f71cc334d97f85931c2b3969e9b140cb5403a4787cf4b81fbc2e','METADATA593_FIXED_PARENT');
+  need(['integrated','candidate','continuation'].every(key=>SHA.test(currentSource?.[key]))
+    &&currentSource.integrated!==old.modelBinding.modelBundleSha256
+    &&currentSource.candidate!==old.candidateGRollbackCompanion.modelBinding.modelBundleSha256
+    &&currentSource.continuation!==old.continuationStateContractSha256,'METADATA593_CURRENT_FAMILY');
+  need(incoming?.modelBinding?.modelBundleSha256===currentSource.integrated
+    &&incoming?.candidateGRollbackCompanion?.modelBinding?.modelBundleSha256===currentSource.candidate
+    &&incoming.continuationStateContractSha256===currentSource.continuation,'METADATA_BINDING');
+  const ids=Object.keys(old.states??{}).sort();
+  need(ids.length===673&&same(Object.keys(old.candidateGRollbackCompanion.states??{}).sort(),ids)
+    &&same(Object.keys(incoming.states??{}).sort(),ids)
+    &&same(Object.keys(incoming.candidateGRollbackCompanion.states??{}).sort(),ids),'PARTS');
+  const inverse=structuredClone(incoming);
+  inverse.modelBinding.modelBundleSha256=old.modelBinding.modelBundleSha256;
+  inverse.candidateGRollbackCompanion.modelBinding.modelBundleSha256=old.candidateGRollbackCompanion.modelBinding.modelBundleSha256;
+  inverse.continuationStateContractSha256=old.continuationStateContractSha256;
+  for(const id of ids){
+    need(inverse.states[id].modelBundleSha256===currentSource.integrated,'METADATA_BINDING');
+    inverse.states[id].modelBundleSha256=old.states[id].modelBundleSha256;
+    const candidate=inverse.candidateGRollbackCompanion.states[id];
+    if(Object.hasOwn(candidate,'modelBundleSha256')){
+      need(candidate.modelBundleSha256===currentSource.candidate
+        &&Object.hasOwn(old.candidateGRollbackCompanion.states[id],'modelBundleSha256'),'METADATA_BINDING');
+      candidate.modelBundleSha256=old.candidateGRollbackCompanion.states[id].modelBundleSha256;
+    }
+  }
+  inverse.generationSha256=old.generationSha256;
+  inverse.stateSha256=old.stateSha256;
+  inverse.candidateGRollbackCompanion.generationSha256=old.candidateGRollbackCompanion.generationSha256;
+  inverse.candidateGRollbackCompanion.stateSha256=old.candidateGRollbackCompanion.stateSha256;
+  need(same(inverse,old),'METADATA_CHECKPOINT_NUMERICAL_CHANGE');
+  return true;
+}
+// SOURCEs egen metadatahændelse efter autentisk593; alle gamle590- og ældre funktioner bevares hele.
+const METADATA593_KIND = 'PRIVATE_ORIGINAL_BOUND_SAME_H0_SOURCE593_METADATA';
+const metadata593Consumed = new WeakSet();
+const METADATA593_SOURCE = SOURCE593_CODE_SOURCE_PROVENANCE.head;
+function metadata593InversePair(pair) {
+  const integrated = structuredClone(pair.integrated), candidate = structuredClone(pair.candidate);
+  need(integrated.modelBundleSha256 === ravScoreModelBinding().modelBundleSha256, 'METADATA_BINDING');
+  integrated.modelBundleSha256 = '69bf81c3cc5e256deee2c116a52462597f4cfc47cb6c855c6dba969c1dcf4643';
+  if (Object.hasOwn(candidate, 'modelBundleSha256')) {
+    need(candidate.modelBundleSha256 === candidateBinding().modelBundleSha256, 'METADATA_BINDING');
+    candidate.modelBundleSha256 = '12f78005304316a680716a1d437e06a582815c1645a2eb567028bcc18ff99ffa';
+  }
+  return { integrated, candidate };
+}
+async function validateMetadata593Attestation(attest, { descriptor, conditions, central, pairs, currentSource }) {
+  need(exact(attest, ['schemaVersion','kind','semanticContract','predecessor','parent','producer','datasetId',
+    'referenceAt','registrySha256','contextRegistrySha256','pairsSha256','transition','attestationSha256'])
+    && attest.schemaVersion === 1 && attest.kind === METADATA593_KIND
+    && attest.semanticContract === ESTABLISHED_NATIVE_CURRENT_SEMANTIC_CONTRACT
+    && attest.transition === 'SAME_H0_MODEL_METADATA' && SHA.test(attest.attestationSha256), 'METADATA_ATTESTATION');
+  const { attestationSha256, ...content } = attest;
+  need(digest(content) === attestationSha256 && Buffer.byteLength(canonical(attest)) <= MAX_ATTEST, 'METADATA_ATTESTATION_HASH');
+  need(exact(attest.predecessor, ['sourceFamilyHead','descriptor','attestation'])
+    && attest.predecessor.sourceFamilyHead === METADATA593_SOURCE
+    && exact(attest.parent, ['bundleContentSha256','generationSha256','attestationSha256'])
+    && Object.values(attest.parent).every(value => SHA.test(value)), 'METADATA_PARENT');
+  const old = attest.predecessor;
+  need(old.descriptor?.bundleContentSha256 === attest.parent.bundleContentSha256
+    && old.attestation?.attestationSha256 === attest.parent.attestationSha256
+    && old.descriptor?.datasetId === conditions.datasetId
+    && old.descriptor?.productionReferenceAt === conditions.productionReferenceAt
+    && attest.datasetId === descriptor.datasetId && attest.datasetId === conditions.datasetId
+    && attest.referenceAt === descriptor.productionReferenceAt && attest.referenceAt === conditions.productionReferenceAt
+    && attest.registrySha256 === digest(central) && attest.contextRegistrySha256 === contextDigest(pairs)
+    && attest.pairsSha256 === pairsDigest(pairs)
+    && exact(attest.producer, Object.keys(currentSource))
+    && same({ ...attest.producer, sourceHead: currentSource.sourceHead }, currentSource)
+    && attest.producer.sourceHead === descriptor.sourceHead, 'METADATA_ATTESTED_SOURCE');
+  // The producer is compared with the genuine OLD Git family, never with
+  // future changed origin bytes. This is an assert-only source check.
+  need(HEAD.test(old.descriptor.sourceHead), 'METADATA_OLD_PRODUCER');
+  await git(['merge-base','--is-ancestor',old.descriptor.sourceHead,currentSource.sourceHead]);
+  for (const file of ['scripts/lib/established-native-current-origin.mjs','scripts/lib/ravscore-production-part-pipeline.mjs'])
+    need(await git(['rev-parse',old.descriptor.sourceHead + ':' + file])
+      === await git(['rev-parse',METADATA593_SOURCE + ':' + file]), 'METADATA_OLD_PRODUCER');
+  need(await git(['rev-parse',old.descriptor.sourceHead + ':scripts/lib/dmi-marine-zone-exclusions.json'])
+    === SEED.ownerPolicyGitBlob, 'METADATA_OLD_POLICY');
+  // A small derived ASSERTION VIEW, not an original B or a snapshot handle.
+  // Restore only the two model metadata fields; every unknown state field and
+  // all 673 actual numeric/history/context values remain exact copies.
+  const inverse = new Map([...pairs].map(([id,pair]) => [id,metadata593InversePair(pair)]));
+  const oldPairView = { datasetId: conditions.datasetId, productionReferenceAt: conditions.productionReferenceAt,
+    coastalParts: { parts: Object.fromEntries([...inverse].map(([id,pair]) => [id,{ravScoreModel:{currentState:pair.integrated}}])) },
+    ravScoreCandidateGWarmup: { runtime: { parts: Object.fromEntries([...inverse]
+      .map(([id,pair]) => [id,{ravScoreModel:{currentState:pair.candidate}}])) } },
+    [ATTEST]: structuredClone(old.attestation) };
+  await withSource593OriginalDataSource(async frozenRoot => {
+    const module = await import(pathToFileURL(path.join(frozenRoot,
+      'scripts/lib/established-native-current-origin-593-assertion.mjs')).href);
+    await module.assertFrozen593MetadataOriginData({ descriptor: old.descriptor, conditions: oldPairView,
+      centralContract: central });
+  });
+}
+export async function buildEstablishedNativeCurrent593MetadataAttestation(handle, options) {
+  requireSourceProducerOutput();const issued=requireSourceProducerBinding();
+  need(arguments.length === 2 && exact(options, ['centralContract','conditions']), 'ARGUMENTS');
+  const old = assertAuthenticatedSourceStaged593Snapshot(handle);
+  need(!metadata593Consumed.has(handle), 'METADATA_ALREADY_CONSUMED');
+  // Admission requires BOTH complete normal generated-model checks, not a
+  // caller tuple/flag or hash inequality. No static builder/NEXT import may
+  // make this bound source depend on its own generated checksum.
+  const builders = ['scripts/build-candidate-g-rollback-bundle.mjs', 'scripts/build-ravscore-model-bundle.mjs'];
+  await git(['diff', '--exit-code', 'HEAD', '--', ...builders,
+    'scripts/lib/model-source-imports.mjs', 'scripts/lib/static-module-closure.mjs']);
+  for (const builder of builders) await exec(process.execPath, [path.join(ROOT, builder), '--check'],
+    { cwd: ROOT, env: sourceEnv(), encoding: 'utf8', maxBuffer: 2 * MB, timeout: 60000 });
+  const currentSource = await sourceIdentity(), contracts = await privateRuntimeContractHashes();
+  need(currentSource.integrated===issued.I&&currentSource.candidate===issued.C
+    &&currentSource.continuation===issued.T,'SOURCE593_ISSUED_FAMILY');
+  const oldI = old.checkpoint.modelBinding, oldC = old.checkpoint.candidateGRollbackCompanion.modelBinding;
+  need(currentSource.integrated !== oldI.modelBundleSha256
+    && currentSource.candidate !== oldC.modelBundleSha256
+    && currentSource.continuation !== old.checkpoint.continuationStateContractSha256, 'METADATA_UNISSUED');
+  need(same({ ...oldI, modelBundleSha256: currentSource.integrated }, ravScoreModelBinding())
+    && same({ ...oldC, modelBundleSha256: currentSource.candidate }, candidateBinding())
+    && same({ ...old.descriptor.contractHashes, continuationStateContractSha256: currentSource.continuation }, contracts),
+  'METADATA_CONTRACT_CHANGED');
+  const {centralContract,conditions} = options;
+  need(same(centralContract,old.centralContract), 'METADATA_REGISTRY_CHANGED');
+  const parts = registryParts(centralContract), pairs = pairsFromConditions(conditions,parts);
+  need(conditions.datasetId === old.descriptor.datasetId
+    && conditions.productionReferenceAt === old.descriptor.productionReferenceAt
+    && same(conditions[ATTEST],old.attestation), 'METADATA_TARGET_CHANGED');
+  for (const [id,pair] of pairs) {
+    const inverse = metadata593InversePair(pair);
+    need(same(inverse.integrated,old.checkpoint.states[id])
+      && same(inverse.candidate,old.checkpoint.candidateGRollbackCompanion.states[id]), 'METADATA_NUMERICAL_CHANGE');
+  }
+  need(same(await sourceIdentity(),currentSource), 'SOURCE_CHANGED');
+  const content = { schemaVersion:1,kind:METADATA593_KIND,semanticContract:ESTABLISHED_NATIVE_CURRENT_SEMANTIC_CONTRACT,
+    predecessor:{sourceFamilyHead:METADATA593_SOURCE,descriptor:structuredClone(old.descriptor),attestation:structuredClone(old.attestation)},
+    parent:{bundleContentSha256:old.descriptor.bundleContentSha256,generationSha256:old.checkpoint.generationSha256,
+      attestationSha256:old.attestation.attestationSha256},
+    producer:{...currentSource},datasetId:conditions.datasetId,referenceAt:conditions.productionReferenceAt,
+    registrySha256:digest(centralContract),contextRegistrySha256:contextDigest(pairs),pairsSha256:pairsDigest(pairs),
+    transition:'SAME_H0_MODEL_METADATA' };
+  const attestation = {...content,attestationSha256:digest(content)};
+  await validateMetadata593Attestation(attestation,{descriptor:{...old.descriptor,sourceHead:currentSource.sourceHead},
+    conditions,central:centralContract,pairs,currentSource});
+  need(same(await sourceIdentity(),currentSource), 'SOURCE_CHANGED');
+  await assertAuthenticatedSourceStaged593SnapshotFresh(handle); // Actual pointer/S version, not payload equality alone.
+  metadata593Consumed.add(handle);
+  return freeze(attestation);
+}
+
+// Assert-only B-before-S reentry seam. Callers must first authenticate the
+// immutable CURRENT B and restore old593 S with its genuine normal reader.
+// This creates no handle and permits no arbitrary same-time numerical write.
+export async function assertEstablishedNativeCurrent593MetadataCheckpoint(options) {
+  requireSourceProducerOutput();const issued=requireSourceProducerBinding();
+  need(arguments.length === 1 && exact(options,['descriptor','conditions','centralContract','previousCheckpoint','incomingCheckpoint']), 'ARGUMENTS');
+  const {descriptor,conditions,centralContract,previousCheckpoint:old,incomingCheckpoint:incoming} = options;
+  const currentSource = await sourceIdentity(descriptor?.sourceHead);
+  need(currentSource.integrated===issued.I&&currentSource.candidate===issued.C
+    &&currentSource.continuation===issued.T,'SOURCE593_ISSUED_FAMILY');
+  const parts = registryParts(centralContract), pairs = pairsFromConditions(conditions,parts);
+  await validateMetadata593Attestation(conditions[ATTEST],{descriptor,conditions,central:centralContract,pairs,currentSource});
+  need(old?.modelBinding?.modelBundleSha256 === '69bf81c3cc5e256deee2c116a52462597f4cfc47cb6c855c6dba969c1dcf4643'
+    && old?.candidateGRollbackCompanion?.modelBinding?.modelBundleSha256 === '12f78005304316a680716a1d437e06a582815c1645a2eb567028bcc18ff99ffa'
+    && old.continuationStateContractSha256 === 'e894dd096d03f71cc334d97f85931c2b3969e9b140cb5403a4787cf4b81fbc2e'
+    && old.datasetId === descriptor.datasetId && incoming?.datasetId === descriptor.datasetId
+    && old.productionReferenceAt === descriptor.productionReferenceAt && incoming.productionReferenceAt === descriptor.productionReferenceAt
+    && conditions[ATTEST].parent.generationSha256 === old.generationSha256
+    && incoming.modelBinding.modelBundleSha256 === currentSource.integrated
+    && incoming.candidateGRollbackCompanion?.modelBinding?.modelBundleSha256 === currentSource.candidate
+    && incoming.continuationStateContractSha256 === currentSource.continuation, 'METADATA_CHECKPOINT_SCOPE');
+  need(same(Object.keys(incoming.states ?? {}).sort(),[...parts.keys()].sort())
+    && same(Object.keys(incoming.candidateGRollbackCompanion.states ?? {}).sort(),[...parts.keys()].sort()), 'PARTS');
+  for(const[id,pair]of pairs) need(same(pair.integrated,incoming.states[id])
+    && same(pair.candidate,incoming.candidateGRollbackCompanion.states[id]), 'METADATA_INCOMING_B_S_DIFFER');
+  assertSource593MetadataCheckpointInverse({previousCheckpoint:old,incomingCheckpoint:incoming,currentSource});
+  need(same(await sourceIdentity(descriptor.sourceHead),currentSource), 'SOURCE_CHANGED');
+  return true;
+}
+
+// Additive594 family; all prior original implementations remain whole above.
+// SOURCEs eget strengt senere594-led; de gamle590- og historiske læsere bevares hele.
+async function readSourceFrozen594LaterOrigin({descriptor,before,request,conditions,central,parts,currentSource}){
+  requireSourceProducerOutput();const issued=requireSourceProducerBinding();
+  need(currentSource.integrated===issued.I&&currentSource.candidate===issued.C
+    &&currentSource.continuation===issued.T,'SOURCE594_ISSUED_FAMILY');
+  const oldI='08750e3667e5a221374762fccadccf08abf5e9f1ae8814ccc97bfc11880bf36c';
+  need(descriptor.modelBinding.modelBundleSha256===oldI&&currentSource.integrated!==oldI,'594_FAMILY');
+  const target=Date.parse(process.env.RAVRADAR_PRODUCTION_TARGET_HOUR??'');
+  need(Number.isFinite(target)&&target%3600000===0&&target>Date.parse(descriptor.productionReferenceAt),'594_LATER_TARGET');
+  const original594=await readAuthenticatedSource594Predecessor();
+  const snapshot=assertAuthenticatedSource594Snapshot(original594);
+  need(same(snapshot.descriptor,descriptor)&&same(snapshot.centralContract,central),'594_ORIGINAL_CHANGED');
+  const contracts=await privateRuntimeContractHashes(),I=ravScoreModelBinding(),C=candidateBinding();
+  need(descriptor.contractHashes.continuationStateContractSha256==='a6c0408f76b5de70a90959e254df78317f8282cb93c0edc85a71d36b9ef8dafa'
+    &&snapshot.checkpoint.candidateGRollbackCompanion.modelBinding.modelBundleSha256==='2d5cde5418270a02396e24a249f0b6bb09527366c1c110d8742a44cfe2ab459b',
+    '594_FIXED_ORIGINAL_BINDING');
+  need(I.modelBundleSha256===currentSource.integrated&&C.modelBundleSha256===currentSource.candidate
+    &&contracts.continuationStateContractSha256===currentSource.continuation
+    &&C.modelBundleSha256!==snapshot.checkpoint.candidateGRollbackCompanion.modelBinding.modelBundleSha256
+    &&contracts.continuationStateContractSha256!==descriptor.contractHashes.continuationStateContractSha256,
+    '594_ISSUED_CURRENT_SOURCE');
+  need(same({...snapshot.checkpoint.modelBinding,modelBundleSha256:I.modelBundleSha256},I)
+    &&same({...snapshot.checkpoint.candidateGRollbackCompanion.modelBinding,modelBundleSha256:C.modelBundleSha256},C)
+    &&same({...descriptor.contractHashes,continuationStateContractSha256:contracts.continuationStateContractSha256},contracts),
+    '594_METADATA_ONLY');
+  need(conditions.datasetId===descriptor.datasetId&&conditions.productionReferenceAt===descriptor.productionReferenceAt
+    &&same(conditions[ATTEST],snapshot.attestation),'594_WHOLE_PARENT_CHANGED');
+  const pairs=pairsFromConditions(conditions,parts);
+  need(same([...pairs.keys()].sort(),Object.keys(snapshot.checkpoint.states).sort())
+    &&same([...pairs.keys()].sort(),Object.keys(snapshot.checkpoint.candidateGRollbackCompanion.states).sort()),'594_PARTS');
+  for(const[id,pair]of pairs){
+    const originalI=snapshot.checkpoint.states[id],originalG=snapshot.checkpoint.candidateGRollbackCompanion.states[id];
+    const inverseI=structuredClone(pair.integrated),inverseG=structuredClone(pair.candidate);
+    need(inverseI.modelBundleSha256===I.modelBundleSha256,'594_CURRENT_PAIR_BINDING');
+    inverseI.modelBundleSha256=originalI.modelBundleSha256;
+    if(Object.hasOwn(inverseG,'modelBundleSha256')){
+      need(inverseG.modelBundleSha256===C.modelBundleSha256,'594_CURRENT_CANDIDATE_BINDING');
+      inverseG.modelBundleSha256=originalG.modelBundleSha256;
+    }
+    need(same(inverseI,originalI)&&same(inverseG,originalG),'594_WHOLE_PAIR_INVERSE');
+  }
+  need(same(await readPointer(request),before),'SOURCE_CHANGED');
+  need(same(await json(path.join(ROOT,'data/live/coastal-parts-v2.json'),16*MB),central),'REGISTRY_CHANGED');
+  await assertAuthenticatedSource594SnapshotFresh(original594);
+  const handle=Object.freeze({});
+  contexts.set(handle,{seed:false,descriptor:structuredClone(descriptor),generationSha256:snapshot.checkpoint.generationSha256,
+    parentAttestationSha256:snapshot.attestation.attestationSha256,central,parts,pairs,currentSource,
+    consumedParts:new Set(),finalized:false});
+  return handle;
+}
+
+
+// Ren hel inverse. Dette er ingen kilde-, DATA-, snapshot- eller SOURCE-admission.
+// Den normale privilegerede kalder kræver først udstedt SOURCE og ægte originale B/S.
+export function assertSource594MetadataCheckpointInverse(options){
+  need(arguments.length===1&&exact(options,['previousCheckpoint','incomingCheckpoint','currentSource']),'ARGUMENTS');
+  const {previousCheckpoint:old,incomingCheckpoint:incoming,currentSource}=options;
+  need(old?.modelBinding?.modelBundleSha256==='08750e3667e5a221374762fccadccf08abf5e9f1ae8814ccc97bfc11880bf36c'
+    &&old?.candidateGRollbackCompanion?.modelBinding?.modelBundleSha256==='2d5cde5418270a02396e24a249f0b6bb09527366c1c110d8742a44cfe2ab459b'
+    &&old.continuationStateContractSha256==='a6c0408f76b5de70a90959e254df78317f8282cb93c0edc85a71d36b9ef8dafa','METADATA594_FIXED_PARENT');
+  need(['integrated','candidate','continuation'].every(key=>SHA.test(currentSource?.[key]))
+    &&currentSource.integrated!==old.modelBinding.modelBundleSha256
+    &&currentSource.candidate!==old.candidateGRollbackCompanion.modelBinding.modelBundleSha256
+    &&currentSource.continuation!==old.continuationStateContractSha256,'METADATA594_CURRENT_FAMILY');
+  need(incoming?.modelBinding?.modelBundleSha256===currentSource.integrated
+    &&incoming?.candidateGRollbackCompanion?.modelBinding?.modelBundleSha256===currentSource.candidate
+    &&incoming.continuationStateContractSha256===currentSource.continuation,'METADATA_BINDING');
+  const ids=Object.keys(old.states??{}).sort();
+  need(ids.length===673&&same(Object.keys(old.candidateGRollbackCompanion.states??{}).sort(),ids)
+    &&same(Object.keys(incoming.states??{}).sort(),ids)
+    &&same(Object.keys(incoming.candidateGRollbackCompanion.states??{}).sort(),ids),'PARTS');
+  const inverse=structuredClone(incoming);
+  inverse.modelBinding.modelBundleSha256=old.modelBinding.modelBundleSha256;
+  inverse.candidateGRollbackCompanion.modelBinding.modelBundleSha256=old.candidateGRollbackCompanion.modelBinding.modelBundleSha256;
+  inverse.continuationStateContractSha256=old.continuationStateContractSha256;
+  for(const id of ids){
+    need(inverse.states[id].modelBundleSha256===currentSource.integrated,'METADATA_BINDING');
+    inverse.states[id].modelBundleSha256=old.states[id].modelBundleSha256;
+    const candidate=inverse.candidateGRollbackCompanion.states[id];
+    if(Object.hasOwn(candidate,'modelBundleSha256')){
+      need(candidate.modelBundleSha256===currentSource.candidate
+        &&Object.hasOwn(old.candidateGRollbackCompanion.states[id],'modelBundleSha256'),'METADATA_BINDING');
+      candidate.modelBundleSha256=old.candidateGRollbackCompanion.states[id].modelBundleSha256;
+    }
+  }
+  inverse.generationSha256=old.generationSha256;
+  inverse.stateSha256=old.stateSha256;
+  inverse.candidateGRollbackCompanion.generationSha256=old.candidateGRollbackCompanion.generationSha256;
+  inverse.candidateGRollbackCompanion.stateSha256=old.candidateGRollbackCompanion.stateSha256;
+  need(same(inverse,old),'METADATA_CHECKPOINT_NUMERICAL_CHANGE');
+  return true;
+}
+// SOURCEs egen metadatahændelse efter autentisk594; alle gamle590- og ældre funktioner bevares hele.
+const METADATA594_KIND = 'PRIVATE_ORIGINAL_BOUND_SAME_H0_SOURCE594_METADATA';
+const metadata594Consumed = new WeakSet();
+const METADATA594_SOURCE = SOURCE594_CODE_SOURCE_PROVENANCE.head;
+function metadata594InversePair(pair) {
+  const integrated = structuredClone(pair.integrated), candidate = structuredClone(pair.candidate);
+  need(integrated.modelBundleSha256 === ravScoreModelBinding().modelBundleSha256, 'METADATA_BINDING');
+  integrated.modelBundleSha256 = '08750e3667e5a221374762fccadccf08abf5e9f1ae8814ccc97bfc11880bf36c';
+  if (Object.hasOwn(candidate, 'modelBundleSha256')) {
+    need(candidate.modelBundleSha256 === candidateBinding().modelBundleSha256, 'METADATA_BINDING');
+    candidate.modelBundleSha256 = '2d5cde5418270a02396e24a249f0b6bb09527366c1c110d8742a44cfe2ab459b';
+  }
+  return { integrated, candidate };
+}
+async function validateMetadata594Attestation(attest, { descriptor, conditions, central, pairs, currentSource }) {
+  need(exact(attest, ['schemaVersion','kind','semanticContract','predecessor','parent','producer','datasetId',
+    'referenceAt','registrySha256','contextRegistrySha256','pairsSha256','transition','attestationSha256'])
+    && attest.schemaVersion === 1 && attest.kind === METADATA594_KIND
+    && attest.semanticContract === ESTABLISHED_NATIVE_CURRENT_SEMANTIC_CONTRACT
+    && attest.transition === 'SAME_H0_MODEL_METADATA' && SHA.test(attest.attestationSha256), 'METADATA_ATTESTATION');
+  const { attestationSha256, ...content } = attest;
+  need(digest(content) === attestationSha256 && Buffer.byteLength(canonical(attest)) <= MAX_ATTEST, 'METADATA_ATTESTATION_HASH');
+  need(exact(attest.predecessor, ['sourceFamilyHead','descriptor','attestation'])
+    && attest.predecessor.sourceFamilyHead === METADATA594_SOURCE
+    && exact(attest.parent, ['bundleContentSha256','generationSha256','attestationSha256'])
+    && Object.values(attest.parent).every(value => SHA.test(value)), 'METADATA_PARENT');
+  const old = attest.predecessor;
+  need(old.descriptor?.bundleContentSha256 === attest.parent.bundleContentSha256
+    && old.attestation?.attestationSha256 === attest.parent.attestationSha256
+    && old.descriptor?.datasetId === conditions.datasetId
+    && old.descriptor?.productionReferenceAt === conditions.productionReferenceAt
+    && attest.datasetId === descriptor.datasetId && attest.datasetId === conditions.datasetId
+    && attest.referenceAt === descriptor.productionReferenceAt && attest.referenceAt === conditions.productionReferenceAt
+    && attest.registrySha256 === digest(central) && attest.contextRegistrySha256 === contextDigest(pairs)
+    && attest.pairsSha256 === pairsDigest(pairs)
+    && exact(attest.producer, Object.keys(currentSource))
+    && same({ ...attest.producer, sourceHead: currentSource.sourceHead }, currentSource)
+    && attest.producer.sourceHead === descriptor.sourceHead, 'METADATA_ATTESTED_SOURCE');
+  // The producer is compared with the genuine OLD Git family, never with
+  // future changed origin bytes. This is an assert-only source check.
+  need(HEAD.test(old.descriptor.sourceHead), 'METADATA_OLD_PRODUCER');
+  await git(['merge-base','--is-ancestor',old.descriptor.sourceHead,currentSource.sourceHead]);
+  for (const file of ['scripts/lib/established-native-current-origin.mjs','scripts/lib/ravscore-production-part-pipeline.mjs'])
+    need(await git(['rev-parse',old.descriptor.sourceHead + ':' + file])
+      === await git(['rev-parse',METADATA594_SOURCE + ':' + file]), 'METADATA_OLD_PRODUCER');
+  need(await git(['rev-parse',old.descriptor.sourceHead + ':scripts/lib/dmi-marine-zone-exclusions.json'])
+    === SEED.ownerPolicyGitBlob, 'METADATA_OLD_POLICY');
+  // A small derived ASSERTION VIEW, not an original B or a snapshot handle.
+  // Restore only the two model metadata fields; every unknown state field and
+  // all 673 actual numeric/history/context values remain exact copies.
+  const inverse = new Map([...pairs].map(([id,pair]) => [id,metadata594InversePair(pair)]));
+  const oldPairView = { datasetId: conditions.datasetId, productionReferenceAt: conditions.productionReferenceAt,
+    coastalParts: { parts: Object.fromEntries([...inverse].map(([id,pair]) => [id,{ravScoreModel:{currentState:pair.integrated}}])) },
+    ravScoreCandidateGWarmup: { runtime: { parts: Object.fromEntries([...inverse]
+      .map(([id,pair]) => [id,{ravScoreModel:{currentState:pair.candidate}}])) } },
+    [ATTEST]: structuredClone(old.attestation) };
+  await withSource594OriginalDataSource(async frozenRoot => {
+    const module = await import(pathToFileURL(path.join(frozenRoot,
+      'scripts/lib/established-native-current-origin-594-assertion.mjs')).href);
+    await module.assertFrozen594MetadataOriginData({ descriptor: old.descriptor, conditions: oldPairView,
+      centralContract: central });
+  });
+}
+export async function buildEstablishedNativeCurrent594MetadataAttestation(handle, options) {
+  requireSourceProducerOutput();const issued=requireSourceProducerBinding();
+  need(arguments.length === 2 && exact(options, ['centralContract','conditions']), 'ARGUMENTS');
+  const old = assertAuthenticatedSourceStaged594Snapshot(handle);
+  need(!metadata594Consumed.has(handle), 'METADATA_ALREADY_CONSUMED');
+  // Admission requires BOTH complete normal generated-model checks, not a
+  // caller tuple/flag or hash inequality. No static builder/NEXT import may
+  // make this bound source depend on its own generated checksum.
+  const builders = ['scripts/build-candidate-g-rollback-bundle.mjs', 'scripts/build-ravscore-model-bundle.mjs'];
+  await git(['diff', '--exit-code', 'HEAD', '--', ...builders,
+    'scripts/lib/model-source-imports.mjs', 'scripts/lib/static-module-closure.mjs']);
+  for (const builder of builders) await exec(process.execPath, [path.join(ROOT, builder), '--check'],
+    { cwd: ROOT, env: sourceEnv(), encoding: 'utf8', maxBuffer: 2 * MB, timeout: 60000 });
+  const currentSource = await sourceIdentity(), contracts = await privateRuntimeContractHashes();
+  need(currentSource.integrated===issued.I&&currentSource.candidate===issued.C
+    &&currentSource.continuation===issued.T,'SOURCE594_ISSUED_FAMILY');
+  const oldI = old.checkpoint.modelBinding, oldC = old.checkpoint.candidateGRollbackCompanion.modelBinding;
+  need(currentSource.integrated !== oldI.modelBundleSha256
+    && currentSource.candidate !== oldC.modelBundleSha256
+    && currentSource.continuation !== old.checkpoint.continuationStateContractSha256, 'METADATA_UNISSUED');
+  need(same({ ...oldI, modelBundleSha256: currentSource.integrated }, ravScoreModelBinding())
+    && same({ ...oldC, modelBundleSha256: currentSource.candidate }, candidateBinding())
+    && same({ ...old.descriptor.contractHashes, continuationStateContractSha256: currentSource.continuation }, contracts),
+  'METADATA_CONTRACT_CHANGED');
+  const {centralContract,conditions} = options;
+  need(same(centralContract,old.centralContract), 'METADATA_REGISTRY_CHANGED');
+  const parts = registryParts(centralContract), pairs = pairsFromConditions(conditions,parts);
+  need(conditions.datasetId === old.descriptor.datasetId
+    && conditions.productionReferenceAt === old.descriptor.productionReferenceAt
+    && same(conditions[ATTEST],old.attestation), 'METADATA_TARGET_CHANGED');
+  for (const [id,pair] of pairs) {
+    const inverse = metadata594InversePair(pair);
+    need(same(inverse.integrated,old.checkpoint.states[id])
+      && same(inverse.candidate,old.checkpoint.candidateGRollbackCompanion.states[id]), 'METADATA_NUMERICAL_CHANGE');
+  }
+  need(same(await sourceIdentity(),currentSource), 'SOURCE_CHANGED');
+  const content = { schemaVersion:1,kind:METADATA594_KIND,semanticContract:ESTABLISHED_NATIVE_CURRENT_SEMANTIC_CONTRACT,
+    predecessor:{sourceFamilyHead:METADATA594_SOURCE,descriptor:structuredClone(old.descriptor),attestation:structuredClone(old.attestation)},
+    parent:{bundleContentSha256:old.descriptor.bundleContentSha256,generationSha256:old.checkpoint.generationSha256,
+      attestationSha256:old.attestation.attestationSha256},
+    producer:{...currentSource},datasetId:conditions.datasetId,referenceAt:conditions.productionReferenceAt,
+    registrySha256:digest(centralContract),contextRegistrySha256:contextDigest(pairs),pairsSha256:pairsDigest(pairs),
+    transition:'SAME_H0_MODEL_METADATA' };
+  const attestation = {...content,attestationSha256:digest(content)};
+  await validateMetadata594Attestation(attestation,{descriptor:{...old.descriptor,sourceHead:currentSource.sourceHead},
+    conditions,central:centralContract,pairs,currentSource});
+  need(same(await sourceIdentity(),currentSource), 'SOURCE_CHANGED');
+  await assertAuthenticatedSourceStaged594SnapshotFresh(handle); // Actual pointer/S version, not payload equality alone.
+  metadata594Consumed.add(handle);
+  return freeze(attestation);
+}
+
+// Assert-only B-before-S reentry seam. Callers must first authenticate the
+// immutable CURRENT B and restore old594 S with its genuine normal reader.
+// This creates no handle and permits no arbitrary same-time numerical write.
+export async function assertEstablishedNativeCurrent594MetadataCheckpoint(options) {
+  requireSourceProducerOutput();const issued=requireSourceProducerBinding();
+  need(arguments.length === 1 && exact(options,['descriptor','conditions','centralContract','previousCheckpoint','incomingCheckpoint']), 'ARGUMENTS');
+  const {descriptor,conditions,centralContract,previousCheckpoint:old,incomingCheckpoint:incoming} = options;
+  const currentSource = await sourceIdentity(descriptor?.sourceHead);
+  need(currentSource.integrated===issued.I&&currentSource.candidate===issued.C
+    &&currentSource.continuation===issued.T,'SOURCE594_ISSUED_FAMILY');
+  const parts = registryParts(centralContract), pairs = pairsFromConditions(conditions,parts);
+  await validateMetadata594Attestation(conditions[ATTEST],{descriptor,conditions,central:centralContract,pairs,currentSource});
+  need(old?.modelBinding?.modelBundleSha256 === '08750e3667e5a221374762fccadccf08abf5e9f1ae8814ccc97bfc11880bf36c'
+    && old?.candidateGRollbackCompanion?.modelBinding?.modelBundleSha256 === '2d5cde5418270a02396e24a249f0b6bb09527366c1c110d8742a44cfe2ab459b'
+    && old.continuationStateContractSha256 === 'a6c0408f76b5de70a90959e254df78317f8282cb93c0edc85a71d36b9ef8dafa'
+    && old.datasetId === descriptor.datasetId && incoming?.datasetId === descriptor.datasetId
+    && old.productionReferenceAt === descriptor.productionReferenceAt && incoming.productionReferenceAt === descriptor.productionReferenceAt
+    && conditions[ATTEST].parent.generationSha256 === old.generationSha256
+    && incoming.modelBinding.modelBundleSha256 === currentSource.integrated
+    && incoming.candidateGRollbackCompanion?.modelBinding?.modelBundleSha256 === currentSource.candidate
+    && incoming.continuationStateContractSha256 === currentSource.continuation, 'METADATA_CHECKPOINT_SCOPE');
+  need(same(Object.keys(incoming.states ?? {}).sort(),[...parts.keys()].sort())
+    && same(Object.keys(incoming.candidateGRollbackCompanion.states ?? {}).sort(),[...parts.keys()].sort()), 'PARTS');
+  for(const[id,pair]of pairs) need(same(pair.integrated,incoming.states[id])
+    && same(pair.candidate,incoming.candidateGRollbackCompanion.states[id]), 'METADATA_INCOMING_B_S_DIFFER');
+  assertSource594MetadataCheckpointInverse({previousCheckpoint:old,incomingCheckpoint:incoming,currentSource});
   need(same(await sourceIdentity(descriptor.sourceHead),currentSource), 'SOURCE_CHANGED');
   return true;
 }

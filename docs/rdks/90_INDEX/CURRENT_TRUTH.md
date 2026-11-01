@@ -1,3 +1,13 @@
+## 1. november 2026 — SOURCE 595: aktuel lokal sandhed
+
+Den isolerede SOURCE-kandidat står lokalt på **4.0.595** efter én normal versionssynk. Den gennemgåede semantiske current594-sammenføring på 24 filer er faktisk anvendt lokalt; ROOT har genlæst den normale NULL-cases PASS. Det er ikke en leveret revision. SOURCE-bindingsfilens version, binding og output er fortsat NULL. Nye 595-C/I/T, SQL og fixedpoint er endnu ikke afledt.
+
+Den ægte forgænger er 4.0.594 fra fast genuine37 CODE. Aktuelle syntetiske 594-input skal fremstilles af de normale kaldere; CODE, DATA og SOURCE-eksekutor må ikke ommærkes til hinanden. Gamle 585/586-prøver beholder egne arkiverede normalfaser. Bevarede 586/C145/I141- og 040000-resultater er historiske originaler, ikke den aktuelle 595-binding eller installationsvej.
+
+Næste åbne led er den normale 594-central-/metadataovergang gennem B før S, samme SDK og almindelige action, fase 63/64 og faktisk afslutning af samme ejer. Profilen er PREPARATION_ONLY; et forberedt prefix eller en fanget RPC-forespørgsel er ikke databasegenlæsning eller fullRuntime/actionbevis. ROOT afventer konkret kalderplan og frosne kildeinput før normal C → I → T, binding-only, nyt procesoutput og eventuel ny SQL-kilde.
+
+ROOTs særskilte oplysninger om fungerende P0/c920, almindelig 235 og offentlig header/784 er ikke SOURCE-kvalifikation og er ikke genverificeret af denne SOURCE-fase. PostgreSQL, kapacitet, komplet cache/historik og selvstændig produktion er ikke bevist. Alle fem hovedmål er åbne til **18. november 2026**. Afgrænset delegering bevarer adskilte filejere og ROOT som eneste produktionskoordinator; ingen produktionsændring under aktiv writer.
+
 ## 21. oktober – SOURCE-kildeafledning, ikke ny offentlig levering
 
 Aktuelt lokalt SOURCE-mål er 040000: en begrænset kalenderformatter-genbrug krævede faktisk ny C145/I141/T12 og append-only SQL. Egen LF-kilde har bestået de fem normale C-/I-/SQL-/syvforbrugersynk-/kalendermål til fixedpoint. Alle 66 tidligere migrationer bevares byteeksakt; aldrig installeret 030000 og 020000 er historik, ikke mellemtrin fra genuine 585. Windows-kilden består C/I og kalender, men SQL/sync afviser den gamle 20261017140000-SQL's rå CRLF-hash. Dens LF-projektion matcher både Git og LF-vært byteeksakt; hverken original eller kontrol er ændret. Lokalt resultat er ikke samlet CI, native PostgreSQL, B/S, national kapacitet eller offentlig effekt. SOURCE er inaktiv; normal vejrhentning og ROOTs ene P0-statuslinje er uændrede. Dette erstatter alene aktuelle bindingsvalg i de daterede 030000-/020000-noter nedenfor. Se DEC-0294.
