@@ -8,7 +8,7 @@
     "sourceValidation": "12764c3979f66a608a1af07ed348cf42d950fea67fde397068c5da69de97a8ed"
   },
   "registryBeforeSha256": "5121de4c4b2b00a99288b2192c0501b92ccb0509e1c3a58d1197e080b1f0839e",
-  "registryAfterSha256": "1e6937025d1a94afb928e25e77843a08b85d86d1ff71c8060c79af77bc6f32af",
+  "registryAfterSha256": "c3972b4e155e52e94ca621ecc86e0b5c760bd4feeacc65d36eea5dea08fdd6a1",
   "registryDelta": {
     "owners": [
       {
@@ -373,6 +373,93 @@
           "cf8c81f48cffde201dadfad7979df58268b4275096a8a7377a51b12d598e8f0c",
           "da877da5c157d0067c393495249ef1e5fb82751108e8f8a46c3f7beda8f764fa"
         ]
+      },
+      "scripts/check-fixed-supabase-account-read-idle.mjs": {
+        "nodeImports": [
+          "node:path",
+          "node:url"
+        ],
+        "imports": [],
+        "resources": [],
+        "dependencySurfaces": [],
+        "bindingSurfaces": [
+          "8a3ba0a8f469fa26b1cdd71651131499ce2050d5dfb583005f66f8712cfc13b0",
+          "ad319bf204c81a130c14421414944a4f196182c4e5f3d4a6cbaa5b6361b45d32"
+        ],
+        "computedBoundaries": []
+      },
+      "scripts/lib/native-original-continuity-workflow-review.mjs": {
+        "nodeImports": [
+          "node:assert/strict",
+          "node:crypto",
+          "node:fs"
+        ],
+        "imports": [],
+        "resources": [
+          "scripts/lib/current-installed-code-only-workflow-review.json",
+          "scripts/lib/native-original-continuity-workflow-review.json"
+        ],
+        "dependencySurfaces": [
+          "0390d8d5900fbcc87e08218d20d025f1afdfe42bb29504f794d0f9f5b8cd8bb7",
+          "4e842f0c6f13efeb6f08de1b76db685c728fc26602424b96c9c1e11a425f65b9"
+        ],
+        "bindingSurfaces": [
+          "4d5bd3236b902b53f777c50e4baeafe65de10c08a1da3801920df12048beb081",
+          "5193ca852a68475d140a771402a4fa03aae098c6694625269ec7835683d9e75a",
+          "59c5cda146e951e65464e14845e52065540f1b4da88b534a0e475f66c55412f8",
+          "d3c7c0b6948622d54638729de889bded01734fa308421ec6df79cb2295a1d7ba"
+        ],
+        "computedBoundaries": []
+      },
+      "scripts/read-fixed-public-rate-log-20261012.mjs": {
+        "nodeImports": [
+          "node:path",
+          "node:url"
+        ],
+        "imports": [],
+        "resources": [],
+        "dependencySurfaces": [],
+        "bindingSurfaces": [
+          "22027bcc4be968d349b013837041b5302c8c29d7253b8f159c88a2848cb543fd",
+          "35c5197f211dc07d58fb9c663e787df1b87a92eb11dda617a4bd77f2c29a1ee5",
+          "6b1570d6f7c84aeb5226f2b3bc7d5bd5e02838d0700aa1008e50a0127150e3d0"
+        ],
+        "computedBoundaries": []
+      },
+      "scripts/read-typed-trip-catalog.mjs": {
+        "nodeImports": [
+          "node:crypto",
+          "node:fs/promises",
+          "node:perf_hooks",
+          "node:url"
+        ],
+        "imports": [],
+        "resources": [
+          "scripts/typed-trip-catalog-read.sql"
+        ],
+        "dependencySurfaces": [
+          "1ef8c78e2f1aae7df71a795e12dc1fb01482cbb8cc818ab8f334eedee9a0070e",
+          "31dd9325624ad1edb4ff987fb38b0b9d845651997a813951dce53c9760314c09",
+          "480d6614e35a07f1175d7c56ee0bb38683a7aec07b4de91aaa7be8bcd0312a42",
+          "6127075210f82d04da3833db676a931e0818fc9a341f45148373370887ca0477",
+          "61b90a399e60b8c8c8814a1c8fe1877c35ca5fb58a62bc18f14cbacf28aa78a3",
+          "715246af024be83a511d6d4e5a21aef6cd7a999a500f4507cfea1433ebb4356f",
+          "7735cacb6bc5142491cbcca6c876366d10aa9bb29d291562a71a8e258e33b2b3",
+          "8048dd963be4238e1afd94064e2c5ff0e52ea19465cb5e57e1bdac6d524b33da",
+          "92f1fe3d4fa5331e890fbd9189dbfbe289e49d16f114f76ee82af22480979681",
+          "9f6376e83fe22321aecb06be67082c1a75975d8a8d87e132ca2ef959ec181ef0",
+          "a2614c589e983ff22f06f0e0029292962c3efe5bb350cd4f8d20bd157dad656c",
+          "a2b588eab2999fadf6c92ef3c05636a06471b6c7be908ccff5ee6114f5031e6e",
+          "ebbea97f5b0415f5fcc64bb653c4aefbe6a15e4b94132d7065e9b32ab2141c88"
+        ],
+        "bindingSurfaces": [
+          "7dca50e97d19a79dd8b14e0d83d2d0835edbf08606b312276e8e8336028c71a6",
+          "8a4f01bd8f396647acb9985368880685203101306a91fa4d40a125e735a49771",
+          "9b3e8695c4e139fabf566cad7ebb96ab518c5bd71f261534c36ac62b86f02c51",
+          "ef4158e73d983bdf7e6559f0a2159d3fcdff47c229c605edc98d655be41fbe11",
+          "f059012275353af640d764ee470f415423c47d954d41f49ea08d174cf1bfc35f"
+        ],
+        "computedBoundaries": []
       }
     },
     "sourceArrayAdditions": {
