@@ -45,7 +45,9 @@ let base,head,main,baseContent,content,baselinePlan,coordinate,decide,discover,a
 let native,namespace,sourceContent,fullBody,phaseBody,fullJobBody,selectedJobBody;
 let immutableFullZip,immutablePhaseZip;
 let maps,zips,selectedReceipt,selectedZip,selectedMetadata,rows=[],cases=0,actualProcesses=0,calls=0;
-const state={movedReview:false,missingReview:false,wrongPlan:false,merged:false};
+const state={movedReview:false,missingReview:false,wrongPlan:false,merged:false,
+  baseTip:null,hintOverride:null,duplicateReview:false,malformedReview:false,headMismatch:false,expiredFull:false,laterNegative:false};
+const fallbackOnlyCommits=new Set();let observedRoutes=[],unexpectedRoutes=[],fixtureFailures=[],fallbackDiscoveries=[];
 const scenarios=[];
 const moduleAt=async file=>import(pathToFileURL(path.join(root,file)).href);
 const commandRows=tree=>git(root,['ls-tree','-z',tree]).toString('utf8').split('\0').filter(Boolean).map(line=>{
@@ -69,12 +71,14 @@ function reviewObject(plan){
 }
 function currentPull(){
   const review=reviewObject(baselinePlan);
+  if(state.hintOverride)review.baselineCommit=state.hintOverride;
+  if(state.headMismatch)review.head=base;
   if(state.wrongPlan)review.planSha256='f'.repeat(64);
   if(state.movedReview&&rows.length)review.reviewSha256='e'.repeat(64);
   return {number:selectedPr,state:state.merged?'closed':'open',...(state.merged?{merged_at:stamp(24),merge_commit_sha:main}:{}),
     user:{login:native.ORIGIN.repository.split('/')[0]},head:{sha:head,ref:'codex/synthetic-domain-current',repo:{full_name:native.ORIGIN.repository}},
-    base:{sha:base,ref:'main',repo:{full_name:native.ORIGIN.repository}},
-    body:state.missingReview?'Synthetic missing review':'Synthetic fixture only\n<!-- RAVRADAR_CONTROL_REVIEW_V2 '+JSON.stringify(review)+' -->\n'};
+    base:{sha:state.baseTip??base,ref:'main',repo:{full_name:native.ORIGIN.repository}},
+    body:state.missingReview?'Synthetic missing review':state.malformedReview?'<!-- RAVRADAR_CONTROL_REVIEW_V2 {bad-json} -->':('Synthetic fixture only\n<!-- RAVRADAR_CONTROL_REVIEW_V2 '+JSON.stringify(review)+' -->\n').repeat(state.duplicateReview?2:1)};
 }
 function run(selected){return {id:selected?selectedRun:fullRun,run_attempt:1,head_sha:selected?head:base,
   head_branch:selected?'codex/synthetic-domain-current':'codex/synthetic-domain-full',event:'pull_request',
@@ -107,10 +111,21 @@ function rebuildMaps(){
     [actions+'/runs/'+fullRun+'/artifacts?per_page=100',{total_count:2,artifacts:[fullMeta,phaseMeta]}],
     [actions+'/artifacts?name='+encodeURIComponent(fullName)+'&per_page=100',{total_count:1,artifacts:[fullMeta]}],
     [actions+'/artifacts/'+fullFinalId,fullMeta],[actions+'/artifacts/'+fullNativeId,phaseMeta]]);
+  if(state.expiredFull){fullMeta.expired=true;phaseMeta.expired=true;}
   zips=new Map([[String(fullFinalId),fullZip],[String(fullNativeId),phaseZip]]);
   for(const current of [base,main].filter(Boolean))for(const producer of Object.values(namespace.SOURCE_GATE_PRODUCERS))
     maps.set(actions+'/workflows/'+producer.workflowId+'/runs?head_sha='+current+'&branch=main&per_page=100&page=1',
       {total_count:0,workflow_runs:[]});
+  if(state.laterNegative){
+    const [workflow,producer]=Object.entries(namespace.SOURCE_GATE_PRODUCERS)[0],negativeRun=fullRun+100;
+    maps.set(actions+'/workflows/'+producer.workflowId+'/runs?head_sha='+base+'&branch=main&per_page=100&page=1',
+      {total_count:1,workflow_runs:[{id:negativeRun,run_attempt:1,head_sha:base,head_branch:'main',path:workflow,
+        repository:{full_name:native.ORIGIN.repository},status:'completed',conclusion:'failure',updated_at:stamp(30)}]});
+    maps.set(actions+'/runs/'+negativeRun+'/attempts/1/jobs?per_page=100',{total_count:1,jobs:[{
+      id:negativeRun+1000,run_id:negativeRun,run_attempt:1,head_sha:base,name:producer.gates[0].job,
+      status:'completed',conclusion:'failure',steps:[{name:producer.gates[0].step,status:'completed',
+        conclusion:'failure',completed_at:stamp(25)}]}]});
+  }
   if(state.merged){
     maps.set(repo+'/commits/'+main+'/pulls?per_page=100',[currentPull()]);
     maps.set(actions+'/artifacts?name='+encodeURIComponent(selectedReceipt.artifactName)+'&per_page=100',
@@ -119,9 +134,12 @@ function rebuildMaps(){
   }
 }
 async function transport(url,options){
+  try{
   calls++;const target=new URL(url),repo='/repos/'+native.ORIGIN.repository,actions=repo+'/actions';
   if(target.origin==='https://synthetic-v2.invalid'){
-    assert.equal(options.headers,undefined);assert.equal(options.redirect,'error');assert(zips.has(target.pathname.slice(1)));
+    assert.equal(options.headers,undefined);assert.equal(options.redirect,'error');
+    if(!zips.has(target.pathname.slice(1)))unexpectedRoutes.push('SIGNED_ARTIFACT:'+target.pathname.slice(1));
+    assert(zips.has(target.pathname.slice(1)));
     return new Response(zips.get(target.pathname.slice(1)));}
   assert.equal(target.origin,'https://api.github.com');
   if(options.redirect===undefined){
@@ -129,16 +147,26 @@ async function transport(url,options){
     assert.equal(options.headers['X-GitHub-Api-Version'],'2022-11-28');
   }else assert.equal(options.redirect,'manual');
   assert.equal(options.headers.Authorization,'Bearer synthetic-never-live');const route=target.pathname+target.search;
+  observedRoutes.push(route);
   if(route===repo+'/pulls/'+selectedPr)return Response.json(currentPull());
   if(route===actions+'/runs/'+selectedRun)return Response.json(run(true));
   if(route===actions+'/runs/'+selectedRun+'/attempts/1/jobs?per_page=100')return Response.json({total_count:1,jobs:[jobs(true)]});
   const match=new RegExp('^'+actions+'/artifacts/([0-9]+)/zip$').exec(route);
-  if(match){assert(zips.has(match[1]));return new Response(null,{status:302,headers:{location:'https://synthetic-v2.invalid/'+match[1]}});}
+  if(match){if(!zips.has(match[1]))unexpectedRoutes.push(route);assert(zips.has(match[1]));
+    return new Response(null,{status:302,headers:{location:'https://synthetic-v2.invalid/'+match[1]}});}
   if(route.startsWith(actions+'/artifacts?name=')&&!maps.has(route))return Response.json({total_count:0,artifacts:[]});
+  const absentCommit=/\/commits\/([a-f0-9]{40})\/pulls\?per_page=100$/.exec(route);
+  if(absentCommit&&fallbackOnlyCommits.has(absentCommit[1])&&!maps.has(route)){
+    fallbackDiscoveries.push(absentCommit[1]);return Response.json([]);
+  }
+  if(!maps.has(route))unexpectedRoutes.push(route);
   assert(maps.has(route),'Unexpected synthetic-only route '+route);return Response.json(maps.get(route));
+  }catch(error){fixtureFailures.push('SYNTHETIC_TRANSPORT_FIXTURE_FAILURE');throw error;}
 }
 function configure(candidate){
-  head=candidate;checkout(head);rows=[];state.missingReview=false;state.movedReview=false;state.wrongPlan=false;state.merged=false;main=null;
+  head=candidate;checkout(head);rows=[];observedRoutes=[];unexpectedRoutes=[];fixtureFailures=[];fallbackDiscoveries=[];
+  state.missingReview=false;state.movedReview=false;state.wrongPlan=false;state.merged=false;
+  state.baseTip=null;state.hintOverride=null;state.duplicateReview=false;state.malformedReview=false;state.headMismatch=false;state.expiredFull=false;state.laterNegative=false;main=null;
   Object.assign(process.env,{GITHUB_EVENT_NAME:'pull_request',GITHUB_REPOSITORY:native.ORIGIN.repository,SOURCE_GATE_HEAD_SHA:head,
     PULL_REQUEST_NUMBER:String(selectedPr),GITHUB_RUN_ID:String(selectedRun),GITHUB_RUN_ATTEMPT:'1',GITHUB_JOB:'validate',
     GITHUB_TOKEN:'synthetic-never-live'});
@@ -222,7 +250,8 @@ try{
   globalThis.fetch=transport;
   console.log=(...args)=>{if(args[0]==='SOURCE_TIME '||String(args[0]).startsWith('SOURCE_TIME ')){
     const row=JSON.parse(String(args[0]).slice('SOURCE_TIME '.length));rows.push(row);actualProcesses++;}originalLog(...args);};
-  rebuildMaps();const positive=await coordinate();assert.equal(positive.selection,'TARGETED');selectedReceipt=positive.receipt;
+  rebuildMaps();const beforePositiveCalls=calls,positive=await coordinate(),positivePhysicalCalls=calls-beforePositiveCalls;
+  assert.equal(positive.selection,'TARGETED');selectedReceipt=positive.receipt;
   assert.equal(selectedReceipt.schemaVersion,2);assert.equal(rows.length,baselinePlan.commands.length);assert(rows.every(row=>row.outcome==='PASS'));
   assert.deepEqual(selectedReceipt.reportedCommandResults,rows);assert.equal(selectedReceipt.domains.postgres.executedInThisRun,false);
   assert.equal(selectedReceipt.domains.historical584National.executedInThisRun,false);cases++;scenarios.push('actual producer processes and V2 receipt');
@@ -258,6 +287,74 @@ try{
     process.chdir(cliCwd);process.argv=cliArgv;
     for(const key of Object.keys(process.env))if(!Object.hasOwn(cliEnvironment,key))delete process.env[key];Object.assign(process.env,cliEnvironment);
   }
+  // A genuine synthetic FULL baseline beyond the unchanged six-entry fallback
+  // is located only through the existing marker, then qualified normally.
+  let deepTip=base;
+  for(let index=0;index<7;index++){
+    deepTip=commit(baselineTree,[deepTip],'synthetic intervening main wrapper '+index);
+    fallbackOnlyCommits.add(deepTip);
+  }
+  const deepHead=commit(candidateTree,[deepTip],'synthetic reviewed control child after seven main wrappers');
+  assert.equal(text(root,['rev-list','--first-parent','--max-count=8',deepTip]).split('\n').indexOf(base),7);
+  const legacyDeepFallback=text(root,['rev-list','--first-parent','--max-count=6',deepTip]).split('\n');
+  configure(deepHead);state.baseTip=deepTip;baselinePlan=plan({baselineCommit:base,candidateCommit:head,expectedHead:head});
+  assert.equal(baselinePlan.selection,'CONTROL_QUALIFICATION_REQUIRED');rebuildMaps();
+  const beforeDeepCalls=calls,deep=await coordinate();assert.equal(deep.selection,'TARGETED');
+  assert.equal(calls-beforeDeepCalls,positivePhysicalCalls,'Locator adds no physical calls to successful normal FULL qualification');
+  assert.deepEqual(deep.receipt.impact.commands,positive.receipt.impact.commands);
+  assert.equal(rows.length,baselinePlan.commands.length);assert.equal(deep.receipt.baselineReference.mergeCommit,base);
+  assert.equal(deep.receipt.domains.postgres.executedInThisRun,false);assert.deepEqual(unexpectedRoutes,[]);assert.deepEqual(fixtureFailures,[]);
+  assert.deepEqual(fallbackDiscoveries,[]);cases++;scenarios.push('untrusted marker locates normal FULL at position8 without larger call or command budget');
+  const unrelated=commit(baselineTree,[],'synthetic non-ancestor marker target');
+  for(const hint of [unrelated,'f'.repeat(40)]){
+    configure(deepHead);state.baseTip=deepTip;state.hintOverride=hint;
+    baselinePlan=plan({baselineCommit:base,candidateCommit:head,expectedHead:head});rebuildMaps();const before=calls;
+    const refused=await coordinate();assert.equal(refused.selection,'FULL');assert.equal(refused.reasonCode,'NO_QUALIFIED_FULL_ANCESTOR');
+    assert.equal(calls-before,9,'Unusable hint uses initial PR/run/job and unchanged six-entry discovery fallback');
+    assert.equal(rows.length,0);assert.deepEqual(unexpectedRoutes,[]);assert.deepEqual(fixtureFailures,[]);assert.deepEqual(fallbackDiscoveries,legacyDeepFallback);
+    cases++;scenarios.push('deep non-ancestor or absent-object hint is ignored; legacy fallback has no FULL');
+  }
+  configure(deepHead);state.baseTip=deepTip;state.duplicateReview=true;
+  baselinePlan=plan({baselineCommit:base,candidateCommit:head,expectedHead:head});rebuildMaps();const beforeDuplicate=calls;
+  assert.equal((await coordinate()).selection,'FULL');assert.equal(calls-beforeDuplicate,9);assert.equal(rows.length,0);
+  assert.deepEqual(unexpectedRoutes,[]);assert.deepEqual(fixtureFailures,[]);assert.deepEqual(fallbackDiscoveries,legacyDeepFallback);
+  cases++;scenarios.push('deep ambiguous marker is ignored as a locator; unchanged fallback has no FULL');
+  for(const flag of ['missingReview','expiredFull','laterNegative']){
+    configure(deepHead);state.baseTip=deepTip;state[flag]=true;
+    baselinePlan=plan({baselineCommit:base,candidateCommit:head,expectedHead:head});rebuildMaps();
+    const refused=await coordinate();assert.equal(refused.selection,'FULL');assert.equal(rows.length,0);
+    assert.deepEqual(unexpectedRoutes,[],'FULL must not hide a missing synthetic transport route');
+    assert.deepEqual(fixtureFailures,[],'FULL must not hide any synthetic transport assertion or route failure');
+    assert.equal(refused.reasonCode,flag==='laterNegative'?'FULL_BASELINE_NOT_QUALIFIED':'NO_QUALIFIED_FULL_ANCESTOR');
+    assert.deepEqual(fallbackDiscoveries,flag==='laterNegative'?[]:legacyDeepFallback);
+    if(flag==='laterNegative')assert(observedRoutes.includes('/repos/'+native.ORIGIN.repository+'/actions/runs/'+(fullRun+100)+'/attempts/1/jobs?per_page=100'));
+    if(flag==='expiredFull')assert.equal(maps.get('/repos/'+native.ORIGIN.repository+'/actions/artifacts/'+fullFinalId).expired,true);
+    cases++;scenarios.push('deep locator remains unavailable for '+flag);
+  }
+  configure(deepHead);state.baseTip=deepTip;state.hintOverride=deepTip;
+  baselinePlan=plan({baselineCommit:base,candidateCommit:head,expectedHead:head});rebuildMaps();
+  const hintPr=selectedPr+1,hintPull={number:hintPr,state:'closed',merged_at:stamp(24),merge_commit_sha:deepTip,
+    head:{sha:deepTip,repo:{full_name:native.ORIGIN.repository}},base:{ref:'main',repo:{full_name:native.ORIGIN.repository}}};
+  const hintRepo='/repos/'+native.ORIGIN.repository,hintActions=hintRepo+'/actions';
+  maps.set(hintRepo+'/commits/'+deepTip+'/pulls?per_page=100',[hintPull]);
+  const targetedHintName='ravradar-source-targeted-domains-v2-pr-'+hintPr+'-'+deepTip+'-'+baseContent.slice(7);
+  maps.set(hintActions+'/artifacts?name='+encodeURIComponent(targetedHintName)+'&per_page=100',
+    {total_count:1,artifacts:[{id:selectedArtifactId,name:targetedHintName,expired:false,workflow_run:{id:selectedRun,head_sha:deepTip}}]});
+  const targetedHint=await coordinate();assert.equal(targetedHint.selection,'FULL');assert.equal(targetedHint.reasonCode,'NO_QUALIFIED_FULL_ANCESTOR');
+  assert.equal(rows.length,0);assert.deepEqual(unexpectedRoutes,[]);assert.deepEqual(fixtureFailures,[]);assert.deepEqual(fallbackDiscoveries,legacyDeepFallback.slice(1));
+  assert(!observedRoutes.some(route=>route.includes('ravradar-source-targeted-domains-v2-')||route.endsWith('/zip')));
+  cases++;scenarios.push('TARGETED-only hint is never promoted or downloaded as FULL');
+  // Within the existing six-entry window a bad locator must never turn the
+  // old complete CONTROL refusal into an automatic FULL handoff.
+  for(const flag of ['duplicateReview','malformedReview','headMismatch','nonAncestor']){
+    configure(positiveHead);baselinePlan=plan({baselineCommit:base,candidateCommit:head,expectedHead:head});
+    if(flag==='nonAncestor')state.hintOverride=unrelated;else state[flag]=true;
+    rebuildMaps();const before=calls;
+    await assert.rejects(coordinate(),/SOURCE_TARGETED_CONTROL_REVIEW_/);
+    assert.equal(calls-before,positivePhysicalCalls-2,'Same normal FULL qualification; RED precedes two post-target reads');
+    assert.equal(rows.length,0);assert.deepEqual(unexpectedRoutes,[]);assert.deepEqual(fixtureFailures,[]);assert.deepEqual(fallbackDiscoveries,[]);
+    cases++;scenarios.push('legacy-window '+flag+' preserves complete CONTROL RED with zero commands');
+  }
   for(const flag of ['missingReview','wrongPlan','movedReview']){
     configure(positiveHead);baselinePlan=plan({baselineCommit:base,candidateCommit:head,expectedHead:head});state[flag]=true;rebuildMaps();
     await assert.rejects(coordinate(),/CONTROL_REVIEW/);assert.equal(rows.length,flag==='movedReview'?baselinePlan.commands.length:0);
@@ -273,6 +370,14 @@ try{
   configure(commit(nativeTree,[positiveHead],'synthetic actual PostgreSQL input changes'));baselinePlan=plan({baselineCommit:base,candidateCommit:head,expectedHead:head});rebuildMaps();
   assert.equal(baselinePlan.selection,'FULL');const refused=await coordinate();assert.equal(refused.selection,'FULL');assert.equal(rows.length,0);
   cases++;scenarios.push('changed real protected input has no short proof');
+  for(const family of ['C','I','T']){
+    const file=family==='T'?profile.continuation.file:profile.models[family].file,changedTree=rewrite(candidateTree,[[file,Buffer.concat([
+      git(root,['cat-file','blob',positiveHead+':'+file]),Buffer.from('\n// synthetic protected '+family+' input drift\n')])]]);
+    configure(commit(changedTree,[positiveHead],'synthetic actual '+family+' input changes'));
+    baselinePlan=plan({baselineCommit:base,candidateCommit:head,expectedHead:head});rebuildMaps();
+    assert.equal(baselinePlan.selection,'FULL');assert.equal((await coordinate()).selection,'FULL');assert.equal(rows.length,0);
+    cases++;scenarios.push('marker cannot override changed real '+family+' input');
+  }
 }finally{
   console.log=originalLog;globalThis.fetch=originalFetch;
   for(const key of Object.keys(process.env))if(!Object.hasOwn(originalEnvironment,key))delete process.env[key];Object.assign(process.env,originalEnvironment);

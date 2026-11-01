@@ -70,6 +70,15 @@ for(const command of SOURCE_IMPACT_CONTROL_TARGETS){
 assert(blocks[20].includes("path: ${{ steps.source-content.outputs.receipt_path || '.cache/source-tree-content-proof.json' }}"));
 passed++;
 
+// The actual step-5 bridge reports only the closed FULL selection/reason.
+// The workflow entrance and every runtime condition above remain unchanged.
+const bridge=fs.readFileSync(new URL('./weather-source-gate.mjs',import.meta.url),'utf8').replace(/\r\n/g,'\n');
+assert(bridge.includes("reason_code=${reasonCode}"));
+assert(bridge.includes("JSON.stringify({selection: 'FULL', reason_code: reasonCode})"));
+for(const reason of ['COMPLETE_DIFF_REQUIRES_FULL','CUMULATIVE_DIFF_REQUIRES_FULL',
+  'FULL_BASELINE_NOT_QUALIFIED','NO_QUALIFIED_FULL_ANCESTOR','TARGETED_PRECONDITION_UNAVAILABLE'])assert(bridge.includes("'"+reason+"'"));
+assert(!bridge.includes('JSON.stringify(impact)'));passed++;
+
 const once=(from,to)=>{assert.equal(source.split(from).length,2);return source.replace(from,()=>to);};
 const mutations=[
   source.replace(SOURCE_IMPACT_FULL_STEP_CONDITION,''),

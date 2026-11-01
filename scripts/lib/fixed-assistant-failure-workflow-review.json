@@ -732,5 +732,199 @@
     "ownersBeforeCount": 101,
     "ownersBeforeArraySha256": "7c5d367f525b569a860b6c7e8cc9dc1f829083574eaba5e88065d1163a56f571",
     "intermediateRegistrySha256": "2d4afeb192aad295787624288fbb8c4e959f049ffbae96508857ead92a0a97d8"
+  },
+  "registryBaselineHintSuccessor": {
+    "kind": "EXACT_UNTRUSTED_BASELINE_HINT_NORMAL_CALLER_REGISTRY_SUCCESSOR",
+    "beforeSha256": "3f881db61fde06c49322eac50407310a47affb4f2d1bf118d38f2b03041b04b1",
+    "afterSha256": "b570d96e48e99fd8677e2e1fe60bf811b30296ed83795c2d80b2e97c6ec03061",
+    "insertions": [
+      {
+        "offset": 454019,
+        "bytes": 76,
+        "sha256": "be7032aab4d42a9bb83777933a13d10b5dd8e5c68b9ac56969c6d90ae28df308",
+        "owner": "scripts/source-targeted-producer.mjs",
+        "field": "dependencySurfaces"
+      },
+      {
+        "offset": 577088,
+        "bytes": 43,
+        "sha256": "a56d648dd18d91f41d96fa0fb2b8c2b4240d60f19d3f0159902fec24b5c1bab3",
+        "owner": "scripts/test-source-impact-workflow.mjs",
+        "field": "resources"
+      },
+      {
+        "offset": 577549,
+        "bytes": 76,
+        "sha256": "99a9ca20249912d3cf89613b8f8aeddac59e6728408edb143900b5f919ea248c",
+        "owner": "scripts/test-source-impact-workflow.mjs",
+        "field": "dependencySurfaces"
+      },
+      {
+        "offset": 578496,
+        "bytes": 76,
+        "sha256": "e6397f63364cd7577fd25682cdd09b75217e5adc8130c08a50427bf7bc05c6c4",
+        "owner": "scripts/test-source-impact-workflow.mjs",
+        "field": "bindingSurfaces"
+      },
+      {
+        "offset": 591389,
+        "bytes": 1520,
+        "sha256": "8bd1efc9601e61ecdb999c2e9e621e201742b2188447328c795ec08cf7ca7e78",
+        "owner": "scripts/test-source-targeted-domain-integration.mjs",
+        "field": "dependencySurfaces"
+      },
+      {
+        "offset": 594692,
+        "bytes": 304,
+        "sha256": "bdfb40a3a402885db3778e2307120a39f14e2623795b43612f715c1d8c10db16",
+        "owner": "scripts/test-source-targeted-domain-integration.mjs",
+        "field": "bindingSurfaces"
+      },
+      {
+        "offset": 595110,
+        "bytes": 76,
+        "sha256": "9a46372cde8f4baf72b861a816ad5cba5888539f0fcd95356c4095f51493c361",
+        "owner": "scripts/test-source-targeted-domain-integration.mjs",
+        "field": "computedBoundaries"
+      },
+      {
+        "offset": 599232,
+        "bytes": 76,
+        "sha256": "b6c7782ac68c3ab962a8e2bc4e8ecf424f0124d9c295655f58b09c88fcb41962",
+        "owner": "scripts/test-source-targeted-producer.mjs",
+        "field": "dependencySurfaces"
+      },
+      {
+        "offset": 602003,
+        "bytes": 76,
+        "sha256": "14bbd723663d9243943c738c6287161d35fe103f5591ec0fac605d10f6aebfb9",
+        "owner": "scripts/test-source-targeted-producer.mjs",
+        "field": "bindingSurfaces"
+      },
+      {
+        "offset": 655225,
+        "bytes": 76,
+        "sha256": "26e1c636084f44432e34e4db356bc666b515bf32ab5cd4c2fe3fffd66f15ff1d",
+        "owner": "scripts/weather-source-gate.mjs",
+        "field": "bindingSurfaces"
+      }
+    ],
+    "surfaceAdditions": [
+      {
+        "owner": "scripts/source-targeted-producer.mjs",
+        "field": "dependencySurfaces",
+        "beforeCount": 14,
+        "beforeArraySha256": "b88325655c3828186b4e3578b23a4a9ec1d1df399e68941a2f9b9cad37bbdc0f",
+        "values": [
+          "a43badb084e122d6a9e40fb3f23531d071d999105df5b76c20d40867f73e2695"
+        ]
+      },
+      {
+        "owner": "scripts/weather-source-gate.mjs",
+        "field": "bindingSurfaces",
+        "beforeCount": 16,
+        "beforeArraySha256": "a33aac059ea368aa3eacdf6afea052d9d4cd0474b7fecd8c06d4b07067b998d8",
+        "values": [
+          "23eb39b9a9388298c45a43df0071071265c2c8761fbdf1d4ea190ceae8a44857"
+        ]
+      },
+      {
+        "owner": "scripts/test-source-targeted-producer.mjs",
+        "field": "dependencySurfaces",
+        "beforeCount": 37,
+        "beforeArraySha256": "352cd4a898912b5132fadd040a130ddfed9ed9db4a119797492eb845952454e3",
+        "values": [
+          "374d9d05a3b6e7a8cf0a204d80f5114bdca58fa1ab182dbe29ff2097c3fc5eaf"
+        ]
+      },
+      {
+        "owner": "scripts/test-source-targeted-producer.mjs",
+        "field": "bindingSurfaces",
+        "beforeCount": 35,
+        "beforeArraySha256": "9a8a87db0b523303476bd27053ccde686156fbed6fd3ecfbbe942e0f341d20d9",
+        "values": [
+          "d5af52a386384955172c0d55ca96ab08b2f115f5b820c08f7aebea1cb9a5b0a4"
+        ]
+      },
+      {
+        "owner": "scripts/test-source-impact-workflow.mjs",
+        "field": "dependencySurfaces",
+        "beforeCount": 5,
+        "beforeArraySha256": "3fb2a16c1e57a1fe2168a8f4fee7fee56b477846e92fd76188239be98a2050a6",
+        "values": [
+          "8b629d257fd30e7819f0ee2f0788a342990d00a4948e209a16f4c151cb0414b4"
+        ]
+      },
+      {
+        "owner": "scripts/test-source-impact-workflow.mjs",
+        "field": "bindingSurfaces",
+        "beforeCount": 11,
+        "beforeArraySha256": "f280ed00faa7e55afe74917b39f2a39793cfc00702a3f3ad25599e314fd77ac4",
+        "values": [
+          "b258021f00a2b002183467e040dca27d650c86bbd5b8d2645fedec3290b71ddd"
+        ]
+      },
+      {
+        "owner": "scripts/test-source-impact-workflow.mjs",
+        "field": "resources",
+        "beforeCount": 5,
+        "beforeArraySha256": "acc6a6215e9732fbd925232c943dbc3bde485c13246642feeed2a0df0a1043aa",
+        "values": [
+          "scripts/weather-source-gate.mjs"
+        ]
+      },
+      {
+        "owner": "scripts/test-source-targeted-domain-integration.mjs",
+        "field": "dependencySurfaces",
+        "beforeCount": 59,
+        "beforeArraySha256": "800049e48194cb4bc3f4d32fed62e7da54d184afc381207a9a464f3f97a67ace",
+        "values": [
+          "8434aaa365de6ec5c138fe7366c9778e7cccface186b90c385c6717652d2857d",
+          "57a5a8198100e3f7f9bf972e2404894d4b46ae213b0614146c34f0fb66ad7450",
+          "dd5bef3ae369bfa44f22e77fa9e32a76868d6fa2dfd4b207f8ebba4dc16e206a",
+          "285d150138b9465295ccd8cc55dcfac9489ba152a0cf32e07161c0dfa6c266ac",
+          "a7323c1441a8e09baa2ad0217494c5cc9e84171e9632442530d254e2f679d96c",
+          "0c518d2b44961a472205d264c1cc033c56fa5fda982c8435f5efd919ded4783f",
+          "828476764be1c109d396fe367c44280819bb59a8de85c2b1aca729ab654bbcc9",
+          "b0c1a8ec3d1f3fe78667441577d81d3435c7963f5b0fdf0bdd1e844414243b90",
+          "f0917caece6c659c499e4d1d50d2be3b14ed3a332884799d29db0df482d85490",
+          "011e1427088658fd358337f35bc2da906771101e39f14b26f42285ca743575ad",
+          "50ef2977754d693ff2830d0b4e15128ca47ea31a5522851f9cfd0df6d14634db",
+          "a98fef673ddf60fa78b0a8f16941005a8c6a3318c2bdafeb29e4a576133575a1",
+          "d20626eb79cdb734ebb16d57ce49a2efff76ed2fa31348c3ed432dfea7f0c08e",
+          "c03684a53dd2bac8f3ca84b5e1a4e59b0e79142b6dd321a7ea6b408edebbe1b0",
+          "dd9cdb71e764995e1c182a0af5793704e45cbc8681b7acbeb1a40b5cda824282",
+          "f132a4c8d06726fc2de0db3df0b36184ac82c797994cf5cf5ee8106a67346ec0",
+          "86a13d582926ce585b9cf3b6b5c0107e0d45c5993638a0a354d51d5994248883",
+          "399ae497baea0342cd03e5b071a3dc9bcd537cdf2947e6b4a23a3d6adf90a4b7",
+          "bf03f6ef53d39ce85a6e841daf3db1fb809d07fc52a1f16592d740be77ab6036",
+          "58d46e88c4ad87a2553feb04a3222a022ae57ffaa24a021da52bc6779e0807b4"
+        ]
+      },
+      {
+        "owner": "scripts/test-source-targeted-domain-integration.mjs",
+        "field": "bindingSurfaces",
+        "beforeCount": 23,
+        "beforeArraySha256": "643549a271479d9991e5ea515a114cab6165df7ae3373bbdde11e185d36959f3",
+        "values": [
+          "4ac169fe5876696b152bcb1609767952e7b91ca6733c02970e3e325e50e3c1c8",
+          "1dcd576e0456544622c37b235f4e91304a5357f701037dd967cf548baf48c739",
+          "46196ae524568243f4c6a25eebb68a08cc61498ae4ca0ec8d410ea1a396b0479",
+          "0c8d85d249a18ffd9dc17e624ea6a85a875844271604e72718e874fe0856dd77"
+        ]
+      },
+      {
+        "owner": "scripts/test-source-targeted-domain-integration.mjs",
+        "field": "computedBoundaries",
+        "beforeCount": 1,
+        "beforeArraySha256": "1f237682078e50676078d3b85e445309a7d19dbbe80d6766c0ce4061a138fe46",
+        "values": [
+          "d79f9eb9cefb9463385586ac85aea61ce2efefa3b5410c0fa9a64274e7913c37"
+        ]
+      }
+    ],
+    "ownersBeforeCount": 103,
+    "sourcesBeforeCount": 368,
+    "resourceFilesBeforeCount": 566
   }
 }

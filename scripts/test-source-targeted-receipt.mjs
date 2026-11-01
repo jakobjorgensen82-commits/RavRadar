@@ -24,7 +24,8 @@ try{
   const head=commit('synthetic about text');
   const {planSourceImpactFromGit:plan}=await import(pathToFileURL(path.join(root,'scripts/source-impact-git-diff.mjs')).href);
   const {sourceTreeContentSha256}=await import(pathToFileURL(path.join(root,'scripts/lib/source-tree-content.mjs')).href);
-  const {buildTargetedSourceReceipt:build,validateTargetedSourceReceipt:validate,targetedSourceArtifactName:name}=
+  const {buildTargetedSourceReceipt:build,validateTargetedSourceReceipt:validate,targetedSourceArtifactName:name,
+    readDomainControlReviewBaselineHint:hint}=
     await import(pathToFileURL(path.join(root,'scripts/source-targeted-receipt.mjs')).href);
   const content=ref=>sourceTreeContentSha256(ref,{git:(args,options)=>git(args,{...options,encoding:'buffer'})});
   const current={repository:'fixture/RavRadar',head,sourceTreeSha256:content(head),pullRequest:2,runId:2,runAttempt:1,jobId:20};
@@ -46,6 +47,22 @@ try{
   assert.equal(receipt.artifactName,name({pullRequest:current.pullRequest,head,sourceTreeSha256:current.sourceTreeSha256}));
   assert(!receipt.artifactName.startsWith('ravradar-source-validation-v2-'));
   assert(!Object.hasOwn(receipt,'nativePostgres'));assert(!Object.hasOwn(receipt,'historical584National'));passed++;
+  // Parsing the existing ROOT marker returns only its untrusted commit locator.
+  // No synthetic reference is authenticated by this parser or receipt module.
+  const locator={head,baselineCommit:base,inventorySha256:sha('inventory'),closureSha256:sha('closure'),
+    planSha256:sha('plan'),reviewSha256:sha('independent synthetic review')};
+  const marked=value=>({body:'Synthetic fixture only\n<!-- RAVRADAR_CONTROL_REVIEW_V2 '+JSON.stringify(value)+' -->\n'});
+  assert.equal(hint(marked(locator),head),base);assert.equal(hint({body:'No marker'},head),null);
+  assert.equal(hint({},head),null);passed++;
+  for(const change of [value=>{value.head=base;},value=>{value.baselineCommit='not-a-commit';},
+    value=>{value.reviewSha256='not-a-digest';},value=>{value.extraAuthority=true;}]){
+    const changed=structuredClone(locator);change(changed);assert.throws(()=>hint(marked(changed),head),/SOURCE_TARGETED_/);passed++;
+  }
+  for(const body of [marked(locator).body+marked(locator).body,'RAVRADAR_CONTROL_REVIEW_V2 malformed',
+    '<!-- RAVRADAR_CONTROL_REVIEW_V2 {bad-json} -->',marked(locator).body+'x'.repeat(65536)]){
+    assert.throws(()=>hint({body},head),/SOURCE_TARGETED_/);passed++;
+  }
+  assert.throws(()=>hint(marked(locator),head,base),/CURRENT_IDENTITY/);passed++;
   assert.throws(()=>name(current),/SOURCE_TARGETED_SHAPE/);passed++;
   const badInput=mutate=>{const clone=structuredClone(input);mutate(clone);assert.throws(()=>build(clone),/^Error: SOURCE_TARGETED_/);passed++;};
   badInput(value=>{value.fullBaseline.kind='RAVRADAR_SOURCE_TARGETED_RECEIPT_V1';});

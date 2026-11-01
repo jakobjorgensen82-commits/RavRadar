@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
 import { runInNewContext } from 'node:vm';
 import { createHash } from 'node:crypto';
-import { reviewedFixedAssistantFailureLegacyWorkflow, reviewedFixedAssistantFailureLegacyRegistry } from './lib/fixed-assistant-failure-workflow-review.mjs';
+import { reviewedFixedAssistantFailureLegacyWorkflow, reviewedFixedAssistantFailureLegacyRegistry, reviewedFixedAssistantFailureBeforeBaselineHintRegistry } from './lib/fixed-assistant-failure-workflow-review.mjs';
 
 // One normal offline caller target. No hosted logs, SQL engine or real token.
 const text = async file => (await fs.readFile(new URL('../' + file, import.meta.url), 'utf8')).replaceAll('\r\n', '\n');
@@ -107,9 +107,18 @@ const actualRegistryRaw = await text('scripts/lib/source-impact-domain-owners-59
 const registrySuccessor = review.registrySourceProofSuccessor;
 const registryBindingSuccessor = review.registryBindingSuccessor;
 const registryWorkflow066Successor = review.registryWorkflow066Successor;
+const registryBaselineHintSuccessor = review.registryBaselineHintSuccessor;
 function assertActualRegistry(source) {
-  assert.equal(digest(source), registryWorkflow066Successor.afterSha256, 'ACTUAL_SOURCE_PROOF_REGISTRY_BYTES');
+  assert.equal(digest(source), registryBaselineHintSuccessor.afterSha256, 'ACTUAL_SOURCE_PROOF_REGISTRY_BYTES');
   const registryDocument = JSON.parse(source);
+  for (const addition of registryBaselineHintSuccessor.surfaceAdditions) {
+    const values = registryDocument.sources[addition.owner][addition.field];
+    assert.equal(values.length, addition.beforeCount + addition.values.length);
+    assert.deepEqual(values.slice(addition.beforeCount), addition.values);
+    assert.equal(digest(JSON.stringify(values.slice(0, addition.beforeCount))), addition.beforeArraySha256);
+  }
+  const previousRegistryRaw = reviewedFixedAssistantFailureBeforeBaselineHintRegistry(source);
+  assert.equal(digest(previousRegistryRaw), registryWorkflow066Successor.afterSha256, 'ACTUAL_SOURCE_PROOF_REGISTRY_BYTES');
   assert.equal(registryWorkflow066Successor.ownersBeforeCount, registrySuccessor.counts.owners);
   assert.equal(registryDocument.owners.length,
     registryWorkflow066Successor.ownersBeforeCount + registryWorkflow066Successor.ownerAdditions.length);
@@ -139,6 +148,8 @@ function assertActualRegistry(source) {
 }
 const actualRegistry = assertActualRegistry(actualRegistryRaw);
 for (const altered of [actualRegistryRaw + '\n',
+  ...registryBaselineHintSuccessor.surfaceAdditions.map(addition =>
+    actualRegistryRaw.replace(JSON.stringify(addition.values[0]), JSON.stringify(addition.values[0]+'-unknown'))),
   ...registryWorkflow066Successor.ownerAdditions.map(workflow066Owner =>
     actualRegistryRaw.replace('"path": "'+workflow066Owner.path+'"', '"path": "'+workflow066Owner.path+'-unknown"')),
   ...registryWorkflow066Successor.surfaceAdditions.flatMap(ordinaryStageAddition => [

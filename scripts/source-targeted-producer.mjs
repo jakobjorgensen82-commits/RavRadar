@@ -7,7 +7,7 @@ import {execFileSync,spawn} from 'node:child_process';
 import {isDeepStrictEqual} from 'node:util';
 import {planSourceImpactFromGit} from './source-impact-git-diff.mjs';
 import {qualifySourceImpactFullBaseline,SOURCE_IMPACT_FULL_BASELINE_KIND} from './source-impact-full-baseline.mjs';
-import {buildTargetedSourceReceipt,buildDomainTargetedSourceReceipt,readDomainControlReview} from './source-targeted-receipt.mjs';
+import {buildTargetedSourceReceipt,buildDomainTargetedSourceReceipt,readDomainControlReview,readDomainControlReviewBaselineHint} from './source-targeted-receipt.mjs';
 import {assistantPublic591Reader,sourceImpactEvidenceAccess,ORIGIN} from './native-postgres-evidence.mjs';
 import {discoverPullRequestSourceGate,PULL_REQUEST_SOURCE_JOB,PULL_REQUEST_SOURCE_WORKFLOW}
   from './lib/weather-source-gate.mjs';
@@ -110,6 +110,14 @@ export async function coordinateTargetedSourceProducer(){
     const mergeBase=text(['merge-base','--all',pull.base.sha,head]);assert(oid(mergeBase));
     impactPlan=await selectImpactPlan(mergeBase,head);
     if(!impactPlan)return full('COMPLETE_DIFF_REQUIRES_FULL');
+    let baselineHint=null;
+    try{
+      const hint=readDomainControlReviewBaselineHint(pull,head);
+      if(hint){git(['merge-base','--is-ancestor',hint,mergeBase]);baselineHint=hint;}
+    }catch{
+      // An unusable locator supplies no authority and does not replace the
+      // legacy fallback or its later complete CONTROL review/refusal.
+    }
     content=sourceTreeContentSha256(head,{git});current={repository:env.GITHUB_REPOSITORY,head,
       sourceTreeSha256:content,pullRequest,runId,runAttempt,jobId:0};
     const runRoute=repo+'/actions/runs/'+runId,run=await get(runRoute);
@@ -118,10 +126,12 @@ export async function coordinateTargetedSourceProducer(){
     assert.equal(run.status,'in_progress');assert.equal(run.repository?.full_name,current.repository);
     assert.equal(run.head_repository?.full_name,current.repository);
     jobRoute=runRoute+'/attempts/'+runAttempt+'/jobs?per_page=100';current.jobId=currentJob(await get(jobRoute),current);
-    // One bounded first-parent search. A TARGETED predecessor is never promoted
-    // to FULL: its separate namespace is not found by the normal FULL locator.
-    const candidates=text(['rev-list','--first-parent','--max-count=6',mergeBase]).split('\n');
-    assert(candidates.length>0&&candidates.every(oid));
+    // At most one untrusted ROOT-marker locator precedes the unchanged bounded
+    // first-parent fallback. Both use the same cumulative plan and normal FULL
+    // discovery/qualification; a TARGETED namespace never becomes FULL.
+    const fallback=text(['rev-list','--first-parent','--max-count=6',mergeBase]).split('\n');
+    assert(fallback.length>0&&fallback.length<=6&&fallback.every(oid));
+    const candidates=[...new Set([...(baselineHint?[baselineHint]:[]),...fallback])];
     for(const candidate of candidates){
       const plan=await selectImpactPlan(candidate,head);
       // Older ancestry can only add paths. Unknown/shared cumulative impact
