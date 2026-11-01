@@ -45,6 +45,18 @@ export function reviewedFixedAssistantFailureLegacyRegistry(value) {
   const successor = review.registrySourceProofSuccessor;
   assert.equal(successor.kind, 'EXACT_CONTROLS_AND_SOURCE_PROOF_REGISTRY_SUCCESSOR');
   assert.equal(successor.oracleSha256, review.registryAfterSha256);
+  const bindingSuccessor = review.registryBindingSuccessor;
+  assert.equal(bindingSuccessor.kind, 'EXACT_AUDIT_RECIPIENT_SIX_BINDINGS_SUCCESSOR');
+  assert.equal(bindingSuccessor.beforeSha256, successor.afterSha256);
+  if (sha(source) === bindingSuccessor.afterSha256) {
+    const insertion = bindingSuccessor.insertion;
+    assert(Number.isSafeInteger(insertion.offset) && insertion.offset >= 0);
+    assert(Number.isSafeInteger(insertion.bytes) && insertion.bytes > 0 && insertion.offset + insertion.bytes <= source.length);
+    assert.equal(sha(source.subarray(insertion.offset, insertion.offset + insertion.bytes)), insertion.sha256,
+      'FIXED_ASSISTANT_REGISTRY_BINDINGS_INSERTION');
+    source = Buffer.concat([source.subarray(0, insertion.offset), source.subarray(insertion.offset + insertion.bytes)]);
+    assert.equal(sha(source), bindingSuccessor.beforeSha256, 'FIXED_ASSISTANT_REGISTRY_BINDINGS_WHOLE_INVERSE');
+  }
   if (sha(source) === review.registryAfterSha256) return source.toString('utf8');
   assert.equal(sha(source), successor.afterSha256, 'FIXED_ASSISTANT_REGISTRY_UNREVIEWED_BYTES');
   const removeInsertion = row => {

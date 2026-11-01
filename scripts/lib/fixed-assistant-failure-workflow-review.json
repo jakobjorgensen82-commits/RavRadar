@@ -626,5 +626,37 @@
       "sources": 368,
       "resourceFiles": 566
     }
+  },
+  "registryBindingSuccessor": {
+    "kind": "EXACT_AUDIT_RECIPIENT_SIX_BINDINGS_SUCCESSOR",
+    "beforeSha256": "e794b96b020ea55c2f78b8eb4380e380a17a604f40a2c260e7ea7cbaeb55c6dc",
+    "afterSha256": "6e2afb97f457f1dfa9b7a4617dab1c298a98b68dfec8bb4d0aba89ab5e2cea2f",
+    "owner": "scripts/audit-saved-weather-inputs.mjs",
+    "bindingHashes": [
+      "139e7258da4072af6f6c6ffd498b3b0feee847039bea989611031b76b708c1ea",
+      "c53d0687d3ae549709ca60a0d6477f996d23127fa318ea6a8c415d5df91a13b4",
+      "b9e50f1d088e83c912f7923f01cd7c81eb0f24c465919541d0fec4b339393158",
+      "4a602440b2bf3bbb4e8bd11640fa8cf06c9b995471274f3c069df4e0d4e96887",
+      "3ac7afc187e5ad88cb60643ef549dc3821cf8b32a4447714723c1746bc2cc925",
+      "fca61249820b55cc7a9ec82263267b9cb4b94a35c6ebcc93e1f022c036b5ca2b"
+    ],
+    "beforeBindingCount": 69,
+    "beforeBindingsArraySha256": "6bb587160f50db23abf94182d25c9cb088ff46a0465a5606bd57ccaf996050c7",
+    "insertion": {
+      "field": "sources/scripts/audit-saved-weather-inputs.mjs/bindingSurfaces",
+      "offset": 751155,
+      "bytes": 456,
+      "sha256": "81a90514aa9bbef6fca56cec2011ba1616dd73e30e2f88003fbbad844d949b15"
+    },
+    "scannerSha256": "afb1e75502e47dfdc98fcb28cab5dc443ec62d096038ec52d66251072ac34b67",
+    "auditedSourceSha256": "ca2ee749b57a0dbf2de5e85733e615e778308b1f2cc332a196e7ffdf60fea6e9",
+    "occurrences": {
+      "139e7258da4072af6f6c6ffd498b3b0feee847039bea989611031b76b708c1ea": 5,
+      "c53d0687d3ae549709ca60a0d6477f996d23127fa318ea6a8c415d5df91a13b4": 1,
+      "b9e50f1d088e83c912f7923f01cd7c81eb0f24c465919541d0fec4b339393158": 2,
+      "4a602440b2bf3bbb4e8bd11640fa8cf06c9b995471274f3c069df4e0d4e96887": 1,
+      "3ac7afc187e5ad88cb60643ef549dc3821cf8b32a4447714723c1746bc2cc925": 1,
+      "fca61249820b55cc7a9ec82263267b9cb4b94a35c6ebcc93e1f022c036b5ca2b": 1
+    }
   }
 }

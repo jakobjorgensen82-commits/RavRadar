@@ -105,9 +105,15 @@ runSourceOracle(legacyWorkflow);
 // fixture remains pinned to its original reviewed 14ade133 CODE and DATA.
 const actualRegistryRaw = await text('scripts/lib/source-impact-domain-owners-594.json');
 const registrySuccessor = review.registrySourceProofSuccessor;
+const registryBindingSuccessor = review.registryBindingSuccessor;
 function assertActualRegistry(source) {
-  assert.equal(digest(source), registrySuccessor.afterSha256, 'ACTUAL_SOURCE_PROOF_REGISTRY_BYTES');
+  assert.equal(digest(source), registryBindingSuccessor.afterSha256, 'ACTUAL_SOURCE_PROOF_REGISTRY_BYTES');
   const registryDocument = JSON.parse(source);
+  const actualAuditBindings = registryDocument.sources[registryBindingSuccessor.owner].bindingSurfaces;
+  assert.equal(actualAuditBindings.length, registryBindingSuccessor.beforeBindingCount + 6);
+  assert.deepEqual(actualAuditBindings.slice(registryBindingSuccessor.beforeBindingCount), registryBindingSuccessor.bindingHashes);
+  assert.equal(digest(JSON.stringify(actualAuditBindings.slice(0, registryBindingSuccessor.beforeBindingCount))),
+    registryBindingSuccessor.beforeBindingsArraySha256);
   assert.deepEqual([registryDocument.owners.length, Object.keys(registryDocument.sources).length, registryDocument.resourceFiles.length],
     [registrySuccessor.counts.owners, registrySuccessor.counts.sources, registrySuccessor.counts.resourceFiles]);
   for (const owner of registrySuccessor.controlOwners)
@@ -118,6 +124,10 @@ function assertActualRegistry(source) {
 }
 const actualRegistry = assertActualRegistry(actualRegistryRaw);
 for (const altered of [actualRegistryRaw + '\n',
+  actualRegistryRaw.replace(registryBindingSuccessor.bindingHashes[0], registryBindingSuccessor.bindingHashes[0].slice(1)),
+  actualRegistryRaw.replace(registryBindingSuccessor.bindingHashes[0], '0'.repeat(64)),
+  actualRegistryRaw.replace('"'+registryBindingSuccessor.bindingHashes[0]+'"', '"'+registryBindingSuccessor.bindingHashes[0]+'","'+'0'.repeat(64)+'"'),
+  actualRegistryRaw.replace(actualRegistry.sources[registryBindingSuccessor.owner].bindingSurfaces[0], '1'.repeat(64)),
   actualRegistryRaw.replace(registrySuccessor.transitionPairs[0], registrySuccessor.transitionPairs[0] + '0'),
   JSON.stringify({...actualRegistry, owners:actualRegistry.owners.slice(0,-1)},null,2)+'\n',
   JSON.stringify({...actualRegistry, resourceFiles:[...actualRegistry.resourceFiles,'unknown-resource.txt']},null,2)+'\n']) {

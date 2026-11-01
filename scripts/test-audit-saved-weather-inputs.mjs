@@ -1990,6 +1990,39 @@ test('Voersaa fixed water trace: actual normal B current/previous and strict pri
   assert.deepEqual(await fs.readFile(path.join(f.old.source,'data/live/conditions.json')),before);
   assert.deepEqual(await fs.readFile(f.old.options.progressFile),originalCipher,'Unowned original progress is not cleaned');
   assert(!(await fs.readdir(f.old.privateRoot)).some(name=>name.startsWith('voersaa-water-')));
+  await t.test('Voersaa fixed water trace: recipient codec keeps legacy master and authenticates the whole new header',async()=>{
+  const recipientCodecLegacy=sealVoersaaWaterTrace(report,waterContext);
+  assert(recipientCodecLegacy.subarray(0,Buffer.byteLength('RR-PRIVATE-VOERSAA-WATER-TRACE-1\n')).equals(Buffer.from('RR-PRIVATE-VOERSAA-WATER-TRACE-1\n')));
+  assert.deepEqual(openVoersaaWaterTrace(recipientCodecLegacy,waterContext),report);
+  // Test-only ephemeral keys, never the local diagnosis recipient's private key.
+  const recipientCodecPair=crypto.generateKeyPairSync('rsa',{modulusLength:3072});
+  const {masterSecret,...identity}=waterContext,recipientCodecRecipientContext={...identity,recipientPrivateKey:recipientCodecPair.privateKey};
+  const recipientCodecBytes=sealVoersaaWaterTraceForRecipient(report,waterContext,{recipientPublicKey:recipientCodecPair.publicKey});
+  assert.deepEqual(openVoersaaWaterTrace(recipientCodecBytes,waterContext),report);
+  assert.deepEqual(openVoersaaWaterTraceForRecipient(recipientCodecBytes,recipientCodecRecipientContext),report);
+  assert.throws(()=>openVoersaaWaterTraceForRecipient(recipientCodecLegacy,recipientCodecRecipientContext));
+  const recipientCodecMagic=Buffer.byteLength('RR-PRIVATE-VOERSAA-WATER-TRACE-2\n'),recipientCodecSize=recipientCodecBytes.readUInt32BE(recipientCodecMagic),recipientCodecAt=recipientCodecMagic+4;
+  const recipientCodecHeader=JSON.parse(recipientCodecBytes.subarray(recipientCodecAt,recipientCodecAt+recipientCodecSize)),recipientCodecSaltAt=recipientCodecAt+recipientCodecSize;
+  assert.equal(recipientCodecHeader.recipientSpkiSha256,crypto.createHash('sha256').update(recipientCodecPair.publicKey.export({type:'spki',format:'der'})).digest('hex'));
+  const recipientCodecChangeHeader=recipientCodecChange=>{const recipientCodecNext=structuredClone(recipientCodecHeader);recipientCodecChange(recipientCodecNext);const recipientCodecEncoded=Buffer.from(JSON.stringify(recipientCodecNext)),recipientCodecLength=Buffer.alloc(4);
+    recipientCodecLength.writeUInt32BE(recipientCodecEncoded.length);return Buffer.concat([recipientCodecBytes.subarray(0,recipientCodecMagic),recipientCodecLength,recipientCodecEncoded,recipientCodecBytes.subarray(recipientCodecAt+recipientCodecSize)]);};
+  const recipientCodecChanged=[
+    recipientCodecChangeHeader(h=>{h.recipientSpkiSha256=(h.recipientSpkiSha256[0]==='0'?'1':'0')+h.recipientSpkiSha256.slice(1);}),
+    recipientCodecChangeHeader(h=>{h.wrappedKey=(h.wrappedKey[0]==='A'?'B':'A')+h.wrappedKey.slice(1);}),
+    recipientCodecChangeHeader(h=>{h.keyAlgorithm='RSA-OAEP-SHA1';}),recipientCodecChangeHeader(h=>{h.extra='unknown';}),
+  ];
+  for(const recipientCodecPosition of [recipientCodecSaltAt,recipientCodecSaltAt+16,recipientCodecBytes.length-1]){const recipientCodecNext=Buffer.from(recipientCodecBytes);recipientCodecNext[recipientCodecPosition]^=1;recipientCodecChanged.push(recipientCodecNext);}
+  for(const recipientCodecNext of recipientCodecChanged){assert.throws(()=>openVoersaaWaterTrace(recipientCodecNext,waterContext));
+    assert.throws(()=>openVoersaaWaterTraceForRecipient(recipientCodecNext,recipientCodecRecipientContext));}
+  for(const recipientCodecChange of [{repository:'other/synthetic'},{runId:'90002'},{runAttempt:'2'},{sourceHead:'a'.repeat(40)}])
+    assert.throws(()=>openVoersaaWaterTraceForRecipient(recipientCodecBytes,{...recipientCodecRecipientContext,...recipientCodecChange}),recipientCodecContextError=>recipientCodecContextError?.code==='ERR_ASSERTION'&&recipientCodecContextError.message.includes('WATER_TRACE_ENVELOPE_CONTEXT'));
+  assert.throws(()=>openVoersaaWaterTrace(recipientCodecBytes,{...waterContext,masterSecret:'other-synthetic-master-secret-never-real'}));
+  const recipientCodecOther=crypto.generateKeyPairSync('rsa',{modulusLength:3072});
+  assert.throws(()=>openVoersaaWaterTraceForRecipient(recipientCodecBytes,{...identity,recipientPrivateKey:recipientCodecOther.privateKey}));
+  let recipientCodecRequests=0;const recipientCodecRefused=await auditVoersaaWaterLevelTrace({...f.options,recipientPublicKey:recipientCodecPair.publicKey,
+    fetchImpl:()=>{recipientCodecRequests++;throw Error('NO_TRANSPORT_ALLOWED');}});
+  assert.equal(recipientCodecRefused.code,'MODE_INVALID');assert.equal(recipientCodecRequests,0,'Pure codec option grants no audit/data authority');
+  });
 });
 test('Voersaa fixed water trace: pointer/absence/archive/inner proofs fail closed without plaintext output',async t=>{
   for(const options of [{changedAt:2},{corrupt:true},{badInner:true},{missing4145:true}]){
@@ -2182,41 +2215,4 @@ test('Voersaa fixed water trace: normal runner temp is separate from system TMPD
     assert(!(await fs.readdir(systemTemp)).some(n=>n.startsWith('rr-ordinary-completed-stage-')),'Only normal owned artifact copies were cleaned');
     assert(!(await fs.readdir(privateRoot)).some(n=>n.startsWith('voersaa-water-')));
   }finally{for(const k of keys){if(saved[k]===undefined)delete process.env[k];else process.env[k]=saved[k];}}
-});
-
-test('Voersaa fixed water trace: recipient codec keeps legacy master and authenticates the whole new header',async t=>{
-  const f=await fixedWaterCase(t),safe=await auditVoersaaWaterLevelTrace(f.options);
-  assert.equal(safe.status,'AUDIT_COMPLETED');
-  const report=openVoersaaWaterTrace(await fs.readFile(f.options.outputPath+'.encrypted'),waterContext);
-  const legacy=sealVoersaaWaterTrace(report,waterContext);
-  assert(legacy.subarray(0,Buffer.byteLength('RR-PRIVATE-VOERSAA-WATER-TRACE-1\n')).equals(Buffer.from('RR-PRIVATE-VOERSAA-WATER-TRACE-1\n')));
-  assert.deepEqual(openVoersaaWaterTrace(legacy,waterContext),report);
-  // Test-only ephemeral keys, never the local diagnosis recipient's private key.
-  const pair=crypto.generateKeyPairSync('rsa',{modulusLength:3072});
-  const {masterSecret,...identity}=waterContext,recipientContext={...identity,recipientPrivateKey:pair.privateKey};
-  const bytes=sealVoersaaWaterTraceForRecipient(report,waterContext,{recipientPublicKey:pair.publicKey});
-  assert.deepEqual(openVoersaaWaterTrace(bytes,waterContext),report);
-  assert.deepEqual(openVoersaaWaterTraceForRecipient(bytes,recipientContext),report);
-  assert.throws(()=>openVoersaaWaterTraceForRecipient(legacy,recipientContext));
-  const magic=Buffer.byteLength('RR-PRIVATE-VOERSAA-WATER-TRACE-2\n'),size=bytes.readUInt32BE(magic),at=magic+4;
-  const header=JSON.parse(bytes.subarray(at,at+size)),saltAt=at+size;
-  assert.equal(header.recipientSpkiSha256,crypto.createHash('sha256').update(pair.publicKey.export({type:'spki',format:'der'})).digest('hex'));
-  const changeHeader=change=>{const next=structuredClone(header);change(next);const encoded=Buffer.from(JSON.stringify(next)),length=Buffer.alloc(4);
-    length.writeUInt32BE(encoded.length);return Buffer.concat([bytes.subarray(0,magic),length,encoded,bytes.subarray(at+size)]);};
-  const changed=[
-    changeHeader(h=>{h.recipientSpkiSha256=(h.recipientSpkiSha256[0]==='0'?'1':'0')+h.recipientSpkiSha256.slice(1);}),
-    changeHeader(h=>{h.wrappedKey=(h.wrappedKey[0]==='A'?'B':'A')+h.wrappedKey.slice(1);}),
-    changeHeader(h=>{h.keyAlgorithm='RSA-OAEP-SHA1';}),changeHeader(h=>{h.extra='unknown';}),
-  ];
-  for(const position of [saltAt,saltAt+16,bytes.length-1]){const next=Buffer.from(bytes);next[position]^=1;changed.push(next);}
-  for(const next of changed){assert.throws(()=>openVoersaaWaterTrace(next,waterContext));
-    assert.throws(()=>openVoersaaWaterTraceForRecipient(next,recipientContext));}
-  for(const change of [{repository:'other/synthetic'},{runId:'90002'},{runAttempt:'2'},{sourceHead:'a'.repeat(40)}])
-    assert.throws(()=>openVoersaaWaterTraceForRecipient(bytes,{...recipientContext,...change}));
-  assert.throws(()=>openVoersaaWaterTrace(bytes,{...waterContext,masterSecret:'other-synthetic-master-secret-never-real'}));
-  const other=crypto.generateKeyPairSync('rsa',{modulusLength:3072});
-  assert.throws(()=>openVoersaaWaterTraceForRecipient(bytes,{...identity,recipientPrivateKey:other.privateKey}));
-  let requests=0;const refused=await auditVoersaaWaterLevelTrace({...f.options,recipientPublicKey:pair.publicKey,
-    fetchImpl:()=>{requests++;throw Error('NO_TRANSPORT_ALLOWED');}});
-  assert.equal(refused.code,'MODE_INVALID');assert.equal(requests,0,'Pure codec option grants no audit/data authority');
 });
