@@ -1,3 +1,7 @@
+## 1. november — Facebook-gruppen tættere på
+
+Forsiden har fået et lokalt f-ikon og et kort link til RavRadars Facebook-gruppe ved logoet. Teksten følger dansk, tysk og engelsk, og placeringen tilpasser sig mobil og computer. De øvrige funktioner og beregninger bevares. Layout, sprogskift, klik og tastaturfokus er afprøvet lokalt; kildekvalifikation og offentlig levering er endnu ikke dokumenteret.
+
 ## 1. november — lokal rettelse af kildekontrollens læseadgang
 
 PR-kontrollen får den nødvendige read-only adgang til at genfinde eksisterende PR-kildebeviser. Gamle hele kontroller bevares bag en præcis inverse, og de nærmeste normale mål består lokalt. Faktisk GitHub-kvalifikation og levering er fortsat åbne; ingen dokumenteret tidsgevinst eller ændring af vejr, model og SQL påstås.

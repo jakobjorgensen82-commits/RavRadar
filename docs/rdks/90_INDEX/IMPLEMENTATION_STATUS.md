@@ -1,3 +1,11 @@
+## 1. november — Facebook-gruppen på forsiden
+
+Ejeren har godkendt et klikbart f-ikon med teksten »Besøg vores gruppe på Facebook« ved RavRadar-brandet. På mobilen ligger linket øverst ved siden af brandet og over sprogvælgeren; på større skærme ligger det efter brandet og før sprogvælgeren. Gruppen er https://www.facebook.com/groups/1849354103138911/.
+
+Linket har dansk, tysk og engelsk tekst via det eksisterende dokumentvalg af sprog. Grafik og tekst er lokale; ingen Facebook-SDK, sporing eller eksterne ikonaktiver tilføjes. Den nye, afgrænsede CSS-adresse sikrer, at den eksisterende browsercache kan hente layoutet. Konto-, tur-, assistent- og sprogfunktioner samt vejr, model, score, administratoropsætning, data og SQL bevares.
+
+ROOTs normale lokale browserafprøvning består på 320, 375, 768 og 1280 px samt dansk, tysk og engelsk, med ét synligt/tilgængeligt gruppelink, korrekt URL og synligt tastaturfokus. Det er lokal brugeraccept; præcis kildekvalifikation og faktisk offentlig levering er fortsat åbne. Ingen ny version er udstedt for dette rene visningslink.
+
 ## 1. november — læserettighed i den almindelige PR-kontrol
 
 - [x] Lokal, afgrænset pull-requests: read i PR-workflowet; eksisterende contents/actions-read og alle produktionskaldere bevares.
