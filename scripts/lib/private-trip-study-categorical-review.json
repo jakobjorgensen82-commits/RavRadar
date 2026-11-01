@@ -42,7 +42,7 @@
     },
     {
       "before": "export function privateTripStudyMigrationSteps(state,{allow004=false,allow005=false,allow006=false}={}){\n  if(!['ABSENT','EXACT','EXACT_004_005','EXACT_004_005_006'].includes(state)\n    ||typeof allow004!=='boolean'||typeof allow005!=='boolean'||typeof allow006!=='boolean')throw fail('AUTHORITY');",
-      "after": "export function privateTripStudyMigrationSteps(state,{allow004=false,allow005=false,allow006=false,allow007=false}={}){\n  if(!['ABSENT','EXACT','EXACT_004_005','EXACT_004_005_006','EXACT_004_005_006_007'].includes(state)\n    ||typeof allow004!=='boolean'||typeof allow005!=='boolean'||typeof allow006!=='boolean'||typeof allow007!=='boolean')throw fail('AUTHORITY');\n  //007 er kun en efterf\u00f8lger til faktisk genl\u00e6st006, aldrig samlet bootstrap.\n  if(allow007&&!['EXACT_004_005_006','EXACT_004_005_006_007'].includes(state))throw fail('006_REQUIRED_BEFORE_007');"
+      "after": "export function privateTripStudyMigrationSteps(state,{allow004=false,allow005=false,allow006=false,allow007=false}={}){\n  if(!['ABSENT','EXACT','EXACT_004_005','EXACT_004_005_006','EXACT_004_005_006_007'].includes(state)\n    ||typeof allow004!=='boolean'||typeof allow005!=='boolean'||typeof allow006!=='boolean'||typeof allow007!=='boolean')throw fail('AUTHORITY');\n  //007 er kun en efterfølger til faktisk genlæst006, aldrig samlet bootstrap.\n  if(allow007&&!['EXACT_004_005_006','EXACT_004_005_006_007'].includes(state))throw fail('006_REQUIRED_BEFORE_007');"
     },
     {
       "before": "  const jobsInstalled=['EXACT_004_005','EXACT_004_005_006'].includes(state);",
@@ -104,7 +104,7 @@
     "edits": [
       {
         "before": "",
-        "after": "      allow_007:\n        description: Tillad kun007 efter faktisk006 og Worker-OFF; statistik og budgetfrigivelse forbliver sl\u00e5et fra\n        type: boolean\n        default: false\n"
+        "after": "      allow_007:\n        description: Tillad kun007 efter faktisk006 og Worker-OFF; statistik og budgetfrigivelse forbliver slået fra\n        type: boolean\n        default: false\n"
       },
       {
         "before": "",
@@ -117,6 +117,84 @@
       "afterSha256": "93d713d717eef8f4541e347ef8860555eb8b8948176c6ce2f9d492c3915f7255",
       "before": "permissions:\n  contents: read\n  actions: read\n",
       "after": "permissions:\n  contents: read\n  actions: read\n  pull-requests: read\n"
+    },
+    "enableSuccessor": {
+      "kind": "EXACT_PRIVATE_STUDY_ENABLE_WORKFLOW_TEST_ONLY_INVERSE",
+      "beforeSha256": "93d713d717eef8f4541e347ef8860555eb8b8948176c6ce2f9d492c3915f7255",
+      "afterSha256": "fa53edb8171551aa4ee5a3a0244e81e6c55ff3936508f7ff2ffbc93ca002a2a2",
+      "edits": [
+        {
+          "before": "options: [plan, deliver, export]",
+          "after": "options: [plan, deliver, export, enable]"
+        },
+        {
+          "before": "      allow_004:\n",
+          "after": "      enable_confirmation:\n        description: Skriv ENABLE_PRIVATE_UNISSUED_STUDY_ONLY for kun at åbne eksisterende signerede private ruter; ingen rapport eller kvalifikationspåstand\n        type: string\n        default: ''\n      allow_004:\n"
+        },
+        {
+          "before": "      PRIVATE_STUDY_OPERATION: ${{ inputs.operation }}",
+          "after": "      PRIVATE_STUDY_OPERATION: ${{ inputs.operation }}\n      PRIVATE_STUDY_ENABLE_CONFIRMATION: ${{ inputs.enable_confirmation }}"
+        },
+        {
+          "before": "            plan|deliver|export) ;;",
+          "after": "            plan|deliver|export) ;;\n            enable) test \"$PRIVATE_STUDY_ENABLE_CONFIRMATION\" = ENABLE_PRIVATE_UNISSUED_STUDY_ONLY ;;"
+        },
+        {
+          "before": "if: ${{ inputs.operation == 'plan' || inputs.operation == 'deliver' }}",
+          "after": "if: ${{ inputs.operation == 'plan' || inputs.operation == 'deliver' || inputs.operation == 'enable' }}"
+        },
+        {
+          "before": "      TRIP_PRIVATE_STUDY_MODE: ${{ inputs.operation }}",
+          "after": "      TRIP_PRIVATE_STUDY_MODE: ${{ inputs.operation }}\n      TRIP_PRIVATE_STUDY_ENABLE_CONFIRMATION: ${{ inputs.enable_confirmation }}"
+        }
+      ]
     }
+  },
+  "enableSuccessor": {
+    "kind": "EXACT_PRIVATE_STUDY_ENABLE_TEST_ONLY_INVERSE",
+    "beforeSha256": "18f6526742667dc0c40a41e2ff2985c1c1ce431d5ceb5c0c349b88de988a7a0f",
+    "afterSha256": "62fff9e189cf002bb245970158413a15f4bc1914ca8b19f6cd0f3f8cbe1ed786",
+    "edits": [
+      {
+        "before": "const VARS=Object.freeze({TRIP_AGGREGATE_ENABLED:'false'});",
+        "after": "const VARS=Object.freeze({TRIP_AGGREGATE_ENABLED:'false'});\nconst ENABLE_VARS=Object.freeze({TRIP_AGGREGATE_ENABLED:'true'});\nconst ENABLE_CONFIRMATION='ENABLE_PRIVATE_UNISSUED_STUDY_ONLY';"
+      },
+      {
+        "before": "function assertConfiguration(config){",
+        "after": "function assertConfiguration(config,expectedVars=VARS){"
+      },
+      {
+        "before": "||!isDeepStrictEqual(config.observability,{enabled:true})||!isDeepStrictEqual(config.vars,VARS)",
+        "after": "||!isDeepStrictEqual(config.observability,{enabled:true})\n    ||![VARS,ENABLE_VARS].includes(expectedVars)||!isDeepStrictEqual(config.vars,expectedVars)"
+      },
+      {
+        "before": "  env.TRIP_PRIVATE_STUDY_CATEGORICAL_APPLY_ALLOWED??='false';",
+        "after": "  env.TRIP_PRIVATE_STUDY_CATEGORICAL_APPLY_ALLOWED??='false';\n  env.TRIP_PRIVATE_STUDY_ENABLE_CONFIRMATION??='';\n  const enableMode=env.TRIP_PRIVATE_STUDY_MODE==='enable';\n  let expectedVars=VARS;"
+      },
+      {
+        "before": "||env.TRIP_STORAGE_PRIVATE_STUDY!=='1'||!['plan','deliver'].includes(env.TRIP_PRIVATE_STUDY_MODE)",
+        "after": "||env.TRIP_STORAGE_PRIVATE_STUDY!=='1'||!['plan','deliver','enable'].includes(env.TRIP_PRIVATE_STUDY_MODE)"
+      },
+      {
+        "before": "||!['true','false'].includes(env.TRIP_PRIVATE_STUDY_CATEGORICAL_APPLY_ALLOWED))throw fail('AUTHORITY');",
+        "after": "||!['true','false'].includes(env.TRIP_PRIVATE_STUDY_CATEGORICAL_APPLY_ALLOWED)\n      ||(enableMode&&(env.TRIP_PRIVATE_STUDY_ENABLE_CONFIRMATION!==ENABLE_CONFIRMATION\n        ||[env.TRIP_PRIVATE_STUDY_APPLY_ALLOWED,env.TRIP_PRIVATE_STUDY_JOBS_APPLY_ALLOWED,\n          env.TRIP_PRIVATE_STUDY_JOB_BINDING_APPLY_ALLOWED,env.TRIP_PRIVATE_STUDY_CATEGORICAL_APPLY_ALLOWED].some(value=>value!=='false')))\n      ||(!enableMode&&env.TRIP_PRIVATE_STUDY_ENABLE_CONFIRMATION!==''))throw fail('AUTHORITY');"
+      },
+      {
+        "before": "  const attest=async(version,enabled=false)=>{\n    if(!isDeepStrictEqual(assertConfiguration(readOwnedJson(CONFIG)),config))throw fail('CONFIGURATION_CHANGED');",
+        "after": "  const attest=async(version,enabled=false,plainVars=expectedVars)=>{\n    if(!isDeepStrictEqual(assertConfiguration(readOwnedJson(CONFIG),expectedVars),config))throw fail('CONFIGURATION_CHANGED');"
+      },
+      {
+        "before": "...(enabled?{expectedPlainTextBindings:VARS}:{})",
+        "after": "...(enabled?{expectedPlainTextBindings:plainVars}:{})"
+      },
+      {
+        "before": "stage='WORKER_REPLACE';if(!schemaVerified)throw fail(stage);await verifySchema();await attest();exactMain();lease(600);",
+        "after": "stage='WORKER_REPLACE';if(!schemaVerified)throw fail(stage);await verifySchema();await attest(undefined,enableMode,VARS);exactMain();lease(600);"
+      },
+      {
+        "before": "    if(env.TRIP_PRIVATE_STUDY_MODE==='plan')return{...plan,operation:'READ_ONLY_PLAN',schemaApplied:false,workerUpdated:false};",
+        "after": "    if(env.TRIP_PRIVATE_STUDY_MODE==='plan')return{...plan,operation:'READ_ONLY_PLAN',schemaApplied:false,workerUpdated:false};\n    if(enableMode){\n      // Confirmation expresses operator intent only, never privacy/Free proof.\n      // No DDL, aggregate request, preparation, export or charge runs here.\n      if(before.state!=='EXACT_004_005_006_007')throw fail('ENABLE_REQUIRES_EXACT_007');\n      desiredSchemaState=before.state;\n      stage='PRE_ENABLE_WORKER_OFF';await attest(currentVersion,true);\n      quiesce();stage='PRE_ENABLE_REVALIDATION';lease(600);exactMain();\n      if(!isDeepStrictEqual(readOwnedJson(PLAN),plan)||!isDeepStrictEqual(await inspect(),before))throw fail(stage);\n      await attest(currentVersion,true);\n      expectedVars=ENABLE_VARS;\n      config=assertConfiguration({...config,vars:{...ENABLE_VARS}},expectedVars);\n      fs.writeFileSync(CONFIG,JSON.stringify(config)+'\\n',{mode:0o600});\n      await verifySchema();\n      // This separate enable path has no automatic Worker retry or export.\n      const version=await replace();await restore(version);\n      return{kind:'PRIVATE_TRIP_STUDY_EXISTING_WORKER_ATTESTED',sourceSha:env.GITHUB_SHA,workerVersionId:version,\n        migrationSha256:MIGRATION_SHA,ddlApplied:false,controlShard:0,shards:10,\n        jobsMigrationSha256:JOBS_MIGRATION_SHA,jobsDdlApplied:false,\n        bindingMigrationSha256:BINDING_MIGRATION_SHA,bindingDdlApplied:false,originalJobBindingReady:true,\n        categoricalMigrationSha256:CATEGORICAL_MIGRATION_SHA,categoricalDdlApplied:false,categoricalPolicyReady:true,\n        configAttested:true,storageMode:'d1',privateAggregationEnabled:true,\n        reportExported:false,publicStatisticsActivated:false,qualificationExecuted:false};\n    }"
+      }
+    ]
   }
 }

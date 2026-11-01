@@ -1965,6 +1965,38 @@ upgradeTest('owner-upgrade bindings rejects a deployment changed during version 
 upgradeTest('owner-upgrade metadata invalid planned descriptor produces zero transport',async()=>{
   let calls=0;await assert.rejects(verifyExistingWorkerBindings({...descriptors,expectedBindings:[],fetchImpl:async()=>{calls++;}}));assert.equal(calls,0);
 });
+upgradeTest('owner-upgrade bindings exact aggregate true and false use the real metadata sandwich',async()=>{
+  for(const value of ['true','false']){
+    const {result,calls}=await bindingProbe((body,{url})=>{
+      if(url.includes('/versions/'))body.result.resources.bindings.push({type:'plain_text',name:'TRIP_AGGREGATE_ENABLED',text:value});
+    },{expectedPlainTextBindings:{TRIP_AGGREGATE_ENABLED:value}});
+    assert.equal(result.versionId,version);assert.deepEqual(result.bindings,bindings());assert.equal(calls.length,3);
+    assert(calls.every(call=>call.init.method==='GET'&&call.init.redirect==='error'&&call.init.body===undefined));
+    assert.doesNotMatch(JSON.stringify(result),/TRIP_AGGREGATE_ENABLED|secret|author|token/i);
+  }
+});
+upgradeTest('owner-upgrade bindings aggregate accepts only one exact string field before transport',async()=>{
+  for(const expected of [null,{},true,{TRIP_AGGREGATE_ENABLED:true},{TRIP_AGGREGATE_ENABLED:false},
+    {TRIP_AGGREGATE_ENABLED:'TRUE'},{TRIP_AGGREGATE_ENABLED:' true'},{TRIP_AGGREGATE_ENABLED:'false '},
+    {TRIP_AGGREGATE_ENABLED:'1'},{OTHER:'true'},{TRIP_AGGREGATE_ENABLED:'true',OTHER:'false'}]){
+    let calls=0;
+    await assert.rejects(verifyExistingWorkerBindings({...descriptors,expectedBindings:bindings(),expectedPlainTextBindings:expected,
+      fetchImpl:async()=>{calls++;throw new Error('unexpected metadata transport');}}),{message:'TRIP_STORAGE_WORKER_BINDINGS_UNVERIFIED'});
+    assert.equal(calls,0);
+  }
+});
+upgradeTest('owner-upgrade bindings aggregate rejects missing opposite secret and duplicate actual settings',async()=>{
+  for(const value of ['true','false'])for(const shape of ['missing','opposite','secret','duplicate']){
+    const calls=[];
+    await assert.rejects(bindingProbe((body,{url})=>{
+      calls.push(url);if(!url.includes('/versions/'))return;
+      if(shape!=='missing')body.result.resources.bindings.push({type:shape==='secret'?'secret_text':'plain_text',
+        name:'TRIP_AGGREGATE_ENABLED',text:shape==='opposite'?(value==='true'?'false':'true'):value});
+      if(shape==='duplicate')body.result.resources.bindings.push({type:'plain_text',name:'TRIP_AGGREGATE_ENABLED',text:value});
+    },{expectedPlainTextBindings:{TRIP_AGGREGATE_ENABLED:value}}),{message:'TRIP_STORAGE_WORKER_BINDINGS_UNVERIFIED'});
+    assert.equal(calls.length,2,'refusal must be from the actual version settings after discovery');
+  }
+});
 // Execute the actual normal OFF heredoc and its actual imported verifier.
 // Reuse the existing deployment/version fixture and real verifier; only local
 // config I/O and Cloudflare transport are artificial. No product call is stubbed.

@@ -32,6 +32,8 @@ const CATEGORICAL_MIGRATION='cloudflare/trip-gateway/migrations/007_trip_weather
 const CATEGORICAL_MIGRATION_SHA='02af90118f981854da39edfde264480b89966fa9f336c0e6163de361569eb67e';
 const UUID=/^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/i;
 const VARS=Object.freeze({TRIP_AGGREGATE_ENABLED:'false'});
+const ENABLE_VARS=Object.freeze({TRIP_AGGREGATE_ENABLED:'true'});
+const ENABLE_CONFIRMATION='ENABLE_PRIVATE_UNISSUED_STUDY_ONLY';
 const FAILURE='PRIVATE_TRIP_STUDY_DELIVERY_FAILED';
 const STATS_TABLES=['trip_weather_aggregate_categorical_policy_anchor','trip_weather_aggregate_policy_anchor','trip_weather_aggregate_releases','trip_weather_aggregate_account_charges',
   'trip_weather_aggregate_job_control','trip_weather_aggregate_jobs','trip_weather_aggregate_job_seen','trip_weather_aggregate_job_winners'];
@@ -122,11 +124,12 @@ function readOwnedJson(filename,maximum=65536){
   const stat=fs.lstatSync(filename);if(!stat.isFile()||stat.isSymbolicLink()||stat.size<1||stat.size>maximum)throw fail('LOCAL_FILE');
   return JSON.parse(fs.readFileSync(filename,'utf8'));
 }
-function assertConfiguration(config){
+function assertConfiguration(config,expectedVars=VARS){
   if(!config||Object.keys(config).sort().join(',')!==['compatibility_date','d1_databases','main','name','observability','preview_urls','vars','workers_dev'].sort().join(',')
     ||config.name!=='ravradar-trip-gateway'||config.main!==path.resolve('cloudflare/trip-gateway/worker.js').replaceAll('\\','/')
     ||config.compatibility_date!=='2026-08-26'||config.workers_dev!==true||config.preview_urls!==false
-    ||!isDeepStrictEqual(config.observability,{enabled:true})||!isDeepStrictEqual(config.vars,VARS)
+    ||!isDeepStrictEqual(config.observability,{enabled:true})
+    ||![VARS,ENABLE_VARS].includes(expectedVars)||!isDeepStrictEqual(config.vars,expectedVars)
     ||!Array.isArray(config.d1_databases)||config.d1_databases.length!==10
     ||config.d1_databases.some((row,i)=>Object.keys(row).sort().join(',')!=='binding,database_id,database_name'
       ||row.binding!=='TRIP_DB_'+i||row.database_name!=='ravradar-trips-'+i||!UUID.test(row.database_id||''))
@@ -140,6 +143,9 @@ export async function deployPrivateTripStudy(){
   env.TRIP_PRIVATE_STUDY_JOBS_APPLY_ALLOWED??='false';
   env.TRIP_PRIVATE_STUDY_JOB_BINDING_APPLY_ALLOWED??='false';
   env.TRIP_PRIVATE_STUDY_CATEGORICAL_APPLY_ALLOWED??='false';
+  env.TRIP_PRIVATE_STUDY_ENABLE_CONFIRMATION??='';
+  const enableMode=env.TRIP_PRIVATE_STUDY_MODE==='enable';
+  let expectedVars=VARS;
   delete env.SUPABASE_SERVICE_ROLE_KEY;delete env.SUPABASE_DB_PASSWORD;delete env.TRIP_PSEUDONYM_SECRET_V1;
   delete env.EXPECTED_TRIP_WORKER_VERSION;
   let stage='AUTHORITY',deadline=0,interrupted=false,schemaVerified=false,stopKnown=true,workerIntent=false,recoveryAttempted=false,
@@ -154,11 +160,15 @@ export async function deployPrivateTripStudy(){
       ||env.GITHUB_WORKFLOW!=='Private RavRadar trip weather study'||env.GITHUB_REF!=='refs/heads/main'
       ||env.GITHUB_RUN_ATTEMPT!=='1'||!/^\d+$/.test(env.GITHUB_RUN_ID||'')||!/^[a-f0-9]{40}$/.test(env.GITHUB_SHA||'')
       ||env.SUPABASE_PROJECT_ID!=='afqhhdrkjfjtpadntdzo'||env.TRIP_STORAGE_OPERATION!=='existing-private-study-upgrade'
-      ||env.TRIP_STORAGE_PRIVATE_STUDY!=='1'||!['plan','deliver'].includes(env.TRIP_PRIVATE_STUDY_MODE)
+      ||env.TRIP_STORAGE_PRIVATE_STUDY!=='1'||!['plan','deliver','enable'].includes(env.TRIP_PRIVATE_STUDY_MODE)
       ||!['true','false'].includes(env.TRIP_PRIVATE_STUDY_APPLY_ALLOWED)
       ||!['true','false'].includes(env.TRIP_PRIVATE_STUDY_JOBS_APPLY_ALLOWED)
       ||!['true','false'].includes(env.TRIP_PRIVATE_STUDY_JOB_BINDING_APPLY_ALLOWED)
-      ||!['true','false'].includes(env.TRIP_PRIVATE_STUDY_CATEGORICAL_APPLY_ALLOWED))throw fail('AUTHORITY');
+      ||!['true','false'].includes(env.TRIP_PRIVATE_STUDY_CATEGORICAL_APPLY_ALLOWED)
+      ||(enableMode&&(env.TRIP_PRIVATE_STUDY_ENABLE_CONFIRMATION!==ENABLE_CONFIRMATION
+        ||[env.TRIP_PRIVATE_STUDY_APPLY_ALLOWED,env.TRIP_PRIVATE_STUDY_JOBS_APPLY_ALLOWED,
+          env.TRIP_PRIVATE_STUDY_JOB_BINDING_APPLY_ALLOWED,env.TRIP_PRIVATE_STUDY_CATEGORICAL_APPLY_ALLOWED].some(value=>value!=='false')))
+      ||(!enableMode&&env.TRIP_PRIVATE_STUDY_ENABLE_CONFIRMATION!==''))throw fail('AUTHORITY');
     if(!/^[a-f0-9]{32}$/.test(env.CLOUDFLARE_ACCOUNT_ID||'')||typeof env.CLOUDFLARE_API_TOKEN!=='string'
       ||env.CLOUDFLARE_API_TOKEN.length<1)throw fail('CONFIGURATION');
     run('git',['fetch','--no-tags','origin','+refs/heads/main:refs/remotes/origin/main']);
@@ -209,12 +219,12 @@ export async function deployPrivateTripStudy(){
     }
     return classification;
   };
-  const attest=async(version,enabled=false)=>{
-    if(!isDeepStrictEqual(assertConfiguration(readOwnedJson(CONFIG)),config))throw fail('CONFIGURATION_CHANGED');
+  const attest=async(version,enabled=false,plainVars=expectedVars)=>{
+    if(!isDeepStrictEqual(assertConfiguration(readOwnedJson(CONFIG),expectedVars),config))throw fail('CONFIGURATION_CHANGED');
     if(plan&&!isDeepStrictEqual(workerSources(),plan.workerSourceFiles))throw fail('WORKER_SOURCE_CHANGED');
     const observed=await verifyExistingWorkerBindings({accountId:env.CLOUDFLARE_ACCOUNT_ID,apiToken:env.CLOUDFLARE_API_TOKEN,
       workerName:config.name,expectedBindings:config.d1_databases,expectedVersion:version,
-      ...(enabled?{expectedPlainTextBindings:VARS}:{})});
+      ...(enabled?{expectedPlainTextBindings:plainVars}:{})});
     return observed.versionId;
   };
   const verifySchema=async(expectedState=desiredSchemaState)=>{
@@ -228,7 +238,7 @@ export async function deployPrivateTripStudy(){
     edge('maintenance');run('sleep',['20']);
   };
   const replace=async()=>{
-    stage='WORKER_REPLACE';if(!schemaVerified)throw fail(stage);await verifySchema();await attest();exactMain();lease(600);
+    stage='WORKER_REPLACE';if(!schemaVerified)throw fail(stage);await verifySchema();await attest(undefined,enableMode,VARS);exactMain();lease(600);
     stage='WORKER_REPLACE';
     workerIntent=true;stopKnown=false;let deployed;
     try{deployed=await deployTripWorker({configPath:CONFIG,env});stopKnown=deployed?.terminationConfirmed===true;if(!stopKnown)throw fail(stage);}
@@ -265,6 +275,29 @@ export async function deployPrivateTripStudy(){
       bindingsSha256:hash(canonical(config.d1_databases)),workerSourceFiles:workerSources(),oldSchema:originalFence,...before};
     fs.writeFileSync(PLAN,JSON.stringify(plan)+'\n',{flag:'wx',mode:0o600});
     if(env.TRIP_PRIVATE_STUDY_MODE==='plan')return{...plan,operation:'READ_ONLY_PLAN',schemaApplied:false,workerUpdated:false};
+    if(enableMode){
+      // Confirmation expresses operator intent only, never privacy/Free proof.
+      // No DDL, aggregate request, preparation, export or charge runs here.
+      if(before.state!=='EXACT_004_005_006_007')throw fail('ENABLE_REQUIRES_EXACT_007');
+      desiredSchemaState=before.state;
+      stage='PRE_ENABLE_WORKER_OFF';await attest(currentVersion,true);
+      quiesce();stage='PRE_ENABLE_REVALIDATION';lease(600);exactMain();
+      if(!isDeepStrictEqual(readOwnedJson(PLAN),plan)||!isDeepStrictEqual(await inspect(),before))throw fail(stage);
+      await attest(currentVersion,true);
+      expectedVars=ENABLE_VARS;
+      config=assertConfiguration({...config,vars:{...ENABLE_VARS}},expectedVars);
+      fs.writeFileSync(CONFIG,JSON.stringify(config)+'\n',{mode:0o600});
+      await verifySchema();
+      // This separate enable path has no automatic Worker retry or export.
+      const version=await replace();await restore(version);
+      return{kind:'PRIVATE_TRIP_STUDY_EXISTING_WORKER_ATTESTED',sourceSha:env.GITHUB_SHA,workerVersionId:version,
+        migrationSha256:MIGRATION_SHA,ddlApplied:false,controlShard:0,shards:10,
+        jobsMigrationSha256:JOBS_MIGRATION_SHA,jobsDdlApplied:false,
+        bindingMigrationSha256:BINDING_MIGRATION_SHA,bindingDdlApplied:false,originalJobBindingReady:true,
+        categoricalMigrationSha256:CATEGORICAL_MIGRATION_SHA,categoricalDdlApplied:false,categoricalPolicyReady:true,
+        configAttested:true,storageMode:'d1',privateAggregationEnabled:true,
+        reportExported:false,publicStatisticsActivated:false,qualificationExecuted:false};
+    }
     const migrationSteps=privateTripStudyMigrationSteps(before.state,{
       allow004:env.TRIP_PRIVATE_STUDY_APPLY_ALLOWED==='true',allow005:env.TRIP_PRIVATE_STUDY_JOBS_APPLY_ALLOWED==='true',
       allow006:env.TRIP_PRIVATE_STUDY_JOB_BINDING_APPLY_ALLOWED==='true',
