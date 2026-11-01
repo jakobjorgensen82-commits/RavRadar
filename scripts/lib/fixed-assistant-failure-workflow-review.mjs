@@ -48,6 +48,21 @@ export function reviewedFixedAssistantFailureLegacyRegistry(value) {
   const bindingSuccessor = review.registryBindingSuccessor;
   assert.equal(bindingSuccessor.kind, 'EXACT_AUDIT_RECIPIENT_SIX_BINDINGS_SUCCESSOR');
   assert.equal(bindingSuccessor.beforeSha256, successor.afterSha256);
+  const workflow066Successor = review.registryWorkflow066Successor;
+  assert.equal(workflow066Successor.kind, 'EXACT_ORDINARY_STAGE_WORKFLOW_066_TWO_SURFACES');
+  assert.equal(workflow066Successor.beforeSha256, bindingSuccessor.afterSha256);
+  if (sha(source) === workflow066Successor.afterSha256) {
+    for (const workflow066Insertion of [...workflow066Successor.insertions].reverse()) {
+      assert(Number.isSafeInteger(workflow066Insertion.offset) && workflow066Insertion.offset >= 0);
+      assert(Number.isSafeInteger(workflow066Insertion.bytes) && workflow066Insertion.bytes > 0
+        && workflow066Insertion.offset + workflow066Insertion.bytes <= source.length);
+      assert.equal(sha(source.subarray(workflow066Insertion.offset, workflow066Insertion.offset + workflow066Insertion.bytes)),
+        workflow066Insertion.sha256, 'FIXED_ASSISTANT_REGISTRY_WORKFLOW066_INSERTION');
+      source = Buffer.concat([source.subarray(0, workflow066Insertion.offset),
+        source.subarray(workflow066Insertion.offset + workflow066Insertion.bytes)]);
+    }
+    assert.equal(sha(source), workflow066Successor.beforeSha256, 'FIXED_ASSISTANT_REGISTRY_WORKFLOW066_WHOLE_INVERSE');
+  }
   if (sha(source) === bindingSuccessor.afterSha256) {
     const insertion = bindingSuccessor.insertion;
     assert(Number.isSafeInteger(insertion.offset) && insertion.offset >= 0);

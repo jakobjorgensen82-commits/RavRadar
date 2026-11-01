@@ -106,9 +106,17 @@ runSourceOracle(legacyWorkflow);
 const actualRegistryRaw = await text('scripts/lib/source-impact-domain-owners-594.json');
 const registrySuccessor = review.registrySourceProofSuccessor;
 const registryBindingSuccessor = review.registryBindingSuccessor;
+const registryWorkflow066Successor = review.registryWorkflow066Successor;
 function assertActualRegistry(source) {
-  assert.equal(digest(source), registryBindingSuccessor.afterSha256, 'ACTUAL_SOURCE_PROOF_REGISTRY_BYTES');
+  assert.equal(digest(source), registryWorkflow066Successor.afterSha256, 'ACTUAL_SOURCE_PROOF_REGISTRY_BYTES');
   const registryDocument = JSON.parse(source);
+  for (const ordinaryStageAddition of registryWorkflow066Successor.surfaceAdditions) {
+    const ordinaryStageValues = registryDocument.sources[registryWorkflow066Successor.owner][ordinaryStageAddition.field];
+    assert.equal(ordinaryStageValues.length, ordinaryStageAddition.beforeCount + 1);
+    assert.deepEqual(ordinaryStageValues.slice(ordinaryStageAddition.beforeCount), [ordinaryStageAddition.sha256]);
+    assert.equal(digest(JSON.stringify(ordinaryStageValues.slice(0, ordinaryStageAddition.beforeCount))),
+      ordinaryStageAddition.beforeArraySha256);
+  }
   const actualAuditBindings = registryDocument.sources[registryBindingSuccessor.owner].bindingSurfaces;
   assert.equal(actualAuditBindings.length, registryBindingSuccessor.beforeBindingCount + 6);
   assert.deepEqual(actualAuditBindings.slice(registryBindingSuccessor.beforeBindingCount), registryBindingSuccessor.bindingHashes);
@@ -124,6 +132,10 @@ function assertActualRegistry(source) {
 }
 const actualRegistry = assertActualRegistry(actualRegistryRaw);
 for (const altered of [actualRegistryRaw + '\n',
+  ...registryWorkflow066Successor.surfaceAdditions.flatMap(ordinaryStageAddition => [
+    actualRegistryRaw.replace(ordinaryStageAddition.sha256, ordinaryStageAddition.sha256.slice(1)),
+    actualRegistryRaw.replace(ordinaryStageAddition.sha256, '2'.repeat(64)),
+    actualRegistryRaw.replace('"'+ordinaryStageAddition.sha256+'"', '"'+ordinaryStageAddition.sha256+'","'+'2'.repeat(64)+'"')]),
   actualRegistryRaw.replace(registryBindingSuccessor.bindingHashes[0], registryBindingSuccessor.bindingHashes[0].slice(1)),
   actualRegistryRaw.replace(registryBindingSuccessor.bindingHashes[0], '0'.repeat(64)),
   actualRegistryRaw.replace('"'+registryBindingSuccessor.bindingHashes[0]+'"', '"'+registryBindingSuccessor.bindingHashes[0]+'","'+'0'.repeat(64)+'"'),

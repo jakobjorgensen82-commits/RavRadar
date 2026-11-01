@@ -658,5 +658,42 @@
       "3ac7afc187e5ad88cb60643ef549dc3821cf8b32a4447714723c1746bc2cc925": 1,
       "fca61249820b55cc7a9ec82263267b9cb4b94a35c6ebcc93e1f022c036b5ca2b": 1
     }
+  },
+  "registryWorkflow066Successor": {
+    "kind": "EXACT_ORDINARY_STAGE_WORKFLOW_066_TWO_SURFACES",
+    "beforeSha256": "6e2afb97f457f1dfa9b7a4617dab1c298a98b68dfec8bb4d0aba89ab5e2cea2f",
+    "afterSha256": "2d4afeb192aad295787624288fbb8c4e959f049ffbae96508857ead92a0a97d8",
+    "owner": "scripts/ordinary-completed-stage-artifact.mjs",
+    "surfaceAdditions": [
+      {
+        "field": "bindingSurfaces",
+        "sha256": "cdfc65ea519a3073d004ba83929599232071b27beceb38a90b3b51bc5044ff6d",
+        "beforeCount": 35,
+        "beforeArraySha256": "51daedc4b95890401e7ac528c31ed5e2c04dd10af77493718c6ee310fe1ef807"
+      },
+      {
+        "field": "computedBoundaries",
+        "sha256": "58f4b0ecbc5a27086169a6639a4dc51e3194d28063c8d0933cfaed8b5a4f6474",
+        "beforeCount": 22,
+        "beforeArraySha256": "ac5a91c3c96e74e6f10098f976498280baaa9f5d04ff5ce782bbfe6a0ec41930"
+      }
+    ],
+    "insertions": [
+      {
+        "field": "bindingSurfaces",
+        "bytes": 76,
+        "sha256": "045c75978f022cc3e14aa94aa2f488ade0e17c124905eb7b2daa88860c95a281",
+        "offset": 347299
+      },
+      {
+        "field": "computedBoundaries",
+        "bytes": 76,
+        "sha256": "e1dd3afada4f8af89f83425dad6ccc633747a7dd826ea5437196c61b8d2848ce",
+        "offset": 349085
+      }
+    ],
+    "reviewInputSha256": "d7e86b2e334506be149b60ce1ff1f427a1bed7d7f5b202f57207bd24d75e7acc",
+    "auditedSourceSha256": "a9655ee55b68adbdf06bb40f210f44519a363ebc011938e99d0df26ae146e349",
+    "meaning": "Exact local require(condition,code) assertion after producerWorkflow(identity); not a new module loader."
   }
 }

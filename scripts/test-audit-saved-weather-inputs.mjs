@@ -2081,6 +2081,7 @@ async function waterStageFixture(f){
   const run={id:Number(target.runId),run_attempt:1,repository:{id:123,full_name:repository},head_repository:{id:123,full_name:repository},
     path:'.github/workflows/run-current-weather-once.yml',event:'workflow_dispatch',head_branch:'main',head_sha:target.sourceHead,
     status:'completed',conclusion:'failure',run_started_at:at(0),updated_at:at(20)};
+  run.path='.github/workflows/update-and-deploy.yml';
   const job={id:456,run_id:run.id,run_attempt:1,head_sha:run.head_sha,head_branch:'main',
     name:'Build and prepare weather production through reusable workflow / build-and-prepare',status:'completed',conclusion:'failure',started_at:at(1),completed_at:at(19),
     steps:['Update central weather cache','Build private production runtime bundle specification','Create the next private production runtime bundle atomically',
@@ -2112,9 +2113,10 @@ test('Voersaa fixed water trace: normal completed-stage metadata/ZIP/GCM/B opens
   assert.equal(report.generations[0].hours[0].waterLevelCm,25);
 });
 test('Voersaa fixed water trace: fixed old stage wrong head/missing step/expiry and GCM tamper stay closed',async t=>{
-  for(const fault of ['head','step','expiry','gcm']){
+  for(const fault of ['head','workflow','step','expiry','gcm']){
     const f=await fixedWaterCase(t,{missing4145:true}),stage=await waterStageFixture(f);
     if(fault==='head')stage.state.run.head_sha=VOERSAA_WATER_TRACE_TARGETS[1].sourceHead;
+    if(fault==='workflow')stage.state.run.path='.github/workflows/run-current-weather-once.yml';
     if(fault==='step')stage.state.job.steps.pop();
     if(fault==='expiry')stage.state.artifact.expired=true;
     if(fault==='gcm'){

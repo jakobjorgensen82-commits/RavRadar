@@ -122,6 +122,19 @@ test('ORDINARY_STAGE_EXACT_ATTEMPT_CIPHERTEXT_ONLY', async () => {
         positiveCount++;
       } finally { await fs.rm(result.privateDirectory, { recursive: true, force: true }); }
     }
+    // Exact fixed run/head/path cross-checks refuse at metadata, before ZIP.
+    for (const fixedRun of [
+      {runId:'41231144384',sourceHead:'7a08f6a8dfb2131898e7270a2429c3f4f810a842',wrongPath:'.github/workflows/run-current-weather-once.yml'},
+      {runId:'41256251412',sourceHead:'37a34703d9ae8bfb2c28056f21a7ea73944033ae',wrongPath:'.github/workflows/update-and-deploy.yml'},
+      {runId:'87654321',sourceHead:input.sourceHead,wrongPath:'.github/workflows/update-and-deploy.yml'},
+    ]) {
+      let fixedRunCalls=0;
+      await assert.rejects(downloadOrdinaryCompletedStageArtifact({...input,runId:fixedRun.runId,runAttempt:'1',sourceHead:fixedRun.sourceHead,
+        fetchImpl:async()=>{fixedRunCalls++;return Response.json({...context(stored).run,id:Number(fixedRun.runId),run_attempt:1,
+          head_sha:fixedRun.sourceHead,path:fixedRun.wrongPath});}}),
+        error=>error.code==='ORDINARY_STAGE_PRODUCER_IDENTITY'&&error.message===error.code);
+      assert.equal(fixedRunCalls,1);negativeCount++;
+    }
     const refused = async (mutate, code, maxCalls = 4) => {
       const state = context(stored);
       await mutate(state);

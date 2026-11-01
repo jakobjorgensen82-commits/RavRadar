@@ -149,6 +149,15 @@ let boundedRead=0;await assert.rejects(()=>completeForecastSharePagesList(async(
 }),/LIST_INCOMPLETE/);assert.equal(boundedRead,5,'No unbounded pagination');
 await assert.rejects(()=>completeForecastSharePagesList(async()=>arrayPage(Array.from({length:101},(_,n)=>projectRow(n)))),/LIST_INCOMPLETE/);
 await assert.rejects(()=>completeForecastSharePagesList(async()=>({status:403,value:{success:false}})),/LIST_STATUS/);
+for(const listStatus of [400,404,500,'400',99,600,NaN,Infinity]){
+  let listStatusReads=0;
+  await assert.rejects(()=>completeForecastSharePagesList(async()=>{listStatusReads++;
+    return{status:listStatus,value:{success:false,errors:[{message:'RAW_PRIVATE_LIST_ERROR'}]}};}),
+    error=>error.code==='SHARE_PAGES_LIST_STATUS'&&error.message==='SHARE_PAGES_LIST_STATUS'
+      &&error.kind==='PROJECT_LIST'&&error.httpStatus===(Number.isInteger(listStatus)&&listStatus>=100&&listStatus<=599?listStatus:null));
+  assert.equal(listStatusReads,1,'A list status refusal must never retry');
+}
+
 cases++;
 
 // Reuse only the existing normal fixture factory prefix. No old tests, I/O or
@@ -175,6 +184,8 @@ async function scenario(kind){
       const value=structuredClone(manifest);if(kind==='wrong-model')value.ravScoreModelBinding.modelBundleSha256='0'.repeat(64);return json(value);}
     if(url.includes('/pages/projects?page=')){
       if(kind==='permission')return json({success:false,errors:[{code:1000,message:'RAW_PRIVATE'}]},403);
+      if(['list-400','list-404','list-500'].includes(kind))
+        return json({success:false,errors:[{code:1000,message:'RAW_PRIVATE_LIST_ERROR'}],result:null},Number(kind.slice(5)));
       const result=listEnvelope(kind==='existing'?[project()]:[]);if(kind==='incomplete')result.value.result_info={page:2};
       return json(result.value);}
     if(url.endsWith('/pages/projects')&&options.method==='POST'){
@@ -214,9 +225,17 @@ assert.equal(good.creates,1);assert.equal(good.deploys,1);assert.equal(good.resu
 const defaultResponse=await scenario('api-defaults');assert.equal(defaultResponse.error,undefined);
 assert.equal(defaultResponse.creates,1);assert.equal(defaultResponse.deploys,1);
 assert.equal(defaultResponse.result.freeCapacityProved,false);assert.equal(defaultResponse.result.hostedScoreProved,false);cases++;
-for(const kind of ['permission','incomplete','existing','main-moved','wrong-model']){
+for(const kind of ['permission','incomplete','existing','main-moved','wrong-model','list-400','list-404','list-500']){
   const result=await scenario(kind);assert(result.error);assert.equal(result.creates,0);assert.equal(result.deploys,0);
-  assert.equal(result.error.receipt.outcome,'REFUSED_BEFORE_WRITE');if(kind==='permission')assert.equal(result.error.receipt.httpStatus,403);cases++;
+  assert.equal(result.error.receipt.outcome,'REFUSED_BEFORE_WRITE');if(kind==='permission')assert.equal(result.error.receipt.httpStatus,403);
+  if(kind.startsWith('list-')){
+    assert.equal(result.error.receipt.code,'SHARE_PAGES_LIST_STATUS');
+    assert.equal(result.error.receipt.readKind,'PROJECT_LIST');assert.equal(result.error.receipt.httpStatus,Number(kind.slice(5)));
+    assert.equal(result.error.receipt.createIssued,false);assert.equal(result.error.receipt.deployIssued,false);
+    assert.equal(result.requests.filter(row=>row.url.includes('/pages/projects?page=')).length,1,'No list retry after HTTP refusal');
+    assert.equal(result.receipts.length,1);assert(!JSON.stringify(result.receipts).includes('RAW_PRIVATE_LIST_ERROR'));
+  }
+  cases++;
 }
 const lostCreate=await scenario('create-lost');assert(lostCreate.error);assert.equal(lostCreate.creates,1);assert.equal(lostCreate.deploys,0);
 assert.equal(lostCreate.error.receipt.readback,'PRESENT_UNOWNED');assert.equal(lostCreate.error.receipt.outcome,'UNKNOWN_NO_RETRY');cases++;

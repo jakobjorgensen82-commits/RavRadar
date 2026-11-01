@@ -56,13 +56,27 @@ async function readBody(response, maximum, onChunk) {
   }
 }
 
+// Only these fixed historical attempts have a separately authenticated workflow.
+// No caller-selectable workflow and no general update-and-deploy admission.
+function producerWorkflow(identity) {
+  if (identity.runId === '41231144384') {
+    if (identity.runAttempt !== '1' || identity.sourceHead !== '7a08f6a8dfb2131898e7270a2429c3f4f810a842')
+      fail('ORDINARY_STAGE_PRODUCER_IDENTITY');
+    return '.github/workflows/update-and-deploy.yml';
+  }
+  if (identity.runId === '41256251412'
+    && (identity.runAttempt !== '1' || identity.sourceHead !== '37a34703d9ae8bfb2c28056f21a7ea73944033ae'))
+    fail('ORDINARY_STAGE_PRODUCER_IDENTITY');
+  return WORKFLOW;
+}
+
 function assertRun(run, identity, now) {
   const { repository, runId, runAttempt, sourceHead } = identity;
   require(positive(run?.id) && positive(run?.run_attempt)
     && String(run.id) === runId && String(run.run_attempt) === runAttempt
     && run.repository?.full_name === repository && run.head_repository?.full_name === repository
     && positive(run.repository?.id) && run.head_repository?.id === run.repository.id
-    && run.path === WORKFLOW && run.event === 'workflow_dispatch' && run.head_branch === 'main'
+    && run.path === producerWorkflow(identity) && run.event === 'workflow_dispatch' && run.head_branch === 'main'
     && run.head_sha === sourceHead && run.status === 'completed' && TERMINAL.has(run.conclusion)
     && Number.isFinite(time(run.run_started_at)) && time(run.run_started_at) <= time(run.updated_at)
     && time(run.updated_at) <= now, 'ORDINARY_STAGE_PRODUCER_IDENTITY');
@@ -215,7 +229,7 @@ export async function downloadOrdinaryCompletedStageArtifact({ repository, runId
       'ORDINARY_STAGE_EXTRACTION_REFUSED');
     await fs.unlink(zipPath);
     return { code: 'ORDINARY_STAGE_CIPHERTEXT_LOCATED', identity,
-      producer: { workflow: WORKFLOW, jobId: job.id, conclusion: run.conclusion, steps },
+      producer: { workflow: producerWorkflow(identity), jobId: job.id, conclusion: run.conclusion, steps },
       artifact: { id: artifact.id, name, digest: artifact.digest, bytes: artifact.size_in_bytes,
         createdAt: artifact.created_at, expiresAt: artifact.expires_at },
       privateDirectory: own, sealedPath, sealedBytes: stat.size, sealedSha256: extracted.sha256,

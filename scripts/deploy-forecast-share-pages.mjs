@@ -142,7 +142,9 @@ export async function completeForecastSharePagesList(read){
   const rows=[],ids=new Set(),names=new Set();let total=null,pages=null,perPage=null;
   for(let page=1;page<=5;page++){
     const response=await read('/pages/projects?page='+page+'&per_page=100','PROJECT_LIST');
-    need(response.status===200,'LIST_STATUS');const data=envelope(response.value),info=response.value.result_info;
+    if(response.status!==200)throw Object.assign(fail('SHARE_PAGES_LIST_STATUS'),{kind:'PROJECT_LIST',
+      httpStatus:Number.isInteger(response.status)&&response.status>=100&&response.status<=599?response.status:null});
+    const data=envelope(response.value),info=response.value.result_info;
     need(Array.isArray(data)&&data.length<=100&&(info===undefined||object(info)),'LIST_INCOMPLETE');
     if(info!==undefined){
       if(Object.hasOwn(info,'page'))need(info.page===page,'LIST_INCOMPLETE');

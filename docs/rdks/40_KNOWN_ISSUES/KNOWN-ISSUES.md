@@ -1,3 +1,11 @@
+## 1. november — oprindelig producentvej og sikker HTTP-fejlstatus
+
+Den faste private vandstandsdiagnose skal kontrollere den workflowvej, som den autentificerede originalproducent faktisk brugte. Den tidlige workflowkontrol og den normale completed-stage-læser havde samme forkerte antagelse. Den afgrænsede rettelse binder kun den navngivne historiske undtagelse til præcis kørsel, forsøg og kildehead; alle andre almindelige producenter beholder den eksisterende vej. Afsluttet producent, de fem krævede gemningstrin, artifactidentitet, udløb, hel ZIP/GCM/B-verifikation og uændret central pointer består. En senere samlet kørselsfejl gør ikke et allerede korrekt gemt originaltrin til en succesfuld offentlig levering.
+
+Prognosedelingens Pages-kontrol bevarer nu fast læsetype og valideret numerisk HTTP-status, når projektlisten afvises. Den gemmer ingen rå leverandørfejltekst og ændrer hverken pagination, fraværsbevis, rettigheder, skrivegrænser eller genforsøgsregler. Dette retter en konkret mangel i fejlrapporten; årsagen til den faktiske HTTP-afvisning er endnu ukendt.
+
+De relevante normale lokale vandstands-, completed-stage-, workflow- og Pages-prøver består med syntetiske input. Præcis samlet kildekvalifikation og de faktiske efterfølgende aflæsninger er åbne. Ingen ny vejrhentning, score-, model-, SQL-, kilde-, administrator- eller geometriændring følger med. Årsagen til den observerede vandstandsafvigelse er ikke fastslået. Alle fem hovedmål består; aktuelle kørsler og detaljeret privat evidens føres i checkpointet.
+
 ## 1. november — privat Pages-opdatering af det eksakt ejede projekt
 
 P0 har faktisk leveret offentlig 4.0.594, og genoptagelsen er terminalt afsluttet. Denne lokale Pages-efterfølger ændrer ikke vejrdata eller modelbinding og er endnu ikke kilde- eller hostingkvalificeret. Aktuel kørselsstatus føres privat.
