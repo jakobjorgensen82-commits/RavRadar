@@ -1,5 +1,12 @@
 # DEC-0302 – Ændringsbaseret validering og oprydning i kontroller
 
+## Genbrugt fixtureopsætning skal bindes til det faktisk udførte udsnit
+
+Tre normale mål for deling og tidsskyderen bruger kun den faste, rene opsætning først i en eksisterende testfil. De må ikke kræve, at senere, ikke udførte tests i filen er uændrede. Forbrugeren kontrollerer derfor den entydige slutmarkør og hele SHA-256 for præcis den opsætning, som dens loader udfører. De oprindelige opsætningsbytes er bevaret identisk; ingen produktmodul, modeldata eller gammel funktions-/negativprøve erstattes. De nye adminsærskilte imports placeres uden for den delte opsætning.
+
+Ukendt eller ændret kode inden for det udførte udsnit afvises stadig. Ændringer efter dets grænse giver ingen tilladelse til at udføre dem som opsætning. Denne afgrænsning fjerner en unødvendig helfilskobling; den ændrer ikke produktets kontroller. Normale relevante mål og præcis samlet kildekvalifikation skal fortsat bestå.
+
+
 ## 1. november — admin skal kontrollere den oprindelige modelpakke
 
 Den lokale adminrettelse holder to læsninger af samme offentlige generation adskilt. Modelkontrollen får den oprindelige, hash- og modelbundne startpakke med dens faktiske referencetime og navne. Overblik og kysteditor beholder den normale aktuelle prognosevisning. Et senere tidspunkt eller navne, som den aktuelle projektion har omdannet til zone-IDer, må ikke udlægges som den oprindelige startpakke. Den strenge sammenligning af model, profil og scoretilgængelighed bevares; metadata omskrives ikke for at få kontrollen til at bestå.

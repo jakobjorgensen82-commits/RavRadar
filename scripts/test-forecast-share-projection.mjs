@@ -17,12 +17,13 @@ const sha=bytes=>crypto.createHash('sha256').update(bytes).digest('hex');
 const text=value=>JSON.stringify(value)+'\n';
 const fixtureUrl=new URL('./test-ravscore-public-data-service-binding.mjs?compactShareFixture',import.meta.url).href;
 const fixtureSource=(await fs.readFile(new URL('./test-ravscore-public-data-service-binding.mjs',import.meta.url),'utf8')).replace(/\r\n/g,'\n');
-assert.equal(sha(fixtureSource),'2fd624fc66f30907694c836402e293393e1676a44537f716cc9b084b94ffe449');
 const sentinel="const primary = bundle('primary-integrated', 61);";
 assert.equal(fixtureSource.split(sentinel).length,2);
+const fixturePrefix=fixtureSource.split(sentinel)[0];
+assert.equal(sha(fixturePrefix),'091f68c8be579ab7f555a0a4caeefe5159f0a2027bdd0300438b1e64d0c90014');
 // The unchanged ordinary210/673 pure test fixture factory only. No product
 // module, guard, model metadata or old test assertion is projected.
-const factory=fixtureSource.split(sentinel)[0]+'\nexport {full,freshNow,horizonTimes,coastalPartsText,zoneRegistryText};\n';
+const factory=fixturePrefix+'\nexport {full,freshNow,horizonTimes,coastalPartsText,zoneRegistryText};\n';
 const hooks=registerHooks({load(url,context,next){return url===fixtureUrl?{format:'module',source:factory,shortCircuit:true}:next(url,context);}});
 let fixture;try{fixture=await import(fixtureUrl);}finally{hooks.deregister();}
 const {full,freshNow,horizonTimes,coastalPartsText,zoneRegistryText}=fixture;

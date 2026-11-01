@@ -910,6 +910,20 @@
           "node scripts/test-ravscore-public-browser-closure.mjs"
         ]
       ]
+    },
+    {
+      "path": "scripts/test-forecast-share-projection.mjs",
+      "domains": [
+        "sharing",
+        "controls"
+      ],
+      "controlQualification": true,
+      "commands": [
+        [
+          "sharing",
+          "node scripts/test-forecast-share-projection.mjs"
+        ]
+      ]
     }
   ],
   "sources": {
@@ -10063,7 +10077,8 @@
         "9ed6392ad2601cd459af1465d46e8eeac154c34adaa29eab45f49f0639f5eaf6",
         "a3e6e5f7b67bb5d5203aead1d6a673190323b89313b685d65a6223abfab608b5",
         "b22984e4e276133e3250e8c9c6a867aa6599f21c01ca8c663a5afa8d0d3e5329",
-        "b7e727ad8b1c835d90b256617b2d88282474906f72d4ad0c50ca3b92353053b9"
+        "b7e727ad8b1c835d90b256617b2d88282474906f72d4ad0c50ca3b92353053b9",
+        "2cab081d614cdfa306e976c39444833ca68073f37af3a82d603c2f45f2c9f29a"
       ],
       "computedBoundaries": [
         "08dfde7e860854b612611f8ec78bff0ca188d3f518e762f081dd57f452befcfd"
@@ -10150,7 +10165,8 @@
         "e0209117eae68e79b0fd24e9b24c36e35973225059a1e7244895a357b2fbdb25",
         "eb60d0054278281252edc43df1173e2ebc375281a842b7415f6304fda80cdc03",
         "f6c3d37e213ebe7fe77cbf5035d5bc1eb60ef2d9639afcbaf4d191091d0bc69d",
-        "f7b33ff5f07bb0a445d53f59acbac4b3f8f7aaab4d55d3e5517788eeef3baa26"
+        "f7b33ff5f07bb0a445d53f59acbac4b3f8f7aaab4d55d3e5517788eeef3baa26",
+        "e4aaf4c98546d9e455792748e16208c9f9d4fdb3a0a860b1a1b6b6aea245cec9"
       ],
       "computedBoundaries": [
         "963fb357adf0c6212b69db664a4925eff16e783e817f6c5d9759d1075931cbbf"
@@ -10320,7 +10336,8 @@
         "e8e4138be87700a5a60352da014693b3ca25fa5991f8cf56058f292c9057eaf3",
         "ea06c848912f9128e4ee4980a55c42f89eca461653e22387d7af7ebd09025f94",
         "ef419d076712b8753a08a22d52001206f3d2e11c1745956fd230b0600cea614b",
-        "fdcd41a78a6e06450b89e69e4308377a8c86d4bf7ce73a359353a5ca9c300c51"
+        "fdcd41a78a6e06450b89e69e4308377a8c86d4bf7ce73a359353a5ca9c300c51",
+        "801df853d7e697369e7c9e92f399431a90b907bbbcf82aac13f5c366973c9ae0"
       ],
       "computedBoundaries": [
         "0a8f28546f16691f769b565d2db0e9dfc9a9c68c1deac93f1d031168fd164a12"

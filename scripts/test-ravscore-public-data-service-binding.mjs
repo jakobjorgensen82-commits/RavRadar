@@ -1,7 +1,5 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
-import { runInNewContext } from 'node:vm';
-import { resolveAdminActivePublicRavScore } from '../js/ui/admin-active-ravscore.js';
 import {
   buildPublicConditionDetails,
   buildPublicConditions,
@@ -17,7 +15,6 @@ import {
 import { ravScoreVerifiedEvidenceTrust } from '../js/core/ravscore-evidence-trust-contract.js';
 import { resolvePublicRavScoreProfile } from '../js/core/ravscore-public-model.js';
 import {
-  buildPublicScoreAvailability,
   RAVSCORE_PUBLIC_FORECAST_HOURS,
   canonicalPublicRuntimeJson,
   publicRuntimeDocumentBody,
@@ -920,6 +917,10 @@ assert.equal(boundedZones.zones['zone-1'].forecast.hourly.length, 1, 'Evicted zo
 assert.match(appSource, /generation!==runtimeGeneration\|\|selectedReferenceAt!==state\.conditions\.publicRuntimeAvailability\?\.selectedReferenceAt/);
 assert.match(appSource, /refreshPublicRuntimeGeneration\(\{manifest:activeManifest/);
 assert.match(appSource, /visibilitychange/);
+
+import { runInNewContext } from 'node:vm';
+import { resolveAdminActivePublicRavScore } from '../js/ui/admin-active-ravscore.js';
+import { buildPublicScoreAvailability } from '../js/core/ravscore-public-runtime-contract.js';
 
 // The normal admin caller must keep the original verified model snapshot
 // separate from the same generation's selected current-hour display.

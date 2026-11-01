@@ -155,10 +155,11 @@ cases++;
 // product modules are replaced; the real controller uses the real public guard.
 const fixturePath=new URL('./test-ravscore-public-data-service-binding.mjs',import.meta.url);
 const fixtureText=(await fs.readFile(fixturePath,'utf8')).replace(/\r\n/g,'\n');
-assert.equal(hash(fixtureText),'2fd624fc66f30907694c836402e293393e1676a44537f716cc9b084b94ffe449');
 const sentinel="const primary = bundle('primary-integrated', 61);";assert.equal(fixtureText.split(sentinel).length,2);
+const fixturePrefix=fixtureText.split(sentinel)[0];
+assert.equal(hash(fixturePrefix),'091f68c8be579ab7f555a0a4caeefe5159f0a2027bdd0300438b1e64d0c90014');
 const fixtureUrl=new URL('./test-ravscore-public-data-service-binding.mjs?pagesControllerFixture',import.meta.url).href;
-const hook=registerHooks({load(url,context,next){return url===fixtureUrl?{format:'module',source:fixtureText.split(sentinel)[0]+'\nexport {bundle,freshNow};\n',shortCircuit:true}:next(url,context);}});
+const hook=registerHooks({load(url,context,next){return url===fixtureUrl?{format:'module',source:fixturePrefix+'\nexport {bundle,freshNow};\n',shortCircuit:true}:next(url,context);}});
 let fixture;try{fixture=await import(fixtureUrl);}finally{hook.deregister();}
 const manifest=fixture.bundle('pages-controller-synthetic',42).manifest;
 const projectFiles=['wrangler.jsonc','functions/index.js','public/_routes.json','public/robots.txt','public/404.html'];

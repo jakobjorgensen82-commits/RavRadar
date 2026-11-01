@@ -36,7 +36,7 @@ test('reviewed admin original snapshot closes direct and cumulative plans and re
   const registryFile='scripts/lib/source-impact-domain-owners-594.json';
   const prior=JSON.parse(git(SOURCE,['cat-file','blob',reference+':'+registryFile]));
   const current=JSON.parse(fs.readFileSync(path.join(SOURCE,registryFile)));
-  assert.equal(prior.owners.length,84);assert.equal(current.owners.length,89);
+  assert.equal(prior.owners.length,84);assert.equal(current.owners.length,90);
   for(const owner of prior.owners)assert.deepEqual(current.owners.find(row=>row.path===owner.path),owner);
   for(const [file,source]of Object.entries(prior.sources))for(const [key,values]of Object.entries(source))
     for(const value of values)assert(current.sources[file][key].includes(value),'Preserve reviewed source seam: '+file);
