@@ -1,3 +1,11 @@
+## 1. november — admin skal kontrollere den oprindelige modelpakke
+
+Den lokale adminrettelse holder to læsninger af samme offentlige generation adskilt. Modelkontrollen får den oprindelige, hash- og modelbundne startpakke med dens faktiske referencetime og navne. Overblik og kysteditor beholder den normale aktuelle prognosevisning. Et senere tidspunkt eller navne, som den aktuelle projektion har omdannet til zone-IDer, må ikke udlægges som den oprindelige startpakke. Den strenge sammenligning af model, profil og scoretilgængelighed bevares; metadata omskrives ikke for at få kontrollen til at bestå.
+
+Den nye læser bruger den eksisterende verificering og deler den normale igangværende hentning. Administratorens to importveje bruger samme særskilte cacheadresse; HTML og service-worker følger den samme adresse. Hovedkortets imports, scoreformel, kilder, vejrtal, administratorpunkter, geometri, version, modelbindinger og PostgreSQL-input er uændrede.
+
+Den faktiske normale kalderprøve består med oprindelig referencetime og navne, uændret aktuel visning, én fælles hentning samt afvisning af afvigende metadata og blandet model. De eksisterende admin-, modulversions- og browserkildekontroller består også lokalt; det er ikke offentlig levering. Præcis kildekvalifikation, sikker levering efter afsluttet writer og målrettet administratorafprøvning på den leverede kode er fortsat åbne. Den korte kontrol skal følge den konkrete påvirkning og bevare ukendt eller bred påvirkning som udvidet prøveomfang. Alle fem mål består; skiftende kørsels- og leveringsbeviser føres i det private checkpoint.
+
 ## 1. november — privat Pages-opdatering af det eksakt ejede projekt
 
 P0 har faktisk leveret offentlig 4.0.594, og genoptagelsen er terminalt afsluttet. Denne lokale Pages-efterfølger ændrer ikke vejrdata eller modelbinding og er endnu ikke kilde- eller hostingkvalificeret. Aktuel kørselsstatus føres privat.

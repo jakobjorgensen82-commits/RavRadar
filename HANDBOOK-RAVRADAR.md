@@ -530,6 +530,14 @@ Den marine rapport viser sine egne tal for friske, bevarede og fallback- eller m
 
 Status 28. oktober: Flere almindelige 4.0.590-vejrgenerationer er offentligt leveret gennem hele den normale kæde; fuld dækning og selvstændig fejlgenopretning er fortsat åbne. PR747 med turtotal og kontokategorier er ikke installeret. Denne Datakvalitet-opfølgning er kun lokalt sammensat og måltestet; præcis kildekontrol, levering og administratoraccept mangler. Ingen scoreformel, kildeprioritet, modelbinding, administratoropsætning, geometri, SQL-regel eller rettighed ændres.
 
+### Oprindelig modelkontrol og aktuelle vejrdata
+
+Når tiden går, kan administratorens vejrvisning vise en nyere prognosetime fra samme generation. Modelkontrollen skal stadig sammenligne manifestet med den oprindelige verificerede startpakke. Derfor læses den oprindelige pakke særskilt, mens overblik og kysteditor beholder den aktuelle visning. Den samme hentning kan genbruges; der hentes ikke endnu en stor vejrfil til modelkontrollen.
+
+Et ændret tidspunkt eller ændrede zonenavne i en afledt visning er ikke bevis for en forkert scoremodel. Omvendt må en ægte forskel i modelbinding eller oprindelige metadata ikke skjules. De strenge kontroller består, og en afvist eller ukendt læsning vises fortsat som uafklaret.
+
+Status 1. november: Opdelingen er rettet og afprøvet lokalt gennem den normale kalder. Præcis kildekvalifikation, sikker levering og administratorafprøvning af den leverede kode mangler fortsat. Rettelsen ændrer hverken vejrtal, scoremodel, rettigheder eller administratorens gemte opsætning.
+
 ## 89.274 Administratorens turtotal og kontokategorier
 
 Kort fortalt: Administratorens Overblik skal vise, hvor mange ture og observationer der er gemt. Kontokategorien fortæller ikke i sig selv, hvilke rettigheder en bruger har.

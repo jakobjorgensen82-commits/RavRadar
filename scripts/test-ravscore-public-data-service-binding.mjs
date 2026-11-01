@@ -1,5 +1,7 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
+import { runInNewContext } from 'node:vm';
+import { resolveAdminActivePublicRavScore } from '../js/ui/admin-active-ravscore.js';
 import {
   buildPublicConditionDetails,
   buildPublicConditions,
@@ -15,6 +17,7 @@ import {
 import { ravScoreVerifiedEvidenceTrust } from '../js/core/ravscore-evidence-trust-contract.js';
 import { resolvePublicRavScoreProfile } from '../js/core/ravscore-public-model.js';
 import {
+  buildPublicScoreAvailability,
   RAVSCORE_PUBLIC_FORECAST_HOURS,
   canonicalPublicRuntimeJson,
   publicRuntimeDocumentBody,
@@ -917,6 +920,94 @@ assert.equal(boundedZones.zones['zone-1'].forecast.hourly.length, 1, 'Evicted zo
 assert.match(appSource, /generation!==runtimeGeneration\|\|selectedReferenceAt!==state\.conditions\.publicRuntimeAvailability\?\.selectedReferenceAt/);
 assert.match(appSource, /refreshPublicRuntimeGeneration\(\{manifest:activeManifest/);
 assert.match(appSource, /visibilitychange/);
+
+// The normal admin caller must keep the original verified model snapshot
+// separate from the same generation's selected current-hour display.
+{
+  documents.clear();
+  service.clearDataMemoryCache();
+  const source = deliverySource;
+  source.datasetId = 'admin-original-snapshot';
+  source.coastalParts.scoreProfile = resolvePublicRavScoreProfile({
+    modelCoverageReady: true, modelMemoryReady: false, modelMigrationReady: true,
+  });
+  const incomplete = row => {
+    for (const mode of ['waders', 'beach']) Object.assign(row[mode], {
+      scoreQuality: 'HISTORY_INCOMPLETE', calibrationEligible: false,
+      scoreSemantics: 'CONSERVATIVE_ENCLOSING_LOWER_BOUND',
+      historyCoverageHours: 24, historyReasonCodes: ['CURRENT_HISTORY_INCOMPLETE'],
+    });
+  };
+  source.coastalParts.zones['zone-1'].hourly.forEach(incomplete);
+  for (const part of Object.values(source.coastalParts.parts)) {
+    if (part.zoneId === 'zone-1') {
+      incomplete(part.current);
+      (part.hourly || []).forEach(incomplete);
+    }
+  }
+  source.coastalParts.scoreAvailability = buildPublicScoreAvailability({
+    policy: source.coastalParts.scoreProfile.publicAvailabilityPolicy,
+    zones: source.coastalParts.zones, referenceAt: generatedAt,
+    zoneNames: Object.fromEntries(zoneIds.map((id, index) => [id, 'Zone '+(index+1)])),
+  });
+  const startup = buildPublicConditions(source), details = buildPublicConditionDetails(source);
+  const startupText = compactJson(startup), detailsText = compactJson(details);
+  const manifest = buildPublicManifest(source, startupText, detailsText, coastalPartsText, zoneRegistryText);
+  manifest.detailDelivery = { schemaVersion: 1, forecastHours: 118,
+    sourceDetailsSha256: manifest.publicConditionDetailsSha256,
+    hours: Object.fromEntries(horizonTimes.map(time => [time, placeholder('admin-'+time)])),
+    zones: Object.fromEntries(zoneIds.map(id => [id, placeholder('admin-'+id)])),
+  };
+  const hour = buildPublicDeliveryDocument(source, details, manifest, 'hour', time9);
+  const hourText = compactJson(hour), hourSha = sha256Text(hourText);
+  manifest.detailDelivery.hours[time9] = {
+    path: './forecast/'+hourSha+'.json', sha256: hourSha, bytes: Buffer.byteLength(hourText),
+  };
+  for (const [url, value] of [
+    ['./data/live/manifest.json', compactJson(manifest)],
+    [primaryUrl(manifest), startupText], [coastalUrl(manifest), coastalPartsText],
+    [zoneUrl(manifest), zoneRegistryText],
+    ['./data/live/forecast/'+hourSha+'.json?dataset='+manifest.datasetId+'&sha='+hourSha, hourText],
+  ]) documents.set(url, value);
+  service.clearDataMemoryCache();
+  const before = requests.length;
+  const dashboard = await fs.readFile(new URL('../js/ui/admin-dashboard.js', import.meta.url), 'utf8');
+  const start = dashboard.indexOf('function loadVerifiedPublicRuntime(){');
+  const end = dashboard.indexOf('function activeModelUnavailableCard(', start);
+  assert(start >= 0 && end > start);
+  const state = { publicLoadStatus:'ready' };
+  const caller = runInNewContext('let verifiedPublicRuntimePromise=null;\n'
+    +dashboard.slice(start,end)+'\n({loadVerifiedPublicRuntime,activePublicRavScoreState});', {
+    state, loadDataManifest:service.loadDataManifest, loadZones:service.loadZones,
+    loadConditions:options=>service.loadConditions({...options,now:emergencyNow}),
+    loadPublicStartupSnapshot:service.loadPublicStartupSnapshot, resolveAdminActivePublicRavScore,
+  });
+  const runtime = await caller.loadVerifiedPublicRuntime();
+  Object.assign(state, { publicManifest:runtime.manifest, conditions:runtime.conditions,
+    publicModelStartup:runtime.modelStartup });
+  const active = caller.activePublicRavScoreState();
+  assert.equal(active.ok, true, active.error?.message);
+  assert.equal(active.value.kind, 'integrated');
+  assert.equal(active.value.observationCalibrationEligible, false);
+  assert.equal(runtime.conditions.publicRuntimeAvailability.selectedReferenceAt, time9);
+  assert.equal(runtime.conditions.coastalParts.scoreAvailability.evaluatedAt, time9);
+  assert.equal(runtime.modelStartup.coastalParts.scoreAvailability.evaluatedAt, generatedAt);
+  assert.equal(runtime.modelStartup.coastalParts.scoreAvailability.historyIncompleteZones[0].zoneName, 'Zone 1');
+  assert.deepEqual(runtime.modelStartup.coastalParts.scoreAvailability, manifest.ravScoreAvailability);
+  assert.equal(requests.slice(before).filter(row=>row.url===primaryUrl(manifest)).length, 1,
+    'Original snapshot and current display share the existing hash-bound startup fetch.');
+  assert.throws(()=>resolveAdminActivePublicRavScore({manifest,conditions:runtime.conditions}),
+    /samme eksakte lokale scoretilgængelighed/,
+    'A current-hour projection must not masquerade as the original manifest startup.');
+  const changed = structuredClone(runtime.modelStartup);
+  changed.coastalParts.scoreAvailability.historyIncompleteZones[0].zoneName = 'Changed name';
+  assert.throws(()=>resolveAdminActivePublicRavScore({manifest,conditions:changed}),
+    /samme eksakte lokale scoretilgængelighed/);
+  const mixed = structuredClone(runtime.modelStartup);
+  mixed.coastalParts.modelBinding.modelBundleSha256 = '0'.repeat(64);
+  assert.throws(()=>resolveAdminActivePublicRavScore({manifest,conditions:mixed}), /anden offentlig RavScore-model/);
+  console.log('Admin original snapshot: normal loader keeps exact H0/names separate from current hour, one shared startup fetch, strict mismatch and mixed-bundle refusal.');
+}
 
 globalThis.fetch = realFetch;
 console.warn = realWarn;

@@ -894,6 +894,14 @@ async function loadManifestBoundStartup(manifest) {
   return data;
 }
 
+export async function loadPublicStartupSnapshot({ manifest = null } = {}) {
+  assertManifest(manifest);
+  if (!sameRavScoreModelBinding(manifest.ravScoreModelBinding, ravScoreModelBinding())) {
+    throw new Error('Appen og datamanifestet bruger forskellige RavScore-modelbundles.');
+  }
+  return loadManifestBoundStartup(manifest);
+}
+
 function requiresCurrentHourProjection(availability, manifest) {
   return availability.mode === RAVSCORE_PUBLIC_RUNTIME_MODE_EMERGENCY
     || availability.selectedReferenceAt !== manifest.productionReferenceAt;

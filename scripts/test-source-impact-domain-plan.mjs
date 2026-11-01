@@ -30,6 +30,82 @@ test('all-specifier scanner exposes bare/URL/data/require/computed imports and t
   assert.notDeepEqual(scanAllSourceDependencies("const file='known.json';readFileSync(file);").dependencySurfaces,
     scanAllSourceDependencies("const file='unknown.json';readFileSync(file);").dependencySurfaces);
 });
+
+test('reviewed admin original snapshot closes direct and cumulative plans and rejects unknown broad-source bytes',async()=>{
+  const reference='72150501445c9c44e6603c17d3d2561bb270d9cf';
+  const registryFile='scripts/lib/source-impact-domain-owners-594.json';
+  const prior=JSON.parse(git(SOURCE,['cat-file','blob',reference+':'+registryFile]));
+  const current=JSON.parse(fs.readFileSync(path.join(SOURCE,registryFile)));
+  assert.equal(prior.owners.length,84);assert.equal(current.owners.length,89);
+  for(const owner of prior.owners)assert.deepEqual(current.owners.find(row=>row.path===owner.path),owner);
+  for(const [file,source]of Object.entries(prior.sources))for(const [key,values]of Object.entries(source))
+    for(const value of values)assert(current.sources[file][key].includes(value),'Preserve reviewed source seam: '+file);
+  for(const key of ['resourceFiles','commands','commonCommands','controlSuite','normalParents',
+    'auditMetadataTransitions','runtimePrerequisites'])assert.deepEqual(current[key],prior[key]);
+  assert.equal(current.resourceFiles.length,552);
+  for(const [file,pairs]of Object.entries(prior.exactSourceTransitions))
+    for(const pair of pairs)assert(current.exactSourceTransitions[file].includes(pair));
+  const products=['admin.html','js/services/data-service.js','js/services/site-function-test-service.js',
+    'js/ui/admin-dashboard.js','service-worker.js','scripts/test-ravscore-public-data-service-binding.mjs'];
+  const exact=products.filter(file=>file!=='js/ui/admin-dashboard.js'&&!file.startsWith('scripts/'));
+  for(const file of exact)assert.equal(current.owners.find(row=>row.path===file).exactSourceTransition,true);
+  const targets=['node scripts/test-ravscore-public-data-service-binding.mjs',
+    'node scripts/test-admin-active-ravscore-runtime.mjs','node scripts/test-ravscore-public-browser-closure.mjs'];
+  assert(current.sources['scripts/test-ravscore-public-data-service-binding.mjs'].nodeImports.includes('node:vm'));
+  assert(current.sources['scripts/test-ravscore-public-data-service-binding.mjs'].imports.includes('js/ui/admin-active-ravscore.js'));
+  assert(current.sources['scripts/test-ravscore-public-data-service-binding.mjs'].resources.includes('js/ui/admin-dashboard.js'));
+  const temporary=fs.realpathSync(os.tmpdir()),root=fs.mkdtempSync(path.join(temporary,'rr-admin-domain-plan-'));
+  const owned=fs.lstatSync(root,{bigint:true});
+  try{
+    git(root,['init','-q']);git(root,['config','core.autocrlf','false']);
+    const objectDirectory=fs.realpathSync(path.join(text(SOURCE,['rev-parse','--path-format=absolute','--git-common-dir']),'objects'));
+    fs.mkdirSync(path.join(root,'.git/objects/info'),{recursive:true});
+    fs.writeFileSync(path.join(root,'.git/objects/info/alternates'),objectDirectory.replaceAll('\\','/')+'\n');
+    const controls=['scripts/source-impact-domain-plan.mjs',registryFile,'scripts/test-source-impact-domain-plan.mjs'];
+    const additions=[...products,...controls].map(file=>[file,fs.readFileSync(path.join(SOURCE,file))]);
+    const make=(rows,label)=>{
+      git(root,['read-tree',reference]);
+      for(const [file,body]of rows){const blob=text(root,['hash-object','-w','--stdin'],body);
+        git(root,['update-index','--add','--cacheinfo','100644',blob,file]);}
+      return text(root,['commit-tree',text(root,['write-tree']),'-p',reference,'-m',label]);
+    };
+    for(const file of files){fs.mkdirSync(path.dirname(path.join(root,file)),{recursive:true});
+      fs.writeFileSync(path.join(root,file),fs.readFileSync(path.join(SOURCE,file)));}
+    const {planSourceDomainImpactFromGit:plan}=await import(pathToFileURL(path.join(root,'scripts/source-impact-domain-plan.mjs')).href);
+    const run=(candidate,baseline=reference)=>{git(root,['update-ref','HEAD',candidate]);
+      return plan({baselineCommit:baseline,candidateCommit:candidate,expectedHead:candidate});};
+    const candidate=make(additions,'synthetic exact reviewed admin original snapshot');
+    for(const baseline of [reference,BASE]){
+      const actual=run(candidate,baseline);
+      assert.equal(actual.status,'PLANNED',JSON.stringify(actual.reasonCodes));
+      assert.equal(actual.selection,'CONTROL_QUALIFICATION_REQUIRED',JSON.stringify(actual.reasonCodes));
+      assert.equal(actual.domains.postgres.status,'NOT_APPLICABLE');
+      assert.equal(actual.domains.historical584National.status,'NOT_APPLICABLE');
+      assert.equal(actual.domains.adminUI.status,'SELECTED');
+      assert.equal(actual.domains.d1.status,'SELECTED','Preserve the existing dashboard D1 owner');
+      assert.equal(actual.skipAuthorized,false);assert.equal(actual.productionAuthority,false);
+      for(const target of targets)assert.equal(actual.commands.filter(command=>command===target).length,1);
+      assert(actual.commands.includes('node scripts/test-module-version-closure-4.0.87.mjs'));
+      assert(actual.commands.includes('node scripts/validate-release-version.mjs'));
+    }
+    for(const file of exact){
+      const changed=additions.map(([name,body])=>[name,name===file?Buffer.concat([body,
+        Buffer.from('\n// Synthetic unreviewed admin source transition.\n')]):body]);
+      assert.deepEqual(run(make(changed,'synthetic unknown admin source')).reasonCodes,
+        ['UNKNOWN_EXACT_SOURCE_TRANSITION:'+file]);
+    }
+    const target='scripts/test-ravscore-public-data-service-binding.mjs';
+    for(const [extra,reason]of [["\nimport 'node:net';\n",'UNDECLARED_NODE_IMPORT:'],
+      ["\nreadFileSync('unreviewed-admin-private.json');\n",'UNKNOWN_READ_OR_SUBPROCESS_SURFACE:']]){
+      const changed=additions.map(([file,body])=>[file,file===target?Buffer.concat([body,Buffer.from(extra)]):body]);
+      assert.deepEqual(run(make(changed,'synthetic unknown admin test capability')).reasonCodes,[reason+target]);
+    }
+  }finally{
+    assert.equal(path.dirname(fs.realpathSync(root)),temporary);const current=fs.lstatSync(root,{bigint:true});
+    assert.equal(current.dev,owned.dev);assert.equal(current.ino,owned.ino);assert.equal(current.birthtimeNs,owned.birthtimeNs);
+    fs.rmSync(root,{recursive:true,force:false});
+  }
+});
 test('normal closed domain planner handles real composition, one same-tree merge and bounded negative mutations',async()=>{
   const temporary=fs.realpathSync(os.tmpdir()),root=fs.mkdtempSync(path.join(temporary,'rr-domain-plan-'));
   const owned=fs.lstatSync(root,{bigint:true});

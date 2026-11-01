@@ -1,5 +1,14 @@
 # DEC-0302 – Ændringsbaseret validering og oprydning i kontroller
 
+## 1. november — admin skal kontrollere den oprindelige modelpakke
+
+Den lokale adminrettelse holder to læsninger af samme offentlige generation adskilt. Modelkontrollen får den oprindelige, hash- og modelbundne startpakke med dens faktiske referencetime og navne. Overblik og kysteditor beholder den normale aktuelle prognosevisning. Et senere tidspunkt eller navne, som den aktuelle projektion har omdannet til zone-IDer, må ikke udlægges som den oprindelige startpakke. Den strenge sammenligning af model, profil og scoretilgængelighed bevares; metadata omskrives ikke for at få kontrollen til at bestå.
+
+Den nye læser bruger den eksisterende verificering og deler den normale igangværende hentning. Administratorens to importveje bruger samme særskilte cacheadresse; HTML og service-worker følger den samme adresse. Hovedkortets imports, scoreformel, kilder, vejrtal, administratorpunkter, geometri, version, modelbindinger og PostgreSQL-input er uændrede.
+
+Den faktiske normale kalderprøve består med oprindelig referencetime og navne, uændret aktuel visning, én fælles hentning samt afvisning af afvigende metadata og blandet model. De eksisterende admin-, modulversions- og browserkildekontroller består også lokalt; det er ikke offentlig levering. Præcis kildekvalifikation, sikker levering efter afsluttet writer og målrettet administratorafprøvning på den leverede kode er fortsat åbne. Den korte kontrol skal følge den konkrete påvirkning og bevare ukendt eller bred påvirkning som udvidet prøveomfang. Alle fem mål består; skiftende kørsels- og leveringsbeviser føres i det private checkpoint.
+
+
 Pages-controller og workflow registreres som delingsproduktkode med deres normale controllerprøve; produktkode er ikke test-only eller databaseudførelse. De gamle konservative import-/læse-/bindingflader og hele PG143/C100/I99/T12 bevares. Den faktiske direkte PR-plan og kumulative plan fra den kvalificerede FULL-forfader skal begge kontrolleres; kontrolændringen kræver den eksisterende CONTROL-suite og eksakt uafhængigt ROOT-review. Ukendt eller fælles påvirkning udvider prøverne. Nye præcise kildeplaner, kvalifikation og sikker levering er stadig åbne; detaljeret evidens føres privat.
 
 En negativprøve for Git-filers executable-mode skal have samme mode på arbejdsfilen og i indeks/commit samt bevise rent checkout, før den forventer afvisning af en leveringsfils mode. Kun at ændre indekset efterlader på Linux en anden, tidligere afvisningsgrund. Testfixturen følger nu denne rækkefølge; produktets clean-head-kontrol og forventede modeafvisning bevares.
