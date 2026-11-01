@@ -48,6 +48,7 @@ function normalCaller({coastlineRead=null,initialPublicReject=true}={}){
   return query(selector);
  };
  const manifest={fixture:'verified-manifest'},conditions={available:true,zones:{one:{},two:{}},ravScoreRuntime:{fixture:true}},
+  modelStartup={available:true,fixture:'original-model-startup',ravScoreRuntime:{fixture:true}},
   zones={coastalParts:{zones:{one:{},two:{}}}};
  const memory=new Map(),events=[];
  const context={document,content,renderCoastlineEditor:(_content,config)=>{editorMounts++;editorConfig=config;content.innerHTML='synthetic-editor';},guard:()=>true,console:{error(){},warn(){}},Promise,Error,Date,JSON,Boolean,Object,Array,
@@ -59,6 +60,7 @@ function normalCaller({coastlineRead=null,initialPublicReject=true}={}){
   testConnection:()=>connectionRead.promise,adminStorageHealth:()=>storageRead.promise,
   loadDataManifest:async()=>{manifestReads++;return manifest;},
   loadConditions:async()=>{await publicRead.promise;if(rejectPublic)throw Error('synthetic public read rejection');return conditions;},
+  loadPublicStartupSnapshot:async()=>{await publicRead.promise;if(rejectPublic)throw Error('synthetic original startup rejection');return modelStartup;},
   loadZones:async()=>zones,
   loadZoneRegistry:async()=>({all:[{},{}],active:[{},{}],legacy:[],collection:{features:[{},{}]},counts:{registered:2,active:2,legacy:0}}),
   loadAdminDocument:async(key,fallback)=>key==='coastline-overrides'&&coastlineRead?coastlineRead():key==='weather-health'?{status:'good'}:fallback,
@@ -66,7 +68,7 @@ function normalCaller({coastlineRead=null,initialPublicReject=true}={}){
   getJson:async()=>({schemaVersion:1,zones:{}}),decodeRuntimeDiagnosticsEnvelope:async()=>null,
   directionReviews:()=>({}),setLocalJsonSafely:()=>true,
   localStorage:{getItem:key=>memory.get(key)||null,setItem:(key,value)=>memory.set(key,value)},
-  resolveAdminActivePublicRavScore:input=>{assert.equal(input.manifest,manifest);assert.equal(input.conditions,conditions);return{statusDa:'synthetic verified model'};},
+  resolveAdminActivePublicRavScore:input=>{assert.equal(input.manifest,manifest);assert.equal(input.conditions,modelStartup);return{statusDa:'synthetic verified model'};},
   scoreAvailabilityCard:()=>context.state.publicLoadStatus==='ready'?'synthetic-verified':'synthetic-unavailable',
   esc:value=>String(value??''),
   queueAdminDocumentSave:()=>assert.fail('bootstrap may not write central documents'),
@@ -87,7 +89,7 @@ function normalCaller({coastlineRead=null,initialPublicReject=true}={}){
  const editorEnd=admin.indexOf('\nfunction renderZones(',editorStart);
  assert(editorStart>=0&&editorEnd>editorStart);
  runInNewContext(admin.slice(editorStart,editorEnd)+'\nglobalThis.ops.editor=renderAdminCoastlineEditor;globalThis.ops.saveCoastline=saveCoastlineChanges;',context);
- return{context,nodes,events,manifest,conditions,content,
+ return{context,nodes,events,manifest,conditions,modelStartup,content,
   editor:()=>({mounts:editorMounts,config:editorConfig}),
   allowFailedNormalSave:()=>{context.saveAdminDocumentNow=async()=>({ok:false,error:'synthetic central rejection'});},
   stats:()=>({renders,counterMounts,manifestReads}),
@@ -124,6 +126,9 @@ assert.equal(run.context.ops.activePublicRavScoreState().ok,false);
 assert.equal(run.context.state.publicLoadStatus,'pending');
 run.releasePublic();await settle();
 assert.equal(run.context.state.publicLoadStatus,'ready');
+assert.equal(run.context.state.conditions,run.conditions,'overview retains the selected current-hour display');
+assert.equal(run.context.state.publicModelStartup,run.modelStartup,'model validation keeps the separately verified original');
+assert.notEqual(run.context.state.publicModelStartup,run.context.state.conditions);
 assert.equal(run.nodes.get('adminZoneCount').textContent,'2/2');
 assert.equal(run.context.state.waterStationsReady,true,'normal retry retains the verified public coastal prerequisite');
 assert.equal(run.context.ops.activePublicRavScoreState().ok,true);

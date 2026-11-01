@@ -26,12 +26,13 @@ import { buildPublicConditions, buildPublicConditionDetails, buildPublicManifest
 let cases = 0;
 const fixtureUrl = new URL('./test-ravscore-public-data-service-binding.mjs?mapTimelineFixture', import.meta.url).href;
 const fixtureText = (await fs.readFile(new URL('./test-ravscore-public-data-service-binding.mjs', import.meta.url),'utf8')).replace(/\r\n/g,'\n');
-assert.equal(crypto.createHash('sha256').update(fixtureText).digest('hex'),'2fd624fc66f30907694c836402e293393e1676a44537f716cc9b084b94ffe449');
 const sentinel = "const primary = bundle('primary-integrated', 61);";
 assert.equal(fixtureText.split(sentinel).length,2);
+const fixturePrefix = fixtureText.split(sentinel)[0];
+assert.equal(crypto.createHash('sha256').update(fixturePrefix).digest('hex'),'091f68c8be579ab7f555a0a4caeefe5159f0a2027bdd0300438b1e64d0c90014');
 // Reuse the existing normal210/673 pure fixture factory, not its old tests or
 // I/O. No product/module logic or existing test file is edited by this loader.
-const fixtureSource = fixtureText.split(sentinel)[0] + '\nexport {full,score,generatedAt,freshNow,horizonTimes,partsByZone,zoneIds,coastalPartsText,zoneRegistryText};\n';
+const fixtureSource = fixturePrefix + '\nexport {full,score,generatedAt,freshNow,horizonTimes,partsByZone,zoneIds,coastalPartsText,zoneRegistryText};\n';
 const hooks=registerHooks({load(url,context,next){return url===fixtureUrl?{format:'module',source:fixtureSource,shortCircuit:true}:next(url,context);}});
 let fixture;try{fixture=await import(fixtureUrl);}finally{hooks.deregister();}
 const {full,score,generatedAt,freshNow,horizonTimes,partsByZone,zoneIds,coastalPartsText,zoneRegistryText}=fixture;

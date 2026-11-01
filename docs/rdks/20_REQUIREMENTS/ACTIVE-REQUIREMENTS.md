@@ -1,3 +1,11 @@
+## 1. november — privat Pages-opdatering af det eksakt ejede projekt
+
+P0 har faktisk leveret offentlig 4.0.594, og genoptagelsen er terminalt afsluttet. Denne lokale Pages-efterfølger ændrer ikke vejrdata eller modelbinding og er endnu ikke kilde- eller hostingkvalificeret. Aktuel kørselsstatus føres privat.
+
+Den lokale kandidat tilføjer en særskilt update-handling til det eksisterende Pages-workflow. Standard create kræver stadig entydigt fravær og afviser et eksisterende projekt. Update kræver egen bekræftelse samt projekt-ID fra ROOTs faktisk vellykkede første create-kvittering og et tidligere verificeret deployment-ID/commit. Projekt, forgænger, canonical/latest, main og lokale input genlæses; præcis allerede leveret kode giver kun en fuldt genlæst no-op. Update opretter eller patcher aldrig et projekt, og ukendt write-/procesudfald bevarer UNKNOWN_NO_RETRY.
+
+Dette er lokal kildeforberedelse i pages.dev-fasen, ikke hosting eller offentlig levering. Customdomæne afvises fortsat; senere domænebinding, én Simply-CNAME, TLS og klient-/cachebusterlukning er åbne sammen med aktuel offentlig 594-kompatibilitet, legacy-Worker, hosted GET/HEAD/OG/robots, Facebook og målt delt Free-/CPU-kapacitet. Ingen ny version, C/I/T, migration, SQL-eksekvering, vejr-/scoreændring, geometri eller aktivering. Ældre create-only-beskrivelser er erstattet alene for denne kontrollerede kodeopdatering; alle eksisterende identitets- og sikkerhedsafslag består.
+
 ## Aktivt krav — installeret 593 og originale 591 kræver hver sin binding, 31. oktober
 
 Den nye assistant-installed593-origin591-successor skal binde databasebefore til ægte udstedt 593 og originalState til de autentiske 591-B/S. Normal staging kræver hele den installerede forgængerhistorik og kun den nye normalt afledte594-migration pending; efter installation kræves faktisk ny canonical-/versions-/kontraktgenlæsning. De71 gamle kilde-SQL og gamle profiler bevares byteuændret.

@@ -8,7 +8,7 @@ import {
  loadDataManifest,
  loadZones,
  mergeConditionDetails,
-} from './data-service.js?v=4.0.594';
+} from './data-service.js?v=4.0.594&ui=admin-model-startup-20261101';
 
 const TIMEOUT_MS=20000;
 const now=()=>performance.now();

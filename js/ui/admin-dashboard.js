@@ -12,7 +12,7 @@ import { auditCurrentDirection } from '../core/current-direction-audit.js?v=4.0.
 import { renderCoastlineEditor, destroyCoastlineEditor } from './admin-coastline-editor.js?v=4.0.594';
 import { createDirectionEditor } from './admin-direction-editor.js?v=4.0.594';
 import { runFullPersistenceTest } from '../services/persistence-test-service.js?v=4.0.594';
-import { runFullSiteFunctionTest } from '../services/site-function-test-service.js?v=4.0.594';
+import { runFullSiteFunctionTest } from '../services/site-function-test-service.js?v=4.0.594&ui=admin-model-startup-20261101';
 import { submitHandbookReview, listHandbookReviews, updateHandbookReview, exportLocalHandbookDrafts, localHandbookDraftCount, listLocalHandbookDrafts, deleteLocalHandbookDraft, retryLocalHandbookDraft, archiveHandbookReview } from '../services/handbook-review-store.js?v=4.0.594';
 import { loadVisitorReport } from '../services/visitor-report-service.js?v=4.0.594';
 import { decodeRuntimeDiagnosticsEnvelope } from '../services/protected-runtime-envelope.js?v=4.0.594';
@@ -25,8 +25,9 @@ import {
 import {
  loadConditions,
  loadDataManifest,
+ loadPublicStartupSnapshot,
  loadZones,
-} from '../services/data-service.js?v=4.0.594';
+} from '../services/data-service.js?v=4.0.594&ui=admin-model-startup-20261101';
 
 const VERSION='4.0.594';
 const SITE_TEST_MODE=new URLSearchParams(location.search).has('ravradarAdminSiteTest');
@@ -80,12 +81,13 @@ function loadVerifiedPublicRuntime(){
    const pending=(async()=>{
    const manifest=await loadDataManifest();
    if(!manifest)throw new Error('Det offentlige manifest kunne ikke verificeres.');
-   const [conditions,zones]=await Promise.all([
+   const [conditions,zones,modelStartup]=await Promise.all([
     loadConditions({manifest}),
     loadZones({manifest}),
+    loadPublicStartupSnapshot({manifest}),
    ]);
    if(conditions?.available!==true)throw new Error('Den offentlige startpakke kunne ikke verificeres.');
-   return{manifest,conditions,zones};
+   return{manifest,conditions,zones,modelStartup};
    })();
    verifiedPublicRuntimePromise=pending;
    pending.catch(()=>{if(verifiedPublicRuntimePromise===pending)verifiedPublicRuntimePromise=null;});
@@ -98,7 +100,7 @@ function activePublicRavScoreState(){
  try{
   return{ok:true,value:resolveAdminActivePublicRavScore({
    manifest:state.publicManifest,
-   conditions:state.conditions,
+   conditions:state.publicModelStartup,
   })};
  }catch(error){
   return{ok:false,error};
@@ -181,7 +183,7 @@ async function refreshAdminPublicRuntime(){
  state.publicLoadStatus='pending';state.publicLoadError=null;updateAdminOverviewReadiness();
  try{
   const runtime=await loadVerifiedPublicRuntime();if(!keep())return;
-  state.publicManifest=runtime.manifest;state.conditions=runtime.conditions;state.coastalParts=runtime.zones.coastalParts;
+  state.publicManifest=runtime.manifest;state.conditions=runtime.conditions;state.coastalParts=runtime.zones.coastalParts;state.publicModelStartup=runtime.modelStartup;
   state.publicLoadStatus='ready';
  }catch{
   if(!keep())return;state.publicLoadStatus='failed';

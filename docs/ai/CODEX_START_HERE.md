@@ -4,6 +4,24 @@ En PR med målrettet kildebevis (`weather-source-targeted-impact-v1` eller `weat
 
 Efter merge og før den første produktionshandling skal ROOT verificere faktisk main, begge forældre og identisk kvalificeret træ og derefter afprøve den eksisterende normale `weather-source-gate.mjs check` mod denne faktiske main. Det er en skrivefri genlæsning af kildebevis, ikke nye leverandørdata, beregning eller gentaget databaseprøve. Et ukendt eller afvist bevis må ikke overstyres. Bevar den oprindelige vejrproducent særskilt fra en senere genoptagelsesproces.
 
+## 1. november — admin skal kontrollere den oprindelige modelpakke
+
+Den lokale adminrettelse holder to læsninger af samme offentlige generation adskilt. Modelkontrollen får den oprindelige, hash- og modelbundne startpakke med dens faktiske referencetime og navne. Overblik og kysteditor beholder den normale aktuelle prognosevisning. Et senere tidspunkt eller navne, som den aktuelle projektion har omdannet til zone-IDer, må ikke udlægges som den oprindelige startpakke. Den strenge sammenligning af model, profil og scoretilgængelighed bevares; metadata omskrives ikke for at få kontrollen til at bestå.
+
+Den nye læser bruger den eksisterende verificering og deler den normale igangværende hentning. Administratorens to importveje bruger samme særskilte cacheadresse; HTML og service-worker følger den samme adresse. Hovedkortets imports, scoreformel, kilder, vejrtal, administratorpunkter, geometri, version, modelbindinger og PostgreSQL-input er uændrede.
+
+Den faktiske normale kalderprøve består med oprindelig referencetime og navne, uændret aktuel visning, én fælles hentning samt afvisning af afvigende metadata og blandet model. De eksisterende admin-, modulversions- og browserkildekontroller består også lokalt; det er ikke offentlig levering. Præcis kildekvalifikation, sikker levering efter afsluttet writer og målrettet administratorafprøvning på den leverede kode er fortsat åbne. Den korte kontrol skal følge den konkrete påvirkning og bevare ukendt eller bred påvirkning som udvidet prøveomfang. Alle fem mål består; skiftende kørsels- og leveringsbeviser føres i det private checkpoint.
+
+## 1. november — privat Pages-opdatering af det eksakt ejede projekt
+
+P0 har faktisk leveret offentlig 4.0.594, og genoptagelsen er terminalt afsluttet. Denne lokale Pages-efterfølger ændrer ikke vejrdata eller modelbinding og er endnu ikke kilde- eller hostingkvalificeret. Aktuel kørselsstatus føres privat.
+
+Den lokale kandidat tilføjer en særskilt update-handling til det eksisterende Pages-workflow. Standard create kræver stadig entydigt fravær og afviser et eksisterende projekt. Update kræver egen bekræftelse samt projekt-ID fra ROOTs faktisk vellykkede første create-kvittering og et tidligere verificeret deployment-ID/commit. Projekt, forgænger, canonical/latest, main og lokale input genlæses; præcis allerede leveret kode giver kun en fuldt genlæst no-op. Update opretter eller patcher aldrig et projekt, og ukendt write-/procesudfald bevarer UNKNOWN_NO_RETRY.
+
+Pages-controller og workflow registreres som delingsproduktkode med deres normale controllerprøve; produktkode er ikke test-only eller databaseudførelse. De gamle konservative import-/læse-/bindingflader og hele PG143/C100/I99/T12 bevares. Den faktiske direkte PR-plan og kumulative plan fra den kvalificerede FULL-forfader skal begge kontrolleres; kontrolændringen kræver den eksisterende CONTROL-suite og eksakt uafhængigt ROOT-review. Ukendt eller fælles påvirkning udvider prøverne. Nye præcise kildeplaner, kvalifikation og sikker levering er stadig åbne; detaljeret evidens føres privat.
+
+Dette er lokal kildeforberedelse i pages.dev-fasen, ikke hosting eller offentlig levering. Customdomæne afvises fortsat; senere domænebinding, én Simply-CNAME, TLS og klient-/cachebusterlukning er åbne sammen med aktuel offentlig 594-kompatibilitet, legacy-Worker, hosted GET/HEAD/OG/robots, Facebook og målt delt Free-/CPU-kapacitet. Ingen ny version, C/I/T, migration, SQL-eksekvering, vejr-/scoreændring, geometri eller aktivering. Ældre create-only-beskrivelser er erstattet alene for denne kontrollerede kodeopdatering; alle eksisterende identitets- og sikkerhedsafslag består.
+
 ## 31. oktober — observeret offentlig forgænger skal følge almindeligt deploy
 
 Ved overgang til en nyere model skal deployet medtage identiteten på den faktisk observerede offentlige forgænger. Den samme observerede kilde skal følge både den almindelige og den genoptagne kalder. En nyere offentlig generation må ikke forveksles med den ældre generation, som stadig står centralt.

@@ -448,9 +448,19 @@ Delingsvisningen genbruger faste datoformater og undgår gentagne sammenligninge
 
 Adapteren, previewrobotternes adgang, controlleren og en afgrænset læseroptimering er lokalt sammenført. Samlet kildekvalifikation og offentlig Pages-levering er åbne. En senere almindelig 591-generation er faktisk leveret med de tre serverfunktioner, og den gamle delingstjeneste er særskilt opdateret og viser igen en kontrolleret score. Det beviser ikke den nye Pages-hosts scorekompatibilitet, domæne/TLS, Facebooks forhåndsvisning, ekstern AI eller tilstrækkelig Free-kapacitet.
 
-Den næste levering skal kontrolleres mod den faktisk gældende offentlige generation og model; denne forberedelse følger 594-kilden. Et ældre 591-sample er historisk evidens og kvalificerer ikke en ny delingshost.
+4.0.594 er nu faktisk offentligt leveret, og P0-genoptagelsen er terminalt afsluttet. Den nye delingshost og den gamle delingstjeneste skal stadig kontrolleres mod denne faktiske generation og model. Et ældre 591-sample er historisk evidens og kvalificerer ikke den nye delingshost.
 
 Der foretages ingen ny versions-, model- eller databaseudstedelse af denne forberedelse. De øvrige RavRadar-opgaver og alle fem hovedmål til 18. november 2026 er fortsat åbne.
+
+### Når delingsprojektets kode opdateres
+
+Den forberedte opdateringsvej gælder det ene delingsprojekt, som allerede er oprettet og kontrolleret. En kodeopdatering skal genfinde præcis dette projekt og den tidligere kontrollerede udgave. Den opretter ikke projektet igen og overtager ikke et andet projekt med samme navn.
+
+Hvis den ønskede kode allerede er leveret, skal den genlæses og kontrolleres uden en ny levering. Et mistet svar er ikke i sig selv en bekræftelse; ukendt udfald må ikke udløse en blind gentagelse.
+
+Denne kandidat gælder alene prøveadressen ravradar-del.pages.dev. Et senere skift til del.ravradar.dk kræver fortsat særskilt domænebinding, én CNAME hos Simply, aktivt certifikat og det kontrollerede skift i hjemmesidens delingsadresse. Hovedhjemmeside, mail og navneservere bevares.
+
+Opdateringsvejen er lokalt forberedt, ikke offentligt leveret. Facebooks egen forhåndsvisning, gratis kapacitet og svartid i praksis samt den nye hosts korrekte visning af den aktuelle offentlige prognose skal stadig kontrolleres hver for sig. Den gamle delingstjeneste og allerede delte links bevares.
 
 ## 89.277 Undersøg de gemte data, før hentningen ændres
 
@@ -519,6 +529,14 @@ Kort fortalt: Et tal kan være korrekt og alligevel beskrive noget andet, end ma
 Den marine rapport viser sine egne tal for friske, bevarede og fallback- eller manglende DMI-zoner. Cacheauditten viser sin registrerede størrelse før og efter samt antal bevarede og fjernede filer. Tallene gættes ikke ud fra forskellen mellem andre rapporter. Visningen ændrer ikke data og starter ingen ny oprydning eller vejrhentning.
 
 Status 28. oktober: Flere almindelige 4.0.590-vejrgenerationer er offentligt leveret gennem hele den normale kæde; fuld dækning og selvstændig fejlgenopretning er fortsat åbne. PR747 med turtotal og kontokategorier er ikke installeret. Denne Datakvalitet-opfølgning er kun lokalt sammensat og måltestet; præcis kildekontrol, levering og administratoraccept mangler. Ingen scoreformel, kildeprioritet, modelbinding, administratoropsætning, geometri, SQL-regel eller rettighed ændres.
+
+### Oprindelig modelkontrol og aktuelle vejrdata
+
+Når tiden går, kan administratorens vejrvisning vise en nyere prognosetime fra samme generation. Modelkontrollen skal stadig sammenligne manifestet med den oprindelige verificerede startpakke. Derfor læses den oprindelige pakke særskilt, mens overblik og kysteditor beholder den aktuelle visning. Den samme hentning kan genbruges; der hentes ikke endnu en stor vejrfil til modelkontrollen.
+
+Et ændret tidspunkt eller ændrede zonenavne i en afledt visning er ikke bevis for en forkert scoremodel. Omvendt må en ægte forskel i modelbinding eller oprindelige metadata ikke skjules. De strenge kontroller består, og en afvist eller ukendt læsning vises fortsat som uafklaret.
+
+Status 1. november: Opdelingen er rettet og afprøvet lokalt gennem den normale kalder. Præcis kildekvalifikation, sikker levering og administratorafprøvning af den leverede kode mangler fortsat. Rettelsen ændrer hverken vejrtal, scoremodel, rettigheder eller administratorens gemte opsætning.
 
 ## 89.274 Administratorens turtotal og kontokategorier
 
