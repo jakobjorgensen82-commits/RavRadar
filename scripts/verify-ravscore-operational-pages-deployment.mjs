@@ -1,11 +1,14 @@
 #!/usr/bin/env node
 
 import crypto from 'node:crypto';
+import { assertForecastShareDescriptor, assembleForecastShareProjection, assertForecastShareProjectionParity, FORECAST_SHARE_INDEX_MAX_BYTES }
+  from '../js/services/forecast-share-projection.js';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import {
   ravScoreModelBinding as integratedBinding,
+  RAVSCORE_CURRENT_SUPPLY_POLICY,
 } from '../js/core/ravscore-model-contract.js';
 import {
   ravScoreModelBinding as candidateBinding,
@@ -126,7 +129,12 @@ function assertOperationalProfileControls(profile, mode, availability, label) {
     return;
   }
   assertIntegratedOperationalAvailability(availability, `${label} availability`);
-  const historyIncomplete = availability.historyIncompleteModeCount > 0;
+  // A ready state window does not erase uncertainty retained in the causal
+  // wave/last-mile bounds. The producer and private audit distinguish these
+  // facts; only a genuinely short current-history window contradicts readiness.
+  const currentHistoryWindowIncomplete = availability.historyIncompleteZones
+    .some(zone => zone.historyCoverageHours
+      < RAVSCORE_CURRENT_SUPPLY_POLICY.windowHours - 1e-12);
   const localUnavailable = availability.unavailableZoneCount > 0;
   const migrationUnavailable = profile.modelMigrationReady === false;
   const expectedAdvisories = [
@@ -140,7 +148,7 @@ function assertOperationalProfileControls(profile, mode, availability, label) {
     // Coverage is an ALL-PARTS statement, availability an ANY-USABLE-PART
     // statement per zone. Partial zones can be usable without complete coverage.
     || (profile.modelCoverageReady === true && localUnavailable)
-    || (historyIncomplete && profile.modelMemoryReady !== false)
+    || (currentHistoryWindowIncomplete && profile.modelMemoryReady !== false)
     || JSON.stringify(profile.advisories) !== JSON.stringify(expectedAdvisories)) {
     throw new Error(`${label} has incompatible integrated history controls`);
   }
@@ -171,14 +179,25 @@ function scanBindings(value, expected, label, pathPrefix = label) {
   }
 }
 
-async function fetchBytes(fetchImpl, url, label) {
-  const response = await fetchImpl(url, {
-    cache: 'no-store',
-    headers: { accept: label.endsWith('.json') || label.endsWith('.geojson')
-      ? 'application/json' : 'text/javascript' },
-  });
-  if (!response?.ok) throw new Error(`${label} returned HTTP ${response?.status ?? 'unknown'}`);
-  return Buffer.from(await response.arrayBuffer());
+async function fetchBytes(fetchImpl, url, label, httpRetryBudget) {
+  // Only a refused transient HTTP response may repeat this exact request.
+  // Tokens belong to the whole verification, including manifest observation.
+  for (let attempt = 1; ; attempt += 1) {
+    const response = await fetchImpl(url, {
+      cache: 'no-store',
+      headers: { accept: label.endsWith('.json') || label.endsWith('.geojson')
+        ? 'application/json' : 'text/javascript' },
+    });
+    if (response?.ok) return Buffer.from(await response.arrayBuffer());
+    const error = new Error(`${label} returned HTTP ${response?.status ?? 'unknown'}`);
+    // Do not abandon an unread response body before a retry or refusal.
+    // Failed cleanup, fetch/abort and body-read errors remain immediate failures.
+    if (typeof response?.body?.cancel === 'function') await response.body.cancel();
+    if (![502, 503, 504].includes(response?.status)
+      || attempt >= 3 || httpRetryBudget.remaining <= 0) throw error;
+    httpRetryBudget.remaining -= 1;
+    await new Promise(resolve => setTimeout(resolve, httpRetryBudget.delayMs));
+  }
 }
 
 function withCacheBuster(baseUrl, relative, sourceHead, observationNonce) {
@@ -349,6 +368,7 @@ async function verifyPublicImplementationClosure({
   expectedPublicClosure,
   observationNonce,
   fetchImpl,
+  httpRetryBudget,
   knownSourceRepair = null,
 }) {
   const expectedMissingPublicFile = knownSourceRepair?.knownMissingPublicFile ?? null;
@@ -362,10 +382,10 @@ async function verifyPublicImplementationClosure({
   const [contractBytes, bundleBytes] = await Promise.all([
     fetchBytes(fetchImpl, withCacheBuster(baseUrl,
       'js/core/ravscore-model-contract.js', sourceHead, observationNonce),
-    'ravscore-model-contract.js'),
+    'ravscore-model-contract.js', httpRetryBudget),
     fetchBytes(fetchImpl, withCacheBuster(baseUrl,
       'js/core/ravscore-model-bundle.generated.js', sourceHead, observationNonce),
-    'ravscore-model-bundle.generated.js'),
+    'ravscore-model-bundle.generated.js', httpRetryBudget),
   ]);
   if (contractBytes.toString('utf8') !== expectedContractText
     || bundleBytes.toString('utf8') !== expectedBundleText) {
@@ -373,7 +393,7 @@ async function verifyPublicImplementationClosure({
   }
   for (const expectedHtml of expectedPublicClosure.htmlEntrypoints) {
     const htmlBytes = await fetchBytes(fetchImpl,
-      withCacheBuster(baseUrl, expectedHtml.path, sourceHead, observationNonce), expectedHtml.path);
+      withCacheBuster(baseUrl, expectedHtml.path, sourceHead, observationNonce), expectedHtml.path, httpRetryBudget);
     const htmlSource = htmlBytes.toString('utf8');
     if (sha256(normalizedBundleSource(htmlSource)) !== expectedHtml.sourceSha256
       || !same(ravScorePublicEntrypointDescriptor(htmlSource, {
@@ -387,7 +407,7 @@ async function verifyPublicImplementationClosure({
     let bytes;
     try {
       bytes = await fetchBytes(fetchImpl,
-        withCacheBuster(baseUrl, item.path, sourceHead, observationNonce), item.path);
+        withCacheBuster(baseUrl, item.path, sourceHead, observationNonce), item.path, httpRetryBudget);
     } catch (error) {
       const allowed = expectedMissingPublicFile;
       if (!allowed || item.path !== allowed.path || item.sha256 !== allowed.sha256
@@ -507,9 +527,10 @@ function assertPublicDocuments({ manifest, startup, details, coastalParts, zoneR
 }
 
 async function verifyOnce({
+  manifestFileSha256,
   baseUrl,
   sourceHead,
-  expectedManifest,
+  manifest,
   expectedModel,
   expectedBinding,
   expectedContractText,
@@ -517,21 +538,13 @@ async function verifyOnce({
   expectedPublicClosure,
   observationNonce,
   fetchImpl,
+  httpRetryBudget,
   knownSourceRepair = null,
 } = {}) {
-  const manifestBytes = await fetchBytes(fetchImpl,
-    withCacheBuster(baseUrl, 'data/live/manifest.json', sourceHead, observationNonce),
-    'manifest.json');
-  let manifest;
-  try { manifest = JSON.parse(manifestBytes.toString('utf8')); }
-  catch { throw new Error('Deployed operational manifest is not JSON'); }
-  if (!same(manifest, expectedManifest)) {
-    throw new Error('Deployed operational manifest differs from the sealed artifact');
-  }
   const fetched = {};
   for (const relative of PUBLIC_FILES) {
     fetched[relative] = await fetchBytes(fetchImpl,
-      withCacheBuster(baseUrl, relative, sourceHead, observationNonce), relative);
+      withCacheBuster(baseUrl, relative, sourceHead, observationNonce), relative, httpRetryBudget);
   }
   const digestChecks = [
     ['data/live/public-conditions.json', manifest.publicConditionsSha256,
@@ -571,7 +584,7 @@ async function verifyOnce({
       const entry = deliveryEntries[deliveryIndex++];
       const relative = `data/live/${entry.path.replace(/^\.\//, '')}`;
       const bytes = await fetchBytes(fetchImpl,
-        withCacheBuster(baseUrl, relative, sourceHead, observationNonce), relative);
+        withCacheBuster(baseUrl, relative, sourceHead, observationNonce), relative, httpRetryBudget);
       if (bytes.length !== entry.bytes || sha256(bytes) !== entry.sha256) {
         throw new Error(`Deployed public delivery digest mismatch for ${relative}`);
       }
@@ -582,6 +595,24 @@ async function verifyOnce({
     }
   }));
 
+  if (expectedPublicClosure.files.some(item => item.path === 'js/services/forecast-share-projection.js')) {
+    const descriptorBytes = await fetchBytes(fetchImpl, withCacheBuster(baseUrl,
+      'data/live/forecast-share.json', sourceHead, observationNonce), 'forecast-share.json', httpRetryBudget);
+    if (descriptorBytes.length > FORECAST_SHARE_INDEX_MAX_BYTES) throw new Error('Deployed forecast sharing descriptor is too large');
+    const descriptor = assertForecastShareDescriptor(JSON.parse(descriptorBytes.toString('utf8')), manifest, manifestFileSha256);
+    const payloads = [];
+    for (const entry of descriptor.zones) {
+      const relative = 'data/live/' + entry.path.slice(2);
+      const bytes = await fetchBytes(fetchImpl, withCacheBuster(baseUrl, relative, sourceHead, observationNonce), relative, httpRetryBudget);
+      if (bytes.length !== entry.bytes || sha256(bytes) !== entry.sha256) {
+        throw new Error('Deployed forecast sharing projection digest mismatch');
+      }
+      payloads.push(JSON.parse(bytes.toString('utf8')));
+    }
+    const projection = assembleForecastShareProjection(payloads, descriptor, manifest);
+    assertForecastShareProjectionParity({projection,descriptor,manifest,
+      details: parsed['data/live/public-condition-details.json'], registry: parsed['data/zones.geojson']});
+  }
   const closureVerification = await verifyPublicImplementationClosure({
     baseUrl,
     sourceHead,
@@ -592,6 +623,7 @@ async function verifyOnce({
     expectedPublicClosure,
     observationNonce,
     fetchImpl,
+    httpRetryBudget,
     knownSourceRepair,
   });
   const implementationClosureSha256 = closureVerification.implementationClosureSha256;
@@ -648,9 +680,10 @@ export async function verifyRavScoreOperationalPagesDeployment({
   expectedPublicClosure = null,
   observationNonce = null,
   fetchImpl = globalThis.fetch,
-  // Pages may report a successful deploy before every edge serves the new
-  // manifest. Keep the exact sealed-artifact check, but allow propagation.
-  attempts = 36,
+  // Pages may serve its previous manifest for up to ten minutes after deploy.
+  // Only that exact-manifest wait polls; the complete package is checked once.
+  // Refused transient HTTP requests share at most three extra attempts total.
+  attempts = 121,
   retryDelayMs = 5_000,
   knownSourceRepairId = null,
 } = {}) {
@@ -664,7 +697,10 @@ export async function verifyRavScoreOperationalPagesDeployment({
     || typeof fetchImpl !== 'function'
     || !Number.isSafeInteger(attempts)
     || attempts < 1
-    || attempts > 36) {
+    || attempts > 121
+    || !Number.isSafeInteger(retryDelayMs)
+    || retryDelayMs < 0
+    || retryDelayMs > 5_000) {
     throw new Error('Operational Pages verification inputs are incompatible');
   }
   assertExactPublicRavScoreModelBindingShape(sealedBinding,
@@ -684,28 +720,40 @@ export async function verifyRavScoreOperationalPagesDeployment({
       !== knownSourceRepair.sourcePublicClosureSha256)) {
     throw new Error('Operational Pages source repair does not match its exact pinned source');
   }
-  let lastError;
+  const httpRetryBudget = { remaining: 3, delayMs: retryDelayMs };
+  let manifest, matchedManifestBytes, matchedObservationNonce;
   for (let attempt = 1; attempt <= attempts; attempt += 1) {
-    try {
-      return await verifyOnce({
-        baseUrl,
-        sourceHead,
-        expectedManifest,
-        expectedModel,
-        expectedBinding: sealedBinding,
-        expectedContractText,
-        expectedBundleText,
-        expectedPublicClosure: sealedPublicClosure,
-        observationNonce: `${observationNonce}-${attempt}`,
-        fetchImpl,
-        knownSourceRepair,
-      });
-    } catch (error) {
-      lastError = error;
-      if (attempt < attempts) await new Promise(resolve => setTimeout(resolve, retryDelayMs));
+    const manifestObservationNonce = `${observationNonce}-${attempt}`;
+    const manifestBytes = await fetchBytes(fetchImpl,
+      withCacheBuster(baseUrl, 'data/live/manifest.json', sourceHead, manifestObservationNonce),
+      'manifest.json', httpRetryBudget);
+    try { manifest = JSON.parse(manifestBytes.toString('utf8')); }
+    catch { throw new Error('Deployed operational manifest is not JSON'); }
+    if (same(manifest, expectedManifest)) {
+      matchedManifestBytes = manifestBytes;
+      matchedObservationNonce = manifestObservationNonce;
+      break;
     }
+    if (attempt === attempts) {
+      throw new Error('Deployed operational manifest differs from the sealed artifact');
+    }
+    await new Promise(resolve => setTimeout(resolve, retryDelayMs));
   }
-  throw lastError;
+  return verifyOnce({
+    manifestFileSha256: sha256(matchedManifestBytes),
+    baseUrl,
+    sourceHead,
+    manifest,
+    expectedModel,
+    expectedBinding: sealedBinding,
+    expectedContractText,
+    expectedBundleText,
+    expectedPublicClosure: sealedPublicClosure,
+    observationNonce: matchedObservationNonce,
+    fetchImpl,
+    httpRetryBudget,
+    knownSourceRepair,
+  });
 }
 
 function argumentValue(argv, name) {

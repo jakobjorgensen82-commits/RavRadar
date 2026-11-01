@@ -368,31 +368,11 @@ async function atomicWriteJson(file, value) {
   }
 }
 
-export async function auditCandidateGRollbackPublicRuntime({
-  candidateFull,
-  plan,
-  startup,
-  startupText,
-  details,
-  detailsText,
-  manifest,
-  manifestText,
-  coastalParts,
-  coastalPartsText,
-  zoneRegistry,
-  zoneRegistryText,
-  stageMarker,
-  expectedSourceHead,
-  expectedDatasetId,
-  expectedZoneCount = EXPECTED_ZONES,
-  expectedPartCount = EXPECTED_PARTS,
-} = {}) {
-  assertSealedStageInput(candidateFull, plan, {
-    expectedSourceHead,
-    expectedDatasetId,
-    expectedZoneCount,
-    expectedPartCount,
-  });
+// Refusal only: metadata cannot qualify or admit a candidate or public artifact.
+export function assertCandidateGRollbackPublicStageMetadata({ plan, stageMarker, manifest } = {}) {
+  // Refuse independent marker/profile shapes before the national candidate
+  // hash/projection. These refusals never qualify or admit the candidate.
+  if (!exactKeys(plan, PLAN_FIELDS)) throw new Error('Candidate G sealed plan field set is incompatible');
   if (RAVSCORE_CALIBRATION_ELIGIBLE !== false) {
     throw new Error('Candidate G public rollback must remain calibration-ineligible');
   }
@@ -434,6 +414,37 @@ export async function auditCandidateGRollbackPublicRuntime({
     || new Set(stageMarker.installed.map(item => item.path)).size !== expectedInstalled.size) {
     throw new Error('Candidate G isolated stage installed-file seal is incompatible');
   }
+  assertScoreProfile(manifest?.ravScoreProfile, expectedBinding,
+    'Candidate G manifest score profile');
+  return expectedBinding;
+}
+
+export async function auditCandidateGRollbackPublicRuntime({
+  candidateFull,
+  plan,
+  startup,
+  startupText,
+  details,
+  detailsText,
+  manifest,
+  manifestText,
+  coastalParts,
+  coastalPartsText,
+  zoneRegistry,
+  zoneRegistryText,
+  stageMarker,
+  expectedSourceHead,
+  expectedDatasetId,
+  expectedZoneCount = EXPECTED_ZONES,
+  expectedPartCount = EXPECTED_PARTS,
+} = {}) {
+  const expectedBinding = assertCandidateGRollbackPublicStageMetadata({ plan, stageMarker, manifest });
+  assertSealedStageInput(candidateFull, plan, {
+    expectedSourceHead,
+    expectedDatasetId,
+    expectedZoneCount,
+    expectedPartCount,
+  });
   const installedByPath = new Map(stageMarker.installed.map(item => [item.path, item]));
   const rollbackContractText = await fs.readFile(
     fileURLToPath(new URL('./rollback-assets/ravscore-model-contract.js', import.meta.url)), 'utf8');
@@ -543,8 +554,6 @@ export async function auditCandidateGRollbackPublicRuntime({
     },
     label: 'Candidate G public manifest runtime',
   });
-  assertScoreProfile(manifest.ravScoreProfile, expectedBinding,
-    'Candidate G manifest score profile');
   if (manifest.ravScoreAvailability?.allZonesActive !== true
     || manifest.ravScoreAvailability?.activeZoneCount !== expectedZoneCount
     || manifest.ravScoreAvailability?.totalZoneCount !== expectedZoneCount
@@ -660,16 +669,22 @@ async function readJsonWithText(file, label) {
 
 async function main() {
   const options = parseArguments(process.argv.slice(2));
-  const [candidateFullFile, planFile, startupFile, detailsFile, manifestFile,
-    coastalPartsFile, zoneRegistryFile, markerFile] = await Promise.all([
-    readJsonWithText(options.input, 'Candidate G staged private input'),
+  const [planFile, manifestFile, markerFile] = await Promise.all([
     readJsonWithText(options.plan, 'Candidate G sealed plan'),
+    readJsonWithText(options.manifest, 'Candidate G public manifest'),
+    readJsonWithText(options.stageMarker, 'Candidate G isolated stage marker'),
+  ]);
+  // Refuse independently invalid metadata before opening national payloads.
+  // The complete audit below repeats the same guards and still proves all seals.
+  assertCandidateGRollbackPublicStageMetadata({
+    plan: planFile.value, manifest: manifestFile.value, stageMarker: markerFile.value,
+  });
+  const [candidateFullFile, startupFile, detailsFile, coastalPartsFile, zoneRegistryFile] = await Promise.all([
+    readJsonWithText(options.input, 'Candidate G staged private input'),
     readJsonWithText(options.startup, 'Candidate G public startup'),
     readJsonWithText(options.details, 'Candidate G public details'),
-    readJsonWithText(options.manifest, 'Candidate G public manifest'),
     readJsonWithText(options.coastalParts, 'Candidate G public coastal parts'),
     readJsonWithText(options.zoneRegistry, 'Candidate G public zone registry'),
-    readJsonWithText(options.stageMarker, 'Candidate G isolated stage marker'),
   ]);
   const audit = await auditCandidateGRollbackPublicRuntime({
     candidateFull: candidateFullFile.value,

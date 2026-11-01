@@ -5,9 +5,11 @@ are used; only ecCodes/file transport is replaced with in-memory messages.
 """
 from __future__ import annotations
 
+import ast
 import copy
 import importlib.util
 import io
+import os
 import sys
 import tempfile
 import types
@@ -550,16 +552,171 @@ class WaveSemanticsTests(unittest.TestCase):
 
 
 class SchedulingContinuityTests(unittest.TestCase):
+    def test_ordinary_lead_can_pass_eight_only_with_actual_fair_time_remaining(self):
+        main = ast.parse(Path(producer.__file__).read_text("utf-8"))
+        reserve_branch = next(node for node in ast.walk(main)
+            if isinstance(node, ast.If) and len(node.body) == 1
+            and isinstance(node.body[0], ast.Assign)
+            and any(isinstance(target, ast.Name)
+                    and target.id == "reserve_for_pending_critical"
+                    for target in node.body[0].targets)
+            and any(isinstance(call, ast.Call) and isinstance(call.func, ast.Name)
+                    and call.func.id == "fair_pending_critical_runtime_reserve"
+                    for call in ast.walk(node.body[0].value)))
+        reserve_code = compile(ast.Module(body=[reserve_branch], type_ignores=[]),
+            producer.__file__, "exec")
+        collections = ["dkss_lf", "dkss_idw", "dkss_nsbs"]
+        remaining = [3193.0]
+        current_reserve, _ = producer.strict_current_runtime_reserve(collections, remaining[0])
+        wave_reserve, _ = producer.wam_runtime_reserve(
+            ["wam_dw", "wam_nsb"], remaining[0],
+            lead_reserve_seconds=sum(current_reserve.values()))
+        pending_current, pending_wam = collections[1:], ["wam_dw", "wam_nsb"]
+        minimum = sum(current_reserve[name] for name in pending_current) + sum(wave_reserve.values()) + 120.0
+        scope = dict(collection="dkss_lf", strict_current_lead_collection="dkss_lf",
+            collection_is_critical_wam=False, collection_is_critical_current=True,
+            cold_strict_current_lead_catch_up=False,
+            pending_critical_wam=pending_wam, pending_critical_current=pending_current,
+            critical_wam_reserve=wave_reserve, strict_current_reserve=current_reserve,
+            reserve_for_pending_critical=minimum, runtime_remaining=lambda: remaining[0],
+            fair_pending_critical_runtime_reserve=producer.fair_pending_critical_runtime_reserve)
+        exec(reserve_code, scope)
+        protected = max(minimum, producer.fair_pending_critical_runtime_reserve(
+            pending_wam, pending_current, remaining[0], wave_reserve, current_reserve))
+        self.assertEqual(scope["reserve_for_pending_critical"], protected,
+            "The ordinary FIRST marine family must protect the same fair pending share.")
+        for lead in collections:
+            ordinary_scope = {**scope, "collection": lead,
+                "strict_current_lead_collection": lead,
+                "pending_critical_current": [name for name in collections if name != lead],
+                "reserve_for_pending_critical": minimum}
+            exec(reserve_code, ordinary_scope)
+            self.assertEqual(ordinary_scope["reserve_for_pending_critical"], protected)
+            cold_scope = {**ordinary_scope, "cold_strict_current_lead_catch_up": True,
+                "reserve_for_pending_critical": minimum}
+            exec(reserve_code, cold_scope)
+            self.assertEqual(cold_scope["reserve_for_pending_critical"], minimum,
+                "The existing authenticated one-off keeps its original reservation policy.")
+        turn = next(node for node in ast.walk(main) if isinstance(node, ast.Assign)
+            and any(isinstance(target, ast.Name) and target.id == "strict_current_lead_turn_attempt_limit"
+                    for target in node.targets))
+        legacy_limit = producer.bounded_strict_current_lead_attempt_limit(remaining[0], collections,
+            sum(wave_reserve.values()), atmosphere_horizon_needed=True)
+        limit = eval(compile(ast.Expression(turn.value), producer.__file__, "eval"),
+            {"MAX_ASSETS_PER_COLLECTION": producer.MAX_ASSETS_PER_COLLECTION},
+            {"collection_is_critical_current": True, "strict_current_lead_attempt_limit": legacy_limit,
+             "cold_strict_current_lead_catch_up": False})
+        self.assertTrue(producer.strict_current_lead_attempt_available("dkss_lf", "dkss_lf", 8, limit),
+            "A ninth file must not be rejected solely because eight earlier files were attempted.")
+        controller = producer.ProgressCheckpointController({}, set(), {"bytes": 0})
+        controller.observe_asset_duration(12.0, cost_family="dkss_lf")
+        with patch.object(producer, "runtime_remaining", side_effect=lambda: remaining[0]):
+            remaining[0] -= 8 * 12.0
+            self.assertTrue(controller.can_start_asset(reserve_seconds=protected, cost_family="dkss_lf"))
+            remaining[0] = protected
+            self.assertFalse(controller.can_start_asset(reserve_seconds=protected, cost_family="dkss_lf"),
+                "Removing the arbitrary count cap must not consume the other families' time.")
+        self.assertEqual(pending_current, collections[1:])
+        self.assertEqual(pending_wam, ["wam_dw", "wam_nsb"])
+
     def test_idw_lead_can_catch_up_multiple_hours_without_stealing_reserves(self):
         limit = producer.bounded_strict_current_lead_attempt_limit
         collections = ["dkss_idw", "dkss_nsbs", "dkss_lf"]
         self.assertGreater(limit(1379.0, collections, 240.0), 1)
         self.assertLessEqual(limit(1379.0, collections, 240.0), 8)
         self.assertEqual(limit(300.0, collections, 240.0), 1)
+        self.assertEqual(limit(300.0, [], 240.0), 0)
         self.assertLessEqual(
             limit(1379.0, collections, 240.0, atmosphere_horizon_needed=True),
             limit(1379.0, collections, 240.0),
         )
+
+
+    def test_cold_child_policy_is_not_an_env_only_or_ordinary48h_grant(self):
+        selector = producer.cold_strict_current_lead_catch_up_requested
+        demand = {
+            "partId": "TEST", "zoneId": "ZONE", "parentZoneId": "ZONE",
+            "entityId": ZONE["id"], "samplingPoint": [ZONE["lon"], ZONE["lat"]],
+            "samplingContextKey": "sha256:" + "a" * 64,
+            "initialSource": "COLD_START", "initialStateAt": None, "initialStateSha256": None,
+            "startAt": RUN, "endAt": RUN,
+        }
+        target_only = producer.current_history_demands([demand], [ZONE], RUN,
+            archive_isolated_cold_start=True)
+        ordinary48 = producer.current_history_demands([{**demand,
+            "startAt": producer.canonical_time(datetime.fromisoformat(RUN.replace("Z", "+00:00"))
+                - timedelta(hours=48))}], [ZONE], RUN)
+        key = "RAVRADAR_DMI_STRICT_CURRENT_LEAD_POLICY"
+        with patch.dict(os.environ, {}, clear=True), patch.object(producer, "CACHE_ONLY", False):
+            self.assertFalse(selector(target_only, RUN))
+            os.environ[key] = "true"
+            self.assertFalse(selector(target_only, RUN))
+            os.environ[key] = "authenticated-current-family-cold-catch-up-v1"
+            self.assertFalse(selector({}, RUN))
+            self.assertFalse(selector(ordinary48, RUN))
+            self.assertFalse(selector(target_only, utc_hour(1)))
+            self.assertTrue(selector(target_only, RUN))
+            with patch.object(producer, "CACHE_ONLY", True):
+                self.assertFalse(selector(target_only, RUN))
+
+    def test_actual_cold_cap_guard_keeps_shared_asset_bound_and_per_asset_critical_reserves(self):
+        tree = ast.parse(Path(producer.__file__).read_text("utf-8"))
+        main = next(node for node in tree.body if isinstance(node, ast.FunctionDef) and node.name == "main")
+        def assignment(name):
+            return next(node for node in ast.walk(main) if isinstance(node, ast.Assign)
+                and any(isinstance(target, ast.Name) and target.id == name for target in node.targets))
+        demand_read = assignment("current_history_requests")
+        policy = assignment("cold_strict_current_lead_catch_up")
+        self.assertEqual(demand_read.value.func.id, "read_current_history_demands")
+        self.assertLess(demand_read.lineno, policy.lineno,
+            "The selector must follow the actual normal archive/B/S/registry demand reader.")
+        turn = assignment("strict_current_lead_turn_attempt_limit")
+        effective = compile(ast.Expression(turn.value), producer.__file__, "eval")
+        ordinary = producer.bounded_strict_current_lead_attempt_limit(100000.0,
+            ["dkss_idw", "dkss_nsbs", "dkss_lf"], 240.0)
+        self.assertEqual(ordinary, 8)
+        def limit(selected, critical):
+            return eval(effective, {"MAX_ASSETS_PER_COLLECTION":producer.MAX_ASSETS_PER_COLLECTION},
+                {"cold_strict_current_lead_catch_up":selected,
+                 "collection_is_critical_current":critical,
+                 "strict_current_lead_attempt_limit":ordinary})
+        self.assertEqual(limit(False, True), producer.MAX_ASSETS_PER_COLLECTION)
+        self.assertEqual(limit(True, False), ordinary)
+        self.assertEqual(limit(True, True), producer.MAX_ASSETS_PER_COLLECTION)
+        self.assertGreater(limit(True, True), 8)
+        self.assertFalse(producer.strict_current_lead_attempt_available("dkss_idw","dkss_idw",8,ordinary))
+        self.assertTrue(producer.strict_current_lead_attempt_available("dkss_idw","dkss_idw",8,limit(True,True)))
+        self.assertFalse(producer.strict_current_lead_attempt_available("dkss_idw","dkss_idw",
+            producer.MAX_ASSETS_PER_COLLECTION,limit(True,True)))
+        cap = next(node for node in ast.walk(main) if isinstance(node, ast.If)
+            and any(isinstance(row, ast.Assign)
+                and any(isinstance(target, ast.Name) and target.id == "budget_stop_code" for target in row.targets)
+                and isinstance(row.value, ast.Constant) and row.value.value == "STRICT_CURRENT_LEAD_ATTEMPT_LIMIT"
+                for row in node.body))
+        gate = compile(ast.Expression(cap.test), producer.__file__, "eval")
+        state = {"collection":"dkss_idw", "strict_current_lead_collection":"dkss_idw",
+            "strict_current_lead_attempts":8,"strict_current_lead_turn_attempt_limit":limit(True,True),
+            "strict_current_lead_attempt_available":producer.strict_current_lead_attempt_available}
+        self.assertFalse(eval(gate,state))
+        state["strict_current_lead_turn_attempt_limit"] = ordinary
+        self.assertTrue(eval(gate,state))
+        state["strict_current_lead_attempts"] = producer.MAX_ASSETS_PER_COLLECTION
+        self.assertTrue(eval(gate,state))
+        siblings = next(value for node in ast.walk(main) for _key,value in ast.iter_fields(node)
+            if isinstance(value,list) and cap in value)
+        reserve = siblings[siblings.index(cap)+1]
+        self.assertIsInstance(reserve, ast.If)
+        self.assertIsInstance(reserve.test, ast.UnaryOp)
+        self.assertEqual(reserve.test.operand.func.attr,"can_start_asset")
+        self.assertEqual([keyword.arg for keyword in reserve.test.operand.keywords],["reserve_seconds","cost_family"])
+        self.assertEqual(reserve.test.operand.keywords[0].value.id,"reserve_for_pending_critical")
+        controller = producer.ProgressCheckpointController({},set(),{"bytes":0})
+        reserve_gate = compile(ast.Expression(reserve.test),producer.__file__,"eval")
+        scope = {"checkpoint_controller":controller,"reserve_for_pending_critical":300.0,"collection":"dkss_idw"}
+        with patch.object(producer,"runtime_remaining",return_value=395.0):
+            self.assertTrue(eval(reserve_gate,scope),"The critical reserve still stops the next cold asset.")
+        with patch.object(producer,"runtime_remaining",return_value=396.0):
+            self.assertFalse(eval(reserve_gate,scope))
 
     def test_h0_catalog_then_real_horizon_query_selects_future_native_assets(self):
         collection = "harmonie_dini_sf"

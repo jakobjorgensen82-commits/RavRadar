@@ -4,6 +4,8 @@ import crypto from 'node:crypto';
 import fs from 'node:fs';
 import {SOURCE_PRODUCER_WORKFLOW_SHA256,inverseSourceProducerWorkflow}
   from './source-producer-workflow-review.mjs';
+import {inverseTerminalRepair4145Workflow} from './completed-private-runtime-workflow-review.mjs';
+import {NATIVE_ORIGINAL_CONTINUITY_WORKFLOW_SHA256,CURRENT_INSTALLED_CODE_ONLY_WORKFLOW_SHA256,inverseNativeOriginalContinuityWorkflow} from './native-original-continuity-workflow-review.mjs';
 import {inverseArchivedProductionGate} from './archived-production-gate-review.mjs';
 import {ACCOUNT_STATISTICS_ASSISTANT_WORKFLOW_SHA256,ACCOUNT_STATISTICS_ASSISTANT_OFF_WORKFLOW_SHA256,ACCOUNT_STATISTICS_ASSISTANT_STORAGE_WORKFLOW_SHA256,inverseAccountStatisticsAssistantWorkflow} from './account-statistics-assistant-workflow-review.mjs';
 const sha=value=>crypto.createHash('sha256').update(value).digest('hex');
@@ -16,6 +18,8 @@ assert.equal(review.role,'code-only-repair');assert.equal(review.edits.length,44
 export function inverseArchivedWeatherRestartWorkflow(source){
   assert.equal(arguments.length,1);assert.equal(typeof source,'string');
   if(sha(source)===SOURCE_PRODUCER_WORKFLOW_SHA256)source=inverseSourceProducerWorkflow(source);
+  source=inverseTerminalRepair4145Workflow(source,'repair');
+  if([NATIVE_ORIGINAL_CONTINUITY_WORKFLOW_SHA256,CURRENT_INSTALLED_CODE_ONLY_WORKFLOW_SHA256].includes(sha(source)))source=inverseNativeOriginalContinuityWorkflow(source);
   if([ACCOUNT_STATISTICS_ASSISTANT_WORKFLOW_SHA256,ACCOUNT_STATISTICS_ASSISTANT_OFF_WORKFLOW_SHA256,ACCOUNT_STATISTICS_ASSISTANT_STORAGE_WORKFLOW_SHA256].includes(sha(source)))source=inverseAccountStatisticsAssistantWorkflow(source);
   if(sha(source)!==review.predecessorSha256)source=inverseArchivedProductionGate(source);
   const digest=sha(source);

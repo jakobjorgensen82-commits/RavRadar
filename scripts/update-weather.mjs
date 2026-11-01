@@ -243,7 +243,7 @@ const WEATHER_CACHE_ONLY = process.env.RAVRADAR_WEATHER_CACHE_ONLY === 'true';
 const COMPONENT_COPERNICUS_BUDGET_MS = WEATHER_CACHE_ONLY ? 0
   : Number(process.env.RAVRADAR_COMPONENT_COPERNICUS_BUDGET_MS ?? 90_000);
 const COMPONENT_OPEN_METEO_BUDGET_MS = WEATHER_CACHE_ONLY ? 0
-  : Number(process.env.RAVRADAR_COMPONENT_OPEN_METEO_BUDGET_MS ?? 90_000);
+  : Number(process.env.RAVRADAR_COMPONENT_OPEN_METEO_BUDGET_MS ?? 600_000);
 const WEATHER_CONCURRENCY = Math.max(1, Number(process.env.WEATHER_CONCURRENCY ?? 6));
 const PROVIDER_FAILURE_THRESHOLD = Math.max(1, Number(process.env.WEATHER_PROVIDER_FAILURE_THRESHOLD ?? 4));
 const PROVIDER_COOLDOWN_MS = Number(process.env.WEATHER_PROVIDER_COOLDOWN_MS ?? 10 * 60 * 1000);
@@ -2268,11 +2268,12 @@ function scoreCoastalPartsRuntime(
           targetReferenceAt: generatedAt,
           });
         previousCandidateGContinuation = candidateGContinuationSelection.state;
+        // A validated previous companion may lose READY on a newer measured
+        // gap. Permit its existing local unavailable projection prospectively;
+        // this does not make the previous or newly derived state READY.
         candidateGRollbackMeasuredWarmupContinuation =
-          (candidateGContinuationSelection.source === 'PRIVATE_RUNTIME'
-            && previousCandidateGRollbackRuntime?.status === CANDIDATE_G_MEASURED_WARMUP_STATUS)
-          || (candidateGContinuationSelection.source === 'CHECKPOINT_COMPANION'
-            && previousCandidateGContinuation?.transportMemoryReady === false);
+          ['PRIVATE_RUNTIME', 'CHECKPOINT_COMPANION', 'POINT_ACTIVATION_COMPANION']
+            .includes(candidateGContinuationSelection.source);
       }
       const feature = {
         type: 'Feature', geometry: { type: 'Point', coordinates: part.waterPoint },
@@ -2418,7 +2419,7 @@ function scoreCoastalPartsRuntime(
       const zone = localPartRuntimeProperties(parent.properties, part, part.partId);
       // This opaque once-only restart begins active memory at target, not
       // at a reconstructed pre-target window. Original cache bytes survive.
-      const replayStartAt = archivedRestartInputs !== null ? generatedAt
+      const replayStartAt = coldInputs !== null ? generatedAt
         : ravScoreOwnerCurrentHistoryStartAt(
           { ...part, zoneId }, initialSelection.state,
           ravScoreRecoverySourceStartAt(initialSelection.state, generatedAt),
@@ -2504,7 +2505,7 @@ function scoreCoastalPartsRuntime(
         );
         // The original/proof context stays whole. Only this first active
         // input view omits earlier rows; ordinary followers never use it.
-        const progressiveInputRecord = archivedRestartInputs === null ? progressiveRecord
+        const progressiveInputRecord = coldInputs === null ? progressiveRecord
           : { ...progressiveRecord, hourly: progressiveRecord.hourly
             .filter(hour => Date.parse(hour.time) >= Date.parse(generatedAt)) };
         progressiveRecoverySource = {
@@ -4033,6 +4034,15 @@ if (currentFamilyColdStart !== null && path.resolve(DMI_BULK_CACHE_PATH)
   !== currentFamilyColdStartAcquisitionChoices(currentFamilyColdStart).outputPath) {
   throw new Error('CURRENT_FAMILY_COLD_START_ACQUISITION_OUTPUT_PATH');
 }
+// The authenticated cold capability isolates only OLD numerical current
+// samples. Scalar/storm history and the genuine B/S baseline stay unchanged.
+if (currentFamilyColdStart !== null) {
+  for (const zone of Object.values(previous.zones ?? {})) {
+    for (const key of ['samples24h', 'samples72h']) {
+      if (Array.isArray(zone?.[key])) zone[key] = withoutHistoricCurrent(zone[key]);
+    }
+  }
+}
 const stateEpochView = process.env.RAVRADAR_WEATHER_STATE_EPOCH_BOOTSTRAP === 'true'
   ? await (await import('./weather-state-epoch.mjs')).loadInstalledWeatherStateEpochInputView({
     targetReferenceAt: generatedAt, registry: coastalPartsContract,
@@ -4745,6 +4755,8 @@ if (coastalPartScoreBuild?.candidateGRollbackRuntime) {
 }
 if (weatherComponents) {
   output.weatherComponentInputs = await persistWeatherComponentSelections(weatherComponents);
+  // The selected-input snapshot is durable; retire only this finished owner.
+  weatherComponents = null;
 }
 const currentProvenanceEnrichment = enrichCurrentProvenanceDocuments({
   conditions: output,
@@ -4767,6 +4779,9 @@ if (establishedNativeCurrentOrigin !== null) {
       partResults: coastalPartScoreBuild?.establishedNativeCurrentPartResults,
     });
 }
+// Retained output projections and the completed attestation no longer need
+// the full per-part production/recovery working owner.
+coastalPartScoreBuild = null;
 reportWeatherBuildStage('current-origin-ready');
 // Byg først de offentlige, begrænsede timefiler fra den komplette beregning i
 // hukommelsen. Gem derefter en komprimeret og hashbundet genstartspakke og fjern

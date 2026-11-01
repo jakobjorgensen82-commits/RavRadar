@@ -1,12 +1,26 @@
 // Test-only source inverse. No native B/S fixture, providers or production calls.
 import assert from 'node:assert/strict';
+import { inverseFullGitPinnedSourcePreparationWorkflow, fullGitPinnedSourcePreparationWorkflowReview }
+  from './lib/completed-private-runtime-workflow-review.mjs';
 import crypto from 'node:crypto';
 import fs from 'node:fs/promises';
 import test from 'node:test';
 import { inverseRelease585WorkflowUserAgents, ordinaryStageWiringReview, inverseOrdinaryCompletedStageWorkflowWiring, assertEarlyCompletedRuntimeStageOrder, inverseEarlyCompletedRuntimeStage, inverseCompletedRuntimeWorkflow, inverseOrdinaryFullHistoryCheckout, inversePairedPrivateRuntimePublication, inverseOriginWeatherReadCredentials, assertCurrentHistoryRawRetentionOrder, inverseCurrentHistoryRawRetentionOrder, inverseCurrentFamilyColdStartWorkflow, inverseRelease584WorkflowUserAgents } from './lib/completed-private-runtime-workflow-review.mjs';
 import { runInNewContext } from 'node:vm';
+import { inverseNativeOriginalSchemaSelectorWorkflow, nativeOriginalSchemaSelectorWorkflowReview,
+  inverseCurrentFamilyColdBudgetWorkflow, currentFamilyColdBudgetWorkflowReview,
+  assistant587ColdBudgetCombinedWorkflowReview, inverseAssistant587ColdBudgetCombinedTo707Workflow,
+  inverseAssistant587ColdBudgetCombinedTo587Workflow }
+  from './lib/completed-private-runtime-workflow-review.mjs';
+import { inverseCurrentFamilyColdCheckpointWorkflow, currentFamilyColdCheckpointWorkflowReview,
+  assistant587ColdCheckpointCombinedWorkflowReview,
+  inverseAssistant587ColdCheckpointCombinedToF83Workflow, inverseAssistant587ColdCheckpointCombinedToD5Workflow }
+  from './lib/completed-private-runtime-workflow-review.mjs';
+import { inverseRelease594WorkflowUserAgents, release594WorkflowUserAgentReview, inverseRelease593WorkflowUserAgents, release593WorkflowUserAgentReview, inverseRuntimeAuditExecutionWorkflow, runtimeAuditExecutionWorkflowReview, runtimeAuditExecution592WorkflowReview, inverseRelease592WorkflowUserAgents, release592WorkflowUserAgentReview, inverseWindTailCapacityWorkflow, windTailCapacityWorkflowReview, inverseRelease591WorkflowUserAgents, inverseRelease590WorkflowUserAgents, inverseRelease588WorkflowUserAgents, inverseLatestColdProgressWorkflow, latestColdProgressWorkflowReview,
+  assistant587LatestColdCombinedWorkflowReview,
+  inverseAssistant587LatestColdCombinedTo664aWorkflow, inverseAssistant587LatestColdCombinedTo2bWorkflow }
+  from './lib/completed-private-runtime-workflow-review.mjs';
 import { spawnSync } from 'node:child_process';
-import { inverseSourceNormalWorkflow } from './lib/source-normal-workflow-review.mjs';
 const sha = source => crypto.createHash('sha256').update(source).digest('hex');
 const read = async relative => {
   const source = (await fs.readFile(new URL(relative, import.meta.url), 'utf8')).replaceAll('\r\n', '\n');
@@ -623,7 +637,19 @@ test('actual optional wiring refuses every partial hunk, wrong role and changed 
 });
 
 test('current585 release inverse keeps every genuine584 workflow byte and refuses partial UA or unrelated drift', async () => {
-  const source = inverseSourceNormalWorkflow((await fs.readFile(new URL('../.github/workflows/reusable-weather-build.yml', import.meta.url), 'utf8')).replaceAll('\r\n', '\n'), 'build');
+  const current586 = inverseNativeOriginalSchemaSelectorWorkflow((await fs.readFile(new URL('../.github/workflows/reusable-weather-build.yml', import.meta.url), 'utf8')).replaceAll('\r\n', '\n'), 'build');
+  assert.equal(sha(current586), '8223891e25cfb7fbcf57a536bcc55a1cbf59ed676f02172588192065ae4eccc0');
+  assert.equal(current586.split('RavRadar/4.0.586').length, 6, 'Exactly five genuine current586 User-Agent fields');
+  assertEarlyCompletedRuntimeStageOrder(current586);
+  assert.equal(inverseRelease585WorkflowUserAgents(current586, 'once'), current586);
+  for (const changed of [current586.replace('RavRadar/4.0.586', 'RavRadar/4.0.585'),
+    current586.replace('RavRadar/4.0.586', 'RavRadar/4.0.587'), current586 + '\n# UNREVIEWED\n']) {
+    assert.equal(inverseRelease585WorkflowUserAgents(changed, 'build'), changed);
+    assert.throws(() => assertEarlyCompletedRuntimeStageOrder(changed));
+  }
+  // Only the WHOLE qualified586 workflow projects to its genuine585
+  // predecessor; every original585 assertion/mutation below is unchanged.
+  const source = current586.replaceAll('RavRadar/4.0.586', 'RavRadar/4.0.585');
   assert.equal(sha(source), '2ee56b8ae3546f8ac3ce97b45aaedbfe7eb67fac0960961f164cecca70c0970c');
   const previous = inverseRelease585WorkflowUserAgents(source, 'build');
   assert.equal(sha(previous), 'b509a5131c64f9df9a431fdf9f99b082fb14c88de8bf9c3ad3e33b8ddc77de57');
@@ -634,4 +660,970 @@ test('current585 release inverse keeps every genuine584 workflow byte and refuse
     assert.equal(inverseRelease585WorkflowUserAgents(changed, 'build'), changed);
     assert.throws(() => assertEarlyCompletedRuntimeStageOrder(changed));
   }
+});
+
+
+test('native original schema selector: actual installed schema1 alone selects ordinary preparation; all old routes stay old',async()=>{
+  // Remove only the exact combined parent layers before the unchanged586 oracle.
+  const actual=inverseAssistant587ColdCheckpointCombinedToF83Workflow(inverseAssistant587LatestColdCombinedTo664aWorkflow((await fs.readFile(new URL('../.github/workflows/reusable-weather-build.yml',import.meta.url),'utf8')).replaceAll('\r\n','\n'),'build'),'build');
+  const source=inverseCurrentFamilyColdBudgetWorkflow(inverseAssistant587CompletedWorkflow(
+    inverseAssistant587ColdBudgetCombinedTo707Workflow(actual,'build'),'build'),'build');
+  const donor=coldStep(source,'Classify one-time DMI PART continuity donor');
+  const plan=coldStep(source,'Plan bounded current history from the actual selected continuation');
+  const review=nativeOriginalSchemaSelectorWorkflowReview;
+  assert.equal(Buffer.byteLength(source),review.after.bytes);assert.equal(sha(source),review.after.sha256);
+  const previous=inverseNativeOriginalSchemaSelectorWorkflow(source,'build');
+  assert.equal(Buffer.byteLength(previous),review.before.bytes);assert.equal(sha(previous),review.before.sha256);
+  assert.equal(inverseCompletedRuntimeWorkflow(source,'build'),inverseCompletedRuntimeWorkflow(previous,'build'));
+  assert.equal(inverseNativeOriginalSchemaSelectorWorkflow(source,'once'),source);
+  assert(source.indexOf('        id: private-runtime-install\n')<source.indexOf('        id: dmi-part-continuity-donor\n'));
+  assert(source.indexOf('        id: dmi-part-continuity-donor\n')<source.indexOf('        id: current-history-demand\n'));
+  assert(donor.includes("steps.private-runtime-install.outcome == 'success'"));
+  assert(donor.includes("const store = await inspectDmiForecastFile('data/live/dmi-forecast-cache.json');"));
+  assert.equal(source.split('await inspectDmiForecastFile(').length,2,'Reuse the existing indexed read, not another full input route');
+  const start=donor.indexOf('          const continuitySchema = '),end=donor.indexOf('          if (store.hasPartContinuity) {',start);
+  assert(start>=0&&end>start);
+  const body=donor.slice(start,end).replace(/^          /gm,'');
+  const classify=store=>{
+    const writes=[];
+    runInNewContext(body,{store,process:{env:{GITHUB_OUTPUT:'SYNTHETIC_OWN_OUTPUT'}},
+      fs:{appendFileSync(file,text){assert.equal(file,'SYNTHETIC_OWN_OUTPUT');writes.push(text);}}});
+    assert.equal(writes.length,1);return writes[0];
+  };
+  for(const schema of [1,2])assert.equal(classify({hasPartContinuity:true,continuity:{metadata:{schemaVersion:schema}}}),
+    'continuity_schema='+schema+'\n');
+  assert.equal(classify({hasPartContinuity:false,continuity:null}),'continuity_schema=\n');
+  for(const schema of [undefined,null,0,3,'1',{},1.5])assert.throws(
+    ()=>classify({hasPartContinuity:true,continuity:{metadata:{schemaVersion:schema}}}),/Unknown DMI PART continuity schema/);
+  const match=plan.match(/^        run: node scripts\/plan-ravscore-current-history\.mjs --retain-committed-raw (\$\{\{ .+ \}\})$/m);
+  assert(match,'The existing exact argument variant must be the only selected suffix');
+  const expression=match[1];
+  const inputs={...coldInputs,completed_private_runtime_pin:'',completed_stage_source:'',
+    weather_state_epoch_raw_cache_key:'',weather_state_epoch_archive_key:'',weather_state_epoch_archive_catalog_sha256:'',
+    ravscore_integrated_weather_handoff_run_id:''};
+  const context={inputs,steps:{
+    'dmi-part-continuity-donor':{outputs:{continuity_schema:'1'}},
+    'private-runtime-install':{outcome:'success'},
+    'operational-model':{outputs:{model:'integrated',binding_current:'true'}},
+    'operational-action':{outputs:{action:'integrated'}},
+    'legacy-bootstrap':{outputs:{stateless_integrated_recovery:'false'}}}};
+  const selected=changed=>coldEvaluate(expression,changed);
+  assert.equal(selected(context),'--prepare-cached-native-originals');
+  for(const schema of ['2','','3','unknown']){
+    const changed=structuredClone(context);changed.steps['dmi-part-continuity-donor'].outputs.continuity_schema=schema;
+    assert.equal(selected(changed),'','Header2 or unknown never grants preparation/admission');
+  }
+  for(const flag of ['completed_private_runtime','checkpoint_only','quick_confirmation','current_family_cold_start',
+    'weather_state_epoch_bootstrap','weather_state_epoch_checkpoint_reentry','native_sampling_identity_original_recovery',
+    'produce_weather_handoff','ravscore_integrated_first_cutover','ravscore_integrated_return']){
+    const changed=structuredClone(context);changed.inputs[flag]=true;assert.equal(selected(changed),'',flag);
+  }
+  for(const locator of ['completed_private_runtime_pin','completed_stage_source','quick_progress_source',
+    'weather_state_epoch_raw_cache_key','weather_state_epoch_archive_key','weather_state_epoch_archive_catalog_sha256',
+    'ravscore_integrated_weather_handoff_run_id']){
+    const changed=structuredClone(context);changed.inputs[locator]='SYNTHETIC_EXPLICIT_REENTRY';
+    assert.equal(selected(changed),'',locator);
+  }
+  for(const mode of ['dry-run','execute']){
+    const changed=structuredClone(context);changed.inputs.ravscore_candidate_g_rollback_mode=mode;assert.equal(selected(changed),'');
+  }
+  const none=structuredClone(context);none.inputs.ravscore_candidate_g_rollback_mode='none';
+  assert.equal(selected(none),'--prepare-cached-native-originals');
+  for(const[item,key,field,bad]of [
+    ['private-runtime-install',null,'outcome','skipped'],
+    ['operational-model','outputs','model','candidate-g'],
+    ['operational-model','outputs','binding_current','false'],
+    ['operational-action','outputs','action','integrated-historical-maintenance'],
+    ['operational-action','outputs','action','integrated-cutover'],
+    ['legacy-bootstrap','outputs','stateless_integrated_recovery','true']]){
+    const changed=structuredClone(context),target=key?changed.steps[item][key]:changed.steps[item];target[field]=bad;
+    assert.equal(selected(changed),'',[item,field].join('.'));
+  }
+  // The new layer cannot consume mutation/partial copies as historical proof.
+  for(const[before,after]of review.hunks){
+    assert.equal(source.split(after).length,2);
+    for(const changed of [source.replace(after,before),source.replace(after,after+'\n# UNREVIEWED\n')]){
+      assert.equal(inverseNativeOriginalSchemaSelectorWorkflow(changed,'build'),changed);
+      assert.throws(()=>inverseCompletedRuntimeWorkflow(changed,'build'));
+    }
+  }
+  // Pure argument selection: no new input flag, provider, raw decoder, installed
+  // marker, source-priority candidate, score change or SQL operation is added.
+  assert.equal(source.split('--prepare-cached-native-originals').length,2);
+  assert.equal(source.split('--retain-committed-raw').length,2);
+});
+
+
+// New whole587 afterimage is not a repin of any historical oracle above.
+import {assistant587CompletedWorkflowReview,inverseAssistant587CompletedWorkflow}
+  from './lib/completed-private-runtime-workflow-review.mjs';
+test('assistant587 exact workflow inverse retains genuine586 and every historical mutation refusal',async()=>{
+  const actual=inverseAssistant587ColdBudgetCombinedTo587Workflow(inverseAssistant587ColdCheckpointCombinedToF83Workflow(inverseAssistant587LatestColdCombinedTo664aWorkflow((await fs.readFile(new URL('../.github/workflows/reusable-weather-build.yml',import.meta.url),'utf8')).replaceAll('\r\n','\n'),'build'),'build'),'build');
+  const review=assistant587CompletedWorkflowReview;
+  assert.equal(Buffer.byteLength(actual),review.after.bytes);assert.equal(sha(actual),review.after.sha256);
+  const previous=inverseAssistant587CompletedWorkflow(actual,'build');
+  assert.equal(Buffer.byteLength(previous),nativeOriginalSchemaSelectorWorkflowReview.after.bytes);
+  assert.equal(sha(previous),nativeOriginalSchemaSelectorWorkflowReview.after.sha256);
+  assert.equal(inverseCompletedRuntimeWorkflow(actual,'build'),inverseCompletedRuntimeWorkflow(previous,'build'));
+  assert.equal(sha(inverseCompletedRuntimeWorkflow(actual,'build')),legacySha);
+  assert.equal(inverseAssistant587CompletedWorkflow(actual,'once'),actual);
+  assert.equal(inverseAssistant587CompletedWorkflow(previous,'build'),previous);
+  const donor='Classify one-time DMI PART continuity donor',planner='Plan bounded current history from the actual selected continuation';
+  assert.equal(coldStep(actual,donor),coldStep(previous,donor),'Actual donor/schema validation remains whole byteexact');
+  const command=source=>{
+    const lines=coldStep(source,planner).split('\n'),inlinePrefix='        run: ',scriptPrefix='          ';
+    const inline=lines.filter(line=>line.startsWith(inlinePrefix+'node scripts/plan-ravscore-current-history.mjs '));
+    const script=lines.filter(line=>line.startsWith(scriptPrefix+'node scripts/plan-ravscore-current-history.mjs '));
+    assert.equal(inline.length+script.length,1,'Exactly one actual planner node invocation, inline OR script');
+    return inline.length?inline[0].slice(inlinePrefix.length):script[0].slice(scriptPrefix.length);
+  };
+  const node=command(actual);assert.equal(node,command(previous),'Whole node argv including --retain-committed-raw and schema1 selector is unchanged');
+  const currentPlan=coldStep(actual,planner),previousPlan=coldStep(previous,planner);
+  const start=currentPlan.indexOf('        run: |\n'),end=currentPlan.indexOf('        env:\n',start);
+  assert(start>=0&&end>start);
+  const heap=[
+    '        run: |',
+    '          if test "'+String.fromCharCode(36)+'{{ steps.assistant-later-h0-source.outputs.required }}" = true; then',
+    '            export NODE_OPTIONS=--max-old-space-size=6144',
+    '          fi',
+    '          '+node,
+    '',
+  ].join('\n');
+  assert.equal(currentPlan.slice(start,end),heap,'Exact587 conditional heap block; no extra command, unconditional heap or selector rewrite');
+  assert(previousPlan.includes('        run: '+node+'\n'));assert(!previousPlan.includes('        run: |\n'));
+  assert.throws(()=>command(actual.replace('          '+node+'\n','          '+node+'\n          '+node+'\n')),
+    'Duplicate actual planner invocation is not accepted');
+  const fixed=actual.replaceAll('RavRadar/4.0.587','RavRadar/4.0.586');
+  const changed=[actual+'\n# UNREVIEWED587\n',actual.replace('RavRadar/4.0.587','RavRadar/4.0.586'),
+    actual.replace('test "'+String.fromCharCode(36)+'{{ steps.full-validation.outcome }}" = success','true'),
+    actual.replace('test "'+String.fromCharCode(36)+'{{ steps.release-gate.outcome }}" = success','true')];
+  for(const[offset,text,original]of review.hunks){
+    for(const replacement of [original,text+text,'?'+text.slice(1)]){
+      const partial=fixed.slice(0,offset)+replacement+fixed.slice(offset+text.length);
+      changed.push(partial.replaceAll('RavRadar/4.0.586','RavRadar/4.0.587'));
+    }
+  }
+  for(const source of changed){
+    assert.notEqual(source,actual);assert.equal(inverseAssistant587CompletedWorkflow(source,'build'),source);
+    assert.throws(()=>inverseCompletedRuntimeWorkflow(source,'build'));
+  }
+});
+
+test('cold budget inverse: exact five conditions preserve all native and earlier workflow oracles',async()=>{
+  const source=inverseAssistant587ColdBudgetCombinedTo707Workflow(inverseAssistant587ColdCheckpointCombinedToF83Workflow(inverseAssistant587LatestColdCombinedTo664aWorkflow((await fs.readFile(new URL('../.github/workflows/reusable-weather-build.yml',import.meta.url),'utf8')).replaceAll('\r\n','\n'),'build'),'build'),'build');
+  const row=currentFamilyColdBudgetWorkflowReview;
+  assert.equal(Buffer.byteLength(source),row.after.bytes);assert.equal(sha(source),row.after.sha256);
+  assert.equal(row.hunks.length,5);
+  const before=inverseCurrentFamilyColdBudgetWorkflow(source,'build');
+  assert.equal(sha(before),nativeOriginalSchemaSelectorWorkflowReview.after.sha256);
+  assert.equal(inverseCurrentFamilyColdBudgetWorkflow(before,'build'),before);
+  assert.equal(inverseNativeOriginalSchemaSelectorWorkflow(source,'build'),inverseNativeOriginalSchemaSelectorWorkflow(before,'build'));
+  assert.equal(inverseCompletedRuntimeWorkflow(source,'build'),inverseCompletedRuntimeWorkflow(before,'build'));
+  assert.equal(sha(inverseCompletedRuntimeWorkflow(source,'build')),legacySha);
+  for(const[old,current]of row.hunks){
+    assert.equal(source.split(current).length,2);
+    for(const changed of [source.replace(current,old),source.replace(current,current+current),
+      source.replace(current,current+'\n# UNREVIEWED_COLD_BUDGET\n')]){
+      assert.notEqual(changed,source);
+      assert.throws(()=>inverseCurrentFamilyColdBudgetWorkflow(changed,'build'),/COLD_BUDGET_WORKFLOW/);
+      assert.throws(()=>inverseCompletedRuntimeWorkflow(changed,'build'));
+    }
+  }
+  assert.throws(()=>inverseCurrentFamilyColdBudgetWorkflow(source+'\n','build'),/COLD_BUDGET_WORKFLOW/);
+  assert.throws(()=>inverseCurrentFamilyColdBudgetWorkflow(source,'once'),/COLD_BUDGET_WORKFLOW_ROLE/);
+});
+
+test('assistant587 plus cold budget: actual combined whole source retains both parents and every older oracle',async()=>{
+  const actual=inverseAssistant587ColdCheckpointCombinedToF83Workflow(inverseAssistant587LatestColdCombinedTo664aWorkflow((await fs.readFile(new URL('../.github/workflows/reusable-weather-build.yml',import.meta.url),'utf8')).replaceAll('\r\n','\n'),'build'),'build');
+  const row=assistant587ColdBudgetCombinedWorkflowReview;
+  assert.equal(Buffer.byteLength(actual),row.combined.bytes);assert.equal(sha(actual),row.combined.sha256);
+  const p0707=inverseAssistant587ColdBudgetCombinedTo707Workflow(actual,'build');
+  const assistant587=inverseAssistant587ColdBudgetCombinedTo587Workflow(actual,'build');
+  assert.equal(Buffer.byteLength(p0707),row.p0707Parent.bytes);assert.equal(sha(p0707),row.p0707Parent.sha256);
+  assert.equal(Buffer.byteLength(assistant587),row.assistant587Parent.bytes);assert.equal(sha(assistant587),row.assistant587Parent.sha256);
+  assert.equal(inverseCurrentFamilyColdBudgetWorkflow(p0707,'build'),inverseAssistant587CompletedWorkflow(assistant587,'build'));
+  assert.equal(inverseCompletedRuntimeWorkflow(actual,'build'),inverseCompletedRuntimeWorkflow(p0707,'build'));
+  assert.equal(inverseCompletedRuntimeWorkflow(actual,'build'),inverseCompletedRuntimeWorkflow(assistant587,'build'));
+  assert.equal(sha(inverseCompletedRuntimeWorkflow(actual,'build')),legacySha);
+  for(const name of ['Classify one-time DMI PART continuity donor','Plan bounded current history from the actual selected continuation'])
+    assert.equal(coldStep(actual,name),coldStep(assistant587,name),'Actual combined donor, planner argv, conditional heap and read guards remain whole587');
+  const changed=[actual+'\n# UNREVIEWED_COMPOSITION\n',actual.replace('RavRadar/4.0.587','RavRadar/4.0.586')];
+  for(const[before,after]of currentFamilyColdBudgetWorkflowReview.hunks){
+    assert.equal(actual.split(after).length,2);
+    changed.push(actual.replace(after,before),actual.replace(after,after+after),actual.replace(after,'?'+after.slice(1)));
+  }
+  for(const[,after,before]of assistant587CompletedWorkflowReview.hunks){
+    const offsets=[];
+    for(let at=actual.indexOf(after);at!==-1;at=actual.indexOf(after,at+1))offsets.push(at);
+    assert(offsets.length>0,'Actual combined assistant hunk is preserved');
+    for(const at of offsets)for(const replacement of [before,after+after,'?'+after.slice(1)])
+      changed.push(actual.slice(0,at)+replacement+actual.slice(at+after.length));
+  }
+  for(const source of changed){
+    assert.notEqual(source,actual);
+    assert.equal(inverseAssistant587ColdBudgetCombinedTo707Workflow(source,'build'),source);
+    assert.equal(inverseAssistant587ColdBudgetCombinedTo587Workflow(source,'build'),source);
+    assert.throws(()=>inverseCompletedRuntimeWorkflow(source,'build'));
+  }
+  for(const role of ['once','unknown']){
+    assert.equal(inverseAssistant587ColdBudgetCombinedTo707Workflow(actual,role),actual);
+    assert.equal(inverseAssistant587ColdBudgetCombinedTo587Workflow(actual,role),actual);
+  }
+});
+
+
+// Keep both genuine P0 inputs separate: latest PR712 and its whole PR710
+// predecessor. All existing historical test bodies and pins stay unchanged.
+const latestColdProgressActual = Object.fromEntries(await Promise.all(
+  Object.entries(currentFamilyColdCheckpointWorkflowReview.roles).map(async ([role, row]) =>
+    [role, inverseAssistant587LatestColdCombinedTo2bWorkflow((await fs.readFile(new URL('../' + row.relativePath, import.meta.url), 'utf8')).replaceAll('\r\n', '\n'), role)])));
+const coldCheckpointActual = Object.fromEntries(Object.entries(latestColdProgressActual).map(([role,source]) =>
+  [role,inverseLatestColdProgressWorkflow(source,role)]));
+
+test('same-archive cold checkpoint inverse admits only both exact new whole workflows and restores c59', () => {
+  const review = currentFamilyColdCheckpointWorkflowReview;
+  assert.equal(review.baseHead, 'c59e840b0fc5cc0eb3148ffbf62f4e1de54a55ab');
+  assert.deepEqual(review.scope, { progressSource: '39886354260-1', targetReferenceAt: '2026-10-23T01:00:00Z' });
+  assert.deepEqual(Object.keys(review.roles), ['build', 'once']);
+  for (const [role, row] of Object.entries(review.roles)) {
+    const source = coldCheckpointActual[role];
+    assert.equal(Buffer.byteLength(source), row.after.bytes); assert.equal(sha(source), row.after.sha256);
+    assert.equal(row.edits.length, role === 'build' ? 10 : 3);
+    const old = inverseCurrentFamilyColdCheckpointWorkflow(source, role);
+    assert.equal(Buffer.byteLength(old), row.before.bytes); assert.equal(sha(old), row.before.sha256);
+    assert.equal(inverseCurrentFamilyColdCheckpointWorkflow(old, role), old);
+    assert.equal(inverseCompletedRuntimeWorkflow(source, role), inverseCompletedRuntimeWorkflow(old, role));
+    let layerSource = source, prior = source.length;
+    for (const [index, [offset, actual, original]] of row.edits.entries()) {
+      if (role === 'build' && index === 4) {
+        assert.equal(Buffer.byteLength(layerSource), 288646);
+        assert.equal(sha(layerSource), '2b4677beed11b2d5b421e580a223531ac668fb96ca26c8d44516af155b533bd1');
+        prior = layerSource.length;
+      }
+      assert(Number.isSafeInteger(offset) && offset >= 0 && offset + actual.length <= prior);
+      prior = offset; assert(actual.length > 0); assert(original.length > 0);
+      assert.equal(layerSource.slice(offset, offset + actual.length), actual);
+      const currentOffset = source.indexOf(actual);
+      assert(currentOffset >= 0);
+      assert.equal(source.indexOf(actual, currentOffset + 1), -1);
+      for (const replacement of ['', actual + actual, '?' + actual.slice(1), original]) {
+        const changed = source.slice(0, currentOffset) + replacement + source.slice(currentOffset + actual.length);
+        assert.notEqual(changed, source);
+        assert.throws(() => inverseCurrentFamilyColdCheckpointWorkflow(changed, role), /COLD_CHECKPOINT_WORKFLOW/);
+        assert.throws(() => inverseCompletedRuntimeWorkflow(changed, role));
+      }
+      layerSource = layerSource.slice(0, offset) + original + layerSource.slice(offset + actual.length);
+    }
+    assert.equal(layerSource, old);
+    for (const changed of [source + '\n# UNREVIEWED\n', source.replace('39886354260-1', '39886354260-2'),
+      source.replace('2026-10-23T01:00:00Z', '2026-10-23T02:00:00Z')]) {
+      assert.notEqual(changed, source);
+      assert.throws(() => inverseCurrentFamilyColdCheckpointWorkflow(changed, role), /COLD_CHECKPOINT_WORKFLOW/);
+      assert.throws(() => inverseCompletedRuntimeWorkflow(changed, role));
+    }
+    const wrongRole = role === 'build' ? 'once' : 'build';
+    assert.throws(() => inverseCurrentFamilyColdCheckpointWorkflow(source, wrongRole), /COLD_CHECKPOINT_WORKFLOW/);
+    assert.throws(() => inverseCompletedRuntimeWorkflow(source, wrongRole));
+  }
+  assert.throws(() => inverseCurrentFamilyColdCheckpointWorkflow(null, 'build'), /COLD_CHECKPOINT_WORKFLOW_TYPE/);
+  assert.throws(() => inverseCurrentFamilyColdCheckpointWorkflow(coldCheckpointActual.build, 'toString'), /COLD_CHECKPOINT_WORKFLOW_ROLE/);
+  assert.throws(() => inverseCurrentFamilyColdCheckpointWorkflow(coldCheckpointActual.build), /COLD_CHECKPOINT_WORKFLOW_ARGUMENTS/);
+  assert.throws(() => inverseCurrentFamilyColdCheckpointWorkflow(coldCheckpointActual.build, 'build', true), /COLD_CHECKPOINT_WORKFLOW_ARGUMENTS/);
+});
+
+test('same-archive actual selectors retain ordinary defaults and exclude checkpoint_only from cold', () => {
+  const actual = coldCheckpointActual;
+  const old = Object.fromEntries(Object.entries(actual).map(([role, source]) =>
+    [role, inverseCurrentFamilyColdCheckpointWorkflow(source, role)]));
+  const field = (source, key) => {
+    const rows = [...source.matchAll(new RegExp('^      ' + key + ': (.+)$', 'gm'))];
+    assert.equal(rows.length, 1); return rows[0][1];
+  };
+  for (const [role, source] of Object.entries(actual)) {
+    const inventory = text => [...text.matchAll(/^      ([a-z_]+):\n/gm)].map(row => row[1]);
+    assert.deepEqual(inventory(source), inventory(old[role]), 'No new public input');
+    const input = coldBlock(source, '      current_family_cold_start:');
+    assert.match(input, /^        required: false$/m);
+    assert.match(input, /^        type: boolean$/m);
+    assert.match(input, /^        default: false$/m);
+    if (role === 'build') assert.equal(coldBlock(source, '    secrets:'), coldBlock(old[role], '    secrets:'));
+  }
+  const caller = coldBlock(actual.once, '  build-and-prepare:');
+  for (const cold of [undefined, false, true]) for (const target of ['', '2026-10-23T01:00:00Z'])
+    for (const completed of ['', '123-1-' + 'a'.repeat(40)]) {
+      const inputs = { ...coldInputs, checkpoint_target_hour: target, completed_stage_source: completed };
+      if (cold !== undefined) inputs.current_family_cold_start = cold;
+      else delete inputs.current_family_cold_start;
+      assert.equal(coldEvaluate(field(caller, 'checkpoint_only'), { inputs }), cold !== true && target !== '' && completed === '');
+      assert.equal(coldEvaluate(field(caller, 'current_family_cold_start'), { inputs }), cold === true);
+      assert.equal(coldEvaluate(field(caller, 'extended_provider_bootstrap'), { inputs }), cold === true);
+    }
+  for (const cold of [false, true]) for (const checkpoint of [false, true]) for (const progress of ['', '39886354260-1']) {
+    const inputs = { ...coldInputs, current_family_cold_start: cold, checkpoint_only: checkpoint,
+      quick_progress_source: progress, production_target_hour: '2026-10-23T01:00:00Z' };
+    assert.equal(coldEvaluate(field(actual.build, 'CHECKPOINT_TARGET_HOUR'), { inputs }),
+      checkpoint || (cold && progress !== '') ? inputs.production_target_hour : '');
+  }
+  assert.equal(coldStep(actual.once, 'Lock the requested original checkpoint hour without provider work'),
+    coldStep(old.once, 'Lock the requested original checkpoint hour without provider work'));
+  assert(coldStep(actual.once, 'Lock the requested original checkpoint hour without provider work')
+    .includes('--target "$CHECKPOINT_TARGET_HOUR" --maximum-age-minutes 90'));
+  assert(actual.once.includes('group: ravradar-weather-production-v2\n  queue: max\n  cancel-in-progress: false'));
+});
+
+test('same-archive actual cache selectors admit only the fixed cold source with no prefix and defer only cold quick proof', () => {
+  const source = coldCheckpointActual.build;
+  const restore = coldStep(source, 'Restore encrypted private weather progress only');
+  const requireProgress = coldStep(source, 'Require recovered progress before short confirmation');
+  const prefix = /^          restore-keys: (.+)$/m.exec(restore)?.[1]; assert(prefix);
+  const key = /^          key: (.+)$/m.exec(restore)?.[1]; assert(key);
+  const format = (value, ...args) => value.replace(/\{(\d+)\}/g, (_, n) => String(args[Number(n)]));
+  for (const cold of [false, true]) for (const progress of ['', '39886354260-1', '39886354260-2', 'protected-current']) {
+    const context = coldOrdinaryContext(cold);
+    context.inputs = { ...context.inputs, quick_progress_source: progress };
+    context.runner = { os: 'Linux' }; context.format = format;
+    assert.equal(coldEvaluate(coldSelector(restore), context), !cold || progress === '39886354260-1');
+    assert.equal(coldEvaluate(coldSelector(requireProgress), context), !cold && progress !== '');
+    assert.equal(coldEvaluate(prefix, context), progress === '' ? 'weather-private-progress-encrypted-v2-Linux-main-' : '');
+  }
+  const context = coldOrdinaryContext(true);
+  context.inputs = { ...context.inputs, quick_progress_source: '39886354260-1' };
+  context.runner = { os: 'Linux' }; context.github.run_id = '999'; context.github.run_attempt = '1'; context.format = format;
+  const actualKey = key.replace(/\$\{\{ (.+?) \}\}/g, (_, expression) => String(coldEvaluate(expression, context)));
+  assert.equal(actualKey, 'weather-private-progress-encrypted-v2-Linux-main-39886354260-1');
+  for (const [field, value] of [['completed_private_runtime', true], ['native_sampling_identity_original_recovery', true],
+    ['weather_state_epoch_bootstrap', true]]) {
+    const changed = structuredClone({ inputs: context.inputs, github: context.github, steps: context.steps });
+    changed.inputs[field] = value; assert.equal(coldEvaluate(coldSelector(restore), changed), false, field);
+  }
+  for (const event of ['pull_request', 'pull_request_target']) {
+    const changed = { ...context, github: { ...context.github, event_name: event } };
+    assert.equal(coldEvaluate(coldSelector(restore), changed), false);
+  }
+  for (const [step, field, value] of [['private-runtime-install', 'outcome', 'failure'],
+    ['weather-source-handoff', 'outputs', { reused: 'true' }]]) {
+    const changed = structuredClone({ inputs: context.inputs, github: context.github, steps: context.steps });
+    changed.steps[step][field] = value; assert.equal(coldEvaluate(coldSelector(restore), changed), false);
+  }
+  const old = inverseCurrentFamilyColdCheckpointWorkflow(source, 'build');
+  assert.equal(coldStep(source, 'Bind optional progress to the exact protected baseline'),
+    coldStep(old, 'Bind optional progress to the exact protected baseline'), 'Captured OLD B baseline is byte-for-byte unchanged');
+});
+
+test('same-archive actual scope and prepare/resolve seams bind source and target before provider use or rebinding', () => {
+  const actual = coldCheckpointActual;
+  const manual = coldStep(actual.once, 'Reject mixed caller-only cold-start modes before target selection');
+  const fixedManual = [
+    '          if test -z "$PROGRESS"; then',
+    '            test -z "$TARGET"',
+    '          else',
+    '            test "$PROGRESS" = 39886354260-1',
+    '            test "$TARGET" = 2026-10-23T01:00:00Z',
+    '          fi',
+  ].join('\n');
+  assert.equal(manual.split(fixedManual).length, 2);
+  assert(actual.once.indexOf(manual) < actual.once.indexOf('      - name: Lock the requested original checkpoint hour without provider work\n'));
+  const reusable = coldStep(actual.build, 'Require the explicit fresh caller-only cold-start scope');
+  const fixedReusable = [
+    '          if test -n "$QUICK_PROGRESS_SOURCE"; then',
+    '            test "$QUICK_PROGRESS_SOURCE" = 39886354260-1',
+    '            test "$RAVRADAR_PRODUCTION_TARGET_HOUR" = 2026-10-23T01:00:00Z',
+    '            test "$CHECKPOINT_TARGET_HOUR" = "$RAVRADAR_PRODUCTION_TARGET_HOUR"',
+    '          else',
+    '            test -z "$CHECKPOINT_TARGET_HOUR"',
+    '          fi',
+  ].join('\n');
+  assert.equal(reusable.split(fixedReusable).length, 2);
+  assert(reusable.includes('test "${{ inputs.checkpoint_only }}" = false'));
+  assert(actual.build.indexOf(reusable) < actual.build.indexOf('      - name: Restore encrypted private weather progress only\n'));
+  const prepare = coldStep(actual.build, 'Prepare strict active DMI donor or resumable candidate');
+  const branch = [
+    '          if test "${{ inputs.current_family_cold_start }}" = true; then',
+    '            if test -n "$QUICK_PROGRESS_SOURCE"; then',
+    '              node scripts/run-current-family-cold-start.mjs reopen',
+    '            else',
+    '              node scripts/run-current-family-cold-start.mjs prepare',
+    '            fi',
+    '            echo "strict_active_ready=false" >> "$GITHUB_OUTPUT"',
+    '            echo "candidate_seeded=true" >> "$GITHUB_OUTPUT"',
+    '            exit 0',
+    '          fi',
+  ].join('\n');
+  assert.equal(prepare.split(branch).length, 2);
+  assert(prepare.includes('PROGRESS_CACHE_MATCHED_KEY: ${{ steps.component-progress-cache.outputs.cache-matched-key }}'));
+  assert(prepare.includes('PROGRESS_CACHE_OUTCOME: ${{ steps.component-progress-cache.outcome }}'));
+  const secret = /^          WEATHER_PROGRESS_MASTER_SECRET: (.+)$/m.exec(prepare)?.[1]; assert(secret);
+  for (const cold of [false, true]) for (const progress of ['', '39886354260-1'])
+    assert.equal(coldEvaluate(secret, { inputs: { ...coldInputs, current_family_cold_start: cold, quick_progress_source: progress },
+      secrets: { SUPABASE_SERVICE_ROLE_KEY: 'SYNTHETIC_SECRET' } }), cold && progress !== '' ? 'SYNTHETIC_SECRET' : '');
+  const bind = coldStep(actual.build, 'Bind production to resolved DMI current hour');
+  const fixedResolve = [
+    '          if test "${{ inputs.current_family_cold_start }}" = true && test -n "$QUICK_PROGRESS_SOURCE"; then',
+    '            test "$QUICK_PROGRESS_SOURCE" = 39886354260-1',
+    '            test "$resolved_target" = "$RAVRADAR_PRODUCTION_TARGET_HOUR"',
+    '            test "$resolved_target" = 2026-10-23T01:00:00Z',
+    '          fi',
+  ].join('\n');
+  assert.equal(bind.split(fixedResolve).length, 2);
+  assert(bind.indexOf(fixedResolve) < bind.indexOf('echo "RAVRADAR_PRODUCTION_TARGET_HOUR=$resolved_target" >> "$GITHUB_ENV"'));
+  const old = inverseCurrentFamilyColdCheckpointWorkflow(actual.build, 'build');
+  for (const name of ['Require actual cold-start producer cessation before other consumers',
+    'Encrypt newly saved private weather progress before later production steps',
+    'Preserve the fixed epoch post-processing reserve before dmi',
+    'Preserve the fixed epoch post-processing reserve before copernicus',
+    'Preserve the fixed epoch post-processing reserve before open-meteo',
+    'Preserve the fixed epoch post-processing reserve before weather']) {
+    const previous = coldStep(old, name);
+    const expected = name.startsWith('Preserve the fixed epoch post-processing reserve before ')
+      ? previous.replace('        run:', [
+        '        env:',
+        "          QUICK_PROGRESS_SOURCE: ${{ inputs.current_family_cold_start != true && inputs.quick_progress_source || '' }}",
+        "          CHECKPOINT_TARGET_HOUR: ${{ inputs.current_family_cold_start != true && inputs.checkpoint_only && inputs.production_target_hour || '' }}",
+        '        run:',
+      ].join('\n')) : previous;
+    assert.equal(coldStep(actual.build, name), expected, name);
+  }
+});
+
+test('assistant587 plus PR710 checkpoint: actual whole composition preserves both exact parents and every oracle', async () => {
+  const actual = inverseAssistant587LatestColdCombinedTo664aWorkflow((await fs.readFile(new URL('../.github/workflows/reusable-weather-build.yml', import.meta.url), 'utf8')).replaceAll('\r\n', '\n'), 'build');
+  const row = assistant587ColdCheckpointCombinedWorkflowReview;
+  assert.equal(row.p0Parent.commit, 'd5d2f5e95c55c3096fa7b03890289c7d2cba307a');
+  assert.equal(row.assistantParent.commit, 'f83da62fc5a90d65190dfb715539eb30070beb22');
+  assert.equal(Buffer.byteLength(actual), row.combined.bytes); assert.equal(sha(actual), row.combined.sha256);
+  assert.equal(row.toF83.length, 11); assert.equal(row.toD5.length, 19);
+  const f83 = inverseAssistant587ColdCheckpointCombinedToF83Workflow(actual, 'build');
+  const d5 = inverseAssistant587ColdCheckpointCombinedToD5Workflow(actual, 'build');
+  for (const [text, pin] of [[f83, row.assistantParent], [d5, row.p0Parent]]) {
+    assert.equal(Buffer.byteLength(text), pin.bytes); assert.equal(sha(text), pin.sha256);
+    assert.equal(inverseCompletedRuntimeWorkflow(actual, 'build'), inverseCompletedRuntimeWorkflow(text, 'build'));
+  }
+  assert.equal(d5, coldCheckpointActual.build);
+  assert.equal(inverseAssistant587ColdBudgetCombinedTo707Workflow(f83, 'build'),
+    inverseCurrentFamilyColdCheckpointWorkflow(d5, 'build'), 'Both exact parents retain the whole common65 workflow');
+  assert.equal(sha(inverseCompletedRuntimeWorkflow(actual, 'build')), legacySha);
+  for (const [edits, parent] of [[row.toF83, f83], [row.toD5, d5]]) {
+    let previous = actual, prior = actual.length;
+    for (const [offset, current, old] of edits) {
+      assert(Number.isSafeInteger(offset) && offset >= 0 && offset + current.length <= prior);
+      prior = offset;
+      assert.equal(previous.slice(offset, offset + current.length), current);
+      previous = previous.slice(0, offset) + old + previous.slice(offset + current.length);
+    }
+    assert.equal(previous, parent, 'Entire fixed projection, not selected fields');
+  }
+});
+
+test('assistant587 plus PR710 checkpoint: partial cross-parent mutations never enter a historical inverse', async () => {
+  const actual = inverseAssistant587LatestColdCombinedTo664aWorkflow((await fs.readFile(new URL('../.github/workflows/reusable-weather-build.yml', import.meta.url), 'utf8')).replaceAll('\r\n', '\n'), 'build');
+  const row = assistant587ColdCheckpointCombinedWorkflowReview;
+  assert.equal(sha(actual), row.combined.sha256);
+  const changed = [
+    actual + '\n# UNREVIEWED_PR710_ASSISTANT587\n',
+    actual.replace('39886354260-1', '39886354260-2'),
+    actual.replace('2026-10-23T01:00:00Z', '2026-10-23T02:00:00Z'),
+    actual.replace('RavRadar/4.0.587', 'RavRadar/4.0.586'),
+  ];
+  for (const edits of [row.toF83, row.toD5]) for (const [offset, current, old] of edits) {
+    assert.equal(actual.slice(offset, offset + current.length), current);
+    for (const replacement of ['', current + current, '?' + current.slice(1), old]) {
+      const candidate = actual.slice(0, offset) + replacement + actual.slice(offset + current.length);
+      if (candidate !== actual) changed.push(candidate);
+    }
+  }
+  for (const source of changed) {
+    assert.notEqual(source, actual);
+    assert.equal(inverseAssistant587ColdCheckpointCombinedToF83Workflow(source, 'build'), source);
+    assert.equal(inverseAssistant587ColdCheckpointCombinedToD5Workflow(source, 'build'), source);
+    assert.throws(() => inverseCompletedRuntimeWorkflow(source, 'build'));
+  }
+  for (const project of [inverseAssistant587ColdCheckpointCombinedToF83Workflow,
+    inverseAssistant587ColdCheckpointCombinedToD5Workflow]) {
+    for (const role of ['once', 'unknown']) assert.equal(project(actual, role), actual);
+    for (const parent of [inverseAssistant587ColdCheckpointCombinedToF83Workflow(actual, 'build'),
+      inverseAssistant587ColdCheckpointCombinedToD5Workflow(actual, 'build')]) assert.equal(project(parent, 'build'), parent);
+    assert.throws(() => project(actual), /ASSISTANT587_CHECKPOINT_ARGUMENTS/);
+    assert.throws(() => project(actual, 'build', true), /ASSISTANT587_CHECKPOINT_ARGUMENTS/);
+    assert.throws(() => project(null, 'build'), /ASSISTANT587_CHECKPOINT_TYPE/);
+  }
+});
+
+test('latest saved progress inverse restores both exact earlier workflows and rejects every changed hunk',async()=>{
+  const review=latestColdProgressWorkflowReview;
+  assert.deepEqual(review.scope,{progressSource:'39886354260-1',latestProgressSource:'39933506923-1',
+    archiveId:'775f99a210b899eacd3ee056f4daae56c20fc3258e64691d4e0544aabd04d3fb',
+    targetReferenceAt:'2026-10-23T01:00:00.000Z',publicInputTarget:'2026-10-23T01:00:00Z'});
+  assert.equal(sha((await fs.readFile(new URL('./lib/current-family-cold-checkpoint-workflow-review.json',import.meta.url),'utf8')).replaceAll('\r\n','\n')),
+    '1ddb3f26ce9e674a7aac8bc045040c2c4aef6c9c968fa916a0753e1db096ae42','Every earlier checkpoint/budget edit and pin remains unchanged');
+  for(const [role,row] of Object.entries(review.roles)){
+    const source=latestColdProgressActual[role];
+    assert.equal(Buffer.byteLength(source),row.after.bytes);assert.equal(sha(source),row.after.sha256);
+    assert.equal(row.edits.length,role==='build'?3:2);
+    const old=inverseLatestColdProgressWorkflow(source,role);
+    assert.equal(old,coldCheckpointActual[role]);assert.equal(Buffer.byteLength(old),row.before.bytes);
+    assert.equal(sha(old),row.before.sha256);assert.equal(inverseLatestColdProgressWorkflow(old,role),old);
+    assert.equal(inverseCurrentFamilyColdCheckpointWorkflow(source,role),inverseCurrentFamilyColdCheckpointWorkflow(old,role));
+    assert.equal(inverseCompletedRuntimeWorkflow(source,role),inverseCompletedRuntimeWorkflow(old,role));
+    let previousOffset=source.length;
+    for(const [offset,actual,original] of row.edits){
+      assert(Number.isSafeInteger(offset)&&offset>=0&&offset+actual.length<=previousOffset);
+      previousOffset=offset;assert(actual.length>0&&original.length>0);
+      const at=source.indexOf(actual);assert(at>=0);assert.equal(source.indexOf(actual,at+1),-1);
+      for(const substitute of ['',actual+actual,'?'+actual.slice(1),original]){
+        const changed=source.slice(0,at)+substitute+source.slice(at+actual.length);
+        assert.notEqual(changed,source);
+        assert.throws(()=>inverseLatestColdProgressWorkflow(changed,role),/LATEST_COLD_PROGRESS_WORKFLOW/);
+        assert.throws(()=>inverseCompletedRuntimeWorkflow(changed,role));
+      }
+    }
+    for(const changed of [source+'\n# UNREVIEWED_LATEST_PROGRESS\n',
+      source.replace('39933506923-1','39933506923-2'),source.replace('2026-10-23T01:00:00Z','2026-10-23T02:00:00Z')]){
+      assert.notEqual(changed,source);
+      assert.throws(()=>inverseLatestColdProgressWorkflow(changed,role),/LATEST_COLD_PROGRESS_WORKFLOW/);
+      assert.throws(()=>inverseCompletedRuntimeWorkflow(changed,role));
+    }
+    assert.throws(()=>inverseLatestColdProgressWorkflow(source,role==='build'?'once':'build'),/LATEST_COLD_PROGRESS_WORKFLOW/);
+  }
+  assert.throws(()=>inverseLatestColdProgressWorkflow(null,'build'),/LATEST_COLD_PROGRESS_WORKFLOW_TYPE/);
+  assert.throws(()=>inverseLatestColdProgressWorkflow(latestColdProgressActual.build,'toString'),/LATEST_COLD_PROGRESS_WORKFLOW_ROLE/);
+  assert.throws(()=>inverseLatestColdProgressWorkflow(latestColdProgressActual.build),/LATEST_COLD_PROGRESS_WORKFLOW_ARGUMENTS/);
+  assert.throws(()=>inverseLatestColdProgressWorkflow(latestColdProgressActual.build,'build',true),/LATEST_COLD_PROGRESS_WORKFLOW_ARGUMENTS/);
+});
+
+test('actual latest progress cache selects the requested exact ID and keeps original target defaults and reserves',()=>{
+  const actual=latestColdProgressActual,ids=['39886354260-1','39933506923-1'];
+  const restore=coldStep(actual.build,'Restore encrypted private weather progress only');
+  const prefix=/^          restore-keys: (.+)$/m.exec(restore)?.[1],key=/^          key: (.+)$/m.exec(restore)?.[1];
+  assert(prefix&&key);assert(restore.includes('uses: actions/cache/restore@v6'));
+  const format=(value,...args)=>value.replace(/\{(\d+)\}/g,(_,n)=>String(args[Number(n)]));
+  for(const cold of [false,true])for(const progress of ['',...ids,'39886354260-2','39933506923-2','39933506924-1','protected-current']){
+    const context=coldOrdinaryContext(cold);context.inputs={...context.inputs,quick_progress_source:progress};
+    context.runner={os:'Linux'};context.github.run_id='999';context.github.run_attempt='1';context.format=format;
+    assert.equal(coldEvaluate(coldSelector(restore),context),!cold||ids.includes(progress));
+    assert.equal(coldEvaluate(prefix,context),progress===''?'weather-private-progress-encrypted-v2-Linux-main-':'');
+    const selected=key.replace(/\$\{\{ (.+?) \}\}/g,(_,expression)=>String(coldEvaluate(expression,context)));
+    assert.equal(selected,'weather-private-progress-encrypted-v2-Linux-main-'+(progress||'999-1'));
+  }
+  const manual=coldStep(actual.once,'Reject mixed caller-only cold-start modes before target selection');
+  assert(manual.includes('test "$PROGRESS" = 39886354260-1 || test "$PROGRESS" = 39933506923-1'));
+  assert(manual.includes('test "$TARGET" = 2026-10-23T01:00:00Z'));
+  assert(manual.includes('test "$GITHUB_RUN_ATTEMPT" = 1'));
+  const scope=coldStep(actual.build,'Require the explicit fresh caller-only cold-start scope');
+  const bind=coldStep(actual.build,'Bind production to resolved DMI current hour');
+  for(const step of [scope,bind])assert(step.includes('test "$QUICK_PROGRESS_SOURCE" = 39886354260-1 || test "$QUICK_PROGRESS_SOURCE" = 39933506923-1'));
+  assert(scope.includes('test "$RAVRADAR_PRODUCTION_TARGET_HOUR" = 2026-10-23T01:00:00Z'));
+  assert(scope.includes('test "$CHECKPOINT_TARGET_HOUR" = "$RAVRADAR_PRODUCTION_TARGET_HOUR"'));
+  assert(scope.includes('test "${{ inputs.checkpoint_only }}" = false'));
+  assert(bind.includes('test "$resolved_target" = "$RAVRADAR_PRODUCTION_TARGET_HOUR"'));
+  assert(bind.includes('test "$resolved_target" = 2026-10-23T01:00:00Z'));
+  assert(bind.indexOf('test "$resolved_target" = 2026-10-23T01:00:00Z')<bind.indexOf('echo "RAVRADAR_PRODUCTION_TARGET_HOUR=$resolved_target"'));
+  const caller=coldBlock(actual.once,'  build-and-prepare:');
+  const field=(text,name)=>{const matches=[...text.matchAll(new RegExp('^      '+name+': (.+)$','gm'))];assert.equal(matches.length,1);return matches[0][1];};
+  for(const progress of ['',...ids]){
+    const inputs={...coldInputs,current_family_cold_start:true,checkpoint_target_hour:'2026-10-23T01:00:00Z',
+      completed_stage_source:'',quick_progress_source:progress};
+    assert.equal(coldEvaluate(field(caller,'checkpoint_only'),{inputs}),false);
+    assert.equal(coldEvaluate(field(caller,'current_family_cold_start'),{inputs}),true);
+    assert.equal(coldEvaluate(field(caller,'extended_provider_bootstrap'),{inputs}),true);
+  }
+  for(const role of ['build','once']){
+    const previous=coldCheckpointActual[role];
+    assert.equal(coldBlock(actual[role],'      current_family_cold_start:').replace(/^        description:.*\n/m,''),
+      coldBlock(previous,'      current_family_cold_start:').replace(/^        description:.*\n/m,''));
+  }
+  for(const name of ['Prepare strict active DMI donor or resumable candidate',
+    'Require actual cold-start producer cessation before other consumers',
+    'Encrypt newly saved private weather progress before later production steps',
+    ...['dmi','copernicus','open-meteo','weather'].map(phase=>'Preserve the fixed epoch post-processing reserve before '+phase)])
+    assert.equal(coldStep(actual.build,name),coldStep(coldCheckpointActual.build,name),name+' remains byte-identical');
+});
+
+test('assistant587 plus PR712 latest progress: actual whole composition preserves both exact Git parents', async () => {
+  const actual = inverseRelease588WorkflowUserAgents((await fs.readFile(new URL('../.github/workflows/reusable-weather-build.yml', import.meta.url), 'utf8')).replaceAll('\r\n', '\n'), 'build');
+  const row = assistant587LatestColdCombinedWorkflowReview;
+  assert.equal(row.p0Parent.commit, '2b1d7a95d4201ef39e10cc9d7e52cd0f4d6243aa');
+  assert.equal(row.assistantParent.commit, '664aeb46966cd0ec182599a90bcaacc6c4b609ab');
+  assert.equal(row.commonParent.commit, 'd957e9579f2d6b3ef2281a1d65a9cb1ff4c39909');
+  assert.equal(Buffer.byteLength(actual), row.combined.bytes); assert.equal(sha(actual), row.combined.sha256);
+  assert.equal(row.to664a.length, 3); assert.equal(row.to2b.length, 19);
+  const assistant = inverseAssistant587LatestColdCombinedTo664aWorkflow(actual, 'build');
+  const p0 = inverseAssistant587LatestColdCombinedTo2bWorkflow(actual, 'build');
+  for (const [source, pin] of [[assistant, row.assistantParent], [p0, row.p0Parent]]) {
+    assert.equal(Buffer.byteLength(source), pin.bytes); assert.equal(sha(source), pin.sha256);
+    assert.equal(inverseCompletedRuntimeWorkflow(actual, 'build'), inverseCompletedRuntimeWorkflow(source, 'build'));
+  }
+  assert.equal(p0, latestColdProgressActual.build);
+  const common = inverseLatestColdProgressWorkflow(p0, 'build');
+  assert.equal(common, inverseAssistant587ColdCheckpointCombinedToD5Workflow(assistant, 'build'));
+  assert.equal(Buffer.byteLength(common), row.commonParent.bytes); assert.equal(sha(common), row.commonParent.sha256);
+  assert.equal(sha(inverseCompletedRuntimeWorkflow(actual, 'build')), legacySha);
+  for (const [edits, parent] of [[row.to664a, assistant], [row.to2b, p0]]) {
+    let previous = actual, prior = actual.length;
+    for (const [offset, current, old] of edits) {
+      assert(Number.isSafeInteger(offset) && offset >= 0 && offset + current.length <= prior);
+      prior = offset;
+      assert.equal(previous.slice(offset, offset + current.length), current);
+      previous = previous.slice(0, offset) + old + previous.slice(offset + current.length);
+    }
+    assert.equal(previous, parent, 'Entire fixed parent projection, not selected fields');
+  }
+  // Evaluate the genuine combined selector, not a normalized historic workflow.
+  const restore = coldStep(actual, 'Restore encrypted private weather progress only');
+  for (const cold of [false, true]) for (const progress of ['', '39886354260-1', '39933506923-1', '39933506923-2', 'protected-current']) {
+    const context = coldOrdinaryContext(cold);
+    context.inputs = { ...context.inputs, quick_progress_source: progress };
+    assert.equal(coldEvaluate(coldSelector(restore), context), !cold || ['39886354260-1', '39933506923-1'].includes(progress));
+  }
+});
+
+test('assistant587 plus PR712 latest progress: partial parent mutations never enter any historical inverse', async () => {
+  const actual = inverseRelease588WorkflowUserAgents((await fs.readFile(new URL('../.github/workflows/reusable-weather-build.yml', import.meta.url), 'utf8')).replaceAll('\r\n', '\n'), 'build');
+  const row = assistant587LatestColdCombinedWorkflowReview;
+  assert.equal(sha(actual), row.combined.sha256);
+  const changed = [
+    actual + '\n# UNREVIEWED_PR712_ASSISTANT587\n',
+    actual.replace('39933506923-1', '39933506923-2'),
+    actual.replace('39886354260-1', '39886354260-2'),
+    actual.replace('2026-10-23T01:00:00Z', '2026-10-23T02:00:00Z'),
+    actual.replace('RavRadar/4.0.587', 'RavRadar/4.0.586'),
+  ];
+  for (const edits of [row.to664a, row.to2b]) for (const [offset, current, old] of edits) {
+    assert.equal(actual.slice(offset, offset + current.length), current);
+    for (const replacement of ['', current + current, '?' + current.slice(1), old]) {
+      const candidate = actual.slice(0, offset) + replacement + actual.slice(offset + current.length);
+      if (candidate !== actual) changed.push(candidate);
+    }
+  }
+  for (const source of changed) {
+    assert.notEqual(source, actual);
+    assert.equal(inverseAssistant587LatestColdCombinedTo664aWorkflow(source, 'build'), source);
+    assert.equal(inverseAssistant587LatestColdCombinedTo2bWorkflow(source, 'build'), source);
+    assert.throws(() => inverseCompletedRuntimeWorkflow(source, 'build'));
+  }
+  for (const project of [inverseAssistant587LatestColdCombinedTo664aWorkflow,
+    inverseAssistant587LatestColdCombinedTo2bWorkflow]) {
+    for (const role of ['once', 'unknown']) assert.equal(project(actual, role), actual);
+    for (const parent of [inverseAssistant587LatestColdCombinedTo664aWorkflow(actual, 'build'),
+      inverseAssistant587LatestColdCombinedTo2bWorkflow(actual, 'build')]) assert.equal(project(parent, 'build'), parent);
+    assert.throws(() => project(actual), /ASSISTANT587_LATEST_COMBINED_ARGUMENTS/);
+    assert.throws(() => project(actual, 'build', true), /ASSISTANT587_LATEST_COMBINED_ARGUMENTS/);
+    assert.throws(() => project(null, 'build'), /ASSISTANT587_LATEST_COMBINED_TYPE/);
+  }
+});
+
+test('release588 exact five UA fields preserve whole587 and every historical refusal',async()=>{
+  const actual=inverseRelease590WorkflowUserAgents((await fs.readFile(new URL('../.github/workflows/reusable-weather-build.yml',import.meta.url),'utf8')).replaceAll('\r\n','\n'),'build');
+  assert.equal(Buffer.byteLength(actual),292886);
+  assert.equal(sha(actual),'998d3a8e11a1088363a84bfd4a0d64f7117eacc059a3cf5c0ca895f7a85e22b3');
+  assert.equal(actual.split('RavRadar/4.0.588').length,6);
+  assert.equal(actual.includes('RavRadar/4.0.587'),false);
+  const previous=inverseRelease588WorkflowUserAgents(actual,'build');
+  assert.equal(sha(previous),'e4c022274fe0d05fd3e10aff59d7a3165c67b92847a196c7ee793df68a666600');
+  assert.equal(previous,actual.replaceAll('RavRadar/4.0.588','RavRadar/4.0.587'));
+  assert.equal(inverseRelease588WorkflowUserAgents(previous,'build'),previous);
+  assert.equal(sha(inverseCompletedRuntimeWorkflow(actual,'build')),legacySha);
+  for(const project of [inverseAssistant587LatestColdCombinedTo664aWorkflow,
+    inverseAssistant587LatestColdCombinedTo2bWorkflow])
+    assert.equal(project(actual,'build'),project(previous,'build'));
+  for(const role of ['once','unknown']){
+    assert.equal(inverseRelease588WorkflowUserAgents(actual,role),actual);
+    assert.equal(inverseRelease588WorkflowUserAgents(previous,role),previous);
+  }
+  const mutations=[actual+'\n# UNREVIEWED588\n',
+    actual.replace('RavRadar/4.0.588','RavRadar/4.0.587'),
+    actual.replaceAll('RavRadar/4.0.588','RavRadar/4.0.589'),
+    actual.replace('RavRadar/4.0.588','RavRadar/4.0.588 RavRadar/4.0.588'),
+    actual.replace('test "${{ steps.full-validation.outcome }}" = success','true')];
+  for(const changed of mutations){
+    assert.notEqual(changed,actual);
+    assert.equal(inverseRelease588WorkflowUserAgents(changed,'build'),changed);
+    assert.throws(()=>inverseCompletedRuntimeWorkflow(changed,'build'));
+  }
+  assert.throws(()=>inverseRelease588WorkflowUserAgents(actual),/RELEASE588_WORKFLOW_ARGUMENTS/);
+  assert.throws(()=>inverseRelease588WorkflowUserAgents(actual,'build',true),/RELEASE588_WORKFLOW_ARGUMENTS/);
+  assert.throws(()=>inverseRelease588WorkflowUserAgents(null,'build'),/RELEASE588_WORKFLOW_TYPE/);
+});
+
+test('release590 five UA inverse reaches genuine588 then the existing19-hunk cold-progress adapter',async()=>{
+  const actual=inverseRelease591WorkflowUserAgents((await fs.readFile(new URL('../.github/workflows/reusable-weather-build.yml',import.meta.url),'utf8')).replaceAll('\r\n','\n'),'build');
+  assert.equal(Buffer.byteLength(actual),292886);
+  assert.equal(sha(actual),'bf9f27721718511cf345505416230b10c863a963bbb49ee774e4fdea8a7adfa6');
+  assert.equal(actual.split('RavRadar/4.0.590').length,6);
+  const previous=inverseRelease590WorkflowUserAgents(actual,'build');
+  assert.equal(Buffer.byteLength(previous),292886);
+  assert.equal(sha(previous),'998d3a8e11a1088363a84bfd4a0d64f7117eacc059a3cf5c0ca895f7a85e22b3');
+  assert.equal(previous,actual.replaceAll('RavRadar/4.0.590','RavRadar/4.0.588'));
+  assert.equal(inverseRelease590WorkflowUserAgents(previous,'build'),previous);
+  assert.equal(inverseRelease588WorkflowUserAgents(actual,'build'),inverseRelease588WorkflowUserAgents(previous,'build'));
+  for(const project of [inverseAssistant587LatestColdCombinedTo664aWorkflow,inverseAssistant587LatestColdCombinedTo2bWorkflow])
+    assert.equal(project(actual,'build'),project(previous,'build'));
+  const normalProgress=inverseAssistant587LatestColdCombinedTo2bWorkflow(actual,'build');
+  assert.equal(Buffer.byteLength(normalProgress),latestColdProgressWorkflowReview.roles.build.after.bytes);
+  assert.equal(sha(normalProgress),latestColdProgressWorkflowReview.roles.build.after.sha256);
+  assert.equal(inverseLatestColdProgressWorkflow(normalProgress,'build'),
+    inverseLatestColdProgressWorkflow(inverseAssistant587LatestColdCombinedTo2bWorkflow(previous,'build'),'build'));
+});
+
+test('release590 UA view rejects mixed,duplicated,unknown or non-UA drift through unchanged whole oracles',async()=>{
+  const actual=inverseRelease591WorkflowUserAgents((await fs.readFile(new URL('../.github/workflows/reusable-weather-build.yml',import.meta.url),'utf8')).replaceAll('\r\n','\n'),'build');
+  for(const role of ['once','unknown','toString'])assert.equal(inverseRelease590WorkflowUserAgents(actual,role),actual);
+  const mutations=[actual+'\n# UNREVIEWED590\n',
+    actual.replace('RavRadar/4.0.590','RavRadar/4.0.588'),
+    // 591 is now exact-reviewed; retain this unknown-future-UA refusal with 592.
+    actual.replaceAll('RavRadar/4.0.590','RavRadar/4.0.592'),
+    actual.replace('RavRadar/4.0.590','RavRadar/4.0.590 RavRadar/4.0.590'),
+    actual.replace('steps.preflight.outputs.should_run','steps.preflight.outputs.changed')];
+  for(const changed of mutations){
+    assert.notEqual(changed,actual);
+    assert.equal(inverseRelease590WorkflowUserAgents(changed,'build'),changed);
+    assert.throws(()=>inverseCompletedRuntimeWorkflow(changed,'build'));
+  }
+  assert.throws(()=>inverseRelease590WorkflowUserAgents(actual),/RELEASE590_WORKFLOW_ARGUMENTS/);
+  assert.throws(()=>inverseRelease590WorkflowUserAgents(actual,'build',true),/RELEASE590_WORKFLOW_ARGUMENTS/);
+  assert.throws(()=>inverseRelease590WorkflowUserAgents(null,'build'),/RELEASE590_WORKFLOW_TYPE/);
+});
+
+test('release591 actual normal workflow preserves genuine590 and historical refusals',async()=>{
+  const actual=inverseWindTailCapacityWorkflow(inverseRelease592WorkflowUserAgents((await fs.readFile(new URL('../.github/workflows/reusable-weather-build.yml',import.meta.url),'utf8')).replaceAll('\r\n','\n'),'build'),'build');
+  assert.equal(Buffer.byteLength(actual),292886);
+  assert.equal(sha(actual),'bfb4d382c36d713328e8d68f7a04801a16f35b3bcecffb3c1e9813cc578338c7');
+  assert.equal(actual.split('RavRadar/4.0.591').length,6);
+  assert.equal(actual.includes('RavRadar/4.0.590'),false);
+  const previous=inverseRelease591WorkflowUserAgents(actual,'build');
+  assert.equal(Buffer.byteLength(previous),292886);
+  assert.equal(sha(previous),'bf9f27721718511cf345505416230b10c863a963bbb49ee774e4fdea8a7adfa6');
+  assert.equal(previous,actual.replaceAll('RavRadar/4.0.591','RavRadar/4.0.590'));
+  assert.equal(inverseRelease591WorkflowUserAgents(previous,'build'),previous);
+  assert.equal(sha(inverseCompletedRuntimeWorkflow(actual,'build')),legacySha);
+  assert.equal(inverseCompletedRuntimeWorkflow(actual,'build'),inverseCompletedRuntimeWorkflow(previous,'build'));
+  for(const project of [inversePairedPrivateRuntimePublication,inverseRelease590WorkflowUserAgents,
+    inverseAssistant587LatestColdCombinedTo664aWorkflow,inverseAssistant587LatestColdCombinedTo2bWorkflow])
+    assert.equal(project(actual,'build'),project(previous,'build'));
+  for(const role of ['once','unknown','toString'])assert.equal(inverseRelease591WorkflowUserAgents(actual,role),actual);
+  const mutations=[actual+'\n# UNREVIEWED591\n',
+    actual.replace('RavRadar/4.0.591','RavRadar/4.0.590'),
+    actual.replace('RavRadar/4.0.591','RavRadar/4.0.592'),
+    actual.replaceAll('RavRadar/4.0.591','RavRadar/4.0.592'),
+    actual.replace('RavRadar/4.0.591','RavRadar/4.0.591 RavRadar/4.0.591'),
+    actual.replace('test "${{ steps.full-validation.outcome }}" = success','true'),
+    actual.replace('steps.preflight.outputs.should_run','steps.preflight.outputs.changed')];
+  for(const changed of mutations){
+    assert.notEqual(changed,actual);
+    assert.equal(inverseRelease591WorkflowUserAgents(changed,'build'),changed);
+    assert.throws(()=>inverseCompletedRuntimeWorkflow(changed,'build'));
+  }
+  assert.throws(()=>inverseRelease591WorkflowUserAgents(actual),/RELEASE591_WORKFLOW_ARGUMENTS/);
+  assert.throws(()=>inverseRelease591WorkflowUserAgents(actual,'build',true),/RELEASE591_WORKFLOW_ARGUMENTS/);
+  assert.throws(()=>inverseRelease591WorkflowUserAgents(null,'build'),/RELEASE591_WORKFLOW_TYPE/);
+});
+
+
+test('wind-tail capacity whole inverse preserves every591 byte and refuses budget or surrounding drift', async () => {
+  const actual = inverseRelease592WorkflowUserAgents((await fs.readFile(new URL('../.github/workflows/reusable-weather-build.yml', import.meta.url), 'utf8')).replaceAll('\r\n', '\n'), 'build');
+  const row = windTailCapacityWorkflowReview;
+  assert.equal(Buffer.byteLength(actual), row.after.bytes);
+  assert.equal(sha(actual), row.after.sha256);
+  const previous = inverseWindTailCapacityWorkflow(actual, 'build');
+  assert.equal(Buffer.byteLength(previous), row.before.bytes);
+  assert.equal(sha(previous), row.before.sha256);
+  assert.equal(previous, actual.replace(row.afterBlock, row.beforeBlock));
+  assert.equal(inverseWindTailCapacityWorkflow(previous, 'build'), previous);
+  assert.equal(inverseRelease591WorkflowUserAgents(actual, 'build'), inverseRelease591WorkflowUserAgents(previous, 'build'));
+  assert.equal(inverseCompletedRuntimeWorkflow(actual, 'build'), inverseCompletedRuntimeWorkflow(previous, 'build'));
+  assert.equal(sha(inverseCompletedRuntimeWorkflow(actual, 'build')), legacySha);
+  const mutations = [
+    actual.replace("|| '600000'", "|| '600001'"),
+    actual.replace("&& '60000'", "&& '60001'"),
+    actual.replace(row.afterBlock, row.beforeBlock.replace("|| '90000'", "|| '600000'")),
+    actual.replace(row.afterBlock, row.afterBlock + row.afterBlock),
+    actual.replace(row.afterBlock, ''),
+    actual.replace('The ordinary scalar reserve must be able to reach all 673 PARTs.', 'Unreviewed reserve policy.'),
+    actual.replace("test \"${{ steps.full-validation.outcome }}\" = success", 'true'),
+    actual + '\n# UNREVIEWED_TAIL_CHANGE\n',
+  ];
+  for (const changed of mutations) {
+    assert.notEqual(changed, actual);
+    assert.equal(inverseWindTailCapacityWorkflow(changed, 'build'), changed);
+    assert.throws(() => inverseCompletedRuntimeWorkflow(changed, 'build'));
+  }
+  for (const role of ['once', 'unknown', 'toString']) assert.equal(inverseWindTailCapacityWorkflow(actual, role), actual);
+  assert.throws(() => inverseWindTailCapacityWorkflow(actual), /WORKFLOW_ARGUMENTS/);
+  assert.throws(() => inverseWindTailCapacityWorkflow(actual, 'build', true), /WORKFLOW_ARGUMENTS/);
+  assert.throws(() => inverseWindTailCapacityWorkflow(null, 'build'), /WORKFLOW_TYPE/);
+});
+
+
+test('release592 actual capacity workflow preserves whole591 tail and historical refusals', async () => {
+  const actual = inverseRuntimeAuditExecutionWorkflow((await fs.readFile(new URL('../.github/workflows/reusable-weather-build.yml', import.meta.url), 'utf8')).replaceAll('\r\n', '\n'), 'build');
+  const row = release592WorkflowUserAgentReview;
+  assert.equal(Buffer.byteLength(actual), row.after.bytes);
+  assert.equal(sha(actual), row.after.sha256);
+  assert.equal(actual.split('RavRadar/4.0.592').length, 6);
+  const previous = inverseRelease592WorkflowUserAgents(actual, 'build');
+  assert.equal(Buffer.byteLength(previous), row.before.bytes);
+  assert.equal(sha(previous), row.before.sha256);
+  assert.equal(previous, actual.replaceAll('RavRadar/4.0.592', 'RavRadar/4.0.591'));
+  assert.equal(inverseRelease592WorkflowUserAgents(previous, 'build'), previous);
+  assert.equal(inverseWindTailCapacityWorkflow(previous, 'build'), previous.replace(windTailCapacityWorkflowReview.afterBlock, windTailCapacityWorkflowReview.beforeBlock));
+  assert.equal(inverseRelease591WorkflowUserAgents(actual, 'build'), inverseRelease591WorkflowUserAgents(previous, 'build'));
+  assert.equal(inverseCompletedRuntimeWorkflow(actual, 'build'), inverseCompletedRuntimeWorkflow(previous, 'build'));
+  assert.equal(sha(inverseCompletedRuntimeWorkflow(actual, 'build')), legacySha);
+  const mutations = [
+    actual.replace('RavRadar/4.0.592', 'RavRadar/4.0.591'),
+    actual.replace("|| '600000'", "|| '600001'"),
+    actual.replace("&& '60000'", "&& '60001'"),
+    actual.replace(windTailCapacityWorkflowReview.afterBlock, windTailCapacityWorkflowReview.afterBlock + windTailCapacityWorkflowReview.afterBlock),
+    actual.replace('timeout-minutes: 80', 'timeout-minutes: 81'),
+    actual + '\n# UNREVIEWED592_CAPACITY_CHANGE\n',
+  ];
+  for (const changed of mutations) {
+    assert.notEqual(changed, actual);
+    assert.equal(inverseRelease592WorkflowUserAgents(changed, 'build'), changed);
+    assert.throws(() => inverseCompletedRuntimeWorkflow(changed, 'build'));
+  }
+  for (const role of ['once', 'unknown', 'toString']) assert.equal(inverseRelease592WorkflowUserAgents(actual, role), actual);
+  assert.throws(() => inverseRelease592WorkflowUserAgents(actual), /RELEASE592_WORKFLOW_ARGUMENTS/);
+  assert.throws(() => inverseRelease592WorkflowUserAgents(actual, 'build', true), /RELEASE592_WORKFLOW_ARGUMENTS/);
+  assert.throws(() => inverseRelease592WorkflowUserAgents(null, 'build'), /RELEASE592_WORKFLOW_TYPE/);
+});
+
+test('runtime audit592 observation whole inverse preserves issued592 and exact591753 parents',async()=>{
+  const actual=inverseRelease593WorkflowUserAgents(inverseRelease594WorkflowUserAgents((await fs.readFile(new URL('../.github/workflows/reusable-weather-build.yml',import.meta.url),'utf8')).replaceAll('\r\n','\n'),'build'),'build');
+  const row=runtimeAuditExecution592WorkflowReview;
+  assert.equal(Buffer.byteLength(actual),row.after.bytes);assert.equal(sha(actual),row.after.sha256);
+  const previous=inverseRuntimeAuditExecutionWorkflow(actual,'build');
+  assert.equal(Buffer.byteLength(previous),row.before.bytes);assert.equal(sha(previous),row.before.sha256);
+  assert.equal(inverseRuntimeAuditExecutionWorkflow(previous,'build'),previous);
+  const genuine591=actual.replaceAll('RavRadar/4.0.592','RavRadar/4.0.591');
+  assert.equal(Buffer.byteLength(genuine591),runtimeAuditExecutionWorkflowReview.after.bytes);
+  assert.equal(sha(genuine591),runtimeAuditExecutionWorkflowReview.after.sha256);
+  assert.equal(inverseRuntimeAuditExecutionWorkflow(genuine591,'build'),previous.replaceAll('RavRadar/4.0.592','RavRadar/4.0.591'));
+
+  assert.equal(inverseCompletedRuntimeWorkflow(actual,'build'),inverseCompletedRuntimeWorkflow(previous,'build'));
+  assert.equal(sha(inverseCompletedRuntimeWorkflow(actual,'build')),legacySha);
+  for(const changed of [actual+'\n# UNKNOWN_AUDIT_CHANGE\n',
+    actual.replace('|| runtime_audit_exit_status=$?','|| runtime_audit_exit_status=0'),
+    actual.replace('--exit-code "$runtime_audit_exit_status"','--exit-code 0'),
+    actual.replace('node scripts/observe-runtime-audit-execution.mjs --phase before || true','true'),
+    actual.replace('.json.execution.json\n','.json.execution-UNKNOWN.json\n'),
+    actual.replace('runtime-audit.json.failure.json','runtime-audit-UNKNOWN.json.failure.json'),
+    actual.replace('Create and validate exactly one checkpoint disposition before release gate','Unreviewed disposition'),
+    actual.replace('test "$'+'{{ steps.full-validation.outcome }}" = success','true')]){
+    assert.notEqual(changed,actual);
+    assert.equal(inverseRuntimeAuditExecutionWorkflow(changed,'build'),changed);
+    assert.throws(()=>inverseCompletedRuntimeWorkflow(changed,'build'));
+  }
+  for(const role of ['once','unknown','toString'])assert.equal(inverseRuntimeAuditExecutionWorkflow(actual,role),actual);
+  assert.throws(()=>inverseRuntimeAuditExecutionWorkflow(actual),/WORKFLOW_ARGUMENTS/);
+  assert.throws(()=>inverseRuntimeAuditExecutionWorkflow(actual,'build',true),/WORKFLOW_ARGUMENTS/);
+  assert.throws(()=>inverseRuntimeAuditExecutionWorkflow(null,'build'),/WORKFLOW_TYPE/);
+});
+
+
+test('release593 actual workflow preserves the immutable592 body and all older whole oracles',async()=>{
+  const actual=inverseRelease594WorkflowUserAgents((await fs.readFile(new URL('../.github/workflows/reusable-weather-build.yml',import.meta.url),'utf8')).replaceAll('\r\n','\n'),'build');
+  const row=release593WorkflowUserAgentReview;
+  assert.equal(Buffer.byteLength(actual),row.after.bytes);assert.equal(sha(actual),row.after.sha256);
+  assert.equal(actual.split('RavRadar/4.0.593').length,6);
+  const previous=inverseRelease593WorkflowUserAgents(actual,'build');
+  assert.equal(Buffer.byteLength(previous),row.before.bytes);assert.equal(sha(previous),row.before.sha256);
+  assert.equal(previous,actual.replaceAll('RavRadar/4.0.593','RavRadar/4.0.592'));
+  assert.equal(inverseRelease593WorkflowUserAgents(previous,'build'),previous);
+  assert.equal(sha(previous),runtimeAuditExecution592WorkflowReview.after.sha256);
+  assert.equal(inverseRuntimeAuditExecutionWorkflow(actual,'build'),inverseRuntimeAuditExecutionWorkflow(previous,'build'));
+  assert.equal(inverseRelease592WorkflowUserAgents(actual,'build'),inverseRelease592WorkflowUserAgents(previous,'build'));
+  assert.equal(inverseCompletedRuntimeWorkflow(actual,'build'),inverseCompletedRuntimeWorkflow(previous,'build'));
+  assert.equal(sha(inverseCompletedRuntimeWorkflow(actual,'build')),legacySha);
+  for(const changed of [actual.replace('RavRadar/4.0.593','RavRadar/4.0.592'),
+    actual.replace("|| '600000'","|| '600001'"),actual.replace('timeout-minutes: 80','timeout-minutes: 81'),
+    actual.replace('|| runtime_audit_exit_status=$?','|| runtime_audit_exit_status=0'),
+    actual+'\n# UNKNOWN593_WORKFLOW_CHANGE\n']){
+    assert.notEqual(changed,actual);assert.equal(inverseRelease593WorkflowUserAgents(changed,'build'),changed);
+    assert.throws(()=>inverseCompletedRuntimeWorkflow(changed,'build'));
+  }
+  for(const role of ['once','unknown','toString'])assert.equal(inverseRelease593WorkflowUserAgents(actual,role),actual);
+  assert.throws(()=>inverseRelease593WorkflowUserAgents(actual),/RELEASE593_WORKFLOW_ARGUMENTS/);
+  assert.throws(()=>inverseRelease593WorkflowUserAgents(actual,'build',true),/RELEASE593_WORKFLOW_ARGUMENTS/);
+  assert.throws(()=>inverseRelease593WorkflowUserAgents(null,'build'),/RELEASE593_WORKFLOW_TYPE/);
+});
+
+test('full Git pin preparation has an exact outer inverse before every unchanged workflow oracle',async()=>{
+  const actual=(await fs.readFile(new URL('../.github/workflows/reusable-weather-build.yml',import.meta.url),'utf8')).replaceAll('\r\n','\n');
+  const row=fullGitPinnedSourcePreparationWorkflowReview;
+  assert.equal(Buffer.byteLength(actual),row.after.bytes);assert.equal(sha(actual),row.after.sha256);
+  const previous=inverseFullGitPinnedSourcePreparationWorkflow(actual,'build');
+  assert.equal(Buffer.byteLength(previous),row.before.bytes);assert.equal(sha(previous),row.before.sha256);
+  assert.deepEqual(row.before,release594WorkflowUserAgentReview.after);
+  assert.equal(inverseFullGitPinnedSourcePreparationWorkflow(previous,'build'),previous);
+  assert.equal(inverseCompletedRuntimeWorkflow(actual,'build'),inverseCompletedRuntimeWorkflow(previous,'build'));
+  assert.equal(sha(inverseCompletedRuntimeWorkflow(actual,'build')),legacySha);
+  const mutations=[actual+'\n# UNKNOWN_FULL_GIT_CHANGE\n','!'+actual.slice(1)];
+  for(const[before,after]of row.hunks)for(const replacement of [before,after+after,''])
+    mutations.push(actual.replace(after,()=>replacement));
+  for(const changed of mutations){
+    assert.notEqual(changed,actual);
+    assert.equal(inverseFullGitPinnedSourcePreparationWorkflow(changed,'build'),changed);
+    assert.throws(()=>inverseCompletedRuntimeWorkflow(changed,'build'));
+  }
+  for(const role of ['once','unknown','toString'])
+    assert.equal(inverseFullGitPinnedSourcePreparationWorkflow(actual,role),actual);
+  assert.throws(()=>inverseFullGitPinnedSourcePreparationWorkflow(actual),/WORKFLOW_ARGUMENTS/);
+  assert.throws(()=>inverseFullGitPinnedSourcePreparationWorkflow(actual,'build',true),/WORKFLOW_ARGUMENTS/);
+  assert.throws(()=>inverseFullGitPinnedSourcePreparationWorkflow(null,'build'),/WORKFLOW_TYPE/);
+});
+
+test('release594 actual workflow preserves whole593 and refuses unrelated changes',async()=>{
+  const actual=inverseFullGitPinnedSourcePreparationWorkflow(
+    (await fs.readFile(new URL('../.github/workflows/reusable-weather-build.yml',import.meta.url),'utf8')).replaceAll('\r\n','\n'),'build');
+  const row=release594WorkflowUserAgentReview;
+  assert.equal(Buffer.byteLength(actual),row.after.bytes);assert.equal(sha(actual),row.after.sha256);
+  assert.equal(actual.split('RavRadar/4.0.594').length,6);
+  const previous=inverseRelease594WorkflowUserAgents(actual,'build');
+  assert.equal(Buffer.byteLength(previous),row.before.bytes);assert.equal(sha(previous),row.before.sha256);
+  assert.equal(previous,actual.replaceAll('RavRadar/4.0.594','RavRadar/4.0.593'));
+  assert.equal(inverseRelease594WorkflowUserAgents(previous,'build'),previous);
+  assert.equal(inverseCompletedRuntimeWorkflow(actual,'build'),inverseCompletedRuntimeWorkflow(previous,'build'));
+  assert.equal(sha(inverseCompletedRuntimeWorkflow(actual,'build')),legacySha);
+  for(const changed of [actual.replace('RavRadar/4.0.594','RavRadar/4.0.593'),
+    actual.replace("|| '600000'","|| '600001'"),actual.replace('timeout-minutes: 80','timeout-minutes: 81'),
+    actual.replace('|| runtime_audit_exit_status=$?','|| runtime_audit_exit_status=0'),
+    actual+'\n# UNKNOWN594_WORKFLOW_CHANGE\n']){
+    assert.notEqual(changed,actual);assert.equal(inverseRelease594WorkflowUserAgents(changed,'build'),changed);
+    assert.throws(()=>inverseCompletedRuntimeWorkflow(changed,'build'));
+  }
+  for(const role of ['once','unknown','toString'])assert.equal(inverseRelease594WorkflowUserAgents(actual,role),actual);
+  assert.throws(()=>inverseRelease594WorkflowUserAgents(actual),/RELEASE594_WORKFLOW_ARGUMENTS/);
+  assert.throws(()=>inverseRelease594WorkflowUserAgents(actual,'build',true),/RELEASE594_WORKFLOW_ARGUMENTS/);
+  assert.throws(()=>inverseRelease594WorkflowUserAgents(null,'build'),/RELEASE594_WORKFLOW_TYPE/);
+});
+
+// The actual repair is read before the unchanged historical workflow oracles.
+test('terminal delivery repair maps only five exact whole sources and its exact wrapper inventory', async () => {
+  const { terminalRepair4145WorkflowReview: review, inverseTerminalRepair4145Workflow: inverse,
+    inverseTerminalRepair4145WorkflowInventory: inventory } = await import('./lib/completed-private-runtime-workflow-review.mjs');
+  assert.deepEqual(Object.keys(review.roles), ['orchestrator', 'once', 'repair', 'recovery', 'deploy']);
+  for (const [role, row] of Object.entries(review.roles)) {
+    const actual = (await fs.readFile(new URL('../' + row.path, import.meta.url), 'utf8')).replaceAll('\r\n', '\n');
+    assert.equal(Buffer.byteLength(actual), row.after.bytes); assert.equal(sha(actual), row.after.sha256);
+    const prior = inverse(actual, role);
+    assert.equal(Buffer.byteLength(prior), row.before.bytes); assert.equal(sha(prior), row.before.sha256);
+    assert.equal(inverse(prior, role), prior);
+    assert.equal(inverseCompletedRuntimeWorkflow(actual, role), inverseCompletedRuntimeWorkflow(prior, role));
+    const unknown = actual + '\n# UNREVIEWED terminal repair mutation\n';
+    assert.equal(inverse(unknown, role), unknown, 'Unknown whole bytes never receive the inverse');
+    for (const unknownRole of ['unknown', 'toString', '__proto__', null, 1])
+      assert.equal(inverse(actual, unknownRole), actual, 'Unknown or inherited role cannot select a reviewed inverse');
+    for (const [offset, fragment] of row.edits) {
+      const mixed = actual.slice(0, offset) + 'MIXED_UNREVIEWED' + actual.slice(offset + fragment.length);
+      assert.equal(inverse(mixed, role), mixed, 'Every incomplete/mixed hunk stays outside the whole inverse');
+    }
+  }
+  const wrapper = (await fs.readFile(new URL('../' + review.wrapper.path, import.meta.url), 'utf8')).replaceAll('\r\n', '\n');
+  const names = ['other-unreviewed.yml', review.wrapper.name, 'update-and-deploy.yml'];
+  assert.deepEqual(inventory(names, wrapper), ['other-unreviewed.yml', 'update-and-deploy.yml']);
+  assert.deepEqual(names, ['other-unreviewed.yml', review.wrapper.name, 'update-and-deploy.yml']);
+  assert.throws(() => inventory(names, wrapper + '\n'), /TERMINAL4145_WRAPPER_/);
+  assert.throws(() => inventory(names, wrapper.replace('pull-requests: read', 'pull-requests: write')), /TERMINAL4145_WRAPPER_/);
+  assert.throws(() => inventory([...names, review.wrapper.name], wrapper), /TERMINAL4145_INVENTORY_DUPLICATE/);
+  assert.throws(() => inventory(names.filter(name => name !== review.wrapper.name), wrapper), /TERMINAL4145_WRAPPER_ONE/);
 });

@@ -531,6 +531,7 @@ export function classifyRavScoreOperationalPagesRecovery({
   observations,
   targetManifest,
   durableEvidence = false,
+  preparedTargetAdmission = null,
 }) {
   assertPendingIdentity(pending);
   const targetManifestSha256 = assertTargetManifest(targetManifest, pending);
@@ -588,6 +589,22 @@ export function classifyRavScoreOperationalPagesRecovery({
     );
   }
 
+  if (terminalEvidence.status === 'NOT_STARTED' && preparedTargetAdmission !== null) {
+    const a = preparedTargetAdmission;
+    if (durableEvidence || a.schemaVersion !== 'ravscore-protected-prepared-target-admission-v1'
+      || a.pendingSha256 !== sha256CanonicalJson(pending)
+      || a.artifactSealSha256 !== sha256CanonicalJson(artifactSeal)
+      || a.originalAttemptId !== pending.attemptId || a.producerHead !== pending.headSha
+      || a.targetManifestSha256 !== pending.requestedPublicManifestSha256
+      || !/^[a-f0-9]{64}$/.test(a.planSha256 ?? '') || !/^[a-f0-9]{64}$/.test(a.phaseObjectSha256 ?? '')
+      || !Number.isSafeInteger(a.centralVersion) || a.centralVersion < 1 || a.privatePayloadIncluded !== false
+      || a.actualExecutor?.repository !== pending.repository || a.actualExecutor?.headSha === pending.headSha
+      || !/^[a-f0-9]{40}$/.test(a.actualExecutor?.headSha ?? '')) {
+      throw new Error('Protected prepared target admission differs from the exact pending/artifact.');
+    }
+    return makeResult(RAVSCORE_OPERATIONAL_PAGES_RECOVERY_ACTIONS.EXACT_TARGET_REDEPLOY,
+      'STABLE_SOURCE_AND_AUTHENTIC_PREPARED_TARGET', pending, artifactSeal, endpoints.length);
+  }
   if (terminalEvidence.status === 'NOT_STARTED') {
     return makeResult(
       RAVSCORE_OPERATIONAL_PAGES_RECOVERY_ACTIONS.SAFE_SOURCE_ABORT,
@@ -649,13 +666,14 @@ function parseArgs(argv) {
     '--observations',
     '--target-manifest',
     '--durable-evidence',
+    '--read-protected-prepared-target',
     '--output'
   ]);
   const args = {};
   for (let index = 0; index < argv.length;) {
     const key = argv[index];
-    if (key === '--durable-evidence') {
-      args['durable-evidence'] = true;
+    if (key === '--durable-evidence' || key === '--read-protected-prepared-target') {
+      args[key.slice(2)] = true;
       index += 1;
       continue;
     }
@@ -666,7 +684,7 @@ function parseArgs(argv) {
     args[key.slice(2)] = value;
     index += 2;
   }
-  const required = [...allowed].filter(key => key !== '--durable-evidence'
+  const required = [...allowed].filter(key => key !== '--durable-evidence' && key !== '--read-protected-prepared-target'
     && !(args['durable-evidence'] === true && key === '--artifact-evidence'));
   if (args['durable-evidence'] === true && args['artifact-evidence'] !== undefined) {
     throw new Error('Durable recovery must not receive artifact-evidence.');
@@ -698,7 +716,7 @@ async function writeJsonAtomic(filePath, value) {
 
 async function main() {
   const args = parseArgs(process.argv.slice(2));
-  const result = classifyRavScoreOperationalPagesRecovery({
+  const input = {
     pending: await readJson(args.pending, 'Pending-identiteten'),
     artifactSeal: await readJson(args['artifact-seal'], 'Artifact-sealet'),
     artifactEvidence: args['durable-evidence']
@@ -708,7 +726,25 @@ async function main() {
     observations: await readJson(args.observations, 'De offentlige observationer'),
     targetManifest: await readJson(args['target-manifest'], 'Target-manifestet'),
     durableEvidence: args['durable-evidence'] === true,
-  });
+  };
+  if (args['read-protected-prepared-target'] === true && !input.durableEvidence
+    && input.terminalEvidence.status === 'NOT_STARTED'
+    && input.observations.every(o => o.publicManifestSha256 === input.pending.sourcePublicManifestSha256)) {
+    // This option requests a fresh authenticated read. It accepts no receipt,
+    // admission flag, source head override or production identity from a file.
+    const {createProtectedPrivateRuntimeClients} = await import('./protected-private-production-runtime.mjs');
+    const {readProtectedPreparedTargetAdmission} = await import('./protected-operational-reentry-evidence.mjs');
+    const clients = createProtectedPrivateRuntimeClients({storageBackend:'supabase'});
+    const e = process.env;
+    input.preparedTargetAdmission = await readProtectedPreparedTargetAdmission({
+      request:clients.documentRequest,storage:clients.storage,repository:e.GITHUB_REPOSITORY,
+      ...input,directory:path.dirname(path.resolve(args.pending)),
+      baseUrl:e.RAVRADAR_PUBLIC_BASE_URL,
+      executor:{repository:e.GITHUB_REPOSITORY,runId:Number(e.GITHUB_RUN_ID),runAttempt:Number(e.GITHUB_RUN_ATTEMPT),
+        headSha:e.GITHUB_SHA,attemptId:'pages-recovery-'+e.GITHUB_RUN_ID+'-'+e.GITHUB_RUN_ATTEMPT},
+    });
+  }
+  const result = classifyRavScoreOperationalPagesRecovery(input);
   await writeJsonAtomic(args.output, result);
   console.log(`Pages-recovery klassificeret som ${result.action}.`);
   if (result.action === RAVSCORE_OPERATIONAL_PAGES_RECOVERY_ACTIONS.FAIL_CLOSED) {

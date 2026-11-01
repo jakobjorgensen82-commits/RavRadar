@@ -6,7 +6,9 @@ import crypto from 'node:crypto';
 import test from 'node:test';
 import './test-source-producer-sync-binding.mjs';
 import './test-source-producer-workflow.mjs';
-import {SOURCE_PRODUCER_BINDING,SOURCE_PRODUCER_OUTPUT,requireSourceProducerBinding,requireSourceProducerOutput} from './lib/source-producer-successor-source.mjs';
+import {SOURCE_PRODUCER_BINDING,SOURCE_PRODUCER_OUTPUT,SOURCE_PRODUCER_BEFORE,
+  SOURCE_PRODUCER_PREDECESSOR_RELEASE,SOURCE_PRODUCER_CODE_PARENT,sourceProducerMigration,
+  requireSourceProducerBinding,requireSourceProducerOutput} from './lib/source-producer-successor-source.mjs';
 import {stageSourceProducerOriginals} from './stage-source-producer-originals.mjs';
 import {runSourceProducerPrewrite,verifySourceProducerPrewritePreservation} from './source-producer-prewrite.mjs';
 import {verifySourceProducerPlan,sourceProducerSqlWriteRequired} from './verify-source-producer-plan.mjs';
@@ -14,7 +16,9 @@ import {reconcileSourceCodeOnlyPrivateRuntimeCheckpoint} from './reconcile-priva
 import {reconcileSourceProducerCodeOnly} from './reconcile-source-producer-code-only.mjs';
 import {runSourceProducerLegacyCompatibility} from './test-source-producer-legacy-compatibility.mjs';
 import {modelSourceRelativeModuleSpecifiers} from './lib/model-source-imports.mjs';
-import {sourceProducerRequiredMigrations} from './integrated-cutover-readiness.mjs';
+import {sourceProducerRequiredMigrations,installed593Original591RequiredMigrations,
+  accountStatisticsAssistantRequiredMigrations,assertSourceProducerMigrationsApplied,
+  assertAccountStatisticsAssistantMigrationsApplied} from './integrated-cutover-readiness.mjs';
 
 const sourceIssued=SOURCE_PRODUCER_BINDING!==null;
 if(sourceIssued){requireSourceProducerBinding();requireSourceProducerOutput();}
@@ -27,8 +31,15 @@ test('SOURCE preserves the never-installed first proposal without staging it as 
     'd8986e0721129a0d0ad996a3a8c6f71c5b0e9dd487883e9d2417843a68599517',
     'Whole never-installed original SQL is retained, not rewritten');
   const required=sourceProducerRequiredMigrations();
-  assert.equal(required.length,55);
-  assert.equal(required.at(-2).version,'20261019100000','Same genuine585 predecessor');
+  // The former55 CURRENT assertion belonged to SOURCE's then-selected585 parent.
+  // Current SOURCE explicitly follows genuine594; the585 family's own scope stays separate.
+  const genuine594=installed593Original591RequiredMigrations();
+  assert.equal(SOURCE_PRODUCER_PREDECESSOR_RELEASE,'4.0.594');
+  assert.equal(SOURCE_PRODUCER_CODE_PARENT.head,'37a34703d9ae8bfb2c28056f21a7ea73944033ae');
+  assert.equal(genuine594.length,61);assert.equal(genuine594.at(-1).version,'20261031070755');
+  assert.equal(genuine594.at(-1).version,SOURCE_PRODUCER_BEFORE.version);
+  assert.deepEqual(required.slice(0,-1),genuine594,'Whole genuine594 original prefix, not a count-only replacement');
+  assert.equal(required.length,genuine594.length+1);assert.deepEqual(required.at(-1),sourceProducerMigration());
   assert.equal(required.at(-1).version,SOURCE_PRODUCER_BINDING.version);
   assert.notEqual(required.at(-1).version,'20261021020000');
   assert(!required.some(row=>row.filename===old),'Old source-only proposal is not an installation step');
@@ -131,4 +142,51 @@ test('SOURCE verified pending-write policy never replays an already installed SQ
     ['unknown',[],version],['before',null,version],['before',[],'not-issued-version'],
   ])assert.throws(()=>sourceProducerSqlWriteRequired(...args));
   assert.throws(()=>sourceProducerSqlWriteRequired('before',[],version,{}));
+});
+
+// Nye normale PR-consumere har samme ufravigelige NULL-grænse, ingen positiv PG-påstand.
+test('SOURCE PR consumers refuse NULL before package, context, native result or upload operands',async()=>{
+  const {verifySourcePrNativeResult,verifySourcePrNativePhaseReceipt,readSourcePrNativeUploadedPhase}
+    =await import('./native-postgres-evidence.mjs');
+  const {verifySourcePrPackage,verifySourcePrWorkflow}=await import('./national584-source-evidence.mjs');
+  if(sourceIssued){
+    assert.throws(()=>verifySourcePrNativeResult({}, {}, {}),{code:'ERR_ASSERTION'});
+    assert.throws(()=>verifySourcePrPackage({}),{code:'ERR_ASSERTION'});return;
+  }
+  let accesses=0;const poison=new Proxy({}, {get(){accesses++;throw Error('UNEXPECTED_SOURCE_PR_OPERAND');},
+    ownKeys(){accesses++;throw Error('UNEXPECTED_SOURCE_PR_KEYS');}});
+  for(const call of [()=>verifySourcePrNativeResult(poison,poison,poison),
+    ()=>verifySourcePrNativePhaseReceipt(poison,poison,poison,poison),
+    ()=>verifySourcePrPackage(poison),()=>verifySourcePrWorkflow(poison)])assert.throws(call,/SOURCE_PRODUCER_UNISSUED/);
+  await assert.rejects(readSourcePrNativeUploadedPhase(poison,poison),/SOURCE_PRODUCER_UNISSUED/);
+  assert.equal(accesses,0);
+});
+
+// Pure normal migration-list parsing only: no SQL execution, B/S or runtime authority.
+test('SOURCE current61-to62 plan accepts its whole genuine594 prefix and rejects the former55 CURRENT shape',()=>{
+  if(!sourceIssued){
+    assert.throws(()=>sourceProducerRequiredMigrations(),/SOURCE_PRODUCER_UNISSUED/);
+    assert.throws(()=>assertSourceProducerMigrationsApplied(''),/SOURCE_PRODUCER_UNISSUED/);return;
+  }
+  const required=sourceProducerRequiredMigrations(),genuine594=installed593Original591RequiredMigrations();
+  assert.equal(genuine594.length,61);assert.deepEqual(required.slice(0,-1),genuine594);
+  assert.deepEqual(required.at(-1),sourceProducerMigration());assert.equal(required.length,62);
+  const currentHistory='Local | Remote | Time (UTC)\n'
+    +required.map(row=>row.version+' | '+row.version+' | state').join('\n');
+  assert.deepEqual(assertSourceProducerMigrationsApplied(currentHistory).appliedVersions,
+    required.map(row=>row.version),'Positive current schema/list contract, not physical PG execution');
+
+  const genuine585=accountStatisticsAssistantRequiredMigrations();
+  assert.equal(genuine585.length,54);assert.equal(genuine585.at(-1).version,'20261019100000');
+  const oldFamilyHistory='Local | Remote | Time (UTC)\n'
+    +genuine585.map(row=>row.version+' | '+row.version+' | state').join('\n');
+  assert.deepEqual(assertAccountStatisticsAssistantMigrationsApplied(oldFamilyHistory).appliedVersions,
+    genuine585.map(row=>row.version),'The old585 family still validates in its own unchanged scope');
+  const formerCurrentShape=[...genuine585,sourceProducerMigration()];assert.equal(formerCurrentShape.length,55);
+  const formerCurrentHistory='Local | Remote | Time (UTC)\n'
+    +formerCurrentShape.map(row=>row.version+' | '+row.version+' | state').join('\n');
+  for(const text of [oldFamilyHistory,formerCurrentHistory])
+    assert.throws(()=>assertSourceProducerMigrationsApplied(text),
+      {code:'ERR_ASSERTION',message:'Missing exact SOURCE source'},
+      'A585 prefix cannot stand in for the complete current594 predecessor, even with the current child');
 });

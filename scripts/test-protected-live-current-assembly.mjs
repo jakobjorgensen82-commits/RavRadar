@@ -14,7 +14,7 @@ import * as contexts from './lib/protected-dmi-current-context.mjs';
 import { mergeHourlyPreferDmi, bulkZoneToForecastRecord,
   buildPartDmiForecastWithProtectedRetention, buildPrivateDmiRecoveryRecord }
   from './lib/private-dmi-recovery-record.mjs';
-import { createProtectedDmiNativeCurrentInspector } from './lib/protected-dmi-native-current-proofs.mjs';
+import { createProtectedDmiNativeCurrentInspector, buildProtectedDmiNativeCurrentProofs } from './lib/protected-dmi-native-current-proofs.mjs';
 import { buildNewestValidRavScoreRecoverySources } from './lib/ravscore-recovery-source-priority.mjs';
 import { mergeProtectedLiveCurrentPilotIntoRecord,
   mergeActiveNativeLiveCurrentPilotIntoRecord } from './lib/protected-live-current-assembly.mjs';
@@ -30,7 +30,7 @@ const environment = { assert, fs, crypto, ...store, ...adapters, ...seams,
   ...pilot, ...waveProxy, ...selection, ...level, ...waveProof, ...recovery,
   mergeHourlyPreferDmi, bulkZoneToForecastRecord,
   buildPartDmiForecastWithProtectedRetention, buildPrivateDmiRecoveryRecord,
-  ...contexts, createProtectedDmiNativeCurrentInspector, mergeProtectedLiveCurrentPilotIntoRecord,
+  ...contexts, createProtectedDmiNativeCurrentInspector, buildProtectedDmiNativeCurrentProofs, mergeProtectedLiveCurrentPilotIntoRecord,
   mergeActiveNativeLiveCurrentPilotIntoRecord, buildNewestValidRavScoreRecoverySources };
 const evaluate = (script, result) => Function(...Object.keys(environment),
   `${script}; return ${result};`)(...Object.values(environment));
@@ -52,6 +52,11 @@ producerFixture = producerFixture.slice(0, producerFixture.lastIndexOf('console.
   .replace('waterPoint: [8, 55]', 'waterPoint: [10, 55]');
 // This also retains all existing no-active-context, POINT_ACTIVATION, saved
 // tuple and publicDefault assertions; none are removed to fit the new path.
+const coldNullBinding = '     const coldInputs = null;';
+assert.equal(producerFixture.split(coldNullBinding).length, 2);
+assert.throws(() => evaluate(producerFixture.replace(coldNullBinding, ''), 'true'),
+  error => error instanceof ReferenceError && error.message === 'coldInputs is not defined',
+  'the exact missing fixture binding still reproduces the original caller failure');
 const fixture = evaluate(producerFixture,
   '({runPublicPartProjection, row, bulk, part, identity, asNative})');
 const om = evaluate(prefix('scripts/test-open-meteo-live-runtime.mjs',

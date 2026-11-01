@@ -9,7 +9,7 @@ import {fileURLToPath,pathToFileURL} from 'node:url';
 import {execFile as callbackExec} from 'node:child_process';
 import {promisify,isDeepStrictEqual} from 'node:util';
 import {withAuthenticated585PredecessorSource}
-  from '../check-source-producer-predecessor-source.mjs';
+  from '../check-native-original-continuity-predecessor-source.mjs';
 
 const ROOT=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'../..');
 const exec=promisify(callbackExec), contexts=new WeakMap(), failedCloses=new Map();

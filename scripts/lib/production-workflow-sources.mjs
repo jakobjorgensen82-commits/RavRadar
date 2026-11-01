@@ -7,6 +7,10 @@ import {ESTABLISHED_NATIVE_CURRENT_ORIGIN_BEFORE,establishedNativeCurrentOriginM
   requireEstablishedNativeCurrentOriginBinding,requireEstablishedNativeCurrentOriginOutput}
   from './established-native-current-origin-successor-source.mjs';
 
+import {ASSISTANT_LATER_H0_BINDING,ASSISTANT_LATER_H0_BEFORE,assistantLaterH0Migration,
+  requireAssistantLaterH0Binding,requireAssistantLaterH0Output,
+  ACTIVE_ASSISTANT_SUCCESSOR as ACTIVE} from './assistant-later-h0-successor-source.mjs';
+
 export const PRODUCTION_WORKFLOW_SOURCES = Object.freeze({
   orchestrator: '.github/workflows/update-and-deploy.yml',
   build: '.github/workflows/reusable-weather-build.yml',
@@ -166,7 +170,9 @@ export function concatenateProductionWorkflowSources(
 // Routing only: this neither admits original data nor authorizes installation.
 // Database prewrite and the normal artifact/activation gates remain mandatory.
 export function deferCurrentGridBindingEdges(migrationVersion) {
-  return migrationVersion === establishedNativeCurrentOriginMigration().version
+  return ACTIVE.binding!==null&&migrationVersion===ACTIVE.migration().version
+    || ASSISTANT_LATER_H0_BINDING!==null&&migrationVersion===assistantLaterH0Migration().version
+    || migrationVersion === establishedNativeCurrentOriginMigration().version
     || migrationVersion === currentMemoryWarmupMigration().version
     || migrationVersion === '20261013220000'
     || typeof migrationVersion === 'string' && /^\d{14}$/.test(migrationVersion)
@@ -174,8 +180,34 @@ export function deferCurrentGridBindingEdges(migrationVersion) {
 }
 
 export async function currentGridEdgePublicationRequired(current, action) {
+  ACTIVE.requireOutput(); // Aktiv udstedt profil, aldrig UNISSUED→gammel familie.
   const { LATEST_REQUIRED_CUTOVER_MIGRATION } = await import('../integrated-cutover-readiness.mjs');
   const native = await import('./native-sampling-identity-successor-source.mjs');
+  if(LATEST_REQUIRED_CUTOVER_MIGRATION.version===ACTIVE.migration().version){
+    const {isDeepStrictEqual}=await import('node:util');
+    const {ravScoreModelBinding}=await import('../../js/core/ravscore-model-contract.js');
+    const binding=ravScoreModelBinding(),next=ACTIVE.requireBinding();
+    if(binding.modelBundleSha256!==next.I)throw new Error('Public587 successor requires actual issued current binding');
+    if(isDeepStrictEqual(current?.modelBinding,binding))return false;
+    const original={...binding,modelBundleSha256:ACTIVE.before.I};
+    if(!isDeepStrictEqual(current?.modelBinding,original))throw new Error('Public587 successor unknown original binding');
+    if(current.model!=='integrated'||current.status!=='INTEGRATED_ACTIVE'||current.pending!==false
+      ||action!=='integrated-historical-maintenance')throw new Error('Public587 successor normal active historical route required');
+    return true;
+  }
+  if(ASSISTANT_LATER_H0_BINDING!==null&&LATEST_REQUIRED_CUTOVER_MIGRATION.version===assistantLaterH0Migration().version){
+    requireAssistantLaterH0Output();const {isDeepStrictEqual}=await import('node:util');
+    const {ravScoreModelBinding}=await import('../../js/core/ravscore-model-contract.js');
+    const binding=ravScoreModelBinding(),next=requireAssistantLaterH0Binding();
+    if(binding.modelBundleSha256!==next.I)throw new Error('Assistant later-H0 requires actual issued current binding');
+    if(isDeepStrictEqual(current?.modelBinding,binding))return false;
+    const original={...binding,modelBundleSha256:ASSISTANT_LATER_H0_BEFORE.I};
+    if(!isDeepStrictEqual(current?.modelBinding,original))throw new Error('Assistant later-H0 unknown original binding');
+    if(current.model!=='integrated'||current.status!=='INTEGRATED_ACTIVE'||current.pending!==false
+      ||action!=='integrated-historical-maintenance')throw new Error('Assistant later-H0 normal active historical route required');
+    return true;
+  }
+
   if(LATEST_REQUIRED_CUTOVER_MIGRATION.version===establishedNativeCurrentOriginMigration().version){
     requireEstablishedNativeCurrentOriginOutput();
     const {isDeepStrictEqual}=await import('node:util');

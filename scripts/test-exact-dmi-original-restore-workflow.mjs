@@ -3,7 +3,71 @@ import fs from 'node:fs';
 import test from 'node:test';
 import crypto from 'node:crypto';
 
-const deliveredWorkflow = fs.readFileSync('.github/workflows/recover-saved-dmi-originals.yml', 'utf8').replace(/\r\n/g, '\n');
+// Additive CURRENT586 outer inverse. Old390663 and genuine predecessor
+// whole-source/hash assertions below are intentionally byte-unchanged.
+const CURRENT586_WORKFLOW_REVIEW = Object.freeze({
+  beforeSha256: '01b6b7c2c184502558aae86b02f1c7a2bab925dac53e14bdc58bacd1a24beede',
+  afterSha256: '546be70e725d85c5294e542921e0303d6715851737fcde93264689942f336940',
+  hunks: [
+    ["        description: \"Skriv RESTORE-EXACT-DMI-ORIGINALS\"\n        required: true\n        type: string\n      restore_current586_originals:\n        description: \"Separat lukket CURRENT586 B/S-plan; ingen progress-checkpoint\"\n        required: false\n        type: boolean\n        default: false\n      expected_main_head:\n        description: \"Eksakt main-commit med faktisk grøn kildekontrol\"\n        required: true\n","        description: \"Skriv RESTORE-EXACT-DMI-ORIGINALS\"\n        required: true\n        type: string\n      expected_main_head:\n        description: \"Eksakt main-commit med faktisk grøn kildekontrol\"\n        required: true\n"],
+    ["          GH_TOKEN: ${{ github.token }}\n          CONFIRMATION: ${{ inputs.confirmation }}\n          EXPECTED_MAIN_HEAD: ${{ inputs.expected_main_head }}\n          CURRENT586: ${{ inputs.restore_current586_originals }}\n        run: |\n          set -euo pipefail\n          test \"$GITHUB_EVENT_NAME\" = workflow_dispatch\n","          GH_TOKEN: ${{ github.token }}\n          CONFIRMATION: ${{ inputs.confirmation }}\n          EXPECTED_MAIN_HEAD: ${{ inputs.expected_main_head }}\n        run: |\n          set -euo pipefail\n          test \"$GITHUB_EVENT_NAME\" = workflow_dispatch\n"],
+    ["          test \"$GITHUB_SHA\" = \"$EXPECTED_MAIN_HEAD\"\n          test \"$(git rev-parse HEAD^{commit})\" = \"$GITHUB_SHA\"\n          test \"$(gh api \"repos/$GITHUB_REPOSITORY/git/ref/heads/main\" --jq '.object.sha')\" = \"$GITHUB_SHA\"\n          [[ \"$CURRENT586\" = true || \"$CURRENT586\" = false ]]\n          if test \"$CURRENT586\" = true; then\n            node --input-type=module -e \"import('./scripts/lib/current586-exact-original-plan.mjs').then(m=>m.requireCurrent586ExactOriginalExecution())\"\n            gh api \"repos/$GITHUB_REPOSITORY/actions/runs/39666991481/attempts/1\" > \"$RUNNER_TEMP/current586-failed-run.json\"\n            jq -e --arg repo \"$GITHUB_REPOSITORY\" '\n              .id == 39666991481 and .run_attempt == 1 and .status == \"completed\" and .conclusion == \"failure\"\n              and .head_sha == \"94b2b6173747b9d1f7d261c5110042a657af0cac\"\n              and .repository.full_name == $repo and .head_repository.full_name == $repo\n              and .head_branch == \"main\" and .path == \".github/workflows/run-current-weather-once.yml\"\n            ' \"$RUNNER_TEMP/current586-failed-run.json\" >/dev/null\n            gh api --method GET \"repos/$GITHUB_REPOSITORY/actions/caches\" \\\n              -f key=dmi-grib-v4-Linux-2026-W43-39520623069-1 -f ref=refs/heads/main -f per_page=100 \\\n              > \"$RUNNER_TEMP/current586-raw-metadata.json\"\n            jq -e '\n              .total_count == 1 and (.actions_caches | length) == 1\n              and .actions_caches[0].id == 9250979458\n              and .actions_caches[0].key == \"dmi-grib-v4-Linux-2026-W43-39520623069-1\"\n              and .actions_caches[0].ref == \"refs/heads/main\"\n              and .actions_caches[0].version == \"9d434ae81d3120176028232ea936fc3f9dc0ed030022ff6d98bec91aa9cf117a\"\n              and .actions_caches[0].size_in_bytes == 2729841089\n            ' \"$RUNNER_TEMP/current586-raw-metadata.json\" >/dev/null\n            echo \"generation=$(date -u +%G-W%V)\" >> \"$GITHUB_OUTPUT\"\n            exit 0\n          fi\n          gh api \"repos/$GITHUB_REPOSITORY/actions/runs/39066350748/attempts/1\" \\\n            > \"$RUNNER_TEMP/saved-input-source-run.json\"\n          jq -e --arg repo \"$GITHUB_REPOSITORY\" '\n","          test \"$GITHUB_SHA\" = \"$EXPECTED_MAIN_HEAD\"\n          test \"$(git rev-parse HEAD^{commit})\" = \"$GITHUB_SHA\"\n          test \"$(gh api \"repos/$GITHUB_REPOSITORY/git/ref/heads/main\" --jq '.object.sha')\" = \"$GITHUB_SHA\"\n          gh api \"repos/$GITHUB_REPOSITORY/actions/runs/39066350748/attempts/1\" \\\n            > \"$RUNNER_TEMP/saved-input-source-run.json\"\n          jq -e --arg repo \"$GITHUB_REPOSITORY\" '\n"],
+    ["          -r requirements-dmi.txt -r requirements-geometry.txt -r requirements-copernicus.txt\n\n      - name: Restore only the approved encrypted checkpoint\n        if: inputs.restore_current586_originals != true\n        id: progress\n        uses: actions/cache/restore@v6\n        with:\n","          -r requirements-dmi.txt -r requirements-geometry.txt -r requirements-copernicus.txt\n\n      - name: Restore only the approved encrypted checkpoint\n        id: progress\n        uses: actions/cache/restore@v6\n        with:\n"],
+    ["          fail-on-cache-miss: true\n\n      - name: Require exact checkpoint hit and privately retain its original bytes\n        if: inputs.restore_current586_originals != true\n        shell: bash\n        env:\n          MATCHED_KEY: ${{ steps.progress.outputs.cache-matched-key }}\n","          fail-on-cache-miss: true\n\n      - name: Require exact checkpoint hit and privately retain its original bytes\n        shell: bash\n        env:\n          MATCHED_KEY: ${{ steps.progress.outputs.cache-matched-key }}\n"],
+    ["        uses: actions/cache/restore@v6\n        with:\n          path: .cache/dmi-grib\n          key: ${{ inputs.restore_current586_originals && 'dmi-grib-v4-Linux-2026-W43-39520623069-1' || 'dmi-grib-v4-Linux-2026-W42-39066350748-1' }}\n          fail-on-cache-miss: true\n\n      - name: Require the exact existing RAW cache before additive recovery\n","        uses: actions/cache/restore@v6\n        with:\n          path: .cache/dmi-grib\n          key: dmi-grib-v4-Linux-2026-W42-39066350748-1\n          fail-on-cache-miss: true\n\n      - name: Require the exact existing RAW cache before additive recovery\n"],
+    ["        run: |\n          set -euo pipefail\n          test \"$CACHE_HIT\" = true\n          if test '${{ inputs.restore_current586_originals }}' = true; then\n            test \"$MATCHED_KEY\" = dmi-grib-v4-Linux-2026-W43-39520623069-1\n          else\n            test \"$MATCHED_KEY\" = dmi-grib-v4-Linux-2026-W42-39066350748-1\n          fi\n          test -d .cache/dmi-grib\n          test ! -L .cache\n          test ! -L .cache/dmi-grib\n","        run: |\n          set -euo pipefail\n          test \"$CACHE_HIT\" = true\n          test \"$MATCHED_KEY\" = dmi-grib-v4-Linux-2026-W42-39066350748-1\n          test -d .cache/dmi-grib\n          test ! -L .cache\n          test ! -L .cache/dmi-grib\n"],
+    ["          git archive \"$producer_head\" | tar -x -C \"$RUNNER_TEMP/ravradar-saved-input-predecessor\"\n\n      - name: Prepare the exact normal caller only inside private scratch\n        if: inputs.restore_current586_originals != true\n        shell: bash\n        env:\n          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}\n","          git archive \"$producer_head\" | tar -x -C \"$RUNNER_TEMP/ravradar-saved-input-predecessor\"\n\n      - name: Prepare the exact normal caller only inside private scratch\n        shell: bash\n        env:\n          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}\n"],
+    ["          test -s data/live/coastal-parts-v2.json\n\n      - name: Authenticate the checkpoint and prepare only demanded exact originals\n        if: inputs.restore_current586_originals != true\n        id: plan\n        run: >-\n          node scripts/audit-saved-weather-inputs.mjs audit\n","          test -s data/live/coastal-parts-v2.json\n\n      - name: Authenticate the checkpoint and prepare only demanded exact originals\n        id: plan\n        run: >-\n          node scripts/audit-saved-weather-inputs.mjs audit\n"],
+    ["          RAVRADAR_R2_SECRET_ACCESS_KEY: ${{ secrets.RAVRADAR_R2_SECRET_ACCESS_KEY }}\n          WEATHER_PROGRESS_MASTER_SECRET: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}\n\n      - name: Prepare the exact normal CURRENT586 source without central hydration\n        if: inputs.restore_current586_originals == true\n        shell: bash\n        run: |\n          set -euo pipefail\n          root=\"$RUNNER_TEMP/ravradar-saved-input-audit\"\n          git clone --shared --no-checkout \"$GITHUB_WORKSPACE\" \"$root/current586-source\"\n          git -C \"$root/current586-source\" -c core.autocrlf=false checkout --detach \"$GITHUB_SHA\"\n\n      - name: Authenticate CURRENT586 B and actual S and prepare saved121 plus forward originals\n        if: inputs.restore_current586_originals == true\n        id: current586-plan\n        run: >-\n          node scripts/audit-saved-weather-inputs.mjs audit\n          --private-root \"$RUNNER_TEMP/ravradar-saved-input-audit\"\n          --descriptor \"$RUNNER_TEMP/ravradar-saved-input-audit/current-source.json\"\n          --predecessor-root \"$RUNNER_TEMP/ravradar-saved-input-predecessor\"\n          --progress-source 39666991481-1\n          --prepare-current586-originals true\n          --output \"$RUNNER_TEMP/ravradar-saved-input-audit/current586-plan-safe.json\"\n        env:\n          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}\n          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}\n          RAVRADAR_R2_ACCOUNT_ID: ${{ secrets.RAVRADAR_R2_ACCOUNT_ID }}\n          RAVRADAR_R2_ACCESS_KEY_ID: ${{ secrets.RAVRADAR_R2_ACCESS_KEY_ID }}\n          RAVRADAR_R2_SECRET_ACCESS_KEY: ${{ secrets.RAVRADAR_R2_SECRET_ACCESS_KEY }}\n\n      - name: Reconfirm actual CURRENT586 B and S immediately before exact transport\n        if: inputs.restore_current586_originals == true && steps.current586-plan.outputs.preparation_status == 'ORIGINAL_PLAN_PREPARED'\n        run: >-\n          node scripts/audit-saved-weather-inputs.mjs verify-current586-plan\n          --private-root \"$RUNNER_TEMP/ravradar-saved-input-audit\"\n          --descriptor \"$RUNNER_TEMP/ravradar-saved-input-audit/current-source.json\"\n          --output \"$RUNNER_TEMP/ravradar-saved-input-audit/current586-before-transport-safe.json\"\n        env:\n          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}\n          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}\n\n      - name: Inspect authenticated original metadata before transport\n        if: steps.plan.outputs.preparation_status == 'ORIGINAL_PLAN_PREPARED' || steps.current586-plan.outputs.preparation_status == 'ORIGINAL_PLAN_PREPARED'\n        run: python -B scripts/inspect-exact-dmi-original-plan.py\n        env:\n          DMI_EXACT_ORIGINAL_PLAN_SHA256: ${{ inputs.restore_current586_originals && steps.current586-plan.outputs.plan_sha256 || steps.plan.outputs.plan_sha256 }}\n          GITHUB_SHA: ${{ github.sha }}\n\n      - name: Select the normal owned cache API runtime\n","          RAVRADAR_R2_SECRET_ACCESS_KEY: ${{ secrets.RAVRADAR_R2_SECRET_ACCESS_KEY }}\n          WEATHER_PROGRESS_MASTER_SECRET: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}\n\n      - name: Inspect authenticated original metadata before transport\n        if: steps.plan.outputs.preparation_status == 'ORIGINAL_PLAN_PREPARED'\n        run: python -B scripts/inspect-exact-dmi-original-plan.py\n        env:\n          DMI_EXACT_ORIGINAL_PLAN_SHA256: ${{ steps.plan.outputs.plan_sha256 }}\n          GITHUB_SHA: ${{ github.sha }}\n\n      - name: Select the normal owned cache API runtime\n"],
+    ["        run: node scripts/run-exact-dmi-original-restore.mjs\n        env:\n          DMI_API_KEY: ${{ secrets.DMI_API_KEY }}\n          DMI_EXACT_ORIGINAL_PREPARATION_STATUS: ${{ inputs.restore_current586_originals && steps.current586-plan.outputs.preparation_status || steps.plan.outputs.preparation_status }}\n          DMI_EXACT_ORIGINAL_COUNT: ${{ inputs.restore_current586_originals && steps.current586-plan.outputs.original_count || steps.plan.outputs.original_count }}\n          DMI_EXACT_ORIGINAL_PLAN_BYTES: ${{ inputs.restore_current586_originals && steps.current586-plan.outputs.plan_bytes || steps.plan.outputs.plan_bytes }}\n          DMI_EXACT_ORIGINAL_PLAN_SHA256: ${{ inputs.restore_current586_originals && steps.current586-plan.outputs.plan_sha256 || steps.plan.outputs.plan_sha256 }}\n          DMI_BULK_MAX_DOWNLOAD_MB: 2048\n          DMI_BULK_RAW_CACHE_MAX_MB: 4096\n          DMI_BULK_MAX_RUNTIME_SECONDS: 780\n          DMI_BULK_FINALIZE_RESERVE_SECONDS: 180\n          DMI_BULK_REQUEST_TIMEOUT_SECONDS: 90\n\n      - name: Reconfirm actual CURRENT586 B and S after physical transport closure\n        if: inputs.restore_current586_originals == true && steps.originals.outputs.originals_restored == 'true'\n        run: >-\n          node scripts/audit-saved-weather-inputs.mjs verify-current586-closed\n          --private-root \"$RUNNER_TEMP/ravradar-saved-input-audit\"\n          --descriptor \"$RUNNER_TEMP/ravradar-saved-input-audit/current-source.json\"\n          --output \"$RUNNER_TEMP/ravradar-saved-input-audit/current586-after-transport-safe.json\"\n        env:\n          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}\n          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}\n\n      - name: Reconfirm the protected source before the sole cache SAVE\n        run: >-\n          node scripts/audit-saved-weather-inputs.mjs describe\n","        run: node scripts/run-exact-dmi-original-restore.mjs\n        env:\n          DMI_API_KEY: ${{ secrets.DMI_API_KEY }}\n          DMI_EXACT_ORIGINAL_PREPARATION_STATUS: ${{ steps.plan.outputs.preparation_status }}\n          DMI_EXACT_ORIGINAL_COUNT: ${{ steps.plan.outputs.original_count }}\n          DMI_EXACT_ORIGINAL_PLAN_BYTES: ${{ steps.plan.outputs.plan_bytes }}\n          DMI_EXACT_ORIGINAL_PLAN_SHA256: ${{ steps.plan.outputs.plan_sha256 }}\n          DMI_BULK_MAX_DOWNLOAD_MB: 2048\n          DMI_BULK_RAW_CACHE_MAX_MB: 4096\n          DMI_BULK_MAX_RUNTIME_SECONDS: 780\n          DMI_BULK_FINALIZE_RESERVE_SECONDS: 180\n          DMI_BULK_REQUEST_TIMEOUT_SECONDS: 90\n\n      - name: Reconfirm the protected source before the sole cache SAVE\n        run: >-\n          node scripts/audit-saved-weather-inputs.mjs describe\n"]
+  ],
+});
+const workflowHash = source => crypto.createHash('sha256').update(source).digest('hex');
+function inverseCurrent586Workflow(source) {
+  assert.equal(typeof source, 'string', 'CURRENT586 workflow review requires whole LF source');
+  if (workflowHash(source) === CURRENT586_WORKFLOW_REVIEW.beforeSha256) return source;
+  assert.equal(workflowHash(source), CURRENT586_WORKFLOW_REVIEW.afterSha256,
+    'only the exact reviewed CURRENT586 workflow may enter the historical inverse');
+  for (const [after, before] of CURRENT586_WORKFLOW_REVIEW.hunks) {
+    assert.equal(source.split(after).length, 2, 'exact CURRENT586 outer inverse hunk');
+    source = source.replace(after, () => before);
+  }
+  assert.equal(workflowHash(source), CURRENT586_WORKFLOW_REVIEW.beforeSha256,
+    'WHOLE genuine preceding workflow survives the CURRENT586 inverse');
+  return source;
+}
+// Exact additive prerequisite inverse: the historical CURRENT586 and older
+// workflow pins/hunks below remain unchanged.
+const PRIVATE_ROOT_SETUP_REVIEW = Object.freeze({
+  beforeSha256: '546be70e725d85c5294e542921e0303d6715851737fcde93264689942f336940',
+  afterSha256: '8815617a34137653f3299f762bad440b685ee575124d797cbf9eac626e22b07d',
+  hunks: [
+    [
+      "      - name: Create the owned private audit directory for both restore modes\n        shell: bash\n        run: |\n          set -euo pipefail\n          umask 077\n          test ! -e \"$RUNNER_TEMP/ravradar-saved-input-audit\"\n          test ! -L \"$RUNNER_TEMP/ravradar-saved-input-audit\"\n          mkdir -m 0700 -- \"$RUNNER_TEMP/ravradar-saved-input-audit\"\n\n",
+      ""
+    ],
+    [
+      "          test ! -L .cache/weather-private-progress.encrypted\n          install -m 0600 .cache/weather-private-progress.encrypted \\\n",
+      "          test ! -L .cache/weather-private-progress.encrypted\n          mkdir \"$RUNNER_TEMP/ravradar-saved-input-audit\"\n          install -m 0600 .cache/weather-private-progress.encrypted \\\n"
+    ]
+  ]
+});
+function inversePrivateRootSetupWorkflow(source) {
+  assert.equal(typeof source, 'string', 'private-root prerequisite requires whole LF workflow');
+  if (workflowHash(source) === PRIVATE_ROOT_SETUP_REVIEW.beforeSha256) return source;
+  assert.equal(workflowHash(source), PRIVATE_ROOT_SETUP_REVIEW.afterSha256,
+    'only the exact reviewed private-root prerequisite may enter the CURRENT586 inverse');
+  for (const [after, before] of PRIVATE_ROOT_SETUP_REVIEW.hunks) {
+    assert.equal(source.split(after).length, 2, 'exact private-root prerequisite inverse hunk');
+    source = source.replace(after, () => before);
+  }
+  assert.equal(workflowHash(source), PRIVATE_ROOT_SETUP_REVIEW.beforeSha256,
+    'WHOLE genuine CURRENT586 workflow survives the prerequisite inverse');
+  return source;
+}
+const installedWorkflow = fs.readFileSync('.github/workflows/recover-saved-dmi-originals.yml', 'utf8').replace(/\r\n/g, '\n');
+const rawDeliveredWorkflow = inversePrivateRootSetupWorkflow(installedWorkflow);
+const deliveredWorkflow = inverseCurrent586Workflow(rawDeliveredWorkflow);
 const diagnosticStep = `      - name: Inspect authenticated original metadata before transport
         if: steps.plan.outputs.preparation_status == 'ORIGINAL_PLAN_PREPARED'
         run: python -B scripts/inspect-exact-dmi-original-plan.py
@@ -43,6 +107,25 @@ function inverseForwardRecovery(source) {
   return source;
 }
 const workflow = inverseForwardRecovery(currentWorkflow);
+test('CURRENT586 outer review: exact additive inverse preserves every frozen predecessor oracle', () => {
+  assert.equal(workflowHash(rawDeliveredWorkflow), CURRENT586_WORKFLOW_REVIEW.afterSha256,
+    'Actual current workflow is not a projected older file');
+  assert.equal(workflowHash(deliveredWorkflow), CURRENT586_WORKFLOW_REVIEW.beforeSha256);
+  assert.equal(inverseCurrent586Workflow(deliveredWorkflow), deliveredWorkflow);
+  assert.match(rawDeliveredWorkflow, /restore_current586_originals:\n[\s\S]*?type: boolean\n        default: false/);
+  assert.match(rawDeliveredWorkflow, /Prepare the exact normal caller only inside private scratch\n        if: inputs\.restore_current586_originals != true/);
+  assert.match(rawDeliveredWorkflow, /Prepare the exact normal CURRENT586 source without central hydration\n        if: inputs\.restore_current586_originals == true/);
+  assert.equal(inverseForwardRecovery(deliveredWorkflow.replace(diagnosticStep, '')), workflow,
+    'All unchanged historical assertions consume the same exact old workflow');
+  for (const [after] of CURRENT586_WORKFLOW_REVIEW.hunks) {
+    assert.equal(rawDeliveredWorkflow.split(after).length, 2);
+    assert.throws(() => inverseCurrent586Workflow(rawDeliveredWorkflow.replace(after,
+      () => after + '# UNREVIEWED_CURRENT586_MUTATION\n')), /exact reviewed CURRENT586/);
+  }
+  assert.throws(() => inverseCurrent586Workflow(rawDeliveredWorkflow + '\n'), /exact reviewed CURRENT586/);
+  assert.throws(() => inverseCurrent586Workflow(null), /whole LF source/);
+});
+
 test('pretransport observer follows authenticated preparation and has no provider credential or added restore authority', () => {
   assert.equal(deliveredWorkflow.split(diagnosticStep).length, 2, 'The bounded report must actually run before transport');
   const prepared = deliveredWorkflow.indexOf('id: plan\n');
@@ -140,4 +223,82 @@ test('390663 forward repair authenticates genuine normal choices and preserves t
   assert.match(currentWorkflow, /test "\$SAVED" = true/);
   assert.doesNotMatch(currentWorkflow, /restore-keys:|workflow run|--publish|wrangler|supabase db|continue-on-error/);
   assert.match(currentWorkflow, /runs-on: ubuntu-24.04\n    timeout-minutes: 75/);
+});
+
+test('private audit prerequisite: both branches own one exclusive private directory before protected reads and clones', () => {
+  const setup = PRIVATE_ROOT_SETUP_REVIEW.hunks[0][0];
+  const assertPrerequisite = source => {
+    assert.equal(source.split(setup).length, 2, 'one exact unconditional private setup');
+    assert.equal((source.match(/^\s*mkdir\b[^\n]*ravradar-saved-input-audit[^\n]*$/gm) ?? []).length, 1,
+      'only the common step creates the audit root; no branch-local mkdir');
+    assert.doesNotMatch(setup, /\n        (?:if|env|continue-on-error):|mkdir -p|chmod|secrets\.|GITHUB_OUTPUT/);
+    const setupIndex = source.indexOf(setup);
+    const findStep = name => {
+      const start = source.indexOf('      - name: ' + name + '\n');
+      assert.ok(start > 0, name);
+      const end = source.indexOf('\n      - ', start + 1);
+      return { start, text: source.slice(start, end < 0 ? undefined : end) };
+    };
+    const proof = findStep('Require existing live green source proof before protected reads');
+    const checkpoint = findStep('Restore only the approved encrypted checkpoint');
+    const retained = findStep('Require exact checkpoint hit and privately retain its original bytes');
+    const raw = findStep("Restore the same checkpoint's existing RAW cache without fallback");
+    const describe = findStep('Read the current protected source identity without remote writes');
+    const producer = findStep('Materialize the exact original producer without executing it');
+    const legacy = findStep('Prepare the exact normal caller only inside private scratch');
+    const current = findStep('Prepare the exact normal CURRENT586 source without central hydration');
+    assert.ok(proof.start < setupIndex && setupIndex < checkpoint.start && checkpoint.start < retained.start
+      && retained.start < raw.start && raw.start < describe.start && describe.start < producer.start);
+    assert.equal(source.indexOf('$RUNNER_TEMP/ravradar-saved-input-audit'), setupIndex + setup.indexOf('$RUNNER_TEMP/ravradar-saved-input-audit'),
+      'the owned root exists before any reference to its descriptors, logs, output or clones');
+    for (const current586 of [false, true]) {
+      const clone = current586 ? current : legacy;
+      const plan = findStep(current586
+        ? 'Authenticate CURRENT586 B and actual S and prepare saved121 plus forward originals'
+        : 'Authenticate the checkpoint and prepare only demanded exact originals');
+      assert.ok(setupIndex < describe.start && producer.start < clone.start && clone.start < plan.start,
+        'both restore modes retain the common prerequisite before their normal consumers');
+      assert.ok(clone.text.includes('if: inputs.restore_current586_originals ' + (current586 ? '== true' : '!= true')));
+      assert.ok(clone.text.includes('root="$RUNNER_TEMP/ravradar-saved-input-audit"'));
+      assert.ok(clone.text.includes('git clone --shared --no-checkout "$GITHUB_WORKSPACE" "$root/' +
+        (current586 ? 'current586-source' : 'current-window-source') + '"'));
+      assert.match(plan.text, /--private-root "\$RUNNER_TEMP\/ravradar-saved-input-audit"/);
+    }
+    assert.match(checkpoint.text, /if: inputs\.restore_current586_originals != true/);
+    assert.match(retained.text, /if: inputs\.restore_current586_originals != true/);
+    assert.match(retained.text, /install -m 0600 \.cache\/weather-private-progress\.encrypted/);
+  };
+  assert.equal(workflowHash(installedWorkflow), PRIVATE_ROOT_SETUP_REVIEW.afterSha256);
+  assertPrerequisite(installedWorkflow);
+  assert.equal(inversePrivateRootSetupWorkflow(installedWorkflow), rawDeliveredWorkflow);
+  assert.equal(inversePrivateRootSetupWorkflow(rawDeliveredWorkflow), rawDeliveredWorkflow);
+  assert.equal(inverseCurrent586Workflow(inversePrivateRootSetupWorkflow(installedWorkflow)), deliveredWorkflow,
+    'the old eleven CURRENT586 inverse hunks and whole predecessor pins are still exact');
+  for (const mutation of [
+    setup.replace('umask 077', 'umask 022'),
+    setup.replace('mkdir -m 0700 --', 'mkdir -p'),
+    setup.replace('mkdir -m 0700 --', 'mkdir -m 0755 --'),
+    setup.replace('          test ! -e "$RUNNER_TEMP/ravradar-saved-input-audit"\n', ''),
+    setup.replace('          test ! -L "$RUNNER_TEMP/ravradar-saved-input-audit"\n', ''),
+    setup.replace('        shell: bash\n', '        if: inputs.restore_current586_originals != true\n        shell: bash\n'),
+    setup.replaceAll('ravradar-saved-input-audit', 'ravradar-other-audit'),
+    '',
+    setup + setup,
+  ]) {
+    const mutated = installedWorkflow.replace(setup, () => mutation);
+    assert.throws(() => assertPrerequisite(mutated), /private setup/);
+    assert.throws(() => inversePrivateRootSetupWorkflow(mutated), /exact reviewed private-root/);
+  }
+  const lateSetup = installedWorkflow.replace(setup, '').replace(
+    '      - name: Prepare the exact normal CURRENT586 source without central hydration\n',
+    () => setup + '      - name: Prepare the exact normal CURRENT586 source without central hydration\n');
+  assert.throws(() => assertPrerequisite(lateSetup));
+  assert.throws(() => inversePrivateRootSetupWorkflow(lateSetup), /exact reviewed private-root/);
+  const duplicateMkdir = installedWorkflow.replace(PRIVATE_ROOT_SETUP_REVIEW.hunks[1][0],
+    () => PRIVATE_ROOT_SETUP_REVIEW.hunks[1][1]);
+  assert.throws(() => assertPrerequisite(duplicateMkdir), /only the common step/);
+  assert.throws(() => inversePrivateRootSetupWorkflow(duplicateMkdir), /exact reviewed private-root/);
+  assert.throws(() => inversePrivateRootSetupWorkflow(null), /whole LF workflow/);
+  assert.throws(() => inversePrivateRootSetupWorkflow(installedWorkflow + '\n'), /exact reviewed private-root/);
+  assert.throws(() => inversePrivateRootSetupWorkflow(installedWorkflow.replace(/\n/g, '\r\n')), /exact reviewed private-root/);
 });

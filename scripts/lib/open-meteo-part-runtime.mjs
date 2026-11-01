@@ -212,17 +212,22 @@ export async function runOpenMeteoPartRuntime({
   privateCacheRoot, bankPath, parts, productionReferenceAt, spatialPolicies,
   requiredPairs, retentionStartAt, retentionEndAt, budgetMs,
   requestTimeoutMs = 15_000, maxRetries = 2,
+  maxHttpAttempts = 800, minimumHttpStartIntervalMs = 150,
   fetchImpl = globalThis.fetch, now = Date.now,
 } = {}) {
   assertWeatherTransportSettlement();
   if (!Number.isInteger(budgetMs) || budgetMs < 0 || !Number.isInteger(requestTimeoutMs) || requestTimeoutMs < 1
     || !Number.isInteger(maxRetries) || maxRetries < 0 || maxRetries > 3 || typeof fetchImpl !== 'function'
-    || typeof now !== 'function') throw failure('OPEN_METEO_PART_TRANSPORT_BUDGET_INVALID');
+    || typeof now !== 'function'
+    || !Number.isInteger(maxHttpAttempts) || maxHttpAttempts < 1 || maxHttpAttempts > 800
+    || !Number.isInteger(minimumHttpStartIntervalMs) || minimumHttpStartIntervalMs < 150
+    || minimumHttpStartIntervalMs > 60_000) throw failure('OPEN_METEO_PART_TRANSPORT_BUDGET_INVALID');
   const options = { privateCacheRoot, bankPath, parts, spatialPolicies, retentionStartAt, retentionEndAt };
   const paths = privatePaths(options);
   const cursorPaths = privatePaths({ privateCacheRoot,
     bankPath: path.join(privateCacheRoot, 'weather-component-fallback-cursor.json') });
-  const deadline = performance.now() + budgetMs;
+  const startedAt = performance.now();
+  const deadline = startedAt + budgetMs;
   const previous = await readBankFile(paths);
   const cursor = await readBankFile(cursorPaths, 64 * 1024);
   if (cursor !== null && (cursor.kind !== 'WEATHER_COMPONENT_FALLBACK_CURSOR' || cursor.schemaVersion !== 1
@@ -231,24 +236,72 @@ export async function runOpenMeteoPartRuntime({
   }
   const remaining = () => Math.max(0, Math.floor(deadline - performance.now()));
   const targets = new Map((parts ?? []).map(part => [part.partId, part]));
-  const stats = { httpAttempts: 0, retries: 0, timeouts: 0, responseBytes: 0 };
-  const fetchResponse = async request => {
+  const stats = { httpAttempts: 0, retries: 0, timeouts: 0, responseBytes: 0,
+    httpAttemptLimit: maxHttpAttempts, pacingMinimumIntervalMs: minimumHttpStartIntervalMs,
+    httpAttemptLimitReached: 0, budgetReached: 0, pacingWaits: 0, pacingWaitMs: 0,
+    checkpointCount: 0, checkpointElapsedMs: 0, firstHttpStartAfterMs: null, totalElapsedMs: 0,
+    httpAttemptsByComponent: { wind: 0, wave: 0, waterTemperature: 0 } };
+  let startGate = Promise.resolve(), nextHttpStartAt = startedAt;
+  const bounded = () => {
+    if (stats.httpAttempts >= maxHttpAttempts) {
+      stats.httpAttemptLimitReached = 1;
+      throw failure('OPEN_METEO_PART_HTTP_ATTEMPT_LIMIT_REACHED');
+    }
+    if (!remaining()) { stats.budgetReached = 1; throw failure('OPEN_METEO_PART_RUNTIME_BUDGET_REACHED'); }
+  };
+  const pacedAttempt = async (url, component, attempt, onRequestStarted) => {
+    let release;
+    const prior = startGate;
+    startGate = new Promise(resolve => { release = resolve; });
+    await prior;
+    let operation;
+    try {
+      bounded();
+      let wait = Math.max(0, nextHttpStartAt - performance.now());
+      while (wait > 0) {
+        if (wait >= remaining()) { stats.budgetReached = 1; throw failure('OPEN_METEO_PART_RUNTIME_BUDGET_REACHED'); }
+        stats.pacingWaits += 1;
+        const beforeWait = performance.now();
+        await new Promise(resolve => setTimeout(resolve, Math.ceil(wait)));
+        stats.pacingWaitMs += Math.max(0, Math.floor(performance.now() - beforeWait));
+        bounded();
+        wait = Math.max(0, nextHttpStartAt - performance.now());
+      }
+      // responseAttempt invokes this wrapper synchronously before its first
+      // await. Hold only the start gate, never a sibling's response lifetime.
+      const pacedFetch = (...args) => {
+        const instant = performance.now();
+        nextHttpStartAt = instant + minimumHttpStartIntervalMs;
+        stats.httpAttempts += 1; stats.httpAttemptsByComponent[component] += 1;
+        if (attempt > 0) stats.retries += 1;
+        if (stats.firstHttpStartAfterMs === null) stats.firstHttpStartAfterMs = Math.max(0, Math.floor(instant - startedAt));
+        onRequestStarted();
+        return fetchImpl(...args);
+      };
+      operation = responseAttempt(url, { fetchImpl: pacedFetch,
+        timeoutMs: Math.min(requestTimeoutMs, remaining()), stats, now });
+    } finally { release(); }
+    return await operation;
+  };
+  const fetchResponse = async (request, { onRequestStarted }) => {
     const partId = request.identity.entityId.replace(/^PART::/, '');
     const canonical = buildOpenMeteoPartRequest(targets.get(partId), request);
     if (openMeteoPartSha256(request) !== openMeteoPartSha256(canonical)) throw failure('OPEN_METEO_PART_TRANSPORT_REQUEST_INVALID');
     const url = `${canonical.endpoint}?${new URLSearchParams(canonical.query)}`;
     for (let attempt = 0; attempt <= maxRetries; attempt += 1) {
       assertWeatherTransportSettlement();
-      if (!remaining()) throw failure('OPEN_METEO_PART_RUNTIME_BUDGET_REACHED');
-      stats.httpAttempts += 1;
-      try { return await responseAttempt(url, { fetchImpl, timeoutMs: Math.min(requestTimeoutMs, remaining()), stats, now }); }
+      bounded();
+      try { return await pacedAttempt(url, request.component, attempt, onRequestStarted); }
       catch (error) {
         if (isWeatherTransportStopUnproved(error)) throw error;
         assertWeatherTransportSettlement();
         if (!error?.retryable || attempt === maxRetries) throw error;
+        bounded();
         const delay = Math.max(250 * 2 ** attempt, error.retryAfterMs ?? 0);
-        if (delay >= remaining()) throw failure('OPEN_METEO_PART_RUNTIME_BUDGET_REACHED');
-        stats.retries += 1;
+        if (delay >= remaining()) {
+          stats.budgetReached = 1;
+          throw failure('OPEN_METEO_PART_RUNTIME_BUDGET_REACHED');
+        }
         await new Promise(resolve => setTimeout(resolve, delay));
       }
     }
@@ -257,16 +310,25 @@ export async function runOpenMeteoPartRuntime({
   const result = await produceOpenMeteoPartComponents({
     ...options, previousBank: previous, productionReferenceAt, requiredPairs,
     startAfterPartId: cursor?.openMeteoLastAttemptedPartId ?? null,
-    shouldContinue: () => remaining() > 0, fetchResponse,
+    shouldContinue: () => remaining() > 0 && stats.httpAttempts < maxHttpAttempts, fetchResponse,
+    transportOwnsRequestStart: true,
     // Builder already revalidates original evidence once and each admission.
     // Do not decode the entire growing bank again for every small checkpoint.
-    checkpoint: bank => saveBankFile(paths, bank),
+    checkpoint: async bank => {
+      const beforeCheckpoint = performance.now();
+      await saveBankFile(paths, bank);
+      stats.checkpointCount += 1;
+      stats.checkpointElapsedMs += Math.max(0, Math.floor(performance.now() - beforeCheckpoint));
+    },
   });
   assertWeatherTransportSettlement();
   if (result.summary.lastAttemptedPartId !== null) {
     await saveBankFile(cursorPaths, { kind: 'WEATHER_COMPONENT_FALLBACK_CURSOR', schemaVersion: 1,
       openMeteoLastAttemptedPartId: result.summary.lastAttemptedPartId });
   }
-  return { ...result, index: validateOpenMeteoPartBank(result.bank, options),
-    summary: { ...result.summary, transport: stats } };
+  const index = validateOpenMeteoPartBank(result.bank, options);
+  stats.httpAttemptLimitReached = stats.httpAttempts >= maxHttpAttempts ? 1 : stats.httpAttemptLimitReached;
+  stats.budgetReached = remaining() === 0 ? 1 : stats.budgetReached;
+  stats.totalElapsedMs = Math.max(0, Math.floor(performance.now() - startedAt));
+  return { ...result, index, summary: { ...result.summary, transport: stats } };
 }

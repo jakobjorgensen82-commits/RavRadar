@@ -15,9 +15,12 @@ export async function produceOpenMeteoPartComponents({
   fetchResponse, checkpoint = async () => {}, shouldContinue = () => true,
   requiredPairs, retentionStartAt, retentionEndAt,
   checkpointEveryParts = 10, startAfterPartId = null,
+  transportOwnsRequestStart = false,
 } = {}) {
   assertWeatherTransportSettlement();
-  if (typeof fetchResponse !== 'function') throw new Error('OPEN_METEO_PART_TRANSPORT_REQUIRED');
+  if (typeof fetchResponse !== 'function' || typeof transportOwnsRequestStart !== 'boolean') {
+    throw new Error('OPEN_METEO_PART_TRANSPORT_REQUIRED');
+  }
   if (!Number.isInteger(checkpointEveryParts) || checkpointEveryParts < 1 || checkpointEveryParts > 50) {
     throw new Error('OPEN_METEO_PART_CHECKPOINT_BATCH_INVALID');
   }
@@ -36,6 +39,8 @@ export async function produceOpenMeteoPartComponents({
   const componentWarnings = {};
   let requests = 0;
   let deferred = 0;
+  const requestsByComponent = Object.fromEntries(OPEN_METEO_PART_COMPONENTS.map(component => [component, 0]));
+  const deferredByComponent = { ...requestsByComponent };
   const pendingCheckpointParts = new Set();
   let lastAttemptedPartId = null;
   let componentsNotAdmitted = 0;
@@ -58,7 +63,7 @@ export async function produceOpenMeteoPartComponents({
   }
   const priorPosition = parts.findIndex(part => part.partId === startAfterPartId);
   const orderedParts = priorPosition < 0 ? parts : [...parts.slice(priorPosition + 1), ...parts.slice(0, priorPosition + 1)];
-  const work = [];
+  const criticalWork = [], temperatureWork = [];
   for (const part of orderedParts) {
     const missing = new Set();
     for (let hour = 0; hour <= 120; hour += 1) {
@@ -73,13 +78,18 @@ export async function produceOpenMeteoPartComponents({
       componentsNotAdmitted += 1;
       return false;
     });
-    work.push(...components.map(component => ({ part, component })));
+    for (const component of components) {
+      (component === 'waterTemperature' ? temperatureWork : criticalWork).push({ part, component });
+    }
   }
+  // Close score-blocking wind/wave gaps first. Within each tier keep the
+  // same rotated PART order, exact component requests and two useful slots.
+  const work = [...criticalWork, ...temperatureWork];
   assertWeatherTransportSettlement();
   await checkpoint(bank);
   // Keep the existing two transport slots occupied independently. Waiting for
   // both siblings of one PART wasted the free slot behind a slow marine reply.
-  // Request order, deadline and source proof stay unchanged; checkpoints have
+  // Order within each priority tier, deadline and source proof are preserved; checkpoints have
   // one writer and can save completed siblings before the slow reply settles.
   const active = new Map();
   let position = 0;
@@ -89,21 +99,29 @@ export async function produceOpenMeteoPartComponents({
         assertWeatherTransportSettlement();
         const id = position++;
         const { part, component } = work[id];
-        lastAttemptedPartId = part.partId;
-        // Start synchronously before checking permission for the next slot;
-        // the caller can stop immediately after an attempt, not just on time.
+        let requestStarted = false;
+        const onRequestStarted = () => {
+          if (requestStarted) return;
+          requestStarted = true;
+          requests += 1; requestsByComponent[component] += 1;
+          lastAttemptedPartId = part.partId;
+        };
+        // Direct transports retain their component-start contract. The normal
+        // paced adapter receipts only its first actual HTTP start, so a task
+        // stopped while waiting for a slot cannot steal the durable cursor.
         const operation = (async () => {
           const request = buildOpenMeteoPartRequest(part, { component, productionReferenceAt,
             cellSelection: spatialPolicies[component].cellSelection, spatialPolicy: spatialPolicies[component] });
-          requests += 1;
-          const response = await fetchResponse(request);
+          if (!transportOwnsRequestStart) onRequestStarted();
+          const response = await fetchResponse(request, { onRequestStarted });
+          if (!requestStarted) throw new Error('OPEN_METEO_PART_REQUEST_START_RECEIPT_REQUIRED');
           return readOpenMeteoPartResponse({ ...response, request }, { part, spatialPolicies,
             onInvalid: code => { componentWarnings[code] = (componentWarnings[code] ?? 0) + 1; },
           });
         // Keep rejection handled even while a sibling checkpoint is awaiting
         // I/O; the original branded error is rethrown at the consumption edge.
         })().then(value => ({ id, part, component, value }),
-          error => ({ id, part, component, failed: true, error }));
+          error => ({ id, part, component, failed: true, error, requestStarted }));
         active.set(id, operation);
       }
       if (!active.size) break;
@@ -112,6 +130,11 @@ export async function produceOpenMeteoPartComponents({
       assertWeatherTransportSettlement();
       active.delete(result.id);
       if (result.failed) {
+        if (!result.requestStarted && transportOwnsRequestStart
+          && ['OPEN_METEO_PART_RUNTIME_BUDGET_REACHED', 'OPEN_METEO_PART_HTTP_ATTEMPT_LIMIT_REACHED'].includes(result.error?.code)) {
+          deferred += 1; deferredByComponent[result.component] += 1;
+          continue;
+        }
         failures.push({ component: result.component, channel: result.component === 'wind' ? 'weather' : 'marine',
           code: 'OPEN_METEO_PART_COMPONENT_UNAVAILABLE' });
         continue;
@@ -147,13 +170,15 @@ export async function produceOpenMeteoPartComponents({
     }
     throw error;
   }
-  deferred = work.length - position;
+  deferred += work.length - position;
+  for (const { component } of work.slice(position)) deferredByComponent[component] += 1;
   if (pendingCheckpointParts.size > 0) {
     bank = builder.snapshot();
     assertWeatherTransportSettlement();
     await checkpoint(bank);
   }
   assertWeatherTransportSettlement();
-  return { bank, summary: { requests, deferred, failures, componentWarnings, records: bank.records.length,
+  return { bank, summary: { requests, deferred, requestsByComponent, deferredByComponent,
+    failures, componentWarnings, records: bank.records.length,
     lastAttemptedPartId, componentsNotAdmitted, retired } };
 }

@@ -245,7 +245,7 @@ jobs:
       NATIVE_IDENTITY_RECOVERY: ${{ inputs.native_sampling_identity_original_recovery }}
       EXTENDED_PROVIDER_BOOTSTRAP: ${{ inputs.extended_provider_bootstrap }}
       PRODUCE_HANDOFF: ${{ inputs.produce_weather_handoff }}
-      CHECKPOINT_TARGET_HOUR: ${{ inputs.checkpoint_only && inputs.production_target_hour || '' }}
+      CHECKPOINT_TARGET_HOUR: ${{ (inputs.checkpoint_only || (inputs.current_family_cold_start && inputs.quick_progress_source != '')) && inputs.production_target_hour || '' }}
       RAVRADAR_WEATHER_STATE_EPOCH_ARCHIVE_ID: ${{ inputs.weather_state_epoch_archive_key }}
       RAVRADAR_WEATHER_STATE_EPOCH_ARCHIVE_CATALOG_SHA256: ${{ inputs.weather_state_epoch_archive_catalog_sha256 }}
       RAVRADAR_PRIVATE_RUNTIME_ROOT: /tmp/ravradar-private-production-runtime
@@ -294,7 +294,7 @@ jobs:
 
     steps:
       - name: Record the actual epoch build start before checkout
-        if: inputs.weather_state_epoch_bootstrap == true
+        if: inputs.weather_state_epoch_bootstrap == true || inputs.current_family_cold_start == true
         shell: bash
         run: |
           set -euo pipefail
@@ -374,7 +374,13 @@ jobs:
           test "${{ inputs.completed_private_runtime }}" = false
           test "${{ inputs.quick_confirmation }}" = false
           test "${{ inputs.checkpoint_only }}" = false
-          test -z "${{ inputs.quick_progress_source }}"
+          if test -n "$QUICK_PROGRESS_SOURCE"; then
+            test "$QUICK_PROGRESS_SOURCE" = 39886354260-1 || test "$QUICK_PROGRESS_SOURCE" = 39933506923-1
+            test "$RAVRADAR_PRODUCTION_TARGET_HOUR" = 2026-10-23T01:00:00Z
+            test "$CHECKPOINT_TARGET_HOUR" = "$RAVRADAR_PRODUCTION_TARGET_HOUR"
+          else
+            test -z "$CHECKPOINT_TARGET_HOUR"
+          fi
           test "${{ inputs.produce_weather_handoff }}" = false
           test "${{ inputs.ravscore_integrated_first_cutover }}" = false
           test "${{ inputs.ravscore_integrated_return }}" = false
@@ -710,12 +716,15 @@ jobs:
           read -r legacy_source_head legacy_source_tree < <(node --input-type=module -e "import { LEGACY_CANDIDATE_G_SOURCE_HEAD, LEGACY_CANDIDATE_G_SOURCE_TREE } from './scripts/lib/ravscore-legacy-candidate-g-source.mjs'; process.stdout.write(LEGACY_CANDIDATE_G_SOURCE_HEAD + ' ' + LEGACY_CANDIDATE_G_SOURCE_TREE + '\n');")
           [[ "$legacy_source_head" =~ ^[a-f0-9]{40}$ ]]
           [[ "$legacy_source_tree" =~ ^[a-f0-9]{40}$ ]]
-          git fetch --no-tags --depth=1 origin "$legacy_source_head"
-          test "$(git rev-parse FETCH_HEAD^{commit})" = "$legacy_source_head"
+          if ! git cat-file -e "${legacy_source_head}^{commit}" 2>/dev/null; then
+            git fetch --no-tags origin "$legacy_source_head"
+            test "$(git rev-parse FETCH_HEAD^{commit})" = "$legacy_source_head"
+          fi
+          test "$(git rev-parse "${legacy_source_head}^{commit}")" = "$legacy_source_head"
           test "$(git rev-parse "${legacy_source_head}^{tree}")" = "$legacy_source_tree"
           for original_head in 37e657867ff0f8c31f8e8489e5c9a1cf235192f9 044d3045fecc2e70d6f35f60010921c6bd597ecc; do
             if ! git cat-file -e "${original_head}^{commit}"; then
-              git fetch --no-tags --depth=1 origin "$original_head"
+              git fetch --no-tags origin "$original_head"
             fi
             test "$(git rev-parse "${original_head}^{commit}")" = "$original_head"
           done
@@ -789,7 +798,13 @@ jobs:
       - name: Preflight exact integrated trip binding before provider work
         if: inputs.source_normal_producer == true || (steps.preflight.outputs.should_run == 'true' && (steps.operational-action.outputs.action == 'integrated' || steps.operational-action.outputs.action == 'integrated-historical-maintenance' || steps.operational-action.outputs.action == 'integrated-return' || steps.operational-action.outputs.action == 'integrated-cutover'))
         shell: bash
-        run: node scripts/integrated-cutover-readiness.mjs verify-db
+        run: |
+          set -euo pipefail
+          source_readiness_args=()
+          if test "${{ inputs.source_normal_producer }}" = true; then
+            source_readiness_args+=(--source-producer)
+          fi
+          node scripts/integrated-cutover-readiness.mjs verify-db "${source_readiness_args[@]}"
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
@@ -976,9 +991,35 @@ jobs:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
 
+      # Separate authentic586 -> later ordinary H0. Not a code-only install,
+      # SAME_H0 event, parent rewrite or generic historical fallback.
+      - name: Select only authentic586 for the normal assistant successor
+        id: assistant-later-h0-source
+        if: inputs.weather_state_epoch_bootstrap != true && inputs.current_family_cold_start != true && inputs.native_sampling_identity_original_recovery != true && steps.preflight.outputs.should_run == 'true' && (steps.operational-action.outputs.action == 'integrated' || steps.operational-action.outputs.action == 'integrated-historical-maintenance')
+        env:
+          OPERATIONAL_ACTION: ${{ steps.operational-action.outputs.action }}
+        run: node scripts/assistant-later-h0-runtime-transition.mjs select
+
+      - name: Prepare the whole original-preserving586 working view
+        id: assistant-later-h0-prepare
+        if: steps.assistant-later-h0-source.outputs.required == 'true'
+        shell: bash
+        env:
+          NODE_OPTIONS: --max-old-space-size=6144
+          OPERATIONAL_ACTION: ${{ steps.operational-action.outputs.action }}
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          RAVRADAR_R2_ACCOUNT_ID: ${{ secrets.RAVRADAR_R2_ACCOUNT_ID }}
+          RAVRADAR_R2_ACCESS_KEY_ID: ${{ secrets.RAVRADAR_R2_ACCESS_KEY_ID }}
+          RAVRADAR_R2_SECRET_ACCESS_KEY: ${{ secrets.RAVRADAR_R2_SECRET_ACCESS_KEY }}
+        run: |
+          set -euo pipefail
+          mkdir -p "$RAVRADAR_PRIVATE_RUNTIME_ROOT"
+          node scripts/assistant-later-h0-runtime-transition.mjs prepare
+
       - name: Prepare exact old-reader restore for the measured wave transition
         id: historical-wave-predecessor
-        if: inputs.source_normal_producer == false && (steps.preflight.outputs.should_run == 'true' && inputs.native_sampling_identity_original_recovery != true && inputs.weather_state_epoch_bootstrap != true && !(steps.operational-action.outputs.action == 'integrated-cutover' && steps.operational-model.outputs.legacy_source_required == 'true'))
+        if: inputs.source_normal_producer == false && (steps.assistant-later-h0-source.outputs.required != 'true' && steps.preflight.outputs.should_run == 'true' && inputs.native_sampling_identity_original_recovery != true && inputs.weather_state_epoch_bootstrap != true && !(steps.operational-action.outputs.action == 'integrated-cutover' && steps.operational-model.outputs.legacy_source_required == 'true'))
         run: >-
           node scripts/prepare-historical-wave-predecessor-restore.mjs
           --source-description "$RUNNER_TEMP/private-runtime-current-source.json"
@@ -1019,7 +1060,7 @@ jobs:
 
       - name: Classify the exact 11Z weather recovery
         id: exact-weather-recovery
-        if: inputs.source_normal_producer == false && (steps.preflight.outputs.should_run == 'true' && inputs.weather_state_epoch_bootstrap != true && !(steps.operational-action.outputs.action == 'integrated-cutover' && steps.operational-model.outputs.legacy_source_required == 'true'))
+        if: inputs.source_normal_producer == false && (steps.assistant-later-h0-source.outputs.required != 'true' && steps.preflight.outputs.should_run == 'true' && inputs.weather_state_epoch_bootstrap != true && !(steps.operational-action.outputs.action == 'integrated-cutover' && steps.operational-model.outputs.legacy_source_required == 'true'))
         shell: bash
         run: |
           set -euo pipefail
@@ -1036,7 +1077,7 @@ jobs:
       # below; restoring the old checkpoint here would reject a valid donor.
       - name: Select current-family paired checkpoint restoration before any S restore
         id: paired-checkpoint-route
-        if: inputs.source_normal_producer == false && (steps.preflight.outputs.should_run == 'true' && inputs.weather_state_epoch_bootstrap != true && inputs.weather_state_epoch_checkpoint_reentry != true && inputs.native_sampling_identity_original_recovery != true && inputs.checkpoint_only != true && inputs.quick_confirmation != true && inputs.completed_private_runtime != true && steps.operational-action.outputs.action == 'integrated')
+        if: inputs.source_normal_producer == false && (steps.assistant-later-h0-source.outputs.required != 'true' && steps.preflight.outputs.should_run == 'true' && inputs.weather_state_epoch_bootstrap != true && inputs.weather_state_epoch_checkpoint_reentry != true && inputs.native_sampling_identity_original_recovery != true && inputs.checkpoint_only != true && inputs.quick_confirmation != true && inputs.completed_private_runtime != true && steps.operational-action.outputs.action == 'integrated')
         shell: bash
         env:
           OPERATIONAL_ACTION: ${{ steps.operational-action.outputs.action }}
@@ -1050,7 +1091,7 @@ jobs:
           node scripts/reconcile-private-runtime-checkpoint.mjs select
 
       - name: Restore the latest atomic schema-6 and Candidate G rollback checkpoint
-        if: inputs.source_normal_producer == false && (steps.paired-checkpoint-route.outputs.required != 'true' && steps.preflight.outputs.should_run == 'true' && inputs.native_sampling_identity_original_recovery != true && inputs.weather_state_epoch_bootstrap != true && steps.exact-weather-recovery.outputs.required != 'true' && steps.historical-wave-predecessor.outputs.transition_kind != 'owner-current-domain-original' && !(steps.operational-action.outputs.action == 'integrated-cutover' && steps.operational-model.outputs.legacy_source_required == 'true') && steps.historical-wave-predecessor.outputs.transition_kind != 'current-grid-sampling-original')
+        if: inputs.source_normal_producer == false && (steps.assistant-later-h0-source.outputs.required != 'true' && steps.paired-checkpoint-route.outputs.required != 'true' && steps.preflight.outputs.should_run == 'true' && inputs.native_sampling_identity_original_recovery != true && inputs.weather_state_epoch_bootstrap != true && steps.exact-weather-recovery.outputs.required != 'true' && steps.historical-wave-predecessor.outputs.transition_kind != 'owner-current-domain-original' && !(steps.operational-action.outputs.action == 'integrated-cutover' && steps.operational-model.outputs.legacy_source_required == 'true') && steps.historical-wave-predecessor.outputs.transition_kind != 'current-grid-sampling-original')
         id: ravscore-checkpoint-cache
         uses: actions/cache/restore@v6
         with:
@@ -1060,7 +1101,7 @@ jobs:
             ravscore-continuation-schema6-v2-
 
       - name: Restore protected atomic RavScore checkpoint when cache is absent
-        if: inputs.source_normal_producer == false && (steps.paired-checkpoint-route.outputs.required != 'true' && steps.preflight.outputs.should_run == 'true' && inputs.native_sampling_identity_original_recovery != true && inputs.weather_state_epoch_bootstrap != true && steps.exact-weather-recovery.outputs.required != 'true' && steps.historical-wave-predecessor.outputs.transition_kind != 'owner-current-domain-original' && !(steps.operational-action.outputs.action == 'integrated-cutover' && steps.operational-model.outputs.legacy_source_required == 'true') && steps.ravscore-checkpoint-cache.outputs.cache-matched-key == '' && steps.historical-wave-predecessor.outputs.transition_kind != 'current-grid-sampling-original')
+        if: inputs.source_normal_producer == false && (steps.assistant-later-h0-source.outputs.required != 'true' && steps.paired-checkpoint-route.outputs.required != 'true' && steps.preflight.outputs.should_run == 'true' && inputs.native_sampling_identity_original_recovery != true && inputs.weather_state_epoch_bootstrap != true && steps.exact-weather-recovery.outputs.required != 'true' && steps.historical-wave-predecessor.outputs.transition_kind != 'owner-current-domain-original' && !(steps.operational-action.outputs.action == 'integrated-cutover' && steps.operational-model.outputs.legacy_source_required == 'true') && steps.ravscore-checkpoint-cache.outputs.cache-matched-key == '' && steps.historical-wave-predecessor.outputs.transition_kind != 'current-grid-sampling-original')
         run: >-
           node scripts/protected-ravscore-continuation-checkpoint.mjs
           --restore
@@ -1117,7 +1158,7 @@ jobs:
           fi
 
       - name: Restore newest compatible private runtime from protected storage
-        if: inputs.source_normal_producer == false && (steps.preflight.outputs.should_run == 'true' && inputs.native_sampling_identity_original_recovery != true && inputs.weather_state_epoch_bootstrap != true && !(steps.operational-action.outputs.action == 'integrated-cutover' && steps.operational-model.outputs.legacy_source_required == 'true'))
+        if: inputs.source_normal_producer == false && (steps.assistant-later-h0-source.outputs.required != 'true' && steps.preflight.outputs.should_run == 'true' && inputs.native_sampling_identity_original_recovery != true && inputs.weather_state_epoch_bootstrap != true && !(steps.operational-action.outputs.action == 'integrated-cutover' && steps.operational-model.outputs.legacy_source_required == 'true'))
         shell: bash
         run: |
           set -uo pipefail
@@ -1284,7 +1325,7 @@ jobs:
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
 
       - name: Verify and restore the private production runtime bundle
-        if: inputs.source_normal_producer == false && (steps.preflight.outputs.should_run == 'true' && inputs.native_sampling_identity_original_recovery != true && inputs.weather_state_epoch_bootstrap != true && steps.private-runtime-state.outputs.available == 'true')
+        if: inputs.source_normal_producer == false && (steps.assistant-later-h0-source.outputs.required != 'true' && steps.preflight.outputs.should_run == 'true' && inputs.native_sampling_identity_original_recovery != true && inputs.weather_state_epoch_bootstrap != true && steps.private-runtime-state.outputs.available == 'true')
         shell: bash
         env:
           HISTORICAL_WAVE_PREDECESSOR_REQUIRED: ${{ steps.historical-wave-predecessor.outputs.required || 'false' }}
@@ -1447,11 +1488,12 @@ jobs:
         if: inputs.source_normal_producer == false && (steps.preflight.outputs.should_run == 'true' && steps.private-runtime-state.outputs.available == 'true')
         shell: bash
         env:
+          OPERATIONAL_ACTION: ${{ steps.operational-action.outputs.action }}
           RAVRADAR_R2_ACCOUNT_ID: ${{ inputs.weather_state_epoch_bootstrap && secrets.RAVRADAR_R2_ACCOUNT_ID || '' }}
           RAVRADAR_R2_ACCESS_KEY_ID: ${{ inputs.weather_state_epoch_bootstrap && secrets.RAVRADAR_R2_ACCESS_KEY_ID || '' }}
           RAVRADAR_R2_SECRET_ACCESS_KEY: ${{ inputs.weather_state_epoch_bootstrap && secrets.RAVRADAR_R2_SECRET_ACCESS_KEY || '' }}
-          SUPABASE_URL: ${{ inputs.weather_state_epoch_bootstrap && secrets.SUPABASE_URL || '' }}
-          SUPABASE_SERVICE_ROLE_KEY: ${{ inputs.weather_state_epoch_bootstrap && secrets.SUPABASE_SERVICE_ROLE_KEY || '' }}
+          SUPABASE_URL: ${{ (inputs.weather_state_epoch_bootstrap || steps.assistant-later-h0-source.outputs.required == 'true') && secrets.SUPABASE_URL || '' }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ (inputs.weather_state_epoch_bootstrap || steps.assistant-later-h0-source.outputs.required == 'true') && secrets.SUPABASE_SERVICE_ROLE_KEY || '' }}
           PREDECESSOR_TRANSITION_KIND: ${{ steps.historical-wave-predecessor.outputs.transition_kind }}
           MIGRATED_RUNTIME_ROOT: ${{ steps.bounded-conditions-predecessor-migration.outputs.restored_path }}
           EXACT_WEATHER_MIGRATED_ROOT: ${{ steps.exact-weather-pair-migration.outputs.restored_path }}
@@ -1467,6 +1509,11 @@ jobs:
           if test "${{ inputs.native_sampling_identity_original_recovery }}" = true; then
             test "${{ steps.native-identity-runtime-install.outcome }}" = success
             node scripts/install-native-identity-checkpoint-runtime.mjs verify
+            exit 0
+          fi
+          if test "${{ steps.assistant-later-h0-source.outputs.required }}" = true; then
+            test "${{ steps.assistant-later-h0-prepare.outcome }}" = success
+            NODE_OPTIONS=--max-old-space-size=6144 node scripts/assistant-later-h0-runtime-transition.mjs install
             exit 0
           fi
           restored_root="$RAVRADAR_PRIVATE_RUNTIME_RESTORE"
@@ -1520,6 +1567,12 @@ jobs:
           const store = await inspectDmiForecastFile('data/live/dmi-forecast-cache.json');
           const manifest = JSON.parse(fs.readFileSync(
             (process.env.RAVRADAR_WEATHER_STATE_EPOCH_ORIGINAL_BUNDLE || process.env.RAVRADAR_NATIVE_IDENTITY_ORIGINAL_BUNDLE || process.env.RAVRADAR_PRIVATE_RUNTIME_BUNDLE) + '/manifest.json', 'utf8'));
+          // Schema is an ordinary work selector only; never an original-proof/PASS marker.
+          const continuitySchema = store.continuity?.metadata.schemaVersion;
+          if (store.hasPartContinuity && continuitySchema !== 1 && continuitySchema !== 2) {
+            throw new Error('Unknown DMI PART continuity schema');
+          }
+          fs.appendFileSync(process.env.GITHUB_OUTPUT, `continuity_schema=${continuitySchema ?? ''}\n`);
           if (store.hasPartContinuity) {
             fs.appendFileSync(process.env.GITHUB_OUTPUT, 'required=false\n');
           } else if (manifest.productionReferenceAt === '2026-09-27T02:00:00.000Z') {
@@ -1703,7 +1756,7 @@ jobs:
         # conditions bytes and bundle hash. This also permits the exact 11Z
         # recovery to resume its own progress after a later no-loss stop;
         # a snapshot from the 15Z anchor is rejected by the binder below.
-        if: inputs.source_normal_producer == false && (inputs.current_family_cold_start != true && inputs.completed_private_runtime != true && (inputs.native_sampling_identity_original_recovery != true && (inputs.weather_state_epoch_bootstrap != true || inputs.weather_state_epoch_checkpoint_reentry == true) && github.ref == 'refs/heads/main' && github.event_name != 'pull_request' && github.event_name != 'pull_request_target' && steps.private-runtime-install.outcome == 'success' && steps.weather-source-handoff.outputs.reused != 'true' && !(inputs.quick_confirmation && inputs.quick_progress_source == 'protected-current')))
+        if: inputs.source_normal_producer == false && ((inputs.current_family_cold_start != true || inputs.quick_progress_source == '39886354260-1' || inputs.quick_progress_source == '39933506923-1') && inputs.completed_private_runtime != true && (inputs.native_sampling_identity_original_recovery != true && (inputs.weather_state_epoch_bootstrap != true || inputs.weather_state_epoch_checkpoint_reentry == true) && github.ref == 'refs/heads/main' && github.event_name != 'pull_request' && github.event_name != 'pull_request_target' && steps.private-runtime-install.outcome == 'success' && steps.weather-source-handoff.outputs.reused != 'true' && !(inputs.quick_confirmation && inputs.quick_progress_source == 'protected-current')))
         uses: actions/cache/restore@v6
         with:
           path: .cache/weather-private-progress.encrypted
@@ -1801,7 +1854,7 @@ jobs:
           # the next scheduled run begins again from protected storage.
 
       - name: Require recovered progress before short confirmation
-        if: inputs.source_normal_producer == false && (inputs.completed_private_runtime != true && (inputs.quick_confirmation == true || inputs.quick_progress_source != ''))
+        if: inputs.source_normal_producer == false && (inputs.current_family_cold_start != true && inputs.completed_private_runtime != true && (inputs.quick_confirmation == true || inputs.quick_progress_source != ''))
         shell: bash
         env:
           QUICK_PROGRESS_SOURCE: ${{ inputs.quick_progress_source }}
@@ -2276,11 +2329,18 @@ jobs:
           RAVRADAR_R2_SECRET_ACCESS_KEY: ${{ inputs.current_family_cold_start && secrets.RAVRADAR_R2_SECRET_ACCESS_KEY || '' }}
           SUPABASE_URL: ${{ inputs.current_family_cold_start && secrets.SUPABASE_URL || '' }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ inputs.current_family_cold_start && secrets.SUPABASE_SERVICE_ROLE_KEY || '' }}
+          WEATHER_PROGRESS_MASTER_SECRET: ${{ inputs.current_family_cold_start && inputs.quick_progress_source != '' && secrets.SUPABASE_SERVICE_ROLE_KEY || '' }}
+          PROGRESS_CACHE_MATCHED_KEY: ${{ steps.component-progress-cache.outputs.cache-matched-key }}
+          PROGRESS_CACHE_OUTCOME: ${{ steps.component-progress-cache.outcome }}
         run: |
           set -euo pipefail
           mkdir -p .cache data/live "$RUNNER_TEMP/dmi-active-proof"
           if test "${{ inputs.current_family_cold_start }}" = true; then
-            node scripts/run-current-family-cold-start.mjs prepare
+            if test -n "$QUICK_PROGRESS_SOURCE"; then
+              node scripts/run-current-family-cold-start.mjs reopen
+            else
+              node scripts/run-current-family-cold-start.mjs prepare
+            fi
             echo "strict_active_ready=false" >> "$GITHUB_OUTPUT"
             echo "candidate_seeded=true" >> "$GITHUB_OUTPUT"
             exit 0
@@ -2348,13 +2408,18 @@ jobs:
       - name: Plan bounded current history from the actual selected continuation
         id: current-history-demand
         if: inputs.source_normal_producer == false && (inputs.completed_private_runtime != true && (steps.preflight.outputs.should_run == 'true' && steps.weather-source-handoff.outputs.reused != 'true' && (steps.operational-action.outputs.action == 'integrated' || steps.operational-action.outputs.action == 'integrated-historical-maintenance') && steps.historical-wave-transition.outputs.required != 'true'))
-        run: node scripts/plan-ravscore-current-history.mjs --retain-committed-raw
+        run: |
+          if test "${{ steps.assistant-later-h0-source.outputs.required }}" = true; then
+            export NODE_OPTIONS=--max-old-space-size=6144
+          fi
+          node scripts/plan-ravscore-current-history.mjs --retain-committed-raw ${{ steps.dmi-part-continuity-donor.outputs.continuity_schema == '1' && steps.private-runtime-install.outcome == 'success' && steps.operational-model.outputs.model == 'integrated' && steps.operational-model.outputs.binding_current == 'true' && steps.operational-action.outputs.action == 'integrated' && steps.legacy-bootstrap.outputs.stateless_integrated_recovery != 'true' && inputs.completed_private_runtime != true && inputs.completed_private_runtime_pin == '' && inputs.completed_stage_source == '' && inputs.checkpoint_only != true && inputs.quick_confirmation != true && inputs.quick_progress_source == '' && inputs.current_family_cold_start != true && inputs.weather_state_epoch_bootstrap != true && inputs.weather_state_epoch_checkpoint_reentry != true && inputs.weather_state_epoch_raw_cache_key == '' && inputs.weather_state_epoch_archive_key == '' && inputs.weather_state_epoch_archive_catalog_sha256 == '' && inputs.native_sampling_identity_original_recovery != true && inputs.ravscore_integrated_weather_handoff_run_id == '' && inputs.produce_weather_handoff != true && inputs.ravscore_integrated_first_cutover != true && inputs.ravscore_integrated_return != true && (inputs.ravscore_candidate_g_rollback_mode == '' || inputs.ravscore_candidate_g_rollback_mode == 'none') && '--prepare-cached-native-originals' || '' }}
         env:
+          OPERATIONAL_ACTION: ${{ steps.operational-action.outputs.action }}
           RAVRADAR_R2_ACCOUNT_ID: ${{ (inputs.weather_state_epoch_bootstrap || inputs.current_family_cold_start) && secrets.RAVRADAR_R2_ACCOUNT_ID || '' }}
           RAVRADAR_R2_ACCESS_KEY_ID: ${{ (inputs.weather_state_epoch_bootstrap || inputs.current_family_cold_start) && secrets.RAVRADAR_R2_ACCESS_KEY_ID || '' }}
           RAVRADAR_R2_SECRET_ACCESS_KEY: ${{ (inputs.weather_state_epoch_bootstrap || inputs.current_family_cold_start) && secrets.RAVRADAR_R2_SECRET_ACCESS_KEY || '' }}
-          SUPABASE_URL: ${{ (inputs.weather_state_epoch_bootstrap || inputs.current_family_cold_start) && secrets.SUPABASE_URL || '' }}
-          SUPABASE_SERVICE_ROLE_KEY: ${{ (inputs.weather_state_epoch_bootstrap || inputs.current_family_cold_start) && secrets.SUPABASE_SERVICE_ROLE_KEY || '' }}
+          SUPABASE_URL: ${{ (inputs.weather_state_epoch_bootstrap || inputs.current_family_cold_start || steps.assistant-later-h0-source.outputs.required == 'true') && secrets.SUPABASE_URL || '' }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ (inputs.weather_state_epoch_bootstrap || inputs.current_family_cold_start || steps.assistant-later-h0-source.outputs.required == 'true') && secrets.SUPABASE_SERVICE_ROLE_KEY || '' }}
           RAVRADAR_REQUIRE_PRIVATE_WEATHER_BASELINE: ${{ steps.private-runtime-install.outcome == 'success' && 'true' || 'false' }}
           RAVSCORE_STATELESS_INTEGRATED_COLD_START_ALLOWED: ${{ (steps.operational-action.outputs.action == 'integrated' || steps.operational-action.outputs.action == 'integrated-historical-maintenance') && steps.legacy-bootstrap.outputs.stateless_integrated_recovery == 'true' && 'true' || 'false' }}
 
@@ -2395,7 +2460,10 @@ jobs:
           fi
 
       - name: Preserve the fixed epoch post-processing reserve before dmi
-        if: inputs.source_normal_producer == false && (inputs.completed_private_runtime != true && (inputs.weather_state_epoch_bootstrap == true && steps.preflight.outputs.should_run == 'true'))
+        if: inputs.source_normal_producer == false && (inputs.completed_private_runtime != true && ((inputs.weather_state_epoch_bootstrap == true || inputs.current_family_cold_start == true) && steps.preflight.outputs.should_run == 'true'))
+        env:
+          QUICK_PROGRESS_SOURCE: ${{ inputs.current_family_cold_start != true && inputs.quick_progress_source || '' }}
+          CHECKPOINT_TARGET_HOUR: ${{ inputs.current_family_cold_start != true && inputs.checkpoint_only && inputs.production_target_hour || '' }}
         run: node scripts/weather-state-epoch-budget.mjs dmi
 
       - name: Update DMI bulk model cache
@@ -2610,6 +2678,11 @@ jobs:
           if test "${{ steps.weather-source-handoff.outputs.reused }}" = "true"; then
             test "$resolved_target" = "${{ steps.weather-source-handoff.outputs.target_hour }}"
           fi
+          if test "${{ inputs.current_family_cold_start }}" = true && test -n "$QUICK_PROGRESS_SOURCE"; then
+            test "$QUICK_PROGRESS_SOURCE" = 39886354260-1 || test "$QUICK_PROGRESS_SOURCE" = 39933506923-1
+            test "$resolved_target" = "$RAVRADAR_PRODUCTION_TARGET_HOUR"
+            test "$resolved_target" = 2026-10-23T01:00:00Z
+          fi
           echo "RAVRADAR_PRODUCTION_TARGET_HOUR=$resolved_target" >> "$GITHUB_ENV"
 
       - name: Inspect target-bound Copernicus source stage after fresh DMI
@@ -2663,7 +2736,10 @@ jobs:
           fi
 
       - name: Preserve the fixed epoch post-processing reserve before copernicus
-        if: inputs.source_normal_producer == false && (inputs.completed_private_runtime != true && (inputs.weather_state_epoch_bootstrap == true && steps.preflight.outputs.should_run == 'true'))
+        if: inputs.source_normal_producer == false && (inputs.completed_private_runtime != true && ((inputs.weather_state_epoch_bootstrap == true || inputs.current_family_cold_start == true) && steps.preflight.outputs.should_run == 'true'))
+        env:
+          QUICK_PROGRESS_SOURCE: ${{ inputs.current_family_cold_start != true && inputs.quick_progress_source || '' }}
+          CHECKPOINT_TARGET_HOUR: ${{ inputs.current_family_cold_start != true && inputs.checkpoint_only && inputs.production_target_hour || '' }}
         run: node scripts/weather-state-epoch-budget.mjs copernicus
 
       - name: Fill only exact-hour DMI gaps from Copernicus
@@ -2700,7 +2776,10 @@ jobs:
           --require-source-stage-reusable
 
       - name: Preserve the fixed epoch post-processing reserve before open-meteo
-        if: inputs.source_normal_producer == false && (inputs.completed_private_runtime != true && (inputs.weather_state_epoch_bootstrap == true && steps.preflight.outputs.should_run == 'true'))
+        if: inputs.source_normal_producer == false && (inputs.completed_private_runtime != true && ((inputs.weather_state_epoch_bootstrap == true || inputs.current_family_cold_start == true) && steps.preflight.outputs.should_run == 'true'))
+        env:
+          QUICK_PROGRESS_SOURCE: ${{ inputs.current_family_cold_start != true && inputs.quick_progress_source || '' }}
+          CHECKPOINT_TARGET_HOUR: ${{ inputs.current_family_cold_start != true && inputs.checkpoint_only && inputs.production_target_hour || '' }}
         run: node scripts/weather-state-epoch-budget.mjs open-meteo
 
       - name: Fill only the exact remaining current gaps from Open-Meteo
@@ -2790,7 +2869,10 @@ jobs:
           --dmi .cache/dmi-candidate-progress.json
 
       - name: Preserve the fixed epoch post-processing reserve before weather
-        if: inputs.source_normal_producer == false && (inputs.completed_private_runtime != true && (inputs.weather_state_epoch_bootstrap == true && steps.preflight.outputs.should_run == 'true'))
+        if: inputs.source_normal_producer == false && (inputs.completed_private_runtime != true && ((inputs.weather_state_epoch_bootstrap == true || inputs.current_family_cold_start == true) && steps.preflight.outputs.should_run == 'true'))
+        env:
+          QUICK_PROGRESS_SOURCE: ${{ inputs.current_family_cold_start != true && inputs.quick_progress_source || '' }}
+          CHECKPOINT_TARGET_HOUR: ${{ inputs.current_family_cold_start != true && inputs.checkpoint_only && inputs.production_target_hour || '' }}
         run: node scripts/weather-state-epoch-budget.mjs weather
 
       - name: Update central weather cache
@@ -2842,7 +2924,10 @@ jobs:
           RAVSCORE_CURRENT_TRACE_PATH: data/diagnostics/ravscore-current-input-stage-trace.json
           RAVSCORE_CURRENT_TRACE_PART_IDS: dk-b04-07-national-part-02,dk-b04-07-national-part-05,dk-b05-12-national-part-01,dk-b05-17-national-part-03,dk-b05-17-national-part-02,dk-b05-17-national-part-04,dk-b05-18-national-part-02,dk-b05-18-national-part-03,dk-b05-18-national-part-05,dk-b05-20-owner-approved-01,dk-b09-06-national-part-06,dk-b10-23-national-part-01,dk-b12-03-national-part-05,dk-b12-06-national-part-02
           RAVRADAR_COMPONENT_COPERNICUS_BUDGET_MS: ${{ inputs.quick_confirmation && '45000' || '90000' }}
-          RAVRADAR_COMPONENT_OPEN_METEO_BUDGET_MS: ${{ inputs.quick_confirmation && '60000' || '90000' }}
+          # The ordinary scalar reserve must be able to reach all 673 PARTs.
+          # The runtime separately caps actual HTTP starts, including retries,
+          # and paces them; a longer deadline does not grant unlimited calls.
+          RAVRADAR_COMPONENT_OPEN_METEO_BUDGET_MS: ${{ inputs.quick_confirmation && '60000' || '600000' }}
           COPERNICUSMARINE_SERVICE_USERNAME: ${{ secrets.COPERNICUSMARINE_SERVICE_USERNAME }}
           COPERNICUSMARINE_SERVICE_PASSWORD: ${{ secrets.COPERNICUSMARINE_SERVICE_PASSWORD }}
           WEATHER_USER_AGENT: "RavRadar/4.0.595 (${{ github.server_url }}/${{ github.repository }})"
@@ -3035,14 +3120,28 @@ jobs:
             echo "release_gate_outcome=$release_gate_outcome" >> "$GITHUB_OUTPUT"
             node scripts/cutover-validation-report.mjs check --input "$report_path"
           else
-            runtime_audit_outcome="success"
+            # Both small observers use the same node executable/configuration as
+            # the audit; observer failure cannot replace its actual exit status.
+            node scripts/observe-runtime-audit-execution.mjs --phase before || true
+            runtime_audit_exit_status=0
             node scripts/audit-ravscore-integrated-public-runtime.mjs \
               --input data/live/conditions.json \
               --output "$audit_path" \
-              || runtime_audit_outcome="failure"
+              || runtime_audit_exit_status=$?
+            node scripts/observe-runtime-audit-execution.mjs --phase after \
+              --exit-code "$runtime_audit_exit_status" || true
+            runtime_audit_outcome="success"
+            if test "$runtime_audit_exit_status" != 0; then
+              runtime_audit_outcome="failure"
+            fi
+            echo "runtime_audit_exit_status=$runtime_audit_exit_status" >> "$GITHUB_OUTPUT"
             echo "runtime_audit_outcome=$runtime_audit_outcome" >> "$GITHUB_OUTPUT"
             if test "$runtime_audit_outcome" = "failure"; then
-              echo "::warning title=RavScore runtime audit::The audit found one or more model/state issues. The issues are retained in the payload-free audit report; valid weather publication continues."
+              if test -f "$audit_path"; then
+                echo "::warning title=RavScore runtime audit::The audit found one or more model/state issues. The issues are retained in the payload-free audit report; valid weather publication continues."
+              else
+                echo "::warning title=RavScore runtime audit process::The audit process stopped before its required report was written (exit $runtime_audit_exit_status). Fixed failure/execution observations are uploaded separately; the required-report publication gates remain unchanged."
+              fi
             fi
           fi
           rollback_status="$(jq -er '.rollback.status | select(. == "READY" or . == "BUILDING_MEASURED_ONLY")' "$audit_path")"
@@ -3059,11 +3158,14 @@ jobs:
 
       - name: Upload the payload-free runtime audit for every weather build
         continue-on-error: true
-        if: always() && ((inputs.source_normal_producer == false && (always() && steps.preflight.outputs.should_run == 'true' && hashFiles('.geometry-v2-work/ravscore-integrated-public-runtime-audit.json') != '')) || (inputs.source_normal_producer == true && (steps.source-normal.outputs.source_result_kind == 'PREPARED_WEATHER' || steps.source-normal.outputs.source_operational_control_report == 'observed') && hashFiles('.geometry-v2-work/ravscore-integrated-public-runtime-audit.json') != ''))
+        if: always() && ((inputs.source_normal_producer == false && steps.preflight.outputs.should_run == 'true' && hashFiles('.geometry-v2-work/ravscore-integrated-public-runtime-audit.json', '.geometry-v2-work/ravscore-integrated-public-runtime-audit.json.failure.json', '.geometry-v2-work/ravscore-integrated-public-runtime-audit.json.execution.json') != '') || (inputs.source_normal_producer == true && (steps.source-normal.outputs.source_result_kind == 'PREPARED_WEATHER' || steps.source-normal.outputs.source_operational_control_report == 'observed') && hashFiles('.geometry-v2-work/ravscore-integrated-public-runtime-audit.json', '.geometry-v2-work/ravscore-integrated-public-runtime-audit.json.failure.json', '.geometry-v2-work/ravscore-integrated-public-runtime-audit.json.execution.json') != ''))
         uses: actions/upload-artifact@v7
         with:
           name: ravscore-runtime-audit-${{ github.run_id }}-${{ github.run_attempt }}
-          path: .geometry-v2-work/ravscore-integrated-public-runtime-audit.json
+          path: |
+            .geometry-v2-work/ravscore-integrated-public-runtime-audit.json
+            .geometry-v2-work/ravscore-integrated-public-runtime-audit.json.failure.json
+            .geometry-v2-work/ravscore-integrated-public-runtime-audit.json.execution.json
           retention-days: 30
           if-no-files-found: error
 
@@ -3215,7 +3317,7 @@ jobs:
           [[ "$legacy_source_head" =~ ^[a-f0-9]{40}$ ]]
           [[ "$legacy_source_tree" =~ ^[a-f0-9]{40}$ ]]
           if ! git cat-file -e "${legacy_source_head}^{commit}" 2>/dev/null; then
-            git fetch --no-tags --depth=1 origin "$legacy_source_head"
+            git fetch --no-tags origin "$legacy_source_head"
           fi
           test "$(git rev-parse "${legacy_source_head}^{commit}")" = "$legacy_source_head"
           test "$(git rev-parse "${legacy_source_head}^{tree}")" = "$legacy_source_tree"

@@ -47,8 +47,8 @@
     },
     {
       "path": "scripts/fixtures/source19-current-native-metadata.mjs",
-      "bytes": 14633,
-      "sha256": "d5ae5943e39dba6eaca9d2968b207d451b0bb65dfe2f9b43b923cefa9f427f1d",
+      "bytes": 22433,
+      "sha256": "9337de328e2abe22e018286640b845c98170285b56f359871468ee42444f4d5b",
       "source": "THIS_SAME_ACTUAL_COMMITTED_CANDIDATE"
     },
     {

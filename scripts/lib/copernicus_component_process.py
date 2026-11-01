@@ -789,7 +789,7 @@ def _source_normal_program(root, phase, options, output_path):
             # its dependent phase. The metadata value is not an owner/admission.
             identity = _source_normal_readiness_identity()
             environment['RAVRADAR_REQUIRE_INTEGRATED_BINDING'] = 'true'
-            command = [str(root / 'scripts/integrated-cutover-readiness.mjs'), 'publish',
+            command = [str(root / 'scripts/integrated-cutover-readiness.mjs'), 'publish', '--source-producer',
                 '--public-implementation-closure-sha256', identity,
                 '--output', str(operational / 'integrated-readiness.json')]
         elif phase == 75:
@@ -928,7 +928,7 @@ def _source_normal_program(root, phase, options, output_path):
         if not node:
             raise RuntimeError('SOURCE_NORMAL_NODE_UNAVAILABLE')
         command = ([str(root / 'scripts/build-public-coastal-parts-v2.mjs')]
-            if phase == 27 else [str(root / 'scripts/integrated-cutover-readiness.mjs'), 'verify-db'])
+            if phase == 27 else [str(root / 'scripts/integrated-cutover-readiness.mjs'), 'verify-db', '--source-producer'])
         return [node] + command, environment
     if phase in (29, 30):
         node = os.readlink(f'/proc/{os.getppid()}/exe')

@@ -15,6 +15,133 @@ import * as productionPipeline from './lib/ravscore-production-part-pipeline.mjs
 import { planRavScoreCurrentHistoryForPart, buildRavScoreCurrentHistoryDemand }
   from './plan-ravscore-current-history.mjs';
 import * as currentHistoryPlanner from './plan-ravscore-current-history.mjs';
+
+test('planner first failure: actual assertion gets a stable qualified frame, not values',async()=>{
+  let original;try{assert.equal('PRIVATE_ACTUAL','PRIVATE_EXPECTED','PRIVATE_MESSAGE');}catch(error){original=error;}
+  const observed=await currentHistoryPlanner.describeRavScoreCurrentHistoryFailure(original,'COMMITTED_RAW_RETENTION');
+  assert.equal(observed.phase,'COMMITTED_RAW_RETENTION');
+  assert.equal(observed.code,'ERR_ASSERTION');
+  assert.equal(observed.exceptionType,'ASSERTION_ERROR');assert.equal(observed.operator,'strictEqual');
+  assert.equal(observed.frame.module,'scripts/test-protected-dmi-native-current-proofs.mjs');
+  assert.match(observed.frame.sha256,/^[a-f0-9]{64}$/);assert(observed.frame.line>0);
+  assert.doesNotMatch(JSON.stringify(observed),/PRIVATE|message|actual|expected|stack/);
+  assert.equal(original.message.includes('PRIVATE_ACTUAL'),true);
+});
+test('planner first failure: only actual fixed code/operator/type values leave the CLI',async()=>{
+  const known=new Error('PRIVATE');known.code='RAVSCORE_CURRENT_HISTORY_DEMAND_RETENTION_B_S_DIFFER';
+  assert.equal((await currentHistoryPlanner.describeRavScoreCurrentHistoryFailure(known)).code,known.code);
+  const unknown=new Error('PRIVATE');unknown.code='RAVSCORE_CURRENT_HISTORY_DEMAND_PRIVATE_SENTINEL';unknown.operator='PRIVATE_OPERATOR';
+  const observed=await currentHistoryPlanner.describeRavScoreCurrentHistoryFailure(unknown);
+  assert.equal(observed.code,'RAVSCORE_CURRENT_HISTORY_DEMAND_REFUSED');assert.equal(observed.operator,null);
+  assert.doesNotMatch(JSON.stringify(observed),/PRIVATE/);
+});
+test('planner first failure: proxies and getters are not invoked and external frames stay unknown',async()=>{
+  let calls=0;const getter=new Error('PRIVATE');
+  for(const key of ['code','stack','message'])Object.defineProperty(getter,key,{configurable:true,get(){calls++;throw Error('PRIVATE_GETTER');}});
+  const proxy=new Proxy({}, {get(){calls++;throw Error('PRIVATE_PROXY');},getOwnPropertyDescriptor(){calls++;throw Error('PRIVATE_PROXY');}});
+  const proxyPrototype=new Error('PRIVATE');Object.setPrototypeOf(proxyPrototype,proxy);
+  for(const error of [proxy,proxyPrototype,getter,null,undefined,false,0]){
+    const observed=await currentHistoryPlanner.describeRavScoreCurrentHistoryFailure(error);
+    assert.equal(observed.frame,null);assert.doesNotMatch(JSON.stringify(observed),/PRIVATE/);
+  }
+  assert.equal(calls,0);
+  const external=new Error('PRIVATE');external.stack='PRIVATE\n    at external (file:///outside/private.mjs:1:1)';
+  assert.equal((await currentHistoryPlanner.describeRavScoreCurrentHistoryFailure(external)).frame,null);
+  const formatterBefore=Object.getOwnPropertyDescriptor(Error,'prepareStackTrace');
+  try{
+    const nativeStackError=new Error('PRIVATE');
+    Object.defineProperty(Error,'prepareStackTrace',{configurable:true,get(){calls++;throw Error('PRIVATE_FORMATTER');}});
+    assert.equal((await currentHistoryPlanner.describeRavScoreCurrentHistoryFailure(nativeStackError)).frame,null);
+    assert.equal(calls,0);
+  }finally{
+    if(formatterBefore)Object.defineProperty(Error,'prepareStackTrace',formatterBefore);
+    else delete Error.prepareStackTrace;
+  }
+  for(const key of ['name','message']){
+    const nonPrimitive=new Error('PRIVATE');
+    const descriptor=Object.getOwnPropertyDescriptor(nonPrimitive,'stack');
+    Object.defineProperty(nonPrimitive,key,{configurable:true,value:{toString(){calls++;throw Error('PRIVATE_CONVERSION');}}});
+    // Materialize Node22's ordinary data stack before installing bad inputs;
+    // Node24 keeps its real VM getter for this same negative case.
+    if(Object.hasOwn(descriptor,'value'))Object.defineProperty(nonPrimitive,'stack',{...descriptor,value:undefined});
+    assert.equal((await currentHistoryPlanner.describeRavScoreCurrentHistoryFailure(nonPrimitive)).frame,null);
+    assert.equal(calls,0);
+  }
+});
+test('planner first failure: normal CLI handler preserves the failing stop and original error',async()=>{
+  const beforeExit=process.exitCode,beforeError=console.error,lines=[],original=new TypeError('PRIVATE');
+  try{
+    console.error=value=>lines.push(value);
+    await currentHistoryPlanner.reportRavScoreCurrentHistoryFailure(original);
+    assert.equal(process.exitCode,1);assert.equal(lines.length,1);
+    const observed=JSON.parse(lines[0]);assert.equal(observed.kind,'RAVSCORE_CURRENT_HISTORY_FIRST_FAILURE');
+    assert.equal(observed.exceptionType,'TYPE_ERROR');assert.equal(observed.privatePayloadIncluded,false);
+    assert.doesNotMatch(lines[0],/PRIVATE/);assert.equal(original.message,'PRIVATE');
+  }finally{console.error=beforeError;process.exitCode=beforeExit;}
+});
+
+import { collectPostH0DmiOriginalDependencies as collectOriginalDependencies }
+  from './lib/post-h0-dmi-original-dependencies.mjs';
+
+test('planner original dependency: actual collector reasons survive the normal CLI without payload',async()=>{
+  const fs=await import('node:fs/promises');
+  const producer=await fs.readFile(new URL('./lib/post-h0-dmi-original-dependencies.mjs',import.meta.url),'utf8');
+  assert.equal(createHash('sha256').update(producer).digest('hex'),
+    'a49ea641f76af721c43a13a091aa102e0904a3730803859d7c5f5e29e7c516bc');
+  const planner=await fs.readFile(new URL('./plan-ravscore-current-history.mjs',import.meta.url),'utf8');
+  const actualReasons=[...new Set([...producer.matchAll(/fail\('([A-Z_]+)'(?:,|\))/g)].map(match=>match[1]))].sort();
+  const whitelist=planner.match(/const originalDependencyReasons=new Set\(\[([\s\S]*?)\]\);/);
+  assert(whitelist,'The entire fixed family must be explicit');
+  const listed=[...whitelist[1].matchAll(/'([A-Z_]+)'/g)].map(match=>match[1]).sort();
+  assert.equal(listed.length,13);assert.deepEqual(listed,actualReasons);
+  for(const [args,suffix]of [[undefined,'INPUT_INVALID'],[{part:{},initialSelection:{}},'INITIAL_SELECTION_INVALID']]){
+    let original;try{collectOriginalDependencies(args);}catch(error){original=error;}
+    assert(original instanceof Error);const expected='POST_H0_DMI_ORIGINAL_'+suffix;
+    assert.equal(original.originalDependencyCode,expected);assert.equal(original.code,undefined);
+    const message=original.message;
+    const observed=await currentHistoryPlanner.describeRavScoreCurrentHistoryFailure(original,'COMMITTED_RAW_RETENTION');
+    assert.equal(observed.code,expected);assert.equal(observed.exceptionType,'ERROR');
+    assert.equal(observed.phase,'COMMITTED_RAW_RETENTION');
+    assert.equal(observed.frame.module,'scripts/lib/post-h0-dmi-original-dependencies.mjs');
+    assert.equal(observed.frame.line,18);
+    assert.equal(observed.frame.sha256,'a49ea641f76af721c43a13a091aa102e0904a3730803859d7c5f5e29e7c516bc');
+    const beforeExit=process.exitCode,beforeError=console.error,lines=[];
+    try{
+      console.error=value=>lines.push(value);
+      await currentHistoryPlanner.reportRavScoreCurrentHistoryFailure(original);
+      assert.equal(process.exitCode,1);assert.equal(lines.length,1);
+      assert.equal(JSON.parse(lines[0]).code,expected);
+      assert.doesNotMatch(lines[0],/"(?:message|actual|expected|stack)"|PRIVATE_SENTINEL/);
+    }finally{console.error=beforeError;process.exitCode=beforeExit;}
+    assert.equal(original.message,message);assert.equal(original.originalDependencyCode,expected);
+    assert.equal(original.code,undefined);
+  }
+});
+test('planner original dependency: forged family, own getter, proxy and unknown code remain rejected',async()=>{
+  const make=()=>{try{collectOriginalDependencies();}catch(error){return error;}};
+  let calls=0;
+  const getter=make();Object.defineProperty(getter,'originalDependencyCode',
+    {get(){calls++;throw Error('PRIVATE_SENTINEL');},configurable:true});
+  const proxy=new Proxy(make(),{get(){calls++;throw Error('PRIVATE_SENTINEL');},
+    getOwnPropertyDescriptor(){calls++;throw Error('PRIVATE_SENTINEL');}});
+  const nonString=make();nonString.originalDependencyCode={toString(){calls++;throw Error('PRIVATE_SENTINEL');}};
+  const unknown=make();unknown.originalDependencyCode='POST_H0_DMI_ORIGINAL_PRIVATE_SENTINEL';
+  const wrongFamily=make();wrongFamily.originalDependencyCode='OTHER_ORIGINAL_INPUT_INVALID';
+  const wrongParent=make();wrongParent.originalDependencyCode='POST_H0_DMI_ORIGINAL_SELECTED_ENDPOINT_SOURCE_MISSING';
+  const unlistedProof=make();unlistedProof.originalDependencyCode='POST_H0_DMI_ORIGINAL_SELECTED_ENDPOINT_PROOF_PRIVATE_SENTINEL';
+  const wrongFrame=new Error('PRIVATE_SENTINEL');wrongFrame.originalDependencyCode='POST_H0_DMI_ORIGINAL_INPUT_INVALID';
+  const forged={originalDependencyCode:'POST_H0_DMI_ORIGINAL_INPUT_INVALID'};
+  const inherited=make();Object.setPrototypeOf(inherited,Object.create(Error.prototype));
+  for(const error of [getter,proxy,nonString,unknown,wrongFamily,wrongParent,unlistedProof,wrongFrame,forged,inherited]){
+    const observed=await currentHistoryPlanner.describeRavScoreCurrentHistoryFailure(error,'COMMITTED_RAW_RETENTION');
+    assert.equal(observed.code,'RAVSCORE_CURRENT_HISTORY_DEMAND_REFUSED');
+    assert.doesNotMatch(JSON.stringify(observed),/PRIVATE_SENTINEL|OTHER_ORIGINAL/);
+  }
+  assert.equal(calls,0);
+  const priority=make();priority.code='ENOENT';
+  assert.equal((await currentHistoryPlanner.describeRavScoreCurrentHistoryFailure(priority)).code,'ENOENT',
+    'The new diagnostic must never replace an existing accepted code');
+});
 import { buildIntegratedPartScoreSeries } from './lib/ravscore-integrated-runtime.mjs';
 import { buildCandidateGRollbackPartScoreSeries } from './lib/ravscore-candidate-g-rollback-runtime.mjs';
 import { buildRavScorePermittedCurrentHistory } from './lib/ravscore-recovery-replay.mjs';
@@ -966,7 +1093,8 @@ test('OLD null shape follows exact normal projection and never promotes a receip
   assert.equal(selectedProjection.sources.current.nativeGridSampling, null);
   assert.equal(selectedProjection.sources.current.nativeSteps[0].nativeGridSampling, null,
     'actual normal top-null always also emits its selected native step null');
-  assert.equal(inspect(selectedNull, topOnly).code, 'DMI_NATIVE_PROOF_PROJECTION_MISMATCH');
+  assert.equal(inspect(selectedNull, topOnly).code, 'DMI_NATIVE_PROOF_NATIVE_ENDPOINT_MISSING',
+    'own null and absent sampling are distinct native endpoints; reject before projection');
   assert.equal(inspect(selectedNull, selectedProjection).ok, true);
   const selectedStepOnly = copy(selectedProjection); delete selectedStepOnly.sources.current.nativeGridSampling;
   assert.equal(inspectDmiForecastGridSampling(selectedStepOnly.sources.current, 'current', selectedStepOnly.time, identity).status, 'unknown');
@@ -1732,14 +1860,16 @@ test('normal private recovery maps the complete 72h bridge without widening publ
     buildNewestValidRavScoreRecoverySources,
     ravScoreOwnerCurrentHistoryStartAt, ravScoreRecoverySourceStartAt: recovery.ravScoreRecoverySourceStartAt,
     part, zoneId: part.zoneId, initialSelection, generatedAt: at(120), feature,
-    archivedRestartInputs: null,
+    coldInputs: null,
     deployedBulkCache: old, historicalDmiBulkCache: null, bulkCache: fresh,
+    protectedCompanionContexts: [],
+    persistedNativeOriginals: null,
     bulkId: identity.entityId, partDmiIdentity: identity, liveCurrentPilot: null, componentInputs: {},
     persistedDmiPartRows: new Map([[part.partId, { hourly: oldDefault.hourly }]]),
     protectedSameRunDmiRetentions: { current: { SAME_VALUES: 0, DIFFERENT_VALUES: 0 },
       wave: { SAME_VALUES: 0, DIFFERENT_VALUES: 0 } } };
   const actualRecovery = Function(...Object.keys(callScope),
-    slice(source, '      const replayStartAt = archivedRestartInputs !== null ? generatedAt',
+    slice(source, '      const replayStartAt = coldInputs !== null ? generatedAt',
       '      let productionSeries;')
     + ';return { replayStartAt, deployedRecoverySource, progressiveRecoverySource, recoverySources };')(
     ...Object.values(callScope));
@@ -2162,4 +2292,106 @@ test('legacy current request CLI proves hash-reader native closure before publis
       } finally { if (mode.includes('noop')) await actualClose(); retained.delete(handle); }
     }
   } finally { await fs.rm(root, { recursive: true, force: true }); }
+});
+
+test('inspector previous bank: normal coherent native121 survives serialization without its old document', () => {
+  // Existing normal fixture/projection/bank contracts on synthetic originals.
+  // JSON readback is not authenticated B/GCM, a saved-bundle caller or GRIB.
+  const f = fixture({ nativeHours: Array.from({ length: 43 }, (_, index) => index * 3), target: 0 });
+  const identity = dmiExpectedIdentityForPart(f.part), own = f.bulk.zones[identity.entityId];
+  for (const native of Object.values(own.hourly)) {
+    const source = native.sources.current;
+    source.nativeGridSampling = {
+      contractId: 'dmi-native-grid-sampling-v1', elementIndex: 71,
+      gridIndexIdentitySha256: createHash('sha256').update('synthetic-previous-bank-native121').digest('hex'),
+      coordinateInterpretation: 'dmi-dkss-grib1-header-endpoints-v1',
+      gridDefinitionSha256: source.gridDefinitionSha256, gridPoint: [...source.gridPoint],
+      fieldSet: [...source.fieldSet], optionalFieldSet: [...source.optionalFieldSet],
+    };
+  }
+  const hourly = buildDmiForecastHourly({ generatedAt: at(0), startAt: at(0), hours: 121,
+    ocean: Object.values(own.hourly).map(native => ({ step: native.time,
+      'current-u': native['current-u'], 'current-v': native['current-v'], provenance: native.sources })) }).hourly;
+  const selections = hourly.map(row => ({ part: f.part, row }));
+  assert.equal(selections.length, 121);
+  assert.deepEqual(hourly[1].sources.current.nativeSteps.map(step => step.nativeValidTime), [at(0), at(3)]);
+  const originalBefore = JSON.stringify(f.bulk);
+  const bank = buildProtectedDmiNativeCurrentProofs({ selections, contexts: [f.bulk] });
+  const serialized = JSON.stringify(bank), reloaded = JSON.parse(serialized);
+  assert.deepEqual(reloaded, bank);
+  // No original document with an endpoint remains among the inspector inputs.
+  const current = copy(f.bulk); current.zones[identity.entityId].hourly = {};
+  assert.equal(createProtectedDmiNativeCurrentInspector({ contexts: [current] }).inspect(selections[1]).code,
+    'DMI_NATIVE_PROOF_NATIVE_ENDPOINT_MISSING');
+  const inspector = createProtectedDmiNativeCurrentInspector({ contexts: [current], previousBank: reloaded });
+  for (const selection of selections) {
+    assert.equal(inspector.inspect(selection).ok, true);
+    const actual = inspector.inspectOriginals(selection);
+    assert.equal(actual.ok, true, actual.code);
+    assert.equal(actual.nativeRows.length, selection.row.sources.current.nativeSteps.length);
+    assert(actual.nativeRows.every(native => native.source.nativeGridSampling.coordinateInterpretation
+      === 'dmi-dkss-grib1-header-endpoints-v1'));
+    const endpoints = inspector.inspectEndpointOriginals(selection);
+    assert.equal(endpoints.ok, true, endpoints.code);
+    assert(endpoints.endpoints.every(Boolean));
+  }
+  assert.equal(JSON.stringify(reloaded), serialized, 'inspector preserves caller bank bytes');
+  assert.equal(JSON.stringify(f.bulk), originalBefore, 'normal bank/proof path preserves actual original inputs');
+  assert.deepEqual(current.zones[identity.entityId].hourly, {});
+});
+
+test('inspector previous bank: detached snapshot does not cache PASS or accept a changed bank on new construction', () => {
+  const f = fixture(), next = fixture({ target: 2 });
+  const bank = JSON.parse(JSON.stringify(bankFor(f))), originalBank = JSON.stringify(bank);
+  const inspector = createProtectedDmiNativeCurrentInspector({ contexts: [], previousBank: bank });
+  assert.equal(JSON.stringify(bank), originalBank);
+  assert.equal(inspector.inspect(f).ok, true);
+  assert.equal(inspector.inspect(next).ok, true, 'every distinct selection is genuinely projected from the retained endpoints');
+  const detached = inspector.inspectOriginals(f);
+  detached.nativeRows[0].uMps += 1;
+  bank.nativeRows[0].value.uMps += 1;
+  bank.contexts[0].value.header.timeStrideHours = 24;
+  bank.selections[0].sourceSha256 = 'd'.repeat(64);
+  assert.equal(inspector.inspectOriginals(f).ok, true, 'already validated private snapshot is independent of caller/output mutation');
+  const changedTuple = { part: f.part, row: { ...f.row, currentUMps: f.row.currentUMps + 0.01 } };
+  assert.deepEqual(inspector.inspect(changedTuple), { ok: false, code: 'DMI_NATIVE_PROOF_PROJECTION_MISMATCH' });
+  assert.throws(() => createProtectedDmiNativeCurrentInspector({ previousBank: bank }), /DMI_NATIVE_PROOF_BANK_INVALID/,
+    'fresh construction must validate current bytes instead of trusting an earlier PASS/hash label');
+});
+
+test('inspector previous bank: tuple context grid collision and scoped-donor refusals remain closed', () => {
+  const f = fixture(), bank = JSON.parse(JSON.stringify(bankFor(f)));
+  const inspector = createProtectedDmiNativeCurrentInspector({ previousBank: bank });
+  for (const mutate of [
+    value => { value.row.currentVMps += 0.01; },
+    value => { value.part.waterPoint[0] += 0.01; },
+    value => { value.row.sources.current.gridPoint[0] += 0.01; },
+    value => { value.row.sources.current.nativeSteps[0].assetIdentitySha256 = 'd'.repeat(64); },
+  ]) {
+    const invalid = copy(f); mutate(invalid);
+    assert.equal(inspector.inspect(invalid).ok, false);
+  }
+  const invalidContext = copy(f.bulk);
+  invalidContext.zones[dmiExpectedIdentityForPart(f.part).entityId].entityType = 'parent-zone';
+  assert.deepEqual(createProtectedDmiNativeCurrentInspector({ contexts: [invalidContext], previousBank: bank }).inspect(f),
+    { ok: false, code: 'DMI_NATIVE_PROOF_CONTEXT_INVALID' });
+  const conflicting = copy(f.bulk);
+  conflicting.zones[dmiExpectedIdentityForPart(f.part).entityId].hourly[at(0)]['current-u'] += 0.01;
+  assert.deepEqual(createProtectedDmiNativeCurrentInspector({ contexts: [conflicting], previousBank: bank }).inspect(f),
+    { ok: false, code: 'DMI_NATIVE_PROOF_NATIVE_CONFLICT' }, 'a bank cannot hide conflicting actual same-identity originals');
+  const lostScope = copy(f.bulk); lostScope.nativeCurrentOriginalScope = 'role-scoped-native-originals-v2';
+  assert.deepEqual(createProtectedDmiNativeCurrentInspector({ contexts: [lostScope], previousBank: bank }).inspect(f),
+    { ok: false, code: 'DMI_NATIVE_PROOF_SCOPED_ORIGINAL_CONTEXT_UNAVAILABLE' },
+    'the existing refusal marker cannot be flattened into a global donor pool even beside a valid bank');
+  for (const mutate of [
+    value => { value.nativeRows[0].value.vMps += 0.01; },
+    value => { value.contexts[0].value.zone.parentZoneId += '-different'; },
+    value => { value.nativeRows[0].value.source.gridPoint[0] += 0.01; },
+  ]) {
+    const tampered = copy(bank); mutate(tampered);
+    assert.throws(() => createProtectedDmiNativeCurrentInspector({ previousBank: tampered }), /DMI_NATIVE_PROOF_BANK_INVALID/);
+  }
+  assert.equal(createProtectedDmiNativeCurrentInspector({ contexts: [f.bulk] }).inspect(f).ok, true);
+  assert.deepEqual(createProtectedDmiNativeCurrentInspector({ contexts: [] }).inspect(f),
+    { ok: false, code: 'DMI_NATIVE_PROOF_NATIVE_ENDPOINT_MISSING' }, 'legacy no-bank behavior is unchanged');
 });

@@ -70,6 +70,130 @@ assert spec and spec.loader
 producer = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(producer)
 
+
+def check_coherent_raw_inventory():
+    """Real normal manifest/filename boundary only; no GRIB/provider proof."""
+    import hashlib
+    wrapper_spec = importlib.util.spec_from_file_location(
+        "coherent_inventory_boundary", ROOT / "scripts/decode-coherent-current-originals.py")
+    wrapper = importlib.util.module_from_spec(wrapper_spec)
+    wrapper_spec.loader.exec_module(wrapper)
+    previous_root, previous_raw = producer.ROOT, producer.RAW_DIR
+    previous_session = dict(producer._RAW_CURRENT_SESSION_PROTECTED)
+    grib_calls = []
+    previous_decoder = producer.codes_grib_new_from_file
+
+    def forbidden_grib(*args, **kwargs):
+        grib_calls.append(True)
+        raise AssertionError("RAW inventory opened the decoder")
+
+    producer.codes_grib_new_from_file = forbidden_grib
+    try:
+        with tempfile.TemporaryDirectory(prefix="rr-coherent-inventory-") as temporary:
+            producer.ROOT = Path(temporary).resolve()
+            producer.RAW_DIR = producer.ROOT / ".cache/dmi-grib"
+            producer.RAW_DIR.mkdir(parents=True)
+            href = "https://opendataapi.dmi.dk/synthetic-inventory-only.grib"
+            raw_path = producer.cached_asset_path(href)
+            payload = b"synthetic inventory bytes, never decoded\n"
+            raw_path.write_bytes(payload)
+            producer.save_raw_cache_manifest({"schemaVersion": 2, "assets": {}})
+            producer.register_raw_cache_asset(raw_path, href, "dkss_nsbs",
+                "2026-10-21T00:00:00Z", "2026-10-21T03:00:00Z",
+                item_id="synthetic-inventory-item", acquired_at="2026-10-21T01:00:00Z",
+                expected_size=len(payload), content_sha256=hashlib.sha256(payload).hexdigest())
+            registered = producer.load_raw_cache_manifest()
+            capture = producer.canonical_current_source_asset(registered["assets"][raw_path.name])
+            assert capture is not None and len(capture) == 11
+            original_manifest = producer.raw_cache_manifest_path().read_bytes()
+
+            def observe(reason=None, *, capture_mode=None):
+                jobs = [{"capture": copy.deepcopy(capture)}]
+                if capture_mode is not None:
+                    jobs[0]["captureMode"] = capture_mode
+                manifest_before = producer.raw_cache_manifest_path().read_bytes()
+                files_before = {file.name: file.read_bytes() for file in producer.RAW_DIR.iterdir()}
+                try:
+                    result = wrapper.raw_inventory(producer, jobs)
+                except wrapper.Refused as error:
+                    assert reason is not None
+                    assert str(error) == "COHERENT_CURRENT_ORIGINAL_" + reason, str(error)
+                    assert "path" not in jobs[0]
+                else:
+                    assert reason is None
+                    assert result == manifest_before and jobs[0]["path"] == raw_path
+                    if capture_mode is not None:
+                        measured = producer.canonical_current_source_asset(
+                            producer.load_raw_cache_manifest()["assets"][raw_path.name])
+                        assert jobs[0]["transportCapture"] == measured
+                assert jobs[0]["capture"] == capture
+                assert producer.raw_cache_manifest_path().read_bytes() == manifest_before
+                assert {file.name: file.read_bytes() for file in producer.RAW_DIR.iterdir()} == files_before
+                assert not grib_calls and not producer._UNSETTLED_GRIB_READS
+
+            observe()
+            raw_path.unlink()  # Only this test's own synthetic file.
+            observe("RAW_CAPTURE_FILE_MISSING")
+            raw_path.write_bytes(payload)
+            changed = copy.deepcopy(registered)
+            changed["assets"][raw_path.name]["acquiredAt"] = "2026-10-21T01:01:00Z"
+            producer.save_raw_cache_manifest(changed)
+            observe("RAW_ACQUISITION_UNRESOLVED")  # DEFAULT rejection is unchanged.
+            observe(capture_mode="AUTHENTICATED_ORIGINAL_WITH_DISTINCT_MEASURED_READ_CAPTURE")
+            # Same existing inventory fixture, all ten non-acquisition fields.
+            different_fields = {
+                "collection": "dkss_lf", "modelRun": "2026-10-20T18:00:00Z",
+                "validTime": "2026-10-21T06:00:00Z", "itemId": "different-own-item",
+                "assetIdentitySha256": "f" * 64, "assetSizeBytes": None,
+                "contentLengthBytes": len(payload) + 1, "contentSha256": "e" * 64,
+                "itemCreatedAt": "2026-10-20T18:00:00Z", "itemUpdatedAt": "2026-10-20T19:00:00Z",
+            }
+            assert len(different_fields) == 10 and "acquiredAt" not in different_fields
+            for field, value in different_fields.items():
+                different = copy.deepcopy(changed)
+                different["assets"][raw_path.name][field] = value
+                producer.save_raw_cache_manifest(different)
+                observe("RAW_CAPTURE_METADATA_UNMATCHED_PREFIX_PRESENT",
+                        capture_mode="AUTHENTICATED_ORIGINAL_WITH_DISTINCT_MEASURED_READ_CAPTURE")
+            for mutation in ("absent", "invalid", "different-model"):
+                changed = copy.deepcopy(registered)
+                if mutation == "absent":
+                    changed["assets"] = {}
+                elif mutation == "invalid":
+                    changed["assets"][raw_path.name]["contentSha256"] = None
+                else:
+                    changed["assets"][raw_path.name]["modelRun"] = "2026-10-20T18:00:00Z"
+                producer.save_raw_cache_manifest(changed)
+                observe("RAW_CAPTURE_METADATA_UNMATCHED_PREFIX_PRESENT")
+                raw_path.unlink()
+                observe("RAW_CAPTURE_METADATA_UNMATCHED_PREFIX_ABSENT")
+                raw_path.write_bytes(payload)
+            # Same prefix is deliberately NOT proof of the expected extension,
+            # full URL/hash, bytes or original. Refusal remains mandatory.
+            producer.save_raw_cache_manifest({"schemaVersion": 2, "assets": {}})
+            raw_path.unlink()
+            collision = producer.RAW_DIR / (capture["assetIdentitySha256"][:24] + ".different")
+            collision.write_bytes(b"unrelated synthetic prefix candidate")
+            observe("RAW_CAPTURE_METADATA_UNMATCHED_PREFIX_PRESENT")
+            collision.unlink()
+            raw_path.write_bytes(payload + b"size mismatch")
+            producer.save_raw_cache_manifest(registered)
+            observe("RAW_FILE_INVALID")
+            raw_path.write_bytes(payload)
+            assert producer.raw_cache_manifest_path().read_bytes() == original_manifest
+            assert not grib_calls
+    finally:
+        producer.ROOT, producer.RAW_DIR = previous_root, previous_raw
+        producer._RAW_CURRENT_SESSION_PROTECTED.clear()
+        producer._RAW_CURRENT_SESSION_PROTECTED.update(previous_session)
+        producer.codes_grib_new_from_file = previous_decoder
+
+
+check_coherent_raw_inventory()
+if sys.argv[1:] == ["--coherent-raw-inventory-only"]:
+    print("Coherent RAW inventory boundary passed: real manifest/files, missing file versus unmatched metadata, prefix is not proof, acquisition refusal and size guard preserved; zero GRIB calls")
+    raise SystemExit(0)
+
 valid_time = "2026-01-01T03:00:00Z"
 zone = {
     "id": "PART::TEST",
@@ -181,6 +305,112 @@ if sys.argv[1:] == ["--cached-current-history-plan-only"]:
     raise SystemExit(0)
 
 
+def check_raw_current_b_conditions_capacity(p, read, write, history):
+    """Real normal fixed B reader, real sized JSON; no provider/native values."""
+    import hashlib
+    import subprocess
+    conditions = p.ROOT / "private/bundle/payload/data/live/conditions.json"
+    manifest = p.ROOT / "private/bundle/manifest.json"
+    checkpoint = p.ROOT / ".cache/ravscore-continuation-checkpoint/checkpoint.json"
+    originals = {path: path.read_bytes() for path in (conditions, manifest, checkpoint)}
+    maximum = int(subprocess.check_output(["node", "--input-type=module", "-e",
+        "import {PRIVATE_CONDITIONS_MAX_BYTES as maximum} from "
+        + json.dumps((ROOT / "scripts/lib/bounded-json-writer.mjs").as_uri())
+        + ";console.log(maximum)"], timeout=10, text=True).strip())
+    assert maximum == 535_822_312
+    candidate = copy.deepcopy(history)
+    counts = {"positive": 0, "negative": 0}
+
+    def sized_json(path, size, document):
+        prefix = json.dumps(document, separators=(",", ":")).encode()[:-1] + b',"padding":"'
+        suffix = b'"}\n'
+        remaining = size - len(prefix) - len(suffix)
+        assert remaining > 0
+        chunk = b"x" * (1024 * 1024)
+        with path.open("wb") as handle:
+            handle.write(prefix)
+            while remaining:
+                selected = min(remaining, len(chunk))
+                handle.write(chunk[:selected]); remaining -= selected
+            handle.write(suffix)
+        # JSON is valid by construction: ASCII JSON fields and a string of x.
+        assert path.lstat().st_size == size and path.lstat().st_nlink == 1
+        with path.open("rb") as handle:
+            assert handle.read(len(prefix)) == prefix
+            handle.seek(-len(suffix), 2); assert handle.read() == suffix
+
+    def demand():
+        write(".cache/ravscore-current-history-demand.json", candidate)
+
+    def rejected(label, exception, code=None):
+        try:
+            read()
+        except exception as error:
+            if code is not None:
+                assert str(error) == code, (label, str(error))
+        else:
+            raise AssertionError(label + " bypassed the normal B boundary")
+        counts["negative"] += 1
+
+    try:
+        for size in (281_527_502, maximum):
+            sized_json(conditions, size, {"synthetic": True})
+            candidate["rawRetention"]["boundary"]["conditionsSha256"] = p.file_content_sha256(conditions)
+            demand()
+            try:
+                assert len(read()) == 1
+            except p.AssetDownloadCleanupUnproven as error:
+                print(json.dumps({"case": "normal-physical-B-conditions-capacity", "fileBytes": size,
+                    "producerMaximumBytes": maximum, "rejectedGuard": str(error)}), flush=True)
+                raise
+            counts["positive"] += 1
+        with conditions.open("ab") as handle:
+            handle.write(b" ")  # Still valid JSON, exactly producer maximum + 1.
+        rejected("conditions maximum + 1", p.AssetDownloadCleanupUnproven, "DMI_RAW_CURRENT_B_BOUNDARY_INVALID")
+        with conditions.open("r+b") as handle:
+            handle.truncate(maximum)
+
+        sized_json(manifest, 256 * 1024 * 1024 + 1, json.loads(originals[manifest]))
+        rejected("manifest unchanged 256-MiB maximum", p.AssetDownloadCleanupUnproven, "DMI_RAW_CURRENT_B_BOUNDARY_INVALID")
+        manifest.write_bytes(originals[manifest])
+        manifest.write_bytes(b"{")
+        rejected("malformed manifest", json.JSONDecodeError)
+        manifest.write_bytes(originals[manifest])
+
+        for selected in (conditions, manifest):
+            link = selected.with_name(selected.name + ".fixture-hardlink")
+            os.link(selected, link)
+            try:
+                assert selected.lstat().st_nlink == 2
+                rejected("multiply linked B file", p.AssetDownloadCleanupUnproven, "DMI_RAW_CURRENT_B_BOUNDARY_INVALID")
+            finally:
+                link.unlink()
+        moved = conditions.with_name(conditions.name + ".fixture-regular")
+        conditions.rename(moved); conditions.mkdir()
+        try:
+            rejected("nonregular conditions", p.AssetDownloadCleanupUnproven, "DMI_RAW_CURRENT_B_BOUNDARY_INVALID")
+        finally:
+            conditions.rmdir(); moved.rename(conditions)
+
+        valid = copy.deepcopy(candidate)
+        candidate["rawRetention"]["boundary"]["conditionsSha256"] = "0" * 64
+        demand(); rejected("conditions SHA mismatch", p.AssetDownloadCleanupUnproven, "DMI_RAW_CURRENT_B_BOUNDARY_CHANGED")
+        candidate = copy.deepcopy(valid)
+        candidate["sourceHashes"]["checkpoint"] = write(
+            ".cache/ravscore-continuation-checkpoint/checkpoint.json", {"generationSha256": "9" * 64})
+        demand(); rejected("S generation mismatch", p.AssetDownloadCleanupUnproven, "DMI_RAW_CURRENT_B_BOUNDARY_CHANGED")
+        checkpoint.write_bytes(originals[checkpoint]); candidate = copy.deepcopy(valid)
+        candidate["registrySha256"] = "sha256:" + "0" * 64
+        demand(); rejected("registry mismatch", ValueError, "DMI_CURRENT_HISTORY_DEMAND_INVALID")
+    finally:
+        for path, body in originals.items():
+            path.write_bytes(body)
+        write(".cache/ravscore-current-history-demand.json", history)
+    print(json.dumps({"case": "normal-physical-B-conditions-capacity", **counts,
+        "physicalRepresentativeBytes": 281_527_502, "producerMaximumBytes": maximum,
+        "manifestMaximumBytes": 256 * 1024 * 1024, "providerCalls": 0, "nativeValues": False}), flush=True)
+
+
 def check_raw_current_retention():
     """Normal download/prune across a failed score; synthetic transport only."""
     import hashlib
@@ -284,6 +514,7 @@ def check_raw_current_retention():
             else: raise AssertionError("changed immutable input was silently ignored")
             write(".cache/ravscore-current-history-demand.json", history)
             assert len(read()) == 1
+            check_raw_current_b_conditions_capacity(p, read, write, history)
             missing_href = "https://owned-fixture.invalid/unselected-missing.grib"
             missing_capture = {**required_capture, "assetIdentitySha256": p.asset_identity_sha256(missing_href),
                 "itemId": "unselected-missing"}
@@ -637,6 +868,58 @@ def check_archive_isolated_raw_retention():
                 write(".cache/ravscore-current-history-demand.json", history)
                 assert read() == {} and p._RAW_CURRENT_PROTECTED == {}, "validated local archive scope did not enable bounded LRU"
                 assert not p._RAW_CURRENT_SESSION_PROTECTED, "policy must not invent a marine receipt"
+                # Real JS planner + its normal post-capability cold selection,
+                # then the complete fixed Python demand/catalog/B/S reader.
+                # The surrounding archive is this existing SYNTHETIC fixture;
+                # no JS archive capability or numerical admission is issued.
+                import subprocess
+                planner_case = r'''
+import fs from 'node:fs';
+import { pathToFileURL } from 'node:url';
+const [plannerPath, target] = process.argv.slice(2);
+const { planRavScoreCurrentHistoryForPart } = await import(pathToFileURL(plannerPath));
+const part = { partId: 'TEST', zoneId: 'ZONE-TEST', waterPoint: [2, 1], onshoreDirectionDeg: 90 };
+const row = planRavScoreCurrentHistoryForPart({ part, targetReferenceAt: new Date(target).toISOString(), stateLessRecovery: true });
+const ordinary = structuredClone(row), demand = { demands: [row] };
+const source = fs.readFileSync(plannerPath, 'utf8');
+const from = source.indexOf('  if (currentFamilyColdStart !== null) {', source.indexOf('  const demand = buildRavScoreCurrentHistoryDemand({'));
+const until = source.indexOf('    demand.schemaVersion = 2;', from);
+if (from < 0 || until <= from) throw Error('NORMAL_COLD_DEMAND_BOUNDARY_REQUIRED');
+new Function('demand', 'currentFamilyColdStart', 'productionReferenceAt', 'refuse',
+  '"use strict";\n' + source.slice(from, until) + '\n}')(demand, {}, row.endAt, code => { throw Error(code); });
+process.stdout.write(JSON.stringify({ ordinary, cold: demand.demands[0] }));
+'''
+                planned = json.loads(subprocess.check_output(["node", "--input-type=module", "-e", planner_case, "COLD_TARGET_UNIT",
+                    str(ROOT / "scripts/plan-ravscore-current-history.mjs"), target], text=True))
+                assert p.epoch(planned["ordinary"]["startAt"]) == p.epoch(target) - 48 * 3600
+                assert p.epoch(planned["cold"]["startAt"]) == p.epoch(target), "actual JS cold selection retained old history"
+                targeted = copy.deepcopy(history); targeted["demands"] = [planned["cold"]]
+                write(".cache/ravscore-current-history-demand.json", targeted)
+                resolved = read()
+                assert set(resolved) == {zone["id"]}
+                assert p.epoch(resolved[zone["id"]]["startAt"]) == p.epoch(target)
+                assert p.epoch(resolved[zone["id"]]["endAt"]) == p.epoch(target)
+                # A flag, absent archive or CACHE_ONLY must not grant this
+                # smaller window. Ordinary 48h demands remain unchanged.
+                try: p.current_history_demands([planned["cold"]], [zone], target)
+                except ValueError: pass
+                else: raise AssertionError("target-only demand acquired authority without validated archive")
+                assert set(p.current_history_demands([planned["ordinary"]], [zone], target)) == {zone["id"]}
+                unscoped = copy.deepcopy(targeted); unscoped.pop("rawRetention"); unscoped["schemaVersion"] = 1
+                write(".cache/ravscore-current-history-demand.json", unscoped)
+                with patch.dict(os.environ, {"DMI_BULK_REQUIRE_COMMITTED_RAW_RETENTION": "false"}):
+                    try: read()
+                    except (p.AssetDownloadCleanupUnproven, ValueError, OSError): pass
+                    else: raise AssertionError("unscoped target-only demand was accepted")
+                write(".cache/ravscore-current-history-demand.json", targeted)
+                original_cache_only = p.CACHE_ONLY
+                try:
+                    p.CACHE_ONLY = True
+                    try: read()
+                    except ValueError: pass
+                    else: raise AssertionError("CACHE_ONLY skipped archive validation but acquired target-only scope")
+                finally: p.CACHE_ONLY = original_cache_only
+                write(".cache/ravscore-current-history-demand.json", history)
                 negatives = []
                 for key, value in (("archiveId", "0" * 64), ("archiveCatalogSha256", "0" * 64),
                                    ("pointerVersion", 8), ("pointerVersion", True), ("checkpointVersion", 10),
@@ -5939,6 +6222,175 @@ if scenario in {"current-only", "cached-current-history"}:
         assert not p._UNSETTLED_GRIB_READS
         assert fixture_path.read_bytes() == payload
         assert p.raw_cache_manifest_path().read_bytes() == fixture_manifest_bytes
+        # Add ONLY inside the existing native current-only fixture's two-order
+        # loop, after normal fd/manifest/bytes assertions and BEFORE snapshots.
+        # The actual file and native source above are the test's existing owned
+        # ecCodes fixture. No new test bank, fixture file, provider or decoder stub.
+        import time
+        wrapper_spec = importlib.util.spec_from_file_location(
+            "coherent_current_native_wrapper", source.with_name("decode-coherent-current-originals.py"))
+        wrapper = importlib.util.module_from_spec(wrapper_spec)
+        wrapper_spec.loader.exec_module(wrapper)
+        step_names = ("itemId", "assetIdentitySha256", "nativeValidTime", "leadTimeHours",
+                      "acquiredAt", "optionalFieldSet", "itemCreatedAt", "itemUpdatedAt",
+                      "nativeGridSampling", "gridPoint", "distanceKm")
+        # A RAW manifest row may omit the two optional item timestamps. The
+        # normal request boundary still requires the complete eleven-field
+        # canonical asset, including both absent timestamps as None.
+        wrapper_capture = p.canonical_current_source_asset(fixture_capture)
+        assert wrapper_capture is not None
+        assert set(wrapper_capture) == set(fixture_capture) | {"itemCreatedAt", "itemUpdatedAt"}
+        assert len(wrapper_capture) == 11
+        assert all(wrapper_capture[key] == value for key, value in fixture_capture.items())
+        assert wrapper_capture["itemCreatedAt"] is None and wrapper_capture["itemUpdatedAt"] is None
+        request = {"requestId": "a" * 64, "partId": current_zone["id"].removeprefix("PART::"),
+                   "identity": p.sampling_identity(current_zone), "nativeValidTime": when,
+                   "nativeStep": {key: copy.deepcopy(source_current[key]) for key in step_names if key in source_current},
+                   "capture": copy.deepcopy(wrapper_capture)}
+        job = {"capture": copy.deepcopy(wrapper_capture), "path": fixture_path,
+               "requests": [request], "zones": {request["partId"]: current_zone}}
+        before_inputs = copy.deepcopy((request, job, stage, stage_diagnostics, stage_outcomes))
+        decoded, completed = wrapper.decode(p, [job], time.monotonic())
+        assert completed == 1 and len(decoded) == 1
+        assert decoded[0]["row"]["sources"]["current"] == source_current
+        assert (decoded[0]["row"]["current-u"], decoded[0]["row"]["current-v"]) == (0., -.5)
+        assert set(decoded[0]["row"]) == {"time", "current-u", "current-v", "sources"}
+        assert set(decoded[0]["row"]["sources"]) == {"current"}
+        assert "generatedAt" not in decoded[0]["header"]
+        assert "forecastAgeHours" not in decoded[0]["row"]["sources"]["current"]
+        assert (request, job, stage, stage_diagnostics, stage_outcomes) == before_inputs
+        assert not p._UNSETTLED_GRIB_READS and fixture_path.read_bytes() == payload
+        assert p.raw_cache_manifest_path().read_bytes() == fixture_manifest_bytes
+        # The malformed nine-field fixture must remain refused; correcting the
+        # test request does not loosen the unchanged full capture comparison.
+        raw_manifest_job = copy.deepcopy(job)
+        raw_manifest_job["capture"] = copy.deepcopy(fixture_capture)
+        try:
+            wrapper.decode(p, [raw_manifest_job], time.monotonic())
+        except wrapper.Refused as error:
+            assert str(error) == "COHERENT_CURRENT_ORIGINAL_OWNED_CAPTURE_MISMATCH"
+        else:
+            raise AssertionError("coherent CURRENT wrapper admitted a noncanonical RAW manifest row")
+        assert fixture_path.read_bytes() == payload and not p._UNSETTLED_GRIB_READS
+        assert p.raw_cache_manifest_path().read_bytes() == fixture_manifest_bytes
+        # Existing full versus Python-seven-place identity guard; do not require
+        # exact central==wire point or introduce an independent nearby tolerance.
+        central_request = {**request, "identity": {**request["identity"], "samplingPoint": [8.00000004, 55.00000004]}}
+        rounded_wire = {**central_request["identity"], "samplingPoint": [8., 55.]}
+        assert wrapper.wire_matches(rounded_wire, central_request)
+        assert not wrapper.wire_matches({**rounded_wire, "samplingPoint": [8.00000001, 55.]}, central_request)
+        # A changed recorded native index must not be accepted just because the
+        # same file and valid time can be decoded. No output escapes on refusal.
+        wrong_job = copy.deepcopy(job)
+        wrong_job["requests"][0]["nativeStep"]["nativeGridSampling"]["elementIndex"] += 1
+        try:
+            wrapper.decode(p, [wrong_job], time.monotonic())
+        except RuntimeError as error:
+            assert str(error) == "COHERENT_CURRENT_ORIGINAL_DECODE_MISMATCH"
+        else:
+            raise AssertionError("coherent CURRENT wrapper admitted a different native element")
+        # All eleven capture fields remain authoritative; OLD's byte-identity
+        # bridge does not grant CURRENT an acquiredAt relabelling authority.
+        acquired_job = copy.deepcopy(job)
+        acquired_job["capture"]["acquiredAt"] = "2026-01-01T00:00:01Z"
+        if acquired_job["capture"]["acquiredAt"] == fixture_capture["acquiredAt"]:
+            acquired_job["capture"]["acquiredAt"] = "2026-01-01T00:00:02Z"
+        try:
+            wrapper.decode(p, [acquired_job], time.monotonic())
+        except wrapper.Refused as error:
+            assert str(error) == "COHERENT_CURRENT_ORIGINAL_OWNED_CAPTURE_MISMATCH"
+        else:
+            raise AssertionError("coherent CURRENT wrapper relabelled acquisition time")
+        assert fixture_path.read_bytes() == payload and not p._UNSETTLED_GRIB_READS
+        assert p.raw_cache_manifest_path().read_bytes() == fixture_manifest_bytes
+        # Reuse THESE actual GRIB bytes through normal manifest registration.
+        # Original source is obtained by the CURRENT decoder, never hand-built.
+        # A distinct local transport acquisition is not a restore-completed claim.
+        old_root, old_raw = p.ROOT, p.RAW_DIR
+        old_session = dict(p._RAW_CURRENT_SESSION_PROTECTED)
+        normal_root = directory / ("coherent-distinct-" + label)
+        (normal_root / ".cache/dmi-grib").mkdir(parents=True)
+        try:
+            p.ROOT, p.RAW_DIR = normal_root, normal_root / ".cache/dmi-grib"
+            p.save_raw_cache_manifest({"schemaVersion": 2, "assets": {}})
+            href = "https://opendataapi.dmi.dk/own-current-distinct-" + label + ".grib"
+            normal_path = p.cached_asset_path(href)
+            normal_path.write_bytes(payload)
+            p.register_raw_cache_asset(normal_path, href, "dkss_lf", when, when,
+                item_id="own-current-distinct-" + label, acquired_at=when,
+                expected_size=len(payload), content_sha256=hashlib.sha256(payload).hexdigest())
+            old_capture = p.canonical_current_source_asset(
+                p.load_raw_cache_manifest()["assets"][normal_path.name])
+            original_stage = {**decoded[0]["header"], "zones": {current_zone["id"]: {
+                **p.sampling_identity(current_zone), "hourly": {}, "gridPoints": {}, "collections": {}}}}
+            original_outcomes = {}
+            with p._grib_read_scope(normal_path, "dkss_lf", when, when) as original_reader:
+                normal_result = p.process_grib_transactionally(normal_path, "dkss_lf", when, when,
+                    [current_zone], original_stage, {}, current_part_outcomes=original_outcomes,
+                    allowed_parameters={"current-u", "current-v"}, _owned_read=original_reader)
+                assert normal_result[0] == {"current-u", "current-v"} and not normal_result[2]
+                assert original_outcomes["complete"] is True
+            assert original_reader.physically_closed and not p._UNSETTLED_GRIB_READS
+            original_row = copy.deepcopy(original_stage["zones"][current_zone["id"]]["hourly"][when])
+            original_source = original_row["sources"]["current"]
+            assert p.canonical_current_source_asset(original_source) == old_capture
+            new_acquired = "2026-01-01T00:00:01Z" if old_capture["acquiredAt"] != "2026-01-01T00:00:01Z" else "2026-01-01T00:00:02Z"
+            p.register_raw_cache_asset(normal_path, href, "dkss_lf", when, when,
+                item_id="own-current-distinct-" + label, acquired_at=new_acquired,
+                expected_size=len(payload), content_sha256=hashlib.sha256(payload).hexdigest())
+            read_capture = p.canonical_current_source_asset(
+                p.load_raw_cache_manifest()["assets"][normal_path.name])
+            assert read_capture["acquiredAt"] != old_capture["acquiredAt"]
+            assert all(read_capture[key] == value for key, value in old_capture.items() if key != "acquiredAt")
+            actual_manifest = p.raw_cache_manifest_path().read_bytes()
+            dual_request = {**request, "capture": copy.deepcopy(old_capture),
+                "nativeStep": {key: copy.deepcopy(original_source[key]) for key in step_names if key in original_source}}
+            strict_job = {"capture": copy.deepcopy(old_capture)}
+            try:
+                wrapper.raw_inventory(p, [strict_job])
+            except wrapper.Refused as error:
+                assert str(error) == "COHERENT_CURRENT_ORIGINAL_RAW_ACQUISITION_UNRESOLVED"
+            else:
+                raise AssertionError("DEFAULT acquisition-only refusal was weakened")
+            dual_job = {"capture": copy.deepcopy(old_capture), "captureMode": "AUTHENTICATED_ORIGINAL_WITH_DISTINCT_MEASURED_READ_CAPTURE",
+                "requests": [dual_request], "zones": {dual_request["partId"]: current_zone}}
+            wrapper.raw_inventory(p, [dual_job])
+            assert dual_job["transportCapture"] == read_capture and dual_job["capture"] == old_capture
+            dual_before = copy.deepcopy((dual_job, dual_request))
+            dual_rows, dual_completed = wrapper.decode(p, [dual_job], time.monotonic())
+            assert dual_completed == 1 and len(dual_rows) == 1
+            assert dual_rows[0]["row"] == original_row
+            assert dual_rows[0]["capture"] == old_capture and dual_rows[0]["transportCapture"] == read_capture
+            assert (dual_rows[0]["row"]["current-u"], dual_rows[0]["row"]["current-v"]) == (0., -.5)
+            assert (dual_job, dual_request) == dual_before
+            wrong_step = copy.deepcopy(dual_job)
+            wrong_step["requests"][0]["nativeStep"]["nativeGridSampling"]["elementIndex"] += 1
+            try:
+                wrapper.decode(p, [wrong_step], time.monotonic())
+            except RuntimeError as error:
+                assert str(error) == "COHERENT_CURRENT_ORIGINAL_DECODE_MISMATCH"
+            else:
+                raise AssertionError("distinct capture bypassed the actual old native step")
+            assert not p._UNSETTLED_GRIB_READS
+            changed_bytes = payload[:-1] + bytes([payload[-1] ^ 1])
+            assert len(changed_bytes) == len(payload)
+            normal_path.write_bytes(changed_bytes)
+            try:
+                try:
+                    wrapper.decode(p, [dual_job], time.monotonic())
+                except wrapper.Refused as error:
+                    assert str(error) == "COHERENT_CURRENT_ORIGINAL_OWNED_CAPTURE_MISMATCH"
+                else:
+                    raise AssertionError("distinct capture skipped full measured content SHA")
+            finally:
+                normal_path.write_bytes(payload)
+            assert normal_path.read_bytes() == payload
+            assert p.raw_cache_manifest_path().read_bytes() == actual_manifest
+            assert not p._UNSETTLED_GRIB_READS and not p._UNSETTLED_ASSET_DOWNLOADS
+        finally:
+            p.ROOT, p.RAW_DIR = old_root, old_raw
+            p._RAW_CURRENT_SESSION_PROTECTED.clear()
+            p._RAW_CURRENT_SESSION_PROTECTED.update(old_session)
         snapshots.append((fixture_path, payload))
     assert current_rows[0] == current_rows[1] and scalar_rows[0] == scalar_rows[1]
 

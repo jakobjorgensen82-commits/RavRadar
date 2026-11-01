@@ -1,8 +1,62 @@
-## 1. november 2026 — isoleret SOURCE 4.0.595, stadig inaktiv
+## 1. november 2026 — main-sammenføring afsluttet som uudstedt kodecheckpoint
 
-Læs den aktuelle 595-front i CODEX_START_HERE, CURRENT_TRUTH og håndbog 89.263 før de daterede noter nedenfor. Aktuel isoleret SOURCE-version er 4.0.595 efter normal versionssynk og lokal 24-filers current594-integration. Nye 595-C/I/T og SQL er endnu ikke afledt; bindingsfilens version, binding og output er NULL. Den normale 594-central → B før S → samme SDK/action 63/64 → faktisk ejerafslutning er fortsat åben, og profilen er PREPARATION_ONLY. Gamle 586/040000-resultater bevares som dateret historik, ikke den aktuelle binding eller installationsvej.
+Denne komposition afslutter den normale lokale sammenføring med main c920. Mergecommitten bevarer begge faktiske Git-forældre og genuine37/594 som forfader. Det er et isoleret kodecheckpoint: package 4.0.594 er stadig midlertidig, SOURCE 4.0.595 er foreslået, og metadataenes version, binding og output er NULL. Ingen ny C/I/T-, SQL-, native- eller produktionsudstedelse følger af committen.
 
-ROOTs P0/c920, almindelig 235 og offentlig header/784 er separate driftsbeviser, ikke SOURCE-bevis. Ingen ny PostgreSQL-, kapacitets-, komplet cache-/historik- eller leveringssucces påstås. Alle fem mål er åbne til 18. november 2026; delegering har adskilte filejere, ROOT koordinerer produktion, og ingen produktion ændres under writer.
+Nyere faktisk main skal fortsat indarbejdes før normal 595-versionssynk og afledning. De fire lokale mål, det lukkede rene importinventar og RDKS er særskilt evidens; positiv samme-PG/SDK/action, afsluttet FULL-kvalifikation, 180-minutters kapacitet og sikker levering er åbne. Tidligere afsnit om uafsluttet merge beskriver tilstanden før dette kodecheckpoint.
+
+## 1. november 2026 — lokal sammenføring, endnu ingen udstedt SOURCE 595
+
+SOURCE19 har det lokale substanscheckpoint `24d8f8ee75bb91d2c75afa92e5ccc407cb7c230f` og en uafsluttet normal sammenføring med main `c920d1e2ad0cbbfe351360f594128f0e06bd1f1e`. Main 4.0.594 er den midlertidige normale versionsforgænger; den planlagte isolerede revision er 4.0.595. Normal versionssynk efter sammenføringen er endnu ikke kørt. SOURCE-version, binding og output er NULL; nye C/I/T og SQL er ikke udstedt. Semantiske konflikter og kvalifikation er fortsat åbne. Et checkpoint, et forberedt input eller MERGE_HEAD er ikke faktisk main-ancestry, native/fullRuntime-, ejerafslutnings- eller leveringsbevis.
+
+Main-kronologien og gældende leverede rettelser bevares. Det særskilt mærkede SOURCE-spor nedenfor bevarer den isolerede grens historik; ældre 585/586/040000-resultater og tidligere aktuelle 595-noter er ikke nye produktions- eller bindingsbeviser. SOURCE-kapitlernes tidligere 89.262/89.263 er nu 89.294/89.295, så main-kapitlerne med samme gamle numre bevares. Begge beslutninger identificeres med hele filnavnet: `docs/rdks/10_DECISIONS/DEC-0294-SOURCE-DERIVED-METADATA-BOUNDARY.md` og `docs/rdks/10_DECISIONS/DEC-0294-PAGES-FORECAST-SHARING-AND-SIMPLY-CNAME.md`.
+
+Den ægte 594-forgænger er genuine37 CODE med normal 61→62-kontrakt; kode, aktuelle syntetiske data og SOURCE-eksekutor holdes adskilt. Gamle familier, SQL-originaler, scoreformel, geometri og kildeprioritet bevares. Samme normale 594-central → B før S → SDK/action 63/64 → faktisk ejerafslutning er fortsat en åben kæde. Alle fem hovedmål er åbne til 18. november 2026. ROOT koordinerer produktion; denne isolerede sammenføring ændrer ingen produktion under den aktive writer. ROOTs P0/vejr/FB/header/kildebeviser forbliver særskilte driftsbeviser.
+
+## 30. oktober — ændringsbaseret kontrol og oprydning
+
+Testomfanget skal følge ændringens faktiske påvirkning og relevante afhængigheder. Uændrede, uvedkommende områder skal ikke automatisk udløse dybe prøver. Korte prøver af den normale kæde kommer tidligt; overflødige, gentagne og erstattede kontroller fjernes fra den normale leveringsvej.
+
+Ejerbeslutningen er gældende arbejdsinstruks. Den konkrete nye testudvælgelse og udtynding er under forberedelse og er ikke teknisk leveret. Det igangværende kvalifikationsforløb bevares; ingen rød eller ukendt relevant gate omgås. Et ikke-berørt databasedomæne skal beskrives som ikke relevant for ændringen, aldrig som ny SQL-eksekvering. Ukendt eller fælles påvirkning udvider prøverne. Friske produktionsartifact bevarer deres relevante fulde data-, integritets-, privacy- og deploykontroller. Se docs/rdks/10_DECISIONS/DEC-0302-CHANGE-BASED-VALIDATION-AND-CONTROL-CLEANUP.md og privat checkpoint. Ældre blanketkrav om samme brede kilde-/databasepakke ved enhver rettelse er erstattet som arbejdsprincip, ikke stiltiende deaktiveret i eksisterende automatisering.
+
+## 29. oktober — prognosedeling på Pages er godkendt, endnu ikke leveret
+
+Ejerens valg er ét separat `ravradar-del` Pages/Functions-projekt, først `ravradar-del.pages.dev`, senere `del.ravradar.dk` med én CNAME hos Simply. Ingen navneserverflytning eller ændring af apex/www/mail. Ældre afventninger af denne ejerbeslutning er historik; oprettelse, deploy, DNS/TLS, offentlig 591-kompatibilitet, Facebookaccept og målt Free-kapacitet er fortsat åbne. Frontend og legacy-Worker bevares indtil kontrolleret overgang. Privat adapter/controllerforberedelse og lokal prøve er ikke offentlig levering. Ingen vejr-, score-, model-, SQL- eller versionsændring. Alle fem mål til 18. november består. Se DEC-0294, håndbog 89.278 og privat checkpoint.
+
+## 25. oktober — klientkode er ikke privat vejrdata; central profil læses som et par
+
+Den seneste almindelige vejrhentning nåede leverandører, beregning og gemning af beskyttet B/S. Pages blev derefter afvist alene på navnene på to nye, normale JavaScript-klienter til administratorens statistikvisning. Den eksisterende navnekontrol må ikke forveksle offentlig programkode med privat rapportindhold. En særskilt administrator-synkronisering havde desuden afvist den aktive centrale profil mod den nyere lokale skabelon før den operationelle aktivering.
+
+Den afgrænsede lokale efterfølger tillader kun de to præcise klientstier, når hver er en regulær fil med de fulde, uændrede bytes fra den aktuelle kilde. Alle andre private navne, JSON-referencer, symlinks, afvigende klientbytes og private payload-fingeraftryk kontrolleres fortsat. Administrator-synkronisering skal genbruge den eksisterende strenge resolver på et frisk, samlet læst operation/profil-par; skabelonen valideres stadig lokalt, og generisk synkronisering skriver aldrig nogen af de to aktiveringsdokumenter.
+
+Dette er lokal fejlrettelse, ikke offentlig levering eller dokumenteret genoptagelse. De normale målprøver, præcis samlet kildekontrol og sikker genbrug af den faktisk nyeste gemte beregning skal fortsat bestå. Bevar allerede offentliggjorte data, originaler, modelbinding, SQL, scoreformel, kildeprioritet og geometri. SOURCE, statistikfrigivelse og automatisk sletning aktiveres ikke. Aktuel cron-/kørselsstatus og genoptagelsesidentiteter føres kun i privat checkpoint; ældre statusfronter er historik på de konkret erstattede punkter.
+
+## 23. oktober — privat587-sammenføring; P0 og levering er fortsat særskilte
+
+Denne lokale587-arbejdsgren sammenfører den udstedte assistentkandidat med P0707s strømstart-, PART-bevarings- og zoneisolationskode. P0707 er fortsat en særskilt kildekandidat under præcis kontrol, ikke en ny offentlig vejrgeneration. 587 er stadig inaktiv og ikke installeret. Ingen test, ny model-/SQL-udstedelse eller produktionshandling er udført som del af denne sammenføring. Begge daterede evidensforløb nedenfor bevares; de bliver ikke et nyt samlet PASS.
+
+P0s håndbogsafsnit89.264 bevares. Det endnu ikke leverede assistentafsnit har nu89.265 med samme stabile ID og tekst. Ejerens godkendte nye strømstart med særskilt arkiv gælder P0;587s senere-H0-installationsgrænse, originale attester, alle65 gamle migrationer og den ene allerede udstedte587-migration bevares. Præcis ny samlet kildekontrol, ægte database-/førskrivningskontrol og faktisk levering/efterfølger er fortsat selvstændige åbne krav.
+
+## 22. oktober — afgrænset ny strømstart på installeret 586
+
+Læs nyeste CURRENT_TRUTH og privat checkpoint før de historiske statustekster. Ejeren har nu udtrykkeligt godkendt en ny aktiv strømhistorik med bevarede autentiske arkiver og offentliggjorte scorer. Den eksisterende current-family-start færdiggøres; gammel numerisk strøm må ikke vende tilbage gennem arbejdsfiler eller næste almindelige cachegenbrug. Normal målprøvet fysisk isolation og første targetgrænse er lokal kode, ikke offentlig drift. Ingen scoreformel, kildeprioritet, admin/geometri, modelbinding eller SQL ændres af denne rettelse.
+
+Den fremtidige opsætning skal passe til Supabase Free og Cloudflare Free, også ved almindelig historik-/cachevækst. Kravet giver ingen tilladelse til betalt opgradering, tab af originaler eller svækkede kontroller. Faktisk forbrug, aktuelle grænser og konservativ fremskrivning skal dokumenteres; komprimeringsmål eller lokal test alene er ikke bevis. Alle fem mål er åbne til 18. november. Tidligere modstridende afventninger nedenfor er dateret historik alene på disse punkter.
+
+## 22. oktober — lokal 4.0.587 er udstedt, ikke leveret
+
+4.0.587 er en lokal, udstedt kildekandidat, ikke installeret eller offentlig levering. Sidste verificerede offentlige version er fortsat 4.0.586. P0 og den almindelige vejrhentning har førsteprioritet; ROOTs aktuelle private checkpoint afgør PR703-forløbets eksterne slutstatus og genopretning. Denne kandidat afslutter hverken det forløb, cost-PR704s samlede kildekontrol eller den åbne cache-/kapacitets- og økonomibeslutning.
+
+Læs den nye 587-front i CODEX_START_HERE, CURRENT_TRUTH, IMPLEMENTATION_STATUS og håndbog 89.265. Den normale lokale versionssynk, C98/I97/T12, én ny append-only SQL og syv forbrugeres fixedpoint består; de 65 tidligere migrationer er byteuændrede, og geodatadiffene ændrer kun topversionen. Dette er ikke ny native PostgreSQL, præcis 587-CI, installation, faktisk ny schema2-B/S, offentlig vejr-/assistentvirkning eller hosted AI-kvalitet.
+
+Ægte 586-forgænger, hele oprindelige B/S-attester, numeriske værdier, historik, kildeprioritet, administratorpunkter, geometri, gamle SQL og afvisninger bevares. Ingen ny historiknulstilling, samme-H0-adgang, implicit statistik/SOURCE-aktivering, sletning, kvoteforøgelse eller offentlig ændring følger af lokal udstedelse. Normal afslutning er dokument-/håndbogssynk, præcis ny source-CI med faktisk ny native PostgreSQL-fase, kontrolleret førstegangs-prewrite på autentisk 586 B/S, SQL-installation/genlæsning og en faktisk strengt senere almindelig generation med bevaret schema2-originalbank og almindelig efterfølger. Generisk kode-only-plan må fortsat kun genlæse allerede installeret NEXT; den giver ikke førsteinstallationsadgang. Alle fem hovedmål er fortsat åbne til 18. november 2026; ældre modstridende status er dateret historik.
+
+## 21. oktober — 4.0.586-originalkontinuitet lokalt udstedt, ikke installeret
+
+Læs ROOTs ene aktuelle P0-linje i CURRENT_TRUTH og seneste private checkpoint før de daterede afventninger nedenfor. Sidste verificerede almindelige offentlige levering er fortsat 39520623069/1 kl. 05.39 dansk tid; den passerede allerede originalbevarelsens retentionguard. Den senere 39608743697/1 stoppede før leverandører med manglende bevis for et valgt native-endepunkt blandt de leverede kontekster. Det beviser ikke leverandørsvigt, ugyldige DMI-tal eller fysisk fravær af alle originaler.
+
+Den lokale P0-efterfølger bevarer en normalt bygget originalbank pr. kystdel sammen med de uændrede 121 timer og læser kun de faste ledsagere fra autentificeret B. En nyere arbejdsfil er ikke erstatning for den gamle originals bevis. Normal fuld kontrol før brug, egne samplingfelters tilstedeværelse, punkt-/epoch-/arkivadskillelse og alle stop består; gammel schema1 får ikke automatisk originalbevis. Den normale samme-H0-metadataovergang fra 585 og kode-only-leveringen er lokalt tilkoblet, ikke installeret.
+
+Normal versionssynk til 4.0.586 og lokal C96/I95/T12-udstedelse er udført med releasedAt 2026-10-21T15:05:07.445Z og én ny append-only SQL. Det er ikke installation eller offentlig levering; Normal fixedpoint og synk af syv forbrugere består lokalt; ROOT ejer fortsat præcis kilde-/nativekontrol og kontrolleret levering. Lokale strømkomponentprøver er ikke hele femfamiliepakken, native PostgreSQL, præcis CI eller offentligt vejr. Ingen historiknulstilling, ændring af gamle numeriske værdier/SQL, kildeprioritet, admin eller geometri. SOURCE, statistik og automatisk retention forbliver inaktive; aktuel cronstatus er UKENDT. Alle fem mål er åbne til 18. november 2026. Ældre modstridende status bevares som dateret historik.
 
 ## 20. oktober — aktuel drift og lokal reserveforberedelse
 
@@ -394,3 +448,15 @@ Ved konflikt gælder: brugerens aktuelle instruktion > aktiv RDKS-beslutning > v
 - Før en kilde-PR køres den lille produktkritiske sourcegate målrettet. Den kræver ikke central adminhydrering eller frisk produktionsdata.
 - Sourcegaten erstatter ikke DEC-0184s post-data artifact-, modelbinding-, runtime-, privacy-, Supabase- og deploybevis. Den fulde validate/releasegate bevares til målrettet eller periodisk brug. Kode-only rettelsesdeploy følger DEC-0148 og beviser eksakt genbrug og artifactintegritet.
 - Midlertidige runtime-shims skrives kun i systemets temp-mappe og må ikke stages.
+
+
+## Bevaret særskilt SOURCE-kronologi før main-sammenføringen
+
+Følgende er de isolerede SOURCE-varianter, som ikke allerede findes ordret i main-kronologien ovenfor. Historiske regler/status læses i deres daterede scope; den aktuelle integrationsfront står øverst.
+
+## 1. november 2026 — isoleret SOURCE 4.0.595, stadig inaktiv
+
+Læs den aktuelle 595-front i CODEX_START_HERE, CURRENT_TRUTH og håndbog 89.263 før de daterede noter nedenfor. Aktuel isoleret SOURCE-version er 4.0.595 efter normal versionssynk og lokal 24-filers current594-integration. Nye 595-C/I/T og SQL er endnu ikke afledt; bindingsfilens version, binding og output er NULL. Den normale 594-central → B før S → samme SDK/action 63/64 → faktisk ejerafslutning er fortsat åben, og profilen er PREPARATION_ONLY. Gamle 586/040000-resultater bevares som dateret historik, ikke den aktuelle binding eller installationsvej.
+
+ROOTs P0/c920, almindelig 235 og offentlig header/784 er separate driftsbeviser, ikke SOURCE-bevis. Ingen ny PostgreSQL-, kapacitets-, komplet cache-/historik- eller leveringssucces påstås. Alle fem mål er åbne til 18. november 2026; delegering har adskilte filejere, ROOT koordinerer produktion, og ingen produktion ændres under writer.
+

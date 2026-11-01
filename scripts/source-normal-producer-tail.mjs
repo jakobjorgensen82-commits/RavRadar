@@ -19,7 +19,8 @@ import { sourcePackInvocationContext, sourceCpInventoryObservation, sourcePackOu
   privateWeatherPackJsonReadsClosed, ownFileDescriptorIdentity, ownedFileDescriptorClosed } from './lib/private-weather-component-pack.mjs';
 import { sourceNormalProducerInstallationInput, sourceNormalProducerInstallationClock,
   sourceNormalProducerTailContext, assertSourceNormalProducerTailClock, consumeSourceNormalProducerSession,
-  prepareSourceNormalProducerSession, reconfirmSourceNormalProducerMain, retainSourceNormalProducerTailFailure }
+  prepareSourceNormalProducerSession, reconfirmSourceNormalProducerMain, retainSourceNormalProducerTailFailure,
+  sourceNormalProducerPrNativeTestSession }
   from './source-normal-producer-entry.mjs';
 
 import { resolveOperationalRavScoreModel, operationalResolvedBindingCurrent,
@@ -5046,7 +5047,8 @@ async function assertSourceNormalCurrentHistoryPlan(holder, operation) {
 async function runSourceNormalAlwaysSeal(holder, operation) {
   const state = sourceDmiWorkingState(holder, operation);
   const issued = assertPrivateSourceJobDeadline(holder), prelude = issued.normalPrelude;
-  if (issued.identity.GITHUB_REF !== 'refs/heads/main' || prelude?.preflight?.shouldRun !== true
+  if ((issued.identity.GITHUB_REF !== 'refs/heads/main' && !sourceNormalProducerPrNativeTestSession(holder))
+    || prelude?.preflight?.shouldRun !== true
     || !issued.normalProgressBase || !state.outputGeneration) return;
   // Unknown I/O, child stop or provenance has already poisoned sourceOriginalOwner
   // and refuses above. A safely closed semantic failure may still reach here.

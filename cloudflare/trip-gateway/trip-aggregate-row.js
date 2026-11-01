@@ -54,5 +54,10 @@ export async function qualifyTripWeatherAggregateRow(row, {
   // not an invented measurement or a mutation of the stored payload.
   const reportedView = Object.hasOwn(payload, 'grams') ? payload : { ...payload, grams: null };
   if (!expectedCalibrationEligibility(reportedView, binding)) { exclusions.ineligible++; return null; }
-  return { payload, id };
+  // Only this hash/schema/origin/binding-qualified original may supply these
+  // existing reported fields. This is internal input, not a new report policy,
+  // effort band, observed trip-quality claim or persistent winner format.
+  const reportedTrip = Object.freeze({ result: payload.result, huntMode: payload.hunt_mode,
+    searchMinutes: payload.search_minutes, searchCoverage: payload.search_coverage });
+  return { payload, id, reportedTrip };
 }

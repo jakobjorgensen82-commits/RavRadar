@@ -537,6 +537,7 @@ jobs:
           --audit "$RAVRADAR_OPERATIONAL_HANDOFF/public-audit.json"
           --source-manifest "$RAVRADAR_OPERATIONAL_HANDOFF/source-manifest.json"
           --source-verification "$RAVRADAR_OPERATIONAL_HANDOFF/source-verification.json"
+          --source-deployment-id "$(cat "$RAVRADAR_OPERATIONAL_HANDOFF/source-deployment-id.txt")"
           --deployment-id "${{ inputs.pre_activation_recovery && format('pages-recovery-{0}-{1}', github.run_id, github.run_attempt) || format('pages-{0}-{1}', github.run_id, github.run_attempt) }}"
           --output "$RAVRADAR_OPERATIONAL_HANDOFF/begin.json"
         env:

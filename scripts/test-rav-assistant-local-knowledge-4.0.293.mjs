@@ -21,6 +21,21 @@ const originalFetch = globalThis.fetch;
 globalThis.fetch = async () => { fetchCalls += 1; throw new Error('Lokale videnssvar må ikke bruge netværket.'); };
 
 try {
+  // Same failure class, normal retrieval and all three locales; no real network.
+  {
+    const cases={"da":{"compound":["Hvad er en ravkese, og hvad kan du?","hvad er er en kese? hvad kan RavRadar hjælpe mig med?","Hvad kan du? Hvad er en kesse til ravjagt?"],"simple":["Hvad er en ravkese?","Hvad er en kese?"],"unknown":"Kan en ravmåler forudsige det præcise landingssted for næste ravstykke?"},"de":{"compound":["Was ist eine Bernsteinkescher und was kannst du?","Was ist ein Bernstein-Kescher? Wobei kannst du mir helfen?","Was kannst du für mich tun? Was ist der Kescher für die Bernsteinsuche?"],"simple":["Was ist eine Bernsteinkescher?","Was ist ein Bernstein-Kescher?"],"unknown":"Kann ein Bernsteinmessgerät den genauen Landeort des nächsten Bernsteinstücks vorhersagen?"},"en":{"compound":["What is an amber net and what can you do?","What is the amber hunting net? What can I ask you?","What can you help me with? What is an amber net?"],"simple":["What is the amber net?","What is an amber hunting net?"],"unknown":"Can an amber meter predict the exact landing place of the next piece of amber?"}};
+    for(const [language,row]of Object.entries(cases)){
+      for(const question of row.compound)assert.equal(assistant.routeRavQuestion(question),'remote-candidate',question);
+      assert.equal(assistant.routeRavQuestion(row.unknown),'remote-candidate',row.unknown);
+      assert.equal(await assistant.askRavRadar(row.unknown,{}, {language,localOnly:true}),i18n.t('assistant.unknown',{},language));
+    }
+    for(const question of ['Can an amber meter predict the exact landing place of the next piece of amber?',
+      'amber predictor','amber whitewater','rav og blåhvaler','Bernstein im Grünland'])
+      assert.notEqual(localKnowledge.matchLocalRavKnowledge(question)?.id,'amber-colour-range-research',question);
+    for(const question of ['Hvilke farver kan rav have?','Welche Farben kann Bernstein haben?','What colours can amber have?'])
+      assert.equal(localKnowledge.matchLocalRavKnowledge(question)?.id,'amber-colour-range-research',question);
+    assert.equal(fetchCalls,0);
+  }
   // Independent questions must be covered as a whole, not by the first broad intent.
   {
     const rows=[

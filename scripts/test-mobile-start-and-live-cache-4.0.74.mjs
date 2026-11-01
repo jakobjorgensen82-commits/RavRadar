@@ -40,7 +40,7 @@ for(const invalid of [column(legendFixture+mapFixture),column(mapFixture)+legend
 if(!mapLegendBelowMap(html))throw new Error('Farveforklaringen ligger ikke under kortet.');
 if(!css.includes('#map{height:58vh')&&!css.includes('#map { height: 58vh'))throw new Error('Mobilkortet er ikke gjort større.');
 if(app.includes('locateButton'))throw new Error('Appen binder stadig en selvstændig GPS-knap.');
-if(!app.includes('createPublicTripEvidenceRuntime')||!app.includes("publicTripEvidenceRuntime.startWithPrompt()"))throw new Error('Den direkte v2-start af ravtur er ikke bevaret.');
+if(!app.includes('createPublicTripEvidenceRuntime')||!app.includes("publicTripEvidenceRuntime.startWithPrompt({observationOrigin:'self-reported'})"))throw new Error('Den direkte v2-start af ravtur er ikke bevaret.');
 if(app.includes('startTrip()'))throw new Error('Den gamle parallelle turstart findes stadig.');
 if(!sw.includes("url.pathname.includes('/data/live/')")||!sw.includes('isContentAddressedLiveData')||!sw.includes("?'force-cache':'no-store'"))throw new Error('Live-data skelner ikke mellem frisk manifestadgang og SHA-adresseret genbrug.');
 if(!ds.includes('public-conditions.json'))throw new Error('Den offentlige side bruger ikke public-conditions.json.');

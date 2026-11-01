@@ -1,0 +1,131 @@
+name: Deploy RavRadar forecast sharing Pages
+
+on:
+  workflow_dispatch:
+    inputs:
+      expected_main:
+        description: "Eksakt kvalificeret main SHA (40 tegn)"
+        required: true
+        type: string
+      confirmation:
+        description: "Skriv DEPLOY-FORECAST-SHARE-PAGES eller UPDATE-FORECAST-SHARE-PAGES efter valgt handling"
+        required: true
+        type: string
+      operation:
+        description: "Create kræver bevist fravær. Update kræver tidligere verificeret eget projekt og deployment."
+        required: true
+        type: choice
+        default: create
+        options:
+          - create
+          - update
+      expected_project_id:
+        description: "Kun update: projekt-ID fra første vellykkede create-kvittering"
+        type: string
+        default: ""
+      expected_deployment_id:
+        description: "Kun update: præcist verificeret forgængerdeployment-ID"
+        type: string
+        default: ""
+      expected_deployment_commit:
+        description: "Kun update: forgængerens verificerede commit SHA (40 tegn)"
+        type: string
+        default: ""
+
+permissions:
+  contents: read
+  actions: read
+  pull-requests: read
+
+# Isolated delivery, same exclusive physical production queue as weather.
+concurrency:
+  group: ravradar-weather-production-v2
+  queue: max
+  cancel-in-progress: false
+
+jobs:
+  deploy-share-pages:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+
+      - name: Require fixed Pages release on exact current main
+        shell: bash
+        env:
+          EXPECTED_MAIN: ${{ inputs.expected_main }}
+          SHARE_CONFIRMATION: ${{ inputs.confirmation }}
+          SHARE_OPERATION: ${{ inputs.operation }}
+          EXPECTED_PROJECT_ID: ${{ inputs.expected_project_id }}
+          EXPECTED_DEPLOYMENT_ID: ${{ inputs.expected_deployment_id }}
+          EXPECTED_DEPLOYMENT_COMMIT: ${{ inputs.expected_deployment_commit }}
+        run: |
+          set -euo pipefail
+          test "$GITHUB_EVENT_NAME" = workflow_dispatch
+          test "$GITHUB_REF" = refs/heads/main
+          test "$GITHUB_RUN_ATTEMPT" = 1
+          case "$SHARE_OPERATION" in
+            create)
+              test "$SHARE_CONFIRMATION" = DEPLOY-FORECAST-SHARE-PAGES
+              test -z "$EXPECTED_PROJECT_ID$EXPECTED_DEPLOYMENT_ID$EXPECTED_DEPLOYMENT_COMMIT"
+              ;;
+            update)
+              test "$SHARE_CONFIRMATION" = UPDATE-FORECAST-SHARE-PAGES
+              test -n "$EXPECTED_PROJECT_ID"
+              [[ "$EXPECTED_DEPLOYMENT_ID" =~ ^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$ ]]
+              [[ "$EXPECTED_DEPLOYMENT_COMMIT" =~ ^[a-f0-9]{40}$ ]]
+              ;;
+            *) exit 1 ;;
+          esac
+          [[ "$EXPECTED_MAIN" =~ ^[a-f0-9]{40}$ ]]
+          test "$GITHUB_SHA" = "$EXPECTED_MAIN"
+          git fetch --no-tags origin +refs/heads/main:refs/remotes/origin/main
+          test "$(git rev-parse HEAD^{commit})" = "$EXPECTED_MAIN"
+          test "$(git rev-parse origin/main^{commit})" = "$EXPECTED_MAIN"
+
+      - name: Reuse exact successful source proof
+        id: source-proof
+        run: node scripts/weather-source-gate.mjs check
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+
+      - name: Require existing proof without a duplicate source gate
+        shell: bash
+        run: test "${{ steps.source-proof.outputs.required }}" = false
+
+      - name: Install pinned Pages CLI in this run-owned runtime only
+        shell: bash
+        run: |
+          set -euo pipefail
+          runtime="$RUNNER_TEMP/ravradar-share-pages-wrangler-$GITHUB_RUN_ID-1"
+          test ! -e "$runtime"
+          npm install --prefix "$runtime" --no-save --package-lock=false --ignore-scripts wrangler@4.28.1
+
+      - name: Create absent fixed project or update exact owned project once
+        run: node scripts/deploy-forecast-share-pages.mjs
+        env:
+          EXPECTED_MAIN: ${{ inputs.expected_main }}
+          SHARE_CONFIRMATION: ${{ inputs.confirmation }}
+          SHARE_OPERATION: ${{ inputs.operation }}
+          EXPECTED_PROJECT_ID: ${{ inputs.expected_project_id }}
+          EXPECTED_DEPLOYMENT_ID: ${{ inputs.expected_deployment_id }}
+          EXPECTED_DEPLOYMENT_COMMIT: ${{ inputs.expected_deployment_commit }}
+          SOURCE_REQUIRED: ${{ steps.source-proof.outputs.required }}
+          GITHUB_TOKEN: ${{ github.token }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+
+      - name: Preserve safe Pages release outcome
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: forecast-share-pages-release-${{ github.run_id }}-${{ github.run_attempt }}
+          path: .cache/forecast-share-pages-release.jsonl
+          if-no-files-found: ignore
+          retention-days: 7

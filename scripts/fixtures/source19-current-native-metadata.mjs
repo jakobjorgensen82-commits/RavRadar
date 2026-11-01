@@ -118,6 +118,103 @@ async function captureGithub(){
   assert.deepEqual(await fs.readFile(file),raw);return {actualSourceMetadataCaptured:true,sourceOwnerIssued:false};
 }
 
+// Expected CI identity is data, never a completed source/native authority.
+// Only this outer prerequisite reader gets the existing read-only CI token.
+export async function captureSourcePrNativeTest(context, {reconfirm=false}={}){
+  requireSourceProducerOutput(); // BEFORE context operands, Git, paths or clients.
+  assert.equal(process.platform,'linux');assert.equal(process.versions.node.split('.')[0],'24');
+  const exact=(value,keys)=>assert.deepEqual(Object.keys(value??{}).sort(),[...keys].sort());
+  const positive=value=>Number.isSafeInteger(value)&&value>0;
+  exact(context,['schemaVersion','scope','current','sourceTreeSha256']);
+  assert.equal(context.schemaVersion,1);assert.equal(context.scope,'SOURCE_PR_NATIVE_TEST_V1');
+  const c=context.current;exact(c,['head','run','attempt','pullRequest','branch']);
+  assert.match(c.head,/^[a-f0-9]{40}$/);assert.equal(c.head,head());
+  assert(positive(c.run)&&positive(c.pullRequest));assert.equal(c.attempt,1);
+  assert(typeof c.branch==='string'&&c.branch.startsWith('codex/')&&!/[\r\n\0]/.test(c.branch));
+  assert.match(context.sourceTreeSha256,/^sha256:[a-f0-9]{64}$/);
+  assert.equal(context.sourceTreeSha256,sourceTreeContentSha256('HEAD'));
+  const repository=process.env.GITHUB_REPOSITORY,token=process.env.GITHUB_TOKEN;
+  assert(/^[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+$/.test(repository??'')&&token,
+    'SOURCE_PR_NATIVE_ACTUAL_READ_CREDENTIAL_REQUIRED');
+  const git=args=>execFileSync('git',['-c','protocol.allow=never','-C',ROOT,...args],
+    {encoding:'utf8',timeout:10000,maxBuffer:4*1024*1024}).trim();
+  const mainHead=git(['rev-parse','origin/main']);assert.match(mainHead,/^[a-f0-9]{40}$/);
+  assert.notEqual(mainHead,c.head);git(['merge-base','--is-ancestor',mainHead,c.head]);
+  const responses={},base='/repos/'+repository;
+  const get=async route=>{
+    const response=await fetch('https://api.github.com'+route,{headers:{Authorization:'Bearer '+token,
+      Accept:'application/vnd.github+json','X-GitHub-Api-Version':'2022-11-28'},signal:AbortSignal.timeout(15000)});
+    assert(response.ok,'SOURCE_PR_NATIVE_ACTUAL_GITHUB_READ_REFUSED');
+    assert(!response.headers.get('link')?.includes('rel="next"'),'SOURCE_PR_NATIVE_PAGINATION_REFUSED');
+    const raw=await response.text();assert(Buffer.byteLength(raw)<=8*1024*1024,'SOURCE_PR_NATIVE_METADATA_BOUND');
+    return responses[route]=JSON.parse(raw);
+  };
+  const runRoute=base+'/actions/runs/'+c.run+'/attempts/1';
+  const run=await get(runRoute),jobs=await get(runRoute+'/jobs?per_page=100');
+  const pull=await get(base+'/pulls/'+c.pullRequest),main=await get(base+'/git/ref/heads/main');
+  assert.equal(run.id,c.run);assert.equal(run.run_attempt,1);assert.equal(run.head_sha,c.head);
+  assert.equal(run.head_branch,c.branch);assert.equal(run.path,'.github/workflows/validate-pull-request.yml');
+  assert.equal(run.event,'pull_request');assert.equal(run.status,'in_progress');assert.equal(run.conclusion,null);
+  for(const value of [run.repository,run.head_repository,pull.head?.repo,pull.base?.repo])assert.equal(value?.full_name,repository);
+  assert.equal(pull.number,c.pullRequest);assert.equal(pull.state,'open');assert.equal(pull.merged,false);
+  assert.equal(pull.head?.sha,c.head);assert.equal(pull.head?.ref,c.branch);assert.equal(pull.base?.ref,'main');
+  assert.equal(pull.base?.sha,mainHead);assert.equal(main.ref,'refs/heads/main');
+  assert.equal(main.object?.type,'commit');assert.equal(main.object.sha,mainHead);
+  assert(Array.isArray(jobs.jobs)&&positive(jobs.total_count)&&jobs.total_count<=100);
+  assert.equal(jobs.jobs.length,jobs.total_count);assert.equal(new Set(jobs.jobs.map(j=>j.id)).size,jobs.total_count);
+  assert(jobs.jobs.every(j=>positive(j.id)));
+  const matches=jobs.jobs.filter(j=>j.name==='Source validation and release gate');assert.equal(matches.length,1);
+  const job=matches[0];assert.equal(job.run_id,c.run);assert.equal(job.head_sha,c.head);
+  if(Object.hasOwn(job,'run_attempt'))assert.equal(job.run_attempt,1);
+  assert.equal(job.status,'in_progress');assert.equal(job.conclusion,null);assert.equal(job.completed_at,null);
+  assert(positive(job.runner_id)&&typeof job.runner_name==='string'&&job.runner_name.length>0);
+  const started=Date.parse(job.started_at);assert(Number.isFinite(started)&&started<=Date.now());
+  assert(Date.now()<started+180*60000,'SOURCE_PR_NATIVE_ORIGINAL_JOB_DEADLINE');
+  assert(Array.isArray(job.steps));assert.equal(new Set(job.steps.map(v=>v.number)).size,job.steps.length);
+  const source=job.steps.filter(v=>v.name==='Validate source contracts and release governance');
+  const native=job.steps.filter(v=>v.name==='Validate native PostgreSQL checkpoint CAS on artificial data only');
+  assert.equal(source.length,1);assert.equal(native.length,1);
+  assert(positive(source[0].number)&&native[0].number===source[0].number+1);
+  assert.equal(source[0].status,'completed');assert.equal(source[0].conclusion,'success');
+  assert.equal(native[0].status,'in_progress');assert.equal(native[0].conclusion,null);
+  const sourceEnd=Date.parse(source[0].completed_at),nativeStart=Date.parse(native[0].started_at);
+  assert(Number.isFinite(sourceEnd)&&Number.isFinite(nativeStart)&&sourceEnd<=nativeStart&&nativeStart<=Date.now());
+  const current={...c,jobId:job.id};
+  const output={kind:'SOURCE_PR_NATIVE_TEST_CAPTURE_V1',scope:'SOURCE_PR_NATIVE_TEST',head:c.head,
+    current,mainHead,repository,sourceTreeSha256:context.sourceTreeSha256,
+    workflowPath:run.path,jobStartedAt:job.started_at,runnerName:job.runner_name,
+    sourceStepNumber:source[0].number,nativeStepNumber:native[0].number,
+    checkedAt:new Date().toISOString(),responses,sourceAdmission:false,productionProof:false};
+  const file=path.join(ROOT,'.cache/source-current-native-github-capture.json');
+  if(reconfirm){
+    const stat=await fs.lstat(file);assert(stat.isFile()&&!stat.isSymbolicLink()&&stat.nlink===1&&stat.size<=16*1024*1024);
+    const old=JSON.parse(await fs.readFile(file,'utf8'));
+    for(const key of ['kind','scope','head','current','mainHead','repository','sourceTreeSha256','workflowPath',
+      'jobStartedAt','runnerName','sourceStepNumber','nativeStepNumber','sourceAdmission','productionProof'])
+      assert.deepEqual(output[key],old[key],'SOURCE_PR_NATIVE_METADATA_CHANGED:'+key);
+    assert(Date.parse(output.checkedAt)>=Date.parse(old.checkedAt));
+  }else{
+    const raw=Buffer.from(JSON.stringify(output)+'\n');assert(raw.length<=16*1024*1024);
+    await fs.mkdir(path.dirname(file),{recursive:true});
+    for(let at=path.dirname(file);;at=path.dirname(at)){
+      const row=await fs.lstat(at);assert(row.isDirectory()&&!row.isSymbolicLink());
+      assert.equal(await fs.realpath(at),at);if(at===path.dirname(at))break;
+    }
+    const handle=await fs.open(file,fs.constants.O_WRONLY|fs.constants.O_CREAT|fs.constants.O_EXCL|fs.constants.O_NOFOLLOW,0o600);
+    try{await handle.writeFile(raw);await handle.sync();}finally{await handle.close();}
+    assert.deepEqual(await fs.readFile(file),raw);
+  }
+  return {kind:output.kind,scope:output.scope,current,mainHead,sourceTreeSha256:context.sourceTreeSha256,
+    sourceStepNumber:output.sourceStepNumber,nativeStepNumber:output.nativeStepNumber,
+    sourceAdmission:false,productionProof:false};
+}
+
+async function sourcePrNativeContextInput(){
+  requireSourceProducerOutput();let raw='';for await(const chunk of process.stdin){raw+=chunk;
+    assert(Buffer.byteLength(raw)<=16384,'SOURCE_PR_NATIVE_EXPECTED_CONTEXT_BOUND');}
+  return JSON.parse(raw);
+}
+
 // Exact594 DATA-prefix request input for the SAME normal native PG/protocol.
 // CODE37 and the actual SOURCE executor remain distinct roles.
 const CURRENT594_PREFIX_CODE=Object.freeze({head:'37a34703d9ae8bfb2c28056f21a7ea73944033ae',
@@ -179,7 +276,12 @@ async function current594InitialRpcRequest(){
 
 if(process.argv[1]&&fileURLToPath(import.meta.url)===path.resolve(process.argv[1])){
   requireSourceProducerOutput();assert.equal(process.argv.length,3);
+  if(['--capture-source-pr-native-test','--reconfirm-source-pr-native-test'].includes(process.argv[2])){
+    console.log(JSON.stringify(await captureSourcePrNativeTest(await sourcePrNativeContextInput(),
+      {reconfirm:process.argv[2]==='--reconfirm-source-pr-native-test'})));
+  }else{
   assert(['--qualify','--capture-github','--rpc-request','--initial-rpc-request','--current594-initial-rpc-request'].includes(process.argv[2]));
   console.log(JSON.stringify(await(process.argv[2]==='--current594-initial-rpc-request'?current594InitialRpcRequest():process.argv[2]==='--qualify'?qualify():
     process.argv[2]==='--rpc-request'?rpcRequest():process.argv[2]==='--initial-rpc-request'?rpcRequest(true):captureGithub())));
+  }
 }

@@ -5,6 +5,7 @@ import vm from 'node:vm';
 import test from 'node:test';
 import * as normalDmiRecord from './lib/private-dmi-recovery-record.mjs';
 import { currentFamilyColdStartScalarRecord } from './current-family-cold-start.mjs';
+import { buildProtectedDmiNativeCurrentProofs } from './lib/protected-dmi-native-current-proofs.mjs';
 import { OPEN_METEO_NATIVE_NEAREST_POLICIES } from './lib/open-meteo-part-bank.mjs';
 import { applyVerifiedWaterSourceRoutingToPartHourly } from './lib/water-source-forecast-routing.mjs';
 import { assertDmiPartHourlyGridSamplingApplicable, verifiedIntegratedPartHourly,
@@ -45,7 +46,8 @@ const verifiedInputs = Object.freeze({ fromPrivateAuthority: true });
 const ordinaryProcess = Object.freeze({ env: Object.freeze({}) });
 
 test('normal PART production plans on current central identity and passes the prepared indexes into scoring', async () => {
-  let planned = false, scored = false, originRead = false;
+  let planned = false, scored = false, originRead = false, companionsRead = false;
+  const emptyCompanions = [];
   const safeLogs = [];
   const output = { weatherEngine: {} };
   const waterSourceRoutingContext = { sources: [], index: new Map(), routing: {}, haversineKm: () => 0 };
@@ -63,6 +65,12 @@ test('normal PART production plans on current central identity and passes the pr
       assert.equal(contract, context.coastalPartsContract);
       originRead = true;
       return null; // This legacy orchestration fixture claims no origin/native authority.
+    },
+    readCurrentPrivateRuntimeCompanions: async at => {
+      assert.equal(originRead, true, 'companion read follows the existing origin boundary');
+      assert.equal(at, reference); assert.equal(companionsRead, false);
+      companionsRead = true;
+      return emptyCompanions; // No fabricated original B or native proof in this orchestration fixture.
     },
     waterSourceRoutingContext, applyVerifiedWaterSourceRoutingToPartHourly,
     assertDmiPartHourlyGridSamplingApplicable,
@@ -114,6 +122,8 @@ test('normal PART production plans on current central identity and passes the pr
       assert.equal(args[18], null, 'ordinary weather does not request a new epoch');
       assert.equal(args[21], null, 'ordinary weather does not request an archive-isolated restart');
       assert.equal(args[16], context.historicalDmiBulkCache);
+      assert.equal(companionsRead, true);
+      assert.equal(args[22], emptyCompanions, 'only the reader result reaches normal scoring');
       scored = true; return { completeLocalBuild: true };
     },
     packDmiPartContinuity: async (_selected, selectedParts, at) => {
@@ -201,7 +211,7 @@ test('scalar planning and public current scoring use their own exact applicabili
       RAVSCORE_PUBLIC_FORECAST_HOURS: 118,
     });
   const runPlan = async input => {
-    let planned, originRead = false;
+    let planned, originRead = false, companionsRead = false;
     const context = vm.createContext({ ...common,
       output: { weatherEngine: {} }, console: { log() {} }, safeWeatherComponentSummary,
       coastalPartsContract: { enabled: true, zones: { [selectedPart.zoneId]: [selectedPart] } },
@@ -211,6 +221,11 @@ test('scalar planning and public current scoring use their own exact applicabili
         assert.equal(originRead, false, 'one fixed origin read per normal planning pass');
         originRead = true;
         return null; // Legacy scalar fixture has no authenticated origin handle.
+      },
+      readCurrentPrivateRuntimeCompanions: async target => {
+        assert.equal(originRead, true); assert.equal(target, at);
+        assert.equal(companionsRead, false); companionsRead = true;
+        return []; // No authenticated original companion is claimed by this scalar-plan seam.
       },
       features: [{ properties: { id: selectedPart.zoneId } }], nextDmiForecastStore: {},
       dmiBulkCache: original.bulk, deployedDmiBulkCache: null, historicalDmiBulkCache: null,
@@ -231,6 +246,7 @@ test('scalar planning and public current scoring use their own exact applicabili
     });
     await vm.runInContext(`(async () => { ${source.slice(start, planningEnd)} })()`, context);
     assert.equal(originRead, true, 'normal planning excerpt completed its fixed origin read');
+    assert.equal(companionsRead, true, 'the normal companion boundary is included in the planning excerpt');
     return planned;
   };
   const plan = await runPlan(record);
@@ -436,9 +452,28 @@ test('epoch scalar bridge reaches actual score/preflight/proxy and packed121 row
   const oldRecord = {zoneId: identity.entityId, point: selectedPart.waterPoint,
     hourly: Array.from({length: DMI_FORECAST_HOURS}, (_, h) => ({...factory.row(h),
       currentUMps: 999, currentVMps: 998, currentStateOnlyHold: {OLD: true}, currentCoastNormalSpeedMps: 997}))};
-  const fresh = {zoneId: identity.entityId, point: selectedPart.waterPoint,
-    hourly: Array.from({length: DMI_FORECAST_HOURS}, (_, h) => ({time: time(h), currentUMps: 0.4, currentVMps: 0.3,
-      sources: {current: factory.row(h, -6, -5).sources.current}}))};
+  // Independent synthetic native inputs precede normal projection. Never derive
+  // an original bank from the selected forecast or return a fabricated PASS.
+  const nativeSeeds = Array.from({length: DMI_FORECAST_HOURS}, (_, h) => {
+    const current = structuredClone(factory.row(h, -6, -5).sources.current);
+    for (const key of ['nativeValidTimes', 'nativeSteps', 'temporalResolution']) delete current[key];
+    return {time: time(h), 'current-u': 0.4, 'current-v': 0.3, sources: {current}};
+  });
+  const nativeContextFor = target => {
+    const targetIdentity = dmiExpectedIdentityForPart(target);
+    const hourly = Object.fromEntries(nativeSeeds.map(seed => {
+      const native = structuredClone(seed);
+      Object.assign(native.sources.current, targetIdentity);
+      return [native.time, native];
+    }));
+    return {...factory.bulk, generatedAt: at,
+      zones: {[targetIdentity.entityId]: {...targetIdentity, hourly}}};
+  };
+  const nativeOriginal = nativeContextFor(selectedPart);
+  const fresh = normalDmiRecord.bulkZoneToForecastRecord({type: 'Feature',
+    geometry: {type: 'Point', coordinates: selectedPart.waterPoint},
+    properties: {id: identity.entityId, dataPoint: selectedPart.waterPoint}}, nativeOriginal, at, null,
+    {startAt: at, expectedIdentity: identity, materializeMissingHorizon: true});
   const originals = JSON.stringify({oldRecord, fresh});
   const clearAt = source.indexOf('  planningRecords.clear();', start);
   const setup = source.slice(source.lastIndexOf('\n  });', clearAt) + '\n  });'.length, clearAt + '  planningRecords.clear();'.length);
@@ -464,17 +499,23 @@ test('epoch scalar bridge reaches actual score/preflight/proxy and packed121 row
   const preflight = source.indexOf('function preflightFeggesundOperationalWaveReadiness(');
   const preStart = source.indexOf('    if (!dmiRecord)', preflight);
   const preBody = source.slice(preStart, source.indexOf('    // This readiness ledger consumes waves only.', preStart));
+  const nativeHelperStart = source.indexOf('function assertDmiPartNativeProofBankDomain(');
+  const nativeHelpers = source.slice(nativeHelperStart, source.indexOf('function assertSelectedDmiNativeOriginalsBeforeScore(', nativeHelperStart));
+  assert.ok(nativeHelperStart >= 0 && nativeHelpers.includes('function buildSelectedDmiPartNativeProofBank('));
   const run = (body, result, record, inputs, part = selectedPart, neighbors = new Map()) => Function(
     'mergeHourlyPreferDmi', 'withoutCurrent', 'buildFeggesundWaveProxy', 'FEGGESUND_WAVE_PROXY_TARGET_ZONE_ID',
     'ravScoreNumber', 'dmiRecord', 'componentInputs', 'part', 'generatedAt', 'sourcesByTime',
     'feggesundSourcesByTime', 'partForecastStartAt', 'forecastStartAt', 'expectedIdentity', 'partDmiIdentity',
-    'partWithZone', 'zoneId', 'selectedDmiPartRecords', helper + proxy + body + '\nreturn ' + result + ';')(
+    'partWithZone', 'zoneId', 'selectedDmiPartRecords', 'selectedDmiPartNativeProofs',
+    'buildProtectedDmiNativeCurrentProofs', 'DMI_FORECAST_HOURS', 'nativeOriginalContexts', 'persistedNativeOriginals',
+    nativeHelpers + helper + proxy + body + '\nreturn ' + result + ';')(
       normalDmiRecord.mergeHourlyPreferDmi, normalDmiRecord.withoutCurrent, buildFeggesundWaveProxy,
       FEGGESUND_WAVE_PROXY_TARGET_ZONE_ID, value => typeof value === 'number' && Number.isFinite(value) ? value : null,
       structuredClone(record), inputs, part, at, neighbors, neighbors, at, at, dmiExpectedIdentityForPart(part),
-      dmiExpectedIdentityForPart(part), part, part.zoneId, new Map());
+      dmiExpectedIdentityForPart(part), part, part.zoneId, new Map(), new Map(),
+      buildProtectedDmiNativeCurrentProofs, DMI_FORECAST_HOURS, [nativeContextFor(part)], null);
   const score = (record, inputs, part = selectedPart, neighbors = new Map()) => run(scoreBody,
-    '({record: operationalDmiRecord, selected: selectedDmiPartRecords})', record, inputs, part, neighbors);
+    '({record: operationalDmiRecord, selected: selectedDmiPartRecords, nativeProofs: selectedDmiPartNativeProofs})', record, inputs, part, neighbors);
   const pre = (record, inputs, part = selectedPart, neighbors = new Map()) => run(preBody,
     'operationalRecord', record, inputs, part, neighbors);
   const inputs = makeInputs(), projected = score(fresh, inputs);
@@ -522,7 +563,9 @@ test('epoch scalar bridge reaches actual score/preflight/proxy and packed121 row
   }
   assert.equal(score(newest, inputs).record.hourly[0].windSpeedMps, 6, 'normal genuinely newer qualified primary still wins');
   const continuity = await import('./lib/dmi-part-continuity.mjs');
-  const pack = await continuity.packDmiPartContinuity(projected.selected, [selectedPart], at);
+  assert.equal(projected.nativeProofs.get(selectedPart.partId).selections.length, 121, 'the actual normal bank proves all selected NEW native originals');
+  const pack = await continuity.packDmiPartContinuity(projected.selected, [selectedPart], at,
+    {nativeCurrentProofsByPart: projected.nativeProofs});
   const restored = await continuity.unpackDmiPartContinuity(pack, [selectedPart], time(1));
   assert.equal(restored.get(selectedPart.partId).hourly.length, 121);
   assert.deepEqual(restored.get(selectedPart.partId).hourly, selected.hourly, 'actual normal pack/restore retains the bridged RAW record');

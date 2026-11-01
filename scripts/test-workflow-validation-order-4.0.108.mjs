@@ -1,12 +1,21 @@
 import assert from 'node:assert/strict';
-import { verifyWorkflow as verifyCurrentNationalWorkflow, inverseSourceNode24Workflow, CURRENT_JOB as CURRENT_SOURCE_JOB, AFTER_JOB as REVIEWED90_SOURCE_JOB } from './national584-source-evidence.mjs';
-import { assertEarlyCompletedRuntimeStageOrder, inverseCompletedRuntimeWorkflow } from './lib/completed-private-runtime-workflow-review.mjs';
+import {inverseForecastSharePagesWorkflowInventory}
+  from './test-forecast-share-pages-deploy.mjs';
+import {
+  assertForecastShareConfiguration, assertForecastShareAuthority,
+  activeForecastShareDeployment, forecastShareVersionFromDeploy,
+  assertForecastShareRemoteShape, readForecastShareJson, FORECAST_SHARE_READ_KINDS,
+  forecastShareDomainsForWorker, forecastShareCfEnvelopeDiagnostic,
+} from './deploy-forecast-share.mjs';
+import { verifyWorkflow as verifyCurrentNationalWorkflow, inverseSourceBeforePostgresWorkflow, CURRENT_JOB as CURRENT_SOURCE_JOB, AFTER_JOB as REVIEWED90_SOURCE_JOB } from './national584-source-evidence.mjs';
+import {projectSourceImpactWorkflowFull} from './lib/source-impact-workflow-review.mjs';
+import { assertEarlyCompletedRuntimeStageOrder, inverseCompletedRuntimeWorkflow, inverseTerminalRepair4145WorkflowInventory } from './lib/completed-private-runtime-workflow-review.mjs';
 import fs from 'node:fs';
+import crypto from 'node:crypto';
 import vm from 'node:vm';
 import { exactPagesAttemptStep } from './github-pages-attempt-evidence.mjs';
 import './test-weather-source-gate.mjs';
 import './test-weather-state-epoch-workflow.mjs';
-import './test-source-normal-workflow.mjs';
 // The normal source gate owns the optional completed-result transport tests.
 // These use synthetic data only, never provider or production credentials.
 import './test-ordinary-completed-stage-artifact.mjs';
@@ -20,6 +29,49 @@ import {
 
 const workflowDirectory = '.github/workflows';
 const productionWorkflowSources = await readProductionWorkflowSources();
+// Check actual full-checkout preparation before the unchanged historical view.
+const fullGitPinPreparationSteps = [
+  'Prepare exact pinned Candidate G source before source validation',
+  'Ensure exact historical Candidate G source is present for full validation',
+];
+function fullGitPinPreparationStep(source, name) {
+  const marker='      - name: '+name+'\n', start=source.indexOf(marker);
+  assert.equal(source.split(marker).length,2,'One exact normal pin preparation step');
+  const end=source.indexOf('\n      - ',start+marker.length);
+  return source.slice(start,end<0?source.length:end);
+}
+function assertFullGitPinPreparation(source) {
+  for(const [index,name]of fullGitPinPreparationSteps.entries()){
+    const block=fullGitPinPreparationStep(source,name);
+    assert.doesNotMatch(block,/git fetch[^\n]*(?:--depth|--deepen|--unshallow)/,
+      'Normal pin preparation must preserve a complete checkout');
+    const fetched=index===0?'            test "$(git rev-parse FETCH_HEAD^{commit})" = "$legacy_source_head"\n':'';
+    assert.ok(block.includes('          if ! git cat-file -e "${legacy_source_head}^{commit}" 2>/dev/null; then\n'
+      +'            git fetch --no-tags origin "$legacy_source_head"\n'+fetched+'          fi\n'),
+      'Fetch only a missing pinned commit; preserve fetched identity verification');
+    for(const suffix of ['commit','tree'])assert.ok(block.includes(
+      '          test "$(git rev-parse "${legacy_source_head}^{'+suffix+'}")" = "$legacy_source_'+(suffix==='commit'?'head':'tree')+'"'),
+      'Always verify the exact pinned commit and tree');
+    assert.equal((block.match(/^\s+git fetch /gm)??[]).length,index===0?2:1,
+      'No additional unguarded pin fetch');
+    if(index===0)assert.ok(block.includes('            if ! git cat-file -e "${original_head}^{commit}"; then\n'
+      +'              git fetch --no-tags origin "$original_head"\n            fi\n'
+      +'            test "$(git rev-parse "${original_head}^{commit}")" = "$original_head"'),
+      'Both original readers retain conditional no-depth fetching and exact identities');
+  }
+}
+const actualFullGitBuildSource=productionWorkflowSources.build.replace(/\r\n/g,'\n');
+assertFullGitPinPreparation(actualFullGitBuildSource);
+for(const name of fullGitPinPreparationSteps){
+  const block=fullGitPinPreparationStep(actualFullGitBuildSource,name);
+  for(const changed of [
+    block.replace('git fetch --no-tags origin','git fetch --no-tags --depth=1 origin'),
+    block.replace('if ! git cat-file','if git cat-file'),
+    ...['commit','tree'].map(suffix=>block.replace(
+      '          test "$(git rev-parse "${legacy_source_head}^{'+suffix+'}")" = "$legacy_source_'+(suffix==='commit'?'head':'tree')+'"','')),
+    block+'\n          git fetch --no-tags origin "$legacy_source_head"\n',
+  ])assert.throws(()=>assertFullGitPinPreparation(actualFullGitBuildSource.replace(block,()=>changed)));
+}
 // Qualify the actual new order before restoring every unchanged historical oracle.
 assertEarlyCompletedRuntimeStageOrder(productionWorkflowSources.build.replace(/\r\n/g, '\n'));
 const productionWorkflows = Object.freeze(Object.fromEntries(
@@ -97,10 +149,587 @@ const productionWorkflowNames = new Set(
 );
 productionWorkflowNames.add('deploy-code-only-repair.yml');
 productionWorkflowNames.add('run-current-weather-once.yml');
-const workflowFiles = fs.readdirSync(workflowDirectory)
-  .filter((name) => /\.ya?ml$/i.test(name))
-  .sort();
+const physicalWorkflowFiles = inverseForecastSharePagesWorkflowInventory(inverseTerminalRepair4145WorkflowInventory(
+  fs.readdirSync(workflowDirectory).filter((name) => /\.ya?ml$/i.test(name)).sort(),
+  fs.readFileSync(`${workflowDirectory}/resume-operational-checkpoint.yml`, 'utf8').replaceAll('\r\n', '\n')),
+  fs.readFileSync(`${workflowDirectory}/deploy-forecast-share-pages.yml`, 'utf8'));
 const expectedWorkflowFiles = ['apply-weather-model-binding-only.yml', 'audit-native-current-grid.yml', 'audit-saved-weather-inputs.yml', 'audit-sealed-current-source.yml', 'build-ravscore-historical-wave-pilot.yml', 'deploy-code-only-repair.yml', 'deploy-trip-storage.yml', 'extract-private-geodanmark-layer.yml', 'migrate-private-runtime-to-r2.yml', 'monitor-trip-storage.yml', 'notify-weather-failure.yml', 'preserve-copernicus-current-shadow.yml', 'recover-live-ravscore-central.yml', 'recover-saved-dmi-originals.yml', 'recover-sealed-weather-36396834072.yml', 'retry-national-admin-roundtrip.yml', 'reusable-operational-reentry.yml', 'reusable-pages-deploy.yml', 'reusable-weather-build.yml', 'run-current-weather-once.yml', 'update-and-deploy.yml', 'validate-approved-public-coast.yml', 'validate-copernicus-current-pilot.yml', 'validate-current-source-native-profile.yml', 'validate-local-part-system-candidate.yml', 'validate-pull-request.yml', 'validate-six-zone-recovery.yml', 'watch-missed-weather-schedule.yml'];
+// Exact outer inventory for the separately dispatched public share Worker.
+const forecastShareName = 'deploy-forecast-share.yml';
+const forecastShareSource = fs.readFileSync(`${workflowDirectory}/${forecastShareName}`, 'utf8').replace(/\r\n/g, '\n');
+function inverseForecastShareWorkflowInventory(names, source) {
+  assert.deepEqual(names, [...expectedWorkflowFiles, 'private-trip-weather-study.yml', forecastShareName].sort());
+  assert.equal(crypto.createHash('sha256').update(source).digest('hex'),
+    'b03274d75ba0d4c6edab84aadff682c7faf99433a15d71b498dc0ea5674bcc1a');
+  return names.filter(name => name !== forecastShareName);
+}
+const actualWorkflowFiles = inverseForecastShareWorkflowInventory(physicalWorkflowFiles, forecastShareSource);
+for (const names of [
+  [...physicalWorkflowFiles, 'unknown-share.yml'].sort(),
+  physicalWorkflowFiles.filter(name => name !== forecastShareName),
+  [...physicalWorkflowFiles, forecastShareName].sort(),
+  physicalWorkflowFiles.filter(name => name !== expectedWorkflowFiles[0]),
+]) assert.throws(() => inverseForecastShareWorkflowInventory(names, forecastShareSource));
+for (const source of [forecastShareSource + '\n# drift\n',
+  forecastShareSource.replace('contents: read', 'contents: write'),
+  forecastShareSource.replace('cancel-in-progress: false', 'cancel-in-progress: true'),
+  forecastShareSource.replace(' = false', ' = true')]) {
+  assert.throws(() => inverseForecastShareWorkflowInventory(physicalWorkflowFiles, source));
+}
+for (const marker of ['workflow_dispatch:', 'expected_main:', 'DEPLOY-FORECAST-SHARE',
+  'group: ravradar-weather-production-v2', 'queue: max', 'cancel-in-progress: false',
+  'node-version: 22', 'node scripts/weather-source-gate.mjs check',
+  'steps.source-proof.outputs.required', 'node scripts/deploy-forecast-share.mjs']) {
+  assert.ok(forecastShareSource.includes(marker), marker);
+}
+assert.doesNotMatch(forecastShareSource, /continue-on-error:|workflow_run:|schedule:|secrets: inherit|SUPABASE|deploy-pages|pages: write|id-token: write/);
+assert.deepEqual([...forecastShareSource.matchAll(/secrets\.([A-Z0-9_]+)/g)].map(match => match[1]).sort(),
+  ['CLOUDFLARE_ACCOUNT_ID', 'CLOUDFLARE_API_TOKEN']);
+const shareConfig = { name: 'ravradar-prognosedeling', main: 'worker.mjs',
+  compatibility_date: '2026-10-24', workers_dev: true, preview_urls: false };
+assertForecastShareConfiguration(shareConfig);
+for (const changed of [{ ...shareConfig, name: 'ravradar-trip-gateway' },
+  ...['assets', 'routes', 'triggers', 'vars', 'd1_databases', 'kv_namespaces', 'r2_buckets', 'env']
+    .map(key => ({ ...shareConfig, [key]: [] }))]) assert.throws(() => assertForecastShareConfiguration(changed));
+const shareAuthority = {
+  GITHUB_REPOSITORY: 'jakobjorgensen82-commits/RavRadar', GITHUB_EVENT_NAME: 'workflow_dispatch',
+  GITHUB_REF: 'refs/heads/main', GITHUB_RUN_ATTEMPT: '1', GITHUB_RUN_ID: '1',
+  EXPECTED_MAIN: 'a'.repeat(40), GITHUB_SHA: 'a'.repeat(40), SOURCE_REQUIRED: 'false',
+  SHARE_CONFIRMATION: 'DEPLOY-FORECAST-SHARE', CLOUDFLARE_ACCOUNT_ID: 'b'.repeat(32),
+  CLOUDFLARE_API_TOKEN: 'synthetic-token', GITHUB_TOKEN: 'synthetic-token',
+};
+assertForecastShareAuthority(shareAuthority);
+for (const [key, value] of Object.entries({ GITHUB_REF: 'refs/heads/other',
+  GITHUB_EVENT_NAME: 'push', GITHUB_RUN_ATTEMPT: '2', SOURCE_REQUIRED: 'true',
+  EXPECTED_MAIN: 'c'.repeat(40), SHARE_CONFIRMATION: '', CLOUDFLARE_ACCOUNT_ID: '' })) {
+  assert.throws(() => assertForecastShareAuthority({ ...shareAuthority, [key]: value }));
+}
+const shareVersion = '11111111-1111-4111-8111-111111111111';
+const shareDeployment = { id: '22222222-2222-4222-8222-222222222222',
+  strategy: 'percentage', versions: [{ version_id: shareVersion, percentage: 100 }] };
+assert.equal(forecastShareVersionFromDeploy(`Current Version ID: ${shareVersion}\n`), shareVersion);
+for (const output of ['', `Current Version ID: ${shareVersion}\nCurrent Version ID: ${shareVersion}\n`]) {
+  assert.throws(() => forecastShareVersionFromDeploy(output));
+}
+assert.equal(activeForecastShareDeployment({ deployments: [shareDeployment] }, shareVersion).versionId, shareVersion);
+for (const changed of [{ deployments: [] }, { deployments: [{ ...shareDeployment, strategy: 'other' }] },
+  { deployments: [{ ...shareDeployment, versions: [{ version_id: shareVersion, percentage: 50 }] }] }]) {
+  assert.throws(() => activeForecastShareDeployment(changed, shareVersion));
+}
+assert.throws(() => activeForecastShareDeployment({ deployments: [shareDeployment] },
+  '33333333-3333-4333-8333-333333333333'));
+const shareRemote = { script: { id: 'ravradar-prognosedeling', has_assets: false, has_modules: true },
+  version: { id: shareVersion, resources: { bindings: [] } }, routes: [], domains: [],
+  schedules: { schedules: [] }, subdomain: { enabled: true, previews_enabled: false } };
+assertForecastShareRemoteShape(shareRemote, shareVersion);
+for (const mutate of [
+  value => { delete value.script.has_assets; },
+  value => { value.script.has_assets = true; },
+  value => { value.version.resources.bindings.push({ type: 'secret_text', name: 'unexpected' }); },
+  value => { delete value.version.resources.bindings; },
+  value => { value.routes.push({ pattern: 'example.test/*' }); },
+  value => { value.domains.push({ hostname: 'example.test' }); },
+  value => { value.schedules.schedules.push({ cron: '* * * * *' }); },
+  value => { value.subdomain.previews_enabled = true; },
+]) {
+  const changed = structuredClone(shareRemote); mutate(changed);
+  assert.throws(() => assertForecastShareRemoteShape(changed, shareVersion));
+}
+const shareControllerSource = fs.readFileSync('scripts/deploy-forecast-share.mjs', 'utf8');
+assert.equal((shareControllerSource.match(/await deployImpl\(/g) ?? []).length, 1,
+  'Only one awaited deploy; no retry loop or rollback');
+assert.ok(shareControllerSource.indexOf('assertRavScoreModelBinding(manifest.ravScoreModelBinding)')
+  < shareControllerSource.indexOf('await deployImpl('));
+assert.ok(shareControllerSource.indexOf('await remote(versionId)') > shareControllerSource.indexOf('await deployImpl('));
+assert.match(shareControllerSource, /UNKNOWN_NO_RETRY/);
+assert.match(shareControllerSource, /terminationConfirmed/);
+assert.doesNotMatch(shareControllerSource, /execSync\(|process\.exit\(|secrets set|db push|wrangler.*rollback/);
+
+
+
+// V3: one complete account-level domains snapshot, then exact local service selection.
+const shareOtherDomain = { id: 'synthetic-other-domain', service: 'unrelated-worker',
+  environment: 'production', hostname: 'unrelated.example.test' };
+const shareAllDomains = result => ({ success: true, errors: [], messages: [], result,
+  result_info: { count: result.length, page: 1, per_page: Math.max(20, result.length),
+    total_count: result.length, total_pages: result.length ? 1 : 0 } });
+assert.deepEqual(forecastShareDomainsForWorker(shareAllDomains([])), []);
+assert.deepEqual(forecastShareDomainsForWorker(shareAllDomains([shareOtherDomain])), []);
+assert.deepEqual(forecastShareDomainsForWorker({ success: true, errors: [], result: [] }), []);
+const shareOwnDomain = { ...shareOtherDomain, id: 'synthetic-share-domain',
+  service: 'ravradar-prognosedeling' };
+for (const environment of ['production', 'staging', '']) {
+  const domain = { ...shareOwnDomain, environment };
+  const domains = forecastShareDomainsForWorker(shareAllDomains([shareOtherDomain, domain]));
+  assert.deepEqual(domains, [domain]);
+  assert.throws(() => assertForecastShareRemoteShape({ ...shareRemote, domains }, shareVersion),
+    error => error.code === 'SHARE_REMOTE_DOMAINS',
+    'Another environment may not hide an already-attached share-Worker domain');
+}
+assert.deepEqual(forecastShareDomainsForWorker(shareAllDomains([
+  { ...shareOtherDomain, service: 'RavRadar-prognosedeling' },
+  { ...shareOtherDomain, id: 'other-prefix', service: 'ravradar-prognosedeling-test' },
+])), [], 'Only the exact fixed service name is selected; no case-folding or prefix adoption');
+for (const changed of [
+  { success: false, errors: [], result: [] },
+  { success: true, result: [] },
+  { success: true, errors: [{ code: 1000, message: 'private message' }], result: [] },
+  { success: true, errors: [], result: null },
+  { ...shareAllDomains([]), result_info: null },
+  { ...shareAllDomains([]), result_info: [] },
+  { ...shareAllDomains([]), result_info: { count: -1 } },
+  { ...shareAllDomains([]), result_info: { page: '1' } },
+  { ...shareAllDomains([]), result_info: { total_pages: 2 } },
+  { ...shareAllDomains([]), result_info: { total_count: 1 } },
+  { ...shareAllDomains([]), result_info: { count: 1 } },
+  { ...shareAllDomains([]), result_info: { cursors: { after: 'unknown' } } },
+  { ...shareAllDomains([shareOtherDomain]), result_info: { per_page: 0 } },
+  { ...shareAllDomains([shareOtherDomain]), result_info: { total_pages: 0 } },
+  shareAllDomains([shareOtherDomain, { ...shareOtherDomain }]),
+  ...[null, [], {}, { ...shareOtherDomain, id: '' },
+    { ...shareOtherDomain, service: null }, { ...shareOtherDomain, service: ' ' },
+    { ...shareOtherDomain, service: ' ravradar-prognosedeling' },
+    { ...shareOtherDomain, service: 'ravradar-prognosedeling\u0000' },
+    { ...shareOtherDomain, environment: undefined }, { ...shareOtherDomain, hostname: '' }]
+    .map(domain => shareAllDomains([domain])),
+]) assert.throws(() => forecastShareDomainsForWorker(changed));
+
+// Exercise the existing normal cf/readDomains/remote closures, not a new deploy path.
+// Only the two exact module exports lose their keyword in this synthetic VM scope.
+const shareListHelpersStart = shareControllerSource.indexOf('function assertCompleteList(envelope) {');
+const shareListHelpersEnd = shareControllerSource.indexOf('export async function deployForecastShare(',
+  shareListHelpersStart);
+const shareRemoteStart = shareControllerSource.indexOf('    const readStatuses = new Map();');
+const shareRemoteEnd = shareControllerSource.indexOf("    stage = 'PREWRITE_READS';", shareRemoteStart);
+const shareFailStart = shareControllerSource.indexOf('const fail = code =>');
+const shareFailEnd = shareControllerSource.indexOf('\n\n', shareFailStart);
+assert.ok(shareListHelpersStart >= 0 && shareListHelpersEnd > shareListHelpersStart
+  && shareRemoteStart >= 0 && shareRemoteEnd > shareRemoteStart
+  && shareFailStart >= 0 && shareFailEnd > shareFailStart);
+const shareListHelpers = shareControllerSource.slice(shareListHelpersStart, shareListHelpersEnd);
+assert.equal(shareListHelpers.split('export function forecastShareDomainsForWorker(').length, 2);
+assert.equal(shareListHelpers.split('export function forecastShareCfEnvelopeDiagnostic(').length, 2);
+const shareNormalRemoteSource = shareControllerSource.slice(shareFailStart, shareFailEnd) + '\n'
+  + shareListHelpers.replace('export function forecastShareDomainsForWorker(',
+    'function forecastShareDomainsForWorker(')
+    .replace('export function forecastShareCfEnvelopeDiagnostic(',
+      'function forecastShareCfEnvelopeDiagnostic(')
+  + shareControllerSource.slice(shareRemoteStart, shareRemoteEnd);
+assert.doesNotMatch(shareNormalRemoteSource, /workers\/domains\?/);
+assert.equal((shareNormalRemoteSource.match(/await cf\('\/workers\/domains', 'CF_DOMAINS'\)/g) ?? []).length, 1);
+async function syntheticShareRemote({ present, domains, expectedVersion = null, allowAbsent = false }) {
+  const calls = [];
+  const result = vm.runInNewContext('(async () => {\n' + shareNormalRemoteSource
+    + '\nreturn remote(expectedVersion, allowAbsent);\n})()', {
+    expectedVersion, allowAbsent, FORECAST_SHARE_WORKER: 'ravradar-prognosedeling',
+    cfBase: 'https://synthetic.example.test', cfHeaders: {},
+    cfEnvelopeDiagnostic: null, forecastShareCfEnvelopeDiagnostic,
+    readForecastShareJson, activeForecastShareDeployment, assertForecastShareRemoteShape,
+    fetchImpl: async (url, options) => {
+      assert.equal(options.method, 'GET');
+      assert.equal(options.redirect, 'error');
+      assert.equal(options.cache, 'no-store');
+      const route = url.slice('https://synthetic.example.test'.length);
+      calls.push(route);
+      const scriptBase = '/workers/scripts/ravradar-prognosedeling';
+      let value;
+      if (route === '/workers/scripts') value = { success: true, errors: [],
+        result: present ? [shareRemote.script] : [] };
+      else if (route === '/workers/domains') value = domains;
+      else if (route === scriptBase + '/deployments') value = { success: true, errors: [],
+        result: { deployments: [shareDeployment] } };
+      else if (route === scriptBase + '/versions/' + shareVersion) {
+        value = { success: true, errors: [], result: shareRemote.version };
+      } else if (route === '/workers/services/ravradar-prognosedeling/environments/production/routes?show_zonename=true') {
+        value = { success: true, errors: [], result: [] };
+      } else if (route === scriptBase + '/schedules') {
+        value = { success: true, errors: [], result: shareRemote.schedules };
+      } else if (route === scriptBase + '/subdomain') {
+        value = { success: true, errors: [], result: shareRemote.subdomain };
+      } else assert.fail('Unexpected normal sharing read');
+      return new Response(JSON.stringify(value), { status: 200 });
+    },
+  });
+  return { result, calls };
+}
+// V5: målt CF_DOMAINS-kompatibilitet, aldrig generel null→[]-normalisering.
+// Modellen følger den faktiske 200/success=true/errors=null/result-array-form;
+// den hævder ikke at kende de private rækker i leverandørens svar.
+const shareMeasuredNullDomains = { ...shareAllDomains([shareOtherDomain]), errors: null };
+assert.deepEqual(forecastShareDomainsForWorker(shareMeasuredNullDomains), []);
+assert.equal(shareMeasuredNullDomains.errors, null);
+for (const present of [false, true]) {
+  const accepted = await syntheticShareRemote({ present, domains: shareMeasuredNullDomains,
+    allowAbsent: true, expectedVersion: present ? shareVersion : null });
+  const observed = await accepted.result;
+  assert.equal(present ? observed.versionId : observed, present ? shareVersion : null);
+  assert.equal(accepted.calls.filter(value => value === '/workers/domains').length, 1);
+  assert.equal(shareMeasuredNullDomains.errors, null, 'Den oprindelige null-form må ikke omskrives');
+}
+for (const [changed, code] of [
+  [{ success: false, errors: null, result: [] }, 'SHARE_CF_READ'],
+  [{ success: true, result: [] }, 'SHARE_CF_READ'],
+  [{ success: true, errors: [ { code: 1000 } ], result: [] }, 'SHARE_CF_READ'],
+  [{ success: true, errors: null }, 'SHARE_LIST_UNKNOWN'],
+  [{ success: true, errors: null, result: null }, 'SHARE_LIST_UNKNOWN'],
+  [{ success: true, errors: null, result: {} }, 'SHARE_LIST_UNKNOWN'],
+  [{ ...shareMeasuredNullDomains, result_info: { total_pages: 2 } }, 'SHARE_LIST_INCOMPLETE'],
+  [{ ...shareMeasuredNullDomains, result_info: { total_count: 2 } }, 'SHARE_LIST_INCOMPLETE'],
+  [{ ...shareMeasuredNullDomains, result_info: null }, 'SHARE_LIST_INCOMPLETE'],
+  [{ ...shareMeasuredNullDomains, result_info: { cursors: { after: 'unknown' } } }, 'SHARE_LIST_INCOMPLETE'],
+  [{ ...shareMeasuredNullDomains, result: [null] }, 'SHARE_DOMAIN_UNKNOWN'],
+  [{ ...shareMeasuredNullDomains, result: [{ ...shareOtherDomain, service: '' }] }, 'SHARE_DOMAIN_UNKNOWN'],
+  [{ ...shareAllDomains([shareOtherDomain, shareOtherDomain]), errors: null }, 'SHARE_DOMAIN_UNKNOWN'],
+  ...['production', 'staging', ''].map(environment =>
+    [{ ...shareAllDomains([{ ...shareOwnDomain, environment }]), errors: null }, 'SHARE_REMOTE_DOMAINS']),
+]) {
+  const rejected = await syntheticShareRemote({ present: false, domains: changed, allowAbsent: true });
+  await assert.rejects(rejected.result, error => error.code === code
+    && error.readKind === 'CF_DOMAINS' && error.httpStatus === 200);
+  assert.equal(rejected.calls.filter(value => value === '/workers/domains').length, 1);
+}
+
+const shareAbsentRead = await syntheticShareRemote({ present: false,
+  domains: shareAllDomains([shareOtherDomain]), allowAbsent: true });
+assert.equal(await shareAbsentRead.result, null);
+assert.deepEqual(shareAbsentRead.calls, ['/workers/scripts', '/workers/domains']);
+const shareExistingRead = await syntheticShareRemote({ present: true,
+  domains: shareAllDomains([shareOtherDomain]), expectedVersion: shareVersion });
+assert.equal((await shareExistingRead.result).versionId, shareVersion);
+assert.equal(shareExistingRead.calls.filter(value => value === '/workers/domains').length, 1);
+for (const present of [false, true]) {
+  const shareUnknownEnvelope = await syntheticShareRemote({ present,
+    domains: { success: false, errors: [{ code: 1000, message: 'private refusal' }], result: [] },
+    allowAbsent: true });
+  await assert.rejects(shareUnknownEnvelope.result, error =>
+    error.code === 'SHARE_CF_READ' && error.readKind === 'CF_DOMAINS' && error.httpStatus === 200);
+  const shareAttachedRead = await syntheticShareRemote({ present,
+    domains: shareAllDomains([shareOwnDomain]), allowAbsent: true });
+  await assert.rejects(shareAttachedRead.result, error => error.code === 'SHARE_REMOTE_DOMAINS');
+  const shareIncompleteRead = await syntheticShareRemote({ present,
+    domains: { ...shareAllDomains([]), result_info: { total_pages: 2 } }, allowAbsent: true });
+  await assert.rejects(shareIncompleteRead.result, error =>
+    error.code === 'SHARE_LIST_INCOMPLETE' && error.readKind === 'CF_DOMAINS' && error.httpStatus === 200);
+}
+
+// V2: fixed read diagnostics and durable issued-version evidence, before readback.
+assert.deepEqual(FORECAST_SHARE_READ_KINDS, [
+  'GH_MAIN', 'CF_SCRIPTS', 'CF_DEPLOYMENTS', 'CF_VERSION', 'CF_ROUTES',
+  'CF_DOMAINS', 'CF_CRON', 'CF_SCRIPT_SUBDOMAIN', 'CF_ACCOUNT_SUBDOMAIN', 'PUBLIC_MANIFEST',
+]);
+for (const readKind of FORECAST_SHARE_READ_KINDS) {
+  const value = await readForecastShareJson('https://example.test/synthetic',
+    {}, async () => new Response('{"ok":true}', { status: 200 }), readKind);
+  assert.deepEqual(value, { value: { ok: true }, readKind, httpStatus: 200 });
+  await assert.rejects(() => readForecastShareJson('https://example.test/do-not-report',
+    { Authorization: 'synthetic-secret' },
+    async () => new Response('private-body-must-not-escape', { status: 403 }), readKind),
+  error => {
+    assert.equal(error.code, 'SHARE_READ_FAILED');
+    assert.equal(error.message, 'SHARE_READ_FAILED');
+    assert.deepEqual(Object.keys(error).sort(), ['code', 'httpStatus', 'readKind']);
+    assert.equal(error.readKind, readKind);
+    assert.equal(error.httpStatus, 403);
+    assert.doesNotMatch(JSON.stringify(error), /example|synthetic-secret|private-body/);
+    return true;
+  });
+}
+await assert.rejects(() => readForecastShareJson('https://example.test/synthetic', {},
+  async () => { throw Object.assign(new Error('secret transport URL'), { code: 'PRIVATE_CODE' }); }, 'GH_MAIN'),
+error => error.code === 'SHARE_READ_FAILED' && error.readKind === 'GH_MAIN' && error.httpStatus === null);
+await assert.rejects(() => readForecastShareJson('https://example.test/synthetic', {},
+  async () => new Response('not-json', { status: 200 }), 'PUBLIC_MANIFEST'),
+error => error.code === 'SHARE_READ_JSON' && error.readKind === 'PUBLIC_MANIFEST' && error.httpStatus === 200);
+let invalidKindReads = 0;
+await assert.rejects(() => readForecastShareJson('https://example.test/synthetic', {},
+  async () => { invalidKindReads++; return new Response('{}'); }, 'https://untrusted-kind.test'),
+  error => error.code === 'SHARE_READ_KIND');
+assert.equal(invalidKindReads, 0);
+for (const [mutate, code] of [
+  [value => { delete value.script.has_assets; }, 'SHARE_REMOTE_ASSETS'],
+  [value => { delete value.script.has_modules; }, 'SHARE_REMOTE_MODULES'],
+  [value => { value.version.id = '33333333-3333-4333-8333-333333333333'; }, 'SHARE_REMOTE_VERSION'],
+]) {
+  const changed = structuredClone(shareRemote); mutate(changed);
+  assert.throws(() => assertForecastShareRemoteShape(changed, shareVersion), error => error.code === code);
+}
+const shareReceiptStart = shareControllerSource.indexOf('    const versionId = forecastShareVersionFromDeploy(deployed.stdout);');
+const shareReceiptEnd = shareControllerSource.indexOf('    active = await remote(versionId);', shareReceiptStart)
+  + '    active = await remote(versionId);'.length;
+assert.ok(shareReceiptStart >= 0 && shareReceiptEnd > shareReceiptStart);
+const shareIssuedReceipts = [];
+const shareReadbackFailure = Object.assign(new Error('synthetic read refusal'),
+  { code: 'SHARE_READ_FAILED', readKind: 'CF_ROUTES', httpStatus: 403 });
+await assert.rejects(vm.runInNewContext('(async () => { let stage = "DEPLOY", active = null;\n'
+  + shareControllerSource.slice(shareReceiptStart, shareReceiptEnd) + '\n})()', {
+  forecastShareVersionFromDeploy, deployed: { stdout: `Current Version ID: ${shareVersion}\n` },
+  expectedMain: 'a'.repeat(40), terminationConfirmed: true,
+  report: value => shareIssuedReceipts.push(JSON.parse(JSON.stringify(value))),
+  remote: async versionId => {
+    assert.equal(versionId, shareVersion);
+    assert.equal(shareIssuedReceipts.length, 1, 'Issued version must be saved before readback can fail');
+    throw shareReadbackFailure;
+  },
+}), error => error === shareReadbackFailure);
+assert.deepEqual(shareIssuedReceipts, [{ kind: 'FORECAST_SHARE_DEPLOY_RECEIPT_V1', stage: 'DEPLOY_RECEIPT',
+  versionId: shareVersion, sourceSha: 'a'.repeat(40), terminationConfirmed: true }]);
+const shareStopStart = shareControllerSource.indexOf("    const receipt = { kind: 'FORECAST_SHARE_RELEASE_STOP_V1'");
+const shareStopEnd = shareControllerSource.indexOf('    report(receipt); throw Object.assign(fail(receipt.outcome), { receipt });', shareStopStart)
+  + '    report(receipt); throw Object.assign(fail(receipt.outcome), { receipt });'.length;
+assert.ok(shareStopStart >= 0 && shareStopEnd > shareStopStart);
+for (const [readKind, httpStatus, expectedKind, expectedStatus] of [
+  ['CF_ROUTES', 403, 'CF_ROUTES', 403],
+  ['https://secret.example/', '403', null, null],
+  ['CF_VERSION', 999, 'CF_VERSION', null],
+]) {
+  const reports = [];
+  assert.throws(() => vm.runInNewContext(shareControllerSource.slice(shareStopStart, shareStopEnd), {
+    stage: 'POSTWRITE_READBACK', expectedMain: 'a'.repeat(40), writeIssued: true, terminationConfirmed: true,
+    FORECAST_SHARE_READ_KINDS,
+    error: { code: 'SHARE_READ_FAILED', readKind, httpStatus, message: 'private body', url: 'private URL' },
+    report: value => reports.push(JSON.parse(JSON.stringify(value))),
+    fail: code => Object.assign(new Error(code), { code }),
+  }), error => error.code === 'UNKNOWN_NO_RETRY');
+  assert.equal(reports.length, 1);
+  assert.equal(reports[0].readKind, expectedKind);
+  assert.equal(reports[0].httpStatus, expectedStatus);
+  assert.equal(reports[0].outcome, 'UNKNOWN_NO_RETRY');
+  assert.doesNotMatch(JSON.stringify(reports), /secret\.example|private body|private URL/);
+}
+
+// V4: the normal CF failure and normal receipt keep only bounded, closed diagnostics.
+const shareUnknownCfDiagnostic = { kind: 'FORECAST_SHARE_CF_ENVELOPE_V1',
+  envelope: 'UNKNOWN', success: 'UNKNOWN', errors: 'UNKNOWN',
+  errorsType: 'UNKNOWN', resultType: 'UNKNOWN',
+  errorCodes: [], errorCodesStatus: 'UNKNOWN' };
+for (const unknown of [null, undefined, true, 10092, 'private raw value', []]) {
+  assert.deepEqual(forecastShareCfEnvelopeDiagnostic(unknown), shareUnknownCfDiagnostic);
+}
+assert.deepEqual(forecastShareCfEnvelopeDiagnostic({ success: false, errors: [] }), {
+  ...shareUnknownCfDiagnostic, envelope: 'OBJECT', success: 'FALSE',
+  errors: 'EMPTY', errorsType: 'ARRAY', resultType: 'ABSENT', errorCodesStatus: 'COMPLETE' });
+assert.deepEqual(forecastShareCfEnvelopeDiagnostic({ success: true, errors: [] }), {
+  ...shareUnknownCfDiagnostic, envelope: 'OBJECT', success: 'TRUE',
+  errors: 'EMPTY', errorsType: 'ARRAY', resultType: 'ABSENT', errorCodesStatus: 'COMPLETE' });
+for (const [errors, errorsType] of [
+  [undefined, 'UNKNOWN'], [null, 'NULL'], [{}, 'OBJECT'], ['private errors', 'STRING'],
+]) {
+  assert.deepEqual(forecastShareCfEnvelopeDiagnostic({ success: 'false', errors }), {
+    ...shareUnknownCfDiagnostic, envelope: 'OBJECT', errorsType, resultType: 'ABSENT' });
+}
+// Nye formfelter er kun faste kategorier; de gamle diagnostikfelter er uændrede.
+assert.deepEqual(forecastShareCfEnvelopeDiagnostic({}), {
+  ...shareUnknownCfDiagnostic, envelope: 'OBJECT', errorsType: 'ABSENT', resultType: 'ABSENT' });
+for (const [field, type] of [
+  [null, 'NULL'], [[], 'ARRAY'], [{ private: 'synthetic-shape-content' }, 'OBJECT'],
+  ['synthetic-shape-content', 'STRING'], [123456, 'NUMBER'], [false, 'BOOLEAN'],
+  [undefined, 'UNKNOWN'],
+]) {
+  const diagnostic = forecastShareCfEnvelopeDiagnostic({ errors: field, result: field });
+  assert.equal(diagnostic.errorsType, type);
+  assert.equal(diagnostic.resultType, type);
+  assert.deepEqual(Object.keys(diagnostic).sort(), [
+    'envelope', 'errorCodes', 'errorCodesStatus', 'errors', 'errorsType', 'kind', 'resultType', 'success',
+  ].sort());
+  assert.doesNotMatch(JSON.stringify(diagnostic), /synthetic-shape-content|123456|private/);
+}
+const sharePrivateCfMarker = 'synthetic-private-value-must-never-escape';
+const shareSafeCfDiagnostic = forecastShareCfEnvelopeDiagnostic({
+  success: false, result: { account: sharePrivateCfMarker }, message: sharePrivateCfMarker,
+  source: { path: sharePrivateCfMarker }, hostname: sharePrivateCfMarker, token: sharePrivateCfMarker,
+  errors: [{ code: 10092, message: sharePrivateCfMarker, source: { pointer: sharePrivateCfMarker } },
+    { code: 10000, documentation_url: sharePrivateCfMarker }],
+});
+assert.deepEqual(shareSafeCfDiagnostic, { kind: 'FORECAST_SHARE_CF_ENVELOPE_V1',
+  envelope: 'OBJECT', success: 'FALSE', errors: 'NONEMPTY', errorsType: 'ARRAY', resultType: 'OBJECT',
+  errorCodes: [10092, 10000], errorCodesStatus: 'COMPLETE' });
+assert.doesNotMatch(JSON.stringify(shareSafeCfDiagnostic), /synthetic-private-value|hostname|token|pointer|message|account/);
+for (const code of ['10092', -1, 0, 999, 1000.5, 10_000_000, NaN, Infinity, null, {}]) {
+  const diagnostic = forecastShareCfEnvelopeDiagnostic({ success: false, errors: [{ code }] });
+  assert.deepEqual(diagnostic.errorCodes, []);
+  assert.equal(diagnostic.errorCodesStatus, 'UNKNOWN');
+}
+for (const entry of [null, false, 'private', [], {}]) {
+  assert.equal(forecastShareCfEnvelopeDiagnostic({ errors: [entry] }).errorCodesStatus, 'UNKNOWN');
+}
+assert.deepEqual(forecastShareCfEnvelopeDiagnostic({ errors: [{ code: 1000 }, { code: 9_999_999 }] }).errorCodes,
+  [1000, 9_999_999]);
+assert.deepEqual(forecastShareCfEnvelopeDiagnostic({
+  errors: Array.from({ length: 9 }, (_, index) => ({ code: 10000 + index })),
+}), { kind: 'FORECAST_SHARE_CF_ENVELOPE_V1', envelope: 'OBJECT', success: 'UNKNOWN',
+  errors: 'NONEMPTY', errorsType: 'ARRAY', resultType: 'ABSENT',
+  errorCodes: Array.from({ length: 8 }, (_, index) => 10000 + index),
+  errorCodesStatus: 'LIMITED' });
+const shareCfNormalReadStart = shareControllerSource.indexOf('    const readStatuses = new Map();');
+const shareCfNormalReadEnd = shareControllerSource.indexOf('    const readDomains = async () => {',
+  shareCfNormalReadStart);
+const shareCfDiagnosticDeclaration = '  let expectedMain, active = null, cfEnvelopeDiagnostic = null;';
+assert.equal(shareControllerSource.split(shareCfDiagnosticDeclaration).length, 2,
+  'Diagnostic state is private to this one normal invocation');
+assert.ok(shareCfNormalReadStart >= 0 && shareCfNormalReadEnd > shareCfNormalReadStart);
+const shareCfNormalRead = shareControllerSource.slice(shareCfNormalReadStart, shareCfNormalReadEnd);
+for (const [raw, expectedDiagnostic] of [
+  [{ success: false, errors: [{ code: 10092, message: sharePrivateCfMarker }] }, {
+    kind: 'FORECAST_SHARE_CF_ENVELOPE_V1', envelope: 'OBJECT', success: 'FALSE',
+    errors: 'NONEMPTY', errorsType: 'ARRAY', resultType: 'ABSENT',
+    errorCodes: [10092], errorCodesStatus: 'COMPLETE',
+  }],
+  [{ success: true, errors: { message: sharePrivateCfMarker } }, {
+    ...shareUnknownCfDiagnostic, envelope: 'OBJECT', success: 'TRUE',
+    errorsType: 'OBJECT', resultType: 'ABSENT',
+  }],
+  [{ success: 'false', errors: [] }, {
+    ...shareUnknownCfDiagnostic, envelope: 'OBJECT', errors: 'EMPTY',
+    errorsType: 'ARRAY', resultType: 'ABSENT', errorCodesStatus: 'COMPLETE',
+  }],
+  [null, shareUnknownCfDiagnostic],
+  [{ success: true, result: [] }, {
+    ...shareUnknownCfDiagnostic, envelope: 'OBJECT', success: 'TRUE',
+    errorsType: 'ABSENT', resultType: 'ARRAY',
+  }],
+  ...[
+    [null, 'NULL'], ['synthetic-shape-content', 'STRING'], [123456, 'NUMBER'], [false, 'BOOLEAN'],
+  ].map(([errors, errorsType]) => [{ success: true, errors, result: [] }, {
+    ...shareUnknownCfDiagnostic, envelope: 'OBJECT', success: 'TRUE',
+    errorsType, resultType: 'ARRAY',
+  }]),
+]) {
+  // Den tidligere null-afvisning bevares for ALLE øvrige faktiske CF-læsekald.
+  const shareRejectedRoutes = raw?.success === true && raw.errors === null ? [
+    ['CF_SCRIPTS', '/workers/scripts'],
+    ['CF_DEPLOYMENTS', '/workers/scripts/ravradar-prognosedeling/deployments'],
+    ['CF_VERSION', '/workers/scripts/ravradar-prognosedeling/versions/' + shareVersion],
+    ['CF_ROUTES', '/workers/services/ravradar-prognosedeling/environments/production/routes?show_zonename=true'],
+    ['CF_CRON', '/workers/scripts/ravradar-prognosedeling/schedules'],
+    ['CF_SCRIPT_SUBDOMAIN', '/workers/scripts/ravradar-prognosedeling/subdomain'],
+    ['CF_ACCOUNT_SUBDOMAIN', '/workers/subdomain'],
+    // Selv den rigtige læsekategori må ikke genbruges på et andet endpoint.
+    ['CF_DOMAINS', '/workers/scripts'],
+  ] : [['CF_DOMAINS', '/workers/domains']];
+  for (const [rejectedReadKind, rejectedSuffix] of shareRejectedRoutes) {
+
+    const receipts = []; let reads = 0;
+    await assert.rejects(vm.runInNewContext('(async () => {\n'
+      + shareCfDiagnosticDeclaration + '\n' + shareCfNormalRead
+      + '\ntry { await cf(rejectedSuffix, rejectedReadKind); } catch (error) {\n'
+      + shareControllerSource.slice(shareStopStart, shareStopEnd) + '\n}\n})()', {
+      stage: 'PREWRITE_READS', writeIssued: false, terminationConfirmed: null, rejectedReadKind, rejectedSuffix,
+      FORECAST_SHARE_READ_KINDS, forecastShareCfEnvelopeDiagnostic, readForecastShareJson,
+      cfBase: 'https://synthetic.example.test', cfHeaders: { Authorization: 'synthetic-not-logged' },
+      fetchImpl: async (url, options) => {
+        reads++; assert.equal(url, 'https://synthetic.example.test' + rejectedSuffix);
+        assert.equal(options.method, 'GET');
+        return new Response(JSON.stringify(raw), { status: 200 });
+      },
+      fail: code => Object.assign(new Error(code), { code }),
+      report: value => receipts.push(JSON.parse(JSON.stringify(value))),
+    }), error => error.code === 'REFUSED_BEFORE_WRITE');
+    assert.equal(reads, 1);
+    assert.equal(receipts.length, 1);
+    assert.deepEqual(receipts[0], { kind: 'FORECAST_SHARE_RELEASE_STOP_V1',
+      stage: 'PREWRITE_READS', sourceSha: null, code: 'SHARE_CF_READ', readKind: rejectedReadKind,
+      httpStatus: 200, cfEnvelope: expectedDiagnostic, writeIssued: false,
+      terminationConfirmed: null, outcome: 'REFUSED_BEFORE_WRITE' });
+    assert.doesNotMatch(JSON.stringify(receipts), /synthetic-private-value|synthetic-not-logged|synthetic\.example|synthetic-shape-content|123456|hostname|pointer|account/);
+  }
+}
+const shareForgedDiagnostics = [];
+assert.throws(() => vm.runInNewContext(shareControllerSource.slice(shareStopStart, shareStopEnd), {
+  stage: 'POSTWRITE_READBACK', expectedMain: 'a'.repeat(40), writeIssued: true, terminationConfirmed: true,
+  FORECAST_SHARE_READ_KINDS, forecastShareCfEnvelopeDiagnostic, cfEnvelopeDiagnostic: null,
+  error: { code: 'SHARE_CF_READ', readKind: 'CF_DOMAINS', httpStatus: 200,
+    cfEnvelope: { message: sharePrivateCfMarker, errorCodes: [sharePrivateCfMarker] } },
+  fail: code => Object.assign(new Error(code), { code }),
+  report: value => shareForgedDiagnostics.push(JSON.parse(JSON.stringify(value))),
+}), error => error.code === 'UNKNOWN_NO_RETRY');
+assert.deepEqual(shareForgedDiagnostics[0].cfEnvelope, shareUnknownCfDiagnostic,
+  'An error-supplied payload is not the private diagnostic state');
+assert.doesNotMatch(JSON.stringify(shareForgedDiagnostics), /synthetic-private-value/);
+
+assert.match(shareControllerSource, /fs\.writeSync\(descriptor, JSON\.stringify\(value\) \+ '\\n'\); fs\.fsyncSync\(descriptor\)/);
+
+// One already-existing private workflow is an exact new inventory layer,
+// not permission to ignore extra files or broaden historical consumers.
+const privateStudyName = 'private-trip-weather-study.yml';
+function privateStudyPre007Workflow(source) {
+  const review = JSON.parse(fs.readFileSync(new URL('./lib/private-trip-study-categorical-review.json', import.meta.url), 'utf8')).workflow;
+  const sha = value => crypto.createHash('sha256').update(value).digest('hex');
+  assert.equal(review.file, '.github/workflows/private-trip-weather-study.yml');
+  const readPermission = review.sourceProofReadPermission;
+  assert.equal(readPermission.kind, 'EXACT_TOP_LEVEL_PULL_REQUEST_READ_GRANT');
+  assert.equal(readPermission.beforeSha256, review.afterSha256);
+  if (sha(source) === readPermission.afterSha256) {
+    assert.equal(source.split(readPermission.after).length, 2);
+    source = source.replace(readPermission.after, () => readPermission.before);
+    assert.equal(sha(source), readPermission.beforeSha256);
+  }
+  assert.equal(sha(source), review.afterSha256);
+  for (const edit of [...review.edits].reverse()) {
+    assert.equal(source.split(edit.after).length, 2); source = source.replace(edit.after, () => edit.before);
+  }
+  assert.equal(sha(source), review.beforeSha256);
+  assert.equal(sha(source), 'bdde67e93ae059a520e21305af42c1566080faa0da786fc670d7f28dc0285949');
+  return source;
+}
+const privateStudyActualSource = privateStudyPre007Workflow(fs.readFileSync(`${workflowDirectory}/${privateStudyName}`, 'utf8').replace(/\r\n/g, '\n'));
+function inversePrivateStudy006ExportWorkflow(source) {
+  const sha = value => crypto.createHash('sha256').update(value).digest('hex');
+  assert.equal(sha(source), 'bdde67e93ae059a520e21305af42c1566080faa0da786fc670d7f28dc0285949',
+    'Exact reviewed006/export workflow before the unchanged historical oracle');
+  const marker = '\n  private-study-export:\n';
+  assert.equal(source.split(marker).length, 2);
+  let prior = source.slice(0, source.indexOf(marker));
+  for (const [current, original] of [
+    ['description: Skrivefri plan, kontrolleret installation med statistik slået fra eller privat rapporteksport',
+      'description: Read-only plan or controlled installation with statistics disabled'],
+    ['options: [plan, deliver, export]', 'options: [plan, deliver]'],
+    ['      allow_006:\n        description: Tillad ét præcist006-forsøg på control0 efter004/005 og faktisk Worker-OFF; statistik forbliver deaktiveret\n        type: boolean\n        default: false\n', ''],
+    ['plan|deliver|export) ;;', 'plan|deliver) ;;'],
+    ["      TRIP_PRIVATE_STUDY_JOB_BINDING_APPLY_ALLOWED: ${{ inputs.allow_006 && 'true' || 'false' }}\n", ''],
+  ]) {
+    assert.equal(prior.split(current).length, 2, 'Each exact new workflow edit occurs once');
+    prior = prior.replace(current, original);
+  }
+  assert.equal(sha(prior), '4c2e35641d7e95e19eedf901b49b9011917a05ef0957a9d7e7e222fb28d4f241',
+    'Whole original private-study workflow, not a changed historical descriptor');
+  return prior;
+}
+const privateStudySource = inversePrivateStudy006ExportWorkflow(privateStudyActualSource);
+for (const [current, changed] of [
+  ['      allow_006:', '      allow_006_unreviewed:'],
+  ["inputs.allow_006 && 'true' || 'false'", 'true'],
+  ['TRIP_PRIVATE_STUDY_JOB_BINDING_APPLY_ALLOWED:', 'TRIP_PRIVATE_STUDY_APPLY_ALLOWED:'],
+  ["inputs.operation == 'plan' || inputs.operation == 'deliver'", 'always()'],
+  ['TRIP_STORAGE_OPERATION: private-study-export', 'TRIP_STORAGE_OPERATION: existing-private-study-upgrade'],
+  ['run: node scripts/publish-private-trip-weather-study.mjs', 'run: node scripts/deploy-private-trip-study.mjs'],
+  ['timeout-minutes: 35', 'timeout-minutes: 350'],
+  ['cancel-in-progress: false', 'cancel-in-progress: true'],
+]) {
+  assert.ok(privateStudyActualSource.includes(current));
+  assert.throws(() => inversePrivateStudy006ExportWorkflow(privateStudyActualSource.replace(current, changed)));
+}
+function inversePrivateStudyWorkflowInventory(names, source) {
+  assert.deepEqual(names, [...expectedWorkflowFiles, privateStudyName].sort(),
+    'Only the whole legacy inventory plus the one reviewed private workflow');
+  assert.equal(crypto.createHash('sha256').update(source).digest('hex'),
+    '4c2e35641d7e95e19eedf901b49b9011917a05ef0957a9d7e7e222fb28d4f241',
+    'Whole existing private workflow; no changed caller, permissions or body');
+  assert.doesNotMatch(source, /pages: write|id-token: write|deploy-pages/);
+  return names.filter(name => name !== privateStudyName);
+}
+const workflowFiles = inversePrivateStudyWorkflowInventory(actualWorkflowFiles, privateStudySource);
+assert.deepEqual(workflowFiles, expectedWorkflowFiles,
+  'The complete unchanged historical workflow inventory is restored');
+for (const names of [
+  [...actualWorkflowFiles, 'unreviewed-workflow.yml'].sort(),
+  actualWorkflowFiles.filter(name => name !== privateStudyName),
+  [...actualWorkflowFiles, privateStudyName].sort(),
+  actualWorkflowFiles.filter(name => name !== expectedWorkflowFiles[0]),
+]) assert.throws(() => inversePrivateStudyWorkflowInventory(names, privateStudySource));
+for (const source of [privateStudySource + "\n# unreviewed change\n",
+  privateStudySource.replace("contents: read", "contents: write")]) {
+  assert.throws(() => inversePrivateStudyWorkflowInventory(actualWorkflowFiles, source));
+}
 if (JSON.stringify(workflowFiles) !== JSON.stringify(expectedWorkflowFiles)) {
   throw new Error(`Uventet workflowinventar: ${workflowFiles.join(', ') || '(tomt)'}. Kun produktionsworkflowet og de registrerede private, ikke-deployerende workflows må være aktive.`);
 }
@@ -227,7 +856,8 @@ assert.deepEqual(
 );
 let sourceGatePathCount = 0;
 for (const workflowName of sourceGateWorkflowNames) {
-  const workflow = fs.readFileSync(`${workflowDirectory}/${workflowName}`, 'utf8').replace(/\r\n/g, '\n');
+  const actualWorkflow = fs.readFileSync(`${workflowDirectory}/${workflowName}`, 'utf8').replace(/\r\n/g, '\n');
+  const workflow = workflowName==='validate-pull-request.yml'?projectSourceImpactWorkflowFull(actualWorkflow):actualWorkflow;
   let searchFrom = 0;
   while (true) {
     const sourceGateRun = workflow.indexOf('npm run validate:source', searchFrom);
@@ -249,7 +879,6 @@ for (const workflowName of sourceGateWorkflowNames) {
         'name: Validate isolated acquisition ownership and raw-save cohort',
         'name: Restore Node22 for existing source validation',
         'name: Validate bounded native current diagnosis on artificial data only',
-        'name: Validate native PostgreSQL checkpoint CAS on artificial data only',
       ], 'Only the exact ordered PR source-only steps may intervene; no unknown step');
       assert.doesNotMatch(intervening, /^\s+(?:if|continue-on-error):/m,
         'The PR ownership/native prefix must run unconditionally and fail closed');
@@ -337,7 +966,7 @@ if (/\.nc(?:\s|$)/m.test(historicalWavePilot)) {
 }
 const actualPullRequestValidation = fs.readFileSync(`${workflowDirectory}/validate-pull-request.yml`, 'utf8').replace(/\r\n/g, '\n');
 verifyCurrentNationalWorkflow(actualPullRequestValidation);
-const pullRequestValidation = inverseSourceNode24Workflow(actualPullRequestValidation).replace(CURRENT_SOURCE_JOB, REVIEWED90_SOURCE_JOB);
+const pullRequestValidation = inverseSourceBeforePostgresWorkflow(actualPullRequestValidation).replace(CURRENT_SOURCE_JOB, REVIEWED90_SOURCE_JOB);
 for (const marker of [
   'pull_request:',
   'permissions:\n  contents: read',
@@ -390,11 +1019,13 @@ const prGateOrder = [
   'name: Validate isolated acquisition ownership and raw-save cohort',
   'name: Restore Node22 for existing source validation',
   'name: Validate bounded native current diagnosis on artificial data only',
-  'name: Validate native PostgreSQL checkpoint CAS on artificial data only',
   'name: Validate source contracts and release governance',
+  'name: Validate native PostgreSQL checkpoint CAS on artificial data only',
+  'name: Upload independently completed native586 PostgreSQL phase',
+  'name: Validate isolated restart and two ordinary national followers',
   'name: Require validated source tree to remain unchanged',
   'name: Upload tree-content source validation proof',
-].map(marker => pullRequestValidation.indexOf(marker));
+].map(marker => actualPullRequestValidation.indexOf(marker));
 if (prGateOrder.some((position, index) => position < 0 || (index > 0 && position <= prGateOrder[index - 1]))) {
   throw new Error('PR-kildegatens exact-head, digest, validering, renhed og proofupload står i forkert rækkefølge.');
 }

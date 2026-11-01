@@ -4,6 +4,11 @@
 **Status:** Implementeret på main i 4.0.509; produktionskæden bestod,
 men den tilsigtede sen-LF-vandstand er ikke bevist.
 
+## Måletillæg 2026-10-24
+
+Før yderligere prioriteringsændring registreres hver samlings første faktiske kø med klassifikationens begrundelse og turens startmarkør. Rapporten ændrer ikke sorteringen og er ikke bevis for hele jobbets starttilstand, senere restkøer eller faktisk samlet dækning. Kritiske filer kan være native opgraderinger; markeringen er ikke i sig selv et tomt vejrhul. Den eksisterende prioritering, stabile cursor, originalkontrol og krav om faktisk dækningsmåling består. Den afgrænsede lokale kilde og målprøve er ikke en ny offentlig driftsobservation.
+
+
 ## Produktionsmåling 2026-09-29
 
 Normalrun `36478379298` på den mergede kode bestod cache,

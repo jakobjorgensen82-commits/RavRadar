@@ -1,4 +1,18 @@
+## Tillæg 2026-11-01 — samlet serverfrist og relevante eksisterende fakta
+
+Den lokale efterfølger bevarer alle 45 udstedte fakta og den fulde vidensbinding. Kun et helt genkendt generelt identifikationsspørgsmål må vælge et mindre, præcist relevant udsnit før inference. Hele det oprindelige spørgsmål kontrolleres, og et ukendt eller blandet led giver ikke adgang til at erklære et delsvar fuldstændigt. Manglende viden om en lups diagnostiske værdi beskrives uden opfundne kendetegn. Uvedkommende zone-/scorefakta kan ikke passere eftervalideringen for det valgte udsnit.
+
+Den eksisterende syvsekunders serverfrist omfatter nu indgående indhold, kvoteventetid, leverandørens svarindhold og sidste synkrone svarbeslutning. Ejet indholdslæsning og leverandørtransport afbrydes; de uændrede kvotetransporter kan afsluttes senere, men får ingen fortsættelse til et leverandørkald. Browserens otte sekunder og fælles gateway ændres ikke. Der loves ikke wirelevering inden syv sekunder eller en løst koldstartsårsag.
+
+En fast succesheader må kun sættes efter den reelle leverandørgren og normal resultatvalidering. Den indeholder ingen private oplysninger og erstatter ikke faktisk hosted kvalitetsaccept. De to normale lokale mål består med syntetisk transport. Præcis kildekontrol, sikker levering og offentlig DA/DE/EN-afprøvning udestår. Model, kvoter, klient, fakta, C/I/T, SQL, vejr, score og tidligere sikkerhedsgrænser bevares.
+
 # DEC-0091 – Bred, versionsbundet og read-only viden i Spørg RavRadar
+
+## Tillæg 2026-10-25 — hele spørgsmålet og samme offentlige prognose
+
+De konkrete ejerfejl kræver produktrettelser, ikke flere generiske afvisninger. Kese/ravkese, egne funktioner og almindelig vind forklares gennem den normale lokale viden. Efterspurgt kalenderdag og national rangering læses fra hjemmesidens allerede validerede projektion uden ny scoring eller fuld zonehentning. Hele inputtet kontrolleres før match; tvetydige datoer og ukendte kvalifikationer må ikke blive et sikkert delsvar.
+
+En faktisk offentlig ekstern case besvarede kun en del af et sammensat spørgsmål. Det eksisterende care-faktum er derfor styrket med allerede kurateret DA/DE/EN-viden om overflade, sprækker og opbevaring, og prompten kræver alle understøttede led eller ærlig usikkerhed. Faktaliste, sikkerhedsgrænser, kvoter og read-only-kontrakt bevares. Normale lokale mål og de direkte kontroller af den nu udstedte 4.0.588-binding består; præcis samlet kilde-/databasekontrol, installation og faktisk offentlig kvalitetsaccept mangler stadig. HTTP 200 eller et lokalt regelsvar er ikke samlet AI-accept.
 
 ## 9. oktober 2026 – lokal 4.0.553-rettelse af score-til-fund-svar
 

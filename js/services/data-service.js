@@ -1,12 +1,16 @@
-import { normalizeZoneRegistry } from './zone-registry.js?v=4.0.595';
+import { assertForecastShareDescriptor, assertForecastShareZoneProjection, forecastShareZoneProjectionSelection,
+  FORECAST_SHARE_DESCRIPTOR_PATH, FORECAST_SHARE_INDEX_MAX_BYTES, FORECAST_SHARE_ZONE_MAX_BYTES } from './forecast-share-projection.js?v=4.0.594';
+import { normalizeZoneRegistry } from './zone-registry.js?v=4.0.594';
+import { exactForecastShareSelection } from './forecast-share-contract.js?v=4.0.594&ui=forecast-share-20261024';
+import { exactMapZoneScore } from './map-forecast-view.js?v=4.0.594';
 import { publicDeliveryEntries, assertPublicDeliveryDocument, publicDeliveryGeneration,
-  reuseVerifiedPublicHour, refreshVerifiedPublicGeneration, createBoundedPublicMemory } from '../core/public-delivery-contract.js?v=4.0.595';
+  reuseVerifiedPublicHour, refreshVerifiedPublicGeneration, createBoundedPublicMemory } from '../core/public-delivery-contract.js?v=4.0.594';
 import {
   RAVSCORE_CALIBRATION_ELIGIBLE,
   RAVSCORE_CURRENT_SUPPLY_POLICY,
   assertRavScoreModelBinding,
   ravScoreModelBinding,
-} from '../core/ravscore-model-contract.js?v=4.0.595';
+} from '../core/ravscore-model-contract.js?v=4.0.594';
 import {
   RAVSCORE_PUBLIC_COASTAL_PART_COUNT,
   RAVSCORE_PUBLIC_DETAILS_KIND,
@@ -26,18 +30,18 @@ import {
   ravScorePublicHorizonValidUntil,
   selectPublicRuntimeAvailability,
   sameRavScoreModelBinding,
-} from '../core/ravscore-public-runtime-contract.js?v=4.0.595';
+} from '../core/ravscore-public-runtime-contract.js?v=4.0.594';
 import {
   assertExactPublicRavScoreProfile,
-} from '../core/ravscore-public-profile-contract.js?v=4.0.595';
+} from '../core/ravscore-public-profile-contract.js?v=4.0.594';
 import {
   assertRavScoreVerifiedEvidenceTrust,
-} from '../core/ravscore-evidence-trust-contract.js?v=4.0.595';
+} from '../core/ravscore-evidence-trust-contract.js?v=4.0.594';
 import {
   assertPublicWeatherSourceAge,
-} from '../core/ravscore-public-weather-source-age.js?v=4.0.595';
+} from '../core/ravscore-public-weather-source-age.js?v=4.0.594';
 
-export { createForecastSnapshotReference } from './trip-evidence-contract.js?v=4.0.595';
+export { createForecastSnapshotReference } from './trip-evidence-contract.js?v=4.0.594';
 
 const DEFAULT_PUBLIC_CONDITIONS_URL = './data/live/public-conditions.json';
 const DEFAULT_PUBLIC_DETAILS_URL = './data/live/public-condition-details.json';
@@ -160,7 +164,11 @@ function contentAddressedCache(url) {
   return /[?&]dataset=[^&]+/.test(url) && /[?&]sha=[a-f0-9]{64}(?:&|$)/i.test(url) ? 'force-cache' : 'no-store';
 }
 
+// Only this normal, privately owned frozen tuple is immutable by construction.
+// Caller objects, frozen Proxies and accessors never select this identity.
+const SHARE_LOCAL_MODEL_BINDING = ravScoreModelBinding();
 function assertNestedModelBindings(value, expected, path = 'payload') {
+  if (expected === SHARE_LOCAL_MODEL_BINDING) return assertShareNestedModelBindings(value, expected, path);
   if (Array.isArray(value)) {
     value.forEach((item, index) => assertNestedModelBindings(item, expected, `${path}[${index}]`));
     return true;
@@ -177,6 +185,39 @@ function assertNestedModelBindings(value, expected, path = 'payload') {
     assertNestedModelBindings(nested, expected, nestedPath);
   }
   return true;
+}
+
+function assertShareNestedModelBindings(value, expected, path = 'payload') {
+  const localExpected = expected === SHARE_LOCAL_MODEL_BINDING;
+  let localExpectedCompared = false;
+  function visitNestedModelBindings(value, path) {
+  if (Array.isArray(value)) {
+    value.forEach((item, index) => {
+      if (item && typeof item === 'object') visitNestedModelBindings(item, `${path}[${index}]`);
+    });
+    return true;
+  }
+  if (!value || typeof value !== 'object') return true;
+  for (const key of Object.keys(value)) {
+    const nested = value[key];
+    const binding = key === 'modelBinding' || key === 'ravScoreModelBinding';
+    const branch = nested && typeof nested === 'object';
+    if (!binding && !branch) continue; // The original primitive arm returned without validation.
+    const nestedPath = `${path}.${key}`;
+    if (binding) {
+      assertRavScoreModelBinding(nested, nestedPath);
+      if (!localExpected || !localExpectedCompared) {
+        if (!sameRavScoreModelBinding(nested, expected)) {
+          throw new Error(`${nestedPath} tilhører en anden RavScore-model eller bundle.`);
+        }
+        localExpectedCompared = true;
+      }
+    }
+    if (branch) visitNestedModelBindings(nested, nestedPath);
+  }
+  return true;
+  }
+  return visitNestedModelBindings(value, path);
 }
 
 function assertPublicVerifiedEvidenceTrust(document, label) {
@@ -853,6 +894,14 @@ async function loadManifestBoundStartup(manifest) {
   return data;
 }
 
+export async function loadPublicStartupSnapshot({ manifest = null } = {}) {
+  assertManifest(manifest);
+  if (!sameRavScoreModelBinding(manifest.ravScoreModelBinding, ravScoreModelBinding())) {
+    throw new Error('Appen og datamanifestet bruger forskellige RavScore-modelbundles.');
+  }
+  return loadManifestBoundStartup(manifest);
+}
+
 function requiresCurrentHourProjection(availability, manifest) {
   return availability.mode === RAVSCORE_PUBLIC_RUNTIME_MODE_EMERGENCY
     || availability.selectedReferenceAt !== manifest.productionReferenceAt;
@@ -1167,4 +1216,138 @@ function mergeDeliveryZone(conditions, details) {
   // zone's metadata, and never overwrite current data with the legacy H0 row.
   return { ...conditions, zones, coastalParts: { ...conditions.coastalParts, zones: scoreZones },
     loadedDetailZones: loaded, detailsAvailable: false };
+}
+
+// Demand-only public sharing reader. No URL score, private cache, source fetch,
+// score calculation, current-clock replacement or per-hour production work.
+// The host owns fetchPublic and fixes its public origin; no host is activated here.
+export async function loadPublicForecastShareSelection(input, { fetchPublic } = {}) {
+  const selection = exactForecastShareSelection(input);
+  if (!selection || typeof fetchPublic !== 'function') throw new Error('FORECAST_SHARE_READER_INVALID');
+  async function read(path, { bytes = null, sha256 = null } = {}) {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 15000);
+    const limit = bytes ?? 512 * 1024;
+    try {
+      const response = await fetchPublic(path, { signal: controller.signal, cache: 'no-store' });
+      if (!response.ok || !response.body?.getReader) throw new Error('FORECAST_SHARE_READ_FAILED');
+      const reader = response.body.getReader(), chunks = [];
+      let size = 0;
+      try {
+        for (;;) {
+          const chunk = await reader.read();
+          if (chunk.done) break;
+          size += chunk.value.byteLength;
+          if (size > limit) { await reader.cancel(); throw new Error('FORECAST_SHARE_BYTES_INVALID'); }
+          chunks.push(chunk.value);
+        }
+      } finally { reader.releaseLock(); }
+      const body = new Uint8Array(size);
+      let offset = 0;
+      for (const chunk of chunks) { body.set(chunk, offset); offset += chunk.byteLength; }
+      const text = new TextDecoder('utf-8', { fatal: true }).decode(body);
+      if (bytes !== null && (size !== bytes || await sha256Text(text) !== sha256)) {
+        throw new Error('FORECAST_SHARE_BINDING_INVALID');
+      }
+      return JSON.parse(text);
+    } finally { clearTimeout(timer); }
+  }
+  const manifest = assertManifest(await read('./data/live/manifest.json'));
+  const availability = selectPublicRuntimeAvailability(manifest, { modelBinding: ravScoreModelBinding() });
+  const entry = publicDeliveryEntries(manifest).find(item => item.kind === 'zone' && item.key === selection.zoneId);
+  if (!entry || selection.time < availability.selectedReferenceAt
+      || !Object.hasOwn(manifest.detailDelivery.hours, selection.time)) return null;
+  const [document, zoneDocument] = await Promise.all([
+    read('./data/live/' + entry.path.slice(2), { bytes: entry.bytes, sha256: entry.sha256 }),
+    read('./data/zones.geojson', { bytes: manifest.zoneRegistryBytes, sha256: manifest.zoneRegistrySha256 }),
+  ]);
+  assertPublicDeliveryDocument(document, manifest, entry);
+  assertPublicVerifiedEvidenceTrust(document, 'Den delte offentlige zonepakke');
+  // assertManifest already proved its complete tuple equals this same local
+  // model. Reuse only the source-owned immutable expected value, never payload
+  // validation results. Every nested tuple still gets its full original assert.
+  assertNestedModelBindings(document, SHARE_LOCAL_MODEL_BINDING);
+  const registry = assertZoneRegistryDocument(zoneDocument, manifest);
+  const zone = registry.active.find(feature => feature.properties.id === selection.zoneId)?.properties;
+  if (!zone || typeof zone.name !== 'string' || !zone.name.trim()) return null;
+  // Recheck real time after I/O, exactly as the normal map-hour reader does.
+  const fresh = selectPublicRuntimeAvailability(manifest, { modelBinding: ravScoreModelBinding() });
+  if (selection.time < fresh.selectedReferenceAt) return null;
+  const result = exactMapZoneScore({ conditions: { coastalParts: document.coastalParts, mapForecastTime: selection.time },
+    time: selection.time, zoneId: selection.zoneId, mode: selection.mode });
+  if (result?.time !== selection.time) return null;
+  return Object.freeze({
+    selection, zoneName: zone.name, datasetId: manifest.datasetId, generatedAt: manifest.generatedAt,
+    // Detached presentation fields only; no weather vectors, geometry or private inputs.
+    result: Object.freeze({
+      time: result.time, available: result.available === true, score: result.available === true ? result.score : null,
+      scoreQuality: result.scoreQuality,
+      localCoverage: Object.freeze({ status: result.localCoverage?.status ?? null }),
+    }),
+  });
+}
+
+// Compact demand-only sharing; normal map/timeline loading remains unchanged.
+export async function loadCompactPublicForecastShareSelection(input, { fetchPublic } = {}) {
+  const selection = exactForecastShareSelection(input);
+  if (!selection || typeof fetchPublic !== 'function') throw new Error('FORECAST_SHARE_READER_INVALID');
+  // One deadline from manifest start, not a fresh15 seconds per fetch. This also
+  // covers stream reads, decoding, hashing and every validation between reads.
+  const deadline = performance.now() + 15000;
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 15000);
+  const budget = () => {
+    if (controller.signal.aborted || performance.now() >= deadline) {
+      controller.abort(); throw new Error('FORECAST_SHARE_DEADLINE_EXCEEDED');
+    }
+  };
+  async function read(path, { bytes = null, sha256 = null, limit = bytes ?? 512 * 1024, withText = false } = {}) {
+    budget();
+    const response = await fetchPublic(path, { signal: controller.signal, cache: 'no-store' });
+    budget();
+    if (!response.ok || !response.body?.getReader) throw new Error('FORECAST_SHARE_READ_FAILED');
+    const reader = response.body.getReader(), chunks = [];
+    let size = 0;
+    try {
+      for (;;) {
+        budget();
+        const chunk = await reader.read();
+        budget();
+        if (chunk.done) break;
+        size += chunk.value.byteLength;
+        if (size > limit) { await reader.cancel(); throw new Error('FORECAST_SHARE_BYTES_INVALID'); }
+        chunks.push(chunk.value);
+      }
+    } catch (error) { await reader.cancel().catch(() => {}); throw error; }
+    finally { reader.releaseLock(); }
+    const body = new Uint8Array(size);
+    let offset = 0;
+    for (const chunk of chunks) { body.set(chunk, offset); offset += chunk.byteLength; }
+    const text = new TextDecoder('utf-8', { fatal: true }).decode(body);
+    if (bytes !== null && (size !== bytes || await sha256Text(text) !== sha256)) {
+      throw new Error('FORECAST_SHARE_BINDING_INVALID');
+    }
+    budget();
+    const document = JSON.parse(text);
+    return withText ? { document, text } : document;
+  }
+  try {
+    const loaded = await read('./data/live/manifest.json', { withText: true });
+    const manifest = assertManifest(loaded.document);
+    const availability = selectPublicRuntimeAvailability(manifest, { modelBinding: ravScoreModelBinding() });
+    if (!Object.hasOwn(manifest.detailDelivery?.zones ?? {}, selection.zoneId)
+      || selection.time < availability.selectedReferenceAt
+      || !Object.hasOwn(manifest.detailDelivery?.hours ?? {}, selection.time)) return null;
+    const descriptor = assertForecastShareDescriptor(await read(FORECAST_SHARE_DESCRIPTOR_PATH, { limit: FORECAST_SHARE_INDEX_MAX_BYTES }),
+      manifest, await sha256Text(loaded.text));
+    const entry = descriptor.zones.find(item => item.id === selection.zoneId);
+    const projection = await read('./data/live/' + entry.path.slice(2), {
+      bytes: entry.bytes, sha256: entry.sha256, limit: FORECAST_SHARE_ZONE_MAX_BYTES,
+    });
+    assertForecastShareZoneProjection(projection, descriptor, manifest, entry);
+    budget();
+    const fresh = selectPublicRuntimeAvailability(manifest, { modelBinding: ravScoreModelBinding() });
+    if (selection.time < fresh.selectedReferenceAt) return null;
+    return forecastShareZoneProjectionSelection(projection, selection);
+  } finally { clearTimeout(timer); }
 }

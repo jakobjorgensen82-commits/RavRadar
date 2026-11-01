@@ -2140,3 +2140,112 @@ for (const [label, changePayload, changeRecord] of [
   }), /TRIP_GATEWAY_UNAVAILABLE:REQUEST_REJECTED/);
   assert.equal(calls, 1); assert.equal(databaseAccesses, 0);
 });
+
+for (const originallyPending of [true, false]) test(`manual same-ID ${originallyPending ? 'pending' : 'synced'} re-submit preserves its exact original body`, async () => {
+  const h = harness();
+  try {
+    h.state.clockMs = Date.parse('2026-10-25T06:00:00.000Z');
+    h.state.failSubmit = originallyPending;
+    const columns = account.toAccountObservationColumns(account.buildAccountTripReport({
+      ...reportAnswer, tripId: firstTrip, observationOrigin: 'self-reported'
+    }));
+    assert.equal((await h.service.submitAccountTripReportObservation(columns)).stored,
+      originallyPending ? 'pending' : 'remote');
+    const original = clean(h.service.getLocalObservations()[0]), wire = h.state.submits[0];
+    assert.equal(h.service.getObservationSyncStatus().pending, originallyPending ? 1 : 0);
+    h.state.clockMs += 60_000;
+    h.state.failSubmit = false;
+    const reordered = Object.fromEntries(Object.entries(columns).reverse());
+    const retried = await h.service.submitAccountTripReportObservation(reordered);
+    assert.equal(retried.stored, 'remote');
+    assert.equal(h.state.submits.length, 2, 'Even a synced original needs its fresh normal POST receipt');
+    assert.equal(h.state.submits[1], wire, 'Re-submit transmits the exact first body');
+    assert.equal(JSON.stringify(h.service.remoteObservationPayload(h.service.getLocalObservations()[0])), wire);
+    assert.equal(h.service.getLocalObservations()[0].submitted_at, original.submitted_at);
+    assert.equal(h.service.getLocalObservations()[0].weather_snapshot.capturedAt, original.weather_snapshot.capturedAt);
+    assert.equal(h.service.getObservationSyncStatus().pending, 0);
+    assert.equal(h.service.getLocalObservations()[0].sync_status, 'synced');
+  } finally { h.finish(); }
+});
+
+test('manual same-ID changed or omitted inputs refuse before any storage or transport', async () => {
+  const h = harness();
+  try {
+    const columns = account.toAccountObservationColumns(account.buildAccountTripReport({ ...reportAnswer, tripId: firstTrip }));
+    await h.service.submitAccountTripReportObservation(columns);
+    const { grams: omitted, ...withoutGrams } = columns;
+    assert.equal(omitted, null);
+    for (const changed of [
+      { ...columns, search_coverage: 'thorough' },
+      { ...columns, found: true, result: 'medium' },
+      { ...columns, actual_coastal_part_id: 'DK-B04-12-P02' },
+      withoutGrams
+    ]) {
+      h.state.writes.length = 0;
+      const before = JSON.stringify([...h.storage.values]), requests = h.state.requests.length;
+      await assert.rejects(h.service.submitAccountTripReportObservation(changed), /gemte tur er ændret/);
+      assert.equal(h.state.writes.length, 0);
+      assert.equal(h.state.requests.length, requests);
+      assert.equal(h.state.submits.length, 1);
+      assert.equal(JSON.stringify([...h.storage.values]), before);
+    }
+  } finally { h.finish(); }
+});
+
+test('manual same-ID cannot adopt the original report after an account change', async () => {
+  const h = harness();
+  try {
+    const columns = account.toAccountObservationColumns(account.buildAccountTripReport({ ...reportAnswer, tripId: firstTrip }));
+    await h.service.submitAccountTripReportObservation(columns);
+    await h.login(B);
+    h.state.writes.length = 0;
+    const before = JSON.stringify([...h.storage.values]), requests = h.state.requests.length;
+    await assert.rejects(h.service.submitAccountTripReportObservation(columns), /konto/);
+    assert.equal(h.state.writes.length, 0);
+    assert.equal(h.state.requests.length, requests);
+    assert.equal(h.state.submits.length, 1);
+    assert.equal(JSON.stringify([...h.storage.values]), before);
+    assert.equal(h.service.getLocalObservations()[0].user_id, A);
+  } finally { h.finish(); }
+});
+
+test('manual same-ID refuses a changed pending body before local writes or transport', async () => {
+  const h = harness();
+  try {
+    const columns = account.toAccountObservationColumns(account.buildAccountTripReport({ ...reportAnswer, tripId: firstTrip }));
+    await h.service.submitAccountTripReportObservation(columns);
+    const pending = JSON.parse(h.storage.getItem('ravradar-observation-outbox-v1'));
+    pending[0].search_coverage = 'thorough';
+    h.storage.setItem('ravradar-observation-outbox-v1', JSON.stringify(pending));
+    h.state.writes.length = 0;
+    const before = JSON.stringify([...h.storage.values]), requests = h.state.requests.length;
+    await assert.rejects(h.service.submitAccountTripReportObservation(columns), /gemte tur er ændret/);
+    assert.equal(h.state.writes.length, 0);
+    assert.equal(h.state.requests.length, requests);
+    assert.equal(h.state.submits.length, 1);
+    assert.equal(JSON.stringify([...h.storage.values]), before);
+  } finally { h.finish(); }
+});
+
+test('manual refusal with missing or falsy original anonymous ID never allocates a replacement', async () => {
+  for (const anonymousId of [undefined, null, '']) {
+    const h = harness();
+    try {
+      const columns = account.toAccountObservationColumns(account.buildAccountTripReport({ ...reportAnswer, tripId: firstTrip }));
+      await h.service.submitAccountTripReportObservation(columns);
+      const rows = JSON.parse(h.storage.getItem('ravradar-observations-v2'));
+      if (anonymousId === undefined) delete rows[0].anonymous_id;
+      else rows[0].anonymous_id = anonymousId;
+      h.storage.setItem('ravradar-observations-v2', JSON.stringify(rows));
+      h.storage.removeItem('ravradar-anonymous-id');
+      h.state.writes.length = 0;
+      const before = JSON.stringify([...h.storage.values]), requests = h.state.requests.length;
+      await assert.rejects(h.service.submitAccountTripReportObservation({ ...columns, search_coverage: 'thorough' }), /gemte tur er ændret/);
+      assert.equal(h.state.writes.length, 0, 'Refusal cannot allocate an anonymous ID or rewrite either queue');
+      assert.equal(h.storage.getItem('ravradar-anonymous-id'), null);
+      assert.equal(h.state.requests.length, requests);
+      assert.equal(h.state.submits.length, 1);
+      assert.equal(JSON.stringify([...h.storage.values]), before);
+    } finally { h.finish(); }
+  }
+});

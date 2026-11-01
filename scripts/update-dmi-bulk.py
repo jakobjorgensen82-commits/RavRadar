@@ -17,6 +17,7 @@ import os
 import pathlib
 import re
 import signal
+import shutil
 import stat
 import sys
 import tempfile
@@ -1461,6 +1462,25 @@ def bounded_strict_current_lead_attempt_limit(
     return max(1, min(8, int(available // STRICT_CURRENT_TURN_RESERVE_SECONDS)))
 
 
+def cold_strict_current_lead_catch_up_requested(current_history_requests, reference):
+    """Scheduling only, AFTER the normal archive-bound demand reader.
+
+    The child selector cannot grant archive/current/native admission. A normal
+    cold48h or warm history demand cannot select this target-only policy.
+    """
+    if (os.getenv("RAVRADAR_DMI_STRICT_CURRENT_LEAD_POLICY")
+            != "authenticated-current-family-cold-catch-up-v1"
+            or CACHE_ONLY or not isinstance(current_history_requests, dict)
+            or not current_history_requests):
+        return False
+    target = canonical_time(reference)
+    return bool(target and all(
+        isinstance(row, dict) and row.get("initialStateAt") is None
+        and row.get("startAt") == target and row.get("endAt") == target
+        for row in current_history_requests.values()
+    ))
+
+
 def asset_identity_sha256(href: Any) -> str | None:
     text = str(href or "").strip()
     if not text:
@@ -1637,9 +1657,13 @@ def processed_step_source_for_official_asset(
     valid_time: Any,
     processing_signature: Any,
     official_asset: Any,
+    current_target_ids: list[str] | None = None,
+    current_target_registry_sha256: str | None = None,
 ) -> dict[str, Any] | None:
     if not isinstance(step, dict) or not isinstance(official_asset, dict):
         return None
+    zones_touched = step.get("zonesTouched")
+    no_mutation = type(zones_touched) is int and zones_touched == 0
     if (
         step.get("complete") is not True
         or step.get("parserVersion") != PARSER_VERSION
@@ -1648,7 +1672,7 @@ def processed_step_source_for_official_asset(
         or step.get("processingSignature") != processing_signature
         or not {"current-u", "current-v"}
             <= set(step.get("recognizedParameters") or [])
-        or int(step.get("zonesTouched") or 0) <= 0
+        or (not no_mutation and int(zones_touched or 0) <= 0)
     ):
         return None
     source = canonical_current_source_asset(step.get("sourceAsset"))
@@ -1667,6 +1691,32 @@ def processed_step_source_for_official_asset(
         or source["itemUpdatedAt"] != expected["itemUpdatedAt"]
     ):
         return None
+    if no_mutation:
+        # Only a newly completed marine traversal with the caller's actual
+        # target context may retain an already-qualified better winner.
+        # This receipt does not replace the caller's actual tuple/retained proof.
+        if (
+            collection not in MARINE_COLLECTIONS
+            or not isinstance(current_target_ids, list)
+            or not current_target_ids
+            or not isinstance(current_target_registry_sha256, str)
+            or not current_target_registry_sha256
+        ):
+            return None
+        try:
+            outcome = validate_current_part_outcome_proof(
+                step.get("currentPartOutcomeProof"),
+                current_target_ids,
+                current_target_registry_sha256,
+                processing_signature,
+                source,
+            )
+        except (TypeError, ValueError):
+            return None
+        if not current_grid_sampling_outcome_matches(
+            step.get("currentGridSamplingOutcome"), outcome,
+        ):
+            return None
     return source
 
 
@@ -1864,6 +1914,9 @@ def reusable_processed_steps(
             valid_time=valid_time,
             processing_signature=processing_signature,
             official_asset=official_asset,
+            # Private scalar support keeps its existing mutation requirement.
+            current_target_ids=current_target_ids if not private_support else None,
+            current_target_registry_sha256=current_target_registry_sha256,
         )
         if source is None:
             continue
@@ -2374,6 +2427,69 @@ def prioritize_dkss_primary_assets(
         verified_reusable_valid_times=verified_reusable_valid_times,
         critical_cursor_valid_time=critical_cursor_valid_time,
     )
+
+
+def dkss_first_turn_order_diagnostic(
+    *, collection: str, model_run: str, production_reference: datetime,
+    ordered_assets: list[dict[str, Any]], requirements: dict[str, dict[str, Any]],
+    required_valid_times: set[str], cursor: str | None, maintenance: bool, primary_mode: bool,
+) -> dict[str, Any]:
+    """Detached observations of an existing queue; never recalculate coverage.
+
+    A critical asset may be a native upgrade, not a value hole. Keep the
+    original reason and actual initial order before later LF replans mutate
+    requirements. This is the first turn of each collection, NOT the input
+    state before every provider in the job. No IDs, paths or values escape.
+    """
+    unavailable = {"available": False, "reasonCode": "DKSS_START_ORDER_UNAVAILABLE"}
+    if (primary_mode is not True or collection not in MARINE_COLLECTIONS or len(ordered_assets) > 512
+            or not required_valid_times or not canonical_time(model_run)):
+        return unavailable
+    allowed_kinds = {"configuration", "current", "currentUpgrade", "regionalCurrent",
+                     "waterLevel", "waterTemperature", "windTail"}
+    rows = []
+    for asset in ordered_assets:
+        valid = canonical_time(asset.get("valid"))
+        row = requirements.get(valid)
+        if not valid or not isinstance(row, dict):
+            return unavailable
+        kinds = row.get("missingComponentKinds")
+        native_priority = row.get("criticalPriority")
+        counts = [row.get(key) for key in (
+            "currentMissingPairCount", "currentUpgradePairCount", "regionalCurrentPotentialPairCount",
+        )]
+        if (type(native_priority) is not int or native_priority not in (0, 1, 2)
+                or not isinstance(kinds, list)
+                or any(not isinstance(kind, str) or kind not in allowed_kinds for kind in kinds)
+                or any(type(count) is not int or count < 0 for count in counts)):
+            return unavailable
+        current_missing, current_upgrade, regional_missing = counts
+        rows.append({
+            "rank": len(rows) + 1, "validTime": valid,
+            "publicHour": valid in required_valid_times,
+            "strideHour": stride_selected(valid, model_run),
+            "classifierPriority": native_priority,
+            "missingComponentKinds": sorted(set(kinds)),
+            "currentMissingPairCount": current_missing,
+            "currentUpgradePairCount": current_upgrade,
+            "regionalCurrentPotentialPairCount": regional_missing,
+        })
+    return {
+        "schemaVersion": 1, "available": True,
+        "scope": "COLLECTION_FIRST_TURN_QUEUE_NOT_WHOLE_RUN_START",
+        "productionReferenceAt": canonical_time(production_reference),
+        "modelRun": canonical_time(model_run), "collection": collection,
+        "cursorValidTime": canonical_time(cursor) if cursor else None,
+        "cursorKind": "nativeRefresh" if maintenance is True else "criticalNative",
+        "maintenance": maintenance is True,
+        "assetCount": len(rows),
+        "classifierPriorityCounts": {
+            str(priority): sum(row["classifierPriority"] == priority for row in rows)
+            for priority in (0, 1, 2)
+        },
+        "orderedHours": rows,
+        "coverageProof": False, "skipAuthority": False, "sourceAdmission": False,
+    }
 
 
 def critical_native_cursor_for_run(
@@ -4538,6 +4654,37 @@ def _exact_unique_fields(pairs):
     return document
 
 
+def _validate_current586_exact_original_restore_plan(plan):
+    """Separate CURRENT B/S metadata scope, never a progress/cache-hit claim."""
+    binding = plan.get("binding")
+    fields = {"scope", "failedRun", "failedAttempt", "targetReferenceAt", "sourceHead", "executionHead",
+              "protectedBundleSha256", "protectedDatasetId", "protectedProductionReferenceAt", "protectedGeneratedAt",
+              "sourceDescriptorSha256", "modelBindingSha256", "modelBundleSha256", "conditionsSha256",
+              "checkpointGenerationSha256", "remoteCheckpointSha256", "remoteCheckpointVersion",
+              "discoverySha256", "originalsSha256", "partCount", "nonce"}
+    fixed = {"scope": "CURRENT586_EXACT_ORIGINAL_RESTORE_39666991481_1", "failedRun": "39666991481",
+             "failedAttempt": 1, "targetReferenceAt": "2026-10-21T20:00:00.000Z",
+             "sourceHead": "94b2b6173747b9d1f7d261c5110042a657af0cac",
+             "protectedBundleSha256": "e9e7b9327df875133b7c2c00ef6440bc411ef2178a9edf9d6cb1ba1a3e7555c3",
+             "modelBundleSha256": "6d8f7cca203b5f7ee5155f3c0cdb39403a02fd0eb30fecaca5070ef9f814a805"}
+    if (not isinstance(binding, dict) or set(binding) != fields
+            or any(type(binding[key]) is not type(value) or binding[key] != value for key, value in fixed.items())
+            or binding["executionHead"] != os.getenv("GITHUB_SHA")
+            or not isinstance(binding["executionHead"], str) or not re.fullmatch(r"[a-f0-9]{40}", binding["executionHead"])
+            or type(binding["partCount"]) is not int or binding["partCount"] != 673
+            or type(binding["remoteCheckpointVersion"]) is not int or binding["remoteCheckpointVersion"] < 1
+            or not all(isinstance(binding[key], str) and re.fullmatch(r"[a-f0-9]{64}", binding[key])
+                       for key in ("sourceDescriptorSha256", "modelBindingSha256", "conditionsSha256",
+                                   "checkpointGenerationSha256", "remoteCheckpointSha256", "discoverySha256", "originalsSha256"))
+            or not isinstance(binding["protectedDatasetId"], str)
+            or not re.fullmatch(r"rr-[A-Za-z0-9][A-Za-z0-9._-]{0,127}", binding["protectedDatasetId"])
+            or not all(isinstance(binding[key], str) and canonical_time(binding[key]) for key in
+                       ("protectedProductionReferenceAt", "protectedGeneratedAt"))
+            or epoch(binding["protectedProductionReferenceAt"]) >= epoch(fixed["targetReferenceAt"])
+            or not isinstance(binding["nonce"], str) or not re.fullmatch(r"[a-f0-9]{32}", binding["nonce"])):
+        _exact_original_refuse("PLAN_REJECTED")
+
+
 def read_exact_original_restore_plan(*, observed_names=None):
     """A fixed private file plus caller-held byte witness, not bearer authority."""
     expected_sha = os.getenv("DMI_EXACT_ORIGINAL_PLAN_SHA256", "")
@@ -4564,28 +4711,33 @@ def read_exact_original_restore_plan(*, observed_names=None):
         _exact_original_refuse("PLAN_REJECTED")
     if (not isinstance(plan, dict) or set(plan) != {"schemaVersion", "contractId", "binding", "originals"}
             or type(plan["schemaVersion"]) is not int or plan["schemaVersion"] != 1
-            or plan["contractId"] != "dmi-exact-original-restore-v1"):
+            or plan["contractId"] not in {"dmi-exact-original-restore-v1", "dmi-current586-exact-original-restore-v1"}):
         _exact_original_refuse("PLAN_REJECTED")
     binding = plan["binding"]
-    if (not isinstance(binding, dict) or set(binding) != {
-            "progressSource", "progressCacheKey", "targetReferenceAt", "sourceHead", "executionHead",
-            "protectedBundleSha256", "protectedDatasetId", "protectedProductionReferenceAt",
-            "protectedGeneratedAt", "modelBindingSha256", "historyDemandSha256", "originalsSha256", "nonce"}
-            or (binding["progressSource"], binding["progressCacheKey"], binding["targetReferenceAt"]) not in (
-                ("38692413809-1", "weather-private-progress-encrypted-v2-Linux-main-38692413809-1", "2026-10-14T18:00:00.000Z"),
-                ("38768040429-1", "weather-private-progress-encrypted-v2-Linux-main-38768040429-1", "2026-10-15T16:00:00.000Z"),
-                ("39066350748-1", "weather-private-progress-encrypted-v2-Linux-main-39066350748-1", "2026-10-17T20:00:00.000Z"))
-            or not all(isinstance(binding[key], str) and re.fullmatch(r"[0-9a-f]{40}", binding[key])
-                       for key in ("sourceHead", "executionHead"))
-            or binding["executionHead"] != os.getenv("GITHUB_SHA")
-            or not all(isinstance(binding[key], str) and re.fullmatch(r"[0-9a-f]{64}", binding[key]) for key in (
-                "protectedBundleSha256", "modelBindingSha256", "historyDemandSha256", "originalsSha256"))
-            or not isinstance(binding["protectedDatasetId"], str)
-            or not re.fullmatch(r"rr-[a-zA-Z0-9._-]{1,180}", binding["protectedDatasetId"])
-            or not all(isinstance(binding[key], str) and canonical_time(binding[key]) for key in (
-                "protectedProductionReferenceAt", "protectedGeneratedAt"))
-            or not isinstance(binding["nonce"], str) or not re.fullmatch(r"[0-9a-f]{32}", binding["nonce"])):
-        _exact_original_refuse("PLAN_REJECTED")
+    if plan["contractId"] == "dmi-current586-exact-original-restore-v1":
+        if (_exact_original_json(plan) + "\n").encode("utf-8") != body:
+            _exact_original_refuse("PLAN_REJECTED")
+        _validate_current586_exact_original_restore_plan(plan)
+    else:
+        if (not isinstance(binding, dict) or set(binding) != {
+                "progressSource", "progressCacheKey", "targetReferenceAt", "sourceHead", "executionHead",
+                "protectedBundleSha256", "protectedDatasetId", "protectedProductionReferenceAt",
+                "protectedGeneratedAt", "modelBindingSha256", "historyDemandSha256", "originalsSha256", "nonce"}
+                or (binding["progressSource"], binding["progressCacheKey"], binding["targetReferenceAt"]) not in (
+                    ("38692413809-1", "weather-private-progress-encrypted-v2-Linux-main-38692413809-1", "2026-10-14T18:00:00.000Z"),
+                    ("38768040429-1", "weather-private-progress-encrypted-v2-Linux-main-38768040429-1", "2026-10-15T16:00:00.000Z"),
+                    ("39066350748-1", "weather-private-progress-encrypted-v2-Linux-main-39066350748-1", "2026-10-17T20:00:00.000Z"))
+                or not all(isinstance(binding[key], str) and re.fullmatch(r"[0-9a-f]{40}", binding[key])
+                           for key in ("sourceHead", "executionHead"))
+                or binding["executionHead"] != os.getenv("GITHUB_SHA")
+                or not all(isinstance(binding[key], str) and re.fullmatch(r"[0-9a-f]{64}", binding[key]) for key in (
+                    "protectedBundleSha256", "modelBindingSha256", "historyDemandSha256", "originalsSha256"))
+                or not isinstance(binding["protectedDatasetId"], str)
+                or not re.fullmatch(r"rr-[a-zA-Z0-9._-]{1,180}", binding["protectedDatasetId"])
+                or not all(isinstance(binding[key], str) and canonical_time(binding[key]) for key in (
+                    "protectedProductionReferenceAt", "protectedGeneratedAt"))
+                or not isinstance(binding["nonce"], str) or not re.fullmatch(r"[0-9a-f]{32}", binding["nonce"])):
+            _exact_original_refuse("PLAN_REJECTED")
     originals = plan["originals"]
     # Preserve independent captures of identical bytes. The preparation and
     # coordinator share this metadata bound; actual unique files are still
@@ -4652,6 +4804,72 @@ def _reuse_exact_original_file(capture, *, work_deadline, observed_names=None):
     return True
 
 
+def _exact_original_check_disk_space(manifest, missing, raw_used):
+    """Exact-restore only; reserve payload, atomic manifest and owned scratch.
+
+    A download temp and its no-clobber hardlink share payload blocks. The
+    manifest writer instead keeps the previous manifest beside a whole new
+    indent=2 UTF-8 .json.tmp. Bound the not-yet-resolved official href by the
+    existing 8192-character URL limit, at worst six JSON bytes per character.
+    This placeholder is size arithmetic only, never a path/source/URL.
+    Allocation rounding is an accounting preflight, not a filesystem-space
+    reservation or proof of future metadata/CoW/compression behavior.
+    """
+    try:
+        unit = os.statvfs(RAW_DIR).f_frsize
+        if type(unit) is not int or unit <= 0:
+            raise ValueError("invalid filesystem allocation unit")
+        allocated = lambda length: ((length + unit - 1) // unit) * unit
+        manifest_info = raw_cache_manifest_path().lstat()
+        blocks = getattr(manifest_info, "st_blocks", None)
+        # Give no existing-allocation credit when it cannot be measured.
+        manifest_credit = ((blocks * 512) // unit) * unit if type(blocks) is int and blocks >= 0 else 0
+        plan = RAW_DIR / ".original-recovery-plan.json"
+        try:
+            plan_bytes = plan.lstat().st_size
+        except FileNotFoundError:
+            plan_bytes = 0  # Direct offline/API caller has no archived plan.
+        encoded = lambda value: len((json.dumps(value, ensure_ascii=False, indent=2) + "\n").encode("utf-8"))
+        manifest_bound = encoded(manifest)
+        for capture in missing:
+            row = {**capture, "canonicalHref": "\x01" * 8192,
+                   "acquiredAt": "9999-12-31T23:59:59.999999Z",
+                   "bytes": capture["contentLengthBytes"],
+                   "lastUsedAt": "9999-12-31T23:59:59.999999Z"}
+            # cached_asset_path is 24 hex chars plus a suffix of the <=8192
+            # character URL. Repeated document framing overestimates growth.
+            manifest_bound += encoded({"schemaVersion": RAW_CACHE_MANIFEST_SCHEMA_VERSION,
+                                       "assets": {"\x01" * (24 + 8192): row}})
+        if type(raw_used) is not int or raw_used < 0:
+            raise ValueError("invalid RAW occupancy")
+        # RAW limits logical occupied bytes, not allocation fragments. used
+        # already includes the old manifest/plan: add only prospective growth.
+        raw_required = (raw_used + sum(capture["contentLengthBytes"] for capture in missing)
+                        + max(0, manifest_bound - manifest_info.st_size))
+        if raw_required > RAW_CACHE_MAX_BYTES:
+            _exact_original_refuse("CACHE_BUDGET")
+        # Existing files/plan already occupy disk. Additionally allow the
+        # prospective manifest growth plus a simultaneous whole manifest temp.
+        # The coordinator may archive the consumed plan and receipt afterwards:
+        # two whole plan lengths plus both existing 8192-byte pipe bounds cover
+        # that scratch conservatively, without an arbitrary free-space quota.
+        # Round EACH new file independently; many small originals cannot
+        # borrow the unallocated tail of another file. st_blocks is measured
+        # in 512-byte units and credited only in whole f_frsize fragments.
+        required = (sum(allocated(capture["contentLengthBytes"]) for capture in missing)
+                    + max(0, allocated(manifest_bound) - manifest_credit) + allocated(manifest_bound)
+                    + 2 * allocated(plan_bytes) + 2 * allocated(8192))
+        free = shutil.disk_usage(RAW_DIR).free
+        if type(free) is not int or free < 0:
+            raise ValueError("invalid disk free measurement")
+    except (OSError, UnicodeError, TypeError, ValueError, OverflowError, AttributeError):
+        raise OSError("DMI_EXACT_ORIGINAL_DISK_STATE_UNAVAILABLE") from None
+    if free < required:
+        _exact_original_refuse("DISK_BUDGET")
+    return {"requiredFreeBytes": required, "requiredRawBytes": raw_required,
+            "prospectiveManifestBytes": manifest_bound, "currentManifestBytes": manifest_info.st_size}
+
+
 def restore_exact_original_assets(originals, *, report=None, observed_names=None):
     """Only exact historical originals. No main, latest, replay, pruning or score."""
     if report is None:
@@ -4694,12 +4912,13 @@ def restore_exact_original_assets(originals, *, report=None, observed_names=None
             # The plan is already deduplicated by immutable capture identity.
             # Re-measure current RAW occupancy; local reuse consumes neither
             # download budget nor additional space. Never prune to make room.
-            _, used = _exact_raw_state(observed_names=observed_names)
+            manifest, used = _exact_raw_state(observed_names=observed_names)
             missing_bytes = sum(capture["contentLengthBytes"] for capture in missing)
             if used + missing_bytes > RAW_CACHE_MAX_BYTES:
                 _exact_original_refuse("CACHE_BUDGET")
             if missing_bytes > MAX_DOWNLOAD_BYTES:
                 _exact_original_refuse("DOWNLOAD_BUDGET")
+            _exact_original_check_disk_space(manifest, missing, used)
         for capture in missing:
             try:
                 href = resolve_exact_original_item(capture, work_deadline=WORK_DEADLINE)["href"]
@@ -4768,7 +4987,7 @@ _EXACT_ORIGINAL_FAILURE_CODES = frozenset("DMI_EXACT_ORIGINAL_" + code for code 
     "METADATA_UNAVAILABLE", "ASSET_UNAVAILABLE",
     "HTTP_REJECTED", "STAC_ROOT_REJECTED", "METADATA_BOUND", "METADATA_INVALID", "REVISION_MISMATCH",
     "RAW_DIRECTORY_REJECTED", "RAW_ENTRY_REJECTED", "MANIFEST_REJECTED", "HEADER_BOUND", "HEADER_MISMATCH",
-    "CONTENT_MISMATCH", "COLLISION", "CACHE_BUDGET", "DOWNLOAD_BUDGET", "LENGTH_MISMATCH", "PLAN_REJECTED",
+    "CONTENT_MISMATCH", "COLLISION", "CACHE_BUDGET", "DOWNLOAD_BUDGET", "DISK_BUDGET", "LENGTH_MISMATCH", "PLAN_REJECTED",
     "ASSET_BOUND", "HEADER_REJECTED", "MANIFEST_CHANGED", "TRANSPORT_FAILED",
 ))
 # End exact-original restore helpers; normal download defaults remain unchanged.
@@ -10992,12 +11211,12 @@ def _current_history_json(value: Any) -> str:
     return json.dumps(value, sort_keys=True, separators=(",", ":"), ensure_ascii=False, allow_nan=False)
 
 
-def current_history_demands(rows, zones, locked_reference):
+def current_history_demands(rows, zones, locked_reference, *, archive_isolated_cold_start=False):
     """Validate the selector's bounded request; this is not source admission."""
     by_id = {str(zone["id"]): zone for zone in zones if zone.get("coastalPart")}
     reference = canonical_time(locked_reference)
     demands = {}
-    if not isinstance(rows, list) or reference is None:
+    if not isinstance(rows, list) or reference is None or type(archive_isolated_cold_start) is not bool:
         raise ValueError("DMI_CURRENT_HISTORY_DEMAND_INVALID")
     for row in rows:
         zone_id = "PART::" + str(row.get("partId") or "") if isinstance(row, dict) else ""
@@ -11028,7 +11247,7 @@ def current_history_demands(rows, zones, locked_reference):
             )
             and identity and zone_id not in demands and start
             and end == reference
-            and ((cold and epoch(start) == epoch(end) - 48 * 3600) or state_window)
+            and ((cold and epoch(start) == epoch(end) - (0 if archive_isolated_cold_start else 48) * 3600) or state_window)
             and all(epoch(value) % 3600 == 0 for value in (start, end))
             and (initial is None or epoch(initial) % 3600 == 0)
             and (source != "POINT_ACTIVATION" or initial == end)
@@ -11256,6 +11475,7 @@ def read_current_history_demands(part_doc, part_bytes, coastal_part_targets, zon
             raise ValueError("DMI_CURRENT_HISTORY_DEMAND_INPUT_MISMATCH")
     if required and document.get("rawRetention") is None:
         _raw_cache_protection_refuse("RETENTION_REQUIRED")
+    archive_isolated_cold_start = False
     if not CACHE_ONLY and "rawRetention" in document and document["rawRetention"] is not None:
         retention = document["rawRetention"]
         if isinstance(retention, dict) and retention.get("kind") == "ARCHIVE_ISOLATED_COLD_RAW_RETENTION":
@@ -11273,9 +11493,12 @@ def read_current_history_demands(part_doc, part_bytes, coastal_part_targets, zon
             _raw_cache_protection_refuse("B_BOUNDARY_INVALID")
         b_manifest_path = bundle / "manifest.json"
         b_conditions_path = bundle / "payload/data/live/conditions.json"
-        for fixed in (b_manifest_path, b_conditions_path):
+        # The normal conditions producer permits this parseable byte boundary;
+        # the small manifest keeps its original, separate 256-MiB ceiling.
+        for fixed, maximum in ((b_manifest_path, 256 * 1024 * 1024),
+                               (b_conditions_path, 535_822_312)):
             info = fixed.lstat()
-            if not stat.S_ISREG(info.st_mode) or info.st_nlink != 1 or info.st_size > 256 * 1024 * 1024:
+            if not stat.S_ISREG(info.st_mode) or info.st_nlink != 1 or info.st_size > maximum:
                 _raw_cache_protection_refuse("B_BOUNDARY_INVALID")
         b_manifest = json.loads(b_manifest_path.read_bytes())
         s_checkpoint = json.loads(source_paths["checkpoint"].read_bytes())
@@ -11285,6 +11508,9 @@ def read_current_history_demands(part_doc, part_bytes, coastal_part_targets, zon
                 or s_checkpoint.get("generationSha256") != boundary.get("checkpointGenerationSha256")):
             _raw_cache_protection_refuse("B_BOUNDARY_CHANGED")
         configure_raw_current_retention(document["rawRetention"])
+        # Only the complete fixed archive/catalog/B/S validation above can
+        # select target-only acquisition. An env flag or CACHE_ONLY cannot.
+        archive_isolated_cold_start = retention.get("kind") == "ARCHIVE_ISOLATED_COLD_RAW_RETENTION"
     if not document["demands"]:
         return {}  # Explicit stateless/no-demand plan; grants no source admission.
     owner_by_part = {}
@@ -11301,7 +11527,8 @@ def read_current_history_demands(part_doc, part_bytes, coastal_part_targets, zon
             })
     if target_fingerprint(targets_from_read_bytes) != target_fingerprint(coastal_part_targets):
         raise ValueError("DMI_CURRENT_HISTORY_DEMAND_TARGET_INVALID")
-    demands = current_history_demands(document["demands"], zones, reference)
+    demands = current_history_demands(document["demands"], zones, reference,
+        archive_isolated_cold_start=archive_isolated_cold_start)
     expected = {"PART::" + target["partId"] for target in coastal_part_targets}
     if set(demands) != expected or any(
         row.get("zoneId") != owner_by_part.get(row.get("partId")) for row in document["demands"]
@@ -12810,6 +13037,8 @@ def build_current_operational_ledger_result(
                     valid_time=valid_time,
                     processing_signature=processing_signature,
                     official_asset=official_asset,
+                    current_target_ids=part_ids,
+                    current_target_registry_sha256=registry_sha256,
                 )
                 if source_asset is None:
                     state = "LOCALLY_SKIPPED"
@@ -15349,6 +15578,25 @@ def main() -> int:
         0,
         int(schedule_coverage.get("strictCurrentLeadAttemptLimit") or 0),
     )
+    schedule_coverage["strictCurrentLeadCriticalAttemptLimit"] = (
+        MAX_ASSETS_PER_COLLECTION if strict_current_lead_collection else 0
+    )
+    schedule_coverage["strictCurrentLeadOrdinaryCriticalPolicy"] = "FAIR_PENDING_CRITICAL_TIME"
+    cold_strict_current_lead_catch_up = bool(
+        strict_current_lead_collection
+        and cold_strict_current_lead_catch_up_requested(
+            current_history_requests, locked_production_reference,
+        )
+    )
+    if cold_strict_current_lead_catch_up:
+        schedule_coverage["strictCurrentLeadColdCatchUp"] = {
+            "policy": "authenticated-current-family-cold-catch-up-v1",
+            "selected": True, "applied": False,
+            "ordinaryFairnessAttemptLimit": MAX_ASSETS_PER_COLLECTION,
+            "effectiveAttemptLimit": MAX_ASSETS_PER_COLLECTION,
+            "effectiveBound": "EXISTING_COLLECTION_ASSET_SELECTION_AND_PER_ASSET_BUDGET",
+            "numericAdmissionIssued": False,
+        }
 
     collection_turns = [] if CACHE_ONLY else operational_collection_turns(
         scheduled, schedule_coverage, result.get("collectionState") or {},
@@ -15368,6 +15616,11 @@ def main() -> int:
         collection_is_critical_wam = collection in critical_wam_collections
         collection_is_critical_current = (
             not collection_is_maintenance and collection in strict_current_collections
+        )
+        strict_current_lead_turn_attempt_limit = (
+            MAX_ASSETS_PER_COLLECTION
+            if collection_is_critical_current
+            else strict_current_lead_attempt_limit
         )
         if (
             not collection_is_critical_atmosphere
@@ -15398,7 +15651,10 @@ def main() -> int:
             collection_is_critical_wam
             or (
                 collection_is_critical_current
-                and collection != strict_current_lead_collection
+                and (
+                    collection != strict_current_lead_collection
+                    or not cold_strict_current_lead_catch_up
+                )
             )
         ):
             reserve_for_pending_critical = max(
@@ -15765,6 +16021,20 @@ def main() -> int:
                     assets = rotate_native_refresh_assets(
                         assets, state.get("nativeRefreshCursorValidTime"),
                     )
+                # Freeze the first actual collection queue. byCollection and
+                # its requirements are otherwise updated during later turns.
+                first_turn_orders = acquisition_plan_diagnostics.setdefault("firstTurnOrder", {})
+                if collection not in first_turn_orders:
+                    first_turn_orders[collection] = dkss_first_turn_order_diagnostic(
+                        collection=collection, model_run=run,
+                        production_reference=locked_production_reference,
+                        ordered_assets=assets, requirements=acquisition_requirements,
+                        required_valid_times=required_current_valid_times,
+                        cursor=(state.get("nativeRefreshCursorValidTime")
+                                if collection_is_maintenance else critical_native_cursor_at_turn_start),
+                        maintenance=collection_is_maintenance,
+                        primary_mode=DKSS_PRIMARY_MODE,
+                    )
             if (
                 collection in MARINE_COLLECTIONS
                 and not coastal_part_current_cache_healthy
@@ -15779,22 +16049,35 @@ def main() -> int:
                     )
                 )
             required_for_family = REQUIRED_TARGETS[COLLECTION_FAMILY[collection]]
+            qualified_current_processed_times = (
+                qualified_current_processed_valid_times(
+                    previous_steps, current_target_ids=current_target_ids,
+                    required_valid_times=required_current_valid_times,
+                    qualified_pair_source_keys=qualified_current_pair_source_keys,
+                    qualified_covered_pair_keys=qualified_covered_current_pair_keys,
+                    private_support_zones=result.get("zones") or {},
+                    private_support_zone_ids=active_production_zone_ids,
+                )
+                if collection in MARINE_COLLECTIONS else set()
+            )
             previously_processed = {
                 valid for valid, step in previous_steps.items()
                 if step.get("complete") is True
                 and set(step.get("recognizedParameters") or []) >= required_for_family
-                and int(step.get("zonesTouched") or 0) > 0
+                and (
+                    int(step.get("zonesTouched") or 0) > 0
+                    or (
+                        collection in MARINE_COLLECTIONS
+                        and type(step.get("zonesTouched")) is int
+                        and step["zonesTouched"] == 0
+                        and valid in required_current_valid_times
+                        and valid in qualified_current_processed_times
+                    )
+                )
             }
             if collection in MARINE_COLLECTIONS:
                 previously_processed.intersection_update(
-                    qualified_current_processed_valid_times(
-                        previous_steps, current_target_ids=current_target_ids,
-                        required_valid_times=required_current_valid_times,
-                        qualified_pair_source_keys=qualified_current_pair_source_keys,
-                        qualified_covered_pair_keys=qualified_covered_current_pair_keys,
-                        private_support_zones=result.get("zones") or {},
-                        private_support_zone_ids=active_production_zone_ids,
-                    )
+                    qualified_current_processed_times
                 )
             previously_traversed = (
                 {
@@ -15851,7 +16134,15 @@ def main() -> int:
                     if step.get("complete") is True
                     and set(step.get("recognizedParameters") or [])
                         >= required_for_family
-                    and int(step.get("zonesTouched") or 0) > 0
+                    and (
+                        int(step.get("zonesTouched") or 0) > 0
+                        or (
+                            collection in MARINE_COLLECTIONS
+                            and type(step.get("zonesTouched")) is int
+                            and step["zonesTouched"] == 0
+                            and valid in previously_processed
+                        )
+                    )
                     and (collection not in MARINE_COLLECTIONS or valid in previously_processed)
                 }
                 traversed = (
@@ -16408,7 +16699,7 @@ def main() -> int:
                         collection,
                         strict_current_lead_collection,
                         strict_current_lead_attempts,
-                        strict_current_lead_attempt_limit,
+                        strict_current_lead_turn_attempt_limit,
                     )
                 ):
                     budget_stop = (
@@ -16439,6 +16730,10 @@ def main() -> int:
                     run_info["strictCurrentLeadAssetsAttempted"] = (
                         strict_current_lead_attempts
                     )
+                    if cold_strict_current_lead_catch_up and collection_is_critical_current:
+                        # A real attempt used the authenticated cold reservation
+                        # policy, which remains exempt from ordinary fair sharing.
+                        schedule_coverage["strictCurrentLeadColdCatchUp"]["applied"] = True
                 if collection_is_critical_atmosphere:
                     critical_atmosphere_attempts += 1
                     run_info["criticalAtmosphereAssetsAttempted"] = (
@@ -16641,8 +16936,9 @@ def main() -> int:
                                 return reject("DKSS_STAGE_SOURCE_CAPTURE_MISSING")
                             if not REQUIRED_TARGETS["marine"] <= set(outcome[0]):
                                 return reject("DKSS_STAGE_REQUIRED_FIELDS_MISSING")
-                            if not outcome[1]:
-                                return reject("DKSS_STAGE_NO_TOUCHED_ZONES")
+                            # A fully read collection can retain better trusted
+                            # winners. The complete proof and exact unchanged-
+                            # tuple checks below, not mutation, validate it.
                             if not isinstance(part_outcomes, dict) or part_outcomes.get("complete") is not True:
                                 return reject("DKSS_STAGE_PART_OUTCOME_INCOMPLETE")
                             if part_outcomes.get("targetPartIds") != current_target_ids:
@@ -17002,7 +17298,11 @@ def main() -> int:
                 )
                 step_complete = bool(
                     set(step_recognized) >= required_for_family
-                    and len(touched) > 0
+                    and (
+                        len(touched) > 0
+                        or collection in MARINE_COLLECTIONS
+                        and step_part_outcome_proof is not None
+                    )
                     and (
                         wave_step_complete
                         if bootstrap_operational_wam
@@ -17756,7 +18056,7 @@ def main() -> int:
                                     critical_atmosphere_attempt_limit
                                     if budget_stop_code
                                         == "ATMOSPHERE_FOUNDATION_ATTEMPT_LIMIT"
-                                    else strict_current_lead_attempt_limit,
+                                    else strict_current_lead_turn_attempt_limit,
                                 "attemptedAssets":
                                     atmosphere_horizon_attempts
                                     if budget_stop_code == "ATMOSPHERE_HORIZON_ATTEMPT_LIMIT"

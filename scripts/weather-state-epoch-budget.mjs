@@ -73,7 +73,21 @@ export function checkWeatherStateEpochBudget({ phase, startedAtMs, now = Date.no
 export async function weatherStateEpochBudgetCli(argv = process.argv.slice(2), environment = process.env) {
   assert(argv.length === 1 && (['request', 'build-request', 'checkpoint-request'].includes(argv[0]) || Object.hasOwn(WEATHER_STATE_EPOCH_PHASE_MINUTES, argv[0])),
     'WEATHER_STATE_EPOCH_BUDGET_INVOCATION');
-  assert.equal(environment.RAVRADAR_WEATHER_STATE_EPOCH_BOOTSTRAP, 'true');
+  if (environment.RAVRADAR_CURRENT_FAMILY_COLD_START === 'true') {
+    // The current-family caller already authenticates its own archive. Reuse
+    // only this clock/reserve check, never the older epoch request authority.
+    const scope = 'WEATHER_STATE_EPOCH_COLD_PHASE_SCOPE';
+    assert(Object.hasOwn(WEATHER_STATE_EPOCH_PHASE_MINUTES, argv[0]), scope);
+    for (const name of ['RAVRADAR_WEATHER_STATE_EPOCH_BOOTSTRAP', 'RAVRADAR_WEATHER_STATE_EPOCH_CHECKPOINT_REENTRY',
+      'COMPLETED_PRIVATE_RUNTIME', 'QUICK_CONFIRMATION', 'CHECKPOINT_ONLY', 'NATIVE_IDENTITY_RECOVERY', 'PRODUCE_HANDOFF'])
+      assert.equal(environment[name], 'false', scope);
+    for (const name of ['QUICK_PROGRESS_SOURCE', 'CHECKPOINT_TARGET_HOUR'])
+      assert.equal(environment[name] ?? '', '', scope);
+    assert.equal(environment.EXTENDED_PROVIDER_BOOTSTRAP, 'true', scope);
+    assert.equal(environment.GITHUB_EVENT_NAME, 'workflow_dispatch', scope);
+    assert.equal(environment.GITHUB_REF, 'refs/heads/main', scope);
+    assert.equal(environment.GITHUB_RUN_ATTEMPT, '1', scope);
+  } else assert.equal(environment.RAVRADAR_WEATHER_STATE_EPOCH_BOOTSTRAP, 'true');
   if (argv[0] === 'checkpoint-request') {
     assertWeatherStateEpochCheckpointRequest(environment);
     return { request: 'AUTHENTICATED_EPOCH_CHECKPOINT_REQUIRED', admission: 'NO_ADMISSION' };

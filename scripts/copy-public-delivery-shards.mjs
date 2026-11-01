@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 import fs from 'node:fs/promises';
+import { copyForecastShareProjection } from './build-forecast-share-projection.mjs';
 import path from 'node:path';
 import crypto from 'node:crypto';
 import { fileURLToPath } from 'node:url';
@@ -19,7 +20,8 @@ export async function copyPublicDeliveryShards({ source, target }) {
     assertPublicDeliveryDocument(JSON.parse(bytes.toString('utf8')), manifest, entry);
     await fs.writeFile(path.join(target, relative), bytes);
   }
-  return { files: entries.length };
+  const share = await copyForecastShareProjection({ source, target });
+  return { files: entries.length + share.files };
 }
 
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {

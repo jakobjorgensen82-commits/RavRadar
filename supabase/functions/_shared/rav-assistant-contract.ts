@@ -12,7 +12,7 @@ export const RAV_ASSISTANT_RAVSCORE_MODEL_BINDING = Object.freeze({
   bestTimePolicyId: "score-history-water-tie-earliest-v3",
   presentationPolicyId: "score-bands-35-55-75-exceptional90-v1",
   modelContractSha256: "a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b",
-  modelBundleSha256: "fddfef8b8955e5a6ab55b4fb273884f43cbf355041727865b2080be9ff3f1400",
+  modelBundleSha256: "08750e3667e5a221374762fccadccf08abf5e9f1ae8814ccc97bfc11880bf36c",
 });
 
 export const RAV_ASSISTANT_KNOWLEDGE_SCHEMA = "rav-assistant-public-knowledge-v1";
@@ -20,7 +20,7 @@ export const RAV_ASSISTANT_KNOWLEDGE_SCHEMA = "rav-assistant-public-knowledge-v1
 // public knowledge document by the Edge contract test and sent with every
 // assistant response so Pages can reject a split model/knowledge deployment.
 export const RAV_ASSISTANT_KNOWLEDGE_SHA256 =
-  "ddefdc8f624014509787bce4852b63f81588f6dd954a17d76307afddb677d105";
+  "b719ea805a455410e996eb41e829086ff811ad809b99aeca938d531f414b3533";
 export const RAV_ASSISTANT_BINDING_HEADERS = Object.freeze({
   modelId: "x-ravradar-model-id",
   modelStateVersion: "x-ravradar-model-state-version",
@@ -28,6 +28,11 @@ export const RAV_ASSISTANT_BINDING_HEADERS = Object.freeze({
   modelBundleSha256: "x-ravradar-model-bundle-sha256",
   knowledgeSchema: "x-ravradar-assistant-knowledge-schema",
   knowledgeSha256: "x-ravradar-assistant-knowledge-sha256",
+});
+
+export const RAV_ASSISTANT_SUCCESS_PROVENANCE = Object.freeze({
+  header: "x-ravradar-assistant-provenance",
+  value: "workers-ai-validated-v1",
 });
 
 export const RAV_ASSISTANT_FACTS = Object.freeze([
@@ -64,7 +69,7 @@ export const RAV_ASSISTANT_FACTS = Object.freeze([
   { id: "amber.cold-water-buoyancy", text: "At the same salinity, colder seawater is generally slightly denser and can reduce amber's submerged density difference a little. Most Baltic amber still sinks, the effect on lifting or mobilisation of natural pieces in local conditions is unquantified, and temperature is not a RavScore input." },
   { id: "identification.fluorescence-varies", text: "Amber fluorescence varies with composition, weathering and treatment, and some imitations also fluoresce. RavRadar's practical hunting guidance is a long-wave amber light around 395 nanometres in dark conditions, followed by physical checking; fluorescence alone is not proof." },
   { id: "identification.treatments-and-imitations", text: "Plastic, glass, copal, pressed amber, composites, fillings, dyes and heat treatment can imitate or alter amber. No single home test reliably separates every case; combine non-destructive clues and seek qualified analysis for valuable or unusual material." },
-  { id: "care.preventive-conservation", text: "Amber is soft, heat-sensitive and vulnerable to strong light, solvents and unstable conditions. Clean an ordinary robust find gently with lukewarm water, avoid hot needles, fire, alcohol, acetone and oils, and keep unusual inclusions stable for specialist assessment." },
+  { id: "care.preventive-conservation", text: "Amber is soft and can be scratched. Weathering can make its surface darker or matt; this does not establish its age or origin. High heat, prolonged strong light and unstable conditions can alter the surface and promote cracking. Store amber in darkness or low light at a stable, moderate temperature without large humidity swings, separate from hard objects. Clean an ordinary robust find gently with lukewarm water; stop if it is cracked, fragile or may contain an important inclusion. Avoid hot needles, fire, alcohol, acetone, other solvents and oils, and keep unusual inclusions stable for specialist assessment. These are general guidelines, not a diagnosis of a particular find." },
   { id: "safety.rip-current", text: "A gap in a bar can concentrate seaward flow. Signs may include a darker calmer channel, fewer breaking waves and foam moving seaward; anyone caught should not fight directly against it but move parallel to shore and follow current authority guidance." },
   { id: "safety.cold-water", text: "Sudden cold-water immersion can cause involuntary gasping, rapid breathing and loss of physical capacity. Dress for water temperature, use suitable flotation, avoid wading alone and remember that waders are not safety equipment." },
   { id: "safety.white-phosphorus", text: "White phosphorus can resemble amber and may self-ignite as it dries. A suspicious amber-like find that smokes, smells chemical or becomes warm must be left in place; keep away and contact police following current Danish defence guidance." },
@@ -73,6 +78,9 @@ export const RAV_ASSISTANT_FACTS = Object.freeze([
   { id: "evidence.source-classes", text: "RavRadar distinguishes direct amber experiments, peer-reviewed coastal analogies, official rules and safety guidance, and named practitioner experience. These sources can complement each other but must not be presented as equally strong evidence." },
   { id: "public-context.selected-zone-only", text: "A remote assistant may explain only the small selected-zone public context supplied by RavRadar. National rankings and exact best-time calculations remain deterministic RavRadar functions and must not be invented by the model." },
   { id: "identification.spectroscopy-limits", text: "FTIR and Raman provide useful evidence about amber chemistry and alteration. Comparing the surface and interior can reveal differences, but natural variation and heat treatment can overlap. A single spectrum does not by itself establish an exact age or an unambiguous weathering stage. Qualified assessment combines comparative spectra, other analytical methods and the specimen's geological context; spectroscopy is not categorically incapable of detecting treatment." },
+  { id: "equipment.amber-net", text: "An amber net is a small net for light wash or visible pieces in very shallow water. Use it only with secure footing; it does not make deep, cold or fast water safe." },
+  { id: "assistant.public-capabilities", text: "I can explain amber, equipment, field signs and how weather and the coast affect a search. I can also show the best places and times from RavRadar’s valid forecast for the selected search mode and explain a score. You can ask about a particular day. I cannot guarantee finds or assess whether entering the water is safe." },
+  { id: "transport.current-supply-memory", text: "After sufficiently strong and sustained verified coastward current, AmberScore can remain high through a brief seaward reversal. Outflow subtracts from the accumulated current-supply index; it does not reset it automatically. Current evidence has full age weight until 24 hours, then declining weight until 48 hours. The score combines 20 % huntability, 50 % delivery potential and 30 % wave mobilisation; the other parts also count. The 48-hour rule concerns current, not completeness of all weather history. These are model assumptions, not observed amber or a guarantee for any zone or hour." },
 ]);
 
 export const RAV_ASSISTANT_REFUSALS = Object.freeze({
@@ -95,7 +103,7 @@ export const RAV_ASSISTANT_UNCERTAIN_REPLIES = Object.freeze({
 
 const SECURITY_PATTERN = /api.?key|password|passwort|adgangskode|supabase|database|datenbank|sql|source code|kildekode|quellcode|system.?prompt|systeminstruk|admin|token|secret|hemmelig|geheim|credential|hack/i;
 const OUT_OF_SCOPE_PATTERN = /(?<![\p{L}\p{N}_])(?:roulade|biskuitrolle|swiss roll|kage|kuchen|cake|fodbold|fußball|football|opskrift|rezept|recipe|politik|politics|aktie|stock price|matematik|math homework|cykeldæk|fahrradreifen|bicycle tyre|weekendtur|wochenendreise|weekend trip|paris)(?![\p{L}\p{N}_])/iu;
-const AMBER_DOMAIN_PATTERN = /(?<![\p{L}\p{N}_])(?:rav\p{L}*|bernstein\p{L}*|succinit|succinite|copal|kopal|amber\p{L}*|harpiks|harz|resin|fossili[sz]|inklusion|einschluss|inclusion|fluorescen|fluoreszenz|fluorescen[ct]e|uv.?light|395\s*nm|fosfor|phosphor|phosphorus|danefæ|kesse|kescher|kyst|küste|coast|strand(?:en|e(?:ne)?)?|beach|hav|meer|sea|bølge|welle|wave|strøm|strömung|current|vandstand|wasserstand|water level|wader|wathose|opskyl(?:let)?|spülsaum|wash line|tang|seegras|seaweed|revle(?:r(?:ne)?|n)?|sandbank|sandbar|revlehul|brandungsrückstrom|rip current|rende(?:n|rne)?|rinne|channel|høfde|buhne|groyne|opdrift|auftrieb|buoyancy|massefylde|dichte|density|saltation|sediment|geologi|geology|geologie|istid|eiszeit|ice age)(?![\p{L}\p{N}_])/iu;
+const AMBER_DOMAIN_PATTERN = /(?<![\p{L}\p{N}_])(?:rav\p{L}*|bernstein\p{L}*|succinit|succinite|copal|kopal|amber\p{L}*|harpiks|harz|resin|fossili[sz]|inklusion|einschluss|inclusion|fluorescen|fluoreszenz|fluorescen[ct]e|uv.?light|395\s*nm|fosfor|phosphor|phosphorus|danefæ|kesse|kescher|kyst|küste|coast|strand(?:en|e(?:ne)?)?|beach|hav|meer|sea|bølge|welle|wave|(?:pålands|fralands|bund|overflade|hav)?strøm(?:men|me(?:ne)?)?|strömung|current|vandstand|wasserstand|water level|wader|wathose|opskyl(?:let)?|spülsaum|wash line|tang|seegras|seaweed|revle(?:r(?:ne)?|n)?|sandbank|sandbar|revlehul|brandungsrückstrom|rip current|rende(?:n|rne)?|rinne|channel|høfde|buhne|groyne|opdrift|auftrieb|buoyancy|massefylde|dichte|density|saltation|sediment|geologi|geology|geologie|istid|eiszeit|ice age)(?![\p{L}\p{N}_])/iu;
 
 // Refuse explicit requests for other users' private finds before provider use.
 const PRIVATE_FIND_REQUEST_PATTERN = /(?<!\p{L})(?:vis(?:e)?|hent(?:e)?|udlever(?:e)?|afslør(?:e)?|show|retrieve|reveal|list|zeig(?:e|en)?|nenn(?:e|en)?)(?!\p{L})(?=[\s\S]*(?:andre brugeres|andres|other users?['’]?|other people['’]?s|anderer (?:nutzer|benutzer)))(?=[\s\S]*(?:privat\p{L}*|præcise? positioner|precise locations|genauen? standorte))(?=[\s\S]*(?:ravfund|fundsteder|ture|positioner|bernsteinfunde?|standorte|amber finds|find locations|trips|locations))/iu;
@@ -227,6 +235,72 @@ export function routeAssistantQuestion(question) {
   return AMBER_DOMAIN_PATTERN.test(text) ? "provider" : "fixed-refusal";
 }
 
+// A whole question about using an unfamiliar amber-labelled instrument is
+// relevant, but its name supplies no evidence that it exists or how it works.
+// This is not a domain-word bypass: bounded noun slots cannot consume clauses,
+// private requests, extra qualifications or a truncated 600-character prefix.
+function unknownAmberEquipmentQuestion(question, locale) {
+  if (typeof question !== "string" || question.length > 600) return false;
+  const text = question.trim().normalize("NFKC").replace(/\s+/gu, " ").replace(/[?!.]+$/u, "");
+  const token = "[\\p{L}\\p{N}][\\p{L}\\p{N}-]{0,39}";
+  const tail = `${token}(?: ${token}){0,3}?`;
+  const labels = { da:`rav[- ]?${tail}`, de:`bernstein[- ]?${tail}`, en:`amber(?: hunting)? ${tail}` };
+  const label = labels[locale];
+  if (!label) return false;
+  const patterns = {
+    da: [
+      `^er (?:(?:en|et|den|det) )?(${label}) (?:(?:vel)?egnet|god|sikker|brugbar) (?:til|i|på) (?:lavt vand|vadejagt|ravjagt|stranden)$`,
+      `^(?:(?:og|så|men) )?hvis (?:jeg|vi) (?:leder|søger)(?: efter rav)? (?:i vandet|med waders|på stranden) med (?:(?:en|et|den|det) )?(${label})$`,
+      `^hvordan (?:bruger|anvender) (?:jeg|vi) (?:en|et|den|det) (${label})(?: til at (?:finde rav|lede efter rav)(?: på stranden)?)?$`,
+      `^hvordan hjælper (?:en|et|den|det) (${label}) (?:mig|os) med at (?:finde rav|lede efter rav)(?: på stranden)?$`,
+    ],
+    de: [
+      `^ist (?:(?:ein|eine|einen|der|die|das) )?(${label}) für (?:flaches wasser|das waten|die bernsteinsuche|den strand) (?:geeignet|sicher|nützlich)$`,
+      `^(?:(?:und|also|aber) )?wenn (?:ich|wir) (?:im wasser|beim waten|am strand) mit (?:(?:einem|einer|dem|der) )?(${label}) (?:suche|suchen)$`,
+      `^wie (?:benutze|verwende) ich (?:ein|eine|einen|den|das|die) (${label})(?: (?:bei der bernsteinsuche|um bernstein zu finden))?$`,
+      `^wie hilft (?:mir|uns) (?:ein|eine|der|das|die) (${label}) bei der bernsteinsuche(?: am strand)?$`,
+    ],
+    en: [
+      `^is (?:(?:a|an|the) )?(${label}) (?:suitable|appropriate|safe|useful) (?:for|in|on) (?:shallow water|wading|amber hunting|the beach)$`,
+      `^(?:(?:and|so|but) )?if (?:i|we) (?:search|look)(?: for amber)? (?:in the water|while wading|on the beach) with (?:(?:a|an|the) )?(${label})$`,
+      `^how (?:do|can) (?:i|we) use (?:a|an|the) (${label})(?: (?:to find amber|for amber hunting)(?: on (?:a|the) beach)?)?$`,
+      `^how (?:does|can) (?:a|an|the) (${label}) help (?:me|us) (?:find|look for|search for) amber(?: on (?:a|the) beach)?$`,
+    ],
+  };
+  // A whole definition of an unfamiliar instrument name is not evidence for
+  // a known net. Restrict this new arm to explicit instrument noun endings;
+  // material, origin and colour definitions retain their ordinary routes.
+  const definitions = {
+    da:`^hvad er (?:(?:en|et|den|det) )?(${label})$`,
+    de:`^was ist (?:(?:ein|eine|einen|der|die|das) )?(${label})$`,
+    en:`^what is (?:(?:a|an|the) )?(${label})$`,
+  };
+  const definition = text.match(new RegExp(definitions[locale], "iu"));
+  if (definition && /(?:måler|meter|apparat|instrument|scanner|sensor|messgerät|messer|gauge|detector|device)$/iu.test(definition[1])) {
+    patterns[locale].push(definitions[locale]);
+  }
+  const known = new Set([
+    "ravkese", "ravkesse", "ravnet", "ravlygte", "ravlampe", "ravbriller",
+    "bernsteinkescher", "bernsteinkese", "bernsteinkesse", "bernsteinnetz", "bernsteinlampe", "bernsteinbrille",
+    "ambernet", "amberhuntingnet", "ambertorch", "amberlight", "amberlamp", "amberglasses",
+  ]);
+  // Whole public UV-lamp names remain known; UV alone cannot admit a device.
+  const knownUv = {
+    da:/^rav(?:langbølget|langbølgede)?uv(?:lygte|lampe)$/u,
+    de:/^bernstein(?:langwellen|langwellig(?:e|en|er|es)?)?uv(?:lampe|licht|taschenlampe)$/u,
+    en:/^amber(?:hunting)?(?:longwave|longwavelength)?uv(?:lamp|light|torch)$/u,
+  };
+  for (const pattern of patterns[locale]) {
+    const match = text.match(new RegExp(pattern, "iu"));
+    if (!match) continue;
+    const device = match[1].toLowerCase();
+    if (/(?<!\p{L})(?:og|eller|men|samt|med|und|oder|aber|sowie|mit|and|or|but|also|with|that|which|because)(?!\p{L})/iu.test(device)) return false;
+    const wholeDevice = device.replace(/[- ]/gu, "");
+    return !known.has(wholeDevice) && !knownUv[locale].test(wholeDevice);
+  }
+  return false;
+}
+
 // These complete questions ask only about finding amber despite a low score.
 // Keep extra clauses, places, dates and private qualifications on their normal
 // route. The answer uses the existing score.no-find-guarantee and
@@ -315,23 +389,96 @@ export function assistantSystemInstruction() {
     "Use RavRadar's exact public terminology: in Danish write rav, jagtbarhed, strømevidens and mobiliseringsmulighed; in German write Bernstein, Suchbarkeit, Strömungsevidenz and Mobilisierungsmöglichkeit; in English write amber, huntability, current evidence and mobilisation opportunity. Never create hybrid words across languages.",
     "evidenceIds must contain only IDs from the supplied facts that directly support the answer. Out-of-scope answers must use an empty evidenceIds array.",
     "The server publishes canonical fact units, not your prose. Include every necessary ID for all supported parts. When using supplied selected-zone values, also include public-context.selected-zone-only; never substitute invented values. Mark relevant unsupported parts uncertain.",
+    "For every question, assess every substantive part against the supplied facts and context. Use disposition answer only when all parts are supported. If any part cannot be supported, use disposition uncertain with evidenceIds for the supported parts; do not label a partial selection complete merely because each selected fact is valid. Never infer the cause or condition of a particular find from general conservation facts.",
     "For the reviewed compound questions about moving material between bars/channels and observing beach wash, cover every supported part. Physical model limits, local redistribution and observable field signs are distinct facets. A partial selection of evidence is not a complete answer; do not invent evidence or drop another selected fact to fit.",
+    "For the reviewed compound question about water level and whether a green score guarantees a find, cite both water-level.context and score.no-find-guarantee. Neither facet alone answers the whole question; keep every qualification and do not invent local water levels.",
+    "For a whole question asking what an amber net is and what you can do, cite both equipment.amber-net and assistant.public-capabilities. These are two supplied public FAQ facts, including ordinary article and spelling variants. Use answer when both parts are supported; do not use uncertain merely because a public capabilities question is phrased conversationally. Never identify an unfamiliar device or precise landing prediction as an amber net, and never drop an extra unknown or private request.",
+    "For the reviewed whole question about using a known amber net at a beach with eelgrass, seaweed or wrack and what to avoid, cite equipment.amber-net, field-signs.clues-not-proof and safety.not-a-safety-rating. These supplied facts support basic net use, observing sorted beach wash and the limits on water safety; a known net is not an unfamiliar instrument merely because the question is compound. They do not support vegetation-raking instructions, identifying a plant species, a site-specific safety clearance or a find guarantee. Keep every supported facet and limitation; do not invent the unsupported ones.",
     "Disposition semantics are strict: use answer for every relevant question that the supplied facts can answer, including safety boundaries, missing data and explaining that a find cannot be guaranteed. Use out_of_scope only for an unrelated topic. Use uncertain only for a relevant question that the supplied facts and selected-zone context cannot answer.",
     "An amber-specific physical-property question or an unfamiliar term for amber-hunting equipment remains relevant even when it is absent from the supplied facts. Lack of supporting facts is uncertainty, not an unrelated topic. Use uncertain, state the limit or ask for clarification, and never invent a property, a device or instructions for its use. A relevant word does not make an unrelated or private request permissible.",
     "For example, asking why a rubbed amber piece attracts paper, or how an unfamiliar amber-hunting instrument works, is in-domain. Answer only the parts supported by supplied facts; otherwise use uncertain with a brief clarification. Do not use the fixed out-of-scope reply for a relevant question merely because its answer is not in the facts.",
     "Uncertainty never licenses speculation: do not suggest unsupported causes, properties or uses, even with words such as may, might or possibly. When no supplied fact supports the explanation, state only that you cannot answer reliably or ask for clarification.",
     "Disposition examples: ‘Can you guarantee a find?’ is answer because the no-find-guarantee fact answers it. ‘Does this score mean safe?’ is answer because the safety-boundary fact answers it. ‘What happens when coherent zone data are missing?’ is answer because the local-missing fact answers it. The answer may explain uncertainty, but its disposition is still answer when a supplied fact supports it.",
     "For a relevant answer, include every supplied fact ID that is necessary to support the main claim. In particular, safety uses safety.not-a-safety-rating, no-find guarantees use score.no-find-guarantee, missing coherent data uses score.local-missing, and the waders wind question uses huntability.waders-wind-led.",
+    "For questions about why RavScore can remain high after sufficient verified coastward current and a brief seaward reversal, cite transport.current-supply-memory. This standalone unit describes only the current component's age weighting and the integrated score, not observed amber, a guaranteed zone/hour score or complete history for all weather components. It does not replace unrelated requested facets: retain every necessary fact, keep unsupported additions uncertain and never answer a private request.",
     "For strong seaward-current questions cite transport.current-led and sequence.release-transport-deposition. For falling-water questions cite water-level.context. For questions about the exact final path across bars and channels cite transport.local-path-unresolved and coast.sorting-and-traps; for observable wash clues also cite field-signs.clues-not-proof. Use transport.grid-evidence-scope for verified model-grid or regional-proxy scope and transport.wave-approach-attenuation for the causal wave-direction mean, memory and numerical attenuation limits. The unchanged transport.grid-not-surf-zone is a complete legacy unit, not an alias for only one of these narrower facts. Select every necessary fact for the actual question, not unrelated model detail; the server never drops an additional selected ID to fit.",
     "For a RavScore weights question, state that the integrated coastal-process model is the only public score model and cite both score.integrated-only and score.weights-20-50-30.",
     "For origin, density, wind, waves, layered current, coastal traps, field signs, UV identification, destructive tests, systematic technique, and event-sequence questions, cite the matching supplied fact IDs. Do not turn clues or possible traps into proof or guarantees.",
     `Fixed out-of-scope replies: ${JSON.stringify(RAV_ASSISTANT_REFUSALS)}`,
+    "When questionEvidence is supplied, use only the supplied exact publicFacts. Every required ID supports a requested facet. A null selected-zone context is irrelevant to this general question: never add zone, score, weather or capabilities instructions. An unclassified clause remains unresolved; never call a partial answer complete. The supplied knowledge does not establish diagnostic magnifier features; preserve that limit without inventing observations.",
     "Return exactly one JSON object and nothing else. Do not use Markdown fences or expose reasoning. The object must contain exactly schemaVersion, locale, disposition, answer and evidenceIds. schemaVersion must be rav-assistant-response-v1.",
   ].join("\n");
 }
 
-export function assistantPrompt(question, context, locale) {
-  return JSON.stringify({ requestedLocale: locale, question, publicSelectedZoneContext: publicAssistantContext(context, locale), publicFacts: RAV_ASSISTANT_FACTS });
+// Closed whole-clause family: membership in the full bank is not relevance.
+// Every clause must match; a recognised prefix never certifies an unknown tail.
+const IDENTIFICATION_CLAUSES = Object.freeze({
+  da: Object.freeze([
+    { facet:"magnifier", pattern:/^kan (?:en |min |et |mit )?(?:almindelig(?:t)? )?(?:lup|forstørrelsesglas) (?:hjælpe(?: mig)? med at|bruges til at) (?:skelne|kende forskel på) (?:rav (?:fra|og) (?:kopal|copal|plast|glas)|(?:kopal|copal|plast|glas) fra rav)(?=$|[\s,.;!?])/iu },
+    { facet:"identification", pattern:/^(?:hvordan (?:kan (?:jeg|man) skelne|skelner (?:jeg|man))|hvordan kan (?:jeg|man) kende forskel på) rav (?:fra|og) (?:kopal|copal|plast|glas)(?=$|[\s,.;!?])/iu },
+    { facet:"clues", pattern:/^(?:hvilke (?:kendetegn|spor|tegn) kan (?:jeg|man) (?:undersøge|se efter|kigge efter|tjekke)|hvad kan (?:jeg|man) (?:undersøge|se efter))(?: uden at (?:beskadige|ødelægge|skade) (?:fundet|ravet|det))?(?=$|[\s,.;!?])/iu },
+    { facet:"damage", pattern:/^hvordan (?:kan (?:jeg|man) undgå|undgår (?:jeg|man)) at (?:beskadige|ødelægge|skade) (?:fundet|ravet|det)(?=$|[\s,.;!?])/iu },
+  ]),
+  de: Object.freeze([
+    { facet:"magnifier", pattern:/^kann (?:eine |meine )?(?:gewöhnliche |normale )?lupe (?:dabei )?helfen,? bernstein von (?:kopal|copal|kunststoff|glas) zu unterscheiden(?=$|[\s,.;!?])/iu },
+    { facet:"identification", pattern:/^wie (?:kann (?:ich|man) bernstein von (?:kopal|copal|kunststoff|glas) unterscheiden|unterscheide ich bernstein von (?:kopal|copal|kunststoff|glas))(?=$|[\s,.;!?])/iu },
+    { facet:"clues", pattern:/^welche (?:merkmale|hinweise|zeichen) kann (?:ich|man) (?:untersuchen|prüfen|beobachten)(?:,? ohne (?:den fund|den bernstein|ihn) zu beschädigen)?(?=$|[\s,.;!?])/iu },
+    { facet:"damage", pattern:/^wie (?:kann ich vermeiden,? (?:den fund|den bernstein|ihn) zu beschädigen|vermeide ich schäden am fund)(?=$|[\s,.;!?])/iu },
+  ]),
+  en: Object.freeze([
+    { facet:"magnifier", pattern:/^can (?:a |my )?(?:normal |ordinary )?(?:magnifier|magnifying glass|loupe) help(?: me)?(?: to)? (?:distinguish|tell) amber from (?:copal|plastic|glass)(?=$|[\s,.;!?])/iu },
+    { facet:"identification", pattern:/^how (?:can (?:i|one) (?:distinguish|tell)|do i distinguish) amber from (?:copal|plastic|glass)(?=$|[\s,.;!?])/iu },
+    { facet:"clues", pattern:/^(?:what|which) (?:features|clues|signs) can (?:i|one) (?:examine|check|look for|inspect)(?: without damaging (?:the find|the amber|it))?(?=$|[\s,.;!?])/iu },
+    { facet:"damage", pattern:/^how can i avoid damaging (?:the find|the amber|it)(?=$|[\s,.;!?])/iu },
+  ]),
+});
+const IDENTIFICATION_LIMITS = Object.freeze({
+  da:"De tilgængelige oplysninger beskriver ikke, hvad en lup kan afgøre om rav og efterligninger.",
+  de:"Die verfügbaren Angaben erklären nicht, was eine Lupe bei Bernstein und Imitationen sicher unterscheiden kann.",
+  en:"The supplied knowledge does not establish what a magnifier can determine about amber and imitations.",
+});
+const IDENTIFICATION_FOCUS = Object.freeze({
+  da:"Jeg kan beskrive ikke-destruktive identifikationsspor og deres begrænsninger, men kan ikke besvare alle dele af spørgsmålet pålideligt. Del de forskellige emner op, så ingen del bliver overset.",
+  de:"Ich kann zerstörungsfreie Hinweise zur Bestimmung und ihre Grenzen erklären, aber nicht alle Teile der Frage zuverlässig beantworten. Trenne die Themen, damit kein Teil übergangen wird.",
+  en:"I can explain non-destructive identification clues and their limits, but cannot answer every part of this question reliably. Separate the topics so no part is overlooked.",
+});
+export function assistantIdentificationFocusAnswer(locale) {
+  return IDENTIFICATION_FOCUS[locale] || RAV_ASSISTANT_UNCERTAIN_REPLIES.en;
+}
+export function assistantIdentificationPolicy(question, locale) {
+  if (typeof question !== "string" || !IDENTIFICATION_CLAUSES[locale]
+      || routeAssistantQuestion(question) !== "provider") return null;
+  const text = question.trim().normalize("NFKC").replace(/\s+/gu," ").replace(/[?!.]+$/u,"");
+  const clauses = text.split(/(?:[?;.!]\s*|,?\s+(?:og|und|and)\s+(?=(?:hvilke|hvad|hvordan|kan|welche|was|wie|kann|what|which|how|can)\b))/iu);
+  const facets = new Set(); let recognised = false;
+  let complete = question.length <= 600 && clauses.length > 0 && clauses.length <= 6;
+  for (const clause of clauses) {
+    const matches = IDENTIFICATION_CLAUSES[locale].map(rule => ({rule,match:rule.pattern.exec(clause)})).filter(row => row.match);
+    if (!matches.length) { complete = false; continue; }
+    recognised = true;
+    const whole = matches.find(row => row.match[0].length === clause.length);
+    if (!whole) { facets.add(matches[0].rule.facet); complete = false; continue; }
+    facets.add(whole.rule.facet);
+    if (/uden at|ohne |without damaging/iu.test(clause)) facets.add("damage");
+  }
+  if (!recognised || (!facets.has("magnifier") && !facets.has("identification"))) return null;
+  const wanted = new Set(["identification.treatments-and-imitations"]);
+  if (facets.has("clues") || facets.has("identification")) wanted.add("identification.uv-clue-not-proof");
+  if (facets.has("damage")) wanted.add("identification.avoid-destructive-tests");
+  return Object.freeze({ family:"general-identification-v1", complete,
+    requiredIds:Object.freeze(RAV_ASSISTANT_FACTS.filter(fact => wanted.has(fact.id)).map(fact => fact.id)),
+    magnifierLimit:facets.has("magnifier"), fullKnowledgeSha256:RAV_ASSISTANT_KNOWLEDGE_SHA256 });
+}
+export function assistantPrompt(question, context, locale, originalQuestion = question) {
+  const policy = assistantIdentificationPolicy(originalQuestion, locale);
+  const selected = policy?.complete ? new Set(policy.requiredIds) : null;
+  return JSON.stringify({ requestedLocale: locale, question,
+    publicSelectedZoneContext:selected ? null : publicAssistantContext(context, locale),
+    publicFacts:selected ? RAV_ASSISTANT_FACTS.filter(fact => selected.has(fact.id)) : RAV_ASSISTANT_FACTS,
+    ...(policy ? { questionEvidence:{ family:policy.family, wholeQuestionClassified:policy.complete,
+      requiredIds:policy.complete ? policy.requiredIds : [], fullKnowledgeSha256:policy.fullKnowledgeSha256,
+      unsupportedMagnifierDiagnosticValue:policy.magnifierLimit } } : {}),
+  });
 }
 
 function parseJsonText(value) {
@@ -402,6 +549,8 @@ export function normaliseAssistantTerminology(value, locale) {
 
 // Canonical translations of the unchanged English public facts, not provider prose.
 const CANONICAL_FACT_TRANSLATIONS = Object.freeze({
+  "equipment.amber-net": {"da":"En ravkese er et lille net til at tage let opskyl eller synlige stykker i helt lavt vand. Brug den kun, hvor du kan stå sikkert; den gør ikke dybt, koldt eller strømfyldt vand forsvarligt.","de":"Ein Bernsteinkescher ist ein kleines Netz für leichtes Treibgut oder sichtbare Stücke in sehr flachem Wasser. Benutze ihn nur bei sicherem Stand; er macht tiefes, kaltes oder stark strömendes Wasser nicht sicher."},
+  "assistant.public-capabilities": {"da":"Jeg kan forklare rav, udstyr, felttegn og hvordan vejr og kyst påvirker en ravtur. Jeg kan også vise bedste steder og tidspunkter fra RavRadars gyldige prognose for den valgte søgemåde og forklare en score. Spørg gerne om en bestemt dag. Jeg kan ikke garantere ravfund eller vurdere, om det er sikkert at gå i vandet.","de":"Ich kann Bernstein, Ausrüstung, Feldzeichen und den Einfluss von Wetter und Küste auf die Suche erklären. Außerdem kann ich beste Orte und Zeiten aus RavRadars gültiger Prognose für die gewählte Suchart zeigen und einen Score erklären. Frage gern nach einem bestimmten Tag. Ich kann weder Funde garantieren noch beurteilen, ob das Betreten des Wassers sicher ist."},
   "score.integrated-only": {
     "da": "Den integrerede kystproces-RavScore er RavRadars eneste offentlige scoremodel. Candidate G bevares kun som historisk rollback-orakel; den er hverken en offentlig model, en skyggemodel eller en runtime-fallback.",
     "de": "Der integrierte Küstenprozess-BernsteinScore ist RavRadars einziges öffentliches Score-Modell. Candidate G bleibt ausschließlich ein historisches Rollback-Orakel; er ist weder öffentliches Modell noch Schattenmodell oder Laufzeit-Fallback."
@@ -445,6 +594,10 @@ const CANONICAL_FACT_TRANSLATIONS = Object.freeze({
   "huntability.waders-wind-led": {
     "da": "Ved wadersjagt er vinden det vigtigste jagtbarhedssignal. Jagtbarheden er 100 til og med 6 m/s og falder derefter; signifikant bølgehøjde er kun en blød nedadgående korrektion. Wadersscoren kan aldrig overstige wadersjagtbarheden. Strandjagt har ikke et tilsvarende jagtbarhedsloft.",
     "de": "Beim Waten ist Wind das wichtigste Signal der Suchbarkeit. Sie beträgt bis einschließlich 6 m/s 100 und sinkt danach; die signifikante Wellenhöhe korrigiert nur sanft nach unten. Der Wathosen-Score kann die Suchbarkeit beim Waten nie überschreiten. Für die Strandsuche gilt keine entsprechende Suchbarkeitsobergrenze."
+  },
+  "transport.current-supply-memory": {
+    "da": "Efter tilstrækkeligt stærk og vedvarende verificeret strøm mod land kan RavScore stadig være høj ved et kort skift væk fra land. Udstrøm trækker fra det opbyggede strømtilførselsindeks, men nulstiller det ikke automatisk. Strømevidens har fuld aldersvægt indtil 24 timer og aftagende vægt frem til 48 timer. Scoren kombinerer 20 % jagtbarhed, 50 % leveringspotentiale og 30 % bølgemobilisering; de øvrige dele tæller også. 48-timersreglen gælder strøm, ikke fuld dækning af al vejrhistorik. Det er modelantagelser, ikke observeret rav eller garanti for en bestemt zone eller time.",
+    "de": "Nach ausreichend starker und anhaltender verifizierter Strömung zur Küste kann der BernsteinScore bei einem kurzen Wechsel seewärts hoch bleiben. Ausströmung vermindert den aufgebauten Strömungszufuhrindex, setzt ihn aber nicht automatisch auf null. Strömungsevidenz hat bis zum Alter von 24 Stunden volles, danach bis 48 Stunden abnehmendes Gewicht. Der Score kombiniert 20 % Suchbarkeit, 50 % Lieferpotenzial und 30 % Wellenmobilisierung; die anderen Teile zählen ebenfalls. Die 48-Stunden-Regel betrifft Strömung, nicht die Vollständigkeit der gesamten Wetterhistorie. Das sind Modellannahmen, kein beobachteter Bernstein und keine Garantie für ein Gebiet oder eine Stunde."
   },
   "transport.current-led": {
     "da": "Verificeret modelgridstrøm er RavScores vigtigste relative transportevidens. En komponent mod land understøtter evidens mod kystzonen; strøm langs kysten er stadig relevant fysisk sammenhæng, men afklarer ikke lokal ravlevering. Udstrøm er negativ forsyningsevidens, ikke bevis for, at alt lokalt rav er væk.",
@@ -535,8 +688,8 @@ const CANONICAL_FACT_TRANSLATIONS = Object.freeze({
     "de": "Kunststoff, Glas, Copal, Pressbernstein, Verbundmaterialien, Füllungen, Farbstoffe und Wärmebehandlung können Bernstein imitieren oder verändern. Kein einzelner Heimtest unterscheidet alle Fälle zuverlässig. Kombiniere zerstörungsfreie Hinweise und lasse wertvolles oder ungewöhnliches Material fachlich untersuchen."
   },
   "care.preventive-conservation": {
-    "da": "Rav er blødt, varmefølsomt og sårbart over for stærkt lys, opløsningsmidler og ustabile forhold. Rens et almindeligt robust fund forsigtigt med lunkent vand. Undgå varme nåle, ild, alkohol, acetone og olier, og hold usædvanlige indeslutninger stabile til en faglig vurdering.",
-    "de": "Bernstein ist weich, wärmeempfindlich und anfällig für starkes Licht, Lösungsmittel und instabile Bedingungen. Reinige einen gewöhnlichen robusten Fund vorsichtig mit lauwarmem Wasser. Vermeide heiße Nadeln, Feuer, Alkohol, Aceton und Öle; bewahre ungewöhnliche Einschlüsse unter stabilen Bedingungen für eine fachliche Beurteilung auf."
+    "da": "Rav er blødt og kan ridses. Overfladen kan blive mørkere eller mat ved forvitring; det fastslår ikke stykkets alder eller oprindelse. Høj varme, langvarigt kraftigt lys og ustabile forhold kan ændre overfladen og fremme revner. Opbevar rav mørkt eller i svagt lys ved stabil, moderat temperatur uden store fugtsvingninger, adskilt fra hårde genstande. Et almindeligt robust fund kan renses forsigtigt med lunkent vand; stop, hvis det er sprækket, skørt eller har en mulig vigtig indeslutning. Undgå varme nåle, ild, alkohol, acetone, andre opløsningsmidler og olier, og hold usædvanlige indeslutninger stabile til en faglig vurdering. Dette er generelle råd, ikke en diagnose af et konkret fund.",
+    "de": "Bernstein ist weich und kann zerkratzt werden. Verwitterung kann seine Oberfläche dunkler oder matt machen; das bestimmt weder Alter noch Herkunft. Hohe Wärme, langes starkes Licht und instabile Bedingungen können die Oberfläche verändern und Risse fördern. Lagere Bernstein dunkel oder lichtarm bei stabiler mäßiger Temperatur, ohne große Feuchteschwankungen und getrennt von harten Gegenständen. Einen gewöhnlichen robusten Fund vorsichtig mit lauwarmem Wasser reinigen; bei Rissen, Sprödigkeit oder möglichem wichtigem Einschluss stoppen. Heiße Nadeln, Feuer, Alkohol, Aceton, andere Lösungsmittel und Öle vermeiden; ungewöhnliche Einschlüsse für eine fachliche Beurteilung stabil lagern. Dies sind allgemeine Hinweise, keine Diagnose eines konkreten Fundes."
   },
   "safety.rip-current": {
     "da": "Et hul i en revle kan samle udadgående strøm. Tegn kan være en mørkere, roligere rende, færre brydende bølger og skum, der bevæger sig udad. Bliver man fanget, bør man ikke kæmpe direkte imod strømmen, men bevæge sig parallelt med kysten og følge myndighedernes aktuelle råd.",
@@ -746,17 +899,175 @@ const BAR_OBSERVATION_FACETS = Object.freeze([
   Object.freeze({id:"observable-field-signs", anyOf:Object.freeze(["field-signs.clues-not-proof"])}),
 ]);
 
+// One separate reviewed water-level/no-find family. The complete original
+// question must match; words or a provider/context claim cannot certify it.
+const WATER_LEVEL_GUARANTEE_QUESTIONS = Object.freeze({
+  da:/^hvad betyder vandstanden for ravjagt,? og kan en grøn score garantere et fund[?!.]*$/iu,
+  de:/^was bedeutet der wasserstand für die bernsteinsuche,? und garantiert ein grüner wert einen fund[?!.]*$/iu,
+  en:/^what does the water level mean for amber hunting,? and does a green score guarantee a find[?!.]*$/iu,
+});
+const WATER_LEVEL_GUARANTEE_FACETS = Object.freeze([
+  Object.freeze({id:"water-level-context", anyOf:Object.freeze(["water-level.context"])}),
+  Object.freeze({id:"no-find-guarantee", anyOf:Object.freeze(["score.no-find-guarantee"])}),
+]);
+
+// Public net definition + public capabilities are independent existing FAQ
+// facets. Article/spelling variants do not create a new instrument fact.
+// Prefix recognition can only add an UNRESOLVED marker, never certify a suffix.
+const NET_DEFINITION_CLAUSE=Object.freeze({
+  da:String.raw`hvad er (?:er )?(?:(?:en|et|den) )?(?:rav)?kes{1,2}e(?: til ravjagt)?`,
+  de:String.raw`was ist (?:(?:ein|eine|einen|der|die|das) )?(?:(?:bernstein(?:-|\s*)?)?kescher|bernstein(?:-|\s*)?kes{1,2}e)(?: für die bernsteinsuche)?`,
+  en:String.raw`what is (?:(?:a|an|the) )?amber(?: hunting)? net`,
+});
+const PUBLIC_CAPABILITIES_CLAUSE=Object.freeze({
+  da:String.raw`(?:hvad kan (?:du|ravradar)(?: hjælpe (?:(?:mig|os) )?med)?|hvad kan jeg spørge (?:dig|ravradar) om|hvilke spørgsmål kan du svare på)`,
+  de:String.raw`(?:was kannst du(?: für mich tun)?|wobei kannst du (?:(?:mir|uns) )?helfen)`,
+  en:String.raw`(?:what can you(?: do| help (?:(?:me|us) )?with)?|what can i ask you)`,
+});
+const NET_CAPABILITIES_FACETS=Object.freeze([
+  Object.freeze({id:'amber-net-definition',anyOf:Object.freeze(['equipment.amber-net'])}),
+  Object.freeze({id:'public-assistant-capabilities',anyOf:Object.freeze(['assistant.public-capabilities'])}),
+]);
+function netCapabilitiesCoverage(question,locale,evidenceIds){
+  if(typeof question!=='string'||question.length>600||!RAV_ASSISTANT_LOCALES.includes(locale))return null;
+  const text=question.trim().normalize('NFKC').replace(/\s+/gu,' ');
+  const starter=String.raw`(?:hvad|hvilk(?:en|et|e)|kan|er|was|wobei|wie|kann(?:st)?|what|how|can)\b`;
+  const clauses=text.split(new RegExp(String.raw`[?？]\s*(?=\p{L})|[,:.;]\s*(?:(?:og|und|and)\s+)?(?=${starter})|\s+(?:og|und|and)\s+(?=${starter})`,'iu'))
+    .map(part=>part.trim().replace(/^(?:og|und|and)\s+/iu,'')).filter(Boolean);
+  const roles=clauses.map(clause=>{
+    for(const [role,source]of[['net',NET_DEFINITION_CLAUSE[locale]],['capabilities',PUBLIC_CAPABILITIES_CLAUSE[locale]]]){
+      if(new RegExp('^(?:'+source+')[?!.]*$','iu').test(clause))return{role,whole:true};
+      if(new RegExp('^(?:'+source+')(?![\\p{L}\\p{N}_])','iu').test(clause))return{role,whole:false};
+    }
+    return{role:null,whole:false};
+  });
+  if(!roles.some(row=>row.role==='net')||!roles.some(row=>row.role==='capabilities'))return null;
+  const selected=new Set(Array.isArray(evidenceIds)?evidenceIds:[]);
+  const missingFacets=NET_CAPABILITIES_FACETS.filter(facet=>!facet.anyOf.some(id=>selected.has(id))).map(facet=>facet.id);
+  if(roles.length!==2||roles.some(row=>!row.whole)||new Set(roles.map(row=>row.role)).size!==2)
+    missingFacets.push('unsupported-question-remainder');
+  return{complete:missingFacets.length===0,missingFacets};
+}
+
+// One reviewed basic net/wash/avoid family, not a plant-species, harvesting,
+// local-safety or find-prediction claim. Prefix recognition may only mark an
+// extra clause unresolved; it never certifies that clause or selects facts.
+const NET_WRACK_PRACTICE_CLAUSE=Object.freeze({
+  da:String.raw`hvordan (?:bruger|anvender) (?:man|jeg|vi) (?:en|den) (?:rav)?kes{1,2}e (?:ved|på) en strand med (?:opskyllet )?(?:ålegræs|tang|opskyl)`,
+  de:String.raw`wie (?:benutzt man|benutze ich|benutzen wir|verwendet man|verwende ich|verwenden wir) (?:einen|den) (?:bernstein(?:-|\s*)?)?kescher (?:an einem strand|am strand) mit (?:angeschwemmtem )?(?:seegras|treibgut)`,
+  en:String.raw`how (?:does one|do i|do we) use (?:an?|the) amber(?: hunting)? net (?:on|at) (?:a|the) beach with (?:washed-up )?(?:eelgrass|seaweed|wrack)`,
+});
+const NET_WRACK_AVOID_CLAUSE=Object.freeze({
+  da:String.raw`hvad (?:skal|bør) (?:man|jeg|vi) undgå`,
+  de:String.raw`was (?:sollte|sollten|soll|sollen|muss|müssen) (?:man|ich|wir) vermeiden`,
+  en:String.raw`what (?:should|must) (?:one|i|we) avoid`,
+});
+const NET_WRACK_PRACTICE_FACETS=Object.freeze([
+  Object.freeze({id:'net-use-and-water-limits',anyOf:Object.freeze(['equipment.amber-net'])}),
+  Object.freeze({id:'wash-observation-and-no-proof',anyOf:Object.freeze(['field-signs.clues-not-proof'])}),
+  Object.freeze({id:'onsite-safety-boundary',anyOf:Object.freeze(['safety.not-a-safety-rating'])}),
+]);
+function netWrackPracticeCoverage(question,locale,evidenceIds){
+  if(typeof question!=='string'||question.length>600||!RAV_ASSISTANT_LOCALES.includes(locale))return null;
+  const text=question.trim().normalize('NFKC').replace(/\s+/gu,' ');
+  const conjunction={da:'og',de:'und',en:'and'}[locale];
+  const source='(?:'+NET_WRACK_PRACTICE_CLAUSE[locale]+')'
+    +'(?:,?\\s+'+conjunction+'\\s+|\\?\\s*)(?:'+NET_WRACK_AVOID_CLAUSE[locale]+')';
+  const whole=new RegExp('^'+source+'[?!.]*$','iu').test(text);
+  if(!whole&&!new RegExp('^'+source+'(?![\\p{L}\\p{N}_])','iu').test(text))return null;
+  const selected=new Set(Array.isArray(evidenceIds)?evidenceIds:[]);
+  const missingFacets=NET_WRACK_PRACTICE_FACETS
+    .filter(facet=>!facet.anyOf.some(id=>selected.has(id))).map(facet=>facet.id);
+  if(!whole)missingFacets.push('unsupported-question-remainder');
+  return{complete:missingFacets.length===0,missingFacets};
+}
+
+// This negative boundary is derived only from the whole normal request.
+// No public fact certifies an instrument's exact amber landing prediction.
+function exactAmberLandingPredictionBoundary(question, locale) {
+  if (typeof question !== "string" || !RAV_ASSISTANT_LOCALES.includes(locale)) return null;
+  const raw = question.trim();
+  if (routeAssistantQuestion(raw) !== "provider") return null;
+  const text = raw.normalize("NFKC").replace(/\s+/gu, " ");
+  const precision = /(?<![\p{L}\p{N}_])(?:rav\p{L}*|bernstein\p{L}*|amber\p{L}*)(?![\p{L}\p{N}_])/iu.test(text)
+    && /(?<![\p{L}\p{N}_])(?:forudsig\p{L}*|vorhersag\p{L}*|predict\p{L}*)(?![\p{L}\p{N}_])/iu.test(text)
+    && /(?<![\p{L}\p{N}_])(?:præcis\p{L}*|nøjagtig\p{L}*|genau\p{L}*|exakt\p{L}*|exact\p{L}*|precis\p{L}*)(?![\p{L}\p{N}_])/iu.test(text)
+    && /(?<![\p{L}\p{N}_])(?:landings\p{L}*|lande(?:ort|punkt|stelle)\p{L}*|anland\p{L}*|landing)(?![\p{L}\p{N}_])/iu.test(text);
+  if (!precision) return null;
+  // An overlong raw request never earns partial coverage from its 600-char prefix.
+  if (raw.length > 600) return "overlong";
+  const starter = String.raw`(?:hvad|hvilk(?:en|et|e)|kan|er|was|wobei|wie|kann(?:st)?|what|how|can)\b`;
+  const clauses = text.split(new RegExp(String.raw`[?？]\s*(?=\p{L})|[,:.;]\s*(?:(?:og|und|and)\s+)?(?=${starter})|\s+(?:og|und|and)\s+(?=${starter})`, "iu"))
+    .map(part => part.trim().replace(/^(?:og|und|and)\s+/iu, "")).filter(Boolean);
+  if (clauses.length === 1) return "standalone";
+  if (clauses.length !== 2) return "unsupported-compound";
+  // Only this complete two-facet family may retain a supported net definition.
+  // The bounded device slot supplies no existence/use evidence and no clause.
+  const token = String.raw`[\p{L}\p{N}][\p{L}\p{N}-]{0,39}`;
+  const tail = `${token}(?: ${token}){0,3}?`;
+  const device = { da:`rav[- ]?${tail}`, de:`bernstein[- ]?${tail}`, en:`amber(?: hunting)? ${tail}` };
+  const wholePrecision = {
+    da:`^kan (?:(?:en|et|den|det) )?(${device.da}) forudsige (?:det |den )?(?:præcise|nøjagtige) landings(?:sted|punkt)(?: for (?:det næste ravstykke|næste ravstykke|rav))?[?!.]*$`,
+    de:`^kann (?:(?:ein|eine|einen|der|die|das) )?(${device.de}) (?:den |die |das )?(?:genau(?:e|en)|exakt(?:e|en)) (?:landeort|landepunkt|landestelle)(?: des nächsten bernsteinstücks| für bernstein)? vorhersagen[?!.]*$`,
+    en:`^can (?:(?:a|an|the) )?(${device.en}) predict the (?:exact|precise) landing (?:place|point|location|site)(?: of the next piece of amber| for amber)?[?!.]*$`,
+  };
+  const net = new RegExp('^(?:' + NET_DEFINITION_CLAUSE[locale] + ')[?!.]*$', 'iu');
+  const roles = clauses.map(clause => {
+    if (net.test(clause)) return "net";
+    const match = clause.match(new RegExp(wholePrecision[locale], "iu"));
+    if (!match || /(?<!\p{L})(?:og|eller|men|samt|med|und|oder|aber|sowie|mit|and|or|but|also|with|that|which|because)(?!\p{L})/iu.test(match[1])) return null;
+    return "precision";
+  });
+  return roles.includes("net") && roles.includes("precision") ? "net-compound" : "unsupported-compound";
+}
+
+
 export function assistantQuestionEvidenceCoverage(question, locale, evidenceIds) {
+  const netWrackPractice=netWrackPracticeCoverage(question,locale,evidenceIds);
+  if(netWrackPractice)return netWrackPractice;
+  const netCapabilities=netCapabilitiesCoverage(question,locale,evidenceIds);
+  if(netCapabilities)return netCapabilities;
   if (!RAV_ASSISTANT_LOCALES.includes(locale) || typeof question !== "string") return null;
   const normalized = question.trim().replace(/\s+/gu, " ");
-  if (!BAR_OBSERVATION_QUESTIONS[locale].test(normalized)) return null;
+  const facets = BAR_OBSERVATION_QUESTIONS[locale].test(normalized) ? BAR_OBSERVATION_FACETS
+    : question.length <= 600 && WATER_LEVEL_GUARANTEE_QUESTIONS[locale].test(normalized)
+      ? WATER_LEVEL_GUARANTEE_FACETS : null;
+  if (!facets) return null;
   const selected = new Set(Array.isArray(evidenceIds) ? evidenceIds : []);
-  const missingFacets = BAR_OBSERVATION_FACETS
+  const missingFacets = facets
     .filter(facet => !facet.anyOf.some(id => selected.has(id))).map(facet => facet.id);
   return { complete:missingFacets.length === 0, missingFacets };
 }
 
-function composeCanonicalAssistantResult(evidenceIds, locale, disposition, context) {
+// Fixed diagnostics only; no request, answer, fact ID or model output is passed.
+export const RAV_ASSISTANT_REJECTION_CODES = Object.freeze([
+  "RESULT_LOCALE_UNSUPPORTED",
+  "RESULT_NOT_OBJECT",
+  "RESULT_KEYS_INVALID",
+  "RESULT_SCHEMA_INVALID",
+  "RESULT_LOCALE_MISMATCH",
+  "RESULT_DISPOSITION_INVALID",
+  "RESULT_ANSWER_EMPTY",
+  "RESULT_ANSWER_TOO_LONG",
+  "RESULT_ANSWER_SECURITY",
+  "RESULT_EVIDENCE_ARRAY_INVALID",
+  "RESULT_EVIDENCE_COUNT_EXCEEDED",
+  "RESULT_EVIDENCE_DUPLICATE",
+  "RESULT_EVIDENCE_UNKNOWN",
+  "RESULT_OUT_OF_SCOPE_EVIDENCE",
+  "RESULT_ANSWER_EVIDENCE_MISSING",
+  "CANONICAL_UNIT_MISSING",
+  "CANONICAL_ANSWER_EMPTY",
+  "CANONICAL_ANSWER_SECURITY"
+]);
+function rejectedAssistantResult(code, observeRejection) {
+  if (typeof observeRejection === "function") {
+    try { observeRejection(code); } catch { /* Observation must never alter admission. */ }
+  }
+  return null;
+}
+
+function composeCanonicalAssistantResult(evidenceIds, locale, disposition, context, observeRejection = null) {
   const pending = new Set(evidenceIds);
   const units = [];
   for (const id of evidenceIds) {
@@ -771,38 +1082,72 @@ function composeCanonicalAssistantResult(evidenceIds, locale, disposition, conte
         ? canonicalSelectedZone(context, locale) : canonicalFactText(id, locale));
     }
   }
-  if (units.some(text => typeof text !== "string" || !text)) return null;
+  if (units.some(text => typeof text !== "string" || !text)) return rejectedAssistantResult("CANONICAL_UNIT_MISSING", observeRejection);
   if (disposition === "uncertain") units.push(RAV_ASSISTANT_UNCERTAIN_REPLIES[locale]);
   const answer = units.join("\n\n");
   // All units or an honest request to focus: no clipping or silent first-N selection.
   if (answer.length > 900) {
     return { answer:CANONICAL_FOCUS_REPLIES[locale], disposition:"uncertain", evidenceIds:[] };
   }
-  if (!answer || SECURITY_PATTERN.test(answer)) return null;
+  if (!answer || SECURITY_PATTERN.test(answer)) return rejectedAssistantResult(
+    !answer ? "CANONICAL_ANSWER_EMPTY" : "CANONICAL_ANSWER_SECURITY", observeRejection);
   return { answer, disposition, evidenceIds };
 }
 
-export function validateAssistantResult(value, locale, context = {}, question = null) {
-  if (!RAV_ASSISTANT_LOCALES.includes(locale)) return null;
-  if (!value || typeof value !== "object" || Array.isArray(value)) return null;
+export function validateAssistantResult(value, locale, context = {}, question = null, observeRejection = null) {
+  const reject = code => rejectedAssistantResult(code, observeRejection);
+  if (!RAV_ASSISTANT_LOCALES.includes(locale)) return reject("RESULT_LOCALE_UNSUPPORTED");
+  if (!value || typeof value !== "object" || Array.isArray(value)) return reject("RESULT_NOT_OBJECT");
   const expectedKeys = ["answer", "disposition", "evidenceIds", "locale", "schemaVersion"];
-  if (Object.keys(value).sort().join("|") !== expectedKeys.join("|")) return null;
-  if (value.schemaVersion !== RAV_ASSISTANT_RESPONSE_SCHEMA || value.locale !== locale) return null;
-  if (!["answer", "out_of_scope", "uncertain"].includes(value.disposition)) return null;
+  if (Object.keys(value).sort().join("|") !== expectedKeys.join("|")) return reject("RESULT_KEYS_INVALID");
+  if (value.schemaVersion !== RAV_ASSISTANT_RESPONSE_SCHEMA || value.locale !== locale) return reject(
+    value.schemaVersion !== RAV_ASSISTANT_RESPONSE_SCHEMA ? "RESULT_SCHEMA_INVALID" : "RESULT_LOCALE_MISMATCH");
+  if (!["answer", "out_of_scope", "uncertain"].includes(value.disposition)) return reject("RESULT_DISPOSITION_INVALID");
   const answer = typeof value.answer === "string" ? normaliseAssistantTerminology(value.answer, locale) : "";
-  if (!answer || answer.length > 900 || SECURITY_PATTERN.test(answer)) return null;
-  if (!Array.isArray(value.evidenceIds) || value.evidenceIds.length > RAV_ASSISTANT_FACTS.length) return null;
+  if (!answer || answer.length > 900 || SECURITY_PATTERN.test(answer)) return reject(
+    !answer ? "RESULT_ANSWER_EMPTY" : answer.length > 900 ? "RESULT_ANSWER_TOO_LONG" : "RESULT_ANSWER_SECURITY");
+  if (!Array.isArray(value.evidenceIds) || value.evidenceIds.length > RAV_ASSISTANT_FACTS.length) return reject(
+    !Array.isArray(value.evidenceIds) ? "RESULT_EVIDENCE_ARRAY_INVALID" : "RESULT_EVIDENCE_COUNT_EXCEEDED");
   const evidenceIds = [...new Set(value.evidenceIds)];
-  if (evidenceIds.length !== value.evidenceIds.length || evidenceIds.some((id) => typeof id !== "string" || !RAV_ASSISTANT_FACTS.some((fact) => fact.id === id))) return null;
+  if (evidenceIds.length !== value.evidenceIds.length || evidenceIds.some((id) => typeof id !== "string" || !RAV_ASSISTANT_FACTS.some((fact) => fact.id === id))) return reject(
+    evidenceIds.length !== value.evidenceIds.length ? "RESULT_EVIDENCE_DUPLICATE" : "RESULT_EVIDENCE_UNKNOWN");
   // Only the normal server caller supplies the original request question.
   // A provider/context-supplied coverage claim is never used or accepted.
+  const identification = assistantIdentificationPolicy(question, locale);
+  // A full-bank ID outside this request's selected pool is unknown to this request.
+  if (identification?.complete && evidenceIds.some(id => !identification.requiredIds.includes(id)))
+    return reject("RESULT_EVIDENCE_UNKNOWN");
   const questionCoverage = assistantQuestionEvidenceCoverage(question, locale, evidenceIds);
+  const unknownEquipment = routeAssistantQuestion(question) === "provider" && unknownAmberEquipmentQuestion(question, locale);
+  const precisionBoundary = exactAmberLandingPredictionBoundary(question, locale);
   if (value.disposition === "out_of_scope") {
-    if (evidenceIds.length) return null;
+    if (evidenceIds.length) return reject("RESULT_OUT_OF_SCOPE_EVIDENCE");
+    if (identification) return { answer:assistantIdentificationFocusAnswer(locale), disposition:"uncertain", evidenceIds:[] };
+    if (precisionBoundary) return { answer:RAV_ASSISTANT_UNCERTAIN_REPLIES[locale], disposition:"uncertain", evidenceIds:[] };
+    if (unknownEquipment) return { answer:RAV_ASSISTANT_UNCERTAIN_REPLIES[locale], disposition:"uncertain", evidenceIds:[] };
     if (questionCoverage) return { answer:CANONICAL_FOCUS_REPLIES[locale], disposition:"uncertain", evidenceIds:[] };
     return { answer: RAV_ASSISTANT_REFUSALS[locale], disposition: value.disposition, evidenceIds };
   }
-  if (value.disposition === "answer" && !evidenceIds.length) return null;
+  if (value.disposition === "answer" && !evidenceIds.length) return reject("RESULT_ANSWER_EVIDENCE_MISSING");
+  if (identification) {
+    if (!identification.complete || !identification.requiredIds.every(id => evidenceIds.includes(id)))
+      return { answer:assistantIdentificationFocusAnswer(locale), disposition:"uncertain", evidenceIds:[] };
+    const canonical = composeCanonicalAssistantResult(evidenceIds, locale, "answer", context, observeRejection);
+    if (!canonical) return null;
+    if (canonical.disposition !== "answer") return { answer:assistantIdentificationFocusAnswer(locale), disposition:"uncertain", evidenceIds:[] };
+    const answer = canonical.answer + (identification.magnifierLimit ? "\n\n" + IDENTIFICATION_LIMITS[locale] : "");
+    if (answer.length > 900) return { answer:assistantIdentificationFocusAnswer(locale), disposition:"uncertain", evidenceIds:[] };
+    return { answer, disposition:identification.magnifierLimit ? "uncertain" : "answer", evidenceIds };
+  }
+  if (precisionBoundary) {
+    if (!evidenceIds.length) return { answer:RAV_ASSISTANT_UNCERTAIN_REPLIES[locale], disposition:"uncertain", evidenceIds:[] };
+    if (precisionBoundary === "net-compound" && evidenceIds.length === 1 && evidenceIds[0] === "equipment.amber-net") {
+      return composeCanonicalAssistantResult(evidenceIds, locale, "uncertain", context, observeRejection);
+    }
+    return { answer:precisionBoundary.endsWith("compound") ? CANONICAL_FOCUS_REPLIES[locale] : RAV_ASSISTANT_UNCERTAIN_REPLIES[locale],
+      disposition:"uncertain", evidenceIds:[] };
+  }
+  if (unknownEquipment) return { answer:RAV_ASSISTANT_UNCERTAIN_REPLIES[locale], disposition:"uncertain", evidenceIds:[] };
   if (value.disposition === "uncertain" && !evidenceIds.length) {
     // Unsupported prose remains unsupported even when the provider labels it
     // uncertain. Keep the validated schema, locale and security checks above;
@@ -815,5 +1160,5 @@ export function validateAssistantResult(value, locale, context = {}, question = 
   if (value.disposition === "answer" && evidenceIds.length === 2 && evidenceIds.includes("score.integrated-only") && evidenceIds.includes("score.weights-20-50-30")) {
     return { answer: RAV_ASSISTANT_WEIGHT_ANSWERS[locale], disposition: value.disposition, evidenceIds };
   }
-  return composeCanonicalAssistantResult(evidenceIds, locale, value.disposition, context);
+  return composeCanonicalAssistantResult(evidenceIds, locale, value.disposition, context, observeRejection);
 }

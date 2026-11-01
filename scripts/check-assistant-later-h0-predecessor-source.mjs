@@ -913,3 +913,12 @@ export function assertSource594OriginalDataSourceSelected(){
 export async function withSource594OriginalDataSource(callback){
   assertSource594OriginalDataSourceSelected();return source594OriginalData(...arguments);
 }
+
+// Kun den eksisterende faste genuine37/594-CODE-vært; ingen kilde-/tuplevalg.
+// Dette er et historisk builder-check, aldrig SOURCE-/SQL-/runtime-adgang.
+if(process.argv[1]&&path.resolve(process.argv[1])===fileURLToPath(import.meta.url)){
+  assert.equal(process.argv.length,3,'Only the fixed historical594 source command');
+  assert.equal(process.argv[2],'source594','No caller-selected frozen profile');
+  await withSource594CodeParent(async()=>{});
+  console.log('Genuine594 CODE builder checked in its fixed source; no SOURCE or runtime admission.');
+}

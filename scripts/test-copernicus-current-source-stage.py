@@ -415,7 +415,8 @@ def has_forbidden_safe_key(value: object) -> bool:
 
 
 def checkpoint_only_cli_transaction_regression(
-    destination: Path, replay_fixture: Path,
+    destination: Path, replay_fixture: Path, *,
+    acquisition_at: datetime = REFERENCE + timedelta(minutes=21),
 ) -> None:
     """Replay the real CLI once, without acquisition work or a second rebuild."""
     real_build = RUNNER_MODULE.build_copernicus_donor_bank
@@ -497,7 +498,7 @@ def checkpoint_only_cli_transaction_regression(
             "--report", str(folder / "safe-report.json"),
             "--summary", str(folder / "safe-summary.txt"),
             "--at", REFERENCE.isoformat().replace("+00:00", "Z"),
-            "--acquisition-at", (REFERENCE + timedelta(minutes=21)).isoformat().replace("+00:00", "Z"),
+            "--acquisition-at", acquisition_at.isoformat().replace("+00:00", "Z"),
             "--checkpoint-only",
         ]
         with (
@@ -556,12 +557,173 @@ def checkpoint_only_cli_transaction_regression(
                 shadow_sha256=file_sha256(shadow_path),
             )
             assert committed_stage["missingPairCount"] == 0
-            assert len(committed_stage["attempts"]) >= 1
+            if acquisition_at <= REFERENCE + timedelta(hours=4):
+                assert len(committed_stage["attempts"]) >= 1
+            else:
+                assert committed_stage["attempts"] == []
+                assert committed_stage["updatedAt"] == committed_stage["productionReferenceAt"]
+                assert committed_shadow["updatedAt"] == acquisition_at.isoformat().replace("+00:00", "Z")
+                assert committed_bank["shadow"]["updatedAt"] == committed_shadow["updatedAt"]
+                assert len(committed_bank["positiveAdmissions"]) == 1
+                assert len(committed_bank["admissionAttempts"]) == 2
     print("OK: checkpoint-only CLI reuses one strict donor candidate and preserves receipts on prepared-write failure.")
+
+
+def fixed_h0_late_acquisition_regression(root: Path) -> None:
+    """Exercise the normal CLI, not a replacement producer or relaxed validator."""
+    late_at = REFERENCE + timedelta(hours=10, minutes=10)
+    for label, acquired_at in (("fresh", REFERENCE + timedelta(minutes=10)),
+                               ("late", late_at)):
+        folder = root / label
+        fixtures = folder / "fixtures"
+        fixtures.mkdir(parents=True)
+        prepare(folder)
+        dataset(fixtures / "copernicus-baltic-nemo.nc", available=False)
+        dataset(fixtures / "copernicus-nws-amm15.nc", available=True)
+        result = run_runner(folder, fixtures, acquisition_at=acquired_at)
+        assert result.returncode == 0, result.stdout + result.stderr
+        shadow_path = folder / "shadow.json"
+        shadow = json.loads(shadow_path.read_text(encoding="utf-8"))
+        bank = load_copernicus_donor_bank(
+            folder / "copernicus-current-donor-bank.json", targets=[TARGET])
+        stage = validate_reusable_source_stage(
+            json.loads((folder / "source-stage.json").read_text(encoding="utf-8")),
+            registry=json.loads((folder / "registry.json").read_text(encoding="utf-8")),
+            shadow=shadow, target_identities={TARGET["partId"]: TARGET},
+            shadow_sha256=file_sha256(shadow_path), allow_rebase=False)
+        assert stage["productionReferenceAt"] == REFERENCE.isoformat().replace("+00:00", "Z")
+        assert stage["selectedRecordRefCount"] == 1 and stage["missingPairCount"] == 0
+        assert len(bank["positiveAdmissions"]) == 1
+        assert len(bank["admissionAttempts"]) == 2
+        actual_at = acquired_at.isoformat().replace("+00:00", "Z")
+        assert shadow["updatedAt"] == actual_at
+        assert bank["shadow"]["updatedAt"] == actual_at
+        assert all(row["acquisitionAt"] == actual_at for row in shadow["acquisitions"])
+        assert all(row["acquisitionAt"] == actual_at for row in bank["admissionAttempts"])
+        if label == "fresh":
+            assert stage["status"] == "READY" and len(stage["attempts"]) == 2
+            print("FRESH_H0_CLI_BYTES " + json.dumps({name: file_sha256(folder / name)
+                for name in ("shadow.json", "source-stage.json", "copernicus-current-donor-bank.json")},
+                sort_keys=True), flush=True)
+        else:
+            assert stage["status"] == "IN_PROGRESS" and stage["attempts"] == []
+            assert stage["updatedAt"] == stage["productionReferenceAt"]
+            assert {row["productionReferenceAt"] for row in bank["admissionAttempts"]} == {
+                acquired_at.replace(minute=0).isoformat().replace("+00:00", "Z")}
+            checked = run_checker(folder, "--require-source-stage-reusable")
+            assert checked.returncode == 0, checked.stdout + checked.stderr
+            assert run_checker(folder, "--require-source-stage-ready").returncode != 0
+            # Re-signing is not permission to use a fresh negative witness in
+            # the old H0 journal. The unchanged strict validator still refuses.
+            try:
+                build_source_stage_progress(
+                    registry=json.loads((folder / "registry.json").read_text(encoding="utf-8")),
+                    shadow=shadow, target_identities={TARGET["partId"]: TARGET},
+                    shadow_sha256=file_sha256(shadow_path), attempts=bank["admissionAttempts"],
+                    updated_at=REFERENCE, **stage_positive_evidence(bank))
+            except CopernicusSourceStageError:
+                pass
+            else:
+                raise AssertionError("Late witnesses must not authorize H0 negative evidence")
+
+    own_reference = late_at.replace(minute=0)
+    assert RUNNER_MODULE.acquisition_witness_reference(REFERENCE, REFERENCE + timedelta(hours=4)) == REFERENCE
+    assert RUNNER_MODULE.acquisition_witness_reference(REFERENCE, late_at) == own_reference
+    for offset, allowed in ((-1, False), (0, True), (117, True), (118, False)):
+        assert RUNNER_MODULE.within_witness_window(
+            (own_reference + timedelta(hours=offset)).isoformat(), own_reference) is allowed
+
+    # An H0 hole before the new witness's interval must stay unresolved, without
+    # asking either fixture/provider for an invalid original request envelope.
+    outside = root / "outside-own-window"
+    prepare(outside)
+    (outside / "fixtures").mkdir()
+    outside_registry = json.loads((outside / "registry.json").read_text(encoding="utf-8"))
+    outside_registry["operationalRequiredPairs"][0]["validTime"] = (
+        REFERENCE + timedelta(hours=1)).isoformat().replace("+00:00", "Z")
+    outside_registry["operationalRequiredPairsSha256"] = required_pairs_sha256(outside_registry["operationalRequiredPairs"])
+    write(outside / "registry.json", outside_registry)
+    result = run_runner(outside, outside / "fixtures", acquisition_at=late_at)
+    assert result.returncode == 0, result.stdout + result.stderr
+    outside_stage = json.loads((outside / "source-stage.json").read_text(encoding="utf-8"))
+    assert outside_stage["status"] == "IN_PROGRESS" and outside_stage["missingPairCount"] == 1
+    assert outside_stage["attempts"] == [] and outside_stage["positiveAdmissions"] == []
+    assert "Copernicus shard checkpoint:" not in result.stdout
+    assert "shard failed" not in result.stderr
+
+    # Both real no-record results are queue progress only, never a backdated
+    # READY/exhaustion proof for the fixed H0.
+    exhausted = root / "late-empty"
+    prepare(exhausted)
+    (exhausted / "fixtures").mkdir()
+    for product in PINNED_PRODUCTS:
+        dataset(exhausted / "fixtures" / (product["source"] + ".nc"), available=False)
+    result = run_runner(exhausted, exhausted / "fixtures", acquisition_at=late_at)
+    assert result.returncode == 0, result.stdout + result.stderr
+    empty_stage = json.loads((exhausted / "source-stage.json").read_text(encoding="utf-8"))
+    assert result.stdout.count("Copernicus shard checkpoint:") == 2
+    assert empty_stage["status"] == "IN_PROGRESS" and empty_stage["missingPairCount"] == 1
+    assert empty_stage["attempts"] == [] and empty_stage["positiveAdmissions"] == []
+
+    # The ordinary refresh keeps old certificates/records, mints only a new
+    # same-invocation Baltic -> AMM15 certificate, then filters the H0 journal.
+    refresh = root / "late-refresh"
+    shutil.copytree(root / "fresh", refresh)
+    before_bank = load_copernicus_donor_bank(refresh / "copernicus-current-donor-bank.json", targets=[TARGET])
+    result = run_runner(refresh, refresh / "fixtures", acquisition_at=late_at, refresh_only=True)
+    assert result.returncode == 0, result.stdout + result.stderr
+    refresh_bank = load_copernicus_donor_bank(refresh / "copernicus-current-donor-bank.json", targets=[TARGET])
+    refresh_stage = json.loads((refresh / "source-stage.json").read_text(encoding="utf-8"))
+    assert all(row in refresh_bank["positiveAdmissions"] for row in before_bank["positiveAdmissions"])
+    assert all(row in refresh_bank["shadow"]["records"] for row in before_bank["shadow"]["records"])
+    assert len(refresh_bank["positiveAdmissions"]) == 2
+    assert refresh_stage["status"] == "IN_PROGRESS" and refresh_stage["missingPairCount"] == 0
+    assert all(row["productionReferenceAt"] == REFERENCE.isoformat().replace("+00:00", "Z")
+               for row in refresh_stage["attempts"])
+    assert refresh_bank["shadow"]["updatedAt"] == late_at.isoformat().replace("+00:00", "Z")
+    assert run_checker(refresh, "--require-source-stage-reusable").returncode == 0
+
+    # Stop the real CLI at its existing strict consolidation seam, leaving two
+    # actual durable receipts. No substitute bank or synthetic proof is used.
+    interrupted = root / "late-interrupted"
+    prepare(interrupted)
+    shutil.copytree(root / "late" / "fixtures", interrupted / "fixtures")
+    command = [str(RUNNER), "--targets", str(interrupted / "registry.json"),
+               "--authoritative-targets", str(interrupted / "targets.json"),
+               "--shadow", str(interrupted / "shadow.json"),
+               "--source-stage", str(interrupted / "source-stage.json"),
+               "--report", str(interrupted / "safe-report.json"),
+               "--summary", str(interrupted / "safe-summary.txt"),
+               "--at", REFERENCE.isoformat(), "--acquisition-at", late_at.isoformat(),
+               "--fixture-directory", str(interrupted / "fixtures")]
+    first_failure = OSError("fixture late consolidation interruption")
+    with (patch.object(sys, "argv", command),
+          patch.dict(os.environ, {"GITHUB_OUTPUT": str(interrupted / "fixture-github-output.txt")}),
+          patch.object(RUNNER_MODULE, "consolidate_durable_segment_progress", side_effect=first_failure)):
+        try:
+            RUNNER_MODULE.main()
+        except OSError as error:
+            assert error is first_failure
+        else:
+            raise AssertionError("Late consolidation interruption must remain fatal")
+    journal = json.loads((interrupted / "copernicus-current-segment-journal.json").read_text(encoding="utf-8"))
+    assert len(journal["entries"]) == 2
+    checkpoint_only_cli_transaction_regression(
+        root / "late-checkpoint", interrupted, acquisition_at=late_at + timedelta(minutes=1))
+    ordinary_replay = root / "late-ordinary-replay"
+    shutil.copytree(interrupted, ordinary_replay)
+    result = run_runner(ordinary_replay, ordinary_replay / "fixtures", acquisition_at=late_at + timedelta(minutes=2))
+    assert result.returncode == 0, result.stdout + result.stderr
+    assert "Copernicus shard checkpoint:" not in result.stdout
+    assert not (ordinary_replay / "copernicus-current-segment-journal.json").exists()
+    assert run_checker(ordinary_replay, "--require-source-stage-reusable").returncode == 0
+    print("OK: fixed H0 late positive acquisition preserves real clocks and no negative/READY authority.")
 
 
 with tempfile.TemporaryDirectory(prefix="ravradar-cop-source-stage-") as raw_root:
     root = Path(raw_root)
+
+    fixed_h0_late_acquisition_regression(root / "fixed-h0-acquisition")
 
     # A normal Baltic record produces both the OPERATIONAL_COMPLETE seal and
     # its exact source-stage binding.

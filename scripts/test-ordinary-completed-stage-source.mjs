@@ -5,9 +5,9 @@ import os from 'node:os';
 import path from 'node:path';
 import { execFileSync } from 'node:child_process';
 import test from 'node:test';
-import { inverseRelease585WorkflowUserAgents } from './lib/completed-private-runtime-workflow-review.mjs';
 import { assertOrdinaryCompletedStageSource, assertOrdinaryCompletedStageCommittedSource, ordinaryStageCalculationWorkflow }
   from './ordinary-completed-stage-source.mjs';
+import { inverseRelease585WorkflowUserAgents } from './lib/completed-private-runtime-workflow-review.mjs';
 
 const sha = value => crypto.createHash('sha256').update(value).digest('hex');
 
@@ -32,16 +32,21 @@ test('committed source reuse compares all calculation objects and only exact sto
     await fs.writeFile(destination, bytes);
   };
   const commit = message => { git('add', '-A'); git('commit', '-m', message); return git('rev-parse', 'HEAD'); };
-  // Historical storage-only calculation compatibility remains tested on its
-  // exact genuine584 bytes. SOURCE is not a runtime compatibility exception.
-  const currentBuild = (await fs.readFile(new URL('../.github/workflows/reusable-weather-build.yml', import.meta.url), 'utf8')).replaceAll('\r\n', '\n');
-  const actual = Buffer.from(inverseRelease585WorkflowUserAgents(currentBuild, 'build'));
+  const currentBuild = Buffer.from((await fs.readFile(new URL('../.github/workflows/reusable-weather-build.yml', import.meta.url), 'utf8'))
+    .replaceAll('\r\n', '\n'));
+  // This old relocation/wiring fixture keeps its genuine584 operands. Reuse
+  // the existing whole-hash-closed TEST inverse; never teach the product's
+  // committed-source comparator to ignore current calculation/workflow drift.
+  const actual = Buffer.from(inverseRelease585WorkflowUserAgents(currentBuild.toString('utf8'), 'build'));
+  assert.equal(sha(actual), 'b509a5131c64f9df9a431fdf9f99b082fb14c88de8bf9c3ad3e33b8ddc77de57');
   const previous = ordinaryStageCalculationWorkflow(actual);
-  const currentOnce = (await fs.readFile(new URL('../.github/workflows/run-current-weather-once.yml', import.meta.url), 'utf8')).replaceAll('\r\n', '\n');
-  const actualOnce = Buffer.from(inverseRelease585WorkflowUserAgents(currentOnce, 'once'));
-  assert.deepEqual(ordinaryStageCalculationWorkflow(Buffer.from(currentBuild)), Buffer.from(currentBuild),
-    'Production calculation compatibility must not invert or waive the new SOURCE producer');
-  assert.deepEqual(ordinaryStageCalculationWorkflow(Buffer.from(currentOnce)), Buffer.from(currentOnce));
+  const currentOnce = Buffer.from((await fs.readFile(new URL('../.github/workflows/run-current-weather-once.yml', import.meta.url), 'utf8'))
+    .replaceAll('\r\n', '\n'));
+  const actualOnce = Buffer.from(inverseRelease585WorkflowUserAgents(currentOnce.toString('utf8'), 'once'));
+  assert.deepEqual(ordinaryStageCalculationWorkflow(currentBuild), currentBuild,
+    'The current producer is not the old storage-only compatibility projection');
+  assert.deepEqual(ordinaryStageCalculationWorkflow(currentOnce), currentOnce,
+    'The current SOURCE caller gains no calculation-reuse exception');
   const previousOnce = ordinaryStageCalculationWorkflow(actualOnce);
   assert.equal(sha(previous), 'f0254a092c0baa188370c207b218e15ad7c9e616138d15234e6f323f101178c6');
   assert.equal(sha(previousOnce), '445964fbbc697ec86848744a9413897d3418b011c4218fb10336734b5e5055a2');
@@ -93,17 +98,15 @@ test('committed source reuse compares all calculation objects and only exact sto
   }
   git('switch', '--detach', consumerHead);
   const changes = [
+    // The test-only inverse grants no new runtime source-reuse authority.
+    ...(!currentBuild.equals(actual) ? [['.github/workflows/reusable-weather-build.yml', currentBuild]] : []),
+    ...(!currentOnce.equals(actualOnce) ? [['.github/workflows/run-current-weather-once.yml', currentOnce]] : []),
     ['scripts/update-weather.mjs', '// SYNTHETIC changed calculation\n'],
     ['js/core/model-fixture.js', 'export const synthetic = 2;\n'],
     ['data/admin/coastal-fixture.json', '{"synthetic":true,"onshore":180}\n'],
     ['scripts/new-unreviewed-input.mjs', '// SYNTHETIC unreviewed input\n'],
     ['.github/workflows/reusable-weather-build.yml', Buffer.concat([actual, Buffer.from('\n# SYNTHETIC unreviewed workflow edit\n')])],
     ['.github/workflows/run-current-weather-once.yml', Buffer.concat([actualOnce, Buffer.from('\n# SYNTHETIC unreviewed caller edit\n')])],
-    // Real committed SOURCE afterimages must not acquire calculation reuse
-    // through the test-only historical projection used above. Each successor
-    // is committed separately and the owned fixture restores consumerHead.
-    ['.github/workflows/reusable-weather-build.yml', Buffer.from(currentBuild)],
-    ['.github/workflows/run-current-weather-once.yml', Buffer.from(currentOnce)],
   ];
   let refused = 0;
   for (const [file, bytes] of changes) {
@@ -128,9 +131,12 @@ test('committed source reuse compares all calculation objects and only exact sto
   refused++;
   commit('synthetic owned hydration fixture cleanup');
   git('switch', '--detach', consumerHead);
+  await fs.chmod(path.join(root, 'scripts/ordinary-completed-stage-artifact.mjs'), 0o755);
   git('update-index', '--chmod=+x', 'scripts/ordinary-completed-stage-artifact.mjs');
   git('commit', '-m', 'synthetic executable delivery mode is refused');
   changedHead = git('rev-parse', 'HEAD');
+  assert.equal(git('status', '--porcelain', '--untracked-files=no'), '',
+    'The executable delivery-mode negative must reach its guard from a clean committed checkout.');
   assert.throws(() => assertOrdinaryCompletedStageSource({ root, producerHead, consumerHead: changedHead }),
     { code: 'ORDINARY_STAGE_SOURCE_DELIVERY_MODE' });
   refused++;

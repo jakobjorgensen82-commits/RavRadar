@@ -26,6 +26,16 @@ Efter cutover findes en gemt privat integreret runtime og et offentligt, allered
 10. En allerede installeret migration er read-only. Hvis modelbindingen ændres, bruges et nyt reproducerbart append-only-led, og databaseplanen må være tom ved sikker retry eller indeholde præcis det forventede ene nye led.
 11. Ved en historisk-til-aktuel bindingsvedligeholdelse må det nye databaseled acceptere præcis den forseglede offentlige forgænger og den nye binding under deployovergangen. Den centrale `activeModelBinding` forbliver den afgørende skrivekontrol; derfor mister forgængeren automatisk skriveadgang, når aktiveringen er fuldført. Dette er en overgangsbro, ikke en generel fallback.
 
+## Tillæg 26. oktober 2026 — den aktuelle installerede familie er ikke en gammel opgraderingsrute
+
+Bevarede udstedte historiske bindingsfiler er arkivbevis, ikke tilstrækkelig anvendelighed for en ny kode-only-kørsel. En installeret aktuel kilde må ikke afvises alene, fordi en gammel controller fortsat findes og kræver sin daværende C/I/T eller migrationsslutning.
+
+En særskilt aktuel installed-only-udvælgelse kræver den faktisk udstedte aktuelle familie, præcis C/I/T og kildefase, normal main-kalder samt alle opgraderings- og recoveryvalg slået fra. Før privat genbrug skal den eksisterende aktuelle planlægger bevise hele den faktisk installerede historie og en tom plan. Databasekontrakter og schema2 genlæses; ruten udfører ingen SQL-apply og sætter ingen gammel upgrade-/Edge-autoritet.
+
+Autentificeret current-runtime er obligatorisk. Afvisning må ikke åbne en historisk fallback. Alle almindelige original-, no-loss-, privacy-, artifact-, readiness- og Pages-kontroller består, og B publiceres før S. De gamle 585/586/origin-planers førskrivningskrav, migrationsgrænser og afslag udvides ikke.
+
+Den konkrete lokale 588-kaldermålprøve består med 39 tilfælde uden fejl eller skip. Præcis ny kilde-CI og faktisk providerfri levering er fortsat åbne. SOURCE589 har en anden standardfase og skal integreres udtrykkeligt; dette tillæg giver ingen automatisk adgang til ukendte eller blot nyere familier. Aktuel kørselsevidens føres privat, ikke som fastlåste offentlige driftsidentiteter.
+
 ## Konsekvenser
 
 - Rettelser kan komme online på minutter i stedet for at vente på en lang providerkæde.

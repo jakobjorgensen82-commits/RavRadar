@@ -565,6 +565,248 @@ function resealPublicDocuments(fixture) {
   fixture.files.set('/data/live/manifest.json', jsonBytes(fixture.manifest));
 }
 
+async function verifyBoundedTransientHttpContract() {
+  const implementation = sealedImplementation(integratedModelBinding(), 'integrated');
+  const { binding, contractText, bundleText, publicClosure } = implementation;
+  const fixture = buildFixture(binding, 'integrated');
+  fixture.files.set('/js/core/ravscore-model-contract.js', Buffer.from(contractText));
+  fixture.files.set('/js/core/ravscore-model-bundle.generated.js', Buffer.from(bundleText));
+  for (const [relative, source] of implementation.sources)
+    fixture.files.set('/' + relative, Buffer.from(source));
+  const options = {
+    baseUrl: 'https://ravradar.example.test/', sourceHead,
+    expectedManifest: fixture.manifest, expectedModel: 'integrated', expectedBinding: binding,
+    expectedContractText: contractText, expectedBundleText: bundleText,
+    expectedPublicClosure: publicClosure, observationNonce: 'fixture-bounded-http',
+    retryDelayMs: 0,
+  };
+  const manifestPath = '/data/live/manifest.json';
+  const detailsPath = '/data/live/public-condition-details.json';
+  const legacyPaths = ['/data/live/public-conditions.json', detailsPath,
+    '/data/live/coastal-parts-v2.json', '/data/zones.geojson'];
+  const makeFetch = intercept => {
+    const counts = new Map(), requests = new Map();
+    let cancelled = 0;
+    const refused = status => ({
+      ok: false, status,
+      body: { cancel: async () => { cancelled++; } },
+      arrayBuffer: async () => { throw new Error('refused HTTP body must never be read'); },
+    });
+    const normal = mockFetch(fixture.files);
+    return {
+      counts, requests, cancellations: () => cancelled,
+      fetch: async (url, init) => {
+        const pathname = new URL(url).pathname, count = (counts.get(pathname) ?? 0) + 1;
+        counts.set(pathname, count);
+        requests.set(pathname, [...(requests.get(pathname) ?? []), { url, init }]);
+        const selected = await intercept?.({ pathname, count, refused, url, init });
+        return selected ?? normal(url, init);
+      },
+    };
+  };
+  const baseline = makeFetch();
+  assert.equal((await verifyRavScoreOperationalPagesDeployment({
+    ...options, fetchImpl: baseline.fetch,
+  })).status, 'passed');
+  for (const relative of legacyPaths) assert.equal(baseline.counts.get(relative), 1);
+
+  for (const [status, failedPath] of [[502, detailsPath], [503, detailsPath], [504, '/index.html']]) {
+    const transient = makeFetch(({ pathname, count, refused }) =>
+      pathname === failedPath && count === 1 ? refused(status) : undefined);
+    assert.equal((await verifyRavScoreOperationalPagesDeployment({
+      ...options, fetchImpl: transient.fetch,
+    })).status, 'passed');
+    assert.equal(transient.cancellations(), 1);
+    for (const [relative, count] of baseline.counts)
+      assert.equal(transient.counts.get(relative), count + Number(relative === failedPath),
+        'successful files must not be downloaded again after another file has transient HTTP');
+    const requests = transient.requests.get(failedPath);
+    assert.deepEqual(requests[1], requests[0], 'retry preserves exact URL, source nonce and request options');
+  }
+
+  for (const failedPath of [manifestPath, detailsPath]) {
+    const permanent = makeFetch(({ pathname, refused }) =>
+      pathname === failedPath ? refused(503) : undefined);
+    await assert.rejects(verifyRavScoreOperationalPagesDeployment({
+      ...options, fetchImpl: permanent.fetch,
+    }), /returned HTTP 503/);
+    assert.equal(permanent.counts.get(failedPath), 3, 'one file has at most three total attempts');
+    assert.equal(permanent.cancellations(), 3);
+    assert.equal(permanent.counts.get(manifestPath), failedPath === manifestPath ? 3 : 1,
+      '121 manifest observations cannot multiply the exhausted transient budget');
+  }
+
+  const globalPaths = [manifestPath, legacyPaths[0], detailsPath, legacyPaths[2]];
+  const shared = makeFetch(({ pathname, count, refused }) =>
+    globalPaths.includes(pathname) && count === 1 ? refused(503) : undefined);
+  await assert.rejects(verifyRavScoreOperationalPagesDeployment({
+    ...options, fetchImpl: shared.fetch,
+  }), /returned HTTP 503/);
+  assert.deepEqual(globalPaths.map(relative => shared.counts.get(relative)), [2, 2, 2, 1],
+    'one invocation shares exactly three retry tokens across manifest and all payload files');
+  assert.equal(shared.cancellations(), 4);
+
+  const betweenObservations = makeFetch(({ pathname, count, refused }) => {
+    assert.equal(pathname, manifestPath);
+    return count % 2 ? refused(503) : response(jsonBytes({ datasetId: 'previous-generation' }));
+  });
+  await assert.rejects(verifyRavScoreOperationalPagesDeployment({
+    ...options, fetchImpl: betweenObservations.fetch,
+  }), /returned HTTP 503/);
+  assert.equal(betweenObservations.counts.get(manifestPath), 7,
+    'transient budget is not renewed when a stale manifest starts the next observation');
+  assert.equal(betweenObservations.cancellations(), 4);
+
+  const corrupt = makeFetch(({ pathname, count, refused }) => pathname !== detailsPath
+    ? undefined : count === 1 ? refused(503) : response(Buffer.from('corrupt after HTTP retry')));
+  await assert.rejects(verifyRavScoreOperationalPagesDeployment({
+    ...options, fetchImpl: corrupt.fetch,
+  }), /artifact digest mismatch.*public-condition-details/);
+  assert.equal(corrupt.counts.get(manifestPath), 1);
+  assert.equal(corrupt.counts.get(detailsPath), 2);
+  assert.equal(corrupt.counts.size, 5);
+  for (const relative of legacyPaths.filter(relative => relative !== detailsPath))
+    assert.equal(corrupt.counts.get(relative), 1, 'digest failure never restarts the payload closure');
+
+  for (const [status, failedPath] of [[404, manifestPath], [404, detailsPath],
+    [401, detailsPath], [403, detailsPath], [429, detailsPath], [500, detailsPath]]) {
+    const hard = makeFetch(({ pathname, refused }) => pathname === failedPath ? refused(status) : undefined);
+    await assert.rejects(verifyRavScoreOperationalPagesDeployment({
+      ...options, fetchImpl: hard.fetch,
+    }), new RegExp('returned HTTP ' + status));
+    assert.equal(hard.counts.get(failedPath), 1, 'only502/503/504 may retry');
+    assert.equal(hard.cancellations(), 1);
+    assert.equal(hard.counts.get(manifestPath), 1, 'hard HTTP failures never become manifest propagation');
+  }
+  const malformed = makeFetch(({ pathname }) =>
+    pathname === manifestPath ? response(Buffer.from('{invalid JSON')) : undefined);
+  await assert.rejects(verifyRavScoreOperationalPagesDeployment({
+    ...options, fetchImpl: malformed.fetch,
+  }), /manifest is not JSON/);
+  assert.equal(malformed.counts.get(manifestPath), 1);
+
+  for (const phase of ['fetch', 'body', 'cleanup']) {
+    const abort = new Error('synthetic abort'); abort.name = 'AbortError';
+    const interrupted = makeFetch(({ pathname }) => {
+      if (pathname !== detailsPath) return undefined;
+      if (phase === 'fetch') throw abort;
+      if (phase === 'body') return { ok: true, status: 200, arrayBuffer: async () => { throw abort; } };
+      return { ok: false, status: 503, body: { cancel: async () => { throw abort; } } };
+    });
+    await assert.rejects(verifyRavScoreOperationalPagesDeployment({
+      ...options, fetchImpl: interrupted.fetch,
+    }), error => error === abort, 'abort/failed physical response cleanup must keep the original failure');
+    assert.equal(interrupted.counts.get(detailsPath), 1);
+    assert.equal(interrupted.counts.get(manifestPath), 1);
+  }
+  console.log('Transient HTTP: exact-file502/503/504 retries, shared three-token bound, cleanup, hard failures, abort and one payload pass: passed.');
+}
+
+async function verifyManifestOnlyPropagationContract() {
+  const implementation = sealedImplementation(integratedModelBinding(), 'integrated');
+  const { binding, contractText, bundleText, publicClosure } = implementation;
+  const fixture = buildFixture(binding, 'integrated');
+  fixture.files.set('/js/core/ravscore-model-contract.js', Buffer.from(contractText));
+  fixture.files.set('/js/core/ravscore-model-bundle.generated.js', Buffer.from(bundleText));
+  for (const [relative, source] of implementation.sources)
+    fixture.files.set('/' + relative, Buffer.from(source));
+  const options = {
+    baseUrl: 'https://ravradar.example.test/', sourceHead,
+    expectedManifest: fixture.manifest, expectedModel: 'integrated', expectedBinding: binding,
+    expectedContractText: contractText, expectedBundleText: bundleText,
+    expectedPublicClosure: publicClosure, observationNonce: 'fixture-manifest-propagation',
+    retryDelayMs: 0,
+  };
+  const manifestPath = '/data/live/manifest.json';
+  const currentFetch = mockFetch(fixture.files);
+  const counts = new Map(), manifestNonces = new Set();
+  let manifestReads = 0;
+  const delayedFetch = async (url, init) => {
+    const parsed = new URL(url), relative = parsed.pathname;
+    counts.set(relative, (counts.get(relative) ?? 0) + 1);
+    if (relative === manifestPath) {
+      manifestReads++;
+      assert.equal(manifestNonces.has(parsed.searchParams.get('ravscore-observation')), false);
+      manifestNonces.add(parsed.searchParams.get('ravscore-observation'));
+      if (manifestReads <= 40) {
+        assert.equal(counts.size, 1, 'stale manifest polling must not fetch payloads');
+        return response(jsonBytes({ datasetId: 'previous-generation' }));
+      }
+    }
+    return currentFetch(url, init);
+  };
+  const propagated = await verifyRavScoreOperationalPagesDeployment({
+    ...options, fetchImpl: delayedFetch,
+  });
+  assert.equal(propagated.status, 'passed');
+  assert.equal(manifestReads, 41, 'default polling must survive more than 36 stale observations');
+  assert.equal(manifestNonces.size, 41);
+  const expectedPayloadReads = new Map();
+  for (const relative of [
+    '/data/live/public-conditions.json', '/data/live/public-condition-details.json',
+    '/data/live/coastal-parts-v2.json', '/data/zones.geojson',
+    '/js/core/ravscore-model-contract.js', '/js/core/ravscore-model-bundle.generated.js',
+    ...publicClosure.htmlEntrypoints.map(item => '/' + item.path),
+    ...publicClosure.files.map(item => '/' + item.path),
+  ]) expectedPayloadReads.set(relative, (expectedPayloadReads.get(relative) ?? 0) + 1);
+  assert.deepEqual(new Map([...counts].filter(([relative]) => relative !== manifestPath)),
+    expectedPayloadReads, 'one unchanged complete verification pass follows manifest match');
+
+  for (const [label, alteredManifest] of [
+    ['old generation', { datasetId: 'previous-generation' }],
+    ['same dataset with changed manifest', { ...fixture.manifest, publicConditionsBytes: fixture.manifest.publicConditionsBytes + 1 }],
+  ]) {
+    let reads = 0, payloadReads = 0;
+    await assert.rejects(verifyRavScoreOperationalPagesDeployment({
+      ...options,
+      fetchImpl: async url => {
+        if (new URL(url).pathname !== manifestPath) {
+          payloadReads++;
+          throw new Error('unexpected payload fetch before exact manifest');
+        }
+        reads++;
+        return response(jsonBytes(alteredManifest));
+      },
+    }), /manifest differs from the sealed artifact/, label);
+    assert.equal(reads, 121, label + ' exhausts only the bounded manifest phase');
+    assert.equal(payloadReads, 0, label + ' must never qualify by dataset id alone');
+  }
+
+  const mutatedCounts = new Map();
+  const mutatedFetch = async (url, init) => {
+    const relative = new URL(url).pathname;
+    mutatedCounts.set(relative, (mutatedCounts.get(relative) ?? 0) + 1);
+    if (relative === '/data/live/public-condition-details.json')
+      return response(Buffer.from('detail mutation after exact manifest'));
+    return currentFetch(url, init);
+  };
+  await assert.rejects(verifyRavScoreOperationalPagesDeployment({
+    ...options, fetchImpl: mutatedFetch,
+  }), /artifact digest mismatch.*public-condition-details/);
+  assert.equal(mutatedCounts.get(manifestPath), 1);
+  assert.equal(mutatedCounts.size, 5, 'only manifest and the four original payloads precede digest rejection');
+  for (const [relative, count] of mutatedCounts)
+    assert.equal(count, 1, relative + ' must fail immediately without a full-package retry');
+
+  for (const [key, invalidValues] of [
+    ['attempts', [0, 122, 1.5, -1, NaN, Infinity, '121', null]],
+    ['retryDelayMs', [-1, 5001, 0.5, NaN, Infinity, '0', null]],
+  ]) {
+    for (const invalid of invalidValues) {
+      let fetches = 0;
+      await assert.rejects(verifyRavScoreOperationalPagesDeployment({
+        ...options, [key]: invalid,
+        fetchImpl: async () => { fetches++; throw new Error('invalid polling inputs must not fetch'); },
+      }), /verification inputs are incompatible/, key + ' must be a bounded safe integer');
+      assert.equal(fetches, 0);
+    }
+  }
+  console.log('Manifest-only propagation: 40 stale then exact, 121 bounded mismatches, same-id drift, single payload pass and input bounds: passed.');
+}
+
+await verifyManifestOnlyPropagationContract();
+await verifyBoundedTransientHttpContract();
+
 for (const [mode, baseBinding] of [
   ['integrated', integratedModelBinding()],
   ['candidate-g', candidateModelBinding()],
@@ -813,6 +1055,42 @@ const historyIncomplete = attachIntegratedImplementation(
 installHistoryIncompleteIntegratedState(historyIncomplete);
 assert.equal((await verifyIntegratedFixture(historyIncomplete)).status, 'passed',
   'an exact all-active HISTORY_INCOMPLETE deployment remains operational');
+
+// The normal producer can have mature state memory while causal wave or
+// last-mile uncertainty remains. Keep the lower-bound quality and its reasons;
+// a complete 48-hour current window is not a FULL_HISTORY claim.
+for (const reason of ['WAVE_MOBILISATION_HISTORY_INCOMPLETE',
+  'LAST_MILE_HISTORY_INCOMPLETE']) {
+  const readyWithCausalUncertainty = attachIntegratedImplementation(
+    buildFixture(historyImplementation.binding, 'integrated'),
+  );
+  installHistoryIncompleteIntegratedState(readyWithCausalUncertainty);
+  for (const profile of [readyWithCausalUncertainty.startup.coastalParts.scoreProfile,
+    readyWithCausalUncertainty.details.coastalParts.scoreProfile,
+    readyWithCausalUncertainty.manifest.ravScoreProfile]) {
+    profile.modelMemoryReady = true;
+    profile.advisories = [];
+  }
+  for (const availability of [readyWithCausalUncertainty.manifest.ravScoreAvailability,
+    readyWithCausalUncertainty.startup.coastalParts.scoreAvailability,
+    readyWithCausalUncertainty.details.coastalParts.scoreAvailability]) {
+    availability.historyIncompleteZones[0].historyCoverageHours = 48;
+    availability.historyIncompleteZones[0].historyReasonCodes = [reason];
+  }
+  for (const document of [readyWithCausalUncertainty.startup,
+    readyWithCausalUncertainty.details]) {
+    const mode = document.coastalParts.zones['zone-1'].hourly[0].waders;
+    mode.historyCoverageHours = 48;
+    mode.historyReasonCodes = [reason];
+  }
+  resealPublicDocuments(readyWithCausalUncertainty);
+  assert.equal((await verifyIntegratedFixture(readyWithCausalUncertainty)).status,
+    'passed', 'mature memory must preserve and accept causal uncertainty: ' + reason);
+  assert.equal(readyWithCausalUncertainty.manifest.ravScoreAvailability
+    .allCurrentScoresFullHistory, false);
+  assert.equal(readyWithCausalUncertainty.details.coastalParts.zones['zone-1']
+    .hourly[0].waders.calibrationEligible, false);
+}
 
 const partialParts = attachIntegratedImplementation(
   buildFixture(historyImplementation.binding, 'integrated'),

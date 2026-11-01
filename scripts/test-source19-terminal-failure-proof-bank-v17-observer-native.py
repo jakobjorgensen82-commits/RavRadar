@@ -2808,7 +2808,7 @@ CURRENT_NATIVE_CASE = 'current-source-native'
 CURRENT_NATIVE_CONTEXT = None
 CURRENT_NATIVE_INPUT_PROFILE = 'operative585'
 CURRENT594_INPUT_PROFILE_PATH = 'scripts/fixtures/source19-current594-input-profile.json'
-CURRENT594_INPUT_PROFILE_SHA256 = 'ac3cc4389efc1811cb28f6b1689775a8328d578e33666a73840034857a2efdfa'
+CURRENT594_INPUT_PROFILE_SHA256 = '375165ab37954807d887108467ec03c902fdf62eafcab3586904bdb6fd94bf18'
 
 CURRENT_NATIVE_POST64_MODULE = None
 def current_native_post64_module():
@@ -2827,6 +2827,33 @@ def current_native_post64_module():
 
 def current_native_pg(context, sql, *, capture=None):
     """Actual SAME normal owned Unix-socket PostgreSQL, never an RPC fixture."""
+    if type(context) is dict and 'sourceCurrentNativeTestContext' in context:
+        # Additive CI-only context, never a rename of the old five-key owner.
+        if set(context) != {'kind', 'pgRoot', 'psql', 'head', 'server', 'sourceCurrentNativeTestContext'}:
+            raise ValueError('SOURCE_PR_NATIVE_PG_CONTEXT_KEYS')
+        test = context['sourceCurrentNativeTestContext']
+        if (type(test) is not dict or set(test) != {'schemaVersion', 'scope', 'current', 'sourceTreeSha256'}
+                or test['schemaVersion'] != 1 or test['scope'] != 'SOURCE_PR_NATIVE_TEST_V1'
+                or not re.fullmatch(r'sha256:[a-f0-9]{64}', test['sourceTreeSha256'])):
+            raise ValueError('SOURCE_PR_NATIVE_PG_TEST_CONTEXT')
+        c = test['current']
+        if (type(c) is not dict or set(c) != {'head', 'run', 'attempt', 'pullRequest', 'branch'}
+                or c['head'] != context['head'] or not re.fullmatch(r'[a-f0-9]{40}', c['head'])
+                or type(c['attempt']) is not int or c['attempt'] != 1
+                or any(type(c[k]) is not int or c[k] <= 0 for k in ('run', 'pullRequest'))
+                or type(c['branch']) is not str or not c['branch'].startswith('codex/')
+                or any(char in c['branch'] for char in '\r\n\0')):
+            raise ValueError('SOURCE_PR_NATIVE_PG_CURRENT_CONTEXT')
+        uid = os.geteuid()
+        if os.getuid() != uid:
+            raise ValueError('SOURCE_PR_NATIVE_PG_OWNER_UID')
+        pg = Path(context['pgRoot'])
+        for directory in (pg, pg / 'database', pg / 'socket'):
+            row = directory.lstat()
+            if (not stat.S_ISDIR(row.st_mode) or stat.S_ISLNK(row.st_mode) or row.st_uid != uid
+                    or stat.S_IMODE(row.st_mode) != 0o700 or directory.resolve(strict=True) != directory):
+                raise ValueError('SOURCE_PR_NATIVE_PG_OWNER_DIRECTORY')
+        context = {key: value for key, value in context.items() if key != 'sourceCurrentNativeTestContext'}
     if (type(context) is not dict or set(context) != {'kind', 'pgRoot', 'psql', 'head', 'server'}
             or context['kind'] != 'SOURCE_CURRENT_SAME_NATIVE_PG'):
         raise ValueError('SOURCE_CURRENT_PROFILE_PG_CONTEXT')
@@ -2918,6 +2945,19 @@ class CurrentSourceNormalProtocolFixture(CurrentSourceSdkProtocolFixture):
 
     def __init__(self, root, protocol, certificate, private_key, context, github):
         self.pg_context, self.github_capture = context, github
+        self.pr_native_test = github.get('kind') == 'SOURCE_PR_NATIVE_TEST_CAPTURE_V1'
+        if self.pr_native_test:
+            c = github['current']
+            if (github['scope'] != 'SOURCE_PR_NATIVE_TEST' or c['attempt'] != 1
+                    or c['head'] != context['head'] or github['head'] != c['head']
+                    or context.get('sourceCurrentNativeTestContext', {}).get('current') != {k: c[k] for k in ('head', 'run', 'attempt', 'pullRequest', 'branch')}
+                    or github['sourceAdmission'] is not False or github['productionProof'] is not False):
+                raise ValueError('SOURCE_PR_NATIVE_CAPTURE_CONTEXT')
+            self.BACKEND = {'workflow_run_backend_id': str(c['run']), 'workflow_job_run_backend_id': str(c['jobId'])}
+            self.ARTIFACT_NAME = f"ravradar-private-build-stage-{c['run']}-1"
+            payload = __import__('base64').urlsafe_b64encode(json.dumps(
+                {'scp': f"Actions.Results:{c['run']}:{c['jobId']}"}, separators=(',', ':')).encode()).decode().rstrip('=')
+            self.RUNTIME_TOKEN = 'eyJhbGciOiJub25lIn0.' + payload + '.'
         initial_profile = protocol.get('initialDataProfile')
         if initial_profile not in (None, 'current594-native-prefix'):
             raise ValueError('CURRENT_POST64_EXACT_ORIGINAL_ROOT')
@@ -2951,6 +2991,19 @@ class CurrentSourceNormalProtocolFixture(CurrentSourceSdkProtocolFixture):
                     raise ValueError('CURRENT594_CANONICAL_RAW_INPUT')
         super().__init__(root, protocol, certificate, private_key)
 
+    def _cache_role(self, key):
+        if not self.pr_native_test:
+            return super()._cache_role(key)
+        c = self.github_capture['current']
+        if not isinstance(key, str):
+            raise AssertionError('CURRENT_SDK_CACHE_KEY_REQUIRED')
+        suffix = str(c['run']) + '-1'
+        if re.fullmatch(r'dmi-grib-v4-Linux-\d{4}-W\d{2}-' + suffix, key):
+            return 'raw'
+        return {'weather-private-progress-encrypted-v2-Linux-main-' + suffix: 'cipher',
+            'ravscore-continuation-schema6-v2-' + suffix: 'checkpoint',
+            'weather-preflight-state-v1-Linux-' + suffix: 'preflight'}.get(key)
+
     def route(self, request, host, parsed):
         method, route = request.command, parsed.path
         query = urllib.parse.parse_qs(parsed.query, strict_parsing=True) if parsed.query else {}
@@ -2959,6 +3012,12 @@ class CurrentSourceNormalProtocolFixture(CurrentSourceSdkProtocolFixture):
             if request.headers.get('Authorization') != 'Bearer source19-synthetic-github':
                 raise AssertionError('CURRENT_PROFILE_TEST_GITHUB_CREDENTIAL')
             base = '/repos/' + repository
+            if self.pr_native_test:
+                key = route + ('?' + parsed.query if parsed.query else '')
+                if key not in self.github_capture['responses']:
+                    raise AssertionError('SOURCE_PR_NATIVE_UNCAPTURED_GITHUB_READ')
+                request.reply(200, self.github_capture['responses'][key])
+                return 'source-pr-native-actual-metadata-in-synthetic-world'
             if route == base + '/git/ref/heads/main' and not query:
                 request.reply(200, {'ref': 'refs/heads/main', 'object': {'type': 'commit', 'sha': self.protocol['head']}})
                 return 'current-genuine-main-reconfirmed'
@@ -3104,8 +3163,14 @@ class SourceCurrentNative(SourceActualSUnionNative):
         capture_env = clean_environment()
         for name in ('GITHUB_TOKEN', 'GITHUB_REPOSITORY'):
             if name in os.environ: capture_env[name] = os.environ[name]
-        subprocess.run([str(NODE), str(ROOT / 'scripts/fixtures/source19-current-native-metadata.mjs'), '--capture-github'],
-            cwd=ROOT, env=capture_env, stdin=subprocess.DEVNULL, check=True, timeout=180)
+        pr_test = context.get('sourceCurrentNativeTestContext')
+        capture_command = [str(NODE), str(ROOT / 'scripts/fixtures/source19-current-native-metadata.mjs')]
+        if pr_test is None:
+            subprocess.run(capture_command + ['--capture-github'],
+                cwd=ROOT, env=capture_env, stdin=subprocess.DEVNULL, check=True, timeout=180)
+        else:
+            subprocess.run(capture_command + ['--capture-source-pr-native-test'],
+                cwd=ROOT, env=capture_env, input=json.dumps(pr_test).encode(), check=True, timeout=90)
         own, root, environment, target = self.owned_current_host(context['head'], with_sdk=True)
         (own / 'fixture-current594').mkdir(mode=0o700, parents=False, exist_ok=False)
         commands = (
@@ -3167,8 +3232,28 @@ class SourceCurrentNative(SourceActualSUnionNative):
         self.assertEqual(CURRENT_NATIVE_INPUT_PROFILE, 'current594-preparation')
         self.assertEqual(inputs['sourceHead'], '37a34703d9ae8bfb2c28056f21a7ea73944033ae')
         self.assertEqual(inputs['executionHead'], context['head'])
-        subprocess.run(['git', 'update-ref', 'refs/remotes/origin/main', context['head']],
-            cwd=root, env=clean_environment(), stdin=subprocess.DEVNULL, check=True, timeout=30)
+        pr_test = context.get('sourceCurrentNativeTestContext')
+        if pr_test is None:
+            subprocess.run(['git', 'update-ref', 'refs/remotes/origin/main', context['head']],
+                cwd=root, env=clean_environment(), stdin=subprocess.DEVNULL, check=True, timeout=30)
+        else:
+            github = strict_json(ROOT / '.cache/source-current-native-github-capture.json', 16 * 1024 * 1024)
+            self.assertEqual(github['kind'], 'SOURCE_PR_NATIVE_TEST_CAPTURE_V1')
+            self.assertNotEqual(github['mainHead'], context['head'])
+            self.assertEqual(subprocess.check_output(['git', 'rev-parse', 'origin/main'], cwd=ROOT,
+                env=clean_environment(), text=True).strip(), github['mainHead'])
+            # A local detached clone may omit origin/main. Create only an absent
+            # ref from authentic M; never overwrite/retag an existing ref as H.
+            current_main = subprocess.run(['git', 'rev-parse', '--verify', 'refs/remotes/origin/main'],
+                cwd=root, env=clean_environment(), capture_output=True, text=True, timeout=30)
+            if current_main.returncode == 0:
+                self.assertEqual(current_main.stdout.strip(), github['mainHead'])
+            else:
+                self.assertEqual(current_main.returncode, 128)
+                subprocess.run(['git', 'update-ref', 'refs/remotes/origin/main', github['mainHead'], '0' * 40],
+                    cwd=root, env=clean_environment(), stdin=subprocess.DEVNULL, check=True, timeout=30)
+            subprocess.run(['git', 'merge-base', '--is-ancestor', github['mainHead'], context['head']],
+                cwd=root, env=clean_environment(), stdin=subprocess.DEVNULL, check=True, timeout=30)
         fixtures = own / 'fixture-current594-code37'
         transport_root = own / 'current594-native-inputs/transport'
         request = subprocess.run([str(NODE), str(root / 'scripts/fixtures/source19-current-native-metadata.mjs'), '--rpc-request'],
@@ -3202,8 +3287,15 @@ class SourceCurrentNative(SourceActualSUnionNative):
         rows_sql = ','.join("('" + name + "'," + current_native_json_literal(row['payload']) + ',' + str(row['version']) + ')' for name, row in documents.items())
         current_native_pg(context, 'begin;insert into public.admin_documents(document_key,payload,version) values ' + rows_sql + ';commit;')
         github = strict_json(ROOT / '.cache/source-current-native-github-capture.json', 16 * 1024 * 1024)
-        self.assertEqual(github['head'], context['head']); self.assertIs(github['normalDecisionRequired'], False)
-        (root / '.cache/weather-source-validation.json').write_text(json.dumps(github['record']) + '\n')
+        self.assertEqual(github['head'], context['head'])
+        if pr_test is None:
+            self.assertIs(github['normalDecisionRequired'], False)
+            (root / '.cache/weather-source-validation.json').write_text(json.dumps(github['record']) + '\n')
+        else:
+            self.assertFalse((root / '.cache/weather-source-validation.json').exists())
+            with (root / '.cache/source-pr-native-test-context.json').open('x', encoding='utf8') as stream:
+                stream.write(json.dumps(github, separators=(',', ':')) + '\n')
+                stream.flush(); os.fsync(stream.fileno())
         protocol = {'head': context['head'], 'target': target, 'objectRows': inputs['objectRows'],
             'bucket': derived['current']['bucket'], 'checkpointMaximumSerializedBytes': derived['current']['checkpointMaximumSerializedBytes'],
             'pgRpcBody': derived['current']['integratedRequestBody'],
@@ -3248,6 +3340,13 @@ class SourceCurrentNative(SourceActualSUnionNative):
             DMI_STAC_ROOT='https://current-source-native.invalid/v1/forecastdata', npm_config_offline='true',
             NODE_USE_ENV_PROXY='1', HTTPS_PROXY=proxy, HTTP_PROXY=proxy, NO_PROXY='',
             NODE_EXTRA_CA_CERTS=str(cert), SSL_CERT_FILE=str(cert), REQUESTS_CA_BUNDLE=str(cert), CURL_CA_BUNDLE=str(cert))
+        if pr_test is not None:
+            c = github['current']
+            environment.update(GITHUB_RUN_ID=str(c['run']), GITHUB_RUN_ATTEMPT='1',
+                GITHUB_REF=f"refs/pull/{c['pullRequest']}/merge", GITHUB_EVENT_NAME='pull_request',
+                RUNNER_NAME=github['runnerName'], ACTIONS_RUNTIME_TOKEN=transport.RUNTIME_TOKEN)
+            # The action gets only published dummy credentials and owned TLS;
+            # the real existing CI token stays exclusively in capture_env.
         for name in ('COMPLETED_PRIVATE_RUNTIME', 'CHECKPOINT_ONLY', 'QUICK_CONFIRMATION',
                 'RAVRADAR_WEATHER_STATE_EPOCH_BOOTSTRAP', 'RAVRADAR_WEATHER_STATE_EPOCH_CHECKPOINT_REENTRY',
                 'NATIVE_IDENTITY_RECOVERY', 'CURRENT_FAMILY_COLD_START', 'PRODUCE_HANDOFF'):
@@ -3257,7 +3356,13 @@ class SourceCurrentNative(SourceActualSUnionNative):
             self.assertFalse((root / name).exists(), 'CURRENT_PROFILE_REQUIRES_GENUINE_CACHE_MISS')
         spec = importlib.util.spec_from_file_location('source_current_actual_outer_owner', root / 'scripts/lib/copernicus_component_process.py')
         helper = importlib.util.module_from_spec(spec); spec.loader.exec_module(helper)
-        owner = helper._LinuxSubsetOwner(time.monotonic() + 230 * 60)
+        remaining = 230 * 60
+        if pr_test is not None:
+            from datetime import datetime
+            cutoff = datetime.fromisoformat(github['jobStartedAt'].replace('Z', '+00:00')).timestamp() + 180 * 60
+            remaining = cutoff - time.time()
+            self.assertGreater(remaining, 0, 'SOURCE_PR_NATIVE_ORIGINAL_JOB_DEADLINE')
+        owner = helper._LinuxSubsetOwner(time.monotonic() + remaining)
         process, logs, first, physically_closed = None, [], None, False
         try:
             owner.enter(); transport.start()
@@ -3285,10 +3390,19 @@ class SourceCurrentNative(SourceActualSUnionNative):
             self.assertIs(type(actual_cleanup['failureCount']), int)
             self.assertEqual(actual_cleanup['failureCount'], len(transport.current_post64.protected_retention_refusals))
             self.assertEqual(actual_cleanup['complete'], actual_cleanup['failureCount'] == 0)
+            if pr_test is not None:
+                self.assertTrue(owner.active, 'SOURCE_PR_NATIVE_ACTUAL_COHORT_OWNER_REQUIRED')
+                self.assertEqual(current_native_pg(context, 'select 1;'), '1')
+                row = root.lstat()
+                self.assertEqual(root.parent, own)
+                self.assertEqual(own.parent, Path(tempfile.gettempdir()).resolve(strict=True))
+                self.assertEqual(root.resolve(strict=True), root)
+                self.assertEqual(row.st_uid, os.geteuid())
+                self.assertEqual(stat.S_IMODE(row.st_mode) & 0o022, 0)
             logs = [(root / name).open('wb') for name in ('stdout', 'stderr')]
             process = subprocess.Popen([str(NODE), str(root / ENTRY)], cwd=root, env=environment,
                 stdin=subprocess.DEVNULL, stdout=logs[0], stderr=logs[1])
-            process.wait(timeout=230 * 60)
+            process.wait(timeout=max(0.001, cutoff - time.time()) if pr_test is not None else 230 * 60)
             # Normal real subreaper/guardian closure, not an exit-code receipt.
             with self.assertRaises(ChildProcessError):
                 os.waitid(os.P_ALL, 0, os.WEXITED | os.WNOHANG | os.WNOWAIT)
@@ -3327,10 +3441,30 @@ class SourceCurrentNative(SourceActualSUnionNative):
                 except BaseException as error: cleanup = cleanup or error
             try: transport.close()
             except BaseException as error: cleanup = cleanup or error
-            print(json.dumps({'kind': 'CURRENT_SOURCE_NORMAL_NATIVE_OBSERVATION',
-                'physicalClosureBeforeCleanup': physically_closed, 'sourceAdmission': False,
-                'wholeFixtureRetained': True, 'productionProof': False}))
+            if pr_test is None:
+                print(json.dumps({'kind': 'CURRENT_SOURCE_NORMAL_NATIVE_OBSERVATION',
+                    'physicalClosureBeforeCleanup': physically_closed, 'sourceAdmission': False,
+                    'wholeFixtureRetained': True, 'productionProof': False}))
             if first is None and cleanup is not None: raise cleanup
+            if pr_test is not None and first is None:
+                # Re-read actual GitHub metadata AFTER no-arg action, SDK and
+                # physical cohort/transport closure, using outer CI token only.
+                capture_env = clean_environment()
+                for name in ('GITHUB_TOKEN', 'GITHUB_REPOSITORY'):
+                    if name in os.environ: capture_env[name] = os.environ[name]
+                checked = subprocess.run([str(NODE), str(ROOT / 'scripts/fixtures/source19-current-native-metadata.mjs'),
+                    '--reconfirm-source-pr-native-test'], cwd=ROOT, env=capture_env,
+                    input=json.dumps(pr_test).encode(), capture_output=True, check=True, timeout=90)
+                actual = json.loads(checked.stdout)
+                self.assertEqual(actual['current'], github['current'])
+                self.assertEqual(actual['mainHead'], github['mainHead'])
+                self.assertTrue(physically_closed)
+                print(json.dumps({'kind': 'CURRENT_SOURCE_NORMAL_NATIVE_OBSERVATION',
+                    'scope': 'SOURCE_PR_NATIVE_TEST', 'current': actual['current'],
+                    'mainHead': actual['mainHead'], 'sourceTreeSha256': actual['sourceTreeSha256'],
+                    'physicalClosureBeforeCleanup': physically_closed, 'sourceAdmission': False,
+                    'wholeFixtureRetained': True, 'productionProof': False}))
+
 
     def owned_current_host(self, head, *, with_sdk, input_profile=None):
         # SAME existing native ownership/layout, shared by two explicit cases.
@@ -3345,6 +3479,15 @@ class SourceCurrentNative(SourceActualSUnionNative):
         # Existing clone below retains the real authenticated committed HEAD;
         # no source overlay, artificial main ref or new issuer is introduced.
         own = Path(tempfile.mkdtemp(prefix='rr-source19-union-native-')).resolve(strict=True)
+        if type(CURRENT_NATIVE_CONTEXT) is dict and CURRENT_NATIVE_CONTEXT.get('sourceCurrentNativeTestContext') is not None:
+            temporary = Path(tempfile.gettempdir()).resolve(strict=True)
+            row = own.lstat()
+            self.assertEqual(own.parent, temporary)
+            self.assertEqual(os.getuid(), os.geteuid())
+            self.assertEqual(row.st_uid, os.geteuid())
+            self.assertEqual(stat.S_IMODE(row.st_mode), 0o700)
+            self.assertTrue(stat.S_ISDIR(row.st_mode) and not stat.S_ISLNK(row.st_mode))
+            self.assertEqual(current_native_pg(CURRENT_NATIVE_CONTEXT, 'select 1;'), '1')
         root = own / CURRENT_NATIVE_CASE
         subprocess.run(['git', '-c', 'core.autocrlf=false', 'clone', '--shared', '--no-hardlinks', '--no-checkout', str(ROOT), str(root)],
             env=clean_environment(), stdin=subprocess.DEVNULL, check=True, timeout=30)

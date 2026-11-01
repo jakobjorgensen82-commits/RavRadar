@@ -7,11 +7,32 @@ import os from 'node:os';
 import { fileURLToPath } from 'node:url';
 import { isDeepStrictEqual } from 'node:util';
 import { readDmiBulkDocument } from './lib/dmi-bulk-storage.mjs';
+import { PRIVATE_CONDITIONS_MAX_BYTES } from './lib/bounded-json-writer.mjs';
 import { verifyPrivateProductionRuntimeBundle } from './private-production-runtime-bundle.mjs';
 import { unpackPrivateWeatherComponentCompanions, privateWeatherPackJsonReadsClosed }
   from './lib/private-weather-component-pack.mjs';
 import { PRIVATE_WEATHER_COMPONENT_FILES, PRIVATE_WEATHER_COMPONENT_PACK_FILE }
   from './lib/private-weather-component-inventory.mjs';
+import {readAuthenticatedFrozen587Predecessor,assertAuthenticatedFrozen587Snapshot}
+  from './lib/authenticated-frozen586-predecessor.mjs';
+import {readAuthenticatedFrozen588Predecessor,assertAuthenticatedFrozen588Snapshot}
+  from './lib/authenticated-frozen586-predecessor.mjs';
+import {readAuthenticatedFrozen590Predecessor,assertAuthenticatedFrozen590Snapshot}
+  from './lib/authenticated-frozen586-predecessor.mjs';
+import {readAuthenticatedFrozen591Predecessor,assertAuthenticatedFrozen591Snapshot}
+  from './lib/authenticated-frozen586-predecessor.mjs';
+import {ACTIVE_ASSISTANT_SUCCESSOR as ACTIVE} from './lib/assistant-later-h0-successor-source.mjs';
+import {ravScoreModelBinding} from '../js/core/ravscore-model-contract.js';
+import {readAssistantLaterH0RetentionInput} from './assistant-later-h0-runtime-transition.mjs';
+const ACTIVE_PREDECESSOR=['assistant-public591-successor','assistant-installed593-origin591-successor'].includes(ACTIVE.sourcePhase)?Object.freeze({
+  read:readAuthenticatedFrozen591Predecessor,snapshot:assertAuthenticatedFrozen591Snapshot,
+}):ACTIVE.sourcePhase==='assistant-public590-successor'?Object.freeze({
+  read:readAuthenticatedFrozen590Predecessor,snapshot:assertAuthenticatedFrozen590Snapshot,
+}):ACTIVE.sourcePhase==='assistant-public588-successor'?Object.freeze({
+  read:readAuthenticatedFrozen588Predecessor,snapshot:assertAuthenticatedFrozen588Snapshot,
+}):Object.freeze({
+  read:readAuthenticatedFrozen587Predecessor,snapshot:assertAuthenticatedFrozen587Snapshot,
+});
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 
 function refuse(reason) {
@@ -131,6 +152,13 @@ export async function readCurrentPrivateRuntimeCompanionInput(targetReferenceAt)
     || descriptorInfo.size > 2 * 1024 * 1024) refuse('RETENTION_B_CHANGED');
   const descriptorBytes = await fs.readFile(descriptorPath);
   const descriptor = JSON.parse(descriptorBytes.toString('utf8'));
+  if(descriptor?.modelBinding?.modelBundleSha256===ACTIVE.before.I
+    &&ravScoreModelBinding().modelBundleSha256===ACTIVE.requireBinding().I){
+    const view=await readAssistantLaterH0RetentionInput(targetReferenceAt);
+    if(view.verified.bundleContentSha256!==descriptor.bundleContentSha256
+      ||!descriptorBytes.equals(await fs.readFile(descriptorPath)))refuse('RETENTION_B_CHANGED');
+    return view;
+  }
   let before = null;
   const verify = async () => {
     const verified = await verifyPrivateProductionRuntimeBundle({ privateRoot, bundlePath,
@@ -146,7 +174,7 @@ export async function readCurrentPrivateRuntimeCompanionInput(targetReferenceAt)
   const conditionsPath = path.join(verified.bundlePath, 'payload/data/live/conditions.json');
   const fileInfo = await fs.lstat(conditionsPath);
   if (!fileInfo.isFile() || fileInfo.isSymbolicLink()
-    || fileInfo.size > 256 * 1024 * 1024) refuse('RETENTION_B_CHANGED');
+    || fileInfo.size > PRIVATE_CONDITIONS_MAX_BYTES) refuse('RETENTION_B_CHANGED');
   const bytes = await fs.readFile(conditionsPath);
   const conditionsSha256 = crypto.createHash('sha256').update(bytes).digest('hex');
   const listed = verified.files.find(row => row.relativePath === 'data/live/conditions.json');
@@ -161,8 +189,21 @@ export async function readCurrentPrivateRuntimeCompanionInput(targetReferenceAt)
 // and only outside all isolated first-active numeric-history views. Missing B
 // throws; an authenticated legacy B with no pack honestly returns no contexts.
 export async function readCurrentPrivateRuntimeCompanions(targetReferenceAt) {
+  // Called after the updater's genuine H0 origin check. Providers may already
+  // have changed unrelated WORKING weather; unpack only immutable original B.
+  if(ravScoreModelBinding().modelBundleSha256===ACTIVE.requireBinding().I){
+    const descriptor=JSON.parse(await fs.readFile(path.join(process.env.RUNNER_TEMP,'private-runtime-current-source.json'),'utf8'));
+    if(descriptor?.modelBinding?.modelBundleSha256===ACTIVE.before.I){
+      const snapshot=ACTIVE_PREDECESSOR.snapshot(await ACTIVE_PREDECESSOR.read());
+      if(snapshot.descriptor.bundleContentSha256!==descriptor.bundleContentSha256)refuse('RETENTION_B_CHANGED');
+      const original=JSON.parse(await fs.readFile(snapshot.conditionsPath,'utf8'));
+      const contexts=await readAuthenticatedCurrentCompanions(snapshot.verified,original);
+      const fresh=ACTIVE_PREDECESSOR.snapshot(await ACTIVE_PREDECESSOR.read());
+      if(!isDeepStrictEqual(snapshot,fresh))refuse('RETENTION_B_CHANGED');return contexts;
+    }
+  }
   const input = await readCurrentPrivateRuntimeCompanionInput(targetReferenceAt);
-  const contexts = await readAuthenticatedCurrentCompanions(input.verified, input.conditions);
+  const contexts = await readAuthenticatedCurrentCompanions(input.verified, input.originalConditions ?? input.conditions);
   await input.verify();
   return contexts;
 }

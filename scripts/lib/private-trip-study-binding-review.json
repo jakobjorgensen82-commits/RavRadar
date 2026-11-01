@@ -1,0 +1,76 @@
+{
+  "kind": "PRIVATE_TRIP_STUDY_006_TEST_ONLY_INVERSE",
+  "file": "scripts/deploy-private-trip-study.mjs",
+  "beforeSha256": "a15b33d1ae183456908faa6a405807c5921f67c609f28d61f78655e841943167",
+  "afterSha256": "458d7b774aa146f298ba07b8c005d998676903ccc26016a03f1b19fc59d726fd",
+  "edits": [
+    {
+      "before": "const JOBS_INTENT='/tmp/ravradar-private-trip-study-jobs-apply-intent.json';",
+      "after": "const JOBS_INTENT='/tmp/ravradar-private-trip-study-jobs-apply-intent.json';\nconst BINDING_INTENT='/tmp/ravradar-private-trip-study-job-binding-apply-intent.json';"
+    },
+    {
+      "before": "const JOBS_MIGRATION_SHA='4a9a109cf9f7660d1852af246c1b1208c0ff3e4eba1e3acb55848ee03f827216';",
+      "after": "const JOBS_MIGRATION_SHA='4a9a109cf9f7660d1852af246c1b1208c0ff3e4eba1e3acb55848ee03f827216';\nconst BINDING_MIGRATION='cloudflare/trip-gateway/migrations/006_trip_weather_aggregate_job_binding.sql';\nconst BINDING_MIGRATION_SHA='cd3cb6862e811bb01ab1279e28e8fb30f894db8c9516ef50314cd10d7cfc9d7b';"
+    },
+    {
+      "before": "  const initial=fs.readFileSync(INITIAL_MIGRATION),jobs=fs.readFileSync(JOBS_MIGRATION);\n  if(!INITIAL_MIGRATION_SHAS.includes(hash(initial))||hash(jobs)!==JOBS_MIGRATION_SHA)throw fail('MIGRATION_SOURCE');",
+      "after": "  const initial=fs.readFileSync(INITIAL_MIGRATION),jobs=fs.readFileSync(JOBS_MIGRATION),binding=fs.readFileSync(BINDING_MIGRATION);\n  if(!INITIAL_MIGRATION_SHAS.includes(hash(initial))||hash(jobs)!==JOBS_MIGRATION_SHA\n    ||hash(binding)!==BINDING_MIGRATION_SHA)throw fail('MIGRATION_SOURCE');"
+    },
+    {
+      "before": "    return{migration:bytes.toString('utf8'),metadata,anchor,jobsMigration:jobs.toString('utf8'),\n      jobsMetadata:normalized(database.prepare(META_SQL).all().map(row=>({...row})))};",
+      "after": "    const jobsMetadata=normalized(database.prepare(META_SQL).all().map(row=>({...row})));\n    database.exec(binding.toString('utf8'));\n    return{migration:bytes.toString('utf8'),metadata,anchor,jobsMigration:jobs.toString('utf8'),jobsMetadata,\n      bindingMigration:binding.toString('utf8'),bindingMetadata:normalized(database.prepare(META_SQL).all().map(row=>({...row})))};"
+    },
+    {
+      "before": "    :isDeepStrictEqual(current,model.jobsMetadata)?'EXACT_004_005':'UNKNOWN';",
+      "after": "    :isDeepStrictEqual(current,model.jobsMetadata)?'EXACT_004_005'\n    :isDeepStrictEqual(current,model.bindingMetadata)?'EXACT_004_005_006':'UNKNOWN';"
+    },
+    {
+      "before": "    expectedJobsControlSchemaSha256:hash(canonical(model.jobsMetadata))};",
+      "after": "    expectedJobsControlSchemaSha256:hash(canonical(model.jobsMetadata)),\n    expectedBindingControlSchemaSha256:hash(canonical(model.bindingMetadata))};"
+    },
+    {
+      "before": "// Fixed migration selection only. Existing allow004 never authorizes005.\nexport function privateTripStudyMigrationSteps(state,{allow004=false,allow005=false}={}){\n  if(!['ABSENT','EXACT','EXACT_004_005'].includes(state)||typeof allow004!=='boolean'||typeof allow005!=='boolean')throw fail('AUTHORITY');\n  if(state==='ABSENT'&&!allow004)throw fail('004_APPLY_NOT_ALLOWED');\n  return Object.freeze([...(state==='ABSENT'?['004']:[]),...(state!=='EXACT_004_005'&&allow005?['005']:[])]);\n}\n",
+      "after": "// Fast rækkefølge. Hver tidligere tilladelse er fortsat kun til sin migration.\nexport function privateTripStudyMigrationSteps(state,{allow004=false,allow005=false,allow006=false}={}){\n  if(!['ABSENT','EXACT','EXACT_004_005','EXACT_004_005_006'].includes(state)\n    ||typeof allow004!=='boolean'||typeof allow005!=='boolean'||typeof allow006!=='boolean')throw fail('AUTHORITY');\n  if(state==='ABSENT'&&!allow004)throw fail('004_APPLY_NOT_ALLOWED');\n  const jobsInstalled=['EXACT_004_005','EXACT_004_005_006'].includes(state);\n  if(allow006&&!jobsInstalled&&!allow005)throw fail('005_APPLY_NOT_ALLOWED');\n  return Object.freeze([...(state==='ABSENT'?['004']:[]),...(!jobsInstalled&&allow005?['005']:[]),\n    ...(state!=='EXACT_004_005_006'&&allow006?['006']:[])]);\n}\n"
+    },
+    {
+      "before": "  env.TRIP_PRIVATE_STUDY_JOBS_APPLY_ALLOWED??='false';",
+      "after": "  env.TRIP_PRIVATE_STUDY_JOBS_APPLY_ALLOWED??='false';\n  env.TRIP_PRIVATE_STUDY_JOB_BINDING_APPLY_ALLOWED??='false';"
+    },
+    {
+      "before": "desiredSchemaState='EXACT',jobsDdlApplied=false;",
+      "after": "desiredSchemaState='EXACT',jobsDdlApplied=false,bindingDdlApplied=false;"
+    },
+    {
+      "before": "      ||!['true','false'].includes(env.TRIP_PRIVATE_STUDY_JOBS_APPLY_ALLOWED))throw fail('AUTHORITY');",
+      "after": "      ||!['true','false'].includes(env.TRIP_PRIVATE_STUDY_JOBS_APPLY_ALLOWED)\n      ||!['true','false'].includes(env.TRIP_PRIVATE_STUDY_JOB_BINDING_APPLY_ALLOWED))throw fail('AUTHORITY');"
+    },
+    {
+      "before": "if(['EXACT','EXACT_004_005'].includes(classification.state)){",
+      "after": "if(['EXACT','EXACT_004_005','EXACT_004_005_006'].includes(classification.state)){"
+    },
+    {
+      "before": "      jobsMigrationSha256:JOBS_MIGRATION_SHA,\n      bindingsSha256:",
+      "after": "      jobsMigrationSha256:JOBS_MIGRATION_SHA,bindingMigrationSha256:BINDING_MIGRATION_SHA,\n      originalJobBindingReady:before.state==='EXACT_004_005_006',\n      bindingsSha256:"
+    },
+    {
+      "before": "      allow004:env.TRIP_PRIVATE_STUDY_APPLY_ALLOWED==='true',allow005:env.TRIP_PRIVATE_STUDY_JOBS_APPLY_ALLOWED==='true'});\n    desiredSchemaState=before.state==='EXACT_004_005'||migrationSteps.includes('005')?'EXACT_004_005':'EXACT';",
+      "after": "      allow004:env.TRIP_PRIVATE_STUDY_APPLY_ALLOWED==='true',allow005:env.TRIP_PRIVATE_STUDY_JOBS_APPLY_ALLOWED==='true',\n      allow006:env.TRIP_PRIVATE_STUDY_JOB_BINDING_APPLY_ALLOWED==='true'});\n    desiredSchemaState=before.state==='EXACT_004_005_006'||migrationSteps.includes('006')?'EXACT_004_005_006'\n      :before.state==='EXACT_004_005'||migrationSteps.includes('005')?'EXACT_004_005':'EXACT';\n    // Ingen006 mens statistik kan starte. Dette er faktisk aktiv versions-\n    // og plain-text-readback, ikke lokal config eller en rapportboolean.\n    if(migrationSteps.includes('006')){stage='PRE_BINDING_WORKER_OFF';await attest(currentVersion,true);}"
+    },
+    {
+      "before": "      const jobs=migration==='005';\n      stage=migration+'_APPLY_INTENT';fs.writeFileSync(jobs?JOBS_INTENT:INTENT,JSON.stringify(plan)+'\\n',{flag:'wx',mode:0o600});",
+      "after": "      if(migration==='006'){\n        await verifySchema('EXACT_004_005');await attest(currentVersion,true);exactMain();lease(600);\n      }\n      const jobs=migration==='005',binding=migration==='006';\n      stage=migration+'_APPLY_INTENT';fs.writeFileSync(binding?BINDING_INTENT:jobs?JOBS_INTENT:INTENT,JSON.stringify(plan)+'\\n',{flag:'wx',mode:0o600});"
+    },
+    {
+      "before": "{sql:jobs?model.jobsMigration:model.migration});",
+      "after": "{sql:binding?model.bindingMigration:jobs?model.jobsMigration:model.migration});"
+    },
+    {
+      "before": "      await verifySchema(jobs?'EXACT_004_005':'EXACT');\n      if(jobs)jobsDdlApplied=true;",
+      "after": "      await verifySchema(binding?'EXACT_004_005_006':jobs?'EXACT_004_005':'EXACT');\n      if(jobs)jobsDdlApplied=true;if(binding)bindingDdlApplied=true;"
+    },
+    {
+      "before": "      jobsMigrationSha256:JOBS_MIGRATION_SHA,jobsDdlApplied,\n      configAttested:",
+      "after": "      jobsMigrationSha256:JOBS_MIGRATION_SHA,jobsDdlApplied,\n      bindingMigrationSha256:BINDING_MIGRATION_SHA,bindingDdlApplied,\n      originalJobBindingReady:desiredSchemaState==='EXACT_004_005_006',\n      configAttested:"
+    }
+  ]
+}

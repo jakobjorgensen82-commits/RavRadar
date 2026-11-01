@@ -8,11 +8,18 @@ import crypto from 'node:crypto';
 import { spawn } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { test } from 'node:test';
+import { assertUsableDmiProgressRecovery } from './lib/verified-dmi-progress-inputs.mjs';
 const ROOT = process.env.RAVRADAR_PRIVATE_COLD_WRAPPER_TEST_ROOT
   ?? path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const CLI = process.env.RAVRADAR_PRIVATE_COLD_CLI_TEST_SOURCE
   ?? path.join(ROOT, 'scripts/run-current-family-cold-start.mjs');
 const text = await fs.readFile(CLI, 'utf8');
+const kernelText = await fs.readFile(path.join(ROOT,'scripts/current-family-cold-start.mjs'),'utf8');
+const scopeLiteral = /export const CURRENT_FAMILY_COLD_START_REENTRY_SCOPE = Object\.freeze\((\{[\s\S]*?\})\);/.exec(kernelText)?.[1];
+assert(scopeLiteral && !scopeLiteral.includes('${'));
+const reentryScope = Object.freeze(new Function('return ('+scopeLiteral+');')());
+assert.deepEqual(reentryScope,{progressSource:'39886354260-1',latestProgressSource:'39933506923-1',
+  targetReferenceAt:'2026-10-23T01:00:00.000Z',archiveId:'775f99a210b899eacd3ee056f4daae56c20fc3258e64691d4e0544aabd04d3fb'});
 const literal = /const STAGED_STOP_CODE = (`[\s\S]*?`);/.exec(text)?.[1];
 assert(literal && !literal.includes('${'), 'The staged adapter must remain a literal.');
 const staged = new Function('return ' + literal)();
@@ -92,8 +99,197 @@ test('CLI diagnostics allow only the fixed helper-code catalogue, never raw unkn
   assert(literal); const codes=new Set(JSON.parse(literal));
   assert(codes.has('CURRENT_FAMILY_COLD_START_FILE_IDENTITY'));
   assert(codes.has('CURRENT_FAMILY_COLD_START_ORIGINAL_CANDIDATE_CHANGED'));
+  const currentCodes = ['CURRENT_FAMILY_COLD_START_PENDING_POINT_PROMOTION',
+    ...['BOUNDS_INVALID', 'CHANGED', 'DUPLICATE_KEY', 'INVALID_FILE', 'INVALID_JSON',
+      'INVALID_KEY', 'INVALID_SIZE', 'RECORD_DESCRIPTOR_INVALID', 'RECORD_SIZE_LIMIT',
+      'SHAPE_INVALID', 'STRUCTURE_LIMIT', 'MISSING', 'READ_UNAVAILABLE']
+      .map(code => 'DMI_FORECAST_FILE_' + code),
+    'DMI_PART_CONTINUITY_NATIVE_ORIGINAL_INVALID',
+    'DMI_PART_CONTINUITY_TOTAL_RAW_SIZE_LIMIT',
+    'DMI_PART_CONTINUITY_TOTAL_COMPRESSED_SIZE_LIMIT',
+    'DMI_PART_CONTINUITY_INPUT_INVALID',
+    'DMI_PART_CONTINUITY_DOMAIN_INVALID',
+    'DMI_PART_CONTINUITY_RECORD_INVALID',
+    'DMI_PART_CONTINUITY_PART_SIZE_LIMIT',
+    'DMI_PART_CONTINUITY_PART_COMPRESSED_SIZE_LIMIT',
+    'DMI_PART_CONTINUITY_MARKER_INVALID',
+    'DMI_PART_CONTINUITY_ENTRY_INVALID',
+    'DMI_PART_CONTINUITY_COMPRESSED_DIGEST_INVALID',
+    'DMI_PART_CONTINUITY_RAW_DIGEST_INVALID',
+    'DMI_PART_CONTINUITY_JSON_INVALID',
+    'DMI_PART_CONTINUITY_DOCUMENT_INVALID',
+    'DMI_PART_CONTINUITY_TOTAL_SIZE_MISMATCH',
+    'DMI_NATIVE_PROOF_BANK_BOUND',
+    'DMI_NATIVE_PROOF_BANK_INVALID',
+    'DMI_NATIVE_PROOF_CONTEXT_CONFLICT',
+    'DMI_NATIVE_PROOF_CONTEXT_DIGEST_INVALID',
+    'DMI_NATIVE_PROOF_CONTEXT_INVALID',
+    'DMI_NATIVE_PROOF_CONTEXT_REFERENCE_MISSING',
+    'DMI_NATIVE_PROOF_DOMAIN_BOUND',
+    'DMI_NATIVE_PROOF_DONOR_BOUND',
+    'DMI_NATIVE_PROOF_ENDPOINT_MISMATCH',
+    'DMI_NATIVE_PROOF_ENTRY_DUPLICATE_OR_ORDER',
+    'DMI_NATIVE_PROOF_ENTRY_INVALID',
+    'DMI_NATIVE_PROOF_GEOMETRY_MISMATCH',
+    'DMI_NATIVE_PROOF_INPUT_BOUND',
+    'DMI_NATIVE_PROOF_NATIVE_CONFLICT',
+    'DMI_NATIVE_PROOF_NATIVE_DIGEST_INVALID',
+    'DMI_NATIVE_PROOF_NATIVE_DUPLICATE_OR_ORDER',
+    'DMI_NATIVE_PROOF_NATIVE_ENDPOINT_MISSING',
+    'DMI_NATIVE_PROOF_NATIVE_INVALID',
+    'DMI_NATIVE_PROOF_NATIVE_RECORD_INVALID',
+    'DMI_NATIVE_PROOF_NATIVE_REFERENCE_MISSING',
+    'DMI_NATIVE_PROOF_PROJECTION_MISMATCH',
+    'DMI_NATIVE_PROOF_RECORD_BOUND',
+    'DMI_NATIVE_PROOF_RECORD_SHAPE',
+    'DMI_NATIVE_PROOF_SCOPED_ORIGINAL_CONTEXT_UNAVAILABLE',
+    'DMI_NATIVE_PROOF_SELECTION_DUPLICATE',
+    'DMI_NATIVE_PROOF_SELECTION_INVALID',
+    'DMI_NATIVE_PROOF_SELECTION_NOT_PROVED',
+    'DMI_NATIVE_PROOF_UNREFERENCED_EVIDENCE'];
+  for (const code of currentCodes) assert(codes.has(code), code);
+  const body = text.slice(text.lastIndexOf('}).catch(error => {') + '}).catch(error => {'.length,
+    text.lastIndexOf('  });'));
+  assert(body.includes('SAFE_HELPER_CODES.has(error.message)'));
+  const report = new Function('error', 'SAFE_HELPER_CODES', 'console', 'process', body);
+  for (const message of [...currentCodes, 'DMI_FORECAST_FILE_SECRET_PAYLOAD',
+    'DMI_PART_CONTINUITY_SECRET_PAYLOAD', 'DMI_NATIVE_PROOF_SECRET_PAYLOAD',
+    'DMI_PART_CONTINUITY_NATIVE_ORIGINAL_INVALID: private content',
+    'DMI_NATIVE_PROOF_PROJECTION_MISMATCH: private content',
+    'DMI_FORECAST_FILE_INVALID_JSON: private content', 'ENOENT: private path']) {
+    const lines = [], processResult = { exitCode: 0 };
+    report({ message }, codes, { error: value => lines.push(value) }, processResult);
+    assert.deepEqual(lines, [currentCodes.includes(message) ? message : 'CURRENT_FAMILY_COLD_CLI_REFUSED']);
+    assert.equal(processResult.exitCode, 1);
+  }
   assert(!codes.has('CURRENT_FAMILY_COLD_START_SECRET_PAYLOAD'));
   assert(text.includes('SAFE_HELPER_CODES.has(error.message)'));
   assert(text.includes("'CURRENT_FAMILY_COLD_CLI_REFUSED'"));
   assert(!text.includes('console.error(error.stack)'));
+});
+
+test('actual cold runDmi authenticates before selecting a fixed child-only scheduling policy', async () => {
+  const signature = 'async function runDmi() {', start = text.indexOf(signature);
+  const boundary = text.indexOf('\nif (process.argv[1]', start);
+  assert(start >= 0 && boundary > start);
+  const block = text.slice(start + signature.length, boundary).trim();
+  assert(block.endsWith('}'));
+  const AsyncFunction = Object.getPrototypeOf(async function () {}).constructor;
+  const execute = new AsyncFunction('paths', 'process', 'path', 'CURRENT_FAMILY_COLD_START_CONTEXT_ENV',
+    'requireFlag', 'loadCurrentFamilyColdStartForTarget', 'currentFamilyColdStartAcquisitionChoices',
+    'crypto', 'spawn', 'ROOT', 'STAGED_STOP_CODE', block.slice(0, -1));
+  const keys = {path:'RAVRADAR_CURRENT_FAMILY_COLD_START_CONTEXT_PATH',
+    sha256:'RAVRADAR_CURRENT_FAMILY_COLD_START_CONTEXT_SHA256'};
+  const selected = {workRoot:path.join(ROOT,'.cache','synthetic-cold-scope'),
+    targetReferenceAt:'2026-10-23T01:00:00.000Z'};
+  for (const authenticated of [false,true]) {
+    const authError = new Error('SYNTHETIC_CONTEXT_REJECTED'), childStop = new Error('STOP_BEFORE_CHILD');
+    const calls = [], capability = Object.freeze({});
+    const environment = {[keys.path]:path.join(selected.workRoot,'context.json'),[keys.sha256]:'a'.repeat(64),
+      RAVRADAR_DMI_STRICT_CURRENT_LEAD_POLICY:'foreign-parent-value'};
+    const before = {...environment};
+    const fakeProcess = {env:environment,on(){},off(){}};
+    await assert.rejects(execute(async()=>selected,fakeProcess,path,keys,
+      (ok,code)=>{assert(ok,code);},
+      async options=>{calls.push('authenticate');assert.deepEqual(options,{contextPath:environment[keys.path],
+        contextSha256:environment[keys.sha256],targetReferenceAt:selected.targetReferenceAt});
+        if(!authenticated)throw authError;return capability;},
+      cap=>{calls.push('choices');assert.equal(cap,capability);return {outputPath:'owned-candidate',
+        deployedFallbackPath:'owned-fallback',publishedBaselinePath:'owned-baseline'};},
+      crypto,(_command,_args,options)=>{calls.push('spawn');
+        assert.equal(options.env.RAVRADAR_DMI_STRICT_CURRENT_LEAD_POLICY,
+          'authenticated-current-family-cold-catch-up-v1');
+        assert.equal(options.env.DMI_BULK_OUTPUT_PATH,'owned-candidate');
+        assert.equal(options.env.DMI_BULK_DEPLOYED_FALLBACK_PATH,'owned-fallback');
+        assert.equal(options.env.DMI_BULK_PUBLISHED_BASELINE_PATH,'owned-baseline');
+        throw childStop;},ROOT,staged), error=>error===(authenticated?childStop:authError));
+    assert.deepEqual(calls,authenticated?['authenticate','choices','spawn']:['authenticate']);
+    assert.deepEqual(environment,before,'The real wrapper may only change its child env object.');
+  }
+});
+
+test('actual cold flags retain fresh defaults and admit only the fixed original progress hour', () => {
+  const start = text.indexOf('function flags() {'), end = text.indexOf('\nasync function paths()', start);
+  assert(start >= 0 && end > start);
+  const scope = reentryScope;
+  const execute = new Function('process','requireFlag','CURRENT_FAMILY_COLD_START_REENTRY_SCOPE',
+    text.slice(start,end) + '\nreturn flags();');
+  const environment = {RAVRADAR_CURRENT_FAMILY_COLD_START:'true',GITHUB_REF:'refs/heads/main',
+    GITHUB_EVENT_NAME:'workflow_dispatch',GITHUB_RUN_ID:'39999999999',GITHUB_RUN_ATTEMPT:'1',
+    RAVRADAR_PRODUCTION_TARGET_HOUR:'2026-10-23T01:00:00Z'};
+  const invoke = env => execute({env},(ok,code)=>{if(!ok)throw new Error(code);},scope);
+  assert.equal(invoke(environment),scope.targetReferenceAt);
+  const reentry = {...environment,QUICK_PROGRESS_SOURCE:scope.progressSource,
+    CHECKPOINT_TARGET_HOUR:environment.RAVRADAR_PRODUCTION_TARGET_HOUR};
+  for(const progressSource of [scope.progressSource,scope.latestProgressSource])
+    assert.equal(invoke({...reentry,QUICK_PROGRESS_SOURCE:progressSource}),scope.targetReferenceAt);
+  for (const changed of [
+    {...environment,CHECKPOINT_TARGET_HOUR:environment.RAVRADAR_PRODUCTION_TARGET_HOUR},
+    {...reentry,QUICK_PROGRESS_SOURCE:'39886354260-2'}, {...reentry,QUICK_PROGRESS_SOURCE:'39886354261-1'},
+    {...reentry,QUICK_PROGRESS_SOURCE:'39933506923-2'}, {...reentry,QUICK_PROGRESS_SOURCE:'39933506924-1'},
+    {...reentry,QUICK_PROGRESS_SOURCE:'39933506923'}, {...reentry,QUICK_PROGRESS_SOURCE:'protected-current'},
+    {...reentry,CHECKPOINT_TARGET_HOUR:''}, {...reentry,CHECKPOINT_ONLY:'true'},
+    {...reentry,RAVRADAR_PRODUCTION_TARGET_HOUR:'2026-10-23T02:00:00Z',CHECKPOINT_TARGET_HOUR:'2026-10-23T02:00:00Z'},
+    {...reentry,GITHUB_RUN_ATTEMPT:'2'}, {...reentry,RAVRADAR_WEATHER_STATE_EPOCH_BOOTSTRAP:'true'},
+    {...reentry,RAVRADAR_WEATHER_STATE_EPOCH_ARCHIVE_ID:'a'.repeat(64)},
+  ]) assert.throws(()=>invoke(changed));
+});
+
+test('actual same-archive wrapper orders exact cache, archive authentication, scoped restore and context publication', async () => {
+  const signature = 'async function reopen() {', start = text.indexOf(signature);
+  const end = text.indexOf('\nasync function runDmi()', start);
+  assert(start >= 0 && end > start);
+  const block = text.slice(start+signature.length,end).trim(); assert(block.endsWith('}'));
+  const execute = new (Object.getPrototypeOf(async function(){}).constructor)(
+    'process','requireFlag','CURRENT_FAMILY_COLD_START_CONTEXT_ENV','paths',
+    'CURRENT_FAMILY_COLD_START_REENTRY_SCOPE','capturePublic','reopenCurrentFamilyColdStart',
+    'weatherComponentProgressCache','ROOT','path','assertUsableDmiProgressRecovery',
+    'writeNew','currentFamilyColdStartAcquisitionChoices','appendEnvironment','console', block.slice(0,-1));
+  const scope = reentryScope;
+  const keys = {path:'COLD_CONTEXT_PATH',sha256:'COLD_CONTEXT_SHA256'};
+  for(const progressSource of [scope.progressSource,scope.latestProgressSource])
+  for (const fault of ['cache','cache-missing','matched-key','matched-other','source',
+    'archive','restore','miss','not-restored','empty','hour','dmi-absent','dmi',null]) {
+    const calls = [], cap = Object.freeze({}), temporary = path.resolve(ROOT,'.cache','synthetic-wrapper-reentry');
+    const selected = {targetReferenceAt:scope.targetReferenceAt,workRoot:path.join(temporary,'work'),publicRoot:path.join(temporary,'public')};
+    const otherSource = progressSource===scope.progressSource?scope.latestProgressSource:scope.progressSource;
+    const env = {QUICK_PROGRESS_SOURCE:fault==='source'?progressSource.replace(/-1$/,'-2'):progressSource,
+      RUNNER_OS:'Linux',RUNNER_TEMP:temporary,
+      PROGRESS_CACHE_OUTCOME:fault==='cache'?'failure':fault==='cache-missing'?'':'success',
+      PROGRESS_CACHE_MATCHED_KEY:fault==='matched-key'?'':
+        'weather-private-progress-encrypted-v2-Linux-main-'+(fault==='matched-other'?otherSource:progressSource)};
+    const before = {...env}, expectedError = new Error('CONTROLLED_'+fault);
+    const invoke = ()=>execute({env},(ok,code)=>{if(!ok)throw new Error('CURRENT_FAMILY_COLD_CLI_'+code);},keys,async()=>selected,scope,
+      async root=>{calls.push('public');assert.equal(root,selected.publicRoot);},
+      async options=>{calls.push('archive');assert.deepEqual(options,{...selected,archiveId:scope.archiveId});
+        if(fault==='archive')throw expectedError;return {capability:cap,contextPath:'verified-context',contextSha256:'b'.repeat(64)};},
+      async options=>{calls.push('restore');assert.deepEqual(options,{mode:'restore',repositoryRoot:ROOT,
+        basePath:path.join(temporary,'weather-progress-base.json'),productionReferenceAt:scope.targetReferenceAt,
+        resumeOriginalTarget:true,currentFamilyColdStartCapability:cap});
+        if(fault==='restore')throw expectedError;
+        return {status:fault==='miss'?'CACHE_MISS':'RESTORED',restored:!['miss','not-restored'].includes(fault),fileCount:fault==='empty'?0:2,
+          restoredProductionReferenceAt:fault==='hour'?'2026-10-23T02:00:00.000Z':scope.targetReferenceAt,
+          dmiProgress:fault==='dmi-absent'?undefined:{forecast:{status:fault==='dmi'?'NOT_PRESENT':'MERGED',
+            recoveredComponents:0,rejectedRecords:0,runtimeRecovered:false}}};},
+      ROOT,path,(value,options)=>{calls.push('usable');assert.deepEqual(options,{allowAbsent:false});
+        return assertUsableDmiProgressRecovery(value,options);},
+      async(file,bytes)=>{calls.push('report');assert.equal(file,path.join(temporary,'weather-progress-restore-report.json'));
+        assert.equal(JSON.parse(bytes).status,'RESTORED');},
+      value=>{calls.push('choices');assert.equal(value,cap);return {outputPath:path.join(ROOT,'.cache/dmi-candidate-progress.json'),
+        deployedFallbackPath:'verified-scalar-fallback',publishedBaselinePath:'verified-scalar-baseline'};},
+      async values=>{calls.push('publish');assert.deepEqual(values,{[keys.path]:'verified-context',[keys.sha256]:'b'.repeat(64),
+        DMI_BULK_DEPLOYED_FALLBACK_PATH:'verified-scalar-fallback',DMI_BULK_PUBLISHED_BASELINE_PATH:'verified-scalar-baseline'});},
+      {log:message=>{calls.push('notice');assert.equal(message,'CURRENT_FAMILY_COLD_REOPENED_SAME_ARCHIVE_AND_AUTHENTICATED_PROGRESS');}});
+    const cacheFaults=['cache','cache-missing','matched-key','matched-other','source'];
+    if (fault) await assert.rejects(invoke,error=>{
+      if(['archive','restore'].includes(fault))return error===expectedError;
+      return error.message===(cacheFaults.includes(fault)?'CURRENT_FAMILY_COLD_CLI_EXACT_PROGRESS_REQUIRED':
+        ['dmi','dmi-absent'].includes(fault)?'DMI_FORECAST_PROGRESS_RECOVERY_REQUIRED':'CURRENT_FAMILY_COLD_CLI_PROGRESS_RESTORE_REQUIRED');
+    }); else await invoke();
+    const expected = cacheFaults.includes(fault)?[]:fault==='archive'?['public','archive']:
+      ['restore','miss','not-restored','empty','hour'].includes(fault)?['public','archive','restore']:
+        ['dmi','dmi-absent'].includes(fault)?['public','archive','restore','usable']:
+        ['public','archive','restore','usable','report','choices','publish','notice'];
+    assert.deepEqual(calls,expected);assert.deepEqual(env,before);
+  }
 });

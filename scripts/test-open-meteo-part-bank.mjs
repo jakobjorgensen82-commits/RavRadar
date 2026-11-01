@@ -406,7 +406,7 @@ test('producer keeps both bounded transport slots useful when one sibling stalls
   const parts = ['A', 'B', 'C', 'D'].map((partId, i) => ({ ...part, partId,
     waterPoint: [part.waterPoint[0] + i / 12, part.waterPoint[1]] }));
   const requiredPairs = parts.map(row => ({ partId: row.partId, component: 'wind', validTime: at(117) }));
-  requiredPairs.push({ partId: 'A', component: 'waterTemperature', validTime: at(117) });
+  requiredPairs.push({ partId: 'A', component: 'wave', validTime: at(117) });
   let active = 0, maximumActive = 0, fastCompletions = 0, continueWork = true;
   let fastCompletionsBeforeSlow = null;
   const checkpoints = [];
@@ -421,11 +421,11 @@ test('producer keeps both bounded transport slots useful when one sibling stalls
     fetchResponse: async request => {
       active += 1; maximumActive = Math.max(maximumActive, active);
       try {
-        if (request.component === 'waterTemperature') {
+        if (request.component === 'wave') {
           await new Promise(resolve => setTimeout(resolve, 40));
           fastCompletionsBeforeSlow = fastCompletions;
           continueWork = false;
-          throw new Error('synthetic slow independent temperature failure');
+          throw new Error('synthetic slow independent wave failure');
         }
         fastCompletions += 1;
         if (fastCompletions === 3) continueWork = false;
@@ -435,7 +435,7 @@ test('producer keeps both bounded transport slots useful when one sibling stalls
       } finally { active -= 1; }
     },
   });
-  assert.equal(fastCompletionsBeforeSlow, 3, 'one blocked SST request must not idle the other slot');
+  assert.equal(fastCompletionsBeforeSlow, 3, 'one blocked score-critical wave request must not idle the other slot');
   assert.ok(maximumActive <= 2); assert.equal(active, 0);
   assert.equal(result.summary.requests, 4);
   assert.equal(result.summary.deferred, 1);

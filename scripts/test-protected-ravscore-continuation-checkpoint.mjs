@@ -4,7 +4,7 @@ import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import {requireSourceProducerOutput} from './lib/source-producer-successor-source.mjs';
-// Refuse the new command before model/T calculation, files or native processes.
+// SOURCE refuses before fixture/T computation, files or native processes.
 if(process.argv.includes('--source-producer')||process.argv.includes('--current-source-native-profile'))requireSourceProducerOutput();
 import { buildIntegratedRavScoreStateSeries } from '../js/core/ravscore-integrated-state-pipeline.js';
 import { buildCandidateGDerivedStateSeries } from '../js/core/ravscore-candidate-g-state-pipeline.js';
@@ -41,6 +41,29 @@ import { ravScoreModelBinding } from '../js/core/ravscore-model-contract.js';
 import {
   ravScoreModelBinding as candidateGRollbackModelBinding,
 } from './rollback-assets/ravscore-model-contract.js';
+
+// Each new native phase refuses before fixture construction or a PG host.
+if(process.argv.includes('--assistant-installed593-origin591-successor')){
+  const {requireInstalled593Original591Release}=await import('./lib/assistant-later-h0-successor-source.mjs');
+  requireInstalled593Original591Release();
+}
+// The additive588 native entry refuses before fixture hashing/construction or a PG host.
+if(process.argv.includes('--assistant-public591-successor')){
+  const {requireAssistantPublic591SuccessorRelease}=await import('./lib/assistant-later-h0-successor-source.mjs');
+  requireAssistantPublic591SuccessorRelease(); // FIRST: before fixture hashing/construction or PG host.
+}
+if(process.argv.includes('--assistant-public590-successor')){
+  const {requireAssistantPublic590SuccessorRelease}=await import('./lib/assistant-later-h0-successor-source.mjs');
+  requireAssistantPublic590SuccessorRelease(); // FIRST: no selected parent/binding, no fixture or PG host.
+}
+if(process.argv.includes('--assistant-public588-successor')){
+  const {requireAssistantPublic588SuccessorRelease}=await import('./lib/assistant-later-h0-successor-source.mjs');
+  requireAssistantPublic588SuccessorRelease(); // UNISSUED before fixture/T hashes, host or SQL.
+}
+if(process.argv.includes('--assistant-public587-successor')){
+  const {requireAssistantPublic587SuccessorRelease}=await import('./lib/assistant-later-h0-successor-source.mjs');
+  requireAssistantPublic587SuccessorRelease();
+}
 
 const PART_COUNT = RAVSCORE_CONTINUATION_CHECKPOINT_POLICY.expectedPartCount;
 const START = Date.parse('2026-08-01T00:00:00.000Z');
@@ -377,8 +400,12 @@ const rpcFailureIncludes = pattern => error => {
 // These assertions are not PostgreSQL/SQL/installation proof.
 if (!process.argv.includes('--native-postgres') && !process.argv.includes('--native-statistics-revision')
     && !process.argv.includes('--native-sampling-identity') && !process.argv.includes('--current-memory-warmup')
-    && !process.argv.includes('--account-statistics-assistant') && !process.argv.includes('--source-producer')
-    && !process.argv.includes('--current-source-native-profile')) {
+    && !process.argv.includes('--account-statistics-assistant') && !process.argv.includes('--assistant-later-h0')
+    && !process.argv.includes('--assistant-public587-successor') && !process.argv.includes('--assistant-public588-successor')
+    && !process.argv.includes('--assistant-public590-successor')
+    && !process.argv.includes('--assistant-public591-successor')
+    && !process.argv.includes('--assistant-installed593-origin591-successor')
+    && !process.argv.includes('--source-producer') && !process.argv.includes('--current-source-native-profile')) {
   const { nativePostgresFailureDiagnostic: diagnose,
     nativePostgresFailureAnnotation: annotate } =
       await import('./lib/checkpoint-cas-native-postgres.mjs');
@@ -530,15 +557,32 @@ if (process.argv.includes('--native-identity-source-only')) {
 }
 
 const currentSourceNativeProfile = process.argv.includes('--current-source-native-profile');
+let sourceCurrentNativeTestContext=null;
+if(process.env.SOURCE_CURRENT_NATIVE_PR_TEST_CONTEXT!==undefined){
+  requireSourceProducerOutput(); // BEFORE parsing expected data or native I/O.
+  assert(currentSourceNativeProfile,'SOURCE_PR_NATIVE_CONTEXT_REQUIRES_EXPLICIT_CURRENT_PROFILE');
+  const raw=process.env.SOURCE_CURRENT_NATIVE_PR_TEST_CONTEXT;
+  assert(Buffer.byteLength(raw)>0&&Buffer.byteLength(raw)<=16384,'SOURCE_PR_NATIVE_CONTEXT_BOUND');
+  sourceCurrentNativeTestContext=JSON.parse(raw);
+  assert(sourceCurrentNativeTestContext!==null,'SOURCE_PR_NATIVE_CONTEXT_REQUIRED');
+}
+
 const sourceProducerNative = process.argv.includes('--source-producer') || currentSourceNativeProfile;
-const accountStatisticsAssistantNative = process.argv.includes('--account-statistics-assistant') || sourceProducerNative;
+const installed593Original591SuccessorNative = process.argv.includes('--assistant-installed593-origin591-successor');
+const assistantPublic591SuccessorNative = process.argv.includes('--assistant-public591-successor') || installed593Original591SuccessorNative;
+const assistantPublic590SuccessorNative = process.argv.includes('--assistant-public590-successor') || assistantPublic591SuccessorNative;
+const assistantPublic588SuccessorNative = process.argv.includes('--assistant-public588-successor') || assistantPublic590SuccessorNative;
+const assistantPublic587SuccessorNative = process.argv.includes('--assistant-public587-successor');
+const assistantLaterH0Native = process.argv.includes('--assistant-later-h0') || assistantPublic587SuccessorNative || assistantPublic588SuccessorNative;
+const nativeOriginalContinuityNative = process.argv.includes('--native-original-continuity') || assistantLaterH0Native;
+const accountStatisticsAssistantNative = process.argv.includes('--account-statistics-assistant') || nativeOriginalContinuityNative || sourceProducerNative;
 // Native PostgreSQL is a separate mandatory Linux source leaf, never a
 // MemoryCentral/Windows representation proof. Reuse these exact 673 builders
 // and the normal checkpoint saver; do not run the simulated RPC tests here.
 if (process.argv.includes('--native-postgres') || process.argv.includes('--native-statistics-revision')
     || process.argv.includes('--native-sampling-identity') || process.argv.includes('--current-memory-warmup')
     || process.argv.includes('--established-native-current-origin') || (process.argv.includes('--last-mile-enclosure') || accountStatisticsAssistantNative)) {
-  let classifyNativeFailure=()=> 'NATIVE_POSTGRES_UNKNOWN_FAILURE';
+  let classifyNativeFailure=null;
   try {
     const { runNativeCheckpointSqlComparison, nativePostgresExceptionCode } =
       await import('./lib/checkpoint-cas-native-postgres.mjs');
@@ -555,12 +599,28 @@ if (process.argv.includes('--native-postgres') || process.argv.includes('--nativ
       includeEstablishedNativeCurrentOrigin: process.argv.includes('--established-native-current-origin') || (process.argv.includes('--last-mile-enclosure') || accountStatisticsAssistantNative),
       includeLastMileEnclosure: (process.argv.includes('--last-mile-enclosure') || accountStatisticsAssistantNative),
       includeAccountStatisticsAssistant: accountStatisticsAssistantNative,
+      includeNativeOriginalContinuity: nativeOriginalContinuityNative,
+      includeAssistantLaterH0: assistantLaterH0Native,
+      includeAssistantPublic587Successor: assistantPublic587SuccessorNative || assistantPublic588SuccessorNative,
+      includeAssistantPublic588Successor: assistantPublic588SuccessorNative,
+      includeAssistantPublic590Successor: assistantPublic590SuccessorNative,
+      includeAssistantPublic591Successor: assistantPublic591SuccessorNative,
+      includeInstalled593Original591Successor: installed593Original591SuccessorNative,
       includeSourceProducer: sourceProducerNative,
       includeCurrentSourceNativeProfile: currentSourceNativeProfile,
+      sourceCurrentNativeTestContext,
     });
+    if(assistantPublic591SuccessorNative)console.log(JSON.stringify({
+      kind:'RAVRADAR_NATIVE_PROGRAM_IDENTITY_V2',phase:installed593Original591SuccessorNative
+        ?'INSTALLED593_ORIGINAL591_SUCCESSOR':'ASSISTANT_PUBLIC591_SUCCESSOR',
+      programs:report.nativeProgramIdentity,
+    }));
     console.log(JSON.stringify(report));
   } catch (error) {
-    const category = classifyNativeFailure(error);
+    const category = sourceProducerNative && classifyNativeFailure ? classifyNativeFailure(error)
+      : /^NATIVE_POSTGRES_[A-Z0-9_]+$/.test(error?.message ?? '')
+      ? error.message : error?.code === 'ERR_ASSERTION'
+        ? 'NATIVE_POSTGRES_ASSERTION_FAILED' : 'NATIVE_POSTGRES_UNKNOWN_FAILURE';
     console.error(JSON.stringify({ kind: 'NATIVE_POSTGRES_CHECKPOINT_CAS_COMPARISON',
       sqlProof: false, category }));
     process.exitCode = 1;

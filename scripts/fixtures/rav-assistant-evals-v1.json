@@ -1,7 +1,7 @@
 {
   "schemaVersion": "rav-assistant-evals-v1",
   "knowledgeVersion": "rav-assistant-public-knowledge-v1",
-  "releaseVersion": "4.0.595",
+  "releaseVersion": "4.0.594",
   "ravScoreModelBinding": {
     "modelId": "RRS-COASTAL-PROCESS-INTEGRATED-1.1.0",
     "stateSchemaVersion": "6.0.0",
@@ -13,7 +13,7 @@
     "bestTimePolicyId": "score-history-water-tie-earliest-v3",
     "presentationPolicyId": "score-bands-35-55-75-exceptional90-v1",
     "modelContractSha256": "a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b",
-    "modelBundleSha256": "fddfef8b8955e5a6ab55b4fb273884f43cbf355041727865b2080be9ff3f1400"
+    "modelBundleSha256": "08750e3667e5a221374762fccadccf08abf5e9f1ae8814ccc97bfc11880bf36c"
   },
   "cases": [
     {
@@ -891,6 +891,105 @@
         "coast.sorting-and-traps",
         "field-signs.clues-not-proof"
       ]
+    },
+    {
+      "id": "da-waterlevel-green-guarantee",
+      "locale": "da",
+      "category": "coastal-physics",
+      "question": "Hvad betyder vandstanden for ravjagt, og kan en grøn score garantere et fund?",
+      "expectedDisposition": "answer",
+      "expectedRoute": "remote-candidate",
+      "requiredEvidenceIds": [
+        "water-level.context",
+        "score.no-find-guarantee"
+      ]
+    },
+    {
+      "id": "de-waterlevel-green-guarantee",
+      "locale": "de",
+      "category": "coastal-physics",
+      "question": "Was bedeutet der Wasserstand für die Bernsteinsuche, und garantiert ein grüner Wert einen Fund?",
+      "expectedDisposition": "answer",
+      "expectedRoute": "remote-candidate",
+      "requiredEvidenceIds": [
+        "water-level.context",
+        "score.no-find-guarantee"
+      ]
+    },
+    {
+      "id": "en-waterlevel-green-guarantee",
+      "locale": "en",
+      "category": "coastal-physics",
+      "question": "What does the water level mean for amber hunting, and does a green score guarantee a find?",
+      "expectedDisposition": "answer",
+      "expectedRoute": "remote-candidate",
+      "requiredEvidenceIds": [
+        "water-level.context",
+        "score.no-find-guarantee"
+      ]
+    },
+    {
+      "id": "da-net-and-public-capabilities",
+      "locale": "da",
+      "category": "whole-question-public-faq",
+      "question": "Hvad er en ravkese, og hvad kan du?",
+      "expectedDisposition": "answer",
+      "expectedRoute": "remote-candidate",
+      "requiredEvidenceIds": [
+        "equipment.amber-net",
+        "assistant.public-capabilities"
+      ]
+    },
+    {
+      "id": "da-unknown-exact-landing-instrument",
+      "locale": "da",
+      "category": "unknown-instrument-no-prefix-answer",
+      "question": "Kan en ravmåler forudsige det præcise landingssted for næste ravstykke?",
+      "expectedDisposition": "uncertain",
+      "expectedRoute": "remote-candidate",
+      "requiredEvidenceIds": []
+    },
+    {
+      "id": "de-net-and-public-capabilities",
+      "locale": "de",
+      "category": "whole-question-public-faq",
+      "question": "Was ist eine Bernsteinkescher und was kannst du?",
+      "expectedDisposition": "answer",
+      "expectedRoute": "remote-candidate",
+      "requiredEvidenceIds": [
+        "equipment.amber-net",
+        "assistant.public-capabilities"
+      ]
+    },
+    {
+      "id": "de-unknown-exact-landing-instrument",
+      "locale": "de",
+      "category": "unknown-instrument-no-prefix-answer",
+      "question": "Kann ein Bernsteinmessgerät den genauen Landeort des nächsten Bernsteinstücks vorhersagen?",
+      "expectedDisposition": "uncertain",
+      "expectedRoute": "remote-candidate",
+      "requiredEvidenceIds": []
+    },
+    {
+      "id": "en-net-and-public-capabilities",
+      "locale": "en",
+      "category": "whole-question-public-faq",
+      "question": "What is an amber net and what can you do?",
+      "expectedDisposition": "answer",
+      "expectedRoute": "remote-candidate",
+      "requiredEvidenceIds": [
+        "equipment.amber-net",
+        "assistant.public-capabilities"
+      ]
+    },
+    {
+      "id": "en-unknown-exact-landing-instrument",
+      "locale": "en",
+      "category": "unknown-instrument-no-prefix-answer",
+      "question": "Can an amber meter predict the exact landing place of the next piece of amber?",
+      "expectedDisposition": "uncertain",
+      "expectedRoute": "remote-candidate",
+      "requiredEvidenceIds": []
     }
   ]
 }

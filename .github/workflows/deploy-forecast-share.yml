@@ -1,0 +1,84 @@
+name: Deploy RavRadar forecast sharing
+
+on:
+  workflow_dispatch:
+    inputs:
+      expected_main:
+        description: "Eksakt kvalificeret main SHA (40 tegn)"
+        required: true
+        type: string
+      confirmation:
+        description: "Skriv DEPLOY-FORECAST-SHARE"
+        required: true
+        type: string
+
+permissions:
+  contents: read
+  actions: read
+  pull-requests: read
+
+# Separate from weather/Pages: a share failure cannot turn delivered weather red.
+# Same physical production queue: never replace the Worker during a weather writer.
+concurrency:
+  group: ravradar-weather-production-v2
+  queue: max
+  cancel-in-progress: false
+
+jobs:
+  deploy-share:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+
+      - name: Require explicit share release on exact current main
+        shell: bash
+        env:
+          EXPECTED_MAIN: ${{ inputs.expected_main }}
+          SHARE_CONFIRMATION: ${{ inputs.confirmation }}
+        run: |
+          set -euo pipefail
+          test "$GITHUB_EVENT_NAME" = workflow_dispatch
+          test "$GITHUB_REF" = refs/heads/main
+          test "$GITHUB_RUN_ATTEMPT" = 1
+          test "$SHARE_CONFIRMATION" = DEPLOY-FORECAST-SHARE
+          [[ "$EXPECTED_MAIN" =~ ^[a-f0-9]{40}$ ]]
+          test "$GITHUB_SHA" = "$EXPECTED_MAIN"
+          git fetch --no-tags origin +refs/heads/main:refs/remotes/origin/main
+          test "$(git rev-parse HEAD^{commit})" = "$EXPECTED_MAIN"
+          test "$(git rev-parse origin/main^{commit})" = "$EXPECTED_MAIN"
+
+      - name: Reuse exact successful source proof
+        id: source-proof
+        run: node scripts/weather-source-gate.mjs check
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+
+      - name: Require existing proof without a duplicate source gate
+        shell: bash
+        run: test "${{ steps.source-proof.outputs.required }}" = false
+
+      - name: Deploy only fixed public forecast-share Worker and read back
+        run: node scripts/deploy-forecast-share.mjs
+        env:
+          EXPECTED_MAIN: ${{ inputs.expected_main }}
+          SHARE_CONFIRMATION: ${{ inputs.confirmation }}
+          SOURCE_REQUIRED: ${{ steps.source-proof.outputs.required }}
+          GITHUB_TOKEN: ${{ github.token }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+
+      - name: Preserve safe share release outcome
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: forecast-share-release-${{ github.run_id }}-${{ github.run_attempt }}
+          path: .cache/forecast-share-release.jsonl
+          if-no-files-found: ignore
+          retention-days: 7

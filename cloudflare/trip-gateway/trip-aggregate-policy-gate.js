@@ -2,6 +2,7 @@ import { canonicalJson, sha256Hex } from '../../supabase/functions/_shared/trip-
 import { ravScoreModelBinding } from '../../js/core/ravscore-model-contract.js';
 import { AGGREGATE_LIMITS, assertAggregateRequest, aggregateWithheldReport, aggregatePendingReport } from '../../supabase/functions/_shared/trip-aggregate-contract.js';
 import { POLICY, fail } from './trip-aggregate-dp.js';
+import { CATEGORICAL_POLICY, assertPrivateTripStudyReport } from './trip-aggregate-categorical.js';
 import { startTripWeatherAggregateJob, advanceTripWeatherAggregateJob, selectPendingTripWeatherAggregateRequest, selectReadyTripWeatherAggregateRequest, assertServerSelectedAggregateRequest } from './trip-aggregate-job.js';
 import { preparePersistedReviewProposal, preparePersistedReadyInputReviewProposal, verifyPersistedReviewProposal, ACCOUNTING_POLICY, accountingPolicySha256 } from './trip-aggregate-ledger.js';
 
@@ -32,6 +33,45 @@ export async function assertReviewPolicyAnchor(control) {
       || canonicalJson(reply.results[0])!==canonicalJson(POLICY_ANCHOR)) fail('DP_POLICY_ANCHOR_INVALID');
   return POLICY_ANCHOR;
 }
+export const CATEGORICAL_POLICY_ANCHOR = Object.freeze({
+  "schema_version": 1,
+  "ledger_id": "rr-trip-descriptive-GLOBAL",
+  "report_schema_version": 3,
+  "cell_count": 160,
+  "policy_sha256": "58ea1d3d218ca754aa511bc55d25bc7d5dbc9dcbbe580ffb7ecd656df56ee1c6",
+  "mechanism_sha256": "68b677e15effda12cf4b48a29b888f14218a3537b0b6342e927be1aaf0f56af6",
+  "legacy_mechanism_sha256": "ffd3389017064fce904ec2f8f850b4e60248db0e29185f9a0ed83021be73117b",
+  "accounting_sha256": "1e79fc2cd2ba9c06c07537458b4628d3a6ae878b750a69885a256108206feb56",
+  "cost_units": 4,
+  "maximum_units": 8,
+  "status": "PRIVATE_UNISSUED_REVIEW_ONLY",
+  "public_release_issued": 0
+});
+// Only a known absent additive schema preserves the old binary producer.
+// Read/shape/hash errors never become absence or a silent policy fallback.
+export async function readCategoricalReportPolicy(control) {
+  const found=await control.prepare("select type,name from sqlite_master where name='trip_weather_aggregate_categorical_policy_anchor'").bind().all();
+  if(found?.success!==true||!Array.isArray(found.results)||found.results.length>1)fail('DP_CATEGORICAL_POLICY_UNAVAILABLE');
+  if(found.results.length===0)return null;
+  const row=found.results[0];
+  if(!row||Object.keys(row).sort().join(',')!=='name,type'||row.type!=='table'||row.name!=='trip_weather_aggregate_categorical_policy_anchor')fail('DP_CATEGORICAL_POLICY_INVALID');
+  if(CATEGORICAL_POLICY.namespace!==POLICY_ANCHOR.ledger_id||CATEGORICAL_POLICY.costUnits!==4
+    ||CATEGORICAL_POLICY.lifetimeBudgetUnits!==8||CATEGORICAL_POLICY.coordinatesPerContribution!==4
+    ||CATEGORICAL_POLICY.contributionPerAccountPerMonth!==1||CATEGORICAL_POLICY.alphaNumerator!==7
+    ||CATEGORICAL_POLICY.alphaDenominator!==8||CATEGORICAL_POLICY.countBound!==1000
+    ||CATEGORICAL_POLICY.publicReleaseIssued!==false||CATEGORICAL_POLICY.legacySamplerSha256!==POLICY_ANCHOR.mechanism_sha256
+    ||await sha256Hex(canonicalJson(CATEGORICAL_POLICY))!==CATEGORICAL_POLICY_ANCHOR.policy_sha256)fail('DP_CATEGORICAL_POLICY_INVALID');
+  const reply=await control.prepare('select '+Object.keys(CATEGORICAL_POLICY_ANCHOR).join(',')+' from trip_weather_aggregate_categorical_policy_anchor').bind().all();
+  if(reply?.success!==true||!Array.isArray(reply.results)||reply.results.length!==1
+    ||canonicalJson(reply.results[0])!==canonicalJson(CATEGORICAL_POLICY_ANCHOR))fail('DP_CATEGORICAL_POLICY_INVALID');
+  return CATEGORICAL_POLICY;
+}
+export async function assertStoredReportPolicy(control,report) {
+  await assertPrivateTripStudyReport(report);
+  if(report.schemaVersion===3&&!await readCategoricalReportPolicy(control))fail('DP_CATEGORICAL_POLICY_UNAVAILABLE');
+  return report;
+}
+
 // The existing45-query ceiling covers this WHOLE invocation, not45 source
 // reads plus uncounted policy/replay/write calls. No provider limit is raised.
 export function policyQueryBoundDatabases(databases) {
@@ -69,9 +109,9 @@ async function preparePolicyBoundReviewUsing(databaseList, request, prepare, {ra
   const result=await prepare(bounded,request,{randomFill});
   await assertReviewPolicyAnchor(bounded[0]);
   if (result?.kind!=='PRIVATE_REVIEW_RESULT_DO_NOT_RELEASE' || !['PERSISTED','REPLAY'].includes(result.status)
-      || result.report?.policySha256!==POLICY_ANCHOR.policy_sha256
       || result.report?.publicReleaseIssued!==false
       || result.accountingSha256!==POLICY_ANCHOR.accounting_sha256) fail('DP_POLICY_BASIS_MISMATCH');
+  await assertStoredReportPolicy(bounded[0],result.report);
   return result;
 }
 // Actual signed Worker may prepare/replay privately, but its HTTP DTO remains
@@ -110,7 +150,8 @@ export async function handleVerifyPolicyBoundAggregate(databases,request){
   const result=await verifyPersistedReviewProposal(bounded,request);
   await assertReviewPolicyAnchor(bounded[0]);
   if(result?.kind!=='PRIVATE_REVIEW_RESULT_DO_NOT_RELEASE'||result.status!=='REPLAY'
-      ||result.report?.policySha256!==POLICY_ANCHOR.policy_sha256||result.report?.publicReleaseIssued!==false
+      ||result.report?.publicReleaseIssued!==false
       || result.accountingSha256!==POLICY_ANCHOR.accounting_sha256)fail('DP_POLICY_BASIS_MISMATCH');
+  await assertStoredReportPolicy(bounded[0],result.report);
   return result.report;
 }

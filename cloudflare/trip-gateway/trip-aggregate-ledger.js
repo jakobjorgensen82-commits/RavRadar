@@ -1,9 +1,11 @@
 import { canonicalJson, sha256Hex } from '../../supabase/functions/_shared/trip-storage.js';
 import { ravScoreModelBinding } from '../../js/core/ravscore-model-contract.js';
 import { assertAggregateRequest } from '../../supabase/functions/_shared/trip-aggregate-contract.js';
-import { prepareTripWeatherAggregate, prepareReadyTripWeatherAggregate, aggregateContributionSubjects } from './trip-aggregate.js';
+import { prepareTripWeatherAggregate, prepareReadyTripWeatherAggregate, prepareCategoricalTripWeatherAggregate, prepareCategoricalReadyTripWeatherAggregate, aggregateContributionSubjects } from './trip-aggregate.js';
 import { readTripWeatherAggregateJob, assertServerSelectedAggregateRequest } from './trip-aggregate-job.js';
-import { POLICY, fail, makePrivateNoisyProposal, assertPrivateNoisyProposal } from './trip-aggregate-dp.js';
+import { POLICY, fail, makePrivateNoisyProposal } from './trip-aggregate-dp.js';
+import { makePrivateCategoricalProposal, assertPrivateTripStudyReport as assertPrivateNoisyProposal } from './trip-aggregate-categorical.js';
+import { readCategoricalReportPolicy } from './trip-aggregate-policy-gate.js';
 
 export const ACCOUNTING_POLICY=Object.freeze({
   id:'rr-account-lifetime-two-months-UNISSUED',scope:'PER_ACCOUNT_LIFETIME',
@@ -96,10 +98,15 @@ async function preparePersistedReviewUsing(databaseList,request,prepareCandidate
   assertDatabases(databaseList,request);
   const control=databaseList[0],existing=await readFrozen(control,request.period);
   if(existing)return{kind:'PRIVATE_REVIEW_RESULT_DO_NOT_RELEASE',status:'REPLAY',report:existing,accountingSha256:await accountingPolicySha256()};
-  const basis=await readBasis(control,request),candidate=await prepareCandidate(databaseList,request);
+  // An existing month is replayed above before any output-format selection.
+  // Only the exact additive anchor selects the new producer for a NEW report.
+  const categorical=await readCategoricalReportPolicy(control);
+  const producer=categorical?(prepareCandidate===prepareReadyTripWeatherAggregate
+    ?prepareCategoricalReadyTripWeatherAggregate:prepareCategoricalTripWeatherAggregate):prepareCandidate;
+  const basis=await readBasis(control,request),candidate=await producer(databaseList,request);
   await assertBasisUnchanged(control,request,basis);
   const subjects=canonicalJson(aggregateContributionSubjects(candidate));subjectsFromJson(subjects);
-  const report=await makePrivateNoisyProposal(candidate,request,{randomFill}),body=canonicalJson(report);
+  const report=await (categorical?makePrivateCategoricalProposal:makePrivateNoisyProposal)(candidate,request,{randomFill}),body=canonicalJson(report);
   const key=await sha256Hex(canonicalJson({ledgerId:POLICY.namespace,period:report.period}));
   const accountingSha256=await accountingPolicySha256();let reply;
   try{

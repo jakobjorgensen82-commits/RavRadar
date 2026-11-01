@@ -2,6 +2,7 @@
 
 import crypto from 'node:crypto';
 import fs from 'node:fs/promises';
+import { readForecastShareProjectionFiles, auditForecastShareProjectionFiles } from './build-forecast-share-projection.mjs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { PROFILE_BINDING } from '../js/jordrav/profile-examples.js';
@@ -38,6 +39,10 @@ const EXPECTED_PUBLIC_PATHS = Object.freeze({
 const ZONE_REGISTRY_FILE = 'data/zones.geojson';
 const PUBLIC_VERSION_FILE = 'version.json';
 const PUBLIC_JORDRAV_PROFILE_FILE = 'data/jordrav/context-20261006/profiles.json';
+const PUBLIC_CLIENT_MODULES = new Set([
+  'js/services/private-trip-study.js',
+  'js/ui/admin-private-trip-study.js',
+]);
 
 const SHA256_PATTERN = /^[a-f0-9]{64}$/;
 const SEMVER_PATTERN = /^\d+\.\d+\.\d+$/;
@@ -98,6 +103,26 @@ function privatePathReason(value) {
     if (/candidate[-_.]?g.*recovery|continuation.*recovery/.test(segment)) return 'private recovery';
   }
   return null;
+}
+
+async function isExactPublicClientModule(entry) {
+  if (entry.kind !== 'file' || !PUBLIC_CLIENT_MODULES.has(entry.relative)) return false;
+  // Only the two reviewed browser files may have a private-looking entry name.
+  // Neither JSON references nor private payload fingerprints use this exception.
+  const source = new URL(`../${entry.relative}`, import.meta.url);
+  try {
+    const [sourceStat, artifactStat] = await Promise.all([
+      fs.lstat(source), fs.lstat(entry.absolute),
+    ]);
+    if (!sourceStat.isFile() || sourceStat.isSymbolicLink()
+      || !artifactStat.isFile() || artifactStat.isSymbolicLink()) return false;
+    const [sourceBytes, artifactBytes] = await Promise.all([
+      fs.readFile(source), fs.readFile(entry.absolute),
+    ]);
+    return sourceBytes.equals(artifactBytes);
+  } catch {
+    return false;
+  }
 }
 
 function isPathLikeString(value) {
@@ -589,19 +614,31 @@ export async function auditPagesArtifactPrivacy(siteRoot, {
     deliveryEntries = publicDeliveryEntries(deliveryManifest);
   } catch { issues.push('invalid public delivery manifest'); }
   const deliveryFiles = new Map(deliveryEntries.map(entry => [`data/live/${entry.path.slice(2)}`, entry]));
-  const expectedFiles = new Set([...EXPECTED_LIVE_FILES, ...deliveryFiles.keys()]);
+  // The deployed, closure-bound compact reader requires the index and all210 zone files.
+  const shareRequired = files.some(file => file.relative === 'js/services/forecast-share-projection.js');
+  let shareFiles = null;
+  try {
+    shareFiles = await readForecastShareProjectionFiles({ liveDirectory: path.join(root, 'data/live'),
+      manifestText: await fs.readFile(path.join(root, 'data/live/manifest.json'), 'utf8'), required: shareRequired });
+  } catch { issues.push('invalid or missing public forecast sharing projection'); }
+  const sharePaths = shareFiles ? ['data/live/forecast-share.json',
+    ...shareFiles.descriptor.zones.map(file => 'data/live/' + file.path.slice(2))] : [];
+  const expectedFiles = new Set([...EXPECTED_LIVE_FILES, ...deliveryFiles.keys(), ...sharePaths]);
   const pathKeys = new Map();
   for (const entry of entries) {
     const key = normalizedPath(entry.relative);
     if (pathKeys.has(key)) issues.push(`case-normalized path collision at ${safePath(entry.relative)}`);
     pathKeys.set(key, entry.relative);
     const reason = privatePathReason(entry.relative);
-    if (reason) issues.push(`${reason} path at ${safePath(entry.relative)}`);
+    if (reason && !(reason === 'private artifact' && await isExactPublicClientModule(entry))) {
+      issues.push(`${reason} path at ${safePath(entry.relative)}`);
+    }
     if (key === 'data/live' && entry.relative !== 'data/live') {
       issues.push(`non-canonical live directory at ${safePath(entry.relative)}`);
     }
     if (key.startsWith('data/live/') && !expectedFiles.has(entry.relative)
-      && !(entry.relative === 'data/live/forecast' && entry.kind === 'directory' && deliveryFiles.size > 0)) {
+      && !(entry.relative === 'data/live/forecast' && entry.kind === 'directory' && deliveryFiles.size > 0)
+      && !(entry.relative === 'data/live/share' && entry.kind === 'directory' && shareFiles !== null)) {
       issues.push(`unexpected live artifact at ${safePath(entry.relative)}`);
     }
   }
@@ -679,6 +716,14 @@ export async function auditPagesArtifactPrivacy(siteRoot, {
     });
   }
 
+  if (shareFiles && requiredParsed) {
+    try {
+      await auditForecastShareProjectionFiles({ liveDirectory: path.join(root, 'data/live'),
+        manifestText: texts.get('data/live/manifest.json'),
+        details: parsed.get('data/live/public-condition-details.json'),
+        registry: parsed.get(ZONE_REGISTRY_FILE), required: true });
+    } catch { issues.push('public forecast sharing results differ from normal public results'); }
+  }
   if (issues.length) throw new PagesArtifactPrivacyError(issues);
   return Object.freeze({
     root,

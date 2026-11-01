@@ -11,6 +11,8 @@ import {
   legacyCandidateGSourceIdentity,
 } from './lib/ravscore-legacy-candidate-g-source.mjs';
 import { buildIntegratedCutoverReadiness } from './integrated-cutover-readiness.mjs';
+import { assertIntegratedRavScoreSelection } from './lib/ravscore-profile-transition.mjs';
+import { readProtectedAdminRavScoreSelection } from './lib/protected-admin-ravscore-selection.mjs';
 import {
   LEGACY_CANDIDATE_G_ATTESTATION_SCHEMA,
   LEGACY_CANDIDATE_G_VERIFICATION_SCHEMA,
@@ -806,6 +808,106 @@ const historicalIntegratedResolved = resolveOperationalRavScoreModel(
   { profileRow: historicalIntegratedSourceProfileRow },
 );
 assert.equal(operationalResolvedBindingCurrent(historicalIntegratedResolved), false);
+
+// Generic admin sync observes the current ACTIVE public truth before the next
+// Pages/CAS release. A valid historical pair must not match the new template.
+assert.throws(() => assertIntegratedRavScoreSelection(
+  historicalIntegratedSourceProfileRow.payload,
+  'Central ravscore-profile-selection',
+), /complete integrated-model-only contract/);
+const historicalProtectedAdminRows = Object.freeze([
+  Object.freeze({
+    document_key: RAVSCORE_OPERATIONAL_ACTIVATION_DOCUMENT_KEY,
+    ...historicalIntegratedSourceRow,
+  }),
+  Object.freeze({
+    document_key: RAVSCORE_PROFILE_SELECTION_DOCUMENT_KEY,
+    ...historicalIntegratedSourceProfileRow,
+  }),
+]);
+const currentProtectedAdminRows = Object.freeze([
+  Object.freeze({
+    document_key: RAVSCORE_OPERATIONAL_ACTIVATION_DOCUMENT_KEY,
+    version: 5,
+    payload: maintenance.document,
+  }),
+  Object.freeze({
+    document_key: RAVSCORE_PROFILE_SELECTION_DOCUMENT_KEY,
+    ...integratedProfileRow,
+  }),
+]);
+const protectedAdminSnapshotsBefore = JSON.stringify([
+  historicalProtectedAdminRows, currentProtectedAdminRows,
+]);
+let protectedAdminReadCount = 0;
+const protectedAdminRequest = async (suffix, options, operation) => {
+  assert.equal(suffix,
+    '?select=document_key,payload,version&document_key=in.(ravscore-operational-model-activation,ravscore-profile-selection)');
+  assert.deepEqual(options, {}, 'the protected profile seam must never write');
+  assert.equal(operation, 'beskyttet sync: atomisk RavScore operation/profil-læsning');
+  protectedAdminReadCount += 1;
+  // The second call models final readback after an intervening valid CAS.
+  return protectedAdminReadCount === 1
+    ? [...historicalProtectedAdminRows].reverse() : currentProtectedAdminRows;
+};
+assert.strictEqual(await readProtectedAdminRavScoreSelection(protectedAdminRequest),
+  historicalIntegratedSourceProfileRow.payload);
+assert.strictEqual(await readProtectedAdminRavScoreSelection(protectedAdminRequest),
+  integratedProfileRow.payload);
+assert.equal(protectedAdminReadCount, 2, 'manifest and readback need fresh pair snapshots');
+assert.equal(JSON.stringify([historicalProtectedAdminRows, currentProtectedAdminRows]),
+  protectedAdminSnapshotsBefore, 'read-only validation must preserve both original pairs');
+
+for (const rows of [
+  null, {}, [], historicalProtectedAdminRows.slice(0, 1),
+  [...historicalProtectedAdminRows, historicalProtectedAdminRows[0]],
+  [historicalProtectedAdminRows[0], historicalProtectedAdminRows[0]],
+  [historicalProtectedAdminRows[0], {
+    ...historicalProtectedAdminRows[1], document_key: 'unknown-operation',
+  }],
+  [historicalProtectedAdminRows[0], {
+    ...historicalProtectedAdminRows[1], extra: true,
+  }],
+  [historicalProtectedAdminRows[0], {
+    document_key: RAVSCORE_PROFILE_SELECTION_DOCUMENT_KEY, version: 30,
+  }],
+  [historicalProtectedAdminRows[0], {
+    ...historicalProtectedAdminRows[1], payload: null,
+  }],
+  [historicalProtectedAdminRows[0], {
+    ...historicalProtectedAdminRows[1], payload: integratedProfile,
+  }],
+  [historicalProtectedAdminRows[0], {
+    ...historicalProtectedAdminRows[1],
+    payload: { ...oldIntegratedProfile, unreviewed: true },
+  }],
+  [{ ...historicalProtectedAdminRows[0],
+    payload: { ...historicalIntegratedSourceDocument, unreviewed: true },
+  }, historicalProtectedAdminRows[1]],
+  [{ ...historicalProtectedAdminRows[0],
+    payload: { ...historicalIntegratedSourceDocument, status: 'UNKNOWN' },
+  }, historicalProtectedAdminRows[1]],
+  [{ ...historicalProtectedAdminRows[0], payload: rollbackPendingRow.payload },
+    currentProtectedAdminRows[1]],
+  [{ ...historicalProtectedAdminRows[0], payload: returnPendingRow.payload }, {
+    document_key: RAVSCORE_PROFILE_SELECTION_DOCUMENT_KEY, ...candidateProfileRow,
+  }],
+]) {
+  let reads = 0;
+  await assert.rejects(readProtectedAdminRavScoreSelection(async () => {
+    reads += 1;
+    return rows;
+  }));
+  assert.equal(reads, 1, 'a rejected pair must not trigger another read or fallback');
+}
+for (const version of [0, -1, 1.5, true, '1', 'unknown', Number.MAX_SAFE_INTEGER + 1]) {
+  for (const index of [0, 1]) {
+    const rows = historicalProtectedAdminRows.map((row, rowIndex) => rowIndex === index
+      ? { ...row, version } : row);
+    await assert.rejects(readProtectedAdminRavScoreSelection(async () => rows),
+      /snapshot is malformed/);
+  }
+}
 const completedSource = completedRuntimeOperationalSource(historicalIntegratedSourceRow, historicalIntegratedSourceProfileRow);
 assert.equal(completedSource.calibrationEligible, false);
 assert.equal(completedSource.sourceRows.operationalVersion, historicalIntegratedSourceRow.version);
@@ -3719,6 +3821,19 @@ assert.throws(() => assertOperationalActivationDocument({
   transitionKind:RAVSCORE_OPERATIONAL_TRANSITION_KINDS.candidateRefresh,
 }), /Integrated maintenance document lacks one exact active public identity/,
 'et identity-neutralt integreret reseal må ikke ommærkes som Candidate G scheduler-refresh');
+
+for (const [operationalRow, profileRow] of [
+  [candidateActiveRow, candidateProfileRow],
+  [legacyRefreshCompleteRow, candidateProfileRow],
+  [{ version: 2, payload: legacyRefreshAbort.document }, legacyProfileRow],
+]) {
+  const rows = [
+    { document_key: RAVSCORE_OPERATIONAL_ACTIVATION_DOCUMENT_KEY, ...operationalRow },
+    { document_key: RAVSCORE_PROFILE_SELECTION_DOCUMENT_KEY, ...profileRow },
+  ];
+  assert.strictEqual(await readProtectedAdminRavScoreSelection(async () => rows),
+    profileRow.payload, 'valid sealed Candidate and legacy source profiles stay read-only');
+}
 
 const serialized = JSON.stringify([
   rollbackBegin.document,

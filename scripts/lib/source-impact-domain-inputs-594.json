@@ -1,0 +1,224 @@
+{
+  "schemaVersion": 1,
+  "id": "REVIEWED_594_DOMAIN_INPUTS_C100_I99_T12",
+  "referenceCommit": "e8786fabba66bd9184ab08a0c8c83bf97711f807",
+  "postgresModules": [
+    "config.js",
+    "js/core/phase-d-process-candidate.js",
+    "js/core/phase-d-wave-process-candidate.js",
+    "js/core/ravscore-candidate-g-state-pipeline.js",
+    "js/core/ravscore-candidate-g.js",
+    "js/core/ravscore-current-supply-memory.js",
+    "js/core/ravscore-integrated-state-pipeline.js",
+    "js/core/ravscore-mobilisation-memory.js",
+    "js/core/ravscore-model-bundle.generated.js",
+    "js/core/ravscore-model-contract.js",
+    "js/core/ravscore-profile-switch.js",
+    "js/core/ravscore-public-model.js",
+    "js/core/ravscore-regime-memory.js",
+    "js/core/ravscore-time.js",
+    "js/core/ravscore-wave-approach-state.js",
+    "js/core/ravscore-wave-mobilisation-state.js",
+    "js/core/score-presentation.js",
+    "js/core/wave-approach.js",
+    "scripts/build-statistics-preference-revision.mjs",
+    "scripts/check-account-statistics-assistant-predecessor-source.mjs",
+    "scripts/check-assistant-later-h0-predecessor-source.mjs",
+    "scripts/check-current-memory-warmup-predecessor-source.mjs",
+    "scripts/check-installed593-code-predecessor-source.mjs",
+    "scripts/check-last-mile-enclosure-predecessor-source.mjs",
+    "scripts/check-native-current-reanalysis-predecessor-source.mjs",
+    "scripts/check-native-identity-frozen-i71-source.mjs",
+    "scripts/check-native-original-continuity-predecessor-source.mjs",
+    "scripts/integrated-cutover-readiness.mjs",
+    "scripts/lib/account-assistant-successor-source.mjs",
+    "scripts/lib/account-statistics-assistant-successor-source.mjs",
+    "scripts/lib/assistant-later-h0-postgres.mjs",
+    "scripts/lib/assistant-later-h0-successor-source.mjs",
+    "scripts/lib/checkpoint-cas-native-postgres.mjs",
+    "scripts/lib/coastal-point-staging-contract.mjs",
+    "scripts/lib/copernicus-offline-environment.mjs",
+    "scripts/lib/current-grid-successor-source.mjs",
+    "scripts/lib/current-memory-warmup-postgres.mjs",
+    "scripts/lib/current-memory-warmup-successor-source.mjs",
+    "scripts/lib/current-transport-history.mjs",
+    "scripts/lib/dmi-marine-zone-exclusions.mjs",
+    "scripts/lib/established-native-current-origin-successor-source.mjs",
+    "scripts/lib/last-mile-enclosure-successor-source.mjs",
+    "scripts/lib/live-current-pilot.mjs",
+    "scripts/lib/native-identity-checkpoint-postgres.mjs",
+    "scripts/lib/native-original-continuity-successor-source.mjs",
+    "scripts/lib/native-sampling-identity-successor-source.mjs",
+    "scripts/lib/native0600-original-successor-source.mjs",
+    "scripts/lib/ravscore-candidate-g-rollback-runtime.mjs",
+    "scripts/lib/ravscore-continuation-implementation-contract.mjs",
+    "scripts/lib/ravscore-profile-transition.mjs",
+    "scripts/lib/ravscore-sampling-context.mjs",
+    "scripts/lib/statistics-preference-revision-native-postgres.mjs",
+    "scripts/lib/supabase-admin-rest.mjs",
+    "scripts/native-sampling-identity-successor-readiness.mjs",
+    "scripts/protected-ravscore-continuation-checkpoint.mjs",
+    "scripts/ravscore-continuation-checkpoint.mjs",
+    "scripts/rollback-assets/ravscore-model-bundle.generated.js",
+    "scripts/rollback-assets/ravscore-model-contract.js",
+    "scripts/run-frozen-current-memory-warmup-source-targets.mjs",
+    "scripts/run-frozen-established-native-current-origin-source-targets.mjs",
+    "scripts/run-frozen-native0600-source-targets.mjs",
+    "scripts/run-frozen584-checkpoint-postgres-source.mjs",
+    "scripts/run-frozen585-native-continuity-postgres-source.mjs",
+    "scripts/run-frozen586-assistant-later-h0-postgres-source.mjs",
+    "scripts/test-protected-ravscore-continuation-checkpoint.mjs",
+    "scripts/verify-account-assistant-schema.mjs"
+  ],
+  "postgresData": [
+    "scripts/fixtures/statistics-preference-revision-input.json",
+    "scripts/lib/dmi-marine-zone-exclusions.json",
+    "scripts/lib/established-native-current-origin-source-target-inventory.json",
+    "scripts/lib/last-mile-enclosure-predecessor-source-inventory.json",
+    "scripts/fixtures/installed593-code-predecessor.json"
+  ],
+  "nativeEvidenceControls": [
+    ".github/workflows/validate-pull-request.yml",
+    "scripts/native-postgres-evidence.mjs",
+    "scripts/test-native-postgres-evidence.mjs",
+    "requirements-dmi.txt",
+    "requirements-geometry.txt",
+    "requirements-copernicus.txt",
+    "scripts/national584-source-evidence.mjs",
+    "scripts/source-impact-full-baseline.mjs",
+    "scripts/test-source-impact-full-baseline.mjs",
+    "scripts/lib/source-tree-content.mjs",
+    "scripts/lib/weather-source-gate.mjs",
+    "scripts/lib/source-impact-workflow-review.mjs",
+    "scripts/lib/account-statistics-assistant-package-review.mjs",
+    "scripts/lib/account-statistics-assistant-package-review.json",
+    "scripts/validate-source-once.mjs",
+    "scripts/run-frozen584-source-targets.mjs",
+    "scripts/lib/frozen584-normal-source-target-inventory.json"
+  ],
+  "setupInputs": [
+    ".github/workflows/validate-pull-request.yml",
+    "requirements-dmi.txt",
+    "requirements-geometry.txt",
+    "requirements-copernicus.txt",
+    "package.json",
+    "package-lock.json"
+  ],
+  "plannerTrustChain": [
+    "scripts/source-impact-plan.mjs",
+    "scripts/source-impact-git-diff.mjs",
+    "scripts/source-targeted-producer.mjs",
+    "scripts/source-targeted-receipt.mjs",
+    "scripts/source-targeted-consumer.mjs",
+    "scripts/source-impact-full-baseline.mjs",
+    "scripts/weather-source-gate.mjs",
+    "scripts/lib/weather-source-gate.mjs",
+    "scripts/lib/source-tree-content.mjs",
+    "scripts/lib/source-impact-workflow-review.mjs",
+    "scripts/validate-source-once.mjs",
+    "scripts/native-postgres-evidence.mjs",
+    "scripts/national584-source-evidence.mjs",
+    "scripts/source-impact-domain-inputs.mjs",
+    "scripts/lib/source-impact-domain-inputs-594.json",
+    "scripts/test-source-impact-domain-inputs.mjs",
+    ".github/workflows/validate-pull-request.yml",
+    "scripts/source-impact-domain-plan.mjs",
+    "scripts/lib/source-impact-control-imports.mjs",
+    "scripts/lib/source-impact-domain-owners-594.json",
+    "scripts/test-source-impact-domain-plan.mjs",
+    "scripts/test-candidate-g-rollback-metadata-order.mjs",
+    "scripts/test-source-targeted-domain-integration.mjs",
+    "scripts/test-source-targeted-consumer.mjs"
+  ],
+  "models": {
+    "C": {
+      "file": "scripts/rollback-assets/ravscore-model-bundle.generated.js",
+      "manifestName": "GENERATED_RAVSCORE_MODEL_BUNDLE_MANIFEST",
+      "contractName": "GENERATED_RAVSCORE_MODEL_CONTRACT_SHA256",
+      "bundleName": "GENERATED_RAVSCORE_MODEL_BUNDLE_SHA256",
+      "rowKey": "file",
+      "schemaVersion": "candidate-g-operational-rollback-bundle-v1",
+      "normalizationId": "candidate-g-rollback-lexer-esm-closure-utf8-lf-static-cachebuster-v2"
+    },
+    "I": {
+      "file": "js/core/ravscore-model-bundle.generated.js",
+      "manifestName": "GENERATED_RAVSCORE_MODEL_BUNDLE_MANIFEST",
+      "contractName": "GENERATED_RAVSCORE_MODEL_CONTRACT_SHA256",
+      "bundleName": "GENERATED_RAVSCORE_MODEL_BUNDLE_SHA256",
+      "rowKey": "path",
+      "schemaVersion": "1.0.0",
+      "normalizationId": "lexer-esm-relative-import-closure-utf8-lf-static-cachebuster-v2"
+    }
+  },
+  "continuation": {
+    "file": "scripts/lib/ravscore-continuation-implementation-contract.mjs",
+    "files": [
+      "js/core/ravscore-model-contract.js",
+      "js/core/ravscore-mobilisation-memory.js",
+      "js/core/ravscore-regime-memory.js",
+      "js/core/ravscore-candidate-g-state-pipeline.js",
+      "js/core/ravscore-current-supply-memory.js",
+      "js/core/ravscore-wave-mobilisation-state.js",
+      "js/core/ravscore-integrated-state-pipeline.js",
+      "scripts/lib/coastal-point-staging-contract.mjs",
+      "scripts/lib/ravscore-candidate-g-rollback-runtime.mjs",
+      "scripts/rollback-assets/ravscore-model-contract.js",
+      "scripts/rollback-assets/ravscore-model-bundle.generated.js",
+      "scripts/ravscore-continuation-checkpoint.mjs"
+    ]
+  },
+  "frozenGitAnchors": [
+    {
+      "head": "044d3045fecc2e70d6f35f60010921c6bd597ecc",
+      "tree": "4c56c3b73633bf3a5e1540e4f53e75be49f0b9da"
+    },
+    {
+      "head": "60d999a68136c43acb4d3664bbd66eed47283bb2",
+      "tree": "ead5743dd9098035b0de5f748de2009460506971"
+    },
+    {
+      "head": "d7b31aa3c706e2f657fe5de99c56434f3cff260d",
+      "tree": "9d05b060dba9015233a368c63438a3dfd9b9b45d"
+    },
+    {
+      "head": "d8a52e3e4cbaed1557cc56fe01f5f0a2b0d657d7",
+      "tree": "0ddede3f4b4fb4faa43b0d43f17c7cdbadcc9bc0"
+    },
+    {
+      "head": "ee029982538c67dea39880bc7b33f3508c10cf9c",
+      "tree": "400babda9377e43ea7ee1444008f7accd1aded32"
+    },
+    {
+      "head": "e8f9f7197d9e262720b7627b4970d3da82baa9d9",
+      "tree": "24dbf944916031ea256537b125966e946efeead8"
+    },
+    {
+      "head": "7df56f36f705db641b3f9476ee8ca1b4c4cfed0c",
+      "tree": "57192d6d5cfbd8709f3558ad8afaaf10dd6cafe0"
+    },
+    {
+      "head": "aab72babd27175a4276c2a2f1965c74bb021b4af",
+      "tree": "959f63d40c3980e804caa750da227cbd96e34a49"
+    },
+    {
+      "head": "b57480082fb16f31ed4e4aa2bc308fff9abfe2d0",
+      "tree": "fe3b9bf6270c2a506aac003d57e1e4d2a7d491de"
+    },
+    {
+      "head": "2712b6556acd33d3d06ff1a9b5f55b5b620f1ee9",
+      "tree": "e3fa7dd3eb7ec873deefb73148ad6bae0f0df725"
+    },
+    {
+      "head": "a157c265949da661827d375db61f9e1e8c4fd6a0",
+      "tree": "54b020c90661caa31b4e5e1eceedbe827336e4b9"
+    },
+    {
+      "head": "37e657867ff0f8c31f8e8489e5c9a1cf235192f9",
+      "tree": "aabcdfd4f81aeba8db448c7b60d87e5212e94cd3"
+    },
+    {
+      "head": "34cf42ff81cb8be7b3d8bb79029ae648e419a143",
+      "tree": "575dfca61399dd29309c4620aab96053f1d930b6"
+    }
+  ]
+}

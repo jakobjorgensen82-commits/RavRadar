@@ -136,4 +136,49 @@ assert.deepEqual(jpegDimensions('assets/about/ravjagt-med-boern-1800.jpg'), { wi
 assert.equal(about.includes('ravjagt-med-boern-1200.webp'), false, 'Om-siden må ikke bruge den tidligere sidevendte billedvariant');
 assert.equal(worker.includes('ravjagt-med-boern-1200.webp'), false, 'Offline-appskallen må ikke cache den tidligere sidevendte billedvariant');
 
+
+// Godkendt forklaringsafsnit: samme Om-side og uændrede eksisterende funktioner.
+const explainerMatch = about.match(/<article id="rr-about-explainer"[^>]*>([\s\S]*?)<\/article>/);
+assert.ok(explainerMatch, 'Det godkendte afsnit skal være en artikel på Om-siden.');
+const explainer = explainerMatch[1];
+const supportPosition = about.indexOf('id="stoet"');
+const contactPosition = about.indexOf('<section class="section contact-card"');
+assert.ok(supportPosition >= 0 && contactPosition >= 0
+  && supportPosition < explainerMatch.index && explainerMatch.index < contactPosition,
+  'Forklaringen skal stå mellem den rigtige MobilePay-støtte og kontakt.');
+assert.equal((explainer.match(/class="rr-chapter"/g) || []).length, 11);
+assert.match(explainer, /<h2 id="rr-explainer-title">/);
+assert.doesNotMatch(explainer, /<h1\b|rr-review|rr-placement|rr-header|ikke offentliggjort/);
+assert.ok(explainer.includes('Mere vind kan gøre vandoverfladen urolig, så det bliver sværere at se ned til bunden med en ravlygte.'));
+assert.ok(explainer.includes('<strong>8 centimeter hvert sekund</strong>'));
+assert.ok(explainer.includes('id="rr-current-angle" type="range" min="0" max="180" value="45" step="15"'));
+assert.doesNotMatch(explainer, /87\s*(?:RavScore|point)/);
+const aboutEntry = read('js/ui/about.js');
+const explainerCode = read('js/ui/about-explainer.js');
+const explainerLanguages = read('js/ui/about-explainer-i18n.js');
+assert.ok(aboutEntry.includes("installAboutExplainer(document.querySelector('#rr-about-explainer'));"));
+assert.match(explainerCode, /export function installAboutExplainer\(root\)/);
+assert.ok(explainerCode.includes("svg.setAttribute('aria-labelledby', 'rr-angle-title rr-angle-desc');"));
+assert.ok(explainerCode.includes('8 * Math.abs(Math.cos(radians))'));
+assert.ok(explainerCode.includes("angle === 90 ? 'along' : angle === 0 ? 'direct' : angle === 180 ? 'away'"));
+assert.doesNotMatch(explainerCode, /\b(?:fetch|XMLHttpRequest|WebSocket|localStorage|sessionStorage)\b|openai|widgetState|data\/live/,
+  'Principfiguren må ikke selv hente prognoser eller indføre gemt bruger-/udkaststate.');
+assert.equal((explainerLanguages.match(/'about\.explainer':/g) || []).length, 2,
+  'DE og EN skal registreres gennem Om-sidens normale sprogvej; dansk er HTML-fallback.');
+const aboutRelease = JSON.parse(read('package.json')).version;
+const aboutSuffix = '?v=' + aboutRelease + '&ui=about-explainer-20261025';
+assert.ok(about.includes('href="about.css' + aboutSuffix + '"'));
+assert.ok(about.includes('src="js/ui/about.js' + aboutSuffix + '"'));
+assert.ok(aboutEntry.includes("'./about-i18n.js" + aboutSuffix + "'"));
+assert.ok(aboutEntry.includes("'./about-explainer.js" + aboutSuffix + "'"));
+assert.ok(aboutI18n.includes("'./about-explainer-i18n.js" + aboutSuffix + "'"));
+for (const asset of ['about.css', 'js/ui/about.js', 'js/ui/about-i18n.js',
+  'js/ui/about-explainer.js', 'js/ui/about-explainer-i18n.js']) {
+  assert.ok(fs.statSync(path.join(root, asset)).isFile(), 'Om-importen skal findes: ' + asset);
+  assert.ok(worker.includes('`./' + asset + '?v=${APP_VERSION}&ui=about-explainer-20261025`'),
+    'Den nye Om-cachekæde mangler den præcise URL: ' + asset);
+}
+assert.ok(worker.includes('`./js/core/about-home-return.js?v=${APP_VERSION}`'),
+  'Om-sidens uændrede tilbagefunktion skal være med i den afgrænsede cachekæde.');
+
 console.log('Om RavRadar: indhold, hjemmeskærmswebapp, MobilePay og responsivt layout er kontraktkontrolleret.');

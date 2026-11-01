@@ -73,16 +73,17 @@ try{
 
 
 
-// Returning from a selected hour to Now hydrates the selected zone only via
-// the existing normal detail reader; a future or unavailable frame never does.
+// Every committed map hour keeps the selected zone's full forecast hydrated
+// through the existing normal reader; null/unready/closed views never do.
 const callbackSource=fragment(app,'function handleMapForecastCommit(frame)','function mapFrame()');
 let detailReads=0,callbackPaints=0;
 const commitContext={mapScores:new Map(),coreViewReady:true,state:{selectedZone:{id:'Z'}},
   refreshMapDisplay(){callbackPaints++;},ensureConditionDetails:async()=>{detailReads++;},console};
 vm.createContext(commitContext);vm.runInContext(callbackSource,commitContext);
-for(const frame of [{isNow:false},null])commitContext.handleMapForecastCommit(frame);
-assert.equal(detailReads,0);commitContext.handleMapForecastCommit({isNow:true});await Promise.resolve();assert.equal(detailReads,1);
-commitContext.state.selectedZone=null;commitContext.handleMapForecastCommit({isNow:true});assert.equal(detailReads,1);
+commitContext.handleMapForecastCommit({isNow:false});assert.equal(detailReads,1);
+commitContext.handleMapForecastCommit(null);assert.equal(detailReads,1);
+commitContext.handleMapForecastCommit({isNow:true});await Promise.resolve();assert.equal(detailReads,2);
+commitContext.state.selectedZone=null;commitContext.handleMapForecastCommit({isNow:true});assert.equal(detailReads,2);
 commitContext.coreViewReady=false;const priorPaints=callbackPaints;commitContext.handleMapForecastCommit({isNow:true});assert.equal(callbackPaints,priorPaints);
 assert.match(app,/onCommit:handleMapForecastCommit/);cases++;
 // Reuse the existing full-URL UI cache identity, without a model/version bump.
@@ -94,6 +95,7 @@ const cssUrl=html.match(/href="(style\.css\?[^\"]+)"/)?.[1];
 const bootstrapUrl=html.match(/src="(bootstrap\.js\?[^\"]+)"/)?.[1];
 const appUrl=bootstrap.match(/import\("([^\"]*app\.js\?[^\"]+)"\)/)?.[1];
 const rendererUrl=app.match(/from '([^']*map-timeline\.js\?[^']+)'/)?.[1];
+const infoPanelUrl=app.match(/from "([^"]*ui\/info-panel\.js\?[^"]+)"/)?.[1];
 const version=JSON.parse(read('package.json')).version;
 const oldKeys=new Map([
  `style.css?v=${version}&ui=account-20261006`,
@@ -103,6 +105,10 @@ const oldKeys=new Map([
  // The actually delivered timeline keys must also miss after this caller fix.
  `bootstrap.js?v=${version}&copy=footer-20261005&ui=account-timeline-20261018`,
  `app.js?v=${version}&copy=footer-20261005&ui=account-timeline-20261018`,
+ // The actually deployed590 callers and panel must also miss their old URLs.
+ `bootstrap.js?v=${version}&copy=footer-20261005&ui=forecast-share-20261024`,
+ `app.js?v=${version}&copy=footer-20261005&ui=forecast-share-20261024`,
+ `js/ui/info-panel.js?v=${version}`,
 ].map(key=>[new URL(key,root).href,{old:true}]));
 const fetched=[];
 const cacheContext={CACHE:'synthetic-installed581',caches:{open:async()=>({
@@ -110,17 +116,73 @@ const cacheContext={CACHE:'synthetic-installed581',caches:{open:async()=>({
 })},fetch:async request=>{fetched.push(request);return{ok:true,clone:()=>({fresh:true})};}};
 vm.createContext(cacheContext);
 vm.runInContext(fragment(sw,'async function cacheFirst(request)','async function staleWhileRevalidate(request)'),cacheContext);
-for(const value of [cssUrl,bootstrapUrl,appUrl,rendererUrl]){
+for(const value of [cssUrl,bootstrapUrl,appUrl,rendererUrl,infoPanelUrl]){
  assert.ok(value,'Changed UI asset must have an explicit URL');
  const url=new URL(value,root);
  assert.equal(url.searchParams.get('v'),version);
- assert.match(url.searchParams.get('ui')??'',/timeline.*20261018/);
+ const expectedUi=url.pathname.endsWith('/js/ui/map-timeline.js')?'timeline-days-20261018'
+   :url.pathname.endsWith('/style.css')?'forecast-share-20261024':'zone-panels-20261027';
+ assert.equal(url.searchParams.get('ui'),expectedUi);
  assert.equal(oldKeys.has(url.href),false,'A changed asset must not reuse an installed581 response');
  await cacheContext.cacheFirst(url.href);
  assert.equal(oldKeys.get(url.href).fresh,true);
 }
-assert.equal(fetched.length,4,'The actual worker cacheFirst fetches every changed UI asset exactly once');
+assert.equal(fetched.length,5,'The actual worker cacheFirst fetches every changed UI asset exactly once');
 assert.match(sw,/event\.request\.mode==='navigate'.*networkFirst\(event\.request\)/);cases++;
+
+// The new feature also busts the actually retained586 data-service request.
+// Run the real worker function again with an independent old586 cache; the
+// original timeline/original-cache checks above remain in force.
+const dataServiceUrl=app.match(/from "([^"]*services\/data-service\.js\?[^"]+)"/)?.[1];
+const shareUiUrl=app.match(/from '([^']*ui\/forecast-share\.js\?[^']+)'/)?.[1];
+const shareContractUrl=app.match(/from '([^']*services\/forecast-share-contract\.js\?[^']+)'/)?.[1];
+const dataSource=read('js/services/data-service.js'),shareUiSource=read('js/ui/forecast-share.js');
+const dataContractUrl=dataSource.match(/from '([^']*forecast-share-contract\.js\?[^']+)'/)?.[1];
+const uiContractUrl=shareUiSource.match(/from '([^']*forecast-share-contract\.js\?[^']+)'/)?.[1];
+assert.ok(dataServiceUrl&&shareUiUrl&&shareContractUrl&&dataContractUrl&&uiContractUrl);
+const contractIdentity=new URL(shareContractUrl,root).href;
+assert.equal(new URL(dataContractUrl,new URL(dataServiceUrl,root)).href,contractIdentity);
+assert.equal(new URL(uiContractUrl,new URL(shareUiUrl,root)).href,contractIdentity,
+  'App, data reader and UI must import the same full-URL contract module');
+const retained586=new Map([
+ 'style.css?v='+version+'&ui=account-timeline-20261018',
+ 'bootstrap.js?v='+version+'&copy=footer-20261005&ui=account-timeline-now-20261018',
+ 'app.js?v='+version+'&copy=footer-20261005&ui=account-timeline-now-20261018',
+ 'js/services/data-service.js?v='+version,
+].map(key=>[new URL(key,root).href,{old:true}]));
+const shareFetches=[],shareCacheContext={CACHE:'synthetic-installed586',caches:{open:async()=>({
+ match:async request=>retained586.get(request),put:(request,response)=>retained586.set(request,response),
+})},fetch:async request=>{shareFetches.push(request);return{ok:true,clone:()=>({fresh:true})};}};
+vm.createContext(shareCacheContext);
+vm.runInContext(fragment(sw,'async function cacheFirst(request)','async function staleWhileRevalidate(request)'),shareCacheContext);
+for(const value of [cssUrl,bootstrapUrl,appUrl,dataServiceUrl,shareUiUrl,shareContractUrl]){
+ const url=new URL(value,root);
+ assert.equal(url.searchParams.get('v'),version);
+ assert.equal(url.searchParams.get('ui'),/\/(?:bootstrap|app)\.js$/.test(url.pathname)
+   ?'zone-panels-20261027':'forecast-share-20261024');
+ assert.equal(retained586.has(url.href),false,'No changed/new share leaf may reuse the retained586 response');
+ await shareCacheContext.cacheFirst(url.href);await shareCacheContext.cacheFirst(url.href);
+ assert.equal(retained586.get(url.href).fresh,true);
+}
+assert.equal(shareFetches.length,6,'Each full URL is fetched once, then normally reused');
+assert.equal(new Set(shareFetches).size,6);cases++;
+
+// A real mode handler counts intent even if the user returns to the initial
+// mode. Programmatic bootstrap setMode remains outside the intent mechanism.
+const modeHandler=app.match(/button\.addEventListener\("click",(\(\)=>\{noteForecastShareUserIntent\(\);setMode\(button\.dataset\.mode\);\})\)/)?.[1];
+const startupOwner=app.match(/isStillRequested:(\(\)=>forecastShareUserIntent===0&&!state\.selectedZone)/)?.[1];
+assert.ok(modeHandler&&startupOwner);
+const intentModes=[],intentContext={forecastShareUserIntent:0,forecastShareControlCleanup:()=>{},
+ state:{selectedZone:null},button:{dataset:{mode:'beach'}},setMode:mode=>intentModes.push(mode)};
+vm.createContext(intentContext);
+vm.runInContext(fragment(app,'function noteForecastShareUserIntent()','const mapTimelineHost'),intentContext);
+const handler=vm.runInContext('('+modeHandler+')',intentContext),ownsStartup=vm.runInContext('('+startupOwner+')',intentContext);
+assert.equal(ownsStartup(),true);
+handler();intentContext.button.dataset.mode='waders';handler();
+assert.deepEqual(intentModes,['beach','waders']);assert.equal(intentContext.forecastShareUserIntent,2);
+assert.equal(ownsStartup(),false,'Returning to the same mode cannot resurrect the old startup link');
+assert.doesNotMatch(fragment(app,'function setMode(mode','async function resumePublicView()'),/noteForecastShareUserIntent/);
+cases++;
 
 globalThis.fetch=savedFetch;
 console.log(JSON.stringify({status:'PASS_MAP_TIMELINE_NORMAL_GENERATION_AND_LIFECYCLE',cases,normalAppCallers:true,normalRenderZones:true,networkCalls:0}));

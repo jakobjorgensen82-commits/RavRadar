@@ -9,6 +9,8 @@ import test from 'node:test';
 import { validateExactDmiOriginalRestorePlan, validateExactDmiOriginalRestorePreparation }
   from './run-exact-dmi-original-restore.mjs';
 
+import {canonicalSavedDmiOriginalCapture} from './lib/saved-dmi-original-capture.mjs';
+
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const sha = bytes => crypto.createHash('sha256').update(bytes).digest('hex');
 const canonical = value => JSON.stringify(value, (_key, item) =>
@@ -30,6 +32,22 @@ function fixturePlan() {
     modelBindingSha256: '2'.repeat(64), historyDemandSha256: '3'.repeat(64),
     originalsSha256: sha(canonical(originals)), nonce: '4'.repeat(32),
   }, originals };
+}
+function fixtureCurrent586Plan(){
+  const old=fixturePlan(),href='https://opendataapi.dmi.dk/v1/forecastdata/assets/synthetic-cached-original.grib';
+  const originals=[canonicalSavedDmiOriginalCapture({...old.originals[0],assetIdentitySha256:sha(href),
+    contentSha256:sha(Buffer.from('rawbytes'))})];
+  assert.ok(originals[0]);
+  return {schemaVersion:1,contractId:'dmi-current586-exact-original-restore-v1',originals,binding:{
+    scope:'CURRENT586_EXACT_ORIGINAL_RESTORE_39666991481_1',failedRun:'39666991481',failedAttempt:1,
+    targetReferenceAt:'2026-10-21T20:00:00.000Z',sourceHead:'94b2b6173747b9d1f7d261c5110042a657af0cac',
+    executionHead:currentHead,protectedBundleSha256:'e9e7b9327df875133b7c2c00ef6440bc411ef2178a9edf9d6cb1ba1a3e7555c3',
+    protectedDatasetId:'rr-synthetic-current586-closure',protectedProductionReferenceAt:'2026-10-21T02:00:00.000Z',
+    protectedGeneratedAt:'2026-10-21T02:01:00.000Z',sourceDescriptorSha256:'1'.repeat(64),
+    modelBindingSha256:'2'.repeat(64),modelBundleSha256:'6d8f7cca203b5f7ee5155f3c0cdb39403a02fd0eb30fecaca5070ef9f814a805',
+    conditionsSha256:'3'.repeat(64),checkpointGenerationSha256:'4'.repeat(64),remoteCheckpointSha256:'5'.repeat(64),
+    remoteCheckpointVersion:7,discoverySha256:'6'.repeat(64),originalsSha256:sha(canonical(originals)),
+    partCount:673,nonce:'a'.repeat(32)}};
 }
 function bytesOf(plan) { return Buffer.from(canonical(plan) + '\n'); }
 function environment(bytes) {
@@ -150,12 +168,38 @@ async function privateFixture(mode) {
   await fs.mkdir(path.join(root, 'scripts/lib'), { recursive: true });
   await fs.mkdir(path.join(root, '.cache/dmi-grib'), { recursive: true });
   for (const file of ['scripts/run-exact-dmi-original-restore.mjs', 'scripts/run-dmi-bulk-supervised.py',
-    'scripts/lib/weather-acquisition-writer.mjs']) await fs.copyFile(path.join(ROOT, file), path.join(root, file));
-  const bytes = bytesOf(fixturePlan());
+    'scripts/lib/weather-acquisition-writer.mjs','scripts/lib/current586-exact-original-plan.mjs',
+    'scripts/lib/saved-dmi-original-capture.mjs']) await fs.copyFile(path.join(ROOT, file), path.join(root, file));
+  const current586=mode.startsWith('current586-'),plan=current586?fixtureCurrent586Plan():fixturePlan();
+  const bytes = bytesOf(plan);
+  let manifestBytes=null;
+  if(current586){
+    // Only this owned synthetic fixture issues the known scope. Removing this
+    // exact replacement restores the whole unissued product helper unchanged.
+    const helperPath=path.join(root,'scripts/lib/current586-exact-original-plan.mjs');
+    const original=await fs.readFile(helperPath,'utf8');
+    const unissued='export const CURRENT586_EXACT_ORIGINAL_EXECUTION=null;';
+    if(original.includes(unissued)){
+      assert.equal(original.split(unissued).length,2);
+      const issued="export const CURRENT586_EXACT_ORIGINAL_EXECUTION=Object.freeze({scope:'CURRENT586_EXACT_ORIGINAL_RESTORE_39666991481_1'});";
+      const fixtureSource=original.replace(unissued,issued);
+      assert.equal(fixtureSource.replace(issued,unissued),original);
+      await fs.writeFile(helperPath,fixtureSource);
+    }else{
+      const api=await import('./lib/current586-exact-original-plan.mjs');
+      assert.deepEqual(api.CURRENT586_EXACT_ORIGINAL_EXECUTION,{scope:'CURRENT586_EXACT_ORIGINAL_RESTORE_39666991481_1'});
+      api.requireCurrent586ExactOriginalExecution();
+      assert.deepEqual(await fs.readFile(helperPath,'utf8'),original);
+    }
+    manifestBytes=Buffer.from(canonical({schemaVersion:2,assets:{'synthetic-cached-original.grib':{
+      ...plan.originals[0],canonicalHref:'https://opendataapi.dmi.dk/v1/forecastdata/assets/synthetic-cached-original.grib'}}})+'\n');
+    await fs.writeFile(path.join(root,'.cache/dmi-grib/asset-manifest.json'),manifestBytes,{flag:'wx'});
+    await fs.writeFile(path.join(root,'.cache/dmi-grib/synthetic-cached-original.grib'),Buffer.from('rawbytes'),{flag:'wx'});
+  }
   await fs.writeFile(path.join(root, '.cache/dmi-grib/.original-recovery-plan.json'), bytes, { flag: 'wx' });
   await fs.writeFile(path.join(root, '.cache/original-BS'), 'unchanged synthetic original\n', { flag: 'wx' });
   await fs.writeFile(path.join(root, '.cache/github-output'), '', { flag: 'wx' });
-  const rejected = mode.startsWith('rejected');
+  const rejected = mode.startsWith('rejected') || mode==='current586-rejected';
   const report = { schemaVersion: 1, contractId: 'dmi-exact-original-restore-result-v1',
     status: rejected ? 'REJECTED' : 'RESTORED',
     code: mode === 'rejected-unknown' ? 'UNKNOWN_MUST_NOT_LEAK' : mode === 'rejected-unclassified'
@@ -164,18 +208,19 @@ async function privateFixture(mode) {
           : rejected ? 'DMI_EXACT_ORIGINAL_UNAVAILABLE' : 'EXACT_ORIGINALS_RESTORED',
     originalCount: 1, uniqueAssetCount: 1, downloadedAssetCount: 1, reusedAssetCount: 0,
     downloadedBytes: 8, pruningPerformed: false, replayPerformed: false, scorePerformed: false };
+  if(current586)Object.assign(report,{downloadedAssetCount:0,reusedAssetCount:1,downloadedBytes:0});
   const source = `import json,os,pathlib,signal,sys,time\n`
     + `assert sys.argv[1:]==['--restore-exact-originals']\n`
     + `assert all(k not in os.environ for k in ['SUPABASE_ACCESS_TOKEN','R2_SECRET_ACCESS_KEY','GITHUB_TOKEN','GITHUB_OUTPUT','DMI_BULK_RAW_DIR','DMI_STAC_ROOT','DMI_BULK_FINALIZE_ONLY'])\n`
     + `assert os.environ.get('DMI_API_KEY')=='synthetic-dmi-key'\n`
     + `pathlib.Path('.cache/producer-ready').write_text('ready')\n`
     + `time.sleep(0.2)\n`
-    + (mode === 'unproved' ? `os.kill(os.getppid(),signal.SIGKILL)\n` : '')
+    + (mode === 'unproved' || mode === 'current586-unproved' ? `os.kill(os.getppid(),signal.SIGKILL)\n` : '')
     + (mode === 'raw-output' ? `print('PRIVATE_MUST_NOT_LEAK')\n` : '')
     + `print(${JSON.stringify(JSON.stringify(report))},flush=True)\n`
     + `raise SystemExit(${rejected ? 2 : 0})\n`;
   await fs.writeFile(path.join(root, 'scripts/update-dmi-bulk.py'), source, { flag: 'wx' });
-  return { root, env: { ...process.env, ...environment(bytes),
+  return { root, planBytes:bytes, manifestBytes, env: { ...process.env, ...environment(bytes),
     GITHUB_OUTPUT: path.join(root, '.cache/github-output'), DMI_API_KEY: 'synthetic-dmi-key',
     SUPABASE_ACCESS_TOKEN: 'PRIVATE_MUST_NOT_LEAK', R2_SECRET_ACCESS_KEY: 'PRIVATE_MUST_NOT_LEAK',
     GITHUB_TOKEN: 'PRIVATE_MUST_NOT_LEAK', DMI_BULK_RAW_DIR: '/MUST_NOT_USE',
@@ -243,4 +288,80 @@ for (const mode of ['rejected', 'rejected-metadata', 'rejected-asset', 'rejected
     assert.equal(await exists(path.join(f.root, '.cache/dmi-grib/.original-recovery-plan.json')), true);
     assert.equal(await fs.readFile(path.join(f.root, '.cache/original-BS'), 'utf8'), 'unchanged synthetic original\n');
   } finally { await removeFixture(f); }
+});
+
+test('CURRENT586 exact restoration: coordinator distinguishes UNISSUED from the one exact issued scope before writer or child',async()=>{
+  const {CURRENT586_EXACT_ORIGINAL_EXECUTION,requireCurrent586ExactOriginalExecution}=await import('./lib/current586-exact-original-plan.mjs');
+  if(CURRENT586_EXACT_ORIGINAL_EXECUTION===null){
+    assert.throws(()=>requireCurrent586ExactOriginalExecution(),{code:'DMI_CURRENT586_ORIGINAL_UNISSUED'});
+    const plan=fixturePlan();plan.contractId='dmi-current586-exact-original-restore-v1';
+    const bytes=bytesOf(plan);
+    assert.throws(()=>validateExactDmiOriginalRestorePlan(bytes,environment(bytes)),
+      {code:'DMI_CURRENT586_ORIGINAL_UNISSUED'});
+  }else{
+    assert.deepEqual(CURRENT586_EXACT_ORIGINAL_EXECUTION,{scope:'CURRENT586_EXACT_ORIGINAL_RESTORE_39666991481_1'});
+    assert.doesNotThrow(()=>requireCurrent586ExactOriginalExecution());
+    const bytes=bytesOf(fixtureCurrent586Plan());
+    assert.deepEqual(validateExactDmiOriginalRestorePlan(bytes,environment(bytes)),
+      {planSha256:sha(bytes),originalCount:1,current586:true});
+    const wrong=fixtureCurrent586Plan();wrong.binding.scope='CURRENT586_WRONG';
+    const invalid=bytesOf(wrong);
+    assert.throws(()=>validateExactDmiOriginalRestorePlan(invalid,environment(invalid)),
+      {code:'DMI_CURRENT586_ORIGINAL_PLAN_REJECTED'});
+  }
+});
+
+native('CURRENT586 restoration coordinator: actual cohort closure archives exact consumed plan and bounded RAW receipt',async()=>{
+  const f=await privateFixture('current586-restored');
+  try{
+    const result=await runFixture(f,async()=>{
+      const deadline=Date.now()+5000;
+      while(!await exists(path.join(f.root,'.cache/producer-ready'))){
+        assert.ok(Date.now()<deadline);await new Promise(resolve=>setTimeout(resolve,10));
+      }
+      assert.equal(await exists(path.join(f.root,'.cache/weather-acquisition-writer.claim')),true);
+      assert.equal(await exists(path.join(f.root,'.cache/dmi-grib/.original-recovery-plan.json')),true);
+    });
+    assert.equal(result.code,0,result.stderr);assert.equal(result.signal,null);assert.equal(result.stderr,'');
+    const returned=JSON.parse(result.stdout);
+    assert.equal(returned.status,'RESTORED');assert.equal(returned.physicalGroupClosed,true);
+    assert.equal(returned.writerClaimReleased,true);assert.equal(returned.planRemoved,true);assert.equal(returned.cacheSaved,false);
+    const folder=path.join(f.root,'.cache/current586-exact-original-restore');
+    assert.deepEqual(await fs.readFile(path.join(folder,'plan.json')),f.planBytes);
+    const receiptBytes=await fs.readFile(path.join(folder,'receipt.json')),receipt=JSON.parse(receiptBytes);
+    assert.equal(receipt.kind,'CURRENT586_EXACT_ORIGINAL_TRANSPORT_CLOSED');
+    assert.equal(receipt.planSha256,sha(f.planBytes));assert.deepEqual(receipt.binding,JSON.parse(f.planBytes).binding);
+    assert.equal(receipt.rawManifestSha256,sha(f.manifestBytes));assert.equal(receipt.rawManifestBytes,f.manifestBytes.length);
+    assert.equal(receipt.result.physicalGroupClosed,true);assert.equal(receipt.result.writerClaimReleased,true);
+    assert.equal(receipt.result.planRemoved,true);assert.equal(receipt.result.reusedAssetCount,1);
+    assert.equal(receipt.result.downloadedAssetCount,0);assert.equal(receipt.result.downloadedBytes,0);
+    assert.equal(receipt.nativeEvidenceProduced,false);assert.equal(receipt.sourceValuesChanged,false);
+    assert.equal(receipt.remoteSourceFreshnessVerifiedAfterTransport,false);
+    assert.ok(Date.parse(receipt.startedAt)<=Date.parse(receipt.completedAt));
+    assert.deepEqual(returned.current586Transport,{receiptPath:'.cache/current586-exact-original-restore/receipt.json',
+      receiptSha256:sha(receiptBytes),receiptBytes:receiptBytes.length});
+    assert.equal(await exists(path.join(f.root,'.cache/weather-acquisition-writer.claim')),false);
+    assert.equal(await exists(path.join(f.root,'.cache/dmi-grib/.original-recovery-plan.json')),false);
+    assert.deepEqual(await fs.readFile(path.join(f.root,'.cache/dmi-grib/asset-manifest.json')),f.manifestBytes);
+    assert.equal(await fs.readFile(path.join(f.root,'.cache/dmi-grib/synthetic-cached-original.grib'),'utf8'),'rawbytes');
+    assert.equal(await fs.readFile(path.join(f.root,'.cache/original-BS'),'utf8'),'unchanged synthetic original\n');
+    assert.equal(await fs.readFile(path.join(f.root,'.cache/github-output'),'utf8'),'originals_restored=true\n');
+    for(const forbidden of ['PRIVATE_MUST_NOT_LEAK','synthetic-dmi-key','contentSha256','acquiredAt','remoteCheckpointSha256'])
+      assert.equal(result.stdout.includes(forbidden),false);
+  }finally{await removeFixture(f);}
+});
+for(const mode of ['current586-rejected','current586-unproved'])native('CURRENT586 restoration coordinator: '+mode+' retains first failure and emits no closed receipt',async()=>{
+  const f=await privateFixture(mode);
+  try{
+    const result=await runFixture(f);
+    assert.equal(result.code,1);assert.equal(result.signal,null);assert.equal(result.stdout,'');
+    assert.equal(result.stderr.includes('PRIVATE_MUST_NOT_LEAK'),false);
+    assert.equal(result.stderr.trim(),mode==='current586-rejected'?'DMI_EXACT_ORIGINAL_UNAVAILABLE':'DMI_EXACT_ORIGINAL_RESTORE_COHORT_UNPROVED');
+    assert.equal(await exists(path.join(f.root,'.cache/current586-exact-original-restore')),false);
+    assert.equal(await exists(path.join(f.root,'.cache/dmi-grib/.original-recovery-plan.json')),true);
+    assert.equal(await exists(path.join(f.root,'.cache/weather-acquisition-writer.claim')),mode==='current586-unproved');
+    assert.deepEqual(await fs.readFile(path.join(f.root,'.cache/dmi-grib/asset-manifest.json')),f.manifestBytes);
+    assert.equal(await fs.readFile(path.join(f.root,'.cache/original-BS'),'utf8'),'unchanged synthetic original\n');
+    assert.equal(await fs.readFile(path.join(f.root,'.cache/github-output'),'utf8'),'');
+  }finally{await removeFixture(f);}
 });

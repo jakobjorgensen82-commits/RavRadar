@@ -1,3 +1,7 @@
+## 22. oktober — fortsæt fra faktisk CURRENT586-observation
+
+Se den nyeste CURRENT_TRUTH og det private checkpoint før næste handling. Første præcise originale endpoint kan ikke bevises blandt de leverede kontekster; den grove identitetskategori er ikke en fysisk RAW-diagnose eller en fuld almindelig reproduktion. Lokal værdifri feltopdeling, normalt Python-mål-fingerprint og bevarede orakler er målprøvet. Capture-/RAW-/normaldekoder-/reprojektionskæde, sikker vejrlevering og alle fem hovedmål er fortsat åbne. Ingen ny version, SQL, nulstilling, kildeprioritet eller originalguard er ændret af diagnoseforfiningen.
+
 ## 17. oktober — 4.0.581: afgrænset testklargøring og almindelig Git-historik
 
 Første præcise kildekontrol på 7b467bb stoppede i den ekstra, kunstige SQL-selectorprøve med syntaksfejl. Kontrolflowet havde da passeret den egentlige nye migration, genlæsning, normal JSONB-rundtur og de forudgående CAS-tilfælde i den isolerede database. Samlet PostgreSQL- og kildekontrol er derfor stadig rød; bevaringsslutkontrol, senere kildeplan, kapacitet og trækontrol blev ikke kørt. Produktionsdatabasen, offentlig 579 og cron er uændrede.

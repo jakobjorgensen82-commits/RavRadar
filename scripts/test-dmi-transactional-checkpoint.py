@@ -143,6 +143,394 @@ def mutate_stages(
 
 
 class TransactionalAssetTests(unittest.TestCase):
+    def test_retained_current_winner_closes_real_main_stage_without_mutation(self) -> None:
+        """Actual main AST/proof/selection boundary; not a Linux decoder test."""
+        import ast
+        source = (SCRIPTS / "update-dmi-bulk.py").read_text(encoding="utf-8")
+        main = next(n for n in ast.parse(source).body
+                    if isinstance(n, ast.FunctionDef) and n.name == "main")
+        validators = [n for n in ast.walk(main) if isinstance(n, ast.FunctionDef)
+                      and n.name == "validate_operational_current_stage"]
+        self.assertEqual(len(validators), 1)
+        # Use the unchanged real caller's complete/processedSteps statements,
+        # not a reimplemented boolean or an invented parser success function.
+        blocks = [n for n in ast.walk(main) if isinstance(getattr(n, "body", None), list)
+                  and any(isinstance(s, ast.Assign) and any(
+                      isinstance(t, ast.Name) and t.id == "step_complete"
+                      for t in s.targets) for s in n.body)]
+        self.assertEqual(len(blocks), 1)
+        body = blocks[0].body
+        index = next(i for i, n in enumerate(body) if isinstance(n, ast.Assign)
+                     and any(isinstance(t, ast.Name) and t.id == "step_complete"
+                             for t in n.targets))
+        self.assertIsInstance(body[index + 3], ast.If)
+        self.assertIsInstance(body[index + 4], ast.If)
+        self.assertIsInstance(body[index + 4].body[0], ast.Assign)
+        stage_code = compile(ast.fix_missing_locations(ast.Module(
+            body=[copy.deepcopy(validators[0])], type_ignores=[])), producer.__file__, "exec")
+        complete_code = compile(ast.fix_missing_locations(ast.Module(
+            body=copy.deepcopy(body[index:index + 4])
+                + [copy.deepcopy(body[index + 4].body[0])], type_ignores=[])), producer.__file__, "exec")
+        zone = {"id": "PART::TEST", "parentZoneId": "ZONE-TEST", "coastalPart": True,
+                "coastType": "limfjord", "lon": 2.0, "lat": 1.0}
+        target = {"partId": "TEST", "parentZoneId": "ZONE-TEST", "name": "Test",
+                  "waterPoint": [2.0, 1.0]}
+        # Same finite header/coordinate construction as the existing normal
+        # native-provenance retained-closer-winner fixture. No provider data.
+        definition = ("regular_ll", 32, 2, 64, 1., 1.93, 1.01, 2.24, .01, .01)
+        section = producer.hashlib.md5(json.dumps(definition, separators=(",", ":")).encode()).hexdigest()
+        signature = (section, *definition)
+        geometry = producer.dkss_grib1_header_geometry(signature, 64)
+        selected = producer.dkss_header_grid_point(geometry, 7)
+        candidate = {"value": .1, "index": selected["index"],
+            "latitude": selected["lat"], "longitude": selected["lon"],
+            "distanceKm": producer.haversine_km(1., 2., selected["lat"], selected["lon"]),
+            "gridDefinitionSha256": producer.grid_definition_sha256_from_signature(definition),
+            "_gridIndexIdentity": producer.grid_index_identity_sha256_from_cache(signature),
+            "_gridCoordinateInterpretation": "dmi-dkss-grib1-header-endpoints-v1"}
+        capture = {"itemId": "synthetic-original", "assetIdentitySha256": "b" * 64,
+            "assetSizeBytes": 1024, "acquiredAt": MODEL_RUN, "contentLengthBytes": 1024,
+            "contentSha256": "d" * 64, "itemCreatedAt": MODEL_RUN}
+        selected_source = producer.native_component_source("dkss_idw", MODEL_RUN, FIRST_TIME,
+            component="current", zone=zone, grid_candidate=candidate, capture=capture,
+            grid_tuple={"current-u": {**candidate, "value": .4}, "current-v": {**candidate, "value": -.3}},
+            spatial_selection="nearest-shared-grid-cell-no-spatial-interpolation",
+            verticalLayer="depthBelowSea:1", verticalLayerRankM=1.,
+            vectorSelection=producer.CURRENT_VECTOR_SELECTION,
+            vectorSemanticsVersion=producer.CURRENT_VECTOR_SEMANTICS_VERSION)
+        self.assertIsNotNone(selected_source)
+        original = {"diagnostics": {"assetsProcessedThisInvocation": 0}, "zones": {zone["id"]: {**producer.sampling_identity(zone),
+            "hourly": {FIRST_TIME: {"time": FIRST_TIME, "current-u": .4, "current-v": -.3,
+                "sources": {"current": selected_source}}}, "gridPoints": {}, "collections": {}}}}
+        old_asset = producer.canonical_current_source_asset(selected_source)
+        source_key = json.dumps(old_asset, sort_keys=True, separators=(",", ":"), ensure_ascii=False)
+        trusted = {("TEST", FIRST_TIME, source_key)}
+        self.assertEqual(producer.current_pair_sampling_evidence(original, trusted), trusted)
+        new_asset = producer.canonical_current_source_asset({**capture, "collection": "dkss_lf",
+            "modelRun": MODEL_RUN, "validTime": FIRST_TIME})
+        self.assertIsNotNone(new_asset)
+        self.assertFalse(producer.prefer_current_hour_candidate(original["zones"][zone["id"]],
+            FIRST_TIME, "dkss_lf", MODEL_RUN,
+            {"distanceKm": 1., "pointKey": (1., 2.009), "layerRank": 1.}, capture, True))
+        outcomes = {"complete": True, "targetPartIds": ["TEST"], "spatialUnavailablePartIds": []}
+        outcome = (set(producer.REQUIRED_TARGETS["marine"]), set(), False, 3, 3)
+        processing = producer.current_marine_processing_signature("synthetic-registry")
+        registry = producer.target_fingerprint([target])
+
+        def context():
+            ns = dict(vars(producer), collection="dkss_lf", step_source_asset=copy.deepcopy(new_asset),
+                current_target_ids=["TEST"], current_target_registry_sha256=registry,
+                processing_signature=processing, coastal_part_targets=[target], asset={"valid": FIRST_TIME},
+                result=copy.deepcopy(original), actual_current_pair_source_keys=set(trusted),
+                validated_current_stage={})
+            exec(stage_code, ns)
+            return ns
+
+        ns = context()
+        before = copy.deepcopy((original, ns["result"], trusted, outcomes, outcome))
+        self.assertTrue(ns["validate_operational_current_stage"](copy.deepcopy(original), None, outcome, outcomes),
+                        ns["validated_current_stage"].get("rejectionCode"))
+        proof = ns["validated_current_stage"]["partOutcomeProof"]
+        ns.update(step_recognized=sorted(outcome[0]), required_for_family=set(outcome[0]), touched=set(),
+            bootstrap_operational_wam=False, wave_step_complete=False, wave_asset_admitted=False,
+            step_part_outcome_proof=proof, interrupted=False, previously_processed=set(),
+            run_info={"assetsProcessed": 0, "processedSteps": {}}, step_wave_target_proof=None)
+        exec(complete_code, ns)
+        self.assertTrue(ns["step_complete"])
+        self.assertEqual(ns["run_info"]["processedValidTimes"], [FIRST_TIME])
+        step = ns["run_info"]["processedSteps"][FIRST_TIME]
+        self.assertEqual(step["zonesTouched"], 0)
+        self.assertTrue(step["complete"])
+        self.assertTrue(producer.current_grid_sampling_outcome_matches(step["currentGridSamplingOutcome"], proof))
+        self.assertEqual(producer.qualified_current_processed_valid_times({FIRST_TIME: step},
+            current_target_ids=["TEST"], required_valid_times={FIRST_TIME},
+            qualified_pair_source_keys=trusted, qualified_covered_pair_keys={("TEST", FIRST_TIME)}), {FIRST_TIME})
+        self.assertEqual((original, ns["result"]["zones"], trusted, outcomes, outcome),
+            (before[0], before[1]["zones"], before[2], before[3], before[4]))
+        # Completion cannot relabel an old unknown native sample as qualified.
+        unknown = copy.deepcopy(original)
+        unknown["zones"][zone["id"]]["hourly"][FIRST_TIME]["sources"]["current"].pop("nativeGridSampling")
+        self.assertEqual(producer.current_pair_sampling_evidence(unknown, trusted), set())
+        self.assertEqual(producer.qualified_current_processed_valid_times({FIRST_TIME: step},
+            current_target_ids=["TEST"], required_valid_times={FIRST_TIME},
+            qualified_pair_source_keys=set(), qualified_covered_pair_keys=set()), set())
+
+        cases = ("capture", "fields", "incomplete", "targets", "proof", "changed", "missing", "untrusted", "unavailable-changed")
+        codes = ("SOURCE_CAPTURE_MISSING", "REQUIRED_FIELDS_MISSING", "PART_OUTCOME_INCOMPLETE",
+                 "TARGET_SET_MISMATCH", "OUTCOME_PROOF_INVALID", "EXPECTED_ROW_CHANGED",
+                 "EXPECTED_SOURCE_MISSING", "EXPECTED_SOURCE_UNTRUSTED", "TRUSTED_UNAVAILABLE_CHANGED")
+        for case, code in zip(cases, codes):
+            with self.subTest(case=case):
+                env, staged, observed, returned = context(), copy.deepcopy(original), copy.deepcopy(outcomes), copy.deepcopy(outcome)
+                if case == "capture": env["step_source_asset"] = None
+                if case == "fields": returned = (set(), *returned[1:])
+                if case == "incomplete": observed["complete"] = False
+                if case == "targets": observed["targetPartIds"] = ["OTHER"]
+                if case == "proof": observed["spatialUnavailablePartIds"] = ["OTHER"]
+                if case in ("changed", "unavailable-changed"):
+                    staged["zones"][zone["id"]]["hourly"][FIRST_TIME]["current-u"] += 1
+                if case == "missing":
+                    for doc in (env["result"], staged):
+                        doc["zones"][zone["id"]]["hourly"][FIRST_TIME]["sources"].pop("current")
+                if case == "untrusted": env["actual_current_pair_source_keys"] = set()
+                if case == "unavailable-changed": observed["spatialUnavailablePartIds"] = ["TEST"]
+                saved = copy.deepcopy((env["result"], staged, observed, returned, env["actual_current_pair_source_keys"]))
+                self.assertFalse(env["validate_operational_current_stage"](staged, None, returned, observed))
+                self.assertEqual(env["validated_current_stage"]["rejectionCode"], "DKSS_STAGE_" + code)
+                self.assertNotIn("partOutcomeProof", env["validated_current_stage"])
+                self.assertEqual((env["result"], staged, observed, returned, env["actual_current_pair_source_keys"]), saved)
+        # Default non-marine/no-proof completion still requires actual mutation.
+        for collection, step_proof in (("harmonie_dini_sf", proof), ("dkss_lf", None)):
+            denied = dict(ns, collection=collection, step_part_outcome_proof=step_proof,
+                run_info={"assetsProcessed": 0, "processedSteps": {}}, previously_processed=set())
+            exec(complete_code, denied)
+            self.assertFalse(denied["step_complete"])
+            self.assertEqual(denied["run_info"]["processedValidTimes"], [])
+
+        # Persist the actual main-produced step through the normal bulk codec,
+        # then feed the real reusable-step reader, not a hand-built permission.
+        previous_run = {
+            "referenceTime": MODEL_RUN, "parserVersion": producer.PARSER_VERSION,
+            "parameterMapVersion": producer.PARAMETER_MAP_VERSION,
+            "gridLookupVersion": producer.GRID_LOOKUP_VERSION,
+            "processingSignature": processing, "processedSteps": {FIRST_TIME: step},
+        }
+        saved = {**copy.deepcopy(original), "zoneRegistrySignature": "synthetic-registry",
+                 "runs": {"dkss_lf": previous_run}}
+        with tempfile.TemporaryDirectory() as directory:
+            checkpoint = Path(directory) / "retained-main.json"
+            producer.atomic_write_bulk_cache(saved, path=checkpoint)
+            restored = producer.load_bulk_document(checkpoint)
+        self.assertEqual(restored, saved)
+        previous_run = restored["runs"]["dkss_lf"]
+        step = previous_run["processedSteps"][FIRST_TIME]
+        official = {key: value for key, value in new_asset.items()
+                    if key not in ("acquiredAt", "contentLengthBytes", "contentSha256")}
+        reuse_args = dict(collection="dkss_lf", same_processing=True, same_run=True,
+            strict_current_anchor_available=True, required_valid_times={FIRST_TIME},
+            required_asset_provenance={FIRST_TIME: official}, current_target_ids=["TEST"],
+            current_target_registry_sha256=registry, actual_pair_source_keys=trusted,
+            covered_pair_keys={("TEST", FIRST_TIME)})
+        reusable = producer.reusable_processed_steps(previous_run, **reuse_args)
+        self.assertEqual(reusable, {FIRST_TIME: step},
+                         "Actual persisted zero-mutation marine step must survive the normal reader")
+        read_args = dict(collection="dkss_lf", model_run=MODEL_RUN, valid_time=FIRST_TIME,
+            processing_signature=processing, official_asset=official,
+            current_target_ids=["TEST"], current_target_registry_sha256=registry)
+        self.assertEqual(producer.processed_step_source_for_official_asset(step, **read_args), new_asset)
+        positive = {**copy.deepcopy(step), "zonesTouched": 1}
+        positive.pop("currentGridSamplingOutcome")
+        self.assertEqual(producer.processed_step_source_for_official_asset(
+            positive, **{k: v for k, v in read_args.items()
+                        if k not in ("current_target_ids", "current_target_registry_sha256")}),
+            new_asset, "The existing positive-mutation reader contract is unchanged")
+        for mutation in ("source-missing", "source-content", "official", "parser",
+                         "signature", "targets-missing", "targets", "registry-missing",
+                         "registry", "outcome-missing", "outcome", "receipt-missing", "receipt"):
+            with self.subTest(saved_step_mutation=mutation):
+                altered, arguments = copy.deepcopy(step), copy.deepcopy(read_args)
+                if mutation == "source-missing": altered.pop("sourceAsset")
+                if mutation == "source-content": altered["sourceAsset"]["contentSha256"] = "e" * 64
+                if mutation == "official": arguments["official_asset"]["itemId"] = "different-item"
+                if mutation == "parser": altered["parserVersion"] = "other-parser"
+                if mutation == "signature": arguments["processing_signature"] += "-different"
+                if mutation == "targets-missing": arguments["current_target_ids"] = None
+                if mutation == "targets":
+                    arguments["current_target_ids"] = ["OTHER"]
+                    arguments["current_target_registry_sha256"] = producer.target_fingerprint(
+                        [{**target, "partId": "OTHER"}])
+                if mutation == "registry-missing": arguments["current_target_registry_sha256"] = None
+                if mutation == "registry": arguments["current_target_registry_sha256"] = "sha256:" + "e" * 64
+                if mutation == "outcome-missing": altered.pop("currentPartOutcomeProof")
+                if mutation == "outcome": altered["currentPartOutcomeProof"]["spatialUnavailablePartIds"] = ["TEST"]
+                if mutation == "receipt-missing": altered.pop("currentGridSamplingOutcome")
+                if mutation == "receipt": altered["currentGridSamplingOutcome"]["outcomeProofSha256"] = "sha256:" + "e" * 64
+                snapshot = copy.deepcopy((altered, arguments))
+                self.assertIsNone(producer.processed_step_source_for_official_asset(altered, **arguments))
+                self.assertEqual((altered, arguments), snapshot)
+        for invalid_count in (-1, -0.5, False, None, "0", 0.0):
+            with self.subTest(zonesTouched=repr(invalid_count)):
+                self.assertIsNone(producer.processed_step_source_for_official_asset(
+                    {**step, "zonesTouched": invalid_count}, **read_args))
+        self.assertIsNone(producer.processed_step_source_for_official_asset(
+            step, **{**read_args, "collection": "harmonie_dini_sf"}))
+        self.assertEqual(producer.reusable_processed_steps(previous_run,
+            **{**reuse_args, "required_valid_times": {MODEL_RUN},
+               "private_support_zones": restored["zones"], "private_support_zone_ids": [zone["id"]]}), {},
+            "Private scalar support cannot borrow the zero-mutation current route")
+        self.assertEqual(producer.reusable_processed_steps(previous_run,
+            **{**reuse_args, "actual_pair_source_keys": set(), "covered_pair_keys": set()}), {},
+            "A complete step cannot replace actual tuple/retained evidence")
+        # The metadata proof binds target count plus the declared registry hash.
+        # Its real caller separately binds the IDs to actual tuple/covered pairs.
+        self.assertEqual(producer.reusable_processed_steps(previous_run,
+            **{**reuse_args, "current_target_ids": ["OTHER"]}), {},
+            "A same-sized replacement ID list cannot borrow TEST's actual tuples")
+
+        # Reuse the existing native-provenance aggregate constructor, without
+        # importing/executing its broad standalone suite or inventing a bank.
+        fixture_source = (SCRIPTS / "test-dmi-native-provenance.py").read_text(encoding="utf-8")
+        fixture = next(n for n in ast.parse(fixture_source).body
+                       if isinstance(n, ast.FunctionDef) and n.name == "ledger_asset")
+        fixture_ns = {"producer": producer, "valid_time": FIRST_TIME}
+        exec(compile(ast.fix_missing_locations(ast.Module(
+            body=[copy.deepcopy(fixture)], type_ignores=[])), str(SCRIPTS / "test-dmi-native-provenance.py"), "exec"),
+            fixture_ns)
+        reference = datetime.fromisoformat(MODEL_RUN.replace("Z", "+00:00"))
+        hours = producer.operational_current_valid_times(reference)
+        aggregate = {**copy.deepcopy(restored), "runs": {}}
+        aggregate["zones"][zone["id"]]["hourly"] = {}
+        catalogs = {}
+        for collection in sorted(producer.MARINE_COLLECTIONS):
+            assets, steps = [], {}
+            for hour in hours:
+                asset_row, captured = fixture_ns["ledger_asset"](collection, hour)
+                if hour == FIRST_TIME and collection in ("dkss_lf", "dkss_idw"):
+                    captured = copy.deepcopy(new_asset if collection == "dkss_lf" else old_asset)
+                    asset_row = {k: v for k, v in captured.items()
+                                 if k not in ("acquiredAt", "contentLengthBytes", "contentSha256")}
+                assets.append(asset_row)
+                row_proof = producer.build_current_part_outcome_proof(
+                    [], ["TEST"], registry, processing, captured)
+                steps[hour] = {
+                    "complete": True, "recognizedParameters": sorted(producer.REQUIRED_TARGETS["marine"]),
+                    "zonesTouched": 1, "parserVersion": producer.PARSER_VERSION,
+                    "processingSignature": processing, "sourceAsset": captured,
+                    "currentPartOutcomeProof": row_proof,
+                }
+                if collection == "dkss_idw":
+                    native_source = producer.native_component_source(
+                        collection, MODEL_RUN, hour, component="current", zone=zone,
+                        grid_candidate=candidate, capture=captured,
+                        grid_tuple={"current-u": {**candidate, "value": .4}, "current-v": {**candidate, "value": -.3}},
+                        spatial_selection="nearest-shared-grid-cell-no-spatial-interpolation",
+                        verticalLayer="depthBelowSea:1", verticalLayerRankM=1.,
+                        vectorSelection=producer.CURRENT_VECTOR_SELECTION,
+                        vectorSemanticsVersion=producer.CURRENT_VECTOR_SEMANTICS_VERSION)
+                    self.assertIsNotNone(native_source)
+                    aggregate["zones"][zone["id"]]["hourly"][hour] = {
+                        "time": hour, "current-u": .4, "current-v": -.3,
+                        "sources": {"current": native_source}}
+            if collection == "dkss_lf":
+                steps[FIRST_TIME] = copy.deepcopy(step)
+            aggregate["runs"][collection] = {**copy.deepcopy(previous_run), "processedSteps": steps}
+            terminal_time = producer.canonical_time(reference + timedelta(hours=120))
+            terminal_asset, _ = fixture_ns["ledger_asset"](collection, terminal_time)
+            catalogs[collection] = (MODEL_RUN, assets, {
+                "catalogInventoryComplete": True, "requiredHorizonEndCovered": True,
+                "requiredRowsTruncatedByAssetLimit": 0, "officialRequiredValidTimeCount": len(hours),
+                "officialRequiredValidTimes": hours, "officialRequiredAssets": assets,
+                "nativeTerminalAsset": terminal_asset})
+        aggregate_before = copy.deepcopy(aggregate)
+        sealed = producer.build_current_operational_ledger_result(aggregate, [target], reference, catalogs)
+        self.assertTrue(sealed.validated)
+        self.assertTrue(sealed.ledger["ready"], sealed.ledger["failureCodes"])
+        self.assertEqual(sealed.ledger["failureCodes"], [])
+        self.assertEqual(sealed.attestation["verifiedPairCount"], len(hours))
+        self.assertEqual(aggregate, aggregate_before)
+        aggregate.setdefault("diagnostics", {})["currentOperationalLedger"] = sealed.ledger
+        self.assertTrue(producer.current_operational_cache_ready(aggregate, [target], reference))
+        for key in ("currentGridSamplingOutcome", "currentPartOutcomeProof", "sourceAsset"):
+            altered = copy.deepcopy(aggregate)
+            altered["runs"]["dkss_lf"]["processedSteps"][FIRST_TIME].pop(key)
+            refused = producer.build_current_operational_ledger_result(altered, [target], reference, catalogs)
+            self.assertFalse(refused.ledger["ready"])
+            self.assertIn("LOCALLY_SKIPPED_DKSS_ASSET", refused.ledger["failureCodes"])
+
+        # An actually retained earlier source remains eligible only through its
+        # normal immutable proof plus actual row attestation. The nonfatal code
+        # itself is retained; no READY flag or missing numeric pair is invented.
+        retained_document = copy.deepcopy(aggregate)
+        retained_source = producer.native_component_source(
+            "dkss_idw", "2025-12-31T23:00:00Z", FIRST_TIME, component="current", zone=zone,
+            grid_candidate=candidate, capture=capture,
+            grid_tuple={"current-u": {**candidate, "value": .4}, "current-v": {**candidate, "value": -.3}},
+            spatial_selection="nearest-shared-grid-cell-no-spatial-interpolation",
+            verticalLayer="depthBelowSea:1", verticalLayerRankM=1.,
+            vectorSelection=producer.CURRENT_VECTOR_SELECTION,
+            vectorSemanticsVersion=producer.CURRENT_VECTOR_SEMANTICS_VERSION)
+        self.assertIsNotNone(retained_source)
+        retained_document["zones"][zone["id"]]["hourly"][FIRST_TIME]["sources"]["current"] = retained_source
+        retained_asset = producer.canonical_current_source_asset(retained_source)
+        retained_outcome = producer.build_current_part_outcome_proof([], ["TEST"], registry, processing, retained_asset)
+        retained_proof = producer.build_retained_current_asset_proof(
+            retained_asset, processing, retained_outcome, ["TEST"], ["TEST"], registry)
+        retained_before = copy.deepcopy(retained_document)
+        retained_result = producer.build_current_operational_ledger_result(
+            retained_document, [target], reference, catalogs, [retained_proof])
+        self.assertTrue(retained_result.validated)
+        self.assertTrue(retained_result.ledger["ready"], retained_result.ledger["failureCodes"])
+        self.assertEqual(retained_result.ledger["failureCodes"], ["RETAINED_CURRENT_PART_TIME"])
+        self.assertEqual(retained_result.attestation["verifiedPairCount"], len(hours))
+        self.assertEqual(retained_document, retained_before)
+        retained_document["diagnostics"]["currentOperationalLedger"] = retained_result.ledger
+        self.assertTrue(producer.current_operational_cache_ready(retained_document, [target], reference))
+        no_proof = producer.build_current_operational_ledger_result(retained_document, [target], reference, catalogs)
+        self.assertFalse(no_proof.ledger["ready"])
+        corrupted = copy.deepcopy(retained_document)
+        corrupted["zones"][zone["id"]]["hourly"][FIRST_TIME]["current-u"] = None
+        self.assertFalse(producer.current_operational_cache_ready(corrupted, [target], reference))
+        mutated_retained = copy.deepcopy(retained_proof)
+        mutated_retained["sourceAsset"]["contentSha256"] = "e" * 64
+        with self.assertRaises(ValueError):
+            producer.build_current_operational_ledger_result(
+                retained_document, [target], reference, catalogs, [mutated_retained])
+
+        # Execute both actual resume selectors and the genuine run-info builder.
+        # No copied boolean replaces their already-qualified marine set.
+        resume_blocks = [n.body for n in ast.walk(main)
+            if isinstance(getattr(n, "body", None), list) and any(
+                isinstance(s, ast.Assign) and any(isinstance(t, ast.Name)
+                    and t.id == "previously_processed" for t in s.targets) for s in n.body)
+            and any(isinstance(s, ast.Assign) and any(isinstance(t, ast.Name)
+                    and t.id == "required_for_family" for t in s.targets) for s in n.body)]
+        self.assertEqual(len(resume_blocks), 1)
+        resume_body = resume_blocks[0]
+        start = next(i for i, n in enumerate(resume_body) if isinstance(n, ast.Assign)
+            and any(isinstance(t, ast.Name) and t.id == "required_for_family" for t in n.targets))
+        end = next(i for i, n in enumerate(resume_body) if isinstance(n, ast.Assign)
+            and any(isinstance(t, ast.Name) and t.id == "previously_traversed" for t in n.targets))
+        resume_factory = next(n for n in ast.walk(main)
+            if isinstance(n, ast.FunctionDef) and n.name == "new_collection_run_info")
+        resume_code = compile(ast.fix_missing_locations(ast.Module(
+            body=copy.deepcopy(resume_body[start:end]) + [copy.deepcopy(resume_factory)],
+            type_ignores=[])), producer.__file__, "exec")
+
+        def actual_resume(collection, steps, pair_keys=trusted, covered=frozenset({("TEST", FIRST_TIME)}),
+                          required=frozenset({FIRST_TIME}), bootstrap_wam=False):
+            env = dict(vars(producer), collection=collection, previous_steps=copy.deepcopy(steps),
+                current_target_ids=["TEST"], required_current_valid_times=set(required),
+                qualified_current_pair_source_keys=set(pair_keys), qualified_covered_current_pair_keys=set(covered),
+                result=copy.deepcopy(restored), active_production_zone_ids=[zone["id"]],
+                processing_signature=processing, bootstrap_operational_wam=bootstrap_wam)
+            exec(resume_code, env)
+            return env["previously_processed"], env["new_collection_run_info"](MODEL_RUN, 1, env["previous_steps"])
+
+        reused_times, run_info = actual_resume("dkss_lf", reusable)
+        self.assertEqual(reused_times, {FIRST_TIME})
+        self.assertEqual(run_info["processedValidTimes"], [FIRST_TIME])
+        self.assertEqual(run_info["processedSteps"], reusable)
+        denied_times, denied_info = actual_resume("dkss_lf", reusable, pair_keys=set(), covered=set())
+        self.assertEqual((denied_times, denied_info["processedValidTimes"]), (set(), []))
+        for invalid_count in (-1, False, None, "0", 0.0):
+            altered_step = {**step, "zonesTouched": invalid_count}
+            times, info = actual_resume("dkss_lf", {FIRST_TIME: altered_step})
+            self.assertEqual((times, info["processedValidTimes"]), (set(), []))
+        times, info = actual_resume("dkss_lf", reusable, required={MODEL_RUN})
+        self.assertEqual((times, info["processedValidTimes"]), (set(), []),
+                         "Private scalar support keeps its mutation requirement")
+        for collection, family, wam in (("harmonie_dini_sf", "atmosphere", False),
+                                        ("wam_dw", "wave", True)):
+            family = producer.COLLECTION_FAMILY[collection]
+            other_step = {**step, "recognizedParameters": sorted(producer.REQUIRED_TARGETS[family]),
+                          "assetTraversalComplete": True}
+            times, info = actual_resume(collection, {FIRST_TIME: other_step}, bootstrap_wam=wam)
+            self.assertEqual((times, info["processedValidTimes"]), (set(), []))
+            if wam:
+                self.assertEqual(info["assetsProofComplete"], 0)
+                self.assertEqual(info["traversedValidTimes"], [])
+        self.assertEqual(original, before[0])
+
     def test_regional_observation_is_state_bound_and_only_suppresses_regional_work(self) -> None:
         source = {
             "collection": "dkss_lf", "modelRun": MODEL_RUN, "validTime": MODEL_RUN,

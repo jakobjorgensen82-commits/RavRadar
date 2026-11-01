@@ -17,6 +17,11 @@ on:
         required: false
         default: false
         type: boolean
+      upgrade_assistant_later_h0_original:
+        description: "Særskilt original586 B/S/native-bank-bevarelse før præcis udstedt assistant-NEXT"
+        required: false
+        default: false
+        type: boolean
 
 permissions:
   contents: read
@@ -37,9 +42,14 @@ jobs:
     name: Apply exact database and assistant bindings without touching saved weather
     runs-on: ubuntu-24.04
     timeout-minutes: 30
+    concurrency:
+      group: ravradar-trip-storage-production
+      cancel-in-progress: false
     env:
       RAVRADAR_CURRENT_GRID_UPGRADE_OPT_IN: ${{ inputs.upgrade_current_grid_original }}
       RAVRADAR_CURRENT_GRID_DIAGNOSE_ONLY: ${{ inputs.diagnose_current_grid_original }}
+      RAVRADAR_ASSISTANT_LATER_H0_ORIGINAL_OPT_IN: ${{ inputs.upgrade_assistant_later_h0_original }}
+      RAVRADAR_ASSISTANT_LATER_H0_BINDING_CONFIRMATION: ${{ inputs.confirmation }}
     steps:
       - uses: actions/checkout@v7
         with:
@@ -63,6 +73,12 @@ jobs:
             test "$GITHUB_RUN_ATTEMPT" = 1
             test "$CONFIRMATION" = CHECK-CURRENT-GRID-ORIGINALS
           else
+            test "$CONFIRMATION" = APPLY-WEATHER-MODEL-BINDING
+          fi
+          if test "${RAVRADAR_ASSISTANT_LATER_H0_ORIGINAL_OPT_IN:-false}" = true; then
+            test "$RAVRADAR_CURRENT_GRID_UPGRADE_OPT_IN" != true
+            test "$RAVRADAR_CURRENT_GRID_DIAGNOSE_ONLY" != true
+            test "$GITHUB_RUN_ATTEMPT" = 1
             test "$CONFIRMATION" = APPLY-WEATHER-MODEL-BINDING
           fi
           git fetch --no-tags origin +refs/heads/main:refs/remotes/origin/main
@@ -98,6 +114,11 @@ jobs:
           fs.appendFileSync(process.env.GITHUB_OUTPUT, 'defer_edges='
             + deferCurrentGridBindingEdges(LATEST_REQUIRED_CUTOVER_MIGRATION.version) + '\n');
           NODE
+
+      - uses: actions/setup-python@v6
+        if: inputs.upgrade_assistant_later_h0_original == true
+        with:
+          python-version: "3.12"
 
       - uses: supabase/setup-cli@3c2f5e2ae34c34e428e8e206e2c4d21fa2d20fbf
         with:
@@ -136,6 +157,29 @@ jobs:
           --workdir "${{ steps.migration-view.outputs.workdir }}"
           --migration-list "$RUNNER_TEMP/weather-binding-migrations-before.txt"
 
+      - name: Read and materialize the normal central registry without promotion
+        if: inputs.upgrade_assistant_later_h0_original == true
+        shell: bash
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: |
+          set -euo pipefail
+          python scripts/sync-admin-config.py | tee "$RUNNER_TEMP/assistant-binding-admin-sync.json"
+          python scripts/apply-central-zone-reviews.py
+          node scripts/build-public-coastal-parts-v2.mjs
+
+      - name: Preserve authenticated original586 B and S for the fixed assistant successor
+        if: inputs.upgrade_assistant_later_h0_original == true
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          RAVRADAR_PRIVATE_RUNTIME_STORAGE_BACKEND: r2
+          RAVRADAR_R2_ACCOUNT_ID: ${{ secrets.RAVRADAR_R2_ACCOUNT_ID }}
+          RAVRADAR_R2_ACCESS_KEY_ID: ${{ secrets.RAVRADAR_R2_ACCESS_KEY_ID }}
+          RAVRADAR_R2_SECRET_ACCESS_KEY: ${{ secrets.RAVRADAR_R2_SECRET_ACCESS_KEY }}
+        run: node scripts/assistant-later-h0-binding-prewrite.mjs prepare
+
       - name: Preserve authenticated unchanged originals for the named current-grid successor
         if: inputs.upgrade_current_grid_original == true
         env:
@@ -171,6 +215,8 @@ jobs:
           cd "$GITHUB_WORKSPACE"
           if test "$RAVRADAR_CURRENT_GRID_UPGRADE_OPT_IN" = true; then
             node scripts/current-grid-binding-prewrite.mjs verify-plan
+          elif test "${RAVRADAR_ASSISTANT_LATER_H0_ORIGINAL_OPT_IN:-false}" = true; then
+            node scripts/assistant-later-h0-binding-prewrite.mjs plan
           else
             node scripts/verify-code-only-migration-plan.mjs \
               --migration-list "$RUNNER_TEMP/weather-binding-migrations-plan.txt" \
@@ -202,6 +248,11 @@ jobs:
           set -euo pipefail
           if test "$RAVRADAR_CURRENT_GRID_UPGRADE_OPT_IN" = true; then
             node scripts/current-grid-binding-prewrite.mjs verify-plan
+          elif test "${RAVRADAR_ASSISTANT_LATER_H0_ORIGINAL_OPT_IN:-false}" = true; then
+            python scripts/sync-admin-config.py | tee "$RUNNER_TEMP/assistant-binding-admin-sync.json"
+            python scripts/apply-central-zone-reviews.py
+            node scripts/build-public-coastal-parts-v2.mjs
+            node scripts/assistant-later-h0-binding-prewrite.mjs verify
           fi
           cd "${{ steps.migration-view.outputs.workdir }}"
           supabase db push --linked --skip-vault

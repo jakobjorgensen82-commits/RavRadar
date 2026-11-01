@@ -4,11 +4,18 @@ import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import test from 'node:test';
+import vm from 'node:vm';
 import { fileURLToPath, pathToFileURL } from 'node:url';
-import { auditSavedWeatherInputs, createReadOnlySavedWeatherClients,
+import { auditSavedWeatherInputs, auditProtectedBaselineComponentFallback, auditVoersaaWaterLevelTrace, createReadOnlySavedWeatherClients,
   measureSavedCurrentContexts, measureSavedNativeProofAvailability, withoutSavedAuditSecrets,
   indexSavedRawManifest, measureSavedRawCaptureMatches, inspectSavedRawFileInventory,
-  savedAuditProgressAuthenticationCode } from './audit-saved-weather-inputs.mjs';
+  savedAuditProgressAuthenticationCode, CURRENT586_ENDPOINT_AUDIT,
+  CURRENT586_CACHED_ORIGINAL_AUDIT } from './audit-saved-weather-inputs.mjs';
+import { cachedCoherentOriginalFailureCode } from './lib/prove-cached-coherent-current-originals.mjs';
+import {VOERSAA_WATER_TRACE_TARGETS,VOERSAA_WATER_TRACE_CONTRACTS,VOERSAA_WATER_TRACE_TIMES,openVoersaaWaterTrace,sealVoersaaWaterTrace,validateVoersaaWaterTraceReport,sealVoersaaWaterTraceForRecipient,openVoersaaWaterTraceForRecipient,VOERSAA_WATER_TRACE_RECIPIENT_SPKI_SHA256} from './lib/voersaa-water-level-trace.mjs';
+import {buildWaterSourceForecastIndex,applyWaterSourceRouting,packWaterSourceForecastContinuity} from './lib/water-source-forecast-routing.mjs';
+import {dmiWaterSourceFixture} from './test-helpers/dmi-water-source-fixture.mjs';
+import {sealStagedPrivateProductionRuntime} from './staged-private-production-runtime.mjs';
 import { createPrivateProductionRuntimeBundle } from './private-production-runtime-bundle.mjs';
 import { buildProtectedPrivateRuntimeArchive, PROTECTED_PRIVATE_RUNTIME_POLICY as policy } from './protected-private-production-runtime.mjs';
 import { PRIVATE_RUNTIME_BASE_FILES, PRIVATE_WEATHER_COMPONENT_FILES } from './lib/private-weather-component-inventory.mjs';
@@ -16,9 +23,16 @@ import { buildPrivateWeatherComponentPack } from './lib/private-weather-componen
 import { weatherComponentProgressCache, WEATHER_PROGRESS_CIPHER_PATH } from './weather-component-progress-cache.mjs';
 import { inspectDmiForecastFile } from './lib/dmi-forecast-file.mjs';
 import { packDmiPartContinuity } from './lib/dmi-part-continuity.mjs';
-import { DMI_FORECAST_HOURS, buildDmiForecastHourly, inspectDmiNativeGridSampling } from './lib/dmi-forecast-store.mjs';
-import { dmiExpectedIdentityForPart } from './lib/ravscore-production-adapters.mjs';
+import { DMI_FORECAST_HOURS, buildDmiForecastHourly, inspectDmiNativeGridSampling, sameNativeIdentity } from './lib/dmi-forecast-store.mjs';
+import { dmiExpectedIdentityForPart, dmiOriginalWireIdentityMatchesCentralIdentity } from './lib/ravscore-production-adapters.mjs';
 import { ravScoreModelBinding } from '../js/core/ravscore-model-contract.js';
+import { diagnoseCurrent586SelectedEndpoints, buildRavScoreRawCurrentRetention } from './plan-ravscore-current-history.mjs';
+import { buildIntegratedPartScoreSeries } from './lib/ravscore-integrated-runtime.mjs';
+import { discoverCommittedCoherentOriginalBootstrap } from './lib/coherent-current-original-bootstrap.mjs';
+import { inverseCurrent586EndpointDiagnosticTestInput, CURRENT586_ENDPOINT_DIAGNOSTIC_TEST_REVIEW,
+  inverseCurrent586IdentityRefinementTestInput, CURRENT586_IDENTITY_REFINEMENT_TEST_REVIEW,
+  inverseCurrent586SharedProjectionExportTestInput, CURRENT586_SHARED_PROJECTION_EXPORT_TEST_REVIEW,
+  inverseNationalCoherentWorkTestInput } from './lib/alternative-c-caller-test-input.mjs';
 import { buildCurrentSupplyMemory } from '../js/core/ravscore-current-supply-memory.js';
 import { spawnSync } from 'node:child_process';
 import { summarizeSealedCurrentPart, summarizeSealedCurrentNationalParts, validateSealedCurrentSourceTarget,
@@ -262,7 +276,8 @@ test('offline subprocess scope removes secrets and restores them even after fail
 
 async function fixture(t, { corrupt = false, changedAt = Infinity, wrongContracts = false,
   wrongBaseline = false, cipherTamper = false, forecastAbsent = false,
-  nativeProofs = false, baselinePackTamper = false, packReaderBank = null, rawCaptures = false } = {}) {
+  nativeProofs = false, baselinePackTamper = false, packReaderBank = null, rawCaptures = false,
+  componentSummaryAbsent = false, waterTraceTarget = null, waterTraceFixture = null } = {}) {
   const folder = await temp(t);
   const source = path.join(folder, 'source'), privateRoot = path.join(folder, 'private'),
     buildRoot = path.join(folder, 'build'), predecessorRoot = path.join(folder, 'old-reader'), progressRoot = path.join(folder, 'progress');
@@ -275,10 +290,20 @@ async function fixture(t, { corrupt = false, changedAt = Infinity, wrongContract
     zones: Object.fromEntries(Array.from({ length: 210 }, (_, i) => [`zone-${i}`, {}])),
     coastalParts: { modelBinding: ravScoreModelBinding(), parts: Object.fromEntries(Array.from({ length: 673 }, (_, i) =>
       [`part-${i}`, { zoneId: `zone-${i % 210}`, waterPoint: [8, 55], landPoint: [8, 55.01], onshoreDirectionDeg: 0 }])) } };
-  const contractHashes = Object.fromEntries(['continuationStateContractSha256', 'fullRuntimeContractSha256', 'publicProjectionContractSha256'].map(key => [key, 'b'.repeat(64)]));
+  if(waterTraceTarget){
+    conditions.datasetId=waterTraceTarget.datasetId;conditions.productionReferenceAt=waterTraceTarget.productionReferenceAt;
+    conditions.generatedAt=new Date(Date.parse(waterTraceTarget.productionReferenceAt)+3600000).toISOString();
+    conditions.zones['DK-B02-06']=conditions.zones['zone-0'];delete conditions.zones['zone-0'];
+    for(const part of Object.values(conditions.coastalParts.parts))if(part.zoneId==='zone-0')part.zoneId='DK-B02-06';
+  }
+  if (componentSummaryAbsent) delete conditions.weatherEngine.componentFallback;
+  const contractHashes = waterTraceTarget?{...VOERSAA_WATER_TRACE_CONTRACTS}:Object.fromEntries(['continuationStateContractSha256', 'fullRuntimeContractSha256', 'publicProjectionContractSha256'].map(key => [key, 'b'.repeat(64)]));
   const files = [];
   for (const descriptor of PRIVATE_RUNTIME_BASE_FILES) {
     const value = descriptor.id === 'full-conditions' ? conditions
+      :waterTraceFixture&&descriptor.id==='dmi-forecast-cache'?waterTraceFixture.forecast
+      :waterTraceFixture&&descriptor.id==='dmi-water-stations'?{stations:waterTraceFixture.stations}
+      :waterTraceFixture&&descriptor.id==='dmi-bulk-cache'&&waterTraceFixture.bulk?waterTraceFixture.bulk
       : ['dmi-forecast-cache', 'dmi-bulk-cache'].includes(descriptor.id) ? { zones: {} } : {};
     await write(source, descriptor.relativePath, value);
     files.push({ ...descriptor, sourcePath: path.join(source, descriptor.relativePath), privacyClass: 'PRIVATE_PRODUCTION_RUNTIME' });
@@ -324,11 +349,12 @@ async function fixture(t, { corrupt = false, changedAt = Infinity, wrongContract
   await createPrivateProductionRuntimeBundle({ privateRoot: buildRoot, bundlePath, repositoryRoot: source, files,
     metadata: { datasetId: conditions.datasetId, productionReferenceAt: conditions.productionReferenceAt, generatedAt: conditions.generatedAt,
       generationId: 'synthetic-input-audit', zoneCount: 210, partCount: 673, modelBinding: ravScoreModelBinding(), contractHashes, privacyClass: 'PRIVATE_PRODUCTION_RUNTIME' } });
-  const built = await buildProtectedPrivateRuntimeArchive({ privateRoot: buildRoot, bundlePath, repositoryRoot: source, sourceHead: 'c'.repeat(40) });
+  const built = await buildProtectedPrivateRuntimeArchive({ privateRoot: buildRoot, bundlePath, repositoryRoot: source, sourceHead: waterTraceTarget?.sourceHead??'c'.repeat(40) });
   await write(predecessorRoot, 'package.json', { type: 'module' });
   await write(predecessorRoot, 'scripts/protected-private-production-runtime.mjs', `export * from ${JSON.stringify(pathToFileURL(path.join(repositoryRoot, 'scripts/protected-private-production-runtime.mjs')).href)};`);
   await write(predecessorRoot, 'scripts/private-production-runtime-workflow.mjs', `export const privateRuntimeContractHashes = async () => (${JSON.stringify(wrongContracts ? { ...contractHashes, fullRuntimeContractSha256: 'd'.repeat(64) } : contractHashes)});`);
   await write(predecessorRoot, 'js/core/ravscore-model-contract.js', `export const ravScoreModelBinding = () => (${JSON.stringify(ravScoreModelBinding())});`);
+  await write(predecessorRoot,'scripts/staged-private-production-runtime.mjs',`export * from ${JSON.stringify(pathToFileURL(path.join(repositoryRoot,'scripts/staged-private-production-runtime.mjs')).href)};`);
   for (const file of ['scripts/lib/coastal-point-staging-contract.mjs', 'scripts/lib/ravscore-sampling-context.mjs']) {
     await write(predecessorRoot, file, `export * from ${JSON.stringify(pathToFileURL(path.join(repositoryRoot, file)).href)};`);
   }
@@ -1337,4 +1363,859 @@ test('main audit pack JSON lifetime / ' + location + ' / ' + fault, { timeout: 3
       await original.rm(row.folder, { recursive: true, force: true });
     }
   }
+});
+
+test('CURRENT586 fixed B-only endpoint diagnostic observes role evidence without admission or scope widening', async () => {
+  const part = { partId: 'coastal-part-sensitive', zoneId: 'DK-B01-01',
+    name: 'Synthetic diagnostic PART', waterPoint: [8, 55], landPoint: [8.001, 55], onshoreDirectionDeg: 90 };
+  const reference = '2026-10-21T14:00:00.000Z';
+  const f = nativeFixture(part, reference, true), complete = f.donor(f.native);
+  const partial = f.donor([f.native[1]]);
+  const state = buildIntegratedPartScoreSeries({ part, zone: { id: part.zoneId, onshoreDirectionDeg: 90 },
+    hourly: [{ time: reference }] }).ravScoreState.continuationState;
+  const conditions = { datasetId: 'rr-synthetic-diagnostic', productionReferenceAt: reference,
+    coastalParts: { parts: { [part.partId]: { ravScoreModel: { currentState: state } } } } };
+  const checkpoint = { datasetId: conditions.datasetId, productionReferenceAt: reference,
+    generationSha256: 'a'.repeat(64), states: { [part.partId]: state } };
+  const options = { registry: { partCount: 1, zones: { [part.zoneId]: [part] } }, conditions, checkpoint,
+    productionReferenceAt: CURRENT586_ENDPOINT_AUDIT.targetReferenceAt, protectedBulk: partial,
+    progressActive: complete, persistedHourlyByPart: new Map([[part.partId, {
+      point: part.waterPoint, hourly: f.hourly }]]), zones: { features: [{ properties: { id: part.zoneId } }] },
+    boundary: { datasetId: conditions.datasetId, productionReferenceAt: reference,
+      bundleContentSha256: 'b'.repeat(64), conditionsSha256: 'c'.repeat(64),
+      checkpointGenerationSha256: checkpoint.generationSha256 } };
+  const missing = error => error.originalDependencyCode ===
+    'POST_H0_DMI_ORIGINAL_SELECTED_ENDPOINT_PROOF_NATIVE_ENDPOINT_MISSING';
+  const before = JSON.stringify(options), beforePersisted = JSON.stringify([...options.persistedHourlyByPart]);
+  assert.throws(() => buildRavScoreRawCurrentRetention(options), missing);
+  const observed = diagnoseCurrent586SelectedEndpoints(options);
+  const role = observed.roles['deployed-private-runtime'];
+  assert.equal(observed.normalCollectorEndpointMissingParts, 1);
+  assert.equal(role.firstNativeEndpointMissingParts, 1);
+  assert.equal(role.originalWrapperAbsent, 1);
+  assert(role.unknownSamplingRows > 0);
+  assert(role.own.selectionsRejected > 0);
+  assert(role.all.selectionsProved > role.own.selectionsProved);
+  assert(role.all.exactNativeStepsFound > role.own.exactNativeStepsFound);
+  assert.equal(observed.nativeAdmissionPerformed, false);
+  assert.throws(() => buildRavScoreRawCurrentRetention(options), missing, 'diagnostic cannot repair the normal refusal');
+  const companion = diagnoseCurrent586SelectedEndpoints({ ...options, protectedCompanionContexts: [complete] });
+  assert.equal(companion.normalCollectorEndpointMissingParts, 0);
+  assert.equal(companion.firstFailureCategory, 'NO_NORMAL_COLLECTOR_REFUSAL');
+  assert.equal(companion.scope, 'FIRST_NORMAL_COLLECTOR_FAILURE_ONLY');
+  for (const [category, mutate] of [
+    ['onlyDerivedNativeAtTime', source => { source.forecastAgeHours = 1; }],
+    ['identityMismatch', source => { source.collection = 'dkss_nsbs'; }],
+    ['samplingPresenceMismatch', source => { source.nativeGridSampling = {
+      contractId: 'dmi-native-grid-sampling-v1', elementIndex: 71,
+      gridIndexIdentitySha256: 'd'.repeat(64), coordinateInterpretation: 'dmi-dkss-grib1-header-endpoints-v1',
+      gridDefinitionSha256: source.gridDefinitionSha256, gridPoint: [...source.gridPoint],
+      fieldSet: [...source.fieldSet], optionalFieldSet: [...source.optionalFieldSet] }; }],
+    ['stepFieldsMismatch', source => { source.itemId += '-different'; }],
+  ]) {
+    const changed = structuredClone(complete);
+    mutate(changed.zones[f.identity.entityId].hourly[f.native[0].time].sources.current);
+    const result = diagnoseCurrent586SelectedEndpoints({ ...options, progressActive: changed });
+    assert(result.roles['deployed-private-runtime'].contextMismatch[category] > 0,
+      category + ': ' + JSON.stringify(result.roles['deployed-private-runtime'].contextMismatch));
+    assert.throws(() => buildRavScoreRawCurrentRetention({ ...options, progressActive: changed }), missing);
+    if (category === 'identityMismatch') {
+      const detail = result.roles['deployed-private-runtime'].identityMismatchDetails;
+      assert.equal(detail.endpointSteps, result.roles['deployed-private-runtime'].contextMismatch.identityMismatch);
+      assert(detail.candidateOccurrences > 0);
+      assert.equal(detail.nativeGroups.collectionFamily, detail.nativeMismatch);
+      assert.equal(detail.wireMismatch, 0);
+      assert.equal(detail.nativeUnclassifiedMismatch, 0);
+      assert.equal(detail.countsMayOverlap, true);
+      assert.equal(detail.uniqueOriginalsClaimed, false);
+      assert.equal(detail.singularCauseClaimed, false);
+    }
+    safeReport(result, 'secret-error-canary');
+  }
+  // Exercise the actual private observational helper, not a duplicated comparator
+  // or a new public hook. These detached probes cannot admit a forecast/native row.
+  const actualPlanner = (await fs.readFile(new URL('./plan-ravscore-current-history.mjs', import.meta.url), 'utf8'))
+    .replace(/\r\n/g, '\n');
+  const helperBody = actualPlanner.match(/^function current586IdentityDifferenceDetails\([\s\S]+?^\}/m)?.[0];
+  assert(helperBody);
+  const observe = vm.runInNewContext('(' + helperBody + ')', {
+    sameNativeIdentity, dmiOriginalWireIdentityMatchesCentralIdentity, structuredClone });
+  const decompose = (...args) => JSON.parse(JSON.stringify(observe(...args)));
+  const nativeSource = f.native[0].sources.current, forecastSource = f.hourly[0].sources.current;
+  const inputsBefore = JSON.stringify([nativeSource, f.identity, forecastSource]);
+  const exact = decompose(nativeSource, f.identity, forecastSource, f.identity);
+  assert.equal(exact.wireMismatch, false); assert.equal(exact.nativeMismatch, false);
+  assert(Object.values(exact.nativeGroups).every(value => value === false));
+  for (const [group, mutate] of [
+    ['collectionFamily', value => { value.collection = 'secret-error-canary'; }],
+    ['modelRun', value => { value.modelRun = '2026-10-20T00:00:00Z'; }],
+    ['entity', value => { value.entityId += '-secret-error-canary'; }],
+    ['gridDefinition', value => { value.gridDefinitionSha256 = 'e'.repeat(64); }],
+    ['gridLocation', value => { value.gridPoint[0] += 0.01; }],
+    ['samplingLocation', value => { value.samplingPoint[0] += 0.01; }],
+    ['distance', value => { value.distanceKm += 0.005; }],
+    ['vector', value => { value.vectorSelection += '-different'; }],
+    ['spatial', value => { value.spatialSelection += '-different'; }],
+    ['layer', value => { value.verticalLayerRankM += 1; }],
+    ['fieldSet', value => { value.fieldSet = ['current-u']; }],
+  ]) {
+    const changed = structuredClone(forecastSource); mutate(changed);
+    const observed = decompose(nativeSource, f.identity, changed, f.identity);
+    assert.equal(observed.nativeMismatch, true, group);
+    assert.deepEqual(Object.keys(observed.nativeGroups).filter(key => observed.nativeGroups[key]), [group]);
+    assert.equal(observed.nativeUnclassifiedMismatch, false);
+    assert.equal(observed.wireMismatch, false);
+    safeReport(observed, 'secret-error-canary');
+  }
+  const tolerance = structuredClone(forecastSource);
+  tolerance.gridPoint[0] += 0.00000005; tolerance.distanceKm += 0.0005;
+  const tolerated = decompose(nativeSource, f.identity, tolerance, f.identity);
+  assert.equal(tolerated.nativeMismatch, false, 'normal native point/distance tolerances remain canonical');
+  assert(Object.values(tolerated.nativeGroups).every(value => value === false));
+  const double = structuredClone(forecastSource);
+  double.collection = 'dkss_nsbs'; double.modelRun = '2026-10-20T00:00:00Z';
+  const overlap = decompose(nativeSource, f.identity, double, f.identity);
+  assert.equal(overlap.nativeGroups.collectionFamily, true); assert.equal(overlap.nativeGroups.modelRun, true);
+  assert.equal(Object.values(overlap.nativeGroups).filter(Boolean).length, 2, 'groups are not singular causes');
+  for (const wire of [null, [], { ...f.identity, unexpected: true },
+    Object.fromEntries(Object.entries(f.identity).filter(([key]) => key !== 'entityId'))]) {
+    const observed = decompose(nativeSource, wire, forecastSource, f.identity);
+    assert.equal(observed.wireMismatch, true); assert.equal(observed.wireShapeMismatch, true);
+    assert.equal(observed.nativeMismatch, false);
+    safeReport(observed, 'secret-error-canary');
+  }
+  const wrongString = { ...f.identity, entityId: 'secret-error-canary' };
+  const stringResult = decompose(nativeSource, wrongString, forecastSource, f.identity);
+  assert.equal(stringResult.wireStringMismatch, true); assert.equal(stringResult.wirePointMismatch, false);
+  const wrongPoint = { ...f.identity, samplingPoint: [8.01, 55] };
+  const pointResult = decompose(nativeSource, wrongPoint, forecastSource, f.identity);
+  assert.equal(pointResult.wirePointMismatch, true); assert.equal(pointResult.wireStringMismatch, false);
+  const precisionIdentity = { ...f.identity, samplingPoint: [8.123456789, 55.123456789] };
+  const wirePrecision = { ...precisionIdentity, samplingPoint: [8.1234568, 55.1234568] };
+  assert.equal(decompose(nativeSource, wirePrecision, forecastSource, precisionIdentity).wireMismatch, false,
+    'normal exact Python seven-place relation is reused, not a diagnostic tolerance');
+  for (const observed of [exact, tolerated, overlap, stringResult, pointResult])
+    safeReport(observed, 'secret-error-canary');
+  assert.equal(JSON.stringify([nativeSource, f.identity, forecastSource]), inputsBefore);
+  assert.equal(JSON.stringify(options), before);
+  assert.equal(JSON.stringify([...options.persistedHourlyByPart]), beforePersisted);
+  safeReport(observed, 'secret-error-canary');
+  assert.throws(() => diagnoseCurrent586SelectedEndpoints({ ...options,
+    productionReferenceAt: '2026-10-21T21:00:00.000Z' }), /FIXED_ENDPOINT_DIAGNOSTIC_SCOPE/);
+  let reads = 0;
+  for (const extra of [{ progressFile: '/private/cipher' }, { includeRawManifest: true },
+    { includeCurrentWindowDiagnostic: true }, { progressSource: '39066350748-1' },
+    { progressCacheKey: 'weather-private-progress-encrypted-v2-Linux-main-39666991481-1' }]) {
+    const result = await auditSavedWeatherInputs({ mode: 'audit', includeCurrent586Endpoints: true,
+      progressSource: CURRENT586_ENDPOINT_AUDIT.progressSource,
+      fetchImpl: async () => { reads++; throw Error('secret-error-canary'); }, ...extra });
+    assert.equal(result.status, 'AUDIT_FAILED_CLOSED'); assert.equal(result.code, 'MODE_INVALID');
+  }
+  assert.equal(reads, 0, 'colliding old/cipher/RAW scopes refuse before transport');
+  // Execute only the actual normal finally-control seam with inert filesystem
+  // functions. The installer's unknown internal close must not trigger removal
+  // merely because the outer baselinePackInvocation stayed null.
+  const auditSource = await fs.readFile(new URL('./audit-saved-weather-inputs.mjs', import.meta.url), 'utf8');
+  const metadataBody = auditSource.match(/^function current586BootstrapObservation\([\s\S]+?^\}/m)?.[0];
+  assert(metadataBody, 'exercise the actual first-failure report adapter');
+  const metadataObservation = vm.runInNewContext('(' + metadataBody + ')', {});
+  const metadata = metadataObservation({ discoverCommittedCoherentOriginalBootstrap }, options);
+  assert.equal(metadata.scope, 'FIRST_NORMAL_COLLECTOR_FAILURE_PART_METADATA_ONLY');
+  assert.equal(metadata.rawAvailability, 'NOT_PROBED');
+  assert.equal(metadata.nativeAdmissionPerformed, false);
+  safeReport(metadata, 'secret-error-canary');
+  const summaryOnly = metadataObservation({ discoverCommittedCoherentOriginalBootstrap: () => ({
+    summary: { status: 'METADATA_BOUND', rawAvailability: 'NOT_PROBED' },
+    privateRequests: [{ itemId: 'secret-error-canary' }], privateBinding: { datasetId: 'rr-synthetic-input' },
+  }) }, options);
+  assert.deepEqual(JSON.parse(JSON.stringify(summaryOnly)), {
+    status: 'METADATA_BOUND', rawAvailability: 'NOT_PROBED',
+    scope: 'FIRST_NORMAL_COLLECTOR_FAILURE_PART_METADATA_ONLY' });
+  for (const [message, expectedCode] of [
+    ['COHERENT_ORIGINAL_BOOTSTRAP_INPUT_BOUND', 'COHERENT_ORIGINAL_BOOTSTRAP_INPUT_BOUND'],
+    ['RAVSCORE_CURRENT_HISTORY_DEMAND_RETENTION_INPUT_INVALID', 'RAVSCORE_CURRENT_HISTORY_DEMAND_RETENTION_INPUT_INVALID'],
+    ['COHERENT_ORIGINAL_BOOTSTRAP_SECRET_CANARY', 'UNCLASSIFIED_METADATA_PREPARATION_REFUSAL'],
+    ['secret-error-canary', 'UNCLASSIFIED_METADATA_PREPARATION_REFUSAL'],
+  ]) {
+    const refused = metadataObservation({ discoverCommittedCoherentOriginalBootstrap: () => { throw new Error(message); } }, options);
+    assert.equal(refused.status, 'PREPARATION_REFUSED');
+    assert.equal(refused.refusalCode, expectedCode);
+    safeReport(refused, 'secret-error-canary');
+  }
+  assert.match(auditSource, /bootstrapMetadata = current586BootstrapObservation\(bootstrapApi, partInputs\)/);
+  assert.equal(JSON.stringify(options), before);
+  assert.equal(JSON.stringify([...options.persistedHourlyByPart]), beforePersisted);
+  const cleanup = auditSource.match(/    if \(work && !includeCurrent586Endpoints && \(baselinePackInvocation === null[\s\S]+?await fs\.rm\(work, \{ recursive: true, force: true \}\)\.catch\(\(\) => \{\}\);/)?.[0];
+  assert(cleanup, 'qualify the actual new-mode finalizer, not a copied predicate');
+  for (const [includeCurrent586Endpoints, prepareCurrent586Originals] of [[true, false], [false, false], [false, true]]) {
+    let removals = 0;
+    const privateRoot = path.join(os.tmpdir(), 'synthetic-unclosed-audit');
+    const firstError = new Error('synthetic-first-error');
+    const scope = { work: path.join(privateRoot, 'saved-input-audit-owned'), privateRoot, path,
+      includeCurrent586Endpoints, includeCurrent586CachedOriginals: false, prepareCurrent586Originals, baselinePackInvocation: null,
+      privateWeatherPackJsonReadsClosed: () => false, firstError,
+      fs: { realpath: async () => privateRoot, rm: async () => { removals++; } } };
+    await assert.rejects(vm.runInNewContext('(async () => { try { throw firstError; } finally {' + cleanup + '} })()', scope),
+      error => error === firstError, 'unknown close/cleanup cannot replace the original failure');
+    assert.equal(removals, includeCurrent586Endpoints || prepareCurrent586Originals ? 0 : 1,
+      'new-mode uncertain work is retained; old mode behavior is unchanged');
+  }
+  const row = CURRENT586_ENDPOINT_DIAGNOSTIC_TEST_REVIEW;
+  const exportedWhole = inverseNationalCoherentWorkTestInput((await fs.readFile(new URL('./plan-ravscore-current-history.mjs', import.meta.url), 'utf8')).replace(/\r\n/g, '\n'), row.path);
+  const sharedExports = CURRENT586_SHARED_PROJECTION_EXPORT_TEST_REVIEW;
+  assert.equal(Buffer.byteLength(exportedWhole), sharedExports.after.bytes);
+  assert.equal(crypto.createHash('sha256').update(exportedWhole).digest('hex'), sharedExports.after.sha256);
+  const refinedWhole = inverseCurrent586SharedProjectionExportTestInput(exportedWhole, row.path);
+  assert.equal(Buffer.byteLength(refinedWhole), sharedExports.before.bytes);
+  assert.equal(crypto.createHash('sha256').update(refinedWhole).digest('hex'), sharedExports.before.sha256);
+  assert.equal(inverseCurrent586SharedProjectionExportTestInput(refinedWhole, row.path), refinedWhole,
+    'The export-only inverse must not remove the identity-refinement layer');
+  for (const edit of sharedExports.edits) {
+    assert.equal(exportedWhole.slice(edit.offset, edit.offset + edit.after.length), edit.after);
+    const changed = exportedWhole.slice(0, edit.offset) + (edit.after[0] === 'X' ? 'Y' : 'X') + exportedWhole.slice(edit.offset + 1);
+    assert.throws(() => inverseCurrent586SharedProjectionExportTestInput(changed, row.path), /ALTERNATIVE_C_TEST_INPUT_CHANGED/);
+  }
+  assert.throws(() => inverseCurrent586SharedProjectionExportTestInput(exportedWhole + '// unknown shared-export drift\n', row.path),
+    /ALTERNATIVE_C_TEST_INPUT_CHANGED/);
+  assert.throws(() => inverseCurrent586SharedProjectionExportTestInput(exportedWhole, 'scripts/unknown.mjs'),
+    /ALTERNATIVE_C_TEST_INPUT_CHANGED/);
+  const refinement = CURRENT586_IDENTITY_REFINEMENT_TEST_REVIEW;
+  const whole = inverseCurrent586IdentityRefinementTestInput(refinedWhole, row.path);
+  assert.equal(Buffer.byteLength(whole), refinement.before.bytes);
+  assert.equal(crypto.createHash('sha256').update(whole).digest('hex'), refinement.before.sha256);
+  assert.equal(inverseCurrent586IdentityRefinementTestInput(whole, row.path), whole);
+  for (const edit of refinement.edits) {
+    assert.equal(refinedWhole.slice(edit.offset, edit.offset + edit.after.length), edit.after);
+    const changed = refinedWhole.slice(0, edit.offset) + (edit.after[0] === 'X' ? 'Y' : 'X') + refinedWhole.slice(edit.offset + 1);
+    assert.throws(() => inverseCurrent586IdentityRefinementTestInput(changed, row.path), /ALTERNATIVE_C_TEST_INPUT_CHANGED/);
+  }
+  assert.throws(() => inverseCurrent586IdentityRefinementTestInput(refinedWhole + '// unknown refinement drift\n', row.path),
+    /ALTERNATIVE_C_TEST_INPUT_CHANGED/);
+  const old = inverseCurrent586EndpointDiagnosticTestInput(whole, row.path);
+  assert.equal(Buffer.byteLength(old), row.before.bytes);
+  assert.equal(crypto.createHash('sha256').update(old).digest('hex'), row.before.sha256);
+  assert.equal(inverseCurrent586EndpointDiagnosticTestInput(old, row.path), old);
+  for (const edit of row.edits) {
+    assert.equal(whole.slice(edit.offset, edit.offset + edit.after.length), edit.after);
+    const changed = whole.slice(0, edit.offset) + (edit.after[0] === 'X' ? 'Y' : 'X') + whole.slice(edit.offset + 1);
+    assert.throws(() => inverseCurrent586EndpointDiagnosticTestInput(changed, row.path), /ALTERNATIVE_C_TEST_INPUT_CHANGED/);
+  }
+  assert.throws(() => inverseCurrent586EndpointDiagnosticTestInput(whole + '// unknown drift\n', row.path),
+    /ALTERNATIVE_C_TEST_INPUT_CHANGED/);
+});
+
+test('CURRENT586 pilot fingerprint uses the actual normal Python target projection, not full registry JSON', async t => {
+  const directory = await temp(t), registryPath = path.join(directory, 'data/live/coastal-parts-v2.json');
+  const registry = { schemaVersion: 2, partCount: 2, zones: {
+    'synthetic-parent-b': [{ partId: 'synthetic-part-b', sourceZoneId: 'synthetic-parent-b',
+      name: 'Does not enter target identity', waterPoint: [8.123456789, 55.123456789] }],
+    'synthetic-parent-a': [{ partId: 'synthetic-part-a', sourceZoneId: 'synthetic-parent-a',
+      name: 'Also excluded', waterPoint: [9.765432101, 56.765432101] }],
+  } };
+  await fs.mkdir(path.dirname(registryPath), { recursive: true });
+  await fs.writeFile(registryPath, JSON.stringify(registry));
+  const modulePath = path.join(directory, 'scripts/lib/copernicus_target_identity.py');
+  await fs.mkdir(path.dirname(modulePath), { recursive: true });
+  const originalModule = await fs.readFile(new URL('./lib/copernicus_target_identity.py', import.meta.url));
+  await fs.writeFile(modulePath, originalModule);
+  assert.deepEqual(await fs.readFile(modulePath), originalModule);
+  const audit = await fs.readFile(new URL('./audit-saved-weather-inputs.mjs', import.meta.url), 'utf8');
+  const literal = audit.match(/const pilotTargetFingerprint = \(await local\(\['-c',\s*('(?:\\.|[^'\\\r\n])*')\s*,/)?.[1];
+  assert(literal, 'extract exactly the actual fixed audit command, never a copied fingerprint algorithm');
+  const command = vm.runInNewContext(literal, Object.create(null));
+  const python = process.env.PYTHON ?? (process.platform === 'win32' ? 'python' : 'python3');
+  const run = async (body, cwd, args = []) => withoutSavedAuditSecrets(async () => {
+    const value = spawnSync(python, ['-c', body, ...args], { cwd, encoding: 'utf8',
+      env: { ...process.env, PYTHONDONTWRITEBYTECODE: '1' }, timeout: 20_000, maxBuffer: 1024 * 1024 });
+    assert.equal(value.error, undefined); assert.equal(value.status, 0);
+    assert.equal(value.stderr, ''); return value.stdout.trim();
+  });
+  const actual = await run(command, directory);
+  const expected = await run('from pathlib import Path; import sys; from scripts.lib.copernicus_target_identity import target_fingerprint, targets_from_registry; print(target_fingerprint(targets_from_registry(Path(sys.argv[1]))))',
+    repositoryRoot, [registryPath]);
+  assert.match(actual, /^sha256:[a-f0-9]{64}$/); assert.equal(actual, expected);
+  const fullRegistry = JSON.stringify(registry, (_key, value) => value && typeof value === 'object'
+    && !Array.isArray(value) ? Object.fromEntries(Object.keys(value).sort().map(key => [key, value[key]])) : value);
+  assert.notEqual(actual, 'sha256:' + crypto.createHash('sha256').update(fullRegistry).digest('hex'));
+  assert.match(audit, /pilotFingerprintAlgorithm: 'NORMAL_COPERNICUS_TARGET_IDENTITY'/);
+});
+
+test('CURRENT586 cached originals: separate scope rejects every mixed transport before filesystem or network', async () => {
+  let reads = 0;
+  for (const extra of [{ includeCurrent586CachedOriginals: 'true' }, { includeCurrent586Endpoints: true },
+    { includeCurrentWindowDiagnostic: true }, { includeSelectedCurrentPreflight: true },
+    { includeRawManifest: true }, { includeRawFilePresence: true }, { rawCacheKey: 'secret-error-canary' },
+    { rawManifestSource: 'secret-error-canary' }, { progressFile: '/private/cipher' },
+    { progressCacheKey: 'secret-error-canary' }, { progressBaselineTargetHour: '2026-10-21T20:00:00.000Z' },
+    { progressSource: '39066350748-1' }, { prepareCurrentForwardOriginals: true }]) {
+    const result = await auditSavedWeatherInputs({ mode: 'audit', includeCurrent586CachedOriginals: true,
+      progressSource: CURRENT586_ENDPOINT_AUDIT.progressSource,
+      fetchImpl: async () => { reads++; throw Error('secret-error-canary'); }, ...extra });
+    assert.equal(result.status, 'AUDIT_FAILED_CLOSED'); assert.equal(result.code, 'MODE_INVALID');
+    assert.equal(result.nativeAdmissionPerformed, false);
+    safeReport(result, 'secret-error-canary');
+  }
+  assert.equal(reads, 0);
+  assert.equal(CURRENT586_CACHED_ORIGINAL_AUDIT.rawCacheKey, 'dmi-grib-v4-Linux-2026-W43-39520623069-1');
+  assert.equal(CURRENT586_CACHED_ORIGINAL_AUDIT.rawCacheId, 9250979458);
+  assert.equal(CURRENT586_CACHED_ORIGINAL_AUDIT.rawCacheBytes, 2729841089);
+});
+
+test('CURRENT586 cached originals: exact worker refusal codes survive without raw text; uncertain scratch stays owned', async () => {
+  for (const suffix of ['RAW_CAPTURE_UNAVAILABLE', 'RAW_ACQUISITION_UNRESOLVED', 'OWNED_CAPTURE_MISMATCH', 'DECODE_FAILED',
+    'RAW_CAPTURE_FILE_MISSING', 'RAW_CAPTURE_METADATA_UNMATCHED_PREFIX_PRESENT',
+    'RAW_CAPTURE_METADATA_UNMATCHED_PREFIX_ABSENT',
+    'DECODE_MISMATCH', 'PRODUCER_PATH_INVALID', 'RAW_PATH_INVALID', 'OUTPUT_PATH_INVALID', 'OUTPUT_BOUND',
+    'OUTPUT_WRITE_FAILED', 'OUTPUT_CLOSE_UNPROVED', 'ARGUMENT_INVALID', 'SUPERVISOR_ARGUMENT_INVALID',
+    'SUPERVISOR_SOURCE_INVALID', 'SUPERVISOR_OUTPUT_BOUND', 'SUPERVISOR_OUTPUT_INVALID']) {
+    const code = 'COHERENT_CURRENT_ORIGINAL_' + suffix;
+    assert.equal(cachedCoherentOriginalFailureCode(new Error(code)), code);
+  }
+  for (const message of ['secret-error-canary', 'COHERENT_CURRENT_ORIGINAL_SECRET_CANARY',
+    'COHERENT_CURRENT_ORIGINAL_RAW_CAPTURE_UNAVAILABLE: secret-error-canary']) {
+    assert.equal(cachedCoherentOriginalFailureCode(new Error(message)), 'COHERENT_CURRENT_CACHED_PROOF_UNCLASSIFIED');
+  }
+  const source = await fs.readFile(new URL('./audit-saved-weather-inputs.mjs', import.meta.url), 'utf8');
+  const cleanup = source.match(/    if \(work && !includeCurrent586Endpoints && \(baselinePackInvocation === null[\s\S]+?await fs\.rm\(work, \{ recursive: true, force: true \}\)\.catch\(\(\) => \{\}\);/)?.[0];
+  assert(cleanup);
+  const privateRoot = path.join(os.tmpdir(), 'synthetic-cached-current-owner');
+  let removals = 0;
+  const firstError = new Error('synthetic-first-error');
+  const scope = { work: path.join(privateRoot, 'saved-input-audit-owned'), privateRoot, path,
+    includeCurrent586Endpoints: false, includeCurrent586CachedOriginals: true, baselinePackInvocation: null,
+    privateWeatherPackJsonReadsClosed: () => false, firstError,
+    fs: { realpath: async () => privateRoot, rm: async () => { removals++; } } };
+  await assert.rejects(vm.runInNewContext('(async () => { try { throw firstError; } finally {' + cleanup + '} })()', scope),
+    error => error === firstError);
+  assert.equal(removals, 0, 'unknown CURRENT worker/read ownership must not be discarded');
+});
+
+test('CURRENT586 restoration S facade: fixed checkpoint GET is default OFF',async()=>{
+  const query='?document_key=eq.ravscore-continuation-checkpoint&select=document_key,payload,version&limit=2';
+  let requested=0;
+  for(const includeCurrent586Checkpoint of [undefined,false]){
+    const clients=createReadOnlySavedWeatherClients({...credentials,includeCurrent586Checkpoint,
+      fetchImpl:async()=>{requested++;return Response.json([]);}});
+    await assert.rejects(clients.request(query),/REMOTE_TARGET_FORBIDDEN/);
+  }
+  assert.throws(()=>createReadOnlySavedWeatherClients({...credentials,includeCurrent586Checkpoint:'true',
+    fetchImpl:async()=>{requested++;return Response.json([]);}}),/READ_CREDENTIALS_UNAVAILABLE/);
+  assert.equal(requested,0);
+});
+
+test('CURRENT586 restoration S facade: only explicit fixed GET key and shape reach transport',async()=>{
+  const query='?document_key=eq.ravscore-continuation-checkpoint&select=document_key,payload,version&limit=2';
+  const expected=credentials.supabaseUrl+'/rest/v1/admin_documents'+query,calls=[];
+  const rows=[{document_key:'ravscore-continuation-checkpoint',payload:{synthetic:true},version:7}];
+  const clients=createReadOnlySavedWeatherClients({...credentials,includeCurrent586Checkpoint:true,
+    fetchImpl:async(url,options)=>{calls.push({url,method:options.method,redirect:options.redirect});return Response.json(rows);}});
+  assert.deepEqual(await clients.request(query),rows);
+  assert.deepEqual(calls,[{url:expected,method:'GET',redirect:'error'}]);
+  for(const target of [
+    expected.replace('storage.example.test','other.example.test'),expected+'&extra=true',expected+'&limit=2',
+    expected.replace('document_key,payload,version','document_key,version'),expected.replace('limit=2','limit=3'),
+    expected.replace('eq.ravscore-continuation-checkpoint','eq.another-checkpoint')]){
+    await assert.rejects(clients.guardedFetch(target),/REMOTE_TARGET_FORBIDDEN/);
+  }
+  await assert.rejects(clients.guardedFetch(expected,{method:'HEAD'}),/REMOTE_TARGET_FORBIDDEN/);
+  for(const method of ['POST','PUT','PATCH','DELETE'])await assert.rejects(clients.guardedFetch(expected,{method}),/REMOTE_WRITE_FORBIDDEN/);
+  await assert.rejects(clients.guardedFetch(expected,{body:'forbidden'}),/REMOTE_WRITE_FORBIDDEN/);
+  await assert.rejects(clients.storage.uploadImmutable(),/REMOTE_WRITE_FORBIDDEN/);
+  assert.equal(calls.length,1);
+});
+
+test('CURRENT586 restoration S facade: actual normal checkpoint body and shared request budgets stay bounded',async()=>{
+  const {PROTECTED_RAVSCORE_CHECKPOINT_RESTORE_MAXIMUM_RESPONSE_BYTES:maximum}=await import('./protected-ravscore-continuation-checkpoint.mjs');
+  assert.ok(maximum>2*1024*1024);
+  const query='?document_key=eq.ravscore-continuation-checkpoint&select=document_key,payload,version&limit=2';
+  const rows=[{document_key:'ravscore-continuation-checkpoint',payload:{padding:'x'.repeat(2*1024*1024)},version:7}];
+  const positive=createReadOnlySavedWeatherClients({...credentials,includeCurrent586Checkpoint:true,
+    fetchImpl:async()=>Response.json(rows)});
+  const actual=await positive.request(query);
+  assert.equal(actual[0].payload.padding.length,2*1024*1024);assert.equal(actual[0].version,7);
+  let requests=0;
+  const tooLarge=createReadOnlySavedWeatherClients({...credentials,includeCurrent586Checkpoint:true,
+    fetchImpl:async()=>{requests++;return new Response('{}',{headers:{'content-length':String(maximum+1)}});}});
+  await assert.rejects(tooLarge.request(query),/REMOTE_BODY_BOUND/);assert.equal(requests,1);
+  const onlyOnce=createReadOnlySavedWeatherClients({...credentials,includeCurrent586Checkpoint:true,maximumRequests:1,
+    fetchImpl:async()=>Response.json([])});
+  await onlyOnce.request(query);await assert.rejects(onlyOnce.request(query),/REMOTE_READ_BOUND/);
+  let now=0;
+  const timed=createReadOnlySavedWeatherClients({...credentials,includeCurrent586Checkpoint:true,
+    maximumMilliseconds:1000,clock:()=>now,fetchImpl:async()=>{now+=600;return Response.json([]);}});
+  await timed.request(query);await assert.rejects(timed.request(query),/REMOTE_READ_BOUND/);
+});
+
+const bOnlyOptions = f => ({ ...credentials, fetchImpl: f.options.fetchImpl,
+  privateRoot: f.privateRoot, descriptorPath: f.options.descriptorPath,
+  predecessorRoot: f.options.predecessorRoot, outputPath: f.options.outputPath,
+  expectedDatasetId: f.conditions.datasetId,
+  expectedProductionReferenceAt: f.conditions.productionReferenceAt });
+
+test('B-only component summary: actual authenticated B works without progress or component unpacking', async t => {
+  // Outer B is authenticated normally; an intentionally invalid INNER pack
+  // proves that this scope never unpacks/adopts it or depends on RAW proofs.
+  const f = await fixture(t, { nativeProofs: true, baselinePackTamper: true });
+  await fs.rm(f.options.progressFile);
+  const beforeConditions = await fs.readFile(path.join(f.source, 'data/live/conditions.json'));
+  const report = await auditProtectedBaselineComponentFallback(bOnlyOptions(f));
+  assert.equal(report.status, 'AUDIT_COMPLETED', JSON.stringify(report));
+  assert.equal(report.readScope, 'PROTECTED_BASELINE_COMPONENT_FALLBACK_ONLY');
+  assert.equal(report.protectedGenerationReadbackVerified, true);
+  assert.equal(report.exactArchivedSourceContractsVerified, true);
+  for (const key of ['encryptedProgressRead', 'rawCacheRead', 'componentPackUnpacked',
+    'semanticUnionPerformed', 'cacheBuilt', 'futureContextPersistenceProved', 'publicDeploymentProved']) {
+    assert.equal(report[key], false, key);
+  }
+  assert.equal(report.summaryPresent, true);
+  const summary = report.protectedBaselineComponentFallback;
+  assert.equal(summary.openMeteo.requests, 7);
+  assert.equal(summary.openMeteo.deferred, 2);
+  assert.equal(summary.before.wind.valid, 3);
+  assert.equal(summary.after.wind.valid, null, 'unreported observations remain unknown');
+  assert.equal(summary.copernicus.status, null);
+  assert.equal(summary.copernicus.transportFailure, null);
+  assert.equal(Object.hasOwn(summary, 'arbitraryPrivatePayload'), false);
+  assert.equal(Object.hasOwn(report, 'nativeProofAvailability'), false);
+  assert.equal(Object.hasOwn(report.capacity, 'progress'), false);
+  for (const key of ['objectBytes', 'objectCount', 'largestObjectBytes', 'envelopeBytes', 'rawPayloadBytes']) {
+    assert.equal(report.capacity.protected[key], f.built.archiveMetrics[key], key);
+  }
+  const authenticatedManifest = JSON.parse(await fs.readFile(path.join(f.folder, 'build/bundle/manifest.json'), 'utf8'));
+  const conditionsFiles = authenticatedManifest.files.filter(file => file.relativePath === 'data/live/conditions.json');
+  assert.equal(conditionsFiles.length, 1);
+  assert.equal(report.capacity.protected.conditionsBytes, conditionsFiles[0].bytes);
+  assert.equal(report.capacity.protected.conditionsBytes, beforeConditions.length);
+  assert(Number.isSafeInteger(report.capacity.protected.conditionsBytes) && report.capacity.protected.conditionsBytes > 0);
+  assert(report.capacity.protected.conditionsBytes <= report.capacity.limits.conditionsBytes);
+  assert(report.capacity.protected.conditionsBytes <= policy.maximumFilePayloadBytes);
+  assert.equal(report.capacity.limits.archiveBytes, policy.maximumArchiveAggregateBytes);
+  assert.equal(report.capacity.limits.rawPayloadBytes, policy.maximumRawPayloadBytes);
+  assert.deepEqual(await fs.readFile(path.join(f.source, 'data/live/conditions.json')), beforeConditions);
+  assert.deepEqual((await fs.readdir(f.privateRoot)).sort(), ['audit.json', 'describe.json', 'source.json']);
+  assert.ok(f.calls.every(call => ['GET', 'HEAD'].includes(call.method)));
+  assert.ok(f.calls.filter(call => call.path === '/rest/v1/admin_documents').length >= 5,
+    'fresh exact pointer is checked before restore and after all inspection');
+  assert.deepEqual(JSON.parse(await fs.readFile(f.options.outputPath, 'utf8')), report);
+  safeReport(report, f.privateRoot);
+});
+
+test('B-only component summary: missing saved summary is unknown rather than zero or a successful provider claim', async t => {
+  const f = await fixture(t, { componentSummaryAbsent: true });
+  await fs.rm(f.options.progressFile);
+  const report = await auditProtectedBaselineComponentFallback(bOnlyOptions(f));
+  assert.equal(report.status, 'AUDIT_COMPLETED', JSON.stringify(report));
+  assert.equal(report.summaryPresent, false);
+  const summary = report.protectedBaselineComponentFallback;
+  assert.equal(summary.openMeteo.requests, null);
+  assert.equal(summary.openMeteo.deferred, null);
+  assert.equal(summary.openMeteo.transport.httpAttempts, null);
+  assert.equal(summary.before.wind.required, null);
+  assert.equal(summary.failureCount, null);
+  safeReport(report, f.privateRoot);
+});
+
+test('B-only component summary: pointer changes, corrupt archives and archived-contract drift fail closed', async t => {
+  for (const options of [{ changedAt: 3 }, { changedAt: 5 }, { corrupt: true }, { wrongContracts: true }]) {
+    const f = await fixture(t, options), report = await auditProtectedBaselineComponentFallback(bOnlyOptions(f));
+    assert.equal(report.status, 'AUDIT_FAILED_CLOSED', JSON.stringify(options));
+    assert.equal(Object.hasOwn(report, 'protectedBaselineComponentFallback'), false);
+    assert.ok(f.calls.every(call => ['GET', 'HEAD'].includes(call.method)));
+    assert.equal((await fs.readdir(f.privateRoot)).some(name => name.startsWith('component-summary-')), false);
+    if (options.wrongContracts) assert.equal(report.code, 'PREDECESSOR_CONTRACT_MISMATCH');
+    if (options.corrupt) assert.equal(report.code, 'PROTECTED_RESTORE_REJECTED');
+    if (options.changedAt) assert.equal(report.code, 'CURRENT_GENERATION_CHANGED');
+    safeReport(report, f.privateRoot);
+  }
+});
+
+test('B-only component summary: exact expected generation and exclusive options are checked before archive I/O', async t => {
+  for (const change of [
+    { expectedDatasetId: 'rr-other' },
+    { expectedProductionReferenceAt: '2026-09-29T17:00:00.000Z' },
+  ]) {
+    const f = await fixture(t), before = f.calls.length;
+    const report = await auditProtectedBaselineComponentFallback({ ...bOnlyOptions(f), ...change });
+    assert.equal(report.status, 'AUDIT_FAILED_CLOSED');
+    assert.equal(report.code, 'SOURCE_IDENTITY_INVALID');
+    assert.equal(f.calls.length, before);
+    safeReport(report, f.privateRoot);
+  }
+  let reads = 0;
+  const base = { privateRoot: '/unreadable-private-root', expectedDatasetId: 'rr-synthetic-input',
+    expectedProductionReferenceAt: '2026-09-29T16:00:00.000Z', fetchImpl: () => { reads++; } };
+  for (const change of [
+    { progressFile: '/forbidden' }, { progressSource: '40762325224-1' },
+    { progressCacheKey: 'forbidden' }, { encryptionKey: 'forbidden' },
+    { rawCacheKey: 'forbidden' }, { includeRawManifest: false }, { includeCurrent586Endpoints: false },
+    { expectedDatasetId: '' }, { expectedProductionReferenceAt: '2026-09-29T16:01:00.000Z' },
+    { expectedProductionReferenceAt: '2026-02-30T16:00:00.000Z' },
+  ]) {
+    const report = await auditProtectedBaselineComponentFallback({ ...base, ...change });
+    assert.equal(report.code, 'MODE_INVALID', JSON.stringify(change));
+    assert.equal(report.phase, 'SETUP');
+  }
+  assert.equal(reads, 0);
+});
+
+test('B-only component summary: failed private cleanup never publishes success or retries deletion', async t => {
+  const f = await fixture(t), realRemove = fs.rm;
+  let attempted = 0;
+  try {
+    fs.rm = async (file, ...args) => {
+      if (path.basename(String(file)).startsWith('component-summary-')) {
+        attempted++;
+        throw new Error('secret-error-canary cleanup');
+      }
+      return realRemove(file, ...args);
+    };
+    const report = await auditProtectedBaselineComponentFallback(bOnlyOptions(f));
+    assert.equal(report.status, 'AUDIT_FAILED_CLOSED');
+    assert.equal(report.code, 'PRIVATE_TEMP_CLEANUP_FAILED');
+    assert.equal(attempted, 1);
+    assert.equal(Object.hasOwn(report, 'protectedBaselineComponentFallback'), false);
+    assert.equal(JSON.parse(await fs.readFile(f.options.outputPath)).status, 'AUDIT_FAILED_CLOSED');
+    safeReport(report, f.privateRoot);
+  } finally { fs.rm = realRemove; }
+});
+
+test('B-only component summary: normal CLI rejects mixed scopes and expected pins in legacy modes before transport', () => {
+  const allowedEnvironment = new Set(['PATH', 'SYSTEMROOT', 'WINDIR', 'TEMP', 'TMP', 'TMPDIR', 'COMSPEC', 'PATHEXT']);
+  const env = Object.fromEntries(Object.entries(process.env).filter(([key]) => allowedEnvironment.has(key.toUpperCase())));
+  const guard = 'data:text/javascript,' + encodeURIComponent('globalThis.fetch=()=>{process.exit(97);};');
+  const six = ['--private-root', '/unreadable-private-root', '--descriptor', '/source.json',
+    '--predecessor-root', '/predecessor', '--output', '/report.json', '--expected-dataset', 'rr-synthetic-input',
+    '--expected-reference', '2026-09-29T16:00:00.000Z'];
+  for (const args of [
+    ['component-summary', ...six, '--progress-file', '/forbidden'],
+    ['component-summary', ...six, '--include-raw-manifest', 'false'],
+    ['component-summary', ...six, '--expected-dataset', 'rr-duplicate'],
+    ['component-summary', ...six.slice(0, -2)],
+    ['describe', '--expected-dataset', 'rr-synthetic-input'],
+    ['audit', '--expected-reference', '2026-09-29T16:00:00.000Z'],
+  ]) {
+    const result = spawnSync(process.execPath, ['--import', guard, 'scripts/audit-saved-weather-inputs.mjs', ...args],
+      { cwd: repositoryRoot, env, encoding: 'utf8', timeout: 10_000, maxBuffer: 64 * 1024, windowsHide: true });
+    assert.equal(result.error, undefined); assert.equal(result.status, 1);
+    assert.equal(result.stdout, '');
+    assert.equal(result.stderr.trim(), 'SAVED_WEATHER_INPUT_AUDIT_FAILED_CLOSED');
+  }
+});
+
+// Additive fixed water scope. Uses this file's existing real synthetic B,
+// archive, archived-reader and read-only transport fixtures unchanged by default.
+const waterMaster='synthetic-water-trace-master-secret-never-real-20261101';
+const waterContext={repository,runId:'90001',runAttempt:'1',sourceHead:'d'.repeat(40),masterSecret:waterMaster};
+async function waterTraceData(target,{badInner=false,rawRunSpelling=false}={}){
+  const stations=[{sourceKey:'oceanobs:fixture-A',stationId:'fixture-A',name:'Synthetic Frederikshavn II',point:[8,55],sourceType:'observation-station'},
+    {sourceKey:'tidewater:fixture-B',stationId:'fixture-B',name:'Synthetic Hals Havn',point:[9,55],sourceType:'forecast-point'}];
+  const times=Array.from({length:121},(_,n)=>new Date(Date.parse(target.productionReferenceAt)+n*3600000).toISOString());
+  const bulk={generatedAt:target.productionReferenceAt,timeStrideHours:1,zones:Object.fromEntries(stations.map((station,i)=>[
+    'SOURCE::'+station.sourceKey,{hourly:Object.fromEntries(times.map((time,n)=>[time,dmiWaterSourceFixture(station,time,10+i*20+n,target.productionReferenceAt)]))}]))};
+  if(rawRunSpelling)for(const zone of Object.values(bulk.zones))for(const row of Object.values(zone.hourly)){
+    row.sources.waterLevel.modelRun=row.sources.waterLevel.modelRun.replace('.000Z','Z');
+    row.sources.waterLevel.nativeValidTime=row.sources.waterLevel.nativeValidTime.replace('.000Z','Z');}
+  const index=buildWaterSourceForecastIndex(stations,bulk,target.productionReferenceAt);
+  assert.equal(index.size,2,'Normal SOURCE qualification must actually pass');
+  const forecast={schemaVersion:1,generatedAt:target.productionReferenceAt,zones:{'DK-B02-06':{zoneId:'DK-B02-06',point:[8.5,55],
+    generatedAt:target.productionReferenceAt,hourly:times.map(time=>({time,waterLevelCm:50,waterLevelTrendCm3h:0,sources:{waterLevel:{provider:'dmi'}}}))}}};
+  const output={zones:{'DK-B02-06':{current:{},forecast:{hourly:structuredClone(forecast.zones['DK-B02-06'].hourly)}}}};
+  const route={zones:{'DK-B02-06':{enabled:true,requireAll:true,method:'inverse-distance',stations:stations.map(s=>({sourceKey:s.sourceKey,stationId:s.stationId}))}}};
+  applyWaterSourceRouting({features:[{properties:{id:'DK-B02-06',name:'Synthetic Voersaa',dataPoint:[8.5,55]}}],output,
+    forecastStore:forecast,sources:stations,index,routing:route,haversineKm:(_point,sourcePoint)=>Math.abs(sourcePoint[0]-8.5)*100,
+    generatedAt:target.productionReferenceAt});
+  forecast.waterSourceContinuity=await packWaterSourceForecastContinuity(index,target.productionReferenceAt);
+  if(badInner)forecast.waterSourceContinuity.entries[0].compressedSha256='f'.repeat(64);
+  return {forecast,stations};
+}
+async function fixedWaterCase(t,{changedAt=Infinity,corrupt=false,badInner=false,missing4145=false,rawRunSpelling=false,mutateTraceData=null,componentSummaryAbsent=false}={}){
+  const fixtures=[];
+  for(const target of VOERSAA_WATER_TRACE_TARGETS){const data=await waterTraceData(target,{badInner:badInner&&target.key==='original4145',rawRunSpelling});
+    if(mutateTraceData)await mutateTraceData(data,target);
+    fixtures.push(await fixture(t,{waterTraceTarget:target,waterTraceFixture:data,componentSummaryAbsent}));}
+  const [old,current]=fixtures,readers=path.join(old.folder,'fixed-readers');await fs.mkdir(readers);
+  for(let i=0;i<2;i++)await fs.cp(fixtures[i].options.predecessorRoot,path.join(readers,VOERSAA_WATER_TRACE_TARGETS[i].readerDirectory),{recursive:true,errorOnExist:true});
+  const state={pointerReads:0,storageReads:0,calls:[],pointer:{schemaVersion:policy.schemaVersion,kind:policy.pointerKind,
+    current:structuredClone(current.built.descriptor),previous:missing4145?null:structuredClone(old.built.descriptor)}};
+  const transport=async(url,options)=>{
+    const target=new URL(url);state.calls.push(target.pathname);
+    assert(['GET','HEAD'].includes(options.method));assert.equal(options.redirect,'error');
+    if(target.pathname==='/rest/v1/admin_documents'){
+      const payload=structuredClone(state.pointer);state.pointerReads++;
+      if(state.pointerReads>=changedAt)payload.current.sourceHead='e'.repeat(40);
+      return Response.json([{document_key:policy.documentKey,version:71,payload}]);
+    }
+    if(target.pathname===`/${policy.bucketId}`&&options.method==='HEAD')return new Response(null,{status:200});
+    const item=fixtures.flatMap(f=>f.built.objects).find(entry=>target.pathname===`/${policy.bucketId}/${entry.descriptor.objectPath}`);
+    assert(item,'Only explicitly selected original immutable R2 objects');state.storageReads++;
+    const bytes=Buffer.from(item.bytes);if(corrupt)bytes[0]^=1;return new Response(bytes);
+  };
+  const outputPath=path.join(old.privateRoot,'water-safe.json');
+  const options={...credentials,...waterContext,privateRoot:old.privateRoot,predecessorRoot:readers,outputPath,fetchImpl:transport};
+  options.githubToken='';
+  return {fixtures,old,current,state,options,transport};
+}
+test('Voersaa fixed water trace: actual normal B current/previous and strict private envelope',async t=>{
+  const f=await fixedWaterCase(t),before=await fs.readFile(path.join(f.old.source,'data/live/conditions.json'));
+  const originalCipher=await fs.readFile(f.old.options.progressFile),logs=[];
+  const originalLog=console.log,originalError=console.error;
+  console.log=(...args)=>logs.push(args.join(' '));console.error=(...args)=>logs.push(args.join(' '));
+  let safe;try{safe=await auditVoersaaWaterLevelTrace(f.options);}finally{console.log=originalLog;console.error=originalError;}
+  assert.equal(safe.status,'AUDIT_COMPLETED',JSON.stringify(safe));assert.equal(safe.exactArchivedSourceContractsVerified,true);safeReport(safe,f.old.privateRoot);
+  const encrypted=await fs.readFile(f.options.outputPath+'.encrypted'),report=openVoersaaWaterTrace(encrypted,waterContext);
+  assert.equal(report.generations[0].inputDisposition,'EXACT_PREVIOUS');assert.equal(report.generations[1].inputDisposition,'EXACT_CURRENT');
+  assert.deepEqual(report.generations.map(g=>g.hours.map(h=>h.time)),[VOERSAA_WATER_TRACE_TIMES,VOERSAA_WATER_TRACE_TIMES]);
+  const midnight=report.generations[0].hours.find(h=>h.time==='2026-10-31T23:00:00.000Z');
+  assert.equal(midnight.waterLevelCm,25);assert.deepEqual(midnight.selectedSources.map(s=>s.waterLevelCm),[15,35]);
+  assert(midnight.selectedSources.every(s=>s.disposition==='QUALIFIED_SAVED_SOURCE_HOUR'&&s.modelRun==='2026-10-31T18:00:00.000Z'));
+  assert.equal(report.generations[1].hours[0].disposition,'OUTSIDE_ORIGINAL_HORIZON');
+  assert.deepEqual(report.generations[0].savedZoneInterpolation,{disposition:'PERSISTED_ZONE_METADATA_ONLY',method:'inverse-distance-water-sources',stations:[
+    {sourceKey:'oceanobs:fixture-A',weight:0.5},{sourceKey:'tidewater:fixture-B',weight:0.5}]});
+  assert.deepEqual(midnight.collections,['dkss_idw']);assert.deepEqual(midnight.nativeValidTimes,['2026-10-31T23:00:00.000Z']);
+  assert(midnight.selectedSources.every(s=>s.collection==='dkss_idw'&&s.nativeValidTimes[0]==='2026-10-31T23:00:00.000Z'));
+  for(const g of report.generations)assert.deepEqual(g.partReconstruction,{disposition:'UNKNOWN_MISSING_AUTHENTIC_SAVED_CONFIG',isReconstruction:true,performed:false});
+  for(const forbidden of ['samplingPoint','gridPoint','waterPoint','landPoint','currentUMps','currentVMps','gzipBase64','synthetic-secret','secret-error-canary'])
+    assert(!JSON.stringify(report).includes(forbidden),forbidden);
+  assert(!encrypted.includes(Buffer.from('Synthetic Hals Havn')));
+  const recipientMagic=Buffer.from('RR-PRIVATE-VOERSAA-WATER-TRACE-2\n');
+  assert(encrypted.subarray(0,recipientMagic.length).equals(recipientMagic));
+  const recipientHeader=JSON.parse(encrypted.subarray(recipientMagic.length+4,
+    recipientMagic.length+4+encrypted.readUInt32BE(recipientMagic.length)));
+  assert.equal(recipientHeader.recipientSpkiSha256,VOERSAA_WATER_TRACE_RECIPIENT_SPKI_SHA256);
+  assert(!JSON.stringify(safe).includes('waterLevelCm'));assert(!logs.join('\n').includes('fixture-A'));assert(!logs.join('\n').includes('Synthetic Hals Havn'));
+  for(const position of [0,encrypted.length-1,Math.floor(encrypted.length/2)]){const changed=Buffer.from(encrypted);changed[position]^=1;assert.throws(()=>openVoersaaWaterTrace(changed,waterContext));}
+  for(const change of [{runId:'90002'},{runAttempt:'2'},{sourceHead:'a'.repeat(40)},{repository:'other/synthetic'},{masterSecret:'other-synthetic-master-secret-never-real'}])
+    assert.throws(()=>openVoersaaWaterTrace(encrypted,{...waterContext,...change}));
+  const bad=structuredClone(report);bad.generations[0].hours[0].waterPoint=[8,55];
+  assert.throws(()=>validateVoersaaWaterTraceReport(bad),/OUTPUT_KEYS/);assert.throws(()=>sealVoersaaWaterTrace(bad,waterContext));
+  assert.deepEqual(await fs.readFile(path.join(f.old.source,'data/live/conditions.json')),before);
+  assert.deepEqual(await fs.readFile(f.old.options.progressFile),originalCipher,'Unowned original progress is not cleaned');
+  assert(!(await fs.readdir(f.old.privateRoot)).some(name=>name.startsWith('voersaa-water-')));
+  await t.test('Voersaa fixed water trace: recipient codec keeps legacy master and authenticates the whole new header',async()=>{
+  const recipientCodecLegacy=sealVoersaaWaterTrace(report,waterContext);
+  assert(recipientCodecLegacy.subarray(0,Buffer.byteLength('RR-PRIVATE-VOERSAA-WATER-TRACE-1\n')).equals(Buffer.from('RR-PRIVATE-VOERSAA-WATER-TRACE-1\n')));
+  assert.deepEqual(openVoersaaWaterTrace(recipientCodecLegacy,waterContext),report);
+  // Test-only ephemeral keys, never the local diagnosis recipient's private key.
+  const recipientCodecPair=crypto.generateKeyPairSync('rsa',{modulusLength:3072});
+  const {masterSecret,...identity}=waterContext,recipientCodecRecipientContext={...identity,recipientPrivateKey:recipientCodecPair.privateKey};
+  const recipientCodecBytes=sealVoersaaWaterTraceForRecipient(report,waterContext,{recipientPublicKey:recipientCodecPair.publicKey});
+  assert.deepEqual(openVoersaaWaterTrace(recipientCodecBytes,waterContext),report);
+  assert.deepEqual(openVoersaaWaterTraceForRecipient(recipientCodecBytes,recipientCodecRecipientContext),report);
+  assert.throws(()=>openVoersaaWaterTraceForRecipient(recipientCodecLegacy,recipientCodecRecipientContext));
+  const recipientCodecMagic=Buffer.byteLength('RR-PRIVATE-VOERSAA-WATER-TRACE-2\n'),recipientCodecSize=recipientCodecBytes.readUInt32BE(recipientCodecMagic),recipientCodecAt=recipientCodecMagic+4;
+  const recipientCodecHeader=JSON.parse(recipientCodecBytes.subarray(recipientCodecAt,recipientCodecAt+recipientCodecSize)),recipientCodecSaltAt=recipientCodecAt+recipientCodecSize;
+  assert.equal(recipientCodecHeader.recipientSpkiSha256,crypto.createHash('sha256').update(recipientCodecPair.publicKey.export({type:'spki',format:'der'})).digest('hex'));
+  const recipientCodecChangeHeader=recipientCodecChange=>{const recipientCodecNext=structuredClone(recipientCodecHeader);recipientCodecChange(recipientCodecNext);const recipientCodecEncoded=Buffer.from(JSON.stringify(recipientCodecNext)),recipientCodecLength=Buffer.alloc(4);
+    recipientCodecLength.writeUInt32BE(recipientCodecEncoded.length);return Buffer.concat([recipientCodecBytes.subarray(0,recipientCodecMagic),recipientCodecLength,recipientCodecEncoded,recipientCodecBytes.subarray(recipientCodecAt+recipientCodecSize)]);};
+  const recipientCodecChanged=[
+    recipientCodecChangeHeader(h=>{h.recipientSpkiSha256=(h.recipientSpkiSha256[0]==='0'?'1':'0')+h.recipientSpkiSha256.slice(1);}),
+    recipientCodecChangeHeader(h=>{h.wrappedKey=(h.wrappedKey[0]==='A'?'B':'A')+h.wrappedKey.slice(1);}),
+    recipientCodecChangeHeader(h=>{h.keyAlgorithm='RSA-OAEP-SHA1';}),recipientCodecChangeHeader(h=>{h.extra='unknown';}),
+  ];
+  for(const recipientCodecPosition of [recipientCodecSaltAt,recipientCodecSaltAt+16,recipientCodecBytes.length-1]){const recipientCodecNext=Buffer.from(recipientCodecBytes);recipientCodecNext[recipientCodecPosition]^=1;recipientCodecChanged.push(recipientCodecNext);}
+  for(const recipientCodecNext of recipientCodecChanged){assert.throws(()=>openVoersaaWaterTrace(recipientCodecNext,waterContext));
+    assert.throws(()=>openVoersaaWaterTraceForRecipient(recipientCodecNext,recipientCodecRecipientContext));}
+  for(const recipientCodecChange of [{repository:'other/synthetic'},{runId:'90002'},{runAttempt:'2'},{sourceHead:'a'.repeat(40)}])
+    assert.throws(()=>openVoersaaWaterTraceForRecipient(recipientCodecBytes,{...recipientCodecRecipientContext,...recipientCodecChange}),recipientCodecContextError=>recipientCodecContextError?.code==='ERR_ASSERTION'&&recipientCodecContextError.message.includes('WATER_TRACE_ENVELOPE_CONTEXT'));
+  assert.throws(()=>openVoersaaWaterTrace(recipientCodecBytes,{...waterContext,masterSecret:'other-synthetic-master-secret-never-real'}));
+  const recipientCodecOther=crypto.generateKeyPairSync('rsa',{modulusLength:3072});
+  assert.throws(()=>openVoersaaWaterTraceForRecipient(recipientCodecBytes,{...identity,recipientPrivateKey:recipientCodecOther.privateKey}));
+  let recipientCodecRequests=0;const recipientCodecRefused=await auditVoersaaWaterLevelTrace({...f.options,recipientPublicKey:recipientCodecPair.publicKey,
+    fetchImpl:()=>{recipientCodecRequests++;throw Error('NO_TRANSPORT_ALLOWED');}});
+  assert.equal(recipientCodecRefused.code,'MODE_INVALID');assert.equal(recipientCodecRequests,0,'Pure codec option grants no audit/data authority');
+  });
+});
+test('Voersaa fixed water trace: pointer/absence/archive/inner proofs fail closed without plaintext output',async t=>{
+  for(const options of [{changedAt:2},{corrupt:true},{badInner:true},{missing4145:true}]){
+    const f=await fixedWaterCase(t,options),safe=await auditVoersaaWaterLevelTrace(f.options);
+    assert.equal(safe.status,'AUDIT_FAILED_CLOSED',JSON.stringify(safe));safeReport(safe,f.old.privateRoot);
+    assert.equal(await fs.stat(f.options.outputPath+'.encrypted').catch(()=>null),null);
+    assert(!(await fs.readdir(f.old.privateRoot)).some(name=>name.startsWith('voersaa-water-')));
+    if(options.changedAt){assert.equal(safe.code,'CURRENT_GENERATION_CHANGED');assert.equal(f.state.storageReads,0);}
+    if(options.missing4145){assert.equal(safe.code,'EXACT_COMPLETED_STAGE_UNAVAILABLE');assert.equal(f.state.storageReads,0);}
+    assert(!JSON.stringify(safe).includes('fixture-A'));
+  }
+});
+test('Voersaa fixed water trace: same read facade retains whole network/body lifetime and closed-target bounds',async()=>{
+  const target=VOERSAA_WATER_TRACE_TARGETS[0];let now=0,calls=0;
+  const clients=createReadOnlySavedWeatherClients({...credentials,waterTraceTarget:target.key,maximumMilliseconds:1000,clock:()=>now,
+    fetchImpl:async()=>{calls++;now+=600;return Response.json([]);}});
+  await clients.request('?document_key=eq.'+policy.documentKey+'&select=document_key,payload,version&limit=2');
+  await assert.rejects(clients.request('?document_key=eq.'+policy.documentKey+'&select=document_key,payload,version&limit=2'),/REMOTE_READ_BOUND/);
+  assert.equal(calls,2);
+  assert.throws(()=>createReadOnlySavedWeatherClients({...credentials,waterTraceTarget:'free-generation'}),/READ_CREDENTIALS_UNAVAILABLE/);
+  const blocked=createReadOnlySavedWeatherClients({...credentials,waterTraceTarget:target.key,fetchImpl:async()=>{throw Error('must not transport');}});
+  await assert.rejects(blocked.guardedFetch('https://example.invalid/raw-question'),/REMOTE_TARGET_FORBIDDEN/);
+});
+test('Voersaa fixed water trace: real CLI rejects descriptor/interval/provider overrides before transport',async t=>{
+  const script=path.join(repositoryRoot,'scripts/audit-saved-weather-inputs.mjs'),own=await temp(t);
+  const expectedSha=process.env.RAVRADAR_PRIVATE_EXPECTED_AUDIT_SHA256??crypto.createHash('sha256').update(await fs.readFile(script)).digest('hex');
+  const wrapper=String.raw`import fs from 'node:fs';import crypto from 'node:crypto';import {registerHooks} from 'node:module';import {pathToFileURL} from 'node:url';
+const target=pathToFileURL(process.argv[1]).href;let actualSha=null,fetchCalls=0;
+registerHooks({load(url,context,next){const result=next(url,context);if(url===target){if(result.source==null)throw Error('CLI_CODE_BYTES_UNAVAILABLE');actualSha=crypto.createHash('sha256').update(result.source).digest('hex');}return result;}});
+globalThis.fetch=()=>{fetchCalls++;throw Error('CLI_TRANSPORT_FORBIDDEN');};
+process.on('exit',()=>fs.writeFileSync(process.env.RAVRADAR_TEST_CLI_PROOF,JSON.stringify({target,actualSha,fetchCalls,entry:process.argv[1]}),{flag:'wx'}));
+await import(target);`;
+  let n=0;for(const extra of [['--descriptor','/forbidden'],['--progress-file','/forbidden'],['--expected-dataset','rr-free'],['--expected-reference','2026-11-01T00:00:00.000Z']]){
+    const proof=path.join(own,'child-'+(n++)+'.json');
+    const child=spawnSync(process.execPath,['--input-type=module','-e',wrapper,script,'water-level-voersaa-20261101','--private-root','/forbidden',
+      '--predecessor-root','/forbidden','--output','/forbidden',...extra],{encoding:'utf8',timeout:10000,env:{...process.env,RAVRADAR_TEST_CLI_PROOF:proof}});
+    assert.equal(child.status,1);assert.match(child.stdout+child.stderr,/SAVED_WEATHER_INPUT_AUDIT_FAILED_CLOSED/);
+    assert(!(child.stdout+child.stderr).includes('synthetic-secret'));assert(!(child.stdout+child.stderr).includes('waterLevelCm'));
+    const loaded=JSON.parse(await fs.readFile(proof));assert.equal(loaded.actualSha,expectedSha,'Actual child audit code must be the candidate');
+    assert.equal(loaded.fetchCalls,0);assert.equal(loaded.entry,script);
+  }
+  t.diagnostic(JSON.stringify({actualChildAuditSha256:expectedSha,normalCliChildren:4,fetchCalls:0,normalExit:1}));
+});
+async function waterStageFixture(f){
+  const target=VOERSAA_WATER_TRACE_TARGETS[0],cipher=path.join(f.old.folder,'original-stage.encrypted');
+  await sealStagedPrivateProductionRuntime({privateRoot:path.join(f.old.folder,'build'),bundlePath:path.join(f.old.folder,'build/bundle'),
+    repositoryRoot:f.old.source,expected:{datasetId:target.datasetId,productionReferenceAt:target.productionReferenceAt,
+      generatedAt:f.old.conditions.generatedAt,modelBinding:ravScoreModelBinding(),contractHashes:VOERSAA_WATER_TRACE_CONTRACTS},
+    sourceHead:target.sourceHead,repository,runId:target.runId,runAttempt:target.runAttempt,outputPath:cipher,masterSecret:waterMaster});
+  const zipPath=path.join(f.old.folder,'original-stage.zip');
+  const python=spawnSync(process.env.PYTHON||'python',['-X','utf8','-c',
+    'import pathlib,stat,sys,zipfile\np=pathlib.Path(sys.argv[1]);z=zipfile.ZipFile(sys.argv[2],"w",compression=zipfile.ZIP_STORED);i=zipfile.ZipInfo("sealed.bin");i.create_system=3;i.external_attr=(stat.S_IFREG|0o600)<<16;z.writestr(i,p.read_bytes());z.close()',cipher,zipPath],
+    {encoding:'utf8',timeout:30000});assert.equal(python.status,0,python.stderr);
+  const zip=await fs.readFile(zipPath),at=minute=>new Date(Date.parse(target.productionReferenceAt)+(180+minute)*60000).toISOString();
+  const run={id:Number(target.runId),run_attempt:1,repository:{id:123,full_name:repository},head_repository:{id:123,full_name:repository},
+    path:'.github/workflows/run-current-weather-once.yml',event:'workflow_dispatch',head_branch:'main',head_sha:target.sourceHead,
+    status:'completed',conclusion:'failure',run_started_at:at(0),updated_at:at(20)};
+  run.path='.github/workflows/update-and-deploy.yml';
+  const job={id:456,run_id:run.id,run_attempt:1,head_sha:run.head_sha,head_branch:'main',
+    name:'Build and prepare weather production through reusable workflow / build-and-prepare',status:'completed',conclusion:'failure',started_at:at(1),completed_at:at(19),
+    steps:['Update central weather cache','Build private production runtime bundle specification','Create the next private production runtime bundle atomically',
+      'Encrypt exact completed private build for late-failure recovery','Save only encrypted completed private build for one day'].map((name,i)=>({name,number:i+10,status:'completed',
+        conclusion:'success',started_at:at(i*2+2),completed_at:at(i*2+3)}))};
+  const artifact={id:789,name:`ravradar-private-build-stage-${target.runId}-1`,expired:false,size_in_bytes:zip.length,
+    digest:'sha256:'+crypto.createHash('sha256').update(zip).digest('hex'),
+    workflow_run:{id:run.id,repository_id:123,head_repository_id:123,head_sha:run.head_sha,head_branch:'main'},created_at:at(10),updated_at:at(11),
+    expires_at:new Date(Date.now()+24*3600000).toISOString()};
+  const state={run,job,artifact,zip,githubCalls:0};
+  state.fetchImpl=async(url,options)=>{
+    const u=new URL(url);if(u.hostname!=='api.github.com')return f.transport(url,options);
+    state.githubCalls++;assert(state.githubCalls<=5);assert.equal(options.redirect,'manual');
+    const base='/repos/'+repository;
+    if(u.pathname===`${base}/actions/runs/${target.runId}/attempts/1`)return Response.json(state.run);
+    if(u.pathname===`${base}/actions/runs/${target.runId}/attempts/1/jobs`)return Response.json({total_count:1,jobs:[state.job]});
+    if(u.pathname===`${base}/actions/runs/${target.runId}/artifacts`)return Response.json({total_count:1,artifacts:[state.artifact]});
+    assert.equal(u.pathname,`${base}/actions/artifacts/789/zip`);return new Response(state.zip);
+  };
+  return {state,cipher};
+}
+test('Voersaa fixed water trace: normal completed-stage metadata/ZIP/GCM/B opens exact old original only',async t=>{
+  const f=await fixedWaterCase(t,{missing4145:true}),stage=await waterStageFixture(f);
+  const before=await fs.readFile(stage.cipher),safe=await auditVoersaaWaterLevelTrace({...f.options,githubToken:'synthetic-github-token',fetchImpl:stage.state.fetchImpl});
+  assert.equal(safe.status,'AUDIT_COMPLETED',JSON.stringify({...safe,syntheticGithubCalls:stage.state.githubCalls}));
+  const report=openVoersaaWaterTrace(await fs.readFile(f.options.outputPath+'.encrypted'),waterContext);
+  assert.equal(report.generations[0].inputDisposition,'EXACT_COMPLETED_STAGE');assert.equal(report.generations[1].inputDisposition,'EXACT_CURRENT');
+  assert.equal(stage.state.githubCalls,4);assert.deepEqual(await fs.readFile(stage.cipher),before,'Original sealed fixture was not deleted or changed');
+  assert.equal(report.generations[0].hours[0].waterLevelCm,25);
+});
+test('Voersaa fixed water trace: fixed old stage wrong head/missing step/expiry and GCM tamper stay closed',async t=>{
+  for(const fault of ['head','workflow','step','expiry','gcm']){
+    const f=await fixedWaterCase(t,{missing4145:true}),stage=await waterStageFixture(f);
+    if(fault==='head')stage.state.run.head_sha=VOERSAA_WATER_TRACE_TARGETS[1].sourceHead;
+    if(fault==='workflow')stage.state.run.path='.github/workflows/run-current-weather-once.yml';
+    if(fault==='step')stage.state.job.steps.pop();
+    if(fault==='expiry')stage.state.artifact.expired=true;
+    if(fault==='gcm'){
+      const bytes=await fs.readFile(stage.cipher);bytes[bytes.length-1]^=1;await fs.writeFile(stage.cipher,bytes);
+      const zipPath=path.join(f.old.folder,'tampered-stage.zip');
+      const python=spawnSync(process.env.PYTHON||'python',['-X','utf8','-c','import sys,zipfile\nz=zipfile.ZipFile(sys.argv[2],"w",compression=zipfile.ZIP_STORED);z.write(sys.argv[1],"sealed.bin");z.close()',stage.cipher,zipPath],{encoding:'utf8',timeout:30000});
+      assert.equal(python.status,0,python.stderr);stage.state.zip=await fs.readFile(zipPath);stage.state.artifact.size_in_bytes=stage.state.zip.length;
+      stage.state.artifact.digest='sha256:'+crypto.createHash('sha256').update(stage.state.zip).digest('hex');
+    }
+    const safe=await auditVoersaaWaterLevelTrace({...f.options,githubToken:'synthetic-github-token',fetchImpl:stage.state.fetchImpl});
+    assert.equal(safe.status,'AUDIT_FAILED_CLOSED',fault+JSON.stringify(safe));safeReport(safe,f.old.privateRoot);
+    assert.equal(await fs.stat(f.options.outputPath+'.encrypted').catch(()=>null),null);
+    assert(stage.state.githubCalls<=4);assert(!(await fs.readdir(f.old.privateRoot)).some(n=>n.startsWith('voersaa-water-')));
+  }
+});
+
+test('Voersaa fixed water trace: exact stored collection/native spelling/weights, unknown keys and controllers',async t=>{
+  const f=await fixedWaterCase(t,{rawRunSpelling:true,mutateTraceData:data=>{
+    const meta=data.forecast.zones['DK-B02-06'].waterLevelInterpolation;meta.stations[0].weight=0.634;meta.stations[1].weight=0.366;
+  }});
+  const safe=await auditVoersaaWaterLevelTrace(f.options);assert.equal(safe.status,'AUDIT_COMPLETED',JSON.stringify(safe));
+  const report=openVoersaaWaterTrace(await fs.readFile(f.options.outputPath+'.encrypted'),waterContext);
+  const first=report.generations[0],hour=first.hours[0];
+  assert.deepEqual(first.savedZoneInterpolation.stations.map(s=>s.weight),[0.634,0.366],'Persisted metadata quoted without recomputation');
+  assert.equal(hour.selectedSources[0].modelRun,'2026-10-31T18:00:00Z');
+  assert.deepEqual(hour.selectedSources[0].nativeValidTimes,['2026-10-31T23:00:00Z']);
+  const mismatch=await fixedWaterCase(t,{mutateTraceData:data=>{data.forecast.zones['DK-B02-06'].waterLevelInterpolation.stations[0].sourceKey='oceanobs:other';}});
+  const second=await auditVoersaaWaterLevelTrace(mismatch.options);assert.equal(second.status,'AUDIT_COMPLETED',JSON.stringify(second));
+  const unknown=openVoersaaWaterTrace(await fs.readFile(mismatch.options.outputPath+'.encrypted'),waterContext);
+  assert.deepEqual(unknown.generations[0].savedZoneInterpolation,{disposition:'UNKNOWN',method:null,stations:[]});
+  for(const fault of ['collection','native-time']){
+    const bad=await fixedWaterCase(t,{mutateTraceData:data=>{const source=data.forecast.zones['DK-B02-06'].hourly[0].sources.waterLevel;
+      if(fault==='collection')source.collections=['unknown-controller'];else source.nativeValidTimes=['2099-01-01T00:00:00Z'];}});
+    const denied=await auditVoersaaWaterLevelTrace(bad.options);assert.equal(denied.status,'AUDIT_FAILED_CLOSED',JSON.stringify(denied));
+    assert.equal(await fs.stat(bad.options.outputPath+'.encrypted').catch(()=>null),null);
+  }
+});
+
+test('Voersaa fixed water trace: same authenticated B yields only approved DMI metadata and safe component counts',async t=>{
+  const f=await fixedWaterCase(t,{mutateTraceData:(data,target)=>{
+    const at=hours=>new Date(Date.parse(target.productionReferenceAt)+hours*3600000).toISOString().replace('.000Z','Z');
+    data.bulk={zones:{},generatedAt:at(1),sourceUpdatedAt:at(-12),refreshStatus:'partial',
+      diagnostics:{runtimeBudgetSeconds:480,assetsProcessedThisInvocation:2,reusedAssets:3,
+        collectionsAttempted:['wam_dw','dkss_idw'],collectionsSucceeded:['dkss_idw'],collectionsPartial:['dkss_lf'],zeroProgressCollections:[],
+        errors:['PRIVATE_ERROR_CANARY'],sampleItems:{waterPoint:[8,55]},
+        stacByCollection:{dkss_idw:{latestRun:at(-6),selectedRun:at(-12),latestRunFutureHorizonHours:120,selectedRunFutureHorizonHours:117,
+          selectedRunLagBehindLatestHours:6,selectedNativeRunComplete:false,requiredHorizonEndCovered:false,
+          incompleteLatestRunDeferred:true,catalogInventoryComplete:false,officialRequiredAssets:'PRIVATE_ASSET_CANARY'}}},
+      runs:{dkss_idw:{referenceTime:at(-12),processedValidTimes:[at(0),at(117),at(120)],processedSteps:'PRIVATE_STEPS_CANARY',modelSelections:{point:[8,55]}}}};
+  }});
+  const safe=await auditVoersaaWaterLevelTrace(f.options);assert.equal(safe.status,'AUDIT_COMPLETED',JSON.stringify(safe));
+  const report=openVoersaaWaterTrace(await fs.readFile(f.options.outputPath+'.encrypted'),waterContext);
+  for(let i=0;i<2;i++){
+    const g=report.generations[i],m=g.bulkMetadata,target=VOERSAA_WATER_TRACE_TARGETS[i];
+    assert.equal(m.status,'PRESENT');assert.equal(m.freshnessClaimed,false);
+    assert.equal(m.sourceUpdatedAt,new Date(Date.parse(target.productionReferenceAt)-12*3600000).toISOString().replace('.000Z','Z'));
+    assert.equal(m.diagnostics.runtimeBudgetSeconds,480);assert.deepEqual(m.diagnostics.collectionsAttempted,['dkss_idw']);
+    const c=m.collections.dkss_idw;assert.equal(c.stac.selectedNativeRunComplete,false);assert.equal(c.stac.incompleteLatestRunDeferred,true);
+    assert.deepEqual(c.run.processedValidTimes,{count:3,min:target.productionReferenceAt.replace('.000Z','Z'),
+      max:new Date(Date.parse(target.productionReferenceAt)+120*3600000).toISOString().replace('.000Z','Z'),containsH117:true,containsH120:true});
+    assert.equal(m.collections.dkss_nsbs.run.processedValidTimes.count,null);assert.equal(m.collections.dkss_nsbs.run.processedValidTimes.containsH120,null);
+    assert.equal(g.componentFallback.before.wind.valid,3);
+  }
+  for(const raw of ['PRIVATE_ERROR_CANARY','PRIVATE_ASSET_CANARY','PRIVATE_STEPS_CANARY','modelSelections','processedSteps','officialRequiredAssets','sampleItems','waterPoint'])
+    assert(!JSON.stringify(report).includes(raw),raw);
+  const extra=structuredClone(report);extra.generations[0].bulkMetadata.collections.dkss_idw.run.processedSteps=[];
+  assert.throws(()=>validateVoersaaWaterTraceReport(extra),/OUTPUT_KEYS/);
+  const extraSummary=structuredClone(report);extraSummary.generations[0].componentFallback.point=[8,55];
+  assert.throws(()=>validateVoersaaWaterTraceReport(extraSummary),/OUTPUT_KEYS/);
+});
+test('Voersaa fixed water trace: optional metadata and saved component absence remain unknown, never zero',async t=>{
+  const f=await fixedWaterCase(t,{componentSummaryAbsent:true,mutateTraceData:data=>{data.bulk={zones:{},generatedAt:'not-a-date',
+    refreshStatus:'private-status-canary',diagnostics:{runtimeBudgetSeconds:'480',assetsProcessedThisInvocation:false,collectionsSucceeded:['unknown-controller']}};}});
+  const safe=await auditVoersaaWaterLevelTrace(f.options);assert.equal(safe.status,'AUDIT_COMPLETED',JSON.stringify(safe));
+  const report=openVoersaaWaterTrace(await fs.readFile(f.options.outputPath+'.encrypted'),waterContext);
+  for(const g of report.generations){assert.equal(g.bulkMetadata.generatedAt,null);assert.equal(g.bulkMetadata.refreshStatus,null);
+    assert.equal(g.bulkMetadata.diagnostics.runtimeBudgetSeconds,null);assert.equal(g.bulkMetadata.diagnostics.assetsProcessedThisInvocation,null);
+    assert.equal(g.bulkMetadata.diagnostics.collectionsSucceeded,null);assert.equal(g.componentFallback,null);}
+});
+
+test('Voersaa fixed water trace: normal runner temp is separate from system TMPDIR, including original stage',async t=>{
+  const own=await temp(t),systemTemp=path.join(own,'system-temp'),runnerTemp=path.join(own,'runner-temp');
+  await fs.mkdir(systemTemp);await fs.mkdir(runnerTemp);
+  const keys=['TEMP','TMP','TMPDIR','RUNNER_TEMP'],saved=Object.fromEntries(keys.map(k=>[k,process.env[k]]));
+  try{
+    process.env.TEMP=systemTemp;process.env.TMP=systemTemp;process.env.TMPDIR=systemTemp;process.env.RUNNER_TEMP=runnerTemp;
+    assert.equal(await fs.realpath(os.tmpdir()),await fs.realpath(systemTemp));
+    assert.notEqual(await fs.realpath(os.tmpdir()),await fs.realpath(process.env.RUNNER_TEMP));
+    const f=await fixedWaterCase(t,{missing4145:true}),stage=await waterStageFixture(f);
+    const readers=path.join(runnerTemp,'fixed-readers');await fs.rename(f.options.predecessorRoot,readers);
+    const privateRoot=path.join(runnerTemp,'private-trace');await fs.mkdir(privateRoot);
+    const outputPath=path.join(privateRoot,'safe.json');
+    const safe=await auditVoersaaWaterLevelTrace({...f.options,privateRoot,predecessorRoot:readers,outputPath,
+      githubToken:'synthetic-github-token',fetchImpl:stage.state.fetchImpl});
+    assert.equal(safe.status,'AUDIT_COMPLETED',JSON.stringify(safe));
+    const report=openVoersaaWaterTrace(await fs.readFile(outputPath+'.encrypted'),waterContext);
+    assert.equal(report.generations[0].inputDisposition,'EXACT_COMPLETED_STAGE');assert.equal(stage.state.githubCalls,4);
+    assert.equal(report.generations[1].inputDisposition,'EXACT_CURRENT');
+    assert(!(await fs.readdir(systemTemp)).some(n=>n.startsWith('rr-ordinary-completed-stage-')),'Only normal owned artifact copies were cleaned');
+    assert(!(await fs.readdir(privateRoot)).some(n=>n.startsWith('voersaa-water-')));
+  }finally{for(const k of keys){if(saved[k]===undefined)delete process.env[k];else process.env[k]=saved[k];}}
 });

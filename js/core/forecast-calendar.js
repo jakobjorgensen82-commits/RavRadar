@@ -1,5 +1,4 @@
 const ISO_DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
-
 // Reuse only formatter configuration, never dates, weather or score results.
 // Exact primitive keys preserve Intl's own alias/validation/coercion semantics.
 const FORECAST_FORMATTER_LIMIT = 16;

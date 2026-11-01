@@ -1,4 +1,6 @@
 import assert from 'node:assert/strict';
+import test from 'node:test';
+import {createHash as conditions593TestHash} from 'node:crypto';
 import path from 'node:path';
 import {pathToFileURL} from 'node:url';
 import {withFrozenNative0600TestSource} from './run-frozen-native0600-source-targets.mjs';
@@ -11,6 +13,20 @@ import { nativeIdentityMigration } from './lib/native-sampling-identity-successo
 import { lastMileEnclosureMigration } from './lib/last-mile-enclosure-successor-source.mjs';
 import {ACCOUNT_STATISTICS_ASSISTANT_BINDING,accountStatisticsAssistantMigration,requireAccountStatisticsAssistantOutput}
   from './lib/account-statistics-assistant-successor-source.mjs';
+import {NATIVE_ORIGINAL_CONTINUITY_BINDING,nativeOriginalContinuityMigration,requireNativeOriginalContinuityOutput}
+  from './lib/native-original-continuity-successor-source.mjs';
+import {ASSISTANT_LATER_H0_BINDING,assistantLaterH0Migration,requireAssistantLaterH0Output,
+  ASSISTANT_PUBLIC587_SUCCESSOR_BINDING,assistantPublic587SuccessorMigration,
+  requireAssistantPublic587SuccessorOutput,readAssistantPublic587SuccessorCanonicalSource,
+  ASSISTANT_PUBLIC588_SUCCESSOR_BINDING,assistantPublic588SuccessorMigration,
+  requireAssistantPublic588SuccessorOutput,readAssistantPublic588SuccessorCanonicalSource,
+  ASSISTANT_PUBLIC590_SUCCESSOR_BINDING,assistantPublic590SuccessorMigration,
+  requireAssistantPublic590SuccessorOutput,readAssistantPublic590SuccessorCanonicalSource,
+  ASSISTANT_PUBLIC591_SUCCESSOR_BINDING,assistantPublic591SuccessorMigration,
+  requireAssistantPublic591SuccessorOutput,readAssistantPublic591SuccessorCanonicalSource,
+  ACTIVE_ASSISTANT_SUCCESSOR as ACTIVE_TIMEOUT_SUCCESSOR,
+  INACTIVE_INSTALLED593_ORIGINAL591_SUCCESSOR as ISSUED594_TIMEOUT_SUCCESSOR}
+  from './lib/assistant-later-h0-successor-source.mjs';
 
 // Keep the payload-free operational control report inside this existing cheap
 // workflow command so the source gate does not grow another process.
@@ -723,6 +739,7 @@ assert.equal(
     < sealedRecovery.indexOf('Publish authenticated original private bundle'),
   true,
 );
+await test('actual594 scoped55s inventory preserves unchanged593 predecessors',async()=>{
 const checkpointTimeoutMigration = fs.readFileSync(
   new URL('../supabase/migrations/20260928112500_checkpoint_cas_bounded_timeout_55s.sql', import.meta.url),
   'utf8',
@@ -734,15 +751,170 @@ assert.doesNotMatch(checkpointTimeoutMigration, /alter (?:role|database)/i);
 // A later binding migration must not silently undo DEC-0249's scoped 55s
 // setting. Checking the old corrective file alone missed the Top20 reset.
 const migrationsUrl = new URL('../supabase/migrations/', import.meta.url);
-const casTimeoutSettings = fs.readdirSync(migrationsUrl).filter(name => name.endsWith('.sql'))
+let casTimeoutSettings = fs.readdirSync(migrationsUrl).filter(name => name.endsWith('.sql'))
   .sort().flatMap(name => [...fs.readFileSync(new URL(name, migrationsUrl), 'utf8').matchAll(
     /alter function public\.ravradar_ravscore_checkpoint_cas\(bigint,timestamptz,jsonb\)\s+set statement_timeout = '([^']+)';/g,
   )].map(match => ({ migration: name, timeout: match[1] })));
 assert.equal(casTimeoutSettings.at(-1)?.timeout, '55s',
   'the final migration order must retain the established checkpoint-only 55s timeout');
+
+// Actual594 is a separate issued source profile. Validate its whole normal SQL
+// and canonical reader before a TEST INVENTORY ONLY inverse; never remove a
+// guessed latest row or grant SQL/data admission to historical593 oracles.
+const activeTimeoutMigration=ACTIVE_TIMEOUT_SUCCESSOR.migration();
+function inverseIssued594TimeoutInventory(inventory,profile,migration,sql){
+  assert.equal(profile,ISSUED594_TIMEOUT_SUCCESSOR,'EXACT_ISSUED594_TIMEOUT_PROFILE_REQUIRED');
+  assert.equal(profile.sourcePhase,'assistant-installed593-origin591-successor');
+  assert.equal(profile.requireRelease(),'4.0.594');
+  assert.equal(profile.originalStateFamily,'591');
+  assert.equal(profile.databaseBefore.version,ASSISTANT_PUBLIC591_SUCCESSOR_BINDING.version);
+  assert.deepEqual(migration,{version:'20261031070755',
+    id:'20261031070755_installed593_original591_later_h0_bound_successor',
+    filename:'20261031070755_installed593_original591_later_h0_bound_successor.sql'});
+  assert.equal(conditions593TestHash('sha256').update(sql).digest('hex'),profile.requireOutput().migrationSha256,
+    'The complete actual594 SQL must match its normally issued output pin');
+  assert.equal(inventory.filter(row=>row.migration===migration.filename).length,1,
+    'Actual594 has exactly one scoped55s inventory row');
+  assert.deepEqual(inventory.at(-1),{migration:migration.filename,timeout:'55s'},
+    'The exact actual594 migration is the latest scoped55s successor');
+  const historical=inventory.slice(0,-1);
+  assert.deepEqual(historical.at(-1),{migration:assistantPublic591SuccessorMigration().filename,timeout:'55s'},
+    'The unchanged installed593 migration immediately precedes actual594');
+  assert.deepEqual(inventory,[...historical,{migration:migration.filename,timeout:'55s'}]);
+  return historical;
+}
+const activeTimeoutSql=fs.readFileSync(new URL(activeTimeoutMigration.filename,migrationsUrl));
+const actual594Canonical=await ACTIVE_TIMEOUT_SUCCESSOR.readCanonicalSource();
+assert.equal(actual594Canonical.admission,'NO_ADMISSION');
+assert.deepEqual(actual594Canonical.migration,activeTimeoutMigration);
+const actual594TimeoutInventory=casTimeoutSettings;
+const inverse594=(inventory=actual594TimeoutInventory,profile=ACTIVE_TIMEOUT_SUCCESSOR,
+  migration=activeTimeoutMigration,sql=activeTimeoutSql)=>inverseIssued594TimeoutInventory(inventory,profile,migration,sql);
+for(const profile of [null,{...ACTIVE_TIMEOUT_SUCCESSOR},
+  {...ACTIVE_TIMEOUT_SUCCESSOR,sourcePhase:'assistant-public591-successor'},
+  {...ACTIVE_TIMEOUT_SUCCESSOR,sourcePhase:'assistant-installed594-origin593-successor'}])
+  assert.throws(()=>inverse594(actual594TimeoutInventory,profile),/EXACT_ISSUED594_TIMEOUT_PROFILE_REQUIRED/);
+for(const migration of [{...activeTimeoutMigration,version:'20261030105202'},
+  {...activeTimeoutMigration,id:'unknown_successor'},
+  {...activeTimeoutMigration,filename:assistantPublic591SuccessorMigration().filename}])
+  assert.throws(()=>inverse594(actual594TimeoutInventory,ACTIVE_TIMEOUT_SUCCESSOR,migration));
+for(const sql of [Buffer.concat([activeTimeoutSql,Buffer.from('\n')]),
+  Buffer.from(activeTimeoutSql.toString('utf8').replace("set statement_timeout = '55s'","set statement_timeout = '54s'"))])
+  assert.throws(()=>inverse594(actual594TimeoutInventory,ACTIVE_TIMEOUT_SUCCESSOR,activeTimeoutMigration,sql));
+const latest594={migration:activeTimeoutMigration.filename,timeout:'55s'};
+for(const inventory of [actual594TimeoutInventory.slice(0,-1),
+  [...actual594TimeoutInventory,latest594],
+  [...actual594TimeoutInventory.slice(0,-1),{...latest594,timeout:'54s'}],
+  [...actual594TimeoutInventory,{migration:'20261031080000_unknown_successor.sql',timeout:'55s'}],
+  [...actual594TimeoutInventory.slice(0,-2),latest594],
+  [...actual594TimeoutInventory.slice(0,-2),latest594,actual594TimeoutInventory.at(-2)]])
+  assert.throws(()=>inverse594(inventory));
+casTimeoutSettings=inverse594();
+
+// Kontrollér den faktisk udstedte public590/591-migration før de uændrede
+// public588/590- og public587/588-inventarer. Kun dens ene præcise række fjernes.
+// Actual issued592 is checked before projecting only its one55s row away.
+// Existing whole591/590/588/587 timeout oracles stay unchanged below.
+if(ASSISTANT_PUBLIC591_SUCCESSOR_BINDING!==null){
+  requireAssistantPublic591SuccessorOutput();
+  const canonical=await readAssistantPublic591SuccessorCanonicalSource();
+  assert.equal(canonical.admission,'NO_ADMISSION');
+  const migration=assistantPublic591SuccessorMigration();
+  assert.equal(migration.version,ASSISTANT_PUBLIC591_SUCCESSOR_BINDING.version);
+  const successor=migration.filename;
+  const actualTimeoutInventory=casTimeoutSettings;
+  assert.equal(actualTimeoutInventory.filter(row=>row.migration===successor).length,1,
+    'Den udstedte592-migration skal have præcis én scoped55s-indstilling');
+  assert.deepEqual(actualTimeoutInventory.at(-1),{migration:successor,timeout:'55s'},
+    'Den eksakte udstedte592-migration skal være sidste scoped55s-efterfølger');
+  casTimeoutSettings=actualTimeoutInventory.slice(0,-1);
+  assert.deepEqual(actualTimeoutInventory,
+    [...casTimeoutSettings,{migration:successor,timeout:'55s'}],
+    'Hele det tidligere591/590/588/587-timeoutinventar bevares foran præcis én udstedt592-migration');
+}
+// TEST INVENTORY ONLY: preserve the whole uninstalled592 SQL source while
+// removing only its exact55s row before the unchanged591/590 timeout oracles.
+// The normal closed installation plan is checked separately; this grants no SQL admission.
+if(ASSISTANT_PUBLIC591_SUCCESSOR_BINDING?.version==='20261030105202'){
+  const name="20261029183010_assistant_public591_later_h0_original_bound_successor.sql";
+  const bytes=fs.readFileSync(new URL(name,migrationsUrl));
+  assert.equal(bytes.length,352862);
+  assert.equal(conditions593TestHash('sha256').update(bytes).digest('hex'),"e5c7fb182d9491bd9222cb59dbefd3da4592867522dde805ea17e67c0d023e97");
+  const inventory=casTimeoutSettings;
+  assert.equal(inventory.filter(row=>row.migration===name).length,1);
+  assert.deepEqual(inventory.at(-1),{migration:name,timeout:'55s'});
+  casTimeoutSettings=inventory.slice(0,-1);
+  assert.deepEqual(inventory,[...casTimeoutSettings,{migration:name,timeout:'55s'}]);
+}
+if(ASSISTANT_PUBLIC590_SUCCESSOR_BINDING!==null){
+  requireAssistantPublic590SuccessorOutput();
+  const canonical=await readAssistantPublic590SuccessorCanonicalSource();
+  assert.equal(canonical.admission,'NO_ADMISSION');
+  const migration=assistantPublic590SuccessorMigration();
+  assert.equal(migration.version,ASSISTANT_PUBLIC590_SUCCESSOR_BINDING.version);
+  const successor=migration.filename;
+  const actualTimeoutInventory=casTimeoutSettings;
+  assert.equal(actualTimeoutInventory.filter(row=>row.migration===successor).length,1,
+    'Den udstedte591-migration skal have præcis én scoped55s-indstilling');
+  assert.deepEqual(actualTimeoutInventory.at(-1),{migration:successor,timeout:'55s'},
+    'Den eksakte udstedte591-migration skal være sidste scoped55s-efterfølger');
+  casTimeoutSettings=actualTimeoutInventory.slice(0,-1);
+  assert.deepEqual(actualTimeoutInventory,
+    [...casTimeoutSettings,{migration:successor,timeout:'55s'}],
+    'Hele det tidligere590/588/587-timeoutinventar bevares foran præcis én udstedt591-migration');
+}
+// Additiv590-kontrol først; de hele gamle588/587-orakler nedenfor bevares.
+// Fjern kun denne præcise ene scoped55s-række fra TEST-inventarvisningen.
+if(ASSISTANT_PUBLIC588_SUCCESSOR_BINDING!==null){
+  requireAssistantPublic588SuccessorOutput();
+  await readAssistantPublic588SuccessorCanonicalSource();
+  const successor=assistantPublic588SuccessorMigration().filename;
+  const actualTimeoutInventory=casTimeoutSettings;
+  assert.equal(actualTimeoutInventory.filter(row=>row.migration===successor).length,1,
+    'Den udstedte590-migration skal have præcis én scoped55s-indstilling');
+  assert.deepEqual(actualTimeoutInventory.at(-1),{migration:successor,timeout:'55s'},
+    'Den eksakte udstedte590-migration skal være sidste scoped55s-efterfølger');
+  casTimeoutSettings=actualTimeoutInventory.slice(0,-1);
+  assert.deepEqual(actualTimeoutInventory,
+    [...casTimeoutSettings,{migration:successor,timeout:'55s'}],
+    'Hele det tidligere588/587-timeoutinventar bevares foran præcis én udstedt590-migration');
+}
+// Kontrollér først hele den nye, kildeudstedte588-migration. Den uændrede
+// gamle587-/forgængerprøve nedenfor ser kun dens præcise ene55s-efterfølger fjernet.
+if(ASSISTANT_PUBLIC587_SUCCESSOR_BINDING!==null){
+  requireAssistantPublic587SuccessorOutput();
+  await readAssistantPublic587SuccessorCanonicalSource();
+  const successor=assistantPublic587SuccessorMigration().filename;
+  const actualTimeoutInventory=casTimeoutSettings;
+  assert.equal(actualTimeoutInventory.filter(row=>row.migration===successor).length,1,
+    'Den udstedte588-migration skal have præcis én scoped55s-indstilling');
+  assert.deepEqual(actualTimeoutInventory.at(-1),{migration:successor,timeout:'55s'},
+    'Den eksakte udstedte588-migration skal være sidste scoped55s-efterfølger');
+  casTimeoutSettings=actualTimeoutInventory.slice(0,-1);
+  assert.deepEqual(actualTimeoutInventory,
+    [...casTimeoutSettings,{migration:successor,timeout:'55s'}],
+    'Hele den tidligere timeoutinventar bevares foran præcis én udstedt588-migration');
+}
 if(ACCOUNT_STATISTICS_ASSISTANT_BINDING!==null)requireAccountStatisticsAssistantOutput();
-assert.equal(casTimeoutSettings.at(-1).migration,
-  ACCOUNT_STATISTICS_ASSISTANT_BINDING===null ? lastMileEnclosureMigration().filename : accountStatisticsAssistantMigration().filename);
+if(NATIVE_ORIGINAL_CONTINUITY_BINDING!==null)requireNativeOriginalContinuityOutput();
+if(ASSISTANT_LATER_H0_BINDING!==null)requireAssistantLaterH0Output();
+const assistantTimeoutMigration=ASSISTANT_LATER_H0_BINDING===null
+  ? null : assistantLaterH0Migration().filename;
+// Preserve the entire old latest-migration oracle, excluding only issued587.
+const predecessorCasTimeoutSettings=assistantTimeoutMigration===null ? casTimeoutSettings
+  : casTimeoutSettings.filter(row=>row.migration!==assistantTimeoutMigration);
+assert.equal(predecessorCasTimeoutSettings.at(-1).migration,
+  NATIVE_ORIGINAL_CONTINUITY_BINDING!==null ? nativeOriginalContinuityMigration().filename
+    : ACCOUNT_STATISTICS_ASSISTANT_BINDING===null ? lastMileEnclosureMigration().filename : accountStatisticsAssistantMigration().filename);
+assert.equal(predecessorCasTimeoutSettings.at(-1).timeout,'55s',
+  'the unchanged issued predecessor retains its original scoped55s timeout');
+if(assistantTimeoutMigration!==null)assert.deepEqual(casTimeoutSettings,
+  [...predecessorCasTimeoutSettings,{migration:assistantTimeoutMigration,timeout:'55s'}],
+  'Only one exact issued587 scoped55s successor may follow the whole predecessor timeout inventory');
+if(ACCOUNT_STATISTICS_ASSISTANT_BINDING!==null)assert.deepEqual(
+  casTimeoutSettings.find(item=>item.migration===accountStatisticsAssistantMigration().filename),
+  {migration:accountStatisticsAssistantMigration().filename,timeout:'55s'},
+  'the immutable actual585 predecessor also retains its original scoped55s timeout');
 assert.deepEqual(casTimeoutSettings.find(item=>item.migration===lastMileEnclosureMigration().filename),
   {migration:lastMileEnclosureMigration().filename,timeout:'55s'},
   'the immutable actual584 predecessor also retains its original scoped55s timeout');
@@ -784,6 +956,8 @@ metadataFunction(top20BindingMigration),
 assert.equal([...restoredTimeoutMigration.matchAll(/create or replace function/g)].length, 1);
 assert.doesNotMatch(restoredTimeoutMigration,
   /alter (?:role|database)|(?:insert into|update|delete from) public\.admin_documents|create.*(?:table|trigger)|drop\s/i);
+
+});
 
 console.log('Reusable production workflow interface and failure contracts passed.');
 

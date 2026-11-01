@@ -5,7 +5,6 @@ import os from 'node:os';
 import path from 'node:path';
 import { execFile } from 'node:child_process';
 import { fileURLToPath, pathToFileURL } from 'node:url';
-import { exactRelativeModuleSpecifiers } from './static-module-closure.mjs';
 import {requireSourceProducerOutput} from './source-producer-successor-source.mjs';
 import { accountAssistantCatalogQuery, verifyAccountAssistantCatalogMetadata }
   from '../verify-account-assistant-schema.mjs';
@@ -35,7 +34,7 @@ const sqlText = text => String(text).replace(/\r\n?/g, '\n');
 const NATIVE_PSQL_PHASES = new Set(['NATIVE_SETUP', 'CAS200_MIGRATION',
   'BASELINE_FIXTURES', 'BASELINE_ADMISSION', 'BASELINE_CAS_CASES',
   'ACCOUNT213', 'CURRENT220', 'STATISTICS230', 'NATIVE_IDENTITY0600', 'CURRENT_MEMORY_WARMUP',
-  'ESTABLISHED_NATIVE_CURRENT_ORIGIN', 'LAST_MILE_ENCLOSURE', 'ACCOUNT_STATISTICS_ASSISTANT', 'SOURCE_PRODUCER',
+  'ESTABLISHED_NATIVE_CURRENT_ORIGIN', 'LAST_MILE_ENCLOSURE', 'ACCOUNT_STATISTICS_ASSISTANT', 'NATIVE_ORIGINAL_CONTINUITY', 'ASSISTANT_LATER_H0', 'ASSISTANT_PUBLIC587_SUCCESSOR', 'ASSISTANT_PUBLIC588_SUCCESSOR', 'ASSISTANT_PUBLIC590_SUCCESSOR', 'SOURCE_PRODUCER',
   'SOURCE_CURRENT_FULL_BOOTSTRAP', 'SOURCE_CURRENT_FULL_READBACK', 'SOURCE_LEGACY_COMPATIBILITY',
   'SOURCE_LEGACY_FOLLOWER', 'SOURCE_LEGACY_BINDINGS', 'SOURCE_LEGACY_PROVIDERS', 'NATIVE_CLEANUP', 'UNKNOWN']);
 const NATIVE_PSQL_STATES = Object.freeze({
@@ -304,9 +303,14 @@ async function issued213Factory(root) {
   const factory = slice('const PART_COUNT =', 'const safeShape =')
     + slice('const samples =', 'const sourceDocument =');
   assert.equal(hash(factory), '71ce29ec98e43bfa02017a145c4438346f1d8a1f4323526ec58e4b1081d81e36');
-  const scanner = 'scripts/lib/static-module-closure.mjs';
-  assert.equal(sqlText(await fs.readFile(path.join(ISSUED_ROOT, scanner), 'utf8')),
-    String(await read(scanner)), 'Use the actual reviewed issued static scanner');
+  // Kun den historiske closure bruger sin hele genuine044d-scanner.
+  // Den aktuelle scanner og dens rettede deklarationsgrammatik ændres ikke.
+  const scannerSource = await read('scripts/lib/static-module-closure.mjs');
+  assert.equal(scannerSource.length, 6790, 'Exact issued scanner byte length');
+  assert.equal(hash(scannerSource), '675f91e7942143a78636e219e54bd7fa0ff25ddcd1998657dd215105054938b0',
+    'Exact issued scanner whole bytes');
+  const { exactRelativeModuleSpecifiers } = await import(
+    'data:text/javascript;base64,' + scannerSource.toString('base64'));
   const tSource = String(await read(ISSUED_T));
   const declaration = /export const RAVSCORE_CONTINUATION_IMPLEMENTATION_FILES = Object\.freeze\(\[\n((?:  '[A-Za-z0-9_./-]+',\n)+)\]\);/.exec(tSource);
   assert(declaration, 'Exact historical T declaration required');
@@ -415,13 +419,13 @@ export async function verifyIssuedNativeCheckpointFixture() {
   }
 }
 
-async function nativePrograms() {
-  if (process.platform !== 'linux') throw new Error('NATIVE_POSTGRES_UNAVAILABLE_ON_THIS_HOST');
-  const configured = await command('pg_config', ['--bindir']);
+export async function nativePrograms({platform=process.platform,run=command,filesystem=fs}={}) {
+  if (platform !== 'linux') throw new Error('NATIVE_POSTGRES_UNAVAILABLE_ON_THIS_HOST');
+  const configured = await run('pg_config', ['--bindir']);
   if (configured.code !== 0) throw new Error('NATIVE_POSTGRES_PG_CONFIG_UNAVAILABLE');
   const candidates = [configured.stdout.trim()];
   try {
-    candidates.push(...(await fs.readdir('/usr/lib/postgresql')).filter(value => /^\d+$/.test(value))
+    candidates.push(...(await filesystem.readdir('/usr/lib/postgresql')).filter(value => /^\d+$/.test(value))
       .sort((a, b) => Number(b) - Number(a)).slice(0, 4)
       .map(value => `/usr/lib/postgresql/${value}/bin`));
   } catch { /* No installation, package download or alternative service. */ }
@@ -429,15 +433,30 @@ async function nativePrograms() {
     if (!path.isAbsolute(directory)) continue;
     const programs = Object.fromEntries(['initdb', 'pg_ctl', 'psql', 'postgres']
       .map(name => [name, path.join(directory, name)]));
-    try { await Promise.all(Object.values(programs).map(file => fs.access(file, fs.constants.X_OK))); }
+    try { await Promise.all(Object.values(programs).map(file => filesystem.access(file, fs.constants.X_OK))); }
     catch { continue; }
-    const versions = await Promise.all(Object.values(programs).map(file => command(file, ['--version'])));
+    const versions = await Promise.all(Object.values(programs).map(file => run(file, ['--version'])));
     const majors = versions.map(result => result.code === 0 ? result.stdout.match(/\b(\d+)\.\d+\b/)?.[1] : null);
     if (majors.every(value => value !== null && value === majors[0]) && Number(majors[0]) >= 16) {
       return { ...programs, majorVersion: Number(majors[0]) };
     }
   }
   throw new Error('NATIVE_POSTGRES_COMPLETE_EXISTING_BINARIES_UNAVAILABLE');
+}
+
+// The same chooser is used by the real host and the read-only reuse probe.
+// This records the selected quartet, not an assumed pg_config installation.
+export async function nativePostgresProgramIdentity(programs) {
+  assert(Number.isSafeInteger(programs?.majorVersion)&&programs.majorVersion>=16);
+  const files=[];
+  for(const name of ['initdb','pg_ctl','psql','postgres']){
+    const file=programs[name];assert.equal(typeof file,'string');assert(path.isAbsolute(file));
+    const realpath=await fs.realpath(file),stat=await fs.stat(realpath);
+    assert(stat.isFile());const raw=await fs.readFile(realpath),version=await command(file,['--version']);
+    assert.equal(version.code,0);assert.equal(Number(version.stdout.match(/\b(\d+)\.\d+\b/)?.[1]),programs.majorVersion);
+    files.push({name,path:file,realpath,mode:stat.mode&0o777,bytes:raw.length,sha256:hash(raw),version:version.stdout.trim()});
+  }
+  return {schemaVersion:1,majorVersion:programs.majorVersion,files};
 }
 
 
@@ -806,26 +825,98 @@ async function compareCurrentGridSuccessor({ psql, runSql, source, accountSource
 export async function runNativeCheckpointSqlComparison({ repositoryRoot,
   sourceDocumentAt, atHour, saveCheckpoint, includeStatisticsRevision = false,
   includeNativeIdentity = false, includeCurrentMemoryWarmup = false, includeEstablishedNativeCurrentOrigin = false,
-  includeLastMileEnclosure = false, includeAccountStatisticsAssistant = false, includeSourceProducer = false,
-  includeCurrentSourceNativeProfile = false } = {}) {
+  includeLastMileEnclosure = false, includeAccountStatisticsAssistant = false,
+  includeNativeOriginalContinuity = false, includeAssistantLaterH0 = false,
+  includeAssistantPublic587Successor = false, includeAssistantPublic588Successor = false,
+  includeAssistantPublic590Successor = false, includeAssistantPublic591Successor = false,
+  includeInstalled593Original591Successor = false, includeSourceProducer = false,
+  includeCurrentSourceNativeProfile = false, sourceCurrentNativeTestContext = null } = {}) {
   assert.equal(typeof includeCurrentSourceNativeProfile,'boolean');
   if(includeCurrentSourceNativeProfile)requireSourceProducerOutput();
   assert(!includeCurrentSourceNativeProfile || includeSourceProducer,'CURRENT profile requires the unchanged SOURCE PG phase');
   assert.equal(typeof includeSourceProducer,'boolean');
-  if(includeSourceProducer)requireSourceProducerOutput(); // BEFORE nativePrograms/filesystem/process I/O.
+  if(includeSourceProducer)requireSourceProducerOutput(); // BEFORE operands, nativePrograms/filesystem/process I/O.
+  if(sourceCurrentNativeTestContext!==null){
+    requireSourceProducerOutput(); // FIRST, including malformed new options.
+    assert(includeSourceProducer&&includeCurrentSourceNativeProfile,'SOURCE_PR_NATIVE_REQUIRES_CURRENT_PROFILE');
+    assert.equal(process.platform,'linux');assert.equal(process.versions.node.split('.')[0],'24',
+      'SOURCE_PR_NATIVE_ACTUAL_NODE24_REQUIRED');
+    const c=sourceCurrentNativeTestContext;
+    assert.deepEqual(Object.keys(c).sort(),['schemaVersion','scope','current','sourceTreeSha256'].sort());
+    assert.equal(c.schemaVersion,1);assert.equal(c.scope,'SOURCE_PR_NATIVE_TEST_V1');
+    assert.match(c.sourceTreeSha256,/^sha256:[a-f0-9]{64}$/);
+    assert.deepEqual(Object.keys(c.current??{}).sort(),['head','run','attempt','pullRequest','branch'].sort());
+    assert.match(c.current.head,/^[a-f0-9]{40}$/);assert.equal(c.current.attempt,1);
+    for(const key of ['run','pullRequest'])assert(Number.isSafeInteger(c.current[key])&&c.current[key]>0);
+    assert(typeof c.current.branch==='string'&&c.current.branch.startsWith('codex/')&&!/[\r\n\0]/.test(c.current.branch));
+    sourceCurrentNativeTestContext=Object.freeze({...c,current:Object.freeze({...c.current})});
+  }
+
   assert(!includeSourceProducer || includeAccountStatisticsAssistant,'SOURCE requires the genuine complete585 native phase');
+  assert(!includeSourceProducer || !(includeNativeOriginalContinuity || includeAssistantLaterH0
+    || includeAssistantPublic587Successor || includeAssistantPublic588Successor || includeAssistantPublic590Successor
+    || includeAssistantPublic591Successor || includeInstalled593Original591Successor),
+    'SOURCE owns its genuine594 replay after585; historical successor phases remain separate');
+  assert.equal(typeof includeInstalled593Original591Successor,'boolean');
+  assert(!includeInstalled593Original591Successor||includeAssistantPublic591Successor,
+    'Installed593/original591 successor requires the genuine complete593 native phase');
+  if(includeInstalled593Original591Successor){
+    const {requireInstalled593Original591Release}=await import('./assistant-later-h0-successor-source.mjs');
+    requireInstalled593Original591Release(); // Before operands, programs, host or SQL.
+  }
+  assert.equal(typeof includeAssistantPublic591Successor,'boolean');
+  assert(!includeAssistantPublic591Successor || includeAssistantPublic590Successor,'Genuine591 phase is required before assistant592');
+  if(includeAssistantPublic591Successor){
+    const {requireAssistantPublic591SuccessorRelease}=await import('./assistant-later-h0-successor-source.mjs');
+    requireAssistantPublic591SuccessorRelease(); // FIRST: no fixture, operand, host or SQL before issuance.
+  }
+  assert.equal(typeof includeAssistantPublic590Successor,'boolean');
+  assert(!includeAssistantPublic590Successor || includeAssistantPublic588Successor,
+    'Authentic590 phase is required before the new assistant phase');
+  if(includeAssistantPublic590Successor){
+    const {requireAssistantPublic590SuccessorRelease}=await import('./assistant-later-h0-successor-source.mjs');
+    requireAssistantPublic590SuccessorRelease(); // FIRST: before operands/programs/host/SQL.
+  }
+  assert.equal(typeof includeAssistantPublic588Successor,'boolean');
+  assert(!includeAssistantPublic588Successor || includeAssistantPublic587Successor,
+    'Public588 successor requires the genuine complete588 native phase');
+  if(includeAssistantPublic588Successor){
+    const {requireAssistantPublic588SuccessorRelease}=await import('./assistant-later-h0-successor-source.mjs');
+    requireAssistantPublic588SuccessorRelease(); // FIRST: before operands/programs/host/SQL.
+  }
   assert.equal(typeof includeStatisticsRevision,'boolean');
   assert.equal(typeof includeNativeIdentity,'boolean');
   assert.equal(typeof includeCurrentMemoryWarmup,'boolean');
   assert.equal(typeof includeEstablishedNativeCurrentOrigin,'boolean');
   assert.equal(typeof includeLastMileEnclosure,'boolean');
   assert.equal(typeof includeAccountStatisticsAssistant,'boolean');
+  assert.equal(typeof includeNativeOriginalContinuity,'boolean');
+  assert.equal(typeof includeAssistantLaterH0,'boolean');
+  assert.equal(typeof includeAssistantPublic587Successor,'boolean');
+  assert(!includeAssistantPublic587Successor || includeAssistantLaterH0,
+    'Public587 successor requires the genuine complete587 native phase');
+  if(includeAssistantPublic587Successor){
+    const {requireAssistantPublic587SuccessorRelease}=await import('./assistant-later-h0-successor-source.mjs');
+    requireAssistantPublic587SuccessorRelease(); // UNISSUED before programs, host, factory or SQL.
+  }
+  assert(!includeAssistantLaterH0 || includeNativeOriginalContinuity,'Assistant later-H0 requires the genuine complete586 native phase');
+  if(includeAssistantLaterH0){
+    const {requireAssistantLaterH0Release}=await import('./assistant-later-h0-successor-source.mjs');
+    requireAssistantLaterH0Release(); // Before programs, host, factory or SQL.
+  }
+  assert(!includeNativeOriginalContinuity || includeAccountStatisticsAssistant,
+    'Native continuity requires the genuine complete585 native phase');
+  if(includeNativeOriginalContinuity){
+    const {requireNativeOriginalContinuityOutput}=await import('./native-original-continuity-successor-source.mjs');
+    requireNativeOriginalContinuityOutput(); // UNISSUED before programs, host or SQL.
+  }
   assert(!includeAccountStatisticsAssistant || includeLastMileEnclosure,'585 requires the genuine complete584 native phase');
   assert(!includeLastMileEnclosure || includeEstablishedNativeCurrentOrigin,'Last-mile enclosure requires every genuine historical native phase');
   assert(!includeEstablishedNativeCurrentOrigin || includeCurrentMemoryWarmup,'Established origin requires every unchanged historical native phase');
   assert(!includeCurrentMemoryWarmup || (includeNativeIdentity && includeStatisticsRevision), 'CurrentMemoryWarmup requires every unchanged historical native phase');
   assert(!includeNativeIdentity || includeStatisticsRevision, 'NEW requires the unchanged statistics230 phase');
   const programs = await nativePrograms();
+  const nativeProgramsBefore=includeAssistantPublic591Successor?await nativePostgresProgramIdentity(programs):null;
   assert.ok(typeof sourceDocumentAt === 'function' && typeof atHour === 'function'
     && typeof saveCheckpoint === 'function', 'normal fixture constructors are required');
   const root = await fs.mkdtemp(path.join(os.tmpdir(), 'rr-checkpoint-pg-'));
@@ -853,6 +944,7 @@ export async function runNativeCheckpointSqlComparison({ repositoryRoot,
     return result.stdout.trim();
   };
   let owner = null, started = false, stopped = false, cleanupAllowed = false;
+  let completedReport=null;
   let statisticsRevisionFailure = null;
   const readOwner = async () => {
     const pid = Number((await fs.readFile(path.join(data, 'postmaster.pid'), 'utf8')).split('\n')[0]);
@@ -1135,10 +1227,99 @@ select public.native_checkpoint_attempt(${baseline},${version},(select payload f
             adapter.compareAccountStatisticsAssistantSuccessor({psql,runSql,root,sourceDocumentAt:factory.sourceDocumentAt,
               atHour:factory.atHour,saveCheckpoint:factory.saveRavScoreContinuationCheckpoint}));
         }catch(error){statisticsRevisionFailure={error};throw error;}
+      }else if(includeNativeOriginalContinuity){
+        const {withFrozen585CheckpointPostgresSource}=await import('../run-frozen585-native-continuity-postgres-source.mjs');
+        accountStatisticsAssistant=await withFrozen585CheckpointPostgresSource(async({adapter,factory})=>
+          adapter.compareAccountStatisticsAssistantSuccessor({psql,runSql,root,sourceDocumentAt:factory.sourceDocumentAt,
+            atHour:factory.atHour,saveCheckpoint:factory.saveRavScoreContinuationCheckpoint}));
       }else{
-      const {compareAccountStatisticsAssistantSuccessor}=await import('./account-statistics-assistant-postgres.mjs');
-      accountStatisticsAssistant=await compareAccountStatisticsAssistantSuccessor({psql,runSql,root,sourceDocumentAt,atHour,saveCheckpoint});
+        const {compareAccountStatisticsAssistantSuccessor}=await import('./account-statistics-assistant-postgres.mjs');
+        accountStatisticsAssistant=await compareAccountStatisticsAssistantSuccessor({psql,runSql,root,sourceDocumentAt,atHour,saveCheckpoint});
       }
+    }
+    let nativeOriginalContinuity;
+    if(includeNativeOriginalContinuity){
+      nativePhase='NATIVE_ORIGINAL_CONTINUITY';
+      if(includeAssistantLaterH0){
+        const {withFrozen586CheckpointPostgresSource}=await import('../run-frozen586-assistant-later-h0-postgres-source.mjs');
+        nativeOriginalContinuity=await withFrozen586CheckpointPostgresSource(async({adapter,factory})=>
+          adapter.compareNativeOriginalContinuitySuccessor({psql,runSql,root,sourceDocumentAt:factory.sourceDocumentAt,
+            atHour:factory.atHour,saveCheckpoint:factory.saveRavScoreContinuationCheckpoint}));
+      }else{
+      const {compareNativeOriginalContinuitySuccessor}=await import('./native-original-continuity-postgres.mjs');
+      nativeOriginalContinuity=await compareNativeOriginalContinuitySuccessor({psql,runSql,root,sourceDocumentAt,atHour,saveCheckpoint});
+      }
+    }
+    let assistantLaterH0;
+    if(includeAssistantLaterH0){
+      nativePhase='ASSISTANT_LATER_H0';
+      if(includeAssistantPublic587Successor){
+        const {withFrozen587CheckpointPostgresSource}=await import('../run-frozen586-assistant-later-h0-postgres-source.mjs');
+        assistantLaterH0=await withFrozen587CheckpointPostgresSource(async({adapter,factory})=>
+          adapter.compareAssistantLaterH0Successor({psql,runSql,root,sourceDocumentAt:factory.sourceDocumentAt,
+            atHour:factory.atHour,saveCheckpoint:factory.saveRavScoreContinuationCheckpoint}));
+      }else{
+        const {compareAssistantLaterH0Successor}=await import('./assistant-later-h0-postgres.mjs');
+        assistantLaterH0=await compareAssistantLaterH0Successor({psql,runSql,root,sourceDocumentAt,atHour,saveCheckpoint});
+      }
+    }
+    let assistantPublic587Successor;
+    if(includeAssistantPublic587Successor){
+      nativePhase='ASSISTANT_PUBLIC587_SUCCESSOR';
+      if(includeAssistantPublic588Successor){
+        const {withFrozen588CheckpointPostgresSource}=await import('../run-frozen586-assistant-later-h0-postgres-source.mjs');
+        assistantPublic587Successor=await withFrozen588CheckpointPostgresSource(async({adapter,factory})=>
+          adapter.compareAssistantPublic587Successor({psql,runSql,root,sourceDocumentAt:factory.sourceDocumentAt,
+            atHour:factory.atHour,saveCheckpoint:factory.saveRavScoreContinuationCheckpoint}));
+      }else{
+      const {compareAssistantPublic587Successor}=await import('./assistant-later-h0-postgres.mjs');
+      assistantPublic587Successor=await compareAssistantPublic587Successor({psql,runSql,root,sourceDocumentAt,atHour,saveCheckpoint});
+      }
+    }
+    let assistantPublic588Successor;
+    if(includeAssistantPublic588Successor){
+      nativePhase='ASSISTANT_PUBLIC588_SUCCESSOR';
+      if(includeAssistantPublic590Successor){
+        const {withFrozen590CheckpointPostgresSource}=await import('../run-frozen586-assistant-later-h0-postgres-source.mjs');
+        assistantPublic588Successor=await withFrozen590CheckpointPostgresSource(async({adapter,factory})=>
+          adapter.compareAssistantPublic588Successor({psql,runSql,root,sourceDocumentAt:factory.sourceDocumentAt,
+            atHour:factory.atHour,saveCheckpoint:factory.saveRavScoreContinuationCheckpoint}));
+      }else{
+        const {compareAssistantPublic588Successor}=await import('./assistant-later-h0-postgres.mjs');
+        assistantPublic588Successor=await compareAssistantPublic588Successor({psql,runSql,root,sourceDocumentAt,atHour,saveCheckpoint});
+      }
+    }
+    let assistantPublic590Successor;
+    if(includeAssistantPublic590Successor){
+      nativePhase='ASSISTANT_PUBLIC590_SUCCESSOR';
+      if(includeAssistantPublic591Successor){
+        const {withFrozen591CheckpointPostgresSource}=await import('../run-frozen586-assistant-later-h0-postgres-source.mjs');
+        assistantPublic590Successor=await withFrozen591CheckpointPostgresSource(async({adapter,factory})=>
+          adapter.compareAssistantPublic590Successor({psql,runSql,root,sourceDocumentAt:factory.sourceDocumentAt,
+            atHour:factory.atHour,saveCheckpoint:factory.saveRavScoreContinuationCheckpoint}));
+      }else{
+      const {compareAssistantPublic590Successor}=await import('./assistant-later-h0-postgres.mjs');
+      assistantPublic590Successor=await compareAssistantPublic590Successor({psql,runSql,root,sourceDocumentAt,atHour,saveCheckpoint});
+      }
+    }
+    let assistantPublic591Successor;
+    if(includeAssistantPublic591Successor){
+      nativePhase='ASSISTANT_PUBLIC591_SUCCESSOR';
+      if(includeInstalled593Original591Successor){
+        const {withFrozen593CheckpointPostgresSource}=await import('../run-frozen586-assistant-later-h0-postgres-source.mjs');
+        assistantPublic591Successor=await withFrozen593CheckpointPostgresSource(async({adapter,factory})=>
+          adapter.compareAssistantPublic591Successor({psql,runSql,root,sourceDocumentAt:factory.sourceDocumentAt,
+            atHour:factory.atHour,saveCheckpoint:factory.saveRavScoreContinuationCheckpoint}));
+      }else{
+        const {compareAssistantPublic591Successor}=await import('./assistant-later-h0-postgres.mjs');
+        assistantPublic591Successor=await compareAssistantPublic591Successor({psql,runSql,root,sourceDocumentAt,atHour,saveCheckpoint});
+      }
+    }
+    let installed593Original591Successor;
+    if(includeInstalled593Original591Successor){
+      nativePhase='INSTALLED593_ORIGINAL591_SUCCESSOR';
+      const {compareInstalled593Original591Successor}=await import('./assistant-later-h0-postgres.mjs');
+      installed593Original591Successor=await compareInstalled593Original591Successor({psql,runSql,root,sourceDocumentAt,atHour,saveCheckpoint});
     }
     let sourceProducer;
     let sourceProducerParentRelease;
@@ -1244,8 +1425,9 @@ select public.native_checkpoint_attempt(${baseline},${version},(select payload f
         ['-I','-B',path.join(repositoryRoot,'scripts/run-source19-terminal-native-bank.py'),
           '--current-source-profile','--node24-path',process.execPath,
           ...(sourceProducerParentRelease==='4.0.594'?['--input-profile','current594-preparation']:[])],
-        {input:JSON.stringify({kind:'SOURCE_CURRENT_SAME_NATIVE_PG',pgRoot:root,psql:programs.psql,head,server:owner}),
-          env:profileEnvironment,timeout:240*60*1000});
+        {input:JSON.stringify({kind:'SOURCE_CURRENT_SAME_NATIVE_PG',pgRoot:root,psql:programs.psql,head,server:owner,
+          ...(sourceCurrentNativeTestContext===null?{}:{sourceCurrentNativeTestContext})}),
+          env:profileEnvironment,timeout:(sourceCurrentNativeTestContext===null?240:180)*60*1000});
       const firstProfileFailure=currentSourceNativeFirstFailure(invocation.stdout);
       if(firstProfileFailure||invocation.code!==0){
         const fixed=firstProfileFailure??{kind:'CURRENT_SOURCE_NATIVE_FIRST_FAILURE',phase:'UNKNOWN',
@@ -1255,10 +1437,37 @@ select public.native_checkpoint_attempt(${baseline},${version},(select payload f
           +' sqlstate='+fixed.sqlstate+' route='+fixed.route);error.currentNativeFailure=Object.freeze(fixed);throw error;
       }
       assert.deepEqual(await readOwner(),owner);
-      currentSourceNativeProfile={sameHost:true,actualNativeProcessCompleted:true,productionProof:false};
+      if(sourceCurrentNativeTestContext===null){
+        currentSourceNativeProfile={sameHost:true,actualNativeProcessCompleted:true,productionProof:false};
+      }else{
+        // No flag/stdout alone completes native proof. This is reached only
+        // after real child success, fixed failure refusal and same-PG readback;
+        // the wrapper's unchanged finally must still stop its actual PG host.
+        assert.equal(head,sourceCurrentNativeTestContext.current.head);
+        const observations=invocation.stdout.split(/\r?\n/).flatMap(line=>{
+          if(line.length>8192)return [];
+          try{const value=JSON.parse(line);return value?.kind==='CURRENT_SOURCE_NORMAL_NATIVE_OBSERVATION'?[value]:[];}catch{return [];}
+        });
+        assert.equal(observations.length,1,'SOURCE_PR_NATIVE_ONE_PHYSICAL_OBSERVATION_REQUIRED');
+        const actual=observations[0];
+        assert.deepEqual(Object.keys(actual).sort(),['kind','scope','current','mainHead','sourceTreeSha256',
+          'physicalClosureBeforeCleanup','sourceAdmission','wholeFixtureRetained','productionProof'].sort());
+        assert.equal(actual.scope,'SOURCE_PR_NATIVE_TEST');
+        assert.deepEqual(Object.keys(actual.current??{}).sort(),[...Object.keys(sourceCurrentNativeTestContext.current),'jobId'].sort());
+        for(const [key,value] of Object.entries(sourceCurrentNativeTestContext.current))assert.equal(actual.current[key],value);
+        assert(Number.isSafeInteger(actual.current.jobId)&&actual.current.jobId>0);
+        assert.match(actual.mainHead,/^[a-f0-9]{40}$/);assert.notEqual(actual.mainHead,head);
+        assert.equal(actual.sourceTreeSha256,sourceCurrentNativeTestContext.sourceTreeSha256);
+        assert.equal(actual.physicalClosureBeforeCleanup,true);assert.equal(actual.wholeFixtureRetained,true);
+        assert.equal(actual.sourceAdmission,false);assert.equal(actual.productionProof,false);
+        currentSourceNativeProfile={kind:'SOURCE_PR_NATIVE_TEST_RESULT_V1',scope:'SOURCE_PR_NATIVE_TEST',
+          current:actual.current,mainHead:actual.mainHead,sourceTreeSha256:actual.sourceTreeSha256,
+          sameHost:true,actualNativeProcessCompleted:true,physicalClosureBeforeCleanup:true,
+          sourceAdmission:false,productionProof:false};
+      }
       }catch(error){statisticsRevisionFailure={error};throw error;}
     }
-    return {kind:'NATIVE_POSTGRES_CHECKPOINT_CAS_COMPARISON',accountAssistant,currentGrid,
+    completedReport={kind:'NATIVE_POSTGRES_CHECKPOINT_CAS_COMPARISON',accountAssistant,currentGrid,
       ...(includeStatisticsRevision?{statisticsRevision}:{}),
       ...(includeNativeIdentity?{nativeIdentity}:{}),
       ...(includeCurrentMemoryWarmup?{currentMemoryWarmup}:{}),
@@ -1268,10 +1477,18 @@ select public.native_checkpoint_attempt(${baseline},${version},(select payload f
       ...(includeSourceProducer?{sourceProducer}:{}),
       ...(includeSourceProducer&&!includeCurrentSourceNativeProfile?{sourceLegacyCompatibility}:{}),
       ...(includeCurrentSourceNativeProfile?{currentSourceNativeProfile}:{}),
+      ...(includeNativeOriginalContinuity?{nativeOriginalContinuity}:{}),
+      ...(includeAssistantLaterH0?{assistantLaterH0}:{}),
+      ...(includeAssistantPublic587Successor?{assistantPublic587Successor}:{}),
+      ...(includeAssistantPublic588Successor?{assistantPublic588Successor}:{}),
+      ...(includeAssistantPublic590Successor?{assistantPublic590Successor}:{}),
+      ...(includeAssistantPublic591Successor?{assistantPublic591Successor}:{}),
+      ...(includeInstalled593Original591Successor?{installed593Original591Successor}:{}),
       issuedSource:issued.sourceReceipt,postgresMajorVersion:programs.majorVersion,
       tcpEnabled:false,normalModelPartCount:673,sqlExecuted:true,migrationExecuted:true,
       migrationSQLSha256:hash(newSource),caseCount:reports.length,
       oldCasDefinitionSha256:hash(oldCas),newCasDefinitionSha256:hash(newCas),reports};
+    return completedReport;
   } catch(error) {
     await emitNativePostgresFirstFailure(error,nativePhase);
     throw error;
@@ -1289,6 +1506,11 @@ select public.native_checkpoint_attempt(${baseline},${version},(select payload f
     const resolved=path.resolve(root), temp=path.resolve(os.tmpdir());
     assert.ok(path.dirname(resolved)===temp && path.basename(resolved).startsWith('rr-checkpoint-pg-'));
     if (cleanupAllowed && (!started || stopped)) await fs.rm(resolved,{recursive:true,force:false});
+    if(completedReport&&includeAssistantPublic591Successor){
+      const after=await nativePostgresProgramIdentity(programs);
+      assert.deepEqual(after,nativeProgramsBefore,'Selected native PostgreSQL programs changed during execution');
+      completedReport.nativeProgramIdentity=after;
+    }
     } catch (cleanupError) {
       await emitNativePostgresFirstFailure(cleanupError,'NATIVE_CLEANUP');
       // Keep the first revision failure; unknown/failed stop retains the same

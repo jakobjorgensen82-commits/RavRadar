@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import { DatabaseSync } from 'node:sqlite';
+import { registerHooks } from 'node:module';
 import { buildAccountTripReport, toAccountObservationColumns } from '../js/services/account-trip-report-contract.js';
 import { applySchema } from './prepare-cloudflare-trip-storage.mjs';
 import { handleRequest } from '../cloudflare/trip-gateway/worker.js';
@@ -49,6 +50,114 @@ const anonymousId = '22222222-2222-4222-8222-222222222222';
 const userOwner = await externalOwnerSubject({ userId, secret });
 const repeatedOwner = await externalOwnerSubject({ userId, secret });
 const anonymousOwner = await externalOwnerSubject({ anonymousId, secret });
+
+// Admin count runs the actual Edge and signed Worker against ten native
+// in-memory SQLite shards. No individual row leaves the Worker or test fetch.
+{
+  const previousDeno=globalThis.Deno,previousFetch=globalThis.fetch;
+  const environment={TRIP_STORAGE_MODE:'d1',SUPABASE_URL:'https://admin-count-test.supabase.co',
+    SUPABASE_ANON_KEY:'synthetic-anon',SUPABASE_SERVICE_ROLE_KEY:'synthetic-service',
+    PUBLIC_RATE_LIMIT_SECRET:gatewaySecret,TRIP_GATEWAY_SHARED_SECRET:gatewaySecret,
+    CLOUDFLARE_TRIP_GATEWAY_URL:gatewayUrl};
+  let callback,profile,profileReads=0,workerCalls=0,shardReads=0,afterCountProfile=null,oldWorker=false,categoryProfiles=[],categoryReads=0;
+  const databases=[],countEnvironment={TRIP_GATEWAY_SHARED_SECRET:gatewaySecret};
+  for(let i=0;i<10;i++){
+    const database=new DatabaseSync(':memory:');databases.push(database);
+    database.exec('create table trip_observations(payload_json text)');
+    database.prepare('insert into trip_observations values (?)').run('{}');
+    countEnvironment['TRIP_DB_'+i]={prepare(sql){assert.match(sql,/^select count\(\*\)/i);
+      assert.doesNotMatch(sql,/\b(?:insert|update|delete|where|owner_subject)\b/i);
+      return {async all(){shardReads++;return {success:true,results:database.prepare(sql).all()};}};}};
+  }
+  for(const [i,value]of [[0,{observation_origin:'synthetic-test'}],[1,{observation_origin:'self-reported'}],
+    [2,{owner_kind:'anonymous',source:'supabase-migration',nested:{observation_origin:'synthetic-test'}}],[3,'invalid-json']])
+    databases[i].prepare('insert into trip_observations values (?)').run(typeof value==='string'?value:JSON.stringify(value));
+  const hooks=registerHooks({resolve(specifier,context,next){
+    if(specifier==='jsr:@supabase/functions-js/edge-runtime.d.ts')return {url:'data:text/javascript,export{}',shortCircuit:true};
+    return next(specifier,context);
+  }});
+  globalThis.Deno={env:{get:name=>environment[name]??null},serve:handler=>{callback=handler;}};
+  globalThis.fetch=async(input,init={})=>{
+    const request=new Request(input,init),url=new URL(request.url);
+    if(url.origin===gatewayUrl){workerCalls++;assert.equal(url.pathname,'/v1/trips/count');
+      assert.deepEqual(await request.clone().json(),{operation:'admin-summary'});
+      if(oldWorker)return Response.json({ok:true,trip_count:14});
+      return handleRequest(request,countEnvironment);
+    }
+    assert.equal(url.origin,environment.SUPABASE_URL);
+    if(url.pathname==='/auth/v1/user')return Response.json({id:userId});
+    if(url.pathname==='/rest/v1/rpc/consume_public_request_limit')return Response.json(true);
+    assert.equal(url.pathname,'/rest/v1/profiles');
+    if(url.searchParams.get('id')?.startsWith('in.(')){
+      categoryReads++;assert.equal(url.searchParams.get('select'),'id,email,role,is_active,user_permissions(permission_key,enabled)');
+      assert.equal(request.headers.get('authorization'),'Bearer synthetic-user');return Response.json(categoryProfiles);
+    }
+    assert.equal(url.searchParams.get('id'),'eq.'+userId);
+    assert.equal(url.searchParams.get('select'),'id,role,is_active,user_permissions(permission_key,enabled)');
+    assert.equal(request.headers.get('authorization'),'Bearer synthetic-user');profileReads++;
+    return Response.json([profileReads>1&&afterCountProfile?afterCountProfile:profile]);
+  };
+  const fresh=()=>{profile={id:userId,role:'owner',is_active:true,user_permissions:[]};
+    profileReads=0;workerCalls=0;shardReads=0;categoryReads=0;afterCountProfile=null;oldWorker=false;environment.TRIP_STORAGE_MODE='d1';};
+  const invoke=body=>callback(new Request(environment.SUPABASE_URL+'/functions/v1/trip-log',{
+    method:'POST',headers:{authorization:'Bearer synthetic-user','content-type':'application/json'},body:JSON.stringify(body)}));
+  try{
+    await import('../supabase/functions/trip-log/index.ts?admin-count-test=1');assert.equal(typeof callback,'function');
+    fresh();let response=await invoke({operation:'admin-count'}),result=await response.json();
+    assert.equal(response.status,200);assert.equal(response.headers.get('cache-control'),'no-store');
+    assert.deepEqual(Object.keys(result).sort(),['completedAt','markedTestCount','scope','startedAt','storedCount']);
+    assert.equal(result.storedCount,14);assert.equal(result.markedTestCount,1);assert.equal(profileReads,2);
+    assert.equal(workerCalls,1);assert.equal(shardReads,10);assert(Date.parse(result.completedAt)>=Date.parse(result.startedAt));
+    assert.doesNotMatch(JSON.stringify(result),/payload|owner|email|client_observation_id|synthetic-user|secret/);
+    for(const denied of [{...profile,role:'expert'},{...profile,is_active:false},
+      {...profile,role:'expert',user_permissions:[{permission_key:'admin_access',enabled:true}]},
+      {...profile,role:'expert',user_permissions:[{permission_key:'full_admin',enabled:false}]}]){
+      fresh();profile=denied;response=await invoke({operation:'admin-count'});assert.equal(response.status,403);assert.equal(workerCalls,0);
+    }
+    fresh();profile.role='expert';profile.user_permissions=[{permission_key:'full_admin',enabled:true}];
+    assert.equal((await invoke({operation:'admin-count'})).status,200);assert.equal(shardReads,10);
+    fresh();afterCountProfile={...profile,is_active:false};response=await invoke({operation:'admin-count'});
+    assert.equal(response.status,403);assert.equal(workerCalls,1);assert.deepEqual(await response.json(),{error:'ADMIN_TRIP_COUNT_FORBIDDEN'});
+    for(const mode of ['supabase','unconfigured','maintenance:'+new Date(Date.now()+60_000).toISOString()]){
+      fresh();environment.TRIP_STORAGE_MODE=mode;response=await invoke({operation:'admin-count'});assert.equal(response.status,503);assert.equal(workerCalls,0);
+    }
+    fresh();oldWorker=true;assert.equal((await invoke({operation:'admin-count'})).status,503);
+    fresh();const saved=countEnvironment.TRIP_DB_5;delete countEnvironment.TRIP_DB_5;
+    response=await invoke({operation:'admin-count'});assert.equal(response.status,503);assert.equal(shardReads,0);countEnvironment.TRIP_DB_5=saved;
+    fresh();const original=countEnvironment.TRIP_DB_4;countEnvironment.TRIP_DB_4={prepare(){throw Error('PRIVATE_PAYLOAD_MUST_NOT_ESCAPE');}};
+    response=await invoke({operation:'admin-count'});assert.equal(response.status,503);
+    assert.deepEqual(await response.json(),{error:'ADMIN_TRIP_COUNT_UNAVAILABLE'});countEnvironment.TRIP_DB_4=original;
+    fresh();response=await invoke({operation:'admin-count',limit:1});assert.equal(response.status,400);assert.equal(workerCalls,0);
+    const normal={gatewayUrl,sharedSecret:gatewaySecret,fetchImpl:(url,init)=>handleRequest(new Request(url,init),countEnvironment)};
+    assert.equal(await countCloudflareTrips(normal),14,'Original empty-body count remains exactly its physical total');
+    console.log('Admin trip count: actual Edge ACL/mode/before-after access, HMAC and all10 SQLite shards, explicit test marker and legacy/anonymous totals; closed errors and original count preserved.');
+    const expertAddress=fs.readFileSync('supabase/functions/_shared/admin-account-categories.ts','utf8').match(/const DESIGNATED_EXPERT = "([^"]+)"/)[1];
+    const ordinaryId='33333333-3333-4333-8333-333333333333',unknownId='44444444-4444-4444-8444-444444444444';
+    const categoryRequest={operation:'admin-account-categories',ids:[userId,anonymousId,ordinaryId,unknownId]};
+    categoryProfiles=[{id:userId,email:'owner@example.invalid',role:'owner',is_active:true,user_permissions:[]},
+      {id:anonymousId,email:expertAddress.toUpperCase(),role:'expert',is_active:true,user_permissions:[]},
+      {id:ordinaryId,email:'regular@example.invalid',role:'expert',is_active:true,user_permissions:[{permission_key:'handbook_review',enabled:true}]}];
+    fresh();response=await invoke(categoryRequest);assert.equal(response.status,200);result=await response.json();
+    assert.deepEqual(result.rows,[{id:userId,category:'owner',issues:[]},{id:anonymousId,category:'expert',issues:[]},
+      {id:ordinaryId,category:'ordinary',issues:['ordinary-has-permissions']},{id:unknownId,category:'unknown',issues:['profile-unavailable']}]);
+    assert.equal(categoryReads,1);assert.equal(profileReads,2);assert.equal(workerCalls,0);assert.equal(response.headers.get('cache-control'),'no-store');
+    assert.doesNotMatch(JSON.stringify(result),/email|example\.invalid|permission_key|payload|Bearer|secret/);
+    fresh();profile.role='expert';profile.user_permissions=[{permission_key:'experts_manage',enabled:true}];
+    assert.equal((await invoke(categoryRequest)).status,403);assert.equal(categoryReads,0);
+    fresh();afterCountProfile={...profile,is_active:false};assert.equal((await invoke(categoryRequest)).status,403);assert.equal(categoryReads,1);
+    for(const ids of [[],[userId,userId],['AAAAAAAA-AAAA-4AAA-8AAA-AAAAAAAAAAAA'],['not-a-uuid'],Array(65).fill(userId)]){
+      fresh();assert.equal((await invoke({operation:'admin-account-categories',ids})).status,400);assert.equal(profileReads,0);assert.equal(categoryReads,0);
+    }
+    fresh();categoryProfiles.push({id:unknownId,email:'other-owner@example.invalid',role:'owner',is_active:true,user_permissions:[]});
+    result=await (await invoke(categoryRequest)).json();
+    assert.deepEqual(result.rows.filter(row=>row.category==='owner').map(row=>row.issues),[['multiple-owners-in-batch'],['multiple-owners-in-batch']]);
+    categoryProfiles[1].role='owner';result=await (await invoke(categoryRequest)).json();
+    assert(result.rows[1].issues.includes('owner-expert-conflict'));categoryProfiles[1].role='expert';
+    fresh();categoryProfiles.push({id:'55555555-5555-4555-8555-555555555555'});
+    assert.equal((await invoke(categoryRequest)).status,503);categoryProfiles.pop();
+    console.log('Admin account categories: exact server designation only, default expert stays ordinary, unknown/RLS-missing preserved, actual Edge before/after ACL, strict UUID batches, scoped conflicts and no returned email or privileges.');
+  }finally{hooks.deregister();globalThis.fetch=previousFetch;if(previousDeno===undefined)delete globalThis.Deno;else globalThis.Deno=previousDeno;for(const database of databases)database.close();}
+}
 
 function pendingUntilAbort(_input, init = {}) {
   return new Promise((resolve, reject) => {
@@ -832,6 +941,14 @@ class FakeD1Database {
           },
           async all() {
             const normalized = sql.toLowerCase();
+            if (normalized === 'select owner_subject from trip_observations where owner_subject = ? limit 1') {
+              return { success: true, results: [...database.rows.values()]
+                .filter(row => row.ownerSubject === args[0]).slice(0, 1).map(row => ({ owner_subject: row.ownerSubject })) };
+            }
+            if (normalized === 'select owner_subject from trip_observation_registry where owner_subject = ? limit 1') {
+              return { success: true, results: [...database.registryRows.values()]
+                .filter(row => row.ownerSubject === args[0]).slice(0, 1).map(row => ({ owner_subject: row.ownerSubject })) };
+            }
             if (normalized.includes('from trip_owner_erasure_tombstones')) {
               const [ownerSubject] = args;
               return {

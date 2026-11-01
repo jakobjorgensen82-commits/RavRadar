@@ -19,7 +19,7 @@ import {
   ravScoreContinuationImplementationSha256,
 } from './lib/ravscore-continuation-implementation-contract.mjs';
 import { checkpointMetadataCasBlock, synchronizeRavScoreModelBinding } from './sync-ravscore-model-binding.mjs';
-import { readCurrentGridCanonicalSource } from './lib/current-grid-successor-source.mjs';
+import { ACTIVE_ASSISTANT_SUCCESSOR as ACTIVE } from './lib/assistant-later-h0-successor-source.mjs';
 import { synchronizeReleaseContractMetadata } from './sync-release-contract-metadata.mjs';
 import { computeCandidateGRollbackBundle } from './build-candidate-g-rollback-bundle.mjs';
 import { RELEASE_GATE_TEST_FILES } from './lib/release-gate-test-plan.mjs';
@@ -107,6 +107,7 @@ const RELEASE_METADATA_TEST_COMMAND = [
 ].join(' && ');
 const CHECKPOINT_MIGRATION_PATH =
   'supabase/migrations/20261013220000_current_grid_original_bound_successor.sql';
+const ACTIVE_CHECKPOINT_MIGRATION_PATH = 'supabase/migrations/' + ACTIVE.migration().filename;
 const HISTORICAL_TRIP_MIGRATION_PATH =
   'supabase/migrations/20260901010000_integrated_trip_measured_warmup_admission.sql';
 const CHECKPOINT_OUTER_BEGIN = '-- RAVSCORE_CHECKPOINT_METADATA_CAS_GENERATED_BEGIN';
@@ -155,6 +156,7 @@ const SYNC_MIGRATION_PATHS = Object.freeze([
   'supabase/migrations/20261010130000_owner_export_origin_bound_successor.sql',
   'supabase/migrations/20261012200000_checkpoint_cas_single_projection_successor.sql',
   'supabase/migrations/20261013210000_account_assistant_original_bound_successor.sql',
+  ACTIVE_CHECKPOINT_MIGRATION_PATH,
 ]);
 
 const packageScripts = JSON.parse(await fs.readFile('package.json', 'utf8')).scripts;
@@ -252,10 +254,10 @@ async function createModelBindingSyncFixture({ migrationTransform = null } = {})
       path.join(root, CHECKPOINT_MIGRATION_PATH),
       'utf8',
     );
-    const { canonicalSource } = await readCurrentGridCanonicalSource({
+    const { canonicalSource } = await ACTIVE.readCanonicalSource({
       migrationsDirectory: path.join(root, 'supabase/migrations'),
     });
-    const canonicalBlock = checkpointOuterBlock(canonicalSource, CHECKPOINT_MIGRATION_PATH);
+    const canonicalBlock = checkpointOuterBlock(canonicalSource, ACTIVE_CHECKPOINT_MIGRATION_PATH);
     for (const relative of [
       'supabase/schema.sql',
       'supabase/INSTALL-RAVRADAR-4.0.56-SECURITY.sql',
@@ -276,16 +278,17 @@ async function createModelBindingSyncFixture({ migrationTransform = null } = {})
     await fs.writeFile(driftPath, `${JSON.stringify(driftDocument, null, 2)}\n`, 'utf8');
 
     if (migrationTransform) {
-      // A sparse successor does not redefine every historical validator.
-      // Corrupt the exact immutable source leaf that really owns the hunk;
-      // never pretend a no-op transformation exercises source pinning.
-      for (const relative of [CHECKPOINT_MIGRATION_PATH,
-        'supabase/migrations/20261010130000_owner_export_origin_bound_successor.sql',
-        'supabase/migrations/20261012200000_checkpoint_cas_single_projection_successor.sql',
-        'supabase/migrations/20261013210000_account_assistant_original_bound_successor.sql']) {
+      // De fire rene canonical-tests nedenfor afprøver de historiske mutationer.
+      // Her testes writegrænsens hele pin på den fil, ACTIVE faktisk læser.
+      // En sparse efterfølger gentager ikke alle gamle markører; hvis en sådan
+      // mutation ikke rammer dens delta, ændres en inert fixturekommentar i den
+      // aktive fil i stedet. Et ubrugt historisk tempblad er ikke en fejlinjektion.
+      for (const relative of [ACTIVE_CHECKPOINT_MIGRATION_PATH]) {
         const source = await fs.readFile(path.join(root, relative), 'utf8');
-        const corrupted = migrationTransform(source);
-        if (corrupted === source) continue;
+        const transformed = migrationTransform(source);
+        const corrupted = transformed === source
+          ? source + '\n-- fixture: deliberate immutable active-source byte corruption.\n'
+          : transformed;
         fixtureImmutableFaults.set(root, { relative,
           originalSha256: sourceSha(source), corruptedSha256: sourceSha(corrupted) });
         await fs.writeFile(path.join(root, relative), corrupted, 'utf8');
@@ -446,10 +449,10 @@ assert.deepEqual(verification.releaseContract, expected);
     );
     await assertFixturePathsUnchanged(root, migrationBefore);
 
-    const { canonicalSource } = await readCurrentGridCanonicalSource({
+    const { canonicalSource } = await ACTIVE.readCanonicalSource({
       migrationsDirectory: path.join(root, 'supabase/migrations'),
     });
-    const canonicalBlock = checkpointOuterBlock(canonicalSource, CHECKPOINT_MIGRATION_PATH);
+    const canonicalBlock = checkpointOuterBlock(canonicalSource, ACTIVE_CHECKPOINT_MIGRATION_PATH);
     for (const relative of [
       'supabase/schema.sql',
       'supabase/INSTALL-RAVRADAR-4.0.56-SECURITY.sql',
@@ -501,14 +504,25 @@ const migrationFailureCases = [
 ];
 
 for (const failureCase of migrationFailureCases) {
-  // Retain every original structural/state/hash rejection on the real pure
-  // validator. At the normal write boundary, whole immutable-source pinning
-  // now rejects the corrupted sparse migration even earlier, before writes.
-  const { canonicalSource } = await readCurrentGridCanonicalSource();
+  // De fire historiske transformationer og deres indre fejlregex ovenfor
+  // bevares som specifikation. Den aktive kilde kræver nu hele den udstedte
+  // canonical før indre kontrol; samme mutation afvises derfor strengere og
+  // tidligere. Ingen hel-kontrolsum eller historisk validator omgås.
+  const { canonicalSource } = await ACTIVE.readCanonicalSource();
+  const corruptedCanonical = failureCase.transform(canonicalSource);
+  assert.notEqual(corruptedCanonical, canonicalSource,
+    failureCase.label + ' must change actual canonical bytes');
   assert.throws(() => checkpointMetadataCasBlock(
-    failureCase.transform(canonicalSource), expected.modelBindings.integrated,
+    corruptedCanonical, expected.modelBindings.integrated,
     expected.modelBindings.candidateGRollback, CHECKPOINT_CONTINUATION_HASH,
-  ), failureCase.error, failureCase.label + ' retains its exact canonical guard');
+  ), error => {
+    assert.equal(error.code, 'ERR_ASSERTION');
+    assert.equal(error.actual, sourceSha(corruptedCanonical));
+    assert.equal(error.expected, ACTIVE.requireOutput().canonicalSha256);
+    assert.equal(error.message.split(/\r?\n/, 1)[0],
+      'Public588 successor inspection requires the entire issued canonical source');
+    return true;
+  }, failureCase.label + ' fails at the stronger whole-canonical guard');
   const root = await createModelBindingSyncFixture({ migrationTransform: failureCase.transform });
   try {
     const before = await snapshotFixturePaths(root, [

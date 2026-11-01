@@ -1,3 +1,178 @@
+## 1. november — privat Pages-opdatering af det eksakt ejede projekt
+
+P0 har faktisk leveret offentlig 4.0.594, og genoptagelsen er terminalt afsluttet. Denne lokale Pages-efterfølger ændrer ikke vejrdata eller modelbinding og er endnu ikke kilde- eller hostingkvalificeret. Aktuel kørselsstatus føres privat.
+
+Den lokale kandidat tilføjer en særskilt update-handling til det eksisterende Pages-workflow. Standard create kræver stadig entydigt fravær og afviser et eksisterende projekt. Update kræver egen bekræftelse samt projekt-ID fra ROOTs faktisk vellykkede første create-kvittering og et tidligere verificeret deployment-ID/commit. Projekt, forgænger, canonical/latest, main og lokale input genlæses; præcis allerede leveret kode giver kun en fuldt genlæst no-op. Update opretter eller patcher aldrig et projekt, og ukendt write-/procesudfald bevarer UNKNOWN_NO_RETRY.
+
+Dette er lokal kildeforberedelse i pages.dev-fasen, ikke hosting eller offentlig levering. Customdomæne afvises fortsat; senere domænebinding, én Simply-CNAME, TLS og klient-/cachebusterlukning er åbne sammen med aktuel offentlig 594-kompatibilitet, legacy-Worker, hosted GET/HEAD/OG/robots, Facebook og målt delt Free-/CPU-kapacitet. Ingen ny version, C/I/T, migration, SQL-eksekvering, vejr-/scoreændring, geometri eller aktivering. Ældre create-only-beskrivelser er erstattet alene for denne kontrollerede kodeopdatering; alle eksisterende identitets- og sikkerhedsafslag består.
+
+## Aktivt krav — installeret 593 og originale 591 kræver hver sin binding, 31. oktober
+
+Den nye assistant-installed593-origin591-successor skal binde databasebefore til ægte udstedt 593 og originalState til de autentiske 591-B/S. Normal staging kræver hele den installerede forgængerhistorik og kun den nye normalt afledte594-migration pending; efter installation kræves faktisk ny canonical-/versions-/kontraktgenlæsning. De71 gamle kilde-SQL og gamle profiler bevares byteuændret.
+
+Begge normale metadatakaldere skal kontrollere hele den autentificerede591-kontrakt mod den faktisk afledte aktuelle kontrakt: korrekt gammel/ny T, præcis gennemgået offentlig projektion, uændret lager-ABI og ingen ekstra/manglende felter. Originalernes numeriske værdier, historik, hele S og attest skal have helinverse. Ingen samme-H0-adgang, fabrikeret593-original eller genbrug af gammel nativeevidens som ny 594-prøve. Frisk pointer, CAS/no-loss, B før S og normale privacy-/release-/offentlige gates består.
+
+Gemt indhentningsprogress må ikke kaldes færdig beregning eller automatisk modelovergang. Normal GCM/AAD og uændret beskyttet B- og conditions-baseline kræves ved genbrug. Afvigelse skal give normal ikke-muterende CACHE_MISS, bevare cipher og beskyttet baseline og fortsætte gennem RAW/cache samt konkrete leverandørhuller. Ingen ommærkning, original-target-/completed-genvej eller ny overdragelse som releaseforudsætning. Se DEC-0303 og håndbog 89.291.
+
+## Aktivt krav — ændringsbaseret testvalg, 30. oktober
+
+Testomfanget skal følge ændringens faktiske påvirkning og relevante afhængigheder. Uændrede, uvedkommende områder skal ikke automatisk udløse dybe prøver. Korte prøver af den normale kæde kommer tidligt; overflødige, gentagne og erstattede kontroller fjernes fra den normale leveringsvej.
+
+Hver valgt prøve skal have et konkret beskyttet krav og en forbindelse til ændrede kildeejere eller relevante afhængigheder. Hele den faktiske diff skal vurderes; ukendt påvirkning giver bredere kontrol. Et grønt workflow er ikke bevis for en regressionstest, der ikke faktisk indgår. Historiske kilde-/SQL-originaler bevares, selv når en gammel prøve flyttes ud af daglig levering. Ejerbeslutningen er gældende arbejdsinstruks. Den konkrete nye testudvælgelse og udtynding er under forberedelse og er ikke teknisk leveret. Det igangværende kvalifikationsforløb bevares; ingen rød eller ukendt relevant gate omgås. Se DEC-0302.
+
+## 30. oktober — krav til den private resume/native-kombination
+
+Completed-stage skal anvende den eksisterende producentgrænse for conditions ved forælder/barn/lineage. Installeret filkontrol må kun udvide de tre eksakte id-/stipar; ingen wildcard eller sammenblanding med komprimeret transport. Hele SHA-256, byteantal, samme descriptor/sti før og efter, lukning, oprindelig fejl, GCM, attest, parent-CAS og no-loss skal bestå.
+
+Native V2 må kun genbruge faktisk EXECUTED-oprindelse med hele den lukkede positive inputrelation, endelige package-scopes, korrekt runtime og de faktisk valgte fire PG-programmer. Metadataafslag skal komme før ZIP; komplet digest-/ZIP-/fasekontrol består bagefter med strømmende transportgrænser og uden token til signed redirect. V1 må ikke opgraderes, og REUSED må ikke kaldes SQL udført nu. Ukendt eller modstridende evidens kræver normal udførelse. Normal national efterfølger og fuld kildekontrol på præcis ny kilde er fortsat nødvendige.
+
+Kvalifikation og faktisk effekt er åbne. Ingen nye gates, ny model/version/SQL eller svækket produktionskontrol følger af dokumentationen. Se DEC-0045, DEC-0301 og håndbog89.288–89.289.
+
+## 30. oktober — 4.0.593-kandidat: samme kapacitet i de nødvendige normale læsere
+
+Den faktisk anvendte forgænger er 4.0.591. Den nye 4.0.593-kandidat samler de allerede forberedte forbedringer og den konkrete kapacitetsrettelse; 4.0.592 samt dens udstedte kilder og SQL bevares, men 592 er ikke installeret eller offentligt leveret. Ældre daterede 591-/592-fronter er historik på disse statuspunkter.
+
+Producenten tillader allerede en parsebar conditions-fil på op til 535.822.312 bytes. Kildegennemgangen fandt stadig særskilte 256-MiB-lofter i normal origin-kontrol, læsning af bevarede originaler og den navngivne 591-snapshotgren før første overgang. En større gyldig fil kan derfor blive gemt og senere afvist. Den tidligere normale syntetiske B/S-prøve beviser fejlklassen; den beviser ikke den aktuelle produktionsfils størrelse eller dens konkrete afvisningsårsag.
+
+De tre afgrænsede læsere genbruger producentens eksisterende PRIVATE_CONDITIONS_MAX_BYTES. Origin udvider kun den aktuelle familie og den præcise 591-forgænger; gammel arkivkontrol og seed bevarer 256 MiB. Snapshot udvider kun FROZEN591; 586/587/588/590-profiler og særlige genoptagelser ændres ikke. Hele byte-/SHA-identiteten, originale B/S, attest, filidentitet, frisk genlæsning, CAS og no-loss skal fortsat bestå. Transportloftet er ikke en ny JSON-grænse.
+
+To af kildefilerne indgår i modelbindingens input. Derfor kræver 593 normal ny afledning og kvalifikation; en importvariant må ikke skjule den faktiske kapacitetsændring. Den faktiske afledning giver C99/I98 ved at medtage den eksisterende bounded-writer som afhængighed. Intet input fjernes; det integrerede modelkontraktdigest og de øvrige normaliserede faglige input er bevaret. 4.0.593 er nu lokalt udstedt gennem normal versionssynk, C/I/T-afledning og den nye append-only migration 20261030105202_assistant_public591_later_h0_original_bound_successor.sql. De syv eksisterende forbrugere er synkroniseret, og de normale friske C/I-, aktive/named-builder- og synkkontroller består til fastpunkt. Alle 70 tidligere SQL-filer er bevaret byteuændrede; der er nu 71 i kilden. Den normale installation vælger 591 som ægte forgænger og kræver ikke installation af 592. Ingen SQL er installeret, og 593 er ikke offentligt leveret.
+
+Scoreformel, numeriske vejrværdier og historiske scorer, DMI → Copernicus → Open-Meteo, administratorpunkter, geometri og kildeprioritet bevares. Lokal forberedelse er ikke normal kapacitetsprøve, grøn kildekontrol, autentificeret førskrivning eller faktisk ny offentlig generation. De relevante normale mål, samlet kvalifikation, sikker installation og senere almindelig levering er åbne; alle fem hovedmål består. Ingen SOURCE-, statistik-, slette-, DNS- eller Pages-projektaktivering følger af dette dokumentationsdelta. Se DEC-0301 og håndbog 89.287; skiftende driftsevidens føres privat.
+
+## Aktive krav til privat B/S-observation og fælles conditions-grænse
+
+Den kommende 592-kilde skal bevare den kritiske 591-rettelses lukkede fase-/fejlkategorier, gamle stopbesked og oprindelige fejl. Ingen rå fejltekst, sti, nøgle, brugeroplysning eller vejrindhold må blive en del af den nye rapport. Ukendt skriveudfald skal fortsat afklares ved normal genlæsning; der må ikke ske blind gentagelse.
+
+Reconcile skal genbruge producentens eksisterende parsebare conditions-grænse. Fuld filstørrelse, SHA-256, blokvis byteidentitet, fil-/mappeidentiteter og beviselig lukning skal bestå. Registry beholder 16 MiB. Et nyt fast bytefelt må kun beskrive den ene conditions-entry i det allerede autentificerede manifest uden ekstra filhentning. Porten er ikke ny model-, versions- eller SQL-udstedelse, og faktisk produktionseffekt er stadig en åben gate.
+
+Se [DEC-0299](../10_DECISIONS/DEC-0299-PRIVATE-BS-RECONCILE-FIXED-FAILURE-CATEGORIES.md) og [DEC-0300](../10_DECISIONS/DEC-0300-RECONCILE-CONDITIONS-CAPACITY-AND-SAFE-BYTE-MEASUREMENT.md).
+
+## 30. oktober — strømvindue, readiness og historikusikkerhed skal have forskellige kontroller
+
+Et fuldt aktuelt strømvindue kan sameksistere med HISTORY_INCOMPLETE fra bølge- eller last-mile-usikkerhed. Efterkontrollen må ikke kræve modelMemoryReady=false alene på grund af denne kvalitetsmarkering. Den skal bruge den faktiske historyCoverageHours mod RAVSCORE_CURRENT_SUPPLY_POLICY.windowHours med den eksisterende numeriske tolerance. Et reelt kort vindue kombineret med påstået klar hukommelse skal fortsat afvises.
+
+Alle profilfelter, modelhash, dækningsrelationer og den præcise advisory-liste skal stadig passe. Scorer, intervaller og årsagskoder må ikke omskrives som følge af kontrolrettelsen. Aktuelle zone/mode-tællere ved H0 er hverken alle 118 timer eller fuld femfamiliedækning.
+
+Bevar den faktisk udstedte 592-families C/I/T, allerede udstedte SQL og alle historiske migrationer, originaler, historik, kildeprioritet, administratorpunkter, geometri, scoreformel og reservekapacitet. Denne auditkontrolport udsteder ikke en yderligere model eller migration. Udført Pages-deploy, afsluttende verifikation og terminal kvittering skal opgøres særskilt. Ingen genoptagelse eller vejrhentning udledes af denne rettelse. Se DEC-0298 og håndbog 89.284.
+
+## 30. oktober — uændret auditkontrakt og afgrænset fejlsynlighed
+
+Auditressourcer må reduceres uden at ændre rapportbytes, modelresultater, afslutningskode eller sikkerhedsaccept. Kontrollen af private feltnavne skal fortsat opdage samme markører hen over tekstbidder og filer. Lokal syntetisk hukommelsesbesparelse er ikke bevis for produktionskapacitet eller en tidligere fejls årsag.
+
+Faste .failure- og .execution-sidefiler må alene indeholde afgrænsede faser, fejlkategorier, processtatus, filstørrelser og heapoplysninger; rå fejltekst, stakspor og inputindhold må ikke kopieres. Manglende påkrævet auditrapport stopper fortsat normal videreføring. Observationer må aldrig blive audit-/READY-erstatning eller skjule et programstop som en modelafvigelse. Ingen heapgrænse eller kontrol lempes.
+
+Bevar den faktisk udstedte 592-families C/I/T, allerede udstedte SQL og historiske migrationer samt originaler, kildeprioritet, administratorpunkter, geometri og scoreformel. Auditvidereførelsen udsteder ikke en ny model eller migration. Den allerede gennemgåede reservekapacitet bevares. Samlet kvalifikation og faktisk almindelig efterfølger kræves. Se DEC-0297 og håndbog 89.283.
+
+## 2026-10-29 — aktivt krav: kompakt, modelbundet delingsprojektion
+
+- Genbrug allerede beregnede offentlige resultater i ét indeks og én zonefil pr. zone, med alle 118 timer og begge søgemåder. Ingen nye scorer, billeder pr. time, privat datalager, databasebinding, leverandørhentning, geometri- eller formelændring.
+- Bevar delingskontraktens fulde 118 × 210 × 2-paritet for tidspunkt, tilgængelighed, score, kvalitet og lokal dækningsstatus. Indeks og alle 210 zonefiler skal indgå i obligatorisk normal artifact-/privacykontrol. Paritet må ikke forveksles med komplet vejr.
+- Genbrug normalproducentens eksisterende objekt/tekst/manifest uden ny stor detail-JSON-læsning. Referencen er ikke autenticitet; hash-/størrelses-/generations-/modelbinding til de gemte offentlige data og normal paritet er stadig obligatorisk. Filbaserede kommandoveje bevares.
+- Ét samlet 15-sekunders stopur fra manifeststart og samme AbortSignal. Manifest/indeks/zone har egne 512/128/32 KiB-lofter. Forkert eller manglende generation, model, zone, time, mode eller sprog skal give neutralt afslag, aldrig et gættet tal eller en nabotime.
+- Samlet 592-kvalifikation må ikke efterlade den gamle Worker på 591. Den eksisterende kontrollerede Worker-vej skal levere en faktisk 592-kompatibel kompaktlæser, og en virkelig ny offentlig generation med de nye filer skal være bevist. Hosted Free-CPU/kvoter, Facebook, Pages/DNS/TLS og klientcutover er særskilte åbne gates. Ingen ekstra version/C/I/T/K eller migration fra formatet; se DEC-0296 og håndbog 89.282.
+
+## 29. oktober — aktivt krav: afgrænset og retfærdig komponentreserve
+
+- Bevar DMI → Copernicus → Open-Meteo og de eksisterende gyldigheds-, original-, historie- og kildekrav. Vind- og bølge-GAP skal behandles før temperatur-GAP; kystdele roteres inden for hver gruppe. Ingen ændring af scoreformel, administratorpunkter, geometri eller DMI-budgetter.
+- Normal reserve: 600.000 ms; kort vej: uændret 60.000 ms; cachevej: ingen nye HTTP-kald. To samtidige transporter, samlet loft på 800 faktiske HTTP-forsøg inklusive retry og mindst 150 ms mellem samtlige starter. Én monoton deadline begynder før banklæsning/validering/første checkpoint og må ikke genstartes af ventetid eller retry.
+- Intet nyt HTTP-forsøg efter loft eller deadline. Allerede startede transporter skal afsluttes eller annulleres sikkert; gyldige søskenderesultater skal gemmes. Cursor følger faktisk første HTTP-start pr. opgave, også fejlede kald; udskudt før start flytter ikke cursor. Bank og parser bevares.
+- 4.800 forsøg ved seks almindelige kørsler er kun loftet for denne vej. Andre Open-Meteo-strømme og forbrugere skal tælles særskilt; ingen Free-garanti. Kildekvalifikation og faktisk almindelig levering skal bevises, før rettelsen kaldes i drift.
+- Dækningens kontrakt er fortsat alle 118 forventede timer × 210 zoner for hver søgemåde, alle fem familier og hver prognosedag. Ukendt er ikke dækket eller nul; sammenlign fælles timer og bevar gyldige originaler. Ingen ny version/C/I/T eller migration. Se DEC-0295 og håndbog 89.281.
+
+## 29. oktober — aktiv ejerbeslutning: separat Pages-prognosedeling
+
+- Kun projektet `ravradar-del` på den eksisterende Cloudflare-konto er godkendt. Først pages.dev; senere `del.ravradar.dk` med én Simply-CNAME. NS/apex/www/mail bevares. Det erstatter tidligere venten på ejerens DNS-valg, ikke de nødvendige leveringskontroller.
+- Den eksisterende read-only-handler, model-/gyldighedskontrol, faste offentlige input og præcise selection bevares. Ingen database, billedlager, nye nøgler/planer, scoreberegning eller vejr-/SQL-ændring. Frontend og legacy-Worker forbliver uændrede i fase 1.
+- Den kontrollerede controller skal bruge eksakt kvalificeret main og fælles eksklusiv writerkanal i et sikkert vindue. Kun entydig 404 må udløse den ene oprettelse; ukendt/eksisterende projekt overtages ikke. Ukendt write genlæses før gentagelse; manglende Pages Write må ikke omgås med ny nøgle.
+- Før klientcutover kræves faktisk Pages-levering, kompatibilitet med en virkelig senere offentlig 591-generation, opdateret gammel Worker, GET/HEAD/OG/robots, domænebinding og TLS samt normal frontend/cachebusterlukning. Facebookpreview og ekstern cache verificeres særskilt.
+- Robots Allow bevarer handlerens noindex/no-store. Funktionerne deler kontoens 100.000 Workers Free-kald/døgn med blandt andet turlageret. Målt samlet forbrug og CPU kræves; ingen ny separat gratis pulje eller sikker Free-drift må loves uden bevis.
+
+Privat adapter/controller og lokale prøver er ikke oprettelse, installation, deploy, DNS eller kapacitetsbevis. Ingen ny version/CIT/migration; alle fem mål forbliver åbne. DEC-0294 og håndbog 89.278 er den aktuelle beslutning; ældre dateret tekst bevares som historik på det erstattede DNS-punkt.
+
+## 29. oktober — skrivefri aflæsning af gemte komponenttællere, lokal forberedelse
+
+Den afgrænsede diagnose kan genlæse én præcist angivet, autentificeret originalpakke B gennem dens egen normale, arkiverede læser. Den kræver samme friske centrale pointer før og efter læsningen. Den bruger ikke det separat gemte beregningscheckpoint S, krypteret fremdrift eller råcachen. Dermed kan de allerede gemte komponenttællere undersøges, selv om fremdriftspakken tilhører en ældre generation.
+
+Resultatet er den eksisterende faste, privatlivssikre optælling for vind, bølger, vandstand og vandtemperatur før reservekilder, efter Copernicus og efter den sidste reserve. Strøm kommer fra en særskilt producent og indgår ikke i denne firefamilieopsummering. Manglende tællere forbliver ukendte. Dækningsgrad for alle fem vejrtyper måles fortsat over alle forventede timer og zoner; diagnosens deltal må ikke erstatte den måling.
+
+Den nye tilstand er udtrykkeligt tilvalgt og slået fra som udgangspunkt. Den deler den eksisterende eksklusive vejrkanal og skal planlægges i et skrivefrit vindue. De eksisterende grænser for kald, bytes og køretid bevares; der hentes ingen nye leverandørdata og udføres ingen cachegemning, beregning, SQL, Pages-deploy eller ændring af vejr/scorer. Der må kun returneres faste tællere og afgrænsede læse-/kapacitetsoplysninger, aldrig rå fejltekst, strømværdier, koordinater, proveniens eller nøgler.
+
+Fire gennemgåede kilde-/testfiler er lokalt sammensat med deres uændrede afhængigheder. Der findes målrettede lokale API-/workflowbeviser; uafhængig YAML-aflæsning var ikke tilgængelig lokalt. Præcis ny GitHub-kontrol, sikker levering og den faktiske autentificerede læsning er fortsat åbne. Der er endnu ingen årsagskonklusion om hullerne sidst i prognosen. Assistentlevering, inaktiv SOURCE-revision og normal vejrhentning beholder deres særskilte krav. Alle fem hovedmål til 18. november 2026 er åbne. Se håndbog 89.277 og privat checkpoint.
+
+## 28. oktober — administratorens optælling og kontokategorier
+
+- **REQ-ADMIN-STORED-TRIP-COUNT-001 – LOKALT IMPLEMENTERET / LEVERING ÅBEN:** Overblik skal vise samlet fysisk rækkeantal i de ti aktive D1-lagerdele og særskilt antal med eksplicit topniveau-testmarkering. Totalen omfatter også anonyme og ældre poster; umærkede poster er ikke verificerede virkelige ture eller modelevidens. Vis interval for sekventiel optælling. Ukendt, vedligeholdelse eller fejl er utilgængelig, aldrig nul. Kun frisk aktiv ejer/fuld administrator før og efter læsning; ingen individuelle turposter eller credentials i svaret.
+- **REQ-ADMIN-ACCOUNT-CATEGORY-001 – LOKALT IMPLEMENTERET / LEVERING ÅBEN:** Ejer følger den autoritative ownerrolle; faglig ekspert er alene ejerens konkret udpegede profil bestemt på serveren; alle øvrige kendte profiler er almindelige brugere. Teknisk defaultrolle expert eller tilfældige permissions definerer ikke ekspertstatus. Ukendt forbliver ukendt. Kategorier og filtre giver ingen rettigheder og foretager ingen profilændring; afvigende rettigheder eller ejer-/ekspertkonflikter vises som advarsler.
+- **REQ-ADMIN-CATEGORY-SCOPE-001 – BINDENDE:** Filtre gælder tydeligt de op til 64 viste profiler fra den eksisterende RLS-liste, ikke en garanteret fuld kontooversigt. Begrænset ekspertadministrations hidtidige liste-/rettighedsgrænse bevares. Sene svar og konto-/adgangsskift må ikke publicere nyt indhold.
+- Samlet anonym statistik, retention, modelændring og domæneændring følger ikke af disse læsefunktioner. Eksakt CI, installation og normal administratoraccept skal dokumenteres særskilt.
+
+## 25. oktober — lokal sammenføring af brugerdata, prognosedeling og udstedt 588
+
+Den kvalificerede 719-forælder er lokalt sammenført med den særskilt udstedte 588-kilde. Begge dokumenthistorikker og produktfunktioner bevares; browserimporterne følger 588 uden ændring af den udstedte modelbinding eller migrationerne. Dette er ikke kvalifikation af den samlede head, installation eller offentlig levering. Offentlig 587 er nået, og det numeriske strømmål er lukket; fire hovedområder er fortsat åbne. Statistik, automatisk sletning og SOURCE forbliver inaktive. De private rating- og same-ID-kandidater indgår ikke. Ældre daterede statusafsnit nedenfor bevares som historik.
+
+## 24. oktober — AKTIV: snæver Free-autoritet til offentlig prognosedeling
+
+Ejeren har udtrykkeligt godkendt oprettelse af kun `ravradar-prognosedeling` på den eksisterende Cloudflare Free-konto og `jakob-jorgensen82.workers.dev`. Den fælles faste delingsadresse er `https://ravradar-prognosedeling.jakob-jorgensen82.workers.dev/`. Autoriteten omfatter ikke ny database, billedlager, DNS-ændring, nøgler eller betalingsplan. Konfigurationen må ikke tilføje assets-/DB-/KV-/R2-bindinger, egne routes, cron eller secrets. Det eksisterende offentlige logo må læses uden nyt billedlager.
+
+Deling skal bruge den faktisk verificerede zone, hele time, søgemåde og DA/DE/EN-sprog. Brugeren vælger selv destination og opslagstekst. Score skal komme fra de eksisterende offentlige data og den normale kontrol af bytes, kontrolsum, model, sted, time og udløb; queryparametre, headere eller miljø må ikke udstede score-/kildeautoritet. Ukendt eller udløbet grundlag må ikke erstattes med en nærmeste time. Ny delt tid følger Europe/Copenhagen inklusive sommer-/vintertid, ikke et fast CET-mærke.
+
+Levering skal ske særskilt efter den normale præcise kildekontrol og uden ændring af almindelige vejr-/Pages-workflows. Aktiv versionsgenlæsning, faktisk hosted GET/HEAD, Free-kapacitet og browser-/Facebook-accept kræves; lokal bundle, Node-prøve eller HTTP 200 er ikke tilstrækkeligt. Ekstern cache og ændrede/udløbne offentlige data skal beskrives ærligt. Score er ikke en garanti for fund. Ingen produktionsændring under writer, ingen model-/SQL-udstedelse eller automatisk udvidelse af andre tilladelser. Alle fem hovedmål er fortsat åbne til 18. november.
+
+## 25. oktober — hele assistentspørgsmålet og den faktisk efterspurgte prognosedag
+
+Ejerens fem offentlige fejlsvar skal rettes som produktadfærd. Almindelige ravspørgsmål, herunder kese/ravkese, egne funktioner og god vind, må ikke afvises som uvedkommende. Bedste område på en navngiven dag skal bruge den tilsvarende eksisterende validerede nationale prognose, ikke falde stiltiende tilbage til i dag eller kræve alle zonepakker. Tvetydig dato, ukendt kvalifikation eller manglende gyldig projektion skal håndteres ærligt. Score, kildeprioritet og rå vejrdata ændres ikke.
+
+Et svar på et sammensat spørgsmål må ikke bestå kvalitetskontrollen ved kun at besvare ét led. Den nye care-viden genbruger eksisterende faglig kuratering, ikke en diagnose af et bestemt fund. Hele inputtets sikkerhed og privacy, begrænset ekstern kontekst, sprog, kvoter og normal fallback bevares. Lokal måltest, installeret kode og HTTP 200 er forskellige trin; faktisk offentlig afprøvning er fortsat et afslutningskrav. Den nye binding må ikke svække originalbevarelse, historik eller writergrænser.
+
+## 24. oktober — lokal 587-sammenføring med den leverede DMI-kilde
+
+DMI-rettelsen er præcist kildekvalificeret og merget særskilt på den installerede 586-familie. Den senest afsluttede naturlige vejrhentning er offentligt verificeret; den næste almindelige kørsel er ved denne lokale sammenføring fortsat i DMI-arbejdet. Det er ikke offentlig 587, bevist fuld dækning eller en afsluttet assistentlevering. Kontinuerligt vejr og alle forventede timer/zoners dækning har fortsat førsteprioritet; ingen produktionsændring må ske under den aktive writer.
+
+Den særskilte 587-kandidat har bestået sin præcise kildekontrol. Den nye lokale kombination kræver sit eget samlede bevis; den tidligere afbrudte 587+DMI-kontrol er ikke et helt PASS. Alle produktblade, udstedte modelbindinger, migrationsfiler og den eksisterende SQL uden for håndbogsliteralen bevares. Assistentens håndbogsafsnit 89.265 og stabile ID er uændrede; det særskilte DMI-afsnit har 89.267. Begge dokumenthistorikker nedenfor bevares. Installation, hosted AI og faktisk 587-virkning er åbne; alle fem hovedmål er åbne til 18. november 2026.
+
+## 24. oktober — bevaret kvalificeret strømvinder gennem cachegenbrug
+
+AKTIVT: En fuldt gennemgået marin DMI-fil kan afsluttes uden numerisk ændring, hvis en bedre allerede kvalificeret strømvinder bevares. Præcist heltalsnul kræver officiel fil-/parser-/signaturidentitet, faktisk targetregister, fuldt kanonisk udfaldsbevis og matchende samplingkvittering. Normal ledger og genoptagelse kræver fortsat faktiske kvalificerede tuples eller retained-originalbeviser. En kvittering må ikke skabe dækning eller opgradere ukendt gridbevis. Privat scalar-support, WAM og ikke-marine grene beholder mutationskravet.
+
+Rettelsen leveres særskilt på installeret 586 uden assistent587, ny modelbinding eller SQL. Kontinuerlig vejrhentning og alle timer/zoners femfamiliedækning har førsteprioritet. Lokalt eller source-grønt er ikke faktisk cachegenbrug eller offentlig effekt.
+
+## 23. oktober — DMI-filer med gyldige, uændrede strømvindere
+
+En fuldt gennemgået marin DMI-fil må markeres behandlet uden numerisk overskrivning, når en allerede kvalificeret bedre vinder bevares. Præcis heltalsnul kræver normal officiel source/parser/signature, faktiske target-ID'er og registryhash, fuldt kanonisk udfaldsbevis samt matchende samplingkvittering. Ingen kvittering må erstatte faktiske tuples eller original-/retained-attestation. Samme kvalifikation skal følge normal gemning, ledger og genoptagelse. Privat scalar-support, WAM og ikke-marine grene beholder deres mutationskrav. Ukendt gridbevis får ingen ny anvendelsesret; kildeprioritet, gamle originaler, strømhukommelsesgrænser, scoreformel og no-loss bevares.
+
+## 23. oktober — afsluttede nationale arbejdsforløb skal kunne frigives
+
+AKTIVT: Den normale updater må frigive sin lokale komponent-reference først efter vellykket awaitet holdbar komponentgemning og sin lokale score-reference først efter vellykket awaitet national originalattestering. Begge skal kunne frigives før offentlig eksport. Ingen delt map, originalrække, outputværdi, continuation, historik eller gemt fil må tømmes eller ændres for at frigive hukommelse. En fejl på en af grænserne skal fortsat kastes; uafsluttede ejere må ikke kaldes færdige.
+
+Rettelsen skal bevares gennem de almindelige kaldere og de gamle præcise kildeorakler. Lokale assertions viser livstid og databevarelse, ikke målt nationalt hukommelsesmaksimum. Faktisk offentlig pakning, no-loss, original B før S, deploy og almindelig efterfølger er fortsat nødvendige. Modelbinding, kildeprioritet, geometri, scoreformel og heapgrænse ændres ikke.
+
+Genbrug efter dette stop må indpasse netop det faktisk gemte seneste checkpoint i samme arkiv og oprindelige mål-time. Det skal stadig have præcis run-/forsøgsbundet cache-key, uændret originalgrundlag og autentificeret GCM samt brugbar DMI-fremdrift før udgivelse af lokal kontekst. Den ældre præcise adgang bevares; ukendt eller manglende cache må ikke blive til fallback eller ny start. Ingen generel latest-regel, cache-only-omgåelse, flyttet mål-time eller større budget følger af denne indpasning.
+
+## 23. oktober — sen anskaffelse må ikke flytte beregningens reference
+
+AKTIVT: En genoptaget operationel CP-hentning skal bevare sit oprindelige registry/H0, DMI-hulgrundlag og challenge-plan. Nye faktiske anskaffelser kan kun få originale vidner inden for deres egen faktiske UTC-heltimereferences 0..117-timersinterval. Anskaffelses-/modeltider og gamle vidner må ikke ommærkes. Invocationens nye Baltic-/AMM15-vidner skal bevares gennem positiv donorcertificering, før den uændrede H0-journalfiltering afgør kortlivet negativ adgang.
+
+Sene afledte stage-projektioner følger eksisterende H0-rebase-semantik og forbliver IN_PROGRESS, også ved fuld positiv dækning. De må ikke kaldes faktisk anskaffelsestid, READY eller OPERATIONAL_COMPLETE. Shadow/donor bevarer den faktiske opdateringstid. Manglende par før det nye vidnes interval må ikke efterdateres eller påstås hentet. Normal gemmerækkefølge, replay, refresh/no-degradation, firetimersgrænse, kildeorden, budgets og no-loss bevares. Forløb inden for den gamle grænse skal bevare sine oprindelige resultater.
+
+## 22. oktober — ny aktiv strømstart skal holde gennem næste genbrug
+
+AKTIVT: Ejerens nyeste beslutning tillader en ny aktiv strømstart uden tidligere strømhistorik. Bevar autentiske gamle sikkerhedspakker og offentliggjorte scorer, men gør dem ikke til nødvendige numeriske input for den nye drift. Første start må kun vælges efter arkiv og genlæsning; manglende historik forbliver UNKNOWN. Alle gamle strømindgange skal håndteres samlet, mens øvrige vejrkomponenter og vandkildebank bevares.
+
+Ny normal schema2-bank skal bevare korrigerede originale strømendepunkter for hele prognosen inklusive støttetimer. En almindelig efterfølger skal genbruge den uden endnu en nulstilling eller gammel RAW-genopretning. Ventende adminpunktpromotion må ikke ophæves. Ingen ændring af scoreformel, kildeprioritet, administratorpunkter, geometri eller modelbinding følger af denne beslutning. De normale databevarelses- og offentliggørelseskontroller består.
+
+## 22. oktober — drift skal passe til eksisterende Free-planer
+
+AKTIVT: Ejerens aktuelle krav er, at fremtidig RavRadar-drift skal passe til Supabase Free og Cloudflare Free, også når cache og historik bygges videre. Kontrollér faktisk periode, forbrug og relevante aktuelle officielle grænser; fremskriv konservativt ved normale kørsler og brugertrafik. Skeln faktisk abonnementsplan fra Free-sammenligning. Lokale komprimeringsmål er ikke kvotebevis. Ingen nye betalingsplaner, datatab, skjult pruning eller svækkelse af kontroller er tilladt. Gem målegrundlag og åbne afhængigheder privat.
+
+## 22. oktober — aktiv 587-leveringskontrakt efter ægte 586
+
+AKTIVT: SpørgRavRadar skal bevare DA/DE/EN, eksisterende kontrollerede fakta/ID'er, safety/private-afslag, ukendt svar og ingen fundgaranti. Generelle forklaringer om bølgebevægelse ved bunden, strømtransport mellem revler og forskellen til materiale på stranden må ikke opfinde aktuelle værdier eller en sikker lokal konklusion. Aktuelle vejrtal kræver fortsat konkret zone og bundne data. Den enkle identifikationsgrammatik må kun bruge den eksisterende fagligt kontrollerede viden; et lokalt svar er ikke hosted AI-bevis.
+
+AKTIVT: Den nye familie skal afledes af hele den faktiske versionssynkroniserede kilde gennem de normale C→I→T-/SQL-builders. Hele autentiske 586-parentattestation, B/S, originale kilder, tal og historik skal bevares. Førsteinstallation kræver den særskilte normale autentificerede prewrite og sole-pending named-plan; generisk code-only må ikke få den tilladelse. Kun strengt senere almindelig H0 og normale partResults kan fortsætte; ingen ny samme-H0-hændelse eller nulstilling. Hele schema2-originalbanken, fremadrettet historik og retentionparitet skal bestå.
+
+Lokalt 587-fixedpoint, syntetiske kaldermål og65 uændrede gamle migrationer er nødvendige kildebeviser, ikke installation. Præcis ny source-/native PostgreSQL-kvalifikation, ægte ny schema2-B/S/efterfølger, faktisk kontrolleret installation/genlæsning og offentlig effekt er fortsat selvstændige krav. P0 har førsteprioritet; lager-/økonomivalg må ikke løses med uautoriseret sletning, pruning eller større kvote. SOURCE, statistik og automatisk retention forbliver inaktive.
+
 ## 20. oktober — varig statistikforberedelse uden historisk klientautoritet
 
 AKTIVT: Normal privat forberedelse skal fortsætte et faktisk eksisterende job over månedsskifte med samme periode, inputgrundlag og model. Kun serverens normale databasegenlæsning må udstede adgang til den gamle periode; klientinput, JSON-kopier og ukvitteret arbejde giver ingen ny skriveautoritet. Friskt samtykke og slettebarriere samt eksisterende tids-, række-, byte- og forespørgselsgrænser bevares. Timeout, ukendt skrivning og afvist kvittering må ikke udløse automatisk retry. Forberedelse og genlæsning er ikke anonym statistikfrigivelse. 004/005, retention og SOURCE aktiveres ikke af den sammenførte kilde.

@@ -883,5 +883,82 @@ def check_single_asset_operational_attestation_scope() -> None:
     print(f"DMI selected-asset attestation scope OK: {scope_cases} projection cases; normal row qualifications {expected_full_calls}->{len(targets)}")
 
 
+def check_first_turn_order_is_detached_observation():
+    near, middle, tail = STRIDE_VALID, "2026-01-02T09:00:00Z", "2026-01-05T09:00:00Z"
+    assets = [{"id": "PRIVATE-ASSET", "valid": valid} for valid in (near, middle, tail)]
+    required = {near, middle, tail}
+    covered = {(TARGET_ID, valid) for valid in required}
+    requirements = {}
+    for valid in required:
+        zone = cached_zone(valid)
+        zone["hourly"][valid].pop("sea-mean-deviation")
+        requirements[valid] = classify(valid, zone, global_covered=True)
+    # All are critical, but one is ONLY a native upgrade, not a value gap.
+    requirements[middle]["missingComponentKinds"] = ["currentUpgrade"]
+    requirements[middle]["criticalPriority"] = 1
+    requirements[middle]["currentUpgradePairCount"] = 1
+    ordered = producer.prioritize_dkss_primary_assets(
+        assets, [TARGET_ID], covered, requirements, direct_valid_times=required,
+        regional_gap_pairs_by_time={}, verified_reusable_valid_times=set(),
+        critical_cursor_valid_time=None,
+    )
+    original_assets, original_requirements = copy.deepcopy(ordered), copy.deepcopy(requirements)
+    options = dict(
+        collection="dkss_lf", model_run=MODEL_RUN,
+        production_reference=datetime(2026, 1, 1, tzinfo=timezone.utc),
+        ordered_assets=ordered, requirements=requirements, required_valid_times=required,
+        cursor=None, maintenance=False, primary_mode=True,
+    )
+    report = producer.dkss_first_turn_order_diagnostic(**options)
+    assert report["available"] is True
+    assert report["scope"] == "COLLECTION_FIRST_TURN_QUEUE_NOT_WHOLE_RUN_START"
+    assert report["classifierPriorityCounts"] == {"0": 2, "1": 1, "2": 0}
+    assert [row["validTime"] for row in report["orderedHours"]] == [row["valid"] for row in ordered]
+    assert [row["validTime"] for row in report["orderedHours"]] == [near, tail, middle]
+    assert [row["rank"] for row in report["orderedHours"]] == [1, 2, 3]
+    assert report["coverageProof"] is report["skipAuthority"] is report["sourceAdmission"] is False
+    assert report["cursorKind"] == "criticalNative" and report["cursorValidTime"] is None
+    assert "PRIVATE-ASSET" not in str(report) and TARGET_ID not in str(report)
+    assert ordered == original_assets and requirements == original_requirements
+    before = copy.deepcopy(report)
+    requirements[near]["missingComponentKinds"].append("regionalCurrent")
+    ordered.reverse()
+    assert report == before, "LATER_REPLAN_MUTATED_FIRST_TURN_OBSERVATION"
+    refresh_order = producer.rotate_native_refresh_assets(original_assets, near)
+    refresh_report = producer.dkss_first_turn_order_diagnostic(**{
+        **options, "ordered_assets": refresh_order, "requirements": original_requirements,
+        "maintenance": True, "cursor": near,
+    })
+    assert refresh_report["cursorKind"] == "nativeRefresh"
+    assert refresh_report["cursorValidTime"] == near and refresh_report["maintenance"] is True
+    assert [row["validTime"] for row in refresh_report["orderedHours"]] == [row["valid"] for row in refresh_order]
+    # Unknown diagnosis cannot stop/reorder the producer or print arbitrary input.
+    for change in ({"primary_mode": False}, {"ordered_assets": assets * 200},
+                   {"requirements": {}}, {"collection": "unknown"}):
+        refused = producer.dkss_first_turn_order_diagnostic(**{**options, **change})
+        assert refused == {"available": False, "reasonCode": "DKSS_START_ORDER_UNAVAILABLE"}
+    bad = copy.deepcopy(requirements)
+    bad[tail]["missingComponentKinds"] = ["PRIVATE-UNEXPECTED-VALUE"]
+    refused = producer.dkss_first_turn_order_diagnostic(**{**options, "requirements": bad})
+    assert refused["available"] is False and "PRIVATE" not in str(refused)
+
+    # One call in normal initial order, after maintenance rotation, not the
+    # mutable LF suffix replan. The receipt is first-write-only by collection.
+    tree = ast.parse(inspect.getsource(producer.main))
+    calls = [node for node in ast.walk(tree) if isinstance(node, ast.Call)
+             and isinstance(node.func, ast.Name) and node.func.id == "dkss_first_turn_order_diagnostic"]
+    assert len(calls) == 1
+    guards = [node for node in ast.walk(tree) if isinstance(node, ast.If)
+              and isinstance(node.test, ast.Compare)
+              and ast.unparse(node.test) == "collection not in first_turn_orders"]
+    assert len(guards) == 1 and calls[0] in list(ast.walk(guards[0]))
+    cursor = next(keyword.value for keyword in calls[0].keywords if keyword.arg == "cursor")
+    assert isinstance(cursor, ast.IfExp) and ast.unparse(cursor.test) == "collection_is_maintenance"
+    assert ast.unparse(cursor.body) == "state.get('nativeRefreshCursorValidTime')"
+    assert ast.unparse(cursor.orelse) == "critical_native_cursor_at_turn_start"
+    print("DMI initial-order diagnostic OK: actual order, upgrade != hole, detached, fixed safe fields")
+
+
 check_single_asset_operational_attestation_scope()
+check_first_turn_order_is_detached_observation()
 print("DMI DKSS primary-mode contract OK")

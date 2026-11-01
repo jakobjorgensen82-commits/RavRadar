@@ -1,9 +1,16 @@
 import { assertSourcePrivateRuntimeCheckpointReconcileRequest, reconcileSourcePrivateRuntimeCheckpoint } from './reconcile-private-runtime-checkpoint.mjs';
-import { assertSavedPrivateRuntimeCheckpointReconcileRequest } from './reconcile-private-runtime-checkpoint.mjs';
+import { classifyProductionTargetFreshness } from './check-production-target-freshness.mjs';
+import { assertSavedPrivateRuntimeCheckpointReconcileRequest, privateRuntimeCheckpointReconcileFailureDiagnostic } from './reconcile-private-runtime-checkpoint.mjs';
 import { ESTABLISHED_NATIVE_CURRENT_ORIGIN_BINDING as OLD_FAMILY } from './lib/established-native-current-origin-successor-source.mjs';
 import { LAST_MILE_ENCLOSURE_BINDING as NEW_FAMILY } from './lib/last-mile-enclosure-successor-source.mjs';
+import {ASSISTANT_LATER_H0_BINDING as ISSUED587_FAMILY,
+  ASSISTANT_PUBLIC587_SUCCESSOR_BINDING as PUBLIC587_SUCCESSOR_FAMILY,
+  ASSISTANT_PUBLIC588_SUCCESSOR_BINDING as PUBLIC588_SUCCESSOR_FAMILY,
+  INSTALLED593_ORIGINAL591_BINDING as CURRENT594_FAMILY,ASSISTANT_PUBLIC591_SUCCESSOR_BINDING as DATABASE593_FAMILY,
+  ASSISTANT_PUBLIC590_SUCCESSOR_BINDING as ORIGINAL591_FAMILY}
+  from './lib/assistant-later-h0-successor-source.mjs';
 import { withFrozenEstablishedNativeCurrentOriginPostgresSource } from './run-frozen-established-native-current-origin-source-targets.mjs';
-import { withFrozen584ReconcileFixture } from './run-frozen584-reconcile-source.mjs';
+import { withFrozen584ReconcileFixture, withFrozen585ReconcileFixture } from './run-frozen584-reconcile-source.mjs';
 import { pathToFileURL } from 'node:url';
 import { execFileSync, spawnSync } from 'node:child_process';
 // Synthetic normal B/S transport. No native/origin issuer, SQL simulation claim
@@ -11,6 +18,8 @@ import { execFileSync, spawnSync } from 'node:child_process';
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import fs from 'node:fs/promises';
+import fsSync from 'node:fs';
+import { writeBoundedJsonAtomic, PRIVATE_CONDITIONS_MAX_BYTES } from './lib/bounded-json-writer.mjs';
 import os from 'node:os';
 import path from 'node:path';
 import crypto from 'node:crypto';
@@ -22,9 +31,12 @@ import { reconcilePrivateRuntimeCheckpoint, requiresPrivateRuntimeCheckpointReco
 import { PRIVATE_RUNTIME_FILES, PRIVATE_RUNTIME_CONTRACT_FILES, buildPrivateRuntimeCreateSpec,
   buildPrivateRuntimeExpectation, installRestoredPrivateRuntime } from './private-production-runtime-workflow.mjs';
 import { createPrivateProductionRuntimeBundle, restorePrivateProductionRuntimeBundle } from './private-production-runtime-bundle.mjs';
-import { publishProtectedPrivateProductionRuntime, restoreProtectedPrivateProductionRuntime }
+import { publishProtectedPrivateProductionRuntime, restoreProtectedPrivateProductionRuntime, PROTECTED_PRIVATE_RUNTIME_POLICY,
+  describeCurrentProtectedPrivateProductionRuntime }
   from './protected-private-production-runtime.mjs';
 import { saveRavScoreContinuationCheckpoint } from './ravscore-continuation-checkpoint.mjs';
+import { readCurrentPrivateRuntimeCompanionInput, readCurrentPrivateRuntimeCompanions }
+  from './read-authenticated-dmi-current-companions.mjs';
 import { publishProtectedRavScoreContinuationCheckpoint, createProtectedRavScoreCheckpointRequester,
   createProtectedRavScoreCheckpointVersionRequester, createProtectedRavScoreCheckpointRpcRequester }
   from './protected-ravscore-continuation-checkpoint.mjs';
@@ -153,6 +165,16 @@ test('normal CURRENT B/S interruption reconciliation preserves whole pairs and r
   // Reuse the genuine normal current-B build/install and bounded S transports.
   // Synthetic request metadata below is NOT a SOURCE owner/origin/native grant.
   async function withSourceRequest(options, operationalAction, use) {
+    // These synthetic B/S cases require this actual issued SOURCE model/canonical.
+    // No old585/594 model is relabelled and no native/original authority is issued.
+    const ownSource = await import('./lib/source-producer-successor-source.mjs');
+    const ownBinding = ownSource.requireSourceProducerBinding();
+    const ownOutput = ownSource.requireSourceProducerOutput();
+    const ownCanonical = await ownSource.readSourceProducerCanonicalSource();
+    assert.equal(ownCanonical.admission, 'NO_ADMISSION');
+    assert.equal(crypto.createHash('sha256').update(ownCanonical.canonicalSource).digest('hex'), ownOutput.canonicalSha256);
+    assert.equal(options.expected.modelBinding.modelBundleSha256, ownBinding.I);
+    assert.equal(options.expected.contractHashes.continuationStateContractSha256, ownBinding.T);
     const values = { INPUT_OPERATION: 'source', OPERATIONAL_ACTION: operationalAction,
       COMPLETED_PRIVATE_RUNTIME: 'false', CHECKPOINT_ONLY: 'false', QUICK_CONFIRMATION: 'false',
       RAVRADAR_WEATHER_STATE_EPOCH_BOOTSTRAP: 'false', RAVRADAR_WEATHER_STATE_EPOCH_CHECKPOINT_REENTRY: 'false',
@@ -176,7 +198,7 @@ test('normal CURRENT B/S interruption reconciliation preserves whole pairs and r
       }
     }
   }
-  await t.test('SOURCE original public action runs genuine current B/install and one normal S CAS/readback', async () => {
+  await t.test('SOURCE own issued model: synthetic normal B/install and one normal S CAS/readback', async () => {
     for (const operationalAction of ['integrated', 'integrated-historical-maintenance']) {
       const backend = await paired(); await publishB(backend, 1);
       const options = await installed(backend, 1), beforeB = clone(backend.documents.get(B));
@@ -245,6 +267,113 @@ test('normal CURRENT B/S interruption reconciliation preserves whole pairs and r
     assert.deepEqual(backend.documents.get(B), beforeB); assert.deepEqual(backend.documents.get(S), beforeS);
   });
 
+
+  await t.test('normal producer conditions above legacy256MiB use the shared parseable limit and pair unchanged', async () => {
+    const sourcePath = path.join(source, 'data/live/conditions.json');
+    const sourceBefore = await fs.readFile(sourcePath), savedBefore = saved[1];
+    try {
+      const document = conditions(refs[1]);
+      document.fixturePrivatePadding = Array(280).fill('x'.repeat(1024 * 1024));
+      const written = await writeBoundedJsonAtomic(sourcePath, document);
+      assert(written.bytes > 256 * 1024 * 1024 && written.bytes <= PRIVATE_CONDITIONS_MAX_BYTES);
+      assert(written.bytes <= PROTECTED_PRIVATE_RUNTIME_POLICY.maximumFilePayloadBytes);
+      const checkpointPath = path.join(own, 'large-s/.cache/ravscore-continuation-checkpoint/checkpoint.json');
+      await saveRavScoreContinuationCheckpoint({ repositoryRoot: source, sourcePath, checkpointPath });
+      const privateRoot = path.join(own, 'large-created'); await fs.mkdir(privateRoot);
+      const bundlePath = path.join(privateRoot, 'bundle');
+      const spec = await buildPrivateRuntimeCreateSpec({ repositoryRoot: source });
+      await createPrivateProductionRuntimeBundle({ repositoryRoot: source, privateRoot, bundlePath, ...spec });
+      const expected = await buildPrivateRuntimeExpectation({ repositoryRoot: source, targetReferenceAt: refs[1], now });
+      saved[1] = { runtime: document, checkpointPath, privateRoot, bundlePath, expected };
+      const backend = normalBAndSTransports(); await publishB(backend, 1);
+      const options = await installed(backend, 1);
+      const originalPath = path.join(options.bundlePath, 'payload/data/live/conditions.json');
+      const installedPath = path.join(options.repositoryRoot, 'data/live/conditions.json');
+      const wholeHash = async file => { const digest = crypto.createHash('sha256'); let bytes = 0;
+        for await (const block of fsSync.createReadStream(file)) { digest.update(block); bytes += block.length; }
+        return { bytes, sha256: digest.digest('hex') }; };
+      const originalBefore = await wholeHash(originalPath), workingBefore = await wholeHash(installedPath);
+      assert.equal(originalBefore.bytes, written.bytes); assert.deepEqual(workingBefore, originalBefore);
+      const beforeB = clone(backend.documents.get(B)); assert.equal(backend.documents.has(S), false);
+      const result = await reconcilePrivateRuntimeCheckpoint({ ...options, expected: undefined,
+        now: '2026-10-17T09:21:00.000Z', request: backend.documentRequest, ...strictRequests(backend) });
+      assert.equal(result.outcome, 'ADVANCED_READBACK_PROVED'); assert.equal(result.checkpointPublishCalls, 1);
+      assert.equal(result.storageDownloads, 0); assert.equal(result.nativeAdmissionIssued, false);
+      assert.deepEqual(backend.documents.get(B), beforeB);
+      const local = JSON.parse(await fs.readFile(path.join(options.repositoryRoot,
+        '.cache/ravscore-continuation-checkpoint/checkpoint.json'), 'utf8'));
+      assert.deepEqual(local, JSON.parse(await fs.readFile(checkpointPath, 'utf8')));
+      assert.deepEqual(await wholeHash(originalPath), originalBefore);
+      assert.deepEqual(await wholeHash(installedPath), workingBefore);
+      // Same already-produced B: exercise the real current-family file reader
+      // before providers and its after-origin API, without minting an origin.
+      const retainedBeforeB = clone(backend.documents.get(B)), retainedBeforeS = clone(backend.documents.get(S));
+      const retainedBeforeCas = backend.events.filter(event => event === 'S_CAS').length;
+      const runnerTemp = path.join(own, 'shared-retention-runner'); await fs.mkdir(runnerTemp);
+      const descriptor = await describeCurrentProtectedPrivateProductionRuntime({ request: backend.documentRequest });
+      await fs.writeFile(path.join(runnerTemp, 'private-runtime-current-source.json'), JSON.stringify(descriptor) + '\n',
+        { flag: 'wx', mode: 0o600 });
+      const envKeys = ['RUNNER_TEMP', 'RAVRADAR_PRIVATE_RUNTIME_ROOT', 'RAVRADAR_PRIVATE_RUNTIME_BUNDLE'];
+      const priorEnv = Object.fromEntries(envKeys.map(key => [key, process.env[key]]));
+      Object.assign(process.env, { RUNNER_TEMP: runnerTemp, RAVRADAR_PRIVATE_RUNTIME_ROOT: options.privateRoot,
+        RAVRADAR_PRIVATE_RUNTIME_BUNDLE: options.bundlePath });
+      const retentionTarget = new Date(Date.parse(refs[1]) + 4 * 3_600_000).toISOString();
+      try {
+        let view = await readCurrentPrivateRuntimeCompanionInput(retentionTarget);
+        assert.equal(view.conditionsSha256, originalBefore.sha256);
+        assert.equal(await fs.realpath(view.conditionsPath), await fs.realpath(originalPath));
+        assert.equal(view.conditions.datasetId, document.datasetId);
+        assert.equal(view.conditions.productionReferenceAt, refs[1]);
+        assert.deepEqual(view.verified.modelBinding, ravScoreModelBinding());
+        assert.equal(view.verified.bundleContentSha256, descriptor.bundleContentSha256);
+        await view.verify(); view = null;
+        // Providers may change working bytes. The second API must keep reading
+        // immutable B; whitespace changes no numeric state and is restored below.
+        let firstRetentionFailure;
+        try {
+          await fs.appendFile(installedPath, ' ');
+          const contexts = await readCurrentPrivateRuntimeCompanions(retentionTarget);
+          assert.deepEqual(contexts, [], 'This normal nine-file B has no component pack; no contexts may be invented.');
+          assert.deepEqual(await wholeHash(originalPath), originalBefore);
+        } catch (error) { firstRetentionFailure = error; throw error; }
+        finally {
+          try { await fs.truncate(installedPath, workingBefore.bytes); }
+          catch (cleanupError) { if (!firstRetentionFailure) throw cleanupError; }
+        }
+      } finally {
+        for (const key of envKeys) {
+          if (priorEnv[key] === undefined) delete process.env[key]; else process.env[key] = priorEnv[key];
+        }
+      }
+      assert.deepEqual(await wholeHash(originalPath), originalBefore);
+      assert.deepEqual(await wholeHash(installedPath), workingBefore);
+      assert.deepEqual(backend.documents.get(B), retainedBeforeB);
+      assert.deepEqual(backend.documents.get(S), retainedBeforeS);
+      assert.equal(backend.events.filter(event => event === 'S_CAS').length, retainedBeforeCas);
+      t.diagnostic(JSON.stringify({ retentionFileReaderBeforeAndAfter: true, addedCasCalls: 0,
+        sameLargeBReused: true, wholeOriginalAndWorkingPreserved: true,
+        opaqueOriginOrFrozen591CapacityProvedByThisCase: false }));
+      t.diagnostic(JSON.stringify({ conditionsBytes: written.bytes, maximumConditionsBytes: PRIVATE_CONDITIONS_MAX_BYTES,
+        outcome: result.outcome, checkpointPublishCalls: result.checkpointPublishCalls, wholeOriginalsUnchanged: true }));
+    } finally {
+      saved[1] = savedBefore; await fs.writeFile(sourcePath, sourceBefore);
+    }
+  });
+  await t.test('four-hour ordinary cadence preserves the exact authenticated old B and advances only its missing S', async () => {
+    const backend = await paired(); await publishB(backend, 1);
+    const oldPointer = clone(backend.documents.get(B)), oldVersion = backend.documents.get(S).version;
+    const checkedAt = '2026-10-17T09:21:00.000Z';
+    const freshness = classifyProductionTargetFreshness({ target: refs[1], now: checkedAt, maximumAgeMinutes: 150 });
+    assert.equal(freshness.status, 'STALE_TARGET_VALID'); assert.equal(freshness.ageMinutes, 261);
+    const result = await run(backend, 1, { now: checkedAt, expected: undefined });
+    assert.equal(result.outcome, 'ADVANCED_READBACK_PROVED'); assert.equal(result.checkpointPublishCalls, 1);
+    assert.equal(backend.documents.get(S).version, oldVersion + 1);
+    assert.deepEqual(backend.documents.get(B), oldPointer);
+    assert.equal(result.storageDownloads, 0); assert.equal(result.nativeAdmissionIssued, false);
+    t.diagnostic(JSON.stringify({ targetAgeMinutes: freshness.ageMinutes, freshnessStatus: freshness.status,
+      paired: result.paired, outcome: result.outcome, storageDownloads: result.storageDownloads,
+      checkpointPublishCalls: result.checkpointPublishCalls, originalBUnchanged: true }));
+  });
   await t.test('pre-B failure leaves exact old pair; matched S has no write or version bump', async () => {
     const backend = await paired(), version = backend.documents.get(S).version;
     const beforePointer = clone(backend.documents.get(B)), beforeS = clone(backend.documents.get(S));
@@ -327,9 +456,9 @@ test('normal CURRENT B/S interruption reconciliation preserves whole pairs and r
       assert.deepEqual(backend.documents.get(S), before);
     }
   });
-  // Historical584 assertions use genuine584 factories/caller, never current585
-  // B relabelled as584. Keep the actual current fixture available separately.
-  const current585 = { saved, run, publishB };
+  // Historical584/585 assertions use their genuine issued factories AND callers.
+  // Actual current586 B/S coverage above/below is not projected to an old family.
+  await withFrozen585ReconcileFixture(t, async current585 => {
   await withFrozen584ReconcileFixture(t, async old584 => {
   const { saved, run, publishB, publishS, normalBAndSTransports, withFrozenEstablishedNativeCurrentOriginPostgresSource } = old584;
   async function withOld140000S(use, { publishOldB = true } = {}) {
@@ -407,6 +536,7 @@ test('normal CURRENT B/S interruption reconciliation preserves whole pairs and r
     }, { publishOldB: false });
   });
   });
+  });
   await t.test('584 version drift after whole S read refuses before CAS without changing payload', async () => {
     const backend = await paired(); await publishB(backend, 1);
     const payload = clone(backend.documents.get(S).payload), casBefore = backend.events.filter(x => x === 'S_CAS').length;
@@ -464,13 +594,14 @@ test('ordinary paired publication is genuinely new, exact-invertible and cannot 
   assert.equal(inverseCompletedRuntimeWorkflow(raw, 'build'), inverseCompletedRuntimeWorkflow(previous, 'build'));
   const step = (text, name) => text.split(/(?=^      - name:)/m).find(block => block.startsWith('      - name: ' + name + '\n'));
   const Sstep = step(raw, 'Publish atomic RavScore checkpoint to protected admin storage');
-  const evalIf = (block, action, required, input = {}) => runInNewContext(block.match(/^        if: (.+)$/m)[1]
+  const evalIf = (block, action, required, input = {}, assistantRequired = 'false') => runInNewContext(block.match(/^        if: (.+)$/m)[1]
     .replace(/\bsteps\.([a-z][a-z0-9-]*)/g, (_, id) => 'steps[' + JSON.stringify(id) + ']'), {
       inputs: { weather_state_epoch_bootstrap: false, weather_state_epoch_checkpoint_reentry: false,
         native_sampling_identity_original_recovery: false, checkpoint_only: false, quick_confirmation: false,
         completed_private_runtime: false, ...input },
       steps: { preflight: { outputs: { should_run: 'true' } }, 'operational-action': { outputs: { action } },
-        'paired-checkpoint-route': { outputs: { required } } } });
+        'paired-checkpoint-route': { outputs: { required } },
+        'assistant-later-h0-source': { outputs: { required: assistantRequired } } } });
   for (const action of ['candidate-dry-run', 'candidate-maintenance', 'integrated-historical-maintenance', 'UNKNOWN']) {
     assert.equal(evalIf(step(raw, 'Select current-family paired checkpoint restoration before any S restore'), action, 'true'), false);
     assert.equal(evalIf(step(raw, 'Reconcile only authenticated CURRENT B to its exact protected S before providers'), action, 'true'), false);
@@ -481,6 +612,25 @@ test('ordinary paired publication is genuinely new, exact-invertible and cannot 
     for (const name of ['Select current-family paired checkpoint restoration before any S restore',
       'Reconcile only authenticated CURRENT B to its exact protected S before providers'])
       assert.equal(evalIf(step(raw, name), 'integrated', 'true', { [flag]: true }), false);
+  const pairedSelector = step(raw, 'Select current-family paired checkpoint restoration before any S restore');
+  const pairedReconcile = step(raw, 'Reconcile only authenticated CURRENT B to its exact protected S before providers');
+  // select writes required=false normally; a skipped step exposes an empty
+  // output. The later-assistant route must skip paired select and leave its
+  // required output empty, so the downstream paired reconciliation cannot run.
+  for (const assistantRequired of ['false', ''])
+    assert.equal(evalIf(pairedSelector, 'integrated', '', {}, assistantRequired), true);
+  const assertLaterAssistantExcluded = (selector, action) => {
+    const selected = evalIf(selector, action, '', {}, 'true');
+    assert.equal(selected, false);
+    assert.equal(evalIf(pairedReconcile, action, selected ? 'true' : '', {}, 'true'), false);
+  };
+  for (const action of ['integrated', 'candidate-dry-run', 'candidate-maintenance', 'integrated-historical-maintenance', 'UNKNOWN'])
+    assertLaterAssistantExcluded(pairedSelector, action);
+  for (const required of ['', 'false'])
+    assert.equal(evalIf(pairedReconcile, 'integrated', required), false);
+  const missingAssistantExclusion = pairedSelector.replace("steps.assistant-later-h0-source.outputs.required != 'true' && ", '');
+  assert.notEqual(missingAssistantExclusion, pairedSelector);
+  assert.throws(() => assertLaterAssistantExcluded(missingAssistantExclusion, 'integrated'), { code: 'ERR_ASSERTION' });
   const ordinary = { OPERATIONAL_ACTION: 'integrated', COMPLETED_PRIVATE_RUNTIME: 'false', CHECKPOINT_ONLY: 'false',
     QUICK_CONFIRMATION: 'false', RAVRADAR_WEATHER_STATE_EPOCH_BOOTSTRAP: 'false',
     RAVRADAR_WEATHER_STATE_EPOCH_CHECKPOINT_REENTRY: 'false', NATIVE_IDENTITY_RECOVERY: 'false' };
@@ -501,6 +651,67 @@ test('ordinary paired publication is genuinely new, exact-invertible and cannot 
   for (const changed of mutations) { assert.notEqual(changed, raw); assert.throws(() => inverseCompletedRuntimeWorkflow(changed, 'build')); }
 });
 
+test('public587 successor keeps exact paired checkpoint family and publication disposition', () => {
+  // Family selection is only a route; no synthetic tuple authorizes B/S writes.
+  // The new tuple is absent until normal issuance; no guessed hash fills it in.
+  const families=[ISSUED587_FAMILY,PUBLIC587_SUCCESSOR_FAMILY].filter(Boolean);
+  assert.equal(families.length,PUBLIC587_SUCCESSOR_FAMILY===null?1:2);
+  for(const family of families){
+    const descriptor={modelBinding:{modelBundleSha256:family.I},
+      contractHashes:{continuationStateContractSha256:family.T}};
+    assert.equal(requiresPrivateRuntimeCheckpointReconcile(descriptor),true);
+    for(const disposition of ['READY_PUBLISHED','MEASURED_WARMUP_PUBLISHED'])
+      assert.doesNotThrow(()=>assertPrivateRuntimeCheckpointPublicationDisposition(descriptor,disposition));
+    assert.throws(()=>assertPrivateRuntimeCheckpointPublicationDisposition(descriptor,'UNKNOWN'),/S_DISPOSITION/);
+    for(const key of ['I','T']){
+      const wrong={...family,[key]:'0'.repeat(64)};
+      assert.equal(requiresPrivateRuntimeCheckpointReconcile({modelBinding:{modelBundleSha256:wrong.I},
+        contractHashes:{continuationStateContractSha256:wrong.T}}),false);
+    }
+  }
+  if(PUBLIC587_SUCCESSOR_FAMILY!==null)for(const [I,T]of [
+    [ISSUED587_FAMILY.I,PUBLIC587_SUCCESSOR_FAMILY.T],
+    [PUBLIC587_SUCCESSOR_FAMILY.I,ISSUED587_FAMILY.T],
+  ])assert.equal(requiresPrivateRuntimeCheckpointReconcile({modelBinding:{modelBundleSha256:I},
+    contractHashes:{continuationStateContractSha256:T}}),false);
+});
+
+test('public588 successor keeps its own exact paired family and publication disposition', () => {
+  // Add only the issued590 route. The CURRENT normal B/S cases above still
+  // require exact original bytes, the canonical manifest and fresh whole S.
+  const family=PUBLIC588_SUCCESSOR_FAMILY;
+  assert.notEqual(family,null);
+  const descriptor={modelBinding:{modelBundleSha256:family.I},
+    contractHashes:{continuationStateContractSha256:family.T}};
+  assert.equal(requiresPrivateRuntimeCheckpointReconcile(descriptor),true);
+  for(const disposition of ['READY_PUBLISHED','MEASURED_WARMUP_PUBLISHED'])
+    assert.doesNotThrow(()=>assertPrivateRuntimeCheckpointPublicationDisposition(descriptor,disposition));
+  for(const disposition of ['', 'UNKNOWN', 'NOT_PUBLISHED', 'REJECTED', undefined])
+    assert.throws(()=>assertPrivateRuntimeCheckpointPublicationDisposition(descriptor,disposition),/S_DISPOSITION/);
+  for(const key of ['I','T']){
+    const wrong={...family,[key]:'0'.repeat(64)};
+    assert.equal(requiresPrivateRuntimeCheckpointReconcile({modelBinding:{modelBundleSha256:wrong.I},
+      contractHashes:{continuationStateContractSha256:wrong.T}}),false);
+  }
+  for(const previous of [ISSUED587_FAMILY,PUBLIC587_SUCCESSOR_FAMILY].filter(Boolean))
+    for(const [I,T]of [[family.I,previous.T],[previous.I,family.T]])
+      assert.equal(requiresPrivateRuntimeCheckpointReconcile({modelBinding:{modelBundleSha256:I},
+        contractHashes:{continuationStateContractSha256:T}}),false);
+});
+
+test('new594 publication requires exact paired S and rejects mixed installed593 or original591 tuples',()=>{
+  const descriptor={modelBinding:{modelBundleSha256:CURRENT594_FAMILY.I},
+    contractHashes:{continuationStateContractSha256:CURRENT594_FAMILY.T}};
+  assert.equal(requiresPrivateRuntimeCheckpointReconcile(descriptor),true);
+  for(const disposition of ['READY_PUBLISHED','MEASURED_WARMUP_PUBLISHED'])
+    assert.doesNotThrow(()=>assertPrivateRuntimeCheckpointPublicationDisposition(descriptor,disposition));
+  for(const disposition of ['UNKNOWN','SKIPPED','FAILED'])
+    assert.throws(()=>assertPrivateRuntimeCheckpointPublicationDisposition(descriptor,disposition),/S_DISPOSITION/);
+  for(const prior of [DATABASE593_FAMILY,ORIGINAL591_FAMILY])
+    for(const [I,T]of [[CURRENT594_FAMILY.I,prior.T],[prior.I,CURRENT594_FAMILY.T]])
+      assert.equal(requiresPrivateRuntimeCheckpointReconcile({modelBinding:{modelBundleSha256:I},
+        contractHashes:{continuationStateContractSha256:T}}),false);
+});
 test('both fixed families and separate saved guard reject mixed tuples and colliding modes', () => {
   for (const family of [OLD_FAMILY, NEW_FAMILY]) {
     const descriptor = { modelBinding: { modelBundleSha256: family.I },
@@ -521,6 +732,8 @@ test('both fixed families and separate saved guard reject mixed tuples and colli
     UPGRADE_EXISTING_OWNER_EXPORT: 'false', UPGRADE_ACCOUNT_ASSISTANT: 'false', UPGRADE_STATISTICS_REVISION: 'false',
     UPGRADE_ACCOUNT_STATISTICS_ASSISTANT: 'false' };
   assert.doesNotThrow(() => assertSavedPrivateRuntimeCheckpointReconcileRequest(env));
+  assert.doesNotThrow(() => assertSavedPrivateRuntimeCheckpointReconcileRequest({
+    ...env, UPGRADE_NATIVE_ORIGINAL_CONTINUITY: undefined }));
   assert.doesNotThrow(() => assertSavedPrivateRuntimeCheckpointReconcileRequest({
     ...env, UPGRADE_NATIVE_ORIGINAL_CONTINUITY: 'false' }));
   for (const value of ['true', '', 'FALSE', '0', true, false, null, 0, {}])
@@ -568,20 +781,64 @@ test('actual readonly ordinary and saved CLI select use one genuine committed so
       PUBLISH_NEWEST_SAVED_WEATHER: 'true', RESTART_ARCHIVED_WEATHER: 'false', UPGRADE_LAST_MILE_ENCLOSURE: 'false',
       UPGRADE_ESTABLISHED_NATIVE_CURRENT_ORIGIN: 'false', UPGRADE_EXISTING_OWNER_EXPORT: 'false',
       UPGRADE_ACCOUNT_ASSISTANT: 'false', UPGRADE_STATISTICS_REVISION: 'false',
-      UPGRADE_ACCOUNT_STATISTICS_ASSISTANT: 'false', RAVRADAR_OPERATIONAL_WORK: own });
+      UPGRADE_ACCOUNT_STATISTICS_ASSISTANT: 'false', UPGRADE_NATIVE_ORIGINAL_CONTINUITY: 'false', RAVRADAR_OPERATIONAL_WORK: own });
     const child = spawnSync(process.execPath, ['scripts/reconcile-private-runtime-checkpoint.mjs', command],
       { cwd: host, env, encoding: 'utf8', timeout: 30000 });
     assert.equal(child.status, 0, child.stderr); assert.equal(child.signal, null);
     assert.equal(await fs.readFile(output, 'utf8'), 'required=true' + String.fromCharCode(10));
-    if (command === 'select-saved') for (const value of ['true', undefined]) {
-      const rejectedOutput = path.join(own, 'saved-rejected-' + String(value) + '.out');
+    if (command === 'select-saved') for (const key of ['UPGRADE_ACCOUNT_STATISTICS_ASSISTANT', 'UPGRADE_NATIVE_ORIGINAL_CONTINUITY']) for (const value of ['true', undefined]) {
+      const rejectedOutput = path.join(own, 'saved-rejected-' + key + '-' + String(value) + '.out');
       await fs.writeFile(rejectedOutput, '', { flag: 'wx' });
       const rejected = spawnSync(process.execPath, ['scripts/reconcile-private-runtime-checkpoint.mjs', command],
-        { cwd: host, env: { ...env, UPGRADE_ACCOUNT_STATISTICS_ASSISTANT: value, GITHUB_OUTPUT: rejectedOutput },
+        { cwd: host, env: { ...env, [key]: value, GITHUB_OUTPUT: rejectedOutput },
           encoding: 'utf8', timeout: 30000 });
+      if (key === 'UPGRADE_NATIVE_ORIGINAL_CONTINUITY' && value === undefined) {
+        assert.equal(rejected.status, 0); assert.equal(rejected.signal, null);
+        assert.equal(await fs.readFile(rejectedOutput, 'utf8'), 'required=true' + String.fromCharCode(10));
+      } else {
       assert.equal(rejected.status, 1); assert.equal(rejected.signal, null);
       assert.match(rejected.stderr, /PRIVATE_B_S_RECONCILE_REFUSED/);
       assert.equal(await fs.readFile(rejectedOutput, 'utf8'), '');
+      }
     }
   }
+});
+
+test('fixed reconcile failure diagnostics preserve refusal and reveal no arbitrary data', () => {
+  const sensitive = 'SYNTHETIC_PRIVATE_MARKER_DO_NOT_LOG';
+  const classify = privateRuntimeCheckpointReconcileFailureDiagnostic;
+  for (const code of ["B_IDENTITY","B_PATH","B_S_DIFFER","CLOSE_UNPROVED","COMMAND","CURRENT_IDENTITY","DERIVED_REFERENCE","FILE","FILE_CHANGED","GENUINE591_STRICTLY_OLDER","INSTALLED_B_CHANGED","INSTALLED_SOURCE_CHANGED","LINK","MAIN","METADATA_CURRENT_FAMILY","METADATA_INSTALLED_CURRENT_REQUEST","METADATA_OPERATIONAL_ACTION","NATIVE_METADATA_CURRENT_FAMILY","NATIVE_METADATA_INSTALLED_CURRENT_REQUEST","NATIVE_METADATA_OPERATIONAL_ACTION","NON_ORDINARY_REQUEST","OPERATIONAL_ACTION","PARENT","PARENT_CHANGED","POINTER","POINTER_CHANGED","SAME_H0_METADATA_ORIGINALS","SAME_H0_NATIVE_METADATA_ORIGINALS","SAVED_MODE_COLLISION","SAVED_OPERATIONAL_ACTION","SAVED_REQUEST","SAVED_WORK_PATH","S_CHANGED_BEFORE_PUBLISH","S_CHANGED_BEFORE_READ","S_DISPOSITION","S_NOT_BEHIND","S_READBACK_DIFFER","S_READBACK_MISSING","S_ROW","S_VERSION_CHANGED_BEFORE_PUBLISH","UNSUPPORTED_FAMILY","WORKFLOW","WORK_CHANGED"]) {
+    assert.equal(classify(new Error('PAIRED_PUBLICATION_' + code), 'RESTORE_S').code, code);
+  }
+  assert.deepEqual(classify(new Error('PAIRED_PUBLICATION_S_NOT_BEHIND'), 'S_RELATION_GUARD'),
+    { phase: 'S_RELATION_GUARD', code: 'S_NOT_BEHIND', errorClass: 'ERROR' });
+  assert.equal(classify(Object.assign(new Error(sensitive), { code: 'ENOENT', path: sensitive, cause: sensitive }),
+    'INSTALLED_SOURCE').code, 'FILE_NOT_FOUND');
+  assert.equal(classify(new SyntaxError(sensitive), 'DERIVE_S').code, 'INPUT_JSON_INVALID');
+  assert.equal(classify(new Error('PAIRED_PUBLICATION_' + sensitive), sensitive).code, 'OTHER_REFUSED');
+  assert.equal(classify(new Error(sensitive), sensitive).phase, 'UNCLASSIFIED');
+  let getterCalls = 0;
+  const getters = Object.create(Error.prototype);
+  for (const key of ['message', 'code', 'path', 'stack', 'cause']) Object.defineProperty(getters, key,
+    { configurable: true, get() { getterCalls++; throw Error(sensitive); } });
+  const results = [classify(getters, 'DERIVE_S'), classify(null), classify(sensitive),
+    classify(new Proxy({}, { ownKeys() { throw Error(sensitive); } }))];
+  assert.equal(getterCalls, 0);
+  assert(!JSON.stringify(results).includes(sensitive));
+  assert(results.every(row => Object.keys(row).sort().join('|') === 'code|errorClass|phase'));
+  assert(results.every(row => row.code === 'OTHER_REFUSED'));
+  assert(!JSON.stringify(classify(Object.assign(new Error(sensitive), { path: sensitive, stack: sensitive,
+    credentials: sensitive, payload: sensitive, code: sensitive }), 'B_VERIFY')).includes(sensitive));
+});
+
+test('actual reconcile CLI retains fixed refusal with one content-free request diagnostic', () => {
+  const result = spawnSync(process.execPath, [path.join(ROOT, 'scripts/reconcile-private-runtime-checkpoint.mjs'), 'reconcile'],
+    { cwd: ROOT, encoding: 'utf8', env: { ...process.env, GITHUB_REF: 'refs/heads/not-main',
+      GITHUB_EVENT_NAME: 'workflow_dispatch' } });
+  assert.equal(result.status, 1); assert.equal(result.stdout, '');
+  const lines = result.stderr.trim().split(/\r?\n/);
+  assert.equal(lines[0], 'PRIVATE_B_S_RECONCILE_REFUSED');
+  assert.equal(lines.length, 2);
+  assert.deepEqual(JSON.parse(lines[1]), { kind: 'PRIVATE_B_S_RECONCILE_DIAGNOSTIC',
+    phase: 'CLI_REQUEST', code: 'WORKFLOW', errorClass: 'ASSERTION_ERROR' });
 });

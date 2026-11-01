@@ -4,6 +4,7 @@ import crypto from 'node:crypto';
 import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
+import { pathToFileURL } from 'node:url';
 import { promisify } from 'node:util';
 import { execFile } from 'node:child_process';
 import {
@@ -35,6 +36,7 @@ import {
 } from './install-candidate-g-rollback-stage.mjs';
 import {
   assertCandidateGRollbackPublicScore,
+  auditCandidateGRollbackPublicRuntime,
 } from './audit-candidate-g-rollback-public-runtime.mjs';
 import { evaluateRavScoreIntegrated } from '../js/core/ravscore-integrated.js';
 import {
@@ -253,9 +255,9 @@ function buildNationalFixture() {
     },
     zoneRegistry: {
       type: 'FeatureCollection',
-      features: Object.keys(zones).map(zoneId => ({
+      features: Object.keys(zones).map((zoneId, zoneIndex) => ({
         type: 'Feature',
-        properties: { id: zoneId, zoneStatus: 'active' },
+        properties: { id: zoneId, name: `Rollback zone ${zoneIndex + 1}`, zoneStatus: 'active' },
         geometry: null,
       })),
     },
@@ -550,6 +552,20 @@ try {
     '--expected-source-head', sourceHead,
     '--expected-dataset-id', datasetId,
   ];
+  const metadataReadTrace = path.join(inputRoot, 'metadata-large-read.jsonl');
+  const metadataReadTrap = path.join(inputRoot, 'metadata-read-trap.mjs');
+  const nationalInputs = ['data/live/conditions.json', 'data/live/public-conditions.json',
+    'data/live/public-condition-details.json', 'data/live/coastal-parts-v2.json', 'data/zones.geojson']
+    .map(file => path.resolve(stageRoot, file));
+  await fs.writeFile(metadataReadTrap, [
+    "import fs from 'node:fs/promises';import sync from 'node:fs';import path from 'node:path';",
+    'const forbidden=new Set(' + JSON.stringify(nationalInputs) + '),read=fs.readFile;',
+    'fs.readFile=async function(file,...args){if(typeof file==="string"&&forbidden.has(path.resolve(file))){',
+    'sync.appendFileSync(' + JSON.stringify(metadataReadTrace) + ',"LARGE_READ_ATTEMPT\\n");',
+    'throw new Error("UNEXPECTED_NATIONAL_READ_BEFORE_METADATA_REFUSAL");}return read.call(this,file,...args);};',
+  ].join('\n'));
+  const metadataAuditArguments = ['--import', pathToFileURL(metadataReadTrap).href, ...auditArguments];
+  let metadataRefusalCases = 0;
   const passed = await execFileAsync(process.execPath, auditArguments, {
     cwd: stageRoot,
     windowsHide: true,
@@ -627,6 +643,38 @@ try {
   const manifestPath = path.join(stageRoot, 'data', 'live', 'manifest.json');
   const pristineStartup = await fs.readFile(startupPath, 'utf8');
   const pristineManifest = await fs.readFile(manifestPath, 'utf8');
+  // The six existing independent shape mutations must fail before touching the
+  // candidate's national canonical hash/projection. BigInt is deliberately not
+  // serializable: it is invalid input, not a mocked validator or result.
+  const earlyStageMarker = JSON.parse(await fs.readFile(
+    path.join(stageRoot, ...CANDIDATE_G_ROLLBACK_STAGE_MARKER.split('/')), 'utf8'));
+  const earlyManifest = JSON.parse(pristineManifest);
+  const invalidCandidateForOrder = { unhashableBeforeAdmission: 1n };
+  const earlyInput = {
+    candidateFull: invalidCandidateForOrder,
+    plan: prepared.plan,
+    stageMarker: earlyStageMarker,
+    manifest: earlyManifest,
+    expectedSourceHead: sourceHead,
+    expectedDatasetId: datasetId,
+  };
+  for (const [label, field, mutate, expected] of [
+    ['partial profile', 'manifest', value => { delete value.ravScoreProfile.rankingPolicyId; }, /score.profile field set/],
+    ['extra profile', 'manifest', value => { value.ravScoreProfile.unexpectedShadowBinding = 'forbidden'; }, /score.profile field set/],
+    ['forged profile', 'manifest', value => { value.ravScoreProfile.bestTimePolicyId = 'forged-best-time'; }, /does not match bestTimePolicyId/],
+    ['public-ready marker', 'stageMarker', value => { value.publicArtifactReady = true; }, /stage marker is incompatible/],
+    ['wrong-profile marker', 'stageMarker', value => { value.candidateTargetProfileSha256 = '0'.repeat(64); }, /stage marker is incompatible/],
+    ['extra marker field', 'stageMarker', value => { value.unsealedField = true; }, /stage marker is incompatible/],
+  ]) {
+    const changed = structuredClone(earlyInput[field]);
+    mutate(changed);
+    await assert.rejects(() => auditCandidateGRollbackPublicRuntime({
+      ...earlyInput, [field]: changed,
+    }), expected, label + ' must reject before national candidate hashing');
+  }
+  await assert.rejects(() => auditCandidateGRollbackPublicRuntime(earlyInput),
+    error => error instanceof TypeError && /BigInt/.test(error.message),
+    'passing cheap shapes must still reach the unchanged whole-candidate hash');
   const stagedAvailability = JSON.parse(pristineStartup).coastalParts.scoreAvailability;
   assert.equal(stagedAvailability.allCurrentScoresFullHistory, true);
   assert.equal(stagedAvailability.fullHistoryModeCount, 420);
@@ -675,12 +723,17 @@ try {
     mutate(invalid);
     // Preserve producer formatting so each rejection tests the mutation, not JSON layout.
     await fs.writeFile(file, `${JSON.stringify(invalid, null, file === manifestPath ? 2 : undefined)}\n`);
-    await assert.rejects(() => execFileAsync(process.execPath, auditArguments, {
+    const metadataOnly = label.endsWith('Candidate profile');
+    await assert.rejects(() => execFileAsync(process.execPath, metadataOnly ? metadataAuditArguments : auditArguments, {
       cwd: stageRoot,
       windowsHide: true,
       maxBuffer: 10 * 1024 * 1024,
     }), error => expectedFailure.test(
       `${error?.stderr ?? ''}${error?.message ?? ''}`), label);
+    if (metadataOnly) {
+      await assert.rejects(() => fs.stat(metadataReadTrace), { code: 'ENOENT' });
+      metadataRefusalCases += 1;
+    }
     await fs.writeFile(file, pristine);
   }
 
@@ -708,13 +761,16 @@ try {
     const wrongMarker = JSON.parse(pristineMarker);
     mutateMarker(wrongMarker);
     await fs.writeFile(markerPath, `${JSON.stringify(wrongMarker)}\n`);
-    await assert.rejects(() => execFileAsync(process.execPath, auditArguments, {
+    await assert.rejects(() => execFileAsync(process.execPath, metadataAuditArguments, {
       cwd: stageRoot,
       windowsHide: true,
       maxBuffer: 10 * 1024 * 1024,
     }), error => /stage marker is incompatible/.test(
       `${error?.stderr ?? ''}${error?.message ?? ''}`));
+    await assert.rejects(() => fs.stat(metadataReadTrace), { code: 'ENOENT' });
+    metadataRefusalCases += 1;
   }
+  assert.equal(metadataRefusalCases, 6);
 } finally {
   await fs.rm(temporaryRoot, { recursive: true, force: true });
 }

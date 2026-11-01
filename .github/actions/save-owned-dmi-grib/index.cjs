@@ -194,6 +194,54 @@ function fixedPostWeatherCacheInputs(selection) {
   return { ...spec, key: env.INPUT_KEY };
 }
 
+// Synthetic PR-native distributions select the same fixed SDK/guardian code.
+// This process-local assertion grants no owner, SAVE, ACK or production proof.
+// All original MAIN input functions above remain byte-for-byte unchanged.
+let assertPrNativeDistribution = null;
+function sourceFixedDistributionInputs() {
+  if (assertPrNativeDistribution === null) return fixedDistributionInputs();
+  assertPrNativeDistribution();
+  if (process.platform !== 'linux' || process.versions.node.split('.')[0] !== '24'
+    || process.env.GITHUB_EVENT_NAME !== 'pull_request' || process.env.RUNNER_OS !== 'Linux'
+    || process.env.GITHUB_SERVER_URL !== 'https://github.com') {
+    throw refused('DMI_RAW_DISTRIBUTION_INPUT_REFUSED');
+  }
+  return null;
+}
+function sourceFixedInputs() {
+  if (assertPrNativeDistribution === null) return fixedInputs();
+  sourceFixedDistributionInputs();
+  const env = process.env, key = env.INPUT_KEY;
+  if (env.INPUT_PATH !== CACHE_PATH || typeof key !== 'string' || key.length > 512
+    || !/^dmi-grib-v4-Linux-[0-9]{4}-W(?:0[1-9]|[1-4][0-9]|5[0-3])-[1-9][0-9]*-[1-9][0-9]*$/.test(key)
+    || !/^[1-9][0-9]*$/.test(env.GITHUB_RUN_ID || '') || env.GITHUB_RUN_ATTEMPT !== '1'
+    || !key.endsWith(`-${env.GITHUB_RUN_ID}-${env.GITHUB_RUN_ATTEMPT}`)
+    || env.GITHUB_SERVER_URL !== 'https://github.com' || !env.ACTIONS_CACHE_SERVICE_V2) {
+    throw refused('DMI_RAW_SAVE_INPUT_REFUSED');
+  }
+  return { key, path: CACHE_PATH };
+}
+function sourceFixedCipherInputs() {
+  if (assertPrNativeDistribution === null) return fixedCipherInputs();
+  sourceFixedDistributionInputs();
+  const env = process.env;
+  if (env.INPUT_OPERATION !== 'upload-encrypted-progress' || (env.INPUT_PATH || '') !== ''
+    || !/^[1-9][0-9]*$/.test(env.GITHUB_RUN_ID || '') || env.GITHUB_RUN_ATTEMPT !== '1'
+    || env.INPUT_KEY !== `weather-private-progress-encrypted-v2-Linux-main-${env.GITHUB_RUN_ID}-${env.GITHUB_RUN_ATTEMPT}`
+    || !env.ACTIONS_CACHE_SERVICE_V2) throw refused('WEATHER_CIPHER_UPLOAD_INPUT_REFUSED');
+  return { key: env.INPUT_KEY, path: CIPHER_PATH };
+}
+function sourceFixedPostWeatherCacheInputs(selection) {
+  if (assertPrNativeDistribution === null) return fixedPostWeatherCacheInputs(selection);
+  sourceFixedDistributionInputs();
+  const spec = POST_WEATHER_CACHES[selection], env = process.env;
+  if (!spec || env.INPUT_OPERATION !== spec.operation || env.INPUT_PATH !== spec.path
+    || !/^[1-9][0-9]*$/.test(env.GITHUB_RUN_ID || '') || env.GITHUB_RUN_ATTEMPT !== '1'
+    || env.INPUT_KEY !== `${spec.prefix}${env.GITHUB_RUN_ID}-${env.GITHUB_RUN_ATTEMPT}`
+    || !env.ACTIONS_CACHE_SERVICE_V2) throw refused('DMI_RAW_SAVE_INPUT_REFUSED');
+  return { ...spec, key: env.INPUT_KEY };
+}
+
 const retainedPostWeatherCacheReaders = new Set();
 const retainedPostWeatherCacheApiFailures = [];
 // Fixed-path value inspection only, NOT an owner, source/SAVE or admission.
@@ -462,7 +510,7 @@ function createDistributionConfigFiles(action, npmCache) {
 }
 
 async function runDistributionWorker() {
-  fixedDistributionInputs();
+  sourceFixedDistributionInputs();
   assertFixedWorkerParent();
   const distribution = assertAdmittedDistributionLock();
   const action = distribution.action;
@@ -552,7 +600,7 @@ async function runDistributionWorker() {
 }
 
 async function runApiWorker() {
-  const input = fixedInputs();
+  const input = sourceFixedInputs();
   assertFixedWorkerParent();
   assertAdmittedDistributionLock(); // Fresh exact legacy/successor check; no earlier receipt is admission.
   process.chdir(ROOT);
@@ -579,7 +627,7 @@ async function runApiWorker() {
 }
 
 async function runCipherApiWorker() {
-  const input = fixedCipherInputs();
+  const input = sourceFixedCipherInputs();
   assertFixedWorkerParent();
   assertAdmittedDistributionLock();
   process.chdir(ROOT);
@@ -710,9 +758,9 @@ async function runOwnedOperation(operation) {
   const sourceInvocation = activeSourceSaveInvocation;
   if (require.main === module) cliPhase = 'INPUT';
   const postWeather = Object.hasOwn(POST_WEATHER_CACHES, operation);
-  const input = operation === 'save' ? fixedInputs()
-    : operation === 'cipher' ? fixedCipherInputs()
-      : postWeather ? fixedPostWeatherCacheInputs(operation) : fixedDistributionInputs();
+  const input = operation === 'save' ? sourceFixedInputs()
+    : operation === 'cipher' ? sourceFixedCipherInputs()
+      : postWeather ? sourceFixedPostWeatherCacheInputs(operation) : sourceFixedDistributionInputs();
   if (require.main === module) cliPhase = 'LOAD';
   const owner = require('../../../scripts/lib/weather-acquisition-writer.mjs');
   let lease;
@@ -976,7 +1024,7 @@ async function runSourceSavePhase(operation) {
 async function runSourcePreflightCacheRead() { return runSourceFixedCacheRead('preflight'); }
 async function runSourceFixedCacheRead(selection) {
   if (!['preflight', 'progress', 'raw'].includes(selection)) throw refused('DMI_RAW_SAVE_INPUT_REFUSED');
-  fixedDistributionInputs();
+  sourceFixedDistributionInputs();
   if (process.env.INPUT_OPERATION !== 'source' || !process.env.ACTIONS_CACHE_SERVICE_V2
     || !/^[1-9][0-9]*$/.test(process.env.GITHUB_RUN_ID || '')
     || !/^[1-9][0-9]*$/.test(process.env.GITHUB_RUN_ATTEMPT || '')) throw refused('DMI_RAW_SAVE_INPUT_REFUSED');
@@ -1034,7 +1082,7 @@ async function runSourceFixedCacheRead(selection) {
 // This fixed in-process bridge keeps the genuine holder in P. It accepts no
 // paths, commands, deadline, synthetic outcome or caller-selected next consumer.
 async function runSourceGeneration() {
-  fixedDistributionInputs();
+  sourceFixedDistributionInputs();
   if (process.argv.length !== 2 || process.env.INPUT_OPERATION !== 'source') {
     throw refused('DMI_RAW_SAVE_ARGUMENT_REFUSED');
   }
@@ -1144,7 +1192,7 @@ function writeSourceOperationalControlObservation(report) {
 // Proposed additions inside the existing fixed action; no new public export.
 const retainedSourcePublicationWorkers = new Set();
 function sourcePublicationContext() {
-  fixedDistributionInputs();
+  sourceFixedDistributionInputs();
   const env = process.env, parent = process.ppid;
   if (env.INPUT_OPERATION !== 'source' || !/^[1-9][0-9]*$/.test(env.GITHUB_RUN_ID || '')
     || !/^[1-9][0-9]*$/.test(env.GITHUB_RUN_ATTEMPT || '')
@@ -1482,8 +1530,22 @@ if (require.main === module) {
     : process.argv.length === 3 && process.argv[2] === '--source-preflight-cache-read' ? runSourcePreflightCacheRead
     : process.argv.length === 3 && process.argv[2] === '--source-progress-cache-read' ? () => runSourceFixedCacheRead('progress')
     : process.argv.length === 3 && process.argv[2] === '--source-raw-cache-read' ? () => runSourceFixedCacheRead('raw') : null;
-  Promise.resolve().then(() => {
+  Promise.resolve().then(async () => {
     if (!operation) throw refused('DMI_RAW_SAVE_ARGUMENT_REFUSED');
+    if (process.env.GITHUB_EVENT_NAME === 'pull_request'
+      && /^refs\/pull\/[1-9][0-9]*\/merge$/.test(process.env.GITHUB_REF || '')
+      && path.basename(ROOT) === 'current-source-native'
+      && /^rr-source19-union-native-/.test(path.basename(path.dirname(ROOT)))
+      && process.env.RUNNER_TRACKING_ID === 'source19-synthetic-kernel-fixture'
+      && process.env.GITHUB_TOKEN === 'source19-synthetic-github') {
+      // Pure NULL/output refusal is first, before importing the entry's wider
+      // dependencies or reading any metadata/path/client. No I/O on UNISSUED.
+      const issued = await import(pathToFileURL(path.join(ROOT, 'scripts/lib/source-producer-successor-source.mjs')).href);
+      issued.requireSourceProducerOutput();
+      const entry = await import(pathToFileURL(path.join(ROOT, 'scripts/source-normal-producer-entry.mjs')).href);
+      assertPrNativeDistribution = entry.sourcePrNativeTestDistributionAssertion();
+      assertPrNativeDistribution();
+    }
     return operation();
   }).catch(error => {
     process.stderr.write('DMI_RAW_SAVE_REFUSED\n');

@@ -134,3 +134,80 @@ a:focus-visible { outline: 3px solid #f2ae49; outline-offset: 4px; }
 }
 
 @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+
+/* Det godkendte forklaringsafsnit er afgrænset til Om-siden. */
+#rr-about-explainer { color-scheme: light; --rr-ink: #12323d; --rr-muted: #4d6570; --rr-paper: #ffffff; --rr-page: #f5f8f9; --rr-line: #d7e3e6; --rr-teal: #0f6574; --rr-sea: #e6f4f7; --rr-sand: #fff1d5; --rr-amber: #a85a0b; --rr-soft: #edf5f5; --rr-current: #146582; --rr-wave: #b8660e; --rr-search: #315753; max-width:880px; margin:56px auto 0; padding:0 clamp(0px,2vw,24px); color:var(--rr-ink); font:400 16px/1.7 system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; }
+#rr-about-explainer * { box-sizing:border-box; }
+#rr-about-explainer a { color:var(--rr-teal); text-underline-offset:3px; }
+#rr-about-explainer .rr-kicker { margin:0 0 8px; text-transform:uppercase; letter-spacing:.13em; font-size:12px; color:var(--rr-amber); font-weight:800; }
+#rr-about-explainer .rr-intro { padding:42px 0 18px; }
+#rr-about-explainer h2 { font-size:clamp(31px,5vw,46px); line-height:1.12; letter-spacing:-.045em; margin:0 0 20px; }
+#rr-about-explainer h3 { font-size:clamp(23px,3.4vw,30px); line-height:1.2; letter-spacing:-.025em; margin:0 0 18px; }
+#rr-about-explainer h4 { font-size:19px; line-height:1.35; margin:24px 0 10px; }
+#rr-about-explainer p { margin:0 0 16px; }
+#rr-about-explainer .rr-lead { font-size:19px; color:var(--rr-muted); line-height:1.65; }
+#rr-about-explainer .rr-chapter { padding:34px 0; border-top:1px solid var(--rr-line); }
+#rr-about-explainer .rr-note { margin:22px 0; padding:17px 20px; border-left:4px solid var(--rr-amber); background:var(--rr-sand); border-radius:0 12px 12px 0; }
+#rr-about-explainer .rr-note p:last-child { margin:0; }
+#rr-about-explainer .rr-toc { display:flex; gap:8px 16px; flex-wrap:wrap; padding:18px 0 25px; font-size:14px; }
+#rr-about-explainer .rr-process { list-style:none; margin:24px 0 12px; padding:0; display:grid; grid-template-columns:repeat(5,minmax(0,1fr)); gap:12px; counter-reset:step; }
+#rr-about-explainer .rr-process li { padding:12px 0 0; border-top:3px solid var(--rr-teal); font-size:14px; line-height:1.45; }
+#rr-about-explainer .rr-process li::before { counter-increment:step; content:counter(step); display:block; color:var(--rr-teal); font-weight:800; margin-bottom:7px; }
+#rr-about-explainer .rr-process strong { display:block; margin-bottom:5px; font-size:15px; }
+#rr-about-explainer figure { margin:25px 0; }
+#rr-about-explainer figcaption { margin-top:10px; color:var(--rr-muted); font-size:14px; }
+#rr-about-explainer .rr-weightbar { display:flex; height:58px; border-radius:10px; overflow:hidden; font-size:14px; font-weight:700; }
+#rr-about-explainer .rr-weightbar span { display:grid; place-content:center; text-align:center; line-height:1.4; }
+#rr-about-explainer .rr-transport { width:50%; background:var(--rr-current); color:#fff; }
+#rr-about-explainer .rr-mobilisation { width:30%; background:var(--rr-wave); color:#fff; }
+#rr-about-explainer .rr-huntability { width:20%; background:var(--rr-search); color:#fff; }
+#rr-about-explainer .rr-example { padding:20px 22px; background:var(--rr-soft); border-radius:14px; }
+#rr-about-explainer .rr-example .rr-calculation { font-size:20px; font-weight:700; color:var(--rr-ink); }
+#rr-about-explainer .rr-example p:last-child { margin:0; }
+#rr-about-explainer .rr-small { font-size:14px; color:var(--rr-muted); }
+#rr-about-explainer .rr-angle-figure { padding:22px; background:var(--rr-soft); border-radius:16px; }
+#rr-about-explainer .rr-angle-drawing { width:100%; height:215px; display:block; }
+#rr-about-explainer .rr-angle-controls { display:grid; gap:10px; margin-top:12px; }
+#rr-about-explainer input[type=range] { width:100%; min-height:44px; accent-color:var(--rr-teal); }
+#rr-about-explainer .rr-angle-result { font-size:15px; min-height:4.8em; color:var(--rr-ink); }
+#rr-about-explainer .rr-angle-key { display:flex; flex-wrap:wrap; gap:8px 20px; margin-top:12px; font-size:14px; }
+#rr-about-explainer .rr-angle-key span { display:flex; align-items:center; gap:8px; }
+#rr-about-explainer .rr-key-line { width:24px; height:0; border-top:3px solid var(--rr-current); flex:0 0 24px; }
+#rr-about-explainer .rr-key-projection { border-top-style:dashed; border-top-color:var(--rr-amber); }
+#rr-about-explainer .rr-reading-steps li { padding-left:6px; margin-bottom:14px; }
+#rr-about-explainer .rr-reading-steps strong { color:var(--rr-ink); }
+#rr-about-explainer .rr-technical { margin:22px 0; padding:0 0 0 18px; border-left:2px solid var(--rr-line); }
+#rr-about-explainer .rr-technical summary { color:var(--rr-teal); font-weight:650; min-height:44px; display:list-item; padding:8px 0; }
+#rr-about-explainer .rr-technical[open] summary { margin-bottom:10px; }
+#rr-about-explainer .rr-age-labels span { max-width:34%; }
+#rr-about-explainer .rr-age-labels span:last-child { text-align:right; }
+#rr-about-explainer .rr-age { display:flex; align-items:stretch; gap:0; min-height:74px; margin-top:18px; }
+#rr-about-explainer .rr-age > div { width:50%; padding:12px 14px; font-size:14px; line-height:1.5; }
+#rr-about-explainer .rr-age-old { background:linear-gradient(90deg,var(--rr-page),var(--rr-sea)); border-bottom:5px solid var(--rr-line); }
+#rr-about-explainer .rr-age-new { background:var(--rr-sea); border-bottom:5px solid var(--rr-teal); }
+#rr-about-explainer .rr-age-labels { display:flex; justify-content:space-between; color:var(--rr-muted); font-size:13px; margin-top:6px; }
+#rr-about-explainer .rr-duo { display:grid; grid-template-columns:1fr 1fr; gap:22px; margin:25px 0; }
+#rr-about-explainer .rr-duo > div { border-top:3px solid var(--rr-line); padding-top:15px; }
+#rr-about-explainer .rr-duo h4 { margin-top:0; }
+#rr-about-explainer dl { margin:20px 0 0; }
+#rr-about-explainer dt { font-weight:750; margin-top:19px; }
+#rr-about-explainer dd { margin:5px 0 0; color:var(--rr-muted); }
+#rr-about-explainer .rr-bandlist { display:flex; flex-wrap:wrap; gap:10px 20px; padding:18px 0; }
+#rr-about-explainer .rr-bandlist span { display:flex; gap:8px; align-items:center; white-space:nowrap; font-size:14px; }
+#rr-about-explainer .rr-dot { width:13px; height:13px; border-radius:50%; background:var(--dot); flex:0 0 13px; }
+#rr-about-explainer ul, #rr-about-explainer ol { padding-left:23px; }
+#rr-about-explainer li + li { margin-top:8px; }
+#rr-about-explainer .rr-source-links { font-size:14px; color:var(--rr-muted); }
+@media(max-width:560px) {
+  #rr-about-explainer .rr-process { grid-template-columns:1fr; gap:0; }
+  #rr-about-explainer .rr-process li { padding:12px 0 12px 36px; border-top:0; border-left:3px solid var(--rr-line); position:relative; }
+  #rr-about-explainer .rr-process li::before { position:absolute; left:12px; top:12px; }
+  #rr-about-explainer .rr-duo { grid-template-columns:1fr; gap:12px; }
+  #rr-about-explainer .rr-weightbar { font-size:12px; height:66px; }
+  #rr-about-explainer .rr-angle-figure { padding:14px; }
+  #rr-about-explainer .rr-age > div { padding:10px; font-size:13px; }
+  #rr-about-explainer .rr-chapter { padding:28px 0; }
+}
+#rr-about-explainer [id] { scroll-margin-top:90px; }
+#rr-about-explainer .rr-angle-figure > h4 { margin-top:0; }
+#rr-about-explainer .rr-angle-figure:focus-within { outline-offset:4px; }

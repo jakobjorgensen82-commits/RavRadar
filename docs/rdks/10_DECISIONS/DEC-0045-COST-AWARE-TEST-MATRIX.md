@@ -1,3 +1,7 @@
+## Tillæg 30. oktober 2026 — ændringsbaseret omfang
+
+DEC-0302 erstatter blanketomfang ved enhver rettelse: valgt testomfang følger faktisk påvirkning og afhængigheder; uvedkommende områder skal ikke automatisk genprøves. Ejerbeslutningen er aktiv arbejdsinstruks, men den nye tekniske matrix er endnu ikke leveret. Bevar alle relevante data-/integritetsgates og ærlig udførelse/genbrug/ikke-berørt-status. Historiske regler nedenfor bevares på deres oprindelige scope.
+
 # DEC-0045 - Omkostningsbevidst testmatrix
 
 - **Status:** IMPLEMENTERET
@@ -54,3 +58,21 @@ Beslutningen ændrer kun placeringen og hyppigheden af dublerede kontroller. Den
 ## Produktionsbevis
 
 PR #37 blev merged som 3dc331ca. Exact-head-kildegaten og push-produktion 32468752244 bestod. Push-kørslen beholdt den tidlige kildekodegate og gennemførte derefter frisk data, fuld validering, releasegate, Supabase, artifact og Pages. Live viser 4.0.247 med 210 zoner og 673 kystdele.
+
+## Privat implementeringsplan 22. oktober 2026 — nativefase og tidlige afslag
+
+Denne uudsendte kildeplan konkretiserer den eksisterende omkostningsregel; den er ikke et nyt grønt produktionsbevis. Native586-fasen får en særskilt faktisk EXECUTED-kvittering og upload før den fulde kildekontrol. Senere genbrug kræver samme lukkede relevante Git-inputgraf og kommandoer, hele wrapper/test/workflow-kontrakt, samme observerede runtime, faktisk oprindelig EXECUTED-faseartifact med digest samt friske entydige run/job/PR-oplysninger. Historiske 584/585-originaler og kildekontrollen på hvert eksakt head bevares. Ukendt evidens, drift, senere fejl eller rerun medfører almindelig native udførelse; en genbrugt kvittering er aldrig ny SQL-eksekvering.
+
+Den nye upload gør denne fremtidige kildeworkflow til 28 trin. Gamle 27-trinskvitteringer og leveringslæsere ommærkes ikke. Første nye kvalificerbare fase skal udføres og uploades faktisk; samlet kildebevis, nationalgate og uændret-træ-kontrol består særskilt. De eksisterende konservative inputregler ændres ikke: blandt andet KNOWN-ISSUES, hele Python-proveniensmålet og de nye Candidate-G-blade er fortsat medregnede input.
+
+Candidate-G-audit må kun flytte allerede eksisterende, uafhængige marker-/installed-shape-/profilafslag før den uændrede tunge sealed-input-kontrol. Alle positive hash-, overlay-, 210/673-, ranking-, privacy- og publiceringskontroller samt alle 19 gamle CLI-tilfælde bevares. Syv additive rækkefølgeafslag er ikke erstatninger for de gamle mål. De to pakker har tidligere bestået deres egne normale lokale mål; den samlede efterfølger er endnu ukørt og uudsendt. Ingen ny testplatform, model/version/SQL, almindelig vejrhentning eller produktionsautoritet indføres.
+
+## Privat præcisering 30. oktober2026 — positiv inputrelation for593-V2
+
+Det ældre22.-oktober-afsnit ovenfor beskriver sin egen586-plan og bevares som historik. Den særskilte593-kandidat bruger en ny V2-type for assistant-public591-successor og ommærker ingen gamle V1-beviser. Nativeinput er positivt lukkede:65 hele moduler/fire JSON/alle71 SQL, tolv frosne Git-ankre, package-type/version og seks endeligt afledte package-scope-/fraværsbeviser. Workflow, controller, normalt prøvemål og de tre requirements-filer bindes særskilt. Et fast moduldigest forhindrer automatisk genbrug ved ændret nativekode. Uafhængig UI/dokumentation eller navngivne andre testinput er ikke automatisk nativeinput, men den samlede præcise kildekontrol består.
+
+Faktisk valgte initdb/pg_ctl/psql/postgres observeres før/efter normal afslutning og oprydning med hele identiteter; attesten tilføjes kun til den nye profil. De eksisterende observerbare runner-/Node-/Python-/Git-/miljø- og setupforudsætninger bindes; ingen generel OS-/ldd-gate indføres. FørsteV2 skal faktisk udføres på Linux og uploades som selvstændig fase. Genbrug kræver frisk entydig kontrol af run/forsøg/job/head/PR og faseartifact/digest samt uændrede faktiske input/runtime; senere negativ evidens eller ukendt udfald vælger almindelig fuld udførelse.
+
+Metadata afvises før ZIP-hentning, og fuld bytes/digest/ZIP/fasekontrol består med særskilt strømmende V2-transport:2MiB JSON/64KiB ZIP,24kald,60sekunder samlet/15sekunder enkeltkald. Token følger ikke signed redirect; rå headere og signedURL gemmes ikke. V1-standardtransporten er byteuændret.
+
+REUSED har executedInThisRun=false og direkte oprindelse til den faktiske EXECUTED-V2. En genbrugskvittering er kun locator. Nationalkalderen skal udlede alle fem forgængeres nativefelter og det aktuelle felt fra den verificerede hele fase; normal national efterfølger og fuldt exact-head-kildebevis består. Ni lokale593-mål er bestået, men første faktiskeV2, Linux-/samlet kildekvalifikation, reelt genbrug, national integration og målt tidsgevinst mangler. Ingen ny SQL-/model-/versionsudstedelse, installation eller ændret vejr-/produktionsgate. Se håndbog89.289 og privat checkpoint.

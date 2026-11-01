@@ -163,6 +163,27 @@ function expectHardStop(mutator, pattern) {
 }
 
 {
+  const input = fixture({terminalStatus:'NOT_STARTED'});
+  const admission = {schemaVersion:'ravscore-protected-prepared-target-admission-v1',
+    pendingSha256:sha256CanonicalJson(input.pending),artifactSealSha256:sha256CanonicalJson(input.artifactSeal),
+    originalAttemptId:input.pending.attemptId,producerHead:input.pending.headSha,
+    targetManifestSha256:input.pending.requestedPublicManifestSha256,planSha256:'a'.repeat(64),
+    phaseObjectSha256:'b'.repeat(64),centralVersion:42,privatePayloadIncluded:false,
+    actualExecutor:{repository:input.pending.repository,headSha:'f'.repeat(40),runId:77,runAttempt:1,attemptId:'pages-recovery-77-1'}};
+  // Synthetic metadata only. The CLI can obtain this context solely by fresh
+  // authenticated protected reads, never a JSON receipt or acceptance flag.
+  assert.equal(classifyRavScoreOperationalPagesRecovery({...input,preparedTargetAdmission:admission}).action,
+    RAVSCORE_OPERATIONAL_PAGES_RECOVERY_ACTIONS.EXACT_TARGET_REDEPLOY);
+  for(const mutation of [{pendingSha256:'0'.repeat(64)},{artifactSealSha256:'0'.repeat(64)},
+    {originalAttemptId:'pages-99-1'},{producerHead:'f'.repeat(40)},{targetManifestSha256:'0'.repeat(64)},
+    {planSha256:null},{phaseObjectSha256:null},{centralVersion:0},{privatePayloadIncluded:true},
+    {actualExecutor:{...admission.actualExecutor,headSha:input.pending.headSha}}])
+    assert.throws(()=>classifyRavScoreOperationalPagesRecovery({...input,preparedTargetAdmission:{...admission,...mutation}}),/admission differs/);
+  assert.throws(()=>classifyRavScoreOperationalPagesRecovery({...input,artifactEvidence:null,durableEvidence:true,
+    preparedTargetAdmission:admission}),/admission differs/);
+}
+
+{
   const result = classify();
   assert.equal(
     result.action,

@@ -4,7 +4,10 @@
 // or close an owner. Existing normal S reconciliation MAY repair central S.
 import crypto from 'node:crypto';
 import fs from 'node:fs/promises';
+import { lstatSync, realpathSync, readFileSync } from 'node:fs';
+import { requireSourceProducerOutput } from './lib/source-producer-successor-source.mjs';
 import path from 'node:path';
+import os from 'node:os';
 import { performance } from 'node:perf_hooks';
 import { execFileSync } from 'node:child_process';
 import { isDeepStrictEqual as same } from 'node:util';
@@ -62,6 +65,187 @@ const envKeys = ['GITHUB_ACTIONS', 'GITHUB_REPOSITORY', 'GITHUB_RUN_ID', 'GITHUB
   'RAVRADAR_ARCHIVED_WEATHER_RESTART_CONTEXT_PATH', 'RAVRADAR_ARCHIVED_WEATHER_RESTART_CONTEXT_SHA256',
   'RAVRADAR_CURRENT_FAMILY_COLD_START_CONTEXT_PATH', 'RAVRADAR_CURRENT_FAMILY_COLD_START_CONTEXT_SHA256'];
 
+// This branch can only select an entirely synthetic, owned native test world.
+// It never issues a session/owner/SAVE/native receipt or production authority.
+const sourcePrIdentities = new WeakMap(), sourcePrEnvironments = new WeakMap();
+const prEnvironmentKeys = ['GITHUB_TOKEN','SUPABASE_URL','SUPABASE_SERVICE_ROLE_KEY','SUPABASE_PUBLISHABLE_KEY',
+  'GH_TOKEN','SUPABASE_ACCESS_TOKEN','CLOUDFLARE_API_TOKEN','AWS_ACCESS_KEY_ID','DMI_STAC_ROOT','ACTIONS_RESULTS_URL',
+  'ACTIONS_RUNTIME_TOKEN','RAVRADAR_PRIVATE_RUNTIME_STORAGE_BACKEND','NODE_USE_ENV_PROXY','HTTP_PROXY','HTTPS_PROXY',
+  'NO_PROXY','NODE_EXTRA_CA_CERTS','SSL_CERT_FILE','REQUESTS_CA_BUNDLE','CURL_CA_BUNDLE','npm_config_offline',
+  'WEATHER_PROGRESS_ENCRYPTION_KEY'];
+const PR_CAPTURE = '.cache/source-pr-native-test-context.json';
+const PR_WORKFLOW = '.github/workflows/validate-pull-request.yml';
+const PR_JOB = 'Source validation and release gate';
+const PR_SOURCE_STEP = 'Validate source contracts and release governance';
+const PR_NATIVE_STEP = 'Validate native PostgreSQL checkpoint CAS on artificial data only';
+
+function assertSyntheticPrDistributionWorld() {
+  requireSourceProducerOutput(); // BEFORE paths, metadata, Git or a client.
+  need(process.platform === 'linux' && process.versions.node.split('.')[0] === '24', 'PR_TEST_RUNTIME');
+  const own = path.dirname(ROOT), temporaryParent = realpathSync(os.tmpdir());
+  need(path.basename(ROOT) === 'current-source-native'
+    && /^rr-source19-union-native-/.test(path.basename(own)) && path.dirname(own) === temporaryParent
+    && process.cwd() === ROOT && process.env.GITHUB_WORKSPACE === ROOT, 'PR_TEST_OWNED_ROOT');
+  need(process.getuid() === process.geteuid(), 'PR_TEST_OWNED_UID');
+  const ownStat = lstatSync(own), rootStat = lstatSync(ROOT), uid = process.geteuid();
+  need(ownStat.isDirectory() && !ownStat.isSymbolicLink() && ownStat.uid === uid
+    && (ownStat.mode & 0o777) === 0o700 && realpathSync(own) === own
+    && rootStat.isDirectory() && !rootStat.isSymbolicLink() && rootStat.uid === uid
+    && (rootStat.mode & 0o700) === 0o700 && (rootStat.mode & 0o022) === 0, 'PR_TEST_OWNED_MODE');
+  for (let at = ROOT;; at = path.dirname(at)) {
+    const row = lstatSync(at);
+    need(row.isDirectory() && !row.isSymbolicLink() && realpathSync(at) === at, 'PR_TEST_ROOT_CHANGED');
+    if (at === path.dirname(at)) break;
+  }
+  const env = process.env;
+  need(env.GITHUB_ACTIONS === 'true' && env.GITHUB_EVENT_NAME === 'pull_request'
+    && /^refs\/pull\/[1-9][0-9]*\/merge$/.test(env.GITHUB_REF ?? '')
+    && env.RUNNER_OS === 'Linux' && env.RUNNER_TRACKING_ID === 'source19-synthetic-kernel-fixture'
+    && env.GITHUB_RUN_ATTEMPT === '1' && /^[1-9][0-9]*$/.test(env.GITHUB_RUN_ID ?? ''), 'PR_TEST_REQUEST');
+  const fixed = { GITHUB_TOKEN: 'source19-synthetic-github', SUPABASE_URL: 'https://fixture.invalid',
+    SUPABASE_SERVICE_ROLE_KEY: 'sb_secret_source19_synthetic', SUPABASE_PUBLISHABLE_KEY: 'sb_publishable_source19_synthetic',
+    DMI_STAC_ROOT: 'https://current-source-native.invalid/v1/forecastdata', ACTIONS_RESULTS_URL: 'https://cache.fixture.invalid',
+    RAVRADAR_PRIVATE_RUNTIME_STORAGE_BACKEND: 'supabase', RAVRADAR_PRIVATE_RUNTIME_ROOT: PRIVATE,
+    RAVRADAR_PRIVATE_RUNTIME_BUNDLE: BUNDLE, RAVRADAR_PRIVATE_RUNTIME_RESTORE: RESTORED,
+    NODE_USE_ENV_PROXY: '1', NO_PROXY: '', npm_config_offline: 'true',
+    WEATHER_PROGRESS_ENCRYPTION_KEY: 'bW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW0=' };
+  need(Object.entries(fixed).every(([key,value]) => env[key] === value), 'PR_TEST_SYNTHETIC_ONLY');
+  // A positive driver environment allowlist, not a secret-name blacklist.
+  // RAW/cipher/cohort descendants inherit only this already isolated world.
+  const allowed = new Set(['PATH','LD_LIBRARY_PATH','LIBRARY_PATH','LANG','LC_ALL','LC_CTYPE',
+    'RUNNER_TEMP','PYTHON','PYTHONDONTWRITEBYTECODE','GITHUB_ACTIONS','GITHUB_REPOSITORY','GITHUB_RUN_ID',
+    'GITHUB_RUN_ATTEMPT','GITHUB_SHA','GITHUB_REF','GITHUB_EVENT_NAME','GITHUB_SERVER_URL','RUNNER_OS','RUNNER_NAME',
+    'RUNNER_TRACKING_ID','GITHUB_WORKSPACE','GITHUB_OUTPUT','GITHUB_TOKEN','SUPABASE_URL','SUPABASE_SERVICE_ROLE_KEY',
+    'SUPABASE_PUBLISHABLE_KEY','RAVRADAR_PRIVATE_RUNTIME_STORAGE_BACKEND','RAVRADAR_PRIVATE_RUNTIME_ROOT',
+    'RAVRADAR_PRIVATE_RUNTIME_BUNDLE','RAVRADAR_PRIVATE_RUNTIME_RESTORE','RAVRADAR_PRODUCTION_TARGET_HOUR',
+    'INPUT_FORCE','INPUT_OPERATION','INPUT_PATH','INPUT_KEY','OPERATIONAL_ACTION','EXTENDED_PROVIDER_BOOTSTRAP',
+    'QUICK_PROGRESS_SOURCE','CHECKPOINT_TARGET_HOUR','ACTIONS_CACHE_SERVICE_V2','ACTIONS_RESULTS_URL','ACTIONS_RUNTIME_TOKEN',
+    'WEATHER_PROGRESS_ENCRYPTION_KEY','DMI_STAC_ROOT','npm_config_offline','NODE_USE_ENV_PROXY','HTTPS_PROXY','HTTP_PROXY',
+    'NO_PROXY','NODE_EXTRA_CA_CERTS','SSL_CERT_FILE','REQUESTS_CA_BUNDLE','CURL_CA_BUNDLE',
+    'COMPLETED_PRIVATE_RUNTIME','CHECKPOINT_ONLY','QUICK_CONFIRMATION','RAVRADAR_WEATHER_STATE_EPOCH_BOOTSTRAP',
+    'RAVRADAR_WEATHER_STATE_EPOCH_CHECKPOINT_REENTRY','NATIVE_IDENTITY_RECOVERY','CURRENT_FAMILY_COLD_START','PRODUCE_HANDOFF']);
+  need(Object.keys(env).every(key => allowed.has(key)), 'PR_TEST_ENVIRONMENT_NOT_ALLOWLISTED');
+  need(/^http:\/\/127\.0\.0\.1:[1-9][0-9]{0,4}$/.test(env.HTTPS_PROXY ?? '')
+    && env.HTTP_PROXY === env.HTTPS_PROXY, 'PR_TEST_LOOPBACK_ONLY');
+  const certificate = path.join(path.dirname(ROOT), 'test-ca.pem');
+  for (const key of ['NODE_EXTRA_CA_CERTS', 'SSL_CERT_FILE', 'REQUESTS_CA_BUNDLE', 'CURL_CA_BUNDLE'])
+    need(env[key] === certificate, 'PR_TEST_OWNED_CA');
+  const ca = lstatSync(certificate);
+  need(ca.isFile() && !ca.isSymbolicLink() && ca.nlink === 1 && realpathSync(certificate) === certificate,
+    'PR_TEST_OWNED_CA');
+  const capturePath = path.join(ROOT, PR_CAPTURE), stat = lstatSync(capturePath);
+  need(stat.isFile() && !stat.isSymbolicLink() && stat.nlink === 1 && stat.size > 0
+    && stat.size <= 16 * 1024 * 1024 && realpathSync(capturePath) === capturePath, 'PR_TEST_CAPTURE');
+  const capture = JSON.parse(readFileSync(capturePath, 'utf8')), c = capture.current;
+  need(capture.kind === 'SOURCE_PR_NATIVE_TEST_CAPTURE_V1' && capture.scope === 'SOURCE_PR_NATIVE_TEST'
+    && capture.sourceAdmission === false && capture.productionProof === false
+    && c && c.head === env.GITHUB_SHA && capture.head === c.head
+    && c.run === Number(env.GITHUB_RUN_ID) && c.attempt === 1
+    && Number.isSafeInteger(c.jobId) && c.jobId > 0
+    && env.GITHUB_REF === 'refs/pull/' + c.pullRequest + '/merge'
+    && capture.repository === env.GITHUB_REPOSITORY && capture.runnerName === env.RUNNER_NAME
+    && capture.workflowPath === PR_WORKFLOW && /^[a-f0-9]{40}$/.test(capture.mainHead ?? '')
+    && capture.mainHead !== c.head && /^sha256:[a-f0-9]{64}$/.test(capture.sourceTreeSha256 ?? ''), 'PR_TEST_CAPTURE');
+  need(git(['rev-parse', 'HEAD']) === c.head && git(['rev-parse', 'origin/main']) === capture.mainHead,
+    'PR_TEST_H_AND_MAIN');
+  git(['merge-base', '--is-ancestor', capture.mainHead, c.head]);
+  const payload = Buffer.from(JSON.stringify({ scp: 'Actions.Results:' + c.run + ':' + c.jobId })).toString('base64url');
+  need(env.ACTIONS_RUNTIME_TOKEN === 'eyJhbGciOiJub25lIn0.' + payload + '.', 'PR_TEST_SYNTHETIC_SDK_TOKEN');
+  return capture;
+}
+
+// An in-process assertion closure for fixed action children. It carries no
+// serialized authority and never substitutes for their existing guardian/FD,
+// physical-close, API, hash, path, lease or SAVE checks.
+export function sourcePrNativeTestDistributionAssertion() {
+  const expected = assertSyntheticPrDistributionWorld();
+  return () => need(same(assertSyntheticPrDistributionWorld(), expected), 'PR_TEST_WORLD_CHANGED');
+}
+
+function capturePrNativeRequest() {
+  const capture = assertSyntheticPrDistributionWorld();
+  need(path.resolve(process.argv[1] ?? '') === path.join(ROOT, '.github/actions/save-owned-dmi-grib/index.cjs')
+    && process.argv.length === 2 && process.env.INPUT_OPERATION === 'source', 'FIXED_ACTION');
+  const identity = Object.freeze(Object.fromEntries(envKeys.map(key => [key, process.env[key]])));
+  assertSourcePrivateRuntimeCheckpointReconcileRequest(identity);
+  for (const key of ['RAVRADAR_ARCHIVED_WEATHER_RESTART_CONTEXT_PATH', 'RAVRADAR_ARCHIVED_WEATHER_RESTART_CONTEXT_SHA256',
+    'RAVRADAR_CURRENT_FAMILY_COLD_START_CONTEXT_PATH', 'RAVRADAR_CURRENT_FAMILY_COLD_START_CONTEXT_SHA256'])
+    need(identity[key] === undefined || identity[key] === '', 'MIXED_MODE');
+  need(['true','false'].includes(identity.INPUT_FORCE) && identity.EXTENDED_PROVIDER_BOOTSTRAP === 'false'
+    && identity.CURRENT_FAMILY_COLD_START === 'false' && identity.PRODUCE_HANDOFF === 'false'
+    && identity.QUICK_PROGRESS_SOURCE === '' && identity.CHECKPOINT_TARGET_HOUR === '', 'MIXED_MODE');
+  const rawTarget = identity.RAVRADAR_PRODUCTION_TARGET_HOUR;
+  need(typeof rawTarget === 'string' && /^\d{4}-\d\d-\d\dT\d\d:00:00\.000Z$/.test(rawTarget)
+    && Number.isFinite(Date.parse(rawTarget)), 'TARGET');
+  sourcePrIdentities.set(identity, capture);
+  sourcePrEnvironments.set(identity, Object.freeze(Object.fromEntries(prEnvironmentKeys.map(key => [key,process.env[key]]))));
+  assertCommittedPrNativeSource(identity);
+  return { identity, target: new Date(rawTarget).toISOString() };
+}
+
+function assertCommittedPrNativeSource(identity) {
+  const capture = sourcePrIdentities.get(identity);
+  need(capture && same(capture, assertSyntheticPrDistributionWorld()), 'PR_TEST_OPAQUE_IDENTITY');
+  const files = [...new Set([...PRIVATE_RUNTIME_PRODUCER_SOURCE_FILES, SELF])];
+  git(['diff', '--exit-code', 'HEAD', '--', ...files]);
+  const rows = git(['ls-tree', '-rz', 'HEAD', '--', ...files]).split('\0').filter(Boolean);
+  const names = rows.map(row => /^100644 blob [a-f0-9]{40,64}\t([^\0]+)$/.exec(row)?.[1]);
+  need(rows.length === files.length && names.every(name => files.includes(name))
+    && new Set(names).size === files.length, 'SOURCE_FILE');
+  need(sourceTreeContentSha256('HEAD') === capture.sourceTreeSha256, 'PR_TEST_SOURCE_TREE');
+}
+
+async function qualifyPrNativeJob(state, reconfirm = false) {
+  const captured = sourcePrIdentities.get(state.identity), c = captured.current;
+  assertCommittedPrNativeSource(state.identity);
+  const base = '/repos/' + captured.repository, route = base + '/actions/runs/' + c.run + '/attempts/1';
+  const {json:run,before} = await githubJson(state, route);
+  need(run.id === c.run && run.run_attempt === 1 && run.head_sha === c.head && run.head_branch === c.branch
+    && run.path === PR_WORKFLOW && run.event === 'pull_request' && run.status === 'in_progress'
+    && run.conclusion === null && run.repository?.full_name === captured.repository
+    && run.head_repository?.full_name === captured.repository, 'PR_TEST_RUN');
+  const {json:jobs,response} = await githubJson(state, route + '/jobs?per_page=100');
+  need(!response.headers.get('link')?.includes('rel="next"') && Array.isArray(jobs.jobs)
+    && Number.isSafeInteger(jobs.total_count) && jobs.total_count >= 1 && jobs.total_count <= 100
+    && jobs.jobs.length === jobs.total_count && jobs.jobs.every(job => Number.isSafeInteger(job.id) && job.id > 0)
+    && new Set(jobs.jobs.map(job => job.id)).size === jobs.jobs.length, 'JOB_LIST');
+  const matches = jobs.jobs.filter(job => job.name === PR_JOB);need(matches.length === 1, 'JOB');
+  const job = matches[0], started = Date.parse(job.started_at ?? '');
+  need(job.id === c.jobId && job.run_id === c.run && job.head_sha === c.head
+    && (!Object.hasOwn(job,'run_attempt') || job.run_attempt === 1)
+    && job.status === 'in_progress' && job.conclusion === null && job.completed_at === null
+    && job.runner_name === state.identity.RUNNER_NAME && Number.isSafeInteger(job.runner_id) && job.runner_id > 0
+    && job.started_at === captured.jobStartedAt && Number.isFinite(started) && started <= before.wall
+    && Array.isArray(job.steps), 'PR_TEST_JOB');
+  const source = job.steps.filter(v => v.name === PR_SOURCE_STEP), native = job.steps.filter(v => v.name === PR_NATIVE_STEP);
+  need(source.length === 1 && native.length === 1 && source[0].number === captured.sourceStepNumber
+    && native[0].number === captured.nativeStepNumber && native[0].number === source[0].number + 1
+    && source[0].status === 'completed' && source[0].conclusion === 'success'
+    && native[0].status === 'in_progress' && native[0].conclusion === null
+    && Date.parse(source[0].completed_at) <= Date.parse(native[0].started_at)
+    && Date.parse(native[0].started_at) <= before.wall, 'PR_TEST_SOURCE_THEN_NATIVE');
+  const {json:pull} = await githubJson(state, base + '/pulls/' + c.pullRequest);
+  need(pull.number === c.pullRequest && pull.state === 'open' && pull.merged === false
+    && pull.head?.sha === c.head && pull.head?.ref === c.branch && pull.base?.ref === 'main'
+    && pull.base.sha === captured.mainHead && pull.head.repo?.full_name === captured.repository
+    && pull.base.repo?.full_name === captured.repository, 'PR_TEST_PULL');
+  const {json:main} = await githubJson(state, base + '/git/ref/heads/main');
+  need(main.ref === 'refs/heads/main' && main.object?.type === 'commit'
+    && main.object.sha === captured.mainHead && main.object.sha !== c.head, 'PR_TEST_MAIN_CHANGED');
+  const cutoff = started + 180 * 60000;
+  if (reconfirm) need(state.endEpoch === cutoff && state.sourceTreeSha256 === captured.sourceTreeSha256, 'PR_TEST_CUTOFF_CHANGED');
+  else { state.endEpoch = cutoff;state.sourceTreeSha256 = captured.sourceTreeSha256; }
+  state.deadline = Math.min(state.deadline, cutoff - state.clockUpper);
+  assertProcess(state);assertCommittedPrNativeSource(state.identity);
+}
+
+export function sourceNormalProducerPrNativeTestSession(session) {
+  const actual = tailSessions.get(session);
+  need(arguments.length === 1 && actual, 'TAIL_LEXICAL_SESSION_REQUIRED');
+  assertSourceNormalProducerTailClock(session);
+  return sourcePrIdentities.has(actual.state.identity);
+}
+
 function captureRequest() {
   need(process.platform === 'linux' && process.versions.node.split('.')[0] === '24', 'RUNTIME');
   need(path.resolve(process.argv[1] ?? '') === path.join(ROOT, '.github/actions/save-owned-dmi-grib/index.cjs')
@@ -102,6 +286,7 @@ function captureRequest() {
 }
 
 function assertCommittedSource(identity) {
+  if (sourcePrIdentities.has(identity)) return assertCommittedPrNativeSource(identity);
   need(git(['rev-parse', 'HEAD']) === identity.GITHUB_SHA
     && git(['rev-parse', 'origin/main']) === identity.GITHUB_SHA, 'MAIN');
   const sourceFiles = [...new Set([...PRIVATE_RUNTIME_PRODUCER_SOURCE_FILES, SELF])];
@@ -156,6 +341,7 @@ async function githubJson(state, route) {
 }
 
 async function qualifyNormalJob(state) {
+  if (sourcePrIdentities.has(state.identity)) return qualifyPrNativeJob(state);
   const identity = state.identity, route = '/repos/' + identity.GITHUB_REPOSITORY
     + '/actions/runs/' + identity.GITHUB_RUN_ID + '/attempts/' + identity.GITHUB_RUN_ATTEMPT;
   const { json: run, before } = await githubJson(state, route);
@@ -202,6 +388,8 @@ function assertEntryFirstFailureAbsent(state) {
 function assertProcess(state) {
   assertEntryFirstFailureAbsent(state);
   need( envKeys.every(key => process.env[key] === state.identity[key]), 'PROCESS_CHANGED');
+  const prEnvironment = sourcePrEnvironments.get(state.identity);
+  if (prEnvironment) need(prEnvironmentKeys.every(key => process.env[key] === prEnvironment[key]), 'PR_TEST_WORLD_CHANGED');
   intersectClock(state, clockSample());
   state.deadline = Math.min(state.deadline, state.endEpoch - state.clockUpper);
   need(Number.isFinite(state.deadline) && state.deadline > state.lastMono, 'DEADLINE');
@@ -309,7 +497,8 @@ async function beginSourceNormalProducerSession(state) {
 
 export async function prepareSourceNormalProducerSession() {
   need(arguments.length === 0 && !attempted, 'ONE_FIXED_ENTRY'); attempted = true;
-  const { identity, target } = captureRequest();
+  const { identity, target } = process.env.GITHUB_EVENT_NAME === 'pull_request'
+    ? capturePrNativeRequest() : captureRequest();
   const state = { identity, target, phase: 'PREPARING', firstFailure: null, firstFailureRecord: null, rows: [], origin: null,
     clockLower: -Infinity, clockUpper: Infinity, lastMono: -Infinity, lastWall: -Infinity,
     deadline: Infinity, endEpoch: Infinity };
@@ -327,7 +516,7 @@ export async function prepareSourceNormalProducerSession() {
     state.clients = createProtectedPrivateRuntimeClients();
     state.active = await activeModel(state);
     await verifyIntegratedDatabaseReadback({ url: process.env.SUPABASE_URL,
-      serviceRoleKey: process.env.SUPABASE_SERVICE_ROLE_KEY });
+      serviceRoleKey: process.env.SUPABASE_SERVICE_ROLE_KEY, sourcePhase: 'source-producer' });
     const registry = await retainFile(state, path.join(ROOT, REGISTRY), null, 16 * 1024 * 1024);
     state.central = await readPinnedJson(state, registry);
     state.parent = await pointer(state);
@@ -525,6 +714,10 @@ export async function reconfirmSourceNormalProducerMain(session) {
   need(arguments.length === 1 && actual, 'TAIL_LEXICAL_SESSION_REQUIRED');
   assertSourceNormalProducerTailClock(session);
   const state = actual.state;
+  if (sourcePrIdentities.has(state.identity)) {
+    await qualifyPrNativeJob(state, true);
+    assertSourceNormalProducerTailClock(session);return actual.context;
+  }
   assertCommittedSource(state.identity);
   const result = await githubJson(state, '/repos/' + state.identity.GITHUB_REPOSITORY + '/git/ref/heads/main');
   need(!result.response.headers.get('link')?.includes('rel="next"')
