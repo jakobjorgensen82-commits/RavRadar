@@ -1,3 +1,9 @@
+## 1. november — spring kun en bevist ikke-kørt databasefase over ved søgning
+
+Den lokale 594-kontroller kunne vælge et nyere målrettet kildeforløb uden udført databasefase og derfor overse et ældre gyldigt native-bevis. Efterfølgeren går kun videre ved de normale, præcist bundne TARGETED-statusser: trin 1–14 bestået og kilde/database/upload 15–17 udtrykkeligt sprunget over i en frisk genlæst succesfuld kørsel. Et målrettet bevis bliver aldrig et native-bevis. Senere databasefejl, annulleret databasefase, ukendt databasestatus og manglende eller ændret artifact efter en faktisk databasefase giver fortsat afslag. Eksisterende kilde-, input-, integritets- og tidsgrænser bevares.
+
+Den eksisterende normale målfil gav 45 PASS; ét uændret historisk tilfælde bestod derefter ved en afgrænset genprøve med den eksisterende Python-runtime på PATH. De to kode-/testfiler er byteidentiske med den gennemgåede lokale rettelse. Facebook-linket og assistentkoden fra PR784 er allerede leveret; faktisk ekstern AI-accept og stabil kvalitet er fortsat åbne. Dette ajourfører de ældre lokale leveringsbeskrivelser nedenfor. Denne nativeforbedring er fortsat kun lokal; ny præcis GitHub-kvalifikation og sikker levering udestår. Ingen tidsgevinst er målt. Ingen ændring af produktionsdata, scoremodel, SQL eller kildeprioritet.
+
 ## 1. november — lokal assistentfrist og identifikationsrelevans
 
 - [x] Én syvsekunders serverfrist gennem indgående indhold, kvote, leverandørindhold og sidste svarbeslutning; senere kvotesvar starter ikke et leverandørkald.
