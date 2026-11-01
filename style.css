@@ -452,3 +452,20 @@ body.zone-focus .info-panel { scroll-margin-top:12px; }
 
 /* Forecast sharing is display-only; the normal map timeline keeps its own date format. */
 .forecast-share-button{margin-top:14px}.forecast-share-time{font-weight:750}.forecast-share-score{padding:12px;border-radius:10px;background:var(--surface-soft);line-height:1.5}.forecast-share-dialog input{width:100%;min-height:44px;padding:9px;border:1px solid var(--line);border-radius:9px;font:inherit}.forecast-share-dialog .button-row{margin-top:18px}.forecast-share-dialog .dialog-content{overflow-wrap:anywhere}
+
+/* Facebookgruppen: lokal grafik og tekst følger det eksisterende html.lang-valg. */
+.app-header--community { flex-wrap: wrap; gap: 12px; }
+.header-brand-community { display: flex; align-items: center; gap: 14px; flex: 0 1 auto; min-width: 0; }
+.header-brand-community .brand-button { min-width: 0; }
+.header-facebook-link { display: inline-flex; align-items: center; gap: 8px; flex: 0 1 auto; max-width: 160px; min-height: 44px; padding: 5px 9px 5px 5px; border: 1px solid rgba(255,255,255,.45); border-radius: 12px; color: white; background: rgba(255,255,255,.08); text-decoration: none; font-size: .8rem; font-weight: 650; line-height: 1.25; }
+.header-facebook-link:hover { background: rgba(255,255,255,.18); }
+.header-facebook-link:focus-visible { outline: 3px solid white; outline-offset: 3px; background: rgba(255,255,255,.18); }
+.header-facebook-icon { width: 30px; height: 30px; flex: 0 0 30px; padding: 4px; border-radius: 50%; color: #1767c8; background: white; fill: currentColor; }
+.header-facebook-text { display: none; min-width: 0; overflow-wrap: anywhere; }
+html[lang="da"] .header-facebook-text[lang="da"],
+html[lang="de"] .header-facebook-text[lang="de"],
+html[lang="en"] .header-facebook-text[lang="en"] { display: block; }
+@media (max-width: 680px) {
+  .header-brand-community { grid-column: 1 / -1; grid-row: 1; justify-content: space-between; gap: 10px; width: 100%; }
+  .header-facebook-link { max-width: 48%; gap: 6px; padding: 5px 6px; font-size: .78rem; }
+}
