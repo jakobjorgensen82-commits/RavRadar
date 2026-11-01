@@ -1,3 +1,11 @@
+## 1. november — lokal P0 for forseglet manifest og startup
+
+Vejrforløb 236 byggede færdigt, og Pages-skrivningen meldte SUCCESS. Den efterfølgende fulde offentlige verifikation afviste startupfilens digest; Pages-jobbet og den samlede terminalkontrol er derfor fortsat FAIL. To senere små offentlige aflæsninger af manifest og startup matchede præcis det forseglede target. Det beviser ikke hele den offentlige pakke. Den første afvigende body blev ikke gemt, så den præcise årsag er fortsat uafklaret.
+
+Den lokale kandidat afventer nu et sammenhængende par af præcist forseglet manifest og startup med korrekt hel SHA og længde under samme friske observationsnonce. Den eksisterende grænse på 121 observationer og det fælles budget på tre ekstra HTTP-genforsøg bevares. Først efter parret matcher kontrolleres den store pakke én gang; startupbytes genbruges. Alle øvrige hash-, størrelse-, model-, 210/673-, leverings- og privatlivsgrænser består. Permanent forkert startup og hårde transport-/indholdsfejl giver fortsat afslag.
+
+Den afgrænsede normale kalderprøve reproducerede afvisningen før rettelsen og består efter med syntetiske svar. Samlet lokal kontrol, præcis CI og levering er fortsat åbne. Den eksisterende providerfri resume-indgang fandt NONE og gentages ikke; almindelig integrated-drift opretter ikke selv en PENDING-overgang før Pages. En ny terminalkvittering kræver den korrekte normale kalder og autentisk ejerskab. Det fejlede 236-forløb ommærkes ikke til grønt. Ingen ny SOURCE-, model-, SQL- eller versionsudstedelse.
+
 ## 1. november — assistentens svarfrist og emnerelevans, lokal kandidat
 
 En offentlig prøve viste, at et generelt identifikationsspørgsmål kunne få uvedkommende zonevejledning efter de faglige fakta. Den lokale rettelse vælger kun de eksisterende relevante identifikationsfakta, når hele spørgsmålets afgrænsede DA/DE/EN-emne er genkendt. Ukendte eller blandede led får fortsat en ærlig afgrænsning; en lup gøres ikke til en sikker identifikationstest. Alle 45 fakta og deres fulde vidensbinding bevares.

@@ -528,6 +528,7 @@ function assertPublicDocuments({ manifest, startup, details, coastalParts, zoneR
 
 async function verifyOnce({
   manifestFileSha256,
+  sealedStartupBytes,
   baseUrl,
   sourceHead,
   manifest,
@@ -541,8 +542,11 @@ async function verifyOnce({
   httpRetryBudget,
   knownSourceRepair = null,
 } = {}) {
-  const fetched = {};
+  // The startup was already observed with this exact matched manifest/nonce.
+  // Reuse its whole bytes, then retain every original package/model check below.
+  const fetched = { 'data/live/public-conditions.json': sealedStartupBytes };
   for (const relative of PUBLIC_FILES) {
+    if (relative === 'data/live/public-conditions.json') continue;
     fetched[relative] = await fetchBytes(fetchImpl,
       withCacheBuster(baseUrl, relative, sourceHead, observationNonce), relative, httpRetryBudget);
   }
@@ -681,7 +685,8 @@ export async function verifyRavScoreOperationalPagesDeployment({
   observationNonce = null,
   fetchImpl = globalThis.fetch,
   // Pages may serve its previous manifest for up to ten minutes after deploy.
-  // Only that exact-manifest wait polls; the complete package is checked once.
+  // Poll only the exact manifest/startup pair; the large package is checked once.
+  // A matching manifest can precede its startup bytes during Pages propagation.
   // Refused transient HTTP requests share at most three extra attempts total.
   attempts = 121,
   retryDelayMs = 5_000,
@@ -721,7 +726,7 @@ export async function verifyRavScoreOperationalPagesDeployment({
     throw new Error('Operational Pages source repair does not match its exact pinned source');
   }
   const httpRetryBudget = { remaining: 3, delayMs: retryDelayMs };
-  let manifest, matchedManifestBytes, matchedObservationNonce;
+  let manifest, matchedManifestBytes, matchedObservationNonce, sealedStartupBytes;
   for (let attempt = 1; attempt <= attempts; attempt += 1) {
     const manifestObservationNonce = `${observationNonce}-${attempt}`;
     const manifestBytes = await fetchBytes(fetchImpl,
@@ -730,17 +735,32 @@ export async function verifyRavScoreOperationalPagesDeployment({
     try { manifest = JSON.parse(manifestBytes.toString('utf8')); }
     catch { throw new Error('Deployed operational manifest is not JSON'); }
     if (same(manifest, expectedManifest)) {
-      matchedManifestBytes = manifestBytes;
-      matchedObservationNonce = manifestObservationNonce;
-      break;
-    }
-    if (attempt === attempts) {
+      // Invalid sealed digest/size is a contract failure, never propagation.
+      if (!SHA256_PATTERN.test(String(manifest.publicConditionsSha256 ?? ''))
+        || !Number.isSafeInteger(manifest.publicConditionsBytes) || manifest.publicConditionsBytes <= 0) {
+        throw new Error('Deployed operational artifact digest mismatch for data/live/public-conditions.json');
+      }
+      const startupBytes = await fetchBytes(fetchImpl,
+        withCacheBuster(baseUrl, 'data/live/public-conditions.json', sourceHead, manifestObservationNonce),
+        'data/live/public-conditions.json', httpRetryBudget);
+      if (startupBytes.length === manifest.publicConditionsBytes
+        && sha256(startupBytes) === manifest.publicConditionsSha256) {
+        matchedManifestBytes = manifestBytes;
+        matchedObservationNonce = manifestObservationNonce;
+        sealedStartupBytes = startupBytes;
+        break;
+      }
+      if (attempt === attempts) {
+        throw new Error('Deployed operational artifact digest mismatch for data/live/public-conditions.json');
+      }
+    } else if (attempt === attempts) {
       throw new Error('Deployed operational manifest differs from the sealed artifact');
     }
     await new Promise(resolve => setTimeout(resolve, retryDelayMs));
   }
   return verifyOnce({
     manifestFileSha256: sha256(matchedManifestBytes),
+    sealedStartupBytes,
     baseUrl,
     sourceHead,
     manifest,
