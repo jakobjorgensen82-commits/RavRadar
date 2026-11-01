@@ -8,9 +8,29 @@ on:
         required: true
         type: string
       confirmation:
-        description: "Skriv DEPLOY-FORECAST-SHARE-PAGES"
+        description: "Skriv DEPLOY-FORECAST-SHARE-PAGES eller UPDATE-FORECAST-SHARE-PAGES efter valgt handling"
         required: true
         type: string
+      operation:
+        description: "Create kræver bevist fravær. Update kræver tidligere verificeret eget projekt og deployment."
+        required: true
+        type: choice
+        default: create
+        options:
+          - create
+          - update
+      expected_project_id:
+        description: "Kun update: projekt-ID fra første vellykkede create-kvittering"
+        type: string
+        default: ""
+      expected_deployment_id:
+        description: "Kun update: præcist verificeret forgængerdeployment-ID"
+        type: string
+        default: ""
+      expected_deployment_commit:
+        description: "Kun update: forgængerens verificerede commit SHA (40 tegn)"
+        type: string
+        default: ""
 
 permissions:
   contents: read
@@ -41,12 +61,28 @@ jobs:
         env:
           EXPECTED_MAIN: ${{ inputs.expected_main }}
           SHARE_CONFIRMATION: ${{ inputs.confirmation }}
+          SHARE_OPERATION: ${{ inputs.operation }}
+          EXPECTED_PROJECT_ID: ${{ inputs.expected_project_id }}
+          EXPECTED_DEPLOYMENT_ID: ${{ inputs.expected_deployment_id }}
+          EXPECTED_DEPLOYMENT_COMMIT: ${{ inputs.expected_deployment_commit }}
         run: |
           set -euo pipefail
           test "$GITHUB_EVENT_NAME" = workflow_dispatch
           test "$GITHUB_REF" = refs/heads/main
           test "$GITHUB_RUN_ATTEMPT" = 1
-          test "$SHARE_CONFIRMATION" = DEPLOY-FORECAST-SHARE-PAGES
+          case "$SHARE_OPERATION" in
+            create)
+              test "$SHARE_CONFIRMATION" = DEPLOY-FORECAST-SHARE-PAGES
+              test -z "$EXPECTED_PROJECT_ID$EXPECTED_DEPLOYMENT_ID$EXPECTED_DEPLOYMENT_COMMIT"
+              ;;
+            update)
+              test "$SHARE_CONFIRMATION" = UPDATE-FORECAST-SHARE-PAGES
+              test -n "$EXPECTED_PROJECT_ID"
+              [[ "$EXPECTED_DEPLOYMENT_ID" =~ ^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$ ]]
+              [[ "$EXPECTED_DEPLOYMENT_COMMIT" =~ ^[a-f0-9]{40}$ ]]
+              ;;
+            *) exit 1 ;;
+          esac
           [[ "$EXPECTED_MAIN" =~ ^[a-f0-9]{40}$ ]]
           test "$GITHUB_SHA" = "$EXPECTED_MAIN"
           git fetch --no-tags origin +refs/heads/main:refs/remotes/origin/main
@@ -71,11 +107,15 @@ jobs:
           test ! -e "$runtime"
           npm install --prefix "$runtime" --no-save --package-lock=false --ignore-scripts wrangler@4.28.1
 
-      - name: Create only absent fixed project and deploy Pages once
+      - name: Create absent fixed project or update exact owned project once
         run: node scripts/deploy-forecast-share-pages.mjs
         env:
           EXPECTED_MAIN: ${{ inputs.expected_main }}
           SHARE_CONFIRMATION: ${{ inputs.confirmation }}
+          SHARE_OPERATION: ${{ inputs.operation }}
+          EXPECTED_PROJECT_ID: ${{ inputs.expected_project_id }}
+          EXPECTED_DEPLOYMENT_ID: ${{ inputs.expected_deployment_id }}
+          EXPECTED_DEPLOYMENT_COMMIT: ${{ inputs.expected_deployment_commit }}
           SOURCE_REQUIRED: ${{ steps.source-proof.outputs.required }}
           GITHUB_TOKEN: ${{ github.token }}
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}

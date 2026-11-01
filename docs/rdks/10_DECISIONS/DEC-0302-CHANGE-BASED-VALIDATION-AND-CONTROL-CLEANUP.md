@@ -1,5 +1,7 @@
 # DEC-0302 – Ændringsbaseret validering og oprydning i kontroller
 
+Pages-controller og workflow registreres som delingsproduktkode med deres normale controllerprøve; produktkode er ikke test-only eller databaseudførelse. De gamle konservative import-/læse-/bindingflader og hele PG143/C100/I99/T12 bevares. Den faktiske direkte PR-plan og kumulative plan fra den kvalificerede FULL-forfader skal begge kontrolleres; kontrolændringen kræver den eksisterende CONTROL-suite og eksakt uafhængigt ROOT-review. Ukendt eller fælles påvirkning udvider prøverne. Nye præcise kildeplaner, kvalifikation og sikker levering er stadig åbne; detaljeret evidens føres privat.
+
 En negativprøve for Git-filers executable-mode skal have samme mode på arbejdsfilen og i indeks/commit samt bevise rent checkout, før den forventer afvisning af en leveringsfils mode. Kun at ændre indekset efterlader på Linux en anden, tidligere afvisningsgrund. Testfixturen følger nu denne rækkefølge; produktets clean-head-kontrol og forventede modeafvisning bevares.
 
 Den normale forberedelse af historiske kildepins henter kun en manglende commit og bruger ikke depth-begrænsning. En lokal Git-reproduktion påviser, at det tidligere ubetingede depth=1-kald gjorde et fuldt checkout shallow og brød forfaderkontrollen trods tilstedeværende objekter. De konkrete commit-/trækontroller består. Kun den gennemgåede hele workflowovergang er registreret; dette er ingen generel kort godkendelse af senere workflowændringer.

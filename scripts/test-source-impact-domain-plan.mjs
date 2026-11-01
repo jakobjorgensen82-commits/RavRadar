@@ -77,10 +77,46 @@ test('normal closed domain planner handles real composition, one same-tree merge
     for(const domain of Object.values(actual.domains))if(domain.status==='SELECTED'){
       assert(domain.commands.length>0);assert(domain.commands.every(command=>actual.commands.includes(command)));
     }
+    const pagesTarget='node scripts/test-forecast-share-pages-deploy.mjs';
+    assert.equal(actual.domains.sharing.status,'SELECTED');
+    assert.equal(actual.commands.filter(command=>command===pagesTarget).length,1,
+      'Pages product/workflow/test owners select their normal controller target once');
+    const direct=plan({baselineCommit:'7a08f6a8dfb2131898e7270a2429c3f4f810a842',
+      candidateCommit:candidate,expectedHead:candidate});
+    assert.equal(direct.status,'PLANNED',JSON.stringify(direct.reasonCodes));
+    assert.equal(direct.selection,'CONTROL_QUALIFICATION_REQUIRED',JSON.stringify(direct.reasonCodes));
+    assert.equal(direct.domains.postgres.status,'NOT_APPLICABLE');
+    assert.equal(direct.domains.sharing.status,'SELECTED');
+    assert.equal(direct.commands.filter(command=>command===pagesTarget).length,1);
+    for(const document of ['docs/rdks/20_REQUIREMENTS/ACTIVE-REQUIREMENTS.md','docs/rdks/MASTER_LOG.md']){
+      const body=git(root,['cat-file','blob',reference+':'+document]);
+      const documentCandidate=commit(rewrite(referenceTree,[[document,Buffer.concat([
+        body,Buffer.from('\n<!-- Synthetic canonical documentation owner check. -->\n'),
+      ])]]),[reference],'synthetic canonical documentation owner');
+      git(root,['update-ref','HEAD',documentCandidate]);
+      const documentPlan=plan({baselineCommit:reference,candidateCommit:documentCandidate,expectedHead:documentCandidate});
+      assert.equal(documentPlan.selection,'TARGETED_DOMAINS',JSON.stringify(documentPlan.reasonCodes));
+      assert.equal(documentPlan.domains.postgres.status,'NOT_APPLICABLE');
+      assert.equal(documentPlan.domains.documentation.status,'SELECTED');
+      assert(documentPlan.domains.documentation.commands.includes('node scripts/validate-rdks.mjs'));
+    }
+    const unknownDocument='docs/rdks/90_INDEX/UNREGISTERED-PAGES-NOTE.md';
+    const unknownDocumentCandidate=commit(rewrite(referenceTree,[[unknownDocument,
+      Buffer.from('# Synthetic unknown documentation path must remain unclassified.\n')]]),[reference],'synthetic unknown documentation owner');
+    git(root,['update-ref','HEAD',unknownDocumentCandidate]);
+    assert.deepEqual(plan({baselineCommit:reference,candidateCommit:unknownDocumentCandidate,
+      expectedHead:unknownDocumentCandidate}).reasonCodes,['UNCLASSIFIED_OWNER:'+unknownDocument]);
     const merged=commit(tree,[reference,candidate],'synthetic same-tree main merge'),onMerge=run(merged);
     assert.equal(text(root,['rev-parse',merged+'^{tree}']),text(root,['rev-parse',candidate+'^{tree}']));
     assert.equal(text(root,['rev-list','--parents','-n','1',merged]).split(' ').length,3);
     assert.deepEqual(onMerge,actual,'Tree-identical producer and merge must have identical plan/digests');
+    const pagesWorkflow='.github/workflows/deploy-forecast-share-pages.yml';
+    const pagesWorkflowBody=git(root,['cat-file','blob',candidate+':'+pagesWorkflow]);
+    const unknownPagesWorkflow=commit(rewrite(tree,[[pagesWorkflow,Buffer.concat([
+      pagesWorkflowBody,Buffer.from('\n# Unknown Pages workflow bytes must require full selection.\n'),
+    ])]]),[candidate],'synthetic Pages exact-source drift');
+    assert.deepEqual(run(unknownPagesWorkflow).reasonCodes,
+      ['UNKNOWN_EXACT_SOURCE_TRANSITION:'+pagesWorkflow]);
     const owner='js/ui/admin-private-trip-study.js',old=git(root,['cat-file','blob',candidate+':'+owner]);
     const mutate=(body,label)=>run(commit(rewrite(tree,[[owner,body]]),[candidate],label));
     assert.equal(mutate(Buffer.concat([old,Buffer.from('\nconst unusedInternalDomainCheck=true;\n')]),'pure internal edit').selection,'CONTROL_QUALIFICATION_REQUIRED');

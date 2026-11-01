@@ -1,3 +1,13 @@
+## 1. november — privat Pages-opdatering af det eksakt ejede projekt
+
+P0 har faktisk leveret offentlig 4.0.594, og genoptagelsen er terminalt afsluttet. Denne lokale Pages-efterfølger ændrer ikke vejrdata eller modelbinding og er endnu ikke kilde- eller hostingkvalificeret. Aktuel kørselsstatus føres privat.
+
+Den lokale kandidat tilføjer en særskilt update-handling til det eksisterende Pages-workflow. Standard create kræver stadig entydigt fravær og afviser et eksisterende projekt. Update kræver egen bekræftelse samt projekt-ID fra ROOTs faktisk vellykkede første create-kvittering og et tidligere verificeret deployment-ID/commit. Projekt, forgænger, canonical/latest, main og lokale input genlæses; præcis allerede leveret kode giver kun en fuldt genlæst no-op. Update opretter eller patcher aldrig et projekt, og ukendt write-/procesudfald bevarer UNKNOWN_NO_RETRY.
+
+Pages-controller og workflow registreres som delingsproduktkode med deres normale controllerprøve; produktkode er ikke test-only eller databaseudførelse. De gamle konservative import-/læse-/bindingflader og hele PG143/C100/I99/T12 bevares. Den faktiske direkte PR-plan og kumulative plan fra den kvalificerede FULL-forfader skal begge kontrolleres; kontrolændringen kræver den eksisterende CONTROL-suite og eksakt uafhængigt ROOT-review. Ukendt eller fælles påvirkning udvider prøverne. Nye præcise kildeplaner, kvalifikation og sikker levering er stadig åbne; detaljeret evidens føres privat.
+
+Dette er lokal kildeforberedelse i pages.dev-fasen, ikke hosting eller offentlig levering. Customdomæne afvises fortsat; senere domænebinding, én Simply-CNAME, TLS og klient-/cachebusterlukning er åbne sammen med aktuel offentlig 594-kompatibilitet, legacy-Worker, hosted GET/HEAD/OG/robots, Facebook og målt delt Free-/CPU-kapacitet. Ingen ny version, C/I/T, migration, SQL-eksekvering, vejr-/scoreændring, geometri eller aktivering. Ældre create-only-beskrivelser er erstattet alene for denne kontrollerede kodeopdatering; alle eksisterende identitets- og sikkerhedsafslag består.
+
 ## 31. oktober — observeret offentlig forgænger skal følge almindeligt deploy
 
 Ved overgang til en nyere model skal deployet medtage identiteten på den faktisk observerede offentlige forgænger. Den samme observerede kilde skal følge både den almindelige og den genoptagne kalder. En nyere offentlig generation må ikke forveksles med den ældre generation, som stadig står centralt.

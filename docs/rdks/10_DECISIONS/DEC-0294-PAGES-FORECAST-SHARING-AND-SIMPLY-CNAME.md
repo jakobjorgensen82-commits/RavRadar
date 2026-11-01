@@ -23,6 +23,18 @@ Den præcise robots-tilføjelse tillader previewrobotter at hente linket. Handle
 
 Den lokale adapter vælger kun mellem de to faste HTTPS-origins og bevarer handlerens rodsti-, metode-, private input-, generations-, model- og timekontrol. OG/canonical bruger den faktisk validerede egen host; app-link og offentlige prognoselæsninger bliver på ravradar.dk. Header, miljø og query kan ikke indsætte en tredje host. Dette er kildeforberedelse, ikke projekt-/domæneoprettelse eller frontendaktivering. Den normale lokale delings-/tidsskyderprøve bevarer de oprindelige 153 cases og består nu med 171; hosted Pages/Free, Facebook, DNS/TLS og klientovergang er fortsat åbne.
 
+### Kontrolleret kodeopdatering efter første create, 1. november
+
+P0 har faktisk leveret offentlig 4.0.594, og genoptagelsen er terminalt afsluttet. Denne lokale Pages-efterfølger ændrer ikke vejrdata eller modelbinding og er endnu ikke kilde- eller hostingkvalificeret. Aktuel kørselsstatus føres privat.
+
+Den lokale kandidat tilføjer en særskilt update-handling til det eksisterende Pages-workflow. Standard create kræver stadig entydigt fravær og afviser et eksisterende projekt. Update kræver egen bekræftelse samt projekt-ID fra ROOTs faktisk vellykkede første create-kvittering og et tidligere verificeret deployment-ID/commit. Projekt, forgænger, canonical/latest, main og lokale input genlæses; præcis allerede leveret kode giver kun en fuldt genlæst no-op. Update opretter eller patcher aldrig et projekt, og ukendt write-/procesudfald bevarer UNKNOWN_NO_RETRY.
+
+ROOT skal hente projektidentiteten fra den gemte vellykkede første create-kvittering. Callerfelter, opdaget tilstedeværelse eller et projekt efter mistet create-svar er ikke i sig selv ejerskabsbevis. Update kræver præcis pages.dev-domænemængde og nul ressourcebindinger/secrets før og efter; et ændret projekt eller en ændret forgænger afvises før write. Det normale faste engangs-Wrangler-/proceskald og den eksklusive writerkø bevares.
+
+Pages-controller og workflow registreres som delingsproduktkode med deres normale controllerprøve; produktkode er ikke test-only eller databaseudførelse. De gamle konservative import-/læse-/bindingflader og hele PG143/C100/I99/T12 bevares. Den faktiske direkte PR-plan og kumulative plan fra den kvalificerede FULL-forfader skal begge kontrolleres; kontrolændringen kræver den eksisterende CONTROL-suite og eksakt uafhængigt ROOT-review. Ukendt eller fælles påvirkning udvider prøverne. Nye præcise kildeplaner, kvalifikation og sikker levering er stadig åbne; detaljeret evidens føres privat.
+
+Dette er lokal kildeforberedelse i pages.dev-fasen, ikke hosting eller offentlig levering. Customdomæne afvises fortsat; senere domænebinding, én Simply-CNAME, TLS og klient-/cachebusterlukning er åbne sammen med aktuel offentlig 594-kompatibilitet, legacy-Worker, hosted GET/HEAD/OG/robots, Facebook og målt delt Free-/CPU-kapacitet. Ingen ny version, C/I/T, migration, SQL-eksekvering, vejr-/scoreændring, geometri eller aktivering. Ældre create-only-beskrivelser er erstattet alene for denne kontrollerede kodeopdatering; alle eksisterende identitets- og sikkerhedsafslag består.
+
 ## Leveringsrækkefølge og åbne beviser
 
 1. Adapter/robots, controller og den afgrænsede læseroptimering er lokalt sammenført med denne dokumentation. Præcis samlet kildekontrol kræves; lokal sammensætning er ikke offentlig kvalifikation.
@@ -34,7 +46,7 @@ Den lokale adapter vælger kun mellem de to faste HTTPS-origins og bevarer handl
 
 ## Kilde- og datagrænser
 
-ROOTs gennemgang måler de eksisterende modelinput til C98/I97/T12, union 104, og finder ingen intersection med Pages-kandidatens filer. Der ændres ingen version, modelbinding, scoreformel, kildeprioritet, vejrflow, original, historisk score eller migration. Håndbogens statiske installationspayload spejles gennem den normale synk; DDL og alle 69 migrationsfiler bevares. Der køres ingen SQL.
+**Historisk første adaptergennemgang:** ROOTs gennemgang målte de daværende modelinput til C98/I97/T12, union 104, og finder ingen intersection med Pages-kandidatens filer. Der ændres ingen version, modelbinding, scoreformel, kildeprioritet, vejrflow, original, historisk score eller migration. Håndbogens statiske installationspayload spejles gennem den normale synk; DDL og alle 69 migrationsfiler bevares. Der køres ingen SQL.
 
 Den eksisterende normale lokale delings-/tidsskyderprøve er bestået med 153 cases og uden netkald. Det er ikke hosted Pages, Facebook, Free-kapacitet eller offentlig 591. SOURCE-revision, statistik og automatisk sletning aktiveres ikke. Alle fem mål til 18. november 2026 forbliver åbne.
 

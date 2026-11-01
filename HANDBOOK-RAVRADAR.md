@@ -448,9 +448,19 @@ Delingsvisningen genbruger faste datoformater og undgår gentagne sammenligninge
 
 Adapteren, previewrobotternes adgang, controlleren og en afgrænset læseroptimering er lokalt sammenført. Samlet kildekvalifikation og offentlig Pages-levering er åbne. En senere almindelig 591-generation er faktisk leveret med de tre serverfunktioner, og den gamle delingstjeneste er særskilt opdateret og viser igen en kontrolleret score. Det beviser ikke den nye Pages-hosts scorekompatibilitet, domæne/TLS, Facebooks forhåndsvisning, ekstern AI eller tilstrækkelig Free-kapacitet.
 
-Den næste levering skal kontrolleres mod den faktisk gældende offentlige generation og model; denne forberedelse følger 594-kilden. Et ældre 591-sample er historisk evidens og kvalificerer ikke en ny delingshost.
+4.0.594 er nu faktisk offentligt leveret, og P0-genoptagelsen er terminalt afsluttet. Den nye delingshost og den gamle delingstjeneste skal stadig kontrolleres mod denne faktiske generation og model. Et ældre 591-sample er historisk evidens og kvalificerer ikke den nye delingshost.
 
 Der foretages ingen ny versions-, model- eller databaseudstedelse af denne forberedelse. De øvrige RavRadar-opgaver og alle fem hovedmål til 18. november 2026 er fortsat åbne.
+
+### Når delingsprojektets kode opdateres
+
+Den forberedte opdateringsvej gælder det ene delingsprojekt, som allerede er oprettet og kontrolleret. En kodeopdatering skal genfinde præcis dette projekt og den tidligere kontrollerede udgave. Den opretter ikke projektet igen og overtager ikke et andet projekt med samme navn.
+
+Hvis den ønskede kode allerede er leveret, skal den genlæses og kontrolleres uden en ny levering. Et mistet svar er ikke i sig selv en bekræftelse; ukendt udfald må ikke udløse en blind gentagelse.
+
+Denne kandidat gælder alene prøveadressen ravradar-del.pages.dev. Et senere skift til del.ravradar.dk kræver fortsat særskilt domænebinding, én CNAME hos Simply, aktivt certifikat og det kontrollerede skift i hjemmesidens delingsadresse. Hovedhjemmeside, mail og navneservere bevares.
+
+Opdateringsvejen er lokalt forberedt, ikke offentligt leveret. Facebooks egen forhåndsvisning, gratis kapacitet og svartid i praksis samt den nye hosts korrekte visning af den aktuelle offentlige prognose skal stadig kontrolleres hver for sig. Den gamle delingstjeneste og allerede delte links bevares.
 
 ## 89.277 Undersøg de gemte data, før hentningen ændres
 

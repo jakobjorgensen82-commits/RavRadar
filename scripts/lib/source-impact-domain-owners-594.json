@@ -751,6 +751,59 @@
         "documentation"
       ],
       "handbookPayload": true
+    },
+    {
+      "path": ".github/workflows/deploy-forecast-share-pages.yml",
+      "domains": [
+        "sharing",
+        "controls"
+      ],
+      "controlQualification": true,
+      "commands": [
+        [
+          "sharing",
+          "node scripts/test-forecast-share-pages-deploy.mjs"
+        ]
+      ],
+      "exactSourceTransition": true
+    },
+    {
+      "path": "docs/rdks/20_REQUIREMENTS/ACTIVE-REQUIREMENTS.md",
+      "domains": [
+        "documentation"
+      ]
+    },
+    {
+      "path": "docs/rdks/MASTER_LOG.md",
+      "domains": [
+        "documentation"
+      ]
+    },
+    {
+      "path": "scripts/deploy-forecast-share-pages.mjs",
+      "domains": [
+        "sharing"
+      ],
+      "commands": [
+        [
+          "sharing",
+          "node scripts/test-forecast-share-pages-deploy.mjs"
+        ]
+      ]
+    },
+    {
+      "path": "scripts/test-forecast-share-pages-deploy.mjs",
+      "domains": [
+        "sharing",
+        "controls"
+      ],
+      "controlQualification": true,
+      "commands": [
+        [
+          "sharing",
+          "node scripts/test-forecast-share-pages-deploy.mjs"
+        ]
+      ]
     }
   ],
   "sources": {
@@ -3273,7 +3326,8 @@
         "c0945ad1c4c6766776232456986c2154640f68a9c4d7ae1da2664db5f0bfbea8",
         "d19eac43e5374afb010778ae4d818f730c26218f1c62a2ade558971753dcd67c",
         "e5129d6663dff67df2012d08eb5e10a27e347e933c4472457278893d93e99a57",
-        "ef1f604306614fa2c382e962e836e260f2a13f4b1ef389ca28848815a9e7b152"
+        "ef1f604306614fa2c382e962e836e260f2a13f4b1ef389ca28848815a9e7b152",
+        "c21342521cb283c982b548602458f58a4f736c6cd2e44b6ea1a0a31cfb780f98"
       ],
       "bindingSurfaces": [
         "0d7fb96818a2a86fd0a016768f8cb6f30e513c4e1eef69b703ced59d0d26d239",
@@ -11099,7 +11153,8 @@
         "scripts/test-protected-ravscore-continuation-checkpoint.mjs",
         "scripts/test-source-impact-domain-inputs.mjs",
         "scripts/test-source-impact-domain-plan.mjs",
-        "scripts/weather-source-gate.mjs"
+        "scripts/weather-source-gate.mjs",
+        ".github/workflows/deploy-forecast-share-pages.yml"
       ],
       "dependencySurfaces": [
         "026eb8c82485db70ce6e81b4bd65b71ff46f0470ad36d9b1a29048d67dba026f",
@@ -11172,7 +11227,21 @@
         "eb3be44e7c4c0cd548d3d14f17af69f1569e250f656b6f11047a0ff0efe8663b",
         "eddd8d170ba3cf15f8a5da50fd0b207f711f74cb36ae95a5a612da46896076aa",
         "f035f3e401bfbc77a9252079acd83459de8e7881b8e22ab9ce38925e4f1593ac",
-        "f7b05eca8f5a0a0b2c9cf6a00838d697f8c7db705f55dfe0dae607a1a55b0fd5"
+        "f7b05eca8f5a0a0b2c9cf6a00838d697f8c7db705f55dfe0dae607a1a55b0fd5",
+        "269769abe9831e47422c7265118ec0a5982a55d239aad1ced7a0f263f8333c61",
+        "27517b12bd37ca4d2a5057c4a7e3d4bdd6c4a0ebbc3fb34c18208ea3a1212a4a",
+        "44414bdcd09fe0fbda90712becaeccd97f4146436dcf712e6592c842e6ef6517",
+        "5ba4d6ade496d5dec79a748f83ffbd6e70f9cdd9def3273be2fbb95b3051f4d8",
+        "68f496cd6f935f227c6e6917e92205ff57b9d1c2a86849352a65281ed7563628",
+        "7f01fc01a339bc36ee167d55d4f32afb982719add3069f5fab869e9004ad9605",
+        "96de62ca2784938f9b958e4943ce39204aa9077b22a97f0804425f143f2a8e66",
+        "9892818bf4e29138ccfa435e0bb4e41014f6de3a9a3a57ab4e0fb04b86675f90",
+        "a9a243433e643bebc8e3245ea8f030f4c26b801b8797704c020c66b5c941b1fc",
+        "b294a450a96581fc6fe6598a4fb92dabd6da94b6b54bf36abd66dfbfdf32c877",
+        "c2e2b56d2b3fcdac80b6976c8e3113506062da5941ce01e40751a59e2938214a",
+        "cb1bd14d98ceba87c5df3e135b3b1068ebb9dbc4a99af2a9d38351f6fc0ade7c",
+        "d4c36c2b061d9c37d12fc43f64b3dad023ae7595c47662f7322301e485fb00a6",
+        "f78cf4a076761a6108216d700dd47532a74329ca2fb04620f9e4494ab0c600af"
       ],
       "bindingSurfaces": [
         "0ce6c7a8266174db56f38892cc174113bbb8080b021df2d28c082790eb43b572",
@@ -11190,7 +11259,8 @@
         "dfb0eabd1d5749ae6fd5019d191a47be71ee965c69fac3921c502cabe571d79c",
         "e2c102c94178aba9ef9512d78edcc986ab8528aba82bc9b1f1385ff3f205ac75",
         "f04f58cb6d84ec1c0b1833a2c0031174cca484d0b8f9b8eb0832b50a90c59941",
-        "f9be97f2ff8713536b21adbd8450bdf88ca5b1ed5a1810bc9c5c0df7dec57e03"
+        "f9be97f2ff8713536b21adbd8450bdf88ca5b1ed5a1810bc9c5c0df7dec57e03",
+        "8a524f7811f4602e6b174f9e903b6178a23c7bcee287cb65428f92a5610fe723"
       ],
       "computedBoundaries": [
         "25f38aa23de966019066f1a3ff84647680125117b2fedd0dccacf2992f1c5966"
@@ -13409,6 +13479,9 @@
     ],
     ".github/workflows/deploy-code-only-repair.yml": [
       "9d16a127c0e7b0e256e199982b56f14762f370f8e30720b2545a40b97bf09dc1/1619b09526d8ea1288bc4c94a690b997f5a5b0f05e12b8ecc26da08e984c4c75"
+    ],
+    ".github/workflows/deploy-forecast-share-pages.yml": [
+      "6e7cd728269f4e6692f109382d7a7a867d7a38c2ebc3e00c8472cb794c84a135/c42aef1818804e97a61c4ccf5f25b3c1d8e5d5d7f537340acea987cc48f9925e"
     ]
   }
 }
