@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
 import { runInNewContext } from 'node:vm';
 import { createHash } from 'node:crypto';
-import { reviewedFixedAssistantFailureLegacyWorkflow, reviewedFixedAssistantFailureLegacyRegistry, reviewedFixedAssistantFailureBeforeBaselineHintRegistry } from './lib/fixed-assistant-failure-workflow-review.mjs';
+import { reviewedFixedAssistantFailureLegacyWorkflow, reviewedFixedAssistantFailureLegacyRegistry, reviewedFixedAssistantFailureBeforeBaselineHintRegistry, reviewedFixedAssistantFailureBeforePrSourceReadGrantRegistry } from './lib/fixed-assistant-failure-workflow-review.mjs';
 
 // One normal offline caller target. No hosted logs, SQL engine or real token.
 const text = async file => (await fs.readFile(new URL('../' + file, import.meta.url), 'utf8')).replaceAll('\r\n', '\n');
@@ -108,7 +108,8 @@ const registrySuccessor = review.registrySourceProofSuccessor;
 const registryBindingSuccessor = review.registryBindingSuccessor;
 const registryWorkflow066Successor = review.registryWorkflow066Successor;
 const registryBaselineHintSuccessor = review.registryBaselineHintSuccessor;
-function assertActualRegistry(source) {
+const registryPrSourceReadGrantSuccessor = review.registryPrSourceReadGrantSuccessor;
+function assertBeforePrSourceReadGrantRegistry(source) {
   assert.equal(digest(source), registryBaselineHintSuccessor.afterSha256, 'ACTUAL_SOURCE_PROOF_REGISTRY_BYTES');
   const registryDocument = JSON.parse(source);
   assert.deepEqual(registryBaselineHintSuccessor.ownerAdditions, [
@@ -214,8 +215,63 @@ function assertActualRegistry(source) {
     [...registrySuccessor.preservedHistoricalPairs, ...registrySuccessor.transitionPairs]);
   return registryDocument;
 }
+function assertActualRegistry(source) {
+  assert.equal(digest(source), registryPrSourceReadGrantSuccessor.afterSha256, 'ACTUAL_SOURCE_PROOF_REGISTRY_BYTES');
+  const document = JSON.parse(source);
+  assert.deepEqual(registryPrSourceReadGrantSuccessor.ownerAdditions, [
+    {
+      "path": ".github/workflows/validate-pull-request.yml",
+      "domains": [
+        "controls"
+      ],
+      "controlQualification": true,
+      "commands": [
+        [
+          "controls",
+          "node scripts/test-source-impact-workflow.mjs"
+        ]
+      ],
+      "exactSourceTransition": true
+    },
+    {
+      "path": "scripts/lib/source-impact-workflow-review.mjs",
+      "domains": [
+        "controls"
+      ],
+      "controlQualification": true,
+      "commands": [
+        [
+          "controls",
+          "node scripts/test-source-impact-workflow.mjs"
+        ]
+      ]
+    }
+  ]);
+  const ownerPrefix = document.owners.slice(0, registryPrSourceReadGrantSuccessor.ownersBeforeCount);
+  assert.equal(document.owners.length, registryPrSourceReadGrantSuccessor.ownersBeforeCount + 2);
+  assert.equal(digest(JSON.stringify(ownerPrefix)), registryPrSourceReadGrantSuccessor.ownersBeforeArraySha256);
+  assert.deepEqual(document.owners.slice(registryPrSourceReadGrantSuccessor.ownersBeforeCount), registryPrSourceReadGrantSuccessor.ownerAdditions);
+  assert.deepEqual(registryPrSourceReadGrantSuccessor.transitionPairs, ["3838f9009f7df679581cea1a54eeba535bf4b0c90ae6e786691ba46dedd5afc5/45b1a6f3dba31711b8fa8d4cff8776c3f7daa024acc798c4da76bee4615eced1"]);
+  const transitionEntries = Object.entries(document.exactSourceTransitions);
+  const oldTransitions = Object.fromEntries(transitionEntries.slice(0, registryPrSourceReadGrantSuccessor.transitionsBeforeCount));
+  assert.equal(transitionEntries.length, registryPrSourceReadGrantSuccessor.transitionsBeforeCount + 1);
+  assert.equal(digest(JSON.stringify(Object.keys(oldTransitions))), registryPrSourceReadGrantSuccessor.transitionsBeforeKeysSha256);
+  assert.equal(digest(JSON.stringify(oldTransitions)), registryPrSourceReadGrantSuccessor.transitionsBeforeObjectSha256);
+  assert.deepEqual(transitionEntries.slice(registryPrSourceReadGrantSuccessor.transitionsBeforeCount),
+    [[registryPrSourceReadGrantSuccessor.transitionOwner, registryPrSourceReadGrantSuccessor.transitionPairs]]);
+  const beforeRaw = reviewedFixedAssistantFailureBeforePrSourceReadGrantRegistry(source);
+  assert.equal(digest(beforeRaw), registryPrSourceReadGrantSuccessor.beforeSha256);
+  const beforeDocument = assertBeforePrSourceReadGrantRegistry(beforeRaw);
+  assert.deepEqual(Object.keys(document), Object.keys(beforeDocument));
+  for (const key of Object.keys(document)) if (!['owners', 'exactSourceTransitions'].includes(key))
+    assert.deepEqual(document[key], beforeDocument[key], 'All other raw registry fields remain exact');
+  return document;
+}
 const actualRegistry = assertActualRegistry(actualRegistryRaw);
 for (const altered of [actualRegistryRaw + '\n',
+  ...registryPrSourceReadGrantSuccessor.ownerAdditions.map(owner =>
+    actualRegistryRaw.replace('"path": "'+owner.path+'"', '"path": "'+owner.path+'-unknown"')),
+  actualRegistryRaw.replace(registryPrSourceReadGrantSuccessor.transitionPairs[0], registryPrSourceReadGrantSuccessor.transitionPairs[0]+'0'),
   ...registryBaselineHintSuccessor.ownerAdditions.map(owner =>
     actualRegistryRaw.replace('"path": "'+owner.path+'"', '"path": "'+owner.path+'-unknown"')),
   actualRegistryRaw.replace('"'+registryBaselineHintSuccessor.sourceAdditions[0].path+'": {', '"unknown-source.mjs": {'),

@@ -1123,5 +1123,63 @@
       "supabase/migrations/20261013210000_account_assistant_original_bound_successor.sql"
     ],
     "resourceFilesBeforeArraySha256": "a33618fd7c8895e6a829c0077417a6f16e875d6930bafb69499009b00f492305"
+  },
+  "registryPrSourceReadGrantSuccessor": {
+    "kind": "EXACT_SOURCE_PR_DISCOVERY_READ_GRANT_REGISTRY_SUCCESSOR",
+    "beforeSha256": "7631fb91fe6d27b0d4f2dccef4216b514f53bb42224a637fa4b60efa86527859",
+    "afterSha256": "c9d137adbaa8517437530a1f0c75830c85dfc43f57ad594b3c73e8000d33b771",
+    "insertions": [
+      {
+        "offset": 26901,
+        "bytes": 607,
+        "sha256": "fda0a1f0cda43eada57c3545b4dfb5b37165fdb47b36b50ab514f7ebcae0cb40",
+        "field": "owners"
+      },
+      {
+        "offset": 907864,
+        "bytes": 198,
+        "sha256": "1b9c8a9839e960865d857b55927e9e4c7b5e5d0abf435e103d1f2cc248b7469d",
+        "field": "exactSourceTransitions"
+      }
+    ],
+    "ownerAdditions": [
+      {
+        "path": ".github/workflows/validate-pull-request.yml",
+        "domains": [
+          "controls"
+        ],
+        "controlQualification": true,
+        "commands": [
+          [
+            "controls",
+            "node scripts/test-source-impact-workflow.mjs"
+          ]
+        ],
+        "exactSourceTransition": true
+      },
+      {
+        "path": "scripts/lib/source-impact-workflow-review.mjs",
+        "domains": [
+          "controls"
+        ],
+        "controlQualification": true,
+        "commands": [
+          [
+            "controls",
+            "node scripts/test-source-impact-workflow.mjs"
+          ]
+        ]
+      }
+    ],
+    "ownersBeforeCount": 106,
+    "ownersBeforeArraySha256": "d1c7bf1e1d0a1a1ab70ce96bd3941251f4eac8ed7e96aee68495f5f511d34ef2",
+    "transitionOwner": ".github/workflows/validate-pull-request.yml",
+    "transitionPairs": [
+      "3838f9009f7df679581cea1a54eeba535bf4b0c90ae6e786691ba46dedd5afc5/45b1a6f3dba31711b8fa8d4cff8776c3f7daa024acc798c4da76bee4615eced1"
+    ],
+    "transitionsBeforeCount": 13,
+    "transitionsBeforeKeysSha256": "f2c0717f959ff056d1dd93736fbb11a21ebdd779d7c7f401497b4438cbd4a944",
+    "transitionsBeforeObjectSha256": "e57140b1b7803412737816843184e73101ce49f4dc239da9b2660e606ea33816",
+    "sameWorkflowBeforeForDirectMain066AndFull169": true
   }
 }

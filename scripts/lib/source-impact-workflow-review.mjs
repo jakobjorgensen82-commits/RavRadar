@@ -26,9 +26,27 @@ const sha=value=>crypto.createHash('sha256').update(value).digest('hex');
 const once=(source,from,to)=>{assert.equal(source.split(from).length,2,'Exact once-only reviewed workflow field required');
   return source.replace(from,()=>to);};
 
-export function projectSourceImpactWorkflowFull(value){
+
+export const SOURCE_IMPACT_PR_READ_GRANT=Object.freeze({
+  "workflow": ".github/workflows/validate-pull-request.yml",
+  "beforeSha256": "3838f9009f7df679581cea1a54eeba535bf4b0c90ae6e786691ba46dedd5afc5",
+  "afterSha256": "45b1a6f3dba31711b8fa8d4cff8776c3f7daa024acc798c4da76bee4615eced1",
+  "before": "permissions:\n  contents: read\n  actions: read\n",
+  "after": "permissions:\n  contents: read\n  actions: read\n  pull-requests: read\n"
+});
+// Test-only: exact whole grant inverse before unchanged qualified FULL oracles.
+export function inverseSourceImpactPrReadGrant(value){
   assert.equal(arguments.length,1);assert.equal(typeof value,'string');
   let source=value.replace(/\r\n/g,'\n');
+  if(sha(source)!==SOURCE_IMPACT_PR_READ_GRANT.afterSha256)return source;
+  source=once(source,SOURCE_IMPACT_PR_READ_GRANT.after,SOURCE_IMPACT_PR_READ_GRANT.before);
+  assert.equal(sha(source),SOURCE_IMPACT_PR_READ_GRANT.beforeSha256,'Exact whole PR-read predecessor');
+  return source;
+}
+
+export function projectSourceImpactWorkflowFull(value){
+  assert.equal(arguments.length,1);assert.equal(typeof value,'string');
+  let source=inverseSourceImpactPrReadGrant(value);
   if(sha(source)===SOURCE_IMPACT_FULL_WORKFLOW_SHA256)return source;
   const selected=/steps\.source-content\.outputs\.(?:selection|receipt_path)|test-source-(?:impact|targeted)-/.test(source);
   if(selected){

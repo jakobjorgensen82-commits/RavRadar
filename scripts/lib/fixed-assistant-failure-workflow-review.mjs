@@ -38,6 +38,26 @@ export function reviewedFixedAssistantFailureLegacyWorkflow(value) {
   return inverse;
 }
 
+// Exact new PR-workflow grant registry image; the complete old chain is retained.
+export function reviewedFixedAssistantFailureBeforePrSourceReadGrantRegistry(value) {
+  assert.equal(typeof value, 'string', 'FIXED_ASSISTANT_REGISTRY_TYPE');
+  let source = Buffer.from(value.replaceAll('\r\n', '\n'), 'utf8');
+  const successor = review.registryPrSourceReadGrantSuccessor;
+  assert.equal(successor.kind, 'EXACT_SOURCE_PR_DISCOVERY_READ_GRANT_REGISTRY_SUCCESSOR');
+  assert.equal(successor.beforeSha256, review.registryBaselineHintSuccessor.afterSha256);
+  if (sha(source) === successor.beforeSha256) return source.toString('utf8');
+  assert.equal(sha(source), successor.afterSha256, 'FIXED_ASSISTANT_REGISTRY_UNREVIEWED_BYTES');
+  for (const insertion of [...successor.insertions].reverse()) {
+    assert(Number.isSafeInteger(insertion.offset) && insertion.offset >= 0);
+    assert(Number.isSafeInteger(insertion.bytes) && insertion.bytes > 0 && insertion.offset + insertion.bytes <= source.length);
+    assert.equal(sha(source.subarray(insertion.offset, insertion.offset + insertion.bytes)), insertion.sha256,
+      'FIXED_ASSISTANT_REGISTRY_PR_SOURCE_INSERTION');
+    source = Buffer.concat([source.subarray(0, insertion.offset), source.subarray(insertion.offset + insertion.bytes)]);
+  }
+  assert.equal(sha(source), successor.beforeSha256, 'FIXED_ASSISTANT_REGISTRY_PR_SOURCE_WHOLE_INVERSE');
+  return source.toString('utf8');
+}
+
 // Exact additive caller surfaces only; no arbitrary JSON projection is accepted.
 export function reviewedFixedAssistantFailureBeforeBaselineHintRegistry(value) {
   assert.equal(typeof value, 'string', 'FIXED_ASSISTANT_REGISTRY_TYPE');
@@ -62,8 +82,10 @@ export function reviewedFixedAssistantFailureBeforeBaselineHintRegistry(value) {
 export function reviewedFixedAssistantFailureLegacyRegistry(value) {
   assert.equal(typeof value, 'string', 'FIXED_ASSISTANT_REGISTRY_TYPE');
   let source = Buffer.from(value.replaceAll('\r\n', '\n'), 'utf8');
+  if (sha(source) === review.registryPrSourceReadGrantSuccessor.afterSha256)
+    source = Buffer.from(reviewedFixedAssistantFailureBeforePrSourceReadGrantRegistry(value), 'utf8');
   if (sha(source) === review.registryBaselineHintSuccessor.afterSha256)
-    source = Buffer.from(reviewedFixedAssistantFailureBeforeBaselineHintRegistry(value), 'utf8');
+    source = Buffer.from(reviewedFixedAssistantFailureBeforeBaselineHintRegistry(source.toString('utf8')), 'utf8');
   const successor = review.registrySourceProofSuccessor;
   assert.equal(successor.kind, 'EXACT_CONTROLS_AND_SOURCE_PROOF_REGISTRY_SUCCESSOR');
   assert.equal(successor.oracleSha256, review.registryAfterSha256);

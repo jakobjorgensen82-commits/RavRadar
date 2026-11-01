@@ -1,3 +1,9 @@
+## 1. november — PR-kontrollen skal kunne genfinde kildebeviset
+
+Den almindelige PR-kontrol manglede sin egen deklarerede læserettighed til pull requests. Den autentificerede commits-til-PR-læser kræver denne rettighed; contents/actions-read er allerede til stede. Den lokale efterfølger tilføjer kun pull-requests: read i PR-workflowet. De to tidligere rettede produktionskaldere bevares. Dette er en påvist manglende forudsætning, ikke bevis for den konkrete HTTP-fejl eller for et faktisk målrettet resultat i GitHub.
+
+De gamle hele workfloworakler bevares gennem én præcis helfilinverse. Kontrolregistreringen får kun to nødvendige kontrolejere og ét præcist workflowpar; øvrige ejere, afhængigheder, ressourcer og prøvekommandoer er uændrede. De to nærmeste normale workflow-/registryprøver består lokalt. Præcis ny plan, ROOT-review, GitHub-kvalifikation og sikker levering er fortsat åbne. Ingen vejr-, model-, SQL-, score-, kilde- eller administratorændring følger med denne kontrolrettelse.
+
 ## 1. november — find det autentiske fulde kildebevis
 
 Den korte kildevej søgte kun seks forfædre tilbage. Et fortsat gyldigt fuldt kildebevis kunne derfor falde uden for søgningen efter flere almindelige merges, selv om alle beskyttede model- og PostgreSQL-input var uændrede.

@@ -1,3 +1,7 @@
+## 1. november — lokal rettelse af kildekontrollens læseadgang
+
+PR-kontrollen får den nødvendige read-only adgang til at genfinde eksisterende PR-kildebeviser. Gamle hele kontroller bevares bag en præcis inverse, og de nærmeste normale mål består lokalt. Faktisk GitHub-kvalifikation og levering er fortsat åbne; ingen dokumenteret tidsgevinst eller ændring af vejr, model og SQL påstås.
+
 ## 1. november — find det autentiske fulde kildebevis
 
 Den korte kildevej søgte kun seks forfædre tilbage. Et fortsat gyldigt fuldt kildebevis kunne derfor falde uden for søgningen efter flere almindelige merges, selv om alle beskyttede model- og PostgreSQL-input var uændrede.

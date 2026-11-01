@@ -1,3 +1,12 @@
+## 1. november — læserettighed i den almindelige PR-kontrol
+
+- [x] Lokal, afgrænset pull-requests: read i PR-workflowet; eksisterende contents/actions-read og alle produktionskaldere bevares.
+- [x] Præcis helfilinverse og additiv kontrolregistrering med hele gamle orakler bevaret; de to normale nærmeste mål består lokalt.
+- [ ] Ny fuld påvirkningsplan og uafhængigt ROOT-review på den endelige kilde.
+- [ ] Faktisk GitHub-kvalifikation, sikker merge og normalt main-kildebevis. Et målrettet resultat eller en tidsgevinst er endnu ikke dokumenteret.
+
+Ingen ny version, modelbinding, SQL eller ændring af vejr, score, kilder, geometri eller rettigheder for brugerne. Alle fem hovedmål består.
+
 ## 1. november — find det autentiske fulde kildebevis
 
 Den korte kildevej søgte kun seks forfædre tilbage. Et fortsat gyldigt fuldt kildebevis kunne derfor falde uden for søgningen efter flere almindelige merges, selv om alle beskyttede model- og PostgreSQL-input var uændrede.
