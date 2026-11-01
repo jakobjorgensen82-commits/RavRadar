@@ -4,6 +4,8 @@ Den lokale private enable-efterfølger registrerer den fælles Worker-bindingsl�
 
 Syv manglende initializerhashes stammer fra den tidligere 785-lookbackrettelse: scanneren binder konservativt de nye jobs-/phase-initializere til otte allerede eksisterende læse-, kalder- og skriveforekomster. Selve udtrykkene og native-koden er uændrede i denne efterfølger. Kun de præcist gennemgåede fire dependency- og tre bindinghashes tilføjes; scannerregler, gamle hashes, kommandoer, rettigheder og afslag bevares.
 
+En samlet statisk fortegnelse over de normale 21 kontrol-/D1-/dokumentationsmål med adminUI-forældrekalderen, 236 kildefiler og 601 ressourcer fandt kun fem yderligere dependencyflader i den uændrede assistentkontrakt. De stammer fra den tidligere identifikationsrettelse, herunder RegExp.exec og policy-/prompt-/validator-wrappers. Kun disse fem konkrete objekthashes registreres med hele deres oprindelige kildeidentitet; ingen ny I/O, ejer, ressource eller scannerregel tillades. Hele gamle kalderscope og orakler bevares. Statisk lukning er ikke en grøn kildekvalifikation, hosted effekt eller tidsgevinst.
+
 De gamle hele registryorakler får kun en hashbundet helbyteinverse før deres oprindelige assertions; den nye rå kontrol kræver samtidig præcis de reviewede tilføjelser. PostgreSQL-/modelinput, SQL og data ændres ikke. Faktisk normal plan, kildekvalifikation og autentisk FULL-forgænger kræves fortsat; registreringen giver ingen hosted kvalifikation, aktivering eller påstået tidsgevinst.
 
 ## 1. november — find det autentiske fulde kildebevis
