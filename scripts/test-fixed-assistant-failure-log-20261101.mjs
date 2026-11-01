@@ -111,6 +111,74 @@ const registryBaselineHintSuccessor = review.registryBaselineHintSuccessor;
 function assertActualRegistry(source) {
   assert.equal(digest(source), registryBaselineHintSuccessor.afterSha256, 'ACTUAL_SOURCE_PROOF_REGISTRY_BYTES');
   const registryDocument = JSON.parse(source);
+  assert.deepEqual(registryBaselineHintSuccessor.ownerAdditions, [
+    {
+      "path": "scripts/test-source-impact-workflow.mjs",
+      "domains": [
+        "controls"
+      ],
+      "controlQualification": true,
+      "commands": [
+        [
+          "controls",
+          "node scripts/test-source-impact-workflow.mjs"
+        ]
+      ]
+    },
+    {
+      "path": "scripts/lib/archived-weather-restart-workflow-review.mjs",
+      "domains": [
+        "controls"
+      ],
+      "controlQualification": true,
+      "commands": [
+        [
+          "controls",
+          "node --test scripts/test-archived-weather-restart-workflow.mjs"
+        ],
+        [
+          "controls",
+          "node scripts/test-code-only-public-runtime.mjs"
+        ],
+        [
+          "controls",
+          "node scripts/source-critical-gate.mjs"
+        ]
+      ]
+    },
+    {
+      "path": "scripts/test-archived-weather-restart-workflow.mjs",
+      "domains": [
+        "controls"
+      ],
+      "controlQualification": true,
+      "commands": [
+        [
+          "controls",
+          "node --test scripts/test-archived-weather-restart-workflow.mjs"
+        ]
+      ]
+    }
+  ]);
+  const ownersBeforeBaselineHint = registryDocument.owners.slice(0, registryBaselineHintSuccessor.ownersBeforeCount);
+  assert.equal(registryDocument.owners.length,
+    registryBaselineHintSuccessor.ownersBeforeCount + registryBaselineHintSuccessor.ownerAdditions.length);
+  assert.deepEqual(registryDocument.owners.slice(registryBaselineHintSuccessor.ownersBeforeCount), registryBaselineHintSuccessor.ownerAdditions);
+  assert.equal(digest(JSON.stringify(ownersBeforeBaselineHint)), registryBaselineHintSuccessor.ownersBeforeArraySha256);
+  assert(registryDocument.controlSuite.includes('node scripts/test-source-impact-workflow.mjs'));
+  const sourceKeys = Object.keys(registryDocument.sources);
+  const sourceKeysBeforeBaselineHint = sourceKeys.slice(0, registryBaselineHintSuccessor.sourcesBeforeCount);
+  assert.equal(registryBaselineHintSuccessor.sourceAdditions.length, 15);
+  assert.equal(sourceKeys.length, registryBaselineHintSuccessor.sourcesBeforeCount + registryBaselineHintSuccessor.sourceAdditions.length);
+  assert.equal(digest(JSON.stringify(sourceKeysBeforeBaselineHint)), registryBaselineHintSuccessor.sourcesBeforeKeysSha256);
+  assert.deepEqual(sourceKeys.slice(registryBaselineHintSuccessor.sourcesBeforeCount), registryBaselineHintSuccessor.sourceAdditions.map(row => row.path));
+  for (const addition of registryBaselineHintSuccessor.sourceAdditions)
+    assert.equal(digest(JSON.stringify(registryDocument.sources[addition.path])), addition.definitionSha256);
+  const resourcesBeforeBaselineHint = registryDocument.resourceFiles.slice(0, registryBaselineHintSuccessor.resourceFilesBeforeCount);
+  assert.equal(registryBaselineHintSuccessor.resourceFileAdditions.length, 32);
+  assert.equal(registryDocument.resourceFiles.length, registryBaselineHintSuccessor.resourceFilesBeforeCount + registryBaselineHintSuccessor.resourceFileAdditions.length);
+  assert.equal(digest(JSON.stringify(resourcesBeforeBaselineHint)), registryBaselineHintSuccessor.resourceFilesBeforeArraySha256);
+  assert.deepEqual(registryDocument.resourceFiles.slice(registryBaselineHintSuccessor.resourceFilesBeforeCount), registryBaselineHintSuccessor.resourceFileAdditions);
   for (const addition of registryBaselineHintSuccessor.surfaceAdditions) {
     const values = registryDocument.sources[addition.owner][addition.field];
     assert.equal(values.length, addition.beforeCount + addition.values.length);
@@ -120,11 +188,11 @@ function assertActualRegistry(source) {
   const previousRegistryRaw = reviewedFixedAssistantFailureBeforeBaselineHintRegistry(source);
   assert.equal(digest(previousRegistryRaw), registryWorkflow066Successor.afterSha256, 'ACTUAL_SOURCE_PROOF_REGISTRY_BYTES');
   assert.equal(registryWorkflow066Successor.ownersBeforeCount, registrySuccessor.counts.owners);
-  assert.equal(registryDocument.owners.length,
+  assert.equal(ownersBeforeBaselineHint.length,
     registryWorkflow066Successor.ownersBeforeCount + registryWorkflow066Successor.ownerAdditions.length);
-  assert.deepEqual(registryDocument.owners.slice(registryWorkflow066Successor.ownersBeforeCount),
+  assert.deepEqual(ownersBeforeBaselineHint.slice(registryWorkflow066Successor.ownersBeforeCount),
     registryWorkflow066Successor.ownerAdditions);
-  assert.equal(digest(JSON.stringify(registryDocument.owners.slice(0, registryWorkflow066Successor.ownersBeforeCount))),
+  assert.equal(digest(JSON.stringify(ownersBeforeBaselineHint.slice(0, registryWorkflow066Successor.ownersBeforeCount))),
     registryWorkflow066Successor.ownersBeforeArraySha256);
   for (const ordinaryStageAddition of registryWorkflow066Successor.surfaceAdditions) {
     const ordinaryStageValues = registryDocument.sources[registryWorkflow066Successor.owner][ordinaryStageAddition.field];
@@ -138,7 +206,7 @@ function assertActualRegistry(source) {
   assert.deepEqual(actualAuditBindings.slice(registryBindingSuccessor.beforeBindingCount), registryBindingSuccessor.bindingHashes);
   assert.equal(digest(JSON.stringify(actualAuditBindings.slice(0, registryBindingSuccessor.beforeBindingCount))),
     registryBindingSuccessor.beforeBindingsArraySha256);
-  assert.deepEqual([registryDocument.owners.length, Object.keys(registryDocument.sources).length, registryDocument.resourceFiles.length],
+  assert.deepEqual([ownersBeforeBaselineHint.length, sourceKeysBeforeBaselineHint.length, resourcesBeforeBaselineHint.length],
     [registrySuccessor.counts.owners + registryWorkflow066Successor.ownerAdditions.length, registrySuccessor.counts.sources, registrySuccessor.counts.resourceFiles]);
   for (const owner of registrySuccessor.controlOwners)
     assert.deepEqual(registryDocument.owners.filter(row => row.path === owner.path), [owner]);
@@ -148,6 +216,10 @@ function assertActualRegistry(source) {
 }
 const actualRegistry = assertActualRegistry(actualRegistryRaw);
 for (const altered of [actualRegistryRaw + '\n',
+  ...registryBaselineHintSuccessor.ownerAdditions.map(owner =>
+    actualRegistryRaw.replace('"path": "'+owner.path+'"', '"path": "'+owner.path+'-unknown"')),
+  actualRegistryRaw.replace('"'+registryBaselineHintSuccessor.sourceAdditions[0].path+'": {', '"unknown-source.mjs": {'),
+  actualRegistryRaw.replace(JSON.stringify(registryBaselineHintSuccessor.resourceFileAdditions[0]), '"unknown-resource.yml"'),
   ...registryBaselineHintSuccessor.surfaceAdditions.map(addition =>
     actualRegistryRaw.replace(JSON.stringify(addition.values[0]), JSON.stringify(addition.values[0]+'-unknown'))),
   ...registryWorkflow066Successor.ownerAdditions.map(workflow066Owner =>

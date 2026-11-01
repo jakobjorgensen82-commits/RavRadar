@@ -1114,6 +1114,53 @@
           "node scripts/test-workflow-validation-order-4.0.108.mjs"
         ]
       ]
+    },
+    {
+      "path": "scripts/test-source-impact-workflow.mjs",
+      "domains": [
+        "controls"
+      ],
+      "controlQualification": true,
+      "commands": [
+        [
+          "controls",
+          "node scripts/test-source-impact-workflow.mjs"
+        ]
+      ]
+    },
+    {
+      "path": "scripts/lib/archived-weather-restart-workflow-review.mjs",
+      "domains": [
+        "controls"
+      ],
+      "controlQualification": true,
+      "commands": [
+        [
+          "controls",
+          "node --test scripts/test-archived-weather-restart-workflow.mjs"
+        ],
+        [
+          "controls",
+          "node scripts/test-code-only-public-runtime.mjs"
+        ],
+        [
+          "controls",
+          "node scripts/source-critical-gate.mjs"
+        ]
+      ]
+    },
+    {
+      "path": "scripts/test-archived-weather-restart-workflow.mjs",
+      "domains": [
+        "controls"
+      ],
+      "controlQualification": true,
+      "commands": [
+        [
+          "controls",
+          "node --test scripts/test-archived-weather-restart-workflow.mjs"
+        ]
+      ]
     }
   ],
   "sources": {
@@ -16187,6 +16234,889 @@
         "e12106986ccf1b6155e51e679b0819fd8d9a1e4b62bd38b45e40c295db3a884e"
       ],
       "computedBoundaries": []
+    },
+    "scripts/acquire-code-only-public-snapshot.mjs": {
+      "nodeImports": [
+        "node:child_process",
+        "node:crypto",
+        "node:fs",
+        "node:fs/promises",
+        "node:os",
+        "node:path",
+        "node:perf_hooks",
+        "node:url"
+      ],
+      "imports": [
+        "js/core/ravscore-public-profile-contract.js",
+        "scripts/prepare-code-only-public-runtime.mjs",
+        "scripts/ravscore-operational-pages-recovery.mjs",
+        "scripts/resolve-code-only-public-source.mjs"
+      ],
+      "resources": [
+        "data/live/coastal-parts-v2.json",
+        "data/live/manifest.json",
+        "data/live/public-conditions.json",
+        "data/water-level-station-routing.json",
+        "scripts/extract-code-only-public-source.py",
+        "scripts/ravscore-operational-activation.mjs"
+      ],
+      "dependencySurfaces": [
+        "018f169c26ed7a880173f5f625d7d84382addfafa48d500118a815372e625dc4",
+        "0a95f351f45aaca6b138591697b26cf97051f0aa6c2598e980285e0ef2f2a9eb",
+        "0a9780dbccd4be762bacc37b768c092ad749aefe17073488783956cef32b10e6",
+        "131021b1dc7c95687473624ea18f794a2348973ec61b629b2456d7190cbdf0a4",
+        "221e3304cc189d401eb680bd097b1e1dc99e4023de2d42f50173e859b3a26521",
+        "225df1e7d4327659135d50aa12d2221d10b326feac13f2429de98c26160b0acc",
+        "24735750deb99681bc2041b80e536543f7afd8b1b3b846bbfed3045d0c052629",
+        "2866ed8d837b8adba2c6bf7309d79092c76266f4ea94db18c126f7dc54e1a801",
+        "2a305e43253e24b48e10d95409a90d2eccac2fd2bf761fad74c97bf96b34e0ef",
+        "2c655e5a29bff38e78bc52167bc02b278123921e89ea7f3177591ef12e7d1766",
+        "322b9dd35b2973632b05156615db37bd40ec6b33258d609148428a6cf725364e",
+        "3436d2ab3946b780f45d0ec3a2440abc462a2f18ff2c9e77763ddb259405d5c5",
+        "4141c17c12fc1950c3308b16caebc152b9cd8988264366a22f3ca52a594f55d8",
+        "42d845aa44f49b293f68a7be4e6c68629138f1d0f010edcc511ad96e1fda4d6e",
+        "43bb76327a95e4f3dbff215966bd0fe6e102f5241e0c32c791b1bf8f2d23df62",
+        "473c44e7b0497de21099076b463d63b53c2e0c0c060a41f6fa7e93796762e820",
+        "5261c8a46d16ba56897b8c8405a5cee9d5b26330454164c9793b11228d5a8f65",
+        "72572246310f32890d9f3b27b18292586af99b495d7af5c60dcba1f6225173ff",
+        "7d1ced152c7290530d181fc52e3277af93608237617139df2036339a4bd8aff8",
+        "82a2ed9f21b06f11b2c24aa4a46c8e28c561a1ed4e68cc0aa3d18d9428cff4eb",
+        "8761776889e1e8e5d78d0e26da65f821cf65d7a1ded45433f36b9c5d540cc5b3",
+        "883300aa350c04f68e1997da8bb4cba49feeda21ac311083a842720c5aac5478",
+        "8c3f20b5be2f7ccfc57a96336e0c2a54ad676f6a182d2e9f4b67ba403b4b072d",
+        "923cc4f4c8b57a46cf969742b384c3564306148d5b14e40b33d92cc142b006b6",
+        "93c4da6a0e5bc158db3c2a9d46570e91a9bf0732724b29c676326c5caa9abd01",
+        "969b8327f78a053e0f26929c3300d865bb905b88f450b299fe0c05365e1c3a56",
+        "9a1fb80fa6a5c81ca7057c2fc27c9dc5723144f7b7edb47aaaa1518f93c9dc53",
+        "b4a7d65bdcbf2915a4fe55b3aed1f561fab99c70ce3bb67ff915dca1ce888088",
+        "b8351f3611913e477c0c4a0eefafb01a358004c996faea671ab8454f80ad4ccd",
+        "b9c7dc144ebb2ae8ca7b020233a4c52135251498acda5870fa8c2bd40663c121",
+        "c3fa79db3783de19a8f6688b3a1aedaef75bdfaed154d8a4ac12c6d8897fc6d5",
+        "c618fd301826668172469ad3e6dfb68b31d167a69d0b3bf7d3a0ee36655e0ef2",
+        "ca439118dc73f8ec2e882796b7b94a0fa0a1ba06426dda62cef4085924eabde5",
+        "cfd8bb63d0e3344768f3a037899987e2d85c6415791e1ca206b3cf83169d32af",
+        "d065d8e833632379b2654a191e115c518b7eb4577328952ac46072a88f184ed0",
+        "d1ebeae9b6811f4dea6f5bb733ae93a3952f40c1a08e6f39a1f64b19ff75c08d",
+        "effd8fa1a2bd2410290de76fa645e7afe382c281592a571bc4371aa6dcb015fa",
+        "f0a3c5269f78d094c83fe6332cab5f41b0573b1e744613f7ded0ba1addaa0a7f",
+        "f47a6289f87be4d20fb785aa0451fcbfc9714c686fbcfb92769bacf654c43b26",
+        "f62128d58d4a01cd1ec9be789c5bdbb0d7924ed4eeb01fd1240c5285e6df89e2",
+        "f994b3276ca2037b251db9552fdc6b68646148c60f9e286587eff365d56d5f20",
+        "ff19848fa502f2aaebe195a794ce4c89ba3188d7c256b52830a6f4e4f57402f2",
+        "ffee9f7ce01f65d7768a06e0315fe1fb98ea01cc2d06b8c016249de72870380c"
+      ],
+      "bindingSurfaces": [
+        "02ce297516202ebe517788eb985b5240347df0e25247adb4153ce92f0e4080b3",
+        "08ea126e549ab44b17494ce075fe23310e308b6756d479ba7cb874eaab342e54",
+        "29889168321fde65ed38a935a0bf00a8c1867502096c728c502f8468385107e6",
+        "2f866ac40d559a2dd7dae3b0f4f82ab6028b083d650fccd6fcd5f47244853b08",
+        "32030e9f23a82d5a822c7c2d2e87512b1b476484a4035a96445ca4131047ced8",
+        "3b6a46f991523803aae7b2d65f263619540c06653505001fcbcc09c77550e34e",
+        "4d5d93f1995b4b4f3852baa77669b133c21ad62e68343dca0e5697104b0af6e3",
+        "54294bb273cdffe2020968146db381ec35231d722df32d3d66fe18878ee7a2b1",
+        "5a7478552886e713b3dfe7bae4266fa7baf98e2ac787d0713ec70a9dd2ecbe98",
+        "7a5622304238e96b19c1fbfaaa913dd56be2a53dc33a0660ce521ea6566508fb",
+        "83402e6da3387fff638006410a68baa2ae78e1cec1ab86b6d7ab4e131525f0fa",
+        "8a4f01bd8f396647acb9985368880685203101306a91fa4d40a125e735a49771",
+        "8fb27bf37fb147674c1a68d52a7315aebb864b787bc5de75b32718c18a1a511c",
+        "9b3e8695c4e139fabf566cad7ebb96ab518c5bd71f261534c36ac62b86f02c51",
+        "c49481cf91b5b1271465a5558c5a21f6e2bdd4e18b5dc0851d77f6637de8d796",
+        "c9400a3dee4e25aae3eebbff38f27a7f2dbad09539b60bf457011dcc0cc1411f",
+        "db7cdb4c0c5e63550323b68d90112abec90b6cddfbc621d236154c4998ffb2c7",
+        "f920bdff7701af26bc7c7b25a536eb58e44d247fb52c85f904e90d0edb1937e4",
+        "f9aa1a59bb5127b6a2f7f4e4038929eb12238e441087ae9b98be01010a8e0dde"
+      ],
+      "computedBoundaries": []
+    },
+    "scripts/assistant-later-h0-binding-prewrite.mjs": {
+      "nodeImports": [
+        "node:assert/strict",
+        "node:child_process",
+        "node:crypto",
+        "node:fs/promises",
+        "node:path",
+        "node:url",
+        "node:util"
+      ],
+      "imports": [
+        "js/core/ravscore-model-contract.js",
+        "scripts/check-assistant-later-h0-predecessor-source.mjs",
+        "scripts/integrated-cutover-readiness.mjs",
+        "scripts/lib/assistant-later-h0-successor-source.mjs",
+        "scripts/lib/authenticated-frozen586-predecessor.mjs",
+        "scripts/lib/coherent-original-source-views.mjs",
+        "scripts/lib/dmi-forecast-file.mjs",
+        "scripts/lib/dmi-part-continuity.mjs",
+        "scripts/lib/private-weather-component-pack.mjs",
+        "scripts/lib/protected-dmi-native-current-proofs.mjs",
+        "scripts/lib/ravscore-recovery-source-priority.mjs",
+        "scripts/migrate-post-cutover-private-runtime.mjs",
+        "scripts/private-production-runtime-workflow.mjs",
+        "scripts/rollback-assets/ravscore-model-contract.js"
+      ],
+      "resources": [],
+      "dependencySurfaces": [
+        "0394a813b8006080780be26f83872ccf1c2d046ccff53a81aac4d1c37df77910",
+        "0826430c59b3a2e8bda0144806d18e492bafc41c8a18071137eba1a617603082",
+        "198754983afc44e53860ddcd6445483fd9a59c984251bc4fbc8e79db4950120a",
+        "2180c5a26ec28610d80217c0626360c49ec0d7f35166453a88793769b257d96b",
+        "22f2d55b791c6e5f804670cb53d58e1333dbc6620f43fcccd2f4ec5c05a73111",
+        "2bfddd17175fc6f44917db61bed0e72c3aecf44a64fa0463b2545662f5f971a2",
+        "2d5c464318d119d12cdc85bf8bd7202a7ad57afe6ff72d43f4bf953c6bc4d0fc",
+        "2d7a63eda07e75c7caf586fd87eed20f31a6c5c4ede5a4aafb2ff8723ca93b97",
+        "2ec93948c73e4a91d57fde73e13ffca8eeacec9e7d91dcc3cb22da433d904666",
+        "340dc50588ff15307f35e0107bb58a21a95a384af0c92d9e06c557053e27444b",
+        "348adcb0075668b6cf0c57f9b8bc944d8d893a447687513e343204e98115db61",
+        "40e0c1b03a63d5bfafe5c58413000dff17ceae055258b0301010e3df89e35302",
+        "41805ec82f442f443e19fd99cfe49d4373fe73e26ad0b24bf418f3eb7b500c29",
+        "45054ac80f61b09d61ee9b7132b601546eacffc7fedae92c696cd4676901862c",
+        "4cc8cda5468d3824f55fcb52f7dd36145172b411da8339f2db22a7381ed5cf9c",
+        "5c9306bee5d748b480fd4dc00a9e00aa8de5654224c8ad5014ebfe9919221f01",
+        "6e1143e3ee496d280973fce36d69b78a80e5fa1a033c7d4eefca2acc7d1811b2",
+        "73b342a7a91566582cb7536a9a20670340403e6244867bc2dd22eae9b5687f55",
+        "74119d096b69e1c0c1ffd05917fc9ae9ea293fa25cb86b412bf6d08147ba7c50",
+        "802baa4e803994f8706043d8e31ac4364dd52615b80e73f5b82f87ddbdacea1c",
+        "9d4b151a54e98246c916b8304598beea377fe363af080f928252f27a2722c539",
+        "a108a0f456355a64f75f64846ffbd61a4c54010bde6ece938eec592f35bfe8d9",
+        "a10d246586f21e1b1341907f4ee513a2b64965177d9fcace8dd20ca99033ec71",
+        "b53d743be7fc1ed0152411121179f6915939a4f5076d65694702a5ad7f7e9ef4",
+        "c6e5dd7a97996597218da8520b328db128cf016acd11d0a99e7464196dfc258b",
+        "cab8e737fafa8617efaea43fb650bc3835900367cbbcd321ad7e8e263c8a2be6",
+        "cb36e1c00dc4d5f1590da2690c5306d511f053fbface1221ef2a99c5316a26a0",
+        "d27f055119e5051f8fd375094976688723bc8540eea035a779657326d9bf5377",
+        "d618e5d5ddf78bbe3530b10500d1ef8e421b07d23418e076f8882faa4f3046d8",
+        "d6dbdf5d860a0c58da023e30adf3389aea899c66ce1248f1d6f9ca59bb07f366",
+        "e382de1b4d716b5880940f1787351903298e7aa28f83a4312975f6d842792c29",
+        "e4c35a57784f539c96541afbb6213b16824a7f134194fe63538fd5fb4bd7b3de",
+        "ecaa9363edf7fcb52cbc7389903681dba6d524ce2ab0f4125385a3af43887cb7",
+        "ecbe84fd22136cbc887244bec674a27e34848b49ce1d087caabd2e4cd49126b1",
+        "ee0f846067b5727cce5bab37838d7c35f77c69cb196e98fee3340f2f4c116a44",
+        "f438e6a2cb0aa3088171c525b2b87f9f1ddc7f4108222e5c0eb9c07ff7e4682a"
+      ],
+      "bindingSurfaces": [
+        "14134d39ff01c52419258002de2827d52bc37b7580bac5441d85843a631b2284",
+        "332f84ad1dcb02f8215fe27d8e5f003f9de8624609ac2c41f07bfddadb64f62d",
+        "3ab9b0442ca5da5222c39dba99cdd2a04ea4808fe55cd80733e4f5f6099a7745",
+        "428e8a658c23aaa8e780f1b14f539fb6f3daeb20ab0e59897aaa2f152b21424f",
+        "7216d2ece63bfe5fba8b2a4d64532fad23b2192279b4012f0fac69f1436e5df8",
+        "734f545532d0f3146cc978e9c0ca7739435c2e73544ca567f63848c8734fd42d",
+        "7e3542a0f8059f80ea4d89b4e2efc71fb3d890712ec231fbcaa7e755e42ce1e1",
+        "8a4f01bd8f396647acb9985368880685203101306a91fa4d40a125e735a49771",
+        "8d03319ccfb31093f50e27f4d6067a48b46c36f2f3fc6ac23f3af4e06973d3ee",
+        "98bb2b0477ac0db09781098be294381f6979314756153e213a6404dded2212d8",
+        "9b3e8695c4e139fabf566cad7ebb96ab518c5bd71f261534c36ac62b86f02c51",
+        "b7f42ed4ae8a6c83b529cd037f7efc75fbb126ebc2987f228266a1a2172de2f7",
+        "bde8dc9a7b06cc541ffb2d6292be003e1dbf643fba9c474dc2f5e46030dd3729",
+        "ca6536e69ed5672cacca199bc1448a2cffe36c3700886c1b28018fc9a496f01f"
+      ],
+      "computedBoundaries": [
+        "d93fafc2a3059b0bb53dbdfd01605ce6e2216de5d1ee80562d3859f27550e12b"
+      ]
+    },
+    "scripts/lib/account-statistics-assistant-workflow-review.mjs": {
+      "nodeImports": [
+        "node:assert/strict",
+        "node:crypto",
+        "node:fs"
+      ],
+      "imports": [
+        "scripts/lib/native-original-continuity-workflow-review.mjs"
+      ],
+      "resources": [
+        "scripts/lib/account-statistics-assistant-workflow-review.json"
+      ],
+      "dependencySurfaces": [
+        "5754a684d75a823fb18b733593a2caf365afdfdee2a28e631a1ebbc55b88bb1f"
+      ],
+      "bindingSurfaces": [
+        "5193ca852a68475d140a771402a4fa03aae098c6694625269ec7835683d9e75a",
+        "d3c7c0b6948622d54638729de889bded01734fa308421ec6df79cb2295a1d7ba",
+        "fea855eccbf65552bc6dc791c59830da5c1fe62a5e78837725c77ff4a2c3771d"
+      ],
+      "computedBoundaries": []
+    },
+    "scripts/lib/archived-production-gate-review.mjs": {
+      "nodeImports": [
+        "node:assert/strict",
+        "node:crypto",
+        "node:fs"
+      ],
+      "imports": [],
+      "resources": [
+        "scripts/lib/archived-production-gate-review.json"
+      ],
+      "dependencySurfaces": [
+        "59c7ee4962523387ff5f2b52541ab6ec8a1cfbc1b6ce9ed4921daf7f88478869"
+      ],
+      "bindingSurfaces": [
+        "5193ca852a68475d140a771402a4fa03aae098c6694625269ec7835683d9e75a",
+        "92e0f1e731de2a6352c56b04b9eb4052c0f65db3a5ae3a2f23d47bb0510a78de",
+        "d3c7c0b6948622d54638729de889bded01734fa308421ec6df79cb2295a1d7ba"
+      ],
+      "computedBoundaries": []
+    },
+    "scripts/lib/archived-weather-restart-workflow-review.mjs": {
+      "nodeImports": [
+        "node:assert/strict",
+        "node:crypto",
+        "node:fs"
+      ],
+      "imports": [
+        "scripts/lib/account-statistics-assistant-workflow-review.mjs",
+        "scripts/lib/archived-production-gate-review.mjs",
+        "scripts/lib/completed-private-runtime-workflow-review.mjs",
+        "scripts/lib/native-original-continuity-workflow-review.mjs"
+      ],
+      "resources": [
+        "scripts/lib/archived-weather-restart-workflow-review.json"
+      ],
+      "dependencySurfaces": [
+        "a1cb22bffa94114c022e393228b042c0f3b2cfd7ca8e370c97e0d48f43ae9cc7"
+      ],
+      "bindingSurfaces": [
+        "44a04d1a9d9e7551b2b5cdd481c1b2c72e05f3d884d1e9529b49d37904b976c2",
+        "5193ca852a68475d140a771402a4fa03aae098c6694625269ec7835683d9e75a",
+        "d3c7c0b6948622d54638729de889bded01734fa308421ec6df79cb2295a1d7ba"
+      ],
+      "computedBoundaries": []
+    },
+    "scripts/prepare-code-only-public-runtime.mjs": {
+      "nodeImports": [
+        "node:crypto",
+        "node:fs/promises",
+        "node:path",
+        "node:url"
+      ],
+      "imports": [
+        "js/core/ravscore-model-contract.js",
+        "scripts/build-forecast-share-projection.mjs",
+        "scripts/lib/private-conditions-hourly.mjs",
+        "scripts/lib/private-weather-component-inventory.mjs",
+        "scripts/lib/public-hour-delivery-pack.mjs",
+        "scripts/migrate-post-cutover-private-runtime.mjs",
+        "scripts/protected-private-production-runtime.mjs",
+        "scripts/public-conditions-lib.mjs",
+        "scripts/ravscore-operational-pages-recovery.mjs"
+      ],
+      "resources": [
+        "version.json"
+      ],
+      "dependencySurfaces": [
+        "0a3995edd1d98043222075551ff517319b6905c7d73e0b330ae658303a3ffde6",
+        "19133d073af8f8b73ee31766f3de4f7e0483b78ab7b848782e2a05f82f9943e6",
+        "2fc97329106147e58c6a394f722a0e20f0b08492cc16109fcc59b4830e4dd2b4",
+        "31bcb5490d2d9234deb06dc3b7f466ad3dce510569c30dff7d2b745e50f2072b",
+        "5645f18332505fd756b1b49027102ad27a9ceddfe38b36d9b35304f1b3a992ca",
+        "67ee23b2eca68c1db8a3f858f508cedfa19b7728baa2cdcdbada2ff46fa086ef",
+        "691c6c4bb21a81590fe243461de8bcdae832b4180d33253b204fde7e00105f3d",
+        "7768a7a5dd8ba7803f4ea50d41b2ec91bfd2638b043a0fe0dd33b47380867515",
+        "802baa4e803994f8706043d8e31ac4364dd52615b80e73f5b82f87ddbdacea1c",
+        "825cdd4b8abc461a6711d613f04754e365fb2bd26c374abfd8da9fc79d960bbc",
+        "a25181d5e04e4b2d8a22a3804948860af04908f850d51fcc61c95e902040a4d2",
+        "a5e76231d2c75c3bbe10df49e56c1363141d53724b397049bfdf968e9381217b",
+        "adda06193085f1af4aea4eb1ee7cf4a0700a8d68262f8e83ec89657a9bc16ed1",
+        "ca363ae2082de5568fa0a0960d773305dd41129b27f14508b126b07f35c441f0",
+        "da20f21dadd6db71ae598b2e7003ebc8a6bb9a361f686d51f244b6486aea30cc",
+        "db1ce7cf0933001fb1aee7a72685e16fe20ed89903e54ef81571bb5502afc300",
+        "e562ba0840c5aa885a6f42b41d7ddcf88a83ccc47c6e394918d82a38cabe67f5",
+        "ee6dd3eb8f39cc3d013501b784266cb43837999463e09a25155a4ce08e08d413",
+        "ef8ec812e2b7172506fd623086c052abbb4590a53b0629c6ef8dbfd81fcdcb65"
+      ],
+      "bindingSurfaces": [
+        "0ff13243c2a3b7216918c1dfbc69747df85de5163f07933c0c6f9ed41c5438e1",
+        "21f2fa4e01a158e2aa778b39e7b54ffeac93339edbc497bb40b7f737b2bf34e8",
+        "2f866ac40d559a2dd7dae3b0f4f82ab6028b083d650fccd6fcd5f47244853b08",
+        "420ae53fd7399ef38379541ab0dd0bf65bb1f9ce803faebd17fb23f043bb6830",
+        "521c0c383896f89077ba36ab42a9dadbb8a45427665289bddb0278966ba09f91",
+        "5cf4913cca83bf8882d647f7c8eedac2b92106e07ae2426689194aed72753b17",
+        "8a4f01bd8f396647acb9985368880685203101306a91fa4d40a125e735a49771",
+        "9b3e8695c4e139fabf566cad7ebb96ab518c5bd71f261534c36ac62b86f02c51",
+        "a76c24d9da680e1357f4470c8fca085a1b67cb1fefac1598b60a3330ae354180",
+        "d6b48e2fb6087aec26254f8bd3a6c8dc86405fb8489df0d4e9f99f94b7b3cc69",
+        "f88cdb06a72e5900ba3518876463c169e65c56d9bbdad56ee07f51413b30a97a"
+      ],
+      "computedBoundaries": []
+    },
+    "scripts/resolve-code-only-public-source.mjs": {
+      "nodeImports": [
+        "node:crypto",
+        "node:fs/promises",
+        "node:path",
+        "node:url"
+      ],
+      "imports": [
+        "scripts/lib/ravscore-known-public-source-repair.mjs"
+      ],
+      "resources": [],
+      "dependencySurfaces": [
+        "513c1c449484b4d83a64aec55781065229110f30a7445709b57359f03d2fc38e",
+        "6416d7c47d23be3a376622b041004db6354a5aea0f737d27f70187de50f0ea0d",
+        "6adda6e81b596bdbd7d1cadcc5eb5a66364a979b967f38eb3c1e8d0d9e393e1f",
+        "70f2f3f05962301fb92c1ad4d76c656e3aeee8a985be7abdd0c6fc46e5926b8a",
+        "802baa4e803994f8706043d8e31ac4364dd52615b80e73f5b82f87ddbdacea1c",
+        "cedf957e8cc4e583b391e3688bcf9c2f2901a28d7411e312c4762a19152b3d5f"
+      ],
+      "bindingSurfaces": [
+        "27c8d5414bc568f6e99d711e77298af34fd54af0df8f8b021c5530421eac7846",
+        "420ae53fd7399ef38379541ab0dd0bf65bb1f9ce803faebd17fb23f043bb6830",
+        "423f771ed196e65c6d91c26ee49c530a9d2ba3114e8fd2e87a670c2d81086849",
+        "5cf4913cca83bf8882d647f7c8eedac2b92106e07ae2426689194aed72753b17",
+        "64604ca457e2b03249f4dbaa6bc81d3ff1903b49d63ada9b1b0dd70864f9ccf4",
+        "8a4f01bd8f396647acb9985368880685203101306a91fa4d40a125e735a49771",
+        "8cb0cdbf368389e00d093e6effd9d1b0b813bba7190c67011a7bb09693a172c1",
+        "9b3e8695c4e139fabf566cad7ebb96ab518c5bd71f261534c36ac62b86f02c51",
+        "d225b089068cf8ce5f857d618b4279ae3a9f841d4077202fea714ec52cef5876",
+        "d6b48e2fb6087aec26254f8bd3a6c8dc86405fb8489df0d4e9f99f94b7b3cc69",
+        "e2933ff5008ba255a7662bcbae5dda7e528daa560381e2d68e678251b9806f3c"
+      ],
+      "computedBoundaries": []
+    },
+    "scripts/run-validation-collection.mjs": {
+      "nodeImports": [
+        "node:assert/strict",
+        "node:child_process",
+        "node:crypto",
+        "node:fs",
+        "node:path",
+        "node:url"
+      ],
+      "imports": [],
+      "resources": [
+        "package.json"
+      ],
+      "dependencySurfaces": [
+        "30ba1d746474792010d64204ee6529e99b9cc99f8e364cb2168acb427c54fbb7",
+        "3410d624aaa3e9669189d8e8d1ded69d2a19811d831dcdf86aeeed05a040fded",
+        "87c3855b4f5963dcde03dac9e4544daa5662bab6ce2af1512d869b7bfb7c0221",
+        "a7e680bd4312405e3be3e23ad3100cf45a893313cd63c7b87a29f88fb475466a",
+        "a887d44d47a85f74cccaca4aa039165371a1a30449615bebfd3524f5a131ddf9"
+      ],
+      "bindingSurfaces": [
+        "216bd48148714bf25719870896b804d8ec0c0059753d28cc69fa1a840a6052fd",
+        "283cf67996520fbc5fca86d37cc4b192d1605a4be75c6e24726868ffa25ac46a",
+        "4f5309227b9935d32f2c2b69e253ad5e61cd369ac5a358cd5f46f1a1cb14032b",
+        "5193ca852a68475d140a771402a4fa03aae098c6694625269ec7835683d9e75a",
+        "752a1af095c6b8b85abfe7028d766bb3c28f7e57bacdf236012f68ced63f3f61",
+        "9dd69488a5f83d39b3aa1afc4845a37430a53bc5546ccf3679b2f0f2b3d4f61e",
+        "ca6d33cc6e28f5f57c6e4ed5b16aa66364f809c0f52ae33d7e5d72f83e0a146b",
+        "d3c7c0b6948622d54638729de889bded01734fa308421ec6df79cb2295a1d7ba",
+        "e3da4e071f2e4737bd0855d20fe6621bab30b3a83c28c0417cb139eefeead35b"
+      ],
+      "computedBoundaries": []
+    },
+    "scripts/source-critical-gate.mjs": {
+      "nodeImports": [
+        "node:assert/strict",
+        "node:child_process",
+        "node:fs",
+        "node:path"
+      ],
+      "imports": [
+        "scripts/lib/archived-weather-restart-workflow-review.mjs",
+        "scripts/test-jordrav.mjs"
+      ],
+      "resources": [
+        ".github/workflows/deploy-code-only-repair.yml",
+        ".github/workflows/reusable-weather-build.yml",
+        ".github/workflows/update-and-deploy.yml",
+        ".github/workflows/validate-pull-request.yml",
+        "app.js",
+        "js/ui/admin-dashboard.js",
+        "package.json",
+        "scripts/acquire-code-only-public-snapshot.mjs",
+        "scripts/verify-code-only-migration-plan.mjs"
+      ],
+      "dependencySurfaces": [
+        "19de32eed3be19c6484ecabc4e02cb39ffff30d39139feaaa7556686e5333921",
+        "31273cf9650aa0fe7e357a1a7ca6a4592e5507e9ec3832d2d2c256df8867de67",
+        "478d017f2646061fa91f298f5598e13b8d8abad43f16a7de94470333595f6ffa",
+        "59cb7624dd8643ef300ecfe79f662360fc2ddff99240de97c869f384f2794e4e",
+        "5de20a6f17207b6a2b115cba10de7a86bbb5b9d443207f1a8495ea7a3198ad90",
+        "6444299767faea981702d4b4eb648df1e0dbe42c9556af6999ba2b12e885a2e2",
+        "717a1898317de672244d49ed9209d0daa6165ce560443f9cfc8f9691f073b1ca",
+        "7366a9576a7a205d9b9d14cb940efe682049169f16a68ae3c7751cbcd00924b6",
+        "8766e4069a6b0753e77c8a8caa825268ad95103d2d94e6c2499b5c649f6d24f7",
+        "8fa89f43d21ecf7f4120cabbc6d96279b7c64b9a6c7edc01f0f696e90a0b683b",
+        "9cd21d1957082c83f557c54c4b5c82f0a45084a81171ac59e630581046d1d11a",
+        "c4e0d54741458c21db7f583f51dfb2e817382d4ab4ad037bd089169567fbceec",
+        "ccef6d037294b150e30b20c0ec0ff344ad1f23c2cf20529890dfe1ff79a2fe59",
+        "cf92df97de51a952fc3d11a6cb16683c571c2e536adcfdb93a1b26a678443a1b",
+        "d48ad1cd3c7abac80a786291392e05f2979a1d8f089ba06d73e483ac572749ba",
+        "ef3965018966e9ff9395c780cfad9da361a42fe31e00aa6d842d3496b07bab2b",
+        "fba36f64e73b136ca7bc477ae6a4c99a79a46d71adf3387fe77bf9fa226b7094"
+      ],
+      "bindingSurfaces": [
+        "001be43d0fe57c5a4d2cb2ba081f84a2af3e5d6c4c167be452413a97c9518eb0",
+        "3ca40c77ee973e3c4f87cf1419f1fd050f4b6897c3722801f6fdb159ce7135a8",
+        "5193ca852a68475d140a771402a4fa03aae098c6694625269ec7835683d9e75a",
+        "700090ad5114bd47f5f2e65bd7f3670b078a856d525ce548e5a98b76e4bc7fda",
+        "93b47627ec7dd5269192c40dff9717e81fa625e57b9b1d35cf367d3957ecd193",
+        "9dd69488a5f83d39b3aa1afc4845a37430a53bc5546ccf3679b2f0f2b3d4f61e",
+        "ca6d33cc6e28f5f57c6e4ed5b16aa66364f809c0f52ae33d7e5d72f83e0a146b",
+        "d3c7c0b6948622d54638729de889bded01734fa308421ec6df79cb2295a1d7ba"
+      ],
+      "computedBoundaries": []
+    },
+    "scripts/test-archived-weather-restart-workflow.mjs": {
+      "nodeImports": [
+        "node:assert/strict",
+        "node:child_process",
+        "node:crypto",
+        "node:fs",
+        "node:os",
+        "node:path",
+        "node:test",
+        "node:url",
+        "node:vm"
+      ],
+      "imports": [
+        "scripts/integrated-cutover-readiness.mjs",
+        "scripts/lib/account-statistics-assistant-workflow-review.mjs",
+        "scripts/lib/archived-production-gate-review.mjs",
+        "scripts/lib/archived-weather-restart-workflow-review.mjs",
+        "scripts/lib/completed-private-runtime-workflow-review.mjs",
+        "scripts/lib/established-native-current-origin-successor-source.mjs",
+        "scripts/lib/last-mile-enclosure-successor-source.mjs",
+        "scripts/lib/native-original-continuity-workflow-review.mjs",
+        "scripts/run-validation-collection.mjs"
+      ],
+      "resources": [
+        ".github/workflows/deploy-code-only-repair.yml",
+        "package.json"
+      ],
+      "dependencySurfaces": [
+        "009a32489624a2a8bb58c0c5602ac1adf84ae29d6c7b5c8a6f161b036fd5cfca",
+        "0225c37898de12462193137123eca40bceb719409128d1162464363d8a5b5d8c",
+        "07d6e3be3240e4367f4d4c5704edb26fa91bde6552d52422543a8214fafc9db4",
+        "0a6bdce6a000c2522c4e94d1d9bbc1c9b08aa687416564a7bbf196c22d3bf5de",
+        "0a8b4eec11040b1794e75d7cbe31b380f0691bc46143ee3a311ee87745e3fe42",
+        "0c60a6f8488cebc5e007c51ec17719d9ee2098a4201867ab50df3d9a60c74a9b",
+        "0d66a6f59811bc4292bf41c45d34e25b6560419e624209415ae2e0d0708e3d03",
+        "0db241359f82405d2f5efdcf7cace4b21c1fc690673031a36b067ea2a88eea35",
+        "0e4cc70fb4c47c4d36b56ad6c808c929599d8962e9b82dde7d538a188bf6be26",
+        "0f66b8548d4cf23f1913cd1af1402b04c4888da74d13c5432bd7e514c09c0b32",
+        "0fd7817419be648f825037a0ff7e6a7324e28d52274c0e63f600abc1620a1c1a",
+        "11748436541aeb88b6df78c03f303cf6b97d778659f95e3d1dbdc8f497fa8ed4",
+        "1336a6484b47bd196d986b3be6636d3b1aef344da5bc89213a46e7b955d79ff7",
+        "13ed91aae8ad1c1bc4274ef0aa51dbef6398f9bbe5e09c76fd3c421234f17560",
+        "163536f1e66e9a3638c7ab87a05d33bc003a023092a1af63c6310de52dc831bf",
+        "164fb2678aae024df2028360f29170d367ea856a1a84e21c43c4abaeddbdfaef",
+        "19c4a6f36a94d8c7b070de87e6df7bb677927f7f0e475ce3fb38712a0c57beed",
+        "1c122b8fbe8891d30668ecbd9e46c65817030918fd48198c97de47490a5058c5",
+        "1c8d9818172d09e917d48dd023dad11c90e14ceb2e943c79ebe7f1ff12db677e",
+        "1e40e6ebaa77273ffac2732820ebb91c8d3174d4ce81dfd4265198857e5ae669",
+        "1eda64a3782f09d7ea3ab37a2ae460c0b9fdf410409dc8ceef25a2bd27d75446",
+        "1f0f565392620d3f4e9d13fdde712077b2a5ccc2586aea44d20fbecbbfce45b7",
+        "1f1f7271b5cce552f8cd19d3988fcebc6174fed02ca6e2bb24b93fa8640514a6",
+        "2065b06b6866fadc118aded48d0da856ed891dcb3fc546c03470c16feab114fb",
+        "23374212cf8e8c63a2edd432a550ffba09bc34d6243d2c1e25a565faf1d46f43",
+        "247fe8b7431099ee22604f5ba3ce6d283d06eae1367c5d503f0110ceaf8cb5fc",
+        "2c230e8ea1d897ba43c5bd39534a6fee8cd413401fbec1372b99d18a361f0a0b",
+        "2c8cd9686c7baa31f42cbce2ed331219a9bb4869fe869d3b7bb2af7c6cc8688b",
+        "2d47aeb8ac3f13e0a3f29fc0e976b709e187cb625ac99085fa480caaa95efd6a",
+        "2e142eac518c700cab4452772ef8a34278b92f91eac506b3dadc52ba0b2416da",
+        "2ef5fe150db24e4957bee01b227e3678f25ba7e37f8bd96821ed435c454f4f2b",
+        "2fc827c367f32b4dffb851e0b6662b0cb937864462d646f8a3a5b2b7daff68a0",
+        "32150a5049b90e9b817f5b411656d32a348fbb3798c8555c81975716065b5210",
+        "3345a5273e66d46f4e6e8ecb6fe300b95a68f5b04ff143af5e500b9e3919dea3",
+        "3bef7a92774c74eb4a5d60aeccbba81b1757ee6fbdc8c21702e03c670a6f1762",
+        "3d9d4c746a842255ad539932c83294975077c6609e0e7d424d9e7fc9b93fabf8",
+        "3e92a1224358b4e7a4f8f9007d52f4a73f799c752966ea047cc5cc46172d347d",
+        "3eda86c4c76f3f641ac86aa6be042bc05342e2e3b8f7e34f7e8cf371754d4193",
+        "4244dd18c4dc9a0cc4c7dd9c38ed85c10b715f42f4562cb3aa9dc4d7c29c7d0b",
+        "4535a93ed946500644ba5f5bf9b8e10b16cf67ca5aa7fecfc118d376b5b7ba02",
+        "461c02da2707112feaa5290d27a473446de8253621d419c50885dd98456cb64c",
+        "476fe67e372d6d206b8cad0459f9d7391573bae78b41569ec4576a8d89aac3f2",
+        "493a48f3d7d089263d3248a9e0dc45ac399b92fbba365e2c8b0bb4f78560a7dc",
+        "499f8c8d0a57a356bbb5840826337c16c607cbbd044d1259359cfcafd2f89531",
+        "49ae903b452ab0850f1a1baea629511de6d6c45ac845e59bd68fab65d803c190",
+        "4d1f0d677a3043ca0ffa5ee253f60425792a5f65d9401cd8f9e0eccb68310580",
+        "4dfc56f0219eeb2f379da255bd957b771e50f32e1bf6766e635dec0188feadfc",
+        "4e06e00762be5be1b8370445dc898e811d5d7f03a768f33ae3c9faa60dc15174",
+        "509d4c21920170d39dfb351ac7c96b187d37cb2ae2db346b03c390754cb5a535",
+        "52d17129eba532a4cbc1f96e5c26cb6a662a0407562c2f5e9ce7a15eebbcfb9c",
+        "559576904f3184d734d0a688b63c2ed6b091eaa5f4c32770817424f9e310a4f5",
+        "56ff8b346d4f15afe5a7ca3f1ac540eb0a5507de4d0959bdae621c90fb909181",
+        "57cdb2f299515cf946c79be2802d977a4188f590dfba71194f1547771781c0f8",
+        "58627a8d49c93f058ae33c49cf1ba2a568b7fedd0a9096de2fb7fbf81229e6d9",
+        "5bda573a50618e022d72363a7267d0ce58decffb87df4f1e4c035aed5d4234ad",
+        "5cb3fc7e4f66c07162d7d33cdb06600a52249c9729d28bc93d04ea8035b3495a",
+        "5cbb22c0a54e4b82b8213031c512f8093acac8b530153874059f10a2ffd3ea60",
+        "5daf4d70caa249fa8b7058ae729994c421a06ac7f1fc010386c1cf2e519a9488",
+        "5f870d9c3e42ec97f2bf7cf3e7ea010667c41da1f1869eb33a9eedbee73c9db0",
+        "602bb65877bee71cfac87409dc4f89f5f7528aedbbc6c1d6908eea89aec9df39",
+        "62cc9023ddd53ffc52aa2e67fda3642c871217787ca3472896eca65cce9c8fb3",
+        "637acafc684594c58a2c2a62a64fbe17a777ad1e22515ca39be87e1a4aaf68dd",
+        "6684bdbe4b542cf50931bea2b6e178dc6170d7e16e85df3abe9ce1e52a82d887",
+        "67332984ea68eb4bd3e4446523f5d738170e95f1410fabb62259c6075aaeabb8",
+        "6daff28db66875b9d1c3e985688e80fc3b8327a572e4101a4c98621c76544119",
+        "6deb8fda41b85b58bbedaf8d64082894a8b60cbdc26a265c6d15e13b692b5cac",
+        "6e4d40b7f13d363bf3cce6dae7f1e8c492fa2971542d6a86589ff9b424c420ae",
+        "6eaff50479ff9e3b771f887b30841a8bbbbbae9b94acc584cc8d5d278d98b8eb",
+        "700d9ba33be26526306bdfb340497739b8938f3d89a88f513f187af8c423f733",
+        "7111ca596043d0870a594180a3db8f3bc8abcf5702f439cc92728560becd5cb4",
+        "72acf27b69f0b21b8eaea909c052339856ab3179059fdbc97b5144fe519bcbc0",
+        "72b272644618ece1e7fbc7f0eafb4ca777d80f424218ce58e8da6442393700c5",
+        "7394173a38e5f0576441f1863a052a7f6bed4c3fd0e5a11fbe7d109bac35c3f5",
+        "77b29b6f7369081623a4ff95cd88b2295cffe087ed6291f596477f5e958b61b0",
+        "78abf03ae34bc704af31f8414e3cf81799c8ed6e081838c6f2f16d3ea51e9689",
+        "797bf43e76cbb7e714e655c670154151d9c2de9f07a6eb4e2f9b6ed3df9b7c1b",
+        "79ff3d93aa04de540c7ac3a8c2af752453983fd8d87bf4ec160f467887852073",
+        "7a2723ff2e21c38b7c7013a33eedd0ebf5d41c237159a8db43436dd4805af14e",
+        "7b1887ec5870913686ac1186a6f10adf7818e02fa9bf72a732f68eef8bda9a04",
+        "7bf3efe92faa330e0fe83e083ad6b0a68289d4d8bb845913649e6f25e8fb9ff2",
+        "7df14762b802bc9ac1949979d1660b80e7173abdc2fdac0c46fac8372ad216c4",
+        "7f6b6c4358d64f1e439b29393aaba592667a672dc15c2b62e068e6399d645d98",
+        "840a2fec7eb78c3e65a16f3bc937253c8baf919cb13691c84bb3ca24c08ccb24",
+        "84c9b465c4786290b7e87215592fe2bbf27ec4874d62de3a64ef9514964b529d",
+        "850bcc95032534d96bdcb5009d63e47390a3d2c338feb4a951f757d8d945094e",
+        "898b9596ad4c41832764e145b9f978c011e7b6f1d97d4d3cf81180bd218ed364",
+        "8de0f63a5c00a1f8e37dc299676972f107cbb59644170f9e4e82c40b8be87691",
+        "939c50dcfe53eb13bbc63114c0235261bfe49d520c1c4624991f27cbd6b132ce",
+        "95a5a9bc7269440e84cded6b0dd45468147889f095591fff22dea58891e2c1c6",
+        "98ce60b44eaaf118937e47ceed36c02ead8f299170fbe02681b07bf746f071dc",
+        "9a129edf8582483b91a00a749a531a917d9f9f88b197f786da3ac6ff3e6a8296",
+        "9a90f55aefcc900ec0121515deb65346033b87b58f80e9aa78328f77314e999e",
+        "9c164f5c6244549ecaa3c6a772449a3c1a80332de0bf1da2bb282fea39921388",
+        "9dd5f607b58a5c033f3ff3ccd829e934ce52e7d13c05e30f542309a46d012f87",
+        "9faf483fb45f9750e3e1e02ba5db3f905d958d87347d746c59c204c0b80f1ec8",
+        "a0e88d1b0369595aca72ae9825ab6fc418872cfc53cc76c8064d4cb700e4db67",
+        "a142b11c897a508ec7515169b963fbd0701a8289220ce4cbe007a85dbaf50c9c",
+        "a219b33d7d008879589b0b70d9f1429f87e558e050e408e7a96f56c9d69bf61b",
+        "a2bd84fa5f928586b43d506b020eb7e46c85fe761200792950e4b6f986405c70",
+        "a37b9eb5e0c1e112b7211e32fd7e54c63de19bc8337790f82377dbb5bbb91244",
+        "a713149a2deeae11e85cee0a2660bea931ca471d640a20505efe28e0d383d8f0",
+        "ac9413175b7c0d6f879745bd04f7e1851ffad2f55145e591e7648c27bcc16a0e",
+        "af8ae893e21d050db4931c3b3a1d10547b090d53f0bd1a943044f4701b0f6453",
+        "b552d62b17fc226280fd07ec3fa2b6e8093221a0c20b6238778394de767c9498",
+        "b69b3320c45598f13d93fc9175271e6e8adb2e948d231229d011ff701eeee135",
+        "b7ca4167857e8efdbe3dcce5fb0b361052d87c5d420e6b33e4dfc835ee60e321",
+        "b82e8f50df52f5792f42d491042670ed1e46236181b9c720c96b1ceb80b3db88",
+        "b95a6a23ea54f922a1c763140bf27d1c5528ac8c311b0e5d3f3cc534c30af75f",
+        "bbfdc7ab8e30441723f61d5706f8772b716407239f481cce89ce7d6053fe85b1",
+        "c0430cd059151c8ef2a5ee4fab9707efa51687f4f7dd03dc509a410cafec60b7",
+        "c150cbcd75624b212473857b2be0cb750e15e259990d7842a29d4cc477b70da1",
+        "c1b9265060042d614101d5c36574d281d43b987038f73d86e6a749077233ac85",
+        "c2168402e4dcdbeb21a5bc26c0039d6d3f576be009ea5e35007354aeeb32e24f",
+        "c2bc02c4d31bfd5fc25c6ce3b570b10ce24052d1013a38cb6dd13669e3d7878a",
+        "c2be2733a100a014eda29750136947e1dd518233a612e0399657f7630c2f5f07",
+        "c4674bdfce1dc5797316f3b9f47f5356fd8e93dcba6e56447ea8ad2f888a8728",
+        "c54bba8887de5c0df3817ad4f24b558f6eb8e8ce5218d3d7edd30e746e30006a",
+        "c5c8207548e2abba51e8aa568321fc1c97d77f03b7d17c44579be1d901b209f2",
+        "c60e1f1f5890b0acd9d4736e87a3a6823b2b5d352b593688c278e96c58fcd72e",
+        "ca21a015152681631c4c367d3a8285df91e14cb338541d847c4c7c5ad76c3773",
+        "cb23fb962076bea040e43e71d96b9b7183ea721a6020d25274c9efae62faa263",
+        "cc75957650229814ce03771ab04f4409c61429d6bb8e24726c55b8265ab5627d",
+        "ce4b5a6e1613c9bf725ea1d8e9aa8a8f44d6c40ceb5926427d48edb216c4ae5d",
+        "d186daa853b643b51e18d996b0232aa26cbc04ddc3e3c7640644af6ec631b9e4",
+        "d4f862364cd9e078b692608b11b32aecde2bdcc9135ae9d3976bb48113c02b11",
+        "d54fa7942018d02ea8ddffa00c09b15c4a65871b7ca1c5ff8424999817bb074c",
+        "d5ad1c926c1f7affa690709f7433b847e7083b2ac3831486d598001bdcc30ea4",
+        "d5efbb1d2e06a4c57105e28b61feeb1732d52ff3d7dfc3a71e7fb66edc673631",
+        "d61c1c9b14ad39a03a322bd838c7f3f79748d2e96a7b61655fa0d46d2bf9348b",
+        "d68811bf1612661f3a48485fb1eea83494f2bd24e9367fa00ed30cb56e8b9dad",
+        "d7fd9ed9177e1744422749a7b8f82473fd99cbfac0b8ab75bea093eb52d75dff",
+        "d9eebd3c8a19dc56e136474b6be78c46a9606d85c731130c5dbf74c2d7799d7b",
+        "dad4be5affc49f84b30ce3a17ec34547d64135263b7527c6d88015c0c68970df",
+        "db90c65e18e8fa8c58709fd2070e48ee3c576e04be509ad442915755ec7cbc76",
+        "dcfad3485b2306840109badf7ae8b1f0a689855e23249637a041f3cb5eb165c1",
+        "df96d91e6bb506039261eb20e882d2b077b04edd879988be93381a5a53557685",
+        "dfa0192d47180fd51e91cd39f805c7693e15cae6dbcc1dd6862ab279eed17409",
+        "e0aeabce85c76666dcff4d5cac42e6db06b728587bbea87bb4528085b044a315",
+        "e1d289236628a85ca34f1c0af681e653289e76e3d67652a50ebdac1f23947ae5",
+        "e3c87f402ec655964fc9897344251c141e6c15883c99e5465a6104d7d0a00901",
+        "e5425944818a0eca97c9a74c5507afb25d3b23d8b7feaba8e761d064881bed1b",
+        "e5ec9ec88a74ada725d0babd58e1514fb602a8653cdf713dcd4d35aa1b970593",
+        "e60504eb37895e830ff4b999b8992a123b5aa25e515b02276be4d154ed067787",
+        "e73f0ca511d6d2bcb121dab0d2669020324c8df5db2652f58c495edfa050fd74",
+        "e860a1a4516083c35dd5def8c24da794803c0a31d2e88c22e5b0c0000cdce3a0",
+        "e90b0e14fa12826c34af893a83e33f8b23931dfbaf8424a4262b808a1ccd41fc",
+        "ea003bf6eeff6e3b08740a57ec13455fd2ea8a53f38c7d3ead121a56fd3d7b7f",
+        "eb9b32efd165357a60f18d2d790350e2e89161c20de1ee934f2e9a2a914f83c6",
+        "ec4d2ef620b835f6b4392bca680fe57381d3065b6ae529dada237a8120eb015e",
+        "f0aaa347a0ce545bc65f77299a9026f86292a4e457c954c80aeee1a28cc0a062",
+        "f0c5bf09837ee782910eebbeaef1cb07f1604272226d5d4f17f0ef625f522b20",
+        "f2161137dc9bdbf352e3193b19240384546bf6a34fa6245ccd53b3360d800c9d",
+        "f4359c7b8310d130a5406bf4c7323957ce25087a610e4f66fd86d874f3fd1796",
+        "f45c845ef130a8e1f14a986037eca86bf4cc9c358a1be8e86a7985b077dd5a81",
+        "f45f91266d5dbf4579c08f12e5d0c2e81e5c4bff6f890cf0684cc6a439005ccf",
+        "f4b0310d52931011a6a1d16f3fae2582ec88f2e7e78540d59623fe478da748cc",
+        "fde14c6b095ae604e72afc9c73afd32fec1a83593f27dc76175ccf602d26f38a"
+      ],
+      "bindingSurfaces": [
+        "0a3a189c408e24a851f1f968cd1022d77c756ccf1d1db4296c5a0f99f0a99d76",
+        "19d1274c6c7aac7b62d7eb1e5da2b30f4c9b9063478326654a7ff1792d88103d",
+        "1e38f12d82a97ded1b3258a7c07c0ddb445127f3607a0a5764bda21eb9477486",
+        "1fbd70411e5d6a5b406a483d078eb56f0d7cea544d728919d110180f5e2b5972",
+        "271088fb1238b0beaf4203e3aa52a8e66d738473e11e392daa969bc81e1a4215",
+        "287a07694f1d17b7f5369936bd9f6826a5931cd5f284d5375c6f88fd5f48480a",
+        "2b25cd307f97be688e31db8fbe2b2f79b3b55bd763edde4ea5705fbfec53a09a",
+        "2c53fc21984fe64bcac6d35d2c67793152d1234ffba58c66dd0a786a0ef9b473",
+        "2da63e3ae20e77cf33bbe6cf94410cbf65f590ca750d51a5ec8171e1ee8ea31e",
+        "45859b5cc6067d814c730afc34a958b9f4a065d5e169f8fe4696c1ddeebb454c",
+        "4723a8cbdeff45ca53a1a1c7b156cdedb14b60c363a45cb10d7f162180cd0cf6",
+        "485c686c805949446e0335f1540e436605529199c449856050a452435870965a",
+        "4fa62c583d0b1e475c2aa577e6c038080b5aa8cb45d7b992de70e147e8ffe642",
+        "5193ca852a68475d140a771402a4fa03aae098c6694625269ec7835683d9e75a",
+        "51ae2a443d0e00c4cac72f7f1d121dbc99d7471617b54862803f992bc69b2c47",
+        "53de57af31074565b9f015ba1f7476d9277b80fce1cb52172740c36346a2f2f2",
+        "5bab9443d6be92ec816d04631aec4b6a4deebf0c6729c8f67986804a77c12348",
+        "5dcf654a7541f2a0e74bc58322aa156473dfde0764bb02b55cf6dee288536037",
+        "63dcb5fe38566f452fa2b19cc0b146197df441483a6f49ba00db7f1f56d87e5a",
+        "77cc3a5a33899a3bf292ac39ec23034453aae795a75c810d38058cd2194b45b1",
+        "7817b7362099e506a4ba9c71eeb79fa9a47ae770b858eabb5b77da90730f869f",
+        "807276ad168307cf7d1e2113cbcc830aa547f9a84ea7c1c4e091ed105889fb03",
+        "86b9c481fb66114d90086b1a577379e35bd04fb69e8d7b6fc968ebf9eb4dfc4c",
+        "8f1dfc96e98562eef87325c049ae60c9eababd4388777ebfe596f322c6840960",
+        "9dd69488a5f83d39b3aa1afc4845a37430a53bc5546ccf3679b2f0f2b3d4f61e",
+        "a159960df37564c8ba5b12c5b57829f579bfbb6740928be9389099278a365e2d",
+        "b52c49c7da3e7263162c73c4edde203fc20c204ffb5cb5ae72fa0927d1d00420",
+        "be5d29d59a849b2dce6e074bc7659051ff670bf5f6d92b5739551f12a6841b99",
+        "be8ff06443d3a4caed1be00379a5ec5f64480e2851b28782d6ac53d3ab01696e",
+        "ca6d33cc6e28f5f57c6e4ed5b16aa66364f809c0f52ae33d7e5d72f83e0a146b",
+        "d3c7c0b6948622d54638729de889bded01734fa308421ec6df79cb2295a1d7ba",
+        "d8516cb93930bb4595ac6191a814d9e298a9e69fc331e9114da08e8da0fb4de2",
+        "e2c102c94178aba9ef9512d78edcc986ab8528aba82bc9b1f1385ff3f205ac75",
+        "e460a875c291327617d573c26269e72c5c84961d0527b825d964e3a440eb9a45",
+        "f01ca0093a7d1e4144ed10cd27142465814e080a20803bcfb260365ac2b683ff",
+        "f305b3418e06d5fd2c8d46d6858d74c32cffb5dc0956fe2f5931748ff312f51f",
+        "fcc74c6a7d8a2e73d1715bbdd1e078488717d051b4c496c1d9c547cef7d08e7f"
+      ],
+      "computedBoundaries": []
+    },
+    "scripts/test-code-only-public-runtime.mjs": {
+      "nodeImports": [
+        "node:assert/strict",
+        "node:child_process",
+        "node:crypto",
+        "node:fs",
+        "node:os",
+        "node:path",
+        "node:test",
+        "node:url"
+      ],
+      "imports": [
+        "js/core/ravscore-model-contract.js",
+        "scripts/acquire-code-only-public-snapshot.mjs",
+        "scripts/check-native-identity-frozen-i71-source.mjs",
+        "scripts/integrated-cutover-readiness.mjs",
+        "scripts/lib/archived-weather-restart-workflow-review.mjs",
+        "scripts/lib/bounded-conditions-predecessor-transition.mjs",
+        "scripts/lib/ravscore-known-public-source-repair.mjs",
+        "scripts/prepare-code-only-public-runtime.mjs",
+        "scripts/protected-private-production-runtime.mjs",
+        "scripts/resolve-code-only-public-source.mjs",
+        "scripts/run-frozen-native0600-source-targets.mjs",
+        "scripts/test-post-cutover-migration-routing.mjs"
+      ],
+      "resources": [
+        ".github/workflows/deploy-code-only-repair.yml",
+        ".github/workflows/recover-live-ravscore-central.yml",
+        ".github/workflows/reusable-pages-deploy.yml",
+        "docs/rdks/10_DECISIONS/DEC-0148-SEPARATE-CODE-DEPLOY-FROM-WEATHER-ACQUISITION.md",
+        "scripts/acquire-code-only-public-snapshot.mjs",
+        "scripts/extract-code-only-public-source.py",
+        "scripts/integrated-cutover-readiness.mjs",
+        "scripts/lib/bounded-conditions-predecessor-transition.mjs",
+        "scripts/prepare-cloudflare-trip-storage.mjs",
+        "scripts/prepare-code-only-public-runtime.mjs",
+        "scripts/protected-private-production-runtime.mjs",
+        "scripts/test-code-only-public-extractor.py",
+        "scripts/verify-cloudflare-trip-gateway.mjs",
+        "scripts/verify-code-only-migration-plan.mjs",
+        "scripts/verify-trip-storage-edge.mjs",
+        "supabase/migrations/20261005000000_owner_water_level_only_binding.sql",
+        "supabase/migrations/20261013210000_account_assistant_original_bound_successor.sql"
+      ],
+      "dependencySurfaces": [
+        "02bd08d6b2fc2e439960b821f462aa22938b54ee3447daddfaa8e4b27ddc448d",
+        "02ed79576afacb4cc74bffa2741245c0a037aaa03a3f2c9ff2f56d08e32469aa",
+        "078cd3bf728cb0075ec89741aca0df30a21da93e4f97e972fa78063aeb45d8b7",
+        "08bef2b464a5650abaa22e94baa828a144f5efeeaf55a6b8c118eb7088be1762",
+        "0bba7ff5a3ba0bc4468fe0fd41e1cf61d201438f5b1d3ea09cbcbb730d6ae869",
+        "11f8f3b8350c792f9a8377e54e2ae2a1b9bbd22c64c4ed223ff920f530d757fa",
+        "1bf52508b1e714d8a68ee8bff8bb50c9d8af7842f6a25867b8e6473e26466c7c",
+        "2a0cdd4babe71725343790433e2a36032c23849987b579a9c5de449f3c7eade5",
+        "3080a62724a7816614ca25dba946bb49c85df813ed28dba1d399b7abc23e17e9",
+        "438b17c4f711705550b86d0c22adb0557a48d902023c8993d0b7244e3cee380b",
+        "469d11688b0630acddd9fe69c121f6c05fd8caf02b0b7e7a9fd586da890c393a",
+        "5bfbf6f84706a19b5b97d52f15a555462032473d9ab520bd6e636250a39c6632",
+        "6481bc9da39fedf397c40534a89ada7672ca600e9c665f850e2af73846abc68b",
+        "7605e2372cb1fa267e369eefc942a0fcd3700d1f39451b28e1c5c7f5d59c0a50",
+        "8075802c231a43d5faeb127c4ebbe775050bbc38744b4e02665c364094ab8408",
+        "8294dc0bdb530f4446dded2826f8d8e2ef1b73b6e88a289b7ceaef2ba59c70ab",
+        "893db1653dc1925b2433f4fc823898a3da4d1484fac48549ae6fb9bec3bdd731",
+        "89881752ad6bb0ad210a6444665b25f0b97363bef26f8ec39cfa588a5cace4e3",
+        "93b5ac3f8217e6452222a0e8c04f81a3ce23fa00c24dc243aa59e4dd03c25c9f",
+        "967eec30cbbce2b908db49f2f6accb1fa9198a4115e9d08f99a07e50404fb2e6",
+        "9a535be9ece43a56a92945e49a7d7c4036e4b881eafb08c574223c9c4a430247",
+        "9e744e80f149c59232d4b5f7fc48c0c740558317bbef4a0484a794a7a5062fb9",
+        "a8959917e8340073577ac65d4da7fa46472ae747b447a904362f251bb0b9bcf9",
+        "abce533f65a8b2e70f5946cf41ba8b60546f8f9b70d4c210f37a198d6a605cad",
+        "acf2309d73d8db4dda8aa6d8e298701675701a232cc0dc8a70d43f95f8084500",
+        "be4f6c4ad5e706c026b60b642d308dd813628878993a7c5f72506cc80009dd25",
+        "c2379290d0333102d5fd9d63b4ad0da9aeaf6fe902a1e11d2aeb81fdad87b9b9",
+        "cf15dd6720a12be10a18b1e7784d39944aebbea05260ac52cb7ed178a320f5c2",
+        "da614f55310dbe09348a1c5e1b88e1285a0f90ba443dfae271ead18a466c526a",
+        "ec690022727667ae8b198f6abb8e9ca9a6ffc5aed35a6cfd67ced8209f5f2f97",
+        "ef600b8d7b9d58a878281df4254b124913d150b469d8ad86791ab40a83075961",
+        "f0e91f9721c0765e0fb24f99050ca974238586feb45e8c5bf17b3ee3543b4d56"
+      ],
+      "bindingSurfaces": [
+        "0818f88d103b41e0e49e5ec3c7a1a560c3bc58ccadd29c58e690c20c4100924d",
+        "08e35a074431dcb398d01d82156fc35dfc57389099391f6040e7c933165f2b8b",
+        "091ad9a6bfc10104523c140f25f43c5f316975661370bc324276b715e9ab9884",
+        "0b28bc2136074b8c3445ccd3d59a5f39b20cfe8c5e67a0bea707783906363960",
+        "0dad464848e1505e646f6566aeb4dfed780075fea94f92b16e0a9b871d1152b4",
+        "13e8111a6d7f320ddc550d8f9a5514b6ab0ff21354df17f482d549adb34c090a",
+        "16d5628c235957322544442af3684feb5495054f9a7049328900ba76a1d9d3de",
+        "1b0e4a5d003e1fbbef7e1fa3409d64ba35365e7e441bea4e538c79efc9b55533",
+        "214afbef8e3f459ae6d1a2ee91be28d30dbf6b022eb6c8a1d024b9b113df44e7",
+        "2a1108ed7dc82da629e8b38819958cab8c532b6bbe094b0eb997167c4a116aeb",
+        "32995e9da20737b3b4ec3ae3d0784cdc3983b437623b86e9a7f309dfe9f023ab",
+        "33d6796043cf0d6efe0dc4b8bfb62aacdc71ef3c0db5ec42e42cc0e99e3e0488",
+        "35fdc6d48bf97ae68f91893602acf2a29c1774b533cc8388e19892879e6a869e",
+        "368595b2753dc96a85ca6fb63327fbc5e2fd89ab4704a4b9d0800e0a68dd2643",
+        "3fd09f2f358aa461626b505aea632c089d8d8d6fe9e66f10542a6bc3e7eeeb8b",
+        "451b3ac1a430df3a50e47838da336e7469523772f2986419e48babfdef972716",
+        "455718199441bc5193ce4a5fbccbff5716ba30bd96c4621c52d41109f6501661",
+        "459ae0c02f4a080eb9fd35d3f6de8bf409f80d8ae37978144c52c6fe24bf8f87",
+        "4607d84ba68395e6b5c0ad817e454098b04e10b5fb678cb8d09d9affa88b3922",
+        "4c9ff90c90bf377d7ec1856e864635dd553d97561be065c8fe4f3af5324286f3",
+        "4e7d8a385cd6bb45a7fa68cfd1a5e9de6fb8ac2213f9935c125e3fbee6cde042",
+        "5193ca852a68475d140a771402a4fa03aae098c6694625269ec7835683d9e75a",
+        "5fd4592e00cbf42f8bacab0984bc0d2f5961c97a3cb7b93287f14e39c5921938",
+        "63ae4a5f6db0f6a39b13d6cae88b10287d6ea68141bca94f7b88a4424de756a6",
+        "666d6b2b148e6e72e6490b564a56fe87e72071184dbfbcf118d8873001747026",
+        "6c5f7af109dd33a0a7508651146b0ccaafd3fb4a7d69710aa5a901096af07232",
+        "6f0a3bcb1aeca64710f3461f0c9e2a2d72d2bc1c2c4e3545e2985b8211d305aa",
+        "816c9c91ef3df6633450ce56dcfed15aa3aa6e937f12ac1c6f3066f39ac79c55",
+        "8b31cb53ed4ea8338df725971aba7bdeb84cbb11b5a5744e51511d30a579d5ef",
+        "9588bb8e82919572f53aec279161720ffca1ba0b58342656dbfb0805f58fce35",
+        "9dd69488a5f83d39b3aa1afc4845a37430a53bc5546ccf3679b2f0f2b3d4f61e",
+        "9de0a1711b9395b2ef1aa0c877e3b1450607c561f4db027e65d5d466a79cf7f6",
+        "a161e502fdb0efc9e10b68e951ea7b91dbb8187a98c621f57b70d739a349d4cf",
+        "b11695e6651a78427bc4ecd8c541492edba2fa9bb70049ecdf92424e2057cbda",
+        "b65fe0c652c1121bec2fec71ce1d7530d419dde6d098a70fb53f5add2b0cc518",
+        "c6d04bb22c171bb42bfaae05c51e1067a4a9b2961813dc7c355c5b50ed4db3fb",
+        "ca6d33cc6e28f5f57c6e4ed5b16aa66364f809c0f52ae33d7e5d72f83e0a146b",
+        "d09f51b6d6a668556f2313987927d9fc1e2cd3c964a79607580c241c59eea33e",
+        "d3c7c0b6948622d54638729de889bded01734fa308421ec6df79cb2295a1d7ba",
+        "d62f1c51ec8d5cfa5742fda1533f48f9ca07f111ccc3391141defa913142e647",
+        "d8ca110a8604f3d7728dc629f641a69b59dbe74090bdb48e9ad4eb3de536bbf9",
+        "dfb0eabd1d5749ae6fd5019d191a47be71ee965c69fac3921c502cabe571d79c",
+        "e1acf14a10f21fada5e188669057cd108e422b0e045823b90af21119db8c704a",
+        "e74d5be87f25ece65b941fac874428439485710fcd233da0a539e2401cb965ed",
+        "eac0367b317ce85f95ababa07a46ca9e8eab63d69b64f6d51d0e71d51c8c5506",
+        "ed2d10e14f1ddcd87d7f69357b63a62d51b01ee3a5740d483e6e4d81698ff8f5",
+        "f124d89d738e62e4720d0835b6a3f464802bd2d04852e3e8cccc34cb05a89d36",
+        "f3e2cac9bde73f7bab81eddf1225057c0db4bb980a6d79de319a621c39c92841",
+        "f52e0bc351cb2dbe140bd4f553d271481ef2bc29da38a872f94a0bf160161f6c",
+        "fa710ce38bbc82b53802a00310fee1fc27b712957f52e4e308a542c372360082"
+      ],
+      "computedBoundaries": [
+        "576f971a23fb3815bab3686353ed70ae4021bebc885236b03c9376b3374470a6",
+        "785c5fd88403f36d8615eb3c390b7080f4369f4a072df3b0410243eb2189ee03"
+      ]
+    },
+    "scripts/test-established-native-current-origin591-metadata.mjs": {
+      "nodeImports": [
+        "node:assert/strict",
+        "node:path",
+        "node:url"
+      ],
+      "imports": [
+        "scripts/assistant-later-h0-runtime-transition.mjs",
+        "scripts/check-assistant-later-h0-predecessor-source.mjs",
+        "scripts/lib/established-native-current-origin.mjs",
+        "scripts/private-production-runtime-workflow.mjs"
+      ],
+      "resources": [],
+      "dependencySurfaces": [],
+      "bindingSurfaces": [],
+      "computedBoundaries": [
+        "8e59ef2a6bced21bd57e1c2c1a6edd4c6255ac1b1d547fb01f92bee9b17ec883"
+      ]
+    },
+    "scripts/test-installed593-original591-successor.mjs": {
+      "nodeImports": [
+        "node:assert/strict",
+        "node:fs/promises",
+        "node:os",
+        "node:path",
+        "node:url"
+      ],
+      "imports": [
+        "scripts/assistant-later-h0-binding-prewrite.mjs",
+        "scripts/build-assistant-later-h0-successor.mjs",
+        "scripts/integrated-cutover-readiness.mjs",
+        "scripts/lib/assistant-later-h0-successor-source.mjs"
+      ],
+      "resources": [],
+      "dependencySurfaces": [
+        "a1018d01426cd8dd323d80c1434838917badb180e26c432c9a7e86ad1bdd2fe3",
+        "fa20ff8b9e138962657d156304795563d9ed8489ab3ca4e42d07c24264c1b05c"
+      ],
+      "bindingSurfaces": [
+        "02ce297516202ebe517788eb985b5240347df0e25247adb4153ce92f0e4080b3",
+        "268e0230de83e428802198ecc50dbe42cc788d8b952f1ef966c882cde6016abd",
+        "8a4f01bd8f396647acb9985368880685203101306a91fa4d40a125e735a49771",
+        "946a593f8526b1b09bad2212d90a5b991592fb0084c5875a746cbeb6f0c22da9",
+        "9b3e8695c4e139fabf566cad7ebb96ab518c5bd71f261534c36ac62b86f02c51",
+        "a79863d32098c97096e65cbf40ab5f690fa8965c6c9f6ca2f026a9c3474c9d15"
+      ],
+      "computedBoundaries": []
+    },
+    "scripts/test-jordrav.mjs": {
+      "nodeImports": [
+        "node:child_process"
+      ],
+      "imports": [],
+      "resources": [],
+      "dependencySurfaces": [
+        "1a103125eed84ff6e63ec16086238362da1a022f4d4c020f5d527502049ef870"
+      ],
+      "bindingSurfaces": [
+        "0125e1bc356a238edfb5729266a911258ae975f81e747cd430b298696bcbae76",
+        "9dd69488a5f83d39b3aa1afc4845a37430a53bc5546ccf3679b2f0f2b3d4f61e",
+        "ca6d33cc6e28f5f57c6e4ed5b16aa66364f809c0f52ae33d7e5d72f83e0a146b"
+      ],
+      "computedBoundaries": []
+    },
+    "scripts/test-post-cutover-migration-routing.mjs": {
+      "nodeImports": [
+        "node:assert/strict",
+        "node:fs/promises"
+      ],
+      "imports": [
+        "js/core/ravscore-model-contract.js",
+        "scripts/assistant-later-h0-runtime-transition.mjs",
+        "scripts/check-assistant-later-h0-predecessor-source.mjs",
+        "scripts/lib/assistant-later-h0-successor-source.mjs",
+        "scripts/lib/private-weather-component-inventory.mjs",
+        "scripts/migrate-post-cutover-private-runtime.mjs",
+        "scripts/prepare-code-only-public-runtime.mjs",
+        "scripts/private-production-runtime-bundle.mjs",
+        "scripts/private-production-runtime-workflow.mjs",
+        "scripts/protected-private-production-runtime.mjs",
+        "scripts/test-established-native-current-origin591-metadata.mjs",
+        "scripts/test-installed593-original591-successor.mjs"
+      ],
+      "resources": [
+        ".github/workflows/deploy-code-only-repair.yml",
+        "scripts/migrate-post-cutover-private-runtime.mjs"
+      ],
+      "dependencySurfaces": [
+        "74ea4eafbb285a7e64491d533c44b75ba1b90ed2fe43dce536412cc162914fc1",
+        "b1771a26f40f0298fd7aeb91026ed178d99c711f68f21f6a1337a90860d1a533"
+      ],
+      "bindingSurfaces": [
+        "57c684023f0bfa6d1699ec94ecc4bd57217256abdaf2d46074eb06a33a33d40e",
+        "8a4f01bd8f396647acb9985368880685203101306a91fa4d40a125e735a49771",
+        "9b3e8695c4e139fabf566cad7ebb96ab518c5bd71f261534c36ac62b86f02c51",
+        "fd3b5d98980d59ece4e65c1d9992a12588e72efc5e7abe9276fc81ccf22a9d99"
+      ],
+      "computedBoundaries": []
     }
   },
   "resourceFiles": [
@@ -16755,7 +17685,39 @@
     "scripts/run-coherent-current-originals-supervised.py",
     "scripts/test-live-current-pilot-4.0.232.mjs",
     "scripts/test-open-meteo-live-runtime.mjs",
-    "scripts/test-ravscore-public-runtime-contract.mjs"
+    "scripts/test-ravscore-public-runtime-contract.mjs",
+    ".github/workflows/apply-weather-model-binding-only.yml",
+    ".github/workflows/recover-live-ravscore-central.yml",
+    "docs/rdks/10_DECISIONS/DEC-0148-SEPARATE-CODE-DEPLOY-FROM-WEATHER-ACQUISITION.md",
+    "js/ui/admin-active-ravscore.js",
+    "scripts/acquire-code-only-public-snapshot.mjs",
+    "scripts/extract-code-only-public-source.py",
+    "scripts/lib/account-statistics-assistant-workflow-review.json",
+    "scripts/lib/archived-weather-restart-workflow-review.json",
+    "scripts/lib/current-installed-code-only-workflow-review.json",
+    "scripts/lib/native-original-continuity-workflow-review.json",
+    "scripts/prepare-code-only-public-runtime.mjs",
+    "scripts/test-code-only-public-extractor.py",
+    "scripts/test-code-only-userdata-policy-routing.mjs",
+    "scripts/test-integrated-cutover-install-contract.mjs",
+    "scripts/test-integrated-cutover-readiness.mjs",
+    "scripts/test-native-identity-checkpoint-runtime.mjs",
+    "scripts/test-native-identity-frozen-i71-source.mjs",
+    "scripts/test-native-identity-installed-migration-metadata.mjs",
+    "scripts/test-native-identity-normal-readiness.mjs",
+    "scripts/test-native-identity-normal-routing.mjs",
+    "scripts/test-native-identity-staging-working-copy.mjs",
+    "scripts/test-native-identity-workflow.mjs",
+    "scripts/test-native-sampling-identity-successor.mjs",
+    "scripts/test-owned-i71-native-identity-working.mjs",
+    "scripts/test-source-validation-once.mjs",
+    "scripts/test-weather-state-epoch-archive.mjs",
+    "scripts/test-weather-state-epoch-budget.mjs",
+    "scripts/test-weather-state-epoch-callers.mjs",
+    "scripts/test-weather-state-epoch.mjs",
+    "scripts/verify-code-only-migration-plan.mjs",
+    "supabase/migrations/20261005000000_owner_water_level_only_binding.sql",
+    "supabase/migrations/20261013210000_account_assistant_original_bound_successor.sql"
   ],
   "commands": {
     "controls": [],
