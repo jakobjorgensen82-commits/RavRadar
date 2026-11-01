@@ -4,6 +4,8 @@ Den lokale diagnosekandidat udvider det eksisterende skrivefri auditjob med én 
 
 Kun faste timer, vandstandskilder, oprindelige modeltidspunkter, gemte kildevægte og afgrænsede komponent-/modeltællere må udvælges. De private resultater gemmes krypteret; diagnosens artifact indeholder kun ciphertext og fast sikker status med én dags retention. Manglende autentisk historisk routingkonfiguration giver udtrykkeligt ukendt rekonstruktion af kystdele. Diagnosen genberegner ikke scorer og ændrer ikke originaler, cache, kilder, administratorpunkter, geometri, modelbindinger eller SQL. Den bruger ingen nye leverandørdata og må kun startes efter præcis kildekontrol og afsluttet writer.
 
+En fast offentlig rapportmodtager gør den krypterede rapport læsbar lokalt. Det private modtagermateriale forbliver i den private lokale evidensmappe og giver ingen tjeneste- eller API-adgang. Den lokale læser skal først verificere den faktisk kvalificerede kode, kørsel, job, trin, artifact, hele ZIP-digest og krypteringskontekst; dekryptering alene er ikke et oprindelsesbevis. De normale workflows, som faktisk læser målrettede PR-beviser, deklarerer den nødvendige læserettighed. De gamle hele testorakler bevares gennem præcise inverser.
+
 Normale lokale B-/GCM-/kalder-, privatlivs- og fristprøver er udført med syntetiske input. De er ikke aflæsning af produktionspakker eller bevis for årsagen til en faktisk vandstandsafvigelse. Præcis kildekvalifikation, sikker levering og den faktiske private aflæsning er fortsat åbne. Diagnosen tilføjer ingen intern fejlviden til brugerassistenten. Alle fem hovedmål består.
 
 ## 1. november — fast, skrivefri aflæsning af assistentens fejlkategorier

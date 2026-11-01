@@ -412,8 +412,14 @@ test('Voersaa fixed water trace workflow: only ciphertext and safe status leave 
   assert.match(actual,/downloadOrdinaryCompletedStageArtifact/);assert.match(actual,/oldStage\.openStagedPrivateProductionRuntime/);
   assert.match(actual,/restoreProtectedPrivateProductionRuntime/);assert.match(actual,/manifest\.bundleContentSha256!==restored\.bundleContentSha256/);
   assert.match(actual,/if\(!same\(await pointer\(\),before\)\)failed\('CURRENT_GENERATION_CHANGED'\)/);
-  assert.match(actual,/trace\.sealVoersaaWaterTrace\(privateReport/);assert.doesNotMatch(actual,/console\.|writeFile\([^\n]*privateReport|force:true/);
+  assert.match(actual,/trace\.sealVoersaaWaterTraceForRecipient\(privateReport,\{repository,runId,runAttempt,sourceHead,masterSecret\}\)/);
+  assert.match(actual,/protectedGenerationReadbackVerified:true,exactArchivedSourceContractsVerified:true/);
+  assert.doesNotMatch(actual,/recipientPublicKey|recipientPrivateKey|console\.|writeFile\([^\n]*privateReport|force:true/);
   const helper=fs.readFileSync('scripts/lib/voersaa-water-level-trace.mjs','utf8');
   assert.match(helper,/UNKNOWN_MISSING_AUTHENTIC_SAVED_CONFIG/);assert.doesNotMatch(helper,/console\.|createProtected|fetch\(/);
   assert.match(helper,/VOERSAA_WATER_TRACE\/20261101\/v1/);
+  assert.match(helper,/VOERSAA_WATER_TRACE\/20261101\/v2/);
+  assert.match(helper,/92d0755edecec37a78ee8e0658a79873c17b67e13324711d75fce76270e8d529/);
+  assert.match(helper,/padding:crypto\.constants\.RSA_PKCS1_OAEP_PADDING,oaepHash:'sha256'/);
+  assert.doesNotMatch(job,/recipient|PUBLIC_KEY|PRIVATE_KEY|secrets\.(?:REPORT|RECIPIENT)/i);
 });

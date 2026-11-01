@@ -1377,9 +1377,9 @@ export async function auditVoersaaWaterLevelTrace(options = {}) {
     phase='FINAL_CURRENT_READBACK';await stableCurrent();
     const privateReport=trace.voersaaWaterTraceReport(crypto.createHash('sha256').update(stable(before)).digest('hex'),generations);
     phase='OWNED_SCRATCH_CLEANUP';cleanupAttempted=true;await cleanup();
-    phase='PRIVATE_ENVELOPE';const ciphertext=trace.sealVoersaaWaterTrace(privateReport,{repository,runId,runAttempt,sourceHead,masterSecret});
+    phase='PRIVATE_ENVELOPE';const ciphertext=trace.sealVoersaaWaterTraceForRecipient(privateReport,{repository,runId,runAttempt,sourceHead,masterSecret});
     await fs.writeFile(encryptedOutput,ciphertext,{flag:'wx',mode:0o600});
-    const report={...baseReport('AUDIT_COMPLETED'),readScope,protectedGenerationReadbackVerified:true,
+    const report={...baseReport('AUDIT_COMPLETED'),readScope,protectedGenerationReadbackVerified:true,exactArchivedSourceContractsVerified:true,
       exactOriginalGenerations:2,privateTraceEncrypted:true,privatePayloadIncluded:false};
     await fs.writeFile(safeOutput,JSON.stringify(report)+'\n',{flag:'wx',mode:0o600});return report;
   }catch(error){

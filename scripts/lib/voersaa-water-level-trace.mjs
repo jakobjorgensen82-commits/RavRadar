@@ -263,6 +263,10 @@ export function sealVoersaaWaterTrace(report,context){
   return Buffer.concat([MAGIC,salt,iv,cipher.update(JSON.stringify(report),'utf8'),cipher.final(),cipher.getAuthTag()]);
 }
 export function openVoersaaWaterTrace(bytes,context){
+  if(Buffer.isBuffer(bytes)&&bytes.subarray(0,RECIPIENT_MAGIC.length).equals(RECIPIENT_MAGIC)){
+    const envelope=recipientEnvelope(bytes,context),cryptoContext=encryptionContext(context);
+    return openRecipientData(envelope,cryptoContext.key(envelope.salt));
+  }
   assert(Buffer.isBuffer(bytes)&&bytes.length>MAGIC.length+44&&bytes.length<=256*1024+MAGIC.length+44
     &&bytes.subarray(0,MAGIC.length).equals(MAGIC),'WATER_TRACE_ENVELOPE_BOUND');
   const cryptoContext=encryptionContext(context),at=MAGIC.length;
@@ -270,4 +274,104 @@ export function openVoersaaWaterTrace(bytes,context){
   decipher.setAAD(cryptoContext.aad);decipher.setAuthTag(bytes.subarray(-16));
   const plaintext=Buffer.concat([decipher.update(bytes.subarray(at+28,-16)),decipher.final()]);
   return validateVoersaaWaterTraceReport(JSON.parse(plaintext.toString('utf8')));
+}
+
+// A fixed local diagnosis recipient, never a B/S/progress/origin credential.
+// Only this public SPKI is shipped. The private key never enters CI or source.
+export const VOERSAA_WATER_TRACE_RECIPIENT_SPKI_SHA256='92d0755edecec37a78ee8e0658a79873c17b67e13324711d75fce76270e8d529';
+const RECIPIENT_PUBLIC_PEM=`-----BEGIN PUBLIC KEY-----
+MIIBojANBgkqhkiG9w0BAQEFAAOCAY8AMIIBigKCAYEA0orSv4TDHcNLaRKyGBoV
+rd2Y/Qtmuzl7ZAM3o3P0Wm/He5hOu2lZ4jHCnFODHcGZJQckgTjziXPO+2ejZinZ
+KC+B3Z+TcR8z3r0vpIGqzNhs5i1AwEG9PX56fXhLLskcoomVnR7hYuJsb1lk2x31
+VT+FX8DudQ+bPpS0TSGD/9TT0kZicrSSblHQZH0Bh6NsKmOSvFa5Ez9HPSCCFQBM
+1MvPXsiy///ojNbBV0WRB/3dBZYNC98Kk8DIzyi9Gpd781Ar7Lsqpy59B/2P4L8C
+5Xrc+hU84ZhKoTtDX2Bjw6sW1WVzN0h7QNgBmoDV2tj7ezrBWBwjnlHapNy1koqo
+SpBTd9gcC4BYOcAeSi/54BuApiM5X6Ie2q0mo6mdk1Yv/GdedpSfeNmzkQAr5gTL
+dPfcC7WRZWo43oyV6IJw0CIcRDOQY2MowBYdzfzcaMiaX1OJZP40wnKKWz8Bks1K
+cDdYoG7qEbqESiF74xOXIsojS+O46Oj1aLhgh96+E1+9AgMBAAE=
+-----END PUBLIC KEY-----
+`;
+const RECIPIENT_MAGIC=Buffer.from('RR-PRIVATE-VOERSAA-WATER-TRACE-2\n');
+const RECIPIENT_PURPOSE='VOERSAA_WATER_TRACE/20261101/v2';
+const MAX_HEADER_BYTES=2048,MAX_REPORT_BYTES=256*1024,WRAPPED_KEY_BYTES=384;
+function reportIdentity(context){
+  assert(object(context),'WATER_TRACE_ENCRYPTION_CONTEXT');
+  const {repository,runId,runAttempt,sourceHead}=context;
+  assert(typeof repository==='string'&&repository.length<=200&&/^[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+$/.test(repository)
+    &&/^[1-9][0-9]{0,31}$/.test(String(runId))&&/^[1-9][0-9]{0,31}$/.test(String(runAttempt))
+    &&/^[a-f0-9]{40}$/.test(sourceHead),'WATER_TRACE_ENCRYPTION_CONTEXT');
+  return {repository,runId:String(runId),runAttempt:String(runAttempt),sourceHead};
+}
+function recipientPublicKey(value){
+  const result=value instanceof crypto.KeyObject?value:crypto.createPublicKey(value);
+  assert(result.type==='public'&&result.asymmetricKeyType==='rsa'
+    &&result.asymmetricKeyDetails.modulusLength===3072,'WATER_TRACE_RECIPIENT_KEY');
+  return result;
+}
+function recipientFingerprint(key){
+  return crypto.createHash('sha256').update(key.export({type:'spki',format:'der'})).digest('hex');
+}
+function recipientEnvelope(bytes,context){
+  assert(Buffer.isBuffer(bytes)&&bytes.length>RECIPIENT_MAGIC.length+48
+    &&bytes.length<=MAX_REPORT_BYTES+RECIPIENT_MAGIC.length+4+MAX_HEADER_BYTES+44
+    &&bytes.subarray(0,RECIPIENT_MAGIC.length).equals(RECIPIENT_MAGIC),'WATER_TRACE_ENVELOPE_BOUND');
+  const lengthAt=RECIPIENT_MAGIC.length,headerBytes=bytes.readUInt32BE(lengthAt),headerAt=lengthAt+4;
+  assert(headerBytes>=2&&headerBytes<=MAX_HEADER_BYTES&&bytes.length>headerAt+headerBytes+44,'WATER_TRACE_ENVELOPE_BOUND');
+  const encoded=bytes.subarray(headerAt,headerAt+headerBytes),header=JSON.parse(encoded.toString('utf8'));
+  exact(header,['purpose','repository','runId','runAttempt','sourceHead','keyAlgorithm','dataAlgorithm','recipientSpkiSha256','wrappedKey']);
+  assert(Buffer.from(JSON.stringify(header)).equals(encoded),'WATER_TRACE_ENVELOPE_HEADER');
+  assert(header.purpose===RECIPIENT_PURPOSE&&header.keyAlgorithm==='RSA-OAEP-SHA256'&&header.dataAlgorithm==='AES-256-GCM'
+    &&typeof header.recipientSpkiSha256==='string'&&/^[a-f0-9]{64}$/.test(header.recipientSpkiSha256)
+    &&typeof header.wrappedKey==='string'&&/^[A-Za-z0-9+/]{512}$/.test(header.wrappedKey),'WATER_TRACE_ENVELOPE_HEADER');
+  const identity=reportIdentity(context);
+  for(const field of Object.keys(identity))assert.equal(header[field],identity[field],'WATER_TRACE_ENVELOPE_CONTEXT');
+  const wrappedKey=Buffer.from(header.wrappedKey,'base64');
+  assert(wrappedKey.length===WRAPPED_KEY_BYTES&&wrappedKey.toString('base64')===header.wrappedKey,'WATER_TRACE_ENVELOPE_HEADER');
+  const saltAt=headerAt+headerBytes,ivAt=saltAt+16,cipherAt=ivAt+12;
+  const ciphertext=bytes.subarray(cipherAt,-16);assert(ciphertext.length<=MAX_REPORT_BYTES,'WATER_TRACE_REPORT_BOUND');
+  return {header,wrappedKey,salt:bytes.subarray(saltAt,ivAt),iv:bytes.subarray(ivAt,cipherAt),
+    aad:bytes.subarray(0,cipherAt),ciphertext,tag:bytes.subarray(-16)};
+}
+function openRecipientData(envelope,key){
+  assert(Buffer.isBuffer(key)&&key.length===32,'WATER_TRACE_DATA_KEY');
+  try{
+    const decipher=crypto.createDecipheriv('aes-256-gcm',key,envelope.iv);
+    decipher.setAAD(envelope.aad);decipher.setAuthTag(envelope.tag);
+    const plaintext=Buffer.concat([decipher.update(envelope.ciphertext),decipher.final()]);
+    assert(plaintext.length<=MAX_REPORT_BYTES,'WATER_TRACE_REPORT_BOUND');
+    return validateVoersaaWaterTraceReport(JSON.parse(plaintext.toString('utf8')));
+  }finally{key.fill(0);}
+}
+export function sealVoersaaWaterTraceForRecipient(report,context,options={}){
+  validateVoersaaWaterTraceReport(report);exact(options,Object.hasOwn(options,'recipientPublicKey')?['recipientPublicKey']:[]);
+  const identity=reportIdentity(context),cryptoContext=encryptionContext(context);
+  // Pure codec tests may select a disposable test RSA key. The audit/CLI has
+  // no such option and always calls this default with its fixed public SPKI.
+  const publicKey=recipientPublicKey(options.recipientPublicKey??RECIPIENT_PUBLIC_PEM);
+  const fingerprint=recipientFingerprint(publicKey);
+  if(!Object.hasOwn(options,'recipientPublicKey'))assert.equal(fingerprint,VOERSAA_WATER_TRACE_RECIPIENT_SPKI_SHA256);
+  const salt=crypto.randomBytes(16),iv=crypto.randomBytes(12),key=cryptoContext.key(salt);
+  try{
+    const wrappedKey=crypto.publicEncrypt({key:publicKey,padding:crypto.constants.RSA_PKCS1_OAEP_PADDING,oaepHash:'sha256'},key);
+    assert.equal(wrappedKey.length,WRAPPED_KEY_BYTES,'WATER_TRACE_RECIPIENT_KEY');
+    const header=Buffer.from(JSON.stringify({purpose:RECIPIENT_PURPOSE,...identity,keyAlgorithm:'RSA-OAEP-SHA256',
+      dataAlgorithm:'AES-256-GCM',recipientSpkiSha256:fingerprint,wrappedKey:wrappedKey.toString('base64')}));
+    assert(header.length<=MAX_HEADER_BYTES,'WATER_TRACE_ENVELOPE_BOUND');
+    const length=Buffer.alloc(4);length.writeUInt32BE(header.length);
+    // Header, wrapped key, SPKI fingerprint, salt and nonce are all authenticated
+    // identically by the existing master reader and the local recipient codec.
+    const aad=Buffer.concat([RECIPIENT_MAGIC,length,header,salt,iv]);
+    const cipher=crypto.createCipheriv('aes-256-gcm',key,iv);cipher.setAAD(aad);
+    return Buffer.concat([aad,cipher.update(JSON.stringify(report),'utf8'),cipher.final(),cipher.getAuthTag()]);
+  }finally{key.fill(0);}
+}
+export function openVoersaaWaterTraceForRecipient(bytes,context){
+  exact(context,['repository','runId','runAttempt','sourceHead','recipientPrivateKey']);
+  const envelope=recipientEnvelope(bytes,context),privateKey=context.recipientPrivateKey instanceof crypto.KeyObject
+    ?context.recipientPrivateKey:crypto.createPrivateKey(context.recipientPrivateKey);
+  assert(privateKey.type==='private'&&privateKey.asymmetricKeyType==='rsa'
+    &&privateKey.asymmetricKeyDetails.modulusLength===3072,'WATER_TRACE_RECIPIENT_KEY');
+  assert.equal(recipientFingerprint(crypto.createPublicKey(privateKey)),envelope.header.recipientSpkiSha256,'WATER_TRACE_RECIPIENT_KEY');
+  const key=crypto.privateDecrypt({key:privateKey,padding:crypto.constants.RSA_PKCS1_OAEP_PADDING,oaepHash:'sha256'},envelope.wrappedKey);
+  return openRecipientData(envelope,key);
 }

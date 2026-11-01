@@ -2,6 +2,7 @@
 
 - Forbered én fast skrivefri sporing af vandstand i to autentiske gemte originalgenerationer med normal fuld B-/GCM-verifikation og uændret central pointer.
 - Bevar snævert feltudvalg i en privat krypteret rapport, faste sikre fejlkoder og særskilt bevis for GitHubs temp-root. Manglende historisk konfiguration forbliver ukendt.
+- Forbered fast lokal rapportmodtager med faktisk job-/artifactverifikation før privat dekryptering; tilføj præcis læserettighed til to normale PR-beviskaldere og isolér den negative tokenprøve fra CI-miljøet.
 - Normale lokale syntetiske mål består; kildekvalifikation, faktisk pakkeaflæsning og årsagskonklusion er åbne. Ingen ændring af model, SQL, score, vejrdata, kilder eller geometri.
 
 ## 1. november — afgrænset assistentdiagnose, uændret 4.0.594

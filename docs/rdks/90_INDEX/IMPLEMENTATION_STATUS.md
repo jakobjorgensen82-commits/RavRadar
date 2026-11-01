@@ -3,6 +3,8 @@
 - [x] Lokal fast læsevej gennem normale autentificerede CURRENT/PREVIOUS- eller genuine completed-stage-B-læsere; original producent og fuld GCM-/B-kontrol bevares.
 - [x] Snævert privat feltudvalg, særskilt krypteret rapport, faste sikre fejlkoder og ukendt ved manglende autentisk historisk konfiguration. Ingen produktionsskrivning eller leverandørhentning.
 - [x] Normale syntetiske kalder-/privatlivs-/fristprøver samt reproduceret separat RUNNER_TEMP/systemtemp-forløb. Dette er ikke rigtig produktionsaflæsning.
+- [x] Lokal modtagerkode til den krypterede rapport er forberedt med fast offentlig modtager og autentificeret job-/artifactgrænse før privatnøglelæsning. Faktisk lokal aflæsning er stadig åben.
+- [x] To nødvendige kildebeviskaldere har forberedt præcis PR-læserettighed; gamle hele workflow-/registryorakler bevares, og negativ tokenprøve isoleres fra CI-miljøet.
 - [ ] Præcis samlet kildekvalifikation og sikker levering efter afsluttet writer.
 - [ ] Faktisk aflæsning af de gemte originaler og årsagsanalyse af den observerede vandstandsafvigelse.
 

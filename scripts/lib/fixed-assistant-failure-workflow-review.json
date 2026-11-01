@@ -487,5 +487,144 @@
         "002c584e1463bfb112258ced22c40f0f0be4b69108f7db327a3e95e405fd02d8/256a467d4b45f559263e96e188c87a7d2aee25e0b96acc4a7a9292a852539894"
       ]
     }
+  },
+  "sourceProofReadPermission": {
+    "kind": "EXACT_TOP_LEVEL_PULL_REQUEST_READ_GRANT",
+    "beforeSha256": "256a467d4b45f559263e96e188c87a7d2aee25e0b96acc4a7a9292a852539894",
+    "afterSha256": "62f523dec566b67c58e298df8afb88fdd3cd1f85a75a2d64e65c868415b6fce2",
+    "before": "permissions:\n  contents: read\n  actions: read\n",
+    "after": "permissions:\n  contents: read\n  actions: read\n  pull-requests: read\n"
+  },
+  "registrySourceProofSuccessor": {
+    "kind": "EXACT_CONTROLS_AND_SOURCE_PROOF_REGISTRY_SUCCESSOR",
+    "afterSha256": "e794b96b020ea55c2f78b8eb4380e380a17a604f40a2c260e7ea7cbaeb55c6dc",
+    "controlsAfterSha256": "5d6f16211ea4088b9704c23311d2fdbff3ef645941500089148527cc6e053073",
+    "oracleSha256": "c3972b4e155e52e94ca621ecc86e0b5c760bd4feeacc65d36eea5dea08fdd6a1",
+    "transitionInsertion": {
+      "field": "exactSourceTransitions/.github/workflows/deploy-trip-storage.yml",
+      "offset": 849631,
+      "bytes": 278,
+      "sha256": "34b29ea119d9e718d90c5e70302d90c3233a9e004dd1229717811b953ffcff5f"
+    },
+    "controlInsertions": [
+      {
+        "field": "owners",
+        "offset": 23163,
+        "bytes": 2040,
+        "sha256": "e7a4ab7ac33c7a5b6b41970f7b287133fef4513b572e5130dc45965f1e3994bd"
+      },
+      {
+        "field": "sources",
+        "offset": 681796,
+        "bytes": 133047,
+        "sha256": "95f9f39e0d47b745cb92d1fec8a3a256fc5f00802aaa4ff44f08a09230fc1160"
+      },
+      {
+        "field": "resourceFiles",
+        "offset": 843891,
+        "bytes": 691,
+        "sha256": "ee20f27627fa168c8af909f749d0bdb4d8e5e1e597b1057c2561c926db833ddb"
+      }
+    ],
+    "transitionOwner": ".github/workflows/deploy-trip-storage.yml",
+    "preservedHistoricalPairs": [
+      "002c584e1463bfb112258ced22c40f0f0be4b69108f7db327a3e95e405fd02d8/256a467d4b45f559263e96e188c87a7d2aee25e0b96acc4a7a9292a852539894"
+    ],
+    "transitionPairs": [
+      "256a467d4b45f559263e96e188c87a7d2aee25e0b96acc4a7a9292a852539894/62f523dec566b67c58e298df8afb88fdd3cd1f85a75a2d64e65c868415b6fce2",
+      "002c584e1463bfb112258ced22c40f0f0be4b69108f7db327a3e95e405fd02d8/62f523dec566b67c58e298df8afb88fdd3cd1f85a75a2d64e65c868415b6fce2"
+    ],
+    "controlOwners": [
+      {
+        "path": "scripts/audit-saved-weather-inputs.mjs",
+        "domains": [
+          "controls"
+        ],
+        "controlQualification": true,
+        "commands": [
+          [
+            "controls",
+            "node --test scripts/test-audit-saved-weather-inputs.mjs"
+          ],
+          [
+            "controls",
+            "node --test scripts/test-saved-weather-audit-workflow.mjs"
+          ]
+        ]
+      },
+      {
+        "path": "scripts/lib/voersaa-water-level-trace.mjs",
+        "domains": [
+          "controls"
+        ],
+        "controlQualification": true,
+        "commands": [
+          [
+            "controls",
+            "node --test scripts/test-audit-saved-weather-inputs.mjs"
+          ],
+          [
+            "controls",
+            "node --test scripts/test-saved-weather-audit-workflow.mjs"
+          ]
+        ]
+      },
+      {
+        "path": ".github/workflows/audit-saved-weather-inputs.yml",
+        "domains": [
+          "controls"
+        ],
+        "controlQualification": true,
+        "commands": [
+          [
+            "controls",
+            "node --test scripts/test-audit-saved-weather-inputs.mjs"
+          ],
+          [
+            "controls",
+            "node --test scripts/test-saved-weather-audit-workflow.mjs"
+          ]
+        ]
+      },
+      {
+        "path": "scripts/test-audit-saved-weather-inputs.mjs",
+        "domains": [
+          "controls"
+        ],
+        "controlQualification": true,
+        "commands": [
+          [
+            "controls",
+            "node --test scripts/test-audit-saved-weather-inputs.mjs"
+          ],
+          [
+            "controls",
+            "node --test scripts/test-saved-weather-audit-workflow.mjs"
+          ]
+        ]
+      },
+      {
+        "path": "scripts/test-saved-weather-audit-workflow.mjs",
+        "domains": [
+          "controls"
+        ],
+        "controlQualification": true,
+        "commands": [
+          [
+            "controls",
+            "node --test scripts/test-audit-saved-weather-inputs.mjs"
+          ],
+          [
+            "controls",
+            "node --test scripts/test-saved-weather-audit-workflow.mjs"
+          ]
+        ]
+      }
+    ],
+    "counts": {
+      "owners": 101,
+      "sources": 368,
+      "resourceFiles": 566
+    }
   }
 }

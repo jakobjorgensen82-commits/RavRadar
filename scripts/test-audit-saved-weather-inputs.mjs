@@ -12,7 +12,7 @@ import { auditSavedWeatherInputs, auditProtectedBaselineComponentFallback, audit
   savedAuditProgressAuthenticationCode, CURRENT586_ENDPOINT_AUDIT,
   CURRENT586_CACHED_ORIGINAL_AUDIT } from './audit-saved-weather-inputs.mjs';
 import { cachedCoherentOriginalFailureCode } from './lib/prove-cached-coherent-current-originals.mjs';
-import {VOERSAA_WATER_TRACE_TARGETS,VOERSAA_WATER_TRACE_CONTRACTS,VOERSAA_WATER_TRACE_TIMES,openVoersaaWaterTrace,sealVoersaaWaterTrace,validateVoersaaWaterTraceReport} from './lib/voersaa-water-level-trace.mjs';
+import {VOERSAA_WATER_TRACE_TARGETS,VOERSAA_WATER_TRACE_CONTRACTS,VOERSAA_WATER_TRACE_TIMES,openVoersaaWaterTrace,sealVoersaaWaterTrace,validateVoersaaWaterTraceReport,sealVoersaaWaterTraceForRecipient,openVoersaaWaterTraceForRecipient,VOERSAA_WATER_TRACE_RECIPIENT_SPKI_SHA256} from './lib/voersaa-water-level-trace.mjs';
 import {buildWaterSourceForecastIndex,applyWaterSourceRouting,packWaterSourceForecastContinuity} from './lib/water-source-forecast-routing.mjs';
 import {dmiWaterSourceFixture} from './test-helpers/dmi-water-source-fixture.mjs';
 import {sealStagedPrivateProductionRuntime} from './staged-private-production-runtime.mjs';
@@ -1951,7 +1951,7 @@ async function fixedWaterCase(t,{changedAt=Infinity,corrupt=false,badInner=false
     const bytes=Buffer.from(item.bytes);if(corrupt)bytes[0]^=1;return new Response(bytes);
   };
   const outputPath=path.join(old.privateRoot,'water-safe.json');
-  const options={...credentials,...waterContext,privateRoot:old.privateRoot,predecessorRoot:readers,outputPath,fetchImpl:transport};
+  const options={...credentials,...waterContext,githubToken:'',privateRoot:old.privateRoot,predecessorRoot:readers,outputPath,fetchImpl:transport};
   return {fixtures,old,current,state,options,transport};
 }
 test('Voersaa fixed water trace: actual normal B current/previous and strict private envelope',async t=>{
@@ -1960,7 +1960,7 @@ test('Voersaa fixed water trace: actual normal B current/previous and strict pri
   const originalLog=console.log,originalError=console.error;
   console.log=(...args)=>logs.push(args.join(' '));console.error=(...args)=>logs.push(args.join(' '));
   let safe;try{safe=await auditVoersaaWaterLevelTrace(f.options);}finally{console.log=originalLog;console.error=originalError;}
-  assert.equal(safe.status,'AUDIT_COMPLETED',JSON.stringify(safe));safeReport(safe,f.old.privateRoot);
+  assert.equal(safe.status,'AUDIT_COMPLETED',JSON.stringify(safe));assert.equal(safe.exactArchivedSourceContractsVerified,true);safeReport(safe,f.old.privateRoot);
   const encrypted=await fs.readFile(f.options.outputPath+'.encrypted'),report=openVoersaaWaterTrace(encrypted,waterContext);
   assert.equal(report.generations[0].inputDisposition,'EXACT_PREVIOUS');assert.equal(report.generations[1].inputDisposition,'EXACT_CURRENT');
   assert.deepEqual(report.generations.map(g=>g.hours.map(h=>h.time)),[VOERSAA_WATER_TRACE_TIMES,VOERSAA_WATER_TRACE_TIMES]);
@@ -1976,6 +1976,11 @@ test('Voersaa fixed water trace: actual normal B current/previous and strict pri
   for(const forbidden of ['samplingPoint','gridPoint','waterPoint','landPoint','currentUMps','currentVMps','gzipBase64','synthetic-secret','secret-error-canary'])
     assert(!JSON.stringify(report).includes(forbidden),forbidden);
   assert(!encrypted.includes(Buffer.from('Synthetic Hals Havn')));
+  const recipientMagic=Buffer.from('RR-PRIVATE-VOERSAA-WATER-TRACE-2\n');
+  assert(encrypted.subarray(0,recipientMagic.length).equals(recipientMagic));
+  const recipientHeader=JSON.parse(encrypted.subarray(recipientMagic.length+4,
+    recipientMagic.length+4+encrypted.readUInt32BE(recipientMagic.length)));
+  assert.equal(recipientHeader.recipientSpkiSha256,VOERSAA_WATER_TRACE_RECIPIENT_SPKI_SHA256);
   assert(!JSON.stringify(safe).includes('waterLevelCm'));assert(!logs.join('\n').includes('fixture-A'));assert(!logs.join('\n').includes('Synthetic Hals Havn'));
   for(const position of [0,encrypted.length-1,Math.floor(encrypted.length/2)]){const changed=Buffer.from(encrypted);changed[position]^=1;assert.throws(()=>openVoersaaWaterTrace(changed,waterContext));}
   for(const change of [{runId:'90002'},{runAttempt:'2'},{sourceHead:'a'.repeat(40)},{repository:'other/synthetic'},{masterSecret:'other-synthetic-master-secret-never-real'}])
@@ -2177,4 +2182,41 @@ test('Voersaa fixed water trace: normal runner temp is separate from system TMPD
     assert(!(await fs.readdir(systemTemp)).some(n=>n.startsWith('rr-ordinary-completed-stage-')),'Only normal owned artifact copies were cleaned');
     assert(!(await fs.readdir(privateRoot)).some(n=>n.startsWith('voersaa-water-')));
   }finally{for(const k of keys){if(saved[k]===undefined)delete process.env[k];else process.env[k]=saved[k];}}
+});
+
+test('Voersaa fixed water trace: recipient codec keeps legacy master and authenticates the whole new header',async t=>{
+  const f=await fixedWaterCase(t),safe=await auditVoersaaWaterLevelTrace(f.options);
+  assert.equal(safe.status,'AUDIT_COMPLETED');
+  const report=openVoersaaWaterTrace(await fs.readFile(f.options.outputPath+'.encrypted'),waterContext);
+  const legacy=sealVoersaaWaterTrace(report,waterContext);
+  assert(legacy.subarray(0,Buffer.byteLength('RR-PRIVATE-VOERSAA-WATER-TRACE-1\n')).equals(Buffer.from('RR-PRIVATE-VOERSAA-WATER-TRACE-1\n')));
+  assert.deepEqual(openVoersaaWaterTrace(legacy,waterContext),report);
+  // Test-only ephemeral keys, never the local diagnosis recipient's private key.
+  const pair=crypto.generateKeyPairSync('rsa',{modulusLength:3072});
+  const {masterSecret,...identity}=waterContext,recipientContext={...identity,recipientPrivateKey:pair.privateKey};
+  const bytes=sealVoersaaWaterTraceForRecipient(report,waterContext,{recipientPublicKey:pair.publicKey});
+  assert.deepEqual(openVoersaaWaterTrace(bytes,waterContext),report);
+  assert.deepEqual(openVoersaaWaterTraceForRecipient(bytes,recipientContext),report);
+  assert.throws(()=>openVoersaaWaterTraceForRecipient(legacy,recipientContext));
+  const magic=Buffer.byteLength('RR-PRIVATE-VOERSAA-WATER-TRACE-2\n'),size=bytes.readUInt32BE(magic),at=magic+4;
+  const header=JSON.parse(bytes.subarray(at,at+size)),saltAt=at+size;
+  assert.equal(header.recipientSpkiSha256,crypto.createHash('sha256').update(pair.publicKey.export({type:'spki',format:'der'})).digest('hex'));
+  const changeHeader=change=>{const next=structuredClone(header);change(next);const encoded=Buffer.from(JSON.stringify(next)),length=Buffer.alloc(4);
+    length.writeUInt32BE(encoded.length);return Buffer.concat([bytes.subarray(0,magic),length,encoded,bytes.subarray(at+size)]);};
+  const changed=[
+    changeHeader(h=>{h.recipientSpkiSha256=(h.recipientSpkiSha256[0]==='0'?'1':'0')+h.recipientSpkiSha256.slice(1);}),
+    changeHeader(h=>{h.wrappedKey=(h.wrappedKey[0]==='A'?'B':'A')+h.wrappedKey.slice(1);}),
+    changeHeader(h=>{h.keyAlgorithm='RSA-OAEP-SHA1';}),changeHeader(h=>{h.extra='unknown';}),
+  ];
+  for(const position of [saltAt,saltAt+16,bytes.length-1]){const next=Buffer.from(bytes);next[position]^=1;changed.push(next);}
+  for(const next of changed){assert.throws(()=>openVoersaaWaterTrace(next,waterContext));
+    assert.throws(()=>openVoersaaWaterTraceForRecipient(next,recipientContext));}
+  for(const change of [{repository:'other/synthetic'},{runId:'90002'},{runAttempt:'2'},{sourceHead:'a'.repeat(40)}])
+    assert.throws(()=>openVoersaaWaterTraceForRecipient(bytes,{...recipientContext,...change}));
+  assert.throws(()=>openVoersaaWaterTrace(bytes,{...waterContext,masterSecret:'other-synthetic-master-secret-never-real'}));
+  const other=crypto.generateKeyPairSync('rsa',{modulusLength:3072});
+  assert.throws(()=>openVoersaaWaterTraceForRecipient(bytes,{...identity,recipientPrivateKey:other.privateKey}));
+  let requests=0;const refused=await auditVoersaaWaterLevelTrace({...f.options,recipientPublicKey:pair.publicKey,
+    fetchImpl:()=>{requests++;throw Error('NO_TRANSPORT_ALLOWED');}});
+  assert.equal(refused.code,'MODE_INVALID');assert.equal(requests,0,'Pure codec option grants no audit/data authority');
 });

@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
 import { runInNewContext } from 'node:vm';
 import { createHash } from 'node:crypto';
-import { reviewedFixedAssistantFailureLegacyWorkflow } from './lib/fixed-assistant-failure-workflow-review.mjs';
+import { reviewedFixedAssistantFailureLegacyWorkflow, reviewedFixedAssistantFailureLegacyRegistry } from './lib/fixed-assistant-failure-workflow-review.mjs';
 
 // One normal offline caller target. No hosted logs, SQL engine or real token.
 const text = async file => (await fs.readFile(new URL('../' + file, import.meta.url), 'utf8')).replaceAll('\r\n', '\n');
@@ -32,18 +32,37 @@ assert.ok(unknown.includes("inputs.operation != '" + route + "'"));
 const digest = value => createHash('sha256').update(value).digest('hex');
 const review = JSON.parse(await text('scripts/lib/fixed-assistant-failure-workflow-review.json'));
 assert.equal(review.sourceHead, '14ade133b7f3b9557f312630a5b557086245b938');
+// The real source-proof callers inherit exactly these three read grants.
+const readPermission = review.sourceProofReadPermission;
+assert.equal(digest(workflow), readPermission.afterSha256);
+function assertSourceProofReadPermission(source) {
+  assert.deepEqual(source.match(/^permissions:\n(?:  [^\n]+\n)+/gm) ?? [],
+    ['permissions:\n  contents: read\n  actions: read\n  pull-requests: read\n']);
+  assert.doesNotMatch(source, /^[ \t]+permissions:/m, 'source-proof jobs must inherit the reviewed top-level grants');
+}
+assertSourceProofReadPermission(workflow);
+for (const altered of [workflow.replace('  pull-requests: read\n', ''),
+  workflow.replace('  pull-requests: read', '  pull-requests: write'),
+  workflow.replace('  pull-requests: read', '  pull-requests: read\n  issues: read'),
+  workflow.replace('  deploy-trip-storage:\n', '  deploy-trip-storage:\n    permissions: {}\n')]) {
+  assert.notEqual(altered, workflow);assert.throws(() => assertSourceProofReadPermission(altered));
+}
+const beforeReadPermission = workflow.replace(readPermission.after, () => readPermission.before);
+assert.equal(digest(beforeReadPermission), review.workflowAfterSha256);
 const legacyWorkflow = reviewedFixedAssistantFailureLegacyWorkflow(workflow);
 assert.equal(digest(legacyWorkflow), review.workflowBeforeSha256);
+assert.equal(reviewedFixedAssistantFailureLegacyWorkflow(beforeReadPermission), legacyWorkflow);
 assert.equal(reviewedFixedAssistantFailureLegacyWorkflow(legacyWorkflow), legacyWorkflow);
 assert.equal(reviewedFixedAssistantFailureLegacyWorkflow(workflow.replaceAll('\n','\r\n')), legacyWorkflow);
 const legacyReadJob = legacyWorkflow.slice(legacyWorkflow.indexOf('  read-fixed-supabase-metadata:'), legacyWorkflow.indexOf('  reject-unknown-operation:'));
 assert.doesNotMatch(legacyReadJob, /fixed-assistant-failure-log-read-20261101/);
-let workflowInverseCases = 3;
+let workflowInverseCases = 4;
 for (const [before,after] of [
   ['test "$GITHUB_RUN_ATTEMPT" = 1','test "$GITHUB_RUN_ATTEMPT" = 2'],
   ['node scripts/weather-source-gate.mjs check','node scripts/weather-source-gate.mjs unknown'],
   ['node scripts/check-fixed-supabase-account-read-idle.mjs','node scripts/check-fixed-supabase-account-read-idle.mjs --unknown'],
   [route,route+'-unknown'],
+  ['  pull-requests: read','  pull-requests: write'],
 ]) {
   assert.notEqual(workflow.replace(before,after),workflow);
   assert.throws(()=>reviewedFixedAssistantFailureLegacyWorkflow(workflow.replace(before,after)), /FIXED_ASSISTANT_WORKFLOW_UNREVIEWED_BYTES/);
@@ -84,7 +103,30 @@ runSourceOracle(legacyWorkflow);
 
 // The new registry has its own exact additive proof. The completed admin
 // fixture remains pinned to its original reviewed 14ade133 CODE and DATA.
-const registryRaw = await text('scripts/lib/source-impact-domain-owners-594.json');
+const actualRegistryRaw = await text('scripts/lib/source-impact-domain-owners-594.json');
+const registrySuccessor = review.registrySourceProofSuccessor;
+function assertActualRegistry(source) {
+  assert.equal(digest(source), registrySuccessor.afterSha256, 'ACTUAL_SOURCE_PROOF_REGISTRY_BYTES');
+  const registryDocument = JSON.parse(source);
+  assert.deepEqual([registryDocument.owners.length, Object.keys(registryDocument.sources).length, registryDocument.resourceFiles.length],
+    [registrySuccessor.counts.owners, registrySuccessor.counts.sources, registrySuccessor.counts.resourceFiles]);
+  for (const owner of registrySuccessor.controlOwners)
+    assert.deepEqual(registryDocument.owners.filter(row => row.path === owner.path), [owner]);
+  assert.deepEqual(registryDocument.exactSourceTransitions[registrySuccessor.transitionOwner],
+    [...registrySuccessor.preservedHistoricalPairs, ...registrySuccessor.transitionPairs]);
+  return registryDocument;
+}
+const actualRegistry = assertActualRegistry(actualRegistryRaw);
+for (const altered of [actualRegistryRaw + '\n',
+  actualRegistryRaw.replace(registrySuccessor.transitionPairs[0], registrySuccessor.transitionPairs[0] + '0'),
+  JSON.stringify({...actualRegistry, owners:actualRegistry.owners.slice(0,-1)},null,2)+'\n',
+  JSON.stringify({...actualRegistry, resourceFiles:[...actualRegistry.resourceFiles,'unknown-resource.txt']},null,2)+'\n']) {
+  assert.notEqual(altered, actualRegistryRaw);assert.throws(() => assertActualRegistry(altered));
+  assert.throws(() => reviewedFixedAssistantFailureLegacyRegistry(altered), /FIXED_ASSISTANT_REGISTRY_UNREVIEWED_BYTES/);
+}
+const registryRaw = reviewedFixedAssistantFailureLegacyRegistry(actualRegistryRaw);
+assert.throws(() => assertActualRegistry(registryRaw), /ACTUAL_SOURCE_PROOF_REGISTRY_BYTES/);
+assert.equal(reviewedFixedAssistantFailureLegacyRegistry(registryRaw), registryRaw);
 assert.equal(digest(registryRaw),review.registryAfterSha256);
 const registry = JSON.parse(registryRaw), priorRegistry = structuredClone(registry);
 for (const owner of review.registryDelta.owners) {
