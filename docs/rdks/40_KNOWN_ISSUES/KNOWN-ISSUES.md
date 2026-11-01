@@ -1,3 +1,11 @@
+## 1. november — påvist temperaturudsultning; lokal kandidat afventer levering
+
+ROOTs normale browserlog for 236 viste 515 OM-starter, 0 temperaturstarter, 673 udsatte temperaturjobs og budgetReached=1. MF/SST-temperatur er en separat request, ikke del af wave. Alle temperaturjobs stod efter hele criticalWork-køen. Det forklarer manglende temperaturforsøg i dette forløb; det beviser ikke, hvilke værdier leverandøren ville have leveret, eller årsagen til DMI-only-vandstandshullerne.
+
+Den lokale 2:1-fletning bevarer relative/roterede ordener, budgetter, to slots, DMI→CP→OM, admission og no-loss. Den giver temperatur en mulighed senest hver tredje dispatch, hvis tre starter kan gennemføres. Den gamle eksplicitte 0-temperatur-testpolitik erstattes for ejerens alle-fem-krav; der repinnes ikke. Normal reproduktion med 2019 jobs/515 starter er RED 0 temperatur før og GREEN 171 temperatur + 344 kritiske efter; 26+24 normale tests består med bevist kandidatlæsning.
+
+Præcis SourceCI og effekt i næste offentlige generation er fortsat åbne. Der loves hverken bedre dækning eller gyldige upstreamværdier. C100/I99/T12 og selektive native-inputs er uændrede; ingen ny version, SQL eller aktivering. Vandstandens separate DMI-only-sag forbliver åben.
+
 ## 1. november — én samlet lokal kandidat, endnu ikke kvalificeret
 
 Denne kandidat samler P0-kontrollen af forseglet manifest/startup, vanddiagnosens eksisterende nøglemapping og prognosedelingens Pages-læsekompatibilitet oven på de bevarede 785-/786-rettelser. Hele den nyere 5067-dokumentation bevares. Samlingen er endnu ikke kvalificeret i GitHub eller leveret; tidligere fejlede kørsler forbliver fejlede.

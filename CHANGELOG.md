@@ -1,3 +1,9 @@
+## 1. november — lokal kandidat: begrænset temperaturandel i OM-køen
+
+Ret den påviste køpolitik fra forløb 236: 515 OM-starter, 0 temperaturstarter, 673 udsatte temperaturjobs og budgetReached=1. Temperatur/MF-SST er en separat request og stod efter hele den kritiske kø. Flet højst to kritiske jobs med ét temperaturjob; bevar begge listers relative/roterede orden, budgetter, to slots, DMI→CP→OM, admission og no-loss.
+
+Erstat den gamle eksplicitte 0-temperatur-under-pres-testpolitik efter ejerens alle-fem-krav; ingen repinning. Samme normale 2019-job/515-starters prøve er RED 0 temperatur før og GREEN 171 temperatur + 344 kritiske efter. 26 runtime- og 24 bank-tests består med faktisk kandidat-/childlæsning. Temperatur får mulighed ved tilstrækkelige starter, ikke garanti for gyldige upstreamværdier. C100/I99/T12 og selektive native-inputs bevares. Præcis SourceCI og ny generationseffekt er åbne; DMI-only-vandstand er separat. Ingen version, SQL eller aktivering.
+
 ## 1. november — én samlet lokal kandidat, endnu ikke kvalificeret
 
 Denne kandidat samler P0-kontrollen af forseglet manifest/startup, vanddiagnosens eksisterende nøglemapping og prognosedelingens Pages-læsekompatibilitet oven på de bevarede 785-/786-rettelser. Hele den nyere 5067-dokumentation bevares. Samlingen er endnu ikke kvalificeret i GitHub eller leveret; tidligere fejlede kørsler forbliver fejlede.

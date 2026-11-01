@@ -5,6 +5,7 @@ import path from 'node:path';
 import test from 'node:test';
 import { spawnSync } from 'node:child_process';
 import { loadOpenMeteoPartRuntime, runOpenMeteoPartRuntime } from './lib/open-meteo-part-runtime.mjs';
+import { produceOpenMeteoPartComponents } from './produce-open-meteo-part-components.mjs';
 import { OPEN_METEO_PART_RESPONSE_MAX_BYTES, selectedOpenMeteoPartRecord,
   buildOpenMeteoPartRequest, readOpenMeteoPartResponse, mergeOpenMeteoPartBank } from './lib/open-meteo-part-bank.mjs';
 
@@ -310,31 +311,103 @@ test('PART settlement: rejected cancellation retains the actual resource and fal
 });
 
 
-test('tail capacity: critical GAP tier precedes temperature while preserving rotated PART fairness', async t => {
-  const input = await fixture(t);
-  const second = { ...part, partId: 'SECOND', waterPoint: [11, 56] };
-  const parts = [part, second];
-  const requiredPairs = parts.flatMap(row => [
-    { partId: row.partId, component: 'waterTemperature', validTime: reference },
-    { partId: row.partId, component: 'wind', validTime: at(100) },
-    { partId: row.partId, component: 'wave', validTime: at(101) },
-  ]);
-  await fs.mkdir(input.privateCacheRoot, { recursive: true });
-  await fs.writeFile(path.join(input.privateCacheRoot, 'weather-component-fallback-cursor.json'),
-    JSON.stringify({ kind: 'WEATHER_COMPONENT_FALLBACK_CURSOR', schemaVersion: 1, openMeteoLastAttemptedPartId: part.partId }));
-  const order = [];
-  const result = await runOpenMeteoPartRuntime({ ...input, parts, requiredPairs,
-    budgetMs: 10_000, maxHttpAttempts: 4,
-    fetchImpl: async raw => { const url = new URL(raw); order.push([url.searchParams.get('longitude'), url.searchParams.get('hourly')]); return new Response('synthetic permanent miss', { status: 400 }); },
+test('tail capacity: bounded scalar fairness reaches temperature under sustained critical work', async t => {
+  await t.test('2026 queue: 673 jobs per family and 515 starts retain critical progress and reach 171 temperatures', async () => {
+    const parts = Array.from({ length: 673 }, (_, index) => ({ ...part, partId: `QUEUE-${index}` }));
+    const requiredPairs = parts.flatMap(row => [
+      { partId: row.partId, component: 'wave', validTime: at(114) },
+      { partId: row.partId, component: 'wind', validTime: at(115) },
+      { partId: row.partId, component: 'waterTemperature', validTime: at(117) },
+    ]);
+    const started = []; let active = 0, maximumActive = 0;
+    const result = await produceOpenMeteoPartComponents({ parts, spatialPolicies, requiredPairs,
+      productionReferenceAt: reference, retentionStartAt: at(-48), retentionEndAt: at(120),
+      startAfterPartId: parts[6].partId, shouldContinue: () => started.length < 515,
+      fetchResponse: async request => {
+        started.push({ partId: request.identity.entityId.slice(6), component: request.component });
+        active++; maximumActive = Math.max(maximumActive, active);
+        try { await Promise.resolve(); throw new Error('synthetic permanent provider refusal'); }
+        finally { active--; }
+      },
+    });
+    t.diagnostic(JSON.stringify({ kind: 'SYNTHETIC_2026_QUEUE_COUNTS', requests: result.summary.requests,
+      requestsByComponent: result.summary.requestsByComponent, deferredByComponent: result.summary.deferredByComponent }));
+    assert.equal(result.summary.requests, 515);
+    assert.deepEqual(result.summary.requestsByComponent, { wind: 172, wave: 172, waterTemperature: 171 });
+    assert.deepEqual(result.summary.deferredByComponent, { wind: 501, wave: 501, waterTemperature: 502 });
+    assert.equal(result.summary.deferred, 1504);
+    assert.equal(result.summary.failures.length, 515);
+    assert.equal(result.bank.records.length, 0, 'request fairness never fabricates provider values');
+    assert.equal(active, 0); assert.equal(maximumActive, 2);
+    const rotated = [...parts.slice(7), ...parts.slice(0, 7)].map(row => row.partId);
+    assert.deepEqual(started.filter(row => row.component === 'waterTemperature').map(row => row.partId), rotated.slice(0, 171));
+    assert.deepEqual(started.filter(row => row.component !== 'waterTemperature').map(row => [row.partId, row.component]),
+      rotated.slice(0, 172).flatMap(id => [[id, 'wave'], [id, 'wind']]));
   });
-  assert.deepEqual(order.map(([longitude, fields]) => [longitude, fields.startsWith('wind_') ? 'wind' : fields.startsWith('wave_') ? 'wave' : 'temperature']),
-    [['11', 'wind'], ['11', 'wave'], ['10', 'wind'], ['10', 'wave']]);
-  assert.equal(result.summary.requests, 4);
-  assert.deepEqual(result.summary.requestsByComponent, { wind: 2, wave: 2, waterTemperature: 0 });
-  assert.deepEqual(result.summary.deferredByComponent, { wind: 0, wave: 0, waterTemperature: 2 });
-  assert.equal(result.summary.deferred, 2);
-  assert.equal(result.summary.lastAttemptedPartId, part.partId);
-  assert.equal(result.summary.transport.httpAttempts, 4);
+  await t.test('normal paced runtime keeps rotation, four HTTP cap and a real temperature start', async t => {
+    const input = await fixture(t);
+    const second = { ...part, partId: 'SECOND', waterPoint: [11, 56] };
+    const parts = [part, second];
+    const requiredPairs = parts.flatMap(row => [
+      { partId: row.partId, component: 'waterTemperature', validTime: reference },
+      { partId: row.partId, component: 'wind', validTime: at(100) },
+      { partId: row.partId, component: 'wave', validTime: at(101) },
+    ]);
+    await fs.mkdir(input.privateCacheRoot, { recursive: true });
+    await fs.writeFile(path.join(input.privateCacheRoot, 'weather-component-fallback-cursor.json'),
+      JSON.stringify({ kind: 'WEATHER_COMPONENT_FALLBACK_CURSOR', schemaVersion: 1, openMeteoLastAttemptedPartId: part.partId }));
+    const order = [];
+    const result = await runOpenMeteoPartRuntime({ ...input, parts, requiredPairs,
+      budgetMs: 10_000, maxHttpAttempts: 4,
+      fetchImpl: async raw => { const url = new URL(raw); order.push([url.searchParams.get('longitude'), url.searchParams.get('hourly')]); return new Response('synthetic permanent miss', { status: 400 }); },
+    });
+    assert.deepEqual(order.map(([longitude, fields]) => [longitude, fields.startsWith('wind_') ? 'wind' : fields.startsWith('wave_') ? 'wave' : 'temperature']),
+      [['11', 'wind'], ['11', 'wave'], ['11', 'temperature'], ['10', 'wind']]);
+    assert.equal(result.summary.requests, 4);
+    assert.deepEqual(result.summary.requestsByComponent, { wind: 2, wave: 1, waterTemperature: 1 });
+    assert.deepEqual(result.summary.deferredByComponent, { wind: 0, wave: 1, waterTemperature: 1 });
+    assert.equal(result.summary.deferred, 2);
+    assert.equal(result.summary.lastAttemptedPartId, part.partId);
+    assert.equal(result.summary.transport.httpAttempts, 4);
+    assert.equal(result.bank.records.length, 0);
+  });
+  await t.test('empty and short tiers drain without invented work or starvation claims below three starts', async t => {
+    for (const components of [[], ['wind'], ['waterTemperature'], ['wind', 'waterTemperature'], ['wave', 'wind', 'waterTemperature']]) {
+      const input = await fixture(t), order = [];
+      const requiredPairs = components.map((component, index) => ({ partId: part.partId, component, validTime: at(index) }));
+      const result = await produceOpenMeteoPartComponents({ ...input, requiredPairs,
+        fetchResponse: async request => { order.push(request.component); throw new Error('synthetic permanent provider refusal'); } });
+      assert.deepEqual(order, components);
+      assert.equal(result.summary.requests, components.length); assert.equal(result.summary.deferred, 0);
+      assert.equal(result.bank.records.length, 0);
+    }
+    const input = await fixture(t), order = [];
+    const result = await produceOpenMeteoPartComponents({ ...input,
+      requiredPairs: ['wind', 'wave', 'waterTemperature'].map((component, index) => ({ partId: part.partId, component, validTime: at(index) })),
+      shouldContinue: () => order.length < 2,
+      fetchResponse: async request => { order.push(request.component); throw new Error('synthetic permanent provider refusal'); },
+    });
+    assert.deepEqual(order, ['wind', 'wave']);
+    assert.equal(result.summary.requestsByComponent.waterTemperature, 0);
+    assert.equal(result.summary.deferredByComponent.waterTemperature, 1);
+  });
+  await t.test('a timed-out critical response settles before the shared budget permits a temperature request', async t => {
+    const input = await fixture(t), order = []; let pending = 0;
+    const result = await runOpenMeteoPartRuntime({ ...input, budgetMs: 2_000, requestTimeoutMs: 20, maxRetries: 0,
+      requiredPairs: ['wind', 'wave', 'waterTemperature'].map((component, index) => ({ partId: part.partId, component, validTime: at(index) })),
+      fetchImpl: (raw, { signal }) => {
+        const fields = new URL(raw).searchParams.get('hourly'); order.push(fields);
+        if (fields.startsWith('wind_')) return new Promise((resolve, reject) => {
+          pending++; signal.addEventListener('abort', () => { pending--; reject(new Error('synthetic owned timeout')); }, { once: true });
+        });
+        return Promise.resolve(new Response('synthetic permanent miss', { status: 400 }));
+      },
+    });
+    assert.deepEqual(order, ['wind_speed_10m,wind_direction_10m', 'wave_height,wave_peak_period,wave_direction', 'sea_surface_temperature']);
+    assert.equal(pending, 0); assert.equal(result.summary.transport.timeouts, 1);
+    assert.deepEqual(result.summary.requestsByComponent, { wind: 1, wave: 1, waterTemperature: 1 });
+    assert.equal(result.bank.records.length, 0);
+  });
 });
 
 test('tail capacity: HTTP cap includes retries and never advances cursor for a paced task with no HTTP', async t => {

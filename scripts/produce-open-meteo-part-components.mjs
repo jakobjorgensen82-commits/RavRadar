@@ -82,9 +82,17 @@ export async function produceOpenMeteoPartComponents({
       (component === 'waterTemperature' ? temperatureWork : criticalWork).push({ part, component });
     }
   }
-  // Close score-blocking wind/wave gaps first. Within each tier keep the
-  // same rotated PART order, exact component requests and two useful slots.
-  const work = [...criticalWork, ...temperatureWork];
+  // Preserve each rotated tier's order while giving temperature one of every
+  // three dispatch opportunities under sustained wind/wave pressure. The
+  // existing budget must allow those starts; no upstream value is promised.
+  const work = [];
+  let criticalIndex = 0, temperatureIndex = 0;
+  while (criticalIndex < criticalWork.length || temperatureIndex < temperatureWork.length) {
+    for (let slot = 0; slot < 2 && criticalIndex < criticalWork.length; slot += 1) {
+      work.push(criticalWork[criticalIndex++]);
+    }
+    if (temperatureIndex < temperatureWork.length) work.push(temperatureWork[temperatureIndex++]);
+  }
   assertWeatherTransportSettlement();
   await checkpoint(bank);
   // Keep the existing two transport slots occupied independently. Waiting for

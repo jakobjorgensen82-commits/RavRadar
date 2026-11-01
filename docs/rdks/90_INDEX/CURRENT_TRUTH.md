@@ -1,3 +1,11 @@
+## 1. november — lokal rettelse: temperatur må ikke udsultes i reservekøen
+
+ROOTs faktiske normale browserlog for vejrforløb 236 viste 515 OM-starter, 0 temperaturstarter, 673 udsatte temperaturjobs og budgetReached=1. Temperaturen hentes særskilt fra MF/SST; den samleveres ikke med bølgerequesten. Den eksisterende kø placerede alle temperaturjobs efter hele den kritiske vind-/bølgekø. Det er en påvist køpolitikfejl, ikke bevis for årsagen til DMI-huller.
+
+Den lokale kandidat fletter højst to kritiske jobs med ét temperaturjob og bevarer hver listes relative, roterede orden. Budgetter, to aktive slots, kildeprioriteten DMI→CP→OM, admission og no-loss bevares. Temperatur får mulighed senest hver tredje dispatch, hvis budget og fysisk transportafslutning tillader tre starter; gyldige upstreamværdier loves ikke.
+
+Den gamle eksplicitte testpolitik med 0 temperaturstarter under kritisk pres erstattes for at opfylde ejerens krav om alle fem familier; det er ikke repinning. Samme normale 2019-job/515-starters prøve er RED med 0 temperaturstarter før og GREEN med 171 temperatur- og 344 kritiske starter efter. De normale 26 runtime- og 24 bank-tests består med bevist kandidatlæsning, også i childprocesserne. C100/I99/T12 og selektive native-inputs er uændrede. Præcis SourceCI og effekt i en ny offentlig generation er åbne. Vandstand er fortsat separat DMI-only; ingen ny version, SQL eller aktivering.
+
 ## 1. november — én samlet lokal kandidat, endnu ikke kvalificeret
 
 Denne kandidat samler P0-kontrollen af forseglet manifest/startup, vanddiagnosens eksisterende nøglemapping og prognosedelingens Pages-læsekompatibilitet oven på de bevarede 785-/786-rettelser. Hele den nyere 5067-dokumentation bevares. Samlingen er endnu ikke kvalificeret i GitHub eller leveret; tidligere fejlede kørsler forbliver fejlede.
