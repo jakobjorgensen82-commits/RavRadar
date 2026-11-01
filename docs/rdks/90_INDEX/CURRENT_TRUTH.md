@@ -1,3 +1,23 @@
+## 1. november — én samlet lokal kandidat, endnu ikke kvalificeret
+
+Denne kandidat samler P0-kontrollen af forseglet manifest/startup, vanddiagnosens eksisterende nøglemapping og prognosedelingens Pages-læsekompatibilitet oven på de bevarede 785-/786-rettelser. Hele den nyere 5067-dokumentation bevares. Samlingen er endnu ikke kvalificeret i GitHub eller leveret; tidligere fejlede kørsler forbliver fejlede.
+
+Pages-projektlisten bruger nu samme per_page=10 som den allerede pinnede officielle Wrangler 4.28.1. Det er en afgrænset kompatibilitetskandidat, ikke bevis for årsagen til HTTP 400. Femkaldsgrænsen, faktisk tom slutside og alle byte-, tids-, identitets-, skrive- og ingen-retry-kontroller bevares. Ved ti rækker pr. side kan 40 projekter plus tom slutside bevises; større lister afvises sikkert.
+
+ROOT ejer efterfølgende kildekvalifikation og levering. SOURCE19 forbliver isoleret; model, C/I/T, SQL, version, geometri og kildeprioritet ændres ikke. Årsagen til Voerså-afvigelsen og 236-forløbets oprindelige startupafvigelse er fortsat ukendt.
+
+## 1. november — lokal rettelse af vanddiagnosens nøglemapping
+
+Vanddiagnosen stoppede i opsætningen før læsning af original B: nøglevariablen pegede på et ikke-oprettet navn. Kandidaten genbruger den eksisterende nøglemapping. De tre relevante normale workflowcases består lokalt. Ingen nøgle installeres, og kryptografi, vejrdata eller scorer ændres ikke. Diagnosen er stadig fejlet, og årsagen til vandstandsafvigelsen ved Voerså er ukendt.
+
+## 1. november — lokal P0 for forseglet manifest og startup
+
+Vejrforløb 236 byggede færdigt, og Pages-skrivningen meldte SUCCESS. Den efterfølgende fulde offentlige verifikation afviste startupfilens digest; Pages-jobbet og den samlede terminalkontrol er derfor fortsat FAIL. To senere små offentlige aflæsninger af manifest og startup matchede præcis det forseglede target. Det beviser ikke hele den offentlige pakke. Den første afvigende body blev ikke gemt, så den præcise årsag er fortsat uafklaret.
+
+Den lokale kandidat afventer nu et sammenhængende par af præcist forseglet manifest og startup med korrekt hel SHA og længde under samme friske observationsnonce. Den eksisterende grænse på 121 observationer og det fælles budget på tre ekstra HTTP-genforsøg bevares. Først efter parret matcher kontrolleres den store pakke én gang; startupbytes genbruges. Alle øvrige hash-, størrelse-, model-, 210/673-, leverings- og privatlivsgrænser består. Permanent forkert startup og hårde transport-/indholdsfejl giver fortsat afslag.
+
+Den afgrænsede normale kalderprøve reproducerede afvisningen før rettelsen og består efter med syntetiske svar. Samlet lokal kontrol, præcis CI og levering er fortsat åbne. Den eksisterende providerfri resume-indgang fandt NONE og gentages ikke; almindelig integrated-drift opretter ikke selv en PENDING-overgang før Pages. En ny terminalkvittering kræver den korrekte normale kalder og autentisk ejerskab. Det fejlede 236-forløb ommærkes ikke til grønt. Ingen ny SOURCE-, model-, SQL- eller versionsudstedelse.
+
 ## 1. november — lokal dialogopfølgning på prognosedage
 
 Den offentlige afprøvning viste, at »og på mandag?« blev afvist efter et fuldt spørgsmål om tirsdag, mens det fulde mandagsspørgsmål gav gyldig landsrangering. Den lokale rettelse bevarer kun en afgrænset prognoseintention i dialogens eksisterende tilstand. En hel kendt DA/DE/EN-forespørgsel med ugedag eller i dag/i morgen/i overmorgen kan efterfølges af et entydigt dagspørgsmål. Det sendes som en fuld forespørgsel gennem de samme normale kalender-, model-, datagenerations-, rangliste- og tidspunktkontroller; brugerens oprindelige tekst vises stadig.

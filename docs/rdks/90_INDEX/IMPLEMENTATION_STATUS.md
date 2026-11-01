@@ -1,3 +1,23 @@
+## 1. november — én samlet lokal kandidat, endnu ikke kvalificeret
+
+Denne kandidat samler P0-kontrollen af forseglet manifest/startup, vanddiagnosens eksisterende nøglemapping og prognosedelingens Pages-læsekompatibilitet oven på de bevarede 785-/786-rettelser. Hele den nyere 5067-dokumentation bevares. Samlingen er endnu ikke kvalificeret i GitHub eller leveret; tidligere fejlede kørsler forbliver fejlede.
+
+Pages-projektlisten bruger nu samme per_page=10 som den allerede pinnede officielle Wrangler 4.28.1. Det er en afgrænset kompatibilitetskandidat, ikke bevis for årsagen til HTTP 400. Femkaldsgrænsen, faktisk tom slutside og alle byte-, tids-, identitets-, skrive- og ingen-retry-kontroller bevares. Ved ti rækker pr. side kan 40 projekter plus tom slutside bevises; større lister afvises sikkert.
+
+ROOT ejer efterfølgende kildekvalifikation og levering. SOURCE19 forbliver isoleret; model, C/I/T, SQL, version, geometri og kildeprioritet ændres ikke. Årsagen til Voerså-afvigelsen og 236-forløbets oprindelige startupafvigelse er fortsat ukendt.
+
+## 1. november — vanddiagnosens mappingrettelse er lokal, ikke leveret
+
+Præcis én nøglemapping er rettet lokalt; alle gamle kontrolorakler bevares. Tre relevante normale workflowcases består på cirka 106 ms. Ingen ny diagnose er kørt, og Voerså-årsagen er fortsat ukendt. Et nyt forsøg kræver egne kontroller, faktisk mainbinding og ingen aktiv writer; udløb må ikke omgås. Ingen nøgleinstallation, kryptografi-, vejr- eller scoreændring.
+
+## 1. november — lokal P0-kandidat for Pages-opstart, ikke leveret
+
+236: produktbuild og Pages-skrivning er gennemført, men startupdigest blev afvist efter deploy, og fuld terminalstatus er FAIL. Senere små manifest-/startupaflæsninger matcher det forseglede target; fuld offentlig pakke og terminalforsegling er ikke dermed verificeret. Den oprindelige afvigende body mangler, så rodårsagen er ikke fastslået.
+
+Kandidaten udvider kun den eksisterende afgrænsede manifestobservation til at kræve startup med samme forseglede hash og længde. Max 121 observationer, frisk nonce og det delte tre-token HTTP-budget bevares. Matchede startupbytes genbruges, og den store pakke kontrolleres én gang gennem alle gamle hårde hash-, model-, dæknings- og privatlivskrav. Andre digestfejl får ingen generel pakke-genprøve.
+
+Snæver normal kalder: RED før, GREEN efter. Samlede lokale mål, eksakt GitHub-kvalifikation og offentlig levering udestår. Providerfri resume gav NONE og gentages ikke. Ordinary integrated har ingen automatisk PENDING-locator; korrekt autentificeret terminalkalder skal afklares. Ingen genstart af vejrhentning og ingen ændring af SOURCE, scoremodel, C/I/T, SQL eller version følger med denne kandidat.
+
 ## 1. november — lokal dialogopfølgning på prognosedage
 
 Den offentlige afprøvning viste, at »og på mandag?« blev afvist efter et fuldt spørgsmål om tirsdag, mens det fulde mandagsspørgsmål gav gyldig landsrangering. Den lokale rettelse bevarer kun en afgrænset prognoseintention i dialogens eksisterende tilstand. En hel kendt DA/DE/EN-forespørgsel med ugedag eller i dag/i morgen/i overmorgen kan efterfølges af et entydigt dagspørgsmål. Det sendes som en fuld forespørgsel gennem de samme normale kalender-, model-, datagenerations-, rangliste- og tidspunktkontroller; brugerens oprindelige tekst vises stadig.

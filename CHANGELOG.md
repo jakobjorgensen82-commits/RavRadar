@@ -1,3 +1,21 @@
+## 1. november — én samlet lokal kandidat, endnu ikke kvalificeret
+
+Denne kandidat samler P0-kontrollen af forseglet manifest/startup, vanddiagnosens eksisterende nøglemapping og prognosedelingens Pages-læsekompatibilitet oven på de bevarede 785-/786-rettelser. Hele den nyere 5067-dokumentation bevares. Samlingen er endnu ikke kvalificeret i GitHub eller leveret; tidligere fejlede kørsler forbliver fejlede.
+
+Pages-projektlisten bruger nu samme per_page=10 som den allerede pinnede officielle Wrangler 4.28.1. Det er en afgrænset kompatibilitetskandidat, ikke bevis for årsagen til HTTP 400. Femkaldsgrænsen, faktisk tom slutside og alle byte-, tids-, identitets-, skrive- og ingen-retry-kontroller bevares. Ved ti rækker pr. side kan 40 projekter plus tom slutside bevises; større lister afvises sikkert.
+
+ROOT ejer efterfølgende kildekvalifikation og levering. SOURCE19 forbliver isoleret; model, C/I/T, SQL, version, geometri og kildeprioritet ændres ikke. Årsagen til Voerså-afvigelsen og 236-forløbets oprindelige startupafvigelse er fortsat ukendt.
+
+## 1. november — lokal kandidat: genbrug vanddiagnosens eksisterende nøglemapping
+
+Ret den ene fejlagtige nøglereference til den allerede eksisterende normale mapping. Tre relevante normale workflowcases består lokalt; gamle orakler og helinverse bevares. Ingen nøgleinstallation, kryptografi-, vejr- eller scoreændring. Den gamle diagnose er stadig fejlet, og Voerså-årsagen er ukendt. Nyt forsøg afventer egne kontroller, faktisk mainbinding og ingen aktiv writer; udløb må ikke omgås.
+
+## 1. november — lokal P0: afvent både manifest og startup før Pages-kvittering
+
+Forbered bounded observation af præcist forseglet manifest og startup før én fuld kontrol af den store pakke. Genbrug de verificerede startupbytes; bevar 121-observationsgrænsen, det delte HTTP-budget og alle hårde hash-, størrelse-, model- og privatlivskrav. Den normale afgrænsede kalderprøve er RED før og GREEN efter; samlet lokal kontrol, CI og levering er åbne.
+
+236 har Pages-write SUCCESS, men fuld terminal FAIL. Senere små manifest-/startupaflæsninger matcher target uden at bevise hele pakken eller endelig rodårsag. Providerfri resume fandt NONE og gentages ikke; korrekt terminalkalder skal afklares. Ingen ny vejrhentning, SOURCE-, model-, SQL- eller versionsudstedelse.
+
 ## 1. november — lokal dialogopfølgning på prognosedage
 
 Den offentlige afprøvning viste, at »og på mandag?« blev afvist efter et fuldt spørgsmål om tirsdag, mens det fulde mandagsspørgsmål gav gyldig landsrangering. Den lokale rettelse bevarer kun en afgrænset prognoseintention i dialogens eksisterende tilstand. En hel kendt DA/DE/EN-forespørgsel med ugedag eller i dag/i morgen/i overmorgen kan efterfølges af et entydigt dagspørgsmål. Det sendes som en fuld forespørgsel gennem de samme normale kalender-, model-, datagenerations-, rangliste- og tidspunktkontroller; brugerens oprindelige tekst vises stadig.
