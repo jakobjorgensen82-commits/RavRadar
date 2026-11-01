@@ -11,11 +11,19 @@
   <title>RavRadar – dansk ravprognose</title>
   <link rel="canonical" itemprop="url" href="https://ravradar.dk/">
   <link rel="icon" type="image/png" sizes="192x192" href="assets/icons/ravradar-192.png">
-  <link rel="manifest" href="manifest.webmanifest"><link rel="apple-touch-icon" href="assets/icons/apple-touch-icon.png"><link rel="preconnect" href="https://unpkg.com"><link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin=""><link rel="stylesheet" href="style.css?v=4.0.594&ui=forecast-share-20261024">
+  <link rel="manifest" href="manifest.webmanifest"><link rel="apple-touch-icon" href="assets/icons/apple-touch-icon.png"><link rel="preconnect" href="https://unpkg.com"><link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin=""><link rel="stylesheet" href="style.css?v=4.0.594&ui=forecast-share-20261024&header=facebook-20261101-v4">
 </head>
 <body>
-  <header class="app-header">
-    <button id="logoButton" class="brand-button" type="button" aria-label="RavRadar"><span class="eyebrow" data-i18n="header.tagline">Dansk ravprognose</span><span class="brand-title">RavRadar</span></button>
+  <header class="app-header app-header--community">
+    <div class="header-brand-community">
+      <button id="logoButton" class="brand-button" type="button" aria-label="RavRadar"><span class="eyebrow" data-i18n="header.tagline">Dansk ravprognose</span><span class="brand-title">RavRadar</span></button>
+      <a class="header-facebook-link" href="https://www.facebook.com/groups/1849354103138911/" target="_blank" rel="noopener noreferrer">
+        <svg class="header-facebook-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M13.6 21v-8.2h2.8l.4-3.2h-3.2V7.5c0-.9.3-1.5 1.6-1.5H17V3.1c-.3 0-1.4-.1-2.6-.1-2.6 0-4.3 1.6-4.3 4.4v2.2H7.3v3.2h2.8V21z"></path></svg>
+        <span class="header-facebook-text" lang="da">Besøg vores gruppe på Facebook</span>
+        <span class="header-facebook-text" lang="de">Besuche unsere Facebook-Gruppe</span>
+        <span class="header-facebook-text" lang="en">Visit our group on Facebook</span>
+      </a>
+    </div>
     <nav class="language-switcher" data-i18n-aria-label="language.selector" aria-label="Vælg sprog"><button type="button" data-language="da" lang="da" aria-pressed="true"><span class="language-flag flag-da" aria-hidden="true"></span> Dansk</button><button type="button" data-language="de" lang="de" aria-pressed="false"><span class="language-flag flag-de" aria-hidden="true"></span> Deutsch</button><button type="button" data-language="en" lang="en" aria-pressed="false"><span class="language-flag flag-en" aria-hidden="true"></span> English</button></nav>
     <div class="header-actions"><button id="accountButton" class="icon-button account-icon-button" type="button" data-i18n-aria-label="header.account" data-i18n-title="header.account" aria-label="Konto" title="Konto"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4"></circle><path d="M4.5 21c.7-4.4 3.2-6.7 7.5-6.7s6.8 2.3 7.5 6.7"></path></svg></button><div class="primary-header-actions"><a class="header-button about-header-link" href="./about.html" data-i18n="header.about">Om RavRadar</a><button id="tripButton" class="header-button" type="button" data-i18n="header.trip.start">Start ravtur</button><button id="assistantButton" class="header-button assistant-header-button" type="button" data-i18n="header.assistant">✨ Spørg RavRadar</button></div></div>
   </header>

@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
 import { runInNewContext } from 'node:vm';
 import { createHash } from 'node:crypto';
-import { reviewedFixedAssistantFailureLegacyWorkflow, reviewedFixedAssistantFailureLegacyRegistry } from './lib/fixed-assistant-failure-workflow-review.mjs';
+import { reviewedFixedAssistantFailureLegacyWorkflow, reviewedFixedAssistantFailureLegacyRegistry, reviewedFixedAssistantFailureBeforeBaselineHintRegistry, reviewedFixedAssistantFailureBeforePrSourceReadGrantRegistry } from './lib/fixed-assistant-failure-workflow-review.mjs';
 
 // One normal offline caller target. No hosted logs, SQL engine or real token.
 const text = async file => (await fs.readFile(new URL('../' + file, import.meta.url), 'utf8')).replaceAll('\r\n', '\n');
@@ -106,24 +106,184 @@ runSourceOracle(legacyWorkflow);
 const actualRegistryRaw = await text('scripts/lib/source-impact-domain-owners-594.json');
 const registrySuccessor = review.registrySourceProofSuccessor;
 const registryBindingSuccessor = review.registryBindingSuccessor;
-function assertActualRegistry(source) {
-  assert.equal(digest(source), registryBindingSuccessor.afterSha256, 'ACTUAL_SOURCE_PROOF_REGISTRY_BYTES');
+const registryWorkflow066Successor = review.registryWorkflow066Successor;
+const registryBaselineHintSuccessor = review.registryBaselineHintSuccessor;
+const registryPrSourceReadGrantSuccessor = review.registryPrSourceReadGrantSuccessor;
+function assertBeforePrSourceReadGrantRegistry(source) {
+  assert.equal(digest(source), registryBaselineHintSuccessor.afterSha256, 'ACTUAL_SOURCE_PROOF_REGISTRY_BYTES');
   const registryDocument = JSON.parse(source);
+  assert.deepEqual(registryBaselineHintSuccessor.ownerAdditions, [
+    {
+      "path": "scripts/test-source-impact-workflow.mjs",
+      "domains": [
+        "controls"
+      ],
+      "controlQualification": true,
+      "commands": [
+        [
+          "controls",
+          "node scripts/test-source-impact-workflow.mjs"
+        ]
+      ]
+    },
+    {
+      "path": "scripts/lib/archived-weather-restart-workflow-review.mjs",
+      "domains": [
+        "controls"
+      ],
+      "controlQualification": true,
+      "commands": [
+        [
+          "controls",
+          "node --test scripts/test-archived-weather-restart-workflow.mjs"
+        ],
+        [
+          "controls",
+          "node scripts/test-code-only-public-runtime.mjs"
+        ],
+        [
+          "controls",
+          "node scripts/source-critical-gate.mjs"
+        ]
+      ]
+    },
+    {
+      "path": "scripts/test-archived-weather-restart-workflow.mjs",
+      "domains": [
+        "controls"
+      ],
+      "controlQualification": true,
+      "commands": [
+        [
+          "controls",
+          "node --test scripts/test-archived-weather-restart-workflow.mjs"
+        ]
+      ]
+    }
+  ]);
+  const ownersBeforeBaselineHint = registryDocument.owners.slice(0, registryBaselineHintSuccessor.ownersBeforeCount);
+  assert.equal(registryDocument.owners.length,
+    registryBaselineHintSuccessor.ownersBeforeCount + registryBaselineHintSuccessor.ownerAdditions.length);
+  assert.deepEqual(registryDocument.owners.slice(registryBaselineHintSuccessor.ownersBeforeCount), registryBaselineHintSuccessor.ownerAdditions);
+  assert.equal(digest(JSON.stringify(ownersBeforeBaselineHint)), registryBaselineHintSuccessor.ownersBeforeArraySha256);
+  assert(registryDocument.controlSuite.includes('node scripts/test-source-impact-workflow.mjs'));
+  const sourceKeys = Object.keys(registryDocument.sources);
+  const sourceKeysBeforeBaselineHint = sourceKeys.slice(0, registryBaselineHintSuccessor.sourcesBeforeCount);
+  assert.equal(registryBaselineHintSuccessor.sourceAdditions.length, 15);
+  assert.equal(sourceKeys.length, registryBaselineHintSuccessor.sourcesBeforeCount + registryBaselineHintSuccessor.sourceAdditions.length);
+  assert.equal(digest(JSON.stringify(sourceKeysBeforeBaselineHint)), registryBaselineHintSuccessor.sourcesBeforeKeysSha256);
+  assert.deepEqual(sourceKeys.slice(registryBaselineHintSuccessor.sourcesBeforeCount), registryBaselineHintSuccessor.sourceAdditions.map(row => row.path));
+  for (const addition of registryBaselineHintSuccessor.sourceAdditions)
+    assert.equal(digest(JSON.stringify(registryDocument.sources[addition.path])), addition.definitionSha256);
+  const resourcesBeforeBaselineHint = registryDocument.resourceFiles.slice(0, registryBaselineHintSuccessor.resourceFilesBeforeCount);
+  assert.equal(registryBaselineHintSuccessor.resourceFileAdditions.length, 32);
+  assert.equal(registryDocument.resourceFiles.length, registryBaselineHintSuccessor.resourceFilesBeforeCount + registryBaselineHintSuccessor.resourceFileAdditions.length);
+  assert.equal(digest(JSON.stringify(resourcesBeforeBaselineHint)), registryBaselineHintSuccessor.resourceFilesBeforeArraySha256);
+  assert.deepEqual(registryDocument.resourceFiles.slice(registryBaselineHintSuccessor.resourceFilesBeforeCount), registryBaselineHintSuccessor.resourceFileAdditions);
+  for (const addition of registryBaselineHintSuccessor.surfaceAdditions) {
+    const values = registryDocument.sources[addition.owner][addition.field];
+    assert.equal(values.length, addition.beforeCount + addition.values.length);
+    assert.deepEqual(values.slice(addition.beforeCount), addition.values);
+    assert.equal(digest(JSON.stringify(values.slice(0, addition.beforeCount))), addition.beforeArraySha256);
+  }
+  const previousRegistryRaw = reviewedFixedAssistantFailureBeforeBaselineHintRegistry(source);
+  assert.equal(digest(previousRegistryRaw), registryWorkflow066Successor.afterSha256, 'ACTUAL_SOURCE_PROOF_REGISTRY_BYTES');
+  assert.equal(registryWorkflow066Successor.ownersBeforeCount, registrySuccessor.counts.owners);
+  assert.equal(ownersBeforeBaselineHint.length,
+    registryWorkflow066Successor.ownersBeforeCount + registryWorkflow066Successor.ownerAdditions.length);
+  assert.deepEqual(ownersBeforeBaselineHint.slice(registryWorkflow066Successor.ownersBeforeCount),
+    registryWorkflow066Successor.ownerAdditions);
+  assert.equal(digest(JSON.stringify(ownersBeforeBaselineHint.slice(0, registryWorkflow066Successor.ownersBeforeCount))),
+    registryWorkflow066Successor.ownersBeforeArraySha256);
+  for (const ordinaryStageAddition of registryWorkflow066Successor.surfaceAdditions) {
+    const ordinaryStageValues = registryDocument.sources[registryWorkflow066Successor.owner][ordinaryStageAddition.field];
+    assert.equal(ordinaryStageValues.length, ordinaryStageAddition.beforeCount + 1);
+    assert.deepEqual(ordinaryStageValues.slice(ordinaryStageAddition.beforeCount), [ordinaryStageAddition.sha256]);
+    assert.equal(digest(JSON.stringify(ordinaryStageValues.slice(0, ordinaryStageAddition.beforeCount))),
+      ordinaryStageAddition.beforeArraySha256);
+  }
   const actualAuditBindings = registryDocument.sources[registryBindingSuccessor.owner].bindingSurfaces;
   assert.equal(actualAuditBindings.length, registryBindingSuccessor.beforeBindingCount + 6);
   assert.deepEqual(actualAuditBindings.slice(registryBindingSuccessor.beforeBindingCount), registryBindingSuccessor.bindingHashes);
   assert.equal(digest(JSON.stringify(actualAuditBindings.slice(0, registryBindingSuccessor.beforeBindingCount))),
     registryBindingSuccessor.beforeBindingsArraySha256);
-  assert.deepEqual([registryDocument.owners.length, Object.keys(registryDocument.sources).length, registryDocument.resourceFiles.length],
-    [registrySuccessor.counts.owners, registrySuccessor.counts.sources, registrySuccessor.counts.resourceFiles]);
+  assert.deepEqual([ownersBeforeBaselineHint.length, sourceKeysBeforeBaselineHint.length, resourcesBeforeBaselineHint.length],
+    [registrySuccessor.counts.owners + registryWorkflow066Successor.ownerAdditions.length, registrySuccessor.counts.sources, registrySuccessor.counts.resourceFiles]);
   for (const owner of registrySuccessor.controlOwners)
     assert.deepEqual(registryDocument.owners.filter(row => row.path === owner.path), [owner]);
   assert.deepEqual(registryDocument.exactSourceTransitions[registrySuccessor.transitionOwner],
     [...registrySuccessor.preservedHistoricalPairs, ...registrySuccessor.transitionPairs]);
   return registryDocument;
 }
+function assertActualRegistry(source) {
+  assert.equal(digest(source), registryPrSourceReadGrantSuccessor.afterSha256, 'ACTUAL_SOURCE_PROOF_REGISTRY_BYTES');
+  const document = JSON.parse(source);
+  assert.deepEqual(registryPrSourceReadGrantSuccessor.ownerAdditions, [
+    {
+      "path": ".github/workflows/validate-pull-request.yml",
+      "domains": [
+        "controls"
+      ],
+      "controlQualification": true,
+      "commands": [
+        [
+          "controls",
+          "node scripts/test-source-impact-workflow.mjs"
+        ]
+      ],
+      "exactSourceTransition": true
+    },
+    {
+      "path": "scripts/lib/source-impact-workflow-review.mjs",
+      "domains": [
+        "controls"
+      ],
+      "controlQualification": true,
+      "commands": [
+        [
+          "controls",
+          "node scripts/test-source-impact-workflow.mjs"
+        ]
+      ]
+    }
+  ]);
+  const ownerPrefix = document.owners.slice(0, registryPrSourceReadGrantSuccessor.ownersBeforeCount);
+  assert.equal(document.owners.length, registryPrSourceReadGrantSuccessor.ownersBeforeCount + 2);
+  assert.equal(digest(JSON.stringify(ownerPrefix)), registryPrSourceReadGrantSuccessor.ownersBeforeArraySha256);
+  assert.deepEqual(document.owners.slice(registryPrSourceReadGrantSuccessor.ownersBeforeCount), registryPrSourceReadGrantSuccessor.ownerAdditions);
+  assert.deepEqual(registryPrSourceReadGrantSuccessor.transitionPairs, ["3838f9009f7df679581cea1a54eeba535bf4b0c90ae6e786691ba46dedd5afc5/45b1a6f3dba31711b8fa8d4cff8776c3f7daa024acc798c4da76bee4615eced1"]);
+  const transitionEntries = Object.entries(document.exactSourceTransitions);
+  const oldTransitions = Object.fromEntries(transitionEntries.slice(0, registryPrSourceReadGrantSuccessor.transitionsBeforeCount));
+  assert.equal(transitionEntries.length, registryPrSourceReadGrantSuccessor.transitionsBeforeCount + 1);
+  assert.equal(digest(JSON.stringify(Object.keys(oldTransitions))), registryPrSourceReadGrantSuccessor.transitionsBeforeKeysSha256);
+  assert.equal(digest(JSON.stringify(oldTransitions)), registryPrSourceReadGrantSuccessor.transitionsBeforeObjectSha256);
+  assert.deepEqual(transitionEntries.slice(registryPrSourceReadGrantSuccessor.transitionsBeforeCount),
+    [[registryPrSourceReadGrantSuccessor.transitionOwner, registryPrSourceReadGrantSuccessor.transitionPairs]]);
+  const beforeRaw = reviewedFixedAssistantFailureBeforePrSourceReadGrantRegistry(source);
+  assert.equal(digest(beforeRaw), registryPrSourceReadGrantSuccessor.beforeSha256);
+  const beforeDocument = assertBeforePrSourceReadGrantRegistry(beforeRaw);
+  assert.deepEqual(Object.keys(document), Object.keys(beforeDocument));
+  for (const key of Object.keys(document)) if (!['owners', 'exactSourceTransitions'].includes(key))
+    assert.deepEqual(document[key], beforeDocument[key], 'All other raw registry fields remain exact');
+  return document;
+}
 const actualRegistry = assertActualRegistry(actualRegistryRaw);
 for (const altered of [actualRegistryRaw + '\n',
+  ...registryPrSourceReadGrantSuccessor.ownerAdditions.map(owner =>
+    actualRegistryRaw.replace('"path": "'+owner.path+'"', '"path": "'+owner.path+'-unknown"')),
+  actualRegistryRaw.replace(registryPrSourceReadGrantSuccessor.transitionPairs[0], registryPrSourceReadGrantSuccessor.transitionPairs[0]+'0'),
+  ...registryBaselineHintSuccessor.ownerAdditions.map(owner =>
+    actualRegistryRaw.replace('"path": "'+owner.path+'"', '"path": "'+owner.path+'-unknown"')),
+  actualRegistryRaw.replace('"'+registryBaselineHintSuccessor.sourceAdditions[0].path+'": {', '"unknown-source.mjs": {'),
+  actualRegistryRaw.replace(JSON.stringify(registryBaselineHintSuccessor.resourceFileAdditions[0]), '"unknown-resource.yml"'),
+  ...registryBaselineHintSuccessor.surfaceAdditions.map(addition =>
+    actualRegistryRaw.replace(JSON.stringify(addition.values[0]), JSON.stringify(addition.values[0]+'-unknown'))),
+  ...registryWorkflow066Successor.ownerAdditions.map(workflow066Owner =>
+    actualRegistryRaw.replace('"path": "'+workflow066Owner.path+'"', '"path": "'+workflow066Owner.path+'-unknown"')),
+  ...registryWorkflow066Successor.surfaceAdditions.flatMap(ordinaryStageAddition => [
+    actualRegistryRaw.replace(ordinaryStageAddition.sha256, ordinaryStageAddition.sha256.slice(1)),
+    actualRegistryRaw.replace(ordinaryStageAddition.sha256, '2'.repeat(64)),
+    actualRegistryRaw.replace('"'+ordinaryStageAddition.sha256+'"', '"'+ordinaryStageAddition.sha256+'","'+'2'.repeat(64)+'"')]),
   actualRegistryRaw.replace(registryBindingSuccessor.bindingHashes[0], registryBindingSuccessor.bindingHashes[0].slice(1)),
   actualRegistryRaw.replace(registryBindingSuccessor.bindingHashes[0], '0'.repeat(64)),
   actualRegistryRaw.replace('"'+registryBindingSuccessor.bindingHashes[0]+'"', '"'+registryBindingSuccessor.bindingHashes[0]+'","'+'0'.repeat(64)+'"'),

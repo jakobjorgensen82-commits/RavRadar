@@ -1,3 +1,11 @@
+## 1. november — find det autentiske fulde kildebevis
+
+Den korte kildevej søgte kun seks forfædre tilbage. Et fortsat gyldigt fuldt kildebevis kunne derfor falde uden for søgningen efter flere almindelige merges, selv om alle beskyttede model- og PostgreSQL-input var uændrede.
+
+Den lokale rettelse bruger højst én henvisning fra den eksisterende ROOT-gennemgang som et ubetroet sted at lede. Den skal være en virkelig forfader til den aktuelle fælles kilde. Derefter kontrolleres hele den kumulerede ændring samt det oprindelige fulde GitHub-bevis, native-bevis, identiteter, integritet og frister gennem præcis de normale læsere. En henvisning giver aldrig i sig selv adgang, og et målrettet bevis bliver ikke et fuldt bevis. Den eksisterende begrænsede søgning, transportbudgetter og efterfølgende komplette ROOT-gennemgang bevares. En ubrugelig henvisning må ikke ændre et eksisterende CONTROL-afslag til automatisk fuld kontrol.
+
+Workflowets faktiske indgang bevarer desuden kun det faste valg og en lukket fejlkode, når fuld kontrol kræves. Rå fejltekst eller privat indhold udskrives ikke. Normale målprøver og præcis GitHub-kvalifikation er fortsat krav; lokal forberedelse er ikke leveret tidsgevinst. Produktionsdata, SQL, scoremodel, administratoropsætning og geometri er uændrede. Alle fem hovedmål består.
+
 # DEC-0302 – Ændringsbaseret validering og oprydning i kontroller
 
 ## Genbrugt fixtureopsætning skal bindes til det faktisk udførte udsnit

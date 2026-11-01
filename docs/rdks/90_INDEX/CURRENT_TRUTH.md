@@ -1,3 +1,33 @@
+## 1. november — Facebook-gruppen på forsiden
+
+Ejeren har godkendt et klikbart f-ikon med teksten »Besøg vores gruppe på Facebook« ved RavRadar-brandet. På mobilen ligger linket øverst ved siden af brandet og over sprogvælgeren; på større skærme ligger det efter brandet og før sprogvælgeren. Gruppen er https://www.facebook.com/groups/1849354103138911/.
+
+Linket har dansk, tysk og engelsk tekst via det eksisterende dokumentvalg af sprog. Grafik og tekst er lokale; ingen Facebook-SDK, sporing eller eksterne ikonaktiver tilføjes. Den nye, afgrænsede CSS-adresse sikrer, at den eksisterende browsercache kan hente layoutet. Konto-, tur-, assistent- og sprogfunktioner samt vejr, model, score, administratoropsætning, data og SQL bevares.
+
+ROOTs normale lokale browserafprøvning består på 320, 375, 768 og 1280 px samt dansk, tysk og engelsk, med ét synligt/tilgængeligt gruppelink, korrekt URL og synligt tastaturfokus. Det er lokal brugeraccept; præcis kildekvalifikation og faktisk offentlig levering er fortsat åbne. Ingen ny version er udstedt for dette rene visningslink.
+
+## 1. november — PR-kontrollen skal kunne genfinde kildebeviset
+
+Den almindelige PR-kontrol manglede sin egen deklarerede læserettighed til pull requests. Den autentificerede commits-til-PR-læser kræver denne rettighed; contents/actions-read er allerede til stede. Den lokale efterfølger tilføjer kun pull-requests: read i PR-workflowet. De to tidligere rettede produktionskaldere bevares. Dette er en påvist manglende forudsætning, ikke bevis for den konkrete HTTP-fejl eller for et faktisk målrettet resultat i GitHub.
+
+De gamle hele workfloworakler bevares gennem én præcis helfilinverse. Kontrolregistreringen får kun to nødvendige kontrolejere og ét præcist workflowpar; øvrige ejere, afhængigheder, ressourcer og prøvekommandoer er uændrede. De to nærmeste normale workflow-/registryprøver består lokalt. Præcis ny plan, ROOT-review, GitHub-kvalifikation og sikker levering er fortsat åbne. Ingen vejr-, model-, SQL-, score-, kilde- eller administratorændring følger med denne kontrolrettelse.
+
+## 1. november — find det autentiske fulde kildebevis
+
+Den korte kildevej søgte kun seks forfædre tilbage. Et fortsat gyldigt fuldt kildebevis kunne derfor falde uden for søgningen efter flere almindelige merges, selv om alle beskyttede model- og PostgreSQL-input var uændrede.
+
+Den lokale rettelse bruger højst én henvisning fra den eksisterende ROOT-gennemgang som et ubetroet sted at lede. Den skal være en virkelig forfader til den aktuelle fælles kilde. Derefter kontrolleres hele den kumulerede ændring samt det oprindelige fulde GitHub-bevis, native-bevis, identiteter, integritet og frister gennem præcis de normale læsere. En henvisning giver aldrig i sig selv adgang, og et målrettet bevis bliver ikke et fuldt bevis. Den eksisterende begrænsede søgning, transportbudgetter og efterfølgende komplette ROOT-gennemgang bevares. En ubrugelig henvisning må ikke ændre et eksisterende CONTROL-afslag til automatisk fuld kontrol.
+
+Workflowets faktiske indgang bevarer desuden kun det faste valg og en lukket fejlkode, når fuld kontrol kræves. Rå fejltekst eller privat indhold udskrives ikke. Normale målprøver og præcis GitHub-kvalifikation er fortsat krav; lokal forberedelse er ikke leveret tidsgevinst. Produktionsdata, SQL, scoremodel, administratoropsætning og geometri er uændrede. Alle fem hovedmål består.
+
+## 1. november — oprindelig producentvej og sikker HTTP-fejlstatus
+
+Den faste private vandstandsdiagnose skal kontrollere den workflowvej, som den autentificerede originalproducent faktisk brugte. Den tidlige workflowkontrol og den normale completed-stage-læser havde samme forkerte antagelse. Den afgrænsede rettelse binder kun den navngivne historiske undtagelse til præcis kørsel, forsøg og kildehead; alle andre almindelige producenter beholder den eksisterende vej. Afsluttet producent, de fem krævede gemningstrin, artifactidentitet, udløb, hel ZIP/GCM/B-verifikation og uændret central pointer består. En senere samlet kørselsfejl gør ikke et allerede korrekt gemt originaltrin til en succesfuld offentlig levering.
+
+Prognosedelingens Pages-kontrol bevarer nu fast læsetype og valideret numerisk HTTP-status, når projektlisten afvises. Den gemmer ingen rå leverandørfejltekst og ændrer hverken pagination, fraværsbevis, rettigheder, skrivegrænser eller genforsøgsregler. Dette retter en konkret mangel i fejlrapporten; årsagen til den faktiske HTTP-afvisning er endnu ukendt.
+
+De relevante normale lokale vandstands-, completed-stage-, workflow- og Pages-prøver består med syntetiske input. Præcis samlet kildekvalifikation og de faktiske efterfølgende aflæsninger er åbne. Ingen ny vejrhentning, score-, model-, SQL-, kilde-, administrator- eller geometriændring følger med. Årsagen til den observerede vandstandsafvigelse er ikke fastslået. Alle fem hovedmål består; aktuelle kørsler og detaljeret privat evidens føres i checkpointet.
+
 ## 1. november — privat vandstandsdiagnose er forberedt
 
 En fast skrivefri audit kan spore vandstand gennem to præcise autentiske originalgenerationer. Den bevarer original producent, fuld B-/GCM-kontrol, frisk uændret pointer/version og de oprindelige numeriske værdier. Private kilde-/timeoplysninger udvælges snævert og krypteres med særskilt formål; kun ciphertext og fast sikker status forlader scratch. Manglende historisk konfiguration er ukendt, ikke en rekonstruktion ud fra nutidig admin.

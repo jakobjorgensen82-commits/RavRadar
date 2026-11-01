@@ -298,6 +298,17 @@ try{
   assert.equal(cliProof.database.executed,false);assert.equal(cliProof.national.executed,false);
   assert.equal(cliProof.fullSourceValidationClaimed,false);assert.equal(cliProof.deliveryAuthority,false);
   assert.equal(targeted.stdout.split('SOURCE_TIME ').length-1,5);cases++;
+  reset();state.missing=true;rebuild();const fullHandoff=runNormalDigestCli('impact-digest',false);
+  assert.equal(fullHandoff.fields.selection,'FULL');assert.equal(fullHandoff.fields.reason_code,'NO_QUALIFIED_FULL_ANCESTOR');
+  assert.deepEqual(Object.keys(fullHandoff.fields).sort(),['artifact_name','reason_code','receipt_path','selection','source_tree_sha256']);
+  assert.equal(fullHandoff.fields.receipt_path,'.cache/source-tree-content-proof.json');
+  assert.equal(count(),0);assert(fullHandoff.fetchCalls>0&&fullHandoff.fetchCalls<=24);
+  const safeFullLines=fullHandoff.stdout.split('\n').filter(line=>line.startsWith('SOURCE_IMPACT '));
+  assert.deepEqual(safeFullLines,['SOURCE_IMPACT '+JSON.stringify({selection:'FULL',reason_code:'NO_QUALIFIED_FULL_ANCESTOR'})]);
+  assert(!fullHandoff.stdout.includes('PRIVATE_'));assert(!fullHandoff.stdout.includes(process.env.GITHUB_TOKEN));
+  const fullHandoffProof=JSON.parse(fs.readFileSync(path.join(root,fullHandoff.fields.receipt_path)));
+  assert.equal(fullHandoffProof.qualification,undefined);assert.equal(fullHandoffProof.nativePostgres,undefined);
+  assert(!fs.existsSync(path.join(root,'.cache/source-targeted-impact-proof.json')));cases++;
   clearCliOutputs();reset();
   write('js/core/unreviewed.js','export const protectedChange=true;\n');const saved=head;
   head=commit('protected change must choose full');process.env.SOURCE_GATE_HEAD_SHA=head;
@@ -311,5 +322,5 @@ try{
 }
 console.log(JSON.stringify({kind:'PRIVATE_NORMAL_TARGETED_PRODUCER_TARGET',cases,passed:cases,failed:0,
   realLocalGitFixtures:true,actualSyntheticTargetProcesses:executions,syntheticTransportCalls:calls,
-  cliSyntheticTransportCalls:cliTransportCalls,actualDigestCliCases:2,
+  cliSyntheticTransportCalls:cliTransportCalls,actualDigestCliCases:3,
   productSourceCommandsExecuted:0,liveApiRequests:0,nativeSqlExecuted:false,production:false,deliveryAuthority:false}));

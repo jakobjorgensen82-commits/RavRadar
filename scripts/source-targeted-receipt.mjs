@@ -214,6 +214,26 @@ export function validateDomainTargetedSourceReceipt(receipt,expected){
     producerMergeIdentityVerified:false,independentControlReviewVerified:false,deliveryAuthority:false});
 }
 
+// The existing marker is only an untrusted locator here. This pure read does
+// not authenticate ancestry, a FULL artifact, protected inputs or ROOT review.
+function domainControlReviewMarker(pull){
+  must(typeof pull.body==='string'&&Buffer.byteLength(pull.body,'utf8')<=65536,'CONTROL_REVIEW_BODY');
+  const markers=[...pull.body.matchAll(/<!-- RAVRADAR_CONTROL_REVIEW_V2 (\{[^\r\n]*\}) -->/g)];
+  must(markers.length===1&&pull.body.split('RAVRADAR_CONTROL_REVIEW_V2').length===2,'CONTROL_REVIEW_REQUIRED');
+  let review;try{review=JSON.parse(markers[0][1]);}catch{must(false,'CONTROL_REVIEW_FORMAT');}
+  keys(review,['head','baselineCommit','inventorySha256','closureSha256','planSha256','reviewSha256']);
+  return review;
+}
+export function readDomainControlReviewBaselineHint(pull,head){
+  must(arguments.length===2&&oid(head),'CURRENT_IDENTITY');
+  if(typeof pull?.body!=='string'||!pull.body.includes('RAVRADAR_CONTROL_REVIEW_V2'))return null;
+  const review=domainControlReviewMarker(pull);
+  must(review.head===head&&oid(review.baselineCommit)
+    &&[review.inventorySha256,review.closureSha256,review.planSha256,review.reviewSha256].every(hash64),
+    'CONTROL_REVIEW_MISMATCH');
+  return review.baselineCommit;
+}
+
 // ROOT records its independent whole-change review in the existing PR body.
 // This is external GitHub metadata, never a candidate-selected approved flag.
 // The actual producer and consumer both read it; pure receipt validation cannot.
@@ -227,11 +247,7 @@ export function readDomainControlReview(pull,expected){
     &&pull.head?.repo?.full_name===current.repository&&pull.base?.ref==='main'
     &&pull.base?.repo?.full_name===current.repository
     &&pull.user?.login===current.repository.split('/')[0],'CONTROL_REVIEW_PULL_IDENTITY');
-  must(typeof pull.body==='string'&&Buffer.byteLength(pull.body,'utf8')<=65536,'CONTROL_REVIEW_BODY');
-  const markers=[...pull.body.matchAll(/<!-- RAVRADAR_CONTROL_REVIEW_V2 (\{[^\r\n]*\}) -->/g)];
-  must(markers.length===1&&pull.body.split('RAVRADAR_CONTROL_REVIEW_V2').length===2,'CONTROL_REVIEW_REQUIRED');
-  let review;try{review=JSON.parse(markers[0][1]);}catch{must(false,'CONTROL_REVIEW_FORMAT');}
-  keys(review,['head','baselineCommit','inventorySha256','closureSha256','planSha256','reviewSha256']);
+  const review=domainControlReviewMarker(pull);
   must(review.head===current.head&&review.baselineCommit===reference.mergeCommit
     &&review.inventorySha256===domainPlan.inventorySha256&&review.closureSha256===domainPlan.closureSha256
     &&review.planSha256===sha(JSON.stringify(domainPlan))&&hash64(review.reviewSha256),'CONTROL_REVIEW_MISMATCH');

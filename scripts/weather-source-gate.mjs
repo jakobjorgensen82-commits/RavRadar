@@ -98,6 +98,11 @@ if (mode === 'digest' || mode === 'impact-digest') {
       ? 'Created separate domain receipt; exact command results are reported per domain; PostgreSQL and historical national execution are not claimed.'
       : 'Created separate targeted source receipt; database and national execution are not claimed.');
   } else {
+    const reasonCode = mode === 'impact-digest' ? impact?.reasonCode : null;
+    if (mode === 'impact-digest' && ![
+      'COMPLETE_DIFF_REQUIRES_FULL', 'CUMULATIVE_DIFF_REQUIRES_FULL',
+      'FULL_BASELINE_NOT_QUALIFIED', 'NO_QUALIFIED_FULL_ANCESTOR', 'TARGETED_PRECONDITION_UNAVAILABLE',
+    ].includes(reasonCode)) throw new Error('Source impact FULL reason differs from the fixed contract');
     const sourceTreeSha256 = sourceTreeContentSha256('HEAD');
     const artifactName = sourceTreeProofArtifactName({
       pullRequestNumber,
@@ -114,7 +119,8 @@ if (mode === 'digest' || mode === 'impact-digest') {
       privatePayloadIncluded: false,
     });
     await fs.appendFile(env.GITHUB_OUTPUT, `source_tree_sha256=${sourceTreeSha256}\nartifact_name=${artifactName}\n`
-      + (mode === 'impact-digest' ? `selection=FULL\nreceipt_path=${pullRequestProofPath}\n` : ''));
+      + (mode === 'impact-digest' ? `selection=FULL\nreason_code=${reasonCode}\nreceipt_path=${pullRequestProofPath}\n` : ''));
+    if (mode === 'impact-digest') console.log('SOURCE_IMPACT ' + JSON.stringify({selection: 'FULL', reason_code: reasonCode}));
     console.log('Created privacy-safe SHA-256 source-tree content proof.');
   }
 } else if (mode === 'record') {

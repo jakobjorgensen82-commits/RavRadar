@@ -4,7 +4,8 @@ import fs from 'node:fs';
 import {fileURLToPath} from 'node:url';
 import {execFileSync} from 'node:child_process';
 import {projectSourceImpactWorkflowFull,SOURCE_IMPACT_FULL_WORKFLOW_ORIGIN,
-  SOURCE_IMPACT_FULL_WORKFLOW_SHA256,SOURCE_IMPACT_FULL_STEP_CONDITION,SOURCE_IMPACT_CONTROL_TARGETS}
+  SOURCE_IMPACT_FULL_WORKFLOW_SHA256,SOURCE_IMPACT_FULL_STEP_CONDITION,SOURCE_IMPACT_CONTROL_TARGETS,
+  SOURCE_IMPACT_PR_READ_GRANT,inverseSourceImpactPrReadGrant}
   from './lib/source-impact-workflow-review.mjs';
 import {verifyWorkflow,inverseSourceBeforePostgresWorkflow,inverseCandidatePublicSourceRunLine,
   CURRENT_JOB,AFTER_JOB,verifyReviewed90Workflow} from './national584-source-evidence.mjs';
@@ -21,6 +22,30 @@ assert.equal(sha(origin),SOURCE_IMPACT_FULL_WORKFLOW_SHA256);
 assert.equal(projectSourceImpactWorkflowFull(source),origin,'WHOLE qualified 334 FULL bytes are preserved');
 assert.equal(projectSourceImpactWorkflowFull(origin),origin);
 verifyWorkflow(source);verifyWorkflow(origin);let passed=1;
+
+// Actual authenticated commit->PR discovery needs the single inherited read grant.
+function assertSourcePrDiscoveryReadGrant(value){
+  assert.deepEqual(value.match(/^permissions:\n(?:  [^\n]+\n)+/gm)??[],
+    ['permissions:\n  contents: read\n  actions: read\n  pull-requests: read\n']);
+  assert.doesNotMatch(value,/^[ \t]+permissions:/m,'No job override may erase the inherited grant');
+}
+assert.equal(sha(source),SOURCE_IMPACT_PR_READ_GRANT.afterSha256);
+assertSourcePrDiscoveryReadGrant(source);
+const beforePrReadGrant=inverseSourceImpactPrReadGrant(source);
+assert.equal(sha(beforePrReadGrant),SOURCE_IMPACT_PR_READ_GRANT.beforeSha256);
+assert.equal(projectSourceImpactWorkflowFull(beforePrReadGrant),origin,'Exact old input remains admitted');
+assert.equal(inverseSourceImpactPrReadGrant(source.replaceAll('\n','\r\n')),beforePrReadGrant);passed++;
+for(const changed of [source.replace('  pull-requests: read\n',''),
+  source.replace('  pull-requests: read','  pull-requests: write'),
+  source.replace('  pull-requests: read\n','  pull-requests: read\n  pull-requests: read\n'),
+  source.replace('  pull-requests: read\n','  pull-requests: read\n  issues: read\n'),
+  source.replace('  validate:\n','  validate:\n    permissions: {}\n')]){
+  assert.notEqual(changed,source);assert.throws(()=>assertSourcePrDiscoveryReadGrant(changed));
+  if(sha(changed)!==SOURCE_IMPACT_PR_READ_GRANT.beforeSha256){
+    assert.throws(()=>projectSourceImpactWorkflowFull(changed));assert.throws(()=>verifyWorkflow(changed));
+  }else assert.equal(projectSourceImpactWorkflowFull(changed),origin);
+  passed++;
+}
 
 // Exercise the same existing current -> genuine historical workflow route
 // used by test-account-statistics-assistant-callers and workflow-order checks.
@@ -69,6 +94,15 @@ for(const command of SOURCE_IMPACT_CONTROL_TARGETS){
 }
 assert(blocks[20].includes("path: ${{ steps.source-content.outputs.receipt_path || '.cache/source-tree-content-proof.json' }}"));
 passed++;
+
+// The actual step-5 bridge reports only the closed FULL selection/reason.
+// The workflow entrance and every runtime condition above remain unchanged.
+const bridge=fs.readFileSync(new URL('./weather-source-gate.mjs',import.meta.url),'utf8').replace(/\r\n/g,'\n');
+assert(bridge.includes("reason_code=${reasonCode}"));
+assert(bridge.includes("JSON.stringify({selection: 'FULL', reason_code: reasonCode})"));
+for(const reason of ['COMPLETE_DIFF_REQUIRES_FULL','CUMULATIVE_DIFF_REQUIRES_FULL',
+  'FULL_BASELINE_NOT_QUALIFIED','NO_QUALIFIED_FULL_ANCESTOR','TARGETED_PRECONDITION_UNAVAILABLE'])assert(bridge.includes("'"+reason+"'"));
+assert(!bridge.includes('JSON.stringify(impact)'));passed++;
 
 const once=(from,to)=>{assert.equal(source.split(from).length,2);return source.replace(from,()=>to);};
 const mutations=[

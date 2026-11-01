@@ -658,5 +658,528 @@
       "3ac7afc187e5ad88cb60643ef549dc3821cf8b32a4447714723c1746bc2cc925": 1,
       "fca61249820b55cc7a9ec82263267b9cb4b94a35c6ebcc93e1f022c036b5ca2b": 1
     }
+  },
+  "registryWorkflow066Successor": {
+    "kind": "EXACT_ORDINARY_STAGE_WORKFLOW_066_TWO_SURFACES",
+    "beforeSha256": "6e2afb97f457f1dfa9b7a4617dab1c298a98b68dfec8bb4d0aba89ab5e2cea2f",
+    "afterSha256": "3f881db61fde06c49322eac50407310a47affb4f2d1bf118d38f2b03041b04b1",
+    "owner": "scripts/ordinary-completed-stage-artifact.mjs",
+    "surfaceAdditions": [
+      {
+        "field": "bindingSurfaces",
+        "sha256": "cdfc65ea519a3073d004ba83929599232071b27beceb38a90b3b51bc5044ff6d",
+        "beforeCount": 35,
+        "beforeArraySha256": "51daedc4b95890401e7ac528c31ed5e2c04dd10af77493718c6ee310fe1ef807"
+      },
+      {
+        "field": "computedBoundaries",
+        "sha256": "58f4b0ecbc5a27086169a6639a4dc51e3194d28063c8d0933cfaed8b5a4f6474",
+        "beforeCount": 22,
+        "beforeArraySha256": "ac5a91c3c96e74e6f10098f976498280baaa9f5d04ff5ce782bbfe6a0ec41930"
+      }
+    ],
+    "insertions": [
+      {
+        "field": "owners",
+        "bytes": 599,
+        "sha256": "3821fe09a4a71daab255969db4b59dd2b06bd686ce65a0d99426b75d666ebcc9",
+        "offset": 25203
+      },
+      {
+        "field": "bindingSurfaces",
+        "bytes": 76,
+        "sha256": "045c75978f022cc3e14aa94aa2f488ade0e17c124905eb7b2daa88860c95a281",
+        "offset": 347898
+      },
+      {
+        "field": "computedBoundaries",
+        "bytes": 76,
+        "sha256": "e1dd3afada4f8af89f83425dad6ccc633747a7dd826ea5437196c61b8d2848ce",
+        "offset": 349684
+      }
+    ],
+    "reviewInputSha256": "d7e86b2e334506be149b60ce1ff1f427a1bed7d7f5b202f57207bd24d75e7acc",
+    "auditedSourceSha256": "a9655ee55b68adbdf06bb40f210f44519a363ebc011938e99d0df26ae146e349",
+    "meaning": "Exact local require(condition,code) assertion after producerWorkflow(identity); not a new module loader.",
+    "ownerAdditions": [
+      {
+        "path": "scripts/ordinary-completed-stage-artifact.mjs",
+        "domains": [
+          "controls"
+        ],
+        "controlQualification": true,
+        "commands": [
+          [
+            "controls",
+            "node scripts/test-workflow-validation-order-4.0.108.mjs"
+          ]
+        ]
+      },
+      {
+        "path": "scripts/test-ordinary-completed-stage-artifact.mjs",
+        "domains": [
+          "controls"
+        ],
+        "controlQualification": true,
+        "commands": [
+          [
+            "controls",
+            "node scripts/test-workflow-validation-order-4.0.108.mjs"
+          ]
+        ]
+      }
+    ],
+    "ownersBeforeCount": 101,
+    "ownersBeforeArraySha256": "7c5d367f525b569a860b6c7e8cc9dc1f829083574eaba5e88065d1163a56f571",
+    "intermediateRegistrySha256": "2d4afeb192aad295787624288fbb8c4e959f049ffbae96508857ead92a0a97d8"
+  },
+  "registryBaselineHintSuccessor": {
+    "kind": "EXACT_UNTRUSTED_BASELINE_HINT_NORMAL_CALLER_REGISTRY_SUCCESSOR",
+    "beforeSha256": "3f881db61fde06c49322eac50407310a47affb4f2d1bf118d38f2b03041b04b1",
+    "afterSha256": "7631fb91fe6d27b0d4f2dccef4216b514f53bb42224a637fa4b60efa86527859",
+    "insertions": [
+      {
+        "offset": 25802,
+        "bytes": 1099,
+        "sha256": "8152de736115a294302a6e03ff997baef4c0a58cecc25553381809d83b4730b8",
+        "field": "owners"
+      },
+      {
+        "offset": 455118,
+        "bytes": 76,
+        "sha256": "be7032aab4d42a9bb83777933a13d10b5dd8e5c68b9ac56969c6d90ae28df308",
+        "owner": "scripts/source-targeted-producer.mjs",
+        "field": "dependencySurfaces"
+      },
+      {
+        "offset": 578187,
+        "bytes": 43,
+        "sha256": "a56d648dd18d91f41d96fa0fb2b8c2b4240d60f19d3f0159902fec24b5c1bab3",
+        "owner": "scripts/test-source-impact-workflow.mjs",
+        "field": "resources"
+      },
+      {
+        "offset": 578648,
+        "bytes": 76,
+        "sha256": "99a9ca20249912d3cf89613b8f8aeddac59e6728408edb143900b5f919ea248c",
+        "owner": "scripts/test-source-impact-workflow.mjs",
+        "field": "dependencySurfaces"
+      },
+      {
+        "offset": 579595,
+        "bytes": 76,
+        "sha256": "e6397f63364cd7577fd25682cdd09b75217e5adc8130c08a50427bf7bc05c6c4",
+        "owner": "scripts/test-source-impact-workflow.mjs",
+        "field": "bindingSurfaces"
+      },
+      {
+        "offset": 592488,
+        "bytes": 1520,
+        "sha256": "8bd1efc9601e61ecdb999c2e9e621e201742b2188447328c795ec08cf7ca7e78",
+        "owner": "scripts/test-source-targeted-domain-integration.mjs",
+        "field": "dependencySurfaces"
+      },
+      {
+        "offset": 595791,
+        "bytes": 304,
+        "sha256": "bdfb40a3a402885db3778e2307120a39f14e2623795b43612f715c1d8c10db16",
+        "owner": "scripts/test-source-targeted-domain-integration.mjs",
+        "field": "bindingSurfaces"
+      },
+      {
+        "offset": 596209,
+        "bytes": 76,
+        "sha256": "9a46372cde8f4baf72b861a816ad5cba5888539f0fcd95356c4095f51493c361",
+        "owner": "scripts/test-source-targeted-domain-integration.mjs",
+        "field": "computedBoundaries"
+      },
+      {
+        "offset": 600331,
+        "bytes": 76,
+        "sha256": "b6c7782ac68c3ab962a8e2bc4e8ecf424f0124d9c295655f58b09c88fcb41962",
+        "owner": "scripts/test-source-targeted-producer.mjs",
+        "field": "dependencySurfaces"
+      },
+      {
+        "offset": 603102,
+        "bytes": 76,
+        "sha256": "14bbd723663d9243943c738c6287161d35fe103f5591ec0fac605d10f6aebfb9",
+        "owner": "scripts/test-source-targeted-producer.mjs",
+        "field": "bindingSurfaces"
+      },
+      {
+        "offset": 656324,
+        "bytes": 76,
+        "sha256": "26e1c636084f44432e34e4db356bc666b515bf32ab5cd4c2fe3fffd66f15ff1d",
+        "owner": "scripts/weather-source-gate.mjs",
+        "field": "bindingSurfaces"
+      },
+      {
+        "offset": 819548,
+        "bytes": 50757,
+        "sha256": "f41af04e0ab6fc2f1e6733c6c69b637b68d0042b103399fd074744dc87b2e8b7",
+        "field": "sources"
+      },
+      {
+        "offset": 900044,
+        "bytes": 1880,
+        "sha256": "8b44610cd5c977271822ff75dbbb94f8187ed05b3d6c1f7c5cb3bad88fc4f202",
+        "field": "resourceFiles"
+      }
+    ],
+    "surfaceAdditions": [
+      {
+        "owner": "scripts/source-targeted-producer.mjs",
+        "field": "dependencySurfaces",
+        "beforeCount": 14,
+        "beforeArraySha256": "b88325655c3828186b4e3578b23a4a9ec1d1df399e68941a2f9b9cad37bbdc0f",
+        "values": [
+          "a43badb084e122d6a9e40fb3f23531d071d999105df5b76c20d40867f73e2695"
+        ]
+      },
+      {
+        "owner": "scripts/weather-source-gate.mjs",
+        "field": "bindingSurfaces",
+        "beforeCount": 16,
+        "beforeArraySha256": "a33aac059ea368aa3eacdf6afea052d9d4cd0474b7fecd8c06d4b07067b998d8",
+        "values": [
+          "23eb39b9a9388298c45a43df0071071265c2c8761fbdf1d4ea190ceae8a44857"
+        ]
+      },
+      {
+        "owner": "scripts/test-source-targeted-producer.mjs",
+        "field": "dependencySurfaces",
+        "beforeCount": 37,
+        "beforeArraySha256": "352cd4a898912b5132fadd040a130ddfed9ed9db4a119797492eb845952454e3",
+        "values": [
+          "374d9d05a3b6e7a8cf0a204d80f5114bdca58fa1ab182dbe29ff2097c3fc5eaf"
+        ]
+      },
+      {
+        "owner": "scripts/test-source-targeted-producer.mjs",
+        "field": "bindingSurfaces",
+        "beforeCount": 35,
+        "beforeArraySha256": "9a8a87db0b523303476bd27053ccde686156fbed6fd3ecfbbe942e0f341d20d9",
+        "values": [
+          "d5af52a386384955172c0d55ca96ab08b2f115f5b820c08f7aebea1cb9a5b0a4"
+        ]
+      },
+      {
+        "owner": "scripts/test-source-impact-workflow.mjs",
+        "field": "dependencySurfaces",
+        "beforeCount": 5,
+        "beforeArraySha256": "3fb2a16c1e57a1fe2168a8f4fee7fee56b477846e92fd76188239be98a2050a6",
+        "values": [
+          "8b629d257fd30e7819f0ee2f0788a342990d00a4948e209a16f4c151cb0414b4"
+        ]
+      },
+      {
+        "owner": "scripts/test-source-impact-workflow.mjs",
+        "field": "bindingSurfaces",
+        "beforeCount": 11,
+        "beforeArraySha256": "f280ed00faa7e55afe74917b39f2a39793cfc00702a3f3ad25599e314fd77ac4",
+        "values": [
+          "b258021f00a2b002183467e040dca27d650c86bbd5b8d2645fedec3290b71ddd"
+        ]
+      },
+      {
+        "owner": "scripts/test-source-impact-workflow.mjs",
+        "field": "resources",
+        "beforeCount": 5,
+        "beforeArraySha256": "acc6a6215e9732fbd925232c943dbc3bde485c13246642feeed2a0df0a1043aa",
+        "values": [
+          "scripts/weather-source-gate.mjs"
+        ]
+      },
+      {
+        "owner": "scripts/test-source-targeted-domain-integration.mjs",
+        "field": "dependencySurfaces",
+        "beforeCount": 59,
+        "beforeArraySha256": "800049e48194cb4bc3f4d32fed62e7da54d184afc381207a9a464f3f97a67ace",
+        "values": [
+          "8434aaa365de6ec5c138fe7366c9778e7cccface186b90c385c6717652d2857d",
+          "57a5a8198100e3f7f9bf972e2404894d4b46ae213b0614146c34f0fb66ad7450",
+          "dd5bef3ae369bfa44f22e77fa9e32a76868d6fa2dfd4b207f8ebba4dc16e206a",
+          "285d150138b9465295ccd8cc55dcfac9489ba152a0cf32e07161c0dfa6c266ac",
+          "a7323c1441a8e09baa2ad0217494c5cc9e84171e9632442530d254e2f679d96c",
+          "0c518d2b44961a472205d264c1cc033c56fa5fda982c8435f5efd919ded4783f",
+          "828476764be1c109d396fe367c44280819bb59a8de85c2b1aca729ab654bbcc9",
+          "b0c1a8ec3d1f3fe78667441577d81d3435c7963f5b0fdf0bdd1e844414243b90",
+          "f0917caece6c659c499e4d1d50d2be3b14ed3a332884799d29db0df482d85490",
+          "011e1427088658fd358337f35bc2da906771101e39f14b26f42285ca743575ad",
+          "50ef2977754d693ff2830d0b4e15128ca47ea31a5522851f9cfd0df6d14634db",
+          "a98fef673ddf60fa78b0a8f16941005a8c6a3318c2bdafeb29e4a576133575a1",
+          "d20626eb79cdb734ebb16d57ce49a2efff76ed2fa31348c3ed432dfea7f0c08e",
+          "c03684a53dd2bac8f3ca84b5e1a4e59b0e79142b6dd321a7ea6b408edebbe1b0",
+          "dd9cdb71e764995e1c182a0af5793704e45cbc8681b7acbeb1a40b5cda824282",
+          "f132a4c8d06726fc2de0db3df0b36184ac82c797994cf5cf5ee8106a67346ec0",
+          "86a13d582926ce585b9cf3b6b5c0107e0d45c5993638a0a354d51d5994248883",
+          "399ae497baea0342cd03e5b071a3dc9bcd537cdf2947e6b4a23a3d6adf90a4b7",
+          "bf03f6ef53d39ce85a6e841daf3db1fb809d07fc52a1f16592d740be77ab6036",
+          "58d46e88c4ad87a2553feb04a3222a022ae57ffaa24a021da52bc6779e0807b4"
+        ]
+      },
+      {
+        "owner": "scripts/test-source-targeted-domain-integration.mjs",
+        "field": "bindingSurfaces",
+        "beforeCount": 23,
+        "beforeArraySha256": "643549a271479d9991e5ea515a114cab6165df7ae3373bbdde11e185d36959f3",
+        "values": [
+          "4ac169fe5876696b152bcb1609767952e7b91ca6733c02970e3e325e50e3c1c8",
+          "1dcd576e0456544622c37b235f4e91304a5357f701037dd967cf548baf48c739",
+          "46196ae524568243f4c6a25eebb68a08cc61498ae4ca0ec8d410ea1a396b0479",
+          "0c8d85d249a18ffd9dc17e624ea6a85a875844271604e72718e874fe0856dd77"
+        ]
+      },
+      {
+        "owner": "scripts/test-source-targeted-domain-integration.mjs",
+        "field": "computedBoundaries",
+        "beforeCount": 1,
+        "beforeArraySha256": "1f237682078e50676078d3b85e445309a7d19dbbe80d6766c0ce4061a138fe46",
+        "values": [
+          "d79f9eb9cefb9463385586ac85aea61ce2efefa3b5410c0fa9a64274e7913c37"
+        ]
+      }
+    ],
+    "ownersBeforeCount": 103,
+    "sourcesBeforeCount": 368,
+    "resourceFilesBeforeCount": 566,
+    "ownerAdditions": [
+      {
+        "path": "scripts/test-source-impact-workflow.mjs",
+        "domains": [
+          "controls"
+        ],
+        "controlQualification": true,
+        "commands": [
+          [
+            "controls",
+            "node scripts/test-source-impact-workflow.mjs"
+          ]
+        ]
+      },
+      {
+        "path": "scripts/lib/archived-weather-restart-workflow-review.mjs",
+        "domains": [
+          "controls"
+        ],
+        "controlQualification": true,
+        "commands": [
+          [
+            "controls",
+            "node --test scripts/test-archived-weather-restart-workflow.mjs"
+          ],
+          [
+            "controls",
+            "node scripts/test-code-only-public-runtime.mjs"
+          ],
+          [
+            "controls",
+            "node scripts/source-critical-gate.mjs"
+          ]
+        ]
+      },
+      {
+        "path": "scripts/test-archived-weather-restart-workflow.mjs",
+        "domains": [
+          "controls"
+        ],
+        "controlQualification": true,
+        "commands": [
+          [
+            "controls",
+            "node --test scripts/test-archived-weather-restart-workflow.mjs"
+          ]
+        ]
+      }
+    ],
+    "ownersBeforeArraySha256": "4e81d5f3ebe9dddd6881b23f2e522ad5fcddab74d674aad899c4826d9ebf96b4",
+    "intermediateRegistrySha256": "b570d96e48e99fd8677e2e1fe60bf811b30296ed83795c2d80b2e97c6ec03061",
+    "sourceAdditions": [
+      {
+        "path": "scripts/acquire-code-only-public-snapshot.mjs",
+        "definitionSha256": "36179f85a4e26208ad966f34208a33a20d48503483c4e89e5b5e97aeba2ccd1d",
+        "codeSha256": "677a1c0d6d1ae9ce4b2d0ffcd1057929329af21ff0176a74b40d38077bd04b3a",
+        "gitBeforeBlobSha1": "67507d3bd54ec151e40f9075fd999fa1355a0a9d"
+      },
+      {
+        "path": "scripts/assistant-later-h0-binding-prewrite.mjs",
+        "definitionSha256": "78cac83e177ab1e1dfd152f0276909b95b53175903900727a0cc131010a2eb8b",
+        "codeSha256": "d46dc4c2741dc62608e640ca60bd6b18027df6086a71f63c26e879c4495c94e2",
+        "gitBeforeBlobSha1": "52fd7d72b5c83ec1693575dc9f2df20009196a32"
+      },
+      {
+        "path": "scripts/lib/account-statistics-assistant-workflow-review.mjs",
+        "definitionSha256": "1a240b150ccd59df6558833ac251dc45e4da5f9fdb749656838f1629217d28ba",
+        "codeSha256": "ad10b9fd749f19406edba582c81a3dc626ab7ae647eaa232074c6f97055cd7b7",
+        "gitBeforeBlobSha1": "3725a37895a1537b20b0eb65f5e385365ad0156d"
+      },
+      {
+        "path": "scripts/lib/archived-production-gate-review.mjs",
+        "definitionSha256": "6d5dac6a60d4fd050e259f594de824d4985bf10d81da4ead5f1dd286ddad2ef7",
+        "codeSha256": "d2e9f9b88b2b52e8ed3b31bccccfbc91d0032f2f520162ea7324f7c333696bf4",
+        "gitBeforeBlobSha1": "0945181849688930b5a23f27b80b2dbcf7fca47f"
+      },
+      {
+        "path": "scripts/lib/archived-weather-restart-workflow-review.mjs",
+        "definitionSha256": "c6a153cab829b3dd4a1948b55ff16499f609648fa84afda2585df9283519aac9",
+        "codeSha256": "64573990e60b76082ef6df421ba86f872bbb26aaa9ea538511b0c16d158ca748",
+        "gitBeforeBlobSha1": "697f25d685c15c4adefaf6c857bf2263cc29c02a"
+      },
+      {
+        "path": "scripts/prepare-code-only-public-runtime.mjs",
+        "definitionSha256": "8de33b70774429d5a791e6cdfeb28a7860415ca428320a40c070b6e11faf6a85",
+        "codeSha256": "0fc9e5599b6ce944957df8628674ca6139dde61ab64a961104ffdd3a5294dff3",
+        "gitBeforeBlobSha1": "4ad0367ee3f0fc08856ab0e46cef98e41aaf92d8"
+      },
+      {
+        "path": "scripts/resolve-code-only-public-source.mjs",
+        "definitionSha256": "1a91bf8d895d430b7e09f56bb46d3977ee4fee8522d2c241cd07da99fc015647",
+        "codeSha256": "ffe84f5a0256f8d7439529d7af5330becb97cba5d4f371ed32bb25e7fe4f997e",
+        "gitBeforeBlobSha1": "cdfc01508875651e97718e947202a272727483f9"
+      },
+      {
+        "path": "scripts/run-validation-collection.mjs",
+        "definitionSha256": "21c59d9d635eced14255151f946ba8f9815ada9f3b1541ab1c28e3e89eea961a",
+        "codeSha256": "36c80d7f46f33693a14d2e2611a3ba3423707d3c21a75e6080c1ebf6ab5f804c",
+        "gitBeforeBlobSha1": "2fbf72876855079ebfdfea4e1dbd8f6708bb61a8"
+      },
+      {
+        "path": "scripts/source-critical-gate.mjs",
+        "definitionSha256": "13df4a7bd4b5cd51b6b046090ea660b9135c9a047b384dca2c56036036530765",
+        "codeSha256": "617c88a750c447f086fb9e4976f77de8bc8573bbbc5a01735d4cb3d25bb35df1",
+        "gitBeforeBlobSha1": "5165480f1ce9fe321e5f64e801d8731ad8229335"
+      },
+      {
+        "path": "scripts/test-archived-weather-restart-workflow.mjs",
+        "definitionSha256": "da72552ea9ab9beb7c82a48cd0f198b0794d6fe7c760970dbce2e9f447c643fd",
+        "codeSha256": "9098e794913a540fd5f25cef9ed16527ecc7c5818940e3a2a41205c0b698050f",
+        "gitBeforeBlobSha1": "93d894e25dec039f8a1c5023e3df4e49ffe1a51d"
+      },
+      {
+        "path": "scripts/test-code-only-public-runtime.mjs",
+        "definitionSha256": "580ef35b65e9eca3e7b8994f5ce2c379c1c9bed6d6c474782a306404c4d10dad",
+        "codeSha256": "5d8655fee4fcee2bf67cba498cb4f5b1ebd453009840453aa3c9fa88123863fd",
+        "gitBeforeBlobSha1": "09cabf6a6093bf13c72c330f350011187e9655ba"
+      },
+      {
+        "path": "scripts/test-established-native-current-origin591-metadata.mjs",
+        "definitionSha256": "4eca4f9ed7dd102d3eacf614dce4f4bb39378211bbca4a81ff29c27f6a3a7f66",
+        "codeSha256": "4f36061900d74fb9626388234bd74c5e6d7f5ecde8ab96682a88667103933df2",
+        "gitBeforeBlobSha1": "b4b322b4ea443be413ec9a9e17c8fa342b3243a8"
+      },
+      {
+        "path": "scripts/test-installed593-original591-successor.mjs",
+        "definitionSha256": "2f3834b3190845f8353b19f8753fad8d2aa8eb33cc0c3e6436e2b7ff3cba61ee",
+        "codeSha256": "0dc2eb8a48e8bb7170c0a868bf60732f768b5af26e047952e19c6a01eb2cf86f",
+        "gitBeforeBlobSha1": "c79f6a2c5ed8f640c00bd3455d6aac5e95550850"
+      },
+      {
+        "path": "scripts/test-jordrav.mjs",
+        "definitionSha256": "351dbcaafd763f4ede6a5bc2f3126f32c7b4e6106a1611004099586e604621b6",
+        "codeSha256": "8358907f4f8e751539edca47eb0d4632e2e3d1b68395e2e2d0df419257247630",
+        "gitBeforeBlobSha1": "2032b7ef7455214bbfc71a7c184c3770629a81ff"
+      },
+      {
+        "path": "scripts/test-post-cutover-migration-routing.mjs",
+        "definitionSha256": "4bc3bee5094b8705c5dec142750c86cf5ecd99d37da11a57bbb066f06de9675f",
+        "codeSha256": "6e0e3ff78f3c72664f3027cffc98d41b063abfcdbd6548582c70afbf9043018f",
+        "gitBeforeBlobSha1": "9db8ca2cb73d73bee671e7ff001ae3327fc7579d"
+      }
+    ],
+    "sourcesBeforeKeysSha256": "83ea81c60ddc37f8c04a9b63ac26ec786d7a9eb61f391edcbcb2f266b5704a5b",
+    "resourceFileAdditions": [
+      ".github/workflows/apply-weather-model-binding-only.yml",
+      ".github/workflows/recover-live-ravscore-central.yml",
+      "docs/rdks/10_DECISIONS/DEC-0148-SEPARATE-CODE-DEPLOY-FROM-WEATHER-ACQUISITION.md",
+      "js/ui/admin-active-ravscore.js",
+      "scripts/acquire-code-only-public-snapshot.mjs",
+      "scripts/extract-code-only-public-source.py",
+      "scripts/lib/account-statistics-assistant-workflow-review.json",
+      "scripts/lib/archived-weather-restart-workflow-review.json",
+      "scripts/lib/current-installed-code-only-workflow-review.json",
+      "scripts/lib/native-original-continuity-workflow-review.json",
+      "scripts/prepare-code-only-public-runtime.mjs",
+      "scripts/test-code-only-public-extractor.py",
+      "scripts/test-code-only-userdata-policy-routing.mjs",
+      "scripts/test-integrated-cutover-install-contract.mjs",
+      "scripts/test-integrated-cutover-readiness.mjs",
+      "scripts/test-native-identity-checkpoint-runtime.mjs",
+      "scripts/test-native-identity-frozen-i71-source.mjs",
+      "scripts/test-native-identity-installed-migration-metadata.mjs",
+      "scripts/test-native-identity-normal-readiness.mjs",
+      "scripts/test-native-identity-normal-routing.mjs",
+      "scripts/test-native-identity-staging-working-copy.mjs",
+      "scripts/test-native-identity-workflow.mjs",
+      "scripts/test-native-sampling-identity-successor.mjs",
+      "scripts/test-owned-i71-native-identity-working.mjs",
+      "scripts/test-source-validation-once.mjs",
+      "scripts/test-weather-state-epoch-archive.mjs",
+      "scripts/test-weather-state-epoch-budget.mjs",
+      "scripts/test-weather-state-epoch-callers.mjs",
+      "scripts/test-weather-state-epoch.mjs",
+      "scripts/verify-code-only-migration-plan.mjs",
+      "supabase/migrations/20261005000000_owner_water_level_only_binding.sql",
+      "supabase/migrations/20261013210000_account_assistant_original_bound_successor.sql"
+    ],
+    "resourceFilesBeforeArraySha256": "a33618fd7c8895e6a829c0077417a6f16e875d6930bafb69499009b00f492305"
+  },
+  "registryPrSourceReadGrantSuccessor": {
+    "kind": "EXACT_SOURCE_PR_DISCOVERY_READ_GRANT_REGISTRY_SUCCESSOR",
+    "beforeSha256": "7631fb91fe6d27b0d4f2dccef4216b514f53bb42224a637fa4b60efa86527859",
+    "afterSha256": "c9d137adbaa8517437530a1f0c75830c85dfc43f57ad594b3c73e8000d33b771",
+    "insertions": [
+      {
+        "offset": 26901,
+        "bytes": 607,
+        "sha256": "fda0a1f0cda43eada57c3545b4dfb5b37165fdb47b36b50ab514f7ebcae0cb40",
+        "field": "owners"
+      },
+      {
+        "offset": 907864,
+        "bytes": 198,
+        "sha256": "1b9c8a9839e960865d857b55927e9e4c7b5e5d0abf435e103d1f2cc248b7469d",
+        "field": "exactSourceTransitions"
+      }
+    ],
+    "ownerAdditions": [
+      {
+        "path": ".github/workflows/validate-pull-request.yml",
+        "domains": [
+          "controls"
+        ],
+        "controlQualification": true,
+        "commands": [
+          [
+            "controls",
+            "node scripts/test-source-impact-workflow.mjs"
+          ]
+        ],
+        "exactSourceTransition": true
+      },
+      {
+        "path": "scripts/lib/source-impact-workflow-review.mjs",
+        "domains": [
+          "controls"
+        ],
+        "controlQualification": true,
+        "commands": [
+          [
+            "controls",
+            "node scripts/test-source-impact-workflow.mjs"
+          ]
+        ]
+      }
+    ],
+    "ownersBeforeCount": 106,
+    "ownersBeforeArraySha256": "d1c7bf1e1d0a1a1ab70ce96bd3941251f4eac8ed7e96aee68495f5f511d34ef2",
+    "transitionOwner": ".github/workflows/validate-pull-request.yml",
+    "transitionPairs": [
+      "3838f9009f7df679581cea1a54eeba535bf4b0c90ae6e786691ba46dedd5afc5/45b1a6f3dba31711b8fa8d4cff8776c3f7daa024acc798c4da76bee4615eced1"
+    ],
+    "transitionsBeforeCount": 13,
+    "transitionsBeforeKeysSha256": "f2c0717f959ff056d1dd93736fbb11a21ebdd779d7c7f401497b4438cbd4a944",
+    "transitionsBeforeObjectSha256": "e57140b1b7803412737816843184e73101ce49f4dc239da9b2660e606ea33816",
+    "sameWorkflowBeforeForDirectMain066AndFull169": true
   }
 }

@@ -9,6 +9,7 @@ import {spawnSync} from 'node:child_process';
 import {fileURLToPath} from 'node:url';
 import {inverseArchivedWeatherRestartWorkflow} from './lib/archived-weather-restart-workflow-review.mjs';
 import {inverseArchivedProductionGate} from './lib/archived-production-gate-review.mjs';
+import {inverseTerminalRepair4145Workflow,terminalRepair4145WorkflowReview} from './lib/completed-private-runtime-workflow-review.mjs';
 import {NATIVE_ORIGINAL_CONTINUITY_WORKFLOW_SHA256,CURRENT_INSTALLED_CODE_ONLY_WORKFLOW_SHA256,
   inverseCurrentInstalledCodeOnlyWorkflow,inverseNativeOriginalContinuityWorkflow} from './lib/native-original-continuity-workflow-review.mjs';
 import {inverseAccountStatisticsAssistantWorkflow,inverseAccountStatisticsAssistantOffAttestation,inverseAccountStatisticsAssistantStorageTransport} from './lib/account-statistics-assistant-workflow-review.mjs';
@@ -18,7 +19,8 @@ import {requireLastMileEnclosureBinding} from './lib/last-mile-enclosure-success
 import {ESTABLISHED_NATIVE_CURRENT_ORIGIN_BINDING} from './lib/established-native-current-origin-successor-source.mjs';
 
 const ROOT=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
-const actualCurrentCodeOnly=fs.readFileSync(path.join(ROOT,'.github/workflows/deploy-code-only-repair.yml'),'utf8').replace(/\r\n/g,'\n');
+const actualTerminalCodeOnly=fs.readFileSync(path.join(ROOT,'.github/workflows/deploy-code-only-repair.yml'),'utf8').replace(/\r\n/g,'\n');
+const actualCurrentCodeOnly=inverseTerminalRepair4145Workflow(actualTerminalCodeOnly,'repair');
 const nativeCurrent=crypto.createHash('sha256').update(actualCurrentCodeOnly).digest('hex')===CURRENT_INSTALLED_CODE_ONLY_WORKFLOW_SHA256
   ? inverseCurrentInstalledCodeOnlyWorkflow(actualCurrentCodeOnly):actualCurrentCodeOnly;
 const actualCurrent=inverseNativeOriginalContinuityWorkflow(nativeCurrent);
@@ -937,3 +939,27 @@ test('native continuity workflow: actual SQL shell branch is one before call and
   // This is actual shell reachability with a bounded transport stand-in, NOT
   // an executed SQL/plan/native proof or successful installation.
 }));
+
+// The actual newer caller is qualified before every unchanged historical body.
+// Existing 9d16/1d6c/... inputs remain accepted; mixed permission bytes do not.
+test('terminal4145 actual code-only caller preserves complete shared old oracles and rejects mixed bytes',()=>{
+  const row=terminalRepair4145WorkflowReview.roles.repair;
+  assert.equal(sha(actualTerminalCodeOnly),row.after.sha256);
+  assert.equal(Buffer.byteLength(actualTerminalCodeOnly),row.after.bytes);
+  assert.equal(sha(actualCurrentCodeOnly),row.before.sha256);
+  assert.equal(Buffer.byteLength(actualCurrentCodeOnly),row.before.bytes);
+  assert.equal(inverseArchivedWeatherRestartWorkflow(actualTerminalCodeOnly),historical);
+  assert.equal(inverseArchivedWeatherRestartWorkflow(actualCurrentCodeOnly),historical);
+  const [offset,current,original]=row.edits[0];assert.equal(row.edits.length,1);
+  assert.equal(current,'      pull-requests: read\n');assert.equal(original,'');
+  assert.equal(actualTerminalCodeOnly.slice(offset,offset+current.length),current);
+  for(const substitute of [current+current,current.replace('read','write'),'# unknown grant\n'+current]){
+    const changed=actualTerminalCodeOnly.slice(0,offset)+substitute+actualTerminalCodeOnly.slice(offset+current.length);
+    assert.notEqual(changed,actualTerminalCodeOnly);
+    assert.equal(inverseTerminalRepair4145Workflow(changed,'repair'),changed);
+    assert.throws(()=>inverseArchivedWeatherRestartWorkflow(changed));
+  }
+  const changedNeighbor=actualTerminalCodeOnly+'\n# UNREVIEWED NEIGHBOR\n';
+  assert.equal(inverseTerminalRepair4145Workflow(changedNeighbor,'repair'),changedNeighbor);
+  assert.throws(()=>inverseArchivedWeatherRestartWorkflow(changedNeighbor));
+});

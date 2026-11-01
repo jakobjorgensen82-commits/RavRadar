@@ -6,6 +6,7 @@ on:
 permissions:
   contents: read
   actions: read
+  pull-requests: read
 
 concurrency:
   group: ravradar-pr-${{ github.event.pull_request.number }}

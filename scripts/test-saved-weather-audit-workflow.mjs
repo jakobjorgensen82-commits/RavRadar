@@ -6,6 +6,13 @@ import test from 'node:test';
 const completeWorkflow = fs.readFileSync('.github/workflows/audit-saved-weather-inputs.yml', 'utf8').replace(/\r\n/g, '\n');
 function beforeVoersaaWaterTrace(value){
   const sha=value=>crypto.createHash('sha256').update(value).digest('hex');
+  if(sha(value)==='4914d1497204b37dbf0407b2d3d2c98a638054b8f11ee070dc2afd7e33aa7b28'){
+    assert.equal(value.split("and .path==$workflow and .status==\"completed\"").length,2);value=value.replace("and .path==$workflow and .status==\"completed\"","and .path==\".github/workflows/run-current-weather-once.yml\" and .status==\"completed\"");
+    assert.equal(value.split("jq -e --arg repo \"$GITHUB_REPOSITORY\" --arg run \"$run\" --arg head \"$head\" --arg workflow \"$workflow\" '").length,2);value=value.replace("jq -e --arg repo \"$GITHUB_REPOSITORY\" --arg run \"$run\" --arg head \"$head\" --arg workflow \"$workflow\" '","jq -e --arg repo \"$GITHUB_REPOSITORY\" --arg run \"$run\" --arg head \"$head\" '");
+    assert.equal(value.split("read -r run head workflow <<< \"$pair\"").length,2);value=value.replace("read -r run head workflow <<< \"$pair\"","read -r run head <<< \"$pair\"");
+    assert.equal(value.split("for pair in '41231144384 7a08f6a8dfb2131898e7270a2429c3f4f810a842 .github/workflows/update-and-deploy.yml' '41256251412 37a34703d9ae8bfb2c28056f21a7ea73944033ae .github/workflows/run-current-weather-once.yml'; do").length,2);value=value.replace("for pair in '41231144384 7a08f6a8dfb2131898e7270a2429c3f4f810a842 .github/workflows/update-and-deploy.yml' '41256251412 37a34703d9ae8bfb2c28056f21a7ea73944033ae .github/workflows/run-current-weather-once.yml'; do","for pair in '41231144384 7a08f6a8dfb2131898e7270a2429c3f4f810a842' '41256251412 37a34703d9ae8bfb2c28056f21a7ea73944033ae'; do");
+    assert.equal(sha(value),'7ab179fa390a7921af2d4d87a5bd562c4d43ab8d68d25eb570540ef34852aa0d','VOERSAA_EXACT_RUN_WORKFLOW_INVERSE_CHANGED');
+  }
   if(sha(value)==='c0b58c930ff808e196790dacc30eb6caa3cd0905e87da89c25ac2f3d517f2832')return value;
   assert.equal(sha(value),'7ab179fa390a7921af2d4d87a5bd562c4d43ab8d68d25eb570540ef34852aa0d','VOERSAA_WHOLE_WORKFLOW_INPUT_CHANGED');
   const sibling=value.slice(value.indexOf('\n  voersaa-water-trace:'));
@@ -397,6 +404,16 @@ test('Voersaa fixed water trace workflow: one fixed job is gated before secrets 
     '.run_attempt==1 and .head_sha==$head','git -c protocol.allow=never merge-base --is-ancestor "$head" "$GITHUB_SHA"',
     'git -c protocol.allow=never archive 7a08f6a8dfb2131898e7270a2429c3f4f810a842',
     'git -c protocol.allow=never archive 37a34703d9ae8bfb2c28056f21a7ea73944033ae'])assert(job.includes(exact),exact);
+  assert(job.includes('41231144384 7a08f6a8dfb2131898e7270a2429c3f4f810a842 .github/workflows/update-and-deploy.yml'));
+  assert(job.includes('41256251412 37a34703d9ae8bfb2c28056f21a7ea73944033ae .github/workflows/run-current-weather-once.yml'));
+  assert(job.includes('read -r run head workflow <<< "$pair"'));
+  assert(job.includes('--arg workflow "$workflow"'));
+  assert(job.includes('and .path==$workflow and .status=="completed"'));
+  assert.doesNotMatch(job,/\.conclusion\s*==\s*"success"/);
+  for(const wrong of [
+    completeWorkflow.replace('41231144384 7a08f6a8dfb2131898e7270a2429c3f4f810a842 .github/workflows/update-and-deploy.yml','41231144384 7a08f6a8dfb2131898e7270a2429c3f4f810a842 .github/workflows/run-current-weather-once.yml'),
+    completeWorkflow.replace('41256251412 37a34703d9ae8bfb2c28056f21a7ea73944033ae .github/workflows/run-current-weather-once.yml','41256251412 37a34703d9ae8bfb2c28056f21a7ea73944033ae .github/workflows/update-and-deploy.yml')])
+    assert.throws(()=>beforeVoersaaWaterTrace(wrong),/VOERSAA_WHOLE_WORKFLOW_INPUT_CHANGED/);
   assert.equal((job.match(/water-level-voersaa-20261101/g)??[]).length,1);
   assert.doesNotMatch(job,/secrets\.(?:DMI|COPERNICUS|OPEN_METEO)|secrets: inherit|set -x|npm run|gh workflow run|--publish|--migrate|actions\/cache/);
   assert.doesNotMatch(job,/node scripts\/(?:update-weather|release-|protected-private-production-runtime|private-production-runtime-workflow)/);

@@ -721,14 +721,14 @@ jobs:
           test "$(gh api "repos/$GITHUB_REPOSITORY/git/ref/heads/main" --jq '.object.sha')" = "$GITHUB_SHA"
           for flag in "$COMPONENT_SUMMARY" "$INCLUDE_RAW_MANIFEST" "$INCLUDE_RAW_FILE_PRESENCE" "$INCLUDE_SELECTED_CURRENT_PREFLIGHT" "$INCLUDE_CURRENT_WINDOW_DIAGNOSTIC" "$INCLUDE_CURRENT586_ENDPOINTS" "$INCLUDE_CURRENT586_CACHED_ORIGINALS"; do test "$flag" = false; done
           for value in "$COMPONENT_DATASET" "$COMPONENT_REFERENCE" "$RAW_MANIFEST_CACHE_KEY" "$RAW_MANIFEST_SOURCE" "$PROGRESS_BASELINE_TARGET_HOUR"; do test -z "$value"; done
-          for pair in '41231144384 7a08f6a8dfb2131898e7270a2429c3f4f810a842' '41256251412 37a34703d9ae8bfb2c28056f21a7ea73944033ae'; do
-            read -r run head <<< "$pair"
+          for pair in '41231144384 7a08f6a8dfb2131898e7270a2429c3f4f810a842 .github/workflows/update-and-deploy.yml' '41256251412 37a34703d9ae8bfb2c28056f21a7ea73944033ae .github/workflows/run-current-weather-once.yml'; do
+            read -r run head workflow <<< "$pair"
             gh api "repos/$GITHUB_REPOSITORY/actions/runs/$run/attempts/1" > "$RUNNER_TEMP/voersaa-source-$run.json"
-            jq -e --arg repo "$GITHUB_REPOSITORY" --arg run "$run" --arg head "$head" '
+            jq -e --arg repo "$GITHUB_REPOSITORY" --arg run "$run" --arg head "$head" --arg workflow "$workflow" '
               (.id|tostring)==$run and .run_attempt==1 and .head_sha==$head
               and .repository.full_name==$repo and .head_repository.full_name==$repo
               and .head_branch=="main" and .event=="workflow_dispatch"
-              and .path==".github/workflows/run-current-weather-once.yml" and .status=="completed"
+              and .path==$workflow and .status=="completed"
             ' "$RUNNER_TEMP/voersaa-source-$run.json" >/dev/null
             git -c protocol.allow=never merge-base --is-ancestor "$head" "$GITHUB_SHA"
           done
