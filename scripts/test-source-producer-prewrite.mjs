@@ -105,10 +105,21 @@ test(sourceIssued?'SOURCE issued staging and prewrite reject invalid call forms 
   }finally{t.mock.restoreAll();}
 });
 
-test('SOURCE code-only reconciliation admits only reviewed bytes and preserves the complete older source',async()=>{
+test('SOURCE historical code-only inverse keeps actual ada oracles while current source has its own registration',async()=>{
   const file='scripts/reconcile-private-runtime-checkpoint.mjs';
-  const source=(await fs.readFile(new URL('./reconcile-private-runtime-checkpoint.mjs',import.meta.url),'utf8'))
+  const current=(await fs.readFile(new URL('./reconcile-private-runtime-checkpoint.mjs',import.meta.url),'utf8'))
     .replace(/^\uFEFF/,'').replace(/\r\n?/g,'\n');
+  // These exact old assertions describe ada's historical SOURCE implementation,
+  // not the newer main+SOURCE union. Read its real Git original without a host,
+  // module execution, code overlay, version cast or replacement oracle.
+  const {execFileSync}=await import('node:child_process');
+  const source=execFileSync('git',['-c','protocol.allow=never','show',
+    'ada840ffd6d4ce4821c2c5c7721c1fdce5df4cdd:'+file],{
+    cwd:new URL('..',import.meta.url),encoding:'utf8',timeout:30000,maxBuffer:128*1024,
+    env:{...Object.fromEntries(['PATH','Path','SystemRoot','WINDIR','TEMP','TMP','LANG','LC_ALL']
+      .filter(key=>typeof process.env[key]==='string').map(key=>[key,process.env[key]])),
+      GIT_NO_LAZY_FETCH:'1',GIT_NO_REPLACE_OBJECTS:'1',GIT_OPTIONAL_LOCKS:'0',GIT_TERMINAL_PROMPT:'0'},
+  }).replace(/^\uFEFF/,'').replace(/\r\n?/g,'\n');
   const hash=value=>crypto.createHash('sha256').update(value).digest('hex');
   const once=(value,before,after)=>{assert.equal(value.split(before).length,2);return value.replace(before,()=>after);};
   assert.equal(hash(source),'0d39bb342673321abf6481a4a3527bb3717dc4b2604688550d23e5d928b467f4');
@@ -128,6 +139,13 @@ test('SOURCE code-only reconciliation admits only reviewed bytes and preserves t
   assert.deepEqual(currentImports.filter(value=>value!=='./select-source-producer-code-only-source.mjs'),oldImports);
   for(const changed of [source+'\n',source.replace("'SOURCE_CODE_ONLY_CURRENT_CHANGED'","'RELAXED_IDENTITY'"),
     source.replace("import {assertSourceProducerCodeOnlyCaller} from './select-source-producer-code-only-source.mjs';",'')])
+    assert.throws(()=>modelSourceRelativeModuleSpecifiers(changed,file),/Whole reviewed model import source changed/);
+  assert.notEqual(current,source,'The actual current union is never labelled as historical ada');
+  const actualImports=modelSourceRelativeModuleSpecifiers(current,file);
+  for(const dependency of ['./lib/source-producer-successor-source.mjs','./select-source-producer-code-only-source.mjs'])
+    assert(actualImports.includes(dependency),'Actual complete current source registration retains '+dependency);
+  for(const changed of [current+'\n',current.replace('SOURCE_CODE_ONLY_CURRENT_CHANGED','RELAXED_IDENTITY'),
+    current.replace("import {assertSourceProducerCodeOnlyCaller} from './select-source-producer-code-only-source.mjs';",'')])
     assert.throws(()=>modelSourceRelativeModuleSpecifiers(changed,file),/Whole reviewed model import source changed/);
 });
 
