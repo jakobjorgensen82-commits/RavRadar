@@ -1,3 +1,11 @@
+## 1. november — lokal dialogopfølgning på prognosedage
+
+Den offentlige afprøvning viste, at »og på mandag?« blev afvist efter et fuldt spørgsmål om tirsdag, mens det fulde mandagsspørgsmål gav gyldig landsrangering. Den lokale rettelse bevarer kun en afgrænset prognoseintention i dialogens eksisterende tilstand. En hel kendt DA/DE/EN-forespørgsel med ugedag eller i dag/i morgen/i overmorgen kan efterfølges af et entydigt dagspørgsmål. Det sendes som en fuld forespørgsel gennem de samme normale kalender-, model-, datagenerations-, rangliste- og tidspunktkontroller; brugerens oprindelige tekst vises stadig.
+
+Ukendte led, næste-uge-kvalifikationer, modstridende dage, sammensatte, private, sikkerhedsfølsomme og for lange spørgsmål omsættes ikke. Dialog-, zone-, søgemåde-, sprog- og generationsskift samt sene svar bevarer de eksisterende nulstillingsgrænser. Kun den finite intention gemmes; ingen rå samtalehistorik, egen kalenderberegning, nye scorer eller AI-emneinstruktion tilføjes. En særskilt cacheadresse følger HTML, bootstrap og app; den uændrede modelservice beholder sin normale adresse.
+
+Den normale app-VM reproducerede fejlen før rettelsen og består efter sammen med livscyklus-, kalender- og søgemåderangeringens mål. C/I/T, modelservice, viden, fakta, version og SQL bevares. Dette er lokal kildeforberedelse; præcis GitHub-kvalifikation og offentlig opfølgningsaccept udestår.
+
 ## 1. november — spring kun en bevist ikke-kørt databasefase over ved søgning
 
 Den lokale 594-kontroller kunne vælge et nyere målrettet kildeforløb uden udført databasefase og derfor overse et ældre gyldigt native-bevis. Efterfølgeren går kun videre ved de normale, præcist bundne TARGETED-statusser: trin 1–14 bestået og kilde/database/upload 15–17 udtrykkeligt sprunget over i en frisk genlæst succesfuld kørsel. Et målrettet bevis bliver aldrig et native-bevis. Senere databasefejl, annulleret databasefase, ukendt databasestatus og manglende eller ændret artifact efter en faktisk databasefase giver fortsat afslag. Eksisterende kilde-, input-, integritets- og tidsgrænser bevares.

@@ -520,6 +520,36 @@ function enableDialogClose(dialog){dialog.querySelector(".dialog-close")?.addEve
 
 let assistantTopicState = null;
 let assistantTurn = 0;
+
+// Only a complete, bounded day question can retain this dialog-owned intent.
+// Everything else keeps its whole raw text and the normal service guards.
+function assistantForecastQuestion(question, topic) {
+  const raw=String(question||'').trim();
+  if(raw.length>600)return null;
+  const text=raw.normalize('NFKC').replace(/\s+/gu,' ');
+  const forms=[
+    ['(?:(?:på )?(?:søndag|mandag|tirsdag|onsdag|torsdag|fredag|lørdag)|i dag|idag|i morgen|imorgen|i overmorgen)',
+      'hvor er (?:det )?bedst|bedste (?:sted|steder|område|områder)',
+      'bedste tidspunkt|hvornår er (?:det )?bedste tidspunkt|hvilket tidspunkt',
+      'og|hvad med','Bedste sted','Bedste tidspunkt'],
+    ['(?:(?:am )?(?:sonntag|montag|dienstag|mittwoch|donnerstag|freitag|samstag)|heute|morgen|übermorgen)',
+      'wo ist es am besten|bester ort|bestes gebiet','beste zeit|wann ist die beste zeit|zu welcher zeit',
+      'und|was ist mit','Bester Ort','Beste Zeit'],
+    ['(?:(?:on )?(?:sunday|monday|tuesday|wednesday|thursday|friday|saturday)|today|tomorrow|day after tomorrow)',
+      'where is (?:it )?best|best (?:place|area)','best time|when is the best time|what time',
+      'and|what about','Best place','Best time'],
+  ];
+  for(const [day,place,time,lead,fullPlace,fullTime]of forms){
+    for(const [kind,request]of [['place',place],['time',time]]){
+      if(new RegExp('^(?:'+request+') '+day+'[?!.]{0,3}$','iu').test(text))
+        return {question:raw,topic:'forecast-best-'+kind};
+    }
+    if(topic!=='forecast-best-place'&&topic!=='forecast-best-time')continue;
+    const match=text.match(new RegExp('^(?:'+lead+') ('+day+')[?!.]{0,3}$','iu'));
+    if(match)return {question:(topic==='forecast-best-place'?fullPlace:fullTime)+' '+match[1],topic};
+  }
+  return null;
+}
 function resetAssistantTopic(){assistantTopicState=null;assistantTurn++;}
 function assistantTopicFrame(){
   const context=assistantContext();
@@ -543,11 +573,13 @@ async function submitAssistantQuestion(question){
   addAssistantMessage(clean,"user");
   const pending=addAssistantMessage(t('assistant.working'),"assistant",true);
   try{
-    const followup=assistantLocalFollowupAnswer(clean,previous,frame.language);
-    if(followup===null&&ravQuestionNeedsConditionDetails(clean,assistantContext()))await ensureConditionDetails();
-    const answer=followup??await askRavRadar(clean,assistantContext());
+    const forecast=assistantForecastQuestion(clean,previous);
+    const routedQuestion=forecast?.question??clean;
+    const followup=forecast?null:assistantLocalFollowupAnswer(clean,previous,frame.language);
+    if(followup===null&&ravQuestionNeedsConditionDetails(routedQuestion,assistantContext()))await ensureConditionDetails();
+    const answer=followup??await askRavRadar(routedQuestion,assistantContext());
     pending.querySelector("p").textContent=answer;pending.classList.remove("loading");
-    const topic=followup===null?assistantTopicForQuestion(clean):previous;
+    const topic=forecast?.topic??(followup===null?assistantTopicForQuestion(clean):previous);
     if(topic&&turn===assistantTurn&&sameAssistantTopicFrame(frame,assistantTopicFrame())){
       assistantTopicState={topic,frame};
     }
