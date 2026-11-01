@@ -129,11 +129,16 @@ test('forecast cache identity reaches actual index, bootstrap and app without ch
   const bootMatches = [...html.matchAll(/<script type="module" src="(bootstrap\.js\?[^"<>]+)"><\/script>/gu)];
   const appMatches = [...boot.matchAll(/await import\("(\.\/app\.js\?[^"<>]+)"\);/gu)];
   assert.equal(bootMatches.length, 1); assert.equal(appMatches.length, 1);
-  for (const value of [bootMatches[0][1], appMatches[0][1]]) {
-    const url = new URL(value, 'https://example.invalid/');
+  const cacheUrls = [bootMatches[0][1], appMatches[0][1]].map(value => new URL(value, 'https://example.invalid/'));
+  assert.equal(cacheUrls[0].pathname, '/bootstrap.js');
+  assert.equal(cacheUrls[1].pathname, '/app.js');
+  assert.equal(cacheUrls[0].search, cacheUrls[1].search, 'Both boot edges must carry the complete same cache identity');
+  for (const url of cacheUrls) {
     assert.equal(url.searchParams.get('v'), version);
-    assert.equal(url.searchParams.get('ui'), 'assistant-forecast-followup-20261101');
+    assert.equal(url.searchParams.get('ui'), 'zone-panels-20261027');
     assert.equal(url.searchParams.getAll('ui').length, 1);
+    assert.equal(url.searchParams.get('assistant'), 'forecast-followup-20261101');
+    assert.equal(url.searchParams.getAll('assistant').length, 1);
   }
   const serviceImports = [...app.matchAll(/from "(\.\/js\/services\/rav-assistant\.js\?[^"<>]+)"/gu)];
   assert.equal(serviceImports.length, 1);
