@@ -110,6 +110,13 @@ const registryWorkflow066Successor = review.registryWorkflow066Successor;
 function assertActualRegistry(source) {
   assert.equal(digest(source), registryWorkflow066Successor.afterSha256, 'ACTUAL_SOURCE_PROOF_REGISTRY_BYTES');
   const registryDocument = JSON.parse(source);
+  assert.equal(registryWorkflow066Successor.ownersBeforeCount, registrySuccessor.counts.owners);
+  assert.equal(registryDocument.owners.length,
+    registryWorkflow066Successor.ownersBeforeCount + registryWorkflow066Successor.ownerAdditions.length);
+  assert.deepEqual(registryDocument.owners.slice(registryWorkflow066Successor.ownersBeforeCount),
+    registryWorkflow066Successor.ownerAdditions);
+  assert.equal(digest(JSON.stringify(registryDocument.owners.slice(0, registryWorkflow066Successor.ownersBeforeCount))),
+    registryWorkflow066Successor.ownersBeforeArraySha256);
   for (const ordinaryStageAddition of registryWorkflow066Successor.surfaceAdditions) {
     const ordinaryStageValues = registryDocument.sources[registryWorkflow066Successor.owner][ordinaryStageAddition.field];
     assert.equal(ordinaryStageValues.length, ordinaryStageAddition.beforeCount + 1);
@@ -123,7 +130,7 @@ function assertActualRegistry(source) {
   assert.equal(digest(JSON.stringify(actualAuditBindings.slice(0, registryBindingSuccessor.beforeBindingCount))),
     registryBindingSuccessor.beforeBindingsArraySha256);
   assert.deepEqual([registryDocument.owners.length, Object.keys(registryDocument.sources).length, registryDocument.resourceFiles.length],
-    [registrySuccessor.counts.owners, registrySuccessor.counts.sources, registrySuccessor.counts.resourceFiles]);
+    [registrySuccessor.counts.owners + registryWorkflow066Successor.ownerAdditions.length, registrySuccessor.counts.sources, registrySuccessor.counts.resourceFiles]);
   for (const owner of registrySuccessor.controlOwners)
     assert.deepEqual(registryDocument.owners.filter(row => row.path === owner.path), [owner]);
   assert.deepEqual(registryDocument.exactSourceTransitions[registrySuccessor.transitionOwner],
@@ -132,6 +139,8 @@ function assertActualRegistry(source) {
 }
 const actualRegistry = assertActualRegistry(actualRegistryRaw);
 for (const altered of [actualRegistryRaw + '\n',
+  ...registryWorkflow066Successor.ownerAdditions.map(workflow066Owner =>
+    actualRegistryRaw.replace('"path": "'+workflow066Owner.path+'"', '"path": "'+workflow066Owner.path+'-unknown"')),
   ...registryWorkflow066Successor.surfaceAdditions.flatMap(ordinaryStageAddition => [
     actualRegistryRaw.replace(ordinaryStageAddition.sha256, ordinaryStageAddition.sha256.slice(1)),
     actualRegistryRaw.replace(ordinaryStageAddition.sha256, '2'.repeat(64)),

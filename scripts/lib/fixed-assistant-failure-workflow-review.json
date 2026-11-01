@@ -662,7 +662,7 @@
   "registryWorkflow066Successor": {
     "kind": "EXACT_ORDINARY_STAGE_WORKFLOW_066_TWO_SURFACES",
     "beforeSha256": "6e2afb97f457f1dfa9b7a4617dab1c298a98b68dfec8bb4d0aba89ab5e2cea2f",
-    "afterSha256": "2d4afeb192aad295787624288fbb8c4e959f049ffbae96508857ead92a0a97d8",
+    "afterSha256": "3f881db61fde06c49322eac50407310a47affb4f2d1bf118d38f2b03041b04b1",
     "owner": "scripts/ordinary-completed-stage-artifact.mjs",
     "surfaceAdditions": [
       {
@@ -680,20 +680,57 @@
     ],
     "insertions": [
       {
+        "field": "owners",
+        "bytes": 599,
+        "sha256": "3821fe09a4a71daab255969db4b59dd2b06bd686ce65a0d99426b75d666ebcc9",
+        "offset": 25203
+      },
+      {
         "field": "bindingSurfaces",
         "bytes": 76,
         "sha256": "045c75978f022cc3e14aa94aa2f488ade0e17c124905eb7b2daa88860c95a281",
-        "offset": 347299
+        "offset": 347898
       },
       {
         "field": "computedBoundaries",
         "bytes": 76,
         "sha256": "e1dd3afada4f8af89f83425dad6ccc633747a7dd826ea5437196c61b8d2848ce",
-        "offset": 349085
+        "offset": 349684
       }
     ],
     "reviewInputSha256": "d7e86b2e334506be149b60ce1ff1f427a1bed7d7f5b202f57207bd24d75e7acc",
     "auditedSourceSha256": "a9655ee55b68adbdf06bb40f210f44519a363ebc011938e99d0df26ae146e349",
-    "meaning": "Exact local require(condition,code) assertion after producerWorkflow(identity); not a new module loader."
+    "meaning": "Exact local require(condition,code) assertion after producerWorkflow(identity); not a new module loader.",
+    "ownerAdditions": [
+      {
+        "path": "scripts/ordinary-completed-stage-artifact.mjs",
+        "domains": [
+          "controls"
+        ],
+        "controlQualification": true,
+        "commands": [
+          [
+            "controls",
+            "node scripts/test-workflow-validation-order-4.0.108.mjs"
+          ]
+        ]
+      },
+      {
+        "path": "scripts/test-ordinary-completed-stage-artifact.mjs",
+        "domains": [
+          "controls"
+        ],
+        "controlQualification": true,
+        "commands": [
+          [
+            "controls",
+            "node scripts/test-workflow-validation-order-4.0.108.mjs"
+          ]
+        ]
+      }
+    ],
+    "ownersBeforeCount": 101,
+    "ownersBeforeArraySha256": "7c5d367f525b569a860b6c7e8cc9dc1f829083574eaba5e88065d1163a56f571",
+    "intermediateRegistrySha256": "2d4afeb192aad295787624288fbb8c4e959f049ffbae96508857ead92a0a97d8"
   }
 }

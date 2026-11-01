@@ -1088,6 +1088,32 @@
           "node --test scripts/test-saved-weather-audit-workflow.mjs"
         ]
       ]
+    },
+    {
+      "path": "scripts/ordinary-completed-stage-artifact.mjs",
+      "domains": [
+        "controls"
+      ],
+      "controlQualification": true,
+      "commands": [
+        [
+          "controls",
+          "node scripts/test-workflow-validation-order-4.0.108.mjs"
+        ]
+      ]
+    },
+    {
+      "path": "scripts/test-ordinary-completed-stage-artifact.mjs",
+      "domains": [
+        "controls"
+      ],
+      "controlQualification": true,
+      "commands": [
+        [
+          "controls",
+          "node scripts/test-workflow-validation-order-4.0.108.mjs"
+        ]
+      ]
     }
   ],
   "sources": {
