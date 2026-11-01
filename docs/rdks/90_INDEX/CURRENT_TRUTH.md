@@ -1,3 +1,11 @@
+## 1. november — privat vandstandsdiagnose er forberedt
+
+En fast skrivefri audit kan spore vandstand gennem to præcise autentiske originalgenerationer. Den bevarer original producent, fuld B-/GCM-kontrol, frisk uændret pointer/version og de oprindelige numeriske værdier. Private kilde-/timeoplysninger udvælges snævert og krypteres med særskilt formål; kun ciphertext og fast sikker status forlader scratch. Manglende historisk konfiguration er ukendt, ikke en rekonstruktion ud fra nutidig admin.
+
+Den lokale kalderprøve har også reproduceret og rettet, at GitHubs RUNNER_TEMP kan være en anden mappe end systemets midlertidige mappe. Samme valgte, eksisterende temp-root skal bevise både den ønskede sti, dens realpath og fravær af symlinks. Det almindelige completed-stage-artifacts eget ejerskab og alle autenticitetskrav bevares.
+
+Kandidaten ændrer ikke vejrtal, scoremodel, kilder, geometri, modelbindinger eller SQL og henter ikke nyt vejr. Lokale syntetiske prøver er ikke produktionsaflæsning eller en fastslået årsag til en faktisk afvigelse. Kildekvalifikation, sikker levering efter writer og faktisk aflæsning er åbne. Alle fem mål består; kørselsidentiteter og private resultater føres i checkpointet.
+
 ## 1. november — leveret adminmodelkontrol og ny afgrænset assistentdiagnose
 
 Den særskilte adminmodelkontrol er nu offentligt leveret og afprøvet gennem den normale administratorside. Den verificerede oprindelige startpakke genkendes; aktuelle prognosevisninger bevares. Den tidligere leveringsstatus nedenfor er historisk for netop denne rettelse. Det er ikke afslutning af hele adminrevisionen.

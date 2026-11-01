@@ -3,7 +3,22 @@ import crypto from 'node:crypto';
 import fs from 'node:fs';
 import test from 'node:test';
 
-const actualWorkflow = fs.readFileSync('.github/workflows/audit-saved-weather-inputs.yml', 'utf8').replace(/\r\n/g, '\n');
+const completeWorkflow = fs.readFileSync('.github/workflows/audit-saved-weather-inputs.yml', 'utf8').replace(/\r\n/g, '\n');
+function beforeVoersaaWaterTrace(value){
+  const sha=value=>crypto.createHash('sha256').update(value).digest('hex');
+  if(sha(value)==='c0b58c930ff808e196790dacc30eb6caa3cd0905e87da89c25ac2f3d517f2832')return value;
+  assert.equal(sha(value),'7ab179fa390a7921af2d4d87a5bd562c4d43ab8d68d25eb570540ef34852aa0d','VOERSAA_WHOLE_WORKFLOW_INPUT_CHANGED');
+  const sibling=value.slice(value.indexOf('\n  voersaa-water-trace:'));
+  assert.equal(sibling.length,6353);assert.equal(sha(sibling),'6d759d286001d06ff1faf31222f1e1c0e97b5da8ccd99aa0b399d49f67855531');
+  value=value.slice(0,-sibling.length);
+  const start=value.indexOf('\n      water_level_voersaa_trace_20261101:'),end=value.indexOf('\npermissions:',start);
+  const input=value.slice(start,end);assert.equal(input.length,226);assert.equal(sha(input),'8a27fd5be0134567f6bbe59aec0aefc373612b92ba70e2f36372cf6a9b3ce590');
+  value=value.slice(0,start)+value.slice(end);
+  for(const operator of ['!=','==']){const from='    if: inputs.component_summary_only '+operator+' true && inputs.water_level_voersaa_trace_20261101 != true\n';
+    assert.equal(value.split(from).length,2);value=value.replace(from,'    if: inputs.component_summary_only '+operator+' true\n');}
+  assert.equal(sha(value),'c0b58c930ff808e196790dacc30eb6caa3cd0905e87da89c25ac2f3d517f2832','VOERSAA_WHOLE_WORKFLOW_INVERSE_CHANGED');return value;
+}
+const actualWorkflow = beforeVoersaaWaterTrace(completeWorkflow);
 const workflowSha = value => crypto.createHash('sha256').update(value).digest('hex');
 const oldWorkflowSha = '2772625366db6c0425b6e7a42ad2d09f16cd0d60ddd9eeb90a6efba524b8e53f';
 const summaryWorkflowSha = 'c0b58c930ff808e196790dacc30eb6caa3cd0905e87da89c25ac2f3d517f2832';
@@ -359,4 +374,46 @@ test('CURRENT586 cached originals have one independent default-off exact-cache p
   assert.match(run, /--progress-source 39666991481-1/);
   assert.doesNotMatch(run, /progress-file|WEATHER_PROGRESS_MASTER_SECRET|include-current586-endpoints|update-weather|deploy|publish/);
   assert.doesNotMatch(text, /(?:contents|actions|pull-requests|pages|id-token): write|actions\/cache\/save|gh workflow run|--publish/);
+});
+
+test('Voersaa fixed water trace workflow: exact additive inverse preserves every historical whole oracle',()=>{
+  assert.equal(workflowSha(beforeVoersaaWaterTrace(completeWorkflow)),summaryWorkflowSha);
+  for(const changed of [completeWorkflow+'\n# drift\n',completeWorkflow.replace('voersaa-water-trace:\n','other-job:\n'),
+    completeWorkflow.replace('water_level_voersaa_trace_20261101 != true','water_level_voersaa_trace_20261101 == true'),
+    completeWorkflow.replace('retention-days: 1\n','retention-days: 14\n')])
+    assert.throws(()=>beforeVoersaaWaterTrace(changed),/VOERSAA_WHOLE_WORKFLOW_INPUT_CHANGED/);
+});
+test('Voersaa fixed water trace workflow: one fixed job is gated before secrets and archives genuine readers only',()=>{
+  const job=completeWorkflow.slice(completeWorkflow.indexOf('\n  voersaa-water-trace:'));
+  assert.match(completeWorkflow,/water_level_voersaa_trace_20261101:\n[^\n]*\n        required: false\n        default: false\n        type: boolean/);
+  assert.match(completeWorkflow,/audit:\n    if: inputs\.component_summary_only != true && inputs\.water_level_voersaa_trace_20261101 != true/);
+  assert.match(completeWorkflow,/component-summary:\n    if: inputs\.component_summary_only == true && inputs\.water_level_voersaa_trace_20261101 != true/);
+  assert.match(job,/if: inputs\.water_level_voersaa_trace_20261101 == true/);
+  assert.match(completeWorkflow,/group: ravradar-weather-production-v2\n  queue: max\n  cancel-in-progress: false/);
+  assert.match(job,/test "\$SOURCE_REQUIRED" = false/);
+  assert(job.indexOf('test "$SOURCE_REQUIRED" = false')<job.indexOf(gh('secrets.SUPABASE_URL')));
+  for(const exact of ['test "$GITHUB_SHA" = "$EXPECTED_MAIN_HEAD"','git/ref/heads/main','weather-source-gate.mjs check',
+    '41231144384 7a08f6a8dfb2131898e7270a2429c3f4f810a842','41256251412 37a34703d9ae8bfb2c28056f21a7ea73944033ae',
+    '.run_attempt==1 and .head_sha==$head','git -c protocol.allow=never merge-base --is-ancestor "$head" "$GITHUB_SHA"',
+    'git -c protocol.allow=never archive 7a08f6a8dfb2131898e7270a2429c3f4f810a842',
+    'git -c protocol.allow=never archive 37a34703d9ae8bfb2c28056f21a7ea73944033ae'])assert(job.includes(exact),exact);
+  assert.equal((job.match(/water-level-voersaa-20261101/g)??[]).length,1);
+  assert.doesNotMatch(job,/secrets\.(?:DMI|COPERNICUS|OPEN_METEO)|secrets: inherit|set -x|npm run|gh workflow run|--publish|--migrate|actions\/cache/);
+  assert.doesNotMatch(job,/node scripts\/(?:update-weather|release-|protected-private-production-runtime|private-production-runtime-workflow)/);
+});
+test('Voersaa fixed water trace workflow: only ciphertext and safe status leave scratch, one-day retention',()=>{
+  const job=completeWorkflow.slice(completeWorkflow.indexOf('\n  voersaa-water-trace:'));
+  const upload=job.slice(job.indexOf('uses: actions/upload-artifact@'));
+  assert.match(upload,/status-safe\.json\.encrypted/);assert.match(upload,/status-safe\.json\n/);
+  assert.match(upload,/retention-days: 1\n/);assert.doesNotMatch(upload,/\*|descriptor|bundle|payload|source\.json/);
+  assert.equal((upload.match(/\$\{\{ runner\.temp \}\}/g)??[]).length,2);
+  const audit=fs.readFileSync('scripts/audit-saved-weather-inputs.mjs','utf8'),start=audit.indexOf('export async function auditVoersaaWaterLevelTrace('),end=audit.indexOf('export async function auditSavedWeatherInputs(',start);
+  const actual=audit.slice(start,end);
+  assert.match(actual,/downloadOrdinaryCompletedStageArtifact/);assert.match(actual,/oldStage\.openStagedPrivateProductionRuntime/);
+  assert.match(actual,/restoreProtectedPrivateProductionRuntime/);assert.match(actual,/manifest\.bundleContentSha256!==restored\.bundleContentSha256/);
+  assert.match(actual,/if\(!same\(await pointer\(\),before\)\)failed\('CURRENT_GENERATION_CHANGED'\)/);
+  assert.match(actual,/trace\.sealVoersaaWaterTrace\(privateReport/);assert.doesNotMatch(actual,/console\.|writeFile\([^\n]*privateReport|force:true/);
+  const helper=fs.readFileSync('scripts/lib/voersaa-water-level-trace.mjs','utf8');
+  assert.match(helper,/UNKNOWN_MISSING_AUTHENTIC_SAVED_CONFIG/);assert.doesNotMatch(helper,/console\.|createProtected|fetch\(/);
+  assert.match(helper,/VOERSAA_WATER_TRACE\/20261101\/v1/);
 });

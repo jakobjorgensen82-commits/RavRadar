@@ -1,3 +1,11 @@
+## 1. november — afgrænset privat vandstandssporing
+
+Den lokale diagnosekandidat udvider det eksisterende skrivefri auditjob med én udtrykkeligt tilvalgt, fast læsning af to autentiske gemte originalgenerationer. Den normale CURRENT/PREVIOUS-læser eller den oprindelige producents completed-stage-læser skal verificere hele B og dens kryptering. Et kopieret manifest eller en senere executor giver ikke selv originalbevis. Hele den aktuelle pointer og version skal være uændret før og efter.
+
+Kun faste timer, vandstandskilder, oprindelige modeltidspunkter, gemte kildevægte og afgrænsede komponent-/modeltællere må udvælges. De private resultater gemmes krypteret; diagnosens artifact indeholder kun ciphertext og fast sikker status med én dags retention. Manglende autentisk historisk routingkonfiguration giver udtrykkeligt ukendt rekonstruktion af kystdele. Diagnosen genberegner ikke scorer og ændrer ikke originaler, cache, kilder, administratorpunkter, geometri, modelbindinger eller SQL. Den bruger ingen nye leverandørdata og må kun startes efter præcis kildekontrol og afsluttet writer.
+
+Normale lokale B-/GCM-/kalder-, privatlivs- og fristprøver er udført med syntetiske input. De er ikke aflæsning af produktionspakker eller bevis for årsagen til en faktisk vandstandsafvigelse. Præcis kildekvalifikation, sikker levering og den faktiske private aflæsning er fortsat åbne. Diagnosen tilføjer ingen intern fejlviden til brugerassistenten. Alle fem hovedmål består.
+
 ## 1. november — fast, skrivefri aflæsning af assistentens fejlkategorier
 
 Adminrettelsen nedenfor er nu leveret gennem normal merge, kontrolleret kodelevering og offentlig verifikation. Systemvisningen genkender igen den oprindelige offentlige modelpakke; overblik og kysteditor bruger fortsat den aktuelle visning. Dette afslutter den afgrænsede modelkontrolfejl, ikke hele admingennemgangen.

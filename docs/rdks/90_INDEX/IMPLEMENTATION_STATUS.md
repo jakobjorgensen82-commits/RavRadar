@@ -1,3 +1,13 @@
+## 1. november — afgrænset privat vandstandssporing
+
+- [x] Lokal fast læsevej gennem normale autentificerede CURRENT/PREVIOUS- eller genuine completed-stage-B-læsere; original producent og fuld GCM-/B-kontrol bevares.
+- [x] Snævert privat feltudvalg, særskilt krypteret rapport, faste sikre fejlkoder og ukendt ved manglende autentisk historisk konfiguration. Ingen produktionsskrivning eller leverandørhentning.
+- [x] Normale syntetiske kalder-/privatlivs-/fristprøver samt reproduceret separat RUNNER_TEMP/systemtemp-forløb. Dette er ikke rigtig produktionsaflæsning.
+- [ ] Præcis samlet kildekvalifikation og sikker levering efter afsluttet writer.
+- [ ] Faktisk aflæsning af de gemte originaler og årsagsanalyse af den observerede vandstandsafvigelse.
+
+Model, SQL, scoreformel, originaler, kilder og administratorpunkter er uændrede. Alle fem hovedmål og de øvrige åbne leverancer består.
+
 ## 1. november — adminmodelkontrol leveret; fast assistentaflæsning forberedt
 
 - [x] Adminmodellens særskilte oprindelige startpakke: normal merge, faktisk kildebevis, kontrolleret kodelevering, offentlig kontrol og normal System-visning med verificeret integreret model. Aktuel prognosevisning er bevaret. Den tidligere lokale leveringsstatus nedenfor er historisk for denne fejl.

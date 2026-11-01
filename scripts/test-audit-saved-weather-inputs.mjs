@@ -6,12 +6,16 @@ import path from 'node:path';
 import test from 'node:test';
 import vm from 'node:vm';
 import { fileURLToPath, pathToFileURL } from 'node:url';
-import { auditSavedWeatherInputs, auditProtectedBaselineComponentFallback, createReadOnlySavedWeatherClients,
+import { auditSavedWeatherInputs, auditProtectedBaselineComponentFallback, auditVoersaaWaterLevelTrace, createReadOnlySavedWeatherClients,
   measureSavedCurrentContexts, measureSavedNativeProofAvailability, withoutSavedAuditSecrets,
   indexSavedRawManifest, measureSavedRawCaptureMatches, inspectSavedRawFileInventory,
   savedAuditProgressAuthenticationCode, CURRENT586_ENDPOINT_AUDIT,
   CURRENT586_CACHED_ORIGINAL_AUDIT } from './audit-saved-weather-inputs.mjs';
 import { cachedCoherentOriginalFailureCode } from './lib/prove-cached-coherent-current-originals.mjs';
+import {VOERSAA_WATER_TRACE_TARGETS,VOERSAA_WATER_TRACE_CONTRACTS,VOERSAA_WATER_TRACE_TIMES,openVoersaaWaterTrace,sealVoersaaWaterTrace,validateVoersaaWaterTraceReport} from './lib/voersaa-water-level-trace.mjs';
+import {buildWaterSourceForecastIndex,applyWaterSourceRouting,packWaterSourceForecastContinuity} from './lib/water-source-forecast-routing.mjs';
+import {dmiWaterSourceFixture} from './test-helpers/dmi-water-source-fixture.mjs';
+import {sealStagedPrivateProductionRuntime} from './staged-private-production-runtime.mjs';
 import { createPrivateProductionRuntimeBundle } from './private-production-runtime-bundle.mjs';
 import { buildProtectedPrivateRuntimeArchive, PROTECTED_PRIVATE_RUNTIME_POLICY as policy } from './protected-private-production-runtime.mjs';
 import { PRIVATE_RUNTIME_BASE_FILES, PRIVATE_WEATHER_COMPONENT_FILES } from './lib/private-weather-component-inventory.mjs';
@@ -273,7 +277,7 @@ test('offline subprocess scope removes secrets and restores them even after fail
 async function fixture(t, { corrupt = false, changedAt = Infinity, wrongContracts = false,
   wrongBaseline = false, cipherTamper = false, forecastAbsent = false,
   nativeProofs = false, baselinePackTamper = false, packReaderBank = null, rawCaptures = false,
-  componentSummaryAbsent = false } = {}) {
+  componentSummaryAbsent = false, waterTraceTarget = null, waterTraceFixture = null } = {}) {
   const folder = await temp(t);
   const source = path.join(folder, 'source'), privateRoot = path.join(folder, 'private'),
     buildRoot = path.join(folder, 'build'), predecessorRoot = path.join(folder, 'old-reader'), progressRoot = path.join(folder, 'progress');
@@ -286,11 +290,20 @@ async function fixture(t, { corrupt = false, changedAt = Infinity, wrongContract
     zones: Object.fromEntries(Array.from({ length: 210 }, (_, i) => [`zone-${i}`, {}])),
     coastalParts: { modelBinding: ravScoreModelBinding(), parts: Object.fromEntries(Array.from({ length: 673 }, (_, i) =>
       [`part-${i}`, { zoneId: `zone-${i % 210}`, waterPoint: [8, 55], landPoint: [8, 55.01], onshoreDirectionDeg: 0 }])) } };
+  if(waterTraceTarget){
+    conditions.datasetId=waterTraceTarget.datasetId;conditions.productionReferenceAt=waterTraceTarget.productionReferenceAt;
+    conditions.generatedAt=new Date(Date.parse(waterTraceTarget.productionReferenceAt)+3600000).toISOString();
+    conditions.zones['DK-B02-06']=conditions.zones['zone-0'];delete conditions.zones['zone-0'];
+    for(const part of Object.values(conditions.coastalParts.parts))if(part.zoneId==='zone-0')part.zoneId='DK-B02-06';
+  }
   if (componentSummaryAbsent) delete conditions.weatherEngine.componentFallback;
-  const contractHashes = Object.fromEntries(['continuationStateContractSha256', 'fullRuntimeContractSha256', 'publicProjectionContractSha256'].map(key => [key, 'b'.repeat(64)]));
+  const contractHashes = waterTraceTarget?{...VOERSAA_WATER_TRACE_CONTRACTS}:Object.fromEntries(['continuationStateContractSha256', 'fullRuntimeContractSha256', 'publicProjectionContractSha256'].map(key => [key, 'b'.repeat(64)]));
   const files = [];
   for (const descriptor of PRIVATE_RUNTIME_BASE_FILES) {
     const value = descriptor.id === 'full-conditions' ? conditions
+      :waterTraceFixture&&descriptor.id==='dmi-forecast-cache'?waterTraceFixture.forecast
+      :waterTraceFixture&&descriptor.id==='dmi-water-stations'?{stations:waterTraceFixture.stations}
+      :waterTraceFixture&&descriptor.id==='dmi-bulk-cache'&&waterTraceFixture.bulk?waterTraceFixture.bulk
       : ['dmi-forecast-cache', 'dmi-bulk-cache'].includes(descriptor.id) ? { zones: {} } : {};
     await write(source, descriptor.relativePath, value);
     files.push({ ...descriptor, sourcePath: path.join(source, descriptor.relativePath), privacyClass: 'PRIVATE_PRODUCTION_RUNTIME' });
@@ -336,11 +349,12 @@ async function fixture(t, { corrupt = false, changedAt = Infinity, wrongContract
   await createPrivateProductionRuntimeBundle({ privateRoot: buildRoot, bundlePath, repositoryRoot: source, files,
     metadata: { datasetId: conditions.datasetId, productionReferenceAt: conditions.productionReferenceAt, generatedAt: conditions.generatedAt,
       generationId: 'synthetic-input-audit', zoneCount: 210, partCount: 673, modelBinding: ravScoreModelBinding(), contractHashes, privacyClass: 'PRIVATE_PRODUCTION_RUNTIME' } });
-  const built = await buildProtectedPrivateRuntimeArchive({ privateRoot: buildRoot, bundlePath, repositoryRoot: source, sourceHead: 'c'.repeat(40) });
+  const built = await buildProtectedPrivateRuntimeArchive({ privateRoot: buildRoot, bundlePath, repositoryRoot: source, sourceHead: waterTraceTarget?.sourceHead??'c'.repeat(40) });
   await write(predecessorRoot, 'package.json', { type: 'module' });
   await write(predecessorRoot, 'scripts/protected-private-production-runtime.mjs', `export * from ${JSON.stringify(pathToFileURL(path.join(repositoryRoot, 'scripts/protected-private-production-runtime.mjs')).href)};`);
   await write(predecessorRoot, 'scripts/private-production-runtime-workflow.mjs', `export const privateRuntimeContractHashes = async () => (${JSON.stringify(wrongContracts ? { ...contractHashes, fullRuntimeContractSha256: 'd'.repeat(64) } : contractHashes)});`);
   await write(predecessorRoot, 'js/core/ravscore-model-contract.js', `export const ravScoreModelBinding = () => (${JSON.stringify(ravScoreModelBinding())});`);
+  await write(predecessorRoot,'scripts/staged-private-production-runtime.mjs',`export * from ${JSON.stringify(pathToFileURL(path.join(repositoryRoot,'scripts/staged-private-production-runtime.mjs')).href)};`);
   for (const file of ['scripts/lib/coastal-point-staging-contract.mjs', 'scripts/lib/ravscore-sampling-context.mjs']) {
     await write(predecessorRoot, file, `export * from ${JSON.stringify(pathToFileURL(path.join(repositoryRoot, file)).href)};`);
   }
@@ -1886,4 +1900,281 @@ test('B-only component summary: normal CLI rejects mixed scopes and expected pin
     assert.equal(result.stdout, '');
     assert.equal(result.stderr.trim(), 'SAVED_WEATHER_INPUT_AUDIT_FAILED_CLOSED');
   }
+});
+
+// Additive fixed water scope. Uses this file's existing real synthetic B,
+// archive, archived-reader and read-only transport fixtures unchanged by default.
+const waterMaster='synthetic-water-trace-master-secret-never-real-20261101';
+const waterContext={repository,runId:'90001',runAttempt:'1',sourceHead:'d'.repeat(40),masterSecret:waterMaster};
+async function waterTraceData(target,{badInner=false,rawRunSpelling=false}={}){
+  const stations=[{sourceKey:'oceanobs:fixture-A',stationId:'fixture-A',name:'Synthetic Frederikshavn II',point:[8,55],sourceType:'observation-station'},
+    {sourceKey:'tidewater:fixture-B',stationId:'fixture-B',name:'Synthetic Hals Havn',point:[9,55],sourceType:'forecast-point'}];
+  const times=Array.from({length:121},(_,n)=>new Date(Date.parse(target.productionReferenceAt)+n*3600000).toISOString());
+  const bulk={generatedAt:target.productionReferenceAt,timeStrideHours:1,zones:Object.fromEntries(stations.map((station,i)=>[
+    'SOURCE::'+station.sourceKey,{hourly:Object.fromEntries(times.map((time,n)=>[time,dmiWaterSourceFixture(station,time,10+i*20+n,target.productionReferenceAt)]))}]))};
+  if(rawRunSpelling)for(const zone of Object.values(bulk.zones))for(const row of Object.values(zone.hourly)){
+    row.sources.waterLevel.modelRun=row.sources.waterLevel.modelRun.replace('.000Z','Z');
+    row.sources.waterLevel.nativeValidTime=row.sources.waterLevel.nativeValidTime.replace('.000Z','Z');}
+  const index=buildWaterSourceForecastIndex(stations,bulk,target.productionReferenceAt);
+  assert.equal(index.size,2,'Normal SOURCE qualification must actually pass');
+  const forecast={schemaVersion:1,generatedAt:target.productionReferenceAt,zones:{'DK-B02-06':{zoneId:'DK-B02-06',point:[8.5,55],
+    generatedAt:target.productionReferenceAt,hourly:times.map(time=>({time,waterLevelCm:50,waterLevelTrendCm3h:0,sources:{waterLevel:{provider:'dmi'}}}))}}};
+  const output={zones:{'DK-B02-06':{current:{},forecast:{hourly:structuredClone(forecast.zones['DK-B02-06'].hourly)}}}};
+  const route={zones:{'DK-B02-06':{enabled:true,requireAll:true,method:'inverse-distance',stations:stations.map(s=>({sourceKey:s.sourceKey,stationId:s.stationId}))}}};
+  applyWaterSourceRouting({features:[{properties:{id:'DK-B02-06',name:'Synthetic Voersaa',dataPoint:[8.5,55]}}],output,
+    forecastStore:forecast,sources:stations,index,routing:route,haversineKm:(_point,sourcePoint)=>Math.abs(sourcePoint[0]-8.5)*100,
+    generatedAt:target.productionReferenceAt});
+  forecast.waterSourceContinuity=await packWaterSourceForecastContinuity(index,target.productionReferenceAt);
+  if(badInner)forecast.waterSourceContinuity.entries[0].compressedSha256='f'.repeat(64);
+  return {forecast,stations};
+}
+async function fixedWaterCase(t,{changedAt=Infinity,corrupt=false,badInner=false,missing4145=false,rawRunSpelling=false,mutateTraceData=null,componentSummaryAbsent=false}={}){
+  const fixtures=[];
+  for(const target of VOERSAA_WATER_TRACE_TARGETS){const data=await waterTraceData(target,{badInner:badInner&&target.key==='original4145',rawRunSpelling});
+    if(mutateTraceData)await mutateTraceData(data,target);
+    fixtures.push(await fixture(t,{waterTraceTarget:target,waterTraceFixture:data,componentSummaryAbsent}));}
+  const [old,current]=fixtures,readers=path.join(old.folder,'fixed-readers');await fs.mkdir(readers);
+  for(let i=0;i<2;i++)await fs.cp(fixtures[i].options.predecessorRoot,path.join(readers,VOERSAA_WATER_TRACE_TARGETS[i].readerDirectory),{recursive:true,errorOnExist:true});
+  const state={pointerReads:0,storageReads:0,calls:[],pointer:{schemaVersion:policy.schemaVersion,kind:policy.pointerKind,
+    current:structuredClone(current.built.descriptor),previous:missing4145?null:structuredClone(old.built.descriptor)}};
+  const transport=async(url,options)=>{
+    const target=new URL(url);state.calls.push(target.pathname);
+    assert(['GET','HEAD'].includes(options.method));assert.equal(options.redirect,'error');
+    if(target.pathname==='/rest/v1/admin_documents'){
+      const payload=structuredClone(state.pointer);state.pointerReads++;
+      if(state.pointerReads>=changedAt)payload.current.sourceHead='e'.repeat(40);
+      return Response.json([{document_key:policy.documentKey,version:71,payload}]);
+    }
+    if(target.pathname===`/${policy.bucketId}`&&options.method==='HEAD')return new Response(null,{status:200});
+    const item=fixtures.flatMap(f=>f.built.objects).find(entry=>target.pathname===`/${policy.bucketId}/${entry.descriptor.objectPath}`);
+    assert(item,'Only explicitly selected original immutable R2 objects');state.storageReads++;
+    const bytes=Buffer.from(item.bytes);if(corrupt)bytes[0]^=1;return new Response(bytes);
+  };
+  const outputPath=path.join(old.privateRoot,'water-safe.json');
+  const options={...credentials,...waterContext,privateRoot:old.privateRoot,predecessorRoot:readers,outputPath,fetchImpl:transport};
+  return {fixtures,old,current,state,options,transport};
+}
+test('Voersaa fixed water trace: actual normal B current/previous and strict private envelope',async t=>{
+  const f=await fixedWaterCase(t),before=await fs.readFile(path.join(f.old.source,'data/live/conditions.json'));
+  const originalCipher=await fs.readFile(f.old.options.progressFile),logs=[];
+  const originalLog=console.log,originalError=console.error;
+  console.log=(...args)=>logs.push(args.join(' '));console.error=(...args)=>logs.push(args.join(' '));
+  let safe;try{safe=await auditVoersaaWaterLevelTrace(f.options);}finally{console.log=originalLog;console.error=originalError;}
+  assert.equal(safe.status,'AUDIT_COMPLETED',JSON.stringify(safe));safeReport(safe,f.old.privateRoot);
+  const encrypted=await fs.readFile(f.options.outputPath+'.encrypted'),report=openVoersaaWaterTrace(encrypted,waterContext);
+  assert.equal(report.generations[0].inputDisposition,'EXACT_PREVIOUS');assert.equal(report.generations[1].inputDisposition,'EXACT_CURRENT');
+  assert.deepEqual(report.generations.map(g=>g.hours.map(h=>h.time)),[VOERSAA_WATER_TRACE_TIMES,VOERSAA_WATER_TRACE_TIMES]);
+  const midnight=report.generations[0].hours.find(h=>h.time==='2026-10-31T23:00:00.000Z');
+  assert.equal(midnight.waterLevelCm,25);assert.deepEqual(midnight.selectedSources.map(s=>s.waterLevelCm),[15,35]);
+  assert(midnight.selectedSources.every(s=>s.disposition==='QUALIFIED_SAVED_SOURCE_HOUR'&&s.modelRun==='2026-10-31T18:00:00.000Z'));
+  assert.equal(report.generations[1].hours[0].disposition,'OUTSIDE_ORIGINAL_HORIZON');
+  assert.deepEqual(report.generations[0].savedZoneInterpolation,{disposition:'PERSISTED_ZONE_METADATA_ONLY',method:'inverse-distance-water-sources',stations:[
+    {sourceKey:'oceanobs:fixture-A',weight:0.5},{sourceKey:'tidewater:fixture-B',weight:0.5}]});
+  assert.deepEqual(midnight.collections,['dkss_idw']);assert.deepEqual(midnight.nativeValidTimes,['2026-10-31T23:00:00.000Z']);
+  assert(midnight.selectedSources.every(s=>s.collection==='dkss_idw'&&s.nativeValidTimes[0]==='2026-10-31T23:00:00.000Z'));
+  for(const g of report.generations)assert.deepEqual(g.partReconstruction,{disposition:'UNKNOWN_MISSING_AUTHENTIC_SAVED_CONFIG',isReconstruction:true,performed:false});
+  for(const forbidden of ['samplingPoint','gridPoint','waterPoint','landPoint','currentUMps','currentVMps','gzipBase64','synthetic-secret','secret-error-canary'])
+    assert(!JSON.stringify(report).includes(forbidden),forbidden);
+  assert(!encrypted.includes(Buffer.from('Synthetic Hals Havn')));
+  assert(!JSON.stringify(safe).includes('waterLevelCm'));assert(!logs.join('\n').includes('fixture-A'));assert(!logs.join('\n').includes('Synthetic Hals Havn'));
+  for(const position of [0,encrypted.length-1,Math.floor(encrypted.length/2)]){const changed=Buffer.from(encrypted);changed[position]^=1;assert.throws(()=>openVoersaaWaterTrace(changed,waterContext));}
+  for(const change of [{runId:'90002'},{runAttempt:'2'},{sourceHead:'a'.repeat(40)},{repository:'other/synthetic'},{masterSecret:'other-synthetic-master-secret-never-real'}])
+    assert.throws(()=>openVoersaaWaterTrace(encrypted,{...waterContext,...change}));
+  const bad=structuredClone(report);bad.generations[0].hours[0].waterPoint=[8,55];
+  assert.throws(()=>validateVoersaaWaterTraceReport(bad),/OUTPUT_KEYS/);assert.throws(()=>sealVoersaaWaterTrace(bad,waterContext));
+  assert.deepEqual(await fs.readFile(path.join(f.old.source,'data/live/conditions.json')),before);
+  assert.deepEqual(await fs.readFile(f.old.options.progressFile),originalCipher,'Unowned original progress is not cleaned');
+  assert(!(await fs.readdir(f.old.privateRoot)).some(name=>name.startsWith('voersaa-water-')));
+});
+test('Voersaa fixed water trace: pointer/absence/archive/inner proofs fail closed without plaintext output',async t=>{
+  for(const options of [{changedAt:2},{corrupt:true},{badInner:true},{missing4145:true}]){
+    const f=await fixedWaterCase(t,options),safe=await auditVoersaaWaterLevelTrace(f.options);
+    assert.equal(safe.status,'AUDIT_FAILED_CLOSED',JSON.stringify(safe));safeReport(safe,f.old.privateRoot);
+    assert.equal(await fs.stat(f.options.outputPath+'.encrypted').catch(()=>null),null);
+    assert(!(await fs.readdir(f.old.privateRoot)).some(name=>name.startsWith('voersaa-water-')));
+    if(options.changedAt){assert.equal(safe.code,'CURRENT_GENERATION_CHANGED');assert.equal(f.state.storageReads,0);}
+    if(options.missing4145){assert.equal(safe.code,'EXACT_COMPLETED_STAGE_UNAVAILABLE');assert.equal(f.state.storageReads,0);}
+    assert(!JSON.stringify(safe).includes('fixture-A'));
+  }
+});
+test('Voersaa fixed water trace: same read facade retains whole network/body lifetime and closed-target bounds',async()=>{
+  const target=VOERSAA_WATER_TRACE_TARGETS[0];let now=0,calls=0;
+  const clients=createReadOnlySavedWeatherClients({...credentials,waterTraceTarget:target.key,maximumMilliseconds:1000,clock:()=>now,
+    fetchImpl:async()=>{calls++;now+=600;return Response.json([]);}});
+  await clients.request('?document_key=eq.'+policy.documentKey+'&select=document_key,payload,version&limit=2');
+  await assert.rejects(clients.request('?document_key=eq.'+policy.documentKey+'&select=document_key,payload,version&limit=2'),/REMOTE_READ_BOUND/);
+  assert.equal(calls,2);
+  assert.throws(()=>createReadOnlySavedWeatherClients({...credentials,waterTraceTarget:'free-generation'}),/READ_CREDENTIALS_UNAVAILABLE/);
+  const blocked=createReadOnlySavedWeatherClients({...credentials,waterTraceTarget:target.key,fetchImpl:async()=>{throw Error('must not transport');}});
+  await assert.rejects(blocked.guardedFetch('https://example.invalid/raw-question'),/REMOTE_TARGET_FORBIDDEN/);
+});
+test('Voersaa fixed water trace: real CLI rejects descriptor/interval/provider overrides before transport',async t=>{
+  const script=path.join(repositoryRoot,'scripts/audit-saved-weather-inputs.mjs'),own=await temp(t);
+  const expectedSha=process.env.RAVRADAR_PRIVATE_EXPECTED_AUDIT_SHA256??crypto.createHash('sha256').update(await fs.readFile(script)).digest('hex');
+  const wrapper=String.raw`import fs from 'node:fs';import crypto from 'node:crypto';import {registerHooks} from 'node:module';import {pathToFileURL} from 'node:url';
+const target=pathToFileURL(process.argv[1]).href;let actualSha=null,fetchCalls=0;
+registerHooks({load(url,context,next){const result=next(url,context);if(url===target){if(result.source==null)throw Error('CLI_CODE_BYTES_UNAVAILABLE');actualSha=crypto.createHash('sha256').update(result.source).digest('hex');}return result;}});
+globalThis.fetch=()=>{fetchCalls++;throw Error('CLI_TRANSPORT_FORBIDDEN');};
+process.on('exit',()=>fs.writeFileSync(process.env.RAVRADAR_TEST_CLI_PROOF,JSON.stringify({target,actualSha,fetchCalls,entry:process.argv[1]}),{flag:'wx'}));
+await import(target);`;
+  let n=0;for(const extra of [['--descriptor','/forbidden'],['--progress-file','/forbidden'],['--expected-dataset','rr-free'],['--expected-reference','2026-11-01T00:00:00.000Z']]){
+    const proof=path.join(own,'child-'+(n++)+'.json');
+    const child=spawnSync(process.execPath,['--input-type=module','-e',wrapper,script,'water-level-voersaa-20261101','--private-root','/forbidden',
+      '--predecessor-root','/forbidden','--output','/forbidden',...extra],{encoding:'utf8',timeout:10000,env:{...process.env,RAVRADAR_TEST_CLI_PROOF:proof}});
+    assert.equal(child.status,1);assert.match(child.stdout+child.stderr,/SAVED_WEATHER_INPUT_AUDIT_FAILED_CLOSED/);
+    assert(!(child.stdout+child.stderr).includes('synthetic-secret'));assert(!(child.stdout+child.stderr).includes('waterLevelCm'));
+    const loaded=JSON.parse(await fs.readFile(proof));assert.equal(loaded.actualSha,expectedSha,'Actual child audit code must be the candidate');
+    assert.equal(loaded.fetchCalls,0);assert.equal(loaded.entry,script);
+  }
+  t.diagnostic(JSON.stringify({actualChildAuditSha256:expectedSha,normalCliChildren:4,fetchCalls:0,normalExit:1}));
+});
+async function waterStageFixture(f){
+  const target=VOERSAA_WATER_TRACE_TARGETS[0],cipher=path.join(f.old.folder,'original-stage.encrypted');
+  await sealStagedPrivateProductionRuntime({privateRoot:path.join(f.old.folder,'build'),bundlePath:path.join(f.old.folder,'build/bundle'),
+    repositoryRoot:f.old.source,expected:{datasetId:target.datasetId,productionReferenceAt:target.productionReferenceAt,
+      generatedAt:f.old.conditions.generatedAt,modelBinding:ravScoreModelBinding(),contractHashes:VOERSAA_WATER_TRACE_CONTRACTS},
+    sourceHead:target.sourceHead,repository,runId:target.runId,runAttempt:target.runAttempt,outputPath:cipher,masterSecret:waterMaster});
+  const zipPath=path.join(f.old.folder,'original-stage.zip');
+  const python=spawnSync(process.env.PYTHON||'python',['-X','utf8','-c',
+    'import pathlib,stat,sys,zipfile\np=pathlib.Path(sys.argv[1]);z=zipfile.ZipFile(sys.argv[2],"w",compression=zipfile.ZIP_STORED);i=zipfile.ZipInfo("sealed.bin");i.create_system=3;i.external_attr=(stat.S_IFREG|0o600)<<16;z.writestr(i,p.read_bytes());z.close()',cipher,zipPath],
+    {encoding:'utf8',timeout:30000});assert.equal(python.status,0,python.stderr);
+  const zip=await fs.readFile(zipPath),at=minute=>new Date(Date.parse(target.productionReferenceAt)+(180+minute)*60000).toISOString();
+  const run={id:Number(target.runId),run_attempt:1,repository:{id:123,full_name:repository},head_repository:{id:123,full_name:repository},
+    path:'.github/workflows/run-current-weather-once.yml',event:'workflow_dispatch',head_branch:'main',head_sha:target.sourceHead,
+    status:'completed',conclusion:'failure',run_started_at:at(0),updated_at:at(20)};
+  const job={id:456,run_id:run.id,run_attempt:1,head_sha:run.head_sha,head_branch:'main',
+    name:'Build and prepare weather production through reusable workflow / build-and-prepare',status:'completed',conclusion:'failure',started_at:at(1),completed_at:at(19),
+    steps:['Update central weather cache','Build private production runtime bundle specification','Create the next private production runtime bundle atomically',
+      'Encrypt exact completed private build for late-failure recovery','Save only encrypted completed private build for one day'].map((name,i)=>({name,number:i+10,status:'completed',
+        conclusion:'success',started_at:at(i*2+2),completed_at:at(i*2+3)}))};
+  const artifact={id:789,name:`ravradar-private-build-stage-${target.runId}-1`,expired:false,size_in_bytes:zip.length,
+    digest:'sha256:'+crypto.createHash('sha256').update(zip).digest('hex'),
+    workflow_run:{id:run.id,repository_id:123,head_repository_id:123,head_sha:run.head_sha,head_branch:'main'},created_at:at(10),updated_at:at(11),
+    expires_at:new Date(Date.now()+24*3600000).toISOString()};
+  const state={run,job,artifact,zip,githubCalls:0};
+  state.fetchImpl=async(url,options)=>{
+    const u=new URL(url);if(u.hostname!=='api.github.com')return f.transport(url,options);
+    state.githubCalls++;assert(state.githubCalls<=5);assert.equal(options.redirect,'manual');
+    const base='/repos/'+repository;
+    if(u.pathname===`${base}/actions/runs/${target.runId}/attempts/1`)return Response.json(state.run);
+    if(u.pathname===`${base}/actions/runs/${target.runId}/attempts/1/jobs`)return Response.json({total_count:1,jobs:[state.job]});
+    if(u.pathname===`${base}/actions/runs/${target.runId}/artifacts`)return Response.json({total_count:1,artifacts:[state.artifact]});
+    assert.equal(u.pathname,`${base}/actions/artifacts/789/zip`);return new Response(state.zip);
+  };
+  return {state,cipher};
+}
+test('Voersaa fixed water trace: normal completed-stage metadata/ZIP/GCM/B opens exact old original only',async t=>{
+  const f=await fixedWaterCase(t,{missing4145:true}),stage=await waterStageFixture(f);
+  const before=await fs.readFile(stage.cipher),safe=await auditVoersaaWaterLevelTrace({...f.options,githubToken:'synthetic-github-token',fetchImpl:stage.state.fetchImpl});
+  assert.equal(safe.status,'AUDIT_COMPLETED',JSON.stringify({...safe,syntheticGithubCalls:stage.state.githubCalls}));
+  const report=openVoersaaWaterTrace(await fs.readFile(f.options.outputPath+'.encrypted'),waterContext);
+  assert.equal(report.generations[0].inputDisposition,'EXACT_COMPLETED_STAGE');assert.equal(report.generations[1].inputDisposition,'EXACT_CURRENT');
+  assert.equal(stage.state.githubCalls,4);assert.deepEqual(await fs.readFile(stage.cipher),before,'Original sealed fixture was not deleted or changed');
+  assert.equal(report.generations[0].hours[0].waterLevelCm,25);
+});
+test('Voersaa fixed water trace: fixed old stage wrong head/missing step/expiry and GCM tamper stay closed',async t=>{
+  for(const fault of ['head','step','expiry','gcm']){
+    const f=await fixedWaterCase(t,{missing4145:true}),stage=await waterStageFixture(f);
+    if(fault==='head')stage.state.run.head_sha=VOERSAA_WATER_TRACE_TARGETS[1].sourceHead;
+    if(fault==='step')stage.state.job.steps.pop();
+    if(fault==='expiry')stage.state.artifact.expired=true;
+    if(fault==='gcm'){
+      const bytes=await fs.readFile(stage.cipher);bytes[bytes.length-1]^=1;await fs.writeFile(stage.cipher,bytes);
+      const zipPath=path.join(f.old.folder,'tampered-stage.zip');
+      const python=spawnSync(process.env.PYTHON||'python',['-X','utf8','-c','import sys,zipfile\nz=zipfile.ZipFile(sys.argv[2],"w",compression=zipfile.ZIP_STORED);z.write(sys.argv[1],"sealed.bin");z.close()',stage.cipher,zipPath],{encoding:'utf8',timeout:30000});
+      assert.equal(python.status,0,python.stderr);stage.state.zip=await fs.readFile(zipPath);stage.state.artifact.size_in_bytes=stage.state.zip.length;
+      stage.state.artifact.digest='sha256:'+crypto.createHash('sha256').update(stage.state.zip).digest('hex');
+    }
+    const safe=await auditVoersaaWaterLevelTrace({...f.options,githubToken:'synthetic-github-token',fetchImpl:stage.state.fetchImpl});
+    assert.equal(safe.status,'AUDIT_FAILED_CLOSED',fault+JSON.stringify(safe));safeReport(safe,f.old.privateRoot);
+    assert.equal(await fs.stat(f.options.outputPath+'.encrypted').catch(()=>null),null);
+    assert(stage.state.githubCalls<=4);assert(!(await fs.readdir(f.old.privateRoot)).some(n=>n.startsWith('voersaa-water-')));
+  }
+});
+
+test('Voersaa fixed water trace: exact stored collection/native spelling/weights, unknown keys and controllers',async t=>{
+  const f=await fixedWaterCase(t,{rawRunSpelling:true,mutateTraceData:data=>{
+    const meta=data.forecast.zones['DK-B02-06'].waterLevelInterpolation;meta.stations[0].weight=0.634;meta.stations[1].weight=0.366;
+  }});
+  const safe=await auditVoersaaWaterLevelTrace(f.options);assert.equal(safe.status,'AUDIT_COMPLETED',JSON.stringify(safe));
+  const report=openVoersaaWaterTrace(await fs.readFile(f.options.outputPath+'.encrypted'),waterContext);
+  const first=report.generations[0],hour=first.hours[0];
+  assert.deepEqual(first.savedZoneInterpolation.stations.map(s=>s.weight),[0.634,0.366],'Persisted metadata quoted without recomputation');
+  assert.equal(hour.selectedSources[0].modelRun,'2026-10-31T18:00:00Z');
+  assert.deepEqual(hour.selectedSources[0].nativeValidTimes,['2026-10-31T23:00:00Z']);
+  const mismatch=await fixedWaterCase(t,{mutateTraceData:data=>{data.forecast.zones['DK-B02-06'].waterLevelInterpolation.stations[0].sourceKey='oceanobs:other';}});
+  const second=await auditVoersaaWaterLevelTrace(mismatch.options);assert.equal(second.status,'AUDIT_COMPLETED',JSON.stringify(second));
+  const unknown=openVoersaaWaterTrace(await fs.readFile(mismatch.options.outputPath+'.encrypted'),waterContext);
+  assert.deepEqual(unknown.generations[0].savedZoneInterpolation,{disposition:'UNKNOWN',method:null,stations:[]});
+  for(const fault of ['collection','native-time']){
+    const bad=await fixedWaterCase(t,{mutateTraceData:data=>{const source=data.forecast.zones['DK-B02-06'].hourly[0].sources.waterLevel;
+      if(fault==='collection')source.collections=['unknown-controller'];else source.nativeValidTimes=['2099-01-01T00:00:00Z'];}});
+    const denied=await auditVoersaaWaterLevelTrace(bad.options);assert.equal(denied.status,'AUDIT_FAILED_CLOSED',JSON.stringify(denied));
+    assert.equal(await fs.stat(bad.options.outputPath+'.encrypted').catch(()=>null),null);
+  }
+});
+
+test('Voersaa fixed water trace: same authenticated B yields only approved DMI metadata and safe component counts',async t=>{
+  const f=await fixedWaterCase(t,{mutateTraceData:(data,target)=>{
+    const at=hours=>new Date(Date.parse(target.productionReferenceAt)+hours*3600000).toISOString().replace('.000Z','Z');
+    data.bulk={zones:{},generatedAt:at(1),sourceUpdatedAt:at(-12),refreshStatus:'partial',
+      diagnostics:{runtimeBudgetSeconds:480,assetsProcessedThisInvocation:2,reusedAssets:3,
+        collectionsAttempted:['wam_dw','dkss_idw'],collectionsSucceeded:['dkss_idw'],collectionsPartial:['dkss_lf'],zeroProgressCollections:[],
+        errors:['PRIVATE_ERROR_CANARY'],sampleItems:{waterPoint:[8,55]},
+        stacByCollection:{dkss_idw:{latestRun:at(-6),selectedRun:at(-12),latestRunFutureHorizonHours:120,selectedRunFutureHorizonHours:117,
+          selectedRunLagBehindLatestHours:6,selectedNativeRunComplete:false,requiredHorizonEndCovered:false,
+          incompleteLatestRunDeferred:true,catalogInventoryComplete:false,officialRequiredAssets:'PRIVATE_ASSET_CANARY'}}},
+      runs:{dkss_idw:{referenceTime:at(-12),processedValidTimes:[at(0),at(117),at(120)],processedSteps:'PRIVATE_STEPS_CANARY',modelSelections:{point:[8,55]}}}};
+  }});
+  const safe=await auditVoersaaWaterLevelTrace(f.options);assert.equal(safe.status,'AUDIT_COMPLETED',JSON.stringify(safe));
+  const report=openVoersaaWaterTrace(await fs.readFile(f.options.outputPath+'.encrypted'),waterContext);
+  for(let i=0;i<2;i++){
+    const g=report.generations[i],m=g.bulkMetadata,target=VOERSAA_WATER_TRACE_TARGETS[i];
+    assert.equal(m.status,'PRESENT');assert.equal(m.freshnessClaimed,false);
+    assert.equal(m.sourceUpdatedAt,new Date(Date.parse(target.productionReferenceAt)-12*3600000).toISOString().replace('.000Z','Z'));
+    assert.equal(m.diagnostics.runtimeBudgetSeconds,480);assert.deepEqual(m.diagnostics.collectionsAttempted,['dkss_idw']);
+    const c=m.collections.dkss_idw;assert.equal(c.stac.selectedNativeRunComplete,false);assert.equal(c.stac.incompleteLatestRunDeferred,true);
+    assert.deepEqual(c.run.processedValidTimes,{count:3,min:target.productionReferenceAt.replace('.000Z','Z'),
+      max:new Date(Date.parse(target.productionReferenceAt)+120*3600000).toISOString().replace('.000Z','Z'),containsH117:true,containsH120:true});
+    assert.equal(m.collections.dkss_nsbs.run.processedValidTimes.count,null);assert.equal(m.collections.dkss_nsbs.run.processedValidTimes.containsH120,null);
+    assert.equal(g.componentFallback.before.wind.valid,3);
+  }
+  for(const raw of ['PRIVATE_ERROR_CANARY','PRIVATE_ASSET_CANARY','PRIVATE_STEPS_CANARY','modelSelections','processedSteps','officialRequiredAssets','sampleItems','waterPoint'])
+    assert(!JSON.stringify(report).includes(raw),raw);
+  const extra=structuredClone(report);extra.generations[0].bulkMetadata.collections.dkss_idw.run.processedSteps=[];
+  assert.throws(()=>validateVoersaaWaterTraceReport(extra),/OUTPUT_KEYS/);
+  const extraSummary=structuredClone(report);extraSummary.generations[0].componentFallback.point=[8,55];
+  assert.throws(()=>validateVoersaaWaterTraceReport(extraSummary),/OUTPUT_KEYS/);
+});
+test('Voersaa fixed water trace: optional metadata and saved component absence remain unknown, never zero',async t=>{
+  const f=await fixedWaterCase(t,{componentSummaryAbsent:true,mutateTraceData:data=>{data.bulk={zones:{},generatedAt:'not-a-date',
+    refreshStatus:'private-status-canary',diagnostics:{runtimeBudgetSeconds:'480',assetsProcessedThisInvocation:false,collectionsSucceeded:['unknown-controller']}};}});
+  const safe=await auditVoersaaWaterLevelTrace(f.options);assert.equal(safe.status,'AUDIT_COMPLETED',JSON.stringify(safe));
+  const report=openVoersaaWaterTrace(await fs.readFile(f.options.outputPath+'.encrypted'),waterContext);
+  for(const g of report.generations){assert.equal(g.bulkMetadata.generatedAt,null);assert.equal(g.bulkMetadata.refreshStatus,null);
+    assert.equal(g.bulkMetadata.diagnostics.runtimeBudgetSeconds,null);assert.equal(g.bulkMetadata.diagnostics.assetsProcessedThisInvocation,null);
+    assert.equal(g.bulkMetadata.diagnostics.collectionsSucceeded,null);assert.equal(g.componentFallback,null);}
+});
+
+test('Voersaa fixed water trace: normal runner temp is separate from system TMPDIR, including original stage',async t=>{
+  const own=await temp(t),systemTemp=path.join(own,'system-temp'),runnerTemp=path.join(own,'runner-temp');
+  await fs.mkdir(systemTemp);await fs.mkdir(runnerTemp);
+  const keys=['TEMP','TMP','TMPDIR','RUNNER_TEMP'],saved=Object.fromEntries(keys.map(k=>[k,process.env[k]]));
+  try{
+    process.env.TEMP=systemTemp;process.env.TMP=systemTemp;process.env.TMPDIR=systemTemp;process.env.RUNNER_TEMP=runnerTemp;
+    assert.equal(await fs.realpath(os.tmpdir()),await fs.realpath(systemTemp));
+    assert.notEqual(await fs.realpath(os.tmpdir()),await fs.realpath(process.env.RUNNER_TEMP));
+    const f=await fixedWaterCase(t,{missing4145:true}),stage=await waterStageFixture(f);
+    const readers=path.join(runnerTemp,'fixed-readers');await fs.rename(f.options.predecessorRoot,readers);
+    const privateRoot=path.join(runnerTemp,'private-trace');await fs.mkdir(privateRoot);
+    const outputPath=path.join(privateRoot,'safe.json');
+    const safe=await auditVoersaaWaterLevelTrace({...f.options,privateRoot,predecessorRoot:readers,outputPath,
+      githubToken:'synthetic-github-token',fetchImpl:stage.state.fetchImpl});
+    assert.equal(safe.status,'AUDIT_COMPLETED',JSON.stringify(safe));
+    const report=openVoersaaWaterTrace(await fs.readFile(outputPath+'.encrypted'),waterContext);
+    assert.equal(report.generations[0].inputDisposition,'EXACT_COMPLETED_STAGE');assert.equal(stage.state.githubCalls,4);
+    assert.equal(report.generations[1].inputDisposition,'EXACT_CURRENT');
+    assert(!(await fs.readdir(systemTemp)).some(n=>n.startsWith('rr-ordinary-completed-stage-')),'Only normal owned artifact copies were cleaned');
+    assert(!(await fs.readdir(privateRoot)).some(n=>n.startsWith('voersaa-water-')));
+  }finally{for(const k of keys){if(saved[k]===undefined)delete process.env[k];else process.env[k]=saved[k];}}
 });
