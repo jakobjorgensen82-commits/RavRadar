@@ -1,3 +1,11 @@
+## Tillæg 2026-11-01 — samlet serverfrist og relevante eksisterende fakta
+
+Den lokale efterfølger bevarer alle 45 udstedte fakta og den fulde vidensbinding. Kun et helt genkendt generelt identifikationsspørgsmål må vælge et mindre, præcist relevant udsnit før inference. Hele det oprindelige spørgsmål kontrolleres, og et ukendt eller blandet led giver ikke adgang til at erklære et delsvar fuldstændigt. Manglende viden om en lups diagnostiske værdi beskrives uden opfundne kendetegn. Uvedkommende zone-/scorefakta kan ikke passere eftervalideringen for det valgte udsnit.
+
+Den eksisterende syvsekunders serverfrist omfatter nu indgående indhold, kvoteventetid, leverandørens svarindhold og sidste synkrone svarbeslutning. Ejet indholdslæsning og leverandørtransport afbrydes; de uændrede kvotetransporter kan afsluttes senere, men får ingen fortsættelse til et leverandørkald. Browserens otte sekunder og fælles gateway ændres ikke. Der loves ikke wirelevering inden syv sekunder eller en løst koldstartsårsag.
+
+En fast succesheader må kun sættes efter den reelle leverandørgren og normal resultatvalidering. Den indeholder ingen private oplysninger og erstatter ikke faktisk hosted kvalitetsaccept. De to normale lokale mål består med syntetisk transport. Præcis kildekontrol, sikker levering og offentlig DA/DE/EN-afprøvning udestår. Model, kvoter, klient, fakta, C/I/T, SQL, vejr, score og tidligere sikkerhedsgrænser bevares.
+
 # DEC-0091 – Bred, versionsbundet og read-only viden i Spørg RavRadar
 
 ## Tillæg 2026-10-25 — hele spørgsmålet og samme offentlige prognose

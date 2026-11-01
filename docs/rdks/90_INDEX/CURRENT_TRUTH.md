@@ -1,3 +1,11 @@
+## 1. november — assistentens svarfrist og emnerelevans, lokal kandidat
+
+En offentlig prøve viste, at et generelt identifikationsspørgsmål kunne få uvedkommende zonevejledning efter de faglige fakta. Den lokale rettelse vælger kun de eksisterende relevante identifikationsfakta, når hele spørgsmålets afgrænsede DA/DE/EN-emne er genkendt. Ukendte eller blandede led får fortsat en ærlig afgrænsning; en lup gøres ikke til en sikker identifikationstest. Alle 45 fakta og deres fulde vidensbinding bevares.
+
+Assistentens eksisterende syv sekunder omfatter nu læsning, kvotekontrol, leverandørens svarindhold og validering under én serverfrist. Forsinket kvotesvar kan ikke sætte et nyt AI-kald i gang efter fristen. Browserens otte sekunder, den fælles gateway, kvoter, modelparametre, vejr og score er uændrede. Netværk og kold opstart ligger fortsat uden for serverfristen; den konkrete oprindelige ventetidsårsag er ikke bevist.
+
+Kun et faktisk leverandørkald med efterfølgende normal validering får en fast offentlig succesheader; den indeholder ingen spørgsmål, svardata eller private oplysninger og er ikke et kvalitetsbevis. De to normale Edge-/klientrundture består lokalt med syntetisk transport. Præcis kildekontrol, sikker installation og faktisk offentlig DA/DE/EN-accept udestår. Ingen model-, versions- eller SQL-udstedelse; alle fem hovedmål består.
+
 ## 1. november — Facebook-gruppen på forsiden
 
 Ejeren har godkendt et klikbart f-ikon med teksten »Besøg vores gruppe på Facebook« ved RavRadar-brandet. På mobilen ligger linket øverst ved siden af brandet og over sprogvælgeren; på større skærme ligger det efter brandet og før sprogvælgeren. Gruppen er https://www.facebook.com/groups/1849354103138911/.

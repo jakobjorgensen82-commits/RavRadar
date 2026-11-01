@@ -30,6 +30,11 @@ export const RAV_ASSISTANT_BINDING_HEADERS = Object.freeze({
   knowledgeSha256: "x-ravradar-assistant-knowledge-sha256",
 });
 
+export const RAV_ASSISTANT_SUCCESS_PROVENANCE = Object.freeze({
+  header: "x-ravradar-assistant-provenance",
+  value: "workers-ai-validated-v1",
+});
+
 export const RAV_ASSISTANT_FACTS = Object.freeze([
   { id: "score.integrated-only", text: "The integrated coastal-process RavScore is RavRadar's only public score model. Candidate G is retained only as a historical rollback oracle; it is neither a public model, a shadow model nor a runtime fallback." },
   { id: "score.weights-20-50-30", text: "The integrated RavScore combines 20 percent huntability, 50 percent delivery potential from verified model-grid-current evidence with bounded wave-approach attenuation and 30 percent wave energy and mobilisation opportunity." },
@@ -400,12 +405,80 @@ export function assistantSystemInstruction() {
     "For a RavScore weights question, state that the integrated coastal-process model is the only public score model and cite both score.integrated-only and score.weights-20-50-30.",
     "For origin, density, wind, waves, layered current, coastal traps, field signs, UV identification, destructive tests, systematic technique, and event-sequence questions, cite the matching supplied fact IDs. Do not turn clues or possible traps into proof or guarantees.",
     `Fixed out-of-scope replies: ${JSON.stringify(RAV_ASSISTANT_REFUSALS)}`,
+    "When questionEvidence is supplied, use only the supplied exact publicFacts. Every required ID supports a requested facet. A null selected-zone context is irrelevant to this general question: never add zone, score, weather or capabilities instructions. An unclassified clause remains unresolved; never call a partial answer complete. The supplied knowledge does not establish diagnostic magnifier features; preserve that limit without inventing observations.",
     "Return exactly one JSON object and nothing else. Do not use Markdown fences or expose reasoning. The object must contain exactly schemaVersion, locale, disposition, answer and evidenceIds. schemaVersion must be rav-assistant-response-v1.",
   ].join("\n");
 }
 
-export function assistantPrompt(question, context, locale) {
-  return JSON.stringify({ requestedLocale: locale, question, publicSelectedZoneContext: publicAssistantContext(context, locale), publicFacts: RAV_ASSISTANT_FACTS });
+// Closed whole-clause family: membership in the full bank is not relevance.
+// Every clause must match; a recognised prefix never certifies an unknown tail.
+const IDENTIFICATION_CLAUSES = Object.freeze({
+  da: Object.freeze([
+    { facet:"magnifier", pattern:/^kan (?:en |min |et |mit )?(?:almindelig(?:t)? )?(?:lup|forstørrelsesglas) (?:hjælpe(?: mig)? med at|bruges til at) (?:skelne|kende forskel på) (?:rav (?:fra|og) (?:kopal|copal|plast|glas)|(?:kopal|copal|plast|glas) fra rav)(?=$|[\s,.;!?])/iu },
+    { facet:"identification", pattern:/^(?:hvordan (?:kan (?:jeg|man) skelne|skelner (?:jeg|man))|hvordan kan (?:jeg|man) kende forskel på) rav (?:fra|og) (?:kopal|copal|plast|glas)(?=$|[\s,.;!?])/iu },
+    { facet:"clues", pattern:/^(?:hvilke (?:kendetegn|spor|tegn) kan (?:jeg|man) (?:undersøge|se efter|kigge efter|tjekke)|hvad kan (?:jeg|man) (?:undersøge|se efter))(?: uden at (?:beskadige|ødelægge|skade) (?:fundet|ravet|det))?(?=$|[\s,.;!?])/iu },
+    { facet:"damage", pattern:/^hvordan (?:kan (?:jeg|man) undgå|undgår (?:jeg|man)) at (?:beskadige|ødelægge|skade) (?:fundet|ravet|det)(?=$|[\s,.;!?])/iu },
+  ]),
+  de: Object.freeze([
+    { facet:"magnifier", pattern:/^kann (?:eine |meine )?(?:gewöhnliche |normale )?lupe (?:dabei )?helfen,? bernstein von (?:kopal|copal|kunststoff|glas) zu unterscheiden(?=$|[\s,.;!?])/iu },
+    { facet:"identification", pattern:/^wie (?:kann (?:ich|man) bernstein von (?:kopal|copal|kunststoff|glas) unterscheiden|unterscheide ich bernstein von (?:kopal|copal|kunststoff|glas))(?=$|[\s,.;!?])/iu },
+    { facet:"clues", pattern:/^welche (?:merkmale|hinweise|zeichen) kann (?:ich|man) (?:untersuchen|prüfen|beobachten)(?:,? ohne (?:den fund|den bernstein|ihn) zu beschädigen)?(?=$|[\s,.;!?])/iu },
+    { facet:"damage", pattern:/^wie (?:kann ich vermeiden,? (?:den fund|den bernstein|ihn) zu beschädigen|vermeide ich schäden am fund)(?=$|[\s,.;!?])/iu },
+  ]),
+  en: Object.freeze([
+    { facet:"magnifier", pattern:/^can (?:a |my )?(?:normal |ordinary )?(?:magnifier|magnifying glass|loupe) help(?: me)?(?: to)? (?:distinguish|tell) amber from (?:copal|plastic|glass)(?=$|[\s,.;!?])/iu },
+    { facet:"identification", pattern:/^how (?:can (?:i|one) (?:distinguish|tell)|do i distinguish) amber from (?:copal|plastic|glass)(?=$|[\s,.;!?])/iu },
+    { facet:"clues", pattern:/^(?:what|which) (?:features|clues|signs) can (?:i|one) (?:examine|check|look for|inspect)(?: without damaging (?:the find|the amber|it))?(?=$|[\s,.;!?])/iu },
+    { facet:"damage", pattern:/^how can i avoid damaging (?:the find|the amber|it)(?=$|[\s,.;!?])/iu },
+  ]),
+});
+const IDENTIFICATION_LIMITS = Object.freeze({
+  da:"De tilgængelige oplysninger beskriver ikke, hvad en lup kan afgøre om rav og efterligninger.",
+  de:"Die verfügbaren Angaben erklären nicht, was eine Lupe bei Bernstein und Imitationen sicher unterscheiden kann.",
+  en:"The supplied knowledge does not establish what a magnifier can determine about amber and imitations.",
+});
+const IDENTIFICATION_FOCUS = Object.freeze({
+  da:"Jeg kan beskrive ikke-destruktive identifikationsspor og deres begrænsninger, men kan ikke besvare alle dele af spørgsmålet pålideligt. Del de forskellige emner op, så ingen del bliver overset.",
+  de:"Ich kann zerstörungsfreie Hinweise zur Bestimmung und ihre Grenzen erklären, aber nicht alle Teile der Frage zuverlässig beantworten. Trenne die Themen, damit kein Teil übergangen wird.",
+  en:"I can explain non-destructive identification clues and their limits, but cannot answer every part of this question reliably. Separate the topics so no part is overlooked.",
+});
+export function assistantIdentificationFocusAnswer(locale) {
+  return IDENTIFICATION_FOCUS[locale] || RAV_ASSISTANT_UNCERTAIN_REPLIES.en;
+}
+export function assistantIdentificationPolicy(question, locale) {
+  if (typeof question !== "string" || !IDENTIFICATION_CLAUSES[locale]
+      || routeAssistantQuestion(question) !== "provider") return null;
+  const text = question.trim().normalize("NFKC").replace(/\s+/gu," ").replace(/[?!.]+$/u,"");
+  const clauses = text.split(/(?:[?;.!]\s*|,?\s+(?:og|und|and)\s+(?=(?:hvilke|hvad|hvordan|kan|welche|was|wie|kann|what|which|how|can)\b))/iu);
+  const facets = new Set(); let recognised = false;
+  let complete = question.length <= 600 && clauses.length > 0 && clauses.length <= 6;
+  for (const clause of clauses) {
+    const matches = IDENTIFICATION_CLAUSES[locale].map(rule => ({rule,match:rule.pattern.exec(clause)})).filter(row => row.match);
+    if (!matches.length) { complete = false; continue; }
+    recognised = true;
+    const whole = matches.find(row => row.match[0].length === clause.length);
+    if (!whole) { facets.add(matches[0].rule.facet); complete = false; continue; }
+    facets.add(whole.rule.facet);
+    if (/uden at|ohne |without damaging/iu.test(clause)) facets.add("damage");
+  }
+  if (!recognised || (!facets.has("magnifier") && !facets.has("identification"))) return null;
+  const wanted = new Set(["identification.treatments-and-imitations"]);
+  if (facets.has("clues") || facets.has("identification")) wanted.add("identification.uv-clue-not-proof");
+  if (facets.has("damage")) wanted.add("identification.avoid-destructive-tests");
+  return Object.freeze({ family:"general-identification-v1", complete,
+    requiredIds:Object.freeze(RAV_ASSISTANT_FACTS.filter(fact => wanted.has(fact.id)).map(fact => fact.id)),
+    magnifierLimit:facets.has("magnifier"), fullKnowledgeSha256:RAV_ASSISTANT_KNOWLEDGE_SHA256 });
+}
+export function assistantPrompt(question, context, locale, originalQuestion = question) {
+  const policy = assistantIdentificationPolicy(originalQuestion, locale);
+  const selected = policy?.complete ? new Set(policy.requiredIds) : null;
+  return JSON.stringify({ requestedLocale: locale, question,
+    publicSelectedZoneContext:selected ? null : publicAssistantContext(context, locale),
+    publicFacts:selected ? RAV_ASSISTANT_FACTS.filter(fact => selected.has(fact.id)) : RAV_ASSISTANT_FACTS,
+    ...(policy ? { questionEvidence:{ family:policy.family, wholeQuestionClassified:policy.complete,
+      requiredIds:policy.complete ? policy.requiredIds : [], fullKnowledgeSha256:policy.fullKnowledgeSha256,
+      unsupportedMagnifierDiagnosticValue:policy.magnifierLimit } } : {}),
+  });
 }
 
 function parseJsonText(value) {
@@ -1040,17 +1113,32 @@ export function validateAssistantResult(value, locale, context = {}, question = 
     evidenceIds.length !== value.evidenceIds.length ? "RESULT_EVIDENCE_DUPLICATE" : "RESULT_EVIDENCE_UNKNOWN");
   // Only the normal server caller supplies the original request question.
   // A provider/context-supplied coverage claim is never used or accepted.
+  const identification = assistantIdentificationPolicy(question, locale);
+  // A full-bank ID outside this request's selected pool is unknown to this request.
+  if (identification?.complete && evidenceIds.some(id => !identification.requiredIds.includes(id)))
+    return reject("RESULT_EVIDENCE_UNKNOWN");
   const questionCoverage = assistantQuestionEvidenceCoverage(question, locale, evidenceIds);
   const unknownEquipment = routeAssistantQuestion(question) === "provider" && unknownAmberEquipmentQuestion(question, locale);
   const precisionBoundary = exactAmberLandingPredictionBoundary(question, locale);
   if (value.disposition === "out_of_scope") {
     if (evidenceIds.length) return reject("RESULT_OUT_OF_SCOPE_EVIDENCE");
+    if (identification) return { answer:assistantIdentificationFocusAnswer(locale), disposition:"uncertain", evidenceIds:[] };
     if (precisionBoundary) return { answer:RAV_ASSISTANT_UNCERTAIN_REPLIES[locale], disposition:"uncertain", evidenceIds:[] };
     if (unknownEquipment) return { answer:RAV_ASSISTANT_UNCERTAIN_REPLIES[locale], disposition:"uncertain", evidenceIds:[] };
     if (questionCoverage) return { answer:CANONICAL_FOCUS_REPLIES[locale], disposition:"uncertain", evidenceIds:[] };
     return { answer: RAV_ASSISTANT_REFUSALS[locale], disposition: value.disposition, evidenceIds };
   }
   if (value.disposition === "answer" && !evidenceIds.length) return reject("RESULT_ANSWER_EVIDENCE_MISSING");
+  if (identification) {
+    if (!identification.complete || !identification.requiredIds.every(id => evidenceIds.includes(id)))
+      return { answer:assistantIdentificationFocusAnswer(locale), disposition:"uncertain", evidenceIds:[] };
+    const canonical = composeCanonicalAssistantResult(evidenceIds, locale, "answer", context, observeRejection);
+    if (!canonical) return null;
+    if (canonical.disposition !== "answer") return { answer:assistantIdentificationFocusAnswer(locale), disposition:"uncertain", evidenceIds:[] };
+    const answer = canonical.answer + (identification.magnifierLimit ? "\n\n" + IDENTIFICATION_LIMITS[locale] : "");
+    if (answer.length > 900) return { answer:assistantIdentificationFocusAnswer(locale), disposition:"uncertain", evidenceIds:[] };
+    return { answer, disposition:identification.magnifierLimit ? "uncertain" : "answer", evidenceIds };
+  }
   if (precisionBoundary) {
     if (!evidenceIds.length) return { answer:RAV_ASSISTANT_UNCERTAIN_REPLIES[locale], disposition:"uncertain", evidenceIds:[] };
     if (precisionBoundary === "net-compound" && evidenceIds.length === 1 && evidenceIds[0] === "equipment.amber-net") {
