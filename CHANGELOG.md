@@ -1,3 +1,13 @@
+## 1. november — lokal kandidat: genbrug vanddiagnosens eksisterende nøglemapping
+
+Ret den ene fejlagtige nøglereference til den allerede eksisterende normale mapping. Tre relevante normale workflowcases består lokalt; gamle orakler og helinverse bevares. Ingen nøgleinstallation, kryptografi-, vejr- eller scoreændring. Den gamle diagnose er stadig fejlet, og Voerså-årsagen er ukendt. Nyt forsøg afventer egne kontroller, faktisk mainbinding og ingen aktiv writer; udløb må ikke omgås.
+
+## 1. november — lokal P0: afvent både manifest og startup før Pages-kvittering
+
+Forbered bounded observation af præcist forseglet manifest og startup før én fuld kontrol af den store pakke. Genbrug de verificerede startupbytes; bevar 121-observationsgrænsen, det delte HTTP-budget og alle hårde hash-, størrelse-, model- og privatlivskrav. Den normale afgrænsede kalderprøve er RED før og GREEN efter; samlet lokal kontrol, CI og levering er åbne.
+
+236 har Pages-write SUCCESS, men fuld terminal FAIL. Senere små manifest-/startupaflæsninger matcher target uden at bevise hele pakken eller endelig rodårsag. Providerfri resume fandt NONE og gentages ikke; korrekt terminalkalder skal afklares. Ingen ny vejrhentning, SOURCE-, model-, SQL- eller versionsudstedelse.
+
 ## 1. november — lokal assistentrettelse af emnerelevans og samlet svartid
 
 Spørg RavRadar får én samlet syvsekunders serverfrist og præcist emnevalg for genkendte generelle identifikationsspørgsmål. Uvedkommende zonevejledning afvises; ukendte led og identifikationsmetodernes begrænsninger behandles ærligt. De to normale lokale klient-/Edge-mål består med syntetisk transport. Offentlig levering og ekstern AI-accept er fortsat åbne. Ingen ændring af vejr, scoremodel, klientfrist, fakta, bindinger eller SQL.
