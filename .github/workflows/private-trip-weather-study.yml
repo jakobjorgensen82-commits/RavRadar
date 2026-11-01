@@ -28,6 +28,7 @@ on:
 permissions:
   contents: read
   actions: read
+  pull-requests: read
 
 # Same order as code-only: weather OUTER, trip-storage INNER. Never the reverse.
 concurrency:

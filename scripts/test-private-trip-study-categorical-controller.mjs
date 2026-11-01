@@ -97,7 +97,23 @@ test('private-study007: whole exact test-only inverse preserves historical contr
   for(const altered of [source+'\n',source.replace('rows.length>46','rows.length>47'),
     source.replace("await verifySchema('EXACT_004_005_006');await attest(currentVersion,true);",
       "await verifySchema('EXACT_004_005_006');await attest(currentVersion);")])assert.throws(()=>inverse(altered));
-  const workflow=fs.readFileSync('.github/workflows/private-trip-weather-study.yml','utf8');
+  const workflow=fs.readFileSync('.github/workflows/private-trip-weather-study.yml','utf8').replaceAll('\r\n','\n');
+  const readPermission=review.workflow.sourceProofReadPermission;
+  assert.equal(sha(workflow),readPermission.afterSha256);
+  const assertSourceProofReadPermission=value=>{
+    assert.deepEqual(value.match(/^permissions:\n(?:  [^\n]+\n)+/gm)||[],
+      ['permissions:\n  contents: read\n  actions: read\n  pull-requests: read\n']);
+    assert.doesNotMatch(value,/^[ \t]+permissions:/m);
+  };
+  assertSourceProofReadPermission(workflow);
+  for(const altered of [workflow.replace('  pull-requests: read\n',''),
+    workflow.replace('  pull-requests: read','  pull-requests: write'),
+    workflow.replace('  pull-requests: read','  pull-requests: read\n  issues: read'),
+    workflow.replace('  private-study-upgrade:\n','  private-study-upgrade:\n    permissions: {}\n')]){
+    assert.notEqual(altered,workflow);assert.throws(()=>assertSourceProofReadPermission(altered));
+  }
+  const beforeReadPermission=workflow.replace(readPermission.after,()=>readPermission.before);
+  assert.equal(sha(beforeReadPermission),review.workflow.afterSha256);
   const callersPath=path.resolve('scripts/test-account-statistics-assistant-callers.mjs'),
     callers=fs.readFileSync(callersPath,'utf8'),
     from=callers.indexOf('async function privateStudyPre007Workflow(){'),
@@ -116,6 +132,8 @@ test('private-study007: whole exact test-only inverse preserves historical contr
   const orderReader=vm.runInNewContext(order.slice(orderFrom,orderTo).replaceAll('import.meta.url','moduleUrl')
     +'\nprivateStudyPre007Workflow;',{fs,URL,assert,crypto,moduleUrl:pathToFileURL(callersPath).href});
   assert.equal(orderReader(workflow),oldWorkflow);
+  assert.equal(orderReader(beforeReadPermission),oldWorkflow);
+  assert.throws(()=>orderReader(workflow.replace('  pull-requests: read','  pull-requests: write')));
   for(const drift of [workflow+'\n',workflow.replace('allow_007:', 'allow_007_unreviewed:'),
     workflow.replace("inputs.allow_007 && 'true' || 'false'",'true')])assert.throws(()=>orderReader(drift));
   assert.equal((callers.match(/import '\.\/test-private-trip-study-categorical-controller\.mjs';/g)||[]).length,1);

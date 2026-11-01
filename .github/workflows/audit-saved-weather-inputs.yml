@@ -85,6 +85,12 @@ on:
         default: ""
         type: string
 
+      water_level_voersaa_trace_20261101:
+        description: "Fixed private DK-B02-06 trace from exact4145/232 originals; no provider or production work"
+        required: false
+        default: false
+        type: boolean
+
 permissions:
   contents: read
   actions: read
@@ -100,7 +106,7 @@ concurrency:
 
 jobs:
   audit:
-    if: inputs.component_summary_only != true
+    if: inputs.component_summary_only != true && inputs.water_level_voersaa_trace_20261101 != true
     name: Authenticate existing packages and report only bounded aggregates
     runs-on: ubuntu-24.04
     timeout-minutes: ${{ inputs.include_current_window_diagnostic && 75 || 30 }}
@@ -543,7 +549,7 @@ jobs:
           retention-days: 14
 
   component-summary:
-    if: inputs.component_summary_only == true
+    if: inputs.component_summary_only == true && inputs.water_level_voersaa_trace_20261101 != true
     name: Read only the authenticated protected component summary
     runs-on: ubuntu-24.04
     timeout-minutes: 30
@@ -670,3 +676,106 @@ jobs:
           path: ${{ runner.temp }}/ravradar-saved-input-audit/summary-safe.json
           if-no-files-found: error
           retention-days: 14
+
+  voersaa-water-trace:
+    if: inputs.water_level_voersaa_trace_20261101 == true
+    name: Read two exact original B water traces privately
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    env:
+      NODE_OPTIONS: --max-old-space-size=6144
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+      - name: Require exclusive fixed read scope and exact main
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          CONFIRMATION: ${{ inputs.confirmation }}
+          EXPECTED_MAIN_HEAD: ${{ inputs.expected_main_head }}
+          COMPONENT_SUMMARY: ${{ inputs.component_summary_only }}
+          COMPONENT_DATASET: ${{ inputs.component_summary_dataset_id }}
+          COMPONENT_REFERENCE: ${{ inputs.component_summary_reference_at }}
+          INCLUDE_RAW_MANIFEST: ${{ inputs.include_raw_manifest }}
+          INCLUDE_RAW_FILE_PRESENCE: ${{ inputs.include_raw_file_presence }}
+          INCLUDE_SELECTED_CURRENT_PREFLIGHT: ${{ inputs.include_selected_current_preflight }}
+          INCLUDE_CURRENT_WINDOW_DIAGNOSTIC: ${{ inputs.include_current_window_diagnostic }}
+          INCLUDE_CURRENT586_ENDPOINTS: ${{ inputs.include_current586_endpoints }}
+          INCLUDE_CURRENT586_CACHED_ORIGINALS: ${{ inputs.include_current586_cached_originals }}
+          RAW_MANIFEST_CACHE_KEY: ${{ inputs.raw_manifest_cache_key }}
+          RAW_MANIFEST_SOURCE: ${{ inputs.raw_manifest_source }}
+          PROGRESS_BASELINE_TARGET_HOUR: ${{ inputs.progress_baseline_target_hour }}
+        run: |
+          set -euo pipefail
+          export GIT_NO_LAZY_FETCH=1 GIT_OPTIONAL_LOCKS=0
+          test "$GITHUB_EVENT_NAME" = workflow_dispatch
+          test "$GITHUB_REF" = refs/heads/main
+          test "$CONFIRMATION" = AUDIT-SAVED-WEATHER-INPUTS
+          [[ "$EXPECTED_MAIN_HEAD" =~ ^[a-f0-9]{40}$ ]]
+          test "$GITHUB_SHA" = "$EXPECTED_MAIN_HEAD"
+          test "$(git -c protocol.allow=never rev-parse HEAD^{commit})" = "$GITHUB_SHA"
+          test "$(gh api "repos/$GITHUB_REPOSITORY/git/ref/heads/main" --jq '.object.sha')" = "$GITHUB_SHA"
+          for flag in "$COMPONENT_SUMMARY" "$INCLUDE_RAW_MANIFEST" "$INCLUDE_RAW_FILE_PRESENCE" "$INCLUDE_SELECTED_CURRENT_PREFLIGHT" "$INCLUDE_CURRENT_WINDOW_DIAGNOSTIC" "$INCLUDE_CURRENT586_ENDPOINTS" "$INCLUDE_CURRENT586_CACHED_ORIGINALS"; do test "$flag" = false; done
+          for value in "$COMPONENT_DATASET" "$COMPONENT_REFERENCE" "$RAW_MANIFEST_CACHE_KEY" "$RAW_MANIFEST_SOURCE" "$PROGRESS_BASELINE_TARGET_HOUR"; do test -z "$value"; done
+          for pair in '41231144384 7a08f6a8dfb2131898e7270a2429c3f4f810a842' '41256251412 37a34703d9ae8bfb2c28056f21a7ea73944033ae'; do
+            read -r run head <<< "$pair"
+            gh api "repos/$GITHUB_REPOSITORY/actions/runs/$run/attempts/1" > "$RUNNER_TEMP/voersaa-source-$run.json"
+            jq -e --arg repo "$GITHUB_REPOSITORY" --arg run "$run" --arg head "$head" '
+              (.id|tostring)==$run and .run_attempt==1 and .head_sha==$head
+              and .repository.full_name==$repo and .head_repository.full_name==$repo
+              and .head_branch=="main" and .event=="workflow_dispatch"
+              and .path==".github/workflows/run-current-weather-once.yml" and .status=="completed"
+            ' "$RUNNER_TEMP/voersaa-source-$run.json" >/dev/null
+            git -c protocol.allow=never merge-base --is-ancestor "$head" "$GITHUB_SHA"
+          done
+      - name: Verify live exact-content source proof for the fixed trace
+        id: source-proof
+        run: node scripts/weather-source-gate.mjs check
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+      - name: Stop unless the fixed trace source has live green proof
+        shell: bash
+        env:
+          SOURCE_REQUIRED: ${{ steps.source-proof.outputs.required }}
+        run: test "$SOURCE_REQUIRED" = false
+      - name: Materialize only the two genuine normal archived readers
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          export GIT_NO_LAZY_FETCH=1 GIT_OPTIONAL_LOCKS=0
+          test "$(gh api "repos/$GITHUB_REPOSITORY/git/ref/heads/main" --jq '.object.sha')" = "$GITHUB_SHA"
+          mkdir "$RUNNER_TEMP/ravradar-voersaa-water-trace" "$RUNNER_TEMP/ravradar-voersaa-water-readers"
+          mkdir "$RUNNER_TEMP/ravradar-voersaa-water-readers/4145" "$RUNNER_TEMP/ravradar-voersaa-water-readers/232"
+          git -c protocol.allow=never archive 7a08f6a8dfb2131898e7270a2429c3f4f810a842 | tar -x -C "$RUNNER_TEMP/ravradar-voersaa-water-readers/4145"
+          git -c protocol.allow=never archive 37a34703d9ae8bfb2c28056f21a7ea73944033ae | tar -x -C "$RUNNER_TEMP/ravradar-voersaa-water-readers/232"
+      - name: Authenticate original B generations and encrypt only the fixed trace
+        id: fixed-water-trace
+        run: >-
+          node scripts/audit-saved-weather-inputs.mjs water-level-voersaa-20261101
+          --private-root "${{ runner.temp }}/ravradar-voersaa-water-trace"
+          --predecessor-root "${{ runner.temp }}/ravradar-voersaa-water-readers"
+          --output "${{ runner.temp }}/ravradar-voersaa-water-trace/status-safe.json"
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          WEATHER_PROGRESS_MASTER_SECRET: ${{ secrets.WEATHER_PROGRESS_MASTER_SECRET }}
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          RAVRADAR_R2_ACCOUNT_ID: ${{ secrets.RAVRADAR_R2_ACCOUNT_ID }}
+          RAVRADAR_R2_ACCESS_KEY_ID: ${{ secrets.RAVRADAR_R2_ACCESS_KEY_ID }}
+          RAVRADAR_R2_SECRET_ACCESS_KEY: ${{ secrets.RAVRADAR_R2_SECRET_ACCESS_KEY }}
+      - name: Keep only ciphertext and fixed safe status for one day
+        if: always() && (steps.fixed-water-trace.outcome == 'success' || steps.fixed-water-trace.outcome == 'failure')
+        uses: actions/upload-artifact@v7
+        with:
+          name: voersaa-water-trace-encrypted-${{ github.run_id }}-${{ github.run_attempt }}
+          path: |
+            ${{ runner.temp }}/ravradar-voersaa-water-trace/status-safe.json.encrypted
+            ${{ runner.temp }}/ravradar-voersaa-water-trace/status-safe.json
+          if-no-files-found: error
+          retention-days: 1

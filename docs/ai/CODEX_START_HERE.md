@@ -1,3 +1,23 @@
+## 1. november — afgrænset privat vandstandssporing
+
+Den lokale diagnosekandidat udvider det eksisterende skrivefri auditjob med én udtrykkeligt tilvalgt, fast læsning af to autentiske gemte originalgenerationer. Den normale CURRENT/PREVIOUS-læser eller den oprindelige producents completed-stage-læser skal verificere hele B og dens kryptering. Et kopieret manifest eller en senere executor giver ikke selv originalbevis. Hele den aktuelle pointer og version skal være uændret før og efter.
+
+Kun faste timer, vandstandskilder, oprindelige modeltidspunkter, gemte kildevægte og afgrænsede komponent-/modeltællere må udvælges. De private resultater gemmes krypteret; diagnosens artifact indeholder kun ciphertext og fast sikker status med én dags retention. Manglende autentisk historisk routingkonfiguration giver udtrykkeligt ukendt rekonstruktion af kystdele. Diagnosen genberegner ikke scorer og ændrer ikke originaler, cache, kilder, administratorpunkter, geometri, modelbindinger eller SQL. Den bruger ingen nye leverandørdata og må kun startes efter præcis kildekontrol og afsluttet writer.
+
+En fast offentlig rapportmodtager gør den krypterede rapport læsbar lokalt. Det private modtagermateriale forbliver i den private lokale evidensmappe og giver ingen tjeneste- eller API-adgang. Den lokale læser skal først verificere den faktisk kvalificerede kode, kørsel, job, trin, artifact, hele ZIP-digest og krypteringskontekst; dekryptering alene er ikke et oprindelsesbevis. De normale workflows, som faktisk læser målrettede PR-beviser, deklarerer den nødvendige læserettighed. De gamle hele testorakler bevares gennem præcise inverser.
+
+Normale lokale B-/GCM-/kalder-, privatlivs- og fristprøver er udført med syntetiske input. De er ikke aflæsning af produktionspakker eller bevis for årsagen til en faktisk vandstandsafvigelse. Præcis kildekvalifikation, sikker levering og den faktiske private aflæsning er fortsat åbne. Diagnosen tilføjer ingen intern fejlviden til brugerassistenten. Alle fem hovedmål består.
+
+## 1. november — fast, skrivefri aflæsning af assistentens fejlkategorier
+
+Adminrettelsen nedenfor er nu leveret gennem normal merge, kontrolleret kodelevering og offentlig verifikation. Systemvisningen genkender igen den oprindelige offentlige modelpakke; overblik og kysteditor bruger fortsat den aktuelle visning. Dette afslutter den afgrænsede modelkontrolfejl, ikke hele admingennemgangen.
+
+Den nye lokale kildekandidat tilføjer én fast læsning i det eksisterende Supabase-læsejob. Den udvælger kun assistentens faste fejlkategorier i ét fast tidsinterval. Projekt, markør, interval, felter, bytegrænse og samlet frist kan ikke vælges af kalderen. Ingen spørgsmål, brugerdata eller rå fejltekst returneres. Ét forsøg forbruges også ved fejl; et tomt resultat beviser ikke, at der ingen fejl var. Ingen installation eller AI-genprøve følger af læsningen.
+
+Læsejobbet bevarer præcis main, første forsøg, kildebevis og frisk kontrol af ledig produktion. Dets to main-genlæsninger bevarer fuld Git-historik. To historiske workfloworakler får kun en hashbundet, helfilverificeret inverse af denne præcise ændring; deres gamle assertions bevares, og den nye måltest kontrollerer den faktiske nye workflowtekst. Kontrolregistreringen udvides additivt uden at omklassificere gammel produktkode eller fjerne gamle afhængigheder. Ukendt påvirkning vælger fortsat større kontrolomfang.
+
+Den normale måltest består lokalt med syntetiske svar, samlede tidsgrænser, afvisninger og før-/efterbevis for de to historiske orakler. Præcis GitHub-kvalifikation, sikker merge og den faktiske afgrænsede logaflæsning er stadig åbne. Ekstern AI er ikke dermed bevist fungerende. Version, modelbindinger, PostgreSQL-input, vejrtal, scoreformel, administratorpunkter og geometri ændres ikke; alle fem hovedmål er fortsat åbne. Aktuelle kørselskvitteringer og øvrige delopgaver står i det private checkpoint. Denne tekniske diagnose tilføjes ikke brugerassistentens viden.
+
 ## Kildebevis: normal merge og kontrol af den faktiske main
 
 En PR med målrettet kildebevis (`weather-source-targeted-impact-v1` eller `weather-source-targeted-domains-v2`) skal flettes med GitHubs almindelige **merge**, ikke squash eller rebase. Den eksisterende normale forbruger kræver to faktiske Git-forældre, hvoraf præcis én er den kvalificerede PR-head, samt identisk helt kildeindhold. En grøn PR eller samme filtræ alene erstatter ikke denne kontrakt.

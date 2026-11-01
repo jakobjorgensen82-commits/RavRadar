@@ -1,3 +1,21 @@
+## 1. november — privat vandstandsdiagnose er forberedt
+
+En fast skrivefri audit kan spore vandstand gennem to præcise autentiske originalgenerationer. Den bevarer original producent, fuld B-/GCM-kontrol, frisk uændret pointer/version og de oprindelige numeriske værdier. Private kilde-/timeoplysninger udvælges snævert og krypteres med særskilt formål; kun ciphertext og fast sikker status forlader scratch. Manglende historisk konfiguration er ukendt, ikke en rekonstruktion ud fra nutidig admin.
+
+Den lokale kalderprøve har også reproduceret og rettet, at GitHubs RUNNER_TEMP kan være en anden mappe end systemets midlertidige mappe. Samme valgte, eksisterende temp-root skal bevise både den ønskede sti, dens realpath og fravær af symlinks. Det almindelige completed-stage-artifacts eget ejerskab og alle autenticitetskrav bevares.
+
+Rapportens faste offentlige modtager giver mulighed for lokal dekryptering efter faktisk job-/artifact-/kodeverifikation. Privat modtagermateriale indgår ikke i kildekoden. Dekryptering giver ingen B/S-, historik- eller oprindelsesadmission. To normale kildebeviskaldere får den nødvendige PR-læserettighed med præcist bevarede gamle orakler; en negativ prøve isolerer sit fraværende token fra CI-miljøets token.
+
+Kandidaten ændrer ikke vejrtal, scoremodel, kilder, geometri, modelbindinger eller SQL og henter ikke nyt vejr. Lokale syntetiske prøver er ikke produktionsaflæsning eller en fastslået årsag til en faktisk afvigelse. Kildekvalifikation, sikker levering efter writer og faktisk aflæsning er åbne. Alle fem mål består; kørselsidentiteter og private resultater føres i checkpointet.
+
+## 1. november — leveret adminmodelkontrol og ny afgrænset assistentdiagnose
+
+Den særskilte adminmodelkontrol er nu offentligt leveret og afprøvet gennem den normale administratorside. Den verificerede oprindelige startpakke genkendes; aktuelle prognosevisninger bevares. Den tidligere leveringsstatus nedenfor er historisk for netop denne rettelse. Det er ikke afslutning af hele adminrevisionen.
+
+En ny lokal kildekandidat tilføjer ét fast, skrivefrit Supabase-læsetrin til assistentfejlen. Kun faste kategorier og HTTP-status må vises, aldrig spørgsmål, brugerdata eller rå fejltekst. Projekt, markør, interval og felter er låst; ét GET deler en samlet kort frist med svarlæsningen og en fast bytegrænse. Fejl eller ukendt svarform genprøves ikke automatisk, og tomme kategorier beviser ikke fravær af en fejl. De normale main-, kildebevis-, første-forsøg- og idlekrav består.
+
+Den nye normale syntetiske måltest er bestået, inklusive afvisninger, timeout og de to uændrede historiske workfloworakler bag en præcis helfilinverse. GitHub-kvalifikation, sikker levering og faktisk logaflæsning mangler. Dette er ingen AI-rettelse eller bevis for fungerende ekstern AI. Ingen nye SQL-/model-/vejrinput eller brugerfunktioner følger; ingen intern fejlviden tilføjes assistenten. Den øvrige aktuelle drifts-, dæknings- og leveringsevidens føres privat. Alle fem hovedmål er åbne.
+
 ## 1. november — admin skal kontrollere den oprindelige modelpakke
 
 Den lokale adminrettelse holder to læsninger af samme offentlige generation adskilt. Modelkontrollen får den oprindelige, hash- og modelbundne startpakke med dens faktiske referencetime og navne. Overblik og kysteditor beholder den normale aktuelle prognosevisning. Et senere tidspunkt eller navne, som den aktuelle projektion har omdannet til zone-IDer, må ikke udlægges som den oprindelige startpakke. Den strenge sammenligning af model, profil og scoretilgængelighed bevares; metadata omskrives ikke for at få kontrollen til at bestå.

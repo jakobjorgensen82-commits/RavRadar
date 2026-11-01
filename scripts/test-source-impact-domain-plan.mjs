@@ -33,9 +33,16 @@ test('all-specifier scanner exposes bare/URL/data/require/computed imports and t
 
 test('reviewed admin original snapshot closes direct and cumulative plans and rejects unknown broad-source bytes',async()=>{
   const reference='72150501445c9c44e6603c17d3d2561bb270d9cf';
+  // This completed admin review is a historical CODE/DATA fixture, pinned before the later fixed-reader registration.
+  const adminReviewedHead='14ade133b7f3b9557f312630a5b557086245b938';
+  const adminFiles=new Set([...files,'admin.html','js/services/data-service.js',
+    'js/services/site-function-test-service.js','js/ui/admin-dashboard.js','service-worker.js',
+    'scripts/test-ravscore-public-data-service-binding.mjs']);
+  const readReviewedAdminFile=file=>{assert(adminFiles.has(file));
+    return git(SOURCE,['cat-file','blob',adminReviewedHead+':'+file]);};
   const registryFile='scripts/lib/source-impact-domain-owners-594.json';
   const prior=JSON.parse(git(SOURCE,['cat-file','blob',reference+':'+registryFile]));
-  const current=JSON.parse(fs.readFileSync(path.join(SOURCE,registryFile)));
+  const current=JSON.parse(readReviewedAdminFile(registryFile));
   assert.equal(prior.owners.length,84);assert.equal(current.owners.length,90);
   for(const owner of prior.owners)assert.deepEqual(current.owners.find(row=>row.path===owner.path),owner);
   for(const [file,source]of Object.entries(prior.sources))for(const [key,values]of Object.entries(source))
@@ -62,7 +69,7 @@ test('reviewed admin original snapshot closes direct and cumulative plans and re
     fs.mkdirSync(path.join(root,'.git/objects/info'),{recursive:true});
     fs.writeFileSync(path.join(root,'.git/objects/info/alternates'),objectDirectory.replaceAll('\\','/')+'\n');
     const controls=['scripts/source-impact-domain-plan.mjs',registryFile,'scripts/test-source-impact-domain-plan.mjs'];
-    const additions=[...products,...controls].map(file=>[file,fs.readFileSync(path.join(SOURCE,file))]);
+    const additions=[...products,...controls].map(file=>[file,readReviewedAdminFile(file)]);
     const make=(rows,label)=>{
       git(root,['read-tree',reference]);
       for(const [file,body]of rows){const blob=text(root,['hash-object','-w','--stdin'],body);
@@ -70,7 +77,7 @@ test('reviewed admin original snapshot closes direct and cumulative plans and re
       return text(root,['commit-tree',text(root,['write-tree']),'-p',reference,'-m',label]);
     };
     for(const file of files){fs.mkdirSync(path.dirname(path.join(root,file)),{recursive:true});
-      fs.writeFileSync(path.join(root,file),fs.readFileSync(path.join(SOURCE,file)));}
+      fs.writeFileSync(path.join(root,file),readReviewedAdminFile(file));}
     const {planSourceDomainImpactFromGit:plan}=await import(pathToFileURL(path.join(root,'scripts/source-impact-domain-plan.mjs')).href);
     const run=(candidate,baseline=reference)=>{git(root,['update-ref','HEAD',candidate]);
       return plan({baselineCommit:baseline,candidateCommit:candidate,expectedHead:candidate});};

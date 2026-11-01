@@ -924,6 +924,170 @@
           "node scripts/test-forecast-share-projection.mjs"
         ]
       ]
+    },
+    {
+      "path": ".github/workflows/deploy-trip-storage.yml",
+      "domains": [
+        "controls"
+      ],
+      "controlQualification": true,
+      "commands": [
+        [
+          "controls",
+          "node scripts/test-fixed-assistant-failure-log-20261101.mjs"
+        ]
+      ],
+      "exactSourceTransition": true
+    },
+    {
+      "path": "scripts/read-fixed-assistant-failure-log-20261101.mjs",
+      "domains": [
+        "controls"
+      ],
+      "controlQualification": true,
+      "commands": [
+        [
+          "controls",
+          "node scripts/test-fixed-assistant-failure-log-20261101.mjs"
+        ]
+      ]
+    },
+    {
+      "path": "scripts/test-fixed-assistant-failure-log-20261101.mjs",
+      "domains": [
+        "controls"
+      ],
+      "controlQualification": true,
+      "commands": [
+        [
+          "controls",
+          "node scripts/test-fixed-assistant-failure-log-20261101.mjs"
+        ]
+      ]
+    },
+    {
+      "path": "scripts/lib/fixed-assistant-failure-workflow-review.mjs",
+      "domains": [
+        "controls"
+      ],
+      "controlQualification": true,
+      "commands": [
+        [
+          "controls",
+          "node scripts/test-fixed-assistant-failure-log-20261101.mjs"
+        ]
+      ]
+    },
+    {
+      "path": "scripts/lib/fixed-assistant-failure-workflow-review.json",
+      "domains": [
+        "controls"
+      ],
+      "controlQualification": true,
+      "commands": [
+        [
+          "controls",
+          "node scripts/test-fixed-assistant-failure-log-20261101.mjs"
+        ]
+      ]
+    },
+    {
+      "path": "scripts/test-integrated-cutover-readiness.mjs",
+      "domains": [
+        "controls"
+      ],
+      "controlQualification": true,
+      "commands": [
+        [
+          "controls",
+          "node scripts/test-fixed-assistant-failure-log-20261101.mjs"
+        ]
+      ]
+    },
+    {
+      "path": "scripts/audit-saved-weather-inputs.mjs",
+      "domains": [
+        "controls"
+      ],
+      "controlQualification": true,
+      "commands": [
+        [
+          "controls",
+          "node --test scripts/test-audit-saved-weather-inputs.mjs"
+        ],
+        [
+          "controls",
+          "node --test scripts/test-saved-weather-audit-workflow.mjs"
+        ]
+      ]
+    },
+    {
+      "path": "scripts/lib/voersaa-water-level-trace.mjs",
+      "domains": [
+        "controls"
+      ],
+      "controlQualification": true,
+      "commands": [
+        [
+          "controls",
+          "node --test scripts/test-audit-saved-weather-inputs.mjs"
+        ],
+        [
+          "controls",
+          "node --test scripts/test-saved-weather-audit-workflow.mjs"
+        ]
+      ]
+    },
+    {
+      "path": ".github/workflows/audit-saved-weather-inputs.yml",
+      "domains": [
+        "controls"
+      ],
+      "controlQualification": true,
+      "commands": [
+        [
+          "controls",
+          "node --test scripts/test-audit-saved-weather-inputs.mjs"
+        ],
+        [
+          "controls",
+          "node --test scripts/test-saved-weather-audit-workflow.mjs"
+        ]
+      ]
+    },
+    {
+      "path": "scripts/test-audit-saved-weather-inputs.mjs",
+      "domains": [
+        "controls"
+      ],
+      "controlQualification": true,
+      "commands": [
+        [
+          "controls",
+          "node --test scripts/test-audit-saved-weather-inputs.mjs"
+        ],
+        [
+          "controls",
+          "node --test scripts/test-saved-weather-audit-workflow.mjs"
+        ]
+      ]
+    },
+    {
+      "path": "scripts/test-saved-weather-audit-workflow.mjs",
+      "domains": [
+        "controls"
+      ],
+      "controlQualification": true,
+      "commands": [
+        [
+          "controls",
+          "node --test scripts/test-audit-saved-weather-inputs.mjs"
+        ],
+        [
+          "controls",
+          "node --test scripts/test-saved-weather-audit-workflow.mjs"
+        ]
+      ]
     }
   ],
   "sources": {
@@ -11412,7 +11576,10 @@
         "e380127f07edfb868cb1d8a92fdcb3f6cc64a8737461ffb7da69b6cc0144448c",
         "efc3dbaf5a48bfb670200ae8e37a37abb2d3e73be5528ec1bc69d519deab215c",
         "f69e8ac5ab77af895fb508d0db505aa80c44fa09b7e92cad2ba83d8312725184",
-        "fb1baa163c28ebcebcb2ad8792afa22104b19a1163e15a96d1178ea2f00a4ca7"
+        "fb1baa163c28ebcebcb2ad8792afa22104b19a1163e15a96d1178ea2f00a4ca7",
+        "132036db1e73cced7e3f42074f1818d2f7dd23a663e41f150833397336e4af77",
+        "7ee35d9b5b2b27ced95317d9a093ab3114060dc46cf5a534b5910e77811fa010",
+        "9907622ad57b23c221a08d201415f0cbddc5812df16ce088c4b8f969e5d4b5e5"
       ],
       "bindingSurfaces": [
         "0ce6c7a8266174db56f38892cc174113bbb8080b021df2d28c082790eb43b572",
@@ -11437,7 +11604,8 @@
         "5de0c7b4d11dbde05cc61448d14f939d5cf9d14fa539638533938458b7a584b6",
         "a2d31d8de93604b0632bca229df72d22e4a094467f0d4e0c798dd209ad5b4556",
         "c6f0db74460aa94c6f0a34fa24b72f80b1ba9c3a5436d6248c6734e8bf962e95",
-        "ed5e89eebdb39fa75dec6a2d964b83e29c08aa468b78b3f2ea36c2c05141e5dd"
+        "ed5e89eebdb39fa75dec6a2d964b83e29c08aa468b78b3f2ea36c2c05141e5dd",
+        "7d1371091bc348aff48e749c33d04e52cc8b241ce6084ecd03daa47d318cfb92"
       ],
       "computedBoundaries": [
         "25f38aa23de966019066f1a3ff84647680125117b2fedd0dccacf2992f1c5966"
@@ -12105,7 +12273,8 @@
         "scripts/lib/account-statistics-assistant-package-review.mjs",
         "scripts/run-frozen-native0600-source-targets.mjs",
         "scripts/test-source-child-environment.mjs",
-        "scripts/validate-source-once.mjs"
+        "scripts/validate-source-once.mjs",
+        "scripts/lib/fixed-assistant-failure-workflow-review.mjs"
       ],
       "resources": [
         ".github/workflows/deploy-trip-storage.yml",
@@ -13168,6 +13337,2796 @@
       "dependencySurfaces": [],
       "bindingSurfaces": [],
       "computedBoundaries": []
+    },
+    "scripts/read-fixed-assistant-failure-log-20261101.mjs": {
+      "nodeImports": [
+        "node:path",
+        "node:url"
+      ],
+      "imports": [],
+      "resources": [],
+      "dependencySurfaces": [],
+      "bindingSurfaces": [
+        "22027bcc4be968d349b013837041b5302c8c29d7253b8f159c88a2848cb543fd",
+        "35c5197f211dc07d58fb9c663e787df1b87a92eb11dda617a4bd77f2c29a1ee5",
+        "6cd280cc33e7013d9835a2322e23093d5e9995890ec56972a4c9323819bca354"
+      ],
+      "computedBoundaries": []
+    },
+    "scripts/test-fixed-assistant-failure-log-20261101.mjs": {
+      "nodeImports": [
+        "node:assert/strict",
+        "node:crypto",
+        "node:fs/promises",
+        "node:vm"
+      ],
+      "imports": [
+        "scripts/lib/fixed-assistant-failure-workflow-review.mjs",
+        "scripts/read-fixed-assistant-failure-log-20261101.mjs"
+      ],
+      "resources": [
+        ".github/workflows/deploy-trip-storage.yml",
+        ".github/workflows/validate-pull-request.yml",
+        "scripts/lib/fixed-assistant-failure-workflow-review.json",
+        "scripts/lib/source-impact-domain-owners-594.json",
+        "scripts/test-integrated-cutover-readiness.mjs",
+        "scripts/test-source-impact-domain-plan.mjs",
+        "scripts/test-source-validation-once.mjs",
+        "supabase/functions/_shared/rav-assistant-contract.ts",
+        "supabase/functions/ravradar-assistant/index.ts"
+      ],
+      "dependencySurfaces": [
+        "000d5fffa30e2cc72d3cf0bb53ded158dd4f92f8e33e8873d8e398195646a01c",
+        "1b2bc495ac9c7d9e459173886153daace1609b9128fbf8edac005983ed6966d7",
+        "392acd440bb1701be7bdbab17445b6706f8cf298caf3ff29f03fd0e9e2b1285b",
+        "3b63f9f69454f9132763ef9a2066a0387f3dde25e2a8f0d06bcbf954b255e0cc",
+        "58ab03b229fee48a368b55f3357b2191d793312f1a3363f97ab6879ce465be18",
+        "618cc01a713c805b66871d8e8d9d1e237f009c08b102f059aa931421077bcdac",
+        "62522fb246a300756446e3451123597c52d44163197c45744712d41d6d8b0660",
+        "6408ef1a1f3db3b6583c9083da93b8dd93c3b6f9b231008f2f612acc0d56577a",
+        "7219b977bdf803dfc50fe1e9cb394c42f593eb9186ae71777a5b066f74ef2bc8",
+        "836d2377fb90e20407082cf4b588ffee73e2c47a1b0a641ad50a1b45c0fe7ade",
+        "8b997ea01e52a99a322b1e4b813c9fa657d2e67151dfe02250cfbae9a6c860e5",
+        "9a60881faa6e3118e11eb54ba8027a3cde665c76de913a126e0e2037c976a4df",
+        "a039dff82e715b5cefc872693c37d1beb02a9093d5aebdb4e4a769abd3181269",
+        "ba399820d1fac9928e5f8cb5f0236582b63b964ee70e38e4828a91fffa29becc",
+        "c0ec43c661ae59ec49644ab274a948160d8de5e09847ca5fb8b46d0a9ac4e127",
+        "ccdad31ec64ad92e45160af4d74ab274ee2bdba770d3141a96337c5194fd1407",
+        "d18fb8df50b859421ed42ce869846f7c9194a938c7efc332961509a0ee80033f",
+        "d9c67a3912070606254ada3f6ddcdb7ba3dabaa96addf9f4ca8259afb0b17396"
+      ],
+      "bindingSurfaces": [
+        "17af3e3ab6a17621485c622c2ab56eba3ed2db9ea4567d43d8f8898cdec347c1",
+        "1893cb0bbee3b7038b82a9dacb7ac04387c6b4f816a284731328b0a75e7835d2",
+        "1a5ed8fad50fb10312f21515bf3030a2b5f4f6d606284c59ece7aacce9244f03",
+        "2e56df592b2b34211d6cd18d8f37d60ea2aa5778578e258d5a658948c5895282",
+        "368292bc0bcacd5c4f2273858b0702e2dac8414ab699ba78af9d5aad981c6e69",
+        "44eb036059bacd96ee0b33350823d657a01fc099a3e3fee9563d4976931973e0",
+        "4918b28bc43678bd83c6975aa75b172ee8109879203c66942bcca534cd0869cf",
+        "58f827d5d92b7844a889608b0ab10045cfa83a097ad7ae4d9c49f1b049a5bcc2",
+        "720500116d50676ae3f8c75bf07fe6b205d4ba89d0ce31a5fc9dcd772e4d6da5",
+        "78cd2bfb8253ce2703d404e1dc1b9b82bdd86bd6f4482e1e50aa057f637eefea",
+        "8a4f01bd8f396647acb9985368880685203101306a91fa4d40a125e735a49771",
+        "9b3e8695c4e139fabf566cad7ebb96ab518c5bd71f261534c36ac62b86f02c51",
+        "ce0b1b24069f4282cb013128baa110d0e5db23909559e3dd0884d0d8be90ad0a",
+        "f8cf2d6a3c9ebdba0cda7262736ff48ba60f903158db5f7f569f574343cce4a8"
+      ],
+      "computedBoundaries": [
+        "ba219000e102ca40a01ef1f736bd539a28743b6689922ceb2f09543fd3e2da0c"
+      ]
+    },
+    "scripts/lib/fixed-assistant-failure-workflow-review.mjs": {
+      "nodeImports": [
+        "node:assert/strict",
+        "node:crypto",
+        "node:fs"
+      ],
+      "imports": [],
+      "resources": [
+        "scripts/lib/fixed-assistant-failure-workflow-review.json"
+      ],
+      "dependencySurfaces": [
+        "53206b1e52504b59532b8f88fac04e382541c7f48059058f6b9fd3108d71ca8e"
+      ],
+      "bindingSurfaces": [
+        "5193ca852a68475d140a771402a4fa03aae098c6694625269ec7835683d9e75a",
+        "82751b24e58a69e64881ac3a23449f7b1434c14569575d2d90333485df50c1f5",
+        "d3c7c0b6948622d54638729de889bded01734fa308421ec6df79cb2295a1d7ba"
+      ],
+      "computedBoundaries": []
+    },
+    "scripts/test-integrated-cutover-readiness.mjs": {
+      "nodeImports": [
+        "node:assert/strict",
+        "node:child_process",
+        "node:crypto",
+        "node:fs/promises",
+        "node:os",
+        "node:path",
+        "node:url"
+      ],
+      "imports": [
+        "js/core/ravscore-current-supply-memory.js",
+        "js/core/ravscore-regime-memory.js",
+        "scripts/check-fixed-supabase-account-read-idle.mjs",
+        "scripts/check-native-identity-frozen-i71-source.mjs",
+        "scripts/integrated-cutover-readiness.mjs",
+        "scripts/lib/account-assistant-successor-source.mjs",
+        "scripts/lib/current-grid-successor-source.mjs",
+        "scripts/lib/fixed-assistant-failure-workflow-review.mjs",
+        "scripts/lib/native-original-continuity-workflow-review.mjs",
+        "scripts/lib/native-sampling-identity-successor-source.mjs",
+        "scripts/lib/ravscore-continuation-implementation-contract.mjs",
+        "scripts/read-fixed-public-rate-log-20261012.mjs",
+        "scripts/read-typed-trip-catalog.mjs",
+        "scripts/verify-account-assistant-schema.mjs"
+      ],
+      "resources": [
+        ".github/workflows/deploy-code-only-repair.yml",
+        ".github/workflows/deploy-trip-storage.yml",
+        "data/admin/ravscore-profile-selection.json",
+        "scripts/build-statistics-preference-revision.mjs",
+        "scripts/check-fixed-supabase-account-read-idle.mjs",
+        "scripts/check-weather-cadence-watchdog.mjs",
+        "scripts/integrated-cutover-readiness.mjs",
+        "scripts/lib/current-grid-successor-source.mjs",
+        "scripts/verify-code-only-migration-plan.mjs",
+        "scripts/verify-statistics-preference-revision-plan.mjs",
+        "supabase/migrations/20260829020000_integrated_trip_calibration_binding.sql",
+        "supabase/migrations/20260901010000_integrated_trip_measured_warmup_admission.sql",
+        "supabase/migrations/20260915020000_private_runtime_storage_deny.sql",
+        "supabase/migrations/20260926170000_exact_checkpoint_predecessor.sql",
+        "supabase/migrations/20261010130000_owner_export_origin_bound_successor.sql",
+        "supabase/migrations/20261012200000_checkpoint_cas_single_projection_successor.sql",
+        "supabase/migrations/20261013210000_account_assistant_original_bound_successor.sql"
+      ],
+      "dependencySurfaces": [
+        "01e12bb931f628147a531da26661d75b8e49d92198804f35e4c5c4b3b9f6a0c3",
+        "04a17063a49e2ecf3021dc858e8eae63850fae69ec8d0e286c860cc1900d0aff",
+        "06fea8966a8e87132a4b1163ab6502b58690992c299aab78fb544186c2aacf42",
+        "15c6f3ce9b39692fe0189950e3ad669f49ba8ae1c85d94ed12dbcc2c520f44de",
+        "21522adc14f702f2f2c1a406996fc50f34b934628556e5a2f05db270e79403e5",
+        "2b7f79cc80f6fe3c9b140562c16a18e320b057cef27cb465a35f7a0bddd2056b",
+        "305bd2bfe7faab226d63cf2ddc2d58705de61b352312a8cae16a8ce7e820a230",
+        "3867f6831995c125ba69435a0de12458edddf7e19a8ad3d6bb403456066ba9a8",
+        "3cdd579a555a9d8dd3ed7c0b396e52df86a99d02b7d72e4aae7a3323af522132",
+        "4025d345c627077284bca94e1f38ba9c158537746b783968ac980ff7dc633aae",
+        "5d94a52272d7ea01ef88c5ce600202bcef611b646e00a5d3079c5b754406fad9",
+        "6ff1d275046303234dcdc5c6aca12252daf3d42632bedfd4b6d6c71c6627ff4e",
+        "75685a31b014970a5b00e9691572dc055b9db80f630d886af35caa25513fffb3",
+        "82734ebfe7dd254a2d6590f3c210602f0a8a73259e30f43d3fe1378aab9304a7",
+        "82ba078ae871b8f44a95f77206f2a0fb1be4eeb01ab2857c67700d7f4e8fca59",
+        "8a7fea79bdb86c704172b07ed2bd3965dc74ed200f7f03a54799003dd988bd16",
+        "8c27119f4b2ee695d7d9fa6b02206e6915b47402045fc825f6ae111ef48af361",
+        "9695546b2f7596c8e37f13e94b899cb5ea910813912b627edcca21ff5ed95849",
+        "974bdbe1be9e26f4a8da698c4714ebd985d27b35ab43e5f32063425c3d568102",
+        "9db1ec4e8a668d2657ddfb2cf35038449cb1bf515b60d70f3a3bc379f4042ffc",
+        "9df6ffde36b0d4449447c7e9705adc2b0b77bf99fb41236baa32fa852f1cc7ee",
+        "9f1ae4c0b788b630ff42fc2667ea20db70d49db650d88ddce013c0d2e42a7552",
+        "ab6f3c65fc648e790c173ed12bec82663e3dc64933082352db46574f8d211166",
+        "b1771a26f40f0298fd7aeb91026ed178d99c711f68f21f6a1337a90860d1a533",
+        "bbc255a75ce4bdbfe4111a84057733125f6e634357cc6c15b0d4188d3a43e180",
+        "bcbcc1668a7d3514d2cebf3569e277eafbee96e220003daed7923dab2e1cd0e4",
+        "bf9c94037b85be8e3d7616b431dfc0c0f4e58f93f8640d934e418358d0707ca9",
+        "c14324c9f80cb518b331e7d5acb2913831979ada4aacebf8ddb9dc66aa1653e3",
+        "c7a8b4f656442073cf4ff95749dcd33ac6e84123d6cccb64f000e50ba8c16082",
+        "cbed7e92811e77c64804518e21b011f96ca496e7cb15c93cfed26de07a845365",
+        "cf95ad3b40083b8eab6a9f367871a460f4bb00024627b3b8e285c95f562daf5d",
+        "d7ea97cd015636484ec653ff3e7f5c1ee1ad7caff1795a6d7e83aea81e82ed3c",
+        "dad4be5affc49f84b30ce3a17ec34547d64135263b7527c6d88015c0c68970df",
+        "dd8a52874067410f889ed93c5912a8cbbfa6312b8509f216425eac24c876e1a8",
+        "dff68e7d125ac17bd26949582ca1ce1a78ffaad208646b5ee04f0260952d179e",
+        "e215b2cec111d0ba07bb2459ef9f0a4b68452316f4c51e6a9fb6d5b903dba943",
+        "eab9d8ecfdbe5c9198928d3d0443dc4a281be43933621ecca2603181fb4e4e88",
+        "f5a9a33f17cbc7c78475af5d607c024f7a8a4177c620d49976c3786423595721"
+      ],
+      "bindingSurfaces": [
+        "0180eec61e2a4b1aa880fa3faf000c0c3d9413bd17f4b353647b8457b6d5eda3",
+        "093d8eed4d05c85bfa28818ddd23eb3d2ee1510f1af422d8bd33bbfeb73b669c",
+        "093f2ce5644465f394c8fb065073464048cc5a9babab819a4ee9f916c475e45e",
+        "0a017dfdce25f4564df7d80001b62f7207f6f7a5c24ba878146afbc612549714",
+        "120c0f1626977a617c393650330613e049ec74b68d3ac4e911c8c636eebb3b71",
+        "13dedf202f49747e316ae7990c37740dd7125c9e7aaf7e2f7c56591acacf0230",
+        "15a0051f94f241b3e5cdf3f6e93efefa53e8d50c497bca3c6c92c02f3ee15f09",
+        "1e136adcf056e57225d72bedacced1360f499ceb1a2b0373007f1a95d10fc70e",
+        "1f4df6ea7b2b350bc67275d0840564bb002ecd5e42f11d18182a3de21eae6132",
+        "2067289b7f8e7d885e77500e999ac4be61dfbca3d00426f2d8a4bf7b19c02d6e",
+        "231e7cd19b33d3ee5ed16941c8cf14631bed4f673b6df394df864de33cdb7950",
+        "244d48331125603d3ed6c61c1e46ee70e9e51836fe177b6cb6cd8c6350ac1fd4",
+        "25276446cbd4198cc1023111131ae8b7255e21b1197bf9e05e48a4e9c8c6595d",
+        "26f151c80e0bc9d0a8fb81c8c81a9ae0d133df9e59b65bbde65764dd58888056",
+        "28a500af09c22337ec40f192948b5e14145172ed12d983b32bca5ab0dc7bec8b",
+        "292b95ae940c4ac1ecedf454c1dd21ed09282397e80f05a4edb5b7299807742e",
+        "296bd1bfab959aa4a045e2d006acffd0e650c257fd61bb67c19fd8d9c8ad2007",
+        "2b9cf38289751bb432012349086e9f9dae022515c1023b7ad67aaf78384a1c21",
+        "2d86ff95bdacc8572316210b5fd0fecc3d92bb820193c99e36d4df6107db279b",
+        "2f0cf8dd841960d990b4f8043c74bd7e105d7cffa863d4ab52f084d80a2dac4f",
+        "2f85a1ad2692ca2e6a1b1784db30cb0e4577f448bd44a8fd1d9ae1c4c63712fc",
+        "38c16debd7d07d963bdc0ddb17d8e0c18c5ea1c6e9ba038540d7f7300ab2f2c2",
+        "3ca81ae4a57a946f132f708b1e5c27fe5062d304d84f7574b5b69bb3ed44e20d",
+        "41fb87836e640810dd8d97cd513d679a529cfe28edb39f932945c5fcf7c380fa",
+        "431ebaf074f64684024f23e0cd0e362cf699bde5f04c832ca01c4cdc89aca8f2",
+        "4808eab4a0d14f7b8e438892137ebf0c38177afb1c222a4b619634e57f4df8ce",
+        "4866eefd18b69f22be7716d5ec7e41a60d922f3a43e56498031d3bcca2a6483e",
+        "4b3400ebadd013f1955eb2be1634caee4229b41ae25c41de62908779ba86d8eb",
+        "4d29f7af495b083fe23279b85fb49c78e94d6e1b8702244755aa2571a2cf2574",
+        "515e6c1a78d1d9af21b1bf02b351a60b35aaafc774d79ad43b3971b8e07aa243",
+        "5237e58436279631aad0751b1e3b80738258096b68fa7921bf71e60a7abd9e13",
+        "54124c2f1bfefd5a5cb9fc1f060cfee5e5a3e3305511c73d5c16fc20975a894b",
+        "5557f9d461f59cb5d56ab633595eada02070cb5d05f52b16b5e4f12418d33c11",
+        "5baa5df63d7aab4f54e1959bfb69a04471fc40c59a26e2ba98aaa5233c682c47",
+        "5e5efcef2fdf61c6a6d4a985eb77ebb7c1a3423e6d204ed9838fd7c055247898",
+        "5ffb98057e8d77756bf4d3151d33dde80642b4b2fce2c0bbb59b3a0849122327",
+        "6024741e72585a9319d093d1d4c77d04d836db2a97a886324f70036127353c50",
+        "642a9d18b9b7987d936901498b3046fc62bab850ffbe5a4bd86ea63f1fbf75c6",
+        "6476a361fdf05d4c370bb4aa9212f1555a93df33b83bd57454a997777d58fef4",
+        "659f0c5d71ec19a9fe3c98465c93db88b48be2f4f546d49f8eccdbb71d4b6204",
+        "6627f77128c61b107554a089daa35473e133b00783ba2f07ac0786c0fbe3cd5d",
+        "66d8949d3ed9981771925cc441a9bda9350418e65286dff435b817941cb38c06",
+        "67308c809985d030e7612413fb1fcac0c748437579f0c9221fbad4b5ef73051a",
+        "79db3339a19f46aabba06ae93d63a7ae19c5f2e61412800495d58f70a40f1a8b",
+        "7d181fb9e97597f4c436df997989db2255238d7ca086dd9a9e1d72e4c1d2e66b",
+        "7e206434e0c988fb3e40ca3e6ecdfa2c1d74eba23adb698fed69eed28ea6d721",
+        "831b5f8a6f1de48262023db51daa095a63e0ed234c89202f555bc47a9c53182d",
+        "88b0e9b20855de492a087772bae5ebb365199f07425428c19b60c20a7d1d7ab3",
+        "8a3b9d71f8f239d528f6a0969a67acb7afe404fcb52873352ca8ebc4cfc184df",
+        "8eb303130505e4bdad0da6908d01b05093c49a41c2d3427909ef3ddfbf7fa62b",
+        "91f4b97a2b606459d80d1249bfe13ceff628dcbbb7869328c6170614dec8f26b",
+        "95de64e1ee6ca8dc9d0243546d50042263c567402dc1db3276fc5093b193dcc0",
+        "97fead5be85ae7dd9ed42b3e33abfb41afe11c5654b6370270935108a88120a6",
+        "9a6669aa1d1a986c6e066d33d6bc823b7eec0fe216505968ce2a6753950aca7a",
+        "9b3e8695c4e139fabf566cad7ebb96ab518c5bd71f261534c36ac62b86f02c51",
+        "9c984b564f6774e6aea1a825851ff024866816225b265d3a7cee2d8486b9457c",
+        "9dd69488a5f83d39b3aa1afc4845a37430a53bc5546ccf3679b2f0f2b3d4f61e",
+        "a19408cedcb0dd8a9b47bddf5f577ae3c1507ceb9fcac1f36929a5a264a387b2",
+        "a429fcfeb0039b95576fee3fb8582f86271e9e67f6b44bfadbad5eb517f9c48c",
+        "a6dd37d3971a8dbefb2cd04b2f5f9dd5c39ff05323db11fe09bb63c16df67ac0",
+        "abef09753c0f05e4bc81e4ebcd1f3a10036aa223e7867c28a603ea5788a5c6ca",
+        "ad74d063633624050ccfe4cc473e0b0b5dcd5ae1c7c8c3a61c888b90392e898c",
+        "b0d6780d4b1b8d7385c0291ad3c6640a3d520e945f6a069331f0ff1480d5cf53",
+        "b0e101d74caa908ae3f0c768854ec38bf4d755f5e2822332e5ba0c917215779d",
+        "b444365ae671d72c23782701d8caf34ce31bfefa0f382dac0578770311f5fec9",
+        "b61270f519a6acdc7143c1df0efc132c45c1100170e3e7bf703738479cffafc2",
+        "b8363fbee3ac02af8f07d9e6cb85f158ec1127baad23195f434d725c2dbcb0dd",
+        "b86b4ab3ba77c77e51ac0643a4da899c445c83c00e5d9c4d21a2bd0d15d413e7",
+        "b94e5f62d5f66ed70f99c50a6c93e8c8e29ec39cd403da425c300640b4bcf8bf",
+        "bb87cae9d3252f2a8ca1bf2c61f2c4f20679e933d19015d330cbcee3ea810b28",
+        "bd0ad05cc1de56f6a7bb02e194f67212d2ed87d03b654fb4e011e6b9efc87251",
+        "bf69fa903e41f44f5f06df5759c1888d0760e5e6b2ec9754a16f819f7c104443",
+        "c0e3b01f3e8964e5d1f1714a2dc1faef988b0357e1c06c2bd08a59b43965cc61",
+        "c48c67011dda8f4afb2aa4d776ececcce453c38e781452b7a6558e5e6edc20fa",
+        "c559c0fe940c18a722c4134286281628f2906e0974a724054f642d0ace86d44d",
+        "c6069dc05752ec30d2340344300f2db3b71d1f9ffb7472f55d9f5361d2705894",
+        "c60dc26581bb57fddc51267db2383d4f85462edb4d7ba7dc0275adea932c3c84",
+        "ca6d33cc6e28f5f57c6e4ed5b16aa66364f809c0f52ae33d7e5d72f83e0a146b",
+        "cd7dfc5eb763babaa4d62d165678221996bcafd3f4607d8323d45b47b0a51b11",
+        "d1504510195530130d975f304c500c5e76d9b3c7f89c314c588afe88519112e9",
+        "d3b9b9dd22049bb44f1f26dc26e7a2fb8508e8b17b755ae244ed723b91bc4cf7",
+        "d3c576d5670f021e20f3dfe922524856072400a8a5941b4f0301cda85a0521d6",
+        "dfb143511123c87a3f5c978eb775b32fa8da47b304086c37d56459ebd1615f17",
+        "e3478773121acb0aba8c820b01ed40f28081eff89b28736d3580949441af1b35",
+        "e4b03c466b19a7f4e3d4a12d73c704bfd18e18ccacf2bbaa65adaec6206e51ec",
+        "f00d54ca64629b3008b47c35aa1fe8617485f8e741941bd29132cd02adb3fa95",
+        "f4e7e78c4ba959cce19f6e25974c358cbf2a187d68e5065d5ede319bb3e9c506",
+        "f9a3535cbbd668f91d33dbd973c6e30164dfef350a8dfd357de6c43dbc2e16d4",
+        "fd3b5d98980d59ece4e65c1d9992a12588e72efc5e7abe9276fc81ccf22a9d99",
+        "ff468fc1287daac03eaa75de679853e1b9ab04ecd3beeebba767a50c8e8a745d"
+      ],
+      "computedBoundaries": [
+        "001d0614e52d8da12ef04e3c1d7ee89294dc2f82ab21c9835a1b517d9a4f4364",
+        "37499b3db4ed9e93e1e178a4fbef59dc691b7d7b8a2694aa20c4958f03bc6c72",
+        "85f68ff789a59ebf85985c8b266ecbfa3f5e51d51860381da8a1ebf5ef8e5dbf",
+        "cf8c81f48cffde201dadfad7979df58268b4275096a8a7377a51b12d598e8f0c",
+        "da877da5c157d0067c393495249ef1e5fb82751108e8f8a46c3f7beda8f764fa"
+      ]
+    },
+    "scripts/check-fixed-supabase-account-read-idle.mjs": {
+      "nodeImports": [
+        "node:path",
+        "node:url"
+      ],
+      "imports": [],
+      "resources": [],
+      "dependencySurfaces": [],
+      "bindingSurfaces": [
+        "8a3ba0a8f469fa26b1cdd71651131499ce2050d5dfb583005f66f8712cfc13b0",
+        "ad319bf204c81a130c14421414944a4f196182c4e5f3d4a6cbaa5b6361b45d32"
+      ],
+      "computedBoundaries": []
+    },
+    "scripts/lib/native-original-continuity-workflow-review.mjs": {
+      "nodeImports": [
+        "node:assert/strict",
+        "node:crypto",
+        "node:fs"
+      ],
+      "imports": [],
+      "resources": [
+        "scripts/lib/current-installed-code-only-workflow-review.json",
+        "scripts/lib/native-original-continuity-workflow-review.json"
+      ],
+      "dependencySurfaces": [
+        "0390d8d5900fbcc87e08218d20d025f1afdfe42bb29504f794d0f9f5b8cd8bb7",
+        "4e842f0c6f13efeb6f08de1b76db685c728fc26602424b96c9c1e11a425f65b9"
+      ],
+      "bindingSurfaces": [
+        "4d5bd3236b902b53f777c50e4baeafe65de10c08a1da3801920df12048beb081",
+        "5193ca852a68475d140a771402a4fa03aae098c6694625269ec7835683d9e75a",
+        "59c5cda146e951e65464e14845e52065540f1b4da88b534a0e475f66c55412f8",
+        "d3c7c0b6948622d54638729de889bded01734fa308421ec6df79cb2295a1d7ba"
+      ],
+      "computedBoundaries": []
+    },
+    "scripts/read-fixed-public-rate-log-20261012.mjs": {
+      "nodeImports": [
+        "node:path",
+        "node:url"
+      ],
+      "imports": [],
+      "resources": [],
+      "dependencySurfaces": [],
+      "bindingSurfaces": [
+        "22027bcc4be968d349b013837041b5302c8c29d7253b8f159c88a2848cb543fd",
+        "35c5197f211dc07d58fb9c663e787df1b87a92eb11dda617a4bd77f2c29a1ee5",
+        "6b1570d6f7c84aeb5226f2b3bc7d5bd5e02838d0700aa1008e50a0127150e3d0"
+      ],
+      "computedBoundaries": []
+    },
+    "scripts/read-typed-trip-catalog.mjs": {
+      "nodeImports": [
+        "node:crypto",
+        "node:fs/promises",
+        "node:perf_hooks",
+        "node:url"
+      ],
+      "imports": [],
+      "resources": [
+        "scripts/typed-trip-catalog-read.sql"
+      ],
+      "dependencySurfaces": [
+        "1ef8c78e2f1aae7df71a795e12dc1fb01482cbb8cc818ab8f334eedee9a0070e",
+        "31dd9325624ad1edb4ff987fb38b0b9d845651997a813951dce53c9760314c09",
+        "480d6614e35a07f1175d7c56ee0bb38683a7aec07b4de91aaa7be8bcd0312a42",
+        "6127075210f82d04da3833db676a931e0818fc9a341f45148373370887ca0477",
+        "61b90a399e60b8c8c8814a1c8fe1877c35ca5fb58a62bc18f14cbacf28aa78a3",
+        "715246af024be83a511d6d4e5a21aef6cd7a999a500f4507cfea1433ebb4356f",
+        "7735cacb6bc5142491cbcca6c876366d10aa9bb29d291562a71a8e258e33b2b3",
+        "8048dd963be4238e1afd94064e2c5ff0e52ea19465cb5e57e1bdac6d524b33da",
+        "92f1fe3d4fa5331e890fbd9189dbfbe289e49d16f114f76ee82af22480979681",
+        "9f6376e83fe22321aecb06be67082c1a75975d8a8d87e132ca2ef959ec181ef0",
+        "a2614c589e983ff22f06f0e0029292962c3efe5bb350cd4f8d20bd157dad656c",
+        "a2b588eab2999fadf6c92ef3c05636a06471b6c7be908ccff5ee6114f5031e6e",
+        "ebbea97f5b0415f5fcc64bb653c4aefbe6a15e4b94132d7065e9b32ab2141c88"
+      ],
+      "bindingSurfaces": [
+        "7dca50e97d19a79dd8b14e0d83d2d0835edbf08606b312276e8e8336028c71a6",
+        "8a4f01bd8f396647acb9985368880685203101306a91fa4d40a125e735a49771",
+        "9b3e8695c4e139fabf566cad7ebb96ab518c5bd71f261534c36ac62b86f02c51",
+        "ef4158e73d983bdf7e6559f0a2159d3fcdff47c229c605edc98d655be41fbe11",
+        "f059012275353af640d764ee470f415423c47d954d41f49ea08d174cf1bfc35f"
+      ],
+      "computedBoundaries": []
+    },
+    "scripts/test-saved-weather-audit-workflow.mjs": {
+      "nodeImports": [
+        "node:assert/strict",
+        "node:crypto",
+        "node:fs",
+        "node:test"
+      ],
+      "imports": [],
+      "resources": [
+        ".github/workflows/audit-saved-weather-inputs.yml",
+        ".github/workflows/audit-sealed-current-source.yml",
+        ".github/workflows/reusable-weather-build.yml",
+        "scripts/audit-saved-weather-inputs.mjs",
+        "scripts/lib/voersaa-water-level-trace.mjs"
+      ],
+      "dependencySurfaces": [
+        "63f525f70939e3a1d6872eef8388b70547c782546f76e33edef072d139119932",
+        "6909fb699e59637d2b2813d592c85d727d705d03dc79b640ae4ebc6cc8e62239",
+        "9c9721c924fd720e7f6a8d7c94226dd9ccc87ea64bdbf0c9488cf002f3c47aa3",
+        "a4b141c0007870bd5b9627c90bd7ba8f7efc781f2248dc62822dc1e5bae868bb",
+        "aae6d140528e3c761a8f2af22f52aaa8ddf10d6020f38df85be144a81a489aac"
+      ],
+      "bindingSurfaces": [
+        "2a24a223bc030bc46fcc2bc952e85a9ffe85b1a602e57c2acb6f79d6ce9dd69b",
+        "4a7f54bac065eec6d20fd18ccd280f48fe33cadfe7e6b4ca31c9f459bd29bf60",
+        "5193ca852a68475d140a771402a4fa03aae098c6694625269ec7835683d9e75a",
+        "62127ddf3cbea37837135e73f16fc7cab226865e0f3305458965e9dea887e05c",
+        "711a487b495cd69bc35a539df0d367bb758a4d0591eb3992392b06b3fb9dbca1",
+        "9ac20678e90c814a9a79b634839be2a089a5c06ccf62727b27ca2a3ec6450961",
+        "e688335d141dcbbc2054f8496b63b3a69b1bfea6bc2cd075a05d37b199ef2d02"
+      ],
+      "computedBoundaries": []
+    },
+    "scripts/test-audit-saved-weather-inputs.mjs": {
+      "nodeImports": [
+        "node:assert/strict",
+        "node:child_process",
+        "node:crypto",
+        "node:fs",
+        "node:fs/promises",
+        "node:module",
+        "node:os",
+        "node:path",
+        "node:test",
+        "node:url",
+        "node:vm"
+      ],
+      "imports": [
+        "js/core/ravscore-current-supply-memory.js",
+        "js/core/ravscore-model-contract.js",
+        "scripts/audit-saved-weather-inputs.mjs",
+        "scripts/audit-sealed-current-source.mjs",
+        "scripts/lib/alternative-c-caller-test-input.mjs",
+        "scripts/lib/coherent-current-original-bootstrap.mjs",
+        "scripts/lib/dmi-forecast-file.mjs",
+        "scripts/lib/dmi-forecast-store.mjs",
+        "scripts/lib/dmi-part-continuity.mjs",
+        "scripts/lib/open-meteo-part-bank.mjs",
+        "scripts/lib/private-weather-component-inventory.mjs",
+        "scripts/lib/private-weather-component-pack.mjs",
+        "scripts/lib/prove-cached-coherent-current-originals.mjs",
+        "scripts/lib/ravscore-integrated-runtime.mjs",
+        "scripts/lib/ravscore-production-adapters.mjs",
+        "scripts/lib/voersaa-water-level-trace.mjs",
+        "scripts/lib/water-source-forecast-routing.mjs",
+        "scripts/plan-ravscore-current-history.mjs",
+        "scripts/private-production-runtime-bundle.mjs",
+        "scripts/protected-private-production-runtime.mjs",
+        "scripts/protected-ravscore-continuation-checkpoint.mjs",
+        "scripts/staged-private-production-runtime.mjs",
+        "scripts/test-helpers/dmi-water-source-fixture.mjs",
+        "scripts/test-sealed-arrow-score-audit.mjs",
+        "scripts/weather-component-progress-cache.mjs"
+      ],
+      "resources": [
+        ".github/workflows/run-current-weather-once.yml",
+        "scripts/audit-saved-weather-inputs.mjs",
+        "scripts/audit-sealed-current-source.mjs",
+        "scripts/lib/copernicus_target_identity.py",
+        "scripts/plan-ravscore-current-history.mjs"
+      ],
+      "dependencySurfaces": [
+        "0009df54fea74699c996a89f9ea5d90a78f4a0f1d9d5a8fe3046ef6d3c29f33f",
+        "049565e4632dd393cc910d94fe09aa0d681989956df352a127e9a8ed4f2550b7",
+        "10bfb938e9c426e152ed08af900cddbe0995d375bf6e497f2036fcd83adc0a4c",
+        "141a251d60c8c95a372cb2edaddc0065beb8f657fe0808af8bd998280657b271",
+        "1420182cf34fd06f6ebadc63c7bf46a3d9ba275ed1a292f22dfa74efcc53c735",
+        "1446080e29c6d19befecd736bf8aeb008bd6eac9ad6a8da9799506d7da209e92",
+        "169f855770b9c3fbb1b4af50231854bf737de9b8e1d5c4c8ba78312cb1a2701c",
+        "1f82447c79e0e5b6b082f2f6e6c6bc3b34f0e1231cff7e32b47942fa3b1ceff4",
+        "22bdf9e5bdf4b7b79c652559a9dee41546bfbe0b10f256c9a7f69636ab2c3d62",
+        "242b0bf03c6e2cbd034ae573d79d80002b555436b1478fef7eb7886d05aeec24",
+        "243e7a72fc09d225ffcc468cfc6eb158591deea2db72cadd920373a4c0c75a16",
+        "29d6f750e981ef57c0938df2f01459832df17f080830f3d723bb88a12bcdf1a2",
+        "2ba17ff14fef6c5bafab10209484aa53156a15c9bd6a829d0739abe741628a31",
+        "2fa79891a1fb06b1da5a811f0bbaccdf998e1567f0c41d4c31825c82c8523a54",
+        "322b9dd35b2973632b05156615db37bd40ec6b33258d609148428a6cf725364e",
+        "33ff9f64dc7f7c946b204cf85fad430fdbdf45bcf9c26aca560e8d54da8dc7ac",
+        "35750df2f674144c0120af84fc7dbc3a96b91bdd66d8c4903b0d938ac0daa083",
+        "36afcdd5bad35afab29f6d71caa0cb835a857f7d804051efe6426803b929c127",
+        "4452f62678384c526b5798cbba68864e714e938331a56aebcea49f6f0749f274",
+        "45625baa5d40b04f5ff8e8f6a14f881fa6c0b67cab82538a07e568271548ace3",
+        "4e737b9012aea593002a7f0910bac536804ed7f346e205964db1b3bbd6c184de",
+        "4fea4b7e02c5da8085965ce3a8ad35453a68ee9bd2730316715f02d33e12da49",
+        "527e372307536f14f3a7140d8f7852252bf4d2f2d0b657618db6117a5433a69c",
+        "529c79fa78092c1f7948f05c8a42a8ed8e24b8e387c1c766503f355c5f033228",
+        "5bd9c467525ca6c23c81f98ce11be1a2afb04fce552eaac944055784b02b691d",
+        "5e80947f0ca1918dcb3d3d64fdbcd329f1957ce8c311aa9080faa0c33d2c67ae",
+        "6216e076aeb7c7428a28d6f7e4229ffa27553bb421d97e54f74d80dc4df536ee",
+        "654f3f39e4fdd0593072c2a6a654153f06e128952184b3b38f760853ca8b5a1a",
+        "6a02835ab93e25d16d50fe69b3ae1a13c18814a1785eec2e9a2850e3fc79484f",
+        "6bfeb12fc312f8a703e4d50e7155f379c04cf84d352819f6e47532b8d6590340",
+        "75bf16557e74278d445a7347406b80f6f55910ad8a7aec88b1d86717b8a6397d",
+        "7611faa100111b64afc0ef6576c78a9461b139f702f2fe12cb246e16186051d3",
+        "7965b4230a8f553989af5e92dbd0f76cfc68c5b67344c9e65f65aebc29ebc90d",
+        "7c242ecf3c565e534bb146dfbace0d925197c42772b7845de05f73a75c00dda6",
+        "8726213006b21cfde8b3680b7bed060f001dec2a38d14aad3913a4241e84a9ce",
+        "899d9234e35a609d440ab98d664c5dd2da72de0f07793314bc02346e6d50e287",
+        "8edf2bb741f4d5bde35c28385c35cfe83e86275588527d4d01c7c28785e6ef72",
+        "95967abd4a282f494e3e7fe39d0a0382b3900ca06caca326ca9647a5c51cb3f4",
+        "a092f19b4d1058f505dd85234809ba4c8f01c18d08a4d92cda1060154b262861",
+        "a2d2458cbcfcf02295073614e9a20a962979d25a221112b77b9d819c13a125e9",
+        "a4cc63a659a71feefbfb19a484554704a2bbcace728294949093f8e74de4e275",
+        "a7c7ccc2e37b2c52e95fc9fd35013e3af67b63ac5afab5b7506b7d9d8ea72309",
+        "aaca2283d423aea7bff18bf0c5ecb678f8a075f55a608648496a0a559115b8f9",
+        "b97149726b111069e116cdb186b83ac8fd37fae97e6bd0e7c859f9bc44c60c2e",
+        "bb578193b2a3fe7506b88bd4069711937a75d9581351335230b7e0882748218f",
+        "bfc13fad8b5a9e55bc7e811dcff835d49c61b8212a71875b449efc444489325c",
+        "c52b9c92a054e7373815b17c977f886f54cd85c3ec38d54e7b44b3ee70fa37e4",
+        "c691af3b18ed84361854b97fa58d4eb9dbe9c57b201e3d6829906ba6a0f2e342",
+        "cd9abf83dd0a5bd000ab2034bf2f042cc749b40f2f58c37f3d29f1793aee5d55",
+        "d1325e9d53c5ec7ddd3cba24e4ff74b38c1b44e8dc9a94e6a84eb017b9c8c95a",
+        "d487b7cef210fe46c4ecf672dea40cefa568d1953b13e601dbcabb6078bde7a7",
+        "de5512969696094a02a56cc7946ed2a98cf8316450d4bfdc785b29027384fdb4",
+        "e35e50020286d2799d81e98d17925934e70c8684ae9652ea92da00111bf5637d",
+        "e64b8802454c316565695bcddab89f4e958b568aef8ec5853d1258b7b9f00a74",
+        "eb568731032a91f1705bdd1f01d9e0842ef70a57dab4c7a0856a7b038500bd02",
+        "ec747d01516d4dcb8fea19a02c6cac56a93a3639f6b7ebda33d9a6244a1e34bf",
+        "ede11a14a6acca6bb30421c34bff3636178d685c0fbfc83bc5f45d0dc2df1b27",
+        "eee9cd74ab8391e8dc19589d27aeb86c76cc2992026919330de870888f6cbce8",
+        "f284b12ce8510088ccd6bbdb21d2a16ba82820f807aee482eac861c9e5b83e3e",
+        "f981d96984f01abf1f2e9bd5cc5719b20a42b306cc88c00661eafae9f09cbb2c",
+        "fe094a6f750a2435d05b3f6517dab0317207100fc72a398f23f593838ec14fb5",
+        "fea2fd3869f1883e7d75066522289085316934dc8a13b1d9e39eaf4353cfe516"
+      ],
+      "bindingSurfaces": [
+        "02651bf20ea86baf55328c412cec851820c3ba2ee52e9a1fd6305432cafdfede",
+        "02ce297516202ebe517788eb985b5240347df0e25247adb4153ce92f0e4080b3",
+        "0331a217d554842cc0ea8758176066f53332a556833a3458a13acaf6b99e90d5",
+        "03768f6de551541e77464d01cda4e5e681e13100430f649dd9df6c77b7b71dce",
+        "0669366431936af6958e6518cf6fe2df2c35c1cef66296324f146f5f21880c7b",
+        "06fdf667da63814bdcbe2ac7bbaafbe00c3aa24667658fd3aef53747fdf48649",
+        "0ff5ce37fdff8a06aea1b24197730a76a2223c4e225e17d8c9a16b088d90027f",
+        "102b2409d6d133dc9b97916694f33f07181871474498b57c699ae63f5be48139",
+        "10da732e547c83572e7e851e205cc93f73bb6e88bf3e5aed5495cbee1f099d1e",
+        "11ec64d4394cb3ea0e5443c1c4e02dc8823a6e97942bfc6e6ed6e5f60da4a78e",
+        "120fbfa535ad6ec30968a5e0abce0b809afbe3028e71347c7fc877a07bc082f4",
+        "14041393e2de55da0bb597deac53e8675a3661198ddef47a43abea395f55c71f",
+        "1469e3ec96ea4eeb65979ae0e437a4451ee5737b0fa16b6cbc4f6934ce47715f",
+        "14d9f48e130742173f3461f618ea7b2ca589cdbc90a847973e41b5f48bf4964c",
+        "16d907940a20930013e26e3d3fa46e3553ce23cad5672a36886f761f98f88b10",
+        "19c66b4d125221f072b6fbdbdf7d87be22deef6e7aeaedc7841aadfda3f770d3",
+        "19f53c0f5af73e3377efea8134f3e2f8fa59f3e00062ab9fecbee0f6bc6424f3",
+        "1b0a8b13911bf346b4948ef686a934e4ba9e1b70abfa6e0ccf5e82cf38aad24d",
+        "1c7678db9168e47194da02e9418042946c62f34cbbe7a6ca3f8773104b411a34",
+        "1d024c5d97960956e966d87d4005811f30c7dfff9b4c69eb0683ab243d7f47c6",
+        "1dc69ee7c4337ea7923dc8409e5807dabd9a4dba6518ca1df333e2ac0c64f848",
+        "1e129dc0cea0b70e59a7bf5d4115bccd359f456758a1e2f3f87349bb3fcd86c6",
+        "1e9b1c1d36b354f443729db1f272da94ac2f173ec23827fb62f1ffca0c63b1d5",
+        "1f24a1bacf1a798decd365b59cdf9eb301d3434193ac43ecf02358dd940baf21",
+        "1f9173b2b14b46056bac75dab9ed09b8809a0afe44db4090055b10ee50dd01e4",
+        "1fdec4482849d8ac91b257d09037c65514948880ebcb1304772fb6117c220d47",
+        "20ce0614f6d5aea1982d42074127e997f184a11cd432935a7b6fffb467699bb6",
+        "231d955270c0867b2f9bada098d772b5a54f36f13fbd0df32520a987e0c71233",
+        "2b7d78fcb35c60db52cc346958a24c28a632633f20902889dfa0953160f3ad87",
+        "2cb3eb9afe4a87802e7685a2f4b6549e45b03da9ef3f354fe672a7ca48f0c4d3",
+        "2ceeebbec721f1de85c2864e634a909a3d2a1e5f8f6e4b674d8ee06c7dc4b98c",
+        "2e475eb921154fd56166fb7dcc63ef084054a838df1123f1ce5adcf8ca63441c",
+        "2f219c040489e980af94655f9af86648aaeb1d6c5739950d10076a05633b5383",
+        "30bde8c20080d1833a73acef04fa1a58275c42c3941d2a74008dae6059ccdaf5",
+        "31645289932cf4b88448c484e473e32d80f3032d1c02ea0bf27ba40ac08048b2",
+        "31f25e30c30c152b437047c4e801955296e9bf712edf6e66d5dfa68782598b26",
+        "32030e9f23a82d5a822c7c2d2e87512b1b476484a4035a96445ca4131047ced8",
+        "32e3e41ab8a621277ae80d62db5ac16c329ade64ec49ad410da65f26fe9e6a7d",
+        "34886914eed5834953e106b76544b17304f894ade70ca3a2d3157af82d7e6847",
+        "37409be28b307a03535807bbf51ce0e4727fdc427e45b559341a2b25cdcd2df6",
+        "37b00d05aa33f4c1ad8d4b77aaed0270b1bb814ffc3283099ae2010a6f01390e",
+        "38495420ffacdff0a293cc4913f3822125a70ff476aeff207788110722644a66",
+        "39709525370498f4669a309201761e2c0bce1ac71565acd86793b16acfbabc89",
+        "3a34d3d18c20674bc3b9b7855f2d5c170f4f4959fd6a24d42e52034ecfb1aaf2",
+        "3c2819ecf94ee2427a3886ba8819eb8f3672824ec71f26f8e87745f107e1ab82",
+        "402b88e8788344afa49a4d9c8a382a2b4ecd3831d841c8483e7293e2fc889542",
+        "458b7191db2c57ffab83181270dbfdd0cae579d0d800d857a4e85daa81acb66a",
+        "4949c0571bc6a0164a4130bf43cb4e6a49e7a9bed906429c92275f0eabb23430",
+        "4a974948fda2afe4e776c2eb91f7dcb7d9c58409d47a9106a16b1cf00e9d5f1e",
+        "4c16424637270189ac457ecf3cb06fe3c728f1b72a76744e2362ca3fc54cc872",
+        "4c1f067c72803a07a2489d41eb4c582ff8b1c1668d6534f63398cc47ff2e7121",
+        "4c2b02aa442b90a854f99a1895077eb224a60edea3ca6131762b93dfa7d048d8",
+        "51f225610a7c834a4d231a3b9c32c2d384818b56e4138ff8b047548e1135231e",
+        "52443c93326d3d426fb30b903d59de111059eb294a687b7f308d73324b063539",
+        "540a1565b53453b56b10908bd08eb900ae8d8136e65b1b0f67edc2298a9f2fea",
+        "54474dd748fa759158b3d412b88924021ae9067679dfa28493df18e88adf4b1e",
+        "55d858a08e75c33864cc20500e139632c43e06bb8440ff606eb7d3d843fa30f2",
+        "58b2e468baca2213ac31ccf23a5e21bcecfe96ecad3a59fc0ce226ba933970c6",
+        "58dc59d85f852206567f359e4eb203078f772001fc9aa1ab0a28e3e6754de1ee",
+        "58e8b118d64c457f908c223a37224a5fb3cb082210fd0b3314fbcfba21000bcb",
+        "5b2091b82ca2112e0d9500827df125d66bf5f552785db4e69f44c6ed5e134077",
+        "5bb9efd786ff860f15e4ae4c9e8904805c51155b7583f6c6f3c3d0def58e2893",
+        "5be5fd9448d6a89a3db43a48b1bb792d9c584f8a8bb96c2dd9f1f5f6a3b52245",
+        "5db9f20a5cf2ac163a6a2581500c00af0e02cd53780b418bcf436b6cc34ac7a2",
+        "5ebab7a266b570b71ac93f40ae748adcda2fe753f4767d355aa3a48a80e9826b",
+        "6062dfee2817bec0d2030eb2a7d6b50111803f5396c140ed89769d64ba962237",
+        "6133d4734c2d67f79c6539915f49db1a6dd48d1be97afe5a955ab69d7342fedf",
+        "66be8517be96eacec07069b510ea8e5bab057243492d7be520b4d37a7ea2efc6",
+        "697ba396c344cf34a72e6956dd4098beb4f575d94f7565bb52429e0e1262f73f",
+        "6b604727f5318e476ae53c659d65a1a3f0f6ef966b1620e035addc1f5993ed61",
+        "6c23717672100d900e084d07daa044e75fd41a6901dd2d44ae31646e5d5e7dd3",
+        "6c7f79467763761e2fd38d23fd0f917deef9d8266f8cf0ee4b8a5ddef2de28f8",
+        "6c93e3c083d7cbf7e4959997fbfd37b7b7cb067538bbff1bc1e85fa441ff94f3",
+        "6e3de7752fa66e91fd895160599007ad4e38b2f9c267a2eefe3c93cb0fa8fade",
+        "6fa36b82bd278019795667cf3c325ebf3ba65456d6913820865ff834e8cc4a6a",
+        "70758efeb8a3b5b98a34ce82b5386e52d835ee07e258c6ffbc0d3044a748042d",
+        "7462b254c91027467afd42992806e8387c49e4372124d4fe92512948ed866552",
+        "75f894ad91f26d0b8ecc71bf9e962946c031309e4100d488de3dfe93ca82a051",
+        "769e01d5dbbb11eb6ef08ac75a4dc1f3ad7f034d53bba66c843d940df153d5bc",
+        "7772cd7b037ccbfc301cb10bed9f7caa24689e39b07fdd8ffe5d7faf3ce168e0",
+        "78de19b988531984b724cc0ae2237e3c1b0c2a0a179f7e242def3a4c0c56336d",
+        "79556b6ce8cc9dd4e88f6276750725e3d1fce7b767cef745ada7364af1cb8aa4",
+        "7a79263ba8f7963d17628fb67a57bad6622213cd8d8520aad5af7e16ff712255",
+        "82165b832bc1b0692dcfee872225e0bc53d9fab76311e517c5814774390beb13",
+        "85c2754017cc2e03df4dfc0a2229845f6ffc5f730feba59592d3c78a6e83b1c8",
+        "85c85a7bd3f8bd02f6cd03dfde50c3cf21f95d905a27853772c45da7dc79059d",
+        "876701ca1fdf36afd55c7d94440b56738d7c30e9f6220158e66a7b758da4faa2",
+        "8837c16571a28f882e4079db408a4c1c4ec9e982889c4587a4ffa81cd9be5982",
+        "8a4f01bd8f396647acb9985368880685203101306a91fa4d40a125e735a49771",
+        "8afb4b76539c12aab71c7491132b539ee1e722720082f1cad2616eaf3078e389",
+        "8d15a5bf20bcd5b56a45cbb7a36c9a7768ce8369e97159239a8356b5d35db213",
+        "8d1f30a76aa9022083e7d6792f90e618bb643f31e4f6696ccefb377637cef5f5",
+        "8d52ccec15c40f00f7cd362c5f2c427a8407683a8583b4cc0406c44cd73f9868",
+        "8d5674d55e04aee7516418b8affb6a2e706c92b5c39adb23d66c03bfb5cc7f3a",
+        "902979499bd9c027c2a71e928d49c489d1a175a0a71832accda5efa4f72bd334",
+        "95c74ab0fe2a6b2509efa2b576bff2a6776b213eca3b2040bc3205a80b552f08",
+        "970d06099e1e5e7fd06c70faf312c5569beeb19c150583c694dba7e4e411736f",
+        "98098adea268f250108c9cb5fd5e8c25d5019a5a0b349d2c494101b9c142993e",
+        "9934eb25ca01179fef7011b7b3f6c9d21bbe8a46455630750ef53f633f3b7ea3",
+        "9957f189d22694822053602a3b10517dc918f9d59089a7b49e3c84541cef6e11",
+        "99636762503e1e63fdbf324c3880e9ce0ea3fcb300485cf2f40531539797680d",
+        "99e6ffe2feaec3f2e18b0038f73bea77afc75b3d30ecf92af669056bf501e441",
+        "9ad220e8720de5e6ffe996b124a52732fb3b852f80d5c917447a32503bd3d29a",
+        "9b3e8695c4e139fabf566cad7ebb96ab518c5bd71f261534c36ac62b86f02c51",
+        "9c2fe98e3c5d4c33095beb895a4755cce3c0d8906ba5d63c5b0676e80684f076",
+        "9c7fc68b829179a730623b09acf7354b2f5ca732af9530bcc0593d72025f198a",
+        "9c832bb28aff6dccfaf79c7033fd5c4d005fee3619eddd1a29ebcb1bfd3c03db",
+        "9d7699f25f6058a755c63ca65813e3e6c4502bf1b3ecb373d8c7f117b26ec18d",
+        "9dd69488a5f83d39b3aa1afc4845a37430a53bc5546ccf3679b2f0f2b3d4f61e",
+        "9eb77c46ea9221552ebea5e3adfaae24cec6e5509a8bae90008b88df9969cdfa",
+        "a0fed373301c0a47b7c3b990866617bb9c85f7768ff8515e63b88258b74eca9e",
+        "a1007b1d0d85f3f1d60584a334c242dd55ccbdfb7cee8f0dbc2d807811687e79",
+        "a3fc1e5e4fe3cd86548dea091b6302af0152a8478ceec5e8d745a10ab662305b",
+        "a431bf57f4c4344ebd2fa60f6c7f158a3d0183a90bf30f9923f008eb3ad37d39",
+        "a696979dd1401312905afe5031e726a0180f22f91d46046a4bb88b93532e6f20",
+        "a6ed3e23c892d26ea974d4851cc5768e84b08a9f62ad0220ac0156aa935c75c0",
+        "a749cf932a37ce2d44b26b08ba117afa12a9da755d9dcb699b6dde79fdfc33d2",
+        "a9dbfda6de30587c086d907d949c277bff0d5e397e99fc1386deefde16eb977e",
+        "aadc8932a101bc611ca2ba79cd0e002a84e91ef0723f8a25397fb35e67ea3bb0",
+        "abf1225efbb1652b5d6cc93832d38fc229aad1bbcc64e7b1b62d2b156a27f3c1",
+        "ad5511cbe1d67f2472145f82821770028b22d049c29e939df596db48f938ddb7",
+        "adcd3798af0144c3e40b5c4e434e272833bd5fce85f58bae44fbbbee6e707aa6",
+        "ae4e21b3e60081a61ddb9036ad8434a31c44ef74b9964c5f5a105e39efbff0e1",
+        "b01cd3ec48488ec2115e6a2827670f92dd7e1bc425ecc7248692aa3ab47adeac",
+        "b10ade943c0b2507b88d5452b0a43a29875cfe6a02e0ee087cb26232e3f821bd",
+        "b1509e23dabacb4bae12b69ce778fcca698daa0f04ab383799bca05a18405df7",
+        "b1c4ae568ff956e33d2aa181edfcd44ed7e78fd80d10d80855c1b9fbb503f42e",
+        "b329e88453ed0733f7477093009c5e75fa567075f8486a19cb8fd9a47da1208c",
+        "b410b59bf1480bf10c4a5e90292815a427d7d493e5171f1c7672e87ca86f95d1",
+        "b4f00a6708071a5fa119a8e7c6bae5405c9e8ddb3984026b36995e7df900e969",
+        "b5afb54c5e2f4f88f26474d0b1962536037963318d9252f26d43241cff2edf4e",
+        "b7aa193846b8f9de2e7d2a8df6015e6a8aa29101138ed6c43cb152ffbdaf6560",
+        "b88a976f2a845ad0b6ce7a163f56d7ea5df2e3c6006dfe2b54bb356402fa39dd",
+        "bd02b283638ae014e761293f9180f94cbe87769fab49423a36c4439a975524bd",
+        "be5d29d59a849b2dce6e074bc7659051ff670bf5f6d92b5739551f12a6841b99",
+        "be8ff06443d3a4caed1be00379a5ec5f64480e2851b28782d6ac53d3ab01696e",
+        "bfb4428d49941b843d1f7976de3310778a96da5dfc5ecab24e9edb6a47d86037",
+        "c084707fc7b53eb6632e7092157f95b8043a8f9f036570537c65f8a2dd870ab3",
+        "c1cae58097881198eaadc53df62b3cd66182cfe8ba52343f4c18d609cad33228",
+        "c31530548e7ccb5fc1f74b14bd96705e55d1c5a0154553cf9f89acfcace37e4f",
+        "c36e1dfca3b8151d50f716a4720143e97da4dcd2179379dfa6e124283d5ca2f5",
+        "c625015bd4f1692975c2f8d6ce3cd673d137a9707b0272058cedc2dc7a565bab",
+        "c64fc035a68ba4e5acd38eee03c4eb1ac1140bafe1cc30cc560fd8e18f37e682",
+        "c6a145f241df412ee460114e98649845e320abf1a5cfb3ede207a806041dae9a",
+        "c6bd291cf4a30de2d5445d2300e7348ea2243c923e5fe034b8d30c4f3ac22170",
+        "ca6536e69ed5672cacca199bc1448a2cffe36c3700886c1b28018fc9a496f01f",
+        "ca6d33cc6e28f5f57c6e4ed5b16aa66364f809c0f52ae33d7e5d72f83e0a146b",
+        "cbcfbaa194d42d765898acf7eab17a494320b31c1f206ada1d2a20dbb87bfa51",
+        "cc51d340e8064b5a155130d130904636e087178328efec8ce22e0b4db435fa84",
+        "d124c289959437011bd7d7e4e255fd8357b451c2e9782c539ecb9ca2a1ed2bef",
+        "d1564ff74575771ce01710f51ac04c21e66069af390ed41f285fe9b6f46c88f4",
+        "d1c98e7f7d9b1092c64cff5abb080646eaa810cdfbe6a29b19e7e1bb0ecfef12",
+        "d3f5f841a28ebf439707a4f9579ba846a50cb779d867eaaece000b11f8064791",
+        "d49bee51141b71e662821b11d047835b1f29cb2f37c235d5bf5c90d4b8ecb0e6",
+        "d4f26cad91124298a689d5c9b9227a8e0c0ccb2306bc4d14ba1db1846e876210",
+        "d5756d6be397c884c6301499915a1771049b967933fcf00cb6422b4618342143",
+        "d87879645c79ac5218828ba45630449d373aff56d851e7674cbe5d4cd3f4e086",
+        "dbf668f44af128c7e639caf272a5d4b6292d31c0d1a48186d1076beb3f803039",
+        "dcdef59f28e0d4fd0e4b52f37efbfe0d5eb46844abb0afa339243cb4ea049498",
+        "dcf6a70b3a13cedeffc75a3ed07cebfcb730953e01274e3004fb12df1acdbfd2",
+        "de594712965cfa3201be6c3aeb249c225c527e0c102a8560c3462de66e3c6e4b",
+        "df00051f5e73a5e27f35416fc0255195af1d35d48b0d15bc39b8757ef91f7070",
+        "df8e572aec6fd292753e576a69525b4559ad8ed040ac83472b0ce3050c1fdbe1",
+        "e3aa7fe0db11221b214129b6839fe3dac8874ae9350e96e314341d1b2d8f5e22",
+        "e3e521f9583c29abdfe01bfd60e6e658c3f54700009370b039b6c29cd02307a6",
+        "e76881121c87e431384e1647f78a10c21210bd0ef54ad8e637a19be698f937b0",
+        "e7f831d6c16b847c6ae286f3df23f6ec392cc8c05cc59460eae3d41f37f2a7ba",
+        "e8702635204a8a5abbb299bd4ba6ce3223f2cc5d2bf01821cf94e5f36e7f4a63",
+        "eae80fad1dc56a14e16801f56f86427933840a9d1693ef41bb0bf7796fce32ff",
+        "effdea7dddfc34c53601859551c4e1b68ed444c60e1a1a75d4ef0ddc2e3bb4b5",
+        "f0a60abb2e1cf48052c27eb0e8e072219d70f0e0118bcf119ddf4d844e9bbea6",
+        "f0d38fcf2b8742d3cb3868d58bfa139b3561b11258ea17efa2200788c83dec13",
+        "f2ebfeb7eee026dfe361a8fc5a94b877c14e304588e99752b32a6a92b4f9d66c",
+        "f381b5cc091e00652c40eeb0a5776a725299e86137eb1397baade16528e511d1",
+        "f48b0a001d63e923c6da1f4016d9e9b139ac0178379a1adecdae73f2c254cdcf",
+        "f67126bbc525391a213684ed15d58e1cc28ce68024ee2d4b74e4e32012c7f399",
+        "f72ff4e3778f2669f70998a9f327a30c78826af660eefa9f9e4cd03f2019e997",
+        "f7f2cd2a446bf89bd137bcf5c5218aa887d903bc7c0ce524ae7a502ce64bf6ef",
+        "fb675a310d578174fee3a7e5766bbef91c7571aaaeab28dca6a8c526f1f7d344",
+        "feaf1be63a6eb574f4846f7fc3e6d373214850c002d4eca2304516f68f366136"
+      ],
+      "computedBoundaries": []
+    },
+    "scripts/weather-component-progress-cache.mjs": {
+      "nodeImports": [
+        "node:child_process",
+        "node:crypto",
+        "node:fs",
+        "node:fs/promises",
+        "node:os",
+        "node:path",
+        "node:stream",
+        "node:stream/promises",
+        "node:url",
+        "node:zlib"
+      ],
+      "imports": [
+        "scripts/check-production-target-freshness.mjs",
+        "scripts/current-family-cold-start.mjs",
+        "scripts/lib/copernicus-offline-environment.mjs",
+        "scripts/lib/dmi-bulk-storage.mjs",
+        "scripts/lib/private-weather-component-inventory.mjs",
+        "scripts/lib/private-weather-component-pack.mjs",
+        "scripts/lib/verified-protected-progress-components.mjs",
+        "scripts/lib/weather-state-epoch-input-view.mjs"
+      ],
+      "resources": [
+        "data/live/coastal-parts-v2.json",
+        "scripts/build-copernicus-target-registry.py"
+      ],
+      "dependencySurfaces": [
+        "03c6b21fbba8bedf4cbbb8f0bccf2389e24cb3ee0f2845242407603839175254",
+        "075d0010dd3f934468e7abb0f33e7f0982e26777df941680a4b931cbd77ba6c8",
+        "08b64041a319f2ed029c66d07d298f6bbd55da05b3a2ebf2703c9386a5083a2d",
+        "0f110ed180f72542392e648443f14b2ed4a4c1f1427e67a570ecf082691f9b68",
+        "1053c68b9d45f45e633a2ca7973386d3f9082be67b6c6130c8d8e053ea4f6dea",
+        "1347cbc55274c397be2e9dde937f70319a7d0e7836c54721039857f41dfc8651",
+        "157b7ca5b24cbedf1352a610e8ce3426effcd33adb716309cfad3425fd63fe5a",
+        "22371c26c2c0c2cbcbd3cad7c69e99145b4e4c9583a8932b34d50b8cd9c5577b",
+        "2fc66b5f157431e7f300697c731c8cb1ea61aa4c065bb685401b70934f0ad58e",
+        "3510b18b628ce6b956e974c26dcb4e0cb65604c53ca2c038725ac05d9e7b846d",
+        "3783bd28157e6f1303e227ef9ad9f90aaa8fbd69df2452bef49178fc6c27a438",
+        "3ba3bc92b3f83b88b8271e1bb19c0a3e748dbb5b7813e8d4cc8a6c81b135c285",
+        "4418ff56e90b4aa4d463f617b3db53027de6b36334657265a43da2e70bea69b4",
+        "4803559d3fa227bed1a679ec64643ad16a9887b77958af3ab127bca9db90a307",
+        "494786cd4d86906f41cd170e5729260922adc5bed289c656c9db14cbaa872ab8",
+        "56cee701519d567c66384676d724fe284b35815d841c34e05b4a0345d02da994",
+        "5a38311399dab5e9d148c37f080d2615780e1c99fb94c6347716be4d92046c2c",
+        "5af48f8bb488079494ab8ad3edc579d4f0c4e5d78f15f797686c8de2e1db411d",
+        "6f4e19146fc3da0617717d6c18b8964d741464a8353654d15d3564febc61ff9c",
+        "767d6586bcfd20e4cfd59c5e357c8b982790e97f8e31d1f34a13efbf413af127",
+        "799615de6c3d0d0a64bc6b837d14c2bbd90fd71279464d444cce6475196b9546",
+        "7d91f35d427890d9f63d344b53cc828eeb05efb961a0f9754cc7249a28e6b1c7",
+        "829051448212626b13400569157f66552ccb80d11ff2284e70afd8e82be3cef5",
+        "87b59296ece7519a351b0ebd4be0b5028a1886618b729981dba970d8f439c349",
+        "8fcdc8401e77b63d279884c2b454a65d12ba3bf64a65d12b0eb4a93610400e4e",
+        "90ec050dde8904ce76b6ab12ed4fb9132ae8240b1259407ab38481b41a5b1af3",
+        "91ae1aa5ad734263b55b50e9fe6926faf89ce3ae818c98d2a81c34605b409294",
+        "980b6bd60d4abc641a0475174115960d68591ded8695bf55ea911f44a5bfc29c",
+        "9c854d71fe09994ec25e3f93872ba82e20e8839ce3b74791e7c2feca7bedb5fe",
+        "a9bf888f4ecf015421324ef82e1c7bbc55ec4b876a721439f1b706a4161cdf9e",
+        "ac172b8694ed55d14f2fdf877b67997b5b0c718cb7d6f253bed4019d3b19e8ff",
+        "ae4c58c666e13db75653e337f35ea79c64f7c84f608e9c0a34e565376776e6e1",
+        "b088e1752785835e4f94f461ae5e31b7373a6d159ec5ed6cb1487d07b305ee9f",
+        "b7f34fb37a33c6c7a4a3b0bb0886dee747c9b4996fbb6a98ac151c57cf6ed74d",
+        "bbb075f14671c776088aed16da545783270eba04fe851ee2699c7d68c46d6007",
+        "bdb18ea45a2a6b3b34928060a9a675b2dcf27f094db36187286854d54c1fdf63",
+        "be65d2a8fd5939b942c372e9cfc1a8e5620b4d9b56deea2069e15d539e0722ee",
+        "c151737c8756bf2dd2c82829fe6364f4b3106223fa477d51dc77e6a9b90f3488",
+        "c460e73cf5917661ef27192f7e9b0b3183216da93095a28a00203e84fa157501",
+        "cfc62dfb076a2b109d1233795fbe177d48441fe9d0677bbc980693a8b0a386c7",
+        "edf6ef920b7dbba2c2f2c75563b8a5f29fd8b15071b74311dccf13242202512b"
+      ],
+      "bindingSurfaces": [
+        "02ce297516202ebe517788eb985b5240347df0e25247adb4153ce92f0e4080b3",
+        "0535be06cad1377243606509204b815fb09dc551ad5c7c09ae9f30f5022b45f7",
+        "06ff22f534e9049044822f2ba66b6c0299de7f8d97024bb200f3c1773f3b4dfc",
+        "07d8e46de1557ed136c844a1fbefa32acad781dd59a250237a2f7ef51ed1fa7a",
+        "0825fc8aebff1c6c48dfb899ffee1698d525a9d1b910061e1cf1717c6fce1edb",
+        "09ca4d3463f253c5b479fea2381eeb75900e6dc3704c7ea0bb3e5a426e925ae5",
+        "0a555d57b244a3c01c780bcae90602ed8e531dc41fcbc57548345375fa2d6536",
+        "0bd9f04399f1654d8b3ca0da8870d95cf1fd557c826aaba81ea72d0b2139e3bb",
+        "181ee3a008407677ffffdb89988b1d9073ea6bfc2abc78a1f536cf8122b3594d",
+        "18c1b6be3d95a42161aaf21c137532887113263d74217328c7e61a33df0c62fd",
+        "29c6d666ca5ee2f720503a8d7f37c7fb67c5c6b77559112a6b6ca2e9a63964bf",
+        "30ff3d5c1271931c6541e3b4b61eacfdabc744694b15207d96f20a94a972063b",
+        "3229f654b4ddb8f24e99df8f766ff5109b8a2a6f8eb9bf52c51ab90843725f8e",
+        "3a069baf7f85c24ac273031437cb954b428af5f570e4303e009c2e95da2b893b",
+        "3b090d17d8086e3c98cb34d4e602b3683c01658b645c25eb874a392df2ffd019",
+        "43d1d8d217a91cc97fb6d394489f67fc1818e955b0289b0559cca7adcf6ad168",
+        "441b61621a44ff224464c719d7b4da58de27c3fe15adff33e53c22cd09bef94d",
+        "48d28cefb52cdfad952e48c41bb359aa72ee18fcff219afc7a7a871a7f9b7936",
+        "4b3d2a6d1a15cd29a000c88bda94691c69b8efee26d449c6cf40cc66fba042bd",
+        "4d5d93f1995b4b4f3852baa77669b133c21ad62e68343dca0e5697104b0af6e3",
+        "565223f8f7079068bed989bfbabf6f89729cd760ed5c55dfd88d3741be92a77d",
+        "579cfe4c2cfa692708918628cd7407dccaebcf89c07941d729a56c2c0a3546d1",
+        "5b4289e1b1966181035495e262781b670667315186a9b0813b847fe19a7bd2d3",
+        "7960a2b2ee4f8735f4ed4669360e341ae795e07a881ba767ea75dbacd7b943bb",
+        "7f14e148c352031c80f96bf1cd574925ab05094fe6af136ef55faef0bbad35a5",
+        "82da6cb2cd24b0d4ddbf987e71920e8a9d878e31d9596c7720dab92d0162a571",
+        "8418495c745eb3b23905f2ca2575b1a57485f538e5c792bba650369a8261f94f",
+        "850799ba92a3ecf0ba34c0e9640e8056a6e66f58539b66009ce02c569b8cc481",
+        "85d3d2e284f0e2c60626ee1e35bd0a5e1e9141ae53a8ba90e503bdec20ff5ac3",
+        "8702f817c6e20cd0697404f17d73c5095bc71c622fcc851bd9a4aa6af746dbde",
+        "8a4f01bd8f396647acb9985368880685203101306a91fa4d40a125e735a49771",
+        "97e6a1a0177e8899896b6118b51f899004b80c866e92b6853009de922abf6f68",
+        "97f24f6e6f026050a48523f89520c2ee2f218643ebdb2675e2656b2806f7dc48",
+        "9b3e8695c4e139fabf566cad7ebb96ab518c5bd71f261534c36ac62b86f02c51",
+        "a2c42651a8ea8e5b18c89ff953974b6b78c672d6e5c7366a910ac0e3e1771a11",
+        "a2eff671d32d3345d7ac7bc0c84636c0d97b222c8ffeefc76ddddee76b5664f1",
+        "a4ce05a2eb111023849d448be17b060845bef5c53e0cbec4036a4df15dfd21c2",
+        "a97e0d6e20f7e403e7b8d88fa974e5559676405565002798c3b33e49808ed578",
+        "aa05a17a17baa00c602a2d1228505fc29ba071e3d26579738ca16c35cb20dde5",
+        "aa1d30233927d34fa8a1f5ac461081494c038372005138a8be6327e32381226c",
+        "abbb6b0ef57cf650c0b31f849b3af185a8b6983645083398598968a8ffeade36",
+        "addc63822b9e2eccf7f7347279f3a5438efaa4cbdf426bc858887a4e9ab4b50c",
+        "b17b8a1f3bb68b40d54a4632a942e7020d7750426ba1e5059f45a3a815a06969",
+        "b778db4c9ae0dd44741227a2f13363c170de766c093dd1dda918d772eb1b6d09",
+        "bb6be4e092018798ec1603613c49eff35e4ade17007569197a600527f82c66bf",
+        "c30cf80562591e3dd55a5dc0b3f21735586ff6ec9cf28cd09498831b14f84cec",
+        "c49481cf91b5b1271465a5558c5a21f6e2bdd4e18b5dc0851d77f6637de8d796",
+        "c8e63ad79d26377a1eb416f7ab3aeb5d91c6daab43aa2cf518ba197099f5a876",
+        "cbd39f8fb40cb9d944de80ececc36467b43adb58f9d713ed5c4d61740e5622ac",
+        "d040c8761a23c589320d5b6e1e31557db5a6a635dac4dee7429ee57aa5063dfe",
+        "d71d6b30dfd9d445e3b72ae6e6e4e687255d755d244294bb286fef432b69d3ec",
+        "d8caf66f1ae105373510699514992780fc3d2b9620ebf69cf68e9140f406c010",
+        "df7c270c3d0ebda0997b6171c1a2a22f4bc4c4ac5007be263d7a247a3e71097b",
+        "e050c25e5381bdbc7519e0bec1e631c48100e246d717714232cad2812532fb5c",
+        "e3dfe5f72b05613481b72cb052abdb8a4402778c9c781c1f8297bdb264e6e913",
+        "e460ca4b59204535f86c1d34446956c70b3ba2a16f2c83a2e5b03244a25a161e",
+        "fd1175268f8752b53ce9dbe4ae4b2d2f7dedd25717f61771d916288da0fba165"
+      ],
+      "computedBoundaries": []
+    },
+    "scripts/lib/verified-protected-progress-components.mjs": {
+      "nodeImports": [
+        "node:child_process",
+        "node:fs/promises",
+        "node:path",
+        "node:url"
+      ],
+      "imports": [
+        "scripts/lib/copernicus-offline-environment.mjs",
+        "scripts/lib/open-meteo-forecast-window.mjs",
+        "scripts/lib/open-meteo-part-bank.mjs",
+        "scripts/lib/private-weather-component-inventory.mjs",
+        "scripts/lib/private-weather-component-pack.mjs",
+        "scripts/lib/verified-dmi-progress-inputs.mjs",
+        "scripts/lib/verified-open-meteo-generation-union.mjs",
+        "scripts/lib/weather-component-needs.mjs",
+        "scripts/lib/weather-history-retention.mjs"
+      ],
+      "resources": [
+        "data/live/coastal-parts-v2.json",
+        "scripts/merge-verified-current-donor-banks.py",
+        "scripts/run-copernicus-weather-components.py"
+      ],
+      "dependencySurfaces": [
+        "0c189bc34a4c38d87aef7a32456a7cc5fe95c1c2849d91bd2d0b9ec920ba3b60",
+        "14d564038323932f306372f3835e64e200b054aa5f1925d6dbb1904207af78f4",
+        "1d68ca054e570d7fb1722423745bb1e9e3a80145698059595d9f86e65263e7cd",
+        "384cc070e88f9e0296da36e1a9eef01a1f38a4040118b80fb7b2c41a06d4fe58",
+        "6332b3df0c5a1f000f58d56982e8e59503f7b6da5e024e983f7d7518be1d0857",
+        "69416f8ce670198b58a65a6cec917ab17666db7698260fd80b8a25cbb52d1342",
+        "73c447fa8d2c7ea088a1acf16ca72b848baaf771d81d46b025e6c77e17b3a2ff",
+        "8373f6110b94d5ab35a303acc153ae25b23c946612ba484d1628d08a58eebeb1",
+        "865a480b271f3e8ab732300f24981e5627b06c32a80f6bb64479fa3ed2cb172f",
+        "994dcb8f5f74938bb1f4206f3f625776bcafe2d8ce5db3b8096abda22a90da46",
+        "a1aefc7116afdd068f17fda9a586f6cfff2d604b3eb37d17fd921e7ace30d8d9",
+        "b2d63ae95d1438069f33e4564343d0d107b22a7f76ff9a2bfd74f021ce248175",
+        "bc863a0f1f11b155af5983340d1268f2fd594bda44efcf5adbdf0c68e74ea639",
+        "bf8f59d0c2ac2ec4951036452e9ae9e663b59367e25c1599ab2e291723eb04c1",
+        "cbbf1e730aa630f8874a0f996ff835694990f01308d1ea8f8c84f6ed6668fbb4",
+        "ccaa54c3cf2ddbbf8ad40098856bf9a78f69018af2d0aaf56a07d692f381f564",
+        "e8422dcedfac85ae8a4191aa4ee8b61f2031c28a0d724863e367d05f71bf2e60",
+        "eb2b702d04a4b45073317af422ae7ef5908bfdc980b3fbd7eba5d41c5f483eea",
+        "f43fc78046a423a8ab15f166cad3618eeafcc104fcde802650bea61fa1a55e58"
+      ],
+      "bindingSurfaces": [
+        "4d5d93f1995b4b4f3852baa77669b133c21ad62e68343dca0e5697104b0af6e3",
+        "4dae992d2d1262290f5238388f790173516afa73c9c0ffb0ee39284bdf15131c",
+        "7e5f6bebf86d0e39fac5f56d7acc856e266e31640d7702b6f11d5db7d12f02c5",
+        "8a4f01bd8f396647acb9985368880685203101306a91fa4d40a125e735a49771",
+        "9b3e8695c4e139fabf566cad7ebb96ab518c5bd71f261534c36ac62b86f02c51",
+        "ae6af3b785a3bd0a25330e9ddcf7a651b2fac877c1732ebc28480ec6ca1b05c7",
+        "ae9d7b1980f299ffd788409c22387535482054229e929c1fab7e19457bd9140f",
+        "b67f4799e05a319e346355b74288378d19e7cad696acc095901df291d89db4c8",
+        "c078c3e9733023c58fa1bc990d0bd0489749e08dadc3137d43e6c6d41e81148a",
+        "c49481cf91b5b1271465a5558c5a21f6e2bdd4e18b5dc0851d77f6637de8d796",
+        "d43ccc3002372c98671c93bf67654f944e96ec14cde466f5d1dd13342090a09f",
+        "dec4cfb8193a7a3e7178d371957e42d770c46d9f6ec257f33ebfe9ce16334868",
+        "e022720155c4e205ddd612270820c50fd6c2d2fd2e375d354fc7a0f8ec949dd7",
+        "e830d484abea96d0f2eb4f6f848db2c3ea267a01b3e228bb35252ee558581ab1",
+        "f9e9e685abada5a99e4bc771a5b2a53e6334f22a07a3de0e09b690cb410593da"
+      ],
+      "computedBoundaries": []
+    },
+    "scripts/lib/weather-history-retention.mjs": {
+      "nodeImports": [],
+      "imports": [],
+      "resources": [],
+      "dependencySurfaces": [],
+      "bindingSurfaces": [],
+      "computedBoundaries": []
+    },
+    "scripts/lib/weather-component-needs.mjs": {
+      "nodeImports": [],
+      "imports": [
+        "js/core/ravscore-model-contract.js",
+        "scripts/lib/weather-component-selection.mjs"
+      ],
+      "resources": [],
+      "dependencySurfaces": [],
+      "bindingSurfaces": [],
+      "computedBoundaries": []
+    },
+    "scripts/lib/verified-open-meteo-generation-union.mjs": {
+      "nodeImports": [],
+      "imports": [
+        "scripts/lib/open-meteo-part-bank.mjs",
+        "scripts/lib/open-meteo-usable-part-bank.mjs"
+      ],
+      "resources": [],
+      "dependencySurfaces": [],
+      "bindingSurfaces": [],
+      "computedBoundaries": []
+    },
+    "scripts/lib/open-meteo-usable-part-bank.mjs": {
+      "nodeImports": [],
+      "imports": [
+        "scripts/lib/open-meteo-part-bank.mjs",
+        "scripts/lib/weather-component-needs.mjs"
+      ],
+      "resources": [],
+      "dependencySurfaces": [],
+      "bindingSurfaces": [],
+      "computedBoundaries": []
+    },
+    "scripts/lib/verified-dmi-progress-inputs.mjs": {
+      "nodeImports": [
+        "node:fs/promises",
+        "node:path"
+      ],
+      "imports": [
+        "scripts/lib/dmi-forecast-file.mjs",
+        "scripts/lib/dmi-forecast-store.mjs",
+        "scripts/lib/dmi-wave-tuple-proof.mjs",
+        "scripts/lib/private-weather-progress-files.mjs",
+        "scripts/lib/ravscore-production-adapters.mjs",
+        "scripts/lib/water-source-forecast-routing.mjs",
+        "scripts/lib/weather-component-needs.mjs",
+        "scripts/lib/weather-component-selection.mjs"
+      ],
+      "resources": [],
+      "dependencySurfaces": [
+        "04b0074924aaa1ea840d9fa79206078b5650b0a5a96602dd75369e1f6e2d5839",
+        "0a3995edd1d98043222075551ff517319b6905c7d73e0b330ae658303a3ffde6",
+        "0d5c35f9f0b366276e52ffb60b484b5d3d76afa690400f7ddf1ed598e2956e37",
+        "61759fcb7e77cb97fdc403e0ad2580df33a7ca521dc5f97472e286b51a1c1e56",
+        "8e5c48ad8853815879e10b41a1808c51e68e60511bed54c6c4f8f416d0a7ffb5",
+        "9b59be1707b4bd72f82648046ee0a58e9ed3eff51554719f6b857509f240d6b5",
+        "b54d9af1d3c8b9d3880716863ddf8c21e6c416b5d1a28032cfc366c80db04a45",
+        "db561bb6bc5005a0718b607b4ba12f9a7c95689e7e720538ad966dbc3fc9db4f"
+      ],
+      "bindingSurfaces": [
+        "21f2fa4e01a158e2aa778b39e7b54ffeac93339edbc497bb40b7f737b2bf34e8",
+        "2f866ac40d559a2dd7dae3b0f4f82ab6028b083d650fccd6fcd5f47244853b08",
+        "71f22fb343730c5d686632b45f3aee24fb43ade0132a1ea0ebea786dd9206b8f",
+        "8a4f01bd8f396647acb9985368880685203101306a91fa4d40a125e735a49771",
+        "9b3e8695c4e139fabf566cad7ebb96ab518c5bd71f261534c36ac62b86f02c51",
+        "dc7b74c9b9d0b22a9ae40218b9d940f2802788fac0d50064f8ef535daea6a885",
+        "e561a8a7740f3e183fae2165a29ea09ed10a537b915cc61abb9f37a4f2ff7646"
+      ],
+      "computedBoundaries": []
+    },
+    "scripts/lib/water-source-forecast-routing.mjs": {
+      "nodeImports": [
+        "node:crypto",
+        "node:util",
+        "node:zlib"
+      ],
+      "imports": [
+        "js/core/water-station-routing.js",
+        "scripts/lib/dmi-forecast-store.mjs",
+        "scripts/lib/dmi-marine-zone-exclusions.mjs",
+        "scripts/lib/fur-water-routing-diagnostic.mjs",
+        "scripts/lib/water-source-continuity-contract.mjs"
+      ],
+      "resources": [],
+      "dependencySurfaces": [],
+      "bindingSurfaces": [
+        "da155bb886758bc238a60b1c4cb58a9aecca9e2d22dea071f2a1615e070c4a67"
+      ],
+      "computedBoundaries": []
+    },
+    "scripts/lib/fur-water-routing-diagnostic.mjs": {
+      "nodeImports": [
+        "node:crypto"
+      ],
+      "imports": [],
+      "resources": [],
+      "dependencySurfaces": [],
+      "bindingSurfaces": [],
+      "computedBoundaries": []
+    },
+    "scripts/lib/open-meteo-forecast-window.mjs": {
+      "nodeImports": [],
+      "imports": [],
+      "resources": [],
+      "dependencySurfaces": [],
+      "bindingSurfaces": [],
+      "computedBoundaries": []
+    },
+    "scripts/current-family-cold-start.mjs": {
+      "nodeImports": [
+        "node:assert/strict",
+        "node:crypto",
+        "node:fs/promises",
+        "node:path",
+        "node:url",
+        "node:util"
+      ],
+      "imports": [
+        "js/core/ravscore-model-contract.js",
+        "scripts/lib/dmi-bulk-storage.mjs",
+        "scripts/lib/dmi-forecast-file.mjs",
+        "scripts/lib/dmi-part-continuity.mjs",
+        "scripts/lib/established-native-current-origin.mjs",
+        "scripts/lib/private-conditions-hourly.mjs",
+        "scripts/lib/private-dmi-recovery-record.mjs",
+        "scripts/lib/private-weather-component-inventory.mjs",
+        "scripts/lib/private-weather-component-pack.mjs",
+        "scripts/lib/public-hour-delivery-pack.mjs",
+        "scripts/lib/weather-state-epoch-archive.mjs",
+        "scripts/private-production-runtime-bundle.mjs",
+        "scripts/private-production-runtime-workflow.mjs",
+        "scripts/protected-private-production-runtime.mjs",
+        "scripts/protected-ravscore-continuation-checkpoint.mjs",
+        "scripts/ravscore-continuation-checkpoint.mjs",
+        "scripts/rollback-assets/ravscore-model-contract.js"
+      ],
+      "resources": [
+        "data/live/coastal-parts-v2.json"
+      ],
+      "dependencySurfaces": [
+        "016aedd763b60089157dedf932bb3c3a837072c8084915b7378560b97b07f0e5",
+        "033d8b059afab43d36bca552d0b8fe27d7e4319db69a1f4b8d4affa352bac64f",
+        "04cd9e37b4962e83d1ed5562db83d8fd70055752898473cd3b17167c56f6c076",
+        "07995f7b63c004830de44ae553dcb229ba13f9b3aefe0d50748a333fc0e5d924",
+        "08bb531476460b0afa422a2f5d8c190007b708a5b48a2d4e90f6354379904207",
+        "0942d879cccd558f1e9415085bdbda3c2c887f55189b4406115a9b02601ed5fb",
+        "0cd75c0b98dc5d2c9e6621861484b49cfd28be6eaa88bc3a510694ead5da4fb0",
+        "14416279cf42957b586b4098366b776320644aeef69e1b62a2224331e3209bfe",
+        "153349d5a8c928c589c086805f48388acdf1e6e9ee61669c51c8561051097743",
+        "15c56f2bbb8f823807b1d8a0d173c8ea627df60191c2331e398d990c9873748a",
+        "1ec2555f55b2734f92666e939dccec53ce8f1625414c41cac6acc82a7cf99721",
+        "1fe4c67e713740d27d5d56abd8aa400413d899e8d69b6c31f2de5e60e0049168",
+        "2f90b205353cab19f63bb04a209879459f65af97e66359a5e440ebe63f3a365d",
+        "304dbdbbced9dbe4ed8c4e3e0490c418f6a959270f3a7598a9a8d5d86086eee5",
+        "30a564fd56d092a09449fd22e7dc16dbf692328599a198248cb026c7156ec9cc",
+        "3162e4192001f6c4a435491cb26fc782fcb248826f13d3383cc4ae67a9317faa",
+        "3315d1b54cb57a1a65b3db9678591c3efb086b9e0f7e5dbd5cfb6e23a99c87f2",
+        "442e1507b3e3e8e7c4ca60f773e06de0c15022a058fa725a7fc04090ec3416fe",
+        "44f5c1e7ac8af00795e7fd50b3c97eeede66f9926feda028b97d05796d6d3291",
+        "4fb2ebe2982f228d9aa91bb9a36be6b1a2914acc73f35e8e177c65b0f62e3ec1",
+        "555156d78aa74d39f87f510a9794bc3433b3f4420df7c91d030e46c50a8cd2ed",
+        "5ab72f5722fad6872fbe80c1d40b487f2e9c99bb6fd0236c081792619ba6cb4b",
+        "5ee3fc0934e0a0b0b9206f1cef3ef89579dc8b403006d7a673c5bd222f8d95a7",
+        "6051cf789336e9e4d156a684081dc394e9254ed0b3a4c5fc9eab01776c7d1015",
+        "607a73489518a68f61fe8c705e58fa1605b443f5cf4ebdb325efcd2ec67a497e",
+        "649228e7d996426e8b1196ea7407a6814b8bcea5006126cca4c6e0d68118852a",
+        "64c9ed637f33f9b3a76f979bb905036f9bb79ced1fdef1d6b829b566b12991fc",
+        "654395090f632a07709158330216447fe8efd15333d96b3ab69115a5427f340c",
+        "6587ceef85f271c78835f08ea5085bb13734ae6eb37ae5550211cf38eeddb128",
+        "6627af17d060e6af61861198447be07eaa03e137d4f258447b7871fbd1151069",
+        "69817c9a1c250dac99c2c19e989679344bc6c2b64fc688db7828bb4d74f09b99",
+        "6fb4f6698a77d1ea5da9fc06d2bdb3f9dab0ab04a039184725d63a7488660274",
+        "7302b879814915a8538482d189b511cfe90fc9fff2b70c488ddf89f92e8a2bf8",
+        "73a72b6191afefd279aa26c17687ced5b4bb800aa6c5fdef92cfc98e826af611",
+        "73fd4bf0715b8cdf2241a7ec7042dd51934c69b0e763d953ccdd8976d4eade9a",
+        "796a70b49b0f514369287b62a1c4b2dcb03156bd89608e23b9ec5bc62d8a0bb6",
+        "7a53ed792ebd6b3087d3b799f002383d31fa26c50e044e15fb5b83d9caa00ab8",
+        "7e6a0ac8f930c909604a27b17d26fece40dd4acaa42e3bfb2f53ff912eeb873e",
+        "8f1b19a6f3797aaa527d0c6682457b958eadbf70210b725739c4e357ad8667cf",
+        "94f83b3bec89614d2a8b91fad4a49c3fd578ff5683babcd9f2efbdb549aa794c",
+        "99c42ebb9ed7e5b5b7d095d096a94fbf612645270dcfdb3dec3a38ed9788119b",
+        "9fbe751e177f78fe39e9e97247379de0c6b2ee3015b1c88e134b30667c457c23",
+        "a2d796c61df0b185c8098ff87ae3b753b51a664b344cf2c91bbcf953b264501a",
+        "abfc1208347fd6ba2961cd446ad21713d670a3974fe23d33d10550d9184e250f",
+        "b385fa4bb65b47ca4e58f45cfd437af317d18f7f3b35d7c301d2d90a520de9fe",
+        "b842031125b603370b06a783672449fb878b27aa28953ccd745c3c9e46255aba",
+        "b90b0fee3fa852d575879fd78666ce82d604cef36bbb2ba18d36918fb249ce7f",
+        "bbe9556003b0d9cc30f51a2ff1991c7e1bd7281cd4496ddaa8613ec5279fb6d5",
+        "bd1993cdaa4dac9417a01ec2614a4ccf419f5ac62d1624329a8fc2b6d66b60fb",
+        "be824c18e90817bdaed3f7d093ab26a702686d6ae704b291b0369dbd0b6f29c2",
+        "ca24a0973618fb162367f7930c62d74100343c028a11b2daa57dbeb0904fbe0c",
+        "d2687897780aa4dbebe2cf6573b9836912f7347ed9891c87a559edf235a28554",
+        "d7689acdbe87d74e74a9a3db0653f36765f7da0a5f8bc7476388b3a569a2f2bf",
+        "d7da9339a25ba447b0d0f4fef8cdbdc7dec3b0df8e2b51e782764a57ce754ae9",
+        "dae2b2578f8c58265e216957cba8629d3c2081efa6f75d455d8783d3c3e1598d",
+        "df42e8380a779ca4c9d4873d316a92abb768c3acb388f8a7025cb85526992bc3",
+        "e550e1a24fbc1299027c0c099aa904d6a71a50d288281698e8248630a2b1b78f",
+        "e7cf457d47509dcda0ef35132cc3f3cdecfb264d963a7a98e5feb2166a5f5950",
+        "efabf8fe56b79995893edcf420e08f370c3808a2f3785d89513c19570e9b3f8c",
+        "f06d99ec304e8a0198407a8e243d2fcde4f4ca7bdd3a3b0f93c50c7df391a52d",
+        "f3dd1ec6859fd77bd1ce65e8a48635971b630f042efb31d40b70857165a103c9",
+        "f42baebf84aa2d7d7aaba981de474d53801a9eaac95afe324d6803ad90e20fc3",
+        "f6efc14616f972c299a910c43854b756fb52688dd3f4e74c321d7e7961cc7100",
+        "fa1e07ba56efbb980a834760bcd3dc3c4d6d38709b5c2b18b4c503b02184547b",
+        "fc186193a7e57430c03cd674669a5b719d5e461edd8df14165a46d558f3b7a32",
+        "fda019fd398068544fd2319f60df9e2da93ca83deef8d359f74f97be6e4b02e3",
+        "fdc802f61c483549e78ba06f2d98ff8bb1502e259f59461c11029c1e62b65645",
+        "fdc9525150502db8c01344faf86b88f1edcaa5b83307aaec997a3aa760631ffb"
+      ],
+      "bindingSurfaces": [
+        "11754347f4326fd6f4fd9b2c58a49ea0e68b7baeab6ada2aac63c812bfa2bee5",
+        "15194caada85b19e49cb95d5d99e843ba269c866572af357df1e2720967ea277",
+        "345c9128ea75324fa5fedc53e25001bb323dd12373a354e9c41c8e690a8b743c",
+        "4b14beebb1c0a7818086fc93d933c2f97d205d6ccdc25008eb7bcf3c46fa9765",
+        "766f5a0d37598a2af762e33be4dbcdf3278739b4bde4b2f5899999fcd0a3bda2",
+        "8845b7a683c16084dc0391b3893ecc17660abea1606d8ee3e65b17da735e5472",
+        "8a4f01bd8f396647acb9985368880685203101306a91fa4d40a125e735a49771",
+        "9b3e8695c4e139fabf566cad7ebb96ab518c5bd71f261534c36ac62b86f02c51",
+        "ae755a98753c9dc8aac2039f6632c1b39cc93b125e1da70f999061363feb1e98",
+        "b5e1d9e8f806d4e339ea2b23f1b36c60dbb10c51c83e92bf37831789c6faa600",
+        "b8903b3871d54fd8668555350a25bb5e52eb6d811def69aadd1fcfa37f1d4f02",
+        "c1a469749d7e9329c7bd4ca6cdbb08a65a6ce31ce718bbc0e659edcbd86d7eff",
+        "cc8b89ffbd742761bb77cd9066e385a63c62fc1b3ad4e878f87457de650c6b86",
+        "d89008c562f4cb1aece6de354624662b814a16044654bab2856edfd82f42f6d6",
+        "dd399bb2ab0aab6bb34da17c7556197d68e8153b0be864c88a94903bf5771d06",
+        "dd734419d412415e5d5b2923a7a7cd4b47c9c098e736bbb02f4dd71832bbcc43",
+        "e01d8d09476cea5c6022feec2a97e596376c745b405880ebb873d572652454c8"
+      ],
+      "computedBoundaries": []
+    },
+    "scripts/lib/dmi-part-continuity.mjs": {
+      "nodeImports": [
+        "node:crypto",
+        "node:util",
+        "node:zlib"
+      ],
+      "imports": [
+        "scripts/lib/dmi-forecast-store.mjs",
+        "scripts/lib/protected-dmi-native-current-proofs.mjs",
+        "scripts/lib/ravscore-production-adapters.mjs"
+      ],
+      "resources": [],
+      "dependencySurfaces": [],
+      "bindingSurfaces": [
+        "611d8cb456c1ae9143d99c7d0c462ca6910fa5c6c536bd0aaf95e7f7818b783c",
+        "970fbd366d5895a39e2f19bbd7b35c0c91cc8000fdabf9c4746cf7108d88d0fc",
+        "9ac0145de1f8b9845b6ab935d965c0c58c6c873a03dd93f37a3e63e50796cfd6",
+        "d0532ef2f6a57767fcde939b5526573cd7b2a7ea6add170fdd76596bd7658f79",
+        "f7e0a9651200faecf76faecd8a9632e2481ed2db4bc7a68238a6d4755bc02e92"
+      ],
+      "computedBoundaries": []
+    },
+    "scripts/test-sealed-arrow-score-audit.mjs": {
+      "nodeImports": [
+        "node:assert/strict",
+        "node:child_process",
+        "node:crypto",
+        "node:fs/promises",
+        "node:os",
+        "node:path",
+        "node:test",
+        "node:url"
+      ],
+      "imports": [
+        "js/core/ravscore-current-supply-memory.js",
+        "js/map/current-arrow-land-mask.js",
+        "scripts/audit-saved-weather-inputs.mjs",
+        "scripts/audit-sealed-arrow-score.mjs",
+        "scripts/lib/dmi-forecast-store.mjs",
+        "scripts/lib/private-weather-component-inventory.mjs",
+        "scripts/lib/ravscore-production-adapters.mjs",
+        "scripts/lib/sealed-arrow-score-hours.mjs",
+        "scripts/lib/sealed-arrow-score-selection.mjs",
+        "scripts/test-sealed-arrow-score-persistence.mjs"
+      ],
+      "resources": [
+        "data/map/current-arrow-land-mask.json",
+        "js/core/ravscore-candidate-g-state-pipeline.js",
+        "js/core/ravscore-evidence-trust-contract.js",
+        "js/core/ravscore-model-contract.js",
+        "js/core/ravscore-public-model.js",
+        "js/core/ravscore-public-runtime-contract.js",
+        "js/core/ravscore-public-weather-source-age.js",
+        "package.json",
+        "scripts/audit-sealed-arrow-score.mjs",
+        "scripts/lib/coastal-point-staging-contract.mjs",
+        "scripts/lib/live-current-pilot.mjs",
+        "scripts/test-live-current-pilot-4.0.232.mjs",
+        "scripts/test-open-meteo-live-runtime.mjs",
+        "scripts/test-ravscore-public-runtime-contract.mjs"
+      ],
+      "dependencySurfaces": [
+        "24428967df6ce344149644d1a8c47a709a683c328964b9af5d4b3b7a4af6086b",
+        "4daba32295d3295916eac77e92886bd024b7944fe1972f5b9be6bbd488de7710",
+        "5961172d37d8e7768495448fa62d4374336f8dac6851395880a01d2f8c16f25a",
+        "62779cf4d4f48452096d1c5e910ca826228f903916f789cba65faf697f2cd53b",
+        "69769cc7a15a06c3ec81540377fc3b8d29318a62905f0148b5c53fa80590079b",
+        "6adb3dbcbbe4aa34bc7a9a6091321138d8182987bb19fea3903c913c1895083f",
+        "6c923924d7914ae308e34ff6027fe60e0be116cce0bc99163e14c74eebc2a895",
+        "7500264c829b91b53366f19b2b4b554bad0d097baa532edda321a47f4904e805",
+        "8ce2d8aa84609b0833b4dbdf9dccc9fbe804f8a6e6c6b7279c6c5e887dc7bbe5",
+        "9944f5b4cb7e3ab9d24b13b8db27d2dbdd16fe155f232866c54d31ebfeabcf77",
+        "9bce75f3f6102c078cd050818e123472ad75d5852168d727873b8ca3a9f6ee96",
+        "b04fc3d562692bd34e1abd50a553f6900f06bfad33371214e81d218cb3c34b54",
+        "b557ae8767bb7753886f62818a5438e5e16c8d9db599df572cd25964fa281cba",
+        "c4d3e0ce497d6e0b988fc6ad60754d4433d962483d35e7447fe80a07c71dfa88",
+        "e2f7f3e49dbcc5351b4c5ba05b692f76cc1ed21d9ec47f7b2671f23b0772f051",
+        "e6824c39c641b7beb7ae3f70583834d8698e1c09f58b1b57ab097f038acf6b49",
+        "eeabced5beb36638c59fd274ea804c68f2e491a952794960ea8e2d0f562c3b04",
+        "f15ce0384034f42fd99a15c534a247d1b71e54f90a66c7fa0f69da818d5115bd",
+        "f5dd7cd37c478596c4dc9a883c793cb4953dc1eccbb8c1ad2d7bb1583faf0c20"
+      ],
+      "bindingSurfaces": [
+        "052b72bf62e462f4d49aa76ed577cb3b5b7f3fb10e49dd82d03d45ac28e2618e",
+        "1945b9358c224a68d4d6074f5589f217f204f7111eebf33d28e192bfad1ded77",
+        "1feb54368c8de06ed162ae7ce1b8ab364717f3ba69f347381b6e98c962795f14",
+        "2426d6cc6490cd7e4546b6a6916b47263d50454fac9beb6da5614a71646c643a",
+        "280fdaccd2ebdaf5d71c356011065e19eb3de7bf2916e9f42e8e65d1afa469ca",
+        "2adfbdd810a27686558b0fae8cbe4482212e4823740cc3adf2d6a2c492bb23bd",
+        "2f0f59b2f0af9c1cb275c898980702b699473bc9302e222f0d089599c6b4290f",
+        "3226a31eccdf3549feb2ceab7e6ddfa98dbfa714901e83bd1304d52647dc8d8f",
+        "3313cbbc778fe6311709ced9047ee267a69ffaa21672089ecd76d2586909b4e9",
+        "35296dc5a5f19094e8e7e93b707d4550dbec42dcf01339380e30a8005288f6fe",
+        "3b107d21a638cd69830ac75ef7b81e9db56616929a793702485ee660b0679b20",
+        "3b3d68b66b1c821407bc38e71efe8795b6510574ea528501caa42c891688e23f",
+        "46caf840a1c19a2a5db246a3fb77127aadf9cee4c333ce679a46594caa08d07a",
+        "50e319ade05df5c23092c41c5f88797bbcaefaf63b8b2d6116860d397e5d2a6e",
+        "5315bba800fd943d43dff78800fffceed63ec44bff7d269a583d3195ba2df9d8",
+        "5a4454347ed3ce2dbf2c103947c1cb3f9f372b0e70e35765b2fcd978b7d6dd01",
+        "63b8f8113a89c10bdc11ec73adf4363c0b96b1597c77f7068489736e78b441a3",
+        "7464fae2f2d7db992564e7a0e1df66fefb74b5cacd2b56af6d8be5dc3839022d",
+        "756d974486557cdc083d1992bf4899a90e31b9fa9a83b3b576539d102be90d2e",
+        "7d0622e26b0898986e77689ef0c0576fc4bd06ef865c94c3e972638ba543b28b",
+        "8a4f01bd8f396647acb9985368880685203101306a91fa4d40a125e735a49771",
+        "8a55ded50f54f0bc7853aa26b5f3457a96181da9e619b1b37d6ffe857328e028",
+        "9210dd903a3afde73326b4e103195f4766cb6d2f45a3148137b2265bb7a71d1d",
+        "9b0343b8d14a79e9f1652231acaa7ca33933050a5af156753794a0f4792c0be7",
+        "9b3e8695c4e139fabf566cad7ebb96ab518c5bd71f261534c36ac62b86f02c51",
+        "9dd69488a5f83d39b3aa1afc4845a37430a53bc5546ccf3679b2f0f2b3d4f61e",
+        "c26a538c0057bd684e0a75bec07bd43badc336c168c6e3b99fab08e730bbc38d",
+        "ca6d33cc6e28f5f57c6e4ed5b16aa66364f809c0f52ae33d7e5d72f83e0a146b",
+        "d4e114f3bffc73a689fb33e69b982d924f7abb6c60a253e06d8f035d700a6290",
+        "de3d36c190310704e14cdf2780e33dff9c116c9030a2905f1f1930c176b82130",
+        "eb33d580fcfe5a8b48f7a3705269e839ba46ff83f613289557ffa80df1d9d17f",
+        "f843750c3cef0cef09fc6d5f6b7d7addb6f6983eae26f9de3d8593a6b5f0f771"
+      ],
+      "computedBoundaries": [
+        "6e940183ca2af11e334cec3fd326cc1f5f0c914d5da6ef713403028801fcb4e5",
+        "91cfd4f0739c728e6993886f8f3cab39564a29438dcf27194b2e35ea07ca5cb5",
+        "975ab4e0e369242c4f63caa4ff66f7957271221cf358ec2d1f087ad2d7cccb68",
+        "eae2e6b04537feca9583701cc903fff7e94c324331d8ff11d77b31eecfbbc077",
+        "f8a6e8b867502b6f257c2afe1be5ed8d8ca8196d7d6d7c6c996b49ddb02d1c67"
+      ]
+    },
+    "scripts/test-sealed-arrow-score-persistence.mjs": {
+      "nodeImports": [
+        "node:assert/strict",
+        "node:child_process",
+        "node:crypto",
+        "node:fs/promises",
+        "node:os",
+        "node:path",
+        "node:test",
+        "node:url"
+      ],
+      "imports": [],
+      "resources": [
+        "data/map/current-arrow-land-mask.json",
+        "js/core/ravscore-model-contract.js",
+        "scripts/audit-saved-weather-inputs.mjs",
+        "scripts/audit-sealed-arrow-score.mjs",
+        "scripts/lib/dmi-forecast-store.mjs",
+        "scripts/lib/private-weather-component-inventory.mjs"
+      ],
+      "dependencySurfaces": [
+        "11f8248a39b16d71af0f254ab33b35392146958f5c6b968fbe1d50b41223000c",
+        "78ed3fec97d8fa580e1b6f57c0e2df8490c6919577ccee387ed51561f93b1e23",
+        "b557ae8767bb7753886f62818a5438e5e16c8d9db599df572cd25964fa281cba",
+        "bf1b772971a8548c16458ac562be7dbf935064115129c1fd5ba01179feaa0204"
+      ],
+      "bindingSurfaces": [
+        "0e87c3b5760ff439e56bd5d74aea112f138c047e31697450787648c97264d46e",
+        "0f3ed4f88f79a39374855e1b841766904e1d85375785ed26545a07706c159780",
+        "1d8adbdc9b7f550ab3157d712e6603df420de5c7506e440f352980cc097ef321",
+        "2b2038f5cdc6a08efe6714a5b970de9a096862f9d57e1aeee2a51c3c2e29a109",
+        "3226a31eccdf3549feb2ceab7e6ddfa98dbfa714901e83bd1304d52647dc8d8f",
+        "6202fc416a5913d366f17de4219f5543151be5e0553225537afd45d900eac6e3",
+        "71e6102f7e8d0aeddc872c34ff9561a211e37593bacd5755209047a6fbeb2a5d",
+        "7f2cb58e597046acbf940e47825010f6d8378506add695e56062b00ba6af51bd",
+        "8a4f01bd8f396647acb9985368880685203101306a91fa4d40a125e735a49771",
+        "9b3e8695c4e139fabf566cad7ebb96ab518c5bd71f261534c36ac62b86f02c51",
+        "9dd69488a5f83d39b3aa1afc4845a37430a53bc5546ccf3679b2f0f2b3d4f61e",
+        "a2d2956c47b96e8183b8b1a7b966ed425430a2a112095eba9a02ff65d66af6b4",
+        "ca6d33cc6e28f5f57c6e4ed5b16aa66364f809c0f52ae33d7e5d72f83e0a146b",
+        "ccc331550e49c797d9eeade055671da72e7ee39393c2ecf20940a86030b1d73e",
+        "e178796e0235f7bd0ee86b8b2050c9c8c7352c2caeca610772061e11ada01b5d",
+        "f01eeac2ef75c058e59ba213abee2b7552bf194dc0305689a372b50727550025"
+      ],
+      "computedBoundaries": [
+        "72408ca4e397a290a1f4c21aad73b3504bfb429b7cb499af49fc9ea164bebd8d",
+        "909dc93a17c2231ab5c953d7ec3c29ae1913465c5b8ee69f13d446dc1b42fe20",
+        "bcc4927a132423731b9760c1167ece5a5cbd302b05765640280cd9cd328f63c7",
+        "dfba444ea5330fc6eb4959b138b20297229610154593111a20ee20e312a82f54",
+        "ea7761844b64eefae586e57666d92c0470718fa2e1e168928198f4cb945d7cb8"
+      ]
+    },
+    "scripts/lib/sealed-arrow-score-selection.mjs": {
+      "nodeImports": [
+        "node:util"
+      ],
+      "imports": [],
+      "resources": [],
+      "dependencySurfaces": [],
+      "bindingSurfaces": [],
+      "computedBoundaries": []
+    },
+    "scripts/lib/sealed-arrow-score-hours.mjs": {
+      "nodeImports": [
+        "node:crypto",
+        "node:fs/promises",
+        "node:path",
+        "node:util"
+      ],
+      "imports": [],
+      "resources": [],
+      "dependencySurfaces": [
+        "3c498c796018f1e8a907ddf897782598abda0ee61c913dd7dbfe8985b5c2372a",
+        "9d1f91fb40e7ea973ffca5ee0cde7ff6100e16aaf3cab7ee8476cbd18162daec"
+      ],
+      "bindingSurfaces": [
+        "11c6dc0bec3879e1f8f8b68ad8e88c728a5ec6599ebb48b9914315559c190508",
+        "3c9dbfe1581c35bacc6431fead8d240f322c28122259590d5cb8568f380daa2c",
+        "670ba7361886d11ba79e6b29bde369705e4d416cc5762ed05c62be91ed422606",
+        "6df81b027cf352a4b51cd6dc4ae7546caa274fdbe8501511964827c7e206c6c8",
+        "74e8f1e3928e9c381133065052704dc0bbbd8a8b2432490d9c60ecedbd6c95b5",
+        "8a4f01bd8f396647acb9985368880685203101306a91fa4d40a125e735a49771",
+        "9b3e8695c4e139fabf566cad7ebb96ab518c5bd71f261534c36ac62b86f02c51",
+        "b678ca2ac4f1c437bad4883909907eea2a92fe9d77b784f54eceeebea9c88d5b",
+        "dbe5121e7bffb120330726119ab5c9e895566b6cac432e2c797bee1350ec2d1b"
+      ],
+      "computedBoundaries": []
+    },
+    "scripts/audit-sealed-arrow-score.mjs": {
+      "nodeImports": [
+        "node:crypto",
+        "node:fs/promises",
+        "node:path",
+        "node:url"
+      ],
+      "imports": [
+        "js/map/current-arrow-land-mask.js",
+        "scripts/lib/sealed-arrow-score-hours.mjs",
+        "scripts/lib/sealed-arrow-score-selection.mjs"
+      ],
+      "resources": [
+        "data/map/current-arrow-land-mask.json"
+      ],
+      "dependencySurfaces": [
+        "19329cbcdbeeaacfb28be3a23a6704de6bfacc8c47c34d8e04b27e73e7590497",
+        "19dc4784311d55bcd603c30948af5f6f2f60dc678b738fa744ea8bdd627b500e",
+        "207641949097fe4d17cf0b9de3624012a96de68e4b9006ddfad5cf7d8f6dbb63",
+        "5700f2fce276f235dc94fedb98531305c36226f4d7d78837769365d99ff602c1",
+        "802baa4e803994f8706043d8e31ac4364dd52615b80e73f5b82f87ddbdacea1c",
+        "cf9ab78d225ebcd40e1bb2702ad35fa6b86165d78c254e2ecc4a1a2de4a067ef",
+        "f390041d1cce7619c6d228afd93c9ff58e7212ccb8d66dd095dfe09ea45c9db6",
+        "f4a25306659a3c84fa7e89c5949090145f4d283d78f7699e82caabf44e903e5b"
+      ],
+      "bindingSurfaces": [
+        "00d70ca34922547019cb1ee8ccbf3304235faea6e80f279423d3579933c02783",
+        "0fa83cbc2a7546568b897a123bf564b7b979cbbecee09a24fdc85ccd5678040e",
+        "1893cb0bbee3b7038b82a9dacb7ac04387c6b4f816a284731328b0a75e7835d2",
+        "2bdd9f49f08b7ba07b79427a8bcfbe0b8fb3298c446d39e6b45a8b406e57bb7a",
+        "2f85ed770c924eaef33bd1b4cfe1c32241a078e3c34230de0673a430d8a72663",
+        "333a9c74f7b6ef4e8d0f600d312cad55dd6b6a5945aac5791fa14e0f98f74ab1",
+        "3cf4dc771d6d670095bcf35690df024d642bb0e9eb410d2ba3c8be8bc6d5655a",
+        "44007ecc25ba86cefe791d5786d9952307ad09f159709cbb45649c4134624126",
+        "80821335dc99c4ea7658015d387ade3efd06d30578872a942cc98e58404dd276",
+        "8a4f01bd8f396647acb9985368880685203101306a91fa4d40a125e735a49771",
+        "9b3e8695c4e139fabf566cad7ebb96ab518c5bd71f261534c36ac62b86f02c51",
+        "a9f3b969b793ab70581ea2c1c82ff28c6d2060ade5a02535e1ff431737e3fdc4",
+        "acccaf074db8246f2dd2d96bc3bcfaa8f1ff4ff79844c8a03b3787107e3d44b0",
+        "cafcb044ad6224cac269d72ba968865c5a270509d9c5098114e723e02343e729",
+        "cd1959d64d16fac0c218a307984222ef9cde5832df4b9dceab4ef55ece314c63",
+        "ef705f291ca19d38db7de88aa643d032dd2a690ea2157598c3ce7d431aa0082b",
+        "f8cf2d6a3c9ebdba0cda7262736ff48ba60f903158db5f7f569f574343cce4a8"
+      ],
+      "computedBoundaries": [
+        "4340efc551ce8c4dbe34f81c072eca8d1703d6b8baf37bbc4dd22ff8007c07dd"
+      ]
+    },
+    "scripts/audit-saved-weather-inputs.mjs": {
+      "nodeImports": [
+        "node:child_process",
+        "node:crypto",
+        "node:fs/promises",
+        "node:os",
+        "node:path",
+        "node:stream",
+        "node:stream/promises",
+        "node:url",
+        "node:util",
+        "node:zlib"
+      ],
+      "imports": [
+        "scripts/lib/bounded-conditions-predecessor-transition.mjs",
+        "scripts/lib/current586-exact-original-plan.mjs",
+        "scripts/lib/dmi-bulk-storage.mjs",
+        "scripts/lib/dmi-forecast-file.mjs",
+        "scripts/lib/dmi-forecast-store.mjs",
+        "scripts/lib/dmi-part-continuity.mjs",
+        "scripts/lib/private-weather-component-inventory.mjs",
+        "scripts/lib/private-weather-component-pack.mjs",
+        "scripts/lib/protected-dmi-current-context.mjs",
+        "scripts/lib/protected-dmi-native-current-proofs.mjs",
+        "scripts/lib/r2-private-runtime-storage.mjs",
+        "scripts/lib/ravscore-production-adapters.mjs",
+        "scripts/lib/saved-current-forward-original-plan.mjs",
+        "scripts/lib/saved-dmi-original-capture.mjs",
+        "scripts/lib/supabase-admin-rest.mjs",
+        "scripts/lib/voersaa-water-level-trace.mjs",
+        "scripts/lib/weather-component-safe-summary.mjs",
+        "scripts/migrate-post-cutover-private-runtime.mjs",
+        "scripts/ordinary-completed-stage-artifact.mjs",
+        "scripts/prepare-saved-dmi-original-restore.mjs",
+        "scripts/protected-private-production-runtime.mjs",
+        "scripts/protected-ravscore-continuation-checkpoint.mjs",
+        "scripts/saved-current-window-scratch.mjs",
+        "scripts/weather-component-progress-cache.mjs"
+      ],
+      "resources": [
+        "data/live/coastal-parts-v2.json",
+        "scripts/lib/saved-current-forward-original-plan.mjs",
+        "scripts/lib/voersaa-water-level-trace.mjs",
+        "scripts/prepare-saved-dmi-original-restore.mjs"
+      ],
+      "dependencySurfaces": [
+        "03bd6327fe804a6793aa0e2b731ac51a18a72533b499eae78ccfe200e6608dda",
+        "04e3591bdfcbeaeea19d09476dc6e085466ab53071731e7d769bfffef4cbc1e7",
+        "0646352c1d41f3b3d456a4ab97a946cf28c6849a9c91881b438e561a749d2fcd",
+        "06fd8fbdc17f72ca90dd3c3515a0d6f1322f5b27a6b447bed6fe15611dd0cc13",
+        "23d8fdab670346ab9aa4e439c68adfca5b5ab89ba79df797f8841b73b536ebd4",
+        "2480b50066d5073c4520fc825c41ff77a25c7a2edccd1edc9dd130e1eb7a8431",
+        "24b9f97467fd26ea43e1d675344d6df64223f36d190d37970b0fe0ed987c3dbb",
+        "2d6f57185d0230d2cb358c1ae391c9b1c6c920d7fc0ef41b2c3c503c93007bde",
+        "372c2c6387a9c90fdb3e2e15a4837371aa6acce4886f9b6142390323fda9c044",
+        "4b265a5ee607eab2ffafdb3cc2db8d2a56fd9eb9970a21360b8816f97fac8185",
+        "5aa36c70c979ee824154802ef97cbff03b7d492bed07e62ea10b13fd7419d53a",
+        "66dc72cdd1bba4ef9fb26c7de614cd3bcae1247fc77f234e18788b890e5d8279",
+        "683b6e488253c2a6fd8e45a99959444c62231e1b38fbf5c458c8a2cb73956fb4",
+        "739f1f8fd20cdb9dcfa01b47af3e16e087163962af5a52f90aace04cf55cd3c8",
+        "7426b510c08fd8d0f527fed1de98b09f7207a1f331ef1c82742c42cc1b770af9",
+        "7cdcda9f18e8f31935e1852fc09d4c5eb89fadc0bfd18e6c307d72a332259090",
+        "7d8ca0a42aecec43627665779c59ca98fe0a1fd1bd954b786ffd238b63958476",
+        "7ef874b3e2ea90fe0ad9dc9c813b503b40aa944db5b9e6fdfb321b113006ff11",
+        "88799f95ac40e706a9e64bcdb9e6b76a842d82a39284ab1b6fd79111ab284b7e",
+        "91abd93be263b1a731731fe6994008009d5994a8603b58491037c8717b66d51a",
+        "92fe4e5f6209fa55d6788118e30c4bde3be29a2d4aaa133c885bee8da88e23c6",
+        "9679a8da89b4762a04af31d9d4a8390e8519a6c6af511923407d9a63d656c588",
+        "9b5a3ee2253adc07d67ee09f1b81f2a370e2785706c46e4c973fa3ee97f04f74",
+        "aa85539acdccc646daa9e7aac6daec86345e41bf133502d79a690bb27c544b0e",
+        "be5834fa5bb9323e844bc7c1977ea29f95e86adbb6381ce9add075e66e70e651",
+        "c6067203ea62ce479bd95ffa5d529f3a2b0e795b7bc6495e77b58df7a2ad2f83",
+        "d00961a7d67246185752661fe7b6c843dcb3823d9787c2b822d7936b1c09b734",
+        "d4c339098c3d4d7eb985372d3386aeac8445758789ba421c038ef6f323587e23",
+        "d6b18e273866989f13b0d916f43afe628b54a25e647b57bb392c8b3b3f3e75d2",
+        "da0d52391c50c05d282d5aca648f6687ce5f24cbcff5a1395189b3cf47a33ea3",
+        "ed86d3116bb06e2a02e5e2a91529e58f7093e39365e0b7b221251eee1eacad87",
+        "f61473f58d6174043c99f39def3d69cd8a550ad18c413517e3b2218d407ccc18",
+        "fdaad66d1ce5c542e1ee50b74f50715c29be28c0c0176fbbd6557dd79975bfa0",
+        "fddba508755f3b4c7c54c17408e37f7ccd42f0a3b5771bc30c20925627b8d9ce"
+      ],
+      "bindingSurfaces": [
+        "0157156568b11f09bf9d9251a40e4749334150888278b714aad4347f4179be13",
+        "02ce297516202ebe517788eb985b5240347df0e25247adb4153ce92f0e4080b3",
+        "0b3f39a69ca4d68a551b08b1583dca518e7c61b06b6b7e863be6b172c8b6b1c1",
+        "0f2afc51db2580b988eec6cf7c96285d28a63cbb85918388a09a9e6a80f6aef8",
+        "143d61f6c09dd6faa96aeb915ee8d1e234499a35f1c30975ee4d1d39282bcc05",
+        "262ef57b965053a8d409fd2646b7c46b5f7400b2630147b716865fb480d0c901",
+        "2b1da9ed64705ae5a5b887ba968915cbdd29f902bb5b0c5d0f39458544a16bc0",
+        "2b813b812b30421d739f5c24aa396c84b2ab81285c8753f38b42f384a4059e05",
+        "3503a8a9f72deefe7c3f65bd9b6a17221452538ff125bcf9a1b4ae02252eadbb",
+        "36e5030194386b452016267942339119c0e29551ba15ddfa86e9652345af5209",
+        "3779c1e68f2af814210d7bc771afea69331b86e1b687bd7a5dccd46013c33b0a",
+        "38f91b0dd61cc48a02e79f45a0078136520755da8e22202ddb52796ce38c47c8",
+        "3c9dbfe1581c35bacc6431fead8d240f322c28122259590d5cb8568f380daa2c",
+        "3d9805bdee758702da91eadf1e8aca6279c136b3542a246aaf57887f50269ed8",
+        "41bd5f2b3b0ce32685d66dc4969f565418db89e0e50ee47429f03e2597828c78",
+        "433ee4071dfb780037d552b86ea7ed7d34cb4ce02555ab52d8f8febe6c260124",
+        "44b33d598e9010cf4b729a0b54e964b8cef434680d951984bda936d552bb6a47",
+        "481bd410d027190893e8e7ea7c362d413fc9f449d772c5efa82d4265b0a60695",
+        "4e43a9f9cff80a4e18aa1936c2696ec7d6f1590862eb34b79f8e6c602f2ad113",
+        "52ec4ebd8c675e3231ef03c9feb88aa388a2d47c2d7a399d52f0d7891899988b",
+        "551eb6aba5ba55bc6245c125dfafdc9ab7e76c70cdb264b690009d17ebf4ee43",
+        "556bf6074300990340c3048ae1ed26179c0e54c3a4bedfb982f31100bb7cef3e",
+        "55c1691cd14feca6580fb4d474f23c7c0d630db719c65e3394606ec98413777d",
+        "56733f8db2eef50fd3301445be970af712b34c2d78888162c883d0419c7f31a2",
+        "5c9843fe191765daf033c13099e33b8e90ec851f5c5e39b18d6b5f75a3c1d7c6",
+        "60831baae66a201a17a70f9b8dc5f86fb8ef418abd9446e3d9de9301fb8a5334",
+        "6218fa155470d270a6d07b52ad3a2e88dd93a9d77471dbfeb971cc0420dea2cc",
+        "6802e4307e24ca30f830313ec30416b970ed3c6542daa678e240f2ad1d8ca23e",
+        "681b814d975ca27692f669e9c97b082946347dc6b0291b209cb24f16f9260c3c",
+        "68dd0a968f9d2ac20f29c6c1a000b946ec0a451e44672ee49bfa55aafd9e1848",
+        "69878120d3e856665c3f361b7ca4feed2957b1d5a52b2fb05a9b443ae1f85961",
+        "6c7233a491c944dca89e7704de13fbfa5d7dcbbb969e12a775bbc2b13bab090f",
+        "6d2c5dea64dbbe2dcf1296bb89b04be2062690c8ecc6ed8ad5bf578f72091027",
+        "6fc7ac8e6e92d42ecbcbb698bf89b00d3b6a6166e149f5520b732cbe9916ca3a",
+        "71005f536b16e61ebe4254cc85adfa49d0fc86d468bd20ed7d99c2f11d43d1df",
+        "76c6ae98aaf930293f20b25088ceac8295ff0123ba017b8826767082f67d04e2",
+        "7920a81f100736332e44e90b13db17a05cf6439ba8489022e0cc6170fca0e4e8",
+        "7d1fe097b0f1ee6b4f9aef44172768181967353061c947930bdb546de9e2cd21",
+        "89fdb540348a6a1cec722c3cdbd038148fc24bfd5b525f633dadd726cbf167ca",
+        "8a03f3f0651cdb10a0554d49f1fe7c96a8bcd7eb4705383d358c8344cf15b4f4",
+        "8a990b56f080fc165a680b41639574e2cca97afb505afa9be39436ac1453e6d3",
+        "8fcef86802fc8cc2d8abf7e3a725a4dcbfe3f9d581fd4d8e08c8d0a94e365864",
+        "971b82b8f371f6214176c9424670640a6bb3b027420ea170aa095174ce2659cf",
+        "9b3e8695c4e139fabf566cad7ebb96ab518c5bd71f261534c36ac62b86f02c51",
+        "a35738d2a972d26a4a1a45832d027c44256b416a2c9266464737dcdc93d88a72",
+        "a7b9dc8b51489d0e79965ce0cc1d09472f8488e71b3c6c2dab4f3099a3d91a95",
+        "abdbdda309fd0d83c481433611cc4e5c92736154cfa8234573c614e0f7e233b6",
+        "ad24885dd5da399b0a94f54244926392f4861b658241ac5c08d3037e5ca803bc",
+        "b3d21002e184f36ed77afc7b561de8fd5dd18db663f665238223d850e9eac59a",
+        "b6115aba6a3845384407946fe6956842fbdacef2431065e551991c704a468ee6",
+        "baffda3fa9222611dc50bba2d8c2f39f5ca76a3599957b7e3b211b10a9097177",
+        "be9b91b9d43642c4b58e680dc5c2e216c88e0408e01450857483b42e3dbf9a68",
+        "c178b430ddab3f3f691b83baa1ff27ceb4c6940a58cfdfbc25ae8505c74b461c",
+        "c654245c7f57eb40992ca270b45fa910fc6e1d9aa5fbf357e806f774f8daa03a",
+        "cedee03877d6f49ee986d4e373051d310003efdd497cf7bd69ad0b6bc054e0bd",
+        "d1868b9b9c141dbaaa6d6adcb957d29d41cadd89a224eea25d485ac2cce98445",
+        "d249f7f8cc99de3d4bc1a3c1989d735cebeb4a3a3a481e9bf0169500adb19b85",
+        "d8d760dd981a166a7ba9bebcfd32e202105ea952b61990d64a59c6b919706de4",
+        "dad94c2349eaa5b9b264b9a0192c247d1cdeccf1efb6c1e6cf2ae3a7c414d5e9",
+        "dd43ef85f684505fa3a7b4db9d834b50f072e430cddc4cda9817062067791ee1",
+        "df7633a757106f8dcb8bcab6c5186b7e21bc4560de33967785aa820b55e2aeb6",
+        "e01374e1533b321e0826a12f680ef368647bd528e66ee8d8412f5bda7b9eea70",
+        "e36b1bb2ca7e56849247e313581631472d0cea08126ddddb70d3c322f56168f1",
+        "e4c53470dc8472881eb1f560b8f405023b4a18809c6491cbdb08c78f1b2948f5",
+        "e5f1a3ba491c1dbab0623e180c11354b57b604aeb17afa0ebfb90b404e2ca0f8",
+        "e94a34e7378d175988bd2c3b505a6e1fda986845fc67b6e42d832b5978526a57",
+        "ef1da6b311e79a1d1f367d3eeaecf6843d02f6692af8ed8eba1eced64ececaad",
+        "f06a85fed07ebe574685b9e288e740355bbc5b79feba34c0aaf72846586595d1",
+        "f345253dc7a4d8266f52b9b58f45f4e2af9d0c9b663dfb260a3c2f2571b35bc1",
+        "139e7258da4072af6f6c6ffd498b3b0feee847039bea989611031b76b708c1ea",
+        "c53d0687d3ae549709ca60a0d6477f996d23127fa318ea6a8c415d5df91a13b4",
+        "b9e50f1d088e83c912f7923f01cd7c81eb0f24c465919541d0fec4b339393158",
+        "4a602440b2bf3bbb4e8bd11640fa8cf06c9b995471274f3c069df4e0d4e96887",
+        "3ac7afc187e5ad88cb60643ef549dc3821cf8b32a4447714723c1746bc2cc925",
+        "fca61249820b55cc7a9ec82263267b9cb4b94a35c6ebcc93e1f022c036b5ca2b"
+      ],
+      "computedBoundaries": [
+        "405d961b533c9e67a9ee505162f89b603c54d9c06c301119a20f1063ed78fc40",
+        "55f94704fc1aae4a338472be88290206a5e5b2b70d61248fa24131208a3cfbf6",
+        "70d9b22605adb99eea82b1bb784a5c8d664eac98a4d71c8f27e092b592631eb7"
+      ]
+    },
+    "scripts/saved-current-window-scratch.mjs": {
+      "nodeImports": [
+        "node:child_process",
+        "node:fs/promises",
+        "node:path",
+        "node:url"
+      ],
+      "imports": [
+        "scripts/lib/copernicus-offline-environment.mjs",
+        "scripts/lib/ravscore-candidate-g-rollback-runtime.mjs",
+        "scripts/lib/ravscore-production-part-pipeline.mjs",
+        "scripts/lib/saved-current-forward-original-plan.mjs",
+        "scripts/lib/saved-current-replay-grid-audit.mjs",
+        "scripts/private-production-runtime-workflow.mjs",
+        "scripts/weather-component-progress-cache.mjs"
+      ],
+      "resources": [
+        "data/live/coastal-parts-v2.json",
+        "js/core/ravscore-model-contract.js",
+        "scripts/build-copernicus-target-registry.py",
+        "scripts/build-current-operational-closure.py",
+        "scripts/build-live-current-pilot.py",
+        "scripts/lib/saved-current-replay-readonly-network.mjs",
+        "scripts/lib/saved-current-window-network-stop.mjs",
+        "scripts/update-weather.mjs"
+      ],
+      "dependencySurfaces": [
+        "0abaa6ad24fb6aa280adce43650924ccff72ef6931bab071571c813cea4d1c13",
+        "10e16306866aafbee5de782fe7387011a1090764e36242c531ac0e510f0b14e5",
+        "22ddc7ccd785b75a4da8c0df883474d6c789beb8bd7667492532690aed27e4f2",
+        "24052cee9c403cc124474681ea691d4d27c3d192bf16fb2b512ce3be56fdae5c",
+        "272fcd533c2b02cb593ec9b8cad34cc63db2f6db332260379bf63d8f3b09ce94",
+        "27353a904c48bd4d1e315090dd0c76bbcdc6716cd35e06acf13bdb2d572a8bb7",
+        "3362794456e3c8d591ba825e265d7b9417c8354f0b87be7850e05ec821a4a811",
+        "44d8b08e2f4e780d3cf01b1960029682ddee8dc17c7ffd400db5ab2decbed996",
+        "5a808f079ea054d482796ce6404c93e4b7f1e458c572b53f79a83c55ac3ea1d4",
+        "5fdfbb469f9ac86a9151c83c5bc2b0dd9df44bbc71b129fc0b5f67cdde131fb5",
+        "6b088eff2733034078232e2bf078a1d76d28738a0fdf054f6cf465adda34cb93",
+        "77c2d7fc2b1480d9068def1b039ec205c140bf25b50b0d105453d916ba806e2f",
+        "7b1691496001218c7138b72684cedd29fd9b3c745c0155da1134eeeb98f22a4f",
+        "7d181ae3b4f291dc9112122e806dbbe85b171991ea816c9b79164634ceb24f56",
+        "7d81cddba95a3503e31e6fa4d6ac6dec34056e6d30b5f97d80abd0f690b736c6",
+        "8bf68b932fb56559b4003a62cc57befd5c3e72fe5c5bdb9ba2f8189aab610743",
+        "8d0137fbf1ee51bf44b447c7d9309c0d2191620c739448a7d8bf9fe9b52aed3c",
+        "a82fb59043a9428ac5f4df37505c6e7c1336a2d0383224a4544be3e36ff577ba",
+        "bd89501164d2c0a99cafaee553f284210488fe3d66cf2723073a3d03763e02f5",
+        "c12b1434176a3a5f531970387caccf35d4c87fc6ec4d8cc57233c8d00df1775e",
+        "c1587ee7a8cb8fb058b28ac8ec709d5f1b5c298910034c16e35249db836eebac",
+        "c23abfc59f30557740a04afb362ea2c08cbb495a854c7121627d62c4f8656e6d",
+        "c3f6838402886e5179f33c229d7e1c3731b88c43a3cb0d55de4255dcf7e22138",
+        "cb0e754cc2602b3cbebe71d5271dfde8ae668f14ecec8cd5959770fcb67fc2e5",
+        "cbad78062f05858faee6d5d0da8f7c1a897ded02a10063e43cd657011d9d0b6f",
+        "cd5df96713606d2818fa1cbe90fd43753d6f1adbaf14522b1f636ee117088416",
+        "cf8d0262eaad727cb9542e312dac9b0c17f1446d0e0acd18bcb455349bf98e9d",
+        "d83d61430e0ffbf56fbb87d3d5bc9261e6994b08c9df09ad1ccdfa8ef5083dbe",
+        "f17553d0d058dbcda446aecf3cdc47cf364af7113e3c2128cee5aa137cb5c0d5"
+      ],
+      "bindingSurfaces": [
+        "0111abf5776c62a38d9b4107eb296403394097c453362bcacf836c3a2e330032",
+        "06e8d84d8d1117df650dacee3630da266a6846ea94734e8f07c827a1b86a4d48",
+        "3033f0bf30842a468eba603c1637ed2d94b6f485aa5fe6d9f9c0fa91c9e6c6dc",
+        "40f4c90acf4fbadc3c7618cde85870341dc3cedb49c2169ad0fef4dcac72176d",
+        "439d3d8dc0feade29c1dadd8f1428bda2ec38cac42f35676305a0cd976e0d75d",
+        "4d5d93f1995b4b4f3852baa77669b133c21ad62e68343dca0e5697104b0af6e3",
+        "538ccf1bbded72834472ce08781459b50db4b530f4de75001f0dd3f0fb39eaad",
+        "7a960ed667ef47c1c72c314bbe3775b328fba266d38976ab827964caecfec6ed",
+        "7b5bcef31cdd61f04eb3263db10e488d68dd7c70ff1c64da7dca7828e42f2799",
+        "8a4f01bd8f396647acb9985368880685203101306a91fa4d40a125e735a49771",
+        "9b3e8695c4e139fabf566cad7ebb96ab518c5bd71f261534c36ac62b86f02c51",
+        "9f1291b8b8ffcbb94d40b9a2ffd701a9ef606ad7b07467196f6173aff9744093",
+        "af209c0811ddbd31575b675960c864a5bc572289ed48eed3e2d6a86419b7b771",
+        "b3d9df697e728792b48d92fdb5f532d4d78229af6eef262a77b0a98204cc977b",
+        "c49481cf91b5b1271465a5558c5a21f6e2bdd4e18b5dc0851d77f6637de8d796"
+      ],
+      "computedBoundaries": [
+        "9e8c695ba6fe3478ee1fbb018232f311d35746eae51c2703fef60f4248824571"
+      ]
+    },
+    "scripts/lib/saved-current-replay-grid-audit.mjs": {
+      "nodeImports": [
+        "node:util"
+      ],
+      "imports": [
+        "scripts/lib/dmi-forecast-store.mjs",
+        "scripts/lib/protected-dmi-native-current-proofs.mjs",
+        "scripts/lib/ravscore-production-adapters.mjs",
+        "scripts/lib/ravscore-recovery-replay.mjs",
+        "scripts/lib/ravscore-recovery-source-priority.mjs"
+      ],
+      "resources": [],
+      "dependencySurfaces": [],
+      "bindingSurfaces": [],
+      "computedBoundaries": []
+    },
+    "scripts/lib/saved-current-forward-original-plan.mjs": {
+      "nodeImports": [
+        "node:crypto",
+        "node:fs/promises",
+        "node:path",
+        "node:url"
+      ],
+      "imports": [
+        "scripts/lib/post-h0-dmi-original-dependencies.mjs",
+        "scripts/lib/private-weather-component-pack.mjs",
+        "scripts/lib/ravscore-production-part-pipeline.mjs",
+        "scripts/lib/saved-dmi-original-capture.mjs"
+      ],
+      "resources": [],
+      "dependencySurfaces": [
+        "30f0db0e41b8658493681fd1b60992a691cc57a9c0ee5abc21132cd72529520b",
+        "8a971e5c6c21a4817aa50f50d38f9cab0908d61b02f59a98e1d3373dc58c5d11"
+      ],
+      "bindingSurfaces": [
+        "1acde880064a5a8497480a7590fc234a70571cd4efa1fe25b6b549739fea03cc",
+        "456e7c249a010976c0bf658b03d1aa58183d4a1be50243bdcd5dc8e524902eaa",
+        "4ee8092707153f0b6a64c1014e1de482aa59ad4f757d167d2e6873579358fa5a",
+        "8a4f01bd8f396647acb9985368880685203101306a91fa4d40a125e735a49771",
+        "8d547640e4f8ef8575cd1d2d9730e2c9335bf214c446168d8a7d1b5beca4da0d",
+        "9b3e8695c4e139fabf566cad7ebb96ab518c5bd71f261534c36ac62b86f02c51"
+      ],
+      "computedBoundaries": []
+    },
+    "scripts/lib/saved-dmi-original-capture.mjs": {
+      "nodeImports": [],
+      "imports": [],
+      "resources": [],
+      "dependencySurfaces": [
+        "37d4ae4015b886a5620f22cd61ac06004c35d4a1aa83f38d18761f31311bba49",
+        "42276af37cb4774cb808b15c781081f6533205ac963b9b31de5dd335685c85cd",
+        "449d24a10ce698d89c23a35678fa6bb9b1192693b57292384698b0ffb6c2a9a2",
+        "45b07219929f876e28655442a8537abdcc40edf6d0eb73bdaa91bc03c06c6831",
+        "81a4031613b1b2d2b26a30fe2c85eb5a0797543ba677d6376c9debc17f5ebcd6",
+        "ab6b6a85a473139b0e406ece29a1b0afba49df53f9e5ff6e3ab1cebd42b77950",
+        "d7dfca5ce86d5a3a1abb93d1c0b753b51c57baaffa60fc4cd4a6a0072783981c",
+        "dc16bb00d0459cf20e9dbfd1261980140fdbf3a2151a7858f412f2b0068abb37"
+      ],
+      "bindingSurfaces": [],
+      "computedBoundaries": []
+    },
+    "scripts/lib/post-h0-dmi-original-dependencies.mjs": {
+      "nodeImports": [
+        "node:util"
+      ],
+      "imports": [
+        "js/core/ravscore-integrated-state-pipeline.js",
+        "scripts/lib/coastal-point-staging-contract.mjs",
+        "scripts/lib/dmi-forecast-store.mjs",
+        "scripts/lib/dmi-marine-zone-exclusions.mjs",
+        "scripts/lib/live-current-pilot.mjs",
+        "scripts/lib/protected-dmi-native-current-proofs.mjs",
+        "scripts/lib/ravscore-production-adapters.mjs",
+        "scripts/lib/ravscore-recovery-replay.mjs",
+        "scripts/lib/ravscore-recovery-source-priority.mjs",
+        "scripts/lib/ravscore-sampling-context.mjs",
+        "scripts/lib/saved-dmi-original-capture.mjs"
+      ],
+      "resources": [],
+      "dependencySurfaces": [],
+      "bindingSurfaces": [],
+      "computedBoundaries": []
+    },
+    "scripts/prepare-saved-dmi-original-restore.mjs": {
+      "nodeImports": [
+        "node:crypto",
+        "node:fs/promises",
+        "node:path",
+        "node:url"
+      ],
+      "imports": [
+        "js/core/ravscore-model-contract.js",
+        "scripts/audit-saved-weather-inputs.mjs",
+        "scripts/lib/dmi-forecast-store.mjs",
+        "scripts/lib/dmi-marine-zone-exclusions.mjs",
+        "scripts/lib/private-dmi-recovery-record.mjs",
+        "scripts/lib/protected-dmi-current-context.mjs",
+        "scripts/lib/protected-dmi-native-current-proofs.mjs",
+        "scripts/lib/ravscore-production-adapters.mjs",
+        "scripts/lib/ravscore-recovery-source-priority.mjs",
+        "scripts/lib/saved-dmi-original-capture.mjs",
+        "scripts/lib/saved-dmi-original-dependencies.mjs",
+        "scripts/plan-ravscore-current-history.mjs"
+      ],
+      "resources": [],
+      "dependencySurfaces": [
+        "23421dfbd0d4a6e5b53b9da1d7437f046b043fe557bd87648b6eae024c7e92ca",
+        "b8e5e62e8ef7bcba8117d06c67aa6c2959a08ae20ce8fcfa5be3b32b0dfdb428"
+      ],
+      "bindingSurfaces": [
+        "620b3fc35438acb2b57534f9a088265ee668b164b39be5e4f035bb613290457b",
+        "8254b415f06b260e402669ff50bc1c0c2c34238c2d009721f6fbe1a1abd0aa0b",
+        "8418495c745eb3b23905f2ca2575b1a57485f538e5c792bba650369a8261f94f",
+        "9b3e8695c4e139fabf566cad7ebb96ab518c5bd71f261534c36ac62b86f02c51",
+        "ab004142ade46e70eb854bd35c77c264ed459f83422f38fc550a87a1dac44274",
+        "addc63822b9e2eccf7f7347279f3a5438efaa4cbdf426bc858887a4e9ab4b50c",
+        "b3ba4a31cf8d691c45e5bb152e394569df727392d9dab370ebd4f72794df595d",
+        "c1ea59af35ff1914619fdb175007977933ed735cd91fa84be7c41a5dcee22256",
+        "f291f9d22e8dc97e426a17da774f98e273ef62b01c3bec8627f0e146506f746c"
+      ],
+      "computedBoundaries": []
+    },
+    "scripts/plan-ravscore-current-history.mjs": {
+      "nodeImports": [
+        "node:assert",
+        "node:crypto",
+        "node:fs/promises",
+        "node:os",
+        "node:path",
+        "node:url",
+        "node:util"
+      ],
+      "imports": [
+        "js/core/ravscore-model-contract.js",
+        "scripts/current-family-cold-start.mjs",
+        "scripts/lib/coastal-point-staging-contract.mjs",
+        "scripts/lib/dmi-bulk-storage.mjs",
+        "scripts/lib/dmi-forecast-file.mjs",
+        "scripts/lib/dmi-forecast-store.mjs",
+        "scripts/lib/dmi-marine-zone-exclusions.mjs",
+        "scripts/lib/dmi-part-continuity.mjs",
+        "scripts/lib/live-current-pilot.mjs",
+        "scripts/lib/local-part-runtime.mjs",
+        "scripts/lib/post-h0-dmi-original-dependencies.mjs",
+        "scripts/lib/private-conditions-hourly.mjs",
+        "scripts/lib/private-dmi-recovery-record.mjs",
+        "scripts/lib/production-reference-time.mjs",
+        "scripts/lib/protected-dmi-current-context.mjs",
+        "scripts/lib/protected-dmi-native-current-proofs.mjs",
+        "scripts/lib/protected-live-current-assembly.mjs",
+        "scripts/lib/ravscore-production-adapters.mjs",
+        "scripts/lib/ravscore-production-part-pipeline.mjs",
+        "scripts/lib/ravscore-recovery-replay.mjs",
+        "scripts/lib/ravscore-recovery-source-priority.mjs",
+        "scripts/lib/ravscore-sampling-context.mjs",
+        "scripts/lib/saved-dmi-original-capture.mjs",
+        "scripts/lib/saved-dmi-original-dependencies.mjs",
+        "scripts/prepare-cached-coherent-current-work.mjs",
+        "scripts/ravscore-continuation-checkpoint.mjs",
+        "scripts/read-authenticated-dmi-current-companions.mjs",
+        "scripts/weather-state-epoch.mjs"
+      ],
+      "resources": [
+        "data/live/coastal-parts-v2.json",
+        "scripts/weather-state-epoch.mjs"
+      ],
+      "dependencySurfaces": [
+        "1e39f36b2a102819e50c1cdaf74c41e6fadefedef63590b14802f2c3d9fe067e",
+        "295d054d4a9391f809e0f87ee09450e159e44c78fb87785f8995e7b394dd029f",
+        "2e2522c2a510366090dbed1cf7a60e5c64ce2fd7288e8f4b6a45f039c47a4311",
+        "3a3e596d547fe4ad079c825b7afb187bb831fce6a3a6229ea64ab13aae269862",
+        "5335c009201974d92e71af166feee57015194458d05c2bdbf93aa228e482384a",
+        "76acbb8872a2d662233bedf57caad19f007f281697f4ca640be2e40df2ea3cd2",
+        "7b1691496001218c7138b72684cedd29fd9b3c745c0155da1134eeeb98f22a4f",
+        "7bb3b25ecd40037ddebb7da880e747b3822c86f55d0cc008b37e2d9f2de05fc2",
+        "802baa4e803994f8706043d8e31ac4364dd52615b80e73f5b82f87ddbdacea1c",
+        "85d1bf3dbcd4756d7d26b81056bd00edf809a83ec55dc3cf0b105b2d68118d5f",
+        "8c1d8fb84098a61c3b42d265a6ebade74fe8b1335c8ff9b71f975db12e74be9d",
+        "93362a521e4069742b2342f628cf545ed147d9c4e509ce8d0899555deb94037a",
+        "970fb4354571e68a0d1b6f4250228ec6539677f59473553bb4563e7112514fb9",
+        "aa468c1c92ec3a02d6554ebc4502173d4ab09bf9814b6f67b252a8129efad5e0",
+        "ca33e09477a5b12b0d498c9418bb60f455154ec8aeb810ef387514cf46d9a1b4",
+        "d88848d7859dfc14eebfbfcbbef89c3ee49f1958cb20448600b1b942944e29c8",
+        "ecdf455036a6106926dbf45ca4b11fd7e4af07884e08a221e0f75c68ffbb1024"
+      ],
+      "bindingSurfaces": [
+        "069b0912673aef2847cfb6b2f08269c3721eb2612ecd993da5b90f4d286fed3a",
+        "1dcd2842762c352079a931eb442ce44e7fb80f3ae9547d5d62265885a976f51e",
+        "42ae48079af9b5a80267cad78d56319782eeec5dd2521519b436a6705baac9a1",
+        "768a4430fd54e540af9c8557ac17767753635b017e3b5d53fe66b86772aa6c65",
+        "781ce7fe659eaa9f0652cdb1256d97ac0ee5339e2106e3f897e5f2e1e6c20857",
+        "99770027b87ecc60abd26e15099144db359b2cc7963837143b59e9851c627602",
+        "9b3e8695c4e139fabf566cad7ebb96ab518c5bd71f261534c36ac62b86f02c51",
+        "a140bc454b1aee4df5bc1bbddfee1718907ca946ffd05f0697c1b61fe390c2ed",
+        "d5359a073c3eb5680aaa322d92b6af5b9ec2596ce7edae530aed2690a5a94169",
+        "e01a77a513b08bbad77d438942313367296a10980619ba8d7a8b2b8bc1bfaf06",
+        "e866b29db612abda3b3710281457374652305e1768849ef5a1cc5a18b635692d",
+        "fc258eb0210d7d4771620b74f22c44b87d805d3a9d3c110a16884da2ca443479"
+      ],
+      "computedBoundaries": []
+    },
+    "scripts/weather-state-epoch.mjs": {
+      "nodeImports": [
+        "node:assert/strict",
+        "node:child_process",
+        "node:crypto",
+        "node:fs",
+        "node:fs/promises",
+        "node:path",
+        "node:url",
+        "node:util",
+        "node:zlib"
+      ],
+      "imports": [
+        "scripts/check-native-identity-frozen-i71-source.mjs",
+        "scripts/lib/native-identity-staging-working-copy.mjs",
+        "scripts/lib/native-sampling-identity-successor-source.mjs",
+        "scripts/lib/verified-protected-progress-components.mjs",
+        "scripts/lib/weather-state-epoch-archive.mjs",
+        "scripts/lib/weather-state-epoch-input-view.mjs",
+        "scripts/migrate-post-cutover-private-runtime.mjs",
+        "scripts/native-sampling-identity-successor-readiness.mjs",
+        "scripts/private-production-runtime-workflow.mjs",
+        "scripts/verify-native-sampling-identity-successor-plan.mjs",
+        "scripts/weather-component-progress-cache.mjs",
+        "scripts/weather-state-epoch-budget.mjs"
+      ],
+      "resources": [
+        "data/live/coastal-parts-v2.json"
+      ],
+      "dependencySurfaces": [
+        "0127d6f8c8f3c75f94adde33a2c9477f4efc15c61854021c21667492521fa33f",
+        "11f090f73bec2a33fd693ea0503b193f4c69ecbaa20c1be8735b5e09f7ec73e1",
+        "1d8390ee2248008f4f89f3d64ae26c9f69ef356abb094377e433b1bcde112adc",
+        "29bc403c4c2dcda664d4c7c263e2c7e1f2552eb13386fd87306d54d16a97ed9e",
+        "2b319ce704e6e1ccb299dd9241afc6289a3cb87bdf02d0567ac46444f7cae956",
+        "2b95fd22e6b19ffce9532e58df9953306eec861db6cb7a3b4106b361fa242ee8",
+        "31b6eac4a641d2630d09fa7153d22870cd05d17bc5b2d5ac3415846f95ee3897",
+        "31df03a19f38b1585dc0f336e6a50f16e629e7c7367b703950272bd9b1464e0a",
+        "38c88e125e965b84c32e2c3ff8686d4e5f8c6ac7c7dbc90a3429ac406cf81c88",
+        "3a7d4a8a14881ce40bd0f3134450042a5d66c57448f4a8f78864402c17524e50",
+        "3d6562e4483dc0e7a15b2114f6f435e880056c83613b8b38a6f5964a7fa3c761",
+        "3ddc5b9f1654bd4773a487016d20fce632bfd48cece995b7d16c07d8abb6c775",
+        "46e9de998c68c45a750362dbf1fafcf93240fea531032b0581a77e959c907746",
+        "4c7196e25453dd9e0beec018a4293e8cf29cbaac64395bbe2e3230d8b9a95ddd",
+        "4e3b15392ee307a6bc76a198d522d4d8b7987b4a3105405983d95de27db287cc",
+        "50e66eaf824fdbceaafde9235b301f77d610b15748b7f42defd61bc8f6c21de0",
+        "58aaa6f29920c3c4b74b93f10d7532628fa5acd43ffc0b0be44a788d1c7b5315",
+        "60d38d57c6699dd5c3547c0064fbf13322674860c5b992d653862b7ba920f664",
+        "6171093212314929eedd5d54b6a63a1b84645a728b5909e6374ec6b3a117e0a3",
+        "654c8fa5f9381ce62d4554df4893c26dc3392b242a02fb9d771c1d4d085bf888",
+        "6b07e43f3ed1a21cbcdb126c6608f846daa11ffdb245fe1cd21964ef4dab11ec",
+        "75dcbd79b31755bfe6a0421323e81785c79b7387fb50fd7099022c3956859510",
+        "7725cab4be96ad70cc78ed31a4d1faa73216f80a677bc9f7efcb539d40fdfda2",
+        "77dd4f541d79f53e229ad3d2c0d1b185363d02120231fd20686049e00c865839",
+        "901106d4ab7c2d56094f37c099eb7826c2db3557e33551bc96a1f9b23db3c730",
+        "95e2a5666d47727e46d45a7b5c172b6fb91075f68b7f1ddd8165a9e8c4e9bcd4",
+        "968554024a90bcc157cb919a0260396f9c275ad006a932647a8bc6667cda5175",
+        "98d7ee85200f20ee6c52dc54b74f0bc37e4d3f5df6cb9ae0eb5c75607e6628ef",
+        "a1cf37b2983ed087ade74e8311dc6f3804130b28433f3d8aa77194910158c59d",
+        "a444c0bf92e0702c5760e2864d99b5a318b044d49919066697719892db312144",
+        "a4ecac55fd47e3ff193d2caf466adb18b05afa7a8d36c3fd6933a4995e5f5718",
+        "b09b75b4f161829c0a809c43789fc4ae675eadd0e7536bc825741507d85acdaf",
+        "b25f14ec3163c105441c2637c8e447c1d2d4e35c4551f4a45651ac6f7ae17035",
+        "b53d743be7fc1ed0152411121179f6915939a4f5076d65694702a5ad7f7e9ef4",
+        "b7acddcdc2d79b00915b23c2a19772795f7d5e5ba9a69255cc161298ea193bef",
+        "c63ee20b3a28e0433723abb94edd81a55d3d766d14a470310b7654ff31e3f2b2",
+        "c7ba817899f9c12080d1b2474d31d89981d58a2ea15dc66abc8091dc4046c00d",
+        "cd101104f7158969e72701069c06c675d11a71a458936c661e0d6915a8c16bfc",
+        "cf8cd217d6df84204024be4b1c371eb39f3a308905e03c48d81496f67a898d99",
+        "d096fc872f8973142afe66131d6be237448467e5029ed64b44c46b0e7e35fa91",
+        "d7e4012c649bdc97ae77baf820121cf0c0d13b310801fd59af8a459a82b5de94",
+        "d7facf632a94aa31b9b09badc6178ee0cdf05e0935cdcde4cc71946f9b401374",
+        "dd60bcecf2be36c9d20203161f46e96ab5045ae44158bec7c3f4c7da1496763a",
+        "e03774cc432e61ad888c3871090dacabb84f1c700ef5fabbeed785d1b907d289",
+        "e1500c2ee6842bad23db1a414297cfbc36e3fd27c3790abc7927a7db2a8cc5da",
+        "e2109326c68351cbcf33cbdb7d6978a5891ffbbb4978384263dc4848eceb9310",
+        "e437adb71d23ded74731282a702a977803411f91050fd2e2d4e4eae931a0a527",
+        "e9896d8fa5451a0ee3b53b4ba9997c00dcdc21fc51979941d4690c02227b2895",
+        "fac481daab8799320262da506fa3d5bc29d917fd982162d029c0739dda752ead",
+        "fb5955fc288a4a1e8256b215e7648ea57911fbe829cea43eaf2e32dbc8de8707",
+        "fdd2e844e4d98b32c49decf3226b0f1250d3b25efb743aead0560fbe67054781"
+      ],
+      "bindingSurfaces": [
+        "03d8efa5cf27354f68905c16a825591eb3cbfe6adca4f5a3f7a2b5a1f9b8d922",
+        "17ebe17afe13636a267537385e610faab897148ec9d5f3115df7677630b677ff",
+        "1ae17533a46275a5e7bafcc851a965a660757b9c36d0dc9c20289034a313cb19",
+        "2f866ac40d559a2dd7dae3b0f4f82ab6028b083d650fccd6fcd5f47244853b08",
+        "3ed7b9681a2930a5225c24f54ea6a2d023c8058222d19351eb6e534b0c7de075",
+        "5c9843fe191765daf033c13099e33b8e90ec851f5c5e39b18d6b5f75a3c1d7c6",
+        "69f802e10120a2fe7ab503c6950ded4b62a8118633641d32fabd2b23feef410d",
+        "71531f287f58ec8602c5c486dbc650b3e07e39fe43d0fcbadfa091839c913890",
+        "73f21c2c0b780ddfe31dbafdfac5c5cf50f2064d12f4536da785035b5fc90e37",
+        "8a4f01bd8f396647acb9985368880685203101306a91fa4d40a125e735a49771",
+        "9b3e8695c4e139fabf566cad7ebb96ab518c5bd71f261534c36ac62b86f02c51",
+        "ae0303268914fd50249701a19d9ea184b0f256d0b339bc5ed81ad8a9213dda67",
+        "b14a626672432bcdd8f04bbd34a600f76348b22b0c645187095fd0141d381764",
+        "c7ee3c7b3a222165d1daf01aa35d9325b5d8a12068bccf3a34538283b1fde7b1",
+        "ca6536e69ed5672cacca199bc1448a2cffe36c3700886c1b28018fc9a496f01f",
+        "cd9fb63959e753ea347c80f0ebd54e80a701cf74b272474db8b533d99445682b",
+        "d18dcb6a58ec36e9f0bac0fdb1ac710fc08136bbcab737ff8f4023c7c35dcb6f",
+        "df7633a757106f8dcb8bcab6c5186b7e21bc4560de33967785aa820b55e2aeb6",
+        "f85f759428734541123dd717aa61322997df8ff3aff13cf6c310e3b377eeb2d8",
+        "f9a0c124786fe5719902e4504e1e6e0ebb25b174cc4025a45512001fb6c41380",
+        "ff551c73cc5b602e5996b276980cd4cd4f2853a89f8018044614670e711ff028"
+      ],
+      "computedBoundaries": [
+        "605c76fc0301317d164867c216bdc064cce485abead88e35f7f7187c0c5ea859"
+      ]
+    },
+    "scripts/weather-state-epoch-budget.mjs": {
+      "nodeImports": [
+        "node:assert/strict",
+        "node:fs/promises",
+        "node:path",
+        "node:url"
+      ],
+      "imports": [
+        "scripts/check-production-target-freshness.mjs"
+      ],
+      "resources": [],
+      "dependencySurfaces": [
+        "46e15bebc21a1dc3e700c29df76eefad70e1491569a6702bca787dfc8a72156a",
+        "644abe366116f97e8640cc89d9172239df8ed0b27b36fcb7ac106162e125fa32",
+        "9a5e92bec0de0b26579ee755cca25fc901ce7311e91a91550e02b4d02b2f91c6"
+      ],
+      "bindingSurfaces": [
+        "0d8590fc30bb803d656acfa3abbf57b538f52db5dc38ed8cb699e6f13b892349",
+        "432c5c46e58f51dc58625633e7f86b6f2ef700f091c8d2c57738dec1d4628457",
+        "64906fb8ba0147ffeb939d9b0680241e6090245eab4beb329e0fb4c645bc1cde",
+        "8a4f01bd8f396647acb9985368880685203101306a91fa4d40a125e735a49771",
+        "9b3e8695c4e139fabf566cad7ebb96ab518c5bd71f261534c36ac62b86f02c51"
+      ],
+      "computedBoundaries": []
+    },
+    "scripts/verify-native-sampling-identity-successor-plan.mjs": {
+      "nodeImports": [
+        "node:assert/strict"
+      ],
+      "imports": [
+        "scripts/integrated-cutover-readiness.mjs",
+        "scripts/lib/native-sampling-identity-successor-source.mjs"
+      ],
+      "resources": [],
+      "dependencySurfaces": [],
+      "bindingSurfaces": [],
+      "computedBoundaries": []
+    },
+    "scripts/migrate-post-cutover-private-runtime.mjs": {
+      "nodeImports": [
+        "node:crypto",
+        "node:fs",
+        "node:fs/promises",
+        "node:path",
+        "node:url"
+      ],
+      "imports": [
+        "js/core/ravscore-integrated-state-pipeline.js",
+        "js/core/ravscore-integrated.js",
+        "js/core/ravscore-model-contract.js",
+        "js/core/ravscore-public-model.js",
+        "js/core/ravscore-public-profile-contract.js",
+        "js/core/ravscore-public-runtime-contract.js",
+        "scripts/audit-ravscore-integrated-public-runtime.mjs",
+        "scripts/check-native-identity-frozen-i71-source.mjs",
+        "scripts/lib/bounded-conditions-predecessor-transition.mjs",
+        "scripts/lib/bounded-json-writer.mjs",
+        "scripts/lib/coastal-point-staging-contract.mjs",
+        "scripts/lib/dmi-marine-zone-exclusions.mjs",
+        "scripts/lib/private-conditions-hourly.mjs",
+        "scripts/lib/private-weather-component-inventory.mjs",
+        "scripts/lib/public-hour-delivery-pack.mjs",
+        "scripts/lib/ravscore-integrated-runtime.mjs",
+        "scripts/lib/ravscore-production-adapters.mjs",
+        "scripts/lib/ravscore-production-part-pipeline.mjs",
+        "scripts/lib/rebind-public-hour-pack-exact.mjs",
+        "scripts/private-production-runtime-bundle.mjs",
+        "scripts/private-production-runtime-workflow.mjs",
+        "scripts/protected-private-production-runtime.mjs",
+        "scripts/public-conditions-lib.mjs",
+        "scripts/rollback-assets/ravscore-model-contract.js",
+        "scripts/runtime-binding-registry.mjs"
+      ],
+      "resources": [
+        "js/core/ravscore-model-contract.js",
+        "scripts/lib/coastal-point-staging-contract.mjs",
+        "scripts/private-production-runtime-bundle.mjs",
+        "scripts/rollback-assets/ravscore-model-contract.js"
+      ],
+      "dependencySurfaces": [
+        "00ef6395633f00763a810aaa4e721f903089a32074ea31ab88a816baaa986115",
+        "0a3995edd1d98043222075551ff517319b6905c7d73e0b330ae658303a3ffde6",
+        "0afb44b49a7325c9e4b52958198860c9db53e45d5a4eb421661913e64b2df099",
+        "0d6cecaa7ef8e1f2de00ce4e6a8013b2b79f9637246f6875827161a627c1e1dc",
+        "0f8fb543b2cf5c49e7113fe9b4428ba07bb42b0679edc31416ff4e5e33b1d341",
+        "11655fecdd820f026dcc6f22b300279b5ba0ac10fb6cef18ce3f4bb2c452dee5",
+        "196ac29823a7e2d847c575514ed1e7140e5c545e4ecd42e0b821f0018e7d1230",
+        "236ab7bcef595457443c479179a1acba923eb0994faebc44bdb5587c1708e537",
+        "241aeb3f140960be318dfc359ab14b180f61d12be6884c770326aeae8dbf03be",
+        "277636f358f83342dd9a133594da79d52fdd8056c92356dd08247096a35bdc70",
+        "2afde9aee9bf709fb01263cbfc2714a2d50f83d4a55ee40278634751bb04f457",
+        "2dfb9cc9c80422f2b7e2e3caf020ecbc3a72ae7b20cc78fe1c8d1f57bf9fa800",
+        "30adb6ba02e3fc55f257b01cab99af3b907ec47700478e608fe4527ea8f6a806",
+        "322b9dd35b2973632b05156615db37bd40ec6b33258d609148428a6cf725364e",
+        "358569bb4a71f7ec16c8fc10c65a007dd222501144ea14486bf0d910892829a1",
+        "3e3dafc3646c304a240aa562e2b62c41436806c0cef51aeedb73e984df1c6428",
+        "40ac72326c781e0e4f0a225ea2f34cacae6e6c9255d2355aab2aa88313be0bf9",
+        "416320a5b6e24d1f110db760b2cb337c9bf9c39b0e71cca042c065a317bc83b7",
+        "4776f679fc561ce64e00bda16fae58ecffe4685b8f63fa74b9bf6db32ec9567a",
+        "53b09defaa6a8ef331c460a6024549140fbef65fd1ecfe24e7b7047029bbe7b7",
+        "571e1298fce9b56296b5fad3185bd24c281129ee7cd7d64b4313a05e1bb3e3d3",
+        "5cd400adc89400e8a0da884c940aa979798499f3e4779e97c2072252b635fecf",
+        "674ec8c0a1f5a2849e90e174a9b04c0d7cd3bf34302d25ac5906525a5f334896",
+        "6c8687361dfde5fb7d42b92dd5e1fe9bcc3275d4cf85cc25bf92025b28bf52c5",
+        "6caca6ae646332b73b118e7c693c77aba1eace44613bb2a061d2a50eaff4c3aa",
+        "71dfefc203a505a001719775b053c6a2ff8848c038f49eafa627bafbd8e0c7ab",
+        "7591c83f0e633929f3cfd891055deb8a8e5a443d368bee457a27107f0804e252",
+        "7b18855eebd9146766c04285bb9d81d308dd2a944cfdc5129d7c1afdb64374bf",
+        "802baa4e803994f8706043d8e31ac4364dd52615b80e73f5b82f87ddbdacea1c",
+        "8114b01b1b07f0faca2c36ce627677d6c0efbebf631c205cfb77ee2cf3880ad1",
+        "83d1f622b1309e2e380892bf637086a20b0d9215c1f194bcb62169fca465afce",
+        "875111f28a37b8ddf5228cc7520f9c42274ed1e365c73b8f2c672bd3bd145103",
+        "88389378af1c33b52221f6dc290387ad3a9649b464623af429199801ca88d992",
+        "892e734bfe2f2d5523b11a237e0ef7ae7e9465639a242ad51760f34b5c114a88",
+        "8d36427948cc69b4ea91bd27f36a297835d52e9734f3bf44c5b4a754fc355dae",
+        "90d6b6f3bbf8c4b856a484459c0166c6048a0af3831742536b189ce48a72b53a",
+        "920d70c546123f527c4ddb30107f364a4f79705a744bf2d0811aa77f950c1239",
+        "936df5406d8a966173d67e63e0dec981d7024c983f9ed8f0d8fffe59f1438da5",
+        "9710718078170013afd948157e3feb4b74f515499ddfa16873a62753eca5f237",
+        "98fcfc944f54aa14b13b34aad98644e738a92f38519448a5bc486d7afa912173",
+        "9902a498b3fe408fe026234cf12b6bbdb1e8cc0057d22f99b4ae4e0e37d4c6cd",
+        "9a44604006b0850a00765a27abbf1e8a205800161c01ed67bb9cb67ae555a88a",
+        "9e3bc3f4969265f208bd407b3f7d1025bb5489609036d5ad520bf0b287222ffa",
+        "9ec60397a534098764a8c223f174d842f8905b1380bbb506ae2a721ce2269e11",
+        "9faec43ca63cea4f5aae53f57bd1ec627bc4c6a762456dc2dfd8788fd0c7ba20",
+        "a5ce6925dda6b52b4b745503c46a06bdea4e6451bb0b155f7faceb20122b3988",
+        "b97d357936024add736d6612cb7a93f6729baad8c1c7557e419c9c70c4591371",
+        "b9c42720d7ab2e2d51731a13b18ce62b26f766fd90f09588aa5f05f93c150310",
+        "bd64f9cdbc9cf9aee0be0c629dd4d58546f9b29b8f4edec044d2a574c097e210",
+        "c61788a9b04154e3e227b829683d1c70b1bcba7851f986e12706a51d639bd9d2",
+        "de2b6dabd3ddd3c6bceadf0b454b37530ab9017e1463a3ea52de35a1065ce8c7",
+        "e3f70b9794b19a5677d52098849538738beea3b9862e9d17a04e34f149f74880",
+        "e6d9d7b80fd1f4ed0e182a7224e1716b63227ec18ce543468641ae56532f4b95",
+        "eb6722a52b147c04b7ed7eaf8324c0601314f64590ef66f9cd64147b4d121bdf",
+        "ed712b3d7c98a45cd6bf27831f93a70b1c17ff253661f71fd848f03e84ffb7a6",
+        "ef6bff7acba3eb0d11dd4e9ea2e097bf5c2dff2450d22e6b881e078c844f0ffc",
+        "f6306c49d817169982fec3c00e0264cbaf9f5cbf73b1c922b1063491ec7bb768"
+      ],
+      "bindingSurfaces": [
+        "1ad229a7bb9ddb3f195fa7bf5c9752932b87310ee8034a45437b3a734d2b1c8e",
+        "21f2fa4e01a158e2aa778b39e7b54ffeac93339edbc497bb40b7f737b2bf34e8",
+        "2f866ac40d559a2dd7dae3b0f4f82ab6028b083d650fccd6fcd5f47244853b08",
+        "311470f077389764b930b213bf893dd15389a71cd749b2ec228324af0c2f5e04",
+        "32030e9f23a82d5a822c7c2d2e87512b1b476484a4035a96445ca4131047ced8",
+        "37442f734669bfb6bdeb09654788d509ce44b4bfd7c923b75048ab53a8453bdb",
+        "3d010f4d803b290a34c97bc99bfc9995196855436c86532d3e7d532f6ce2b56c",
+        "3e0e18161d6462e95c4395e99487bddb008efd14acd256f52fcb8188b0c1039d",
+        "46039f150bf10b4beeaa2b801eb81907f42fe34d65aeedcf5431289ab265f39b",
+        "554a91b116be3eca5fcef3280e93ca3fbfdc69141313517487b0a537fecfc13b",
+        "5767c3169b31d4327aa8b9c663220dc6015b081c548fdbb230081c6d4dc347b4",
+        "58742a65c188a657140a7d7f363377f4efe30063795acfb6d9ccb05508e906a7",
+        "60831baae66a201a17a70f9b8dc5f86fb8ef418abd9446e3d9de9301fb8a5334",
+        "63735b88662da446db656b95359a5aa04be5944e9bf943f0c74ad9aa5e49e1f8",
+        "7a28cf9826aa485120c7bba06fa66e46d79d28e8fcfa9b62b0b83a14e1d50b51",
+        "83374505e5bead077f5f344d523b6216312e9849df532dbc916b51ab43998a21",
+        "883b51a53da4b8a86fba04657b3ce225f815b24bbad5100e2dfe6980486983dd",
+        "8873f638e96e5f767d1cd8c2003dc67baf2b67a6ac1bef1951789ca69a575f8b",
+        "973d5702e1195e44640db3a41a46fb3be28169953a92dc14cf8986b5f57290d8",
+        "9b3e8695c4e139fabf566cad7ebb96ab518c5bd71f261534c36ac62b86f02c51",
+        "cb6092d2d55e77888f53ea03910c6b7a721c9ecd3dc20aab34a510c1d30026d8",
+        "d26f4dc7a3200dbcfffe18e7ad97cc86fed2591040c45cd166fa1cbfeb06e72d",
+        "d2e0377cd7f4c6eb45205ab386437b0a8d70240a315190c9cddcb77fa1f8ead7",
+        "d5eba69a2252ac0fa3ffb20e3bd4c86ec9dec914397fba4f7b4fa13b5bd5bf5c",
+        "f3e9b72621ed29788fe56b69ca40a99434517e4ec34e73222472d9124fcc1bec",
+        "f88cdb06a72e5900ba3518876463c169e65c56d9bbdad56ee07f51413b30a97a",
+        "fd6c9d4428bd29330214dad00e2905f8fe26fff54e66a4f5bef67bcd3b46c55b"
+      ],
+      "computedBoundaries": [
+        "0635fd815fe1aeea6e85be18f0fecf3ad296a43b8cde9031af5b52bfda61b63e",
+        "085ee57dc2289652eb1a47af7ea1d00aaa0f6b29eb8afcd784d63a33a43b6d9a",
+        "0b661732624d5c2ab57b98d1e4c97db605754ef28fd3c9a8e56df428ddd8db07",
+        "c84f519e7e405ce88f6a01f9e2ac2cfb47a3bc6060af125ad3bb2953b289b0e3",
+        "f8f4d684ff62d4aeaf1ada1370bb3d55825a2856c36f26dfdf9daad04766c908"
+      ]
+    },
+    "scripts/runtime-binding-registry.mjs": {
+      "nodeImports": [],
+      "imports": [],
+      "resources": [],
+      "dependencySurfaces": [],
+      "bindingSurfaces": [],
+      "computedBoundaries": []
+    },
+    "scripts/lib/rebind-public-hour-pack-exact.mjs": {
+      "nodeImports": [
+        "node:crypto",
+        "node:fs/promises",
+        "node:os",
+        "node:path"
+      ],
+      "imports": [
+        "scripts/lib/public-delivery-nested-binding.mjs",
+        "scripts/lib/public-hour-delivery-pack.mjs"
+      ],
+      "resources": [],
+      "dependencySurfaces": [
+        "0c135fe0cd36a3896be1a5d6f99860022ed0866f45a34a516b35557f16575045",
+        "31f19f810dba657ab498821b50019b7fb8634cef7be3b4a3d38e363f8557072f"
+      ],
+      "bindingSurfaces": [
+        "29865a0deb1fea1abb92234207fc55bf14019b42ddb5136126c9719b72d4f4ca",
+        "429f6fa7e370ed3fb7b3151f9755ef0c0b089f5a1c87436ddff7a95657fc13c6",
+        "8a4f01bd8f396647acb9985368880685203101306a91fa4d40a125e735a49771",
+        "9b3e8695c4e139fabf566cad7ebb96ab518c5bd71f261534c36ac62b86f02c51",
+        "a852ab5f02426a79828c6a944f8829484def37481d40648b3eeed322c05392a8",
+        "e365478c6fc667d60fa5037b856e0723a533372ac0a2d5095201ab650cd83996"
+      ],
+      "computedBoundaries": []
+    },
+    "scripts/audit-ravscore-integrated-public-runtime.mjs": {
+      "nodeImports": [
+        "node:fs/promises",
+        "node:path",
+        "node:url",
+        "node:v8"
+      ],
+      "imports": [
+        "js/core/local-zone-score.js",
+        "js/core/ravscore-candidate-g-state-pipeline.js",
+        "js/core/ravscore-current-supply-memory.js",
+        "js/core/ravscore-integrated-state-pipeline.js",
+        "js/core/ravscore-integrated.js",
+        "js/core/ravscore-mobilisation-memory.js",
+        "js/core/ravscore-model-contract.js",
+        "js/core/ravscore-public-model.js",
+        "js/core/ravscore-public-profile-contract.js",
+        "js/core/ravscore-public-runtime-contract.js",
+        "js/core/ravscore-regime-memory.js",
+        "js/core/ravscore-time.js",
+        "js/core/ravscore-wave-approach-state.js",
+        "scripts/build-forecast-share-projection.mjs",
+        "scripts/lib/feggesund-wave-proxy.mjs",
+        "scripts/lib/fur-water-routing-diagnostic.mjs",
+        "scripts/lib/private-conditions-hourly.mjs",
+        "scripts/lib/ravscore-candidate-g-rollback-runtime.mjs",
+        "scripts/lib/ravscore-integrated-runtime.mjs",
+        "scripts/lib/ravscore-production-adapters.mjs",
+        "scripts/lib/ravscore-sampling-context.mjs",
+        "scripts/public-conditions-lib.mjs",
+        "scripts/rollback-assets/ravscore-model-contract.js"
+      ],
+      "resources": [
+        "data/live/coastal-parts-v2.json",
+        "data/live/manifest.json",
+        "data/live/public-conditions.json"
+      ],
+      "dependencySurfaces": [
+        "1c90e1673f106595cd51810d45ce6516ba494687b41ce9b07d5641fefa9c4872",
+        "60f80878e42486f003a1fbc32f76e00afcc50ea960a253ce633b7783c9137838",
+        "802baa4e803994f8706043d8e31ac4364dd52615b80e73f5b82f87ddbdacea1c",
+        "89fd4663c3673223051b47a41419232b78bbe38f657f4b123bfdf794aa180b67",
+        "a3563a836b0d49d09ba7b1e773c82488c6c5584ea633d6246f678330cc36bf41",
+        "b7063e077b57f2fdfa3e2510bc0deecaca285ef632053d04d6f5fffbe12c51c0",
+        "c78c4f9c95eff037deceaa695c3fc41c4028c538bedefa75739e8a3251873ed6"
+      ],
+      "bindingSurfaces": [
+        "21bc43f23be8aa9c5a067c40cd80f2f9b554373d9bc4b67a7cebfa4f3a5543ab",
+        "61cc40deae1e6d77052d84b6f4a64f73f49ccea9a38c3894cb69e78bda07f170",
+        "7481e22be41abd07f55debe9f8aeab0c1a1d22b9465a58619af78cff847cb6f0",
+        "829858dfc17fa59c87a1252d9f6a12619f775f8448100bcbd7c93dab530bcab9",
+        "89173b48ddb8d291c6e7a2d8bbbe00207c3bcae544db958653d7cdd05b8991da",
+        "8e74b3a70e45bfd5d409c7b97412bb0e0b79f29d14ea7df3694ae50b1807abdd",
+        "8fdf840a36111593f4ec09d845856f3817d5593c347cef7c74e3593ef6554bb7",
+        "9598b4b0a01c12c81a478e9debd1787742a3ec8878b0d1f9eb7e7cc9f8723bd4",
+        "9b3e8695c4e139fabf566cad7ebb96ab518c5bd71f261534c36ac62b86f02c51",
+        "ae65e6128aa38c2e1827978b4a4be38c7b3102dd2e719c482a8cf20f6fe082a5",
+        "baffda3fa9222611dc50bba2d8c2f39f5ca76a3599957b7e3b211b10a9097177",
+        "d1065f01000524320620a87fb6349fd58e8e0740e852e83412510bbefb78d34b",
+        "e988588dc4a3f3a7e3cc64a5074b2a62e31093f798c2862cc6449800ecb0ea71"
+      ],
+      "computedBoundaries": []
+    },
+    "scripts/lib/native-identity-staging-working-copy.mjs": {
+      "nodeImports": [
+        "node:crypto",
+        "node:fs",
+        "node:fs/promises",
+        "node:path",
+        "node:url",
+        "node:util"
+      ],
+      "imports": [
+        "js/core/ravscore-model-contract.js",
+        "scripts/check-native-identity-frozen-i71-source.mjs",
+        "scripts/lib/coastal-point-stage-dmi-adapter.mjs",
+        "scripts/lib/coastal-point-staging-contract.mjs",
+        "scripts/lib/native-sampling-identity-successor-source.mjs",
+        "scripts/lib/private-weather-component-inventory.mjs",
+        "scripts/lib/ravscore-production-adapters.mjs",
+        "scripts/rollback-assets/ravscore-model-contract.js"
+      ],
+      "resources": [],
+      "dependencySurfaces": [
+        "013cad7e9795a3272efa3da1f11c664d126dc48efe592aadab2167d69079340b",
+        "555156d78aa74d39f87f510a9794bc3433b3f4420df7c91d030e46c50a8cd2ed",
+        "72f1fc6af5ac75fd1956cc023876c16eb14249b22e8100052727da73bf932f26",
+        "7b3229d65978953e5a91871caf20afd6f1a62d3161e2476316ae66d26be0ee9b",
+        "7f243d23ec0f9d38e777fbf17b7caebd2fdd605ec286e02742f37d64ca25c5f0",
+        "826521c0b9c2f6e66121e95d305586da9eb0f3544b13b54a3d9cd532f5097575",
+        "85240f696cc2a2a0c2fc54827fd611ac22d9d8860724278831a4ca43b7c073bf",
+        "a47fa1872e042a2887ae393b3dd3e9f26151047335acbdc695f95222cd6189fc",
+        "cbd4dffd7850a164c0d10439c1cac9319028269fd73fbdea6c35dbd3706d89e2",
+        "fb5a87b2b2635d2f0d45e316c59cd006eb6dba8e43d663d012c1b01e94587f32",
+        "fc7d45159620d319d219af98eebcf7aae59d9215ff2628432fdd6e41bb4d73b9"
+      ],
+      "bindingSurfaces": [
+        "1eb3d8f8d9c0962c00791dafede92982963ee0d4d23da31af7320a7a6f3fa740",
+        "36990fe61f056028b2340ff14f245ae86b49a3752c3fa8fc310548d1a68a37c5",
+        "44a0ed32a2cd81acc0116c4dc2ac73258eb7a2abe9792552c03cb8a4f4c47a50",
+        "4777c70d6cbd9d69478f9a1e62ee31ebeeefc21c13ba390a5712e6f6240d1a02",
+        "55c693f1b8b444aa059b518d82e2036871eefcb5db1d9b539f5a7533fc3fcac0",
+        "5eb1b0eb79c7b54b2121ba0d1af92fafe42a65b942d918777b99a42bfbdf5a12",
+        "610d5cfef51f8009e9cacc7dea1ecc9bcef6d8f2690ecbe4d36809c90bd0c092",
+        "76bf5923d188c04799c1a8b41580ccc91539a307bbf3de42aaffd455c92d595c",
+        "7fb43dfd6dd057af2c68eb55122a4b4442d647fc057addc31f795aaea9e4d324",
+        "8a4f01bd8f396647acb9985368880685203101306a91fa4d40a125e735a49771",
+        "99544786db98d5b172785ec785d51ed9b9997cbb6f08f40f0e71f0178c8695ac",
+        "9b3e8695c4e139fabf566cad7ebb96ab518c5bd71f261534c36ac62b86f02c51",
+        "b5274ea675e9fb5f33ad5ba8a90b479986271003da8653dfe09b2eb985157e13",
+        "c2a78a098c22dfd9cff8e56caff9c7fbf3e210ba373f623c82c6da755e0352e9",
+        "f0db4002eabb1c7191471a57ae1b2f52a16039b41f1fd813fedb69531c70d783",
+        "f437e453e4eebde5a6fe6fc5ee2b0f2507f6973b9e25aea1f5e0d96052edfb07",
+        "f98384c323e8224cd5506836c6be89eea428e78d29e0ac8338c6fbd9ae8e1666"
+      ],
+      "computedBoundaries": [
+        "f50f10370073c3efcab9786ca640e2453ac0b1357016560420ee0c5ba43efaea"
+      ]
+    },
+    "scripts/lib/coastal-point-stage-dmi-adapter.mjs": {
+      "nodeImports": [],
+      "imports": [
+        "scripts/lib/ravscore-production-adapters.mjs"
+      ],
+      "resources": [],
+      "dependencySurfaces": [],
+      "bindingSurfaces": [],
+      "computedBoundaries": []
+    },
+    "scripts/read-authenticated-dmi-current-companions.mjs": {
+      "nodeImports": [
+        "node:crypto",
+        "node:fs/promises",
+        "node:os",
+        "node:path",
+        "node:url",
+        "node:util"
+      ],
+      "imports": [
+        "js/core/ravscore-model-contract.js",
+        "scripts/assistant-later-h0-runtime-transition.mjs",
+        "scripts/lib/assistant-later-h0-successor-source.mjs",
+        "scripts/lib/authenticated-frozen586-predecessor.mjs",
+        "scripts/lib/bounded-json-writer.mjs",
+        "scripts/lib/dmi-bulk-storage.mjs",
+        "scripts/lib/private-weather-component-inventory.mjs",
+        "scripts/lib/private-weather-component-pack.mjs",
+        "scripts/private-production-runtime-bundle.mjs"
+      ],
+      "resources": [],
+      "dependencySurfaces": [
+        "20d101b7fdba7348bb8802266aaf812eb2c5707f0742920620c1ac364eae963d",
+        "380fc1cd7e745dc750fc317a2edbbe4b2bfa33596840451d1db7ce31b62a6504",
+        "4069f1938926173b1fc42189e79b43eb4f724fdf23ce6dee93171fad0a09c7e9",
+        "44b349682dfbed031c97d9fd5750a20d8b901295d1816aac2221ea9f48c4a406",
+        "757a5eb64efefadaf65d007f25c82f85705de18d62beb064e3dca18142c84a9c",
+        "95aad494238c2227eb1b9b99bbeabdbfe28c3e1c829f1eaff2799f0d41938eb6",
+        "99c1eb33425a8fed39e3757ed41ff8053f2a808df9fe3c07b322bce98b351938",
+        "9d3f77ad614a2b1ddf0ca717eeb80d42695b470f0263aa1f95a053dc5bb5aa0c",
+        "a6b0b7f642919c0ac21d3a1b5b7ea094ff165a9a100f48757e34ef743a2c74b1",
+        "af1058134fdbeac25ab3f4ecf2fd98ad321de82b0ef58b5fedb92f7b4863a343",
+        "b3437b418e7ad753774ef904bcea45813a8c79393aa421d4e237b747983e6930",
+        "b9e1bc55639ba4b1cabbfae69b2ccc29149d364471c300be0672865078ef916d",
+        "cad2276ca9d7039c44e9ba3bed2670581147014c04f17af483f3235297788b0d",
+        "cfb7bb741c135af2f307e874d321b067adff19d0894106624a48f39499fb8db3",
+        "e0d40c6c25ccda4eb5cf44aa0e142217ed1cc756921eae8162614252b7f0e4fe",
+        "e8303fc0a69d7c3f7c2298e41d5a1067c46e1902c7477ba1d25a1c6ec23cb3ab",
+        "ea79c7a38220f5f0acbcf66c38c90290c79f7afae46b9327e04a86d514140aab",
+        "f0de61b91aa744fa9dda5d0b42d2276c71930bc55216d717f7ed377e7ab5c823",
+        "fddba508755f3b4c7c54c17408e37f7ccd42f0a3b5771bc30c20925627b8d9ce"
+      ],
+      "bindingSurfaces": [
+        "02ce297516202ebe517788eb985b5240347df0e25247adb4153ce92f0e4080b3",
+        "138b4459513964aa8451e73c440038710438f637053ffb850ac5d12b36d8ead8",
+        "168b27c7c7c526efe2f5d0e496155bfab3d0c59a269d0f38abeff5579ecf8e7f",
+        "1a66a9a5d9835320b2e8e5b3ac44d2b3dcc9d696357e8c30f7fab1659aad2786",
+        "4986c5d1ee9fa907314ba7412536690a6a460057665a76d7a7e714c8876bb8cd",
+        "51acd10f10c4147496be34ae1c3b9e316a114c324e577f7ef91ebf30116b8dba",
+        "5c01e63ddff9adc1ba98a5f66268a4868d38d067919b6ed781ae4300fb3bb912",
+        "69a40b860c88a852c42d3428d42da1515155c206cbe27e359add3db31c3b8c01",
+        "7bfc69d2efc1837733c767a71022de619a605f8d0c3f29a4ad3dd9a866958edf",
+        "8a4f01bd8f396647acb9985368880685203101306a91fa4d40a125e735a49771",
+        "9b3e8695c4e139fabf566cad7ebb96ab518c5bd71f261534c36ac62b86f02c51",
+        "9d2d5631fea7fc59a455dbe4f6470781c08410640b8009d3e5fa543307f1f4d0",
+        "b6324de6e2e1e99410c64f90cf067bd8f6f8b87193c902965aa94509becee2db",
+        "b87790c4e39c2e7b6bdea5d3236430741f0a6a43759c8b5a9d694885e8756d75",
+        "bc853d7fe8823d8a53352a560b44efe2a682a1e2972c78b8af741d16f5166f39",
+        "bca637f943dc9b2c2e8d53a9a20f6e4f1db898fbb94c526f3f107deb73b934e3",
+        "be9b91b9d43642c4b58e680dc5c2e216c88e0408e01450857483b42e3dbf9a68",
+        "ce3393d33214e2929c239150e679b8d7687dc2531caf4409426cfb5eeaf35bea",
+        "d7a1970e2ed059be1ece402f6fabccb852861ff02b473e87d86aec42b2a78bca",
+        "daf554af311ece39ca329723848bdebf4589c59f3b6e1cd64ae00f7f9d1eecc8",
+        "e2ebc36b88356d6e60e87225561455147a8d9e58f4eb37d4c62467a78b34475a",
+        "e783cc162a0db94c70773344927b2a8b654733faf5fad23bf81c8ee46985bc07",
+        "e8702635204a8a5abbb299bd4ba6ce3223f2cc5d2bf01821cf94e5f36e7f4a63"
+      ],
+      "computedBoundaries": []
+    },
+    "scripts/assistant-later-h0-runtime-transition.mjs": {
+      "nodeImports": [
+        "node:assert/strict",
+        "node:crypto",
+        "node:fs",
+        "node:fs/promises",
+        "node:path",
+        "node:url",
+        "node:util"
+      ],
+      "imports": [
+        "js/core/ravscore-model-contract.js",
+        "scripts/check-assistant-later-h0-predecessor-source.mjs",
+        "scripts/lib/assistant-later-h0-successor-source.mjs",
+        "scripts/lib/assistant-public591-runtime-contracts.mjs",
+        "scripts/lib/authenticated-frozen586-predecessor.mjs",
+        "scripts/migrate-post-cutover-private-runtime.mjs",
+        "scripts/private-production-runtime-workflow.mjs",
+        "scripts/protected-private-production-runtime.mjs",
+        "scripts/ravscore-continuation-checkpoint.mjs",
+        "scripts/rollback-assets/ravscore-model-contract.js"
+      ],
+      "resources": [],
+      "dependencySurfaces": [
+        "01db824615d0558f5b26ad5a4002caa43fc159a3980787fd107231f48b9c998e",
+        "03aa50098e705fa8db546961250199a56df602fab3d3cf5d05eb485609c9c64f",
+        "053e8c547cb9e5c72d6c8db128f75f932682d7d4b9c98b9dcc049b787aec8904",
+        "0f5ff56d9bc9561d5d4e229611524822b343acc8a947804419f9a4483d8f7c39",
+        "0f7974f8036a1fd2b81167682650e57f93d450eed16b062da13381db8a466e6a",
+        "21cb94b7fd598c51c17e808701892cf0f558577bffd348a211f26fbaed9b8dbf",
+        "2564e0447108ec793342022ef062872e8d9f6c6f889b70db931965ffa1f18971",
+        "261fa97800ab9394274cc409cb6678d2c3f5cc6e6c4fdea4031ed4a43b2f6bec",
+        "26703cfbc90c19e991d81df631adc946dfda227e3e6899f27f0e00bb78d001fb",
+        "2eeb530a85d951944955f65c6613b04ed524824c4e020aabc2988d41933226f6",
+        "4069f1938926173b1fc42189e79b43eb4f724fdf23ce6dee93171fad0a09c7e9",
+        "638a2471041d854bb3bfbb06603e2a5739e3402dd7bd78b395861c2350017147",
+        "6846f1c7a21874319cd324baddaf04f4a709c266ad37c5f42dbf7a897c2b61eb",
+        "782800aaa21b733f34b1146f54c7b0f6bcdf657cbdfeaaffb883d77d3680d088",
+        "802baa4e803994f8706043d8e31ac4364dd52615b80e73f5b82f87ddbdacea1c",
+        "80967fa418a8aafe939242abe25c5d1ad712a57b771c5a36cd12ae512e127404",
+        "844f91ad731fd6f8323ec9f76c07ff44f003cd88c7b067c9306ad8cc805e9128",
+        "90fa165ff3d8ed297d39a7ba2c25215a481cf9ba343b14983fa89900612d4fc8",
+        "99da08bc769adc6f810c6b501210468e4fcc1cb2182462aedeb7d0cbb0986ee7",
+        "9e49f33167e7e7401ccbd37eda2e2b5f7b1daa41e76a44f67619c30c87c97a4c",
+        "adbf8c50e42dd3618218bc2c7ee83dcef9fd926d8f19ff0c74b65c2a7f4c67c0",
+        "b00213a69e0b3a8a7ab0fbf371960c75c22fc9a58574ff1292fbda13d1c38d8f",
+        "b93133b35dfb0cb901d83e5e13b2381eb3f8dce4c671f35906a4bf97f7dd866b",
+        "e0d062ce3ce4414fd2712cfdaed4eaf2857a6ff377bfc191a97325e420495f23",
+        "e19bb451d0982dab97a1856b45d41090350bbcab980f8896e2bcce99ed2eeee2",
+        "ece5e8101127491c5f25b35d5acd92bf18b47c1fc42759a3d3685d205a25f320",
+        "f6ae488bb142983edc8706ac2d4027f4fc288d057b1c16d395c4cd4f7835d91c",
+        "f94b470ff29346c2865161091ee9cac156ace0cafef216682ab3019af69e9a64"
+      ],
+      "bindingSurfaces": [
+        "2752a39ab488132b64b9659a3dc065215c909b40fdb2061679eb5af19bb8084b",
+        "2d766039f2ecddfcde7ad91fa64fe7169a27e7f9fd3a2fa3f426a7e5d9bb0acd",
+        "2f866ac40d559a2dd7dae3b0f4f82ab6028b083d650fccd6fcd5f47244853b08",
+        "3b7571cab25e4a95dafcc151ce92c3985321d728f333df98c257ce2de12e3f30",
+        "44578dae6cc65c55cf387c6bee1a808c2975eb5c02a4a92328f82ff6322b46d5",
+        "51a15a5c3f76deb94403724ba9b40b63657086aece1850c2275fc402e6e8109b",
+        "5767c3169b31d4327aa8b9c663220dc6015b081c548fdbb230081c6d4dc347b4",
+        "67c06c640621a7de5f759b3febec48c51de5edeb2180a03c6d2a4e4596723751",
+        "68a6d6cb33f21fe5547445ea77a9cfc7737e9cf84d5b5ab0b0eb04014dae4207",
+        "6f99904e2e17180189f70276d2e287286f851f3e725f1c19cbdcaedabc7163d3",
+        "810a29ecdb5f18d1a7b4ddbe965ad7ae5c21d453d0fc83b6f1a7b508a1a95112",
+        "8a4f01bd8f396647acb9985368880685203101306a91fa4d40a125e735a49771",
+        "95149332bdb5a58bfe04c1ef92cbc9eba3c7774c4d6a5e151f647dd4cd2a2407",
+        "9b3e8695c4e139fabf566cad7ebb96ab518c5bd71f261534c36ac62b86f02c51",
+        "9db55fa5aaa9152f8f304ca0d3649bded9e81d0e6d7413cc67d4c7d896a2b410",
+        "ac72d61313a6f630b0bfbf0b3ea69c0c5a7a454897d98e5ac508577015e8a85f",
+        "b9db5017a2bce12bb435a6fcd9a621b8c2f2fa272c1f6ebe01e24428aecc1b90",
+        "ce2695aefa8b220694323daafda7efa5236a1680446c6c8cf8ffdc0a30d7ce57",
+        "fd6c9d4428bd29330214dad00e2905f8fe26fff54e66a4f5bef67bcd3b46c55b"
+      ],
+      "computedBoundaries": [
+        "cc2fbc50d5c478c51f31b0081f9c1292457f0333814313a98bc9d009859caa7b"
+      ]
+    },
+    "scripts/prepare-cached-coherent-current-work.mjs": {
+      "nodeImports": [
+        "node:crypto",
+        "node:fs",
+        "node:fs/promises",
+        "node:path",
+        "node:url",
+        "node:util"
+      ],
+      "imports": [
+        "scripts/lib/coherent-current-original-bootstrap.mjs",
+        "scripts/lib/coherent-original-source-views.mjs",
+        "scripts/lib/dmi-forecast-file.mjs",
+        "scripts/lib/dmi-part-continuity.mjs",
+        "scripts/lib/private-weather-component-pack.mjs",
+        "scripts/lib/protected-dmi-native-current-proofs.mjs",
+        "scripts/lib/prove-cached-coherent-current-originals.mjs",
+        "scripts/lib/reproject-coherent-current-originals.mjs",
+        "scripts/plan-ravscore-current-history.mjs"
+      ],
+      "resources": [],
+      "dependencySurfaces": [
+        "0587cca1f4b85749667729ab689eef980ff28c805a5910c4f1f40fbf641c6961",
+        "158766d54bb4126a30f441e820b262b257f502c86845c1e3a7065cb46e1410bc",
+        "332e50cdbf87a40b766f1e3705b2a57994ece25f8069a76801e1c0d239aefd6d",
+        "4837d2e0f1707a4b42f68cc5cad01092c72e44886eff75cf45beeb0569fcf884",
+        "4a20a46008853caa7f06af33b4788f40a75b97880c50091e01a1e5471a22ba64",
+        "87c8f8b63b76cad0155d2bbe39893747ab0b7ce42373f0702004bc3c70842e9e",
+        "a54f7a8a4205700419187f563ccead26c591abe171538e1e19d5b47acb3ac112",
+        "b496f13f1c6cdbba842f0cd38bf8cdc463e569e489570fad4cb8e8a8266950cc",
+        "dd9f77c9682db9d25509ca0675114000b5d84c18551364b1b4ea0f678d7dd44a",
+        "e030fc07d9c9fe745a24122b05eb603dabc717fa83f6232fd4a06de202cb90f0"
+      ],
+      "bindingSurfaces": [
+        "0e7a5f8c58a152b74cf27243a7847b52722e66ff772d3868fd980d9d2ab6f26c",
+        "3447f44b8641b74621bbe4c50c558ddc8541afe4e669c3cb8997a5dc83fcf60f",
+        "35b100b6df038f0431dea425771f52e06dceedddb1bd2b677338b8c41a6d33e1",
+        "3697e5fc27f96126ea23eb35cb5fa8a4f33dc6c32b4860e86d94bcb48b1cd27e",
+        "48abd072437a3702d744045ad20f9c9e72654f243d31ea0491cf625d4e54101f",
+        "5638a3466c0291f5de1332e5085d9183b9bb4cdd1c08b50f82a1ae31e832e9a4",
+        "67b9daa13766afbbcc5ef9b795091bd107e435670cb504f02f0ddf67d30fabd0",
+        "8a4f01bd8f396647acb9985368880685203101306a91fa4d40a125e735a49771",
+        "9b3e8695c4e139fabf566cad7ebb96ab518c5bd71f261534c36ac62b86f02c51",
+        "bb70138322ae1d8ae484e077293b1bb6d99371adc8a4747456a10e7b71fcbd7e",
+        "c9ad6e2768d6283fd7980b7ec60192bafd99c517f608bed8204b56e217e7a2da",
+        "ff571dfb2a476e76dd5520dedf68442b5f961cf2b925ab92bdd4ac8a9bb534b9"
+      ],
+      "computedBoundaries": []
+    },
+    "scripts/lib/reproject-coherent-current-originals.mjs": {
+      "nodeImports": [
+        "node:crypto",
+        "node:util"
+      ],
+      "imports": [
+        "scripts/lib/coherent-current-original-bootstrap.mjs",
+        "scripts/lib/coherent-original-source-views.mjs",
+        "scripts/lib/protected-dmi-native-current-proofs.mjs",
+        "scripts/lib/ravscore-production-adapters.mjs",
+        "scripts/lib/ravscore-recovery-source-priority.mjs",
+        "scripts/lib/saved-dmi-original-capture.mjs",
+        "scripts/plan-ravscore-current-history.mjs"
+      ],
+      "resources": [],
+      "dependencySurfaces": [],
+      "bindingSurfaces": [],
+      "computedBoundaries": []
+    },
+    "scripts/lib/coherent-original-source-views.mjs": {
+      "nodeImports": [
+        "node:util"
+      ],
+      "imports": [
+        "scripts/lib/protected-dmi-native-current-proofs.mjs",
+        "scripts/lib/ravscore-production-adapters.mjs",
+        "scripts/lib/ravscore-recovery-source-priority.mjs"
+      ],
+      "resources": [],
+      "dependencySurfaces": [],
+      "bindingSurfaces": [],
+      "computedBoundaries": []
+    },
+    "scripts/lib/coherent-current-original-bootstrap.mjs": {
+      "nodeImports": [
+        "node:crypto",
+        "node:util"
+      ],
+      "imports": [
+        "scripts/lib/coherent-original-source-views.mjs",
+        "scripts/lib/dmi-forecast-store.mjs",
+        "scripts/lib/protected-dmi-native-current-proofs.mjs",
+        "scripts/lib/ravscore-production-adapters.mjs",
+        "scripts/lib/ravscore-recovery-source-priority.mjs",
+        "scripts/lib/saved-dmi-original-capture.mjs",
+        "scripts/plan-ravscore-current-history.mjs"
+      ],
+      "resources": [],
+      "dependencySurfaces": [],
+      "bindingSurfaces": [],
+      "computedBoundaries": []
+    },
+    "scripts/lib/prove-cached-coherent-current-originals.mjs": {
+      "nodeImports": [
+        "node:child_process",
+        "node:crypto",
+        "node:fs",
+        "node:fs/promises",
+        "node:path",
+        "node:url",
+        "node:util"
+      ],
+      "imports": [
+        "scripts/lib/coherent-current-original-bootstrap.mjs",
+        "scripts/lib/dmi-forecast-file.mjs",
+        "scripts/lib/dmi-part-continuity.mjs",
+        "scripts/lib/reproject-coherent-current-originals.mjs",
+        "scripts/plan-ravscore-current-history.mjs"
+      ],
+      "resources": [
+        "scripts/run-coherent-current-originals-supervised.py"
+      ],
+      "dependencySurfaces": [
+        "07592276d05b50a026958776449d7d234e1fa144c162697f81d3d0fc23fd3fa4",
+        "0b73361dc3edeb0ba97160702a992361edc7c5d07d9817a57224b4b4e6aca77d",
+        "0c3cf80c8d547147d8c3bd9101be1889c664f45eecb650b206fa0a1842580481",
+        "1b76313f61d6b793cece6fc496adb0ac2715a335395c7a15d3a7ea3b19de65d9",
+        "1fe2d3f70e19c8caf0f77d5390306fddd4b54df007a9b5c50aa4468a60616c38",
+        "20485e50a39371353104a2d97953f69a29658885ec128b1777230b1d94f3ac22",
+        "555156d78aa74d39f87f510a9794bc3433b3f4420df7c91d030e46c50a8cd2ed",
+        "571d773307eadb810d9c5d9381ae7aba6f2eca1e3eb3ba7841c79805a356ce10",
+        "5ac6a8f7faef7481f8127c5f72f4e5840fd3480fa504526d0bb79b6142a737fa",
+        "5ead1c7d2272829aaa1743b3dee6d786b07669a03e39a686f738e23d47b8059c",
+        "68d990afb183403a159be73c72f51809cd101e75c41b16b2cc3d6fc8e3c85bf9",
+        "792c7a9afe89a9226dfbca325027739bea2c31574cb5c12d67664c80049bb7b2",
+        "7d6e34dbfc5e60d92d37ae5a9198644cef84f735c7f813a508ffb23c7333fe78",
+        "95e3bbe1cf7ec564d4eeae292dc9c8e10e737e69dd2782a46f3a493690466185",
+        "99bf3f82ed330119976193b7c35f38514f1af437bf961a01cb68ee3ec7fa3c96",
+        "a6c2388cbb092013be9d9e6bf24fbc818154ef737c18a799599bddd46932135e",
+        "ae4cf69744a320193f25d3fa0af38a4d8050bf589054e576174744ac6a86da09",
+        "e888e5daf5a3cc03bf6fa56327ac625faf43871c9da39e4240ad8340c4a0bc42"
+      ],
+      "bindingSurfaces": [
+        "06a463ecd1c89468bdc04279c4431bce9199f6e21d3bfdc6516e23e9f93918c0",
+        "1c281deebf09037a65579a61309eb3edba18aae9b04999f9503bf925a9980874",
+        "29f4953c1ee4f225711824ca2c92f73d6a8227d8cb247317785d870c1485d609",
+        "2f866ac40d559a2dd7dae3b0f4f82ab6028b083d650fccd6fcd5f47244853b08",
+        "3458eabb42b5feed209189801a0490ff5bf85dbd0ff88c0905ac93ab9f91582a",
+        "408389248b2b0074971cef359bd04a62aafc4ecc56eb780fa4f81496e4124506",
+        "411755f0700d73741f46feb05967c85fb826be4c43f2d4928dc19056d71ff0b2",
+        "42b4cefbb2ea981517ebc1ab3e686fe430a85c398c847a64cf3fddf499c7a2af",
+        "4d5d93f1995b4b4f3852baa77669b133c21ad62e68343dca0e5697104b0af6e3",
+        "617921805710ca10e61d4c506786fa4424db78b8a98706a5367a2a0d1a111605",
+        "7d9f906c5eaa2039861770668b57bbb9b4ef14cf3233aa73ffc1fc5e7dcfcbff",
+        "8a4f01bd8f396647acb9985368880685203101306a91fa4d40a125e735a49771",
+        "9b3e8695c4e139fabf566cad7ebb96ab518c5bd71f261534c36ac62b86f02c51",
+        "a8c00437e588039665511818f2047c441d306d7abc619721f58cc980dd8b09b0",
+        "b1fe2002b28d2c995c5b8578ca69aa326cac0679ac5ac6677a4e0ad4ad7d41a8",
+        "bbeeae56ea84b8a421f8e37d45a44e5d505b8bef6a4bb9d600bc828765982df2",
+        "c49481cf91b5b1271465a5558c5a21f6e2bdd4e18b5dc0851d77f6637de8d796",
+        "f9888bea22c78ed445e91a18bacf3b49020aee53fbeb371db8d65cfa0bb4c0ef"
+      ],
+      "computedBoundaries": []
+    },
+    "scripts/lib/saved-dmi-original-dependencies.mjs": {
+      "nodeImports": [],
+      "imports": [
+        "scripts/lib/ravscore-production-adapters.mjs",
+        "scripts/lib/saved-dmi-original-capture.mjs"
+      ],
+      "resources": [],
+      "dependencySurfaces": [],
+      "bindingSurfaces": [],
+      "computedBoundaries": []
+    },
+    "scripts/lib/protected-live-current-assembly.mjs": {
+      "nodeImports": [
+        "node:util"
+      ],
+      "imports": [
+        "scripts/lib/current-spatial-runtime-proof.mjs",
+        "scripts/lib/dmi-forecast-store.mjs",
+        "scripts/lib/dmi-native-current-runtime-projection.mjs",
+        "scripts/lib/live-current-pilot.mjs",
+        "scripts/lib/protected-dmi-current-context.mjs",
+        "scripts/lib/ravscore-production-adapters.mjs",
+        "scripts/lib/weather-component-selection.mjs"
+      ],
+      "resources": [],
+      "dependencySurfaces": [],
+      "bindingSurfaces": [],
+      "computedBoundaries": []
+    },
+    "scripts/lib/protected-dmi-current-context.mjs": {
+      "nodeImports": [],
+      "imports": [
+        "scripts/lib/dmi-forecast-store.mjs",
+        "scripts/lib/ravscore-production-adapters.mjs"
+      ],
+      "resources": [],
+      "dependencySurfaces": [],
+      "bindingSurfaces": [],
+      "computedBoundaries": []
+    },
+    "scripts/lib/dmi-native-current-runtime-projection.mjs": {
+      "nodeImports": [],
+      "imports": [
+        "scripts/lib/dmi-forecast-store.mjs"
+      ],
+      "resources": [],
+      "dependencySurfaces": [],
+      "bindingSurfaces": [],
+      "computedBoundaries": []
+    },
+    "scripts/lib/current-spatial-runtime-proof.mjs": {
+      "nodeImports": [],
+      "imports": [
+        "js/core/current-direction-audit.js",
+        "scripts/lib/live-current-pilot.mjs"
+      ],
+      "resources": [],
+      "dependencySurfaces": [],
+      "bindingSurfaces": [],
+      "computedBoundaries": []
+    },
+    "scripts/lib/production-reference-time.mjs": {
+      "nodeImports": [],
+      "imports": [],
+      "resources": [],
+      "dependencySurfaces": [],
+      "bindingSurfaces": [],
+      "computedBoundaries": []
+    },
+    "scripts/lib/local-part-runtime.mjs": {
+      "nodeImports": [],
+      "imports": [],
+      "resources": [],
+      "dependencySurfaces": [],
+      "bindingSurfaces": [],
+      "computedBoundaries": []
+    },
+    "scripts/lib/weather-component-safe-summary.mjs": {
+      "nodeImports": [],
+      "imports": [],
+      "resources": [],
+      "dependencySurfaces": [],
+      "bindingSurfaces": [],
+      "computedBoundaries": []
+    },
+    "scripts/lib/voersaa-water-level-trace.mjs": {
+      "nodeImports": [
+        "node:assert/strict",
+        "node:crypto",
+        "node:fs/promises",
+        "node:path"
+      ],
+      "imports": [
+        "scripts/lib/dmi-bulk-storage.mjs",
+        "scripts/lib/dmi-forecast-file.mjs",
+        "scripts/lib/water-source-forecast-routing.mjs",
+        "scripts/lib/weather-component-safe-summary.mjs"
+      ],
+      "resources": [],
+      "dependencySurfaces": [
+        "0c99df77d92e7ee7879260d0e5f2229559ccdd31173bb5b0ce22d2f3fa922283",
+        "2c31bb5c5f7dceef58ac4a0fd2d96edf04fdcaeed668c787bd425f039d13c6b2",
+        "322b9dd35b2973632b05156615db37bd40ec6b33258d609148428a6cf725364e",
+        "a404a54ce679d5c14f8aef0a48f4a5b5b9c5aa3b6edea8cf414332bbe125acce"
+      ],
+      "bindingSurfaces": [
+        "32030e9f23a82d5a822c7c2d2e87512b1b476484a4035a96445ca4131047ced8",
+        "8a4f01bd8f396647acb9985368880685203101306a91fa4d40a125e735a49771",
+        "9b3e8695c4e139fabf566cad7ebb96ab518c5bd71f261534c36ac62b86f02c51",
+        "e783cc162a0db94c70773344927b2a8b654733faf5fad23bf81c8ee46985bc07"
+      ],
+      "computedBoundaries": []
+    },
+    "scripts/lib/current586-exact-original-plan.mjs": {
+      "nodeImports": [
+        "node:assert/strict",
+        "node:crypto",
+        "node:fs",
+        "node:fs/promises",
+        "node:path"
+      ],
+      "imports": [
+        "scripts/lib/saved-dmi-original-capture.mjs"
+      ],
+      "resources": [],
+      "dependencySurfaces": [
+        "0b73361dc3edeb0ba97160702a992361edc7c5d07d9817a57224b4b4e6aca77d",
+        "2e960cfeb4c1ddc359ab86997726845e771088af38ef714afccabf4b4a1e5d95",
+        "5b5e6198623891d107a815d801dcf42610c9ba8f05eb726f4a8f1178d3928ec1",
+        "763821fc1f7cfd69a1819c3e18b58c0b1cf3b3842f9ee9b6fbdc91883f63f70e",
+        "aaa943517c86776133d1eb02afc089d7400fb6b399217ebef3a9e92ae9f5ff19",
+        "acfa75b684479b964091172663cfe6d26d1a57f386912366e61d8d336895a15f",
+        "fc451f51f4d46dc88887eb314fd34ea816c8374994bb5bc852c93198c17cf211"
+      ],
+      "bindingSurfaces": [
+        "0aab27eb18f715a4eabfcb539701a9660628f4f39ceac3d1a5ea2cce10f31e6c",
+        "29f4953c1ee4f225711824ca2c92f73d6a8227d8cb247317785d870c1485d609",
+        "2f866ac40d559a2dd7dae3b0f4f82ab6028b083d650fccd6fcd5f47244853b08",
+        "3458eabb42b5feed209189801a0490ff5bf85dbd0ff88c0905ac93ab9f91582a",
+        "554d2cc7d9dbc9aee4d3cb62968568b1b6e96afa610ba363e67c11fc7a826ae4",
+        "57649aea3e4250ab5c18000aee750c23c1c279d2d779ba1eb8eef7e4baa4ae10",
+        "7254367adbe7d02fa2945ce16fb0f2cf39ee9d626c96933a77eb27b50b7aed1a",
+        "8a4f01bd8f396647acb9985368880685203101306a91fa4d40a125e735a49771",
+        "9155f4dd71f80a2efd74a7adffd02074d189a15cb0346bb3dfb98940d48c584f",
+        "9ad6f2965633693e6916e17570d2b2f97e08526b20799be5d06a71f536a62c7f",
+        "9b3e8695c4e139fabf566cad7ebb96ab518c5bd71f261534c36ac62b86f02c51",
+        "c539c471d49897c1e003db2d2203e43c93b1961112f75612163e6d5660f93c0e",
+        "cc10c00a979eb94e82b37cfbb55c33107305212c60bf983d114c7e339685b535",
+        "e8303cc50d32b9f468492bac7f08b802ce1a3a976104ba1052bf21aa45ded69f",
+        "f20a2eb2dc6a6f75a716e1d9fbe23df8bcdac36c948539337b68ce9aa8651da8",
+        "f9888bea22c78ed445e91a18bacf3b49020aee53fbeb371db8d65cfa0bb4c0ef"
+      ],
+      "computedBoundaries": []
+    },
+    "scripts/test-helpers/dmi-water-source-fixture.mjs": {
+      "nodeImports": [],
+      "imports": [],
+      "resources": [],
+      "dependencySurfaces": [],
+      "bindingSurfaces": [],
+      "computedBoundaries": []
+    },
+    "scripts/audit-sealed-current-source.mjs": {
+      "nodeImports": [
+        "node:fs/promises",
+        "node:path",
+        "node:url"
+      ],
+      "imports": [
+        "js/core/ravscore-current-supply-memory.js",
+        "scripts/lib/bounded-json-writer.mjs",
+        "scripts/lib/dmi-bulk-storage.mjs",
+        "scripts/lib/private-conditions-hourly.mjs",
+        "scripts/lib/ravscore-production-adapters.mjs",
+        "scripts/private-production-runtime-bundle.mjs",
+        "scripts/private-production-runtime-workflow.mjs",
+        "scripts/staged-private-production-runtime.mjs"
+      ],
+      "resources": [],
+      "dependencySurfaces": [
+        "1de7227dec84c6d8ac52bdf85533330ca72f23d484db75573488c5cd95360bf8",
+        "207641949097fe4d17cf0b9de3624012a96de68e4b9006ddfad5cf7d8f6dbb63",
+        "257ad50a2f58f9e75ca5ccc4e5da05adb250f4651163f190bf84020497660335",
+        "802baa4e803994f8706043d8e31ac4364dd52615b80e73f5b82f87ddbdacea1c",
+        "8cd7e95e56bb6dfcc3fa9fef716c40031bf82488c6be9fa78fc1c4b3323535f7",
+        "cf9ab78d225ebcd40e1bb2702ad35fa6b86165d78c254e2ecc4a1a2de4a067ef"
+      ],
+      "bindingSurfaces": [
+        "0fa83cbc2a7546568b897a123bf564b7b979cbbecee09a24fdc85ccd5678040e",
+        "44007ecc25ba86cefe791d5786d9952307ad09f159709cbb45649c4134624126",
+        "882523d59dce87bf1fc2ab607dcb85ab0d63ecc50bd2d0fc620fa1ec4ecf0189",
+        "8e9d61663918b6a665c89d49da8c22c29ca479e288c17ae72b1253698f2e59d5",
+        "938e5501459c52df256feafe19ebfb584644fe0b296a3fdea022c817bbcd837f",
+        "9b3e8695c4e139fabf566cad7ebb96ab518c5bd71f261534c36ac62b86f02c51",
+        "baffda3fa9222611dc50bba2d8c2f39f5ca76a3599957b7e3b211b10a9097177",
+        "cc118355f7fc193fe7e9ced0f847a4fa46d81548c52db7e9e1937f3ac2a3e444",
+        "e12106986ccf1b6155e51e679b0819fd8d9a1e4b62bd38b45e40c295db3a884e"
+      ],
+      "computedBoundaries": []
     }
   },
   "resourceFiles": [
@@ -13722,7 +16681,21 @@
     "supabase/migrations/20261027124633_assistant_public588_later_h0_original_bound_successor.sql",
     "supabase/migrations/20261028223717_assistant_public590_later_h0_original_bound_successor.sql",
     "supabase/schema.sql",
-    "version.json"
+    "version.json",
+    "scripts/lib/fixed-assistant-failure-workflow-review.json",
+    ".github/workflows/audit-saved-weather-inputs.yml",
+    ".github/workflows/audit-sealed-current-source.yml",
+    "data/map/current-arrow-land-mask.json",
+    "scripts/audit-sealed-arrow-score.mjs",
+    "scripts/audit-sealed-current-source.mjs",
+    "scripts/lib/saved-current-forward-original-plan.mjs",
+    "scripts/lib/saved-current-replay-readonly-network.mjs",
+    "scripts/lib/saved-current-window-network-stop.mjs",
+    "scripts/lib/voersaa-water-level-trace.mjs",
+    "scripts/run-coherent-current-originals-supervised.py",
+    "scripts/test-live-current-pilot-4.0.232.mjs",
+    "scripts/test-open-meteo-live-runtime.mjs",
+    "scripts/test-ravscore-public-runtime-contract.mjs"
   ],
   "commands": {
     "controls": [],
@@ -13826,6 +16799,11 @@
     ],
     "service-worker.js": [
       "7fa4b74f6f8e28dddf00f3c155c731eceb1136aba8d049aa4e2d952b18aed901/5ba21ad8625b758189ed69c9d29b07ca8152a57ab0a4aa53ef705dd7b5ad38a8"
+    ],
+    ".github/workflows/deploy-trip-storage.yml": [
+      "002c584e1463bfb112258ced22c40f0f0be4b69108f7db327a3e95e405fd02d8/256a467d4b45f559263e96e188c87a7d2aee25e0b96acc4a7a9292a852539894",
+      "256a467d4b45f559263e96e188c87a7d2aee25e0b96acc4a7a9292a852539894/62f523dec566b67c58e298df8afb88fdd3cd1f85a75a2d64e65c868415b6fce2",
+      "002c584e1463bfb112258ced22c40f0f0be4b69108f7db327a3e95e405fd02d8/62f523dec566b67c58e298df8afb88fdd3cd1f85a75a2d64e65c868415b6fce2"
     ]
   }
 }

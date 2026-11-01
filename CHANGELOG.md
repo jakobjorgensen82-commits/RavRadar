@@ -1,3 +1,17 @@
+## 1. november 2026 — lokal privat vandstandsdiagnose, endnu ikke leveret
+
+- Forbered én fast skrivefri sporing af vandstand i to autentiske gemte originalgenerationer med normal fuld B-/GCM-verifikation og uændret central pointer.
+- Bevar snævert feltudvalg i en privat krypteret rapport, faste sikre fejlkoder og særskilt bevis for GitHubs temp-root. Manglende historisk konfiguration forbliver ukendt.
+- Forbered fast lokal rapportmodtager med faktisk job-/artifactverifikation før privat dekryptering; tilføj præcis læserettighed til to normale PR-beviskaldere og isolér den negative tokenprøve fra CI-miljøet.
+- Normale lokale syntetiske mål består; kildekvalifikation, faktisk pakkeaflæsning og årsagskonklusion er åbne. Ingen ændring af model, SQL, score, vejrdata, kilder eller geometri.
+
+## 1. november — afgrænset assistentdiagnose, uændret 4.0.594
+
+- Tilføjer én fast, skrivefri læsning af assistentens fejlkategorier gennem det eksisterende kontrollerede læsejob. Ingen rå log, spørgsmål, brugerdata, installation eller automatisk gentagelse.
+- Bevarer Git-historikken ved læsejobbets main-kontroller. To historiske workflowprøver bruger en præcis hashbundet inverse; den nye normale måltest læser den faktiske nye kode. Kontrolregistreringen udvides uden at fjerne gamle ejere eller afhængigheder.
+- Lokal syntetisk måltest er bestået. Præcis GitHub-kvalifikation og faktisk logaflæsning er fortsat åbne; dette beviser ikke fungerende ekstern AI. Ingen ændring af scoreformel, modelbinding, SQL, vejrdata eller geometri.
+- Adminmodellens særskilte originalkontrol fra afsnittet nedenfor er nu offentligt leveret og afprøvet. Det afslutter denne konkrete fejl, ikke hele adminrevisionen. Aktuel kørselsevidens føres privat.
+
 ## 1. november — admin skal kontrollere den oprindelige modelpakke
 
 Den lokale adminrettelse holder to læsninger af samme offentlige generation adskilt. Modelkontrollen får den oprindelige, hash- og modelbundne startpakke med dens faktiske referencetime og navne. Overblik og kysteditor beholder den normale aktuelle prognosevisning. Et senere tidspunkt eller navne, som den aktuelle projektion har omdannet til zone-IDer, må ikke udlægges som den oprindelige startpakke. Den strenge sammenligning af model, profil og scoretilgængelighed bevares; metadata omskrives ikke for at få kontrollen til at bestå.

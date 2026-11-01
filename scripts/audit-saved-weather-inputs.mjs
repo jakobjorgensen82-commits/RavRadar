@@ -29,6 +29,7 @@ import { dmiExpectedIdentityForPart, verifiedDmiNativeComponentSource,
   eligibleDmiNativeComponentSource, verifiedBulkCurrent } from './lib/ravscore-production-adapters.mjs';
 import { unpackPrivateWeatherComponentPack, privateWeatherPackJsonReadsClosed } from './lib/private-weather-component-pack.mjs';
 import { safeWeatherComponentSummary } from './lib/weather-component-safe-summary.mjs';
+import {VOERSAA_WATER_TRACE_TARGETS,matchesVoersaaWaterTarget} from './lib/voersaa-water-level-trace.mjs';
 import { weatherComponentProgressCache, withAuthenticatedWeatherProgress,
   WEATHER_PROGRESS_CIPHER_PATH, WEATHER_PROGRESS_MAX_CIPHER_BYTES } from './weather-component-progress-cache.mjs';
 import { buildCurrentGridSamplingOriginalRestoreExpectation } from './lib/bounded-conditions-predecessor-transition.mjs';
@@ -430,9 +431,11 @@ export function createReadOnlySavedWeatherClients({
   accountId = process.env.RAVRADAR_R2_ACCOUNT_ID, accessKeyId = process.env.RAVRADAR_R2_ACCESS_KEY_ID,
   secretAccessKey = process.env.RAVRADAR_R2_SECRET_ACCESS_KEY, fetchImpl = globalThis.fetch,
   describeOnly = false, maximumRequests = 40, maximumMilliseconds = 300_000,
-  includeCurrent586Checkpoint = false,
+  includeCurrent586Checkpoint = false, waterTraceTarget = null,
   clock = () => performance.now(),
 } = {}) {
+  const fixedWaterTarget=waterTraceTarget===null?null:VOERSAA_WATER_TRACE_TARGETS.find(target=>target.key===waterTraceTarget);
+  if(waterTraceTarget!==null&&!fixedWaterTarget)fail('READ_CREDENTIALS_UNAVAILABLE');
   let base;
   try { base = new URL(supabaseUrl); } catch { fail('READ_CREDENTIALS_UNAVAILABLE'); }
   if (base.protocol !== 'https:' || base.username || base.password || base.pathname !== '/' || base.search || base.hash
@@ -548,10 +551,13 @@ export function createReadOnlySavedWeatherClients({
     if (pointer && response.ok) {
       let rows;
       try { rows = JSON.parse(body.toString('utf8')); } catch { fail('POINTER_READ_FAILED'); }
-      const descriptor = rows?.[0]?.payload?.current;
+      const pointer=rows?.[0]?.payload;
+      const descriptor=fixedWaterTarget?[pointer?.current,pointer?.previous].filter(Boolean)
+        .find(item=>matchesVoersaaWaterTarget(item,fixedWaterTarget)):pointer?.current;
       if (object(descriptor)) {
         // The original protected reader performs full descriptor validation.
-        // Only the current generation's narrow immutable paths can be fetched.
+        // Default remains current-only. The closed water scope may read only
+        // its exact original target from CURRENT/PREVIOUS, never another B.
         currentDescriptor = descriptor;
         allowedObjects.clear();
         for (const entry of descriptor.objects ?? [descriptor]) if (typeof entry?.objectPath === 'string'
@@ -1249,6 +1255,146 @@ export async function auditProtectedBaselineComponentFallback(options = {}) {
   }
 }
 
+// Fixed observation of two genuine originals; not a restore/publication route.
+export async function auditVoersaaWaterLevelTrace(options = {}) {
+  const allowed=new Set(['privateRoot','predecessorRoot','outputPath','repositoryRoot','repository','runId','runAttempt','sourceHead',
+    'masterSecret','githubToken','supabaseUrl','serviceRoleKey','accountId','accessKeyId','secretAccessKey','fetchImpl']);
+  let phase='SETUP',safeOutput=null,encryptedOutput=null,owned=[],ctx,cleanupAttempted=false;
+  const readScope='VOERSAA_WATER_LEVEL_20261101_FIXED_ORIGINALS';
+  const failed=code=>{const error=new Error(code);error.waterTraceCode=code;throw error;};
+  async function own(directory,normalArtifact=false){
+    const resolved=path.resolve(directory),real=await fs.realpath(resolved),stat=await fs.lstat(resolved,{bigint:true});
+    if(real!==resolved||!stat.isDirectory()||stat.isSymbolicLink()||stat.ino<=0n
+      ||(normalArtifact?path.dirname(real)!==await fs.realpath(os.tmpdir())||!path.basename(real).startsWith('rr-ordinary-completed-stage-')
+        :!inside(ctx.root,real)||real===ctx.root))failed('PRIVATE_SCRATCH_UNPROVED');
+    owned.push({directory:real,dev:stat.dev,ino:stat.ino,birthtimeNs:stat.birthtimeNs});return real;
+  }
+  async function cleanup(){
+    while(owned.length){const entry=owned.at(-1),stat=await fs.lstat(entry.directory,{bigint:true});
+      if(!stat.isDirectory()||stat.isSymbolicLink()||await fs.realpath(entry.directory)!==entry.directory
+        ||stat.dev!==entry.dev||stat.ino!==entry.ino||stat.birthtimeNs!==entry.birthtimeNs)failed('PRIVATE_CLEANUP_UNPROVED');
+      await fs.rm(entry.directory,{recursive:true,force:false});owned.pop();}
+  }
+  try {
+    if(!object(options)||Object.keys(options).some(key=>!allowed.has(key)))failed('MODE_INVALID');
+    const {privateRoot,predecessorRoot,outputPath,repositoryRoot=REPOSITORY,
+      repository=process.env.GITHUB_REPOSITORY,runId=process.env.GITHUB_RUN_ID,runAttempt=process.env.GITHUB_RUN_ATTEMPT,
+      sourceHead=process.env.GITHUB_SHA,masterSecret=process.env.WEATHER_PROGRESS_MASTER_SECRET,
+      githubToken=process.env.GITHUB_TOKEN??process.env.GH_TOKEN,fetchImpl=globalThis.fetch}=options;
+    if(typeof masterSecret!=='string'||masterSecret.length<32||!/^[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+$/.test(repository??'')
+      ||!/^[1-9][0-9]*$/.test(String(runId??''))||!/^[1-9][0-9]*$/.test(String(runAttempt??''))
+      ||!/^[a-f0-9]{40}$/.test(sourceHead??''))failed('ENCRYPTION_CONTEXT_INVALID');
+    phase='PRIVATE_CONTEXT';ctx=await context(privateRoot,repositoryRoot);
+    // Same existing component-summary realpath seam; Windows TEMP may be a short alias.
+    const resolvePrivate=value=>typeof value==='string'&&inside(path.resolve(privateRoot),path.resolve(value))
+      ?path.join(ctx.root,path.relative(path.resolve(privateRoot),path.resolve(value))):value;
+    phase='PRIVATE_OUTPUT';safeOutput=await newOutput(ctx.root,resolvePrivate(outputPath));encryptedOutput=await newOutput(ctx.root,resolvePrivate(outputPath+'.encrypted'));
+    phase='ARCHIVED_READER_PARENT';const requested=path.resolve(predecessorRoot),readerParent=await fs.realpath(requested),readerStat=await fs.lstat(requested);
+    const tempRoots=await Promise.all([path.resolve(os.tmpdir()),...(process.env.RUNNER_TEMP?[path.resolve(process.env.RUNNER_TEMP)]:[])]
+      .map(async root=>({requested:root,real:await fs.realpath(root)})));
+    const selectedTemp=tempRoots.find(root=>requested!==root.requested&&readerParent!==root.real
+      &&inside(root.requested,requested)&&inside(root.real,readerParent));
+    if(!readerStat.isDirectory()||readerStat.isSymbolicLink()||!selectedTemp
+      ||inside(ctx.root,readerParent)||inside(readerParent,ctx.root)||inside(ctx.repository,readerParent))failed('PREDECESSOR_ROOT_INVALID');
+    // One and the same configured temp root owns requested path, realpath and link proof.
+    await noSymlinks(selectedTemp.requested,requested);
+    phase='TRACE_HELPER_LOAD';const trace=await import('./lib/voersaa-water-level-trace.mjs');
+    const credentialNames=['supabaseUrl','serviceRoleKey','accountId','accessKeyId','secretAccessKey'];
+    const credentials=Object.fromEntries(credentialNames.filter(key=>Object.hasOwn(options,key)).map(key=>[key,options[key]]));
+    const pointerClient=createReadOnlySavedWeatherClients({...credentials,fetchImpl,describeOnly:true});
+    const query='?document_key=eq.'+encodeURIComponent(policy.documentKey)+'&select=document_key,payload,version&limit=2';
+    async function pointer(){
+      const rows=await pointerClient.request(query,{},'read');
+      if(!Array.isArray(rows)||rows.length!==1||rows[0].document_key!==policy.documentKey
+        ||!Number.isSafeInteger(rows[0].version)||rows[0].version<=0)failed('CURRENT_POINTER_INVALID');
+      protectedApi.validateProtectedPrivateRuntimePointer(rows[0].payload,{allowHistoricalCurrentModelBinding:true});return rows;
+    }
+    phase='CURRENT_PIN';const before=await pointer();
+    const stableCurrent=async()=>{if(!same(await pointer(),before))failed('CURRENT_GENERATION_CHANGED');};
+    const work=await own(await fs.mkdtemp(path.join(ctx.root,'voersaa-water-'))),generations=[];
+    for(const target of trace.VOERSAA_WATER_TRACE_TARGETS){
+      phase='GENUINE_READER_'+target.key;
+      const predecessor=await noSymlinks(readerParent,path.join(readerParent,target.readerDirectory));
+      const load=async relative=>import(pathToFileURL(await noSymlinks(predecessor,path.join(predecessor,relative))).href);
+      const [oldProtected,oldWorkflow,oldBinding,oldStage]=await Promise.all([
+        load('scripts/protected-private-production-runtime.mjs'),load('scripts/private-production-runtime-workflow.mjs'),
+        load('js/core/ravscore-model-contract.js'),load('scripts/staged-private-production-runtime.mjs')]);
+      const binding=oldBinding.ravScoreModelBinding(),contracts=await oldWorkflow.privateRuntimeContractHashes({repositoryRoot:predecessor});
+      if(binding.modelBundleSha256!=='08750e3667e5a221374762fccadccf08abf5e9f1ae8814ccc97bfc11880bf36c'
+        ||binding.modelContractSha256!=='a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b'
+        ||!same(contracts,trace.VOERSAA_WATER_TRACE_CONTRACTS))failed('GENUINE_READER_CONTRACT_MISMATCH');
+      const targetRoot=path.join(work,target.key);await fs.mkdir(targetRoot);const bundlePath=path.join(targetRoot,'bundle');
+      const matches=['current','previous'].flatMap(role=>{
+        const descriptor=before[0].payload[role];return trace.matchesVoersaaWaterTarget(descriptor,target)?[{role,descriptor}]:[];});
+      if(matches.length>1&&!same(matches[0].descriptor,matches[1].descriptor))failed('AMBIGUOUS_EXACT_GENERATION');
+      const expected={modelBinding:binding,contractHashes:contracts,datasetId:target.datasetId,productionReferenceAt:target.productionReferenceAt,
+        targetReferenceAt:target.productionReferenceAt,minimumReferenceAt:target.productionReferenceAt,minimumGeneratedAt:target.productionReferenceAt};
+      let restored,inputDisposition;
+      await stableCurrent();
+      if(matches.length){
+        phase='EXACT_POINTER_B_'+target.key;
+        const {descriptor,role}=matches[0];
+        if(!same(descriptor.modelBinding,binding)||!same(descriptor.contractHashes,contracts))failed('EXACT_GENERATION_CONTRACT_MISMATCH');
+        const clients=createReadOnlySavedWeatherClients({...credentials,fetchImpl,waterTraceTarget:target.key});
+        const request=async(...args)=>{const rows=await clients.request(...args);if(!same(rows,before))failed('CURRENT_GENERATION_CHANGED');return rows;};
+        restored=await withoutSavedAuditSecrets(()=>oldProtected.restoreProtectedPrivateProductionRuntime({
+          privateRoot:targetRoot,bundlePath,repositoryRoot:predecessor,expected:{...expected,generatedAt:descriptor.generatedAt,
+            bundleContentSha256:descriptor.bundleContentSha256,minimumGeneratedAt:descriptor.generatedAt},request,storage:clients.storage}));
+        if(restored.restored!==true||restored.bundleContentSha256!==descriptor.bundleContentSha256
+          ||restored.objectSha256!==descriptor.objectSha256||restored.centralVersion!==before[0].version)failed('EXACT_POINTER_B_NOT_RESTORED');
+        inputDisposition=role==='current'?'EXACT_CURRENT':'EXACT_PREVIOUS';
+      }else{
+        phase='EXACT_COMPLETED_STAGE_'+target.key;
+        if(typeof githubToken!=='string'||!githubToken)failed('EXACT_COMPLETED_STAGE_UNAVAILABLE');
+        const {downloadOrdinaryCompletedStageArtifact}=await import('./ordinary-completed-stage-artifact.mjs');
+        phase='COMPLETED_STAGE_DOWNLOAD_'+target.key;
+        const artifact=await downloadOrdinaryCompletedStageArtifact({repository,runId:target.runId,runAttempt:target.runAttempt,
+          sourceHead:target.sourceHead,token:githubToken,fetchImpl});
+        await own(artifact.privateDirectory,true);
+        phase='COMPLETED_STAGE_GCM_'+target.key;
+        restored=await withoutSavedAuditSecrets(()=>oldStage.openStagedPrivateProductionRuntime({
+          inputPath:artifact.sealedPath,privateRoot:targetRoot,bundlePath,repositoryRoot:predecessor,expected,
+          sourceHead:target.sourceHead,repository,runId:target.runId,runAttempt:target.runAttempt,masterSecret}));
+        if(restored.restored!==true||restored.productionPointerUnchanged!==true)failed('EXACT_COMPLETED_STAGE_NOT_RESTORED');
+        inputDisposition='EXACT_COMPLETED_STAGE';
+      }
+      await stableCurrent();
+      phase='BOUND_TRACE_'+target.key;
+      const manifest=await readJson(path.join(bundlePath,'manifest.json'));
+      if(manifest.datasetId!==target.datasetId||manifest.productionReferenceAt!==target.productionReferenceAt
+        ||manifest.bundleContentSha256!==restored.bundleContentSha256||!same(manifest.modelBinding,binding)
+        ||!same(manifest.contractHashes,contracts))failed('BUNDLE_IDENTITY_MISMATCH');
+      const bundleIdentitySha256=crypto.createHash('sha256').update(stable({sourceHead:target.sourceHead,
+        datasetId:manifest.datasetId,productionReferenceAt:manifest.productionReferenceAt,generatedAt:manifest.generatedAt,
+        bundleContentSha256:manifest.bundleContentSha256,modelBinding:binding,contractHashes:contracts})).digest('hex');
+      const generationTrace=await trace.readVoersaaWaterTrace({payloadRoot:path.join(bundlePath,'payload'),target,inputDisposition,bundleIdentitySha256});
+      // Existing B-only reader and safe helper; never hydrate/replay the hourly or component packs.
+      let conditions=await readJson(path.join(bundlePath,'payload/data/live/conditions.json'),535_822_312);
+      generationTrace.componentFallback=object(conditions.weatherEngine?.componentFallback)?safeWeatherComponentSummary(conditions.weatherEngine.componentFallback):null;
+      conditions=null;generations.push(generationTrace);
+      await stableCurrent();
+    }
+    phase='FINAL_CURRENT_READBACK';await stableCurrent();
+    const privateReport=trace.voersaaWaterTraceReport(crypto.createHash('sha256').update(stable(before)).digest('hex'),generations);
+    phase='OWNED_SCRATCH_CLEANUP';cleanupAttempted=true;await cleanup();
+    phase='PRIVATE_ENVELOPE';const ciphertext=trace.sealVoersaaWaterTraceForRecipient(privateReport,{repository,runId,runAttempt,sourceHead,masterSecret});
+    await fs.writeFile(encryptedOutput,ciphertext,{flag:'wx',mode:0o600});
+    const report={...baseReport('AUDIT_COMPLETED'),readScope,protectedGenerationReadbackVerified:true,exactArchivedSourceContractsVerified:true,
+      exactOriginalGenerations:2,privateTraceEncrypted:true,privatePayloadIncluded:false};
+    await fs.writeFile(safeOutput,JSON.stringify(report)+'\n',{flag:'wx',mode:0o600});return report;
+  }catch(error){
+    let code=/^(?:MODE_INVALID|ENCRYPTION_CONTEXT_INVALID|PREDECESSOR_ROOT_INVALID|CURRENT_POINTER_INVALID|CURRENT_GENERATION_CHANGED|GENUINE_READER_CONTRACT_MISMATCH|AMBIGUOUS_EXACT_GENERATION|EXACT_GENERATION_CONTRACT_MISMATCH|EXACT_POINTER_B_NOT_RESTORED|EXACT_COMPLETED_STAGE_UNAVAILABLE|EXACT_COMPLETED_STAGE_NOT_RESTORED|BUNDLE_IDENTITY_MISMATCH|PRIVATE_SCRATCH_UNPROVED|PRIVATE_CLEANUP_UNPROVED)$/.test(error?.waterTraceCode??'')
+      ?error.waterTraceCode:'WATER_TRACE_FAILED_CLOSED';
+    if(safeCode.has(error?.auditCode))code=error.auditCode;
+    // Exact existing normal transport codes only; never exception text.
+    if(new Set(["ORDINARY_STAGE_ARTIFACT_DIGEST","ORDINARY_STAGE_ARTIFACT_IDENTITY","ORDINARY_STAGE_BODY_BOUND","ORDINARY_STAGE_BODY_INVALID","ORDINARY_STAGE_BODY_LENGTH","ORDINARY_STAGE_BODY_UNAVAILABLE","ORDINARY_STAGE_DOWNLOAD_HTTP","ORDINARY_STAGE_EXTRACTION_REFUSED","ORDINARY_STAGE_JOB_IDENTITY","ORDINARY_STAGE_LIST_INCOMPLETE","ORDINARY_STAGE_METADATA_HTTP","ORDINARY_STAGE_METADATA_JSON","ORDINARY_STAGE_PRODUCER_IDENTITY","ORDINARY_STAGE_READ_FAILED","ORDINARY_STAGE_REDIRECT_REFUSED","ORDINARY_STAGE_REQUEST","ORDINARY_STAGE_REQUEST_BOUND","ORDINARY_STAGE_REQUIRED_STEP","ORDINARY_STAGE_TRANSPORT_FAILED","ORDINARY_STAGE_WRITE_FAILED","ORDINARY_STAGE_ZIP_REFUSED_UNKNOWN"]).has(error?.code))code=error.code;
+    if(owned.length&&!cleanupAttempted)try{cleanupAttempted=true;await cleanup();}catch{code='PRIVATE_CLEANUP_UNPROVED';}
+    const report={...baseReport('AUDIT_FAILED_CLOSED'),readScope,phase,code,privateTraceEncrypted:false};
+    if(safeOutput!==null)await fs.writeFile(safeOutput,JSON.stringify(report)+'\n',{flag:'wx',mode:0o600}).catch(()=>{});
+    return report;
+  }
+}
+
 export async function auditSavedWeatherInputs({ mode, privateRoot, descriptorPath, predecessorRoot,
   progressFile, progressSource, progressCacheKey, outputPath, repositoryRoot = REPOSITORY,
   includeRawManifest = false, rawCacheKey = null, rawManifestSource = null,
@@ -1789,6 +1935,8 @@ if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.me
       options[key] = options[key] === 'true';
     }
     const {mode,...readbackOptions}=options;
+    const fixedWaterTrace = mode === 'water-level-voersaa-20261101';
+    if(fixedWaterTrace&&!same(Object.keys(readbackOptions).sort(),['privateRoot','predecessorRoot','outputPath'].sort()))fail('MODE_INVALID');
     const componentSummaryOnly = mode === 'component-summary';
     if (componentSummaryOnly && !same(Object.keys(readbackOptions).sort(),
       ['privateRoot','descriptorPath','predecessorRoot','outputPath','expectedDatasetId','expectedProductionReferenceAt'].sort())) fail('MODE_INVALID');
@@ -1796,7 +1944,8 @@ if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.me
       || Object.hasOwn(readbackOptions, 'expectedProductionReferenceAt'))) fail('MODE_INVALID');
     if(['verify-current586-plan','verify-current586-closed'].includes(mode)
       &&!same(Object.keys(readbackOptions).sort(),['descriptorPath','outputPath','privateRoot']))fail('MODE_INVALID');
-    const report = componentSummaryOnly ? await auditProtectedBaselineComponentFallback(readbackOptions)
+    const report = fixedWaterTrace ? await auditVoersaaWaterLevelTrace(readbackOptions)
+      : componentSummaryOnly ? await auditProtectedBaselineComponentFallback(readbackOptions)
       : ['verify-current586-plan','verify-current586-closed'].includes(mode)
       ? await verifyCurrent586OriginalPlanRemoteSources({...readbackOptions,completedTransport:mode==='verify-current586-closed'}) : await auditSavedWeatherInputs(options);
     if ((options.prepareCurrentForwardOriginals || options.prepareCurrent586Originals) && report.status === 'AUDIT_COMPLETED' && report.originalRestorePreparation && process.env.GITHUB_OUTPUT) {

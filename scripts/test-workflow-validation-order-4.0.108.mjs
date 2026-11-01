@@ -655,6 +655,14 @@ function privateStudyPre007Workflow(source) {
   const review = JSON.parse(fs.readFileSync(new URL('./lib/private-trip-study-categorical-review.json', import.meta.url), 'utf8')).workflow;
   const sha = value => crypto.createHash('sha256').update(value).digest('hex');
   assert.equal(review.file, '.github/workflows/private-trip-weather-study.yml');
+  const readPermission = review.sourceProofReadPermission;
+  assert.equal(readPermission.kind, 'EXACT_TOP_LEVEL_PULL_REQUEST_READ_GRANT');
+  assert.equal(readPermission.beforeSha256, review.afterSha256);
+  if (sha(source) === readPermission.afterSha256) {
+    assert.equal(source.split(readPermission.after).length, 2);
+    source = source.replace(readPermission.after, () => readPermission.before);
+    assert.equal(sha(source), readPermission.beforeSha256);
+  }
   assert.equal(sha(source), review.afterSha256);
   for (const edit of [...review.edits].reverse()) {
     assert.equal(source.split(edit.after).length, 2); source = source.replace(edit.after, () => edit.before);

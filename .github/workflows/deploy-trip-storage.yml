@@ -17,11 +17,13 @@ on:
           - fixed-public-rate-log-read
           - fixed-public-rate-log-read-20261013
           - fixed-public-rate-console-read-20261015
+          - fixed-assistant-failure-log-read-20261101
           - fixed-storage-upload-log-read-20261013
 
 permissions:
   contents: read
   actions: read
+  pull-requests: read
 
 concurrency:
   group: ravradar-trip-storage-production
@@ -982,7 +984,7 @@ jobs:
         run: node scripts/verify-cloudflare-trip-gateway.mjs
 
   read-fixed-supabase-metadata:
-    if: ${{ inputs.operation == 'typed-trip-catalog-read' || inputs.operation == 'fixed-public-rate-log-read' || inputs.operation == 'fixed-public-rate-log-read-20261013' || inputs.operation == 'fixed-public-rate-console-read-20261015' || inputs.operation == 'fixed-storage-upload-log-read-20261013' }}
+    if: ${{ inputs.operation == 'typed-trip-catalog-read' || inputs.operation == 'fixed-public-rate-log-read' || inputs.operation == 'fixed-public-rate-log-read-20261013' || inputs.operation == 'fixed-public-rate-console-read-20261015' || inputs.operation == 'fixed-assistant-failure-log-read-20261101' || inputs.operation == 'fixed-storage-upload-log-read-20261013' }}
     name: Bounded fixed Supabase read (no installation or repair)
     runs-on: ubuntu-24.04
     timeout-minutes: 5
@@ -1007,7 +1009,7 @@ jobs:
           test "$GITHUB_EVENT_NAME" = workflow_dispatch
           test "$GITHUB_REF" = refs/heads/main
           test "$GITHUB_RUN_ATTEMPT" = 1
-          git fetch --no-tags --depth=1 origin +refs/heads/main:refs/remotes/origin/main
+          git fetch --no-tags origin +refs/heads/main:refs/remotes/origin/main
           test "$(git rev-parse HEAD^{commit})" = "$EXPECTED_HEAD_SHA"
           test "$(git rev-parse origin/main^{commit})" = "$EXPECTED_HEAD_SHA"
 
@@ -1037,7 +1039,7 @@ jobs:
         run: |
           set -euo pipefail
           node scripts/check-fixed-supabase-account-read-idle.mjs
-          git fetch --no-tags --depth=1 origin +refs/heads/main:refs/remotes/origin/main
+          git fetch --no-tags origin +refs/heads/main:refs/remotes/origin/main
           test "$(git rev-parse HEAD^{commit})" = "$EXPECTED_HEAD_SHA"
           test "$(git rev-parse origin/main^{commit})" = "$EXPECTED_HEAD_SHA"
 
@@ -1069,6 +1071,13 @@ jobs:
         env:
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
 
+      - name: Read only the fixed 1 November assistant failure categories
+        if: inputs.operation == 'fixed-assistant-failure-log-read-20261101'
+        timeout-minutes: 1
+        run: node scripts/read-fixed-assistant-failure-log-20261101.mjs
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+
       - name: Read the one fixed 13 October Storage upload-log interval
         if: inputs.operation == 'fixed-storage-upload-log-read-20261013'
         timeout-minutes: 1
@@ -1077,7 +1086,7 @@ jobs:
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
 
   reject-unknown-operation:
-    if: ${{ inputs.operation != '' && inputs.operation != 'full-install' && inputs.operation != 'existing-worker-repair' && inputs.operation != 'existing-owner-export-upgrade' && inputs.operation != 'existing-owner-erasure-guard' && inputs.operation != 'typed-trip-catalog-read' && inputs.operation != 'fixed-public-rate-log-read' && inputs.operation != 'fixed-public-rate-log-read-20261013' && inputs.operation != 'fixed-public-rate-console-read-20261015' && inputs.operation != 'fixed-storage-upload-log-read-20261013' }}
+    if: ${{ inputs.operation != '' && inputs.operation != 'full-install' && inputs.operation != 'existing-worker-repair' && inputs.operation != 'existing-owner-export-upgrade' && inputs.operation != 'existing-owner-erasure-guard' && inputs.operation != 'typed-trip-catalog-read' && inputs.operation != 'fixed-public-rate-log-read' && inputs.operation != 'fixed-public-rate-log-read-20261013' && inputs.operation != 'fixed-public-rate-console-read-20261015' && inputs.operation != 'fixed-assistant-failure-log-read-20261101' && inputs.operation != 'fixed-storage-upload-log-read-20261013' }}
     runs-on: ubuntu-latest
     steps:
       - run: exit 1

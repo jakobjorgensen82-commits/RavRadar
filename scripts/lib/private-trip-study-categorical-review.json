@@ -110,6 +110,13 @@
         "before": "",
         "after": "      TRIP_PRIVATE_STUDY_CATEGORICAL_APPLY_ALLOWED: ${{ inputs.allow_007 && 'true' || 'false' }}\n"
       }
-    ]
+    ],
+    "sourceProofReadPermission": {
+      "kind": "EXACT_TOP_LEVEL_PULL_REQUEST_READ_GRANT",
+      "beforeSha256": "ad0a549d5b61055a2549de9fc9c8263db7958aced5bea72992d0d9a9207a8859",
+      "afterSha256": "93d713d717eef8f4541e347ef8860555eb8b8948176c6ce2f9d492c3915f7255",
+      "before": "permissions:\n  contents: read\n  actions: read\n",
+      "after": "permissions:\n  contents: read\n  actions: read\n  pull-requests: read\n"
+    }
   }
 }
