@@ -1,3 +1,24 @@
+<a id="source-595-status-2026-11-02"></a>
+## 2. november — SOURCE 595 afventer endelig kodeunion
+
+Den normale lokale main-sammenføring b03 indarbejder faktisk main fra PR790 og bevarer genuine37 som forfader. Package4.0.594 er midlertidig; 4.0.595 er foreslået. SOURCE-metadataenes version, binding og output er NULL; der er ingen ny C/I/T- eller SQL-udstedelse.
+
+PR790 har faktisk bestået fuld kildekontrol og er normalt merget. Den efterfølgende offentlige kodelevering samt DA/DE/EN-dagopfølgninger og dialognulstilling er verificeret særskilt. Det er driftsbevis, ikke SOURCE-kvalifikation. OM-køens effekt på en ny vejrgeneration er endnu ikke målt.
+
+PR791 har sin egen beståede CONTROL-kontrol med21 relevante mål. Dets input og senere faktiske main M2 skal normalt indarbejdes før endelig kodefreeze og én normal595-afledning. En kvalificeret PR-head må forberedes lokalt, men er ikke faktisk main. Ingen genmærkning af tidligere bindinger eller originaler.
+
+Ren statisk inventering på b03: I161/C165/T12,171 læste filer, nul afslag. Det er ikke genererede hashes eller runtime-PASS. Positiv issued62, samme faktiske PG, normal SDK/action63/64, fysisk ejerafslutning, hel FULL-succes og180-minutterskapacitet er fortsat åbne. Originaler, gamle SQL, numerik, geometri og DMI→Copernicus→Open-Meteo bevares.
+
+Alle fem mål til18.november består. ROOT koordinerer produktionen; ingen produktionsændring under aktiv writer. Aktuelle kørsler, nøjagtige commits og kvitteringer står i det private checkpoint. Ældre modstridende status nedenfor er dateret historik.
+
+## 1. november — privat statistik: installeret 007, lokal enable-kandidat
+
+007 er faktisk installeret gennem den normale private controller med verificeret Worker-OFF og genåbnet D1. Den nye lokale kandidat tilføjer kun en særskilt, fast bekræftet enable-operation i det eksisterende workflow. Den bevarer standard OFF og de normale kilde-, main-, schema-, bindings-, vedligeholdelses- og readback-kontroller. Enable starter ingen rapport, datajob eller budgetbelastning.
+
+Den fælles bindingslæser afviste den forventede tekstværdi true. Fejlen er reproduceret på den uændrede læser og rettet til præcis true/false for det ene eksisterende felt. 17 normale bindingscases og 10 controller-/inversecases består med den virkelige læser, inklusive kendt ON → eksisterende deliver → verificeret OFF. Det er syntetisk lokal kontrol; den gamle kontrollerede Worker-recovery bevares, og ukendt skriveudfald kræver faktisk afklaring.
+
+Præcis kildekvalifikation, aktivering, hosted privat rapport og målt Free-/CPU-/D1-kapacitet er åbne. Der foreligger ingen hosted PASS. Samtykke, 4/8-budget, 160 celler og publicReleaseIssued=false bevares; kontakt, mail og retention ændres ikke. Ingen ny version, SQL eller automatisk aktivering.
+
 ## 1. november — lokal rettelse: temperatur må ikke udsultes i reservekøen
 
 ROOTs faktiske normale browserlog for vejrforløb 236 viste 515 OM-starter, 0 temperaturstarter, 673 udsatte temperaturjobs og budgetReached=1. Temperaturen hentes særskilt fra MF/SST; den samleveres ikke med bølgerequesten. Den eksisterende kø placerede alle temperaturjobs efter hele den kritiske vind-/bølgekø. Det er en påvist køpolitikfejl, ikke bevis for årsagen til DMI-huller.

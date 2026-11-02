@@ -1,3 +1,7 @@
+## 2. november — SOURCE 595 er fortsat uudstedt
+
+Bevar NULL-bindingen, indtil PR791-input og den senere faktiske main M2 er normalt sammenført og endeligt frosset. Følg [den aktuelle SOURCE-status](docs/rdks/90_INDEX/CURRENT_TRUTH.md#source-595-status-2026-11-02) og det private checkpoint. Ingen produktionsændring under aktiv writer.
+
 ## 1. november 2026 — main-sammenføring afsluttet som uudstedt kodecheckpoint
 
 Denne komposition afslutter den normale lokale sammenføring med main c920. Mergecommitten bevarer begge faktiske Git-forældre og genuine37/594 som forfader. Det er et isoleret kodecheckpoint: package 4.0.594 er stadig midlertidig, SOURCE 4.0.595 er foreslået, og metadataenes version, binding og output er NULL. Ingen ny C/I/T-, SQL-, native- eller produktionsudstedelse følger af committen.

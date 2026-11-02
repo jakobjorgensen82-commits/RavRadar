@@ -1,3 +1,15 @@
+## 2. november — SOURCE forberedes med den aktuelle main
+
+PR790-main er normalt indarbejdet. PR791 og senere faktisk main skal med før én595-afledning; SOURCE er stadig NULL og inaktiv. Den offentlige kodelevering og assistentaccept er særskilte beviser. Se [SOURCE-status](docs/rdks/90_INDEX/CURRENT_TRUTH.md#source-595-status-2026-11-02).
+
+## 1. november — lokal privat enable-efterfølger efter installeret 007
+
+Forbered særskilt enable med fast bekræftelse i det eksisterende private statistikworkflow; bevar OFF-standard og normale kilde-/main-/schema-/bindings-/vedligeholdelses-/readback-kontroller. 007 er faktisk installeret med verificeret OFF. Enable starter ingen rapport, datajob eller charge.
+
+Reproducer og ret den fælles bindingslæsers afslag på forventet true: kun det eksisterende ene felt accepterer præcis true/false. 17 normale bindingscases og 10 controller-/inversecases består med den virkelige verifier, inklusive kendt ON → almindelig deliver → OFF. Bevar den eksisterende kontrollerede recovery og faktisk afklaring af ukendte writes.
+
+Kildekvalifikation, aktivering, hosted rapport/adgang og Free-/CPU-/D1-måling er fortsat åbne; ingen hosted PASS eller ny version/SQL. Kontakt/mail/retention, samtykke, 4/8-budget, 160 celler og publicReleaseIssued=false bevares.
+
 ## 1. november — lokal kandidat: begrænset temperaturandel i OM-køen
 
 Ret den påviste køpolitik fra forløb 236: 515 OM-starter, 0 temperaturstarter, 673 udsatte temperaturjobs og budgetReached=1. Temperatur/MF-SST er en separat request og stod efter hele den kritiske kø. Flet højst to kritiske jobs med ét temperaturjob; bevar begge listers relative/roterede orden, budgetter, to slots, DMI→CP→OM, admission og no-loss.

@@ -1,3 +1,7 @@
+## 2. november — SOURCE efter den faktiske main-sammenføring
+
+Læs [den aktuelle SOURCE-status](../rdks/90_INDEX/CURRENT_TRUTH.md#source-595-status-2026-11-02) før historikken nedenfor. b03 har indarbejdet den faktiske main fra PR790; package594 er midlertidig, 595 foreslået og metadata NULL. PR791 og senere faktisk main M2 skal med før én normal afledning. Gamle daterede afsnit er historik på disse punkter.
+
 ## 1. november 2026 — main-sammenføring afsluttet som uudstedt kodecheckpoint
 
 Denne komposition afslutter den normale lokale sammenføring med main c920. Mergecommitten bevarer begge faktiske Git-forældre og genuine37/594 som forfader. Det er et isoleret kodecheckpoint: package 4.0.594 er stadig midlertidig, SOURCE 4.0.595 er foreslået, og metadataenes version, binding og output er NULL. Ingen ny C/I/T-, SQL-, native- eller produktionsudstedelse følger af committen.

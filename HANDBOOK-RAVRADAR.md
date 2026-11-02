@@ -1,3 +1,7 @@
+## Aktuel SOURCE-status 2. november 2026
+
+SOURCE595 er foreslået, inaktiv og uudstedt. Læs afsnit89.295 og [den kanoniske status](docs/rdks/90_INDEX/CURRENT_TRUTH.md#source-595-status-2026-11-02) før ældre daterede statusfronter.
+
 ## 1. november 2026 — lokal sammenføring, endnu ingen udstedt SOURCE 595
 
 SOURCE19 har det lokale substanscheckpoint `24d8f8ee75bb91d2c75afa92e5ccc407cb7c230f` og en uafsluttet normal sammenføring med main `c920d1e2ad0cbbfe351360f594128f0e06bd1f1e`. Main 4.0.594 er den midlertidige normale versionsforgænger; den planlagte isolerede revision er 4.0.595. Normal versionssynk efter sammenføringen er endnu ikke kørt. SOURCE-version, binding og output er NULL; nye C/I/T og SQL er ikke udstedt. Semantiske konflikter og kvalifikation er fortsat åbne. Et checkpoint, et forberedt input eller MERGE_HEAD er ikke faktisk main-ancestry, native/fullRuntime-, ejerafslutnings- eller leveringsbevis.
@@ -10950,6 +10954,14 @@ Programversion, faktiske kildefiler og alle afledte kontroloplysninger skal pass
 Den isolerede revisions lokale kontrol af denne adskillelse er ikke en offentlig levering. Fuld afledning, normale database- og lagringsforløb, kapacitet og faktisk drift skal fortsat verificeres, før revisionen kan aktiveres. Den almindelige vejrhentning og prioriteringen af vejrkilder ændres ikke af dette forberedelsestrin.
 
 ## 89.295 Isoleret SOURCE 4.0.595: status før ny afledning
+
+Aktuel status 2. november 2026:
+
+Den isolerede SOURCE-kilde er nu normalt sammenført med den faktisk kvalificerede og mergede main-kode fra PR 790. Den lokale programversion er midlertidigt 4.0.594; 4.0.595 er foreslået. Revisionens egne versions-, bindings- og outputfelter er stadig NULL, og ingen nye modelkontrolsummer eller SQL er udstedt.
+
+ROOT har dokumenteret en særskilt vellykket kodelevering med offentlig dansk, tysk og engelsk accept af korte dagopfølgninger og nulstilling. Det er ikke en SOURCE-prøve eller måling af den nye vejrkøs effekt. Den næste kvalificerede kontrolændring, PR 791, skal først følge den normale main-sammenføring, før SOURCEs endelige kodeinput fryses og 595 afledes én gang.
+
+Den rene statiske importinventering lukker de aktuelle kodeafhængigheder, men beviser ikke drift. Samme faktiske database, normal SDK/action til fase 63/64, afsluttet ejer, hele kildekontrollen og 180-minutterskapaciteten er fortsat åbne. Gamle familier og originaler bevares. Ældre statusafsnit nedenfor beskriver deres daterede trin.
 
 Kort fortalt: Programversionen er opdateret lokalt. Det betyder ikke, at revisionen er klar til drift.
 

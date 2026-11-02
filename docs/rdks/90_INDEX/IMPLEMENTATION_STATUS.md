@@ -1,3 +1,21 @@
+## 2. november — SOURCE-integration og resterende gates
+
+- [x] Faktisk PR790-main normalt indarbejdet i b03; NULL og gamle originaler bevaret.
+- [x] Ren statisk b03-inventering I161/C165/T12 med nul afslag.
+- [ ] PR791-input, senere faktisk main M2 og endelig kodefreeze.
+- [ ] Én normal595-afledning samt issued62/samme-PG/SDK/action63/64/ejerafslutning, fuld kildekontrol og180-minutterskapacitet.
+
+Package594 er midlertidig; SOURCE er inaktiv. Se [kanonisk status](CURRENT_TRUTH.md#source-595-status-2026-11-02) og privat checkpoint. Bestået normal drift er ikke SOURCE-PASS.
+
+## 1. november — privat enable lokalt forberedt; hosted måling udestår
+
+- [x] Faktisk 007-installation gennem normal controller, Worker-OFF-attestering og genåbnet D1; tidligere 004/005/006 gentages ikke.
+- [x] Lokal særskilt enable-operation med fast bekræftelse, OFF som standard og uændrede normale kontroller. Ingen automatisk rapport, datajob eller charge ved enable.
+- [x] Den virkelige bindingslæsers true-afslag er reproduceret før rettelsen. Den tillader nu kun præcis true/false i det ene eksisterende felt; 17 bindingscases og 10 controller-/inversecases består, inklusive kontrolleret ON → almindelig deliver → OFF med den virkelige verifier.
+- [ ] Præcis kildekvalifikation og faktisk enable/ON-readback, første private hosted rapport, adgangsaccept og målt Free-/CPU-/D1-kvalifikation. Lokale cases og andre ruters kvotetal giver ingen hosted PASS.
+
+Den eksisterende Worker-recovery bevares; processtop er ikke i sig selv kendt leverandør-writeudfald. Særskilt OFF kræver frisk normal faktisk readback. Kontakt/mail/retention, samtykke, 4/8-budget, 160 celler og publicReleaseIssued=false bevares. Ingen ny version, SQL eller aktivering følger af forberedelsen.
+
 ## 1. november — lokal begrænset temperaturandel i OM-reservekøen
 
 - [x] Faktisk normal browserlog for 236: 515 OM-starter, 0 temperaturstarter, 673 temperaturjobs udsat og budgetReached=1. Separat MF/SST-request og global criticalWork-før-temperatur-rækkefølge er verificeret i koden; temperatur samleveres ikke med bølger.

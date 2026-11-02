@@ -164,6 +164,15 @@ async function privateStudyPre007Workflow(){
   const readPermission=review.sourceProofReadPermission;
   assert.equal(readPermission.kind,'EXACT_TOP_LEVEL_PULL_REQUEST_READ_GRANT');
   assert.equal(readPermission.beforeSha256,review.afterSha256);
+  const enable=review.enableSuccessor;
+  if(enable&&hash(source)===enable.afterSha256){
+    assert.equal(enable.kind,'EXACT_PRIVATE_STUDY_ENABLE_WORKFLOW_TEST_ONLY_INVERSE');
+    assert.equal(enable.beforeSha256,readPermission.afterSha256);
+    for(const edit of [...enable.edits].reverse()){
+      assert.equal(source.split(edit.after).length,2);source=source.replace(edit.after,()=>edit.before);
+    }
+    assert.equal(hash(source),enable.beforeSha256);
+  }
   if(hash(source)===readPermission.afterSha256){
     assert.equal(source.split(readPermission.after).length,2);
     source=source.replace(readPermission.after,()=>readPermission.before);
@@ -184,6 +193,15 @@ async function privateStudyPre007Controller(){
   const hash=value=>crypto.createHash('sha256').update(value).digest('hex');
   assert.equal(review.kind,'PRIVATE_TRIP_STUDY_007_TEST_ONLY_INVERSE');
   assert.equal(review.file,'scripts/deploy-private-trip-study.mjs');
+  const enable=review.enableSuccessor;
+  if(enable&&hash(source)===enable.afterSha256){
+    assert.equal(enable.kind,'EXACT_PRIVATE_STUDY_ENABLE_TEST_ONLY_INVERSE');
+    assert.equal(enable.beforeSha256,review.afterSha256);
+    for(const edit of [...enable.edits].reverse()){
+      assert.equal(source.split(edit.after).length,2);source=source.replace(edit.after,()=>edit.before);
+    }
+    assert.equal(hash(source),enable.beforeSha256);
+  }
   assert.equal(hash(source),review.afterSha256);
   for(const edit of [...review.edits].reverse()){
     assert.equal(source.split(edit.after).length,2);source=source.replace(edit.after,()=>edit.before);

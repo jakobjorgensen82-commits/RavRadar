@@ -1,3 +1,7 @@
+## Tillæg 2. november — afled én gang på den endelige kodeunion
+
+b03 bevarer faktisk PR790-main. PR791-input og senere faktisk main M2 skal normalt indarbejdes før versionssynk og frisk C/I/T/binding/output/SQL. Bevar NULL indtil da; et lokalt kvalificeret PR-input er ikke main. [Aktuel status](../90_INDEX/CURRENT_TRUTH.md#source-595-status-2026-11-02) skelner statisk inventering, kildekvalifikation og drift. Alle oprindelige grænser nedenfor består.
+
 # DEC-0294 – SOURCE-kode og dens genererede kontrolmetadata
 
 ## Tillæg 1. november 2026 — 595 versionssynkroniseret, binding stadig NULL

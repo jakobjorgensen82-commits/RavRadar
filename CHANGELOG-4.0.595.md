@@ -1,3 +1,7 @@
+## 2. november — endelig kodeunion før udstedelse
+
+b03 indarbejder faktisk PR790-main. Statisk inventering lukker I161/C165/T12, men binding og output er NULL. PR791/senere faktisk main M2, én normal afledning og de nye FULL-/PG-/kapacitetsgates mangler. Ingen aktivering eller offentlig595-levering er bevist.
+
 ## 4.0.595 — lokal, inaktiv SOURCE-kandidat; endnu ingen ny afledning
 
 - Den gennemgåede 24-filers current594-integration er anvendt lokalt. Genuine37 CODE, aktuelle syntetiske 594-data og SOURCE-eksekutor holdes adskilt; gamle 585/586-prøver beholder egne arkiverede normalfaser.
