@@ -253,9 +253,14 @@ test('normal CURRENT B/S interruption reconciliation preserves whole pairs and r
         [{ targetReferenceAt: refs[1] }, /SOURCE_TARGET_CHANGED/],
         [{ expected: undefined }, /SOURCE_CURRENT_EXPECTATION_REQUIRED/],
         [{ expected: { ...options.expected, modelBinding: { ...options.expected.modelBinding,
-          modelBundleSha256: OLD_FAMILY.I } } }, /SOURCE_CURRENT_EXPECTATION/],
+          modelBundleSha256: OLD_FAMILY.I } } }, /PAIRED_PUBLICATION_SOURCE_INSTALLED_CURRENT_REQUIRED/],
         [{ expected: { ...options.expected, contractHashes: { ...options.expected.contractHashes,
-          continuationStateContractSha256: OLD_FAMILY.T } } }, /SOURCE_CURRENT_EXPECTATION/],
+          continuationStateContractSha256: OLD_FAMILY.T } } }, /PAIRED_PUBLICATION_SOURCE_INSTALLED_CURRENT_REQUIRED/],
+        // Preserve current I/T to reach the separate whole-current expectation guard.
+        [{ expected: { ...options.expected, modelBinding: { ...options.expected.modelBinding,
+          modelContractSha256: '0'.repeat(64) } } }, /SOURCE_CURRENT_EXPECTATION/],
+        [{ expected: { ...options.expected, contractHashes: { ...options.expected.contractHashes,
+          fullRuntimeContractSha256: '0'.repeat(64) } } }, /SOURCE_CURRENT_EXPECTATION/],
       ]) await assert.rejects(reconcileSourcePrivateRuntimeCheckpoint({ ...args, ...change }), pattern);
       const captured = process.env.OPERATIONAL_ACTION;
       try {
@@ -596,7 +601,7 @@ test('ordinary paired publication is genuinely new, exact-invertible and cannot 
   const Sstep = step(raw, 'Publish atomic RavScore checkpoint to protected admin storage');
   const evalIf = (block, action, required, input = {}, assistantRequired = 'false') => runInNewContext(block.match(/^        if: (.+)$/m)[1]
     .replace(/\bsteps\.([a-z][a-z0-9-]*)/g, (_, id) => 'steps[' + JSON.stringify(id) + ']'), {
-      inputs: { weather_state_epoch_bootstrap: false, weather_state_epoch_checkpoint_reentry: false,
+      inputs: { source_normal_producer: false, weather_state_epoch_bootstrap: false, weather_state_epoch_checkpoint_reentry: false,
         native_sampling_identity_original_recovery: false, checkpoint_only: false, quick_confirmation: false,
         completed_private_runtime: false, ...input },
       steps: { preflight: { outputs: { should_run: 'true' } }, 'operational-action': { outputs: { action } },
@@ -612,6 +617,11 @@ test('ordinary paired publication is genuinely new, exact-invertible and cannot 
     for (const name of ['Select current-family paired checkpoint restoration before any S restore',
       'Reconcile only authenticated CURRENT B to its exact protected S before providers'])
       assert.equal(evalIf(step(raw, name), 'integrated', 'true', { [flag]: true }), false);
+  // These legacy ordinary steps require the actual explicit false SOURCE input.
+  for (const sourceNormal of [true, undefined])
+    for (const name of ['Select current-family paired checkpoint restoration before any S restore',
+      'Reconcile only authenticated CURRENT B to its exact protected S before providers'])
+      assert.equal(evalIf(step(raw, name), 'integrated', 'true', { source_normal_producer: sourceNormal }), false);
   const pairedSelector = step(raw, 'Select current-family paired checkpoint restoration before any S restore');
   const pairedReconcile = step(raw, 'Reconcile only authenticated CURRENT B to its exact protected S before providers');
   // select writes required=false normally; a skipped step exposes an empty
