@@ -1,3 +1,14 @@
+## 2. november — privat databasebackup: lokal integration, livegates åbne
+
+- [x] Kilde og lokal prøve for femfilseksport, GCM/eksakt SHA, separat privat R2-arkiv, central og DB-uafhængig genfinding samt eksplicit materialisering uden SQL-eksekvering.
+- [x] Manuel skrivefri standard og eksisterende vejr→turlager-køer; 109 backupcases, kildeplan, gammel DMI75-case og privacy består lokalt.
+- [ ] Præcis ny kilde-/native-/GitHub-kvalifikation og normal levering.
+- [ ] Faktisk R2-adgang, hosted eksport/genlæsning og isoleret kompatibel Auth/schema/datarestore; managed-DDL, Storage-bytes og uafhængig nøglerecovery.
+- [ ] Varig databasebackupplan med frekvens, retention og uafhængig nøglerecovery uden PC/Codex; én manuel backup er ikke nok.
+- [ ] FreeReady/Pro-opsigelse og faktisk _site-måling.
+
+Ingen atomisk snapshotpåstand, scheduler-, SOURCE-, statistik-, slette- eller produktionsaktivering. Se håndbog 89.300 og DEC-0272.
+
 ## 2. november — normal scalarplan med begge kendte kontinuitetsformater
 
 Den normale producent gemmer native strømhistorik som schema2. Før-DMI-kalderen skal tillade både schema1 og schema2, før den normale læser vurderer de gemte komponenter og planlægger reelle vejrhul.

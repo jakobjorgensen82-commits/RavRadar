@@ -1,3 +1,12 @@
+## 2026-11-02 — lokal privat databasebackup og Pages-byteoptælling
+
+- Saml manuel femfilseksport med GCM/eksakt SHA, central og DB-uafhængig R2-genfinding samt eksplicit privat SQL-materialisering uden restore.
+- Bevar skrivefri standard, eksisterende vejr→turlager-køer, Linux/Node 24/CLI 2.117.0 og 20/30-minuttersgrænser. Ingen nye nøgler, tjenester eller planer.
+- 109 backupcases, kildeplan, gammel DMI75-map-case og privacy består lokalt. Walkerens byteoptælling er tilføjet uden ekstra gennemgang; faktisk _site er ikke målt.
+- Præcis kildekvalifikation, faktisk lageradgang og isoleret Auth/schema/datarestore samt øvrige Free/Pro-gates er åbne. Separate dumps er ikke ét atomisk snapshot.
+
+Ingen model-, SQL-, versions-, geometri-, scheduler- eller SOURCE-aktivering. Se håndbog 89.300 og DEC-0272.
+
 ## 2. november — normal scalarplan med begge kendte kontinuitetsformater
 
 Den normale producent gemmer native strømhistorik som schema2. Før-DMI-kalderen skal tillade både schema1 og schema2, før den normale læser vurderer de gemte komponenter og planlægger reelle vejrhul.

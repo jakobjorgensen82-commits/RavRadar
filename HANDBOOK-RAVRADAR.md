@@ -1,3 +1,35 @@
+## 89.300 Privat databasebackup før gratis drift
+
+<a id="supabase-private-backup-free-readiness-2026-11-02"></a>
+
+Kort fortalt: En krypteret eksport, som kan genfindes og verificeres, er ikke i sig selv en afprøvet databasegendannelse eller grundlag for at opsige Pro.
+
+### Manuel normal vej
+
+Den særskilte backupkalder er manuel og bruger bucket-readonly som skrivefri standard. Capture og eventuel bucketoprettelse er særskilte, udtrykkelige valg på præcis kvalificeret main. GitHubs midlertidige Linux-runner bruger Node 24, fast Supabase CLI 2.117.0 og eksisterende adgange; der tilføjes ingen nøgle, tjeneste eller plan. Den eksisterende vejrkø holdes yderst og turlagerkøen inderst. Operationen har 20 minutter og jobbet 30 minutter inklusive klargøring. Ukendt udfald giver stop uden automatisk gentagelse.
+
+### Fem beskyttede filer
+
+Den normale eksport omfatter roles.sql, schema.sql, data.sql, history-schema.sql og history-data.sql. Hver fil komprimeres og krypteres med særskilt databaseformål gennem eksisterende HKDF/AES-GCM. Eksakte SHA-256-værdier, autentificeret kontekst og samlet filgruppe kontrolleres ved genlæsning fra den særskilte private EU-bucket ravradar-supabase-backup. Vejrets originale B/S-pakker er ikke en hel databasebackup.
+
+### Genfinding og eksplicit materialisering
+
+En central privat locator eller DB-uafhængig R2-genfinding med eksplicit indeks-SHA kan vælge det autentificerede arkiv. Genfinding kræver stadig den bevarede dekrypteringskontekst og eksisterende nøgle. Normal verifikation og bootstrap skriver ingen SQL-filer. Kun arkivcontrollerens særskilte, eksplicitte materialize kan efter kontrol af alle fem GCM/SHA-beviser skabe de præcise SQL-bytes i et nyt privat, ejet RUNNER_TEMP-mål. Det udfører ikke SQL og gendanner ikke en produktionsdatabase.
+
+### Gates før gratis drift
+
+De fem separate dumps er ikke ét atomisk databasesnapshot. Faktisk kompatibel Auth-, schema- og datarestore, anti-genoplivning efter sletning, egne managed-DDL, nødvendige projektindstillinger og Storage-objektbytes er fortsat åbne. Det samme gælder uafhængig nøglerecovery, faktisk R2-adgang efter det tidligere Cloudflare-403-afslag og målt hosted eksport/genlæsning. FreeReady og Pro-opsigelse kræver disse faktiske beviser; hemmelighedsnavnes tilstedeværelse er ikke et forbindelsesbevis.
+
+En varig plan for databasebackup med fastlagt frekvens, retention og uafhængig nøglerecovery er fortsat åben. Før selvstændig Free-drift eller Pro-opsigelse skal planen kunne drives og gendannelsen verificeres uden PC/Codex; én manuel backup er ikke tilstrækkelig.
+
+### Lokal status og afgrænsning
+
+Den samlede lokale kandidat har bestået 109 normale backupcases, kildeplantesten, den gamle DMI75-map-case og privacyprøven. Præcis ny kilde-/native-/GitHub-kvalifikation og levering er ikke afsluttet. Pakken aktiverer ikke SOURCE, statistik, sletning, retention, en tidsplan eller produktionsrestore og ændrer ikke model, SQL, geometri eller gates. Se også 89.298 om den særskilte dokumenthistorik.
+
+### Pages-forbrug
+
+Den eksisterende privacywalker kan nu samtidig tælle ukomprimerede bytes. Der er ingen ekstra gennemgang eller ny kvoteregel. Der foreligger endnu ingen måling af et faktisk _site fra denne kandidat.
+
 ## 89.299 Begge kendte kontinuitetsformater i scalarplanen
 
 Kort fortalt: Den normale plan for reelle vejrhul skal også kunne bruge den nyere, originale strømhistorik. Kun de to allerede kendte formater tillades.

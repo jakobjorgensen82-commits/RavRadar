@@ -1,3 +1,7 @@
+## 2. november — privat databasebackup, lokal kandidat før Free
+
+Læs håndbog 89.300 (supabase-private-backup-free-readiness-2026-11-02) og DEC-0272s nye tillæg. Den manuelle backup har skrivefri standard, fem krypterede SQL-filer og verificeret genfinding; eksplicit materialisering er ikke restore. Lokale mål består, men faktisk adgang, isoleret restore og Free/Pro-opsigelse er åbne. Ingen SOURCE-, scheduler- eller produktionsaktivering følger med.
+
 ## 2. november — normal scalarplan med begge kendte kontinuitetsformater
 
 Den normale producent gemmer native strømhistorik som schema2. Før-DMI-kalderen skal tillade både schema1 og schema2, før den normale læser vurderer de gemte komponenter og planlægger reelle vejrhul.

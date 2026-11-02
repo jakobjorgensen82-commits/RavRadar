@@ -1,3 +1,9 @@
+## 2. november — åben Free-gate: faktisk databasegendannelse og adgang
+
+Den lokale krypterede femfilseksport og genfinding er ikke et atomisk databasesnapshot eller et faktisk restorebevis. Den særskilte private R2-buckets adgang er ikke verificeret efter det tidligere Cloudflare-403-afslag. Eksisterende DB-password- og øvrige hemmelighedsnavne findes, men faktisk hosted adgang og eksport er endnu uprøvet.
+
+Auth/schema/datarestore, anti-genoplivning, egne managed-DDL, nødvendige Storage-objektbytes/projektindstillinger og uafhængig nøglerecovery står åbne før FreeReady/Pro-opsigelse. Ny præcis kildekvalifikation og levering mangler også. Den nye byteoptælling har ikke målt et faktisk _site. Ingen sletning, tidsplan eller produktionsrestore startes af kandidaten. Se håndbog 89.300 og DEC-0272.
+
 ## 2. november — normal scalarplan med begge kendte kontinuitetsformater
 
 Den normale producent gemmer native strømhistorik som schema2. Før-DMI-kalderen skal tillade både schema1 og schema2, før den normale læser vurderer de gemte komponenter og planlægger reelle vejrhul.

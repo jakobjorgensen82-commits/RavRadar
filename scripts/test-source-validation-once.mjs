@@ -1,6 +1,6 @@
 import { reviewedFixedAssistantFailureLegacyWorkflow } from './lib/fixed-assistant-failure-workflow-review.mjs';
 import './test-source-child-environment.mjs';
-import {inverseReviewedAccountStatisticsAssistantSourceScripts,inverseReviewedDmiScalarGapSourceScripts} from './lib/account-statistics-assistant-package-review.mjs';
+import {inverseReviewedAccountStatisticsAssistantSourceScripts,inverseReviewedDmiScalarGapSourceScripts,inverseReviewedSupabaseBackupSourceScripts} from './lib/account-statistics-assistant-package-review.mjs';
 import assert from 'node:assert/strict';
 import {createHash} from 'node:crypto';
 import fs from 'node:fs';
@@ -18,6 +18,8 @@ import {
 const forecastShareProjectionCommand = 'node scripts/test-forecast-share-projection.mjs';
 const precedingPrivacySourceDefinition = 'node scripts/test-post-cutover-private-runtime-migration.mjs && node scripts/test-tracked-runtime-privacy.mjs && node scripts/test-pages-artifact-privacy.mjs';
 function inverseReviewedForecastShareProjectionRegistration(actualScripts) {
+  if(Object.hasOwn(actualScripts,'test:supabase-backup'))
+    return inverseReviewedForecastShareProjectionRegistration(inverseReviewedSupabaseBackupSourceScripts(actualScripts));
   if(createHash('sha256').update(JSON.stringify(Object.keys(actualScripts).sort().map(key=>[key,actualScripts[key]]))).digest('hex')==='fd4857146f205c9dc04248c642807456e01cdf47d6087de026ddd5f9c2316663')
     return inverseReviewedForecastShareProjectionRegistration(inverseReviewedDmiScalarGapSourceScripts(actualScripts));
   const digest = scripts => createHash('sha256').update(JSON.stringify(scripts)).digest('hex');
@@ -42,6 +44,30 @@ function inverseReviewedForecastShareProjectionRegistration(actualScripts) {
   return previous;
 }
 const actualForecastShareSourceScripts = JSON.parse(fs.readFileSync('package.json', 'utf8')).scripts;
+// Actual backup tests have their own visible normal group; old cases below keep their complete M5 map.
+const backupRegistrationBefore=JSON.stringify(actualForecastShareSourceScripts);
+const backupFamilies=['scripts/test-export-supabase-database.mjs','scripts/test-seal-supabase-database-export.mjs',
+  'scripts/test-archive-supabase-database-backup.mjs','scripts/test-supabase-backup-bucket.mjs','scripts/test-supabase-database-backup-workflow.mjs'];
+const backupCommand='node --test '+backupFamilies.join(' ');
+assert.equal(actualForecastShareSourceScripts['test:supabase-backup'],backupCommand);
+const backupPrevious=inverseReviewedSupabaseBackupSourceScripts(actualForecastShareSourceScripts);
+const backupDeclared=expandSourceCommands(actualForecastShareSourceScripts,'validate:source:checks');
+const backupPlan=buildSourceValidationPlan(actualForecastShareSourceScripts),backupDispatched=[];
+assert.equal(runSourceValidation(backupPlan,{execute(command){backupDispatched.push(command);return 0;},log(){}}),0);
+assert.deepEqual(backupDispatched,[...backupPlan.preflight,...backupPlan.remaining,backupPlan.gate]);
+for(const list of [backupDeclared,backupDispatched]){
+  assert.equal(list.filter(command=>command===backupCommand).length,1);
+  for(const file of backupFamilies)assert.equal(list.flatMap(command=>command.split(' ')).filter(value=>value===file).length,1);
+}
+assert.deepEqual(backupDeclared.filter(command=>command!==backupCommand),expandSourceCommands(backupPrevious,'validate:source:checks'));
+for(const mutate of [v=>v['test:supabase-backup']+=' scripts/UNREVIEWED.mjs',
+  v=>v['validate:source:checks']+=' && npm run test:supabase-backup',
+  v=>v['test:unreviewed']='node scripts/UNREVIEWED.mjs',
+  v=>v['test:weather-source-critical']+=' --unreviewed']){
+  const value={...actualForecastShareSourceScripts};mutate(value);assert.throws(()=>inverseReviewedSupabaseBackupSourceScripts(value));
+}
+assert.equal(JSON.stringify(actualForecastShareSourceScripts),backupRegistrationBefore);
+
 const precedingForecastShareSourceScripts = inverseReviewedForecastShareProjectionRegistration(actualForecastShareSourceScripts);
 for (const definition of [precedingPrivacySourceDefinition,
   actualForecastShareSourceScripts['test:privacy-source-critical'] + ' && ' + forecastShareProjectionCommand,
