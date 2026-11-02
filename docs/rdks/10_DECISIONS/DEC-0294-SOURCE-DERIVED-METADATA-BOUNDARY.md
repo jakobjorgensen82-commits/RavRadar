@@ -1,3 +1,7 @@
+## Tillæg 2. november — nye assistentinput kræver den reelle afledning
+
+Den sammenførte klientservice ændrer faktisk C/I-kode. Gamle model- og databasebeviser er derfor ikke ny595-kvalifikation. Bevar NULL indtil faktisk main M2 og endelig DMI-kode er med; følg én normal afledning på den frosne union. [Kanonisk status](../90_INDEX/CURRENT_TRUTH.md#source-595-status-2026-11-02) skelner den lokale målprøve fra native- og driftsevidens.
+
 ## Tillæg 2. november — afled én gang på den endelige kodeunion
 
 b03 bevarer faktisk PR790-main. PR791-input og senere faktisk main M2 skal normalt indarbejdes før versionssynk og frisk C/I/T/binding/output/SQL. Bevar NULL indtil da; et lokalt kvalificeret PR-input er ikke main. [Aktuel status](../90_INDEX/CURRENT_TRUTH.md#source-595-status-2026-11-02) skelner statisk inventering, kildekvalifikation og drift. Alle oprindelige grænser nedenfor består.

@@ -1,6 +1,12 @@
 <a id="source-595-status-2026-11-02"></a>
 ## 2. november — SOURCE 595 afventer endelig kodeunion
 
+Den lokale merge83df har desuden indarbejdet kvalificeret791-H. Den efterfølgende lokale kodeunion tilføjer den gennemgåede assistentforståelse og en tydelig enhedsafgrænsning i admin. Det er stadig ikke faktisk main M2.
+
+Assistenten sammensætter en hel kendt netforklaring med den eksisterende daterede prognose; ukendte apparater med garantiled får ærlig usikkerhed. Den snævre ambr-variant forstås også som selvstændig definition. Rangering, dato-/horizonregler, søgemåde og45 fakta bevares. Samme normale H-baserede syntetiske kaldere reproducerer først den offentlige1/8-fordeling og består derefter8/8 samt aliasdefinition og18 UI-cases. Det er ikke ny offentlig eller SOURCE-native-kvalifikation.
+
+Servicefilen er reelt C/I-input; den tidligere statiske171-filskvittering er ikke bevis for de nye bytes. Faktisk main M2, endelig DMI-GAP-kode og nyt rent inventar skal med før én normal595-afledning. Metadata forbliver NULL. Den komplette DMI-rettelses faktiske påvirkning afgør, om den kan leveres særskilt som P0 uden at aktivere revisionen; omfang og kontroller må ikke skæres til for en kort gate.
+
 Den normale lokale main-sammenføring b03 indarbejder faktisk main fra PR790 og bevarer genuine37 som forfader. Package4.0.594 er midlertidig; 4.0.595 er foreslået. SOURCE-metadataenes version, binding og output er NULL; der er ingen ny C/I/T- eller SQL-udstedelse.
 
 PR790 har faktisk bestået fuld kildekontrol og er normalt merget. Den efterfølgende offentlige kodelevering samt DA/DE/EN-dagopfølgninger og dialognulstilling er verificeret særskilt. Det er driftsbevis, ikke SOURCE-kvalifikation. OM-køens effekt på en ny vejrgeneration er endnu ikke målt.

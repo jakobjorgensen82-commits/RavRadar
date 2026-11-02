@@ -1,3 +1,7 @@
+## 2. november — tre konkrete assistentfamilier er rettet lokalt
+
+Tabt prognoseled i sammensatte spørgsmål, kendt net-stavevariant og ukendt apparat/garanti har en gennemgået lokal efterfølger. Offentlig genaccept afventer levering; dette lukker ikke assistentområdet. Se [kanonisk status](../90_INDEX/CURRENT_TRUTH.md#source-595-status-2026-11-02). Voerså-afvigelsen er parkeret efter ejerens prioritering.
+
 ## 2. november — SOURCE er ikke udstedt eller aktiveret
 
 Den normale main-integration er gennemført, men PR791/senere faktisk main M2 og de nye595-gates er fortsat åbne. Bevar NULL og alle originaler; ingen ny afledning på et mellemtrin. Se [aktuel status og gates](../90_INDEX/CURRENT_TRUTH.md#source-595-status-2026-11-02). Den nye OM-køs faktiske dækningsvirkning mangler stadig.

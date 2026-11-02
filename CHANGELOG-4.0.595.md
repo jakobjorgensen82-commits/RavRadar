@@ -1,3 +1,7 @@
+## Lokal kodeunion 2. november — endnu ingen udstedt595
+
+Den gennemgåede assistentforståelse og enhedsafgrænsning i admin er indarbejdet med791-H. Samme normale rangering,45 fakta og bruger-/sikkerhedsgrænser bevares. Faktisk main M2 og endelig DMI-kode skal med før én normal afledning; offentlig effekt er ikke verificeret.
+
 ## 2. november — endelig kodeunion før udstedelse
 
 b03 indarbejder faktisk PR790-main. Statisk inventering lukker I161/C165/T12, men binding og output er NULL. PR791/senere faktisk main M2, én normal afledning og de nye FULL-/PG-/kapacitetsgates mangler. Ingen aktivering eller offentlig595-levering er bevist.

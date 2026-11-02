@@ -1,3 +1,7 @@
+## 2. november — den aktuelle SOURCE-status har forrang
+
+Læs [kanonisk status](90_INDEX/CURRENT_TRUTH.md#source-595-status-2026-11-02) før de historiske statusfronter nedenfor. Den lokale kodeunion er videreført; version/binding/output er fortsat NULL, og faktisk main M2 samt endelig DMI-kode afventes.
+
 ## 1. november 2026 — lokal sammenføring, endnu ingen udstedt SOURCE 595
 
 SOURCE19 har det lokale substanscheckpoint `24d8f8ee75bb91d2c75afa92e5ccc407cb7c230f` og en uafsluttet normal sammenføring med main `c920d1e2ad0cbbfe351360f594128f0e06bd1f1e`. Main 4.0.594 er den midlertidige normale versionsforgænger; den planlagte isolerede revision er 4.0.595. Normal versionssynk efter sammenføringen er endnu ikke kørt. SOURCE-version, binding og output er NULL; nye C/I/T og SQL er ikke udstedt. Semantiske konflikter og kvalifikation er fortsat åbne. Et checkpoint, et forberedt input eller MERGE_HEAD er ikke faktisk main-ancestry, native/fullRuntime-, ejerafslutnings- eller leveringsbevis.

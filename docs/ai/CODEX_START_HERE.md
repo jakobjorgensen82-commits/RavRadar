@@ -1,3 +1,7 @@
+## 2. november — fortsæt fra den aktuelle lokale kodeunion
+
+Kvalificeret791-H samt gennemgået assistent- og admintekst er forberedt lokalt. Det er ikke faktisk main M2 eller offentlig levering. Se [kanonisk status](../rdks/90_INDEX/CURRENT_TRUTH.md#source-595-status-2026-11-02) og privat checkpoint; frys endelig kode før én595-afledning.
+
 ## 2. november — SOURCE efter den faktiske main-sammenføring
 
 Læs [den aktuelle SOURCE-status](../rdks/90_INDEX/CURRENT_TRUTH.md#source-595-status-2026-11-02) før historikken nedenfor. b03 har indarbejdet den faktiske main fra PR790; package594 er midlertidig, 595 foreslået og metadata NULL. PR791 og senere faktisk main M2 skal med før én normal afledning. Gamle daterede afsnit er historik på disse punkter.

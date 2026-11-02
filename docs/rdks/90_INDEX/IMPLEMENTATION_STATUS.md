@@ -1,3 +1,11 @@
+## 2. november — konkret lokal assistent- og adminintegration
+
+- [x] Kvalificeret791-H forberedt gennem normal lokal merge; endnu ikke faktisk main M2.
+- [x] Gennemgået assistentkode og tydelig lokal observationsafgrænsning indarbejdet. Den normale syntetiske H-baserede prøve består de otte observerede spørgsmål, selvstændig aliasdefinition og18 UI-cases.
+- [ ] Faktisk main M2, endelig DMI-kode, nyt rent inventar og normal595-afledning/kvalifikation/levering.
+
+Se [kanonisk status](CURRENT_TRUTH.md#source-595-status-2026-11-02). Lokal accept er ikke SOURCE-native- eller offentlig AI-accept.
+
 ## 2. november — SOURCE-integration og resterende gates
 
 - [x] Faktisk PR790-main normalt indarbejdet i b03; NULL og gamle originaler bevaret.

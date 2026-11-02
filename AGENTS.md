@@ -1,3 +1,7 @@
+## 2. november — lokale assistent- og admininput er sammenført
+
+Den gennemgåede lokale kandidat er nu indarbejdet. Faktisk main M2 og endelig DMI-kode mangler fortsat før én595-afledning. Følg [kanonisk status](docs/rdks/90_INDEX/CURRENT_TRUTH.md#source-595-status-2026-11-02); bevar NULL og produktionsro under aktiv writer.
+
 ## 2. november — SOURCE 595 er fortsat uudstedt
 
 Bevar NULL-bindingen, indtil PR791-input og den senere faktiske main M2 er normalt sammenført og endeligt frosset. Følg [den aktuelle SOURCE-status](docs/rdks/90_INDEX/CURRENT_TRUTH.md#source-595-status-2026-11-02) og det private checkpoint. Ingen produktionsændring under aktiv writer.

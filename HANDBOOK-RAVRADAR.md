@@ -10957,6 +10957,10 @@ Den isolerede revisions lokale kontrol af denne adskillelse er ikke en offentlig
 
 Aktuel status 2. november 2026:
 
+Den lokale kodeunion omfatter nu også den gennemgåede assistentforståelse: kendt udstyr og en dateret prognose kan besvares samlet med den normale rangering, og et ukendt apparat giver ikke grundlag for en fundgaranti. Admins observationstal og eksport mærkes tydeligt som oplysninger på den aktuelle enhed. De normale syntetiske mål består på den H-baserede kandidat; offentlig genaccept afventer levering.
+
+Revisionen er fortsat inaktiv med NULL-metadata. Faktisk main M2 og endelig DMI-kode skal med før den normale595-afledning og samlede kvalifikation. Den reelle serviceændring er modelinput; gamle kontrolsummer eller tidligere drift må ikke genmærkes som nyt bevis.
+
 Den isolerede SOURCE-kilde er nu normalt sammenført med den faktisk kvalificerede og mergede main-kode fra PR 790. Den lokale programversion er midlertidigt 4.0.594; 4.0.595 er foreslået. Revisionens egne versions-, bindings- og outputfelter er stadig NULL, og ingen nye modelkontrolsummer eller SQL er udstedt.
 
 ROOT har dokumenteret en særskilt vellykket kodelevering med offentlig dansk, tysk og engelsk accept af korte dagopfølgninger og nulstilling. Det er ikke en SOURCE-prøve eller måling af den nye vejrkøs effekt. Den næste kvalificerede kontrolændring, PR 791, skal først følge den normale main-sammenføring, før SOURCEs endelige kodeinput fryses og 595 afledes én gang.

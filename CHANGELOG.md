@@ -1,3 +1,7 @@
+## 2. november — assistentforståelse og tydelig adminafgrænsning, lokalt
+
+Sammensæt kendt netforklaring med normal dateret prognose; forstå den begrænsede ambr-variant; svar ærligt om ukendt apparat og fundgaranti. Observationer mærkes som enhedsbaserede. Gennemgået og sammenført lokalt; afledning og levering afventer [SOURCE-status](docs/rdks/90_INDEX/CURRENT_TRUTH.md#source-595-status-2026-11-02).
+
 ## 2. november — SOURCE forberedes med den aktuelle main
 
 PR790-main er normalt indarbejdet. PR791 og senere faktisk main skal med før én595-afledning; SOURCE er stadig NULL og inaktiv. Den offentlige kodelevering og assistentaccept er særskilte beviser. Se [SOURCE-status](docs/rdks/90_INDEX/CURRENT_TRUTH.md#source-595-status-2026-11-02).
