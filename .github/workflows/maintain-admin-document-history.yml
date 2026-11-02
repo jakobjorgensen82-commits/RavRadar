@@ -1,0 +1,219 @@
+name: Maintain RavRadar admin document history
+
+on:
+  workflow_dispatch:
+    inputs:
+      expected_main:
+        description: Exact qualified current main SHA
+        required: true
+        type: string
+      operation:
+        description: Fixed private history operation; publish creates and verifies a fresh archive first
+        type: choice
+        default: plan
+        options: [plan, archive, publish-locator, discover, restore, prune, bucket-readonly, bucket-create]
+      confirmation:
+        description: Exact publish-locator, prune or bucket-create confirmation; empty for read-only/archive operations
+        type: string
+        default: ''
+      prune_limit:
+        description: Exact prune batch; keep25 for the first bounded live qualification
+        type: choice
+        default: '25'
+        options: ['25', '100', '600']
+      index_sha:
+        description: Optional exact index SHA for discover/restore only
+        type: string
+        default: ''
+
+permissions:
+  contents: read
+  actions: read
+  pull-requests: read
+
+# Existing order: weather OUTER, trip storage INNER. No new lock or schedule.
+concurrency:
+  group: ravradar-weather-production-v2
+  queue: max
+  cancel-in-progress: false
+
+jobs:
+  admin-document-history:
+    concurrency:
+      group: ravradar-trip-storage-production
+      cancel-in-progress: false
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - name: Require the fixed main invocation before any qualified read
+        shell: bash
+        env:
+          EXPECTED_HEAD_SHA: ${{ inputs.expected_main }}
+        run: |
+          test "$GITHUB_EVENT_NAME" = workflow_dispatch
+          test "$GITHUB_REF" = refs/heads/main
+          test "$GITHUB_RUN_ATTEMPT" = 1
+          test "$GITHUB_SHA" = "$EXPECTED_HEAD_SHA"
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+      - name: Restore source-content validation locator
+        uses: actions/cache/restore@v6
+        with:
+          path: .cache/weather-source-validation.json
+          key: weather-source-proof-v2-${{ runner.os }}-${{ github.sha }}-${{ github.run_id }}-${{ github.run_attempt }}-admin-history
+          restore-keys: |
+            weather-source-proof-v2-${{ runner.os }}-${{ github.sha }}-
+      - name: Require the already qualified exact-content source
+        id: source-proof
+        timeout-minutes: 2
+        run: node scripts/weather-source-gate.mjs check
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+      - name: Reject missing source proof before private access
+        run: test "${{ steps.source-proof.outputs.required }}" = false
+      - name: Run only the fixed document-history operation
+        shell: bash
+        env:
+          EXPECTED_HEAD_SHA: ${{ inputs.expected_main }}
+          DOCUMENT_HISTORY_OPERATION: ${{ inputs.operation }}
+          DOCUMENT_HISTORY_CONFIRMATION: ${{ inputs.confirmation }}
+          DOCUMENT_HISTORY_INDEX_SHA: ${{ inputs.index_sha }}
+          DOCUMENT_HISTORY_PRUNE_LIMIT: ${{ inputs.prune_limit }}
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          RAVRADAR_R2_ACCOUNT_ID: ${{ secrets.RAVRADAR_R2_ACCOUNT_ID }}
+          RAVRADAR_R2_ACCESS_KEY_ID: ${{ secrets.RAVRADAR_R2_ACCESS_KEY_ID }}
+          RAVRADAR_R2_SECRET_ACCESS_KEY: ${{ secrets.RAVRADAR_R2_SECRET_ACCESS_KEY }}
+        run: |
+          node <<'NODE'
+          const fs = require('node:fs');
+          const path = require('node:path');
+          const { execFileSync } = require('node:child_process');
+          const env = process.env;
+          let phase = 'AUTHORITY';
+          function need(value, code) { if (!value) { const error = new Error(code); error.code = code; throw error; } }
+          const expected = {
+            plan: 'READ_ONLY_DRAFT',
+            archive: 'FIXED_BUCKET_ARCHIVE_AND_READONLY_ROUNDTRIP_VERIFIED',
+            'publish-locator': 'DURABLE_PRIVATE_LOCATOR_CAS_AND_RESTORE_VERIFIED',
+            discover: 'DURABLE_PRIVATE_LOCATOR_DISCOVERED_AND_RESTORED',
+            restore: 'CENTRAL_DISCOVERY_READONLY_FULL_ROW_RESTORE_VERIFIED',
+            prune: 'EXACT_ARCHIVED_ROWS_ABSENT_AFTER_WRITE',
+          };
+          try {
+            need(env.GITHUB_EVENT_NAME === 'workflow_dispatch' && env.GITHUB_REF === 'refs/heads/main'
+              && env.GITHUB_RUN_ATTEMPT === '1' && env.GITHUB_REPOSITORY === 'jakobjorgensen82-commits/RavRadar'
+              && env.GITHUB_WORKFLOW === 'Maintain RavRadar admin document history'
+              && /^[a-f0-9]{40}$/.test(env.EXPECTED_HEAD_SHA || '') && env.GITHUB_SHA === env.EXPECTED_HEAD_SHA,
+              'DOCUMENT_HISTORY_AUTHORITY');
+            const operation = env.DOCUMENT_HISTORY_OPERATION;
+            const bucketOperation = ['bucket-readonly', 'bucket-create'].includes(operation);
+            need(Object.hasOwn(expected, operation) || bucketOperation, 'DOCUMENT_HISTORY_OPERATION');
+            const pruneLimit = env.DOCUMENT_HISTORY_PRUNE_LIMIT;
+            need(['25', '100', '600'].includes(pruneLimit), 'DOCUMENT_HISTORY_PRUNE_LIMIT');
+            need(operation === 'prune' || pruneLimit === '25', 'DOCUMENT_HISTORY_PRUNE_LIMIT_SCOPE');
+            const confirmation = env.DOCUMENT_HISTORY_CONFIRMATION || '';
+            need(operation === 'bucket-create' ? confirmation === 'CREATE-PRIVATE-EU-ADMIN-HISTORY-BUCKET'
+              : operation === 'publish-locator' ? confirmation === 'PUBLISH-PRIVATE-ADMIN-HISTORY-LOCATOR'
+              : operation === 'prune' ? confirmation === 'PRUNE-EXACT-THREE-DOCUMENT-HISTORY'
+              : confirmation === '', 'DOCUMENT_HISTORY_CONFIRMATION');
+            const selector = env.DOCUMENT_HISTORY_INDEX_SHA || '';
+            need(selector === '' || (['discover', 'restore'].includes(operation) && /^[a-f0-9]{64}$/.test(selector)),
+              'DOCUMENT_HISTORY_INDEX_SELECTOR');
+            need(typeof env.RUNNER_TEMP === 'string' && path.isAbsolute(env.RUNNER_TEMP), 'DOCUMENT_HISTORY_TEMP');
+            const deadline = Date.now() + 20 * 60 * 1000;
+            const remaining = () => { const value = deadline - Date.now(); need(value > 0, 'DOCUMENT_HISTORY_DEADLINE'); return value; };
+            const gitEnv = Object.fromEntries(['PATH', 'Path', 'HOME', 'USERPROFILE', 'SystemRoot', 'WINDIR',
+              'TEMP', 'TMP', 'RUNNER_TEMP', 'LANG', 'LC_ALL'].filter(key => typeof env[key] === 'string').map(key => [key, env[key]]));
+            Object.assign(gitEnv, { GIT_TERMINAL_PROMPT: '0' });
+            function mainHead() {
+              phase = 'MAIN_RECONFIRM';
+              try {
+                execFileSync('git', ['fetch', '--no-tags', 'origin', '+refs/heads/main:refs/remotes/origin/main'],
+                  { env: gitEnv, stdio: ['ignore', 'pipe', 'pipe'], timeout: Math.min(60000, remaining()), maxBuffer: 65536 });
+                for (const ref of ['HEAD^{commit}', 'origin/main^{commit}']) {
+                  const value = execFileSync('git', ['rev-parse', ref],
+                    { env: gitEnv, stdio: ['ignore', 'pipe', 'pipe'], timeout: Math.min(10000, remaining()), maxBuffer: 65536 }).toString().trim();
+                  need(value === env.EXPECTED_HEAD_SHA, 'DOCUMENT_HISTORY_MAIN_CHANGED');
+                }
+              } catch (error) { if (['DOCUMENT_HISTORY_MAIN_CHANGED', 'DOCUMENT_HISTORY_DEADLINE'].includes(error.code)) throw error;
+                const failure = new Error('DOCUMENT_HISTORY_MAIN_UNAVAILABLE'); failure.code = 'DOCUMENT_HISTORY_MAIN_UNAVAILABLE'; throw failure; }
+            }
+            mainHead();
+            const workdir = fs.mkdtempSync(path.join(env.RUNNER_TEMP, 'rr-admin-document-history-'));
+            fs.chmodSync(workdir, 0o700);
+            const controllerEnv = Object.fromEntries([...Object.keys(gitEnv), 'SUPABASE_URL', 'SUPABASE_SERVICE_ROLE_KEY',
+              'SUPABASE_ACCESS_TOKEN', 'RAVRADAR_R2_ACCOUNT_ID', 'RAVRADAR_R2_ACCESS_KEY_ID', 'RAVRADAR_R2_SECRET_ACCESS_KEY']
+              .filter(key => typeof env[key] === 'string').map(key => [key, env[key]]));
+            const completed = [];
+            // The management token reaches only this fixed metadata/create helper, never the archive controller.
+            function invokeBucket(mode, requirePrivate = true) {
+              mainHead(); phase = 'BUCKET_' + mode;
+              const args = ['scripts/provision-admin-document-history-bucket.mjs', '--' + mode];
+              if (mode === 'create') args.push('--confirm', confirmation);
+              const bucketEnv = Object.fromEntries([...Object.keys(gitEnv), 'RAVRADAR_R2_ACCOUNT_ID', 'CLOUDFLARE_API_TOKEN']
+                .filter(key => typeof env[key] === 'string').map(key => [key, env[key]]));
+              let result;
+              try { result = JSON.parse(execFileSync(process.execPath, args, { env: bucketEnv,
+                stdio: ['ignore', 'pipe', 'pipe'], timeout: Math.min(120000, remaining()), maxBuffer: 65536 }).toString('utf8')); }
+              catch (error) {
+                let record = null; try { record = JSON.parse(error.stderr.toString('utf8')); } catch {}
+                const failure = new Error('R2_BUCKET_READ_FAILED');
+                failure.code = /^R2_BUCKET_[A-Z_]{1,80}$/.test(record?.code || '') ? record.code
+                  : mode === 'create' ? 'R2_BUCKET_CREATE_OUTCOME_UNKNOWN' : 'R2_BUCKET_READ_FAILED';
+                failure.httpStatus = Number.isInteger(record?.httpStatus) && record.httpStatus >= 100 && record.httpStatus <= 599 ? record.httpStatus : null;
+                throw failure;
+              }
+              const verified = ['PRIVATE_EU_BUCKET_VERIFIED', 'PRIVATE_EU_BUCKET_CREATED_VERIFIED'].includes(result?.status);
+              need(result && result.bucket === 'ravradar-admin-history-archive' && result.jurisdiction === 'eu'
+                && result.objectsUploaded === false && result.settingsChanged === false
+                && (verified || (!requirePrivate && result.status === 'PRIVATE_EU_BUCKET_ABSENT'))
+                && (!verified || (result.managedPublicEnabled === false && result.customDomainCount === 0)), 'DOCUMENT_HISTORY_BUCKET_RECEIPT');
+              completed.push('bucket-' + mode);
+            }
+            function invoke(mode) {
+              if (['archive', 'publish-locator', 'prune'].includes(mode)) invokeBucket('read-only');
+              mainHead(); phase = mode;
+              const args = ['scripts/admin-document-history-maintenance.mjs', '--' + mode, '--workdir', workdir];
+              if (mode === 'publish-locator' || mode === 'prune') args.push('--confirm', confirmation);
+              if (mode === 'prune') args.push('--limit', pruneLimit);
+              if (selector && ['discover', 'restore'].includes(mode)) args.push('--index-sha', selector);
+              let result;
+              try {
+                const output = execFileSync(process.execPath, args, { env: controllerEnv, stdio: ['ignore', 'pipe', 'pipe'],
+                  timeout: remaining(), maxBuffer: 65536 });
+                result = JSON.parse(output.toString('utf8'));
+              } catch (error) {
+                let code = ['archive', 'publish-locator', 'prune'].includes(mode) ? 'WRITE_OUTCOME_UNKNOWN' : 'DOCUMENT_HISTORY_CHILD_FAILED';
+                try { const record = JSON.parse(error.stderr.toString('utf8'));
+                  if (record.status === 'FAILED_CLOSED' && /^[A-Z_]{1,96}$/.test(record.code)) code = record.code; } catch {}
+                const failure = new Error(code); failure.code = code; throw failure;
+              }
+              need(result && result.mode === mode && result.status === expected[mode]
+                && result.currentDocumentsWritten === false && result.protectedOtherKeysWritten === false
+                && result.archiveObjectsDeleted === false, 'DOCUMENT_HISTORY_RECEIPT');
+              completed.push(mode);
+            }
+            // Fresh private prerequisites remain in one runner, under both existing locks.
+            // A publish request explicitly creates and verifies a fresh archive first.
+            if (bucketOperation) invokeBucket(operation === 'bucket-create' ? 'create' : 'read-only', operation === 'bucket-create');
+            else {
+              if (operation === 'archive' || operation === 'publish-locator') invoke('plan');
+              if (operation === 'publish-locator') invoke('archive');
+              invoke(operation);
+            }
+            console.log(JSON.stringify({ status: 'DOCUMENT_HISTORY_COMPLETE', operation, completed,
+              fullDatabaseBackupVerified: false, productionDatabaseRestoreExecuted: false, freeReady: false }));
+          } catch (error) {
+            console.error(JSON.stringify({ status: 'FAILED_CLOSED', phase,
+              code: (/^[A-Z_]{1,96}$/.test(error.code || '') || /^R2_BUCKET_[A-Z_]{1,80}$/.test(error.code || '')) ? error.code : 'DOCUMENT_HISTORY_OPERATOR_FAILED',
+              httpStatus: Number.isInteger(error.httpStatus) ? error.httpStatus : null }));
+            process.exitCode = 1;
+          }
+          NODE

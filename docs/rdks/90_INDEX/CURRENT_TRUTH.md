@@ -1,3 +1,19 @@
+## 2. november — privat arkivbucket: særskilt lokal provisionskandidat
+
+Bucketkontrollen har to særskilte valg: bucket-readonly læser kun den faste EU-buckets metadata. bucket-create kræver CREATE-PRIVATE-EU-ADMIN-HISTORY-BUCKET og må kun forsøge én oprettelse efter en fuldstændig autentificeret EU-fortegnelse og direkte fraværskontrol. En eksisterende bucket må ikke ændres. Kun Standard-lager bruges; r2.dev skal være deaktiveret, og listen over egne domæner skal være tom. De samme metadata genlæses før archive, publish-locator og prune. Den eksisterende Cloudflare-nøgle bruges kun af bucket-hjælperen. Manglende adgang eller HTTP 401/403 stopper uden nye rettigheder eller nøgler. Ukendt POST-udfald må kun afklares med bucket-readonly; POST gentages ikke automatisk.
+
+Dette er kildeforberedelse med beståede normale syntetiske mål; faktisk tokenadgang, oprettelse og privat metadata er ikke aflæst eller leveret her. De øvrige backup-, genopretnings-, kilde- og safe-delete-gates består. Ingen vejr-, model-, SOURCE- eller betalingsændring. Se håndbog 89.298.
+
+## 2. november — kontrolleret dokumenthistorik, ikke udført oprydning
+
+Den lokale kandidat omfatter kun historik for `rdks-documentation-center`, `handbook` og `handbook-source-baseline`. Deres aktuelle dokumenter og de fem nyeste historikversioner pr. nøgle bevares. Ældre originaler arkiveres før en eventuel beskæring i en særskilt privat R2-bucket; vejrets bucket og originale B/S-pakker er ikke oprydningsmål.
+
+V2 bevarer den præcise REST-respons for hver historikrække. Central V2-arkivhenvisning og fuld genlæsning forbinder senere kontrol med de originale bytes. En lokal fil, en statuslinje eller en genserialiseret JSON-værdi giver ikke sletteautoritet. Ukendt skriveudfald standser uden automatisk gentagelse.
+
+Den særskilte manuelle workflow har skrivefri plan som standard. Arkivering og publicering af arkivhenvisning bruger de nødvendige friske fortrin i samme runner; beskæring er altid særskilt og bekræftet. Første kontrollerede prøve bruger batch 25; senere kan operatøren vælge 100 eller 600 inden for samme uændrede kontroller, så en stor rest ikke kræver mange gentagne fulde forudkontroller. Jobbet har 25 minutter inklusive klargøring, mens den samlede operation og controller bevarer 20 minutter. Den eksisterende vejr→turlager-låserækkefølge bevares.
+
+Normale lokale prøver består. Ingen livearkivering, locatorpublicering eller beskæring er udført som led i kandidaten. Faktisk lageradgang, backup-/genopretnings- og anti-genoplivningskontrol samt præcis kildekvalifikation er fortsat åbne. Kandidaten kan kvalificeres og leveres selvstændigt fra aktuel main; SOURCE 595 er ikke en forudsætning. De fem produktfiler og disse dokumenter er uden for de faktisk læste modelinputfortegnelser. En senere SOURCE-sammenføring skal alligevel verificere endelig importlukning, uændrede modelbindinger og præcist kildebevis gennem de normale kaldere. RavScore, tupel, vejrdata, geometri og version er uændrede; samlet gratis drift eller grundlag for Pro-opsigelse er ikke bevist. Se håndbog 89.298.
+
 ## 2. november — de historiske kildeprøver bevarer deres oprindelige input
 
 Den første samlede kontrol af DMI-kandidaten stoppede i to gamle inputkontrakter: den udvidede kommandofortegnelse og den flyttede scalar-kalder i updateren. De 32 afslag er kortlagt til disse to fælles årsager; de er ikke i sig selv bevis for fejl i nye vejrdata.

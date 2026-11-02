@@ -1,3 +1,11 @@
+## 2. november — åben dokumenthistorik: arkiv og backup før beskæring
+
+Den lokale vedligeholdelseskandidat er ikke live- eller safe-delete-kvalificeret. Før muterende brug skal den faktiske private arkivbucket/adgang, backup-/genopretnings- og anti-genoplivningsafklaring samt normal præcis kilde- og leveringskontrol være på plads. En privat gendannet historikfil er ikke en udført produktions-DB-restore eller en fuld databasebackup.
+
+En beskæringsoperation genkontrollerer hele det relevante arkiv og de aktuelle kandidatrækker. Mange små batches kan derfor give unødvendig gentagen dataoverførsel. Standard 25 bevares til den første begrænsede liveprøve; et senere eksplicit valg på 100 eller 600 kan behandle resten inden for de samme kontroller og tidsgrænser. Det er ikke en garanti for, at et stort batch kan afsluttes uden faktisk måling. Ingen automatisk retry må forsøge at skjule et ukendt PUT-, locator- eller DELETE-udfald.
+
+Kandidaten kan kvalificeres selvstændigt på aktuel main og behøver ikke vente på SOURCE 595. En senere SOURCE-sammenføring kræver stadig normal endelig import-/bindings- og kildekontrol. En aktiv SOURCE-prøves genbekræftelse af main må ikke forveksles med en funktionel afhængighed af oprydningen. Eksisterende løbende vejrhentning, aktuelle dokumenter, de seneste fem historikversioner pr. nøgle, øvrige beskyttede nøgler og arkivoriginaler skal bevares. Samlet FreeReady og Pro-opsigelse er særskilt åbne. Se håndbog 89.298.
+
 ## 2. november — de historiske kildeprøver bevarer deres oprindelige input
 
 Den første samlede kontrol af DMI-kandidaten stoppede i to gamle inputkontrakter: den udvidede kommandofortegnelse og den flyttede scalar-kalder i updateren. De 32 afslag er kortlagt til disse to fælles årsager; de er ikke i sig selv bevis for fejl i nye vejrdata.

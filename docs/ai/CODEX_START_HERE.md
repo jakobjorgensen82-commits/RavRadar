@@ -1,3 +1,9 @@
+## 2. november — afgrænset dokumenthistorik, kun lokal kandidat
+
+Læs håndbog 89.298 før arkivering eller beskæring af dokumenthistorik. Kandidaten bevarer de tre aktuelle dokumenter og de fem nyeste historikversioner pr. nøgle. Ældre versioner må først beskæres efter præcis privat arkivering, verificeret genlæsning og central V2-arkivhenvisning.
+
+Den særskilte manuelle maintenance-kalder bruger den eksisterende vejrkø yderst og turlagerkøen inderst. Standardvalget er skrivefri plan; der er ingen tidsplan eller automatisk beskæring. Normale lokale controller- og kalderprøver består, men præcis kildekvalifikation, faktisk privat lageradgang, backup-/genopretningsafklaring og sikker liveprøve er åbne. Kandidaten kan kvalificeres selvstændigt på sin præcise main-baserede kilde og kræver ikke SOURCE 595 først. En senere SOURCE-sammenføring skal normalt bevare modelbindinger og hele kildebeviset; den må ikke ommærke et gammelt bevis. Ingen SOURCE-aktivering, FreeReady eller Pro-opsigelse følger af denne lokale kandidat.
+
 ## 2. november — DMI-køens nye lokale afgrænsning
 
 Læs CURRENT_TRUTHs nye front, DEC-0261s tillæg og håndbog 89.294. Reelle komponenthuller og native opgraderinger skal skelnes gennem den samme normale fortolkning. Lokal prøve er ikke offentlig levering; SOURCE er fortsat inaktiv.

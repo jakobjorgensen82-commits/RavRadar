@@ -1,3 +1,25 @@
+## 2. november — dokumentarkivets bucket: lokal klargøring
+
+- [x] To lukkede bucketvalg i den nye vedligeholdelseskalder; særskilt Cloudflare-nøgleflade og frisk metadata før archive/publish/prune.
+- [x] Normale syntetiske cases for fravær, privat genlæsning, engangsoprettelse, HTTP 403 og ukendt skriveudfald.
+- [ ] Faktisk eksisterende R2-rettighed, fast EU/Standard-bucket og deaktiveret r2.dev uden egne domæner.
+- [ ] Præcis kildekvalifikation og normal levering før de allerede krævede backup-/restore- og beskæringsprøver.
+
+Ingen API-oprettelse, adgangsændring, automatisk retry, FreeReady eller abonnementsændring er udført af denne kandidat.
+
+## 2. november — dokumenthistorik: lokal kandidat, livegates åbne
+
+- [x] Fast afgrænsning til tre dokumentnøgler; aktuelle dokumenter og seneste fem historikversioner pr. nøgle bevares.
+- [x] V2-arkiv med eksakte REST-originaler, privat genlæsning og central arkivhenvisning; eksisterende adgangs- og databevaringskontroller bevares.
+- [x] Særskilt manuel kalder med skrivefri standardplan, særskilt bekræftet beskæring og eksisterende vejr→turlager-kø. Job 25 minutter; operation/controller 20 minutter.
+- [x] Normale lokale controller- og workflowprøver; lukket prune-valg 25/100/600, standard 25 og kun anvendeligt ved beskæring.
+- [ ] Selvstændig præcis main-baseret kildekvalifikation og sikker levering af oprydningskandidaten; ingen afhængighed af SOURCE 595-aktivering.
+- [ ] Ved senere SOURCE-sammenføring: normal endelig import-/bindings- og kildekontrol; uændret modelinput skal bevises, ikke antages.
+- [ ] Faktisk privat bucket/adgang, backup-/genopretnings- og anti-genoplivningskontrol samt første afgrænsede liveprøve.
+- [ ] Målt plads-/egressvirkning og grundlag for samlet gratis drift.
+
+Ingen automatisk oprydning eller tidsplan, faktisk beskæring, FreeReady eller Pro-opsigelse følger af denne status. Originale B/S, vejrdata, scoremodel, tupel og version ændres ikke. Se håndbog 89.298.
+
 ## 2. november — de historiske kildeprøver bevarer deres oprindelige input
 
 Den første samlede kontrol af DMI-kandidaten stoppede i to gamle inputkontrakter: den udvidede kommandofortegnelse og den flyttede scalar-kalder i updateren. De 32 afslag er kortlagt til disse to fælles årsager; de er ikke i sig selv bevis for fejl i nye vejrdata.
