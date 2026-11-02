@@ -5,6 +5,8 @@
 - 109 backupcases, kildeplan, gammel DMI75-map-case og privacy består lokalt. Walkerens byteoptælling er tilføjet uden ekstra gennemgang; faktisk _site er ikke målt.
 - Præcis kildekvalifikation, faktisk lageradgang og isoleret Auth/schema/datarestore samt øvrige Free/Pro-gates er åbne. Separate dumps er ikke ét atomisk snapshot.
 
+- Tilføjelse 3. november: forbered særskilt manuel syntetisk standard-CLI-/Auth-restoreprøve uden produktionsadgange; faktisk hosted udførelse er åben.
+
 Ingen model-, SQL-, versions-, geometri-, scheduler- eller SOURCE-aktivering. Se håndbog 89.300 og DEC-0272.
 
 ## 2. november — normal scalarplan med begge kendte kontinuitetsformater

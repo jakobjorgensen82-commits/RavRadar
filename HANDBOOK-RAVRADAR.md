@@ -22,6 +22,10 @@ De fem separate dumps er ikke ét atomisk databasesnapshot. Faktisk kompatibel A
 
 En varig plan for databasebackup med fastlagt frekvens, retention og uafhængig nøglerecovery er fortsat åben. Før selvstændig Free-drift eller Pro-opsigelse skal planen kunne drives og gendannelsen verificeres uden PC/Codex; én manuel backup er ikke tilstrækkelig.
 
+### Særskilt syntetisk genopretningsprøve
+
+En særskilt manuel Linuxprøve er lokalt forberedt med to efterfølgende, syntetiske Supabase-projekter. Den bruger fem normale CLI-dumps, en frisk lokal database og et nyt Auth-login efter gendannelse. Den bruger ingen produktionsadgange og ændrer ikke de normale PostgreSQL-gates. Fem rene grænseprøver består; faktisk Linux-, Docker-, Auth- og genopretningskørsel er endnu ikke udført og beviser derfor ikke projektets backup.
+
 ### Lokal status og afgrænsning
 
 Den samlede lokale kandidat har bestået 109 normale backupcases, kildeplantesten, den gamle DMI75-map-case og privacyprøven. Præcis ny kilde-/native-/GitHub-kvalifikation og levering er ikke afsluttet. Pakken aktiverer ikke SOURCE, statistik, sletning, retention, en tidsplan eller produktionsrestore og ændrer ikke model, SQL, geometri eller gates. Se også 89.298 om den særskilte dokumenthistorik.

@@ -2,6 +2,7 @@
 
 - [x] Kilde og lokal prøve for femfilseksport, GCM/eksakt SHA, separat privat R2-arkiv, central og DB-uafhængig genfinding samt eksplicit materialisering uden SQL-eksekvering.
 - [x] Manuel skrivefri standard og eksisterende vejr→turlager-køer; 109 backupcases, kildeplan, gammel DMI75-case og privacy består lokalt.
+- [x] Kilde til særskilt manuel syntetisk CLI-/Auth-restoreprøve; fem rene grænsecases består. Faktisk hosted udførelse er åben.
 - [ ] Præcis ny kilde-/native-/GitHub-kvalifikation og normal levering.
 - [ ] Faktisk R2-adgang, hosted eksport/genlæsning og isoleret kompatibel Auth/schema/datarestore; managed-DDL, Storage-bytes og uafhængig nøglerecovery.
 - [ ] Varig databasebackupplan med frekvens, retention og uafhængig nøglerecovery uden PC/Codex; én manuel backup er ikke nok.

@@ -2,6 +2,8 @@
 
 Den særskilte manuelle kalder bevarer skrivefri bucket-readonly, eksisterende vejr→turlager-køer, Linux/Node 24/CLI 2.117.0 og 20 minutters operation/30 minutters job. Fem SQL-filer krypteres og genlæses med GCM/eksakt SHA og autentificeret gruppe; central locator og DB-uafhængigt R2-valg er adskilt fra eksplicit privat SQL-materialisering uden restore. Separate dumps er ikke ét atomisk databasesnapshot.
 
+Den særskilte syntetiske Linux-/CLI-/Auth-restoreprøve er lokalt forberedt med fem rene grænsecases; ingen hosted Docker- eller Auth-gendannelse er endnu udført.
+
 109 normale backupcases, kildeplantesten, gammel DMI75-map-case og privacy består lokalt. Ny præcis kilde-/native-/GitHub-kvalifikation, faktisk R2-adgang efter tidligere 403, Auth/managed-DDL/Storage-bytes, uafhængig nøglerecovery og isoleret restore er fortsat åbne før FreeReady/Pro-opsigelse. Pages-walkeren tæller kun bytes; et faktisk _site er endnu ikke målt. Version/model/SQL/geometri og alle fem hovedmål består. Se håndbog 89.300 og DEC-0272.
 
 ## 2. november — normal scalarplan med begge kendte kontinuitetsformater
