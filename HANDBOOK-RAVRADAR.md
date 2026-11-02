@@ -1,3 +1,19 @@
+## 89.299 Begge kendte kontinuitetsformater i scalarplanen
+
+Kort fortalt: Den normale plan for reelle vejrhul skal også kunne bruge den nyere, originale strømhistorik. Kun de to allerede kendte formater tillades.
+
+### Hvor fejlen lå
+
+Den tidligere selector tillod kun schema1, selv om den normale producent allerede udstedte schema2 og den efterfølgende læser accepterede begge. Derfor kunne en almindelig gyldig genlæsning springe den nye plan over. Den afgrænsede rettelse udvider kun denne formatkontrol til de to kendte værdier. Alle øvrige almindelig-genlæsning-, model-, bindings- og særforløbsvagter bevares; ukendte formater giver fortsat ingen adgang.
+
+### Hvad den normale prøve viser
+
+Den samme normale testcase er rød før og grøn efter rettelsen: producentens faktiske schema2 går gennem workflowets selector, Node-planen, den offline reservekilde og Python-/DMI-læseren. Hele de gamle workfloworakler og afslag på ukendt format eller ændret helfil bevares. Det er ikke bevis for, at alle øvrige vagter var opfyldt i en bestemt produktionskørsel, eller at leverandørerne har alle manglende timer.
+
+### Bevarelse og leveringsgrænse
+
+DMI → Copernicus → Open-Meteo, hentebudgetter, originaler, cache, scoreformel, modelbindinger, administratorpunkter og geometri ændres ikke. Den konkrete ændring bruger den normale fulde kildevej; kontrolregistret udvides ikke for at gøre kandidaten målrettet. Native- og databasegenbrug afgøres fortsat af den normale læser på faktiske uændrede input og runtime. Præcis GitHub-kvalifikation, sikker levering efter writer og faktisk ny offentlig effekt er åbne.
+
 ## 89.298 Sikker vedligeholdelse af dokumenthistorik
 
 Kort fortalt: De aktuelle dokumenter og de nyeste historikversioner bevares. Ældre versioner må først beskæres, når deres præcise originaler er privat arkiveret, verificeret og kan genfindes centralt.

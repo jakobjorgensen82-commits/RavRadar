@@ -508,6 +508,19 @@ test('qualified scalar planning uses the restored snapshot and preserves conserv
   const expression = planner.match(/RAVRADAR_RETAINED_SCALAR_CONTEXT: \$\{\{ (.+) && 'ordinary-restored' \|\| '' \}\}/)?.[1];
   assert.ok(expression);
   const history = step(actualNormalWorkflow, 'Plan bounded current history from the actual selected continuation');
-  assert.ok(history.includes(expression+" && '--prepare-cached-native-originals'"),
-    'Reuse the complete existing ordinary-restored context, not a broader flag');
+  const schema1 = "steps.dmi-part-continuity-donor.outputs.continuity_schema == '1'";
+  const schema12 = "("+schema1+" || steps.dmi-part-continuity-donor.outputs.continuity_schema == '2')";
+  assert.equal(expression.split(schema12).length, 2, 'Only the two known continuity schemas select scalar work');
+  const historicalExpression = expression.replace(schema12, schema1);
+  assert.ok(history.includes(historicalExpression+" && '--prepare-cached-native-originals'"),
+    'Every other existing ordinary-restored guard and the historical schema1 selector remain unchanged');
+  const predecessor = actualNormalWorkflow.replace('RAVRADAR_RETAINED_SCALAR_CONTEXT: ${{ '+schema12,
+    'RAVRADAR_RETAINED_SCALAR_CONTEXT: ${{ '+schema1);
+  assert.notEqual(predecessor, actualNormalWorkflow);
+  assert.equal(inverseCompletedRuntimeWorkflow(actualNormalWorkflow, 'build'),
+    inverseCompletedRuntimeWorkflow(predecessor, 'build'), 'The complete historical workflow oracle is unchanged');
+  for (const unknown of [actualNormalWorkflow+'\n', actualNormalWorkflow.replace(schema12, schema12+' || true')]) {
+    assert.throws(() => inverseCompletedRuntimeWorkflow(unknown, 'build'),
+      'Unknown whole workflows retain the historical rejection');
+  }
 });

@@ -177,6 +177,16 @@ export const qualifiedScalarPlanningWorkflowReview = Object.freeze({
 export function inverseQualifiedScalarPlanningWorkflow(source, role) {
   assert.equal(arguments.length, 2, 'QUALIFIED_SCALAR_INVERSE_ARGUMENTS');
   assert.equal(typeof source, 'string', 'QUALIFIED_SCALAR_INVERSE_TYPE');
+  // TEST ONLY: the exact schema1/2 work-selector successor, no runtime proof.
+  if (role === 'build' && sha(source) === '451249801b6944d945b193fd95de5065cf057a8b08a6698a675e2192c074100c') {
+    assert.equal(Buffer.byteLength(source), 297899, 'QUALIFIED_SCALAR_SCHEMA_AFTER_BYTES');
+    const actual = "RAVRADAR_RETAINED_SCALAR_CONTEXT: ${{ (steps.dmi-part-continuity-donor.outputs.continuity_schema == '1' || steps.dmi-part-continuity-donor.outputs.continuity_schema == '2')";
+    const original = "RAVRADAR_RETAINED_SCALAR_CONTEXT: ${{ steps.dmi-part-continuity-donor.outputs.continuity_schema == '1'";
+    assert.equal(source.split(actual).length, 2, 'QUALIFIED_SCALAR_SCHEMA_EXACT_HUNK');
+    source = source.replace(actual, () => original);
+    assert.equal(Buffer.byteLength(source), 297829, 'QUALIFIED_SCALAR_SCHEMA_BEFORE_BYTES');
+    assert.equal(sha(source), '674864b0a68ee9bb8da00f835386bbd5aa53e1d329ad9a948939e81ad4bafaf8', 'QUALIFIED_SCALAR_SCHEMA_WHOLE_PREDECESSOR');
+  }
   const row = qualifiedScalarPlanningWorkflowReview;
   if (role !== 'build' || sha(source) !== row.after.sha256) return source;
   assert.equal(Buffer.byteLength(source), row.after.bytes, 'QUALIFIED_SCALAR_AFTER_BYTES');
