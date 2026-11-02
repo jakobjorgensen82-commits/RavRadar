@@ -238,7 +238,7 @@ test('normal closed domain planner handles real composition, one same-tree merge
 });
 
 
-test('reviewed private-study operator closes current control plans and keeps unknown capabilities FULL',async()=>{
+test('reviewed private-study operator closes frozen793 control plans and keeps unknown capabilities FULL',async()=>{
   const studyTemporary=fs.realpathSync(os.tmpdir());
   const studyRoot=fs.mkdtempSync(path.join(studyTemporary,'rr-study-domain-plan-'));
   const studyOwned=fs.lstatSync(studyRoot,{bigint:true});
@@ -247,10 +247,11 @@ test('reviewed private-study operator closes current control plans and keeps unk
     const studyObjectDirectory=fs.realpathSync(path.join(text(SOURCE,['rev-parse','--path-format=absolute','--git-common-dir']),'objects'));
     fs.mkdirSync(path.join(studyRoot,'.git/objects/info'),{recursive:true});
     fs.writeFileSync(path.join(studyRoot,'.git/objects/info/alternates'),studyObjectDirectory.replaceAll('\\','/')+'\n');
-    const studyHead=text(SOURCE,['rev-parse','HEAD']);
+    // Genuine reviewed793 CODE/control fixture, not a claim about later current HEAD.
+    const studyHead='62d4dee3ab3a5ded26811a4aaf6050a1f1b65f2e';
     const studyControls=['scripts/source-impact-domain-plan.mjs','scripts/lib/source-impact-domain-owners-594.json',
       'scripts/test-source-impact-domain-plan.mjs'];
-    const studyControlBodies=studyControls.map(studyFile=>[studyFile,fs.readFileSync(path.join(SOURCE,studyFile))]);
+    const studyControlBodies=studyControls.map(studyFile=>[studyFile,git(SOURCE,['cat-file','blob',studyHead+':'+studyFile])]);
     const studyCommit=(studyRows,studyLabel)=>{
       git(studyRoot,['read-tree',studyHead]);
       for(const [studyFile,studyBody]of studyRows){
@@ -260,7 +261,7 @@ test('reviewed private-study operator closes current control plans and keeps unk
       return text(studyRoot,['commit-tree',text(studyRoot,['write-tree']),'-p',studyHead,'-m',studyLabel]);
     };
     for(const studyFile of files){fs.mkdirSync(path.dirname(path.join(studyRoot,studyFile)),{recursive:true});
-      fs.writeFileSync(path.join(studyRoot,studyFile),fs.readFileSync(path.join(SOURCE,studyFile)));}
+      fs.writeFileSync(path.join(studyRoot,studyFile),git(SOURCE,['cat-file','blob',studyHead+':'+studyFile]));}
     const {planSourceDomainImpactFromGit:studyPlan}=await import(pathToFileURL(path.join(studyRoot,'scripts/source-impact-domain-plan.mjs')).href);
     const studyRun=(studyCandidate,studyBaseline)=>{git(studyRoot,['update-ref','HEAD',studyCandidate]);
       return studyPlan({baselineCommit:studyBaseline,candidateCommit:studyCandidate,expectedHead:studyCandidate});};

@@ -103,7 +103,7 @@ runSourceOracle(legacyWorkflow);
 
 // The new registry has its own exact additive proof. The completed admin
 // fixture remains pinned to its original reviewed 14ade133 CODE and DATA.
-const actualRegistryRaw = await text('scripts/lib/source-impact-domain-owners-594.json');
+const actualRegistryRaw = reviewedPrivateStudyOperatorBeforeRegistry(await text('scripts/lib/source-impact-domain-owners-594.json'));
 const registrySuccessor = review.registrySourceProofSuccessor;
 const registryBindingSuccessor = review.registryBindingSuccessor;
 const registryWorkflow066Successor = review.registryWorkflow066Successor;
@@ -524,3 +524,108 @@ console.log(JSON.stringify({status:'PASS',fixedReaderCases:cases,controlledGETs:
   realNetwork:0,retries:0,bodyDeadlineMs:10000,maximumResponseBytes:32768,rowCapRejectsAt:8,
   actualLoggerBodyExecuted:true,sqlRegexStringContractsOnly:true,nativeClickHouse:'UNRUN',
   hostedConsoleFormat:'UNRUN',rawPayloadOutput:false}));
+
+
+// Test-only exact793 registry view. All preceding historical assertions/pins
+// still receive the complete genuine M2 image; no runtime planner uses this view.
+function reviewedPrivateStudyOperatorBeforeRegistry(operatorRegistryRaw) {
+  const operatorRegistryProof = {
+  "beforeSha256": "b25c72a7e67f1163393f425cd1508d66b4ee4dd67178e58fd95220ed48c01318",
+  "afterSha256": "239dedfb4d8f0f0a5fa70abac1abaa96f46ef75008e1abd90fafb8fdbd73c9af",
+  "beforeBytes": 927578,
+  "afterBytes": 938079,
+  "insertions": [
+    {
+      "offset": 28075,
+      "bytes": 173,
+      "sha256": "505bb748b0e0691631866b725237085713176cc63cadfce7e882b80c507b0c45"
+    },
+    {
+      "offset": 558355,
+      "bytes": 58,
+      "sha256": "0ab89de62e1e49cc355b167800f525d47cb8880f393bbf1b12a349ec7c9a2e35"
+    },
+    {
+      "offset": 570687,
+      "bytes": 1596,
+      "sha256": "cb99a678a31d60e0d04964e50bd6c367919a4de44f193d8e192be18ecda34519"
+    },
+    {
+      "offset": 574218,
+      "bytes": 760,
+      "sha256": "7875a68420105a7b91bdf0de3b19e1d1b50bf8467ba3dd5f1174d2e43b7a319a"
+    },
+    {
+      "offset": 575092,
+      "bytes": 76,
+      "sha256": "7bb5aa363b9e21a4a0bcbdf330f0d838f86442a8e593039a8ed9cb52f81fef48"
+    },
+    {
+      "offset": 619568,
+      "bytes": 64,
+      "sha256": "135f9ab620170653502da77cc16b5bc5bd9e591b4ce7e841970b440a972a930d"
+    },
+    {
+      "offset": 621600,
+      "bytes": 219,
+      "sha256": "b9ec799239125ddad0a7e169dd623b05240b1137c3687ef7547460ef395e7bfa"
+    },
+    {
+      "offset": 626113,
+      "bytes": 3572,
+      "sha256": "aa2764092cd61bae051fa9aa6497bc137a2b9e9047fd2933eb384d7ed475881c"
+    },
+    {
+      "offset": 632076,
+      "bytes": 2812,
+      "sha256": "69d7d11d0e2510a1d1bfa7b182b8b5709da2470ca6be191bc78ec00333a3de3c"
+    },
+    {
+      "offset": 899600,
+      "bytes": 1171,
+      "sha256": "28aa14224a9deec7519209d5f6bed45852cc96b5767a3a19be73ae10282fd47c"
+    }
+  ]
+};
+  const operatorRegistryInverse = operatorRegistryInput => {
+    assert.equal(typeof operatorRegistryInput, 'string');
+    let operatorRegistryBytes = Buffer.from(operatorRegistryInput, 'utf8');
+    assert.equal(operatorRegistryBytes.length, operatorRegistryProof.afterBytes);
+    assert.equal(digest(operatorRegistryBytes), operatorRegistryProof.afterSha256,
+      'PRIVATE_STUDY_OPERATOR_REGISTRY_UNREVIEWED_BYTES');
+    for (const operatorRegistryInsertion of [...operatorRegistryProof.insertions].reverse()) {
+      assert(Number.isSafeInteger(operatorRegistryInsertion.offset) && operatorRegistryInsertion.offset >= 0);
+      assert(Number.isSafeInteger(operatorRegistryInsertion.bytes) && operatorRegistryInsertion.bytes > 0
+        && operatorRegistryInsertion.offset + operatorRegistryInsertion.bytes <= operatorRegistryBytes.length);
+      assert.equal(digest(operatorRegistryBytes.subarray(operatorRegistryInsertion.offset,
+        operatorRegistryInsertion.offset + operatorRegistryInsertion.bytes)), operatorRegistryInsertion.sha256);
+      operatorRegistryBytes = Buffer.concat([operatorRegistryBytes.subarray(0, operatorRegistryInsertion.offset),
+        operatorRegistryBytes.subarray(operatorRegistryInsertion.offset + operatorRegistryInsertion.bytes)]);
+    }
+    assert.equal(operatorRegistryBytes.length, operatorRegistryProof.beforeBytes);
+    assert.equal(digest(operatorRegistryBytes), operatorRegistryProof.beforeSha256,
+      'PRIVATE_STUDY_OPERATOR_REGISTRY_WHOLE_M2_INVERSE');
+    return operatorRegistryBytes.toString('utf8');
+  };
+  const operatorRegistryBefore = operatorRegistryInverse(operatorRegistryRaw);
+  let operatorRegistryForward = Buffer.from(operatorRegistryBefore, 'utf8');
+  const operatorRegistryActual = Buffer.from(operatorRegistryRaw, 'utf8');
+  for (const operatorRegistryInsertion of operatorRegistryProof.insertions) {
+    operatorRegistryForward = Buffer.concat([operatorRegistryForward.subarray(0, operatorRegistryInsertion.offset),
+      operatorRegistryActual.subarray(operatorRegistryInsertion.offset, operatorRegistryInsertion.offset + operatorRegistryInsertion.bytes),
+      operatorRegistryForward.subarray(operatorRegistryInsertion.offset)]);
+  }
+  assert.deepEqual(operatorRegistryForward, operatorRegistryActual, 'PRIVATE_STUDY_OPERATOR_REGISTRY_WHOLE_FORWARD');
+  for (const operatorRegistryMutation of [operatorRegistryRaw + '\n',
+    operatorRegistryRaw.replace('"path": "scripts/publish-private-trip-weather-study.mjs"',
+      '"path": "scripts/unreviewed-private-study-operator.mjs"'),
+    operatorRegistryRaw.replace('"scripts/publish-private-trip-weather-study.mjs": {',
+      '"scripts/unreviewed-private-study-operator.mjs": {'),
+    operatorRegistryRaw.replace('4a075746bc10c25f91531ffda4e7481097ab596584160885791f6467a5030bda', '0'.repeat(64)),
+    JSON.stringify({...JSON.parse(operatorRegistryRaw), unreviewedOperatorRegistryField: true}, null, 2) + '\n']) {
+    assert.notEqual(operatorRegistryMutation, operatorRegistryRaw);
+    assert.throws(() => operatorRegistryInverse(operatorRegistryMutation));
+  }
+  assert.throws(() => operatorRegistryInverse(operatorRegistryBefore));
+  return operatorRegistryBefore;
+}
