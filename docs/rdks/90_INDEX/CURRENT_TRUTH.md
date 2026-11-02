@@ -1,3 +1,45 @@
+## 1. november — lokal rettelse: temperatur må ikke udsultes i reservekøen
+
+ROOTs faktiske normale browserlog for vejrforløb 236 viste 515 OM-starter, 0 temperaturstarter, 673 udsatte temperaturjobs og budgetReached=1. Temperaturen hentes særskilt fra MF/SST; den samleveres ikke med bølgerequesten. Den eksisterende kø placerede alle temperaturjobs efter hele den kritiske vind-/bølgekø. Det er en påvist køpolitikfejl, ikke bevis for årsagen til DMI-huller.
+
+Den lokale kandidat fletter højst to kritiske jobs med ét temperaturjob og bevarer hver listes relative, roterede orden. Budgetter, to aktive slots, kildeprioriteten DMI→CP→OM, admission og no-loss bevares. Temperatur får mulighed senest hver tredje dispatch, hvis budget og fysisk transportafslutning tillader tre starter; gyldige upstreamværdier loves ikke.
+
+Den gamle eksplicitte testpolitik med 0 temperaturstarter under kritisk pres erstattes for at opfylde ejerens krav om alle fem familier; det er ikke repinning. Samme normale 2019-job/515-starters prøve er RED med 0 temperaturstarter før og GREEN med 171 temperatur- og 344 kritiske starter efter. De normale 26 runtime- og 24 bank-tests består med bevist kandidatlæsning, også i childprocesserne. C100/I99/T12 og selektive native-inputs er uændrede. Præcis SourceCI og effekt i en ny offentlig generation er åbne. Vandstand er fortsat separat DMI-only; ingen ny version, SQL eller aktivering.
+
+## 1. november — én samlet lokal kandidat, endnu ikke kvalificeret
+
+Denne kandidat samler P0-kontrollen af forseglet manifest/startup, vanddiagnosens eksisterende nøglemapping og prognosedelingens Pages-læsekompatibilitet oven på de bevarede 785-/786-rettelser. Hele den nyere 5067-dokumentation bevares. Samlingen er endnu ikke kvalificeret i GitHub eller leveret; tidligere fejlede kørsler forbliver fejlede.
+
+Pages-projektlisten bruger nu samme per_page=10 som den allerede pinnede officielle Wrangler 4.28.1. Det er en afgrænset kompatibilitetskandidat, ikke bevis for årsagen til HTTP 400. Femkaldsgrænsen, faktisk tom slutside og alle byte-, tids-, identitets-, skrive- og ingen-retry-kontroller bevares. Ved ti rækker pr. side kan 40 projekter plus tom slutside bevises; større lister afvises sikkert.
+
+ROOT ejer efterfølgende kildekvalifikation og levering. SOURCE19 forbliver isoleret; model, C/I/T, SQL, version, geometri og kildeprioritet ændres ikke. Årsagen til Voerså-afvigelsen og 236-forløbets oprindelige startupafvigelse er fortsat ukendt.
+
+## 1. november — lokal rettelse af vanddiagnosens nøglemapping
+
+Vanddiagnosen stoppede i opsætningen før læsning af original B: nøglevariablen pegede på et ikke-oprettet navn. Kandidaten genbruger den eksisterende nøglemapping. De tre relevante normale workflowcases består lokalt. Ingen nøgle installeres, og kryptografi, vejrdata eller scorer ændres ikke. Diagnosen er stadig fejlet, og årsagen til vandstandsafvigelsen ved Voerså er ukendt.
+
+## 1. november — lokal P0 for forseglet manifest og startup
+
+Vejrforløb 236 byggede færdigt, og Pages-skrivningen meldte SUCCESS. Den efterfølgende fulde offentlige verifikation afviste startupfilens digest; Pages-jobbet og den samlede terminalkontrol er derfor fortsat FAIL. To senere små offentlige aflæsninger af manifest og startup matchede præcis det forseglede target. Det beviser ikke hele den offentlige pakke. Den første afvigende body blev ikke gemt, så den præcise årsag er fortsat uafklaret.
+
+Den lokale kandidat afventer nu et sammenhængende par af præcist forseglet manifest og startup med korrekt hel SHA og længde under samme friske observationsnonce. Den eksisterende grænse på 121 observationer og det fælles budget på tre ekstra HTTP-genforsøg bevares. Først efter parret matcher kontrolleres den store pakke én gang; startupbytes genbruges. Alle øvrige hash-, størrelse-, model-, 210/673-, leverings- og privatlivsgrænser består. Permanent forkert startup og hårde transport-/indholdsfejl giver fortsat afslag.
+
+Den afgrænsede normale kalderprøve reproducerede afvisningen før rettelsen og består efter med syntetiske svar. Samlet lokal kontrol, præcis CI og levering er fortsat åbne. Den eksisterende providerfri resume-indgang fandt NONE og gentages ikke; almindelig integrated-drift opretter ikke selv en PENDING-overgang før Pages. En ny terminalkvittering kræver den korrekte normale kalder og autentisk ejerskab. Det fejlede 236-forløb ommærkes ikke til grønt. Ingen ny SOURCE-, model-, SQL- eller versionsudstedelse.
+
+## 1. november — lokal dialogopfølgning på prognosedage
+
+Den offentlige afprøvning viste, at »og på mandag?« blev afvist efter et fuldt spørgsmål om tirsdag, mens det fulde mandagsspørgsmål gav gyldig landsrangering. Den lokale rettelse bevarer kun en afgrænset prognoseintention i dialogens eksisterende tilstand. En hel kendt DA/DE/EN-forespørgsel med ugedag eller i dag/i morgen/i overmorgen kan efterfølges af et entydigt dagspørgsmål. Det sendes som en fuld forespørgsel gennem de samme normale kalender-, model-, datagenerations-, rangliste- og tidspunktkontroller; brugerens oprindelige tekst vises stadig.
+
+Ukendte led, næste-uge-kvalifikationer, modstridende dage, sammensatte, private, sikkerhedsfølsomme og for lange spørgsmål omsættes ikke. Dialog-, zone-, søgemåde-, sprog- og generationsskift samt sene svar bevarer de eksisterende nulstillingsgrænser. Kun den finite intention gemmes; ingen rå samtalehistorik, egen kalenderberegning, nye scorer eller AI-emneinstruktion tilføjes. En særskilt cacheadresse følger HTML, bootstrap og app; den uændrede modelservice beholder sin normale adresse.
+
+Den normale app-VM reproducerede fejlen før rettelsen og består efter sammen med livscyklus-, kalender- og søgemåderangeringens mål. C/I/T, modelservice, viden, fakta, version og SQL bevares. Dette er lokal kildeforberedelse; præcis GitHub-kvalifikation og offentlig opfølgningsaccept udestår.
+
+## 1. november — spring kun en bevist ikke-kørt databasefase over ved søgning
+
+Den lokale 594-kontroller kunne vælge et nyere målrettet kildeforløb uden udført databasefase og derfor overse et ældre gyldigt native-bevis. Efterfølgeren går kun videre ved de normale, præcist bundne TARGETED-statusser: trin 1–14 bestået og kilde/database/upload 15–17 udtrykkeligt sprunget over i en frisk genlæst succesfuld kørsel. Et målrettet bevis bliver aldrig et native-bevis. Senere databasefejl, annulleret databasefase, ukendt databasestatus og manglende eller ændret artifact efter en faktisk databasefase giver fortsat afslag. Eksisterende kilde-, input-, integritets- og tidsgrænser bevares.
+
+Den eksisterende normale målfil gav 45 PASS; ét uændret historisk tilfælde bestod derefter ved en afgrænset genprøve med den eksisterende Python-runtime på PATH. De to kode-/testfiler er byteidentiske med den gennemgåede lokale rettelse. Facebook-linket og assistentkoden fra PR784 er allerede leveret; faktisk ekstern AI-accept og stabil kvalitet er fortsat åbne. Dette ajourfører de ældre lokale leveringsbeskrivelser nedenfor. Denne nativeforbedring er fortsat kun lokal; ny præcis GitHub-kvalifikation og sikker levering udestår. Ingen tidsgevinst er målt. Ingen ændring af produktionsdata, scoremodel, SQL eller kildeprioritet.
+
 ## 1. november — assistentens svarfrist og emnerelevans, lokal kandidat
 
 En offentlig prøve viste, at et generelt identifikationsspørgsmål kunne få uvedkommende zonevejledning efter de faglige fakta. Den lokale rettelse vælger kun de eksisterende relevante identifikationsfakta, når hele spørgsmålets afgrænsede DA/DE/EN-emne er genkendt. Ukendte eller blandede led får fortsat en ærlig afgrænsning; en lup gøres ikke til en sikker identifikationstest. Alle 45 fakta og deres fulde vidensbinding bevares.

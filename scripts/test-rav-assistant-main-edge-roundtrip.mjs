@@ -1221,6 +1221,36 @@ try {
         release: () => { assert.equal(typeof release, 'function'); release(); release = null; },
       };
     }
+    if (fieldDaylightOnly === 'forecast-intent-lifecycle') {
+      const forms = [
+        ['da', 'Hvor er det bedst på tirsdag?', 'og på mandag?', 'Bedste sted på mandag'],
+        ['de', 'Wo ist es am besten am Dienstag?', 'und am Montag?', 'Bester Ort am Montag'],
+        ['en', 'Where is it best on Tuesday?', 'and on Monday?', 'Best place on Monday'],
+      ];
+      let checks = 0;
+      const beforeQuota = controlledQuotaCalls;
+      for (const [locale, first, followup, full] of forms) {
+        const changes = [null, ui => ui.emit('dialog', 'close'), ui => ui.emit('dialog', 'cancel'),
+          ui => ui.emit('#assistantForm', 'reset'),
+          ui => { ui.state.conditions = { ...ui.state.conditions }; },
+          ui => { ui.state.zones = { ...ui.state.zones }; },
+          ui => { ui.setMode('waders', { render: false }); ui.setMode('beach', { render: false }); },
+          ui => { ui.openZone({ id: 'synthetic-forecast-change' }, { scroll: false }); ui.closeZone(); },
+          () => { browserLanguage = locale === 'en' ? 'da' : 'en'; }];
+        for (const change of changes) {
+          const ui = uiFixture(locale), asked = [], actualAsk = ui.context.askRavRadar;
+          ui.context.askRavRadar = (...args) => { asked.push(args[0]); return actualAsk(...args); };
+          await ui.submit(first); assert.equal(ui.topic(), 'forecast-best-place');
+          change?.(ui); await ui.submit(followup);
+          assert.equal(asked.at(-1), change ? followup : full);
+          assert.equal(ui.topic(), change ? null : 'forecast-best-place'); checks++;
+        }
+      }
+      assert.equal(controlledQuotaCalls, beforeQuota); assert.equal(controlledProviderCalls, providerBefore);
+      assert.equal(blockedNetworkCalls, blockedBefore);
+      console.log(JSON.stringify({ status: 'PASS', contract: 'forecast intent uses actual app mode/zone/dialog lifecycle', checks, realNetwork: 0 }));
+      return;
+    }
     if (fieldDaylightOnly === 'public-method-followup') {
       reset();controlledProviderResponse=null;responseMutation=null;
       const quotaBefore=controlledQuotaCalls,providerBefore=controlledProviderCalls;
@@ -2044,6 +2074,9 @@ try {
     const start = appSource.indexOf('async function submitAssistantQuestion(');
     const end = appSource.indexOf('const quickBox=', start);
     assert.ok(start >= 0 && end > start);
+    const forecastStart = appSource.indexOf('function assistantForecastQuestion(');
+    const forecastEnd = appSource.indexOf('function resetAssistantTopic()', forecastStart);
+    assert.ok(forecastStart >= 0 && forecastEnd > forecastStart && forecastEnd < start);
     const messages = [];
     const ui = vm.createContext({
       assistantTopicState: null, assistantTurn: 0,
@@ -2060,7 +2093,7 @@ try {
         return { querySelector: () => p, classList: { remove() {} } };
       },
     });
-    vm.runInContext(appSource.slice(start, end), ui);
+    vm.runInContext(appSource.slice(forecastStart, forecastEnd) + appSource.slice(start, end), ui);
     const call = async question => {
       await ui.submitAssistantQuestion(question);
       return messages.at(-1).p.textContent;
@@ -3188,6 +3221,7 @@ try {
   await assertAlongshoreTopic('green-score-empty');
   await assertAlongshoreTopic('empty-beach-score');
   await assertAlongshoreTopic('public-method-followup');
+  await assertAlongshoreTopic('forecast-intent-lifecycle');
   await assertAlongshoreTopic('green-guarantee-followup-equipment');
   await assertQuotaFailureDiagnostic();
   await assertProviderFailureDiagnostic();

@@ -1,3 +1,31 @@
+## 1. november — påvist temperaturudsultning; lokal kandidat afventer levering
+
+ROOTs normale browserlog for 236 viste 515 OM-starter, 0 temperaturstarter, 673 udsatte temperaturjobs og budgetReached=1. MF/SST-temperatur er en separat request, ikke del af wave. Alle temperaturjobs stod efter hele criticalWork-køen. Det forklarer manglende temperaturforsøg i dette forløb; det beviser ikke, hvilke værdier leverandøren ville have leveret, eller årsagen til DMI-only-vandstandshullerne.
+
+Den lokale 2:1-fletning bevarer relative/roterede ordener, budgetter, to slots, DMI→CP→OM, admission og no-loss. Den giver temperatur en mulighed senest hver tredje dispatch, hvis tre starter kan gennemføres. Den gamle eksplicitte 0-temperatur-testpolitik erstattes for ejerens alle-fem-krav; der repinnes ikke. Normal reproduktion med 2019 jobs/515 starter er RED 0 temperatur før og GREEN 171 temperatur + 344 kritiske efter; 26+24 normale tests består med bevist kandidatlæsning.
+
+Præcis SourceCI og effekt i næste offentlige generation er fortsat åbne. Der loves hverken bedre dækning eller gyldige upstreamværdier. C100/I99/T12 og selektive native-inputs er uændrede; ingen ny version, SQL eller aktivering. Vandstandens separate DMI-only-sag forbliver åben.
+
+## 1. november — én samlet lokal kandidat, endnu ikke kvalificeret
+
+Denne kandidat samler P0-kontrollen af forseglet manifest/startup, vanddiagnosens eksisterende nøglemapping og prognosedelingens Pages-læsekompatibilitet oven på de bevarede 785-/786-rettelser. Hele den nyere 5067-dokumentation bevares. Samlingen er endnu ikke kvalificeret i GitHub eller leveret; tidligere fejlede kørsler forbliver fejlede.
+
+Pages-projektlisten bruger nu samme per_page=10 som den allerede pinnede officielle Wrangler 4.28.1. Det er en afgrænset kompatibilitetskandidat, ikke bevis for årsagen til HTTP 400. Femkaldsgrænsen, faktisk tom slutside og alle byte-, tids-, identitets-, skrive- og ingen-retry-kontroller bevares. Ved ti rækker pr. side kan 40 projekter plus tom slutside bevises; større lister afvises sikkert.
+
+ROOT ejer efterfølgende kildekvalifikation og levering. SOURCE19 forbliver isoleret; model, C/I/T, SQL, version, geometri og kildeprioritet ændres ikke. Årsagen til Voerså-afvigelsen og 236-forløbets oprindelige startupafvigelse er fortsat ukendt.
+
+## 1. november — åben Voerså-afvigelse; diagnose stoppet i opsætningen
+
+Den manglende nøglemapping er fundet og har en lokal kandidat med tre beståede normale workflowcases. Det forklarer diagnosens stop, ikke vandstandsafvigelsen ved Voerså. Diagnosen er fortsat fejlet. Et nyt forsøg kræver egen kvalifikation, faktisk mainbinding og ingen aktiv writer; udløbne originaler må ikke bruges. Ingen ny nøgle eller ændring af kryptografi, vejr eller scorer.
+
+## 1. november — P0 åben: startup kan afvige efter et matchende Pages-manifest
+
+Forløb 236 fik Pages-write SUCCESS, men fuld efterkontrol og terminalstatus FAIL på startupdigest. De senere to små offentlige filer matcher nu target. Den første afvigende body/SHA er ikke bevaret; en blanding under propagation er mulig, ikke en bevist endelig rodårsag. Fuld offentlig pakke og korrekt terminalkvittering er fortsat åbne.
+
+Lokal kandidat og normal kalderprøve giver RED før og GREEN efter: vent bounded på både præcist manifest og startup, genbrug startup og kontroller storpakke én gang. De eksisterende 121 observationer, tre delte HTTP-genforsøg og samtlige hårde hash-/størrelses-/model-/privatlivsgrænser består. Ingen ukendt afvigelse accepteres som gyldige data.
+
+Resume fandt NONE og gentages ikke. Den almindelige integrated-gren har ingen begin-PENDING før Pages; genoptagelse må kræve en faktisk normal locator og kan ikke udlede den af to små GET. Den korrekte providerfri terminalvej, samlet lokal kontrol, CI og levering skal stadig verificeres. Ingen ny SOURCE/model/SQL/version eller ny vejrhentning er aktiveret.
+
 ## 1. november — assistentens emnerelevans og svartid er fortsat åbne leveringspunkter
 
 En faktisk offentlig identifikationsprøve gav først en generisk fejl og derefter et svar med uvedkommende zonevejledning. Den lokale efterfølger retter den genkendte emnefamilies faktavalg og samler serverarbejdet under den eksisterende syvsekundersfrist. De to normale lokale mål består, men de er ikke hosted AI- eller leveringsbevis. Netværk/kold opstart og fulde svar på blandede emner er fortsat afgrænsninger. Ingen påstand om én bevist årsag til alle tidligere assistentfejl. Følg DEC-0091 og privat checkpoint; de øvrige assistentkrav er ikke lukket.

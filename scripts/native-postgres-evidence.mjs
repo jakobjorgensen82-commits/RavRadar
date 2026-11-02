@@ -1470,19 +1470,44 @@ export async function decideInstalled593Original591Reuse({env=process.env,local,
     assert.equal(new Set(listing.workflow_runs.map(row=>row.id)).size,listing.workflow_runs.length);
     const prior=listing.workflow_runs.filter(row=>row.id<current.id).sort((a,b)=>b.id-a.id);
     // Search only the bounded latest page. Missing candidates execute normally.
-    let row=null;
+    let row=null,rowJobs=null;
     for(const candidate of prior){
       try{
         if(candidate.run_attempt!==1)continue;
         for(const file of INSTALLED593_ORIGINAL591_CONTROLS)
           assert.equal(readGit(['cat-file','blob',candidate.head_sha+':'+file]),readGit(['cat-file','blob','HEAD:'+file]));
-        row=candidate;break;
-      }catch{ /* An old V1 producer or unavailable Git source is no origin. */ }
+      }catch{ /* An old V1 producer or unavailable Git source is no origin. */ continue; }
+      // The normal TARGETED run skips full source15, PG16 and upload17. It is not a
+      // native origin; only this exact skipped phase can pass to an older row.
+      // Metadata/PG/artifact refusals stay outside the source-lookup catch.
+      const jobs=await get(base+'/runs/'+candidate.id+'/attempts/1/jobs?per_page=100');assert(complete(jobs,'jobs'));
+      const job=one(jobs.jobs.filter(value=>value.name===JOB));assert.equal(job.run_id,candidate.id);
+      assert.equal(job.run_attempt,1);assert.equal(job.head_sha,candidate.head_sha);assert.equal(job.status,'completed');
+      const pg=one(job.steps.filter(value=>value.name===STEP));
+      if(pg.conclusion==='skipped'){
+        const skippedRun=await get(base+'/runs/'+candidate.id);
+        for(const key of ['id','head_sha','head_branch','run_attempt'])assert.equal(skippedRun[key],candidate[key]);
+        assert.equal(skippedRun.path,WORKFLOW);assert.equal(skippedRun.event,'pull_request');
+        assert.equal(skippedRun.repository?.full_name,ORIGIN.repository);assert.equal(skippedRun.head_repository?.full_name,ORIGIN.repository);
+        assert.equal(skippedRun.status,'completed');assert.equal(skippedRun.conclusion,'success');
+        assert.match(skippedRun.head_sha,/^[a-f0-9]{40}$/);assert(typeof skippedRun.head_branch==='string'&&skippedRun.head_branch.length>0);
+        assert(Number.isSafeInteger(job.id)&&job.id>0);assert.equal(job.conclusion,'success');
+        const source=one(job.steps.filter(value=>value.name==='Validate source contracts and release governance'));
+        const upload=one(job.steps.filter(value=>value.name===CURRENT586_PHASE_UPLOAD));
+        assert.equal(source.number,15);assert.equal(pg.number,16);assert.equal(upload.number,17);
+        assert.deepEqual(job.steps.filter(value=>value.number<=17).map(value=>value.number),Array.from({length:17},(_,i)=>i+1));
+        assert(job.steps.filter(value=>value.number<15).every(successful));
+        assert.equal(source.status,'completed');assert.equal(source.conclusion,'skipped');
+        assert.equal(pg.status,'completed');assert.equal(upload.status,'completed');assert.equal(upload.conclusion,'skipped');
+        continue;
+      }
+      row=candidate;rowJobs=jobs;break;
     }
     assert(row);const load=async expected=>{
       const run=await get(base+'/runs/'+expected.id);
       for(const key of ['id','head_sha','head_branch','run_attempt'])assert.equal(run[key],expected[key]);
-      const jobs=await get(base+'/runs/'+run.id+'/attempts/1/jobs?per_page=100'),phase=verifyAssistantPublic591Metadata(run,jobs);
+      const jobs=expected.id===row.id?rowJobs:await get(base+'/runs/'+run.id+'/attempts/1/jobs?per_page=100');
+      const phase=verifyAssistantPublic591Metadata(run,jobs);
       const artifacts=await get(base+'/runs/'+run.id+'/artifacts?per_page=100');assert(complete(artifacts,'artifacts'));
       const artifact=one(artifacts.artifacts.filter(value=>value.name==='native586-phase-'+run.id+'-1-'+run.head_sha));
       verifyAssistantPublic591ArtifactMetadata(artifact,run,phase);
@@ -1515,7 +1540,8 @@ export async function decideInstalled593Original591Reuse({env=process.env,local,
       const jobs=await get(base+'/runs/'+next.id+'/attempts/1/jobs?per_page=100');assert(complete(jobs,'jobs'));
       const job=one(jobs.jobs.filter(value=>value.name===JOB));assert.equal(job.run_id,next.id);
       assert.equal(job.run_attempt,1);assert.equal(job.head_sha,next.head_sha);assert.equal(job.status,'completed');
-      const pg=one(job.steps.filter(value=>value.name===STEP));assert(pg.conclusion==='skipped'||successful(pg));
+      const pg=one(job.steps.filter(value=>value.name===STEP));assert.equal(pg.status,'completed');
+      assert(pg.conclusion==='skipped'||successful(pg));
     }
     verifyInstalled593Original591Input(local.nativeInput,await getInput({readGit}));
     verifyAssistantPublic591Runtime(local.runtime,await getRuntime());

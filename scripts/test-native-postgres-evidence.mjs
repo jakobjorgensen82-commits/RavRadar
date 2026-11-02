@@ -1715,3 +1715,78 @@ test('594 V2 normal locator transport reuses beyond24 physical hops and safely r
   const expired=await run(installed593Original591Reader,{expireDuringFetch:true});
   assert.equal(expired.result.status,'EXECUTE');assert.equal(expired.physicalCalls,1);
 });
+
+
+test('594 V2 skips only proved non-executed PG rows and keeps later negative or missing-artifact refusals',async()=>{
+  const scenario=({pgConclusion='skipped',pgStatus='completed',differentControls=false,artifactMode='missing',freshRunMutation=null}={})=>{
+    const fixture=v2LiveFixture({installed594V2:true}),observed=[];
+    const newest={...copy(fixture.origin),id:fixture.origin.id+25,head_sha:'7'.repeat(40),
+      head_branch:'synthetic594-targeted-skipped',pull_requests:[],created_at:'2026-10-30T11:00:00Z',conclusion:'success'};
+    const jobs=copy(fixture.originalJobs),job=jobs.jobs[0];
+    Object.assign(job,{id:newest.id+1000,run_id:newest.id,head_sha:newest.head_sha,conclusion:'success'});
+    for(const step of job.steps)Object.assign(step,{started_at:'2026-10-30T11:00:00Z',completed_at:'2026-10-30T11:01:00Z'});
+    job.steps[14].conclusion=pgConclusion==='success'?'success':'skipped';
+    Object.assign(job.steps[15],{status:pgStatus,conclusion:pgConclusion,
+      started_at:pgConclusion==='skipped'?null:'2026-10-30T11:01:00Z',completed_at:pgConclusion==='skipped'?null:'2026-10-30T11:02:00Z'});
+    Object.assign(job.steps[16],{conclusion:pgConclusion==='success'?'success':'skipped',
+      started_at:pgConclusion==='success'?'2026-10-30T11:02:00Z':null,completed_at:pgConclusion==='success'?'2026-10-30T11:03:00Z':null});
+    const originalGet=fixture.options.get,originalReadGit=fixture.options.readGit;
+    fixture.options.readGit=args=>differentControls&&args[0]==='cat-file'&&args[2].startsWith(newest.head_sha+':')
+      ?'different actual controls':originalReadGit(args);
+    fixture.options.get=async(route,options={})=>{
+      observed.push(route);
+      if(route.includes('/workflows/')){
+        const listing=await originalGet(route,options);
+        return {...listing,total_count:listing.total_count+1,
+          workflow_runs:[listing.workflow_runs[0],copy(newest),...listing.workflow_runs.slice(1)]};
+      }
+      if(route.endsWith('/runs/'+newest.id)){const fresh=copy(newest);freshRunMutation?.(fresh);return fresh;}
+      if(route.includes('/runs/'+newest.id+'/attempts/1/jobs'))return copy(jobs);
+      if(route.endsWith('/runs/'+newest.id+'/artifacts?per_page=100')){
+        assert.equal(pgConclusion,'success','A skipped phase must not request an artifact');
+        if(artifactMode==='missing')return {total_count:0,artifacts:[]};
+        return {total_count:1,artifacts:[{...fixture.artifactFor(newest),digest:'unknown'}]};
+      }
+      return originalGet(route,options);
+    };
+    return {fixture,newest,jobs,observed};
+  };
+  const skipped=scenario(),reused=await decideInstalled593Original591Reuse(skipped.fixture.options);
+  assert.equal(reused.status,'REUSED');assert.equal(reused.executedInThisRun,false);
+  assert.equal(reused.origin.run,skipped.fixture.origin.id,'The actual older executed origin must remain the origin');
+  assert.deepEqual(skipped.jobs.jobs[0].steps.slice(14,17).map(step=>[step.status,step.conclusion]),
+    [['completed','skipped'],['completed','skipped'],['completed','skipped']],
+    'The actual normal TARGETED source15/PG16/upload17 shape must be used');
+  assert.equal(skipped.observed.filter(route=>route.endsWith('/runs/'+skipped.newest.id)).length,1,
+    'Listing metadata alone cannot authorize passing the skipped run');
+  assert(!skipped.observed.some(route=>route.includes('/runs/'+skipped.newest.id+'/artifacts')));
+  assert.equal(skipped.observed.filter(route=>route.endsWith('/artifacts/'+(skipped.fixture.origin.id+2000)+'/zip')).length,1);
+  for(const pgConclusion of ['failure','cancelled',null,'unknown']){
+    const later=scenario({pgConclusion,differentControls:true});
+    assert.equal((await decideInstalled593Original591Reuse(later.fixture.options)).status,'EXECUTE',String(pgConclusion));
+    assert(later.observed.some(route=>route.endsWith('/artifacts/'+(later.fixture.origin.id+2000)+'/zip')),
+      'The later negative phase must be rejected after the older actual origin was checked');
+  }
+  for(const pgStatus of ['in_progress',null]){
+    const unknown=scenario({pgStatus,differentControls:true});
+    assert.equal((await decideInstalled593Original591Reuse(unknown.fixture.options)).status,'EXECUTE');
+  }
+  for(const artifactMode of ['missing','tampered']){
+    const executed=scenario({pgConclusion:'success',artifactMode});
+    assert.equal((await decideInstalled593Original591Reuse(executed.fixture.options)).status,'EXECUTE');
+    assert(!executed.observed.some(route=>route.endsWith('/artifacts/'+(executed.fixture.origin.id+2000)+'/zip')),
+      'A selected PG-success origin with missing or changed evidence must not fall through to older evidence');
+  }
+  const mixed=scenario();mixed.jobs.jobs[0].steps[16].conclusion='success';
+  assert.equal((await decideInstalled593Original591Reuse(mixed.fixture.options)).status,'EXECUTE');
+  const obsoleteV1Shape=scenario();obsoleteV1Shape.jobs.jobs[0].steps[14].conclusion='success';
+  assert.equal((await decideInstalled593Original591Reuse(obsoleteV1Shape.fixture.options)).status,'EXECUTE',
+    'Do not retain the mistaken v1 source15-success admission as an alternative TARGETED shape');
+  for(const mutate of [run=>run.head_sha='8'.repeat(40),run=>run.run_attempt=2,
+    run=>run.status='in_progress',run=>run.conclusion='cancelled',run=>run.conclusion=null]){
+    const moved=scenario({freshRunMutation:mutate});
+    assert.equal((await decideInstalled593Original591Reuse(moved.fixture.options)).status,'EXECUTE');
+    assert(!moved.observed.some(route=>route.endsWith('/artifacts/'+(moved.fixture.origin.id+2000)+'/zip')),
+      'A changed or unknown fresh skipped-run identity must stop before an older origin is used');
+  }
+});

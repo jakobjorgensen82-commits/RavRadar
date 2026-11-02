@@ -804,6 +804,95 @@ async function verifyManifestOnlyPropagationContract() {
   console.log('Manifest-only propagation: 40 stale then exact, 121 bounded mismatches, same-id drift, single payload pass and input bounds: passed.');
 }
 
+async function verifySealedStartupPropagationContract() {
+  const implementation = sealedImplementation(integratedModelBinding(), 'integrated');
+  const { binding, contractText, bundleText, publicClosure } = implementation;
+  const fixture = buildFixture(binding, 'integrated');
+  fixture.files.set('/js/core/ravscore-model-contract.js', Buffer.from(contractText));
+  fixture.files.set('/js/core/ravscore-model-bundle.generated.js', Buffer.from(bundleText));
+  for (const [relative, source] of implementation.sources)
+    fixture.files.set('/' + relative, Buffer.from(source));
+  const options = {
+    baseUrl: 'https://ravradar.example.test/', sourceHead,
+    expectedManifest: fixture.manifest, expectedModel: 'integrated', expectedBinding: binding,
+    expectedContractText: contractText, expectedBundleText: bundleText,
+    expectedPublicClosure: publicClosure, observationNonce: 'fixture-startup-propagation', retryDelayMs: 0,
+  };
+  const manifestPath = '/data/live/manifest.json', startupPath = '/data/live/public-conditions.json';
+  const detailsPath = '/data/live/public-condition-details.json';
+  const normal = mockFetch(fixture.files), counts = new Map(), nonces = new Set();
+  let observations = 0;
+  const verified = await verifyRavScoreOperationalPagesDeployment({
+    ...options, fetchImpl: async (url, init) => {
+      const parsed = new URL(url), relative = parsed.pathname;
+      counts.set(relative, (counts.get(relative) ?? 0) + 1);
+      assert.equal(init.cache, 'no-store');
+      if (relative === manifestPath) {
+        observations++;
+        const nonce = parsed.searchParams.get('ravscore-observation');
+        assert(!nonces.has(nonce)); nonces.add(nonce);
+        return normal(url, init);
+      }
+      if (relative === startupPath && observations <= 8) {
+        assert.equal(counts.get(detailsPath) ?? 0, 0, 'stale startup must not download large details');
+        return response(Buffer.from('previous startup generation'));
+      }
+      return normal(url, init);
+    },
+  });
+  assert.equal(verified.status, 'passed');
+  assert.equal(observations, 9); assert.equal(nonces.size, 9);
+  assert.equal(counts.get(startupPath), 9, 'matched startup bytes are reused without another GET');
+  assert.equal(counts.get(detailsPath), 1, 'the complete large payload is checked once');
+
+  const permanent = new Map();
+  await assert.rejects(verifyRavScoreOperationalPagesDeployment({
+    ...options, attempts: 3, fetchImpl: async (url, init) => {
+      const relative = new URL(url).pathname; permanent.set(relative, (permanent.get(relative) ?? 0) + 1);
+      return relative === startupPath ? response(Buffer.from('persistent invalid startup')) : normal(url, init);
+    },
+  }), /artifact digest mismatch.*public-conditions/);
+  assert.deepEqual(permanent, new Map([[manifestPath, 3], [startupPath, 3]]),
+    'bounded corruption refuses without any large payload or implementation request');
+
+  const changedManifest = { ...fixture.manifest, datasetId: 'different generation' };
+  const moving = new Map(); let movingObservation = 0;
+  assert.equal((await verifyRavScoreOperationalPagesDeployment({
+    ...options, attempts: 3, fetchImpl: async (url, init) => {
+      const parsed = new URL(url), relative = parsed.pathname;
+      moving.set(relative, (moving.get(relative) ?? 0) + 1);
+      if (relative === manifestPath) {
+        movingObservation++;
+        return movingObservation === 2 ? response(jsonBytes(changedManifest)) : normal(url, init);
+      }
+      if (relative === startupPath) {
+        assert.equal(parsed.searchParams.get('ravscore-observation'), options.observationNonce + '-' + movingObservation);
+        if (movingObservation === 1) return response(Buffer.from('previous startup generation'));
+      }
+      return normal(url, init);
+    },
+  })).status, 'passed');
+  assert.equal(moving.get(manifestPath), 3); assert.equal(moving.get(startupPath), 2);
+  assert.equal(moving.get(detailsPath), 1, 'a new manifest must be read before every startup observation');
+
+  for (const failure of ['http404', 'network', 'body']) {
+    const failed = new Map();
+    await assert.rejects(verifyRavScoreOperationalPagesDeployment({
+      ...options, fetchImpl: async (url, init) => {
+        const relative = new URL(url).pathname; failed.set(relative, (failed.get(relative) ?? 0) + 1);
+        if (relative !== startupPath) return normal(url, init);
+        if (failure === 'http404') return { ok: false, status: 404 };
+        if (failure === 'network') throw new Error('fixed synthetic network refusal');
+        return { ok: true, status: 200, arrayBuffer: async () => { throw new Error('fixed synthetic body refusal'); } };
+      },
+    }), /HTTP 404|fixed synthetic (?:network|body) refusal/);
+    assert.deepEqual(failed, new Map([[manifestPath, 1], [startupPath, 1]]),
+      'hard HTTP, transport and body errors never become propagation retries');
+  }
+  console.log('Sealed manifest/startup pair: delayed200 then exact, permanent corruption, changed manifest, no large refetch and hard failures: passed.');
+}
+
+await verifySealedStartupPropagationContract();
 await verifyManifestOnlyPropagationContract();
 await verifyBoundedTransientHttpContract();
 
