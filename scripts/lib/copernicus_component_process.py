@@ -1172,7 +1172,7 @@ def _source_normal_outputs(data, phase, expected_target=None):
             'production_reference_at', 'required_pair_count', 'selected_record_ref_count',
             'missing_pair_count'},
         9: {'checkpoint_written', 'missing_pair_count'},
-        42: {'strict_active_ready', 'candidate_seeded', 'extended', 'missing_pair_counts_json'},
+        42: {'strict_active_ready', 'candidate_seeded', 'extended', 'missing_pair_counts_json', 'recovery_snapshot'},
         23: {'should_run', 'dmi_changed', 'reason', 'age_minutes'},
         29: {'cache_hit'},
         30: {'distribution_ready'},
@@ -1198,6 +1198,8 @@ def _source_normal_outputs(data, phase, expected_target=None):
         if key not in allowed:
             continue
         if not separator or len(value) > 256 or '\0' in value:
+            raise RuntimeError('SOURCE_NORMAL_OUTPUT_INVALID')
+        if phase == 42 and key == 'recovery_snapshot' and value not in ('materialized.json', 'recovery-candidate.json'):
             raise RuntimeError('SOURCE_NORMAL_OUTPUT_INVALID')
         # The normal OM writer publishes intermediate checkpoints and then its
         # terminal values. Match the existing GITHUB_OUTPUT last-value rule.

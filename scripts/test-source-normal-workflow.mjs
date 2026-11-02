@@ -8,7 +8,7 @@ import path from 'node:path';
 import test from 'node:test';
 import { execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
-import { SOURCE_NORMAL_WORKFLOW_REVIEW as review, inverseSourceNormalWorkflow, SOURCE_NORMAL_MAIN_IMPORT_WORKFLOW_REVIEW as mainImportReview, inverseSourceNormalMainImportWorkflow } from './lib/source-normal-workflow-review.mjs';
+import { SOURCE_NORMAL_WORKFLOW_REVIEW as review, inverseSourceNormalWorkflow, SOURCE_NORMAL_MAIN_IMPORT_WORKFLOW_REVIEW as mainImportReview, inverseSourceNormalMainImportWorkflow, SOURCE_NORMAL_SCALAR_WORKFLOW_REVIEW as scalarWorkflowReview, inverseSourceNormalScalarWorkflow } from './lib/source-normal-workflow-review.mjs';
 import { buildWeatherOperationalControlSummary } from './weather-operational-control-summary.mjs';
 const ROOT = fileURLToPath(new URL('../', import.meta.url));
 const sha = value => crypto.createHash('sha256').update(value).digest('hex');
@@ -95,7 +95,7 @@ test('SOURCE whole caller inverses reproduce genuine b2 and reject drift in ever
   // The raw current callers separately qualify only the fixed actual merge.
   assert.deepEqual(Object.values(mainImportReview.roles).map(row => row.layers.map(layer => layer.editCount)), [[37, 5], [4]]);
   for (const [role, row] of Object.entries(mainImportReview.roles)) {
-    const current = read(row.relativePath), first = row.layers[0];
+    const current = inverseSourceNormalScalarWorkflow(read(row.relativePath),role), first = row.layers[0];
     assert.equal(Buffer.byteLength(current), first.after.bytes);
     assert.equal(sha(current), first.after.sha256);
     assert.equal(inverseSourceNormalMainImportWorkflow(current, role), actual[role]);
@@ -289,4 +289,40 @@ test('normal caller dependency/main gates, one SOURCE action and actual B-before
   assert(publisher.includes('phase.transportClosed !== true'));
   assert(publisher.includes('return reconfirmSourceNormalMain(holder)'));
   assert(!publisher.includes('continueOnError'));
+});
+
+test('SOURCE scalar workflow outer inverse keeps genuine a166 and all historical layers exact',()=>{
+  const raw=read('.github/workflows/reusable-weather-build.yml'),row=scalarWorkflowReview;
+  assert.equal(sha(raw),row.after.sha256);assert.equal(Buffer.byteLength(raw),row.after.bytes);
+  const old=inverseSourceNormalScalarWorkflow(raw,'build');
+  assert.equal(old,execFileSync('git',['show','7a5b23e18525a6747a1a0e49f99ff20fbdc1864c:.github/workflows/reusable-weather-build.yml'],{cwd:ROOT,encoding:'utf8',maxBuffer:1024*1024}));
+  assert.equal(inverseSourceNormalWorkflow(raw,'build'),inverseSourceNormalWorkflow(old,'build'));
+  for(const[,actual]of row.hunks){
+    const at=raw.indexOf(actual);assert(at>=0);
+    const changed=raw.slice(0,at)+'#'+raw.slice(at+1);
+    assert.equal(inverseSourceNormalScalarWorkflow(changed,'build'),changed);
+    assert.throws(()=>inverseSourceNormalWorkflow(changed,'build'));
+  }
+  for(const role of ['once','other'])assert.equal(inverseSourceNormalScalarWorkflow(raw,role),raw);
+  assert.throws(()=>inverseSourceNormalScalarWorkflow(raw),/SOURCE_SCALAR_WORKFLOW_ARGUMENTS/);
+  assert.throws(()=>inverseSourceNormalScalarWorkflow(null,'build'),/SOURCE_SCALAR_WORKFLOW_TYPE/);
+});
+
+test('SOURCE raw76 DMI registration qualifies the actual normal plan and preserves both old package views',async()=>{
+  const raw=JSON.parse(read('package.json')).scripts,original=structuredClone(raw);
+  const {reviewedSourceDmiMainSourceScripts:mainView,inverseReviewedSourceDmiScalarGapSourceScripts:oldView,SOURCE_DMI_PACKAGE_SCRIPT_REVIEW:row}=await import('./national584-source-evidence.mjs');
+  const digest=value=>sha(JSON.stringify(Object.keys(value).sort().map(key=>[key,value[key]])));
+  assert.equal(digest(raw),row.afterSha256);
+  const main75=mainView(raw),source73=oldView(raw);
+  assert.equal(digest(main75),row.mainAfterSha256);assert.equal(digest(source73),row.beforeSha256);
+  assert.deepEqual(raw,original,'Actual raw Source76 is never rewritten');
+  for(const mutate of [v=>delete v['test:source-producer-source'],v=>v['test:source-producer-source']+=' --unexpected',
+    v=>v['test:assistant-later-h0-source']=v['test:assistant-later-h0-source'].replace('source594','source585'),
+    v=>v['test:ravscore-source-critical']+=' && npm run test:source-producer-source',
+    v=>v['test:weather-source-critical']=source73['test:weather-source-critical'],
+    v=>v['validate:source:checks']=source73['validate:source:checks'],v=>v.unknown='node scripts/UNKNOWN.mjs']){
+    const changed=structuredClone(raw);mutate(changed);assert.throws(()=>mainView(changed));assert.throws(()=>oldView(changed));
+  }
+  assert.throws(()=>oldView(source73));assert.throws(()=>mainView(main75));
+  assert.throws(()=>mainView(raw,{}));assert.throws(()=>oldView(null));
 });

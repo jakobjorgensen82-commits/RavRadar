@@ -2446,16 +2446,40 @@ jobs:
             --parts data/live/coastal-parts-v2.json \
             --at "$RAVRADAR_PRODUCTION_TARGET_HOUR" \
             --github-output "$GITHUB_OUTPUT"
+          printf 'cache_path=%s\n' "$recovery_cache" >> "$GITHUB_OUTPUT"
 
       - name: Plan global current acquisition before DMI
         if: inputs.source_normal_producer == false && (inputs.completed_private_runtime != true && (steps.preflight.outputs.should_run == 'true' && steps.weather-source-handoff.outputs.reused != 'true'))
-        continue-on-error: true
         shell: bash
+        env:
+          DMI_PLANNING_SNAPSHOT: ${{ steps.dmi-recovery-budget.outputs.cache_path }}
+          DMI_PART_CONTINUITY_DONOR_PATH: ${{ steps.restored-dmi-part-continuity-donor.outputs.path }}
+          RAVRADAR_REQUIRE_PRIVATE_WEATHER_BASELINE: ${{ steps.private-runtime-install.outcome == 'success' && 'true' || 'false' }}
+          RAVRADAR_RETAINED_SCALAR_CONTEXT: ${{ steps.dmi-part-continuity-donor.outputs.continuity_schema == '1' && steps.private-runtime-install.outcome == 'success' && steps.operational-model.outputs.model == 'integrated' && steps.operational-model.outputs.binding_current == 'true' && steps.operational-action.outputs.action == 'integrated' && steps.legacy-bootstrap.outputs.stateless_integrated_recovery != 'true' && inputs.completed_private_runtime != true && inputs.completed_private_runtime_pin == '' && inputs.completed_stage_source == '' && inputs.checkpoint_only != true && inputs.quick_confirmation != true && inputs.quick_progress_source == '' && inputs.current_family_cold_start != true && inputs.weather_state_epoch_bootstrap != true && inputs.weather_state_epoch_checkpoint_reentry != true && inputs.weather_state_epoch_raw_cache_key == '' && inputs.weather_state_epoch_archive_key == '' && inputs.weather_state_epoch_archive_catalog_sha256 == '' && inputs.native_sampling_identity_original_recovery != true && inputs.ravscore_integrated_weather_handoff_run_id == '' && inputs.produce_weather_handoff != true && inputs.ravscore_integrated_first_cutover != true && inputs.ravscore_integrated_return != true && (inputs.ravscore_candidate_g_rollback_mode == '' || inputs.ravscore_candidate_g_rollback_mode == 'none') && 'ordinary-restored' || '' }}
         run: |
+          set -euo pipefail
+          rm -f .cache/weather-scalar-needs.json .cache/weather-qualified-acquisition-plan.json
+          scalar_args=(--cache "$DMI_PLANNING_SNAPSHOT" --at "$RAVRADAR_PRODUCTION_TARGET_HOUR")
+          qualified_args=(--scalar-snapshot "$DMI_PLANNING_SNAPSHOT")
+          if test -n "$DMI_PART_CONTINUITY_DONOR_PATH"; then
+            scalar_args+=(--historical "$DMI_PART_CONTINUITY_DONOR_PATH")
+            qualified_args+=(--scalar-history "$DMI_PART_CONTINUITY_DONOR_PATH")
+          fi
+          if test "$RAVRADAR_RETAINED_SCALAR_CONTEXT" = ordinary-restored; then
+            scalar_status=0
+            node scripts/plan-weather-scalar-acquisition.mjs "${scalar_args[@]}" || scalar_status=$?
+            if test "$scalar_status" -eq 2; then
+              echo "::error::Retained scalar planning did not prove transport termination."
+              exit 2
+            elif test "$scalar_status" -ne 0; then
+              echo "::warning::Retained scalar planning unavailable; native priority is preserved."
+            fi
+          fi
           if ! python scripts/build-weather-acquisition-plan.py \
             --at "$RAVRADAR_PRODUCTION_TARGET_HOUR" \
-            --report data/diagnostics/weather-acquisition-plan-before-dmi.json; then
-            rm -f .cache/weather-current-acquisition-plan.json
+            --report data/diagnostics/weather-acquisition-plan-before-dmi.json \
+            "${qualified_args[@]}"; then
+            rm -f .cache/weather-current-acquisition-plan.json .cache/weather-qualified-acquisition-plan.json
             echo "::warning::Advisory acquisition plan unavailable; DMI uses conservative native coverage."
           fi
 
@@ -2490,6 +2514,9 @@ jobs:
           DMI_BULK_RETAIN_PREFERRED_NATIVE_RUN: false
           DMI_BULK_DKSS_PRIMARY_MODE: true
           DMI_BULK_CURRENT_ACQUISITION_PLAN_PATH: .cache/weather-current-acquisition-plan.json
+          DMI_BULK_QUALIFIED_ACQUISITION_PLAN_PATH: .cache/weather-qualified-acquisition-plan.json
+          DMI_BULK_SCALAR_SNAPSHOT_PATH: ${{ steps.dmi-recovery-budget.outputs.cache_path }}
+          DMI_PART_CONTINUITY_DONOR_PATH: ${{ steps.restored-dmi-part-continuity-donor.outputs.path }}
           DMI_BULK_CURRENT_HISTORY_DEMAND_PATH: ${{ steps.current-history-demand.outcome == 'success' && '.cache/ravscore-current-history-demand.json' || '' }}
           DMI_BULK_REQUIRE_COMMITTED_RAW_RETENTION: ${{ steps.private-runtime-install.outcome == 'success' && (steps.operational-action.outputs.action == 'integrated' || steps.operational-action.outputs.action == 'integrated-historical-maintenance') && inputs.weather_state_epoch_bootstrap != true && steps.legacy-bootstrap.outputs.stateless_integrated_recovery != 'true' && steps.historical-wave-transition.outputs.required != 'true' && 'true' || 'false' }}
           DMI_BULK_LEGACY_CURRENT_ORIGINAL_REQUEST_PATH: ${{ steps.legacy-current-requests.outcome == 'success' && '.cache/dmi-legacy-current-original-requests.json' || '' }}

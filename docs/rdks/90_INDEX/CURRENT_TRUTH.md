@@ -1,5 +1,21 @@
 <a id="source-595-status-2026-11-02"></a>
-## 2. november — SOURCE 595 afventer endelig kodeunion
+## 2. november — faktisk lokal SOURCE-kodeunion, endnu ingen udstedt595
+
+Faktisk main fra PR791 er normalt indarbejdet som forfader. Den isolerede revision er nu også normalt sammenført med den samlede gennemgåede PR792-kandidat, herunder DMI-køen, de private metadata-/fejlfaserettelser og deres relevante normale kaldere. Kandidatens endelige kvalifikation og efterfølgende faktiske main er fortsat særskilte krav; et gennemgået PR-input er ikke en leveret main.
+
+Revisionens egen normale indgang opbygger nu det bevarede komponentgrundlag før DMI gennem de samme eksisterende læsere. Per-PART-/zonepolicy, vandstand ved T og T+3, konservativ afvisning af ukendt kontekst, kildeprioritet og budgetter bevares. Dette er ikke kildeadmission eller en garanti for manglende timer. Den uændrede fysiske importlæser accepterer de faktiske nye afhængigheder; ingen ekstra importundtagelse er indført.
+
+Historiske hele workflow- og package-input bevares ved præcise, lukkede læsegrænser; ukendte bytes afvises. Den eksisterende særskilte SOURCE-packagekontrol afprøver den faktiske nye kommandooversigt, mens den gamle594-kontrol og dens orakler bevares. En tidligere native-prøve bliver ikke dermed ny SOURCE-kvalifikation. De detaljerede før-/efterbeviser og skiftende kørselsidentiteter står privat.
+
+Den gennemgåede assistentforståelse og den tydelige enhedsafgrænsning i admin bevares. De lokale syntetiske spørgsmål/UI-cases er ikke ny offentlig AI-accept. Den reelle service og revisionens producentkode er modelinput og skal indgå i den endelige normale afledning.
+
+Package4.0.594 er fortsat midlertidig; SOURCE4.0.595 er foreslået, inaktiv og uudstedt. Metadataenes version, binding og output er NULL. Indarbejd den endelige kvalificerede faktiske main og frys de reelle kildeinput før én normal595-afledning. Ingen nye C/I/T eller SQL er udstedt, og alle gamle SQL-originaler bevares.
+
+Rent endeligt importinventar, positiv issued62, samme faktiske PostgreSQL, normal SDK/action63/64, fysisk ejerafslutning, hel FULL-succes,180-minutterskapacitet og sikker offentlig levering er fortsat åbne. Verificeret almindelig drift eller en kortere kontrol af en særskilt rettelse er ikke SOURCE-PASS. Prognosedelingens faktiske595-kompatibilitet og målt Free-kapacitet er også åbne.
+
+Alle fem mål til18.november består. ROOT koordinerer produktionen; ingen produktionsændring under aktiv writer. Voerså-afvigelsen er parkeret, mens kontinuerlig vejrhentning og reel dækning prioriteres. De ældre statusafsnit nedenfor er dateret historik på de punkter, der nu er ajourført.
+
+## 2. november — historisk trin før den aktuelle SOURCE-kodeunion
 
 Den lokale merge83df har desuden indarbejdet kvalificeret791-H. Den efterfølgende lokale kodeunion tilføjer den gennemgåede assistentforståelse og en tydelig enhedsafgrænsning i admin. Det er stadig ikke faktisk main M2.
 
@@ -16,6 +32,32 @@ PR791 har sin egen beståede CONTROL-kontrol med21 relevante mål. Dets input og
 Ren statisk inventering på b03: I161/C165/T12,171 læste filer, nul afslag. Det er ikke genererede hashes eller runtime-PASS. Positiv issued62, samme faktiske PG, normal SDK/action63/64, fysisk ejerafslutning, hel FULL-succes og180-minutterskapacitet er fortsat åbne. Originaler, gamle SQL, numerik, geometri og DMI→Copernicus→Open-Meteo bevares.
 
 Alle fem mål til18.november består. ROOT koordinerer produktionen; ingen produktionsændring under aktiv writer. Aktuelle kørsler, nøjagtige commits og kvitteringer står i det private checkpoint. Ældre modstridende status nedenfor er dateret historik.
+
+## 2. november — de historiske kildeprøver bevarer deres oprindelige input
+
+Den første samlede kontrol af DMI-kandidaten stoppede i to gamle inputkontrakter: den udvidede kommandofortegnelse og den flyttede scalar-kalder i updateren. De 32 afslag er kortlagt til disse to fælles årsager; de er ikke i sig selv bevis for fejl i nye vejrdata.
+
+Den afgrænsede efterfølger genskaber kun de præcist gennemgåede, hele forgængerinput ved de eksisterende testlæsegrænser. Gamle størrelser, hashes, assertions og funktionelle prøver bevares. Ukendte eller ændrede bytes afvises fortsat, mens de nye normale DMI-/loaderprøver læser den faktiske nye kode. Ingen produktionsværdi, scoreformel, kildeprioritet, administratoropsætning, geometri eller SQL ændres.
+
+Den fælles package-helper er et beskyttet native-kontrolinput. Dens ændring kræver derfor korrekt ny samlet kvalifikation; tidligere native-bevis må ikke kaldes uændret eller stiltiende genbruges. Normale målprøver, præcis GitHub-kvalifikation og faktisk vejreffekt er fortsat særskilte krav. Aktuelle kørsler og fejlevidens står i det private checkpoint.
+
+## 2. november — kvalificerede datahuller før native opgraderinger, lokal kandidat
+
+Den samlede lokale DMI-kandidat skelner reelle mangler fra allerede dækkede timer med manglende native opgradering. Den genbruger den normale bevarede femkomponentfortolkning og centrale SOURCE-vandstandsrouting før DMI. Per-PART-mangler, TREND ved T og privat T+3 bevares, og den eksisterende parameter-/zoneadgang afgrænser hver samlings prioritet og ekstra feltlæsning. Ukendt kontekst beholder den konservative native vej.
+
+Otte relevante normale lokale kaldere består på den faktiske samlede kandidat. De tidligere hele workflow-orakler er bevaret gennem én præcis inverse; de to manglende almindelige kildekalderindgange er tilkoblet uden dobbelt udførelse. Præcis GitHub-kontrol, sikker merge og målt effekt i en ny almindelig generation er åbne. Ingen ny version, C/I/T, SQL, geometri, scoreformel, kildeprioritet eller tidsbudget. SOURCE forbliver særskilt og inaktiv. Aktuelle kørsler og private måletal føres kun i checkpointet. Se DEC-0261 og håndbog 89.296.
+
+## 2. november — privat rapport er forberedt; lokal rettelse af ventetid og fejlfaser
+
+En ny, afgrænset skrivefri kontrol af kontrolbasen viser, at den fejlede rapportkørsel nåede gennem alle ti lagre og gemte ét færdigt rapportforslag. Verificering og levering til admin er fortsat uafklarede. Forslaget bevares til normal genlæsning uden ny tilfældig beregning. Statistikfunktionen er kontrolleret lukket igen; normal turlagring fungerer.
+
+Den lokale samlede rettelse lader de to uafhængige metadataaflæsninger ske samtidig ved hver eksisterende kontrol. Begge komplette svar skal stadig valideres, før de bruges, og alle før-/efterkontroller samt de samlede frister bevares. Samme målrettede forsinkelsesprøve går fra timeout til afslutning; det er ikke bevis for den gamle produktionsfejls præcise kode eller tilstrækkelig hosted kapacitet. De faste fejlfaser nedenfor bevares. Præcis kildekvalifikation, levering, adminaccept og målt Free-/CPU-kapacitet er åbne.
+
+## 2. november — historik: privat rapport stoppede uden fase; sikker lokal fejlrapportering
+
+Den private statistikfunktion blev faktisk aktiveret og genlæst korrekt. Den første private rapportkørsel stoppede med en generisk fejlmarkør; det præcise trin og eventuelle varige forberedelsesvirkninger er ukendte. Funktionen er derefter kontrolleret lukket igen, og normal D1-turlagring er genåbnet. Dette er ikke en fejlet almindelig vejrhentning. Detaljer og målinger står i det private checkpoint.
+
+Den lokale kandidat tilføjer kun faste faser, lukkede fejlkoder og ærligt skriveudfald til den eksisterende operatør. Før aggregate-start kan den melde NOT_STARTED; derefter beholder alle fejl UNKNOWN_NO_RETRY. Rå fejltekst, underprocesoutput, data, konti og nøgler vises ikke. Tre nye normale lokale cases og den eksisterende hele006-kaldercase består. Frister, kildekontrol, transport, genforsøg, model og SQL er uændrede. Præcis kildekvalifikation og levering af fejlrapporteringen er åbne; den oprindelige rapportfejl og Free-kapaciteten er ikke løst af dette.
 
 ## 1. november — privat statistik: installeret 007, lokal enable-kandidat
 

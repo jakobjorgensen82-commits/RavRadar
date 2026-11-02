@@ -1548,7 +1548,7 @@ test('release593 actual workflow preserves the immutable592 body and all older w
 });
 
 test('full Git pin preparation has an exact outer inverse before every unchanged workflow oracle',async()=>{
-  const actual=(await fs.readFile(new URL('../.github/workflows/reusable-weather-build.yml',import.meta.url),'utf8')).replaceAll('\r\n','\n');
+  const actual=inverseQualifiedScalarPlanningWorkflow((await fs.readFile(new URL('../.github/workflows/reusable-weather-build.yml',import.meta.url),'utf8')).replaceAll('\r\n','\n'),'build');
   const row=fullGitPinnedSourcePreparationWorkflowReview;
   assert.equal(Buffer.byteLength(actual),row.after.bytes);assert.equal(sha(actual),row.after.sha256);
   const previous=inverseFullGitPinnedSourcePreparationWorkflow(actual,'build');
@@ -1626,4 +1626,24 @@ test('terminal delivery repair maps only five exact whole sources and its exact 
   assert.throws(() => inventory(names, wrapper.replace('pull-requests: read', 'pull-requests: write')), /TERMINAL4145_WRAPPER_/);
   assert.throws(() => inventory([...names, review.wrapper.name], wrapper), /TERMINAL4145_INVENTORY_DUPLICATE/);
   assert.throws(() => inventory(names.filter(name => name !== review.wrapper.name), wrapper), /TERMINAL4145_WRAPPER_ONE/);
+});
+
+
+import {inverseQualifiedScalarPlanningWorkflow, qualifiedScalarPlanningWorkflowReview}
+  from './lib/completed-private-runtime-workflow-review.mjs';
+test('qualified scalar inverse keeps the entire genuine main workflow and rejects mixed bytes', async () => {
+  const source = (await fs.readFile(new URL('../.github/workflows/reusable-weather-build.yml', import.meta.url), 'utf8')).replaceAll('\r\n', '\n');
+  const row = qualifiedScalarPlanningWorkflowReview;
+  assert.equal(sha(source), row.after.sha256);
+  const before = inverseQualifiedScalarPlanningWorkflow(source, 'build');
+  assert.equal(sha(before), row.before.sha256);
+  assert.equal(Buffer.byteLength(before), row.before.bytes);
+  assert.equal(inverseQualifiedScalarPlanningWorkflow(before, 'build'), before);
+  assert.equal(inverseQualifiedScalarPlanningWorkflow(source, 'once'), source);
+  for (const changed of [source+'\n', source.replace('ordinary-restored', 'mixed-context'),
+      source.replace('DMI_BULK_HOURS: 118', 'DMI_BULK_HOURS: 117')]) {
+    assert.notEqual(changed, source);
+    assert.equal(inverseQualifiedScalarPlanningWorkflow(changed, 'build'), changed);
+    assert.throws(() => inverseCompletedRuntimeWorkflow(changed, 'build'));
+  }
 });

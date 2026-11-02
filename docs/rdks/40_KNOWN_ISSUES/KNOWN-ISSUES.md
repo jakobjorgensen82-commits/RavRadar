@@ -1,3 +1,9 @@
+## 2. november — lokal SOURCE-integration lukker kodeforskellen, ikke driftskravene
+
+Revisionens egen præ-DMI-indgang og de nye kildekaldere er nu integreret med den gennemgåede DMI-/statistikkandidat. Faktisk main fra PR791 er allerede forfader. De historiske hele kodeinput, gamle SQL og originalbindinger bevares. Endelig kvalificeret main, rent importinventar, én normal595-afledning, positiv samme-PG/SDK/action-kæde, fysisk ejerafslutning, heljobskapacitet og sikker offentlig levering er fortsat åbne. Se [kanonisk status](../90_INDEX/CURRENT_TRUTH.md#source-595-status-2026-11-02).
+
+Voerså-afvigelsen forbliver parkeret efter ejerens prioritering; almindelig datadækning prioriteres fortsat. Nedenstående ældre lokale statuser beskriver deres daterede trin.
+
 ## 2. november — tre konkrete assistentfamilier er rettet lokalt
 
 Tabt prognoseled i sammensatte spørgsmål, kendt net-stavevariant og ukendt apparat/garanti har en gennemgået lokal efterfølger. Offentlig genaccept afventer levering; dette lukker ikke assistentområdet. Se [kanonisk status](../90_INDEX/CURRENT_TRUTH.md#source-595-status-2026-11-02). Voerså-afvigelsen er parkeret efter ejerens prioritering.
@@ -5,6 +11,26 @@ Tabt prognoseled i sammensatte spørgsmål, kendt net-stavevariant og ukendt app
 ## 2. november — SOURCE er ikke udstedt eller aktiveret
 
 Den normale main-integration er gennemført, men PR791/senere faktisk main M2 og de nye595-gates er fortsat åbne. Bevar NULL og alle originaler; ingen ny afledning på et mellemtrin. Se [aktuel status og gates](../90_INDEX/CURRENT_TRUTH.md#source-595-status-2026-11-02). Den nye OM-køs faktiske dækningsvirkning mangler stadig.
+
+## 2. november — de historiske kildeprøver bevarer deres oprindelige input
+
+Den første samlede kontrol af DMI-kandidaten stoppede i to gamle inputkontrakter: den udvidede kommandofortegnelse og den flyttede scalar-kalder i updateren. De 32 afslag er kortlagt til disse to fælles årsager; de er ikke i sig selv bevis for fejl i nye vejrdata.
+
+Den afgrænsede efterfølger genskaber kun de præcist gennemgåede, hele forgængerinput ved de eksisterende testlæsegrænser. Gamle størrelser, hashes, assertions og funktionelle prøver bevares. Ukendte eller ændrede bytes afvises fortsat, mens de nye normale DMI-/loaderprøver læser den faktiske nye kode. Ingen produktionsværdi, scoreformel, kildeprioritet, administratoropsætning, geometri eller SQL ændres.
+
+Den fælles package-helper er et beskyttet native-kontrolinput. Dens ændring kræver derfor korrekt ny samlet kvalifikation; tidligere native-bevis må ikke kaldes uændret eller stiltiende genbruges. Normale målprøver, præcis GitHub-kvalifikation og faktisk vejreffekt er fortsat særskilte krav. Aktuelle kørsler og fejlevidens står i det private checkpoint.
+
+## 2. november — åben DMI-hale: gyldig reserve er ikke et tomt hul
+
+Den lokale kandidat retter den påviste sammenblanding af native opgraderinger og reelle scalar-mangler samt tab af per-PART- og TREND/T+3-afgrænsning i hentekøen. Normale lokale kaldere består; præcis CI og ny offentlig effekt er åbne. Ingen upstream- eller dækningsgaranti følger af kørettelsen. SOURCE-indgangen er særskilt uafsluttet. Se CURRENT_TRUTH, DEC-0261 og håndbog 89.296.
+
+## 2. november — privat rapport gemt, efterfølgende accept og kapacitet åbne
+
+Den faktiske kontrolbase bekræfter gennemført scanning af alle ti lagre og ét bevaret rapportforslag fra den fejlede eksport. Den gamle generiske fejlkode kan stadig ikke afgøre verify- eller adminudfald. Funktionen er lukket igen med normal turlagring genåbnet. En lokal samlet efterfølger bevarer forslaget og alle kontroller, paralleliserer kun to uafhængige komplette metadataaflæsninger og rapporterer faste fejlfaser. Den oprindelige produktionsfejls præcise årsag og hosted Free-/CPU-kapacitet er fortsat åbne; et lokalt gennemført forsinkelsesforsøg er ikke hosted kvalifikation. Ingen ny eksport, SQL, fristforøgelse eller offentlig statistik.
+
+## 2. november — historik: privat rapport stoppede uden fase; sikker lokal fejlrapportering
+
+Den normale private rapportoperatør skjuler hidtil alle fejl under samme markør. Den faktiske første fejlede prøve kan derfor ikke tilskrives kildekontrol, aggregate eller adminpublicering alene ud fra varigheden. En lokal afgrænset kandidat bevarer faste faser/fejlkoder og UNKNOWN_NO_RETRY efter mulig skrivestart. Den ændrer ingen frist eller prøverapport og giver ikke automatisk adgang til en gentagelse. Kvalifikation og faktisk årsagsafklaring er fortsat åbne; se CURRENT_TRUTH og privat checkpoint.
 
 ## 1. november — privat statistik mangler aktivering og faktisk hosted kvalifikation
 

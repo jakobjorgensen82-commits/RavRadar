@@ -14,7 +14,8 @@ import {requireSourceProducerOutput} from './lib/source-producer-successor-sourc
 import {SOURCE_PRODUCER_COMMANDS,verifySourceProducerNativePhaseReceipt,
   assertSourceProducerProofHeader} from './native-postgres-evidence.mjs';
 import {projectSourceImpactWorkflowFull} from './lib/source-impact-workflow-review.mjs';
-import {inverseReviewedForecastShareProjectionSourceScripts} from './lib/account-statistics-assistant-package-review.mjs';
+import {inverseReviewedForecastShareProjectionSourceScripts,inverseReviewedDmiScalarGapSourceScripts} from './lib/account-statistics-assistant-package-review.mjs';
+import {expandSourceCommands,buildSourceValidationPlan,runSourceValidation} from './validate-source-once.mjs';
 import {requireAssistantLaterH0Release,requireAssistantPublic587SuccessorRelease,
   requireAssistantPublic588SuccessorRelease,ASSISTANT_PUBLIC588_SUCCESSOR_RELEASE,
   requireAssistantPublic590SuccessorRelease,ASSISTANT_PUBLIC590_SUCCESSOR_RELEASE,
@@ -758,7 +759,73 @@ export function sourcePrFrozenMainPackage(){
   assert.equal(sha(raw),SOURCE_PR_PACKAGE_ORACLE_SHA256);const pkg=JSON.parse(raw);
   assert.equal(pkg.version,'4.0.594');return pkg;
 }
+// SOURCE-only source-plan DATA view: exact Source76 -> Main75 and oldSource73.
+// This checks actual raw76 through the normal planner; it is no native/CI proof.
+export const SOURCE_DMI_PACKAGE_SCRIPT_REVIEW=Object.freeze({
+  afterSha256:'88c2c51d0873e0d04349ee4eb8a996ff9f45b26bb4186f7025cc551c1aab4b10',
+  beforeSha256:'c3fdea60999c07b90d06f0e3d11ffcbe08d7ffdbc58365640fb49697af9bb93c',
+  mainAfterSha256:'fd4857146f205c9dc04248c642807456e01cdf47d6087de026ddd5f9c2316663',
+  mainBeforeSha256:'9975859065142d025c5a9a75b5a2045c304aec8a2e109bccb2f27da6d0e7da3b',
+});
+function sourceCommandAdapterInverse(scripts){
+  const previous={...scripts};
+  assert.equal(previous['test:source-producer-source'],'node scripts/build-source-producer-successor.mjs --check');
+  delete previous['test:source-producer-source'];
+  assert.equal(previous['test:assistant-later-h0-source'],'node scripts/check-assistant-later-h0-predecessor-source.mjs source594');
+  previous['test:assistant-later-h0-source']='node scripts/build-assistant-later-h0-successor.mjs --active --check';
+  const actual='npm run test:assistant-later-h0-source && npm run test:source-producer-source && node scripts/sync-ravscore-model-binding.mjs --check';
+  const original='npm run test:assistant-later-h0-source && node scripts/sync-ravscore-model-binding.mjs --check';
+  assert.equal(previous['test:ravscore-source-critical'].split(actual).length,2);
+  previous['test:ravscore-source-critical']=previous['test:ravscore-source-critical'].replace(actual,()=>original);
+  return previous;
+}
+function reviewedSourceDmiScriptViews(scripts){
+  assert(scripts&&Object.getPrototypeOf(scripts)===Object.prototype);
+  assert(Object.values(scripts).every(value=>typeof value==='string'));
+  const row=SOURCE_DMI_PACKAGE_SCRIPT_REVIEW;
+  const canonical=value=>JSON.stringify(Object.keys(value).sort().map(key=>[key,value[key]]));
+  assert.equal(sha(canonical(scripts)),row.afterSha256,'SOURCE_DMI_WHOLE_RAW76');
+  const main75=sourceCommandAdapterInverse(scripts);
+  assert.equal(sha(canonical(main75)),row.mainAfterSha256,'SOURCE_DMI_WHOLE_MAIN75');
+  const main72=inverseReviewedDmiScalarGapSourceScripts(main75);
+  const group='npm run test:weather-acquisition',old='node scripts/test-weather-acquisition-workflows.mjs';
+  const added=' && node --test scripts/test-completed-private-runtime-workflow-inverse.mjs';
+  assert.equal(scripts['test:weather-source-critical'].split(group).length,2);
+  assert.equal(scripts['validate:source:checks'].split(added).length,2);
+  const source73={...scripts,
+    'test:weather-source-critical':scripts['test:weather-source-critical'].replace(group,()=>old),
+    'validate:source:checks':scripts['validate:source:checks'].replace(added,()=>''),
+  };
+  assert.equal(sha(canonical(source73)),row.beforeSha256,'SOURCE_DMI_WHOLE_OLD_SOURCE73');
+  assert.deepEqual(sourceCommandAdapterInverse(source73),main72,'The full Source/Main inverse diamond');
+  assert.equal(sha(canonical(main72)),row.mainBeforeSha256);
+  const commands=expandSourceCommands(scripts,'validate:source:checks'),plan=buildSourceValidationPlan(scripts),calls=[];
+  assert.equal(commands.length,76);
+  assert.equal(runSourceValidation(plan,{execute(command){calls.push(command);return 0;},log(){}}),0);
+  assert.deepEqual(calls,[...plan.preflight,...plan.remaining,plan.gate]);
+  const additions=['python -B scripts/test-weather-acquisition-plan.py','python -B scripts/test-open-meteo-donor-bank.py',
+    'node --test scripts/test-completed-private-runtime-workflow-inverse.mjs'];
+  for(const values of [commands,calls])for(const command of [...additions,'node scripts/build-source-producer-successor.mjs --check'])
+    assert.equal(values.filter(value=>value===command).length,1);
+  assert.deepEqual(commands.filter(command=>!additions.includes(command)),expandSourceCommands(source73,'validate:source:checks'));
+  return {main75,source73};
+}
+export function reviewedSourceDmiMainSourceScripts(scripts){
+  assert.equal(arguments.length,1);return reviewedSourceDmiScriptViews(scripts).main75;
+}
+export function inverseReviewedSourceDmiScalarGapSourceScripts(scripts){
+  assert.equal(arguments.length,1);return reviewedSourceDmiScriptViews(scripts).source73;
+}
+
+
 export function verifySourcePrPackage(pkg){
+  requireSourceProducerOutput();assert.equal(arguments.length,1); // FIRST, before pkg operands.
+  assert(pkg&&Object.getPrototypeOf(pkg)===Object.prototype);assert.equal(typeof pkg.version,'string');
+  assert(pkg.scripts&&Object.getPrototypeOf(pkg.scripts)===Object.prototype);
+  const scripts=inverseReviewedSourceDmiScalarGapSourceScripts(pkg.scripts);
+  return verifySourcePrPackageBeforeDmi({...pkg,scripts});
+}
+function verifySourcePrPackageBeforeDmi(pkg){
   requireSourceProducerOutput();assert.equal(arguments.length,1); // FØR pkg-operander.
   assert(pkg&&Object.getPrototypeOf(pkg)===Object.prototype);assert.equal(typeof pkg.version,'string');
   assert(pkg.scripts&&Object.getPrototypeOf(pkg.scripts)===Object.prototype);

@@ -1,6 +1,6 @@
 import { reviewedFixedAssistantFailureLegacyWorkflow } from './lib/fixed-assistant-failure-workflow-review.mjs';
 import './test-source-child-environment.mjs';
-import {inverseReviewedAccountStatisticsAssistantSourceScripts} from './lib/account-statistics-assistant-package-review.mjs';
+import {inverseReviewedAccountStatisticsAssistantSourceScripts,inverseReviewedDmiScalarGapSourceScripts} from './lib/account-statistics-assistant-package-review.mjs';
 import assert from 'node:assert/strict';
 import {createHash} from 'node:crypto';
 import fs from 'node:fs';
@@ -18,6 +18,8 @@ import {
 const forecastShareProjectionCommand = 'node scripts/test-forecast-share-projection.mjs';
 const precedingPrivacySourceDefinition = 'node scripts/test-post-cutover-private-runtime-migration.mjs && node scripts/test-tracked-runtime-privacy.mjs && node scripts/test-pages-artifact-privacy.mjs';
 function inverseReviewedForecastShareProjectionRegistration(actualScripts) {
+  if(createHash('sha256').update(JSON.stringify(Object.keys(actualScripts).sort().map(key=>[key,actualScripts[key]]))).digest('hex')==='fd4857146f205c9dc04248c642807456e01cdf47d6087de026ddd5f9c2316663')
+    return inverseReviewedForecastShareProjectionRegistration(inverseReviewedDmiScalarGapSourceScripts(actualScripts));
   const digest = scripts => createHash('sha256').update(JSON.stringify(scripts)).digest('hex');
   assert.equal(digest(actualScripts), '0c471e7f1dd23549309ef500c2f1b4749e02fb3b7529fbe0260eb06694abdee0',
     'Only the entire reviewed592 script map plus the one compact-sharing registration.');

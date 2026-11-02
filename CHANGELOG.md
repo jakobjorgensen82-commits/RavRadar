@@ -1,3 +1,9 @@
+## 2. november — SOURCE sammenført med den gennemgåede DMI- og statistikrettelse
+
+Den isolerede kodeunion indarbejder nu faktisk main fra PR791 og den samlede gennemgåede PR792-kandidat. Revisionens normale præ-DMI-indgang bruger samme bevarede komponentfortolkning, PART-/zoneafgrænsning og T+3 som den almindelige vejrhentning. Historiske hele kontrolinput bevares gennem præcise, lukkede læsegrænser; nye normale kaldere kontrollerer den nye kode.
+
+SOURCE er fortsat inaktiv med NULL-version, -binding og -output. Den endelige kvalificerede faktiske main skal indarbejdes før én normal595-afledning. De ældre statusafsnit nedenfor bevares som dateret historik; aktuelle gates står i [SOURCE-status](docs/rdks/90_INDEX/CURRENT_TRUTH.md#source-595-status-2026-11-02). Ingen produktion, SQL, scoreformel, kildeprioritet eller geometri ændres af denne lokale integration.
+
 ## 2. november — assistentforståelse og tydelig adminafgrænsning, lokalt
 
 Sammensæt kendt netforklaring med normal dateret prognose; forstå den begrænsede ambr-variant; svar ærligt om ukendt apparat og fundgaranti. Observationer mærkes som enhedsbaserede. Gennemgået og sammenført lokalt; afledning og levering afventer [SOURCE-status](docs/rdks/90_INDEX/CURRENT_TRUTH.md#source-595-status-2026-11-02).
@@ -5,6 +11,28 @@ Sammensæt kendt netforklaring med normal dateret prognose; forstå den begræns
 ## 2. november — SOURCE forberedes med den aktuelle main
 
 PR790-main er normalt indarbejdet. PR791 og senere faktisk main skal med før én595-afledning; SOURCE er stadig NULL og inaktiv. Den offentlige kodelevering og assistentaccept er særskilte beviser. Se [SOURCE-status](docs/rdks/90_INDEX/CURRENT_TRUTH.md#source-595-status-2026-11-02).
+
+## 2. november — de historiske kildeprøver bevarer deres oprindelige input
+
+Den første samlede kontrol af DMI-kandidaten stoppede i to gamle inputkontrakter: den udvidede kommandofortegnelse og den flyttede scalar-kalder i updateren. De 32 afslag er kortlagt til disse to fælles årsager; de er ikke i sig selv bevis for fejl i nye vejrdata.
+
+Den afgrænsede efterfølger genskaber kun de præcist gennemgåede, hele forgængerinput ved de eksisterende testlæsegrænser. Gamle størrelser, hashes, assertions og funktionelle prøver bevares. Ukendte eller ændrede bytes afvises fortsat, mens de nye normale DMI-/loaderprøver læser den faktiske nye kode. Ingen produktionsværdi, scoreformel, kildeprioritet, administratoropsætning, geometri eller SQL ændres.
+
+Den fælles package-helper er et beskyttet native-kontrolinput. Dens ændring kræver derfor korrekt ny samlet kvalifikation; tidligere native-bevis må ikke kaldes uændret eller stiltiende genbruges. Normale målprøver, præcis GitHub-kvalifikation og faktisk vejreffekt er fortsat særskilte krav. Aktuelle kørsler og fejlevidens står i det private checkpoint.
+
+## 2026-11-02 — lokal DMI-hentekø på uændret 4.0.594
+
+- Skeln reelle vind-/vandstands-/temperaturhuller fra native opgraderinger gennem normale bevarede PART-/SOURCE-læsere.
+- Bevar T og T+3 samt eksisterende samlings-/zoneadgang i første plan, omplanlægning og feltfilter.
+- Tilkobl to manglende normale kildekalderindgange; bevar gamle hele workflow-orakler. Otte lokale mål består; GitHub og faktisk levering er åbne. Ingen version/model/SQL, score, kilder, budget eller geometri ændres.
+
+## 2026-11-02 — lokal metadata-parallelisering for privat statistik
+
+Læs de to uafhængige, komplette metadatafortegnelser samtidig. Bevar alle svar-, samtykke-, slette- og før-/efterkontroller samt eksisterende frister. Den normale målprøve bevarer rapportgenbrug og afviser ufuldstændige eller ændrede svar. Den faktiske kontrolbase viser et allerede gemt rapportforslag; normal verify/adminaccept og hosted Free-kapacitet er fortsat åbne. Den eksisterende lukkede kilderegistrering udvides kun med de gennemgåede private operatør-/testafhængigheder; ukendt påvirkning kræver stadig fuld kontrol.
+
+## 2026-11-02 — lokal sikker fejlrapportering for privat statistik
+
+Den eksisterende private rapportoperatør bevarer nu lukkede fase-/fejlkoder og skelner ikke-startet skrivning fra ukendt udfald. Rå data og fejltekst skjules fortsat. Normale lokale cases består; kildekvalifikation og levering er åbne. Det er ikke en rettelse af den endnu ukendte oprindelige årsag, ny eksport, ændrede frister, model, SQL eller offentlig statistik.
 
 ## 1. november — lokal privat enable-efterfølger efter installeret 007
 

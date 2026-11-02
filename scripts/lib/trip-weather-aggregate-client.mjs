@@ -78,8 +78,10 @@ export async function readTripWeatherAggregate({ supabaseUrl, serviceRoleKey,
       profilesUrl.search = 'select=id&is_active=eq.true&order=id&limit=1001';
       const preferencesUrl = new URL('/rest/v1/account_statistics_preferences', base);
       preferencesUrl.search = 'select=user_id,enabled,revision&order=user_id&limit=1001';
-      const profiles = await boundedJson(profilesUrl, { method: 'GET', headers }, fetchImpl, controller.signal, true);
-      const preferences = await boundedJson(preferencesUrl, { method: 'GET', headers }, fetchImpl, controller.signal, true);
+      const [profiles, preferences] = await Promise.all([
+        boundedJson(profilesUrl, { method: 'GET', headers }, fetchImpl, controller.signal, true),
+        boundedJson(preferencesUrl, { method: 'GET', headers }, fetchImpl, controller.signal, true),
+      ]);
       if (!Array.isArray(profiles) || !Array.isArray(preferences)
           || profiles.length > AGGREGATE_LIMITS.accounts || preferences.length > AGGREGATE_LIMITS.accounts) aggregateFail('AGGREGATE_ACCOUNT_CAP_REACHED');
       const ids = new Set(), prefs = new Map();

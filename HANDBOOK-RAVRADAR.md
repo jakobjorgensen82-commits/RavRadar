@@ -1,3 +1,9 @@
+## Aktuel lokal integration 2. november 2026
+
+SOURCE-koden omfatter faktisk main fra PR791 og den gennemgåede samlede DMI-/statistikkandidat. Det er lokal integration, ikke en udstedt eller aktiveret revision. Version, binding og output er fortsat NULL; den endelige kvalificerede faktiske main skal indarbejdes før én normal595-afledning. Læs [den kanoniske status](docs/rdks/90_INDEX/CURRENT_TRUTH.md#source-595-status-2026-11-02) før ældre status nedenfor.
+
+DMI-kapitlet har i denne sammenføring nummer89.296. SOURCE-kapitlerne89.294 og89.295 samt alle tre stabile web-id'er bevares; samme kapitelnummer må ikke skjule en anden tekst.
+
 ## Aktuel SOURCE-status 2. november 2026
 
 SOURCE595 er foreslået, inaktiv og uudstedt. Læs afsnit89.295 og [den kanoniske status](docs/rdks/90_INDEX/CURRENT_TRUTH.md#source-595-status-2026-11-02) før ældre daterede statusfronter.
@@ -9,6 +15,22 @@ SOURCE19 har det lokale substanscheckpoint `24d8f8ee75bb91d2c75afa92e5ccc407cb7c
 Main-kronologien og gældende leverede rettelser bevares. Det særskilt mærkede SOURCE-spor nedenfor bevarer den isolerede grens historik; ældre 585/586/040000-resultater og tidligere aktuelle 595-noter er ikke nye produktions- eller bindingsbeviser. SOURCE-kapitlernes tidligere 89.262/89.263 er nu 89.294/89.295, så main-kapitlerne med samme gamle numre bevares. Begge beslutninger identificeres med hele filnavnet: `docs/rdks/10_DECISIONS/DEC-0294-SOURCE-DERIVED-METADATA-BOUNDARY.md` og `docs/rdks/10_DECISIONS/DEC-0294-PAGES-FORECAST-SHARING-AND-SIMPLY-CNAME.md`.
 
 Den ægte 594-forgænger er genuine37 CODE med normal 61→62-kontrakt; kode, aktuelle syntetiske data og SOURCE-eksekutor holdes adskilt. Gamle familier, SQL-originaler, scoreformel, geometri og kildeprioritet bevares. Samme normale 594-central → B før S → SDK/action 63/64 → faktisk ejerafslutning er fortsat en åben kæde. Alle fem hovedmål er åbne til 18. november 2026. ROOT koordinerer produktion; denne isolerede sammenføring ændrer ingen produktion under den aktive writer. ROOTs P0/vejr/FB/header/kildebeviser forbliver særskilte driftsbeviser.
+
+## 89.296 Reelle datahuller før opgradering af dækkede timer
+
+### Hvorfor gyldige timer og mangler skal skelnes
+
+En time kan allerede have brugbare vejrdata fra en anden tilladt kilde, selv om DMI endnu mangler sit fulde native bevis. Det er stadig relevant at opgradere timen til DMI, men først skal den almindelige hentning forsøge de reelle huller. DMI er fortsat første kilde, derefter Copernicus og til sidst Open-Meteo.
+
+### Samme normale fortolkning før hentningen
+
+Den lokale kandidat bruger de samme læsere af bevarede DMI-, Copernicus- og Open-Meteo-data samt den centralt valgte vandstandsrouting som den normale beregning. Den undersøger hver kystdel og time for vind, vandstand og temperatur. Vandstandens tre timers udvikling kræver også det relevante tidspunkt tre timer senere. Planen afgør alene hentekøen; den kan aldrig godkende en måling eller udfylde et hul med nul.
+
+Et hul får kun denne prioritet i en DMI-samling, som efter de eksisterende komponent- og zoneregler må levere de pågældende data. De syv kystzoner beholder deres vandstandsundtagelse uden adgang til Limfjordens strøm, strømhukommelse, vind eller temperatur. Ukendt eller ændret planlægningsgrundlag bevarer den konservative native kø. Samme grænse gælder første plan, omplanlægning og udvælgelse af felter.
+
+### Status og bevisgrænse
+
+De relevante normale lokale prøver består på den samlede kandidat, også den fysiske kæde gennem de eksisterende offline-læsere. Det er ikke GitHub-kvalifikation eller offentlig effekt. Tidsbudgetter, kildeaccept, originaler, no-loss, administratorpunkter, geometri og scoreformel er uændrede. SOURCE-revisionens særskilte indgang kræver fortsat sin egen integration før aktivering.
 
 ## 89.293 Prøver skal følge det, rettelsen kan påvirke
 

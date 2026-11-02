@@ -1,3 +1,7 @@
+## 2. november — faktisk main og gennemgået DMI-kode er indarbejdet lokalt
+
+Den isolerede SOURCE-kodeunion omfatter faktisk PR791-main og den samlede gennemgåede DMI-/statistikkandidat. Den endelige kvalificerede faktiske main skal stadig indarbejdes før én normal595-afledning; version/binding/output er NULL. Følg [kanonisk status](docs/rdks/90_INDEX/CURRENT_TRUTH.md#source-595-status-2026-11-02). Ældre afventning af allerede indarbejdet main nedenfor er dateret historik. Ingen aktivering eller produktionsændring følger af den lokale integration.
+
 ## 2. november — lokale assistent- og admininput er sammenført
 
 Den gennemgåede lokale kandidat er nu indarbejdet. Faktisk main M2 og endelig DMI-kode mangler fortsat før én595-afledning. Følg [kanonisk status](docs/rdks/90_INDEX/CURRENT_TRUTH.md#source-595-status-2026-11-02); bevar NULL og produktionsro under aktiv writer.

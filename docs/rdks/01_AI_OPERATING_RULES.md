@@ -1,3 +1,7 @@
+## 2. november — faktisk main og gennemgået DMI-kode er indarbejdet lokalt
+
+Den isolerede SOURCE-kodeunion omfatter faktisk PR791-main og den samlede gennemgåede DMI-/statistikkandidat. Den endelige kvalificerede faktiske main skal stadig indarbejdes før én normal595-afledning; version/binding/output er NULL. Følg [kanonisk status](90_INDEX/CURRENT_TRUTH.md#source-595-status-2026-11-02). Ældre afventning af allerede indarbejdet main nedenfor er dateret historik. Ingen aktivering eller produktionsændring følger af den lokale integration.
+
 ## 2. november — skeln lokal kodeunion fra afledning og drift
 
 [Den aktuelle SOURCE-status](90_INDEX/CURRENT_TRUTH.md#source-595-status-2026-11-02) erstatter ældre merge-status nedenfor på de konkret daterede punkter. Assistentens service er C/I-input: ingen gammel binding må genmærkes efter rettelsen.

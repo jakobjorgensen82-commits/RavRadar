@@ -1,3 +1,13 @@
+## 2. november — faktisk lokal SOURCE-kodeintegration
+
+- [x] Faktisk PR791-main normalt indarbejdet og bevaret som forfader.
+- [x] Gennemgået samlet DMI-/statistikkandidat normalt sammenført med revisionens egen præ-DMI-indgang og præcise historiske kontrolinput.
+- [x] NULL-metadata, gamle SQL-originaler, scoreformel, kildeprioritet og geometri bevaret.
+- [ ] Den endelige kvalificerede faktiske main, nyt rent inventar og endelig kodefreeze.
+- [ ] Én normal595-afledning, positiv issued62/samme-PG/SDK/action63/64, fysisk ejerafslutning, hel FULL-kvalifikation,180-minutterskapacitet og sikker offentlig levering.
+
+Lokal integration er ikke SOURCE-native- eller offentlig AI-accept. Aktuelle test-/kørselsresultater står i checkpointet; de ældre trin nedenfor er historik. Se [kanonisk status](CURRENT_TRUTH.md#source-595-status-2026-11-02).
+
 ## 2. november — konkret lokal assistent- og adminintegration
 
 - [x] Kvalificeret791-H forberedt gennem normal lokal merge; endnu ikke faktisk main M2.
@@ -14,6 +24,41 @@ Se [kanonisk status](CURRENT_TRUTH.md#source-595-status-2026-11-02). Lokal accep
 - [ ] Én normal595-afledning samt issued62/samme-PG/SDK/action63/64/ejerafslutning, fuld kildekontrol og180-minutterskapacitet.
 
 Package594 er midlertidig; SOURCE er inaktiv. Se [kanonisk status](CURRENT_TRUTH.md#source-595-status-2026-11-02) og privat checkpoint. Bestået normal drift er ikke SOURCE-PASS.
+
+## 2. november — de historiske kildeprøver bevarer deres oprindelige input
+
+Den første samlede kontrol af DMI-kandidaten stoppede i to gamle inputkontrakter: den udvidede kommandofortegnelse og den flyttede scalar-kalder i updateren. De 32 afslag er kortlagt til disse to fælles årsager; de er ikke i sig selv bevis for fejl i nye vejrdata.
+
+Den afgrænsede efterfølger genskaber kun de præcist gennemgåede, hele forgængerinput ved de eksisterende testlæsegrænser. Gamle størrelser, hashes, assertions og funktionelle prøver bevares. Ukendte eller ændrede bytes afvises fortsat, mens de nye normale DMI-/loaderprøver læser den faktiske nye kode. Ingen produktionsværdi, scoreformel, kildeprioritet, administratoropsætning, geometri eller SQL ændres.
+
+Den fælles package-helper er et beskyttet native-kontrolinput. Dens ændring kræver derfor korrekt ny samlet kvalifikation; tidligere native-bevis må ikke kaldes uændret eller stiltiende genbruges. Normale målprøver, præcis GitHub-kvalifikation og faktisk vejreffekt er fortsat særskilte krav. Aktuelle kørsler og fejlevidens står i det private checkpoint.
+
+## 2. november — DMI-kø: normal lokal integration, levering åben
+
+- [x] Normal bevaret PART-/SOURCE-fortolkning før DMI; vandstand ved T og T+3; samlingsafgrænsning efter eksisterende komponent-/zonepolicy.
+- [x] Otte normale lokale mål på samlet kandidat; fysisk offline-kæde og uændrede originaler; præcise gamle workflow-orakler og almindelige CI-kaldere.
+- [ ] Præcis GitHub-kvalifikation, sikker levering og faktisk ny offentlig dækningsvirkning.
+- [ ] SOURCE-revisionens egen præ-DMI-indgang integreres særskilt før dens aktivering.
+
+Ingen ny version/model/SQL, kilde-, budget-, score- eller geometriændring. Se DEC-0261 og håndbog 89.296; privat checkpoint har skiftende evidens.
+
+## 2. november — privat rapportforberedelse er faktisk bevaret
+
+- [x] Skrivefri kontrol af den eneste gemte rapport: alle ti lagre behandlet, ét færdigt forslag bevaret. Ingen individuel tur- eller brugerinspektion.
+- [x] Lokal afgrænset parallelisering af de to uafhængige, komplette metadataaflæsninger med uændrede kontroller og frister; målrettet gammel timeoutcase afsluttes nu.
+- [ ] Samlet kildekvalifikation og sikker levering af metadata- og fejlfaserettelsen.
+- [ ] Normal genlæsning med faktisk verify/adminaccept og målt hosted Free-/CPU-kapacitet. Statistik er fortsat lukket; ingen ny rapportgentagelse er udført.
+
+Den præcise gamle fejl er fortsat ukendt. Den tidligere uafklarede forberedelse nedenfor er erstattet af den faktiske kontrol; øvrige åbne punkter består.
+
+## 2. november — historik: privat rapport stoppede uden fase; sikker lokal fejlrapportering
+
+- [x] Faktisk aktivering til privat prøve og efterfølgende kontrolleret lukning med genåbnet normal turlagring.
+- [x] Lokal fast fase-/fejlkoderapport uden rå data; tre nye normale cases og gammel hel006-kaldercase består.
+- [ ] Præcis kildekvalifikation og sikker levering af fejlrapporteringen.
+- [ ] Den oprindelige rapportfejls faktiske fase/årsag, eventuelle varige virkninger, fuldført privat rapport og målt Free-kapacitet.
+
+Ingen eksportgentagelse, ny frist, SQL, konto-/tursletning, statistikfrigivelse eller automatisk aktivering. Aktuel evidens står i checkpointet.
 
 ## 1. november — privat enable lokalt forberedt; hosted måling udestår
 

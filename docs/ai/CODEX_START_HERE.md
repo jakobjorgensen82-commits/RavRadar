@@ -1,3 +1,7 @@
+## 2. november — fortsæt fra den faktiske lokale SOURCE-kodeunion
+
+Faktisk main fra PR791 er indarbejdet; den samlede gennemgåede DMI-/statistikkandidat er nu normalt sammenført i den isolerede revision. Det er ikke bevis for kandidatens endelige main-kvalifikation eller SOURCE-drift. Læs [kanonisk status](../rdks/90_INDEX/CURRENT_TRUTH.md#source-595-status-2026-11-02), DEC-0261 og håndbog89.296. Bevar NULL og indarbejd den endelige kvalificerede faktiske main før én normal595-afledning. Ældre afventning af den allerede indarbejdede PR791-main er historik. Ingen produktionsændring under aktiv writer.
+
 ## 2. november — fortsæt fra den aktuelle lokale kodeunion
 
 Kvalificeret791-H samt gennemgået assistent- og admintekst er forberedt lokalt. Det er ikke faktisk main M2 eller offentlig levering. Se [kanonisk status](../rdks/90_INDEX/CURRENT_TRUTH.md#source-595-status-2026-11-02) og privat checkpoint; frys endelig kode før én595-afledning.
@@ -27,6 +31,10 @@ SOURCE19 har det lokale substanscheckpoint `24d8f8ee75bb91d2c75afa92e5ccc407cb7c
 Main-kronologien og gældende leverede rettelser bevares. Det særskilt mærkede SOURCE-spor nedenfor bevarer den isolerede grens historik; ældre 585/586/040000-resultater og tidligere aktuelle 595-noter er ikke nye produktions- eller bindingsbeviser. SOURCE-kapitlernes tidligere 89.262/89.263 er nu 89.294/89.295, så main-kapitlerne med samme gamle numre bevares. Begge beslutninger identificeres med hele filnavnet: `docs/rdks/10_DECISIONS/DEC-0294-SOURCE-DERIVED-METADATA-BOUNDARY.md` og `docs/rdks/10_DECISIONS/DEC-0294-PAGES-FORECAST-SHARING-AND-SIMPLY-CNAME.md`.
 
 Den ægte 594-forgænger er genuine37 CODE med normal 61→62-kontrakt; kode, aktuelle syntetiske data og SOURCE-eksekutor holdes adskilt. Gamle familier, SQL-originaler, scoreformel, geometri og kildeprioritet bevares. Samme normale 594-central → B før S → SDK/action 63/64 → faktisk ejerafslutning er fortsat en åben kæde. Alle fem hovedmål er åbne til 18. november 2026. ROOT koordinerer produktion; denne isolerede sammenføring ændrer ingen produktion under den aktive writer. ROOTs P0/vejr/FB/header/kildebeviser forbliver særskilte driftsbeviser.
+
+## 2. november — DMI-køens nye lokale afgrænsning
+
+Læs CURRENT_TRUTHs nye front, DEC-0261s tillæg og håndbog 89.296. Reelle komponenthuller og native opgraderinger skal skelnes gennem den samme normale fortolkning. Lokal prøve er ikke offentlig levering; SOURCE er fortsat inaktiv.
 
 ## 1. november — find det autentiske fulde kildebevis
 

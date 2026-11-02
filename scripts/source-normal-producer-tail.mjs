@@ -2106,6 +2106,9 @@ async function finishSourceNormalGeneration(holder, operation, phaseOperation) {
       const expectedRemoval = phase.result.exitCode === 0
         && ((phase.name === 'activePromote' && route.relativePath === '.cache/dmi-active-complete.json.tmp')
           || (phase.name === 'advisoryRemove' && route.relativePath === '.cache/weather-current-acquisition-plan.json')
+          || (phase.name === 'generationPrepare' && ['.cache/weather-scalar-needs.json',
+            '.cache/weather-current-acquisition-plan.json', '.cache/weather-qualified-acquisition-plan.json',
+            'data/diagnostics/weather-acquisition-plan-before-dmi.json'].includes(route.relativePath))
           || (phase.name === 'pointPrepare' && [PRIVATE_WEATHER_COMPONENT_FILES.coastalPointActivationState,
             PRIVATE_WEATHER_COMPONENT_FILES.coastalPointPendingPromotion].includes(route.relativePath)));
       if (route.original && !expectedRemoval) sourceOriginalFailure('NORMAL_OUTPUT_LOST');
@@ -2320,7 +2323,8 @@ async function runSourceNormalGenerationPreparation(holder, operation) {
   const values = phase.result.outputs;
   if (!['true', 'false'].includes(values.strict_active_ready)
     || values.candidate_seeded !== (values.strict_active_ready === 'true' ? 'false' : 'true')
-    || !['true', 'false'].includes(values.extended)) sourceOriginalFailure('NORMAL_RECOVERY_RESULT_INVALID');
+    || !['true', 'false'].includes(values.extended)
+    || !['materialized.json', 'recovery-candidate.json'].includes(values.recovery_snapshot)) sourceOriginalFailure('NORMAL_RECOVERY_RESULT_INVALID');
   const counts = JSON.parse(values.missing_pair_counts_json);
   if (!isPlainObject(counts) || Object.keys(counts).sort().join(',') !== 'current,waterLevel,waterTemperature,wave,wind'
     || Object.values(counts).some(value => !Number.isSafeInteger(value) || value < 0)) {
@@ -2330,7 +2334,7 @@ async function runSourceNormalGenerationPreparation(holder, operation) {
   sourceDmiWorkingState(holder, operation);
   prelude.generationPreparation = phase;
   prelude.recovery = Object.freeze({ extended: values.extended === 'true',
-    missingPairCountsJson: values.missing_pair_counts_json });
+    missingPairCountsJson: values.missing_pair_counts_json, snapshot: values.recovery_snapshot });
 }
 
 async function acquireSourceNormalProgressCipher(holder) {
@@ -3019,6 +3023,9 @@ async function runSourceNormalProgram(holder, operation, name) {
     Buffer.from(issued.identity.GITHUB_SHA, 'hex').copy(challenge, 60);
     const targetEnvironment = originalTarget || cpInventory || progressUnion ? (await import('./lib/copernicus-offline-environment.mjs')).copernicusOfflineEnvironment() : process.env;
     const environment = Object.freeze({ ...targetEnvironment,
+      ...(name === 'generationPrepare' ? {
+        DMI_PART_CONTINUITY_DONOR_PATH: issued.normalPrelude.continuityDonor?.path ?? '',
+      } : {}),
       ...(name === 'currentHistoryPlan' ? {
         RAVRADAR_REQUIRE_PRIVATE_WEATHER_BASELINE: 'true',
         RAVSCORE_STATELESS_INTEGRATED_COLD_START_ALLOWED: issued.normalPrelude.legacyBootstrap.statelessIntegratedRecovery ? 'true' : 'false',
@@ -3256,6 +3263,11 @@ function sourceNormalDmiEnvironment(holder) {
   const recovery = prelude.recovery.extended === true;
   const extended = route.request.extended || historical || recovery;
   const large = extended || bootstrap;
+  const temporary = process.env.RUNNER_TEMP;
+  if (typeof temporary !== 'string' || !path.isAbsolute(temporary) || path.resolve(temporary) !== temporary
+    || !['materialized.json', 'recovery-candidate.json'].includes(prelude.recovery.snapshot)) {
+    sourceOriginalFailure('NORMAL_DMI_RECOVERY_INVALID');
+  }
   const wave = sourceNormalWamSelection(holder);
   const counts = prelude.recovery.missingPairCountsJson;
   if (typeof counts !== 'string' || counts.length > 4096) sourceOriginalFailure('NORMAL_DMI_RECOVERY_INVALID');
@@ -3271,6 +3283,9 @@ function sourceNormalDmiEnvironment(holder) {
       ? prelude.legacyCurrentRequests.requestsSha256 : '',
     DMI_BULK_DKSS_PRIMARY_MODE: 'true',
     DMI_BULK_CURRENT_ACQUISITION_PLAN_PATH: '.cache/weather-current-acquisition-plan.json',
+    DMI_BULK_QUALIFIED_ACQUISITION_PLAN_PATH: '.cache/weather-qualified-acquisition-plan.json',
+    DMI_BULK_SCALAR_SNAPSHOT_PATH: path.join(temporary, 'dmi-active-proof', prelude.recovery.snapshot),
+    DMI_PART_CONTINUITY_DONOR_PATH: prelude.continuityDonor?.path ?? '',
     DMI_BULK_ADAPTIVE_RECOVERY: !route.request.quick && recovery ? 'true' : 'false',
     DMI_BULK_RECOVERY_BEFORE_COUNTS: counts,
     DMI_BULK_HOURS: '118', DMI_BULK_MAX_DOWNLOAD_MB: large ? '4096' : '2048',
@@ -4853,7 +4868,9 @@ const sourceNormalMutablePaths = Object.freeze({
   currentHistoryPlan: Object.freeze(['.cache/ravscore-continuation-checkpoint/checkpoint.json',
     '.cache/ravscore-current-history-demand.json']),
   generationPrepare: Object.freeze([PRIVATE_WEATHER_COMPONENT_FILES.dmiCandidate,
-    PRIVATE_WEATHER_COMPONENT_FILES.dmiActive, 'data/live/dmi-bulk-cache.json']),
+    PRIVATE_WEATHER_COMPONENT_FILES.dmiActive, 'data/live/dmi-bulk-cache.json',
+    '.cache/weather-scalar-needs.json', '.cache/weather-current-acquisition-plan.json',
+    '.cache/weather-qualified-acquisition-plan.json', 'data/diagnostics/weather-acquisition-plan-before-dmi.json']),
   point: Object.freeze([PRIVATE_WEATHER_COMPONENT_FILES.coastalPointDmi,
     PRIVATE_WEATHER_COMPONENT_FILES.coastalPointState, PRIVATE_WEATHER_COMPONENT_FILES.coastalPointStatus,
     'data/live/coastal-point-staging-status.json']),

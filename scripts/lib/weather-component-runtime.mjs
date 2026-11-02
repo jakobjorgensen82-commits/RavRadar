@@ -1,3 +1,16 @@
+import { createReadStream } from 'node:fs';
+import { readDmiBulkDocument } from './dmi-bulk-storage.mjs';
+import { readDmiForecastFile } from './dmi-forecast-file.mjs';
+import { unpackDmiPartContinuity } from './dmi-part-continuity.mjs';
+import { buildPartDmiForecastWithProtectedRetention, haversineKm } from './private-dmi-recovery-record.mjs';
+import { dmiExpectedIdentityForPart } from './ravscore-production-adapters.mjs';
+import { localPartRuntimeProperties } from './local-part-runtime.mjs';
+import { buildWaterSourceForecastIndex, unpackWaterSourceForecastContinuity,
+  applyWaterSourceForecastStatus } from './water-source-forecast-routing.mjs';
+import { assertCoastalPointActivationStateInjection } from './coastal-point-staging-contract.mjs';
+import { RESEARCH_HISTORY_HOURS } from './weather-history-retention.mjs';
+import { OPEN_METEO_FUTURE_HOURS } from './open-meteo-forecast-window.mjs';
+import { OPEN_METEO_NATIVE_NEAREST_POLICIES } from './open-meteo-part-bank.mjs';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { createHash, randomUUID } from 'node:crypto';
@@ -6,7 +19,8 @@ import { buildWeatherComponentNeeds, openMeteoGapPairsFromWeatherNeeds,
 import { loadOpenMeteoPartRuntime, runOpenMeteoPartRuntime } from './open-meteo-part-runtime.mjs';
 import { runCopernicusComponentRuntime } from './copernicus-component-runtime.mjs';
 import { createWeatherComponentSelectionHistory, snapshotWeatherComponentSelectionHistory } from './weather-component-selection-history.mjs';
-import { SCORING_RESERVE_COMPONENTS } from './ravscore-production-adapters.mjs';
+import { SCORING_RESERVE_COMPONENTS, verifiedIntegratedPartHourly } from './ravscore-production-adapters.mjs';
+import { applyVerifiedWaterSourceRoutingToPartHourly } from './water-source-forecast-routing.mjs';
 import { assertWeatherTransportSettlement, isWeatherTransportStopUnproved } from './weather-transport-settlement.mjs';
 
 const HISTORY_MAX_BYTES = 128 * 1024 * 1024;
@@ -236,4 +250,210 @@ export async function persistWeatherComponentSelections(prepared) {
     catch (error) { if (!failed) throw error; }
   }
   return { ...prepared.sourceMarker, selectedComponentsSha256: digest(bytes) };
+}
+
+// One shared normal scalar applicability boundary; CURRENT keeps its own closure.
+export function verifiedPartScalarPlanningHourly({
+  part, parentFeature, record, dmiBulkCache, inputs, liveCurrentPilot = null,
+  waterSourceRoutingContext,
+}) {
+  const routed = applyVerifiedWaterSourceRoutingToPartHourly({
+    part, parentFeature,
+    hourly: verifiedIntegratedPartHourly(
+      record, dmiBulkCache, `PART::${part.partId}`, part,
+      { ...inputs, requireNativeGridSampling: false, liveCurrentPilot }),
+    ...waterSourceRoutingContext,
+  });
+  // This plan consumes only wind/wave/waterLevel/waterTemperature, not current.
+  // NEW current is assembled and strictly checked in the score caller.
+  return routed.hourly;
+}
+
+// Offline counterpart of the existing retained-load section above. In
+// particular it never calls runOpenMeteoPartRuntime, even with a zero budget.
+// CP's existing no-transportBudget arm invokes the fixed --verify-only reader.
+export async function loadRetainedWeatherComponentPlanningInputs({
+  privateCacheRoot, parts, productionReferenceAt, retentionStartAt, retentionEndAt,
+  readVerifiedHourly, planningDeadlineAt = Date.now() + 120_000,
+}) {
+  retainedScalarRemaining(planningDeadlineAt);
+  assertWeatherTransportSettlement();
+  if (!path.isAbsolute(privateCacheRoot) || !Array.isArray(parts) || !parts.length
+    || typeof readVerifiedHourly !== 'function') {
+    throw new Error('RETAINED_SCALAR_INPUTS_INVALID');
+  }
+  const historyPath = path.join(privateCacheRoot, 'weather-component-selection-history.json');
+  const inputs = { productionReferenceAt,
+    componentSelectionHistory: createWeatherComponentSelectionHistory(await readHistory(historyPath),
+      { parts, retentionStartAt, retentionEndAt }),
+    openMeteoComponentIndex: null, copernicusComponentIndex: null };
+  const common = { privateCacheRoot, parts, productionReferenceAt, retentionStartAt, retentionEndAt };
+  const om = await loadOpenMeteoPartRuntime({ ...common,
+    bankPath: path.join(privateCacheRoot, 'open-meteo-part-component-bank.json'),
+    spatialPolicies: OPEN_METEO_NATIVE_NEAREST_POLICIES });
+  inputs.openMeteoComponentIndex = om.index;
+  const needs = buildWeatherComponentNeeds({ parts, productionReferenceAt,
+    readVerifiedHourly: part => readVerifiedHourly(part, inputs) });
+  const cp = await runCopernicusComponentRuntime({ ...common,
+    bankPath: path.join(privateCacheRoot, 'copernicus-component-bank.json'),
+    cacheDirectory: path.join(privateCacheRoot, 'copernicus-components'),
+    needs: needs.needs.filter(row => SCORING_RESERVE_COMPONENTS.includes(row.component)),
+    budgetMs: 0, verificationTimeoutMs: retainedScalarRemaining(planningDeadlineAt) });
+  retainedScalarRemaining(planningDeadlineAt);
+  inputs.copernicusComponentIndex = cp.index;
+  assertWeatherTransportSettlement();
+  return { inputs };
+}
+
+// Reuse the normal CP original-verification ceiling, shared across the whole
+// retained plan rather than adding another unbounded pre-DMI phase.
+function retainedScalarRemaining(deadline) {
+  const left = deadline - Date.now();
+  if (!Number.isSafeInteger(deadline) || left <= 0 || left > 120_000)
+    throw new Error('RETAINED_SCALAR_PLANNING_DEADLINE');
+  return left;
+}
+
+async function retainedScalarSnapshotDigest(file, optional, deadline) {
+  retainedScalarRemaining(deadline);
+  let stat;
+  try { stat = await fs.lstat(file); }
+  catch (error) { if (optional && error.code === 'ENOENT') return null; throw error; }
+  if (!stat.isFile() || stat.isSymbolicLink()) throw new Error('RETAINED_SCALAR_SNAPSHOT_FILE_INVALID');
+  const digest = createHash('sha256');
+  const stream = createReadStream(file, { signal: AbortSignal.timeout(retainedScalarRemaining(deadline)) });
+  try {
+    for await (const chunk of stream) { retainedScalarRemaining(deadline); digest.update(chunk); }
+  } finally {
+    // Do not publish a fallback while our hash handle might still be open.
+    if (!stream.closed) {
+      stream.destroy();
+      await new Promise(resolve => stream.once('close', resolve));
+    }
+  }
+  retainedScalarRemaining(deadline);
+  return { bytes: stat.size, sha256: `sha256:${digest.digest('hex')}` };
+}
+
+// The ordinary workflow already restores/authenticates these files before
+// steps 105-106. This loader adds no restore, provider request or source
+// authority. Its result is internal planning input, never public coverage.
+export async function loadRetainedPartScalarPlanning({
+  root, dmiCachePath, productionReferenceAt, historicalCachePath = null,
+}) {
+  assertWeatherTransportSettlement();
+  if (!path.isAbsolute(root) || !path.isAbsolute(dmiCachePath)
+    || !/^\d{4}-\d\d-\d\dT\d\d:00:00\.000Z$/.test(productionReferenceAt)
+    || !Number.isFinite(Date.parse(productionReferenceAt))) {
+    throw new Error('RETAINED_SCALAR_SNAPSHOT_ARGUMENTS_INVALID');
+  }
+  const planningDeadlineAt = Date.now() + 120_000;
+  const readBudgeted = async operation => {
+    retainedScalarRemaining(planningDeadlineAt);
+    const value = await operation();
+    retainedScalarRemaining(planningDeadlineAt);
+    return value;
+  };
+  const at = relative => path.join(root, relative);
+  const files = {
+    dmi: [dmiCachePath, false],
+    parts: [at('data/live/coastal-parts-v2.json'), false],
+    zones: [at('data/zones.geojson'), false],
+    forecast: [at('data/live/dmi-forecast-cache.json'), false],
+    stations: [at('data/live/dmi-water-stations.json'), false],
+    deployed: [at('.cache/deployed-dmi-bulk-cache.json'), true],
+    routing: [at('data/water-level-station-routing.json'), true],
+    selection: [at('.cache/weather-component-selection-history.json'), true],
+    openMeteo: [at('.cache/open-meteo-part-component-bank.json'), true],
+    copernicus: [at('.cache/copernicus-component-bank.json'), true],
+    pointState: [at('.cache/coastal-point-staging/activation-state-injection.json'), true],
+  };
+  if (historicalCachePath !== null) {
+    if (!path.isAbsolute(historicalCachePath)) throw new Error('RETAINED_SCALAR_HISTORY_PATH_INVALID');
+    files.historical = [historicalCachePath, false];
+  }
+  const snapshot = async () => {
+    const settled = await Promise.allSettled(Object.entries(files).map(async ([key, [file, optional]]) =>
+      [key, await retainedScalarSnapshotDigest(file, optional, planningDeadlineAt)]));
+    // Every owned stream must settle before any caller may take fallback.
+    const failed = settled.find(result => result.status === 'rejected');
+    if (failed) throw failed.reason;
+    retainedScalarRemaining(planningDeadlineAt);
+    return Object.fromEntries(settled.map(result => result.value));
+  };
+  const before = await snapshot();
+  const readJson = async (key, fallback) => {
+    if (before[key] === null) return fallback;
+    if (before[key].bytes > 64 * 1024 * 1024) throw new Error('RETAINED_SCALAR_METADATA_LIMIT');
+    return readBudgeted(async () => JSON.parse(await fs.readFile(files[key][0], 'utf8')));
+  };
+  const contract = await readJson('parts');
+  const features = (await readJson('zones'))?.features;
+  if (!contract?.enabled || !contract.zones || !Array.isArray(features) || !features.length) {
+    throw new Error('RETAINED_SCALAR_REGISTRY_INVALID');
+  }
+  const parts = Object.entries(contract.zones).flatMap(([zoneId, zoneParts]) =>
+    zoneParts.map(part => ({ ...part, zoneId })));
+  if (parts.length !== contract.partCount || parts.length < 1 || parts.length > 673
+    || features.length > 210 || new Set(parts.map(part => part.partId)).size !== parts.length) {
+    throw new Error('RETAINED_SCALAR_PART_DOMAIN_INVALID');
+  }
+  const parentById = new Map(features.map(feature => [feature.properties?.id, feature]));
+  const forecastStore = await readBudgeted(() => readDmiForecastFile(files.forecast[0]));
+  const dmiBulkCache = await readBudgeted(() => readDmiBulkDocument(dmiCachePath));
+  const deployedDmiBulkCache = before.deployed === null ? null : await readBudgeted(() => readDmiBulkDocument(files.deployed[0]));
+  const historicalDmiBulkCache = historicalCachePath === null ? null : await readBudgeted(() => readDmiBulkDocument(historicalCachePath));
+  const persisted = await unpackDmiPartContinuity(forecastStore.partContinuity, parts, productionReferenceAt);
+  const pointState = before.pointState === null ? {}
+    : assertCoastalPointActivationStateInjection(await readJson('pointState'));
+  const stations = (await readJson('stations'))?.stations;
+  const routing = await readJson('routing', { schemaVersion: 1, zones: {} });
+  if (!Array.isArray(stations) || !routing?.zones) throw new Error('RETAINED_SCALAR_WATER_CONTEXT_INVALID');
+  const retainedSourceIndex = await unpackWaterSourceForecastContinuity(
+    forecastStore.waterSourceContinuity, productionReferenceAt);
+  const sourceIndex = buildWaterSourceForecastIndex(stations, dmiBulkCache, productionReferenceAt, {
+    protectedBulkCache: deployedDmiBulkCache, historicalBulkCache: historicalDmiBulkCache, retainedSourceIndex,
+  });
+  const sourceRegistry = applyWaterSourceForecastStatus(stations, sourceIndex, productionReferenceAt, { minimumHours: 96 });
+  const waterSourceRoutingContext = { sources: sourceRegistry, index: sourceIndex, routing, haversineKm,
+    previousRoutingDiagnostic: null, diagnosticReferenceAt: productionReferenceAt };
+  const records = new Map();
+  for (const part of parts) {
+    retainedScalarRemaining(planningDeadlineAt);
+    const parent = parentById.get(part.zoneId);
+    if (!parent) throw new Error('RETAINED_SCALAR_PARENT_MISSING');
+    const bulkId = `PART::${part.partId}`;
+    const expectedIdentity = dmiExpectedIdentityForPart(part, bulkId);
+    const feature = { type: 'Feature', geometry: { type: 'Point', coordinates: part.waterPoint },
+      properties: localPartRuntimeProperties(parent.properties, part, bulkId) };
+    records.set(part.partId, buildPartDmiForecastWithProtectedRetention(feature, dmiBulkCache,
+      pointState?.[part.partId] ? null : deployedDmiBulkCache, productionReferenceAt, {
+        startAt: productionReferenceAt, expectedIdentity,
+        persistedHourly: pointState?.[part.partId] ? [] : persisted.get(part.partId)?.hourly ?? [],
+        historicalBulkCache: pointState?.[part.partId] ? null : historicalDmiBulkCache,
+      }));
+  }
+  const readVerifiedHourly = (part, inputs) => verifiedPartScalarPlanningHourly({
+    part, parentFeature: parentById.get(part.zoneId), record: records.get(part.partId),
+    dmiBulkCache, inputs, waterSourceRoutingContext,
+  });
+  try {
+    const retentionStartAt = new Date(Date.parse(productionReferenceAt) - RESEARCH_HISTORY_HOURS * 3600000).toISOString();
+    const retentionEndAt = new Date(Date.parse(productionReferenceAt) + (OPEN_METEO_FUTURE_HOURS - 1) * 3600000).toISOString();
+    const { inputs } = await loadRetainedWeatherComponentPlanningInputs({ privateCacheRoot: at('.cache'),
+      parts, productionReferenceAt, retentionStartAt, retentionEndAt, readVerifiedHourly, planningDeadlineAt });
+    const needs = buildWeatherComponentNeeds({ parts, productionReferenceAt,
+      readVerifiedHourly: part => readVerifiedHourly(part, inputs) });
+    const after = await snapshot();
+    if (JSON.stringify(before) !== JSON.stringify(after)) throw new Error('RETAINED_SCALAR_SNAPSHOT_CHANGED');
+    // Wave-only parent/Feggesund work remains in the unchanged WAM/scoring
+    // caller. No wave coverage or CURRENT availability is claimed here.
+    const scalar = row => ['wind', 'waterLevel', 'waterTemperature'].includes(row.component);
+    return { productionReferenceAt, parts, snapshotInputHashes: before,
+      needs: needs.needs.filter(scalar), dmiUpgradeNeeds: needs.dmiUpgradeNeeds.filter(scalar),
+      privateSupportNeeds: needs.privateSupportNeeds };
+  } finally {
+    records.clear();
+    assertWeatherTransportSettlement();
+  }
 }
