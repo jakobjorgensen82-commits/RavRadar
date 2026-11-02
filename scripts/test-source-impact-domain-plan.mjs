@@ -236,3 +236,69 @@ test('normal closed domain planner handles real composition, one same-tree merge
     fs.rmSync(root,{recursive:true,force:false});
   }
 });
+
+
+test('reviewed private-study operator closes frozen793 control plans and keeps unknown capabilities FULL',async()=>{
+  const studyTemporary=fs.realpathSync(os.tmpdir());
+  const studyRoot=fs.mkdtempSync(path.join(studyTemporary,'rr-study-domain-plan-'));
+  const studyOwned=fs.lstatSync(studyRoot,{bigint:true});
+  try{
+    git(studyRoot,['init','-q']);git(studyRoot,['config','core.autocrlf','false']);
+    const studyObjectDirectory=fs.realpathSync(path.join(text(SOURCE,['rev-parse','--path-format=absolute','--git-common-dir']),'objects'));
+    fs.mkdirSync(path.join(studyRoot,'.git/objects/info'),{recursive:true});
+    fs.writeFileSync(path.join(studyRoot,'.git/objects/info/alternates'),studyObjectDirectory.replaceAll('\\','/')+'\n');
+    // Genuine reviewed793 CODE/control fixture, not a claim about later current HEAD.
+    const studyHead='62d4dee3ab3a5ded26811a4aaf6050a1f1b65f2e';
+    const studyControls=['scripts/source-impact-domain-plan.mjs','scripts/lib/source-impact-domain-owners-594.json',
+      'scripts/test-source-impact-domain-plan.mjs'];
+    const studyControlBodies=studyControls.map(studyFile=>[studyFile,git(SOURCE,['cat-file','blob',studyHead+':'+studyFile])]);
+    const studyCommit=(studyRows,studyLabel)=>{
+      git(studyRoot,['read-tree',studyHead]);
+      for(const [studyFile,studyBody]of studyRows){
+        const studyBlob=text(studyRoot,['hash-object','-w','--stdin'],studyBody);
+        git(studyRoot,['update-index','--add','--cacheinfo','100644',studyBlob,studyFile]);
+      }
+      return text(studyRoot,['commit-tree',text(studyRoot,['write-tree']),'-p',studyHead,'-m',studyLabel]);
+    };
+    for(const studyFile of files){fs.mkdirSync(path.dirname(path.join(studyRoot,studyFile)),{recursive:true});
+      fs.writeFileSync(path.join(studyRoot,studyFile),git(SOURCE,['cat-file','blob',studyHead+':'+studyFile]));}
+    const {planSourceDomainImpactFromGit:studyPlan}=await import(pathToFileURL(path.join(studyRoot,'scripts/source-impact-domain-plan.mjs')).href);
+    const studyRun=(studyCandidate,studyBaseline)=>{git(studyRoot,['update-ref','HEAD',studyCandidate]);
+      return studyPlan({baselineCommit:studyBaseline,candidateCommit:studyCandidate,expectedHead:studyCandidate});};
+    const studyCandidate=studyCommit(studyControlBodies,'synthetic exact current private-study controls');
+    for(const [studyBaseline,studyCount]of [['5c0ede4862a1bf66342450c6458ae043ce5f310d',18],
+      ['3450a99355da895b4f286e717a839969003be989',21]]){
+      const studyActual=studyRun(studyCandidate,studyBaseline);
+      assert.equal(studyActual.status,'PLANNED',JSON.stringify(studyActual.reasonCodes));
+      assert.equal(studyActual.selection,'CONTROL_QUALIFICATION_REQUIRED',JSON.stringify(studyActual.reasonCodes));
+      assert.equal(studyActual.commands.length,studyCount);
+      for(const studyDomain of ['controls','d1','adminUI','documentation'])assert.equal(studyActual.domains[studyDomain].status,'SELECTED');
+      assert.equal(studyActual.domains.postgres.status,'NOT_APPLICABLE');
+      assert.equal(studyActual.domains.historical584National.status,'NOT_APPLICABLE');
+      for(const studyPair of [['postgresBefore','postgresAfter'],['CBefore','CAfter'],['IBefore','IAfter'],['TBefore','TAfter']])
+        assert.equal(studyActual.inputDigests[studyPair[0]],studyActual.inputDigests[studyPair[1]]);
+      assert.equal(studyActual.commands.filter(studyCommand=>studyCommand==='node --test scripts/test-account-statistics-assistant-callers.mjs').length,1);
+      assert(!studyActual.commands.includes('node --test scripts/test-trip-aggregate-month-rollover.mjs'),
+        'The existing admin parent imports and executes every ordinary rollover/operator case once');
+      assert.equal(studyActual.baselineQualified,false);assert.equal(studyActual.skipAuthorized,false);
+      assert.equal(studyActual.productionAuthority,false);
+    }
+    const studyPublisher='scripts/publish-private-trip-weather-study.mjs';
+    const studyPublisherBody=git(SOURCE,['cat-file','blob',studyHead+':'+studyPublisher]);
+    for(const [studyExtra,studyReason]of [
+      ["\nimport 'node:net';\n",'UNDECLARED_NODE_IMPORT:'],
+      ["\nreadFileSync('unreviewed-study-private.json');\n",'UNKNOWN_READ_OR_SUBPROCESS_SURFACE:'],
+      ["\nspawn('unreviewed-study-program',[]);\n",'UNKNOWN_READ_OR_SUBPROCESS_SURFACE:'],
+      ["\nnew Function('return process')();\n",'UNKNOWN_SENSITIVE_BINDING_OR_REFLECTIVE_SURFACE:']]){
+      const studyMutation=studyCommit([...studyControlBodies,[studyPublisher,Buffer.concat([studyPublisherBody,Buffer.from(studyExtra)])]],
+        'synthetic unknown private-study capability');
+      assert.deepEqual(studyRun(studyMutation,'5c0ede4862a1bf66342450c6458ae043ce5f310d').reasonCodes,[studyReason+studyPublisher]);
+    }
+  }finally{
+    assert.equal(path.dirname(fs.realpathSync(studyRoot)),studyTemporary);
+    const studyCurrent=fs.lstatSync(studyRoot,{bigint:true});
+    assert.equal(studyCurrent.dev,studyOwned.dev);assert.equal(studyCurrent.ino,studyOwned.ino);
+    assert.equal(studyCurrent.birthtimeNs,studyOwned.birthtimeNs);
+    fs.rmSync(studyRoot,{recursive:true,force:false});
+  }
+});

@@ -12,6 +12,18 @@ Den samlede lokale DMI-kandidat skelner reelle mangler fra allerede dækkede tim
 
 Otte relevante normale lokale kaldere består på den faktiske samlede kandidat. De tidligere hele workflow-orakler er bevaret gennem én præcis inverse; de to manglende almindelige kildekalderindgange er tilkoblet uden dobbelt udførelse. Præcis GitHub-kontrol, sikker merge og målt effekt i en ny almindelig generation er åbne. Ingen ny version, C/I/T, SQL, geometri, scoreformel, kildeprioritet eller tidsbudget. SOURCE forbliver særskilt og inaktiv. Aktuelle kørsler og private måletal føres kun i checkpointet. Se DEC-0261 og håndbog 89.294.
 
+## 2. november — privat rapport er forberedt; lokal rettelse af ventetid og fejlfaser
+
+En ny, afgrænset skrivefri kontrol af kontrolbasen viser, at den fejlede rapportkørsel nåede gennem alle ti lagre og gemte ét færdigt rapportforslag. Verificering og levering til admin er fortsat uafklarede. Forslaget bevares til normal genlæsning uden ny tilfældig beregning. Statistikfunktionen er kontrolleret lukket igen; normal turlagring fungerer.
+
+Den lokale samlede rettelse lader de to uafhængige metadataaflæsninger ske samtidig ved hver eksisterende kontrol. Begge komplette svar skal stadig valideres, før de bruges, og alle før-/efterkontroller samt de samlede frister bevares. Samme målrettede forsinkelsesprøve går fra timeout til afslutning; det er ikke bevis for den gamle produktionsfejls præcise kode eller tilstrækkelig hosted kapacitet. De faste fejlfaser nedenfor bevares. Præcis kildekvalifikation, levering, adminaccept og målt Free-/CPU-kapacitet er åbne.
+
+## 2. november — historik: privat rapport stoppede uden fase; sikker lokal fejlrapportering
+
+Den private statistikfunktion blev faktisk aktiveret og genlæst korrekt. Den første private rapportkørsel stoppede med en generisk fejlmarkør; det præcise trin og eventuelle varige forberedelsesvirkninger er ukendte. Funktionen er derefter kontrolleret lukket igen, og normal D1-turlagring er genåbnet. Dette er ikke en fejlet almindelig vejrhentning. Detaljer og målinger står i det private checkpoint.
+
+Den lokale kandidat tilføjer kun faste faser, lukkede fejlkoder og ærligt skriveudfald til den eksisterende operatør. Før aggregate-start kan den melde NOT_STARTED; derefter beholder alle fejl UNKNOWN_NO_RETRY. Rå fejltekst, underprocesoutput, data, konti og nøgler vises ikke. Tre nye normale lokale cases og den eksisterende hele006-kaldercase består. Frister, kildekontrol, transport, genforsøg, model og SQL er uændrede. Præcis kildekvalifikation og levering af fejlrapporteringen er åbne; den oprindelige rapportfejl og Free-kapaciteten er ikke løst af dette.
+
 ## 1. november — privat statistik: installeret 007, lokal enable-kandidat
 
 007 er faktisk installeret gennem den normale private controller med verificeret Worker-OFF og genåbnet D1. Den nye lokale kandidat tilføjer kun en særskilt, fast bekræftet enable-operation i det eksisterende workflow. Den bevarer standard OFF og de normale kilde-, main-, schema-, bindings-, vedligeholdelses- og readback-kontroller. Enable starter ingen rapport, datajob eller budgetbelastning.

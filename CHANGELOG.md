@@ -12,6 +12,14 @@ Den fælles package-helper er et beskyttet native-kontrolinput. Dens ændring kr
 - Bevar T og T+3 samt eksisterende samlings-/zoneadgang i første plan, omplanlægning og feltfilter.
 - Tilkobl to manglende normale kildekalderindgange; bevar gamle hele workflow-orakler. Otte lokale mål består; GitHub og faktisk levering er åbne. Ingen version/model/SQL, score, kilder, budget eller geometri ændres.
 
+## 2026-11-02 — lokal metadata-parallelisering for privat statistik
+
+Læs de to uafhængige, komplette metadatafortegnelser samtidig. Bevar alle svar-, samtykke-, slette- og før-/efterkontroller samt eksisterende frister. Den normale målprøve bevarer rapportgenbrug og afviser ufuldstændige eller ændrede svar. Den faktiske kontrolbase viser et allerede gemt rapportforslag; normal verify/adminaccept og hosted Free-kapacitet er fortsat åbne. Den eksisterende lukkede kilderegistrering udvides kun med de gennemgåede private operatør-/testafhængigheder; ukendt påvirkning kræver stadig fuld kontrol.
+
+## 2026-11-02 — lokal sikker fejlrapportering for privat statistik
+
+Den eksisterende private rapportoperatør bevarer nu lukkede fase-/fejlkoder og skelner ikke-startet skrivning fra ukendt udfald. Rå data og fejltekst skjules fortsat. Normale lokale cases består; kildekvalifikation og levering er åbne. Det er ikke en rettelse af den endnu ukendte oprindelige årsag, ny eksport, ændrede frister, model, SQL eller offentlig statistik.
+
 ## 1. november — lokal privat enable-efterfølger efter installeret 007
 
 Forbered særskilt enable med fast bekræftelse i det eksisterende private statistikworkflow; bevar OFF-standard og normale kilde-/main-/schema-/bindings-/vedligeholdelses-/readback-kontroller. 007 er faktisk installeret med verificeret OFF. Enable starter ingen rapport, datajob eller charge.
