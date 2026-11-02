@@ -11,6 +11,7 @@ import { inverseAlternativeCCaller, inverseAssistant587OriginalCompanionTestInpu
   inverseAssistant587OriginalRawBoundaryTestInput } from './lib/alternative-c-caller-test-input.mjs';
 import { inverseWindTailCapacityUpdaterTestInput, WIND_TAIL_CAPACITY_UPDATER_TEST_REVIEW,
   inverseCandidateGReadyGapUpdaterTestInput, CANDIDATE_G_READY_GAP_UPDATER_TEST_REVIEW,
+  inverseDmiScalarPlanningUpdaterTestInput, DMI_SCALAR_PLANNING_UPDATER_TEST_REVIEW,
   inverseCurrentNativeOriginalProducerTestInput, CURRENT_NATIVE_ORIGINAL_PRODUCER_TEST_REVIEW,
   inverseCurrentFamilyColdTargetTestInput }
   from './lib/archived-weather-restart-updater-test-input.mjs';
@@ -1481,7 +1482,8 @@ test('assistant591 retention companion uses actual592 whole source before unchan
 });
 
 test('READY-gap caller has an exact outer inverse before every unchanged wind-tail and historical updater oracle', async () => {
-  const actual = (await fs.readFile(producerPath, 'utf8')).replaceAll('\r\n', '\n');
+  const actual = inverseDmiScalarPlanningUpdaterTestInput(
+    (await fs.readFile(producerPath, 'utf8')).replaceAll('\r\n', '\n'), 'scripts/update-weather.mjs');
   const row = CANDIDATE_G_READY_GAP_UPDATER_TEST_REVIEW;
   assert.equal(Buffer.byteLength(actual), row.after.bytes);
   assert.equal(digest(actual), row.after.sha256);
@@ -1564,4 +1566,30 @@ test('conditions593 retention reader preserves whole592 and refuses changed IO c
   for(const [old,current]of row.hunks)for(const changed of [actual.replace(current,()=>old),actual.replace(current,()=>current+current)])
     assert.throws(()=>inverseConditions593RetentionCompanionTestInput(changed,row.path));
   for(const changed of [actual+'\n','!'+actual.slice(1)])assert.throws(()=>inverseConditions593RetentionCompanionTestInput(changed,row.path));
+});
+
+
+test('DMI scalar callback extraction retains actualV7 tests and every immutable updater oracle', async () => {
+  const raw = (await fs.readFile(producerPath, 'utf8')).replaceAll('\r\n', '\n');
+  const row = DMI_SCALAR_PLANNING_UPDATER_TEST_REVIEW, relative = row.path;
+  assert.equal(Buffer.byteLength(raw), row.after.bytes); assert.equal(digest(raw), row.after.sha256);
+  const previous = inverseDmiScalarPlanningUpdaterTestInput(raw, relative);
+  assert.equal(Buffer.byteLength(previous), row.before.bytes); assert.equal(digest(previous), row.before.sha256);
+  assert.equal(inverseDmiScalarPlanningUpdaterTestInput(previous, relative), previous);
+  for (const reader of [inverseCandidateGReadyGapUpdaterTestInput, inverseWindTailCapacityUpdaterTestInput,
+    inverseCurrentNativeOriginalProducerTestInput, inverseCurrentFamilyColdTargetTestInput])
+    assert.equal(reader(raw, relative), reader(previous, relative));
+  const mutations = [raw + '\n', '!' + raw.slice(1)];
+  for (const [old, current] of row.hunks)
+    for (const value of [old, current + current, '']) mutations.push(raw.replace(current, () => value));
+  for (const changed of mutations) {
+    assert.notEqual(changed, raw);
+    assert.equal(inverseDmiScalarPlanningUpdaterTestInput(changed, relative), changed);
+    assert.throws(() => inverseCurrentNativeOriginalProducerTestInput(changed, relative));
+  }
+  for (const wrongPath of ['', 'scripts/unknown.mjs', 'toString'])
+    assert.equal(inverseDmiScalarPlanningUpdaterTestInput(raw, wrongPath), raw);
+  assert.throws(() => inverseDmiScalarPlanningUpdaterTestInput(raw), /UPDATER_ARGUMENTS/);
+  assert.throws(() => inverseDmiScalarPlanningUpdaterTestInput(raw, relative, true), /UPDATER_ARGUMENTS/);
+  assert.throws(() => inverseDmiScalarPlanningUpdaterTestInput(null, relative), /UPDATER_TYPE/);
 });

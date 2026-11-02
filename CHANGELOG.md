@@ -1,3 +1,11 @@
+## 2. november — de historiske kildeprøver bevarer deres oprindelige input
+
+Den første samlede kontrol af DMI-kandidaten stoppede i to gamle inputkontrakter: den udvidede kommandofortegnelse og den flyttede scalar-kalder i updateren. De 32 afslag er kortlagt til disse to fælles årsager; de er ikke i sig selv bevis for fejl i nye vejrdata.
+
+Den afgrænsede efterfølger genskaber kun de præcist gennemgåede, hele forgængerinput ved de eksisterende testlæsegrænser. Gamle størrelser, hashes, assertions og funktionelle prøver bevares. Ukendte eller ændrede bytes afvises fortsat, mens de nye normale DMI-/loaderprøver læser den faktiske nye kode. Ingen produktionsværdi, scoreformel, kildeprioritet, administratoropsætning, geometri eller SQL ændres.
+
+Den fælles package-helper er et beskyttet native-kontrolinput. Dens ændring kræver derfor korrekt ny samlet kvalifikation; tidligere native-bevis må ikke kaldes uændret eller stiltiende genbruges. Normale målprøver, præcis GitHub-kvalifikation og faktisk vejreffekt er fortsat særskilte krav. Aktuelle kørsler og fejlevidens står i det private checkpoint.
+
 ## 2026-11-02 — lokal DMI-hentekø på uændret 4.0.594
 
 - Skeln reelle vind-/vandstands-/temperaturhuller fra native opgraderinger gennem normale bevarede PART-/SOURCE-læsere.

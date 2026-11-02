@@ -3,6 +3,37 @@ import assert from 'node:assert/strict';
 import crypto from 'node:crypto';
 import fs from 'node:fs';
 const sha=value=>crypto.createHash('sha256').update(value).digest('hex');
+// TEST INPUT ONLY: exact V7 scalar-planning callback extraction, before all
+// immutable old updater oracles. Current DMI/loader tests use actual V7 code.
+export const DMI_SCALAR_PLANNING_UPDATER_TEST_REVIEW = Object.freeze({
+  path: "scripts/update-weather.mjs",
+  before: Object.freeze({"bytes": 250790, "sha256": "0dc6dc1a957528a8886bd4b1fa7d4c6a4387e67457f1578434979337f0a237d9"}),
+  after: Object.freeze({"bytes": 250461, "sha256": "e4f7f442c4ad655c533adebe7470144c5aa55bcbd136c4d891a37cd7ea8b9693"}),
+  hunks: Object.freeze([
+  [
+    "import { prepareWeatherComponentRuntime, persistWeatherComponentSelections } from './lib/weather-component-runtime.mjs';",
+    "import { prepareWeatherComponentRuntime, persistWeatherComponentSelections, verifiedPartScalarPlanningHourly } from './lib/weather-component-runtime.mjs';"
+  ],
+  [
+    "    readVerifiedHourly: (part, inputs) => {\n      const routed = applyVerifiedWaterSourceRoutingToPartHourly({\n        part, parentFeature: parentById.get(part.zoneId),\n        hourly: verifiedIntegratedPartHourly(\n          planningRecords.get(part.partId), dmiBulkCache, `PART::${part.partId}`, part,\n          { ...inputs, requireNativeGridSampling: false, liveCurrentPilot }),\n        ...waterSourceRoutingContext,\n      });\n      // This plan consumes only wind/wave/waterLevel/waterTemperature, not current.\n      // NEW current is assembled and strictly checked in the score caller.\n      return routed.hourly;\n    },\n",
+    "    readVerifiedHourly: (part, inputs) => verifiedPartScalarPlanningHourly({\n      part, parentFeature: parentById.get(part.zoneId),\n      record: planningRecords.get(part.partId), dmiBulkCache,\n      inputs, liveCurrentPilot, waterSourceRoutingContext,\n    }),\n"
+  ]
+].map(hunk => Object.freeze(hunk))),
+});
+export function inverseDmiScalarPlanningUpdaterTestInput(source, relative) {
+  assert.equal(arguments.length, 2, 'DMI_SCALAR_PLANNING_UPDATER_ARGUMENTS');
+  assert.equal(typeof source, 'string', 'DMI_SCALAR_PLANNING_UPDATER_TYPE');
+  const row = DMI_SCALAR_PLANNING_UPDATER_TEST_REVIEW;
+  if (relative !== row.path || sha(source) !== row.after.sha256) return source;
+  assert.equal(Buffer.byteLength(source), row.after.bytes, 'DMI_SCALAR_PLANNING_UPDATER_AFTER_SIZE');
+  for (const [before, after] of [...row.hunks].reverse()) {
+    assert.equal(source.split(after).length, 2, 'DMI_SCALAR_PLANNING_UPDATER_EXACT_HUNK');
+    source = source.replace(after, () => before);
+  }
+  assert.equal(Buffer.byteLength(source), row.before.bytes, 'DMI_SCALAR_PLANNING_UPDATER_BEFORE_SIZE');
+  assert.equal(sha(source), row.before.sha256, 'DMI_SCALAR_PLANNING_UPDATER_WHOLE_INVERSE');
+  return source;
+}
 // TEST INPUT ONLY: invert the reviewed READY-gap caller before the unchanged
 // wind-tail and every older whole-source oracle. No runtime admission.
 export const CANDIDATE_G_READY_GAP_UPDATER_TEST_REVIEW = Object.freeze({
@@ -27,6 +58,7 @@ export const CANDIDATE_G_READY_GAP_UPDATER_TEST_REVIEW = Object.freeze({
 export function inverseCandidateGReadyGapUpdaterTestInput(source, relative) {
   assert.equal(arguments.length, 2, 'CANDIDATE_G_READY_GAP_UPDATER_ARGUMENTS');
   assert.equal(typeof source, 'string', 'CANDIDATE_G_READY_GAP_UPDATER_TYPE');
+  source = inverseDmiScalarPlanningUpdaterTestInput(source, relative);
   const row = CANDIDATE_G_READY_GAP_UPDATER_TEST_REVIEW;
   if (relative !== row.path || sha(source) !== row.after.sha256) return source;
   assert.equal(Buffer.byteLength(source), row.after.bytes, 'CANDIDATE_G_READY_GAP_UPDATER_AFTER_SIZE');

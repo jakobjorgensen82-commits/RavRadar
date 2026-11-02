@@ -10,12 +10,44 @@ const review=JSON.parse(bytes);assert.equal(review.schemaVersion,1);
 assert.equal(review.kind,'TEST_ONLY_EXACT_ACCOUNT_STATISTICS_ASSISTANT_PACKAGE_INVERSE');assert.equal(review.edits.length,3);
 const canonical=scripts=>JSON.stringify(Object.keys(scripts).sort().map(key=>[key,scripts[key]]));
 
+// TEST-ONLY command-map view: the exact two-field DMI test registration is
+// qualified through the real planner before every unchanged older oracle.
+export function inverseReviewedDmiScalarGapSourceScripts(scripts){
+  assert.equal(arguments.length,1);assert(scripts&&Object.getPrototypeOf(scripts)===Object.prototype);
+  assert(Object.values(scripts).every(value=>typeof value==='string'));
+  assert.equal(sha(canonical(scripts)),'fd4857146f205c9dc04248c642807456e01cdf47d6087de026ddd5f9c2316663',
+    'Only the whole reviewed DMI scalar-gap75-command map may enter this view');
+  const group='npm run test:weather-acquisition',old='node scripts/test-weather-acquisition-workflows.mjs',
+    inverse=' && node --test scripts/test-completed-private-runtime-workflow-inverse.mjs';
+  assert.equal(scripts['test:weather-source-critical'].split(group).length,2);
+  assert.equal(scripts['validate:source:checks'].split(inverse).length,2);
+  const previous={...scripts,
+    'test:weather-source-critical':scripts['test:weather-source-critical'].replace(group,()=>old),
+    'validate:source:checks':scripts['validate:source:checks'].replace(inverse,()=>''),
+  };
+  assert.equal(sha(canonical(previous)),'9975859065142d025c5a9a75b5a2045c304aec8a2e109bccb2f27da6d0e7da3b',
+    'Both entire preceding field values and every unrelated script survive');
+  const commands=expandSourceCommands(scripts,'validate:source:checks'),plan=buildSourceValidationPlan(scripts),calls=[];
+  assert.equal(commands.length,75);
+  assert.equal(runSourceValidation(plan,{execute(command){calls.push(command);return 0;},log(){}}),0);
+  assert.deepEqual(calls,[...plan.preflight,...plan.remaining,plan.gate]);
+  const added=['python -B scripts/test-weather-acquisition-plan.py','python -B scripts/test-open-meteo-donor-bank.py',
+    'node --test scripts/test-completed-private-runtime-workflow-inverse.mjs'];
+  for(const values of [commands,calls]){
+    for(const command of [...added,old])assert.equal(values.filter(value=>value===command).length,1);
+  }
+  assert.deepEqual(commands.filter(command=>!added.includes(command)),expandSourceCommands(previous,'validate:source:checks'),
+    'All original command order and multiplicities survive before the old72-command oracles');
+  return previous;
+}
+
 // Exact read-only source-plan qualification for compact forecast sharing.
 // This grants no model/native/public authority and removes only this one
 // reviewed registration before the unchanged historical command-map oracles.
 export function inverseReviewedForecastShareProjectionSourceScripts(scripts){
   assert.equal(arguments.length,1);assert(scripts&&Object.getPrototypeOf(scripts)===Object.prototype);
   assert(Object.values(scripts).every(value=>typeof value==='string'));
+  if(sha(canonical(scripts))==='fd4857146f205c9dc04248c642807456e01cdf47d6087de026ddd5f9c2316663')scripts=inverseReviewedDmiScalarGapSourceScripts(scripts);
   assert.equal(sha(canonical(scripts)),'9975859065142d025c5a9a75b5a2045c304aec8a2e109bccb2f27da6d0e7da3b',
     'Only the entire reviewed592 command map plus one compact-sharing target');
   const command='node scripts/test-forecast-share-projection.mjs';
@@ -96,6 +128,7 @@ export function inverseAssistantPublic587SuccessorSourceScripts(scripts){
 export function inverseAssistantPublic588SuccessorSourceScripts(scripts){
   assert.equal(arguments.length,1);assert(scripts&&Object.getPrototypeOf(scripts)===Object.prototype);
   assert(Object.values(scripts).every(value=>typeof value==='string'));
+  if(sha(canonical(scripts))==='fd4857146f205c9dc04248c642807456e01cdf47d6087de026ddd5f9c2316663')scripts=inverseReviewedDmiScalarGapSourceScripts(scripts);
   if(sha(canonical(scripts))==='9975859065142d025c5a9a75b5a2045c304aec8a2e109bccb2f27da6d0e7da3b')
     scripts=inverseReviewedForecastShareProjectionSourceScripts(scripts);
   assert.equal(sha(canonical(scripts)),'ecd611d8379143b1a046eb7f77c422a6f8bab9aae72847ec90ec6416afb2c563',

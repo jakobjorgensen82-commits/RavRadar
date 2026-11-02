@@ -1,3 +1,11 @@
+## 2. november — de historiske kildeprøver bevarer deres oprindelige input
+
+Den første samlede kontrol af DMI-kandidaten stoppede i to gamle inputkontrakter: den udvidede kommandofortegnelse og den flyttede scalar-kalder i updateren. De 32 afslag er kortlagt til disse to fælles årsager; de er ikke i sig selv bevis for fejl i nye vejrdata.
+
+Den afgrænsede efterfølger genskaber kun de præcist gennemgåede, hele forgængerinput ved de eksisterende testlæsegrænser. Gamle størrelser, hashes, assertions og funktionelle prøver bevares. Ukendte eller ændrede bytes afvises fortsat, mens de nye normale DMI-/loaderprøver læser den faktiske nye kode. Ingen produktionsværdi, scoreformel, kildeprioritet, administratoropsætning, geometri eller SQL ændres.
+
+Den fælles package-helper er et beskyttet native-kontrolinput. Dens ændring kræver derfor korrekt ny samlet kvalifikation; tidligere native-bevis må ikke kaldes uændret eller stiltiende genbruges. Normale målprøver, præcis GitHub-kvalifikation og faktisk vejreffekt er fortsat særskilte krav. Aktuelle kørsler og fejlevidens står i det private checkpoint.
+
 ## 2. november — åben DMI-hale: gyldig reserve er ikke et tomt hul
 
 Den lokale kandidat retter den påviste sammenblanding af native opgraderinger og reelle scalar-mangler samt tab af per-PART- og TREND/T+3-afgrænsning i hentekøen. Normale lokale kaldere består; præcis CI og ny offentlig effekt er åbne. Ingen upstream- eller dækningsgaranti følger af kørettelsen. SOURCE-indgangen er særskilt uafsluttet. Se CURRENT_TRUTH, DEC-0261 og håndbog 89.294.
