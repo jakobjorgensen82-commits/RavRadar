@@ -97,6 +97,7 @@ from lib.dmi_bulk_storage import (
 from lib.weather_acquisition_plan import (
     planning_regional_covered_pairs,
     read_current_acquisition_plan,
+    read_qualified_acquisition_plan, scalar_snapshot_paths, scalar_gap_components_at,
 )
 from lib.copernicus_current import (
     COLD_BRIDGE_HOURS,
@@ -927,6 +928,7 @@ def operational_asset_parameter_filter(
     valid_time: str,
     model_run: str,
     required_current_valid_times: set[str],
+    *, scalar_gap_components: frozenset[str] = frozenset(),
 ) -> set[str] | None:
     """Keep exact hourly current proof without oversampling optional fields.
 
@@ -940,7 +942,15 @@ def operational_asset_parameter_filter(
         and valid_time in required_current_valid_times
         and not stride_selected(valid_time, model_run)
     ):
-        return set(REQUIRED_TARGETS["marine"])
+        parameters = set(REQUIRED_TARGETS["marine"])
+        # These are the same native hourly assets already required by CURRENT.
+        # Only qualified retained value gaps request optional fields between
+        # stride hours. The unchanged decoder still admits actual field/cell data.
+        if "waterTemperature" in scalar_gap_components:
+            parameters.add("water-temperature")
+        if "wind" in scalar_gap_components:
+            parameters.update(("wind-tail-u-10m", "wind-tail-v-10m"))
+        return parameters
     return None
 
 
@@ -2527,6 +2537,46 @@ DKSS_PRIMARY_STRIDE_REQUIRED_COMPONENTS = {
 }
 
 
+def qualified_scalar_gap_components_for_asset(
+    plan: dict[str, Any] | None, collection: str, valid_time: str,
+    target_ids: list[str],
+) -> frozenset[str] | None:
+    """Scope retained demand through normal parameter-zone admission only.
+
+    Public PART parent identities come from the exact validated target registry.
+    This never predicts a wet cell or admits a decoded value. SOURCE-based water
+    needs remain water-only; real SOURCE sampling stays in parameter_zones.
+    """
+    if plan is None or collection not in MARINE_COLLECTIONS:
+        return None
+    try:
+        if not target_ids or len(set(target_ids)) != len(target_ids):
+            return None
+        parents = plan["parentZoneIds"]
+        if any(part_id not in parents or not isinstance(parents[part_id], str)
+               or not parents[part_id] for part_id in target_ids):
+            return None
+        # Only the existing target-role/parent metadata is projected for this
+        # scheduler query. No point, SOURCE identity, cache row or proof changes.
+        zones = [{"id": f"PART::{part_id}", "parentZoneId": parents[part_id],
+                  "coastalPart": True} for part_id in target_ids]
+        component_fields = {
+            "wind": DKSS_PRIMARY_STRIDE_REQUIRED_COMPONENTS["windTail"],
+            "waterLevel": DKSS_PRIMARY_ALWAYS_REQUIRED_COMPONENTS["waterLevel"],
+            "waterTemperature": DKSS_PRIMARY_STRIDE_REQUIRED_COMPONENTS["waterTemperature"],
+        }
+        result: set[str] = set()
+        for component, fields in component_fields.items():
+            eligible = {zone["id"] for zone in parameter_zones(collection, fields[0], zones)}
+            part_ids = [part_id for part_id in target_ids if f"PART::{part_id}" in eligible]
+            if component in scalar_gap_components_at(plan, valid_time, part_ids=part_ids):
+                result.add(component)
+        return frozenset(result)
+    except (KeyError, TypeError, ValueError):
+        # Unknown context preserves the old conservative native classification.
+        return None
+
+
 def _exact_validated_dmi_component_present(
     zone_id: str,
     zone: Any,
@@ -2611,6 +2661,7 @@ def classify_dkss_primary_asset(
     required_valid_times: set[str] | None = None,
     regional_current_gap_count: int = 0,
     require_native_grid_sampling: bool = False,
+    scalar_gap_plan: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     """Classify one DKSS asset as critical work or safe refresh-only work.
 
@@ -2621,7 +2672,8 @@ def classify_dkss_primary_asset(
     optional overview weather, not an integrated-score input; its absence
     must not make an asset critical. Other components still require finite
     values and native DMI provenance. Optional temperature/wind-tail fields
-    remain stride-bound.
+    remain stride-bound unless the qualified retained plan identifies a real
+    value gap at that exact native hour. Unknown planning preserves old priority.
     """
     if not enabled or collection not in MARINE_COLLECTIONS:
         return {
@@ -2644,6 +2696,13 @@ def classify_dkss_primary_asset(
     normalized_targets = sorted({str(value or "").strip() for value in target_ids if str(value or "").strip()})
     normalized_zones = sorted({str(value or "").strip() for value in active_zone_ids if str(value or "").strip()})
     missing_components: set[str] = set()
+    scoped_scalar_gaps = (qualified_scalar_gap_components_for_asset(
+        scalar_gap_plan, collection, valid_time, normalized_targets,
+    ) if valid_time else None)
+    scalar_domain_qualified = scoped_scalar_gaps is not None
+    retained_scalar_gaps = scoped_scalar_gaps or frozenset()
+    scalar_native_kinds = {"wind": "windTail", "waterLevel": "waterLevel",
+                           "waterTemperature": "waterTemperature"}
     valid_regional_gap_count = (
         regional_current_gap_count
         if type(regional_current_gap_count) is int
@@ -2696,6 +2755,10 @@ def classify_dkss_primary_asset(
             required_components.pop("current", None)
         if not private_support and stride_selected(valid_time, canonical_run):
             required_components.update(DKSS_PRIMARY_STRIDE_REQUIRED_COMPONENTS)
+        for component in retained_scalar_gaps:
+            native_kind = scalar_native_kinds[component]
+            if native_kind in DKSS_PRIMARY_STRIDE_REQUIRED_COMPONENTS:
+                required_components[native_kind] = DKSS_PRIMARY_STRIDE_REQUIRED_COMPONENTS[native_kind]
         for component, fields in required_components.items():
             if component == "current":
                 # The exact native PART matrix is counted independently above;
@@ -2727,6 +2790,7 @@ def classify_dkss_primary_asset(
             missing_components.add("currentUpgrade")
     if valid_regional_gap_count:
         missing_components.add("regionalCurrent")
+    missing_components.update(scalar_native_kinds[key] for key in retained_scalar_gaps)
 
     critical = bool(missing_components)
     critical_priority = (
@@ -2734,6 +2798,12 @@ def classify_dkss_primary_asset(
         else 1 if current_upgrade_pair_count
         else 2
     )
+    if scalar_domain_qualified:
+        # Native deficits remain required work. Only the normal qualified
+        # production union distinguishes their takeover from real value gaps.
+        critical_priority = (0 if retained_scalar_gaps or current_missing_pair_count
+                             or valid_regional_gap_count or "configuration" in missing_components
+                             else 1 if critical else 2)
     result = {
         "critical": critical,
         "deferValidRefresh": not critical,
@@ -2782,6 +2852,38 @@ def load_current_acquisition_planning_pairs(
         "coveredPairCount": len(pairs),
     })
     return pairs, diagnostics
+
+
+def load_qualified_scalar_acquisition_planning(
+    targets: list[dict[str, Any]], reference: datetime,
+    current_pairs: set[tuple[str, str]] | None,
+) -> tuple[dict[str, Any] | None, dict[str, Any]]:
+    """Recheck the same restored bytes; this is priority, never admission."""
+    plan_path = str(os.getenv("DMI_BULK_QUALIFIED_ACQUISITION_PLAN_PATH", "")).strip()
+    snapshot_path = str(os.getenv("DMI_BULK_SCALAR_SNAPSHOT_PATH", "")).strip()
+    current_path = str(os.getenv("DMI_BULK_CURRENT_ACQUISITION_PLAN_PATH", "")).strip()
+    historical_path = str(os.getenv("DMI_PART_CONTINUITY_DONOR_PATH", "")).strip()
+    diagnostics = {"present": bool(plan_path), "valid": False,
+                   "scope": "conservative-native-priority"}
+    if not plan_path:
+        return None, diagnostics
+    try:
+        if current_pairs is None or not snapshot_path or not current_path:
+            raise ValueError("QUALIFIED_SCALAR_CONTEXT_UNAVAILABLE")
+        compiled = read_qualified_acquisition_plan(
+            plan_path, current_plan_path=current_path, targets=targets,
+            production_reference_at=canonical_time(reference),
+            snapshot_paths=scalar_snapshot_paths(pathlib.Path.cwd(), snapshot_path, historical_path or None),
+            check_continue=lambda: not should_stop_work(),
+        )
+        if compiled.pop("currentCoveredPairs") != current_pairs:
+            raise ValueError("QUALIFIED_CURRENT_PLAN_CHANGED")
+    except (OSError, UnicodeError, ValueError, TypeError, KeyError, RecursionError):
+        diagnostics["failureCode"] = "QUALIFIED_SCALAR_PLAN_UNUSABLE"
+        return None, diagnostics
+    diagnostics.update({"valid": True, "scope": "qualified-retained-value-gaps-before-native-takeover",
+                        "sourceAdmission": False})
+    return compiled, diagnostics
 
 
 def dkss_collection_deferred_only(run_info: dict[str, Any], asset_count: int) -> bool:
@@ -15050,6 +15152,10 @@ def main() -> int:
             coastal_part_targets, locked_production_reference,
         )
     )
+    qualified_scalar_gap_plan, scalar_acquisition_diagnostics = load_qualified_scalar_acquisition_planning(
+        coastal_part_targets, locked_production_reference, global_current_planning_pairs,
+    )
+    result["diagnostics"]["qualifiedScalarAcquisitionPlan"] = scalar_acquisition_diagnostics
     current_part_zone_ids = {f"PART::{part_id}" for part_id in current_target_ids}
     acquisition_plan_diagnostics["optionalParentCurrentCount"] = sum(
         zone_id not in current_part_zone_ids
@@ -15335,6 +15441,7 @@ def main() -> int:
                     active_zone_ids=active_production_zone_ids,
                     enabled=True,
                     require_native_grid_sampling=True,
+                    scalar_gap_plan=qualified_scalar_gap_plan,
                     planning_covered_pair_keys=initial_planning_current_pairs,
                     required_valid_times=required_current_valid_times,
                     regional_current_gap_count=len(
@@ -15956,6 +16063,7 @@ def main() -> int:
                         active_zone_ids=active_production_zone_ids,
                         enabled=DKSS_PRIMARY_MODE,
                         require_native_grid_sampling=True,
+                        scalar_gap_plan=qualified_scalar_gap_plan,
                         planning_covered_pair_keys=planning_current_pairs,
                         required_valid_times=required_current_valid_times,
                         regional_current_gap_count=len(
@@ -16540,6 +16648,7 @@ def main() -> int:
                         active_zone_ids=active_production_zone_ids,
                         enabled=True,
                         require_native_grid_sampling=True,
+                        scalar_gap_plan=qualified_scalar_gap_plan,
                         planning_covered_pair_keys=(
                             planning_current_pairs
                             if global_current_planning_pairs is not None else None
@@ -16865,6 +16974,10 @@ def main() -> int:
                             asset["valid"],
                             asset_model_run,
                             required_current_valid_times,
+                            scalar_gap_components=qualified_scalar_gap_components_for_asset(
+                                qualified_scalar_gap_plan, collection, asset["valid"],
+                                current_target_ids,
+                            ) or frozenset(),
                         )
                         operational_wave_asset = (
                             MappingWaveAsset(
@@ -17533,6 +17646,7 @@ def main() -> int:
                                         ),
                                         enabled=DKSS_PRIMARY_MODE,
                                         require_native_grid_sampling=True,
+                                        scalar_gap_plan=qualified_scalar_gap_plan,
                                         planning_covered_pair_keys=(
                                             planning_current_pairs
                                         ),

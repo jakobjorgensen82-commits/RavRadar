@@ -1,3 +1,9 @@
+## 2. november — kvalificerede datahuller før native opgraderinger, lokal kandidat
+
+Den samlede lokale DMI-kandidat skelner reelle mangler fra allerede dækkede timer med manglende native opgradering. Den genbruger den normale bevarede femkomponentfortolkning og centrale SOURCE-vandstandsrouting før DMI. Per-PART-mangler, TREND ved T og privat T+3 bevares, og den eksisterende parameter-/zoneadgang afgrænser hver samlings prioritet og ekstra feltlæsning. Ukendt kontekst beholder den konservative native vej.
+
+Otte relevante normale lokale kaldere består på den faktiske samlede kandidat. De tidligere hele workflow-orakler er bevaret gennem én præcis inverse; de to manglende almindelige kildekalderindgange er tilkoblet uden dobbelt udførelse. Præcis GitHub-kontrol, sikker merge og målt effekt i en ny almindelig generation er åbne. Ingen ny version, C/I/T, SQL, geometri, scoreformel, kildeprioritet eller tidsbudget. SOURCE forbliver særskilt og inaktiv. Aktuelle kørsler og private måletal føres kun i checkpointet. Se DEC-0261 og håndbog 89.294.
+
 ## 1. november — privat statistik: installeret 007, lokal enable-kandidat
 
 007 er faktisk installeret gennem den normale private controller med verificeret Worker-OFF og genåbnet D1. Den nye lokale kandidat tilføjer kun en særskilt, fast bekræftet enable-operation i det eksisterende workflow. Den bevarer standard OFF og de normale kilde-, main-, schema-, bindings-, vedligeholdelses- og readback-kontroller. Enable starter ingen rapport, datajob eller budgetbelastning.

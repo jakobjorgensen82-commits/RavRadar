@@ -5,6 +5,10 @@ import ast
 import copy
 import importlib.util
 import inspect
+import json
+import subprocess
+import runpy
+import tempfile
 import os
 import sys
 import types
@@ -962,3 +966,350 @@ def check_first_turn_order_is_detached_observation():
 check_single_asset_operational_attestation_scope()
 check_first_turn_order_is_detached_observation()
 print("DMI DKSS primary-mode contract OK")
+
+
+NODE_NORMAL_SCALAR_FIXTURE = r"""
+import assert from 'node:assert/strict';
+import {createHash} from 'node:crypto';
+import {encodeRetainedScalarNeeds} from './scripts/plan-weather-scalar-acquisition.mjs';
+import fs from 'node:fs';
+import {fileURLToPath} from 'node:url';
+import {buildPartDmiForecastWithProtectedRetention,haversineKm} from './scripts/lib/private-dmi-recovery-record.mjs';
+import {verifiedIntegratedPartHourly,dmiExpectedIdentityForPart} from './scripts/lib/ravscore-production-adapters.mjs';
+import {buildWaterSourceForecastIndex,applyVerifiedWaterSourceRoutingToPartHourly} from './scripts/lib/water-source-forecast-routing.mjs';
+import {buildWeatherComponentNeeds} from './scripts/lib/weather-component-needs.mjs';
+import {dmiMarineCollectionAllowedForZone} from './scripts/lib/dmi-marine-zone-exclusions.mjs';
+import {dmiWaterSourceFixture} from './scripts/test-helpers/dmi-water-source-fixture.mjs';
+globalThis.fetch=()=>{throw Error('REGRESSION_NETWORK_FORBIDDEN');};
+const H0='2026-01-01T00:00:00.000Z',HOUR=3600000;
+const time=i=>new Date(Date.parse(H0)+i*HOUR).toISOString();
+const part={partId:'TEST',zoneId:'ZONE-TEST',parentZoneId:'ZONE-TEST',waterPoint:[2,1],onshoreDirectionDeg:90};
+const identity=dmiExpectedIdentityForPart(part);
+const fixtureText=fs.readFileSync(new URL('./scripts/test-dmi-protected-tuple-continuity.mjs',import.meta.url),'utf8');
+const from=fixtureText.indexOf("const vectorSelection ="),until=fixtureText.indexOf('const options =',from);
+assert(from>=0&&until>from,'EXISTING_NATIVE_FIXTURE_BOUNDARY');
+const fixture=Function('part','identity','time',fixtureText.slice(from,until)+';return {row,bulk};')(part,identity,time);
+const persisted=Array.from({length:121},(_,i)=>fixture.row(i));
+for(const row of persisted){delete row.waterLevelCm;delete row.sources.waterLevel;}
+const feature={type:'Feature',geometry:{type:'Point',coordinates:part.waterPoint},properties:{id:identity.entityId,dataPoint:part.waterPoint,onshoreDirectionDeg:90}};
+const retained=buildPartDmiForecastWithProtectedRetention(feature,fixture.bulk,null,H0,{startAt:H0,expectedIdentity:identity,persistedHourly:persisted});
+const qualified=verifiedIntegratedPartHourly(retained,fixture.bulk,identity.entityId,part,{requireNativeGridSampling:false});
+assert.equal(qualified.length,121,'NORMAL_RETENTION_PRESERVES_PRIVATE_SUPPORT');
+const station={sourceKey:'tidewater:SYNTHETIC',stationId:'SYNTHETIC',name:'Syntetisk kilde',sourceType:'forecast-point',point:[2,1],registryStatus:'active-forecast-point',properties:{status:'Active'}};
+const parentFeature={properties:{id:part.zoneId,name:'Syntetisk zone',dataPoint:part.waterPoint,coastLine:[[1.9,1],[2.1,1]],onshoreDirectionDeg:90}};
+const routing={zones:{[part.zoneId]:{enabled:true,requireAll:true,method:'manual-weights',stations:[{sourceKey:station.sourceKey,weight:1}]}}};
+function route(offsets,hourly=qualified){const sourceRows=Object.fromEntries(offsets.map(i=>[time(i),dmiWaterSourceFixture(station,time(i),20+i,H0)]));const bulk={generatedAt:H0,timeStrideHours:1,zones:{['SOURCE::'+station.sourceKey]:{hourly:sourceRows}}};const index=buildWaterSourceForecastIndex([station],bulk,H0);assert.equal(index.size,1,'NORMAL_SOURCE_NATIVE_QUALIFICATION');return applyVerifiedWaterSourceRoutingToPartHourly({part,parentFeature,hourly,sources:[station],index,routing,haversineKm:()=>1,diagnosticReferenceAt:H0}).hourly;}
+const routed=route(Array.from({length:49},(_,i)=>i));
+const needs=buildWeatherComponentNeeds({parts:[part],productionReferenceAt:H0,readVerifiedHourly:()=>routed});
+const gapAt=i=>needs.needs.filter(n=>n.validTime===time(i)&&n.purpose==='GAP').map(n=>[n.component,n.gapReason]);
+assert.deepEqual(gapAt(4),[],'EARLY_SOURCE_AND_PART_MUST_BE_ACTUALLY_QUALIFIED');
+assert.deepEqual(gapAt(96),[['waterLevel','VALUE_GAP']],'LATE_SCALAR_GAP_MUST_REMAIN_REAL');
+assert.equal(routed[4].waterLevelProvenance.status,'verified');assert.equal(routed[4].waterLevelProvenance.provider,'dmi');
+assert(Number.isFinite(routed[4].waterLevelTrendCm3h),'SOURCE_T_PLUS_3_MUST_BE_VERIFIED');
+const tailWithSupport=route([117,120]);const tailWithoutSupport=route([117]);
+const tailPlan=buildWeatherComponentNeeds({parts:[part],productionReferenceAt:H0,readVerifiedHourly:()=>tailWithoutSupport});
+assert(Number.isFinite(tailWithSupport[117].waterLevelTrendCm3h),'SOURCE_EXACT_H120_SUPPORT');
+assert.equal(tailWithoutSupport[117].waterLevelTrendCm3h,null);
+assert(tailPlan.needs.some(n=>n.validTime===time(117)&&n.component==='waterLevel'&&n.gapReason==='TREND_GAP'));
+assert(tailPlan.privateSupportNeeds.some(n=>n.validTime===time(120)&&n.component==='waterLevel'));
+const seven=['DK-B01-01','DK-B01-02','DK-B02-08','DK-B02-09','DK-B02-11','DK-B03-01','DK-B03-02'];
+for(const zone of seven){assert(dmiMarineCollectionAllowedForZone('dkss_lf',zone,'waterLevel'));assert(!dmiMarineCollectionAllowedForZone('dkss_lf',zone,'current'));assert(!dmiMarineCollectionAllowedForZone('dkss_lf',zone,'waterTemperature'));}
+assert(dmiMarineCollectionAllowedForZone('dkss_lf','DK-B05-17','current'),'OWN_LIMFJORD_INPUT_NOT_EXCLUDED');
+const currentCoveredAt=i=>routed[i].currentProvenance?.status==='verified'&&Number.isFinite(routed[i].currentSpeedMps)&&Number.isFinite(routed[i].currentDirectionDeg);
+assert(currentCoveredAt(4)&&currentCoveredAt(96),'NORMAL_PART_CURRENT_ADMISSION');
+
+const optionalPersisted=structuredClone(persisted);
+for(const row of optionalPersisted.slice(90)){
+  delete row.windSpeedMps;delete row.windDirectionDeg;delete row.sources.wind;
+  delete row.waterTemperatureC;delete row.sources.waterTemperature;
+}
+const optionalRetained=buildPartDmiForecastWithProtectedRetention(feature,fixture.bulk,null,H0,
+  {startAt:H0,expectedIdentity:identity,persistedHourly:optionalPersisted});
+const optionalQualified=verifiedIntegratedPartHourly(optionalRetained,fixture.bulk,identity.entityId,part,
+  {requireNativeGridSampling:false});
+const optionalRouted=route(Array.from({length:49},(_,i)=>i),optionalQualified);
+const optionalNeeds=buildWeatherComponentNeeds({parts:[part],productionReferenceAt:H0,
+  readVerifiedHourly:()=>optionalRouted});
+// Pure schema encoding only. These test tags cannot pass the physical snapshot
+// reader; original-file admission is independently exercised in its own case.
+const tag={bytes:Buffer.byteLength(fixtureText),sha256:'sha256:'+createHash('sha256').update(fixtureText).digest('hex')};
+const snapshots=Object.fromEntries(['dmi','parts','zones','forecast','stations','deployed','routing',
+  'selection','openMeteo','copernicus','pointState'].map(role=>[role,tag]));
+const encode=plan=>encodeRetainedScalarNeeds({productionReferenceAt:H0,parts:[part],
+  needs:plan.needs.filter(row=>['wind','waterLevel','waterTemperature'].includes(row.component)),
+  privateSupportNeeds:plan.privateSupportNeeds,snapshotInputHashes:snapshots});
+
+function collectionDomainFixture(){
+  const H0='2026-08-05T06:00:00.000Z',time=i=>new Date(Date.parse(H0)+i*3600000).toISOString();
+  const parts=[{partId:'DOMAIN-EXCLUDED',zoneId:'DK-B02-09',parentZoneId:'DK-B02-09',waterPoint:[10,56],onshoreDirectionDeg:90},
+    {partId:'DOMAIN-LIMFJORD',zoneId:'DK-B05-17',parentZoneId:'DK-B05-17',waterPoint:[10,56],onshoreDirectionDeg:90}];
+  const waterText=fs.readFileSync(new URL('./scripts/test-water-source-forecast-routing-4.0.100.mjs',import.meta.url),'utf8');
+  const begin=waterText.indexOf('const rows=(base,collection,key,samplingPoint)=>');
+  const end=waterText.indexOf('\nconst sources=[',begin);
+  assert(begin>=0&&end>begin,'EXISTING_NORMAL_WATER_SOURCE_FIXTURE');
+  const station={sourceKey:'tidewater:DOMAIN',stationId:'DOMAIN',name:'Syntetisk LF-kilde',sourceType:'forecast-point',
+    point:[10,56],registryStatus:'active-forecast-point'};
+  const sourceRows=times=>Function('times','generatedAt',waterText.slice(begin,end)+';return rows;')(times,H0)
+    (0,'dkss_lf',station.sourceKey,station.point);
+  const times=Array.from({length:41},(_,i)=>time(i*3));
+  const build=(part,sourceTimes=times)=>{
+    const identity=dmiExpectedIdentityForPart(part);
+    const native=Function('part','identity','time',fixtureText.slice(from,until)+';return {row,bulk};')(part,identity,time);
+    const persisted=Array.from({length:121},(_,i)=>native.row(i));
+    for(const [i,row] of persisted.entries()){
+      delete row.waterLevelCm;delete row.sources.waterLevel;
+      if(part===parts[0]&&i>=4&&i<=40){delete row.windSpeedMps;delete row.windDirectionDeg;delete row.sources.wind;
+        delete row.waterTemperatureC;delete row.sources.waterTemperature;}
+      if(part===parts[1]&&i>=90){delete row.waterTemperatureC;delete row.sources.waterTemperature;}
+    }
+    const feature={type:'Feature',geometry:{type:'Point',coordinates:part.waterPoint},
+      properties:{id:identity.entityId,dataPoint:part.waterPoint,onshoreDirectionDeg:90}};
+    const retained=buildPartDmiForecastWithProtectedRetention(feature,native.bulk,null,H0,
+      {startAt:H0,expectedIdentity:identity,persistedHourly:persisted});
+    const qualified=verifiedIntegratedPartHourly(retained,native.bulk,identity.entityId,part,{requireNativeGridSampling:false});
+    const bulk={generatedAt:H0,timeStrideHours:3,zones:{['SOURCE::'+station.sourceKey]:{hourly:sourceRows(sourceTimes)}}};
+    const index=buildWaterSourceForecastIndex([station],bulk,H0);assert.equal(index.size,1);
+    const parentFeature={properties:{id:part.zoneId,name:'Syntetisk zone',dataPoint:part.waterPoint,
+      coastLine:[[9.9,56],[10.1,56]],onshoreDirectionDeg:90}};
+    const routing={zones:{[part.zoneId]:{enabled:true,requireAll:true,method:'manual-weights',
+      stations:[{sourceKey:station.sourceKey,weight:1}]}}};
+    return applyVerifiedWaterSourceRoutingToPartHourly({part,parentFeature,hourly:qualified,sources:[station],
+      index,routing,haversineKm,diagnosticReferenceAt:H0}).hourly;
+  };
+  const hourly=new Map(parts.map(part=>[part.partId,build(part)]));
+  const domainNeeds=buildWeatherComponentNeeds({parts,productionReferenceAt:H0,
+    readVerifiedHourly:part=>hourly.get(part.partId)});
+  const encodeDomain=plan=>encodeRetainedScalarNeeds({productionReferenceAt:H0,parts,
+    needs:plan.needs.filter(row=>['wind','waterLevel','waterTemperature'].includes(row.component)),
+    privateSupportNeeds:plan.privateSupportNeeds,snapshotInputHashes:snapshots});
+  const currentPairs=parts.flatMap(part=>hourly.get(part.partId).slice(0,118).filter(row=>
+    row.currentProvenance?.status==='verified'&&Number.isFinite(row.currentSpeedMps)
+      &&Number.isFinite(row.currentDirectionDeg)).map(row=>[part.partId,row.time]));
+  assert.equal(currentPairs.length,236,'NORMAL_QUALIFIED_PART_CURRENT_DOMAIN');
+  const sourceTail=build(parts[0],times.slice(0,-1));
+  assert.equal(sourceTail[117].waterLevelProvenance.collection,'dkss_lf');
+  assert.equal(sourceTail[117].waterLevelProvenance.sourceClass,'verified-dmi-water-source-routing');
+  assert(Number.isFinite(sourceTail[117].waterLevelCm));assert.equal(sourceTail[117].waterLevelTrendCm3h,null);
+  const sourceNeeds=buildWeatherComponentNeeds({parts,productionReferenceAt:H0,
+    readVerifiedHourly:part=>part===parts[0]?sourceTail:hourly.get(part.partId)});
+  assert(sourceNeeds.needs.some(row=>row.partId===parts[0].partId&&row.validTime===time(117)
+    &&row.component==='waterLevel'&&row.gapReason==='TREND_GAP'));
+  assert(sourceNeeds.privateSupportNeeds.some(row=>row.partId===parts[0].partId&&row.validTime===time(120)));
+  return {reference:H0,targets:parts.map(part=>({partId:part.partId,parentZoneId:part.parentZoneId,waterPoint:part.waterPoint})),
+    needs:encodeDomain(domainNeeds),sourceNeeds:encodeDomain(sourceNeeds),early:time(20),late:time(97),
+    sourceT:time(117),sourceSupport:time(120),currentPairs};
+}
+console.log(JSON.stringify({domain:collectionDomainFixture(),waterOnly:encode(needs),optional:encode(optionalNeeds),trend:encode(tailPlan),
+  early:time(4),late:time(96),optionalLate:time(95),currentQualified:[currentCoveredAt(4),currentCoveredAt(96)]}));
+"""
+
+
+def check_qualified_production_gaps_precede_native_only_deficits():
+    # Run the normal PART retention, sanitizer, SOURCE routing and needs builder.
+    # Neither the production classifier priorities nor qualified availability
+    # are supplied by this test. Old native UNKNOWN remains UNKNOWN.
+    from lib.weather_acquisition_plan import validate_scalar_needs, scalar_gap_components_at
+    script = NODE_NORMAL_SCALAR_FIXTURE
+    result = subprocess.run(["node", "--input-type=module", "--eval", script], cwd=ROOT,
+                            capture_output=True, text=True, timeout=30, check=True)
+    document = json.loads(result.stdout)
+    assert document["currentQualified"] == [True, True]
+    early, late, optional_late = map(producer.canonical_time,
+        [document["early"], document["late"], document["optionalLate"]])
+    targets = [TARGET]
+    qualified = validate_scalar_needs(document["waterOnly"], targets=targets,
+                                     production_reference_at=MODEL_RUN)
+    optional = validate_scalar_needs(document["optional"], targets=targets,
+                                    production_reference_at=MODEL_RUN)
+    assert scalar_gap_components_at(qualified, early) == set()
+    assert scalar_gap_components_at(qualified, late) == {"waterLevel"}
+    assert scalar_gap_components_at(optional, optional_late) == {"waterLevel", "wind", "waterTemperature"}
+    # The normal SOURCE value at T is present, but its normal T+3 trend is
+    # missing. Encode/compile must preserve the need at BOTH T and T+3.
+    trend = validate_scalar_needs(document["trend"], targets=targets,
+                                  production_reference_at=MODEL_RUN)
+    trend_time = "2026-01-05T21:00:00Z"  # normal fixture H0 + 117h
+    support_time = "2026-01-06T00:00:00Z"  # the same normal need + 3h
+    assert scalar_gap_components_at(trend, trend_time) == {"waterLevel"}
+    assert scalar_gap_components_at(trend, support_time) == {"waterLevel"}
+    required_trend_times = set(producer.operational_current_valid_times(
+        datetime.fromisoformat(MODEL_RUN.replace("Z", "+00:00"))))
+    trend_zone = cached_zone(trend_time)
+    trend_zone["hourly"][trend_time]["time"] = trend_time
+    assert producer._exact_validated_dmi_component_present(ZONE_ID, trend_zone,
+        trend_time, "waterLevel", ("sea-mean-deviation",))
+    trend_requirement = producer.classify_dkss_primary_asset(collection="dkss_lf",
+        model_run=MODEL_RUN, asset={"valid": trend_time, "id": "normal-trend-gap"},
+        target_ids=[TARGET_ID], covered_pair_keys=set(), cached_zones={ZONE_ID: trend_zone},
+        active_zone_ids=[ZONE_ID], enabled=True,
+        planning_covered_pair_keys={(TARGET_ID, trend_time)},
+        required_valid_times=required_trend_times, require_native_grid_sampling=True,
+        scalar_gap_plan=trend)
+    assert trend_requirement["criticalPriority"] == 0
+    assert "waterLevel" in trend_requirement["missingComponentKinds"]
+    support_requirement = producer.classify_dkss_primary_asset(collection="dkss_lf",
+        model_run=MODEL_RUN,
+        asset={"valid": support_time, "id": "normal-private-support", "privateComponentSupport": True},
+        target_ids=[TARGET_ID], covered_pair_keys=set(), cached_zones={},
+        active_zone_ids=[ZONE_ID], enabled=True, planning_covered_pair_keys=set(),
+        required_valid_times=required_trend_times, require_native_grid_sampling=True,
+        scalar_gap_plan=trend)
+    assert support_requirement["criticalPriority"] == 0
+    assert support_requirement["currentMissingPairCount"] == 0
+    assert support_requirement["currentNativeDeficitCount"] == 0
+    cache = {ZONE_ID: cached_zone(early)}
+    for valid in (late, optional_late): cache[ZONE_ID]["hourly"].update(cached_zone(valid)["hourly"])
+    for valid in (early, late, optional_late):
+        hour = cache[ZONE_ID]["hourly"][valid]; hour["time"] = valid
+        hour.pop("sea-mean-deviation"); hour["sources"].pop("waterLevel")
+    planning = {(TARGET_ID, value) for value in (early, late, optional_late)}
+    required = set(producer.operational_current_valid_times(datetime.fromisoformat(MODEL_RUN.replace("Z", "+00:00"))))
+    assets = [{"valid": early, "id": "covered-native-deficit"}, {"valid": late, "id": "genuine-gap"}]
+    def classify_all(plan):
+        return {asset["valid"]: producer.classify_dkss_primary_asset(collection="dkss_lf",
+            model_run=MODEL_RUN, asset=asset, target_ids=[TARGET_ID], covered_pair_keys=set(),
+            cached_zones=cache, active_zone_ids=[ZONE_ID], enabled=True,
+            planning_covered_pair_keys=planning, required_valid_times=required,
+            require_native_grid_sampling=True, scalar_gap_plan=plan) for asset in assets}
+    old = classify_all(None); new = classify_all(qualified)
+    assert old[early]["criticalPriority"] == old[late]["criticalPriority"] == 0
+    assert new[early]["critical"] and not new[early]["deferValidRefresh"]
+    assert new[early]["criticalPriority"] == 1 and new[late]["criticalPriority"] == 0
+    assert new[early]["currentUpgradePairCount"] == 1
+    for requirements, expected in ((old, ["covered-native-deficit", "genuine-gap"]),
+                                   (new, ["genuine-gap", "covered-native-deficit"])):
+        for suffix in (assets, list(assets)):
+            ordered = producer.prioritize_dkss_primary_assets(suffix, [TARGET_ID], planning, requirements,
+                direct_valid_times=required, regional_gap_pairs_by_time={},
+                verified_reusable_valid_times=set(), critical_cursor_valid_time=None)
+            assert [row["id"] for row in ordered] == expected
+    # Non-stride optional fields come from the same required native hour asset.
+    assert not producer.stride_selected(optional_late, MODEL_RUN)
+    original_filter = producer.operational_asset_parameter_filter("dkss_lf", optional_late, MODEL_RUN, required)
+    gap_filter = producer.operational_asset_parameter_filter("dkss_lf", optional_late, MODEL_RUN, required,
+        scalar_gap_components=scalar_gap_components_at(optional, optional_late))
+    assert original_filter == set(producer.REQUIRED_TARGETS["marine"])
+    assert gap_filter == original_filter | {"water-temperature", "wind-tail-u-10m", "wind-tail-v-10m"}
+    assert producer.operational_asset_parameter_filter("dkss_lf", optional_late, MODEL_RUN, required,
+        scalar_gap_components=scalar_gap_components_at(qualified, early)) == original_filter
+    # Actual CURRENT holes keep their class even if scalar needs are covered.
+    actual_current_gap = producer.classify_dkss_primary_asset(collection="dkss_lf", model_run=MODEL_RUN,
+        asset=assets[0], target_ids=[TARGET_ID], covered_pair_keys=set(), cached_zones=cache,
+        active_zone_ids=[ZONE_ID], enabled=True, planning_covered_pair_keys=set(),
+        required_valid_times=required, require_native_grid_sampling=True, scalar_gap_plan=qualified)
+    assert actual_current_gap["criticalPriority"] == 0 and actual_current_gap["currentMissingPairCount"] == 1
+    # Collection selection, both time plans and the native filter share the plan.
+    calls = [node for node in ast.walk(main_tree) if isinstance(node, ast.Call)
+             and isinstance(node.func, ast.Name) and node.func.id == "classify_dkss_primary_asset"]
+    assert len(calls) == 4
+    for call in calls:
+        assert any(keyword.arg == "scalar_gap_plan" and isinstance(keyword.value, ast.Name)
+                   and keyword.value.id == "qualified_scalar_gap_plan" for keyword in call.keywords)
+    # Reuse the existing normal planning-file fixture for the actual DMI reader.
+    # This checks fixed paths and whole file hashes, not provider-value admission.
+    fixture = runpy.run_path(str(ROOT / "scripts/test-weather-acquisition-plan.py"))
+    from lib.weather_acquisition_plan import build_qualified_acquisition_plan
+    with tempfile.TemporaryDirectory() as root:
+        scalar, _ = fixture["QualifiedScalarPlanTests"]().make_scalar(root,
+            value_gaps=[(0, 96, "wind")])
+        current = fixture["plan"]()
+        target_rows = fixture["TARGETS"]
+        reference = fixture["BASE"]
+        qualified_path = Path(root) / "v2.json"
+        current_path = Path(root) / "v1.json"
+        current_path.write_text(json.dumps(current), encoding="utf-8")
+        qualified_path.write_text(json.dumps(build_qualified_acquisition_plan(current, scalar,
+            targets=target_rows, production_reference_at=reference)), encoding="utf-8")
+        previous = os.getcwd()
+        try:
+            os.chdir(root)
+            with patch.dict(os.environ, {
+                "DMI_BULK_QUALIFIED_ACQUISITION_PLAN_PATH": str(qualified_path),
+                "DMI_BULK_CURRENT_ACQUISITION_PLAN_PATH": str(current_path),
+                "DMI_BULK_SCALAR_SNAPSHOT_PATH": str(Path(root) / "dmi.json"),
+                "DMI_PART_CONTINUITY_DONOR_PATH": "",
+            }):
+                compiled, diagnostic = producer.load_qualified_scalar_acquisition_planning(
+                    target_rows, reference, set())
+                assert diagnostic["valid"] and diagnostic["sourceAdmission"] is False
+                assert scalar_gap_components_at(compiled, fixture["at"](96)) == {"wind"}
+        finally:
+            os.chdir(previous)
+
+    # A real scalar hole in the LF-excluded parent cannot make every LF hour
+    # critical before a later, normally eligible Limfjord temperature gap.
+    domain = document["domain"]
+    domain_reference = datetime.fromisoformat(domain["reference"].replace("Z", "+00:00"))
+    domain_targets = domain["targets"]
+    domain_ids = [row["partId"] for row in domain_targets]
+    domain_plan = validate_scalar_needs(domain["needs"], targets=domain_targets,
+                                      production_reference_at=domain_reference)
+    early_domain, late_domain = map(producer.canonical_time, [domain["early"], domain["late"]])
+    domain_required = set(producer.operational_current_valid_times(domain_reference))
+    domain_current = {(part_id, producer.canonical_time(valid)) for part_id, valid in domain["currentPairs"]}
+    assert scalar_gap_components_at(domain_plan, early_domain) == {"wind", "waterTemperature"}
+    assert scalar_gap_components_at(domain_plan, late_domain) == {"waterTemperature"}
+    domain_assets = [{"valid": early_domain, "id": "ineligible-scalar-native-upgrade"},
+                     {"valid": late_domain, "id": "eligible-scalar-tail"}]
+    def domain_requirement(collection, asset, plan=domain_plan, ids=domain_ids):
+        return producer.classify_dkss_primary_asset(collection=collection,
+            model_run="2026-08-05T00:00:00Z", asset=asset, target_ids=ids,
+            covered_pair_keys=set(), cached_zones={},
+            active_zone_ids=["PART::"+part_id for part_id in ids], enabled=True,
+            planning_covered_pair_keys=domain_current, required_valid_times=domain_required,
+            require_native_grid_sampling=True, scalar_gap_plan=plan)
+    requirements = {asset["valid"]: domain_requirement("dkss_lf", asset) for asset in domain_assets}
+    order = producer.prioritize_dkss_primary_assets(domain_assets, domain_ids, domain_current, requirements,
+        direct_valid_times=domain_required, regional_gap_pairs_by_time={},
+        verified_reusable_valid_times=set(), critical_cursor_valid_time=None)
+    assert [asset["id"] for asset in order] == ["eligible-scalar-tail", "ineligible-scalar-native-upgrade"], \
+        "DMI_COLLECTION_SCALAR_DOMAIN_GAP_REGRESSION"
+    assert requirements[early_domain]["criticalPriority"] == 1
+    assert requirements[early_domain]["critical"] is True
+    assert requirements[late_domain]["criticalPriority"] == 0
+    assert domain_requirement("dkss_idw", domain_assets[0])["criticalPriority"] == 0
+    assert domain_requirement("dkss_lf", domain_assets[0], ids=[domain_ids[1]])["criticalPriority"] == 1
+    early_components = producer.qualified_scalar_gap_components_for_asset(
+        domain_plan, "dkss_lf", early_domain, domain_ids)
+    late_components = producer.qualified_scalar_gap_components_for_asset(
+        domain_plan, "dkss_lf", late_domain, domain_ids)
+    assert early_components == set()
+    assert late_components == {"waterTemperature"}
+    assert producer.qualified_scalar_gap_components_for_asset(
+        domain_plan, "dkss_idw", early_domain, domain_ids) == {"wind", "waterTemperature"}
+    for valid, components, extras in [(early_domain, early_components, set()),
+                                      (late_domain, late_components, {"water-temperature"})]:
+        assert not producer.stride_selected(valid, "2026-08-05T00:00:00Z")
+        actual_filter = producer.operational_asset_parameter_filter("dkss_lf", valid,
+            "2026-08-05T00:00:00Z", domain_required, scalar_gap_components=components)
+        assert actual_filter == set(producer.REQUIRED_TARGETS["marine"]) | extras
+    unknown_context = copy.deepcopy(domain_plan)
+    unknown_context["parentZoneIds"].pop(domain_ids[0])
+    assert producer.qualified_scalar_gap_components_for_asset(
+        unknown_context, "dkss_lf", early_domain, domain_ids) is None
+    assert domain_requirement("dkss_lf", domain_assets[0], unknown_context)["criticalPriority"] == 0
+    source_plan = validate_scalar_needs(domain["sourceNeeds"], targets=domain_targets,
+                                      production_reference_at=domain_reference)
+    source_t = producer.canonical_time(domain["sourceT"])
+    source_support = producer.canonical_time(domain["sourceSupport"])
+    source_requirement = domain_requirement("dkss_lf", {"valid":source_t}, source_plan, [domain_ids[0]])
+    support_requirement = domain_requirement("dkss_lf", {"valid":source_support,"privateComponentSupport":True},
+                                            source_plan, [domain_ids[0]])
+    assert source_requirement["criticalPriority"] == support_requirement["criticalPriority"] == 0
+    assert support_requirement["currentMissingPairCount"] == support_requirement["currentNativeDeficitCount"] == 0
+    assert producer.qualified_scalar_gap_components_for_asset(source_plan, "dkss_lf", source_t,
+        [domain_ids[0]]) == {"waterLevel"}
+    assert producer.qualified_scalar_gap_components_for_asset(source_plan, "dkss_lf", source_support,
+        [domain_ids[0]]) == {"waterLevel"}
+    filter_calls = [node for node in ast.walk(main_tree) if isinstance(node, ast.Call)
+                    and isinstance(node.func, ast.Name) and node.func.id == "operational_asset_parameter_filter"]
+    assert len(filter_calls) == 1
+    scalar_filter = next(keyword.value for keyword in filter_calls[0].keywords
+                         if keyword.arg == "scalar_gap_components")
+    assert any(isinstance(node, ast.Call) and isinstance(node.func, ast.Name)
+               and node.func.id == "qualified_scalar_gap_components_for_asset"
+               for node in ast.walk(scalar_filter))
+
+    print("DMI qualified scalar priority OK: normal PART/SOURCE needs, optional hourly decode, old fallback preserved")
+
+check_qualified_production_gaps_precede_native_only_deficits()

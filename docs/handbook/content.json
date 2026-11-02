@@ -4,6 +4,13 @@
   "title": "RavRadar Håndbog",
   "updatedAt": "2026-10-31",
   "sections": [
+{
+  "id": "dmi-qualified-scalar-gap-priority-2026-11-02",
+  "chapter": "89.294",
+  "title": "Reelle datahuller før opgradering af dækkede timer",
+  "summary": "Hentekøen skal skelne reelle mangler fra DMI-opgraderinger af timer, der allerede har gyldige data.",
+  "body": "### Hvorfor gyldige timer og mangler skal skelnes\n\nEn time kan allerede have brugbare vejrdata fra en anden tilladt kilde, selv om DMI endnu mangler sit fulde native bevis. Det er stadig relevant at opgradere timen til DMI, men først skal den almindelige hentning forsøge de reelle huller. DMI er fortsat første kilde, derefter Copernicus og til sidst Open-Meteo.\n\n### Samme normale fortolkning før hentningen\n\nDen lokale kandidat bruger de samme læsere af bevarede DMI-, Copernicus- og Open-Meteo-data samt den centralt valgte vandstandsrouting som den normale beregning. Den undersøger hver kystdel og time for vind, vandstand og temperatur. Vandstandens tre timers udvikling kræver også det relevante tidspunkt tre timer senere. Planen afgør alene hentekøen; den kan aldrig godkende en måling eller udfylde et hul med nul.\n\nEt hul får kun denne prioritet i en DMI-samling, som efter de eksisterende komponent- og zoneregler må levere de pågældende data. De syv kystzoner beholder deres vandstandsundtagelse uden adgang til Limfjordens strøm, strømhukommelse, vind eller temperatur. Ukendt eller ændret planlægningsgrundlag bevarer den konservative native kø. Samme grænse gælder første plan, omplanlægning og udvælgelse af felter.\n\n### Status og bevisgrænse\n\nDe relevante normale lokale prøver består på den samlede kandidat, også den fysiske kæde gennem de eksisterende offline-læsere. Det er ikke GitHub-kvalifikation eller offentlig effekt. Tidsbudgetter, kildeaccept, originaler, no-loss, administratorpunkter, geometri og scoreformel er uændrede. SOURCE-revisionens særskilte indgang kræver fortsat sin egen integration før aktivering.\n"
+},
     {
       "id": "source-domain-validation-2026-10-31",
       "chapter": "89.293",

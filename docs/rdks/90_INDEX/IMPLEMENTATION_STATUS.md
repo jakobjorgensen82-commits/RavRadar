@@ -1,3 +1,12 @@
+## 2. november — DMI-kø: normal lokal integration, levering åben
+
+- [x] Normal bevaret PART-/SOURCE-fortolkning før DMI; vandstand ved T og T+3; samlingsafgrænsning efter eksisterende komponent-/zonepolicy.
+- [x] Otte normale lokale mål på samlet kandidat; fysisk offline-kæde og uændrede originaler; præcise gamle workflow-orakler og almindelige CI-kaldere.
+- [ ] Præcis GitHub-kvalifikation, sikker levering og faktisk ny offentlig dækningsvirkning.
+- [ ] SOURCE-revisionens egen præ-DMI-indgang integreres særskilt før dens aktivering.
+
+Ingen ny version/model/SQL, kilde-, budget-, score- eller geometriændring. Se DEC-0261 og håndbog 89.294; privat checkpoint har skiftende evidens.
+
 ## 1. november — privat enable lokalt forberedt; hosted måling udestår
 
 - [x] Faktisk 007-installation gennem normal controller, Worker-OFF-attestering og genåbnet D1; tidligere 004/005/006 gentages ikke.

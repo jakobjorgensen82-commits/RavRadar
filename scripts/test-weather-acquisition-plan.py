@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import copy
+import hashlib
 from datetime import datetime, timedelta, timezone
 import json
 from pathlib import Path
@@ -21,6 +22,8 @@ from lib.open_meteo_current_fallback import (
 from lib.weather_acquisition_plan import (
     CurrentAcquisitionPlanError, build_current_acquisition_plan, exact_hour,
     read_current_acquisition_plan, validate_current_acquisition_plan,
+    build_qualified_acquisition_plan, validate_qualified_acquisition_plan,
+    read_qualified_acquisition_plan, scalar_snapshot_paths, scalar_gap_components_at,
 )
 
 BASE = datetime(2026, 9, 9, 18, tzinfo=timezone.utc)
@@ -315,6 +318,100 @@ class AcquisitionBuilderDonorIntegrationTests(unittest.TestCase):
             self.assertEqual(report["sources"]["open-meteo"]["coveredPairCount"], 1)
             self.assertIn("open-meteo-bank", document["sourceInputHashes"])
             self.assertEqual(bank_path.read_text(encoding="utf-8"), original_bank_bytes)
+
+
+class QualifiedScalarPlanTests(unittest.TestCase):
+    def make_scalar(self, root, *, value_gaps=(), trend_gaps=()):
+        paths = scalar_snapshot_paths(root, Path(root) / "dmi.json")
+        snapshots = {}
+        for role, filename in paths.items():
+            filename.parent.mkdir(parents=True, exist_ok=True)
+            data = ("synthetic fixed input " + role).encode()
+            filename.write_bytes(data)
+            snapshots[role] = {"bytes": len(data), "sha256": "sha256:" + hashlib.sha256(data).hexdigest()}
+        values = {key: bytearray((len(TARGETS) * 118 + 7) // 8)
+                  for key in ("wind", "waterLevel", "waterTemperature")}
+        trend = bytearray((len(TARGETS) * 118 + 7) // 8)
+        support = bytearray((len(TARGETS) * 121 + 7) // 8)
+        def set_bit(mask, index):
+            mask[index // 8] |= 1 << (index % 8)
+        water = {index: set() for index in range(len(TARGETS))}
+        for part, offset, component in value_gaps:
+            set_bit(values[component], part * 118 + offset)
+            if component == "waterLevel": water[part].add(offset)
+        for part, offset in trend_gaps:
+            set_bit(trend, part * 118 + offset)
+            water[part].add(offset)
+        for part, needs in water.items():
+            for offset in needs:
+                if offset + 3 not in needs: set_bit(support, part * 121 + offset + 3)
+        scalar = {"schemaVersion": 1, "kind": "retained-part-scalar-needs-v1",
+            "productionReferenceAt": at(), "partIds": [row["partId"] for row in TARGETS],
+            "forecastHourCount": 118, "supportHourCount": 121, "encoding": "hex-lsb0-v1",
+            "valueGapMasks": {key: bytes(mask).hex() for key, mask in values.items()},
+            "waterTrendGapMask": bytes(trend).hex(), "waterSupportMask": bytes(support).hex(),
+            "snapshotInputHashes": snapshots}
+        return scalar, paths
+
+    def test_v2_embeds_exact_v1_and_distinguishes_value_gap_from_t_plus_3(self):
+        with tempfile.TemporaryDirectory() as root:
+            scalar, _ = self.make_scalar(root, value_gaps=[(0, 96, "waterTemperature"),
+                (1, 95, "wind"), (0, 4, "waterLevel")], trend_gaps=[(1, 117)])
+            current = plan([("P1", at(4))])
+            document = build_qualified_acquisition_plan(current, scalar, targets=TARGETS,
+                production_reference_at=at())
+            self.assertEqual(document["currentPlan"], current)
+            compiled = validate_qualified_acquisition_plan(document, current, targets=TARGETS,
+                production_reference_at=at())
+            self.assertEqual(scalar_gap_components_at(compiled, at(96)), {"waterTemperature"})
+            self.assertEqual(scalar_gap_components_at(compiled, at(95)), {"wind"})
+            self.assertEqual(scalar_gap_components_at(compiled, at(117)), {"waterLevel"})
+            self.assertEqual(scalar_gap_components_at(compiled, at(120)), {"waterLevel"})
+            self.assertEqual(compiled["currentCoveredPairs"], {("P1", at(4))})
+            self.assertNotIn("ready", document)
+
+    def test_v2_rejects_domain_time_masks_padding_support_and_whole_binding_drift(self):
+        with tempfile.TemporaryDirectory() as root:
+            scalar, _ = self.make_scalar(root, value_gaps=[(0, 4, "waterLevel")])
+            current = plan()
+            mutations = [lambda x: x.update(partIds=["P2", "P1"]),
+                lambda x: x.update(productionReferenceAt=at(1)),
+                lambda x: x.update(encoding="base64"),
+                lambda x: x.update(waterSupportMask="00" * len(bytes.fromhex(x["waterSupportMask"]))),
+                lambda x: x["valueGapMasks"].update(wind=x["valueGapMasks"]["wind"][:-2]+"80"),
+                lambda x: x.update(ready=True)]
+            for mutate in mutations:
+                changed = copy.deepcopy(scalar); mutate(changed)
+                with self.assertRaises(CurrentAcquisitionPlanError):
+                    build_qualified_acquisition_plan(current, changed, targets=TARGETS,
+                        production_reference_at=at())
+            document = build_qualified_acquisition_plan(current, scalar, targets=TARGETS,
+                production_reference_at=at())
+            for field in ("bindingSha256", "currentPlan", "forecastHourCount", "unknown"):
+                changed = copy.deepcopy(document); changed[field] = None
+                with self.subTest(field=field), self.assertRaises(CurrentAcquisitionPlanError):
+                    validate_qualified_acquisition_plan(changed, current, targets=TARGETS,
+                        production_reference_at=at())
+            with self.assertRaises(CurrentAcquisitionPlanError):
+                validate_qualified_acquisition_plan(document, plan([("P1", at(5))]), targets=TARGETS,
+                    production_reference_at=at())
+
+    def test_v2_rechecks_exact_physical_snapshot_and_time_stop_before_priority(self):
+        with tempfile.TemporaryDirectory() as root:
+            scalar, paths = self.make_scalar(root, value_gaps=[(0, 96, "wind")])
+            current = plan(); document = build_qualified_acquisition_plan(current, scalar,
+                targets=TARGETS, production_reference_at=at())
+            current_path = Path(root) / "v1.json"; current_path.write_text(json.dumps(current))
+            qualified_path = Path(root) / "v2.json"; qualified_path.write_text(json.dumps(document))
+            arguments = dict(current_plan_path=current_path, targets=TARGETS,
+                production_reference_at=at(), snapshot_paths=paths)
+            self.assertEqual(scalar_gap_components_at(read_qualified_acquisition_plan(
+                qualified_path, **arguments), at(96)), {"wind"})
+            with self.assertRaisesRegex(CurrentAcquisitionPlanError, "TIME_STOP"):
+                read_qualified_acquisition_plan(qualified_path, **arguments, check_continue=lambda: False)
+            paths["openMeteo"].write_bytes(b"changed")
+            with self.assertRaisesRegex(CurrentAcquisitionPlanError, "SNAPSHOT_CHANGED"):
+                read_qualified_acquisition_plan(qualified_path, **arguments)
 
 
 if __name__ == "__main__":

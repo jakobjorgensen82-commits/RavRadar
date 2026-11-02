@@ -1,3 +1,9 @@
+## 2026-11-02 — lokal DMI-hentekø på uændret 4.0.594
+
+- Skeln reelle vind-/vandstands-/temperaturhuller fra native opgraderinger gennem normale bevarede PART-/SOURCE-læsere.
+- Bevar T og T+3 samt eksisterende samlings-/zoneadgang i første plan, omplanlægning og feltfilter.
+- Tilkobl to manglende normale kildekalderindgange; bevar gamle hele workflow-orakler. Otte lokale mål består; GitHub og faktisk levering er åbne. Ingen version/model/SQL, score, kilder, budget eller geometri ændres.
+
 ## 1. november — lokal privat enable-efterfølger efter installeret 007
 
 Forbered særskilt enable med fast bekræftelse i det eksisterende private statistikworkflow; bevar OFF-standard og normale kilde-/main-/schema-/bindings-/vedligeholdelses-/readback-kontroller. 007 er faktisk installeret med verificeret OFF. Enable starter ingen rapport, datajob eller charge.

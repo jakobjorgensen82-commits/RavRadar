@@ -1,3 +1,19 @@
+## 89.294 Reelle datahuller før opgradering af dækkede timer
+
+### Hvorfor gyldige timer og mangler skal skelnes
+
+En time kan allerede have brugbare vejrdata fra en anden tilladt kilde, selv om DMI endnu mangler sit fulde native bevis. Det er stadig relevant at opgradere timen til DMI, men først skal den almindelige hentning forsøge de reelle huller. DMI er fortsat første kilde, derefter Copernicus og til sidst Open-Meteo.
+
+### Samme normale fortolkning før hentningen
+
+Den lokale kandidat bruger de samme læsere af bevarede DMI-, Copernicus- og Open-Meteo-data samt den centralt valgte vandstandsrouting som den normale beregning. Den undersøger hver kystdel og time for vind, vandstand og temperatur. Vandstandens tre timers udvikling kræver også det relevante tidspunkt tre timer senere. Planen afgør alene hentekøen; den kan aldrig godkende en måling eller udfylde et hul med nul.
+
+Et hul får kun denne prioritet i en DMI-samling, som efter de eksisterende komponent- og zoneregler må levere de pågældende data. De syv kystzoner beholder deres vandstandsundtagelse uden adgang til Limfjordens strøm, strømhukommelse, vind eller temperatur. Ukendt eller ændret planlægningsgrundlag bevarer den konservative native kø. Samme grænse gælder første plan, omplanlægning og udvælgelse af felter.
+
+### Status og bevisgrænse
+
+De relevante normale lokale prøver består på den samlede kandidat, også den fysiske kæde gennem de eksisterende offline-læsere. Det er ikke GitHub-kvalifikation eller offentlig effekt. Tidsbudgetter, kildeaccept, originaler, no-loss, administratorpunkter, geometri og scoreformel er uændrede. SOURCE-revisionens særskilte indgang kræver fortsat sin egen integration før aktivering.
+
 ## 89.293 Prøver skal følge det, rettelsen kan påvirke
 
 **Kort fortalt: Kontroller skal følge den faktiske ændring. Uændrede områder skal ikke genprøves automatisk, og det skal fremgå tydeligt, hvad der er prøvet, genbrugt eller ikke relevant.**

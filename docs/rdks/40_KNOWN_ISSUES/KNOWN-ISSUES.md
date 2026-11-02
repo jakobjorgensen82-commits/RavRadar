@@ -1,3 +1,7 @@
+## 2. november — åben DMI-hale: gyldig reserve er ikke et tomt hul
+
+Den lokale kandidat retter den påviste sammenblanding af native opgraderinger og reelle scalar-mangler samt tab af per-PART- og TREND/T+3-afgrænsning i hentekøen. Normale lokale kaldere består; præcis CI og ny offentlig effekt er åbne. Ingen upstream- eller dækningsgaranti følger af kørettelsen. SOURCE-indgangen er særskilt uafsluttet. Se CURRENT_TRUTH, DEC-0261 og håndbog 89.294.
+
 ## 1. november — privat statistik mangler aktivering og faktisk hosted kvalifikation
 
 007 er installeret og normalt verificeret med Worker-OFF. En privat lokal enable-kandidat åbner alene de eksisterende signerede ruter efter de normale kontroller og en fast særskilt bekræftelse; OFF er fortsat standard. Den starter ingen rapport, datajob eller charge.
