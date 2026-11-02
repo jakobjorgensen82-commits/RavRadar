@@ -38,6 +38,28 @@ export function reviewedFixedAssistantFailureLegacyWorkflow(value) {
   return inverse;
 }
 
+// One exact additive D1/native785 image; no runtime-scanned surface admission.
+export function reviewedFixedAssistantFailureBeforePrivateStudyRegistry(value) {
+  assert.equal(typeof value, 'string', 'FIXED_ASSISTANT_REGISTRY_TYPE');
+  let privateStudyBytes = Buffer.from(value.replaceAll('\r\n', '\n'), 'utf8');
+  const privateStudySuccessor = review.registryPrivateStudyEnableNativeSuccessor;
+  assert.equal(privateStudySuccessor.kind, 'EXACT_PRIVATE_STUDY_ENABLE_NATIVE785_REGISTRY_SUCCESSOR');
+  assert.equal(privateStudySuccessor.beforeSha256, review.registryPrSourceReadGrantSuccessor.afterSha256);
+  if (sha(privateStudyBytes) === privateStudySuccessor.beforeSha256) return privateStudyBytes.toString('utf8');
+  assert.equal(sha(privateStudyBytes), privateStudySuccessor.afterSha256, 'FIXED_ASSISTANT_REGISTRY_UNREVIEWED_BYTES');
+  for (const privateStudyInsertion of [...privateStudySuccessor.insertions].reverse()) {
+    assert(Number.isSafeInteger(privateStudyInsertion.offset) && privateStudyInsertion.offset >= 0);
+    assert(Number.isSafeInteger(privateStudyInsertion.bytes) && privateStudyInsertion.bytes > 0
+      && privateStudyInsertion.offset + privateStudyInsertion.bytes <= privateStudyBytes.length);
+    assert.equal(sha(privateStudyBytes.subarray(privateStudyInsertion.offset, privateStudyInsertion.offset + privateStudyInsertion.bytes)),
+      privateStudyInsertion.sha256, 'FIXED_ASSISTANT_PRIVATE_STUDY_INSERTION');
+    privateStudyBytes = Buffer.concat([privateStudyBytes.subarray(0, privateStudyInsertion.offset),
+      privateStudyBytes.subarray(privateStudyInsertion.offset + privateStudyInsertion.bytes)]);
+  }
+  assert.equal(sha(privateStudyBytes), privateStudySuccessor.beforeSha256, 'FIXED_ASSISTANT_PRIVATE_STUDY_WHOLE_INVERSE');
+  return privateStudyBytes.toString('utf8');
+}
+
 // Exact new PR-workflow grant registry image; the complete old chain is retained.
 export function reviewedFixedAssistantFailureBeforePrSourceReadGrantRegistry(value) {
   assert.equal(typeof value, 'string', 'FIXED_ASSISTANT_REGISTRY_TYPE');
@@ -82,8 +104,10 @@ export function reviewedFixedAssistantFailureBeforeBaselineHintRegistry(value) {
 export function reviewedFixedAssistantFailureLegacyRegistry(value) {
   assert.equal(typeof value, 'string', 'FIXED_ASSISTANT_REGISTRY_TYPE');
   let source = Buffer.from(value.replaceAll('\r\n', '\n'), 'utf8');
+  if (sha(source) === review.registryPrivateStudyEnableNativeSuccessor.afterSha256)
+    source = Buffer.from(reviewedFixedAssistantFailureBeforePrivateStudyRegistry(source.toString('utf8')), 'utf8');
   if (sha(source) === review.registryPrSourceReadGrantSuccessor.afterSha256)
-    source = Buffer.from(reviewedFixedAssistantFailureBeforePrSourceReadGrantRegistry(value), 'utf8');
+    source = Buffer.from(reviewedFixedAssistantFailureBeforePrSourceReadGrantRegistry(source.toString('utf8')), 'utf8');
   if (sha(source) === review.registryBaselineHintSuccessor.afterSha256)
     source = Buffer.from(reviewedFixedAssistantFailureBeforeBaselineHintRegistry(source.toString('utf8')), 'utf8');
   const successor = review.registrySourceProofSuccessor;

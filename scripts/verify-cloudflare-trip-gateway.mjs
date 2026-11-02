@@ -330,7 +330,7 @@ export async function verifyExistingWorkerBindings({
   const object = value => value !== null && typeof value === 'object' && !Array.isArray(value);
   if (expectedPlainTextBindings !== undefined
     && (!object(expectedPlainTextBindings) || Object.keys(expectedPlainTextBindings).join(',') !== 'TRIP_AGGREGATE_ENABLED'
-      || expectedPlainTextBindings.TRIP_AGGREGATE_ENABLED !== 'false')) throw failure();
+      || !['false', 'true'].includes(expectedPlainTextBindings.TRIP_AGGREGATE_ENABLED))) throw failure();
   if (!Array.isArray(expectedBindings) || expectedBindings.length !== 10
     || expectedBindings.some((row, index) => !object(row) || row.binding !== `TRIP_DB_${index}`
       || row.database_name !== `ravradar-trips-${index}` || typeof row.database_id !== 'string' || !uuid.test(row.database_id))

@@ -1,3 +1,11 @@
+## 1. november — privat statistik mangler aktivering og faktisk hosted kvalifikation
+
+007 er installeret og normalt verificeret med Worker-OFF. En privat lokal enable-kandidat åbner alene de eksisterende signerede ruter efter de normale kontroller og en fast særskilt bekræftelse; OFF er fortsat standard. Den starter ingen rapport, datajob eller charge.
+
+Den fælles læsers konkrete afslag på forventet true er reproduceret og rettet med uændrede øvrige metadata-/bindingsguards. 17 normale bindingscases og 10 controller-/inversecases består med den virkelige læser, også kendt ON → eksisterende deliver → verificeret OFF. Den gamle kontrollerede recovery bevares; ukendt write må ikke udledes af et grønt fixture eller blindt gentages.
+
+Kildekvalifikation, faktisk aktivering, privat rapport/adgang og rutespecifik Free-/CPU-/D1-måling er åbne. Første normale eksport kan fremføre et varigt job, fryse rapport og belaste eksisterende budget; den er ikke en skrivefri prøve. Der påstås ingen hosted PASS. Kontakt, mail, retention, samtykke, 4/8-budget, 160 celler og publicReleaseIssued=false ændres ikke. Ingen ny version, SQL eller automatisk aktivering.
+
 ## 1. november — påvist temperaturudsultning; lokal kandidat afventer levering
 
 ROOTs normale browserlog for 236 viste 515 OM-starter, 0 temperaturstarter, 673 udsatte temperaturjobs og budgetReached=1. MF/SST-temperatur er en separat request, ikke del af wave. Alle temperaturjobs stod efter hele criticalWork-køen. Det forklarer manglende temperaturforsøg i dette forløb; det beviser ikke, hvilke værdier leverandøren ville have leveret, eller årsagen til DMI-only-vandstandshullerne.
