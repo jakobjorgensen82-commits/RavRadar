@@ -1,3 +1,9 @@
+## 2. november2026 — lokal595-udstedelse, sikker Free-klargøring fortsat åben
+
+SOURCE4.0.595 er normalt lokalt udstedt efter integration af den kvalificerede main. Én append-only SQL og normal sync samt alle seks fixedpointkontroller er bestået; alle75 gamle SQL-originaler er byteuændrede. Positiv kalder-, PostgreSQL-, native-, CI-, kapacitets-, installations- og driftsverifikation er fortsat åbne. Den aktuelle offentlige modelgeneration er særskilt4.0.594. Ingen scoreformel, kildeprioritet, administratorpunkter eller geometri ændres.
+
+Ejeren har godkendt sikker oprydning og gennemgang af hele opsætningen til selvstændig Free-drift, også vejrhentning, cache, beregning og deploy. Arkiv, faktisk genopretning, kapacitet og dataadgang skal verificeres før sletning eller abonnementsændring. Ingen faktisk oprydning, downgrade eller automatisk sletning er udført. Alle fem mål til18.november er åbne; aktuelle målinger og næste trin føres privat. Ældre modstridende status nedenfor er historik.
+
 ## 1. november 2026 — lokal sammenføring, endnu ingen udstedt SOURCE 595
 
 SOURCE19 har det lokale substanscheckpoint `24d8f8ee75bb91d2c75afa92e5ccc407cb7c230f` og en uafsluttet normal sammenføring med main `c920d1e2ad0cbbfe351360f594128f0e06bd1f1e`. Main 4.0.594 er den midlertidige normale versionsforgænger; den planlagte isolerede revision er 4.0.595. Normal versionssynk efter sammenføringen er endnu ikke kørt. SOURCE-version, binding og output er NULL; nye C/I/T og SQL er ikke udstedt. Semantiske konflikter og kvalifikation er fortsat åbne. Et checkpoint, et forberedt input eller MERGE_HEAD er ikke faktisk main-ancestry, native/fullRuntime-, ejerafslutnings- eller leveringsbevis.

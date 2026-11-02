@@ -1,3 +1,16 @@
+## 2. november — SOURCE595 lokalt udstedt og fixedpoint bestået; samlet kvalifikation åben
+
+- [x] Den kvalificerede faktiske main fra PR792 normalt indarbejdet som Git-forælder; hele SOURCE-træet uændret ved merge.
+- [x] Pages-controlleren accepterer kun den faste projektvært og præcis del.ravradar.dk;57 normale lokale cases består. Frontendens legacy-adresse bevares indtil DNS/TLS og normal værtaccept.
+- [x] Normal lokal versionssynk til4.0.595 og C/I-afledning; én binding og ét outputsæt i hver sin nye proces med præcis bevaret normal stdout. Metadata er ikke længere NULL.
+- [x] Én ny create-only append-SQL og normal consumer-sync bestået; alle 75 gamle fysiske SQL-originaler byteuændrede, fysisk bank76.
+- [x] Alle seks normale fixedpoint-processer bestået; de kontrollerede generator-/consumerbytes uændrede.
+- [x] Normale generatorer lukker C165/I161/T12;19 issued-kaldercases og den særskilte normale canonical/modelcase består uden skips. Lokale parser-/kalderprøver er ikke udført PostgreSQL.
+- [ ] Faktisk61→62 i samme PostgreSQL, SDK/action63/64, fysisk ejerafslutning, fuld SOURCE-kvalifikation og faktisk180-minutterskapacitet.
+- [ ] Kontrolleret installation, offentlig levering og accept samt dokumenteret selvstændig Free-drift.
+
+Alle fem mål er åbne. Se [kanonisk status](CURRENT_TRUTH.md#source-595-status-2026-11-02) og håndbog89.297; ældre afventning af main nedenfor er historik.
+
 ## 2. november — faktisk lokal SOURCE-kodeintegration
 
 - [x] Faktisk PR791-main normalt indarbejdet og bevaret som forfader.

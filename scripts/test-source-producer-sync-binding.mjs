@@ -54,6 +54,8 @@ test('SOURCE actual C/I closures bind implementation without hashing their own d
     'scripts/integrated-cutover-readiness.mjs',
     'scripts/lib/private-weather-component-pack.mjs',
     'scripts/lib/ravscore-production-part-pipeline.mjs',
+    // Normal SOURCE disposition/recovery binds this complete verifier module.
+    'scripts/verify-ravscore-operational-pages-deployment.mjs',
   ];
   assert.deepEqual(MODEL_RELEASE_ONLY_DEPENDENCIES,['scripts/ravscore-operational-activation.mjs']);
   assert.deepEqual(RAVSCORE_MODEL_BUNDLE_EXCLUDED_MODULES,[
@@ -68,7 +70,7 @@ test('SOURCE actual C/I closures bind implementation without hashing their own d
   const releaseOnly=[
     'app.js','bootstrap.js','service-worker.js','scripts/prepare-candidate-g-operational-rollback.mjs',
     'scripts/install-candidate-g-rollback-stage.mjs','scripts/audit-candidate-g-rollback-public-runtime.mjs',
-    'scripts/verify-ravscore-operational-pages-deployment.mjs','scripts/ravscore-operational-activation.mjs',
+    'scripts/ravscore-operational-activation.mjs',
   ];
   for(const bundle of [candidate,integrated]){
     const files=bundle.manifest.files.map(row=>row.path??row.file);
@@ -105,6 +107,7 @@ test('normal SOURCE committed-source guard rejects absent or untracked derived o
     const calls=[];
     const guard=runInNewContext('('+source.slice(start,end).trim()+')',{
       PRIVATE_RUNTIME_PRODUCER_SOURCE_FILES,SELF:self,ROOT:'synthetic-source-root',
+      sourcePrIdentities:new WeakMap(),
       need(condition,code){assert(condition,code);},
       git(args){
         calls.push(Array.from(args));

@@ -1,3 +1,31 @@
+## 89.297 Fra kvalificeret kildekode til selvstændig drift
+
+Aktuel lokal udstedelse2.november2026: SOURCE4.0.595 er normalt lokalt udstedt efter integration af den kvalificerede main. Én append-only SQL og normal sync samt alle seks fixedpointkontroller er bestået; alle75 gamle SQL-originaler er byteuændrede. Positiv kalder-, PostgreSQL-, native-, CI-, kapacitets-, installations- og driftsverifikation er fortsat åbne. Den aktuelle offentlige modelgeneration er særskilt4.0.594. Ingen scoreformel, kildeprioritet, administratorpunkter eller geometri ændres.
+
+4.0.595 er låst med `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b` og `modelBundleSha256=6267f6991e69e2cf29b2dc13f08a88d895e499587694481f7aade60a58552840` over 161 kanonisk normaliserede transitive implementeringsfiler. De normale deklarerede forbrugere er synkroniseret. Inaktiv Candidate G har `modelContractSha256=c73dac1b4376005e792580791d84eb79c9370e905a2a7fd0bdee857506a20cf8` og `modelBundleSha256=78ec96cc1fc8e4a5396f0a0d9fc01cdfd624a346f76873ee118b8bf5be7660bd` over 165 transitive filer. FortsættelseskontraktenT12 er `95aba5dd94e2c703263a1c1734c33aeb1b09d75ec09156050d10425598e5207c`. Disse identiteter dokumenterer kildeudstedelse, ikke faktisk SQL-installation eller offentlig595-drift.
+
+### Faktisk hovedkilde og egen kvalifikation
+
+Den kvalificerede faktiske main med den samlede DMI-rettelse er normalt indarbejdet i SOURCE-grenen. Hele SOURCE-træet var uændret ved denne merge. Main-kvalifikation og revisionens egen kvalifikation er forskellige beviser.
+
+Den normale 595-afledning skal begynde med det bevarede NULL-udgangspunkt efter dokumentreview og endelig kodefreeze og gennemføres én gang gennem den eksisterende kæde. Alle 75 gamle SQL-originaler og de hidtidige faglige modeller bevares. Metadataenes aktuelle tilstand og revisionens fase føres i CURRENT_TRUTH og IMPLEMENTATION_STATUS.
+
+### Delingsværten og klienten har hver sin overgang
+
+Pages-kontrollen accepterer kun ravradar-del.pages.dev og præcis del.ravradar.dk. Projektidentitet, uændrede bindinger, kildebevis, fysisk processtop og friske genlæsninger består; 57 normale lokale cases er gennemført. Frontendens legacy-adresse og cachekæde skifter først efter faktisk DNS/TLS og normal accept af den nye vært. En lokal kontrolprøve er ikke en offentlig domænelevering.
+
+### Sikker klargøring til drift uden Codex
+
+Ejeren har godkendt sikker oprydning og gennemgang af den eksisterende opsætning, også hidtil unævnte driftsled, så den kan fungere på Free uden løbende Codex eller en lokal PC. ravradar.dk, vejrhentning, cache, beregning, deploy og genoptagelse skal beskyttes. Planen skal bruge de eksisterende kontrollerede veje og respektere aktive skrivere, databevarelse og kendt skriveudfald.
+
+Klargøring er ikke i sig selv et bevis for færdig selvdrift eller målt Free-kapacitet. Automatisk brugerretention, mailafsender, statistik og SOURCE-G4 aktiveres ikke implicit. Ingen ny betalt plan, skjult pruning eller svækket no-loss følger med.
+
+### Krav fra kode til faktisk drift
+
+Positiv issued62 med ægte 594-forgænger, samme PostgreSQL, SDK/action63/64, fysisk ejerafslutning, hel SOURCE-kvalifikation og faktisk 180-minutterskapacitet skal dokumenteres særskilt. Det samme gælder kontrolleret installation med original-B/S-før-T, beskyttet genoptagelse, offentlig levering og normal accept. Den aktuelle fase står i de to statusdokumenter.
+
+Alle fem hovedmål er fortsat åbne. DEC-0261s gældende DMI-krav, kildeprioritet, administratorpunkter, geometri og scoreformel bevares. Ældre daterede statusafsnit beskriver deres historiske trin.
+
 ## Aktuel lokal integration 2. november 2026
 
 SOURCE-koden omfatter faktisk main fra PR791 og den gennemgåede samlede DMI-/statistikkandidat. Det er lokal integration, ikke en udstedt eller aktiveret revision. Version, binding og output er fortsat NULL; den endelige kvalificerede faktiske main skal indarbejdes før én normal595-afledning. Læs [den kanoniske status](docs/rdks/90_INDEX/CURRENT_TRUTH.md#source-595-status-2026-11-02) før ældre status nedenfor.
@@ -1326,7 +1354,7 @@ En særskilt, dokumenteret Storage-formatkant rettes samtidig: immutable upload 
 
 # RavRadar Håndbog
 
-**Håndbogsversion:** 4.0.594
+**Håndbogsversion:** 4.0.595
 
 **Lokal kildebinding — 29. oktober 2026, RavScore 4.0.591, ikke installeret:** Den integrerede model er offentlig som modeltype under den særskilt leverede 4.0.590. Den nye assistentefterfølger er lokalt udstedt og er endnu ikke samlet kvalificeret, installeret eller offentliggjort.
 

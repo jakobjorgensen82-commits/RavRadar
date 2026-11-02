@@ -1,3 +1,9 @@
+## 2. november — main-afventning lukket; følg revisionens resterende gates
+
+Den kvalificerede faktiske main er normalt indarbejdet. Hele SOURCE-træet var uændret ved denne merge; ældre afventning af main nedenfor er historik. Revisionens aktuelle udstedelsesfase og åbne krav står i CURRENT_TRUTH og IMPLEMENTATION_STATUS. Den normale 595-afledning skal begynde fra det bevarede NULL-udgangspunkt og ske én gang. Gamle SQL og autentiske originaler samt kravene om issued62/samme-PG/SDK/action63/64, ejerafslutning, fuld kvalifikation, 180-minutterskapacitet, installation og offentlig accept bevares.
+
+Pages-controllerens snævre domæneefterfølger har bestået 57 normale lokale cases. Frontendens legacy-adresse må først skifte efter DNS/TLS og normal værtaccept; lokale cases er ikke værtaccept. Sikker oprydning og selvstændig Free-drift kræver deres egne faktiske beviser. Automatisk brugerretention, mail og særskilt SOURCE-G4-/statistikaktivering følger ikke implicit med. Beskyt P0 og alle fem åbne mål. Se [kanonisk status](../90_INDEX/CURRENT_TRUTH.md#source-595-status-2026-11-02) og håndbog 89.297.
+
 ## 2. november — lokal SOURCE-integration lukker kodeforskellen, ikke driftskravene
 
 Revisionens egen præ-DMI-indgang og de nye kildekaldere er nu integreret med den gennemgåede DMI-/statistikkandidat. Faktisk main fra PR791 er allerede forfader. De historiske hele kodeinput, gamle SQL og originalbindinger bevares. Endelig kvalificeret main, rent importinventar, én normal595-afledning, positiv samme-PG/SDK/action-kæde, fysisk ejerafslutning, heljobskapacitet og sikker offentlig levering er fortsat åbne. Se [kanonisk status](../90_INDEX/CURRENT_TRUTH.md#source-595-status-2026-11-02).

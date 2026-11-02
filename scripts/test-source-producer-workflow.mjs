@@ -137,13 +137,29 @@ function assertActualSourceWorkflow(text){
 }
 const once=(text,before,after)=>{assert.equal(count(text,before),1);return text.replace(before,()=>after);};
 const changeStep=(text,name,change)=>{const block=named(text,name).text;return once(text,block,change(block));};
-test('SOURCE workflow exact46-hunk inverse recovers every genuine b2 byte',()=>{
+// These two whole46/b2 cases belong to the genuine pre-merge SOURCE caller.
+// Actual current SOURCE caller semantics below keep reading the current file.
+// This is not an inverse from the current caller to the historical caller.
+function readGenuineHistoricalSourceWorkflow(){
+  const env={...process.env,GIT_NO_LAZY_FETCH:'1',GIT_NO_REPLACE_OBJECTS:'1',GIT_TERMINAL_PROMPT:'0',
+    GIT_CONFIG_COUNT:'1',GIT_CONFIG_KEY_0:'protocol.allow',GIT_CONFIG_VALUE_0:'never'};
+  const git=args=>execFileSync('git',['-C',ROOT,...args],{env,encoding:'utf8',timeout:30000,maxBuffer:1024*1024});
+  const head='ada840ffd6d4ce4821c2c5c7721c1fdce5df4cdd';
+  assert.equal(git(['rev-parse',head+'^{tree}']).trim(),'3131a45cad02f1bebaeb458d8d9847e39deb17e7');
+  assert.equal(git(['rev-parse',head+':'+WORKFLOW]).trim(),'1261f9956097a8fd212ee78459012c64b39023f1');
+  const historical=git(['show',head+':'+WORKFLOW]);
+  assert.equal(Buffer.byteLength(historical),221321);
+  assert.equal(sha(historical),SOURCE_PRODUCER_WORKFLOW_SHA256,'Whole genuine historical SOURCE caller');
+  return historical;
+}
+test('historical SOURCE workflow exact46-hunk inverse recovers every genuine b2 byte',()=>{
   const env={...process.env,GIT_NO_LAZY_FETCH:'1',GIT_NO_REPLACE_OBJECTS:'1',GIT_TERMINAL_PROMPT:'0',
     GIT_CONFIG_COUNT:'1',GIT_CONFIG_KEY_0:'protocol.allow',GIT_CONFIG_VALUE_0:'never'};
   const git=args=>execFileSync('git',['-C',ROOT,...args],{env,encoding:'utf8',timeout:30000,maxBuffer:1024*1024});
   const head='b2d4ba68c6e560c6e1f2335ea8ace604a6315da3';
   assert.equal(git(['rev-parse',head+'^{tree}']).trim(),'d911b0ee27084194cba8bde59ff9540d8b164543');
   const base=git(['show',head+':'+WORKFLOW]);
+  const source=readGenuineHistoricalSourceWorkflow();
   assert.equal(sha(source),SOURCE_PRODUCER_WORKFLOW_SHA256);
   assert.equal(sha(base),SOURCE_PRODUCER_WORKFLOW_PREDECESSOR_SHA256);
   assert.equal(inverseSourceProducerWorkflow(source),base,'Every genuine b2 workflow byte survives');
@@ -151,9 +167,10 @@ test('SOURCE workflow exact46-hunk inverse recovers every genuine b2 byte',()=>{
   assert.throws(()=>inverseSourceProducerWorkflow(source+'\n# unreviewed\n'));
   assert.throws(()=>inverseSourceProducerWorkflow(source.replace("  contents: read\n","  contents: write\n")));
 });
-test('SOURCE whole predecessor still passes every unchanged older workflow oracle',async()=>{
+test('historical SOURCE whole predecessor still passes every unchanged older workflow oracle',async()=>{
   // Mandatory separate old raw-descriptor guards, not an optional/skip branch.
   // Their checkout failures must not conceal the independent SOURCE results.
+  const source=readGenuineHistoricalSourceWorkflow();
   const {inverseAccountStatisticsAssistantWorkflow}=await import('./lib/account-statistics-assistant-workflow-review.mjs');
   const {inverseArchivedWeatherRestartWorkflow}=await import('./lib/archived-weather-restart-workflow-review.mjs');
   const base=inverseSourceProducerWorkflow(source);

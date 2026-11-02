@@ -1,3 +1,7 @@
+## 2. november — SOURCE595 er lokalt udstedt; samlet kvalifikation og drift er åbne
+
+Følg [kanonisk status](docs/rdks/90_INDEX/CURRENT_TRUTH.md#source-595-status-2026-11-02) og det private checkpoint. Binding/output er lokalt afledt én gang, append-only SQL og normal fixedpoint består. Ældre NULL- og main-afventningsudsagn nedenfor er historik. Ingen SOURCE-aktivering eller produktionsændring følger af lokal udstedelse.
+
 ## 2. november — faktisk main og gennemgået DMI-kode er indarbejdet lokalt
 
 Den isolerede SOURCE-kodeunion omfatter faktisk PR791-main og den samlede gennemgåede DMI-/statistikkandidat. Den endelige kvalificerede faktiske main skal stadig indarbejdes før én normal595-afledning; version/binding/output er NULL. Følg [kanonisk status](docs/rdks/90_INDEX/CURRENT_TRUTH.md#source-595-status-2026-11-02). Ældre afventning af allerede indarbejdet main nedenfor er dateret historik. Ingen aktivering eller produktionsændring følger af den lokale integration.

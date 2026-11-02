@@ -1,3 +1,9 @@
+## 2. november — kvalificeret main er indarbejdet; følg revisionens aktuelle fase
+
+Den kvalificerede faktiske main fra PR792 er normalt indarbejdet som Git-forælder. Hele SOURCE-træet var uændret ved denne merge. Læs [kanonisk status](../rdks/90_INDEX/CURRENT_TRUTH.md#source-595-status-2026-11-02) og IMPLEMENTATION_STATUS for den aktuelle udstedelses- og kvalifikationsfase, samt DEC-0261 og håndbog 89.297. Ældre afventning af main-integration er dateret historik. Den normale 595-afledning skal begynde med det bevarede NULL-udgangspunkt og gennemføres én gang efter dokumentreview og kodefreeze; dette er ikke en løbende påstand om metadataenes aktuelle værdi.
+
+Ejeren har godkendt sikker oprydning og klargøring til selvstændig Free-drift, også af hidtil unævnte driftsafhængigheder. Beskyt ravradar.dk, vejrhentning, cache, beregning og deploy. Brug de eksisterende kontrollerede veje; SOURCE-G4, statistik og automatisk brugersletning aktiveres ikke implicit. Alle fem mål er åbne.
+
 ## 2. november — fortsæt fra den faktiske lokale SOURCE-kodeunion
 
 Faktisk main fra PR791 er indarbejdet; den samlede gennemgåede DMI-/statistikkandidat er nu normalt sammenført i den isolerede revision. Det er ikke bevis for kandidatens endelige main-kvalifikation eller SOURCE-drift. Læs [kanonisk status](../rdks/90_INDEX/CURRENT_TRUTH.md#source-595-status-2026-11-02), DEC-0261 og håndbog89.296. Bevar NULL og indarbejd den endelige kvalificerede faktiske main før én normal595-afledning. Ældre afventning af den allerede indarbejdede PR791-main er historik. Ingen produktionsændring under aktiv writer.

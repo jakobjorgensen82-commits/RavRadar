@@ -1,3 +1,7 @@
+## 2. november — kvalificeret main er faktisk integreret
+
+Den kvalificerede faktiske main fra PR792 er normalt indarbejdet. Hele SOURCE-træet var uændret ved denne merge. [Kanonisk status](90_INDEX/CURRENT_TRUTH.md#source-595-status-2026-11-02) og IMPLEMENTATION_STATUS angiver revisionens aktuelle fase; håndbog 89.297 beskriver den normale vej fra kode til drift. Ældre main-afventning nedenfor er historik. 595 afledes én gang fra det krævede NULL-udgangspunkt efter dokumentreview og kodefreeze; efterfølgende fasebeviser registreres i de to statusdokumenter. Alle fem mål er åbne.
+
 ## 2. november — faktisk main og gennemgået DMI-kode er indarbejdet lokalt
 
 Den isolerede SOURCE-kodeunion omfatter faktisk PR791-main og den samlede gennemgåede DMI-/statistikkandidat. Den endelige kvalificerede faktiske main skal stadig indarbejdes før én normal595-afledning; version/binding/output er NULL. Følg [kanonisk status](90_INDEX/CURRENT_TRUTH.md#source-595-status-2026-11-02). Ældre afventning af allerede indarbejdet main nedenfor er dateret historik. Ingen aktivering eller produktionsændring følger af den lokale integration.

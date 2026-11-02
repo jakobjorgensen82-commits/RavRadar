@@ -1,4 +1,18 @@
 <a id="source-595-status-2026-11-02"></a>
+## 2. november — SOURCE595 lokalt udstedt og fixedpoint bestået; kvalifikation og drift åbne
+
+Den endelige kvalificerede faktiske main fra PR792 er nu normalt indarbejdet som Git-forælder. SOURCE-træet er uændret ved denne merge, og de gennemgåede DMI-, assistent-, admin- og private controllerændringer bevares. Main-kvalifikation er ikke SOURCE-kvalifikation; ældre udsagn nedenfor om afventet main-integration er dateret historik.
+
+Pages-controlleren accepterer kun ravradar-del.pages.dev og præcis del.ravradar.dk. De eksisterende kilde-, projekt-, bindings-, processtop- og readback-guards består, og57 normale lokale cases er bestået. De seks frontend-/cacheejere er ikke ændret: legacy-delingsadressen bevares indtil faktisk DNS/TLS og normal værtaccept. Dette er ikke offentlig domænelevering.
+
+SOURCE4.0.595 har gennemført normal lokal versionssynk og C/I-afledning. Én binding og ét sæt outputidentiteter er afledt i hver sin nye proces med præcis bevaret normal stdout; metadataenes version, binding og output er ikke længere NULL. Én ny append-only SQL-fil er skrevet create-only, og normal consumer-sync er bestået. Alle 75 gamle fysiske SQL-originaler er byteuændrede; den fysiske bank indeholder nu 76 filer. Alle seks normale fixedpoint-processer er bestået med uændrede kontrollerede generator-/consumerbytes. Det er lokal udstedelse og fixedpoint, ikke PostgreSQL-, native-, CI-, installations- eller driftsbevis. De normale generatorer lukker de faktiske C165/I161/T12-input, og de målrettede normale issued-kalderprøver består, herunder hele kilde-/outputafgrænsningen, synkronisering og61→62-planen. Det er lokal kalder- og parserkontrol, ikke udført PostgreSQL.
+
+Faktisk61→62 på den ægte594-forgænger i samme PostgreSQL, SDK/action63/64, fysisk ejerafslutning, hel FULL/SOURCE-kvalifikation og faktisk gennemførelse inden for180 minutter er fortsat åbne. Kontrolleret installation, original-B/S-før-T, beskyttet genoptagelse, offentlig levering og normal brugeraccept skal derefter dokumenteres; ingen gammel native-prøve ommærkes.
+
+Ejeren har godkendt sikker oprydning og gennemgang af den eksisterende opsætning til vedligeholdelsesfri Free-drift uden løbende Codex-/PC-afhængighed, også hvor et driftsled ikke tidligere er nævnt. Arbejdet skal beskytte ravradar.dk, vejrhentning, cache, beregning, deploy og genoptagelse. Klargøring er ikke målt Free-kapacitet eller færdig selvdrift; ukendte udfald og afhængigheder skal afklares gennem de normale kontroller. Ingen skjult pruning, datatab, ny betalt plan eller implicit SOURCE-G4-, statistik- eller automatisk brugersletteaktivering følger med.
+
+Alle fem mål til18.november er åbne. ROOT koordinerer produktionen; ingen produktionsændring under aktiv writer. DEC-0261s gældende DMI-krav og kildeprioritet bevares. Se håndbog89.297; skiftende identiteter, målinger og private driftsbeviser føres alene privat.
+
 ## 2. november — faktisk lokal SOURCE-kodeunion, endnu ingen udstedt595
 
 Faktisk main fra PR791 er normalt indarbejdet som forfader. Den isolerede revision er nu også normalt sammenført med den samlede gennemgåede PR792-kandidat, herunder DMI-køen, de private metadata-/fejlfaserettelser og deres relevante normale kaldere. Kandidatens endelige kvalifikation og efterfølgende faktiske main er fortsat særskilte krav; et gennemgået PR-input er ikke en leveret main.

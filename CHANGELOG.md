@@ -1,3 +1,11 @@
+## 2. november — kvalificeret main integreret; normal vej til SOURCE595
+
+Den kvalificerede main fra PR792 er normalt indarbejdet som faktisk Git-forælder. Hele SOURCE-træet var uændret ved denne merge. Den normale 595-afledning skal begynde med det bevarede NULL-udgangspunkt efter dokumentreview og kodefreeze og gennemføres én gang. Den aktuelle udstedelsesfase og kvalifikationsstatus føres i [CURRENT_TRUTH](docs/rdks/90_INDEX/CURRENT_TRUTH.md#source-595-status-2026-11-02) og IMPLEMENTATION_STATUS; denne historik ommærker ikke main-bevis som revisionens egen kvalifikation.
+
+Pages-controlleren accepterer kun den faste projektvært og præcis del.ravradar.dk med bevarede hårde guards; 57 normale lokale cases er gennemført. De seks frontend-/cacheejere indgik ikke i denne ændring. Legacy-adressen må først skifte efter DNS/TLS og normal værtaccept. Ejeren har desuden godkendt sikker oprydning og klargøring til selvstændig Free-drift gennem de eksisterende kontrollerede veje; det er ikke en færdigmelding eller implicit SOURCE-G4-, statistik- eller brugersletteaktivering.
+
+Alle fem mål er åbne. Se DEC-0261 og håndbog 89.297. Ældre daterede afsnit bevares som historik; ingen INSTALL-, versions-, model-, SQL-, kildeprioritets- eller geometriændring udføres af denne dokumentopdatering.
+
 ## 2. november — SOURCE sammenført med den gennemgåede DMI- og statistikrettelse
 
 Den isolerede kodeunion indarbejder nu faktisk main fra PR791 og den samlede gennemgåede PR792-kandidat. Revisionens normale præ-DMI-indgang bruger samme bevarede komponentfortolkning, PART-/zoneafgrænsning og T+3 som den almindelige vejrhentning. Historiske hele kontrolinput bevares gennem præcise, lukkede læsegrænser; nye normale kaldere kontrollerer den nye kode.

@@ -1,3 +1,9 @@
+## 2. november — én normal udstedelse efter faktisk main-integration
+
+Kvalificeret main er normalt indarbejdet; hele SOURCE-træet var uændret ved denne merge. Den normale 595-afledning starter med det bevarede NULL-udgangspunkt efter ROOTs dokumentreview og endelig kodefreeze og gennemføres én gang gennem den eksisterende kæde. Den aktuelle fase og metadataenes aktuelle tilstand står i [CURRENT_TRUTH](90_INDEX/CURRENT_TRUTH.md#source-595-status-2026-11-02) og IMPLEMENTATION_STATUS. Gamle SQL, autentiske originaler, kilde- og modelroller bevares. Se DEC-0261 og håndbog 89.297; ældre afventningsudsagn nedenfor er historik.
+
+Sikker oprydning og Free-/Codex-uafhængig klargøring er godkendt som arbejde, ikke som bevis for færdig drift eller generel sletteadgang. Beskyt den aktive writer og normal genoptagelse; ukendt skriveudfald må ikke gentages blindt. Ingen implicit SOURCE-G4-, statistik- eller brugersletteaktivering.
+
 ## 2. november — faktisk main og gennemgået DMI-kode er indarbejdet lokalt
 
 Den isolerede SOURCE-kodeunion omfatter faktisk PR791-main og den samlede gennemgåede DMI-/statistikkandidat. Den endelige kvalificerede faktiske main skal stadig indarbejdes før én normal595-afledning; version/binding/output er NULL. Følg [kanonisk status](90_INDEX/CURRENT_TRUTH.md#source-595-status-2026-11-02). Ældre afventning af allerede indarbejdet main nedenfor er dateret historik. Ingen aktivering eller produktionsændring følger af den lokale integration.
