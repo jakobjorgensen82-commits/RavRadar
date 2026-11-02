@@ -1,6 +1,8 @@
 import assert from 'node:assert/strict';
 import crypto from 'node:crypto';
 import fs from 'node:fs';
+import {readIssued594ImpactTextTestInputs} from './lib/assistant594-historical-source-test-input.mjs';
+const historicalTextInputs=await readIssued594ImpactTextTestInputs();
 import os from 'node:os';
 import path from 'node:path';
 import {execFileSync} from 'node:child_process';
@@ -19,7 +21,8 @@ const files=['package.json','scripts/validate-source-once.mjs','scripts/source-i
 try{
   git('init','-q');git('config','user.name','Synthetic impact test');git('config','user.email','fixture@example.invalid');
   git('config','core.autocrlf','false');git('config','core.filemode','true');
-  for(const file of files){const bytes=fs.readFileSync(path.join(SOURCE,file));write(file,bytes);
+  for(const file of files){const bytes=Object.hasOwn(historicalTextInputs,file)
+    ?Buffer.from(historicalTextInputs[file]):fs.readFileSync(path.join(SOURCE,file));write(file,bytes);
     pins.push({path:file,sha256:crypto.createHash('sha256').update(bytes).digest('hex')});}
   write('docs/rdks/90_INDEX/CURRENT_TRUTH.md','# Baseline\n');const base=commit('synthetic base');
   const {planSourceImpactFromGit:plan}=await import(pathToFileURL(path.join(root,'scripts/source-impact-git-diff.mjs')).href);

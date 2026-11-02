@@ -13,7 +13,7 @@ import {SOURCE_PR_NATIVE_PHASE_KIND,verifySourcePrNativePhaseReceipt,readSourceP
 import {requireSourceProducerOutput} from './lib/source-producer-successor-source.mjs';
 import {SOURCE_PRODUCER_COMMANDS,verifySourceProducerNativePhaseReceipt,
   assertSourceProducerProofHeader} from './native-postgres-evidence.mjs';
-import {projectSourceImpactWorkflowFull} from './lib/source-impact-workflow-review.mjs';
+import {projectSourceImpactWorkflowFull,SOURCE_IMPACT_FULL_STEP_CONDITION} from './lib/source-impact-workflow-review.mjs';
 import {inverseReviewedForecastShareProjectionSourceScripts,inverseReviewedDmiScalarGapSourceScripts} from './lib/account-statistics-assistant-package-review.mjs';
 import {expandSourceCommands,buildSourceValidationPlan,runSourceValidation} from './validate-source-once.mjs';
 import {requireAssistantLaterH0Release,requireAssistantPublic587SuccessorRelease,
@@ -113,8 +113,13 @@ export function inverseSourceNode24Workflow(value) {
   assert.equal(source.split(SOURCE_NODE24_ENV).length,2,'Exact once-only step-scoped Node24 operand');
   const cohort='          python -B scripts/test-owned-dmi-grib-save-native.py --node24-path "$(command -v node)"\n';
   assert(source.includes(cohort+SOURCE_NODE24_CAPTURE),'Capture must follow the actual Node24 cohort');
-  const pg='      - name: Validate native PostgreSQL checkpoint CAS on artificial data only\n        shell: bash\n        env:\n';
-  assert(source.includes(pg+SOURCE_NODE24_ENV),'Runtime belongs only to the existing PG step');
+  const pgName='      - name: Validate native PostgreSQL checkpoint CAS on artificial data only\n';
+  const pgBody='        shell: bash\n        env:\n';
+  // Preserve the old unconditional FULL header and the existing exact selected
+  // FULL header. Whole workflow verification still follows this data inverse.
+  assert([pgName+pgBody,pgName+SOURCE_IMPACT_FULL_STEP_CONDITION+pgBody]
+    .some(header=>source.includes(header+SOURCE_NODE24_ENV)),
+    'Runtime belongs only to the existing PG step');
   assert(source.indexOf(SOURCE_NODE24_CAPTURE)<source.indexOf('      - name: Restore Node22 for existing source validation\n'));
   source=source.replace(SOURCE_NODE24_CAPTURE,'').replace(SOURCE_NODE24_ENV,'');
   return source;

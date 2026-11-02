@@ -4,12 +4,12 @@ import fs from 'node:fs/promises';
 import crypto from 'node:crypto';
 import test from 'node:test';
 import {SOURCE_NODE24_CAPTURE,SOURCE_NODE24_ENV,inverseSourceNode24Workflow,
-  verifyWorkflow} from './national584-source-evidence.mjs';
+  verifyWorkflow,verifySourcePrWorkflow} from './national584-source-evidence.mjs';
 
 test('SOURCE legacy native child retains actual Node24 without changing Node22 or national environment',async()=>{
   const source=(await fs.readFile(new URL('../.github/workflows/validate-pull-request.yml',import.meta.url),'utf8'))
     .replace(/\r\n/g,'\n');
-  verifyWorkflow(source); // Includes the whole historical workflow inverse/hash.
+  verifySourcePrWorkflow(source); // Actual SOURCE first, then its whole historical workflow inverse/hash.
   const prior=inverseSourceNode24Workflow(source);
   verifyWorkflow(prior);
   assert(!prior.includes('RAVRADAR_SOURCE_NATIVE_NODE24_PATH'));
@@ -26,7 +26,7 @@ test('SOURCE legacy native child retains actual Node24 without changing Node22 o
     source.replace(SOURCE_NODE24_CAPTURE,SOURCE_NODE24_CAPTURE.replace('$GITHUB_OUTPUT','$GITHUB_ENV')),
     source.replace(SOURCE_NODE24_ENV,SOURCE_NODE24_ENV.replace('outputs.node24_path','outputs.unverified_path')),
     source.replace(SOURCE_NODE24_CAPTURE,'').replace('      - name: Restore Node22',SOURCE_NODE24_CAPTURE+'      - name: Restore Node22'),
-  ])assert.throws(()=>verifyWorkflow(changed));
+  ])assert.throws(()=>verifySourcePrWorkflow(changed));
 });
 
 test('CURRENT opt-in qualification requires prior exact main proof and cannot deploy or mint its own gate',async()=>{

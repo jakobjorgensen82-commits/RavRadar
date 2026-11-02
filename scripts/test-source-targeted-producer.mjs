@@ -1,6 +1,8 @@
 import assert from 'node:assert/strict';
 import crypto from 'node:crypto';
 import fs from 'node:fs';
+import {readIssued594ImpactTextTestInputs} from './lib/assistant594-historical-source-test-input.mjs';
+const historicalTextInputs=await readIssued594ImpactTextTestInputs();
 import os from 'node:os';
 import path from 'node:path';
 import {execFileSync} from 'node:child_process';
@@ -171,7 +173,7 @@ try{
   copyModule('scripts/weather-source-gate.mjs');
   for(const name of ['package.json','scripts/lib/account-statistics-assistant-package-review.json','js/ui/about-i18n.js',
     'js/ui/about-explainer-i18n.js','js/ui/learn-i18n.js','js/ui/learn-i18n-de.js','js/ui/learn-i18n-en.js'])
-    write(name,fs.readFileSync(path.join(SOURCE,name)));
+    write(name,Object.hasOwn(historicalTextInputs,name)?historicalTextInputs[name]:fs.readFileSync(path.join(SOURCE,name)));
   write('.gitignore','.cache/\n');fs.mkdirSync(path.join(root,'.cache'));
   const scripts=JSON.parse(fs.readFileSync(path.join(SOURCE,'package.json'))).scripts;
   const commands=[...new Set(['validate:release-version','test:module-version-closure','test:security-hardening',
