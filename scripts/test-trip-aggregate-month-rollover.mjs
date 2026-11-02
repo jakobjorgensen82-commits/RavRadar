@@ -785,3 +785,221 @@ test('categorical report preserves global ledger and owner delivery without lega
       originalLegacyReportUnchanged:true,ownerTransportAndTable:true,installed:false,activated:false,hostedFreeQualified:false}));
   }finally{fixtures.forEach(f=>f.close());Date.now=oldClock;globalThis.fetch=oldFetch;}
 });
+
+
+// Execute the actual fixed operator/CLI with the existing VM test boundary.
+// Dependencies are synthetic; no GitHub, aggregate, admin or credential I/O.
+async function invokePrivateStudyOperatorFixture(options = {}) {
+  const vm = await import('node:vm');
+  const path = await import('node:path');
+  const {fileURLToPath,pathToFileURL} = await import('node:url');
+  const url = new URL('./publish-private-trip-weather-study.mjs',import.meta.url);
+  let source = fs.readFileSync(url,'utf8');
+  assert.equal((source.match(/^import /gm) ?? []).length,5);
+  source = source.replace(/^import [^\n]+\n/gm,'').replace(/^export /gm,'')
+    .replaceAll('import.meta.url','moduleUrl');
+  const secret = 'PRIVATE_FIXTURE_SENSITIVE';
+  const head = 'a'.repeat(40), calls = {read:0,aggregate:0,publish:0};
+  const env = {GITHUB_EVENT_NAME:'workflow_dispatch',GITHUB_WORKFLOW:'Private RavRadar trip weather study',
+    GITHUB_REF:'refs/heads/main',GITHUB_RUN_ATTEMPT:'1',GITHUB_SHA:head,
+    TRIP_STORAGE_OPERATION:'private-study-export',GITHUB_TOKEN:secret,
+    SUPABASE_ACCESS_TOKEN:secret,SUPABASE_SERVICE_ROLE_KEY:secret,
+    TRIP_GATEWAY_SHARED_SECRET:secret,TRIP_PSEUDONYM_SECRET_V1:secret,CLOUDFLARE_API_TOKEN:secret,
+    CLOUDFLARE_TRIP_GATEWAY_URL:'https://synthetic.example',...options.env};
+  const stdout=[],stderr=[];
+  let complete;
+  const done = new Promise(resolve => {complete=resolve;});
+  const context = {
+    moduleUrl:url.href,path,pathToFileURL,
+    process:{argv:['node',fileURLToPath(url)],env,exitCode:undefined},
+    console:{log:line=>{stdout.push(line);complete();},error:line=>{stderr.push(line);complete();}},
+    execFileSync:(command,args,config)=>{
+      calls.read++;
+      assert.equal(config.timeout,60000);assert.equal(config.maxBuffer,65536);
+      assert.equal(config.env.GITHUB_TOKEN,secret,'The normal source check receives the existing token');
+      for(const key of ['SUPABASE_ACCESS_TOKEN','SUPABASE_SERVICE_ROLE_KEY','TRIP_GATEWAY_SHARED_SECRET',
+        'TRIP_PSEUDONYM_SECRET_V1','CLOUDFLARE_API_TOKEN'])assert.equal(config.env[key],undefined);
+      if(command==='git'&&args[0]==='fetch')return '';
+      if(command==='git'&&args[0]==='rev-parse')return head+'\n';
+      assert.equal(command,'node');assert.deepEqual(Array.from(args),['scripts/weather-source-gate.mjs','check']);
+      if(options.sourceError)throw options.sourceError;
+      return options.sourceRequired ? 'Source gate: required=true; reason=synthetic\n'
+        : 'Source gate: required=false; reason=synthetic-proof\n';
+    },
+    readTripWeatherAggregate:async()=>{calls.aggregate++;if(options.aggregateError)throw options.aggregateError;return {};},
+    publishPrivateTripStudyAdmin:async()=>{calls.publish++;if(options.publishError)throw options.publishError;
+      return {kind:'PRIVATE_STUDY_ADMIN_BLOB_VERIFIED',synthetic:true};},
+  };
+  let timer;
+  try {
+    vm.runInNewContext(source,context,{filename:'actual-private-study-operator.mjs'});
+    await Promise.race([done,new Promise((_,reject)=>{timer=setTimeout(()=>reject(Error('OPERATOR_FIXTURE_DID_NOT_SETTLE')),2000);})]);
+  } finally {clearTimeout(timer);}
+  assert(![...stdout,...stderr].some(line=>String(line).includes(secret)),'No raw secret or provider text may escape');
+  const parse = line => {try{return JSON.parse(line);}catch{return {kind:line};}};
+  return {calls,stdout,stderr,exitCode:context.process.exitCode,
+    failure:stderr.length?parse(stderr[0]):null,receipt:stdout.length?parse(stdout[0]):null};
+}
+
+test('private-study operator reports fixed source timeout phase before aggregate work',async()=>{
+  const error=Object.assign(Error('PRIVATE_FIXTURE_SENSITIVE child stderr'),
+    {code:'ETIMEDOUT',stdout:'PRIVATE_FIXTURE_SENSITIVE',stderr:'PRIVATE_FIXTURE_SENSITIVE'});
+  const result=await invokePrivateStudyOperatorFixture({sourceError:error});
+  assert.equal(result.failure?.phase,'SOURCE_PROOF','PRIVATE_STUDY_SAFE_PHASE_REGRESSION');
+  assert.equal(result.failure.errorCode,'PRIVATE_STUDY_OPERATOR_COMMAND_TIMEOUT');
+  assert.equal(result.failure.writeOutcome,'NOT_STARTED');
+  assert.equal(result.failure.kind,'PRIVATE_STUDY_OPERATOR_FAILED');
+  assert.equal(result.exitCode,1);assert.deepEqual(result.calls,{read:4,aggregate:0,publish:0});
+  assert.equal(result.stderr.length,1);assert.equal(result.stdout.length,0);
+});
+
+test('private-study operator keeps aggregate and publication failures unknown without retry or raw errors',async()=>{
+  for(const fixture of [
+    {input:{aggregateError:Error('AGGREGATE_CALLER_TIMEOUT')},phase:'AGGREGATE',code:'AGGREGATE_CALLER_TIMEOUT',calls:{read:4,aggregate:1,publish:0}},
+    {input:{publishError:Error('PRIVATE_STUDY_DOCUMENT_WRITE_OUTCOME_UNKNOWN')},phase:'ADMIN_PUBLISH',code:'PRIVATE_STUDY_DOCUMENT_WRITE_OUTCOME_UNKNOWN',calls:{read:4,aggregate:1,publish:1}},
+    {input:{aggregateError:Error('PRIVATE_FIXTURE_SENSITIVE unknown backend body')},phase:'AGGREGATE',code:'PRIVATE_STUDY_OPERATOR_UNCLASSIFIED',calls:{read:4,aggregate:1,publish:0}},
+    {input:{aggregateError:Object.defineProperty({},'message',{get(){throw Error('PRIVATE_FIXTURE_SENSITIVE getter');}})},phase:'AGGREGATE',code:'PRIVATE_STUDY_OPERATOR_UNCLASSIFIED',calls:{read:4,aggregate:1,publish:0}},
+  ]){
+    const result=await invokePrivateStudyOperatorFixture(fixture.input);
+    assert.equal(result.failure?.phase,fixture.phase);
+    assert.equal(result.failure.errorCode,fixture.code);
+    assert.equal(result.failure.writeOutcome,'UNKNOWN_NO_RETRY');
+    assert.deepEqual(result.calls,fixture.calls);assert.equal(result.exitCode,1);
+    assert.deepEqual(Object.keys(result.failure).sort(),['errorCode','kind','phase','writeOutcome']);
+  }
+  const rejected=await invokePrivateStudyOperatorFixture({sourceRequired:true});
+  assert.equal(rejected.failure.phase,'SOURCE_PROOF');assert.equal(rejected.failure.errorCode,'PRIVATE_STUDY_OPERATOR_SOURCE');
+  assert.equal(rejected.failure.writeOutcome,'NOT_STARTED');assert.deepEqual(rejected.calls,{read:4,aggregate:0,publish:0});
+  const authority=await invokePrivateStudyOperatorFixture({env:{GITHUB_RUN_ATTEMPT:'2'}});
+  assert.equal(authority.failure.phase,'AUTHORITY');assert.equal(authority.failure.errorCode,'PRIVATE_STUDY_OPERATOR_AUTHORITY');
+  assert.deepEqual(authority.calls,{read:0,aggregate:0,publish:0});
+  const success=await invokePrivateStudyOperatorFixture();
+  assert.equal(success.failure,null);assert.equal(success.exitCode,undefined);
+  assert.equal(success.receipt.kind,'PRIVATE_STUDY_ADMIN_BLOB_VERIFIED');
+  assert.deepEqual(success.calls,{read:4,aggregate:1,publish:1});
+});
+
+
+test('private-study operator diagnostic view preserves the entire immutable publisher oracle',async()=>{
+  const vm=await import('node:vm'),crypto=await import('node:crypto');
+  const callers=fs.readFileSync(new URL('./test-account-statistics-assistant-callers.mjs',import.meta.url),'utf8');
+  const begin='// BEGIN EXACT PRIVATE STUDY OPERATOR DIAGNOSTIC TEST VIEW';
+  const end='// END EXACT PRIVATE STUDY OPERATOR DIAGNOSTIC TEST VIEW';
+  assert.equal(callers.split(begin).length,2);assert.equal(callers.split(end).length,2);
+  const from=callers.indexOf(begin),until=callers.indexOf(end,from);
+  const view=vm.runInNewContext(callers.slice(from,until)+'\nreviewedPrivateStudyOperatorPublisher;',{assert,crypto,Buffer});
+  const actual=fs.readFileSync(new URL('./publish-private-trip-weather-study.mjs',import.meta.url),'utf8');
+  const sha=value=>crypto.createHash('sha256').update(value).digest('hex');
+  const before=view(actual);
+  assert.equal(sha(before),'5b087741711e31ad64401be9a8bbfc4ffb0bfe53bd7e68a50a9fe08cd947d6dc');
+  assert.equal(view(before),before);
+  for(const changed of [actual+'\n',actual.replace('timeout:60000','timeout:60001'),
+    actual.replace("phase = 'AGGREGATE'","phase = 'ADMIN_PUBLISH'")]){
+    assert.notEqual(changed,actual);assert.equal(view(changed),changed);
+    assert.notEqual(sha(view(changed)),sha(before));
+  }
+});
+
+test('aggregate client parallel inventories preserve completeness and consent barriers', async () => {
+  const { readTripWeatherAggregate } = await import('./lib/trip-weather-aggregate-client.mjs');
+  const modes = ['stable', 'truncated-profiles', 'truncated-preferences', 'unsafe-revision',
+    'changed-after-ack', 'changed-after-verify', 'profile-removal', 'failed-preference-aborts-profile'];
+  const shared = 'synthetic-parallel-inventory-shared-secret-only-000000000000';
+  const pseudonym = 'synthetic-input-scan-pseudonym-secret-only-00000000';
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = async () => { throw new Error('NETWORK_FORBIDDEN'); };
+  try {
+    for (const mode of modes) {
+      const f = fixture(), originals = f.originals();
+      f.dbs[0].exec(fs.readFileSync(new URL('../cloudflare/trip-gateway/migrations/007_trip_weather_aggregate_categorical_policy.sql', import.meta.url), 'utf8'));
+      const env = { TRIP_GATEWAY_SHARED_SECRET: shared, TRIP_AGGREGATE_ENABLED: 'true',
+        ...Object.fromEntries(f.d1.map((db, index) => ['TRIP_DB_' + index, db])) };
+      let pair = null, pairs = 0, profileReads = 0, preferenceReads = 0;
+      let aggregateCalls = 0, verifyCalls = 0, abortedProfile = false;
+      const together = () => new Promise((resolve, reject) => {
+        if (!pair) {
+          const pending = { waiting: [], timer: null };
+          pending.timer = setTimeout(() => {
+            if (pair === pending) pair = null;
+            pending.waiting.forEach(item => item.reject(new Error('SYNTHETIC_INVENTORY_PAIR_NOT_PARALLEL')));
+          }, 250);
+          pair = pending;
+        }
+        pair.waiting.push({ resolve, reject });
+        if (pair.waiting.length === 2) {
+          const completed = pair; pair = null; pairs++;
+          clearTimeout(completed.timer); completed.waiting.forEach(item => item.resolve());
+        }
+      });
+      const fetchImpl = async (input, init = {}) => {
+        const url = new URL(input);
+        if (url.hostname === 'synthetic.supabase.co') {
+          assert.equal(init.method, 'GET'); assert.equal(init.redirect, 'error');
+          assert.equal(init.cache, 'no-store'); assert.equal(init.credentials, 'omit');
+          const profiles = url.pathname === '/rest/v1/profiles';
+          assert(profiles || url.pathname === '/rest/v1/account_statistics_preferences');
+          if (profiles) profileReads++; else preferenceReads++;
+          await together(); // Both actual bounded GETs must begin before either returns.
+          if (mode === 'failed-preference-aborts-profile') {
+            if (!profiles) return new Response('{}', { status: 403 });
+            return new Promise((resolve, reject) => {
+              const abort = () => { abortedProfile = true; reject(new Error('SYNTHETIC_PROFILE_ABORTED')); };
+              if (init.signal.aborted) abort(); else init.signal.addEventListener('abort', abort, { once: true });
+            });
+          }
+          const changed = mode === 'changed-after-ack' && aggregateCalls > 0
+            || mode === 'changed-after-verify' && verifyCalls > 0;
+          const rows = profiles ? mode === 'profile-removal' && aggregateCalls > 0 ? [] : [{ id: uuid(9000) }]
+            : changed ? [{ user_id: uuid(9000), enabled: false, revision: '1' }]
+            : mode === 'unsafe-revision' ? [{ user_id: uuid(9000), enabled: true, revision: 9007199254740992 }] : [];
+          const range = mode === 'truncated-profiles' && profiles ? '0-0/2'
+            : mode === 'truncated-preferences' && !profiles ? '*/1'
+            : rows.length ? `0-${rows.length - 1}/${rows.length}` : '*/0';
+          return new Response(JSON.stringify(rows), { headers: { 'content-range': range } });
+        }
+        assert.equal(url.hostname, 'synthetic-parallel.workers.dev');
+        if (url.pathname === '/v1/trips/aggregate-weather') aggregateCalls++;
+        else { assert.equal(url.pathname, '/v1/trips/aggregate-weather-verify'); verifyCalls++; }
+        const offset = f.trace.length, response = await handleRequest(new Request(url, init), env);
+        assert.equal(response.status, 200); assert(queryCount(f.trace.slice(offset)) <= 45);
+        return response;
+      };
+      const invoke = () => readTripWeatherAggregate({ supabaseUrl: 'https://synthetic.supabase.co',
+        serviceRoleKey: 'synthetic-service-secret-only-0000000000000000', gatewayUrl: 'https://synthetic-parallel.workers.dev',
+        sharedSecret: shared, pseudonymSecret: pseudonym, fetchImpl });
+      try {
+        if (mode === 'stable') {
+          const report = await invoke(); assert.equal(report.schemaVersion, 3); assert.equal(report.publicReleaseIssued, false);
+          assert.equal(aggregateCalls, 11); assert.equal(verifyCalls, 1);
+          assert.equal(profileReads, 13); assert.equal(preferenceReads, 13); assert.equal(pairs, 13);
+          const ledger = plain(f.dbs[0].prepare('select * from trip_weather_aggregate_releases').all());
+          assert.deepEqual(f.accounting(), [1, 0]);
+          assert.deepEqual(await invoke(), report, 'an existing proposal is replayed without resampling');
+          assert.equal(aggregateCalls, 12); assert.equal(verifyCalls, 2);
+          assert.equal(profileReads, 16); assert.equal(preferenceReads, 16);
+          assert.deepEqual(plain(f.dbs[0].prepare('select * from trip_weather_aggregate_releases').all()), ledger);
+          assert.deepEqual(f.accounting(), [1, 0]);
+        } else {
+          const code = mode.startsWith('truncated-') ? /AGGREGATE_ACCOUNT_INVENTORY_INCOMPLETE/
+            : mode === 'unsafe-revision' ? /AGGREGATE_PREFERENCE_METADATA_INVALID/
+            : mode === 'failed-preference-aborts-profile' ? /AGGREGATE_READ_REJECTED/ : /AGGREGATE_PREFERENCES_CHANGED/;
+          await assert.rejects(invoke(), code);
+          if (mode === 'changed-after-ack' || mode === 'profile-removal') {
+            assert.equal(aggregateCalls, 1); assert.equal(verifyCalls, 0); assert.deepEqual(f.accounting(), [0, 0]);
+          } else if (mode === 'changed-after-verify') {
+            assert.equal(aggregateCalls, 11); assert.equal(verifyCalls, 1); assert.deepEqual(f.accounting(), [1, 0]);
+          } else {
+            assert.equal(aggregateCalls, 0); assert.equal(verifyCalls, 0);
+            assert.deepEqual(f.accounting(), [0, 0]);
+            assert.equal(profileReads, 1); assert.equal(preferenceReads, 1);
+          }
+          if (mode === 'failed-preference-aborts-profile') assert.equal(abortedProfile, true);
+        }
+        assert.deepEqual(f.originals(), originals);
+      } finally {
+        if (pair) { clearTimeout(pair.timer); pair.waiting.forEach(item => item.reject(new Error('SYNTHETIC_FIXTURE_CLOSED'))); }
+        f.close();
+      }
+    }
+  } finally { globalThis.fetch = originalFetch; }
+});
