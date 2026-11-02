@@ -8,12 +8,13 @@ import path from 'node:path';
 import test from 'node:test';
 import { execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
-import { SOURCE_NORMAL_WORKFLOW_REVIEW as review, inverseSourceNormalWorkflow } from './lib/source-normal-workflow-review.mjs';
+import { SOURCE_NORMAL_WORKFLOW_REVIEW as review, inverseSourceNormalWorkflow, SOURCE_NORMAL_MAIN_IMPORT_WORKFLOW_REVIEW as mainImportReview, inverseSourceNormalMainImportWorkflow } from './lib/source-normal-workflow-review.mjs';
 import { buildWeatherOperationalControlSummary } from './weather-operational-control-summary.mjs';
 const ROOT = fileURLToPath(new URL('../', import.meta.url));
 const sha = value => crypto.createHash('sha256').update(value).digest('hex');
 const read = file => fs.readFileSync(path.join(ROOT, file), 'utf8').replaceAll('\r\n', '\n');
 const actual = Object.fromEntries(Object.entries(review.roles).map(([role, row]) => [role, read(row.relativePath)]));
+const historicalActual = Object.fromEntries(Object.entries(actual).map(([role, source]) => [role, inverseSourceNormalMainImportWorkflow(source, role)]));
 const prior = Object.fromEntries(Object.entries(actual).map(([role, source]) => [role, inverseSourceNormalWorkflow(source, role)]));
 const count = (text, value) => text.split(value).length - 1;
 const gh = value => '$' + '{{ ' + value + ' }}';
@@ -78,6 +79,7 @@ function requestFor(source, name, enabled) {
 const requestNames = { build: 'Select one explicit legacy or SOURCE ordinary route',
   once: 'Reject unknown or mixed SOURCE request before any operational reentry' };
 test('SOURCE whole caller inverses reproduce genuine b2 and reject drift in every reviewed hunk', () => {
+  const actual = historicalActual; // Genuine fixed 6c8 CODE for all unchanged old oracles.
   for (const [role, row] of Object.entries(review.roles)) {
     const genuine = execFileSync('git', ['show', review.predecessorHead + ':' + row.relativePath],
       { cwd: ROOT, encoding: 'utf8', maxBuffer: 1024 * 1024 });
@@ -89,6 +91,42 @@ test('SOURCE whole caller inverses reproduce genuine b2 and reject drift in ever
       assert.notEqual(changed, actual[role]); assert.throws(() => inverseSourceNormalWorkflow(changed, role));
     }
     assert(Object.isFrozen(row) && Object.isFrozen(row.edits) && row.edits.every(Object.isFrozen));
+  }
+  // The raw current callers separately qualify only the fixed actual merge.
+  assert.deepEqual(Object.values(mainImportReview.roles).map(row => row.layers.map(layer => layer.editCount)), [[37, 5], [4]]);
+  for (const [role, row] of Object.entries(mainImportReview.roles)) {
+    const current = read(row.relativePath), first = row.layers[0];
+    assert.equal(Buffer.byteLength(current), first.after.bytes);
+    assert.equal(sha(current), first.after.sha256);
+    assert.equal(inverseSourceNormalMainImportWorkflow(current, role), actual[role]);
+    assert.equal(inverseSourceNormalWorkflow(current, role), prior[role]);
+    assert(Object.isFrozen(row) && Object.isFrozen(row.layers));
+    for (const layer of row.layers) {
+      assert(Object.isFrozen(layer) && Object.isFrozen(layer.edits) && layer.edits.every(Object.isFrozen));
+    }
+    for (const edit of first.edits) {
+      const changed = current.slice(0, edit.offset) + '#' + current.slice(edit.offset + 1);
+      assert.notEqual(changed, current);
+      assert.equal(inverseSourceNormalMainImportWorkflow(changed, role), changed);
+      assert.throws(() => inverseSourceNormalWorkflow(changed, role));
+    }
+    for (const changed of [current + '\n', current.replace('      source_normal_producer:', '      unknown_source_normal_producer:')]) {
+      assert.notEqual(changed, current);
+      assert.equal(inverseSourceNormalMainImportWorkflow(changed, role), changed);
+      assert.throws(() => inverseSourceNormalWorkflow(changed, role));
+    }
+    if (role === 'build') {
+      const positions = [...current.matchAll(/RavRadar\/4\.0\.595/g)].map(match => match.index);
+      assert.equal(positions.length, 5);
+      for (const at of positions) {
+        const changed = current.slice(0, at) + '#' + current.slice(at + 1);
+        assert.equal(inverseSourceNormalMainImportWorkflow(changed, role), changed);
+        assert.throws(() => inverseSourceNormalWorkflow(changed, role));
+      }
+    }
+    assert.equal(inverseSourceNormalMainImportWorkflow(current, 'other'), current);
+    assert.throws(() => inverseSourceNormalMainImportWorkflow(current), /SOURCE_MAIN_IMPORT_INVERSE_ARGUMENTS/);
+    assert.throws(() => inverseSourceNormalMainImportWorkflow(null, role), /SOURCE_MAIN_IMPORT_INVERSE_TYPE/);
   }
 });
 test('both actual request programs are explicit default-OFF and reject unknown or mixed SOURCE modes', () => {
