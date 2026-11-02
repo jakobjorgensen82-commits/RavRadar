@@ -1,4 +1,10 @@
-## 2. november — privat rapport stoppede uden fase; sikker lokal fejlrapportering
+## 2. november — privat rapport er forberedt; lokal rettelse af ventetid og fejlfaser
+
+En ny, afgrænset skrivefri kontrol af kontrolbasen viser, at den fejlede rapportkørsel nåede gennem alle ti lagre og gemte ét færdigt rapportforslag. Verificering og levering til admin er fortsat uafklarede. Forslaget bevares til normal genlæsning uden ny tilfældig beregning. Statistikfunktionen er kontrolleret lukket igen; normal turlagring fungerer.
+
+Den lokale samlede rettelse lader de to uafhængige metadataaflæsninger ske samtidig ved hver eksisterende kontrol. Begge komplette svar skal stadig valideres, før de bruges, og alle før-/efterkontroller samt de samlede frister bevares. Samme målrettede forsinkelsesprøve går fra timeout til afslutning; det er ikke bevis for den gamle produktionsfejls præcise kode eller tilstrækkelig hosted kapacitet. De faste fejlfaser nedenfor bevares. Præcis kildekvalifikation, levering, adminaccept og målt Free-/CPU-kapacitet er åbne.
+
+## 2. november — historik: privat rapport stoppede uden fase; sikker lokal fejlrapportering
 
 Den private statistikfunktion blev faktisk aktiveret og genlæst korrekt. Den første private rapportkørsel stoppede med en generisk fejlmarkør; det præcise trin og eventuelle varige forberedelsesvirkninger er ukendte. Funktionen er derefter kontrolleret lukket igen, og normal D1-turlagring er genåbnet. Dette er ikke en fejlet almindelig vejrhentning. Detaljer og målinger står i det private checkpoint.
 

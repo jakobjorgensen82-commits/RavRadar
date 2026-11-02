@@ -1,4 +1,8 @@
-## 2. november — privat rapport stoppede uden fase; sikker lokal fejlrapportering
+## 2. november — privat rapport gemt, efterfølgende accept og kapacitet åbne
+
+Den faktiske kontrolbase bekræfter gennemført scanning af alle ti lagre og ét bevaret rapportforslag fra den fejlede eksport. Den gamle generiske fejlkode kan stadig ikke afgøre verify- eller adminudfald. Funktionen er lukket igen med normal turlagring genåbnet. En lokal samlet efterfølger bevarer forslaget og alle kontroller, paralleliserer kun to uafhængige komplette metadataaflæsninger og rapporterer faste fejlfaser. Den oprindelige produktionsfejls præcise årsag og hosted Free-/CPU-kapacitet er fortsat åbne; et lokalt gennemført forsinkelsesforsøg er ikke hosted kvalifikation. Ingen ny eksport, SQL, fristforøgelse eller offentlig statistik.
+
+## 2. november — historik: privat rapport stoppede uden fase; sikker lokal fejlrapportering
 
 Den normale private rapportoperatør skjuler hidtil alle fejl under samme markør. Den faktiske første fejlede prøve kan derfor ikke tilskrives kildekontrol, aggregate eller adminpublicering alene ud fra varigheden. En lokal afgrænset kandidat bevarer faste faser/fejlkoder og UNKNOWN_NO_RETRY efter mulig skrivestart. Den ændrer ingen frist eller prøverapport og giver ikke automatisk adgang til en gentagelse. Kvalifikation og faktisk årsagsafklaring er fortsat åbne; se CURRENT_TRUTH og privat checkpoint.
 

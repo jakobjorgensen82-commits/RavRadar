@@ -1,4 +1,13 @@
-## 2. november — privat rapport stoppede uden fase; sikker lokal fejlrapportering
+## 2. november — privat rapportforberedelse er faktisk bevaret
+
+- [x] Skrivefri kontrol af den eneste gemte rapport: alle ti lagre behandlet, ét færdigt forslag bevaret. Ingen individuel tur- eller brugerinspektion.
+- [x] Lokal afgrænset parallelisering af de to uafhængige, komplette metadataaflæsninger med uændrede kontroller og frister; målrettet gammel timeoutcase afsluttes nu.
+- [ ] Samlet kildekvalifikation og sikker levering af metadata- og fejlfaserettelsen.
+- [ ] Normal genlæsning med faktisk verify/adminaccept og målt hosted Free-/CPU-kapacitet. Statistik er fortsat lukket; ingen ny rapportgentagelse er udført.
+
+Den præcise gamle fejl er fortsat ukendt. Den tidligere uafklarede forberedelse nedenfor er erstattet af den faktiske kontrol; øvrige åbne punkter består.
+
+## 2. november — historik: privat rapport stoppede uden fase; sikker lokal fejlrapportering
 
 - [x] Faktisk aktivering til privat prøve og efterfølgende kontrolleret lukning med genåbnet normal turlagring.
 - [x] Lokal fast fase-/fejlkoderapport uden rå data; tre nye normale cases og gammel hel006-kaldercase består.
