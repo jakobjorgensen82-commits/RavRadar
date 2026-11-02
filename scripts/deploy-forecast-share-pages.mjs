@@ -141,7 +141,8 @@ const envelope=value=>{need(object(value)&&value.success===true&&Array.isArray(v
 export async function completeForecastSharePagesList(read){
   const rows=[],ids=new Set(),names=new Set();let total=null,pages=null,perPage=null;
   for(let page=1;page<=5;page++){
-    const response=await read('/pages/projects?page='+page+'&per_page=100','PROJECT_LIST');
+    // Match the fixed Wrangler 4.28.1 project-list request; keep every completeness guard.
+    const response=await read('/pages/projects?page='+page+'&per_page=10','PROJECT_LIST');
     if(response.status!==200)throw Object.assign(fail('SHARE_PAGES_LIST_STATUS'),{kind:'PROJECT_LIST',
       httpStatus:Number.isInteger(response.status)&&response.status>=100&&response.status<=599?response.status:null});
     const data=envelope(response.value),info=response.value.result_info;

@@ -763,7 +763,7 @@ jobs:
           --output "${{ runner.temp }}/ravradar-voersaa-water-trace/status-safe.json"
         env:
           GITHUB_TOKEN: ${{ github.token }}
-          WEATHER_PROGRESS_MASTER_SECRET: ${{ secrets.WEATHER_PROGRESS_MASTER_SECRET }}
+          WEATHER_PROGRESS_MASTER_SECRET: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
           RAVRADAR_R2_ACCOUNT_ID: ${{ secrets.RAVRADAR_R2_ACCOUNT_ID }}

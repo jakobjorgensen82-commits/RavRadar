@@ -123,7 +123,7 @@ const projectRow=(n)=>({id:'opaque-project-'+n,name:'project-'+n});
 const arrayPage=(rows,info)=>({status:200,value:{success:true,errors:[],result:rows,...(info===undefined?{}:{result_info:info})}});
 let pagesRead=0;
 const paged=await completeForecastSharePagesList(async requested=>{
-  const page=++pagesRead;assert.equal(requested,'/pages/projects?page='+page+'&per_page=100');
+  const page=++pagesRead;assert.equal(requested,'/pages/projects?page='+page+'&per_page=10');
   return arrayPage(page<3?[projectRow(page)]:[],page===2?{page:2,per_page:100,count:1}:undefined);
 });
 assert.deepEqual(paged,[projectRow(1),projectRow(2)]);assert.equal(pagesRead,3,'A short page must not claim completeness');
@@ -148,6 +148,26 @@ let boundedRead=0;await assert.rejects(()=>completeForecastSharePagesList(async(
   const page=++boundedRead;return arrayPage([projectRow(page)]);
 }),/LIST_INCOMPLETE/);assert.equal(boundedRead,5,'No unbounded pagination');
 await assert.rejects(()=>completeForecastSharePagesList(async()=>arrayPage(Array.from({length:101},(_,n)=>projectRow(n)))),/LIST_INCOMPLETE/);
+// Cloudflare's pinned Wrangler 4.28.1 listProjects uses per_page=10.
+// This proves our request shape and unchanged terminal/budget contract only;
+// synthetic transport cannot prove the cause of a real Cloudflare HTTP 400.
+let wranglerTenPageReads=0;
+const wranglerTenPageRows=await completeForecastSharePagesList(async(wranglerTenPageRequest,wranglerTenPageKind)=>{
+  const wranglerTenPageNumber=++wranglerTenPageReads;
+  assert.equal(wranglerTenPageRequest,'/pages/projects?page='+wranglerTenPageNumber+'&per_page=10');
+  assert.equal(wranglerTenPageKind,'PROJECT_LIST');
+  const wranglerTenPageData=wranglerTenPageNumber<=4
+    ?Array.from({length:10},(_,wranglerTenPageOffset)=>projectRow((wranglerTenPageNumber-1)*10+wranglerTenPageOffset)):[];
+  return arrayPage(wranglerTenPageData,{page:wranglerTenPageNumber,per_page:10,count:wranglerTenPageData.length,total_count:40,total_pages:4});
+});
+assert.equal(wranglerTenPageRows.length,40);assert.equal(wranglerTenPageReads,5);cases++;
+let wranglerTenUnterminatedReads=0;
+await assert.rejects(()=>completeForecastSharePagesList(async()=>{
+  const wranglerTenUnterminatedPage=++wranglerTenUnterminatedReads;
+  return arrayPage(Array.from({length:10},(_,wranglerTenUnterminatedOffset)=>projectRow((wranglerTenUnterminatedPage-1)*10+wranglerTenUnterminatedOffset)),
+    {page:wranglerTenUnterminatedPage,per_page:10,count:10,total_count:50,total_pages:5});
+}),/LIST_INCOMPLETE/);
+assert.equal(wranglerTenUnterminatedReads,5,'No sixth call or inferred completeness for a full fifth page');cases++;
 await assert.rejects(()=>completeForecastSharePagesList(async()=>({status:403,value:{success:false}})),/LIST_STATUS/);
 for(const listStatus of [400,404,500,'400',99,600,NaN,Infinity]){
   let listStatusReads=0;
