@@ -8,7 +8,7 @@ Den tidligere selector tillod kun schema1, selv om den normale producent allered
 
 ### Hvad den normale prøve viser
 
-Den samme normale testcase er rød før og grøn efter rettelsen: producentens faktiske schema2 går gennem workflowets selector, Node-planen, den offline reservekilde og Python-/DMI-læseren. Hele de gamle workfloworakler og afslag på ukendt format eller ændret helfil bevares. Det er ikke bevis for, at alle øvrige vagter var opfyldt i en bestemt produktionskørsel, eller at leverandørerne har alle manglende timer.
+Den samme normale testcase er rød før og grøn efter rettelsen: producentens faktiske schema2 går gennem workflowets selector, Node-planen, den offline reservekilde og Python-/DMI-læseren. Hele de gamle workfloworakler og afslag på ukendt format eller ændret helfil bevares. Et særskilt, eksakt helfiltrin fører schema1/2-ændringen tilbage til den ægte forgænger, før den gamle scalarprøve læser den. Den nye helfil og ændrede eller ukendte varianter prøves særskilt; gamle forventninger ændres ikke. Det er ikke bevis for, at alle øvrige vagter var opfyldt i en bestemt produktionskørsel, eller at leverandørerne har alle manglende timer.
 
 ### Bevarelse og leveringsgrænse
 

@@ -1629,10 +1629,10 @@ test('terminal delivery repair maps only five exact whole sources and its exact 
 });
 
 
-import {inverseQualifiedScalarPlanningWorkflow, qualifiedScalarPlanningWorkflowReview}
+import {inverseQualifiedScalarSchemaWorkflow, inverseQualifiedScalarPlanningWorkflow, qualifiedScalarPlanningWorkflowReview}
   from './lib/completed-private-runtime-workflow-review.mjs';
 test('qualified scalar inverse keeps the entire genuine main workflow and rejects mixed bytes', async () => {
-  const source = (await fs.readFile(new URL('../.github/workflows/reusable-weather-build.yml', import.meta.url), 'utf8')).replaceAll('\r\n', '\n');
+  const source = inverseQualifiedScalarSchemaWorkflow((await fs.readFile(new URL('../.github/workflows/reusable-weather-build.yml', import.meta.url), 'utf8')).replaceAll('\r\n', '\n'), 'build');
   const row = qualifiedScalarPlanningWorkflowReview;
   assert.equal(sha(source), row.after.sha256);
   const before = inverseQualifiedScalarPlanningWorkflow(source, 'build');
@@ -1646,4 +1646,25 @@ test('qualified scalar inverse keeps the entire genuine main workflow and reject
     assert.equal(inverseQualifiedScalarPlanningWorkflow(changed, 'build'), changed);
     assert.throws(() => inverseCompletedRuntimeWorkflow(changed, 'build'));
   }
+});
+
+test('scalar schema successor preserves the exact whole predecessor before the unchanged scalar oracle', async () => {
+  const actual = (await fs.readFile(new URL('../.github/workflows/reusable-weather-build.yml', import.meta.url), 'utf8')).replaceAll('\r\n', '\n');
+  assert.equal(Buffer.byteLength(actual), 297899);
+  assert.equal(sha(actual), '451249801b6944d945b193fd95de5065cf057a8b08a6698a675e2192c074100c');
+  const previous = inverseQualifiedScalarSchemaWorkflow(actual, 'build');
+  assert.equal(Buffer.byteLength(previous), 297829);
+  assert.equal(sha(previous), qualifiedScalarPlanningWorkflowReview.after.sha256);
+  assert.equal(inverseQualifiedScalarSchemaWorkflow(previous, 'build'), previous);
+  assert.equal(inverseQualifiedScalarPlanningWorkflow(actual, 'build'), inverseQualifiedScalarPlanningWorkflow(previous, 'build'));
+  for (const role of ['once', 'unknown', 'toString', '__proto__', null, 1])
+    assert.equal(inverseQualifiedScalarSchemaWorkflow(actual, role), actual);
+  for (const changed of [actual+'\n', actual.replace("continuity_schema == '2'", "continuity_schema == '3'"),
+      actual.replace('ordinary-restored', 'mixed-context'), actual.replace('DMI_BULK_HOURS: 118', 'DMI_BULK_HOURS: 117')]) {
+    assert.notEqual(changed, actual);
+    assert.equal(inverseQualifiedScalarSchemaWorkflow(changed, 'build'), changed);
+    assert.throws(() => inverseCompletedRuntimeWorkflow(changed, 'build'));
+  }
+  assert.throws(() => inverseQualifiedScalarSchemaWorkflow(actual), /SCALAR_SCHEMA_ARGUMENTS/);
+  assert.throws(() => inverseQualifiedScalarSchemaWorkflow(null, 'build'), /SCALAR_SCHEMA_TYPE/);
 });
