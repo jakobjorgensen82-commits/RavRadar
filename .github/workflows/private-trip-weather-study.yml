@@ -7,7 +7,11 @@ on:
         description: Skrivefri plan, kontrolleret installation med statistik slået fra eller privat rapporteksport
         type: choice
         default: plan
-        options: [plan, deliver, export]
+        options: [plan, deliver, export, enable]
+      enable_confirmation:
+        description: Skriv ENABLE_PRIVATE_UNISSUED_STUDY_ONLY for kun at åbne eksisterende signerede private ruter; ingen rapport eller kvalifikationspåstand
+        type: string
+        default: ''
       allow_004:
         description: Allow one exact control0-only004 attempt when absent
         type: boolean
@@ -41,18 +45,20 @@ jobs:
     runs-on: ubuntu-latest
     env:
       PRIVATE_STUDY_OPERATION: ${{ inputs.operation }}
+      PRIVATE_STUDY_ENABLE_CONFIRMATION: ${{ inputs.enable_confirmation }}
     steps:
       - name: Validate fixed private study operation
         shell: bash
         run: |
           case "$PRIVATE_STUDY_OPERATION" in
             plan|deliver|export) ;;
+            enable) test "$PRIVATE_STUDY_ENABLE_CONFIRMATION" = ENABLE_PRIVATE_UNISSUED_STUDY_ONLY ;;
             *) echo 'PRIVATE_STUDY_OPERATION_INVALID' >&2; exit 1 ;;
           esac
 
   private-study-upgrade:
     needs: validate-operation
-    if: ${{ inputs.operation == 'plan' || inputs.operation == 'deliver' }}
+    if: ${{ inputs.operation == 'plan' || inputs.operation == 'deliver' || inputs.operation == 'enable' }}
     concurrency:
       group: ravradar-trip-storage-production
       cancel-in-progress: false
@@ -72,6 +78,7 @@ jobs:
       TRIP_STORAGE_OPERATION: existing-private-study-upgrade
       TRIP_STORAGE_PRIVATE_STUDY: '1'
       TRIP_PRIVATE_STUDY_MODE: ${{ inputs.operation }}
+      TRIP_PRIVATE_STUDY_ENABLE_CONFIRMATION: ${{ inputs.enable_confirmation }}
       TRIP_PRIVATE_STUDY_APPLY_ALLOWED: ${{ inputs.allow_004 && 'true' || 'false' }}
       TRIP_PRIVATE_STUDY_JOBS_APPLY_ALLOWED: ${{ inputs.allow_005 && 'true' || 'false' }}
       TRIP_PRIVATE_STUDY_JOB_BINDING_APPLY_ALLOWED: ${{ inputs.allow_006 && 'true' || 'false' }}
