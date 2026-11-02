@@ -57,3 +57,12 @@ En senere almindelig 591-generation har faktisk leveret de tre normale serverfun
 - Håndbog 89.278, stabilt ID `forecast-share-pages-simply-cname-2026-10-29`.
 - Ejerens Pagesplan, præcis adapter/robots-gennemgang og kontrollernes detaljer findes i det private checkpoint; skiftende deploy-/DNS-identiteter holdes dér.
 - [Cloudflare Pages Direct Upload](https://developers.cloudflare.com/pages/get-started/direct-upload/) og [Pages Functions routing](https://developers.cloudflare.com/pages/functions/routing/) beskriver platformens eksisterende vej. De er ikke bevis for vores konto, rettigheder eller faktisk levering.
+
+
+### Kontrolleret customdomæne i opdateringsvejen, 3. november
+
+Prøveadressen ravradar-del.pages.dev er faktisk oprettet og har vist kontrollerede scorer fra den offentlige 594-prognose. Hjemmesidens delingsknap bruger fortsat den gamle adresse. del.ravradar.dk, DNS/TLS, klientovergang, Facebookaccept og målt CPU-kapacitet er fortsat åbne; en lokal prøve eller de observerede vellykkede svar lukker ikke disse krav.
+
+Den afgrænsede controllerkandidat accepterer nu kun pages.dev alene eller sammen med præcis del.ravradar.dk. Projektidentitet, forgænger og den samlede domænemængde skal være uændrede gennem før-/efterkontrollerne. Fremmede værter, dubletter og domæneskift under opdatering afvises. Controlleren ændrer ikke DNS og opretter ikke et eksisterende projekt på ny.
+
+Lever den kildekvalificerede controller før domænet tilknyttes. Derefter følger Pagesbinding, én Simply-CNAME, TLS/hostkontrol og særskilt frontend-/cacheovergang. Navneservere, hovedhjemmeside, mail, gammel Worker og allerede delte links bevares. Ingen ændring af model, version, SQL, vejr, score, administratorpunkter eller geometri. Se DEC-0294 og håndbog 89.278; aktuelle identiteter og detaljeret evidens står i det private checkpoint.

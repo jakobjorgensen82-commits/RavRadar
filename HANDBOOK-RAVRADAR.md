@@ -524,6 +524,14 @@ Denne kandidat gælder alene prøveadressen ravradar-del.pages.dev. Et senere sk
 
 Opdateringsvejen er lokalt forberedt, ikke offentligt leveret. Facebooks egen forhåndsvisning, gratis kapacitet og svartid i praksis samt den nye hosts korrekte visning af den aktuelle offentlige prognose skal stadig kontrolleres hver for sig. Den gamle delingstjeneste og allerede delte links bevares.
 
+### Status og næste sikre trin, 3. november 2026
+
+Prøveadressen ravradar-del.pages.dev er nu oprettet og afprøvet med kontrollerede scorer fra den offentlige 594-prognose. Hjemmesidens delingsknap bruger fortsat den gamle adresse. Den korte adresse, certifikatet, Facebooks egen visning og gratis CPU-kapacitet er endnu ikke færdigkontrolleret. De tidligere daterede beskrivelser af manglende projektoprettelse er dermed historiske på dette punkt.
+
+Før det korte domæne tilsluttes, skal opdateringsværktøjet kunne bevare netop denne adresse. Den afgrænsede kandidat tillader kun prøveadressen alene eller sammen med del.ravradar.dk. Den samme domænemængde skal genfindes under hele opdateringen; fremmede adresser, dubletter og ændringer undervejs giver afslag. Værktøjet ændrer ikke selv DNS.
+
+Efter denne kode er kvalificeret og leveret, følger tilknytning på Pages, én CNAME hos Simply og kontrol af det aktive certifikat. Først derefter skifter hjemmesidens delingsknap. Navneservere, hovedhjemmeside, mail og den gamle delingstjeneste bevares. Der ændres ingen scoremodel, vejrdata eller database.
+
 ## 89.277 Undersøg de gemte data, før hentningen ændres
 
 **Kort fortalt: Huller i prognosen skal undersøges i de data, som vejrhentningen faktisk gemte. En afgrænset læsning kan vise, hvor meget de enkelte reservekilder udfyldte, uden at starte en ny vejrhentning.**

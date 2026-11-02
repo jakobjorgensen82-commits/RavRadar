@@ -1,3 +1,11 @@
+## 3. november — delingsprojektet bevarer det præcise korte domæne
+
+Prøveadressen ravradar-del.pages.dev er faktisk oprettet og har vist kontrollerede scorer fra den offentlige 594-prognose. Hjemmesidens delingsknap bruger fortsat den gamle adresse. del.ravradar.dk, DNS/TLS, klientovergang, Facebookaccept og målt CPU-kapacitet er fortsat åbne; en lokal prøve eller de observerede vellykkede svar lukker ikke disse krav.
+
+Den afgrænsede controllerkandidat accepterer nu kun pages.dev alene eller sammen med præcis del.ravradar.dk. Projektidentitet, forgænger og den samlede domænemængde skal være uændrede gennem før-/efterkontrollerne. Fremmede værter, dubletter og domæneskift under opdatering afvises. Controlleren ændrer ikke DNS og opretter ikke et eksisterende projekt på ny.
+
+Lever den kildekvalificerede controller før domænet tilknyttes. Derefter følger Pagesbinding, én Simply-CNAME, TLS/hostkontrol og særskilt frontend-/cacheovergang. Navneservere, hovedhjemmeside, mail, gammel Worker og allerede delte links bevares. Ingen ændring af model, version, SQL, vejr, score, administratorpunkter eller geometri. Se DEC-0294 og håndbog 89.278; aktuelle identiteter og detaljeret evidens står i det private checkpoint.
+
 ## 2. november — normal scalarplan med begge kendte kontinuitetsformater
 
 Den normale producent gemmer native strømhistorik som schema2. Før-DMI-kalderen skal tillade både schema1 og schema2, før den normale læser vurderer de gemte komponenter og planlægger reelle vejrhul.
