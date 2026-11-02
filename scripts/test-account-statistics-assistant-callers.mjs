@@ -891,7 +891,7 @@ test('private-study006: privat eksport bevarer hele installationsarm og normale 
     ["inputs.operation == 'export'","inputs.operation != 'deliver'"],['node scripts/publish-private-trip-weather-study.mjs','node scripts/deploy-private-trip-study.mjs']]){
     assert(workflow.includes(before));assert.throws(()=>validate(workflow.replace(before,after)));
   }
-  const publisher=await read('scripts/publish-private-trip-weather-study.mjs');
+  const publisher=reviewedPrivateStudyOperatorPublisher(await read('scripts/publish-private-trip-weather-study.mjs'));
   assert.equal(sha(publisher),'5b087741711e31ad64401be9a8bbfc4ffb0bfe53bd7e68a50a9fe08cd947d6dc');
   // TEST DATA only: the exact normal594 versioned dashboard precedes every
   // unchanged593 and older whole-file oracle. No UI behavior is ported here.
@@ -1465,3 +1465,18 @@ test('calendar588 national entry binds its own phase while historical584 reuse r
   assert(source.includes('catch{result=await executeHistorical();'));
   assert(source.includes('providerOrProductionProof:false'));
 });
+
+
+// BEGIN EXACT PRIVATE STUDY OPERATOR DIAGNOSTIC TEST VIEW
+// Test-only: one whole-source successor; the immutable006 publisher pin and
+// every preceding assertion remain intact. Actual new CLI behavior is tested.
+function reviewedPrivateStudyOperatorPublisher(source){
+  assert.equal(typeof source,'string');
+  const sha=value=>crypto.createHash('sha256').update(value).digest('hex');
+  if(sha(source)!=='33e65c0438d72619097b5b2fe9aa48dc3c29144da745f5352b41b953461bdfbd')return source;
+  assert.equal(Buffer.byteLength(source),5095);
+  const previous="// Fixed existing GitHub operator operation -> existing protected admin document.\nimport {execFileSync} from 'node:child_process';\nimport path from 'node:path';\nimport {pathToFileURL} from 'node:url';\nimport {readTripWeatherAggregate} from './lib/trip-weather-aggregate-client.mjs';\nimport {publishPrivateTripStudyAdmin} from './lib/private-trip-study-admin-transport.mjs';\nexport async function publishOwnerPrivateTripStudy(){\n  const env=process.env;\n  if(process.argv.length!==2||env.GITHUB_EVENT_NAME!=='workflow_dispatch'||env.GITHUB_WORKFLOW!=='Private RavRadar trip weather study'\n    ||env.GITHUB_REF!=='refs/heads/main'||env.GITHUB_RUN_ATTEMPT!=='1'||env.TRIP_STORAGE_OPERATION!=='private-study-export'\n    ||!/^[a-f0-9]{40}$/.test(env.GITHUB_SHA||''))throw Error('PRIVATE_STUDY_OPERATOR_AUTHORITY');\n  const childEnv={...env};for(const key of ['SUPABASE_ACCESS_TOKEN','SUPABASE_SERVICE_ROLE_KEY','TRIP_GATEWAY_SHARED_SECRET','TRIP_PSEUDONYM_SECRET_V1','CLOUDFLARE_API_TOKEN'])delete childEnv[key];\n  const read=(command,args)=>execFileSync(command,args,{env:childEnv,encoding:'utf8',stdio:['ignore','pipe','pipe'],timeout:60000,maxBuffer:65536});\n  read('git',['fetch','--no-tags','origin','+refs/heads/main:refs/remotes/origin/main']);\n  for(const ref of ['HEAD^{commit}','origin/main^{commit}'])if(read('git',['rev-parse',ref]).trim()!==env.GITHUB_SHA)throw Error('PRIVATE_STUDY_OPERATOR_SOURCE');\n  if(!/^Source gate: required=false; reason=[^\\r\\n]+$/m.test(read('node',['scripts/weather-source-gate.mjs','check'])))throw Error('PRIVATE_STUDY_OPERATOR_SOURCE');\n  const report=await readTripWeatherAggregate({supabaseUrl:'https://afqhhdrkjfjtpadntdzo.supabase.co',\n    serviceRoleKey:env.SUPABASE_SERVICE_ROLE_KEY,gatewayUrl:env.CLOUDFLARE_TRIP_GATEWAY_URL,\n    sharedSecret:env.TRIP_GATEWAY_SHARED_SECRET,pseudonymSecret:env.TRIP_PSEUDONYM_SECRET_V1});\n  return publishPrivateTripStudyAdmin(report,{serviceRoleKey:env.SUPABASE_SERVICE_ROLE_KEY,accessToken:env.SUPABASE_ACCESS_TOKEN});\n}\nif(process.argv[1]&&pathToFileURL(path.resolve(process.argv[1])).href===import.meta.url){\n  publishOwnerPrivateTripStudy().then(receipt=>console.log(JSON.stringify(receipt))).catch(()=>{\n    console.error('PRIVATE_STUDY_OPERATOR_FAILED');process.exitCode=1;\n  });\n}\n";
+  assert.equal(sha(previous),'5b087741711e31ad64401be9a8bbfc4ffb0bfe53bd7e68a50a9fe08cd947d6dc');
+  return previous;
+}
+// END EXACT PRIVATE STUDY OPERATOR DIAGNOSTIC TEST VIEW

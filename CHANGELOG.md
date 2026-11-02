@@ -1,3 +1,7 @@
+## 2026-11-02 — lokal sikker fejlrapportering for privat statistik
+
+Den eksisterende private rapportoperatør bevarer nu lukkede fase-/fejlkoder og skelner ikke-startet skrivning fra ukendt udfald. Rå data og fejltekst skjules fortsat. Normale lokale cases består; kildekvalifikation og levering er åbne. Det er ikke en rettelse af den endnu ukendte oprindelige årsag, ny eksport, ændrede frister, model, SQL eller offentlig statistik.
+
 ## 1. november — lokal privat enable-efterfølger efter installeret 007
 
 Forbered særskilt enable med fast bekræftelse i det eksisterende private statistikworkflow; bevar OFF-standard og normale kilde-/main-/schema-/bindings-/vedligeholdelses-/readback-kontroller. 007 er faktisk installeret med verificeret OFF. Enable starter ingen rapport, datajob eller charge.

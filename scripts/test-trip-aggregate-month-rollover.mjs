@@ -785,3 +785,117 @@ test('categorical report preserves global ledger and owner delivery without lega
       originalLegacyReportUnchanged:true,ownerTransportAndTable:true,installed:false,activated:false,hostedFreeQualified:false}));
   }finally{fixtures.forEach(f=>f.close());Date.now=oldClock;globalThis.fetch=oldFetch;}
 });
+
+
+// Execute the actual fixed operator/CLI with the existing VM test boundary.
+// Dependencies are synthetic; no GitHub, aggregate, admin or credential I/O.
+async function invokePrivateStudyOperatorFixture(options = {}) {
+  const vm = await import('node:vm');
+  const path = await import('node:path');
+  const {fileURLToPath,pathToFileURL} = await import('node:url');
+  const url = new URL('./publish-private-trip-weather-study.mjs',import.meta.url);
+  let source = fs.readFileSync(url,'utf8');
+  assert.equal((source.match(/^import /gm) ?? []).length,5);
+  source = source.replace(/^import [^\n]+\n/gm,'').replace(/^export /gm,'')
+    .replaceAll('import.meta.url','moduleUrl');
+  const secret = 'PRIVATE_FIXTURE_SENSITIVE';
+  const head = 'a'.repeat(40), calls = {read:0,aggregate:0,publish:0};
+  const env = {GITHUB_EVENT_NAME:'workflow_dispatch',GITHUB_WORKFLOW:'Private RavRadar trip weather study',
+    GITHUB_REF:'refs/heads/main',GITHUB_RUN_ATTEMPT:'1',GITHUB_SHA:head,
+    TRIP_STORAGE_OPERATION:'private-study-export',GITHUB_TOKEN:secret,
+    SUPABASE_ACCESS_TOKEN:secret,SUPABASE_SERVICE_ROLE_KEY:secret,
+    TRIP_GATEWAY_SHARED_SECRET:secret,TRIP_PSEUDONYM_SECRET_V1:secret,CLOUDFLARE_API_TOKEN:secret,
+    CLOUDFLARE_TRIP_GATEWAY_URL:'https://synthetic.example',...options.env};
+  const stdout=[],stderr=[];
+  let complete;
+  const done = new Promise(resolve => {complete=resolve;});
+  const context = {
+    moduleUrl:url.href,path,pathToFileURL,
+    process:{argv:['node',fileURLToPath(url)],env,exitCode:undefined},
+    console:{log:line=>{stdout.push(line);complete();},error:line=>{stderr.push(line);complete();}},
+    execFileSync:(command,args,config)=>{
+      calls.read++;
+      assert.equal(config.timeout,60000);assert.equal(config.maxBuffer,65536);
+      assert.equal(config.env.GITHUB_TOKEN,secret,'The normal source check receives the existing token');
+      for(const key of ['SUPABASE_ACCESS_TOKEN','SUPABASE_SERVICE_ROLE_KEY','TRIP_GATEWAY_SHARED_SECRET',
+        'TRIP_PSEUDONYM_SECRET_V1','CLOUDFLARE_API_TOKEN'])assert.equal(config.env[key],undefined);
+      if(command==='git'&&args[0]==='fetch')return '';
+      if(command==='git'&&args[0]==='rev-parse')return head+'\n';
+      assert.equal(command,'node');assert.deepEqual(Array.from(args),['scripts/weather-source-gate.mjs','check']);
+      if(options.sourceError)throw options.sourceError;
+      return options.sourceRequired ? 'Source gate: required=true; reason=synthetic\n'
+        : 'Source gate: required=false; reason=synthetic-proof\n';
+    },
+    readTripWeatherAggregate:async()=>{calls.aggregate++;if(options.aggregateError)throw options.aggregateError;return {};},
+    publishPrivateTripStudyAdmin:async()=>{calls.publish++;if(options.publishError)throw options.publishError;
+      return {kind:'PRIVATE_STUDY_ADMIN_BLOB_VERIFIED',synthetic:true};},
+  };
+  let timer;
+  try {
+    vm.runInNewContext(source,context,{filename:'actual-private-study-operator.mjs'});
+    await Promise.race([done,new Promise((_,reject)=>{timer=setTimeout(()=>reject(Error('OPERATOR_FIXTURE_DID_NOT_SETTLE')),2000);})]);
+  } finally {clearTimeout(timer);}
+  assert(![...stdout,...stderr].some(line=>String(line).includes(secret)),'No raw secret or provider text may escape');
+  const parse = line => {try{return JSON.parse(line);}catch{return {kind:line};}};
+  return {calls,stdout,stderr,exitCode:context.process.exitCode,
+    failure:stderr.length?parse(stderr[0]):null,receipt:stdout.length?parse(stdout[0]):null};
+}
+
+test('private-study operator reports fixed source timeout phase before aggregate work',async()=>{
+  const error=Object.assign(Error('PRIVATE_FIXTURE_SENSITIVE child stderr'),
+    {code:'ETIMEDOUT',stdout:'PRIVATE_FIXTURE_SENSITIVE',stderr:'PRIVATE_FIXTURE_SENSITIVE'});
+  const result=await invokePrivateStudyOperatorFixture({sourceError:error});
+  assert.equal(result.failure?.phase,'SOURCE_PROOF','PRIVATE_STUDY_SAFE_PHASE_REGRESSION');
+  assert.equal(result.failure.errorCode,'PRIVATE_STUDY_OPERATOR_COMMAND_TIMEOUT');
+  assert.equal(result.failure.writeOutcome,'NOT_STARTED');
+  assert.equal(result.failure.kind,'PRIVATE_STUDY_OPERATOR_FAILED');
+  assert.equal(result.exitCode,1);assert.deepEqual(result.calls,{read:4,aggregate:0,publish:0});
+  assert.equal(result.stderr.length,1);assert.equal(result.stdout.length,0);
+});
+
+test('private-study operator keeps aggregate and publication failures unknown without retry or raw errors',async()=>{
+  for(const fixture of [
+    {input:{aggregateError:Error('AGGREGATE_CALLER_TIMEOUT')},phase:'AGGREGATE',code:'AGGREGATE_CALLER_TIMEOUT',calls:{read:4,aggregate:1,publish:0}},
+    {input:{publishError:Error('PRIVATE_STUDY_DOCUMENT_WRITE_OUTCOME_UNKNOWN')},phase:'ADMIN_PUBLISH',code:'PRIVATE_STUDY_DOCUMENT_WRITE_OUTCOME_UNKNOWN',calls:{read:4,aggregate:1,publish:1}},
+    {input:{aggregateError:Error('PRIVATE_FIXTURE_SENSITIVE unknown backend body')},phase:'AGGREGATE',code:'PRIVATE_STUDY_OPERATOR_UNCLASSIFIED',calls:{read:4,aggregate:1,publish:0}},
+    {input:{aggregateError:Object.defineProperty({},'message',{get(){throw Error('PRIVATE_FIXTURE_SENSITIVE getter');}})},phase:'AGGREGATE',code:'PRIVATE_STUDY_OPERATOR_UNCLASSIFIED',calls:{read:4,aggregate:1,publish:0}},
+  ]){
+    const result=await invokePrivateStudyOperatorFixture(fixture.input);
+    assert.equal(result.failure?.phase,fixture.phase);
+    assert.equal(result.failure.errorCode,fixture.code);
+    assert.equal(result.failure.writeOutcome,'UNKNOWN_NO_RETRY');
+    assert.deepEqual(result.calls,fixture.calls);assert.equal(result.exitCode,1);
+    assert.deepEqual(Object.keys(result.failure).sort(),['errorCode','kind','phase','writeOutcome']);
+  }
+  const rejected=await invokePrivateStudyOperatorFixture({sourceRequired:true});
+  assert.equal(rejected.failure.phase,'SOURCE_PROOF');assert.equal(rejected.failure.errorCode,'PRIVATE_STUDY_OPERATOR_SOURCE');
+  assert.equal(rejected.failure.writeOutcome,'NOT_STARTED');assert.deepEqual(rejected.calls,{read:4,aggregate:0,publish:0});
+  const authority=await invokePrivateStudyOperatorFixture({env:{GITHUB_RUN_ATTEMPT:'2'}});
+  assert.equal(authority.failure.phase,'AUTHORITY');assert.equal(authority.failure.errorCode,'PRIVATE_STUDY_OPERATOR_AUTHORITY');
+  assert.deepEqual(authority.calls,{read:0,aggregate:0,publish:0});
+  const success=await invokePrivateStudyOperatorFixture();
+  assert.equal(success.failure,null);assert.equal(success.exitCode,undefined);
+  assert.equal(success.receipt.kind,'PRIVATE_STUDY_ADMIN_BLOB_VERIFIED');
+  assert.deepEqual(success.calls,{read:4,aggregate:1,publish:1});
+});
+
+
+test('private-study operator diagnostic view preserves the entire immutable publisher oracle',async()=>{
+  const vm=await import('node:vm'),crypto=await import('node:crypto');
+  const callers=fs.readFileSync(new URL('./test-account-statistics-assistant-callers.mjs',import.meta.url),'utf8');
+  const begin='// BEGIN EXACT PRIVATE STUDY OPERATOR DIAGNOSTIC TEST VIEW';
+  const end='// END EXACT PRIVATE STUDY OPERATOR DIAGNOSTIC TEST VIEW';
+  assert.equal(callers.split(begin).length,2);assert.equal(callers.split(end).length,2);
+  const from=callers.indexOf(begin),until=callers.indexOf(end,from);
+  const view=vm.runInNewContext(callers.slice(from,until)+'\nreviewedPrivateStudyOperatorPublisher;',{assert,crypto,Buffer});
+  const actual=fs.readFileSync(new URL('./publish-private-trip-weather-study.mjs',import.meta.url),'utf8');
+  const sha=value=>crypto.createHash('sha256').update(value).digest('hex');
+  const before=view(actual);
+  assert.equal(sha(before),'5b087741711e31ad64401be9a8bbfc4ffb0bfe53bd7e68a50a9fe08cd947d6dc');
+  assert.equal(view(before),before);
+  for(const changed of [actual+'\n',actual.replace('timeout:60000','timeout:60001'),
+    actual.replace("phase = 'AGGREGATE'","phase = 'ADMIN_PUBLISH'")]){
+    assert.notEqual(changed,actual);assert.equal(view(changed),changed);
+    assert.notEqual(sha(view(changed)),sha(before));
+  }
+});

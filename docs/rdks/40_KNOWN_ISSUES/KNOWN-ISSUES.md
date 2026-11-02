@@ -1,3 +1,7 @@
+## 2. november — privat rapport stoppede uden fase; sikker lokal fejlrapportering
+
+Den normale private rapportoperatør skjuler hidtil alle fejl under samme markør. Den faktiske første fejlede prøve kan derfor ikke tilskrives kildekontrol, aggregate eller adminpublicering alene ud fra varigheden. En lokal afgrænset kandidat bevarer faste faser/fejlkoder og UNKNOWN_NO_RETRY efter mulig skrivestart. Den ændrer ingen frist eller prøverapport og giver ikke automatisk adgang til en gentagelse. Kvalifikation og faktisk årsagsafklaring er fortsat åbne; se CURRENT_TRUTH og privat checkpoint.
+
 ## 1. november — privat statistik mangler aktivering og faktisk hosted kvalifikation
 
 007 er installeret og normalt verificeret med Worker-OFF. En privat lokal enable-kandidat åbner alene de eksisterende signerede ruter efter de normale kontroller og en fast særskilt bekræftelse; OFF er fortsat standard. Den starter ingen rapport, datajob eller charge.
