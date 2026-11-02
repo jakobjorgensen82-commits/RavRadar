@@ -1,3 +1,21 @@
+## 2026-11-02 — lokal provisionskandidat til privat dokumentarkiv
+
+- Tilføj særskilt bucket-readonly og eksplicit bekræftet bucket-create til den nye vedligeholdelseskalder.
+- Brug kun eksisterende Cloudflare-adgang og den faste EU/Standard-bucket; genlæs private metadata før archive/publish/prune. Eksisterende buckets og offentlig adgang ændres ikke.
+- Bevar numerisk HTTP-afslag og stop ved ukendt oprettelsesudfald uden automatisk genforsøg. Normale syntetiske mål består; faktisk adgang og levering er åbne.
+
+Ingen vejr-, model-, version-, tupel-, SQL- eller betalingsændring. Se håndbog 89.298.
+
+## 2026-11-02 — lokal kandidat til afgrænset dokumenthistorik
+
+- Bevar aktuelle RDKS-/håndbogsdokumenter og de fem nyeste historikversioner pr. nøgle; ældre originaler arkiveres før eventuel beskæring.
+- Bevar eksakte REST-bytes i særskilt privat R2-arkiv med central V2-henvisning og verificeret genlæsning.
+- Tilføj en særskilt manuel vedligeholdelseskalder: skrivefri standardplan, bekræftet beskæring og uændret vejr→turlager-låserækkefølge.
+- Giv jobklargøring en fem minutters buffer; operation/controller forbliver 20 minutter. Lukket prune-valg 25/100/600, standard 25, mindsker behovet for gentagne fulde forudkontroller.
+- Normale lokale prøver består; selvstændig præcis main-baseret kildekvalifikation, privat lager-/backupkontrol og livevirkning er åbne. SOURCE 595 er ingen aktiveringsforudsætning; en senere sammenføring skal gennem normale endelige import-/bindings- og kildekontroller. Ingen automatisk oprydning, FreeReady eller Pro-opsigelse er leveret.
+
+Ingen versions-, tupel-, RavScore-, vejrdata-, original- eller geometriændring. Se håndbog 89.298.
+
 ## 2. november — de historiske kildeprøver bevarer deres oprindelige input
 
 Den første samlede kontrol af DMI-kandidaten stoppede i to gamle inputkontrakter: den udvidede kommandofortegnelse og den flyttede scalar-kalder i updateren. De 32 afslag er kortlagt til disse to fælles årsager; de er ikke i sig selv bevis for fejl i nye vejrdata.
