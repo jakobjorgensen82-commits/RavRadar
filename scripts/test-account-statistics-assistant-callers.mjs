@@ -1569,3 +1569,7 @@ test('DMI scalar source registration qualifies75 commands before unchanged72-com
   assert.throws(()=>inverse(prior));assert.throws(()=>inverse(actual,{}));
   assert.throws(()=>inverse(null));assert.throws(()=>inverse({...actual,unreviewed:false}));
 });
+
+// The normal source target also owns the fixed document-history workflow boundary.
+import './test-admin-document-history-workflow.mjs';
+import './test-admin-document-history-maintenance.mjs';

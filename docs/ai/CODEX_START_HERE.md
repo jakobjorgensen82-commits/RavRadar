@@ -1,3 +1,9 @@
+## 2. november — afgrænset dokumenthistorik, kun lokal kandidat
+
+Læs håndbog 89.298 før arkivering eller beskæring af dokumenthistorik. Kandidaten bevarer de tre aktuelle dokumenter og de fem nyeste historikversioner pr. nøgle. Ældre versioner må først beskæres efter præcis privat arkivering, verificeret genlæsning og central V2-arkivhenvisning.
+
+Den særskilte manuelle maintenance-kalder bruger den eksisterende vejrkø yderst og turlagerkøen inderst. Standardvalget er skrivefri plan; der er ingen tidsplan eller automatisk beskæring. Normale lokale controller- og kalderprøver består, men præcis kildekvalifikation, faktisk privat lageradgang, backup-/genopretningsafklaring og sikker liveprøve er åbne. Kandidaten kan kvalificeres selvstændigt på sin præcise main-baserede kilde og kræver ikke SOURCE 595 først. En senere SOURCE-sammenføring skal normalt bevare modelbindinger og hele kildebeviset; den må ikke ommærke et gammelt bevis. Ingen SOURCE-aktivering, FreeReady eller Pro-opsigelse følger af denne lokale kandidat.
+
 ## 2. november — kvalificeret main er indarbejdet; følg revisionens aktuelle fase
 
 Den kvalificerede faktiske main fra PR792 er normalt indarbejdet som Git-forælder. Hele SOURCE-træet var uændret ved denne merge. Læs [kanonisk status](../rdks/90_INDEX/CURRENT_TRUTH.md#source-595-status-2026-11-02) og IMPLEMENTATION_STATUS for den aktuelle udstedelses- og kvalifikationsfase, samt DEC-0261 og håndbog 89.297. Ældre afventning af main-integration er dateret historik. Den normale 595-afledning skal begynde med det bevarede NULL-udgangspunkt og gennemføres én gang efter dokumentreview og kodefreeze; dette er ikke en løbende påstand om metadataenes aktuelle værdi.
